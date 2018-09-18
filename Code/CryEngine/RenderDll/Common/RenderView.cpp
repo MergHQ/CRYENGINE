@@ -365,7 +365,7 @@ void CRenderView::SwitchUsageMode(EUsageMode mode)
 			auto lambda_job_after_write = [this] {
 				Job_PostWrite();
 			};
-			m_jobstate_Write.RegisterPostJobCallback("JobRenderViewPostWrite", lambda_job_after_write, JobManager::eRegularPriority, &m_jobstate_PostWrite);
+			m_jobstate_Write.RegisterPostJob("JobRenderViewPostWrite", lambda_job_after_write, JobManager::eRegularPriority, &m_jobstate_PostWrite);
 		}
 
 		// If no items will be written, next SetStopped call will trigger post job

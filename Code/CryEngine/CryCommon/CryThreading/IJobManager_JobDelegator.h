@@ -135,17 +135,26 @@ struct SJobLambdaFunction<R(T ...)>
 //! Generic Job interface.
 //! Accepts job data on creation and stores them into the associated function object.
 //! Responsible for invoking the associated function.
-template<const char* Name, class TFuncType>
+template<class TFuncType, const char* Name = nullptr>
 class CRY_ALIGN(128) CGenericJob: public CJobBase
 {
 public:
 
-	//! Generic constructor which takes any parameter and constructs the underlying functor.
-	//! The SFINAE check is essential so that implicitly copy-constructing from another non-const CGenericJob
-	//! object would not go in here, but into the deleted copy constructor.
+	template<typename TargetType, typename ... Types>
+	static constexpr bool AppearsInAnyOf()
+	{
+		return stl::disjunction< std::is_same<TargetType, Types>... >::value;
+	}
+
+	//! Generic constructor when the job name is bound at compile time.
+	//! Takes any parameter and constructs the underlying functor.
+	//! The SFINAE check AppearsInAnyOf is essential so that implicitly copy-constructing from another non-const
+	//! CGenericJob object would not go in here, but into the deleted copy constructor.
 	template<typename ... T, 
+		const char* TName = Name, // Dependent non-type parameter is necessary for mutual exclusive SFINAE to work
 		typename = typename std::enable_if<
-			!stl::disjunction< std::is_same<CGenericJob, typename std::decay<T>::type>... >::value
+			TName != nullptr &&
+			!AppearsInAnyOf<CGenericJob, typename std::decay<T>::type...>()
 		>::type
 	>
 	CGenericJob(T... t) // by value because we are going to store them anyway
@@ -162,6 +171,25 @@ public:
 		m_JobDelegator.SetDelegator(Invoke);
 		/*Safe, since GetJobHandle itself is thread safe and should always return the same result for a job */
 		SetJobProgramData(gEnv->GetJobManager()->GetJobHandle(Name, Invoke));
+	}
+
+	//! Generic constructor when the job name is not available at compile time.
+	//! Takes a job name string and any further parameter to construct the underlying functor.
+	//! Does not check AppearsInAnyOf as the first parameter prevents the function from taking priority 
+	//! over the copy constructor.
+	template<typename ... T,
+		const char* TName = Name, // Dependent non-type parameter is necessary for mutual exclusive SFINAE to work
+		typename = typename std::enable_if<TName == nullptr>::type
+	>
+	CGenericJob(const char* szName, T... t)
+	{
+		static_assert(TFuncType::template SAcceptsParams<T ...>::value, "Incompatible parameters passed to the job");
+		new(&m_Storage)TFuncType(std::move(t)...);
+		MEMORY_RW_REORDERING_BARRIER;
+		m_JobDelegator.SetParamDataSize(sizeof(CGenericJob::m_Storage));
+		m_JobDelegator.SetJobParamData((void*)&m_Storage);
+		m_JobDelegator.SetDelegator(Invoke);
+		SetJobProgramData(gEnv->GetJobManager()->GetJobHandle(szName, Invoke));
 	}
 
 	~CGenericJob() = default;
@@ -231,9 +259,9 @@ private:
 } // namespace JobManager
 
 //! Defines a job class to hold a free function or member function callback.
-#define DECLARE_JOB(NAME, TYPE, FUNCTION)                                                                           \
-	typedef ::JobManager::Detail::CGenericJob<COMPILE_TIME_STRING(NAME),                                              \
-	                                          ::JobManager::Detail::SJobFunction<decltype(& FUNCTION), (& FUNCTION)>> \
+#define DECLARE_JOB(NAME, TYPE, FUNCTION)                                                                             \
+	typedef ::JobManager::Detail::CGenericJob<::JobManager::Detail::SJobFunction<decltype(& FUNCTION), (& FUNCTION)>, \
+												COMPILE_TIME_STRING(NAME)>                                            \
 	  TYPE;
 
 //! Defines a job class to hold a lambda callback.
@@ -247,7 +275,7 @@ private:
 //!
 //! The usage:
 //! ExampleJob job = [] { /* stuff */ };
-#define DECLARE_LAMBDA_JOB(NAME, TYPE, ...)                                                        \
-	typedef ::JobManager::Detail::CGenericJob<COMPILE_TIME_STRING(NAME),                             \
-	                                          ::JobManager::Detail::SJobLambdaFunction<__VA_ARGS__>> \
+#define DECLARE_LAMBDA_JOB(NAME, TYPE, ...)                                                          \
+	typedef ::JobManager::Detail::CGenericJob<::JobManager::Detail::SJobLambdaFunction<__VA_ARGS__>, \
+												COMPILE_TIME_STRING(NAME)>                           \
 	  TYPE;

@@ -265,7 +265,7 @@ struct SJobSyncVariable
 	void Wait() volatile;
 	bool NeedsToWait() volatile;
 	void SetRunning(uint16 count = 1) volatile;
-	bool SetStopped(struct SJobStateBase* pPostCallback = nullptr, uint16 count = 1) volatile;
+	bool SetStopped(struct SJobState* pPostCallback = nullptr, uint16 count = 1) volatile;
 
 private:
 	friend class CJobManager;
@@ -287,45 +287,30 @@ private:
 #endif
 };
 
-//! Condition variable like struct to be used for polling if a job has been finished.
-struct SJobStateBase
+//! Condition variable-alike object to be used for polling if a job has been finished.
+//! Has reference semantic, copies of the job state refer to the same object
+struct SJobState
 {
-public:
-	ILINE bool IsRunning() const { return syncVar.IsRunning(); }
+	SJobState()
+		: m_pImpl(new SJobStateImpl())
+	{}
+
+	ILINE bool IsRunning() const { return m_pImpl->syncVar.IsRunning(); }
+
 	ILINE void SetRunning(uint16 count = 1)
 	{
-		syncVar.SetRunning(count);
+		m_pImpl->syncVar.SetRunning(count);
 	}
-	virtual bool SetStopped(uint16 count = 1)
+
+	bool SetStopped(uint16 count = 1)
 	{
-		return syncVar.SetStopped(this, count);
-	}
-	virtual void AddPostJob() {};
-
-	virtual ~SJobStateBase() {}
-
-private:
-	friend class CJobManager;
-
-	SJobSyncVariable syncVar;
-};
-
-//! For speed, use 16 byte aligned job state.
-struct CRY_ALIGN(16) SJobState: SJobStateBase
-{
-	//! When profiling, intercept the SetRunning() and SetStopped() functions for profiling informations.
-	ILINE SJobState()
-#if defined(JOBMANAGER_SUPPORT_PROFILING)
-	: nProfilerIndex(~0), m_pFollowUpJob(nullptr)
-#else
-	: m_pFollowUpJob(NULL)
-#endif
-	{
+		return m_pImpl->syncVar.SetStopped(this, count);
 	}
 
-	virtual void AddPostJob() override;
+	void AddPostJob();
 
-	ILINE void RegisterPostJob(CJobBase* pFollowUpJob) { m_pFollowUpJob = pFollowUpJob; }
+	template<typename Callback>
+	ILINE void RegisterPostJob(const char* jobName, Callback&& lambdaCallback, TPriorityLevel priority = JobManager::eRegularPriority, SJobState* pJobState = nullptr);
 
 	// Non blocking trying to stop state, and run post job.
 	ILINE bool TryStopping()
@@ -340,29 +325,34 @@ struct CRY_ALIGN(16) SJobState: SJobStateBase
 	ILINE const bool Wait();
 
 #if defined(JOBMANAGER_SUPPORT_PROFILING)
-	uint16 nProfilerIndex;
+	void SetProfilerIndex(uint16 index)
+	{
+		m_pImpl->nProfilerIndex = index;
+	}
+
+	uint16 GetProfilerIndex() const { return m_pImpl->nProfilerIndex; }
 #endif
 
-	CJobBase* m_pFollowUpJob;
-};
+private:
 
-struct SJobStateLambda : public SJobState
-{
-	void RegisterPostJobCallback(const char* postJobName, const std::function<void()>& lambda, TPriorityLevel priority = eRegularPriority, SJobState* pJobState = 0)
+	struct SJobStateImpl : public CMultiThreadRefCount
 	{
-		m_callbackJobName = postJobName;
-		m_callbackJobPriority = priority;
-		m_callbackJobState = pJobState;
-		m_callback = lambda;
+		SJobSyncVariable syncVar;
+		std::unique_ptr<CJobBase> m_pFollowUpJob;
+		//! When profiling, intercept the SetRunning() and SetStopped() functions for profiling informations.
+#if defined(JOBMANAGER_SUPPORT_PROFILING)
+		uint16 nProfilerIndex = ~0;
+#endif
+	};
+
+	friend class CJobManager;
+
+	SJobSyncVariable& GetSyncVar()
+	{
+		return m_pImpl->syncVar;
 	}
-private:
-	virtual void AddPostJob() override;
-private:
-	const char*                    m_callbackJobName;
-	SJobState*                     m_callbackJobState;
-	std::function<void()>          m_callback;
-	TPriorityLevel                 m_callbackJobPriority;
-	CryCriticalSectionNonRecursive m_stopLock;
+
+	_smart_ptr<SJobStateImpl> m_pImpl;
 };
 
 //! Stores worker utilization stats for a frame.
@@ -481,14 +471,6 @@ bool SJobFrameStats::operator<(const SJobFrameStats& crOther) const
 	return usec > crOther.usec;
 }
 
-//! Struct to represent a packet for the consumer producer queue.
-struct CRY_ALIGN(16) SAddPacketData
-{
-	JobManager::SJobState* pJobState;
-	uint16 profilerIndex;
-	uint8 nInvokerIndex;   //!< To keep the struct 16 bytes long, we use a index into the info block.
-};
-
 //! Delegator function.
 //! Takes a pointer to a params structure and does the decomposition of the parameters, then calls the Job entry function.
 typedef void (* Invoker)(void*);
@@ -539,7 +521,6 @@ struct CRY_ALIGN(128) SInfoBlock
 	//! data needed to run the job and it's functionality.
 	volatile SInfoBlockState jobState;             //!< State of the SInfoBlock in job queue, should only be modified by access functions.
 	Invoker jobInvoker;                            //!< Callback function to job invoker (extracts parameters and calls entry function).
-	std::function<void()> jobLambdaInvoker;        //!< Alternative way to invoke job with lambda
 	JobManager::SJobState* pJobState;              //!< External job state address
 	JobManager::SInfoBlock* pNext;                 //!< Single linked list for fallback jobs in the case the queue is full, and a worker wants to push new work.
 
@@ -571,7 +552,6 @@ struct CRY_ALIGN(128) SInfoBlock
 	ILINE void AssignMembersTo(SInfoBlock* pDest) const
 	{
 		pDest->jobInvoker = jobInvoker;
-		pDest->jobLambdaInvoker = jobLambdaInvoker;
 		pDest->pJobState = pJobState;
 		pDest->pNext = pNext;
 
@@ -810,15 +790,6 @@ public:
 	void         SetPriorityLevel(unsigned int nPrioritylevel) { m_nPrioritylevel = nPrioritylevel; }
 	void         SetBlocking()                                 { m_bIsBlocking = true; }
 
-	void         SetLambda(const std::function<void()>& lambda)
-	{
-		m_lambda = lambda;
-	}
-	const std::function<void()>& GetLambda() const
-	{
-		return m_lambda;
-	}
-
 protected:
 	JobManager::SJobState* m_pJobState;                     //!< Extern job state.
 	unsigned int           m_nPrioritylevel;                //!< Enum represent the priority level to use.
@@ -826,13 +797,14 @@ protected:
 	unsigned int           m_ParamDataSize;                 //!< Sizeof parameter struct.
 	threadID               m_CurThreadID;                   //!< Current thread id.
 	Invoker                m_pGenericDelecator;
-	std::function<void()>  m_lambda;
 };
 
 //! Base class for jobs.
 class CJobBase
 {
 public:
+	virtual ~CJobBase() = default;
+
 	ILINE CJobBase() : m_pJobProgramData(NULL)
 	{
 	}
@@ -928,7 +900,8 @@ struct IJobManager
 	virtual void AddJob(JobManager::CJobDelegator& RESTRICT_REFERENCE crJob, const JobManager::TJobHandle cJobHandle) = 0;
 
 	//! Add a job as a lambda callback.
-	virtual void AddLambdaJob(const char* jobName, const std::function<void()>& lambdaCallback, TPriorityLevel priority = JobManager::eRegularPriority, SJobState* pJobState = nullptr) = 0;
+	template<typename Callback>
+	void AddLambdaJob(const char* jobName, Callback&& lambdaCallback, TPriorityLevel priority = JobManager::eRegularPriority, SJobState* pJobState = nullptr);
 
 	//! Wait for a job, preempt the calling thread if the job is not done yet.
 	virtual const bool WaitForJob(JobManager::SJobState& rJobState) const = 0;
@@ -1005,30 +978,6 @@ ILINE bool InvokeAsJob(const char* pJobName)
 #else
 	return gEnv->pJobManager->InvokeAsJob(pJobName);
 #endif
-}
-
-/////////////////////////////////////////////////////////////////////////////
-inline void SJobState::AddPostJob()
-{
-	// Start post job if set.
-	if (m_pFollowUpJob)
-		m_pFollowUpJob->Run();
-}
-
-//////////////////////////////////////////////////////////////////////////
-inline void SJobStateLambda::AddPostJob()
-{
-	if (m_callback)
-	{
-		// Add post job callback before trying to stop and releasing the semaphore
-		gEnv->GetJobManager()->AddLambdaJob(m_callbackJobName, m_callback, m_callbackJobPriority, m_callbackJobState);   // Use same job state for post job.
-	}
-}
-
-/////////////////////////////////////////////////////////////////////////////
-inline const bool SJobState::Wait()
-{
-	return gEnv->pJobManager->WaitForJob(*this);
 }
 
 //! Utility functions namespace for the producer consumer queue.
@@ -1152,7 +1101,7 @@ ILINE void JobManager::CJobDelegator::RegisterJobState(JobManager::SJobState* __
 	assert(pJobState);
 	m_pJobState = pJobState;
 #if defined(JOBMANAGER_SUPPORT_PROFILING)
-	pJobState->nProfilerIndex = this->GetProfilingDataIndex();
+	pJobState->SetProfilerIndex(this->GetProfilingDataIndex());
 #endif
 }
 
@@ -1319,7 +1268,7 @@ inline void JobManager::SJobSyncVariable::SetRunning(uint16 count) volatile
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-inline bool JobManager::SJobSyncVariable::SetStopped(SJobStateBase* pPostCallback, uint16 count) volatile
+inline bool JobManager::SJobSyncVariable::SetStopped(SJobState* pPostCallback, uint16 count) volatile
 {
 	SyncVar currentValue;
 	SyncVar newValue;
@@ -1381,9 +1330,6 @@ inline bool JobManager::SJobSyncVariable::SetStopped(SJobStateBase* pPostCallbac
 
 inline void JobManager::SInfoBlock::Release(uint32 nMaxValue)
 {
-	// Free lambda bound resources prior marking the info block as free
-	jobLambdaInvoker = nullptr;
-
 	JobManager::IJobManager* pJobManager = gEnv->GetJobManager();
 
 	SInfoBlockState currentInfoBlockState;
@@ -1478,6 +1424,52 @@ inline void JobManager::SInfoBlock::Wait(uint32 nRoundID, uint32 nMaxValue)
 	pJobManager->DeallocateSemaphore(semaphoreHandle, this);
 }
 
+/////////////////////////////////////////////////////////////////////////////////
+inline void JobManager::SJobState::AddPostJob()
+{
+	// Start post job if set.
+	if (m_pImpl->m_pFollowUpJob)
+		m_pImpl->m_pFollowUpJob->Run();
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+inline const bool JobManager::SJobState::Wait()
+{
+	return gEnv->pJobManager->WaitForJob(*this);
+}
+
+#include "IJobManager_JobDelegator.h"
+
+/////////////////////////////////////////////////////////////////////////////////
+template<typename Callback>
+inline void JobManager::IJobManager::AddLambdaJob(const char* jobName, Callback&& lambdaCallback, TPriorityLevel priority, SJobState* pJobState)
+{
+	Detail::CGenericJob<Detail::SJobLambdaFunction<>> job { jobName, std::forward<Callback>(lambdaCallback) };
+	job.SetPriorityLevel(priority);
+	job.RegisterJobState(pJobState);
+	job.Run();
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+template<typename Callback>
+ILINE void JobManager::SJobState::RegisterPostJob(const char* jobName, Callback&& lambdaCallback, TPriorityLevel priority, JobManager::SJobState* pJobState)
+{
+	auto CreateJob = [&]
+	{
+		using LambdaJobType = typename Detail::CGenericJob<Detail::SJobLambdaFunction<>>;
+		auto job = stl::make_unique<LambdaJobType>(jobName, std::forward<Callback>(lambdaCallback));
+		job->SetPriorityLevel(priority);
+		if (pJobState)
+		{
+			job->RegisterJobState(pJobState);
+		}
+		return job;
+	};
+
+	m_pImpl->m_pFollowUpJob = CreateJob();
+}
+
+
 //! Global helper function to wait for a job.
 //! Wait for a job, preempt the calling thread if the job is not done yet.
 inline const bool CryWaitForJob(JobManager::SJobState& rJobState)
@@ -1487,4 +1479,3 @@ inline const bool CryWaitForJob(JobManager::SJobState& rJobState)
 
 // Shorter helper type for job states
 typedef JobManager::SJobState       CryJobState;
-typedef JobManager::SJobStateLambda CryJobStateLambda;

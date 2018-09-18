@@ -523,8 +523,8 @@ private:
 	// Internal job states to control when view job processing is done.
 	CryJobState                    m_jobstate_Sort;
 	CryJobState                    m_jobstate_PostWrite;
-	CryJobStateLambda              m_jobstate_Write;
-	CryJobStateLambda              m_jobstate_ShadowGen;
+	CryJobState                    m_jobstate_Write;
+	CryJobState                    m_jobstate_ShadowGen;
 
 	CryCriticalSectionNonRecursive m_lock_UsageMode;
 	CryCriticalSectionNonRecursive m_lock_PostWrite;

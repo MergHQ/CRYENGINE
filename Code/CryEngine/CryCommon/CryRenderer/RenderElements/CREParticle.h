@@ -3,7 +3,6 @@
 #ifndef __CREPARTICLE_H__
 #define __CREPARTICLE_H__
 
-#include <CryThreading/IJobManager.h>
 #include <CryMemory/MemoryAccess.h>
 
 // forward declarations

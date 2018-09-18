@@ -399,13 +399,13 @@ JobManager::CJobManager::CJobManager()
 const bool JobManager::CJobManager::WaitForJob(JobManager::SJobState& rJobState) const
 {
 	static ICVar* isActiveWaitEnableCVar = gEnv->pConsole ? gEnv->pConsole->GetCVar("sys_job_system_worker_boost_enabled") : nullptr;
-	if (!rJobState.syncVar.NeedsToWait())
+	if (!rJobState.GetSyncVar().NeedsToWait())
 	{
 		return true;
 	}
 
 #if defined(JOBMANAGER_SUPPORT_PROFILING)
-	SJobProfilingData* pJobProfilingData = gEnv->GetJobManager()->GetProfilingData(rJobState.nProfilerIndex);
+	SJobProfilingData* pJobProfilingData = gEnv->GetJobManager()->GetProfilingData(rJobState.GetProfilerIndex());
 	pJobProfilingData->nWaitBegin = gEnv->pTimer->GetAsyncTime();
 	pJobProfilingData->nThreadId = CryGetCurrentThreadId();
 #endif
@@ -434,7 +434,7 @@ const bool JobManager::CJobManager::WaitForJob(JobManager::SJobState& rJobState)
 		KickTempWorker();
 	}
 
-	rJobState.syncVar.Wait();
+	rJobState.GetSyncVar().Wait();
 
 	if (processJobsWhileWaiting)
 	{
@@ -551,7 +551,6 @@ void JobManager::CJobManager::AddJob(JobManager::CJobDelegator& crJob, const Job
 	infoBlock.nflags = 0;
 	infoBlock.paramSize = cParamSize;
 	infoBlock.jobInvoker = crJob.GetGenericDelegator();
-	infoBlock.jobLambdaInvoker = crJob.GetLambda();
 #if defined(JOBMANAGER_SUPPORT_PROFILING)
 	infoBlock.profilerIndex = crJob.GetProfilingDataIndex();
 #endif
@@ -576,15 +575,6 @@ void JobManager::CJobManager::AddJob(JobManager::CJobDelegator& crJob, const Job
 	
 	CRY_ASSERT(m_pBlockingBackEnd);
 	return static_cast<BlockingBackEnd::CBlockingBackEnd*>(m_pBlockingBackEnd)->AddJob(crJob, cJobHandle, infoBlock);
-}
-
-void JobManager::CJobManager::AddLambdaJob(const char* jobName, const std::function<void()>& callback, TPriorityLevel priority, SJobState* pJobState)
-{
-	CJobLambda job(jobName, callback);
-	job.SetPriorityLevel(priority);
-	if (pJobState)
-		job.RegisterJobState(pJobState);
-	job.Run();
 }
 
 void JobManager::CJobManager::ShutDown()

@@ -7,7 +7,6 @@
 
 #include <CryNetwork/SerializeFwd.h>
 #include <CryAISystem/IAIRecorder.h>  // <> required for Interfuscator
-#include <CryThreading/IJobManager.h> // <> required for Interfuscator
 #include <CryPhysics/IPhysics.h>
 #include <CryCore/Containers/CryFixedArray.h>
 #include <CryEntitySystem/IEntity.h>

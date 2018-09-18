@@ -18,7 +18,7 @@
 
 #include <CrySystem/ICodeCheckpointMgr.h>
 
-#include <CryThreading/IJobManager_JobDelegator.h>
+#include <CryThreading/IJobManager.h>
 
 std::vector<IPhysicalEntity*> CPhysicsEventListener::m_physVisAreaUpdateVector;
 int CPhysicsEventListener::m_jointFxCount = 0, CPhysicsEventListener::m_jointFxFrameId = 0;

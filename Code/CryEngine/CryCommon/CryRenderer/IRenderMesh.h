@@ -10,7 +10,6 @@
 #include <CryRenderer/IRenderer.h>  // PublicRenderPrimitiveType
 #include <CryMath/Cry_Geo.h>
 #include <CryCore/Containers/CryArray.h>
-#include <CryThreading/IJobManager.h>
 
 class CMesh;
 struct CRenderChunk;

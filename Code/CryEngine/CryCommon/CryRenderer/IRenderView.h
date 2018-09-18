@@ -6,6 +6,9 @@
 
 #include "IShader.h"
 
+namespace JobManager { struct SJobState; }
+typedef JobManager::SJobState CryJobState;
+
 struct SRenderViewport;
 
 // Defines an output target for the Render View

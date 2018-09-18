@@ -13,8 +13,6 @@
 
 #include <CryMath/Cry_Geo.h>
 #include <CryRenderer/IFlares.h> // <> required for Interfuscator
-#include <CryThreading/IJobManager.h>
-
 #include <CryExtension/ClassWeaver.h>
 #include <CrySystem/IEngineModule.h>
 #include <CrySystem/TimeValue.h>

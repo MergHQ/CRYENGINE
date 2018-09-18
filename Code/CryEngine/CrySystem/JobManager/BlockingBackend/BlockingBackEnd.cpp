@@ -307,14 +307,7 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 		CRYPROFILE_SCOPE_PROFILE_MARKER(pJobManager->GetJobName(infoBlock.jobInvoker));
 		CRYPROFILE_SCOPE_PLATFORM_MARKER(pJobManager->GetJobName(infoBlock.jobInvoker));
 #endif
-		if (infoBlock.jobLambdaInvoker)
-		{
-			infoBlock.jobLambdaInvoker();
-		}
-		else
-		{
-			(*infoBlock.jobInvoker)(infoBlock.GetParamAddress());
-		}
+		(*infoBlock.jobInvoker)(infoBlock.GetParamAddress());
 
 #if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
 		JobManager::IWorkerBackEndProfiler* workerProfiler = m_pBlockingBackend->GetBackEndWorkerProfiler();
