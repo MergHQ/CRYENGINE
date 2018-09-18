@@ -29,7 +29,7 @@ void PySelectObject(const char* objName)
 
 	CBaseObject* pObject = GetIEditorImpl()->GetObjectManager()->FindObject(objName);
 	if (pObject)
-		GetIEditorImpl()->GetObjectManager()->SelectObject(pObject);
+		GetIEditorImpl()->GetObjectManager()->AddObjectToSelection(pObject);
 }
 
 void PyUnselectObjects(const std::vector<std::string>& names)
@@ -63,7 +63,7 @@ void PySelectObjects(const std::vector<std::string>& names)
 		{
 			throw std::logic_error(string("\"") + names[i].c_str() + "\" is an invalid entity.");
 		}
-		GetIEditorImpl()->GetObjectManager()->SelectObject(pObject);
+		GetIEditorImpl()->GetObjectManager()->AddObjectToSelection(pObject);
 	}
 }
 
@@ -142,7 +142,6 @@ void SelectAndGoTo(const char* objName)
 	if (pObject)
 	{
 		CUndo undo("Select Object");
-		GetIEditorImpl()->GetObjectManager()->ClearSelection();
 		GetIEditorImpl()->GetObjectManager()->SelectObject(pObject);
 		GoToSelection();
 	}

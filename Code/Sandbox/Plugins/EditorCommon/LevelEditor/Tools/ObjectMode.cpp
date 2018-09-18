@@ -334,7 +334,7 @@ bool CObjectMode::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint3
 {
 	if (nChar == Qt::Key_Escape)
 	{
-		GetIEditor()->ClearSelection();
+		GetIEditor()->GetObjectManager()->ClearSelection();
 		CLevelEditorSharedState* pLevelEditor = GetIEditor()->GetLevelEditorSharedState();
 
 		if (pLevelEditor->GetEditMode() == CLevelEditorSharedState::EditMode::SelectArea)
@@ -545,13 +545,6 @@ bool CObjectMode::OnLButtonDown(CViewport* view, int nFlags, CPoint point)
 
 		IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
 
-		if (!bNoRemoveSelection)
-		{
-			// Current selection should be cleared
-			numSelected = GetIEditor()->GetISelectionGroup()->GetCount();
-			pObjectManager->ClearSelection();
-		}
-
 		if (hitObj)
 		{
 			numSelected = 1;
@@ -568,10 +561,20 @@ bool CObjectMode::OnLButtonDown(CViewport* view, int nFlags, CPoint point)
 				}
 				else
 				{
-					pObjectManager->SelectObject(hitObj);
+					pObjectManager->AddObjectToSelection(hitObj);
 				}
 			}
 		}
+		else
+		{
+			if (!bNoRemoveSelection)
+			{
+				// Current selection should be cleared
+				numSelected = GetIEditor()->GetISelectionGroup()->GetCount();
+				pObjectManager->ClearSelection();
+			}
+		}
+
 		if (view->IsUndoRecording())
 		{
 			view->AcceptUndo("Select Object(s)");
@@ -671,7 +674,7 @@ bool CObjectMode::OnLButtonUp(CViewport* view, int nFlags, CPoint point)
 
 		if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::SelectArea)
 		{
-			GetIEditor()->ClearSelection();
+			GetIEditor()->GetObjectManager()->ClearSelection();
 		}
 	}
 

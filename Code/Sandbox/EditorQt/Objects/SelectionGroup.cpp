@@ -77,6 +77,14 @@ CBaseObject* CSelectionGroup::GetObject(int index) const
 	return m_objects[index];
 }
 
+void CSelectionGroup::GetObjects(std::vector<CBaseObject*>& objects) const
+{
+	for (_smart_ptr<CBaseObject> pObject : m_objects)
+	{
+		objects.push_back(pObject.get());
+	}
+}
+
 CBaseObject* CSelectionGroup::GetObjectByGuid(CryGUID guid) const
 {
 	for (size_t i = 0, count(m_objects.size()); i < count; ++i)

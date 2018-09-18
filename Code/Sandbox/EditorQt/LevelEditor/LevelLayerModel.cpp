@@ -664,7 +664,7 @@ bool CLevelLayerModel::dropMimeData(const QMimeData* pData, Qt::DropAction actio
 		if (toBeLinked.size())
 			pObjectManager->Link(toBeLinked, pTargetObject);
 
-		if (pAttachTo) // if dropping into a group, select the group
+		if (pAttachTo && !pAttachTo->IsOpen()) // if dropping into a closed group, select the group instead
 			pObjectManager->SelectObject(pTargetObject);
 
 		GetIEditorImpl()->GetIUndoManager()->Accept("Level Explorer Move");

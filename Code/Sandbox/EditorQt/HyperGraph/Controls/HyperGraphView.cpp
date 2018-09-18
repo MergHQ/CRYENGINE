@@ -3095,7 +3095,7 @@ void CHyperGraphView::OnSelectEntity()
 		return;
 
 	CUndo undo("Select Object(s)");
-	GetIEditorImpl()->ClearSelection();
+	GetIEditorImpl()->GetObjectManager()->ClearSelection();
 	for (int i = 0; i < nodes.size(); i++)
 	{
 		// only can CFlowNode* if not a comment, argh...
@@ -3104,7 +3104,7 @@ void CHyperGraphView::OnSelectEntity()
 			CFlowNode* pFlowNode = (CFlowNode*)nodes[i];
 			if (pFlowNode->GetEntity())
 			{
-				GetIEditorImpl()->SelectObject(pFlowNode->GetEntity());
+				GetIEditorImpl()->GetObjectManager()->AddObjectToSelection(pFlowNode->GetEntity());
 			}
 			else if(strcmp(pFlowNode->GetClassName(), "Prefab:Instance") == 0)
 			{
@@ -3117,7 +3117,7 @@ void CHyperGraphView::OnSelectEntity()
 					{
 						IEditor* const pEditor = GetIEditor();
 						CBaseObject* const pObject = pEditor->GetObjectManager()->FindObject(sInstanceName);
-						pEditor->SelectObject(pObject);
+						pEditor->GetObjectManager()->AddObjectToSelection(pObject);
 					}
 				}
 			}

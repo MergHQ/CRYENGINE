@@ -1543,7 +1543,7 @@ bool CEditorMainFrame::BeforeClose()
 	pDoc->SetModifiedFlag(FALSE);
 
 	// Close all edit panels.
-	GetIEditorImpl()->ClearSelection();
+	GetIEditorImpl()->GetObjectManager()->ClearSelection();
 	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 
 	CTabPaneManager::GetInstance()->CloseAllPanes();

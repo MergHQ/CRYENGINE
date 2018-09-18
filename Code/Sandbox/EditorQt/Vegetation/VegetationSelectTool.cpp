@@ -37,7 +37,7 @@ CVegetationSelectTool::CVegetationSelectTool()
 	, m_pVegetationMap(GetIEditorImpl()->GetVegetationMap())
 	, m_pManipulator(nullptr)
 {
-	GetIEditorImpl()->ClearSelection();
+	GetIEditorImpl()->GetObjectManager()->ClearSelection();
 }
 
 CVegetationSelectTool::~CVegetationSelectTool()

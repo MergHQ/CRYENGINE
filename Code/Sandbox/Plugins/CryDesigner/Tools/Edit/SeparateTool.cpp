@@ -77,7 +77,7 @@ DesignerObject* SeparateTool::Separate(MainContext& mc)
 
 	pNewObj->SetMaterial(mc.pObject->GetMaterial());
 
-	GetIEditor()->SelectObject(pNewObj);
+	GetIEditor()->GetObjectManager()->AddObjectToSelection(pNewObj);
 	GetIEditor()->GetObjectManager()->UnselectObject(mc.pObject);
 
 	return pNewObj;

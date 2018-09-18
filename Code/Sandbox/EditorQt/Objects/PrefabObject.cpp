@@ -383,9 +383,7 @@ void CPrefabObject::ConvertToProceduralObject()
 	pObject->SetWorldTM(this->GetWorldTM());
 
 	pObject->SetLayer(GetLayer());
-	GetIEditor()->SelectObject(pObject);
-
-	GetIEditor()->SelectObject(pObject);
+	GetIEditor()->GetObjectManager()->AddObjectToSelection(pObject);
 
 	CEntityObject* pEntityObject = static_cast<CEntityObject*>(pObject);
 

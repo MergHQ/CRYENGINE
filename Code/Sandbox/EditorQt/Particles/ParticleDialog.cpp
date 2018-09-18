@@ -727,7 +727,6 @@ CBaseObject* CParticleDialog::CreateParticleEntity(CParticleItem* pItem, Vec3 co
 	if (!GetIEditorImpl()->GetDocument()->IsDocumentReady())
 		return nullptr;
 
-	GetIEditorImpl()->ClearSelection();
 	CBaseObject* pObject = GetIEditorImpl()->NewObject("ParticleEntity");
 	if (pObject)
 	{
@@ -740,7 +739,6 @@ CBaseObject* CParticleDialog::CreateParticleEntity(CParticleItem* pItem, Vec3 co
 		if (pParent)
 			pParent->AttachChild(pObject);
 		AssignToEntity(pItem, pObject);
-		GetIEditorImpl()->SelectObject(pObject);
 	}
 	return pObject;
 }

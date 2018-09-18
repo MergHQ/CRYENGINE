@@ -398,7 +398,7 @@ void CTrackViewEntityNode::OnNodeVisibilityChanged(IAnimNode* pNode, const bool 
 		if (bUnhideSelected)
 		{
 			GetIEditor()->GetObjectManager()->UnselectObject(m_pNodeEntity);
-			GetIEditor()->GetObjectManager()->SelectObject(m_pNodeEntity);
+			GetIEditor()->GetObjectManager()->AddObjectToSelection(m_pNodeEntity);
 		}
 
 		UpdateTrackGizmo();

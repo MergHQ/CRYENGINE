@@ -142,7 +142,6 @@ void DesignerUndo::RestoreEditTool(Model* pModel, CryGUID objGUID, EDesignerTool
 	bool bSelected(pSelectedObj->IsSelected());
 	if (!bSelected)
 	{
-		GetIEditor()->GetObjectManager()->ClearSelection();
 		GetIEditor()->GetObjectManager()->SelectObject(pSelectedObj);
 	}
 

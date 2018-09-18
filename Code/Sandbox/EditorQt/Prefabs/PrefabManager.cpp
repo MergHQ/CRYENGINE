@@ -579,7 +579,7 @@ void CPrefabManager::CloneObjectsFromPrefabs(std::vector<CBaseObject*>& childObj
 		(it->first)->CloneSelected(&(it->second), clonedObjects);
 	}
 
-	pObjectManager->SelectObjects(clonedObjects);
+	pObjectManager->AddObjectsToSelection(clonedObjects);
 }
 
 void CPrefabManager::CloneAllFromPrefabs(std::vector<CPrefabObject*>& prefabs)
@@ -617,7 +617,7 @@ void CPrefabManager::CloneAllFromPrefabs(std::vector<CPrefabObject*>& prefabs)
 		objectsToSelect.insert(objectsToSelect.cend(), newChildren.begin(), newChildren.end());
 	}
 
-	pObjectManager->SelectObjects(objectsToSelect);
+	pObjectManager->AddObjectsToSelection(objectsToSelect);
 }
 
 void CPrefabManager::CloneAllFromSelection()

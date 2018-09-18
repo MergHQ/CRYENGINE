@@ -186,12 +186,21 @@ struct IObjectManager
 	//////////////////////////////////////////////////////////////////////////
 	// Object Selection.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void SelectObject(CBaseObject* obj) = 0;
-	virtual void UnselectObject(CBaseObject* obj) = 0;
-
+	//! Clear selection and select
+	virtual void SelectObject(CBaseObject* pObject) = 0;
 	virtual void SelectObjects(const std::vector<CBaseObject*>& objects) = 0;
+
+	//! Add objects to current selection
+	virtual void AddObjectToSelection(CBaseObject* pObject) = 0;
+	virtual void AddObjectsToSelection(const std::vector<CBaseObject*>& objects) = 0;
+
+	//! Remove objects from current selection
+	virtual void UnselectObject(CBaseObject* pObject) = 0;
 	virtual void UnselectObjects(const std::vector<CBaseObject*>& objects) = 0;
+
+	//! Toggle selected state
 	virtual void ToggleSelectObjects(const std::vector<CBaseObject*>& objects) = 0;
+	//! Add and remove objects from selection
 	virtual void SelectAndUnselectObjects(const std::vector<CBaseObject*>& selectObjects, const std::vector<CBaseObject*>& unselectObjects) = 0;
 	virtual void SelectAll() = 0;
 

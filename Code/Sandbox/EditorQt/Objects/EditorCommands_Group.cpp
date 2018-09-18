@@ -265,7 +265,7 @@ REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::DetachFromGroup, grou
 REGISTER_EDITOR_UI_COMMAND_DESC(group, detach, "Detach", "", "", false);
 REGISTER_COMMAND_REMAPPING(ui_action, actionGroup_Detach, group, detach)
 
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::DetachFromGroup, group, detach_from_hierarchy,
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::DetachToRoot, group, detach_from_hierarchy,
                                    CCommandDescription("Detaches selected objects from full hierarchy. The object will placed directly on it's owning layer"))
 REGISTER_EDITOR_UI_COMMAND_DESC(group, detach_from_hierarchy, "Detach from Hierarchy", "", "", false);
 REGISTER_COMMAND_REMAPPING(ui_action, actionGroup_DetachToRoot, group, detach_from_hierarchy)

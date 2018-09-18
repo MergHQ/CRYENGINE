@@ -57,17 +57,16 @@ void CObjectCloneTool::CloneSelection()
 	objects.reserve(currSelection->GetFilteredCount());
 	newObjects.reserve(currSelection->GetFilteredCount());
 
-	auto pObjMan = GetIEditor()->GetObjectManager();
+	auto pObjectManager = GetIEditor()->GetObjectManager();
 
 	// Clone every object.
 	for (int i = 0; i < currSelection->GetFilteredCount(); i++)
 	{
 		objects.push_back(currSelection->GetFilteredObject(i));
 	}
-	pObjMan->CloneObjects(objects, newObjects);
+	pObjectManager->CloneObjects(objects, newObjects);
 
-	GetIEditorImpl()->ClearSelection();
-	GetIEditorImpl()->SelectObjects(newObjects);
+	pObjectManager->SelectObjects(newObjects);
 }
 
 void CObjectCloneTool::SetConstrPlane(CViewport* view, CPoint point)

@@ -835,8 +835,6 @@ private:
 	friend class CObjectArchive;
 	friend class CSelectionGroup;
 
-	void OnMenuProperties();
-
 	//! Set class description for this object,
 	//! Only called once after creation by ObjectManager.
 	void SetClassDesc(CObjectClassDesc* classDesc);
