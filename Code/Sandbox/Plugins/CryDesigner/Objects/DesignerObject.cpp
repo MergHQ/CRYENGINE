@@ -337,7 +337,7 @@ void DesignerObject::Serialize(CObjectArchive& ar)
 		if (GetCompiler())
 		{
 			uint64 nRenderFlag = ERF_HAS_CASTSHADOWMAPS | ERF_CASTSHADOWMAPS;
-			ar.node->getAttr("RndFlags", nRenderFlag);
+			ar.node->getAttr("RndFlags", nRenderFlag, false);
 			if (nRenderFlag & ERF_CASTSHADOWMAPS)
 				nRenderFlag |= ERF_HAS_CASTSHADOWMAPS;
 			GetCompiler()->SetRenderFlags(nRenderFlag);
@@ -388,7 +388,7 @@ void DesignerObject::Serialize(CObjectArchive& ar)
 		}
 		if (m_pCompiler)
 		{
-			ar.node->setAttr("RndFlags", ERF_GET_WRITABLE(GetCompiler()->GetRenderFlags()));
+			ar.node->setAttr("RndFlags", ERF_GET_WRITABLE(GetCompiler()->GetRenderFlags()), false);
 			ar.node->setAttr("StaticObjFlags", ERF_GET_WRITABLE(GetCompiler()->GetStaticObjFlags()));
 			ar.node->setAttr("ViewDistRatio", GetCompiler()->GetViewDistRatio());
 			if (!GetCompiler()->IsValid())
