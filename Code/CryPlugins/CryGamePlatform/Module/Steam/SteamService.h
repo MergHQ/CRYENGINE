@@ -87,8 +87,6 @@ namespace Cry
 				virtual bool IsLoggedIn() const override;
 				// ~IService
 
-				virtual void SetAwaitingCallback(int iAwaiting) { m_awaitingCallbacks += iAwaiting; }
-
 			protected:
 				STEAM_CALLBACK(CService, OnGameOverlayActivated, GameOverlayActivated_t, m_callbackGameOverlayActivated);
 				STEAM_CALLBACK(CService, OnAvatarImageLoaded, AvatarImageLoaded_t, m_onAvatarImageLoadedCallback);
@@ -118,7 +116,6 @@ namespace Cry
 				mutable std::vector<std::unique_ptr<CAccount>> m_accounts;
 				mutable DynArray<IAccount*> m_friends;
 
-				int m_awaitingCallbacks;
 				std::vector<IListener*> m_listeners;
 
 				uint32 m_authTicketHandle;

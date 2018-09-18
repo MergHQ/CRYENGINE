@@ -27,8 +27,6 @@ namespace Cry
 				{
 					SteamAPICall_t hSteamAPICall = pSteamMatchmaking->CreateLobby((ELobbyType)visibility, maxMemberCount);
 					m_callResultCreateLobby.Set(hSteamAPICall, this, &CMatchmaking::OnCreateLobby);
-
-					m_service.SetAwaitingCallback(1);
 				}
 			}
 
@@ -79,15 +77,12 @@ namespace Cry
 				{
 					SteamAPICall_t hSteamAPICall = pSteamMatchmaking->RequestLobbyList();
 					m_callResultLobbyMatchList.Set(hSteamAPICall, this, &CMatchmaking::OnLobbyMatchList);
-
-					m_service.SetAwaitingCallback(1);
 				}
 				else
 				{
 					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Steam matchmaking service not available");
 					LobbyMatchList_t temp;
 					temp.m_nLobbiesMatching = 0;
-					m_service.SetAwaitingCallback(1); // since OnLobbyMatchList will expect to be used as a callback
 					OnLobbyMatchList(&temp, true);
 				}
 			}
@@ -123,8 +118,6 @@ namespace Cry
 				{
 					SteamAPICall_t hSteamAPICall = pSteamMatchmaking->JoinLobby(ExtractSteamID(lobbyId));
 					m_callResultLobbyEntered.Set(hSteamAPICall, this, &CMatchmaking::OnJoin);
-
-					m_service.SetAwaitingCallback(1);
 				}
 				else
 				{
@@ -132,7 +125,6 @@ namespace Cry
 					LobbyEnter_t temp;
 					temp.m_EChatRoomEnterResponse = k_EChatRoomEnterResponseError;
 					temp.m_ulSteamIDLobby = k_steamIDNil.ConvertToUint64();
-					m_service.SetAwaitingCallback(1); // since onJoin will expect to be used as a callback
 					OnJoin(&temp, true);
 				}
 			}
@@ -186,15 +178,10 @@ namespace Cry
 						pListener->OnJoinedLobby(pLobby);
 					}
 				}
-
-				// Remove callback so that we don't call update all the time
-				m_service.SetAwaitingCallback(-1);
 			}
 
 			void CMatchmaking::OnLobbyMatchList(LobbyMatchList_t* pLobbyMatchList, bool bIOFailure)
 			{
-				m_service.SetAwaitingCallback(-1);
-
 				for (IListener* pListener : m_listeners)
 				{
 					pListener->OnLobbyQueryComplete(pLobbyMatchList->m_nLobbiesMatching);
@@ -208,8 +195,6 @@ namespace Cry
 
 			void CMatchmaking::OnJoin(LobbyEnter_t* pCallback, bool bIOFailure)
 			{
-				m_service.SetAwaitingCallback(-1);
-
 				if (pCallback->m_EChatRoomEnterResponse == k_EChatRoomEnterResponseSuccess)
 				{
 					// Make sure CUserLobby object exists on this client

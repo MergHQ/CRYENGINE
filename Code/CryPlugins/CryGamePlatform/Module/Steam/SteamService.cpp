@@ -47,7 +47,6 @@ namespace Cry
 				, m_callbackGetSteamAuthTicketResponse(this, &CService::OnGetSteamAuthTicketResponse)
 				, m_callbackOnPersonaChange(this, &CService::OnPersonaStateChange)
 				, m_pServer(nullptr)
-				, m_awaitingCallbacks(0)
 				, m_authTicketHandle(k_HAuthTicketInvalid)
 			{
 				// Map Steam API language codes to engine
@@ -216,10 +215,7 @@ namespace Cry
 			{
 				CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
-				if (m_awaitingCallbacks > 0)
-				{
-					SteamAPI_RunCallbacks();
-				}
+				SteamAPI_RunCallbacks();
 			}
 
 			void CService::Shutdown()
@@ -281,8 +277,6 @@ namespace Cry
 				{
 					pListener->OnOverlayActivated(SteamServiceID, pData->m_bActive != 0);
 				}
-
-				m_awaitingCallbacks -= 1;
 			}
 
 			void CService::OnAvatarImageLoaded(AvatarImageLoaded_t* pCallback)
@@ -317,8 +311,6 @@ namespace Cry
 				{
 					pListener->OnGetSteamAuthTicketResponse(success, authTicket);
 				}
-
-				SetAwaitingCallback(-1);
 			}
 
 			void CService::OnPersonaStateChange(PersonaStateChange_t* pData)
@@ -327,8 +319,6 @@ namespace Cry
 				{
 					pListener->OnPersonaStateChanged(CAccount(pData->m_ulSteamID), static_cast<IListener::EPersonaChangeFlags>(pData->m_nChangeFlags));
 				}
-
-				SetAwaitingCallback(-1);
 			}
 
 			bool CService::OwnsApplication(ApplicationIdentifier id) const
@@ -568,7 +558,6 @@ namespace Cry
 					return false;
 				}
 				m_authTicketHandle = (uint32)pSteamUser->GetAuthSessionTicket(rgchToken, sizeof(rgchToken), &unTokenLen);
-				SetAwaitingCallback(1);
 
 				const char hex_chars[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 

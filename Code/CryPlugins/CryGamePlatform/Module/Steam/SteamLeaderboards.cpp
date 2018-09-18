@@ -27,13 +27,10 @@ namespace Cry
 				}
 				SteamAPICall_t hSteamAPICall = pSteamUserStats->FindOrCreateLeaderboard(name, sortMethod, displayType);
 				m_callResultFindLeaderboard.Set(hSteamAPICall, this, &CLeaderboards::OnFindLeaderboard);
-
-				m_service.SetAwaitingCallback(1);
 			}
 
 			void CLeaderboards::OnFindLeaderboard(LeaderboardFindResult_t* pResult, bool bIOFailure)
 			{
-				m_service.SetAwaitingCallback(-1);
 				ISteamUserStats* pSteamUserStats = SteamUserStats();
 
 				if (!pResult->m_bLeaderboardFound || bIOFailure || !pSteamUserStats)
@@ -45,8 +42,6 @@ namespace Cry
 				{
 					SteamAPICall_t hSteamAPICall = pSteamUserStats->DownloadLeaderboardEntries(pResult->m_hSteamLeaderboard, m_pQueuedEntryRequest->request, m_pQueuedEntryRequest->minRange, m_pQueuedEntryRequest->maxRange);
 					m_callResultEntriesDownloaded.Set(hSteamAPICall, this, &CLeaderboards::OnEntriesDownloaded);
-
-					m_service.SetAwaitingCallback(1);
 
 					m_pQueuedEntryRequest.reset();
 				}
@@ -81,8 +76,6 @@ namespace Cry
 
 			void CLeaderboards::OnEntriesDownloaded(LeaderboardScoresDownloaded_t* pResult, bool bIOFailure)
 			{
-				m_service.SetAwaitingCallback(-1);
-
 				LeaderboardEntry_t leaderboardEntry;
 				int32 details[3];
 

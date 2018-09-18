@@ -46,15 +46,11 @@ namespace Cry
 				{
 					SteamAPICall_t result = pSteamUGC->CreateItem(appId, (EWorkshopFileType)type);
 					m_callResultContentCreated.Set(result, this, &CUserGeneratedContentManager::OnContentCreated);
-
-					m_service.SetAwaitingCallback(1);
 				}
 			}
 
 			void CUserGeneratedContentManager::OnContentCreated(CreateItemResult_t* pResult, bool bIOError)
 			{
-				m_service.SetAwaitingCallback(-1);
-
 				if (pResult->m_eResult == k_EResultOK)
 				{
 					if (pResult->m_bUserNeedsToAcceptWorkshopLegalAgreement)

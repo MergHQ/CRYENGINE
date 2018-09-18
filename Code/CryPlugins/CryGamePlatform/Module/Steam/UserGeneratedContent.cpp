@@ -112,8 +112,6 @@ namespace Cry
 				SteamAPICall_t result = pSteamUGC->SubmitItemUpdate(m_updateHandle, changeNote);;
 				m_callResultContentUpdated.Set(result, this, &CUserGeneratedContent::OnContentUpdated);
 
-				m_service.SetAwaitingCallback(1);
-
 				m_updateHandle = 0;
 			}
 
@@ -134,8 +132,6 @@ namespace Cry
 					}
 					break;
 				}
-
-				m_service.SetAwaitingCallback(-1);
 			}
 		}
 	}
