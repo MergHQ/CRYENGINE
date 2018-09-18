@@ -51,7 +51,7 @@
 
 namespace minigui { class CDrawContext{ public: virtual ~CDrawContext() {} }; }
 
-using JobManager::SJobStateBase;
+using JobManager::SJobState;
 %}
 
 %typemap(csbase) ICryPak::EPathResolutionRules "uint"

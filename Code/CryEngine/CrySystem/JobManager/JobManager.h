@@ -92,36 +92,6 @@ protected:
 	SWorkerStatsInfo m_WorkerStatsInfo;   // Information about each worker's utilization
 };
 
-class CJobLambda : public CJobBase
-{
-public:
-	CJobLambda(const char* jobName, const std::function<void()>& lambda)
-	{
-		m_jobHandle = gEnv->GetJobManager()->GetJobHandle(jobName, &Invoke);
-		m_JobDelegator.SetJobParamData(0);
-		m_JobDelegator.SetParamDataSize(0);
-		m_JobDelegator.SetDelegator(Invoke);
-		m_JobDelegator.SetLambda(lambda);
-		SetJobProgramData(m_jobHandle);
-	}
-	void SetPriorityLevel(unsigned int nPriorityLevel)
-	{
-		m_JobDelegator.SetPriorityLevel(nPriorityLevel);
-	}
-	void SetBlocking()
-	{
-		m_JobDelegator.SetBlocking();
-	}
-
-private:
-	static void Invoke(void* p)
-	{
-	}
-
-public:
-	TJobHandle m_jobHandle;
-};
-
 // singleton managing the job queues
 class CRY_ALIGN(128) CJobManager final: public IJobManager, public IInputEventListener
 {
@@ -143,8 +113,6 @@ public:
 
 	//adds a job
 	virtual void AddJob(JobManager::CJobDelegator & crJob, const JobManager::TJobHandle cJobHandle) override;
-
-	virtual void AddLambdaJob(const char* jobName, const std::function<void()> &lambdaCallback, TPriorityLevel priority = JobManager::eRegularPriority, SJobState * pJobState = nullptr) override;
 
 	//obtain job handle from name
 	virtual const JobManager::TJobHandle GetJobHandle(const char* cpJobName, const uint32 cStrLen, JobManager::Invoker pInvoker) override;

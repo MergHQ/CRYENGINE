@@ -428,14 +428,7 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::ThreadEntry()
 
 			uint64 nJobStartTicks = CryGetTicks();
 
-			if (infoBlock.jobLambdaInvoker)
-			{
-				infoBlock.jobLambdaInvoker();
-			}
-			else
-			{
-				(*infoBlock.jobInvoker)(infoBlock.GetParamAddress());
-			}
+			(*infoBlock.jobInvoker)(infoBlock.GetParamAddress());
 			nTicksInJobExecution += CryGetTicks() - nJobStartTicks;
 		}
 

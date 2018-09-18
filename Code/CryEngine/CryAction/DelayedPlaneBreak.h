@@ -7,6 +7,7 @@
 #include <CryPhysics/IDeferredCollisionEvent.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryEntitySystem/IBreakableManager.h>
+#include <CryThreading/IJobManager.h>
 
 class CDelayedPlaneBreak : public IDeferredPhysicsEvent
 {

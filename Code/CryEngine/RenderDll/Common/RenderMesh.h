@@ -18,6 +18,7 @@
 #include <CryCore/Containers/VectorMap.h>
 #include <CryCore/Containers/VectorSet.h>
 #include <CryMath/GeomQuery.h>
+#include <CryThreading/IJobManager.h>
 
 #include "ComputeSkinningStorage.h"
 

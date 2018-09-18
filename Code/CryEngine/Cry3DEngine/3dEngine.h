@@ -4,6 +4,7 @@
 
 #include <CryThreading/CryThreadSafeRendererContainer.h>
 #include <CryCore/Containers/CryListenerSet.h>
+#include <CryThreading/IJobManager.h>
 #include "VisibleRenderNodeManager.h"
 #include "LightVolumeManager.h"
 

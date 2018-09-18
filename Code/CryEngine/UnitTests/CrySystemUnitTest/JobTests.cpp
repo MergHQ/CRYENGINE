@@ -191,7 +191,7 @@ TEST_F(CJobSystemTest, MoveConstructor)
 	REQUIRE(host.GetValue() == 42);
 }
 
-TEST_F(CJobSystemTest, LambdaJobOld)
+TEST_F(CJobSystemTest, LambdaJobConcise)
 {
 	std::atomic<int> v { 0 };
 	JobManager::SJobState jobState;
@@ -229,7 +229,7 @@ struct SDestructorDetector
 
 bool SDestructorDetector::isCalled = false;
 
-TEST_F(CJobSystemTest, LambdaJobNew)
+TEST_F(CJobSystemTest, LambdaJobVerbose)
 {
 	int v = 0;
 
@@ -263,5 +263,34 @@ TEST_F(CJobSystemTest, LambdaJobNew)
 		jobState.Wait();
 		REQUIRE(v == 23);
 	}
+}
+
+TEST_F(CJobSystemTest, PostJob)
+{
+	JobManager::SJobState jobState;
+	JobManager::SJobState jobState2;
+	int x = 0;
+	gEnv->pJobManager->AddLambdaJob("ExampleJob2", [&]
+	{
+		x++;
+	}, JobManager::eRegularPriority, &jobState);
+	auto followup = [&]
+	{
+		x++;
+	};
+	jobState.RegisterPostJob("PostJob", followup, JobManager::eRegularPriority, &jobState2);
+	jobState.Wait();
+	jobState2.Wait();
+	REQUIRE(x == 2);
+}
+
+TEST_F(CJobSystemTest, JobState)
+{
+	JobManager::SJobState jobState;
+	JobManager::SJobState jobState2 = jobState;
+	jobState.SetRunning();
+	REQUIRE(jobState2.IsRunning());
+	jobState2.SetStopped();
+	REQUIRE(!jobState.IsRunning());
 }
 
