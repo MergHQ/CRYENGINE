@@ -2558,6 +2558,7 @@ static float LinearToGamma(float x)
 
 #include <squish-ccr/squish.h>
 #include <squish-ccr/squish.inl>
+#include <CryCore/Assert/CryAssert.h> // Ensure assert is redefined as CRY_ASSERT
 
 #ifdef __GNUC__
 #pragma GCC diagnostic pop

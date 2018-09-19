@@ -49,6 +49,10 @@ void CATLAudioObject::Release()
 	}
 
 	m_pImplData = nullptr;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	m_flags &= ~EObjectFlags::Virtual;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
