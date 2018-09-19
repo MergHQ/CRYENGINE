@@ -189,8 +189,8 @@ public:
 		Matrix34 matrix;
 
 		// 4 values making Vec4 (CustomData)
-		float vegetationBendingScale;
 		float vegetationBendingRadius;
+		float vegetationBendingScale;
 		float dissolve;
 		float tesselationPatchId;
 	};
