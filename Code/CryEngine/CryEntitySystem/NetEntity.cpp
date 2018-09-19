@@ -387,7 +387,7 @@ void CNetEntity::OnNetworkedEntityTransformChanged(EntityTransformationFlagsMask
 			doAspectUpdate = false;
 		// position has changed, best let other people know about it
 		// disabled volatile... see OnSpawn for reasoning
-		if (doAspectUpdate)
+		if (doAspectUpdate && gEnv->pNetContext)
 		{
 			gEnv->pNetContext->ChangedAspects(m_pEntity->GetId(), /*eEA_Volatile |*/ eEA_Physics);
 		}
