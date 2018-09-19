@@ -267,7 +267,11 @@ void CPropagationProcessor::UpdateOcclusion()
 		rayInfo.numHits = std::min(rayInfo.numHits + 1, s_maxRayHits);
 		float finalOcclusion = 0.0f;
 
-		if (rayInfo.numHits > 0)
+		if ((g_cvars.m_setFullOcclusionOnMaxHits > 0) && (rayInfo.numHits == s_maxRayHits))
+		{
+			finalOcclusion = 1.0f;
+		}
+		else if (rayInfo.numHits > 0)
 		{
 			ISurfaceTypeManager* const pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
 			CRY_ASSERT(rayInfo.numHits <= s_maxRayHits);
@@ -357,7 +361,12 @@ void CPropagationProcessor::ProcessPhysicsRay(CAudioRayInfo* const pAudioRayInfo
 	float minDistance = FLT_MAX;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-	if (pAudioRayInfo->numHits > 0)
+	if ((g_cvars.m_setFullOcclusionOnMaxHits > 0) && (pAudioRayInfo->numHits == s_maxRayHits))
+	{
+		finalOcclusion = 1.0f;
+		numRealHits = s_maxRayHits;
+	}
+	else if (pAudioRayInfo->numHits > 0)
 	{
 		ISurfaceTypeManager* const pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
 		CRY_ASSERT(pAudioRayInfo->numHits <= s_maxRayHits);

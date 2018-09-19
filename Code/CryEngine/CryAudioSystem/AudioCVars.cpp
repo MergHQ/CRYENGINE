@@ -161,6 +161,11 @@ void CCVars::RegisterVariables()
 	                  "d: Collisions with terrain.\n",
 	                  OnOcclusionRayTypesChanged);
 
+	REGISTER_CVAR2("s_SetFullOcclusionOnMaxHits", &m_setFullOcclusionOnMaxHits, m_setFullOcclusionOnMaxHits, VF_CHEAT | VF_CHEAT_NOCHECK,
+	               "If set to 1, the occlusion value will be set to 1 (max) when a ray cast reaches its max hit limit.\n"
+	               "Usage: s_SetFullOcclusionOnMaxHits [0/1] (off/on)\n"
+	               "Default: 0, (off)\n");
+
 	REGISTER_STRING("s_DefaultStandaloneFilesAudioTrigger", "", 0,
 	                "The name of the ATL AudioTrigger which is used for playing back standalone files, when you call 'PlayFile' without specifying\n"
 	                "an override triggerId that should be used instead.\n"
@@ -304,6 +309,7 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_AccumulateOcclusion");
 		pConsole->UnregisterVariable("s_IgnoreWindowFocus");
 		pConsole->UnregisterVariable("s_OcclusionCollisionTypes");
+		pConsole->UnregisterVariable("s_SetFullOcclusionOnMaxHits");
 		pConsole->UnregisterVariable("s_DefaultStandaloneFilesAudioTrigger");
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
