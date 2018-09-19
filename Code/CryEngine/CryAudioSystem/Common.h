@@ -33,6 +33,16 @@ class CATLPreloadRequest;
 class CATLAudioEnvironment;
 class CSetting;
 
+enum class ESystemStates : EnumFlagsType
+{
+	None             = 0,
+	ImplShuttingDown = BIT(0),
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	IsMuted          = BIT(1),
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+};
+CRY_CREATE_ENUM_FLAG_OPERATORS(ESystemStates);
+
 using AudioTriggerLookup = std::map<ControlId, CTrigger const*>;
 using AudioParameterLookup = std::map<ControlId, CParameter const*>;
 using AudioSwitchLookup = std::map<ControlId, CATLSwitch const*>;
@@ -43,6 +53,7 @@ using SettingLookup = std::map<ControlId, CSetting const*>;
 extern TriggerImplId g_uniqueConnectionId;
 extern Impl::IImpl* g_pIImpl;
 extern CSystem g_system;
+extern ESystemStates g_systemStates;
 extern AudioTriggerLookup g_triggers;
 extern AudioParameterLookup g_parameters;
 extern AudioSwitchLookup g_switches;

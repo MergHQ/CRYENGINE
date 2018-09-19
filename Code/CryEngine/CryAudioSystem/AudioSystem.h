@@ -15,13 +15,6 @@ namespace CryAudio
 // Forward declarations.
 class CSystem;
 
-enum class EInternalStates : EnumFlagsType
-{
-	None             = 0,
-	ImplShuttingDown = BIT(0),
-};
-CRY_CREATE_ENUM_FLAG_OPERATORS(EInternalStates);
-
 class CMainThread final : public ::IThread
 {
 public:
@@ -146,7 +139,6 @@ private:
 	volatile float                     m_accumulatedFrameTime = 0.0f;
 	std::atomic<uint32>                m_externalThreadFrameId{ 0 };
 	uint32                             m_lastExternalThreadFrameId = 0;
-	EInternalStates                    m_flags = EInternalStates::None;
 	uint32                             m_objectPoolSize = 0;
 	uint32                             m_eventPoolSize = 0;
 	CryFixedStringT<MaxFilePathLength> m_configPath;

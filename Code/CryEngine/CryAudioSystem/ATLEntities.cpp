@@ -643,6 +643,10 @@ void CMuteAllTrigger::Execute() const
 	{
 		g_pIImpl->MuteAll();
 	}
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	g_systemStates |= ESystemStates::IsMuted;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -680,6 +684,10 @@ void CUnmuteAllTrigger::Execute() const
 	{
 		g_pIImpl->UnmuteAll();
 	}
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	g_systemStates &= ~ESystemStates::IsMuted;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
