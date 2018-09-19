@@ -25,6 +25,7 @@ public:
 	int   m_accumulateOcclusion = 1;
 	int   m_ignoreWindowFocus = 0;
 	int   m_occlusionCollisionTypes = 0;
+	int   m_setFullOcclusionOnMaxHits = 0;
 
 	float m_occlusionMaxDistance = 500.0f;
 	float m_occlusionMinDistance = 0.1f;
