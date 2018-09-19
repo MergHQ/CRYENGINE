@@ -140,7 +140,7 @@ void CSystem::PushRequest(CAudioRequest const& request)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AUDIO);
 
-	if ((m_flags& EInternalStates::ImplShuttingDown) == 0)
+	if ((g_systemStates& ESystemStates::ImplShuttingDown) == 0)
 	{
 		m_requestQueue.enqueue(request);
 
@@ -967,7 +967,7 @@ void CSystem::GetTriggerData(ControlId const triggerId, STriggerData& triggerDat
 void CSystem::ReleaseImpl()
 {
 	// Reject new requests during shutdown.
-	m_flags |= EInternalStates::ImplShuttingDown;
+	g_systemStates |= ESystemStates::ImplShuttingDown;
 
 	// Release middleware specific data before its shutdown.
 	g_fileManager.ReleaseImplData();
@@ -998,7 +998,7 @@ void CSystem::ReleaseImpl()
 	g_eventManager.Release();
 	g_fileManager.Release();
 
-	m_flags &= ~EInternalStates::ImplShuttingDown;
+	g_systemStates &= ~ESystemStates::ImplShuttingDown;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2790,9 +2790,12 @@ void CSystem::HandleRetriggerControls()
 
 	g_pObject->ForceImplementationRefresh(false);
 
-	#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	g_previewObject.ForceImplementationRefresh(false);
-	#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
+	if ((g_systemStates& ESystemStates::IsMuted) != 0)
+	{
+		ExecuteDefaultTrigger(EDefaultTriggerType::MuteAll);
+	}
 }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }      // namespace CryAudio

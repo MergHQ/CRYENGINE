@@ -11,6 +11,7 @@ namespace CryAudio
 TriggerImplId g_uniqueConnectionId = 0;
 Impl::IImpl* g_pIImpl = nullptr;
 CSystem g_system;
+ESystemStates g_systemStates = ESystemStates::None;
 AudioTriggerLookup g_triggers;
 AudioParameterLookup g_parameters;
 AudioSwitchLookup g_switches;
