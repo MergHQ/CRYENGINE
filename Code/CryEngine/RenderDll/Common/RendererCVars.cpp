@@ -121,7 +121,6 @@ float CRendererCVars::CV_r_rain_maxviewdist_deferred;
 float CRendererCVars::CV_r_measureoverdrawscale;
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingmipfading);
 int CRendererCVars::CV_r_TexturesStreamPoolSize;
-int CRendererCVars::CV_r_TexturesStreamPoolSecondarySize;
 int CRendererCVars::CV_r_texturesstreampooldefragmentation;
 int CRendererCVars::CV_r_texturesstreampooldefragmentationmaxmoves;
 int CRendererCVars::CV_r_texturesstreampooldefragmentationmaxamount;
@@ -2025,9 +2024,6 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_TexturesStreamPoolSize", CV_r_TexturesStreamPoolSize, nDefaultTexPoolSize, VF_NULL,
 	               "Size of texture streaming pool in MB.\n");
 
-	REGISTER_CVAR3("r_TexturesStreamPoolSecondarySize", CV_r_TexturesStreamPoolSecondarySize, 0, VF_NULL,
-	               "Size of secondary pool for textures in MB.");
-
 	REGISTER_CVAR3("r_texturesstreampooldefragmentation", CV_r_texturesstreampooldefragmentation, nDefaultDefragState, VF_NULL,
 	              "Enabled CPU (1), GPU(2) and disable (0) textures stream pool defragmentation.\n");
 	REGISTER_CVAR3("r_texturesstreampooldefragmentationmaxmoves", CV_r_texturesstreampooldefragmentationmaxmoves, 8, VF_NULL,
@@ -2821,8 +2817,8 @@ void CRendererCVars::InitCVars()
 	               "0: off");
 
 	REGISTER_CVAR3("r_CustomResMaxSize", CV_r_CustomResMaxSize, 4096, VF_REQUIRE_APP_RESTART, "Maximum resolution of custom resolution rendering");
-	REGISTER_CVAR3("r_CustomResWidth", CV_r_CustomResWidth, 0, VF_DUMPTODISK | VF_REQUIRE_APP_RESTART, "Width of custom resolution rendering");
-	REGISTER_CVAR3("r_CustomResHeight", CV_r_CustomResHeight, 0, VF_DUMPTODISK | VF_REQUIRE_APP_RESTART, "Height of custom resolution rendering");
+	REGISTER_CVAR3("r_CustomResWidth", CV_r_CustomResWidth, 0, VF_DUMPTODISK | VF_RENDERER_CVAR, "Width of custom resolution rendering");
+	REGISTER_CVAR3("r_CustomResHeight", CV_r_CustomResHeight, 0, VF_DUMPTODISK | VF_RENDERER_CVAR, "Height of custom resolution rendering");
 	REGISTER_CVAR3("r_CustomResPreview", CV_r_CustomResPreview, 1, VF_NULL, "Enable/disable preview of custom resolution rendering in viewport"
 	                                                                        "(0 - no preview, 1 - scaled to match viewport, 2 - custom resolution clipped to viewport");
 	REGISTER_CVAR3("r_Supersampling", CV_r_Supersampling, 1, VF_NULL, "Use supersampled antialiasing"

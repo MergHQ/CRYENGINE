@@ -630,7 +630,7 @@ bool CREParticle::Compile(CRenderObject* pRenderObject, CRenderView *pRenderView
 		switch (desc.renderState & OS_TRANSPARENT)
 		{
 		case OS_ALPHA_BLEND:
-			if (bDepthFixup)
+			if (bDepthFixup && CRendererCVars::CV_r_HDRTexFormat)
 				psoDesc.m_RenderState |= GS_BLALPHA_MIN | GS_BLSRC_SRC1ALPHA | GS_BLDST_ONEMINUSSRC1ALPHA;
 			else
 				psoDesc.m_RenderState |= GS_BLALPHA_MIN | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA;
@@ -645,6 +645,9 @@ bool CREParticle::Compile(CRenderObject* pRenderObject, CRenderView *pRenderView
 
 		if (desc.renderState & OS_NODEPTH_TEST)
 			psoDesc.m_RenderState |= GS_NODEPTHTEST;
+
+		if (bDepthFixup && !CRendererCVars::CV_r_HDRTexFormat)
+			psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_SAMPLE1];
 	};
 
 	bool bCompiled = true;

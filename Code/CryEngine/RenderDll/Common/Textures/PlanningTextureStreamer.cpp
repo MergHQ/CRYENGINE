@@ -335,10 +335,10 @@ bool CPlanningTextureStreamer::TryBegin_FromDisk(CTexture* pTex, uint32 nTexPers
 		++estp;
 	}
 
-	uint32 nWantedWidth = max(1, pTex->m_nWidth >> nTexWantedMip);
+	uint32 nWantedWidth  = max(1, pTex->m_nWidth  >> nTexWantedMip);
 	uint32 nWantedHeight = max(1, pTex->m_nHeight >> nTexWantedMip);
-	uint32 nAvailWidth = max(1, pTex->m_nWidth >> nTexAvailMip);
-	uint32 nAvailHeight = max(1, pTex->m_nHeight >> nTexAvailMip);
+	uint32 nAvailWidth   = max(1, pTex->m_nWidth  >> nTexAvailMip);
+	uint32 nAvailHeight  = max(1, pTex->m_nHeight >> nTexAvailMip);
 
 	ptrdiff_t nRequired = pTex->StreamComputeSysDataSize(nTexWantedMip) - pTex->StreamComputeSysDataSize(nTexAvailMip);
 
@@ -566,27 +566,31 @@ SPlanningMemoryState CPlanningTextureStreamer::GetMemoryState()
 {
 	SPlanningMemoryState ms = { 0 };
 
-	ms.nMemStreamed = CTexture::s_nStatsStreamPoolInUseMem;
+	ms.nMemStreamed      = CTexture::s_nStatsStreamPoolInUseMem;   // Sum of all allocated memory
+	ms.nMemBoundStreamed = CTexture::s_nStatsStreamPoolBoundMem;   // Sum of all in-used memory
+	ms.nMemTemp          = ms.nMemStreamed - ms.nMemBoundStreamed; // Sum of allocated temporary/overhang memory
 
 #if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-	ms.nPhysicalLimit = GetDeviceObjectFactory().m_texturePool.GetPoolSize();
-	ms.nTargetPhysicalLimit = (ptrdiff_t)(static_cast<int64>(ms.nPhysicalLimit - 30 * 1024 * 1024) * 96 / 100);
+	ms.nPoolLimit = GetDeviceObjectFactory().m_texturePool.GetPoolSize();
+	ms.nTargetPhysicalLimit = (ptrdiff_t)(static_cast<int64>(ms.nPoolLimit - 30 * 1024 * 1024) * 96 / 100);
 	ms.nTargetPhysicalLimit = max((ptrdiff_t)0, ms.nTargetPhysicalLimit);
 
 	ms.nStaticTexUsage = 0;//CTexture::s_nStatsCurManagedNonStreamedTexMem;
 	ms.nUnknownPoolUsage = GetDeviceObjectFactory().m_texturePool.GetPoolAllocated() - (CTexture::s_pPoolMgr->GetReservedSize() /*ms.nMemStreamed*/ + ms.nStaticTexUsage);
 
-	ms.nMemLimit = ms.nTargetPhysicalLimit - (ms.nStaticTexUsage + ms.nUnknownPoolUsage);
-	ms.nMemFreeSlack = (ptrdiff_t)((int64)ms.nPhysicalLimit * 4 / 100);
+	ms.nMemLimit     = ms.nTargetPhysicalLimit - (ms.nStaticTexUsage + ms.nUnknownPoolUsage);
+	ms.nMemFreeSlack = ms.nPoolLimit * 4 / 100;
 #else
-	ms.nPhysicalLimit = (ptrdiff_t)CRenderer::GetTexturesStreamPoolSize() * 1024 * 1024;
+	ms.nPoolLimit = CRenderer::GetTexturesStreamPoolSize() * 1024 * 1024;
+	ms.nTargetPhysicalLimit = 0;
 
-	ms.nMemLimit = (ptrdiff_t)((int64)ms.nPhysicalLimit * 95 / 100);
-	ms.nMemFreeSlack = (ptrdiff_t)((int64)ms.nPhysicalLimit * 5 / 100);
+	ms.nStaticTexUsage = 0;
+	ms.nUnknownPoolUsage = 0;
+
+	ms.nMemLimit     = ms.nPoolLimit * 95 / 100;
+	ms.nMemFreeSlack = ms.nPoolLimit *  5 / 100;
 #endif
 
-	ms.nMemBoundStreamed = CTexture::s_nStatsStreamPoolBoundMem;
-	ms.nMemTemp = ms.nMemStreamed - ms.nMemBoundStreamed;
 	ms.nMemFreeLower = ms.nMemLimit - ms.nMemStreamed;
 	ms.nMemFreeUpper = (ms.nMemLimit + ms.nMemFreeSlack) - ms.nMemStreamed;
 	ms.nStreamLimit = ms.nMemLimit - CTexture::s_nStatsStreamPoolBoundPersMem;

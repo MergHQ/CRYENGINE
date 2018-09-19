@@ -247,6 +247,7 @@ Property
   Precache = CustomRenderDS
   Precache = CustomRenderVS
   Precache = CustomRenderPS
+  Precache = GlassPS
   Precache = SkinPS
   Precache = HDRPostProcessPS
   Precache = PostMotionBlurVS

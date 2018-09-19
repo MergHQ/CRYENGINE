@@ -91,7 +91,7 @@ protected:
 	int    m_NumMips;
 	int    m_NumPersistantMips;
 	int    m_Flags;       // e.g. FIM_GREYSCALE|FIM_ALPHA
-	int    m_nStartSeek;
+	size_t m_nStartSeek;
 	float  m_fAvgBrightness;
 	ColorF m_cMinColor;
 	ColorF m_cMaxColor;
@@ -151,7 +151,7 @@ public:
 	void                         mfFree_image(const int nSide);
 	bool                         mfIs_image(const int nSide) const              { return m_pByteImage[nSide] != NULL; }
 
-	int                          mfGet_StartSeek() const                        { return m_nStartSeek; }
+	size_t                       mfGet_StartSeek() const                        { return m_nStartSeek; }
 
 	void                         mfSet_ImageSize(int Size)                      { m_ImgSize = Size; }
 	int                          mfGet_ImageSize() const                        { return m_ImgSize; }

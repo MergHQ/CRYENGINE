@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include "Renderer.h"
 
 #if CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
@@ -17,10 +18,35 @@ class CRendererCVars
 public:
 	void InitCVars();
 
+	static int GetMaxCustomResSize(int maxTextureSize = 0)
+	{
+		return std::min(CV_r_CustomResMaxSize, maxTextureSize ? maxTextureSize : INT_MAX);
+	}
+
+	static int GetCustomResWidth(bool custom = false, int maxTextureSize = 0, int textureWidth = 0)
+	{
+		if (!CV_r_CustomResWidth || !custom) return textureWidth;
+
+		const int customWidth = std::min(GetMaxCustomResSize(CV_r_CustomResWidth), maxTextureSize ? maxTextureSize : INT_MAX);
+		const int clampedWidth = std::max(std::min(customWidth, textureWidth ? textureWidth : INT_MAX), textureWidth ? (textureWidth + 1) >> 1 : 0);
+
+		return clampedWidth; // If multiple of 8: std::min(Align(clampedWidth, 8), customWidth);
+	}
+
+	static int GetCustomResHeight(bool custom = false, int maxTextureSize = 0, int textureHeight = 0)
+	{
+		if (!CV_r_CustomResHeight || !custom) return textureHeight;
+
+		const int customHeight = std::min(GetMaxCustomResSize(CV_r_CustomResHeight), maxTextureSize ? maxTextureSize : INT_MAX);
+		const int clampedHeight = std::max(std::min(customHeight, textureHeight ? textureHeight : INT_MAX), textureHeight ? (textureHeight + 1) >> 1 : 0);
+
+		return clampedHeight; // If multiple of 8: std::min(Align(clampedHeight, 8), customHeight);
+	}
+
 protected:
 
 	// Helper methods.
-	static int  GetTexturesStreamPoolSize();
+	static size_t GetTexturesStreamPoolSize();
 	static void Cmd_ShowRenderTarget(IConsoleCmdArgs* pArgs);
 	static void OnChange_CachedShadows(ICVar* pCVar);
 	static void OnChange_GeomInstancingThreshold(ICVar* pVar);
@@ -160,7 +186,6 @@ public:
 	static int CV_r_BreakOnError;
 
 	static int CV_r_TexturesStreamPoolSize; //plz do not access directly, always by GetTexturesStreamPoolSize()
-	static int CV_r_TexturesStreamPoolSecondarySize;
 	static int CV_r_texturesstreampooldefragmentation;
 	static int CV_r_texturesstreampooldefragmentationmaxmoves;
 	static int CV_r_texturesstreampooldefragmentationmaxamount;

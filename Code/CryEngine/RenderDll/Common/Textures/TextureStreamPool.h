@@ -45,16 +45,18 @@ struct STexPoolItem : STexPoolItemHdr
 
 	bool IsFree() const { return m_NextFree != NULL; }
 
-	int  GetSize()
-	{
-		int nSize = sizeof(*this);
-		return nSize;
-	}
 	void GetMemoryUsage(ICrySizer* pSizer) const
 	{
 		pSizer->AddObject(this, sizeof(*this));
 		pSizer->AddObject(m_pDevTexture);
 	}
+
+	size_t GetAllocatedSystemMemory() const
+	{
+		size_t nSize = sizeof(*this);
+		return nSize;
+	}
+
 	bool IsStillUsedByGPU(uint32 nCurTick);
 };
 
@@ -74,13 +76,24 @@ struct STexPool
 
 	~STexPool();
 
-	size_t GetSize()
+	void GetMemoryUsage(ICrySizer* pSizer) const
 	{
-		size_t nSize = sizeof(*this);
+		pSizer->AddObject(this, sizeof(*this));
 		STexPoolItemHdr* pIT = m_ItemsList.m_Next;
 		while (pIT != &m_ItemsList)
 		{
-			nSize += static_cast<STexPoolItem*>(pIT)->GetSize();
+			pSizer->AddObject(static_cast<STexPoolItem*>(pIT));
+			pIT = pIT->m_Next;
+		}
+	}
+
+	size_t GetAllocatedSystemMemory() const
+	{
+		size_t nSize = sizeof(*this);
+		const STexPoolItemHdr* pIT = m_ItemsList.m_Next;
+		while (pIT != &m_ItemsList)
+		{
+			nSize += static_cast<const STexPoolItem*>(pIT)->GetAllocatedSystemMemory();
 			pIT = pIT->m_Next;
 		}
 
@@ -91,17 +104,6 @@ struct STexPool
 	{
 		assert((m_eTT != eTT_Cube && m_eTT != eTT_CubeArray) || !(m_nArraySize % 6));
 		return m_nArraySize;
-	}
-
-	void GetMemoryUsage(ICrySizer* pSizer) const
-	{
-		pSizer->AddObject(this, sizeof(*this));
-		STexPoolItemHdr* pIT = m_ItemsList.m_Next;
-		while (pIT != &m_ItemsList)
-		{
-			pSizer->AddObject(static_cast<STexPoolItem*>(pIT));
-			pIT = pIT->m_Next;
-		}
 	}
 };
 

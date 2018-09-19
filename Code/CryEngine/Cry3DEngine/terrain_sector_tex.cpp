@@ -64,8 +64,8 @@ int CTerrainNode::CreateSectorTexturesFromBuffer(float * pSectorHeightMap)
 	{
 		int nDim = GetTerrain()->m_arrBaseTexInfos.m_TerrainTextureLayer[0].nSectorSizePixels;
 		ETEX_Format texFormat = GetTerrain()->m_arrBaseTexInfos.m_TerrainTextureLayer[0].eTexFormat;
-		int nSizeDxtMip0 = GetRenderer()->GetTextureFormatDataSize(nDim, nDim, 1, 1, texFormat);
-		int nSizeMip0 = GetRenderer()->GetTextureFormatDataSize(nDim, nDim, 1, 1, eTF_R8G8B8A8);
+		uint32 nSizeDxtMip0 = GetRenderer()->GetTextureFormatDataSize(nDim, nDim, 1, 1, texFormat);
+		uint32 nSizeMip0    = GetRenderer()->GetTextureFormatDataSize(nDim, nDim, 1, 1, eTF_R8G8B8A8);
 
 		SAFE_DELETE(GetTerrain()->m_pTerrainRgbLowResSystemCopy);
 		GetTerrain()->m_pTerrainRgbLowResSystemCopy = new PodArray<ColorB>;
@@ -107,10 +107,10 @@ void CTerrainNode::StreamAsyncOnComplete(IReadStream* pStream, unsigned nError)
 
 		int nDim = m_pTerrain->m_texCache[0].m_nDim;
 
-		int nSizeDxt = GetRenderer()->GetTextureFormatDataSize(nDim, nDim, 1, 1, pLayers[0].eTexFormat);
-		int nSizeRgb = GetRenderer()->GetTextureFormatDataSize(nDim, nDim, 1, 1, eTF_R8G8B8A8);
+		uint32 nSizeDxt = GetRenderer()->GetTextureFormatDataSize(nDim, nDim, 1, 1, pLayers[0].eTexFormat);
+		uint32 nSizeRgb = GetRenderer()->GetTextureFormatDataSize(nDim, nDim, 1, 1, eTF_R8G8B8A8);
 
-		byte * pDxtIn = (byte *)pStream->GetBuffer();
+		byte * pDxtIn  = (byte *)pStream->GetBuffer();
 		byte * pRgbOut = ((byte*)pStream->GetUserData()) + nDim * nDim * sizeof(float);
 
 		GetRenderer()->DXTDecompress(pDxtIn,						nSizeDxt, (byte*)pRgbOut,						 nDim, nDim, 1, pLayers[0].eTexFormat, false, 4);

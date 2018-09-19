@@ -42,15 +42,14 @@ CTextureArrayAlloc<STexStreamPrepState*, CTexture::MaxStreamPrepTasks> CTexture:
 CTextureArrayAlloc<STexStreamOutState, CTexture::MaxStreamTasks> CTexture::s_StreamOutTasks;
 #endif
 
-volatile int CTexture::s_nBytesSubmittedToStreaming = { 0 };
+volatile size_t CTexture::s_nBytesSubmittedToStreaming = { 0 };
 volatile int CTexture::s_nMipsSubmittedToStreaming = { 0 };
 volatile int CTexture::s_nNumStreamingRequests = { 0 };
-int CTexture::s_nBytesRequiredNotSubmitted = 0;
 
 #if !defined (_RELEASE) || defined(ENABLE_STATOSCOPE_RELEASE)
 int CTexture::s_TextureUpdates = 0;
 float CTexture::s_TextureUpdatesTime = 0.0f;
-int CTexture::s_TexturesUpdatedRendered = 0;
+int CTexture::s_TextureUpdatedRendered = 0;
 float CTexture::s_TextureUpdatedRenderedTime = 0.0f;
 int CTexture::s_StreamingRequestsCount = 0;
 float CTexture::s_StreamingRequestsTime = 0.0f;
@@ -62,8 +61,11 @@ ITextureStreamListener* CTexture::s_pStreamListener;
 
 bool CTexture::s_bStreamDontKeepSystem = false;
 
-int CTexture::s_nTexturesDataBytesLoaded = 0;
-volatile int CTexture::s_nTexturesDataBytesUploaded = 0;
+#ifndef _RELEASE
+size_t CTexture::s_nTexturesDataBytesLoaded = 0;
+volatile size_t CTexture::s_nTexturesDataBytesUploaded = 0;
+#endif
+
 int CTexture::s_nStatsAllocFails;
 bool CTexture::s_bOutOfMemoryTotally;
 volatile size_t CTexture::s_nStatsStreamPoolInUseMem;
@@ -286,7 +288,7 @@ void STexStreamInState::StreamAsyncOnComplete(IReadStream* pStream, unsigned nEr
 
 	if (tp->m_pFileTexMips)
 	{
-		int nChunkSize = tp->m_pFileTexMips->m_pMipHeader[nMip + m_nHigherUploadedMip].m_SideSize * tp->GetNumSides();
+		ptrdiff_t nChunkSize = tp->m_pFileTexMips->m_pMipHeader[nMip + m_nHigherUploadedMip].m_SideSize * tp->GetNumSides();
 		CryInterlockedAdd(&CTexture::s_nBytesSubmittedToStreaming, -nChunkSize);
 	}
 	CryInterlockedDecrement(&CTexture::s_nMipsSubmittedToStreaming);
@@ -345,14 +347,13 @@ void STexStreamInState::StreamAsyncOnComplete(IReadStream* pStream, unsigned nEr
 #endif
 		}
 
-#ifndef _RELEASE
 		// collect statistics
 		if (pStream->GetParams().nSize > 1024)
 			CTexture::s_nStreamingThroughput += pStream->GetParams().nSize;
+
 		const CTimeValue currentTime = iTimer->GetAsyncTime();
 		if (currentTime - m_fStartTime > .01f)  // avoid measurement errors for small textures
 			CTexture::s_nStreamingTotalTime += currentTime.GetSeconds() - m_fStartTime;
-#endif
 
 		m_bAllStreamsComplete = true;
 	}
@@ -562,7 +563,7 @@ bool CTexture::IsStreamedIn(const int nMinPrecacheRoundIds[MAX_STREAM_PREDICTION
 	return true;
 }
 
-int CTexture::GetStreamableMemoryUsage(int nStartMip) const
+uint32 CTexture::GetStreamableMemoryUsage(int nStartMip) const
 {
 	assert(IsStreamed());
 	if (m_pFileTexMips == NULL)
@@ -819,8 +820,6 @@ bool CTexture::StreamPrepare(CImageFilePtr&& pIM)
 	}
 #endif
 
-	m_pFileTexMips->m_nSrcStart = pIM->mfGet_StartSeek();
-
 	for (int iMip = 0; iMip < m_nMips; iMip++)
 	{
 		m_pFileTexMips->m_pMipHeader[iMip].m_SideSizeWithMips = 0;
@@ -855,7 +854,7 @@ bool CTexture::StreamPrepare(CImageFilePtr&& pIM)
 			nSyncEndMip = m_nMips - 1;
 		}
 
-		int nOffs = 0;
+		size_t nOffs = 0;
 		assert(nSyncStartMip <= nSyncEndMip);
 
 		const bool bIsDXT = CTexture::IsBlockCompressed(eDstFormat);
@@ -873,10 +872,7 @@ bool CTexture::StreamPrepare(CImageFilePtr&& pIM)
 				if (!mp->DataArray)
 					mp->Init(mh.m_SideSize, Align(nMipW, nMipAlign), Align(nMipH, nMipAlign));
 
-				if (eSrcTileMode != eTM_None)
-					mp->m_bNative = 1;
-
-				int nSrcSideSize = CTexture::TextureDataSize(
+				uint32 nSrcSideSize = CTexture::TextureDataSize(
 					max(1, m_nWidth  >> iMip),
 					max(1, m_nHeight >> iMip),
 					max(1, m_nDepth  >> iMip),
@@ -884,7 +880,9 @@ bool CTexture::StreamPrepare(CImageFilePtr&& pIM)
 					m_eSrcFormat,
 					eSrcTileMode);
 
+#ifndef _RELEASE
 				CTexture::s_nTexturesDataBytesLoaded += nSrcSideSize;
+#endif
 				if (iSide == 0 || (m_eFlags & FT_REPLICATE_TO_ALL_SIDES) == 0)
 				{
 					assert(pIM->mfIs_image(iSide));
@@ -945,6 +943,8 @@ bool CTexture::StreamPrepare_Finalise(bool bFromLoad)
 {
 	LOADING_TIME_PROFILE_SECTION;
 
+	const bool bNative = (m_eSrcTileMode != eTM_None);
+
 	assert(m_pFileTexMips);
 	for (int iSide = 0; iSide < m_CacheFileHeader.m_nSides; ++iSide)
 	{
@@ -955,9 +955,9 @@ bool CTexture::StreamPrepare_Finalise(bool bFromLoad)
 			assert(mp->DataArray);
 
 			// If native, assume we're tiled and prepped for the device - we shouldn't need to expand.
-			if (!mp->m_bNative)
+			if (!bNative)
 			{
-				int nSrcSideSize = CTexture::TextureDataSize(
+				uint32 nSrcSideSize = CTexture::TextureDataSize(
 					max(1, m_nWidth  >> iMip),
 					max(1, m_nHeight >> iMip),
 					max(1, m_nDepth  >> iMip),
@@ -1329,7 +1329,7 @@ bool CTexture::StartStreaming(CTexture* pTex, STexPoolItem* pNewPoolItem, const 
 			pStreamState->m_nActivateMip = nActivateMip;
 
 			// update streaming frame ID
-			int nSizeToSubmit = 0;
+			ptrdiff_t nSizeToSubmit = 0LL;
 
 			int nSides = pTex->GetNumSides();
 
@@ -1509,15 +1509,7 @@ void CTexture::InitStreaming()
 #if CRY_PLATFORM_DESKTOP
 	if (CRenderer::CV_r_texturesstreaming)
 	{
-		int nMinTexStreamPool = 192;
-		int nMaxTexStreamPool = 1536;
-
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-		if (!pEnv->pi.winInfo.is64Bit)  // 32 bit executable
-		{
-			nMaxTexStreamPool = 512;
-		}
-	#endif
+		const int videoMem = int(gRenDev->m_MaxTextureMemory / 1024 / 1024);
 
 		ICVar* pICVarTexRes = iConsole->GetCVar("sys_spec_TextureResolution");
 		if (pICVarTexRes)
@@ -1527,22 +1519,16 @@ void CTexture::InitStreaming()
 			{
 				// Some cards report slightly lower byte numbers than their spec in MB suggests, so we have to be conservative
 				// Note: On some MGPU systems the memory reported is the overall amount and not the memory available per GPU
-				if (gRenDev->m_MaxTextureMemory >= (size_t)2800 * 1024 * 1024)
-				{
-					pICVarTexRes->Set(4);
-				}
-				else if (gRenDev->m_MaxTextureMemory >= (size_t)1900 * 1024 * 1024)
-				{
-					pICVarTexRes->Set(3);
-				}
-				else if (gRenDev->m_MaxTextureMemory >= (size_t)1450 * 1024 * 1024)
-				{
-					pICVarTexRes->Set(2);
-				}
-				else
-				{
-					pICVarTexRes->Set(1);
-				}
+				/**/ if (videoMem >= 7800) pICVarTexRes->Set(7); // VRAM 8.0 GB
+				else if (videoMem >= 5800) pICVarTexRes->Set(6); // VRAM 6.0 GB
+				else if (videoMem >= 3800) pICVarTexRes->Set(5); // VRAM 4.0 GB
+				else if (videoMem >= 2800) pICVarTexRes->Set(4); // VRAM 3.0 GB
+				else if (videoMem >= 1900) pICVarTexRes->Set(3); // VRAM 2.0 GB
+				else if (videoMem >= 1450) pICVarTexRes->Set(2); // VRAM 1.5 GB
+				else /*                 */ pICVarTexRes->Set(1); // VRAM 1.0 GB
+
+				// TODO: put the capacity to search into the config and make a loop to find the proper config
+				// TODO: Auto-assign poolsize based on free memory (W10 only)
 			}
 			else
 			{
@@ -1550,7 +1536,20 @@ void CTexture::InitStreaming()
 			}
 		}
 
-		CRenderer::CV_r_TexturesStreamPoolSize = clamp_tpl(CRenderer::CV_r_TexturesStreamPoolSize, nMinTexStreamPool, nMaxTexStreamPool);
+		if (CRenderer::CV_r_TexturesStreamPoolSize >= 0)
+		{
+			int nMinTexStreamPool = gEnv->IsEditor() ? 512 : 192;
+			int nMaxTexStreamPool = videoMem * 7 / 8;
+
+#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
+			if (!pEnv->pi.winInfo.is64Bit)  // 32 bit executable
+			{
+				nMaxTexStreamPool = 512;
+			}
+#endif
+
+			CRenderer::CV_r_TexturesStreamPoolSize = clamp_tpl(CRenderer::CV_r_TexturesStreamPoolSize, nMinTexStreamPool, nMaxTexStreamPool);
+		}
 
 		// Don't skip mips in the editor so that assets can be viewed in full resolution
 		if (gEnv->IsEditor())
@@ -1559,7 +1558,6 @@ void CTexture::InitStreaming()
 #endif
 
 	s_nStreamingMode = CRenderer::CV_r_texturesstreaming;
-
 	s_bStreamDontKeepSystem = CRenderer::CV_r_texturesstreamingonlyvideo == 0;
 
 	if (CRenderer::CV_r_texturesstreaming)
@@ -1577,6 +1575,7 @@ void CTexture::InitStreaming()
 		SDynTexture::s_CurTexAtlasSize = min(128u, SDynTexture::s_CurTexAtlasSize);
 		SDynTexture::s_CurDynTexMaxSize = min(128u, SDynTexture::s_CurDynTexMaxSize);
 	}
+
 	iLog->Log("  Video textures: Atlas clouds max size: %u Mb", SDynTexture::s_CurDynTexAtlasCloudsMaxsize);
 	iLog->Log("  Video textures: Atlas sprites max size: %u Mb", SDynTexture::s_CurDynTexAtlasSpritesMaxsize);
 	iLog->Log("  Video textures: Dynamic managed max size: %u Mb", SDynTexture::s_CurDynTexMaxSize);
@@ -1688,7 +1687,7 @@ void CTexture::RT_FlushAllStreamingTasks(const bool bAbort /* = false*/)
 
 	s_pTextureStreamer->Flush();
 
-	assert(s_nBytesSubmittedToStreaming == 0);
+	CRY_ASSERT(s_nBytesSubmittedToStreaming == 0);
 	iLog->Log("Finished flushing pended textures...");
 
 	SRenderStatistics::Write().m_fTexUploadTime += (iTimer->GetAsyncTime() - time0).GetSeconds();

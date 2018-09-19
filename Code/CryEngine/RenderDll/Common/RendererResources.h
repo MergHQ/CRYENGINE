@@ -255,6 +255,8 @@ public:
 	static CTexture* s_ptexLinearDepthScaled[3];                                 // Min, Max, Avg, med
 	static CTexture* s_ptexLinearDepthDownSample[4];                             // CDepthReadbackStage
 	static CTexture* s_ptexLinearDepthReadBack[4];                               // CDepthReadbackStage
+	static CTexture* s_ptexLinearDepthFixup;
+	static ResourceViewHandle s_ptexLinearDepthFixupUAV;
 
 	static CTexture* s_ptexSceneTarget;                                          // Shared rt for generic usage (refraction/srgb/diffuse accumulation/hdr motionblur/etc)
 	static CTexture* s_ptexSceneTargetR11G11B10F[2];                             // CMotionBlurStage
@@ -281,8 +283,8 @@ public:
 
 	static CTexture* s_ptexHDRFinalBloom;                                        // CRainStage, CToneMappingStage, CBloomStage
 
-	static CTexture* s_ptexDisplayTarget;                                        // display-colorspace target
-	static CTexture* s_ptexDisplayTargetAlt;                                     // display-colorspace target
+	static CTexture* s_ptexDisplayTargetSrc;                                        // display-colorspace target
+	static CTexture* s_ptexDisplayTargetDst;                                     // display-colorspace target
 	static CTexture* s_ptexDisplayTargetScaled[3];                               // low-resolution/blurred version. 2x/4x/8x/16x smaller than screen
 	static CTexture* s_ptexDisplayTargetScaledTemp[2];                           // low-resolution/blurred version. 2x/4x/8x/16x smaller than screen, temp textures (used for blurring/ping-pong)
 

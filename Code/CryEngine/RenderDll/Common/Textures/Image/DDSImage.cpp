@@ -614,14 +614,14 @@ void CImageDDSFile::AdjustFirstFileName(uint32& nFlags, const char* pFileName, D
 //////////////////////////////////////////////////////////////////////
 
 #if CRY_PLATFORM_WINDOWS
-byte* WriteDDS(const byte* dat, int wdt, int hgt, int dpth, const char* name, ETEX_Format eTF, int nMips, ETEX_Type eTT, bool bToMemory, int* pSize)
+byte* WriteDDS(const byte* dat, int wdt, int hgt, int dpth, const char* name, ETEX_Format eTF, int nMips, ETEX_Type eTT, bool bToMemory, size_t* pSize)
 {
 	CImageExtensionHelper::DDS_FILE_DESC fileDesc;
 	memset(&fileDesc, 0, sizeof(fileDesc));
 	byte* pData = NULL;
 	CCryFile file;
-	int nOffs = 0;
-	int nSize = CTexture::TextureDataSize(wdt, hgt, dpth, nMips, 1, eTF);
+	size_t nOffs = 0;
+	uint32 nSize = CTexture::TextureDataSize(wdt, hgt, dpth, nMips, 1, eTF);
 
 	fileDesc.dwMagic = MAKEFOURCC('D', 'D', 'S', ' ');
 

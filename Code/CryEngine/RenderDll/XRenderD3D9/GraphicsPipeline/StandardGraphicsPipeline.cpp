@@ -976,7 +976,7 @@ void CStandardGraphicsPipeline::Execute()
 			if (!m_pPostEffectStage->Execute())
 			{
 				// Post effects disabled, copy diffuse to color target
-				CStretchRectPass::GetPass().Execute(CRendererResources::s_ptexDisplayTarget, pRenderView->GetRenderOutput()->GetColorTarget());
+				CStretchRectPass::GetPass().Execute(CRendererResources::s_ptexDisplayTargetDst, pRenderView->GetRenderOutput()->GetColorTarget());
 			}
 
 			// CRenderOutput->m_pColorTarget

@@ -496,7 +496,8 @@ void CPostAAStage::Execute()
 
 	PROFILE_LABEL_SCOPE("POST_AA");
 
-	CTexture* pCurrRT = CRendererResources::s_ptexDisplayTarget;
+	// TODO: CPostEffectContext::GetDstBackBufferTexture() pre-EnableAltBackBuffer()
+	CTexture* pCurrRT = CRendererResources::s_ptexDisplayTargetDst;
 	CTexture* pMgpuRT = NULL;
 
 	// TODO: Support temporal AA in the editor
@@ -516,6 +517,7 @@ void CPostAAStage::Execute()
 	// TODO: Un-jitter depth buffer for AuxGeom depth tests (alternative: jitter aux)
 	// TODO: Don't do anything and throw away depth when no depth-test/aux is used
 	{
+		// TODO: CPostEffectContext::GetDstBackBufferTexture() post-EnableAltBackBuffer()
 		CTexture* pDestRT = RenderView()->GetColorTarget();
 		DoFinalComposition(pCurrRT, pDestRT, aaMode);
 	}
