@@ -114,6 +114,7 @@ public:
 	}
 
 	bool Execute();
+	void ResetPrimitive() { m_primitive.Reset(); }
 
 	void SetCustomViewport(const D3DViewPort& viewport)
 	{

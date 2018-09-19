@@ -696,10 +696,10 @@ struct SCryEngineStats
 
 	uint32                            nAPI_MeshSize; // Allocated by DirectX
 
-	uint32                            nSummary_TextureSize;                 // Total size of all textures
-	uint32                            nSummary_UserTextureSize;             // Size of eser textures, (from files...)
-	uint32                            nSummary_EngineTextureSize;           // Dynamic Textures
-	uint32                            nSummary_TexturesPoolSize;            // Dynamic Textures
+	size_t                            nSummary_TextureSize;                 // Total size of all textures
+	size_t                            nSummary_UserTextureSize;             // Size of user textures, (from files...)
+	size_t                            nSummary_EngineTextureSize;           // Dynamic Textures
+	size_t                            nSummary_TexturesPoolSize;            // Dynamic Textures
 	float                             nSummary_TexturesStreamingThroughput; // in KB/sec
 
 	uint32                            nStatObj_SummaryTextureSize;
@@ -1395,7 +1395,7 @@ void CEngineStats::CollectTextures()
 	m_stats.nSummary_UserTextureSize = 0;
 	m_stats.nSummary_EngineTextureSize = 0;
 	m_stats.nSummary_TexturesStreamingThroughput = 0;
-	;
+
 	pRenderer->EF_Query(EFQ_TexturesPoolSize, m_stats.nSummary_TexturesPoolSize);
 
 	m_stats.textures.clear();
@@ -1408,7 +1408,7 @@ void CEngineStats::CollectTextures()
 		for (uint32 i = 0; i < query.numTextures; i++)
 		{
 			ITexture* pTexture = query.pTextures[i];
-			int nTexSize = pTexture->GetDataSize();
+			uint32 nTexSize = pTexture->GetDataSize();
 			if (nTexSize > 0)
 			{
 				m_stats.textures.push_back(pTexture);
@@ -1417,10 +1417,11 @@ void CEngineStats::CollectTextures()
 				if (pTexture->GetFlags() & (FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL | FT_USAGE_UNORDERED_ACCESS))
 				{
 					int numCopies = 1;
-					numCopies += (pTexture->GetFlags() & FT_STAGE_UPLOAD) ? 1 : 0;
+
+					numCopies += (pTexture->GetFlags() & FT_STAGE_UPLOAD  ) ? 1 : 0;
 					numCopies += (pTexture->GetFlags() & FT_STAGE_READBACK) ? 1 : 0;
 
-					m_stats.nSummary_EngineTextureSize += numCopies * nTexSize;
+					m_stats.nSummary_EngineTextureSize += size_t(nTexSize) * numCopies;
 				}
 				else
 				{
@@ -2192,34 +2193,32 @@ void CStatsToExcelExporter::ExportSummary(SCryEngineStats& stats)
 	AddRow();
 
 	AddCell("Textures Overall Size", CELL_BOLD);
-	AddCell(stats.nSummary_TextureSize / (1024 * 1024));
+	AddCell((uint32)(stats.nSummary_TextureSize / (1024 * 1024)));
 	AddCell("Total amount of textures memory usage");
 
 	AddRow();
 	AddCell("Pool Size", CELL_BOLD);
-	AddCell(stats.nSummary_TexturesPoolSize / 1024 / 1024);
+	AddCell((uint32)(stats.nSummary_TexturesPoolSize / 1024 / 1024));
 	AddCell("Size of textures pool");
 
 	AddRow();
 	AddCell("Textures Memory Usage", CELL_BOLD);
-	AddCell((stats.nSummary_TexturesPoolSize + stats.nSummary_UserTextureSize + stats.nSummary_EngineTextureSize) / (1024 * 1024));
+	AddCell(((uint32)(stats.nSummary_TexturesPoolSize + stats.nSummary_UserTextureSize + stats.nSummary_EngineTextureSize) / (1024 * 1024)));
 	AddCell("Total memory of textures in RAM");
 
 	AddRow();
 	AddCell("Textures Engine Only", CELL_BOLD);
-	AddCell((stats.nSummary_EngineTextureSize) / (1024 * 1024));
+	AddCell(((uint32)(stats.nSummary_EngineTextureSize) / (1024 * 1024)));
 	AddCell("Textures for internal Engine usage ");
 
 	AddRow();
 	AddCell("User Textures", CELL_BOLD);
-	AddCell((stats.nSummary_UserTextureSize) / (1024 * 1024));
+	AddCell(((uint32)(stats.nSummary_UserTextureSize) / (1024 * 1024)));
 	AddCell("User textures not stored in the textures pool");
 
 	AddRow();
 	AddCell("Textures streaming throughput(KB/s)", CELL_BOLD);
-	;
-	if (stats.nSummary_TexturesStreamingThroughput > 0)
-		AddCell((stats.nSummary_TexturesStreamingThroughput) / 1024);
+	AddCell((uint32)((stats.nSummary_TexturesStreamingThroughput) / 1024));
 	AddRow();
 
 	//AddRow();
@@ -3971,7 +3970,7 @@ void CStatsToExcelExporter::ExportMemInfo(SCryEngineStats& stats)
 	AddRow();
 	AddRow();
 	AddCell("API Textures (KB)", CELL_BOLD);
-	AddCell((stats.nSummary_TexturesPoolSize + stats.nSummary_UserTextureSize + stats.nSummary_EngineTextureSize) / (1024 * 1024));
+	AddCell((uint32)((stats.nSummary_TexturesPoolSize + stats.nSummary_UserTextureSize + stats.nSummary_EngineTextureSize) / (1024 * 1024)));
 	AddRow();
 	AddCell("API Meshes (KB)", CELL_BOLD);
 	AddCell(stats.nAPI_MeshSize / 1024);

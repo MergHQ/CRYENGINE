@@ -71,7 +71,7 @@ size_t CMaterialLayer::GetResourceMemoryUsage(ICrySizer* pSizer)
 					if (piTexture)
 					{
 						SIZER_COMPONENT_NAME(pSizer, "MemoryTexture");
-						size_t nCurrentResourceMemoryUsage = piTexture->GetDataSize();
+						uint32 nCurrentResourceMemoryUsage = piTexture->GetDataSize();
 						nResourceMemory += nCurrentResourceMemoryUsage;
 						pSizer->AddObject(piTexture, nCurrentResourceMemoryUsage);
 
@@ -1014,7 +1014,7 @@ int CMatInfo::GetTextureMemoryUsage(ICrySizer* pSizer, int nSubMtlSlot)
 				continue;
 			used.insert(pTexture);
 
-			int nTexSize = pTexture->GetDataSize();
+			uint32 nTexSize = pTexture->GetDataSize();
 			textureSize += nTexSize;
 
 			if (pSizer)

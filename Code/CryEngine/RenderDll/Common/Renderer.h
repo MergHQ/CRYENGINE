@@ -1022,7 +1022,7 @@ public:
 	virtual void                   EF_ReloadShaderFiles(int nCategory) override;
 	virtual void                   EF_ReloadTextures() override;
 	virtual int                    EF_LoadLightmap(const char* nameTex) override;
-	virtual DynArray<uint16_t>     EF_RenderEnvironmentCubeHDR(std::size_t size, const Vec3& Pos) override;
+	virtual DynArray<uint16_t>     EF_RenderEnvironmentCubeHDR(int size, const Vec3& Pos) override;
 	virtual bool                   WriteTIFToDisk(const void* pData, int width, int height, int bytesPerChannel, int numChannels, bool bFloat, const char* szPreset, const char* szFileName) override;
 	virtual ITexture*              EF_GetTextureByID(int Id) override;
 	virtual ITexture*              EF_GetTextureByName(const char* name, uint32 flags = 0) override;
@@ -1173,7 +1173,7 @@ public:
 	bool                                              ReleaseChunk(int p, PodArray<alloc_info_struct>& alloc_info);
 
 	virtual const char*                               GetTextureFormatName(ETEX_Format eTF) override;
-	virtual int                                       GetTextureFormatDataSize(int nWidth, int nHeight, int nDepth, int nMips, ETEX_Format eTF) override;
+	virtual uint32                                    GetTextureFormatDataSize(int nWidth, int nHeight, int nDepth, int nMips, ETEX_Format eTF) override;
 	virtual void                                      SetDefaultMaterials(IMaterial* pDefMat, IMaterial* pTerrainDefMat) override                          { m_pDefaultMaterial = pDefMat; m_pTerrainDefaultMaterial = pTerrainDefMat; }
 	virtual byte*                                     GetTextureSubImageData32(byte* pData, int nDataSize, int nX, int nY, int nW, int nH, CTexture* pTex) { return 0; }
 
@@ -1263,7 +1263,7 @@ public:
 	float                GetMipDistFactor(uint32 twidth, uint32 theight) { float ratio = std::max(twidth, theight) / float(CRendererResources::s_renderMinDim); return ratio * ratio; }
 //	float                GetMipDistFactor(uint32 twidth, uint32 theight) { return ((TANGENT30_2 * TANGENT30_2) / (m_rheight * m_rheight)) * std::max(twidth, theight) * std::max(twidth, theight); }
 
-	static size_t           GetTexturesStreamPoolSize();
+	static size_t        GetTexturesStreamPoolSize();
 
 protected:
 	void EF_AddParticle(CREParticle* pParticle, SShaderItem& shaderItem, CRenderObject* pRO, const SRenderingPassInfo& passInfo);

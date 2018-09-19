@@ -104,7 +104,7 @@ size_t ITextureStreamer::StatsComputeRequiredMipMemUsage()
 			int nMips = tp->GetNumMips();
 			nReqMip = min(nReqMip, nPersMip);
 
-			int nWantedSize = tp->StreamComputeSysDataSize(nReqMip);
+			uint32 nWantedSize = tp->StreamComputeSysDataSize(nReqMip);
 
 			nSizeToLoad += nWantedSize;
 			if (nWantedSize && pList)

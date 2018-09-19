@@ -70,8 +70,8 @@ void CRenderOutput::InitializeDisplayContext()
 {
 	CRY_ASSERT(m_pDisplayContext);
 
-	const int outputWidth  = m_pDisplayContext->IsScalable() && CRendererCVars::CV_r_CustomResWidth  ? std::min(CRendererCVars::CV_r_CustomResMaxSize, CRendererCVars::CV_r_CustomResWidth ) : m_pDisplayContext->GetDisplayResolution()[0];
-	const int outputHeight = m_pDisplayContext->IsScalable() && CRendererCVars::CV_r_CustomResHeight ? std::min(CRendererCVars::CV_r_CustomResMaxSize, CRendererCVars::CV_r_CustomResHeight) : m_pDisplayContext->GetDisplayResolution()[1];
+	const int outputWidth  = CRendererCVars::GetCustomResWidth (m_pDisplayContext->IsScalable(), 0, m_pDisplayContext->GetDisplayResolution()[0]);
+	const int outputHeight = CRendererCVars::GetCustomResHeight(m_pDisplayContext->IsScalable(), 0, m_pDisplayContext->GetDisplayResolution()[1]);
 
 	InitializeOutputResolution(outputWidth, outputHeight);
 	SetViewport(SRenderViewport(0, 0, outputWidth, outputHeight));
@@ -87,8 +87,8 @@ void CRenderOutput::ReinspectDisplayContext()
 	m_clearColor = m_pDisplayContext->m_desc.clearColor;
 	m_clearDepth = m_pDisplayContext->m_desc.clearDepthStencil.r;
 
-	const int outputWidth  = m_pDisplayContext->IsScalable() && CRendererCVars::CV_r_CustomResWidth  ? std::min(CRendererCVars::CV_r_CustomResMaxSize, CRendererCVars::CV_r_CustomResWidth ) : m_pDisplayContext->GetDisplayResolution()[0];
-	const int outputHeight = m_pDisplayContext->IsScalable() && CRendererCVars::CV_r_CustomResHeight ? std::min(CRendererCVars::CV_r_CustomResMaxSize, CRendererCVars::CV_r_CustomResHeight) : m_pDisplayContext->GetDisplayResolution()[1];
+	const int outputWidth  = CRendererCVars::GetCustomResWidth (m_pDisplayContext->IsScalable(), 0, m_pDisplayContext->GetDisplayResolution()[0]);
+	const int outputHeight = CRendererCVars::GetCustomResHeight(m_pDisplayContext->IsScalable(), 0, m_pDisplayContext->GetDisplayResolution()[1]);
 
 	ChangeOutputResolution(outputWidth, outputHeight);
 	SetViewport(SRenderViewport(0, 0, outputWidth, outputHeight));
@@ -106,8 +106,8 @@ void CRenderOutput::BeginRendering(CRenderView* pRenderView, stl::optional<uint3
 
 	if (m_pDisplayContext)
 	{
-		CRY_ASSERT(m_OutputWidth  == (m_pDisplayContext->IsScalable() && CRendererCVars::CV_r_CustomResWidth  ? std::min(CRendererCVars::CV_r_CustomResMaxSize, CRendererCVars::CV_r_CustomResWidth)  : m_pDisplayContext->GetDisplayResolution()[0]));
-		CRY_ASSERT(m_OutputHeight == (m_pDisplayContext->IsScalable() && CRendererCVars::CV_r_CustomResHeight ? std::min(CRendererCVars::CV_r_CustomResMaxSize, CRendererCVars::CV_r_CustomResHeight) : m_pDisplayContext->GetDisplayResolution()[1]));
+		CRY_ASSERT(m_OutputWidth  == CRendererCVars::GetCustomResWidth (m_pDisplayContext->IsScalable(), 0, m_pDisplayContext->GetDisplayResolution()[0]));
+		CRY_ASSERT(m_OutputHeight == CRendererCVars::GetCustomResHeight(m_pDisplayContext->IsScalable(), 0, m_pDisplayContext->GetDisplayResolution()[1]));
 
 		if (pRenderView)
 		{

@@ -226,7 +226,7 @@ struct SDepthTexture;
 
 struct STextureStreamingStats
 {
-	STextureStreamingStats(bool bComputeTexturesPerFrame) : bComputeReuquiredTexturesPerFrame(bComputeTexturesPerFrame)
+	STextureStreamingStats(bool bComputeTexturesPerFrame) : bComputeRequiredTexturesPerFrame(bComputeTexturesPerFrame)
 	{
 		nMaxPoolSize = 0;
 		nCurrentPoolSize = 0;
@@ -253,7 +253,7 @@ struct STextureStreamingStats
 	float      fPoolFragmentation;
 	uint32     bPoolOverflow        : 1;
 	uint32     bPoolOverflowTotally : 1;
-	const bool bComputeReuquiredTexturesPerFrame;
+	const bool bComputeRequiredTexturesPerFrame;
 };
 
 struct SSubresourceData
@@ -461,8 +461,8 @@ public:
 	virtual const uint32    GetFlags() const = 0;
 	virtual const int       GetNumMips() const = 0;
 	virtual const int       GetRequiredMip() const = 0;
-	virtual const int       GetDeviceDataSize() const = 0;
-	virtual const int       GetDataSize() const = 0;
+	virtual const uint32    GetDeviceDataSize() const = 0;
+	virtual const uint32    GetDataSize() const = 0;
 	virtual const ETEX_Type GetTextureType() const = 0;
 	virtual const bool      IsTextureLoaded() const = 0;
 	virtual void            PrecacheAsynchronously(float fMipFactor, int nFlags, int nUpdateId, int nCounter = 1) = 0;
@@ -476,7 +476,7 @@ public:
 
 	virtual int             StreamCalculateMipsSigned(float fMipFactor) const = 0;
 	virtual int             GetStreamableMipNumber() const = 0;
-	virtual int             GetStreamableMemoryUsage(int nStartMip) const = 0;
+	virtual uint32          GetStreamableMemoryUsage(int nStartMip) const = 0;
 	virtual int             GetMinLoadedMip() const = 0;
 
 	//! Used for debugging/profiling.
@@ -562,8 +562,8 @@ public:
 	// <interfuscator:shuffle>
 	virtual ~IDynTexture(){}
 	virtual void      Release() = 0;
-	virtual void      GetSubImageRect(uint32& nX, uint32& nY, uint32& nWidth, uint32& nHeight) = 0;
-	virtual void      GetImageRect(uint32& nX, uint32& nY, uint32& nWidth, uint32& nHeight) = 0;
+	virtual void      GetSubImageRect(int& nX, int& nY, int& nWidth, int& nHeight) = 0;
+	virtual void      GetImageRect(int& nX, int& nY, int& nWidth, int& nHeight) = 0;
 	virtual int       GetTextureID() = 0;
 	virtual void      Lock() = 0;
 	virtual void      UnLock() = 0;
@@ -593,9 +593,9 @@ struct STexAnim
 	bool              m_bLoop;
 	float             m_Time;
 
-	int               Size()
+	size_t            Size()
 	{
-		int nSize = sizeof(STexAnim);
+		size_t nSize = sizeof(STexAnim);
 		nSize += m_TexPics.GetMemoryUsage();
 		return nSize;
 	}

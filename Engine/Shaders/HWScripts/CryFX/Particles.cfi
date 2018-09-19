@@ -35,11 +35,7 @@ struct OutputVS
 
 struct pixoutParticle
 {
-	half4 Color        : SV_Target0;
-
-#if %DEPTH_FIXUP
-	half4 BlendFactors : SV_Target1;
-#endif
+	half4 Color : SV_Target0;
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -807,6 +803,9 @@ void ApplyFog( inout half4 cFinal, half4 avgFogVolumeContrib, in OutputVS IN )
 
 //////////////////////////////////////////////////////////////////////
 
+RWTexture2D<float2> velocityObjTex : register(u2);
+RWTexture2D<uint> depthObjTex : register(u3);
+
 float4 GetScreenCoords( float4 WPos )
 { 
 #if %_RT_PROJECTION_MULTI_RES || %_RT_PROJECTION_LENS_MATCHED
@@ -821,7 +820,12 @@ float4 GetScreenCoords( float4 WPos )
 #if !ORBIS
 [earlydepthstencil]
 #endif
+
+#if %DEPTH_FIXUP // Shader-System disallows RT-flag masking of function signatures, so we have to eat up the export here
+pixoutParticle ParticlePS(OutputVS IN, out float4 outBlendFactors : SV_Target1)
+#else
 pixoutParticle ParticlePS(OutputVS IN)
+#endif
 {
 	pixoutParticle OUT = (pixoutParticle) 0;
 
@@ -956,11 +960,16 @@ pixoutParticle ParticlePS(OutputVS IN)
 #endif
 
 	OUT.Color = cFinal;
-
+	
 #if %DEPTH_FIXUP
 	const float fZ = tcScreen.w * CV_NearFarClipDist.w;
-	OUT.Color.a = cFinal.a > DepthFixupThreshold ? -fZ : 1;
-	OUT.BlendFactors = cFinal.a;
+	const float fD = cFinal.a > DepthFixupThreshold ? -fZ : -0.0f;
+
+#if !%_RT_SAMPLE1
+	OUT.Color.a = fD; outBlendFactors = cFinal.a;
+#else
+	InterlockedMax(depthObjTex[floor(IN.HPosition.xy)], asuint(fD));
+#endif
 #endif
 
 	return OUT;

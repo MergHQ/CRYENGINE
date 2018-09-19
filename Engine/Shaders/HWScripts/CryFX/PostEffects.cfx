@@ -763,15 +763,18 @@ technique CopyToDeviceDepth
 /// Transparency Depth Fixup technique /////////////////////////////////////////////////////////////
 
 Texture2D<float4> TZFixMrg_Source           : register(t0); 
-SamplerState TZFixMrg_Sampler               : register(s0);
-
 
 pixout TranspDepthFixupMergePS(vtxOutTexToTex IN)
 {
 	// Merge depth values using min/max blending
 	pixout OUT = (pixout) 0;
-	OUT.Color.x = GetTexture2D(TZFixMrg_Source, TZFixMrg_Sampler, IN.baseTC.xy).w;
 	
+#if !%_RT_SAMPLE1
+	OUT.Color.x = TZFixMrg_Source.Load(int3(IN.HPosition.xy, 0)).w;
+#else
+	OUT.Color.x = TZFixMrg_Source.Load(int3(IN.HPosition.xy, 0)).x;
+#endif
+
 	if (OUT.Color.x >= 0)
 		discard;
 	else

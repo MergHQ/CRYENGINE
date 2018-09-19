@@ -1238,7 +1238,7 @@ struct IRenderer//: public IRendererCallbackServer
 
 	//! Load lightmap for name.
 	virtual int  EF_LoadLightmap(const char* name) = 0;
-	virtual DynArray<uint16_t> EF_RenderEnvironmentCubeHDR(size_t size, const Vec3& Pos) = 0;
+	virtual DynArray<uint16_t> EF_RenderEnvironmentCubeHDR(int size, const Vec3& Pos) = 0;
 	// Writes a TIF file to the system with the requested preset
 	// Intended for use with EF_RenderEnvironmentCubeHDR
 	virtual bool WriteTIFToDisk(const void* pData, int width, int height, int bytesPerChannel, int numChannels, bool bFloat, const char* szPreset, const char* szFileName) = 0;
@@ -1543,7 +1543,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual int                                         GetMaxTextureSize() = 0;
 
 	virtual const char*                                 GetTextureFormatName(ETEX_Format eTF) = 0;
-	virtual int                                         GetTextureFormatDataSize(int nWidth, int nHeight, int nDepth, int nMips, ETEX_Format eTF) = 0;
+	virtual uint32                                      GetTextureFormatDataSize(int nWidth, int nHeight, int nDepth, int nMips, ETEX_Format eTF) = 0;
 	virtual bool                                        IsTextureFormatSupported(ETEX_Format eTF) = 0;
 
 	virtual void                                        SetDefaultMaterials(IMaterial* pDefMat, IMaterial* pTerrainDefMat) = 0;

@@ -318,7 +318,7 @@ CTexture* CShaderMan::mfCheckTemplateTexName(const char* mapname, ETEX_Type eTT)
 	else if (!stricmp(mapname, "$PrevFrameScaled"))
 		TexPic = CRendererResources::s_ptexDisplayTargetScaledPrev;
 	else if (!stricmp(mapname, "$DisplayTarget"))
-		TexPic = CRendererResources::s_ptexDisplayTarget;
+		TexPic = CRendererResources::s_ptexDisplayTargetSrc;
 	else if (!stricmp(mapname, "$ModelHUD"))
 		TexPic = CRendererResources::s_ptexModelHudBuffer;
 	else if (!stricmp(mapname, "$DisplayTargetScaled_d2"))

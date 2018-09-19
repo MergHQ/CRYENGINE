@@ -104,9 +104,9 @@ float SStatoscopeTextureStreamingDG::GetTextureRenders()
 {
 	#if !defined (_RELEASE) || defined(ENABLE_STATOSCOPE_RELEASE)
 	const float time = gEnv->pTimer->GetAsyncCurTime() - CTexture::s_TextureUpdatedRenderedTime;
-	const float res = ((float)CTexture::s_TexturesUpdatedRendered / time);
+	const float res = ((float)CTexture::s_TextureUpdatedRendered / time);
 	CTexture::s_TextureUpdatedRenderedTime = gEnv->pTimer->GetAsyncCurTime();
-	CTexture::s_TexturesUpdatedRendered = 0;
+	CTexture::s_TextureUpdatedRendered = 0;
 	#else
 	const float res = 0.0f;
 	#endif

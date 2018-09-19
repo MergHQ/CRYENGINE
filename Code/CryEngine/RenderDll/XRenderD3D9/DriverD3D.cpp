@@ -525,11 +525,11 @@ void CD3D9Renderer::CalculateResolutions(int displayWidthRequested, int displayH
 	}
 
 	// Calculate the rendering resolution based on inputs ///////////////////////////////////////////////////////////
-	*pOutputWidth = pDC->IsScalable() && CV_r_CustomResWidth ? std::min(CV_r_CustomResMaxSize, CV_r_CustomResWidth) : *pDisplayWidth;
-	*pOutputHeight = pDC->IsScalable() && CV_r_CustomResHeight ? std::min(CV_r_CustomResMaxSize, CV_r_CustomResHeight) : *pDisplayHeight;
+	*pOutputWidth  = GetCustomResWidth (pDC->IsScalable(), m_MaxTextureSize, *pDisplayWidth);
+	*pOutputHeight = GetCustomResHeight(pDC->IsScalable(), m_MaxTextureSize, *pDisplayHeight);
 
-	const int nMaxResolutionX = std::max(std::min(CV_r_CustomResMaxSize, m_MaxTextureSize ? m_MaxTextureSize : INT_MAX), *pOutputWidth);
-	const int nMaxResolutionY = std::max(std::min(CV_r_CustomResMaxSize, m_MaxTextureSize ? m_MaxTextureSize : INT_MAX), *pOutputHeight);
+	const int nMaxResolutionX = std::max(GetMaxCustomResSize(m_MaxTextureSize), *pOutputWidth);
+	const int nMaxResolutionY = std::max(GetMaxCustomResSize(m_MaxTextureSize), *pOutputHeight);
 
 	int nSSSamplesX = pDC->m_nSSSamplesX; do { *pRenderWidth  = *pOutputWidth  * nSSSamplesX; --nSSSamplesX; } while (*pRenderWidth  > nMaxResolutionX);
 	int nSSSamplesY = pDC->m_nSSSamplesY; do { *pRenderHeight = *pOutputHeight * nSSSamplesY; --nSSSamplesX; } while (*pRenderHeight > nMaxResolutionY);
@@ -563,7 +563,7 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 		m_windowState = windowState;
 
 		bChangedRendering |= windowState != previousWindowState;
-		bResizeSwapchain |= windowState != previousWindowState;
+		bResizeSwapchain  |= windowState != previousWindowState;
 
 #if CRY_PLATFORM_CONSOLE || CRY_PLATFORM_MOBILE
 		bNativeRes = true;
@@ -615,7 +615,7 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 			monitorInfo.cbSize = sizeof(monitorInfo);
 			GetMonitorInfo(hMonitor, &monitorInfo);
 
-			displayWidthRequested = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
+			displayWidthRequested  = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
 			displayHeightRequested = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
 		}
 #endif
@@ -1805,9 +1805,9 @@ void CD3D9Renderer::DebugDrawStats1(const SRenderStatistics& RStats)
 			if (!tp || tp->IsNoTexture())
 				continue;
 			n++;
-			nObjSize += tp->GetSize(true);
-			int nS = tp->GetDeviceDataSize();
-			int nSys = tp->GetDataSize();
+			nObjSize += tp->GetAllocatedSystemMemory(true);
+			uint32 nS = tp->GetDeviceDataSize();
+			uint32 nSys = tp->GetDataSize();
 			if (tp->IsStreamed())
 			{
 				if (tp->IsUnloaded())
@@ -1970,11 +1970,11 @@ void CD3D9Renderer::DebugVidResourcesBars(int nX, int nY)
 			if (!tp || tp->IsNoTexture())
 				continue;
 			i++;
-			nObjSize += tp->GetSize(true);
-			int nS = tp->GetDeviceDataSize();
+			nObjSize += tp->GetAllocatedSystemMemory(true);
+			uint32 nS = tp->GetDeviceDataSize();
 			if (tp->IsStreamed())
 			{
-				int nSizeSys = tp->GetDataSize();
+				uint32 nSizeSys = tp->GetDataSize();
 				if (tp->IsUnloaded())
 				{
 					assert(nS == 0);
@@ -3515,6 +3515,7 @@ void CD3D9Renderer::RT_EndFrame()
 		CV_r_usezpass = m_nUseZpass;
 	}
 #endif
+#if !defined(_RELEASE)
 	if (CRenderer::CV_r_logTexStreaming)
 	{
 		LogStrv(0, "******************************* EndFrame ********************************\n");
@@ -3527,6 +3528,7 @@ void CD3D9Renderer::RT_EndFrame()
 	   CTexture::m_fStreamDistFactor = max(1.0f, CTexture::m_fStreamDistFactor/1.2f);*/
 	CTexture::s_nTexturesDataBytesUploaded = 0;
 	CTexture::s_nTexturesDataBytesLoaded = 0;
+#endif
 
 	m_wireframe_mode_prev = m_wireframe_mode;
 
@@ -4812,7 +4814,7 @@ unsigned int CD3D9Renderer::UploadToVideoMemory(unsigned char* pSrcData, int w, 
 		if (bAsyncDevTexCreation && m_pRT->IsMultithreaded())
 		{
 			// make texture without device texture and request it async creation
-			int nImgSize = CTexture::TextureDataSize(w, h, d, nummipmap, 1, eSrcFormat);
+			uint32 nImgSize = CTexture::TextureDataSize(w, h, d, nummipmap, 1, eSrcFormat);
 			std::shared_ptr<std::vector<uint8>> pImgData;
 			if (pSrcData)
 			{

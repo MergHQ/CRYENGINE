@@ -11,7 +11,7 @@ struct SPlanningMemoryState
 {
 	ptrdiff_t nMemStreamed;
 	ptrdiff_t nStaticTexUsage;
-	ptrdiff_t nPhysicalLimit;
+	ptrdiff_t nPoolLimit;
 	ptrdiff_t nTargetPhysicalLimit;
 	ptrdiff_t nMemLimit;
 	ptrdiff_t nMemFreeSlack;
@@ -164,24 +164,24 @@ struct SPlanningTextureOrderKey
 		  (pTex->GetStreamRoundInfo(1).nRoundUpdateId >= nZoneIds[1] ? 0 : (1 << 27)) |
 		  static_cast<uint16>(pTex->GetRequiredMipFP() + PackedFpBias);
 
-		pTexture = pTex;
+		pTexture         = pTex;
 
-		nWidth = pTex->GetWidth();
-		nHeight = pTex->GetHeight();
-		nMips = pTex->GetNumMips();
-		nMipsPersistent = pTex->IsForceStreamHighRes() ?  pTex->GetNumMips() : pTex->GetNumPersistentMips();
-		nFormatCode = pTex->StreamGetFormatCode();
+		nWidth           = pTex->GetWidth();
+		nHeight          = pTex->GetHeight();
+		nMips            = pTex->GetNumMips();
+		nMipsPersistent  = pTex->IsForceStreamHighRes() ?  pTex->GetNumMips() : pTex->GetNumPersistentMips();
+		nFormatCode      = pTex->StreamGetFormatCode();
 
-		uint32 nSlices = pTex->StreamGetNumSlices();
-		nSlicesMinus1 = nSlices - 1;
+		uint32 nSlices   = pTex->StreamGetNumSlices();
+		nSlicesMinus1    = nSlices - 1;
 		nSlicesPotMinus1 = (1u << (32 - (nSlices > 1 ? countLeadingZeros32(nSlices - 1) : 32))) - 1;
 
-		nCurMip = pTex->StreamGetLoadedMip();
-		eTF = pTex->GetDstFormat();
-		nPersistentSize = pTex->GetPersistentSize();
-		bIsStreaming = pTex->IsStreaming();
-		bUnloaded = pTex->IsUnloaded();
-		nStreamPrio = pTex->StreamGetPriority();
+		nCurMip          = pTex->StreamGetLoadedMip();
+		eTF              = pTex->GetDstFormat();
+		nPersistentSize  = pTex->GetPersistentSize();
+		bIsStreaming     = pTex->IsStreaming();
+		bUnloaded        = pTex->IsUnloaded();
+		nStreamPrio      = pTex->StreamGetPriority();
 	}
 };
 
