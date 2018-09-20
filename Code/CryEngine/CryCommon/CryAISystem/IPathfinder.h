@@ -9,7 +9,7 @@
 #include <CryCore/functor.h>
 #include <CryAISystem/IAgent.h>
 #include <CryAISystem/NavigationSystem/MNMTile.h>
-#include <CryAISystem/NavigationSystem/INavigationQuery.h>
+#include <CryAISystem/NavigationSystem/INavMeshQuery.h>
 
 class CAIActor;
 

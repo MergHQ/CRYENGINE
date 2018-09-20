@@ -4,6 +4,7 @@ start_sources()
 sources_platform(ALL)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Navigation"
+		"Navigation/FixedAABBTests.cpp"
 		"Navigation/NavMeshTests.cpp"
 )
 end_sources()

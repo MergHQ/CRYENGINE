@@ -5,7 +5,7 @@
 #include <CryEntitySystem/IEntityComponent.h>
 
 #include <CryAISystem/NavigationSystem/NavigationIdTypes.h>
-#include <CryAISystem/NavigationSystem/INavigationQuery.h>
+#include <CryAISystem/NavigationSystem/INavMeshQuery.h>
 
 struct IEntityNavigationComponent : public IEntityComponent
 {

@@ -34,6 +34,11 @@
 
 struct RayCastRequest;
 
+namespace MNM
+{
+	class CNavMeshQueryManager;
+}
+
 #if DEBUG_MNM_ENABLED || NAVIGATION_SYSTEM_EDITOR_BACKGROUND_UPDATE
 class NavigationSystem;
 struct NavigationMesh;
@@ -608,6 +613,8 @@ public:
 	virtual TileGeneratorExtensionID         RegisterTileGeneratorExtension(MNM::TileGenerator::IExtension& extension) override;
 	virtual bool                             UnRegisterTileGeneratorExtension(const TileGeneratorExtensionID extensionId) override;
 
+	virtual MNM::INavMeshQueryManager*       GetNavMeshQueryManager() override;
+
 	virtual INavigationUpdatesManager*       GetUpdateManager() override { return &m_updatesManager; }
 
 	inline const WorldMonitor*               GetWorldMonitor() const
@@ -809,6 +816,7 @@ private:
 	bool                                   m_isNavigationUpdatePaused;
 
 	MNM::STileGeneratorExtensionsContainer m_tileGeneratorExtensionsContainer;
+	MNM::CNavMeshQueryManager*             m_pNavMeshQueryManager;
 };
 
 namespace NavigationSystemUtils

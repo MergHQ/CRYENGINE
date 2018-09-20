@@ -135,9 +135,18 @@ struct FixedVec3
 		z = _z;
 	}
 
-	inline value_type dot(const FixedVec3& other) const
+	template<typename OBaseType, size_t OIntegerBitCount>
+	inline value_type dot(const FixedVec3<OBaseType, OIntegerBitCount>& other) const
 	{
 		return x * other.x + y * other.y + z * other.z;
+	}
+
+	template<typename OBaseType, size_t OIntegerBitCount>
+	inline FixedVec3 cross(const FixedVec3<OBaseType, OIntegerBitCount>& other) const
+	{
+		return FixedVec3(y * other.z - z * other.y,
+			z * other.x - x * other.z, 
+			x * other.y - y * other.x);
 	}
 
 	inline value_type approximatedLen() const

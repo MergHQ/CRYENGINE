@@ -3,7 +3,7 @@
 #pragma once
 
 #include <CryAISystem/INavigationSystem.h>
-#include <CryAISystem/NavigationSystem/INavigationQuery.h>
+#include <CryAISystem/NavigationSystem/INavMeshQuery.h>
 
 #include <CrySerialization/Forward.h>
 
