@@ -4,6 +4,7 @@
 #include "NavigationSystem.h"
 #include "DebugDrawContext.h"
 #include "MNMPathfinder.h"
+#include "../MNM/NavMeshQueryManager.h"
 
 #include "Components/Navigation/NavigationComponent.h"
 
@@ -153,6 +154,7 @@ NavigationSystem::NavigationSystem(const char* configName)
 	, m_configurationVersion(0)
 	, m_isNavigationUpdatePaused(false)
 	, m_tileGeneratorExtensionsContainer()
+	, m_pNavMeshQueryManager(new MNM::CNavMeshQueryManager())
 {
 	SetupTasks();
 
@@ -178,6 +180,8 @@ NavigationSystem::~NavigationSystem()
 #ifdef NAVIGATION_SYSTEM_CONSOLE_AUTOCOMPLETE
 	gEnv->pConsole->UnRegisterAutoComplete("ai_debugMNMAgentType");
 #endif
+
+	SAFE_DELETE(m_pNavMeshQueryManager);
 }
 
 NavigationAgentTypeID NavigationSystem::CreateAgentType(const char* name, const CreateAgentTypeParams& params)
@@ -2267,6 +2271,8 @@ void NavigationSystem::Clear()
 	m_markupAnnotationChangesToApply.clear();
 
 	ResetAllNavigationSystemUsers();
+
+	m_pNavMeshQueryManager->Clear();
 }
 
 void NavigationSystem::ClearAndNotify()
@@ -3154,12 +3160,12 @@ size_t NavigationSystem::GetTriangleCenterLocationsInMesh(const NavigationMeshID
 	const MNM::aabb_t meshAabb = navMesh.ToMeshSpace(MNM::aabb_t(searchAABB.min, searchAABB.max));
 
 	size_t foundTrianglesCount = 0;
-	navMesh.QueryTrianglesWithProcessing(meshAabb, pFilter, [&](const MNM::TileID tileId, const MNM::Tile::STriangle** pTriangles, const MNM::TriangleID* pTriangleIds, const size_t trianglesCount)
+	navMesh.QueryTrianglesWithProcessing(meshAabb, pFilter, [&](const MNM::TriangleIDArray& trianglesId)
 	{
 		MNM::vector3_t a, b, c;
-		for (size_t i = 0; i < trianglesCount; ++i)
+		for (size_t i = 0; i < trianglesId.size(); ++i)
 		{
-			navMesh.GetVertices(pTriangleIds[i], a, b, c);
+			navMesh.GetVertices(trianglesId[i], a, b, c);
 			centerLocations[foundTrianglesCount] = navMesh.ToWorldSpace((a + b + c) * MNM::real_t(0.33333f)).GetVec3();
 
 			if (++foundTrianglesCount == maxCenterLocationCount)
@@ -3207,14 +3213,18 @@ size_t NavigationSystem::GetTriangleInfo(const NavigationMeshID meshID, const AA
 	const MNM::aabb_t meshAabb = navMesh.ToMeshSpace(MNM::aabb_t(aabb.min, aabb.max));
 
 	size_t foundTrianglesCount = 0;
-	navMesh.QueryTrianglesWithProcessing(meshAabb, pFilter, [&](const MNM::TileID tileId, const MNM::Tile::STriangle** pTriangles, const MNM::TriangleID* pTriangleIds, const size_t trianglesCount)
+	navMesh.QueryTrianglesWithProcessing(meshAabb, pFilter, [&](const MNM::TriangleIDArray& trianglesId)
 	{
 		MNM::vector3_t a, b, c;
-		for (size_t i = 0; i < trianglesCount; ++i)
+		for (size_t i = 0; i < trianglesId.size(); ++i)
 		{
-			navMesh.GetVertices(pTriangleIds[i], a, b, c);
+			MNM::Tile::STriangle triangle;
+			const MNM::TriangleID triangleId = trianglesId[i];
+
+			navMesh.GetVertices(triangleId, a, b, c);
 			centerLocations[foundTrianglesCount] = navMesh.ToWorldSpace((a + b + c) * MNM::real_t(0.33333f)).GetVec3();
-			islandids[foundTrianglesCount] = pTriangles[i]->islandID;
+			navMesh.GetTriangle(triangleId, triangle);
+			islandids[foundTrianglesCount] = triangle.islandID;
 
 			if (++foundTrianglesCount == maxCount)
 				return INavMeshQueryProcessing::EResult::Stop;
@@ -4292,6 +4302,10 @@ void NavigationSystem::UpdateAllListener(const ENavigationEvent event)
 void NavigationSystem::DebugDraw()
 {
 	m_debugDraw.DebugDraw(*this);
+
+#ifdef NAV_MESH_QUERY_DEBUG
+	m_pNavMeshQueryManager->DebugDrawQueriesList();
+#endif // NAV_MESH_QUERY_DEBUG
 }
 
 void NavigationSystem::Reset()
@@ -4407,6 +4421,11 @@ bool NavigationSystem::UnRegisterTileGeneratorExtension(const TileGeneratorExten
 		return true;
 	}
 	return false;
+}
+
+MNM::INavMeshQueryManager* NavigationSystem::GetNavMeshQueryManager()
+{
+	return m_pNavMeshQueryManager;
 }
 
 //////////////////////////////////////////////////////////////////////////

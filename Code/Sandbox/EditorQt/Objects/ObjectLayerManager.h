@@ -6,19 +6,17 @@
 #define LAYER_PATH           "Layers/"
 
 #include "ObjectLayer.h"
-#include "Objects/IObjectLayerManager.h"
+#include <Objects/IObjectLayerManager.h>
 #include <CrySandbox/CrySignal.h>
 #include <CryExtension/CryGUID.h>
 
-class CObjectManager;
 class CObjectArchive;
-class CLayerNodeAnimator;
-struct IAnimSequence;
+class CObjectManager;
 
 namespace Private_ObjectLayerManager
 {
 	class CUndoLayerCreateDelete;
-};
+}
 
 struct CLayerChangeEvent
 {
@@ -65,7 +63,7 @@ public:
 	//! Mark level layer model for backing up. Modified state should not be altered when generating a backup
 	void          StartBackup() { m_bCanModifyLayers = false; }
 	//! Mark level layer model for backing up. Modified state should not be altered when generating a backup
-	void          EndBackup() { m_bCanModifyLayers = true; }
+	void          EndBackup()   { m_bCanModifyLayers = true; }
 	//! Ensures that the editor has finished loading a level before allowing layers to be modified.
 	bool          CanModifyLayers() const;
 	//! Create a layer of the given type and attach it to the parent layer if provided
@@ -79,7 +77,7 @@ public:
 	//! Delete all layers from layer manager.
 	void          ClearLayers(bool bNotify = true);
 	//! Returns true if there are no layers. Note that this should not happen in normal circumstances
-	uint		  HasLayers() const;
+	uint          HasLayers() const;
 
 	//! Can layer be renamed to the new name
 	bool CanRename(const CObjectLayer* pLayer, const char* szNewName) const;
@@ -114,13 +112,13 @@ public:
 	const std::vector<CObjectLayer*>& GetLayers() const;
 
 	//! Set this layer is current.
-	void           SetCurrentLayer(CObjectLayer* pCurrLayer);
-	CObjectLayer*  GetCurrentLayer() const;
+	void          SetCurrentLayer(CObjectLayer* pCurrLayer);
+	CObjectLayer* GetCurrentLayer() const;
 
-	const string& GetLayersPath() const                    { return m_layersPath; }
-	void           SetLayersPath(const string& layersPath) { m_layersPath = layersPath; }
+	const string& GetLayersPath() const                   { return m_layersPath; }
+	void          SetLayersPath(const string& layersPath) { m_layersPath = layersPath; }
 
-	void           NotifyLayerChange(const CLayerChangeEvent& event);
+	void          NotifyLayerChange(const CLayerChangeEvent& event);
 
 	//! Export layer to objects archive.
 	void          ExportLayer(CObjectArchive& ar, CObjectLayer* pLayer, bool bExportExternalChilds);
@@ -139,9 +137,6 @@ public:
 	bool InitLayerSwitches(bool isOnlyClear = false);
 	void ExportLayerSwitches(XmlNodeRef& node);
 	void SetupLayerSwitches(bool isOnlyClear = false, bool isOnlyRenderNodes = false);
-
-	void SetLayerNodeAnimators(IAnimSequence* pSequence, bool isOnlyClear = false);
-	void SetLayerNodeAnimators(IMovieSystem* pMovieSystem, bool isOnlyClear = false);
 
 	void SetGameMode(bool inGame);
 
@@ -190,7 +185,7 @@ private:
 	// instead of pointers. Maintaining this would be more involved. That's why for now we leave the simple solution
 	mutable std::vector<CObjectLayer*> m_layersCache;
 	//! List of layer paths to be deleted on save (product of a rename)
-	std::set<std::string> m_toBeDeleted;
+	std::set<std::string>              m_toBeDeleted;
 
 	//! Pointer to currently active layer.
 	TSmartPtr<CObjectLayer> m_pCurrentLayer;
@@ -198,7 +193,7 @@ private:
 
 	CObjectManager* m_pObjectManager;
 	//! Layers path relative to level folder.
-	string         m_layersPath;
+	string          m_layersPath;
 
 	bool            m_bOverwriteDuplicates;
 	bool            m_bCanModifyLayers;
@@ -207,5 +202,5 @@ private:
 	std::vector<CObjectLayer*> m_layerSwitches;
 
 	// visible set for restoring states in Isolate()
-	CryGUID           m_visibleSetLayer;
+	CryGUID m_visibleSetLayer;
 };

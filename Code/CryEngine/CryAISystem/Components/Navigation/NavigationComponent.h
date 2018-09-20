@@ -6,7 +6,7 @@
 #include "CollisionAvoidanceAgent.h"
 
 #include <CryAISystem/MovementRequest.h>
-#include <CryAISystem/NavigationSystem/INavigationQuery.h>
+#include <CryAISystem/NavigationSystem/INavMeshQuery.h>
 #include <CryAISystem/Components/IEntityNavigationComponent.h>
 
 #include <CrySerialization/Forward.h>

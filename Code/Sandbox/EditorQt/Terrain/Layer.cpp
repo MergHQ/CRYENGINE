@@ -67,7 +67,7 @@ CLayer::CLayer() : m_cLayerFilterColor(1, 1, 1), m_fLayerTiling(1), m_fSpecularA
 	AllocateMaskGrid();
 }
 
-uint32 CLayer::GetCurrentLayerId()
+uint32 CLayer::GetCurrentLayerId() const
 {
 	return m_dwLayerId;
 }
@@ -1483,7 +1483,7 @@ CImageEx& CLayer::GetTexturePreviewImage()
 	return m_previewImage;
 }
 
-void CLayer::GetMemoryUsage(ICrySizer* pSizer)
+void CLayer::GetMemoryUsage(ICrySizer* pSizer) const
 {
 	pSizer->Add(*this);
 

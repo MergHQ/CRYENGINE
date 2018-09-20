@@ -334,6 +334,23 @@ void AIConsoleVars::Init()
 	                       "4 - triangles, mesh contours, external links and triangle IDs\n"
 	                       "5 - triangles, mesh contours, external links and island IDs\n"
 	                       "6 - triangles with backfaces, mesh contours and external links\n");
+	
+	DefineConstIntCVarName("ai_DebugDrawNavigationQueriesUDR", DebugDrawNavigationQueriesUDR, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
+		"Displays the navigation queries debug information using UDR.\n"
+		"Requires ai_debugDraw, ai_debugDrawNavigation and ai_storeNavigationQueriesHistory to be enabled.\n"
+		"Usage: ai_DebugDrawNavigationQueriesUDR [0/1]\n"
+		"Default is 0 (off)\n"
+		"0 - off\n"
+		"1 - Displays the query config, triangles by batches and invalidations\n");
+
+	DefineConstIntCVarName("ai_DebugDrawNavigationQueriesList", DebugDrawNavigationQueriesList, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
+		"Displays a navigation queries list in the screen with all batches and elapsed times.\n"
+		"Requires ai_debugDraw, ai_debugDrawNavigation and ai_storeNavigationQueriesHistory to be enabled.\n"
+		"Usage: ai_DebugDrawNavigationQueriesList [0/1]\n"
+		"Default is 0 (off)\n"
+		"0 - off\n"
+		"1 - on\n");
+
 	DefineConstIntCVarName("ai_MNMDebugTriangleOnCursor", DebugTriangleOnCursor, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 		"Displays the basic information about the MNM Triangle where the cursor is pointing.\n"
 		"Usage: ai_MNMDebugTriangleOnCursor [0/1]\n"
@@ -346,6 +363,15 @@ void AIConsoleVars::Init()
 	                       "Default is 1 (on)\n"
 	                       "0 - off\n"
 	                       "1 - on\n");
+
+	DefineConstIntCVarName("ai_StoreNavigationQueriesHistory", StoreNavigationQueriesHistory, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
+		"Enables the storage of navigation queries in a history. History can be displayed enabling the cvar ai_DebugDrawNavigationQueries.\n"
+		"Requires ai_debugDraw and ai_debugDrawNavigation to be enabled.\n"
+		"Usage: ai_StoreNavigationQueriesHistory [0/1]\n"
+		"Default is 0 (off)\n"
+		"0 - off\n"
+		"1 - on\n");
+	
 	DefineConstIntCVarName("ai_NavGenThreadJobs", NavGenThreadJobs, 1, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Number of tile generation jobs per thread per frame.\n"
 	                       "Usage: ai_NavGenThreadJobs [1+]\n"

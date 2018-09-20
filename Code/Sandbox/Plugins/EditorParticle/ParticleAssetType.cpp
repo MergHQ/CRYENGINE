@@ -2,8 +2,9 @@
 #include <StdAfx.h>
 #include "ParticleAssetType.h"
 
-#include <AssetSystem/Loader/AssetLoaderHelpers.h>
 #include <AssetSystem/EditableAsset.h>
+#include <AssetSystem/Loader/AssetLoaderHelpers.h>
+#include <AssetSystem/MaterialType.h>
 #include <FileDialogs/EngineFileDialog.h>
 #include <FilePathUtil.h>
 
@@ -20,6 +21,10 @@
 #include <CryCore/ToolsHelpers/EngineSettingsManager.inl>
 
 REGISTER_ASSET_TYPE(CParticlesType)
+
+// Detail attributes.
+CItemModelAttribute CParticlesType::s_componentsCountAttribute("Components count", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute CParticlesType::s_featuresCountAttribute("Features count", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
 
 namespace Private_ParticleAssetType
 {
@@ -70,17 +75,34 @@ static string CreateAssetMetaData(const string& pfxFilePath)
 
 struct CParticlesType::SCreateParams
 {
-	bool bUseExistingEffect;
-
-	SCreateParams()
-		: bUseExistingEffect(false)
-	{
-	}
+	bool bUseExistingEffect = false;
 };
 
 CryIcon CParticlesType::GetIconInternal() const
 {
 	return CryIcon("icons:common/assets_particles.ico");
+}
+
+std::vector<CItemModelAttribute*> CParticlesType::GetDetails() const
+{
+	return
+	{
+		&s_componentsCountAttribute,
+		&s_featuresCountAttribute
+	};
+}
+
+QVariant CParticlesType::GetDetailValue(const CAsset* pAsset, const CItemModelAttribute* pDetail) const
+{
+	if (pDetail == &s_componentsCountAttribute)
+	{
+		return GetVariantFromDetail(pAsset->GetDetailValue("componentsCount"), pDetail);
+	}
+	else if (pDetail == &s_featuresCountAttribute)
+	{
+		return GetVariantFromDetail(pAsset->GetDetailValue("featuresCount"), pDetail);
+	}
+	return QVariant();
 }
 
 CAssetEditor* CParticlesType::Edit(CAsset* asset) const

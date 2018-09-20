@@ -60,8 +60,7 @@ template<typename TFilter, typename TQuery>
 INavMeshQueryProcessing::EResult CNavMesh::QueryTileTrianglesWithProcessing(const TileID tileID, const STile& tile, const aabb_t& queryAabbTile, TFilter& filter, TQuery&& query) const
 {
 	const size_t trianglesBatchCount = 32;
-	const Tile::STriangle* trianglesToProcess[trianglesBatchCount];
-	TriangleID triangleIdsToProcess[trianglesBatchCount];
+	MNM::TriangleIDArray triangleIdsToProcess(trianglesBatchCount);
 	size_t trianglesCount = 0;
 
 	INavMeshQueryProcessing::EResult result = INavMeshQueryProcessing::EResult::Continue;
@@ -91,13 +90,12 @@ INavMeshQueryProcessing::EResult CNavMesh::QueryTileTrianglesWithProcessing(cons
 				if (filter.PassFilter(triangle))
 				{
 					triangleIdsToProcess[trianglesCount] = ComputeTriangleID(tileID, triangleIdx);
-					trianglesToProcess[trianglesCount] = &triangle;
 
 					if (++trianglesCount < trianglesBatchCount)
 						continue;
 
 					// Process triangles
-					result = query(tileID, trianglesToProcess, triangleIdsToProcess, trianglesCount);
+					result = query(triangleIdsToProcess);
 					if (result == INavMeshQueryProcessing::EResult::Stop)
 						return result;
 
@@ -123,13 +121,12 @@ INavMeshQueryProcessing::EResult CNavMesh::QueryTileTrianglesWithProcessing(cons
 				if (filter.PassFilter(triangle))
 				{
 					triangleIdsToProcess[trianglesCount] = ComputeTriangleID(tileID, static_cast<uint16>(i));
-					trianglesToProcess[trianglesCount] = &triangle;
 
 					if (++trianglesCount < trianglesBatchCount)
 						continue;
 
 					// Process triangles
-					result = query(tileID, trianglesToProcess, triangleIdsToProcess, trianglesCount);
+					result = query(triangleIdsToProcess);
 					if (result == INavMeshQueryProcessing::EResult::Stop)
 						return result;
 
@@ -142,7 +139,7 @@ INavMeshQueryProcessing::EResult CNavMesh::QueryTileTrianglesWithProcessing(cons
 	if (trianglesCount > 0)
 	{
 		// Processing rest of the triangles
-		result = query(tileID, trianglesToProcess, triangleIdsToProcess, trianglesCount);
+		result = query(triangleIdsToProcess);
 	}
 	return result;
 }

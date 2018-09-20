@@ -21,7 +21,7 @@
 #include <CryPhysics/AgePriorityQueue.h>
 #include <CryAISystem/INavigationSystem.h>
 #include <CryAISystem/IPathfinder.h>
-#include <CryAISystem/NavigationSystem/INavigationQuery.h>
+#include <CryAISystem/NavigationSystem/INavMeshQuery.h>
 
 //////////////////////////////////////////////////////////////////////////
 

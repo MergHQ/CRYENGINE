@@ -107,7 +107,6 @@ public Q_SLOTS:
 
 protected:
 	int      GetIndexFromMouseCoord(const QPoint& globalPos);
-	QAction* ActionAt(const QPoint& globalPos);
 
 public:
 	CCrySignal<void(std::shared_ptr<QMainToolBarManager::QItemDesc> )> selectedItemChanged;

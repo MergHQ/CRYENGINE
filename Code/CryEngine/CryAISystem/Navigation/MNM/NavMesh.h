@@ -15,7 +15,7 @@
 #include <CryCore/Containers/VectorMap.h>
 
 #include <CryAISystem/NavigationSystem/MNMNavMesh.h>
-#include <CryAISystem/NavigationSystem/INavigationQuery.h>
+#include <CryAISystem/NavigationSystem/INavMeshQuery.h>
 
 class OffMeshNavigationManager;
 

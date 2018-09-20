@@ -151,13 +151,13 @@ public:
 	//! Allocate mask grid for layer.
 	void AllocateMaskGrid();
 
-	void GetMemoryUsage(ICrySizer* pSizer);
+	void GetMemoryUsage(ICrySizer* pSizer) const;
 
 	//! should always return a valid LayerId
 	uint32 GetOrRequestLayerId();
 
 	//! might return 0xffffffff
-	uint32 GetCurrentLayerId();
+	uint32 GetCurrentLayerId() const;
 
 	// CHeightmap::m_LayerIdBitmap
 	void      SetLayerId(const uint32 dwLayerId);

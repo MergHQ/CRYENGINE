@@ -4,16 +4,12 @@
 
 #include "EditorFramework/Inspector.h"
 
-#include <QScrollableBox.h>
-
 #include <memory>
 #include <vector>
 
 class CBaseObject;
-class QScrollArea;
-class QShowEvent;
 class QPropertyTree;
-class QVBoxLayout;
+
 struct CObjectEvent;
 
 class EDITOR_COMMON_API CObjectPropertyWidget : public QWidget, public IAutoEditorNotifyListener

@@ -24,7 +24,7 @@
 #include <CryGame/IGameFramework.h>
 
 #include "Navigation/NavigationSystem/NavigationSystem.h"
-#include <CryAISystem/NavigationSystem/INavigationQuery.h>
+#include <CryAISystem/NavigationSystem/INavMeshQuery.h>
 
 //#pragma optimize("", off)
 //#pragma inline_depth(0)

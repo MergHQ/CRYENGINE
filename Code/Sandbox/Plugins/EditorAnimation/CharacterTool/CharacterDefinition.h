@@ -91,6 +91,7 @@ struct CharacterAttachment
 	bool                 m_updateMirror;
 	QuatT                m_boneTrans, m_boneTransMirror;
 	Vec3                 m_dirChild;
+	int                  m_submtlId;
 
 	struct ProxySource
 	{
@@ -139,6 +140,7 @@ struct CharacterAttachment
 		, m_boneTrans(IDENTITY)
 		, m_boneTransMirror(IDENTITY)
 		, m_dirChild(ZERO)
+		, m_submtlId(0)
 	{
 	}
 

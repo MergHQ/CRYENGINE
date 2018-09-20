@@ -14,6 +14,11 @@ struct IOffMeshNavigationManager;
 struct INavigationUpdatesManager;
 struct INavMeshQueryFilter;
 
+namespace MNM
+{
+	struct INavMeshQueryManager;
+}
+
 #ifdef SW_NAVMESH_USE_GUID
 typedef uint64 NavigationMeshGUID;
 typedef uint64 NavigationVolumeGUID;
@@ -117,6 +122,8 @@ struct INavigationSystem
 
 	virtual const MNM::IAnnotationsLibrary& GetAnnotationLibrary() const = 0;
 	virtual MNM::AreaAnnotation             GetAreaTypeAnnotation(const NavigationAreaTypeID areaTypeID) const = 0;
+
+	virtual MNM::INavMeshQueryManager*      GetNavMeshQueryManager() = 0;
 
 #ifdef SW_NAVMESH_USE_GUID
 	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const CreateMeshParams& params, NavigationMeshGUID guid) = 0;
