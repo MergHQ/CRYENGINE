@@ -910,6 +910,7 @@ void MirrorAttachment(const CharacterAttachment& att0, CharacterAttachment& att1
 		att1.m_frame0[j] = ((int)fabs(att1.m_frame0[j] * 10) * 0.1f) * sgnnz(att1.m_frame0[j]);
 	att1.m_damping = att0.m_damping;
 	att1.m_tension = att0.m_tension;
+	att1.m_submtlId = att0.m_submtlId;
 	att1.m_updateMirror = false;
 }
 
@@ -1146,6 +1147,7 @@ void CharacterAttachment::Serialize(Serialization::IArchive& ar)
 			ar(Serialization::RadiansAsDeg(m_frame0), "frame0", "Rotation0");
 			ar(m_tension, "tension", "Spring Tension");
 			ar(m_damping, "damping", "Spring Damping");
+			ar(m_submtlId, "submtl", "SubMtl Index");
 			ar(m_strJointNameMirror, "mirrorName");
 			ar(m_boneTrans, "boneTrans");
 			ar(m_boneTransMirror, "boneTransMirror");
@@ -2471,7 +2473,7 @@ void CharacterDefinition::ApplyPhysAttachments(ICharacterInstance* pICharacterIn
 			if (IGeometry *pGeom = attachment.CreateProxyGeom())
 			{
 				CryBonePhysics& phys = *skel.GetJointPhysInfo(skel.GetJointIDByName(attachment.m_strJointName), m_physLod);
-				phys.pPhysGeom = pGeoman->RegisterGeometry(pGeom);
+				phys.pPhysGeom = pGeoman->RegisterGeometry(pGeom, attachment.m_submtlId);
 				pGeom->Release();
 				phys.flags = joint_no_gravity | joint_isolated_accelerations;
 				*(Vec3*)phys.min = DEG2RAD(Vec3(attachment.m_limits[0]));
@@ -2790,6 +2792,7 @@ void CharacterDefinition::LoadPhysProxiesFromCharacter(ICharacterInstance *chara
 			att.m_frame0 = Ang3(q0);
 			for(j = 0; j < 3; j++)
 				att.m_frame0[j] = ((int)fabs(att.m_frame0[j] * 10) * 0.1f) * sgnnz(att.m_frame0[j]);
+			att.m_submtlId = pPhys->surface_idx;
 			att.UpdateMirrorInfo(i, skel);
 
 			attachments.push_back(att);
@@ -2802,13 +2805,14 @@ void CharacterDefinition::SavePhysProxiesToCGF(const char* fname)
 {
 	IStatObj* pSkelObj = gEnv->p3DEngine->CreateStatObj();
 	pSkelObj->FreeIndexedMesh();
+	pSkelObj->SetMaterial(gEnv->p3DEngine->GetMaterialManager()->FindMaterial(materialPath));
 	for(int i = 0; i < attachments.size(); i++)
 	{
 		const CharacterAttachment& att = attachments[i];
 		if (att.m_attachmentType != CA_PROX || att.m_ProxyPurpose != CharacterAttachment::RAGDOLL)
 			continue;
 		IStatObj::SSubObject& subObj = pSkelObj->AddSubObject(gEnv->p3DEngine->CreateStatObj());
-		phys_geometry *pGeom = gEnv->pPhysicalWorld->GetGeomManager()->RegisterGeometry(att.CreateProxyGeom());
+		phys_geometry *pGeom = gEnv->pPhysicalWorld->GetGeomManager()->RegisterGeometry(att.CreateProxyGeom(), att.m_submtlId);
 		pGeom->pGeom->Release();
 		subObj.pStatObj->SetPhysGeom(pGeom);
 		subObj.pStatObj->SetBBoxMax(Vec3(0.1f));
