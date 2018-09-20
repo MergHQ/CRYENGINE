@@ -18,7 +18,9 @@ CListener::CListener(CObjectTransformation const& transformation, int const id)
 	, m_position(transformation.GetPosition())
 	, m_previousPosition(transformation.GetPosition())
 {
-	ZeroStruct(m_attributes);
+	Fill3DAttributeTransformation(transformation, m_attributes);
+	FMOD_RESULT const fmodResult = s_pSystem->setListenerAttributes(id, &m_attributes);
+	ASSERT_FMOD_OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
