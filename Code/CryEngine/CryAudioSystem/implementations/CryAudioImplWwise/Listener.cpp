@@ -23,6 +23,14 @@ CListener::CListener(CObjectTransformation const& transformation, AkGameObjectID
 	, m_position(transformation.GetPosition())
 	, m_previousPosition(transformation.GetPosition())
 {
+	AkListenerPosition listenerPos;
+	FillAKListenerPosition(transformation, listenerPos);
+	AKRESULT const wwiseResult = AK::SoundEngine::SetPosition(id, listenerPos);
+
+	if (!IS_WWISE_OK(wwiseResult))
+	{
+		Cry::Audio::Log(ELogType::Warning, "Wwise - CListener constructor failed with AKRESULT: %d", wwiseResult);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

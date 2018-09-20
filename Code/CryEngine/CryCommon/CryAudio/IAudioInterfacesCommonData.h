@@ -181,15 +181,15 @@ class CObjectTransformation
 public:
 
 	CObjectTransformation()
-		: m_position(Vec3Constants<float>::fVec3_Zero)
-		, m_forward(Vec3Constants<float>::fVec3_OneY)
-		, m_up(Vec3Constants<float>::fVec3_OneZ)
+		: m_position(0.0f, 0.0f, 0.0f)
+		, m_forward(0.0f, 1.0f, 0.0f)
+		, m_up(0.0f, 0.0f, 1.0f)
 	{}
 
 	CObjectTransformation(Vec3 const& position)
 		: m_position(position)
-		, m_forward(Vec3Constants<float>::fVec3_OneY)
-		, m_up(Vec3Constants<float>::fVec3_OneZ)
+		, m_forward(0.0f, 1.0f, 0.0f)
+		, m_up(0.0f, 0.0f, 1.0f)
 	{}
 
 	CObjectTransformation(Matrix34 const& transformation)
