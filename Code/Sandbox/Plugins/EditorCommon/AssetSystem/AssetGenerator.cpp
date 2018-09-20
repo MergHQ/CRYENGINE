@@ -96,7 +96,7 @@ void CAssetGenerator::OnFileChange(const char* szFilename, EChangeType changeTyp
 	m_fileQueue.ProcessItemUniqueAsync(filePath, [this, updateExisting](const string& path)
 	{
 		// It can be that the file is still being opened for writing.
-		if (m_waitForTextureCompiler || IsFileOpened(path))
+		if (m_pTextureCompilerProgress || IsFileOpened(path))
 		{
 			// Try again
 			return false;
@@ -224,28 +224,20 @@ void CAssetGenerator::OnCompilationQueueTriggered(int nPending)
 {
 	std::unique_lock<std::mutex> lock(m_textureCompilerMutex);
 
-	if (!m_waitForTextureCompiler)
+	if (!m_pTextureCompilerProgress)
 	{
 		m_pTextureCompilerProgress.reset(new CProgressNotification(QObject::tr("Compiling textures"), QString()));
 	}
-
-	++m_waitForTextureCompiler;
 }
 
 void CAssetGenerator::OnCompilationQueueDepleted()
 {
 	std::unique_lock<std::mutex> lock(m_textureCompilerMutex);
 
-	if (m_waitForTextureCompiler > 0)
-	{
-		--m_waitForTextureCompiler;
-	}
-	
-	if (!m_waitForTextureCompiler)
+	if (m_pTextureCompilerProgress)
 	{
 		m_pTextureCompilerProgress.reset();
 	}
-
 }
 
 }
