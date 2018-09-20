@@ -101,7 +101,7 @@ private:
 	void Clear();
 
 	// Returns the first folder that it needs to create (even if it creates subfolders inside it)
-	// to facitilitate Qt model notifications
+	// to facilitate Qt model notifications
 	Folder* AddFolder(const char* path, bool empty);
 
 	// Returns the created subfolder

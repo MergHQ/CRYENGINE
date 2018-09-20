@@ -1855,20 +1855,15 @@ void CHeightmap::MakeBeaches()
 	if (GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
 		GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CUndoHeightmapModify(this));
 
-	unsigned int i, j;
-	t_hmap* pHeightmapData = NULL;
-	t_hmap* pHeightmapDataStart = NULL;
-	double dCurHeight;
-
 	// Get the water level
 	double dWaterLevel = m_fWaterLevel;
 
 	// Make the beaches
-	for (j = 0; j < m_iHeight; j++)
+	for (uint64 j = 0; j < m_iHeight; j++)
 	{
-		for (i = 0; i < m_iWidth; i++)
+		for (uint64 i = 0; i < m_iWidth; i++)
 		{
-			dCurHeight = m_pHeightmap[i + j * m_iWidth];
+			double dCurHeight = m_pHeightmap[i + j * m_iWidth];
 
 			// Center water level at zero
 			dCurHeight -= dWaterLevel;

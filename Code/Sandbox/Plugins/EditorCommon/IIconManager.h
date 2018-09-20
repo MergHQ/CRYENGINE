@@ -6,7 +6,6 @@
 
 struct IStatObj;
 struct IMaterial;
-class CBitmap;
 
 // Note: values are used as array indices
 enum EStatObject

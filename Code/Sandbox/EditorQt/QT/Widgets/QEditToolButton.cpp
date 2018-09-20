@@ -1,14 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "QEditToolButton.h"
 
-#include <QGridLayout>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
+#include <CryIcon.h>
 
-#include "RecursionLoopGuard.h"
-#include "CryIcon.h"
+#include <LevelEditor/LevelEditorSharedState.h>
+#include <RecursionLoopGuard.h>
+
+#include <QGridLayout>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
+
 
 QEditToolButton::QEditToolButton(QWidget* parent)
 	: QToolButton(parent)

@@ -44,7 +44,7 @@ public:
 		{
 			m_bStartedRecord = false;
 		}
-	};
+	}
 
 	~CUndo()
 	{
@@ -55,7 +55,7 @@ public:
 			else
 				GetIEditor()->GetIUndoManager()->Accept(m_description);
 		}
-	};
+	}
 
 	void Cancel()
 	{

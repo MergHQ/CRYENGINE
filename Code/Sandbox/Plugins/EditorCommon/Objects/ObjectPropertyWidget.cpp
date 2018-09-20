@@ -3,14 +3,17 @@
 #include "StdAfx.h"
 #include "ObjectPropertyWidget.h"
 
-#include <QAdvancedPropertyTree.h>
-#include <CrySerialization/IArchive.h>
-#include "Qt/Widgets/QEditToolButton.h"
-
 #include "Objects/BaseObject.h"
-#include "IUndoManager.h"
 #include "IObjectManager.h"
-#include "Objects/SelectionGroup.h"
+#include "QAdvancedPropertyTree.h"
+
+// EditorQt
+#include <Objects/SelectionGroup.h>
+
+// EditorInterface
+#include <IUndoManager.h>
+
+#include <CrySerialization/IArchive.h>
 
 struct CObjectPropertyWidget::SBaseObjectSerializer
 {
@@ -62,8 +65,6 @@ CObjectPropertyWidget::~CObjectPropertyWidget()
 		m_propertyTree->deleteLater();
 	}
 }
-
-
 
 void CObjectPropertyWidget::CreatePropertyTrees()
 {

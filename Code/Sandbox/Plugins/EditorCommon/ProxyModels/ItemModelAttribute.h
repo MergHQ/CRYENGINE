@@ -107,8 +107,6 @@ public:
 	//! commaSeparatedString needs to be in the form "value1,value2,value3"
 	CItemModelAttributeEnum(const char* szName, char* commaSeparatedString, Visibility visibility = CItemModelAttribute::Visible, bool filterable = true, QVariant defaultFilterValue = QVariant());
 
-	~CItemModelAttributeEnum() {}
-
 	virtual QStringList GetEnumEntries() const { return m_enumEntries; }
 
 protected:
@@ -119,7 +117,6 @@ class EDITOR_COMMON_API CItemModelAttributeEnumFunc : public CItemModelAttribute
 {
 public:
 	CItemModelAttributeEnumFunc(const char* szName, std::function<QStringList()> populateFunc, Visibility visibility = CItemModelAttribute::Visible, bool filterable = true, QVariant defaultFilterValue = QVariant());
-	virtual ~CItemModelAttributeEnumFunc() {}
 
 	virtual QStringList GetEnumEntries() const override;
 
@@ -136,8 +133,6 @@ public:
 	CItemModelAttributeEnumT(const char* szName, Visibility visibility = CItemModelAttribute::Visible, bool filterable = true, QVariant defaultFilterValue = QVariant())
 		: CItemModelAttributeEnumFunc(szName, WrapMemberFunction(this, &CItemModelAttributeEnumT::PopulateFunc), visibility, filterable, defaultFilterValue)
 	{}
-
-	~CItemModelAttributeEnumT() {}
 
 	QStringList PopulateFunc()
 	{
