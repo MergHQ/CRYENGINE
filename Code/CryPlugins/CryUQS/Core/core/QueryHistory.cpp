@@ -1139,6 +1139,12 @@ namespace UQS
 		//
 		//===================================================================================
 
+		void CQueryHistory::SHistoryData::Serialize(Serialization::IArchive& ar)
+		{
+			ar(metaData, "m_metaData");			// "m_" prefix is for backwards compatibility when loading a previously saved history
+			ar(historicQueries, "m_history");	// ditto
+		}
+
 		CQueryHistory::CQueryHistory()
 		{
 			// nothing
@@ -1148,8 +1154,8 @@ namespace UQS
 		{
 			if (this != &other)
 			{
-				m_history = std::move(other.m_history);
-				m_metaData = std::move(other.m_metaData);
+				m_historyData = std::move(other.m_historyData);
+				// bypass m_serializationMutex
 			}
 			return *this;
 		}
@@ -1161,13 +1167,13 @@ namespace UQS
 			// (this gives us the desired depth-first traversal when scrolling through all historic queries)
 			//
 
-			auto insertPos = m_history.end();
+			auto insertPos = m_historyData.historicQueries.end();
 
 			if (parentQueryID.IsValid())
 			{
 				// search backwards from the end as this will find the insert position quicker
 				// (this leverages the fact that child queries will often get started at roughly the same time as their parent, thus having them reside quite at the end)
-				for (auto rit = m_history.rbegin(), rendIt = m_history.rend(); rit != rendIt; ++rit)
+				for (auto rit = m_historyData.historicQueries.rbegin(), rendIt = m_historyData.historicQueries.rend(); rit != rendIt; ++rit)
 				{
 					const CHistoricQuery* pCurrentHistoricQuery = rit->get();
 
@@ -1181,30 +1187,30 @@ namespace UQS
 			}
 
 			HistoricQuerySharedPtr pNewEntry(new CHistoricQuery(queryID, szQuerierName, parentQueryID, pOwningHistoryManager));
-			insertPos = m_history.insert(insertPos, std::move(pNewEntry));
+			insertPos = m_historyData.historicQueries.insert(insertPos, std::move(pNewEntry));
 			return *insertPos;
 		}
 
 		void CQueryHistory::Clear()
 		{
-			m_history.clear();
+			m_historyData.historicQueries.clear();
 			// keep m_metaData
 		}
 
 		size_t CQueryHistory::GetHistorySize() const
 		{
-			return m_history.size();
+			return m_historyData.historicQueries.size();
 		}
 
 		const CHistoricQuery& CQueryHistory::GetHistoryEntryByIndex(size_t index) const
 		{
-			CRY_ASSERT(index < m_history.size());
-			return *m_history[index];
+			CRY_ASSERT(index < m_historyData.historicQueries.size());
+			return *m_historyData.historicQueries[index];
 		}
 
 		const CHistoricQuery* CQueryHistory::FindHistoryEntryByQueryID(const CQueryID& queryID) const
 		{
-			for (const HistoricQuerySharedPtr& pHistoricEntry : m_history)
+			for (const HistoricQuerySharedPtr& pHistoricEntry : m_historyData.historicQueries)
 			{
 				if (pHistoricEntry->GetQueryID() == queryID)
 				{
@@ -1218,7 +1224,7 @@ namespace UQS
 		{
 			size_t memoryUsed = 0;
 
-			for (const HistoricQuerySharedPtr& q : m_history)
+			for (const HistoricQuerySharedPtr& q : m_historyData.historicQueries)
 			{
 				memoryUsed += q->GetRoughMemoryUsage();
 			}
@@ -1228,13 +1234,105 @@ namespace UQS
 
 		void CQueryHistory::SetArbitraryMetaDataForSerialization(const char* szKey, const char* szValue)
 		{
-			m_metaData[szKey] = szValue;
+			m_historyData.metaData[szKey] = szValue;
 		}
 
-		void CQueryHistory::Serialize(Serialization::IArchive& ar)
+		bool CQueryHistory::SerializeToXmlFile(const char* szXmlFilePath, string& error) const
 		{
-			ar(m_metaData, "m_metaData");
-			ar(m_history, "m_history");
+			Serialization::IArchiveHost* pArchiveHost = gEnv->pSystem->GetArchiveHost();
+			if (pArchiveHost->SaveXmlFile(szXmlFilePath, Serialization::SStruct(m_historyData), "UQSQueryHistory"))
+			{
+				return true;
+			}
+			else
+			{
+				error = "Serialization::IArchiveHost::SaveXmlFile() failed for some reason";
+				return false;
+			}
+		}
+
+		bool CQueryHistory::DeserializeFromXmlFile(const char* szXmlFilePath, string& error)
+		{
+			Serialization::IArchiveHost* pArchiveHost = gEnv->pSystem->GetArchiveHost();
+			if (pArchiveHost->LoadXmlFile(Serialization::SStruct(m_historyData), szXmlFilePath))
+			{
+				return true;
+			}
+			else
+			{
+				error = "Serialization::IArchiveHost::LoadXmlFile() failed for some reason (file not found?)";
+				return false;
+			}
+		}
+
+		bool CQueryHistory::IsHistoricQueryAndAllParentQueriesFinished(const CHistoricQuery& historicQuery) const
+		{
+			if (g_pHub->GetQueryManager().FindQueryByQueryID(historicQuery.GetQueryID()))
+				return false;
+
+			const CQueryID& parentQueryID = historicQuery.GetParentQueryID();
+			if (!parentQueryID.IsValid())
+				return true;
+
+			// recursively walk up the query tree
+			const CHistoricQuery* pParentHistoricQuery = FindHistoryEntryByQueryID(parentQueryID);
+			if (pParentHistoricQuery)	// this may fail if the history-so-far gets cleared before a new child query gets added to it (perfectly valid use-case)
+			{
+				if (!IsHistoricQueryAndAllParentQueriesFinished(*pParentHistoricQuery))
+					return false;
+			}
+
+			return true;
+		}
+
+		void CQueryHistory::StartAsyncXmlSerializeJob(const char* szXmlFilePath)
+		{
+			string xmlFilePath(szXmlFilePath);
+			SHistoryData snapshot;
+			snapshot.metaData = m_historyData.metaData;
+
+			// snap-shoot only finished queries and also only if their potential parent (and grand-parent, etc.) have also finished
+			// (we might get race-conditions otherwise or end up with dangling parent query IDs in children)
+			for (const HistoricQuerySharedPtr& pHistoricQuery : m_historyData.historicQueries)
+			{
+				if (IsHistoricQueryAndAllParentQueriesFinished(*pHistoricQuery))
+				{
+					snapshot.historicQueries.push_back(pHistoricQuery);
+				}
+			}
+
+			auto myLambda = [snapshot, xmlFilePath, this]()
+			{
+				if (m_serializationMutex.TryLock())
+				{
+					const CTimeValue timestampBefore = gEnv->pTimer->GetAsyncTime();
+					Serialization::IArchiveHost* pArchiveHost = gEnv->pSystem->GetArchiveHost();
+					if (pArchiveHost->SaveXmlFile(xmlFilePath.c_str(), Serialization::SStruct(snapshot), "UQSQueryHistory"))
+					{
+						const CTimeValue timestampAfter = gEnv->pTimer->GetAsyncTime();
+						const float elapsedSeconds = (timestampAfter - timestampBefore).GetSeconds();
+						CryLogAlways("[UQS] Successfully dumped query history containing %i queries to '%s' in %.2f seconds", (int)snapshot.historicQueries.size(), xmlFilePath.c_str(), elapsedSeconds);
+					}
+					else
+					{
+						CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "[UQS] Could not serialize the live query history to xml file '%s' (Serialization::IArchiveHost::SaveXmlFile() failed for some reason)", xmlFilePath.c_str());
+					}
+					m_serializationMutex.Unlock();
+				}
+				else
+				{
+					CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "[UQS] CQueryHistory::StartAsyncXmlSerializeJob: async serializing still in progress - please try again in a few seconds.");
+				}
+			};
+
+			gEnv->pJobManager->AddLambdaJob("UQSHistory", myLambda, JobManager::eStreamPriority);
+			CryLogAlways("[UQS] Just added a new job to serialize the live query history. We'll let you know once that job is finished.");
+		}
+
+		void CQueryHistory::PrintStatisticsToConsole(const char* szMessagePrefix) const
+		{
+			size_t totalMemoryUsage = GetRoughMemoryUsage();
+			CryLogAlways("%s%i queries in history, %.2fkb (%.2fmb) memory usage", szMessagePrefix, (int)m_historyData.historicQueries.size(), (float)totalMemoryUsage / 1024.0f, (float)totalMemoryUsage / (1024.0f * 1024.0f));
 		}
 
 	}

@@ -157,7 +157,6 @@ void CAutoExposureStage::AdjustExposure()
 
 		m_passAutoExposure.SetTexture(0, pTexPrev);
 		m_passAutoExposure.SetTexture(1, CRendererResources::s_ptexHDRToneMaps[0]);
-		m_passAutoExposure.SetSampler(0, EDefaultSamplerStates::PointClamp);
 	}
 
 	static CCryNameR param0Name("ElapsedTime");

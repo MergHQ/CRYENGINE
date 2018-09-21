@@ -217,6 +217,8 @@ class CShaderMan :
 	//////////////////////////////////////////////////////////////////////////
 
 private:
+	void           mfUpdateBuildVersion(const char* szCachePath);
+
 	STexAnim*      mfReadTexSequence(const char* name, int Flags, bool bFindOnly);
 	int            mfReadTexSequence(STexSamplerRT* smp, const char* name, int Flags, bool bFindOnly);
 

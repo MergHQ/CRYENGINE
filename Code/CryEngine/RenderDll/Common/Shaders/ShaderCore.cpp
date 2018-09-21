@@ -936,15 +936,50 @@ void CShaderMan::mfInitCommonGlobalFlags(void)
 	mfCreateCommonGlobalFlags(pszGlobalsPath.c_str());
 }
 
+void CShaderMan::mfUpdateBuildVersion(const char* szCachePath)
+{
+	stack_string versionFileName = szCachePath;
+	versionFileName += "version.txt";
+
+	SFileVersion version;
+
+	if (FILE* pHandle = gEnv->pCryPak->FOpen(versionFileName.c_str(), "r", ICryPak::FOPEN_HINT_QUIET))
+	{
+		char buf[256];
+		const size_t count = gEnv->pCryPak->FRead(buf, sizeof(buf) - 1, pHandle);
+		buf[count] = '\0';
+
+		version.Set(buf);
+
+		gEnv->pCryPak->FClose(pHandle);
+	}
+
+	if (version != gEnv->pSystem->GetBuildVersion() && CRenderer::CV_r_shadersCacheClearOnVersionChange)
+	{
+		gEnv->pCryPak->RemoveDir(szCachePath, true);
+	}
+
+	if (FILE* pHandle = gEnv->pCryPak->FOpen(versionFileName.c_str(), "w"))
+	{
+		const CryFixedStringT<32> str = gEnv->pSystem->GetBuildVersion().ToString();
+
+		gEnv->pCryPak->FWrite(str.c_str(), str.size(), pHandle);
+		gEnv->pCryPak->FClose(pHandle);
+	}
+}
+
 void CShaderMan::mfInitLookups()
 {
 	m_ResLookupDataMan[static_cast<int>(cacheSource::readonly)].Clear();
 	string dirdatafilename("%ENGINE%/" + string(m_ShadersCache));
 	dirdatafilename += "lookupdata.bin";
 	m_ResLookupDataMan[static_cast<int>(cacheSource::readonly)].LoadData(dirdatafilename.c_str(), CParserBin::m_bEndians, true);
-
-	m_ResLookupDataMan[static_cast<int>(cacheSource::user)].Clear();
+	
 	dirdatafilename = m_szUserPath + string(m_ShadersCache);
+	
+	mfUpdateBuildVersion(dirdatafilename.c_str());
+	
+	m_ResLookupDataMan[static_cast<int>(cacheSource::user)].Clear();
 	dirdatafilename += "lookupdata.bin";
 	m_ResLookupDataMan[static_cast<int>(cacheSource::user)].LoadData(dirdatafilename.c_str(), CParserBin::m_bEndians, false);
 }

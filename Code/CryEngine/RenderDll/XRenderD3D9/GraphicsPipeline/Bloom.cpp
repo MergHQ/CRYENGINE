@@ -39,7 +39,6 @@ void CBloomStage::Execute()
 		m_pass1H.SetRenderTarget(0, CRendererResources::s_ptexHDRTargetScaled[1][1]);
 		m_pass1H.SetState(GS_NODEPTHTEST);
 		m_pass1H.SetTexture(0, CRendererResources::s_ptexHDRTargetScaled[1][0]);
-		m_pass1H.SetTexture(2, CRendererResources::s_ptexHDRToneMaps[0]);
 		m_pass1H.SetSampler(0, samplerBloom);
 	}
 
@@ -56,7 +55,6 @@ void CBloomStage::Execute()
 		m_pass1V.SetRenderTarget(0, CRendererResources::s_ptexHDRTargetScaled[1][0]);
 		m_pass1V.SetState(GS_NODEPTHTEST);
 		m_pass1V.SetTexture(0, CRendererResources::s_ptexHDRTargetScaled[1][1]);
-		m_pass1V.SetTexture(2, CRendererResources::s_ptexHDRToneMaps[0]);
 		m_pass1V.SetSampler(0, samplerBloom);
 	}
 
@@ -73,7 +71,6 @@ void CBloomStage::Execute()
 		m_pass2H.SetRenderTarget(0, CRendererResources::s_ptexHDRTargetScaled[1][1]);
 		m_pass2H.SetState(GS_NODEPTHTEST);
 		m_pass2H.SetTexture(0, CRendererResources::s_ptexHDRTargetScaled[1][0]);
-		m_pass2H.SetTexture(2, CRendererResources::s_ptexHDRToneMaps[0]);
 		m_pass2H.SetSampler(0, samplerBloom);
 	}
 
@@ -91,7 +88,6 @@ void CBloomStage::Execute()
 		m_pass2V.SetState(GS_NODEPTHTEST);
 		m_pass2V.SetTexture(0, CRendererResources::s_ptexHDRTargetScaled[1][1]);
 		m_pass2V.SetTexture(1, CRendererResources::s_ptexHDRTargetScaled[1][0]);
-		m_pass2V.SetTexture(2, CRendererResources::s_ptexHDRToneMaps[0]);
 		m_pass2V.SetSampler(0, samplerBloom);
 	}
 

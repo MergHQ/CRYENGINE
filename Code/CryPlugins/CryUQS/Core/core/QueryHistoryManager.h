@@ -49,9 +49,13 @@ namespace UQS
 			void                               AutomaticUpdateDebugRendering3DBegin();
 			void                               AutomaticUpdateDebugRendering3DEnd();
 
+			void                               SerializeLiveQueryHistoryAsync(const char* szXmlFilePath);
+			void                               PrintStatisticsOfLiveAndDeserializedHistoryToConsole() const;
+
 		private:
 			                                   UQS_NON_COPYABLE(CQueryHistoryManager);
 
+			void                               AddSomeMetaDataToLiveHistory();
 			void                               NotifyListeners(IQueryHistoryListener::EEventType eventType) const;
 			void                               NotifyListeners(IQueryHistoryListener::EEventType eventType, const CQueryID& relatedQueryID) const;
 

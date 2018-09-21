@@ -67,12 +67,13 @@ float GetDissolveThreshold9(int2 sc)
 {
 	float tm[2][4] =
 	{
-		{  0.0f / 16,  4.0f / 16,  2.0f / 16,  6.0f / 16 },
-		{  3.0f / 16,  7.0f / 16,  1.0f / 16,  5.0f / 16 }
+		{  0.0f / 8,  4.0f / 8,  2.0f / 8,  6.0f / 8 },
+		{  3.0f / 8,  7.0f / 8,  1.0f / 8,  5.0f / 8 }
 	};
 
 	return tm[sc.y & 1][sc.x & 3];
 }
+
 float GetDissolveThreshold17(int2 sc)
 {
 	float tm[4][4] =
@@ -96,7 +97,7 @@ float GetDissolveThreshold33(int2 sc)
 		{ 15.0f / 32,  31.0f / 32,   7.0f / 32,  23.0f / 32,  13.0f / 32,  29.0f / 32,   5.0f / 32,  21.0f / 32 }
 	};
 
-	return tm[sc.y & 7][sc.x & 3];
+	return tm[sc.y & 3][sc.x & 7];
 }
 
 float TestDissolve(float fDissolve, int2 sc, int levels = 17)

@@ -97,34 +97,20 @@ namespace UQS
 			// add some meta data to the live history before serializing it
 			//
 
-			{
-				// add date + time as meta data
-				char dateAndTimeAsString[1024] = "";
-				time_t ltime;
-				if (time(&ltime) != (time_t)-1)
-				{
-					if (struct tm* pTm = localtime(&ltime))
-					{
-						strftime(dateAndTimeAsString, CRY_ARRAY_COUNT(dateAndTimeAsString), "%Y-%m-%d %H:%M:%S", pTm);
-					}
-				}
-				m_queryHistories[EHistoryOrigin::Live].SetArbitraryMetaDataForSerialization("serializationDateTime", dateAndTimeAsString);
-
-				// TODO: could add more meta data (e. g. engine version)
-			}
+			AddSomeMetaDataToLiveHistory();
 
 			//
 			// serialize the query history
 			//
 
-			Serialization::IArchiveHost* pArchiveHost = gEnv->pSystem->GetArchiveHost();
-			if (pArchiveHost->SaveXmlFile(szXmlFilePath, Serialization::SStruct(m_queryHistories[EHistoryOrigin::Live]), "UQSQueryHistory"))
+			string internalError;
+			if (m_queryHistories[EHistoryOrigin::Live].SerializeToXmlFile(szXmlFilePath, internalError))
 			{
 				return true;
 			}
 			else
 			{
-				error.Format("Could not serialize the live query history to xml file '%s' (Serialization::IArchiveHost::SaveXmlFile() failed for some reason)", szXmlFilePath);
+				error.Format("Could not serialize the live query history to xml file '%s': %s", szXmlFilePath, internalError.c_str());
 				return false;
 			}
 		}
@@ -132,9 +118,9 @@ namespace UQS
 		bool CQueryHistoryManager::DeserializeQueryHistory(const char* szXmlFilePath, Shared::IUqsString& error)
 		{
 			CQueryHistory tempQueryHistory;
+			string internalError;
 
-			Serialization::IArchiveHost* pArchiveHost = gEnv->pSystem->GetArchiveHost();
-			if (pArchiveHost->LoadXmlFile(Serialization::SStruct(tempQueryHistory), szXmlFilePath))
+			if (tempQueryHistory.DeserializeFromXmlFile(szXmlFilePath, internalError))
 			{
 				m_queryHistories[EHistoryOrigin::Deserialized] = std::move(tempQueryHistory);
 				m_queryIDOfCurrentHistoricQuery[EHistoryOrigin::Deserialized] = CQueryID::CreateInvalid();
@@ -147,7 +133,7 @@ namespace UQS
 			}
 			else
 			{
-				error.Format("Could not de-serialize the query history from xml file '%s'", szXmlFilePath);
+				error.Format("Could not de-serialize the query history from xml file '%s': %s", szXmlFilePath, internalError.c_str());
 				return false;
 			}
 		}
@@ -323,6 +309,35 @@ namespace UQS
 		{
 			CRY_ASSERT(m_bAutomaticUpdateDebugRendering3DInProgress);
 			m_bAutomaticUpdateDebugRendering3DInProgress = false;
+		}
+
+		void CQueryHistoryManager::SerializeLiveQueryHistoryAsync(const char* szXmlFilePath)
+		{
+			AddSomeMetaDataToLiveHistory();
+			m_queryHistories[IQueryHistoryManager::EHistoryOrigin::Live].StartAsyncXmlSerializeJob(szXmlFilePath);
+		}
+
+		void CQueryHistoryManager::PrintStatisticsOfLiveAndDeserializedHistoryToConsole() const
+		{
+			m_queryHistories[IQueryHistoryManager::EHistoryOrigin::Live].PrintStatisticsToConsole        ("Live query history:         ");
+			m_queryHistories[IQueryHistoryManager::EHistoryOrigin::Deserialized].PrintStatisticsToConsole("Deserialized query history: ");
+		}
+
+		void CQueryHistoryManager::AddSomeMetaDataToLiveHistory()
+		{
+			// add date + time as meta data
+			char dateAndTimeAsString[1024] = "";
+			time_t ltime;
+			if (time(&ltime) != (time_t)-1)
+			{
+				if (struct tm* pTm = localtime(&ltime))
+				{
+					strftime(dateAndTimeAsString, CRY_ARRAY_COUNT(dateAndTimeAsString), "%Y-%m-%d %H:%M:%S", pTm);
+				}
+			}
+			m_queryHistories[EHistoryOrigin::Live].SetArbitraryMetaDataForSerialization("serializationDateTime", dateAndTimeAsString);
+
+			// TODO: could add more meta data (e. g. engine version)
 		}
 
 		void CQueryHistoryManager::NotifyListeners(IQueryHistoryListener::EEventType eventType) const
