@@ -333,6 +333,11 @@ float4 Get2dHPos(float4 pos)
 	return hPos;
 }
 
+int2 GetScaledWPos(float2 WPos)
+{
+	return (int2)floor(WPos * CV_HPosScale);
+}
+
 float2 GetScaledScreenTC(float2 TC)
 {
 	return TC * CV_HPosScale;
