@@ -328,7 +328,7 @@ half ssrBorderFadeExponent
   string UIName = "SSR transition exp.";
   string UIWidget = "slider";
   float UIMin = 0.0;
-  float UIMax = 8.0;
+  float UIMax = 2.0;
   float UIStep = 0.01;
 > = 1.0;
 
@@ -339,7 +339,7 @@ half ssrDistanceAtt
   string UIName = "SSR distance vs. default";
   string UIWidget = "slider";
   float UIMin = 0.0;
-  float UIMax = 1.0;
+  float UIMax = 2.0;
   float UIStep = 0.01;
 > = 1.0;
 
@@ -350,7 +350,7 @@ half ssrSamplingAtt
   string UIName = "SSR samples vs. default";
   string UIWidget = "slider";
   float UIMin = 0.0;
-  float UIMax = 1.0;
+  float UIMax = 2.0;
   float UIStep = 0.01;
 > = 1.0;
 

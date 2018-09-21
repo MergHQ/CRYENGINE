@@ -382,7 +382,13 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, E
 				{
 					pNode = GetISystem()->CreateXmlNode(CryAudio::s_szEventTag);
 					pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
-					pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPathAttribute, pItem->GetPath());
+
+					string const& path = pItem->GetPath();
+
+					if (!path.IsEmpty())
+					{
+						pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPathAttribute, pItem->GetPath());
+					}
 
 					CEventConnection::EActionType const actionType = pEventConnection->GetActionType();
 
@@ -451,7 +457,13 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, E
 				{
 					pNode = GetISystem()->CreateXmlNode(CryAudio::s_szEventTag);
 					pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
-					pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPathAttribute, pItem->GetPath());
+
+					string const& path = pItem->GetPath();
+
+					if (!path.IsEmpty())
+					{
+						pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPathAttribute, pItem->GetPath());
+					}
 
 					if (pParameterConnection->GetMultiplier() != CryAudio::Impl::SDL_mixer::s_defaultParamMultiplier)
 					{
@@ -478,7 +490,14 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, E
 				{
 					pNode = GetISystem()->CreateXmlNode(CryAudio::s_szEventTag);
 					pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
-					pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPathAttribute, pItem->GetPath());
+
+					string const& path = pItem->GetPath();
+
+					if (!path.IsEmpty())
+					{
+						pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPathAttribute, pItem->GetPath());
+					}
+
 					pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szValueAttribute, pStateConnection->GetValue());
 
 					if ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0)

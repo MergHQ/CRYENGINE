@@ -16,6 +16,7 @@ namespace water
 // water stage unique parameters
 struct SPerPassWater
 {
+	Matrix44 viewProjPrev;
 	Matrix44 causticViewProjMatr;
 	Vec4     waterRippleLookup;
 	Vec4     ssrParams;
@@ -254,6 +255,9 @@ void CWaterStage::Init()
 	m_passWaterFogVolumeAfterWater.SetLabel("WATER_FOG_VOLUME_AFTER_WATER");
 	m_passWaterFogVolumeAfterWater.SetupPassContext(m_stageID, ePass_FogVolume, TTYPE_GENERAL, FB_GENERAL, EFSLIST_WATER_VOLUMES, FB_BELOW_WATER, false);
 	m_passWaterFogVolumeAfterWater.SetPassResources(m_pResourceLayout, m_pPerPassResourceSets[ePass_FogVolume]);
+
+	for (uint i = 0; i < MAX_GPU_NUM; i++)
+		m_prevViewProj[i] = IDENTITY;
 }
 
 void CWaterStage::Update()
@@ -842,6 +846,8 @@ bool CWaterStage::CreatePipelineState(
 	case CWaterStage::ePass_ReflectionGen:
 		{
 			psoDesc.m_pRenderPass = m_passWaterReflectionGen.GetRenderPass();
+			psoDesc.m_RenderState = (psoDesc.m_RenderState & ~(GS_NODEPTHTEST | GS_DEPTHWRITE | GS_DEPTHFUNC_MASK));
+			psoDesc.m_RenderState = GS_DEPTHFUNC_LEQUAL;
 
 			if (CRenderer::CV_r_DeferredShadingTiled > 0)
 				psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_TILED_SHADING];
@@ -857,6 +863,8 @@ bool CWaterStage::CreatePipelineState(
 	case CWaterStage::ePass_WaterSurface:
 		{
 			psoDesc.m_pRenderPass = m_passWaterSurface.GetRenderPass();
+			psoDesc.m_RenderState = (psoDesc.m_RenderState & ~(GS_NODEPTHTEST | GS_DEPTHWRITE | GS_DEPTHFUNC_MASK));
+			psoDesc.m_RenderState = GS_DEPTHFUNC_LEQUAL;
 
 			if (CRenderer::CV_r_DeferredShadingTiled > 0)
 				psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_TILED_SHADING];
@@ -867,6 +875,8 @@ bool CWaterStage::CreatePipelineState(
 	case CWaterStage::ePass_CausticsGen:
 		{
 			psoDesc.m_pRenderPass = m_passWaterCausticsSrcGen.GetRenderPass();
+			psoDesc.m_RenderState = (psoDesc.m_RenderState & ~(GS_NODEPTHTEST | GS_DEPTHWRITE | GS_DEPTHFUNC_MASK));
+			psoDesc.m_RenderState = GS_DEPTHFUNC_LEQUAL;
 
 			bWaterRipples = true;
 		}
@@ -890,15 +900,12 @@ bool CWaterStage::CreatePipelineState(
 	// TODO: move shader runtime masks to shader constants to avoid shader permutations after removing old graphics pipeline.
 	psoDesc.m_ShaderFlags_RT |= bWaterRipples ? g_HWSR_MaskBit[HWSR_SAMPLE4] : 0;
 
-	const bool bReverseDepth = true;
-	if (bReverseDepth)
 	{
 		psoDesc.m_RenderState = ReverseDepthHelper::ConvertDepthFunc(psoDesc.m_RenderState);
 	}
 
 	outPSO = GetDeviceObjectFactory().CreateGraphicsPSO(psoDesc);
-
-	return (outPSO != nullptr);
+	return outPSO != nullptr;
 }
 
 CDeviceResourceLayoutPtr CWaterStage::CreateScenePassLayout(const CDeviceResourceSetDesc& perPassResources)
@@ -1026,7 +1033,7 @@ bool CWaterStage::SetAndBuildPerPassResources(bool bOnInit, EPass passId)
 
 		if (passId == ePass_ReflectionGen)
 		{
-			resources.SetTexture(ePerPassTexture_Reflection, pPrevWaterVolRefl, EDefaultResourceViews::Default, EShaderStage_Pixel);
+			resources.SetTexture(ePerPassTexture_Reflection, CRendererResources::s_ptexHDRTargetPrev, EDefaultResourceViews::Default, EShaderStage_Pixel);
 			resources.SetTexture(ePerPassTexture_Refraction, CRendererResources::s_ptexHDRTargetScaled[0][0], EDefaultResourceViews::Default, EShaderStage_Pixel);
 			resources.SetTexture(ePerPassTexture_SceneDepth, CRendererResources::s_ptexLinearDepthScaled[0], EDefaultResourceViews::Default, EShaderStage_Pixel);
 		}
@@ -1132,10 +1139,21 @@ void CWaterStage::UpdatePerPassResources(EPass passId)
 		CRY_ASSERT(pWaterRipplesStage);
 		CRY_ASSERT(pVolFogStage);
 
+		Matrix44 mViewProj = GetCurrentViewInfo().cameraProjMatrix;
+
+		const int frameID = SPostEffectsUtils::m_iFrameCounter;
+		Matrix44 mViewport(0.5f, 0, 0, 0,
+			0, -0.5f, 0, 0,
+			0, 0, 1.0f, 0,
+			0.5f, 0.5f, 0, 1.0f);
+		uint32 numGPUs = pRenderer->GetActiveGPUCount();
+		Matrix44 mViewProjPrev = m_prevViewProj[max((frameID - (int)numGPUs) % MAX_GPU_NUM, 0)] * mViewport;
+
 		CryStackAllocWithSize(water::SPerPassConstantBuffer, cb, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
 		// water related parameters
 		auto& cbWater = cb->cbPerPassWater;
+		cbWater.viewProjPrev = mViewProjPrev;
 		cbWater.causticViewProjMatr = causticInfo.m_mCausticMatr;
 		cbWater.waterRippleLookup = pWaterRipplesStage->GetWaterRippleLookupParam();
 		cbWater.ssrParams = Vec4(
@@ -1202,6 +1220,9 @@ void CWaterStage::UpdatePerPassResources(EPass passId)
 
 		CRY_ASSERT(m_pPerPassCB[passId]);
 		m_pPerPassCB[passId]->UpdateBuffer(cb, cbSize);
+
+		// Update array used for MGPU support
+		m_prevViewProj[frameID % MAX_GPU_NUM] = mViewProj;
 	}
 }
 
@@ -1570,7 +1591,7 @@ void CWaterStage::ExecuteReflection()
 		D3DViewPort viewport = { 0.0f, float(pCurrWaterVolRefl->GetHeight() - nHeight), float(nWidth), float(nHeight), 0.0f, 1.0f };
 
 		m_passCopySceneTargetReflection.Execute(CRendererResources::s_ptexSceneTarget, CRendererResources::s_ptexHDRTargetScaled[0][0]);
-		m_passWaterReflectionClear.Execute(pCurrWaterVolRefl, Clr_Transparent, 1, &rect);
+		m_passCopySSReflection.Execute(CRendererResources::s_ptexHDRTargetMaskedScaled[0][1], pCurrWaterVolRefl);
 
 		// draw render items to generate water reflection texture.
 		{

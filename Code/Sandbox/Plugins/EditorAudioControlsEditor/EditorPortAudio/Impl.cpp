@@ -277,7 +277,13 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, E
 	{
 		pNode = GetISystem()->CreateXmlNode(CryAudio::s_szEventTag);
 		pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
-		pNode->setAttr(CryAudio::Impl::PortAudio::s_szPathAttribute, pItem->GetPath());
+
+		string const& path = pItem->GetPath();
+
+		if (!path.IsEmpty())
+		{
+			pNode->setAttr(CryAudio::Impl::PortAudio::s_szPathAttribute, path.c_str());
+		}
 
 		if (pEventConnection->GetActionType() == CEventConnection::EActionType::Start)
 		{

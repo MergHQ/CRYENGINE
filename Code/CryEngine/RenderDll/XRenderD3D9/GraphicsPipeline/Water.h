@@ -164,6 +164,7 @@ private:
 	CSceneRenderPass                          m_passWaterFogVolumeBeforeWater;
 	CFullscreenPass                           m_passCopyDepth;
 	CStretchRectPass                          m_passCopySceneTargetReflection;
+	CStretchRectPass                          m_passCopySSReflection;
 	CClearRegionPass                          m_passWaterReflectionClear;
 	CSceneRenderPass                          m_passWaterReflectionGen;
 	CMipmapGenPass                            m_passWaterReflectionMipmapGen;
@@ -180,6 +181,8 @@ private:
 
 	CRenderPrimitive                          m_causticsGridPrimitive;
 	CRenderPrimitive                          m_deferredOceanStencilPrimitive[2];
+
+	Matrix44 m_prevViewProj[MAX_GPU_NUM];
 
 	uint64 m_frameIdWaterSim;
 	Vec4   m_oceanAnimationParams[2];
