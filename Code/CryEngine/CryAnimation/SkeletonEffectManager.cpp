@@ -84,24 +84,7 @@ void CSkeletonEffectManager::SpawnEffect(CCharInstance* pCharInstance, const Ani
 
 void CSkeletonEffectManager::SpawnEffectAudio(CCharInstance* pCharInstance, const AnimEventInstance& animEvent, const QuatTS& entityLoc)
 {
-	const char* triggerName = animEvent.m_CustomParameter;
-	const char* boneName = animEvent.m_BonePathName;
-	const Vec3& offset = animEvent.m_vOffset;
-	const Vec3& dir = animEvent.m_vDir;
-
-	ISkeletonPose* pISkeletonPose = pCharInstance->GetISkeletonPose();
-	const IDefaultSkeleton& rIDefaultSkeleton = pCharInstance->GetIDefaultSkeleton();
-
-	// Determine position
-	int boneID = (boneName && boneName[0] ? rIDefaultSkeleton.GetJointIDByName(boneName) : -1);
-	boneID = (boneID == -1 ? 0 : boneID);
-	QuatTS loc;
-	GetEffectJointLocation(pISkeletonPose, loc, boneID, offset, dir, entityLoc);
-
-	// Spawn audio
-	CryAudio::ControlId const triggerId = CryAudio::StringToId(triggerName);
-	CryAudio::SExecuteTriggerData triggerData(triggerId, triggerName, CryAudio::EOcclusionType::Ignore, loc.t, INVALID_ENTITYID, true);
-	gEnv->pAudioSystem->ExecuteTriggerEx(triggerData);
+	// Until we establish a consistent event handling model across engine systems, audio events should be handled by the game logic (as it has been done historically).
 }
 
 void CSkeletonEffectManager::SpawnEffectParticles(CCharInstance* pCharInstance, const AnimEventInstance& animEvent, const QuatTS& entityLoc)

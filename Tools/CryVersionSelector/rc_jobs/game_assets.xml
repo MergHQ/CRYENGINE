@@ -205,9 +205,9 @@
 		<Job Zip="${TargetRoot}/GameData.pak"	Input="Libs/UI/*.*;config/*.*"	Exclude="${CryassetType}"		Zip_Compression="0" />
 
 		<!-- Pak all files that need to be compressed. -->
-		<Job Zip="${TargetRoot}/Animations.pak"	Input="${AnimationTypes}"	Exclude="*.cgf;${DefaultExcludes}"	Zip_SizeSplit="1" Zip_MaxSize="1900000" />
-		<Job Zip="${TargetRoot}/Objects.pak"	Input="*.cgf"				Exclude="${DefaultExcludes}"		Zip_SizeSplit="1" Zip_MaxSize="1900000" />
-		<Job Zip="${TargetRoot}/Textures.pak"	Input="${TextureTypes}"		Exclude="${DefaultExcludes}"		Zip_SizeSplit="1" Zip_MaxSize="1900000" />
+		<Job Zip="${TargetRoot}/Animations.pak"	Input="${AnimationTypes}"	Exclude="*.cgf;${DefaultExcludes}"  Zip_SizeSplit="1" Zip_MaxSize="1900000" />
+		<Job Zip="${TargetRoot}/Objects.pak"	Input="*.cgf"				Exclude="${DefaultExcludes}"        Zip_SizeSplit="1" Zip_MaxSize="1900000" />
+		<Job Zip="${TargetRoot}/Textures.pak"	Input="${TextureTypes}"		Exclude="${CryassetType}"           Zip_SizeSplit="1" Zip_MaxSize="1900000" />
 		<Job Zip="${TargetRoot}/GameData.pak"	Input="${GameDataInputs}"	Exclude="Libs/UI/*.*;${CryassetType}" />
 
 		<!-- Startup cache, this is deprecated -->
@@ -239,10 +239,10 @@
 		<!-- Converted loose files from levels, overwrite -->
 		<Properties SourceRoot="${TempPath}/${DataFolder}_Assets" />
 		<If TargetHasEditor="1">
-			<Run Job="CopySubfolderJob" SubFolder="Levels" Input="*.*" Exclude="*.$*" Refresh="1" />
+			<Run Job="CopySubfolderJob" SubFolder="Levels" Input="*.*" Exclude="${TextureTypes};*.$*" Refresh="1" />
 		</If>
 		<IfNot TargetHasEditor="1">
-			<Run Job="CopySubfolderJob" SubFolder="Levels" Input="*.*" Exclude="${EditorOnlyLevelSubFolders};*.$*" Refresh="1" />
+			<Run Job="CopySubfolderJob" SubFolder="Levels" Input="*.*" Exclude="${TextureTypes};${EditorOnlyLevelSubFolders};*.$*" Refresh="1" />
 		</IfNot>
 
 		<!-- Also copy some level meta-files into GameData.pak for signing purposes -->
