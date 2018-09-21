@@ -286,6 +286,7 @@ int CRendererCVars::CV_r_shaderssubmitrequestline;
 int CRendererCVars::CV_r_shaderslogcachemisses;
 int CRendererCVars::CV_r_shadersImport;
 int CRendererCVars::CV_r_shadersExport;
+int CRendererCVars::CV_r_shadersCacheClearOnVersionChange;
 
 AllocateConstIntCVar(CRendererCVars, CV_r_meshprecache);
 int CRendererCVars::CV_r_meshpoolsize;
@@ -2338,6 +2339,9 @@ void CRendererCVars::InitCVars()
 
 	REGISTER_CVAR3("r_ShadersExport", CV_r_shadersExport, 1, VF_NULL,
 	               "0 off, 1 allow shader export during shader cache generation - Currently unavailable.");
+
+	REGISTER_CVAR3("r_shadersCacheClearOnVersionChange", CV_r_shadersCacheClearOnVersionChange, 0, VF_NULL,
+	               "0 off, 1 locally cached compiled shader folder is deleted if a new game version is detected.");
 
 	DefineConstIntCVar3("r_DebugRenderMode", CV_r_debugrendermode, 0, VF_CHEAT, "");
 	DefineConstIntCVar3("r_DebugRefraction", CV_r_debugrefraction, 0, VF_CHEAT,
