@@ -33,5 +33,5 @@ CProgressNotification::~CProgressNotification()
 {
 	CNotificationCenter* pNotificationCenter = static_cast<CNotificationCenter*>(GetIEditor()->GetNotificationCenter());
 	Internal::CProgressNotification* pProgress = static_cast<Internal::CProgressNotification*>(pNotificationCenter->GetNotification(m_id));
-	pProgress->TaskComplete();
+	pProgress->SetProgress(1.0f);
 }
