@@ -69,9 +69,13 @@ namespace UQS
 			static void                                                CmdListQueryBlueprintLibrary(IConsoleCmdArgs* pArgs);
 			static void                                                CmdListRunningQueries(IConsoleCmdArgs* pArgs);
 			static void                                                CmdDumpQueryHistory(IConsoleCmdArgs* pArgs);
+			static void                                                CmdDumpQueryHistoryAsync(IConsoleCmdArgs* pArgs);
 			static void                                                CmdLoadQueryHistory(IConsoleCmdArgs* pArgs);
 			static void                                                CmdClearLiveQueryHistory(IConsoleCmdArgs* pArgs);
 			static void                                                CmdClearDeserializedQueryHistory(IConsoleCmdArgs* pArgs);
+			static void                                                CmdPrintQueryHistoryStatisticsToConsole(IConsoleCmdArgs* pArgs);
+
+			static bool                                                HelpBuildHistoryDumpFilePath(IConsoleCmdArgs* pArgs, const char* szFileNamePrefix, char (&outFilePath)[ICryPak::g_nMaxPath]);
 
 		private:
 			CEnumFlags<EHubOverrideFlags>                              m_overrideFlags;

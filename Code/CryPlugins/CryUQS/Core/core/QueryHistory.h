@@ -213,6 +213,16 @@ namespace UQS
 
 		class CQueryHistory
 		{
+		private:
+			// bundles data commonly used by synchronous and asynchronous serialization
+			struct SHistoryData
+			{
+				void                                       Serialize(Serialization::IArchive& ar);
+
+				std::vector<HistoricQuerySharedPtr>        historicQueries;
+				std::map<string, string>                   metaData;
+			};
+
 		public:
 			explicit                                       CQueryHistory();
 			CQueryHistory&                                 operator=(CQueryHistory&& other);
@@ -223,11 +233,17 @@ namespace UQS
 			const CHistoricQuery*                          FindHistoryEntryByQueryID(const CQueryID& queryID) const;
 			size_t                                         GetRoughMemoryUsage() const;
 			void                                           SetArbitraryMetaDataForSerialization(const char* szKey, const char* szValue);    // adds arbitrary key/value pairs to the history, which will blindly be serialized
-			void                                           Serialize(Serialization::IArchive& ar);
+			bool                                           SerializeToXmlFile(const char* szXmlFilePath, string& error) const;
+			bool                                           DeserializeFromXmlFile(const char* szXmlFilePath, string& error);
+			void                                           StartAsyncXmlSerializeJob(const char* szFileName);
+			void                                           PrintStatisticsToConsole(const char* szMessagePrefix) const;
 
 		private:
-			std::vector<HistoricQuerySharedPtr>            m_history;
-			std::map<string, string>                       m_metaData;
+			bool                                           IsHistoricQueryAndAllParentQueriesFinished(const CHistoricQuery& historicQuery) const;
+
+		private:
+			SHistoryData                                   m_historyData;
+			CryCriticalSection                             m_serializationMutex; // for limiting asynchronous serializations to max 1 per time
 		};
 
 	}
