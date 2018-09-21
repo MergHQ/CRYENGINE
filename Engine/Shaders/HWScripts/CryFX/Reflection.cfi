@@ -3,7 +3,7 @@
 #define FRUSTUM_EXIT_DETECTION   1
 //#define START_OFFSET_JITTER     1
 //#undef RAYBUNDLE_TRACING       1
-//#define NEAREST_HALFRES_MASKING  1
+#define NEAREST_HALFRES_MASKING  1
 
 struct ReflParams
 {
@@ -230,13 +230,15 @@ float4 SSRaycast
 	float dirAtten = saturate( dot( params.ViewVec, reflVec ) + 0.5);
 //	if (dirAtten < 0.01) return 0;
 
-	float4 rayStart = mul( CV_ViewProjMatr, float4( params.vPositionWS, 1 ) );
-	rayStart.z = params.fDepth;
-	rayStart.xy = GetScaledScreenTC( rayStart.xy * float2(0.5, -0.5) + 0.5 * rayStart.w );
+	float4 rayStart = mul( CV_ViewProjMatr, float4( params.vPositionWS          , 1 ) );
+	float4 rayEnd   = mul( CV_ViewProjMatr, float4( params.vPositionWS + reflVec, 1 ) );
+	float2 rayDir   = (rayEnd.xy / rayEnd.w) - (rayStart.xy / rayStart.w);
 
-	float4 rayEnd = mul( CV_ViewProjMatr, float4( params.vPositionWS + reflVec, 1 ) );
-	rayEnd.z = params.ProjRatio.y / (rayEnd.z / rayEnd.w - params.ProjRatio.x);
-	rayEnd.xy = GetScaledScreenTC( rayEnd.xy * float2(0.5, -0.5) + 0.5 * rayEnd.w );
+	rayStart.z = params.fDepth;
+	rayEnd.z   = params.ProjRatio.y / (rayEnd.z / rayEnd.w - params.ProjRatio.x);
+
+	rayStart.xy = GetScaledScreenTC( rayStart.xy * float2(0.5, -0.5) + 0.5 * rayStart.w );
+	rayEnd.xy   = GetScaledScreenTC( rayEnd.xy   * float2(0.5, -0.5) + 0.5 * rayEnd.w   );
 
 	float4 ray = rayEnd - rayStart;
 	
@@ -261,7 +263,7 @@ float4 SSRaycast
 			uvMultiRes.y > 0.0f && uvMultiRes.y < 1.0f
 		)
 		{
-			bestLen = 1.0f;
+			bestLen = 1.0f * sign(projPos.w);
 		}
 	}
 
@@ -282,7 +284,7 @@ float4 SSRaycast
 		float brdAtten = abs(dot(normalize(CV_CameraFrontVector.xyz), params.NormalWorld)); // Use camera inclination up/down to reduce horizontal border
 		float2 borderSize = params.borderSize.xy * CV_HPosScale.xy * float2(brdAtten, 1.0f);  // Fade out at borders
 		
-		float2 borderDist = GetMinBorderDistance(params, reprojPos.xy, ray.xy);
+		float2 borderDist = GetMinBorderDistance(params, reprojPos.xy, rayDir);
 		float2 edgeWeights = borderDist < borderSize ? borderDist / borderSize : 1.0f;
 		float edgeWeight = min(edgeWeights.x, edgeWeights.y); /* edgeWeights.x **** x-axis is mirrored when using SSRaycast instead of fade out */
 
@@ -355,16 +357,18 @@ float4 SSRRaytrace
 	float dirAtten = saturate( dot( params.ViewVec, reflVec ) + 0.5);
 	if (dirAtten < 0.01) return 0;
 	
-	float4 rayStart = mul( CV_ViewProjMatr, float4( params.vPositionWS, 1 ) );
-	rayStart.z = params.fDepth;
-	rayStart.xy = GetScaledScreenTC( rayStart.xy * float2(0.5, -0.5) + 0.5 * rayStart.w );
+	float4 rayStart = mul( CV_ViewProjMatr, float4( params.vPositionWS          , 1 ) );
+	float4 rayEnd   = mul( CV_ViewProjMatr, float4( params.vPositionWS + reflVec, 1 ) );
+	float2 rayDir   = (rayEnd.xy / rayEnd.w) - (rayStart.xy / rayStart.w);
 
-	float4 rayEnd = mul( CV_ViewProjMatr, float4( params.vPositionWS + reflVec, 1 ) );
-	rayEnd.z = params.ProjRatio.y / (rayEnd.z / rayEnd.w - params.ProjRatio.x);
-	rayEnd.xy = GetScaledScreenTC( rayEnd.xy * float2(0.5, -0.5) + 0.5 * rayEnd.w );
+	rayStart.z = params.fDepth;
+	rayEnd.z   = params.ProjRatio.y / (rayEnd.z / rayEnd.w - params.ProjRatio.x);
+	
+	rayStart.xy = GetScaledScreenTC( rayStart.xy * float2(0.5, -0.5) + 0.5 * rayStart.w );
+	rayEnd.xy   = GetScaledScreenTC( rayEnd.xy   * float2(0.5, -0.5) + 0.5 * rayEnd.w   );
 
 	float4 ray = rayEnd - rayStart;
-
+		
 	const int numSamples = GetMaxTracingSamples(params, reflLen, reflVec);
 	const float stepSize = rcp(numSamples);
 	
@@ -557,11 +561,11 @@ float4 SSRRaytrace
 		float2 borderSize = params.borderSize.xy * CV_HPosScale.xy * float2(brdAtten, 1.0f);  // Fade out at borders
 		float traceSize = params.borderSize.z;  // Fade out at distance
 
-		float2 borderDist = GetMinBorderDistance(params, reprojPos.xy, ray.xy);
+		float2 borderDist = GetMinBorderDistance(params, reprojPos.xy, rayDir);
 		float2 edgeWeights = borderDist < borderSize ? borderDist / borderSize : 1.0f;
 		float edgeWeight = min(edgeWeights.x, edgeWeights.y);
 		
-		float traceDist = 1.0f - length(ray * bestLen) / GetFarTracingDistance(params, reflVec);
+		float traceDist = 1.0f - (bestLen * reflLen) / GetFarTracingDistance(params, reflVec);
 		float traceWeight = traceDist < traceSize ? traceDist / traceSize : 1.0f;
 
 		reprojPos.xy *= CV_HPosScale.zw;
@@ -597,7 +601,7 @@ float4 SSRRaytrace
 			// We didn't start tracing in nearest geometry, but we're attempting a nearest depth-probe, which is filtered out now
 			float4 fWeightTap = max(float4(params.bgMultiplier, params.bgMultiplier, params.bgMultiplier, params.bgMultiplier), fLinearDepthTap != 1.0f);
 			float2 subUV = frac(reprojPos.xy * CV_ScreenSize.xy * rcp(params.UnscaledMultiplier));
-			
+
 #if NEAREST_HALFRES_MASKING
 			// Gather from min(depth)
 			float4 fLinearDepthTest = params.UnscaledMultiplier.x <= 1.0f ?

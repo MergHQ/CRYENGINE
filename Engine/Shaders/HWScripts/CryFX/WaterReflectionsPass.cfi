@@ -28,18 +28,18 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 		params.maxLum = 10000.0f;
 		params.NormalWorld = vNormal.xyz;
 		params.Smoothness = vNormal.w;
-		params.Reproject = false;
-		params.ViewProjPrev = 0;
+		params.Reproject = true;
+		params.ViewProjPrev = perPassParams.viewProjPrev;
 		params.limitMask =
 			// Don't clip left and right because we use X-mirroring to hide the end-of-data seam
 			FRUSTUM_NOCLIP_LEFT | FRUSTUM_NOCLIP_RIGHT;
 	
 		// local reflections setup
 		{
-			params.bgMultiplier = 0;
+			params.bgMultiplier = 0.0f;
 			params.MaxDistance = perPassParams.ssrParams.z * ssrDistanceAtt;
 			params.MaxSamples = perPassParams.ssrParams.w * ssrSamplingAtt;
-			params.borderSize = float3(0.0f, 1.0f - (1.0f - ssrBorderSizeY) * 1.0f, ssrBorderSizeZ);
+			params.borderSize = float3(0.0f, ssrBorderSizeY, ssrBorderSizeZ);
 
 			half4 color = SSRRaytrace
 			(
@@ -49,12 +49,12 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 				refractionHalfResTex,
 				ssLinearMirrorX,
 
-				refractionHalfResTex,
+				reflectionPrevTex,
 				ssLinearMirrorX,
 
 				params
 			);
-		
+
 			specularRefl = color;
 			specularPrec = params.blendWeight;
 		}
@@ -65,7 +65,7 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 			params.bgMultiplier = ssrBGMultiplier;
 			params.MaxDistance = perPassParams.ssrParams.z * ssrDistanceAtt;
 			params.MaxSamples = 1;
-			params.borderSize = float3(0.0f, 1.0f - (1.0f - ssrBorderSizeY) * 1.0f, ssrBorderSizeZ);
+			params.borderSize = float3(0.0f, ssrBorderSizeY, ssrBorderSizeZ);
 
 			half4 color = SSRaycast
 			(
@@ -75,7 +75,7 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 				refractionHalfResTex,
 				ssLinearMirrorX,
 
-				refractionHalfResTex,
+				reflectionPrevTex,
 				ssLinearMirrorX,
 
 				params
@@ -101,6 +101,9 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 pixout WaterReflPS(v2f_hs IN)
 {
 	pixout OUT = (pixout) 1;
+	
+	SVolumetricFogParams volFogParams = GetVolumetricFogParams();
+	VolumetricFogSampling vfs = GetVolumetricFogSampling();
 
 	const float fDepth = IN.screenProj.w * CV_NearFarClipDist.w;
 	float2 linearUV = IN.screenProj.xy / IN.screenProj.w;
@@ -139,26 +142,28 @@ pixout WaterReflPS(v2f_hs IN)
 	half4 cSSRefl = ReflectionPassPS(IN, half4(vReflN.xyz, 1)) / PS_HDR_RANGE_ADAPT_MAX;
 
 	// EnvCubeReflMul, RealtimeReflMul
-	half3 cReflCurr = lerp(cCubeRefl, cSSRefl, saturate(cSSRefl.a));
+	half3 reflectColor = lerp(cCubeRefl, cSSRefl, saturate(cSSRefl.a));
 
-	// TODO: Remove fog from reflection
+	// NOTE: This takes out the whole fog from the reflection, but
+	// we don't put back the fog along the two rays, just to the part
+	// until hitting the reflector, the path from reflector to hit has
+	// not precalculated fog-information available
+	// TODO: remove the fraction of the fog which corresponds to
+	// length(reflector_to_hit) / length(camera_to_hit)
 #if %_RT_FOG && %_RT_VOLUMETRIC_FOG
-	//cReflCurr -= fogColor * ReflFogScale;
+	half3 fogColor = 0;
+	float len = length(IN.vView.xyz);
+	VolumetricFogTexcoord vtc = GetVolumetricFogTexcoordParamByScreenProj(volFogParams, IN.screenProj, false, len);
+	float4 vf = GetVolumetricFogValueJittered(volFogParams, vfs, vtc).xyzw;
+	half4 globalFogColor = GetVolumetricFogAnalyticalColor( volFogParams, vfs, -IN.vView.xyz, len );
+	ApplyVolumetricFog(volFogParams, vf, globalFogColor, vtc, fogColor.xyz);
+
+	// subtract fog color from refract color.
+	half3 reflectColorWithFog = reflectColor;
+	reflectColor -= fogColor;
 #endif
 
-	//////////////////////////////////////////////////////////////////////////////////////////////////    
-	// Continuously blend previous frame, minimize shimering
-	float4 vPrevHSPos = HPosToScreenTC( mul(CV_PrevViewProjMatr, float4(IN.vPosWS.xyz, 1.0 )), false );
-	half2 prevTC = vPrevHSPos.xy / vPrevHSPos.w;
-	prevTC.x *= CV_HPosScale.z;
-	prevTC.y = 1.0 - (1.0 - prevTC.y) * CV_HPosScale.w;
-
-	prevTC = MapViewportToRaster(prevTC);
-
-	half3 cReflPrev = reflectionPrevTex.Sample(ssMaterialTrilinearClamp, prevTC.xy).rgb / PS_HDR_RANGE_ADAPT_MAX;
-	cReflPrev = isfinite( cReflPrev ) ? cReflPrev : 0;  // Filter out NANs that we still have sometimes, otherwise they get propagated and remain in the view
-
-	OUT.Color.rgb = cReflCurr;//(cReflCurr * 0.75 + cReflPrev * 0.25) * PS_HDR_RANGE_ADAPT_MAX;
+	OUT.Color.rgb = reflectColor;
 
 	return OUT;
 }

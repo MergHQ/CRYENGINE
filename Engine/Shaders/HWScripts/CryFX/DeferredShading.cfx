@@ -400,8 +400,6 @@ pixout SSRRaytracePS(vtxOutWPOS IN)
 	params.JitterUV = IN.baseTC.zw;
 	params.NearFarClipDist = PS_NearFarClipDist.xy;
 	params.UnscaledMultiplier = g_mSSRParams.xy;
-	params.MaxDistance = g_mSSRParams.z;
-	params.MaxSamples = g_mSSRParams.w;
 	params.ViewVec = normalize(IN.CamVec);
 	params.fDepth = fDepth;
 	params.vPositionWS = vPositionWS;
@@ -411,6 +409,10 @@ pixout SSRRaytracePS(vtxOutWPOS IN)
 	params.Reproject = true;
 	params.ViewProjPrev = g_mViewProjPrev;
 	params.limitMask = 0;
+	
+	params.bgMultiplier = 0.0f;
+	params.MaxDistance = g_mSSRParams.z;
+	params.MaxSamples = g_mSSRParams.w;
 	params.borderSize = float3(0.07, 0.07, 1.0);
 	
 	OUT.Color = SSRRaytrace

@@ -61,7 +61,7 @@ void CScreenSpaceReflectionsStage::Execute()
 			m_passRaytracing.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 		}
 
-		static CCryNameR viewProjprevName("g_mViewProjPrev");
+		static CCryNameR viewProjPrevName("g_mViewProjPrev");
 		static CCryNameR ssrParamsName("g_mSSRParams"); // we need to tell the shader to read from a depth buffer with twice the size of the output in halfres mode
 		Vec4 ssrParams(
 			CRenderer::CV_r_SSReflHalfRes ? 2.0f : 1.0f,
@@ -70,7 +70,7 @@ void CScreenSpaceReflectionsStage::Execute()
 			CRenderer::CV_r_SSReflSamples * 1.0f);
 
 		m_passRaytracing.BeginConstantUpdate();
-		m_passRaytracing.SetConstantArray(viewProjprevName, (Vec4*)mViewProjPrev.GetData(), 4, eHWSC_Pixel);
+		m_passRaytracing.SetConstantArray(viewProjPrevName, (Vec4*)mViewProjPrev.GetData(), 4, eHWSC_Pixel);
 		m_passRaytracing.SetConstantArray(ssrParamsName, (Vec4*)&ssrParams, 1, eHWSC_Pixel);
 		m_passRaytracing.Execute();
 	}
