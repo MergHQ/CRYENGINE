@@ -23,7 +23,7 @@ namespace UQS
 			, pCallback(0)
 			, queryID(CQueryID::CreateInvalid())
 			, parentQueryID(CQueryID::CreateInvalid())
-			, bPerformanceOffender(false)
+			, performanceOffenderMercyCountdown(3)	// allow the query to be the most performance-offending one 3 times before taking counter measures
 		{}
 
 		//===================================================================================
@@ -323,7 +323,7 @@ namespace UQS
 					// - this is to make sure that the performance offender does no longer block these preceding queries by continuously interrupting everything
 					//
 
-					if (runningQueryInfo.bPerformanceOffender)
+					if (runningQueryInfo.performanceOffenderMercyCountdown == 0)
 					{
 						if (bEncounteredSomeNonPerformanceOffenderByNow)
 						{
@@ -465,14 +465,35 @@ namespace UQS
 							if (overallFractionUsedSoFar > 1.0f + SCvars::timeBudgetExcessThresholdInPercent * 0.01f)
 							{
 								CRY_ASSERT(worstPerformingQuery.itInQueries != m_queries.end());
+								CRY_ASSERT(worstPerformingQuery.itInQueries->performanceOffenderMercyCountdown >= 0);
 
-								NotifyOfQueryPerformanceWarning(*worstPerformingQuery.itInQueries, "system frame #%i: query has just been flagged as a performance offender (consumed %.1f%% of its granted time: %fms vs %fms)", (int)gEnv->nMainFrameID, worstPerformingQuery.usedFractionOfTimeBudget * 100.0f, timeUsedByThisQuery.GetMilliSeconds(), timeBudgetForThisQuery.GetMilliSeconds());
+								if (worstPerformingQuery.itInQueries->performanceOffenderMercyCountdown > 0)
+								{
+									if (--worstPerformingQuery.itInQueries->performanceOffenderMercyCountdown > 0)
+									{
+										// this query still has some chances to consume less time than granted before getting flagged as performance offender
+										NotifyOfQueryPerformanceWarning(*worstPerformingQuery.itInQueries, "system frame #%i: query may get flagged as a performance offender after %i more chances to recover (consumed %.1f%% of its granted time: %fms vs %fms)",
+											(int)gEnv->nMainFrameID,
+											worstPerformingQuery.itInQueries->performanceOffenderMercyCountdown,
+											worstPerformingQuery.usedFractionOfTimeBudget * 100.0f,
+											timeUsedByThisQuery.GetMilliSeconds(),
+											timeBudgetForThisQuery.GetMilliSeconds());
+									}
+									else
+									{
+										// this query had enough chances to prevent excessive time consumption => now it's a performance offender
+										NotifyOfQueryPerformanceWarning(*worstPerformingQuery.itInQueries, "system frame #%i: query has just been flagged as a performance offender (consumed %.1f%% of its granted time: %fms vs %fms)",
+											(int)gEnv->nMainFrameID,
+											worstPerformingQuery.usedFractionOfTimeBudget * 100.0f,
+											timeUsedByThisQuery.GetMilliSeconds(),
+											timeBudgetForThisQuery.GetMilliSeconds());
 
-								// move the worst performing query to the end of the queue such that preceding queries won't get offended anymore
-								SRunningQueryInfo worstOne = std::move(*worstPerformingQuery.itInQueries);
-								worstOne.bPerformanceOffender = true;
-								m_queries.erase(worstPerformingQuery.itInQueries);
-								m_queries.push_back(std::move(worstOne));
+										// move this performance offender to the end of the queue such that preceding queries won't get offended anymore
+										SRunningQueryInfo worstOne = std::move(*worstPerformingQuery.itInQueries);
+										m_queries.erase(worstPerformingQuery.itInQueries);
+										m_queries.push_back(std::move(worstOne));
+									}
+								}
 
 								// prematurely interrupt processing of the remaining queries
 								break;

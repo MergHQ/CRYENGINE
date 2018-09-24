@@ -60,8 +60,8 @@ template<typename TFilter, typename TQuery>
 INavMeshQueryProcessing::EResult CNavMesh::QueryTileTrianglesWithProcessing(const TileID tileID, const STile& tile, const aabb_t& queryAabbTile, TFilter& filter, TQuery&& query) const
 {
 	const size_t trianglesBatchCount = 32;
-	MNM::TriangleIDArray triangleIdsToProcess(trianglesBatchCount);
-	size_t trianglesCount = 0;
+	MNM::TriangleIDArray triangleIdsToProcess;
+	triangleIdsToProcess.reserve(trianglesBatchCount);
 
 	INavMeshQueryProcessing::EResult result = INavMeshQueryProcessing::EResult::Continue;
 
@@ -89,9 +89,9 @@ INavMeshQueryProcessing::EResult CNavMesh::QueryTileTrianglesWithProcessing(cons
 
 				if (filter.PassFilter(triangle))
 				{
-					triangleIdsToProcess[trianglesCount] = ComputeTriangleID(tileID, triangleIdx);
+					triangleIdsToProcess.push_back(ComputeTriangleID(tileID, triangleIdx));
 
-					if (++trianglesCount < trianglesBatchCount)
+					if (triangleIdsToProcess.size() < trianglesBatchCount)
 						continue;
 
 					// Process triangles
@@ -99,7 +99,7 @@ INavMeshQueryProcessing::EResult CNavMesh::QueryTileTrianglesWithProcessing(cons
 					if (result == INavMeshQueryProcessing::EResult::Stop)
 						return result;
 
-					trianglesCount = 0;
+					triangleIdsToProcess.resize(0);
 				}
 			}
 		}
@@ -120,9 +120,9 @@ INavMeshQueryProcessing::EResult CNavMesh::QueryTileTrianglesWithProcessing(cons
 			{
 				if (filter.PassFilter(triangle))
 				{
-					triangleIdsToProcess[trianglesCount] = ComputeTriangleID(tileID, static_cast<uint16>(i));
+					triangleIdsToProcess.push_back(ComputeTriangleID(tileID, static_cast<uint16>(i)));
 
-					if (++trianglesCount < trianglesBatchCount)
+					if (triangleIdsToProcess.size() < trianglesBatchCount)
 						continue;
 
 					// Process triangles
@@ -130,13 +130,13 @@ INavMeshQueryProcessing::EResult CNavMesh::QueryTileTrianglesWithProcessing(cons
 					if (result == INavMeshQueryProcessing::EResult::Stop)
 						return result;
 
-					trianglesCount = 0;
+					triangleIdsToProcess.resize(0);
 				}
 			}
 		}
 	}
 
-	if (trianglesCount > 0)
+	if (!triangleIdsToProcess.empty())
 	{
 		// Processing rest of the triangles
 		result = query(triangleIdsToProcess);
