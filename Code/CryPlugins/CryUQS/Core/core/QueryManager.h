@@ -38,7 +38,7 @@ namespace UQS
 				Functor1<const SQueryResult&>                          pCallback;
 				CQueryID                                               queryID;
 				CQueryID                                               parentQueryID;
-				bool                                                   bPerformanceOffender;  // flag to indicate that this query was exceeding its time-budget most; offenders get moved to the end of the queue and get skipped until all preceding queries are finished
+				int                                                    performanceOffenderMercyCountdown;  // countdown before finally marking a query as performance offender when exceeding its time-budget most among all others; offenders get moved to the end of the queue and get skipped until all preceding queries are finished
 			};
 
 			//===================================================================================
