@@ -810,6 +810,24 @@ void CPrefabManager::importAssetsFromLevel(XmlNodeRef& levelRoot)
 	}
 }
 
+void CPrefabManager::UpdateAllPrefabsToLatestVersion()
+{
+	CAssetManager* const pAssetManager = GetIEditor()->GetAssetManager();
+	const CAssetType* const pPrefabType = pAssetManager->FindAssetType("Prefab");
+	pAssetManager->ForeachAssetOfType(pPrefabType, [this](CAsset* pAsset)
+	{
+		//get the asset guid and use it to load the prefab item (asset guid is the same as prefab guid)
+		const CryGUID& guid = pAsset->GetGUID();
+		CPrefabItem* pItem = static_cast<CPrefabItem*>(LoadItem(guid));
+		//upgrade the object and remember to reload all the objects in the scene to apply the new changes
+		pItem->CheckVersionAndUpgrade();
+		//update all the instances in the level (if there are any)
+		pItem->UpdateObjects();
+		//serialize the changes to file
+		pItem->GetLibrary()->Save();
+	});
+}
+
 void CPrefabManager::DeleteItem(IDataBaseItem* pItem)
 {
 	assert(pItem);
@@ -953,7 +971,14 @@ static void PyReloadAll()
 	GetIEditorImpl()->GetObjectManager()->SendEvent(EVENT_PREFAB_REMAKE);
 }
 
+static void PyUpdateAllPrefabs()
+{
+	GetIEditor()->GetPrefabManager()->UpdateAllPrefabsToLatestVersion();
 }
+}
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyUpdateAllPrefabs, prefab, update_all_prefabs,
+	CCommandDescription("Update all prefabs to latest version"));
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyCreateFromSelection, prefab, create_from_selection,
                                    CCommandDescription("Create prefab"));

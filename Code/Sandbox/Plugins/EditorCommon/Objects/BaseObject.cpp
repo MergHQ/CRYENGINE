@@ -2746,7 +2746,6 @@ void CBaseObject::ResolveParent(CBaseObject* parent)
 		{
 			bSuspended = GetIEditor()->SuspendUpdateCGroup(parent);
 			parent->AddMember(this, false);
-			CryLog("Reparenting %s to %s", GetName(), m_parent->GetName());
 			if (bSuspended)
 				GetIEditor()->ResumeUpdateCGroup(parent);
 		}
