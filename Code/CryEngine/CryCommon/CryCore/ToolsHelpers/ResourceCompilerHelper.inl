@@ -700,6 +700,7 @@ ERcExitCode CResourceCompilerHelper::InvokeResourceCompiler(const char* szSrcFil
 	wRemoteCmdLine.appendAscii("\" ");
 	wRemoteCmdLine.appendAscii(bUserDialog ? "/userdialog=1 " : "/userdialog=0 ");
 	wRemoteCmdLine.appendAscii(bRefresh ? "/refresh=1 " : "/refresh=0 ");
+	wRemoteCmdLine.appendAscii("/stripmetadata ");
 	wRemoteCmdLine.append(szRegSettingsBuffer);
 
 	// make it write to a filename of our choice

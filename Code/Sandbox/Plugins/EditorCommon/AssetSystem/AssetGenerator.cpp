@@ -81,9 +81,16 @@ void CAssetGenerator::OnFileChange(const char* szFilename, EChangeType changeTyp
 		return;
 	}
 
+	// Ignore invalid paths.
+	string reasonToReject;
+	if (!CAssetType::IsValidAssetPath(string().Format("%s.cryasset", szFilename), reasonToReject))
+	{
+		return;
+	}
+
 	// Refresh cryasset files for the following types even if exists. 
 	// These asset types do not have true asset editors to update cryasset files.
-	static const char* const update[] = { "mtl", "cdf" };
+	static const char* const update[] = { "mtl", "cdf", "dds" };
 	const char* szExt = PathUtil::GetExt(szFilename);
 	const bool updateExisting = std::any_of(std::begin(update), std::end(update), [szExt](const char* szUpdatable)
 	{
