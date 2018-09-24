@@ -444,11 +444,6 @@ private:
 			const string dstPath = PathUtil::Make(dir, asset, ext);
 			const string tmpPath = PathUtil::Make(tempDir, asset, ext);
 			assets.emplace_back(srcFile, dstPath, tmpPath);
-
-			// Try to update existing ".cryasset" instead of creating a new one to keep the asset GUID.
-			const string dstCryasset = dstPath + ".cryasset";
-			const string tmpCryasset = tmpPath + ".cryasset";
-			gEnv->pCryPak->CopyFileOnDisk(dstCryasset.c_str(), tmpCryasset.c_str(), false);
 		}
 
 		return assets;
@@ -464,41 +459,36 @@ private:
 	// Returns list of asset filenames without paths.
 	static std::vector<string> GetAssetFiles(const string& srcFile)
 	{
-		// Try to read the file list form .cryasset
-		const string cryasset = srcFile + ".cryasset";
-
-		const XmlNodeRef pXml = (GetFileAttributes(cryasset) != INVALID_FILE_ATTRIBUTES) ? gEnv->pSystem->LoadXmlFromFile(cryasset) : nullptr;
-		if (!pXml)
-		{
-			return{ PathUtil::GetFile(srcFile) };
-		}
-
+		const CryPathString path = PathUtil::Make(PathUtil::GetPathWithoutFilename(srcFile.c_str()).c_str(), "*");
 		std::vector<string> files;
-
-		// Find "AssetMetadata" node. It may be either the root node or a child of the root.
-		const XmlNodeRef pMetadata = pXml->isTag("AssetMetadata") ? pXml : pXml->findChild("AssetMetadata");
-		if (pMetadata)
+		ICryPak* const pPack = gEnv->pCryPak;
+		_finddata_t fd;
+		intptr_t handle = pPack->FindFirst(path, &fd, 0, true);
+		if (handle >= 0)
 		{
-			const XmlNodeRef pFiles = pMetadata->findChild("Files");
-			if (pFiles)
+			do
 			{
-				files.reserve(pFiles->getChildCount());
-				for (int i = 0, n = pFiles->getChildCount(); i < n; ++i)
+				if (!strcmp(fd.name, ".") || !strcmp(fd.name, ".."))
 				{
-					const XmlNodeRef pFile = pFiles->getChild(i);
-					files.emplace_back(pFile->getAttr("path"));
+					continue;
 				}
-			}
+
+				if ((fd.attrib & _A_SUBDIR) != 0)
+				{
+					continue;
+				}
+
+				files.emplace_back(fd.name);
+			} while (pPack->FindNext(handle, &fd) >= 0);
+			pPack->FindClose(handle);
 		}
 
 		// A fallback solution, should never happen.
 		if (files.empty())
 		{
-			iLog->LogError("Cryasset has no data files: %s", cryasset.c_str());
 			files.push_back(PathUtil::GetFile(srcFile));
 		}
 
-		files.emplace_back(PathUtil::GetFile(cryasset));
 		return files;
 	}
 

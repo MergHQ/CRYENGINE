@@ -107,6 +107,22 @@ public:
 			function(pAsset);
 	}
 
+	//! Applies a function to each asset of a specified type.
+	//! \param pAssetType The asset type we are going to look for
+	//! \param function Function object to be applied to every asset of type pAssetType. The signature of the function should be equivalent void f(CAsset*).
+	template<typename F>
+	void ForeachAssetOfType(const CAssetType* pAssetType, F&& function)
+	{
+		ForeachAsset([pAssetType, function](CAsset* pAsset)
+		{
+			//If it's a pAssetType we have to update it 
+			if (pAsset->GetType() == pAssetType)
+			{
+				function(pAsset);
+			}
+		});
+	}
+
 	//! Imports the assets source file again while trying to preserve user settings.
 	//! Reimporting is delegated to an asset importer based on the source file's extension, so it
 	//! should be handled by the same importer that created the asset in the first place.

@@ -118,6 +118,9 @@ public:
 	// Allows to generate prefab assets from level files of CE5.5
 	static void importAssetsFromLevel(XmlNodeRef& levelRoot);
 
+	//Updates all the assets to the latest version
+	void UpdateAllPrefabsToLatestVersion();
+
 protected:
 	virtual IDataBaseLibrary* LoadLibrary(const string& filename, bool bReload = false) override;
 

@@ -20,7 +20,39 @@
 
 #include <CryMath/Cry_Math.h>
 
-#define CURRENT_VERSION 1
+
+enum EPrefabVersions
+{
+	/*
+	Prefabs are saved in a flattened hierarchy, group members are too.For example
+	<Object Type = "Group" Layer = "Main" LayerGUID = "561c3d54-fd84-4a25-3fa2-2781f36492a8" Id = "a440327f-e262-3aa9-6520-619fe689071e" Name = "Group-2" Pos = "509.65161,501.59622,31.999756" Rotate = "1,0,0,0" Scale = "1,1,1" ColorRGB = "65280" UseCustomLevelLayerColor = "0" Opened = "0" / >
+	<Object Type = "Brush" Layer = "Main" LayerGUID = "561c3d54-fd84-4a25-3fa2-2781f36492a8" Id = "27120ffe-ab2b-6c95-c25d-171d8ec67aaf" Name = "primitive_sphere-1" Parent = "a440327f-e262-3aa9-6520-619fe689071e" Pos = "-508.02625,-501.48993,-31.999756" Rotate = "1,0,0,0" Scale = "1,1,1" ColorRGB = "16777215" UseCustomLevelLayerColor = "0" MatLayersMask = "0" Prefab = "objects/default/primitive_sphere.cgf" IgnoreVisareas = "0" CastShadowMaps = "1" GIMode = "1" RainOccluder = "1" SupportSecondVisarea = "0" DynamicDistanceShadows = "0" Hideable = "0" LodRatio = "100" ViewDistRatio = "100" NotTriangulate = "0" NoDynamicWater = "0" AIRadius = "-1" NoStaticDecals = "0" RecvWind = "0" Occluder = "0" DrawLast = "0" ShadowLodBias = "0" IgnoreTerrainLayerBlend = "1" IgnoreDecalBlend = "1" RndFlags = "60000608">
+	<CollisionFiltering>
+	<Type collision_class_terrain = "0" collision_class_wheeled = "0" collision_class_living = "0" collision_class_articulated = "0" collision_class_soft = "0" collision_class_particle = "0" gcc_player_capsule = "0" gcc_player_body = "0" gcc_vehicle = "0" gcc_large_kickable = "0" gcc_ragdoll = "0" gcc_rigid = "0" gcc_vtol = "0" gcc_ai = "0" / >
+	<Ignore collision_class_terrain = "0" collision_class_wheeled = "0" collision_class_living = "0" collision_class_articulated = "0" collision_class_soft = "0" collision_class_particle = "0" gcc_player_capsule = "0" gcc_player_body = "0" gcc_vehicle = "0" gcc_large_kickable = "0" gcc_ragdoll = "0" gcc_rigid = "0" gcc_vtol = "0" gcc_ai = "0" / >
+	< / CollisionFiltering>
+	< / Object>
+	"primitive_sphere-1" is a child of "Group-2", how do you know ? Because it has a parent attribute with the group guid, top level objects in prefab don't have a parent, it's implicitly given at load time
+	*/
+	e_FlattenedHierarchy,
+	/*
+	1 : No more flattened hierarchy, groups are serialized exactly as they are in the level file (using CGroup::Serialize)
+	<Object Type="Group" Layer="Main" LayerGUID="5af8763b-0eb4-f6b2-c9cd-bf985e9fa3dd" Id="b5621401-679a-2850-f761-ae381c539261" Name="Group-4" Pos="-6.7286377,1.715271,0" Rotate="1,0,0,0" Scale="1,1,1" ColorRGB="65280" UseCustomLevelLayerColor="0" Opened="1">
+	<Objects>
+	<Object Type="Brush" Layer="Main" LayerGUID="5af8763b-0eb4-f6b2-c9cd-bf985e9fa3dd" Id="92354280-6ddb-a34b-ddf8-fb1d67141eb7" Name="primitive_pyramid-1" Parent="b5621401-679a-2850-f761-ae381c539261" Pos="5.1032715,0.83911133,0" Rotate="1,0,0,0" Scale="1,1,1" ColorRGB="16777215" UseCustomLevelLayerColor="0" MatLayersMask="0" Prefab="objects/default/primitive_pyramid.cgf" IgnoreVisareas="0" CastShadowMaps="1" GIMode="1" RainOccluder="1" SupportSecondVisarea="0" DynamicDistanceShadows="0" Hideable="0" LodRatio="100" ViewDistRatio="100" NotTriangulate="0" NoDynamicWater="0" AIRadius="-1" NoStaticDecals="0" RecvWind="0" Occluder="0" DrawLast="0" ShadowLodBias="0" IgnoreTerrainLayerBlend="1" IgnoreDecalBlend="1" RndFlags="60000408">
+	<CollisionFiltering>
+	<Type collision_class_terrain="0" collision_class_wheeled="0" collision_class_living="0" collision_class_articulated="0" collision_class_soft="0" collision_class_particle="0" gcc_player_capsule="0" gcc_player_body="0" gcc_vehicle="0" gcc_large_kickable="0" gcc_ragdoll="0" gcc_rigid="0" gcc_vtol="0" gcc_ai="0"/>
+	<Ignore collision_class_terrain="0" collision_class_wheeled="0" collision_class_living="0" collision_class_articulated="0" collision_class_soft="0" collision_class_particle="0" gcc_player_capsule="0" gcc_player_body="0" gcc_vehicle="0" gcc_large_kickable="0" gcc_ragdoll="0" gcc_rigid="0" gcc_vtol="0" gcc_ai="0"/>
+	</CollisionFiltering>
+	</Object>
+	</Objects>
+	</Object>
+	Group members are properly serialized via CGroup::SerializeMembers instead of flattening (note the <Objects> tag)
+	*/
+	e_FullHierarchy,
+};
+
+#define CURRENT_VERSION EPrefabVersions::e_FullHierarchy
 
 CPrefabItem::CPrefabItem() :
 	//init to current version
@@ -46,7 +78,8 @@ void CPrefabItem::Serialize(SerializeContext& ctx)
 		//we are loading a very old prefab, set version to 0
 		if (!node->getAttr("Version", m_version))
 		{
-			m_version = 0;
+			m_version = e_FlattenedHierarchy;
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "This prefab has been created with an old file version, on modify it will be updated to latest");
 		}
 	}
 	else
@@ -107,32 +140,10 @@ void CPrefabItem::CollectLinkedObjects(CBaseObject* pObj, std::vector<CBaseObjec
 		CollectLinkedObjects(pLinkedObject, linkedObjects, selection);
 	}
 }
-/*VERSIONS
-   0 : Prefabs are saved in a flattened hierarchy, group members are too. For example
-   <Object Type="Group" Layer="Main" LayerGUID="561c3d54-fd84-4a25-3fa2-2781f36492a8" Id="a440327f-e262-3aa9-6520-619fe689071e" Name="Group-2" Pos="509.65161,501.59622,31.999756" Rotate="1,0,0,0" Scale="1,1,1" ColorRGB="65280" UseCustomLevelLayerColor="0" Opened="0"/>
-   <Object Type="Brush" Layer="Main" LayerGUID="561c3d54-fd84-4a25-3fa2-2781f36492a8" Id="27120ffe-ab2b-6c95-c25d-171d8ec67aaf" Name="primitive_sphere-1" Parent="a440327f-e262-3aa9-6520-619fe689071e" Pos="-508.02625,-501.48993,-31.999756" Rotate="1,0,0,0" Scale="1,1,1" ColorRGB="16777215" UseCustomLevelLayerColor="0" MatLayersMask="0" Prefab="objects/default/primitive_sphere.cgf" IgnoreVisareas="0" CastShadowMaps="1" GIMode="1" RainOccluder="1" SupportSecondVisarea="0" DynamicDistanceShadows="0" Hideable="0" LodRatio="100" ViewDistRatio="100" NotTriangulate="0" NoDynamicWater="0" AIRadius="-1" NoStaticDecals="0" RecvWind="0" Occluder="0" DrawLast="0" ShadowLodBias="0" IgnoreTerrainLayerBlend="1" IgnoreDecalBlend="1" RndFlags="60000608">
-    <CollisionFiltering>
-     <Type collision_class_terrain="0" collision_class_wheeled="0" collision_class_living="0" collision_class_articulated="0" collision_class_soft="0" collision_class_particle="0" gcc_player_capsule="0" gcc_player_body="0" gcc_vehicle="0" gcc_large_kickable="0" gcc_ragdoll="0" gcc_rigid="0" gcc_vtol="0" gcc_ai="0"/>
-     <Ignore collision_class_terrain="0" collision_class_wheeled="0" collision_class_living="0" collision_class_articulated="0" collision_class_soft="0" collision_class_particle="0" gcc_player_capsule="0" gcc_player_body="0" gcc_vehicle="0" gcc_large_kickable="0" gcc_ragdoll="0" gcc_rigid="0" gcc_vtol="0" gcc_ai="0"/>
-    </CollisionFiltering>
-   </Object>
-   "primitive_sphere-1" is a child of "Group-2", how do you know ? Because it has a parent attribute with the group guid, top level objects in prefab don't have a parent, it's implicitly given at load time
-   1 : No more flattened hierarchy, groups are serialized exactly as they are in the level file (using CGroup::Serialize)
-   <Object Type="Group" Layer="Main" LayerGUID="5af8763b-0eb4-f6b2-c9cd-bf985e9fa3dd" Id="b5621401-679a-2850-f761-ae381c539261" Name="Group-4" Pos="-6.7286377,1.715271,0" Rotate="1,0,0,0" Scale="1,1,1" ColorRGB="65280" UseCustomLevelLayerColor="0" Opened="1">
-   <Objects>
-    <Object Type="Brush" Layer="Main" LayerGUID="5af8763b-0eb4-f6b2-c9cd-bf985e9fa3dd" Id="92354280-6ddb-a34b-ddf8-fb1d67141eb7" Name="primitive_pyramid-1" Parent="b5621401-679a-2850-f761-ae381c539261" Pos="5.1032715,0.83911133,0" Rotate="1,0,0,0" Scale="1,1,1" ColorRGB="16777215" UseCustomLevelLayerColor="0" MatLayersMask="0" Prefab="objects/default/primitive_pyramid.cgf" IgnoreVisareas="0" CastShadowMaps="1" GIMode="1" RainOccluder="1" SupportSecondVisarea="0" DynamicDistanceShadows="0" Hideable="0" LodRatio="100" ViewDistRatio="100" NotTriangulate="0" NoDynamicWater="0" AIRadius="-1" NoStaticDecals="0" RecvWind="0" Occluder="0" DrawLast="0" ShadowLodBias="0" IgnoreTerrainLayerBlend="1" IgnoreDecalBlend="1" RndFlags="60000408">
-     <CollisionFiltering>
-      <Type collision_class_terrain="0" collision_class_wheeled="0" collision_class_living="0" collision_class_articulated="0" collision_class_soft="0" collision_class_particle="0" gcc_player_capsule="0" gcc_player_body="0" gcc_vehicle="0" gcc_large_kickable="0" gcc_ragdoll="0" gcc_rigid="0" gcc_vtol="0" gcc_ai="0"/>
-      <Ignore collision_class_terrain="0" collision_class_wheeled="0" collision_class_living="0" collision_class_articulated="0" collision_class_soft="0" collision_class_particle="0" gcc_player_capsule="0" gcc_player_body="0" gcc_vehicle="0" gcc_large_kickable="0" gcc_ragdoll="0" gcc_rigid="0" gcc_vtol="0" gcc_ai="0"/>
-     </CollisionFiltering>
-    </Object>
-   </Objects>
-   </Object>
-   Group members are properly serialized via CGroup::SerializeMembers instead of flattening (note the <Objects> tag)
- */
+
 void CPrefabItem::CheckVersionAndUpgrade()
 {
-	if (m_version < 1)
+	if (m_version < EPrefabVersions::e_FullHierarchy)
 	{
 		//in version 0 all prefabs objects are in a flat list, meaning all objects are added to the top level of the prefab (even group members are flattened), this needs to be updated to a proper hierarchy
 		std::vector<XmlNodeRef> objects;
