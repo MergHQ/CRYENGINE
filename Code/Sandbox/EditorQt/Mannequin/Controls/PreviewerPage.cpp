@@ -653,7 +653,7 @@ float CPreviewerPage::PopulateClipTracks(CSequencerNode* node, const int scopeID
 		}
 	}
 
-	CFragmentIdTrack* fragTrack = (CFragmentIdTrack*)node->GetTrackForParameter(SEQUENCER_PARAM_FRAGMENTID);
+	CFragmentTrack* fragTrack = (CFragmentTrack*)node->GetTrackForParameter(SEQUENCER_PARAM_FRAGMENTID);
 
 	const ActionScopes scopeFlag = BIT64(scopeID);
 
@@ -1110,7 +1110,7 @@ void CPreviewerPage::SetUIFromHistory()
 
 			float maxTime = MIN_TIME_RANGE;
 			MannUtils::InsertFragmentTrackFromHistory(animNode, *m_fragmentHistory, 0.0f, 0.0f, maxTime, m_contexts->m_scopeData[i]);
-			m_contexts->m_scopeData[i].fragTrack[eMEM_Previewer] = (CFragmentIdTrack*)animNode->GetTrackForParameter(SEQUENCER_PARAM_FRAGMENTID);// fragTrack;
+			m_contexts->m_scopeData[i].fragTrack[eMEM_Previewer] = (CFragmentTrack*)animNode->GetTrackForParameter(SEQUENCER_PARAM_FRAGMENTID);// fragTrack;
 
 			m_contexts->m_scopeData[i].animNode[eMEM_Previewer] = animNode;
 		}

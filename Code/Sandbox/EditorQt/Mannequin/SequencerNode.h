@@ -15,8 +15,7 @@ class CSequencerNode
 public:
 	enum ESupportedParamFlags
 	{
-		PARAM_MULTIPLE_TRACKS = BIT32(0), //<! If set, user may create multiple tracks for this parameter
-		PARAM_PERSISTENT_TRACKS = BIT32(1) //<! If set, user may not remove tracks of this parameter
+		PARAM_MULTIPLE_TRACKS = 0x01, // Set if parameter can be assigned multiple tracks.
 	};
 
 	struct SParamInfo
@@ -34,7 +33,7 @@ public:
 	virtual ~CSequencerNode();
 
 	void                       SetName(const char* name);
-	const char*                GetName() const;
+	const char*                GetName();
 
 	virtual ESequencerNodeType GetType() const;
 
@@ -66,7 +65,6 @@ public:
 	virtual void OnMenuOption(int menuOption);
 
 	virtual bool CanAddTrackForParameter(ESequencerParamType nParamId) const;
-	virtual bool CanRemoveTrackForParameter(ESequencerParamType nParamId) const;
 
 	virtual int  GetParamCount() const;
 	virtual bool GetParamInfo(int nIndex, SParamInfo& info) const;

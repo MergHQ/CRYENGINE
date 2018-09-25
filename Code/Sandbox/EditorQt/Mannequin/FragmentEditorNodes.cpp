@@ -8,11 +8,10 @@
 #include <CryGame/IGameFramework.h>
 #include "ICryMannequinEditor.h"
 
-const int NUM_PARAM_IDS = 4;
+const int NUM_PARAM_IDS = 3;
 CSequencerNode::SParamInfo g_paramInfoFE[NUM_PARAM_IDS] =
 {
-	CSequencerNode::SParamInfo("FragmentId", SEQUENCER_PARAM_FRAGMENTID, CSequencerNode::PARAM_PERSISTENT_TRACKS),
-	CSequencerNode::SParamInfo("FragmentProperties", SEQUENCER_PARAM_FRAGMENTPROPS, CSequencerNode::PARAM_PERSISTENT_TRACKS),
+	CSequencerNode::SParamInfo("FragmentId", SEQUENCER_PARAM_FRAGMENTID, 0),
 	CSequencerNode::SParamInfo("AnimLayer",  SEQUENCER_PARAM_ANIMLAYER,  CSequencerNode::PARAM_MULTIPLE_TRACKS),
 	CSequencerNode::SParamInfo("ProcLayer",  SEQUENCER_PARAM_PROCLAYER,  CSequencerNode::PARAM_MULTIPLE_TRACKS)
 };
@@ -21,7 +20,7 @@ CSequencerNode::SParamInfo g_paramInfoFE[NUM_PARAM_IDS] =
 const int NUM_FE_ROOT_PARAM_IDS = 1;
 CSequencerNode::SParamInfo g_paramInfoFERoot[NUM_FE_ROOT_PARAM_IDS] =
 {
-	CSequencerNode::SParamInfo("Params", SEQUENCER_PARAM_PARAMS, CSequencerNode::PARAM_PERSISTENT_TRACKS)
+	CSequencerNode::SParamInfo("Params", SEQUENCER_PARAM_PARAMS, 0)
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -224,9 +223,6 @@ CSequencerTrack* CFragmentNode::CreateTrack(ESequencerParamType nParamId)
 
 	switch (nParamId)
 	{
-	case SEQUENCER_PARAM_FRAGMENTPROPS:
-		newTrack = new CFragmentPropertyTrack();
-		break;
 	case SEQUENCER_PARAM_ANIMLAYER:
 		newTrack = new CClipTrack(m_pScopeData->context[eMEM_FragmentEditor], eMEM_FragmentEditor);
 		break;
@@ -234,7 +230,7 @@ CSequencerTrack* CFragmentNode::CreateTrack(ESequencerParamType nParamId)
 		newTrack = new CProcClipTrack(m_pScopeData->context[eMEM_FragmentEditor], eMEM_FragmentEditor);
 		break;
 	case SEQUENCER_PARAM_FRAGMENTID:
-		newTrack = new CFragmentIdTrack(*m_pScopeData, eMEM_FragmentEditor);
+		newTrack = new CFragmentTrack(*m_pScopeData, eMEM_FragmentEditor);
 		break;
 	}
 

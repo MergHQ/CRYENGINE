@@ -23,7 +23,7 @@ void CSequencerNode::SetName(const char* name)
 	m_name = name;
 }
 
-const char* CSequencerNode::GetName() const
+const char* CSequencerNode::GetName()
 {
 	return m_name.c_str();
 }
@@ -189,25 +189,9 @@ bool CSequencerNode::CanAddTrackForParameter(ESequencerParamType paramId) const
 	if (!GetParamInfoFromId(paramId, paramInfo))
 		return false;
 
+	int flags = 0;
 	CSequencerTrack* track = GetTrackForParameter(paramId);
 	if (track && !(paramInfo.flags & CSequencerNode::PARAM_MULTIPLE_TRACKS))
-	{
-		return false;
-	}
-
-	return true;
-}
-
-bool CSequencerNode::CanRemoveTrackForParameter(ESequencerParamType paramId) const
-{
-	SParamInfo paramInfo;
-	if (!GetParamInfoFromId(paramId, paramInfo))
-	{
-		return false;
-	}
-
-	CSequencerTrack* track = GetTrackForParameter(paramId);
-	if (track && (paramInfo.flags & CSequencerNode::PARAM_PERSISTENT_TRACKS))
 	{
 		return false;
 	}

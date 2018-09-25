@@ -402,7 +402,7 @@ struct SFragmentData
 		}
 	}
 
-	float                       actionFinishedTiming = 0.0f; //<! Timing of the IAction::OnActionFinished() runtime call, expressed in seconds relative to the end of the fragment. This property is referred to as "BlendOutDuration" in xml attributes due to backwards compatibility reasons.
+	float                       blendOutDuration = 0.0f;
 	DynArray<TAnimClipSequence> animLayers;
 	DynArray<TProcClipSequence> procLayers;
 	float                       duration[PART_TOTAL];
@@ -413,9 +413,9 @@ struct SFragmentData
 class CFragment
 {
 public:
-	CFragment() : m_actionFinishedTiming(0.2f) {}
+	CFragment() : m_blendOutDuration(0.2f) {}
 
-	float                       m_actionFinishedTiming; //<! Timing of the IAction::OnActionFinished() runtime call, expressed in seconds relative to the end of the fragment. This property is referred to as "BlendOutDuration" in xml attributes due to backwards compatibility reasons.
+	float                       m_blendOutDuration;
 	DynArray<TAnimClipSequence> m_animLayers;
 	DynArray<TProcClipSequence> m_procLayers;
 };

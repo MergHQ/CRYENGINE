@@ -12,36 +12,36 @@ class TSequencerTrack
 {
 public:
 	//! Return number of keys in track.
-	virtual int GetNumKeys() const override { return m_keys.size(); }
+	virtual int GetNumKeys() const { return m_keys.size(); }
 
 	//! Set number of keys in track.
 	//! If needed adds empty keys at end or remove keys from end.
-	virtual void SetNumKeys(int numKeys) override { m_keys.resize(numKeys); }
+	virtual void SetNumKeys(int numKeys) { m_keys.resize(numKeys); }
 
 	//! Remove specified key.
-	virtual void RemoveKey(int num) override;
+	virtual void RemoveKey(int num);
 
-	virtual int  CreateKey(float time) override;
-	virtual int  CloneKey(int fromKey) override;
-	virtual int  CopyKey(CSequencerTrack* pFromTrack, int nFromKey) override;
+	int          CreateKey(float time);
+	int          CloneKey(int fromKey);
+	int          CopyKey(CSequencerTrack* pFromTrack, int nFromKey);
 
 	//! Get key at specified location.
 	//! @param key Must be valid pointer to compatible key structure, to be filled with specified key location.
-	virtual void                 GetKey(int index, CSequencerKey* key) const override;
+	virtual void                 GetKey(int index, CSequencerKey* key) const;
 
-	virtual const CSequencerKey* GetKey(int index) const override;
-	virtual CSequencerKey*       GetKey(int index) override;
+	virtual const CSequencerKey* GetKey(int index) const;
+	virtual CSequencerKey*       GetKey(int index);
 
 	//! Set key at specified location.
 	//! @param key Must be valid pointer to compatible key structure.
-	virtual void SetKey(int index, const CSequencerKey* key) override;
+	virtual void SetKey(int index, CSequencerKey* key);
 
 	/** Serialize this animation track to XML.
 	    Do not override this method, prefer to override SerializeKey.
 	 */
-	virtual bool Serialize(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEmptyTracks = true) override;
+	virtual bool Serialize(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEmptyTracks = true);
 
-	virtual bool SerializeSelection(XmlNodeRef& xmlNode, bool bLoading, bool bCopySelected = false, float fTimeOffset = 0) override;
+	virtual bool SerializeSelection(XmlNodeRef& xmlNode, bool bLoading, bool bCopySelected = false, float fTimeOffset = 0);
 
 	/** Serialize single key of this track.
 	    Override this in derived classes.
@@ -51,9 +51,7 @@ public:
 
 protected:
 	//! Sort keys in track (after time of keys was modified).
-	virtual void DoSortKeys() override;
-
-	virtual void OnTimeRangeChanged(const Range& oldRange, const Range& newRange) override;
+	virtual void DoSortKeys();
 
 protected:
 	typedef std::vector<KeyType> Keys;
@@ -96,7 +94,7 @@ inline CSequencerKey* TSequencerTrack<KeyType >::GetKey(int index)
 
 //////////////////////////////////////////////////////////////////////////
 template<class KeyType>
-inline void TSequencerTrack<KeyType >::SetKey(int index, const CSequencerKey* key)
+inline void TSequencerTrack<KeyType >::SetKey(int index, CSequencerKey* key)
 {
 	assert(index >= 0 && index < (int)m_keys.size());
 	assert(key != 0);
@@ -109,33 +107,6 @@ template<class KeyType>
 inline void TSequencerTrack<KeyType >::DoSortKeys()
 {
 	std::sort(m_keys.begin(), m_keys.end());
-}
-
-template<typename KeyType>
-inline void TSequencerTrack<KeyType>::OnTimeRangeChanged(const Range& oldRange, const Range& newRange)
-{
-	const float leftDelta = newRange.start - oldRange.start;
-	const float rightDelta = newRange.end - oldRange.end;
-
-	for (CSequencerKey& key : m_keys)
-	{
-		switch (key.GetTimelineAlignment())
-		{
-		case CSequencerKey::ETimelineAlignment::Left:
-			key.m_time += leftDelta;
-			break;
-		case CSequencerKey::ETimelineAlignment::Right:
-			key.m_time += rightDelta;
-			break;
-		default:
-			assert(false);
-			break;
-		}
-
-		newRange.ClipValue(key.m_time);
-	}
-
-	Invalidate();
 }
 
 //////////////////////////////////////////////////////////////////////////

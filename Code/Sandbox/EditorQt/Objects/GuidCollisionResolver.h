@@ -29,6 +29,7 @@ private:
 
 	void SavePrefabHierarchy(CPrefabObject* pPrefabObject);
 
+	const std::vector<CBaseObject*>* GetSavedChildrenPtr(CPrefabObject* pPrefabObject);
 	const std::vector<CBaseObject*>& GetSavedChildren(CPrefabObject* pPrefabObject);
 
 	CBaseObject* m_pConflictingObject{ nullptr };

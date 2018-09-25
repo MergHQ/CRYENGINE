@@ -18,9 +18,9 @@ public:
 protected:
 	DECLARE_MESSAGE_MAP()
 
-	void DrawTrack(int item, CDC* dc, const CRect& rcItem);
-	void DrawKeys(const CSequencerTrack* track, CDC* dc, const CRect& rc, const Range& timeRange, EDSRenderFlags renderFlags);
-	void DrawNodeItem(const CSequencerNode* pAnimNode, CDC* dc, const CRect& rcItem);
+	void DrawTrack(int item, CDC* dc, CRect& rcItem);
+	void DrawKeys(CSequencerTrack* track, CDC* dc, CRect& rc, Range& timeRange, EDSRenderFlags renderFlags);
+	void DrawNodeItem(CSequencerNode* pAnimNode, CDC* dc, CRect& rcItem);
 
 	// Overrides from CSequencerKeys.
 	int  FirstKeyFromPoint(CPoint point, bool exact = false) const;
