@@ -32,6 +32,9 @@ uint32 GetWorkerThreadId();
 
 } // namespace detail
 
+namespace ThreadBackEnd   { class CThreadBackEnd; }
+namespace BlockingBackEnd { class CBlockingBackEnd; }
+
 // Tracks CPU/PPU worker thread(s) utilization and job execution time per frame
 class CWorkerBackEndProfiler : public IWorkerBackEndProfiler
 {
@@ -100,11 +103,7 @@ public:
 	static CJobManager* Instance();
 
 	//destructor
-	virtual ~CJobManager()
-	{
-		delete m_pThreadBackEnd;
-		CryAlignedDelete(m_pBlockingBackEnd);
-	}
+	virtual ~CJobManager();
 
 	virtual void Init(uint32 nSysMaxWorker) override;
 
@@ -121,23 +120,7 @@ public:
 		return GetJobHandle(cpJobName, strlen(cpJobName), pInvoker);
 	}
 
-	virtual JobManager::IBackend* GetBackEnd(JobManager::EBackEndType backEndType) override
-	{
-		switch (backEndType)
-		{
-		case eBET_Thread:
-			return m_pThreadBackEnd;
-		case eBET_Blocking:
-			return m_pBlockingBackEnd;
-		default:
-			CRY_ASSERT_MESSAGE(0, "Unsupported EBackEndType encountered.");
-			__debugbreak();
-			return 0;
-		}
-		;
-
-		return 0;
-	}
+	virtual JobManager::IBackend* GetBackEnd(JobManager::EBackEndType backEndType) override;
 
 	//shuts down job manager
 	virtual void ShutDown() override;
@@ -199,10 +182,7 @@ public:
 		assert(nIdx < JOBSYSTEM_INVOKER_COUNT);
 		return m_arrJobInvokers[nIdx];
 	}
-	virtual uint32 GetNumWorkerThreads() const override
-	{
-		return m_pThreadBackEnd ? m_pThreadBackEnd->GetNumWorkerThreads() : 0;
-	}
+	virtual uint32 GetNumWorkerThreads() const override;
 
 	// get a free semaphore from the jobmanager pool
 	virtual JobManager::TSemaphoreHandle AllocateSemaphore(volatile const void* pOwner) override;
@@ -242,8 +222,8 @@ private:
 
 	bool m_Initialized;                                     //true if JobManager have been initialized
 
-	IBackend* m_pThreadBackEnd;                 // Backend for regular jobs, available on PC/XBOX. on Xbox threads are polling with a low priority
-	IBackend* m_pBlockingBackEnd;               // Backend for tasks which can block to prevent stalling regular jobs in this case
+	ThreadBackEnd::CThreadBackEnd*     m_pThreadBackEnd;    // Backend for regular jobs, available on PC/XBOX. on Xbox threads are polling with a low priority
+	BlockingBackEnd::CBlockingBackEnd* m_pBlockingBackEnd;  // Backend for tasks which can block to prevent stalling regular jobs in this case
 
 	uint16 m_nJobIdCounter;                     // JobId counter for jobs dynamically allocated at runtime
 
