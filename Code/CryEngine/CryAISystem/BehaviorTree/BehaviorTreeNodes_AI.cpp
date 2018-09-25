@@ -1513,7 +1513,7 @@ public:
 		archive(m_alertness, "value", "^Value");
 		archive.doc("Set alertness value between [0-2]. 0 represents minimum alertness; 2 maximum.");
 
-		if (m_alertness < 0 && m_alertness > 2)
+		if (m_alertness < 0 || m_alertness > 2)
 		{
 			archive.error(m_alertness, SerializationUtils::Messages::ErrorInvalidValueWithReason("Value", ToString(m_alertness), "Alertness valid range is [0-2]"));
 		}

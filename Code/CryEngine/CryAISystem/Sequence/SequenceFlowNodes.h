@@ -150,6 +150,7 @@ public:
 
 	CFlowNode_AISequenceActionMove(SActivationInfo* pActInfo)
 		: m_actInfo(*pActInfo)
+		, m_stopRadiusSqr(0.0f)
 	{
 	}
 
@@ -327,6 +328,7 @@ public:
 
 	CFlowNode_AISequenceActionShoot(SActivationInfo* pActInfo)
 		: m_actInfo(*pActInfo)
+		, m_fireTimeMS(0)
 	{
 	}
 

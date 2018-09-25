@@ -9,6 +9,7 @@
 #include "ConnectionsModel.h"
 
 #include <ModelUtils.h>
+#include <IConnection.h>
 #include <IItem.h>
 #include <QtUtil.h>
 #include <Controls/QuestionDialog.h>
@@ -61,7 +62,7 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 		{
 			RefreshConnectionProperties();
 			UpdateSelectedConnections();
-	  });
+		});
 
 	auto const pSplitter = new QSplitter(Qt::Vertical, this);
 	pSplitter->addWidget(m_pTreeView);
@@ -85,13 +86,13 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 			  m_pTreeView->selectionModel()->clear();
 			  RefreshConnectionProperties();
 			}
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	g_implementationManager.SignalImplementationAboutToChange.Connect([this]()
 		{
 			m_pTreeView->selectionModel()->clear();
 			RefreshConnectionProperties();
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	QObject::connect(m_pConnectionModel, &CConnectionsModel::SignalConnectionAdded, this, &CConnectionsWidget::OnConnectionAdded);
 }
@@ -160,7 +161,7 @@ void CConnectionsWidget::OnContextMenu(QPoint const& pos)
 				pContextMenu->addAction(tr("Select in Middleware Data"), [=]()
 					{
 						SignalSelectConnectedImplItem(itemId);
-				  });
+					});
 			}
 		}
 
@@ -300,11 +301,11 @@ void CConnectionsWidget::RefreshConnectionProperties()
 			if (index.isValid())
 			{
 				ControlId const id = static_cast<ControlId>(index.data(static_cast<int>(ModelUtils::ERoles::Id)).toInt());
-				ConnectionPtr const pConnection = m_pControl->GetConnection(id);
+				IConnection const* const pIConnection = m_pControl->GetConnection(id);
 
-				if ((pConnection != nullptr) && pConnection->HasProperties())
+				if ((pIConnection != nullptr) && pIConnection->HasProperties())
 				{
-					serializers.emplace_back(*pConnection);
+					serializers.emplace_back(*pIConnection);
 					showProperties = true;
 				}
 			}

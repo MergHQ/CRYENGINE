@@ -7,6 +7,7 @@
 #include "ImplementationManager.h"
 #include "AssetUtils.h"
 
+#include <IConnection.h>
 #include <IItem.h>
 
 #include <FilePathUtil.h>
@@ -727,11 +728,11 @@ CAsset* CAssetsManager::CreateAndConnectImplItemsRecursively(Impl::IItem* const 
 		pParent->AddChild(pControl);
 		m_controls.push_back(pControl);
 
-		ConnectionPtr const pAudioConnection = g_pIImpl->CreateConnectionToControl(pControl->GetType(), pIItem);
+		IConnection* const pIConnection = g_pIImpl->CreateConnectionToControl(pControl->GetType(), pIItem);
 
-		if (pAudioConnection != nullptr)
+		if (pIConnection != nullptr)
 		{
-			pControl->AddConnection(pAudioConnection);
+			pControl->AddConnection(pIConnection);
 		}
 
 		pAsset = pControl;

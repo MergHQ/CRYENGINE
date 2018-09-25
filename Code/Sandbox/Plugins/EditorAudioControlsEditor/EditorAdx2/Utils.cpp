@@ -94,7 +94,7 @@ string GetTypeName(EItemType const type)
 }
 
 //////////////////////////////////////////////////////////////////////////
-string FindCueSheetName(CItem* const pItem, CItem const& rootItem)
+string FindCueSheetName(CItem const* const pItem, CItem const& rootItem)
 {
 	string cueSheetName = "";
 	CItem const* pParent = pItem;

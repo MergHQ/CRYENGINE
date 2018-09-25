@@ -562,7 +562,7 @@ struct SysSpecOverrideSinkConsole : public ILoadConfigurationEntrySink
 
 		ICVar* pCvar = gEnv->pConsole->GetCVar(szKey);
 		if (pCvar)
-			pCvar->Set(szValue);
+			pCvar->SetFromString(szValue);
 	}
 };
 #endif

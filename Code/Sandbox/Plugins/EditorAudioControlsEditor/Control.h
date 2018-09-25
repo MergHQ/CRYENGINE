@@ -4,7 +4,6 @@
 
 #include "Asset.h"
 
-#include <IConnection.h>
 #include <CrySystem/XML/IXml.h>
 
 namespace ACE
@@ -14,14 +13,20 @@ namespace Impl
 struct IItem;
 } // namespace Impl
 
+struct IConnection;
+
 class CControl final : public CAsset
 {
 public:
 
-	explicit CControl(string const& name, ControlId const id, EAssetType const type);
-	~CControl();
-
 	CControl() = delete;
+	CControl(CControl const&) = delete;
+	CControl(CControl&&) = delete;
+	CControl& operator=(CControl const&) = delete;
+	CControl& operator=(CControl&&) = delete;
+
+	explicit CControl(string const& name, ControlId const id, EAssetType const type);
+	virtual ~CControl() override;
 
 	// CAsset
 	virtual void SetName(string const& name) override;
@@ -41,13 +46,11 @@ public:
 	void              SetSelectedConnections(ControlIds selectedConnectionIds) { m_selectedConnectionIds = selectedConnectionIds; }
 
 	size_t            GetConnectionCount() const                               { return m_connections.size(); }
-	void              AddConnection(ConnectionPtr const pConnection);
-	void              RemoveConnection(ConnectionPtr const pConnection);
+	void              AddConnection(IConnection* const pIConnection);
 	void              RemoveConnection(Impl::IItem* const pIItem);
 	void              ClearConnections();
-	ConnectionPtr     GetConnectionAt(size_t const index) const;
-	ConnectionPtr     GetConnection(ControlId const id) const;
-	ConnectionPtr     GetConnection(Impl::IItem const* const pIItem) const;
+	IConnection*      GetConnectionAt(size_t const index) const;
+	IConnection*      GetConnection(ControlId const id) const;
 	void              BackupAndClearConnections();
 	void              ReloadConnections();
 	void              LoadConnectionFromXML(XmlNodeRef const xmlNode, int const platformIndex = -1);
@@ -60,10 +63,10 @@ private:
 	void SignalConnectionRemoved(Impl::IItem* const pIItem);
 	void SignalConnectionModified();
 
-	ControlId const            m_id;
-	Scope                      m_scope;
-	std::vector<ConnectionPtr> m_connections;
-	bool                       m_isAutoLoad;
+	ControlId const           m_id;
+	Scope                     m_scope;
+	std::vector<IConnection*> m_connections;
+	bool                      m_isAutoLoad;
 
 	using XMLNodes = std::vector<XmlNodeRef>;
 	std::map<int, XMLNodes> m_rawConnections;

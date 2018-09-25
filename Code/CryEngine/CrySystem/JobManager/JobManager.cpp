@@ -540,9 +540,6 @@ void JobManager::CJobManager::AddJob(JobManager::CJobDelegator& crJob, const Job
 
 	JobManager::SInfoBlock infoBlock;
 
-	// Test if the job should be invoked
-	bool bUseJobSystem = m_nJobSystemEnabled ? CJobManager::InvokeAsJob(cJobHandle) : false;
-
 	const uint32 cOrigParamSize = crJob.GetParamDataSize();
 	const uint8 cParamSize = cOrigParamSize >> 4;
 
@@ -566,15 +563,31 @@ void JobManager::CJobManager::AddJob(JobManager::CJobDelegator& crJob, const Job
 	pJobProfilingData->jobHandle = cJobHandle;
 #endif
 
-	// == dispatch to the right BackEnd == //
-	// default case is the threadbackend
-	if (m_pThreadBackEnd && !crJob.IsBlocking())
+	// == When the job is filtered or job system is disabled, execute directly == //
+	if (!InvokeAsJob(cJobHandle))
 	{
-		return static_cast<ThreadBackEnd::CThreadBackEnd*>(m_pThreadBackEnd)->AddJob(crJob, cJobHandle, infoBlock);
+		Invoker delegator = crJob.GetGenericDelegator();
+		const void* pParamMem = crJob.GetJobParamData();
+
+		// execute job function
+		(*delegator)((void*)pParamMem);
+
+		IF(infoBlock.GetJobState(), 1)
+		{
+			infoBlock.GetJobState()->SetStopped();
+		}
 	}
-	
-	CRY_ASSERT(m_pBlockingBackEnd);
-	return static_cast<BlockingBackEnd::CBlockingBackEnd*>(m_pBlockingBackEnd)->AddJob(crJob, cJobHandle, infoBlock);
+	// == dispatch to the right BackEnd == //
+	// thread backend is preferred
+	else if (m_pThreadBackEnd && !crJob.IsBlocking())
+	{
+		m_pThreadBackEnd->AddJob(crJob, cJobHandle, infoBlock);
+	}
+	else
+	{
+		CRY_ASSERT(m_pBlockingBackEnd);
+		m_pBlockingBackEnd->AddJob(crJob, cJobHandle, infoBlock);
+	}
 }
 
 void JobManager::CJobManager::ShutDown()
@@ -1598,14 +1611,42 @@ bool JobManager::CJobManager::OnInputEvent(const SInputEvent& event)
 void JobManager::CJobManager::KickTempWorker() const
 {
 	CRY_ASSERT(m_pThreadBackEnd);
-	static_cast<ThreadBackEnd::CThreadBackEnd*>(m_pThreadBackEnd)->KickTempWorker();
+	m_pThreadBackEnd->KickTempWorker();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 void JobManager::CJobManager::StopTempWorker() const
 {
 	CRY_ASSERT(m_pThreadBackEnd);
-	static_cast<ThreadBackEnd::CThreadBackEnd*>(m_pThreadBackEnd)->StopTempWorker();
+	m_pThreadBackEnd->StopTempWorker();
+}
+
+JobManager::CJobManager::~CJobManager()
+{
+	delete m_pThreadBackEnd;
+	CryAlignedDelete(m_pBlockingBackEnd);
+}
+
+JobManager::IBackend* JobManager::CJobManager::GetBackEnd(JobManager::EBackEndType backEndType)
+{
+	switch (backEndType)
+	{
+	case eBET_Thread:
+		return m_pThreadBackEnd;
+	case eBET_Blocking:
+		return m_pBlockingBackEnd;
+	default:
+		CRY_ASSERT_MESSAGE(0, "Unsupported EBackEndType encountered.");
+		__debugbreak();
+		return nullptr;
+	}
+
+	return nullptr;
+}
+
+uint32 JobManager::CJobManager::GetNumWorkerThreads() const
+{
+	return m_pThreadBackEnd ? m_pThreadBackEnd->GetNumWorkerThreads() : 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

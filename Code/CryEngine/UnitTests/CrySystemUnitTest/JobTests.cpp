@@ -9,6 +9,7 @@
 #include <vector>
 #include <memory>
 #include <atomic>
+#include <thread>
 
 void InitJobManager()
 {
@@ -269,7 +270,7 @@ TEST_F(CJobSystemTest, PostJob)
 {
 	JobManager::SJobState jobState;
 	JobManager::SJobState jobState2;
-	int x = 0;
+	std::atomic<int> x{ 0 };
 	gEnv->pJobManager->AddLambdaJob("ExampleJob2", [&]
 	{
 		x++;
@@ -281,7 +282,7 @@ TEST_F(CJobSystemTest, PostJob)
 	jobState.RegisterPostJob("PostJob", followup, JobManager::eRegularPriority, &jobState2);
 	jobState.Wait();
 	jobState2.Wait();
-	REQUIRE(x == 2);
+	REQUIRE(static_cast<int>(x) == 2);
 }
 
 TEST_F(CJobSystemTest, JobState)
@@ -294,3 +295,46 @@ TEST_F(CJobSystemTest, JobState)
 	REQUIRE(!jobState.IsRunning());
 }
 
+TEST_F(CJobSystemTest, Filter)
+{
+	JobManager::SJobState jobState;
+	JobManager::SJobState jobState2;
+
+	std::thread::id threadId = std::this_thread::get_id();
+	std::thread::id jobThreadId1, jobThreadId2;
+
+	gEnv->pJobManager->SetJobFilter("Job1");
+
+	gEnv->pJobManager->AddLambdaJob("Job1", [&]
+	{
+		jobThreadId1 = std::this_thread::get_id();
+	}, JobManager::eRegularPriority, &jobState);
+
+	gEnv->pJobManager->AddLambdaJob("Job2", [&]
+	{
+		jobThreadId2 = std::this_thread::get_id();
+	}, JobManager::eRegularPriority, &jobState2);
+
+	jobState.Wait();
+	jobState2.Wait();
+
+	REQUIRE(jobThreadId1 == threadId);
+	REQUIRE(jobThreadId2 != threadId);
+}
+
+TEST_F(CJobSystemTest, DisableJobSystem)
+{
+	gEnv->pJobManager->SetJobSystemEnabled(0);
+
+	JobManager::SJobState jobState;
+	std::thread::id threadId = std::this_thread::get_id();
+	std::thread::id jobThreadId;
+	REQUIRE(jobThreadId != threadId);
+	gEnv->pJobManager->AddLambdaJob("Job", [&]
+	{
+		jobThreadId = std::this_thread::get_id();
+	}, JobManager::eRegularPriority, &jobState);
+	REQUIRE(jobThreadId == threadId);
+	jobState.Wait();
+	gEnv->pJobManager->SetJobSystemEnabled(1);
+}

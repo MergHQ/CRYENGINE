@@ -7,6 +7,7 @@
 #include "ImplementationManager.h"
 #include "AssetUtils.h"
 
+#include <IConnection.h>
 #include <IItem.h>
 #include <CrySerialization/StringList.h>
 
@@ -151,53 +152,47 @@ void CControl::SetAutoLoad(bool const isAutoLoad)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ConnectionPtr CControl::GetConnectionAt(size_t const index) const
+IConnection* CControl::GetConnectionAt(size_t const index) const
 {
-	ConnectionPtr pConnection = nullptr;
+	IConnection* pIConnection = nullptr;
 
 	if (index < m_connections.size())
 	{
-		pConnection = m_connections[index];
+		pIConnection = m_connections[index];
 	}
 
-	return pConnection;
+	return pIConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ConnectionPtr CControl::GetConnection(ControlId const id) const
+IConnection* CControl::GetConnection(ControlId const id) const
 {
-	ConnectionPtr pConnection = nullptr;
+	IConnection* pIConnection = nullptr;
 
-	for (auto const& connection : m_connections)
+	for (auto const pITempConnection : m_connections)
 	{
-		if ((connection != nullptr) && (connection->GetID() == id))
+		if ((pITempConnection != nullptr) && (pITempConnection->GetID() == id))
 		{
-			pConnection = connection;
+			pIConnection = pITempConnection;
 			break;
 		}
 	}
 
-	return pConnection;
+	return pIConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ConnectionPtr CControl::GetConnection(Impl::IItem const* const pIItem) const
+void CControl::AddConnection(IConnection* const pIConnection)
 {
-	return GetConnection(pIItem->GetId());
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CControl::AddConnection(ConnectionPtr const pConnection)
-{
-	if (pConnection != nullptr)
+	if (pIConnection != nullptr)
 	{
-		Impl::IItem* const pIItem = g_pIImpl->GetItem(pConnection->GetID());
+		Impl::IItem* const pIItem = g_pIImpl->GetItem(pIConnection->GetID());
 
 		if (pIItem != nullptr)
 		{
-			g_pIImpl->EnableConnection(pConnection, g_assetsManager.IsLoading());
-			pConnection->SignalConnectionChanged.Connect(this, &CControl::SignalConnectionModified);
-			m_connections.push_back(pConnection);
+			g_pIImpl->EnableConnection(pIConnection, g_assetsManager.IsLoading());
+			pIConnection->SignalConnectionChanged.Connect(this, &CControl::SignalConnectionModified);
+			m_connections.push_back(pIConnection);
 			SignalConnectionAdded(pIItem);
 			SignalControlModified();
 		}
@@ -205,24 +200,31 @@ void CControl::AddConnection(ConnectionPtr const pConnection)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CControl::RemoveConnection(ConnectionPtr const pConnection)
+void CControl::RemoveConnection(Impl::IItem* const pIItem)
 {
-	if (pConnection != nullptr)
+	if (pIItem != nullptr)
 	{
-		auto const it = std::find(m_connections.begin(), m_connections.end(), pConnection);
+		ControlId const id = pIItem->GetId();
+		auto iter = m_connections.begin();
+		auto const iterEnd = m_connections.end();
 
-		if (it != m_connections.end())
+		while (iter != iterEnd)
 		{
-			Impl::IItem* const pIItem = g_pIImpl->GetItem(pConnection->GetID());
+			auto const pIConnection = *iter;
 
-			if (pIItem != nullptr)
+			if (pIConnection->GetID() == id)
 			{
-				g_pIImpl->DisableConnection(pConnection, g_assetsManager.IsLoading());
-				pConnection->SignalConnectionChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
-				m_connections.erase(it);
+				g_pIImpl->DisableConnection(pIConnection, g_assetsManager.IsLoading());
+				pIConnection->SignalConnectionChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
+				g_pIImpl->DestructConnection(pIConnection);
+
+				m_connections.erase(iter);
 				SignalConnectionRemoved(pIItem);
 				SignalControlModified();
+				break;
 			}
+
+			++iter;
 		}
 	}
 }
@@ -234,10 +236,12 @@ void CControl::ClearConnections()
 	{
 		bool const isLoading = g_assetsManager.IsLoading();
 
-		for (auto const& connection : m_connections)
+		for (auto const pIConnection : m_connections)
 		{
-			g_pIImpl->DisableConnection(connection, isLoading);
-			Impl::IItem* const pIItem = g_pIImpl->GetItem(connection->GetID());
+			g_pIImpl->DisableConnection(pIConnection, isLoading);
+			pIConnection->SignalConnectionChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
+			Impl::IItem* const pIItem = g_pIImpl->GetItem(pIConnection->GetID());
+			g_pIImpl->DestructConnection(pIConnection);
 
 			if (pIItem != nullptr)
 			{
@@ -259,9 +263,9 @@ void CControl::BackupAndClearConnections()
 
 	if ((m_type != EAssetType::Preload) && (m_type != EAssetType::Setting))
 	{
-		for (auto const& connection : m_connections)
+		for (auto const pIConnection : m_connections)
 		{
-			XmlNodeRef const pRawConnection = g_pIImpl->CreateXMLNodeFromConnection(connection, m_type);
+			XmlNodeRef const pRawConnection = g_pIImpl->CreateXMLNodeFromConnection(pIConnection, m_type);
 
 			if (pRawConnection != nullptr)
 			{
@@ -273,15 +277,15 @@ void CControl::BackupAndClearConnections()
 	{
 		auto const numPlatforms = static_cast<int>(g_platforms.size());
 
-		for (auto const& connection : m_connections)
+		for (auto const pIConnection : m_connections)
 		{
-			XmlNodeRef const pRawConnection = g_pIImpl->CreateXMLNodeFromConnection(connection, m_type);
+			XmlNodeRef const pRawConnection = g_pIImpl->CreateXMLNodeFromConnection(pIConnection, m_type);
 
 			if (pRawConnection != nullptr)
 			{
 				for (int i = 0; i < numPlatforms; ++i)
 				{
-					if (connection->IsPlatformEnabled(static_cast<PlatformIndexType>(i)))
+					if (pIConnection->IsPlatformEnabled(static_cast<PlatformIndexType>(i)))
 					{
 						m_rawConnections[i].push_back(pRawConnection);
 					}
@@ -308,31 +312,6 @@ void CControl::ReloadConnections()
 	}
 
 	m_rawConnections.clear();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CControl::RemoveConnection(Impl::IItem* const pIItem)
-{
-	if (pIItem != nullptr)
-	{
-		ControlId const id = pIItem->GetId();
-		auto it = m_connections.begin();
-		auto const end = m_connections.end();
-		bool const isLoading = g_assetsManager.IsLoading();
-
-		for (; it != end; ++it)
-		{
-			if ((*it)->GetID() == id)
-			{
-				g_pIImpl->DisableConnection(*it, isLoading);
-
-				m_connections.erase(it);
-				SignalConnectionRemoved(pIItem);
-				SignalControlModified();
-				break;
-			}
-		}
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -375,14 +354,14 @@ void CControl::SignalConnectionModified()
 //////////////////////////////////////////////////////////////////////////
 void CControl::LoadConnectionFromXML(XmlNodeRef const xmlNode, int const platformIndex /*= -1*/)
 {
-	ConnectionPtr pConnection = g_pIImpl->CreateConnectionFromXMLNode(xmlNode, m_type);
+	IConnection* pConnection = g_pIImpl->CreateConnectionFromXMLNode(xmlNode, m_type);
 
 	if (pConnection != nullptr)
 	{
 		if ((m_type == EAssetType::Preload) || (m_type == EAssetType::Setting))
 		{
 			// The connection could already exist but using a different platform
-			ConnectionPtr const pPreviousConnection = GetConnection(pConnection->GetID());
+			IConnection* const pPreviousConnection = GetConnection(pConnection->GetID());
 
 			if (pPreviousConnection == nullptr)
 			{
