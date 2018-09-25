@@ -164,7 +164,7 @@ private:
 	private:
 		ILINE Hdl ProtectHdl(Hdl x) const
 		{
-#if !CRY_PLATFORM_APPLE && !(CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) && !CRY_PLATFORM_ORBIS && CRYNETWORK_RELEASEBUILD
+#if !CRY_PLATFORM_APPLE && !CRY_PLATFORM_LINUX && !CRY_PLATFORM_ORBIS && CRYNETWORK_RELEASEBUILD
 			if (x != InvalidHdl)
 			{
 				return (x << 1) ^ ((uint32)UINT_PTR(this) + 1);     // ensures 0xFFFFFFFF cannot be a valid result (this will always be at least 4 byte aligned)
@@ -175,7 +175,7 @@ private:
 
 		ILINE Hdl UnprotectHdl(Hdl x) const
 		{
-#if !CRY_PLATFORM_APPLE && !(CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) && !CRY_PLATFORM_ORBIS && CRYNETWORK_RELEASEBUILD
+#if !CRY_PLATFORM_APPLE && !CRY_PLATFORM_LINUX && !CRY_PLATFORM_ORBIS && CRYNETWORK_RELEASEBUILD
 			if (x != InvalidHdl)
 			{
 				return (x ^ ((uint32)UINT_PTR(this) + 1)) >> 1;

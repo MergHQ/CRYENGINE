@@ -498,11 +498,8 @@ bool CCryPluginManager::LoadPluginFromFile(const char* szPluginFile, bool notify
 	}
 
 	// Load all binaries specified in the .cryplugin file
-#if CRY_PLATFORM_64BIT
 	constexpr const char* szBinFolder = "bin\\win_x64";
-#elif CRY_PLATFORM_32BIT
-	constexpr const char* szBinFolder = "bin\\win_x86";
-#endif
+
 	const string pluginRoot = PathUtil::GetPathWithoutFilename(szPluginFile);
 	const string binaryDirectory = PathUtil::Make(pluginRoot, szBinFolder);
 	for (const auto& it : plugin.content.binaries)

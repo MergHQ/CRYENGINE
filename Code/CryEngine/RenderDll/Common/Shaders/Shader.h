@@ -318,12 +318,12 @@ enum ETexFilter
 
 //=============================================================================
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#pragma warning( push )               //AMD Port
 	#pragma warning( disable : 4267 )
 #endif
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#pragma warning( pop )                //AMD Port
 #endif
 

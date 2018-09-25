@@ -108,7 +108,7 @@ float COBBTree::BuildNode(int iNode, int iTriStart,int nTris, int nDepth)
 	}
 
 	// separate geometry into two parts
-#if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) || (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) || CRY_PLATFORM_APPLE
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_APPLE
 	volatile // compiler bug workaround?
 #endif
 	int iAxis;

@@ -40,11 +40,7 @@ typedef struct _MEMORYSTATUS
 
 extern void GlobalMemoryStatus(LPMEMORYSTATUS lpmem);
 
-#if CRY_PLATFORM_64BIT
-	#define MEMORY_ALLOCATION_ALIGNMENT 16
-#else
-	#define MEMORY_ALLOCATION_ALIGNMENT 8
-#endif
+#define MEMORY_ALLOCATION_ALIGNMENT 16
 
 #define S_OK                          0
 #define THREAD_PRIORITY_NORMAL        0

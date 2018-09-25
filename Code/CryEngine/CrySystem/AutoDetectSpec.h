@@ -58,7 +58,6 @@ bool          IsDX12Supported();
 bool          GetGPUInfo(char* pName, size_t bufferSize, unsigned int& vendorID, unsigned int& deviceID, unsigned int& totLocalVidMem, DXFeatureLevel& featureLevel);
 int           GetGPURating(unsigned int vendorId, unsigned int deviceId);
 void          GetOS(SPlatformInfo::SWinInfo& winInfo, char* pName, size_t bufferSize);
-bool          IsVistaKB940105Required();
 
 inline size_t SafeMemoryThreshold(size_t memMB)
 {

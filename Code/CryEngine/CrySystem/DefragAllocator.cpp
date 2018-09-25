@@ -680,11 +680,7 @@ void CDefragAllocator::LinkFreeChunk(Index idx)
 
 IDefragAllocator::Hdl CDefragAllocator::Allocate_Locked(size_t sz, size_t alignment, const char* source, void* pContext)
 {
-#if CRY_PLATFORM_64BIT
 	CDBA_ASSERT(sz <= (BIT64(NumBuckets)));
-#else
-	CDBA_ASSERT(sz <= (BIT(NumBuckets)));
-#endif
 
 	sz = Align(sz, alignment) >> m_logMinAlignment;
 	alignment >>= m_logMinAlignment;
@@ -1119,7 +1115,7 @@ size_t CDefragAllocator::Defrag_FindMovesBwd(PendingMove** pMoves, size_t maxMov
 
 				if (IsMoveableCandidate(candidateChunkAttr, 0xffffffff))
 				{
-#if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) || CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
 					size_t candidateChunkAlign = BIT64(candidateChunk.logAlign);
 #else
 					size_t candidateChunkAlign = BIT(candidateChunk.logAlign);
@@ -1199,7 +1195,7 @@ size_t CDefragAllocator::Defrag_FindMovesBwd(PendingMove** pMoves, size_t maxMov
 
 				if (IsMoveableCandidate(candidateChunkAttr, 0xffffffff))
 				{
-#if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) || CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
 					size_t candidateChunkAlign = BIT64(candidateChunk.logAlign);
 #else
 					size_t candidateChunkAlign = BIT(candidateChunk.logAlign);
@@ -1304,7 +1300,7 @@ size_t CDefragAllocator::Defrag_FindMovesFwd(PendingMove** pMoves, size_t maxMov
 
 			if (IsMoveableCandidate(candidateChunkAttr, 0xffffffff))
 			{
-#if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) || CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
 				size_t candidateChunkAlign = BIT64(candidateChunk.logAlign);
 #else
 				size_t candidateChunkAlign = BIT(candidateChunk.logAlign);
@@ -1772,7 +1768,7 @@ void CDefragAllocator::SyncMoveSegment(uint32 seg)
 			CDBA_ASSERT(!pChunk->attr.IsPinned());
 			CDBA_ASSERT(m_policy.pDefragPolicy != NULL);
 
-#if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) || CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
 			size_t chunkAlign = BIT64(pChunk->logAlign);
 #else
 			size_t chunkAlign = BIT(pChunk->logAlign);

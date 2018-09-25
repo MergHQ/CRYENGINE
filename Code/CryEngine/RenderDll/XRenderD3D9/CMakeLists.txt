@@ -48,7 +48,7 @@ add_sources("CryRenderer_uber_5_dx11_dur.cpp"
 )
 
 # -- DXGL/opengl_loader_wgl.waf_files --
-sources_platform(WIN32)
+sources_platform(WINDOWS)
 add_sources("NoUberFile"
 	PROJECTS CryRenderOpenGL
 	SOURCE_GROUP "DXGL\\\\Specification"
@@ -57,7 +57,7 @@ add_sources("NoUberFile"
 )
 
 # -- DXGL/opengl_loader_gl.waf_files --
-sources_platform(LINUX WIN32)
+sources_platform(LINUX WINDOWS)
 add_sources("NoUberFile"
 	PROJECTS CryRenderOpenGL
 	SOURCE_GROUP "DXGL\\\\Specification"
@@ -474,7 +474,7 @@ add_sources("CryRenderer_uber_5_orb_dx11.cpp"
 )
 
 # -- DX11/dx11_renderer.waf_files --
-sources_platform(WIN32)
+sources_platform(WINDOWS)
 add_sources("CryRenderer_uber_5_dx11_dx11.cpp"
 	PROJECTS CryRenderD3D11
 	SOURCE_GROUP "DeviceManager\\\\D3D11"
@@ -589,7 +589,7 @@ add_sources("NoUberFile"
 )
 
 # -- mesh_baker.waf_files --
-sources_platform(ANDROID APPLE DURANGO LINUX WIN32)
+sources_platform(ANDROID APPLE DURANGO LINUX WINDOWS)
 add_sources("NoUberFile"
 	PROJECTS CryRenderD3D11 CryRenderD3D12 CryRenderVulkan CryRenderOpenGL
 	SOURCE_GROUP "Source Files"
@@ -688,7 +688,7 @@ add_sources("NoUberFile"
 )
 
 # -- Vulkan/vulkan_win.waf_files --
-sources_platform(WIN32)
+sources_platform(WINDOWS)
 add_sources("CryRenderer_uber_5_vulkan_dxgi.cpp"
 	PROJECTS CryRenderVulkan
 	SOURCE_GROUP "Vulkan\\\\CryVulkanWrappers\\\\GI\\\\DXGI"
@@ -1208,7 +1208,7 @@ if (RENDERER_DX11)
 	target_include_directories(${THIS_PROJECT} PRIVATE .. "${SDK_DIR}/squish-ccr")
 	target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib)
 
-	if (WIN32 OR WIN64)
+	if (WINDOWS)
 		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /NODEFAULTLIB:libcmt.lib")
 		target_compile_definitions(${THIS_PROJECT} PRIVATE -DCRY_RENDERER_DIRECT3D=110 -DDO_RENDERSTATS -D_RENDERER ${extra_defines})
 		target_link_libraries(${THIS_PROJECT} PRIVATE dxguid d3d11 d3d10 d3dcompiler Ole32 Gdi32 wininet Shell32 png16 tiff)
@@ -1231,15 +1231,11 @@ if (RENDERER_OPENGL)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DCRY_RENDERER_DIRECT3D=110 -DCRY_RENDERER_OPENGL=440 -DDO_RENDERSTATS -D_RENDERER ${extra_defines})
 	target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib)
 
-	if (WIN32 OR WIN64)
+	if (WINDOWS)
 		target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}/squish-ccr" "${CRYENGINE_DIR}/Code/Tools/LibTIFF" "${CRYENGINE_DIR}/Code/Tools/HLSLCrossCompiler/include")
 		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /NODEFAULTLIB:libcmt.lib")
 		target_link_libraries(${THIS_PROJECT} PRIVATE opengl32 winmm Ole32 Gdi32 wininet Shell32 png16 tiff)
-		if(WIN64)
-			find_library(LIBHLSLCC libHLSLcc PATHS "${CRYENGINE_DIR}/Code/Tools/HLSLCrossCompiler/lib/win64")
-		elseif(WIN32)
-			find_library(LIBHLSLCC libHLSLcc PATHS "${CRYENGINE_DIR}/Code/Tools/HLSLCrossCompiler/lib/win32")
-		endif()
+		find_library(LIBHLSLCC libHLSLcc PATHS "${CRYENGINE_DIR}/Code/Tools/HLSLCrossCompiler/lib/win64")
 		mark_as_advanced(FORCE LIBHLSLCC)
 		target_link_libraries(${THIS_PROJECT} PRIVATE "${LIBHLSLCC}")
 	elseif(APPLE)
@@ -1274,7 +1270,7 @@ else()
 endif()
 
 if(RENDERER_DX12 OR RENDERER_VULKAN)
-	if(WIN32 OR WIN64)
+	if(WINDOWS)
 		if(${CMAKE_GENERATOR} MATCHES "Visual Studio")
 			option(USE_DXC "Enable DXC Compiler for DX12 Shader Compilation" OFF)
 		endif()
@@ -1294,7 +1290,7 @@ if (RENDERER_DX12)
 	target_include_directories(${THIS_PROJECT} PRIVATE .. "${SDK_DIR}" "${SDK_DIR}/squish-ccr" "${CRYENGINE_DIR}/Code/Tools/LibTIFF" "${CRYENGINE_DIR}/Code/CryEngine/RenderDll/XRenderD3D9/DX12/Includes")
 	target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib)
 
-	if (WIN32 OR WIN64)
+	if (WINDOWS)
 		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /NODEFAULTLIB:libcmt.lib")
 		target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib dxguid d3d12 dxgi d3dcompiler Ole32 Gdi32 wininet Shell32 png16 tiff)
 	elseif(DURANGO)
@@ -1317,7 +1313,7 @@ if (RENDERER_VULKAN)
 	target_include_directories(${THIS_PROJECT} PRIVATE ..)
 	target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}/squish-ccr")
 	target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib spirv-cross)
-	if(WIN32 OR WIN64)
+	if(WINDOWS)
 		target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}/VulkanSDK/Include")
 		target_link_libraries(${THIS_PROJECT} PRIVATE Ole32 Gdi32 wininet Shell32 png16 dxguid vulkan-1 tiff)
 		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /NODEFAULTLIB:libcmt.lib")

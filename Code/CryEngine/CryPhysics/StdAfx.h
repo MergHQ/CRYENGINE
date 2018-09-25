@@ -67,7 +67,7 @@
 #define NO_CRY_STREAM
 class CStream;
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 #undef min
 #undef max
 #endif
@@ -84,7 +84,7 @@ class CStream;
 #define VALIDATOR_RANGE2(member,minval,maxval)
 #define VALIDATORS_END
 #define ENTITY_VALIDATE(strSource,pStructure)*/
-#if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) || (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT)
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX
 #define DoBreak {__debugbreak();}
 #else
 #define DoBreak { __debugbreak(); }

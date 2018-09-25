@@ -175,17 +175,13 @@ void CSystem::LogVersion()
 #elif CRY_PLATFORM_ORBIS
 	CryLogAlways("Running 64 bit Orbis version SDK VER:0x%08X", SCE_ORBIS_SDK_VERSION);
 #elif CRY_PLATFORM_ANDROID
-	CryLogAlways("Running 32 bit Android version API VER:%d", __ANDROID_API__);
+	CryLogAlways("Running 64 bit Android version API VER:%d", __ANDROID_API__);
 #elif CRY_PLATFORM_IOS
 	CryLogAlways("Running 64 bit iOS version");
-#elif CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#elif CRY_PLATFORM_WINDOWS
 	CryLogAlways("Running 64 bit Windows version");
-#elif CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-	CryLogAlways("Running 32 bit Windows version");
-#elif (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT)
+#elif CRY_PLATFORM_LINUX
 	CryLogAlways("Running 64 bit Linux version");
-#elif (CRY_PLATFORM_LINUX && CRY_PLATFORM_32BIT)
-	CryLogAlways("Running 32 bit Linux version");
 #elif CRY_PLATFORM_MAC
 	CryLogAlways("Running 64 bit Mac version");
 #endif

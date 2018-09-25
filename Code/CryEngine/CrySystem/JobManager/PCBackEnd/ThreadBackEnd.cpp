@@ -140,18 +140,12 @@ void JobManager::ThreadBackEnd::CThreadBackEnd::AddJob(JobManager::CJobDelegator
 	JobManager::SInfoBlock& RESTRICT_REFERENCE rJobInfoBlock = m_JobQueue.jobInfoBlocks[nJobPriority][jobSlot];
 
 	// since we will use the whole InfoBlock, and it is aligned to 128 bytes, clear the cacheline, this is faster than a cachemiss on write
-#if CRY_PLATFORM_64BIT
 	//STATIC_CHECK( sizeof(JobManager::SInfoBlock) == 512, ERROR_SIZE_OF_SINFOBLOCK_NOT_EQUALS_512 );
-#else
-	//STATIC_CHECK( sizeof(JobManager::SInfoBlock) == 384, ERROR_SIZE_OF_SINFOBLOCK_NOT_EQUALS_384 );
-#endif
 
 	// first cache line needs to be persistent
 	ResetLine128(&rJobInfoBlock, 128);
 	ResetLine128(&rJobInfoBlock, 256);
-#if CRY_PLATFORM_64BIT
 	ResetLine128(&rJobInfoBlock, 384);
-#endif
 
 	/////////////////////////////////////////////////////////////////////////////
 	// Initialize the InfoBlock
@@ -175,10 +169,8 @@ void JobManager::ThreadBackEnd::CThreadBackEnd::AddJob(JobManager::CJobDelegator
 	// the producing thread won't need the info block anymore, flush it from the cache
 	FlushLine128(&rJobInfoBlock, 0);
 	FlushLine128(&rJobInfoBlock, 128);
-#if CRY_PLATFORM_64BIT
 	FlushLine128(&rJobInfoBlock, 256);
 	FlushLine128(&rJobInfoBlock, 384);
-#endif
 
 	MemoryBarrier();
 	m_JobQueue.jobInfoBlockStates[nJobPriority][jobSlot].SetReady();

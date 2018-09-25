@@ -1,4 +1,4 @@
-if(WIN64)
+if(WINDOWS)
 	add_library(FbxSdk SHARED IMPORTED GLOBAL)
 	set_target_properties(FbxSdk PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${SDK_DIR}/FbxSdk/include")
 	set_target_properties(FbxSdk PROPERTIES INTERFACE_COMPILE_DEFINITIONS FBXSDK_NEW_API=1)

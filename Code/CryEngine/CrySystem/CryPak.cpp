@@ -3329,7 +3329,7 @@ void CCryPakFindData::ScanFS(CCryPak* pPak, const char* szDirIn)
 
 	_wfinddata64_t fdw;
 	__finddata64_t fd;
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#if CRY_PLATFORM_WINDOWS
 	memset(&fdw, 0, sizeof(fdw));
 	memset(&fd, 0, sizeof(fd));
 	#endif
@@ -3392,7 +3392,7 @@ void CCryPakFindData::ScanFS(CCryPak* pPak, const char* szDirIn)
 #else
 
 	__finddata64_t fd;
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#if CRY_PLATFORM_WINDOWS
 	memset(&fd, 0, sizeof(fd));
 	#endif
 	intptr_t nFS = _findfirst64(szDirIn, &fd);

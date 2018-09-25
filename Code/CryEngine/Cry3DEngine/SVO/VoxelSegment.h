@@ -94,7 +94,7 @@ struct SVoxSegmentFileHeader
 };
 
 // SSuperMesh index type
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#if CRY_PLATFORM_WINDOWS
 typedef uint32 SMINDEX;
 	#else
 typedef uint16 SMINDEX;

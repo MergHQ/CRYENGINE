@@ -896,7 +896,7 @@ void C3DEngine::ShutDown()
 	}
 }
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#pragma warning( push )               //AMD Port
 	#pragma warning( disable : 4311 )
 #endif
@@ -1288,7 +1288,7 @@ void C3DEngine::EndOcclusion()
 	GetObjManager()->EndOcclusionCulling();
 }
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#pragma warning( pop )                //AMD Port
 #endif
 

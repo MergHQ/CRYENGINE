@@ -30,7 +30,7 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-if(WIN32 OR WIN64 OR APPLE OR LINUX)
+if(WINDOWS OR APPLE OR LINUX)
 	CryEngineModule(CryOpenVR PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
 
 	target_include_directories( ${THIS_PROJECT}
@@ -41,10 +41,8 @@ if(WIN32 OR WIN64 OR APPLE OR LINUX)
 		../Interface
 	)
 
-	if(WIN64)
+	if(WINDOWS)
 		find_library(openvr_api openvr_api PATHS "${SDK_DIR}/OpenVR/lib/win64")
-	elseif(WIN32)
-		find_library(openvr_api openvr_api PATHS "${SDK_DIR}/OpenVR/lib/win32")
 	elseif(APPLE)
 		find_library(openvr_api openvr_api PATHS "${SDK_DIR}/OpenVR/lib/osx32")
 	elseif(LINUX)

@@ -14,11 +14,7 @@
 //-------------------------------------------------------
 /// Cpu class
 //-------------------------------------------------------
-#if CRY_PLATFORM_64BIT
-	#define MAX_CPU 64
-#else
-	#define MAX_CPU 32
-#endif
+#define MAX_CPU 64
 
 /// Type of Cpu Vendor.
 enum ECpuVendor

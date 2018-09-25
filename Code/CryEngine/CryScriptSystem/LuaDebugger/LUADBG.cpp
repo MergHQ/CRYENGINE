@@ -19,10 +19,6 @@
 	#include <CryInput/IInput.h>
 
 	#include <direct.h>
-	#if CRY_PLATFORM_32BIT
-		#include "Shlwapi.h"
-		#pragma comment(lib, "Shlwapi.lib")
-	#endif
 
 	#pragma warning(disable: 4244)
 

@@ -30,12 +30,7 @@
 #define VK_CONTROL 0
 #define VK_SCROLL  0
 
-//#define USE_CRT 1
-#if !CRY_PLATFORM_64BIT
-	#error "iOS build only supports the 64bit architecture"
-#else
-	#define SIZEOF_PTR 8
+#define SIZEOF_PTR 8
 typedef uint64_t threadID;
-#endif
 
 #endif // __IOSSPECIFIC_H__

@@ -18,7 +18,7 @@ add_definitions(
 	-D_UNICODE
 	-D_HAS_EXCEPTIONS=0
 )
-if(WIN32)
+if(WINDOWS)
 	add_compile_options(/wd4267 /wd4244)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	add_compile_options(-Wno-unused-but-set-variable)

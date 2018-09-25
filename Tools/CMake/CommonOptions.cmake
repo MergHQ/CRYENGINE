@@ -35,7 +35,7 @@ if(OPTION_GEOM_CACHES)
 	list(APPEND global_defines USE_GEOM_CACHES=1)
 endif()
 
-if (WIN32 OR WIN64 OR LINUX)
+if (WINDOWS OR LINUX)
 	option(OPTION_DEDICATED_SERVER "Build engine in Dedicated Server mode" OFF)
 endif()
 

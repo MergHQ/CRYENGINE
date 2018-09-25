@@ -1878,7 +1878,7 @@ struct CBufferPoolImpl final
 	  , UINT_PTR size
 	  , IDefragAllocatorCopyNotification* pNotification) final
 	{
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT // Workaround for Win64, using a C-cast here breaks Orbis
+#if CRY_PLATFORM_WINDOWS // Workaround for Win64, using a C-cast here breaks Orbis
 	#pragma warning( push )
 	#pragma warning( disable : 4244)
 #endif
@@ -1887,7 +1887,7 @@ struct CBufferPoolImpl final
 #else
 		item_handle_t handle = static_cast<item_handle_t>(reinterpret_cast<uintptr_t>(pContext));
 #endif
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#pragma warning( pop )
 #endif
 		SBufferPoolItem* old_item = &m_item_table[handle];

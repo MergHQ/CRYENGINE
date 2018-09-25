@@ -1,4 +1,4 @@
-if (((WIN32 OR LINUX OR APPLE) AND EXISTS "${SDK_DIR}/Steamworks") AND OPTION_ENGINE)
+if (((WINDOWS OR LINUX OR APPLE) AND EXISTS "${SDK_DIR}/Steamworks") AND OPTION_ENGINE)
 	option(PLUGIN_GAMEPLATFORM_STEAM "Enable Game platform integration plug-in for Steam" ON)
 else()
 	option(PLUGIN_GAMEPLATFORM_STEAM "Enable Game platform integration plug-in for Steam" OFF)
@@ -40,7 +40,7 @@ add_sources("CryGamePlatform_Steam_uber_1.cpp"
 		"../../Interface/PlatformUserIdentifier.h"
 )
 
-sources_platform(WIN32 LINUX APPLE)
+sources_platform(WINDOWS LINUX APPLE)
 add_sources("CryGamePlatform_Steam_uber_2.cpp"
 	SOURCE_GROUP "Root"
 		"SteamService.cpp"
@@ -96,7 +96,7 @@ PUBLIC
 	../../Common
 )
 
-if(WIN32 OR LINUX OR APPLE)
+if(WINDOWS OR LINUX OR APPLE)
 	include(${TOOLS_CMAKE_DIR}/modules/Steamworks.cmake)
 
 	target_link_libraries(${THIS_PROJECT} PRIVATE Steamworks)

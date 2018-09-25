@@ -3,7 +3,7 @@
 
 start_sources()
 # -- launcher.waf_files --
-sources_platform(WIN32)
+sources_platform(WINDOWS)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Header Files"
 		"StdAfx.h"
@@ -26,7 +26,7 @@ end_sources()
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/DPIAware.xml" "${CMAKE_CURRENT_BINARY_DIR}/DPIAware.manifest" COPYONLY)
 
 add_sources("NoUberFile" SOURCE_GROUP "Manifest" "${CMAKE_CURRENT_BINARY_DIR}/DPIAware.manifest")
-if(WIN32 AND NOT OPTION_DEDICATED_SERVER)
+if(WINDOWS AND NOT OPTION_DEDICATED_SERVER)
 	CryLauncher(WindowsLauncher SOLUTION_FOLDER "Launcher")
 	target_link_libraries( ${THIS_PROJECT} PRIVATE Shell32)
 else()

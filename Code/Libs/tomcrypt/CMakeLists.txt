@@ -462,7 +462,7 @@ target_compile_definitions(tomcrypt
 		-Dmalloc=malloc
 )
 
-if (WIN32 OR WIN64 OR DURANGO)
+if (WINDOWS OR DURANGO)
 	target_compile_options(tomcrypt PRIVATE
 		/wd4267 # Truncate size_t -> int from strlen() result
 		/wd4244 # Truncate intptr_t -> int from pointer subtraction
@@ -506,7 +506,7 @@ target_compile_definitions(tomcrypt_staticcrt
 		-Dmalloc=malloc
 )
 
-if (WIN32 OR WIN64 OR DURANGO)
+if (WINDOWS OR DURANGO)
 	target_compile_options(tomcrypt_staticcrt PRIVATE
 		/wd4267 # Truncate size_t -> int from strlen() result
 		/wd4244 # Truncate intptr_t -> int from pointer subtraction

@@ -1,4 +1,4 @@
-if ((WIN32 AND EXISTS "${SDK_DIR}/discord-rpc") AND OPTION_ENGINE)
+if ((WINDOWS AND EXISTS "${SDK_DIR}/discord-rpc") AND OPTION_ENGINE)
 	option(PLUGIN_GAMEPLATFORM_DISCORD "Enable Discord Rich Presence integration plug-in" ON)
 else()
 	option(PLUGIN_GAMEPLATFORM_DISCORD "Enable Discord Rich Presence integration plug-in" OFF)
@@ -11,7 +11,7 @@ endif()
 start_sources()
 
 # -- discord.waf_files --
-sources_platform(WIN32)
+sources_platform(WINDOWS)
 add_sources("CryGamePlatform_Discord_uber_0.cpp"
 	SOURCE_GROUP "Root"
 		"resource.h"
@@ -68,7 +68,7 @@ PUBLIC
 	../../Common
 )
 
-if(WIN32)
+if(WINDOWS)
 	include(${TOOLS_CMAKE_DIR}/modules/discord-rpc.cmake)
 
 	target_link_libraries(${THIS_PROJECT} PRIVATE discord-rpc)

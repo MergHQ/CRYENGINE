@@ -3,7 +3,7 @@
 
 start_sources()
 # -- steam_lobby.waf_files --
-sources_platform(WIN32)
+sources_platform(WINDOWS)
 add_sources("CryLobby_steam_uber.cpp"
 	PROJECTS CryLobby
 	SOURCE_GROUP "Steam"
@@ -119,19 +119,17 @@ PRIVATE
 	"${SDK_DIR}/speex-1.0.5/include"
 )
 
-if(WIN64)
+if(WINDOWS)
 	find_library(SPEEX libspeex-1.0.5 PATHS "${SDK_DIR}/speex-1.0.5/lib/x64" )
-elseif(WIN32)
-	find_library(SPEEX libspeex-1.0.5 PATHS "${SDK_DIR}/speex-1.0.5/lib/win32" )
 endif()
 mark_as_advanced(FORCE SPEEX)
 
-if (EXISTS "${SDK_DIR}/Steamworks" AND WIN32)
+if (EXISTS "${SDK_DIR}/Steamworks" AND WINDOWS)
 	include(${TOOLS_CMAKE_DIR}/modules/Steamworks.cmake)
 	target_link_libraries(${THIS_PROJECT} PRIVATE Steamworks)
 endif()
 
-if (WIN32 OR WIN64)
+if (WINDOWS)
 	target_link_libraries(${THIS_PROJECT} PRIVATE Ws2_32 Mswsock "${SPEEX}")
 elseif(DURANGO)
 	target_link_libraries(${THIS_PROJECT} PRIVATE Ws2_32 uuid)

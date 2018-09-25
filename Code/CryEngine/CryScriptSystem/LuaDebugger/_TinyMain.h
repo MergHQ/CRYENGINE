@@ -37,13 +37,13 @@
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Debug functions / macros
 ///////////////////////////////////////////////////////////////////////////////////////////
-#if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) || (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT)
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX
 	#define _TinyVerify(x) { if (!(x)) assert(0); }
 #else
 	#define _TinyVerify(x) { if (!(x)) { __debugbreak(); }; }
 #endif
 
-#if defined(_DEBUG) && !(CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) && !(CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT)
+#if defined(_DEBUG) && !CRY_PLATFORM_WINDOWS && !CRY_PLATFORM_LINUX
 	#define _TinyAssert(x) { if (!(x)) { __debugbreak(); }; }
 #else
 	#define _TinyAssert(x) __noop(x);

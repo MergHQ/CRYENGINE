@@ -85,7 +85,7 @@ endmacro()
 #Specifies a set of platforms that should build source files provided after this point. Specify ALL to build for all platforms.
 #Syntax: sources_platform([OR] X Y Z [AND A B C])
 #Subsequent source files will be built if "if(T)" is true for at least one token T in OR and all tokens T in AND.
-#Example: sources_platform(WIN32 ANDROID AND HAS_FOO) = build if target is Windows or Android, and HAS_FOO is true.
+#Example: sources_platform(WINDOWS ANDROID AND HAS_FOO) = build if target is Windows or Android, and HAS_FOO is true.
 macro(sources_platform)
 	set(PLATFORM_CONDITION)
 	set(multiValueArgs OR AND)
@@ -329,7 +329,7 @@ macro(use_fbx_sdk)
 endmacro()
 
 macro(use_substance)
-if(WIN64)
+if(WINDOWS)
    SET(LIB_DIR "${SDK_DIR}/SubstanceEngines/lib/win32-msvc2015-64")
    SET(DLL_DIR "${SDK_DIR}/SubstanceEngines/bin/win32-msvc2015-64")
    SET(TINYXML_LIB_DIR "${SDK_DIR}/SubstanceEngines/3rdparty/tinyxml/lib/win32-msvc2015-64")

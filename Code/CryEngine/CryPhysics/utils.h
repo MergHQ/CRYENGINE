@@ -134,20 +134,6 @@ ILINE int float2int(float x)
 #endif
 	return _mm_cvtss_si32(_mm_load_ss(&x));
 }
-#elif CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-const float fmag = (1.5f*(1<<23));
-const int imag = -((23+127)<<23 | 1<<22);
-// had to rewrite in assembly, since it's impossible to tell the compiler that in this case 
-// addition is not associative, i.e. (x+0.5)+fmag!=x+(fmag+0.5)
-__declspec(naked) ILINE int float2int(float x)
-{ __asm {
-	fld [esp+4]
-	fadd fmag
-	mov eax, imag
-	fstp [esp-4]
-	add eax, [esp-4]
-	ret
-}}
 #else 
 ILINE int float2int(float x)
 {
@@ -772,29 +758,11 @@ struct subref {
 
 // spinlocks
 /*ILINE void SpinLock(volatile int *pLock,int checkVal,int setVal) { 
-#if CRY_PLATFORM_X86
-	__asm {
-	mov edx, setVal
-	mov ecx, pLock
-	Spin:
-		mov eax, checkVal
-		lock cmpxchg [ecx], edx
-	jnz Spin }
-#else
 	while(_InterlockedCompareExchange(pLock,setVal,checkVal)!=checkVal);
-#endif
 }
 
 ILINE void AtomicAdd(volatile int *pVal, int iAdd) {
-#if CRY_PLATFORM_X86
-	__asm {
-		mov edx, pVal
-		mov eax, iAdd
-		lock add [edx], eax
-	}
-#else
 	_InterlockedExchangeAdd(pVal,iAdd);
-#endif
 }*/
 
 

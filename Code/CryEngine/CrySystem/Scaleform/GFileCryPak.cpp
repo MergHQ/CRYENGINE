@@ -79,7 +79,7 @@ SInt GFileCryPak::GetLength()
 SInt64 GFileCryPak::LGetLength()
 {
 	size_t len = GetLengthInternal();
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#if CRY_PLATFORM_WINDOWS
 	assert(len <= ((UInt64) - 1) >> 1);
 	#endif
 	return (SInt64) len;
@@ -304,7 +304,7 @@ SInt GFileCryStream::GetLength()
 SInt64 GFileCryStream::LGetLength()
 {
 	size_t len = GetLengthInternal();
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#if CRY_PLATFORM_WINDOWS
 	assert(len <= ((UInt64) - 1) >> 1);
 	#endif
 	return (SInt64) len;

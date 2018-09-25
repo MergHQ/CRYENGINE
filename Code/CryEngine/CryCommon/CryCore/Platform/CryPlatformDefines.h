@@ -13,20 +13,11 @@
 // http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0491c/BABJFEFG.html
 #if defined(__x86_64__) || defined(_M_X64)
 	#define CRY_PLATFORM_X64       1
-	#define CRY_PLATFORM_64BIT     1
 	#define CRY_PLATFORM_SSE2      1
-#elif defined(__i386) || defined(_M_IX86)
-	#define CRY_PLATFORM_X86       1
-	#define CRY_PLATFORM_32BIT     1
-#elif defined(__arm__)
-	#define CRY_PLATFORM_ARM    1
-	#define CRY_PLATFORM_32BIT  1
-	#if defined(__ARM_NEON__)
-		#define CRY_PLATFORM_NEON 1
-	#endif
+#elif defined(__i386) || defined(_M_IX86) || defined(__arm__)
+	#error 32-bit platforms are not supported.
 #elif defined(__aarch64__)
 	#define CRY_PLATFORM_ARM    1
-	#define CRY_PLATFORM_64BIT  1
 #else
 	#define CRY_PLATFORM_UNKNOWNCPU 1
 #endif
@@ -42,7 +33,6 @@
 		#if !CRY_PLATFORM_UNKNOWNCPU
 			#error iOS: Unsupported CPU
 		#endif
-		#define CRY_PLATFORM_64BIT   1
 	#elif TARGET_OS_MAC
 		#define CRY_PLATFORM_DESKTOP 1
 		#define CRY_PLATFORM_MAC     1
@@ -84,23 +74,14 @@
 	#define CRY_PLATFORM_MOBILE  1
 	#define CRY_PLATFORM_ANDROID 1
 	#define CRY_PLATFORM_POSIX   1
-	#if CRY_PLATFORM_ARM && !(CRY_PLATFORM_64BIT || CRY_PLATFORM_32BIT)
-		#error Unsupported Android CPU (only 32-bit and 64-bit ARM are supported).
-	#endif
 
 #elif defined(_WIN32)
 
 	#define CRY_PLATFORM_DESKTOP 1
 	#define CRY_PLATFORM_WINDOWS 1
 	#define CRY_PLATFORM_WINAPI  1
-	#if defined(_WIN64)
-		#if !CRY_PLATFORM_X64
-			#error Unsupported Windows 64 CPU (the only supported is x86-64).
-		#endif
-	#else
-		#if !CRY_PLATFORM_X86
-			#error Unsupported Windows 32 CPU (the only supported is x86).
-		#endif
+	#if !defined(_WIN64)
+		#error Unsupported Windows 64 CPU (the only supported is x86-64).
 	#endif
 
 #elif defined(__linux__) || defined(__linux)
@@ -108,8 +89,8 @@
 	#define CRY_PLATFORM_DESKTOP 1
 	#define CRY_PLATFORM_LINUX   1
 	#define CRY_PLATFORM_POSIX   1
-	#if !CRY_PLATFORM_X64 && !CRY_PLATFORM_X86
-		#error Unsupported Linux CPU (the only supported are x86 and x86-64).
+	#if !CRY_PLATFORM_X64
+		#error Unsupported Linux CPU (the only supported are x86-64).
 	#endif
 
 #else
@@ -132,10 +113,6 @@
 	#error Wrong value of CRY_PLATFORM_X64.
 #endif
 
-#if defined(CRY_PLATFORM_X86) && CRY_PLATFORM_X86 != 1
-	#error Wrong value of CRY_PLATFORM_X86.
-#endif
-
 #if defined(CRY_PLATFORM_ARM) && CRY_PLATFORM_ARM != 1
 	#error Wrong value of CRY_PLATFORM_ARM.
 #endif
@@ -144,20 +121,8 @@
 	#error Wrong value of CRY_PLATFORM_UNKNOWN_CPU.
 #endif
 
-#if CRY_PLATFORM_X64 + CRY_PLATFORM_X86 + CRY_PLATFORM_ARM + CRY_PLATFORM_UNKNOWNCPU != 1
+#if CRY_PLATFORM_X64 + CRY_PLATFORM_ARM + CRY_PLATFORM_UNKNOWNCPU != 1
 	#error Invalid CPU type.
-#endif
-
-#if defined(CRY_PLATFORM_64BIT) && CRY_PLATFORM_64BIT != 1
-	#error Wrong value of CRY_PLATFORM_64BIT.
-#endif
-
-#if defined(CRY_PLATFORM_32BIT) && CRY_PLATFORM_32BIT != 1
-	#error Wrong value of CRY_PLATFORM_32BIT.
-#endif
-
-#if CRY_PLATFORM_64BIT + CRY_PLATFORM_32BIT != 1
-	#error Invalid CRY_PLATFORM_xxBIT.
 #endif
 
 #if defined(CRY_PLATFORM_DESKTOP) && CRY_PLATFORM_DESKTOP != 1

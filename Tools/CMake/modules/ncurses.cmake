@@ -1,4 +1,4 @@
-if(LINUX64)
+if(LINUX)
 	add_library(menuw SHARED IMPORTED GLOBAL)
 	set_target_properties(menuw PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${SDK_DIR}/ncurses/include")
 	set_target_properties(menuw PROPERTIES IMPORTED_LOCATION "${SDK_DIR}/ncurses/lib/libmenuw.so")

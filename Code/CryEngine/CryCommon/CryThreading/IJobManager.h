@@ -282,9 +282,7 @@ private:
 	};
 
 	SyncVar syncVar;      //!< Sync-variable which contain the running state or the used semaphore.
-#if CRY_PLATFORM_64BIT
 	char    padding[4];
-#endif
 };
 
 //! Condition variable-alike object to be used for polling if a job has been finished.
@@ -536,15 +534,9 @@ struct CRY_ALIGN(128) SInfoBlock
 #endif
 
 	//! Size of the SInfoBlock struct and how much memory we have to store parameters.
-#if CRY_PLATFORM_64BIT
 	static const unsigned int scSizeOfSJobQueueEntry = 512;
 	static const unsigned int scSizeOfJobQueueEntryHeader = 64;   //!< Please adjust when adding/removing members, keep as a multiple of 16.
 	static const unsigned int scAvailParamSize = scSizeOfSJobQueueEntry - scSizeOfJobQueueEntryHeader;
-#else
-	static const unsigned int scSizeOfSJobQueueEntry = 384;
-	static const unsigned int scSizeOfJobQueueEntryHeader = 32;   //!< Please adjust when adding/removing members, keep as a multiple of 16.
-	static const unsigned int scAvailParamSize = scSizeOfSJobQueueEntry - scSizeOfJobQueueEntryHeader;
-#endif
 
 	//! Parameter data are enclosed within to save a cache miss.
 	CRY_ALIGN(16) unsigned char paramData[scAvailParamSize];    //!< is 16 byte aligned, make sure it is kept aligned.
@@ -1145,9 +1137,7 @@ ILINE void JobManager::CJobDelegator::SetRunning()
 inline JobManager::SJobSyncVariable::SJobSyncVariable()
 {
 	syncVar.wordValue = 0;
-#if CRY_PLATFORM_64BIT
 	padding[0] = padding[1] = padding[2] = padding[3] = 0;
-#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////////

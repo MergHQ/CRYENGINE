@@ -113,7 +113,7 @@ void CGameResourcesExporter::Save(const string& outputDirectory)
 	m_files.clear();
 }
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 template<class Container1, class Container2>
 void Append(Container1& a, const Container2& b)
 {

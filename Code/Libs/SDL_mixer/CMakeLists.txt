@@ -111,7 +111,7 @@ target_compile_definitions(${THIS_PROJECT} PRIVATE
 )
 
 
-if(WIN32 OR WIN64)
+if(WINDOWS)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE
 		-DMUSIC_WAV
 		-DMODPLUG_DYNAMIC="libmodplug-1.dll"
@@ -133,7 +133,7 @@ CryEngineStaticModule(timidity SOLUTION_FOLDER "Libs/Audio")
 target_include_directories(${THIS_PROJECT} PUBLIC "${SDK_DIR}/SDL_mixer/timidity")
 target_link_libraries(${THIS_PROJECT} PRIVATE SDL2)
 
-if(WIN32 OR WIN64)
+if(WINDOWS)
 	target_compile_options(${THIS_PROJECT} PRIVATE /W0)
 elseif(LINUX OR ANDROID)
 	target_compile_options(${THIS_PROJECT} PRIVATE -w)
@@ -146,7 +146,7 @@ CryEngineStaticModule(native_midi SOLUTION_FOLDER "Libs/Audio")
 target_include_directories(${THIS_PROJECT} PUBLIC "${SDK_DIR}/SDL_mixer/native_midi")
 target_link_libraries(${THIS_PROJECT} PRIVATE SDL2)
 
-if(WIN32 OR WIN64)
+if(WINDOWS)
 	target_compile_options(${THIS_PROJECT} PRIVATE /W0)
 elseif(LINUX OR ANDROID)
 	target_compile_options(${THIS_PROJECT} PRIVATE -w)

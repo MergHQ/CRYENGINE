@@ -44,7 +44,7 @@ if(DURANGO)
 endif()
 
 target_link_libraries( ${THIS_PROJECT} PRIVATE freetype )
-if (WIN32 OR WIN64)
+if (WINDOWS)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE Shell32 )
 elseif(APPLE)
 	find_library(CORE_SERVICES CoreServices)

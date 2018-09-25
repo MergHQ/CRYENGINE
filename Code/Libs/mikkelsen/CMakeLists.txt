@@ -13,7 +13,7 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-if (WIN32)
+if (WINDOWS)
 	set(DISABLE_WARNINGS /W0)  # Disable warnings from 3rdParty code.
 else()
 	set(DISABLE_WARNINGS -w)

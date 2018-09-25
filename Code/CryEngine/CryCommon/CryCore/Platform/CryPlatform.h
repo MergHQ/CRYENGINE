@@ -20,9 +20,7 @@
 
 ////////////////////////////////////////////////////////////////////////////
 // some ifdef selection to include the correct platform implementation
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-	#include <CryCore/Platform/CryPlatform.Win32.h>
-#elif CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#include <CryCore/Platform/CryPlatform.Win64.h>
 #elif CRY_PLATFORM_DURANGO
 	#include <CryCore/Platform/CryPlatform.Durango.h>

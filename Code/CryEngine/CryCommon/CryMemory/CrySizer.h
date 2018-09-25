@@ -25,7 +25,7 @@ struct SVF_P3F_C4B_T2S;
 struct SVF_P3S_C4B_T2S;
 struct SPipTangents;
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#include <string.h> // workaround for Amd64 compiler
 #endif
 

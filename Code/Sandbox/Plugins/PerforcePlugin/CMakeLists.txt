@@ -34,7 +34,7 @@ end_sources()
 
 set(SUPPORTED_PLATFORM YES)
 
-if (WIN64 OR WIN32)
+if (WINDOWS)
 	set(P4API_PLATFORM_FOLDER windows)
 else()
 	set(SUPPORTED_PLATFORM NO)

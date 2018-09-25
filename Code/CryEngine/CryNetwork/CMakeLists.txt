@@ -284,13 +284,11 @@ add_sources("CryNetwork_uber_3.cpp"
 		"DebugKit/Encoding.cpp"
 		"DebugKit/NetVis.cpp"
 		"DebugKit/NetworkInspector.cpp"
-		"DebugKit/ServerProfiler.cpp"
 		"DebugKit/DebugKit.h"
 		"DebugKit/DebugOutput.h"
 		"DebugKit/Encoding.h"
 		"DebugKit/NetVis.h"
 		"DebugKit/NetworkInspector.h"
-		"DebugKit/ServerProfiler.h"
 	SOURCE_GROUP "Http"
 		"Http/AutoConfigDownloader.cpp"
 		"Http/SimpleHttpServer.cpp"
@@ -355,20 +353,18 @@ CryEngineModule(CryNetwork PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 
 target_include_directories( ${THIS_PROJECT} PRIVATE "${SDK_DIR}/speex-1.0.5/include" )
 
-if(WIN64)
+if(WINDOWS)
 	find_library(SPEEX libspeex-1.0.5 PATHS "${SDK_DIR}/speex-1.0.5/lib/x64" )
-elseif(WIN32)
-	find_library(SPEEX libspeex-1.0.5 PATHS "${SDK_DIR}/speex-1.0.5/lib/win32" )
 endif()
 mark_as_advanced(FORCE SPEEX)
 
 target_link_libraries(${THIS_PROJECT} PRIVATE bigdigits)
 
-if(WIN32)
+if(WINDOWS)
 	# Exclude Default libcmt.lib library
 	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /NODEFAULTLIB:libcmt.lib") 
 	target_link_libraries( ${THIS_PROJECT} PRIVATE Ws2_32 Mswsock "${SPEEX}" )
-endif(WIN32)
+endif(WINDOWS)
 
 if(DURANGO)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE Ws2_32 )

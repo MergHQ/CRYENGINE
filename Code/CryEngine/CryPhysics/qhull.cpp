@@ -106,17 +106,10 @@ int __qhullcalled=0;
 
 int qhull(strided_pointer<Vec3> _pts, int npts, index_t*& pTris, qhullmalloc qmalloc)
 {
-#if CRY_PLATFORM_64BIT
 	static ptitem ptbuf[4096];
 	static qhtritem trbuf[4096];
 	static qhtritem *tmparr_ptr_buf[2048];
 	static int tmparr_idx_buf[2048];
-#else
-	static ptitem ptbuf[1024];
-	static qhtritem trbuf[1024];
-	static qhtritem *tmparr_ptr_buf[512];
-	static int tmparr_idx_buf[512];
-#endif
 	static volatile int g_lockQhull;
 	int iter=0,maxiter=0;
 	__qhullcalled++;

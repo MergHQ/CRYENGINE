@@ -18,9 +18,7 @@
 #if CRY_PLATFORM_WINDOWS
 	#include <direct.h>
 	#include <io.h>
-#endif
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
 	#pragma warning( push )               //AMD Port
 	#pragma warning( disable : 4267 )
 #endif

@@ -1,4 +1,4 @@
-if(WIN64)
+if(WINDOWS)
    add_library(Substance SHARED IMPORTED GLOBAL)
    SET(LIB_DIR "${SDK_DIR}/SubstanceEngines/lib/win32-msvc2015-64")
    SET(DLL_DIR "${SDK_DIR}/SubstanceEngines/bin/win32-msvc2015-64")
@@ -14,12 +14,10 @@ if(WIN64)
     
     set_property(TARGET Substance APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${SDK_DIR}/SubstanceEngines/include")
     set_property(TARGET Substance APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${SDK_DIR}/SubstanceEngines/3rdparty/tinyxml")
-
-
-endif() # if(WIN64)
+endif() # if(WINDOWS)
 
 macro(copy_substance) 
-	if (WIN64)
+	if (WINDOWS)
         file(TO_NATIVE_PATH "${OUTPUT_DIRECTORY}" NATIVE_OUTDIR)
         file(TO_NATIVE_PATH "${DLL_DIR}" NATIVE_DLLDIR)
         add_custom_command(TARGET ${THIS_PROJECT} PRE_BUILD

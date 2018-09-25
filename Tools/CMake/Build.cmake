@@ -29,7 +29,7 @@ if (OPTION_SANDBOX AND OPTION_STATIC_LINKING)
 	set(OPTION_SANDBOX OFF)
 endif()
 
-if (OPTION_SANDBOX AND WIN64)
+if (OPTION_SANDBOX AND WINDOWS)
 	# Find Qt before including any plugin subdirectories
 	if (MSVC_VERSION GREATER 1900) # Visual Studio > 2015
 		set(QT_DIR "${SDK_DIR}/Qt/5.6/msvc2015_64/Qt")
@@ -107,38 +107,20 @@ macro(generate_crytest_targets target_name using_runner_target_name)
 				<LocalDebuggerCommandArguments>-run_crytest -crytest_open_report</LocalDebuggerCommandArguments>
 				<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 			</PropertyGroup>
-			<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Debug|Win32'\">
-				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${runner}.exe</LocalDebuggerCommand>
-				<LocalDebuggerWorkingDirectory>${OUTPUT_DIRECTORY}</LocalDebuggerWorkingDirectory>
-				<LocalDebuggerCommandArguments>-run_crytest -crytest_open_report</LocalDebuggerCommandArguments>
-				<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-			</PropertyGroup>
-			<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Profile|Win32'\">
-				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${runner}.exe</LocalDebuggerCommand>
-				<LocalDebuggerWorkingDirectory>${OUTPUT_DIRECTORY}</LocalDebuggerWorkingDirectory>
-				<LocalDebuggerCommandArguments>-run_crytest -crytest_open_report</LocalDebuggerCommandArguments>
-				<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-			</PropertyGroup>		
-			<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Release|Win32'\">
-				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${runner}.exe</LocalDebuggerCommand>
-				<LocalDebuggerWorkingDirectory>${OUTPUT_DIRECTORY}</LocalDebuggerWorkingDirectory>
-				<LocalDebuggerCommandArguments>-run_crytest -crytest_open_report</LocalDebuggerCommandArguments>
-				<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-			</PropertyGroup>
 		</Project>")
 
 endmacro()
 
 # Run Unit Test
-if (OPTION_ENGINE AND (WIN32 OR WIN64))
+if (OPTION_ENGINE AND WINDOWS)
 	generate_crytest_targets(run_crytest WindowsLauncher)
 endif()
 
-if (OPTION_SANDBOX AND WIN64)
+if (OPTION_SANDBOX AND WINDOWS)
 	generate_crytest_targets(run_crytest_sandbox Sandbox)
 endif()
 
-if(WIN64 AND EXISTS "${CRYENGINE_DIR}/Code/Tools/ShaderCacheGen/ShaderCacheGen")
+if(WINDOWS AND EXISTS "${CRYENGINE_DIR}/Code/Tools/ShaderCacheGen/ShaderCacheGen")
 	option(OPTION_SHADERCACHEGEN "Build the shader cache generator." OFF)
 endif()
 

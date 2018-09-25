@@ -248,10 +248,7 @@ CTexture::~CTexture()
 	InvalidateDeviceResource(this, eResourceDestroyed);
 
 	// sizes of these structures should NOT exceed L2 cache line!
-#if CRY_PLATFORM_64BIT
 	static_assert((offsetof(CTexture, m_fCurrentMipBias) - offsetof(CTexture, m_pFileTexMips)) <= 64, "Invalid offset!");
-	//static_assert((offsetof(CTexture, m_pFileTexMips) % 64) == 0, "Invalid offset!");
-#endif
 
 #ifndef _RELEASE
 	if (!gRenDev->m_pRT->IsRenderThread() || gRenDev->m_pRT->IsRenderLoadingThread())

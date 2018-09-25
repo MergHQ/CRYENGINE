@@ -1,6 +1,6 @@
 project(crashrpt)
 
-# WIN32/WIN64 Only project, should not be attempted to be build on any other platform
+# Windows-only project, should not be attempted to be build on any other platform
 
 set(crashrpt_dir "${SDK_DIR}/CrashRpt/1403")
 
@@ -8,7 +8,7 @@ set(crashrpt_dir "${SDK_DIR}/CrashRpt/1403")
 start_sources()
 
 # -- crashrpt.waf_files --
-sources_platform(WIN32)
+sources_platform(WINDOWS)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Root"
 		"${SDK_DIR}/CrashRpt/1403/reporting/crashrpt/CrashHandler.cpp"

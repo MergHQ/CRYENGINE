@@ -20,10 +20,8 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#if CRY_PLATFORM_WINDOWS
 		#pragma comment( lib, "steam_api64.lib")
-	#elif CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-		#pragma comment( lib, "steam_api.lib")
 	#endif
 
 ////////////////////////////////////////////////////////////////////////////////

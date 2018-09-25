@@ -399,10 +399,8 @@ void CLuaRemoteDebug::SendVersion()
 	m_sendBuffer.Write((int)LUA_REMOTE_DEBUG_HOST_VERSION);
 	if (m_clientVersion >= 4)
 	{
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#if CRY_PLATFORM_WINDOWS
 		m_sendBuffer.Write((char)eP_Win64);
-	#elif CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-		m_sendBuffer.Write((char)eP_Win32);
 	#else
 		m_sendBuffer.Write((char)eP_Unknown);
 	#endif

@@ -1,14 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   CryPlatform.h
-//  Version:     v1.00
-//  Created:     31/01/2013 by Christopher Bolte.
-//  Compilers:   Visual Studio.NET
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
 #ifndef _CRY_PLATFORM_WIN64_H_
 #define _CRY_PLATFORM_WIN64_H_
 

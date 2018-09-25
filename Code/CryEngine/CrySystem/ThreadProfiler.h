@@ -16,10 +16,6 @@
 
 #include <CryCore/Platform/platform.h>
 
-#if defined(USE_FRAME_PROFILER) && CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-	#define THREAD_SAMPLER
-#endif
-
 #ifdef THREAD_SAMPLER
 
 enum ETraceThreads

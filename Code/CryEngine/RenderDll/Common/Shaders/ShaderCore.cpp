@@ -192,7 +192,7 @@ int CShader::GetTexId()
 	return tp->GetTextureID();
 }
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#pragma warning( push )               //AMD Port
 	#pragma warning( disable : 4267 )
 #endif
@@ -219,7 +219,7 @@ void CShader::GetMemoryUsage(ICrySizer* pSizer) const
 	pSizer->AddObject(m_HWTechniques);
 }
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#pragma warning( pop )                //AMD Port
 #endif
 
@@ -264,7 +264,7 @@ CShader::~CShader()
 	SAFE_DELETE(m_DerivedShaders);
 }
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#pragma warning( push )               //AMD Port
 	#pragma warning( disable : 4311 )     // I believe the int cast below is okay.
 #endif
@@ -298,7 +298,7 @@ CShader& CShader::operator=(const CShader& src)
 	return *this;
 }
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#pragma warning( pop )                  //AMD Port
 #endif
 
@@ -1122,9 +1122,9 @@ void CShaderMan::mfInit(void)
 		m_ShadersGamePath = gEnv->pCryPak->GetGameFolder() + string("/GameShaders/HWScripts/");
 		m_ShadersGameExtPath = gEnv->pCryPak->GetGameFolder() + string("/GameShaders/");
 		m_ShadersMergeCachePath = "Shaders/MergeCache/";
-#if (CRY_PLATFORM_LINUX && CRY_PLATFORM_32BIT) || CRY_PLATFORM_ANDROID
+#if CRY_PLATFORM_ANDROID
 		m_ShadersCache = "Shaders/Cache/LINUX32/";
-#elif (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT)
+#elif CRY_PLATFORM_LINUX
 		m_ShadersCache = "Shaders/Cache/LINUX64/";
 #elif CRY_PLATFORM_MAC
 		m_ShadersCache = "Shaders/Cache/Mac/";

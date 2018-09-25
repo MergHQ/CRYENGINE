@@ -23,7 +23,7 @@
 
 #include <string>
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#pragma warning(push)
 	#pragma warning(disable: 4244)
 #endif
@@ -2513,6 +2513,6 @@ Vec4 CHWShader_D3D::GetFogColorGradientRadial(const CCamera& camera)
 	return sGetFogColorGradientRadial(camera);
 }
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#pragma warning(pop)
 #endif

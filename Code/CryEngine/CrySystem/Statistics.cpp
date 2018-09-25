@@ -2135,10 +2135,8 @@ void CStatsToExcelExporter::ExportSummary(SCryEngineStats& stats)
 	AddRow();
 	AddCell(string("Level ") + levelName);
 	AddRow();
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#if CRY_PLATFORM_WINDOWS
 	AddCell("Running in 64bit version");
-	#else
-	AddCell("Running in 32bit version");
 	#endif
 	AddRow();
 	AddCell("Level Load Time (sec):");

@@ -193,7 +193,7 @@ target_link_libraries (${PROJECT_NAME} PRIVATE zlib)
 
 #--- other
 
-if (WIN32)
+if (WINDOWS)
 	#Use native SSL support on Windows
 	target_compile_definitions(${PROJECT_NAME} PRIVATE
 		USE_WINDOWS_SSPI
@@ -205,7 +205,7 @@ endif()
 #--- configure ---
 #--- Should use include() to divide configure settings to a seperate file
 
-if (NOT WIN32)
+if (NOT WINDOWS)
 # Generate custom configuration file
 
 #--- HEADER FILES
@@ -370,7 +370,7 @@ configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/curl_config.h.in" "${CMAKE_CURRENT_
 target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_CONFIG_H)
 target_include_directories (${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 
-endif (NOT WIN32)
+endif (NOT WINDOWS)
 
 if (ORBIS OR DARWIN OR LINUX OR ANDROID)
 	target_compile_options(${THIS_PROJECT} PRIVATE -w)

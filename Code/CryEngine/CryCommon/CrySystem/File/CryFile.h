@@ -266,7 +266,7 @@ inline size_t CCryFile::GetLength()
 	return size;
 }
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#pragma warning( push )               //AMD Port
 	#pragma warning( disable : 4267 )
 #endif
@@ -278,7 +278,7 @@ inline size_t CCryFile::Seek(size_t seek, int mode)
 	return IfPak(FSeek, fseek, (m_file, long(seek), mode));
 }
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#pragma warning( pop )                //AMD Port
 #endif
 

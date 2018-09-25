@@ -83,7 +83,7 @@ end_sources()
 
 CryEngineModule(CryScriptSystem PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 target_link_libraries(${THIS_PROJECT} PRIVATE lua)
-if (WIN32)
+if (WINDOWS)
 	target_link_libraries(${THIS_PROJECT} PRIVATE shell32 Gdi32 wininet Ole32)
 endif()
 

@@ -39,7 +39,7 @@ end_sources()
 
 CryEngineStaticModule(zlib SOLUTION_FOLDER "Libs")
 
-if (WIN32 OR DURANGO)
+if (WINDOWS OR DURANGO)
 target_compile_definitions(${THIS_PROJECT} PRIVATE -D_CRT_NONSTDC_NO_DEPRECATE -D_CRT_SECURE_NO_WARNINGS)
 endif()
 

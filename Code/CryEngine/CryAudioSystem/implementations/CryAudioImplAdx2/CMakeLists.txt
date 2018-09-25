@@ -56,7 +56,7 @@ end_sources()
 #END-FILE-LIST
 
 if(AUDIO_ADX2)
-	if(WIN64)
+	if(WINDOWS)
 		set( ADX2_PLATFORM_FOLDER pc )
 		set( ADX2_LIB_FOLDER x64 )
 		set( ADX2_LIBS
@@ -66,17 +66,6 @@ if(AUDIO_ADX2)
 			cri_atom_pcx64
 			cri_atom_monitor_pcx64
 			cri_mana_pcx64
-		)
-	elseif(WIN32)
-		set( ADX2_PLATFORM_FOLDER pc )
-		set( ADX2_LIB_FOLDER x86 )
-		set( ADX2_LIBS
-			cri_base_pcx86
-			cri_framework_pcx86
-			cri_file_system_pcx86
-			cri_atom_pcx86
-			cri_atom_monitor_pcx86
-			cri_mana_pcx86
 		)
 	endif()
 

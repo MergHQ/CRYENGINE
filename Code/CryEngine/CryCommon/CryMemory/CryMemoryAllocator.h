@@ -22,7 +22,7 @@
 #define TRACK_NODE_ALLOC_WITH_MEMREPLAY 1
 #define CRY_STL_ALLOC
 
-#if (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) || CRY_PLATFORM_APPLE
+#if CRY_PLATFORM_LINUX || CRY_PLATFORM_APPLE
 	#include <sys/mman.h>
 #endif
 
@@ -31,7 +31,7 @@
 //! Don't use _MAX_BYTES as identifier for Max Bytes, STLPORT defines the same enum.
 //! This leads to situation where the wrong enum is choosen in different compilation units,
 //! which in case leads to errors(The stlport one is defined as 128).
-#if defined(__OS400__) || CRY_PLATFORM_DURANGO || (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) || CRY_PLATFORM_MAC || (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT)
+#if defined(__OS400__) || CRY_PLATFORM_DURANGO || CRY_PLATFORM_WINDOWS || CRY_PLATFORM_MAC || CRY_PLATFORM_LINUX
 enum {_ALIGNMENT = 16, _ALIGN_SHIFT = 4, __MAX_BYTES = 512, NFREELISTS = 32, ADDRESSSPACE = 2 * 1024 * 1024, ADDRESS_SHIFT = 40};
 #else
 enum {_ALIGNMENT = 8, _ALIGN_SHIFT = 3, __MAX_BYTES = 512, NFREELISTS = 64, ADDRESSSPACE = 2 * 1024 * 1024, ADDRESS_SHIFT = 20};
@@ -47,7 +47,7 @@ public:
 	_Node_alloc_obj* _M_next;
 };
 
-#if CRY_PLATFORM_DURANGO || (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) || CRY_PLATFORM_APPLE || (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT)
+#if CRY_PLATFORM_DURANGO || CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX
 	#define MASK_COUNT 0x000000FFFFFFFFFF
 	#define MASK_VALUE 0xFFFFFF
 	#define MASK_NEXT  0xFFFFFFFFFF000000
@@ -226,7 +226,7 @@ struct Node_Allocator<eCryMallocCryFreeCRTCleanup>
 
 };
 
-#if (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) || CRY_PLATFORM_APPLE
+#if CRY_PLATFORM_LINUX || CRY_PLATFORM_APPLE
 template<>
 struct Node_Allocator<eCryLinuxMalloc>
 {
@@ -238,7 +238,7 @@ struct Node_Allocator<eCryLinuxMalloc>
 
 	inline void* pool_alloc(size_t size)
 	{
-	#if (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT)
+	#if CRY_PLATFORM_LINUX
 		char* p = (char*)mmap(NULL, size + sizeof(_MemHead), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_32BIT | MAP_ANONYMOUS, -1, 0);
 	#else
 		// Mac OS X does not have the MAP_32BIT since it's BSD based, compiling with -fPIC should solve the issue
@@ -252,7 +252,7 @@ struct Node_Allocator<eCryLinuxMalloc>
 	};
 	inline void* cleanup_alloc(size_t size)
 	{
-	#if (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT)
+	#if CRY_PLATFORM_LINUX
 		char* p = (char*)mmap(NULL, size + sizeof(_MemHead), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_32BIT | MAP_ANONYMOUS, -1, 0);
 	#else
 		// Mac OS X does not have the MAP_32BIT since it's BSD based, compiling with -fPIC should solve the issue
@@ -699,7 +699,7 @@ public:
 
 		if (__n > (size_t)__MAX_BYTES)
 		{
-#if !(CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) && !CRY_PLATFORM_APPLE
+#if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_APPLE
 			Node_Allocator<_alloc> all;
 #else
 			Node_Allocator<eCryLinuxMalloc> all;
@@ -812,7 +812,7 @@ public:
 		size_t __n = _Find_right_size(__p);
 		if (__n > (size_t)__MAX_BYTES)
 		{
-#if !(CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) && !CRY_PLATFORM_APPLE
+#if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_APPLE
 			Node_Allocator<_alloc> all;
 #else
 			Node_Allocator<eCryLinuxMalloc> all;
@@ -837,7 +837,7 @@ public:
 
 		if (__n > (size_t)__MAX_BYTES)
 		{
-#if !(CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) && !CRY_PLATFORM_APPLE
+#if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_APPLE
 			Node_Allocator<_alloc> all;
 #else
 			Node_Allocator<eCryLinuxMalloc> all;
@@ -883,7 +883,7 @@ public:
 		size_t __n = _Find_right_size(__p);
 		if (__n > (size_t)__MAX_BYTES)
 		{
-#if !(CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) && !CRY_PLATFORM_APPLE
+#if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_APPLE
 			Node_Allocator<_alloc> all;
 #else
 			Node_Allocator<eCryLinuxMalloc> all;
@@ -1111,7 +1111,7 @@ char* node_alloc<_alloc, __threads, _Size >::_S_chunk_alloc(size_t _p_size,
 {
 	char* __result = 0;
 	size_t __total_bytes = _p_size * __nobjs;
-#if !(CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) && !CRY_PLATFORM_APPLE
+#if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_APPLE
 	Node_Allocator<_alloc> allocator;
 #else
 	Node_Allocator<eCryLinuxMalloc> allocator;

@@ -785,7 +785,7 @@ void CVars::Init()
 	              "1 - occlusion test on render node level, 2 - occlusion test on render mesh level");
 	REGISTER_CVAR(e_CheckOcclusion, 1, VF_NULL, "Perform a visible check in check occlusion job");
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT // for big dense levels and for editor
+#if CRY_PLATFORM_WINDOWS
 	#define DEFAULT_CHECK_OCCLUSION_QUEUE_SIZE        4096
 	#define DEFAULT_CHECK_OCCLUSION_OUTPUT_QUEUE_SIZE 32768
 #else
