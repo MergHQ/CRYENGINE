@@ -4,6 +4,7 @@
 #include "UserDataUtil.h"
 
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonDocument>
 
 #include <QtUtil.h>
@@ -39,6 +40,11 @@ bool Migrate(const QString& from, const QString& to)
 		// Don't replace any existing files
 		if (QFile::exists(destination))
 			return true;
+
+		// Make sure the folder exists in the versioned user data
+		QFileInfo fileInfo(destination);
+		QDir toDir(fileInfo.absolutePath());
+		toDir.mkpath(fileInfo.absolutePath());
 
 		return QFile::copy(from, destination);
 	}
