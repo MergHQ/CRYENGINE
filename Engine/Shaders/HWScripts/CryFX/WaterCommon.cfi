@@ -31,6 +31,7 @@ float4 volFogShadowDarkeningSunAmb;
 
 struct SPerPassWaterParams
 {
+	float4x4 viewProjPrev;
 	float4x4 causticViewProjMatr;
 	float4   waterRippleLookup;
 	float4   ssrParams;
@@ -46,6 +47,7 @@ cbuffer CBPerPassWater : register(b5)
 {
 	struct
 	{
+		float4x4 viewProjPrev;
 		float4x4 causticViewProjMatr;
 		float4   waterRippleLookup;
 		float4   ssrParams;
@@ -113,10 +115,12 @@ SPerPassWaterParams GetPerPassWaterParams()
 	SPerPassWaterParams params;
 
 #if %_RT_COMPUTE_SKINNING
+	params.viewProjPrev = cbPerPassWater.viewProjPrev;
 	params.causticViewProjMatr = cbPerPassWater.causticViewProjMatr;
 	params.waterRippleLookup = cbPerPassWater.waterRippleLookup;
 	params.ssrParams = cbPerPassWater.ssrParams;
 #else
+	params.viewProjPrev = CV_PrevViewProjMatr;
 	params.causticViewProjMatr = CV_ViewProjMatr;
 	params.waterRippleLookup = WaterRipplesLookupParams;
 	params.ssrParams = float4(1, 1, 1, 28);
@@ -398,9 +402,9 @@ SamplerState ssLinearMirrorX                 : register(s11);
 //////////////////////////////////////////////////////////////////////////
 // per pass textures for water volume reflection gen pass
 
-Texture2D refractionHalfResTex : register(t30) = TS_HDR_TargetPrev;
-Texture2D reflectionPrevTex : register(t31) = TS_WaterVolumeReflPrev;
-Texture2D sceneDepthScaledTex : register(t32) = TS_ZTargetScaled_d2;
+Texture2D refractionHalfResTex : register(t30);// = TS_SceneTargetScaled_d2;
+Texture2D reflectionPrevTex    : register(t31) = TS_HDR_TargetPrev;
+Texture2D sceneDepthScaledTex  : register(t32) = TS_ZTargetScaled_d2;
 
 //////////////////////////////////////////////////////////////////////////
 // per pass textures for water fog volume pass
