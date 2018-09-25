@@ -26,7 +26,7 @@ namespace Utils
 ControlId GetId(EItemType const type, string const& name, CItem* const pParent, CItem const& rootItem);
 string    GetPathName(CItem const* const pItem, CItem const& rootItem);
 string    GetTypeName(EItemType const type);
-string    FindCueSheetName(CItem* const pItem, CItem const& rootItem);
+string    FindCueSheetName(CItem const* const pItem, CItem const& rootItem);
 } // namespace Utils
 } // namespace Adx2
 } // namespace Impl

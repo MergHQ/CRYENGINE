@@ -45,11 +45,8 @@ enum class EErrorCode : CryAudio::EnumFlagsType
 CRY_CREATE_ENUM_FLAG_OPERATORS(EErrorCode);
 
 using ControlId = CryAudio::IdType;
-static ControlId const s_aceInvalidId = 0;
+static constexpr ControlId s_aceInvalidId = 0;
 using ControlIds = std::vector<ControlId>;
-
-struct IConnection;
-using ConnectionPtr = std::shared_ptr<IConnection>;
 
 class CAsset;
 using Assets = std::vector<CAsset*>;

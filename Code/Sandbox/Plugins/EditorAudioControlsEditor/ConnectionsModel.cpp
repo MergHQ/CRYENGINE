@@ -7,6 +7,7 @@
 #include "ImplementationManager.h"
 
 #include <ModelUtils.h>
+#include <IConnection.h>
 #include <IItem.h>
 #include <QtUtil.h>
 #include <DragDrop.h>
@@ -96,7 +97,7 @@ void CConnectionsModel::ConnectSignals()
 			{
 			  ResetModelAndCache();
 			}
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	g_assetsManager.SignalConnectionRemoved.Connect([this]()
 		{
@@ -104,22 +105,22 @@ void CConnectionsModel::ConnectSignals()
 			{
 			  ResetModelAndCache();
 			}
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	g_implementationManager.SignalImplementationAboutToChange.Connect([this]()
 		{
 			beginResetModel();
 			m_pControl = nullptr;
-			m_connectionsCache.clear();
+			m_connectionIdCache.clear();
 			endResetModel();
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	g_implementationManager.SignalImplementationChanged.Connect([this]()
 		{
 			beginResetModel();
 			ResetCache();
 			endResetModel();
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -173,7 +174,7 @@ int CConnectionsModel::rowCount(QModelIndex const& parent) const
 	{
 		if ((parent.row() < 0) || (parent.column() < 0))
 		{
-			rowCount = m_connectionsCache.size();
+			rowCount = static_cast<int>(m_connectionIdCache.size());
 		}
 	}
 
@@ -193,108 +194,105 @@ QVariant CConnectionsModel::data(QModelIndex const& index, int role) const
 
 	if ((m_pControl != nullptr) && index.isValid())
 	{
-		if (index.row() < m_connectionsCache.size())
+		auto const indexRow = static_cast<size_t>(index.row());
+
+		if (indexRow < m_connectionIdCache.size())
 		{
-			ConnectionPtr const pConnection = m_connectionsCache[index.row()];
+			Impl::IItem const* const pIItem = g_pIImpl->GetItem(m_connectionIdCache[indexRow]);
 
-			if (pConnection != nullptr)
+			if (pIItem != nullptr)
 			{
-				Impl::IItem const* const pIItem = g_pIImpl->GetItem(pConnection->GetID());
-
-				if (pIItem != nullptr)
+				if (role == static_cast<int>(ModelUtils::ERoles::Name))
 				{
-					if (role == static_cast<int>(ModelUtils::ERoles::Name))
+					variant = QtUtil::ToQString(pIItem->GetName());
+				}
+				else
+				{
+					switch (index.column())
 					{
-						variant = QtUtil::ToQString(pIItem->GetName());
-					}
-					else
-					{
-						switch (index.column())
+					case static_cast<int>(EColumns::Notification):
 						{
-						case static_cast<int>(EColumns::Notification):
+							EItemFlags const flags = pIItem->GetFlags();
+
+							switch (role)
 							{
-								EItemFlags const flags = pIItem->GetFlags();
-
-								switch (role)
+							case Qt::DecorationRole:
+								if ((flags& EItemFlags::IsPlaceHolder) != 0)
 								{
-								case Qt::DecorationRole:
-									if ((flags& EItemFlags::IsPlaceHolder) != 0)
-									{
-										variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Placeholder);
-									}
-									else if ((flags& EItemFlags::IsLocalized) != 0)
-									{
-										variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized);
-									}
-									break;
-								case Qt::ToolTipRole:
-									if ((flags& EItemFlags::IsPlaceHolder) != 0)
-									{
-										variant = g_pIImpl->GetItemTypeName(pIItem) + tr(" not found in middleware project");
-									}
-									else if ((flags& EItemFlags::IsLocalized) != 0)
-									{
-										variant = g_pIImpl->GetItemTypeName(pIItem) + tr(" is localized");
-									}
-									break;
-								case static_cast<int>(ModelUtils::ERoles::Id):
-									variant = pIItem->GetId();
-									break;
+									variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Placeholder);
 								}
-							}
-							break;
-						case static_cast<int>(EColumns::Name):
-							{
-								switch (role)
+								else if ((flags& EItemFlags::IsLocalized) != 0)
 								{
-								case Qt::DecorationRole:
-									variant = g_pIImpl->GetItemIcon(pIItem);
-									break;
-								case Qt::DisplayRole:
-								case Qt::ToolTipRole:
-									variant = QtUtil::ToQString(pIItem->GetName());
-									break;
-								case static_cast<int>(ModelUtils::ERoles::Id):
-									variant = pIItem->GetId();
-									break;
+									variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized);
 								}
-							}
-							break;
-						case static_cast<int>(EColumns::Path):
-							{
-								switch (role)
+								break;
+							case Qt::ToolTipRole:
+								if ((flags& EItemFlags::IsPlaceHolder) != 0)
 								{
-								case Qt::DisplayRole:
-								case Qt::ToolTipRole:
-									{
-										QString path;
-										Impl::IItem const* pIItemParent = pIItem->GetParent();
-
-										while (pIItemParent != nullptr)
-										{
-											QString parentName = QtUtil::ToQString(pIItemParent->GetName());
-
-											if (!parentName.isEmpty())
-											{
-												if (path.isEmpty())
-												{
-													path = parentName;
-												}
-												else
-												{
-													path = parentName + "/" + path;
-												}
-											}
-											pIItemParent = pIItemParent->GetParent();
-										}
-
-										variant = path;
-									}
-									break;
+									variant = g_pIImpl->GetItemTypeName(pIItem) + tr(" not found in middleware project");
 								}
+								else if ((flags& EItemFlags::IsLocalized) != 0)
+								{
+									variant = g_pIImpl->GetItemTypeName(pIItem) + tr(" is localized");
+								}
+								break;
+							case static_cast<int>(ModelUtils::ERoles::Id):
+								variant = pIItem->GetId();
+								break;
 							}
-							break;
 						}
+						break;
+					case static_cast<int>(EColumns::Name):
+						{
+							switch (role)
+							{
+							case Qt::DecorationRole:
+								variant = g_pIImpl->GetItemIcon(pIItem);
+								break;
+							case Qt::DisplayRole: // Intentional fall-through.
+							case Qt::ToolTipRole:
+								variant = QtUtil::ToQString(pIItem->GetName());
+								break;
+							case static_cast<int>(ModelUtils::ERoles::Id):
+								variant = pIItem->GetId();
+								break;
+							}
+						}
+						break;
+					case static_cast<int>(EColumns::Path):
+						{
+							switch (role)
+							{
+							case Qt::DisplayRole: // Intentional fall-through.
+							case Qt::ToolTipRole:
+								{
+									QString path;
+									Impl::IItem const* pIItemParent = pIItem->GetParent();
+
+									while (pIItemParent != nullptr)
+									{
+										QString parentName = QtUtil::ToQString(pIItemParent->GetName());
+
+										if (!parentName.isEmpty())
+										{
+											if (path.isEmpty())
+											{
+												path = parentName;
+											}
+											else
+											{
+												path = parentName + "/" + path;
+											}
+										}
+										pIItemParent = pIItemParent->GetParent();
+									}
+
+									variant = path;
+								}
+								break;
+							}
+						}
+						break;
 					}
 				}
 			}
@@ -366,18 +364,13 @@ QModelIndex CConnectionsModel::index(int row, int column, QModelIndex const& par
 	{
 		if ((row >= 0) && (column >= 0))
 		{
-			if (row < m_connectionsCache.size())
+			if (row < m_connectionIdCache.size())
 			{
-				ConnectionPtr const pConnection = m_connectionsCache[row];
+				Impl::IItem const* const pIItem = g_pIImpl->GetItem(m_connectionIdCache[static_cast<size_t>(row)]);
 
-				if (pConnection != nullptr)
+				if (pIItem != nullptr)
 				{
-					Impl::IItem const* const pIItem = g_pIImpl->GetItem(pConnection->GetID());
-
-					if (pIItem != nullptr)
-					{
-						modelIndex = createIndex(row, column);
-					}
+					modelIndex = createIndex(row, column);
 				}
 			}
 		}
@@ -431,16 +424,16 @@ bool CConnectionsModel::dropMimeData(QMimeData const* pData, Qt::DropAction acti
 
 				if (pIItem != nullptr)
 				{
-					ConnectionPtr pConnection = m_pControl->GetConnection(pIItem);
+					IConnection* pIConnection = m_pControl->GetConnection(id);
 
-					if (pConnection == nullptr)
+					if (pIConnection == nullptr)
 					{
-						pConnection = g_pIImpl->CreateConnectionToControl(m_pControl->GetType(), pIItem);
+						pIConnection = g_pIImpl->CreateConnectionToControl(m_pControl->GetType(), pIItem);
 
-						if (pConnection != nullptr)
+						if (pIConnection != nullptr)
 						{
-							m_pControl->AddConnection(pConnection);
-							lastConnectedId = pConnection->GetID();
+							m_pControl->AddConnection(pIConnection);
+							lastConnectedId = pIConnection->GetID();
 							wasDropped = true;
 						}
 					}
@@ -474,7 +467,7 @@ QStringList CConnectionsModel::mimeTypes() const
 //////////////////////////////////////////////////////////////////////////
 void CConnectionsModel::ResetCache()
 {
-	m_connectionsCache.clear();
+	m_connectionIdCache.clear();
 
 	if (m_pControl != nullptr)
 	{
@@ -482,11 +475,11 @@ void CConnectionsModel::ResetCache()
 
 		for (size_t i = 0; i < numConnections; ++i)
 		{
-			ConnectionPtr const pConnection = m_pControl->GetConnectionAt(i);
+			IConnection* const pIConnection = m_pControl->GetConnectionAt(i);
 
-			if (pConnection != nullptr)
+			if (pIConnection != nullptr)
 			{
-				m_connectionsCache.push_back(pConnection);
+				m_connectionIdCache.push_back(pIConnection->GetID());
 			}
 		}
 	}

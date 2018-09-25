@@ -7,6 +7,7 @@
 
 namespace ACE
 {
+struct IConnection;
 class CControl;
 
 class CConnectionsModel final : public QAbstractItemModel
@@ -14,6 +15,12 @@ class CConnectionsModel final : public QAbstractItemModel
 	Q_OBJECT
 
 public:
+
+	CConnectionsModel() = delete;
+	CConnectionsModel(CConnectionsModel const&) = delete;
+	CConnectionsModel(CConnectionsModel&&) = delete;
+	CConnectionsModel& operator=(CConnectionsModel const&) = delete;
+	CConnectionsModel& operator=(CConnectionsModel&&) = delete;
 
 	enum class EColumns : CryAudio::EnumFlagsType
 	{
@@ -24,8 +31,6 @@ public:
 
 	explicit CConnectionsModel(QObject* const pParent);
 	virtual ~CConnectionsModel() override;
-
-	CConnectionsModel() = delete;
 
 	void Init(CControl* const pControl);
 	void DisconnectSignals();
@@ -43,7 +48,6 @@ public:
 	virtual bool            dropMimeData(QMimeData const* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent) override;
 	virtual Qt::DropActions supportedDropActions() const override;
 	virtual QStringList     mimeTypes() const override;
-
 	// ~QAbstractItemModel
 
 signals:
@@ -56,7 +60,7 @@ private:
 	void ResetCache();
 	void ResetModelAndCache();
 
-	CControl*                  m_pControl;
-	std::vector<ConnectionPtr> m_connectionsCache;
+	CControl*  m_pControl;
+	ControlIds m_connectionIdCache;
 };
 } // namespace ACE

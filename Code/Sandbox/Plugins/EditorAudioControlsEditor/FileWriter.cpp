@@ -7,6 +7,7 @@
 #include "ImplementationManager.h"
 
 #include <IItem.h>
+#include <IConnection.h>
 #include <CryString/StringUtils.h>
 #include <CrySystem/File/CryFile.h>
 
@@ -358,13 +359,13 @@ void CFileWriter::WriteConnectionsToXML(XmlNodeRef const pNode, CControl* const 
 
 	for (size_t i = 0; i < numConnections; ++i)
 	{
-		ConnectionPtr const pConnection = pControl->GetConnectionAt(i);
+		IConnection const* const pIConnection = pControl->GetConnectionAt(i);
 
-		if (pConnection != nullptr)
+		if (pIConnection != nullptr)
 		{
-			if (((type != EAssetType::Preload) && (type != EAssetType::Setting)) || (pConnection->IsPlatformEnabled(static_cast<PlatformIndexType>(platformIndex))))
+			if (((type != EAssetType::Preload) && (type != EAssetType::Setting)) || (pIConnection->IsPlatformEnabled(static_cast<PlatformIndexType>(platformIndex))))
 			{
-				XmlNodeRef const pChild = g_pIImpl->CreateXMLNodeFromConnection(pConnection, type);
+				XmlNodeRef const pChild = g_pIImpl->CreateXMLNodeFromConnection(pIConnection, type);
 
 				if (pChild != nullptr)
 				{

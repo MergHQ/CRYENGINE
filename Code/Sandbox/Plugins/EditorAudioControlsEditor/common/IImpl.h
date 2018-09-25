@@ -21,6 +21,8 @@ class QString;
 
 namespace ACE
 {
+struct IConnection;
+
 namespace Impl
 {
 struct IItem;
@@ -107,10 +109,10 @@ struct IImpl
 	virtual EAssetType ImplTypeToAssetType(IItem const* const pIItem) const = 0;
 
 	//! Creates and returns a connection to a middleware control. The connection object is owned by this class.
-	//! \param assetType - The type of the audio system control you are connecting to pMiddlewareControl.
+	//! \param assetType - The type of the audio system control you are connecting to the middleware control.
 	//! \param pIItem - Middleware control for which to make the connection.
 	// \return A pointer to the newly created connection.
-	virtual ConnectionPtr CreateConnectionToControl(EAssetType const assetType, IItem const* const pIItem) = 0;
+	virtual IConnection* CreateConnectionToControl(EAssetType const assetType, IItem const* const pIItem) = 0;
 
 	//! Creates and returns a connection defined in an XML node.
 	//! The format of the XML node should be in sync with the CreateXMLNodeFromConnection function which is in charge of writing the node during serialization.
@@ -119,24 +121,29 @@ struct IImpl
 	//! \param pNode - XML node where the connection is defined.
 	//! \param assetType - The type of the audio system control you are connecting to.
 	//! \return A pointer to the newly created connection.
-	virtual ConnectionPtr CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType const assetType) = 0;
+	virtual IConnection* CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType const assetType) = 0;
 
 	//! When serializing connections between controls this function will be called once per connection to serialize its properties.
 	//! This function should be in sync with CreateConnectionToControl as whatever it's written here will have to be read there.
-	//! \param pConnection - Connection to serialize.
+	//! \param pIConnection - Connection to serialize.
 	//! \param assetType - Type of the audio system control that has this connection.
 	//! \return An XML node with the connection serialized.
-	virtual XmlNodeRef CreateXMLNodeFromConnection(ConnectionPtr const pConnection, EAssetType const assetType) = 0;
+	virtual XmlNodeRef CreateXMLNodeFromConnection(IConnection const* const pIConnection, EAssetType const assetType) = 0;
 
 	//! Whenever a connection is added to an audio system control this function should be called to keep the system informed of which connections are being used.
-	//! \param pConnection - Connection that has been enabled.
+	//! \param pIConnection - Connection that has been enabled.
 	//! \param isLoading - Is data currently being loaded or not.
-	virtual void EnableConnection(ConnectionPtr const pConnection, bool const isLoading) = 0;
+	virtual void EnableConnection(IConnection const* const pIConnection, bool const isLoading) = 0;
 
 	//! Whenever a connection is removed from an audio system control this function should be called to keep the system informed of which connections are being used.
-	//! \param pConnection - Connection that has been disabled.
+	//! \param pIConnection - Connection that has been disabled.
 	//! \param isLoading - Is data currently being loaded or not.
-	virtual void DisableConnection(ConnectionPtr const pConnection, bool const isLoading) = 0;
+	virtual void DisableConnection(IConnection const* const pIConnection, bool const isLoading) = 0;
+
+	//! Free the memory and potentially other resources used by the supplied IConnection
+	//! \param pIConnection - pointer to the connection to be discarded
+	//! \return void
+	virtual void DestructConnection(IConnection const* const pIConnection) = 0;
 
 	//! Executed before data gets reloaded.
 	virtual void OnAboutToReload() = 0;

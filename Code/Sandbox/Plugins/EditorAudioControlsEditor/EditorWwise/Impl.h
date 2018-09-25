@@ -22,6 +22,11 @@ class CImpl final : public IImpl
 {
 public:
 
+	CImpl(CImpl const&) = delete;
+	CImpl(CImpl&&) = delete;
+	CImpl& operator=(CImpl const&) = delete;
+	CImpl& operator=(CImpl&&) = delete;
+
 	CImpl();
 	virtual ~CImpl() override;
 
@@ -43,11 +48,12 @@ public:
 	virtual bool           IsSystemTypeSupported(EAssetType const assetType) const override;
 	virtual bool           IsTypeCompatible(EAssetType const assetType, IItem const* const pIItem) const override;
 	virtual EAssetType     ImplTypeToAssetType(IItem const* const pIItem) const override;
-	virtual ConnectionPtr  CreateConnectionToControl(EAssetType const assetType, IItem const* const pIItem) override;
-	virtual ConnectionPtr  CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType const assetType) override;
-	virtual XmlNodeRef     CreateXMLNodeFromConnection(ConnectionPtr const pConnection, EAssetType const assetType) override;
-	virtual void           EnableConnection(ConnectionPtr const pConnection, bool const isLoading) override;
-	virtual void           DisableConnection(ConnectionPtr const pConnection, bool const isLoading) override;
+	virtual IConnection*   CreateConnectionToControl(EAssetType const assetType, IItem const* const pIItem) override;
+	virtual IConnection*   CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType const assetType) override;
+	virtual XmlNodeRef     CreateXMLNodeFromConnection(IConnection const* const pIConnection, EAssetType const assetType) override;
+	virtual void           EnableConnection(IConnection const* const pIConnection, bool const isLoading) override;
+	virtual void           DisableConnection(IConnection const* const pIConnection, bool const isLoading) override;
+	virtual void           DestructConnection(IConnection const* const pIConnection) override;
 	virtual void           OnAboutToReload() override;
 	virtual void           OnReloaded() override;
 	virtual void           OnSelectConnectedItem(ControlId const id) const override;
