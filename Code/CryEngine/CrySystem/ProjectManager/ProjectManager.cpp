@@ -210,17 +210,10 @@ bool CProjectManager::ParseProjectFile()
 
 		auto gameDllIt = m_project.legacyGameDllPaths.find("any");
 
-#if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT)
 		if (gameDllIt == m_project.legacyGameDllPaths.end())
 		{
 			gameDllIt = m_project.legacyGameDllPaths.find("win_x64");
 		}
-#elif (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT)
-		if (gameDllIt == m_project.legacyGameDllPaths.end())
-		{
-			gameDllIt = m_project.legacyGameDllPaths.find("win_x86");
-		}
-#endif
 		string legacyGameDllPath;
 
 		// Set legacy Game DLL

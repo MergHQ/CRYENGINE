@@ -48,11 +48,6 @@
 		#define CRY_PFX2_USE_SEE4
 	#endif
 #endif
-#if CRY_PLATFORM_X86
-	#undef CRY_PFX2_USE_SSE // limited code generation in x86, disabling SSE entirely for now.
-	#// msvc x86 only supports up to 3 arguments by copy of type __m128. More than that will require
-	#// references. That makes it incompatible with Vec4_tpl.
-#endif
 
 namespace pfx2
 {

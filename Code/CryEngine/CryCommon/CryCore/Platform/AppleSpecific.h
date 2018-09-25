@@ -261,11 +261,11 @@ public:
 	CHandle(const HandleType cHandle = U) : m_Value(cHandle){}
 	CHandle(const PointerType cpHandle) : m_Value(reinterpret_cast<HandleType>(cpHandle)){}
 	CHandle(INVALID_HANDLE_VALUE_ENUM) : m_Value(U){}      //!< to be able to use a common value for all InvalidHandle - types
-		#if CRY_PLATFORM_64BIT
+
 	//! Treat __null tyope also as invalid handle type.
 	//! To be able to use a common value for all InvalidHandle - types.
 	CHandle(long) : m_Value(U){}
-		#endif
+
 	operator HandleType(){ return m_Value; }
 	bool           operator!() const                             { return m_Value == sciInvalidHandleValue; }
 	const CHandle& operator=(const CHandle& crHandle)            { m_Value = crHandle.m_Value; return *this; }

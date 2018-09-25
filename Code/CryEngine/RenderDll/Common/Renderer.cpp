@@ -240,10 +240,6 @@ void CRenderer::InitRenderer()
 
 	//assert(!(FOB_MASK_AFFECTS_MERGING & 0xffff));
 	//assert(sizeof(CRenderObject) == 256);
-#if !CRY_PLATFORM_64BIT && !CRY_PLATFORM_ANDROID
-	// Disabled this check for ShaderCache Gen, it is only a performacne thingy for last gen consoles anyway
-	//STATIC_CHECK(sizeof(CRenderObject) == 128, CRenderObject);
-#endif
 	STATIC_CHECK(!(FOB_MASK_AFFECTS_MERGING & 0xffff), FOB_MASK_AFFECTS_MERGING);
 
 	if (!g_pSDynTexture_PoolAlloc)
@@ -1705,7 +1701,7 @@ EShaderQuality CRenderer::EF_GetShaderQuality(EShaderType eST)
 	return eSQ_Low;
 }
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 #pragma warning( push )             //AMD Port
 #pragma warning( disable : 4312 )   // 'type cast' : conversion from 'int' to 'void *' of greater size
 #endif
@@ -2285,7 +2281,7 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 	}
 }
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 #pragma warning( pop )              //AMD Port
 #endif
 

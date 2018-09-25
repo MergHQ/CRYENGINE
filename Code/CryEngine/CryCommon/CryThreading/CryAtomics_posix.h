@@ -101,7 +101,6 @@ ILINE int64 CryInterlockedCompareExchange64(volatile int64* addr, int64 exchange
 	return __sync_val_compare_and_swap(addr, comperand, exchange);
 }
 
-#if CRY_PLATFORM_64BIT
 // Returns initial address prior exchange
 // Chipset needs to support cmpxchg16b which most do
 //https://blog.lse.epita.fr/articles/42-implementing-generic-double-word-compare-and-swap-.html
@@ -140,7 +139,6 @@ ILINE unsigned char CryInterlockedCompareExchange128(volatile int64* pDst, int64
 		return bResult;
 	#endif
 }
-#endif
 
 // Returns initial address prior exchange
 ILINE void* CryInterlockedCompareExchangePointer(void* volatile* pDst, void* pExchange, void* pComperand)
@@ -148,7 +146,6 @@ ILINE void* CryInterlockedCompareExchangePointer(void* volatile* pDst, void* pEx
 	return __sync_val_compare_and_swap(pDst, pComperand, pExchange);
 }
 
-#if CRY_PLATFORM_64BIT
 //////////////////////////////////////////////////////////////////////////
 // Linux 64-bit implementation of lockless single-linked list
 //////////////////////////////////////////////////////////////////////////
@@ -245,95 +242,6 @@ ILINE void* CryInterlockedFlushSList(SLockFreeSingleLinkedListHeader& list)
 	return (void*)curSetting[0];
 }
 //////////////////////////////////////////////////////////////////////////
-#elif CRY_PLATFORM_32BIT
-//////////////////////////////////////////////////////////////////////////
-// Implementation for Linux32 with gcc using uint64
-//////////////////////////////////////////////////////////////////////////
-ILINE void CryInterlockedPushEntrySList(SLockFreeSingleLinkedListHeader& list, SLockFreeSingleLinkedListEntry& element)
-{
-	uint32 curSetting[2];
-	uint32 newSetting[2];
-	uint32 newPointer = (uint32) & element;
-	do
-	{
-		curSetting[0] = (uint32)list.pNext;
-		curSetting[1] = list.salt;
-		element.pNext = (SLockFreeSingleLinkedListEntry*)curSetting[0];
-		newSetting[0] = newPointer;        // new pointer
-		newSetting[1] = curSetting[1] + 1; // new salt
-	}
-	while (false == __sync_bool_compare_and_swap((volatile uint64*)&list.pNext, *(uint64*)&curSetting[0], *(uint64*)&newSetting[0]));
-}
-
-//////////////////////////////////////////////////////////////////////////
-ILINE void CryInterlockedPushListSList(SLockFreeSingleLinkedListHeader& list, SLockFreeSingleLinkedListEntry& first, SLockFreeSingleLinkedListEntry& last, uint32 count)
-{
-	(void)count; //unused
-
-	uint32 curSetting[2];
-	uint32 newSetting[2];
-	uint32 newPointer = (uint32) & first;
-	do
-	{
-		curSetting[0] = (uint32)list.pNext;
-		curSetting[1] = list.salt;
-		last.pNext = (SLockFreeSingleLinkedListEntry*)curSetting[0];
-		newSetting[0] = newPointer;        // new pointer
-		newSetting[1] = curSetting[1] + 1; // new salt
-	}
-	while (false == __sync_bool_compare_and_swap((volatile uint64*)&list.pNext, *(uint64*)&curSetting[0], *(uint64*)&newSetting[0]));
-}
-
-//////////////////////////////////////////////////////////////////////////
-ILINE void* CryInterlockedPopEntrySList(SLockFreeSingleLinkedListHeader& list)
-{
-	uint32 curSetting[2];
-	uint32 newSetting[2];
-	do
-	{
-		curSetting[1] = list.salt;
-		curSetting[0] = (uint32)list.pNext;
-		if (curSetting[0] == 0)
-			return NULL;
-		newSetting[0] = *(uint32*)curSetting[0]; // new pointer
-		newSetting[1] = curSetting[1] + 1;       // new salt
-	}
-	while (false == __sync_bool_compare_and_swap((volatile uint64*)&list.pNext, *(uint64*)&curSetting[0], *(uint64*)&newSetting[0]));
-	return (void*)curSetting[0];
-}
-
-//////////////////////////////////////////////////////////////////////////
-ILINE void* CryRtlFirstEntrySList(SLockFreeSingleLinkedListHeader& list)
-{
-	return list.pNext;
-}
-
-//////////////////////////////////////////////////////////////////////////
-ILINE void CryInitializeSListHead(SLockFreeSingleLinkedListHeader& list)
-{
-	list.salt = 0;
-	list.pNext = NULL;
-}
-
-//////////////////////////////////////////////////////////////////////////
-ILINE void* CryInterlockedFlushSList(SLockFreeSingleLinkedListHeader& list)
-{
-	uint32 curSetting[2];
-	uint32 newSetting[2];
-	uint32 newPointer;
-	do
-	{
-		curSetting[1] = list.salt;
-		curSetting[0] = (uint32)list.pNext;
-		if (curSetting[0] == 0)
-			return NULL;
-		newSetting[0] = 0;
-		newSetting[1] = curSetting[1] + 1;
-	}
-	while (false == __sync_bool_compare_and_swap((volatile uint64*)&list.pNext, *(uint64*)&curSetting[0], *(uint64*)&newSetting[0]));
-	return (void*)curSetting[0];
-}
-#endif
 
 //////////////////////////////////////////////////////////////////////////
 // Helper

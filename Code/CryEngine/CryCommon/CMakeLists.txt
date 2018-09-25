@@ -3,7 +3,7 @@
 
 start_sources()
 # -- crycommon_win32.waf_files --
-sources_platform(DURANGO WIN32)
+sources_platform(DURANGO WINDOWS)
 add_sources("NoUberFile"
 	PROJECTS CryCommon
 	SOURCE_GROUP "CryNetwork"
@@ -25,8 +25,6 @@ add_sources("NoUberFile"
 		
 	SOURCE_GROUP "CryCore\\\\Platform"
 		"CryCore/Platform/CryPlatform.Linux.h"
-		"CryCore/Platform/Linux32Specific.h"
-		"CryCore/Platform/Linux64Specific.h"
 		"CryCore/Platform/Linux_Win32Wrapper.h"
 		"CryCore/Platform/LinuxSpecific.h"
 )
@@ -90,8 +88,6 @@ add_sources("NoUberFile"
 		
 	SOURCE_GROUP "CryCore\\\\Platform"
 		"CryCore/Platform/AndroidSpecific.h"
-		"CryCore/Platform/Android32Specific.h"
-		"CryCore/Platform/Android64Specific.h"
 		"CryCore/Platform/platform_impl_android.inl"
 		"CryCore/Platform/AndroidJNI.h"
 		"CryCore/Platform/AndroidJNI.inl"
@@ -144,7 +140,7 @@ add_sources("NoUberFile"
 )
 
 # -- crycommon_windows.waf_files --
-sources_platform(WIN32)
+sources_platform(WINDOWS)
 add_sources("NoUberFile"
 	PROJECTS CryCommon
 	SOURCE_GROUP "CryAssert"
@@ -152,10 +148,8 @@ add_sources("NoUberFile"
 	SOURCE_GROUP "CryCore"
 		
 	SOURCE_GROUP "CryCore\\\\Platform"
-		"CryCore/Platform/CryPlatform.Win32.h"
 		"CryCore/Platform/CryPlatform.Win64.h"
-		"CryCore/Platform/Win32specific.h"
-		"CryCore/Platform/Win64specific.h"
+		"CryCore/Platform/WindowsSpecific.h"
 		"CryCore/Platform/platform_impl_winapi.inl"
 	SOURCE_GROUP "CrySystem"
 		

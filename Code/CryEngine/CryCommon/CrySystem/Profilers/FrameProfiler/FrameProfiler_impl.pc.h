@@ -5,12 +5,9 @@
 #if defined(CRY_PROFILE_MARKERS_USE_GPA)
 	#include <ittnotify.h>
 
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#if CRY_PLATFORM_WINDOWS
 LINK_THIRD_PARTY_LIBRARY("SDKs/GPA/lib64/libittnotify.lib")
 LINK_THIRD_PARTY_LIBRARY("SDKs/GPA/lib64/jitprofiling.lib")
-	#elif CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-LINK_THIRD_PARTY_LIBRARY("SDKs/GPA/lib32/libittnotify.lib")
-LINK_THIRD_PARTY_LIBRARY("SDKs/GPA/lib32/jitprofiling.lib")
 	#else
 		#error Unknown Platform
 	#endif

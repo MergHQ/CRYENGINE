@@ -25,7 +25,7 @@ end_sources()
 
 CryEngineModule(CryUserAnalytics PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
 target_link_libraries(${THIS_PROJECT} PRIVATE curl)
-if(WIN32)
+if(WINDOWS)
     target_link_libraries(${THIS_PROJECT} PRIVATE Ole32 Shell32)
 endif()
 target_include_directories(${THIS_PROJECT}

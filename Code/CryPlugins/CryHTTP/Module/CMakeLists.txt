@@ -1,4 +1,4 @@
-if ((WIN32 OR ORBIS) AND OPTION_ENGINE)
+if ((WINDOWS OR ORBIS) AND OPTION_ENGINE)
 	option(PLUGIN_HTTP "Enable HTTP support" ON)
 else()
 	option(PLUGIN_HTTP "Enable HTTP support" OFF)
@@ -18,7 +18,7 @@ add_sources("CryHTTP_uber_0.cpp"
 		"StdAfx.h"
 )
 
-sources_platform(WIN32 LINUX APPLE)
+sources_platform(WINDOWS LINUX APPLE)
 add_sources("CryHTTP_cURL_uber_0.cpp"
 	SOURCE_GROUP "Implementation"
 		"HttpImplementation_cURL.cpp"
@@ -48,7 +48,7 @@ PUBLIC
 	../Interface
 )
 
-if(WIN32 OR LINUX OR APPLE)
+if(WINDOWS OR LINUX OR APPLE)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE curl )
 endif()
 

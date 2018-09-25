@@ -251,24 +251,14 @@ typedef void (*RenderFunc)(void);
 	#if !defined(EXCLUDE_NV_API)
 		#define USE_NV_API 1
 		#define NV_API_HEADER "NVIDIA/NVAPI_r386/nvapi.h"
-
-		#if CRY_PLATFORM_64BIT
-			#define NV_API_LIB "SDKs/NVIDIA/NVAPI_r386/amd64/nvapi64.lib"
-		#else
-			#define NV_API_LIB "SDKs/NVIDIA/NVAPI_r386/x86/nvapi.lib"
-		#endif
+		#define NV_API_LIB "SDKs/NVIDIA/NVAPI_r386/amd64/nvapi64.lib"
 	#endif
 
 	// AMD EXT (DX11 only)
 	#if !defined(EXCLUDE_AMD_API) && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 		#define USE_AMD_API 1
 		#define AMD_API_HEADER "AMD/AGS Lib/inc/amd_ags.h"
-
-		#if CRY_PLATFORM_64BIT
-			#define AMD_API_LIB "SDKs/AMD/AGS Lib/lib/amd_ags_x64.lib"
-		#else
-			#define AMD_API_LIB "SDKs/AMD/AGS Lib/lib/amd_ags_x86.lib"
-		#endif
+		#define AMD_API_LIB "SDKs/AMD/AGS Lib/lib/amd_ags_x64.lib"
 	#endif
 #endif
 

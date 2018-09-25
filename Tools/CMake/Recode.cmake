@@ -1,4 +1,4 @@
-if(WIN64)
+if(WINDOWS)
 	option(OPTION_RECODE "Enable support for Recode" OFF)
 
 	if(OPTION_RECODE)
@@ -11,13 +11,7 @@ if(WIN64)
 
 		get_filename_component(RECODE_INSTALL_PATH "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Indefiant\\Recode;InstallDir]" ABSOLUTE)
 		file(TO_NATIVE_PATH "${RECODE_INSTALL_PATH}" RECODE_INSTALL_PATH)
-		if(WIN64)
-			set(RECODE_INSTALL_PATH "${RECODE_INSTALL_PATH}\\x64" CACHE INTERNAL "Recode path" FORCE)
-		elseif(WIN32 AND EXISTS "${RECODE_INSTALL_PATH}\\Win32") # Recode 3 does not support 32-bit
-			set(RECODE_INSTALL_PATH "${RECODE_INSTALL_PATH}\\Win32" CACHE INTERNAL "Recode path" FORCE)
-		else()
-			set(RECODE_INSTALL_PATH)
-		endif()
+		set(RECODE_INSTALL_PATH "${RECODE_INSTALL_PATH}\\x64" CACHE INTERNAL "Recode path" FORCE)
 
 		foreach(t IN ITEMS STATIC SHARED EXE MODULE)
 			foreach(c IN ITEMS ${CMAKE_CONFIGURATION_TYPES})

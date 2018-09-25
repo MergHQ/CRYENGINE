@@ -310,7 +310,7 @@ add_sources("NoUberFile"
 )
 end_sources()
 
-if(WIN64)
+if(WINDOWS)
 	CreateDynamicModule(python27 SOLUTION_FOLDER "Libs")
 	set_target_properties(python27 PROPERTIES DEBUG_POSTFIX "_d")
 	target_compile_options(${THIS_PROJECT} PRIVATE /W0 "/FI${CRY_LIBS_DIR}/python/pyconfig.h")
@@ -333,7 +333,7 @@ add_sources("NoUberFile"
 )
 end_sources()
 
-if(WIN64)
+if(WINDOWS)
 	CryConsoleApplication(sandboxpython SOLUTION_FOLDER "Libs")
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DPy_BUILD_CORE -DWIN32 $<$<CONFIG:Debug>:_DEBUG>)
 	target_link_libraries(${THIS_PROJECT} PRIVATE python27 Shlwapi)

@@ -1423,7 +1423,7 @@ void CWheeledVehicleEntity::AddAdditionalImpulses(float time_interval)
 		m_Ffriction = m_body.P-Pbefore; m_Tfriction = m_body.L-Lbefore;
 
 #ifdef _DEBUG
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 		assert(m_Ffriction.len2()>=0);
 #else
 		if (!(m_Ffriction.len2()>=0))

@@ -3831,10 +3831,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		m_env.pLocalMemoryUsage = NULL;
 #endif
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-		_controlfp(_PC_64, _MCW_PC); // not supported on Windows 64
-#endif
-
 		if (g_cvars.sys_float_exceptions > 0)
 		{
 			if (g_cvars.sys_float_exceptions == 3 && gEnv->IsEditor()) // Turn off float exceptions in editor if sys_float_exceptions = 3
@@ -3848,7 +3844,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		}
 		m_env.pThreadManager->EnableFloatExceptions((EFPE_Severity)g_cvars.sys_float_exceptions);
 
-#if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) && defined(SECUROM_64)
+#if CRY_PLATFORM_WINDOWS && defined(SECUROM_64)
 		if (!m_env.IsEditor() && !IsDedicated())
 		{
 			int res = TestSecurom64();

@@ -179,7 +179,7 @@ end_sources()
 
 CryEngineModule(CryDefaultEntities PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
 
-if(WIN32 OR WIN64)
+if(WINDOWS)
 	target_compile_options(${THIS_PROJECT} PRIVATE /Zc:inline-)
 endif()
 

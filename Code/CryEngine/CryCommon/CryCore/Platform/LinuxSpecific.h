@@ -379,7 +379,7 @@ public:
 	CHandle(const HandleType cHandle = U) : m_Value(cHandle){}
 	CHandle(const PointerType cpHandle) : m_Value(reinterpret_cast<HandleType>(cpHandle)){}
 	CHandle(INVALID_HANDLE_VALUE_ENUM) : m_Value(U){}        //!< To be able to use a common value for all InvalidHandle - types.
-	#if (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) && !defined(__clang__)
+	#if CRY_PLATFORM_LINUX && !defined(__clang__)
 	//! Treat __null tyope also as invalid handle type.
 	//! To be able to use a common value for all InvalidHandle - types.
 	CHandle(__typeof__(__null)) : m_Value(U){}

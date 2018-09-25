@@ -623,7 +623,7 @@ private:
 	{
 		UINT_PTR dstChunkBase = dstChunk.ptr;
 		UINT_PTR dstChunkEnd = dstChunkBase + dstChunk.attr.GetSize();
-#if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) || CRY_PLATFORM_DURANGO
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
 		UINT_PTR allocAlign = BIT64(srcChunk.logAlign);
 #else
 		UINT_PTR allocAlign = BIT(srcChunk.logAlign);

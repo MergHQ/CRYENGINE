@@ -142,12 +142,7 @@ SMessageTag CUpdateMessage::GetMessageTag(INetSender* pSender, IMessageMapper* m
 	if (pEntity != NULL)
 	{
 		pEntityClass = pEntity->GetClass();
-	#if CRY_PLATFORM_64BIT
 		mTag.varying1 = (uint64)pEntityClass;
-	#else
-		uint32 t = (uint32)pEntityClass;
-		mTag.varying1 = (uint64)t;
-	#endif
 	}
 	else
 	{

@@ -319,7 +319,6 @@ void EnableFloatExceptions(threadID nThreadId, EFPE_Severity eFPESeverity)
 		return;
 	}
 
-#if CRY_PLATFORM_64BIT
 	//////////////////////////////////////////////////////////////////////////
 	// Note:
 	// DO NOT USE ctx.FltSave.MxCsr ... SetThreadContext() will copy the value of ctx.MxCsr into it
@@ -327,11 +326,6 @@ void EnableFloatExceptions(threadID nThreadId, EFPE_Severity eFPESeverity)
 	DWORD& floatMxCsr = ctx.MxCsr;                    // Hold FPE Mask and Status for MMX (SSE) floating point registers
 	WORD& floatControlWord = ctx.FltSave.ControlWord; // Hold FPE Mask for floating point registers
 	WORD& floatStatuslWord = ctx.FltSave.StatusWord;  // Holds FPE Status for floating point registers
-#else
-	DWORD& floatMxCsr = *(DWORD*)(&ctx.ExtendedRegisters[24]); // Hold FPE Mask and Status for MMX (SSE) floating point registers
-	DWORD& floatControlWord = ctx.FloatSave.ControlWord;       // Hold FPE Mask for floating point registers
-	DWORD& floatStatuslWord = ctx.FloatSave.StatusWord;        // Holds FPE Status for floating point registers
-#endif
 
 	// Flush-To-Zero Mode
 	// Two conditions must be met for FTZ processing to occur:
@@ -412,11 +406,9 @@ void SetFloatingPointExceptionMask(uint nMask)
 {
 	uint temp = 0;
 	_clearfp();
-#if CRY_PLATFORM_32BIT
-	const unsigned int kAllowedBits = _MCW_DN | _MCW_EM | _MCW_RC | _MCW_IC | _MCW_PC;
-#else
+
 	const unsigned int kAllowedBits = _MCW_DN | _MCW_EM | _MCW_RC;
-#endif
+
 	_controlfp_s(&temp, nMask, kAllowedBits);
 }
 }

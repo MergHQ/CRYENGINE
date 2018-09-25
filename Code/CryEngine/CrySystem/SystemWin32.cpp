@@ -1186,14 +1186,7 @@ void CSystem::FatalError(const char* format, ...)
 	CryDebugBreak();
 
 	// app can not continue
-#ifdef _DEBUG
-
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-	__debugbreak();
-	#endif
-
-#else
-
+#if !defined(_DEBUG)
 	#if CRY_PLATFORM_WINDOWS
 	_flushall();
 	#endif

@@ -3014,7 +3014,7 @@ void CVoxelSegment::ErrorTerminate(const char* format, ...)
 	cry_vsprintf(szText, format, args);
 	va_end(args);
 
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#if CRY_PLATFORM_WINDOWS
 	if (!gEnv->pGameFramework)
 	{
 		// quick terminate if in developer mode

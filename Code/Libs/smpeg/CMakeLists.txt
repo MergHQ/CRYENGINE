@@ -62,7 +62,7 @@ target_compile_definitions(${THIS_PROJECT} PRIVATE
 target_link_libraries(${THIS_PROJECT} PRIVATE SDL2)
 set_property(TARGET ${THIS_PROJECT} PROPERTY OUTPUT_NAME "smpeg2")
 
-if(WIN32 OR WIN64)
+if(WINDOWS)
 	target_link_libraries(${THIS_PROJECT} PRIVATE
 		kernel32
 		user32

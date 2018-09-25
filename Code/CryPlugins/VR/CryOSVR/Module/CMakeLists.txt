@@ -28,7 +28,7 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-if (WIN64)
+if (WINDOWS)
 	CryEngineModule(CryOSVR PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
 
 	target_include_directories( ${THIS_PROJECT}

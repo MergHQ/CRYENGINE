@@ -58,7 +58,7 @@ add_sources("CrySystem_uber_6.cpp"
 )
 
 # -- crysystem_win32.waf_files --
-sources_platform(DURANGO WIN32)
+sources_platform(DURANGO WINDOWS)
 add_sources("CrySystem_uber_6.cpp"
 	PROJECTS CrySystem
 	SOURCE_GROUP "Threading"
@@ -87,7 +87,7 @@ add_sources("CrySystem_uber_7.cpp"
 )
 
 # -- crysystem_posix.waf_files --
-sources_platform(ANDROID APPLE LINUX ORBIS WIN32)
+sources_platform(ANDROID APPLE LINUX ORBIS WINDOWS)
 add_sources("CrySystem_uber_6.cpp"
 	PROJECTS CrySystem
 	SOURCE_GROUP "Threading"
@@ -514,7 +514,7 @@ add_sources("CrySystem_uber_7.cpp"
 )
 
 # -- platformos.waf_files --
-sources_platform(ANDROID APPLE LINUX WIN32)
+sources_platform(ANDROID APPLE LINUX WINDOWS)
 add_sources("NoUberFile"
 	PROJECTS CrySystem
 	SOURCE_GROUP "PlatformOS"
@@ -529,7 +529,7 @@ MACRO(setup_crysystem)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE zlib expat lz4 md5 tomcrypt )
 	use_scaleform()
 
-	if (WIN32)
+	if (WINDOWS)
 		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /NODEFAULTLIB:libcmt.lib /NODEFAULTLIB:libcpmt.lib")
 		target_link_libraries(${THIS_PROJECT} PRIVATE wininet Shell32 Ole32 Gdi32)
 	elseif (LINUX)

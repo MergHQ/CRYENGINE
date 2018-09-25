@@ -147,7 +147,6 @@ ILINE int64 CryInterlockedCompareExchange64(volatile int64* pDst, int64 exchange
 	return _InterlockedCompareExchange64(pDst, exchange, compare);
 }
 
-#if CRY_PLATFORM_64BIT
 // Returns initial value prior exchange
 ILINE unsigned char CryInterlockedCompareExchange128(volatile int64* pDst, int64 exchangeHigh, int64 exchangeLow, int64* pComparandResult)
 {
@@ -155,7 +154,6 @@ ILINE unsigned char CryInterlockedCompareExchange128(volatile int64* pDst, int64
 	CRY_ASSERT_MESSAGE((((int64)pDst) & 15) == 0, "The destination data must be 16-byte aligned to avoid a general protection fault.");
 	return _InterlockedCompareExchange128(pDst, exchangeHigh, exchangeLow, pComparandResult);
 }
-#endif
 //////////////////////////////////////////////////////////////////////////
 // Helper
 //////////////////////////////////////////////////////////////////////////

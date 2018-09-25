@@ -12,9 +12,7 @@ DesignerWarning.h
 #ifndef __DESIGNER_WARNING_H__
 #define __DESIGNER_WARNING_H__
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-	#define DESIGNER_WARNING_ENABLED 1  // needs a release build define to hook in here 
-#elif CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#define DESIGNER_WARNING_ENABLED 1  // needs a release build define to hook in here 
 #else
 	#define DESIGNER_WARNING_ENABLED 0

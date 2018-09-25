@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.6)
 start_sources()
 # -- tiff.waf_files --
 
-sources_platform(WIN32)
+sources_platform(WINDOWS)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Config"
 	    "include_win/tif_config.h"
@@ -63,7 +63,7 @@ add_sources("NoUberFile"
 
 end_sources()
 
-if(WIN32 OR WIN64 OR LINUX)
+if(WINDOWS OR LINUX)
 	CryEngineStaticModule(tiff SOLUTION_FOLDER "Libs")
 	target_include_directories(${THIS_PROJECT} PUBLIC "${SDK_DIR}/tiff-4.0.4/libtiff")
 	target_link_libraries(${THIS_PROJECT} PRIVATE zlib)
@@ -71,7 +71,7 @@ else()
 	CryFileContainer(tiff SOLUTION_FOLDER "Libs")
 endif()
 
-if(WIN32 OR WIN64)
+if(WINDOWS)
 	target_include_directories(${THIS_PROJECT} PUBLIC "${CRY_LIBS_DIR}/tiff/include_win")
 elseif(LINUX)
 	target_compile_options(${THIS_PROJECT} PRIVATE -w)

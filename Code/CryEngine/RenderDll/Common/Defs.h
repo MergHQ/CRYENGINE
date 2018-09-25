@@ -53,36 +53,6 @@
 	#endif
 #endif
 
-#if CRY_PLATFORM_X86
-
-// This is 'stolen' from someone (I don't remember who anymore). It
-// is a nice and fast way to convert a floating point number to int
-// (only works on a i386 type processor).
-// It is equivalent to 'i=(int)(f+.5)'.
-	#define FIST_MAGIC ((float)((((65536.0 * 65536.0 * 16) + (65536.0 * 0.5)) * 65536.0)))
-inline long QuickRound(float inval)
-{
-	double dtemp = FIST_MAGIC + inval;
-	return ((*(long*)&dtemp) - 0x80000000);
-}
-
-inline long QuickInt(float inval)
-{
-	double dtemp = FIST_MAGIC + (inval - .4999f);
-	return ((*(long*)&dtemp) - 0x80000000);
-}
-
-// This is my own invention derived from the previous one. This converts
-// a floating point number to a 16.16 fixed point integer. It is
-// equivalent to 'i=(int)(f*65536.)'.
-	#define FIST_MAGIC2 ((float)((((65536.0 * 16) + (0.5)) * 65536.0)))
-inline long QuickInt16(float inval)
-{
-	double dtemp = FIST_MAGIC2 + inval;
-	return ((*(long*)&dtemp) - 0x80000000);
-}
-#endif // CRY_PLATFORM_X86
-
 #ifdef PROC_M68K
 
 	#define FIST_MAGIC ((((65536.0 * 65536.0 * 16) + (65536.0 * 0.5)) * 65536.0))
@@ -106,7 +76,7 @@ inline long QuickInt16(float inval)
 }
 #endif
 
-#if CRY_PLATFORM_X86 || defined(PROC_M68K)
+#if defined(PROC_M68K)
 	#define QRound(x) QuickRound(x)
 	#define QInt(x)   QuickInt(x)
 	#define QInt16(x) QuickInt16(x)

@@ -36,8 +36,6 @@
 #include "RemoteControl/RemoteControl.h"
 #include "Http/SimpleHttpServer.h"
 
-#include "DebugKit/ServerProfiler.h"
-
 #include <CrySystem/Profilers/ThreadProfilerSupport.h>
 #include <CrySystem/ITextModeConsole.h>
 #include "Http/AutoConfigDownloader.h"
@@ -229,9 +227,6 @@ CNetwork::CNetwork()
 
 	SCOPED_GLOBAL_LOCK;
 
-	if (gEnv->IsDedicated())
-		CServerProfiler::Init();
-
 	//Timur, Turn off testing.
 	/*
 	   if (!CWhirlpoolHash::Test())
@@ -340,9 +335,6 @@ CNetwork::~CNetwork()
 
 	SAFE_DELETE(m_pMMM);
 	SAFE_DELETE(m_pResolver);
-
-	if (gEnv->IsDedicated())
-		CServerProfiler::Cleanup();
 }
 
 bool CNetwork::AllSuicidal()
@@ -1210,16 +1202,6 @@ void CNetwork::DoSyncWithGame(ENetworkGameSync type)
 #if STATS_COLLECTOR_INTERACTIVE
 			GetStats()->InteractiveUpdate();
 #endif
-
-			if (CServerProfiler::ShouldSaveAndCrash())
-			{
-				gEnv->pConsole->ExecuteString("SaveLevelStats");
-#if CRY_PLATFORM_ORBIS
-				_Exit(0);
-#else
-				_exit(0);
-#endif
-			}
 		}
 		break;
 	case eNGS_Shutdown:

@@ -694,11 +694,7 @@ private:
 
 //--------------------------------------------------------------------------------
 #undef UNIQUE
-#if defined(CRY_PLATFORM_64BIT)
-	#define UNIQUE(s) (s + string().Format("%016llX", (uint64) this)).c_str()
-#else
-	#define UNIQUE(s) (s + string().Format("%08X", (uint32) this)).c_str()
-#endif
+#define UNIQUE(s) (s + string().Format("%016llX", (uint64) this)).c_str()
 
 //--------------------------------------------------------------------------------
 

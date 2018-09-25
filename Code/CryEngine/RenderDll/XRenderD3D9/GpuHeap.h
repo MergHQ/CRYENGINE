@@ -15,11 +15,6 @@ union UPage;
 // This is a base-class, the derived class should implement the abstract methods for large blocks.
 class CGpuHeap
 {
-#if CRY_PLATFORM_64BIT
-	static const bool kMapPersistentDefault = true;
-#else
-	static const bool kMapPersistentDefault = false;
-#endif
 
 public:
 	// Handle to a block of memory.
@@ -30,7 +25,7 @@ protected:
 	// Note: The maximum number of memory types is currently 32.
 	// Set the map-persistent flag to save the API overhead of repeated map/unmap, and instead always map, at the cost of CPU virtual memory space.
 	// Set the commit-regions flag if the heap wants to commit/decommit regions separate from the block allocations. This can be used to eliminate physical memory fragmentation, if the heap can control the page-mapping.
-	CGpuHeap(uint32_t numMemoryTypes, bool bMapPersistent = kMapPersistentDefault, bool bCommitRegions = false);
+	CGpuHeap(uint32_t numMemoryTypes, bool bCommitRegions = false);
 
 	// Destroys the GPU heap.
 	// All remaining allocated API blocks will be unmapped and deallocated.
@@ -132,7 +127,6 @@ private:
 	void           DeallocateLarge(uint32_t memoryType, uint32_t pageId, bool bUnlink, bool bCommit);
 	void           DeallocateHuge(uint32_t memoryType, uint32_t pageId, bool bCommit);
 
-	const bool                     m_bMapPersistent;
 	const bool                     m_bCommitRegions;
 	const uint32_t                 m_numHeaps;
 	CryCriticalSectionNonRecursive m_lock;

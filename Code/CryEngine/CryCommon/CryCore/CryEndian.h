@@ -168,7 +168,6 @@ ILINE void SwapEndian(T* t, int nCount, bool bSwapEndian = eLittleEndian)
 		SwapEndianBase(t, nCount);
 }
 
-#if CRY_PLATFORM_64BIT
 //! \param bSwapEndian Optional, defaults to swapping from LittleEndian format.
 template<class T>
 ILINE void SwapEndian(T* t, unsigned int nCount, bool bSwapEndian = eLittleEndian)
@@ -176,7 +175,6 @@ ILINE void SwapEndian(T* t, unsigned int nCount, bool bSwapEndian = eLittleEndia
 	if (bSwapEndian)
 		SwapEndianBase(t, nCount);
 }
-#endif
 
 //! \param bSwapEndian Optional, defaults to swapping from LittleEndian format.
 template<class T>

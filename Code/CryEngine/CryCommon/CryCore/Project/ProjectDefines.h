@@ -32,7 +32,7 @@
 #endif
 
 // Durango SDK and Orbis SDK are 64-bit only
-#if !(CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT)
+#if !CRY_PLATFORM_WINDOWS
 	#undef TOOLS_SUPPORT_DURANGO
 	#undef TOOLS_SUPPORT_ORBIS
 #endif

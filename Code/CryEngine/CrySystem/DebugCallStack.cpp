@@ -1095,15 +1095,10 @@ int DebugCallStack::handleException(EXCEPTION_POINTERS* exception_pointer)
 	}
 	else if (ret == IDB_IGNORE)
 	{
-	#if CRY_PLATFORM_32BIT
-		exception_pointer->ContextRecord->FloatSave.StatusWord &= ~31;
-		exception_pointer->ContextRecord->FloatSave.ControlWord |= 7;
-		(*(WORD*)(exception_pointer->ContextRecord->ExtendedRegisters + 24) &= 31) |= 0x1F80;
-	#else
 		exception_pointer->ContextRecord->FltSave.StatusWord &= ~31;
 		exception_pointer->ContextRecord->FltSave.ControlWord |= 7;
 		(exception_pointer->ContextRecord->FltSave.MxCsr &= 31) |= 0x1F80;
-	#endif
+
 		firstTime = true;
 		callCount = 0;
 
@@ -1816,10 +1811,6 @@ void DebugCallStack::ResetFPU(EXCEPTION_POINTERS* pex)
 	{
 		// How to reset FPU: http://www.experts-exchange.com/Programming/System/Windows__Programming/Q_10310953.html
 		_clearfp();
-	#if CRY_PLATFORM_32BIT
-		pex->ContextRecord->FloatSave.ControlWord |= 0x2F;
-		pex->ContextRecord->FloatSave.StatusWord &= ~0x8080;
-	#endif
 	}
 }
 

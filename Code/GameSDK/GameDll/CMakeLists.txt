@@ -959,7 +959,6 @@ add_sources("CryGameSDKDLL_uber_22.cpp"
 add_sources("CryGameSDKDLL_uber_23.cpp"
 	PROJECTS CryGameSDK
 	SOURCE_GROUP "Utility"
-		"LaptopUtil.cpp"
 		"NetInputChainDebug.cpp"
 		"Utility/Wiggle.cpp"
 		"ShotDebug.cpp"
@@ -971,7 +970,6 @@ add_sources("CryGameSDKDLL_uber_23.cpp"
 		"ScreenResolution.cpp"
 		"CryMacros.h"
 		"Utility/Hermite.h"
-		"LaptopUtil.h"
 		"NetInputChainDebug.h"
 		"Utility/Wiggle.h"
 		"EventDistributor.h"
@@ -1367,7 +1365,7 @@ target_include_directories( ${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/CryEn
 target_link_libraries( ${THIS_PROJECT} PRIVATE CryLobby )
 target_link_libraries( ${THIS_PROJECT} PRIVATE CryPerceptionSystem )
 
-if (WIN32 OR WIN64)
+if (WINDOWS)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE shell32 Gdi32  )
 elseif(ORBIS)
 	deploy_runtime_dir(../Resources/orbis/sce_sys app/sce_sys)

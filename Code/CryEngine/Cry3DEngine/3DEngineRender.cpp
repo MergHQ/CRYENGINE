@@ -2793,7 +2793,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 					}
 			}
 
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#if CRY_PLATFORM_WINDOWS
 		#pragma warning( push )             //AMD Port
 		#pragma warning( disable : 4267 )
 	#endif
@@ -3231,7 +3231,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 
 	m_pPartManager->RenderDebugInfo();
 
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#if CRY_PLATFORM_WINDOWS
 		#pragma warning( pop )              //AMD Port
 	#endif
 	#ifndef _RELEASE
@@ -3418,20 +3418,12 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 	{
 		if (GetCVars()->e_DisplayMemoryUsageIcon)
 		{
-			uint64 nAverageMemoryUsage(0);
-			uint64 nHighMemoryUsage(0);
+			uint64 nAverageMemoryUsage(3000);
+			uint64 nHighMemoryUsage(6000);
 			const uint64 nMegabyte(1024 * 1024);
 
 			// Copied from D3DDriver.cpp, function CD3D9Renderer::RT_EndFrame().
 			int nIconSize = 16;
-
-	#if CRY_PLATFORM_64BIT
-			nAverageMemoryUsage = 3000;
-			nHighMemoryUsage = 6000;
-	#else
-			nAverageMemoryUsage = 800;
-			nHighMemoryUsage = 1200;
-	#endif
 
 			// This is the same value as measured in the editor.
 			uint64 nCurrentMemoryUsage = processMemInfo.PagefileUsage / nMegabyte;

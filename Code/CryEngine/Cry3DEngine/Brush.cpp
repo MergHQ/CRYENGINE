@@ -86,7 +86,7 @@ bool CBrush::HasChanged()
 	return false;
 }
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#pragma warning( push )               //AMD Port
 	#pragma warning( disable : 4311 )
 #endif
@@ -177,7 +177,7 @@ void CBrush::Render(const struct SRendParams& _EntDrawParams, const SRenderingPa
 	m_pStatObj->Render(rParms, passInfo);
 }
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#pragma warning( pop )                //AMD Port
 #endif
 

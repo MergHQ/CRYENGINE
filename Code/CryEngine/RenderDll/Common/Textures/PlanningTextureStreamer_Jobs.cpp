@@ -594,7 +594,7 @@ void CPlanningTextureStreamer::Job_InitKeys(SPlanningTextureOrderKey* pKeys, CTe
 
 	for (size_t i = 0; i < nTextures; ++i)
 	{
-#if CRY_PLATFORM_DURANGO || (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) || CRY_PLATFORM_ORBIS
+#if CRY_PLATFORM_DURANGO || CRY_PLATFORM_WINDOWS || CRY_PLATFORM_ORBIS
 		if ((i + 32) < nTextures)
 			_mm_prefetch((char*)(pTexs[i + 32]) + 0x40, 0);
 #endif

@@ -256,7 +256,7 @@ public:
 	virtual void setAttr(const char* key, const Vec4& value) = 0;
 	virtual void setAttr(const char* key, const Vec3d& value) = 0;
 	virtual void setAttr(const char* key, const Quat& value) = 0;
-#if (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) || CRY_PLATFORM_APPLE
+#if CRY_PLATFORM_LINUX || CRY_PLATFORM_APPLE
 	//! Compatability functions, on Linux and Mac long int is the default int64_t.
 	ILINE void setAttr(const char* key, unsigned long int value, bool useHexFormat = true)
 	{
@@ -295,7 +295,7 @@ public:
 	virtual bool getAttr(const char* key, XmlString& value) const = 0;
 	virtual bool getAttr(const char* key, ColorB& value) const = 0;
 
-#if (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) || CRY_PLATFORM_APPLE
+#if CRY_PLATFORM_LINUX || CRY_PLATFORM_APPLE
 	//! Compatability functions, on Linux and Mac long int is the default int64_t.
 	ILINE bool getAttr(const char* key, unsigned long int& value, bool useHexFormat = true) const
 	{
@@ -334,7 +334,7 @@ public:
 
 	//! Inline Helpers.
 	//! @{
-#if !(CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) && !CRY_PLATFORM_APPLE
+#if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_APPLE
 	bool getAttr(const char* key, long& value) const           { int v; if (getAttr(key, v)) { value = v; return true; } else return false; }
 	bool getAttr(const char* key, unsigned long& value) const  { unsigned int v; if (getAttr(key, v)) { value = v; return true; } else return false; }
 	void setAttr(const char* key, unsigned long value)         { setAttr(key, (unsigned int)value); };

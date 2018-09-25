@@ -36,7 +36,7 @@
 #include "UI/HUD/HUDEventDispatcher.h"
 #include "PersistantStats.h"
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#pragma warning(disable: 4244)
 #endif
 

@@ -2366,22 +2366,16 @@ void CStatoscope::SetLogFilename()
 		m_logFilename += "_XBOXONE";
 	#elif CRY_PLATFORM_ORBIS
 		m_logFilename += "_PS4";
-	#elif CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#elif CRY_PLATFORM_WINDOWS
 		m_logFilename += "_WIN64";
-	#elif CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-		m_logFilename += "_WIN32";
 	#elif CRY_PLATFORM_MAC
 		m_logFilename += "_MAC";
 	#elif CRY_PLATFORM_ANDROID
 		m_logFilename += "_ANDROID";
-	#elif CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT
+	#elif CRY_PLATFORM_LINUX
 		m_logFilename += "_LINUX64";
-	#elif CRY_PLATFORM_LINUX && CRY_PLATFORM_32BIT
-		m_logFilename += "_LINUX32";
-	#elif CRY_PLATFORM_IOS && CRY_PLATFORM_64BIT
+	#elif CRY_PLATFORM_IOS
 		m_logFilename += "_IOS64";
-	#elif CRY_PLATFORM_IOS && CRY_PLATFORM_32BIT
-		m_logFilename += "_IOS32";
 	#else
 		m_logFilename += "_UNKNOWNPLAT";
 	#endif

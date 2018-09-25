@@ -31,11 +31,10 @@ enable_language(CXX)
 
 if (DURANGO OR ORBIS OR ANDROID OR LINUX)
 	unset(WIN32)
-	unset(WIN64)
+	unset(WINDOWS)
 endif ()
 
 if (WIN32)  # Either Win32 or Win64
-	set(WINDOWS TRUE)
 	include("${TOOLS_CMAKE_DIR}/toolchain/windows/WindowsPC-MSVC.cmake")
 endif(WIN32)
 
@@ -82,14 +81,10 @@ set(GAME_MODULES CACHE INTERNAL "List of game modules being built" FORCE)
 if (DURANGO OR ORBIS OR ANDROID OR LINUX)
 	# WIN32 Should be unset  again after project( line to work correctly
 	unset(WIN32)
-	unset(WIN64)
+	unset(WINDOWS)
 endif ()
 
 set(game_folder CACHE INTERNAL "Game folder used for resource files on Windows" FORCE)
-
-if(LINUX32 OR LINUX64)
-	set(LINUX TRUE)
-endif()
 
 # Define Options
 get_property(global_defines DIRECTORY "${CRYENGINE_DIR}" PROPERTY COMPILE_DEFINITIONS)
@@ -202,20 +197,15 @@ endif (OUTPUT_DIRECTORY)
 
 include("${TOOLS_CMAKE_DIR}/ConfigureChecks.cmake")
 include("${TOOLS_CMAKE_DIR}/CommonMacros.cmake")
-
 include("${TOOLS_CMAKE_DIR}/Recode.cmake")
 
-if(WIN32)
+if(WINDOWS)
 	# Common Libriries linked to all targets
 	set(COMMON_LIBS Ntdll User32 Advapi32 Ntdll Ws2_32)
 
 	if (EXISTS "${SDK_DIR}/GPA" AND OPTION_ENGINE)
 		list(APPEND global_includes "${SDK_DIR}/GPA/include" )
-		if (WIN64)
-			list(APPEND global_links "${SDK_DIR}/GPA/lib64" )
-		else()
-			list(APPEND global_links "${SDK_DIR}/GPA/lib32" )
-		endif()
+		list(APPEND global_links "${SDK_DIR}/GPA/lib64" )
 		set(COMMON_LIBS ${COMMON_LIBS} jitprofiling libittnotify)
 	endif()
 else()
@@ -232,15 +222,11 @@ if (OPTION_RELEASE_PROFILING)
 	list(APPEND global_defines  "$<$<CONFIG:Release>:PERFORMANCE_BUILD>")
 endif()
 
-if ((WIN32 OR WIN64) AND OPTION_ENABLE_BROFILER AND OPTION_ENGINE)
+if (WINDOWS AND OPTION_ENABLE_BROFILER AND OPTION_ENGINE)
 	list(APPEND global_defines USE_BROFILER)
 	list(APPEND global_includes "${SDK_DIR}/Brofiler" )
 	list(APPEND global_links "${SDK_DIR}/Brofiler" )
-	if (WIN64)
-		set(COMMON_LIBS ${COMMON_LIBS} ProfilerCore64)
-	elseif(WIN32)
-		set(COMMON_LIBS ${COMMON_LIBS} ProfilerCore32)
-	endif()
+	set(COMMON_LIBS ${COMMON_LIBS} ProfilerCore64)
 endif()
 
 if (OPTION_ENGINE)
@@ -290,7 +276,7 @@ if (NOT VERSION)
 endif()
 set(METADATA_VERSION ${VERSION} CACHE STRING "Version number for executable metadata" FORCE)
 
-if(WIN32)
+if(WINDOWS)
 	if (NOT METADATA_COMPANY)
 		set(METADATA_COMPANY "Crytek GmbH")
 	endif()
@@ -304,4 +290,4 @@ if(WIN32)
 
 	string(REPLACE . , METADATA_VERSION_COMMA ${METADATA_VERSION})
 	set(METADATA_VERSION_COMMA ${METADATA_VERSION_COMMA} CACHE INTERNAL "" FORCE)
-endif(WIN32)
+endif(WINDOWS)

@@ -24,7 +24,7 @@ extern int g_nPrintDX12;
 	#define DX12_FUNC_LOG do {} while (0);
 #endif
 
-#if CRY_PLATFORM_64BIT && CRY_PLATFORM_DESKTOP
+#if CRY_PLATFORM_DESKTOP
 	#define DX12_LINKEDADAPTER            true
 	#define DX12_LINKEDADAPTER_SIMULATION 0
 #endif

@@ -71,7 +71,7 @@ struct SystemAllocator
 };
 }
 
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#if CRY_PLATFORM_WINDOWS
 		#define BUCKET_ALLOCATOR_DEFAULT_SIZE (256 * 1024 * 1024)
 	#else
 		#define BUCKET_ALLOCATOR_DEFAULT_SIZE (128 * 1024 * 1024)
@@ -344,11 +344,7 @@ private:
 	static const UINT_PTR PageAlignMask = ~(PageLength - 1);
 	static const UINT_PTR SmallBlockOffsetMask = SmallBlockLength - 1;
 	static const UINT_PTR PageOffsetMask = PageLength - 1;
-	#if CRY_PLATFORM_64BIT
 	static const UINT_PTR FreeListMagic = 0x63f9ab2df2ee1157;
-	#else
-	static const UINT_PTR FreeListMagic = 0xf2ee1157;
-	#endif
 
 	struct PageSBHot
 	{

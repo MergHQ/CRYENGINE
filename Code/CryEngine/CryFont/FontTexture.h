@@ -63,7 +63,7 @@ typedef struct CTextureSlot
 typedef std::vector<CTextureSlot*>                                  CTextureSlotList;
 typedef std::unordered_map<uint32, CTextureSlot*, stl::hash_uint32> CTextureSlotTable;
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#undef GetCharWidth
 	#undef GetCharHeight
 #endif

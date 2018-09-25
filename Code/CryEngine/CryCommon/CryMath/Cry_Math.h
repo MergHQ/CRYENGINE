@@ -530,13 +530,13 @@ ILINE int32 iszero(f64 x)
 	return -((u.i >> 31) ^ (u.i - 1) >> 31);
 }
 ILINE int32 iszero(int32 x)   { return -(x >> 31 ^ (x - 1) >> 31); }
-#if CRY_PLATFORM_64BIT && !defined(__clang__)
+#if !defined(__clang__)
 ILINE int64 iszero(__int64 x) { return -(x >> 63 ^ (x - 1) >> 63); }
 #endif
-#if CRY_PLATFORM_64BIT && defined(__clang__) && !CRY_PLATFORM_LINUX && !CRY_PLATFORM_ANDROID
+#if defined(__clang__) && !CRY_PLATFORM_LINUX && !CRY_PLATFORM_ANDROID
 ILINE int64 iszero(int64_t x) { return -(x >> 63 ^ (x - 1) >> 63); }
 #endif
-#if CRY_PLATFORM_64BIT && (CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE)
+#if (CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE)
 ILINE int64 iszero(long int x) { return -(x >> 63 ^ (x - 1) >> 63); }
 #endif
 

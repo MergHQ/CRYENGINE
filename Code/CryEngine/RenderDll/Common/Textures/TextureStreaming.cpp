@@ -1540,14 +1540,6 @@ void CTexture::InitStreaming()
 		{
 			int nMinTexStreamPool = gEnv->IsEditor() ? 512 : 192;
 			int nMaxTexStreamPool = videoMem * 7 / 8;
-
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-			if (!pEnv->pi.winInfo.is64Bit)  // 32 bit executable
-			{
-				nMaxTexStreamPool = 512;
-			}
-#endif
-
 			CRenderer::CV_r_TexturesStreamPoolSize = clamp_tpl(CRenderer::CV_r_TexturesStreamPoolSize, nMinTexStreamPool, nMaxTexStreamPool);
 		}
 

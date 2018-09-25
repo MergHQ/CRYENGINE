@@ -2116,7 +2116,6 @@ public:
 		pOptimisedList->m_pFragDefData = pFragData;
 
 		STagStateBase globalKeys = STagStateBase(pOptimisedList->m_keys, bytesGlobal);
-		uint8* keyBuffer = pOptimisedList->m_keys;
 		T* valueBuffer = pOptimisedList->m_values;
 
 		//--- Assign the globalTags & data
@@ -2155,9 +2154,6 @@ public:
 
 	const T* GetBestMatch(const SFragTagState& fragTags, const CTagDefinition* pGlobalTagDef, const CTagDefinition* pFragTagDef, SFragTagState* pMatchedFragTags = NULL, uint32* pTagSetIdx = NULL) const
 	{
-		STagStateBase tagGlobal((const STagStateBase)(fragTags.globalTags));
-		STagStateBase tagFragment((const STagStateBase)(fragTags.fragmentTags));
-
 		const uint32 numEntries = m_keys.size();
 		for (uint32 i = 0; i < numEntries; i++)
 		{

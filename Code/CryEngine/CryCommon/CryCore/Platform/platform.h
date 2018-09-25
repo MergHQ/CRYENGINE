@@ -135,7 +135,7 @@ enum class EPlatform
 #else
 	#define __STDC_FORMAT_MACROS
 	#include <inttypes.h>
-	#if CRY_PLATFORM_APPLE || (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) || CRY_PLATFORM_ORBIS
+	#if CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ORBIS
 		#undef PRIX64
 		#undef PRIx64
 		#undef PRId64
@@ -152,11 +152,11 @@ enum class EPlatform
 #endif
 
 #if !defined(PRISIZE_T)
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT || CRY_PLATFORM_DURANGO
+	#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
 		#define PRISIZE_T "I64u"     //size_t defined as unsigned __int64
-	#elif (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT) || (CRY_PLATFORM_LINUX && CRY_PLATFORM_32BIT) || CRY_PLATFORM_ANDROID
+	#elif CRY_PLATFORM_ANDROID
 		#define PRISIZE_T "u"
-	#elif CRY_PLATFORM_APPLE || (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) || CRY_PLATFORM_ORBIS
+	#elif CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ORBIS
 		#define PRISIZE_T "lu"
 	#else
 		#error "Please define PRISIZE_T for this platform"
@@ -164,11 +164,11 @@ enum class EPlatform
 #endif
 
 #if !defined(PRI_PTRDIFF_T)
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#if CRY_PLATFORM_WINDOWS
 		#define PRI_PTRDIFF_T "I64d"
-	#elif (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT) || (CRY_PLATFORM_LINUX && CRY_PLATFORM_32BIT) || CRY_PLATFORM_ANDROID
+	#elif CRY_PLATFORM_ANDROID
 		#define PRI_PTRDIFF_T "d"
-	#elif CRY_PLATFORM_APPLE || (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) || CRY_PLATFORM_ORBIS || CRY_PLATFORM_DURANGO
+	#elif CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ORBIS || CRY_PLATFORM_DURANGO
 		#define PRI_PTRDIFF_T "ld"
 	#else
 		#error "Please defined PRI_PTRDIFF_T for this platform"
@@ -178,10 +178,8 @@ enum class EPlatform
 #if !defined(PRI_THREADID)
 	#if (CRY_PLATFORM_APPLE && defined(__LP64__)) || CRY_PLATFORM_ORBIS
 		#define PRI_THREADID "llu"
-	#elif (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) || (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) || CRY_PLATFORM_ANDROID || CRY_PLATFORM_DURANGO
+	#elif CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_DURANGO
 		#define PRI_THREADID "lu"
-	#elif (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT) || (CRY_PLATFORM_LINUX && CRY_PLATFORM_32BIT)
-		#define PRI_THREADID "u"
 	#else
 		#error "Please defined PRI_THREADID for this platform"
 	#endif
@@ -295,28 +293,16 @@ static inline void __dmb()
 	#define _HELP(x) ""
 #endif
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-	#include <CryCore/Platform/Win32specific.h>
+#if CRY_PLATFORM_WINDOWS
+	#include <CryCore/Platform/WindowsSpecific.h>
 #endif
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
-	#include <CryCore/Platform/Win64specific.h>
-#endif
-
-#if CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_LINUX
 	#include <CryCore/Platform/Linux64Specific.h>
 #endif
 
-#if CRY_PLATFORM_LINUX && CRY_PLATFORM_32BIT
-	#include <CryCore/Platform/Linux32Specific.h>
-#endif
-
-#if CRY_PLATFORM_ANDROID && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_ANDROID
 	#include <CryCore/Platform/Android64Specific.h>
-#endif
-
-#if CRY_PLATFORM_ANDROID && CRY_PLATFORM_32BIT
-	#include <CryCore/Platform/Android32Specific.h>
 #endif
 
 #if CRY_PLATFORM_DURANGO
