@@ -2869,7 +2869,7 @@ void CSystem::Strange()
 void CSystem::Relaunch(bool bRelaunch)
 {
 	if (m_sys_firstlaunch)
-		m_sys_firstlaunch->Set("0");
+		m_sys_firstlaunch->Set(0);
 
 	m_bRelaunch = bRelaunch;
 	SaveConfiguration();
