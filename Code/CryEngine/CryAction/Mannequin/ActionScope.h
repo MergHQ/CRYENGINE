@@ -323,7 +323,7 @@ private:
 	float                       m_fragmentDuration;
 	float                       m_transitionOutroDuration;
 	float                       m_transitionDuration;
-	float                       m_actionFinishedTiming; //<! Timing of the IAction::OnActionFinished() runtime call, expressed in seconds relative to the end of the fragment. This property is referred to as "BlendOutDuration" in xml attributes due to backwards compatibility reasons.
+	float                       m_blendOutDuration;
 	EClipType                   m_partTypes[SFragmentData::PART_TOTAL];
 
 	float                       m_lastNormalisedTime;

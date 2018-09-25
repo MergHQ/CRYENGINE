@@ -1192,7 +1192,7 @@ void CAnimationDatabaseLibrary::FragmentToXML(XmlNodeRef outXmlFrag, const CFrag
 		}
 	}
 
-	outXmlFrag->setAttr("BlendOutDuration", fragment->m_actionFinishedTiming);
+	outXmlFrag->setAttr("BlendOutDuration", fragment->m_blendOutDuration);
 }
 
 bool CAnimationDatabaseLibrary::XMLToFragment(CFragment& fragment, XmlNodeRef root, bool transition) const
@@ -1201,7 +1201,7 @@ bool CAnimationDatabaseLibrary::XMLToFragment(CFragment& fragment, XmlNodeRef ro
 	uint32 numAnimLayers = 0;
 	uint32 numProcLayers = 0;
 
-	root->getAttr("BlendOutDuration", fragment.m_actionFinishedTiming);
+	root->getAttr("BlendOutDuration", fragment.m_blendOutDuration);
 
 	for (uint32 i = 0; i < numChildren; ++i)
 	{

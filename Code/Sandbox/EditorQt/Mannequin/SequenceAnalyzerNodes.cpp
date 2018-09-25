@@ -9,8 +9,8 @@
 const int NUM_SCOPE_PARAM_IDS = 4;
 CSequencerNode::SParamInfo g_scopeParamInfo[NUM_SCOPE_PARAM_IDS] =
 {
-	CSequencerNode::SParamInfo("TransitionProperties", SEQUENCER_PARAM_TRANSITIONPROPS, CSequencerNode::PARAM_PERSISTENT_TRACKS),
-	CSequencerNode::SParamInfo("FragmentId",           SEQUENCER_PARAM_FRAGMENTID,      CSequencerNode::PARAM_PERSISTENT_TRACKS),
+	CSequencerNode::SParamInfo("TransitionProperties", SEQUENCER_PARAM_TRANSITIONPROPS, 0),
+	CSequencerNode::SParamInfo("FragmentId",           SEQUENCER_PARAM_FRAGMENTID,      0),
 	CSequencerNode::SParamInfo("AnimLayer",            SEQUENCER_PARAM_ANIMLAYER,       CSequencerNode::PARAM_MULTIPLE_TRACKS),
 	CSequencerNode::SParamInfo("ProcLayer",            SEQUENCER_PARAM_PROCLAYER,       CSequencerNode::PARAM_MULTIPLE_TRACKS)
 };
@@ -18,8 +18,8 @@ CSequencerNode::SParamInfo g_scopeParamInfo[NUM_SCOPE_PARAM_IDS] =
 const int NUM_GLOBAL_PARAM_IDS = 2;
 CSequencerNode::SParamInfo g_scopeParamInfoGlobal[NUM_GLOBAL_PARAM_IDS] =
 {
-	CSequencerNode::SParamInfo("TagState", SEQUENCER_PARAM_TAGS,   CSequencerNode::PARAM_PERSISTENT_TRACKS),
-	CSequencerNode::SParamInfo("Params",   SEQUENCER_PARAM_PARAMS, CSequencerNode::PARAM_PERSISTENT_TRACKS)
+	CSequencerNode::SParamInfo("TagState", SEQUENCER_PARAM_TAGS,   0),
+	CSequencerNode::SParamInfo("Params",   SEQUENCER_PARAM_PARAMS, 0)
 };
 
 const int MI_SET_CONTEXT_NONE = 10000;
@@ -172,7 +172,7 @@ CSequencerTrack* CScopeNode::CreateTrack(ESequencerParamType nParamId)
 		newTrack = new CProcClipTrack(m_pScopeData->context[m_mode], m_mode);
 		break;
 	case SEQUENCER_PARAM_FRAGMENTID:
-		newTrack = new CFragmentIdTrack(*m_pScopeData, m_mode);
+		newTrack = new CFragmentTrack(*m_pScopeData, m_mode);
 		break;
 	case SEQUENCER_PARAM_TRANSITIONPROPS:
 		if (m_mode == eMEM_TransitionEditor)

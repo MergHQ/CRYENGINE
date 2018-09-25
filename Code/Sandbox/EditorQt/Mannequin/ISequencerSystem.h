@@ -12,7 +12,6 @@ enum ESequencerParamType
 {
 	SEQUENCER_PARAM_UNDEFINED = 0,
 	SEQUENCER_PARAM_FRAGMENTID,
-	SEQUENCER_PARAM_FRAGMENTPROPS,
 	SEQUENCER_PARAM_TAGS,
 	SEQUENCER_PARAM_PARAMS,
 	SEQUENCER_PARAM_ANIMLAYER,
@@ -46,14 +45,6 @@ struct SKeyColour
 
 struct CSequencerKey
 {
-	enum class ETimelineAlignment
-	{
-		Left,  //!< Key is anchored to the timeline's left boundary and will keep position relative to it when the fragment duration changes.
-		Right, //!< Key is anchored to the timeline's right boundary and will keep position relative to it when the fragment duration changes.
-
-		Default = Left
-	};
-
 	CSequencerKey()
 		: m_time()
 		, flags()
@@ -64,7 +55,6 @@ struct CSequencerKey
 	}
 
 	virtual ~CSequencerKey() {}
-	virtual ETimelineAlignment GetTimelineAlignment() const { return ETimelineAlignment::Default; }
 
 	virtual bool IsFileInsidePak() const { return m_fileState & eIsInsidePak; }
 	virtual bool IsFileInsideDB() const  { return m_fileState & eIsInsideDB; }
@@ -169,7 +159,7 @@ public:
 
 	virtual int                  CreateKey(float time) = 0;
 
-	virtual void                 SetKey(int index, const CSequencerKey* key) = 0;
+	virtual void                 SetKey(int index, CSequencerKey* key) = 0;
 	virtual void                 GetKey(int index, CSequencerKey* key) const = 0;
 
 	virtual const CSequencerKey* GetKey(int index) const = 0;
@@ -177,8 +167,8 @@ public:
 
 	virtual void                 RemoveKey(int num) = 0;
 
-	virtual void                 GetKeyInfo(int key, const char*& description, float& duration) const = 0;
-	virtual void                 GetTooltip(int key, const char*& description, float& duration) const { return GetKeyInfo(key, description, duration); }
+	virtual void                 GetKeyInfo(int key, const char*& description, float& duration) = 0;
+	virtual void                 GetTooltip(int key, const char*& description, float& duration) { return GetKeyInfo(key, description, duration); }
 	virtual float                GetKeyDuration(const int key) const = 0;
 	virtual const SKeyColour& GetKeyColour(int key) const = 0;
 	virtual const SKeyColour& GetBlendColour(int key) const = 0;
@@ -193,8 +183,6 @@ public:
 	virtual int               CopyKey(CSequencerTrack* pFromTrack, int nFromKey) = 0;
 
 	virtual int               GetNumSecondarySelPts(int key) const { return 0; }
-
-	virtual Range             GetTrackDuration() const { return Range{ 0.0f, 0.0f }; }
 
 	// Look for a secondary selection point in the key & time range specified.
 	//
@@ -319,14 +307,8 @@ public:
 			m_flags &= ~SEQUENCER_TRACK_SELECTED;
 	}
 
-	void SetTimeRange(const Range& timeRange)
-	{
-		const Range previousTimeRange = m_timeRange;
-		m_timeRange = timeRange;
-		OnTimeRangeChanged(previousTimeRange, timeRange);
-	}
-
-	const Range& GetTimeRange() const { return m_timeRange; }
+	void         SetTimeRange(const Range& timeRange) { m_timeRange = timeRange; }
+	const Range& GetTimeRange() const                 { return m_timeRange; }
 
 	void         OnChange()
 	{
@@ -343,8 +325,6 @@ public:
 	bool         IsMuted() const  { return m_muted; }
 
 protected:
-
-	virtual void OnTimeRangeChanged(const Range& oldRange, const Range& newRange) {}
 	virtual void OnChangeCallback() {}
 	virtual void DoSortKeys() = 0;
 

@@ -118,7 +118,6 @@ bool InsertClipTracksToNode(CSequencerNode* node, const SFragmentData& fragData,
 	}
 
 	//--- Expand out tracks to receive values
-	node->CreateTrack(SEQUENCER_PARAM_FRAGMENTPROPS);
 	for (uint32 i = numAnimClipTracks; i < numAnimLayers; i++)
 	{
 		node->CreateTrack(SEQUENCER_PARAM_ANIMLAYER);
@@ -136,18 +135,10 @@ bool InsertClipTracksToNode(CSequencerNode* node, const SFragmentData& fragData,
 	{
 		CSequencerTrack* animTrack = node->GetTrackByIndex(i);
 
-		if (animTrack->GetParameterType() == SEQUENCER_PARAM_FRAGMENTPROPS)
-		{
-			const int index = animTrack->CreateKey(0.0f);
-
-			CFragmentPropertyKey key;
-			key.actionFinishedTiming = fragData.actionFinishedTiming;
-			animTrack->SetKey(index, &key);
-		}
-		else if (animTrack->GetParameterType() == SEQUENCER_PARAM_ANIMLAYER)
+		if (animTrack->GetParameterType() == SEQUENCER_PARAM_ANIMLAYER)
 		{
 			CClipTrack* pClipTrack = static_cast<CClipTrack*>(animTrack);
-			pClipTrack->SetMainAnimTrack(animClipTrack == 0);
+			pClipTrack->SetMainAnimTrack(i == 0);
 			if (animClipTrack < numAnimLayers && trackContext.context->animSet)
 			{
 				//--- Insert keys
@@ -179,6 +170,7 @@ bool InsertClipTracksToNode(CSequencerNode* node, const SFragmentData& fragData,
 					CClipKey clipKey;
 					clipKey.m_time = timeTally;
 					clipKey.historyItem = trackContext.historyItem;
+					clipKey.blendOutDuration = fragData.blendOutDuration;
 					clipKey.Set(animClip, animSet, fragData.transitionType);
 
 					lastDuration = clipKey.GetDuration();
@@ -190,6 +182,10 @@ bool InsertClipTracksToNode(CSequencerNode* node, const SFragmentData& fragData,
 
 					animTrack->SetKey(key, &clipKey);
 				}
+
+				timeTally += lastDuration;
+
+				maxTime = max(maxTime, timeTally);
 
 				animClipTrack++;
 			}
@@ -223,25 +219,32 @@ bool InsertClipTracksToNode(CSequencerNode* node, const SFragmentData& fragData,
 				const TProcClipSequence& clipSequence = fragData.procLayers[procClipTrack];
 				const uint32 numClips = clipSequence.size();
 				float timeTally = startTime;
+				float lastDuration = 0.0f;
 				for (uint32 c = 0; c < numClips; c++)
 				{
 					const SProceduralEntry& procClip = clipSequence[c];
+					float blendDuration = procClip.blend.duration;
 
+					float time = 0.0f;
 					timeTally += procClip.blend.exitTime;
 					if ((endTime > 0.0f) && (timeTally > endTime))
 					{
+						lastDuration = 0.0f;
 						break;
 					}
-
-					const int key = animTrack->CreateKey(timeTally);
-
+					int key = animTrack->CreateKey(timeTally);
 					CProcClipKey clipKey;
 					clipKey.FromProceduralEntry(procClip, fragData.transitionType);
+
 					clipKey.m_time = timeTally;
 					clipKey.historyItem = trackContext.historyItem;
 
 					animTrack->SetKey(key, &clipKey);
 				}
+
+				timeTally += lastDuration;
+
+				maxTime = max(maxTime, timeTally);
 
 				procClipTrack++;
 			}
@@ -267,16 +270,8 @@ bool InsertClipTracksToNode(CSequencerNode* node, const SFragmentData& fragData,
 				}
 			}
 		}
-	}
 
-	{
-		Range timeRange{ 0.0f, 0.0f };
-		for (uint32 i = 0; i < newNumNodeLayers; i++)
-		{
-			timeRange |= node->GetTrackByIndex(i)->GetTrackDuration();
-		}
-
-		maxTime = std::max(maxTime, timeRange.end);
+		animTrack->SetTimeRange(Range(0.0f, maxTime));
 	}
 
 	return isLooping;
@@ -317,17 +312,21 @@ void GetFragmentFromClipTracks(CFragment& fragment, CSequencerNode* animNode, ui
 
 		animTrack->SortKeys();
 
-		if (animTrack->GetParameterType() == SEQUENCER_PARAM_FRAGMENTPROPS)
-		{
-			const auto pFragmentPropertyTrack = static_cast<CFragmentPropertyTrack*>(animTrack);
-			const auto pFragmentPropertyKey = static_cast<CFragmentPropertyKey*>(pFragmentPropertyTrack->GetKey(0));
-			assert(pFragmentPropertyKey);
-
-			fragment.m_actionFinishedTiming = pFragmentPropertyKey->actionFinishedTiming;
-		}
-		else if (animTrack->GetParameterType() == SEQUENCER_PARAM_ANIMLAYER)
+		if (animTrack->GetParameterType() == SEQUENCER_PARAM_ANIMLAYER)
 		{
 			TAnimClipSequence& animClipSeq = fragment.m_animLayers[animLayer];
+
+			// Set fragment completion time based on the last clip of the first anim layer
+			const bool firstAnimLayer = animLayer == 0;
+			if (firstAnimLayer && numKeys)
+			{
+				const CClipKey* pLastKey = static_cast<const CClipKey*>(animTrack->GetKey(numKeys - 1));
+				CRY_ASSERT(pLastKey);
+				if (pLastKey)
+				{
+					fragment.m_blendOutDuration = pLastKey->blendOutDuration;
+				}
+			}
 
 			float lastTime = fragStartTime;
 			bool foundBlock = false;
@@ -400,7 +399,7 @@ void InsertFragmentTrackFromHistory(CSequencerNode* animNode, SFragmentHistoryCo
 {
 	CTransitionPropertyTrack* propsTrack = (CTransitionPropertyTrack*)animNode->CreateTrack(SEQUENCER_PARAM_TRANSITIONPROPS);
 
-	CFragmentIdTrack* fragTrack = (CFragmentIdTrack*)animNode->CreateTrack(SEQUENCER_PARAM_FRAGMENTID);
+	CFragmentTrack* fragTrack = (CFragmentTrack*)animNode->CreateTrack(SEQUENCER_PARAM_FRAGMENTID);
 	assert(fragTrack != NULL);
 
 	fragTrack->SetHistory(history);
@@ -456,7 +455,7 @@ void InsertFragmentTrackFromHistory(CSequencerNode* animNode, SFragmentHistoryCo
 
 					if (pTrack->GetParameterType() == SEQUENCER_PARAM_FRAGMENTID)
 					{
-						CFragmentIdTrack* fragTrackSibling = (CFragmentIdTrack*)pTrack;
+						CFragmentTrack* fragTrackSibling = (CFragmentTrack*)pTrack;
 						if (fragTrackSibling->GetScopeData().scopeID == rootScope)
 						{
 							const uint32 numKeys = fragTrackSibling->GetNumKeys();
@@ -498,7 +497,7 @@ void GetHistoryFromTracks(SFragmentHistoryContext& historyContext)
 		CSequencerTrack* pTrack = historyContext.m_tracks[i];
 		if (pTrack && (pTrack->GetParameterType() == SEQUENCER_PARAM_FRAGMENTID))
 		{
-			CFragmentIdTrack* pFragTrack = (CFragmentIdTrack*)pTrack;
+			CFragmentTrack* pFragTrack = (CFragmentTrack*)pTrack;
 			scopeMask |= BIT64(pFragTrack->GetScopeData().scopeID);
 		}
 	}
@@ -550,7 +549,7 @@ void GetHistoryFromTracks(SFragmentHistoryContext& historyContext)
 				if (pTrack->GetParameterType() == SEQUENCER_PARAM_FRAGMENTID)
 				{
 					CFragmentKey fragKey;
-					CFragmentIdTrack* pFragTrack = (CFragmentIdTrack*)pTrack;
+					CFragmentTrack* pFragTrack = (CFragmentTrack*)pTrack;
 					pFragTrack->GetKey(keys[bestTrack], &fragKey);
 					if (!fragKey.transition)
 					{

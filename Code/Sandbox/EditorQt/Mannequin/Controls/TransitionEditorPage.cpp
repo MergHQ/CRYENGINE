@@ -630,7 +630,7 @@ float CTransitionEditorPage::PopulateClipTracks(CSequencerNode* node, const int 
 		}
 	}
 
-	CFragmentIdTrack* fragTrack = (CFragmentIdTrack*)node->GetTrackForParameter(SEQUENCER_PARAM_FRAGMENTID);
+	CFragmentTrack* fragTrack = (CFragmentTrack*)node->GetTrackForParameter(SEQUENCER_PARAM_FRAGMENTID);
 	CTransitionPropertyTrack* propsTrack = (CTransitionPropertyTrack*)node->GetTrackForParameter(SEQUENCER_PARAM_TRANSITIONPROPS);
 
 	//--- Strip transition properties track
@@ -1213,7 +1213,7 @@ void CTransitionEditorPage::SetUIFromHistory()
 
 		float maxTime = TRANSITION_MIN_TIME_RANGE;
 		MannUtils::InsertFragmentTrackFromHistory(animNode, *m_fragmentHistory, 0.0f, 0.0f, maxTime, scopeData);
-		scopeData.fragTrack[eMEM_TransitionEditor] = (CFragmentIdTrack*)animNode->GetTrackForParameter(SEQUENCER_PARAM_FRAGMENTID);
+		scopeData.fragTrack[eMEM_TransitionEditor] = (CFragmentTrack*)animNode->GetTrackForParameter(SEQUENCER_PARAM_FRAGMENTID);
 		scopeData.animNode[eMEM_TransitionEditor] = animNode;
 	}
 
@@ -1254,7 +1254,7 @@ void CTransitionEditorPage::OnUpdateTV(bool forceUpdate)
 		uint32 propChangeCount = 0;
 
 		const SScopeData& scopeData = m_contexts->m_scopeData[i];
-		CFragmentIdTrack* pFragTrack = NULL;
+		CFragmentTrack* pFragTrack = NULL;
 		CTransitionPropertyTrack* pPropsTrack = NULL;
 		if (scopeData.animNode[eMEM_TransitionEditor])
 		{
@@ -1270,7 +1270,7 @@ void CTransitionEditorPage::OnUpdateTV(bool forceUpdate)
 					clipChangeCount += seqTrack->GetChangeCount();
 					break;
 				case SEQUENCER_PARAM_FRAGMENTID:
-					pFragTrack = (CFragmentIdTrack*)seqTrack;
+					pFragTrack = (CFragmentTrack*)seqTrack;
 					fragChangeCount = pFragTrack->GetChangeCount();
 					break;
 				case SEQUENCER_PARAM_TRANSITIONPROPS:
