@@ -885,7 +885,7 @@ float GetBlendMin(float2 tc0, float2 tc1, float fAverSmoothness, float fDepth0, 
 		fMinBlend = saturate(max(fMinBlend + fDistTCRat * (1.f - fMinBlend), 0.5 * saturate(pow(fAverSmoothness, 3))));
 	}
 
-	fMinBlend += saturate(abs(fDepth0 / fDepth1 - 1.f) * 0.45);
+	fMinBlend += saturate(abs(fDepth0 / fDepth1 - 1.f));
 
 	fMinBlend += 0.25f * (tc0.x < 0 || tc0.x > 1 || tc0.y < 0 || tc0.y > 1);
 

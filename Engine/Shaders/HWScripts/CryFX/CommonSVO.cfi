@@ -1510,6 +1510,7 @@ float4 ConeTraceTree(Ray rayForTree, const float fLodRatio, out float4 vPos0, ou
 			// get child offset
 			int childPtr = ReadChildPtr(curNode.vTC, nFoundChildId);
 
+			[flatten] // required as workaround for AMD drivers version 18.8.2 bug
 			if (childPtr) // if child is not empty - continue recursion, otherwise skip empty space
 			{
 				// child node with data found - continue recursiuon into this node
