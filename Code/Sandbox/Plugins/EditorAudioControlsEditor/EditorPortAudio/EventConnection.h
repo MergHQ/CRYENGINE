@@ -3,6 +3,7 @@
 #pragma once
 
 #include <IConnection.h>
+#include <PoolObject.h>
 
 namespace ACE
 {
@@ -10,7 +11,7 @@ namespace Impl
 {
 namespace PortAudio
 {
-class CEventConnection final : public IConnection
+class CEventConnection final : public IConnection, public CryAudio::CPoolObject<CEventConnection, stl::PSyncNone>
 {
 public:
 
@@ -20,6 +21,10 @@ public:
 		Stop, };
 
 	CEventConnection() = delete;
+	CEventConnection(CEventConnection const&) = delete;
+	CEventConnection(CEventConnection&&) = delete;
+	CEventConnection& operator=(CEventConnection const&) = delete;
+	CEventConnection& operator=(CEventConnection&&) = delete;
 
 	explicit CEventConnection(ControlId const id)
 		: m_id(id)

@@ -4,22 +4,30 @@
 
 #include "BaseConnection.h"
 
+#include <PoolObject.h>
+
 namespace ACE
 {
 namespace Impl
 {
 namespace Adx2
 {
-class CPlatformConnection final : public CBaseConnection
+class CPlatformConnection final : public CBaseConnection, public CryAudio::CPoolObject<CPlatformConnection, stl::PSyncNone>
 {
 public:
 
 	CPlatformConnection() = delete;
+	CPlatformConnection(CPlatformConnection const&) = delete;
+	CPlatformConnection(CPlatformConnection&&) = delete;
+	CPlatformConnection& operator=(CPlatformConnection const&) = delete;
+	CPlatformConnection& operator=(CPlatformConnection&&) = delete;
 
 	explicit CPlatformConnection(ControlId const id)
 		: CBaseConnection(id)
 		, m_configurationsMask(std::numeric_limits<PlatformIndexType>::max())
 	{}
+
+	virtual ~CPlatformConnection() override = default;
 
 	// CBaseConnection
 	virtual bool HasProperties() const override { return true; }

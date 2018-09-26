@@ -17,6 +17,8 @@
 
 namespace ACE
 {
+size_t CSystemSourceModel::s_numDroppedItems = 0;
+
 //////////////////////////////////////////////////////////////////////////
 QStringList GetScopeNames()
 {
@@ -35,8 +37,7 @@ QStringList GetScopeNames()
 }
 
 static QStringList const s_typeFilterList {
-	"Trigger", "Parameter", "Switch", "State", "Environment", "Preload"
-};
+	"Trigger", "Parameter", "Switch", "State", "Environment", "Preload" };
 
 static CItemModelAttributeEnum s_typeAttribute("Type", s_typeFilterList, CItemModelAttribute::AlwaysHidden, true);
 static CItemModelAttributeEnumFunc s_scopeAttribute("Scope", &GetScopeNames, CItemModelAttribute::StartHidden, true);
@@ -184,6 +185,8 @@ bool CSystemSourceModel::DropData(QMimeData const* const pData, CAsset* const pP
 
 		if (ProcessImplDragDropData(pData, implItems))
 		{
+			s_numDroppedItems = implItems.size();
+
 			for (auto const pIItem : implItems)
 			{
 				g_assetsManager.CreateAndConnectImplItems(pIItem, pParent);
@@ -227,18 +230,18 @@ CSystemSourceModel::~CSystemSourceModel()
 void CSystemSourceModel::ConnectSignals()
 {
 	CAudioControlsEditorPlugin::SignalAboutToLoad.Connect([&]()
-		{
-			beginResetModel();
-			m_ignoreLibraryUpdates = true;
-			endResetModel();
-	  }, reinterpret_cast<uintptr_t>(this));
+	    {
+	                                                      beginResetModel();
+	                                                      m_ignoreLibraryUpdates = true;
+	                                                      endResetModel();
+			}, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::SignalLoaded.Connect([&]()
-		{
-			beginResetModel();
-			m_ignoreLibraryUpdates = false;
-			endResetModel();
-	  }, reinterpret_cast<uintptr_t>(this));
+	    {
+	                                                 beginResetModel();
+	                                                 m_ignoreLibraryUpdates = false;
+	                                                 endResetModel();
+			}, reinterpret_cast<uintptr_t>(this));
 
 	g_assetsManager.SignalLibraryAboutToBeAdded.Connect([this]()
 		{
@@ -247,7 +250,7 @@ void CSystemSourceModel::ConnectSignals()
 			  int const row = static_cast<int>(g_assetsManager.GetLibraryCount());
 			  beginInsertRows(QModelIndex(), row, row);
 			}
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	g_assetsManager.SignalLibraryAdded.Connect([this](CLibrary* const pLibrary)
 		{
@@ -255,7 +258,7 @@ void CSystemSourceModel::ConnectSignals()
 			{
 			  endInsertRows();
 			}
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	g_assetsManager.SignalLibraryAboutToBeRemoved.Connect([this](CLibrary* const pLibrary)
 		{
@@ -270,10 +273,10 @@ void CSystemSourceModel::ConnectSignals()
 			      int const index = static_cast<int>(i);
 			      beginRemoveRows(QModelIndex(), index, index);
 			      break;
-			    }
-			  }
+					}
+				}
 			}
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	g_assetsManager.SignalLibraryRemoved.Connect([this]()
 		{
@@ -281,7 +284,7 @@ void CSystemSourceModel::ConnectSignals()
 			{
 			  endRemoveRows();
 			}
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////

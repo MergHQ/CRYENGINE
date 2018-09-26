@@ -19,6 +19,9 @@ namespace Impl
 {
 namespace PortAudio
 {
+constexpr uint32 g_itemPoolSize = 2048;
+constexpr uint32 g_eventConnectionPoolSize = 2048;
+
 //////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
 	: m_pDataPanel(nullptr)
@@ -28,6 +31,12 @@ CImpl::CImpl()
 	                        string(CryAudio::s_szAssetsFolderName))
 	, m_localizedAssetsPath(m_assetAndProjectPath)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Port Audio ACE Item Pool");
+	CItem::CreateAllocator(g_itemPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Port Audio ACE Event Connection Pool");
+	CEventConnection::CreateAllocator(g_eventConnectionPoolSize);
+
 	gEnv->pAudioSystem->GetImplInfo(m_implInfo);
 	m_implName = m_implInfo.name.c_str();
 	m_implFolderName = CryAudio::Impl::PortAudio::s_szImplFolderName;
@@ -38,6 +47,9 @@ CImpl::~CImpl()
 {
 	Clear();
 	DestroyDataPanel();
+
+	CItem::FreeMemoryPool();
+	CEventConnection::FreeMemoryPool();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -321,11 +333,6 @@ void CImpl::EnableConnection(IConnection const* const pIConnection, bool const i
 	{
 		++m_connectionsByID[pItem->GetId()];
 		pItem->SetFlags(pItem->GetFlags() | EItemFlags::IsConnected);
-
-		if ((m_pDataPanel != nullptr) && !isLoading)
-		{
-			m_pDataPanel->OnConnectionAdded();
-		}
 	}
 }
 
@@ -346,11 +353,6 @@ void CImpl::DisableConnection(IConnection const* const pIConnection, bool const 
 		}
 
 		m_connectionsByID[pItem->GetId()] = connectionCount;
-
-		if ((m_pDataPanel != nullptr) && !isLoading)
-		{
-			m_pDataPanel->OnConnectionRemoved();
-		}
 	}
 }
 

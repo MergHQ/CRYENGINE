@@ -524,7 +524,7 @@ void CMainWindow::ReloadSystemData()
 //////////////////////////////////////////////////////////////////////////
 void CMainWindow::ReloadMiddlewareData()
 {
-	m_pMonitorSystem->Disable();
+	m_pMonitorMiddleware->Disable();
 	QGuiApplication::setOverrideCursor(Qt::WaitCursor);
 	OnAboutToReload();
 

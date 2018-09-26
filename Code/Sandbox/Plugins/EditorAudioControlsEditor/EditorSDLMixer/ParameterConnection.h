@@ -4,6 +4,7 @@
 
 #include "BaseConnection.h"
 
+#include <PoolObject.h>
 #include <CryAudioImplSDLMixer/GlobalData.h>
 
 namespace ACE
@@ -12,11 +13,15 @@ namespace Impl
 {
 namespace SDLMixer
 {
-class CParameterConnection final : public CBaseConnection
+class CParameterConnection final : public CBaseConnection, public CryAudio::CPoolObject<CParameterConnection, stl::PSyncNone>
 {
 public:
 
 	CParameterConnection() = delete;
+	CParameterConnection(CParameterConnection const&) = delete;
+	CParameterConnection(CParameterConnection&&) = delete;
+	CParameterConnection& operator=(CParameterConnection const&) = delete;
+	CParameterConnection& operator=(CParameterConnection&&) = delete;
 
 	explicit CParameterConnection(
 		ControlId const id,
@@ -26,6 +31,8 @@ public:
 		, m_mult(mult)
 		, m_shift(shift)
 	{}
+
+	virtual ~CParameterConnection() override = default;
 
 	// CBaseConnection
 	virtual void Serialize(Serialization::IArchive& ar) override;

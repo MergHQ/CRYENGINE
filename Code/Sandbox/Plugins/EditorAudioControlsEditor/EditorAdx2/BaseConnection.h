@@ -17,12 +17,10 @@ class CBaseConnection : public IConnection
 public:
 
 	CBaseConnection() = delete;
-
-	explicit CBaseConnection(ControlId const id)
-		: m_id(id)
-	{}
-
-	virtual ~CBaseConnection() override = default;
+	CBaseConnection(CBaseConnection const&) = delete;
+	CBaseConnection(CBaseConnection&&) = delete;
+	CBaseConnection& operator=(CBaseConnection const&) = delete;
+	CBaseConnection& operator=(CBaseConnection&&) = delete;
 
 	// IConnection
 	virtual ControlId GetID() const override final                                                             { return m_id; }
@@ -32,6 +30,14 @@ public:
 	virtual bool      IsPlatformEnabled(PlatformIndexType const platformIndex) const override                  { return true; }
 	virtual void      ClearPlatforms() override                                                                {}
 	// ~IConnection
+
+protected:
+
+	explicit CBaseConnection(ControlId const id)
+		: m_id(id)
+	{}
+
+	virtual ~CBaseConnection() override = default;
 
 private:
 

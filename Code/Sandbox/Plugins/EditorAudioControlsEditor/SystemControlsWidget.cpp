@@ -804,15 +804,10 @@ void CSystemControlsWidget::SelectNewAsset(QModelIndex const& parent, int const 
 		{
 			QModelIndex const& parentIndex = m_pSystemFilterProxyModel->mapFromSource(parent);
 			m_pTreeView->expand(parentIndex);
-			m_pTreeView->selectionModel()->select(assetIndex, QItemSelectionModel::Select | QItemSelectionModel::Rows);
 
-			if (m_pTreeView->selectionModel()->selectedRows(m_nameColumn).size() == 1)
+			if (CSystemSourceModel::GetNumDroppedItems() == 1)
 			{
 				m_pTreeView->setCurrentIndex(assetIndex);
-			}
-			else
-			{
-				m_pTreeView->scrollTo(assetIndex);
 			}
 		}
 	}

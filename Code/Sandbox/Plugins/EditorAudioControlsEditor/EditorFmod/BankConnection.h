@@ -4,22 +4,30 @@
 
 #include "BaseConnection.h"
 
+#include <PoolObject.h>
+
 namespace ACE
 {
 namespace Impl
 {
 namespace Fmod
 {
-class CBankConnection final : public CBaseConnection
+class CBankConnection final : public CBaseConnection, public CryAudio::CPoolObject<CBankConnection, stl::PSyncNone>
 {
 public:
+
+	CBankConnection() = delete;
+	CBankConnection(CBankConnection const&) = delete;
+	CBankConnection(CBankConnection&&) = delete;
+	CBankConnection& operator=(CBankConnection const&) = delete;
+	CBankConnection& operator=(CBankConnection&&) = delete;
 
 	explicit CBankConnection(ControlId const id)
 		: CBaseConnection(id)
 		, m_configurationsMask(std::numeric_limits<PlatformIndexType>::max())
 	{}
 
-	CBankConnection() = delete;
+	virtual ~CBankConnection() override = default;
 
 	// CBaseConnection
 	virtual bool HasProperties() const override { return true; }

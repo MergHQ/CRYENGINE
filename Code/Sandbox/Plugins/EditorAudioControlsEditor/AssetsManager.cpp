@@ -16,6 +16,10 @@ namespace ACE
 {
 ControlId CAssetsManager::m_nextId = 1;
 
+static constexpr uint32 g_controlPoolSize = 8192;
+static constexpr uint32 g_folderPoolSize = 1024;
+static constexpr uint32 g_libraryPoolSize = 256;
+
 //////////////////////////////////////////////////////////////////////////
 CAssetsManager::CAssetsManager()
 {
@@ -32,11 +36,24 @@ CAssetsManager::~CAssetsManager()
 	CAudioControlsEditorPlugin::SignalAboutToLoad.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	CAudioControlsEditorPlugin::SignalLoaded.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	Clear();
+
+	CControl::FreeMemoryPool();
+	CFolder::FreeMemoryPool();
+	CLibrary::FreeMemoryPool();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CAssetsManager::Initialize()
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "ACE Control Pool");
+	CControl::CreateAllocator(g_controlPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "ACE Folder Pool");
+	CFolder::CreateAllocator(g_folderPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "ACE Library Pool");
+	CLibrary::CreateAllocator(g_libraryPoolSize);
+
 	g_implementationManager.SignalImplementationAboutToChange.Connect([this]()
 		{
 			ClearAllConnections();

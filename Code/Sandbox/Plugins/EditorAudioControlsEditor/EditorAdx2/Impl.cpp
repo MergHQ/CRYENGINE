@@ -6,6 +6,7 @@
 #include "Common.h"
 #include "PlatformConnection.h"
 #include "CueConnection.h"
+#include "GenericConnection.h"
 #include "ParameterConnection.h"
 #include "ParameterToStateConnection.h"
 #include "SnapshotConnection.h"
@@ -25,6 +26,14 @@ namespace Impl
 {
 namespace Adx2
 {
+constexpr uint32 g_itemPoolSize = 8192;
+constexpr uint32 g_cueConnectionPoolSize = 8192;
+constexpr uint32 g_parameterConnectionPoolSize = 512;
+constexpr uint32 g_parameterToStateConnectionPoolSize = 256;
+constexpr uint32 g_platformConnectionPoolSize = 256;
+constexpr uint32 g_snapshotConnectionPoolSize = 128;
+constexpr uint32 g_genericConnectionPoolSize = 512;
+
 //////////////////////////////////////////////////////////////////////////
 EItemType TagToType(char const* const szTag)
 {
@@ -160,6 +169,27 @@ CImpl::CImpl()
 	, m_localizedAssetsPath(m_assetsPath)
 	, m_szUserSettingsFile("%USER%/audiocontrolseditor_adx2.user")
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Adx2 ACE Item Pool");
+	CItem::CreateAllocator(g_itemPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Adx2 ACE Cue Connection Pool");
+	CCueConnection::CreateAllocator(g_cueConnectionPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Adx2 ACE Parameter Connection Pool");
+	CParameterConnection::CreateAllocator(g_parameterConnectionPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Adx2 ACE Parameter To State Connection Pool");
+	CParameterToStateConnection::CreateAllocator(g_parameterToStateConnectionPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Adx2 ACE Platform Connection Pool");
+	CPlatformConnection::CreateAllocator(g_platformConnectionPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Adx2 ACE Snapshot Connection Pool");
+	CSnapshotConnection::CreateAllocator(g_snapshotConnectionPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Adx2 ACE Generic Connection Pool");
+	CGenericConnection::CreateAllocator(g_genericConnectionPoolSize);
+
 	gEnv->pAudioSystem->GetImplInfo(m_implInfo);
 	m_implName = m_implInfo.name.c_str();
 	m_implFolderName = CryAudio::Impl::Adx2::s_szImplFolderName;
@@ -172,6 +202,14 @@ CImpl::~CImpl()
 {
 	Clear();
 	DestroyDataPanel();
+
+	CItem::FreeMemoryPool();
+	CCueConnection::FreeMemoryPool();
+	CParameterConnection::FreeMemoryPool();
+	CParameterToStateConnection::FreeMemoryPool();
+	CPlatformConnection::FreeMemoryPool();
+	CSnapshotConnection::FreeMemoryPool();
+	CGenericConnection::FreeMemoryPool();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -404,7 +442,7 @@ IConnection* CImpl::CreateConnectionToControl(EAssetType const assetType, IItem 
 			}
 			else
 			{
-				pIConnection = static_cast<IConnection*>(new CBaseConnection(pItem->GetId()));
+				pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
 			}
 		}
 		else if ((type == EItemType::Binary) || (type == EItemType::DspBusSetting))
@@ -417,7 +455,7 @@ IConnection* CImpl::CreateConnectionToControl(EAssetType const assetType, IItem 
 		}
 		else
 		{
-			pIConnection = static_cast<IConnection*>(new CBaseConnection(pItem->GetId()));
+			pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
 		}
 	}
 
@@ -522,7 +560,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 								pSelectorLabelItem = CreatePlaceholderItem(childName, EItemType::SelectorLabel, pItem);
 							}
 
-							pIConnection = static_cast<IConnection*>(new CBaseConnection(pSelectorLabelItem->GetId()));
+							pIConnection = static_cast<IConnection*>(new CGenericConnection(pSelectorLabelItem->GetId()));
 						}
 					}
 					else
@@ -533,7 +571,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 				break;
 			case EItemType::Bus:
 				{
-					pIConnection = static_cast<IConnection*>(new CBaseConnection(pItem->GetId()));
+					pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
 				}
 				break;
 			case EItemType::Snapshot:
@@ -699,11 +737,6 @@ void CImpl::EnableConnection(IConnection const* const pIConnection, bool const i
 	{
 		++m_connectionsByID[pItem->GetId()];
 		pItem->SetFlags(pItem->GetFlags() | EItemFlags::IsConnected);
-
-		if ((m_pDataPanel != nullptr) && !isLoading)
-		{
-			m_pDataPanel->OnConnectionAdded();
-		}
 	}
 }
 
@@ -724,11 +757,6 @@ void CImpl::DisableConnection(IConnection const* const pIConnection, bool const 
 		}
 
 		m_connectionsByID[pItem->GetId()] = connectionCount;
-
-		if ((m_pDataPanel != nullptr) && !isLoading)
-		{
-			m_pDataPanel->OnConnectionRemoved();
-		}
 	}
 }
 

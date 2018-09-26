@@ -6,6 +6,7 @@
 #include "Common.h"
 #include "BankConnection.h"
 #include "EventConnection.h"
+#include "GenericConnection.h"
 #include "KeyConnection.h"
 #include "ParameterConnection.h"
 #include "ParameterToStateConnection.h"
@@ -25,6 +26,15 @@ namespace Impl
 namespace Fmod
 {
 std::vector<string> CImpl::s_programmerSoundEvents;
+
+constexpr uint32 g_itemPoolSize = 8192;
+constexpr uint32 g_eventConnectionPoolSize = 8192;
+constexpr uint32 g_keyConnectionPoolSize = 4096;
+constexpr uint32 g_parameterConnectionPoolSize = 512;
+constexpr uint32 g_parameterToStateConnectionPoolSize = 256;
+constexpr uint32 g_bankConnectionPoolSize = 256;
+constexpr uint32 g_snapshotConnectionPoolSize = 128;
+constexpr uint32 g_genericConnectionPoolSize = 128;
 
 //////////////////////////////////////////////////////////////////////////
 EItemType TagToType(char const* const szTag)
@@ -204,6 +214,30 @@ CImpl::CImpl()
 	, m_localizedAssetsPath(m_assetsPath)
 	, m_szUserSettingsFile("%USER%/audiocontrolseditor_fmod.user")
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Fmod Studio ACE Item Pool");
+	CItem::CreateAllocator(g_itemPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Fmod Studio ACE Event Connection Pool");
+	CEventConnection::CreateAllocator(g_eventConnectionPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Fmod Studio ACE Key Connection Pool");
+	CKeyConnection::CreateAllocator(g_keyConnectionPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Fmod Studio ACE Parameter Connection Pool");
+	CParameterConnection::CreateAllocator(g_parameterConnectionPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Fmod Studio ACE Parameter To State Connection Pool");
+	CParameterToStateConnection::CreateAllocator(g_parameterToStateConnectionPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Fmod Studio ACE Bank Connection Pool");
+	CBankConnection::CreateAllocator(g_bankConnectionPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Fmod Studio ACE Snapshot Connection Pool");
+	CSnapshotConnection::CreateAllocator(g_snapshotConnectionPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Fmod Studio ACE Generic Connection Pool");
+	CGenericConnection::CreateAllocator(g_genericConnectionPoolSize);
+
 	gEnv->pAudioSystem->GetImplInfo(m_implInfo);
 	m_implName = m_implInfo.name.c_str();
 	m_implFolderName = CryAudio::Impl::Fmod::s_szImplFolderName;
@@ -216,6 +250,15 @@ CImpl::~CImpl()
 {
 	Clear();
 	DestroyDataPanel();
+
+	CItem::FreeMemoryPool();
+	CEventConnection::FreeMemoryPool();
+	CKeyConnection::FreeMemoryPool();
+	CParameterConnection::FreeMemoryPool();
+	CParameterToStateConnection::FreeMemoryPool();
+	CBankConnection::FreeMemoryPool();
+	CSnapshotConnection::FreeMemoryPool();
+	CGenericConnection::FreeMemoryPool();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -442,7 +485,7 @@ IConnection* CImpl::CreateConnectionToControl(EAssetType const assetType, IItem 
 			}
 			else
 			{
-				pIConnection = static_cast<IConnection*>(new CBaseConnection(pItem->GetId()));
+				pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
 			}
 		}
 		else if (type == EItemType::Bank)
@@ -451,7 +494,7 @@ IConnection* CImpl::CreateConnectionToControl(EAssetType const assetType, IItem 
 		}
 		else
 		{
-			pIConnection = static_cast<IConnection*>(new CBaseConnection(pItem->GetId()));
+			pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
 		}
 	}
 
@@ -623,7 +666,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 				break;
 			case EItemType::Return:
 				{
-					pIConnection = static_cast<IConnection*>(new CBaseConnection(pItem->GetId()));
+					pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
 				}
 				break;
 			}
@@ -753,11 +796,6 @@ void CImpl::EnableConnection(IConnection const* const pIConnection, bool const i
 	{
 		++m_connectionsByID[pItem->GetId()];
 		pItem->SetFlags(pItem->GetFlags() | EItemFlags::IsConnected);
-
-		if ((m_pDataPanel != nullptr) && !isLoading)
-		{
-			m_pDataPanel->OnConnectionAdded();
-		}
 	}
 }
 
@@ -778,11 +816,6 @@ void CImpl::DisableConnection(IConnection const* const pIConnection, bool const 
 		}
 
 		m_connectionsByID[pItem->GetId()] = connectionCount;
-
-		if ((m_pDataPanel != nullptr) && !isLoading)
-		{
-			m_pDataPanel->OnConnectionRemoved();
-		}
 	}
 }
 

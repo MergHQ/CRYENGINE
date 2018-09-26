@@ -21,6 +21,11 @@ namespace Impl
 {
 namespace SDLMixer
 {
+constexpr uint32 g_itemPoolSize = 2048;
+constexpr uint32 g_eventConnectionPoolSize = 2048;
+constexpr uint32 g_parameterConnectionPoolSize = 256;
+constexpr uint32 g_stateConnectionPoolSize = 256;
+
 //////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
 	: m_pDataPanel(nullptr)
@@ -30,6 +35,18 @@ CImpl::CImpl()
 	                        + string(CryAudio::s_szAssetsFolderName))
 	, m_localizedAssetsPath(m_assetAndProjectPath)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "SDL Mixer ACE Item Pool");
+	CItem::CreateAllocator(g_itemPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "SDL Mixer ACE Event Connection Pool");
+	CEventConnection::CreateAllocator(g_eventConnectionPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "SDL Mixer ACE Parameter Connection Pool");
+	CParameterConnection::CreateAllocator(g_parameterConnectionPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "SDL Mixer ACE State Connection Pool");
+	CStateConnection::CreateAllocator(g_stateConnectionPoolSize);
+
 	gEnv->pAudioSystem->GetImplInfo(m_implInfo);
 	m_implName = m_implInfo.name.c_str();
 	m_implFolderName = CryAudio::Impl::SDL_mixer::s_szImplFolderName;
@@ -40,6 +57,11 @@ CImpl::~CImpl()
 {
 	Clear();
 	DestroyDataPanel();
+
+	CItem::FreeMemoryPool();
+	CEventConnection::FreeMemoryPool();
+	CParameterConnection::FreeMemoryPool();
+	CStateConnection::FreeMemoryPool();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -520,11 +542,6 @@ void CImpl::EnableConnection(IConnection const* const pIConnection, bool const i
 	{
 		++m_connectionsByID[pItem->GetId()];
 		pItem->SetFlags(pItem->GetFlags() | EItemFlags::IsConnected);
-
-		if ((m_pDataPanel != nullptr) && !isLoading)
-		{
-			m_pDataPanel->OnConnectionAdded();
-		}
 	}
 }
 
@@ -545,11 +562,6 @@ void CImpl::DisableConnection(IConnection const* const pIConnection, bool const 
 		}
 
 		m_connectionsByID[pItem->GetId()] = connectionCount;
-
-		if ((m_pDataPanel != nullptr) && !isLoading)
-		{
-			m_pDataPanel->OnConnectionRemoved();
-		}
 	}
 }
 

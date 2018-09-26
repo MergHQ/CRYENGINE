@@ -4,6 +4,7 @@
 
 #include "BaseConnection.h"
 
+#include <PoolObject.h>
 #include <CryAudioImplAdx2/GlobalData.h>
 
 namespace ACE
@@ -12,11 +13,15 @@ namespace Impl
 {
 namespace Adx2
 {
-class CParameterConnection final : public CBaseConnection
+class CParameterConnection final : public CBaseConnection, public CryAudio::CPoolObject<CParameterConnection, stl::PSyncNone>
 {
 public:
 
 	CParameterConnection() = delete;
+	CParameterConnection(CParameterConnection const&) = delete;
+	CParameterConnection(CParameterConnection&&) = delete;
+	CParameterConnection& operator=(CParameterConnection const&) = delete;
+	CParameterConnection& operator=(CParameterConnection&&) = delete;
 
 	explicit CParameterConnection(
 		ControlId const id,
@@ -26,6 +31,8 @@ public:
 		, m_mult(mult)
 		, m_shift(shift)
 	{}
+
+	virtual ~CParameterConnection() override = default;
 
 	// CBaseConnection
 	virtual bool HasProperties() const override { return true; }
