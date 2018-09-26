@@ -627,7 +627,7 @@ struct SCryEngineStats
 
 		, nSummaryCharactersSize(0)
 
-		//, nSummary_TextureSize(0)
+		, nSummary_TextureSize(0)
 		, nSummary_UserTextureSize(0)
 		, nSummary_EngineTextureSize(0)
 		, nSummary_TexturesStreamingThroughput(0.0f)
