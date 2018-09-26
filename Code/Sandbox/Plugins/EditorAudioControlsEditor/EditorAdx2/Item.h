@@ -3,6 +3,7 @@
 #pragma once
 
 #include <IItem.h>
+#include <PoolObject.h>
 
 namespace ACE
 {
@@ -30,7 +31,7 @@ enum class EItemType : CryAudio::EnumFlagsType
 	FolderGlobal,
 	FolderCueSheet, };
 
-class CItem final : public IItem
+class CItem final : public IItem, public CryAudio::CPoolObject<CItem, stl::PSyncNone>
 {
 public:
 

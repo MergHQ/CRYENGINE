@@ -891,9 +891,9 @@ void CSplineCtrlEx::DrawSpline(CDC* pDC, SSplineInfo& splineInfo, float startTim
 	nTotalNumberOfDimensions = pSpline->GetNumDimensions();
 	for (nCurrentDimension = 0; nCurrentDimension < nTotalNumberOfDimensions; nCurrentDimension++)
 	{
-		COLORREF splineColor = EDIT_SPLINE_COLOR;
+		COLORREF splineColor = splineInfo.anColorArray[nCurrentDimension];
+
 		CPen pen;
-		splineColor = splineInfo.anColorArray[nCurrentDimension];
 		pen.CreatePen(PS_SOLID, 2, splineColor);
 
 		if (p0.x > left && !pDetailSpline)

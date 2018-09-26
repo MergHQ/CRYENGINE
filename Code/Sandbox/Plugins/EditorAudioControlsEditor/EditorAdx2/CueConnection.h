@@ -4,15 +4,23 @@
 
 #include "BaseConnection.h"
 
+#include <PoolObject.h>
+
 namespace ACE
 {
 namespace Impl
 {
 namespace Adx2
 {
-class CCueConnection final : public CBaseConnection
+class CCueConnection final : public CBaseConnection, public CryAudio::CPoolObject<CCueConnection, stl::PSyncNone>
 {
 public:
+
+	CCueConnection() = delete;
+	CCueConnection(CCueConnection const&) = delete;
+	CCueConnection(CCueConnection&&) = delete;
+	CCueConnection& operator=(CCueConnection const&) = delete;
+	CCueConnection& operator=(CCueConnection&&) = delete;
 
 	enum class EActionType : CryAudio::EnumFlagsType
 	{
@@ -27,7 +35,7 @@ public:
 		, m_actionType(actionType)
 	{}
 
-	CCueConnection() = delete;
+	virtual ~CCueConnection() override = default;
 
 	// CBaseConnection
 	virtual bool HasProperties() const override { return true; }

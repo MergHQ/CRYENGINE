@@ -4,6 +4,7 @@
 
 #include "Asset.h"
 
+#include <PoolObject.h>
 #include <CrySystem/XML/IXml.h>
 
 namespace ACE
@@ -15,7 +16,7 @@ struct IItem;
 
 struct IConnection;
 
-class CControl final : public CAsset
+class CControl final : public CAsset, public CryAudio::CPoolObject<CControl, stl::PSyncNone>
 {
 public:
 

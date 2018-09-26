@@ -4,6 +4,7 @@
 
 #include "BaseConnection.h"
 
+#include <PoolObject.h>
 #include <CryAudioImplFmod/GlobalData.h>
 
 namespace ACE
@@ -12,9 +13,15 @@ namespace Impl
 {
 namespace Fmod
 {
-class CKeyConnection final : public CBaseConnection
+class CKeyConnection final : public CBaseConnection, public CryAudio::CPoolObject<CKeyConnection, stl::PSyncNone>
 {
 public:
+
+	CKeyConnection() = delete;
+	CKeyConnection(CKeyConnection const&) = delete;
+	CKeyConnection(CKeyConnection&&) = delete;
+	CKeyConnection& operator=(CKeyConnection const&) = delete;
+	CKeyConnection& operator=(CKeyConnection&&) = delete;
 
 	explicit CKeyConnection(
 		ControlId const id,
@@ -23,7 +30,7 @@ public:
 		, m_event(event)
 	{}
 
-	CKeyConnection() = delete;
+	virtual ~CKeyConnection() override = default;
 
 	// CBaseConnection
 	virtual bool HasProperties() const override { return true; }

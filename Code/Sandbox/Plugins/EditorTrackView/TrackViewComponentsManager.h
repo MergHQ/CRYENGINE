@@ -12,7 +12,6 @@ class CTrackViewComponentsManager
 {
 public:
 	CTrackViewComponentsManager();
-	~CTrackViewComponentsManager();
 
 	void                               Init(CTrackViewCore* pTrackViewCore);
 	void                               BroadcastTrackViewEditorEvent(ETrackViewEditorEvent event);

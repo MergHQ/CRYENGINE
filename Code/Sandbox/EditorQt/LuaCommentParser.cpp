@@ -3,20 +3,13 @@
 #include "StdAfx.h"
 #include "LuaCommentParser.h"
 
-//-------------------------------------------------------------------------
-LuaCommentParser::LuaCommentParser(void)
-{
-	m_pFile = NULL;
-	m_RootTable = NULL;
-	m_AllText = NULL;
-}
-
-//-------------------------------------------------------------------------
-LuaCommentParser::~LuaCommentParser(void)
+LuaCommentParser::LuaCommentParser()
+	: m_pFile(nullptr)
+	, m_RootTable(nullptr)
+	, m_AllText(nullptr)
 {
 }
 
-//-------------------------------------------------------------------------
 void LuaCommentParser::CloseScriptFile()
 {
 	if (m_pFile)
@@ -49,7 +42,6 @@ void WriteToFile(FILE* file, LuaTable* table, int level = 0)
 	}
 }
 
-//-------------------------------------------------------------------------
 bool LuaCommentParser::OpenScriptFile(const char* path)
 {
 	// Open
@@ -94,7 +86,6 @@ bool LuaCommentParser::OpenScriptFile(const char* path)
 	return true;
 }
 
-//-------------------------------------------------------------------------
 int LuaCommentParser::FindStringInFileSkippingComments(string searchString, int offset)
 {
 	string file = string(m_AllText + offset);
@@ -142,21 +133,16 @@ int LuaCommentParser::FindStringInFileSkippingComments(string searchString, int 
 }
 
 //Recursively finds all tables and creates a tree out of it
-//-------------------------------------------------------------------------
 int LuaCommentParser::FindTables(LuaTable* parentTable, int offset)
 {
 	int posInFile = offset;
 	string fullfile = string(m_AllText);
-	string file = string(m_AllText + offset);
-	int posOpenBracket;
-	posOpenBracket = 1;
+	int posOpenBracket = FindStringInFileSkippingComments("{", posInFile);
 	int i = 0;
-
-	posOpenBracket = FindStringInFileSkippingComments("{", posInFile);
 
 	//table found
 	int breakhere = 0;
-	file = string(m_AllText + posOpenBracket + 1);
+	string file = string(m_AllText + posOpenBracket + 1);
 	posInFile = posOpenBracket + 1;
 	string tableName = FindTableNameForBracket(posInFile - 1);
 
@@ -199,7 +185,6 @@ int LuaCommentParser::FindTables(LuaTable* parentTable, int offset)
 	return -1;
 };
 
-//-------------------------------------------------------------------------
 string LuaCommentParser::FindTableNameForBracket(int bracketPos)
 {
 	// Find '=' sign and the word before that if not commented
@@ -263,7 +248,6 @@ string LuaCommentParser::FindTableNameForBracket(int bracketPos)
 	return tableName;
 }
 
-//-------------------------------------------------------------------------
 int LuaCommentParser::GetVarInTable(const char* tablePath, const char* varName)
 {
 	string sTablePath = tablePath;
@@ -304,7 +288,7 @@ int LuaCommentParser::GetVarInTable(const char* tablePath, const char* varName)
 		for (int i = 0; i < table->m_ChildTables.size(); i++)
 		{
 			//if it is inside childtable, find next one
-			if (table && table->m_ChildTables[i]->m_CloseBracePos > variablePos && table->m_ChildTables[i]->m_OpenBracePos < variablePos)
+			if (table->m_ChildTables[i]->m_CloseBracePos > variablePos && table->m_ChildTables[i]->m_OpenBracePos < variablePos)
 			{
 				variablePos = FindWordInFileSkippingComments(varName, variablePos + strlen(varName));
 				done = false;
@@ -316,7 +300,6 @@ int LuaCommentParser::GetVarInTable(const char* tablePath, const char* varName)
 	return variablePos;
 }
 
-//-------------------------------------------------------------------------
 int LuaCommentParser::FindWordInFileSkippingComments(string searchString, int offset)
 {
 	int variablePos = FindStringInFileSkippingComments(searchString, offset);
@@ -327,7 +310,6 @@ int LuaCommentParser::FindWordInFileSkippingComments(string searchString, int of
 	return variablePos;
 }
 
-//-------------------------------------------------------------------------
 bool LuaCommentParser::ParseComment(const char* tablePath, const char* varName, float* minVal, float* maxVal, float* stepVal, string* desc)
 {
 	int pos = GetVarInTable(tablePath, varName);
@@ -412,7 +394,6 @@ bool LuaCommentParser::ParseComment(const char* tablePath, const char* varName, 
 	return true;
 }
 
-//-------------------------------------------------------------------------
 LuaCommentParser* LuaCommentParser::GetInstance()
 {
 	static LuaCommentParser* m_Instance;
@@ -424,15 +405,11 @@ LuaCommentParser* LuaCommentParser::GetInstance()
 	return m_Instance;
 }
 
-//-------------------------------------------------------------------------
 bool LuaCommentParser::IsAlphaNumericalChar(char c)
 {
-	bool isNumber = false;
-	bool isLowerCase = false;
-	bool isUpperCase = false;
-	isNumber = (int)c >= 48 && (int)c <= 57;
-	isLowerCase = (int)c >= 97 && (int)c <= 122;
-	isUpperCase = (int)c >= 65 && (int)c <= 90;
+	bool isNumber = (int)c >= 48 && (int)c <= 57;
+	bool isLowerCase = (int)c >= 97 && (int)c <= 122;
+	bool isUpperCase = (int)c >= 65 && (int)c <= 90;
 
 	return isNumber || isLowerCase || isUpperCase || (int)c == 95;
 }

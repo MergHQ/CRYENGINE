@@ -2,27 +2,17 @@
 
 #pragma once
 
-#include "Objects/BaseObject.h"
-#include "IObjectManager.h"
+#include <Objects/BaseObject.h>
+#include <IObjectManager.h>
 
-//////////////////////////////////////////////////////////////////////////
 class SANDBOX_API CSurfaceInfoPicker
 {
 public:
-
 	CSurfaceInfoPicker();
 
 	class CExcludedObjects
 	{
 	public:
-
-		CExcludedObjects(){}
-		~CExcludedObjects(){}
-		CExcludedObjects(const CExcludedObjects& excluded)
-		{
-			objects = excluded.objects;
-		}
-
 		void Add(CBaseObject* pObject)
 		{
 			objects.insert(pObject);
@@ -246,5 +236,4 @@ private:
 	CBaseObjectsArray      m_objects;
 	CExcludedObjects       m_ExcludedObjects;
 	mutable CBaseObjectPtr m_pPickedObject;
-
 };

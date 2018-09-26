@@ -4,15 +4,23 @@
 
 #include "BaseConnection.h"
 
+#include <PoolObject.h>
+
 namespace ACE
 {
 namespace Impl
 {
 namespace Fmod
 {
-class CEventConnection final : public CBaseConnection
+class CEventConnection final : public CBaseConnection, public CryAudio::CPoolObject<CEventConnection, stl::PSyncNone>
 {
 public:
+
+	CEventConnection() = delete;
+	CEventConnection(CEventConnection const&) = delete;
+	CEventConnection(CEventConnection&&) = delete;
+	CEventConnection& operator=(CEventConnection const&) = delete;
+	CEventConnection& operator=(CEventConnection&&) = delete;
 
 	enum class EActionType : CryAudio::EnumFlagsType
 	{
@@ -26,7 +34,7 @@ public:
 		, m_actionType(actionType)
 	{}
 
-	CEventConnection() = delete;
+	virtual ~CEventConnection() override = default;
 
 	// CBaseConnection
 	virtual bool HasProperties() const override { return true; }

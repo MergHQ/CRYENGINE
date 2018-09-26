@@ -44,6 +44,8 @@ public:
 	static bool                 CanDropData(QMimeData const* const pData, CAsset const& parent);
 	static bool                 DropData(QMimeData const* const pData, CAsset* const pParent);
 
+	static size_t               GetNumDroppedItems() { return s_numDroppedItems; }
+
 protected:
 
 	// QAbstractItemModel
@@ -65,7 +67,9 @@ private:
 
 	void ConnectSignals();
 
-	bool      m_ignoreLibraryUpdates;
-	int const m_nameColumn;
+	bool          m_ignoreLibraryUpdates;
+	int const     m_nameColumn;
+
+	static size_t s_numDroppedItems;
 };
 } // namespace ACE

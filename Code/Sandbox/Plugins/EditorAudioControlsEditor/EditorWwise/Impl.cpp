@@ -4,7 +4,7 @@
 #include "Impl.h"
 
 #include "Common.h"
-#include "BaseConnection.h"
+#include "GenericConnection.h"
 #include "ParameterConnection.h"
 #include "ParameterToStateConnection.h"
 #include "SoundbankConnection.h"
@@ -21,6 +21,12 @@ namespace Impl
 {
 namespace Wwise
 {
+constexpr uint32 g_itemPoolSize = 8192;
+constexpr uint32 g_genericConnectionPoolSize = 8192;
+constexpr uint32 g_parameterConnectionPoolSize = 512;
+constexpr uint32 g_parameterToStateConnectionPoolSize = 256;
+constexpr uint32 g_soundbankConnectionPoolSize = 256;
+
 //////////////////////////////////////////////////////////////////////////
 EItemType TagToType(char const* const szTag)
 {
@@ -162,6 +168,21 @@ CImpl::CImpl()
 	, m_localizedAssetsPath(m_assetsPath)
 	, m_szUserSettingsFile("%USER%/audiocontrolseditor_wwise.user")
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Wwise ACE Item Pool");
+	CItem::CreateAllocator(g_itemPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Wwise ACE Generic Connection Pool");
+	CGenericConnection::CreateAllocator(g_genericConnectionPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Wwise ACE Parameter Connection Pool");
+	CParameterConnection::CreateAllocator(g_parameterConnectionPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Wwise ACE Parameter to State Connection Pool");
+	CParameterToStateConnection::CreateAllocator(g_parameterToStateConnectionPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Wwise ACE Soundbank Connection Pool");
+	CSoundbankConnection::CreateAllocator(g_soundbankConnectionPoolSize);
+
 	gEnv->pAudioSystem->GetImplInfo(m_implInfo);
 	m_implName = m_implInfo.name.c_str();
 	m_implFolderName = CryAudio::Impl::Wwise::s_szImplFolderName;
@@ -174,6 +195,12 @@ CImpl::~CImpl()
 {
 	Clear();
 	DestroyDataPanel();
+
+	CItem::FreeMemoryPool();
+	CGenericConnection::FreeMemoryPool();
+	CParameterConnection::FreeMemoryPool();
+	CParameterToStateConnection::FreeMemoryPool();
+	CSoundbankConnection::FreeMemoryPool();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -390,7 +417,7 @@ IConnection* CImpl::CreateConnectionToControl(EAssetType const assetType, IItem 
 				pIConnection = static_cast<IConnection*>(new CParameterToStateConnection(pItem->GetId()));
 				break;
 			default:
-				pIConnection = static_cast<IConnection*>(new CBaseConnection(pItem->GetId()));
+				pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
 				break;
 			}
 		}
@@ -400,7 +427,7 @@ IConnection* CImpl::CreateConnectionToControl(EAssetType const assetType, IItem 
 		}
 		else
 		{
-			pIConnection = static_cast<IConnection*>(new CBaseConnection(pItem->GetId()));
+			pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
 		}
 
 	}
@@ -543,7 +570,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 						}
 						break;
 					default:
-						pIConnection = static_cast<IConnection*>(new CBaseConnection(pItem->GetId()));
+						pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
 						break;
 					}
 				}
@@ -553,7 +580,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 				}
 				else
 				{
-					pIConnection = static_cast<IConnection*>(new CBaseConnection(pItem->GetId()));
+					pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
 				}
 			}
 		}
@@ -666,11 +693,6 @@ void CImpl::EnableConnection(IConnection const* const pIConnection, bool const i
 	{
 		++m_connectionsByID[pItem->GetId()];
 		pItem->SetFlags(pItem->GetFlags() | EItemFlags::IsConnected);
-
-		if ((m_pDataPanel != nullptr) && !isLoading)
-		{
-			m_pDataPanel->OnConnectionAdded();
-		}
 	}
 }
 
@@ -691,11 +713,6 @@ void CImpl::DisableConnection(IConnection const* const pIConnection, bool const 
 		}
 
 		m_connectionsByID[pItem->GetId()] = connectionCount;
-
-		if ((m_pDataPanel != nullptr) && !isLoading)
-		{
-			m_pDataPanel->OnConnectionRemoved();
-		}
 	}
 }
 

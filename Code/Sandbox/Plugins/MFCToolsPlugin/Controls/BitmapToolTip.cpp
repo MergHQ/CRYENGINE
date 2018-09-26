@@ -193,11 +193,10 @@ bool CBitmapToolTip::LoadImage(const CString& imageFilename)
 		return false;
 
 	EShowMode eShowMode = ESHOW_RGB;
-	const char* pShowModeDescription = "RGB";
 	bool bShowInOriginalSize = false;
 
 	GetShowMode(eShowMode, bShowInOriginalSize);
-	pShowModeDescription = GetShowModeDescription(eShowMode, bShowInOriginalSize);
+	const char* pShowModeDescription = GetShowModeDescription(eShowMode, bShowInOriginalSize);
 
 	if ((m_filename == imageFilename) && (m_eShowMode == eShowMode) && (m_bShowFullsize == bShowInOriginalSize))
 		return true;

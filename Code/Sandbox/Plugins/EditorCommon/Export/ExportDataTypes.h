@@ -150,7 +150,6 @@ public:
 
 	int                       nParent;
 	size_t                    m_MeshHash;
-	bool                      bIsCameraTarget;
 	char                      name[EXP_NAMESIZE];
 	char                      materialName[EXP_NAMESIZE];
 	Export::EEntityObjectType entityType;

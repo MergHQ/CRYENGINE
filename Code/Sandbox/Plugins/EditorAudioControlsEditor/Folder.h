@@ -4,9 +4,11 @@
 
 #include "Asset.h"
 
+#include <PoolObject.h>
+
 namespace ACE
 {
-class CFolder final : public CAsset
+class CFolder final : public CAsset, public CryAudio::CPoolObject<CFolder, stl::PSyncNone>
 {
 public:
 

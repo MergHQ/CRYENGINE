@@ -113,9 +113,8 @@ class CLineNo : public CXTPReportRecordItemText
 		__super::GetItemMetrics(pDrawArgs, pItemMetrics);
 		if (pDrawArgs->pControl->HasFocus() && pDrawArgs->pRow->IsFocused() && pDrawArgs->pColumn == pDrawArgs->pControl->GetFocusedColumn())
 		{
-			COLORREF color = pItemMetrics->clrBackground;
 			const float fac = HFAC;
-			color = HCOL;
+			COLORREF color = HCOL;
 			pItemMetrics->clrBackground = color;
 		}
 	}
@@ -461,25 +460,22 @@ static const COLORREF COL_LOOKAT = RGB(120, 100, 200);
 static const COLORREF COL_REST = RGB(120, 120, 200);
 
 CDialogScriptRecord::CDialogScriptRecord()
-{
-	m_pScript = 0;
+	: m_pScript(nullptr)
+{	
 }
 
 CDialogScriptRecord::CDialogScriptRecord(CEditorDialogScript* pScript, const CEditorDialogScript::SScriptLine* pLine)
+	: m_line(*pLine)
+	, m_pScript(pScript)
 {
-	m_line = *pLine;
-	m_pScript = pScript;
-
 	FillItems();
 }
 
-void
-CDialogScriptRecord::FillItems()
+void CDialogScriptRecord::FillItems()
 {
-	CXTPReportRecordItem* pItem = 0;
-	pItem = AddItem(new CLineNo());
+	AddItem(new CLineNo());
 	// Actor
-	pItem = AddItem(new CHelperConstraint<CEditorDialogScript::TActorID>(m_line.m_actor));
+	CXTPReportRecordItem* pItem = AddItem(new CHelperConstraint<CEditorDialogScript::TActorID>(m_line.m_actor));
 	pItem->SetBackgroundColor(COL_ACTOR);
 
 	// Sound

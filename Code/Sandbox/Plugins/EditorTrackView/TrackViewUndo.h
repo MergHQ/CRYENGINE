@@ -54,7 +54,7 @@ protected:
 	virtual void        Redo() override;
 
 	std::vector<bool>   SaveKeyStates(CTrackViewSequence* pSequence) const;
-	void                RestoreKeyStates(CTrackViewSequence* pSequence, const std::vector<bool> keyStates);
+	void                RestoreKeyStates(CTrackViewSequence* pSequence, const std::vector<bool>& keyStates);
 
 	CTrackViewSequence* m_pSequence;
 	std::vector<bool>   m_undoKeyStates;

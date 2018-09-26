@@ -20,7 +20,8 @@ const float kSelectionBallScale = 0.05f;
 const float kRotateCircleRadiusScale = 0.75f;
 
 CAxisHelper::CAxisHelper()
-	: m_matrix(IDENTITY)
+	: m_b2D(false)
+	, m_matrix(IDENTITY)
 {
 	m_nModeFlags = MOVE_FLAG;
 	m_highlightMode = MOVE_MODE;

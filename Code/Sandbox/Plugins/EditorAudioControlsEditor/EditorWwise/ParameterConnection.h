@@ -4,6 +4,7 @@
 
 #include "BaseConnection.h"
 
+#include <PoolObject.h>
 #include <CryAudioImplWwise/GlobalData.h>
 
 namespace ACE
@@ -12,17 +13,26 @@ namespace Impl
 {
 namespace Wwise
 {
-class CParameterConnection final : public CBaseConnection
+class CParameterConnection final : public CBaseConnection, public CryAudio::CPoolObject<CParameterConnection, stl::PSyncNone>
 {
 public:
 
-	explicit CParameterConnection(ControlId const id, float const mult = CryAudio::Impl::Wwise::s_defaultParamMultiplier, float const shift = CryAudio::Impl::Wwise::s_defaultParamShift)
+	CParameterConnection() = delete;
+	CParameterConnection(CParameterConnection const&) = delete;
+	CParameterConnection(CParameterConnection&&) = delete;
+	CParameterConnection& operator=(CParameterConnection const&) = delete;
+	CParameterConnection& operator=(CParameterConnection&&) = delete;
+
+	explicit CParameterConnection(
+		ControlId const id,
+		float const mult = CryAudio::Impl::Wwise::s_defaultParamMultiplier,
+		float const shift = CryAudio::Impl::Wwise::s_defaultParamShift)
 		: CBaseConnection(id)
 		, m_mult(mult)
 		, m_shift(shift)
 	{}
 
-	CParameterConnection() = delete;
+	virtual ~CParameterConnection() override = default;
 
 	// CBaseConnection
 	virtual bool HasProperties() const override { return true; }

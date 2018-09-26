@@ -5,10 +5,8 @@
 
 #include "EditorCommonAPI.h"
 
-#include <vector>
 #include <QFileDialog>
-
-class CFilePopupMenu;
+#include <vector>
 
 class EDITOR_COMMON_API CSystemFileDialog
 {

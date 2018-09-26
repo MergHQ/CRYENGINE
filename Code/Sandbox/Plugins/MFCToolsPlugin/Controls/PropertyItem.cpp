@@ -1564,16 +1564,11 @@ void CPropertyItem::CreateControls(CWnd* pWndParent, CRect& textRect, CRect& ctr
 			m_cEdit->EnableUpdateOnKillFocus(!m_bForceModified);
 			RegisterCtrl(m_cEdit);
 
-			HICON hButtonIcon(NULL);
-
-			hButtonIcon = (HICON)LoadImage(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_FILE_BROWSE), IMAGE_ICON, 16, 15, LR_DEFAULTCOLOR | LR_SHARED);
 			m_cButton3 = new CInPlaceButton(functor(*this, &CPropertyItem::OnFileBrowseButton));
 			m_cButton3->Create("...", WS_CHILD | WS_VISIBLE, nullRc, pWndParent, 4);
 			RegisterCtrl(m_cButton3);
-			//m_cButton3->SetIcon( CSize(16,15),hButtonIcon);
-			//m_cButton3->SetBorderGap(6);
 
-			hButtonIcon = (HICON)LoadImage(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_TIFF), IMAGE_ICON, 16, 15, LR_DEFAULTCOLOR | LR_SHARED);
+			HICON hButtonIcon = (HICON)LoadImage(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_TIFF), IMAGE_ICON, 16, 15, LR_DEFAULTCOLOR | LR_SHARED);
 			m_cButton4 = new CInPlaceButton(functor(*this, &CPropertyItem::OnTextureEditButton));
 			m_cButton4->Create("", WS_CHILD | WS_VISIBLE, nullRc, pWndParent, 7); // edit selected texture semantics.
 			m_cButton4->SetIcon(CSize(16, 15), hButtonIcon);

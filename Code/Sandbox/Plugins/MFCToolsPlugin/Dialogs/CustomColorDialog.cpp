@@ -13,19 +13,11 @@ static BOOL CALLBACK CreateScreenWndCB(HMONITOR monitor, HDC dc, LPRECT rect, LP
 
 class CScreenWnd : public CWnd
 {
-	// Construction
 public:
 	CScreenWnd();
 
-	// Overrides
-public:
 	virtual BOOL Create(CMFCColorDialog* pColorDlg, CRect rect);
 
-	// Implementation
-public:
-	virtual ~CScreenWnd();
-
-	// Generated message map functions
 protected:
 	//{{AFX_MSG(CScreenWnd)
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
@@ -34,7 +26,7 @@ protected:
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
-	CMFCColorDialog * m_pColorDlg;
+	CMFCColorDialog* m_pColorDlg;
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -191,10 +183,7 @@ BOOL CALLBACK CreateScreenWndCB(HMONITOR monitor, HDC dc, LPRECT rect, LPARAM da
 // CScreenWnd
 
 CScreenWnd::CScreenWnd()
-{
-}
-
-CScreenWnd::~CScreenWnd()
+	: m_pColorDlg(nullptr)
 {
 }
 

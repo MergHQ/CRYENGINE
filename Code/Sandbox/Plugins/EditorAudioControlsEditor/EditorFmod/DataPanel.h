@@ -34,8 +34,6 @@ public:
 	void Reset();
 	void OnAboutToReload();
 	void OnReloaded();
-	void OnConnectionAdded() const;
-	void OnConnectionRemoved() const;
 	void OnSelectConnectedItem(ControlId const id);
 
 private:

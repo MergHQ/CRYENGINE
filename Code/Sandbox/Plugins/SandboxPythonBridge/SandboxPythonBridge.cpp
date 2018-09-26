@@ -74,10 +74,10 @@ class PythonViewPaneWidget : public IPane
 	friend class PythonViewPaneClass;
 
 public:
-	PythonViewPaneWidget(PyObject* pWidgetType, const char* name) : IPane()
-		, name(name)
-	{
-		pythonWidget = InstantiateWidgetFromPython(pWidgetType);
+	PythonViewPaneWidget(PyObject* pWidgetType, const char* name)
+		: name(name)
+		, pythonWidget(InstantiateWidgetFromPython(pWidgetType))
+	{		
 	}
 
 	~PythonViewPaneWidget()

@@ -100,7 +100,7 @@ public:
 	QString    GetSelectedItem();
 	QString    SelectNext();
 
-	void       SetHistoryMatches(const Messages::SAutoCompleteReply item)        { m_model.Set(item); }
+	void       SetHistoryMatches(const Messages::SAutoCompleteReply& item)       { m_model.Set(item); }
 	void       AddHistoryMatch(Messages::SAutoCompleteReply::SItem newMatchItem) { m_historyReply.matches.push_back(newMatchItem); }
 
 	void       DisplayHistory();

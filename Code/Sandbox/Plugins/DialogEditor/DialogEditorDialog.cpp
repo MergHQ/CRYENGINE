@@ -689,9 +689,7 @@ BOOL CDialogEditorDialog::Create(DWORD dwStyle, const RECT& rect, CWnd* pParentW
 //////////////////////////////////////////////////////////////////////////
 BOOL CDialogEditorDialog::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo)
 {
-	BOOL res = FALSE;
-
-	res = m_View.OnCmdMsg(nID, nCode, pExtra, pHandlerInfo);
+	BOOL res = m_View.OnCmdMsg(nID, nCode, pExtra, pHandlerInfo);
 	if (res)
 		return res;
 

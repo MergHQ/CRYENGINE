@@ -142,7 +142,7 @@ void CNamedData::Serialize(CArchive& ar)
 		int iSize = m_blocks.size();
 		ar << iSize;
 
-		for (TBlocks::iterator it = m_blocks.begin(); it != m_blocks.end(); it++)
+		for (TBlocks::iterator it = m_blocks.begin(); it != m_blocks.end(); ++it)
 		{
 			string key = it->first;
 			DataBlock* pBlock = it->second;
@@ -193,7 +193,6 @@ void CNamedData::Serialize(CArchive& ar)
 			unsigned int nSize = 0;
 			unsigned int nOriginalSize = 0;
 			unsigned int flags = 0;
-			bool bCompressed = false;
 
 			DataBlock* pBlock = new DataBlock;
 
@@ -203,7 +202,7 @@ void CNamedData::Serialize(CArchive& ar)
 			ar >> flags;
 
 			nSize = nSizeFlags & (~(1 << 31));
-			bCompressed = (nSizeFlags & (1 << 31)) != 0;
+			bool bCompressed = (nSizeFlags & (1 << 31)) != 0;
 
 			if (nSize)
 			{
@@ -230,7 +229,7 @@ void CNamedData::Serialize(CArchive& ar)
 
 void CNamedData::Save(CPakFile& pakFile)
 {
-	for (TBlocks::iterator it = m_blocks.begin(); it != m_blocks.end(); it++)
+	for (TBlocks::iterator it = m_blocks.begin(); it != m_blocks.end(); ++it)
 	{
 		string key = it->first;
 		DataBlock* pBlock = it->second;
@@ -256,7 +255,7 @@ void CNamedData::Save(const string& levelPath)
 {
 	ICryPak* const pCryPak = GetISystem()->GetIPak();
 
-	for (TBlocks::iterator it = m_blocks.begin(); it != m_blocks.end(); it++)
+	for (TBlocks::iterator it = m_blocks.begin(); it != m_blocks.end(); ++it)
 	{
 		string key = it->first;
 		DataBlock* pBlock = it->second;

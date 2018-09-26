@@ -668,33 +668,33 @@ void CLevelExplorer::OnContextMenuForSingleLayer(CAbstractMenu& menu, CObjectLay
 
 	int collapseSection = menu.GetNextEmptySection();
 
-	auto action = menu.CreateAction(tr("Expand all"), collapseSection);
+	menu.CreateAction(tr("Expand all"), collapseSection);
 
-	action = menu.CreateAction(tr("Collapse all"), collapseSection);
+	menu.CreateAction(tr("Collapse all"), collapseSection);
 
 	int hideFreezeObjectsSection = menu.GetNextEmptySection();
 
 	if (AllFrozenInLayer(layer))
 	{
-		action = menu.CreateAction(tr("Unfreeze objects in layer"), hideFreezeObjectsSection);
+		menu.CreateAction(tr("Unfreeze objects in layer"), hideFreezeObjectsSection);
 	}
 	else
 	{
-		action = menu.CreateAction(tr("Freeze objects in layer"), hideFreezeObjectsSection);
+		menu.CreateAction(tr("Freeze objects in layer"), hideFreezeObjectsSection);
 	}
 
 	if (AllHiddenInLayer(layer))
 	{
-		action = menu.CreateAction(tr("Unhide objects in layer"), hideFreezeObjectsSection);
+		menu.CreateAction(tr("Unhide objects in layer"), hideFreezeObjectsSection);
 	}
 	else
 	{
-		action = menu.CreateAction(tr("Hide objects in layer"), hideFreezeObjectsSection);
+		menu.CreateAction(tr("Hide objects in layer"), hideFreezeObjectsSection);
 	}
 
 	int hideFreezeSection = menu.GetNextEmptySection();
 
-	action = menu.CreateAction(tr("Visible"), hideFreezeSection);
+	auto action = menu.CreateAction(tr("Visible"), hideFreezeSection);
 	action->setCheckable(true);
 	action->setChecked(layer->IsVisible(false));
 	connect(action, &QAction::toggled, [layer](bool bChecked)

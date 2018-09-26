@@ -49,7 +49,6 @@ public:
 	bool                     OpenScriptFile(const char* path);
 	bool                     ParseComment(const char* tablePath, const char* varName, float* minVal, float* maxVal, float* stepVal, string* desc);
 	static LuaCommentParser* GetInstance();
-	~LuaCommentParser(void);
 	void                     CloseScriptFile();
 protected:
 	int                      FindTables(LuaTable* parentTable = NULL, int offset = 0);

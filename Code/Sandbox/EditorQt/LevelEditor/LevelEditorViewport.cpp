@@ -138,9 +138,9 @@ static bool TryObjectCreate(const CDragDropData* pDragDropData, string& classNam
 }
 
 CLevelEditorViewport::CLevelEditorViewport()
-	: CRenderViewport()
-{
-	m_camFOV = gViewportPreferences.defaultFOV;
+	: m_camFOV(gViewportPreferences.defaultFOV)
+	, m_headerWidget(nullptr)
+{	
 }
 
 CLevelEditorViewport::~CLevelEditorViewport()

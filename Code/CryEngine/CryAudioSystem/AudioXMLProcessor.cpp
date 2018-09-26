@@ -154,6 +154,7 @@ void CAudioXMLProcessor::ParseDefaultControlsFile(XmlNodeRef const pRootNode)
 			         (_stricmp(childNodeTag, s_szSwitchesNodeTag) == 0) ||
 			         (_stricmp(childNodeTag, s_szEnvironmentsNodeTag) == 0) ||
 			         (_stricmp(childNodeTag, s_szPreloadsNodeTag) == 0) ||
+			         (_stricmp(childNodeTag, s_szSettingsNodeTag) == 0) ||
 			         (_stricmp(childNodeTag, s_szEditorDataTag) == 0))
 			{
 				// These tags are valid but ignored here, because no default controls of these type currently exist.
@@ -230,6 +231,7 @@ void CAudioXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EData
 								         _stricmp(szChildNodeTag, s_szParametersNodeTag) == 0 ||
 								         _stricmp(szChildNodeTag, s_szSwitchesNodeTag) == 0 ||
 								         _stricmp(szChildNodeTag, s_szEnvironmentsNodeTag) == 0 ||
+								         _stricmp(szChildNodeTag, s_szSettingsNodeTag) == 0 ||
 								         _stricmp(szChildNodeTag, s_szEditorDataTag) == 0)
 								{
 									// These tags are valid but ignored here.
