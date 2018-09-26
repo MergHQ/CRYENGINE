@@ -4,7 +4,7 @@
 #define NOT_USE_CRY_MEMORY_MANAGER
 
 #include "CryCore/Platform/CryPlatformDefines.h"
-#include <CryCore/Platform/Win64Specific.h>
+#include <CryCore/Platform/WindowsSpecific.h>
 #include <CryCore/Platform/CryWindows.h>
 
 #pragma warning (disable : 4390 4996)
