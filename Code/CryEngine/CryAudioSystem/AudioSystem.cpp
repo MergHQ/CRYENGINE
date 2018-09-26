@@ -899,7 +899,7 @@ char const* CSystem::GetConfigPath() const
 CryAudio::IListener* CSystem::CreateListener(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
 	CATLListener* pListener = nullptr;
-	SListenerRequestData<EListenerRequestType::RegisterListener> const requestData(&pListener, transformation, szName);
+	SManagerRequestData<EManagerRequestType::RegisterListener> const requestData(&pListener, transformation, szName);
 	CAudioRequest request(&requestData);
 	request.flags = ERequestFlags::ExecuteBlocking;
 	PushRequest(request);
@@ -910,22 +910,18 @@ CryAudio::IListener* CSystem::CreateListener(CObjectTransformation const& transf
 ///////////////////////////////////////////////////////////////////////////
 void CSystem::ReleaseListener(CryAudio::IListener* const pIListener)
 {
-	SListenerRequestData<EListenerRequestType::ReleaseListener> const requestData(static_cast<CATLListener*>(pIListener));
+	SManagerRequestData<EManagerRequestType::ReleaseListener> const requestData(static_cast<CATLListener*>(pIListener));
 	CAudioRequest const request(&requestData);
 	PushRequest(request);
 }
 
 //////////////////////////////////////////////////////////////////////////
-CryAudio::IObject* CSystem::CreateObject(SCreateObjectData const& objectData /*= SCreateObjectData::GetEmptyObject()*/, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+CryAudio::IObject* CSystem::CreateObject(SCreateObjectData const& objectData /*= SCreateObjectData::GetEmptyObject()*/)
 {
-	CATLAudioObject* const pObject = new CATLAudioObject(objectData.transformation);
-	SObjectRequestData<EObjectRequestType::RegisterObject> const requestData(objectData);
+	CATLAudioObject* pObject = nullptr;
+	SManagerRequestData<EManagerRequestType::RegisterObject> const requestData(&pObject, objectData);
 	CAudioRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pObject = pObject;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	request.flags = ERequestFlags::ExecuteBlocking;
 	PushRequest(request);
 	return static_cast<CryAudio::IObject*>(pObject);
 }
@@ -933,9 +929,8 @@ CryAudio::IObject* CSystem::CreateObject(SCreateObjectData const& objectData /*=
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ReleaseObject(CryAudio::IObject* const pIObject)
 {
-	SObjectRequestData<EObjectRequestType::ReleaseObject> const requestData;
-	CAudioRequest request(&requestData);
-	request.pObject = static_cast<CATLAudioObject*>(pIObject);
+	SManagerRequestData<EManagerRequestType::ReleaseObject> const requestData(static_cast<CATLAudioObject*>(pIObject));
+	CAudioRequest const request(&requestData);
 	PushRequest(request);
 }
 
@@ -1518,6 +1513,75 @@ ERequestStatus CSystem::ProcessManagerRequest(CAudioRequest const& request)
 			g_pIImpl->GetInfo(pRequestData->implInfo);
 			break;
 		}
+	case EManagerRequestType::RegisterListener:
+		{
+			SManagerRequestData<EManagerRequestType::RegisterListener> const* const pRequestData =
+				static_cast<SManagerRequestData<EManagerRequestType::RegisterListener> const*>(request.GetData());
+			*pRequestData->ppListener = g_listenerManager.CreateListener(pRequestData->transformation, pRequestData->name.c_str());
+			break;
+		}
+	case EManagerRequestType::ReleaseListener:
+		{
+			SManagerRequestData<EManagerRequestType::ReleaseListener> const* const pRequestData =
+				static_cast<SManagerRequestData<EManagerRequestType::ReleaseListener> const* const>(request.GetData());
+
+			CRY_ASSERT(pRequestData->pListener != nullptr);
+
+			if (pRequestData->pListener != nullptr)
+			{
+				g_listenerManager.ReleaseListener(pRequestData->pListener);
+				result = ERequestStatus::Success;
+			}
+
+			break;
+		}
+	case EManagerRequestType::RegisterObject:
+		{
+			SManagerRequestData<EManagerRequestType::RegisterObject> const* const pRequestData =
+				static_cast<SManagerRequestData<EManagerRequestType::RegisterObject> const*>(request.GetData());
+
+			auto const pNewObject = new CATLAudioObject(pRequestData->transformation);
+			g_objectManager.RegisterObject(pNewObject);
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+			pNewObject->Init(pRequestData->name.c_str(), g_pIImpl->ConstructObject(pRequestData->transformation, pRequestData->name.c_str()), pRequestData->entityId);
+#else
+			pNewObject->Init(nullptr, g_pIImpl->ConstructObject(pRequestData->transformation, nullptr), pRequestData->entityId);
+#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+
+			if (pRequestData->setCurrentEnvironments)
+			{
+				SetCurrentEnvironmentsOnObject(pNewObject, INVALID_ENTITYID);
+			}
+
+			SetOcclusionType(*pNewObject, pRequestData->occlusionType);
+			*pRequestData->ppObject = pNewObject;
+			result = ERequestStatus::Success;
+
+			break;
+		}
+	case EManagerRequestType::ReleaseObject:
+		{
+			SManagerRequestData<EManagerRequestType::ReleaseObject> const* const pRequestData =
+				static_cast<SManagerRequestData<EManagerRequestType::ReleaseObject> const* const>(request.GetData());
+
+			CRY_ASSERT(pRequestData->pObject != nullptr);
+
+			if (pRequestData->pObject != nullptr)
+			{
+				if (pRequestData->pObject != g_pObject)
+				{
+					pRequestData->pObject->RemoveFlag(EObjectFlags::InUse);
+					result = ERequestStatus::Success;
+				}
+				else
+				{
+					Cry::Audio::Log(ELogType::Warning, "ATL received a request to release the GlobalAudioObject");
+				}
+			}
+
+			break;
+		}
 	case EManagerRequestType::None:
 		{
 			result = ERequestStatus::Success;
@@ -1936,44 +2000,6 @@ ERequestStatus CSystem::ProcessObjectRequest(CAudioRequest const& request)
 
 			break;
 		}
-	case EObjectRequestType::RegisterObject:
-		{
-			SObjectRequestData<EObjectRequestType::RegisterObject> const* const pRequestData =
-				static_cast<SObjectRequestData<EObjectRequestType::RegisterObject> const*>(request.GetData());
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			pObject->Init(pRequestData->name.c_str(), g_pIImpl->ConstructObject(pRequestData->transformation, pRequestData->name.c_str()), pRequestData->entityId);
-#else
-			pObject->Init(nullptr, g_pIImpl->ConstructObject(pRequestData->transformation, nullptr), pRequestData->entityId);
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-
-			pObject->HandleSetTransformation(pRequestData->transformation);
-
-			if (pRequestData->setCurrentEnvironments)
-			{
-				SetCurrentEnvironmentsOnObject(pObject, INVALID_ENTITYID);
-			}
-
-			SetOcclusionType(*pObject, pRequestData->occlusionType);
-			g_objectManager.RegisterObject(pObject);
-			result = ERequestStatus::Success;
-
-			break;
-		}
-	case EObjectRequestType::ReleaseObject:
-		{
-			if (pObject != g_pObject)
-			{
-				pObject->RemoveFlag(EObjectFlags::InUse);
-				result = ERequestStatus::Success;
-			}
-			else
-			{
-				Cry::Audio::Log(ELogType::Warning, "ATL received a request to release the GlobalAudioObject");
-			}
-
-			break;
-		}
 	case EObjectRequestType::ProcessPhysicsRay:
 		{
 			SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> const* const pRequestData =
@@ -2088,27 +2114,6 @@ ERequestStatus CSystem::ProcessListenerRequest(SRequestData const* const pPassed
 			}
 
 			result = ERequestStatus::Success;
-		}
-		break;
-	case EListenerRequestType::RegisterListener:
-		{
-			SListenerRequestData<EListenerRequestType::RegisterListener> const* const pRequestData =
-				static_cast<SListenerRequestData<EListenerRequestType::RegisterListener> const*>(pPassedRequestData);
-			*pRequestData->ppListener = g_listenerManager.CreateListener(pRequestData->transformation, pRequestData->name.c_str());
-		}
-		break;
-	case EListenerRequestType::ReleaseListener:
-		{
-			SListenerRequestData<EListenerRequestType::ReleaseListener> const* const pRequestData =
-				static_cast<SListenerRequestData<EListenerRequestType::ReleaseListener> const* const>(pPassedRequestData);
-
-			CRY_ASSERT(pRequestData->pListener != nullptr);
-
-			if (pRequestData->pListener != nullptr)
-			{
-				g_listenerManager.ReleaseListener(pRequestData->pListener);
-				result = ERequestStatus::Success;
-			}
 		}
 		break;
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -2594,7 +2599,7 @@ void CSystem::HandleDrawDebug()
 			                      static_cast<uint32>((memInfo.allocated - memInfo.freed) / 1024));
 
 			{
-				CPoolObject<CATLAudioObject, stl::PSyncMultiThread>::Allocator& allocator = CATLAudioObject::GetAllocator();
+				CPoolObject<CATLAudioObject, stl::PSyncNone>::Allocator& allocator = CATLAudioObject::GetAllocator();
 				posY += Debug::g_systemLineHeight;
 				auto mem = allocator.GetTotalMemory();
 				auto pool = allocator.GetCounts();

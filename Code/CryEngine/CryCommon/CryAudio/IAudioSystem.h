@@ -483,7 +483,7 @@ struct IAudioSystem
 	 * @return Pointer to a freshly constructed CryAudio::IObject instance.
 	 * @see ReleaseObject
 	 */
-	virtual IObject* CreateObject(SCreateObjectData const& objectData = SCreateObjectData::GetEmptyObject(), SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+	virtual IObject* CreateObject(SCreateObjectData const& objectData = SCreateObjectData::GetEmptyObject()) = 0;
 
 	/**
 	 * Destructs the passed audio object instance.

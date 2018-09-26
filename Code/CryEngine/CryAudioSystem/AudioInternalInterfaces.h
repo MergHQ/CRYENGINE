@@ -53,6 +53,10 @@ enum class EManagerRequestType : EnumFlagsType
 	ReloadControlsData,
 	GetAudioFileData,
 	GetImplInfo,
+	RegisterListener,
+	ReleaseListener,
+	RegisterObject,
+	ReleaseObject,
 	ExecuteTriggerEx,
 	ExecuteDefaultTrigger,
 	ExecutePreviewTrigger,
@@ -88,8 +92,6 @@ enum class EObjectRequestType : EnumFlagsType
 	SetSwitchState,
 	SetCurrentEnvironments,
 	SetEnvironment,
-	RegisterObject,
-	ReleaseObject,
 	ProcessPhysicsRay,
 	SetName,
 	ToggleAbsoluteVelocityTracking,
@@ -100,8 +102,6 @@ enum class EListenerRequestType : EnumFlagsType
 {
 	None,
 	SetTransformation,
-	RegisterListener,
-	ReleaseListener,
 	SetName,
 };
 
@@ -508,6 +508,102 @@ struct SManagerRequestData<EManagerRequestType::GetImplInfo> final : public SMan
 	virtual ~SManagerRequestData() override = default;
 
 	SImplInfo& implInfo;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SManagerRequestData<EManagerRequestType::RegisterListener> final : public SManagerRequestDataBase
+{
+	explicit SManagerRequestData(CATLListener** const ppListener_, CObjectTransformation const& transformation_, char const* const szName)
+		: SManagerRequestDataBase(EManagerRequestType::RegisterListener)
+		, ppListener(ppListener_)
+		, transformation(transformation_)
+		, name(szName)
+	{}
+
+	explicit SManagerRequestData(SManagerRequestData<EManagerRequestType::RegisterListener> const* const pALRData)
+		: SManagerRequestDataBase(EManagerRequestType::RegisterListener)
+		, ppListener(pALRData->ppListener)
+		, name(pALRData->name)
+	{}
+
+	virtual ~SManagerRequestData() override = default;
+
+	CATLListener** const                       ppListener;
+	CObjectTransformation const                transformation;
+	CryFixedStringT<MaxObjectNameLength> const name;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SManagerRequestData<EManagerRequestType::ReleaseListener> final : public SManagerRequestDataBase
+{
+	explicit SManagerRequestData(CATLListener* const pListener_)
+		: SManagerRequestDataBase(EManagerRequestType::ReleaseListener)
+		, pListener(pListener_)
+	{}
+
+	explicit SManagerRequestData(SManagerRequestData<EManagerRequestType::ReleaseListener> const* const pALRData)
+		: SManagerRequestDataBase(EManagerRequestType::ReleaseListener)
+		, pListener(pALRData->pListener)
+	{}
+
+	virtual ~SManagerRequestData() override = default;
+
+	CATLListener* const pListener;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SManagerRequestData<EManagerRequestType::RegisterObject> final : public SManagerRequestDataBase
+{
+	explicit SManagerRequestData(CATLAudioObject** const ppObject_, SCreateObjectData const& data)
+		: SManagerRequestDataBase(EManagerRequestType::RegisterObject)
+		, ppObject(ppObject_)
+		, name(data.szName)
+		, occlusionType(data.occlusionType)
+		, transformation(data.transformation)
+		, entityId(data.entityId)
+		, setCurrentEnvironments(data.setCurrentEnvironments)
+	{}
+
+	explicit SManagerRequestData(SManagerRequestData<EManagerRequestType::RegisterObject> const* const pAMRData)
+		: SManagerRequestDataBase(EManagerRequestType::RegisterObject)
+		, ppObject(pAMRData->ppObject)
+		, name(pAMRData->name)
+		, occlusionType(pAMRData->occlusionType)
+		, transformation(pAMRData->transformation)
+		, entityId(pAMRData->entityId)
+		, setCurrentEnvironments(pAMRData->setCurrentEnvironments)
+	{}
+
+	virtual ~SManagerRequestData() override = default;
+
+	CATLAudioObject** const                    ppObject;
+	CryFixedStringT<MaxObjectNameLength> const name;
+	EOcclusionType const                       occlusionType;
+	CObjectTransformation const                transformation;
+	EntityId const                             entityId;
+	bool const setCurrentEnvironments;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SManagerRequestData<EManagerRequestType::ReleaseObject> final : public SManagerRequestDataBase
+{
+	explicit SManagerRequestData(CATLAudioObject* const pObject_)
+		: SManagerRequestDataBase(EManagerRequestType::ReleaseObject)
+		, pObject(pObject_)
+	{}
+
+	explicit SManagerRequestData(SManagerRequestData<EManagerRequestType::ReleaseObject> const* const pAMRData)
+		: SManagerRequestDataBase(EManagerRequestType::ReleaseObject)
+		, pObject(pAMRData->pObject)
+	{}
+
+	virtual ~SManagerRequestData() override = default;
+
+	CATLAudioObject* const pObject;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -1046,37 +1142,6 @@ struct SObjectRequestData<EObjectRequestType::SetEnvironment> final : public SOb
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SObjectRequestData<EObjectRequestType::RegisterObject> final : public SObjectRequestDataBase
-{
-	explicit SObjectRequestData(SCreateObjectData const& data)
-		: SObjectRequestDataBase(EObjectRequestType::RegisterObject)
-		, name(data.szName)
-		, occlusionType(data.occlusionType)
-		, transformation(data.transformation)
-		, entityId(data.entityId)
-		, setCurrentEnvironments(data.setCurrentEnvironments)
-	{}
-
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::RegisterObject> const* const pAMRData)
-		: SObjectRequestDataBase(EObjectRequestType::RegisterObject)
-		, name(pAMRData->name)
-		, occlusionType(pAMRData->occlusionType)
-		, transformation(pAMRData->transformation)
-		, entityId(pAMRData->entityId)
-		, setCurrentEnvironments(pAMRData->setCurrentEnvironments)
-	{}
-
-	virtual ~SObjectRequestData() override = default;
-
-	CryFixedStringT<MaxObjectNameLength> const name;
-	EOcclusionType const                       occlusionType;
-	CObjectTransformation const                transformation;
-	EntityId const                             entityId;
-	bool const setCurrentEnvironments;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<>
 struct SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> final : public SObjectRequestDataBase
 {
 	explicit SObjectRequestData(CAudioRayInfo* const pAudioRayInfo_)
@@ -1201,49 +1266,6 @@ struct SListenerRequestData<EListenerRequestType::SetTransformation> final : pub
 
 	CObjectTransformation const transformation;
 	CATLListener* const         pListener;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<>
-struct SListenerRequestData<EListenerRequestType::RegisterListener> final : public SListenerRequestDataBase
-{
-	explicit SListenerRequestData(CATLListener** const ppListener_, CObjectTransformation const& transformation_, char const* const szName)
-		: SListenerRequestDataBase(EListenerRequestType::RegisterListener)
-		, ppListener(ppListener_)
-		, transformation(transformation_)
-		, name(szName)
-	{}
-
-	explicit SListenerRequestData(SListenerRequestData<EListenerRequestType::RegisterListener> const* const pALRData)
-		: SListenerRequestDataBase(EListenerRequestType::RegisterListener)
-		, ppListener(pALRData->ppListener)
-		, name(pALRData->name)
-	{}
-
-	virtual ~SListenerRequestData() override = default;
-
-	CATLListener** const                       ppListener;
-	CObjectTransformation const                transformation;
-	CryFixedStringT<MaxObjectNameLength> const name;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<>
-struct SListenerRequestData<EListenerRequestType::ReleaseListener> final : public SListenerRequestDataBase
-{
-	explicit SListenerRequestData(CATLListener* const pListener_)
-		: SListenerRequestDataBase(EListenerRequestType::ReleaseListener)
-		, pListener(pListener_)
-	{}
-
-	explicit SListenerRequestData(SListenerRequestData<EListenerRequestType::ReleaseListener> const* const pALRData)
-		: SListenerRequestDataBase(EListenerRequestType::ReleaseListener)
-		, pListener(pALRData->pListener)
-	{}
-
-	virtual ~SListenerRequestData() override = default;
-
-	CATLListener* const pListener;
 };
 
 //////////////////////////////////////////////////////////////////////////
