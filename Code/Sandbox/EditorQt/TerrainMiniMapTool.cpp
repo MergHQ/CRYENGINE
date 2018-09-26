@@ -61,8 +61,8 @@ class CUndoTerrainMiniMapTool : public IUndoObject
 {
 public:
 	CUndoTerrainMiniMapTool()
-	{
-		m_Undo = GetIEditorImpl()->GetDocument()->GetCurrentMission()->GetMinimap();
+		: m_Undo{ GetIEditorImpl()->GetDocument()->GetCurrentMission()->GetMinimap() }
+	{	
 	}
 protected:
 	virtual const char* GetDescription() { return "MiniMap Params"; }
@@ -91,14 +91,13 @@ private:
 IMPLEMENT_DYNCREATE(CTerrainMiniMapTool, CEditTool)
 
 CTerrainMiniMapTool::CTerrainMiniMapTool()
-	: m_bGenerationFinished(true)
+	: m_minimap(GetIEditorImpl()->GetDocument()->GetCurrentMission()->GetMinimap())
+	, m_bDragging(false)
+	, b_stateScreenShot(false)
+	, m_exportDds(true)
+	, m_exportTif(true)
+	, m_bGenerationFinished(true)
 {
-	m_minimap = GetIEditorImpl()->GetDocument()->GetCurrentMission()->GetMinimap();
-	m_bDragging = false;
-	b_stateScreenShot = false;
-	m_exportDds = true;
-	m_exportTif = true;
-
 	m_path = PathUtil::GamePathToCryPakPath(GetIEditorImpl()->GetGameEngine()->GetLevelPath().GetString());
 	if (strstr(m_path, ":\\") == nullptr)
 	{

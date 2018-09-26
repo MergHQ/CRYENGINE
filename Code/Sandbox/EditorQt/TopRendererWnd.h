@@ -57,7 +57,6 @@ private:
 
 public:
 	// Display options.
-	bool m_bDisplayLabels;
 	bool m_bShowHeightmap;
 	bool m_bLastShowHeightmapState;
 	bool m_bShowStatObjects;

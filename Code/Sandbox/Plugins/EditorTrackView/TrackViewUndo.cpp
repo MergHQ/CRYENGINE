@@ -95,7 +95,7 @@ std::vector<bool> CUndoAnimKeySelection::SaveKeyStates(CTrackViewSequence* pSequ
 	return selectionState;
 }
 
-void CUndoAnimKeySelection::RestoreKeyStates(CTrackViewSequence* pSequence, const std::vector<bool> keyStates)
+void CUndoAnimKeySelection::RestoreKeyStates(CTrackViewSequence* pSequence, const std::vector<bool>& keyStates)
 {
 	CTrackViewKeyBundle keys = pSequence->GetAllKeys();
 	const unsigned int numkeys = keys.GetKeyCount();

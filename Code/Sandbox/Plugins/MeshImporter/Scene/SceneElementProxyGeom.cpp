@@ -135,7 +135,11 @@ void CSceneElementProxyGeom::Serialize(Serialization::IArchive& ar)
 		if (ar.isInput())
 		{
 			mesh_data* pmd = (mesh_data*)pGeom->GetData();
-			memset(pmd->pMats, m_pPhysGeom->surface_idx, pmd->pMats ? pmd->nTris : 0);
+			if (pmd->pMats)
+			{
+				memset(pmd->pMats, m_pPhysGeom->surface_idx, pmd->nTris);
+			}
+
 		}
 		break;
 	}

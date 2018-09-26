@@ -4,11 +4,13 @@
 
 #include "EditorCommonAPI.h"
 #include "QtUtil.h"
-#include <qnamespace.h>
-#include <QMetaType>
-#include <QVariant>
+
 #include <CrySandbox/CrySignal.h>
+
+#include <QVariant>
 #include <QWidget>
+
+#include <qnamespace.h>
 
 namespace Attributes
 {
@@ -45,8 +47,8 @@ public:
 	}
 
 	CAttributeType(const std::vector<Attributes::IAttributeFilterOperator*>& operators)
+		: m_operators(operators)
 	{
-		m_operators = operators;
 	}
 
 	CAttributeType(Attributes::IAttributeFilterOperator* pOperator)

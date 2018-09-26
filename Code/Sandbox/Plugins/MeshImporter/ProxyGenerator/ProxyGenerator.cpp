@@ -185,7 +185,10 @@ phys_geometry* CProxyGenerator::AddProxyGeom(SPhysProxies* pPhysProxies, IGeomet
 	if (type == GEOM_TRIMESH)
 	{
 		mesh_data* pmd = (mesh_data*)pProxyGeom->GetData();
-		memset(pmd->pMats, 0, pmd->pMats ? pmd->nTris : 0);
+		if (pmd->pMats)
+		{
+			memset(pmd->pMats, 0, pmd->nTris);
+		}
 	}
 	if (replaceIfPresent && pProxyGeom->GetType() == GEOM_TRIMESH)
 	{
