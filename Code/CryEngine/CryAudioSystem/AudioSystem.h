@@ -83,7 +83,7 @@ public:
 	virtual char const* GetConfigPath() const override;
 	virtual IListener*  CreateListener(CObjectTransformation const& transformation, char const* const szName = nullptr) override;
 	virtual void        ReleaseListener(IListener* const pIListener) override;
-	virtual IObject*    CreateObject(SCreateObjectData const& objectData = SCreateObjectData::GetEmptyObject(), SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual IObject*    CreateObject(SCreateObjectData const& objectData = SCreateObjectData::GetEmptyObject()) override;
 	virtual void        ReleaseObject(IObject* const pIObject) override;
 	virtual void        GetFileData(char const* const szName, SFileData& fileData) override;
 	virtual void        GetTriggerData(ControlId const triggerId, STriggerData& triggerData) override;

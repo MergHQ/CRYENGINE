@@ -68,7 +68,7 @@ using ObjectEventSet = std::set<CATLEvent*>;
 using ObjectTriggerImplStates = std::map<TriggerImplId, SAudioTriggerImplState>;
 using ObjectTriggerStates = std::map<TriggerInstanceId, SAudioTriggerInstanceState>;
 
-class CATLAudioObject final : public IObject, public CPoolObject<CATLAudioObject, stl::PSyncMultiThread>
+class CATLAudioObject final : public IObject, public CPoolObject<CATLAudioObject, stl::PSyncNone>
 {
 public:
 
