@@ -2816,7 +2816,7 @@ void CHeightmap::SetWaterLevel(float waterLevel)
 			GetIEditorImpl()->GetSystem()->GetI3DEngine()->GetITerrain()->SetOceanWaterLevel(waterLevel);
 
 	signalWaterLevelChanged();
-};
+}
 
 void CHeightmap::SetHoleAt(const int x, const int y, const bool bHole)
 {

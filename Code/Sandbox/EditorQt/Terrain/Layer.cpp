@@ -26,7 +26,12 @@ UINT CLayer::m_iInstanceCount = 0;
 
 static const char* szReplaceMe = "%ENGINE%/EngineAssets/TextureMsg/ReplaceMe.tif";
 
-CLayer::CLayer() : m_cLayerFilterColor(1, 1, 1), m_fLayerTiling(1), m_fSpecularAmount(0), m_fSortOrder(0), m_fUseRemeshing(0)
+CLayer::CLayer() 
+	: m_cLayerFilterColor(1, 1, 1)
+	, m_fLayerTiling(1)
+	, m_fSpecularAmount(0)
+	, m_fSortOrder(0)
+	, m_fUseRemeshing(0)
 {
 	// One more instance
 	m_iInstanceCount++;

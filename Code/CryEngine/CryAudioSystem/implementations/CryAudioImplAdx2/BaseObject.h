@@ -42,7 +42,7 @@ public:
 	// CryAudio::Impl::IObject
 	virtual void                         Update(float const deltaTime) override                                  {}
 	virtual void                         SetTransformation(CObjectTransformation const& transformation) override {}
-	virtual CObjectTransformation const& GetTransformation() const override                                      { return m_transformation; }
+	virtual CObjectTransformation const& GetTransformation() const override                                      { return CObjectTransformation::GetEmptyObject(); }
 	virtual ERequestStatus               ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent) override;
 	virtual void                         StopAllTriggers() override;
 	virtual ERequestStatus               PlayFile(IStandaloneFile* const pIStandaloneFile) override;
@@ -67,13 +67,12 @@ protected:
 	void UpdateVelocityTracking();
 
 	using Events = std::vector<CEvent*>;
-	Events                m_events;
+	Events              m_events;
 
-	EObjectFlags          m_flags;
-	CObjectTransformation m_transformation;
-	S3DAttributes         m_3dAttributes;
-	CriAtomEx3dSourceHn   m_p3dSource;
-	CriAtomExPlayerHn     m_pPlayer;
+	EObjectFlags        m_flags;
+	S3DAttributes       m_3dAttributes;
+	CriAtomEx3dSourceHn m_p3dSource;
+	CriAtomExPlayerHn   m_pPlayer;
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	float m_absoluteVelocity;

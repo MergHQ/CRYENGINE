@@ -195,7 +195,7 @@ public:
 	}
 };
 
-};
+}
 
 CLevelEditor::CLevelEditor()
 	: CEditor(nullptr)
@@ -203,8 +203,6 @@ CLevelEditor::CLevelEditor()
 	, m_assetBrowser(nullptr)
 	, m_pTagLocations(new CTagLocations())
 {
-	auto cmdManager = GetIEditorImpl()->GetCommandManager();
-	ICommandManager* pCmdMgr = GetIEditorImpl()->GetICommandManager();
 }
 
 CLevelEditor::~CLevelEditor()

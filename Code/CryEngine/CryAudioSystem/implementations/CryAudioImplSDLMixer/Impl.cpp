@@ -545,20 +545,15 @@ void CImpl::DestructSetting(ISetting const* const pISetting)
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructGlobalObject()
 {
-	return static_cast<IObject*>(new CObject(0));
+	return static_cast<IObject*>(new CObject(CObjectTransformation::GetEmptyObject(), 0));
 }
 
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructObject(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
 	static uint32 id = 1;
-	CObject* pObject = new CObject(id++);
-
+	auto const pObject = new CObject(transformation, id++);
 	SoundEngine::RegisterObject(pObject);
-
-#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
-	m_idToName[pObject->m_id] = szName;
-#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 
 	return static_cast<IObject*>(pObject);
 }

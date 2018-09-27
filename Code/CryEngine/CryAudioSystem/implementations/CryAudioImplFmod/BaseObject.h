@@ -49,7 +49,7 @@ public:
 	// CryAudio::Impl::IObject
 	virtual void                         Update(float const deltaTime) override;
 	virtual void                         SetTransformation(CObjectTransformation const& transformation) override {}
-	virtual CObjectTransformation const& GetTransformation() const override                                      { return m_transformation; }
+	virtual CObjectTransformation const& GetTransformation() const override                                      { return CObjectTransformation::GetEmptyObject(); }
 	virtual ERequestStatus               ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent) override;
 	virtual void                         StopAllTriggers() override;
 	virtual ERequestStatus               PlayFile(IStandaloneFile* const pIStandaloneFile) override;
@@ -81,10 +81,8 @@ protected:
 	std::vector<CBaseStandaloneFile*>           m_pendingFiles;
 
 	FMOD_3D_ATTRIBUTES                          m_attributes;
-	float                 m_occlusion = 0.0f;
-	float                 m_absoluteVelocity = 0.0f;
-
-	CObjectTransformation m_transformation;
+	float m_occlusion = 0.0f;
+	float m_absoluteVelocity = 0.0f;
 };
 
 using Objects = std::vector<CBaseObject*>;

@@ -116,7 +116,7 @@ CEditorImpl::CEditorImpl(CGameEngine* ge)
 
 	m_pLevelIndependentFileMan = new CLevelIndependentFileMan;
 	m_pLevelEditorSharedState.reset(new CLevelEditorSharedState);
-	m_pExportManager = 0;
+	m_pExportManager = nullptr;
 	SetMasterCDFolder();
 	m_bExiting = false;
 	m_pClassFactory = CClassFactory::Instance();
@@ -133,7 +133,6 @@ CEditorImpl::CEditorImpl(CGameEngine* ge)
 	m_pAssetManager = new CAssetManager();
 	CAssetModel::CAutoRegisterColumn::RegisterAll();
 	m_pPolledKeyManager = new CPolledKeyManager();
-	m_pConsoleSync = 0;
 	m_pEditorFileMonitor.reset(new CEditorFileMonitor());
 	m_pBackgroundTaskManager.reset(new BackgroundTaskManager::CTaskManager);
 	m_pBackgroundScheduleManager.reset(new BackgroundScheduleManager::CScheduleManager);
@@ -163,7 +162,7 @@ CEditorImpl::CEditorImpl(CGameEngine* ge)
 	m_pFlowGraphDebuggerEditor = new CFlowGraphDebuggerEditor;
 	m_pMatFxGraphManager = new CMaterialFXGraphMan;
 	m_pDevManager = new CDevManager();
-	m_pSourceControl = 0;
+	m_pSourceControl = nullptr;
 	m_pScriptEnv = new EditorScriptEnvironment();
 
 	m_pResourceSelectorHost.reset(CreateResourceSelectorHost());

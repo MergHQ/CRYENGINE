@@ -15,7 +15,6 @@
 class CAIManager;
 class CBaseLibraryDialog;
 class CClassFactory;
-class CConsoleSynchronization;
 class CCustomActionsEditorManager;
 class CEditorCommandManager;
 class CEditorFileMonitor;
@@ -382,8 +381,6 @@ protected:
 	//! Currently used ruler
 	CRuler*                                  m_pRuler;
 	EditorScriptEnvironment*                 m_pScriptEnv;
-	//! CConsole Synchronization
-	CConsoleSynchronization*                 m_pConsoleSync;
 
 	CLevelIndependentFileMan*                m_pLevelIndependentFileMan;
 	std::unique_ptr<CLevelEditorSharedState> m_pLevelEditorSharedState;

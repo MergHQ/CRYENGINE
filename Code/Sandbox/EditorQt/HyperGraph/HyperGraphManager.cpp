@@ -14,13 +14,11 @@
 #include "Nodes/MissingNode.h"
 #include "Controls/HyperGraphEditorWnd.h"
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraphManager::Init()
 {
 	m_notifyListenersDisabled = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CHyperGraphDialog* CHyperGraphManager::OpenView(IHyperGraph* pGraph)
 {
 	CWnd* pWnd = GetIEditorImpl()->FindView("Flow Graph");
@@ -37,7 +35,6 @@ CHyperGraphDialog* CHyperGraphManager::OpenView(IHyperGraph* pGraph)
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CHyperNode* CHyperGraphManager::CreateNode(CHyperGraph* pGraph, const char* sNodeClass, HyperNodeID nodeId, const Gdiplus::PointF& /* pos */, CBaseObject* pObj, bool bAllowMissing)
 {
 	// AlexL: ignore pos, as a SetPos would screw up Undo. And it will be set afterwards anyway
@@ -119,7 +116,6 @@ CHyperNode* CHyperGraphManager::CreateNode(CHyperGraph* pGraph, const char* sNod
 	return NULL;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraphManager::GetPrototypes(std::vector<CString>& prototypes, bool bForUI, NodeFilterFunctor filterFunc)
 {
 	prototypes.clear();
@@ -142,7 +138,6 @@ void CHyperGraphManager::GetPrototypes(std::vector<CString>& prototypes, bool bF
 #endif
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraphManager::GetPrototypesEx(std::vector<THyperNodePtr>& prototypes, bool bForUI, NodeFilterFunctor filterFunc /* = NodeFilterFunctor( */)
 {
 	prototypes.clear();
@@ -157,7 +152,6 @@ void CHyperGraphManager::GetPrototypesEx(std::vector<THyperNodePtr>& prototypes,
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraphManager::SendNotifyEvent(EHyperGraphEvent event, IHyperGraph* pGraph, IHyperNode* pNode)
 {
 	if (m_notifyListenersDisabled)
@@ -167,12 +161,11 @@ void CHyperGraphManager::SendNotifyEvent(EHyperGraphEvent event, IHyperGraph* pG
 	for (Listeners::iterator it = m_listeners.begin(); it != m_listeners.end(); it = next)
 	{
 		next = it;
-		next++;
+		++next;
 		(*it)->OnHyperGraphManagerEvent(event, pGraph, pNode);
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraphManager::SetGUIControlsProcessEvents(bool active, bool refreshTreeCtrList)
 {
 	CWnd* pWnd = GetIEditorImpl()->FindView("Flow Graph");
@@ -184,7 +177,6 @@ void CHyperGraphManager::SetGUIControlsProcessEvents(bool active, bool refreshTr
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraphManager::SetCurrentViewedGraph(CHyperGraph* pGraph)
 {
 	CWnd* pWnd = GetIEditorImpl()->FindView("Flow Graph");
@@ -196,13 +188,11 @@ void CHyperGraphManager::SetCurrentViewedGraph(CHyperGraph* pGraph)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraphManager::AddListener(IHyperGraphManagerListener* pListener)
 {
 	stl::push_back_unique(m_listeners, pListener);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraphManager::RemoveListener(IHyperGraphManagerListener* pListener)
 {
 	stl::find_and_erase(m_listeners, pListener);

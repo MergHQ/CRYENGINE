@@ -330,10 +330,9 @@ std::vector<std::string> PyGetObjectLayer(const std::vector<std::string>& names)
 			}
 		}
 	}
-	std::set<std::string>::iterator it;
-	for (it = tempSet.begin(); it != tempSet.end(); it++)
+	for (const auto& str : tempSet)
 	{
-		result.push_back(it->c_str());
+		result.push_back(str);
 	}
 	return result;
 }
@@ -422,7 +421,7 @@ std::vector<std::string> PyGetObjectChildren(const char* pName)
 		return result;
 	}
 
-	for (std::vector<_smart_ptr<CBaseObject>>::iterator it = objectVector.begin(); it != objectVector.end(); it++)
+	for (std::vector<_smart_ptr<CBaseObject>>::iterator it = objectVector.begin(); it != objectVector.end(); ++it)
 	{
 		result.push_back(static_cast<std::string>(it->get()->GetName()));
 	}

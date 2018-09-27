@@ -18,8 +18,9 @@ namespace Impl
 namespace SDL_mixer
 {
 //////////////////////////////////////////////////////////////////////////
-CObject::CObject(uint32 const id)
+CObject::CObject(CObjectTransformation const& transformation, uint32 const id)
 	: m_id(id)
+	, m_transformation(transformation)
 {
 }
 

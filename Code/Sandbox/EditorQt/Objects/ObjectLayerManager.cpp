@@ -196,7 +196,7 @@ void CObjectLayerManager::ClearLayers(bool bNotify /*= true*/)
 		//CLayerChangeEvent(CLayerChangeEvent::LE_BEFORE_REMOVE, pLayer).Send();
 
 		itnext = it;
-		itnext++;
+		++itnext;
 		m_layersMap.erase(it);
 
 		//CLayerChangeEvent(CLayerChangeEvent::LE_AFTER_REMOVE, pLayer).Send();

@@ -83,7 +83,6 @@ private:
 	ICVar* m_pCVarFileExtension;
 
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
-	std::map<uint32, string>             m_idToName;
 	CryFixedStringT<MaxInfoStringLength> m_name;
 #endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 };

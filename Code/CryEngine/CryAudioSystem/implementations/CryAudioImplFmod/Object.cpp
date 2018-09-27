@@ -26,11 +26,14 @@ namespace Fmod
 {
 //////////////////////////////////////////////////////////////////////////
 CObject::CObject(CObjectTransformation const& transformation)
-	: m_previousAbsoluteVelocity(0.0f)
+	: m_transformation(transformation)
+	, m_previousAbsoluteVelocity(0.0f)
 	, m_position(transformation.GetPosition())
 	, m_previousPosition(transformation.GetPosition())
 	, m_velocity(ZERO)
 {
+	Fill3DAttributeTransformation(transformation, m_attributes);
+	Set3DAttributes();
 }
 
 //////////////////////////////////////////////////////////////////////////
