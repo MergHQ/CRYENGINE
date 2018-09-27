@@ -735,6 +735,8 @@ void CD3D9Renderer::SetGamma(float fGamma, float fBrightness, float fContrast, b
 
 	SGammaRamp gamma;
 
+	// Code kept for possible backward compatibility
+	const bool bModifyOldTable = false;
 	float fInvGamma = 1.f / fGamma;
 
 	float fAdd = (fBrightness - 0.5f) * 0.5f - fContrast * 0.5f + 0.25f;
@@ -744,17 +746,26 @@ void CD3D9Renderer::SetGamma(float fGamma, float fBrightness, float fContrast, b
 	{
 		float pfInput[3];
 
-		pfInput[0] = (float)(orgGamma.red[i] >> 8) / 255.f;
-		pfInput[1] = (float)(orgGamma.green[i] >> 8) / 255.f;
-		pfInput[2] = (float)(orgGamma.blue[i] >> 8) / 255.f;
+		if (bModifyOldTable)
+		{
+			pfInput[0] = (float)(orgGamma.red  [i] >> 8) / 255.f;
+			pfInput[1] = (float)(orgGamma.green[i] >> 8) / 255.f;
+			pfInput[2] = (float)(orgGamma.blue [i] >> 8) / 255.f;
+		}
+		else
+		{
+			pfInput[0] = i / 255.f;
+			pfInput[1] = i / 255.f;
+			pfInput[2] = i / 255.f;
+		}
 
 		pfInput[0] = pow_tpl(pfInput[0], fInvGamma) * fMul + fAdd;
 		pfInput[1] = pow_tpl(pfInput[1], fInvGamma) * fMul + fAdd;
 		pfInput[2] = pow_tpl(pfInput[2], fInvGamma) * fMul + fAdd;
 
-		gamma.red[i] = CLAMP(int_round(pfInput[0] * 65535.f), 0, 65535);
+		gamma.red  [i] = CLAMP(int_round(pfInput[0] * 65535.f), 0, 65535);
 		gamma.green[i] = CLAMP(int_round(pfInput[1] * 65535.f), 0, 65535);
-		gamma.blue[i] = CLAMP(int_round(pfInput[2] * 65535.f), 0, 65535);
+		gamma.blue [i] = CLAMP(int_round(pfInput[2] * 65535.f), 0, 65535);
 	}
 
 	SetDeviceGamma(&gamma);
