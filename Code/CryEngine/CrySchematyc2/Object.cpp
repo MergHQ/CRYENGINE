@@ -826,12 +826,6 @@ namespace Schematyc2
 	{}
 
 	//////////////////////////////////////////////////////////////////////////
-	int32 CObject::GetNetworkAspect() const
-	{
-		const bool bClientAuthority = m_pNetworkObject ? m_pNetworkObject->ClientAuthority() : false;
-		return bClientAuthority ? m_clientAspect : m_serverAspect;
-	}
-
 	int32 CObject::GetStateMachineNetworkAspect(const ILibStateMachine& libStateMachine) const
 	{
 		return (libStateMachine.GetNetAuthority() == EStateMachineNetAuthority::Local)
@@ -1773,7 +1767,6 @@ namespace Schematyc2
 		if ((m_flags & EObjectFlags::NetworkReplicateActions) != 0)
 		{
 			const bool isReading = serialize.IsReading();
-			const bool bObjectHasNetworkAuthority = HaveNetworkAuthority();
 
 			for (size_t stateMachineIdx = 0, stateMachineCount = m_stateMachines.size(); stateMachineIdx < stateMachineCount; ++stateMachineIdx)
 			{
