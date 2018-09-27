@@ -201,7 +201,6 @@ namespace Schematyc2
 		void CreateAndInitComponents(const IObjectNetworkSpawnParamsPtr& pNetworkSpawnParams);
 		void CreateAndInitActions();
 
-		int32 GetNetworkAspect() const;
 		int32 GetStateMachineNetworkAspect(const ILibStateMachine& libStateMachine) const;
 		void MarkAspectDirtyForStateMachine(size_t iStateMachine);
 		bool HaveNetworkAuthority() const;
