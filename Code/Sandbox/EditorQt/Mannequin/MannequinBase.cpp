@@ -1340,7 +1340,7 @@ void CFragmentHistory::SaveSequence(const char* filename)
 void CFragmentHistory::UpdateScopeMasks(const SMannequinContexts* contexts, const TagState& globalTags)
 {
 	const uint32 numScopes = contexts->m_controllerDef->m_scopeIDs.GetNum();
-	for (THistoryBuffer::iterator iter = m_items.begin(); iter != m_items.end(); iter++)
+	for (THistoryBuffer::iterator iter = m_items.begin(); iter != m_items.end(); ++iter)
 	{
 		SHistoryItem& item = *iter;
 		if (item.type == SHistoryItem::Fragment)

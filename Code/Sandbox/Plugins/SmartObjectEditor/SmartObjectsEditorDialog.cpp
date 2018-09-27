@@ -2166,7 +2166,7 @@ void CSmartObjectsEditorDialog::SyncSelection()
 		while (it != itEnd)
 		{
 			next = it;
-			next++;
+			++next;
 			if (!it->second)
 				m_mapHelperObjects.erase(it);
 			it = next;

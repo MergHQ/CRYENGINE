@@ -14,7 +14,6 @@ class CMannequinEditorPage : public CToolbarDialog
 
 public:
 	CMannequinEditorPage(UINT nIDTemplate, CWnd* pParentWnd = NULL);
-	virtual ~CMannequinEditorPage();
 
 	virtual CMannequinModelViewport* ModelViewport() const { return NULL; }
 	virtual CMannDopeSheet*          TrackPanel()          { return NULL; }

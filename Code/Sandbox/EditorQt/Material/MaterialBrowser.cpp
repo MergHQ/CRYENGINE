@@ -2005,7 +2005,7 @@ void CMaterialBrowserCtrl::OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseIt
 			for (Items::iterator it = m_items.begin(); it != m_items.end(); it = next)
 			{
 				next = it;
-				next++;
+				++next;
 				CMaterialBrowserRecord* pRecord = *it;
 				if (pRecord->pMaterial == pItem)
 				{

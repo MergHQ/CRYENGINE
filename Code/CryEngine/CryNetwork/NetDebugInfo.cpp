@@ -139,7 +139,7 @@ CNetDebugInfo::CNetDebugInfo()
 
 CNetDebugInfo::~CNetDebugInfo()
 {
-	for (std::vector<CNetDebugInfoSection*>::iterator it = m_sections.begin(); it != m_sections.end(); it++)
+	for (std::vector<CNetDebugInfoSection*>::iterator it = m_sections.begin(); it != m_sections.end(); ++it)
 	{
 		delete (*it);
 	}
@@ -164,7 +164,7 @@ void CNetDebugInfo::Tick()
 		SNetworkProfilingStats debugStats;
 		CNetwork::Get()->GetProfilingStatistics(&debugStats);
 
-		for (std::vector<CNetDebugInfoSection*>::iterator it = m_sections.begin(); it != m_sections.end(); it++)
+		for (std::vector<CNetDebugInfoSection*>::iterator it = m_sections.begin(); it != m_sections.end(); ++it)
 		{
 			(*it)->Tick(&debugStats);
 

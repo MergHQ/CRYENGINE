@@ -13,11 +13,6 @@ CMannequinEditorPage::CMannequinEditorPage(UINT nIDTemplate, CWnd* pParentWnd)
 {
 }
 
-CMannequinEditorPage::~CMannequinEditorPage()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 BOOL CMannequinEditorPage::PreTranslateMessage(MSG* pMsg)
 {
 	if (pMsg->message == WM_KEYDOWN)
@@ -49,7 +44,7 @@ BOOL CMannequinEditorPage::PreTranslateMessage(MSG* pMsg)
 			if (pNodeCtrl)
 			{
 				std::vector<CSequencerNode*>::reverse_iterator itEnd = pSelectedNodes.rend();
-				for (std::vector<CSequencerNode*>::reverse_iterator it = pSelectedNodes.rbegin(); it != itEnd; it++)
+				for (std::vector<CSequencerNode*>::reverse_iterator it = pSelectedNodes.rbegin(); it != itEnd; ++it)
 				{
 					if (!pNodeCtrl->IsNodeExpanded(*it))
 					{

@@ -228,7 +228,7 @@ void PyGameMaterial::UpdateMaterial()
 		pMaterial->SetName(m_matName);
 	}
 
-	for (std::vector<pPyGameSubMaterial>::iterator iter = m_matSubMaterials.begin(); iter != m_matSubMaterials.end(); iter++)
+	for (std::vector<pPyGameSubMaterial>::iterator iter = m_matSubMaterials.begin(); iter != m_matSubMaterials.end(); ++iter)
 	{
 		iter->get()->UpdateSubMaterial();
 	}

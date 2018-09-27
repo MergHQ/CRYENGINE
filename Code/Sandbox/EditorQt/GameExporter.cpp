@@ -1843,7 +1843,7 @@ void CGameExporter::ExportLevelPerLayerResourceList(const string& path)
 
 		const char* acLayerName = (const char*)pLayer->GetName();
 
-		for (CUsedResources::TResourceFiles::const_iterator it = resources.files.begin(); it != resources.files.end(); it++)
+		for (CUsedResources::TResourceFiles::const_iterator it = resources.files.begin(); it != resources.files.end(); ++it)
 		{
 			string filePath = PathUtil::MakeGamePath((*it).GetString());
 			filePath.MakeLower();

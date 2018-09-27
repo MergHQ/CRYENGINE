@@ -378,7 +378,7 @@ public:
 			}
 		}
 
-		for (NodesMap::iterator nit = nodes.begin(); nit != nodes.end(); nit++)
+		for (NodesMap::iterator nit = nodes.begin(); nit != nodes.end(); ++nit)
 		{
 			if (m_parentVar)
 			{
@@ -390,7 +390,7 @@ public:
 			}
 		}
 
-		for (NodesMap::iterator nit1 = listNodes.begin(); nit1 != listNodes.end(); nit1++)
+		for (NodesMap::iterator nit1 = listNodes.begin(); nit1 != listNodes.end(); ++nit1)
 		{
 			if (m_parentVar)
 			{
@@ -1163,7 +1163,7 @@ void CEntityScript::SetEventsTable(CEntityObject* pEntity)
 		CEntityEventTarget& et = pEntity->GetEventTarget(i);
 		sourceEvents.insert(et.sourceEvent);
 	}
-	for (std::set<string>::iterator it = sourceEvents.begin(); it != sourceEvents.end(); it++)
+	for (std::set<string>::iterator it = sourceEvents.begin(); it != sourceEvents.end(); ++it)
 	{
 		SmartScriptTable pTrgEvents(scriptSystem, false);
 		string sourceEvent = *it;

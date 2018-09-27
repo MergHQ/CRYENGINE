@@ -613,7 +613,7 @@ bool CBaseObject::Init(CBaseObject* prev, const string& file)
 
 CBaseObject::~CBaseObject()
 {
-	for (BaseObjectArray::iterator c = m_children.begin(); c != m_children.end(); c++)
+	for (BaseObjectArray::iterator c = m_children.begin(); c != m_children.end(); ++c)
 	{
 		CBaseObject* child = *c;
 		child->m_parent = 0;

@@ -283,7 +283,7 @@ void CObjectArchive::SortObjects()
 
 void CObjectArchive::ResolveObjectsGuids()
 {
-	for (Callbacks::iterator it = m_resolveCallbacks.begin(); it != m_resolveCallbacks.end(); it++)
+	for (Callbacks::iterator it = m_resolveCallbacks.begin(); it != m_resolveCallbacks.end(); ++it)
 	{
 		Callback& cb = it->second;
 		CryGUID objectId = ResolveID(it->first);

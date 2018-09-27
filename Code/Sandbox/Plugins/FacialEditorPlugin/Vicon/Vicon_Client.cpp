@@ -231,7 +231,7 @@ bool recieve(SOCKET Socket, double& Val)
 //////////////////////////////////////////////////////////////////////////
 std::vector<string>::const_iterator iFind(const std::vector<string>& vi, const string& sElem)
 {
-	for (std::vector<string>::const_iterator i = vi.begin(); i != vi.end(); i++)
+	for (std::vector<string>::const_iterator i = vi.begin(); i != vi.end(); ++i)
 	{
 		const string& sTest = (*i);
 		if (_stricmp(sElem.c_str(), sTest.c_str()) == 0)
@@ -253,7 +253,7 @@ void CViconClient::Disconnect()
 	}
 
 	int k = 0;
-	for (std::vector<EntityId>::iterator i = m_lstEntities.begin(); i != m_lstEntities.end(); i++, k++)
+	for (std::vector<EntityId>::iterator i = m_lstEntities.begin(); i != m_lstEntities.end(); ++i, ++k)
 	{
 		IEntity* pEnt = gEnv->pEntitySystem->GetEntity(*i);
 		if (!pEnt)
@@ -354,7 +354,7 @@ void CViconClient::ExternalPostProcessing(ICharacterInstance* pInstance)
 
 		//initialize the Biped Skeleton
 		uint32 IsInitialized = 0;
-		for (iBody = m_BodyChannels.begin(), iBodyData = m_bodyPositions.begin(); iBody != m_BodyChannels.end(); iBody++, iBodyData++)
+		for (iBody = m_BodyChannels.begin(), iBodyData = m_bodyPositions.begin(); iBody != m_BodyChannels.end(); ++iBody, ++iBodyData)
 		{
 			IsInitialized = 0;
 			if (iBodyData->m_IsInitialized == 0)
@@ -1014,7 +1014,7 @@ bool CViconClient::Connect(IConsoleCmdArgs* pArgs)
 
 	std::vector<string>::iterator iInfo;
 
-	for (iInfo = m_info.begin(); iInfo != m_info.end(); iInfo++)
+	for (iInfo = m_info.begin(); iInfo != m_info.end(); ++iInfo)
 	{
 		long int s;
 		char c[255];
@@ -1048,7 +1048,7 @@ bool CViconClient::Connect(IConsoleCmdArgs* pArgs)
 	//	The m_info packets now contain the channel names.
 	//	Identify the channels with the various dof's.
 
-	for (iInfo = m_info.begin(); iInfo != m_info.end(); iInfo++)
+	for (iInfo = m_info.begin(); iInfo != m_info.end(); ++iInfo)
 	{
 		//	Extract the channel type
 
@@ -1145,7 +1145,7 @@ bool CViconClient::Connect(IConsoleCmdArgs* pArgs)
 
 	int nCounter = 0;
 	char szTemp[256];
-	for (iBody = m_BodyChannels.begin(); iBody != m_BodyChannels.end(); iBody++, nCounter++)
+	for (iBody = m_BodyChannels.begin(); iBody != m_BodyChannels.end(); ++iBody, ++nCounter)
 	{
 		//gEnv->pLog->Log("<Vicon Client> Body=%s T=(%f %f %f) R=(%f %f %f)",iBody->Name.c_str(),
 		gEnv->pLog->Log("<Vicon Client> Body(%d)=%s", nCounter, iBody->Name.c_str());
@@ -1163,7 +1163,7 @@ bool CViconClient::Connect(IConsoleCmdArgs* pArgs)
 				szStart++; // skip ":"
 
 				bool bFound = false;
-				for (std::vector<string>::iterator it = m_lstEntityNames.begin(); it != m_lstEntityNames.end(); it++)
+				for (std::vector<string>::iterator it = m_lstEntityNames.begin(); it != m_lstEntityNames.end(); ++it)
 				{
 					string sName = (*it);
 					if (strcmp(sName.c_str(), szTemp) == 0)
@@ -1299,7 +1299,7 @@ bool CViconClient::Connect(IConsoleCmdArgs* pArgs)
 	int nPosMarker = 0;
 	for (iMarker = m_MarkerChannels.begin(),
 	     iMarkerData = m_markerPositions.begin();
-	     iMarker != m_MarkerChannels.end(); iMarker++, iMarkerData++, nPosMarker++)
+	     iMarker != m_MarkerChannels.end(); ++iMarker, ++iMarkerData, ++nPosMarker)
 	{
 		gEnv->pLog->Log("<Vicon Client> Marker(%d)=%s", nPosMarker, iMarker->Name.c_str());
 
@@ -1434,7 +1434,7 @@ void CViconClient::Update()
 
 	if (bLogging)
 		gEnv->pLog->Log("STEP 5");
-	for (iData = m_data.begin(); iData != m_data.end(); iData++)
+	for (iData = m_data.begin(); iData != m_data.end(); ++iData)
 	{
 		if (!recieve(m_SocketHandle, *iData))
 		{
@@ -1467,7 +1467,7 @@ void CViconClient::Update()
 
 	for (iMarker = m_MarkerChannels.begin(),
 	     iMarkerData = m_markerPositions.begin();
-	     iMarker != m_MarkerChannels.end(); iMarker++, iMarkerData++)
+	     iMarker != m_MarkerChannels.end(); ++iMarker, ++iMarkerData)
 	{
 		iMarkerData->X = m_data[iMarker->X];
 		iMarkerData->Y = m_data[iMarker->Y];
@@ -1489,7 +1489,7 @@ void CViconClient::Update()
 	std::vector<BodyChannel>::iterator iBody;
 	std::vector<BodyData>::iterator iBodyData;
 
-	for (iBody = m_BodyChannels.begin(), iBodyData = m_bodyPositions.begin(); iBody != m_BodyChannels.end(); iBody++, iBodyData++)
+	for (iBody = m_BodyChannels.begin(), iBodyData = m_bodyPositions.begin(); iBody != m_BodyChannels.end(); ++iBody, ++iBodyData)
 	{
 		iBodyData->Joint.q = Quat::exp(Vec3d(m_data[iBody->RX], m_data[iBody->RY], m_data[iBody->RZ]) * 0.5);
 		iBodyData->Joint.t = Vec3d(m_data[iBody->TX], m_data[iBody->TY], m_data[iBody->TZ]) / 1000.0;
@@ -1530,7 +1530,7 @@ void CViconClient::Update()
 
 		for (iBody = m_BodyChannels.begin(),
 		     iBodyData = m_bodyPositions.begin();
-		     iBody != m_BodyChannels.end(); iBody++, iBodyData++)
+		     iBody != m_BodyChannels.end(); ++iBody, ++iBodyData)
 		{
 			if (strncmp(m_lstEntityNames[k].c_str(), iBody->Name.c_str(), nNameLen) != 0)
 				continue; // try next body

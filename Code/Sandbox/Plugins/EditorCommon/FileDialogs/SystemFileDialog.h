@@ -2,17 +2,15 @@
 #pragma once
 
 #include "FileDialogs/ExtensionFilter.h"
-
 #include "EditorCommonAPI.h"
 
 #include <QFileDialog>
+
 #include <vector>
 
 class EDITOR_COMMON_API CSystemFileDialog
 {
 public:
-	typedef std::function<bool (const QString& path)> AcceptFileCallback;
-
 	enum Mode
 	{
 		SelectDirectory,	// ignore files and select a directory
@@ -47,7 +45,7 @@ public:
 
 	int Execute() { return m_dialog.exec(); }
 
-	/// \returns vector with full pathes of all files selected
+	/// \returns vector with full paths of all files selected
 	std::vector<QString> GetSelectedFiles() const;
 
 public:
