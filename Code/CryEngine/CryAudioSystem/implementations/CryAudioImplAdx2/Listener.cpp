@@ -19,7 +19,11 @@ CListener::CListener(CObjectTransformation const& transformation, uint16 const i
 	, m_previousPosition(transformation.GetPosition())
 	, m_transformation(transformation)
 {
-	ZeroStruct(m_3dAttributes);
+	Fill3DAttributeTransformation(transformation, m_3dAttributes);
+	criAtomEx3dListener_SetPosition(pHandle, &m_3dAttributes.pos);
+	criAtomEx3dListener_SetOrientation(pHandle, &m_3dAttributes.fwd, &m_3dAttributes.up);
+	criAtomEx3dListener_SetVelocity(pHandle, &m_3dAttributes.vel);
+	criAtomEx3dListener_Update(pHandle);
 }
 
 //////////////////////////////////////////////////////////////////////////

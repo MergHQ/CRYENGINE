@@ -24,7 +24,7 @@ public:
 	CObject& operator=(CObject const&) = delete;
 	CObject& operator=(CObject&&) = delete;
 
-	explicit CObject(uint32 const id);
+	explicit CObject(CObjectTransformation const& transformation, uint32 const id);
 	virtual ~CObject() override = default;
 
 	// CryAudio::Impl::IObject

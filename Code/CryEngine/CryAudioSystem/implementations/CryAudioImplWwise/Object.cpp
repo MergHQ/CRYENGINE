@@ -70,11 +70,21 @@ CObject::CObject(AkGameObjectID const id, CObjectTransformation const& transform
 	, m_distanceToListener(0.0f)
 	, m_previousRelativeVelocity(0.0f)
 	, m_previousAbsoluteVelocity(0.0f)
+	, m_transformation(transformation)
 	, m_position(transformation.GetPosition())
 	, m_previousPosition(transformation.GetPosition())
 	, m_velocity(ZERO)
 {
 	m_auxSendValues.reserve(4);
+
+	AkSoundPosition soundPos;
+	FillAKObjectPosition(transformation, soundPos);
+	AKRESULT const wwiseResult = AK::SoundEngine::SetPosition(id, soundPos);
+
+	if (!IS_WWISE_OK(wwiseResult))
+	{
+		Cry::Audio::Log(ELogType::Warning, "Wwise - CObject constructor failed with AKRESULT: %d", wwiseResult);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

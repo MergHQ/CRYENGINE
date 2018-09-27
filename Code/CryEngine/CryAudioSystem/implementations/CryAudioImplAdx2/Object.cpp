@@ -27,12 +27,17 @@ static constexpr CriChar8 const* s_szOcclusionAisacName = "occlusion";
 
 //////////////////////////////////////////////////////////////////////////
 CObject::CObject(CObjectTransformation const& transformation)
-	: m_occlusion(0.0f)
+	: m_transformation(transformation)
+	, m_occlusion(0.0f)
 	, m_previousAbsoluteVelocity(0.0f)
 	, m_position(transformation.GetPosition())
 	, m_previousPosition(transformation.GetPosition())
 	, m_velocity(ZERO)
 {
+	Fill3DAttributeTransformation(transformation, m_3dAttributes);
+	criAtomEx3dSource_SetPosition(m_p3dSource, &m_3dAttributes.pos);
+	criAtomEx3dSource_SetOrientation(m_p3dSource, &m_3dAttributes.fwd, &m_3dAttributes.up);
+	criAtomEx3dSource_Update(m_p3dSource);
 }
 
 //////////////////////////////////////////////////////////////////////////
