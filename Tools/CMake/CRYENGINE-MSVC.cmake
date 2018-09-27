@@ -6,7 +6,6 @@ set(MSVC_COMMON_FLAGS
 	/Zc:wchar_t # Parse wchar_t as internal type
 	/GF         # Eliminate Duplicate Strings
 	/Gy         # Enable function level linking
-	/GR-        # Disable RTTI
 	/utf-8      # Set source and execution charset to utf-8
 	/Wv:18      # Disable warnings until SDK depedencies switch to UTF-8/ASCII.
 	/MP         # Build with multiple processes
@@ -19,7 +18,9 @@ set(MSVC_COMMON_FLAGS
 	/wd4068		# 'Unknown pragma' - sometimes need these in code to prevent global suppression.
 )
 string(REPLACE ";" " " MSVC_COMMON_FLAGS "${MSVC_COMMON_FLAGS}")
- 
+
+set(CMAKE_RC_FLAGS /nologo)
+
 # Override cxx flags
 set(CMAKE_CXX_FLAGS "${MSVC_COMMON_FLAGS}" CACHE STRING "C++ Common Flags" FORCE)
 

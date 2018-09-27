@@ -617,6 +617,11 @@ function(CryEngineModule target)
 	elseif(NOT MODULE_FORCE_SHARED)
 		set(MODULES ${MODULES} ${THIS_PROJECT} CACHE INTERNAL "List of engine being built" FORCE)	
 	endif()
+
+	if (MSVC AND NOT ${THIS_PROJECT} STREQUAL "EditorCommon")        # EditorCommon is a special case.
+		target_compile_options(${THIS_PROJECT} PRIVATE 	/GR-)        # Disable RTTI
+	endif()
+
 	apply_compile_settings()
 	if ((OPTION_STATIC_LINKING OR MODULE_FORCE_STATIC) AND NOT MODULE_FORCE_SHARED)
 		target_compile_definitions(${THIS_PROJECT} PRIVATE _LIB -DCRY_IS_MONOLITHIC_BUILD)
