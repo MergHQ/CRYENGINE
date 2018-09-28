@@ -151,6 +151,7 @@ char const* const CImpl::GetFileLocation(SFileInfo* const pFileInfo)
 void CImpl::GetInfo(SImplInfo& implInfo) const
 {
 	implInfo.name = "null-impl";
+	implInfo.folderName = "";
 }
 
 ///////////////////////////////////////////////////////////////////////////

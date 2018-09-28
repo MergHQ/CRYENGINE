@@ -12,6 +12,186 @@
 namespace CryAudio
 {
 //////////////////////////////////////////////////////////////////////////
+void ParseSystemDataFile(char const* const szFolderPath, SPoolSizes& poolSizesout)
+{
+	CryFixedStringT<MaxFilePathLength> rootFolderPath(szFolderPath);
+	rootFolderPath.TrimRight(R"(/\)");
+	CryFixedStringT<MaxFilePathLength + MaxFileNameLength> search(rootFolderPath + "/*.xml");
+	_finddata_t fd;
+	intptr_t handle = gEnv->pCryPak->FindFirst(search.c_str(), &fd);
+
+	if (handle != -1)
+	{
+		CryFixedStringT<MaxFilePathLength + MaxFileNameLength> fileName;
+
+		do
+		{
+			fileName = rootFolderPath.c_str();
+			fileName += "/";
+			fileName += fd.name;
+
+			XmlNodeRef const pRootNode(GetISystem()->LoadXmlFromFile(fileName));
+
+			if (pRootNode != nullptr)
+			{
+				if (_stricmp(pRootNode->getTag(), s_szRootNodeTag) == 0)
+				{
+					uint32 numtriggers = 0;
+					pRootNode->getAttr(s_szNumTriggersAttribute, numtriggers);
+					poolSizesout.triggers += numtriggers;
+
+					uint32 numParameters = 0;
+					pRootNode->getAttr(s_szNumParametersAttribute, numParameters);
+					poolSizesout.parameters += numParameters;
+
+					uint32 numSwitches = 0;
+					pRootNode->getAttr(s_szNumSwitchesAttribute, numSwitches);
+					poolSizesout.switches += numSwitches;
+
+					int32 numStates = 0;
+					pRootNode->getAttr(s_szNumStatesAttribute, numStates);
+					poolSizesout.states += numStates;
+
+					int32 numEnvironments = 0;
+					pRootNode->getAttr(s_szNumEnvironmentsAttribute, numEnvironments);
+					poolSizesout.environments += numEnvironments;
+
+					int32 numPreloads = 0;
+					pRootNode->getAttr(s_szNumPreloadsAttribute, numPreloads);
+					poolSizesout.preloads += numPreloads;
+
+					int32 numSettings = 0;
+					pRootNode->getAttr(s_szNumSettingsAttribute, numSettings);
+					poolSizesout.settings += numSettings;
+
+					int32 numTriggerConnections = 0;
+					pRootNode->getAttr(s_szNumTriggerConnectionsAttribute, numTriggerConnections);
+					poolSizesout.triggerConnections += numTriggerConnections;
+
+					int32 numParameterConnections = 0;
+					pRootNode->getAttr(s_szNumParameterConnectionsAttribute, numParameterConnections);
+					poolSizesout.parameterConnections += numParameterConnections;
+
+					int32 numStateConnections = 0;
+					pRootNode->getAttr(s_szNumStateConnectionsAttribute, numStateConnections);
+					poolSizesout.stateConnections += numStateConnections;
+
+					int32 numEnvironmentConnections = 0;
+					pRootNode->getAttr(s_szNumEnvironmentConnectionsAttribute, numEnvironmentConnections);
+					poolSizesout.environmentConnections += numEnvironmentConnections;
+
+					int32 numSettingConnections = 0;
+					pRootNode->getAttr(s_szNumSettingConnectionsAttribute, numSettingConnections);
+					poolSizesout.settingConnections += numSettingConnections;
+				}
+			}
+		}
+		while (gEnv->pCryPak->FindNext(handle, &fd) >= 0);
+
+		gEnv->pCryPak->FindClose(handle);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void ParseLevelSpecificSystemData(char const* const szFolderPath, SPoolSizes& poolSizesOut)
+{
+	CryFixedStringT<MaxFilePathLength> levelsFolderPath(szFolderPath);
+	levelsFolderPath += "levels/";
+
+	_finddata_t fd;
+	ICryPak* const pCryPak = gEnv->pCryPak;
+	intptr_t const handle = pCryPak->FindFirst(levelsFolderPath + "*", &fd);
+
+	if (handle != -1)
+	{
+		do
+		{
+			if (fd.attrib & _A_SUBDIR)
+			{
+				char const* const szName = fd.name;
+
+				if ((_stricmp(szName, ".") != 0) && (_stricmp(szName, "..") != 0))
+				{
+					char const* const szSubFolderName = levelsFolderPath + szName;
+					SPoolSizes levelPoolSizes;
+
+					ParseSystemDataFile(szSubFolderName, levelPoolSizes);
+
+					poolSizesOut.triggers = std::max(poolSizesOut.triggers, levelPoolSizes.triggers);
+					poolSizesOut.parameters = std::max(poolSizesOut.parameters, levelPoolSizes.parameters);
+					poolSizesOut.switches = std::max(poolSizesOut.switches, levelPoolSizes.switches);
+					poolSizesOut.states = std::max(poolSizesOut.states, levelPoolSizes.states);
+					poolSizesOut.environments = std::max(poolSizesOut.environments, levelPoolSizes.environments);
+					poolSizesOut.preloads = std::max(poolSizesOut.preloads, levelPoolSizes.preloads);
+					poolSizesOut.settings = std::max(poolSizesOut.settings, levelPoolSizes.settings);
+
+					poolSizesOut.triggerConnections = std::max(poolSizesOut.triggerConnections, levelPoolSizes.triggerConnections);
+					poolSizesOut.parameterConnections = std::max(poolSizesOut.parameterConnections, levelPoolSizes.parameterConnections);
+					poolSizesOut.stateConnections = std::max(poolSizesOut.stateConnections, levelPoolSizes.stateConnections);
+					poolSizesOut.environmentConnections = std::max(poolSizesOut.environmentConnections, levelPoolSizes.environmentConnections);
+					poolSizesOut.settingConnections = std::max(poolSizesOut.settingConnections, levelPoolSizes.settingConnections);
+				}
+			}
+		}
+		while (pCryPak->FindNext(handle, &fd) >= 0);
+
+		pCryPak->FindClose(handle);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioXMLProcessor::ParseSystemData()
+{
+	ZeroStruct(g_poolSizes);
+
+	g_pIImpl->GetInfo(g_implInfo);
+	g_configPath = AUDIO_SYSTEM_DATA_ROOT "/";
+	g_configPath += (g_implInfo.folderName + "/" + s_szConfigFolderName + "/").c_str();
+
+	ParseSystemDataFile(g_configPath.c_str(), g_poolSizes);
+
+	// For level specific controls, we take the highest amount of any scope,
+	// to avoid reallocating when the scope changes.
+	SPoolSizes maxLevelPoolSizes;
+	ParseLevelSpecificSystemData(g_configPath.c_str(), maxLevelPoolSizes);
+
+	g_poolSizes.triggers += maxLevelPoolSizes.triggers;
+	g_poolSizes.parameters += maxLevelPoolSizes.parameters;
+	g_poolSizes.switches += maxLevelPoolSizes.switches;
+	g_poolSizes.states += maxLevelPoolSizes.states;
+	g_poolSizes.environments += maxLevelPoolSizes.environments;
+	g_poolSizes.preloads += maxLevelPoolSizes.preloads;
+	g_poolSizes.settings += maxLevelPoolSizes.settings;
+
+	g_poolSizes.triggerConnections += maxLevelPoolSizes.triggerConnections;
+	g_poolSizes.parameterConnections += maxLevelPoolSizes.parameterConnections;
+	g_poolSizes.stateConnections += maxLevelPoolSizes.stateConnections;
+	g_poolSizes.environmentConnections += maxLevelPoolSizes.environmentConnections;
+	g_poolSizes.settingConnections += maxLevelPoolSizes.settingConnections;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	// Used to hide pools without allocations in debug draw.
+	g_debugPoolSizes = g_poolSizes;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
+	// Need to set pool sizes to at least 1, because there could be files that don't contain the
+	// counts yet, which could result in asserts of the pool object.
+	g_poolSizes.triggers = std::max<uint32>(1, g_poolSizes.triggers);
+	g_poolSizes.parameters = std::max<uint32>(1, g_poolSizes.parameters);
+	g_poolSizes.switches = std::max<uint32>(1, g_poolSizes.switches);
+	g_poolSizes.states = std::max<uint32>(1, g_poolSizes.states);
+	g_poolSizes.environments = std::max<uint32>(1, g_poolSizes.environments);
+	g_poolSizes.preloads = std::max<uint32>(1, g_poolSizes.preloads);
+	g_poolSizes.settings = std::max<uint32>(1, g_poolSizes.settings);
+
+	g_poolSizes.triggerConnections = std::max<uint32>(1, g_poolSizes.triggerConnections);
+	g_poolSizes.parameterConnections = std::max<uint32>(1, g_poolSizes.parameterConnections);
+	g_poolSizes.stateConnections = std::max<uint32>(1, g_poolSizes.stateConnections);
+	g_poolSizes.environmentConnections = std::max<uint32>(1, g_poolSizes.environmentConnections);
+	g_poolSizes.settingConnections = std::max<uint32>(1, g_poolSizes.settingConnections);
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CAudioXMLProcessor::ParseControlsData(char const* const szFolderPath, EDataScope const dataScope)
 {
 	CryFixedStringT<MaxFilePathLength> sRootFolderPath(szFolderPath);

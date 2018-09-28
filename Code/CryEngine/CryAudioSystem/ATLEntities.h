@@ -150,7 +150,7 @@ public:
 	CATLControlImpl& operator=(CATLControlImpl&&) = delete;
 };
 
-class CATLTriggerImpl : public CATLControlImpl
+class CATLTriggerImpl : public CATLControlImpl, public CPoolObject<CATLTriggerImpl, stl::PSyncNone>
 {
 public:
 
@@ -177,7 +177,7 @@ public:
 
 using TriggerConnections = std::vector<CATLTriggerImpl const*>;
 
-class CTrigger final : public Control
+class CTrigger final : public Control, public CPoolObject<CTrigger, stl::PSyncNone>
 {
 public:
 
@@ -447,7 +447,7 @@ private:
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 // Class for a parameter associated with a middleware parameter
-class CParameterImpl final : public CATLControlImpl
+class CParameterImpl final : public CATLControlImpl, public CPoolObject<CParameterImpl, stl::PSyncNone>
 {
 public:
 
@@ -472,7 +472,7 @@ private:
 
 using ParameterConnections = std::vector<CParameterImpl const*>;
 
-class CParameter final : public Control
+class CParameter final : public Control, public CPoolObject<CParameter, stl::PSyncNone>
 {
 public:
 
@@ -510,7 +510,7 @@ private:
 	ParameterConnections const m_connections;
 };
 
-class CSwitchStateImpl final : public CATLControlImpl
+class CSwitchStateImpl final : public CATLControlImpl, public CPoolObject<CSwitchStateImpl, stl::PSyncNone>
 {
 public:
 
@@ -535,7 +535,7 @@ private:
 
 using SwitchStateConnections = std::vector<CSwitchStateImpl const*>;
 
-class CATLSwitchState final
+class CATLSwitchState final : public CPoolObject<CATLSwitchState, stl::PSyncNone>
 {
 public:
 
@@ -588,7 +588,7 @@ private:
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 
-class CATLSwitch final : public Control
+class CATLSwitch final : public Control, public CPoolObject<CATLSwitch, stl::PSyncNone>
 {
 public:
 
@@ -620,7 +620,7 @@ private:
 	SwitchStates m_states;
 };
 
-class CATLEnvironmentImpl final : public CATLControlImpl
+class CATLEnvironmentImpl final : public CATLControlImpl, public CPoolObject<CATLEnvironmentImpl, stl::PSyncNone>
 {
 public:
 
@@ -633,7 +633,7 @@ public:
 	Impl::IEnvironment const* const m_pImplData;
 };
 
-class CATLAudioEnvironment final : public CATLEntity<EnvironmentId>
+class CATLAudioEnvironment final : public CATLEntity<EnvironmentId>, public CPoolObject<CATLAudioEnvironment, stl::PSyncNone>
 {
 public:
 
@@ -654,7 +654,7 @@ public:
 	ImplPtrVec const m_implPtrs;
 };
 
-class CSettingImpl final : public CATLControlImpl
+class CSettingImpl final : public CATLControlImpl, public CPoolObject<CSettingImpl, stl::PSyncNone>
 {
 public:
 
@@ -679,7 +679,7 @@ private:
 
 using SettingConnections = std::vector<CSettingImpl const*>;
 
-class CSetting final : public Control
+class CSetting final : public Control, public CPoolObject<CSetting, stl::PSyncNone>
 {
 public:
 
@@ -826,7 +826,7 @@ public:
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 
-class CATLPreloadRequest final : public CATLEntity<PreloadRequestId>
+class CATLPreloadRequest final : public CATLEntity<PreloadRequestId>, public CPoolObject<CATLPreloadRequest, stl::PSyncNone>
 {
 public:
 

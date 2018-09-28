@@ -153,6 +153,9 @@ CImpl::CImpl()
 	: m_isMuted(false)
 	, m_pAcfBuffer(nullptr)
 	, m_dbasId(CRIATOMEXDBAS_ILLEGAL_ID)
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	, m_name("Adx2 (" CRI_ATOM_VER_NUM ")")
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 {
 	m_constructedObjects.reserve(256);
 }
@@ -162,10 +165,10 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 {
 	ERequestStatus result = ERequestStatus::Success;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Adx2 Object Pool");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Adx2 Object Pool");
 	CObject::CreateAllocator(objectPoolSize);
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Adx2 Event Pool");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Adx2 Event Pool");
 	CEvent::CreateAllocator(eventPoolSize);
 
 	m_regularSoundBankFolder = AUDIO_SYSTEM_DATA_ROOT;
@@ -176,8 +179,6 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 	m_localizedSoundBankFolder = m_regularSoundBankFolder;
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-	m_name = "Adx2 (" CRI_ATOM_VER_NUM ")";
-
 	LoadAcbInfos(m_regularSoundBankFolder);
 
 	if (ICVar* pCVar = gEnv->pConsole->GetCVar("g_languageAudio"))

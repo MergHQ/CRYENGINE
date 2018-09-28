@@ -223,14 +223,14 @@ enum Type
 	MSC_CAF             = 21,
 	MSC_ArchetypeLib    = 22,
 
-	MSC_SoundProject    = 23,
+	MSC_AudioSystem     = 23,
 	MSC_EntityArchetype = 24,
 
 	MSC_LUA             = 25,
 	MSC_D3D             = 26,
 	MSC_ParticleEffect  = 27,
 	MSC_SoundBuffer     = 28,
-	MSC_FSB             = 29, //!< Sound bank data
+	MSC_AudioImpl       = 29,
 
 	MSC_AIObjects       = 30,
 	MSC_Animation       = 31,

@@ -52,6 +52,86 @@ char const* TypeToTag(EAssetType const assetType)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CountControls(EAssetType const type, SLibraryScope& scope)
+{
+	switch (type)
+	{
+	case EAssetType::Trigger:
+		{
+			++scope.numTriggers;
+			break;
+		}
+	case EAssetType::Parameter:
+		{
+			++scope.numParameters;
+			break;
+		}
+	case EAssetType::Switch:
+		{
+			++scope.numSwitches;
+			break;
+		}
+	case EAssetType::State:
+		{
+			++scope.numStates;
+			break;
+		}
+	case EAssetType::Environment:
+		{
+			++scope.numEnvironments;
+			break;
+		}
+	case EAssetType::Preload:
+		{
+			++scope.numPreloads;
+			break;
+		}
+	case EAssetType::Setting:
+		{
+			++scope.numSettings;
+			break;
+		}
+	default:
+		break;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CountConnections(EAssetType const type, SLibraryScope& scope)
+{
+	switch (type)
+	{
+	case EAssetType::Trigger:
+		{
+			++scope.numTriggerConnections;
+			break;
+		}
+	case EAssetType::Parameter:
+		{
+			++scope.numParameterConnections;
+			break;
+		}
+	case EAssetType::State:
+		{
+			++scope.numStateConnections;
+			break;
+		}
+	case EAssetType::Environment:
+		{
+			++scope.numEnvironmentConnections;
+			break;
+		}
+	case EAssetType::Setting:
+		{
+			++scope.numSettingConnections;
+			break;
+		}
+	default:
+		break;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 CFileWriter::CFileWriter(FileNames& previousLibraryPaths)
 	: m_previousLibraryPaths(previousLibraryPaths)
 {}
@@ -142,6 +222,71 @@ void CFileWriter::WriteLibrary(CLibrary& library)
 				XmlNodeRef pFileNode = GetISystem()->CreateXmlNode(CryAudio::s_szRootNodeTag);
 				pFileNode->setAttr(CryAudio::s_szNameAttribute, library.GetName());
 				pFileNode->setAttr(CryAudio::s_szVersionAttribute, s_currentFileVersion);
+
+				// Don't write control counts for default library, because default controls are not pooled.
+				// But connections of default controls need to get written.
+				if ((library.GetFlags() & EAssetFlags::IsDefaultControl) == 0)
+				{
+					if (libScope.numTriggers > 0)
+					{
+						pFileNode->setAttr(CryAudio::s_szNumTriggersAttribute, libScope.numTriggers);
+					}
+
+					if (libScope.numParameters > 0)
+					{
+						pFileNode->setAttr(CryAudio::s_szNumParametersAttribute, libScope.numParameters);
+					}
+
+					if (libScope.numSwitches > 0)
+					{
+						pFileNode->setAttr(CryAudio::s_szNumSwitchesAttribute, libScope.numSwitches);
+					}
+
+					if (libScope.numStates > 0)
+					{
+						pFileNode->setAttr(CryAudio::s_szNumStatesAttribute, libScope.numStates);
+					}
+
+					if (libScope.numEnvironments > 0)
+					{
+						pFileNode->setAttr(CryAudio::s_szNumEnvironmentsAttribute, libScope.numEnvironments);
+					}
+
+					if (libScope.numPreloads > 0)
+					{
+						pFileNode->setAttr(CryAudio::s_szNumPreloadsAttribute, libScope.numPreloads);
+					}
+
+					if (libScope.numSettings > 0)
+					{
+						pFileNode->setAttr(CryAudio::s_szNumSettingsAttribute, libScope.numSettings);
+					}
+				}
+
+				if (libScope.numTriggerConnections > 0)
+				{
+					pFileNode->setAttr(CryAudio::s_szNumTriggerConnectionsAttribute, libScope.numTriggerConnections);
+				}
+
+				if (libScope.numParameterConnections > 0)
+				{
+					pFileNode->setAttr(CryAudio::s_szNumParameterConnectionsAttribute, libScope.numParameterConnections);
+				}
+
+				if (libScope.numStateConnections > 0)
+				{
+					pFileNode->setAttr(CryAudio::s_szNumStateConnectionsAttribute, libScope.numStateConnections);
+				}
+
+				if (libScope.numEnvironmentConnections > 0)
+				{
+					pFileNode->setAttr(CryAudio::s_szNumEnvironmentConnectionsAttribute, libScope.numEnvironmentConnections);
+				}
+
+				if (libScope.numSettingConnections > 0)
+				{
+					pFileNode->setAttr(CryAudio::s_szNumSettingConnectionsAttribute, libScope.numSettingConnections);
+				}
 
 				auto const numTypes = static_cast<int>(EAssetType::NumTypes);
 
@@ -266,7 +411,7 @@ void CFileWriter::WriteItem(CAsset* const pAsset, string const& path, LibrarySto
 			{
 				SLibraryScope& scope = library[pControl->GetScope()];
 				scope.isDirty = true;
-				WriteControlToXML(scope.GetXmlNode(pControl->GetType()), pControl, path);
+				WriteControlToXML(scope.GetXmlNode(pControl->GetType()), pControl, path, scope);
 			}
 		}
 	}
@@ -296,11 +441,12 @@ void CFileWriter::GetScopes(CAsset const* const pAsset, std::unordered_set<Scope
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileWriter::WriteControlToXML(XmlNodeRef const pNode, CControl* const pControl, string const& path)
+void CFileWriter::WriteControlToXML(XmlNodeRef const pNode, CControl* const pControl, string const& path, SLibraryScope& scope)
 {
 	EAssetType const type = pControl->GetType();
 	XmlNodeRef const pChildNode = pNode->createNode(TypeToTag(type));
 	pChildNode->setAttr(CryAudio::s_szNameAttribute, pControl->GetName());
+	CountControls(type, scope);
 
 	if (!path.empty())
 	{
@@ -317,7 +463,7 @@ void CFileWriter::WriteControlToXML(XmlNodeRef const pNode, CControl* const pCon
 
 			if ((pAsset != nullptr) && (pAsset->GetType() == EAssetType::State))
 			{
-				WriteControlToXML(pChildNode, static_cast<CControl*>(pAsset), "");
+				WriteControlToXML(pChildNode, static_cast<CControl*>(pAsset), "", scope);
 			}
 		}
 	}
@@ -334,7 +480,7 @@ void CFileWriter::WriteControlToXML(XmlNodeRef const pNode, CControl* const pCon
 		{
 			XmlNodeRef const pFileNode = pChildNode->createNode(CryAudio::s_szPlatformTag);
 			pFileNode->setAttr(CryAudio::s_szNameAttribute, g_platforms[i]);
-			WriteConnectionsToXML(pFileNode, pControl, i);
+			WriteConnectionsToXML(pFileNode, pControl, scope, i);
 
 			if (pFileNode->getChildCount() > 0)
 			{
@@ -344,7 +490,7 @@ void CFileWriter::WriteControlToXML(XmlNodeRef const pNode, CControl* const pCon
 	}
 	else
 	{
-		WriteConnectionsToXML(pChildNode, pControl);
+		WriteConnectionsToXML(pChildNode, pControl, scope);
 	}
 
 	pControl->SetModified(false);
@@ -352,7 +498,7 @@ void CFileWriter::WriteControlToXML(XmlNodeRef const pNode, CControl* const pCon
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileWriter::WriteConnectionsToXML(XmlNodeRef const pNode, CControl* const pControl, int const platformIndex /*= -1*/)
+void CFileWriter::WriteConnectionsToXML(XmlNodeRef const pNode, CControl* const pControl, SLibraryScope& scope, int const platformIndex /*= -1*/)
 {
 	EAssetType const type = pControl->GetType();
 	size_t const numConnections = pControl->GetConnectionCount();
@@ -413,6 +559,7 @@ void CFileWriter::WriteConnectionsToXML(XmlNodeRef const pNode, CControl* const 
 					if (shouldAddNode)
 					{
 						pNode->addChild(pChild);
+						CountConnections(type, scope);
 					}
 				}
 			}

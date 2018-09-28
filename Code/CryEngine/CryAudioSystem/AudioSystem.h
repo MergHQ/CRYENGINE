@@ -134,23 +134,22 @@ private:
 
 	static void    OnCallback(SRequestInfo const* const pRequestInfo);
 
-	bool                               m_isInitialized = false;
-	bool                               m_didThreadWait = false;
-	volatile float                     m_accumulatedFrameTime = 0.0f;
-	std::atomic<uint32>                m_externalThreadFrameId{ 0 };
-	uint32                             m_lastExternalThreadFrameId = 0;
-	uint32                             m_objectPoolSize = 0;
-	uint32                             m_eventPoolSize = 0;
-	CryFixedStringT<MaxFilePathLength> m_configPath;
-	SImplInfo                          m_implInfo;
-	CMainThread                        m_mainThread;
+	bool                       m_isInitialized = false;
+	bool                       m_didThreadWait = false;
+	volatile float             m_accumulatedFrameTime = 0.0f;
+	std::atomic<uint32>        m_externalThreadFrameId{ 0 };
+	uint32                     m_lastExternalThreadFrameId = 0;
+	uint32                     m_objectPoolSize = 0;
+	uint32                     m_eventPoolSize = 0;
+	SImplInfo                  m_implInfo;
+	CMainThread                m_mainThread;
 
-	AudioRequests                      m_requestQueue;
-	AudioRequestsSyncCallbacks         m_syncCallbacks;
-	CAudioRequest                      m_syncRequest;
-	CAudioRequest                      m_request;
-	CryEvent                           m_mainEvent;
-	CryEvent                           m_audioThreadWakeupEvent;
+	AudioRequests              m_requestQueue;
+	AudioRequestsSyncCallbacks m_syncCallbacks;
+	CAudioRequest              m_syncRequest;
+	CAudioRequest              m_request;
+	CryEvent                   m_mainEvent;
+	CryEvent                   m_audioThreadWakeupEvent;
 
 #if defined(ENABLE_AUDIO_LOGGING)
 	int m_loggingOptions;
