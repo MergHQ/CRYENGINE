@@ -1909,6 +1909,8 @@ void CClothSimulator::PositionsIntegrate()
 	const float kd = 1.0f - m_config.friction;
 	for (int i = 0; i < m_nVtx; i++)
 	{
+		if (IsParticleAttached(i)) continue;
+
 		Vector4 pos0 = m_particlesHot[i].pos;
 		Vector4 dv = (m_particlesHot[i].pos - m_particlesCold[i].prevPos) / m_dtPrev; // determine velocity, using the previous dt, since difference to prePos is used
 
