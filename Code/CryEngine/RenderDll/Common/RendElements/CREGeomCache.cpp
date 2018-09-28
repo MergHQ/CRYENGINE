@@ -12,12 +12,12 @@
 
 #if defined(USE_GEOM_CACHES)
 
-#include <CryRenderer/RenderElements/RendElement.h>
-#include <Cry3DEngine/CREGeomCache.h>
-#include <Cry3DEngine/I3DEngine.h>
-#include "../Renderer.h"
-#include "../Common/PostProcess/PostEffects.h"
-#include "XRenderD3D9/DriverD3D.h"
+	#include <CryRenderer/RenderElements/RendElement.h>
+	#include <Cry3DEngine/CREGeomCache.h>
+	#include <Cry3DEngine/I3DEngine.h>
+	#include "../Renderer.h"
+	#include "../Common/PostProcess/PostEffects.h"
+	#include "XRenderD3D9/DriverD3D.h"
 
 //#include "XRenderD3D9/DriverD3D.h"
 
@@ -219,20 +219,6 @@ void CREGeomCache::DrawToCommandList(CRenderObject* pObj, const SGraphicsPipelin
 {
 	//mfUpdate(0, FCEF_TRANSFORM, false); //TODO: check if correct
 
-}
-
-inline static void getObjMatrix(UFloat4* sData, const register float* pData, const bool bRelativeToCamPos, const Vec3& vRelativeToCamPos)
-{
-	sData[0].Load(&pData[0]);
-	sData[1].Load(&pData[4]);
-	sData[2].Load(&pData[8]);
-
-	if (bRelativeToCamPos)
-	{
-		sData[0].f[3] -= vRelativeToCamPos.x;
-		sData[1].f[3] -= vRelativeToCamPos.y;
-		sData[2].f[3] -= vRelativeToCamPos.z;
-	}
 }
 
 #endif
