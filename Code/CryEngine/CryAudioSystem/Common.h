@@ -38,7 +38,8 @@ enum class ESystemStates : EnumFlagsType
 	None             = 0,
 	ImplShuttingDown = BIT(0),
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	IsMuted          = BIT(1),
+	PoolsAllocated   = BIT(1),
+	IsMuted          = BIT(2),
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ESystemStates);
@@ -68,6 +69,27 @@ extern CUnmuteAllTrigger g_unmuteAllTrigger;
 extern CPauseAllTrigger g_pauseAllTrigger;
 extern CResumeAllTrigger g_resumeAllTrigger;
 
+extern SImplInfo g_implInfo;
+extern CryFixedStringT<MaxFilePathLength> g_configPath;
+
+struct SPoolSizes final
+{
+	uint32 triggers = 0;
+	uint32 parameters = 0;
+	uint32 switches = 0;
+	uint32 states = 0;
+	uint32 environments = 0;
+	uint32 preloads = 0;
+	uint32 settings = 0;
+	uint32 triggerConnections = 0;
+	uint32 parameterConnections = 0;
+	uint32 stateConnections = 0;
+	uint32 environmentConnections = 0;
+	uint32 settingConnections = 0;
+};
+
+extern SPoolSizes g_poolSizes;
+
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 static constexpr char const* s_szPreviewTriggerName = "preview_trigger";
 static constexpr ControlId PreviewTriggerId = StringToId(s_szPreviewTriggerName);
@@ -75,5 +97,6 @@ static constexpr ControlId PreviewTriggerId = StringToId(s_szPreviewTriggerName)
 class CPreviewTrigger;
 extern CPreviewTrigger g_previewTrigger;
 extern CATLAudioObject g_previewObject;
+extern SPoolSizes g_debugPoolSizes;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }      // namespace CryAudio

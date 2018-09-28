@@ -20,7 +20,6 @@ static constexpr char const* s_szDescriptionAttribute = "description";
 struct SLibraryScope final
 {
 	SLibraryScope()
-		: isDirty(false)
 	{
 		pNodes[0] = GetISystem()->CreateXmlNode(CryAudio::s_szTriggersNodeTag);
 		pNodes[1] = GetISystem()->CreateXmlNode(CryAudio::s_szParametersNodeTag);
@@ -63,7 +62,19 @@ struct SLibraryScope final
 	}
 
 	XmlNodeRef pNodes[6]; // Trigger, Parameter, Switch, Environment, Preload, Setting
-	bool       isDirty;
+	bool       isDirty = false;
+	uint32     numTriggers = 0;
+	uint32     numParameters = 0;
+	uint32     numSwitches = 0;
+	uint32     numStates = 0;
+	uint32     numEnvironments = 0;
+	uint32     numPreloads = 0;
+	uint32     numSettings = 0;
+	uint32     numTriggerConnections = 0;
+	uint32     numParameterConnections = 0;
+	uint32     numStateConnections = 0;
+	uint32     numEnvironmentConnections = 0;
+	uint32     numSettingConnections = 0;
 };
 
 using LibraryStorage = std::map<Scope, SLibraryScope>;
@@ -83,8 +94,8 @@ private:
 	void WriteLibrary(CLibrary& library);
 	void WriteItem(CAsset* const pAsset, string const& path, LibraryStorage& library);
 	void GetScopes(CAsset const* const pAsset, std::unordered_set<Scope>& scopes);
-	void WriteControlToXML(XmlNodeRef const pNode, CControl* const pControl, string const& path);
-	void WriteConnectionsToXML(XmlNodeRef const pNode, CControl* const pControl, int const platformIndex = -1);
+	void WriteControlToXML(XmlNodeRef const pNode, CControl* const pControl, string const& path, SLibraryScope& scope);
+	void WriteConnectionsToXML(XmlNodeRef const pNode, CControl* const pControl, SLibraryScope& scope, int const platformIndex = -1);
 	void WriteLibraryEditorData(CAsset const& library, XmlNodeRef const pParentNode) const;
 	void WriteFolderEditorData(CAsset const& library, XmlNodeRef const pParentNode) const;
 	void WriteControlsEditorData(CAsset const& parentAsset, XmlNodeRef const pParentNode) const;

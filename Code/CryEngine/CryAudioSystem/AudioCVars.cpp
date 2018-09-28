@@ -198,6 +198,7 @@ void CCVars::RegisterVariables()
 	               "m: Draw middleware specific info for active audio objects.\n"
 	               "q: Hide audio system memory info.\n"
 	               "r: Apply filter also to inactive object debug info.\n"
+	               "s: Draw detailed memory pool debug info.\n"
 	               "u: List standalone files.\n"
 	               "v: List active Events.\n"
 	               "w: List active Audio Objects.\n"

@@ -1362,6 +1362,7 @@ enum class EDrawFilter : EnumFlagsType
 
 	HideMemoryInfo         = BIT(22), // q
 	FilterAllObjectInfo    = BIT(23), // r
+	DetailedMemoryInfo     = BIT(24), // s
 
 	StandaloneFiles        = BIT(26), // u
 	ActiveEvents           = BIT(27), // v

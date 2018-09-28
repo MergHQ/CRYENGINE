@@ -70,11 +70,10 @@ void OnStandaloneFileFinished(CATLStandaloneFile& standaloneFile, const char* sz
 CImpl::CImpl()
 	: m_pCVarFileExtension(nullptr)
 	, m_isMuted(false)
-{
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
-	m_name = "SDL Mixer 2.0.2";
+	, m_name("SDL Mixer 2.0.2")
 #endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
-
+{
 #if CRY_PLATFORM_WINDOWS
 	m_memoryAlignment = 16;
 #elif CRY_PLATFORM_MAC
@@ -99,10 +98,10 @@ void CImpl::Update()
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSize)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "SDL Mixer Object Pool");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "SDL Mixer Object Pool");
 	CObject::CreateAllocator(objectPoolSize);
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "SDL Mixer Event Pool");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "SDL Mixer Event Pool");
 	CEvent::CreateAllocator(eventPoolSize);
 
 	m_pCVarFileExtension = REGISTER_STRING("s_SDLMixerStandaloneFileExtension", ".mp3", 0, "the expected file extension for standalone files, played via the sdl_mixer");

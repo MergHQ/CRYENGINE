@@ -31,10 +31,10 @@ CImpl::CImpl()
 	                        string(CryAudio::s_szAssetsFolderName))
 	, m_localizedAssetsPath(m_assetAndProjectPath)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Port Audio ACE Item Pool");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Port Audio ACE Item Pool");
 	CItem::CreateAllocator(g_itemPoolSize);
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Port Audio ACE Event Connection Pool");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Port Audio ACE Event Connection Pool");
 	CEventConnection::CreateAllocator(g_eventConnectionPoolSize);
 
 	gEnv->pAudioSystem->GetImplInfo(m_implInfo);

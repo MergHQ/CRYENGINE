@@ -102,8 +102,8 @@ private:
 	CriAtomEx3dListenerConfig             m_listenerConfig;
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-	CryFixedStringT<MaxInfoStringLength> m_name;
-	size_t                               m_acfFileSize = 0;
+	CryFixedStringT<MaxInfoStringLength> const m_name;
+	size_t m_acfFileSize = 0;
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 };
 } // namespace Adx2

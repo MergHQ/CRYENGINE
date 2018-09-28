@@ -23,6 +23,7 @@ public:
 	CAudioXMLProcessor& operator=(CAudioXMLProcessor const&) = delete;
 	CAudioXMLProcessor& operator=(CAudioXMLProcessor&&) = delete;
 
+	void                ParseSystemData();
 	void                ParseControlsData(char const* const szFolderPath, EDataScope const dataScope);
 	void                ClearControlsData(EDataScope const dataScope);
 	void                ParsePreloadsData(char const* const szFolderPath, EDataScope const dataScope);

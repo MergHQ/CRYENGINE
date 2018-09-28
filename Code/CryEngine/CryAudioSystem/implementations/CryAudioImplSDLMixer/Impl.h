@@ -83,7 +83,7 @@ private:
 	ICVar* m_pCVarFileExtension;
 
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
-	CryFixedStringT<MaxInfoStringLength> m_name;
+	CryFixedStringT<MaxInfoStringLength> const m_name;
 #endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 };
 } // namespace SDL_mixer

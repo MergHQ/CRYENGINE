@@ -26,8 +26,14 @@ CUnmuteAllTrigger g_unmuteAllTrigger;
 CPauseAllTrigger g_pauseAllTrigger;
 CResumeAllTrigger g_resumeAllTrigger;
 
+SImplInfo g_implInfo;
+CryFixedStringT<MaxFilePathLength> g_configPath = "";
+
+SPoolSizes g_poolSizes;
+
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 CPreviewTrigger g_previewTrigger;
 CATLAudioObject g_previewObject(CObjectTransformation::GetEmptyObject());
+SPoolSizes g_debugPoolSizes;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }      // namespace CryAudio

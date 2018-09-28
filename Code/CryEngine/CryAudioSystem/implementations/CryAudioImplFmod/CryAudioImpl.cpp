@@ -51,7 +51,7 @@ class CEngineModule_CryAudioImplFmod : public CryAudio::IImplModule
 		void* pSecondaryMemory = nullptr;
 
 	#if CRY_PLATFORM_DURANGO
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Fmod Implementation Audio Pool Secondary");
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod Implementation Audio Pool Secondary");
 		secondarySize = g_cvars.m_secondaryMemoryPoolSize << 10;
 
 		APU_ADDRESS temp;

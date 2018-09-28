@@ -45,13 +45,13 @@ CAssetsManager::~CAssetsManager()
 //////////////////////////////////////////////////////////////////////////
 void CAssetsManager::Initialize()
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "ACE Control Pool");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "ACE Control Pool");
 	CControl::CreateAllocator(g_controlPoolSize);
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "ACE Folder Pool");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "ACE Folder Pool");
 	CFolder::CreateAllocator(g_folderPoolSize);
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "ACE Library Pool");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "ACE Library Pool");
 	CLibrary::CreateAllocator(g_libraryPoolSize);
 
 	g_implementationManager.SignalImplementationAboutToChange.Connect([this]()

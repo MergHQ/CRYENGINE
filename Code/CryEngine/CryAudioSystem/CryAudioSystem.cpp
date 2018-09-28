@@ -77,7 +77,7 @@ class CEngineModule_CryAudioSystem : public ISystemModule
 
 		bool bSuccess = false;
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "AudioSystem Memory Pool");
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "AudioSystem Memory Pool");
 
 		if (CreateAudioSystem(env))
 		{
