@@ -255,7 +255,11 @@ macro(copy_binary_files_to_target)
 
 	if (WINDOWS)
 		if (OPTION_ENGINE)
-			deploy_runtime_files("${SDK_DIR}/Microsoft Visual Studio Compiler/14.0/redist/x64/**/*.dll")
+			if (MSVC_VERSION GREATER 1900) # Visual Studio > 2015
+				deploy_runtime_files("${SDK_DIR}/Microsoft Visual Studio Compiler/14.15.26726/Redist/MSVC/14.15.26706/x64/**/*.dll")
+			elseif (MSVC_VERSION EQUAL 1900) # Visual Studio 2015
+				deploy_runtime_files("${SDK_DIR}/Microsoft Visual Studio Compiler/14.0/redist/x64/**/*.dll")
+			endif()	
 		endif()
 		if (OPTION_SANDBOX)
 			deploy_runtime_files("${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/plugins/platforms/*.dll" "platforms")

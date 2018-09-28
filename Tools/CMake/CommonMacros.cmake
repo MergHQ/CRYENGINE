@@ -618,8 +618,13 @@ function(CryEngineModule target)
 		set(MODULES ${MODULES} ${THIS_PROJECT} CACHE INTERNAL "List of engine being built" FORCE)	
 	endif()
 
-	if (MSVC AND NOT ${THIS_PROJECT} STREQUAL "EditorCommon")        # EditorCommon is a special case.
-		target_compile_options(${THIS_PROJECT} PRIVATE 	/GR-)        # Disable RTTI
+	if (MSVC)
+		if (${THIS_PROJECT} STREQUAL "EditorCommon" OR ${THIS_PROJECT} STREQUAL "MFCToolsPlugin")
+			# These editor plugins are built using CryEngineModule, but need to have RTTI enabled.
+			target_compile_options(${THIS_PROJECT} PRIVATE /GR)
+		else()
+			target_compile_options(${THIS_PROJECT} PRIVATE /GR-)
+		endif()
 	endif()
 
 	apply_compile_settings()

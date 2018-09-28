@@ -71,6 +71,6 @@ set_property(TARGET ${THIS_PROJECT} PROPERTY EXCLUDE_FROM_DEFAULT_BUILD_RELEASE 
 use_qt()
 
 # Wrapping with shiboken requires Run-Time Type Information to be enabled.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR")
+target_compile_options(${THIS_PROJECT} PRIVATE /GR)
 
 add_subdirectory("ShibokenWrapper")
