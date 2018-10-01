@@ -400,7 +400,14 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 				if ((shaderFlags2 & EF2_DEPTH_FIXUP) && CRendererCVars::CV_r_HDRTexFormat)
 				{
 					psoDesc.m_RenderState |= GS_DEPTHFUNC_LEQUAL;
-					psoDesc.m_RenderState |= GS_BLSRC_SRC1ALPHA | GS_BLDST_ONEMINUSSRC1ALPHA | GS_BLALPHA_MIN;
+					if (shaderFlags2 & EF2_DEPTH_FIXUP_REPLACE)
+					{
+						psoDesc.m_RenderState |= GS_BLSRC_SRC1ALPHA_A_ONE | GS_BLDST_ONEMINUSSRC1ALPHA_A_ZERO; // == "Replace alpha"
+					}
+					else
+					{
+						psoDesc.m_RenderState |= GS_BLSRC_SRC1ALPHA | GS_BLDST_ONEMINUSSRC1ALPHA | GS_BLALPHA_MIN;
+					}
 				}
 				else
 				{

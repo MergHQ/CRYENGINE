@@ -465,6 +465,7 @@ enum EToken
 	eT_ForceDrawFirst,
 	eT_ForceDrawAfterWater,
 	eT_DepthFixup,
+	eT_DepthFixupReplace,
 	eT_SingleLightPass,
 	eT_HWTessellation,
 	eT_WaterParticle,

@@ -1814,35 +1814,36 @@ enum ERenderListID
 // SShader::Flags2
 // Additional Different useful flags
 
-#define EF2_PREPR_SCANWATER      0x4
-#define EF2_NOCASTSHADOWS        0x8
-#define EF2_NODRAW               0x10
-#define EF2_WRINKLE_BLENDING     0x20
-#define EF2_HASOPAQUE            0x40
-#define EF2_AFTERHDRPOSTPROCESS  0x80
-#define EF2_DONTSORTBYDIST       0x100
-#define EF2_FORCE_WATERPASS      0x200
-#define EF2_FORCE_GENERALPASS    0x400
-#define EF2_AFTERPOSTPROCESS     0x800
-#define EF2_IGNORERESOURCESTATES 0x1000
-#define EF2_EYE_OVERLAY          0x2000
-#define EF2_FORCE_TRANSPASS      0x4000
-#define EF2_FORCE_ZPASS          0x10000
-#define EF2_FORCE_DRAWLAST       0x20000
-#define EF2_FORCE_DRAWAFTERWATER 0x40000
-#define EF2_BILLBOARD            0x80000
-#define EF2_DEPTH_FIXUP          0x100000
-#define EF2_SINGLELIGHTPASS      0x200000
-#define EF2_FORCE_DRAWFIRST      0x400000
-#define EF2_HAIR                 0x800000
-#define EF2_DETAILBUMPMAPPING    0x1000000
-#define EF2_HASALPHATEST         0x2000000
-#define EF2_HASALPHABLEND        0x4000000
-#define EF2_ZPREPASS             0x8000000
-#define EF2_VERTEXCOLORS         0x10000000
-#define EF2_SKINPASS             0x20000000
-#define EF2_HW_TESSELLATION      0x40000000
-#define EF2_ALPHABLENDSHADOWS    0x80000000
+#define EF2_PREPR_SCANWATER        0x4
+#define EF2_NOCASTSHADOWS          0x8
+#define EF2_NODRAW                 0x10
+#define EF2_WRINKLE_BLENDING       0x20
+#define EF2_HASOPAQUE              0x40
+#define EF2_AFTERHDRPOSTPROCESS    0x80
+#define EF2_DONTSORTBYDIST         0x100
+#define EF2_FORCE_WATERPASS        0x200
+#define EF2_FORCE_GENERALPASS      0x400
+#define EF2_AFTERPOSTPROCESS       0x800
+#define EF2_IGNORERESOURCESTATES   0x1000
+#define EF2_EYE_OVERLAY            0x2000
+#define EF2_FORCE_TRANSPASS        0x4000
+#define EF2_FORCE_ZPASS            0x8000
+#define EF2_FORCE_DRAWLAST         0x10000
+#define EF2_FORCE_DRAWAFTERWATER   0x20000
+#define EF2_BILLBOARD              0x40000
+#define EF2_DEPTH_FIXUP            0x80000
+#define EF2_DEPTH_FIXUP_REPLACE    0x100000
+#define EF2_SINGLELIGHTPASS        0x200000
+#define EF2_FORCE_DRAWFIRST        0x400000
+#define EF2_HAIR                   0x800000
+#define EF2_DETAILBUMPMAPPING      0x1000000
+#define EF2_HASALPHATEST           0x2000000
+#define EF2_HASALPHABLEND          0x4000000
+#define EF2_ZPREPASS               0x8000000
+#define EF2_VERTEXCOLORS           0x10000000
+#define EF2_SKINPASS               0x20000000
+#define EF2_HW_TESSELLATION        0x40000000
+#define EF2_ALPHABLENDSHADOWS      0x80000000
 
 struct IShader
 {

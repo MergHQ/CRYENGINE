@@ -567,6 +567,7 @@ void CParserBin::Init()
 	FX_REGISTER_TOKEN(ForceDrawFirst);
 	FX_REGISTER_TOKEN(ForceDrawAfterWater);
 	FX_REGISTER_TOKEN(DepthFixup);
+	FX_REGISTER_TOKEN(DepthFixupReplace);
 	FX_REGISTER_TOKEN(SingleLightPass);
 	FX_REGISTER_TOKEN(HWTessellation);
 	FX_REGISTER_TOKEN(VertexColors);

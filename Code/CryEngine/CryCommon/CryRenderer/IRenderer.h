@@ -423,21 +423,23 @@ const float VIRTUAL_SCREEN_HEIGHT = 600.0f;
 #define GS_BLSRC_ALPHASATURATE     0x09
 #define GS_BLSRC_SRCALPHA_A_ZERO   0x0A  // separate alpha blend state
 #define GS_BLSRC_SRC1ALPHA         0x0B  // dual source blending
+#define GS_BLSRC_SRC1ALPHA_A_ONE   0x0C
 #define GS_BLSRC_MASK              0x0F
 #define GS_BLSRC_SHIFT             0
 
-#define GS_BLDST_ZERO              0x10
-#define GS_BLDST_ONE               0x20
-#define GS_BLDST_SRCCOL            0x30
-#define GS_BLDST_ONEMINUSSRCCOL    0x40
-#define GS_BLDST_SRCALPHA          0x50
-#define GS_BLDST_ONEMINUSSRCALPHA  0x60
-#define GS_BLDST_DSTALPHA          0x70
-#define GS_BLDST_ONEMINUSDSTALPHA  0x80
-#define GS_BLDST_ONE_A_ZERO        0x90 // separate alpha blend state
-#define GS_BLDST_ONEMINUSSRC1ALPHA 0xA0 // dual source blending
-#define GS_BLDST_MASK              0xF0
-#define GS_BLDST_SHIFT             4
+#define GS_BLDST_ZERO                     0x10
+#define GS_BLDST_ONE                      0x20
+#define GS_BLDST_SRCCOL                   0x30
+#define GS_BLDST_ONEMINUSSRCCOL           0x40
+#define GS_BLDST_SRCALPHA                 0x50
+#define GS_BLDST_ONEMINUSSRCALPHA         0x60
+#define GS_BLDST_DSTALPHA                 0x70
+#define GS_BLDST_ONEMINUSDSTALPHA         0x80
+#define GS_BLDST_ONE_A_ZERO               0x90 // separate alpha blend state
+#define GS_BLDST_ONEMINUSSRC1ALPHA        0xA0 // dual source blending
+#define GS_BLDST_ONEMINUSSRC1ALPHA_A_ZERO 0xB0
+#define GS_BLDST_MASK                     0xF0
+#define GS_BLDST_SHIFT                    4
 
 #define GS_DEPTHWRITE              0x00000100
 #define GS_NODEPTHTEST             0x00000200
