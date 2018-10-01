@@ -25,16 +25,15 @@ IMPLEMENT_DYNCREATE(CVehiclePart, CBaseObject)
 
 //////////////////////////////////////////////////////////////////////////
 CVehiclePart::CVehiclePart()
+	: m_pVehicle(nullptr)
+	, m_pParent(nullptr)
+	, m_pYawSpeed(nullptr)
+	, m_pYawLimits(nullptr)
+	, m_pPitchSpeed(nullptr)
+	, m_pPitchLimits(nullptr)
+	, m_pHelper(nullptr)
+	, m_pPartClass(nullptr)
 {
-	m_pVehicle = 0;
-	m_pVar = 0;
-
-	m_pYawSpeed = 0;
-	m_pYawLimits = 0;
-	m_pPitchSpeed = 0;
-	m_pPitchLimits = 0;
-	m_pHelper = 0;
-	m_pPartClass = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////

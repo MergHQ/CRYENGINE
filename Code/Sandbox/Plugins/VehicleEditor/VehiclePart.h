@@ -78,8 +78,6 @@ protected:
 	CVehiclePart();
 	void DeleteThis() { delete this; }
 
-	void UpdateFromVar();
-
 	void OnSetClass(IVariable* pVar);
 	void OnSetPos(IVariable* pVar);
 
@@ -89,7 +87,6 @@ protected:
 	CVehiclePart*      m_pParent;
 
 	bool               m_isMain;
-	IVariable*         m_pVar;
 
 	// pointer for saving per-frame lookups
 	IVariable* m_pYawSpeed;

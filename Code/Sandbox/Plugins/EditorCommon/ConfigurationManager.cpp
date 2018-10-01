@@ -5,8 +5,8 @@
 #include <CrySystem/IConsole.h>
 
 CConfigurationManager::CConfigurationManager()
+	: m_pPlatformsCvar{nullptr}
 {
-
 }
 
 void CConfigurationManager::Init()

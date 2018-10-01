@@ -1,16 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
- -------------------------------------------------------------------------
-  $Id$
-  $DateTime$
-  
- -------------------------------------------------------------------------
-  History:
-  - 7:10:2004   14:48 : Created by Márcio Martins
-												taken over by Filippo De Luca
-
-*************************************************************************/
 #include "StdAfx.h"
 #include <CryString/StringUtils.h>
 #include "Game.h"
@@ -5008,7 +4997,6 @@ IMPLEMENT_RMI(CActor, ClKill)
 		dummyHitInfo.projectileClassId = params.projectileClassId;
 		dummyHitInfo.penetrationCount = params.penetration;
 		dummyHitInfo.dir = params.dir;
-		dummyHitInfo.weaponId = params.weaponId;
 		dummyHitInfo.impulseScale  = params.impulseScale;
 
 		if(IEntity * pKilledEntity = gEnv->pEntitySystem->GetEntity(dummyHitInfo.targetId))
