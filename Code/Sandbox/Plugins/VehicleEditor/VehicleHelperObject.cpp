@@ -19,11 +19,9 @@ const ColorB g_vehicleHelperColor(255, 255, 120);
 const ColorB g_vehicleAssetHelperColor(120, 255, 120);
 
 CVehicleHelper::CVehicleHelper()
+	: m_fromGeometry(false)
+	, m_pVehicle(nullptr)
 {
-	m_pVar = 0;
-	m_fromGeometry = false;
-	m_pVehicle = 0;
-
 	ChangeColor(g_vehicleHelperColor);
 
 	InitOnTransformCallback(this);

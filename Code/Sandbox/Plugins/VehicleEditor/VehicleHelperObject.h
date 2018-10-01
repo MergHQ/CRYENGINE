@@ -61,8 +61,6 @@ protected:
 	float              m_innerRadius;
 	float              m_outerRadius;
 
-	IVariable*         m_pVar;
-
 	bool               m_fromGeometry;
 
 	CVehiclePrototype* m_pVehicle;

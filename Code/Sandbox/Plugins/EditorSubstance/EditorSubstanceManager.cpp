@@ -158,9 +158,14 @@ bool CManager::IsEditing(const string& presetName)
 
 CManager::CManager(QObject* parent)
 	: QObject(parent)
+	, m_pFileListener(nullptr)
+	, m_rcConfig(nullptr)
 	, m_pPresetCreator(nullptr)
 	, m_renderUID(0)
 	, m_currentRendererID(0)
+	, m_pCompressedRenderer(nullptr)
+	, m_pPreviewRenderer(nullptr)
+
 {
 
 }

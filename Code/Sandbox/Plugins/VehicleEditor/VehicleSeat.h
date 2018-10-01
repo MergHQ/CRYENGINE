@@ -75,12 +75,8 @@ protected:
 	CVehicleSeat();
 	void DeleteThis() { delete this; }
 
-	void UpdateFromVar();
-
 	CVehiclePrototype* m_pVehicle;
 	CVehiclePart*      m_pPart;
-
-	IVariable*         m_pVar;
 };
 
 /*!

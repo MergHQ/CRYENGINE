@@ -83,6 +83,9 @@ struct STexturePreset
 
 struct CRenderJobPair
 {
+	CRenderJobPair()
+		: renderer{nullptr}
+	{}
 	std::vector<ISubstancePreset*> presets;
 	Renderers::CInstanceRenderer*  renderer;
 };
