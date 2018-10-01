@@ -1464,16 +1464,6 @@ void PropertyTree::setArchiveContext(yasli::Context* lastContext)
 	archiveContext_ = lastContext;
 }
 
-PropertyTree::PropertyTree(const PropertyTree&)
-{
-}
-
-
-PropertyTree& PropertyTree::operator=(const PropertyTree&)
-{
-	return *this;
-}
-
 void PropertyTree::onAttachedTreeChanged()
 {
 	revert();

@@ -91,7 +91,6 @@ class CFeatureSlotWidget : public QGraphicsWidget
 public:
 	CFeatureSlotWidget();
 	CFeatureSlotWidget(const CFeatureSlotWidget& other);
-	~CFeatureSlotWidget();
 
 	void            InitFromFeature(CFeatureWidget& featureWidget);
 	CFeatureWidget* GetFeature() const                         { return m_pFeatureWidget; }
