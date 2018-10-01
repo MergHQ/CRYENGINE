@@ -33,23 +33,23 @@ public:
 public:
 	CNodeWidgetStyle(const char* szStyleId, CNodeGraphViewStyle& viewStyle);
 
-	const QColor&                  GetBorderColor() const                 { return m_borderColor; }
-	void                           SetBorderColor(const QColor& color)    { m_borderColor = color; }
+	const QColor&                  GetBorderColor() const                  { return m_borderColor; }
+	void                           SetBorderColor(const QColor& color)     { m_borderColor = color; }
 
-	int32                          GetBorderWidth() const                 { return m_borderWidth; }
-	void                           SetBorderWidth(int32 width)            { m_borderWidth = width; }
+	int32                          GetBorderWidth() const                  { return m_borderWidth; }
+	void                           SetBorderWidth(int32 width)             { m_borderWidth = width; }
 
-	const QColor&                  GetBackgroundColor() const             { return m_backgroundColor; }
-	void                           SetBackgroundColor(const QColor color) { m_backgroundColor = color; }
+	const QColor&                  GetBackgroundColor() const              { return m_backgroundColor; }
+	void                           SetBackgroundColor(const QColor& color) { m_backgroundColor = color; }
 
-	QMargins                       GetMargins() const                     { return m_margins; }
-	void                           SetMargins(QMargins margins)           { m_margins = margins; }
+	QMargins                       GetMargins() const                      { return m_margins; }
+	void                           SetMargins(QMargins margins)            { m_margins = margins; }
 
-	const CNodeContentWidgetStyle& GetContentWidgetStyle() const          { return *m_pContentStyle; }
-	const CNodeInfoWidgetStyle&    GetInfoWidgetStyle() const             { return *m_pInfoWidgetStyle; }
+	const CNodeContentWidgetStyle& GetContentWidgetStyle() const           { return *m_pContentStyle; }
+	const CNodeInfoWidgetStyle&    GetInfoWidgetStyle() const              { return *m_pInfoWidgetStyle; }
 
-	CNodeContentWidgetStyle&       GetContentWidgetStyle()                { return *m_pContentStyle; }
-	CNodeInfoWidgetStyle&          GetInfoWidgetStyle()                   { return *m_pInfoWidgetStyle; }
+	CNodeContentWidgetStyle&       GetContentWidgetStyle()                 { return *m_pContentStyle; }
+	CNodeInfoWidgetStyle&          GetInfoWidgetStyle()                    { return *m_pInfoWidgetStyle; }
 
 protected:
 	virtual CNodeContentWidgetStyle* CreateContentWidgetStyle();

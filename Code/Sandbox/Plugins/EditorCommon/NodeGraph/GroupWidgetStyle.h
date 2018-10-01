@@ -26,40 +26,39 @@ public:
 public:
 	CGroupWidgetStyle(const char* szStyleId, CNodeGraphViewStyle& viewStyle);
 
-	const QPointF&                  GetMinimalExtents() const                  { return m_minimalExtents; }
-	void                            SetMinimalExtents(const QPointF& extents)  { m_minimalExtents = extents; }
+	const QPointF& GetMinimalExtents() const                      { return m_minimalExtents; }
+	void           SetMinimalExtents(const QPointF& extents)      { m_minimalExtents = extents; }
 
-	const QColor&                   GetBorderColor() const                     { return m_borderColor; }
-	void                            SetBorderColor(const QColor& color)        { m_borderColor = color; }
+	const QColor& GetBorderColor() const                         { return m_borderColor; }
+	void          SetBorderColor(const QColor& color)            { m_borderColor = color; }
 
-	int32                           GetBorderWidth() const                     { return m_borderWidth; }
-	void                            SetBorderWidth(int32 width)                { m_borderWidth = width; }
+	int32         GetBorderWidth() const                         { return m_borderWidth; }
+	void          SetBorderWidth(int32 width)                    { m_borderWidth = width; }
 
-	const QColor&                   GetBackgroundColor() const                 { return m_backgroundColor; }
-	void                            SetBackgroundColor(const QColor color)     { m_backgroundColor = color; }
+	const QColor& GetBackgroundColor() const                     { return m_backgroundColor; }
+	void          SetBackgroundColor(const QColor& color)        { m_backgroundColor = color; }
 
-	QMargins                        GetMargins() const                         { return m_margins; }
-	void                            SetMargins(QMargins margins)               { m_margins = margins; }
+	QMargins      GetMargins() const                             { return m_margins; }
+	void          SetMargins(QMargins margins)                   { m_margins = margins; }
 
-	int32                           GetPendingBorderWidth() const              { return m_pendingBorderWidth; }
-	void                            SetPendingBorderWidth(int32 width)         { m_pendingBorderWidth = width; }
+	int32         GetPendingBorderWidth() const                  { return m_pendingBorderWidth; }
+	void          SetPendingBorderWidth(int32 width)             { m_pendingBorderWidth = width; }
 
-	const QColor&                   GetPendingBorderColor() const              { return m_pendingBorderColor; }
-	void                            SetPendingBorderColor(const QColor& color) { m_pendingBorderColor = color; }
+	const QColor& GetPendingBorderColor() const                  { return m_pendingBorderColor; }
+	void          SetPendingBorderColor(const QColor& color)     { m_pendingBorderColor = color; }
 
-	const QColor&                   GetPendingBackgroundColor() const             { return m_pendingBackgroundColor; }
-	void                            SetPendingBackgroundColor(const QColor color) { m_pendingBackgroundColor = color; }
+	const QColor& GetPendingBackgroundColor() const              { return m_pendingBackgroundColor; }
+	void          SetPendingBackgroundColor(const QColor& color) { m_pendingBackgroundColor = color; }
 
-
-private:	
-	QColor                          m_borderColor;
-	int32                           m_borderWidth;
-	QPointF                         m_minimalExtents;
-	QColor                          m_backgroundColor;
-	QColor                          m_pendingBorderColor;
-	int32                           m_pendingBorderWidth;
-	QColor                          m_pendingBackgroundColor;
-	QMargins                        m_margins;
+private:
+	QColor   m_borderColor;
+	int32    m_borderWidth;
+	QPointF  m_minimalExtents;
+	QColor   m_backgroundColor;
+	QColor   m_pendingBorderColor;
+	int32    m_pendingBorderWidth;
+	QColor   m_pendingBackgroundColor;
+	QMargins m_margins;
 };
 
 }

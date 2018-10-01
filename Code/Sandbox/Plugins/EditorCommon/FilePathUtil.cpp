@@ -235,12 +235,11 @@ void SplitPath(const string& fullPathFilename, string& driveLetter, string& dire
 	string strExtension;
 
 	const char* pchLastPosition = fullPathFilename.c_str();
-	const char* pchCurrentPosition = fullPathFilename.c_str();
 	const char* pchAuxPosition = fullPathFilename.c_str();
 
 	// Directory names or filenames containing ":" are invalid, so we can assume if there is a :
 	// it will be the drive name.
-	pchCurrentPosition = strchr(pchLastPosition, ':');
+	const char* pchCurrentPosition = strchr(pchLastPosition, ':');
 	if (pchCurrentPosition == nullptr)
 	{
 		driveLetter = "";

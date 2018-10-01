@@ -6,11 +6,11 @@
 #include "EditorCommonInit.h"
 #include "ICommandManager.h"
 
-#include <algorithm>
-
 #include <QAction>
 #include <QCursor>
 #include <QMenu>
+
+#include <algorithm>
 
 //////////////////////////////////////////////////////////////////////////
 class CPopupMenuItemCommand : public CPopupMenuItem
@@ -37,7 +37,7 @@ private:
 class QPopupMenuItemAction : public QAction
 {
 public:
-	QPopupMenuItemAction(const std::shared_ptr<CPopupMenuItem> item, QObject* parent);
+	QPopupMenuItemAction(const std::shared_ptr<CPopupMenuItem>& item, QObject* parent);
 	~QPopupMenuItemAction();
 
 	void OnTriggered();
@@ -47,7 +47,7 @@ private:
 	std::shared_ptr<CPopupMenuItem> m_item;
 };
 
-QPopupMenuItemAction::QPopupMenuItemAction(const std::shared_ptr<CPopupMenuItem> item, QObject* parent)
+QPopupMenuItemAction::QPopupMenuItemAction(const std::shared_ptr<CPopupMenuItem>& item, QObject* parent)
 	: QAction(QString(item->Text()), parent)
 	, m_item(item)
 {

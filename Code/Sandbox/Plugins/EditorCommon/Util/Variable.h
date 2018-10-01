@@ -849,12 +849,12 @@ struct type_convertor
 		value.x = 0;
 		value.y = 0;
 		sscanf((const char*)from, "%f,%f", &value.x, &value.y);
-	};
+	}
 	void operator()(const string& from, Vec3& value) const
 	{
 		value.Set(0, 0, 0);
 		sscanf((const char*)from, "%f,%f,%f", &value.x, &value.y, &value.z);
-	};
+	}
 	void operator()(const string& from, Vec4& value) const
 	{
 		value.x = 0;
@@ -862,17 +862,17 @@ struct type_convertor
 		value.z = 0;
 		value.w = 0;
 		sscanf((const char*)from, "%f,%f,%f,%f", &value.x, &value.y, &value.z, &value.w);
-	};
+	}
 	void operator()(const string& from, Ang3& value) const
 	{
 		value.Set(0, 0, 0);
 		sscanf((const char*)from, "%f,%f,%f", &value.x, &value.y, &value.z);
-	};
+	}
 	void operator()(const string& from, Quat& value) const
 	{
 		value.SetIdentity();
 		sscanf((const char*)from, "%f,%f,%f,%f", &value.w, &value.v.x, &value.v.y, &value.v.z);
-	};
+	}
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -882,7 +882,7 @@ template<class Type>
 inline bool compare(const Type& arg1, const Type& arg2)
 {
 	return arg1 == arg2;
-};
+}
 inline bool compare(const Vec2& v1, const Vec2& v2)
 {
 	return v1.x == v2.x && v1.y == v2.y;
@@ -916,7 +916,7 @@ template<class Type>
 inline void init(Type& val)
 {
 	val = 0;
-};
+}
 inline void init(Vec2& val) { val.x = 0; val.y = 0; }
 inline void init(Vec3& val) { val.x = 0; val.y = 0; val.z = 0; }
 inline void init(Vec4& val) { val.x = 0; val.y = 0; val.z = 0; val.w = 0;  }
@@ -1108,7 +1108,6 @@ protected:
 	float         m_valueMin, m_valueMax, m_valueStep;
 	unsigned char m_bHardMin : 1;
 	unsigned char m_bHardMax : 1;
-	bool          m_bResolving;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -1300,7 +1299,7 @@ public:
 		if (index >= m_items.size())
 			return NULL;
 		return m_items[index].name;
-	};
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	T NameToValue(const string& name)
@@ -1331,7 +1330,7 @@ public:
 		item.name = name;
 		item.value = value;
 		m_items.push_back(item);
-	};
+	}
 
 protected:
 	~CVarEnumList() {}
@@ -1361,7 +1360,7 @@ public:
 		if (!m_enum)
 			m_enum = new CVarEnumList<T>;
 		m_enum->AddItem(name, value);
-	};
+	}
 	void AddEnumItem(const char* name, const T& value)
 	{
 		if (GetFlags() & UI_USE_GLOBAL_ENUMS)  // don't think adding makes sense
@@ -1369,7 +1368,7 @@ public:
 		if (!m_enum)
 			m_enum = new CVarEnumList<T>;
 		m_enum->AddItem(name, value);
-	};
+	}
 	void SetEnumList(CVarEnumListBase<T>* enumList)
 	{
 		m_enum = enumList;
@@ -1462,7 +1461,7 @@ struct CSmartVariableEnum : public CSmartVariableBase<T, CVariableEnum<T>>
 	void AddEnumItem(const string& name, const T& value)
 	{
 		pVar->AddEnumItem(name, value);
-	};
+	}
 	void SetEnumList(CVarEnumListBase<T>* enumList)
 	{
 		pVar->EnableUpdateCallbacks(false);

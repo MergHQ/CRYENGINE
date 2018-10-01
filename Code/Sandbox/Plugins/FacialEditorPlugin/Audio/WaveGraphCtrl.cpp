@@ -887,15 +887,13 @@ void CWaveGraphCtrl::UpdatePlayback()
 	if (!m_bPlaying || m_bScrubbing)
 		return;
 
-	float fTime = m_fTimeMarker;
-
 	// Update the time marker based on real time.
 	//CTimeValue currentRealTime = gEnv->pTimer->GetAsyncTime();
 	DWORD currentRealTime = timeGetTime();
 	float elapsedTime = float(currentRealTime - m_lastTimeCheck) / 1000.0f;
-	fTime = m_fTimeMarker + elapsedTime * m_fPlaybackSpeed;
+	float fTime = m_fTimeMarker + elapsedTime * m_fPlaybackSpeed;
 
-	// Try to keep the time synched with the sound engine - adjust the time if there are any sounds playing.
+	// Try to keep the time synced with the sound engine - adjust the time if there are any sounds playing.
 	/*for (int waveFormIndex = 0, waveFormCount = m_waveforms.size(); waveFormIndex < waveFormCount; ++waveFormIndex)
 	   {
 	   ISound* pSound = (*m_waveforms[waveFormIndex].itSound).second.pSound;

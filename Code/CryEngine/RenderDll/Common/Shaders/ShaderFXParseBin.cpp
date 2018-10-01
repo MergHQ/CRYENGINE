@@ -1263,6 +1263,7 @@ bool CShaderManBin::ParseBinFX_Global_Annotations(CParserBin& Parser, SParserFra
 		FX_TOKEN(ForceGeneralPass)
 		FX_TOKEN(ForceDrawAfterWater)
 		FX_TOKEN(DepthFixup)
+		FX_TOKEN(DepthFixupReplace)
 		FX_TOKEN(SingleLightPass)
 		FX_TOKEN(Refractive)
 		FX_TOKEN(ForceRefractionUpdate)
@@ -1429,6 +1430,13 @@ bool CShaderManBin::ParseBinFX_Global_Annotations(CParserBin& Parser, SParserFra
 			if (!ef)
 				break;
 			ef->m_Flags2 |= EF2_DEPTH_FIXUP;
+#endif
+			break;
+		case eT_DepthFixupReplace:
+#if !CRY_PLATFORM_ORBIS
+			if (!ef)
+				break;
+			ef->m_Flags2 |= EF2_DEPTH_FIXUP_REPLACE;
 #endif
 			break;
 		case eT_SingleLightPass:

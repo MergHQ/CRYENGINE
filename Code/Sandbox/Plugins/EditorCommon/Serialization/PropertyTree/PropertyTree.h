@@ -310,8 +310,8 @@ protected:
 	void         onModelPushUndo(PropertyTreeOperator* op, bool* handled);
 
 private:
-	PropertyTree(const PropertyTree&);
-	PropertyTree& operator=(const PropertyTree&);
+	PropertyTree(const PropertyTree&) = delete;
+	PropertyTree& operator=(const PropertyTree&) = delete;
 protected:
 	std::unique_ptr<PropertyTreeModel>            model_;
 	std::unique_ptr<property_tree::InplaceWidget> widget_; // in-place widget
