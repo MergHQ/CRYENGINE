@@ -113,7 +113,7 @@ half4 SilhouetteVisionOptimised( vert2fragCustomRender IN )
 #endif
 
 	half3 finalColor = fMask.xxx * IN.cVision.xyz;
-	return half4(finalColor.rgb, dot(finalColor, 0.333f) > 0.0f);
+	return half4(finalColor.rgb, (IN.cVision.w <= 0) ? IN.cVision.w : (dot(finalColor, 0.333f) > 0.0f));
 }
 
 // Silhouette geometry highlights (used for hinting weapons, pickups, etc - Crysis 2)

@@ -461,8 +461,8 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				if (pObj)
 				{
 					pObj->m_nMaterialLayers = 0;
-					pObj->m_ObjFlags |= FOB_SELECTED;
-					pObj->m_data.m_nHUDSilhouetteParams = RGBA8(255.0f, clr.b, clr.g, clr.r);
+					pObj->m_ObjFlags |= FOB_SELECTED | FOB_HUD_REQUIRE_DEPTHTEST;
+					pObj->m_data.m_nHUDSilhouetteParams = RGBA8(0.0f, clr.b, clr.g, clr.r); // Zero-Alpha == solid fill mode
 				}
 
 				if (!bNoText)
@@ -513,8 +513,8 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				if (pObj)
 				{
 					pObj->m_nMaterialLayers = 0;
-					pObj->m_ObjFlags |= FOB_SELECTED;
-					pObj->m_data.m_nHUDSilhouetteParams = RGBA8(255.0f, clr.b, clr.g, clr.r);
+					pObj->m_ObjFlags |= FOB_SELECTED | FOB_HUD_REQUIRE_DEPTHTEST;
+					pObj->m_data.m_nHUDSilhouetteParams = RGBA8(0.0f, clr.b, clr.g, clr.r); // Zero-Alpha == solid fill mode
 				}
 
 				if (pObj && nNumLods > 1 && !bNoText)
@@ -568,8 +568,8 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				if (pObj)
 				{
 					pObj->m_nMaterialLayers = 0;
-					pObj->m_ObjFlags |= FOB_SELECTED;
-					pObj->m_data.m_nHUDSilhouetteParams = RGBA8(255.0f, clr.b, clr.g, clr.r);
+					pObj->m_ObjFlags |= FOB_SELECTED | FOB_HUD_REQUIRE_DEPTHTEST;
+					pObj->m_data.m_nHUDSilhouetteParams = RGBA8(0.0f, clr.b, clr.g, clr.r); // Zero-Alpha == solid fill mode
 				}
 
 				if (!bNoText)
@@ -774,8 +774,8 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 					}
 					
 					pObj->m_nMaterialLayers = 0;
-					pObj->m_ObjFlags |= FOB_SELECTED;
-					pObj->m_data.m_nHUDSilhouetteParams = RGBA8(255.0f, clr.b * 255.0f, clr.g * 255.0f, clr.r * 255.0f);
+					pObj->m_ObjFlags |= FOB_SELECTED | FOB_HUD_REQUIRE_DEPTHTEST;
+					pObj->m_data.m_nHUDSilhouetteParams = RGBA8(0.0f, clr.b * 255.0f, clr.g * 255.0f, clr.r * 255.0f); // Zero-Alpha == solid fill mode
 				}
 				return false;
 			}
