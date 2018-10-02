@@ -77,14 +77,14 @@ struct MultiEditTest
 struct MultiEditTest2
 {
 	MultiEditTest2()
+		: memberInt(156)
+		, memberFloat(1512051.45)
+		, memberString("some string")
+		, memberBool(false)
+		, memberSharedPtr(std::make_shared<DynCreateBase>())
+		, country(ECountry::Denmark)
+		, color(0xFFFFFFFF)
 	{
-		memberInt = 156;
-		memberFloat = 1512051.45;
-		memberString = "some string";
-		memberBool = false;
-		memberSharedPtr = std::make_shared<DynCreateBase>();
-		country = ECountry::Denmark;
-		color = 0xFFFFFFFF;
 	}
 
 	int                            memberInt;
@@ -266,13 +266,11 @@ struct InliningTest
 struct TestStruct
 {
 	TestStruct()
+		: memberInt(123)
+		, memberFloat(456.789)
+		, memberString("some string")
+		, memberSharedPtr(std::make_shared<DynCreateDerived>())
 	{
-		memberInt = 123;
-		memberFloat = 456.789;
-		memberString = "some string";
-		memberSharedPtr = std::make_shared<DynCreateBase>();
-		memberSharedPtr = std::make_shared<DynCreateDerived>();
-
 		structVector.emplace_back();
 		structVector.emplace_back();
 		structVector.emplace_back();

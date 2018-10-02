@@ -80,10 +80,10 @@ void FinishEditing(const CLineEditDelegate* pLineEditDelegate, CLineEdit* pEdito
 
 CLineEditDelegate::CLineEditDelegate(QAbstractItemView* pParentView)
 	: m_pParentView(pParentView)
+	, m_validateNameFunc([](const string& s) { return s; }) // Identity.
 	, m_editRole(Qt::EditRole)
 	, m_pDelegate(pParentView->itemDelegate())
 {
-	m_validateNameFunc = [](const string& s) { return s; }; // Identity.
 }
 
 QWidget* CLineEditDelegate::createEditor(QWidget* pParent, const QStyleOptionViewItem& option, const QModelIndex& modelIndex) const
