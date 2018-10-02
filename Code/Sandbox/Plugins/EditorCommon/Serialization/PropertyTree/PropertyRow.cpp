@@ -60,6 +60,8 @@ inline unsigned calcHash(const T& t, unsigned hash = 5381)
 ConstStringList* PropertyRow::constStrings_ = 0;
 
 PropertyRow::PropertyRow()
+	: pos_(0, 0)
+	, size_(-1, -1)
 {
 	parent_ = 0;
 	callback_ = 0;
@@ -71,8 +73,6 @@ PropertyRow::PropertyRow()
 	belongsToFilteredRow_ = false;
 	matchFilter_ = true;
 
-	pos_ =  Point(0, 0);
-	size_ = Point(-1, -1);
 	plusSize_ = 0;
 	textPos_ = 0;
 	textSizeInitial_ = 0;

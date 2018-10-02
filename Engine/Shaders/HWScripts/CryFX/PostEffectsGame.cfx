@@ -934,6 +934,12 @@ pixout DeferredSilhouettesOptimisedPS(vtxOutSilhouettes IN)
 	solidFillAlphaOffset.y = SolidFillBufferTex.SampleLevel(SolidFillBufferSampler, IN.baseTC2.xy, 0.0f).w;
 	solidFillAlphaOffset.z = SolidFillBufferTex.SampleLevel(SolidFillBufferSampler, IN.baseTC3.xy, 0.0f).w;
 
+    if (solidFillColor.w <= 0) // Solid fill output
+    {
+        OUT.Color = solidFillColor;
+        return OUT;
+    }
+
 	half3 edges = abs(solidFillColor.www - solidFillAlphaOffset);
 
 	half silhouete = 1.0f - dot(edges.xyz, SILHOUETTE_BRIGHTNESS);

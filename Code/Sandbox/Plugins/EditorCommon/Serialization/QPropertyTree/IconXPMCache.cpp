@@ -108,7 +108,7 @@ bool IconXPMCache::parseXPM(RGBAImage* out, const yasli::IconXPM& icon)
 		if (*p == '#') {
 			++p;
 			if (strlen(p) == 6) {
-				int colorCode;
+				unsigned int colorCode;
 				if(sscanf(p, "%x", &colorCode) != 1)
 					return false;
 				Color color((colorCode & 0xff0000) >> 16,

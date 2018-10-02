@@ -484,10 +484,9 @@ bool CSurfaceInfoPicker::RayIntersection(
   IMaterial** ppOutLastMaterial)
 {
 	SRayHitInfo hitInfo;
-	bool bRayIntersection = false;
-	IMaterial* pMaterial(NULL);
+	IMaterial* pMaterial = nullptr;
 
-	bRayIntersection = RayIntersection(vWorldRaySrc, vWorldRayDir, pEntity, &pMaterial, WorldTM, hitInfo);
+	bool bRayIntersection = RayIntersection(vWorldRaySrc, vWorldRayDir, pEntity, &pMaterial, WorldTM, hitInfo);
 	if (!bRayIntersection)
 	{
 		bRayIntersection = RayIntersection(vWorldRaySrc, vWorldRayDir, pStatObj, &pMaterial, WorldTM, hitInfo);

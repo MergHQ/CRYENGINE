@@ -1,17 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   MultiThread_Containers.h
-//  Version:     v1.00
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __MultiThread_Containters_h__
-#define __MultiThread_Containters_h__
 #pragma once
 
 #include <CrySystem/Pipe.h>
@@ -341,8 +329,8 @@ public:
 	T* pop();
 
 private:
-	typedef typename Alloc::template rebind<T*> Alloc_rebind;
-	queue<T*, typename Alloc_rebind::other> m_lockFreeQueue;
+	using Alloc_rebind = typename std::allocator_traits<Alloc>::template rebind_alloc<T*>;
+	queue<T*, Alloc_rebind> m_lockFreeQueue;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -574,5 +562,3 @@ template<typename T> void free_container(CryMT::queue<T>& v)
 	v.free_memory();
 }
 }
-
-#endif // __MultiThread_Containters_h__

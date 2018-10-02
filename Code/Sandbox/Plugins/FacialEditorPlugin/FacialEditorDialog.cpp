@@ -480,8 +480,7 @@ BOOL CFacialEditorDialog::OnInitDialog()
 
 	if (m_lastProject != "")
 	{
-		bool loadResult = false;
-		loadResult = m_pContext->LoadProject(m_lastProject);
+		bool loadResult = m_pContext->LoadProject(m_lastProject);
 
 		if (loadResult)
 		{
@@ -682,9 +681,7 @@ bool CFacialEditorDialog::CloseCurrentSequence()
 		m_lastSequence = m_pContext->GetSequence()->GetName();
 	if (m_pContext->bSequenceModfied)
 	{
-		QDialogButtonBox::StandardButton res = QDialogButtonBox::StandardButton::Yes;
-
-		res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Facial Sequence was modified.\r\nDo you want to save your changes?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::Cancel);
+		auto res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Facial Sequence was modified.\r\nDo you want to save your changes?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::Cancel);
 
 		if (res == QDialogButtonBox::StandardButton::Yes)
 		{
@@ -709,10 +706,7 @@ bool CFacialEditorDialog::CloseCurrentLibrary()
 	if (m_pContext->bLibraryModfied)
 	{
 		// As to save old project.
-		QDialogButtonBox::StandardButton res = QDialogButtonBox::StandardButton::Yes;
-
-		res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Expressions Library?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::No | QDialogButtonBox::StandardButton::Cancel);
-
+		auto res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Expressions Library?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::No | QDialogButtonBox::StandardButton::Cancel);
 		if (res == QDialogButtonBox::StandardButton::Yes)
 		{
 			if (!SaveCurrentLibrary())
@@ -735,10 +729,7 @@ bool CFacialEditorDialog::CloseCurrentJoysticks()
 {
 	if (m_pContext->bJoysticksModfied)
 	{
-		QDialogButtonBox::StandardButton res = QDialogButtonBox::StandardButton::Yes;
-
-		res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Joystick Set?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::No | QDialogButtonBox::StandardButton::Cancel);
-
+		auto res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Joystick Set?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::No | QDialogButtonBox::StandardButton::Cancel);
 		if (res == QDialogButtonBox::StandardButton::Cancel)
 		{
 			return false;
@@ -1591,10 +1582,7 @@ void CFacialEditorDialog::OnClose()
 {
 	if (m_pContext->bLibraryModfied)
 	{
-		QDialogButtonBox::StandardButton res = QDialogButtonBox::StandardButton::No;
-
-		res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Facial Expression library was modified.\r\nDo you want to save your changes?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::No | QDialogButtonBox::StandardButton::Cancel);
-
+		auto res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Facial Expression library was modified.\r\nDo you want to save your changes?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::No | QDialogButtonBox::StandardButton::Cancel);
 		if (res == QDialogButtonBox::StandardButton::Cancel)
 		{
 			return;
@@ -1935,11 +1923,7 @@ void CFacialEditorDialog::OnProjectOpen()
 	if (m_pContext->bProjectModfied)
 	{
 		// As to save old project.
-
-		QDialogButtonBox::StandardButton res = QDialogButtonBox::StandardButton::Cancel;
-
-		res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Project?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::Cancel);
-
+		auto res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Project?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::Cancel);
 		if (res == QDialogButtonBox::StandardButton::Cancel)
 		{
 			return;
@@ -1994,10 +1978,7 @@ void CFacialEditorDialog::OnLibraryOpen()
 	if (m_pContext->bLibraryModfied)
 	{
 		// As to save old project.
-		QDialogButtonBox::StandardButton res = QDialogButtonBox::StandardButton::Cancel;
-
-		res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Expressions Library?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::Cancel);
-
+		auto res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Expressions Library?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::Cancel);
 		if (res == QDialogButtonBox::StandardButton::Cancel)
 		{
 			return;
@@ -2134,10 +2115,7 @@ void CFacialEditorDialog::OnLoadCharacter()
 	if (m_pContext->bLibraryModfied)
 	{
 		// As to save old project.
-		QDialogButtonBox::StandardButton res = QDialogButtonBox::StandardButton::Cancel;
-
-		res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Expressions Library?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::Cancel);
-
+		auto res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Expressions Library?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::Cancel);
 		if (res == QDialogButtonBox::StandardButton::Cancel)
 		{
 			return;
@@ -2260,10 +2238,7 @@ bool CFacialEditorDialog::SaveCurrentJoysticks(bool bSaveAs)
 //////////////////////////////////////////////////////////////////////////
 void CFacialEditorDialog::OnSequenceSave()
 {
-	QDialogButtonBox::StandardButton res = QDialogButtonBox::StandardButton::Cancel;
-
-	res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Expressions Library?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::Cancel);
-
+	auto res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Expressions Library?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::Cancel);
 	if (res == QDialogButtonBox::StandardButton::Yes)
 	{
 		SaveCurrentSequence();

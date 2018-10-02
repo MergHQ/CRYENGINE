@@ -308,8 +308,8 @@ struct CRenderViewport::SScopedCurrentContext
 
 	SScopedCurrentContext(CRenderViewport* viewport)
 		: viewport(viewport)
-	{
-		previousContext = viewport->SetCurrentContext();
+		, previousContext(viewport->SetCurrentContext())
+	{	
 	}
 
 	~SScopedCurrentContext()

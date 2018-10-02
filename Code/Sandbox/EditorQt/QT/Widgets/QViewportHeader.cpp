@@ -738,7 +738,7 @@ void QViewportHeader::AddAspectRatioMenus(CPopupMenuItem& menu, Functor2<unsigne
 			unsigned int width;
 			unsigned int height;
 
-			if (sscanf(customPresets[i], "%d:%d", &width, &height) == 2)
+			if (sscanf(customPresets[i], "%u:%u", &width, &height) == 2)
 				menu.Add(customPresets[i], setAspectRatioFunc, width, height);
 		}
 	}

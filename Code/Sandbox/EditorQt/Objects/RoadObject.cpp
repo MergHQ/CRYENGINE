@@ -144,9 +144,7 @@ float CRoadObject::GetLocalWidth(int index, float t)
 	float ed = 1.0f;
 	if (af < 0.0f)
 		ed = -1.0f;
-	//af = ed-af;
-	af = af;
-	//af = ed-af;
+
 	af = (af + 1.0f) / 2;
 	return ((1.0f - af) * an1 + af * an2);
 }

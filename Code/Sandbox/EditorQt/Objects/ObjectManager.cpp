@@ -2069,7 +2069,7 @@ void CObjectManager::EmitPopulateInspectorEvent() const
 		else if (objectCount > 1)
 		{
 			char numString[30];
-			snprintf(numString, arraysize(numString), "%d", objectCount);
+			snprintf(numString, arraysize(numString), "%zu", objectCount);
 			szTitle = numString;
 			szTitle += " Selected Objects";
 		}

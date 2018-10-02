@@ -57,7 +57,6 @@ enum ScanResult
 
 struct PropertyRowMenuHandler : sigslot::has_slots
 {
-	virtual ~PropertyRowMenuHandler() {}
 };
 
 struct PropertyActivationEvent
@@ -248,7 +247,6 @@ public:
 	void                                  calcPulledRows(int* minTextSize, int* freePulledChildren, int* minimalWidth, const PropertyTree* tree, int index);
 	void                                  calculateMinimalSize(const PropertyTree* tree, int posX, int availableWidth, bool force, int* extraSizeRemainder, int* _extraSize, int index);
 	void                                  setTextSize(const PropertyTree* tree, int rowIndex, float multiplier);
-	void                                  calculateTotalSizes(int* minTextSize);
 	void                                  adjustVerticalPosition(const PropertyTree* tree, int& totalHeight);
 
 	virtual bool                          isWidgetFixed() const   { return userFixedWidget_ || (widgetPlacement() != WIDGET_VALUE && widgetPlacement() != WIDGET_INSTEAD_OF_TEXT); }
@@ -265,7 +263,6 @@ public:
 	Rect                                  validatorWarningIconRect(const PropertyTree* tree) const;
 	Rect                                  validatorErrorIconRect(const PropertyTree* tree) const;
 	Rect                                  titleIconRect(const PropertyTree* tree) const;
-	void                                  adjustHoveredRect(Rect& hoveredRect);
 	int                                   heightIncludingChildren() const { return heightIncludingChildren_; }
 	property_tree::Font                   rowFont(const PropertyTree* tree) const;
 
@@ -324,7 +321,7 @@ public:
 	bool userWidgetToContent() const { return userWidgetToContent_; }
 	int  userWidgetSize() const      { return userWidgetSize_; }
 
-	// multiValue is used to edit properties of multiple objects simulateneously
+	// multiValue is used to edit properties of multiple objects simultaneously
 	bool multiValue() const             { return multiValue_; }
 	void setMultiValue(bool multiValue) { multiValue_ = multiValue; }
 
