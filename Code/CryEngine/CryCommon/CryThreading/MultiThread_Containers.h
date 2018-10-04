@@ -439,6 +439,7 @@ public:
 
 	void Push(const T &rObj);
 	bool Pop(T * pResult);
+	bool TryPop(T * pResult);
 
 	//! Needs to be called before using, assumes that there is at least one producer
 	//! so the first one doesn't need to call AddProducer, but he has to deregister itself.
@@ -548,6 +549,16 @@ inline bool N_ProducerSingleConsumerQueue<T >::Pop(T* pResult)
 	assert(m_arrStates != NULL);
 	assert(m_nBufferSize != 0);
 	return CryMT::detail::N_ProducerSingleConsumerQueueBase::Pop(pResult, m_nProducerIndex, m_nComsumerIndex, m_nRunning, m_arrBuffer, m_nBufferSize, sizeof(T), m_arrStates);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+template<typename T>
+inline bool N_ProducerSingleConsumerQueue<T >::TryPop(T* pResult)
+{
+	assert(m_arrBuffer != NULL);
+	assert(m_arrStates != NULL);
+	assert(m_nBufferSize != 0);
+	return CryMT::detail::N_ProducerSingleConsumerQueueBase::TryPop(pResult, m_nProducerIndex, m_nComsumerIndex, m_nRunning, m_arrBuffer, m_nBufferSize, sizeof(T), m_arrStates);
 }
 };
 

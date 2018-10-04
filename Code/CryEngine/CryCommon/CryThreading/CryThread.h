@@ -173,8 +173,11 @@ public:
 
 	void Push(void* pObj, volatile uint32& rProducerIndex, volatile uint32& rConsumerIndex, volatile uint32& rRunning, void* arrBuffer, uint32 nBufferSize, uint32 nObjectSize, volatile uint32* arrStates);
 	bool Pop(void* pObj, volatile uint32& rProducerIndex, volatile uint32& rConsumerIndex, volatile uint32& rRunning, void* arrBuffer, uint32 nBufferSize, uint32 nObjectSize, volatile uint32* arrStates);
+	bool TryPop(void* pObj, volatile uint32& rProducerIndex, volatile uint32& rConsumerIndex, volatile uint32& rRunning, void* arrBuffer, uint32 nBufferSize, uint32 nObjectSize, volatile uint32* arrStates);
 
 private:
+	bool Pop_impl(void* pObj, volatile uint32& rProducerIndex, volatile uint32& rConsumerIndex, volatile uint32& rRunning, void* arrBuffer, uint32 nBufferSize, uint32 nObjectSize, volatile uint32* arrStates);
+
 	SLockFreeSingleLinkedListHeader fallbackList;
 	struct SFallbackList
 	{
@@ -421,7 +424,7 @@ inline  void N_ProducerSingleConsumerQueueBase::Push(void* pObj, volatile uint32
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-inline  bool N_ProducerSingleConsumerQueueBase::Pop(void* pObj, volatile uint32& rProducerIndex, volatile uint32& rConsumerIndex, volatile uint32& rRunning, void* arrBuffer, uint32 nBufferSize, uint32 nObjectSize, volatile uint32* arrStates)
+inline bool N_ProducerSingleConsumerQueueBase::Pop(void* pObj, volatile uint32& rProducerIndex, volatile uint32& rConsumerIndex, volatile uint32& rRunning, void* arrBuffer, uint32 nBufferSize, uint32 nObjectSize, volatile uint32* arrStates)
 {
 	CryMT::CryMemoryBarrier();
 
@@ -435,10 +438,28 @@ inline  bool N_ProducerSingleConsumerQueueBase::Pop(void* pObj, volatile uint32&
 		}
 	}
 
+	return Pop_impl(pObj, rProducerIndex, rConsumerIndex, rRunning, arrBuffer, nBufferSize, nObjectSize, arrStates);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+inline bool N_ProducerSingleConsumerQueueBase::TryPop(void* pObj, volatile uint32& rProducerIndex, volatile uint32& rConsumerIndex, volatile uint32& rRunning, void* arrBuffer, uint32 nBufferSize, uint32 nObjectSize, volatile uint32* arrStates)
+{
+	CryMT::CryMemoryBarrier();
+	if (rRunning && rProducerIndex - rConsumerIndex == 0)
+	{
+		return false;
+	}
+
+	return Pop_impl(pObj, rProducerIndex, rConsumerIndex, rRunning, arrBuffer, nBufferSize, nObjectSize, arrStates);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+inline bool N_ProducerSingleConsumerQueueBase::Pop_impl(void* pObj, volatile uint32& rProducerIndex, volatile uint32& rConsumerIndex, volatile uint32& rRunning, void* arrBuffer, uint32 nBufferSize, uint32 nObjectSize, volatile uint32* arrStates)
+{
 	if (rRunning == 0 && rProducerIndex - rConsumerIndex == 0)
 	{
 		SFallbackList* pFallback = (SFallbackList*)CryInterlockedPopEntrySList(fallbackList);
-		IF (pFallback, 0)
+		IF(pFallback, 0)
 		{
 			memcpy(pObj, pFallback->object, nObjectSize);
 			CryModuleMemalignFree(pFallback);
@@ -448,7 +469,8 @@ inline  bool N_ProducerSingleConsumerQueueBase::Pop(void* pObj, volatile uint32&
 		return false;
 	}
 
-	backoff.reset();
+	// Wait for the producer that acquired the index to finish copying the data
+	CSimpleThreadBackOff backoff;
 	while (arrStates[rConsumerIndex % nBufferSize] == 0)
 	{
 		backoff.backoff();

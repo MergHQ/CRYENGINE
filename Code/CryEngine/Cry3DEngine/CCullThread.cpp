@@ -302,6 +302,7 @@ void CCullThread::PrepareCullbufferAsync(const CCamera& rCamera)
 
 	m_Position = rCam.GetPosition();
 
+	m_checkOcclusion.SetRunning();
 	GetObjManager()->BeginCulling();
 
 	m_nPrepareState = PREPARE_STARTED;
@@ -351,6 +352,7 @@ void CCullThread::CullStart(const SRenderingPassInfo& passInfo)
 		TOcclusionCheckJob job;
 		job.SetClassInstance(this);
 		job.SetPriorityLevel(JobManager::eHighPriority);
+		job.RegisterJobState(&m_checkOcclusion);
 		job.Run();
 	}
 }
@@ -689,6 +691,7 @@ void CCullThread::PrepareOcclusion_RasterizeZBuffer()
 		TOcclusionCheckJob job;
 		job.SetClassInstance(this);
 		job.SetPriorityLevel(JobManager::eHighPriority);
+		job.RegisterJobState(&m_checkOcclusion);
 		job.Run();
 	}
 }
@@ -769,6 +772,7 @@ void CCullThread::CheckOcclusion()
 	}
 
 	GetObjManager()->RemoveCullJobProducer();
+	m_checkOcclusion.SetStopped();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -818,6 +822,13 @@ bool CCullThread::TestQuad(const Vec3& vCenter, const Vec3& vAxisX, const Vec3& 
 		return true;
 
 	return false;
+}
+
+void CCullThread::WaitOnCheckOcclusionJobs()
+{
+	// Ensure all jobs have finished
+	m_checkOcclusion.Wait();
+	GetObjManager()->GetRenderContentJobState().Wait();
 }
 
 } // namespace NAsyncCull

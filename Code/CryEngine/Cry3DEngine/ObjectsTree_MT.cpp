@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "PolygonClipContext.h"
+#include "CryThreading/IJobManager.h"
 #include "RoadRenderNode.h"
 #include "Brush.h"
 #include "RenderMeshMerger.h"
@@ -47,12 +48,31 @@ void CObjManager::RenderNonJobObjects(const SRenderingPassInfo& passInfo)
 	CRY_PROFILE_REGION(PROFILE_3DENGINE, "3DEngine: RenderNonJobObjects");
 	CRYPROFILE_SCOPE_PROFILE_MARKER("RenderNonJobObjects");
 
-	SCheckOcclusionOutput outputData;
+	bool hasWaited = false;
 	while (1)
 	{
-		// process till we know that no more procers are working
+		// Optimization:
+		// First we work off all already queued occlusion job outputs.
+		// Once there is no more output in the queue, we wait on the occlusion jobs to finish which will spawn an extra worker.
+		// Lastly we work off all remaining occlusion job outputs
+		SCheckOcclusionOutput outputData;
+		if (!GetObjManager()->TryPopFromCullOutputQueue(&outputData))
+		{
+			if (!hasWaited)
+			{
+				m_CullThread.WaitOnCheckOcclusionJobs();
+				hasWaited = true;
+				continue;
+			}
+			else
+			{
+				break;
+			}
+		}
 		if (!GetObjManager()->PopFromCullOutputQueue(&outputData))
+		{
 			break;
+		}
 
 		switch (outputData.type)
 		{

@@ -26,6 +26,7 @@ private:
 	void* m_pCheckOcclusionJob;
 	JobManager::SJobState m_JobStatePrepareOcclusionBuffer;
 	JobManager::SJobState m_PrepareBufferSync;
+	JobManager::SJobState m_checkOcclusion;
 	Matrix44A m_MatScreenViewProj;
 	Matrix44A m_MatScreenViewProjTransposed;
 	Vec3 m_ViewDir;
@@ -84,6 +85,8 @@ public:
 
 	bool TestAABB(const AABB &rAABB, float fEntDistance, float fVerticalExpand = 0.0f);
 	bool TestQuad(const Vec3 &vCenter, const Vec3 &vAxisX, const Vec3 &vAxisY);
+
+	void WaitOnCheckOcclusionJobs();
 
 	CCullThread();
 	~CCullThread();
