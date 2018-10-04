@@ -152,28 +152,38 @@ bool CEntityLoadManager::ParseEntities(XmlNodeRef& entitiesNode, bool bIsLoading
 		SYNCHRONOUS_LOADING_TICK();
 
 		XmlNodeRef entityNode = entitiesNode->getChild(i);
-		if (entityNode && entityNode->isTag("Entity") && CanParseEntity(entityNode))
+		if (entityNode && entityNode->isTag("Entity"))
 		{
-			// Create entities only if we are not in editor game mode.
-			if (!gEnv->IsEditorGameMode())
+			bool parsed = false;
+			if (CanParseEntity(entityNode))
 			{
-				INDENT_LOG_DURING_SCOPE(true, "Parsing entity '%s'", entityNode->getAttr("Name"));
-
-				loadParameterStorage.emplace_back();
-				SEntityLoadParams& loadParams = loadParameterStorage.back();
-				loadParams.networkIdentifier = static_cast<IEntitySystem::StaticEntityNetworkIdentifier>(i);
-
-				if (!ExtractEntityLoadParams(entityNode, loadParams, segmentOffset, true))
+				// Create entities only if we are not in editor game mode.
+				if (!gEnv->IsEditorGameMode())
 				{
-					loadParameterStorage.pop_back();
+					INDENT_LOG_DURING_SCOPE(true, "Parsing entity '%s'", entityNode->getAttr("Name"));
 
-					string sName = entityNode->getAttr("Name");
-					EntityWarning("CEntityLoadManager::ParseEntities : Failed when parsing entity \'%s\'", sName.empty() ? "Unknown" : sName.c_str());
+					loadParameterStorage.emplace_back();
+					SEntityLoadParams& loadParams = loadParameterStorage.back();
+					loadParams.networkIdentifier = static_cast<IEntitySystem::StaticEntityNetworkIdentifier>(i);
+
+					if (!ExtractEntityLoadParams(entityNode, loadParams, segmentOffset, true))
+					{
+						loadParameterStorage.pop_back();
+
+						string sName = entityNode->getAttr("Name");
+						EntityWarning("CEntityLoadManager::ParseEntities : Failed when parsing entity \'%s\'", sName.empty() ? "Unknown" : sName.c_str());
+					}
+					else
+					{
+						parsed = true;
+						requiredAllocationSize += loadParams.allocationSize;
+					}
 				}
-				else
-				{
-					requiredAllocationSize += loadParams.allocationSize;
-				}
+			}
+			
+			if (!parsed && bIsLoadingLevelFile)
+			{
+				g_pIEntitySystem->AddStaticEntityId(INVALID_ENTITYID, static_cast<IEntitySystem::StaticEntityNetworkIdentifier>(i));
 			}
 		}
 

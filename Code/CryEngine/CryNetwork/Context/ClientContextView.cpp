@@ -348,13 +348,13 @@ NET_IMPLEMENT_SIMPLE_IMMEDIATE_MESSAGE(CClientContextView, BeginUnbindObject, eN
 
 NET_IMPLEMENT_SIMPLE_IMMEDIATE_MESSAGE(CClientContextView, RemoveStaticObject, eNRT_ReliableUnordered, eMPF_BlocksStateChange)
 {
-	ContextState()->UnbindStaticObject(param.id);
+	ContextState()->UnbindStaticObject(param.staticId);
 	return true;
 }
 
 NET_IMPLEMENT_SIMPLE_IMMEDIATE_MESSAGE(CClientContextView, UnbindPredictedObject, eNRT_ReliableUnordered, eMPF_BlocksStateChange)
 {
-	ContextState()->UnbindStaticObject(param.id);
+	ContextState()->UnbindPredictedObject(param.id);
 	return true;
 }
 

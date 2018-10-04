@@ -18,10 +18,10 @@
 // Qt
 #include <QApplication>
 #include <QDesktopWidget>
+#include <QEvent>
 #include <QPropertyAnimation>
 #include <QTabWidget>
 #include <QVBoxLayout>
-#include <QEvent>
 
 REGISTER_TRAY_AREA_WIDGET(CNotificationCenterTrayWidget, 10)
 
@@ -335,8 +335,6 @@ private:
 	int animationDistance;
 	int notificationMaxCount;
 
-	//
-	int                                              m_lastShownIdx;
 	QWidget*                                         m_pNotificationCenterWidget;
 	QVector<CNotificationWidget*>                    m_notificationPopups;
 	// Ongoing geometry animations need to be cached so we can update the end value if needed

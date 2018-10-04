@@ -3570,7 +3570,7 @@ EntityId CEntitySystem::GetEntityIdFromStaticEntityNetworkId(const StaticEntityN
 
 void CEntitySystem::AddStaticEntityId(const EntityId id, StaticEntityNetworkIdentifier networkIdentifier)
 {
-	CRY_ASSERT_MESSAGE(m_staticEntityIds.empty() || m_staticEntityIds.back() < id, "Static entity identifiers must be added sequentially!");
+	CRY_ASSERT_MESSAGE(m_staticEntityIds.empty() || m_staticEntityIds.back() < id || id == INVALID_ENTITYID, "Static entity identifiers must be added sequentially!");
 	CRY_ASSERT(networkIdentifier < m_staticEntityIds.size());
 
 	// Static entity identifiers start at index 1, 0 being game rules

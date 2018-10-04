@@ -635,7 +635,7 @@ RemoveLeafFromNode(SQuadNode& rParentNode, const TLeafContent& crCont, const TVe
 }
 
 template<class TLeafContent, uint32 TMaxCellElems, class TPosType, class TIndexType, bool TUseRadius>
-void CQuadTree<TLeafContent, TMaxCellElems, TPosType, TIndexType, TUseRadius >::EnsureTreeIntegrity(const TTravRecVecType crTraversedNodes)
+void CQuadTree<TLeafContent, TMaxCellElems, TPosType, TIndexType, TUseRadius >::EnsureTreeIntegrity(const TTravRecVecType& crTraversedNodes)
 {
 	const uint32 cCount = crTraversedNodes.size();
 	for (int i = cCount - 1; i >= 0; --i)

@@ -571,7 +571,7 @@ HTREEITEM CFragmentBrowser::FindFragmentItem(FragmentID fragmentID, const SFragT
 	return NULL;
 }
 
-bool CFragmentBrowser::SelectFragments(const std::vector<FragmentID> fragmentIDs, const std::vector<SFragTagState>& tagStates, const std::vector<uint32>& options)
+bool CFragmentBrowser::SelectFragments(const std::vector<FragmentID>& fragmentIDs, const std::vector<SFragTagState>& tagStates, const std::vector<uint32>& options)
 {
 	bool bRet = false;
 	std::vector<HTREEITEM> newBoldItems;
