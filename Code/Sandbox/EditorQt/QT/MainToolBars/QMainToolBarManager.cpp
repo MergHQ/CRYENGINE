@@ -1,4 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #include "StdAfx.h"
 #include "QMainToolBarManager.h"
 
@@ -363,10 +364,10 @@ void QMainToolBarManager::AddToolBar(const QString& name, const std::shared_ptr<
 	CreateMainFrameToolBar(name, pToolBar);
 }
 
-void QMainToolBarManager::UpdateToolBar(const std::shared_ptr<QToolBarDesc> toolBar)
+void QMainToolBarManager::UpdateToolBar(const std::shared_ptr<QToolBarDesc>& pToolBar)
 {
-	SaveToolBar(toolBar->GetName());
-	CreateMainFrameToolBar(toolBar->GetName(), toolBar);
+	SaveToolBar(pToolBar->GetName());
+	CreateMainFrameToolBar(pToolBar->GetName(), pToolBar);
 }
 
 void QMainToolBarManager::RemoveToolBar(const QString& name)

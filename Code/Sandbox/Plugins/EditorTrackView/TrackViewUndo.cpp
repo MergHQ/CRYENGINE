@@ -461,7 +461,7 @@ void CUndoTrackRemove::Redo()
 CUndoAnimNodeReparent::CUndoAnimNodeReparent(CTrackViewAnimNode* pAnimNode, CTrackViewAnimNode* pNewParent)
 	: CAbstractUndoAnimNodeTransaction(pAnimNode), m_pNewParent(pNewParent), m_pOldParent(m_pParentNode)
 {
-	CTrackViewSequence* pSequence = pAnimNode->GetSequence();
+	const CTrackViewSequence* pSequence = pAnimNode->GetSequence();
 	assert(pSequence == m_pNewParent->GetSequence() && pSequence == m_pOldParent->GetSequence());
 
 	Reparent(pNewParent);

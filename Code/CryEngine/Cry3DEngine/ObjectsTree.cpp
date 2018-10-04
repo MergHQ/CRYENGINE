@@ -2541,6 +2541,7 @@ void COctreeNode::RenderContent(int nRenderMask, const Vec3& vAmbColor, uint32 p
 	TRenderContentJob renderContentJob(nRenderMask, vAmbColor, passCullMask, passInfo);
 	renderContentJob.SetClassInstance(this);
 	renderContentJob.SetPriorityLevel(JobManager::eHighPriority);
+	renderContentJob.RegisterJobState(&GetObjManager()->GetRenderContentJobState());
 	renderContentJob.Run();
 }
 
@@ -3563,6 +3564,12 @@ bool CObjManager::PopFromCullOutputQueue(SCheckOcclusionOutput* pCheckOcclusionO
 	CRY_PROFILE_REGION(PROFILE_3DENGINE, "3DEngine: WaitCullOutputQueue");
 
 	return m_CheckOcclusionOutputQueue.Pop(pCheckOcclusionOutput);
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CObjManager::TryPopFromCullOutputQueue(SCheckOcclusionOutput* pCheckOcclusionOutput)
+{
+	return m_CheckOcclusionOutputQueue.TryPop(pCheckOcclusionOutput);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

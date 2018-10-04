@@ -620,10 +620,10 @@ static inline void DisplayDensity(IMergedMeshesManager* manager, AABB _bbox, uin
 	col1.b = 0.6f;
 	col1.a = 0.80f;
 
-	col1.r = 0.1f;
-	col1.g = 0.8f;
-	col1.b = 0.1f;
-	col1.a = 0.90f;
+	col2.r = 0.1f;
+	col2.g = 0.8f;
+	col2.b = 0.1f;
+	col2.a = 0.90f;
 
 	// Extract a surface from each grid cell if the cell straddles
 	// the boundary of the cell
@@ -735,22 +735,6 @@ static inline void DisplayDensitySpheres(IMergedMeshesManager* manager, AABB _bb
 	ISurfaceType* surfaceTypes[8][MMRM_MAX_SURFACE_TYPES];
 	const float rcp = 1.f / (float)(dim - 1);
 	size_t c[8];
-
-	ColorF col0, col1, col2;
-	col0.r = 0.8f;
-	col0.g = 0.1f;
-	col0.b = 0.2f;
-	col0.a = 0.85f;
-
-	col1.r = 0.1f;
-	col1.g = 0.1f;
-	col1.b = 0.6f;
-	col1.a = 0.80f;
-
-	col1.r = 0.1f;
-	col1.g = 0.8f;
-	col1.b = 0.1f;
-	col1.a = 0.90f;
 
 	// Extract a surface from each grid cell if the cell straddles
 	// the boundary of the cell

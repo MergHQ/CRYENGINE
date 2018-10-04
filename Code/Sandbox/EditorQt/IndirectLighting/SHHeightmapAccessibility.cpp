@@ -13,8 +13,14 @@ const float CHemisphereSink_SH::cA1 = 2.094395f / 3.141593f;
 const float CHemisphereSink_SH::cA2 = 0.785398f / 3.141593f;
 
 CHemisphereSink_SH::CHemisphereSink_SH(const DWORD indwAngleSteps, const DWORD indwWidth, const DWORD indwHeight)
-	: m_SHRotMatrix(9), m_pTerrainObjMan(NULL), m_AngleSteps((uint32)indwAngleSteps),
-	m_SHSamples((size_t)indwAngleSteps), m_WaterLevel(0.f), m_Width((uint32)indwWidth)
+	: m_SHRotMatrix(9)
+	, m_pTerrainObjMan(nullptr)
+	, m_pHeightMap(nullptr)
+	, m_WaterLevel(0.f)
+	, m_HeightScale(1.f)
+	, m_AngleSteps((uint32)indwAngleSteps)
+	, m_SHSamples((size_t)indwAngleSteps)
+	, m_Width((uint32)indwWidth)
 {
 	assert(indwWidth == indwHeight);
 	Matrix33_tpl<float> rotMat;
@@ -108,11 +114,11 @@ CHemisphereSink_SH::CHemisphereSink_SH(const DWORD indwAngleSteps, const DWORD i
 
 void CHemisphereSink_SH::Init
 (
-  CTerrainObjectMan* cpTerrainObjMan,
-  float* pHeightMap,
-  const float cWaterLevel,
-  const float cHeightScale,
-  const uint32 cWorldSpaceMul
+	CTerrainObjectMan* cpTerrainObjMan,
+	float* pHeightMap,
+	const float cWaterLevel,
+	const float cHeightScale,
+	const uint32 cWorldSpaceMul
 )
 {
 	assert(cpTerrainObjMan);
@@ -161,7 +167,7 @@ void CHemisphereSink_SH::InitSample(SampleType& rInoutValue, const uint32 cX, co
 	float obstructionAmount = 1.f;
 	const uint8 cObstruction = m_pTerrainObjMan->IsObstructed(cX, cY, m_Width, obstructionIndex, obstructionAmount, false);//obstruction map is in heightmap space
 	if (cObstruction == CTerrainObjectMan::scObstructed)
-		rInoutValue.SetObstructed(true);//OnBeforeProcessing will take care of coordinate translation
+		rInoutValue.SetObstructed(true); //OnBeforeProcessing will take care of coordinate translation
 	if (rInoutValue.posZ <= m_WaterLevel)
 		rInoutValue.SetToBeIgnored(true);
 }
@@ -209,16 +215,16 @@ void CHemisphereSink_SH::AddWedgeArea(const float cCurWedgeAngle, const float cI
 			yPos = newOrigin.y;
 			m_pTerrainObjMan->CalcRayIntersectionData
 			(
-			  newOrigin,
-			  crRayDir,
-			  scRayLength
+				newOrigin,
+				crRayDir,
+				scRayLength
 			);
 			rayIntersectionDataValid = true;
 		}
 		if (!cDoRayCasting || !m_DoMP)
 			PerformRayCasting(crWedgeSamples, cDoRayCasting, rInoutValue, wedgeHorizonAngle);
 		else
-			PerformRayCastingMP(crWedgeSamples, m_SHSamplesMP[cAzimutIndex], rInoutValue, wedgeHorizonAngle);//call mp version
+			PerformRayCastingMP(crWedgeSamples, m_SHSamplesMP[cAzimutIndex], rInoutValue, wedgeHorizonAngle); //call mp version
 	}
 
 	SampleType* pSample = &rInoutValue;
@@ -249,16 +255,16 @@ void CHemisphereSink_SH::AddWedgeArea(const float cCurWedgeAngle, const float cI
 				}
 				m_pTerrainObjMan->CalcRayIntersectionData
 				(
-				  newOrigin,
-				  crRayDir,
-				  scRayLength,
-				  getQuadTreeCont
+					newOrigin,
+					crRayDir,
+					scRayLength,
+					getQuadTreeCont
 				);
 			}
 			if (!cDoRayCasting || !m_DoMP)
 				PerformRayCasting(crWedgeSamples, cDoRayCasting, *pSample, wedgeHorizonAngle);
 			else
-				PerformRayCastingMP(crWedgeSamples, m_SHSamplesMP[cAzimutIndex], *pSample, wedgeHorizonAngle);//call mp version
+				PerformRayCastingMP(crWedgeSamples, m_SHSamplesMP[cAzimutIndex], *pSample, wedgeHorizonAngle); //call mp version
 		}
 	}
 }
@@ -326,10 +332,10 @@ void CHemisphereSink_SH::SMPData::ThreadEntry()
 
 void CHemisphereSink_SH::PerformRayCastingMP
 (
-  const TSingleWedgeSampleVecPair& crWedgeSamples,
-  TWedgeSampleVecMPSingle& rWedgeSamplesMP,
-  SampleType& rInoutValue,
-  const float cWedgeHorizonAngle
+	const TSingleWedgeSampleVecPair& crWedgeSamples,
+	TWedgeSampleVecMPSingle& rWedgeSamplesMP,
+	SampleType& rInoutValue,
+	const float cWedgeHorizonAngle
 )
 {
 #if defined(DO_MP)
@@ -370,10 +376,10 @@ void CHemisphereSink_SH::PerformRayCastingMP
 
 void CHemisphereSink_SH::PerformRayCasting
 (
-  const TSingleWedgeSampleVecPair& crWedgeSamples,
-  const bool cDoRayCasting,
-  SampleType& rInoutValue,
-  const float cWedgeHorizonAngle
+	const TSingleWedgeSampleVecPair& crWedgeSamples,
+	const bool cDoRayCasting,
+	SampleType& rInoutValue,
+	const float cWedgeHorizonAngle
 ) const
 {
 	//iterate all altitudes and get the ray query with its hit colour
@@ -489,23 +495,23 @@ void CHemisphereSink_SH::OnCalcEnd(SampleType& rInoutValue)
 		float obstructionAmount = 1.f;
 		//WORLD_HMAP_COORDINATE_EXCHANGE
 		const uint8 cObstruction = m_pTerrainObjMan->IsObstructed
-		                           (
-		  (uint16)rInoutValue.posY,
-		  (uint16)rInoutValue.posX,
-		  m_Width * m_WorldSpaceMul,
-		  obstructionIndex,
-		  obstructionAmount,
-		  true
+			                         (
+			(uint16)rInoutValue.posY,
+			(uint16)rInoutValue.posX,
+			m_Width * m_WorldSpaceMul,
+			obstructionIndex,
+			obstructionAmount,
+			true
 		                           );//obstruction map is in heightmap space
 	}
 }
 
 void CHemisphereSink_SH::AddSample
 (
-  SampleType& rSampleToLinkFrom,
-  const Vec3& crPos,
-  const bool cApplyRayCasting,
-  const bool cIsFullyObstructed
+	SampleType& rSampleToLinkFrom,
+	const Vec3& crPos,
+	const bool cApplyRayCasting,
+	const bool cIsFullyObstructed
 )
 {
 	//always sort sample to be added by distance to original sample, this way we might minimize calls CalcRayIntersectionData
@@ -517,7 +523,7 @@ void CHemisphereSink_SH::AddSample
 
 	float height = crPos.z;
 	if (rSampleToLinkFrom.IsOffseted())
-		height = std::max(height, rSampleToLinkFrom.posZ);//dont place below
+		height = std::max(height, rSampleToLinkFrom.posZ); //dont place below
 
 	addSample.posZ = height;
 	addSample.posXFloat = crPos.x;
@@ -539,7 +545,7 @@ void CHemisphereSink_SH::AddSample
 			if (fabs(pSample->posXFloat - crPos.x) < cDistThreshold &&
 			    fabs(pSample->posYFloat - crPos.y) < cDistThreshold &&
 			    fabs(pSample->posZ - height) < cDistThreshold)
-				return;//a sample near this pos does already exists
+				return; //a sample near this pos does already exists
 		}
 	}
 	addSample.SetDoRayCasting(cApplyRayCasting);

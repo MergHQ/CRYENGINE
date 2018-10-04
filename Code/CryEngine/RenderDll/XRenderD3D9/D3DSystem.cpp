@@ -167,7 +167,10 @@ SDisplayContextKey CD3D9Renderer::CreateSwapChainBackedContext(const SDisplayCon
 
 	if (width * height)
 	{
-		pDC->ChangeDisplayResolution(width, height);
+		gRenDev->ExecuteRenderThreadCommand([=]
+		{
+			pDC->ChangeDisplayResolution(width, height);
+		}, ERenderCommandFlags::None );
 	}
 
 	{

@@ -420,10 +420,16 @@ public:
 
 	void PushIntoCullOutputQueue(const SCheckOcclusionOutput& rCheckOcclusionOutput);
 	bool PopFromCullOutputQueue(SCheckOcclusionOutput* pCheckOcclusionOutput);
+	bool TryPopFromCullOutputQueue(SCheckOcclusionOutput* pCheckOcclusionOutput);
 
 	void BeginCulling();
 	void RemoveCullJobProducer();
 	void AddCullJobProducer();
+
+	JobManager::SJobState& GetRenderContentJobState()
+	{
+		return m_renderContentJobState;
+	}
 
 #ifndef _RELEASE
 	void CoverageBufferDebugDraw();
@@ -525,6 +531,8 @@ private:
 
 	CryMT::SingleProducerSingleConsumerQueue<SCheckOcclusionJobData> m_CheckOcclusionQueue;
 	CryMT::N_ProducerSingleConsumerQueue<SCheckOcclusionOutput>      m_CheckOcclusionOutputQueue;
+	
+	JobManager::SJobState                                            m_renderContentJobState;
 
 	class CPreloadTimeslicer;
 	std::unique_ptr<CPreloadTimeslicer> m_pPreloadTimeSlicer;

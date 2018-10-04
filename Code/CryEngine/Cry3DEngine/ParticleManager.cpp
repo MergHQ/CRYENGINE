@@ -90,9 +90,8 @@ ITimer* g_pParticleTimer = NULL;
 
 //////////////////////////////////////////////////////////////////////////
 CParticleManager::CParticleManager(bool bEnable)
+	: m_pParticleSystem(pfx2::GetIParticleSystem())
 {
-	m_pParticleSystem = pfx2::GetIParticleSystem();
-
 	m_bEnabled = bEnable;
 	m_bRegisteredListener = false;
 #ifdef bEVENT_TIMINGS

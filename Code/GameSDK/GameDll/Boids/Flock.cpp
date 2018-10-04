@@ -1,16 +1,4 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-// -------------------------------------------------------------------------
-//  File name:   flock.cpp
-//  Version:     v1.00
-//  Created:     5/4/2002 by Timur.
-//  Compilers:   Visual C++ 7.0
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "Flock.h"
 #include "BugsFlock.h"
@@ -57,6 +45,7 @@ int CFlock::m_e_flocks_hunt = 1;
 
 //////////////////////////////////////////////////////////////////////////
 CFlock::CFlock(IEntity* pEntity, EFlockType flockType)
+	: m_lastUpdatePosTimePassed(0)
 {
 	m_nViewDistRatio = 100;
 	m_pEntity = pEntity;
@@ -299,7 +288,7 @@ void CFlock::Update(CCamera* pCamera)
 		return;
 	}
 
-	if (GetISystem()->IsSerializingFile() == 1) //quickloading
+	if (GetISystem()->IsSerializingFile() == 1) //quick loading
 		return;
 
 	if (!m_bEntityCreated)

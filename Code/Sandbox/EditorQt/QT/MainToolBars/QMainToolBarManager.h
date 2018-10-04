@@ -143,7 +143,7 @@ public:
 	~QMainToolBarManager();
 
 	void                                                AddToolBar(const QString& name, const std::shared_ptr<QToolBarDesc>& pToolBar);
-	void                                                UpdateToolBar(const std::shared_ptr<QToolBarDesc> toolBar);
+	void                                                UpdateToolBar(const std::shared_ptr<QToolBarDesc>& pToolBar);
 	void                                                RemoveToolBar(const QString& name);
 
 	const QMap<QString, std::shared_ptr<QToolBarDesc>>& GetToolBars() const             { return m_ToolBarsDesc; }
