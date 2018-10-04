@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __EffectorInfoWnd_h__
-#define __EffectorInfoWnd_h__
 #pragma once
 
 #include "Dialogs/ToolbarDialog.h"
@@ -21,7 +19,7 @@ public:
 	~CEffectorInfoWnd();
 	void Create(CWnd* pParent);
 	void SetContext(CFacialEdContext* pContext);
-	void ResetWeight() { SetWeight(1.0f, 0); };
+	void ResetWeight() { SetWeight(1.0f, 0); }
 
 protected:
 	DECLARE_MESSAGE_MAP()
@@ -40,9 +38,7 @@ protected:
 	afx_msg void OnGotoMinus1();
 	afx_msg void OnGoto0();
 	afx_msg void OnGoto1();
-	afx_msg void OnChangeCurrentTime();
 	afx_msg void OnMeasureItemSplines(LPMEASUREITEMSTRUCT pMeasureItem);
-	afx_msg void OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct);
 
 	void         ReloadCtrls();
 	void         SetWeight(float fWeight, float fBalance = 0.0f);
@@ -64,7 +60,6 @@ protected:
 
 private:
 	CXTPToolBar           m_wndToolBar;
-	//CXTPToolBar m_wndToolBar;
 	CXTPTaskPanel         m_wndTaskPanel;
 	CImageList            m_imageList;
 
@@ -79,7 +74,6 @@ private:
 	int                   m_nSplineHeight;
 
 	CXTPControlLabel*     m_pCurrPosCtrl;
-	CXTPControlLabel*     m_pExpName;
 
 	CFacialEdContext*     m_pContext;
 	struct ControllerInfo
@@ -94,5 +88,3 @@ private:
 	CPropertyCtrlEx                    m_wndProperties;
 	class CFacialAttachmentEffectorUI* m_pAttachEffectorUI;
 };
-
-#endif // __EffectorInfoWnd_h__

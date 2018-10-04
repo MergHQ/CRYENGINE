@@ -1,17 +1,18 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#include <CrySandbox/CrySignal.h>
-#include "Controls/EditorDialog.h"
 #include "QMainToolBarManager.h"
 
-class QToolBar;
+#include <Controls/EditorDialog.h>
+#include <CrySandbox/CrySignal.h>
+
 class QAdvancedTreeView;
 class QDeepFilterProxyModel;
-class QHBoxLayout;
-class QListView;
 class QEditableComboBox;
+class QHBoxLayout;
 class QLineEdit;
+class QListView;
+class QToolBar;
 class QToolButton;
 
 class QToolBarCreator : public CEditorDialog
@@ -90,7 +91,7 @@ public:
 	void                                               RemoveItemAt(int idx);
 	void                                               BuildPreview();
 
-	QCustomToolBar*                                    CreateToolBar(const QString& title, const std::shared_ptr<QMainToolBarManager::QToolBarDesc> toolBarDesc);
+	QCustomToolBar*                                    CreateToolBar(const QString& title, const std::shared_ptr<QMainToolBarManager::QToolBarDesc>& pToolBarDesc);
 	std::shared_ptr<QMainToolBarManager::QToolBarDesc> GetCurrentToolBarDesc() { return m_pCurrentToolBarDesc; }
 	void                                               SetSelectedActionIcon(const char* szPath);
 
@@ -106,7 +107,7 @@ public Q_SLOTS:
 	void ShowToolBarContextMenu(const QPoint& position);
 
 protected:
-	int      GetIndexFromMouseCoord(const QPoint& globalPos);
+	int GetIndexFromMouseCoord(const QPoint& globalPos);
 
 public:
 	CCrySignal<void(std::shared_ptr<QMainToolBarManager::QItemDesc> )> selectedItemChanged;

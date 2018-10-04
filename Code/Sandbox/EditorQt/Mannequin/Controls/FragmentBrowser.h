@@ -43,7 +43,7 @@ public:
 	void SetContext(SMannequinContexts& context);
 
 	void SetScopeContext(int scopeContextID);
-	bool SelectFragments(const std::vector<FragmentID> fragmentIDs, const std::vector<SFragTagState>& tagStates, const std::vector<uint32>& options);
+	bool SelectFragments(const std::vector<FragmentID>& fragmentIDs, const std::vector<SFragTagState>& tagStates, const std::vector<uint32>& options);
 	bool SelectFragment(FragmentID fragmentID, const SFragTagState& tagState, uint32 option = 0);
 	bool SetTagState(const std::vector<SFragTagState>& newTagsVec);
 

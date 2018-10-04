@@ -201,7 +201,6 @@ PropertyRow* PropertyRowContainer::addElement(PropertyTree* tree, bool append)
 	tree->expandRow(clonedRow);
 	TreePath path = tree->model()->pathFromRow(clonedRow);
 	tree->model()->rowChanged(clonedRow);
-	clonedRow = tree->model()->rowFromPath(path);
 	tree->repaint(); 
 	clonedRow = tree->model()->rowFromPath(path);
 	if (clonedRow) {

@@ -1,17 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
--------------------------------------------------------------------------
-$Id$
-$DateTime$
-Description: Manager for playlists
-
--------------------------------------------------------------------------
-History:
-- 06:03:2010 : Created by Tom Houghton
-
-*************************************************************************/
-
 #include "StdAfx.h"
 #include "PlaylistManager.h"
 
@@ -1870,11 +1858,10 @@ void CPlaylistManager::ReadDetailedServerInfo(uint16 *pOptions, uint32 numOption
 			// Read the value and convert back into an int
 			int iValue = 0;
 			float fValue = 0.f;
-			ECVarType cvarType = ECVarType::Invalid;
-			
-			m_bIsSettingOptions = true;
 
-			cvarType = UnpackCustomVariantOption(pOptions[i], i, &iValue, &fValue);
+			m_bIsSettingOptions = true;
+			ECVarType cvarType = UnpackCustomVariantOption(pOptions[i], i, &iValue, &fValue);
+
 			if (cvarType == ECVarType::Int)
 			{
 				option.m_pCVar->Set(iValue);
@@ -2058,9 +2045,8 @@ void CPlaylistManager::ReadSetCustomVariantOptions(CCryLobbyPacket* pPacket, CPl
 			// Read the value and convert back into an int
 			int iValue = 0;
 			float fValue = 0.f;
-			ECVarType cvarType = ECVarType::Invalid;
 			
-			cvarType = UnpackCustomVariantOption(pPacket->ReadUINT16(), i, &iValue, &fValue);
+			ECVarType cvarType = UnpackCustomVariantOption(pPacket->ReadUINT16(), i, &iValue, &fValue);
 			if (cvarType == ECVarType::Int)
 			{
 				option.m_pCVar->Set(iValue);

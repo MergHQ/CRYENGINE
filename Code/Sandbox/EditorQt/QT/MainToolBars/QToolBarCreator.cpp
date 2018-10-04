@@ -408,7 +408,7 @@ void QToolBarCreator::QDropContainer::SetSelectedActionIcon(const char* szPath)
 	toolBarActions[idx]->setIcon(CryIcon(szPath));
 }
 
-QToolBarCreator::QCustomToolBar* QToolBarCreator::QDropContainer::CreateToolBar(const QString& title, const std::shared_ptr<QMainToolBarManager::QToolBarDesc> toolBarDesc)
+QToolBarCreator::QCustomToolBar* QToolBarCreator::QDropContainer::CreateToolBar(const QString& title, const std::shared_ptr<QMainToolBarManager::QToolBarDesc>& pToolBarDesc)
 {
 	if (title.isEmpty())
 		return nullptr;
@@ -419,7 +419,7 @@ QToolBarCreator::QCustomToolBar* QToolBarCreator::QDropContainer::CreateToolBar(
 	connect(pToolBar, &QToolBar::customContextMenuRequested, this, &QToolBarCreator::QDropContainer::ShowToolBarContextMenu);
 
 	CEditorMainFrame* pMainFrame = CEditorMainFrame::GetInstance();
-	pMainFrame->GetToolBarManager()->CreateToolBar(toolBarDesc, pToolBar);
+	pMainFrame->GetToolBarManager()->CreateToolBar(pToolBarDesc, pToolBar);
 	QList<QAction*> toolBarActions = pToolBar->actions();
 
 	for (QAction* pAction : toolBarActions)
