@@ -1259,6 +1259,7 @@ void CServerContextView::OnWitnessDeclared()
 
 void CServerContextView::RemoveStaticEntity(EntityId id)
 {
+#ifndef PURE_CLIENT
 	class CRemoveStaticObjectMessage : public INetMessage, private SRemoveStaticObject
 	{
 	public:
@@ -1290,4 +1291,8 @@ void CServerContextView::RemoveStaticEntity(EntityId id)
 
 	const IEntitySystem::StaticEntityNetworkIdentifier staticId = gEnv->pEntitySystem->GetStaticEntityNetworkId(id);
 	Parent()->NetAddSendable(new CRemoveStaticObjectMessage(CClientContextView::RemoveStaticObject, staticId), 0, NULL, NULL);
+#else
+	// Calling RemoveStaticEntity on PURE_CLIENT is not supported. If happens - check settings for eNOE_RemoveStaticEntity.
+	NET_ASSERT(false);
+#endif
 }
