@@ -218,13 +218,13 @@ CREWaterOcean* COcean::m_pOceanRE = 0;
 uint32 COcean::m_nVisiblePixelsCount = ~0;
 
 COcean::COcean(IMaterial* pMat)
+	: m_pMaterial(pMat)
 {
 	m_pBottomCapRenderMesh = 0;
 
 	memset(m_fRECustomData, 0, sizeof(m_fRECustomData));
 	memset(m_fREOceanBottomCustomData, 0, sizeof(m_fREOceanBottomCustomData));
 
-	m_pMaterial = pMat;
 	m_fLastFov = 0;
 	m_fLastVisibleFrameTime = 0.0f;
 

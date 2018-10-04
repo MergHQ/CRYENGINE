@@ -689,7 +689,7 @@ int CSaverCGF::SaveNodeMesh(
 		chunk.nVerts = pNode->meshInfo.nVerts;
 		chunk.nIndices = pNode->meshInfo.nIndices;
 		chunk.nSubsets = pNode->meshInfo.nSubsets;
-		chunk.bboxMax = pNode->meshInfo.bboxMin;
+		chunk.bboxMin = pNode->meshInfo.bboxMin;
 		chunk.bboxMax = pNode->meshInfo.bboxMax;
 	}
 

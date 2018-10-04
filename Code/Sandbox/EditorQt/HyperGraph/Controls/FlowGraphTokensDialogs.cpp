@@ -265,9 +265,9 @@ IMPLEMENT_DYNAMIC(CFlowGraphNewTokenDlg, CDialog)
 
 CFlowGraphNewTokenDlg::CFlowGraphNewTokenDlg(STokenData* pTokenData, TTokens tokenList, CWnd* pParent /*=NULL*/)
 	: CDialog(CFlowGraphNewTokenDlg::IDD, pParent)
+	, m_pTokenData(pTokenData)
+	, m_tokens(tokenList)
 {
-	m_pTokenData = pTokenData;
-	m_tokens = tokenList;
 }
 
 void CFlowGraphNewTokenDlg::DoDataExchange(CDataExchange* pDX)

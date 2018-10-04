@@ -1,16 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   MatMan.cpp
-//  Version:     v1.00
-//  Created:     28/5/2001 by Vladimir Kajalin
-//  Compilers:   Visual Studio.NET
-//  Description: Material Manager Implementation
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "MatMan.h"
 #include "3dEngine.h"
@@ -1290,7 +1279,6 @@ void CMatMan::FreeAllMaterials()
 	CMatInfo* pMtl = CMatInfo::get_intrusive_list_root();
 
 	// Shut down all materials
-	pMtl = CMatInfo::get_intrusive_list_root();
 	while (pMtl)
 	{
 		pMtl->ShutDown();
