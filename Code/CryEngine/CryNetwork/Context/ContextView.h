@@ -63,12 +63,21 @@ struct SSimpleObjectIDParams
 	}
 };
 
-struct SRemoveStaticObject
+struct SRemovePredictedObject
 {
 	EntityId id;
 	void     SerializeWith(TSerialize ser)
 	{
 		ser.Value("id", id);
+	}
+};
+
+struct SRemoveStaticObject
+{
+	IEntitySystem::StaticEntityNetworkIdentifier staticId;
+	void     SerializeWith(TSerialize ser)
+	{
+		ser.Value("id", staticId);
 	}
 };
 

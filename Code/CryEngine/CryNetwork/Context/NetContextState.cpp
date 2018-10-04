@@ -1534,7 +1534,28 @@ void CNetContextState::RebindObject(SNetObjectID netId, EntityId userId)
 	}
 }
 
-void CNetContextState::UnbindStaticObject(EntityId id)
+void CNetContextState::UnbindStaticObject(IEntitySystem::StaticEntityNetworkIdentifier staticId)
+{
+	NET_ASSERT(gEnv->pSystem->GetSystemGlobalState() > ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START_ENTITIES);
+
+	const EntityId id = gEnv->pEntitySystem->GetEntityIdFromStaticEntityNetworkId(staticId);
+	if (id == INVALID_ENTITYID)
+	{
+		return;
+	}
+
+	SNetObjectID netID = GetNetID(id);
+	if (netID)
+	{
+		UnbindObject(netID, eUOF_CallGame);
+	}
+	else
+	{
+		TO_GAME(&CNetContextState::GC_UnboundObject, this, id);
+	}
+}
+
+void CNetContextState::UnbindPredictedObject(EntityId id)
 {
 	SNetObjectID netID = GetNetID(id);
 	if (netID)

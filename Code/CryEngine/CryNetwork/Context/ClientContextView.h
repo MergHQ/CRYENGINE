@@ -109,7 +109,7 @@ public:
 	NET_DECLARE_IMMEDIATE_MESSAGE(BeginBindPredictedObject);
 	NET_DECLARE_IMMEDIATE_MESSAGE(BeginBindStaticObject);
 	NET_DECLARE_SIMPLE_IMMEDIATE_MESSAGE(BeginUnbindObject, SSimpleObjectIDParams);
-	NET_DECLARE_SIMPLE_IMMEDIATE_MESSAGE(UnbindPredictedObject, SRemoveStaticObject);
+	NET_DECLARE_SIMPLE_IMMEDIATE_MESSAGE(UnbindPredictedObject, SRemovePredictedObject);
 	NET_DECLARE_IMMEDIATE_MESSAGE(ReconfigureObject);
 	NET_DECLARE_IMMEDIATE_MESSAGE(RMI_UnreliableOrdered);
 	NET_DECLARE_IMMEDIATE_MESSAGE(RMI_ReliableUnordered);

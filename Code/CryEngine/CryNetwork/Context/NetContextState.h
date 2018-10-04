@@ -6,6 +6,7 @@
 #pragma once
 
 #include <CryNetwork/INetwork.h>
+#include <CryEntitySystem/IEntitySystem.h>
 #include "INetContextState.h"
 #include "INetContextListener.h"
 #include "ContextEstablisher.h"
@@ -163,7 +164,8 @@ public:
 	void                   UpdateAuthority(SNetObjectID id, bool bAuth, bool bLocal);
 	bool                   AllocateObject(EntityId userID, SNetObjectID netID, NetworkAspectType aspectBits, bool bOwned, ESpawnType spawnType, INetContextListenerPtr pController);
 	bool                   UnbindObject(SNetObjectID id, uint32 flags);
-	void                   UnbindStaticObject(EntityId id);
+	void                   UnbindStaticObject(IEntitySystem::StaticEntityNetworkIdentifier staticId);
+	void                   UnbindPredictedObject(EntityId staticId);
 	void                   ForceUnbindObject(SNetObjectID id);
 	// reconfigure an objects enabled aspects status
 	void                   ReconfigureObject(SNetObjectID netID, NetworkAspectType aspects);
