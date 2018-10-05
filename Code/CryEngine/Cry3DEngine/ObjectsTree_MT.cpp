@@ -64,14 +64,10 @@ void CObjManager::RenderNonJobObjects(const SRenderingPassInfo& passInfo)
 				hasWaited = true;
 				continue;
 			}
-			else
+			else if (!GetObjManager()->PopFromCullOutputQueue(&outputData))
 			{
 				break;
 			}
-		}
-		if (!GetObjManager()->PopFromCullOutputQueue(&outputData))
-		{
-			break;
 		}
 
 		switch (outputData.type)
