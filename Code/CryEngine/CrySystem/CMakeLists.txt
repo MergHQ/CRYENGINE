@@ -605,11 +605,6 @@ if (OPTION_ENABLE_CRASHRPT)
 	add_subdirectory( "${CRY_LIBS_DIR}/crashrpt" "${CMAKE_CURRENT_BINARY_DIR}/crashrpt")
 endif()
 
-if (ANDROID OR ORBIS)
-	#Forcing C11 standard on C files and with that overriding project C++ standard that is being applied.
-	set_source_files_properties("CryDLMalloc.c" PROPERTIES COMPILE_FLAGS "-std=c11")
-endif()
-
 CryEngineModule(CrySystem PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 setup_crysystem()
 

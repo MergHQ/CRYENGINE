@@ -87,11 +87,6 @@ if (WINDOWS)
 	target_link_libraries(${THIS_PROJECT} PRIVATE shell32 Gdi32 wininet Ole32)
 endif()
 
-if (ANDROID OR ORBIS)
-	#Forcing C11 standard on C files and with that overriding project C++ standard that is being applied.
-	set_source_files_properties("vectorlib.c" PROPERTIES COMPILE_FLAGS "-std=c11")
-endif()
-
 if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	target_compile_options(${THIS_PROJECT} PRIVATE
 		-Wno-unused-variable
