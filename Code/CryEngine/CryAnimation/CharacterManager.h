@@ -326,10 +326,10 @@ private:
 	void                      RegisterModelSKIN(CSkin* pModelSKIN, uint32 nLoadingFlags);
 	void                      UnregisterModelSKEL(CDefaultSkeleton* pModelSKEL);
 	void                      UnregisterModelSKIN(CSkin* pModelSKIN);
-	void                      SkelExtension(CCharInstance* pCharInstance, const char* pFilepathSKEL, const uint32 cdfId, const uint32 nLoadingFlags);
+	void                      SkelExtension(CCharInstance* pCharInstance, const CharacterDefinition& characterDefinition, const uint32 nLoadingFlags);
 	uint32                    CompatibilityTest(CDefaultSkeleton* pDefaultSkeleton, CSkin* pCSkin);
 	CDefaultSkeleton*         CheckIfModelSKELLoaded(const string& strFileName, uint32 nLoadingFlags);
-	CDefaultSkeleton*         CreateExtendedSkel(CCharInstance* pCharInstance, CDefaultSkeleton* pDefaultSkeleton, uint64 nExtendedCRC64, const std::vector<const char*>& mismatchingSkins, const uint32 nLoadingFlags);
+	CDefaultSkeleton*         CreateExtendedSkel(CDefaultSkeleton* const pSourceSkeleton, const std::vector<const char*>& mismatchingSkins, IMaterial* const pMaterial, const uint32 nLoadingFlags);
 #ifdef EDITOR_PCDEBUGCODE
 	virtual void              ClearAllKeepInMemFlags();
 #endif

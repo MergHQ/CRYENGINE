@@ -2960,7 +2960,7 @@ ICharacterInstance* CharacterManager::LoadCharacterDefinition(const string pathn
 
 		pCharInstance->SetFilePath(pathname); //store the CDF-pathname inside the instance
 
-		SkelExtension(pCharInstance, pFilepathSKEL, cdfId, nLoadingFlags);
+		SkelExtension(pCharInstance, m_arrCacheForCDF[cdfId], nLoadingFlags);
 
 		//-----------------------------------------------------------
 		//init attachment-list
@@ -2994,94 +2994,90 @@ ICharacterInstance* CharacterManager::LoadCharacterDefinition(const string pathn
 
 //----------------------------------------------------------------------------------
 
-void CharacterManager::SkelExtension(CCharInstance* pCharInstance, const char* pFilepathSKEL, const uint32 cdfId, const uint32 nLoadingFlags)
+void CharacterManager::SkelExtension(CCharInstance* pCharacter, const CharacterDefinition& characterDefinition, const uint32 loadingFlags)
 {
-	CDefaultSkeleton* const pDefaultSkeleton = pCharInstance->m_pDefaultSkeleton;
+	CDefaultSkeleton* const pCurrentSkeleton = pCharacter->m_pDefaultSkeleton;
 
 	std::vector<const char*> mismatchingSkins;
-	uint64 nExtendedCRC64 = CCrc32::ComputeLowercase(pFilepathSKEL);
-
-	for (auto && attachment : m_arrCacheForCDF[cdfId].m_arrAttachments)
+	for (auto&& attachment : characterDefinition.m_arrAttachments)
 	{
 		if (attachment.m_Type != CA_SKIN)
 		{
 			continue;
 		}
 
-		const char* const szSkinPath = attachment.m_strBindingPath.c_str();
-		if (!szSkinPath)
+		const char* const skinPath = attachment.m_strBindingPath.c_str();
+		if (!skinPath)
 		{
 			continue;
 		}
 
-		CSkin* const pModelSKIN = static_cast<CSkin*>(LoadModelSKIN(szSkinPath, nLoadingFlags));
-		if (!pModelSKIN)
+		CSkin* const pSkin = static_cast<CSkin*>(LoadModelSKIN(skinPath, loadingFlags));
+		if (!pSkin)
 		{
 			continue;
 		}
 
-		const uint32 mismatchingJointsCount = CompatibilityTest(pDefaultSkeleton, pModelSKIN);
+		const uint32 mismatchingJointsCount = CompatibilityTest(pCurrentSkeleton, pSkin);
 		if (mismatchingJointsCount > 0)
 		{
-			mismatchingSkins.push_back(szSkinPath);
+			mismatchingSkins.push_back(skinPath);
 		}
-
-		nExtendedCRC64 += CCrc32::ComputeLowercase(szSkinPath);
 	}
 
-	if (!mismatchingSkins.empty())
+	if (!mismatchingSkins.empty() || (pCharacter->GetIMaterial() != pCurrentSkeleton->GetIMaterial()))
 	{
-		CDefaultSkeleton* pExtDefaultSkeleton = CheckIfModelExtSKELCreated(nExtendedCRC64, nLoadingFlags);
-		if (!pExtDefaultSkeleton)
+		CDefaultSkeleton* pExtendedSkeleton = CreateExtendedSkel(pCurrentSkeleton, mismatchingSkins, pCharacter->GetIMaterial(), loadingFlags);
+		if (pExtendedSkeleton)
 		{
-			pExtDefaultSkeleton = CreateExtendedSkel(pCharInstance, pDefaultSkeleton, nExtendedCRC64, mismatchingSkins, nLoadingFlags);
-		}
-		if (pExtDefaultSkeleton)
-		{
-			pDefaultSkeleton->SetKeepInMemory(true);
-			pCharInstance->RuntimeInit(pExtDefaultSkeleton);
+			pCurrentSkeleton->SetKeepInMemory(true);
+			pCharacter->RuntimeInit(pExtendedSkeleton);
 		}
 	}
 }
 
-void CharacterManager::ExtendDefaultSkeletonWithSkinAttachments(ICharacterInstance* pCharInst, const char* szFilepathSKEL, const char** szSkinAttachments, const uint32 skinsCount, const uint32 nLoadingFlags)
+void CharacterManager::ExtendDefaultSkeletonWithSkinAttachments(ICharacterInstance* pICharacter, const char* /*unused*/, const char** szSkinAttachments, const uint32 skinsCount, const uint32 loadingFlags)
 {
-	CCharInstance* pCharInstance = static_cast<CCharInstance*>(pCharInst);
-	CDefaultSkeleton* const pDefaultSkeleton = pCharInstance->m_pDefaultSkeleton;
+	CCharInstance* const pCharacter = static_cast<CCharInstance*>(pICharacter);
+
+	const char* originalSkeletonFilename = pCharacter->m_pDefaultSkeleton->GetModelFilePath();
+	if (pCharacter->m_pDefaultSkeleton->GetModelFilePathCRC64() != 0)
+	{
+		assert(originalSkeletonFilename[0] == '_');
+		originalSkeletonFilename++; // All extended skeletons have an '_' in front of the filepath to not confuse them with regular skeletons.
+	}
+
+	CDefaultSkeleton* pOriginalSkeleton = g_pCharacterManager->CheckIfModelSKELLoaded(originalSkeletonFilename, loadingFlags);
+	if (!pOriginalSkeleton)
+	{
+		return;
+	}
 
 	std::vector<const char*> mismatchingSkins;
-	uint64 nExtendedCRC64 = CCrc32::ComputeLowercase(szFilepathSKEL);
-
 	for (uint32 i = 0; i < skinsCount; ++i)
 	{
-		const char* const szSkinPath = szSkinAttachments[i];
+		const char* const skinPath = szSkinAttachments[i];
 
-		CSkin* const pModelSKIN = static_cast<CSkin*>(LoadModelSKIN(szSkinPath, nLoadingFlags));
-		if (!pModelSKIN)
+		CSkin* const pSkin = static_cast<CSkin*>(LoadModelSKIN(skinPath, loadingFlags));
+		if (!pSkin)
 		{
 			continue;
 		}
 
-		const uint32 mismatchingJointsCount = CompatibilityTest(pDefaultSkeleton, pModelSKIN);
+		const uint32 mismatchingJointsCount = CompatibilityTest(pOriginalSkeleton, pSkin);
 		if (mismatchingJointsCount > 0)
 		{
-			mismatchingSkins.push_back(szSkinPath);
+			mismatchingSkins.push_back(skinPath);
 		}
-
-		nExtendedCRC64 += CCrc32::ComputeLowercase(szSkinPath);
 	}
 
-	if (!mismatchingSkins.empty())
+	if (!mismatchingSkins.empty() || (pCharacter->GetIMaterial() != pOriginalSkeleton->GetIMaterial()))
 	{
-		CDefaultSkeleton* pExtDefaultSkeleton = CheckIfModelExtSKELCreated(nExtendedCRC64, nLoadingFlags);
-		if (!pExtDefaultSkeleton)
-		{
-			pExtDefaultSkeleton = CreateExtendedSkel(pCharInstance, pDefaultSkeleton, nExtendedCRC64, mismatchingSkins, nLoadingFlags);
-		}
+		CDefaultSkeleton* pExtDefaultSkeleton = CreateExtendedSkel(pOriginalSkeleton, mismatchingSkins, pCharacter->GetIMaterial(), loadingFlags);
 		if (pExtDefaultSkeleton)
 		{
-			pDefaultSkeleton->SetKeepInMemory(true);
-			pCharInstance->RuntimeInit(pExtDefaultSkeleton);
+			pOriginalSkeleton->SetKeepInMemory(true);
+			pCharacter->RuntimeInit(pExtDefaultSkeleton);
 		}
 	}
 }
@@ -3190,99 +3186,123 @@ static struct
 	SNode  m_arrExtModelJoints[MAX_JOINT_AMOUNT * 2]; // This is the new extended skeleton
 } lh;
 
-CDefaultSkeleton* CharacterManager::CreateExtendedSkel(CCharInstance* pCharInstance, CDefaultSkeleton* pDefaultSkeleton, uint64 nExtendedCRC64, const std::vector<const char*>& mismatchingSkins, const uint32 nLoadingFlags)
+CDefaultSkeleton* CharacterManager::CreateExtendedSkel(CDefaultSkeleton* const pSourceSkeleton, const std::vector<const char*>& mismatchingSkins, IMaterial* const pMaterial, const uint32 nLoadingFlags)
 {
-	const char* pFilepathSKEL = pDefaultSkeleton->GetModelFilePath();
+	assert(pSourceSkeleton);
+	assert(pSourceSkeleton->GetModelFilePathCRC64() == 0);
+	assert(pMaterial);
 
-	stack_string tmp = pFilepathSKEL;
-	stack_string strextended = "_" + tmp;
-	CDefaultSkeleton* pExtDefaultSkeleton = new CDefaultSkeleton(strextended.c_str(), CHR, nExtendedCRC64);
-	pExtDefaultSkeleton->SetModelAnimEventDatabase(pDefaultSkeleton->GetModelAnimEventDatabaseCStr());
-	RegisterModelSKEL(pExtDefaultSkeleton, nLoadingFlags);
-
-	//create a real hierarchy
-	uint32 numJoints = pDefaultSkeleton->m_arrModelJoints.size();
-	for (uint32 j = 0; j < numJoints; j++)
+	uint64 extendedSkeletonCrc = CCrc32::ComputeLowercase(pSourceSkeleton->GetModelFilePath());
+	if (pMaterial != pSourceSkeleton->GetIMaterial())
 	{
-		int32 p = pDefaultSkeleton->m_arrModelJoints[j].m_idxParent;
-		lh.m_arrHierarchy[j].m_DefaultAbsolute = pDefaultSkeleton->m_poseDefaultData.GetJointsAbsolute()[j];
-		lh.m_arrHierarchy[j].m_idxParent = p;
-		lh.m_arrHierarchy[j].m_idxNext = 0;
-		lh.m_arrHierarchy[j].m_idxFirst = 0;
-		lh.m_arrHierarchy[j].m_fMass = pDefaultSkeleton->m_arrModelJoints[j].m_fMass;
-		lh.m_arrHierarchy[j].m_PhysInfo = pDefaultSkeleton->m_arrBackupPhysInfo[j];
-		lh.m_arrHierarchy[j].m_strJointName = pDefaultSkeleton->m_arrModelJoints[j].m_strJointName;
-		lh.m_arrHierarchy[j].m_nJointCRC32Lower = pDefaultSkeleton->m_arrModelJoints[j].m_nJointCRC32Lower;
-		lh.m_arrHierarchy[j].m_nCRC32Parent = p < 0 ? 0 : pDefaultSkeleton->m_arrModelJoints[p].m_nJointCRC32Lower;
+		extendedSkeletonCrc += CCrc32::ComputeLowercase(pMaterial->GetName());
+	}
+	for (const char* skinName : mismatchingSkins)
+	{
+		extendedSkeletonCrc += CCrc32::ComputeLowercase(skinName);
 	}
 
-	uint32 nExtensionNeeded = mismatchingSkins.size();
-	for (uint32 e = 0; e < nExtensionNeeded; e++)
+	if (CDefaultSkeleton* pCachedSkeleton = CheckIfModelExtSKELCreated(extendedSkeletonCrc, nLoadingFlags))
 	{
-		const char* ppath = mismatchingSkins[e];
-		const CSkin* pCModelSKIN = CheckIfModelSKINLoaded(ppath, nLoadingFlags);
-		if (pCModelSKIN == 0)
-			CryFatalError("ModelError: skin not loaded");
-		PREFAST_ASSUME(pCModelSKIN);
-		const CSkin::SJointInfo* parrModelJoints = &pCModelSKIN->m_arrModelJoints[0];
-		if (lh.find(numJoints, parrModelJoints->m_nJointCRC32Lower) < 0)
+		return pCachedSkeleton;
+	}
+
+	stack_string extendedSkeletonName = "_";
+	extendedSkeletonName += pSourceSkeleton->GetModelFilePath();
+
+	CDefaultSkeleton* const pExtendedSkeleton = new CDefaultSkeleton(extendedSkeletonName.c_str(), CHR, extendedSkeletonCrc);
+	{
+		// Initialize with the source skeleton hierarchy.
+		uint32 numJoints = pSourceSkeleton->m_arrModelJoints.size();
+		for (uint32 j = 0; j < numJoints; j++)
 		{
-			CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_ERROR, "CryAnimation: Skin root joint '%s' was not found in skeleton (with root '%s'), while attaching skin '%s' to skeleton '%s'.",
-			           parrModelJoints->m_NameModelSkin.c_str(), lh.m_arrHierarchy[0].m_strJointName, pCModelSKIN->GetModelFilePath(), pDefaultSkeleton->GetModelFilePath());
-			lh.m_arrHierarchy[numJoints].m_DefaultAbsolute = parrModelJoints->m_DefaultAbsolute;
-			lh.m_arrHierarchy[numJoints].m_idxParent = 0;
-			lh.m_arrHierarchy[numJoints].m_idxNext = 0;
-			lh.m_arrHierarchy[numJoints].m_idxFirst = 0;
-			lh.m_arrHierarchy[numJoints].m_fMass = 0;
-			lh.m_arrHierarchy[numJoints].m_PhysInfo.pPhysGeom = 0;
-			lh.m_arrHierarchy[numJoints].m_strJointName = parrModelJoints->m_NameModelSkin;
-			lh.m_arrHierarchy[numJoints].m_nJointCRC32Lower = parrModelJoints->m_nJointCRC32Lower;
-			lh.m_arrHierarchy[numJoints].m_nCRC32Parent = pDefaultSkeleton->m_arrModelJoints[0].m_nJointCRC32Lower;
-			numJoints++;
+			const int32 parentIndex = pSourceSkeleton->m_arrModelJoints[j].m_idxParent;
+			lh.m_arrHierarchy[j].m_DefaultAbsolute = pSourceSkeleton->m_poseDefaultData.GetJointsAbsolute()[j];
+			lh.m_arrHierarchy[j].m_idxParent = parentIndex;
+			lh.m_arrHierarchy[j].m_idxNext = 0;
+			lh.m_arrHierarchy[j].m_idxFirst = 0;
+			lh.m_arrHierarchy[j].m_fMass = pSourceSkeleton->m_arrModelJoints[j].m_fMass;
+			lh.m_arrHierarchy[j].m_PhysInfo = pSourceSkeleton->m_arrBackupPhysInfo[j];
+			lh.m_arrHierarchy[j].m_strJointName = pSourceSkeleton->m_arrModelJoints[j].m_strJointName;
+			lh.m_arrHierarchy[j].m_nJointCRC32Lower = pSourceSkeleton->m_arrModelJoints[j].m_nJointCRC32Lower;
+			lh.m_arrHierarchy[j].m_nCRC32Parent = parentIndex < 0 ? 0 : pSourceSkeleton->m_arrModelJoints[parentIndex].m_nJointCRC32Lower;
 		}
-		uint32 numSkinJoints = pCModelSKIN->m_arrModelJoints.size();
-		for (uint32 s = 0; s < numSkinJoints; s++)
+
+		// Extend with joints from mismatching skins.
+		const uint32 nExtensionNeeded = mismatchingSkins.size();
+		for (uint32 e = 0; e < nExtensionNeeded; ++e)
 		{
-			const char* pskinname = parrModelJoints[s].m_NameModelSkin.c_str();
-			uint32 found = 0, scrc32 = parrModelJoints[s].m_nJointCRC32Lower;
-			for (uint32 m = 0; m < numJoints; m++)
-				if (scrc32 == lh.m_arrHierarchy[m].m_nJointCRC32Lower)  { found = 1; break; }
-			if (found == 0)
-				lh.insert(numJoints++, s, parrModelJoints);
+			const CSkin* pSkin = CheckIfModelSKINLoaded(mismatchingSkins[e], nLoadingFlags);
+			assert(pSkin);
+
+			const CSkin::SJointInfo* parrModelJoints = &pSkin->m_arrModelJoints[0];
+			if (lh.find(numJoints, parrModelJoints[0].m_nJointCRC32Lower) < 0)
+			{
+				CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_ERROR, "CryAnimation: Skin root joint '%s' was not found in skeleton (with root '%s'), while attaching skin '%s' to skeleton '%s'.", parrModelJoints->m_NameModelSkin.c_str(), lh.m_arrHierarchy[0].m_strJointName, pSkin->GetModelFilePath(), pSourceSkeleton->GetModelFilePath());
+				lh.m_arrHierarchy[numJoints].m_DefaultAbsolute = parrModelJoints[0].m_DefaultAbsolute;
+				lh.m_arrHierarchy[numJoints].m_idxParent = 0;
+				lh.m_arrHierarchy[numJoints].m_idxNext = 0;
+				lh.m_arrHierarchy[numJoints].m_idxFirst = 0;
+				lh.m_arrHierarchy[numJoints].m_fMass = 0;
+				lh.m_arrHierarchy[numJoints].m_PhysInfo.pPhysGeom = 0;
+				lh.m_arrHierarchy[numJoints].m_strJointName = parrModelJoints[0].m_NameModelSkin;
+				lh.m_arrHierarchy[numJoints].m_nJointCRC32Lower = parrModelJoints[0].m_nJointCRC32Lower;
+				lh.m_arrHierarchy[numJoints].m_nCRC32Parent = pSourceSkeleton->m_arrModelJoints[0].m_nJointCRC32Lower;
+				++numJoints;
+			}
+
+			const uint32 numSkinJoints = pSkin->m_arrModelJoints.size();
+			for (uint32 s = 1; s < numSkinJoints; ++s)
+			{
+				if (lh.find(numJoints, parrModelJoints[s].m_nJointCRC32Lower) < 0)
+				{
+					lh.insert(numJoints, s, parrModelJoints);
+					++numJoints;
+				}
+			}
+
+			if (numJoints >= MAX_JOINT_AMOUNT)
+			{
+				CryFatalError("ModelError: bone count over limit");
+			}
 		}
-		if (numJoints >= MAX_JOINT_AMOUNT)
-			CryFatalError("ModelError: bone count over limit");
+
+		lh.rebuild(numJoints);
+
+		pExtendedSkeleton->m_arrModelJoints.resize(numJoints);
+		pExtendedSkeleton->m_poseDefaultData.Initialize(numJoints);
+		pExtendedSkeleton->m_arrModelJoints[0].m_idxParent = lh.m_arrExtModelJoints[0].m_idxParent;
+		pExtendedSkeleton->m_arrModelJoints[0].m_strJointName = lh.m_arrExtModelJoints[0].m_strJointName;
+		pExtendedSkeleton->m_arrModelJoints[0].m_nJointCRC32Lower = lh.m_arrExtModelJoints[0].m_nJointCRC32Lower;
+		pExtendedSkeleton->m_arrModelJoints[0].m_nJointCRC32 = CCrc32::Compute(lh.m_arrExtModelJoints[0].m_strJointName);
+		pExtendedSkeleton->m_arrModelJoints[0].m_PhysInfoRef = lh.m_arrExtModelJoints[0].m_PhysInfo;
+		pExtendedSkeleton->m_arrModelJoints[0].m_fMass = lh.m_arrExtModelJoints[0].m_fMass;
+		pExtendedSkeleton->m_poseDefaultData.GetJointsRelative()[0] = lh.m_arrExtModelJoints[0].m_DefaultAbsolute;
+		pExtendedSkeleton->m_poseDefaultData.GetJointsAbsolute()[0] = lh.m_arrExtModelJoints[0].m_DefaultAbsolute;
+
+		for (uint32 i = 1; i < numJoints; i++)
+		{
+			int32 p = lh.m_arrExtModelJoints[i].m_idxParent;
+			pExtendedSkeleton->m_arrModelJoints[i].m_idxParent = p;
+			pExtendedSkeleton->m_arrModelJoints[i].m_strJointName = lh.m_arrExtModelJoints[i].m_strJointName;
+			pExtendedSkeleton->m_arrModelJoints[i].m_nJointCRC32Lower = lh.m_arrExtModelJoints[i].m_nJointCRC32Lower;
+			pExtendedSkeleton->m_arrModelJoints[i].m_nJointCRC32 = CCrc32::Compute(lh.m_arrExtModelJoints[i].m_strJointName);
+			pExtendedSkeleton->m_arrModelJoints[i].m_PhysInfoRef = lh.m_arrExtModelJoints[i].m_PhysInfo;
+			pExtendedSkeleton->m_arrModelJoints[i].m_fMass = lh.m_arrExtModelJoints[i].m_fMass;
+			pExtendedSkeleton->m_poseDefaultData.GetJointsAbsolute()[i] = lh.m_arrExtModelJoints[i].m_DefaultAbsolute;
+			pExtendedSkeleton->m_poseDefaultData.GetJointsRelative()[i] = pExtendedSkeleton->m_poseDefaultData.GetJointsAbsolute()[p].GetInverted() * lh.m_arrExtModelJoints[i].m_DefaultAbsolute;
+		}
 	}
 
-	//rebuild the linear skeleton from the hierarchy
-	lh.rebuild(numJoints);
-	pExtDefaultSkeleton->m_arrModelJoints.resize(numJoints);
-	pExtDefaultSkeleton->m_poseDefaultData.Initialize(numJoints);
-	pExtDefaultSkeleton->m_arrModelJoints[0].m_idxParent = lh.m_arrExtModelJoints[0].m_idxParent;
-	pExtDefaultSkeleton->m_arrModelJoints[0].m_strJointName = lh.m_arrExtModelJoints[0].m_strJointName;
-	pExtDefaultSkeleton->m_arrModelJoints[0].m_nJointCRC32Lower = lh.m_arrExtModelJoints[0].m_nJointCRC32Lower;
-	pExtDefaultSkeleton->m_arrModelJoints[0].m_nJointCRC32 = CCrc32::Compute(lh.m_arrExtModelJoints[0].m_strJointName);
-	pExtDefaultSkeleton->m_arrModelJoints[0].m_PhysInfoRef = lh.m_arrExtModelJoints[0].m_PhysInfo;
-	pExtDefaultSkeleton->m_arrModelJoints[0].m_fMass = lh.m_arrExtModelJoints[0].m_fMass;
-	pExtDefaultSkeleton->m_poseDefaultData.GetJointsRelative()[0] = lh.m_arrExtModelJoints[0].m_DefaultAbsolute;
-	pExtDefaultSkeleton->m_poseDefaultData.GetJointsAbsolute()[0] = lh.m_arrExtModelJoints[0].m_DefaultAbsolute;
-	for (uint32 i = 1; i < numJoints; i++)
-	{
-		int32 p = lh.m_arrExtModelJoints[i].m_idxParent;
-		pExtDefaultSkeleton->m_arrModelJoints[i].m_idxParent = p;
-		pExtDefaultSkeleton->m_arrModelJoints[i].m_strJointName = lh.m_arrExtModelJoints[i].m_strJointName;
-		pExtDefaultSkeleton->m_arrModelJoints[i].m_nJointCRC32Lower = lh.m_arrExtModelJoints[i].m_nJointCRC32Lower;
-		pExtDefaultSkeleton->m_arrModelJoints[i].m_nJointCRC32 = CCrc32::Compute(lh.m_arrExtModelJoints[i].m_strJointName);
-		pExtDefaultSkeleton->m_arrModelJoints[i].m_PhysInfoRef = lh.m_arrExtModelJoints[i].m_PhysInfo;
-		pExtDefaultSkeleton->m_arrModelJoints[i].m_fMass = lh.m_arrExtModelJoints[i].m_fMass;
-		pExtDefaultSkeleton->m_poseDefaultData.GetJointsAbsolute()[i] = lh.m_arrExtModelJoints[i].m_DefaultAbsolute;
-		pExtDefaultSkeleton->m_poseDefaultData.GetJointsRelative()[i] = pExtDefaultSkeleton->m_poseDefaultData.GetJointsAbsolute()[p].GetInverted() * lh.m_arrExtModelJoints[i].m_DefaultAbsolute;
-	}
-	pExtDefaultSkeleton->RebuildJointLookupCaches();
-	pExtDefaultSkeleton->CopyAndAdjustSkeletonParams(pDefaultSkeleton);
-	pExtDefaultSkeleton->SetupPhysicalProxies(pDefaultSkeleton->m_arrBackupPhyBoneMeshes, pDefaultSkeleton->m_arrBackupBoneEntities, pDefaultSkeleton->GetIMaterial(), pFilepathSKEL);
-	pExtDefaultSkeleton->VerifyHierarchy();
-	return pExtDefaultSkeleton;
+	RegisterModelSKEL(pExtendedSkeleton, nLoadingFlags);
+
+	pExtendedSkeleton->SetModelAnimEventDatabase(pSourceSkeleton->GetModelAnimEventDatabaseCStr());
+	pExtendedSkeleton->RebuildJointLookupCaches();
+	pExtendedSkeleton->CopyAndAdjustSkeletonParams(pSourceSkeleton);
+	pExtendedSkeleton->SetupPhysicalProxies(pSourceSkeleton->m_arrBackupPhyBoneMeshes, pSourceSkeleton->m_arrBackupBoneEntities, pMaterial, pSourceSkeleton->GetModelFilePath());
+	pExtendedSkeleton->VerifyHierarchy();
+
+	return pExtendedSkeleton;
 }
 
 void CharacterManager::ReleaseCDF(const char* pathname)
