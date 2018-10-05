@@ -147,26 +147,24 @@ void CAttachmentSKIN::Immediate_ClearBinding(uint32 nLoadingFlags)
 	}
 }; 
 
-void CAttachmentSKIN::RecreateDefaultSkeleton(CCharInstance* pInstanceSkel, uint32 nLoadingFlags) 
+void CAttachmentSKIN::RecreateDefaultSkeleton(CCharInstance* pCharacter, uint32 loadingFlags) 
 {
-	const CDefaultSkeleton* const pDefaultSkeleton = pInstanceSkel->m_pDefaultSkeleton;
-
-	const char* pOriginalFilePath = pDefaultSkeleton->GetModelFilePath();
-	if (pDefaultSkeleton->GetModelFilePathCRC64() && pOriginalFilePath[0]=='_')
+	const char* originalSkeletonFilename = pCharacter->m_pDefaultSkeleton->GetModelFilePath();
+	if (pCharacter->m_pDefaultSkeleton->GetModelFilePathCRC64() != 0)
 	{
-		pOriginalFilePath++; // All extended skeletons have an '_' in front of the filepath to not confuse them with regular skeletons.
+		assert(originalSkeletonFilename[0] == '_');
+		originalSkeletonFilename++; // All extended skeletons have an '_' in front of the filepath to not confuse them with regular skeletons.
 	}
 
-	CDefaultSkeleton* pOrigDefaultSkeleton = g_pCharacterManager->CheckIfModelSKELLoaded(pOriginalFilePath,nLoadingFlags);
-	if (!pOrigDefaultSkeleton)
+	CDefaultSkeleton* pOriginalSkeleton = g_pCharacterManager->CheckIfModelSKELLoaded(originalSkeletonFilename,loadingFlags);
+	if (!pOriginalSkeleton)
 	{
 		return;
 	}
 
-	pOrigDefaultSkeleton->SetKeepInMemory(true);
+	pOriginalSkeleton->SetKeepInMemory(true);
 
 	std::vector<const char*> mismatchingSkins;
-	uint64 nExtendedCRC64 = CCrc32::ComputeLowercase(pOriginalFilePath);
 	for (auto&& pAttachment : m_pAttachmentManager->m_arrAttachments)
 	{
 		if (pAttachment->GetType() != CA_SKIN)
@@ -180,15 +178,13 @@ void CAttachmentSKIN::RecreateDefaultSkeleton(CCharInstance* pInstanceSkel, uint
 			continue;
 		}
 
-		const char* pSkinFilename = pSkin->GetModelFilePath();
-		mismatchingSkins.push_back(pSkinFilename);
-		nExtendedCRC64 += CCrc32::ComputeLowercase(pSkinFilename);
+		mismatchingSkins.push_back(pSkin->GetModelFilePath());
 	}
 
-	CDefaultSkeleton* const pExtDefaultSkeleton = g_pCharacterManager->CreateExtendedSkel(pInstanceSkel, pOrigDefaultSkeleton, nExtendedCRC64, mismatchingSkins, nLoadingFlags); 
-	if (pExtDefaultSkeleton)
+	CDefaultSkeleton* const pExtendedSkeleton = g_pCharacterManager->CreateExtendedSkel(pOriginalSkeleton, mismatchingSkins, pCharacter->GetIMaterial(), loadingFlags);
+	if (pExtendedSkeleton)
 	{
-		pInstanceSkel->RuntimeInit(pExtDefaultSkeleton);
+		pCharacter->RuntimeInit(pExtendedSkeleton);
 		m_pAttachmentManager->m_TypeSortingRequired++;
 		m_pAttachmentManager->UpdateAllRemapTables();
 	}
