@@ -38,7 +38,6 @@ public:
 	virtual ~QTerrainLayerPanel() override;
 
 	void SetLayer(CLayer* pLayer);
-	void UndoPush();
 
 protected:
 	virtual bool CanEditTool(CEditTool* pTool) override;
@@ -46,6 +45,9 @@ protected:
 	void         LayerChanged(CLayer* pLayer);
 	void         BrushChanged(CEditTool* pTool);
 	void         AttachProperties();
+
+private:
+	void UndoPush();
 
 	STexturePainterSerializer m_layerSerializer;
 };

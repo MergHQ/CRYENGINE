@@ -17,6 +17,4 @@ public:
 
 	virtual void                              SetLayout(const QVariantMap& state);
 	virtual QVariantMap                       GetLayout() const override;
-
-	static class CTerrainTextureDialog*       GetTextureLayerEditor();
 };

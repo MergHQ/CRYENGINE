@@ -1690,7 +1690,9 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRe
 
 		if (nBatchFlags & FB_CUSTOM_RENDER)
 		{
-			m_renderItems[EFSLIST_CUSTOM].push_back(ri);
+			SRendItem rItem = ri;
+			rItem.fDist = SRendItem::EncodeCustomDistanceSortingValue(pObj); // custom sorting for silhouettes, etc...
+			m_renderItems[EFSLIST_CUSTOM].push_back(rItem);
 			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_CUSTOM], nBatchFlags);
 		}
 
@@ -2225,6 +2227,7 @@ void CRenderView::Job_SortRenderItemsInList(ERenderListID list)
 	case EFSLIST_HALFRES_PARTICLES:
 	case EFSLIST_LENSOPTICS:
 	case EFSLIST_EYE_OVERLAY:
+	case EFSLIST_CUSTOM:
 		{
 			PROFILE_FRAME(State_SortingDist);
 			SRendItem::mfSortByDist(&renderItems[nStart], n, false);
@@ -2265,7 +2268,6 @@ void CRenderView::Job_SortRenderItemsInList(ERenderListID list)
 
 	case EFSLIST_FORWARD_OPAQUE:
 	case EFSLIST_FORWARD_OPAQUE_NEAREST:
-	case EFSLIST_CUSTOM:
 		{
 			{
 				PROFILE_FRAME(State_SortingForwardOpaque);
