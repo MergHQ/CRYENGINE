@@ -56,6 +56,13 @@ struct CRY_ALIGN(32) SRendItem
 		return pObj->m_fDistance + pObj->m_fSort;
 	}
 
+	static float EncodeCustomDistanceSortingValue(CRenderObject* pObj)
+	{
+		int nRenderAlways = pObj->m_pRenderNode->GetRndFlags() & ERF_RENDER_ALWAYS;
+		float comp = pObj->m_fDistance + pObj->m_fSort;
+		return nRenderAlways ? std::numeric_limits<float>::lowest() + comp : comp;
+	}
+
 	static uint32 EncodeObjFlagsSortingValue(CRenderObject* pObj)
 	{
 		return (pObj->m_ObjFlags & ~0xFFFF) + (pObj->m_nSort & 0xFFFF);
