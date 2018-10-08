@@ -185,7 +185,7 @@ bool CEntity::SendEventInternal(const SEntityEvent& event)
 	const uint8 firstEventIndex = static_cast<uint8>(countTrailingZeros64(mask)); /* Index of the first set bit in mask */ \
 	const uint8 lastUsedEventIndex = static_cast<uint8>(std::numeric_limits<EntityEventMask>::digits - static_cast<uint8>(countLeadingZeros64(mask)));  /* Index of the last set bit in mask */ \
 	const uint8 lastEventIndex = min(lastUsedEventIndex, CEntity::GetEntityEventIndex(Cry::Entity::EEvent::LastNonPerformanceCritical)); /* Index of the last usable set bit in mask, perf critical events don't matter */ \
-	for (uint8 i = firstEventIndex; i < lastEventIndex; i += static_cast<uint8>(countTrailingZeros64(mask >> (i + 1)) + 1)) /* Iterate through the set events, skip past segments that are set to 0 - faster than check inside since majority of events will have the majority of mask bits set to 0 */ \
+	for (uint8 i = firstEventIndex; i <= lastEventIndex; i += static_cast<uint8>(countTrailingZeros64(mask >> (i + 1)) + 1)) /* Iterate through the set events, skip past segments that are set to 0 - faster than check inside since majority of events will have the majority of mask bits set to 0 */ \
 	
 
 /////////////////////////////////////////////////////////////////////////
