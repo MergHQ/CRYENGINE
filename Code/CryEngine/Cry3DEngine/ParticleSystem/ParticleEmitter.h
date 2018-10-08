@@ -96,6 +96,7 @@ public:
 	void                      UpdateEmitGeomFromEntity();
 	const SVisEnviron&        GetVisEnv() const            { return m_visEnviron; }
 	const SPhysEnviron&       GetPhysicsEnv() const        { return m_physEnviron; }
+	void                      UpdatePhysEnv();
 	const SpawnParams&        GetSpawnParams() const       { return m_spawnParams; }
 	const GeomRef&            GetEmitterGeometry() const   { return m_emitterGeometry; }
 	QuatTS                    GetEmitterGeometryLocation() const;
@@ -137,7 +138,6 @@ private:
 	void     UpdateBoundingBox();
 	void     UpdateRuntimes();
 	void     UpdateFromEntity();
-	void     UpdateTargetFromEntity(IEntity* pEntity);
 	IEntity* GetEmitGeometryEntity() const;
 
 private:

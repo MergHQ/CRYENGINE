@@ -10,16 +10,18 @@ namespace pfx2
 using namespace crymath;
 // 4x vector types of standard types
 #ifdef CRY_PFX2_USE_SSE
-typedef f32v4  floatv;
-typedef u32v4  uint32v;
-typedef i32v4  int32v;
-typedef uint32 uint8v;
-typedef u32v4  UColv;
+typedef f32v4    floatv;
+typedef u32v4    uint32v;
+typedef i32v4    int32v;
+typedef uint32   uint8v;
+typedef mask32v4 maskv;
+typedef u32v4    UColv;
 #else
 typedef float  floatv;
 typedef uint32 uint32v;
 typedef int32  int32v;
 typedef uint8  uint8v;
+typedef uint32 maskv;
 typedef UCol   UColv;
 #endif
 
@@ -94,6 +96,29 @@ template<typename T>
 T StartTime(T curTime, T frameTime, T absAge);
 
 
+///////////////////////////////////////////////////////////////////////////
+// Fast approx cube root, implemented by blending between square root and fourth root
+struct CubeRootApprox
+{
+	// Specify point at which cube root is accurate (apart from 0 and 1)
+	CubeRootApprox(float anchor)
+	{
+		float correct = pow(anchor, 0.333333f);
+		float anchorSqrt = sqrt_fast(anchor);
+		m_blend = (correct - anchorSqrt) / (sqrt_fast(anchorSqrt) - anchorSqrt);
+	}
+
+	template<typename T>
+	T operator()(T f) const
+	{
+		T fsqrt = sqrt_fast(f);
+		return fsqrt + (sqrt_fast(fsqrt) - fsqrt) * convert<T>(m_blend);
+	}
+private:
+	float m_blend;
+};
+
+///////////////////////////////////////////////////////////////////////////
 // non vectorized
 
 void RotateAxes(Vec3* v0, Vec3* v1, const float angle);

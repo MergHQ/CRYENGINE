@@ -623,74 +623,23 @@ void CParticleEmitter::SetSpawnParams(SpawnParams const& spawnParams)
 	m_SpawnParams = spawnParams;
 }
 
-bool GetPhysicalVelocity(Velocity3& Vel, IEntity* pEnt, const Vec3& vPos)
-{
-	if (pEnt)
-	{
-		if (IPhysicalEntity* pPhysEnt = pEnt->GetPhysics())
-		{
-			pe_status_dynamics dyn;
-			if (pPhysEnt->GetStatus(&dyn))
-			{
-				Vel.vLin = dyn.v;
-				Vel.vRot = dyn.w;
-				Vel.vLin = Vel.VelocityAt(vPos - dyn.centerOfMass);
-				return true;
-			}
-		}
-		if (pEnt = pEnt->GetParent())
-			return GetPhysicalVelocity(Vel, pEnt, vPos);
-	}
-	return false;
-}
-
 void CParticleEmitter::UpdateFromEntity()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	m_nEmitterFlags &= ~(ePEF_HasPhysics | ePEF_HasTarget | ePEF_HasAttachment);
 
-	// Get emitter entity.
-	IEntity* pEntity = m_pOwnerEntity;
-
-	// Set external target.
-	if (!m_Target.bPriority)
+	if (UpdateTarget(m_Target, m_pOwnerEntity, GetLocation().t))
 	{
-		ParticleTarget target;
-		if (pEntity)
-		{
-			for (IEntityLink* pLink = pEntity->GetEntityLinks(); pLink; pLink = pLink->next)
-			{
-				if (!stricmp(pLink->name, "Target") || !strnicmp(pLink->name, "Target-", 7))
-				{
-					if (IEntity* pTarget = gEnv->pEntitySystem->GetEntity(pLink->entityId))
-					{
-						target.bTarget = true;
-						target.vTarget = pTarget->GetPos();
-
-						Velocity3 Vel(ZERO);
-						GetPhysicalVelocity(Vel, pTarget, GetLocation().t);
-						target.vVelocity = Vel.vLin;
-
-						AABB bb;
-						pTarget->GetLocalBounds(bb);
-						target.fRadius = max(bb.min.len(), bb.max.len());
-						m_nEmitterFlags |= ePEF_HasTarget;
-						break;
-					}
-				}
-			}
-		}
-
-		if (target.bTarget != m_Target.bTarget || target.vTarget != m_Target.vTarget)
-			InvalidateStaticBounds();
-		m_Target = target;
+		InvalidateStaticBounds();
+		if (m_Target.bTarget)
+			m_nEmitterFlags |= ePEF_HasTarget;
 	}
 
 	bool bShadows = (GetEnvFlags() & REN_CAST_SHADOWS) != 0;
 
 	// Get entity of attached parent.
-	if (pEntity)
+	if (IEntity* pEntity = m_pOwnerEntity)
 	{
 		if (!(pEntity->GetFlags() & ENTITY_FLAG_CASTSHADOW))
 			bShadows = false;

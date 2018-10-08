@@ -751,9 +751,9 @@ public:
 	
 private:
 	// non-inline version with Vec4f conversion
-	ILINE static float SNoise(const Vec4 v)
+	static float SNoise(const Vec4& v)
 	{
-		return ::SNoise(Vec4f(v));
+		return ::SNoise(static_cast<const Vec4f&>(v));
 	}
 
 	ILINE static Vec3 Potential(const Vec4 sample)
@@ -813,6 +813,8 @@ public:
 		pComponent->InitParticles.add(this);
 		pComponent->GetSpatialExtents.add(this);
 		pComponent->AddParticleData(EPDT_SpawnFraction);
+		m_source.AddToComponent(pComponent);
+		m_destination.AddToComponent(pComponent);
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -866,15 +868,12 @@ private:
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationBeam, "Location", "Beam", colorLocation);
 
 //////////////////////////////////////////////////////////////////////////
-// CFeatureLocationcamera
+// CFeatureLocationBindToCamera
 
 class CFeatureLocationBindToCamera : public CParticleFeature
 {
 public:
 	CRY_PFX2_DECLARE_FEATURE
-
-	CFeatureLocationBindToCamera()
-		: m_spawnOnly(false) {}
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
@@ -886,7 +885,8 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
 		CParticleFeature::Serialize(ar);
-		ar(m_spawnOnly, "SpawnOnly", "Spawn Only");
+		SERIALIZE_VAR(ar, m_spawnOnly);
+		SERIALIZE_VAR(ar, m_positionOnly);
 	}
 
 	virtual void PostInitParticles(CParticleComponentRuntime& runtime) override
@@ -898,26 +898,33 @@ public:
 
 		CParticleContainer& container = runtime.GetContainer();
 		const CParticleContainer& parentContainer = runtime.GetParentContainer();
-		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
-		const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
-		const IQuatStream parentOrientations = parentContainer.GetIQuatStream(EPQF_Orientation);
-		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
-		IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
+		const auto parentIds = container.IStream(EPDT_ParentId);
+		const auto parentPositions = parentContainer.IStream(EPVF_Position);
+		const auto parentOrientations = parentContainer.IStream(EPQF_Orientation);
+		auto positions = container.IOStream(EPVF_Position);
+		auto velocities = container.IOStream(EPVF_Velocity);
 
 		for (auto particleId : runtime.SpawnedRange())
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
 			const Vec3 wParentPosition = parentPositions.Load(parentId);
-			const Quat wParentOrientation = parentOrientations.Load(parentId);
-			const QuatT worldToParent = QuatT(wParentPosition, wParentOrientation).GetInverted();
+			Vec3 wPosition = positions.Load(particleId);
+			if (m_positionOnly)
+			{
+				wPosition += wCameraPose.t - wParentPosition;
+			}
+			else
+			{
+				const Quat wParentOrientation = parentOrientations.Load(parentId);
+				const QuatT worldToParent = QuatT(wParentPosition, wParentOrientation).GetInverted();
 
-			const Vec3 wPosition0 = positions.Load(particleId);
-			const Vec3 wPosition1 = wCameraPose * (worldToParent * wPosition0);
-			positions.Store(particleId, wPosition1);
+				wPosition = wCameraPose * (worldToParent * wPosition);
 
-			const Vec3 wVelocity0 = velocities.Load(particleId);
-			const Vec3 wVelocity1 = wCameraPose.q * (worldToParent.q * wVelocity0);
-			velocities.Store(particleId, wVelocity1);
+				Vec3 wVelocity = velocities.Load(particleId);
+				wVelocity = wCameraPose.q * (worldToParent.q * wVelocity);
+				velocities.Store(particleId, wVelocity);
+			}
+			positions.Store(particleId, wPosition);
 		}
 	}
 
@@ -925,33 +932,36 @@ public:
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
-		const CCamera& camera = gEnv->p3DEngine->GetRenderingCamera();
-		const QuatT wCurCameraPose = QuatT(camera.GetMatrix());
-		const QuatT wPrevCameraPoseInv = GetPSystem()->GetLastCameraPose().GetInverted();
 		const QuatT cameraMotion = GetPSystem()->GetCameraMotion();
-
 		CParticleContainer& container = runtime.GetContainer();
 		const CParticleContainer& parentContainer = runtime.GetParentContainer();
-		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
-		const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
-		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
-		IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
+		const auto parentIds = container.IStream(EPDT_ParentId);
+		const auto parentPositions = parentContainer.IStream(EPVF_Position);
+		auto positions = container.IOStream(EPVF_Position);
+		auto velocities = container.IOStream(EPVF_Velocity);
 
 		for (auto particleId : container.GetNonSpawnedRange())
 		{
-			const Vec3 wPosition0 = positions.Load(particleId);
-			const Vec3 cPosition0 = wPrevCameraPoseInv * wPosition0;
-			const Vec3 wPosition1 = wCurCameraPose * cPosition0;
-			positions.Store(particleId, wPosition1);
+			Vec3 wPosition = positions.Load(particleId);
+			if (m_positionOnly)
+			{
+				wPosition += cameraMotion.t;
+			}
+			else
+			{
+				wPosition = cameraMotion * wPosition;
 
-			const Vec3 wVelocity0 = velocities.Load(particleId);
-			const Vec3 wVelocity1 = cameraMotion.q * wVelocity0;
-			velocities.Store(particleId, wVelocity1);
+				Vec3 wVelocity = velocities.Load(particleId);
+				wVelocity = cameraMotion.q * wVelocity;
+				velocities.Store(particleId, wVelocity);
+			}
+			positions.Store(particleId, wPosition);
 		}
 	}
 
 private:
-	bool m_spawnOnly;
+	bool m_spawnOnly    = false;
+	bool m_positionOnly = false;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationBindToCamera, "Location", "BindToCamera", colorLocation);
@@ -959,158 +969,11 @@ CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationBindToCamera, "Loca
 //////////////////////////////////////////////////////////////////////////
 // CFeatureLocationOmni
 
-namespace
-{
-//
-// Box
-//
-ILINE Vec3 RandomPosZBox(SChaosKey& chaosKey)
-{
-	return Vec3(chaosKey.RandSNorm(), chaosKey.RandSNorm(), chaosKey.RandUNorm());
-}
+extern TDataType<Vec3> EPVF_PositionPrev;
 
-ILINE bool WrapPosZBox(Vec3& pos)
-{
-	Vec3 pos0 = pos;
-	pos.x -= std::floor(pos.x * 0.5f + 0.5f) * 2.0f;
-	pos.y -= std::floor(pos.y * 0.5f + 0.5f) * 2.0f;
-	pos.z -= std::floor(pos.z);
-	return pos != pos0;
-}
+using Matrix34v = Matrix34_tpl<floatv>;
 
-//
-// Sector
-//
-ILINE bool InScreen(const Vec3& pos, Vec2 scrWidth, float epsilon = 0.0f)
-{
-	return abs(pos.x) <= pos.z * scrWidth.x + epsilon
-	    && abs(pos.y) <= pos.z * scrWidth.y + epsilon;
-}
-
-ILINE bool InSector(const Vec3& pos, Vec2 scrWidth, float epsilon = 0.0f)
-{
-	return InScreen(pos, scrWidth, epsilon)
-	       && pos.len2() <= 1.0f + epsilon * 2.0f;
-}
-
-ILINE Vec3 RandomSector(SChaosKey& chaosKey, Vec2 scrWidth)
-{
-	Vec3 pos(chaosKey.RandSNorm() * scrWidth.x, chaosKey.RandSNorm() * scrWidth.y, 1.0f);
-	float r = pow(chaosKey.RandUNorm(), 0.333333f);
-	pos *= r * pos.GetInvLengthFast();
-	assert(InSector(pos, scrWidth, 0.001f));
-	return pos;
-}
-
-void WrapSector(Vec3& pos, const Vec3& posPrev, Vec2 scrWidth)
-{
-	Vec3 delta = posPrev - pos;
-
-	float maxMoveIn = 0.0f;
-	float minMoveOut = std::numeric_limits<float>::max();
-
-	// (P + D t) | N = 0
-	// t = -P|N / D|N     ; N unnormalized
-	auto GetPlaneDists = [&](float px, float py, float pz)
-	{
-		float dist = px * pos.x + py * pos.y + pz * pos.z;
-		float dot = -(px * delta.x + py * delta.y + pz * delta.z);
-
-		if (dist > 0.0f && dot > 0.0f && dist > dot * maxMoveIn)
-			maxMoveIn = dist / dot;
-		else if (dot < 0.0f && dist > dot * minMoveOut)
-			minMoveOut = dist / dot;
-	};
-
-	GetPlaneDists(+1, 0, -scrWidth.x);
-	GetPlaneDists(-1, 0, -scrWidth.x);
-	GetPlaneDists(0, +1, -scrWidth.y);
-	GetPlaneDists(0, -1, -scrWidth.y);
-
-	// Wrap into sphere
-	// r^2 = (P + D t)^2 = 1
-	// P*P + P*D 2t + D*D t^2 = 1
-	// r^2\t = 2 P*D 2 + 2 D*D t
-	float dists[2];
-	float dd = delta | delta, dp = delta | pos, pp = pos | pos;
-	int n = solve_quadratic(dd, dp * 2.0f, pp - 1.0f, dists);
-	while (--n >= 0)
-	{
-		float dr = dp + dd * dists[n];
-		if (dr < 0.0f)
-			maxMoveIn = max(maxMoveIn, dists[n]);
-		else if (dists[n] > 0.0f)
-			minMoveOut = min(minMoveOut, dists[n]);
-	}
-
-	if (maxMoveIn > 0.0f && maxMoveIn < minMoveOut)
-	{
-		const float moveDist = (minMoveOut - maxMoveIn) * trunc(minMoveOut / (minMoveOut - maxMoveIn));
-		if (moveDist < 1e6f)
-			pos += delta * moveDist;
-	}
-	assert(InSector(pos, scrWidth, 0.001f));
-}
-
-CRY_TEST(WrapSectorTest)
-{
-	SChaosKey chaosKey(0u);
-	for (int i = 0; i < 100; ++i)
-	{
-		Vec2 scrWidth(chaosKey.Rand(SChaosKey::Range(0.1f, 3.0f)), chaosKey.Rand(SChaosKey::Range(0.1f, 3.0f)));
-		Vec3 pos = RandomSector(chaosKey, scrWidth);
-		Vec3 pos2 = pos + chaosKey.RandSphere();
-		if (!InSector(pos2, scrWidth))
-		{
-			Vec3 pos3 = pos2;
-			WrapSector(pos3, pos, scrWidth);
-		}
-	}
-};
-
-ILINE int WrapRotation(Vec3& pos, Vec3& posPrev, const Matrix33& camRot, Vec2 scrWidth)
-{
-	Vec3 posRot = camRot * posPrev;
-	if (InScreen(posRot, scrWidth))
-		return false;
-
-	if (abs(posRot.x) > posRot.z * scrWidth.x)
-		posPrev.x = -posPrev.x;
-	if (abs(posRot.y) > posRot.z * scrWidth.y)
-		posPrev.y = -posPrev.y;
-
-	pos += posPrev - posRot;
-	assert(InScreen(pos, scrWidth, 0.001f));
-
-	return true;
-}
-
-CRY_TEST(WrapRotationTest)
-{
-	SChaosKey chaosKey(0u);
-	for (int i = 0; i < 100; ++i)
-	{
-		Vec2 scrWidth(chaosKey.Rand(SChaosKey::Range(0.1f, 3.0f)), chaosKey.Rand(SChaosKey::Range(0.1f, 3.0f)));
-		Vec3 pos = RandomSector(chaosKey, scrWidth);
-		if (i % 4 == 0)
-			pos.x = 0;
-		else if (i % 4 == 1)
-			pos.y = 0;
-		AngleAxis rot;
-		rot.axis = i % 4 == 0 ? Vec3(1, 0, 0) : i % 4 == 1 ? Vec3(0, 1, 0) : Vec3(chaosKey.RandCircle());
-		rot.angle = (i+1) * 0.01f * gf_PI;
-		Vec3 pos2 = AngleAxis(-rot.angle, rot.axis) * pos;
-		if (!InScreen(pos2, scrWidth))
-		{
-			Vec3 pos1 = pos;
-			Vec3 pos3 = pos2;
-			WrapRotation(pos3, pos1, Matrix33::CreateRotationAA(-rot.angle, rot.axis), scrWidth);
-		}
-	}
-};
-}
-
-MakeDataType(EPVF_AuxPosition, Vec3);
+static CubeRootApprox cubeRootApprox(0.125f);
 
 class CFeatureLocationOmni : public CParticleFeature
 {
@@ -1119,16 +982,18 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->AddParticleData(EPVF_AuxPosition);
+		pComponent->OnPreRun.add(this);
+		pComponent->CullSubInstances.add(this);
 		pComponent->GetSpatialExtents.add(this);
+		pComponent->KillParticles.add(this);
+		pComponent->SpawnParticles.add(this);
 		pComponent->InitParticles.add(this);
-		pComponent->UpdateParticles.add(this);
-		m_visibility.AddToComponent(pComponent, this);
+		m_visibilityRange.AddToComponent(pComponent, this);
 
 		if (!m_useEmitterLocation)
 		{
 			// auto-set distance culling
-			const float visibility = m_visibility.GetValueRange().end;
+			const float visibility = m_visibilityRange.GetValueRange().end;
 			auto& maxCamDistance = pParams->m_visibility.m_maxCameraDistance;
 			if (visibility < maxCamDistance)
 				maxCamDistance = visibility;
@@ -1138,35 +1003,129 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
 		CParticleFeature::Serialize(ar);
-		SERIALIZE_VAR(ar, m_visibility);
+		SERIALIZE_VAR(ar, m_visibilityRange);
+		if (ar.isInput() && GetVersion(ar) < 14)
+			ar(m_visibilityRange, "Visibility", "Visibility");
+		SERIALIZE_VAR(ar, m_spawnDistance);
 	#ifndef _RELEASE
-		SERIALIZE_VAR(ar, m_wrapSector);
-		SERIALIZE_VAR(ar, m_wrapRotation);
-		SERIALIZE_VAR(ar, m_wrapTranslation);
 		SERIALIZE_VAR(ar, m_useEmitterLocation);
 	#endif
+	}
+
+	virtual void OnPreRun(CParticleComponentRuntime& runtime, uint numParticles) override
+	{
+		CParticleContainer& container = runtime.GetContainer();
+		auto positions = container.IStream(EPVF_Position);
+		auto positionsPrev = container.IStream(EPVF_PositionPrev, runtime.GetEmitter()->GetLocation().t);
+		auto velocities = container.IStream(EPVF_Velocity);
+
+		m_averageData.numParticles = numParticles;
+		m_averageData.velocityFinal.zero();
+		m_averageData.distanceTravel.zero();
+		for (auto particleId : runtime.FullRange())
+		{
+			m_averageData.velocityFinal += velocities.Load(particleId);
+			m_averageData.distanceTravel += positions.Load(particleId) - positionsPrev.SafeLoad(particleId);
+		}
+		m_averageData.velocityFinal /= (float)container.GetNumParticles();
+		m_averageData.distanceTravel /= (float)container.GetNumParticles();
+	}
+
+	virtual void CullSubInstances(CParticleComponentRuntime& runtime, TDynArray<SInstance>& instances) override
+	{
+		// Allow only one instance
+		uint numAllowed = 1 - runtime.GetNumInstances();
+		if (numAllowed < instances.size())
+			instances.resize(numAllowed);
 	}
 
 	virtual void GetSpatialExtents(const CParticleComponentRuntime& runtime, TConstArray<float> scales, TVarArray<float> extents) override
 	{
 		UpdateCameraData(runtime);
+
 		const uint numInstances = runtime.GetNumInstances();
 		for (uint i = 0; i < numInstances; ++i)
 		{
 			float scale = m_camData.maxDistance * scales[i];
 			const Vec3 boxUnit(m_camData.scrWidth.x, m_camData.scrWidth.y, 1.0f);
-			float extent;
-			if (m_wrapSector)
-			{
-				float capHeight = 1.0f - rsqrt(boxUnit.len2());
-				extent = (capHeight * scale) * sqr(scale + 1.0f) * 4.0f / 3.0f;
-			}
-			else
-			{
-				const Vec3 box = boxUnit * scale;
-				extent = (box.x * 2.0f + 1.0f) * (box.y * 2.0f + 1.0f) * (box.z + 1.0f);
-			}
+			float capHeight = 1.0f - boxUnit.GetInvLength();
+			float extent = (capHeight * scale) * sqr(scale + 1.0f) * 4.0f / 3.0f;
 			extents[i] += extent;
+		}
+	}
+
+	virtual void KillParticles(CParticleComponentRuntime& runtime) override
+	{
+		CRY_PFX2_PROFILE_DETAIL;
+
+		CParticleContainer& container = runtime.GetContainer();
+		auto ages = container.IOStream(EPDT_NormalAge);
+		auto positions = container.IStream(EPVF_Position);
+
+		const uint numParticles = container.GetNumParticles();
+		if (!numParticles) // Reset averages
+			return;
+
+		UpdateCameraData(runtime);
+
+		Matrix34v fromWorld = m_camData.fromWorld;
+		for (auto particleId : runtime.FullRangeV())
+		{
+			floatv age = ages.Load(particleId);
+			Vec3v pos = positions.Load(particleId);
+			Vec3v posCam = fromWorld * pos;
+			age = if_else(InSector(posCam), age, convert<floatv>(1.0f));
+			ages.Store(particleId, age);
+		}
+	}
+
+	virtual void SpawnParticles(CParticleComponentRuntime& runtime, TDynArray<SSpawnEntry>& spawnEntries) override
+	{
+		CRY_PFX2_PROFILE_DETAIL;
+
+		UpdateCameraData(runtime);
+
+		m_spawnStart = 0;
+		for (auto const& spawn : spawnEntries)
+			m_spawnStart += spawn.m_count;
+
+		Vec3 travelPrev = m_averageData.velocityFinal * m_camData.deltaTimePrev;
+		Matrix34v toPrev = m_camData.fromWorldPrev * Matrix34::CreateTranslationMat(-travelPrev) * m_camData.toWorld;
+		Matrix34v toWorld = m_camData.toWorld;
+
+		for (uint i = CRY_PFX2_PARTICLESGROUP_ALIGN(m_averageData.numParticles); i > 0; i -= CRY_PFX2_PARTICLESGROUP_STRIDE)
+		{
+			Vec3v posCam = RandomSector<floatv>(runtime.ChaosV());
+			Vec3v posCamPrev = toPrev * posCam;
+		#ifdef CRY_PFX2_USE_SSE
+			int mask = Any(~InSector(posCamPrev));
+			if (mask)
+			{
+				// Incoming particles
+				static_assert(CRY_PFX2_PARTICLESGROUP_STRIDE == 4, "Particle data vectorization != 4");
+				Vec3v posv = toWorld * posCam;
+				AddElem<0>(mask, posv);
+				AddElem<1>(mask, posv);
+				AddElem<2>(mask, posv);
+				AddElem<3>(mask, posv);
+			}
+		#else
+			if (InSector(posCamPrev))
+			{
+				Vec3 pos = toWorld * posCam;
+				m_newPositions.push_back(pos);
+			}
+		#endif
+		}
+		
+		if (m_newPositions.size())
+		{
+			const float life = runtime.ComponentParams().m_maxParticleLife;
+			SSpawnEntry spawn = {};
+			spawn.m_count = m_newPositions.size();
+			spawn.m_ageBegin = 0.0f;
+			spawn.m_ageIncrement = life / float(spawn.m_count);
+			spawnEntries.push_back(spawn);
 		}
 	}
 
@@ -1175,124 +1134,95 @@ public:
 		CRY_PFX2_PROFILE_DETAIL;
 
 		CParticleContainer& container = runtime.GetContainer();
-		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
-		IOVec3Stream auxPositions = container.GetIOVec3Stream(EPVF_AuxPosition);
+		auto positions = container.IOStream(EPVF_Position);
+		auto velocities = container.IOStream(EPVF_Velocity);
+		auto ages = container.IOStream(EPDT_NormalAge);
 
-		UpdateCameraData(runtime);
+ 		UpdateCameraData(runtime);
+
+		uint firstRandom = runtime.SpawnedRange().m_begin + m_spawnStart;
+		uint nNew = 0;
 
 		for (auto particleId : runtime.SpawnedRange())
 		{
-			// Overwrite position
 			Vec3 pos;
-			if (m_wrapSector)
+			if (particleId >= firstRandom && nNew < m_newPositions.size())
 			{
-				pos = RandomSector(runtime.Chaos(), m_camData.scrWidth);
-				auxPositions.Store(particleId, pos);
+				const Vec3& pos = m_newPositions[nNew++];
+				positions.Store(particleId, pos);
+				velocities.Store(particleId, m_averageData.velocityFinal);
 			}
 			else
 			{
-				pos = RandomPosZBox(runtime.Chaos());
+				Vec3 posCam = RandomSector<float>(runtime.Chaos());
+				pos = m_camData.toWorld * posCam;
+				positions.Store(particleId, pos);
 			}
-			pos = m_camData.toWorld * pos;
-			positions.Store(particleId, pos);
 		}
+		m_newPositions.resize(0);
+
+		m_camData.deltaTimePrev = runtime.DeltaTime();
 	}
 
-	virtual void UpdateParticles(CParticleComponentRuntime& runtime) override
-	{
-		CRY_PFX2_PROFILE_DETAIL;
-
-		CParticleContainer& container = runtime.GetContainer();
-		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
-		IOVec3Stream auxPositions = container.GetIOVec3Stream(EPVF_AuxPosition);
-
-		UpdateCameraData(runtime);
-		bool doCamRot = m_wrapRotation && m_camData.camRot.angle > 0.001f;
-		Matrix33 camMat = Matrix33::CreateRotationAA(-m_camData.camRot.angle, m_camData.camRot.axis);
-
-		// Wrap positions
-		if (m_wrapSector)
-		{
-			for (auto particleId : runtime.FullRange())
-			{
-				Vec3 pos = positions.Load(particleId);
-				Vec3 posCam = m_camData.fromWorld * pos;
-
-				if (!InSector(posCam, m_camData.scrWidth))
-				{
-					Vec3 posCamPrev = auxPositions.Load(particleId);
-
-					// Adjust for camera rotation
-					if (doCamRot && WrapRotation(posCam, posCamPrev, camMat, m_camData.scrWidth))
-					{
-						if (m_wrapTranslation && !InSector(posCam, m_camData.scrWidth))
-							WrapSector(posCam, posCamPrev, m_camData.scrWidth);
-					}
-					else if (m_wrapTranslation)
-					{
-						// Adjust for translation
-						WrapSector(posCam, posCamPrev, m_camData.scrWidth);
-					}
-
-					assert(InSector(posCam, m_camData.scrWidth, 0.001f));
-					pos = m_camData.toWorld * posCam;
-					positions.Store(particleId, pos);
-				}
-				auxPositions.Store(particleId, posCam);
-			}
-		}
-		else
-		{
-			if (m_wrapTranslation) for (auto particleId : runtime.FullRange())
-			{
-				Vec3 pos = positions.Load(particleId);
-				Vec3 posCam = m_camData.fromWorld * pos;
-
-				if (WrapPosZBox(posCam))
-				{
-					pos = m_camData.toWorld * posCam;
-					positions.Store(particleId, pos);
-				}
-			}
-		}
-	}
 
 private:
 
 	// Camera data is shared per-effect, based on the global render camera and effect params
 	struct SCameraData
 	{
-		int32     nFrameId    {-1};
-		Vec2      scrWidth    {0};
-		float     maxDistance {0};
-		Matrix34  toWorld     {IDENTITY};
-		Matrix34  fromWorld   {IDENTITY};
-		AngleAxis camRot      {0, Vec3(0)};
+		int32     nFrameId      {-1};
+		Vec2      scrWidth      {0};
+		float     maxDistance   {0};
+		Matrix34  toWorld       {IDENTITY};
+		Matrix34  fromWorld     {IDENTITY};
+		Matrix34  fromWorldPrev {IDENTITY};
+		float     deltaTimePrev {0};
 	};
 	SCameraData m_camData;
+
+	struct SComponentData
+	{
+		uint numParticles;
+		Vec3 velocityFinal;
+		Vec3 distanceTravel;
+	};
+	SComponentData  m_averageData;
+
+	uint            m_spawnStart  {0};
+	TDynArray<Vec3> m_newPositions;
 
 	void UpdateCameraData(const CParticleComponentRuntime& runtime)
 	{
 		if (gEnv->nMainFrameID == m_camData.nFrameId)
 			return;
 		CCamera cam = GetEffectCamera(runtime);
-		m_camData.maxDistance = m_visibility.GetValueRange(runtime).end;
+		m_camData.maxDistance = m_visibilityRange.GetValueRange(runtime).end;
 		m_camData.maxDistance = min(m_camData.maxDistance, +runtime.ComponentParams().m_visibility.m_maxCameraDistance);
 
 		// Clamp view distance based on particle size
-		const float maxParticleSize = runtime.ComponentParams().m_maxParticleSize * runtime.ComponentParams().m_visibility.m_viewDistanceMultiple;
+		const float maxSize = runtime.ComponentParams().m_maxParticleSize;
+		const float maxParticleSize = maxSize * runtime.ComponentParams().m_visibility.m_viewDistanceMultiple;
 		const float maxAngularDensity = GetPSystem()->GetMaxAngularDensity(cam);
 		const float maxDistance = maxAngularDensity * maxParticleSize * runtime.GetEmitter()->GetViewDistRatio();
 		if (maxDistance < m_camData.maxDistance)
 			m_camData.maxDistance = maxDistance;
 
-		m_camData.toWorld = UnitToWorld(cam, m_camData.maxDistance, runtime.ComponentParams().m_maxParticleSize);
-		if (m_camData.nFrameId != -1)
-			// Find rotation from last frame
-			m_camData.camRot = Quat(m_camData.fromWorld * m_camData.toWorld);
-		m_camData.fromWorld = m_camData.toWorld.GetInverted();
+		m_camData.fromWorldPrev = m_camData.fromWorld;
 		m_camData.scrWidth = ScreenWidth(cam);
+
+		// Matrix rotates Z to Y, scales by range, and offsets backward by particle size
+		const Matrix34 toCam(
+			m_camData.maxDistance * m_camData.scrWidth.x, 0, 0, 0,
+			0, 0, m_camData.maxDistance, -maxSize,
+			0, -m_camData.maxDistance * m_camData.scrWidth.y, 0, 0
+		);
+		// Concatenate with camera world location
+		m_camData.toWorld = cam.GetMatrix() * toCam;
+		m_camData.fromWorld = m_camData.toWorld.GetInverted();
+		if (m_camData.nFrameId == -1)
+			m_camData.fromWorldPrev = m_camData.fromWorld;
 		m_camData.nFrameId = gEnv->nMainFrameID;
+		m_camData.deltaTimePrev = runtime.DeltaTime();
 	}
 
 	CCamera GetEffectCamera(const CParticleComponentRuntime& runtime) const
@@ -1311,34 +1241,53 @@ private:
 		}
 	}
 
-	Matrix34 UnitToWorld(const CCamera& cam, float range, float size) const
-	{
-		// Matrix rotates Z to Y, scales by range, and offsets backward by particle size
-		Vec2 scrWidth = m_wrapSector ? Vec2(1) : ScreenWidth(cam);
-		const Matrix34 toCam(
-		  range * scrWidth.x, 0, 0, 0,
-		  0, 0, range, -size,
-		  0, -range * scrWidth.y, 0, 0
-		  );
-
-		// Concatenate with camera world location
-		return cam.GetMatrix() * toCam;
-	}
-
 	static Vec2 ScreenWidth(const CCamera& cam)
 	{
 		Vec3 corner = cam.GetEdgeF();
 		return Vec2(abs(corner.x), abs(corner.z)) / corner.y;
 	}
 
-	// Parameters
-	CParamMod<EDD_InstanceUpdate, UFloat100> m_visibility;
+	uint InSector(const Vec3& pos) const
+	{
+		return max(abs(pos.x), abs(pos.y)) <= pos.z
+			&& pos.len2() <= 1.0f;
+	}
 
-	// Debugging and profiling options
-	bool m_wrapSector         = true;
-	bool m_wrapTranslation    = true;
-	bool m_wrapRotation       = true;
-	bool m_useEmitterLocation = false;
+#ifdef CRY_PFX2_USE_SSE
+	mask32v4 InSector(const Vec3v& pos) const
+	{
+		return max(abs(pos.x), abs(pos.y)) <= pos.z
+			& pos.len2() <= convert<floatv>(1.0f);
+	}
+
+	template<int elem>
+	void AddElem(int mask, const Vec3v& v)
+	{
+		if (mask & (1<<elem))
+		{
+			m_newPositions.emplace_back(get_element<elem>(v.x), get_element<elem>(v.y), get_element<elem>(v.z));
+		}
+	}
+#endif
+
+	template<typename T, typename TChaos>
+	Vec3_tpl<T> RandomSector(TChaos& chaos) const
+	{
+		Vec3_tpl<T> pos(
+			chaos.RandSNorm(),
+			chaos.RandSNorm(),
+			convert<T>(1.0f));
+		T r = cubeRootApprox(chaos.RandUNorm());
+		pos *= r * pos.GetInvLengthFast();
+		return pos;
+	}
+
+	// Parameters
+	CParamMod<EDD_InstanceUpdate, UFloat100> m_visibilityRange;
+	float                                    m_spawnDistance = 0;
+
+	// Debugging options
+	bool                                     m_useEmitterLocation = false;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationOmni, "Location", "Omni", colorLocation);

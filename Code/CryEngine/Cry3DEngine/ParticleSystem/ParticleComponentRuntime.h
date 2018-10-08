@@ -38,6 +38,7 @@ public:
 	void                          ComputeVertices(const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels) override;
 
 	void                      Initialize();
+	void                      Clear();
 	CParticleEffect*          GetEffect() const          { return m_pComponent->GetEffect(); }
 	CParticleEmitter*         GetEmitter() const         { return m_pEmitter; }
 
@@ -84,6 +85,7 @@ public:
 	float                     DeltaTime() const;
 
 private:
+	void PreRun();
 	void AddInstances();
 	void AddParticles();
 	void RemoveParticles();
@@ -99,6 +101,7 @@ private:
 	TDynArray<byte>                m_subInstanceData;
 	AABB                           m_bounds;
 	bool                           m_alive;
+	float                          m_deltaTime;
 	SChaosKey mutable              m_chaos;
 	SChaosKeyV mutable             m_chaosV;
 

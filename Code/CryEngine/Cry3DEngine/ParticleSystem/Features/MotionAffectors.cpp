@@ -263,6 +263,7 @@ public:
 		pFeature->AddToComputeList(this);
 		pComponent->AddParticleData(EPVF_Position);
 		pComponent->AddParticleData(EPVF_Acceleration);
+		m_targetSource.AddToComponent(pComponent);
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -380,6 +381,7 @@ public:
 		pFeature->AddToComputeList(this);
 		pComponent->AddParticleData(EPVF_Position);
 		pComponent->AddParticleData(EPVF_VelocityField);
+		m_targetSource.AddToComponent(pComponent);
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
