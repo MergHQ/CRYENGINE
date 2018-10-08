@@ -140,7 +140,6 @@ bool CPoseAlignerChain::Prepare(const SAnimationPoseModifierParams& params)
 
 	m_state.rootJointIndex = m_state.m_pIkLimbType->m_arrRootToEndEffector[0];
 	m_state.targetJointIndex = m_state.m_pIkLimbType->m_arrJointChain.back().m_idxJoint;
-	m_state.m_pIkLimbType = m_state.m_pIkLimbType;
 	m_stateExecute = m_state;
 	return true;
 }

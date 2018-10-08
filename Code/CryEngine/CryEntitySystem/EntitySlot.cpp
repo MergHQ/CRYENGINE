@@ -317,7 +317,7 @@ bool CEntitySlot::IsRendered() const
 	else if (m_pRenderNode)
 	{
 		// If node have temp data allocated for it, it is considered to be rendered by the 3dEngine
-		if (m_pRenderNode->m_pTempData.load())
+		if (m_pRenderNode->m_pTempData)
 			return true;
 
 		if (std::abs((int)m_pRenderNode->GetDrawFrame() - (int)gEnv->nMainFrameID) < 3)

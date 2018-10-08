@@ -13,11 +13,12 @@ namespace Designer {
 namespace UVMapping
 {
 
-UVGizmo::UVGizmo() :
-	m_pAxisHelper(new CAxisHelper),
-	m_Pos(Vec3(0, 0, 0)),
-	m_HighlightedAxis(0),
-	m_bVisible(true)
+UVGizmo::UVGizmo() 
+	: m_HighlightedAxis(0)
+	, m_Pos(Vec3(0, 0, 0))
+	, m_pAxisHelper(new CAxisHelper)
+	, m_bStartedDragging(false)
+	, m_bVisible(true)
 {
 	Vec3 red(1.0f, 0.0f, 0.0f);
 	Vec3 green(0.0f, 1.0f, 0.0f);

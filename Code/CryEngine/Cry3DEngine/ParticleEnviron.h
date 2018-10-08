@@ -30,6 +30,9 @@ enum EEnvironFlags
 	ENV_COLLIDE_ANY     = ENV_TERRAIN | ENV_STATIC_ENT | ENV_DYNAMIC_ENT,
 	ENV_COLLIDE_PHYSICS = ENV_STATIC_ENT | ENV_DYNAMIC_ENT,
 	ENV_COLLIDE_CACHE   = ENV_TERRAIN | ENV_STATIC_ENT,
+
+	// Entity connections
+	ENV_TARGET          = BIT(8)
 };
 
 struct SPhysForces
@@ -310,3 +313,14 @@ protected:
 	IVisArea* m_pVisArea;                   // VisArea emitter is in, if needed and if any.
 	void*     m_pVisNodeCache;
 };
+
+
+//////////////////////////////////////////////////////////////////////////
+// Entity functions
+//
+
+struct IEntity;
+struct ParticleTarget;
+
+bool GetPhysicalVelocity(Velocity3& Vel, IEntity* pEnt, const Vec3& vPos);
+bool UpdateTarget(ParticleTarget& target, IEntity* pEntity, const Vec3& vPos);

@@ -211,8 +211,8 @@ SStaticAssetSelectorEntry::SStaticAssetSelectorEntry(const char* typeName, const
 
 SStaticAssetSelectorEntry::SStaticAssetSelectorEntry(const char* typeName, const std::vector<string>& typeNames)
 	: SStaticResourceSelectorEntry(typeName, Private_AssetSelector::SelectAsset, Private_AssetSelector::ValidateAsset, Private_AssetSelector::EditAsset, "", false)
+	, assetTypeNames(typeNames)
 {
-	assetTypeNames = typeNames;
 	isAsset = true;
 }
 

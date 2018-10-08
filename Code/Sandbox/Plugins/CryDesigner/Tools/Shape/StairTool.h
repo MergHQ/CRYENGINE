@@ -68,7 +68,6 @@ private:
 
 	static PolygonPtr CreatePolygon(const std::vector<BrushVec3>& vList, bool bFlip, PolygonPtr pBasePolygon);
 
-	PolygonPtr              m_pCapPolygon;
 	std::vector<PolygonPtr> m_PolygonsNeedPostProcess;
 	StairParameter          m_StairParameter;
 	bool                    m_bWidthIsLonger;

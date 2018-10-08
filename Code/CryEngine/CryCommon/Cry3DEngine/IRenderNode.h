@@ -3,7 +3,8 @@
 #pragma once
 
 #include <atomic>
-#include "../CryAudio/IAudioSystem.h"
+#include <CryAudio/IAudioSystem.h>
+#include <CryEntitySystem/IEntity.h>
 
 #define SUPP_HMAP_OCCL
 
@@ -143,12 +144,7 @@ public:
 		userData.objMat.SetTranslation(userData.objMat.GetTranslation() + delta);
 	}
 
-	void MarkForAutoDelete()
-	{
-		userData.lastSeenFrame[0] =
-		  userData.lastSeenFrame[1] =
-		    userData.lastSeenShadowFrame = 0;
-	}
+	void MarkForAutoDelete();
 };
 
 // RenderNode flags
@@ -291,7 +287,7 @@ public:
 		m_fWSMaxViewDist = 0;
 		m_nInternalFlags = 0;
 		m_nMaterialLayers = 0;
-		m_pTempData.store(nullptr);
+		m_pTempData = nullptr;
 		m_pPrev = m_pNext = nullptr;
 		m_cShadowLodBias = 0;
 		m_nEditorSelectionID = 0;
@@ -377,7 +373,7 @@ public:
 	virtual struct IFoliage* GetFoliage(int nSlot = 0) { return 0; }
 
 	//! Make sure I3DEngine::FreeRenderNodeState(this) is called in destructor of derived class.
-	virtual ~IRenderNode() { CRY_ASSERT(!m_pTempData.load()); }
+	virtual ~IRenderNode() { CRY_ASSERT(!m_pTempData); }
 
 	//! Set override material for this instance.
 	virtual void SetMaterial(IMaterial* pMat) = 0;
@@ -415,6 +411,18 @@ public:
 
 	//! Called when RenderNode becomes visible or invisible, can only be called from the Main thread
 	virtual void  OnRenderNodeVisible(bool bBecomeVisible) {}
+
+	//! Called when RenderNode and its owner entity becomes visible or invisible, can only be called from the Main thread
+	void OnRenderNodeAndEntityVisibilityChanged(bool bBecomeVisible)
+	{
+		OnRenderNodeVisible(bBecomeVisible);
+
+		if (GetOwnerEntity() && (GetRndFlags() & ERF_ENABLE_ENTITY_RENDER_CALLBACK))
+		{
+			// Notify our owner entity that the visibility of render node have changed.
+			GetOwnerEntity()->OnRenderNodeVisibilityChange(bBecomeVisible);
+		}
+	}
 
 	virtual uint8 GetSortPriority()                        { return 0; }
 
@@ -470,21 +478,17 @@ public:
 	//! Object draw frames (set if was drawn).
 	ILINE void SetDrawFrame(int nFrameID, int nRecursionLevel)
 	{
-		// If we can get a pointer atomically it must be valid [until the end of the frame] and we can access it
-		const auto pTempData = m_pTempData.load();
-		CRY_ASSERT(pTempData);
+		CRY_ASSERT(m_pTempData);
 
-		int* pDrawFrames = pTempData->userData.lastSeenFrame;
+		int* pDrawFrames = m_pTempData->userData.lastSeenFrame;
 		pDrawFrames[nRecursionLevel] = nFrameID;
 	}
 
 	ILINE int GetDrawFrame(int nRecursionLevel = 0) const
 	{
-		// If we can get a pointer atomically it must be valid [until the end of the frame] and we can access it
-		const auto pTempData = m_pTempData.load();
-		IF (!pTempData, 0) return 0;
+		IF (!m_pTempData, 0) return 0;
 
-		int* pDrawFrames = pTempData->userData.lastSeenFrame;
+		int* pDrawFrames = m_pTempData->userData.lastSeenFrame;
 		return pDrawFrames[nRecursionLevel];
 	}
 
@@ -551,7 +555,7 @@ public:
 	}
 
 	//! Inform 3d engine that permanent render object that captures drawing state of this node is not valid and must be recreated.
-	ILINE void   InvalidatePermanentRenderObject() { if (auto pTempData = m_pTempData.load()) pTempData->invalidRenderObjects = pTempData->hasValidRenderObjects.load(); }
+	ILINE void   InvalidatePermanentRenderObject() { if (m_pTempData) m_pTempData->invalidRenderObjects = m_pTempData->hasValidRenderObjects.load(); }
 
 	virtual void SetEditorObjectId(uint32 nEditorObjectId)
 	{
@@ -571,20 +575,6 @@ public:
 	// Retrieve a pointer to the entity who owns this render node.
 	virtual IEntity* GetOwnerEntity() const           { return nullptr; }
 
-	//////////////////////////////////////////////////////////////////////////
-	// Variables
-	//////////////////////////////////////////////////////////////////////////
-
-	void RemoveAndMarkForAutoDeleteTempData()
-	{
-		// Remove pointer atomically
-		SRenderNodeTempData* pTempData = m_pTempData.exchange(nullptr);
-
-		// Keep the contents of the object valid, but schedule it for removal at the end of the frame
-		if (pTempData)
-			pTempData->MarkForAutoDelete();
-	}
-
 public:
 
 	//! Every sector has linked list of IRenderNode objects.
@@ -597,9 +587,8 @@ public:
 	RenderFlagsType m_dwRndFlags;
 
 	//! Pointer to temporary data allocated only for currently visible objects.
-	std::atomic<SRenderNodeTempData*> m_pTempData;
-	CryRWLock                         m_manipulationLock;	
-	int                               m_manipulationFrame = -1;
+	SRenderNodeTempData* m_pTempData = nullptr;
+	int                  m_manipulationFrame = -1;
 
 	//! Hud silhouette parameter, default is black with alpha zero
 	uint32 m_nHUDSilhouettesParam;
@@ -639,6 +628,19 @@ inline void IRenderNode::SetViewDistRatio(int nViewDistRatio)
 		m_ucViewDistRatio = nViewDistRatio;
 		if (m_pOcNode)
 			m_pOcNode->MarkAsUncompiled(GetRenderNodeListId(GetRenderNodeType()));
+	}
+}
+
+inline void SRenderNodeTempData::MarkForAutoDelete()
+{
+	userData.lastSeenFrame[0] =
+		userData.lastSeenFrame[1] =
+		userData.lastSeenShadowFrame = 0;
+
+	if (userData.pOwnerNode)
+	{
+		userData.pOwnerNode->OnRenderNodeAndEntityVisibilityChanged(false);
+		userData.pOwnerNode = nullptr;
 	}
 }
 

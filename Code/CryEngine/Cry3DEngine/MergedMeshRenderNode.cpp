@@ -2921,7 +2921,7 @@ void CMergedMeshRenderNode::RenderRenderMesh(
   , const SRenderingPassInfo& passInfo
   )
 {
-	const auto pTempData = m_pTempData.load();
+	const auto pTempData = m_pTempData;
 	if (!pTempData)
 	{
 		CRY_ASSERT(false);

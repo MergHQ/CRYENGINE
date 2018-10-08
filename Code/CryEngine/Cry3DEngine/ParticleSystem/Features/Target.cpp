@@ -21,4 +21,10 @@ void CTargetSource::Serialize(Serialization::IArchive& ar)
 	ar(m_offset, "Offset", "Offset");
 }
 
+void CTargetSource::AddToComponent(CParticleComponent* pComponent)
+{
+	if (m_source == ETargetSource::Target)
+		pComponent->GetEffect()->AddEnvironFlags(ENV_TARGET);
+}
+
 }

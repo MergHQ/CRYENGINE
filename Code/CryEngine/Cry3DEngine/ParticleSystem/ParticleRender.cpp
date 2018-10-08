@@ -103,7 +103,7 @@ void CParticleRenderBase::AddRenderObject(CParticleComponentRuntime& runtime, co
 	pRenderObject->SetInstanceDataDirty();
 	pObjData->m_FogVolumeContribIdx = renderContext.m_fogVolumeId;
 	pObjData->m_LightVolumeId = renderContext.m_lightVolumeId;
-	if (const auto p = emitter.m_pTempData.load())
+	if (const auto p = emitter.m_pTempData)
 		reinterpret_cast<Vec4f&>(pObjData->m_fTempVars[0]) = (Vec4f const&)(p->userData.vEnvironmentProbeMults);
 	else
 		reinterpret_cast<Vec4f&>(pObjData->m_fTempVars[0]) = Vec4f(1.0f, 1.0f, 1.0f, 1.0f);

@@ -197,8 +197,7 @@ void CParticleEmitter::Update()
 	}
 
 	if (HasBounds())
-		CParticleManager::Instance()->GetPhysEnviron().Update(m_physEnviron, 
-			m_bounds, m_visEnviron.OriginIndoors(), m_pEffect->GetEnvironFlags() | ENV_WATER, true, 0);
+		UpdatePhysEnv();
 
 	// Apply stats from last update
 	auto& stats = GetPSystem()->GetThreadData().statsCPU;
@@ -572,7 +571,9 @@ void CParticleEmitter::UpdateStreamingPriority(const SUpdateStreamingPriorityCon
 	{
 		const auto* pComponent = pRuntime->GetComponent();
 		const SComponentParams& params = pComponent->GetComponentParams();
-		const float normalizedDist = context.distance * rcp_safe(params.m_maxParticleSize);
+		const float normalizedDist = context.distance 
+			* context.pPassInfo->GetZoomFactor()
+			* rcp_safe(params.m_maxParticleSize);
 		const bool bHighPriority = !!(params.m_renderObjectFlags & FOB_NEAREST);
 
 		if (CMatInfo* pMatInfo  = static_cast<CMatInfo*>(params.m_pMaterial.get()))
@@ -586,6 +587,12 @@ void CParticleEmitter::UpdateStreamingPriority(const SUpdateStreamingPriorityCon
 			m_pObjManager->PrecacheStatObj(pStatObj, context.lod, Matrix34A(m_location),
 				pStatObj->GetMaterial(), context.importance, normalizedDist, context.bFullUpdate, bHighPriority);
 	}
+}
+
+void CParticleEmitter::UpdatePhysEnv()
+{
+	CParticleManager::Instance()->GetPhysEnviron().Update(m_physEnviron, 
+		m_bounds, m_visEnviron.OriginIndoors(), m_pEffect->GetEnvironFlags() | ENV_WATER, true, 0);
 }
 
 void CParticleEmitter::GetSpawnParams(SpawnParams& spawnParams) const
@@ -717,8 +724,8 @@ void CParticleEmitter::ResetRenderObjects()
 
 ILINE void CParticleEmitter::UpdateFromEntity()
 {
-	if (m_entityOwner && m_target.bPriority)
-		UpdateTargetFromEntity(m_entityOwner);
+	if (m_pEffect->GetEnvironFlags() & ENV_TARGET)
+		UpdateTarget(m_target, m_entityOwner, GetLocation().t);
 }
 
 IEntity* CParticleEmitter::GetEmitGeometryEntity() const
@@ -766,34 +773,6 @@ void CParticleEmitter::SetRenderObject(CRenderObject* pRenderObject, _smart_ptr<
 {
 	CRY_PFX2_ASSERT(threadId < RT_COMMAND_BUF_COUNT);
 	m_pRenderObjects[threadId][renderObjectIdx] = std::make_pair(pRenderObject, std::move(material));
-}
-
-void CParticleEmitter::UpdateTargetFromEntity(IEntity* pEntity)
-{
-	CRY_PFX2_PROFILE_DETAIL;
-
-	if (m_target.bPriority)
-		return;
-
-	ParticleTarget target;
-	for (IEntityLink* pLink = pEntity->GetEntityLinks(); pLink; pLink = pLink->next)
-	{
-		IEntity* pTarget = gEnv->pEntitySystem->GetEntity(pLink->entityId);
-		if (pTarget)
-		{
-			target.bTarget = true;
-			target.vTarget = pTarget->GetPos();
-
-			target.vVelocity = Vec3(ZERO);  // PFX2_TODO : grab velocity from entity's physical object
-
-			AABB boundingBox;
-			pTarget->GetLocalBounds(boundingBox);
-			target.fRadius = boundingBox.GetRadius();
-
-			break;
-		}
-	}
-	m_target = target;
 }
 
 void CParticleEmitter::Register()

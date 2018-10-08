@@ -12,6 +12,13 @@
 
 namespace Designer
 {
+
+MovePipeline::MovePipeline()
+	: m_pModel(nullptr)
+	, m_bExecutedAdditionPass(false)
+{
+}
+
 void MovePipeline::TransformSelections(MainContext& mc, const BrushMatrix34& offsetTM)
 {
 	ComputeIntermediatePositionsBasedOnInitQueryResults(offsetTM);

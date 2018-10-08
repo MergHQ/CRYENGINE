@@ -39,7 +39,7 @@ void CCloudBlockerRenderNode::SetMatrix(const Matrix34& mat)
 
 void CCloudBlockerRenderNode::OffsetPosition(const Vec3& delta)
 {
-	if (const auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
+	if (m_pTempData) m_pTempData->OffsetPosition(delta);
 	m_position += delta;
 	m_WSBBox.Move(delta);
 }

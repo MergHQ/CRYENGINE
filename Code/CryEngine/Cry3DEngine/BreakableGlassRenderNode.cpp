@@ -1065,7 +1065,7 @@ void CBreakableGlassRenderNode::Render(const SRendParams& renderParams, const SR
 
 void CBreakableGlassRenderNode::OffsetPosition(const Vec3& delta)
 {
-	if (const auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
+	if (m_pTempData) m_pTempData->OffsetPosition(delta);
 	m_planeBBox.Move(delta);
 	m_fragBBox.Move(delta);
 	m_matrix.SetTranslation(m_matrix.GetTranslation() + delta);

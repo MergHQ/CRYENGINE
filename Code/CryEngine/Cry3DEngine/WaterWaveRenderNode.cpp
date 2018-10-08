@@ -385,7 +385,7 @@ void CWaterWaveRenderNode::SetRenderMesh(IRenderMesh* pRenderMesh)
 
 void CWaterWaveRenderNode::OffsetPosition(const Vec3& delta)
 {
-	if (const auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
+	if (m_pTempData) m_pTempData->OffsetPosition(delta);
 	m_pOrigPos += delta;
 	m_pWorldTM.SetTranslation(m_pWorldTM.GetTranslation() + delta);
 	m_pMin += delta;

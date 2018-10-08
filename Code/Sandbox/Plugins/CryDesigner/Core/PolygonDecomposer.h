@@ -56,10 +56,12 @@ enum EDecomposerFlag
 class PolygonDecomposer
 {
 public:
-	PolygonDecomposer(int nFlag = 0) :
-		m_nFlag(nFlag),
-		m_bGenerateConvexes(false),
-		m_pOutData(NULL)
+	PolygonDecomposer(int nFlag = 0)
+		: m_nFlag(nFlag)
+		, m_bGenerateConvexes(false)
+		, m_pOutData(nullptr)
+		, m_nBasedVertexIndex(0)
+		, m_pBrushConvexes(nullptr)
 	{
 	}
 
@@ -204,7 +206,6 @@ private: // Related to Triangulation
 	std::vector<Vertex> m_VertexList;
 	std::vector<Point>  m_PointList;
 	BrushPlane          m_Plane;
-	short               m_SubMatID;
 	PolygonPtr          m_pPolygon;
 	int                 m_nBasedVertexIndex;
 	bool                m_bGenerateConvexes;

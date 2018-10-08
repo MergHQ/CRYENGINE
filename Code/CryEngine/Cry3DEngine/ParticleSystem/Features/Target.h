@@ -12,10 +12,10 @@ namespace pfx2
 {
 
 SERIALIZATION_ENUM_DECLARE(ETargetSource, ,
-                           Self,
-                           Parent,
-                           Target
-                           )
+	Self,
+	Parent,
+	Target
+)
 
 // PFX2_TODO : optimize : GetTarget is very inefficient. Make static dispatch and then vectorize it.
 
@@ -26,6 +26,7 @@ public:
 
 	void Serialize(Serialization::IArchive& ar);
 	Vec3 GetTarget(const CParticleComponentRuntime& runtime, TParticleId particleId, bool isParentId = false);
+	void AddToComponent(CParticleComponent* pComponent);
 
 private:
 	Vec3          m_offset;

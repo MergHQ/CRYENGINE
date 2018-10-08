@@ -485,7 +485,7 @@ void CRoadRenderNode::Render(const SRendParams& RendParams, const SRenderingPass
 	const auto objMat = Matrix34::CreateTranslationMat(vWSBoxCenter);
 
 	CRenderObject* pObj = nullptr;
-	if (GetObjManager()->AddOrCreatePersistentRenderObject(m_pTempData.load(), pObj, nullptr, objMat, passInfo))
+	if (GetObjManager()->AddOrCreatePersistentRenderObject(m_pTempData, pObj, nullptr, objMat, passInfo))
 		return;
 
 	pObj->m_pRenderNode = this;
@@ -656,7 +656,7 @@ void CRoadRenderNode::GetClipPlanes(Plane* pPlanes, int nPlanesNum, int nVertId)
 
 void CRoadRenderNode::OffsetPosition(const Vec3& delta)
 {
-	if (const auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
+	if (m_pTempData) m_pTempData->OffsetPosition(delta);
 	m_serializedData.worldSpaceBBox.Move(delta);
 }
 

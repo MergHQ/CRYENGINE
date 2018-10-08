@@ -430,7 +430,6 @@ void CTerrainNode::Init(int x1, int y1, int nNodeSize, CTerrainNode* pParent, bo
 CTerrainNode::~CTerrainNode()
 {
 	Get3DEngine()->FreeRenderNodeState(this);
-	CRY_ASSERT(!m_pTempData.load());
 
 	if (GetTerrain()->m_pTerrainUpdateDispatcher)
 		GetTerrain()->m_pTerrainUpdateDispatcher->RemoveJob(this);
