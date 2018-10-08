@@ -28,11 +28,11 @@ public:
 struct GizmoDraggingContext
 {
 	CLevelEditorSharedState::Axis axis;
-	int   mode;
-	Vec3  pos;
-	int   mouse_x, mouse_y;
-	int   mouse_down_x, mouse_down_y;
-	float radian;
+	int                           mode;
+	Vec3                          pos;
+	int                           mouse_x, mouse_y;
+	int                           mouse_down_x, mouse_down_y;
+	float                         radian;
 };
 
 enum EGizmoMode
@@ -53,7 +53,7 @@ public:
 
 	void        SetPos(const Vec3& pos);
 	void        MovePos(const Vec3& offset);
-	const Vec3& GetPos() const   { return m_Pos;    }
+	const Vec3& GetPos() const   { return m_Pos; }
 	void        Hide(bool bHide) { m_bVisible = !bHide; }
 	void        SetMode(EGizmoMode mode);
 	void        Draw(SDisplayContext& dc);

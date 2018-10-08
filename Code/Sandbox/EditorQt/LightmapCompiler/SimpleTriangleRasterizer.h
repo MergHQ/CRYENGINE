@@ -40,12 +40,12 @@ public:
 	{
 	public:
 
-		//! constructor
 		CDWORDFlatFill(DWORD* inpBuffer, const DWORD indwPitchInPixels, DWORD indwValue)
+			: m_dwValue(indwValue)
+			, m_pBufferLine(nullptr)
+			, m_pBuffer(inpBuffer)
+			, m_dwPitchInPixels(indwPitchInPixels)
 		{
-			m_dwValue = indwValue;
-			m_pBuffer = inpBuffer;
-			m_dwPitchInPixels = indwPitchInPixels;
 		}
 
 		virtual void Triangle(const int iniY)

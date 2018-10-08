@@ -46,7 +46,6 @@ bool PolygonDecomposer::TriangulatePolygon(PolygonPtr pPolygon, FlexibleMesh& ou
 
 	m_pPolygon = pPolygon;
 	m_Plane = pPolygon->GetPlane();
-	m_SubMatID = pPolygon->GetSubMatID();
 	m_nBasedVertexIndex = 0;
 
 	m_pOutData = &outMesh;
@@ -118,7 +117,6 @@ void PolygonDecomposer::DecomposeToConvexes(PolygonPtr pPolygon, Convexes& outCo
 
 		m_pPolygon = pPolygon;
 		m_Plane = pPolygon->GetPlane();
-		m_SubMatID = pPolygon->GetSubMatID();
 		m_nBasedVertexIndex = 0;
 		m_pBrushConvexes = &outConvexes;
 

@@ -69,15 +69,15 @@ struct CEngineFileDialog::Implementation
 	{
 		QVector<FileSystem::SFileFilter::FileFilterCallback> defaultFileFilterCallbacks;
 		FileSystem::SFileFilter                              fileFilter;
-		CFileTreeModel*      fileTree;
-		CFileSortProxyModel* fileSortProxy;
-		CFileTreeModel*      directories;
-		CFileSortProxyModel* directorySortProxy;
-		bool                 m_selectDirectory;
-		FileSystem::CEnumerator*  m_enumerator;
+		CFileTreeModel*          fileTree;
+		CFileSortProxyModel*     fileSortProxy;
+		CFileTreeModel*          directories;
+		CFileSortProxyModel*     directorySortProxy;
+		bool                     m_selectDirectory;
+		FileSystem::CEnumerator* m_enumerator;
 
-		CFileListModel*		pHistoryModel;
-		CFileListModel*		pFavoritesModel;
+		CFileListModel*          pHistoryModel;
+		CFileListModel*          pFavoritesModel;
 
 		Models()
 			: fileTree(nullptr)
@@ -86,6 +86,8 @@ struct CEngineFileDialog::Implementation
 			, directorySortProxy(nullptr)
 			, m_selectDirectory(false)
 			, m_enumerator(GetIEditor()->GetFileSystemEnumerator())
+			, pHistoryModel(nullptr)
+			, pFavoritesModel(nullptr)
 		{}
 
 		void Setup(const FileFilterCallback& fileFilterFunc, const QString& baseDirectory, const ExtensionFilterVector& extensionFilters, CEngineFileDialog::Mode mode, QObject* parent)
@@ -95,10 +97,11 @@ struct CEngineFileDialog::Implementation
 			{
 				fileFilter.fileExtensions = extensionFilters.front().GetExtensions().toSet();
 			}
-			auto directoryOnlyFilter = [](const FileSystem::SnapshotPtr&, const FileSystem::FilePtr&)
-			{
-				return false;
-			};
+			auto directoryOnlyFilter =
+				[](const FileSystem::SnapshotPtr&, const FileSystem::FilePtr&)
+				{
+					return false;
+				};
 
 			if (m_selectDirectory)
 			{
@@ -109,7 +112,7 @@ struct CEngineFileDialog::Implementation
 				defaultFileFilterCallbacks << fileFilterFunc;
 			}
 			fileFilter.fileFilterCallbacks = defaultFileFilterCallbacks;
-			//TODO : restore base dir functionnality
+			//TODO : restore base dir functionality
 			/*if (!baseDirectory.isEmpty())
 			{
 				fileFilter.directories << baseDirectory;
@@ -265,7 +268,7 @@ struct CEngineFileDialog::Implementation
 
 	bool IsAsteriskFilterCurrentlySelected()
 	{
-		return  GetCurrentFileExtensions().first().contains("*");
+		return GetCurrentFileExtensions().first().contains("*");
 	}
 
 	void AcceptFilesFromInput()
@@ -313,7 +316,7 @@ struct CEngineFileDialog::Implementation
 
 		//unique entry in history
 		//must make sure we do not add the root to history
-		if(!selectedDirectoryPath.isEmpty() && !m_history.contains(selectedDirectoryPath))
+		if (!selectedDirectoryPath.isEmpty() && !m_history.contains(selectedDirectoryPath))
 			m_history.push_back(selectedDirectoryPath);
 
 		m_dialog->accept();
@@ -449,9 +452,9 @@ struct CEngineFileDialog::Implementation
 
 		auto pConn = std::make_shared<QMetaObject::Connection>();
 		*pConn = connect(
-		  m_ui.pDirectoryTreeView->model(),
-		  &QAbstractItemModel::layoutChanged,
-		  [this, pConn]()
+			m_ui.pDirectoryTreeView->model(),
+			&QAbstractItemModel::layoutChanged,
+			[this, pConn]()
 		{
 			m_ui.pDirectoryTreeView->scrollTo(m_ui.pDirectoryTreeView->currentIndex(), QTreeView::PositionAtCenter);
 
@@ -520,17 +523,18 @@ struct CEngineFileDialog::Implementation
 		connect(m_ui.pFavoritesView->selectionModel(), &QItemSelectionModel::selectionChanged, [this]
 		{
 			auto selection = m_ui.pFavoritesView->selectionModel()->selectedRows();
-			if(selection.size() == 1)
+			if (selection.size() == 1)
 				OpenFavoritesIndex(selection.first());
 		});
 
-		connect(m_ui.pFavoritesView, &QTreeView::customContextMenuRequested, [this](const QPoint &pos)
+		connect(m_ui.pFavoritesView, &QTreeView::customContextMenuRequested, [this](const QPoint& pos)
 		{
 			auto currentSelection = m_ui.pFavoritesView->selectionModel()->currentIndex();
 
 			auto menu = new QMenu();
 			auto action = menu->addAction(tr("Remove From Favorites"));
-			connect(action, &QAction::triggered, [&]() {
+			connect(action, &QAction::triggered, [&]()
+			{
 				m_models.pFavoritesModel->RemoveEntry(currentSelection);
 			});
 
@@ -639,7 +643,7 @@ struct CEngineFileDialog::Implementation
 
 		auto snapshotPtr = m_models.m_enumerator->GetCurrentSnapshot();
 		auto dirPtr = snapshotPtr->GetDirectoryByEnginePath(enginePath);
-		
+
 		if (m_allowAnyFile)
 			return true;
 		else if (dirPtr)
@@ -648,7 +652,7 @@ struct CEngineFileDialog::Implementation
 			return false; //because dirPtr == nullptr
 		else
 		{
-			foreach(const auto & extension, m_validExtensions)
+			foreach(const auto& extension, m_validExtensions)
 			{
 				if (!IsWildcardExtension(extension) && enginePath.endsWith(L'.' + extension, Qt::CaseInsensitive))
 				{
@@ -664,14 +668,13 @@ struct CEngineFileDialog::Implementation
 			}
 			return false;
 		}
-		
 	}
 
 	QString EnforceValidExtension(const QString& filename, const QString& dirPath) const
 	{
 		if (filename.contains('.'))
 		{
-			foreach(const auto & extension, m_validExtensions)
+			foreach(const auto& extension, m_validExtensions)
 			{
 				if (IsWildcardExtension(extension) || filename.endsWith(L'.' + extension, Qt::CaseInsensitive))
 				{
@@ -815,7 +818,8 @@ struct CEngineFileDialog::Implementation
 		QScopedPointer<CFilePopupMenu, QScopedPointerDeleteLater> popupMenu(new CFilePopupMenu(QFileInfo(filePath), spawnParent));
 
 		popupMenu->addSeparator();
-		popupMenu->addAction(new CFilePopupMenu::SFilePopupMenuAction("Add to favorites", nullptr, [&]() {
+		popupMenu->addAction(new CFilePopupMenu::SFilePopupMenuAction("Add to favorites", nullptr, [&]()
+		{
 			m_models.pFavoritesModel->AddEntry(filePath);
 		}));
 
@@ -1048,7 +1052,6 @@ struct CEngineFileDialog::Implementation
 			pHistoryView->setColumnHidden(2, true);
 			pHistoryView->setColumnHidden(3, true);
 
-
 			//favorites
 			pFavoritesView = new CFileTreeView(parent);
 			pFavoritesView->setUniformRowHeights(true);
@@ -1177,8 +1180,8 @@ struct CEngineFileDialog::Implementation
 		QAdvancedTreeView*     pDirectoryTreeView;
 		CFileTreeView*         pFileDetailsView;
 		CFilePreviewContainer* pPreviewContainer;
-		CFileTreeView*		   pFavoritesView;
-		CFileTreeView*		   pHistoryView;
+		CFileTreeView*         pFavoritesView;
+		CFileTreeView*         pHistoryView;
 
 		CFileNameLineEdit*     pFilenameLineEdit;
 	};
@@ -1233,7 +1236,7 @@ struct CEngineFileDialog::Implementation
 		//favorites model
 		//here we are trying to maintain the list of unfiltered favorites and update it based on what the user does with the filtered favorites that are displayed
 		//added here to guarantee these were added after the models are populated
-		connect(m_models.pFavoritesModel, &QAbstractItemModel::rowsInserted, [this](const QModelIndex &parent, int first, int last)
+		connect(m_models.pFavoritesModel, &QAbstractItemModel::rowsInserted, [this](const QModelIndex& parent, int first, int last)
 		{
 			int insertionIndex = 0;
 			if (first > 0)
@@ -1256,7 +1259,7 @@ struct CEngineFileDialog::Implementation
 			}
 		});
 
-		connect(m_models.pFavoritesModel, &QAbstractItemModel::rowsAboutToBeRemoved, [this](const QModelIndex &parent, int first, int last)
+		connect(m_models.pFavoritesModel, &QAbstractItemModel::rowsAboutToBeRemoved, [this](const QModelIndex& parent, int first, int last)
 		{
 			for (int i = first; i <= last; i++)
 			{
@@ -1265,7 +1268,7 @@ struct CEngineFileDialog::Implementation
 			}
 		});
 
-		connect(m_models.pFavoritesModel, &QAbstractItemModel::rowsAboutToBeMoved, [this](const QModelIndex &parent, int start, int end, const QModelIndex &destination, int row)
+		connect(m_models.pFavoritesModel, &QAbstractItemModel::rowsAboutToBeMoved, [this](const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row)
 		{
 			int insertionIndex = 0;
 			if (row > 0)
@@ -1286,18 +1289,18 @@ struct CEngineFileDialog::Implementation
 		});
 	}
 
-	CEngineFileDialog*   m_dialog;
-	QSet<QString>        m_validExtensions;
-	QString              m_defaultExtension;
-	Models               m_models;
-	Ui                   m_ui;
-	History              m_navigationHistory;
-	AcceptFileCallback   m_acceptFileCallback;
+	CEngineFileDialog*      m_dialog;
+	QSet<QString>           m_validExtensions;
+	QString                 m_defaultExtension;
+	Models                  m_models;
+	Ui                      m_ui;
+	History                 m_navigationHistory;
+	AcceptFileCallback      m_acceptFileCallback;
 	CEngineFileDialog::Mode m_mode;
-	std::vector<QString> m_selectedFiles;
-	bool				 m_allowAnyFile;
-	QStringList			 m_history;
-	QStringList			 m_favorites;
+	std::vector<QString>    m_selectedFiles;
+	bool                    m_allowAnyFile;
+	QStringList             m_history;
+	QStringList             m_favorites;
 };
 
 CEngineFileDialog::CEngineFileDialog(OpenParams& openParams, QWidget* parent)
@@ -1396,7 +1399,7 @@ QString CEngineFileDialog::RunGameSave(const RunParams& runParams, QWidget* pare
 	{
 		return QString();
 	}
-	
+
 	return selectedFiles.front();
 }
 

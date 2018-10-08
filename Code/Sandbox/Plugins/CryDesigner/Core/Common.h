@@ -176,12 +176,12 @@ void             DrawSpot(SDisplayContext& dc, const BrushMatrix34& worldTM, con
 EOperationResult SubtractEdge3D(const BrushEdge3D& inEdge0, const BrushEdge3D& inEdge1, BrushEdge3D outEdge[2]);
 EOperationResult IntersectEdge3D(const BrushEdge3D& inEdge0, const BrushEdge3D& inEdge1, BrushEdge3D& outEdge);
 ESplitResult     Split(
-  const BrushPlane& plane,
-  const BrushLine& splitLine,
-  const std::vector<BrushEdge3D>& splitEdges,
-  const BrushEdge3D& inEdge,
-  BrushEdge3D& positiveEdge,
-  BrushEdge3D& negativeEdge);
+	const BrushPlane& plane,
+	const BrushLine& splitLine,
+	const std::vector<BrushEdge3D>& splitEdges,
+	const BrushEdge3D& inEdge,
+	BrushEdge3D& positiveEdge,
+	BrushEdge3D& negativeEdge);
 
 void  MakeSectorOfCircle(BrushFloat fRadius, const BrushVec2& vCenter, BrushFloat startRadian, BrushFloat diffRadian, int nSegmentCount, std::vector<BrushVec2>& outVertexList);
 float ComputeAnglePointedByPos(const BrushVec2& vCenter, const BrushVec2& vPointedPos);
@@ -242,9 +242,10 @@ bool                     HasVertexInVertexList(const std::vector<BrushVec3>& ver
 
 struct MainContext
 {
-	MainContext() : pObject(NULL), pCompiler(NULL), pModel(NULL) {}
-	MainContext(CBaseObject* _pObject, ModelCompiler* _pCompiler, Model* _pModel) : pObject(_pObject), pCompiler(_pCompiler), pModel(_pModel) {}
+	MainContext() : pObject(nullptr), pCompiler(nullptr), pModel(nullptr), pSelected(nullptr) {}
+	MainContext(CBaseObject* _pObject, ModelCompiler* _pCompiler, Model* _pModel) : pObject(_pObject), pCompiler(_pCompiler), pModel(_pModel), pSelected(nullptr) {}
 	bool IsValid() const { return pObject && pCompiler && pModel; }
+
 	CBaseObject*   pObject;
 	ModelCompiler* pCompiler;
 	Model*         pModel;
@@ -270,4 +271,4 @@ inline Serialization::RangeDecorator<float> STEPRISE_RANGE(float& value)  { retu
 
 #define CRYDESIGNER_USER_DIRECTORY "CryDesigner"
 #define SERIALIZATION_ENUM_LABEL(value, label) \
-  description.add(int(value), label, label);
+	description.add(int(value), label, label);

@@ -451,9 +451,9 @@ void CMannTagDefEditorDialog::OnDeleteTagButton()
 		}
 	}
 
-	char* buffer[4096];
+	char buffer[4096];
 	IMannequinEditorManager* pMgr = gEnv->pGameFramework->GetMannequinInterface().GetMannequinEditorManager();
-	pMgr->GetAffectedFragmentsString(pTagDefPair->m_pOriginal, tagID, (char*)buffer, sizeof(buffer));
+	pMgr->GetAffectedFragmentsString(pTagDefPair->m_pOriginal, tagID, buffer, sizeof(buffer));
 	message.Format("Deleting tag '%s' will affect:%s\nAre you sure?", itemText, buffer);
 
 	if (ConfirmDelete(message))

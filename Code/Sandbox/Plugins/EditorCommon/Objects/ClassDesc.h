@@ -33,8 +33,9 @@ class EDITOR_COMMON_API CObjectClassDesc : public IClassDesc, public IDataBaseMa
 {
 public:
 	CObjectClassDesc()
+		: m_nTextureIcon(0)
+		, bRegistered(false)
 	{
-		m_nTextureIcon = 0;
 	}
 
 	//! Release class description.
