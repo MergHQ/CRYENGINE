@@ -1975,6 +1975,11 @@ void CAISystem::OnAIObjectRemoved(CAIObject* pObject)
 				++i;
 		}
 	}
+
+	if (gEnv->IsEditing() && pObject->GetAIType() == AIOBJECT_NAV_SEED)
+	{
+		gAIEnv.pNavigationSystem->RequestUpdateAccessibilityAfterSeedChange(pObject->GetPos(), pObject->GetPos());
+	}
 }
 
 

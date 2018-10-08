@@ -1696,15 +1696,15 @@ void NavigationSystem::ComputeMeshesAccessibility(const NavigationMeshID* pUpdat
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-	std::vector<std::pair<Vec3, NavigationAgentTypeID>> seeds;
-	seeds.reserve(10);
-	GetAISystem()->GetNavigationSeeds(seeds);
+	std::vector<std::pair<Vec3, NavigationAgentTypeID>> allSeedPoints;
+	std::vector<Vec3> seedPointsAffectingMesh;
+	allSeedPoints.reserve(32);
+	seedPointsAffectingMesh.reserve(32);
+	GetAISystem()->GetNavigationSeeds(allSeedPoints);
 
-	if (seeds.size() == 0)
-		return;
-
-	const float horizontalRange = 1.0f;
-	const float verticalRange = 1.0f;
+	MNM::SOrderedSnappingMetrics snappingMetrics;
+	snappingMetrics.EmplaceMetric(MNM::ESnappingType::Vertical, 1.0f, 1.0f);
+	snappingMetrics.EmplaceMetric(MNM::ESnappingType::Box, 1.0f, 1.0f, 1.0f);
 
 	for (size_t i = 0; i < count; ++i)
 	{
@@ -1716,30 +1716,46 @@ void NavigationSystem::ComputeMeshesAccessibility(const NavigationMeshID* pUpdat
 		NavigationMesh& mesh = m_meshes[meshId];
 		MNM::CNavMesh& navMesh = mesh.navMesh;
 
-		navMesh.GetIslands().ResetSeedConnectivityStates(MNM::CIslands::ESeedConnectivityState::Inaccessible);
+		seedPointsAffectingMesh.clear();
 
-		MNM::IslandConnections::ConnectedIslandsArray connectedIslands;
-
-		for (size_t seedIdx = 0, count = seeds.size(); seedIdx < count; ++seedIdx)
+		for (size_t seedIdx = 0, count = allSeedPoints.size(); seedIdx < count; ++seedIdx)
 		{
-			connectedIslands.clear();
-			
-			if (seeds[seedIdx].second.IsValid() && seeds[seedIdx].second != mesh.agentTypeID)
+			if (allSeedPoints[seedIdx].second.IsValid() && allSeedPoints[seedIdx].second != mesh.agentTypeID)
 				continue;
 
-			if(!IsLocationInMeshVolume(meshId, seeds[seedIdx].first))
+			if (!IsLocationInMeshVolume(meshId, allSeedPoints[seedIdx].first))
 				continue;
 
-			const MNM::TriangleID triangleID = GetClosestMeshLocation(meshId, seeds[seedIdx].first, verticalRange, horizontalRange, nullptr, nullptr, nullptr);
-			MNM::Tile::STriangle triangle;
-			if (!triangleID || !navMesh.GetTriangle(triangleID, triangle) || (triangle.islandID == MNM::Constants::eStaticIsland_InvalidIslandID))
-				continue;
+			seedPointsAffectingMesh.push_back(allSeedPoints[seedIdx].first);
+		}
 
-			const MNM::GlobalIslandID seedIslandID(meshId, triangle.islandID);
-			if (navMesh.GetIslands().GetSeedConnectivityState(triangle.islandID) != MNM::CIslands::ESeedConnectivityState::Accessible)
+		if (seedPointsAffectingMesh.empty())
+		{
+			navMesh.GetIslands().ResetSeedConnectivityStates(MNM::CIslands::ESeedConnectivityState::Accessible);
+		}
+		else
+		{
+			navMesh.GetIslands().ResetSeedConnectivityStates(MNM::CIslands::ESeedConnectivityState::Inaccessible);
+			MNM::IslandConnections::ConnectedIslandsArray connectedIslands;
+
+			for (size_t seedIdx = 0, count = seedPointsAffectingMesh.size(); seedIdx < count; ++seedIdx)
 			{
-				m_islandConnectionsManager.GetIslandConnections().GetConnectedIslands(seedIslandID, connectedIslands);
-				navMesh.GetIslands().SetSeedConnectivityState(connectedIslands.data(), connectedIslands.size(), MNM::CIslands::ESeedConnectivityState::Accessible);
+				connectedIslands.clear();
+
+				MNM::TriangleID triangleID;
+				if (!navMesh.SnapPosition(seedPointsAffectingMesh[seedIdx], snappingMetrics, nullptr, nullptr, &triangleID))
+					continue;
+
+				MNM::Tile::STriangle triangle;
+				if (!triangleID || !navMesh.GetTriangle(triangleID, triangle) || (triangle.islandID == MNM::Constants::eStaticIsland_InvalidIslandID))
+					continue;
+
+				const MNM::GlobalIslandID seedIslandID(meshId, triangle.islandID);
+				if (navMesh.GetIslands().GetSeedConnectivityState(triangle.islandID) != MNM::CIslands::ESeedConnectivityState::Accessible)
+				{
+					m_islandConnectionsManager.GetIslandConnections().GetConnectedIslands(seedIslandID, connectedIslands);
+					navMesh.GetIslands().SetSeedConnectivityState(connectedIslands.data(), connectedIslands.size(), MNM::CIslands::ESeedConnectivityState::Accessible);
+				}
 			}
 		}
 		navMesh.MarkTrianglesNotConnectedToSeeds(m_annotationsLibrary.GetInaccessibleAreaFlag().value);
