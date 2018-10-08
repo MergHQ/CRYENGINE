@@ -3,6 +3,7 @@
 #include <StdAfx.h>
 
 #include "Terrain/SurfaceType.h"
+#include "Terrain/TerrainLayerUndoObject.h"
 #include "Terrain/TerrainManager.h"
 #include "Terrain/TerrainTexGen.h"
 #include "Util/AutoLogTime.h"
@@ -73,10 +74,7 @@ void CTerrainManager::SerializeSurfaceTypes(CXmlArchive& xmlAr, bool bUpdateEngi
 	}
 	else
 	{
-		// Storing
 		CLogFile::WriteLine("Storing surface types...");
-
-		// Save the layer count
 
 		XmlNodeRef node = xmlAr.root->newChild("SurfaceTypes");
 
@@ -133,15 +131,15 @@ int CTerrainManager::FindSurfaceType(const string& name)
 	return -1;
 }
 
-CLayer* CTerrainManager::FindLayer(const char* sLayerName) const
+CLayer* CTerrainManager::FindLayer(const char* szLayerName) const
 {
 	for (int i = 0; i < GetLayerCount(); i++)
 	{
-		CLayer* layer = GetLayer(i);
-		if (strcmp(layer->GetLayerName(), sLayerName) == 0)
-			return layer;
+		CLayer* pLayer = GetLayer(i);
+		if (strcmp(pLayer->GetLayerName(), szLayerName) == 0)
+			return pLayer;
 	}
-	return 0;
+	return nullptr;
 }
 
 CLayer* CTerrainManager::FindLayerByLayerId(const uint32 dwLayerId) const
@@ -152,90 +150,30 @@ CLayer* CTerrainManager::FindLayerByLayerId(const uint32 dwLayerId) const
 		if (layer->GetCurrentLayerId() == dwLayerId)
 			return layer;
 	}
-	return 0;
-}
-
-void CTerrainManager::RemoveLayer(CLayer* layer)
-{
-	SelectLayer(-1);
-
-	if (layer && layer->GetCurrentLayerId() != e_layerIdUndefined)
-	{
-		uint32 id = layer->GetCurrentLayerId();
-
-		if (id != e_layerIdUndefined)
-			m_heightmap.EraseLayerID(id);
-	}
-
-	if (layer)
-	{
-		delete layer;
-		m_layers.erase(std::remove(m_layers.begin(), m_layers.end(), layer), m_layers.end());
-	}
-
-	signalLayersChanged();
-}
-
-void CTerrainManager::SwapLayers(int layer1, int layer2)
-{
-	CRY_ASSERT(layer1 >= 0 && layer1 < m_layers.size());
-	CRY_ASSERT(layer2 >= 0 && layer2 < m_layers.size());
-
-	std::swap(m_layers[layer1], m_layers[layer2]);
-
-	signalLayersChanged();
-}
-
-void CTerrainManager::MoveLayerToTop(int index)
-{
-	CRY_ASSERT(index > 0 && index < m_layers.size());
-
-	std::vector<CLayer*> tmp;
-	tmp.reserve(m_layers.size());
-
-	tmp.push_back(m_layers[index]);
-	tmp.insert(tmp.end(), m_layers.cbegin(), m_layers.cbegin() + index);
-	tmp.insert(tmp.end(), m_layers.cbegin() + index + 1, m_layers.cend());
-
-	m_layers.swap(tmp);
-}
-
-void CTerrainManager::MoveLayerToBottom(int index)
-{
-	CRY_ASSERT(index >= 0 && index < m_layers.size()-1);
-
-	std::vector<CLayer*> tmp;
-	tmp.reserve(m_layers.size());
-
-	tmp.insert(tmp.end(), m_layers.cbegin(), m_layers.cbegin() + index);
-	tmp.insert(tmp.end(), m_layers.cbegin() + index + 1, m_layers.cend());
-	tmp.push_back(m_layers[index]);
-
-	m_layers.swap(tmp);
+	return nullptr;
 }
 
 void CTerrainManager::InvalidateLayers()
 {
-	////////////////////////////////////////////////////////////////////////
-	// Set the update needed flag for all layer
-	////////////////////////////////////////////////////////////////////////
 	for (int i = 0; i < GetLayerCount(); ++i)
+	{
 		GetLayer(i)->InvalidateMask();
+	}
 }
 
 void CTerrainManager::ClearLayers()
 {
 	LOADING_TIME_PROFILE_SECTION;
-	SelectLayer(-1);
-	////////////////////////////////////////////////////////////////////////
-	// Clear all texture layers
-	////////////////////////////////////////////////////////////////////////
-	for (int i = 0; i < GetLayerCount(); ++i)
-		delete GetLayer(i);
+	SelectLayer(s_invalidLayerIndex);
+
+	for (CLayer* pLayer : m_layers)
+	{
+		delete pLayer;
+	}
 
 	m_layers.clear();
 
-	signalLayersChanged();
+	ReloadSurfaceTypes();
 }
 
 void CTerrainManager::SerializeLayerSettings(CXmlArchive& xmlAr)
@@ -243,7 +181,7 @@ void CTerrainManager::SerializeLayerSettings(CXmlArchive& xmlAr)
 	if (xmlAr.bLoading)
 	{
 		// Loading
-		int selected_layer = GetSelectedLayerIndex();
+		int selectedLayer = GetSelectedLayerIndex();
 		CLogFile::WriteLine("Loading layer settings...");
 		CWaitProgress progress(_T("Loading Terrain Layers"));
 
@@ -256,19 +194,22 @@ void CTerrainManager::SerializeLayerSettings(CXmlArchive& xmlAr)
 			return;
 
 		// Read all layers
-		int numLayers = layers->getChildCount();
+		const int numLayers = layers->getChildCount();
+		m_layers.reserve(numLayers);
+
 		for (int i = 0; i < numLayers; i++)
 		{
 			progress.Step(100 * i / numLayers);
-			// Create a new layer
-			m_layers.push_back(new CLayer);
 
 			CXmlArchive ar(xmlAr);
 			ar.root = layers->getChild(i);
-			// Fill the layer with the data
-			GetLayer(i)->Serialize(ar);
 
-			CryLog("  loaded editor layer %d  name='%s' LayerID=%d", i, GetLayer(i)->GetLayerName(), GetLayer(i)->GetCurrentLayerId());
+			CLayer* pLayer = new CLayer;
+			pLayer->Serialize(ar);
+
+			m_layers.push_back(pLayer);
+
+			CryLog("  loaded editor layer %d  name='%s' LayerID=%d", i, pLayer->GetLayerName(), pLayer->GetCurrentLayerId());
 		}
 
 		// If surface type ids are unassigned, assign them.
@@ -278,9 +219,8 @@ void CTerrainManager::SerializeLayerSettings(CXmlArchive& xmlAr)
 				GetSurfaceTypePtr(i)->AssignUnusedSurfaceTypeID();
 		}
 
-		signalLayersChanged();
-
-		SelectLayer(selected_layer);
+		ReloadSurfaceTypes();
+		SelectLayer(selectedLayer);
 	}
 	else
 	{
@@ -289,11 +229,11 @@ void CTerrainManager::SerializeLayerSettings(CXmlArchive& xmlAr)
 		XmlNodeRef layers = xmlAr.root->newChild("Layers");
 
 		// Write all layers
-		for (int i = 0; i < GetLayerCount(); i++)
+		for (CLayer* pLayer : m_layers)
 		{
 			CXmlArchive ar(xmlAr);
 			ar.root = layers->newChild("Layer");
-			GetLayer(i)->Serialize(ar);
+			pLayer->Serialize(ar);
 		}
 	}
 }
@@ -330,12 +270,8 @@ uint32 CTerrainManager::GetDetailIdLayerFromLayerId(const uint32 dwLayerId)
 
 void CTerrainManager::MarkUsedLayerIds(bool bFree[e_layerIdUndefined]) const
 {
-	std::vector<CLayer*>::const_iterator it;
-
-	for (it = m_layers.begin(); it != m_layers.end(); ++it)
+	for (const CLayer* pLayer : m_layers)
 	{
-		CLayer* pLayer = *it;
-
 		const uint32 id = pLayer->GetCurrentLayerId();
 
 		if (id < e_layerIdUndefined)
@@ -472,26 +408,19 @@ void CTerrainManager::GetTerrainMemoryUsage(ICrySizer* pSizer)
 {
 	{
 		SIZER_COMPONENT_NAME(pSizer, "Layers");
-
-		std::vector<CLayer*>::iterator it;
-
-		for (it = m_layers.begin(); it != m_layers.end(); ++it)
+		for (const CLayer* pLayer : m_layers)
 		{
-			CLayer* pLayer = *it;
-
 			pLayer->GetMemoryUsage(pSizer);
 		}
 	}
 
 	{
 		SIZER_COMPONENT_NAME(pSizer, "CHeightmap");
-
 		m_heightmap.GetMemoryUsage(pSizer);
 	}
 
 	{
 		SIZER_COMPONENT_NAME(pSizer, "RGBLayer");
-
 		GetRGBLayer()->GetMemoryUsage(pSizer);
 	}
 }
@@ -521,23 +450,11 @@ bool CTerrainManager::ConvertLayersToRGBLayer()
 	if (!bConvertNeeded)
 		return false;
 
-	std::vector<CLayer*>::iterator it;
-
 	uint32 dwTexResolution = 0;
 
-	for (it = m_layers.begin(); it != m_layers.end(); ++it)
+	for (const CLayer* pLayer : m_layers)
 	{
-		CLayer* pLayer = *it;
-
 		dwTexResolution = max(dwTexResolution, (uint32)pLayer->GetMaskResolution());
-		/*
-		   if(pLayer->GetMask().IsValid())
-		   {
-		   dwTexResolution=pLayer->GetMask().GetWidth();
-		   bLayersStillHaveAMask=true;
-		   break;
-		   }
-		 */
 	}
 
 	if (QDialogButtonBox::StandardButton::No == CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Convert LayeredTerrainTexture to RGBTerrainTexture?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::No))
@@ -597,10 +514,8 @@ bool CTerrainManager::ConvertLayersToRGBLayer()
 	GetIEditorImpl()->GetHeightmap()->CalcSurfaceTypes();
 
 	// we no longer need the layer mask data
-	for (it = m_layers.begin(); it != m_layers.end(); ++it)
+	for (CLayer* pLayer : m_layers)
 	{
-		CLayer* pLayer = *it;
-
 		pLayer->ReleaseMask();
 	}
 
@@ -738,7 +653,7 @@ int CTerrainManager::GetSelectedLayerIndex()
 		}
 	}
 
-	return -1;
+	return s_invalidLayerIndex;
 }
 
 CLayer* CTerrainManager::GetSelectedLayer()
@@ -750,11 +665,110 @@ CLayer* CTerrainManager::GetSelectedLayer()
 	return nullptr;
 }
 
-void CTerrainManager::AddLayer(CLayer* layer)
+void CTerrainManager::AddLayer(CLayer* pLayer, int index)
 {
-	int layerIndex = m_layers.size();
-	m_layers.push_back(layer);
-	signalLayersChanged();
+	std::vector<CLayer*>::iterator itPos;
+	if (index == s_invalidLayerIndex || index > m_layers.size())
+	{
+		itPos = m_layers.end();
+		index = m_layers.size();
+	}
+	else
+	{
+		itPos = m_layers.begin() + index;
+	}
 
-	SelectLayer(layerIndex);
+	m_layers.insert(itPos, pLayer);
+
+	ReloadSurfaceTypes();
+	SelectLayer(index);
+}
+
+void CTerrainManager::RemoveSelectedLayer()
+{
+	const int index = GetSelectedLayerIndex();
+	if (index == s_invalidLayerIndex)
+	{
+		return;
+	}
+
+	CLayer* pLayer = m_layers[index];
+	if (!pLayer)
+	{
+		return;
+	}
+
+	CUndo undo("Delete Terrain Layer");
+	GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CTerrainLayersPropsUndoObject);
+
+	if (pLayer->GetCurrentLayerId() != e_layerIdUndefined)
+	{
+		uint32 id = pLayer->GetCurrentLayerId();
+
+		if (id != e_layerIdUndefined)
+			m_heightmap.EraseLayerID(id);
+	}
+
+	delete pLayer;
+	m_layers.erase(m_layers.begin() + index);
+
+	ReloadSurfaceTypes();
+
+	const int newSelection = (index != m_layers.size()) ? index : index - 1;
+	SelectLayer(newSelection);
+}
+
+void CTerrainManager::DuplicateSelectedLayer()
+{
+	const int index = GetSelectedLayerIndex();
+	if (index == s_invalidLayerIndex)
+	{
+		return;
+	}
+
+	CLayer* pLayer = m_layers[index];
+	if (!pLayer)
+	{
+		return;
+	}
+
+	CUndo undo("Duplicate Terrain Layer");
+	GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CTerrainLayersPropsUndoObject);
+
+	CLayer* pNewLayer = pLayer->Duplicate();
+	AddLayer(pNewLayer, index + 1);
+}
+
+void CTerrainManager::MoveLayer(int oldPos, int newPos)
+{
+	if (oldPos == newPos)
+	{
+		return;
+	}
+
+	CUndo undo("Move Terrain Layer");
+	GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CTerrainLayersPropsUndoObject);
+
+	CRY_ASSERT(oldPos >= 0 && oldPos < m_layers.size());
+
+	if (newPos == s_invalidLayerIndex)
+	{
+		newPos = m_layers.size();
+	}
+
+	if (newPos > oldPos)
+	{
+		// Adjust because of removed element
+		--newPos;
+	}
+
+	CRY_ASSERT(newPos >= 0 && newPos < m_layers.size());
+
+	CLayer* pMovedLayer = m_layers[oldPos];
+
+	m_layers.erase(m_layers.begin() + oldPos);
+
+	m_layers.insert(m_layers.begin() + newPos, pMovedLayer);
+
+	signalLayersChanged();
 }

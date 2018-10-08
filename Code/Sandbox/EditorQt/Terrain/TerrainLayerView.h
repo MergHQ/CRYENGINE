@@ -3,24 +3,26 @@
 
 #include "QAdvancedTreeView.h"
 
+class CLayer;
+class CTerrainManager;
+
 class QTerrainLayerView : public QAdvancedTreeView
 {
 	Q_OBJECT
 public:
-	QTerrainLayerView(CTerrainManager* pTerrainManager);
-	virtual ~QTerrainLayerView() override;
+	QTerrainLayerView(QWidget* pParent, CTerrainManager* pTerrainManager);
+	~QTerrainLayerView();
 
-protected:
-	void         selectRow(int row);
+private:
 	virtual void selectionChanged(const QItemSelection& selected, const QItemSelection& deselected) override;
 	virtual void customEvent(QEvent* event) override;
 	virtual void mousePressEvent(QMouseEvent* event) override;
 
-private:
-	void SelectedLayerChanged(class CLayer* pLayer);
-	void LayersChanged();
+	void         SelectRow(int row);
+	void         SelectedLayerChanged(CLayer* pLayer);
+	void         LayersChanged();
 
-	class QAbstractTableModel* m_pModel;
-	class CTerrainManager*     m_pTerrainManager;
-	bool                       m_selecting;
+	QAbstractItemModel* m_pModel;
+	CTerrainManager*    m_pTerrainManager;
+	bool                m_selectionProcessing;
 };

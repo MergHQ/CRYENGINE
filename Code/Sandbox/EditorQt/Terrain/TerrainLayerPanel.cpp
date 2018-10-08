@@ -5,9 +5,9 @@
 #include "QT/Widgets/QEditToolButton.h"
 #include "Terrain/Layer.h"
 #include "Terrain/TerrainLayerPanel.h"
+#include "Terrain/TerrainLayerUndoObject.h"
 #include "Terrain/TerrainLayerView.h"
 #include "Terrain/TerrainManager.h"
-#include "TerrainTexture.h"
 #include "TerrainTexturePainter.h"
 
 #include <CryIcon.h>
@@ -68,7 +68,7 @@ QTerrainLayerPanel::QTerrainLayerPanel(QWidget* parent)
 	pSplitter->setOrientation(Qt::Vertical);
 	localLayout->addWidget(pSplitter);
 
-	QTerrainLayerView* pLayerView = new QTerrainLayerView(GetIEditorImpl()->GetTerrainManager());
+	QTerrainLayerView* pLayerView = new QTerrainLayerView(this, GetIEditorImpl()->GetTerrainManager());
 	pSplitter->addWidget(pLayerView);
 
 	if (GetIEditorImpl()->GetTerrainManager())
@@ -170,5 +170,5 @@ void QTerrainLayerPanel::AttachProperties()
 void QTerrainLayerPanel::UndoPush()
 {
 	CUndo layerModified("Texture Layer Change");
-	CTerrainTextureDialog::StoreLayersUndo();
+	GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CTerrainLayersPropsUndoObject);
 }

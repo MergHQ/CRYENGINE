@@ -26,7 +26,7 @@ UINT CLayer::m_iInstanceCount = 0;
 
 static const char* szReplaceMe = "%ENGINE%/EngineAssets/TextureMsg/ReplaceMe.tif";
 
-CLayer::CLayer() 
+CLayer::CLayer()
 	: m_cLayerFilterColor(1, 1, 1)
 	, m_fLayerTiling(1)
 	, m_fSpecularAmount(0)
@@ -79,24 +79,25 @@ uint32 CLayer::GetCurrentLayerId() const
 
 uint32 CLayer::GetOrRequestLayerId()
 {
-	if (m_dwLayerId == e_layerIdUndefined)    // not set yet
+	if (m_dwLayerId == e_layerIdUndefined)
 	{
-		bool bFree[e_layerIdUndefined];
+		// LayerId is not set yet. Find first empty slot
+		bool freeLayersMask[e_layerIdUndefined];
+		std::fill_n(freeLayersMask, e_layerIdUndefined, true);
 
-		for (uint32 id = 0; id < e_layerIdUndefined; id++)
-			bFree[id] = true;
+		GetIEditorImpl()->GetTerrainManager()->MarkUsedLayerIds(freeLayersMask);
+		GetIEditorImpl()->GetHeightmap()->MarkUsedLayerIds(freeLayersMask);
 
-		GetIEditorImpl()->GetTerrainManager()->MarkUsedLayerIds(bFree);
-		GetIEditorImpl()->GetHeightmap()->MarkUsedLayerIds(bFree);
-
-		for (uint32 id = 0; id < e_layerIdUndefined; id++)
-			if (bFree[id])
+		for (uint32 id = 0; id < e_layerIdUndefined; ++id)
+		{
+			if (freeLayersMask[id])
 			{
 				m_dwLayerId = id;
 				CryLog("GetOrRequestLayerId() '%s' m_dwLayerId=%d", GetLayerName(), m_dwLayerId);
 				GetIEditorImpl()->GetDocument()->SetModifiedFlag(TRUE);
 				break;
 			}
+		}
 	}
 
 	assert(m_dwLayerId < e_layerIdUndefined);
@@ -351,15 +352,6 @@ void CLayer::Serialize(CXmlArchive& xmlAr)
 		layer->setAttr("LayerTiling", m_fLayerTiling);
 		layer->setAttr("SpecularAmount", m_fSpecularAmount);
 		layer->setAttr("SortOrder", m_fSortOrder);
-
-		int layerTexureSize = m_cTextureDimensions.cx * m_cTextureDimensions.cy * sizeof(DWORD);
-
-		/*		if (layerTexureSize <= MAX_TEXTURE_SIZE)
-		    {
-		      PrecacheTexture();
-		      xmlAr.pNamedData->AddDataBlock( string("Layer_")+m_strLayerName,m_texture.GetData(),m_texture.GetSize() );
-		    }
-		 */
 
 		if (!m_bAutoGen)
 		{
@@ -1285,14 +1277,14 @@ void CLayer::AutogenLayerMask(const CRect& rc, const int resolution, const CPoin
 
 			// Calculate the slope for this point
 			float fs = (
-			  fabs((*(h + 1)) - hVal) +
-			  fabs((*(h - 1)) - hVal) +
-			  fabs((*(h + iHeightmapWidth)) - hVal) +
-			  fabs((*(h - iHeightmapWidth)) - hVal) +
-			  fabs((*(h + iHeightmapWidth + 1)) - hVal) +
-			  fabs((*(h - iHeightmapWidth - 1)) - hVal) +
-			  fabs((*(h + iHeightmapWidth - 1)) - hVal) +
-			  fabs((*(h - iHeightmapWidth + 1)) - hVal));
+				fabs((*(h + 1)) - hVal) +
+				fabs((*(h - 1)) - hVal) +
+				fabs((*(h + iHeightmapWidth)) - hVal) +
+				fabs((*(h - iHeightmapWidth)) - hVal) +
+				fabs((*(h + iHeightmapWidth + 1)) - hVal) +
+				fabs((*(h - iHeightmapWidth - 1)) - hVal) +
+				fabs((*(h + iHeightmapWidth - 1)) - hVal) +
+				fabs((*(h - iHeightmapWidth + 1)) - hVal));
 
 			// Compensate the smaller slope for bigger heightfields
 			float fSlope = fs * fInvHeightScale;
@@ -1512,7 +1504,7 @@ void CLayer::AssignMaterial(const string& materialName)
 		}
 	}
 
-	// If this is the last reference of this particular surface type (only CTerrainManager has a ref to it, 
+	// If this is the last reference of this particular surface type (only CTerrainManager has a ref to it,
 	// then we simply change its data without fearing that anything else will change.
 	if (m_pSurfaceType && m_pSurfaceType->Unique())
 	{
