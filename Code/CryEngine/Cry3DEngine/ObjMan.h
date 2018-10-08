@@ -275,7 +275,7 @@ public:
 
 	uint16 CheckCachedNearestCubeProbe(IRenderNode* pEnt, Vec4* pEnvProbMults = nullptr)
 	{
-		if (const auto tempDataPtr = pEnt->m_pTempData.load())
+		if (const auto tempDataPtr = pEnt->m_pTempData)
 		{
 			SRenderNodeTempData::SUserData& pUserDataRN = tempDataPtr->userData;
 
@@ -462,6 +462,7 @@ public:
 	uint32       GetResourcesModificationChecksum(IRenderNode* pOwnerNode) const;
 	bool         AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempData, CRenderObject*& pRenderObject, const CLodValue* pLodValue, const Matrix34& transformationMatrix, const SRenderingPassInfo& passInfo) const;
 	IRenderMesh* GetBillboardRenderMesh(IMaterial* pMaterial);
+
 
 public:
 	//////////////////////////////////////////////////////////////////////////

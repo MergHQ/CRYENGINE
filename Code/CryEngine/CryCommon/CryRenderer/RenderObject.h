@@ -448,14 +448,15 @@ protected:
 	// Disallow copy (potential bugs with PERMANENT objects)
 	// alwasy use IRendeer::EF_DuplicateRO if you want a copy
 	// of a CRenderObject
-	CRenderObject(const CRenderObject &other)
-	{
-	};
-	// CRenderObject& operator= (const CRenderObject& other) = default; // Not supported on vs2012
+	CRenderObject(CRenderObject &&other) = delete;
+	CRenderObject(const CRenderObject &other) = delete;
+	CRenderObject& operator= (CRenderObject&& other) = default;
+	CRenderObject& operator= (const CRenderObject& other) = default;
 
 	void CloneObject(CRenderObject* srcObj)
 	{
 		*this = *srcObj;
+		this->m_pCompiledObject = nullptr;
 	}
 
 	friend class CRenderer;

@@ -105,7 +105,7 @@ void CClipVolumeManager::UpdateEntityClipVolume(const Vec3& pos, IRenderNode* pR
 	if (!pRenderNode)
 		return;
 
-	const auto pTempData = pRenderNode->m_pTempData.load();
+	const auto pTempData = pRenderNode->m_pTempData;
 	if (!pTempData)
 		return;
 

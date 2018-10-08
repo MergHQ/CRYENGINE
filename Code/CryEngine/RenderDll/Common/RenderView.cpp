@@ -90,7 +90,7 @@ struct SDeleteNonePoolRenderObjs
 	void operator()(CRenderObject** pData) const
 	{
 		// Delete elements outside of pool range
-		if (*pData && (*pData < m_pPoolStart || *pData > m_pPoolEnd))
+		if (*pData && (*pData < m_pPoolStart || *pData >= m_pPoolEnd))
 			delete *pData;
 	}
 };
@@ -210,6 +210,7 @@ void CRenderView::Clear()
 	m_globalFogDescription = SRenderGlobalFogDescription();
 
 	ClearTemporaryCompiledObjects();
+	m_permanentRenderObjectsToCompile.CoalesceMemory();
 	m_permanentRenderObjectsToCompile.clear();
 
 	m_bTrackUncompiledItems = true;

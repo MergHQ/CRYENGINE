@@ -1900,13 +1900,13 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	if (passInfo.IsGeneralPass() && IsStatObjBufferRenderTasksAllowed() && JobManager::InvokeAsJob("CheckOcclusion"))
 		m_pObjManager->EndOcclusionCulling();
 
-		// release shadow views (from now only renderer owns it)
-		for (const auto& pair : shadowFrustums)
-		{
-			auto &shadowFrustum = pair.first;
-			CRY_ASSERT(shadowFrustum->pOnePassShadowView);
-			shadowFrustum->pOnePassShadowView.reset();
-		}
+	// release shadow views (from now only renderer owns it)
+	for (const auto& pair : shadowFrustums)
+	{
+		auto &shadowFrustum = pair.first;
+		CRY_ASSERT(shadowFrustum->pOnePassShadowView);
+		shadowFrustum->pOnePassShadowView.reset();
+	}
 }
 
 void C3DEngine::ResetCoverageBufferSignalVariables()

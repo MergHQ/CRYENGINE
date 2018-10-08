@@ -175,7 +175,7 @@ void CDistanceCloudRenderNode::GetMemoryUsage(ICrySizer* pSizer) const
 
 void CDistanceCloudRenderNode::OffsetPosition(const Vec3& delta)
 {
-	if (const auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
+	if (m_pTempData) m_pTempData->OffsetPosition(delta);
 	m_pos += delta;
 	m_WSBBox.Move(delta);
 }

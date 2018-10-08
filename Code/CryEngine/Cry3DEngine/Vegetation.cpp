@@ -196,8 +196,8 @@ CLodValue CVegetation::ComputeLod(int wantedLod, const SRenderingPassInfo& passI
 			const float fEntDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, GetBBox())) * passInfo.GetZoomFactor();
 			wantedLod = CObjManager::GetObjectLOD(this, fEntDistance);
 
-			if (auto pTempData = m_pTempData.load())
-				pTempData->userData.nWantedLod = wantedLod;
+			if (m_pTempData)
+				m_pTempData->userData.nWantedLod = wantedLod;
 		}
 
 		int minUsableLod = pStatObj->GetMinUsableLod();
@@ -267,7 +267,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	auto pTempData = m_pTempData.load();
+	auto pTempData = m_pTempData;
 	if (!pTempData)
 	{
 		CRY_ASSERT(false);
@@ -686,7 +686,7 @@ bool CVegetation::PhysicalizeFoliage(bool bPhysicalize, int iSource, int nSlot)
 	if (!pBody || !pBody->m_pSpines)
 		return false;
 
-	if (auto pTempData = m_pTempData.load())
+	if (auto pTempData = m_pTempData)
 	{
 		if (bPhysicalize)
 		{
@@ -748,7 +748,7 @@ IRenderNode* CVegetation::Clone() const
 void CVegetation::ShutDown()
 {
 	Get3DEngine()->FreeRenderNodeState(this); // Also does unregister entity.
-	CRY_ASSERT(!m_pTempData.load());
+	CRY_ASSERT(!m_pTempData);
 
 	// TODO: Investigate thread-safety wrt tempdata here.
 	Dephysicalize();
@@ -776,7 +776,7 @@ void CVegetation::Dephysicalize(bool bKeepIfReferenced)
 	if (m_pPhysEnt && GetSystem()->GetIPhysicalWorld()->DestroyPhysicalEntity(m_pPhysEnt, 4 * (int)bKeepIfReferenced))
 	{
 		m_pPhysEnt = 0;
-		const auto pTempData = m_pTempData.load();
+		const auto pTempData = m_pTempData;
 		if (pTempData && pTempData->userData.m_pFoliage)
 		{
 			pTempData->userData.m_pFoliage->Release();
@@ -906,8 +906,8 @@ void CVegetation::UpdateSpriteInfo(SVegetationSpriteInfo& si, float fSpriteAmoun
 
 IFoliage* CVegetation::GetFoliage(int nSlot)
 {
-	if (const auto pTempData = m_pTempData.load())
-		return pTempData->userData.m_pFoliage;
+	if (m_pTempData)
+		return m_pTempData->userData.m_pFoliage;
 
 	return nullptr;
 }
@@ -952,7 +952,7 @@ void CVegetation::CheckCreateDeformable()
 
 void CVegetation::OffsetPosition(const Vec3& delta)
 {
-	if (const auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
+	if (m_pTempData) m_pTempData->OffsetPosition(delta);
 	// GetBBox before moving position
 	AABB aabb = GetBBox();
 	if (m_bApplyPhys)
@@ -1054,9 +1054,9 @@ IStatObj* CVegetation::GetEntityStatObj(unsigned int nSubPartId, Matrix34A* pMat
 {
 	if (pMatrix)
 	{
-		if (const auto pTempData = m_pTempData.load())
+		if (m_pTempData)
 		{
-			*pMatrix = pTempData->userData.objMat;
+			*pMatrix = m_pTempData->userData.objMat;
 		}
 		else
 		{
@@ -1090,5 +1090,5 @@ IMaterial* CVegetation::GetMaterial(Vec3* pHitPos) const
 
 bool CVegetation::CanExecuteRenderAsJob()
 {
-	return (GetCVars()->e_ExecuteRenderAsJobMask & BIT(GetRenderNodeType())) != 0;
+	return (GetCVars()->e_ExecuteRenderAsJobMask & BIT(GetRenderNodeType())) != 0 && (m_dwRndFlags & ERF_RENDER_ALWAYS) == 0;
 }

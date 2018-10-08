@@ -4746,7 +4746,6 @@ CRenderObject* CRenderer::EF_DuplicateRO(CRenderObject* pSrc, const SRenderingPa
 		uint32 nId = pObjNew->m_Id;
 		pObjNew->CloneObject(pSrc);
 		pObjNew->m_Id = nId;
-		pObjNew->m_pCompiledObject = nullptr; // Must not be cloned.
 
 		CPermanentRenderObject* pObjSrc = reinterpret_cast<CPermanentRenderObject*>(pSrc);
 
@@ -4764,6 +4763,5 @@ CRenderObject* CRenderer::EF_DuplicateRO(CRenderObject* pSrc, const SRenderingPa
 
 	CRenderObject* pObjNew = passInfo.GetRenderView()->AllocateTemporaryRenderObject();
 	pObjNew->CloneObject(pSrc);
-	pObjNew->m_pCompiledObject = nullptr;
 	return pObjNew;
 }

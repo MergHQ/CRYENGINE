@@ -527,6 +527,8 @@ private:
 	};
 	std::map<std::pair<IStatObj*, IMaterial*>, PodArray<SNodeInstancingInfo>*>* m_pStaticInstancingInfo;
 
+	CryCriticalSectionNonRecursive m_renderLock;
+
 	float m_fPrevTerrainTexScale;                         // used to detect terrain texturing change and refresh info in object instances
 
 public:

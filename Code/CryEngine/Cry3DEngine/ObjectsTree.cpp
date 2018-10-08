@@ -113,7 +113,7 @@ void COctreeNode::CheckManageVegetationSprites(float fNodeDistance, int nMaxFram
 		float fSwitchRange = min(fSpriteSwitchDist * GetCVars()->e_LodTransitionSpriteDistRatio, GetCVars()->e_LodTransitionSpriteMinDist);
 		float fLodTransitionDistband = 1.f;
 
-		const auto pTempData = pObj->m_pTempData.load();
+		const auto pTempData = pObj->m_pTempData;
 		if (pObj->m_pSpriteInfo)
 		{
 			CStatObj* pStatObj = vegetGroup.GetStatObj();
@@ -2555,6 +2555,16 @@ void COctreeNode::RenderContentJobEntry(int nRenderMask, Vec3 vAmbColor, uint32 
 	}
 #endif
 
+	{
+		// NOTE: There's an extremely low chance of contention on this lock:
+		// Due to one-pass-traversal we have a strong guarantee that each octree
+		// node can only be processed by one thread at a time for a given traversal.
+		// Currently only vis area octree traversal can overlap with general 
+		// octree traversal. 
+		CRY_PROFILE_FUNCTION_WAITING(PROFILE_3DENGINE);
+		m_renderLock.Lock();
+	}
+
 	PodArray<SRenderLight*>* pAffectingLights = GetAffectingLights(passInfo);
 
 	SSectorTextureSet* pTerrainTexInfo = NULL;
@@ -2573,7 +2583,7 @@ void COctreeNode::RenderContentJobEntry(int nRenderMask, Vec3 vAmbColor, uint32 
 			{
 				for (IRenderNode* pObj = m_arrObjects[nListId].m_pFirstNode; pObj; pObj = pObj->m_pNext)
 				{
-					if (auto pTempData = pObj->m_pTempData.load())
+					if (auto pTempData = pObj->m_pTempData)
 					{
 						// Invalidate objects where terrain texture is used
 						if (pTempData->userData.bTerrainColorWasUsed)
@@ -2602,6 +2612,8 @@ void COctreeNode::RenderContentJobEntry(int nRenderMask, Vec3 vAmbColor, uint32 
 	{
 		GetObjManager()->RemoveCullJobProducer();
 	}
+
+	m_renderLock.Unlock();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
