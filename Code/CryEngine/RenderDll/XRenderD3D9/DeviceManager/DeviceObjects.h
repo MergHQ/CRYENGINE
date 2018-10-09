@@ -66,7 +66,7 @@ struct SInputLayoutCompositionDescriptor
 
 	bool operator==(const SInputLayoutCompositionDescriptor &rhs) const noexcept
 	{
-		return VertexFormat == rhs.VertexFormat && StreamMask == rhs.StreamMask && ShaderMask == rhs.ShaderMask;
+		return static_cast<size_t>(*this) == static_cast<size_t>(rhs);
 	}
 	bool operator!=(const SInputLayoutCompositionDescriptor &rhs) const noexcept { return !(*this == rhs); }
 
@@ -74,10 +74,16 @@ struct SInputLayoutCompositionDescriptor
 	{
 		size_t operator()(const SInputLayoutCompositionDescriptor &d) const noexcept
 		{
-			const auto x = static_cast<size_t>(d.StreamMask) | (static_cast<size_t>(d.ShaderMask) << 8) | (static_cast<size_t>(d.VertexFormat.value) << 16) | (static_cast<size_t>(d.bInstanced) << 24);
+			const auto x = static_cast<size_t>(d);
 			return std::hash<size_t>()(x);
 		}
 	};
+
+private:
+	explicit operator size_t() const
+	{
+		return static_cast<size_t>(StreamMask) | (static_cast<size_t>(ShaderMask) << 8) | (static_cast<size_t>(VertexFormat.value) << 16) | (static_cast<size_t>(bInstanced) << 24);
+	}
 };
 
 class CDeviceObjectFactory
