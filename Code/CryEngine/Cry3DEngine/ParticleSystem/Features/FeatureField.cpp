@@ -123,10 +123,8 @@ public:
 		ar(m_size, "value", "Value");
 	}
 
-	virtual EFeatureType GetFeatureType() override
-	{
-		return EFT_Size;
-	}
+	virtual EFeatureType GetFeatureType() override { return EFT_Size; }
+	static uint DefaultForType() { return EFT_Size; }
 
 	virtual void InitParticles(CParticleComponentRuntime& runtime) override
 	{

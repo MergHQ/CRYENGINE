@@ -401,16 +401,38 @@ void CFeatureRenderSprites::SortSprites(SSpritesContext& spritesContext)
 
 	if (byAge)
 	{
-		CRY_PFX2_ASSERT(container.HasData(EPDT_NormalAge));
-		CRY_PFX2_ASSERT(container.HasData(EPDT_LifeTime));
-		IFStream ages = container.GetIFStream(EPDT_NormalAge);
-		IFStream lifeTimes = container.GetIFStream(EPDT_LifeTime);
-
-		for (size_t i = 0; i < numSprites; ++i)
+		if (container.HasData(EPDT_SpawnId))
 		{
-			const TParticleId particleId = particleIds[i];
-			const float age = ages.Load(particleId) * lifeTimes.Load(particleId);
-			keys[i] = age;
+			auto ids = container.IStream(EPDT_SpawnId);
+			for (size_t i = 0; i < numSprites; ++i)
+			{
+				const TParticleId particleId = particleIds[i];
+				keys[i] = (float)ids.Load(particleId);
+			}
+		}
+		else if (isfinite(spritesContext.m_runtime.ComponentParams().m_maxTotalLIfe)
+		&& container.HasData(EPDT_SpawnFraction))
+		{
+			auto fractions = container.IStream(EPDT_SpawnFraction);
+			for (size_t i = 0; i < numSprites; ++i)
+			{
+				const TParticleId particleId = particleIds[i];
+				keys[i] = fractions.Load(particleId);
+			}
+		}
+		else
+		{
+			CRY_PFX2_ASSERT(container.HasData(EPDT_NormalAge));
+			CRY_PFX2_ASSERT(container.HasData(EPDT_LifeTime));
+			auto ages = container.IStream(EPDT_NormalAge);
+			auto lifeTimes = container.IStream(EPDT_LifeTime);
+
+			for (size_t i = 0; i < numSprites; ++i)
+			{
+				const TParticleId particleId = particleIds[i];
+				const float age = ages.Load(particleId) * lifeTimes.Load(particleId);
+				keys[i] = age;
+			}
 		}
 	}
 	else if (byDistance)

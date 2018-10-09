@@ -348,10 +348,10 @@ void CParticleComponent::Compile()
 			{
 				if (auto* params = GetPSystem()->GetDefaultFeatureParam(EFeatureType(b)))
 				{
-					if (auto* feature = params->m_pFactory())
+					if (auto* feature = static_cast<CParticleFeature*>(params->m_pFactory()))
 					{
-						m_defaultFeatures.push_back(static_cast<CParticleFeature*>(feature));
-						static_cast<CParticleFeature*>(feature)->AddToComponent(this, &m_params);
+						m_features.push_back(feature);
+						feature->AddToComponent(this, &m_params);
 					}
 				}
 			}

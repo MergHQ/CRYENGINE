@@ -195,12 +195,9 @@ void CParticleContainer::AddParticles(TConstArray<SSpawnEntry> spawnEntries)
 		{
 			auto spawnIds = IOStream(EPDT_SpawnId);
 			for (uint32 i = currentId; i < lastId; ++i)
-				spawnIds[i] = m_nextSpawnId++;
+				spawnIds[i] = m_nextSpawnId + i - currentId;
 		}
-		else
-		{
-			m_nextSpawnId += toAddCount;
-		}
+		m_nextSpawnId += toAddCount;
 
 		if (HasData(EPDT_NormalAge))
 		{
