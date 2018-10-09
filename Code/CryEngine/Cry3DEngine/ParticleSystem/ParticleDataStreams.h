@@ -16,7 +16,7 @@ struct TIOStream
 public:
 	typedef vector4_t<T> Tv;
 
-	explicit TIOStream(T* pStream)             : m_pStream(pStream) {}
+	explicit TIOStream(T* pStream)              : m_pStream(pStream) {}
 	bool IsValid() const                        { return m_pStream != 0; }
 	T    Load(TParticleId pId) const            { return m_pStream[pId]; }
 	void Store(TParticleId pId, T value)        { m_pStream[pId] = value; }
@@ -44,10 +44,11 @@ public:
 	typedef vector4_t<T> Tv;
 
 	explicit TIStream(const T* pStream = nullptr, T defaultVal = T());
-	T SafeLoad(TParticleId pId) const { return m_pStream[pId & m_safeMask]; }
-	T operator[](TParticleId pId) const { return SafeLoad(pId); }
+	bool IsValid() const                       { return m_safeMask != 0; }
+	T SafeLoad(TParticleId pId) const          { return m_pStream[pId & m_safeMask]; }
+	T operator[](TParticleId pId) const        { return SafeLoad(pId); }
 #ifdef CRY_PFX2_USE_SSE
-	Tv SafeLoad(TParticleGroupId pgId) const { return *(const Tv*)(m_pStream + (pgId & m_safeMask)); }
+	Tv SafeLoad(TParticleGroupId pgId) const   { return *(const Tv*)(m_pStream + (pgId & m_safeMask)); }
 	Tv operator[](TParticleGroupId pgId) const { return SafeLoad(pgId); }
 	Tv SafeLoad(TParticleIdv pIdv) const;
 #endif

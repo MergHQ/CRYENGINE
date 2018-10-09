@@ -11,10 +11,11 @@ namespace pfx2
 struct SSpawnData
 {
 	float m_amount;
-	float m_spawned;
 	float m_duration;
 	float m_restart;
 	float m_timer;
+	float m_spawned;
+	float m_fraction;
 
 	float DeltaTime(float dT) const
 	{
@@ -66,6 +67,14 @@ public:
 		SetMax(pParams->m_stableTime, stableTime);
 		SetMax(pParams->m_equilibriumTime, equilibriumTime);
 		SetMax(pParams->m_maxTotalLIfe, maxLife);
+
+		if (m_duration.GetBaseValue() == 0.0f)
+		{
+			// Particles all have same age, add Spawn fraction or Id to distinguish them
+			pComponent->AddParticleData(EPDT_SpawnFraction);
+			if (m_restart.IsEnabled())
+				pComponent->AddParticleData(EPDT_SpawnId);
+		}
 	}
 
 	void AddSubInstances(CParticleComponentRuntime& runtime, TDynArray<SInstance>& instances) override
@@ -190,13 +199,11 @@ protected:
 		{
 			SSpawnData& spawnData = runtime.GetInstanceData(i, m_offsetSpawnData);
 
-			const float startTime = max(spawnData.m_timer, 0.0f);
-			const float endTime = min(spawnData.m_timer + dT, spawnData.m_duration);
-			const float spawnTime = endTime - startTime;
-			const float spawned = amounts[i] * countScale;
-			
 			if (spawnData.m_timer <= spawnData.m_duration)
 				runtime.SetAlive();
+
+			const float spawnTime = spawnData.DeltaTime(dT);
+			const float spawned = amounts[i] * countScale;
 
 			if (spawnTime >= 0.0f && spawned > 0.0f)
 			{
@@ -212,14 +219,12 @@ protected:
 
 					if (std::isfinite(spawnData.m_duration))
 					{
-						entry.m_fractionIncrement = rcp(max((float)entry.m_count - 1, 1.0f));
-						if (spawnData.m_duration > 0.0f)
-						{
-							const float invDuration = rcp(spawnData.m_duration);
-							entry.m_fractionBegin = startTime * invDuration;
-							const float fractionEnd = endTime * invDuration;
-							entry.m_fractionIncrement *= (fractionEnd - entry.m_fractionBegin);
-						}
+						float total = spawned;
+						if (spawnData.m_duration * spawnTime > 0.0f)
+							total *= spawnData.m_duration * rcp(spawnTime);
+						entry.m_fractionIncrement = rcp(total - 1.0f);
+						entry.m_fractionBegin = spawnData.m_fraction;
+						spawnData.m_fraction += entry.m_fractionIncrement * entry.m_count;
 					}
 
 					spawnEntries.push_back(entry);
@@ -255,10 +260,11 @@ protected:
 			const float delay = delays[i] + runtime.GetInstance(idx).m_startDelay;
 
 			spawnData.m_timer    = -delay;
-			spawnData.m_spawned  = 0.0f;
 			spawnData.m_amount   = amounts[i];
 			spawnData.m_duration = durations[i];
 			spawnData.m_restart  = max(restarts[i], delay + spawnData.m_duration);
+			spawnData.m_spawned  = 0.0f;
+			spawnData.m_fraction = 0.0f;
 		}
 	}
 
@@ -290,7 +296,7 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
 		CParticleFeatureSpawnBase::Serialize(ar);
-		if (m_duration.GetBaseValue())
+		if (m_duration.IsEnabled() && m_duration.GetBaseValue() > 0.0f)
 			ar(m_mode, "Mode", "Mode");
 	}
 
@@ -313,7 +319,7 @@ public:
 	{
 		for (uint i = 0; i < amounts.size(); ++i)
 		{
-			SSpawnData& spawnData = runtime.GetInstanceData(i, m_offsetSpawnData);
+			const SSpawnData& spawnData = runtime.GetInstanceData(i, m_offsetSpawnData);
 			const float dt = spawnData.DeltaTime(runtime.DeltaTime());
 			if (dt < 0.0f)
 				continue;

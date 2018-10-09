@@ -227,7 +227,6 @@ private:
 	Vec2                                     m_nodePosition;
 	SComponentParams                         m_params;
 	TSmartArray<CParticleFeature>            m_features;
-	TSmartArray<CParticleFeature>            m_defaultFeatures;
 	PUseData                                 m_pUseData;
 	SEnable                                  m_enabled;
 	SEnable                                  m_visible;

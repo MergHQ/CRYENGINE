@@ -14,12 +14,8 @@ public:
 	CFeatureLifeTime(float lifetime = 1, bool killOnParentDeath = false)
 		: m_lifeTime(lifetime), m_killOnParentDeath(killOnParentDeath) {}
 
+	virtual EFeatureType GetFeatureType() override { return EFT_Life; }
 	static uint DefaultForType() { return EFT_Life; }
-
-	virtual EFeatureType GetFeatureType() override
-	{
-		return EFT_Life;
-	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
