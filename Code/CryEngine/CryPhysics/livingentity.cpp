@@ -840,7 +840,7 @@ int CLivingEntity::GetStateSnapshot(TSerialize ser, float time_back, int flags)
 		m_bFlying,
 		m_bJumpRequested,
 		m_dh, m_dhSpeed, m_stablehTime,
-		m_pWorld->GetPhysicalEntityId(m_pLastGroundCollider), m_iLastGroundColliderPart, m_posLastGroundColl
+		(m_pWorld ? m_pWorld->GetPhysicalEntityId(m_pLastGroundCollider) : -2), m_iLastGroundColliderPart, m_posLastGroundColl
 	};
 	helper.Serialize( ser );
 
