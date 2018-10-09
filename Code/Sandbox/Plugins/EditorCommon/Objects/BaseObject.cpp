@@ -951,8 +951,11 @@ void CBaseObject::ChangeColor(ColorB color)
 
 void CBaseObject::SetColor(ColorB color)
 {
-	m_color = color;
-	GetIEditor()->GetObjectManager()->NotifyObjectListeners(this, OBJECT_ON_COLOR_CHANGED);
+	if (m_color != color)
+	{
+		m_color = color;
+		GetIEditor()->GetObjectManager()->NotifyObjectListeners(this, OBJECT_ON_COLOR_CHANGED);
+	}
 }
 
 void CBaseObject::UseColorOverride(bool color)
