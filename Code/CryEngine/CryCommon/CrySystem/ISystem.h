@@ -2,14 +2,10 @@
 
 #pragma once
 
-#ifdef _DLL
-	#ifdef CRYSYSTEM_EXPORTS
-		#define CRYSYSTEM_API DLL_EXPORT
-	#else
-		#define CRYSYSTEM_API DLL_IMPORT
-	#endif
+#ifdef CRYSYSTEM_EXPORTS
+	#define CRYSYSTEM_API DLL_EXPORT
 #else
-	#define CRYSYSTEM_API
+	#define CRYSYSTEM_API DLL_IMPORT
 #endif
 
 #include <CryCore/Platform/platform.h> // Needed for LARGE_INTEGER (for consoles).
