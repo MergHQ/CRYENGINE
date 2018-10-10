@@ -241,3 +241,18 @@ bool CPrefabPicker::IsValidAssetForPrefab(const CPrefabObject* pPrefabObject, co
 
 	return true;
 }
+
+void CPrefabPicker::GetAllPrefabObjectDescendants(const CBaseObject* pObject, std::vector<CPrefabObject*>& outAllChildren)
+{
+	for (int i = 0, iChildCount(pObject->GetChildCount()); i < iChildCount; ++i)
+	{
+		CBaseObject* pChild = pObject->GetChild(i);
+		if (pChild == NULL)
+			continue;
+		if (pChild->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
+		{
+			outAllChildren.push_back(static_cast<CPrefabObject*>(pChild));
+		}
+		GetAllPrefabObjectDescendants(pChild, outAllChildren);
+	}
+}

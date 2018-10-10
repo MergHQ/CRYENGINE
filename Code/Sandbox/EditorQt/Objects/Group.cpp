@@ -811,6 +811,25 @@ void CGroup::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 	}
 }
 
+bool CGroup::CanAddMembers(std::vector<CBaseObject*>& objects)
+{
+	for (CBaseObject* pObject : objects)
+	{
+		if (IsDescendantOf(pObject))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool CGroup::CanAddMember(CBaseObject* pMember)
+{
+	std::vector<CBaseObject*> members = { pMember };
+	return CanAddMembers(members);
+}
+
 void CGroup::Serialize(CObjectArchive& ar)
 {
 	CBaseObject::Serialize(ar);
