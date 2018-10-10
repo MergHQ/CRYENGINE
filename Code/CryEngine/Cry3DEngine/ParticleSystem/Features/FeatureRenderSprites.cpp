@@ -205,35 +205,22 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 	const CCamera& camera = *spritesContext.m_camInfo.pCamera;
 	const Vec3 cameraPosition = camera.GetPosition();
 
-	// frustum culling
+	// frustum and distance culling
 	SFrustumTest frustumTest(camera, spritesContext.m_bounds);
-
-	// size and distance culling
-	const float camAng = camera.GetFov();
-	const float screenArea = camAng * camera.GetHorizontalFov();
-	const float camNearClip = m_facingMode == EFacingMode::Screen ? 0.0f : camera.GetEdgeN().GetLength();
-	const float nearDist = spritesContext.m_bounds.GetDistance(camera.GetPosition());
-	const float farDist = spritesContext.m_bounds.GetFarDistance(camera.GetPosition());
-	const float maxScreen = min(+visibility.m_maxScreenSize, GetCVars()->e_ParticlesMaxDrawScreen);
-
-	const float minCamDist = max(+visibility.m_minCameraDistance, camNearClip);
-	const float maxCamDist = visibility.m_maxCameraDistance;
-	const float invMaxAng = 1.0f / (maxScreen * camAng * 0.5f);
-	const float invMinAng = GetPSystem()->GetMaxAngularDensity(camera) * emitter.GetViewDistRatio() * visibility.m_viewDistanceMultiple;
-
-	const bool cullNear = nearDist < minCamDist * 2.0f
-	                      || maxScreen < 2 && nearDist < runtime.ComponentParams().m_maxParticleSize * invMaxAng * 2.0f;
-	const bool cullFar = farDist > maxCamDist * 0.75f
-	                     || GetCVars()->e_ParticlesMinDrawPixels > 0.0f;
+	SFarCulling cullFar(runtime, camera);
+	SNearCulling cullNear(runtime, camera, m_facingMode != EFacingMode::Screen);
 
 	// count and cull pixels drawn for near emitters
+	const float camAng = camera.GetFov();
+	const float screenArea = camAng * camera.GetHorizontalFov();
+	const float nearDist = spritesContext.m_bounds.GetDistance(camera.GetPosition());
 	const float maxArea = runtime.GetContainer().GetNumParticles()
 		* div_min(sqr(runtime.ComponentParams().m_maxParticleSize * 2.0f) * m_aspectRatio, sqr(nearDist), screenArea)
 		* m_fillCost;
 	const bool cullArea = maxArea > spritesContext.m_areaLimit;
 	const bool sumArea = cullArea || maxArea > 1.0f / 256.0f;
-
-	const bool culling = frustumTest.doTest || cullNear || cullFar || sumArea;
+	const bool cullDist = cullNear.DoCulling() || cullFar.DoCulling() || sumArea;
+	const bool culling = frustumTest.doTest || cullDist;
 	const bool stretching = m_facingMode == EFacingMode::Velocity && m_axisScale != 0.0f;
 
 	auto& memHeap = GetPSystem()->GetThreadData().memHeap;
@@ -276,19 +263,13 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 			if (!frustumTest.IsVisible(position, fullSize))
 				continue;
 
-			if (cullNear + cullFar + sumArea)
+			if (cullDist)
 			{
-				const float invDist = rsqrt_fast((cameraPosition - position).GetLengthSquared());
-				if (cullNear)
-				{
-					const float ratio = max(fullSize * invMaxAng, minCamDist) * invDist;
-					alpha *= crymath::saturate((1.0f - ratio) * 2.0f);
-				}
-				if (cullFar)
-				{
-					const float ratio = min(fullSize * invMinAng, maxCamDist) * invDist;
-					alpha *= crymath::saturate((ratio - 1.0f) * 3.0f);
-				}
+				const float invDist = (cameraPosition - position).GetInvLengthFast();
+				if (cullNear.DoCulling())
+					alpha *= cullNear.DistanceFade(fullSize, invDist);
+				if (cullFar.DoCulling())
+					alpha *= cullFar.DistanceFade(fullSize, invDist);
 				if (sumArea)
 				{
 					// Compute pixel area, and cull latest particles to enforce pixel limit
