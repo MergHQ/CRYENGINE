@@ -346,9 +346,11 @@ private:
 
 	void    PredictNextTriangleEntryPosition(const TriangleID bestNodeTriangleID, const vector3_t& bestNodeLocalPosition, const TriangleID nextTriangleID, const unsigned int vertexIndex, const vector3_t& finalLocalPosition, vector3_t& outLocalPosition) const;
 
-	//! Function provides next triangle edge through with the ray is leaving the triangle and returns whether the ray ends in the triangle or not.
+	//! Function provides next triangle edge through which the ray is leaving the triangle and returns whether the ray ends in the triangle or not.
 	//! intersectingEdgeIndex is set to InvalidEdgeIndex if the ray ends in the triangle or there was no intersection found.
 	bool FindNextIntersectingTriangleEdge(const vector3_t& rayStartPos, const vector3_t& rayEndPos, const vector2_t pVertices[3], real_t& rayIntersectionParam, uint16& intersectingEdgeIndex) const;
+
+	bool IsPointInsideNeighbouringTriangleWhichSharesEdge(const TriangleID sourceTriangleID, const uint16 edgeIndex, const vector3_t& targetPosition, const TriangleID targetTriangleID) const;
 
 	//! Returns id of the neighbour triangle corresponding to the edge index of the current triangle or InvalidTriangleID if the edge is on navmesh boundaries
 	template<typename TFilter>
