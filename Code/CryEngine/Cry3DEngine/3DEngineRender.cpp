@@ -2028,7 +2028,7 @@ void C3DEngine::RenderSkyBox(IMaterial* pMat, const SRenderingPassInfo& passInfo
 			m_pREHDRSky->m_moonTexId = m_nNightMoonTexId;
 
 			// add sky dome to render list
-			passInfo.GetIRenderView()->AddRenderObject(m_pREHDRSky, pMat->GetShaderItem(), pObj, passInfo, EFSLIST_GENERAL, 1);
+			passInfo.GetIRenderView()->AddRenderObject(m_pREHDRSky, pMat->GetShaderItem(), pObj, passInfo, EFSLIST_GENERAL, 0);
 
 			// get sky lighting parameter.
 			const SSkyLightRenderParams* pSkyParams = m_pSkyLightManager->GetRenderParams();
@@ -2041,9 +2041,9 @@ void C3DEngine::RenderSkyBox(IMaterial* pMat, const SRenderingPassInfo& passInfo
 		}
 	}
 	// skybox
-	else
+	else if (m_pRESky && pMat)
 	{
-		if (pMat && m_pRESky && GetCVars()->e_SkyBox)
+		if (GetCVars()->e_SkyBox)
 		{
 			CRenderObject* pObj = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
 			if (!pObj)
@@ -2057,7 +2057,7 @@ void C3DEngine::RenderSkyBox(IMaterial* pMat, const SRenderingPassInfo& passInfo
 			m_pRESky->m_fSkyBoxStretching = m_fSkyBoxStretching;
 			m_pRESky->m_fSkyBoxAngle = DEG2RAD(m_fSkyBoxAngle);
 
-			passInfo.GetIRenderView()->AddRenderObject(m_pRESky, pMat->GetShaderItem(), pObj, passInfo, EFSLIST_GENERAL, 1);
+			passInfo.GetIRenderView()->AddRenderObject(m_pRESky, pMat->GetShaderItem(), pObj, passInfo, EFSLIST_GENERAL, 0);
 		}
 	}
 

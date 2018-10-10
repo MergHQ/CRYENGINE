@@ -161,4 +161,33 @@ float CParticleRenderBase::CullArea(float area, float areaLimit, TParticleIdArra
 		return area;
 }
 
+
+SFarCulling::SFarCulling(const CParticleComponentRuntime& runtime, const CCamera& camera)
+{
+	const CParticleEmitter& emitter = *runtime.GetEmitter();
+	const SVisibilityParams& visibility = runtime.ComponentParams().m_visibility;
+
+	maxCamDist = visibility.m_maxCameraDistance;
+	invMinAng = GetPSystem()->GetMaxAngularDensity(camera) * emitter.GetViewDistRatio() * visibility.m_viewDistanceMultiple;
+	const float farDist = runtime.GetBounds().GetFarDistance(camera.GetPosition());
+	doCull = farDist > maxCamDist * 0.75f
+		|| Cry3DEngineBase::GetCVars()->e_ParticlesMinDrawPixels > 0.0f;
+}
+
+SNearCulling::SNearCulling(const CParticleComponentRuntime& runtime, const CCamera& camera, bool clipNear)
+{
+	const CParticleEmitter& emitter = *runtime.GetEmitter();
+	const SVisibilityParams& visibility = runtime.ComponentParams().m_visibility;
+
+	const float camNearClip = clipNear ? camera.GetEdgeN().GetLength() : 0.0f;
+	const float nearDist = runtime.GetBounds().GetDistance(camera.GetPosition());
+	const float camAng = camera.GetFov();
+	const float maxScreen = min(+visibility.m_maxScreenSize, Cry3DEngineBase::GetCVars()->e_ParticlesMaxDrawScreen);
+	minCamDist = max(+visibility.m_minCameraDistance, camNearClip);
+	invMaxAng = 1.0f / (maxScreen * camAng * 0.5f);
+
+	doCull = nearDist < minCamDist * 2.0f
+		|| maxScreen < 2 && nearDist < runtime.ComponentParams().m_maxParticleSize * invMaxAng * 2.0f;
+}
+
 }

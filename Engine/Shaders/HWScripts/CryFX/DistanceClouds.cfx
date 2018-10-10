@@ -10,8 +10,8 @@ float Script : STANDARDSGLOBAL
 	string Script =
 		"Public;"
 		"Sky;"
-		"ShaderDrawType = General;"
-    "ShaderType = FX;"
+		"ShaderDrawType = Sky;"
+		"ShaderType = FX;"
 >;
 
 #if !%SIMPLE
@@ -257,10 +257,10 @@ pixout DistanceCloudsPS(v2f IN)
   // Re-scale range
   col *= PS_HDR_RANGE_ADAPT_MAX;
 
-	half4 Color = half4( col, a );
+	OUT.Color = half4( col, a );
 
-	HDROutput(OUT, Color, 1);
-	
+	//Fwd_ApplyFog(worldPos, cameraToWorldPos, IN.Position, OUT.Color.xyz);
+
 	return OUT;
 }
 
@@ -281,6 +281,9 @@ int GetNumSamples()
 pixout DistanceCloudsAdvancedPS(v2f IN)
 {
 	pixout OUT;
+	
+	const float3 cameraToWorldPos = ReconstructWorldPos(IN.Position.xy, 1.0f, true);
+	const float3 worldPos = GetWorldViewPos() + cameraToWorldPos;
 
 	const int numSamples = GetNumSamples();
 
@@ -327,8 +330,9 @@ pixout DistanceCloudsAdvancedPS(v2f IN)
 	float alpha = pow( saturate( height * AlphaMultiplier ), AlphaSaturation );
   
 	// Final color encoding
-	half4 Color = half4( col * PS_HDR_RANGE_ADAPT_MAX, alpha );
-	HDROutput( OUT, Color, 1 );
+	OUT.Color = half4( col * PS_HDR_RANGE_ADAPT_MAX, alpha );
+
+	//Fwd_ApplyFog(worldPos, cameraToWorldPos, IN.Position, OUT.Color.xyz);
 
 	return OUT;
 }
@@ -356,6 +360,9 @@ pixout DistanceCloudsSimplePS(v2f_simple IN)
 {
 	pixout OUT;
 	
+	const float3 cameraToWorldPos = ReconstructWorldPos(IN.Position.xy, 1.0f, true);
+	const float3 worldPos = GetWorldViewPos() + cameraToWorldPos;
+
    // Debug output
  #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
    DebugOutput(OUT.Color, float4(IN.baseTC, 0, 1));
@@ -363,12 +370,12 @@ pixout DistanceCloudsSimplePS(v2f_simple IN)
  #endif
 
 	half4 col = GetTexture2D( diffuseTex, ssMaterialTrilinearClamp, IN.baseTC.xy);
-	OUT.Color = half4(MatDifColor.xyz * col.xyz, col.w * Opacity);
-	
-	OUT.Color.rgb *= Exposure;
+	OUT.Color = half4(MatDifColor.xyz * col.xyz, col.w * Opacity) * Exposure;
 
-  // Re-scale range
-  OUT.Color.rgb *= PS_HDR_RANGE_ADAPT_MAX;
+	// Re-scale range
+	OUT.Color.rgb *= PS_HDR_RANGE_ADAPT_MAX;
+
+	//Fwd_ApplyFog(worldPos, cameraToWorldPos, IN.Position, OUT.Color.xyz);
 
 	return OUT;
 }

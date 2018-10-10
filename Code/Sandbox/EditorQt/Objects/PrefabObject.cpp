@@ -1427,6 +1427,69 @@ void CPrefabObject::SetName(const string& name)
 	}
 }
 
+bool CPrefabObject::CanAddMembers(std::vector<CBaseObject*>& objects)
+{
+	if (!CGroup::CanAddMembers(objects))
+	{
+		return false;
+	}
+
+	/*
+		We need to gather all prefab objects from the hierarchy of this prefab and the hierarchies of each object we want to add.
+		Then we compare them, if they have the same prefab items, but from different objects, we cannot add the member because it means that we'll have recursive references (aka prefab in prefab). 
+		If the items are from the same objects it's ok as it means we are in the same prefab instance
+	*/
+	for (CBaseObject* pToAdd : objects)
+	{
+
+		//Go to the top of pObject hierarchy
+		CBaseObject* pToAddRoot = pToAdd;
+		while (pToAddRoot->GetParent())
+		{
+			pToAddRoot = pToAddRoot->GetParent();
+		}
+		
+		//Get all the prefab objects
+		std::vector<CPrefabObject*> toAddPrefabDescendants;
+		CPrefabPicker::GetAllPrefabObjectDescendants(pToAddRoot, toAddPrefabDescendants);
+		//we also need to check against pToAddTop as it could be a prefab
+		if (pToAddRoot->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
+		{
+			toAddPrefabDescendants.push_back(static_cast<CPrefabObject*>(pToAddRoot));
+		}
+
+		//Go trough all the prefabs and find if some have the same items
+		for (auto pToAddPrefabDescendant : toAddPrefabDescendants)
+		{
+				//If we are on the same instance (pCurrentPrefabDescendant == pToAddPrefabDescendant) it's fine, objects can be moved
+				if (this != pToAddPrefabDescendant && this->GetPrefabItem() == pToAddPrefabDescendant->GetPrefabItem()) // same item but another hierarchy
+				{
+					//If we are on a different instance then we need to check if we are on the same hierarchy (i.e same nested prefabs, we cannot add) and stop it if necessary
+					if (this != this)
+					{
+						//Same prefab parents means same hierarchy
+						CBaseObject * pCurrentPrefabDescendantParent = this->GetPrefab();
+						CBaseObject * pToAddPrefabDescendantParent = pToAddPrefabDescendant->GetPrefab();
+						//no matching parents, definitely different hierarchy
+						if (!pCurrentPrefabDescendantParent || !pToAddPrefabDescendantParent)
+						{
+							continue;
+						}	//matching parents, but different item, not the same hierarchy
+						else if (pCurrentPrefabDescendantParent && pToAddPrefabDescendantParent && (static_cast<CPrefabObject*>(pCurrentPrefabDescendantParent))->GetPrefabItem() != (static_cast<CPrefabObject*>(pToAddPrefabDescendantParent))->GetPrefabItem())
+						{
+							continue;
+						}
+					}
+					
+					//same parents and same item, we definitely cannot add
+					return false;
+				}
+		}
+	}
+
+	return true;
+}
+
 bool CPrefabObject::HitTestMembers(HitContext& hcOrg)
 {
 	float mindist = FLT_MAX;
@@ -1494,21 +1557,6 @@ void CPrefabObject::ResumeUpdate()
 {
 	if (!m_pPrefabItem || m_bSettingPrefabObj)
 		return;
-}
-
-bool CPrefabObject::CanObjectBeAddedAsMember(CBaseObject* pObject)
-{
-	if (pObject->CheckFlags(OBJFLAG_PREFAB))
-	{
-		CBaseObject* pParentObject = pObject->GetParent();
-		while (pParentObject)
-		{
-			if (pParentObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
-				return GetPrefabGuid() == static_cast<CPrefabObject*>(pParentObject)->GetPrefabGuid();
-			pParentObject = pParentObject->GetParent();
-		}
-	}
-	return true;
 }
 
 void CPrefabObject::UpdatePivot(const Vec3& newWorldPivotPos)

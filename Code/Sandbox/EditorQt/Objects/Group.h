@@ -43,6 +43,8 @@ public:
 	void          CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
 	//! Attach new child node.
+	virtual bool        CanAddMembers(std::vector<CBaseObject*>& objects);
+	virtual bool        CanAddMember(CBaseObject* pMember);
 	virtual void        AddMember(CBaseObject* pMember, bool bKeepPos = true) override;
 	virtual void        AddMembers(std::vector<CBaseObject*>& objects, bool shouldKeepPos = true) override;
 	virtual void        RemoveMember(CBaseObject* pMember, bool shouldKeepPos = true, bool shouldPlaceOnRoot = false) override;

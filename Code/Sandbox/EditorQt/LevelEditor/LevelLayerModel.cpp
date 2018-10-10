@@ -10,6 +10,7 @@
 #include "Objects/EntityObject.h"
 #include "Objects/GeomEntity.h"
 #include "Objects/Group.h"
+#include "Objects/PrefabObject.h"
 #include "Material/Material.h"
 #include "HyperGraph/FlowGraphHelpers.h"
 
@@ -533,7 +534,6 @@ bool CLevelLayerModel::canDropMimeData(const QMimeData* pData, Qt::DropAction ac
 	}
 
 	CBaseObject* pTargetObject = ObjectFromIndex(parent);
-
 	if (pTargetObject)
 	{
 		// Check if our target is invalid
@@ -545,7 +545,23 @@ bool CLevelLayerModel::canDropMimeData(const QMimeData* pData, Qt::DropAction ac
 
 			// If not a group check if it's a valid link target
 			if (!GetIEditorImpl()->IsCGroup(pTargetObject) && !object->CanLinkTo(pTargetObject))
-				return true;
+			{
+			  return true;
+			}
+
+			//find if we have a prefab or a group in the hierarchy, if we do run the safety checks
+			CBaseObject* pFound = pTargetObject;
+			
+			if (!pFound->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
+			{
+				pFound = pFound->GetPrefab();
+			}
+
+			if (pFound)
+			{
+			  //this needs to be inverted as true means not add
+			  return !(static_cast<CPrefabObject*>(pFound))->CanAddMember(object);
+			}
 
 			return false;
 		});

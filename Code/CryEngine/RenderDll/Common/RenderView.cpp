@@ -4,6 +4,7 @@
 #include "RenderView.h"
 
 
+#include "GraphicsPipeline/SceneForward.h"
 #include "GraphicsPipeline/ShadowMap.h"
 #include "GraphicsPipeline/ClipVolumes.h"
 #include "CompiledRenderObject.h"
@@ -863,7 +864,7 @@ void CRenderView::AddPolygon(const SRenderPolygonDescription& poly, const SRende
 			if ((poly.pRenderObject && poly.pRenderObject->m_fAlpha < 1.0f)
 					|| (pShaderResources && pShaderResources->IsTransparent()))
 			{
-				renderListId = !(poly.pRenderObject->m_ObjFlags & FOB_AFTER_WATER) ? EFSLIST_TRANSP_BW : EFSLIST_TRANSP_BW;
+				renderListId = !(poly.pRenderObject->m_ObjFlags & FOB_AFTER_WATER) ? EFSLIST_TRANSP_BW : EFSLIST_TRANSP_AW;
 				batchFlags |= FB_TRANSPARENT;
 			}
 		}
@@ -1454,6 +1455,38 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 	assert(m_usageMode == eUsageModeWriting || m_bAddingClientPolys || nList == EFSLIST_PREPROCESS);  // Adding items only in writing mode
 
 	CShader* RESTRICT_POINTER pShader = (CShader*)shaderItem.m_pShader;
+
+#ifndef OMIT_SKY_ELEMENT_MATERIAL_WORKAROUND
+	// TODO: Clean up sky-code
+	// Sky-shaded elements shall not pass!
+	EDataType reType = pElem ? pElem->mfGetType() : eDATA_Unknown;
+	if (reType == eDATA_Sky)
+	{
+		gcpRendD3D.GetGraphicsPipeline().GetSceneForwardStage()->SetSkyRE((CRESky*)pElem);
+		return;
+	}
+
+	if (reType == eDATA_HDRSky)
+	{
+		gcpRendD3D.GetGraphicsPipeline().GetSceneForwardStage()->SetSkyRE((CREHDRSky*)pElem);
+		return;
+	}
+
+	if (pShader->m_eSHDType == eSHDT_Sky)
+	{
+		// Redirect all "DistanceCloud"-type shaders to the SKY-list
+		if (pShader->m_eShaderType == eST_FX)
+		{
+			nList = EFSLIST_SKY;
+		}
+		// Redirect all "Sky"-type shaders to the SkyPass
+		else if (pShader->m_eShaderType == eST_Sky)
+		{
+			gcpRendD3D.GetGraphicsPipeline().GetSceneForwardStage()->SetSkyMat(pObj->m_pCurrMaterial);
+			return;
+		}
+	}
+#endif // !OMIT_SKY_ELEMENT_MATERIAL_WORKAROUND
 
 	if (!bShadowPass)
 	{

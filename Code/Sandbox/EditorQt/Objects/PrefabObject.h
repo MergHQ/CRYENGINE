@@ -69,6 +69,7 @@ public:
 
 	virtual void       SetName(const string& name) override;
 
+	virtual bool       CanAddMembers(std::vector<CBaseObject*>& objects) override;
 	virtual void       AddMember(CBaseObject* pMember, bool bKeepPos = true) override;
 	virtual void       AddMembers(std::vector<CBaseObject*>& objects, bool shouldKeepPos = true) override;
 
@@ -104,7 +105,6 @@ public:
 	void         SyncPrefab(const SObjectChangedContext& context);
 	bool         SuspendUpdate(bool bForceSuspend = true);
 	void         ResumeUpdate();
-	bool         CanObjectBeAddedAsMember(CBaseObject* pObject);
 	void         InitObjectPrefabId(CBaseObject* object);
 	bool         IsModifyInProgress() const                 { return m_bModifyInProgress; }
 	void         SetModifyInProgress(const bool inProgress) { m_bModifyInProgress = inProgress; }

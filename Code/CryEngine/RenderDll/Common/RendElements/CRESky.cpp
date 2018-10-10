@@ -9,6 +9,79 @@
 #include "../../XRenderD3D9/DriverD3D.h"
 #include "GraphicsPipeline/SceneForward.h"
 
+//////////////////////////////////////////////////////////////////////////
+
+namespace sky
+{
+struct SPerDrawConstantBuffer
+{
+	Matrix44 WorldMatrix;
+
+	Vec2 TextureSize;
+	Vec2 TexelSize;
+
+	Vec3 PartialMieInScatteringConst;
+	Vec3 PartialRayleighInScatteringConst;
+	Vec3 SunDirection;
+	Vec3 PhaseFunctionConstants;
+
+	Vec3 NightSkyColBase;
+	Vec3 NightSkyColDelta;
+	Vec2 NightSkyZenithColShift;
+
+	Vec4 NightMoonDirSize;
+	Vec3 NightMoonTexGenRight;
+	Vec3 NightMoonTexGenUp;
+	Vec3 NightMoonColor;
+	Vec4 NightMoonInnerCoronaColorScale;
+	Vec4 NightMoonOuterCoronaColorScale;
+};
+
+struct SCompiledSky : NoCopy
+{
+	SCompiledSky()
+		: m_pPerDrawCB(nullptr)
+		, m_vertexStreamSet(nullptr)
+		, m_indexStreamSet(nullptr)
+		, m_nVerticesCount(0)
+		, m_nStartIndex(0)
+		, m_nNumIndices(0)
+		, m_bValid(0)
+		, m_reserved(0)
+	{}
+
+	~SCompiledSky()
+	{
+		ReleaseDeviceResources();
+	}
+
+	void ReleaseDeviceResources()
+	{
+		m_pMaterialResourceSet.reset();
+		m_pPerDrawRS.reset();
+		m_pPerDrawCB.reset();
+	}
+
+	CDeviceResourceSetPtr     m_pMaterialResourceSet;
+	CDeviceResourceSetPtr     m_pPerDrawRS;
+	CConstantBufferPtr        m_pPerDrawCB;
+
+	const CDeviceInputStream* m_vertexStreamSet;
+	const CDeviceInputStream* m_indexStreamSet;
+
+	int32                     m_nVerticesCount;
+	int32                     m_nStartIndex;
+	int32                     m_nNumIndices;
+
+	DevicePipelineStatesArray m_psoArray;
+
+	uint32                    m_bValid : 1; //!< True if compilation succeeded.
+	uint32                    m_reserved : 31;
+};
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 InputLayoutHandle CRESky::GetVertexFormat() const
 {
 	return EDefaultInputLayouts::P3F_C4B_T2F;
@@ -24,12 +97,11 @@ bool CRESky::GetGeometryInfo(SGeometryInfo& streams, bool bSupportTessellation)
 
 bool CRESky::Compile(CRenderObject* pObj, CRenderView *pRenderView, bool updateInstanceDataOnly)
 {
-	return true;
+	return false;
 }
 
 void CRESky::DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx, CDeviceCommandList* commandList)
 {
-	gcpRendD3D->GetGraphicsPipeline().GetSceneForwardStage()->SetSkyRE(this, nullptr);
 }
 
 CRESky::~CRESky()
@@ -84,24 +156,13 @@ CREHDRSky::~CREHDRSky()
 	SAFE_RELEASE(m_pSkyDomeTextureRayleigh);
 }
 
-static void FillSkyTextureData(CTexture* pTexture, const void* pData, const uint32 width, const uint32 height, const uint32 pitch)
-{
-	CDeviceTexture* pDevTex = pTexture->GetDevTexture();
-	assert(pTexture && pTexture->GetWidth() == width && pTexture->GetHeight() == height && pDevTex);
-	const SResourceMemoryAlignment layout = SResourceMemoryAlignment::Linear<CryHalf4>(width, height);
-	CRY_ASSERT(pitch == layout.rowStride);
-	GPUPIN_DEVICE_TEXTURE(gcpRendD3D->GetPerformanceDeviceContext(), pDevTex);
-	GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(pData, pDevTex, layout);
-}
-
 bool CREHDRSky::Compile(CRenderObject* pObj, CRenderView *pRenderView, bool updateInstanceDataOnly)
 {
-	return true;
+	return false;
 }
 
 void CREHDRSky::DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx, CDeviceCommandList* commandList)
 {
-	gcpRendD3D->GetGraphicsPipeline().GetSceneForwardStage()->SetSkyRE(nullptr, this);
 }
 
 

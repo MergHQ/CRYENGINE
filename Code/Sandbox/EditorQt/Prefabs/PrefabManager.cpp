@@ -420,7 +420,7 @@ void CPrefabManager::AddSelectionToPrefab(CPrefabObject* pPrefab)
 	bool invalidAddOperation = false;
 	for (int i = 0, count = objects.size(); i < count; ++i)
 	{
-		if (!pPrefab->CanObjectBeAddedAsMember(objects[i]))
+		if (!pPrefab->CanAddMember(objects[i]))
 		{
 			Warning("Object %s is already part of a prefab (%s)", objects[i]->GetName(), objects[i]->GetPrefab()->GetName());
 			invalidAddOperation = true;
@@ -508,7 +508,7 @@ bool CPrefabManager::AttachObjectToPrefab(CPrefabObject* prefab, CBaseObject* ob
 {
 	if (prefab && obj)
 	{
-		if (!prefab->CanObjectBeAddedAsMember(obj))
+		if (!prefab->CanAddMember(obj))
 		{
 			Warning("Object %s is already part of a prefab (%s)", obj->GetName(), obj->GetPrefab()->GetName());
 			return false;

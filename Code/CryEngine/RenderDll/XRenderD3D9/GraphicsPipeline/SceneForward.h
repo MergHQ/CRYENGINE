@@ -63,7 +63,9 @@ public:
 	void         ExecuteMobile();
 	void         ExecuteMinimum(CTexture* pColorTex, CTexture* pDepthTex);
 
-	void         SetSkyRE(CRESky* pSkyRE, CREHDRSky* pHDRSkyRE);
+	void         SetSkyRE(CRESky* pSkyRE);
+	void         SetSkyRE(CREHDRSky* pHDRSkyRE);
+	void         SetSkyMat(IMaterial* pMat);
 
 	void FillCloudShadingParams(SCloudShadingParams& cloudParams, bool enable = true) const;
 
@@ -73,6 +75,8 @@ private:
 
 	void SetSkyParameters();
 	void SetHDRSkyParameters();
+	void SetMatParameters();
+
 	void ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex);
 
 
@@ -124,6 +128,7 @@ private:
 	CRenderPrimitive          m_starsPrimitive;
 	CPrimitiveRenderPass      m_starsPass;
 	CRESky*                   m_pSkyRE = nullptr;
+	IMaterial*                m_pSkyMat = nullptr;
 	CREHDRSky*                m_pHDRSkyRE = nullptr;
 	Vec4                      m_paramMoonTexGenRight;
 	Vec4                      m_paramMoonTexGenUp;
