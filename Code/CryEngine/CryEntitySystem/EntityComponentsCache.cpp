@@ -58,6 +58,8 @@ void CEntityComponentsCache::RemoveEntitiesSpawnedDuringGameMode()
 			g_pIEntitySystem->RemoveEntity(entityId, true);
 		}
 	}
+
+	m_entitiesSpawnedDuringEditorGameMode.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
