@@ -63,7 +63,7 @@ void CEntityAINavigationComponent::ReflectType(Schematyc::CTypeDesc<CEntityAINav
 	desc.AddMember(&CEntityAINavigationComponent::m_movementProperties, 'move', "movement", "Movement", nullptr, SMovementProperties());
 	desc.AddMember(&CEntityAINavigationComponent::m_collisionAvoidanceProperties, 'cola', "colavoid", "Collision Avoidance", nullptr, SCollisionAvoidanceProperties());
 
-	desc.AddMember(&CEntityAINavigationComponent::m_navigationQueryFilter, 'nqft', "queryFilter", "Navigation Query Filter", nullptr, SNavMeshQueryFilterDefault());
+	desc.AddMember(&CEntityAINavigationComponent::m_navigationQueryFilter, 'nqft', "queryFilter", "Navigation Query Filter", nullptr, SNavMeshQueryFilterDefaultWithCosts());
 }
 
 void CEntityAINavigationComponent::Register(Schematyc::IEnvRegistrar& registrar)

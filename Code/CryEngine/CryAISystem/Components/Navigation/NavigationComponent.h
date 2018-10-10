@@ -6,7 +6,7 @@
 #include "CollisionAvoidanceAgent.h"
 
 #include <CryAISystem/MovementRequest.h>
-#include <CryAISystem/NavigationSystem/INavMeshQuery.h>
+#include <CryAISystem/NavigationSystem/NavMeshQueryFilterDefault.h>
 #include <CryAISystem/Components/IEntityNavigationComponent.h>
 
 #include <CrySerialization/Forward.h>
@@ -60,7 +60,7 @@ public:
 	virtual void   SetNavigationAgentType(const char* szTypeName) override;
 	virtual void   SetMovementProperties(const SMovementProperties& properties) override;
 	virtual void   SetCollisionAvoidanceProperties(const SCollisionAvoidanceProperties& properties) override;
-	virtual void   SetNavigationQueryFilter(const SNavMeshQueryFilterDefault& filter) override { m_navigationQueryFilter = filter; }
+	virtual void   SetNavigationQueryFilter(const SNavMeshQueryFilterDefaultWithCosts& filter) override { m_navigationQueryFilter = filter; }
 	virtual bool   TestRaycastHit(const Vec3& toPositon, Vec3& hitPos, Vec3& hitNorm) const override;
 	virtual bool   IsRayObstructed(const Vec3& toPosition) const override;
 	virtual bool   IsDestinationReachable(const Vec3& destination) const override;
@@ -147,7 +147,7 @@ private:
 	StateUpdatedCallback          m_stateUpdatedCallback;
 	NavigationCompletedCallback   m_navigationCompletedCallback;
 
-	SNavMeshQueryFilterDefault    m_navigationQueryFilter;
+	SNavMeshQueryFilterDefaultWithCosts    m_navigationQueryFilter;
 };
 
 void ReflectType(Schematyc::CTypeDesc<CEntityAINavigationComponent::SCollisionAvoidanceProperties::EType>& desc);

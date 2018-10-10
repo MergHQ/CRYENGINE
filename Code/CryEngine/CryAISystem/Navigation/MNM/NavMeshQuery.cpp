@@ -8,6 +8,12 @@
 
 namespace MNM
 {
+
+namespace DefaultQueryFilters
+{
+	const SAcceptAllQueryTrianglesFilter g_acceptAllTriangles;
+}
+
 INavMeshQueryProcessing::EResult CTriangleAtQuery::operator() (const MNM::TriangleIDArray& triangleIDArray)
 {
 	MNM::vector3_t a, b, c;
@@ -567,8 +573,7 @@ bool CNavMeshQuery::ProcessTileTriangles(const TileID tileId, const size_t batch
 	}
 	else
 	{
-		const SNavMeshQueryFilterDefault defaultQueryFilter;
-		return QueryTileTriangles(tileId, tile, queryAabbTile, defaultQueryFilter, processedTrianglesInBatch, outTriangles, outTrianglesCount, outStoppedAtTriangleIndexInTile);
+		return QueryTileTriangles(tileId, tile, queryAabbTile, DefaultQueryFilters::g_acceptAllTriangles, processedTrianglesInBatch, outTriangles, outTrianglesCount, outStoppedAtTriangleIndexInTile);
 	}
 }
 

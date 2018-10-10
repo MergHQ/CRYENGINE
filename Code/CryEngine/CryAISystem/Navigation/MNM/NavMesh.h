@@ -10,12 +10,12 @@
 #include "MNMProfiler.h"
 #include "Islands.h"
 #include "DangerousAreas.h"
+#include "NavMeshQuery.h"
 
 #include <CryMath/SimpleHashLookUp.h>
 #include <CryCore/Containers/VectorMap.h>
 
 #include <CryAISystem/NavigationSystem/MNMNavMesh.h>
-#include <CryAISystem/NavigationSystem/INavMeshQuery.h>
 
 class OffMeshNavigationManager;
 
@@ -353,23 +353,6 @@ private:
 	//! Returns id of the neighbour triangle corresponding to the edge index of the current triangle or InvalidTriangleID if the edge is on navmesh boundaries
 	template<typename TFilter>
 	TriangleID StepOverEdgeToNeighbourTriangle(const vector3_t& rayStart, const vector3_t& rayEnd, const TileID currentTileID, const TriangleID currentTriangleID, const uint16 edgeIndex, const TFilter& filter) const;
-
-	//! Filter for QueryTriangles, which accepts all triangles.
-	//! Note, that the signature of PassFilter() function is same as INavMeshQueryFilter::PassFilter(), but it's not virtual.
-	//! This way, templated implementation functions can avoid unnecessary checks and virtual calls.
-	struct SAcceptAllQueryTrianglesFilter
-	{
-		inline bool PassFilter(const Tile::STriangle&) const { return true; }
-		inline float GetCostMultiplier(const MNM::Tile::STriangle& triangle) const { return 1.0f; }
-		inline MNM::real_t GetCost(const MNM::vector3_t& fromPos, const MNM::vector3_t& toPos,
-			const MNM::Tile::STriangle& currentTriangle, const MNM::Tile::STriangle& nextTriangle,
-			const MNM::TriangleID currentTriangleId, const MNM::TriangleID nextTriangleId) const
-		{
-			return (fromPos - toPos).lenNoOverflow();
-		}
-	};
-
-	struct SMinIslandAreaQueryTrianglesFilter;
 
 	template<typename TFilter>
 	size_t QueryTrianglesWithFilterInternal(const aabb_t& queryLocalAabb, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const;

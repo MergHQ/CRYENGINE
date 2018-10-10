@@ -9,7 +9,7 @@
 #include <CryCore/functor.h>
 #include <CryAISystem/IAgent.h>
 #include <CryAISystem/NavigationSystem/MNMTile.h>
-#include <CryAISystem/NavigationSystem/INavMeshQuery.h>
+#include <CryAISystem/NavigationSystem/INavMeshQueryFilter.h>
 
 class CAIActor;
 
@@ -629,7 +629,7 @@ struct MNMPathRequest
 		, allowDangerousDestination(false)
 		, dangersToAvoidFlags(eMNMDangers_None)
 		, beautify(true)
-		, pRequesterEntity(nullptr)
+		, requesterEntityId(INVALID_ENTITYID)
 		, pCustomPathCostComputer(nullptr)
 		, pFilter(nullptr)
 	{
@@ -650,7 +650,7 @@ struct MNMPathRequest
 		, allowDangerousDestination(false)
 		, dangersToAvoidFlags(dangersFlags)
 		, beautify(true)
-		, pRequesterEntity(nullptr)
+		, requesterEntityId(INVALID_ENTITYID)
 		, pCustomPathCostComputer(nullptr)
 		, pFilter(nullptr)
 	{
@@ -675,7 +675,7 @@ struct MNMPathRequest
 	const INavMeshQueryFilter* pFilter;
 
 	MNMCustomPathCostComputerSharedPtr pCustomPathCostComputer;  // can be provided by the game code to allow for computing path-finding costs in more ways than just through the built-in "danger areas" (see MNMDangersFlags)
-	IEntity*              pRequesterEntity;
+	EntityId              requesterEntityId;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -692,8 +692,14 @@ struct IMNMPathfinder
 	//! Returns an ID so that you can cancel the request.
 	virtual MNM::QueuedPathID RequestPathTo(const EntityId requesterEntityId, const MNMPathRequest& request) = 0;
 
+	//! Request a path (look at MNMPathRequest for relevant request info).
+	//! This request is queued and processed in a separate thread.
+	//! The path result is sent to the callback function specified in the request.
+	//! Returns an ID so that you can cancel the request.
+	virtual MNM::QueuedPathID RequestPathTo(const MNMPathRequest& request) = 0;
+
 	//! Cancel a requested path by ID.
-	virtual void CancelPathRequest(MNM::QueuedPathID requestId) = 0;
+	virtual void CancelPathRequest(const MNM::QueuedPathID requestId) = 0;
 
 	virtual bool CheckIfPointsAreOnStraightWalkableLine(const NavigationMeshID& meshID, const Vec3& source, const Vec3& destination, float heightOffset = 0.2f) const = 0;
 	virtual bool CheckIfPointsAreOnStraightWalkableLine(const NavigationMeshID& meshID, const Vec3& source, const Vec3& destination, const INavMeshQueryFilter* pFilter, float heightOffset = 0.2f) const = 0;

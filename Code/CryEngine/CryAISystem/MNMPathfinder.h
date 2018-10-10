@@ -21,7 +21,7 @@
 #include <CryPhysics/AgePriorityQueue.h>
 #include <CryAISystem/INavigationSystem.h>
 #include <CryAISystem/IPathfinder.h>
-#include <CryAISystem/NavigationSystem/INavMeshQuery.h>
+#include <CryAISystem/NavigationSystem/INavMeshQueryFilter.h>
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -371,7 +371,8 @@ public:
 	void                      Reset();
 
 	virtual MNM::QueuedPathID RequestPathTo(const EntityId requesterEntityId, const MNMPathRequest& request) override;
-	virtual void              CancelPathRequest(MNM::QueuedPathID requestId) override;
+	virtual MNM::QueuedPathID RequestPathTo(const MNMPathRequest& request) override;
+	virtual void              CancelPathRequest(const MNM::QueuedPathID requestId) override;
 
 	void                      WaitForJobsToFinish();
 

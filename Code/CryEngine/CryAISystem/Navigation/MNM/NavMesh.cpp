@@ -222,7 +222,7 @@ void CNavMesh::Init(const SGridParams& params, const SAgentSettings& agentSettin
 }
 
 //! Filter to support old GetTriangles() function (and such), which allow to specify minIslandArea, without NavMesh query filter
-struct CNavMesh::SMinIslandAreaQueryTrianglesFilter
+struct SMinIslandAreaQueryTrianglesFilter
 {
 	SMinIslandAreaQueryTrianglesFilter(const CNavMesh& navMesh_, float minIslandArea_)
 		: navMesh(navMesh_)
@@ -413,8 +413,7 @@ void CNavMesh::QueryTrianglesWithProcessing(const aabb_t& queryAabbWorld, const 
 	}
 	else
 	{
-		const SAcceptAllQueryTrianglesFilter filter;
-		return QueryTrianglesWithProcessingInternal(queryAabbWorld, filter, *pQuery);
+		return QueryTrianglesWithProcessingInternal(queryAabbWorld, DefaultQueryFilters::g_acceptAllTriangles, *pQuery);
 	}
 }
 
@@ -480,20 +479,19 @@ size_t CNavMesh::GetTriangles(aabb_t localAabb, TriangleID* triangles, size_t ma
 		}
 		else
 		{
-			const SAcceptAllQueryTrianglesFilter filter;
-			return QueryTrianglesWithFilterInternal(localAabb, filter, maxTriCount, triangles);
+			return QueryTrianglesWithFilterInternal(localAabb, DefaultQueryFilters::g_acceptAllTriangles, maxTriCount, triangles);
 		}
 	}
 	else
 	{
 		if (pFilter)
 		{
-			const SNavigationQueryFilterWithMinIslandFilter filter(*pFilter, *this, minIslandArea);
+			static const SNavigationQueryFilterWithMinIslandFilter filter(*pFilter, *this, minIslandArea);
 			return QueryTrianglesWithFilterInternal(localAabb, filter, maxTriCount, triangles);
 		}
 		else
 		{
-			const SMinIslandAreaQueryTrianglesFilter filter(*this, minIslandArea);
+			static const SMinIslandAreaQueryTrianglesFilter filter(*this, minIslandArea);
 			return QueryTrianglesWithFilterInternal(localAabb, filter, maxTriCount, triangles);
 		}
 	}
@@ -804,7 +802,7 @@ bool CNavMesh::SnapPosition(
 				if (!ProjectPointOnTriangleVertical(localPosition, vertices[0], vertices[1], vertices[2], *pSnappedLocalPosition))
 				{
 					CRY_ASSERT_MESSAGE(false, "Triangle to snap on was found but failed to project point on it");
-					return false;
+					break;
 				}
 			}
 			return true;
@@ -946,8 +944,7 @@ CNavMesh::EWayQueryResult CNavMesh::FindWay(SWayQueryRequest& inputRequest, SWay
 	}
 	else
 	{
-		const SAcceptAllQueryTrianglesFilter filter;
-		return FindWayInternal(inputRequest, workingSet, filter, result);
+		return FindWayInternal(inputRequest, workingSet, DefaultQueryFilters::g_acceptAllTriangles, result);
 	}
 }
 
@@ -1306,7 +1303,7 @@ void CNavMesh::MarkTrianglesNotConnectedToSeeds(const MNM::AreaAnnotation::value
 			if(triangle.islandID == MNM::Constants::eStaticIsland_InvalidIslandID)
 				continue;
 			
-			AreaAnnotation::value_type flags = triangle.areaAnnotation.GetFlags();			
+			AreaAnnotation::value_type flags = triangle.areaAnnotation.GetFlags();
 			if (m_islands.GetSeedConnectivityState(triangle.islandID) == CIslands::ESeedConnectivityState::Inaccessible)
 			{
 				flags |= markFlags;
@@ -1453,8 +1450,7 @@ MNM::ERayCastResult CNavMesh::RayCast(const vector3_t& fromLocalPosition, Triang
 		}
 		else
 		{
-			const SAcceptAllQueryTrianglesFilter filter;
-			return RayCast_v3(fromLocalPosition, fromTri, toLocalPosition, toTri, filter, raycastRequest);
+			return RayCast_v3(fromLocalPosition, fromTri, toLocalPosition, toTri, DefaultQueryFilters::g_acceptAllTriangles, raycastRequest);
 		}
 	}
 	}
@@ -2517,8 +2513,7 @@ size_t CNavMesh::QueryTriangles(const aabb_t& queryLocalAabb, const INavMeshQuer
 	}
 	else
 	{
-		const SAcceptAllQueryTrianglesFilter filter;
-		return QueryTrianglesWithFilterInternal(queryLocalAabb, filter, maxTrianglesCount, pOutTriangles);
+		return QueryTrianglesWithFilterInternal(queryLocalAabb, DefaultQueryFilters::g_acceptAllTriangles, maxTrianglesCount, pOutTriangles);
 	}
 }
 

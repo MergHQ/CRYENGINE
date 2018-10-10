@@ -236,7 +236,45 @@ MNM::QueuedPathID CMNMPathfinder::RequestPathTo(const EntityId requesterEntityId
 	return m_requestedPathsQueue.push_back(MNM::PathfinderUtils::QueuedRequest(requesterEntityId, request.agentTypeID, request));
 }
 
-void CMNMPathfinder::CancelPathRequest(MNM::QueuedPathID requestId)
+MNM::QueuedPathID CMNMPathfinder::RequestPathTo(const MNMPathRequest& request)
+{
+	const IEntity* pEntity = request.requesterEntityId != INVALID_ENTITYID ? gEnv->pEntitySystem->GetEntity(request.requesterEntityId) : nullptr;
+	const char* actorName = pEntity ? pEntity->GetName() : "'missing entity'";
+	
+	//////////////////////////////////////////////////////////////////////////
+	// Validate Agent Type
+	if (!request.agentTypeID)
+	{
+		AIWarning("[CMNMPathfinder::RequestPathTo] Request from agent %s has no NavigationType defined.", actorName);
+		return MNM::Constants::eQueuedPathID_InvalidID;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// Validate callback
+	if (!request.resultCallback)
+	{
+		AIWarning("[CMNMPathfinder::RequestPathTo] Agent %s does not provide a result Callback", actorName);
+		return 0;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// Validate start/end locations
+	const NavigationMeshID meshID = gAIEnv.pNavigationSystem->GetEnclosingMeshID(request.agentTypeID, request.startLocation);
+
+	if (!meshID)
+	{
+		if (request.requesterEntityId != INVALID_ENTITYID)
+		{
+			AIQueueBubbleMessage("CMNMPathfinder::RequestPathTo-NoMesh", request.requesterEntityId,
+				"I'm not inside a Navigation area for my navigation type.",
+				eBNS_LogWarning);
+		}		
+		return 0;
+	}
+	return m_requestedPathsQueue.push_back(MNM::PathfinderUtils::QueuedRequest(request.requesterEntityId, request.agentTypeID, request));
+}
+
+void CMNMPathfinder::CancelPathRequest(const MNM::QueuedPathID requestId)
 {
 	m_processingContextsPool.CancelPathRequest(requestId);
 
