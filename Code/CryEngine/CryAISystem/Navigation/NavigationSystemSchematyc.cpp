@@ -62,13 +62,13 @@ namespace NavigationComponentHelpers
 
 namespace NavigationSystemSchematyc
 {
-	bool NearestNavmeshPositionSchematyc(NavigationAgentTypeID agentTypeID, const Vec3& location, float vrange, float hrange, const SNavMeshQueryFilterDefault& filter, Vec3& meshLocation)
+	bool NearestNavmeshPositionSchematyc(NavigationAgentTypeID agentTypeID, const Vec3& location, float vrange, float hrange, const SNavMeshQueryFilterDefaultWithCosts& filter, Vec3& meshLocation)
 	{
 		//TODO: GetEnclosingMeshID(agentID, location); doesn't take into account vrange and hrange and can return false when point isn't inside mesh boundary
 		return gAIEnv.pNavigationSystem->GetClosestPointInNavigationMesh(agentTypeID, location, vrange, hrange, &meshLocation, &filter);
 	}
 
-	bool TestRaycastHitOnNavmeshSchematyc(NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& endPos, const SNavMeshQueryFilterDefault& filter, Vec3& hitPos)
+	bool TestRaycastHitOnNavmeshSchematyc(NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& endPos, const SNavMeshQueryFilterDefaultWithCosts& filter, Vec3& hitPos)
 	{
 		MNM::SRayHitOutput hit;
 		const bool isHit = gAIEnv.pNavigationSystem->NavMeshRayCast(agentTypeID, startPos, endPos, &filter, &hit) == MNM::ERayCastResult::Hit;

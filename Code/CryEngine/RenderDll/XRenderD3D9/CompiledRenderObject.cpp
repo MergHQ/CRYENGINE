@@ -547,7 +547,6 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 	}
 
 	CRenderElement::SGeometryInfo geomInfo;
-	ZeroStruct(geomInfo);
 
 	if (!bInstanceDataUpdateOnly) // first update only: needed for per instance buffers
 	{
@@ -559,6 +558,10 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 			m_bIncomplete = true;
 			return false;
 		}
+
+		CRY_ASSERT(geomInfo.nNumVertexStreams > 0);
+		CRY_ASSERT(geomInfo.indexStream.hStream != 0 && geomInfo.indexStream.hStream != ~0u);
+		CRY_ASSERT(geomInfo.vertexStreams[0].hStream != 0 && geomInfo.vertexStreams[0].hStream != ~0u);
 
 		m_bHasTessellation = bSupportTessellation;
 		m_TessellationPatchIDOffset = geomInfo.nTessellationPatchIDOffset;

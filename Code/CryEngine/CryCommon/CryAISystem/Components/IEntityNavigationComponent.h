@@ -5,7 +5,7 @@
 #include <CryEntitySystem/IEntityComponent.h>
 
 #include <CryAISystem/NavigationSystem/NavigationIdTypes.h>
-#include <CryAISystem/NavigationSystem/INavMeshQuery.h>
+#include <CryAISystem/NavigationSystem/NavMeshQueryFilterDefault.h>
 
 struct IEntityNavigationComponent : public IEntityComponent
 {
@@ -55,7 +55,7 @@ struct IEntityNavigationComponent : public IEntityComponent
 	virtual void SetNavigationAgentType(const char* szTypeName) = 0;
 	virtual void SetMovementProperties(const SMovementProperties& properties) = 0;
 	virtual void SetCollisionAvoidanceProperties(const SCollisionAvoidanceProperties& properties) = 0;
-	virtual void SetNavigationQueryFilter(const SNavMeshQueryFilterDefault& filter) = 0;
+	virtual void SetNavigationQueryFilter(const SNavMeshQueryFilterDefaultWithCosts& filter) = 0;
 	virtual bool TestRaycastHit(const Vec3& toPositon, Vec3& hitPos, Vec3& hitNorm) const = 0;
 	virtual bool IsRayObstructed(const Vec3& toPosition) const = 0;
 	virtual bool IsDestinationReachable(const Vec3& destination) const = 0;

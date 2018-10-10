@@ -13,7 +13,13 @@ public:
 	void RestoreEntities();
 
 	void OnEntitySpawnedDuringGameMode(const EntityId id) { m_entitiesSpawnedDuringEditorGameMode.emplace(id); }
-	void OnEntityRemovedDuringGameMode(const EntityId id) { m_entitiesSpawnedDuringEditorGameMode.erase(id); }
+	void OnEntityRemovedDuringGameMode(const EntityId id) 
+	{
+		CRY_ASSERT_MESSAGE(
+			m_entitiesSpawnedDuringEditorGameMode.find(id) != m_entitiesSpawnedDuringEditorGameMode.end(),
+			"Entity id: %d was not spawned during Simulation or Game mode. This entity was probably spawned in Editor (during level loading) and you are trying to remove it during Simulation or Game mode, which is not consistent.", id);
+		m_entitiesSpawnedDuringEditorGameMode.erase(id); 
+	}
 	void RemoveEntitiesSpawnedDuringGameMode();
 
 private:
@@ -39,6 +45,6 @@ private:
 	};
 
 	std::unordered_map<SDoubleGUID, std::unique_ptr<Schematyc::CClassProperties>, HashDoubleGUID> m_componentPropertyCache;
-	std::set<EntityId> m_entitiesSpawnedDuringEditorGameMode;
+	std::unordered_set<EntityId> m_entitiesSpawnedDuringEditorGameMode;
 };
 #endif

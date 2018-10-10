@@ -54,6 +54,10 @@ struct SSnappingMetric
 		Count,
 	};
 
+	SSnappingMetric()
+		: SSnappingMetric(EType::Vertical, -FLT_MAX, -FLT_MAX)
+	{}
+
 	SSnappingMetric(ESnappingType::ETypeVertical, const float verticalUpRange = -FLT_MAX, const float verticalDownRange = -FLT_MAX)
 		: SSnappingMetric(EType::Vertical, verticalUpRange, verticalDownRange)
 	{}

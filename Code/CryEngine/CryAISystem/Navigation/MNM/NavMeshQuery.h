@@ -15,6 +15,20 @@ namespace MNM
 {
 class CNavMesh;
 
+namespace DefaultQueryFilters
+{
+	//! Filter for QueryTriangles, which accepts all triangles.
+	//! Note, that the signature of PassFilter(), GetCostMultiplier() and GetCost() functions is same as in INavMeshQueryFilter, but it's not virtual.
+	//! This way, templated implementation functions can avoid unnecessary checks and virtual calls.
+	struct SAcceptAllQueryTrianglesFilter
+	{
+		inline bool PassFilter(const Tile::STriangle&) const { return true; }
+		inline float GetCostMultiplier(const MNM::Tile::STriangle& triangle) const { return 1.0f; }
+	};
+	
+	extern const SAcceptAllQueryTrianglesFilter g_acceptAllTriangles;
+}
+
 class CTriangleAtQuery : public INavMeshQueryProcessing
 {
 public:

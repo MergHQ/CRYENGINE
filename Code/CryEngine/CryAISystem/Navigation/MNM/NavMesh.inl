@@ -14,8 +14,7 @@ void CNavMesh::QueryTrianglesWithProcessing(const aabb_t& queryAabbWorld, const 
 	}
 	else
 	{
-		const SAcceptAllQueryTrianglesFilter filter;
-		return QueryTrianglesWithProcessingInternal(queryAabbWorld, filter, query);
+		return QueryTrianglesWithProcessingInternal(queryAabbWorld, DefaultQueryFilters::g_acceptAllTriangles, query);
 	}
 }
 
