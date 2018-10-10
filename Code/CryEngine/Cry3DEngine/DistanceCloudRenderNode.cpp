@@ -144,8 +144,7 @@ void CDistanceCloudRenderNode::Render(const SRendParams& rParam, const SRenderin
 	pIndices[4] = 2;
 	pIndices[5] = 3;
 
-	int afterWater(GetObjManager()->IsAfterWater(m_pos, passInfo.GetCamera().GetPosition(), passInfo, Get3DEngine()->GetWaterLevel()) ? 1 : 0);
-	SRenderPolygonDescription poly(pRenderObject, pMaterial->GetShaderItem(), 4, pVerts, pTangents, pIndices, 6, EFSLIST_SKY, afterWater);
+	SRenderPolygonDescription poly(pRenderObject, pMaterial->GetShaderItem(), 4, pVerts, pTangents, pIndices, 6, EFSLIST_SKY, false);
 	passInfo.GetIRenderView()->AddPolygon(poly, passInfo);
 }
 

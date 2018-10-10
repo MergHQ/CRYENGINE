@@ -3,6 +3,9 @@
 #include "Common.cfi"
 #include "ModificatorVT.cfi"
 #include "shadeLib.cfi"
+#include "SkyCommon.cfi"
+
+// TODO: remove after old graphics pipeline is removed.
 
 // Shader global descriptions
 float Script : STANDARDSGLOBAL
@@ -13,103 +16,73 @@ float Script : STANDARDSGLOBAL
            "ShaderType = Sky;"
 >;
 
-sampler2D whiteSampler = sampler_state
-{
-  Texture = $White;
-  MinFilter = LINEAR;
-  MagFilter = LINEAR;
-  MipFilter = LINEAR;
-};
+DIFFUSEMAP
 
 ///////////////////////////// 
  
 struct a2v 
 {
-  float4 Position : POSITION; //in object space
-  float2 baseTC   : TEXCOORD0;
+	float4 Position : POSITION; //in object space
+	float2 baseTC   : TEXCOORD0;
 	IN_C0
 };
 
 struct v2f
 {
-  float4 Position  : SV_POSITION;  //in projection space
-  float2 baseTC    : TEXCOORD0;
-  float3 viewDir	 : TEXCOORD1;
+	float4 Position  : SV_POSITION;  //in projection space
+	float2 baseTC    : TEXCOORD0;
+	float3 viewDir	 : TEXCOORD1;
 };
  
 struct v2fZ
 {
-  float4 Position  : SV_POSITION;  //in projection space
+	float4 Position  : SV_POSITION;  //in projection space
 }; 
 
 ///////////////// vertex shader //////////////////
 v2f SkyVS(a2v IN)
 {
-  v2f OUT = (v2f)0; 
+	v2f OUT = (v2f)0; 
 
-  // Position in screen space.
-  float4 vPos = IN.Position;
-  OUT.Position = _pos_Common(vPos);
-  OUT.Position.z = OUT.Position.w;
+	// Position in screen space.
+	float4 vPos = IN.Position;
+	OUT.Position = _pos_Common(vPos);
+	OUT.Position.z = OUT.Position.w;
   
-  OUT.baseTC.xy = IN.baseTC.xy;  
+	OUT.baseTC.xy = IN.baseTC.xy;  
   
-  //OUT.viewDir = IN.Position.xyz - g_VS_WorldViewPos.xyz;
-  OUT.viewDir = IN.Position.xyz;
+	//OUT.viewDir = IN.Position.xyz - g_VS_WorldViewPos.xyz;
+	OUT.viewDir = IN.Position.xyz;
 
-  return OUT; 
+	return OUT; 
 } 
 
 v2fZ SkyZVS(a2v IN)
 {
-  v2fZ OUT = (v2fZ)0; 
+	v2fZ OUT = (v2fZ)0; 
 
-  // Position in screen space.
-  float4 vPos = IN.Position;
-  OUT.Position = _pos_Common(vPos);
-  OUT.Position.z = OUT.Position.w;
+	// Position in screen space.
+	float4 vPos = IN.Position;
+	OUT.Position = _pos_Common(vPos);
+	OUT.Position.z = OUT.Position.w;
 
-  return OUT;
+	return OUT;
 }
 
 ///////////////// pixel shader //////////////////
 
 pixout SkyPS(v2f IN)
 {
-  pixout OUT;
-
-  half4 baseColor = GetTexture2D(whiteSampler, IN.baseTC.xy);
-  half4 Color = baseColor; // * CV_GlobalColor
-
-   // Debug output
- #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
-   DebugOutput(OUT.Color, float4(IN.baseTC.xy, 0, 0));
-   return OUT;
- #endif
-  
-  half3 skyDir = normalize( IN.viewDir.xyz );  
-	
-//	half sunInfluence = dot( normalize( IN.viewDir.xyz ), g_PS_SunLightDir.xyz ) * 0.25 + 0.75;
-//	sunInfluence *= saturate( g_PS_SunLightDir.z * 4.0 ) * 0.666 + 0.333;		
-//	Color *= sunInfluence;
-
-  // Re-scale range
-  Color.xyz *= PS_HDR_RANGE_ADAPT_MAX;
-
-	HDROutput(OUT, Color, 1);
-	
-  return OUT;
+	pixout OUT = (pixout)0;
+	OUT.color = float4(GetDiffuseTex(diffuseTex, IN.baseTC.xy), 1);
+	return OUT;
 }
 
 pixout_gbuffer SkyZPS(v2fZ IN) 
 {
-	pixout_gbuffer OUT;
-	
-	MaterialAttribsCommon attribs = MaterialAttribsDefault();
-	attribs.Albedo = 0;  // Output black albedo for emissive surface
-	EncodeGBuffer( attribs, OUT.GBufferA, OUT.GBufferB, OUT.GBufferC );
-
-  return OUT;
+	// Legacy Dummy
+	pixout_gbuffer OUT = (pixout_gbuffer)0;
+	return OUT;
 }
 
 //////////////////////////////// technique ////////////////

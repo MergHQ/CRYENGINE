@@ -1,0 +1,174 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
+
+//////////////////////////////////////////////////////////////////////////
+// TODO: remove after old graphics pipeline is removed.
+
+float2 SkyDome_TextureSize;
+float2 SkyDome_TexelSize;
+
+float3 SkyDome_PartialMieInScatteringConst;
+float3 SkyDome_PartialRayleighInScatteringConst;
+float3 SkyDome_SunDirection;
+float3 SkyDome_PhaseFunctionConstants;
+
+float3 SkyDome_NightSkyColBase;
+float3 SkyDome_NightSkyColDelta;
+float2 SkyDome_NightSkyZenithColShift;
+
+float4 SkyDome_NightMoonDirSize;
+float3 SkyDome_NightMoonTexGenRight;
+float3 SkyDome_NightMoonTexGenUp;
+float3 SkyDome_NightMoonColor;
+float4 SkyDome_NightMoonInnerCoronaColorScale;
+float4 SkyDome_NightMoonOuterCoronaColorScale;
+
+float4 SkyDome_StarSize;
+float  SkyDome_StarIntensity;
+
+float4 SkyDome_SkyBoxParams; // x: angle, y: stretching, z: multiplier
+float4 SkyDome_SkyBoxExposure; // rgb: exposure color, a: exposure strength
+float4 SkyDome_SkyBoxOpacity; // rgb: opacity filter, a: opacity strength
+
+//////////////////////////////////////////////////////////////////////////
+// per pass textures
+
+Texture2D<float4> SkyDome_Tex             : register(t0);
+Texture2D<float4> SkyDome_Moon            : register(t3);
+SamplerState SkyDome_TexSS                : register(s0);   // LinearClamp
+
+Texture2D<float4> SkyDome_Mie             : register(t1);
+Texture2D<float4> SkyDome_Rayleigh        : register(t2);
+SamplerState SkyDome_ScatSS               : register(s1);   // samplerStateLinearWrapU
+
+//////////////////////////////////////////////////////////////////////////
+// Per draw constant buffer for water volume and water fog volume.
+
+struct SSkyParams
+{
+	float4x4 WorldMatrix;
+	
+	float2 TextureSize;
+	float2 TexelSize;
+
+	float3 PartialMieInScatteringConst;
+	float3 PartialRayleighInScatteringConst;
+	float3 SunDirection;
+	float3 PhaseFunctionConstants;
+
+	float3 NightSkyColBase;
+	float3 NightSkyColDelta;
+	float2 NightSkyZenithColShift;
+
+	float4 NightMoonDirSize;
+	float3 NightMoonTexGenRight;
+	float3 NightMoonTexGenUp;
+	float3 NightMoonColor;
+	float4 NightMoonInnerCoronaColorScale;
+	float4 NightMoonOuterCoronaColorScale;
+
+	float4 StarSize;
+	float  StarIntensity;
+	
+	float4 SkyBoxParams;
+	float4 SkyBoxExposure;
+	float4 SkyBoxOpacity;
+};
+
+cbuffer CBSky : register(b0)
+{
+	struct
+	{
+		float4x4 WorldMatrix;
+	
+		float2 TextureSize;
+		float2 TexelSize;
+
+		float3 PartialMieInScatteringConst;
+		float3 PartialRayleighInScatteringConst;
+		float3 SunDirection;
+		float3 PhaseFunctionConstants;
+
+		float3 NightSkyColBase;
+		float3 NightSkyColDelta;
+		float2 NightSkyZenithColShift;
+
+		float4 NightMoonDirSize;
+		float3 NightMoonTexGenRight;
+		float3 NightMoonTexGenUp;
+		float3 NightMoonColor;
+		float4 NightMoonInnerCoronaColorScale;
+		float4 NightMoonOuterCoronaColorScale;
+
+		float4 StarSize;
+		float  StarIntensity;
+	
+		float4 SkyBoxParams;
+		float4 SkyBoxExposure;
+		float4 SkyBoxOpacity;
+	} cbSky;
+};
+
+SSkyParams GetSkyParams()
+{
+	SSkyParams params;
+
+#if %_RT_COMPUTE_SKINNING
+	params.WorldMatrix                      = cbSky.WorldMatrix;
+	
+	params.TextureSize                      = cbSky.TextureSize;
+	params.TexelSize                        = cbSky.TexelSize;
+
+	params.PartialMieInScatteringConst      = cbSky.PartialMieInScatteringConst;
+	params.PartialRayleighInScatteringConst = cbSky.PartialRayleighInScatteringConst;
+	params.SunDirection                     = cbSky.SunDirection;
+	params.PhaseFunctionConstants           = cbSky.PhaseFunctionConstants;
+
+	params.NightSkyColBase                  = cbSky.NightSkyColBase;
+	params.NightSkyColDelta                 = cbSky.NightSkyColDelta;
+	params.NightSkyZenithColShift           = cbSky.NightSkyZenithColShift;
+
+	params.NightMoonDirSize                 = cbSky.NightMoonDirSize;
+	params.NightMoonTexGenRight             = cbSky.NightMoonTexGenRight;
+	params.NightMoonTexGenUp                = cbSky.NightMoonTexGenUp;
+	params.NightMoonColor                   = cbSky.NightMoonColor;
+	params.NightMoonInnerCoronaColorScale   = cbSky.NightMoonInnerCoronaColorScale;
+	params.NightMoonOuterCoronaColorScale   = cbSky.NightMoonOuterCoronaColorScale;
+	
+	params.StarSize                         = cbSky.StarSize;
+	params.StarIntensity                    = cbSky.StarIntensity;
+	
+	params.SkyBoxParams                     = cbSky.SkyBoxParams;
+	params.SkyBoxExposure                   = cbSky.SkyBoxExposure;
+	params.SkyBoxOpacity                    = cbSky.SkyBoxOpacity;
+#else
+	params.WorldMatrix                      = float4x4(Get_SPI_ObjWorldMat(0), float4(0.0f, 0.0f, 0.0f, 1.0f));
+	params.TextureSize                      = SkyDome_TextureSize;
+	params.TexelSize                        = SkyDome_TexelSize;
+
+	params.PartialMieInScatteringConst      = SkyDome_PartialMieInScatteringConst;
+	params.PartialRayleighInScatteringConst = SkyDome_PartialRayleighInScatteringConst;
+	params.SunDirection                     = SkyDome_SunDirection;
+	params.PhaseFunctionConstants           = SkyDome_PhaseFunctionConstants;
+
+	params.NightSkyColBase                  = SkyDome_NightSkyColBase;
+	params.NightSkyColDelta                 = SkyDome_NightSkyColDelta;
+	params.NightSkyZenithColShift           = SkyDome_NightSkyZenithColShift;
+
+	params.NightMoonDirSize                 = SkyDome_NightMoonDirSize;
+	params.NightMoonTexGenRight             = SkyDome_NightMoonTexGenRight;
+	params.NightMoonTexGenUp                = SkyDome_NightMoonTexGenUp;
+	params.NightMoonColor                   = SkyDome_NightMoonColor;
+	params.NightMoonInnerCoronaColorScale   = SkyDome_NightMoonInnerCoronaColorScale;
+	params.NightMoonOuterCoronaColorScale   = SkyDome_NightMoonOuterCoronaColorScale;
+	
+	params.StarSize                         = SkyDome_StarSize;
+	params.StarIntensity                    = SkyDome_StarIntensity;
+	
+	params.SkyBoxParams                     = SkyDome_SkyBoxParams;
+	params.SkyBoxExposure                   = SkyDome_SkyBoxExposure;
+	params.SkyBoxOpacity                    = SkyDome_SkyBoxOpacity;
+#endif
+
+	return params;
+}
