@@ -12,7 +12,9 @@
 #define PHYSRENDERER_H
 
 #include <CryPhysics/IPhysicsDebugRenderer.h>
+#include <CryPhysics/primitives.h>
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <CryPhysics/physinterface.h>
 
 #if _MSC_VER > 1000
 	#pragma once
@@ -42,16 +44,16 @@ class CPhysRenderer : public IPhysicsDebugRenderer, public IPhysRenderer
 public:
 	CPhysRenderer();
 	~CPhysRenderer();
-	void Init();
-	void DrawGeometry(IGeometry* pGeom, geom_world_data* pgwd, const ColorB& clr, const Vec3& sweepDir = Vec3(0));
-	void DrawGeometry(int itype, const void* pGeomData, geom_world_data* pgwd, const ColorB& clr, const Vec3& sweepDir = Vec3(0));
-	QuatT SetOffset(const Vec3& offs = Vec3(ZERO), const Quat& qrot = Quat(ZERO)) 
-	{ 
-		QuatT prev(m_qrot,m_offset); 
-		m_offset = offs; 
-		if ((qrot|qrot)>0)
+	void  Init();
+	void  DrawGeometry(IGeometry* pGeom, geom_world_data* pgwd, const ColorB& clr, const Vec3& sweepDir = Vec3(0));
+	void  DrawGeometry(int itype, const void* pGeomData, geom_world_data* pgwd, const ColorB& clr, const Vec3& sweepDir = Vec3(0));
+	QuatT SetOffset(const Vec3& offs = Vec3(ZERO), const Quat& qrot = Quat(ZERO))
+	{
+		QuatT prev(m_qrot, m_offset);
+		m_offset = offs;
+		if ((qrot | qrot) > 0)
 			m_qrot = qrot;
-		return prev; 
+		return prev;
 	}
 
 	// IPhysRenderer

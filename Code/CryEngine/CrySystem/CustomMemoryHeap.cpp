@@ -6,6 +6,7 @@
 #if CRY_PLATFORM_DURANGO
 	#include <apu.h>
 #endif // CRY_PLATFORM_DURANGO
+#include <CryMemory/CrySizer.h>
 
 //////////////////////////////////////////////////////////////////////////
 CCustomMemoryHeapBlock::CCustomMemoryHeapBlock(CCustomMemoryHeap* pHeap, void* pData, size_t const allocateSize, char const* const szUsage)

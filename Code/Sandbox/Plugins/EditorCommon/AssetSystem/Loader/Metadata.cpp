@@ -2,7 +2,9 @@
 
 #include "StdAfx.h"
 #include "Metadata.h"
+#include "FilePathUtil.h"
 
+#include <CrySystem/XML/IXml.h>
 #include <chrono>
 
 namespace AssetLoader

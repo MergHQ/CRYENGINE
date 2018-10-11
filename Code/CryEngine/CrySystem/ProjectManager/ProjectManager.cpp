@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 #include "ProjectManager.h"
 
-#include "System.h"
+#include "ExtensionSystem/CryPluginManager.h"
 
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySerialization/STL.h>

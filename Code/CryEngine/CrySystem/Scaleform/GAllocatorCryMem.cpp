@@ -8,6 +8,7 @@
 	#include "SharedStates.h"
 	#include "SharedResources.h"
 	#include "System.h"
+	#include <CryMemory/IMemory.h>
 
 	#define TRACK_ALLOCATIONS
 

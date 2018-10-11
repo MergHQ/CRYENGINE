@@ -17,8 +17,9 @@
 
 const uint32 STATOSCOPE_BINARY_VERSION = 2;
 
-	#include <CryString/CryName.h>
-	#include <CryNetwork/CrySocks.h>
+#include <CryNetwork/CrySocks.h>
+#include <CryRenderer/IRenderer.h>
+#include <CryString/CryName.h>
 
 struct SPerfStatFrameProfilerRecord
 {

@@ -10,6 +10,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include <StdAfx.h>
+#include <CryMath/Cry_Math.h>
 #include "MiniInfoBox.h"
 #include "DrawContext.h"
 #include <CrySystem/ISystem.h>

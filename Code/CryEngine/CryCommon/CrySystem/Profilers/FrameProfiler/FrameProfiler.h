@@ -7,6 +7,7 @@
 #include <CryCore/Platform/platform.h>
 #include <CrySystem/ISystem.h>
 #include <CrySystem/ITimer.h>
+#include <CryMath/Cry_Math.h>
 
 #include "FrameProfiler_Shared.h"
 #include "FrameProfiler_Internal.h"

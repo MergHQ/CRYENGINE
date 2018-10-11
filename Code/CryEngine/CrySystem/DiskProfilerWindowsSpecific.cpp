@@ -5,8 +5,9 @@
 #include "DiskProfilerWindowsSpecific.h"
 
 #if CRY_PLATFORM_WINDOWS
-
 #include <CryString/CryString.h>
+#include <CryString/CryPath.h>
+#include <CrySystem/ISystem.h>
 
 CDiskProfilerWindowsSpecific::CDiskProfilerWindowsSpecific() : m_log(gEnv->pSystem)
 {

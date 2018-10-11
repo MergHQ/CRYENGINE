@@ -6,6 +6,7 @@
 #include "SteamUserIdentifier.h"
 
 #include <CrySystem/IProjectManager.h>
+#include <CrySystem/CryVersion.h>
 
 #include <steam/steam_gameserver.h>
 

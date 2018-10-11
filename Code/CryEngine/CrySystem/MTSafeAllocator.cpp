@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "MTSafeAllocator.h"
 #include <CrySystem/IConsole.h>
+#include <CryMemory/CrySizer.h>
 
 extern CMTSafeHeap* g_pPakHeap;
 

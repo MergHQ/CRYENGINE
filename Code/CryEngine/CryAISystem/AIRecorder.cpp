@@ -18,6 +18,7 @@
 #include "AIRecorder.h"
 #include "PipeUser.h"
 #include <CryString/StringUtils.h>
+#include <CrySystem/CryVersion.h>
 #include <CryGame/IGameFramework.h>
 
 #ifdef CRYAISYSTEM_DEBUG

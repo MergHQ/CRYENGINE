@@ -6,6 +6,7 @@
 #include "Formats/DDS.h"
 #include "Metadata/Metadata.h"
 #include "ImageObject.h"
+#include <CrySystem/XML/IXml.h>
 
 namespace AssetManager
 {

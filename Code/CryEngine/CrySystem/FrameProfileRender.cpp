@@ -14,11 +14,13 @@
 #include "StdAfx.h"
 #include "FrameProfileSystem.h"
 #include <CryRenderer/IRenderer.h>
+#include <CryMath/Cry_Camera.h>
 #include <CryInput/IInput.h>
 #include <CrySystem/ILog.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryScriptSystem/IScriptSystem.h>
 #include <CrySystem/ITextModeConsole.h>
+#include <CryThreading/IJobManager.h>
 
 #include <CrySystem/File/CryFile.h>
 

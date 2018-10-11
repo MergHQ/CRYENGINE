@@ -3,10 +3,10 @@
 #ifndef physinterface_h
 #define physinterface_h
 
-#include <CryCore/Platform/platform.h>
 #include <CryNetwork/SerializeFwd.h>
 #include <CryMemory/CrySizer.h>
 #include <CryMath/Cry_Geo.h>
+#include <CryMath/LCGRandom.h>
 #include <CryCore/stridedptr.h>
 #include "primitives.h"
 #ifdef NEED_ENDIAN_SWAP

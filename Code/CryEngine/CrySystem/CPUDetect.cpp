@@ -11,6 +11,7 @@
 #include "StdAfx.h"
 #include "System.h"
 #include "AutoDetectSpec.h"
+#include "CPUDetect.h"
 
 #if CRY_PLATFORM_WINDOWS
 	#include <intrin.h>

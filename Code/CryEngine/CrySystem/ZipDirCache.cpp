@@ -22,6 +22,11 @@ using namespace ZipFile;
 CryCriticalSection ZipDir::Cache::CacheData::m_csCacheIOLock;
 #endif
 
+void ZipDir::Cache::CacheData::GetMemoryUsage(ICrySizer* pSizer) const
+{
+	pSizer->AddObject(this, sizeof(*this));
+}
+
 // initializes the instance structure
 void ZipDir::Cache::Construct(CZipFile& fNew, CMTSafeHeap* pHeap, size_t nDataSizeIn, unsigned int nFactoryFlags, size_t nAllocatedSize)
 {
@@ -565,6 +570,13 @@ bool ZipDir::Cache::ReOpen(const char* filePath)
 	}
 
 	return false;
+}
+
+void ZipDir::Cache::GetMemoryUsage(ICrySizer* pSizer) const
+{
+	// to account for the full memory, see ZipDir::CacheFactory::MakeCache for this cause of this calculation
+	pSizer->AddObject(this, m_pCacheData->m_pHeap->PersistentAllocSize(m_nAllocatedSize));
+	pSizer->AddObject(m_pCacheData);
 }
 
 //////////////////////////////////////////////////////////////////////////

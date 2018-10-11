@@ -29,6 +29,7 @@
 #include "ISaveGame.h"
 #include "GameRulesModules/IGameRulesRoundsModule.h"
 #include <CryCore/TypeInfo_impl.h>
+#include <CrySystem/CryVersion.h>
 #include "DataPatchDownloader.h"
 #include "PatchPakManager.h"
 

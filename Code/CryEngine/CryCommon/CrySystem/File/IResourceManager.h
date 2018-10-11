@@ -4,6 +4,9 @@
 
 #pragma once
 
+struct IResourceList;
+class CTimeValue;
+
 struct SLayerPakStats
 {
 	struct SEntry

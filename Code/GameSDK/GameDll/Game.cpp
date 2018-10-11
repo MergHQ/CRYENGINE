@@ -40,6 +40,7 @@
 #include <CryLobby/ICryLobbyUI.h>
 #include <CrySystem/ILocalizationManager.h>
 #include <CrySystem/File/IResourceManager.h>
+#include <CrySystem/CryVersion.h>
 #include <CryAction/ICustomActions.h>
 #include <CryFlowGraph/IFlowBaseNode.h>
 

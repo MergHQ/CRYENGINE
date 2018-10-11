@@ -4,6 +4,7 @@
 #define _ZIP_DIR_READER_HDR_
 
 #include <CryCore/Project/ProjectDefines.h>
+#include <CrySystem/File/ICryPak.h>
 
 namespace ZipDir
 {

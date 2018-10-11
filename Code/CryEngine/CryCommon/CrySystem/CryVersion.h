@@ -4,11 +4,8 @@
 
 #pragma once
 
-#include <array>
-#include <algorithm>
-
 #include <CryString/CryFixedString.h>
-#include <CrySystem/CryUtils.h>
+#include <array>
 
 //////////////////////////////////////////////////////////////////////////
 /** This class keeps file version information.

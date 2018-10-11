@@ -81,6 +81,8 @@ public:
 	// </interfuscator:shuffle>
 };
 
+#include <CrySystem/ISystem.h>
+
 class CScopedFloatingPointException
 {
 public:

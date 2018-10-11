@@ -20,6 +20,7 @@
 #pragma warning(pop)
 
 #include <vector>
+#include <stack>
 #include <CrySystem/Scaleform/GMemorySTLAlloc.h>
 #include "GTexture_Impl.h"
 

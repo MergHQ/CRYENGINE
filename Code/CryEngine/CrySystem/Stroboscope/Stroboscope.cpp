@@ -11,6 +11,7 @@
 ////////////////////////////////////////////////////////////////////////////
 #include "StdAfx.h"
 #include <random>
+#include <CryRenderer/IRenderer.h>
 
 #if defined(ENABLE_PROFILING_CODE)
 

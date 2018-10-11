@@ -8,6 +8,7 @@
 
 #if CRY_PLATFORM_WINDOWS
 
+#include <CryCore/Platform/CryWindows.h>
 #include <winioctl.h>
 
 class CDiskProfilerWindowsSpecific

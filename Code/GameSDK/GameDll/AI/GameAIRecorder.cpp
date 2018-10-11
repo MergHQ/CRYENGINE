@@ -13,6 +13,7 @@
 *************************************************************************/
 
 #include "StdAfx.h"
+#include <CrySystem/CryVersion.h>
 #include "GameAIRecorder.h"
 #include "GameAISystem.h"
 #include "GameCVars.h"

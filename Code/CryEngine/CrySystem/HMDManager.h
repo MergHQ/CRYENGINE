@@ -3,6 +3,9 @@
 #pragma once
 
 #include <CrySystem/VR/IHMDManager.h>
+#include <CryCore/smartptr.h>
+
+struct ICVar;
 
 class CHmdManager : public IHmdManager
 {

@@ -4,6 +4,9 @@
 
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/Decorators/Range.h>
+#include <CryMath/Cry_Math.h>
+
+template<class T> struct Color_tpl;
 
 template<typename T>
 inline bool Serialize(Serialization::IArchive& ar, Color_tpl<T>& c, const char* name, const char* label);

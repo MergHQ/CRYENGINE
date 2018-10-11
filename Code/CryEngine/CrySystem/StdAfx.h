@@ -26,6 +26,87 @@
 #define CRYSYSTEM_EXPORTS
 
 #include <CryCore/Platform/platform.h>
+#include <CryCore/Assert/CryAssert.h>
+
+#ifdef USE_PCH
+
+#include <cstdlib>
+#include <csignal>
+#include <csetjmp>
+#include <cstdarg>
+#include <typeinfo>
+#include <typeindex>
+#include <type_traits>
+#include <bitset>
+#include <functional>
+#include <utility>
+#include <ctime>
+#include <chrono>
+#include <cstddef>
+#include <initializer_list>
+#include <tuple>
+#include <new>
+#include <memory>
+#include <scoped_allocator>
+#include <climits>
+#include <cfloat>
+#include <cstdint>
+#include <cinttypes>
+#include <limits>
+#include <exception>
+#include <stdexcept>
+#include <cassert>
+#include <system_error>
+#include <cerrno>
+#include <cctype>
+#include <cwctype>
+#include <cstring>
+#include <cwchar>
+#include <string>
+#include <array>
+#include <vector>
+#include <deque>
+#include <list>
+#include <forward_list>
+#include <set>
+#include <map>
+#include <unordered_set>
+#include <unordered_map>
+#include <stack>
+#include <queue>
+#include <algorithm>
+#include <iterator>
+#include <cmath>
+#include <complex>
+#include <valarray>
+#include <random>
+#include <numeric>
+#include <ratio>
+#include <cfenv>
+#include <iosfwd>
+#include <ios>
+#include <istream>
+#include <ostream>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <iomanip>
+#include <streambuf>
+#include <cstdio>
+#include <locale>
+#include <clocale>
+#include <codecvt>
+#include <regex>
+#include <atomic>
+#include <thread>
+#include <mutex>
+#include <future>
+#include <condition_variable>
+#include <ciso646>
+#include <ccomplex>
+#include <ctgmath>
+#include <cstdalign>
+#include <cstdbool>
 
 //////////////////////////////////////////////////////////////////////////
 // CRT
@@ -48,6 +129,13 @@
 		#include <io.h>
 	#endif
 #endif
+#include <cmath>
+
+#if CRY_PLATFORM_WINDOWS
+	#include <CryCore/Platform/CryWindows.h>
+	#include <winsock2.h>
+	#include <shlobj.h>
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // CRY Stuff ////////////////////////////////////////////////////////////////
@@ -55,62 +143,88 @@
 #include <CryMath/Cry_Math.h>
 #include <CryMath/Cry_Camera.h>
 #include <CryMath/Random.h>
-#include <CryCore/smartptr.h>
 #include <CryMath/Range.h>
+#include <CryMath/Angle.h>
+#include <CryMath/ISplines.h>
+#include <CryMath/Rotation.h>
+#include <CryMath/Transform.h>
+
 #include <CryMemory/CrySizer.h>
+#include <CryMemory/AddressHelpers.h>
+#include <CryMemory/HeapAllocator.h>
+#include <CryMemory/BucketAllocator.h>
+#include <CryMemory/STLGlobalAllocator.h>
+
+#include <CryCore/BoostHelpers.h>
+
+#include <CryCore/smartptr.h>
+#include <CryCore/CryEnumMacro.h>
 #include <CryCore/StlUtils.h>
+#include <CryCore/stridedptr.h>
+#include <CryCore/functor.h>
+#include <CryCore/RingBuffer.h>
+#include <CryCore/SmallFunction.h>
+#include <CryCore/BitMask.h>
+#include <CryCore/CryVariant.h>
+#include <CryCore/optional.h>
+#include <CryCore/CountedValue.h>
+#include <CryCore/CryCustomTypes.h>
+#include <CryCore/CryTypeInfo.h>
+#include <CryCore/Containers/CryArray.h>
+#include <CryCore/Containers/CryFixedArray.h>
+#include <CryCore/Containers/CryListenerSet.h>
+#include <CryCore/Containers/MiniQueue.h>
+#include <CryCore/Containers/VectorSet.h>
+#include <CryCore/Containers/VectorMap.h>
+#include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
+#include <CryCore/ToolsHelpers/SettingsManagerHelpers.h>
+#include <CryCore/TypeInfo_impl.h>
 
-static inline int RoundToClosestMB(size_t memSize)
-{
-	// add half a MB and shift down to get closest MB
-	return((int) ((memSize + (1 << 19)) >> 20));
-}
+#include <CryString/CryString.h>
+#include <CryString/CryFixedString.h>
+#include <CryString/CryName.h>
+#include <CryString/CryPath.h>
 
-//////////////////////////////////////////////////////////////////////////
-// For faster compilation
-//////////////////////////////////////////////////////////////////////////
-#include <CryRenderer/IRenderer.h>
-#include <CrySystem/File/CryFile.h>
-#include <CrySystem/ISystem.h>
-#include <CryScriptSystem/IScriptSystem.h>
-#include <CryEntitySystem/IEntitySystem.h>
-#include <Cry3DEngine/I3DEngine.h>
-#include <CrySystem/ITimer.h>
-#include <CryAudio/IAudioSystem.h>
-#include <CryPhysics/IPhysics.h>
-#include <CryAISystem/IAISystem.h>
-#include <CrySystem/XML/IXml.h>
-#include <CrySystem/ICmdLine.h>
-#include <CryInput/IInput.h>
-#include <CrySystem/IConsole.h>
-#include <CrySystem/ILog.h>
+#include <CrySerialization/STL.h>
+#include <CrySerialization/DynArray.h>
+#include <CrySerialization/Color.h>
+#include <CrySerialization/ColorImpl.h>
+#include <CrySerialization/Math.h>
+#include <CrySerialization/MathImpl.h>
 
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>  // to be removed
+#include <CryExtension/ClassWeaver.h>
+#include <CryExtension/Conversion.h>
+#include <CryExtension/RegFactoryNode.h>
 
-/////////////////////////////////////////////////////////////////////////////
-//forward declarations for common Interfaces.
-/////////////////////////////////////////////////////////////////////////////
-class ITexture;
-struct IRenderer;
-struct ISystem;
-struct IScriptSystem;
-struct ITimer;
-struct IFFont;
-struct IInput;
-struct IKeyboard;
-struct ICVar;
-struct IConsole;
-struct IEntitySystem;
-struct IProcess;
-struct ICryPak;
-struct ICryFont;
-struct I3DEngine;
-struct IMovieSystem;
-struct IPhysicalWorld;
+#include <CryThreading/CryThreadSafeRendererContainer.h>
+#include <CryThreading/IJobManager.h> //TODO ideally don't include it, but it defines flags such as JOBMANAGER_SUPPORT_FRAMEPROFILER
 
-/////////////////////////////////////////////////////////////////////////////
-// HMD libraries
-/////////////////////////////////////////////////////////////////////////////
-#include <CrySystem/VR/IHMDDevice.h>
+#include <CryRenderer/IScaleform.h> // expensive header
+#include <CryRenderer/IRenderer.h> // expensive header
+
+#ifdef INCLUDE_SCALEFORM_SDK
+	#include <GRefCount.h>
+	#include <GMemory.h>
+	#include <GMemoryHeap.h>
+	#include <GAtomic.h>
+	#include <GStats.h>
+	#include <GTimer.h>
+	#include <GList.h>
+	#include <GSysAllocMalloc.h>
+	#include <GArray.h>
+	#include <GAllocator.h>
+	#include <GMath.h>
+	#include <GFxPlayerStats.h>
+	#include <GColor.h>
+	#include <GColorMacros.h>
+	#include <GMatrix2D.h>
+	#include <GTypes2DF.h>
+	#include <GMatrix3D.h>
+	#include <GPoint3.h>
+	#include <GImage.h>
+	#include <GRendererEventHandler.h>
+#endif
+
+#endif // USE_PCH
 
 #endif // __stdafx_h__

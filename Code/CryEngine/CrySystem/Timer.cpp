@@ -7,6 +7,7 @@
 #include <CrySystem/IConsole.h>
 #include <CrySystem/ILog.h>
 #include <CryNetwork/ISerialize.h>
+#include <CryRenderer/IRenderer.h>
 /////////////////////////////////////////////////////
 #include <CryCore/Platform/CryWindows.h>
 

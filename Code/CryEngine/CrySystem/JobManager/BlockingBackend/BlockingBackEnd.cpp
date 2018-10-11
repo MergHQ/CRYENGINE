@@ -13,6 +13,7 @@
 #include "../JobManager.h"
 #include "../../System.h"
 #include "../../CPUDetect.h"
+#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 JobManager::BlockingBackEnd::CBlockingBackEnd::CBlockingBackEnd(JobManager::SInfoBlock** pRegularWorkerFallbacks, uint32 nRegularWorkerThreads) :

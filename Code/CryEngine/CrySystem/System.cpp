@@ -67,6 +67,7 @@
 #include "Serialization/ArchiveHost.h"
 #include "ThreadProfiler.h"
 #include <CrySystem/Profilers/IDiskProfiler.h>
+#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
 #include "SystemEventDispatcher.h"
 #include "HardwareMouse.h"
 #include "ServerThrottle.h"
@@ -99,6 +100,7 @@
 
 #include "ExtensionSystem/CryPluginManager.h"
 #include "ProjectManager/ProjectManager.h"
+#include "UserAnalytics/UserAnalyticsSystem.h"
 
 #include "DebugCallStack.h"
 #include "ManualFrameStep.h"
@@ -137,6 +139,10 @@ CMTSafeHeap* g_pPakHeap = 0;// = &g_pakHeap;
 
 //////////////////////////////////////////////////////////////////////////
 #include "Validator.h"
+#include "CPUDetect.h"
+#include <CrySystem/CVarOverride.h>
+#include "CmdLine.h"
+#include <CryMath/Random.h>
 
 #if CRY_PLATFORM_ANDROID
 namespace
@@ -3748,6 +3754,31 @@ void* CSystem::GetRootWindowMessageHandler()
 	assert(false && "This platform does not support window message handlers");
 	return NULL;
 #endif
+}
+
+ICmdLine* CSystem::GetICmdLine()
+{
+	return m_pCmdLine;
+}
+
+IUserAnalyticsSystem* CSystem::GetIUserAnalyticsSystem()
+{
+	return m_pUserAnalyticsSystem;
+}
+
+Cry::IPluginManager* CSystem::GetIPluginManager()
+{
+	return m_pPluginManager;
+}
+
+uint32 CSystem::GetCPUFlags()
+{
+	return m_pCpu ? m_pCpu->GetFeatures() : 0;
+}
+
+int CSystem::GetLogicalCPUCount()
+{
+	return m_pCpu ? m_pCpu->GetLogicalCPUCount() : 0;
 }
 
 #undef EXCLUDE_UPDATE_ON_CONSOLE

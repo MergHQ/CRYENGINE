@@ -9,6 +9,7 @@
 
 #include <CrySystem/ICmdLine.h>
 #include <CryNetwork/INetwork.h>
+#include <CryCore/Assert/CryAssert.h>
 
 struct IAIActorProxy;
 struct IGameFramework;
@@ -62,7 +63,7 @@ struct IGame
 
 		static void       GetNameForFile(const char* baseFileName, const uint32 fileIdx, char* outputName, size_t outputNameSize)
 		{
-			assert(baseFileName != NULL);
+			CRY_ASSERT(baseFileName != NULL);
 			cry_sprintf(outputName, outputNameSize, "%s_%u", baseFileName, fileIdx);
 		}
 

@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "StatoscopeTextureStreamingIntervalGroup.h"
+#include <CryRenderer/IRenderer.h>
 
 #if ENABLE_STATOSCOPE
 

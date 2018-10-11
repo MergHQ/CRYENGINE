@@ -16,6 +16,7 @@
 	#include <CryThreading/MultiThread_Containers.h>
 
 	#include <CryThreading/IThreadManager.h>
+	#include <CrySystem/IConsole.h>
 
 class CStatsAgentImpl
 {

@@ -534,54 +534,54 @@ void CConsoleHelpGen::CreateMainPages()
 {
 	CryCreateDirectory(GetFolderName());
 
-	std::map<string, const char*> mapPrefix;
-
-	// order here doesn't matter, after the name some help can be added (after the first return)
-	mapPrefix["AI_"] = "Artificial Intelligence";
-	mapPrefix["NET_"] = "Network";
-	mapPrefix["ED_"] = "Editor";
-	mapPrefix["ES_"] = "Entity System";
-	mapPrefix["CON_"] = "Console";
-	mapPrefix["AG_"] = "Animation Graph"       "\n"  "High level animation logic, describes animation selection and flow, matches animation state to current game logical state.";
-	mapPrefix["AC_"] = "Animated Character"      "\n"  "Better name would be 'Character Movement'.\nBridges game controlled movement and animation controlled movement.";
-	mapPrefix["CA_"] = "Character Animation"     "\n"  "Motion synthesize and playback, parameterization through blending and inversed kinematics.";
-	mapPrefix["E_"] = "3DEngine";
-	mapPrefix["I_"] = "Input";
-	mapPrefix["FG_"] = "Flow Graph"          "\n"  "hyper graph: game logic";
-	mapPrefix["P_"] = "Physics";
-	mapPrefix["R_"] = "Renderer";
-	mapPrefix["S_"] = "Sound";
-	mapPrefix["G_"] = "Game"              "\n"  "game specific, not part of CryEngine";
-	mapPrefix["SYS_"] = "System";
-	mapPrefix["V_"] = "Vehicle";
-	mapPrefix["FT_"] = "Feature Test";
-	mapPrefix["DEMO_"] = "Time Demo";
-	mapPrefix["FT_"] = "Feature Test";
-	mapPrefix["GFX_"] = "Scaleform GFx";
-	mapPrefix["GL_"] = "Game Lobby";
-	mapPrefix["HUD_"] = "Heads Up Display";
-	mapPrefix["KC_"] = "Kill Cam";
-	mapPrefix["MN_"] = "Mannequin";
-	mapPrefix["PL_"] = "Player";
-	mapPrefix["PP_"] = "Player Progression";
-	mapPrefix["AIM_"] = "Aiming";
-	mapPrefix["CAPTURE_"] = "Capture";
-	mapPrefix["DS_"] = "Dialog Scripts";
-	mapPrefix["GT_"] = "Game Token";
-	mapPrefix["LOG_"] = "Logging";
-	mapPrefix["MOV_"] = "Movie Sequences";
-	mapPrefix["OSM_"] = "Overload Scene Manager";
-	mapPrefix["PROFILE_"] = "Profiling";
-	mapPrefix["STAP_"] = "Screen-space Torso Aim Pose";
-	mapPrefix["LUA_"] = "Lua"             "\n"  "scripting system";
-	mapPrefix["SV_"] = "Server";
-	mapPrefix["MFX_"] = "Material Effects";
-	mapPrefix["M_"] = "Multi threading";
-	mapPrefix["CC_"] = "Character Customization";
-	mapPrefix["CL_"] = "Client";
-	mapPrefix["Q_"] = "Quality"           "\n"  "usually shader quality";
-	mapPrefix["T_"] = "Timer";
-	mapPrefix["___"] = "Remaining";           // key defined to get it sorted in the end
+	std::map<string, const char*> mapPrefix =
+	{
+		{"AI_", "Artificial Intelligence"},
+		{"NET_", "Network"},
+		{"ED_", "Editor"},
+		{"ES_", "Entity System"},
+		{"CON_", "Console"},
+		{"AG_", "Animation Graph"       "\n"  "High level animation logic, describes animation selection and flow, matches animation state to current game logical state."},
+		{"AC_", "Animated Character"      "\n"  "Better name would be 'Character Movement'.\nBridges game controlled movement and animation controlled movement."},
+		{"CA_", "Character Animation"     "\n"  "Motion synthesize and playback, parameterization through blending and inversed kinematics."},
+		{"E_", "3DEngine"},
+		{"I_", "Input"},
+		{"FG_", "Flow Graph"          "\n"  "hyper graph: game logic"},
+		{"P_", "Physics"},
+		{"R_", "Renderer"},
+		{"S_", "Sound"},
+		{"G_", "Game"              "\n"  "game specific, not part of CryEngine"},
+		{"SYS_", "System"},
+		{"V_", "Vehicle"},
+		{"FT_", "Feature Test"},
+		{"DEMO_", "Time Demo"},
+		{"FT_", "Feature Test"},
+		{"GFX_", "Scaleform GFx"},
+		{"GL_", "Game Lobby"},
+		{"HUD_", "Heads Up Display"},
+		{"KC_", "Kill Cam"},
+		{"MN_", "Mannequin"},
+		{"PL_", "Player"},
+		{"PP_", "Player Progression"},
+		{"AIM_", "Aiming"},
+		{"CAPTURE_", "Capture"},
+		{"DS_", "Dialog Scripts"},
+		{"GT_", "Game Token"},
+		{"LOG_", "Logging"},
+		{"MOV_", "Movie Sequences"},
+		{"OSM_", "Overload Scene Manager"},
+		{"PROFILE_", "Profiling"},
+		{"STAP_", "Screen-space Torso Aim Pose"},
+		{"LUA_", "Lua"             "\n"  "scripting system"},
+		{"SV_", "Server"},
+		{"MFX_", "Material Effects"},
+		{"M_", "Multi threading"},
+		{"CC_", "Character Customization"},
+		{"CL_", "Client"},
+		{"Q_", "Quality"           "\n"  "usually shader quality"},
+		{"T_", "Timer"},
+		{"___", "Remaining"},           // key defined to get it sorted in the end
+	};
 
 	FILE* f1 = fopen((string(GetFolderName()) + "/index" + GetFileExtension()).c_str(), "w");
 	if (!f1)

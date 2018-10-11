@@ -12,6 +12,8 @@
 #include "ServiceNetwork.h"
 #include "RemoteCommandHelpers.h"
 #include <CryNetwork/CrySocks.h>
+#include <CryCore/CryEndian.h>
+#include <CrySystem/IConsole.h>
 
 //-----------------------------------------------------------------------------
 
@@ -1536,6 +1538,16 @@ void CServiceNetworkListener::ProcessPendingConnections()
 		delete (*it);
 		it = m_pPendingConnections.erase(it);
 	}
+}
+
+const uint32 CServiceNetwork::GetReceivedDataQueueLimit() const
+{
+	return m_pReceiveDataQueueLimit->GetIVal();
+}
+
+const uint32 CServiceNetwork::GetSendDataQueueLimit() const
+{
+	return m_pSendDataQueueLimit->GetIVal();
 }
 
 //-----------------------------------------------------------------------------

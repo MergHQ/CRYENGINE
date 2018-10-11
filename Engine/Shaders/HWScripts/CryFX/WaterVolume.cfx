@@ -306,9 +306,9 @@ half ssrBorderSizeY
   string UIName = "SSR border Y";
   string UIWidget = "slider";
   float UIMin = 0.0;
-  float UIMax = 0.5;
+  float UIMax = 1.0;
   float UIStep = 0.01;
-> = 0.05;
+> = 0.5;
 
 half ssrBorderSizeZ
 <

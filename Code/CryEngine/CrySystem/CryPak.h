@@ -25,6 +25,8 @@
 #include "FileIOWrapper.h"
 #include <CryCore/Containers/VectorMap.h>
 #include <CrySystem/Profilers/IPerfHud.h>
+#include <CryMemory/STLGlobalAllocator.h>
+#include <atomic>
 
 class CCryPak;
 
@@ -68,11 +70,7 @@ struct CCachedFileData : public _i_reference_target_t
 		return sizeof(*this) + (m_pFileData && m_pFileEntry ? m_pFileEntry->desc.lSizeUncompressed : 0);
 	}
 
-	void GetMemoryUsage(ICrySizer* pSizer) const
-	{
-		pSizer->AddObject(m_pZip);
-		pSizer->AddObject(m_pFileEntry);
-	}
+	void GetMemoryUsage(ICrySizer* pSizer) const;
 
 	// override addref and release to prevent a race condition
 	virtual void AddRef() const override;
@@ -164,10 +162,7 @@ struct CZipPseudoFile
 	uint64           GetModificationTime() { return m_pFileData->GetFileEntry()->GetModificationTime(); }
 	const char*      GetArchivePath()      { return m_pFileData->GetZip()->GetFilePath(); }
 
-	void             GetMemoryUsage(ICrySizer* pSizer) const
-	{
-		pSizer->AddObject(m_pFileData);
-	}
+	void             GetMemoryUsage(ICrySizer* pSizer) const;
 
 protected:
 	unsigned long      m_nCurSeek;
@@ -289,14 +284,7 @@ class CCryPak : public ICryPak, public ISystemEventListener
 			return strBindRoot.capacity() + strFileName.capacity() + pZip->GetSize();
 		}
 
-		void GetMemoryUsage(ICrySizer* pSizer) const
-		{
-			pSizer->AddObject(strBindRoot);
-			pSizer->AddObject(strFileName);
-			pSizer->AddObject(pArchive);
-			pSizer->AddObject(pZip);
-
-		}
+		void GetMemoryUsage(ICrySizer* pSizer) const;
 	};
 	typedef std::vector<PackDesc, stl::STLGlobalAllocator<PackDesc>> ZipArray;
 	CryReadModifyLock m_csZips;

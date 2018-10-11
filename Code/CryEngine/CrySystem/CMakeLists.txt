@@ -170,6 +170,7 @@ add_sources("CrySystem_uber_0.cpp"
 add_sources("CrySystem_uber_1.cpp"
 	PROJECTS CrySystem
 	SOURCE_GROUP "Source Files"
+		"SimpleStringPool.cpp"
 		"SystemRender.cpp"
 		"NotificationNetwork.cpp"
 		"PhysRenderer.cpp"

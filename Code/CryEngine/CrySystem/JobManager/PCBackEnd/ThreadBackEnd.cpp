@@ -14,6 +14,7 @@
 #include "../../System.h"
 #include "../../CPUDetect.h"
 #include <thread>
+#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 JobManager::ThreadBackEnd::CThreadBackEnd::CThreadBackEnd()

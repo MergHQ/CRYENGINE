@@ -4,11 +4,13 @@
 
 #if defined(ENABLE_LOADING_PROFILER)
 
-	#include "BootProfiler.h"
-	#include "ThreadInfo.h"
-	#include "CryMath/Cry_Math.h"
+#include "BootProfiler.h"
+#include "ThreadInfo.h"
+#include "CryMath/Cry_Math.h"
 
-	#include <CryGame/IGameFramework.h>
+#include <CryGame/IGameFramework.h>
+#include <CryRenderer/IRenderer.h>
+#include <CryMath/Random.h>
 
 namespace
 {

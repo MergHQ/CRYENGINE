@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "../../CrySystem/ISystem.h"
 #include "../../CryCore/BaseTypes.h"
 #include "../../CrySerialization/Forward.h"
 #include "../../CryCore/Assert/CryAssert.h"

@@ -7,6 +7,7 @@
 #include <CryCore/Project/ProjectDefines.h>
 #include "StatsAgentPipe.h"
 #include <CryCore/Platform/CryWindows.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 namespace
 {

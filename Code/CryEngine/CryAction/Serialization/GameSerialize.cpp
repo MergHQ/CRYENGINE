@@ -29,6 +29,7 @@
 
 #include <CryCore/Platform/IPlatformOS.h>
 #include <CryPhysics/IDeferredCollisionEvent.h>
+#include <CrySystem/CryVersion.h>
 
 #include <set>
 #include <time.h>

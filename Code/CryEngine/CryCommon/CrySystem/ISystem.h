@@ -1,34 +1,19 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <CrySchematyc/Utils/EnumFlags.h>
+#include <CryExtension/ICryFactory.h>
+#include <CryExtension/ICryUnknown.h>
+#include "Profilers/FrameProfiler/FrameProfiler_Shared.h"
+#include "IValidator.h"
+#include "ILog.h"
+#include <memory>
 
 #ifdef CRYSYSTEM_EXPORTS
 	#define CRYSYSTEM_API DLL_EXPORT
 #else
 	#define CRYSYSTEM_API DLL_IMPORT
 #endif
-
-#include <CryCore/Platform/platform.h> // Needed for LARGE_INTEGER (for consoles).
-#include <CryCore/Assert/CryAssert.h>
-
-#include <CrySystem/XML/IXml.h> // <> required for Interfuscator
-#include "IValidator.h"         // <> required for Interfuscator
-#include <CrySystem/ILog.h>     // <> required for Interfuscator
-#include <CryString/StringUtils.h>
-#include "CryVersion.h"
-#include <CryCore/smartptr.h>
-#include <CryMemory/IMemory.h>          // <> required for Interfuscator
-#include <CrySystem/ISystemScheduler.h> // <> required for Interfuscator
-
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_Shared.h>
-#include <CrySchematyc/Utils/EnumFlags.h>
-
-#include <CryMath/LCGRandom.h>
-#include <CryExtension/ICryFactory.h>
-#include <CryExtension/ICryUnknown.h>
-#include <CrySystem/IManualFrameStepController.h>
-
-#include <CrySystem/CVarOverride.h>
 
 struct ILog;
 struct IProfileLogSystem;
@@ -42,6 +27,14 @@ struct IInput;
 struct IRenderer;
 struct IRenderAuxGeom;
 struct IConsole;
+class CRndGen;
+struct ILogCallback;
+struct IValidator;
+struct IManualFrameStepController;
+class XmlNodeRef;
+struct IXmlUtils;
+struct CryGUID;
+typedef CryGUID CryInterfaceID;
 namespace Telemetry {
 struct ITelemetrySystem;
 }

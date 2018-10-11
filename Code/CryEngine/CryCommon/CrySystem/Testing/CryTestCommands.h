@@ -1,10 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
-#include <vector>              // std::vector
-#include <functional>          // std::function
-#include <CrySystem/ISystem.h> // gEnv
-#include "ITestSystem.h"       // ITestSystem
-#include "Command.h"           // CCommand
+#include <vector>
+#include <functional>
+#include <CrySystem/ISystem.h>
+#include <CrySystem/IConsole.h>
+#include "ITestSystem.h"
+#include "Command.h"
 
 namespace CryTest
 {

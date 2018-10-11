@@ -2,27 +2,24 @@
 
 #include "StdAfx.h"
 #include "LevelSystem.h"
-#include "ActorSystem.h"
 #include <CryMovie/IMovieSystem.h>
-#include "CryAction.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <CryGame/IGameTokens.h>
 #include <CryAudio/Dialog/IDialogSystem.h>
 #include "TimeOfDayScheduler.h"
 #include "IGameRulesSystem.h"
 #include <CryAction/IMaterialEffects.h>
 #include "IPlayerProfiles.h"
-#include <CryLiveCreate/ILiveCreateHost.h>
 #include <CrySystem/File/IResourceManager.h>
-#include <CrySystem/ILocalizationManager.h>
 #include "Network/GameContext.h"
 #include "ICooperativeAnimationManager.h"
 #include <CryPhysics/IDeferredCollisionEvent.h>
 #include <CryCore/Platform/IPlatformOS.h>
 #include <CryAction/ICustomActions.h>
+#include <CrySystem/CryVersion.h>
 #include "CustomEvents/CustomEventsManager.h"
 #include "GameVolumes/GameVolumesManager.h"
 
-#include <CryGame/IGameVolumes.h>
 
 #define LOCAL_WARNING(cond, msg) do { if (!(cond)) { CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "%s", msg); } } while (0)
 //#define LOCAL_WARNING(cond, msg)  CRY_ASSERT_MESSAGE(cond, msg)

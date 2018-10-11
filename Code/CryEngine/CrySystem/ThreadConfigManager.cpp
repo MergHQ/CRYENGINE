@@ -2,8 +2,9 @@
 
 #include "StdAfx.h"
 #include "ThreadConfigManager.h"
-#include <CrySystem/IConsole.h>
 #include "System.h"
+#include "CPUDetect.h"
+#include <CrySystem/IConsole.h>
 #include <CryString/StringUtils.h>
 #include <CryCore/CryCustomTypes.h>
 

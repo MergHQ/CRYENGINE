@@ -23,6 +23,7 @@
 #include <CryScriptSystem/IScriptSystem.h>
 #include "ClassRegistryReplicator.h"
 #include <CryNetwork/INetworkService.h>
+#include <CryPhysics/IPhysics.h>
 
 // FIXME: Cell SDK GCC bug workaround.
 #ifndef __GAMEOBJECT_H__

@@ -16,8 +16,10 @@
 #include <CryNetwork/IServiceNetwork.h>
 #include <CryNetwork/CrySocks.h>
 #include <CryThreading/IThreadManager.h>
+#include <CryMath/LCGRandom.h>
 
 class CServiceNetwork;
+struct ICVar;
 
 //-----------------------------------------------------------------------------
 
@@ -413,15 +415,9 @@ public:
 		return this;
 	}
 
-	ILINE const uint32 GetReceivedDataQueueLimit() const
-	{
-		return m_pReceiveDataQueueLimit->GetIVal();
-	}
+	const uint32 GetReceivedDataQueueLimit() const;
 
-	ILINE const uint32 GetSendDataQueueLimit() const
-	{
-		return m_pSendDataQueueLimit->GetIVal();
-	}
+	const uint32 GetSendDataQueueLimit() const;
 
 public:
 	CServiceNetwork();

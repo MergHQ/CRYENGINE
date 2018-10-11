@@ -209,10 +209,7 @@ public:
 	enum {gClassId = 1};
 	unsigned GetClassId() const { return gClassId; }
 
-	void     GetMemoryUsage(ICrySizer* pSizer) const
-	{
-		pSizer->AddObject(this, sizeof(*this));
-	}
+	void     GetMemoryUsage(ICrySizer* pSizer) const;
 };
 #endif //#ifndef OPTIMIZED_READONLY_ZIP_ENTRY
 
@@ -254,9 +251,6 @@ public:
 	enum {gClassId = 2};
 	unsigned GetClassId() const                    { return gClassId; }
 
-	void     GetMemoryUsage(ICrySizer* pSizer) const
-	{
-		pSizer->AddObject(this, sizeof(*this));
-	}
+	void     GetMemoryUsage(ICrySizer* pSizer) const;
 };
 #endif //__CRY_ARCHIVE_HDR__

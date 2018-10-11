@@ -24,6 +24,7 @@
 #include "XMLBinaryReader.h"
 
 #include "XMLPatcher.h"
+#include <CryNetwork/SimpleSerialize.h>
 
 //////////////////////////////////////////////////////////////////////////
 CXmlNode_PoolAlloc* g_pCXmlNode_PoolAlloc = 0;

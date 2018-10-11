@@ -12,6 +12,7 @@
 #include <CryNetwork/IServiceNetwork.h>
 #include "RemoteCommand.h"
 #include "RemoteCommandHelpers.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 //-----------------------------------------------------------------------------
 

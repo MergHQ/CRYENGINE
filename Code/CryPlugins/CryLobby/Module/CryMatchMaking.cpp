@@ -4,6 +4,7 @@
 #include "CryMatchMaking.h"
 #include "CrySharedLobbyPacket.h"
 
+#include <CrySystem/CryVersion.h>
 #include <CryGame/IGameFramework.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include "LAN/CryLANLobby.h"

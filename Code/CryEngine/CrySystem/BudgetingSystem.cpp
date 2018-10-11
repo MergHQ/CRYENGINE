@@ -29,6 +29,12 @@ const char c_sys_budget_numdrawcalls[] = "sys_budget_numdrawcalls";
 const char c_sys_budget_numpolys[] = "sys_budget_numpolys";
 const char c_sys_budget_streamingthroughput[] = "sys_budget_streamingthroughput";
 
+static int RoundToClosestMB(size_t memSize)
+{
+	// add half a MB and shift down to get closest MB
+	return((int)((memSize + (1 << 19)) >> 20));
+}
+
 CBudgetingSystem::CBudgetingSystem()
 	: m_pRenderer(0)
 	, m_pAuxRenderer(0)

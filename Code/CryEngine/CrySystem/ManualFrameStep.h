@@ -10,6 +10,7 @@
 
 #include <CryInput/IInput.h>
 #include <CryNetwork/NetHelpers.h>
+#include <CrySystem/IManualFrameStepController.h>
 
 enum class EManualFrameStepResult
 {

@@ -9,6 +9,7 @@
 #include "XmlIArchive.h"
 
 #include <CrySerialization/BlackBox.h>
+#include <CrySystem/ISystem.h>
 
 namespace XmlUtil
 {

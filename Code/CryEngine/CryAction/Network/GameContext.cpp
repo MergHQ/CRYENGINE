@@ -33,8 +33,11 @@
 #include "CVarListProcessor.h"
 #include "NetworkCVars.h"
 #include "CryActionCVars.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <CryNetwork/INetwork.h>
 #include <CryCore/Platform/IPlatformOS.h>
+#include <CrySystem/CryVersion.h>
+#include <CrySystem/IManualFrameStepController.h>
 
 // context establishment tasks
 #include <CryNetwork/NetHelpers.h>

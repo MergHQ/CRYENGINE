@@ -5,6 +5,8 @@
 #include <map>
 #include <CryThreading/IThreadConfigManager.h>
 
+class XmlNodeRef;
+
 /*
    ThreadConfigManager:
    Loads a thread configuration from an xml file and stores them.

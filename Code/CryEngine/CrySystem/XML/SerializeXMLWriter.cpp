@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "SerializeXMLWriter.h"
 #include <CryEntitySystem/IEntitySystem.h>
+#include <CryMemory/CrySizer.h>
 
 static const size_t MAX_NODE_STACK_DEPTH = 40;
 

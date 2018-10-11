@@ -3,8 +3,9 @@
 #include "StdAfx.h"
 #include "GdiUtil.h"
 #include "Util/Image.h"
+#include <Controls/QuestionDialog.h>
 #include <CryString/StringUtils.h>
-#include "Controls/QuestionDialog.h"
+#include <CryMemory/IMemory.h>
 
 CGdiCanvas::CGdiCanvas()
 {

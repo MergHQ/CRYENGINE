@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 
+#include <CryMath/Cry_Math.h>
 #include "GeneralMemoryHeap.h"
 #include "PageMappingHeap.h"
 
