@@ -663,38 +663,62 @@ void CLevelExplorer::CreateContextForSingleFolderLayer(CAbstractMenu &abstractMe
 void CLevelExplorer::OnContextMenuForSingleLayer(CAbstractMenu& menu, CObjectLayer* layer) const
 {
 	int toggleSection = menu.GetNextEmptySection();
-	menu.AddAction(GetIEditor()->GetICommandManager()->GetAction("levisolate_editabilityers"), toggleSection);
-	menu.AddAction(GetIEditor()->GetICommandManager()->GetAction("levisolate_visibilityers"), toggleSection);
+	menu.AddAction(GetIEditor()->GetICommandManager()->GetAction("level.isolate_editability"), toggleSection);
+	menu.AddAction(GetIEditor()->GetICommandManager()->GetAction("level.isolate_visibility"), toggleSection);
 
 	int collapseSection = menu.GetNextEmptySection();
 
-	menu.CreateAction(tr("Expand all"), collapseSection);
+	auto action = menu.CreateAction(tr("Expand all"), collapseSection);
+	connect(action, &QAction::triggered, this, [&]()
+	{
+		OnExpandAllLayers();
+	});
 
-	menu.CreateAction(tr("Collapse all"), collapseSection);
+	action = menu.CreateAction(tr("Collapse all"), collapseSection);
+	connect(action, &QAction::triggered, [this]()
+	{
+		OnCollapseAllLayers();
+	});
 
 	int hideFreezeObjectsSection = menu.GetNextEmptySection();
 
 	if (AllFrozenInLayer(layer))
 	{
-		menu.CreateAction(tr("Unfreeze objects in layer"), hideFreezeObjectsSection);
+		action = menu.CreateAction(tr("Unfreeze objects in layer"), hideFreezeObjectsSection);
+		connect(action, &QAction::triggered, [layer, this]()
+		{
+			OnUnfreezeAllInLayer(layer);
+		});
 	}
 	else
 	{
-		menu.CreateAction(tr("Freeze objects in layer"), hideFreezeObjectsSection);
+		action = menu.CreateAction(tr("Freeze objects in layer"), hideFreezeObjectsSection);
+		connect(action, &QAction::triggered, [layer, this]()
+		{
+			OnFreezeAllInLayer(layer);
+		});
 	}
 
 	if (AllHiddenInLayer(layer))
 	{
-		menu.CreateAction(tr("Unhide objects in layer"), hideFreezeObjectsSection);
+		action = menu.CreateAction(tr("Unhide objects in layer"), hideFreezeObjectsSection);
+		connect(action, &QAction::triggered, [layer, this]()
+		{
+			OnUnhideAllInLayer(layer);
+		});
 	}
 	else
 	{
-		menu.CreateAction(tr("Hide objects in layer"), hideFreezeObjectsSection);
+		action = menu.CreateAction(tr("Hide objects in layer"), hideFreezeObjectsSection);
+		connect(action, &QAction::triggered, [layer, this]()
+		{
+			OnHideAllInLayer(layer);
+		});
 	}
 
 	int hideFreezeSection = menu.GetNextEmptySection();
 
-	auto action = menu.CreateAction(tr("Visible"), hideFreezeSection);
+	action = menu.CreateAction(tr("Visible"), hideFreezeSection);
 	action->setCheckable(true);
 	action->setChecked(layer->IsVisible(false));
 	connect(action, &QAction::toggled, [layer](bool bChecked)
