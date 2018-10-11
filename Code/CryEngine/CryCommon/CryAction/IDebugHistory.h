@@ -12,6 +12,8 @@
 *************************************************************************/
 
 #pragma once
+#include <CryMath/Cry_Math.h>
+#include <CryMath/Cry_Color.h>
 
 struct IDebugHistory
 {

@@ -1,7 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include <StdAfx.h>
-#include <CryThreading/IJobManager_JobDelegator.h>
+#include <CryThreading/IJobManager.h>
+#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
 
 #include "StreamAsyncFileRequest.h"
 

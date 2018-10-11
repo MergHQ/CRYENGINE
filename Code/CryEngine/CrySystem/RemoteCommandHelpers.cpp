@@ -10,6 +10,8 @@
 *************************************************************************/
 #include "StdAfx.h"
 #include <CryNetwork/IServiceNetwork.h>
+#include <CryCore/CryEndian.h>
+#include <CrySystem/ISystem.h>
 #include "RemoteCommandHelpers.h"
 
 //-----------------------------------------------------------------------------
@@ -249,7 +251,7 @@ void CDataWriteStreamBuffer::CopyToBuffer(void* pData) const
 	// Copy data from default (preallocated) partition
 	{
 		const uint32 partitionSize = sizeof(m_defaultPartition);
-		const uint32 dataToCopy = min<uint32>(partitionSize, dataLeft);
+		const uint32 dataToCopy = std::min(partitionSize, dataLeft);
 		memcpy(pWritePtr, &m_defaultPartition[0], dataToCopy);
 
 		// advance
@@ -262,7 +264,7 @@ void CDataWriteStreamBuffer::CopyToBuffer(void* pData) const
 	{
 		// get size of data to copy
 		const uint32 partitionSize = m_partitionSizes[i];
-		const uint32 dataToCopy = min<uint32>(partitionSize, dataLeft);
+		const uint32 dataToCopy = std::min(partitionSize, dataLeft);
 		memcpy(pWritePtr, m_pPartitions[i], dataToCopy);
 
 		// advance

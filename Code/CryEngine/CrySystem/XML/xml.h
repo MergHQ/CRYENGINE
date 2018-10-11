@@ -13,6 +13,7 @@
 #define __XML_HEADER__
 
 #include <algorithm>
+#include <stack>
 #include <CryMemory/PoolAllocator.h>
 
 #include <CrySystem/XML/IXml.h>

@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <stdio.h>
 #include <CrySystem/File/ICryPak.h>
+#include <CryString/UnicodeFunctions.h>
 
 /////////////////////////////////////////////////////////////////////
 // String pool implementation (from expat).

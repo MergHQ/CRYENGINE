@@ -10,6 +10,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include <StdAfx.h>
+#include <CryMath/Cry_Math.h>
 #include "MiniGUI.h"
 #include "DrawContext.h"
 

@@ -18,7 +18,9 @@
 #if CRY_PLATFORM_WINDOWS && !defined(_RELEASE)
 
 #include <CrySystem/ISystem.h>
+#include <CrySystem/IConsole.h>
 #include <CryCore/Platform/CryWindows.h>
+#include <CryString/CryPath.h>
 
 namespace {
 bool FileExists(const char* szFileName)

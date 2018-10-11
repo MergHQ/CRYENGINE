@@ -5,6 +5,7 @@
 #if CRY_PLATFORM_WINDOWS
 
 class CHTTPDownloader;
+struct ISystem;
 
 class CDownloadManager
 {

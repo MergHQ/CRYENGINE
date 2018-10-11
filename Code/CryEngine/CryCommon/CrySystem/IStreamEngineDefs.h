@@ -2,6 +2,7 @@
 
 #ifndef ISTREAMENGINEDEFS_H
 #define ISTREAMENGINEDEFS_H
+#include <CryCore/smartptr.h>
 
 #if defined(ENABLE_PROFILING_CODE)
 	#define STREAMENGINE_ENABLE_LISTENER

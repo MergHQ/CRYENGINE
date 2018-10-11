@@ -20,6 +20,7 @@
 #include <CryNetwork/CrySocks.h>
 
 class CRemoteCommandManager;
+struct ICVar;
 
 // Remote command client implementation
 class CRemoteCommandClient : public IRemoteCommandClient, public IThread

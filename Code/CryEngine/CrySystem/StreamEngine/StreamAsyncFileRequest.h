@@ -16,6 +16,7 @@
 #include <CrySystem/IStreamEngineDefs.h>
 #include <CrySystem/TimeValue.h>
 #include <CryCore/Platform/CryWindows.h>
+#include <CryThreading/IJobManager.h>
 
 class CStreamEngine;
 class CAsyncIOFileRequest;

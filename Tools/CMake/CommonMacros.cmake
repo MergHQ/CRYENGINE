@@ -35,17 +35,13 @@ macro(set_libpath_flag)
 endmacro()
 
 function(USE_MSVC_PRECOMPILED_HEADER TargetProject PrecompiledHeader PrecompiledSource)
-  if(NOT ${CMAKE_GENERATOR} MATCHES "Visual Studio")
-	# Now only support precompiled headers for the Visual Studio projects
-	return()
-  endif()
+	if(NOT ${CMAKE_GENERATOR} MATCHES "Visual Studio")
+		# Now only support precompiled headers for the Visual Studio projects
+		return()
+	endif()
 
-	if (OPTION_UNITY_BUILD AND UBERFILES AND UNITY_${TargetProject})
-	return()
-  endif()
-  
-  if (OPTION_PCH AND MSVC)
-		#message("Enable PCH for ${TargetProject}")
+	if (OPTION_PCH AND MSVC)
+		message("Enable PCH for ${TargetProject}")
 		if (WINDOWS OR DURANGO)
 			if(${CMAKE_GENERATOR} MATCHES "Visual Studio")
 				# Inside Visual Studio
@@ -54,6 +50,8 @@ function(USE_MSVC_PRECOMPILED_HEADER TargetProject PrecompiledHeader Precompiled
 				get_filename_component(PCH_NAME "${PrecompiledSource}" NAME_WE)
 				set(PCH_FILE "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${TargetProject}.dir/${PCH_NAME}.pch")
 			endif()
+
+			target_compile_options(${TargetProject} PRIVATE "-DUSE_PCH")
 
 			#set_target_properties(${TargetProject} PROPERTIES COMPILE_FLAGS "/Yu\"${PrecompiledHeader}\" /Fp\"${PCH_FILE}\"")
 			set_source_files_properties("${PrecompiledSource}" PROPERTIES COMPILE_FLAGS " /Yc\"${PrecompiledHeader}\" /Fp\"${PCH_FILE}\" ")
@@ -72,6 +70,16 @@ function(USE_MSVC_PRECOMPILED_HEADER TargetProject PrecompiledHeader Precompiled
 		if (ORBIS)
 			#set_target_properties(${TargetProject} PROPERTIES COMPILE_FLAGS "/Yu\"${PrecompiledHeader}\"")
 			#set_source_files_properties(${PrecompiledSource} PROPERTIES COMPILE_FLAGS "/Yc\"${PrecompiledHeader}\"")
+		endif()
+	endif()
+
+	get_target_property(HAS_AUTOMOC ${TargetProject} AUTOMOC)
+	if (HAS_AUTOMOC STREQUAL "TRUE")
+		set (MOC_COMPILATION "${CMAKE_CURRENT_BINARY_DIR}/${TargetProject}_autogen/mocs_compilation.cpp")
+		# Regardless of PCH, stdafx.h needs to be includeded to ensure platform definitions are visible
+		set_property(SOURCE "${MOC_COMPILATION}" APPEND_STRING PROPERTY COMPILE_FLAGS " /FI\"${PrecompiledHeader}\"")
+		if (OPTION_PCH)
+			set_property(SOURCE "${MOC_COMPILATION}" APPEND_STRING PROPERTY COMPILE_FLAGS " /Yu\"${PrecompiledHeader}\" /Fp\"${PCH_FILE}\" -DUSE_PCH")
 		endif()
 	endif()
 endfunction()
@@ -558,7 +566,10 @@ endmacro()
 
 macro(apply_compile_settings)
 	if (MODULE_PCH)
-		USE_MSVC_PRECOMPILED_HEADER( ${THIS_PROJECT} ${MODULE_PCH_H} ${MODULE_PCH} )
+		#CryQt defines incompatible DLLExport in stdafx, temporarily disable PCH for CryQt now
+		if (NOT "${THIS_PROJECT}" STREQUAL "CryQt")
+			USE_MSVC_PRECOMPILED_HEADER( ${THIS_PROJECT} ${MODULE_PCH_H} ${MODULE_PCH} )
+		endif()
 		set_property(TARGET ${THIS_PROJECT} APPEND PROPERTY AUTOMOC_MOC_OPTIONS -b${MODULE_PCH_H})
 	endif()
 	if (MODULE_OUTDIR)

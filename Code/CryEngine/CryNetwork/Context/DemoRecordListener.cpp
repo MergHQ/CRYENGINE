@@ -8,6 +8,7 @@
 #include "DemoRecordListener.h"
 #include "NetContext.h"
 #include <CrySystem/ITimer.h>
+#include <CrySystem/CryVersion.h>
 #include "Streams/CompressingStream.h"
 #include "DemoDefinitions.h"
 #include "Context/ServerContextView.h"

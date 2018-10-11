@@ -14,8 +14,10 @@
 
 #include <CrySystem/ISystem.h>
 #include <CrySystem/IConsole.h>
+#include <CrySystem/File/ICryPak.h>
 
 #include <CryCore/Platform/CryLibrary.h>
+#include <CrySerialization/IArchiveHost.h>
 
 #if CRY_PLATFORM_WINDOWS
 	#include <shellapi.h> // requires <windows.h>

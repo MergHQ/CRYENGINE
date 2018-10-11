@@ -12,6 +12,7 @@
 #include <CryCore/Platform/CryWindows.h>
 #include <WinSock2.h>
 #include <ws2tcpip.h>
+#include <CrySystem/ISystem.h>
 
 #define CRY_INVALID_SOCKET INVALID_SOCKET
 #define CRY_SOCKET_ERROR   SOCKET_ERROR

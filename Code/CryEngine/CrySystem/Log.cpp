@@ -1424,6 +1424,17 @@ int CLog::GetVerbosityLevel() const
 	return 0;
 }
 
+void CLog::GetMemoryUsage(ICrySizer* pSizer) const
+{
+	pSizer->AddObject(this, sizeof(*this));
+	pSizer->AddObject(m_pLogVerbosity);
+	pSizer->AddObject(m_pLogWriteToFile);
+	pSizer->AddObject(m_pLogWriteToFileVerbosity);
+	pSizer->AddObject(m_pLogVerbosityOverridesWriteToFile);
+	pSizer->AddObject(m_pLogSpamDelay);
+	pSizer->AddObject(m_threadSafeMsgQueue);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // Checks the verbosity of the message and returns NULL if the message must NOT be
 // logged, or the pointer to the part of the message that should be logged

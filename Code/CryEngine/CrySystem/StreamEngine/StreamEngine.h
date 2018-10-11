@@ -15,6 +15,7 @@
 #include <CrySystem/IStreamEngine.h>
 #include <CrySystem/ISystem.h>
 #include <CrySystem/TimeValue.h>
+#include <CryInput/IInput.h>
 
 #include "StreamIOThread.h"
 #include "StreamReadStream.h"

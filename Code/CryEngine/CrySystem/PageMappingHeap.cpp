@@ -50,7 +50,7 @@ struct FindLargest
 	}
 	bool operator()(size_t, size_t length)
 	{
-		largest = max(largest, length);
+		largest = std::max(largest, length);
 		return true;
 	}
 

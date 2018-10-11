@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "Script/ScriptFile.h"
 
+#include <CrySystem/CryVersion.h>
 #include <CrySerialization/BlackBox.h>
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySerialization/STL.h>

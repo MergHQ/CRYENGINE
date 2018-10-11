@@ -18,6 +18,8 @@
 #include "JobStructs.h"
 
 #include <map>
+#include <CryInput/IInput.h>
+#include <CryMath/Cry_Color.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace JobManager

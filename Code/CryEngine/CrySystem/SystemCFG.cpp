@@ -22,6 +22,7 @@
 	#include <CrySystem/ILog.h>
 
 #endif
+#include "CmdLine.h"
 
 #ifndef EXE_VERSION_INFO_0
 	#define EXE_VERSION_INFO_0 1

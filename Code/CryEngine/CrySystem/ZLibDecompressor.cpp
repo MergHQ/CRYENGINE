@@ -12,6 +12,7 @@
 
 #include <zlib.h>
 #include "ZLibDecompressor.h"
+#include <CryRenderer/IRenderer.h>
 
 class CZLibInflateStream : public IZLibInflateStream
 {

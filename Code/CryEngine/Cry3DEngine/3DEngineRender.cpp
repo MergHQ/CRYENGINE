@@ -41,8 +41,12 @@
 #include "ClipVolumeManager.h"
 #include <Cry3DEngine/ITimeOfDay.h>
 #include <CrySystem/Scaleform/IScaleformHelper.h>
+#include <CrySystem/CryVersion.h>
 #include <CryGame/IGameFramework.h>
 #include <CryAnimation/ICryAnimation.h>
+#ifdef ENABLE_LW_PROFILERS
+	#include <CryAnimation/IAttachment.h>
+#endif
 #include <CryAISystem/IAISystem.h>
 #include <CryCore/Platform/IPlatformOS.h>
 #include <CryGame/IGame.h>

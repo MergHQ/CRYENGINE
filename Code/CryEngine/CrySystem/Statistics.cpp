@@ -15,7 +15,7 @@
 #include "System.h"
 #include <CryMemory/CryMemoryManager.h>
 #include <CryScriptSystem/IScriptSystem.h>
-#include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>    // CResourceCompilerHelper
+#include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>   
 #include "LoadingProfiler.h"
 #include "PhysRenderer.h"
 #include <CrySystem/File/IResourceManager.h>
@@ -24,8 +24,9 @@
 #include <CryAction/ITimeDemoRecorder.h>
 
 // Access to some game info.
-#include <CryGame/IGameFramework.h>    // IGameFramework
-#include <../CryAction/ILevelSystem.h> // ILevelSystemListener
+#include <CryGame/IGameFramework.h>   
+#include <../CryAction/ILevelSystem.h>
+#include <CryEntitySystem/IEntitySystem.h>
 
 const std::vector<string>& GetModuleNames()
 {

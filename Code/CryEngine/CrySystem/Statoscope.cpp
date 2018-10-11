@@ -16,8 +16,11 @@
 #include "System.h"
 #include "ThreadProfiler.h"
 #include <CryThreading/IThreadManager.h>
+#include <CryThreading/IJobManager.h>
 #include <CrySystem/Scaleform/IScaleformHelper.h>
+#include <CryAISystem/IAISystem.h>
 #include <CryParticleSystem/IParticlesPfx2.h>
+#include <CryPhysics/IPhysics.h>
 
 #include "StatoscopeStreamingIntervalGroup.h"
 #include "StatoscopeTextureStreamingIntervalGroup.h"

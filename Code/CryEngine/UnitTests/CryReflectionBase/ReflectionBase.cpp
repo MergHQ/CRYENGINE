@@ -1,4 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+#include <CryCore/Platform/platform.h>
+#include <CryReflection/Framework.h>
 #include "ReflectionBase.h"
 
 // Fundamental Types

@@ -46,6 +46,8 @@ struct ICodeCheckpointMgr
 	// </interfuscator:shuffle>
 };
 
+#include <CrySystem/ISystem.h>
+
 //! Inline helper class used for registration and update of code checkpoint state.
 class CCodeCheckpoint
 {

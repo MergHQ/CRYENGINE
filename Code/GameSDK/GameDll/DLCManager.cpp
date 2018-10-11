@@ -29,6 +29,7 @@ History:
 #include "DLCManager.h"
 #include "PlaylistManager.h"
 #include <CryString/UnicodeFunctions.h>
+#include <CrySystem/CryVersion.h>
 
 static AUTOENUM_BUILDNAMEARRAY(s_standardLevelNames, NOTDLCLevelList);
 static AUTOENUM_BUILDNAMEARRAY(s_standardGameModes, NOTDLCGameModeList);

@@ -42,6 +42,8 @@ struct IRenderMesh;
 struct IRenderNode;
 struct CRenderChunk;
 class CCamera;
+class ITexture;
+struct ICVar;
 
 #include <CryCore/Containers/VectorMap.h>
 

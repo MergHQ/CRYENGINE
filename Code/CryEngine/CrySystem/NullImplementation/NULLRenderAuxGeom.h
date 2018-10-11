@@ -4,6 +4,7 @@
 #define NULL_RENDER_AUX_GEOM_H
 
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <CryMath/Cry_Camera.h>
 
 class CNULLRenderer;
 class ICrySizer;

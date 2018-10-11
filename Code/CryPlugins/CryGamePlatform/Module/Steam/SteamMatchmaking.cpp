@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 
+#include <CrySystem/CryVersion.h>
 #include "SteamMatchmaking.h"
 #include "SteamService.h"
 #include "SteamUserIdentifier.h"

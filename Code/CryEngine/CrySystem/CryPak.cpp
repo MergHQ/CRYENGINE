@@ -3104,6 +3104,11 @@ int CZipPseudoFile::Ungetc(int c)
 	return c;
 }
 
+void CZipPseudoFile::GetMemoryUsage(ICrySizer * pSizer) const
+{
+	pSizer->AddObject(m_pFileData);
+}
+
 CCachedFileData::CCachedFileData(class CCryPak* pPak, ZipDir::Cache* pZip, unsigned int nArchiveFlags, ZipDir::FileEntry* pFileEntry, const char* szFilename)
 {
 	m_pPak = pPak;
@@ -3256,6 +3261,12 @@ int64 CCachedFileData::ReadData(void* pBuffer, int64 nFileOffset, int64 nReadSiz
 	}
 
 	return nReadSize;
+}
+
+void CCachedFileData::GetMemoryUsage(ICrySizer * pSizer) const
+{
+	pSizer->AddObject(m_pZip);
+	pSizer->AddObject(m_pFileEntry);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -4733,4 +4744,12 @@ bool CCryPak::ForEachArchiveFolderEntry(const char* szArchivePath, const char* s
 		}
 	}
 	return true;
+}
+
+void CCryPak::PackDesc::GetMemoryUsage(ICrySizer* pSizer) const
+{
+	pSizer->AddObject(strBindRoot);
+	pSizer->AddObject(strFileName);
+	pSizer->AddObject(pArchive);
+	pSizer->AddObject(pZip);
 }

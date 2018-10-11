@@ -6,10 +6,12 @@
 ******************************************************************************/
 
 #include "StdAfx.h"
+#include <CryMath/Cry_Math.h>
 #include <zlib.h>
 #include "ZLibCompressor.h"
 #include <CryCore/TypeInfo_impl.h>
 #include <md5/md5.h>
+#include <CryRenderer/IRenderer.h>
 
 // keep these in sync with the enums in IZLibCompressor.h
 static const int k_stratMap[] = { Z_DEFAULT_STRATEGY, Z_FILTERED, Z_HUFFMAN_ONLY, Z_RLE };

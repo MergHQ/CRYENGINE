@@ -1,6 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include <CryMath/Cry_Math.h>
+#include <CryCore/CryEndian.h>
 #include "DefragAllocator.h"
 
 #ifdef CDBA_MORE_DEBUG
@@ -1890,4 +1892,44 @@ void CDefragAllocator::ValidateFreeLists()
 			CDBA_ASSERT(m_chunks[chunk.freePrevIdx].freeNextIdx == idx);
 		}
 	}
+}
+
+void SDefragAllocChunk::SwapEndian()
+{
+	::SwapEndian(addrPrevIdx, true);
+	::SwapEndian(addrNextIdx, true);
+	::SwapEndian(packedPtr, true);
+	::SwapEndian(attr.ui, true);
+
+	if (attr.IsBusy())
+	{
+		::SwapEndian(pContext, true);
+	}
+	else
+	{
+		::SwapEndian(freePrevIdx, true);
+		::SwapEndian(freeNextIdx, true);
+	}
+
+#ifndef _RELEASE
+	::SwapEndian(source, true);
+#endif
+
+#ifdef CDBA_MORE_DEBUG
+	::SwapEndian(hash, true);
+#endif
+}
+
+void SDefragAllocSegment::SwapEndian()
+{
+	::SwapEndian(address, true);
+	::SwapEndian(capacity, true);
+	::SwapEndian(headSentinalChunkIdx, true);
+}
+
+void CDefragAllocator::PendingMove::SwapEndian()
+{
+	::SwapEndian(srcChunkIdx, true);
+	::SwapEndian(dstChunkIdx, true);
+	::SwapEndian(userMoveId, true);
 }

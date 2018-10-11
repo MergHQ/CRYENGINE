@@ -24,6 +24,7 @@
 #include "Network.h"
 #include <CryMemory/STLGlobalAllocator.h>
 #include <CryLobby/CommonICryMatchMaking.h>
+#include <CrySystem/CryVersion.h>
 
 static const float STATS_UPDATE_INTERVAL_NUB = 0.25f;
 static const float KESTIMEOUT = 30.0f;

@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "Metadata.h"
 #include "IConverter.h"
+#include <CrySystem/XML/IXml.h>
 
 
 namespace AssetManager

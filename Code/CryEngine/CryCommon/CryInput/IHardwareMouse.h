@@ -2,6 +2,8 @@
 
 #pragma once
 
+struct ISystemEventListener;
+
 //-----------------------------------------------------------------------------------------------------
 /*
    When double-click, the sequence is the following:

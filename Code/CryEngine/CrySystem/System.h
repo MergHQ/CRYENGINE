@@ -3,28 +3,17 @@
 #pragma once
 
 #include <CrySystem/ISystem.h>
-#include <CryRenderer/IRenderer.h>
-#include <CryPhysics/IPhysics.h>
-#include <CrySystem/IWindowMessageHandler.h>
 
-#include <CryMath/Random.h>
-#include <CryCore/Platform/CryLibrary.h>
-
-#include "Timer.h"
-#include <CrySystem/CryVersion.h>
-#include "CmdLine.h"
-#include <CryString/CryName.h>
-#include <CryMath/Cry_Camera.h>
-
-#include "FrameProfileSystem.h"
-#include "MTSafeAllocator.h"
-#include "CPUDetect.h"
+#include "MemoryFragmentationProfiler.h"
 #include "PakVars.h"
-#include "MemoryFragmentationProfiler.h"  // CMemoryFragmentationProfiler
-
-#include "ExtensionSystem/CryPluginManager.h"
-#include "UserAnalytics/UserAnalyticsSystem.h"
-
+#include "Timer.h"
+#include "FrameProfileSystem.h"
+#include <CrySystem/IWindowMessageHandler.h>
+#include <CrySystem/CryVersion.h>
+#include <CryMath/Cry_Camera.h>
+#include <CryString/CryName.h>
+#include <CryMath/LCGRandom.h>
+#include <CryRenderer/IRenderer.h>
 #include <bitset>
 
 struct IConsoleCmdArgs;
@@ -50,6 +39,14 @@ struct ICryPerfHUD;
 class CNULLRenderAuxGeom;
 class CManualFrameStepController;
 class CProjectManager;
+class CCpuFeatures;
+class CCmdLine;
+struct ICVar;
+struct IResourceCollector;
+struct IFFont;
+class CMTRand_int32;
+class CCryPluginManager;
+class CUserAnalyticsSystem;
 
 namespace minigui
 {
@@ -166,8 +163,8 @@ struct SSystemCVars
 
 	int     sys_deferAudioUpdateOptim;
 	int     sys_filesystemCaseSensitivity;
-	
-	int sys_reflection_natvis;
+
+	int     sys_reflection_natvis;
 
 	PakVars pakVars;
 
@@ -340,7 +337,7 @@ public:
 	IMonoEngineModule*           GetIMonoEngineModule() override { return m_env.pMonoRuntime; }
 	ICryFont*                    GetICryFont() override          { return m_env.pCryFont; }
 	ILog*                        GetILog() override              { return m_env.pLog; }
-	ICmdLine*                    GetICmdLine() override          { return m_pCmdLine; }
+	ICmdLine*                    GetICmdLine() override;
 	IStreamEngine*               GetStreamEngine() override;
 	IValidator*                  GetIValidator() override        { return m_pValidator; };
 	IPhysicsDebugRenderer*       GetIPhysicsDebugRenderer() override;
@@ -358,8 +355,8 @@ public:
 #ifdef CRY_TESTING
 	CryTest::ITestSystem*        GetITestSystem() override            { return m_pTestSystem.get(); }
 #endif
-	IUserAnalyticsSystem*        GetIUserAnalyticsSystem() override   { return m_pUserAnalyticsSystem; }
-	Cry::IPluginManager*         GetIPluginManager() override         { return m_pPluginManager; }
+	IUserAnalyticsSystem*        GetIUserAnalyticsSystem() override;
+	Cry::IPluginManager*         GetIPluginManager() override;
 	IProjectManager*             GetIProjectManager() override;
 
 	IResourceManager*            GetIResourceManager() override;
@@ -414,11 +411,11 @@ public:
 
 	virtual Serialization::IArchiveHost* GetArchiveHost() const override { return m_pArchiveHost; }
 
-	void                                 SetViewCamera( CCamera& Camera) override;
-	const CCamera&                       GetViewCamera() const override          { return m_ViewCamera; }
+	void                                 SetViewCamera(CCamera& Camera) override;
+	const CCamera& GetViewCamera() const override       { return m_ViewCamera; }
 
-	virtual uint32 GetCPUFlags() override               { return m_pCpu ? m_pCpu->GetFeatures() : 0; }
-	virtual int    GetLogicalCPUCount() override        { return m_pCpu ? m_pCpu->GetLogicalCPUCount() : 0; }
+	virtual uint32 GetCPUFlags() override;
+	virtual int    GetLogicalCPUCount() override;
 
 	void           IgnoreUpdates(bool bIgnore) override { m_bIgnoreUpdates = bIgnore; }
 	void           SetGCFrequency(const float fRate);
@@ -432,7 +429,7 @@ public:
 	virtual void DisplayErrorMessage(const char* acMessage, float fTime, const float* pfColor = 0, bool bHardError = true) override;
 
 	virtual void FatalError(const char* format, ...) override PRINTF_PARAMS(2, 3);
-	virtual void ReportBug(const char* format, ...) override  PRINTF_PARAMS(2, 3);
+	virtual void ReportBug(const char* format, ...) override PRINTF_PARAMS(2, 3);
 	// Validator Warning.
 	void         WarningV(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, va_list args) override;
 	void         Warning(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, ...) override;
@@ -452,9 +449,9 @@ public:
 #else
 	virtual ILoadConfigurationEntrySink* GetCVarsWhiteListConfigSink() const override { return NULL; }
 #endif // defined(CVARS_WHITELIST)
-	virtual bool IsCVarWhitelisted(const char* szName, bool silent) const override;
+	virtual bool                         IsCVarWhitelisted(const char* szName, bool silent) const override;
 
-	virtual ISystemUserCallback* GetUserCallback() const override { return m_pUserCallback; }
+	virtual ISystemUserCallback*         GetUserCallback() const override { return m_pUserCallback; }
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual void              SaveConfiguration() override;
@@ -563,7 +560,7 @@ private:
 	bool InitDynamicResponseSystem(const SSystemInitParams& startupParams);
 	bool InitLiveCreate(const SSystemInitParams& startupParams);
 	bool InitMonoBridge(const SSystemInitParams& startupParams);
-	bool InitUDR(const SSystemInitParams& startupParams);										  
+	bool InitUDR(const SSystemInitParams& startupParams);
 	void InitGameFramework(SSystemInitParams& startupParams);
 	bool OpenRenderLibrary(const SSystemInitParams& startupParams, int type);
 	bool OpenRenderLibrary(const SSystemInitParams& startupParams, const char* t_rend);
@@ -1005,24 +1002,24 @@ public:
 	void UpdateUpdateTimes();
 
 protected: // -------------------------------------------------------------
-	ILoadingProgressListener*                 m_pProgressListener;
-	CCmdLine*                                 m_pCmdLine;
+	ILoadingProgressListener*             m_pProgressListener;
+	CCmdLine*                             m_pCmdLine;
 #ifdef CRY_TESTING
-	std::unique_ptr<CryTest::ITestSystem>     m_pTestSystem;
+	std::unique_ptr<CryTest::ITestSystem> m_pTestSystem;
 #endif
-	CVisRegTest*                              m_pVisRegTest;
-	CResourceManager*                         m_pResourceManager;
-	ITextModeConsole*                         m_pTextModeConsole;
-	INotificationNetwork*                     m_pNotificationNetwork;
-	CCryPluginManager*                        m_pPluginManager;
-	CUserAnalyticsSystem*                     m_pUserAnalyticsSystem;
-	CProjectManager*                          m_pProjectManager;
-	CManualFrameStepController*               m_pManualFrameStepController = nullptr;
+	CVisRegTest*                          m_pVisRegTest;
+	CResourceManager*                     m_pResourceManager;
+	ITextModeConsole*                     m_pTextModeConsole;
+	INotificationNetwork*                 m_pNotificationNetwork;
+	CCryPluginManager*                    m_pPluginManager;
+	CUserAnalyticsSystem*                 m_pUserAnalyticsSystem;
+	CProjectManager*                      m_pProjectManager;
+	CManualFrameStepController*           m_pManualFrameStepController = nullptr;
 
-	bool                                      m_hasWindowFocus = true;
+	bool   m_hasWindowFocus = true;
 
-	string                                    m_binariesDir;
-	string                                    m_currentLanguageAudio;
+	string m_binariesDir;
+	string m_currentLanguageAudio;
 
 	std::vector<std::pair<CTimeValue, float>> m_updateTimes;
 

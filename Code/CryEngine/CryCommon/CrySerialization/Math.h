@@ -20,6 +20,7 @@
 //   ar(q, "q");
 //
 #include <CrySerialization/Forward.h>
+#include <CryMath/Cry_Math.h>
 
 template<typename T>
 bool Serialize(Serialization::IArchive& ar, struct Vec2_tpl<T>& v, const char* name, const char* label);

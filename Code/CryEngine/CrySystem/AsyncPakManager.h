@@ -18,6 +18,8 @@
 #include <CrySystem/File/IResourceManager.h>
 #include <CrySystem/IStreamEngine.h>
 
+struct ICustomMemoryBlock;
+
 class CAsyncPakManager : public IStreamCallback
 {
 protected:

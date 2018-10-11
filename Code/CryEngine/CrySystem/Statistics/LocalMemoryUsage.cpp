@@ -36,6 +36,7 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryAnimation/ICryAnimation.h>
+#include <CryAnimation/IAttachment.h>
 
 //#define MAX_LODS 6										// I want an engine-wide const :-(
 #define MAX_SLOTS  100                // GetSlotCount() is not working :-(

@@ -19,6 +19,7 @@
 #include <CryExtension/CryCreateClassInstance.h>
 #include <CryMono/IMonoRuntime.h>
 #include <CryGame/IGameStartup.h>
+#include <CryFont/IFont.h>
 
 #if (CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID) && !defined(DEDICATED_SERVER)
 	#include <dlfcn.h>
@@ -34,21 +35,22 @@
 	#include <algorithm>
 #endif
 
-#include <CryNetwork/INetwork.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryAISystem/IAISystem.h>
-#include <CryRenderer/IRenderer.h>
-#include <CrySystem/File/ICryPak.h>
-#include <CryMovie/IMovieSystem.h>
+#include <CryAnimation/ICryAnimation.h>
+#include <CryAudio/IAudioSystem.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryInput/IInput.h>
-#include <CrySystem/ILog.h>
-#include <CryAudio/IAudioSystem.h>
-#include <CryAnimation/ICryAnimation.h>
-#include <CryScriptSystem/IScriptSystem.h>
-#include <CrySystem/ICmdLine.h>
-#include <CrySystem/IProcess.h>
+#include <CryMovie/IMovieSystem.h>
+#include <CryNetwork/INetwork.h>
+#include <CryPhysics/IPhysics.h>
 #include <CryReflection/Framework.h>
+#include <CryRenderer/IRenderer.h>
+#include <CryScriptSystem/IScriptSystem.h>
+#include <CrySystem/File/ICryPak.h>
+#include <CrySystem/ICmdLine.h>
+#include <CrySystem/ILog.h>
+#include <CrySystem/IProcess.h>
 #include <CryUDR/InterfaceIncludes.h>
 
 #include "CryPak.h"
@@ -128,6 +130,9 @@
 #endif
 
 #include "WindowsConsole.h"
+#include "CmdLine.h"
+#include "CPUDetect.h"
+#include "UserAnalytics/UserAnalyticsSystem.h"
 
 #if CRY_PLATFORM_WINDOWS
 extern LONG WINAPI CryEngineExceptionFilterWER(struct _EXCEPTION_POINTERS* pExceptionPointers);

@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "RendererCVars.h"
 #include "Renderer.h"
+#include <CrySystem/CryVersion.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/ITimeOfDay.h>
 #include "GraphicsPipeline/DebugRenderTargets.h"

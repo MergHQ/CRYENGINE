@@ -11,6 +11,7 @@
 #include <CrySystem/TimeValue.h>
 #include <PoolObject.h>
 #include <CryString/HashedString.h>
+#include <CryMemory/IMemory.h>
 
 namespace CryAudio
 {

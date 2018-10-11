@@ -2,6 +2,7 @@
 #pragma once
 
 #include "IEditorClassFactory.h"
+#include <CryCore/smartptr.h>
 
 // Source control status of item.
 enum ESccFileAttributes

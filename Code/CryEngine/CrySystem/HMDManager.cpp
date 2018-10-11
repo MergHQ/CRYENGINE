@@ -7,6 +7,8 @@
 #include <CryRenderer/IStereoRenderer.h>
 
 #include <CrySystem/ICryPluginManager.h>
+#include <CrySystem/ISystem.h>
+#include <CryRenderer/IRenderer.h>
 
 // Note:
 //  We support a single HMD device at a time.

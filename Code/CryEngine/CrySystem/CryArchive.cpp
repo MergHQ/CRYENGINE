@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "CryPak.h"
 #include "CryArchive.h"
+#include <CryMemory/CrySizer.h>
 
 //////////////////////////////////////////////////////////////////////////
 #ifndef OPTIMIZED_READONLY_ZIP_ENTRY
@@ -91,6 +92,11 @@ int CryArchiveRW::RemoveAll()
 
 }
 
+void CryArchiveRW::GetMemoryUsage(ICrySizer* pSizer) const
+{
+	pSizer->AddObject(this, sizeof(*this));
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Adds a new file to the zip or update an existing one
 // adds a directory (creates several nested directories if needed)
@@ -137,3 +143,8 @@ int CryArchiveRW::UpdateFileContinuousSegment(const char* szRelativePath, unsign
 }
 
 #endif //#ifndef OPTIMIZED_READONLY_ZIP_ENTRY
+
+void CryArchive::GetMemoryUsage(ICrySizer* pSizer) const
+{
+	pSizer->AddObject(this, sizeof(*this));
+}

@@ -16,6 +16,7 @@
 	#include <CrySystem/IStreamEngineDefs.h>
 
 struct ICryPak;
+struct IStreamEngine;
 
 class GFileCryPak : public GFile
 {

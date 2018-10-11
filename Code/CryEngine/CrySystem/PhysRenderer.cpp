@@ -5,8 +5,10 @@
 #include "PhysRenderer.h"
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryEntitySystem/IEntity.h>
+#include <CryEntitySystem/IEntitySystem.h>
 #include <Cry3DEngine/IRenderNode.h>
 #include <Cry3DEngine/IStatObj.h>
+#include <CryPhysics/IPhysics.h>
 
 #pragma warning(push)
 #pragma warning(disable: 4244)

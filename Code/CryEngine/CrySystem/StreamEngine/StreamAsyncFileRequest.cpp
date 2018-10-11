@@ -16,6 +16,7 @@
 
 #include "StreamEngine.h"
 #include <CrySystem/Profilers/IDiskProfiler.h>
+#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
 #include "../System.h"
 #include "../CryPak.h"
 

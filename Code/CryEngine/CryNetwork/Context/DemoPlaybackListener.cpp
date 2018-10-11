@@ -12,6 +12,7 @@
 	#include "NetContext.h"
 	#include "Protocol/NetChannel.h"
 	#include <CrySystem/ITimer.h>
+	#include <CrySystem/CryVersion.h>
 	#include <CryNetwork/SimpleSerialize.h>
 	#include <CryEntitySystem/IEntitySystem.h>
 	#include <CryString/StringUtils.h>

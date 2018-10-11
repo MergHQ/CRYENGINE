@@ -4,6 +4,7 @@
 #define STATOSCOPETEXTURESTREAMINGINTERVALGROUP_H
 
 #include "Statoscope.h"
+#include <CryRenderer/IRenderer.h>
 
 #if ENABLE_STATOSCOPE
 

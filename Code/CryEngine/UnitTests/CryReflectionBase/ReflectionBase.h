@@ -1,6 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+#include <CryCore/Assert/CryAssert.h>
+#include <CrySerialization/Forward.h>
+#include <CryString/CryString.h>
+#include <CryCore/BaseTypes.h>
 
-#include <CryReflection/Framework.h>
+namespace Cry { namespace Reflection { struct ITypeDesc; } }
 
 class CVault
 {

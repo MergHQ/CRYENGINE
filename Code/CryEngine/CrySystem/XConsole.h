@@ -11,6 +11,7 @@
 //forward declaration
 struct IIpnut;
 struct INetwork;
+struct IFFont;
 class CSystem;
 
 #define MAX_HISTORY_ENTRIES 50

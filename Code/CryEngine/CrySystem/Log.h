@@ -6,6 +6,11 @@
 #include <CryThreading/CryAtomics.h>
 #include <CryThreading/MultiThread_Containers.h>
 
+struct ISystem;
+struct ICVar;
+struct IConsole;
+struct IConsoleCmdArgs;
+
 //////////////////////////////////////////////////////////////////////
 
 #define MAX_FILENAME_SIZE 256
@@ -166,16 +171,7 @@ private: // -------------------------------------------------------------------
 
 public: // -------------------------------------------------------------------
 
-	void GetMemoryUsage(ICrySizer* pSizer) const
-	{
-		pSizer->AddObject(this, sizeof(*this));
-		pSizer->AddObject(m_pLogVerbosity);
-		pSizer->AddObject(m_pLogWriteToFile);
-		pSizer->AddObject(m_pLogWriteToFileVerbosity);
-		pSizer->AddObject(m_pLogVerbosityOverridesWriteToFile);
-		pSizer->AddObject(m_pLogSpamDelay);
-		pSizer->AddObject(m_threadSafeMsgQueue);
-	}
+	void GetMemoryUsage(ICrySizer* pSizer) const;
 	// checks the verbosity of the message and returns NULL if the message must NOT be
 	// logged, or the pointer to the part of the message that should be logged
 	const char* CheckAgainstVerbosity(const char* pText, bool& logtofile, bool& logtoconsole, const uint8 DefaultVerbosity = 2);

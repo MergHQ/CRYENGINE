@@ -48,6 +48,8 @@
 #include <CrySystem/Scaleform/IScaleformHelper.h>
 #include <CrySystem/VR/IHMDManager.h>
 
+class CMTSafeHeap;
+
 extern CMTSafeHeap* g_pPakHeap;
 
 extern int CryMemoryGetAllocatedSize();

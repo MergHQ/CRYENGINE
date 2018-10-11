@@ -1,6 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include <CrySystem/ISystem.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include "ImeManager.h"
 
 #define IME_CVAR_NAME "sys_ime"

@@ -20,6 +20,7 @@
 #include <CryCore/Platform/IPlatformOS.h>
 #include <CryString/StringUtils.h>
 #include <CrySystem/Scaleform/IScaleformHelper.h>
+#include <CryFont/IFont.h>
 
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 	#include <unistd.h>

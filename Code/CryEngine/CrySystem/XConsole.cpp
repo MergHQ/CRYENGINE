@@ -2,27 +2,15 @@
 
 #include "StdAfx.h"
 #include "XConsole.h"
-#include "XConsoleVariable.h"
 #include "System.h"
 #include "ConsoleBatchFile.h"
-#include <CryString/StringUtils.h>
-#include <CryString/UnicodeFunctions.h>
-#include <CryString/UnicodeIterator.h>
-
-#include <CryInput/IInput.h>
-#include <CrySystem/ITimer.h>
-#include <CryScriptSystem/IScriptSystem.h>
-#include <CryInput/IInput.h>
-#include <CryRenderer/IRenderer.h>
-#include <CryNetwork/INetwork.h>     // EvenBalance - M.Quinn
-#include <CrySystem/ISystem.h>
-#include <CrySystem/ILog.h>
-#include <CrySystem/IProcess.h>
+#include "ConsoleHelpGen.h"
+#include <CryFont/IFont.h>
 #include <CryInput/IHardwareMouse.h>
+#include <CryNetwork/INetwork.h>     // EvenBalance - M.Quinn
 #include <CryNetwork/IRemoteCommand.h>
 #include <CryRenderer/IRenderAuxGeom.h>
-#include <CryString/StringUtils.h>
-#include "ConsoleHelpGen.h"     // CConsoleHelpGen
+#include "XConsoleVariable.h"
 
 #define BACKGROUND_SERVER_CHAR '/'
 

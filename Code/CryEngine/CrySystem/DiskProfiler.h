@@ -19,6 +19,7 @@
 #include <CrySystem/Profilers/IDiskProfiler.h>
 #include <CrySystem/IStreamEngine.h>
 #include <CryMath/Cry_Color.h>
+#include <CryMemory/STLGlobalAllocator.h>
 
 class CDiskProfilerWindowsSpecific;
 

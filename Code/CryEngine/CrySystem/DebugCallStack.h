@@ -14,6 +14,7 @@
 #ifndef __DebugCallStack_h__
 #define __DebugCallStack_h__
 
+#include <CrySystem/IValidator.h>
 #include "IDebugCallStack.h"
 
 #if CRY_PLATFORM_WINDOWS
@@ -22,6 +23,9 @@
 const int MAX_DEBUG_STACK_ENTRIES_FILE_DUMP = 12;
 
 struct ISystem;
+struct IConsoleCmdArgs;
+struct ICVar;
+struct SFileVersion;
 
 //!============================================================================
 //!

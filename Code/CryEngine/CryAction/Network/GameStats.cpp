@@ -24,6 +24,7 @@
 #include "GameStatsConfig.h"
 #include "CryActionCVars.h"
 #include <CryGame/IGameStatistics.h>
+#include <CrySystem/CryVersion.h>
 
 const float REPORT_INTERVAL = 1.0f;//each second send state to network engine
 const float UPDATE_INTERVAL = 20.0f;

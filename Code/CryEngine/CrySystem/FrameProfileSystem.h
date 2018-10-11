@@ -13,10 +13,12 @@
 
 #pragma once
 
+#include <CryThreading/IJobManager.h>
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler.h>
 #include <CryInput/IInput.h>
 
 #ifdef USE_FRAME_PROFILER
+	#include <CryMath/Cry_Color.h>
 
 extern ColorF profile_colors[];
 
@@ -342,10 +344,10 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Histograms.
 	//////////////////////////////////////////////////////////////////////////
-	bool  m_bEnableHistograms;
-	int   m_histogramsCurrPos;
-	int   m_histogramsMaxPos;
-	int   m_histogramsHeight;
+	bool m_bEnableHistograms;
+	int  m_histogramsCurrPos;
+	int  m_histogramsMaxPos;
+	int  m_histogramsHeight;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Selection/Render.
@@ -465,9 +467,9 @@ public:
 	bool         IsSubSystemFiltered(EProfiledSubsystem subsystem) const { return m_bSubsystemFilterEnabled && m_subsystemFilter != subsystem; }
 	bool         IsSubSystemFiltered(CFrameProfiler* pProfiler) const    { return IsSubSystemFiltered((EProfiledSubsystem)pProfiler->m_subsystem); }
 	void         EnableHistograms(bool bEnableHistograms);
-	bool         IsEnabled() const   { return m_bEnabled; }
-	virtual bool IsVisible() const   { return m_bDisplay; }
-	bool         IsProfiling() const { return m_bCollect; }
+	bool         IsEnabled() const                                       { return m_bEnabled; }
+	virtual bool IsVisible() const                                       { return m_bDisplay; }
+	bool         IsProfiling() const                                     { return m_bCollect; }
 	void         SetDisplayQuantity(EDisplayQuantity quantity);
 	void         AddPeak(SPeakRecord& peak);
 
@@ -569,7 +571,7 @@ struct CFrameProfileSystem : public IFrameProfileSystem
 	virtual void                         SetAdditionalSubsystems(bool bEnabled)     {}
 	virtual const float                  GetOverBudgetRatio(int modulenumber) const { return 0.0f; }
 
-	void                                 Init()                   {}
+	void                                 Init()                                     {}
 	void                                 Done()                                     {}
 	void                                 Render()                                   {}
 

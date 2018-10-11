@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 
+#include <CryMath/Cry_Math.h>
 #include "FlashPlayerInstance.h"
 #include "../System.h"
 #include <CrySystem/IConsole.h>

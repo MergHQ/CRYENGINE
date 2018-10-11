@@ -9,6 +9,7 @@
 #include <CryCore/Containers/VectorMap.h>
 #include <CryCore/StlUtils.h>
 #include <CrySystem/TimeValue.h>
+#include <CrySystem/XML/IXml.h>
 
 template<class T, class U>
 class InterpolatedValue_tpl;

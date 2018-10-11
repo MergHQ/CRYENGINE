@@ -13,6 +13,7 @@
 #if ENABLE_STATOSCOPE
 
 struct STexturePoolAllocation;
+class CFrameProfiler;
 
 struct IStatoscopeFrameRecord
 {

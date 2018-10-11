@@ -12,6 +12,7 @@
 #include <CryThreading/IJobManager.h>
 #include "CryPak.h"
 #include <CryThreading/IJobManager_JobDelegator.h>
+#include <CryMath/Random.h>
 
 #ifdef SUPPORT_UNBUFFERED_IO
 	#include <shlwapi.h>

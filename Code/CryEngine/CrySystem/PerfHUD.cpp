@@ -12,7 +12,7 @@
 #include <StdAfx.h>
 
 #ifdef USE_PERFHUD
-
+	#include <CryMath/Cry_Math.h>
 	#include "PerfHUD.h"
 	#include "MiniGUI/MiniInfoBox.h"
 	#include "MiniGUI/MiniMenu.h"

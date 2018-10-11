@@ -4,6 +4,7 @@
 
 #ifdef INCLUDE_SCALEFORM_SDK
 
+#include <CryMath/Cry_Math.h>
 #include <CrySystem/Scaleform/ConfigScaleform.h>
 	#include "SharedStates.h"
 
