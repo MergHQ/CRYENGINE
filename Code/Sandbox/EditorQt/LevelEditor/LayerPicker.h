@@ -19,10 +19,11 @@ protected:
 	virtual QSize sizeHint() const override { return QSize(400, 500); }
 
 private:
-
+	void OnSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
 	void OnOk();
 	void SelectLayerIndex(const QModelIndex& index);
 
 	CObjectLayer*      m_selectedLayer;
 	QAdvancedTreeView* m_treeView;
+	QPushButton*       m_pOkButton;
 };

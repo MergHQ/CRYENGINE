@@ -6,6 +6,7 @@
 #include "LevelModelsManager.h"
 #include "Objects/ObjectLayer.h"
 #include "Objects/ObjectLayerManager.h"
+#include "Objects/SelectionGroup.h"
 
 #include "ProxyModels/DeepFilterProxyModel.h"
 #include "QAdvancedTreeView.h"
@@ -35,7 +36,44 @@ dll_string ShowDialog(const SResourceSelectorContext& context, const char* szPre
 	return szPreviousValue;
 }
 
+void SwitchLayer()
+{
+	const CSelectionGroup* pSelection = GetIEditorImpl()->GetSelection();
+	auto selectionCount = pSelection->GetCount();
+
+	if (selectionCount < 1)
+	{
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Please select an object to switch layer");
+		return;
+	}
+
+	// Set selected layer in picker to last selected object's layer
+	CBaseObject* pObject = pSelection->GetObject(selectionCount - 1);
+	CLayerPicker layerPicker;
+	layerPicker.SetSelectedLayer(static_cast<CObjectLayer*>(pObject->GetLayer()));
+
+	if (layerPicker.exec() == QDialog::Accepted)
+	{
+		CObjectLayer* pLayer = layerPicker.GetSelectedLayer();
+		if (!pLayer)
+			return;
+
+		CUndo moveObjects(string().Format("Move Objects to Layer %s", pLayer->GetName()));
+
+		// We just care about setting the layer in the top level objects as children will inherit the parent's layer
+		pSelection->FilterParents();
+		auto filteredCount = pSelection->GetFilteredCount();
+		for (auto i = 0; i < filteredCount; ++i)
+		{
+			pSelection->GetFilteredObject(i)->SetLayer(pLayer);
+		}
+	}
+}
+
 REGISTER_RESOURCE_SELECTOR("LevelLayer", ShowDialog, "")
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(SwitchLayer, object, switch_layer,
+                                   CCommandDescription("Open Layer dialog to allow switching layers"))
+REGISTER_EDITOR_UI_COMMAND_DESC(object, switch_layer, "Switch Layer", "Ctrl+L", "", false)
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -43,6 +81,7 @@ REGISTER_RESOURCE_SELECTOR("LevelLayer", ShowDialog, "")
 CLayerPicker::CLayerPicker()
 	: CEditorDialog("LayerPicker")
 {
+	SetTitle("Select Layer");
 	auto model = CLevelModelsManager::GetInstance().GetLevelModel();
 
 	QDeepFilterProxyModel::BehaviorFlags behavior = QDeepFilterProxyModel::AcceptIfChildMatches | QDeepFilterProxyModel::AcceptIfParentMatches;
@@ -65,7 +104,8 @@ CLayerPicker::CLayerPicker()
 	m_treeView->setSortingEnabled(true);
 	m_treeView->sortByColumn((int)eLayerColumns_Name, Qt::AscendingOrder);
 
-	connect(m_treeView, &QTreeView::doubleClicked, this, &CLayerPicker::SelectLayerIndex);
+	connect(m_treeView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &CLayerPicker::OnSelectionChanged);
+	connect(m_treeView, &QTreeView::activated, this, &CLayerPicker::SelectLayerIndex);
 
 	searchBox->SetAutoExpandOnSearch(m_treeView);
 
@@ -81,10 +121,10 @@ CLayerPicker::CLayerPicker()
 	}
 
 	//TODO : make use of the standard button dialog bar
-	QPushButton* okButton = new QPushButton(this);
-	okButton->setText(tr("Ok"));
-	okButton->setDefault(true);
-	connect(okButton, &QPushButton::clicked, this, &CLayerPicker::OnOk);
+	m_pOkButton = new QPushButton(this);
+	m_pOkButton->setText(tr("Ok"));
+	m_pOkButton->setDefault(true);
+	connect(m_pOkButton, &QPushButton::clicked, this, &CLayerPicker::OnOk);
 
 	QPushButton* cancelButton = new QPushButton(this);
 	cancelButton->setText(tr("Cancel"));
@@ -95,7 +135,7 @@ CLayerPicker::CLayerPicker()
 
 	auto buttonsLayout = new QHBoxLayout();
 	buttonsLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Preferred));
-	buttonsLayout->addWidget(okButton);
+	buttonsLayout->addWidget(m_pOkButton);
 	buttonsLayout->addWidget(cancelButton);
 
 	auto mainLayout = new QVBoxLayout();
@@ -104,6 +144,30 @@ CLayerPicker::CLayerPicker()
 	mainLayout->addLayout(buttonsLayout);
 
 	setLayout(mainLayout);
+}
+
+void CLayerPicker::OnSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
+{
+	QModelIndex index = m_treeView->currentIndex();
+	if (!index.isValid())
+		return;
+
+	QVariant layerVar = index.data((int)CLevelModel::Roles::InternalPointerRole);
+	if (layerVar.isValid())
+	{
+		CObjectLayer* pLayer = reinterpret_cast<CObjectLayer*>(layerVar.value<intptr_t>());
+		if (!pLayer)
+			return;
+
+		if (pLayer->GetLayerType() == eObjectLayerType_Terrain)
+		{
+			m_pOkButton->setEnabled(false);
+		}
+		else
+		{
+			m_pOkButton->setEnabled(true);
+		}
+	}
 }
 
 void CLayerPicker::SetSelectedLayer(CObjectLayer* layer)
