@@ -748,15 +748,20 @@ void TryInstantEditing(CAsset* pAsset)
 
 }
 
+QToolButton* CreateToolButtonForAction(QAction* pAction)
+{
+	CRY_ASSERT(pAction);
+
+	QToolButton* const pButton = new QToolButton;
+	pButton->setDefaultAction(pAction);
+	pButton->setAutoRaise(true);
+	return pButton;
+}
+
 }
 
 CAssetBrowser::CAssetBrowser(bool bHideEngineFolder /*= false*/, QWidget* pParent /*= nullptr*/)
 	: CDockableEditor(pParent)
-	, m_viewMode(Max)
-	, m_recursiveView(false)
-	, m_recursiveSearch(true)
-	, m_navigationIndex(-1)
-	, m_dontPushNavHistory(false)
 {
 	setObjectName("Asset Browser");
 
@@ -867,8 +872,15 @@ void CAssetBrowser::InitViews(bool bHideEngineFolder)
 	m_pAttributeFilterProxyModel->setSourceModel(m_pFolderFilterModel.get());
 	m_pAttributeFilterProxyModel->setFilterKeyColumn(eAssetColumns_FilterString);
 
+	//folders view
+	m_foldersView = new CAssetFoldersView(bHideEngineFolder);
+	m_foldersView->signalSelectionChanged.Connect(this, &CAssetBrowser::OnFolderSelectionChanged);
+	connect(m_foldersView->m_treeView, &QTreeView::customContextMenuRequested, this, &CAssetBrowser::OnFolderViewContextMenu);
+
 	// TODO: Consider extracting the AssetsView stuff to a new CAssetsView class to encapsulate all the detail/thumbnail related states.
 	InitAssetsView();
+	InitActions();
+
 	QWidget* pAssetsView = CreateAssetsViewSelector();
 
 	//filter panel
@@ -880,11 +892,6 @@ void CAssetBrowser::InitViews(bool bHideEngineFolder)
 	m_filterPanel->GetSearchBox()->setPlaceholderText(tr("Search Assets"));
 	m_filterPanel->GetSearchBox()->signalOnFiltered.Connect(this, &CAssetBrowser::UpdateModels);
 	m_filterPanel->signalOnFiltered.Connect(this, &CAssetBrowser::UpdateModels);
-
-	//folders view
-	m_foldersView = new CAssetFoldersView(bHideEngineFolder);
-	m_foldersView->signalSelectionChanged.Connect(this, &CAssetBrowser::OnFolderSelectionChanged);
-	connect(m_foldersView->m_treeView, &QTreeView::customContextMenuRequested, this, &CAssetBrowser::OnFolderViewContextMenu);
 
 	m_foldersSplitter = new QSplitter();
 	m_foldersSplitter->setOrientation(Qt::Horizontal);
@@ -954,6 +961,23 @@ void CAssetBrowser::InitViews(bool bHideEngineFolder)
 	SetViewMode(Thumbnails);//by default let's use thumbnails
 
 	OnFolderSelectionChanged(m_foldersView->GetSelectedFolders());
+}
+
+void CAssetBrowser::InitActions()
+{
+	QAction* pAction = new QAction(CryIcon("icons:common/general_view_folder_tree.ico"), tr("Show Folder Tree"), this);
+	pAction->setCheckable(true);
+	pAction->setChecked(true);
+	pAction->setIconVisibleInMenu(false);
+	connect(pAction, &QAction::toggled, this, [this](bool checked) { m_foldersView->setVisible(checked); });
+	m_actionShowFoldersView = pAction;
+
+	pAction = new QAction(CryIcon("icons:common/general_view_recursive_view.ico"), tr("Recursive View"), this);
+	pAction->setCheckable(true);
+	pAction->setChecked(false);
+	pAction->setIconVisibleInMenu(false);
+	connect(pAction, &QAction::toggled, this, [this](bool checked) { UpdateModels(); });
+	m_actionRecursiveView = pAction;
 }
 
 void CAssetBrowser::InitMenus()
@@ -1052,10 +1076,8 @@ void CAssetBrowser::InitMenus()
 
 		int sec = menuView->GetNextEmptySection();
 
-		action = menuView->CreateAction(tr("Show Folder Tree"), sec);
-		action->setCheckable(true);
-		action->setChecked(m_foldersView->isVisible());
-		connect(action, &QAction::triggered, this, [&]() { m_foldersView->setVisible(!m_foldersView->isVisible()); });
+		CRY_ASSERT(m_actionShowFoldersView);
+		menuView->AddAction(m_actionShowFoldersView, sec);
 
 #if ASSET_BROWSER_USE_PREVIEW_WIDGET
 		action = menuView->addAction(tr("Show Preview"), sec);
@@ -1070,15 +1092,13 @@ void CAssetBrowser::InitMenus()
 
 		sec = menuView->GetNextEmptySection();
 
-		action = menuView->CreateAction(tr("Recursive View"), sec);
-		action->setCheckable(true);
-		action->setChecked(m_recursiveView);
-		connect(action, &QAction::triggered, this, [&]() { SetRecursiveView(!m_recursiveView); });
+		CRY_ASSERT(m_actionRecursiveView);
+		menuView->AddAction(m_actionRecursiveView, sec);
 
 		action = menuView->CreateAction(tr("Recursive Search"), sec);
 		action->setCheckable(true);
-		action->setEnabled(!m_recursiveView);
-		action->setChecked(m_recursiveSearch || m_recursiveView);
+		action->setEnabled(!IsRecursiveView());
+		action->setChecked(m_recursiveSearch || IsRecursiveView());
 		connect(action, &QAction::triggered, this, [&]() { SetRecursiveSearch(!m_recursiveSearch); });
 
 		if (m_filterPanel)
@@ -1180,6 +1200,8 @@ void CAssetBrowser::AddViewModeButton(ViewMode viewMode, const char* szIconPath,
 
 QWidget* CAssetBrowser::CreateAssetsViewSelector()
 {
+	using namespace Private_AssetBrowser;
+
 	QWidget* const pAssetsView = new QWidget();
 
 	m_mainViewSplitter = new QSplitter();
@@ -1197,23 +1219,32 @@ QWidget* CAssetBrowser::CreateAssetsViewSelector()
 	MenuWidgetBuilders::CMenuBuilder builder(pThumbnailMenu);
 	m_thumbnailSizeMenu->Build(builder);
 
+	QToolButton* const pShowFoderButton = CreateToolButtonForAction(m_actionShowFoldersView);
+	QToolButton* const pRecursiveViewButton = CreateToolButtonForAction(m_actionRecursiveView);
+
 	AddViewModeButton(ViewMode::VSplit, "icons:common/general_view_vertical.ico", "Split Vertically\nShows both details and thumbnails");
 	AddViewModeButton(ViewMode::HSplit, "icons:common/general_view_horizonal.ico", "Split Horizontally\nShows both details and thumbnails");
 	AddViewModeButton(ViewMode::Details, "icons:common/general_view_list.ico", "Shows Details");
 	AddViewModeButton(ViewMode::Thumbnails, "icons:common/general_view_thumbnail.ico", "Shows Thumbnails", pThumbnailMenu);
 
-	QHBoxLayout* const pButtonsLayout = new QHBoxLayout();
+	QVBoxLayout* const pButtonsLayout = new QVBoxLayout();
 	pButtonsLayout->setObjectName("viewModeButtonsLayout");
 	pButtonsLayout->setContentsMargins(0, 0, 0, 0);
 	pButtonsLayout->setMargin(0);
-	pButtonsLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Minimum));
+	pButtonsLayout->setSpacing(GetButtonsSpacing());
+
+	pButtonsLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding));
+	pButtonsLayout->addWidget(pShowFoderButton);
+	pButtonsLayout->addWidget(pRecursiveViewButton);
+	pButtonsLayout->addSpacerItem(new QSpacerItem(0, GetButtonGroupsSpacing(), QSizePolicy::Minimum, QSizePolicy::Maximum));
+
 	const QList<QAbstractButton*> buttons = m_viewModeButtons->buttons();
 	for (QAbstractButton* pButton : buttons)
 	{
 		pButtonsLayout->addWidget(pButton);
 	}
 
-	QVBoxLayout* const pLayout = new QVBoxLayout();
+	QHBoxLayout* const pLayout = new QHBoxLayout();
 	pLayout->setSpacing(0);
 	pLayout->setMargin(0);
 	pLayout->addWidget(m_mainViewSplitter);
@@ -1378,7 +1409,8 @@ void CAssetBrowser::SetLayout(const QVariantMap& state)
 	QVariant showFoldersVar = state.value("showFolders");
 	if (showFoldersVar.isValid())
 	{
-		m_foldersView->setVisible(showFoldersVar.toBool());
+		SetFoldersViewVisible(showFoldersVar.toBool());
+
 	}
 
 #if ASSET_BROWSER_USE_PREVIEW_WIDGET
@@ -1416,6 +1448,11 @@ void CAssetBrowser::SetLayout(const QVariantMap& state)
 	UpdateNavigation(true);
 }
 
+void CAssetBrowser::SetFoldersViewVisible(const bool isVisible)
+{
+	m_actionShowFoldersView->setChecked(isVisible);
+}
+
 QVariantMap CAssetBrowser::GetLayout() const
 {
 	QVariantMap state = CDockableEditor::GetLayout();
@@ -1423,9 +1460,9 @@ QVariantMap CAssetBrowser::GetLayout() const
 	state.insert("mainViewSplitter", m_mainViewSplitter->saveState().toBase64());
 	state.insert("foldersSplitter", m_foldersSplitter->saveState().toBase64());
 	state.insert("viewMode", (int)m_viewMode);
-	state.insert("recursiveView", m_recursiveView);
+	state.insert("recursiveView", IsRecursiveView());
 	state.insert("recursiveSearch", m_recursiveSearch);
-	state.insert("showFolders", m_foldersView->isVisibleTo(this));
+	state.insert("showFolders", IsFoldersViewVisible());
 #if ASSET_BROWSER_USE_PREVIEW_WIDGET
 	state.insert("showPreview", m_previewWidget->isVisibleTo(this));
 #endif
@@ -1466,6 +1503,16 @@ CAsset* CAssetBrowser::GetLastSelectedAsset() const
 		return nullptr;
 }
 
+bool CAssetBrowser::IsRecursiveView() const
+{
+	return m_actionRecursiveView->isChecked();
+}
+
+bool CAssetBrowser::IsFoldersViewVisible() const
+{
+	return m_actionShowFoldersView->isChecked();
+}
+
 void CAssetBrowser::SetViewMode(ViewMode viewMode)
 {
 	if (m_viewMode != viewMode)
@@ -1503,10 +1550,9 @@ void CAssetBrowser::SetViewMode(ViewMode viewMode)
 
 void CAssetBrowser::SetRecursiveView(bool recursiveView)
 {
-	if (m_recursiveView != recursiveView)
+	if (IsRecursiveView() != recursiveView)
 	{
-		m_recursiveView = recursiveView;
-		UpdateModels();
+		m_actionRecursiveView->setChecked(recursiveView);
 	}
 }
 
@@ -1529,10 +1575,10 @@ void CAssetBrowser::UpdateModels()
 		m_pFolderFilterModel->SetShowFolders(false);
 		m_pFolderFilterModel->SetRecursive(true);
 	}
-	else if (!searching && m_recursiveView != m_pFolderFilterModel->IsRecursive())
+	else if (!searching && IsRecursiveView() != m_pFolderFilterModel->IsRecursive())
 	{
-		m_pFolderFilterModel->SetRecursive(m_recursiveView);
-		m_pFolderFilterModel->SetShowFolders(!m_recursiveView);
+		m_pFolderFilterModel->SetRecursive(IsRecursiveView());
+		m_pFolderFilterModel->SetShowFolders(!IsRecursiveView());
 	}
 }
 
@@ -1658,7 +1704,7 @@ void CAssetBrowser::CreateContextMenu(bool isFolderView /*= false*/)
 		}
 		BuildContextMenuForFolders(folders, abstractMenu);
 	}
-	else if (assets.empty() && folders.empty() && !m_recursiveView)//nothing selected in recursive view
+	else if (assets.empty() && folders.empty() && !IsRecursiveView())//nothing selected in recursive view
 	{
 		BuildContextMenuForEmptiness(abstractMenu);
 	}
