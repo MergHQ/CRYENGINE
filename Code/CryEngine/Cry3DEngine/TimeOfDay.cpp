@@ -1446,6 +1446,7 @@ void CTimeOfDay::Serialize(XmlNodeRef& node, bool bLoading)
 								m_pCurrentPreset = &preset;
 								m_currentPresetName = presetName;
 								m_consts = m_pCurrentPreset->GetConstants();
+								ConstantsChanged();
 							}
 						}
 						else
