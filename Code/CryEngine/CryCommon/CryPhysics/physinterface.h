@@ -334,7 +334,7 @@ public:
 // are available, compile in Profile mode without debug symbols or remove optimizations
 // in the code where the bug occurs
 // see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=59776
-#if defined(_PROFILE) && !defined(__clang__) && (__GNUC__ == 4) && (__GNUC_MINOR__ == 8)
+#if defined(_PROFILE) && !CRY_COMPILER_CLANG && (__GNUC__ == 4) && (__GNUC_MINOR__ == 8)
 // Cannot use #pragma GCC optimize("O0") because it causes a system crash when using
 // the gcc compiler for another platform
 	#define CRY_GCC48_AVOID_OPTIMIZE __attribute__((optimize("-O0")))

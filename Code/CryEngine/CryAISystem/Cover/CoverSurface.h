@@ -21,7 +21,7 @@ public:
 
 	struct Segment
 	{
-#if defined(__clang__)
+#if CRY_COMPILER_CLANG
 	#pragma clang diagnostic push
 	#pragma clang diagnostic ignored "-Wconstant-conversion"
 #endif
@@ -42,7 +42,7 @@ public:
 			flags = 0;
 			length = 0;
 		}
-#if defined(__clang__)
+#if CRY_COMPILER_CLANG
 	#pragma clang diagnostic pop
 #endif
 #if defined(__GNUC__)

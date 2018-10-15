@@ -72,6 +72,6 @@ private:
 //! leading to missing-symbol linker error in non-uber builds. For this
 //! reason we have to provide the definition of the template here for this
 //! compiler.
-#if defined(_MSC_VER) || defined(__clang__)
+#if defined(_MSC_VER) || CRY_COMPILER_CLANG
 	#include "PoolObject_impl.h"
 #endif // _MSC_VER || __clang__

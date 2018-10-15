@@ -544,7 +544,7 @@ struct NoMove
 template<class TDerived>
 struct ZeroInit
 {
-#if defined(__clang__) || defined(__GNUC__)
+#if CRY_COMPILER_CLANG || defined(__GNUC__)
 	bool __dummy;             //!< Dummy var to create non-zero size, ensuring proper placement in TDerived.
 #endif
 

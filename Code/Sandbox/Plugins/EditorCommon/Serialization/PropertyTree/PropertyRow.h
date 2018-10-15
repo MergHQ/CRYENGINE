@@ -9,7 +9,7 @@
 
 #pragma once
 
-#if !defined(__clang__) && defined(__GNUC__) && (__GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 7))
+#if !defined(CRY_COMPILER_CLANG) && defined(__GNUC__) && (__GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 7))
 // GCC got support for override keyword in 4.8
 	#define override
 	#define final

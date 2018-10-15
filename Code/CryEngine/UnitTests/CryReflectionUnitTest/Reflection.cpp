@@ -84,7 +84,7 @@ namespace TypeIdUnitTests
 namespace SCompileTimeUnitTests
 {
 	// TODO: This should work for all compilers. Enable it, as soon as the GCC workaround in Type\TypeUtils.h is removed.
-#if defined (CRY_COMPILER_MSVC) || (defined(CRY_COMPILER_CLANG) && !defined(CRY_PLATFORM_ORBIS))
+#if defined(CRY_COMPILER_MSVC) || (defined(CRY_COMPILER_CLANG) && !defined(CRY_PLATFORM_ORBIS))
 	constexpr bool CompareCompileTimeString(const char* a, const char* b, int64 len = 1)
 	{
 		return *a == *b && (len - 1 <= 0 || CompareCompileTimeString(a + 1, b + 1, len - 1));
