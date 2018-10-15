@@ -518,7 +518,7 @@ CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureMotionPhysics, "Motion", "P
 
 MakeDataType(EPDT_PhysicalEntity, IPhysicalEntity*);
 
-void PopulateSurfaceTypes()
+bool Serialize(IArchive& ar, ESurfaceType& val, cstr name, cstr label)
 {
 	// Populate enum on first serialization call.
 	if (!ESurfaceType::count() && gEnv)
@@ -538,6 +538,7 @@ void PopulateSurfaceTypes()
 
 		pSurfaceTypeEnum->Release();
 	}
+	return Serialize(ar, static_cast<DynamicEnum<ISurfaceType>&>(val), name, label);
 }
 
 CFeatureMotionCryPhysics::CFeatureMotionCryPhysics()
@@ -564,8 +565,6 @@ void CFeatureMotionCryPhysics::AddToComponent(CParticleComponent* pComponent, SC
 
 void CFeatureMotionCryPhysics::Serialize(Serialization::IArchive& ar)
 {
-	PopulateSurfaceTypes();
-
 	CParticleFeature::Serialize(ar);
 	ar(m_physicsType, "PhysicsType", "Physics Type");
 	ar(m_surfaceType, "SurfaceType", "Surface Type");

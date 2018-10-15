@@ -88,7 +88,8 @@ SERIALIZATION_DECLARE_ENUM(EPhysicsType,
 	)
 
 // Dynamic enum for surface types
-typedef DynamicEnum<struct ISurfaceType> ESurfaceType;
+struct ESurfaceType : DynamicEnum<struct ISurfaceType> {};
+bool Serialize(IArchive& ar, ESurfaceType& val, cstr name, cstr label);
 
 class CFeatureMotionCryPhysics : public CParticleFeature
 {

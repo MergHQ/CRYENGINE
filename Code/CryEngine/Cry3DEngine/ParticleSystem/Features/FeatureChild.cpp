@@ -105,7 +105,15 @@ public:
 	{
 		SERIALIZE_VAR(ar, m_surfaceRequirement);
 		if (m_surfaceRequirement != ESurfaceRequirement::Any)
-			SERIALIZE_VAR(ar, m_surface);
+		{
+			SERIALIZE_VAR(ar, m_surfaces);
+			if (ar.isInput() && GetVersion(ar) <= 13)
+			{
+				ESurfaceType surface;
+				if (ar(surface, "Surface", "Surface"))
+					m_surfaces.push_back(surface);
+			}
+		}
 	}
 
 	bool IsDelayed() const override { return true; }
@@ -124,12 +132,12 @@ public:
 			{
 				if (m_surfaceRequirement == ESurfaceRequirement::Only)
 				{
-					if (contact.m_pSurfaceType->GetId() != m_surface)
+					if (!stl::find(m_surfaces, contact.m_pSurfaceType->GetId()))
 						continue;
 				}
 				else if (m_surfaceRequirement == ESurfaceRequirement::Not)
 				{
-					if (contact.m_pSurfaceType->GetId() == m_surface)
+					if (stl::find(m_surfaces, contact.m_pSurfaceType->GetId()))
 						continue;
 				}
 				instances.emplace_back(particleId, contact.m_time);
@@ -138,8 +146,8 @@ public:
 	}
 
 private:
-	ESurfaceRequirement m_surfaceRequirement;
-	ESurfaceType        m_surface;
+	ESurfaceRequirement     m_surfaceRequirement;
+	TDynArray<ESurfaceType> m_surfaces;
 };
 
 CRY_PFX2_IMPLEMENT_COMPONENT_FEATURE(CParticleFeature, CFeatureChildOnCollide, "Child", "OnCollide", colorChild);
