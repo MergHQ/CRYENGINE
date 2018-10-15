@@ -336,9 +336,9 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 		{
 			const float radius = fullSizes[particleId];
 			const Vec3 position = positions.Load(particleId);
-			const float waterDist = spritesContext.m_physEnviron.GetWaterPlane(waterPlane, position, 0.0f);
-			const float distRel = waterDist * rcp_fast(radius) * waterSign;
-			const float waterAlpha = saturate(distRel + 1.0f);
+			const float waterDist = spritesContext.m_physEnviron.GetWaterPlane(waterPlane, position, radius);
+			const float distRel = waterDist * rcp_fast(radius);
+			const float waterAlpha = saturate((distRel + 1.0f) * waterSign);
 			spriteAlphas[particleId] *= waterAlpha;
 
 			if (waterAlpha > 0.0f)
