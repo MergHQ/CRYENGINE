@@ -766,12 +766,14 @@ bool CLevelLayerModel::setData(const QModelIndex& index, const QVariant& value, 
 		case eObjectColumns_Visible:
 			if (role == Qt::CheckStateRole)
 			{
+				CUndo undoVisibility("Set Visibility");
 				pObject->SetVisible(value == Qt::Checked);
 			}
 			break;
 		case eObjectColumns_Frozen:
 			if (role == Qt::CheckStateRole)
 			{
+				CUndo undoFrozen("Set Frozen");
 				pObject->SetFrozen(value == Qt::Checked);
 			}
 			break;
