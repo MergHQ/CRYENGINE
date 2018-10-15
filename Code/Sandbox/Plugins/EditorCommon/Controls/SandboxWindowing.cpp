@@ -162,9 +162,8 @@ QToolsMenuWindowSingleTabAreaFrame::QToolsMenuWindowSingleTabAreaFrame(QToolWind
 	: QToolWindowSingleTabAreaFrame(manager, parent)
 {
 	m_pUpperBarLayout = new QHBoxLayout();
-	m_layout->addLayout(m_pUpperBarLayout, 0, 0);
-	m_pUpperBarLayout->addWidget(m_caption, Qt::AlignLeft);
-
+	m_pLayout->addLayout(m_pUpperBarLayout, 0, 0);
+	m_pUpperBarLayout->addWidget(m_pCaption, Qt::AlignLeft);
 }
 
 void QToolsMenuWindowSingleTabAreaFrame::setContents(QWidget* widget)
@@ -187,14 +186,14 @@ QToolsMenuToolWindowArea::QToolsMenuToolWindowArea(QToolWindowManager* manager, 
 	QToolsMenuWindowSingleTabAreaFrame* customTabFrame = new QToolsMenuWindowSingleTabAreaFrame(manager, this);
 	m_menuButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 	addAction(GetIEditor()->GetICommandManager()->GetAction("general.open_editor_menu"));
-	customTabFrame->m_layout->addWidget(m_menuButton, 0, 1, Qt::AlignVCenter | Qt::AlignRight);
+	customTabFrame->m_pLayout->addWidget(m_menuButton, 0, 1, Qt::AlignVCenter | Qt::AlignRight);
 	//Override the standard frame with our custom version
-	m_tabFrame = customTabFrame;
+	m_pTabFrame = customTabFrame;
 	//Without this all undocked mfc widgets will be black
-	m_tabFrame->hide();
+	m_pTabFrame->hide();
 
-	m_tabFrame->installEventFilter(this);
-	customTabFrame->m_caption->installEventFilter(this);
+	m_pTabFrame->installEventFilter(this);
+	customTabFrame->m_pCaption->installEventFilter(this);
 	tabBar()->installEventFilter(this);
 }
 
@@ -213,7 +212,7 @@ void QToolsMenuToolWindowArea::OnCurrentChanged(int index)
 	m_menuButton->setFocusProxy(focusTarget);
 	tabBar()->setFocusProxy(focusTarget);
 
-	QToolsMenuWindowSingleTabAreaFrame* customTabFrame = qobject_cast<QToolsMenuWindowSingleTabAreaFrame*>(m_tabFrame);
+	QToolsMenuWindowSingleTabAreaFrame* customTabFrame = qobject_cast<QToolsMenuWindowSingleTabAreaFrame*>(m_pTabFrame);
 
 	if (tabBar()->count() > 1)
 	{
@@ -221,7 +220,7 @@ void QToolsMenuToolWindowArea::OnCurrentChanged(int index)
 	}
 	else if (tabBar()->count() == 1)
 	{
-		customTabFrame->m_layout->addWidget(m_menuButton, 0, 1, Qt::AlignVCenter | Qt::AlignRight);
+		customTabFrame->m_pLayout->addWidget(m_menuButton, 0, 1, Qt::AlignVCenter | Qt::AlignRight);
 	}
 }
 
@@ -238,7 +237,7 @@ void QToolsMenuToolWindowArea::adjustDragVisuals()
 		m_menuButton->setFocusProxy(focusTarget);
 		tabBar()->setFocusProxy(focusTarget);
 
-		QToolsMenuWindowSingleTabAreaFrame* customTabFrame = qobject_cast<QToolsMenuWindowSingleTabAreaFrame*>(m_tabFrame);
+		QToolsMenuWindowSingleTabAreaFrame* customTabFrame = qobject_cast<QToolsMenuWindowSingleTabAreaFrame*>(m_pTabFrame);
 		bool floatingWrapper = m_manager->isFloatingWrapper(parentWidget());
 
 		if (tabBar()->count() > 1)
@@ -247,7 +246,7 @@ void QToolsMenuToolWindowArea::adjustDragVisuals()
 		}
 		else if (tabBar()->count() == 1)
 		{
-			customTabFrame->m_layout->addWidget(m_menuButton, 0, 1, Qt::AlignVCenter | Qt::AlignRight);
+			customTabFrame->m_pLayout->addWidget(m_menuButton, 0, 1, Qt::AlignVCenter | Qt::AlignRight);
 		}
 
 		/*
@@ -258,11 +257,11 @@ void QToolsMenuToolWindowArea::adjustDragVisuals()
 		{
 			if (floatingWrapper)
 			{
-				customTabFrame->m_caption->hide();
+				customTabFrame->m_pCaption->hide();
 			}
 			else
 			{
-				customTabFrame->m_caption->show();
+				customTabFrame->m_pCaption->show();
 			}
 		}
 
