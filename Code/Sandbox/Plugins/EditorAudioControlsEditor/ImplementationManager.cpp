@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "ImplementationManager.h"
 
+#include "Common.h"
 #include "AudioControlsEditorPlugin.h"
 
 #include <IUndoManager.h>
@@ -13,7 +14,7 @@ string const g_sImplementationCVarName = "s_AudioImplName";
 namespace ACE
 {
 typedef void (WINAPI * PGNSI)();
-using TPfnGetAudioInterface = Impl::IImpl * (*)(ISystem*);
+using TPfnGetAudioInterface = Impl::IImpl* (*)(ISystem*);
 
 Impl::IImpl* g_pIImpl = nullptr;
 
@@ -83,7 +84,9 @@ bool CImplementationManager::LoadImplementation()
 				if (GetIEditor() != nullptr)
 				{
 					g_pIImpl = pfnAudioInterface(GetIEditor()->GetSystem());
-					CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadImplData | EReloadFlags::SetPlatforms);
+					ZeroStruct(g_implInfo);
+					g_pIImpl->Initialize(g_implInfo, g_platforms);
+					CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadImplData);
 				}
 			}
 		}

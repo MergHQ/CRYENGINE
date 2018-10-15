@@ -69,4 +69,27 @@ static constexpr char const* const s_szGlobalScopeName = "global";
 static constexpr Scope GlobalScopeId = CryAudio::StringToId(s_szGlobalScopeName);
 
 using PlatformIndexType = uint16;
+
+enum class EImplInfoFlags : CryAudio::EnumFlagsType
+{
+	None = 0,
+	SupportsProjects = BIT(0),
+	SupportsTriggers = BIT(1),
+	SupportsParameters = BIT(2),
+	SupportsSwitches = BIT(3),
+	SupportsStates = BIT(4),
+	SupportsEnvironments = BIT(5),
+	SupportsPreloads = BIT(6),
+	SupportsSettings = BIT(7), };
+CRY_CREATE_ENUM_FLAG_OPERATORS(EImplInfoFlags);
+
+struct SImplInfo final
+{
+	CryFixedStringT<CryAudio::MaxInfoStringLength> name;
+	CryFixedStringT<CryAudio::MaxInfoStringLength> folderName;
+	CryFixedStringT<CryAudio::MaxFilePathLength>   projectPath;
+	CryFixedStringT<CryAudio::MaxFilePathLength>   assetsPath;
+	CryFixedStringT<CryAudio::MaxFilePathLength>   localizedAssetsPath;
+	EImplInfoFlags flags;
+};
 } // namespace ACE

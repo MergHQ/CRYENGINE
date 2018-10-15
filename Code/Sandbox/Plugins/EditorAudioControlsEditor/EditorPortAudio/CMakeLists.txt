@@ -6,6 +6,7 @@ start_sources()
 sources_platform(ALL)
 add_sources("EditorPortAudio_uber_0.cpp"
 	SOURCE_GROUP "Root"
+		"Common.cpp"
 		"Common.h"
 		"Impl.cpp"
 		"Impl.h"

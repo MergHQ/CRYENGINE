@@ -11,6 +11,8 @@ namespace Impl
 {
 namespace Wwise
 {
+extern Platforms g_platforms;
+
 static CryIcon s_errorIcon;
 static CryIcon s_auxBusIcon;
 static CryIcon s_eventIcon;

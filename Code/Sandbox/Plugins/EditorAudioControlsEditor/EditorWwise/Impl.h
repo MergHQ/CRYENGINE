@@ -14,8 +14,6 @@ namespace Impl
 {
 namespace Wwise
 {
-static Platforms s_platforms;
-
 class CDataPanel;
 
 class CImpl final : public IImpl
@@ -31,21 +29,14 @@ public:
 	virtual ~CImpl() override;
 
 	// IImpl
+	virtual void           Initialize(SImplInfo& implInfo, Platforms const& platforms) override;
 	virtual QWidget*       CreateDataPanel() override;
 	virtual void           DestroyDataPanel() override;
-	virtual void           Reload(bool const preserveConnectionStatus = true) override;
-	virtual void           SetPlatforms(Platforms const& platforms) override { s_platforms = platforms; }
+	virtual void           Reload(SImplInfo& implInfo) override;
 	virtual IItem*         GetItem(ControlId const id) const override;
 	virtual CryIcon const& GetItemIcon(IItem const* const pIItem) const override;
 	virtual QString const& GetItemTypeName(IItem const* const pIItem) const override;
-	virtual string const&  GetName() const override                { return m_implName; }
-	virtual string const&  GetFolderName() const override          { return m_implFolderName; }
-	virtual char const*    GetAssetsPath() const override          { return m_assetsPath.c_str(); }
-	virtual char const*    GetLocalizedAssetsPath() const override { return m_localizedAssetsPath.c_str(); }
-	virtual char const*    GetProjectPath() const override         { return m_projectPath.c_str(); }
 	virtual void           SetProjectPath(char const* const szPath) override;
-	virtual bool           SupportsProjects() const override       { return true; }
-	virtual bool           IsSystemTypeSupported(EAssetType const assetType) const override;
 	virtual bool           IsTypeCompatible(EAssetType const assetType, IItem const* const pIItem) const override;
 	virtual EAssetType     ImplTypeToAssetType(IItem const* const pIItem) const override;
 	virtual IConnection*   CreateConnectionToControl(EAssetType const assetType, IItem const* const pIItem) override;
@@ -68,6 +59,7 @@ public:
 private:
 
 	void Clear();
+	void SetImplInfo(SImplInfo& implInfo);
 	void SetLocalizedAssetsPath();
 
 	// Generates the ID of the item given its full path name.
@@ -79,17 +71,15 @@ private:
 
 	using ConnectionIds = std::map<ControlId, int>;
 
-	CItem               m_rootItem { "", s_aceInvalidId, EItemType::None };
-	ItemCache           m_itemCache; // cache of the items stored by id for faster access
-	ConnectionIds       m_connectionsByID;
-	CryAudio::SImplInfo m_implInfo;
-	string              m_implName;
-	string              m_implFolderName;
-	string              m_projectPath;
-	string const        m_assetsPath;
-	string              m_localizedAssetsPath;
-	char const* const   m_szUserSettingsFile;
-	CDataPanel*         m_pDataPanel;
+	CItem             m_rootItem { "", s_aceInvalidId, EItemType::None };
+	ItemCache         m_itemCache;   // cache of the items stored by id for faster access
+	ConnectionIds     m_connectionsByID;
+	CDataPanel*       m_pDataPanel;
+	string            m_implName;
+	string            m_projectPath;
+	string const      m_assetsPath;
+	string            m_localizedAssetsPath;
+	char const* const m_szUserSettingsFile;
 };
 } // namespace Wwise
 } // namespace Impl

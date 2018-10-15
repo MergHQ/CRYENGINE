@@ -214,6 +214,27 @@ CImpl::CImpl()
 	, m_localizedAssetsPath(m_assetsPath)
 	, m_szUserSettingsFile("%USER%/audiocontrolseditor_fmod.user")
 {
+}
+
+//////////////////////////////////////////////////////////////////////////
+CImpl::~CImpl()
+{
+	Clear();
+	DestroyDataPanel();
+
+	CItem::FreeMemoryPool();
+	CEventConnection::FreeMemoryPool();
+	CKeyConnection::FreeMemoryPool();
+	CParameterConnection::FreeMemoryPool();
+	CParameterToStateConnection::FreeMemoryPool();
+	CBankConnection::FreeMemoryPool();
+	CSnapshotConnection::FreeMemoryPool();
+	CGenericConnection::FreeMemoryPool();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::Initialize(SImplInfo& implInfo, Platforms const& platforms)
+{
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod Studio ACE Item Pool");
 	CItem::CreateAllocator(g_itemPoolSize);
 
@@ -238,27 +259,14 @@ CImpl::CImpl()
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod Studio ACE Generic Connection Pool");
 	CGenericConnection::CreateAllocator(g_genericConnectionPoolSize);
 
-	gEnv->pAudioSystem->GetImplInfo(m_implInfo);
-	m_implName = m_implInfo.name.c_str();
-	m_implFolderName = CryAudio::Impl::Fmod::s_szImplFolderName;
+	CryAudio::SImplInfo systemImplInfo;
+	gEnv->pAudioSystem->GetImplInfo(systemImplInfo);
+	m_implName = systemImplInfo.name.c_str();
+
+	SetImplInfo(implInfo);
+	g_platforms = platforms;
 
 	Serialization::LoadJsonFile(*this, m_szUserSettingsFile);
-}
-
-//////////////////////////////////////////////////////////////////////////
-CImpl::~CImpl()
-{
-	Clear();
-	DestroyDataPanel();
-
-	CItem::FreeMemoryPool();
-	CEventConnection::FreeMemoryPool();
-	CKeyConnection::FreeMemoryPool();
-	CParameterConnection::FreeMemoryPool();
-	CParameterToStateConnection::FreeMemoryPool();
-	CBankConnection::FreeMemoryPool();
-	CSnapshotConnection::FreeMemoryPool();
-	CGenericConnection::FreeMemoryPool();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -279,31 +287,24 @@ void CImpl::DestroyDataPanel()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::Reload(bool const preserveConnectionStatus)
+void CImpl::Reload(SImplInfo& implInfo)
 {
 	Clear();
-	SetLocalizedAssetsPath();
+	SetImplInfo(implInfo);
 
 	CProjectLoader(m_projectPath, m_assetsPath, m_localizedAssetsPath, m_rootItem, m_itemCache, *this);
 
-	if (preserveConnectionStatus)
+	for (auto const& connection : m_connectionsByID)
 	{
-		for (auto const& connection : m_connectionsByID)
+		if (connection.second > 0)
 		{
-			if (connection.second > 0)
-			{
-				auto const pItem = static_cast<CItem* const>(GetItem(connection.first));
+			auto const pItem = static_cast<CItem* const>(GetItem(connection.first));
 
-				if (pItem != nullptr)
-				{
-					pItem->SetFlags(pItem->GetFlags() | EItemFlags::IsConnected);
-				}
+			if (pItem != nullptr)
+			{
+				pItem->SetFlags(pItem->GetFlags() | EItemFlags::IsConnected);
 			}
 		}
-	}
-	else
-	{
-		m_connectionsByID.clear();
 	}
 
 	if (m_pDataPanel != nullptr)
@@ -346,31 +347,6 @@ void CImpl::SetProjectPath(char const* const szPath)
 {
 	m_projectPath = szPath;
 	Serialization::SaveJsonFile(m_szUserSettingsFile, *this);
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CImpl::IsSystemTypeSupported(EAssetType const assetType) const
-{
-	bool isSupported = false;
-
-	switch (assetType)
-	{
-	case EAssetType::Trigger:     // Intentional fall-through.
-	case EAssetType::Parameter:   // Intentional fall-through.
-	case EAssetType::Switch:      // Intentional fall-through.
-	case EAssetType::State:       // Intentional fall-through.
-	case EAssetType::Environment: // Intentional fall-through.
-	case EAssetType::Preload:     // Intentional fall-through.
-	case EAssetType::Folder:      // Intentional fall-through.
-	case EAssetType::Library:
-		isSupported = true;
-		break;
-	default:
-		isSupported = false;
-		break;
-	}
-
-	return isSupported;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -863,6 +839,26 @@ void CImpl::Clear()
 	s_programmerSoundEvents.clear();
 	m_itemCache.clear();
 	m_rootItem.Clear();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::SetImplInfo(SImplInfo& implInfo)
+{
+	SetLocalizedAssetsPath();
+
+	implInfo.name = m_implName.c_str();
+	implInfo.folderName = CryAudio::Impl::Fmod::s_szImplFolderName;
+	implInfo.projectPath = m_projectPath.c_str();
+	implInfo.assetsPath = m_assetsPath.c_str();
+	implInfo.localizedAssetsPath = m_localizedAssetsPath.c_str();
+	implInfo.flags = (
+		EImplInfoFlags::SupportsProjects |
+		EImplInfoFlags::SupportsTriggers |
+		EImplInfoFlags::SupportsParameters |
+		EImplInfoFlags::SupportsSwitches |
+		EImplInfoFlags::SupportsStates |
+		EImplInfoFlags::SupportsEnvironments |
+		EImplInfoFlags::SupportsPreloads);
 }
 
 //////////////////////////////////////////////////////////////////////////
