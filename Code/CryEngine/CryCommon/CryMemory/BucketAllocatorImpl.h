@@ -298,11 +298,10 @@ bool BucketAllocator<TraitsT >::Refill(uint8 bucket)
 
 	size_t smallBlockIdx = (baseAddress - blockBase) / SmallBlockLength;
 	size_t smallBlockEnd = ((endAddress - itemSize - blockBase) + SmallBlockOffsetMask) / SmallBlockLength;
-	size_t numSmallBlocks = smallBlockEnd - smallBlockIdx;
 
 	BucketAssert(useForward || !(endAddress & SmallBlockOffsetMask));
 	BucketAssert(!useForward || !(baseAddress & 7));
-	BucketAssert(numSmallBlocks > 0);
+	BucketAssert((smallBlockEnd - smallBlockIdx) > 0);
 	BucketAssert(smallBlockIdx < SmallBlocksPerPage);
 	BucketAssert(smallBlockEnd <= SmallBlocksPerPage);
 	BucketAssert(baseAddress >= fbh->start);
@@ -587,7 +586,6 @@ void BucketAllocator<TraitsT >::CleanupInternal(bool sortFreeLists)
 	for (int segId = 0; segId < numSegments; ++segId)
 	{
 		SegmentHot& segh = m_segmentsHot[segId];
-		SegmentCold& segc = m_segmentsCold[segId];
 
 		size_t basePageId = segId * NumPages;
 

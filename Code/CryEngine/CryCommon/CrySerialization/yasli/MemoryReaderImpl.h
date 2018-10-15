@@ -31,8 +31,12 @@ MemoryReader::MemoryReader(const char* fileName)
         std::size_t len = ftell(file);
         fseek(file, 0, SEEK_SET);
         memory_ = new char[len];
+#if defined(USE_CRY_ASSERT)
         std::size_t count = fread((void*)memory_, 1, len, file);
         YASLI_ASSERT(count == len);
+#else
+        fread((void*)memory_, 1, len, file);
+#endif
         ownedMemory_ = true;
         position_ = memory_;
         size_ = len;

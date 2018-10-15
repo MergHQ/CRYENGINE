@@ -1062,7 +1062,6 @@ struct IGameFramework
 
 ILINE bool IsDemoPlayback()
 {
-	ISystem* pSystem = GetISystem();
 	INetContext* pNetContext = gEnv->pGameFramework->GetNetContext();
 	return pNetContext ? pNetContext->IsDemoPlayback() : false;
 }

@@ -8,9 +8,9 @@
 
 //! Compiler version
 #define CRY_COMPILER_CLANG   1
-#define CRY_COMPILER_VERSION ((__clang_major__ * 100) + (__clang_minor__))
-#if CRY_COMPILER_VERSION < 301
-	#error This version of clang is not supported, the minimum supported version is 3.1
+#define CRY_COMPILER_VERSION ((__clang_major__ * 100) + (__clang_minor__ * 10))
+#if CRY_COMPILER_VERSION < 390
+    #error This version of clang is not supported, the minimum supported version is 3.9 (#CRY_COMPILER_VERSION)
 #endif
 #if defined(__cplusplus) && __cplusplus < 201103L
 	#error The compiler is not in C++11 mode, this is required for compiling CRYENGINE
@@ -77,6 +77,13 @@
 //! Unreachable code marker for helping error handling and optimization
 #define UNREACHABLE() __builtin_unreachable()
 
+#if !defined(CRY_DISABLE_WARNING_UNUSED_VARIABLES)
+
+#define CRY_DISABLE_WARN_UNUSED_VARIABLES() _Pragma("clang diagnostic push") _Pragma("clang diagnostic ignored \"-Wunused-variable\"")
+#define CRY_RESTORE_WARN_UNUSED_VARIABLES() _Pragma("clang diagnostic pop")
+
+#endif
+
 #ifdef  _MSC_VER
 // For clang on MSBuild
 #define stricmp   _stricmp
@@ -85,4 +92,4 @@
 #define wcsnicmp  _wcsnicmp
 #define alloca    _alloca
 #define itoa      _itoa
-#endif //CRY_PLATFORM_ORBIS
+#endif //_MSC_VER

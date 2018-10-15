@@ -268,9 +268,8 @@ struct SFeatureParametersBase
 	const Parameters& GetParameters() const
 	{
 		const Parameters& result = static_cast<const Parameters&>(*this);
-		// sanity check that Parameters is a derived class of
-		// SFeatureParametersBase
-		const SFeatureParametersBase& sanityCheck = result;
+		// sanity check that Parameters is a derived class of SFeatureParametersBase
+		static_assert(std::is_base_of<SFeatureParametersBase, Parameters>::value, "Parameters is not a derived class of SFeatureParametersBase");
 		return result;
 	}
 };

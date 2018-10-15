@@ -127,7 +127,7 @@ namespace Serialization {
 		const Serialization::TypeDescription* descriptionByRegisteredName(const char* registeredName) const override
 		{
 			size_t count = m_types.size();
-			for (size_t i = 0; i < m_types.size(); ++i)
+			for (size_t i = 0; i < count; ++i)
 				if (strcmp(m_types[i].name(), registeredName) == 0)
 					return &m_types[i];
 			return 0;

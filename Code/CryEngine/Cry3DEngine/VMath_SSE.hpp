@@ -136,7 +136,7 @@ ILINE vec4 Vec4Epsilon()
 template<ECacheLvl L>
 ILINE void Prefetch(const void* pData)
 {
-#if (CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID) && !defined(__clang__)
+#if (CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID) && !CRY_COMPILER_CLANG
 	_mm_prefetch(reinterpret_cast<const char*>(pData), (_mm_hint)L);
 #else
 	_mm_prefetch(reinterpret_cast<const char*>(pData), (int)L);

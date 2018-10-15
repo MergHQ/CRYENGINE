@@ -489,7 +489,10 @@ Token JSONTokenizer::operator()(const char* ptr) const
 	Token cur(ptr, ptr);
 	while(!cur && *ptr != '\0'){
 		while(isComment(*cur.end)){
+#if 0
+			// Unused variable if DEBUG_TRACE_TOKENIZER is not defined
 			const char* commentStart = ptr;
+#endif
 			while(*cur.end && *cur.end != '\n')
 				++cur.end;
 			while(isSpace(*cur.end))
@@ -882,8 +885,13 @@ bool JSONIArchive::operator()(const Serializer& ser, const char* name, const cha
             ser(*this);
         YASLI_ASSERT(!stack_.empty());
         stack_.pop_back();
+
+#if defined(USE_CRY_ASSERT)
         bool closed = closeBracket();
         YASLI_ASSERT(closed);
+#else
+        closeBracket();
+#endif
         return true;
     }
     return false;

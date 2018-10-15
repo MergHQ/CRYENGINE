@@ -976,7 +976,6 @@ struct SDirectoryEnumeratorHelper
 public:
 	void ScanDirectoryRecursive(const string& root, const string& pathIn, const string& fileSpec, std::vector<string>& files)
 	{
-		bool anyFound = false;
 		string path = PathUtil::AddSlash(pathIn);
 		string dir = PathUtil::AddSlash(PathUtil::AddSlash(root) + path);
 

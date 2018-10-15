@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 
-#if defined(__clang__)
+#if CRY_COMPILER_CLANG
 	#pragma clang diagnostic push
 	#pragma clang diagnostic ignored "-Winvalid-source-encoding"
 #endif

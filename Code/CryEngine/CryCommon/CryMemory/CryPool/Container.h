@@ -138,8 +138,11 @@ public:
 
 		CListItemInPlace* pItemNext = reinterpret_cast<CListItemInPlace*>(Offset);
 
+#if defined(USE_CRY_ASSERT)
 		const size_t Offset2 = reinterpret_cast<size_t>(pItemNext->Data());
 		CPA_ASSERT(!(Offset2 & (Align - 1)));
+#endif
+
 		m_Items.AddBehind(pItemNext, pItem);
 		//pItemNext->Prev(pItem);
 		//pItemNext->Next(pItem->Next());
@@ -332,7 +335,6 @@ protected:
 		if (pItem2)                                   //was not aligned?
 		{
 			//then keep the current ITem
-			const size_t SizeItem = pItem->MemSize();
 			const size_t SizeNext = pNext->MemSize();
 			m_Items.AddBehind(pItem2, pNext);
 			pItem2->Data(pData + SizeNext);

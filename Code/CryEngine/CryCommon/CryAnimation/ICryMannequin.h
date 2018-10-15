@@ -2272,8 +2272,6 @@ private:
 				const int animID = piAnimationSet->GetAnimIDByCRC(animClip.animation.animRef.crc);
 				const uint32 filePathCRC = piAnimationSet->GetFilePathCRCByAnimID(animID);
 
-				const char* pAnimPath = piAnimationSet->GetFilePathByID(animID);
-
 				// CharacterManager needs the filePathCRC
 				m_animsCached.push_back(SCacheAnims(filePathCRC));
 			}

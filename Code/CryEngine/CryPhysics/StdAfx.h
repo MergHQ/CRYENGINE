@@ -43,7 +43,7 @@
 // C6246: Local declaration of <variable> hides declaration of same name in outer scope.
 #define LOCAL_NAME_OVERRIDE_OK PREFAST_SUPPRESS_WARNING(6246)
 // C6201: buffer overrun for <variable>, which is possibly stack allocated: index <name> is out of valid index range <min> to <max>
-#if defined(__clang__)
+#if CRY_COMPILER_CLANG
 #define INDEX_NOT_OUT_OF_RANGE _Pragma("clang diagnostic ignored \"-Warray-bounds\"")
 #else
 #define INDEX_NOT_OUT_OF_RANGE PREFAST_SUPPRESS_WARNING(6201)

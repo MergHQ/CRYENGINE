@@ -412,7 +412,6 @@ void CCryEditDoc::Load(CXmlArchive& xmlAr, const string& szFilename)
 void CCryEditDoc::Load(TDocMultiArchive& arrXmlAr, const string& filename)
 {
 	using namespace Private_CryEditDoc;
-	CScopedVariableSetter<bool> loadingGuard(m_bLevelBeingLoaded, true);
 
 	// Register a unique load event
 	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
@@ -788,6 +787,8 @@ BOOL CCryEditDoc::DoSave(LPCTSTR lpszPathName, BOOL bReplace)
 
 BOOL CCryEditDoc::OnOpenDocument(LPCTSTR lpszPathName)
 {
+	CScopedVariableSetter<bool> loadingGuard(m_bLevelBeingLoaded, true);
+
 	TOpenDocContext context;
 	if (!BeforeOpenDocument(lpszPathName, context))
 		return FALSE;

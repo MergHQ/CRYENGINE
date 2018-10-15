@@ -712,8 +712,12 @@ namespace Schematyc2
 			CRY_ASSERT(szInput);
 			if(szInput)
 			{
+#if defined(USE_CRY_ASSERT)
 				const int	itemCount = sscanf(szInput, "%f", &output);
 				CRY_ASSERT(itemCount == 1);
+#else
+				sscanf(szInput, "%f", &output);
+#endif
 			}
 			return output;
 		}
@@ -763,8 +767,12 @@ namespace Schematyc2
 			CRY_ASSERT(szInput);
 			if(szInput)
 			{
+#if defined(USE_CRY_ASSERT)
 				const int	itemCount = sscanf(szInput, "%f, %f", &output.x, &output.y);
 				CRY_ASSERT(itemCount == 2);
+#else
+				sscanf(szInput, "%f, %f", &output.x, &output.y);
+#endif
 			}
 			return output;
 		}
@@ -814,8 +822,12 @@ namespace Schematyc2
 			CRY_ASSERT(szInput);
 			if(szInput)
 			{
+#if defined(USE_CRY_ASSERT)
 				const int	itemCount = sscanf(szInput, "%f, %f, %f", &output.x, &output.y, &output.z);
 				CRY_ASSERT(itemCount == 3);
+#else
+				sscanf(szInput, "%f, %f, %f", &output.x, &output.y, &output.z);
+#endif
 			}
 			return output;
 		}
@@ -865,8 +877,12 @@ namespace Schematyc2
 			CRY_ASSERT(szInput);
 			if(szInput)
 			{
+#if defined(USE_CRY_ASSERT)
 				const int	itemCount = sscanf(szInput, "%f, %f, %f", &output.x, &output.y, &output.z);
 				CRY_ASSERT(itemCount == 3);
+#else
+				sscanf(szInput, "%f, %f, %f", &output.x, &output.y, &output.z);
+#endif
 			}
 			return output;
 		}
@@ -916,8 +932,12 @@ namespace Schematyc2
 			CRY_ASSERT(szInput);
 			if(szInput)
 			{
+#if defined(USE_CRY_ASSERT)
 				const int	itemCount = sscanf(szInput, "%f, %f, %f, %f", &output.v.x, &output.v.y, &output.v.z, &output.w);
 				CRY_ASSERT(itemCount == 4);
+#else
+				sscanf(szInput, "%f, %f, %f, %f", &output.v.x, &output.v.y, &output.v.z, &output.w);
+#endif
 			}
 			return output;
 		}

@@ -87,6 +87,13 @@
 //! Unreachable code marker for helping error handling and optimization
 #define UNREACHABLE() __assume(0)
 
+#if !defined(CRY_DISABLE_WARNING_UNUSED_VARIABLES)
+
+#define CRY_DISABLE_WARN_UNUSED_VARIABLES() __pragma(warning(push)) __pragma(warning(disable: 4189))
+#define CRY_RESTORE_WARN_UNUSED_VARIABLES() __pragma(warning(pop))
+
+#endif
+
 // Disable (and enable) specific compiler warnings.
 // MSVC compiler is very confusing in that some 4xxx warnings are shown even with warning level 3,
 // and some 4xxx warnings are NOT shown even with warning level 4.

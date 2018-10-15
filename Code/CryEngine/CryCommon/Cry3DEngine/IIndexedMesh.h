@@ -1352,7 +1352,6 @@ public:
 
 		const int oldVertexCount = GetVertexCount();
 		const int oldFaceCount = GetFaceCount();
-		const int nOldCoorCount = GetTexCoordCount();
 
 		if (GetTexCoordCount() != 0 && GetTexCoordCount() != oldVertexCount)
 		{
@@ -1745,8 +1744,6 @@ public:
 
 		for (size_t i = 0, count = m_subsets.size(); i < count; ++i)
 		{
-			const SMeshSubset& subset = m_subsets[i];
-
 			float posArea;
 			float texArea;
 			const char* errorText = "";

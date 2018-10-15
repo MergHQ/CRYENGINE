@@ -114,7 +114,7 @@ typedef int32    __int32;
 typedef int64    __int64;
 
 typedef uint32   __uint32;
-#if !defined(__clang__)
+#if !CRY_COMPILER_CLANG
 typedef uint64   __uint64;
 #endif
 #endif
@@ -379,8 +379,8 @@ public:
 	CHandle(const HandleType cHandle = U) : m_Value(cHandle){}
 	CHandle(const PointerType cpHandle) : m_Value(reinterpret_cast<HandleType>(cpHandle)){}
 	CHandle(INVALID_HANDLE_VALUE_ENUM) : m_Value(U){}        //!< To be able to use a common value for all InvalidHandle - types.
-	#if CRY_PLATFORM_LINUX && !defined(__clang__)
-	//! Treat __null tyope also as invalid handle type.
+	#if CRY_PLATFORM_LINUX && !CRY_COMPILER_CLANG
+	//! Treat __null type also as invalid handle type.
 	//! To be able to use a common value for all InvalidHandle - types.
 	CHandle(__typeof__(__null)) : m_Value(U){}
 	#endif

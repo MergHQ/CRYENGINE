@@ -2936,14 +2936,8 @@ void CPhysicalWorld::DetachEntityGridThunks(CPhysicalPlaceholder *pobj)
 			ithunk_next = m_gthunks[ithunk].inextOwned;
 			iprev=m_gthunks[ithunk].iprev; inext=m_gthunks[ithunk].inext;
 			m_gthunks[ithunk].pent = 0;
-#if defined(__clang__)
-	#pragma clang diagnostic push
-	#pragma clang diagnostic ignored "-Wconstant-conversion"
-#endif
-			m_gthunks[ithunk].inext=m_gthunks[ithunk].iprev = -1;
-#if defined(__clang__)
-	#pragma clang diagnostic pop
-#endif
+			m_gthunks[ithunk].inext=m_gthunks[ithunk].iprev = ~0ull;
+
 			m_gthunks[inext].iprev = iprev & -(int)inext>>31;
 			m_gthunks[inext].bFirstInCell = m_gthunks[ithunk].bFirstInCell;
 			if (m_gthunks[ithunk].bFirstInCell) {
@@ -5090,7 +5084,7 @@ void CPhysicalWorld::RemoveExplosionShape(int id)
 
 // disable overflow warning
 
-#if defined(__clang__)
+#if CRY_COMPILER_CLANG
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Winteger-overflow"
 #endif
@@ -5134,7 +5128,7 @@ IGeometry *CPhysicalWorld::GetExplosionShape(float size,int idmat, float &scale,
 	bCreateConstraint = m_pExpl[i-1].bCreateConstraint;
 	return m_pExpl[i-1].pGeom;
 }
-#if defined(__clang__)
+#if CRY_COMPILER_CLANG
 #pragma clang diagnostic pop
 #endif
 #if defined(__GNUC__)

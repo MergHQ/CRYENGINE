@@ -902,7 +902,6 @@ struct SmallDynStorage
 				char CRY_ALIGN(alignof(T)) elem;
 			};
 			static EmptyHeader s_EmptyHeader;
-			size_t st = sizeof(T), at = alignof(T), sh = sizeof(EmptyHeader), ah = alignof(EmptyHeader);
 			return (T*)&s_EmptyHeader.elem;
 		}
 		ILINE void set_null()      { m_aElems = null_header(); }
