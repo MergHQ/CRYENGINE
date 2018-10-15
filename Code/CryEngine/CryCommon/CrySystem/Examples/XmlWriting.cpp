@@ -1,4 +1,5 @@
 #include <CrySystem/ISystem.h>
+#include <CrySystem/XML/IXml.h>
 
 // Example of how an XML structure can be created programmatically and saved to disk
 void WriteXml()

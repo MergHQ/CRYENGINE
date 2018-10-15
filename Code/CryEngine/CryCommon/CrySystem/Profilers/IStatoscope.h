@@ -10,10 +10,11 @@
 #define __IStatoscope_h__
 #pragma once
 
+class CFrameProfiler;
+
 #if ENABLE_STATOSCOPE
 
 struct STexturePoolAllocation;
-class CFrameProfiler;
 
 struct IStatoscopeFrameRecord
 {

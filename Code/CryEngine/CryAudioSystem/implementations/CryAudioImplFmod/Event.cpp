@@ -8,6 +8,7 @@
 #include "EnvironmentParameter.h"
 #include "Trigger.h"
 #include <SharedAudioData.h>
+#include <CryAudio/IAudioSystem.h>
 
 namespace CryAudio
 {

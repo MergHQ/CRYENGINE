@@ -39,6 +39,8 @@ CCryMemoryManager* CCryMemoryManager::GetInstance()
 }
 
 #ifndef MEMMAN_STATIC
+#include <CrySystem/IConsole.h>
+
 int CCryMemoryManager::s_sys_MemoryDeadListSize;
 
 void CCryMemoryManager::RegisterCVars()

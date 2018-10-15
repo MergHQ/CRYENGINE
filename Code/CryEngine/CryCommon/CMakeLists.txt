@@ -1289,6 +1289,13 @@ if(OPTION_DOXYGEN_EXAMPLES)
 	CryEngineStaticModule(CryAPIExamples SOLUTION_FOLDER Common)
 	# Disable memory manager so that we don't need to define eCryModule in the examples
 	target_compile_definitions(CryAPIExamples PRIVATE NOT_USE_CRY_MEMORY_MANAGER=1)
+
+	# Force include platform.h for resolving various dependencies
+	if (MSVC_VERSION)
+		target_compile_options(CryAPIExamples PRIVATE "/FICryCore/Platform/platform.h")
+	else ()
+		target_compile_options(CryAPIExamples PRIVATE "-include CryCore/Platform/platform.h")
+	endif()
 else()
 	CryFileContainer(CryAPIExamples SOLUTION_FOLDER Common)
 endif()
