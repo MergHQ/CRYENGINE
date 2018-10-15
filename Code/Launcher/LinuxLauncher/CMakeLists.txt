@@ -20,6 +20,12 @@ if(LINUX)
 	endif()
 	target_include_directories(${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CrySystem")
 	target_link_libraries( ${THIS_PROJECT} PRIVATE SDL2 dl pthread menuw formw ncursesw jsmn)
+
+	option(OPTION_ALLOW_RUNNING_SERVER_AS_ROOT "Allow running the dedicated server as root" OFF)
+	if (OPTION_ALLOW_RUNNING_SERVER_AS_ROOT)
+		target_compile_definitions(${THIS_PROJECT} PRIVATE "ALLOW_RUNNING_SERVER_AS_ROOT")
+	endif()
+
 	if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 		target_compile_options(${THIS_PROJECT} PRIVATE
 			-Wno-unknown-pragmas
