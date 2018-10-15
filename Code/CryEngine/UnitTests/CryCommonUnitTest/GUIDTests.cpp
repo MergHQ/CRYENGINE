@@ -3,6 +3,12 @@
 #include <CryExtension/CryGUID.h>
 #include <CryString/StringUtils.h>
 
+// Meta test - constexpr behaviors
+constexpr CryGUID gConstGuid = "{4DFD2FF0-6403-4B0C-87C3-840148B7598B}"_cry_guid;
+static_assert(!gConstGuid.IsNull(), "constexpr IsNull test");
+static_assert(gConstGuid == "4DFD2FF0-6403-4B0C-87C3-840148B7598B"_cry_guid, "constexpr equality test");
+static_assert(gConstGuid != "296708CE-F570-4263-B067-C6D8B15990BD"_cry_guid, "constexpr inequality test");
+
 TEST(CryGUIDTest, All)
 {
 	CryGUID guid;
