@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "MainWindow.h"
 
+#include "Common.h"
 #include "AudioControlsEditorPlugin.h"
 #include "PreferencesDialog.h"
 #include "ImplementationManager.h"
@@ -307,7 +308,7 @@ void CMainWindow::UpdateImplLabel()
 {
 	if (g_pIImpl != nullptr)
 	{
-		m_pImplNameLabel->setText(QtUtil::ToQString(g_pIImpl->GetName()));
+		m_pImplNameLabel->setText(QtUtil::ToQString(g_implInfo.name.c_str()));
 	}
 	else
 	{

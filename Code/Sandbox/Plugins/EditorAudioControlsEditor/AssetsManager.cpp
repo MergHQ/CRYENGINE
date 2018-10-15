@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "AssetsManager.h"
 
+#include "Common.h"
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
 #include "AssetUtils.h"
@@ -349,7 +350,7 @@ void CAssetsManager::UpdateConfigFolderPath()
 {
 	if (g_pIImpl != nullptr)
 	{
-		m_configFolderPath = AUDIO_SYSTEM_DATA_ROOT "/" + g_pIImpl->GetFolderName() + "/" + CryAudio::s_szConfigFolderName + "/";
+		m_configFolderPath = AUDIO_SYSTEM_DATA_ROOT "/" + string(g_implInfo.folderName) + "/" + CryAudio::s_szConfigFolderName + "/";
 	}
 	else
 	{

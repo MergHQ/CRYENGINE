@@ -17,7 +17,6 @@ namespace ACE
 class CImplementationManager;
 extern CAssetsManager g_assetsManager;
 extern CImplementationManager g_implementationManager;
-extern Platforms g_platforms;
 
 enum class EReloadFlags : CryAudio::EnumFlagsType
 {
@@ -26,8 +25,7 @@ enum class EReloadFlags : CryAudio::EnumFlagsType
 	ReloadImplData = BIT(1),
 	ReloadScopes = BIT(2),
 	SendSignals = BIT(3),
-	SetPlatforms = BIT(4),
-	BackupConnections = BIT(5), };
+	BackupConnections = BIT(4), };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EReloadFlags);
 
 class CAudioControlsEditorPlugin final : public IPlugin, public ISystemEventListener
@@ -60,7 +58,6 @@ private:
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
 	// ~ISystemEventListener
 
-	void        InitPlatforms();
 	static void ReloadImplData(EReloadFlags const flags);
 
 	static FileNames           s_currentFilenames;

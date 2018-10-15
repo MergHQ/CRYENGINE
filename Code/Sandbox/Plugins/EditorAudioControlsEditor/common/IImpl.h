@@ -33,6 +33,11 @@ struct IImpl
 	virtual ~IImpl() = default;
 	//! \endcond
 
+	//! Initializes the middleware implementation.
+	//! \param implInfo - Info struct to be filled by the middleware implementation.
+	//! \param platforms - Platform names of the current project.
+	virtual void Initialize(SImplInfo& implInfo, Platforms const& platforms) = 0;
+
 	//! Creates a new widget that is used for displaying middleware data in the middleware data panel.
 	//! \return A pointer to the data panel.
 	virtual QWidget* CreateDataPanel() = 0;
@@ -41,15 +46,8 @@ struct IImpl
 	virtual void DestroyDataPanel() = 0;
 
 	//! Reloads all the middleware control data.
-	//! \param preserveConnectionStatus - Keep the connection status of the controls. If true, when
-	//! reloading the controls it will try to map the connected status they had previously
-	//! (if they existed before the reload).
-	virtual void Reload(bool const preserveConnectionStatus = true) = 0;
-
-	//! Provides platform names to the middleware implementation.
-	//! \param platforms - Platform names of the current project.
-	//! Used for platform specific preload requests.
-	virtual void SetPlatforms(Platforms const& platforms) = 0;
+	//! \param implInfo - Info struct to be filled by the middleware implementation.
+	virtual void Reload(SImplInfo& implInfo) = 0;
 
 	//! Gets the middleware control given its unique id.
 	//! \param id - Unique ID of the control.
@@ -66,35 +64,9 @@ struct IImpl
 	//! \return A string with the type name corresponding to the control type.
 	virtual QString const& GetItemTypeName(IItem const* const pIItem) const = 0;
 
-	//! Gets the name of the implementation which might be used in the ACE UI.
-	//! \return A string with the name of the implementation.
-	virtual string const& GetName() const = 0;
-
-	//! Gets the name of the implementation folder which might be used to construct paths to audio assets and ACE files.
-	//! \return A string with the name of the implementation folder.
-	virtual string const& GetFolderName() const = 0;
-
-	//! Returns path to the folder that contains soundbanks and/or audio files.
-	virtual char const* GetAssetsPath() const = 0;
-
-	//! Returns path to the folder that contains localized soundbanks and/or audio files.
-	virtual char const* GetLocalizedAssetsPath() const = 0;
-
-	//! Returns path to the folder that contains the middleware project.
-	//! If the selected middleware doesn't support projects, the asset path is returned.
-	virtual char const* GetProjectPath() const = 0;
-
 	//! Sets the path to the middleware project.
 	//! \param szPath - Folder path to the middleware project.
 	virtual void SetProjectPath(char const* const szPath) = 0;
-
-	//! Checks if the selected middleware supports projects or not.
-	virtual bool SupportsProjects() const = 0;
-
-	//! Checks if the given audio system control type is supported by the middleware implementation.
-	//! \param assetType - An audio system control type.
-	//! \return A bool if the type is supported or not.
-	virtual bool IsSystemTypeSupported(EAssetType const assetType) const = 0;
 
 	//! Checks if the given audio system control type and middleware control are compatible.
 	//! \param assetType - An audio system control type.

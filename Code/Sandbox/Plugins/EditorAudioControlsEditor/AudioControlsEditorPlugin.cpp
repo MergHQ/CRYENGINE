@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "AudioControlsEditorPlugin.h"
 
+#include "Common.h"
 #include "MainWindow.h"
 #include "AudioControlsLoader.h"
 #include "FileWriter.h"
@@ -23,7 +24,6 @@ namespace ACE
 {
 CAssetsManager g_assetsManager;
 CImplementationManager g_implementationManager;
-Platforms g_platforms;
 FileNames CAudioControlsEditorPlugin::s_currentFilenames;
 CryAudio::IObject* CAudioControlsEditorPlugin::s_pIAudioObject = nullptr;
 CryAudio::ControlId CAudioControlsEditorPlugin::s_audioTriggerId = CryAudio::InvalidControlId;
@@ -34,6 +34,18 @@ CCrySignal<void()> CAudioControlsEditorPlugin::SignalAboutToSave;
 CCrySignal<void()> CAudioControlsEditorPlugin::SignalSaved;
 
 REGISTER_VIEWPANE_FACTORY(CMainWindow, "Audio Controls Editor", "Tools", true)
+
+//////////////////////////////////////////////////////////////////////////
+void InitPlatforms()
+{
+	g_platforms.clear();
+	std::vector<dll_string> const& platforms = GetIEditor()->GetConfigurationManager()->GetPlatformNames();
+
+	for (auto const& platform : platforms)
+	{
+		g_platforms.push_back(platform.c_str());
+	}
+}
 
 //////////////////////////////////////////////////////////////////////////
 CAudioControlsEditorPlugin::CAudioControlsEditorPlugin()
@@ -159,12 +171,7 @@ void CAudioControlsEditorPlugin::ReloadImplData(EReloadFlags const flags)
 		}
 
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_COMMENT, "[Audio Controls Editor] Reloading audio implementation data");
-		g_pIImpl->Reload();
-
-		if ((flags& EReloadFlags::SetPlatforms) != 0)
-		{
-			g_pIImpl->SetPlatforms(g_platforms);
-		}
+		g_pIImpl->Reload(g_implInfo);
 
 		if ((flags& EReloadFlags::BackupConnections) != 0)
 		{
@@ -209,18 +216,6 @@ void CAudioControlsEditorPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wpar
 	case ESYSTEM_EVENT_AUDIO_IMPLEMENTATION_LOADED:
 		g_implementationManager.LoadImplementation();
 		break;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioControlsEditorPlugin::InitPlatforms()
-{
-	g_platforms.clear();
-	std::vector<dll_string> const& platforms = GetIEditor()->GetConfigurationManager()->GetPlatformNames();
-
-	for (auto const& platform : platforms)
-	{
-		g_platforms.push_back(platform.c_str());
 	}
 }
 } // namespace ACE

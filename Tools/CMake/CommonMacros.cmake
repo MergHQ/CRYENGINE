@@ -41,7 +41,7 @@ function(USE_MSVC_PRECOMPILED_HEADER TargetProject PrecompiledHeader Precompiled
 	endif()
 
 	if (OPTION_PCH AND MSVC)
-		message("Enable PCH for ${TargetProject}")
+		message(STATUS "Enable PCH for ${TargetProject}")
 		if (WINDOWS OR DURANGO)
 			if(${CMAKE_GENERATOR} MATCHES "Visual Studio")
 				# Inside Visual Studio

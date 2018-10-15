@@ -30,6 +30,9 @@
 
 #ifdef USE_PCH
 
+// Ensure included first to prevent windows.h from being included by certain standard library headers, e.g. <future> on Durango
+#include <CryCore/Platform/CryWindows.h>
+
 #include <cstdlib>
 #include <csignal>
 #include <csetjmp>
@@ -105,7 +108,6 @@
 #include <ciso646>
 #include <ccomplex>
 #include <ctgmath>
-#include <cstdalign>
 #include <cstdbool>
 
 //////////////////////////////////////////////////////////////////////////
@@ -132,7 +134,6 @@
 #include <cmath>
 
 #if CRY_PLATFORM_WINDOWS
-	#include <CryCore/Platform/CryWindows.h>
 	#include <winsock2.h>
 	#include <shlobj.h>
 #endif

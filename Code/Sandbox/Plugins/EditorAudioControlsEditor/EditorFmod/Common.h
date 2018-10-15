@@ -11,6 +11,8 @@ namespace Impl
 {
 namespace Fmod
 {
+extern Platforms g_platforms;
+
 static CryIcon s_errorIcon;
 static CryIcon s_bankIcon;
 static CryIcon s_editorFolderIcon;

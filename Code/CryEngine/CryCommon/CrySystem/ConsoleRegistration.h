@@ -144,6 +144,8 @@ private:
 		#error LOG_CONST_CVAR_ACCESS should be defined in ProjectDefines.h
 	#endif
 
+#include <CrySystem/CVarOverride.h>
+
 namespace Detail
 {
 template<typename T>

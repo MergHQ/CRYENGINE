@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "MiddlewareDataWidget.h"
 
+#include "Common.h"
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
 #include "AssetIcons.h"
@@ -144,8 +145,8 @@ void CMiddlewareDataWidget::OpenFileImporter(FileImportInfos const& fileImportIn
 {
 	FileImportInfos fileInfos = fileImportInfos;
 
-	QString assetsPath = QtUtil::ToQString(PathUtil::GetGameFolder() + "/" + g_pIImpl->GetAssetsPath());
-	QString localizedAssetsPath = QtUtil::ToQString(PathUtil::GetGameFolder() + "/" + g_pIImpl->GetLocalizedAssetsPath());
+	QString assetsPath = QtUtil::ToQString(PathUtil::GetGameFolder() + "/" + g_implInfo.assetsPath.c_str());
+	QString localizedAssetsPath = QtUtil::ToQString(PathUtil::GetGameFolder() + "/" + g_implInfo.localizedAssetsPath.c_str());
 	QString const targetFolderPath = (isLocalized ? localizedAssetsPath : assetsPath) + "/" + targetFolderName;
 
 	QDir const targetFolder(targetFolderPath);

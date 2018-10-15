@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "SystemControlsWidget.h"
 
+#include "Common.h"
 #include "SystemSourceModel.h"
 #include "SystemLibraryModel.h"
 #include "SystemFilterProxyModel.h"
@@ -428,29 +429,33 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 							}
 
 							pAddMenu->addAction(GetAssetIcon(EAssetType::Folder), tr("Folder"), [=]() { CreateFolder(pParent); });
-							pAddMenu->addAction(GetAssetIcon(EAssetType::Trigger), tr("Trigger"), [=]() { CreateControl("new_trigger", EAssetType::Trigger, pParent); });
 
-							if (g_pIImpl->IsSystemTypeSupported(EAssetType::Parameter))
+							if ((g_implInfo.flags & EImplInfoFlags::SupportsTriggers) != 0)
+							{
+								pAddMenu->addAction(GetAssetIcon(EAssetType::Trigger), tr("Trigger"), [=]() { CreateControl("new_trigger", EAssetType::Trigger, pParent); });
+							}
+
+							if ((g_implInfo.flags & EImplInfoFlags::SupportsParameters) != 0)
 							{
 								pAddMenu->addAction(GetAssetIcon(EAssetType::Parameter), tr("Parameter"), [=]() { CreateControl("new_parameter", EAssetType::Parameter, pParent); });
 							}
 
-							if (g_pIImpl->IsSystemTypeSupported(EAssetType::Switch))
+							if ((g_implInfo.flags & EImplInfoFlags::SupportsSwitches) != 0)
 							{
 								pAddMenu->addAction(GetAssetIcon(EAssetType::Switch), tr("Switch"), [=]() { CreateControl("new_switch", EAssetType::Switch, pParent); });
 							}
 
-							if (g_pIImpl->IsSystemTypeSupported(EAssetType::Environment))
+							if ((g_implInfo.flags & EImplInfoFlags::SupportsEnvironments) != 0)
 							{
 								pAddMenu->addAction(GetAssetIcon(EAssetType::Environment), tr("Environment"), [=]() { CreateControl("new_environment", EAssetType::Environment, pParent); });
 							}
 
-							if (g_pIImpl->IsSystemTypeSupported(EAssetType::Preload))
+							if ((g_implInfo.flags & EImplInfoFlags::SupportsPreloads) != 0)
 							{
 								pAddMenu->addAction(GetAssetIcon(EAssetType::Preload), tr("Preload"), [=]() { CreateControl("new_preload", EAssetType::Preload, pParent); });
 							}
 
-							if (g_pIImpl->IsSystemTypeSupported(EAssetType::Setting))
+							if ((g_implInfo.flags & EImplInfoFlags::SupportsSettings) != 0)
 							{
 								pAddMenu->addAction(GetAssetIcon(EAssetType::Setting), tr("Setting"), [=]() { CreateControl("new_setting", EAssetType::Setting, pParent); });
 							}
@@ -485,7 +490,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 					}
 					else if (controlType == EAssetType::Switch)
 					{
-						if (g_pIImpl->IsSystemTypeSupported(EAssetType::State))
+						if ((g_implInfo.flags & EImplInfoFlags::SupportsStates) != 0)
 						{
 							pAddMenu->addAction(GetAssetIcon(EAssetType::State), tr("State"), [&]() { CreateControl("new_state", EAssetType::State, pControl); });
 						}
@@ -841,33 +846,13 @@ void CSystemControlsWidget::OnUpdateCreateButtons()
 					bool const isLibraryOrFolder = (assetType == EAssetType::Library) || (assetType == EAssetType::Folder);
 
 					m_pCreateFolderAction->setVisible(isLibraryOrFolder);
-					m_pCreateTriggerAction->setVisible(isLibraryOrFolder);
-
-					if (g_pIImpl->IsSystemTypeSupported(EAssetType::Parameter))
-					{
-						m_pCreateParameterAction->setVisible(isLibraryOrFolder);
-					}
-
-					if (g_pIImpl->IsSystemTypeSupported(EAssetType::Switch))
-					{
-						m_pCreateSwitchAction->setVisible(isLibraryOrFolder);
-						m_pCreateStateAction->setVisible(assetType == EAssetType::Switch);
-					}
-
-					if (g_pIImpl->IsSystemTypeSupported(EAssetType::Environment))
-					{
-						m_pCreateEnvironmentAction->setVisible(isLibraryOrFolder);
-					}
-
-					if (g_pIImpl->IsSystemTypeSupported(EAssetType::Preload))
-					{
-						m_pCreatePreloadAction->setVisible(isLibraryOrFolder);
-					}
-
-					if (g_pIImpl->IsSystemTypeSupported(EAssetType::Setting))
-					{
-						m_pCreateSettingAction->setVisible(isLibraryOrFolder);
-					}
+					m_pCreateTriggerAction->setVisible(isLibraryOrFolder && ((g_implInfo.flags & EImplInfoFlags::SupportsTriggers) != 0));
+					m_pCreateParameterAction->setVisible(isLibraryOrFolder && ((g_implInfo.flags & EImplInfoFlags::SupportsParameters) != 0));
+					m_pCreateSwitchAction->setVisible(isLibraryOrFolder && ((g_implInfo.flags & EImplInfoFlags::SupportsSwitches) != 0));
+					m_pCreateStateAction->setVisible((assetType == EAssetType::Switch) && ((g_implInfo.flags & EImplInfoFlags::SupportsStates) != 0));
+					m_pCreateEnvironmentAction->setVisible(isLibraryOrFolder && ((g_implInfo.flags & EImplInfoFlags::SupportsEnvironments) != 0));
+					m_pCreatePreloadAction->setVisible(isLibraryOrFolder && ((g_implInfo.flags & EImplInfoFlags::SupportsPreloads) != 0));
+					m_pCreateSettingAction->setVisible(isLibraryOrFolder && ((g_implInfo.flags & EImplInfoFlags::SupportsSettings) != 0));
 
 					isActionVisible = true;
 				}

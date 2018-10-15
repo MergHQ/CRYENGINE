@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 #include "SoundbankConnection.h"
 
-#include "Impl.h"
+#include "Common.h"
 
 namespace ACE
 {
@@ -15,13 +15,13 @@ namespace Wwise
 void CSoundbankConnection::Serialize(Serialization::IArchive& ar)
 {
 	PlatformIndexType const configurationsMask = m_configurationsMask;
-	size_t const numPlatforms = s_platforms.size();
+	size_t const numPlatforms = g_platforms.size();
 
 	for (size_t i = 0; i < numPlatforms; ++i)
 	{
 		auto const platformIndex = static_cast<PlatformIndexType>(i);
 		bool isEnabled = IsPlatformEnabled(platformIndex);
-		ar(isEnabled, s_platforms[i], s_platforms[i]);
+		ar(isEnabled, g_platforms[i], g_platforms[i]);
 		SetPlatformEnabled(platformIndex, isEnabled);
 	}
 

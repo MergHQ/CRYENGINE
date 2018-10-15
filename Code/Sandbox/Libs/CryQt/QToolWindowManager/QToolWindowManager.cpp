@@ -181,9 +181,9 @@ void QToolWindowManager::startDrag(const QList<QWidget*>& toolWindows, IToolWind
 	m_draggedToolWindows = toolWindows;
 
 	QRect floatingGeometry = QRect(QCursor::pos(), area->size());
-	moveToolWindows(toolWindows, nullptr, QToolWindowAreaReference::Drag, -1, floatingGeometry);
-	m_lastArea = nullptr;
-	updateDragPosition();
+	//This will release all the too windows from the current area, create a new floating wrapper with a new area inside and then add all the tool windows to it
+	//Then startDrag() will be called on the wrapper (this will then call QToolWindowManager::startDrag(IToolWindowWrapper* wrapper) aka the wrapper version of dragging)
+	moveToolWindows(toolWindows, area, QToolWindowAreaReference::Drag, -1, floatingGeometry);
 }
 
 void QToolWindowManager::startDrag(IToolWindowWrapper* wrapper)
@@ -257,17 +257,7 @@ void QToolWindowManager::moveToolWindows(const QList<QWidget*>& toolWindows, con
 
 void QToolWindowManager::moveToolWindows(const QList<QWidget*>& toolWindows, IToolWindowArea* area, QToolWindowAreaReference::eType reference /*= Combine*/, int index /*= -1*/, QRect geometry /*= QRect()*/)
 {
-	IToolWindowWrapper* wrapper = nullptr;
-	bool currentAreaIsSimple = true;
-	foreach(QWidget * toolWindow, toolWindows)
-	{
-		// when iterating  over the tool windows, we will figure out if the current are is actually roll-ups and not tabs
-		IToolWindowArea* currentArea = findClosestParent<IToolWindowArea*>(toolWindow);
-		if (currentAreaIsSimple && currentArea && currentArea->areaType() == watTabs)
-			currentAreaIsSimple = false;
-		releaseToolWindow(toolWindow, false);
-	}
-
+	//If no area find one
 	if (!area)
 	{
 		if (m_lastArea)
@@ -284,6 +274,26 @@ void QToolWindowManager::moveToolWindows(const QList<QWidget*>& toolWindows, ITo
 			m_mainWrapper->setContents(m_lastArea->getWidget());
 		}
 	}
+
+	QPoint dragOffset;
+	//Get the current mouse position and offset from the area before we remove the tool windows from it
+	if (area && reference == QToolWindowAreaReference::Drag)
+	{
+		QPoint widgetPos = area->mapToGlobal(area->rect().topLeft());
+		dragOffset = widgetPos - QCursor::pos();
+	}
+
+	IToolWindowWrapper* wrapper = nullptr;
+	bool currentAreaIsSimple = true;
+	foreach(QWidget * toolWindow, toolWindows)
+	{
+		// when iterating  over the tool windows, we will figure out if the current one is actually roll-ups and not tabs
+		IToolWindowArea* currentArea = findClosestParent<IToolWindowArea*>(toolWindow);
+		if (currentAreaIsSimple && currentArea && currentArea->areaType() == watTabs)
+			currentAreaIsSimple = false;
+		releaseToolWindow(toolWindow, false);
+	}
+
 	switch (reference)
 	{
 	case QToolWindowAreaReference::Top:    // top of furthest parent
@@ -319,16 +329,23 @@ void QToolWindowManager::moveToolWindows(const QList<QWidget*>& toolWindows, ITo
 			wrapper->setContents(area->getWidget());
 			wrapper->getWidget()->show();
 
-			if (geometry != QRect())
+			if (geometry != QRect()) //we have geometry, apply the mouse offset
 			{
+				//If we have a  title bar we want to move the mouse to half the height of it
+				QCustomTitleBar* pTitleBar = wrapper->getWidget()->findChild<QCustomTitleBar*>();
+				if (pTitleBar)
+				{
+					dragOffset.setY(-pTitleBar->height() / 2);
+				}
+				//apply the mouse offset to the current rect
+				geometry.moveTopLeft(geometry.topLeft() + dragOffset);
 				wrapper->getWidget()->setGeometry(geometry);
 			}
-			else
+			else //with no present geometry we just create a new one
 			{
 				wrapper->getWidget()->setGeometry(QRect(QPoint(0, 0), toolWindows[0]->sizeHint()));
 				wrapper->getWidget()->move(QCursor::pos());
 			}
-
 		}
 		break;
 	default: //combine + hidden
@@ -340,6 +357,7 @@ void QToolWindowManager::moveToolWindows(const QList<QWidget*>& toolWindows, ITo
 		area->addToolWindows(toolWindows, index);
 		m_lastArea = area;
 	}
+	//This will remove the previous area the tool windows where attached to
 	simplifyLayout();
 	foreach(QWidget * toolWindow, toolWindows)
 	{
@@ -350,6 +368,7 @@ void QToolWindowManager::moveToolWindows(const QList<QWidget*>& toolWindows, ITo
 	if (reference == QToolWindowAreaReference::Drag && wrapper)
 	{
 		m_draggedWrapper = wrapper;
+		//start the drag on the new wrapper, will end up calling QToolWindowManager::startDrag(IToolWindowWrapper* wrapper)
 		wrapper->startDrag();
 	}
 }
