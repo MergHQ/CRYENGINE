@@ -140,12 +140,14 @@ public:
 	//! Log all names inside CryName table.
 	virtual void LogNames()
 	{
+#if !defined(EXCLUDE_NORMAL_LOG)
 		NameMap::iterator it;
 		for (it = m_nameMap.begin(); it != m_nameMap.end(); ++it)
 		{
 			SNameEntry* pNameEntry = it->second;
 			CryLog("[%4d] %s", pNameEntry->nLength, pNameEntry->GetStr());
 		}
+#endif
 	}
 
 };

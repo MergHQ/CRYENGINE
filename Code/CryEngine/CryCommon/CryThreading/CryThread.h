@@ -256,8 +256,14 @@ public:
 	void UnlockModify() const
 	{
 		SetDebugLocked(false);
+
+#if defined(USE_CRY_ASSERT)
 		int counter = CryInterlockedDecrement(&m_modifyCount);    // decrement write counter
 		assert(counter >= 0);
+#else
+		CryInterlockedDecrement(&m_modifyCount);    // decrement write counter
+#endif
+
 		m_writeLock.Unlock();                       // release exclusive lock
 	}
 

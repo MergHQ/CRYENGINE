@@ -234,8 +234,12 @@ float  NumToFromString(float val, int digits, bool floating, char buffer[], int 
 	else
 		cry_sprintf(buffer, buf_size, "%.*f", digits, float(val));
 
+#if defined(USE_CRY_ASSERT)
 	int readCount = sscanf_s(buffer, "%g", &val);
 	assert(readCount == 1);
+#else
+	sscanf_s(buffer, "%g", &val);
+#endif
 	return val;
 }
 

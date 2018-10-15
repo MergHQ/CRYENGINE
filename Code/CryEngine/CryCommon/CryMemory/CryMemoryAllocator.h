@@ -672,11 +672,6 @@ private:
 		pBlock->_M_allocations_list[pBlock->_M_allocations_count].SetNext((char*)pObj - (char*)pBlock);
 		pBlock->_M_allocations_list[pBlock->_M_allocations_count++].SetCount(count);
 		pBlock->_M_allocations_list[pBlock->_M_allocations_count].SetNext((char*)pObj + count * _n - (char*)pBlock);
-
-		if (count >= NTREESCOUNT + 1)
-		{
-			int b = 0;
-		}
 	}
 
 public:
@@ -1158,22 +1153,6 @@ char* node_alloc<_alloc, __threads, _Size >::_S_chunk_alloc(size_t _p_size,
 				__cas_new_head<_Node_alloc_Mem_block<_Size>, __threads, _Size>(&_S_free_mem_blocks, __pnew_block);
 				//__pCurrentHugeBlock->_M_count += __nobjs;
 			}
-			else
-			{
-				if (__result != 0)
-					int a = 0;
-				//A too small block, we put it in the main free list elements:
-				/*
-
-				   _Obj* volatile* __my_free_list = _S_free_list + S_FREELIST_INDEX(__bytes_left);
-				   _Obj* __pobj = __REINTERPRET_CAST(_Obj*, __new_buf_pos);
-				   ++_S_freelist_counter[S_FREELIST_INDEX(__bytes_left)];
-				   __cas_new_head(__my_free_list, __pobj);
-				   if (__result == 0)
-				   __pCurrentHugeBlock->_M_count +=  1;
-
-				 */
-			}
 		}
 
 		if (__result != 0)
@@ -1369,7 +1348,7 @@ void node_alloc<_alloc, __threads, _Size >::_S_freelist_delete_inside(int num, _
 {
 
 	_Obj* volatile* __pList = _S_free_list + num;
-	_Obj* __pnext, * __pfirst, * __plast, * __r;
+	_Obj* __pnext, * __pfirst, * __r;
 
 	do
 	{
@@ -1630,37 +1609,17 @@ void node_alloc<_alloc, __threads, _Size >::cleanup()
 				tmp_low[i] = low;
 				tmp_high[i] = high;
 
-				if (low == high && ((void*)low < (void*)__pcur || (void*) high > (void*)__pcur->_M_end))
-				{
-					//size_t ttt = _S_freelist_count_inside(i, (_Obj*)__pcur, (_Obj*)__pcur->_M_end);// + sizeof(_Node_alloc_Mem_block_Huge));
-					//if (ttt != tmp_count[i])
-					//	int a = 0;
-
-					//For testing purposes
-					int b = 0;
-				}
-				else
+				if (low != high || ((void*)low >= (void*)__pcur && (void*) high <= (void*)__pcur->_M_end))
 				{
 					tmp_count[i] = high - low;// + 1;
 					freelistsize += tmp_count[i];//  * (i + 1) << _ALIGN_SHIFT;
-					//For testing purposes
-					//#ifdef _DEBUG
-					//size_t ttt = _S_freelist_count_inside(i, (_Obj*)__pcur, (_Obj*)__pcur->_M_end);// + sizeof(_Node_alloc_Mem_block_Huge));
-					//if (ttt != tmp_count[i])
-					//	int a = 0;
-					//#endif
 				}
 			}
 		}
 
 		if (freelistsize)
 		{
-
-			if (cursize != freelistsize)
-			{
-				int a = freelistsize - cursize;
-			}
-			else
+			if (cursize == freelistsize)
 			{
 				bdelete = true;
 

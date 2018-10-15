@@ -1296,7 +1296,6 @@ inline bool JobManager::SJobSyncVariable::SetStopped(SJobState* pPostCallback, u
 	if (currentValue.semaphoreHandle)
 	{
 		// try to set the running counter to 0 atomically
-		bool bNeedSemaphoreRelease = true;
 		do
 		{
 			// volatile read
@@ -1310,7 +1309,7 @@ inline bool JobManager::SJobSyncVariable::SetStopped(SJobState* pPostCallback, u
 
 		}
 		while (CryInterlockedCompareExchange((volatile LONG*)&syncVar.wordValue, newValue.wordValue, currentValue.wordValue) != currentValue.wordValue);
-		// set the running successfull to 0, now we can release the semaphore
+		// set the running successful to 0, now we can release the semaphore
 		gEnv->GetJobManager()->GetSemaphore(resValue.semaphoreHandle, this)->Release();
 	}
 
@@ -1321,8 +1320,6 @@ inline bool JobManager::SJobSyncVariable::SetStopped(SJobState* pPostCallback, u
 
 inline void JobManager::SInfoBlock::Release(uint32 nMaxValue)
 {
-	JobManager::IJobManager* pJobManager = gEnv->GetJobManager();
-
 	SInfoBlockState currentInfoBlockState;
 	SInfoBlockState newInfoBlockState;
 	SInfoBlockState resultInfoBlockState;

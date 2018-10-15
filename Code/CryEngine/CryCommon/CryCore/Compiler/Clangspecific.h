@@ -77,6 +77,13 @@
 //! Unreachable code marker for helping error handling and optimization
 #define UNREACHABLE() __builtin_unreachable()
 
+#if !defined(CRY_DISABLE_WARNING_UNUSED_VARIABLES)
+
+#define CRY_DISABLE_WARN_UNUSED_VARIABLES() _Pragma("clang diagnostic push") _Pragma("clang diagnostic ignored \"-Wunused-variable\"")
+#define CRY_RESTORE_WARN_UNUSED_VARIABLES() _Pragma("clang diagnostic pop")
+
+#endif
+
 #ifdef  _MSC_VER
 // For clang on MSBuild
 #define stricmp   _stricmp

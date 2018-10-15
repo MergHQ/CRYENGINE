@@ -129,10 +129,8 @@ public:
 		if (m_properties.size() != rhs.m_properties.size())
 			return false;
 
-		const CClassMemberDescArray& memberDescs = m_pDesc->GetMembers();
 		for (uint32 propertyIdx = 0, propertyCount = m_properties.size(); propertyIdx < propertyCount; ++propertyIdx)
 		{
-			const CClassMemberDesc& memberDesc = memberDescs[propertyIdx];
 			if (!Any::Equals(*m_scratchpad.Get(m_properties[propertyIdx]), *rhs.m_scratchpad.Get(rhs.m_properties[propertyIdx])))
 			{
 				return false;

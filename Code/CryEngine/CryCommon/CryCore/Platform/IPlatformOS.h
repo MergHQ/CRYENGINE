@@ -875,7 +875,7 @@ struct IPlatformOS
 	unsigned int TextToUIP(const char* fromString)  const
 	{
 		unsigned int ip1, ip2, ip3, ip4;
-		int numScanned = sscanf(fromString, "%u.%u.%u.%u", &ip1, &ip2, &ip3, &ip4);
+		sscanf(fromString, "%u.%u.%u.%u", &ip1, &ip2, &ip3, &ip4);
 		unsigned int ip = 0;
 		ip |= ip4;
 		ip |= ip3 << 8;

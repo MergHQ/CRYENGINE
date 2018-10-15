@@ -981,7 +981,9 @@ struct CEnumInfo : TEnumInfo<CEnumDef, TInt>
       if (Elems.empty())                                      \
       {                                                       \
         CEnumDef::SInit::Init(Elems);                         \
+CRY_DISABLE_WARN_UNUSED_VARIABLES();                          \
         CEnumDef::SInit __VA_ARGS__;                          \
+CRY_RESTORE_WARN_UNUSED_VARIABLES();                          \
       }                                                       \
       static CEnumInfo<TInt> info( # EType, Elems, enum_str); \
       return info;                                            \

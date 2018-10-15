@@ -32,7 +32,6 @@ inline void PointerInterface::YASLI_SERIALIZE_METHOD(Archive& ar) const
 	const char* const typePropertyName = noEmptyNames ? "type" : "";
 	const char* const dataPropertyName = noEmptyNames ? "data" : "";
 
-	TypeID baseTypeID = baseType();
 	const char* oldRegisteredName = registeredTypeName();
 	if (!oldRegisteredName)
 		oldRegisteredName = "";

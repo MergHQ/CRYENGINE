@@ -742,7 +742,6 @@ private:
 			m_FlashValueBuffer.clear();
 			for (DynArray<SUIData>::const_iterator it = m_ArgList.begin(); it != m_ArgList.end(); ++it)
 			{
-				bool bConverted = false;
 				switch (it->Type)
 				{
 				case eUIDT_Bool:
@@ -765,11 +764,18 @@ private:
 					break;
 				case eUIDT_Any:
 					{
+#if defined(USE_CRY_ASSERT)
 						bool bRes = TryAddValue<int>(it->Data)
 						            || TryAddValue<float>(it->Data)
 						            || (it->Data.GetType() == eUIDT_String && AddValue<string>(it->Data))
 						            || (it->Data.GetType() == eUIDT_WString && AddValue<wstring>(it->Data));
 						assert(bRes);
+#else
+					TryAddValue<int>(it->Data)
+						|| TryAddValue<float>(it->Data)
+						|| (it->Data.GetType() == eUIDT_String && AddValue<string>(it->Data))
+						|| (it->Data.GetType() == eUIDT_WString && AddValue<wstring>(it->Data));
+#endif
 					}
 					break;
 				default:
@@ -814,8 +820,12 @@ private:
 			{
 				if (buffer.size() > 0) buffer += delimiter_str;
 				CryStringT<T> val;
+#if defined(USE_CRY_ASSERT)
 				bool bRes = it->Data.GetValueWithConversion(val);
 				assert(bRes && "try to convert to char* string list but some of the values are unsupported wchar_t*");
+#else
+				it->Data.GetValueWithConversion(val);
+#endif
 				buffer += val;
 			}
 		}
@@ -2059,10 +2069,16 @@ template<> struct SUIGetTypeStr<eUOT_Events>
 	#define UIEVENT_RETURN_DISPATCH_SAFE return it->second->Dispatch((void*) pThis, event);
 #endif
 
+#if defined(USE_CRY_ASSERT)
 #define UIEVENT_GETARGSAVE(index)                             \
   deref_t<T ## index> arg ## index;                           \
   { const bool ok = event.args.GetArg(index, arg ## index.v); \
     CRY_ASSERT_MESSAGE(ok, "Value is not compatible for arg " # index); }
+#else
+#define UIEVENT_GETARGSAVE(index)                             \
+  deref_t<T ## index> arg ## index;                           \
+  { event.args.GetArg(index, arg ## index.v); }
+#endif
 
 #define UIEVENT_CHECKARGCOUNT(count) \
   CRY_ASSERT_MESSAGE(event.args.GetArgCount() == count, "Wrong argument count, expected " # count);

@@ -1365,7 +1365,7 @@ BOOL SetFileTime(const char* lpFileName, const FILETIME* lpLastAccessTime)
 {
 #if CRY_PLATFORM_ORBIS
 	char buf[512];
-	const char* const adjustedFilename = ConvertFileName(buf, sizeof(buf), lpFileName);
+	ConvertFileName(buf, sizeof(buf), lpFileName);
 #else
 	// Craig: can someone get a better impl here?
 	char adjustedFilename[MAX_PATH];
