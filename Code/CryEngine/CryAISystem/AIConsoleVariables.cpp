@@ -737,7 +737,7 @@ void AIConsoleVars::Init()
 	                       "Any other value is used for the biggest version.");
 
 	DefineConstIntCVarName("ai_MNMRemoveInaccessibleTrianglesOnLoad", MNMRemoveInaccessibleTrianglesOnLoad, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
-		"Defines whether inaccessible triangles should be removed from NavMesh after it is loaded.");
+		"Defines whether inaccessible triangles should be removed from NavMesh after it is loaded (doesn't work in Editor, where the triangles are never removed).");
 
 	DefineConstIntCVarName("ai_SmartPathFollower_useAdvancedPathShortcutting", SmartPathFollower_useAdvancedPathShortcutting, 1, VF_NULL, "Enables a more failsafe way of preventing the AI to shortcut through obstacles (0 = disable, any other value = enable)");
 	DefineConstIntCVarName("ai_SmartPathFollower_useAdvancedPathShortcutting_debug", SmartPathFollower_useAdvancedPathShortcutting_debug, 0, VF_NULL, "Show debug lines for when CVar ai_SmartPathFollower_useAdvancedPathShortcutting_debug is enabled");

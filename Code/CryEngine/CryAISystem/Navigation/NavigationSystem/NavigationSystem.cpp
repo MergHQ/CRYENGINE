@@ -3782,7 +3782,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 
 			m_volumesManager.LoadData(file, nFileVersion);
 
-			if (gAIEnv.CVars.MNMRemoveInaccessibleTrianglesOnLoad)
+			if (gAIEnv.CVars.MNMRemoveInaccessibleTrianglesOnLoad && !gEnv->IsEditor())
 			{
 				RemoveAllTrianglesByFlags(m_annotationsLibrary.GetInaccessibleAreaFlag().value);
 			}
