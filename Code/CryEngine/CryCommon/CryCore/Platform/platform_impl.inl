@@ -264,7 +264,7 @@ bool CryInitializeEngine(SSystemInitParams& startupParams, bool bManualEngineLoo
 	}
 #endif
 
-	if (ISystem* pSystem = CreateSystemInterface(startupParams, bManualEngineLoop))
+	if (CreateSystemInterface(startupParams, bManualEngineLoop) != nullptr)
 	{
 #if !defined(CRY_IS_MONOLITHIC_BUILD)
 		if (bManualEngineLoop)

@@ -227,7 +227,6 @@ ILINE void* CryInterlockedFlushSList(SLockFreeSingleLinkedListHeader& list)
 {
 	uint64 curSetting[2];
 	uint64 newSetting[2];
-	uint64 newPointer;
 	do
 	{
 		curSetting[1] = list.salt;
