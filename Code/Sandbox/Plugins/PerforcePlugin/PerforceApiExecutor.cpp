@@ -7,6 +7,8 @@
 namespace Private_CPerforceApiExecutor
 {
 
+const int MAX_ARGS_OUTPUT_LENGTH = 200;
+
 static string g_port;
 static string g_workspace;
 static string g_user;
@@ -64,12 +66,17 @@ public:
 			cu = m_pParser->SetP4ClientUser(func);
 		}
 		string argsStr = "";
-		for (int i = 0; i < arguments.size(); ++i)
+		for (int i = 0; i < arguments.size() && i < MAX_ARGS_OUTPUT_LENGTH; ++i)
 		{
 			argsStr += arguments[i] + " ";
+			if (argsStr.size() >= MAX_ARGS_OUTPUT_LENGTH)
+			{
+				argsStr += "(...)";
+				break;
+			}
 		}
 
-		CryLog(">>>>>>>>>>>> p4 %s %s", func, argsStr);
+		CryLog("Perforce command execution: p4 %s %s", func, argsStr);
 		ClientApi::Run(func, cu);
 		return true;
 	}
@@ -202,7 +209,7 @@ public:
 		AddSpec(dict, "Date");
 		AddSpec(dict, "User");
 		AddSpec(dict, "Status");
-		AddSpec(dict, "Description", AddTabs(m_desc));
+		AddSpec(dict, "Description", AddTabs(m_desc), false);
 		AddSpec(dict, "Jobs");
 		AddSpec(dict, "Type");
 		if (!m_bEmpty)
@@ -216,14 +223,18 @@ public:
 	const string& GetOutput() const { return m_output; }
 
 private:
-	void AddSpec(StrDict* dict, const char* name, const char* value = nullptr)
+	void AddSpec(StrDict* dict, const char* name, const string value = "", bool addLeadingTab = true)
 	{
 		auto pStr = dict->GetVar(name);
 		if (pStr)
 		{
 			m_spec.Append(name);
-			m_spec.Append(":\n\t");
-			m_spec.Append(value ? value : pStr->Text());
+			m_spec.Append(":\n");
+			if (addLeadingTab)
+			{
+				m_spec.Append("\t");
+			}
+			m_spec.Append(value.empty() ? pStr->Text() : value.c_str());
 			m_spec.Append("\n\n");
 		}
 	}
@@ -247,12 +258,15 @@ private:
 	{
 		string result;
 		int startIndex = 0;
-		auto newLineIndex = str.find('\n', startIndex);
-		while (newLineIndex != std::string::npos)
+		while (startIndex < str.size())
 		{
-			result += str.substr(startIndex, newLineIndex - startIndex + 1) + '\t';
+			auto newLineIndex = str.find('\n', startIndex);
+			if (newLineIndex == std::string::npos)
+			{
+				newLineIndex = str.size();
+			}
+			result += '\t' + str.substr(startIndex, newLineIndex - startIndex + 1);
 			startIndex = newLineIndex + 1;
-			newLineIndex = str.find('\n', startIndex);
 		}
 		return result;
 	}
@@ -515,11 +529,21 @@ string CPerforceApiExecutor::Have(const std::vector<string>& filePaths)
 	return "";
 }
 
-string CPerforceApiExecutor::Revert(const std::vector<string>& paths, bool onlyUnchanged /*= false*/)
+string CPerforceApiExecutor::Revert(const std::vector<string>& paths, bool onlyUnchanged /*= false*/, bool clearOnlyState /*= false*/)
 {
 	using namespace Private_CPerforceApiExecutor;
 
-	TryRun("revert", onlyUnchanged ? MergeVectors({ "-a" }, paths) : paths);
+	std::vector<string> args;
+	if (onlyUnchanged)
+	{
+		args.push_back("-a");
+	}
+	if (clearOnlyState)
+	{
+		args.push_back("-k");
+	}
+	AppendVector(args, paths);
+	TryRun("revert", args);
 
 	return "";
 }
@@ -610,6 +634,14 @@ string CPerforceApiExecutor::Diff(const std::vector<string>& filePaths /*= {"...
 string CPerforceApiExecutor::Logout()
 {
 	TryRun("logout", {});
+
+	return "";
+}
+
+string CPerforceApiExecutor::Print(const string& file)
+{
+	string fileWithRevision = file + "#head";
+	TryRun("print", { "-q" , fileWithRevision }, false);
 
 	return "";
 }

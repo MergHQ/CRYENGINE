@@ -21,7 +21,42 @@
 // CRY_ASSERT_TRACE(expression,("This should never happen because parameter %d named %s is %f",iParameter,szParam,fValue));
 //-----------------------------------------------------------------------------------------------------
 
-	#if defined(USE_CRY_ASSERT)
+#if defined(USE_CRY_ASSERT)
+
+static const wchar_t* g_moduleNames[] =
+{
+	L"",
+	L"Cry3DEngine",
+	L"CryAction",
+	L"CryAISystem",
+	L"CryAnimation",
+	L"CryDynamicResponseSystem",
+	L"CryEntitySystem",
+	L"CryFont",
+	L"CryInput",
+	L"CryMovie",
+	L"CryNetwork",
+	L"CryLobby",
+	L"CryPhysics",
+	L"CryScriptSystem",
+	L"CryAudioSystem",
+	L"CrySystem",
+	L"CryGame",
+	L"CryRenderer",
+	L"Launcher",
+	L"Sandbox",
+	L"CryLiveCreate",
+	L"CryOnline",
+	L"CryAudioImplementation",
+	L"CryMonoBridge",
+	L"CryScaleformHelper",
+	L"CryFlowGraph",
+	L"Legacy Module",
+	L"Engine Plug-ins",
+	L"Editor Plug-ins",
+	L"Schematyc2",
+	L"UniversalDebugRecordings"
+};
 
 enum class ECryAssertLevel
 {

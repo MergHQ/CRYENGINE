@@ -261,7 +261,7 @@ std::vector<CAsset*> CAssetType::Import(const string& sourceFilePath, const stri
 	return pAssetImporter->Import({ GetTypeName() }, ctx);
 }
 
-std::vector<string> CAssetType::GetAssetFiles(const CAsset& asset, bool includeSourceFile, bool makeAbsolute /* = false*/) const
+std::vector<string> CAssetType::GetAssetFiles(const CAsset& asset, bool includeSourceFile, bool makeAbsolute /* = false*/, bool includeThumbnail /*= true*/) const
 {
 	std::vector<string> files;
 	files.reserve(asset.GetFilesCount() + 3);
@@ -270,7 +270,7 @@ std::vector<string> CAssetType::GetAssetFiles(const CAsset& asset, bool includeS
 		files.emplace_back(asset.GetFile(i));
 	}
 	files.emplace_back(asset.GetMetadataFile());
-	if (HasThumbnail())
+	if (includeThumbnail && HasThumbnail())
 	{
 		files.emplace_back(asset.GetThumbnailPath());
 	}

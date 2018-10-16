@@ -3,6 +3,7 @@
 
 #include "QWidget"
 
+//! This tab displays version control system's settings.
 class EDITOR_COMMON_API CVersionControlSettingsTab : public QWidget
 {
 	Q_OBJECT

@@ -72,6 +72,9 @@ void AllocateMemoryPools()
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Environment Connection Pool");
 	CATLEnvironmentImpl::CreateAllocator(g_poolSizes.environmentConnections);
 
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Preload Connection Pool");
+	CATLAudioFileEntry::CreateAllocator(g_poolSizes.preloadConnections);
+
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Setting Connection Pool");
 	CSettingImpl::CreateAllocator(g_poolSizes.settingConnections);
 }
@@ -91,6 +94,7 @@ void FreeMemoryPools()
 	CParameterImpl::FreeMemoryPool();
 	CSwitchStateImpl::FreeMemoryPool();
 	CATLEnvironmentImpl::FreeMemoryPool();
+	CATLAudioFileEntry::FreeMemoryPool();
 	CSettingImpl::FreeMemoryPool();
 }
 
@@ -1541,7 +1545,7 @@ ERequestStatus CSystem::ProcessManagerRequest(CAudioRequest const& request)
 			{
 				for (auto const pEvent : pObject->GetActiveEvents())
 				{
-					CRY_ASSERT_MESSAGE((pEvent != nullptr) && (pEvent->IsPlaying() || pEvent->IsVirtual()), "Invalid event during EAudioManagerRequestType::ReloadControlsData");
+					CRY_ASSERT_MESSAGE((pEvent != nullptr) && pEvent->IsPlaying(), "Invalid event during EAudioManagerRequestType::ReloadControlsData");
 					pEvent->Stop();
 				}
 			}
@@ -1686,7 +1690,7 @@ ERequestStatus CSystem::ProcessCallbackManagerRequest(CAudioRequest& request)
 				static_cast<SCallbackManagerRequestData<ECallbackManagerRequestType::ReportStartedEvent> const* const>(request.GetData());
 			CATLEvent& audioEvent = pRequestData->audioEvent;
 
-			audioEvent.m_state = EEventState::PlayingDelayed;
+			audioEvent.m_state = pRequestData->isVirtual ? EEventState::Virtual : EEventState::Playing;
 
 			if (audioEvent.m_pAudioObject != g_pObject)
 			{
@@ -1727,31 +1731,7 @@ ERequestStatus CSystem::ProcessCallbackManagerRequest(CAudioRequest& request)
 			SCallbackManagerRequestData<ECallbackManagerRequestType::ReportVirtualizedEvent> const* const pRequestData =
 				static_cast<SCallbackManagerRequestData<ECallbackManagerRequestType::ReportVirtualizedEvent> const* const>(request.GetData());
 
-			pRequestData->audioEvent.m_state = EEventState::Virtual;
-			CATLAudioObject* const pObject = pRequestData->audioEvent.m_pAudioObject;
-
-			if ((pObject->GetFlags() & EObjectFlags::Virtual) == 0)
-			{
-				bool isVirtual = true;
-
-				for (auto const pEvent : pObject->GetActiveEvents())
-				{
-					if (pEvent->m_state != EEventState::Virtual)
-					{
-						isVirtual = false;
-						break;
-					}
-				}
-
-				if (isVirtual)
-				{
-					pObject->SetFlag(EObjectFlags::Virtual);
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-					pObject->ResetObstructionRays();
-#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
-				}
-			}
+			pRequestData->audioEvent.SetVirtual();
 
 			result = ERequestStatus::Success;
 
@@ -1762,8 +1742,7 @@ ERequestStatus CSystem::ProcessCallbackManagerRequest(CAudioRequest& request)
 			SCallbackManagerRequestData<ECallbackManagerRequestType::ReportPhysicalizedEvent> const* const pRequestData =
 				static_cast<SCallbackManagerRequestData<ECallbackManagerRequestType::ReportPhysicalizedEvent> const* const>(request.GetData());
 
-			pRequestData->audioEvent.m_state = EEventState::Playing;
-			pRequestData->audioEvent.m_pAudioObject->RemoveFlag(EObjectFlags::Virtual);
+			pRequestData->audioEvent.SetPlaying();
 
 			result = ERequestStatus::Success;
 
@@ -1831,6 +1810,8 @@ ERequestStatus CSystem::ProcessObjectRequest(CAudioRequest const& request)
 {
 	ERequestStatus result = ERequestStatus::Failure;
 	CATLAudioObject* const pObject = (request.pObject != nullptr) ? request.pObject : g_pObject;
+
+	CRY_ASSERT_MESSAGE((pObject->GetFlags() & EObjectFlags::InUse) != 0, "Object must be in use during CSystem::ProcessObjectRequest");
 
 	SObjectRequestDataBase const* const pBase =
 		static_cast<SObjectRequestDataBase const* const>(request.GetData());

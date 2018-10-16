@@ -60,7 +60,7 @@ public:
 		ePerPassTexture_Refraction            = 30,
 		ePerPassTexture_Reflection            = 31,
 
-		ePerPassTexture_SceneDepth            = 32,
+		ePerPassTexture_SceneLinearDepth      = 32,
 		
 		ePerPassTexture_ShadowMap0            = 33,
 		ePerPassTexture_ShadowMap1            = 34,
@@ -70,7 +70,7 @@ public:
 		ePerPassTexture_Count
 	};
 	static_assert(int32(ePerPassTexture_PerlinNoiseMap) == int32(CSceneGBufferStage::ePerPassTexture_PerlinNoiseMap), "Per instance texture count must be same in water stage to ensure using same resource layout.");
-	static_assert(int32(ePerPassTexture_SceneDepth) == int32(CSceneGBufferStage::ePerPassTexture_SceneLinearDepth), "Per instance texture count must be same in water stage to ensure using same resource layout.");
+	static_assert(int32(ePerPassTexture_SceneLinearDepth) == int32(CSceneGBufferStage::ePerPassTexture_SceneLinearDepth), "Per instance texture count must be same in water stage to ensure using same resource layout.");
 
 	enum EPerPassSampler
 	{

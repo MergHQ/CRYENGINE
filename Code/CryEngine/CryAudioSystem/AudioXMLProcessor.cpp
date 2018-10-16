@@ -48,39 +48,43 @@ void ParseSystemDataFile(char const* const szFolderPath, SPoolSizes& poolSizesou
 					pRootNode->getAttr(s_szNumSwitchesAttribute, numSwitches);
 					poolSizesout.switches += numSwitches;
 
-					int32 numStates = 0;
+					uint32 numStates = 0;
 					pRootNode->getAttr(s_szNumStatesAttribute, numStates);
 					poolSizesout.states += numStates;
 
-					int32 numEnvironments = 0;
+					uint32 numEnvironments = 0;
 					pRootNode->getAttr(s_szNumEnvironmentsAttribute, numEnvironments);
 					poolSizesout.environments += numEnvironments;
 
-					int32 numPreloads = 0;
+					uint32 numPreloads = 0;
 					pRootNode->getAttr(s_szNumPreloadsAttribute, numPreloads);
 					poolSizesout.preloads += numPreloads;
 
-					int32 numSettings = 0;
+					uint32 numSettings = 0;
 					pRootNode->getAttr(s_szNumSettingsAttribute, numSettings);
 					poolSizesout.settings += numSettings;
 
-					int32 numTriggerConnections = 0;
+					uint32 numTriggerConnections = 0;
 					pRootNode->getAttr(s_szNumTriggerConnectionsAttribute, numTriggerConnections);
 					poolSizesout.triggerConnections += numTriggerConnections;
 
-					int32 numParameterConnections = 0;
+					uint32 numParameterConnections = 0;
 					pRootNode->getAttr(s_szNumParameterConnectionsAttribute, numParameterConnections);
 					poolSizesout.parameterConnections += numParameterConnections;
 
-					int32 numStateConnections = 0;
+					uint32 numStateConnections = 0;
 					pRootNode->getAttr(s_szNumStateConnectionsAttribute, numStateConnections);
 					poolSizesout.stateConnections += numStateConnections;
 
-					int32 numEnvironmentConnections = 0;
+					uint32 numEnvironmentConnections = 0;
 					pRootNode->getAttr(s_szNumEnvironmentConnectionsAttribute, numEnvironmentConnections);
 					poolSizesout.environmentConnections += numEnvironmentConnections;
 
-					int32 numSettingConnections = 0;
+					uint32 numPreloadConnections = 0;
+					pRootNode->getAttr(s_szNumPreloadConnectionsAttribute, numPreloadConnections);
+					poolSizesout.preloadConnections += numPreloadConnections;
+
+					uint32 numSettingConnections = 0;
 					pRootNode->getAttr(s_szNumSettingConnectionsAttribute, numSettingConnections);
 					poolSizesout.settingConnections += numSettingConnections;
 				}
@@ -129,6 +133,7 @@ void ParseLevelSpecificSystemData(char const* const szFolderPath, SPoolSizes& po
 					poolSizesOut.parameterConnections = std::max(poolSizesOut.parameterConnections, levelPoolSizes.parameterConnections);
 					poolSizesOut.stateConnections = std::max(poolSizesOut.stateConnections, levelPoolSizes.stateConnections);
 					poolSizesOut.environmentConnections = std::max(poolSizesOut.environmentConnections, levelPoolSizes.environmentConnections);
+					poolSizesOut.preloadConnections = std::max(poolSizesOut.preloadConnections, levelPoolSizes.preloadConnections);
 					poolSizesOut.settingConnections = std::max(poolSizesOut.settingConnections, levelPoolSizes.settingConnections);
 				}
 			}
@@ -167,6 +172,7 @@ void CAudioXMLProcessor::ParseSystemData()
 	g_poolSizes.parameterConnections += maxLevelPoolSizes.parameterConnections;
 	g_poolSizes.stateConnections += maxLevelPoolSizes.stateConnections;
 	g_poolSizes.environmentConnections += maxLevelPoolSizes.environmentConnections;
+	g_poolSizes.preloadConnections += maxLevelPoolSizes.preloadConnections;
 	g_poolSizes.settingConnections += maxLevelPoolSizes.settingConnections;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -188,6 +194,7 @@ void CAudioXMLProcessor::ParseSystemData()
 	g_poolSizes.parameterConnections = std::max<uint32>(1, g_poolSizes.parameterConnections);
 	g_poolSizes.stateConnections = std::max<uint32>(1, g_poolSizes.stateConnections);
 	g_poolSizes.environmentConnections = std::max<uint32>(1, g_poolSizes.environmentConnections);
+	g_poolSizes.preloadConnections = std::max<uint32>(1, g_poolSizes.preloadConnections);
 	g_poolSizes.settingConnections = std::max<uint32>(1, g_poolSizes.settingConnections);
 }
 

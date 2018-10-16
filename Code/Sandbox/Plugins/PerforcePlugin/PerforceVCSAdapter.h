@@ -35,7 +35,9 @@ public:
 
 	virtual SVersionControlError Revert(const std::vector<string>& files, const std::vector<string>& folders) override;
 
-	virtual SVersionControlError RevertUnchanged(const std::vector<string>& files, const std::vector<string>& folders) override;
+	virtual SVersionControlError ClearLocalState(const std::vector<string>& files, const std::vector<string>& folders, bool clearIfUnchanged) override;
+
+	virtual SVersionControlError RetrieveFilesContent(const string& file) override;
 
 	virtual SVersionControlError CheckSettings() override;
 

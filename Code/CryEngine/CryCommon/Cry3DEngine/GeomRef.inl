@@ -138,7 +138,7 @@ void GeomRef::GetRandomPoints(Array<PosNorm> points, CRndGen seed, EGeomType eAt
 
 	if (eAttachType == GeomType_Physics)
 	{
-		if (IPhysicalEntity* pPhysEnt = GetPhysicalEntity())
+		if (GetPhysicalEntity() != nullptr)
 		{
 			pe_status_random sr;
 			sr.points = points;

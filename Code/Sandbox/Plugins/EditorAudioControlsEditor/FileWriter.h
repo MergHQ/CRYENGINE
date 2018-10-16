@@ -74,6 +74,7 @@ struct SLibraryScope final
 	uint32     numParameterConnections = 0;
 	uint32     numStateConnections = 0;
 	uint32     numEnvironmentConnections = 0;
+	uint32     numPreloadConnections = 0;
 	uint32     numSettingConnections = 0;
 };
 

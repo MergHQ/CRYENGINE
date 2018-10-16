@@ -21,11 +21,26 @@ public:
 	//! Clears cache.
 	void Clear();
 
+	//! Saves the content a given file in the cache.
+	void SaveFilesContent(const string& file, const string& filesContent);
+
+	//! Returns the content for a given file and removes it from cache.
+	string RemoveFilesContent(const string& file);
+
+	//! Returns the content of a given file.
+	//! @return empty string if not found.
+	const string& GetFilesContent(const string& file) const;
+
+	//! Returns the number of files' statuses in cache.
 	size_t GetSize() const { return m_fileStatuses.size(); }
 
-	void GetFileStatuses(std::function<bool(const CVersionControlFileStatus&)>
-		, std::vector<std::shared_ptr<const CVersionControlFileStatus>>&) const; 
+	//! Filters file statuses.
+	//! @filter Filter function.
+	//! @result Resulting filtered list of files' statuses.
+	void   GetFileStatuses(std::function<bool(const CVersionControlFileStatus&)> filter
+		, std::vector<std::shared_ptr<const CVersionControlFileStatus>>& result) const; 
 
+	//! Returns version control status of given file.
 	std::shared_ptr<const CVersionControlFileStatus> GetFileStatus(const string& filePath);
 
 	CCrySignal<void()> m_signalUpdate;
@@ -35,5 +50,8 @@ private:
 
 	FileStatusesMap m_fileStatuses;
 
-	mutable std::mutex m_dataMutex;
+	std::unordered_map<string, string, stl::hash_strcmp<string>, stl::hash_strcmp<string>> m_filesContents;
+
+	mutable std::mutex m_fileStatusesMutex;
+	mutable std::mutex m_fileContentsMutex;
 };

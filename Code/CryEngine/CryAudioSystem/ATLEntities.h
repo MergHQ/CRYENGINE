@@ -755,10 +755,11 @@ public:
 	void      Release();
 	void      Stop();
 	void      SetDataScope(EDataScope const dataScope) { m_dataScope = dataScope; }
-	bool      IsPlaying() const                        { return m_state == EEventState::Playing || m_state == EEventState::PlayingDelayed; }
-	bool      IsVirtual() const                        { return m_state == EEventState::Virtual; }
+	bool      IsPlaying() const                        { return (m_state == EEventState::Playing) || (m_state == EEventState::Virtual); }
 	void      SetTriggerId(ControlId const id)         { m_triggerId = id; }
 	ControlId GetTriggerId() const                     { return m_triggerId; }
+	void      SetVirtual();
+	void      SetPlaying();
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	void              SetTriggerName(char const* const szTriggerName) { m_szTriggerName = szTriggerName; }
@@ -784,7 +785,7 @@ private:
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 
-class CATLAudioFileEntry final
+class CATLAudioFileEntry final : public CPoolObject<CATLAudioFileEntry, stl::PSyncNone>
 {
 public:
 

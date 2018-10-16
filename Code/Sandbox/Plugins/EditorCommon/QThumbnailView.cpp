@@ -125,30 +125,80 @@ public:
 	void DrawThumbmailAdditionalIcons(const QModelIndex& index, const QRect& iconRect, QPainter* painter) const
 	{
 		QVariant vi = index.data(QThumbnailsView::s_ThumbnailIconsRole);
-		if (vi.isValid() && vi.type() == QVariant::List)
+		if (!vi.isValid() || vi.type() != QVariant::List)
 		{
-			const int iconSize = iconRect.width() >= 64 ? 16 : 8;
-			QVariantList varIcons = vi.value<QVariantList>();
-			int iconX = iconRect.right() - iconSize + 1;
-			int iconY = iconRect.y();
-			for (QVariant& vIcon : varIcons)
+			return;
+		}
+
+		QVariantList varIcons = vi.value<QVariantList>();
+		if (varIcons.isEmpty())
+		{
+			return;
+		}
+
+		const int iconSize = iconRect.width() >= 64 ? 16 : 8;
+
+		constexpr int positionCount = 4;
+		CRY_ASSERT(positionCount == SSubIcon::EPosition::BottomRight + 1);
+
+		QPoint point[positionCount];
+		QPoint step[positionCount];
+
+		point[SSubIcon::EPosition::TopRight] = QPoint(iconRect.x() + iconRect.width() - iconSize, iconRect.y());
+		point[SSubIcon::EPosition::TopLeft] = QPoint(iconRect.x(), iconRect.y());
+		point[SSubIcon::EPosition::BottomLeft] = QPoint(iconRect.x(), iconRect.y() + iconRect.height() - iconSize);
+		point[SSubIcon::EPosition::BottomRight] = QPoint(iconRect.x() + iconRect.width() - iconSize, iconRect.y() + iconRect.height() - iconSize);
+
+		step[SSubIcon::EPosition::TopRight] = QPoint(-iconSize, 0);
+		step[SSubIcon::EPosition::TopLeft] = QPoint(0, iconSize);
+		step[SSubIcon::EPosition::BottomLeft] = QPoint(iconSize, 0);
+		step[SSubIcon::EPosition::BottomRight] = QPoint(0, -iconSize);
+
+		for (QVariant& vIcon : varIcons)
+		{
+			if (!vIcon.isValid())
 			{
-				if (vIcon.isValid() && vIcon.type() == QVariant::Icon)
-				{
-					QIcon icon = qvariant_cast<QIcon>(vIcon);
-					painter->drawPixmap(iconX, iconY, icon.pixmap(iconSize, iconSize));
-				}
-				iconX -= iconSize;
-				if (iconX + 1 < iconRect.x())
-				{
-					iconX = iconRect.right() - iconSize + 1;
-					iconY += iconSize;
-					if (iconY + iconSize > iconRect.bottom() + 1)
-					{
-						return;
-					}
-				}
+				continue;
 			}
+
+			QIcon icon;
+			int positionIndex = static_cast<int>(SSubIcon::EPosition::TopRight);
+
+			if (vIcon.canConvert<SSubIcon>())
+			{
+				const SSubIcon subIcon = vIcon.value<SSubIcon>();
+				icon = subIcon.icon;
+				positionIndex = static_cast<int>(subIcon.position);
+			}
+			else if (vIcon.type() == QVariant::Icon)
+			{
+				icon = qvariant_cast<QIcon>(vIcon);
+			}
+			else
+			{ 
+				continue;
+			}
+
+			// Find a free spot starting from the desired corner in CCW direction. 
+			// The search can turn round corners if there is no space in the current line.
+			for(int i = 0; i <= positionCount; ++i)
+			{
+				if (i == positionCount)
+				{
+					return;
+				}
+
+				if (iconRect.translated(-step[positionIndex]).contains(point[positionIndex]))
+				{
+					break;
+				}
+
+				positionIndex = ++positionIndex % positionCount;
+			}
+
+			painter->drawPixmap(point[positionIndex], icon.pixmap(iconSize, iconSize));
+
+			point[positionIndex] += step[positionIndex];
 		}
 	}
 

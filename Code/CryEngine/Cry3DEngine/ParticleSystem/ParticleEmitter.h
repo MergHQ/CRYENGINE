@@ -110,7 +110,8 @@ public:
 	float                     GetDeltaTime() const         { return m_time - m_timeUpdated; }
 	float                     GetTime() const              { return m_time; }
 	float                     GetAge() const               { return m_time - m_timeCreated; }
-	bool                      WasRenderedLastFrame() const { return m_unrendered <= 1 && !(GetRndFlags() & ERF_HIDDEN); }
+	uint                      IsHidden() const             { return GetRndFlags() & ERF_HIDDEN; }
+	bool                      WasRenderedLastFrame() const { return m_unrendered <= 1 && !IsHidden(); }
 	uint32                    GetInitialSeed() const       { return m_initialSeed; }
 	uint32                    GetCurrentSeed() const       { return m_currentSeed; }
 	uint                      GetEmitterId() const         { return m_emitterId; }

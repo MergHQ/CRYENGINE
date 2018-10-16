@@ -1,22 +1,27 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "LevelModel.h"
 
-#include <QtUtil.h>
-#include <QMimeData>
-#include <QApplication>
-#include <QByteArray>
+#include "QtUtil.h"
 
 #include "Objects/ObjectLayer.h"
 #include "Objects/ObjectLayerManager.h"
-#include <CryCore/ToolsHelpers/GuidUtil.h>
+#include "CryCore/ToolsHelpers/GuidUtil.h"
 
 #include "CryIcon.h"
 #include "QAdvancedItemDelegate.h"
 #include "ProxyModels/ItemModelAttribute.h"
 #include "LevelLayerModel.h"
 #include "DragDrop.h"
+
+#include "VersionControl/VersionControl.h"
+#include "VersionControl/AssetsVCSStatusProvider.h"
+#include "VersionControl/UI/VersionControlUIHelper.h"
+
+#include <QMimeData>
+#include <QApplication>
+#include <QByteArray>
 
 //////////////////////////////////////////////////////////////////////////
 class CBaseObject;
@@ -39,13 +44,19 @@ void ProcessIndexList(const QModelIndexList& list, std::vector<CBaseObject*>& ou
 			{
 				CObjectLayer* pLayer = reinterpret_cast<CObjectLayer*>(internalPtrVar.value<intptr_t>());
 
-				if (pLayer->GetLayerType() == eObjectLayerType_Layer)
+				switch (pLayer->GetLayerType())
 				{
-					outLayers.push_back(pLayer);
-				}
-				else if (pLayer->GetLayerType() == eObjectLayerType_Folder)
-				{
-					outLayerFolders.push_back(pLayer);
+				case eObjectLayerType_Layer:
+				case eObjectLayerType_Terrain:
+					{
+						outLayers.push_back(pLayer);
+						break;
+					}
+				case eObjectLayerType_Folder:
+					{
+						outLayerFolders.push_back(pLayer);
+						break;
+					}
 				}
 			}
 			break;
@@ -239,6 +250,8 @@ CItemModelAttribute* CLevelModel::GetColumnAttribute(int column) const
 		return &LevelModelsAttributes::s_visibleAttribute;
 	case eLayerColumns_Frozen:
 		return &LevelModelsAttributes::s_frozenAttribute;
+	case eLayerColumns_VCS:
+		return &LevelModelsAttributes::s_vcsAttribute;
 	case eLayerColumns_Exportable:
 		return &LevelModelsAttributes::s_ExportableAttribute;
 	case eLayerColumns_ExportablePak:
@@ -296,6 +309,7 @@ QVariant CLevelModel::data(const QModelIndex& index, int role) const
 					}
 
 				}
+				break;
 			case Qt::DecorationRole:
 				if (pLayer->GetLayerType() == eObjectLayerType_Layer)
 				{
@@ -317,6 +331,7 @@ QVariant CLevelModel::data(const QModelIndex& index, int role) const
 				{
 					return CryIcon("icons:Tools/tools_terrain-editor.ico").pixmap(16, 16);
 				}
+				break;
 			}
 			break;
 		case ELayerColumns::eLayerColumns_Visible:
@@ -339,8 +354,8 @@ QVariant CLevelModel::data(const QModelIndex& index, int role) const
 			default:
 				break;
 			}
+			break;
 		case ELayerColumns::eLayerColumns_Frozen:
-
 			switch (role)
 			{
 			case Qt::CheckStateRole:
@@ -353,6 +368,26 @@ QVariant CLevelModel::data(const QModelIndex& index, int role) const
 			default:
 				break;
 			}
+			break;
+		case ELayerColumns::eLayerColumns_VCS:
+			{
+				if (role != Qt::DecorationRole && role != Qt::DisplayRole && !CVersionControl::GetInstance().IsOnline())
+					break;
+
+				const bool isFolder = pLayer->GetLayerType() == eObjectLayerType_Folder;
+				if (isFolder)
+				{
+					if (role == Qt::DisplayRole)
+						return "-";
+					if (role == Qt::TextAlignmentRole)
+						return Qt::AlignCenter;
+					break;
+				}
+
+				if (role == Qt::DecorationRole && !isFolder)
+					return VersionControlUIHelper::GetIconFromStatus(CAssetsVCSStatusProvider::GetStatus(*pLayer));
+			}
+			break;
 		case ELayerColumns::eLayerColumns_Exportable:
 			switch (role)
 			{
@@ -381,7 +416,6 @@ QVariant CLevelModel::data(const QModelIndex& index, int role) const
 				return pLayer->HasPhysics() ? Qt::Checked : Qt::Unchecked;
 			}
 			break;
-
 		case ELayerColumns::eLayerColumns_Platform:
 			switch (role)
 			{
@@ -411,6 +445,7 @@ QVariant CLevelModel::data(const QModelIndex& index, int role) const
 			default:
 				break;
 			}
+			break;
 		}
 	}
 	return QVariant();
@@ -515,11 +550,14 @@ QVariant CLevelModel::headerData(int section, Qt::Orientation orientation, int r
 			return CryIcon("icons:General/Visibility_True.ico");
 		if (section == eLayerColumns_Frozen)
 			return CryIcon("icons:Navigation/Basics_Select_False.ico");
+		if (section == eLayerColumns_VCS)
+			return CryIcon("icons:VersionControl/icon.ico");
 	}
 	if (role == Qt::DisplayRole)
 	{
 		//For Visible, Frozen and Layer Color we don't return the name because we use Icons instead
-		if (section != eLayerColumns_Visible && section != eLayerColumns_Frozen && section != eLayerColumns_Color)
+		if (section != eLayerColumns_Visible && section != eLayerColumns_Frozen && section != eLayerColumns_VCS 
+			&& section != eLayerColumns_Color)
 		{
 			return pAttribute->GetName();
 		}
@@ -539,6 +577,7 @@ QVariant CLevelModel::headerData(int section, Qt::Orientation orientation, int r
 		case eLayerColumns_Name:
 		case eLayerColumns_Visible:
 		case eLayerColumns_Frozen:
+		case eLayerColumns_VCS:
 			return "";
 		default:
 			return "Layers";
@@ -597,11 +636,11 @@ QModelIndex CLevelModel::index(int row, int column, const QModelIndex& parent) c
 			// index for a top level layer
 			int index = 0;
 			const auto& layers = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetLayers();
-			for (CObjectLayer* pLayer : layers)
+			for (IObjectLayer* pLayer : layers)
 			{
 				// since all the layers are stored together we need look for the ones
 				// that have no parents as these are the top level layers
-				if (pLayer->GetParent() == nullptr)
+				if (pLayer->GetParentIObjectLayer() == nullptr)
 				{
 					if (index == row)
 					{
@@ -842,9 +881,9 @@ int CLevelModel::rowCount(const QModelIndex& parent) const
 		// rowCount for the top level layers
 		int count = 0;
 		const auto& layers = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetLayers();
-		for (CObjectLayer* pOtherLayer : layers)
+		for (IObjectLayer* pOtherLayer : layers)
 		{
-			if (pOtherLayer->GetParent() == nullptr)
+			if (pOtherLayer->GetParentIObjectLayer() == nullptr)
 			{
 				// since all the layers are stored together we need to count only
 				// the top level ones to get the right index
@@ -887,13 +926,13 @@ QModelIndex CLevelModel::IndexFromLayer(const CObjectLayer* pLayer) const
 			// pLayer is a top level item
 			int index = 0;
 			const auto& layers = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetLayers();
-			for (CObjectLayer* pOtherLayer : layers)
+			for (IObjectLayer* pOtherLayer : layers)
 			{
 				if (pOtherLayer == pLayer)
 				{
 					return createIndex(index, 0, reinterpret_cast<quintptr>(pLayer));
 				}
-				if (pOtherLayer->GetParent() == nullptr)
+				if (pOtherLayer->GetParentIObjectLayer() == nullptr)
 				{
 					// since all the layers are stored together we need to count only
 					// the top level ones to get the right index
@@ -912,9 +951,9 @@ int CLevelModel::RootRowIfInserted(const CObjectLayer* pLayer) const
 
 	const auto& layers = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetLayers();
 
-	for (CObjectLayer* pOtherLayer : layers)
+	for (IObjectLayer* pOtherLayer : layers)
 	{
-		if (pOtherLayer->GetParent() == nullptr)//Only count top level layers
+		if (pOtherLayer->GetParentIObjectLayer() == nullptr)//Only count top level layers
 		{
 			if (pLayer->GetGUID() < pOtherLayer->GetGUID())
 			{

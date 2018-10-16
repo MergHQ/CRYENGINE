@@ -85,6 +85,7 @@ struct SPoolSizes final
 	uint32 parameterConnections = 0;
 	uint32 stateConnections = 0;
 	uint32 environmentConnections = 0;
+	uint32 preloadConnections = 0;
 	uint32 settingConnections = 0;
 };
 

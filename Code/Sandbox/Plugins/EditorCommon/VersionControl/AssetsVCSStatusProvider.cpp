@@ -2,8 +2,10 @@
 #include "StdAfx.h"
 #include "AssetsVCSStatusProvider.h"
 #include "VersionControl.h"
+#include "AssetFilesProvider.h"
 #include "AssetSystem/IFilesGroupProvider.h"
 #include "AssetSystem/AssetManagerHelpers.h"
+#include "Objects/IObjectLayer.h"
 
 namespace Private_AssetsVCSStatusProvider
 {
@@ -20,52 +22,76 @@ void UpdateFilesStatus(std::vector<string> files, const std::vector<string>& fol
 	});
 }
 
-int GetFileStatus(const string& file)
+}
+
+int CAssetsVCSStatusProvider::GetStatus(const string& file)
 {
 	auto fs = CVersionControl::GetInstance().GetFileStatus(file);
 	return fs ? fs->GetState() : CVersionControlFileStatus::eState_NotTracked;
 }
 
-bool HasFileStatus(const string& file, int status)
-{
-	auto fs = CVersionControl::GetInstance().GetFileStatus(file);
-	return fs ? fs->HasState(status) : false;
-}
-
-}
-
 int CAssetsVCSStatusProvider::GetStatus(const CAsset& asset)
 {
 	using namespace Private_AssetsVCSStatusProvider;
-	return GetFileStatus(asset.GetMetadataFile());
+	return GetStatus(asset.GetMetadataFile());
 }
 
 int CAssetsVCSStatusProvider::GetStatus(const IFilesGroupProvider& pFileGroup)
 {
 	using namespace Private_AssetsVCSStatusProvider;
-	return GetFileStatus(pFileGroup.GetMainFile());
+	return GetStatus(pFileGroup.GetMainFile());
+}
+
+int CAssetsVCSStatusProvider::GetStatus(const IObjectLayer& layer)
+{
+	using namespace Private_AssetsVCSStatusProvider;
+	return GetStatus(PathUtil::MakeGamePath(layer.GetLayerFilepath()));
+}
+
+bool CAssetsVCSStatusProvider::HasStatus(const string& file, int status)
+{
+	auto fs = CVersionControl::GetInstance().GetFileStatus(file);
+	return fs ? fs->HasState(status) : status == CVersionControlFileStatus::eState_NotTracked;
 }
 
 bool CAssetsVCSStatusProvider::HasStatus(const CAsset& asset, int status)
 {
 	using namespace Private_AssetsVCSStatusProvider;
-	return HasFileStatus(asset.GetMetadataFile(), status);
+	return HasStatus(asset.GetMetadataFile(), status);
 }
 
-bool CAssetsVCSStatusProvider::HasStatus(const IFilesGroupProvider& pFileGroup, int status)
+bool CAssetsVCSStatusProvider::HasStatus(const IFilesGroupProvider& fileGroup, int status)
 {
 	using namespace Private_AssetsVCSStatusProvider;
-	return HasFileStatus(pFileGroup.GetMainFile(), status);
+	return HasStatus(fileGroup.GetMainFile(), status);
+}
+
+bool CAssetsVCSStatusProvider::HasStatus(const IObjectLayer& layer, int status)
+{
+	using namespace Private_AssetsVCSStatusProvider;
+	return HasStatus(PathUtil::MakeGamePath(layer.GetLayerFilepath()), status);
 }
 
 void CAssetsVCSStatusProvider::UpdateStatus(const std::vector<CAsset*>& assets, const std::vector<string>& folders, std::function<void()> callback /*= nullptr*/)
 {
 	using namespace Private_AssetsVCSStatusProvider;
-	UpdateFilesStatus(AssetManagerHelpers::GetListOfMetadataFiles(assets), folders, std::move(callback));
+	UpdateFilesStatus(CAssetFilesProvider::GetForAssets(assets, CAssetFilesProvider::EInclude::OnlyMainFile), folders, std::move(callback));
+}
+
+void CAssetsVCSStatusProvider::UpdateStatus(const std::vector<IObjectLayer*>& layers, std::function<void()> callback /*= nullptr*/)
+{
+	using namespace Private_AssetsVCSStatusProvider;
+	UpdateFilesStatus(CAssetFilesProvider::GetForLayers(layers, CAssetFilesProvider::EInclude::OnlyMainFile), {}, std::move(callback));
 }
 
 void CAssetsVCSStatusProvider::UpdateStatus(const IFilesGroupProvider& pFilesGroup, std::function<void()> callback /*= nullptr*/)
 {
 	using namespace Private_AssetsVCSStatusProvider;
-	UpdateFilesStatus(pFilesGroup.GetFiles(), {}, std::move(callback));
+	UpdateFilesStatus({ pFilesGroup.GetMainFile() }, {}, std::move(callback));
+}
+
+void CAssetsVCSStatusProvider::UpdateStatus(const std::vector<std::shared_ptr<IFilesGroupProvider>>& fileGroups, std::vector<string> folders, std::function<void()> callback /*= nullptr*/)
+{
+	using namespace Private_AssetsVCSStatusProvider;
+	UpdateFilesStatus(CAssetFilesProvider::GetForFileGroups(fileGroups, CAssetFilesProvider::EInclude::OnlyMainFile), {}, std::move(callback));
 }

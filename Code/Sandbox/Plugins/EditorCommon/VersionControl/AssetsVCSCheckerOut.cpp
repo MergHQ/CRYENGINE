@@ -10,82 +10,77 @@
 namespace Private_AssetsVCSCheckerOut
 {
 
-void SyncDeletedAssets(std::vector<CAsset*>& assets, std::vector<CAsset*>::iterator firstDeletedIt)
+void SyncDeletedAssets(std::vector<std::shared_ptr<IFilesGroupProvider>>& fileGroups, std::vector<std::shared_ptr<IFilesGroupProvider>>::iterator firstDeletedIt)
 {
-	auto numDeleted = std::distance(firstDeletedIt, assets.end());
+	const auto numDeleted = std::distance(firstDeletedIt, fileGroups.end());
 	if (numDeleted > 0)
 	{
-		std::vector<CAsset*> deletedAssets;
-		deletedAssets.reserve(numDeleted);
-		std::move(firstDeletedIt, assets.end(), std::back_inserter(deletedAssets));
-		assets.erase(firstDeletedIt, assets.end());
-		CAssetsVCSSynchronizer::Sync(std::move(deletedAssets), {});
+		std::vector<std::shared_ptr<IFilesGroupProvider>> deletedFileGroups;
+		deletedFileGroups.reserve(numDeleted);
+		std::move(firstDeletedIt, fileGroups.end(), std::back_inserter(deletedFileGroups));
+		fileGroups.erase(firstDeletedIt, fileGroups.end());
+		CAssetsVCSSynchronizer::Sync(std::move(deletedFileGroups), {});
 	}
 }
 
-void DoCheckOutAssets(const std::vector<CAsset*>& assets)
+void DoCheckOutAssets(const std::vector<std::shared_ptr<IFilesGroupProvider>>& fileGroups)
 {
-	CVersionControl::GetInstance().EditFiles(CAssetFilesProvider::GetForAssets(assets), false, [](const auto& result)
-	{
-		if (result.GetError().type == EVersionControlError::AlreadyCheckedOutByOthers)
-		{
-			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Can't check out exclusively checked out file(s)");
-		}
-	});
+	CVersionControl::GetInstance().EditFiles(CAssetFilesProvider::GetForFileGroups(fileGroups));
 }
 
-void UpdateChangedAndCheckOutAll(std::vector<CAsset*> assets, std::vector<CAsset*>::iterator firstChangedRemotelyIt)
+void UpdateChangedAndCheckOutAll(std::vector<std::shared_ptr<IFilesGroupProvider>> fileGroups, std::vector<std::shared_ptr<IFilesGroupProvider>>::iterator firstChangedRemotelyIt)
 {
-	auto numUpdated = std::distance(firstChangedRemotelyIt, assets.end());
+	auto numUpdated = std::distance(firstChangedRemotelyIt, fileGroups.end());
 	if (numUpdated > 0)
 	{
-		std::vector<CAsset*> updatedAssets;
-		updatedAssets.reserve(numUpdated);
-		std::copy(firstChangedRemotelyIt, assets.end(), std::back_inserter(updatedAssets));
-		CAssetsVCSSynchronizer::Sync(std::move(updatedAssets), {}, [assets = std::move(assets)]()
+		std::vector<std::shared_ptr<IFilesGroupProvider>> updatedFileGroups;
+		updatedFileGroups.reserve(numUpdated);
+		std::copy(firstChangedRemotelyIt, fileGroups.end(), std::back_inserter(updatedFileGroups));
+		CAssetsVCSSynchronizer::Sync(std::move(updatedFileGroups), {}, [fileGroups = std::move(fileGroups)]()
 		{
-			DoCheckOutAssets(assets);
+			DoCheckOutAssets(fileGroups);
 		});
 	}
 	else
 	{
-		DoCheckOutAssets(assets);
+		DoCheckOutAssets(fileGroups);
 	}
 }
 
 }
 
-void CAssetsVCSCheckerOut::CheckOutAssets(std::vector<CAsset*> assets)
+void CAssetsVCSCheckerOut::CheckOut(const std::vector<CAsset*>& assets)
+{
+	CheckOut(CAssetFilesProvider::ToFileGroups(assets));
+}
+
+void CAssetsVCSCheckerOut::CheckOut(const std::vector<IObjectLayer*>& layers)
+{
+	CheckOut(CAssetFilesProvider::ToFileGroups(layers));
+}
+
+void CAssetsVCSCheckerOut::CheckOut(const std::vector<std::shared_ptr<IFilesGroupProvider>>& fileGroups)
 {
 	using namespace Private_AssetsVCSCheckerOut;
 
-	auto it = std::remove_if(assets.begin(), assets.end(), [](CAsset* pAsset)
-	{
-		return strcmp(pAsset->GetType()->GetTypeName(), "Level") == 0;
-	});
-	if (it != assets.end())
-	{
-		assets.erase(it);
-	}
-
-	CAssetsVCSStatusProvider::UpdateStatus(assets, {}, [assets = std::move(assets)]() mutable
+	CAssetsVCSStatusProvider::UpdateStatus(fileGroups, {}, [fileGroups = fileGroups]() mutable
 	{
 		// move all remotely change assets to the back of the array.
-		auto firstChangedRemotelyIt = std::partition(assets.begin(), assets.end(), [](CAsset* pAsset)
+		auto firstChangedRemotelyIt = std::partition(fileGroups.begin(), fileGroups.end(), [](const auto& pFileGroup)
 		{
 			using FS = CVersionControlFileStatus;
 			static const int changedRemotelyState = FS::eState_DeletedRemotely | FS::eState_UpdatedRemotely;
-			return !CAssetsVCSStatusProvider::HasStatus(*pAsset, changedRemotelyState);
+			return !CAssetsVCSStatusProvider::HasStatus(*pFileGroup, changedRemotelyState);
 		});
 		// from remotely changes range move remotely deleted assets to the back.
-		auto firstDeletedIt = std::partition(firstChangedRemotelyIt, assets.end(), [](CAsset* pAsset)
+		auto firstDeletedIt = std::partition(firstChangedRemotelyIt, fileGroups.end(), [](const auto& pFileGroup)
 		{
-			return !CAssetsVCSStatusProvider::HasStatus(*pAsset, CVersionControlFileStatus::eState_DeletedRemotely);
+			return !CAssetsVCSStatusProvider::HasStatus(*pFileGroup, CVersionControlFileStatus::eState_DeletedRemotely);
 		});
 
 		// this syncs deleted assets and removes them from the array.
-		SyncDeletedAssets(assets, firstDeletedIt);
+		SyncDeletedAssets(fileGroups, firstDeletedIt);
 
-		UpdateChangedAndCheckOutAll(std::move(assets), firstChangedRemotelyIt);
+		UpdateChangedAndCheckOutAll(std::move(fileGroups), firstChangedRemotelyIt);
 	});
 }

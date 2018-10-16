@@ -32,6 +32,7 @@ public:
 	virtual ERequestStatus Stop() override;
 	// ~CryAudio::Impl::IEvent
 
+	void SetInitialVirtualState(float const distance);
 	void UpdateVirtualState(float const distance);
 
 	EEventState m_state;

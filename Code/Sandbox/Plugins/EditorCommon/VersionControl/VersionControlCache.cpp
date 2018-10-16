@@ -9,43 +9,87 @@ void CVersionControlCache::UpdateFiles(const std::vector<CVersionControlFileStat
 	{
 		return;
 	}
+	bool hasChanges = false;
 	{
-		std::lock_guard<std::mutex> lock(m_dataMutex);
+		std::lock_guard<std::mutex> lock(m_fileStatusesMutex);
 		if (shouldClear)
 		{
 			m_fileStatuses.clear();
+			hasChanges = true;
 		}
-		for (const auto& fileStatus : newFiles)
+		for (const auto& fileStatusUpdate : newFiles)
 		{
-			auto it = m_fileStatuses.find(fileStatus.GetFileName());
+			auto it = m_fileStatuses.find(fileStatusUpdate.GetFileName());
 			if (it != m_fileStatuses.end())
 			{
-				fileStatus.Apply(*it->second);
+				const CVersionControlFileStatus& fs = *it->second;
+				const auto oldState = fs.GetState();
+				fileStatusUpdate.Apply(*it->second);
+				hasChanges |= oldState != fs.GetState();
 			}
 			else
 			{
-				auto fs = std::make_shared<CVersionControlFileStatus>(fileStatus.GetFileName());
-				fileStatus.Apply(*fs);
-				m_fileStatuses.emplace(fileStatus.GetFileName(), std::move(fs));
+				auto fs = std::make_shared<CVersionControlFileStatus>(fileStatusUpdate.GetFileName());
+				fileStatusUpdate.Apply(*fs);
+				m_fileStatuses.emplace(fileStatusUpdate.GetFileName(), std::move(fs));
+				hasChanges = true;
 			}
 		}
 	}
-	SendUpdateSignal();
+	if (hasChanges)
+	{
+		SendUpdateSignal();
+	}
 }
 
 void CVersionControlCache::Clear()
 {
 	{
-		std::lock_guard<std::mutex> lock(m_dataMutex);
+		std::lock_guard<std::mutex> lock(m_fileStatusesMutex);
 		m_fileStatuses.clear();
 	}
+	{
+		std::lock_guard<std::mutex> lock(m_fileContentsMutex);
+		m_filesContents.clear();
+	}
 	SendUpdateSignal();
+}
+
+void CVersionControlCache::SaveFilesContent(const string& file, const string& filesContent)
+{
+	std::lock_guard<std::mutex> lock(m_fileContentsMutex);
+	m_filesContents[file] = filesContent;
+}
+
+string CVersionControlCache::RemoveFilesContent(const string& file)
+{
+	std::lock_guard<std::mutex> lock(m_fileContentsMutex);
+	auto it = m_filesContents.find(file);
+	if (it != m_filesContents.end())
+	{
+		string filesContent = std::move(it->second);
+		m_filesContents.erase(it);
+		return filesContent;
+	}
+	return "";
+}
+
+const string& CVersionControlCache::GetFilesContent(const string& file) const
+{
+	static const string emptyString;
+	std::lock_guard<std::mutex> lock(m_fileContentsMutex);
+	const auto& it = m_filesContents.find(file);
+	if (it != m_filesContents.cend())
+	{
+		return it->second;
+	}
+	return emptyString;
 }
 
 void CVersionControlCache::GetFileStatuses(std::function<bool(const CVersionControlFileStatus&)> filter
 	, std::vector<std::shared_ptr<const CVersionControlFileStatus>>& result) const
 {
-	std::lock_guard<std::mutex> lock(m_dataMutex);
+	std::lock_guard<std::mutex> lock(m_fileStatusesMutex);
 	for (const auto& fsItem : m_fileStatuses)
 	{
 		if (filter(*fsItem.second))
@@ -57,7 +101,7 @@ void CVersionControlCache::GetFileStatuses(std::function<bool(const CVersionCont
 
 std::shared_ptr<const CVersionControlFileStatus> CVersionControlCache::GetFileStatus(const string& filePath)
 {
-	std::lock_guard<std::mutex> lock(m_dataMutex);
+	std::lock_guard<std::mutex> lock(m_fileStatusesMutex);
 	auto it = m_fileStatuses.find(filePath);
 	if (it != m_fileStatuses.end())
 	{

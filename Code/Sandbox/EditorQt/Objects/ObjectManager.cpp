@@ -3794,7 +3794,7 @@ void CObjectManager::SaveEntitiesInternalState(IDataWriteStream& writer) const
 		uint32 numVisibleLayers = 0;
 		for (uint32 i = 0; i < layers.size(); ++i)
 		{
-			CObjectLayer* pLayer = layers[i];
+			IObjectLayer* pLayer = layers[i];
 			if (pLayer->IsVisible())
 			{
 				numVisibleLayers += 1;
@@ -3804,7 +3804,7 @@ void CObjectManager::SaveEntitiesInternalState(IDataWriteStream& writer) const
 		writer.WriteUint32(numVisibleLayers);
 		for (uint32 i = 0; i < layers.size(); ++i)
 		{
-			CObjectLayer* pLayer = layers[i];
+			IObjectLayer* pLayer = layers[i];
 			if (pLayer->IsVisible())
 			{
 				writer.WriteString(pLayer->GetName());

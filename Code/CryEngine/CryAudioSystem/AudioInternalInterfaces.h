@@ -712,19 +712,22 @@ struct SCallbackManagerRequestData final : public SCallbackManagerRequestDataBas
 template<>
 struct SCallbackManagerRequestData<ECallbackManagerRequestType::ReportStartedEvent> final : public SCallbackManagerRequestDataBase
 {
-	explicit SCallbackManagerRequestData(CATLEvent& audioEvent_)
+	explicit SCallbackManagerRequestData(CATLEvent& audioEvent_, bool const isVirtual_)
 		: SCallbackManagerRequestDataBase(ECallbackManagerRequestType::ReportStartedEvent)
 		, audioEvent(audioEvent_)
+		, isVirtual(isVirtual_)
 	{}
 
 	explicit SCallbackManagerRequestData(SCallbackManagerRequestData<ECallbackManagerRequestType::ReportStartedEvent> const* const pACMRData)
 		: SCallbackManagerRequestDataBase(ECallbackManagerRequestType::ReportStartedEvent)
 		, audioEvent(pACMRData->audioEvent)
+		, isVirtual(pACMRData->isVirtual)
 	{}
 
 	virtual ~SCallbackManagerRequestData() override = default;
 
 	CATLEvent& audioEvent;
+	bool       isVirtual;
 };
 
 //////////////////////////////////////////////////////////////////////////

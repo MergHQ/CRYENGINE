@@ -8,17 +8,21 @@
 
 class CAsset;
 struct IFilesGroupProvider;
+struct IObjectLayer;
 
 //! This class is responsible for synchronizing assets with the version on repository.
 class EDITOR_COMMON_API CAssetsVCSSynchronizer
 {
 public:
-	static void Sync(std::vector<CAsset*> assets, std::vector<string> folders , std::function<void()> callback = nullptr);
-	static void Sync(std::shared_ptr<IFilesGroupProvider>, std::function<void()> callback = nullptr);
+	//! Synchronizes given assets and folders with version in the repository.
+	static void Sync(const std::vector<CAsset*>& assets, std::vector<string> folders , std::function<void()> callback = nullptr);
 
-	//! Finds strings in vec1 that are absent in vec2
-	static std::vector<string> FindMissingStrings(std::vector<string>& vec1, std::vector<string>& vec2);
+	//! Synchronizes files group with version in the repository.
+	static void Sync(const std::shared_ptr<IFilesGroupProvider>&, std::function<void()> callback = nullptr);
 
-	//! Compares current assets' file with given list and returns the difference list.
-	static std::vector<string> GetMissingAssetsFiles(const std::vector<CAsset*>& assets, std::vector<string>& originalFiles);
+	//! Synchronizes layers with version in the repository.
+	static void Sync(const std::vector<IObjectLayer*>& layers, std::vector<string> folders, std::function<void()> callback = nullptr);
+
+	//! Synchronizes files groups with version in the repository.
+	static void Sync(std::vector<std::shared_ptr<IFilesGroupProvider>>, std::vector<string> folders, std::function<void()> callback = nullptr);
 };

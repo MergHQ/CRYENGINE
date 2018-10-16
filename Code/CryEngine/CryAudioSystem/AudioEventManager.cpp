@@ -128,17 +128,25 @@ void CEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, flo
 			{
 				float const* pColor = Debug::g_globalColorInactive.data();
 
-				if (pEvent->IsPlaying())
+				switch (pEvent->m_state)
 				{
-					pColor = Debug::g_managerColorItemActive.data();
-				}
-				else if (pEvent->m_state == EEventState::Loading)
-				{
-					pColor = Debug::g_managerColorItemLoading.data();
-				}
-				else if (pEvent->IsVirtual())
-				{
-					pColor = Debug::g_globalColorVirtual.data();
+				case EEventState::Playing:
+					{
+						pColor = Debug::g_managerColorItemActive.data();
+						break;
+					}
+				case EEventState::Virtual:
+					{
+						pColor = Debug::g_globalColorVirtual.data();
+						break;
+					}
+				case EEventState::Loading:
+					{
+						pColor = Debug::g_managerColorItemLoading.data();
+						break;
+					}
+				default:
+					break;
 				}
 
 				auxGeom.Draw2dLabel(posX, posY, Debug::g_managerFontSize, pColor, false, "%s on %s", szTriggerName, pEvent->m_pAudioObject->m_name.c_str());

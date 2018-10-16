@@ -29,6 +29,14 @@ Property
 
 Property
 {
+  Name = %PBR
+  Mask = 0x200
+  Property    (Use PBR-BRDF)
+  Description (Use physically-based Illumination)
+}
+
+Property
+{
   Name = %FLOW
   Mask = 0x2
   Property    (Water flow)

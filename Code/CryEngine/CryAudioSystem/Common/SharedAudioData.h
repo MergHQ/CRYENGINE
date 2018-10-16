@@ -14,7 +14,6 @@ enum class EEventState : EnumFlagsType
 {
 	None,
 	Playing,
-	PlayingDelayed,
 	Loading,
 	Unloading,
 	Virtual,

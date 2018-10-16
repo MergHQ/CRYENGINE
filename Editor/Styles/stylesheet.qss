@@ -2149,10 +2149,25 @@ QToolButton#Filter::menu-indicator
 	subcontrol-position: right bottom;
 }
 
-CVersionControlPendingChangesTab QPlainTextEdit
+QPlainTextEdit
 {
     margin-top: 0px;
     margin-left: 2px;
     border-radius: 3px;
     background-color: rgb(50,50,50);
 }
+
+CVersionControlWorkspaceOverviewTab QPushButton#revert
+{
+    min-width: 70px;
+    max-width: 120px;
+    width: -1px;
+}
+
+CVersionControlWorkspaceOverviewTab QPushButton#submit
+{
+    min-width: 70px;
+    max-width: 190px;
+    width: -1px;
+}
+

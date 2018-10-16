@@ -35,6 +35,7 @@ float4 g_ScreenScale < psregister = c15; >;
 
 float4x4 g_mDecalTS <  psregister = c25; > ;
 float4x4 g_mViewProjPrev;
+float4x4 g_mReprojectToPrev;
 float4   g_mSSRParams;
 
 float4 g_TextureRect[2];	// x, y, w, h
@@ -408,6 +409,7 @@ pixout SSRRaytracePS(vtxOutWPOS IN)
 	params.Smoothness = attribs.Smoothness;
 	params.Reproject = true;
 	params.ViewProjPrev = g_mViewProjPrev;
+	params.ReprojectToPrev = g_mReprojectToPrev;
 	params.limitMask = 0;
 	
 	params.bgMultiplier = 0.0f;

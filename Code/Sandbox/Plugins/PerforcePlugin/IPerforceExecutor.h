@@ -58,7 +58,7 @@ struct IPerforceExecutor
 
 	virtual string Have(const std::vector<string>& filePaths) = 0;
 
-	virtual string Revert(const std::vector<string>& filePaths, bool onlyUnchanged = false) = 0;
+	virtual string Revert(const std::vector<string>& filePaths, bool onlyUnchanged = false, bool clearOnlyState = false) = 0;
 
 	virtual string Shelve(const std::vector<string>& filePaths, const string& changelist) = 0;
 
@@ -77,6 +77,8 @@ struct IPerforceExecutor
 	virtual string CheckLogin() = 0;
 
 	virtual string Logout() = 0;
+
+	virtual string Print(const string& file) = 0;
 
 	virtual void   UpdateSettings(const string& port, const string& workspace, const string& user = "", const string& password = "") = 0;
 };

@@ -12,6 +12,7 @@ namespace renderitems_topological_sort
 {
 
 using bounds_t = TRect_tpl<uint16>;
+using bounds_collection_t = std::vector<bounds_t>;
 struct node
 {
 	using edge_t = node * ;
@@ -96,7 +97,7 @@ template <typename F, typename R>
 inline void topological(nodes_t &nodes, roots_t &roots, std::size_t min_resolve_area, const F &f, const R &r) noexcept
 {
 	roots_t roots_pending_resolve;
-	std::vector<bounds_t> resolve_rects;
+	bounds_collection_t resolve_rects;
 
 	for (; roots.size() || roots_pending_resolve.size();)
 	{
@@ -147,15 +148,15 @@ std::size_t CRenderView::OptimizeTransparentRenderItemsResolves(STransparentSegm
 
 	if (CRendererCVars::CV_r_RefractionPartialResolveMode == 1)
 	{
-		for (auto i = 0; i < renderItems.size();)
+		for (size_t i = 0; i < renderItems.size();)
 		{
 			const auto& item = renderItems[i];
 			const bool needsResolve = !!(item.nBatchFlags & refractionMask);
 
 			STransparentSegment segment;
-			segment.rendItems.start = i;
+			segment.rendItems.start = static_cast<int>(i);
 			while (++i < renderItems.size() && !(renderItems[i].nBatchFlags & refractionMask)) {}
-			segment.rendItems.end = i; 
+			segment.rendItems.end = static_cast<int>(i);
 
 			if (needsResolve)
 			{
@@ -190,13 +191,17 @@ std::size_t CRenderView::OptimizeTransparentRenderItemsResolves(STransparentSegm
 		std::size_t start = 0, end = 0;
 		topological(nodes, roots, min_reslolve_area,
 			[&](const node& n) { renderItems[end++] = n.item; },
-			[&](std::vector<bounds_t> &&resolve_rects)
+			[&](bounds_collection_t &&resolve_rects)
 			{
+				// Add a segment if we have a pass with no resolve
+				if (end > start && !segments.size())
+					segments.emplace_back(STransparentSegment{});
+
 				if (segments.size())
 				{
 					// Finish previous segment
-					segments.back().rendItems.start = start;
-					segments.back().rendItems.end = end;
+					segments.back().rendItems.start = static_cast<int>(start);
+					segments.back().rendItems.end = static_cast<int>(end);
 
 					start = end;
 				}
@@ -214,8 +219,8 @@ std::size_t CRenderView::OptimizeTransparentRenderItemsResolves(STransparentSegm
 		{
 			if (!segments.size())
 				segments.emplace_back(STransparentSegment{});
-			segments.back().rendItems.start = start;
-			segments.back().rendItems.end = end;
+			segments.back().rendItems.start = static_cast<int>(start);
+			segments.back().rendItems.end = static_cast<int>(end);
 		}
 	}
 

@@ -10,7 +10,10 @@ namespace PerforceFilePathUtil
 //! Adjusts given folder paths to ones suitable to use by perforce.
 std::vector<string> AdjustFolders(const std::vector<string>& folders);
 
-//! Splits given vector of paths into 2 vectors: files and folders. Data is appended to output vectors.
+//! Adjusts given paths to ones suitable to use by perforce.
+std::vector<string> AdjustPaths(const std::vector<string>& paths);
+
+//! Splits given vector of paths into 2 vectors: files and folders.
 void SeparateFolders(const std::vector<string>& paths, std::vector<string>& outputFiles, std::vector<string>& outputFolders);
 
-};
+}

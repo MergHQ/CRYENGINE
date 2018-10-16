@@ -18,6 +18,7 @@ extern CItemModelAttributeEnumT<ObjectType> s_objectTypeAttribute;
 extern CItemModelAttribute s_objectTypeDescAttribute;
 extern CItemModelAttribute s_visibleAttribute;
 extern CItemModelAttribute s_frozenAttribute;
+extern CItemModelAttribute s_vcsAttribute;
 extern CItemModelAttribute s_defaultMaterialAttribute;
 extern CItemModelAttribute s_customMaterialAttribute;
 extern CItemModelAttribute s_breakableAttribute;
@@ -41,7 +42,8 @@ public:
 		eObjectColumns_LayerColor,
 		eObjectColumns_Visible, //Must be kept index 0 to match eLayerColumns_Visible
 		eObjectColumns_Frozen,  //Must be kept index 1 to match eLayerColumns_Frozen
-		eObjectColumns_Name,    //Must be kept index 2 to match eLayerColumns_Name
+		eObjectColumns_VCS,     //Must be kept index 2 to match eLayerColumns_VCS
+		eObjectColumns_Name,    //Must be kept index 3 to match eLayerColumns_Name
 		eObjectColumns_Layer,
 		eObjectColumns_Type,
 		eObjectColumns_TypeDesc,

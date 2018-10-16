@@ -177,9 +177,9 @@ CAssetEditor* CLevelType::Edit(CAsset* pAsset) const
 	return nullptr;
 }
 
-std::vector<string> CLevelType::GetAssetFiles(const CAsset& asset, bool includeSourceFile, bool makeAbsolute) const
+std::vector<string> CLevelType::GetAssetFiles(const CAsset& asset, bool includeSourceFile, bool makeAbsolute, bool includeThumbnail) const
 {
-	std::vector<string> files = CAssetType::GetAssetFiles(asset, includeSourceFile, makeAbsolute);
+	std::vector<string> files = CAssetType::GetAssetFiles(asset, includeSourceFile, makeAbsolute, includeThumbnail);
 
 	if (makeAbsolute)
 	{

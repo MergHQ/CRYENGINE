@@ -150,6 +150,8 @@ public:
 
 	string GetFullFileName() const;
 
+	void SetDirty() { m_bInfoDirty = true; }
+
 private:
 	struct CTerrainTextureTile
 	{

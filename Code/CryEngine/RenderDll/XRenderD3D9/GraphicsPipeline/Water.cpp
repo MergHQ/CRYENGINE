@@ -17,6 +17,7 @@ namespace water
 struct SPerPassWater
 {
 	Matrix44 viewProjPrev;
+	Matrix44 reprojectToPrev;
 	Matrix44 causticViewProjMatr;
 	Vec4     waterRippleLookup;
 	Vec4     ssrParams;
@@ -1035,13 +1036,15 @@ bool CWaterStage::SetAndBuildPerPassResources(bool bOnInit, EPass passId)
 		{
 			resources.SetTexture(ePerPassTexture_Reflection, CRendererResources::s_ptexHDRTargetPrev, EDefaultResourceViews::Default, EShaderStage_Pixel);
 			resources.SetTexture(ePerPassTexture_Refraction, CRendererResources::s_ptexHDRTargetScaled[0][0], EDefaultResourceViews::Default, EShaderStage_Pixel);
-			resources.SetTexture(ePerPassTexture_SceneDepth, CRendererResources::s_ptexLinearDepthScaled[0], EDefaultResourceViews::Default, EShaderStage_Pixel);
+
+			resources.SetTexture(ePerPassTexture_SceneLinearDepth, CRendererResources::s_ptexLinearDepthScaled[0], EDefaultResourceViews::Default, EShaderStage_Pixel);
 		}
 		else
 		{
 			resources.SetTexture(ePerPassTexture_Reflection, pCurrWaterVolRefl, EDefaultResourceViews::Default, EShaderStage_Pixel);
 			resources.SetTexture(ePerPassTexture_Refraction, CRendererResources::s_ptexSceneTarget, EDefaultResourceViews::Default, EShaderStage_Pixel);
-			resources.SetTexture(ePerPassTexture_SceneDepth, CRendererResources::s_ptexLinearDepth, EDefaultResourceViews::Default, EShaderStage_Pixel);
+
+			resources.SetTexture(ePerPassTexture_SceneLinearDepth, CRendererResources::s_ptexLinearDepth, EDefaultResourceViews::Default, EShaderStage_Pixel);
 		}
 
 		// forward shadow textures.
@@ -1054,6 +1057,7 @@ bool CWaterStage::SetAndBuildPerPassResources(bool bOnInit, EPass passId)
 		{
 			CShadowUtils::GetShadowCascades(cascades, RenderView());
 		}
+
 		resources.SetTexture(ePerPassTexture_ShadowMap0, cascades.pShadowMap[0], EDefaultResourceViews::Default, EShaderStage_Pixel);
 		resources.SetTexture(ePerPassTexture_ShadowMap1, cascades.pShadowMap[1], EDefaultResourceViews::Default, EShaderStage_Pixel);
 		resources.SetTexture(ePerPassTexture_ShadowMap2, cascades.pShadowMap[2], EDefaultResourceViews::Default, EShaderStage_Pixel);
@@ -1091,6 +1095,7 @@ bool CWaterStage::SetAndBuildPerPassResources(bool bOnInit, EPass passId)
 				resources.SetBuffer(17, pTiledLights->GetTiledTranspLightMaskBuffer(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			}
 		}
+
 		resources.SetTexture(40, CRendererResources::s_ptexEnvironmentBRDF, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 	}
 
@@ -1154,6 +1159,7 @@ void CWaterStage::UpdatePerPassResources(EPass passId)
 		// water related parameters
 		auto& cbWater = cb->cbPerPassWater;
 		cbWater.viewProjPrev = mViewProjPrev;
+		cbWater.reprojectToPrev = GetCurrentViewInfo().GetReprojection();
 		cbWater.causticViewProjMatr = causticInfo.m_mCausticMatr;
 		cbWater.waterRippleLookup = pWaterRipplesStage->GetWaterRippleLookupParam();
 		cbWater.ssrParams = Vec4(

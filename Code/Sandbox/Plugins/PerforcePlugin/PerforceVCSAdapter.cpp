@@ -131,18 +131,31 @@ std::vector<string> MergeFilesWithFolders(const std::vector<string>& files, cons
 {
 	std::vector<string> result;
 	result.reserve(files.size() + folders.size());
+
 	std::copy(files.cbegin(), files.cend(), std::back_inserter(result));
-	std::transform(folders.cbegin(), folders.cend(), std::back_inserter(result), [](const string& folder)
+	std::vector<string> adjustedFolders = PerforceFilePathUtil::AdjustFolders(folders);
+	std::move(adjustedFolders.begin(), adjustedFolders.end(), std::back_inserter(result));
+
+	return result;
+}
+
+std::vector<string> AdjustAndMergePaths(const std::vector<string>& paths, const std::vector<string>& folders)
+{
+	if (folders.empty())
 	{
-		return folder.empty() ? "..." : folder + "/...";
-	});
+		return PerforceFilePathUtil::AdjustPaths(paths);
+	}
+	
+	std::vector<string> result = PerforceFilePathUtil::AdjustPaths(paths);
+	std::vector<string> adjustedFolders = PerforceFilePathUtil::AdjustFolders(folders);
+	std::move(adjustedFolders.begin(), adjustedFolders.end(), std::back_inserter(result));
 	return result;
 }
 
 }
 
 CPerforceVCSAdapter::CPerforceVCSAdapter(const string& rootPath)
-	: m_pParser(std::make_unique<CPerforceApiOutputParser>())
+	: m_pParser(std::make_unique<CPerforceApiOutputParser>(rootPath))
 	, m_pExecutor(std::make_unique<CPerforceApiExecutor>(rootPath, static_cast<CPerforceApiOutputParser*>(m_pParser.get())))
 	, m_pConflictsResolver(std::make_unique<CPerforceConflictsResolver>(m_pExecutor.get(), m_pParser.get()))
 	, m_rootPath(rootPath)
@@ -181,8 +194,10 @@ SVersionControlError CPerforceVCSAdapter::UpdateStatus(const std::vector<string>
 {
 	using namespace Private_PerforceVCSAdapter;
 	std::vector<string> allFiles;
-	std::vector<string> allFolders = PerforceFilePathUtil::AdjustFolders(folders);
+	std::vector<string> allFolders;
 	PerforceFilePathUtil::SeparateFolders(filePaths, allFiles, allFolders);
+	allFolders.insert(allFolders.end(), folders.cbegin(), folders.cend());
+	allFolders = PerforceFilePathUtil::AdjustFolders(allFolders);
 
 	std::vector<CVersionControlFileStatusUpdate> filesStatuses;
 	if (!UpdateStatusesForFiles(allFiles, filesStatuses))
@@ -218,14 +233,7 @@ SVersionControlError CPerforceVCSAdapter::GetLatest(const std::vector<string>& f
 {
 	using namespace Private_PerforceVCSAdapter;
 	std::vector<CVersionControlFileStatusUpdate> fileStatuses;
-	if (folders.empty())
-	{
-		m_pParser->ParseSync(m_pExecutor->Sync(files, force), fileStatuses, false);
-	}
-	else
-	{
-		m_pParser->ParseSync(m_pExecutor->Sync(MergeFilesWithFolders(files, folders), force), fileStatuses, false);
-	}
+	m_pParser->ParseSync(m_pExecutor->Sync(AdjustAndMergePaths(files, folders), force), fileStatuses, false);
 	if (!UpdateOnlineState())
 	{
 		return m_pParser->GetError();
@@ -237,13 +245,12 @@ SVersionControlError CPerforceVCSAdapter::GetLatest(const std::vector<string>& f
 SVersionControlError CPerforceVCSAdapter::SubmitFiles(const std::vector<string>& filePaths, const string& message)
 {
 	string cl;
-	m_pExecutor->Add(filePaths);
+	m_pParser->ParseCreateChangelist(m_pExecutor->CreateChangelist(message), cl);
 	if (!UpdateOnlineState())
 	{
 		return m_pParser->GetError();
 	}
-	m_pParser->ParseCreateChangelist(m_pExecutor->CreateChangelist(message), cl);
-	MoveFilesToChangelist(cl, filePaths);
+	MoveFilesToChangelist(cl, PerforceFilePathUtil::AdjustPaths(filePaths));
 	SubmitChangelist(cl);
 	return m_pParser->GetError();
 }
@@ -369,7 +376,7 @@ SVersionControlError CPerforceVCSAdapter::ResolveConflicts(const std::vector<std
 SVersionControlError CPerforceVCSAdapter::AddFiles(const std::vector<string>& filePaths)
 {
 	std::vector<CVersionControlFileStatusUpdate> addedFiles;
-	m_pParser->ParseAdd(m_pExecutor->Add(filePaths), addedFiles);
+	m_pParser->ParseAdd(m_pExecutor->Add(PerforceFilePathUtil::AdjustPaths(filePaths)), addedFiles);
 	if (!UpdateOnlineState())
 	{
 		return m_pParser->GetError();
@@ -381,7 +388,7 @@ SVersionControlError CPerforceVCSAdapter::AddFiles(const std::vector<string>& fi
 SVersionControlError CPerforceVCSAdapter::EditFiles(const std::vector<string>& filePaths)
 {
 	std::vector<CVersionControlFileStatusUpdate> fileStatuses;
-	m_pParser->ParseEdit(m_pExecutor->Edit(filePaths), fileStatuses);
+	m_pParser->ParseEdit(m_pExecutor->Edit(PerforceFilePathUtil::AdjustPaths(filePaths)), fileStatuses);
 	if (!UpdateOnlineState())
 	{
 		return m_pParser->GetError();
@@ -393,7 +400,7 @@ SVersionControlError CPerforceVCSAdapter::EditFiles(const std::vector<string>& f
 SVersionControlError CPerforceVCSAdapter::DeleteFiles(const std::vector<string>& filePaths)
 {
 	std::vector<CVersionControlFileStatusUpdate> fileStatuses;
-	m_pParser->ParseDelete(m_pExecutor->Delete(filePaths), fileStatuses);
+	m_pParser->ParseDelete(m_pExecutor->Delete(PerforceFilePathUtil::AdjustPaths(filePaths)), fileStatuses);
 	if (!UpdateOnlineState())
 	{
 		return m_pParser->GetError();
@@ -406,7 +413,7 @@ SVersionControlError CPerforceVCSAdapter::Revert(const std::vector<string>& file
 {
 	using namespace Private_PerforceVCSAdapter;
 	std::vector<CVersionControlFileStatusUpdate> fileStatuses;
-	m_pParser->ParseRevert(m_pExecutor->Revert(folders.empty() ? files : MergeFilesWithFolders(files, folders)), fileStatuses);
+	m_pParser->ParseRevert(m_pExecutor->Revert(AdjustAndMergePaths(files, folders)), fileStatuses);
 	if (!UpdateOnlineState())
 	{
 		return m_pParser->GetError();
@@ -415,16 +422,25 @@ SVersionControlError CPerforceVCSAdapter::Revert(const std::vector<string>& file
 	return m_pParser->GetError();
 }
 
-SVersionControlError CPerforceVCSAdapter::RevertUnchanged(const std::vector<string>& files, const std::vector<string>& folders)
+SVersionControlError CPerforceVCSAdapter::ClearLocalState(const std::vector<string>& files, const std::vector<string>& folders, bool clearIfUnchanged)
 {
 	using namespace Private_PerforceVCSAdapter;
 	std::vector<CVersionControlFileStatusUpdate> fileStatuses;
-	m_pParser->ParseRevert(m_pExecutor->Revert(folders.empty() ? files : MergeFilesWithFolders(files, folders), true), fileStatuses);
+	m_pParser->ParseRevert(m_pExecutor->Revert(AdjustAndMergePaths(files, folders), clearIfUnchanged, true), fileStatuses);
 	if (!UpdateOnlineState())
 	{
 		return m_pParser->GetError();
 	}
 	GetCache()->UpdateFiles(fileStatuses);
+	return m_pParser->GetError();
+}
+
+SVersionControlError CPerforceVCSAdapter::RetrieveFilesContent(const string& file)
+{
+	string filesContent;
+	m_pParser->ParsePrint(m_pExecutor->Print(file), filesContent);
+
+	GetCache()->SaveFilesContent(file, filesContent);
 	return m_pParser->GetError();
 }
 
@@ -471,7 +487,6 @@ SVersionControlError CPerforceVCSAdapter::DeleteChangelist(const string& changel
 
 SVersionControlError CPerforceVCSAdapter::MoveFilesToChangelist(const string& changelist, const std::vector<string>& filePaths)
 {
-	//m_executor->Reconcile(filePaths);
 	m_pExecutor->Reopen(changelist, filePaths);
 	return m_pParser->GetError();
 }
@@ -596,6 +611,7 @@ SVersionControlError CPerforceVCSAdapter::CheckSettings()
 	if (error.type == EVersionControlError::SessionExpired)
 	{
 		m_pExecutor->Logout();
+		UpdateSettings();
 		m_pExecutor->CheckLogin();
 		error = m_pParser->GetError();
 	}
@@ -612,7 +628,7 @@ SVersionControlError CPerforceVCSAdapter::CheckSettings()
 	{
 		error = { EVersionControlError::InvalidSettings, "Unknown workspace." };
 	}
-	else if (info.currentDir.find(info.root) != 0)
+	else if (info.currentDir.compareNoCase(0, info.root.size(), info.root) != 0)
 	{
 		error = { EVersionControlError::InvalidSettings, "Current assets' folder in not under client's root path." };
 	}

@@ -43,7 +43,7 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 		CATLEvent* const pEvent = g_eventManager.ConstructEvent();
 		ERequestStatus const activateResult = pConnection->Execute(g_pObject->GetImplDataPtr(), pEvent->m_pImplData);
 
-		if (activateResult == ERequestStatus::Success || activateResult == ERequestStatus::Pending)
+		if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual) || (activateResult == ERequestStatus::Pending))
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			pEvent->SetTriggerName(pControl->GetName());
@@ -56,7 +56,7 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 			pEvent->m_audioTriggerImplId = pConnection->m_audioTriggerImplId;
 			pEvent->m_audioTriggerInstanceId = s_triggerInstanceIdCounter;
 
-			if (activateResult == ERequestStatus::Success)
+			if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual))
 			{
 				pEvent->m_state = EEventState::Playing;
 				++(triggerInstanceState.numPlayingEvents);
@@ -159,6 +159,42 @@ void CATLEvent::Release()
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	m_szTriggerName = nullptr;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CATLEvent::SetVirtual()
+{
+	m_state = EEventState::Virtual;
+
+	if ((m_pAudioObject->GetFlags() & EObjectFlags::Virtual) == 0)
+	{
+		bool isVirtual = true;
+
+		for (auto const pEvent : m_pAudioObject->GetActiveEvents())
+		{
+			if (pEvent->m_state != EEventState::Virtual)
+			{
+				isVirtual = false;
+				break;
+			}
+		}
+
+		if (isVirtual)
+		{
+			m_pAudioObject->SetFlag(EObjectFlags::Virtual);
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+			m_pAudioObject->ResetObstructionRays();
+#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CATLEvent::SetPlaying()
+{
+	m_state = EEventState::Playing;
+	m_pAudioObject->RemoveFlag(EObjectFlags::Virtual);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -298,7 +334,7 @@ void CTrigger::Execute(
 		CATLEvent* const pEvent = g_eventManager.ConstructEvent();
 		ERequestStatus const activateResult = pConnection->Execute(object.GetImplDataPtr(), pEvent->m_pImplData);
 
-		if (activateResult == ERequestStatus::Success || activateResult == ERequestStatus::Pending)
+		if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual) || (activateResult == ERequestStatus::Pending))
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			pEvent->SetTriggerName(GetName());
@@ -313,7 +349,12 @@ void CTrigger::Execute(
 
 			if (activateResult == ERequestStatus::Success)
 			{
-				pEvent->m_state = EEventState::Playing;
+				pEvent->SetPlaying();
+				++(triggerInstanceState.numPlayingEvents);
+			}
+			else if (activateResult == ERequestStatus::SuccessVirtual)
+			{
+				pEvent->SetVirtual();
 				++(triggerInstanceState.numPlayingEvents);
 			}
 			else if (activateResult == ERequestStatus::Pending)
@@ -370,7 +411,7 @@ void CTrigger::Execute(
 		CATLEvent* const pEvent = g_eventManager.ConstructEvent();
 		ERequestStatus const activateResult = pConnection->Execute(object.GetImplDataPtr(), pEvent->m_pImplData);
 
-		if (activateResult == ERequestStatus::Success || activateResult == ERequestStatus::Pending)
+		if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual) || (activateResult == ERequestStatus::Pending))
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			pEvent->SetTriggerName(GetName());
@@ -385,7 +426,12 @@ void CTrigger::Execute(
 
 			if (activateResult == ERequestStatus::Success)
 			{
-				pEvent->m_state = EEventState::Playing;
+				pEvent->SetPlaying();
+				++(triggerInstanceState.numPlayingEvents);
+			}
+			else if (activateResult == ERequestStatus::SuccessVirtual)
+			{
+				pEvent->SetVirtual();
 				++(triggerInstanceState.numPlayingEvents);
 			}
 			else if (activateResult == ERequestStatus::Pending)
@@ -863,7 +909,7 @@ void CPreviewTrigger::Stop()
 {
 	for (auto const pEvent : g_previewObject.GetActiveEvents())
 	{
-		CRY_ASSERT_MESSAGE((pEvent != nullptr) && (pEvent->IsPlaying() || pEvent->IsVirtual()), "Invalid event during CPreviewTrigger::Stop");
+		CRY_ASSERT_MESSAGE((pEvent != nullptr) && pEvent->IsPlaying(), "Invalid event during CPreviewTrigger::Stop");
 		pEvent->Stop();
 	}
 }

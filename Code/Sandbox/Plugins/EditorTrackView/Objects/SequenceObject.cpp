@@ -121,8 +121,7 @@ void CSequenceObject::Serialize(CObjectArchive& ar)
 	CBaseObject::Serialize(ar);
 
 	// Sequence Undo/Redo is not handled by serialization. See TrackViewUndo.cpp
-	const IUndoManager* pUndoManager = GetIEditor()->GetIUndoManager();
-	if (pUndoManager->IsUndoTransaction() || pUndoManager->IsUndoRecording())
+	if(ar.bUndo)
 	{
 		return;
 	}

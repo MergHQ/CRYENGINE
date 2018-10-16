@@ -2,10 +2,8 @@
 
 #include "StdAfx.h"
 #include "Metadata.h"
-#include "FilePathUtil.h"
-
-#include <CrySystem/XML/IXml.h>
 #include <chrono>
+#include "Util/TimeUtil.h"
 
 namespace AssetLoader
 {
@@ -13,7 +11,6 @@ namespace AssetLoader
 const char* GetMetadataTag() { return "AssetMetadata"; }
 
 // DODO: FIXME: the following classes parse cryasset xml manually: 
-// Code\CryEngine\RenderDll\Common\Textures\TextureCompiler.cpp
 // Code\Sandbox\EditorQt\Alembic\AlembicCompiler.cpp
 
 bool ReadMetadata(const XmlNodeRef& container, SAssetMetadata& metadata)
@@ -78,14 +75,6 @@ bool ReadMetadata(const XmlNodeRef& container, SAssetMetadata& metadata)
 	return true;
 }
 
-long GetTimeStamp()
-{
-	using namespace std::chrono;
-	auto nowTimePoint = system_clock::now();
-	auto nowTimePointSeconds = time_point_cast<seconds>(nowTimePoint);
-	return nowTimePointSeconds.time_since_epoch().count();
-}
-
 // See also RC's version of WriteMetaData.
 void WriteMetaData(const XmlNodeRef& asset, const SAssetMetadata& metadata)
 {	
@@ -101,7 +90,7 @@ void WriteMetaData(const XmlNodeRef& asset, const SAssetMetadata& metadata)
 	pMetadataNode->setAttr("type", metadata.type);
 	pMetadataNode->setAttr("guid", metadata.guid.ToString().c_str());
 	pMetadataNode->setAttr("source", metadata.sourceFile);
-	pMetadataNode->setAttr("timestamp", GetTimeStamp());
+	pMetadataNode->setAttr("timestamp", TimeUtil::GetCurrentTimeStamp());
 
 	XmlNodeRef pFiles = pMetadataNode->findChild("Files");
 	if (!pFiles)

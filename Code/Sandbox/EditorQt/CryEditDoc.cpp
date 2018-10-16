@@ -962,9 +962,6 @@ bool CCryEditDoc::SaveLevel(const string& filename)
 
 	CAutoCheckOutDialogEnableForAll enableForAll;
 
-	if (!CFileUtil::OverwriteFile(filename))
-		return false;
-
 	string levelFolder = PathUtil::GetPathWithoutFilename(filename);
 	CFileUtil::CreateDirectory(levelFolder);
 	GetIEditorImpl()->GetGameEngine()->SetLevelPath(levelFolder);

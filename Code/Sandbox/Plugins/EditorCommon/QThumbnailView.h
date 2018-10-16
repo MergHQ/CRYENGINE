@@ -14,6 +14,25 @@ class QListView;
 class EDITOR_COMMON_API QThumbnailsView : public QWidget, public IStateSerializable
 {
 	Q_OBJECT;
+
+public:
+	//! Item model with s_ThumbnailIconsRole may return a list of additional icons, where each element of the list should be QIcon or SSubIcon.
+	//! SSubIcon allows to assign the position of the icon in thumbnail. All regular QIcon elements will have a TopRight position.
+	// \sa QThumbnailsView::s_ThumbnailIconsRole
+	// \sa QThumbnailsView::SetModel(QAbstractItemModel* model)
+	struct SSubIcon
+	{
+		enum EPosition
+		{
+			TopRight,
+			TopLeft,
+			BottomLeft,
+			BottomRight
+		};
+
+		QIcon icon;
+		EPosition position;
+	};
 public:
 	//! Pass an internal view to be used as the list view or let it be set as a regular QListView();
 	QThumbnailsView(QListView* pInternalView = nullptr, bool showSizeButtons = true, QWidget* parent = nullptr);
@@ -96,3 +115,5 @@ private:
 	bool			  m_restoreSelection;
 	std::vector<CAdvancedPersistentModelIndex> m_selectedBackup;
 };
+
+Q_DECLARE_METATYPE(QThumbnailsView::SSubIcon);

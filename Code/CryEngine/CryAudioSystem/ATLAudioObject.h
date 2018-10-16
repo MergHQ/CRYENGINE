@@ -112,6 +112,8 @@ public:
 
 	CObjectTransformation const&   GetTransformation()                            { return m_transformation; }
 
+	bool                           IsActive() const;
+
 	// Flags / Properties
 	EObjectFlags GetFlags() const { return m_flags; }
 	void         SetFlag(EObjectFlags const flag);
@@ -150,7 +152,6 @@ private:
 
 	void ReportFinishedTriggerInstance(ObjectTriggerStates::iterator const& iter);
 	void PushRequest(SRequestData const& requestData, SRequestUserData const& userData);
-	bool HasActiveData(CATLAudioObject const* const pAudioObject) const;
 	bool ExecuteDefaultTrigger(ControlId const id);
 
 	ObjectStandaloneFileMap m_activeStandaloneFiles;

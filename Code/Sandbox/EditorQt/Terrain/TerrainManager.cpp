@@ -527,6 +527,7 @@ bool CTerrainManager::ConvertLayersToRGBLayer()
 void CTerrainManager::SetTerrainSize(int resolution, float unitSize)
 {
 	m_heightmap.Resize(resolution, resolution, unitSize);
+	GetRGBLayer()->SetDirty();
 }
 
 void CTerrainManager::ResetHeightMap()

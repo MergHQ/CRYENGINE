@@ -76,7 +76,7 @@ bool CDeviceResourceSet_Vulkan::UpdateImpl(const CDeviceResourceSetDesc& desc, C
 		return true;
 	}
 
-	return true;
+	return false;
 }
 
 static const inline size_t NoAlign(size_t nSize) { return nSize; }
