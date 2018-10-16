@@ -241,6 +241,7 @@
         <file alias="common/general_dropdown_triangle.ico">icons/general_dropdown_triangle.ico</file>
         <file alias="common/general_sorting_ascending.ico">icons/general_sorting_ascending.ico</file>
         <file alias="common/general_sorting_descending.ico">icons/general_sorting_descending.ico</file>
+        <file alias="common/general_state_modified.ico">icons/general_state_modified.ico</file>
         <file alias="General/Plus.ico">icons/general_Plus.ico</file>
         <file alias="General/Minus.ico">icons/general_Minus.ico</file>
         <file alias="General/Add_File_Inverted.ico">icons/general_file_add_inverted.ico</file>

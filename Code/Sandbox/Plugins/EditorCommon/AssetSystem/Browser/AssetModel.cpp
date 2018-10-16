@@ -357,6 +357,24 @@ QVariant CAssetModel::data(const QModelIndex& index, int role) const
 						}
 					}
 				}
+
+				if (m_favHelper.IsFavorite(index))
+				{
+					const QThumbnailsView::SSubIcon subIcon{ m_favHelper.GetFavoriteIcon(true), QThumbnailsView::SSubIcon::EPosition::TopLeft };
+					QVariant v;
+					v.setValue(subIcon);
+					icons.push_back(v);
+				}
+
+				if (pAsset->IsModified())
+				{
+					const static CryIcon modified("icons:common/general_state_modified.ico");
+					const QThumbnailsView::SSubIcon subIcon{ modified, QThumbnailsView::SSubIcon::EPosition::BottomRight };
+					QVariant v;
+					v.setValue(subIcon);
+					icons.push_back(v);
+				}
+
 				return icons;
 			}
 			default:
