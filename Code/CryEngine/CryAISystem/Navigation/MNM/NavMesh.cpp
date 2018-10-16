@@ -745,8 +745,7 @@ bool CNavMesh::SnapPosition(
 					GetVertices(closestId, vertices);
 					if (!ProjectPointOnTriangleVertical(localPosition, vertices[0], vertices[1], vertices[2], *pSnappedLocalPosition))
 					{
-						CRY_ASSERT_MESSAGE(false, "Triangle to snap on was found but failed to project point on it");
-						return false;
+						break;
 					}
 				}
 				return true;
@@ -801,7 +800,6 @@ bool CNavMesh::SnapPosition(
 				GetVertices(closestId, vertices);
 				if (!ProjectPointOnTriangleVertical(localPosition, vertices[0], vertices[1], vertices[2], *pSnappedLocalPosition))
 				{
-					CRY_ASSERT_MESSAGE(false, "Triangle to snap on was found but failed to project point on it");
 					break;
 				}
 			}
@@ -1699,7 +1697,7 @@ MNM::ERayCastResult CNavMesh::RayCast_v3(const vector3_t& fromLocalPosition, Tri
 	if (!IsLocationInTriangle(fromLocalPosition, fromTriangleID))
 		return ERayCastResult::InvalidStart;
 
-	if (!IsLocationInTriangle(toLocalPosition, toTriangleID))
+	if (toTriangleID != MNM::Constants::InvalidTriangleID && !IsLocationInTriangle(toLocalPosition, toTriangleID))
 		return ERayCastResult::InvalidEnd;
 
 	RaycastCameFromMap cameFrom;
@@ -1739,7 +1737,7 @@ MNM::ERayCastResult CNavMesh::RayCast_v3(const vector3_t& fromLocalPosition, Tri
 		const bool bEndingInside = FindNextIntersectingTriangleEdge(fromLocalPosition, toLocalPosition, currentTriangleVertices, rayIntersectionParam, intersectionEdgeIndex);
 		if (rayIntersectionParam == real_t(1.0f))
 		{
-			if (intersectionEdgeIndex == uint16(MNM::Constants::InvalidEdgeIndex))
+			if (!bEndingInside && intersectionEdgeIndex == uint16(MNM::Constants::InvalidEdgeIndex))
 			{
 				// Ray segment missed the triangle, return the last hit
 				return ConstructRaycastResult(ERayCastResult::Hit, rayHit, rayHit.triangleID, cameFrom, raycastRequest);
@@ -1748,14 +1746,14 @@ MNM::ERayCastResult CNavMesh::RayCast_v3(const vector3_t& fromLocalPosition, Tri
 			rayHit.triangleID = currentTriangleID;
 			rayHit.edge = intersectionEdgeIndex;
 			rayHit.distance = 1.0f;
-			if (currentTriangleID == toTriangleID)
+			if (currentTriangleID == toTriangleID || toTriangleID == MNM::Constants::InvalidTriangleID)
 			{
-				// Ray segment is ending in end triangle, return no hit
+				// Ray segment is ending in end triangle or position, return no hit
 				return ConstructRaycastResult(ERayCastResult::NoHit, rayHit, rayHit.triangleID, cameFrom, raycastRequest);
 			}
 			else
 			{
-				if (IsPointInsideNeighbouringTriangleWhichSharesEdge(currentTriangleID, intersectionEdgeIndex, toLocalPosition, toTriangleID))
+				if (intersectionEdgeIndex != uint16(MNM::Constants::InvalidEdgeIndex) && IsPointInsideNeighbouringTriangleWhichSharesEdge(currentTriangleID, intersectionEdgeIndex, toLocalPosition, toTriangleID))
 				{
 					// Ray segment is ending in end triangle, return no hit
 					// TODO: construct full sequence of triangles to toTriangleID? 
@@ -3051,6 +3049,9 @@ bool CNavMesh::IsPointInsideNeighbouringTriangleWhichSharesEdge(const TriangleID
 	// vertexToEdgeIdx is used to determine in which 'direction' triangles should be traversed around the nearest vertex (clockwise or counter-clockwise).
 	const int32* vertexToEdgeIdx = currentVertexIndex == currentEdgeIndex ? clockwiseEdgeIndices : counterClockwiseEdgeIndices;
 
+	bool isSwitchingSide = false;
+	bool alreadySwitchedSide = false;
+
 	// In the case when targetTriangle and sourceTriangle share whole edge, the loop should always break during the first execution
 	do
 	{
@@ -3060,6 +3061,8 @@ bool CNavMesh::IsPointInsideNeighbouringTriangleWhichSharesEdge(const TriangleID
 
 		const uint16 currentTriangleIndex = ComputeTriangleIndex(currentTriangleID);
 		const Tile::STriangle& currentTriangle = currentTile.triangles[currentTriangleIndex];
+
+		TriangleID prevTriangleID = currentTriangleID;
 
 		for (size_t linkIndex = 0; linkIndex < currentTriangle.linkCount; ++linkIndex)
 		{
@@ -3114,8 +3117,25 @@ bool CNavMesh::IsPointInsideNeighbouringTriangleWhichSharesEdge(const TriangleID
 			currentTriangleID = neighbourTriangleID;
 			break;
 		}
+
+		if (prevTriangleID == currentTriangleID)
+		{
+			if (alreadySwitchedSide)
+				return false; // NavMesh boundary was hit from both sides and targetTriangle wasn't found
+			
+			// It wasn't possible to step through current edge, inverse the side
+			vertexToEdgeIdx = clockwiseEdgeIndices == vertexToEdgeIdx ? counterClockwiseEdgeIndices : clockwiseEdgeIndices;
+			currentEdgeIndex = vertexToEdgeIdx[sourceEdgeIndex];
+			currentTriangleID = sourceTriangleID;
+			alreadySwitchedSide = true;
+			isSwitchingSide = true;
+		}
+		else
+		{
+			isSwitchingSide = false;
+		}
 	} 
-	while (currentTriangleID != sourceTriangleID);
+	while (currentTriangleID != sourceTriangleID || isSwitchingSide);
 
 	return false;
 }

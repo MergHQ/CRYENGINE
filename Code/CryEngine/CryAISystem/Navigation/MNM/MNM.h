@@ -246,9 +246,19 @@ inline VecType ClosestPtPointTriangle(const VecType& p, const VecType& a, const 
 }
 
 //! Projects point p on triangle abc in vertical direction. 
-//! Returns true when the position is successfully projected to triangle or false in case of degenerate triangle or when the point is outside of the triangle.
+//! Returns true when the position is successfully projected to triangle or false in case of degenerate triangle.
+//! The function isn't checking if the position p lies inside the triangle, it is responsibility of the caller to provide correct inputs.
 inline bool ProjectPointOnTriangleVertical(const vector3_t& p, const vector3_t& a, const vector3_t& b, const vector3_t& c, vector3_t& projected)
 {
+	projected.x = p.x;
+	projected.y = p.y;
+
+	if (a.z == b.z && a.z == c.z)
+	{
+		projected.z = a.z;
+		return true;
+	}
+	
 	const vector3_t v0 = c - a;
 	const vector3_t v1 = b - a;
 	const vector3_t v2 = p - a;
@@ -260,32 +270,32 @@ inline bool ProjectPointOnTriangleVertical(const vector3_t& p, const vector3_t& 
 
 	const real_t dot00 = v0_2d.dot(v0_2d);
 	const real_t dot01 = v0_2d.dot(v1_2d);
-	const real_t dot02 = v0_2d.dot(v2_2d);
 	const real_t dot11 = v1_2d.dot(v1_2d);
-	const real_t dot12 = v1_2d.dot(v2_2d);
 
 	const real_t denom = dot00 * dot11 - dot01 * dot01;
-	if (denom == 0)
+	const real_t tolerance = real_t::epsilon() * 4;
+	if (denom > -tolerance && denom < tolerance)
 	{
-		// Degenerate triangle
+		// Points are collinear, triangle is degenerate
 		return false;
 	}
 
-	const real_t u = (dot11 * dot02 - dot01 * dot12) / denom;
-	const real_t v = (dot00 * dot12 - dot01 * dot02) / denom;
+	const real_t dot02 = v0_2d.dot(v2_2d);
+	const real_t dot12 = v1_2d.dot(v2_2d);
 
-	const real_t tolerance = real_t::epsilon();
-	if (u >= -tolerance && v >= -tolerance && (u + v) <= real_t(1) + tolerance)
-	{
-		// Compute back 3D position of the projected point
-		projected = a + v0 * u + v1 * v;
-		return true;
-	}
-	return false;
+	const real_t u = (dot11 * dot02 - dot01 * dot12);
+	const real_t v = (dot00 * dot12 - dot01 * dot02);
+
+	CRY_ASSERT_MESSAGE(u >= -tolerance * 10 && v >= -tolerance * 10 && (u + v) <= denom + tolerance * 10, "Projecting point is too far outside of the triangle.");
+	
+	// Compute only z value of the projected position, x and y stays the same
+	projected.z = a.z + v0.z * u / denom + v1.z * v / denom;
+	return true;
 }
 
 inline bool PointInTriangle(const vector2_t& p, const vector2_t& a, const vector2_t& b, const vector2_t& c)
 {
+	// Careful: this function can return that the point p is inside triangle abc also in the case of degenerate triangle.
 	const bool e0 = (p - a).cross(a - b) >= 0;
 	const bool e1 = (p - b).cross(b - c) >= 0;
 	const bool e2 = (p - c).cross(c - a) >= 0;

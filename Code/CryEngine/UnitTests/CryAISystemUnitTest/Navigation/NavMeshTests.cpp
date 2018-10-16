@@ -58,8 +58,7 @@ TEST(CryMNMTest, ProjectPointOnTriangleVertical)
 
 	// Degenerate triangle tests
 	REQUIRE(!ProjectPointOnTriangleVertical(vector3_t(real_t(0.0f), real_t(0.5f), real_t(2.0f)), A, B, D, projected));
-	REQUIRE(!ProjectPointOnTriangleVertical(A, A, A, A, projected));
-
-	// Point outside the triangle
-	REQUIRE(!ProjectPointOnTriangleVertical(vector3_t(real_t(-1.0f), real_t(0.5f), real_t(2.0f)), A, B, D, projected));
+	REQUIRE(!ProjectPointOnTriangleVertical(A, A, A, C, projected));
+	
+	REQUIRE(ProjectPointOnTriangleVertical(A, A, A, A, projected)); // All points have same z value, z value for projected point can be set
 }
