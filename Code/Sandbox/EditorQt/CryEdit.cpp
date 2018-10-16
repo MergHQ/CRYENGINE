@@ -1081,11 +1081,6 @@ CCryEditApp::ECreateLevelResult CCryEditApp::CreateLevel(const string& levelName
 	GetIEditorImpl()->GetDocument()->InitEmptyLevel(resolution, unitSize, bUseTerrain);
 	CProgressNotification notification("Creating Level", QtUtil::ToQString(levelName));
 
-	if (bUseTerrain)
-	{
-		GetIEditorImpl()->GetTerrainManager()->SetTerrainSize(resolution, unitSize);
-	}
-
 	// Save the document to this folder
 	GetIEditorImpl()->GetDocument()->SetPathName(filename.GetBuffer());
 

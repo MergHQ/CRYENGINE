@@ -23,7 +23,7 @@ CDependencyGraph::CDependencyGraph()
 	{
 		if (assets.size() == 1)
 		{
-			auto action = menu.CreateAction(QObject::tr("Show Dependency Graph"), menu.FindSectionByName("Assets"));
+			auto action = menu.CreateAction(QObject::tr("Show Dependency Graph"), menu.FindOrCreateSectionByName("Assets"));
 			QObject::connect(action, &QAction::triggered, [asset = assets.front()]()
 			{ 
 				GetIEditor()->ExecuteCommand("asset.show_dependency_graph '%s'", asset->GetMetadataFile());

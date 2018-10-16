@@ -14,6 +14,8 @@
 #include "HyperGraph/FlowGraphManager.h"
 #include "HyperGraph/FlowGraph.h"
 #include "HyperGraph/FlowGraphNode.h"
+#include "ThreadingUtils.h"
+#include "AssetSystem/FileOperationsExecutor.h"
 
 #include "Controls/QuestionDialog.h"
 #include "Util/BoostPythonHelpers.h"
@@ -137,7 +139,7 @@ void CLayerChangeEvent::Send() const
 
 CObjectLayerManager::CObjectLayerManager(CObjectManager* pObjectManager) :
 	m_pObjectManager(pObjectManager),
-	m_layersPath(LAYER_PATH),
+	m_layersPath("Layers/"),
 	m_bCanModifyLayers(true),
 	m_bOverwriteDuplicates(false),
 	m_visibleSetLayer(CryGUID::Null())
@@ -154,11 +156,11 @@ void CObjectLayerManager::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
 	switch (event)
 	{
-	case eNotify_OnBeginNewScene: // Intentional fallthrough
+	case eNotify_OnBeginNewScene: // Intentional fall through
 	case eNotify_OnBeginSceneOpen:
 		m_bCanModifyLayers = false;
 		break;
-	case eNotify_OnEndNewScene: // Intentional fallthrough
+	case eNotify_OnEndNewScene: // Intentional fall through
 	case eNotify_OnEndSceneOpen:
 		m_bCanModifyLayers = true;
 		break;
@@ -171,7 +173,7 @@ bool CObjectLayerManager::CanModifyLayers() const
 	return m_bCanModifyLayers;
 }
 
-const std::vector<CObjectLayer*>& CObjectLayerManager::GetLayers() const
+const std::vector<IObjectLayer*>& CObjectLayerManager::GetLayers() const
 {
 	if (m_layersCache.empty())
 	{
@@ -305,7 +307,12 @@ void CObjectLayerManager::AddLayer(CObjectLayer* pLayer, bool bNotify /*= true*/
 	m_layersMap[pLayer->GetGUID()] = pLayer;
 	m_layersCache.clear();
 	// Remove added layer from list of layers to be deleted on save
-	m_toBeDeleted.erase(pLayer->GetLayerFilepath().c_str());
+	auto it = m_toBeDeleted.find(pLayer->GetLayerFilepath().c_str());
+	if (it != m_toBeDeleted.end())
+	{
+		m_toBeDeleted.erase(it);
+		CryLog("Layer %s is removed from deletion pending list", pLayer->GetLayerFilepath().c_str());
+	}
 
 	if (bNotify)
 	{
@@ -334,35 +341,37 @@ bool CObjectLayerManager::CanDeleteLayer(CObjectLayer* pLayer)
 	return false;
 }
 
-void CObjectLayerManager::DeleteLayer(CObjectLayer* pLayer, bool bNotify /*= true*/)
+bool CObjectLayerManager::DeleteLayer(IObjectLayer* pLayer, bool bNotify /*= true*/, bool deleteFileOnSave /*= true*/)
 {
 	using namespace Private_ObjectLayerManager;
 	assert(pLayer);
 
-	if (!CanDeleteLayer(pLayer))
+	auto pObjectLayer = static_cast<CObjectLayer*>(pLayer);
+
+	if (!CanDeleteLayer(pObjectLayer))
 	{
-		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Cannot delete layer %s", pLayer->GetName());
-		return;
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Cannot delete layer %s", pObjectLayer->GetName());
+		return false;
 	}
 
 	if (bNotify)
 	{
-		CLayerChangeEvent(CLayerChangeEvent::LE_BEFORE_REMOVE, pLayer).Send();
+		CLayerChangeEvent(CLayerChangeEvent::LE_BEFORE_REMOVE, pObjectLayer).Send();
 	}
 
 	// First delete all child layers.
-	while (pLayer->GetChildCount())
+	while (pObjectLayer->GetChildCount())
 	{
-		DeleteLayer(pLayer->GetChild(0), false);
+		DeleteLayer(pObjectLayer->GetChild(0), false);
 	}
 
 	// prevent reference counted layer to be released before this function ends.
-	TSmartPtr<CObjectLayer> pLayerHolder = pLayer;
+	TSmartPtr<CObjectLayer> pLayerHolder = pObjectLayer;
 
 	// Delete all objects for this layer.
 	//std::vector<CBaseObjectPtr> objects;
 	CBaseObjectsArray objects;
-	m_pObjectManager->GetObjects(objects, pLayer);
+	m_pObjectManager->GetObjects(objects, pObjectLayer);
 	objects.erase(std::remove_if(objects.begin(), objects.end(), [](CBaseObject* pObject)
 	{
 		return pObject->CheckFlags(OBJFLAG_PREFAB);
@@ -371,19 +380,23 @@ void CObjectLayerManager::DeleteLayer(CObjectLayer* pLayer, bool bNotify /*= tru
 	m_pObjectManager->DeleteObjects(objects);
 
 	if (GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
-		GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CUndoLayerCreateDelete(pLayer, false));
+		GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CUndoLayerCreateDelete(pObjectLayer, false));
 
-	// Insert layer path in list of files to be deleted on save
-	m_toBeDeleted.insert(pLayer->GetLayerFilepath().c_str());
+	if (deleteFileOnSave)
+	{
+		// Insert layer path in list of files to be deleted on save
+		m_toBeDeleted.insert(pObjectLayer->GetLayerFilepath().c_str());
+		CryLog("Layer %s is added to pending deletion list", pObjectLayer->GetLayerFilepath().c_str());
+	}
 
-	bool bIsActive = pLayer == GetCurrentLayer();
+	bool bIsActive = pObjectLayer == GetCurrentLayer();
 
 	// remove child from parent after serialization for storing Parent GUID
-	CObjectLayer* pParent = pLayer->GetParent();
+	CObjectLayer* pParent = pObjectLayer->GetParent();
 	if (pParent)
-		pParent->RemoveChild(pLayer, false);
+		pParent->RemoveChild(pObjectLayer, false);
 
-	m_layersMap.erase(pLayer->GetGUID());
+	m_layersMap.erase(pObjectLayer->GetGUID());
 	m_layersCache.clear();
 
 	if (bIsActive)
@@ -394,10 +407,11 @@ void CObjectLayerManager::DeleteLayer(CObjectLayer* pLayer, bool bNotify /*= tru
 
 	if (bNotify)
 	{
-		CLayerChangeEvent(CLayerChangeEvent::LE_AFTER_REMOVE, pLayer).Send();
+		CLayerChangeEvent(CLayerChangeEvent::LE_AFTER_REMOVE, pObjectLayer).Send();
 	}
 
 	GetIEditorImpl()->GetFlowGraphManager()->SendNotifyEvent(EHG_GRAPH_INVALIDATE);
+	return true;
 }
 
 bool CObjectLayerManager::CanRename(const CObjectLayer* pLayer, const char* szNewName) const
@@ -423,13 +437,17 @@ void CObjectLayerManager::SetLayerName(CObjectLayer* pLayer, const char* szNewNa
 	{
 		string oldFilePath = pLayer->GetLayerFilepath();
 		m_toBeDeleted.insert(oldFilePath.c_str());
+		CryLog("Layer %s is added to pending deletion list", pLayer->GetLayerFilepath().c_str());
 	}
 
 	pLayer->SetNameImpl(szNewName, IsUpdateDepends);
 
 	auto ite = m_toBeDeleted.find(pLayer->GetLayerFilepath().c_str());
 	if (ite != m_toBeDeleted.end())
+	{
 		m_toBeDeleted.erase(ite);
+		CryLog("Layer %s is removed from deletion pending list", pLayer->GetLayerFilepath().c_str());
+	}
 }
 
 bool CObjectLayerManager::CanMove(const CObjectLayer* pLayer, const CObjectLayer* pTargetParent) const
@@ -459,7 +477,7 @@ CObjectLayer* CObjectLayerManager::FindLayerByFullName(const string& layerFullNa
 {
 	for (auto& layer : m_layersMap)
 	{
-		if (layer.second->GetLayerType() == eObjectLayerType_Layer && stricmp(layer.second->GetFullName(), layerFullName) == 0)
+		if (stricmp(layer.second->GetFullName(), layerFullName) == 0)
 		{
 			return layer.second;
 		}
@@ -612,7 +630,7 @@ void CObjectLayerManager::Serialize(CObjectArchive& ar)
 							string fullPathName;
 							string name;
 							layerNode->getAttr("FullName", fullPathName);
-							filenames.push_back(fullPathName + LAYER_FILE_EXTENSION);
+							filenames.push_back(fullPathName + GetLayerExtension());
 						}
 						else
 						{
@@ -714,22 +732,61 @@ void CObjectLayerManager::Serialize(CObjectArchive& ar)
 			}
 		}
 
-		// Remove all stale layers that were renamed
-		for (auto path : m_toBeDeleted)
-		{
-			PathUtil::Remove(path.c_str());
-
-			// If it's an actual layer and not a folder, then also remove all .bak files
-			if (strcmp(path.c_str() + path.size() - strlen(LAYER_FILE_EXTENSION), LAYER_FILE_EXTENSION) == 0)
-			{
-				PathUtil::Remove(PathUtil::ReplaceExtension(path.c_str(), "bak").c_str());
-				PathUtil::Remove(PathUtil::ReplaceExtension(path.c_str(), "bak2").c_str());
-			}
-		}
-
-		m_toBeDeleted.clear();
+		DeletePendingLayers();
 	}
 	ar.node = xmlNode;
+}
+
+void CObjectLayerManager::DeletePendingLayers()
+{
+	for (auto it = m_toBeDeleted.begin(); it != m_toBeDeleted.end();)
+	{
+		if (!PathUtil::PathExists(*it))
+		{
+			it = m_toBeDeleted.erase(it);
+		}
+		else
+		{
+			++it;
+		}
+	}
+
+	if (m_toBeDeleted.empty())
+	{
+		return;
+	}
+
+	std::vector<string> filesToDelete;
+	filesToDelete.reserve(m_toBeDeleted.size() * 3);
+	for (const string& path : m_toBeDeleted)
+	{
+		// If it's an actual layer and not a folder, then also remove all .bak files
+		if (strcmp(path.c_str() + path.size() - strlen(GetLayerExtension()), GetLayerExtension()) == 0)
+		{
+			filesToDelete.push_back(PathUtil::ToGamePath(path));
+			string bakFile = PathUtil::ReplaceExtension(path.c_str(), "bak").c_str();
+			if (PathUtil::FileExists(bakFile))
+			{
+				filesToDelete.push_back(PathUtil::ToGamePath(bakFile));
+			}
+			bakFile += '2';
+			if (PathUtil::FileExists(bakFile))
+			{
+				filesToDelete.push_back(PathUtil::ToGamePath(bakFile));
+			}
+		}
+		else
+		{
+			filesToDelete.push_back(PathUtil::ToGamePath(path));
+		}
+	}
+
+	m_toBeDeleted.clear();
+
+	ThreadingUtils::AsyncQueue([files = std::move(filesToDelete)]() mutable
+	{
+		CFileOperationExecutor::GetExecutor()->Delete(files);
+	});
 }
 
 void CObjectLayerManager::SaveLayer(CObjectArchive* pArchive, CObjectLayer* pLayer)
@@ -759,6 +816,8 @@ void CObjectLayerManager::SaveLayer(CObjectArchive* pArchive, CObjectLayer* pLay
 		// Save xml file to disk.
 		XmlHelpers::SaveXmlNode(rootFileNode, file);
 		pLayer->SetModified(false);
+
+		signalLayerSaved(*pLayer);
 	}
 }
 
@@ -823,11 +882,15 @@ CObjectLayer* CObjectLayerManager::ImportLayer(CObjectArchive& ar, const string&
 			{
 				return nullptr;
 			}
-			DeleteLayer(pPrevLayer, bNotify);
+			if (!DeleteLayer(pPrevLayer, bNotify))
+			{
+				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Importing of layer %s failed", filePath);
+				return nullptr;
+			}
 		}
 	}
-
-	AddLayer(pLayer, bNotify);
+	
+	AddLayer(pLayer, true);
 
 	XmlNodeRef layerObjects = layerNode->findChild("LayerObjects");
 	if (layerObjects)
@@ -844,16 +907,16 @@ CObjectLayer* CObjectLayerManager::ImportLayer(CObjectArchive& ar, const string&
 	string lowerFilePath = filePath;
 	lowerFilePath.MakeLower();
 	int fullNameBegin = lowerFilePath.find("/layers/") + 8;
-	ResolveParentFor(filePath.substr(fullNameBegin, filePath.size() - fullNameBegin - strlen(LAYER_FILE_EXTENSION)), pLayer, bNotify);
+	ResolveParentFor(filePath.substr(fullNameBegin, filePath.size() - fullNameBegin - strlen(GetLayerExtension())), pLayer, bNotify);
 
 	return pLayer;
 }
 
-CObjectLayer* CObjectLayerManager::ImportLayerFromFile(const char* filename, bool bNotify /*= true*/, CObjectArchive* globalArchive /* = nullptr */)
+CObjectLayer* CObjectLayerManager::ImportLayerFromFile(const string& filePath, bool bNotify /*= true*/, CObjectArchive* globalArchive /* = nullptr */)
 {
-	if (CFileUtil::FileExists(filename))
+	if (CFileUtil::FileExists(filePath))
 	{
-		XmlNodeRef root = XmlHelpers::LoadXmlFromFile(filename);
+		XmlNodeRef root = XmlHelpers::LoadXmlFromFile(filePath);
 		if (root)
 		{
 			CObjectArchive localArchive(GetIEditorImpl()->GetObjectManager(), root, true);
@@ -865,11 +928,10 @@ CObjectLayer* CObjectLayerManager::ImportLayerFromFile(const char* filename, boo
 				XmlNodeRef prevNove = archive->node;
 				archive->node = layerDesc;
 
-				CObjectLayer* pLayer = ImportLayer(*archive, filename, bNotify);
+				CObjectLayer* pLayer = ImportLayer(*archive, filePath, bNotify);
 				if (pLayer)
 				{
-
-					uint32 attr = CFileUtil::GetAttributes(filename);
+					uint32 attr = CFileUtil::GetAttributes(filePath);
 					if (gEditorGeneralPreferences.freezeReadOnly() && attr != SCC_FILE_ATTRIBUTE_INVALID && (attr & SCC_FILE_ATTRIBUTE_READONLY))
 					{
 						pLayer->SetFrozen(true);
@@ -888,12 +950,12 @@ CObjectLayer* CObjectLayerManager::ImportLayerFromFile(const char* filename, boo
 		}
 		else
 		{
-			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Failed to import layer file '%s'", filename);
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Failed to import layer file '%s'", filePath);
 		}
 	}
 	else
 	{
-		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Layer file '%s' not found", filename);
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Layer file '%s' not found", filePath);
 	}
 
 	return nullptr;
@@ -930,7 +992,6 @@ CObjectLayer* CObjectLayerManager::GetCurrentLayer() const
 
 void CObjectLayerManager::ResolveParentFor(const string& fullName, CObjectLayer* pLayer, bool notify /*=true*/)
 {
-
 	CObjectLayer* pParentLayer = FindOrCreateFolderChain(PathUtil::GetPathWithoutFilename(fullName), notify);
 	if (pParentLayer)
 	{
@@ -1281,12 +1342,13 @@ void CObjectLayerManager::SetAllVisible(bool bVisible)
 	}
 }
 
-bool CObjectLayerManager::ReloadLayer(CObjectLayer* pLayer)
+bool CObjectLayerManager::ReloadLayer(IObjectLayer* pLayer)
 {
 	if (pLayer)
 	{
+		auto pObjectLayer = static_cast<CObjectLayer*>(pLayer);
 		string path = pLayer->GetLayerFilepath();
-		CObjectLayer* pParentLayer = pLayer->GetParent();
+		CObjectLayer* pParentLayer = pObjectLayer->GetParent();
 
 		if (!CFileUtil::FileExists(path))
 		{
@@ -1295,7 +1357,7 @@ bool CObjectLayerManager::ReloadLayer(CObjectLayer* pLayer)
 			return false;
 		}
 
-		DeleteLayer(pLayer);
+		DeleteLayer(pObjectLayer);
 
 		CObjectLayer* pNewLayer = ImportLayerFromFile(path);
 		if (!pNewLayer)

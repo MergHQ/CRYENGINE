@@ -829,7 +829,10 @@
         <file alias="VersionControl/locked.ico">icons/versioncontrol_locked.ico</file>
         <file alias="VersionControl/new.ico">icons/versioncontrol_new.ico</file>
         <file alias="VersionControl/not_latest.ico">icons/versioncontrol_not_latest.ico</file>
+        <file alias="VersionControl/deleted.ico">icons/versioncontrol_deleted.ico</file>
         <file alias="VersionControl/latest.ico">icons/versioncontrol_latest.ico</file>
+        <file alias="VersionControl/not_tracked.ico">icons/versioncontrol_not_tracked.ico</file>
+        <file alias="VersionControl/warning.ico">icons/versioncontrol_warning.ico</file>
         <file alias="VersionControl/error.ico">icons/versioncontrol_error.ico</file>
     </qresource>
 </RCC>

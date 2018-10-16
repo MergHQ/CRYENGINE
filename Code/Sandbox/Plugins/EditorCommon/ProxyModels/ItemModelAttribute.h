@@ -159,6 +159,7 @@ EDITOR_COMMON_API extern CAttributeType<int> s_intAttributeType;
 EDITOR_COMMON_API extern CAttributeType<float> s_floatAttributeType;
 EDITOR_COMMON_API extern CAttributeType<bool> s_booleanAttributeType;
 EDITOR_COMMON_API extern CAttributeType<int> s_enumAttributeType;
+EDITOR_COMMON_API extern CAttributeType<QIcon> s_iconAttributeType;
 
 //! Set of reusable and common attributes for many models.
 EDITOR_COMMON_API extern CItemModelAttribute s_nameAttribute;

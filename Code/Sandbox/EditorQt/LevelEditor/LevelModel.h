@@ -14,7 +14,8 @@ enum ELayerColumns
 	eLayerColumns_Color, //Must be kept index 0 to match eObjectColumns_LayerColor
 	eLayerColumns_Visible,    //Must be kept index 1 to match eObjectColumns_Visible
 	eLayerColumns_Frozen,     //Must be kept index 2 to match eObjectColumns_Frozen
-	eLayerColumns_Name,       //Must be kept index 3 to match eObjectColumns_Name
+	eLayerColumns_VCS,        //Must be kept index 3 to match eObjectColumns_VCS
+	eLayerColumns_Name,       //Must be kept index 4 to match eObjectColumns_Name
 	eLayerColumns_Exportable,
 	eLayerColumns_ExportablePak,
 	eLayerColumns_LoadedByDefault,

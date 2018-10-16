@@ -36,6 +36,12 @@ void Handle(SVersionControlError error)
 	case EVersionControlError::InvalidFileName:
 		errorMessage = "Version Control System: Invalid file name";
 		break;
+	case EVersionControlError::OperationFailed:
+		errorMessage = "Version Control System: Operation failed";
+		break;
+	case EVersionControlError::AlreadyCheckedOutByOthers:
+		errorMessage = "Version Control System: Exclusive check out";
+		break;
 	case EVersionControlError::Unknown:
 		errorMessage = "Version Control System: Error";
 		break;

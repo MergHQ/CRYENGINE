@@ -13,6 +13,7 @@ enum class EVersionControlError
 	CorruptedFileState,
 	NoConnection,
 	InvalidFileName,
+	OperationFailed,
 	Unknown
 };
 
@@ -27,7 +28,7 @@ struct SVersionControlError
 		, message(message)
 	{
 		isCritical = type == E::LoginFailed || type == E::InvalidSettings || type == E::Terminated
-			|| type == E::NoConnection || type == E::SessionExpired;
+			|| type == E::NoConnection || type == E::SessionExpired || type == E::OperationFailed;
 	}
 
 	string               message;

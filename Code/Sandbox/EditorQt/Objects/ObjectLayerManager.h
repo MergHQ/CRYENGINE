@@ -2,9 +2,6 @@
 
 #pragma once
 
-#define LAYER_FILE_EXTENSION ".lyr"
-#define LAYER_PATH           "Layers/"
-
 #include "ObjectLayer.h"
 #include <Objects/IObjectLayerManager.h>
 #include <CrySandbox/CrySignal.h>
@@ -53,6 +50,8 @@ struct CLayerChangeEvent
 class SANDBOX_API CObjectLayerManager : public IObjectLayerManager, public IEditorNotifyListener
 {
 public:
+	static const char* GetLayerExtension() { return ".lyr"; }
+
 	CCrySignal<void(const CLayerChangeEvent&)> signalChangeEvent;
 
 	CObjectLayerManager(CObjectManager* pObjectManager);
@@ -73,7 +72,7 @@ public:
 	//! Check if it's possible to delete a layer.
 	bool          CanDeleteLayer(CObjectLayer* pLayer);
 	//! Delete layer from layer manager.
-	void          DeleteLayer(CObjectLayer* pLayer, bool bNotify = true);
+	bool          DeleteLayer(IObjectLayer* pLayer, bool bNotify = true, bool deleteFileOnSave = true) override;
 	//! Delete all layers from layer manager.
 	void          ClearLayers(bool bNotify = true);
 	//! Returns true if there are no layers. Note that this should not happen in normal circumstances
@@ -88,13 +87,13 @@ public:
 	bool CanMove(const CObjectLayer* pLayer, const CObjectLayer* pTargetParent) const;
 
 	//! Find layer by layer GUID.
-	CObjectLayer* FindLayer(CryGUID guid) const;
+	virtual CObjectLayer* FindLayer(CryGUID guid) const override;
 
 	//! Search for layer by name.
-	CObjectLayer* FindLayerByFullName(const string& layerFullName) const;
+	virtual CObjectLayer* FindLayerByFullName(const string& layerFullName) const override;
 
 	//! Search for layer by name, where the layer type is eObjectLayerType_Layer.
-	CObjectLayer* FindLayerByName(const string& layerName) const;
+	virtual CObjectLayer* FindLayerByName(const string& layerName) const override;
 
 	//! Search for folder by name, where where the folder type is eObjectLayerType_Folder.
 	CObjectLayer* FindFolderByName(const string& layerName) const;
@@ -109,13 +108,13 @@ public:
 	bool IsAnyLayerOfType(EObjectLayerType type) const;
 
 	//! Get a list of all managed layers.
-	const std::vector<CObjectLayer*>& GetLayers() const;
+	const std::vector<IObjectLayer*>& GetLayers() const override;
 
 	//! Set this layer is current.
-	void          SetCurrentLayer(CObjectLayer* pCurrLayer);
-	CObjectLayer* GetCurrentLayer() const;
+	void                   SetCurrentLayer(CObjectLayer* pCurrLayer);
+	virtual CObjectLayer*  GetCurrentLayer() const override;
 
-	const string& GetLayersPath() const                   { return m_layersPath; }
+	const string& GetLayersPath() const { return m_layersPath; }
 	void          SetLayersPath(const string& layersPath) { m_layersPath = layersPath; }
 
 	void          NotifyLayerChange(const CLayerChangeEvent& event);
@@ -126,7 +125,7 @@ public:
 	CObjectLayer* ImportLayer(CObjectArchive& ar, const string& filePath, bool bNotify = true);
 
 	//! Import layer from file. If globalArchive, caller is responsible for both Object and Layer resolution!
-	CObjectLayer* ImportLayerFromFile(const char* filename, bool bNotify = true, CObjectArchive* globalArchive = nullptr);
+	CObjectLayer* ImportLayerFromFile(const string& filePath, bool bNotify = true, CObjectArchive* globalArchive = nullptr) override;
 
 	// Serialize layer manager (called from object manager).
 	void Serialize(CObjectArchive& ar);
@@ -151,7 +150,7 @@ public:
 	void SetAllVisible(bool bVisible);
 
 	//! Reloads the layer from disk
-	bool ReloadLayer(CObjectLayer* pLayer);
+	bool ReloadLayer(IObjectLayer* pLayer) override;
 
 	//! Saves the layer to disk
 	void       SaveLayer(CObjectLayer* pLayer);
@@ -173,7 +172,10 @@ private:
 	CObjectLayer* CreateLayerInstance() { return new CObjectLayer(); }
 
 	void          SaveLayer(CObjectArchive* pArchive, CObjectLayer* pLayer);
-	CObjectLayer* CObjectLayerManager::FindOrCreateFolderChain(const string& folderChain, bool bNotify = true);
+	CObjectLayer* FindOrCreateFolderChain(const string& folderChain, bool bNotify = true);
+
+	//! Physically deletes layers that pend deletion.
+	void DeletePendingLayers();
 
 	//////////////////////////////////////////////////////////////////////////
 	//! Map of layer GUID to layer pointer.
@@ -183,9 +185,9 @@ private:
 	// At the moment this is the simplest implementation of layers' caching.
 	// Ideally we would need to make it work together with the map maybe by having map keep indices of layers in the vector
 	// instead of pointers. Maintaining this would be more involved. That's why for now we leave the simple solution
-	mutable std::vector<CObjectLayer*> m_layersCache;
+	mutable std::vector<IObjectLayer*> m_layersCache;
 	//! List of layer paths to be deleted on save (product of a rename)
-	std::set<std::string>              m_toBeDeleted;
+	std::set<string> m_toBeDeleted;
 
 	//! Pointer to currently active layer.
 	TSmartPtr<CObjectLayer> m_pCurrentLayer;

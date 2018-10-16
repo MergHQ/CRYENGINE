@@ -23,8 +23,6 @@ public:
 	CLevelExplorer(QWidget* pParent = nullptr);
 	~CLevelExplorer();
 
-	static CCrySignal<void(CAbstractMenu&, const std::vector<CBaseObject*>&, const std::vector<CObjectLayer*>& layers, const std::vector<CObjectLayer*>& folders)> s_signalContextMenuRequested;
-
 	//////////////////////////////////////////////////////////////////////////
 	// CEditor implementation
 	virtual const char* GetEditorName() const override { return "Level Explorer"; }

@@ -26,6 +26,7 @@ namespace LevelModelsAttributes
 {
 CItemModelAttribute s_visibleAttribute("Visible", &Attributes::s_booleanAttributeType, CItemModelAttribute::Visible, true, Qt::Checked, Qt::CheckStateRole);
 CItemModelAttribute s_frozenAttribute("Frozen", &Attributes::s_booleanAttributeType, CItemModelAttribute::Visible, true, Qt::Unchecked, Qt::CheckStateRole);
+CItemModelAttribute s_vcsAttribute("Version Control", &Attributes::s_iconAttributeType);
 CItemModelAttribute s_layerNameAttribute("Layer", &Attributes::s_stringAttributeType);
 CItemModelAttribute s_objectTypeDescAttribute("Type", &Attributes::s_stringAttributeType);
 CItemModelAttribute s_defaultMaterialAttribute("Default Material", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
@@ -83,6 +84,8 @@ CItemModelAttribute * CLevelLayerModel::GetAttributeForColumn(EObjectColumns col
 		return &LevelModelsAttributes::s_visibleAttribute;
 	case eObjectColumns_Frozen:
 		return &LevelModelsAttributes::s_frozenAttribute;
+	case eObjectColumns_VCS:
+		return &LevelModelsAttributes::s_vcsAttribute;
 	case eObjectColumns_DefaultMaterial:
 		return &LevelModelsAttributes::s_defaultMaterialAttribute;
 	case eObjectColumns_CustomMaterial:
@@ -129,11 +132,14 @@ QVariant CLevelLayerModel::GetHeaderData(int section, Qt::Orientation orientatio
 			return CryIcon("icons:General/Visibility_True.ico");
 		if (section == eObjectColumns_Frozen)
 			return CryIcon("icons:Navigation/Basics_Select_False.ico");
+		if (section == eObjectColumns_VCS)
+			return CryIcon("icons:VersionControl/icon.ico");
 	}
 	if (role == Qt::DisplayRole)
 	{
 		//For Visible and Frozen we use Icons instead
-		if (section == eObjectColumns_Visible || section == eObjectColumns_Frozen || section == eObjectColumns_LayerColor)
+		if (section == eObjectColumns_Visible || section == eObjectColumns_Frozen || section == eObjectColumns_VCS 
+			|| section == eObjectColumns_LayerColor)
 		{
 			return "";
 		}
@@ -154,6 +160,7 @@ QVariant CLevelLayerModel::GetHeaderData(int section, Qt::Orientation orientatio
 		case eObjectColumns_Name:
 		case eObjectColumns_Visible:
 		case eObjectColumns_Frozen:
+		case eObjectColumns_VCS:
 		case eObjectColumns_LayerColor:
 			return "";
 			break;
@@ -232,6 +239,8 @@ QVariant CLevelLayerModel::data(const QModelIndex& index, int role) const
 			{
 				switch (index.column())
 				{
+				case eObjectColumns_VCS:
+					return "-";
 				case eObjectColumns_Name:
 					return (const char*)pObject->GetName();
 				case eObjectColumns_Layer:
@@ -381,8 +390,14 @@ QVariant CLevelLayerModel::data(const QModelIndex& index, int role) const
 			case eObjectColumns_Frozen:
 				return pObject->IsFrozen() ? Qt::Checked : Qt::Unchecked;
 			}
-			break;
 		}
+		break;
+	case Qt::TextAlignmentRole:
+		{
+			if (index.column() == eObjectColumns_VCS)
+				return Qt::AlignCenter;
+		}
+		break;
 	case QAdvancedItemDelegate::s_IconOverrideRole:
 		{
 			CBaseObject* pObject = ObjectFromIndex(index);
@@ -403,8 +418,8 @@ QVariant CLevelLayerModel::data(const QModelIndex& index, int role) const
 			default:
 				break;
 			}
-			break;
 		}
+		break;
 	case QAdvancedItemDelegate::s_DrawRectOverrideRole:
 		{
 			switch (index.column())

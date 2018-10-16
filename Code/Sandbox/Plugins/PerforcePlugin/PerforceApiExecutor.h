@@ -58,7 +58,7 @@ public:
 
 	virtual string Have(const std::vector<string>& filePaths) override;
 
-	virtual string Revert(const std::vector<string>& filePaths, bool onlyUnchanged = false) override;
+	virtual string Revert(const std::vector<string>& filePaths, bool onlyUnchanged /*= false*/, bool clearOnlyState /*= false*/) override;
 
 	virtual string Shelve(const std::vector<string>& filePaths, const string& changelist) override;
 
@@ -77,6 +77,8 @@ public:
 	virtual string CheckLogin() override;
 
 	virtual string Logout() override;
+
+	virtual string Print(const string& file) override;
 
 	virtual void   UpdateSettings(const string& port, const string& workspace, const string& user /* = "" */, const string& password /* = "" */) override;
 

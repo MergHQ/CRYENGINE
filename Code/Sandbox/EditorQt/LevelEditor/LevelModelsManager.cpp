@@ -18,7 +18,8 @@ enum EFullLevelColumns
 	eFullLevelColumns_LayerColor,
 	eFullLevelColumns_Visible, //Must be kept index 0 to match
 	eFullLevelColumns_Frozen,  //Must be kept index 1 to match
-	eFullLevelColumns_Name,    //Must be kept index 2 to match
+	eFullLevelColumns_VCS,     //Must be kept index 2 to match
+	eFullLevelColumns_Name,    //Must be kept index 3 to match
 	eFullLevelColumns_Layer,
 	eFullLevelColumns_Type,
 	eFullLevelColumns_TypeDesc,
@@ -58,6 +59,8 @@ static CItemModelAttribute* FullLevel_GetColumnAttribute(int column)
 		return &LevelModelsAttributes::s_visibleAttribute;
 	case eFullLevelColumns_Frozen:
 		return &LevelModelsAttributes::s_frozenAttribute;
+	case eFullLevelColumns_VCS:
+		return &LevelModelsAttributes::s_vcsAttribute;
 	case eFullLevelColumns_DefaultMaterial:
 		return &LevelModelsAttributes::s_defaultMaterialAttribute;
 	case eFullLevelColumns_CustomMaterial:
@@ -111,11 +114,14 @@ static QVariant FullLevel_GetHeaderData(int section, Qt::Orientation orientation
 			return CryIcon("icons:General/Visibility_True.ico");
 		if (section == eFullLevelColumns_Frozen)
 			return CryIcon("icons:General/editable.ico");
+		if (section == eFullLevelColumns_VCS)
+			return CryIcon("icons:VersionControl/icon.ico");
 	}
 	if (role == Qt::DisplayRole)
 	{
 		//For Visible and Frozen we use Icons instead
-		if (section == eFullLevelColumns_Visible || section == eFullLevelColumns_Frozen || section == eFullLevelColumns_LayerColor)
+		if (section == eFullLevelColumns_Visible || section == eFullLevelColumns_Frozen || section == eFullLevelColumns_VCS 
+			|| section == eFullLevelColumns_LayerColor)
 		{
 			return QString("");
 		}
@@ -135,6 +141,7 @@ static QVariant FullLevel_GetHeaderData(int section, Qt::Orientation orientation
 		{
 		case eFullLevelColumns_Visible:
 		case eFullLevelColumns_Frozen:
+		case eFullLevelColumns_VCS:
 		case eFullLevelColumns_Name:
 		case eFullLevelColumns_LayerColor:
 			return "";
@@ -255,14 +262,15 @@ void CLevelModelsManager::CreateLayerModels()
 {
 	LOADING_TIME_PROFILE_SECTION;
 	const auto& layers = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetLayers();
-	for (CObjectLayer* layer : layers)
+	for (IObjectLayer* pLayer : layers)
 	{
-		if (layer->GetLayerType() != eObjectLayerType_Layer)
+		auto pObjectLayer = static_cast<CObjectLayer*>(pLayer);
+		if (pObjectLayer->GetLayerType() != eObjectLayerType_Layer)
 		{
 			continue;
 		}
-		auto layerModel = new CLevelLayerModel(layer, this);
-		m_layerModels[layer] = layerModel;
+		auto layerModel = new CLevelLayerModel(pObjectLayer, this);
+		m_layerModels[pObjectLayer] = layerModel;
 		m_allObjectsModel->MountAppend(layerModel);
 	}
 

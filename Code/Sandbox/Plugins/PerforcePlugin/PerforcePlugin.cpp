@@ -19,7 +19,7 @@ class CPerforceVersionControl_ClassDesc : public IClassDesc
 	virtual const char*    Category() { return "VersionControl"; }
 	virtual void*          CreateObject()
 	{
-		return new CPerforceVCSAdapter(PathUtil::GetGameProjectAssetsPath());
+		return new CPerforceVCSAdapter(PathUtil::MatchAbsolutePathToCaseOnFileSystem(PathUtil::GetGameProjectAssetsPath()));
 	}
 };
 

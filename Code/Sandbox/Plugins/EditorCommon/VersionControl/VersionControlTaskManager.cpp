@@ -12,18 +12,16 @@ CryMutex g_queueMutex;
 CryConditionVariable g_cond;
 volatile bool g_shouldTerminate = false;
 
-using CTask = CVersionControlTaskManager::CTask;
-
-class CBlockingTask : public CVersionControlTaskManager::CTask
+class CBlockingTask : public CVersionControlTask
 {
 public:
-	CBlockingTask(CVersionControlTaskManager::TaskWrapper func)
-		: CTask(std::move(func))
+	CBlockingTask(CVersionControlTask::TaskWrapper func)
+		: CVersionControlTask(std::move(func))
 	{}
 
 	virtual void Execute()
 	{
-		CTask::Execute();
+		CVersionControlTask::Execute();
 		m_isExecuted = true;
 		m_cond.Notify();
 	}
@@ -47,7 +45,7 @@ private:
 class CTaskQueueExecutor : public IThread
 {
 public:
-	CTaskQueueExecutor(std::deque<std::shared_ptr<CTask>>& tasks)
+	CTaskQueueExecutor(std::deque<std::shared_ptr<CVersionControlTask>>& tasks)
 		: m_tasks(tasks)
 	{}
 
@@ -57,13 +55,16 @@ public:
 		{
 			while (!g_shouldTerminate && !m_shouldTerminate && !m_tasks.empty())
 			{
-				std::shared_ptr<CTask> pTask;
+				std::shared_ptr<CVersionControlTask> pTask;
 				{
 					CryAutoLock<CryMutex> lock(g_queueMutex);
 					pTask = m_tasks.front();
 					m_tasks.pop_front();
 				}
-				pTask->Execute();
+				if (!pTask->IsCanceled())
+				{
+					pTask->Execute();
+				}
 			}
 
 			CryAutoLock<CryMutex> lock(g_queueMutex);
@@ -76,7 +77,7 @@ public:
 	void Terminate() { m_shouldTerminate = true; }
 
 private:
-	std::deque<std::shared_ptr<CTask>>& m_tasks;
+	std::deque<std::shared_ptr<CVersionControlTask>>& m_tasks;
 	// thread should have it's own terminate flag because it's possible to switch to another VCS while the first
 	// one is still running (finishing last long operation).
 	volatile bool m_shouldTerminate{ false };
@@ -126,11 +127,11 @@ void CVersionControlTaskManager::Reset()
 	Enable();
 }
 
-std::shared_ptr<CVersionControlTaskManager::CTask> CVersionControlTaskManager::AddTask(CVersionControlTaskManager::TaskWrapper func, bool isBlocking)
+std::shared_ptr<CVersionControlTask> CVersionControlTaskManager::AddTask(CVersionControlTask::TaskWrapper func, bool isBlocking)
 {
 	using namespace Private_VersionControlTaskManager;
 
-	auto task = isBlocking ? std::make_shared<CBlockingTask>(std::move(func)) : std::make_shared<CTask>(std::move(func));
+	auto task = isBlocking ? std::make_shared<CBlockingTask>(std::move(func)) : std::make_shared<CVersionControlTask>(std::move(func));
 
 	{
 		CryAutoLock<CryMutex> lock(g_queueMutex);
@@ -142,7 +143,7 @@ std::shared_ptr<CVersionControlTaskManager::CTask> CVersionControlTaskManager::A
 	return task;
 }
 
-std::shared_ptr<const CVersionControlResult> CVersionControlTaskManager::ScheduleTask(std::function<void(CVersionControlResult&)> taskFunc, bool isBlocking, Callback callback)
+std::shared_ptr<CVersionControlTask> CVersionControlTaskManager::ScheduleTask(std::function<void(CVersionControlResult&)> taskFunc, bool isBlocking, Callback callback)
 {
 	using namespace Private_VersionControlTaskManager;
 	CRY_ASSERT_MESSAGE(g_pTaskQueueExecutor, "VCS Thread is not running");
@@ -150,28 +151,36 @@ std::shared_ptr<const CVersionControlResult> CVersionControlTaskManager::Schedul
 	{
 		return nullptr;
 	}
-	auto pTask = AddTask([taskFunc, callback = std::move(callback)](std::shared_ptr<CVersionControlResult> result) mutable
+	auto pTask = AddTask([taskFunc, callback = std::move(callback)](std::shared_ptr<CVersionControlTask> pTask) mutable
 	{
-		taskFunc(*result);
+		auto& result = pTask->m_result;
+		taskFunc(pTask->m_result);
 		if (g_shouldTerminate)
 		{
-			result->SetError(EVersionControlError::Terminated);
+			result.SetError(EVersionControlError::Terminated);
 		}
-		GetIEditor()->PostOnMainThread([result, callback = std::move(callback)]()
+		GetIEditor()->PostOnMainThread([pTask, callback = std::move(callback)]()
 		{
-			VersionControlErrorHandler::Handle(result->GetError());
-			if (callback && !result->GetError().isCritical)
+			if (pTask->IsCanceled())
 			{
-				callback(*result);
+				return;
+			}
+			VersionControlErrorHandler::Handle(pTask->GetResult().GetError());
+			if (callback && !pTask->GetResult().GetError().isCritical)
+			{
+				callback(pTask->GetResult());
 			}
 		});
 	}, isBlocking);
-	return std::shared_ptr<const CVersionControlResult>(pTask, &pTask->GetResult());
+	return pTask;
 }
 
-void CVersionControlTaskManager::CTask::Execute()
+void CVersionControlTask::Cancel()
 {
-	auto task = shared_from_this();
-	auto result = std::shared_ptr<CVersionControlResult>(task, &m_result);
-	m_func(result);
+	m_isCanceled = true;
+}
+
+void CVersionControlTask::Execute()
+{
+	m_func(shared_from_this());
 }

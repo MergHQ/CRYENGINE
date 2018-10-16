@@ -64,6 +64,8 @@ struct IPerforceOutputParser
 
 	virtual void ParseReconcile(const string& perforceOutput, std::vector<string>& result, bool isPreview = true) const = 0;
 
+	virtual void ParsePrint(const string& perforceOutput, string& result) const = 0;
+
 	virtual SVersionControlError GetError() const = 0;
 
 	bool ParseStatus(const string& perforceOutput, std::vector<CVersionControlFileStatusUpdate>& result) const

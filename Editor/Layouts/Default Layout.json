@@ -284,53 +284,17 @@
                 "syncSelection": true,
                 "treeView": {
                     "columnData": {
-                        "": {
-                            "data": "",
+                        "Layer Color": {
+                            "data": "Layer Color",
                             "visible": true,
-                            "visualIndex": 22,
-                            "width": 0
+                            "visualIndex": 0,
+                            "width": 6
                         },
-                        "AI GroupID": {
-                            "data": "AI GroupID",
-                            "visible": false,
-                            "visualIndex": 16,
-                            "width": 0
-                        },
-                        "Breakable": {
-                            "data": "Breakable",
-                            "visible": false,
-                            "visualIndex": 9,
-                            "width": 0
-                        },
-                        "Custom Material": {
-                            "data": "Custom Material",
-                            "visible": false,
-                            "visualIndex": 8,
-                            "width": 0
-                        },
-                        "Default Material": {
-                            "data": "Default Material",
-                            "visible": false,
-                            "visualIndex": 7,
-                            "width": 0
-                        },
-                        "Exportable": {
-                            "data": "Exportable",
-                            "visible": false,
-                            "visualIndex": 17,
-                            "width": 0
-                        },
-                        "Exportable to Pak": {
-                            "data": "Exportable to Pak",
-                            "visible": false,
-                            "visualIndex": 18,
-                            "width": 0
-                        },
-                        "Flow Graph": {
-                            "data": "Flow Graph",
-                            "visible": false,
-                            "visualIndex": 11,
-                            "width": 0
+                        "Visible": {
+                            "data": "Visible",
+                            "visible": true,
+                            "visualIndex": 1,
+                            "width": 25
                         },
                         "Frozen": {
                             "data": "Frozen",
@@ -338,95 +302,138 @@
                             "visualIndex": 2,
                             "width": 25
                         },
-                        "Geometry": {
-                            "data": "Geometry",
-                            "visible": false,
-                            "visualIndex": 12,
-                            "width": 0
-                        },
-                        "Has Physics": {
-                            "data": "Has Physics",
-                            "visible": false,
-                            "visualIndex": 19,
-                            "width": 0
-                        },
-                        "Instances": {
-                            "data": "Instances",
-                            "visible": false,
-                            "visualIndex": 13,
-                            "width": 0
-                        },
-                        "LOD Count": {
-                            "data": "LOD Count",
-                            "visible": false,
-                            "visualIndex": 14,
-                            "width": 0
-                        },
-                        "Layer": {
-                            "data": "Layer",
+                        "Version Control": {
+                            "data": "Version Control",
                             "visible": true,
-                            "visualIndex": 4,
-                            "width": 100
-                        },
-                        "Layer Color": {
-                            "data": "Layer Color",
-                            "visible": true,
-                            "visualIndex": 0,
-                            "width": 6
-                        },
-                        "Loaded in Game": {
-                            "data": "Loaded in Game",
-                            "visible": false,
-                            "visualIndex": 20,
-                            "width": 0
+                            "visualIndex": 3,
+                            "width": 25
                         },
                         "Name": {
                             "data": "Name",
                             "visible": true,
-                            "visualIndex": 3,
+                            "visualIndex": 4,
                             "width": 275
+                        },
+                        "Layer": {
+                            "data": "Layer",
+                            "visible": true,
+                            "visualIndex": 5,
+                            "width": 100
+                        },
+                        "Type": {
+                            "data": "Type",
+                            "visible": true,
+                            "visualIndex": 6,
+                            "width": 353
                         },
                         "Object Type": {
                             "data": "Object Type",
                             "visible": false,
-                            "visualIndex": 6,
+                            "visualIndex": 7,
                             "width": 0
                         },
-                        "Platform": {
-                            "data": "Platform",
+                        "Default Material": {
+                            "data": "Default Material",
                             "visible": false,
-                            "visualIndex": 21,
+                            "visualIndex": 8,
+                            "width": 0
+                        },
+                        "Custom Material": {
+                            "data": "Custom Material",
+                            "visible": false,
+                            "visualIndex": 9,
+                            "width": 0
+                        },
+                        "Breakable": {
+                            "data": "Breakable",
+                            "visible": false,
+                            "visualIndex": 10,
                             "width": 0
                         },
                         "Smart Object": {
                             "data": "Smart Object",
                             "visible": false,
-                            "visualIndex": 10,
+                            "visualIndex": 11,
+                            "width": 0
+                        },
+                        "Flow Graph": {
+                            "data": "Flow Graph",
+                            "visible": false,
+                            "visualIndex": 12,
+                            "width": 0
+                        },
+                        "Geometry": {
+                            "data": "Geometry",
+                            "visible": false,
+                            "visualIndex": 13,
+                            "width": 0
+                        },
+                        "Instances": {
+                            "data": "Instances",
+                            "visible": false,
+                            "visualIndex": 14,
+                            "width": 0
+                        },
+                        "LOD Count": {
+                            "data": "LOD Count",
+                            "visible": false,
+                            "visualIndex": 15,
                             "width": 0
                         },
                         "Spec": {
                             "data": "Spec",
                             "visible": false,
-                            "visualIndex": 15,
+                            "visualIndex": 16,
                             "width": 0
                         },
-                        "Type": {
-                            "data": "Type",
-                            "visible": true,
-                            "visualIndex": 5,
-                            "width": 353
+                        "AI GroupID": {
+                            "data": "AI GroupID",
+                            "visible": false,
+                            "visualIndex": 17,
+                            "width": 0
                         },
-                        "Visible": {
-                            "data": "Visible",
+                        "Exportable": {
+                            "data": "Exportable",
+                            "visible": false,
+                            "visualIndex": 18,
+                            "width": 0
+                        },
+                        "Exportable to Pak": {
+                            "data": "Exportable to Pak",
+                            "visible": false,
+                            "visualIndex": 19,
+                            "width": 0
+                        },
+                        "Has Physics": {
+                            "data": "Has Physics",
+                            "visible": false,
+                            "visualIndex": 20,
+                            "width": 0
+                        },
+                        "Loaded in Game": {
+                            "data": "Loaded in Game",
+                            "visible": false,
+                            "visualIndex": 21,
+                            "width": 0
+                        },
+                        "Platform": {
+                            "data": "Platform",
+                            "visible": false,
+                            "visualIndex": 22,
+                            "width": 0
+                        },
+                        "": {
+                            "data": "",
                             "visible": true,
-                            "visualIndex": 1,
-                            "width": 25
+                            "visualIndex": 23,
+                            "width": 0
                         }
                     },
                     "columnOrder": [
                         "Layer Color",
                         "Visible",
                         "Frozen",
+                        "Version Control",
                         "Name",
                         "Layer",
                         "Type",
@@ -449,7 +456,7 @@
                     ],
                     "headerSortingOrder": {
                         "sortOrder": 0,
-                        "sortedSection": 3
+                        "sortedSection": 4
                     },
                     "version": 1
                 }

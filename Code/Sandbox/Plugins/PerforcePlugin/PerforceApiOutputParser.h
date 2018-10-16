@@ -11,7 +11,7 @@ class CPerforceApiOutputParser : public IPerforceOutputParser
 public:
 	using IPerforceOutputParser::ParseStatus;
 
-	CPerforceApiOutputParser();
+	CPerforceApiOutputParser(const string& trackedFolderPath);
 
 	~CPerforceApiOutputParser();
 
@@ -60,6 +60,8 @@ public:
 	virtual void ParseDiff(const string& perforceOutput, std::vector<string>& result) const override;
 
 	virtual void ParseReconcile(const string& perforceOutput, std::vector<string>& result, bool isPreview) const override;
+
+	virtual void ParsePrint(const string& perforceOutput, string& result) const override;
 
 	void         SetFileStatFilter(EFileStatFilter f);
 

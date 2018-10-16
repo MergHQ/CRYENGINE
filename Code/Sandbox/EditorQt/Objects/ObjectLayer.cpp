@@ -9,6 +9,7 @@
 #include "Terrain/RGBLayer.h"
 #include "CryString/CryPath.h"
 #include "Preferences/GeneralPreferences.h"
+#include "Util/TimeUtil.h"
 
 //////////////////////////////////////////////////////////////////////////
 // class CUndoLayerStates
@@ -175,16 +176,8 @@ public:
 	CTerrainLayer::CTerrainLayer(const char* szName)
 		: CObjectLayer(szName, eObjectLayerType_Terrain)
 	{
+		PopulesDependantFiles();
 		CTerrainManager* pTerrainManager = GetIEditorImpl()->GetTerrainManager();
-		const size_t n = pTerrainManager->GetDataFilesCount();
-		m_files.reserve(n);
-		string dataFolder = GetIEditorImpl()->GetLevelDataFolder();
-		for (size_t i = 0; i < n; ++i)
-		{
-			m_files.push_back(PathUtil::MakeGamePath(PathUtil::Make(dataFolder, pTerrainManager->GetDataFilename(i))));
-		}
-		m_files.push_back(PathUtil::MakeGamePath(pTerrainManager->GetRGBLayer()->GetFullFileName()));
-
 		pTerrainManager->signalTerrainChanged.Connect(this, &CTerrainLayer::OnTerrainChange);
 		pTerrainManager->signalLayersChanged.Connect(this, &CTerrainLayer::OnTerrainChange);
 	}
@@ -248,10 +241,31 @@ public:
 		}
 	}
 
+private:
 	void OnTerrainChange()
 	{
 		SetModified(true);
 	}
+
+	void PopulesDependantFiles()
+	{
+		CTerrainManager* pTerrainManager = GetIEditorImpl()->GetTerrainManager();
+		const size_t numTerrainFiles = pTerrainManager->GetDataFilesCount();
+		m_files.reserve(numTerrainFiles);
+		string dataFolder = GetIEditorImpl()->GetLevelDataFolder();
+		string levelFolder = GetIEditorImpl()->GetLevelFolder();
+		for (size_t i = 0; i < numTerrainFiles; ++i)
+		{
+			m_files.push_back(PathUtil::Make(dataFolder, pTerrainManager->GetDataFilename(i)));
+		}
+		m_files.push_back(pTerrainManager->GetRGBLayer()->GetFullFileName());
+
+		for (string& file : m_files)
+		{
+			file = file.substr(levelFolder.size() + 1);
+		}
+	}
+
 };
 
 const ColorB g_defaultLayerColor(71, 71, 71);
@@ -351,6 +365,18 @@ void CObjectLayer::Serialize(XmlNodeRef& node, bool isLoading)
 		node->getAttr("Color", color);
 		m_color = ColorB(GetRValue(color), GetGValue(color), GetBValue(color));
 
+		XmlNodeRef pFiles = node->findChild("Files");
+		if (pFiles)
+		{
+			m_files.clear();
+			m_files.reserve(pFiles->getChildCount());
+			for (int i = 0, n = pFiles->getChildCount(); i < n; ++i)
+			{
+				XmlNodeRef pFile = pFiles->getChild(i);
+				m_files.emplace_back(pFile->getAttr("path"));
+			}
+		}
+
 		GetIEditorImpl()->GetObjectManager()->InvalidateVisibleList();
 	}
 	else
@@ -364,9 +390,25 @@ void CObjectLayer::Serialize(XmlNodeRef& node, bool isLoading)
 		node->setAttr("HavePhysics", m_havePhysics);
 		node->setAttr("IsDefaultColor", !m_useColorOverride);
 		node->setAttr("Color", RGB(m_color.r, m_color.g, m_color.b));
+		node->setAttr("Timestamp", TimeUtil::GetCurrentTimeStamp());
 
 		if (m_specs != eSpecType_All)
 			node->setAttr("Specs", m_specs);
+
+		if (!m_files.empty())
+		{
+			XmlNodeRef pFiles = node->findChild("Files");
+			if (!pFiles)
+			{
+				pFiles = node->newChild("Files");
+			}
+
+			for (const string& file : m_files)
+			{
+				XmlNodeRef pFile = pFiles->newChild("File");
+				pFile->setAttr("path", file);
+			}
+		}
 	}
 }
 
@@ -629,12 +671,12 @@ void CObjectLayer::SetModified(bool isModified)
 }
 
 //////////////////////////////////////////////////////////////////////////
-string CObjectLayer::GetLayerFilepath()
+string CObjectLayer::GetLayerFilepath() const 
 {
 	CObjectLayerManager* pLayerManager = GetIEditorImpl()->GetObjectManager()->GetLayersManager();
 	string filePath = PathUtil::Make(GetIEditorImpl()->GetGameEngine()->GetLevelPath(), pLayerManager->GetLayersPath() + GetFullName()).c_str();
 	if (m_layerType != eObjectLayerType_Folder)
-		filePath += LAYER_FILE_EXTENSION;
+		filePath += CObjectLayerManager::GetLayerExtension();
 
 	return filePath;
 }
@@ -686,7 +728,6 @@ void CObjectLayer::UseColorOverride(bool useColorOverride)
 	CLayerChangeEvent(CLayerChangeEvent::LE_LAYERCOLOR, this).Send();
 }
 
-//////////////////////////////////////////////////////////////////////////
 string CObjectLayer::GetFullName() const
 {
 	string fullName(m_name);

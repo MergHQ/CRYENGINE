@@ -167,7 +167,7 @@ public:
 	//! \param asset An instance of asset to be examined.
 	//! \param includeSourceFile If true, the collection will include the asset source file, if any.
 	//! \param makeAbsolute By default the paths are relative to the assets root directory.
-	virtual std::vector<string> GetAssetFiles(const CAsset& asset, bool includeSourceFile, bool makeAbsolute = false) const;
+	virtual std::vector<string> GetAssetFiles(const CAsset& asset, bool includeSourceFile, bool makeAbsolute = false, bool includeThumbnail = true) const;
 
 	//! Returns the color code of the thumbnail.
 	virtual QColor GetThumbnailColor() const { return QColor(Qt::green); }

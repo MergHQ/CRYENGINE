@@ -46,6 +46,50 @@ static void SplitIndexedName(const string& name, string& stem, int& num)
 	stem = name.substr(0, i);
 }
 
+void AddDirectorysContent(const QString& dirPath, std::vector<string>& result, int currentLevel, int levelLimit, bool includeFolders)
+{
+	if (currentLevel >= levelLimit)
+	{
+		return;
+	}
+	QDir dir(dirPath);
+	QFileInfoList infoList = dir.entryInfoList(QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot);
+	for (const QFileInfo& fileInfo : infoList)
+	{
+		const QString absolutePath = fileInfo.absoluteFilePath();
+		if (fileInfo.isDir())
+		{
+			if (includeFolders)
+			{
+				result.push_back(PathUtil::ToGamePath(QtUtil::ToString(absolutePath)));
+			}
+			AddDirectorysContent(absolutePath, result, currentLevel + 1, levelLimit, includeFolders);
+		}
+		else
+		{
+			result.push_back(PathUtil::ToGamePath(QtUtil::ToString(absolutePath)));
+		}
+	}
+}
+
+string MatchPathSegmentsToPathOnFileSystem(const string& path, const string& rootFolder, const std::vector<string>& segments)
+{
+	QDir dir = QDir(QtUtil::ToQString(rootFolder));
+	string finalPath = rootFolder;
+	for (int i = 0; i < segments.size(); ++i)
+	{
+		const auto entries = dir.entryList({ QtUtil::ToQString(segments[i]) }, QDir::Dirs | QDir::Files);
+		if (entries.empty())
+		{
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "path %s doesn't exist on the file system", path);
+			return "";
+		}
+		finalPath = PathUtil::Make(finalPath, QtUtil::ToString(entries[0]));
+		dir = QDir(QtUtil::ToQString(finalPath));
+	}
+	return finalPath;
+}
+
 } // namespace Private_FilePathUtil
 
 namespace PathUtil
@@ -290,6 +334,11 @@ string GetGameProjectAssetsPath()
 	return gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryAbsolute();
 }
 
+string GetGameProjectAssetsRelativePath()
+{
+	return gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryRelative();
+}
+
 string GetCurrentPlatformFolder()
 {
 #ifdef CRY_PLATFORM_WINDOWS
@@ -301,6 +350,20 @@ string GetCurrentPlatformFolder()
 #else
 	#error Unknown Platform
 #endif // CRY_PLATFORM_WINDOWS
+}
+
+string MatchGamePathToCaseOnFileSystem(const string& path)
+{
+	return ToGamePath(Private_FilePathUtil::MatchPathSegmentsToPathOnFileSystem(path, 
+		PathUtil::GetGameFolder(), PathUtil::SplitIntoSegments(path)));
+}
+
+string MatchAbsolutePathToCaseOnFileSystem(const string& path)
+{
+	std::vector<string> pathSegments = PathUtil::SplitIntoSegments(path);
+	string rootFolder = pathSegments[0] + '/';
+	pathSegments.erase(pathSegments.begin());
+	return Private_FilePathUtil::MatchPathSegmentsToPathOnFileSystem(path, rootFolder, pathSegments);
 }
 
 string ReplaceFilename(const string& filepath, const string& filename)
@@ -508,6 +571,11 @@ string ToGamePath(const char* path)
 		return AbsolutePathToGamePath(fixedPath);
 }
 
+bool PathExists(const string& path)
+{
+	return QFileInfo(QtUtil::ToQString(path)).exists();
+}
+
 bool FileExists(const string& path)
 {
 	QFileInfo inf(QtUtil::ToQString(path));
@@ -518,6 +586,19 @@ bool FolderExists(const string& path)
 {
 	QFileInfo inf(QtUtil::ToQString(path));
 	return inf.exists() && inf.isDir();
+}
+
+std::vector<string> GetDirectorysContent(const string& dirPath, int depthLevel /*= 0*/, bool includeFolders /*= false*/)
+{
+	return GetDirectorysContent(QtUtil::ToQString(dirPath), depthLevel, includeFolders);
+}
+
+std::vector<string> GetDirectorysContent(const QString& dirPath, int depthLevel /*= 0*/, bool includeFolders /*= false*/)
+{
+	using namespace Private_FilePathUtil;
+	std::vector<string> result;
+	AddDirectorysContent(dirPath, result, 0, depthLevel == 0 ? std::numeric_limits<int>::max() : depthLevel, includeFolders);
+	return result;
 }
 
 bool IsFileInPakOnly(const string& path)

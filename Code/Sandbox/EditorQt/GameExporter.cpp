@@ -1832,7 +1832,7 @@ void CGameExporter::ExportLevelPerLayerResourceList(const string& path)
 	const auto& layers = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetLayers();
 	for (size_t i = 0; i < layers.size(); ++i)
 	{
-		CObjectLayer* pLayer = layers[i];
+		CObjectLayer* pLayer = static_cast<CObjectLayer*>(layers[i]);
 
 		// Only export topmost layers, and make sure they are flagged for exporting
 		if (pLayer->GetParent() || !pLayer->IsExporLayerPak())

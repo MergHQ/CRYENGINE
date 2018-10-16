@@ -48,8 +48,6 @@
 
 REGISTER_VIEWPANE_FACTORY_AND_MENU(CLevelExplorer, "Level Explorer", "Tools", false, "Level Editor")
 
-CCrySignal<void(CAbstractMenu&, const std::vector<CBaseObject*>& objects, const std::vector<CObjectLayer*>& layers, const std::vector<CObjectLayer*>& folders)> CLevelExplorer::s_signalContextMenuRequested;
-
 namespace Private_LevelExplorer
 {
 class Delegate : public QAdvancedItemDelegate
@@ -448,7 +446,9 @@ void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 		CreateContextForSingleFolderLayer(abstractMenu, layerFolders);
 	}
 
-	if (layers.size())
+	const bool hasNormalLayers = layers.size() > 1 || (layers.size() == 1 && layers[0]->GetLayerType() != eObjectLayerType_Terrain);
+
+	if (hasNormalLayers)
 	{
 		CreateContextMenuForLayers(abstractMenu, layers);
 	}
@@ -508,7 +508,7 @@ void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 		});
 	}
 
-	if (!layers.empty() || !layerFolders.empty())
+	if (hasNormalLayers || !layerFolders.empty())
 	{
 		int actionsSection = abstractMenu.FindOrCreateSectionByName("Actions");
 
@@ -522,6 +522,14 @@ void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 			OnDeleteLayers(layers); 
 		});
 	}
+
+	std::vector<IObjectLayer*> iLayers;
+	std::vector<IObjectLayer*> iLayerFolders;
+	iLayers.reserve(layers.size());
+	iLayerFolders.reserve(layerFolders.size());
+	std::move(layers.begin(), layers.end(), std::back_inserter(iLayers));
+	std::move(layerFolders.begin(), layerFolders.end(), std::back_inserter(iLayerFolders));
+	GetIEditor()->GetObjectManager()->GetIObjectLayerManager()->signalContextMenuRequested(abstractMenu, objects, iLayers, iLayerFolders);
 
 	QMenu menu;
 	abstractMenu.Build(MenuWidgetBuilders::CMenuBuilder(&menu));
@@ -558,8 +566,6 @@ void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 			menuVisitor.PopulateQMenu(&menu);
 		}
 	}
-
-	s_signalContextMenuRequested(abstractMenu, objects, layers, layerFolders);
 
 	//executes the menu synchronously so we can keep references to the arrays scoped to this method in lambdas
 	menu.exec(m_treeView->mapToGlobal(pos));
@@ -611,26 +617,26 @@ void CLevelExplorer::CreateContextMenuForLayers(CAbstractMenu &abstractMenu, con
 	if (layers.size() == 1)
 	{
 		//capture layer by copy or layers by reference
-		CObjectLayer* layer = layers[0];
+		CObjectLayer* pLayer = layers[0];
 
 		int miscLayerSection = abstractMenu.GetNextEmptySection();
 
 		action = abstractMenu.CreateAction(tr("Open Containing Folder"), miscLayerSection);
-		connect(action, &QAction::triggered, [layer]()
+		connect(action, &QAction::triggered, [pLayer]()
 		{
-			QtUtil::OpenInExplorer((const char*)layer->GetLayerFilepath());
+			QtUtil::OpenInExplorer((const char*)pLayer->GetLayerFilepath());
 		});
 
 		action = abstractMenu.CreateAction(tr("Copy Filename"), miscLayerSection);
-		connect(action, &QAction::triggered, [layer]()
+		connect(action, &QAction::triggered, [pLayer]()
 		{
-			QApplication::clipboard()->setText(PathUtil::GetFile(layer->GetLayerFilepath()).GetString());
+			QApplication::clipboard()->setText(PathUtil::GetFile(pLayer->GetLayerFilepath()).GetString());
 		});
 
 		action = abstractMenu.CreateAction(tr("Copy Full Path"), miscLayerSection);
-		connect(action, &QAction::triggered, [layer]()
+		connect(action, &QAction::triggered, [pLayer]()
 		{
-			QApplication::clipboard()->setText(layer->GetLayerFilepath().GetString());
+			QApplication::clipboard()->setText(pLayer->GetLayerFilepath().GetString());
 		});
 	}
 
@@ -1372,6 +1378,7 @@ void CLevelExplorer::OnHeaderSectionCountChanged()
 	m_treeView->header()->resizeSection((int)eLayerColumns_Color, 10);
 	m_treeView->header()->resizeSection((int)eLayerColumns_Visible, 25);
 	m_treeView->header()->resizeSection((int)eLayerColumns_Frozen, 25);
+	m_treeView->header()->resizeSection((int)eLayerColumns_VCS, 25);
 }
 
 void CLevelExplorer::OnModelDestroyed()
