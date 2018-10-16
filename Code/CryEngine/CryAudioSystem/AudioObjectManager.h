@@ -39,7 +39,6 @@ public:
 	void            GetStartedStandaloneFileRequestData(CATLStandaloneFile* const pStandaloneFile, CAudioRequest& request);
 	void            ReportFinishedStandaloneFile(CATLStandaloneFile* const pStandaloneFile);
 	void            ReleasePendingRays();
-	bool            IsActive(CATLAudioObject const* const pAudioObject) const;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	size_t                    GetNumAudioObjects() const;
@@ -50,8 +49,6 @@ public:
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 private:
-
-	bool HasActiveData(CATLAudioObject const* const pAudioObject) const;
 
 	ConstructedObjects m_constructedObjects;
 };

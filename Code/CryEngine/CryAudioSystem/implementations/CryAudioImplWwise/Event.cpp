@@ -54,6 +54,12 @@ ERequestStatus CEvent::Stop()
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CEvent::SetInitialVirtualState(float const distance)
+{
+	m_state = ((m_maxAttenuation > 0.0f) && (m_maxAttenuation < distance)) ? EEventState::Virtual : EEventState::Playing;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CEvent::UpdateVirtualState(float const distance)
 {
 	EEventState const state = ((m_maxAttenuation > 0.0f) && (m_maxAttenuation < distance)) ? EEventState::Virtual : EEventState::Playing;

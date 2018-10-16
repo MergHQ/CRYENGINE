@@ -113,42 +113,9 @@ void CATLAudioObject::ReportStartedEvent(CATLEvent* const pEvent)
 	{
 		SAudioTriggerInstanceState& audioTriggerInstanceState = iter->second;
 
-		switch (pEvent->m_state)
-		{
-		case EEventState::Playing:
-			{
-				++(audioTriggerInstanceState.numPlayingEvents);
-
-				break;
-			}
-		case EEventState::PlayingDelayed:
-			{
-				CRY_ASSERT(audioTriggerInstanceState.numLoadingEvents > 0);
-				--(audioTriggerInstanceState.numLoadingEvents);
-				++(audioTriggerInstanceState.numPlayingEvents);
-				pEvent->m_state = EEventState::Playing;
-
-				break;
-			}
-		case EEventState::Loading:
-			{
-				++(audioTriggerInstanceState.numLoadingEvents);
-
-				break;
-			}
-		case EEventState::Unloading:
-			{
-				// not handled currently
-				break;
-			}
-		default:
-			{
-				// unknown event state!
-				CRY_ASSERT(false);
-
-				break;
-			}
-		}
+		CRY_ASSERT(audioTriggerInstanceState.numLoadingEvents > 0);
+		--(audioTriggerInstanceState.numLoadingEvents);
+		++(audioTriggerInstanceState.numPlayingEvents);
 	}
 	else
 	{
@@ -266,7 +233,7 @@ ERequestStatus CATLAudioObject::HandleStopTrigger(CTrigger const* const pTrigger
 {
 	for (auto const pEvent : m_activeEvents)
 	{
-		if ((pEvent != nullptr) && (pEvent->IsPlaying() || pEvent->IsVirtual()) && (pEvent->GetTriggerId() == pTrigger->GetId()))
+		if ((pEvent != nullptr) && pEvent->IsPlaying() && (pEvent->GetTriggerId() == pTrigger->GetId()))
 		{
 			pEvent->Stop();
 		}
@@ -326,9 +293,9 @@ void CATLAudioObject::PushRequest(SRequestData const& requestData, SRequestUserD
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CATLAudioObject::HasActiveData(CATLAudioObject const* const pAudioObject) const
+bool CATLAudioObject::IsActive() const
 {
-	for (auto const pEvent : pAudioObject->GetActiveEvents())
+	for (auto const pEvent : m_activeEvents)
 	{
 		if (pEvent->IsPlaying())
 		{
@@ -336,7 +303,7 @@ bool CATLAudioObject::HasActiveData(CATLAudioObject const* const pAudioObject) c
 		}
 	}
 
-	for (auto const& standaloneFilePair : pAudioObject->GetActiveStandaloneFiles())
+	for (auto const& standaloneFilePair : m_activeStandaloneFiles)
 	{
 		CATLStandaloneFile const* const pStandaloneFile = standaloneFilePair.first;
 
@@ -811,13 +778,12 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 					doesObjectNameMatchFilter = (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
 				}
 
-				bool const hasActiveData = HasActiveData(pObject);
-				bool const canDraw = (g_cvars.m_hideInactiveAudioObjects == 0) || ((g_cvars.m_hideInactiveAudioObjects != 0) && hasActiveData);
+				bool const hasActiveData = pObject->IsActive();
+				bool const isVirtual = (pObject->GetFlags() & EObjectFlags::Virtual) != 0;
+				bool const canDraw = (g_cvars.m_hideInactiveAudioObjects == 0) || ((g_cvars.m_hideInactiveAudioObjects != 0) && hasActiveData && !isVirtual);
 
 				if (canDraw)
 				{
-					bool const isVirtual = (pObject->GetFlags() & EObjectFlags::Virtual) != 0;
-
 					if (drawSphere)
 					{
 						auxGeom.DrawSphere(

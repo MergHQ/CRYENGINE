@@ -354,6 +354,7 @@ void CObject::SetObstructionOcclusion(float const obstruction, float const occlu
 //////////////////////////////////////////////////////////////////////////
 void CObject::SetOcclusionType(EOcclusionType const occlusionType)
 {
+	// For disabling ray casts of the propagation processor if an object is virtual.
 	if ((occlusionType != EOcclusionType::None) && (occlusionType != EOcclusionType::Ignore))
 	{
 		m_flags |= EObjectFlags::UpdateVirtualStates;

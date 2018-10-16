@@ -144,6 +144,7 @@ enum class ERequestStatus : EnumFlagsType
 	Success,                 /**< Returned if the request processed successfully. */
 	SuccessDoNotTrack,       /**< Audio middleware implementations return this if during ExecuteTrigger an event was actually stopped so that internal data can be immediately freed. */
 	SuccessNeedsRefresh,     /**< Audio middleware implementations return this if after an action they require to be refreshed. */
+	SuccessVirtual,          /**< Audio middleware implementations return this if the event is virtual after executing at trigger. */
 	PartialSuccess,          /**< Returned if the outcome of the request wasn't a complete success but also not complete failure. */
 	Failure,                 /**< Returned if the request failed to process. */
 	Pending,                 /**< Returned if the request was delivered but final execution is pending. It's then kept in the system until its status changed. */

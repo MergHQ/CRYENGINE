@@ -381,6 +381,7 @@ void CObject::SetOcclusionType(EOcclusionType const occlusionType)
 {
 	if (m_id != g_globalObjectId)
 	{
+		// For disabling ray casts of the propagation processor if an object is virtual.
 		if ((occlusionType != EOcclusionType::None) && (occlusionType != EOcclusionType::Ignore))
 		{
 			m_flags |= EObjectFlags::UpdateVirtualStates;
@@ -423,24 +424,13 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 			pEvent->m_pObject = this;
 			pEvent->m_maxAttenuation = pTrigger->m_maxAttenuation;
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-			// Always update in production code for debug draw.
-			pEvent->UpdateVirtualState(m_distanceToListener);
-#else
-			if ((m_flags& EObjectFlags::UpdateVirtualStates) != 0)
-			{
-				pEvent->UpdateVirtualState(m_distanceToListener);
-			}
-			else
-			{
-				pEvent->m_state = EEventState::Playing;
-			}
-#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+			m_distanceToListener = m_position.GetDistance(g_pListener->GetPosition());
+			pEvent->SetInitialVirtualState(m_distanceToListener);
 
 			m_events.push_back(pEvent);
 			m_needsToUpdateVirtualStates = (m_id != g_globalObjectId);
 
-			result = ERequestStatus::Success;
+			result = (pEvent->m_state == EEventState::Virtual) ? ERequestStatus::SuccessVirtual : ERequestStatus::Success;
 		}
 		else
 		{
