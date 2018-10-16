@@ -32,6 +32,7 @@ float4 volFogShadowDarkeningSunAmb;
 struct SPerPassWaterParams
 {
 	float4x4 viewProjPrev;
+	float4x4 reprojectToPrev;
 	float4x4 causticViewProjMatr;
 	float4   waterRippleLookup;
 	float4   ssrParams;
@@ -48,6 +49,7 @@ cbuffer CBPerPassWater : register(b5)
 	struct
 	{
 		float4x4 viewProjPrev;
+		float4x4 reprojectToPrev;
 		float4x4 causticViewProjMatr;
 		float4   waterRippleLookup;
 		float4   ssrParams;
@@ -116,11 +118,13 @@ SPerPassWaterParams GetPerPassWaterParams()
 
 #if %_RT_COMPUTE_SKINNING
 	params.viewProjPrev = cbPerPassWater.viewProjPrev;
+	params.reprojectToPrev = cbPerPassWater.reprojectToPrev;
 	params.causticViewProjMatr = cbPerPassWater.causticViewProjMatr;
 	params.waterRippleLookup = cbPerPassWater.waterRippleLookup;
 	params.ssrParams = cbPerPassWater.ssrParams;
 #else
 	params.viewProjPrev = CV_PrevViewProjMatr;
+	params.reprojectToPrev = CV_ReprojectToPrev;
 	params.causticViewProjMatr = CV_ViewProjMatr;
 	params.waterRippleLookup = WaterRipplesLookupParams;
 	params.ssrParams = float4(1, 1, 1, 28);
@@ -384,9 +388,9 @@ Texture2D WaterDynRipplesTex : register(t27);
 Texture2D WaterNormalTex : register(t28) = TS_WaterVolumeDDN;
 Texture2D waterGlossTex : register(29) = "%ENGINE%/EngineAssets/Textures/water_gloss.tif";
 
-Texture2D refractionTex : register(t30) = TS_SceneTarget;
-Texture2D reflectionTex : register(t31) = TS_WaterVolumeRefl;
-Texture2D sceneDepthTex : register(t32) = TS_ZTarget;
+Texture2D refractionTex  : register(t30) = TS_SceneTarget;
+Texture2D reflectionTex  : register(t31) = TS_WaterVolumeRefl;
+Texture2D linearDepthTex : register(t32) = TS_ZTarget;
 
 // forward sun shadow
 Texture2D<float4> shadowMapTex0 : register(t33) = TS_Shadow0;
@@ -404,7 +408,7 @@ SamplerState ssLinearMirrorX                 : register(s11);
 
 Texture2D refractionHalfResTex : register(t30);// = TS_SceneTargetScaled_d2;
 Texture2D reflectionPrevTex    : register(t31) = TS_HDR_TargetPrev;
-Texture2D sceneDepthScaledTex  : register(t32) = TS_ZTargetScaled_d2;
+Texture2D linearDepthScaledTex : register(t32) = TS_ZTargetScaled_d2;
 
 //////////////////////////////////////////////////////////////////////////
 // per pass textures for water fog volume pass
@@ -434,16 +438,16 @@ VolumetricFogSampling GetVolumetricFogSampling()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-float wvGetScaneDepth(float2 screenTC)
+float wvGetSceneDepth(float2 screenTC)
 {
 	int3 pixcoord = int3(screenTC.xy * CV_ScreenSize.xy, 0);
-	float depth = sceneDepthTex.Load(pixcoord).x;
+	float depth = linearDepthTex.Load(pixcoord).x;
 	return depth;
 }
 
 float wvGetLinearDepthScaled(float2 screenTC)
 {
-	return wvGetScaneDepth(screenTC) * CV_NearFarClipDist.y;
+	return wvGetSceneDepth(screenTC) * CV_NearFarClipDist.y;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

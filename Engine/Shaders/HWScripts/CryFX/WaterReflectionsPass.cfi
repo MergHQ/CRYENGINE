@@ -16,7 +16,7 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 
 		SPerPassWaterParams perPassParams = GetPerPassWaterParams();
 		ReflParams params = (ReflParams)0;
-	
+
 		params.ScreenTC = ScreenTC;
 		params.ProjRatio = g_PS_ProjRatio.xy;
 		params.JitterUV = IN.Position.xy;
@@ -30,6 +30,7 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 		params.Smoothness = vNormal.w;
 		params.Reproject = true;
 		params.ViewProjPrev = perPassParams.viewProjPrev;
+		params.ReprojectToPrev = perPassParams.reprojectToPrev;
 		params.limitMask =
 			// Don't clip left and right because we use X-mirroring to hide the end-of-data seam
 			FRUSTUM_NOCLIP_LEFT | FRUSTUM_NOCLIP_RIGHT;
@@ -37,13 +38,13 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 		// local reflections setup
 		{
 			params.bgMultiplier = 0.0f;
-			params.MaxDistance = perPassParams.ssrParams.z * ssrDistanceAtt;
+			params.MaxDistance = perPassParams.ssrParams.z * ssrDistanceAtt * ssrBorderSizeZ;
 			params.MaxSamples = perPassParams.ssrParams.w * ssrSamplingAtt;
-			params.borderSize = float3(0.0f, ssrBorderSizeY, ssrBorderSizeZ);
+			params.borderSize = float3(0.0f, ssrBorderSizeY, 1.0f);
 
 			half4 color = SSRRaytrace
 			(
-				sceneDepthScaledTex,
+				linearDepthScaledTex,
 
 				refractionHalfResTex,
 				refractionHalfResTex,
@@ -55,21 +56,21 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 				params
 			);
 
-			specularRefl = color;
-			specularPrec = params.blendWeight;
+			specularRefl += color * color.a * pow(params.blendWeight, ssrBorderFadeExponent) * (1.0f - specularPrec);
+			specularPrec +=         color.a * pow(params.blendWeight, ssrBorderFadeExponent) * (1.0f - specularPrec);
 		}
 
 		// far reflection setup (if no or partially hit only)
-		[branch] if (specularRefl.a < 1.0f)
+		[branch] if (specularPrec != 1.0f)
 		{
 			params.bgMultiplier = ssrBGMultiplier;
 			params.MaxDistance = perPassParams.ssrParams.z * ssrDistanceAtt;
 			params.MaxSamples = 1;
-			params.borderSize = float3(0.0f, ssrBorderSizeY, ssrBorderSizeZ);
+			params.borderSize = float3(0.0f, ssrBorderSizeY, 1.0f);
 
 			half4 color = SSRaycast
 			(
-				sceneDepthScaledTex,
+				linearDepthScaledTex,
 
 				refractionHalfResTex,
 				refractionHalfResTex,
@@ -81,18 +82,11 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 				params
 			);
 
-			// Merge local and far reflections
-			float l = specularRefl.a + color.a;
-			if (l > 0)
-			{
-				l = color.a / l;
-
-				specularRefl = lerp(specularRefl, color, l);
-				specularPrec = lerp(specularPrec, params.blendWeight, l);
-			}
+			specularRefl += color * color.a * pow(params.blendWeight, ssrBorderFadeExponent) * (1.0f - specularPrec);
+			specularPrec +=         color.a * pow(params.blendWeight, ssrBorderFadeExponent) * (1.0f - specularPrec);
 		}
 
-		specularRefl.a = pow(specularPrec * specularRefl.a, ssrBorderFadeExponent);
+		specularRefl.a = specularPrec;
 	}
 
 	return specularRefl;
@@ -108,7 +102,7 @@ pixout WaterReflPS(v2f_hs IN)
 	const float fDepth = IN.screenProj.w * CV_NearFarClipDist.w;
 	float2 linearUV = IN.screenProj.xy / IN.screenProj.w;
 	float2 screenTC = MapViewportToRaster(linearUV);
-	float fDepthCenter = sceneDepthScaledTex.Sample(ssPointClamp, screenTC);
+	float fDepthCenter = linearDepthScaledTex.Load(int3(IN.Position.xy, 0));
 
 	clip( fDepthCenter - fDepth );
 
@@ -136,13 +130,18 @@ pixout WaterReflPS(v2f_hs IN)
 	half3 vReflN = lerp(half3(0,0,1), vNormal, ReflectionBumpScale);
 	half3 vRefl = reflect(vDir, vReflN);
 	half3 vReflNorm = normalize( vRefl );
-	half3 cCubeRefl = GatherCubemapSpecular(screenTC, IN.vPosWS.xyz - GetWorldViewPos(), vNormal, cSmoothness);
 	
 	// Blend in screenspace reflections
 	half4 cSSRefl = ReflectionPassPS(IN, half4(vReflN.xyz, 1)) / PS_HDR_RANGE_ADAPT_MAX;
+	half3 reflectColor = cSSRefl.rgb;
 
 	// EnvCubeReflMul, RealtimeReflMul
-	half3 reflectColor = lerp(cCubeRefl, cSSRefl, saturate(cSSRefl.a));
+	if (cSSRefl.a != 1.0f)
+	{
+		half3 cCubeRefl = GatherCubemapSpecular(screenTC, IN.vPosWS.xyz - GetWorldViewPos(), vNormal, cSmoothness);
+
+		reflectColor += cCubeRefl * (1.0f - cSSRefl.a);
+	}
 
 	// NOTE: This takes out the whole fog from the reflection, but
 	// we don't put back the fog along the two rays, just to the part

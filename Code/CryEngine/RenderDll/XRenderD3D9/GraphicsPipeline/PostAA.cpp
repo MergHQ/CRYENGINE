@@ -349,45 +349,12 @@ void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint3
 		if (aaMode & eAT_TSAA_MASK)
 			constants->params = Vec4(CRenderer::CV_r_AntialiasingTSAASubpixelDetection, CRenderer::CV_r_AntialiasingTSAASmoothness, 0, 0);
 
-		// Compute reprojection matrix with highest possible precision to minimize numeric diffusion
-		// TODO: Make sure NEAREST projection is handled correctly
-		Matrix44_tpl<f64> matReprojection64[2];
-		for (size_t i = 0; i < viewInfoCount; ++i)
-		{
-			const auto& viewInfo = RenderView()->GetViewInfo( static_cast<CCamera::EEye>(i) );
-			
-			Matrix44A matProj = viewInfo.unjitteredProjMatrix; // Use Projection matrix without the pixel shift
-
-			assert(pRenderer->GetS3DRend().GetStereoMode() == EStereoMode::STEREO_MODE_DUAL_RENDERING
-			       || (matProj.m20 == 0 && matProj.m21 == 0)); // Ensure jittering is removed from projection matrix
-
-			Matrix44_tpl<f64> matViewInv, matProjInv;
-			mathMatrixLookAtInverse(&matViewInv, &viewInfo.viewMatrix);
-			const bool bCanInvert = mathMatrixPerspectiveFovInverse(&matProjInv, &matProj);
-			assert(bCanInvert);
-
-			Matrix44_tpl<f64> matScaleBias1 = Matrix44_tpl<f64>(
-			  0.5, 0, 0, 0,
-			  0, -0.5, 0, 0,
-			  0, 0, 1, 0,
-			  0.5, 0.5, 0, 1);
-			Matrix44_tpl<f64> matScaleBias2 = Matrix44_tpl<f64>(
-			  2.0, 0, 0, 0,
-			  0, -2.0, 0, 0,
-			  0, 0, 1, 0,
-			  -1.0, 1.0, 0, 1);
-
-			Matrix44 mPrevView = viewInfo.prevCameraMatrix;
-			matReprojection64[i] = matProjInv * matViewInv * Matrix44_tpl<f64>(mPrevView) * Matrix44_tpl<f64>(matProj);
-			matReprojection64[i] = matScaleBias2 * matReprojection64[i] * matScaleBias1;
-		}
-
-		constants->matReprojection = (Matrix44)matReprojection64[0];
+		constants->matReprojection = RenderView()->GetViewInfo(CCamera::eEye_Left).GetReprojection();
 
 		if (viewInfoCount > 1)
 		{
 			constants.BeginStereoOverride(true);
-			constants->matReprojection = (Matrix44)matReprojection64[1];
+			constants->matReprojection = RenderView()->GetViewInfo(CCamera::eEye_Right).GetReprojection();
 		}
 
 		m_passTemporalAA.EndTypedConstantUpdate(constants);

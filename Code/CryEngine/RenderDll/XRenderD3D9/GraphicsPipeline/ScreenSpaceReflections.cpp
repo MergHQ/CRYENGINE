@@ -21,6 +21,7 @@ void CScreenSpaceReflectionsStage::Execute()
 	PROFILE_LABEL_SCOPE("SS_REFLECTIONS");
 
 	Matrix44 mViewProj = GetCurrentViewInfo().cameraProjMatrix;
+	Matrix44 mReprojToPrev = GetCurrentViewInfo().GetReprojection();
 
 	const int frameID = SPostEffectsUtils::m_iFrameCounter;
 	Matrix44 mViewport(0.5f, 0, 0, 0,
@@ -62,6 +63,7 @@ void CScreenSpaceReflectionsStage::Execute()
 		}
 
 		static CCryNameR viewProjPrevName("g_mViewProjPrev");
+		static CCryNameR reprojToPrevName("g_mReprojectToPrev");
 		static CCryNameR ssrParamsName("g_mSSRParams"); // we need to tell the shader to read from a depth buffer with twice the size of the output in halfres mode
 		Vec4 ssrParams(
 			CRenderer::CV_r_SSReflHalfRes ? 2.0f : 1.0f,
@@ -71,6 +73,7 @@ void CScreenSpaceReflectionsStage::Execute()
 
 		m_passRaytracing.BeginConstantUpdate();
 		m_passRaytracing.SetConstantArray(viewProjPrevName, (Vec4*)mViewProjPrev.GetData(), 4, eHWSC_Pixel);
+		m_passRaytracing.SetConstantArray(reprojToPrevName, (Vec4*)mReprojToPrev.GetData(), 4, eHWSC_Pixel);
 		m_passRaytracing.SetConstantArray(ssrParamsName, (Vec4*)&ssrParams, 1, eHWSC_Pixel);
 		m_passRaytracing.Execute();
 	}
