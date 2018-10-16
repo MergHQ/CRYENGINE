@@ -191,20 +191,20 @@ void AlignToGrid()
 {
 	const ISelectionGroup* sel = GetIEditor()->GetISelectionGroup();
 	if (sel->GetCount() == 0)
-	{
-		CUndo undo("Align To Grid");
-		Matrix34 tm;
-		for (int i = 0; i < sel->GetCount(); i++)
-		{
-			CBaseObject* obj = sel->GetObject(i);
-			tm = obj->GetWorldTM();
+		return;
 
-			// Alignment for this command is only make sense in World Space coordinates
-			Vec3 snappedPos = gSnappingPreferences.Snap3DWorldSpace(tm.GetTranslation());
-			tm.SetTranslation(snappedPos);
-			obj->SetWorldTM(tm);
-			obj->OnEvent(EVENT_ALIGN_TOGRID);
-		}
+	CUndo undo("Align To Grid");
+	Matrix34 tm;
+	for (int i = 0; i < sel->GetCount(); i++)
+	{
+		CBaseObject* obj = sel->GetObject(i);
+		tm = obj->GetWorldTM();
+
+		// Alignment for this command is only make sense in World Space coordinates
+		Vec3 snappedPos = gSnappingPreferences.Snap3DWorldSpace(tm.GetTranslation());
+		tm.SetTranslation(snappedPos);
+		obj->SetWorldTM(tm);
+		obj->OnEvent(EVENT_ALIGN_TOGRID);
 	}
 }
 }
