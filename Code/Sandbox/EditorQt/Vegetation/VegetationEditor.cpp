@@ -13,6 +13,7 @@
 #include "QT/Widgets/QEditToolButton.h"
 #include "QT/Widgets/QPreviewWidget.h"
 
+#include <AssetSystem/Browser/AssetBrowserDialog.h>
 #include <FileDialogs/SystemFileDialog.h>
 #include <Menu/AbstractMenu.h>
 #include <Serialization/QPropertyTree/QPropertyTree.h>
@@ -319,16 +320,9 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			pShowPreviewAction = pViewMenu->CreateAction(tr("Show Preview"));
 			pShowPreviewAction->setCheckable(true);
 
-			pShowLodFilesAction = pViewMenu->CreateAction(tr("Show LOD files"));
-			pShowLodFilesAction->setCheckable(true);
-
 			bool bShowPreview = true;
 			pParentEditor->GetProperty(s_showPreviewPropertyName, bShowPreview);
 			pShowPreviewAction->setChecked(bShowPreview);
-
-			bool bShowLod = false;
-			pParentEditor->GetProperty(s_showLodPropertyName, bShowLod);
-			pShowLodFilesAction->setChecked(bShowLod);
 		}
 
 		QAction*              pImportAction;
@@ -347,7 +341,6 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 		QAction*              pRemoveDuplicatedVegetation;
 		QAction*              pRemoveAction;
 		QAction*              pShowPreviewAction;
-		QAction*              pShowLodFilesAction;
 
 		std::vector<QAction*> toolBarActions;
 	};
@@ -754,17 +747,15 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			  return;
 			}
 
-			string filename;
-			if (!CFileUtil::SelectSingleFile(EFILE_TYPE_GEOMETRY, filename, string(), string("objects")))
+			const CAsset* pAsset = CAssetBrowserDialog::OpenSingleAssetForTypes({ "Mesh" });
+			if (!pAsset)
 			{
 			  return;
 			}
 
 			CUndo undo("Replace Vegetation Object");
-			m_pVegetationModel->ReplaceVegetationObject(currentObjectIndex, filename.GetString());
+			m_pVegetationModel->ReplaceVegetationObject(currentObjectIndex, QtUtil::ToQString(pAsset->GetFile(0)));
 
-			// Update properties in tree. revert() functions do not work
-			//m_pVegetationObjectPropTree->revertNoninterrupting();
 			const auto pVegetationMap = GetIEditorImpl()->GetVegetationMap();
 			const auto selectedObjects = pVegetationMap->GetSelectedObjects();
 			UpdateVegetationSerializers(selectedObjects);
@@ -817,11 +808,6 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 		{
 			m_pEditor->SetProperty(s_showPreviewPropertyName, bIsChecked);
 			UpdatePreviewVisibility();
-		});
-
-		connect(m_actions.pShowLodFilesAction, &QAction::toggled, [this](bool bIsChecked)
-		{
-			m_pEditor->SetProperty(s_showLodPropertyName, bIsChecked);
 		});
 	}
 
@@ -1029,20 +1015,8 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 	void AddVegetationObject()
 	{
-		CFileUtil::FileFilterCallback fileFilterFunc;
-		if (!m_actions.pShowLodFilesAction->isChecked())
-		{
-			fileFilterFunc = [](const FileSystem::SnapshotPtr&, const FileSystem::FilePtr& file)
-			{
-				const auto fileName = QFileInfo(file->provider->fullName).baseName();
-				QRegularExpressionMatch match;
-				const auto index = fileName.lastIndexOf(QRegularExpression(QStringLiteral("_lod[0-9]*"), QRegularExpression::CaseInsensitiveOption), -1, &match);
-				return (index < 0) || ((index + match.captured().size()) < fileName.size());
-			};
-		}
-
-		std::vector<string> filenames;
-		if (!CFileUtil::SelectMultipleFiles(EFILE_TYPE_GEOMETRY, filenames, string(), string("objects"), string(), fileFilterFunc))
+		const std::vector<CAsset*> assets = CAssetBrowserDialog::OpenMultipleAssetsForTypes({ "Mesh" });
+		if (assets.empty())
 		{
 			return;
 		}
@@ -1055,9 +1029,9 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 		CVegetationObject* pVegObject = nullptr;
 
 		CUndo undo("Add Vegetation Object(s)");
-		for (const auto& filename : filenames)
+		for (const CAsset* pAsset : assets)
 		{
-			pVegObject = m_pVegetationModel->AddVegetationObject(currentIndex, filename.GetString());
+			pVegObject = m_pVegetationModel->AddVegetationObject(currentIndex, QtUtil::ToQString(pAsset->GetFile(0)));
 		}
 
 		if (!pGroupItem && pVegObject)
@@ -1213,12 +1187,10 @@ private:
 
 	static const QString               s_showPreviewPropertyName;
 	static const QString               s_previewSplitterStatePropertyName;
-	static const QString               s_showLodPropertyName;
 };
 
 const QString CVegetationEditor::SImplementation::s_showPreviewPropertyName = QStringLiteral("showPreview");
 const QString CVegetationEditor::SImplementation::s_previewSplitterStatePropertyName = QStringLiteral("previewSplitterState");
-const QString CVegetationEditor::SImplementation::s_showLodPropertyName = QStringLiteral("showLod");
 
 REGISTER_VIEWPANE_FACTORY(CVegetationEditor, "Vegetation Editor", "Tools", true)
 
