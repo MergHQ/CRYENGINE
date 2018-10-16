@@ -122,6 +122,11 @@ void CountConnections(EAssetType const type, SLibraryScope& scope)
 			++scope.numEnvironmentConnections;
 			break;
 		}
+	case EAssetType::Preload:
+		{
+			++scope.numPreloadConnections;
+			break;
+		}
 	case EAssetType::Setting:
 		{
 			++scope.numSettingConnections;
@@ -282,6 +287,11 @@ void CFileWriter::WriteLibrary(CLibrary& library)
 				if (libScope.numEnvironmentConnections > 0)
 				{
 					pFileNode->setAttr(CryAudio::s_szNumEnvironmentConnectionsAttribute, libScope.numEnvironmentConnections);
+				}
+
+				if (libScope.numPreloadConnections > 0)
+				{
+					pFileNode->setAttr(CryAudio::s_szNumPreloadConnectionsAttribute, libScope.numPreloadConnections);
 				}
 
 				if (libScope.numSettingConnections > 0)

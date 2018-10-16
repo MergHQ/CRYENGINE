@@ -72,6 +72,9 @@ void AllocateMemoryPools()
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Environment Connection Pool");
 	CATLEnvironmentImpl::CreateAllocator(g_poolSizes.environmentConnections);
 
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Preload Connection Pool");
+	CATLAudioFileEntry::CreateAllocator(g_poolSizes.preloadConnections);
+
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Setting Connection Pool");
 	CSettingImpl::CreateAllocator(g_poolSizes.settingConnections);
 }
@@ -91,6 +94,7 @@ void FreeMemoryPools()
 	CParameterImpl::FreeMemoryPool();
 	CSwitchStateImpl::FreeMemoryPool();
 	CATLEnvironmentImpl::FreeMemoryPool();
+	CATLAudioFileEntry::FreeMemoryPool();
 	CSettingImpl::FreeMemoryPool();
 }
 

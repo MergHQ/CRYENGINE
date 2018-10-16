@@ -785,7 +785,7 @@ private:
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 
-class CATLAudioFileEntry final
+class CATLAudioFileEntry final : public CPoolObject<CATLAudioFileEntry, stl::PSyncNone>
 {
 public:
 
