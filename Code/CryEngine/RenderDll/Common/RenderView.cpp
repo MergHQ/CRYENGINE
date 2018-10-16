@@ -1561,6 +1561,7 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 	case EFSLIST_HALFRES_PARTICLES:
 	case EFSLIST_LENSOPTICS:
 	case EFSLIST_EYE_OVERLAY:
+	case EFSLIST_SKY:
 		// Use the (possibly) tighter AABB extracted from the render element and store distance squared.
 		ri.fDist = Distance::Point_AABBSq(passInfo.GetCamera().GetPosition(), transformed_aabb) * passInfo.GetZoomFactor() + pObj->m_fSort;
 		break;
@@ -2261,6 +2262,7 @@ void CRenderView::Job_SortRenderItemsInList(ERenderListID list)
 	case EFSLIST_HALFRES_PARTICLES:
 	case EFSLIST_LENSOPTICS:
 	case EFSLIST_EYE_OVERLAY:
+	case EFSLIST_SKY:
 	case EFSLIST_CUSTOM:
 		{
 			PROFILE_FRAME(State_SortingDist);
@@ -2866,7 +2868,43 @@ float SRenderViewInfo::WorldToCameraZ(const Vec3& wP) const
 
 //////////////////////////////////////////////////////////////////////////
 
-Matrix44 SRenderViewInfo::GetNearestProjection(float nearestFOV, float farPlane, Vec2 subpixelShift)
+Matrix44 SRenderViewInfo::GetReprojection() const
+{
+	// TODO: Make sure NEAREST projection is handled correctly
+	Matrix44_tpl<f64> matReprojection64;
+
+	const Matrix44A& matProj = unjitteredProjMatrix; // Use Projection matrix without the pixel shift
+	const Matrix44A& matView = viewMatrix;
+
+	CRY_ASSERT(gcpRendD3D->GetS3DRend().GetStereoMode() == EStereoMode::STEREO_MODE_DUAL_RENDERING
+		|| (matProj.m20 == 0 && matProj.m21 == 0)); // Ensure jittering is removed from projection matrix
+
+	Matrix44_tpl<f64> matViewInv, matProjInv;
+	mathMatrixLookAtInverse(&matViewInv, &matView);
+	const bool bCanInvert = mathMatrixPerspectiveFovInverse(&matProjInv, &matProj);
+	assert(bCanInvert);
+
+	Matrix44_tpl<f64> matScaleBias1 = Matrix44_tpl<f64>(
+		 0.5,  0.0, 0.0, 0.0,
+		 0.0, -0.5, 0.0, 0.0,
+		 0.0,  0.0, 1.0, 0.0,
+		 0.5,  0.5, 0.0, 1.0);
+	Matrix44_tpl<f64> matScaleBias2 = Matrix44_tpl<f64>(
+		 2.0,  0.0, 0.0, 0.0,
+		 0.0, -2.0, 0.0, 0.0,
+		 0.0,  0.0, 1.0, 0.0,
+		-1.0,  1.0, 0.0, 1.0);
+
+	const Matrix44& mPrevView = prevCameraMatrix;
+	const Matrix44& mPrevProj = matProj;
+
+	matReprojection64 = matProjInv * matViewInv * Matrix44_tpl<f64>(mPrevView) * Matrix44_tpl<f64>(mPrevProj);
+	matReprojection64 = matScaleBias2 * matReprojection64 * matScaleBias1;
+
+	return (Matrix44)matReprojection64;
+}
+
+Matrix44 SRenderViewInfo::GetNearestProjection(float nearestFOV, float farPlane, Vec2 subpixelShift) const
 {
 	CRY_ASSERT(pCamera);
 

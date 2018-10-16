@@ -77,7 +77,8 @@ struct SRenderViewInfo
 	SRenderViewInfo();
 	void     SetCamera(const CCamera& cam, const CCamera& previousCam, Vec2 subpixelShift, float drawNearestFov, float drawNearestFarPlane);
 
-	Matrix44 GetNearestProjection(float nearestFOV, float farPlane, Vec2 subpixelShift);
+	Matrix44 GetReprojection() const;
+	Matrix44 GetNearestProjection(float nearestFOV, float farPlane, Vec2 subpixelShift) const;
 	void     ExtractViewMatrices(const CCamera& cam, Matrix44& view, Matrix44& viewZero, Matrix44& invView) const;
 
 	float    WorldToCameraZ(const Vec3& wP) const;
