@@ -290,7 +290,7 @@ bool CTexture::RT_CreateDeviceTexture(const SSubresourceData& pData)
 	//if we have any device owned resources allocated, we must sync with render thread
 	if (m_pDevTexture)
 	{
-		ReleaseDeviceTexture(false);
+		RT_ReleaseDeviceTexture(false, false);
 	}
 
 	// The payload can only be passed untiled currently
@@ -333,7 +333,18 @@ bool CTexture::RT_CreateDeviceTexture(const SSubresourceData& pData)
 
 void CTexture::ReleaseDeviceTexture(bool bKeepLastMips, bool bFromUnload) threadsafe
 {
-	PROFILE_FRAME(CTexture_ReleaseDeviceTexture);
+	this->AddRef();
+	gRenDev->ExecuteRenderThreadCommand([=] {
+		this->RT_ReleaseDeviceTexture(bKeepLastMips, bFromUnload);
+		this->Release();
+
+	}, ERenderCommandFlags::LevelLoadingThread_executeDirect
+		| ERenderCommandFlags::FlushAndWait);
+}
+
+void CTexture::RT_ReleaseDeviceTexture(bool bKeepLastMips, bool bFromUnload) threadsafe
+{
+	CRY_PROFILE_REGION(PROFILE_RENDERER, "CTexture::RT_ReleaseDeviceTexture");
 
 	if (!bFromUnload)
 		AbortStreamingTasks(this);
