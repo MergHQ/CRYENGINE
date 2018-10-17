@@ -135,6 +135,8 @@ protected:
 	void         SetChildsParent(CBaseObject* pObj) { pObj->m_parent = this; }
 
 	void         FilterOutNonMembers(std::vector<CBaseObject*>& objects);
+	//Groups and derived shouldn't have visual properties visible. Specifically in prefabs where there is no way to reliably store global prefab properties (they get saved in the layer and not in the xml)
+	virtual void SerializeGeneralVisualProperties(Serialization::IArchive& ar, bool bMultiEdit) override;
 
 	// This list contains children which are actually members of this group, rather than regular attached ones.
 	TBaseObjects m_members;
@@ -146,8 +148,8 @@ protected:
 	bool         m_ignoreChildModify : 1;
 	bool         m_bUpdatingPivot    : 1;
 
-	friend Private_Group::CBatchAttachChildrenTransformationsHandler;
-	friend Private_Group::CUndoBatchAttachBaseObject;
+	friend Private_Group ::CBatchAttachChildrenTransformationsHandler;
+	friend Private_Group ::CUndoBatchAttachBaseObject;
 	friend CBaseObject;
 	friend CObjectManager;
 };

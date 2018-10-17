@@ -212,18 +212,6 @@ void CObjectArchive::EnableReconstructPrefabObject(bool bEnable)
 	}
 }
 
-void CObjectArchive::SetShouldResetInternalMembers(bool reset)
-{
-	if (reset)
-	{
-		m_nFlags |= eObjectLoader_ResetInternalMembers;
-	}
-	else
-	{
-		m_nFlags &= ~(eObjectLoader_ResetInternalMembers);
-	}
-}
-
 void CObjectArchive::SerializeObjects(bool processEvents)
 {
 	CWaitProgress wait("Loading Objects", false);

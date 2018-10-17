@@ -758,10 +758,6 @@ void CPrefabObject::SetPrefab(CPrefabItem* pPrefab, bool bForceReload)
 	SyncParentObject();
 
 	eventsDelay.Resume();
-	//Previous calls can potentially set up the skip prefab update to false so reset it again since we are not changing the prefab skip the lib update
-	pPrefabManager->SetSkipPrefabUpdate(true);
-
-	SetMinSpec(GetMinSpec(), true);   // to make sure that all children get the right spec
 
 	pPrefabManager->SetSkipPrefabUpdate(false);
 }
@@ -1435,10 +1431,10 @@ bool CPrefabObject::CanAddMembers(std::vector<CBaseObject*>& objects)
 	}
 
 	/*
-		We need to gather all prefab objects from the hierarchy of this prefab and the hierarchies of each object we want to add.
-		Then we compare them, if they have the same prefab items, but from different objects, we cannot add the member because it means that we'll have recursive references (aka prefab in prefab). 
-		If the items are from the same objects it's ok as it means we are in the same prefab instance
-	*/
+	   We need to gather all prefab objects from the hierarchy of this prefab and the hierarchies of each object we want to add.
+	   Then we compare them, if they have the same prefab items, but from different objects, we cannot add the member because it means that we'll have recursive references (aka prefab in prefab).
+	   If the items are from the same objects it's ok as it means we are in the same prefab instance
+	 */
 	for (CBaseObject* pToAdd : objects)
 	{
 
@@ -1448,7 +1444,7 @@ bool CPrefabObject::CanAddMembers(std::vector<CBaseObject*>& objects)
 		{
 			pToAddRoot = pToAddRoot->GetParent();
 		}
-		
+
 		//Get all the prefab objects
 		std::vector<CPrefabObject*> toAddPrefabDescendants;
 		CPrefabPicker::GetAllPrefabObjectDescendants(pToAddRoot, toAddPrefabDescendants);
@@ -1461,29 +1457,29 @@ bool CPrefabObject::CanAddMembers(std::vector<CBaseObject*>& objects)
 		//Go trough all the prefabs and find if some have the same items
 		for (auto pToAddPrefabDescendant : toAddPrefabDescendants)
 		{
-				//If we are on the same instance (pCurrentPrefabDescendant == pToAddPrefabDescendant) it's fine, objects can be moved
-				if (this != pToAddPrefabDescendant && this->GetPrefabItem() == pToAddPrefabDescendant->GetPrefabItem()) // same item but another hierarchy
+			//If we are on the same instance (pCurrentPrefabDescendant == pToAddPrefabDescendant) it's fine, objects can be moved
+			if (this != pToAddPrefabDescendant && this->GetPrefabItem() == pToAddPrefabDescendant->GetPrefabItem()) // same item but another hierarchy
+			{
+				//If we are on a different instance then we need to check if we are on the same hierarchy (i.e same nested prefabs, we cannot add) and stop it if necessary
+				if (this != this)
 				{
-					//If we are on a different instance then we need to check if we are on the same hierarchy (i.e same nested prefabs, we cannot add) and stop it if necessary
-					if (this != this)
+					//Same prefab parents means same hierarchy
+					CBaseObject* pCurrentPrefabDescendantParent = this->GetPrefab();
+					CBaseObject* pToAddPrefabDescendantParent = pToAddPrefabDescendant->GetPrefab();
+					//no matching parents, definitely different hierarchy
+					if (!pCurrentPrefabDescendantParent || !pToAddPrefabDescendantParent)
 					{
-						//Same prefab parents means same hierarchy
-						CBaseObject * pCurrentPrefabDescendantParent = this->GetPrefab();
-						CBaseObject * pToAddPrefabDescendantParent = pToAddPrefabDescendant->GetPrefab();
-						//no matching parents, definitely different hierarchy
-						if (!pCurrentPrefabDescendantParent || !pToAddPrefabDescendantParent)
-						{
-							continue;
-						}	//matching parents, but different item, not the same hierarchy
-						else if (pCurrentPrefabDescendantParent && pToAddPrefabDescendantParent && (static_cast<CPrefabObject*>(pCurrentPrefabDescendantParent))->GetPrefabItem() != (static_cast<CPrefabObject*>(pToAddPrefabDescendantParent))->GetPrefabItem())
-						{
-							continue;
-						}
+						continue;
+					} //matching parents, but different item, not the same hierarchy
+					else if (pCurrentPrefabDescendantParent && pToAddPrefabDescendantParent && (static_cast<CPrefabObject*>(pCurrentPrefabDescendantParent))->GetPrefabItem() != (static_cast<CPrefabObject*>(pToAddPrefabDescendantParent))->GetPrefabItem())
+					{
+						continue;
 					}
-					
-					//same parents and same item, we definitely cannot add
-					return false;
 				}
+
+				//same parents and same item, we definitely cannot add
+				return false;
+			}
 		}
 	}
 

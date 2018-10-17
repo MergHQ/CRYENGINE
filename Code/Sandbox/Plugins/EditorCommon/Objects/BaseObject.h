@@ -817,7 +817,11 @@ public:
 	CCrySignal<void(const CBaseObject*, const CObjectEvent&)> signalChanged;
 
 protected:
+	//Serializes all the generic properties of an object from/to UI
 	virtual void SerializeGeneralProperties(Serialization::IArchive& ar, bool bMultiEdit);
+	//Serializes all the visual properties of an object (currently only minspec, material should be moved inside too) from/to UI
+	virtual void SerializeGeneralVisualProperties(Serialization::IArchive& ar, bool bMultiEdit);
+	//Serializes the transform from/to UI
 	virtual void SerializeTransformProperties(Serialization::IArchive& ar);
 
 private:
