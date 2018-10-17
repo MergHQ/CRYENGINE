@@ -1678,6 +1678,11 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRe
 	m_renderItems[nRenderList].push_back(ri);
 	UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[nRenderList], nBatchFlags);
 
+#ifndef OMIT_SKY_ELEMENT_MATERIAL_WORKAROUND
+	if (nRenderList == EFSLIST_SKY)
+		return;
+#endif
+
 	if (!IsShadowGenView())
 	{
 		const bool bForwardOpaqueFlags = (nBatchFlags & (FB_DEBUG | FB_TILED_FORWARD)) != 0;

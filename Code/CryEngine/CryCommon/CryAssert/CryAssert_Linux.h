@@ -103,6 +103,14 @@ bool CryAssert(const char* szCondition, const char* szFile, unsigned int line, b
 		fscanf(assert_file, "%d", &result);
 		fclose(assert_file);
 
+#if defined(eCryModule)
+		const char* szModuleName = g_moduleNames[eCryModule];
+#else
+		const char* szModuleName = "Undefined";
+#endif
+
+		gEnv->pLog->LogError("Assertion Failed! %s:%d reason:%s Module:%s", szFile, line, gs_szMessage[0] ? gs_szMessage : "<empty>", szModuleName);
+
 		switch (result)
 		{
 		case 0:
