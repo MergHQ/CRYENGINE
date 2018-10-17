@@ -1227,29 +1227,29 @@ QWidget* CAssetBrowser::CreateAssetsViewSelector()
 	AddViewModeButton(ViewMode::Details, "icons:common/general_view_list.ico", "Shows Details");
 	AddViewModeButton(ViewMode::Thumbnails, "icons:common/general_view_thumbnail.ico", "Shows Thumbnails", pThumbnailMenu);
 
-	QVBoxLayout* const pButtonsLayout = new QVBoxLayout();
-	pButtonsLayout->setObjectName("viewModeButtonsLayout");
-	pButtonsLayout->setContentsMargins(0, 0, 0, 0);
-	pButtonsLayout->setMargin(0);
-	pButtonsLayout->setSpacing(GetButtonsSpacing());
+	m_pShortcutBarLayout = new QBoxLayout(QBoxLayout::TopToBottom);
+	m_pShortcutBarLayout->setObjectName("viewModeButtonsLayout");
+	m_pShortcutBarLayout->setContentsMargins(0, 0, 0, 0);
+	m_pShortcutBarLayout->setMargin(0);
+	m_pShortcutBarLayout->setSpacing(GetButtonsSpacing());
 
-	pButtonsLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding));
-	pButtonsLayout->addWidget(pShowFoderButton);
-	pButtonsLayout->addWidget(pRecursiveViewButton);
-	pButtonsLayout->addSpacerItem(new QSpacerItem(0, GetButtonGroupsSpacing(), QSizePolicy::Minimum, QSizePolicy::Maximum));
+	m_pShortcutBarLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding));
+	m_pShortcutBarLayout->addWidget(pShowFoderButton);
+	m_pShortcutBarLayout->addWidget(pRecursiveViewButton);
+	m_pShortcutBarLayout->addSpacerItem(new QSpacerItem(0, GetButtonGroupsSpacing(), QSizePolicy::Minimum, QSizePolicy::Maximum));
 
 	const QList<QAbstractButton*> buttons = m_viewModeButtons->buttons();
 	for (QAbstractButton* pButton : buttons)
 	{
-		pButtonsLayout->addWidget(pButton);
+		m_pShortcutBarLayout->addWidget(pButton);
 	}
 
-	QHBoxLayout* const pLayout = new QHBoxLayout();
-	pLayout->setSpacing(0);
-	pLayout->setMargin(0);
-	pLayout->addWidget(m_mainViewSplitter);
-	pLayout->addLayout(pButtonsLayout);
-	pAssetsView->setLayout(pLayout);
+	m_pAssetsViewLayout = new QBoxLayout(QBoxLayout::LeftToRight);
+	m_pAssetsViewLayout->setSpacing(0);
+	m_pAssetsViewLayout->setMargin(0);
+	m_pAssetsViewLayout->addWidget(m_mainViewSplitter);
+	m_pAssetsViewLayout->addLayout(m_pShortcutBarLayout);
+	pAssetsView->setLayout(m_pAssetsViewLayout);
 
 	return pAssetsView;
 }
@@ -1631,13 +1631,24 @@ bool CAssetBrowser::eventFilter(QObject* object, QEvent* event)
 		if (event->isAccepted())
 			return true;
 	}
-	else if (event->type() == QEvent::Resize)
-	{
-		auto orientation = (width() > height()) ? Qt::Horizontal : Qt::Vertical;
-		m_foldersSplitter->setOrientation(orientation);
-	}
 
 	return false;
+}
+
+void CAssetBrowser::resizeEvent(QResizeEvent* event)
+{
+	if (width() > height())
+	{
+		m_foldersSplitter->setOrientation(Qt::Horizontal);
+		m_pShortcutBarLayout->setDirection(QBoxLayout::TopToBottom);
+		m_pAssetsViewLayout->setDirection(QBoxLayout::LeftToRight);
+	}
+	else
+	{
+		m_foldersSplitter->setOrientation(Qt::Vertical);
+		m_pShortcutBarLayout->setDirection(QBoxLayout::LeftToRight);
+		m_pAssetsViewLayout->setDirection(QBoxLayout::TopToBottom);
+	}
 }
 
 void CAssetBrowser::ProcessSelection(std::vector<CAsset*>& assets, std::vector<string>& folders) const
