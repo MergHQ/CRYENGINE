@@ -2226,7 +2226,12 @@ void CTexture::ReloadFile(const char* szFileName) threadsafe
 	if (realName.size() >= (uint32)gameFolderPathLength && memcmp(realName.data(), gameFolderPath, gameFolderPathLength) == 0)
 		realName += gameFolderPathLength;
 
-	_smart_ptr<CTexture> pFoundTexture = nullptr;
+	CCryNameTSCRC crc32NameBase = GenName(realName, 0);
+	CCryNameTSCRC crc32NameAtch = GenName(realName, FT_ALPHA);
+
+	// Search texture in a thread-safe manner, and protect the found texture from deletion
+	_smart_ptr<CTexture> pFoundTextureBase = nullptr;
+	_smart_ptr<CTexture> pFoundTextureAtch = nullptr;
 
 	{
 		CryAutoReadLock<CryRWLock> lock(s_cResLock);
@@ -2234,34 +2239,21 @@ void CTexture::ReloadFile(const char* szFileName) threadsafe
 		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
 		if (pRL)
 		{
-			// Search texture in a thread-safe manner, and protect the found texture from deletion
-			// Loop should block the resource-library as briefly as possible (don't call heavy stuff in the loop)
-			ResourcesMapItor itor;
-			for (itor = pRL->m_RMap.begin(); itor != pRL->m_RMap.end(); itor++)
-			{
-				CTexture* pTexture = (CTexture*)itor->second;
-				if (!pTexture || !(pTexture->m_eFlags & FT_FROMIMAGE))
-					continue;
+			const auto& itorBase = pRL->m_RMap.find(crc32NameBase);
+			const auto& itorAtch = pRL->m_RMap.find(crc32NameAtch);
 
-				string srcName = PathUtil::ToUnixPath(pTexture->m_SrcName);
-				if (strlen(srcName) >= (uint32)gameFolderPathLength && _strnicmp(srcName, gameFolderPath, gameFolderPathLength) == 0)
-					srcName += gameFolderPathLength;
-
-				//CryLogAlways("realName = %s srcName = %s gameFolderPath = %s szFileName = %s", realName, srcName, gameFolderPath, szFileName);
-				if (!stricmp(realName, srcName))
-				{
-					pFoundTexture = pTexture;
-					break;
-				}
-			}
+			if (itorBase != pRL->m_RMap.end())
+				pFoundTextureBase = (CTexture*)itorBase->second;
+			if (itorAtch != pRL->m_RMap.end())
+				pFoundTextureAtch = (CTexture*)itorAtch->second;
 		}
 	}
 
 	// Trigger the texture's reload without holding the resource-library lock to evade dead-locks
-	if (pFoundTexture)
-	{
-		pFoundTexture->Reload();
-	}
+	if (pFoundTextureBase)
+		pFoundTextureBase->Reload();
+	if (pFoundTextureAtch)
+		pFoundTextureAtch->Reload();
 }
 
 void CTexture::ReloadTextures() threadsafe

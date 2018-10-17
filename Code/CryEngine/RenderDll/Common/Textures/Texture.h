@@ -1576,6 +1576,7 @@ public:
 	//=======================================================
 	// Lowest-level functions calling into the API-specific implementation
 	bool               RT_CreateDeviceTexture(const SSubresourceData& pData);
+	void               RT_ReleaseDeviceTexture(bool bKeepLastMips, bool bFromUnload);
 
 	void               CreateDeviceTexture(SSubresourceData&& pData);
 	void               ReleaseDeviceTexture(bool bKeepLastMips, bool bFromUnload = false);

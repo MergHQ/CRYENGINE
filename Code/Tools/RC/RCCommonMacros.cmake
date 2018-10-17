@@ -248,12 +248,14 @@ endmacro()
 
 macro(set_rc_flags)
 	target_compile_definitions( ${THIS_PROJECT} PRIVATE
-		-DWIN32
 		-DRESOURCE_COMPILER
 		-DFORCE_STANDARD_ASSERT
 		-DNOT_USE_CRY_MEMORY_MANAGER
 	)
-	target_include_directories( ${THIS_PROJECT} PRIVATE 
+    if (WIN32)
+		target_compile_definitions(${THIS_PROJECT} PRIVATE -DWIN32)
+	endif()
+	target_include_directories( ${THIS_PROJECT} PRIVATE
 		${CRYENGINE_SOURCE_DIR}/Code/CryEngine/CryCommon 
 		${SDK_DIR}/boost
 		${CRYENGINE_SOURCE_DIR}/Code/Sandbox/Plugins/EditorCommon 
@@ -264,8 +266,10 @@ function(CryResourceCompiler target)
 	prepare_project(${ARGN})
 	add_executable(${THIS_PROJECT} WIN32 ${${THIS_PROJECT}_SOURCES})
 	set_rc_flags()
-	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /SUBSYSTEM:CONSOLE")
-	set_property(TARGET ${THIS_PROJECT} PROPERTY LIBRARY_OUTPUT_DIRECTORY "${OUTPUT_DIRECTORY}")	
+	if (WIN32)
+		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /SUBSYSTEM:CONSOLE")
+	endif()
+	set_property(TARGET ${THIS_PROJECT} PROPERTY LIBRARY_OUTPUT_DIRECTORY "${OUTPUT_DIRECTORY}")
 	set_property(TARGET ${THIS_PROJECT} PROPERTY RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_DIRECTORY}")	
 	#set_property(TARGET ${THIS_PROJECT} PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIRECTORY})
 	set_property(TARGET ${THIS_PROJECT} PROPERTY OUTPUT_NAME "rc")
@@ -302,8 +306,26 @@ endfunction()
 function(CryConsoleApplication target)
 	prepare_project(${ARGN})
 	add_executable(${THIS_PROJECT} ${${THIS_PROJECT}_SOURCES})
-	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /SUBSYSTEM:CONSOLE")
-	apply_compile_settings()	
+	if (WIN32)
+		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /SUBSYSTEM:CONSOLE")
+	endif()
+	apply_compile_settings()
+endfunction()
+
+function(CryFileContainer target)
+	set(THIS_PROJECT ${target} PARENT_SCOPE)
+	set(THIS_PROJECT ${target})
+	project(${target})
+
+	read_settings(${ARGN})
+	if(NOT ${THIS_PROJECT}_SOURCES)
+		set(${THIS_PROJECT}_SOURCES ${SOURCES})
+	endif()
+
+	add_custom_target( ${THIS_PROJECT} SOURCES ${${THIS_PROJECT}_SOURCES})
+	if(MODULE_SOLUTION_FOLDER)
+		set_solution_folder("${MODULE_SOLUTION_FOLDER}" ${THIS_PROJECT})
+	endif()
 endfunction()
 
 # Common library requirements
