@@ -1437,7 +1437,7 @@ void CShaderMan::AddGLCombination(FXShaderCacheCombinations& CmbsMap, SCacheComb
 	}
 	else
 		cry_strcpy(name, st);
-	#ifdef __GNUC__
+    #if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 	cry_sprintf(str, "%s(%llx)(%x)(%x)", name, cmb.Ident.m_GLMask, cmb.Ident.m_MDMask, cmb.Ident.m_MDVMask);
 	#else
 	cry_sprintf(str, "%s(%I64x)(%x)(%x)", name, cmb.Ident.m_GLMask, cmb.Ident.m_MDMask, cmb.Ident.m_MDVMask);
@@ -1475,7 +1475,7 @@ void CShaderMan::AddGLCombination(FXShaderCacheCombinations& CmbsMap, SCacheComb
 void CShaderMan::AddCombination(SCacheCombination& cmb, FXShaderCacheCombinations& CmbsMap, CHWShader* pHWS)
 {
 	char str[2048];
-	#ifdef __GNUC__
+    #if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 	sprintf(str, "%s(%llx)(%llx)(%d)(%d)(%d)(%llx)", cmb.Name.c_str(), cmb.Ident.m_GLMask, cmb.Ident.m_RTMask, cmb.Ident.m_LightMask, cmb.Ident.m_MDMask, cmb.Ident.m_MDVMask, cmb.Ident.m_pipelineState.opaque);
 	#else
 	sprintf(str, "%s(%I64x)(%I64x)(%d)(%d)(%d)(%llx)", cmb.Name.c_str(), cmb.Ident.m_GLMask, cmb.Ident.m_RTMask, cmb.Ident.m_LightMask, cmb.Ident.m_MDMask, cmb.Ident.m_MDVMask, cmb.Ident.m_pipelineState.opaque);
@@ -1928,7 +1928,7 @@ void CHWShader::mfGenName(uint64 GLMask, uint64 RTMask, uint32 LightMask, uint32
 	char str[32];
 	if (bType != 0 && GLMask)
 	{
-#if defined(__GNUC__)
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 		cry_sprintf(str, "(GL%llx)", GLMask);
 #else
 		cry_sprintf(str, "(GL%I64x)", GLMask);
@@ -1937,7 +1937,7 @@ void CHWShader::mfGenName(uint64 GLMask, uint64 RTMask, uint32 LightMask, uint32
 	}
 	if (bType != 0)
 	{
-#if defined(__GNUC__)
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 		cry_sprintf(str, "(RT%llx)", RTMask);
 #else
 		cry_sprintf(str, "(RT%I64x)", RTMask);

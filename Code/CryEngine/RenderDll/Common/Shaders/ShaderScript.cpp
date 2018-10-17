@@ -316,7 +316,7 @@ void CShaderMan::mfFillGenMacroses(SShaderGen* shG, TArray<char>& buf, uint64 nM
 		if (shG->m_BitMask[i]->m_Mask & nMaskGen)
 		{
 			char macro[256];
-#if defined(__GNUC__)
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 			cry_sprintf(macro, "#define %s 0x%llx\n", shG->m_BitMask[i]->m_ParamName.c_str(), (unsigned long long)shG->m_BitMask[i]->m_Mask);
 #else
 			cry_sprintf(macro, "#define %s 0x%I64x\n", shG->m_BitMask[i]->m_ParamName.c_str(), (uint64)shG->m_BitMask[i]->m_Mask);
@@ -677,7 +677,7 @@ CShader* CShaderMan::mfForName(const char* nameSh, int flags, const CShaderResou
 		//  nMaskGen = gRenDev->EF_GetRemapedShaderMaskGen(nameSh, nMaskGen | nMaskGenHW);
 		mfModifyGenFlags(efGen, Res, nMaskGen, nMaskGenHW);
 		bGenModified = true;
-#ifdef __GNUC__
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 		cry_sprintf(nameNew, "%s(%llx)", nameRes, nMaskGen);
 #else
 		cry_sprintf(nameNew, "%s(%I64x)", nameRes, nMaskGen);
@@ -729,7 +729,7 @@ CShader* CShaderMan::mfForName(const char* nameSh, int flags, const CShaderResou
 				//nMaskGen = gRenDev->EF_GetRemapedShaderMaskGen(nameSh, nMaskGen | nMaskGenHW);
 				mfModifyGenFlags(efGen, Res, nMaskGen, nMaskGenHW);
 			}
-#ifdef __GNUC__
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 			cry_sprintf(nameNew, "%s(%llx)", nameRes, nMaskGen);
 #else
 			cry_sprintf(nameNew, "%s(%I64x)", nameRes, nMaskGen);

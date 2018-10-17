@@ -27,11 +27,6 @@
 #include <CryAISystem/IAIObject.h>
 #include <CryAISystem/IAIActor.h>
 #include <CryAISystem/ISignal.h>
-
-//#include <ILipSync.h>
-#if defined(__GNUC__)
-	#include <float.h>
-#endif
 #include <CryAISystem/IPathfinder.h>
 
 #include <CryAISystem/IAIActor.h>

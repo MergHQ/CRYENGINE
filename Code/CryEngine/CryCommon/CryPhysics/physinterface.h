@@ -329,19 +329,6 @@ public:
 };
 //! \endcond
 
-// Workaround for bug in GCC 4.8. The kind of access patterns here leads to an internal
-// compiler error in GCC 4.8 when optimizing with debug symbols. Two possible solutions
-// are available, compile in Profile mode without debug symbols or remove optimizations
-// in the code where the bug occurs
-// see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=59776
-#if defined(_PROFILE) && !CRY_COMPILER_CLANG && (__GNUC__ == 4) && (__GNUC_MINOR__ == 8)
-// Cannot use #pragma GCC optimize("O0") because it causes a system crash when using
-// the gcc compiler for another platform
-	#define CRY_GCC48_AVOID_OPTIMIZE __attribute__((optimize("-O0")))
-#else
-	#define CRY_GCC48_AVOID_OPTIMIZE
-#endif
-
 //! \cond INTERNAL
 //! Unused_marker deliberately fills a variable with invalid data.
 //! This is so that later is_unused() can check whether it was initialized (this is used in all physics params/status/action structures)
@@ -359,11 +346,11 @@ public:
 		uint32 i[2];
 	};
 	unused_marker() {}
-	unused_marker&                     operator,(float& x) CRY_GCC48_AVOID_OPTIMIZE;
-	unused_marker&                     operator,(double& x) CRY_GCC48_AVOID_OPTIMIZE;
-	unused_marker&                     operator,(int& x) CRY_GCC48_AVOID_OPTIMIZE;
-	unused_marker&                     operator,(unsigned int& x) CRY_GCC48_AVOID_OPTIMIZE;
-	unused_marker&                     operator,(bool& x) CRY_GCC48_AVOID_OPTIMIZE;
+	unused_marker&                     operator,(float& x);
+	unused_marker&                     operator,(double& x);
+	unused_marker&                     operator,(int& x);
+	unused_marker&                     operator,(unsigned int& x);
+	unused_marker&                     operator,(bool& x);
 	template<class T> unused_marker&   operator,(T& x) = delete; // prevent accidental use with unimplemented type
 	template<class ref> unused_marker& operator,(ref*& x)                        { x = (ref*)-1; return *this; }
 	template<class F> unused_marker&   operator,(Vec3_tpl<F>& x)                 { return *this, x.x; }
@@ -377,8 +364,6 @@ inline unused_marker& unused_marker::operator,(double& x)       { (alias_cast<in
 inline unused_marker& unused_marker::operator,(int& x)          { x = 1 << 31; return *this; }
 inline unused_marker& unused_marker::operator,(unsigned int& x) { x = 1u << 31; return *this; }
 inline unused_marker& unused_marker::operator,(bool& x)         { *alias_cast<char*>(&x) = 0x77; return *this; }
-
-#undef CRY_GCC48_AVOID_OPTIMIZE
 
 inline bool              is_unused(const float& x)         { unused_marker::f2i u; u.f = x; return (u.i & 0xFFA00000) == 0xFFA00000; }
 

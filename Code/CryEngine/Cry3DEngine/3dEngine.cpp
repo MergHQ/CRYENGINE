@@ -3189,7 +3189,7 @@ static inline __m128i float_to_half_SSE2(__m128 f, __m128i& s)
 
 static inline __m128i approx_float_to_half_SSE2(__m128 f, __m128i& s)
 {
-	#if defined(__GNUC__)
+    #if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 		#define DECL_CONST4(name, val) static const uint __attribute__((aligned(16))) name[4] = { (val), (val), (val), (val) }
 	#else
 		#define DECL_CONST4(name, val) static const __declspec(align(16)) uint name[4] = { (val), (val), (val), (val) }

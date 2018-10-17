@@ -74,4 +74,4 @@ private:
 //! compiler.
 #if defined(_MSC_VER) || CRY_COMPILER_CLANG
 	#include "PoolObject_impl.h"
-#endif // _MSC_VER || __clang__
+#endif // _MSC_VER || CRY_COMPILER_CLANG

@@ -772,7 +772,7 @@ static int munmap(void *start, size_t length)
 #include <sys/types.h>  /* For size_t */
 #endif  /* LACKS_SYS_TYPES_H */
 
-#if (defined(__GNUC__) && ((defined(__i386__) || defined(__x86_64__)))) || (defined(_MSC_VER) && _MSC_VER>=1310)
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG) || (defined(_MSC_VER) && _MSC_VER>=1310)
 #define SPIN_LOCKS_AVAILABLE 1
 #else
 #define SPIN_LOCKS_AVAILABLE 0
@@ -961,14 +961,14 @@ struct mallinfo {
 */
 
 #ifndef FORCEINLINE
-  #if defined(__GNUC__)
+  #if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 #define FORCEINLINE __inline __attribute__ ((always_inline))
   #elif defined(_MSC_VER)
     #define FORCEINLINE __forceinline
   #endif
 #endif
 #ifndef NOINLINE
-  #if defined(__GNUC__)
+  #if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
     #define NOINLINE __attribute__ ((noinline))
   #elif defined(_MSC_VER)
     #define NOINLINE __declspec(noinline)
@@ -2941,7 +2941,7 @@ static size_t traverse_and_check(mstate m);
 #define treebin_at(M,i)     (&((M)->treebins[i]))
 
 /* assign tree index for size S to variable I. Use x86 asm if possible  */
-#if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
+#if (defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)) && defined(__x86_64__)
 #define compute_tree_index(S, I)\
 {\
   unsigned int X = S >> TREEBIN_SHIFT;\
@@ -3045,7 +3045,7 @@ static size_t traverse_and_check(mstate m);
 
 /* index corresponding to given bit. Use x86 asm if possible */
 
-#if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
+#if (defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)) && defined(__x86_64__)
 #define compute_bit2idx(X, I)\
 {\
   unsigned int J;\
@@ -3142,13 +3142,13 @@ static size_t traverse_and_check(mstate m);
 
 /* In gcc, use __builtin_expect to minimize impact of checks */
 #if !INSECURE
-#if defined(__GNUC__) && __GNUC__ >= 3
-#define RTCHECK(e)  __builtin_expect(e, 1)
-#else /* GNUC */
-#define RTCHECK(e)  (e)
-#endif /* GNUC */
+    #if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
+        #define RTCHECK(e)  __builtin_expect(e, 1)
+    #else /* GNUC */
+        #define RTCHECK(e)  (e)
+    #endif /* GNUC */
 #else /* !INSECURE */
-#define RTCHECK(e)  (1)
+    #define RTCHECK(e)  (1)
 #endif /* !INSECURE */
 
 /* macros to set up inuse chunks with or without footers */

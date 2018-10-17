@@ -44,19 +44,19 @@ typedef void* (* GLADloadproc)(const char* name);
 	#if defined(GLAD_GLAPI_EXPORT)
 		#if defined(WIN32) || defined(__CYGWIN__)
 			#if defined(GLAD_GLAPI_EXPORT_BUILD)
-				#if defined(__GNUC__)
+                #if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 					#define GLAPI __attribute__ ((dllexport)) extern
 				#else
 					#define GLAPI __declspec(dllexport) extern
 				#endif
 			#else
-				#if defined(__GNUC__)
+                #if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 					#define GLAPI __attribute__ ((dllimport)) extern
 				#else
 					#define GLAPI __declspec(dllimport) extern
 				#endif
 			#endif
-		#elif defined(__GNUC__) && defined(GLAD_GLAPI_EXPORT_BUILD)
+        #elif (defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)) && defined(GLAD_GLAPI_EXPORT_BUILD)
 			#define GLAPI __attribute__ ((visibility("default"))) extern
 		#else
 			#define GLAPI extern
@@ -98,7 +98,7 @@ typedef unsigned long long int uint64_t;
 typedef long int               int32_t;
 typedef long long int          int64_t;
 typedef unsigned long long int uint64_t;
-	#elif defined(_WIN32) && defined(__GNUC__)
+    #elif defined(_WIN32) && (defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG))
 		#include <stdint.h>
 	#elif defined(_WIN32)
 typedef __int32          int32_t;

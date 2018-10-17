@@ -498,11 +498,7 @@ void CTerrain::GetObjects(PodArray<SRNInfo>* pLstObjects)
 int CTerrain::GetTerrainNodesAmount()
 {
 	//	((N pow l)-1)/(N-1)
-#if defined(__GNUC__)
 	uint64 amount = (uint64)0xaaaaaaaaaaaaaaaaULL;
-#else
-	uint64 amount = (uint64)0xaaaaaaaaaaaaaaaa;
-#endif
 	amount >>= (65 - (GetParentNode()->m_nTreeLevel + 1) * 2);
 	return (int)amount;
 }

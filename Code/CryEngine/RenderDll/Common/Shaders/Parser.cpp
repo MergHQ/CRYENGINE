@@ -353,17 +353,14 @@ uint64 shGetHex64(const char* buf)
 {
 	if (!buf)
 		return 0;
-#if defined(__GNUC__)
-	unsigned long long i = 0;
-	int res = sscanf(buf, "%llx", &i);
-	assert(res);
-	return (uint64)i;
-#else
 	uint64 i = 0;
+#if defined(CRY_COMPILER_GCC)
+	int res = sscanf(buf, "%llx", &i);
+#else
 	int res = sscanf(buf, "%I64x", &i);
+#endif
 	assert(res);
 	return i;
-#endif
 }
 
 void shGetVector(const char* buf, Vec3& v)

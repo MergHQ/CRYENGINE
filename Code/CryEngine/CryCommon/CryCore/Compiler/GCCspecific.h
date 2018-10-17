@@ -8,9 +8,9 @@
 
 //! Compiler version
 #define CRY_COMPILER_GCC     1
-#define CRY_COMPILER_VERSION ((__GNUC__ * 100) + (__GNUC_MINOR__))
-#if CRY_COMPILER_VERSION < 406
-	#error This version of g++ is not supported, the minimum supported version is 4.6
+#define CRY_COMPILER_VERSION ((__GNUC__ * 100) + (__GNUC_MINOR__ * 10))
+#if CRY_COMPILER_VERSION < 730
+    #error This version of g++ is not supported, the minimum supported version is 7.3
 #endif
 #if defined(__cplusplus) && __cplusplus < 201103L
 	#error The compiler is not in C++11 mode, this is required for compiling CRYENGINE

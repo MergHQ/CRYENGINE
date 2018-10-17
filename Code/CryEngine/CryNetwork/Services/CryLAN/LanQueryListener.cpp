@@ -172,7 +172,7 @@ void CLanQueryListener::ProcessPongFrom(const uint8* buffer, size_t bufferLength
 	if (0 != memcmp(PONG, buffer, PONG_LENGTH))
 		return;
 	int64 serNumber;
-#if defined(__GNUC__)
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 	{
 		char serNumBuffer[bufferLength - PONG_LENGTH + 1];
 		memcpy(serNumBuffer, buffer + PONG_LENGTH, bufferLength - PONG_LENGTH);
@@ -290,7 +290,7 @@ void CLanQueryListener::GQ_SendPingTo(CNameRequestPtr pReq)
 	CTimeValue when = g_time;
 	int64 serNumber = when.GetValue();
 	cry_sprintf(buffer, "%s %" PRIi64, "PING",
-#if defined(__GNUC__)
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 	            (long long)serNumber
 #else
 	            serNumber

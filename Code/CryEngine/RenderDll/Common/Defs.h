@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-#if !CRY_PLATFORM_ORBIS || (defined(__GNUC__) && __GNUC__ < 4)
+#if !CRY_PLATFORM_ORBIS
 	#include <signal.h>
 #endif
 #include <errno.h>
