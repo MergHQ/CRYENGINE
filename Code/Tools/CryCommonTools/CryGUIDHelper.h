@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "CryExtension\CryGUID.h"
+#include "CryExtension/CryGUID.h"
 
 namespace CryGUIDHelper
 {

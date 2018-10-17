@@ -472,6 +472,8 @@ elseif(LINUX)
 		-Wno-tautological-constant-out-of-range-compare
 		-Wno-unused-label
 		-Wno-non-literal-null-conversion
+		-Wno-unknown-warning-option
+		-Wno-deprecated-declarations
 		)
 	set(PLATFORM_INCLUDE_DIR "${CRY_LIBS_DIR}/hdf5/linux")
 endif()

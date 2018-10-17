@@ -25,6 +25,7 @@
 #pragma comment(lib, "version.lib")
 
 #include <CryCore/Platform/CryWindows.h>  // needed for DbgHelp.h
+#include <CryCore/Platform/CryLibrary.h>
 
 #include <DbgHelp.h>
 #pragma comment(lib, "dbghelp")
@@ -771,7 +772,7 @@ void CrashHandler::WriteMinidump(EXCEPTION_POINTERS* const pExceptionInfo)
 			CONST PMINIDUMP_USER_STREAM_INFORMATION UserStreamParam,
 			CONST PMINIDUMP_CALLBACK_INFORMATION CallbackParam);
 
-		MINIDUMPWRITEDUMP pDump = (MINIDUMPWRITEDUMP)::GetProcAddress(hDll, "MiniDumpWriteDump");
+		MINIDUMPWRITEDUMP pDump = (MINIDUMPWRITEDUMP)CryGetProcAddress(hDll, "MiniDumpWriteDump");
 		if (pDump)
 		{
 			{

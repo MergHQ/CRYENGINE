@@ -203,11 +203,11 @@ struct FileEntry
 	
 	ZipFile::DataDescriptor desc;
 	ZipFile::ulong nFileHeaderOffset; // offset of the local file header
-	ZipFile::ulong nFileDataOffset;		// offset of the packed info inside the file; NOTE: this can be INVALID_DATA_OFFSET, if not calculated yet!
-	ZipFile::ushort nMethod;					// the method of compression (0 if no compression/store)
-	ZipFile::ushort nNameOffset;			// offset of the file name in the name pool for the directory
+	ZipFile::ulong nFileDataOffset;   // offset of the packed info inside the file; NOTE: this can be INVALID_DATA_OFFSET, if not calculated yet!
+	ZipFile::ushort nMethod;          // the method of compression (0 if no compression/store)
+	ZipFile::ushort nNameOffset;      // offset of the file name in the name pool for the directory
 
-	// the file modification times
+	// the file modification times in DOS format.
 	ZipFile::ushort nLastModTime;
 	ZipFile::ushort nLastModDate;
 
@@ -238,7 +238,7 @@ struct FileEntry
 		return nFileHeaderOffset != INVALID_DATA_OFFSET;
 	}
 	// returns the name of this file, given the pointer to the name pool
-	const char* GetName(const char* pNamePool)const
+	const char* GetName(const char* pNamePool) const
 	{
 		return pNamePool + nNameOffset;
 	}
