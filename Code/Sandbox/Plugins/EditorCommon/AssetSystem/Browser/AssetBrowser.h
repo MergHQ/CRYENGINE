@@ -126,7 +126,8 @@ private:
 
 	QAbstractItemView* GetFocusedView() const;
 
-	bool               eventFilter(QObject* object, QEvent* event) override;
+	virtual bool       eventFilter(QObject* object, QEvent* event) override;
+	virtual void       resizeEvent(QResizeEvent* event) override;
 
 	//extract actual content from the selection for further processing
 	void                ProcessSelection(std::vector<CAsset*>& assets, std::vector<string>& folders) const;
@@ -187,6 +188,8 @@ private:
 	QAction*                                    m_actionRecursiveView = nullptr;
 	QAction*                                    m_actionShowFoldersView = nullptr;
 	QLabel*                                     m_multipleFoldersLabel = nullptr;
+	QBoxLayout*                                 m_pShortcutBarLayout = nullptr;
+	QBoxLayout*                                 m_pAssetsViewLayout = nullptr;
 
 	std::unique_ptr<CLineEditDelegate>          m_detailsViewNewNameDelegate; // Note that delegates are not owned by view.
 	std::unique_ptr<CLineEditDelegate>          m_thumbnailViewNewNameDelegate;
