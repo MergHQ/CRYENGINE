@@ -373,7 +373,7 @@ bool CryAssert(const char* _pszCondition, const char* _pszFile, unsigned int _ui
 		SDlgItem<256> currentModuleItem = { BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE | WS_TABSTOP, 0, 165, 113, 100, 14, IDC_CRYASSERT_BUTTON_MODULE, 0xFFFF, 0x0080 };
 		
 		wstring message = L"Ignore All From ";
-		message += g_moduleNames[eCryModule];
+		message += CryStringUtils::UTF8ToWStr(g_moduleNames[eCryModule]);
 		cry_strcpy_wchar(currentModuleItem.t, message.c_str());
 
 		const int numEntries = 17;

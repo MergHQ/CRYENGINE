@@ -498,7 +498,7 @@ static void CmdIgnoreAssertsFromModule(IConsoleCmdArgs* pArgs)
 {
 	if (gEnv && gEnv->pSystem && pArgs->GetArgCount() == 2)
 	{
-		wstring requestedModule = CryStringUtils::UTF8ToWStr(pArgs->GetArg(1));
+		string requestedModule = pArgs->GetArg(1);
 
 		for (uint32 i = 0; i < eCryM_Num; ++i)
 		{

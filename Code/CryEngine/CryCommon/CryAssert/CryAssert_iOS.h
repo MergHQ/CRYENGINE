@@ -92,6 +92,15 @@ bool CryAssert(const char* szCondition, const char* szFile, unsigned int line, b
 	{
 		CryLogAlways("!!ASSERT!!\n\tCondition: %s\n\tMessage  : %s\n\tFile     : %s\n\tLine     : %d", szCondition, gs_szMessage, szFile, line);
 	}
+
+#if defined(eCryModule)
+	const char* szModuleName = g_moduleNames[eCryModule];
+#else
+	const char* szModuleName = "Undefined";
+#endif
+
+	gEnv->pLog->LogError("Assertion Failed! %s:%d reason:%s Module:%s", szFile, line, gs_szMessage[0] ? gs_szMessage : "<empty>", szModuleName);
+
 	return false;
 }
 
