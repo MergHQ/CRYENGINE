@@ -854,7 +854,7 @@ bool CHWShader::mfWriteoutTokensToCache()
 		return true;
 
 	char szName[256];
-#if defined(__GNUC__)
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 	cry_sprintf(szName, "$MAP_%llx", m_nMaskGenFX);
 #else
 	cry_sprintf(szName, "$MAP_%I64x", m_nMaskGenFX);
@@ -2905,7 +2905,7 @@ void CHWShader_D3D::mfSaveCGFile(const char* scr, const char* path)
 	char name[1024];
 	if (path && path[0])
 	{
-#if defined(__GNUC__)
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 		cry_sprintf(name, "%s/%s(LT%x)@(RT%llx)(MD%x)(MDV%x)(GL%llx)(PSS%llx).cg", path, GetName(), m_pCurInst->m_Ident.m_LightMask, m_pCurInst->m_Ident.m_RTMask, m_pCurInst->m_Ident.m_MDMask, m_pCurInst->m_Ident.m_MDVMask, m_pCurInst->m_Ident.m_GLMask, m_pCurInst->m_Ident.m_pipelineState.opaque);
 #else
 		cry_sprintf(name, "%s/%s(LT%x)/(RT%I64x)(MD%x)(MDV%x)(GL%I64x)(PSS%llx).cg", path, GetName(), m_pCurInst->m_Ident.m_LightMask, m_pCurInst->m_Ident.m_RTMask, m_pCurInst->m_Ident.m_MDMask, m_pCurInst->m_Ident.m_MDVMask, m_pCurInst->m_Ident.m_GLMask, m_pCurInst->m_Ident.m_pipelineState.opaque);
@@ -2913,7 +2913,7 @@ void CHWShader_D3D::mfSaveCGFile(const char* scr, const char* path)
 	}
 	else
 	{
-#if defined(__GNUC__)
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 		cry_sprintf(name, "Shaders/Cache/D3D10/fxerror/%s(GL%llx)@(LT%x)(RT%llx)@(MD%x)(MDV%x)(PSS%llx).cg", GetName(), m_pCurInst->m_Ident.m_GLMask, m_pCurInst->m_Ident.m_LightMask, m_pCurInst->m_Ident.m_RTMask, m_pCurInst->m_Ident.m_MDMask, m_pCurInst->m_Ident.m_MDVMask, m_pCurInst->m_Ident.m_pipelineState.opaque);
 #else
 		cry_sprintf(name, "FXError/%s(GL%I64x)/(LT%x)(RT%I64x)/(MD%x)(MDV%x)(PSS%llx).cg", GetName(), m_pCurInst->m_Ident.m_GLMask, m_pCurInst->m_Ident.m_LightMask, m_pCurInst->m_Ident.m_RTMask, m_pCurInst->m_Ident.m_MDMask, m_pCurInst->m_Ident.m_MDVMask, m_pCurInst->m_Ident.m_pipelineState.opaque);
@@ -3576,7 +3576,7 @@ void CHWShader_D3D::mfPrintCompileInfo(SHWSInstance* pInst)
 	if (gRenDev->m_cEF.m_bActivated && CRenderer::CV_r_shadersdebug > 0)
 		CryLog(
 		  " Shader %s"
-#if defined(__GNUC__)
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 		  "(%llx)"
 #else
 		  "(%I64x)"
@@ -3777,7 +3777,7 @@ bool CHWShader_D3D::mfActivate(CShader* pSH, uint32 nFlags)
 		{
 			if (!pInst->m_bAsyncActivating)
 			{
-#ifdef __GNUC__
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 				Warning("Warning: Shader %s(%llx)(%x)(%x)(%x)(%llx)(%s) is not existing in the cache\n",
 #else
 				Warning("Warning: Shader %s(%I64x)(%x)(%x)(%x)(%llx)(%s) is not existing in the cache\n",

@@ -460,8 +460,6 @@ void CPrefabItem::ModifyInstancedPrefab(CSelectionGroup& objectsInPrefabAsFlatSe
 				// Build load archive
 				CObjectArchive loadAr(pObjManager, changedObject, true);
 
-				loadAr.SetShouldResetInternalMembers(true);
-
 				// Load ids remapping info into the load archive
 				for (int j = 0, count = guidMapping.size(); j < count; ++j)
 					loadAr.RemapID(guidMapping[j].from, guidMapping[j].to);

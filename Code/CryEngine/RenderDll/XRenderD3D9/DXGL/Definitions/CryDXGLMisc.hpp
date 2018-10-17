@@ -145,7 +145,7 @@ typedef RECT D3D11_RECT;
 #if defined(_MSC_VER)
 	#define DXGL_EXPORT __declspec(dllexport)
 	#define DXGL_IMPORT __declspec(dllimport)
-#elif defined(__GNUC__)
+#elif defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 	#define DXGL_EXPORT __attribute__ ((visibility("default")))
 	#define DXGL_IMPORT __attribute__ ((visibility("default")))
 #else

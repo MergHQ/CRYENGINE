@@ -35,7 +35,7 @@ private:
 
 /*!
  *		CPrefabObject is prefabricated object which can contain multiple other objects, in a group like manner,
-    but internal objects can not be modified, they are only created from PrefabItem.
+   but internal objects can not be modified, they are only created from PrefabItem.
  */
 class SANDBOX_API CPrefabObject : public CGroup
 {
@@ -163,7 +163,7 @@ public:
 	virtual CryGUID GetFrom(const CryGUID& loadedGuid) const override;
 
 private:
-	_smart_ptr<CPrefabObject> m_pPrefabObject { nullptr };
+	_smart_ptr<CPrefabObject> m_pPrefabObject{ nullptr };
 public:
 };
 

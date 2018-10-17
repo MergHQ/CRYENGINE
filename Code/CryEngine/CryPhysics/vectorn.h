@@ -40,7 +40,7 @@ public:
 #endif
 		else { data=new ftype[len]; flags=0; }
 	}
-#if defined(__GNUC__) && __GNUC__ >= 4
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 	// Copy constructor to make GCC4 happy. The copy constructor is never
 	// really used, but GCC4 won't complile this if it is not there...
 	vectorn_tpl(const vectorn_tpl &src) { abort(); }
@@ -208,7 +208,7 @@ vector_scalar_product_tpl<ftype> operator*(const vectorn_tpl<ftype> &vec, ftype 
 typedef vectorn_tpl<float> vectornf;
 typedef vectorn_tpl<real> vectorn;
 
-#if defined(__GNUC__)
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 	#define DECLARE_VECTORN_POOL(ftype,sz) template<> ftype vectorn_tpl<ftype>::vecn_pool[sz] = {}; \
     template<> int vectorn_tpl<ftype>::vecn_pool_pos=0;                     \
 		template<> int vectorn_tpl<ftype>::vecn_pool_size=sz;

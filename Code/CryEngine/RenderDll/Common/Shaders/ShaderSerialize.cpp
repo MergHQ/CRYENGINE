@@ -467,7 +467,7 @@ bool CShaderSerialize::ExportShader(CShader* pSH, CShaderManBin& binShaderMgr)
 
 	int nLen = Data.Num();
 	char sName[128];
-	#if defined(__GNUC__)
+    #if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 	cry_sprintf(sName, "(%llx)", pSH->m_nMaskGenFX);
 	#else
 	cry_sprintf(sName, "(%I64x)", pSH->m_nMaskGenFX);
@@ -500,7 +500,7 @@ bool CShaderSerialize::CheckFXBExists(CShader* pSH)
 		return false;
 
 	char sName[128];
-	#if defined(__GNUC__)
+    #if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 	cry_sprintf(sName, "(%llx)", pSH->m_nMaskGenFX);
 	#else
 	cry_sprintf(sName, "(%I64x)", pSH->m_nMaskGenFX);
@@ -539,7 +539,7 @@ bool CShaderSerialize::ImportShader(CShader* pSH, CShaderManBin& binShaderMgr)
 	uint32 i;
 	int j;
 	char sName[128];
-	#if defined(__GNUC__)
+    #if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 	cry_sprintf(sName, "(%llx)", pSH->m_nMaskGenFX);
 	#else
 	cry_sprintf(sName, "(%I64x)", pSH->m_nMaskGenFX);

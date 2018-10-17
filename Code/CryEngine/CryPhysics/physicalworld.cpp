@@ -2918,13 +2918,9 @@ NO_INLINE void TrackThunkUsageFree(int thunk)
 #define TrackThunkUsageFree(thunk)
 #endif // CAPTURE_REPLAY_LOG
 
-#if defined(__GNUC__)
-#if __GNUC__ >= 4 && __GNUC__MINOR__ < 7
-	#pragma GCC diagnostic ignored "-Woverflow"
-#else
+#if defined(CRY_COMPILER_GCC)
 	#pragma GCC diagnostic push
 	#pragma GCC diagnostic ignored "-Woverflow"
-#endif
 #endif
 void CPhysicalWorld::DetachEntityGridThunks(CPhysicalPlaceholder *pobj)
 {
@@ -2954,12 +2950,8 @@ void CPhysicalWorld::DetachEntityGridThunks(CPhysicalPlaceholder *pobj)
 		pobj->m_iGThunk0 = 0;
 	}
 }
-#if defined(__GNUC__)
-#if __GNUC__ >= 4 && __GNUC__MINOR__ < 7
-	#pragma GCC diagnostic error "-Woverflow"
-#else
+#if defined(CRY_COMPILER_GCC)
 	#pragma GCC diagnostic pop
-#endif
 #endif
 
 void CPhysicalWorld::SortThunks()
@@ -5089,13 +5081,9 @@ void CPhysicalWorld::RemoveExplosionShape(int id)
 #pragma clang diagnostic ignored "-Winteger-overflow"
 #endif
 
-#if defined(__GNUC__)
-#if __GNUC__ >= 4 && __GNUC__MINOR__ < 7
-        #pragma GCC diagnostic ignored "-Woverflow"
-#else
+#if defined(CRY_COMPILER_GCC)
 	#pragma GCC diagnostic push
 	#pragma GCC diagnostic ignored "-Woverflow"
-#endif
 #endif
 IGeometry *CPhysicalWorld::GetExplosionShape(float size,int idmat, float &scale, int &bCreateConstraint)
 {
@@ -5131,12 +5119,8 @@ IGeometry *CPhysicalWorld::GetExplosionShape(float size,int idmat, float &scale,
 #if CRY_COMPILER_CLANG
 #pragma clang diagnostic pop
 #endif
-#if defined(__GNUC__)
-#if __GNUC__ >= 4 && __GNUC__MINOR__ < 7
-        #pragma GCC diagnostic error "-Woverflow"
-#else
+#if defined(CRY_COMPILER_GCC)
 	#pragma GCC diagnostic pop
-#endif
 #endif
 
 int CPhysicalWorld::SetWaterManagerParams(pe_params *params)

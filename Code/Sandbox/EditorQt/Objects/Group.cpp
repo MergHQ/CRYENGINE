@@ -572,6 +572,11 @@ void CGroup::FilterOutNonMembers(std::vector<CBaseObject*>& objects)
 	}), objects.end());
 }
 
+void CGroup::SerializeGeneralVisualProperties(Serialization::IArchive& ar, bool bMultiEdit)
+{
+	//Don't add any property to the archive, this will stop properties from showing in the ui
+}
+
 void CGroup::RemoveChild(CBaseObject* child)
 {
 	bool bMemberChild = stl::find_and_erase(m_members, child);
@@ -1241,8 +1246,8 @@ void CGroup::AttachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepP
 			  // TODO: optimize
 			  for (auto pChild : children)
 			  {
-					//If this object is in a prefab we have to clean it up (aka remove the serialized entry from the XML of the item), before the object is assigned to the new prefab
-          pChild->UpdatePrefab(eOCOT_Delete);
+			    //If this object is in a prefab we have to clean it up (aka remove the serialized entry from the XML of the item), before the object is assigned to the new prefab
+			    pChild->UpdatePrefab(eOCOT_Delete);
 				}
 
 			  pParent->DetachChildren(children, shouldKeepPos, true);

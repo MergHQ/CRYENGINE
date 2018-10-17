@@ -553,7 +553,7 @@ CRYMM_INLINE void* CryModuleCalloc(size_t num, size_t size) noexcept
 CRYMM_INLINE void CryModuleMemalignFree(void* memblock) noexcept
 {
 	MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
-	#if defined(__GNUC__) && !CRY_PLATFORM_APPLE
+    #if (defined(CRY_COMPILER_CLANG) || defined(CRY_COMPILER_GCC)) && !CRY_PLATFORM_APPLE
 	free(memblock);
 	#else
 	_aligned_free(memblock);
@@ -564,7 +564,7 @@ CRYMM_INLINE void CryModuleMemalignFree(void* memblock) noexcept
 CRYMM_INLINE void* CryModuleReallocAlign(void* memblock, size_t size, size_t alignment) noexcept
 {
 	MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
-	#if defined(__GNUC__)
+    #if defined(CRY_COMPILER_CLANG) || defined(CRY_COMPILER_GCC)
 	// realloc makes no guarantees about the alignment of memory.  Rather than unconditionally
 	// copying data, if the new allocation we got back from realloc isn't properly aligned:
 	// 1) Create new properly aligned allocation
@@ -600,7 +600,7 @@ CRYMM_INLINE void* CryModuleReallocAlign(void* memblock, size_t size, size_t ali
 CRYMM_INLINE void* CryModuleMemalign(size_t size, size_t alignment) noexcept
 {
 	MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
-	#if defined(__GNUC__) && !CRY_PLATFORM_APPLE
+    #if (defined(CRY_COMPILER_CLANG) || defined(CRY_COMPILER_GCC)) && !CRY_PLATFORM_APPLE
 	void* ret = memalign(alignment, size);
 	#else
 	void* ret = _aligned_malloc(size, alignment);

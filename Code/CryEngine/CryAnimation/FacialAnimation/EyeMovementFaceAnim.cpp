@@ -9,10 +9,6 @@
 #include "FaceEffector.h"
 #include "FaceEffectorLibrary.h"
 
-#if defined(__GNUC__)
-	#include <float.h> // FLT_MIN
-#endif
-
 const CFaceIdentifierHandle* CEyeMovementFaceAnim::RetrieveEffectorIdentifiers() const
 {
 	IFacialAnimation* pFaceAnim = g_pCharacterManager->GetIFacialAnimation();

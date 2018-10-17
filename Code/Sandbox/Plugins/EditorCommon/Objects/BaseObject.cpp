@@ -1918,14 +1918,6 @@ void CBaseObject::Serialize(CObjectArchive& ar)
 
 	if (ar.bLoading)
 	{
-		// Loading.
-		if (ar.ShouldResetInternalMembers())
-		{
-			m_flags = 0;
-			m_nMinSpec = 0;
-			m_scale.Set(1.0f, 1.0f, 1.0f);
-		}
-
 		int flags = 0;
 		int oldFlags = m_flags;
 
@@ -1986,7 +1978,7 @@ void CBaseObject::Serialize(CObjectArchive& ar)
 		xmlNode->getAttr("Material", mtlName);
 		xmlNode->getAttr("MinSpec", nMinSpec);
 
-		if (nMinSpec <= CONFIG_VERYHIGH_SPEC) // Ignore invalid values.
+		if (nMinSpec <= END_CONFIG_SPEC_ENUM) // Ignore invalid values.
 			m_nMinSpec = nMinSpec;
 
 		if (m_bUseMaterialLayersMask)
@@ -2070,19 +2062,15 @@ void CBaseObject::Serialize(CObjectArchive& ar)
 			// If we are selected update UI Panel.
 			UpdateUIVars();
 		}
-
-		// We reseted the min spec and deserialized it so set it internally
-		if (ar.ShouldResetInternalMembers())
-		{
-			SetMinSpec(m_nMinSpec);
-		}
+		 
+		SetMinSpec(m_nMinSpec, false);
 	}
 	else
 	{
 		// Saving.
 		const bool isPartOfPrefab = IsPartOfPrefab();
 
-		// This attributed only readed by ObjectManager.
+		// This attributed only read by ObjectManager.
 		xmlNode->setAttr("Type", GetTypeName());
 
 		if (m_layer)
@@ -2142,8 +2130,7 @@ void CBaseObject::Serialize(CObjectArchive& ar)
 		if (m_pMaterial)
 			xmlNode->setAttr("Material", GetMaterialName());
 
-		if (m_nMinSpec != 0)
-			xmlNode->setAttr("MinSpec", (uint32)m_nMinSpec);
+		xmlNode->setAttr("MinSpec", (uint32)m_nMinSpec);
 
 		if (m_bUseMaterialLayersMask)
 		{
@@ -2204,8 +2191,7 @@ XmlNodeRef CBaseObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 	if (!scale.IsZero())
 		objNode->setAttr("Scale", scale);
 
-	if (m_nMinSpec != 0)
-		objNode->setAttr("MinSpec", (uint32)m_nMinSpec);
+	objNode->setAttr("MinSpec", (uint32)m_nMinSpec);
 
 	// Save variables.
 	if (m_pVarObject != nullptr)
@@ -3336,7 +3322,8 @@ void CBaseObject::SetLayerModified()
 void CBaseObject::SetMinSpec(uint32 nSpec, bool bSetChildren)
 {
 	m_nMinSpec = nSpec;
-	UpdateVisibility(!IsHidden());
+	bool bHidden = IsHidden();
+	UpdateVisibility(!bHidden);
 
 	// Set min spec for all children
 	if (bSetChildren)
@@ -3937,6 +3924,7 @@ void CBaseObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 	creator.AddPropertyTree<CBaseObject>("General", [](CBaseObject* pObject, Serialization::IArchive& ar, bool bMultiEdit)
 	{
 		pObject->SerializeGeneralProperties(ar, bMultiEdit);
+		pObject->SerializeGeneralVisualProperties(ar, bMultiEdit);
 	});
 	creator.AddPropertyTree<CBaseObject>("Transform", [](CBaseObject* pObject, Serialization::IArchive& ar, bool bMultiEdit)
 	{
@@ -3977,9 +3965,6 @@ void CBaseObject::SerializeGeneralProperties(Serialization::IArchive& ar, bool b
 			}
 		}
 	}
-
-	ESystemConfigSpec minSpec = (ESystemConfigSpec)m_nMinSpec;
-	ar(minSpec, "MinSpec", "Minimum Graphics");
 
 	if (ar.isInput())
 	{
@@ -4023,15 +4008,31 @@ void CBaseObject::SerializeGeneralProperties(Serialization::IArchive& ar, bool b
 			objectChanged = true;
 		}
 
+		// if we had a change make sure to propagate it to the prefab
+		if (objectChanged)
+		{
+			UpdatePrefab();
+		}
+	}
+}
+
+void CBaseObject::SerializeGeneralVisualProperties(Serialization::IArchive& ar, bool bMultiEdit)
+{
+	ESystemConfigSpec minSpec = (ESystemConfigSpec)m_nMinSpec;
+	ar(minSpec, "MinSpec", "Minimum Graphics");
+
+	bool visualPropertyChanged = false;
+
+	if (ar.isInput())
+	{
 		if (minSpec != GetMinSpec())
 		{
 			StoreUndo("Change MinSpec", true);
-			SetMinSpec(minSpec);
-			objectChanged = true;
+			SetMinSpec(minSpec, false);
+			visualPropertyChanged = true;
 		}
 
-		// if we had a change make sure to propagate it to the prefab
-		if (objectChanged)
+		if (visualPropertyChanged)
 		{
 			UpdatePrefab();
 		}

@@ -2549,18 +2549,18 @@ static float LinearToGamma(float x)
 
 // Squish uses non-standard inline friend templates which Recode cannot parse
 #if !defined(__RECODE__) && !defined(EXCLUDE_SQUISH_SDK)
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Werror"
-#endif   // __GNUC__
+#if defined(CRY_COMPILER_GCC)
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Werror"
+#endif   // CRY_COMPILER_GCC
 
 #include <squish-ccr/squish.h>
 #include <squish-ccr/squish.inl>
 #include <CryCore/Assert/CryAssert.h> // Ensure assert is redefined as CRY_ASSERT
 
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif   // __GNUC__
+#if defined(CRY_COMPILER_GCC)
+    #pragma GCC diagnostic pop
+#endif   // CRY_COMPILER_GCC
 #endif
 
 // number of bytes per block per type

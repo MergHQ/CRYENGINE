@@ -9,12 +9,6 @@
 
 #pragma once
 
-#if !defined(CRY_COMPILER_CLANG) && defined(__GNUC__) && (__GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 7))
-// GCC got support for override keyword in 4.8
-	#define override
-	#define final
-#endif
-
 #include <typeinfo>
 #include <algorithm>
 #include <CrySerialization/yasli/Serializer.h>

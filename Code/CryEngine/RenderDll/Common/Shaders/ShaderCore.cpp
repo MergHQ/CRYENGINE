@@ -763,7 +763,7 @@ void CShaderMan::mfSaveCommonGlobalFlagsToDisk(const char* szName, uint32 nMaskC
 		for (; pIter != pEnd; ++pIter)
 		{
 			gEnv->pCryPak->FPrintf(fp, "%s "
-#if defined(__GNUC__)
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 			                       "%llx\n"
 #else
 			                       "%I64x\n"
@@ -913,7 +913,7 @@ void CShaderMan::mfInitCommonGlobalFlags(void)
 			gEnv->pCryPak->FGets(str, 256, fp);
 
 			if (sscanf(str, "%127s "
-#if defined(__GNUC__)
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 			           "%llx"
 #else
 			           "%I64x"
