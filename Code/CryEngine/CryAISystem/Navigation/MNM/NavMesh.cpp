@@ -3052,6 +3052,8 @@ bool CNavMesh::IsPointInsideNeighbouringTriangleWhichSharesEdge(const TriangleID
 	bool isSwitchingSide = false;
 	bool alreadySwitchedSide = false;
 
+	int bailOutCounter = 0;
+
 	// In the case when targetTriangle and sourceTriangle share whole edge, the loop should always break during the first execution
 	do
 	{
@@ -3085,15 +3087,18 @@ bool CNavMesh::IsPointInsideNeighbouringTriangleWhichSharesEdge(const TriangleID
 				if (neighbourTriangleID == targetTriangleID)
 					return true;
 
+				bool edgeIsFound = false;
 				const Tile::STriangle& neighbourTriangle = currentTile.triangles[link.triangle];
 				for (uint16 neighbourVertexIdx = 0; neighbourVertexIdx < 3; ++neighbourVertexIdx)
 				{
 					if (neighbourTriangle.vertex[neighbourVertexIdx] == vertexIndexInTile)
 					{
 						currentEdgeIndex = vertexToEdgeIdx[neighbourVertexIdx];
+						edgeIsFound = true;
 						break;
 					}
 				}
+				CRY_ASSERT(edgeIsFound);
 			}
 			else
 			{
@@ -3127,6 +3132,9 @@ bool CNavMesh::IsPointInsideNeighbouringTriangleWhichSharesEdge(const TriangleID
 			vertexToEdgeIdx = clockwiseEdgeIndices == vertexToEdgeIdx ? counterClockwiseEdgeIndices : clockwiseEdgeIndices;
 			currentEdgeIndex = vertexToEdgeIdx[sourceEdgeIndex];
 			currentTriangleID = sourceTriangleID;
+			currentVertexIndex = GetNearestTriangleVertexIndex(sourceTile, GetTileOrigin(sourceContainer.x, sourceContainer.y, sourceContainer.z), sourceTriangle, targetPosition);
+			vertexIndexInTile = sourceTriangle.vertex[currentVertexIndex];
+
 			alreadySwitchedSide = true;
 			isSwitchingSide = true;
 		}
@@ -3135,8 +3143,12 @@ bool CNavMesh::IsPointInsideNeighbouringTriangleWhichSharesEdge(const TriangleID
 			isSwitchingSide = false;
 		}
 	} 
-	while (currentTriangleID != sourceTriangleID || isSwitchingSide);
+	while ((currentTriangleID != sourceTriangleID || isSwitchingSide) && (++bailOutCounter < 1024));
 
+	CRY_ASSERT_MESSAGE(
+		bailOutCounter < 1024, 
+		"Potential infinite loop detected: source triangle ID: %u, edge idx: %u, target triangle ID: %u, position: %f, %f, %f", 
+		sourceTriangleID, sourceEdgeIndex, targetTriangleID, targetPosition.x.as_float(), targetPosition.y.as_double(), targetPosition.z.as_float());
 	return false;
 }
 

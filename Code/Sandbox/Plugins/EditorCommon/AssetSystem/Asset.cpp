@@ -163,11 +163,11 @@ bool CAsset::CanBeEdited() const
 
 bool CAsset::IsWritable(bool includeSourceFile /*= true*/) const
 {
-	std::vector<string> filepaths(m_type->GetAssetFiles(*this, includeSourceFile, true));
-	for (string& path : filepaths)
+	const std::vector<string> filepaths(m_type->GetAssetFiles(*this, includeSourceFile, true));
+	for (const string& path : filepaths)
 	{
-		QFileInfo fileInfo(QtUtil::ToQString(path));
-		if (!fileInfo.isWritable())
+		const QFileInfo fileInfo(QtUtil::ToQString(path));
+		if (fileInfo.exists() && !fileInfo.isWritable())
 		{
 			return false;
 		}

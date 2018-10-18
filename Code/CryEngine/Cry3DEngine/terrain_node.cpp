@@ -775,9 +775,6 @@ bool CTerrainNode::CheckUpdateProcObjects()
 				if (pGroup == GetObjManager()->m_lstStaticTypes.end() || !pGroup->GetStatObj() || pGroup->fSize <= 0)
 					continue;
 
-				if (!CheckMinSpec(pGroup->minConfigSpec)) // Check min spec of this group.
-					continue;
-
 				// distribute objects into different tree levels based on object size
 
 				float fSectorViewDistMax = GetCVars()->e_ProcVegetationMaxViewDistance * (GetBBox().GetSize().x / 64.f);
@@ -871,6 +868,9 @@ bool CTerrainNode::CheckUpdateProcObjects()
 
 						if (pGroup->offlineProcedural && !gEnv->IsEditor())
 							continue; // those procedural objects are already loaded as permanent objects
+
+						if (!CheckMinSpec(pGroup->minConfigSpec)) // Check min spec of this group.
+							continue;
 
 						CVegetation* pEnt = m_arrProcObjects.Add(new(CVegetation::eAllocator_Procedural) CVegetation());
 						assert(pEnt);

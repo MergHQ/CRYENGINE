@@ -551,15 +551,18 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 										// every draw call uses custom constants (at least surface type id and direction of projection) so we have to duplicate render object
 										pDetailObj = GetRenderer()->EF_DuplicateRO(pDetailObj, passInfo);
 
+										// make sure layers are properly sorted
+										pDetailObj->m_fSort = (float)pSurf->ucThisSurfaceTypeId;
+
 										pMesh->AddRenderElements(pMat, pDetailObj, passInfo, EFSLIST_TERRAINLAYER, 1);
 									}
 								}
 							}
+						}
 					}
 				}
 			}
 	}
-}
 }
 
 // update data in video buffer
@@ -793,9 +796,9 @@ bool CTerrainNode::RenderSector(const SRenderingPassInfo& passInfo)
 
 	if (pRenderMesh && GetCVars()->e_TerrainDrawThisSectorOnly < 2 && bDetailLayersReady)
 	{
-			DrawArray(passInfo);
-			return true;
-		}
+		DrawArray(passInfo);
+		return true;
+	}
 
 	if (passInfo.GetRecursiveLevel())
 		if (pRenderMesh)
@@ -1560,7 +1563,7 @@ void CTerrainNode::SetVertexSurfaceType(float x, float y, float stepSize, CTerra
 {
 	SSurfaceTypeItem st = pTerrain->GetSurfaceTypeItem(x, y);
 
-	if(!GetCVars()->e_TerrainDetailMaterialsWeightedBlending)
+	if (!GetCVars()->e_TerrainDetailMaterialsWeightedBlending)
 		st = st.GetDominatingSurfaceType();
 
 	if (st.GetHole())
