@@ -123,6 +123,7 @@ CAssetManager::CAssetManager()
 	: m_assetModel(nullptr)
 	, m_assetFoldersModel(nullptr)
 	, m_isScanning(false)
+	, m_orderedByGUID(false)
 {
 	s_instance = this;
 	m_assetModel = new CAssetModel();

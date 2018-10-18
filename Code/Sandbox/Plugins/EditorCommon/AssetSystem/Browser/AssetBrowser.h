@@ -174,29 +174,29 @@ private:
 	bool OnOpen() override;
 
 	//ui components
-	QAdvancedTreeView*                          m_detailsView = nullptr;
-	QThumbnailsView*                            m_thumbnailView = nullptr;
-	QItemSelectionModel*                        m_selection = nullptr;
-	QSplitter*                                  m_mainViewSplitter = nullptr;
-	QFilteringPanel*                            m_filterPanel = nullptr;
-	QSplitter*                                  m_foldersSplitter = nullptr;
-	CAssetFoldersView*                          m_foldersView = nullptr;
-	QToolButton*                                m_backButton = nullptr;
-	QToolButton*                                m_forwardButton = nullptr;
-	CBreadcrumbsBar*                            m_breadcrumbs = nullptr;
-	QButtonGroup*                               m_viewModeButtons = nullptr;
-	QAction*                                    m_actionRecursiveView = nullptr;
-	QAction*                                    m_actionShowFoldersView = nullptr;
-	QLabel*                                     m_multipleFoldersLabel = nullptr;
-	QBoxLayout*                                 m_pShortcutBarLayout = nullptr;
+	CAssetFoldersView*                          m_pFoldersView = nullptr;
+	CBreadcrumbsBar*                            m_pBreadcrumbs = nullptr;
+	QAction*                                    m_pActionRecursiveView = nullptr;
+	QAction*                                    m_pActionShowFoldersView = nullptr;
+	QAdvancedTreeView*                          m_pDetailsView = nullptr;
 	QBoxLayout*                                 m_pAssetsViewLayout = nullptr;
+	QBoxLayout*                                 m_pShortcutBarLayout = nullptr;
+	QButtonGroup*                               m_pViewModeButtons = nullptr;
+	QFilteringPanel*                            m_pFilterPanel = nullptr;
+	QItemSelectionModel*                        m_pSelection = nullptr;
+	QLabel*                                     m_pMultipleFoldersLabel = nullptr;
+	QSplitter*                                  m_pFoldersSplitter = nullptr;
+	QSplitter*                                  m_pMainViewSplitter = nullptr;
+	QThumbnailsView*                            m_pThumbnailView = nullptr;
+	QToolButton*                                m_pBackButton = nullptr;
+	QToolButton*                                m_pForwardButton = nullptr;
 
-	std::unique_ptr<CLineEditDelegate>          m_detailsViewNewNameDelegate; // Note that delegates are not owned by view.
-	std::unique_ptr<CLineEditDelegate>          m_thumbnailViewNewNameDelegate;
-	std::unique_ptr<QAttributeFilterProxyModel> m_pAttributeFilterProxyModel;
-	std::unique_ptr<CAssetFolderFilterModel>    m_pFolderFilterModel;
+	std::unique_ptr<CAbstractMenu>              m_pThumbnailSizeMenu;
 	std::unique_ptr<CAssetDropHandler>          m_pAssetDropHandler;
-	std::unique_ptr<CAbstractMenu>              m_thumbnailSizeMenu;
+	std::unique_ptr<CAssetFolderFilterModel>    m_pFolderFilterModel;
+	std::unique_ptr<CLineEditDelegate>          m_pDetailsViewNewNameDelegate; // Note that delegates are not owned by view.
+	std::unique_ptr<CLineEditDelegate>          m_pThumbnailViewNewNameDelegate;
+	std::unique_ptr<QAttributeFilterProxyModel> m_pAttributeFilterProxyModel;
 	std::unique_ptr<QTimer>                     m_pQuickEditTimer;
 
 	//state variables
