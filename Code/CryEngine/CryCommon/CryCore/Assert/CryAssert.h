@@ -23,40 +23,7 @@
 
 #if defined(USE_CRY_ASSERT)
 
-static const char* g_moduleNames[] =
-{
-	"",
-	"Cry3DEngine",
-	"CryAction",
-	"CryAISystem",
-	"CryAnimation",
-	"CryDynamicResponseSystem",
-	"CryEntitySystem",
-	"CryFont",
-	"CryInput",
-	"CryMovie",
-	"CryNetwork",
-	"CryLobby",
-	"CryPhysics",
-	"CryScriptSystem",
-	"CryAudioSystem",
-	"CrySystem",
-	"CryGame",
-	"CryRenderer",
-	"Launcher",
-	"Sandbox",
-	"CryLiveCreate",
-	"CryOnline",
-	"CryAudioImplementation",
-	"CryMonoBridge",
-	"CryScaleformHelper",
-	"CryFlowGraph",
-	"Legacy Module",
-	"Engine Plug-ins",
-	"Editor Plug-ins",
-	"Schematyc2",
-	"UniversalDebugRecordings"
-};
+extern const char* g_moduleNames[];		// defined in CryAssert_impl.h
 
 enum class ECryAssertLevel
 {
