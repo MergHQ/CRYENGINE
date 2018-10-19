@@ -389,17 +389,19 @@ bool CGroup::CanCreateFrom(std::vector<CBaseObject*>& objects)
 bool CGroup::CreateFrom(std::vector<CBaseObject*>& objects)
 {
 	// Put the newly created group on the last selected object's layer
-	if (objects.size())
+	if (objects.empty())
 	{
-		CBaseObject* pLastSelectedObject = objects[objects.size() - 1];
-		GetIEditorImpl()->GetIUndoManager()->Suspend();
-		SetLayer(pLastSelectedObject->GetLayer());
-		GetIEditorImpl()->GetIUndoManager()->Resume();
-
-		//add ourselves to the last selected group
-		if (CBaseObject* pLastParent = pLastSelectedObject->GetGroup())
-			pLastParent->AddMember(this);
+		return false;
 	}
+
+	CBaseObject* pLastSelectedObject = objects[objects.size() - 1];
+	GetIEditorImpl()->GetIUndoManager()->Suspend();
+	SetLayer(pLastSelectedObject->GetLayer());
+	GetIEditorImpl()->GetIUndoManager()->Resume();
+
+	//add ourselves to the last selected group
+	if (CBaseObject* pLastParent = pLastSelectedObject->GetGroup())
+		pLastParent->AddMember(this);
 
 	// Prefab support
 	CPrefabObject* pPrefabToCompareAgainst = nullptr;
@@ -429,6 +431,11 @@ bool CGroup::CreateFrom(std::vector<CBaseObject*>& objects)
 
 void CGroup::CreateFrom(std::vector<CBaseObject*>& objects, Vec3 center)
 {
+	if (objects.empty())
+	{
+		return;
+	}
+
 	CUndo undo("Create Group");
 	CGroup* group = (CGroup*)GetIEditorImpl()->NewObject("Group");
 	if (!group)
@@ -437,6 +444,12 @@ void CGroup::CreateFrom(std::vector<CBaseObject*>& objects, Vec3 center)
 		return;
 	}
 
+	if (CBaseObject* pLastParent = objects[objects.size() - 1]->GetGroup())
+	{
+		Matrix34 m = pLastParent->GetWorldTM();
+		m.Invert();
+		center = m.TransformPoint(center);
+	}
 	// Snap center to grid.
 	group->SetPos(gSnappingPreferences.Snap3D(center));
 

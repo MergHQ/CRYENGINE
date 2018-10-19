@@ -3,7 +3,43 @@
 #include "CryAssert.h"
 #if defined(USE_CRY_ASSERT)
 
-	#if !CRY_PLATFORM_WINDOWS
+const char* g_moduleNames[] =
+{
+    "",
+    "Cry3DEngine",
+    "CryAction",
+    "CryAISystem",
+    "CryAnimation",
+    "CryDynamicResponseSystem",
+    "CryEntitySystem",
+    "CryFont",
+    "CryInput",
+    "CryMovie",
+    "CryNetwork",
+    "CryLobby",
+    "CryPhysics",
+    "CryScriptSystem",
+    "CryAudioSystem",
+    "CrySystem",
+    "CryGame",
+    "CryRenderer",
+    "Launcher",
+    "Sandbox",
+    "CryLiveCreate",
+    "CryOnline",
+    "CryAudioImplementation",
+    "CryMonoBridge",
+    "CryScaleformHelper",
+    "CryFlowGraph",
+    "Legacy Module",
+    "Engine Plug-ins",
+    "Editor Plug-ins",
+    "Schematyc2",
+    "UniversalDebugRecordings"
+};
+
+    #if !CRY_PLATFORM_WINDOWS
+
 void CryLogAssert(const char* _pszCondition, const char* _pszFile, unsigned int _uiLine, bool* _pbIgnore)
 {
 	// Empty on purpose

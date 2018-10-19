@@ -221,8 +221,8 @@ ILINE EMessageSendResult WorstMessageSendResult(EMessageSendResult r1, EMessageS
 typedef uint8       ChannelMaskType;
 
 typedef uint32 TNetChannelID;
-static const char* LOCAL_CONNECTION_STRING = "<local>";
-static const char* NULL_CONNECTION_STRING = "<null>";
+#define LOCAL_CONNECTION_STRING "<local>"
+#define NULL_CONNECTION_STRING  "<null>"
 static const size_t MaxProfilesPerAspect = 8;
 
 //! \cond INTERNAL

@@ -1629,6 +1629,21 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	if (passInfo.IsGeneralPass() && IsStatObjBufferRenderTasksAllowed() && JobManager::InvokeAsJob("CheckOcclusion"))
 		m_pObjManager->BeginOcclusionCulling(passInfo);
 
+
+	////////////////////////////////////////////////////////////////////////////////////////
+	// Add auxiliary stat objects
+	////////////////////////////////////////////////////////////////////////////////////////
+	if (!passInfo.IsRecursivePass())
+	{
+		const auto &auxStatObjs = passInfo.GetIRenderView()->GetAuxiliaryStatObjects();
+		if (auxStatObjs.size())
+		{
+			CRY_PROFILE_REGION(PROFILE_RENDERER, "auxiliaryStatObjects");
+			for (auto &obj : auxStatObjs)
+				obj.second->Render(obj.first, passInfo);
+		}
+	}
+
 	////////////////////////////////////////////////////////////////////////////////////////
 	// Collect shadow passes
 	////////////////////////////////////////////////////////////////////////////////////////

@@ -230,6 +230,8 @@ private:
 	Matrix34 m_matrixStack[32];
 	int      m_previousMatrixIndex[32];
 
+	Matrix34 m_statObjWorldMatrix;
+
 	// Display Helper Sizes
 	const int                displayHelperSizeLarge = 32;
 	const int                displayHelperSizeSmall = 4;

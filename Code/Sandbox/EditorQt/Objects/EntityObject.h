@@ -583,6 +583,8 @@ private:
 	friend void               PySetEntityProperty(const char* entityName, const char* propName, SPyWrappedProperty value);
 	friend SPyWrappedProperty PyGetEntityParam(const char* pObjectName, const char* pVarPath);
 	friend void               PySetEntityParam(const char* pObjectName, const char* pVarPath, SPyWrappedProperty value);
+
+	Matrix34 m_statObjWorldMatrix;
 };
 
 /*!

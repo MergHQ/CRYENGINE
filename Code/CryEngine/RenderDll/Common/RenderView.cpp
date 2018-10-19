@@ -232,6 +232,8 @@ void CRenderView::Clear()
 	UnsetRenderOutput();
 
 	ZeroStruct(m_SkinningData);
+
+	m_auxiliaryStatObjects.clear();
 }
 
 // Helper function to allocate new compiled object from pool

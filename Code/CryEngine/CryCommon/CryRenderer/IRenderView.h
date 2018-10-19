@@ -178,6 +178,9 @@ struct IRenderView : public CMultiThreadRefCount
 
 	//! Set associated shadow frustum
 	virtual void              SetShadowFrustumOwner(ShadowMapFrustum* pOwner) = 0;
+
+	virtual void                                                  InjectAuxiliaryStatObject(SRendParams rp, IStatObj* pStatObj) = 0;
+	virtual const std::vector<std::pair<SRendParams, IStatObj*>> &GetAuxiliaryStatObjects() const = 0;
 };
 
 typedef _smart_ptr<IRenderView> IRenderViewPtr;
