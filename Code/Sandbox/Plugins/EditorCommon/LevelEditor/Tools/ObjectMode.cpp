@@ -551,7 +551,14 @@ bool CObjectMode::OnLButtonDown(CViewport* view, int nFlags, CPoint point)
 
 			if (!bToggle)
 			{
-				pObjectManager->SelectObject(hitObj);
+				if (bShiftClick)
+				{
+					pObjectManager->AddObjectToSelection(hitObj);
+				}
+				else
+				{
+					pObjectManager->SelectObject(hitObj);
+				}
 			}
 			else
 			{
