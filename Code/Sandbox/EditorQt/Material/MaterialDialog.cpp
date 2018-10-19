@@ -1,15 +1,19 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "Material.h"
 
+#include "MaterialDialog.h"
+
+#include "Material.h"
 #include "MaterialImageListCtrl.h"
 #include "MaterialManager.h"
 #include "MaterialHelpers.h"
 #include "MaterialLibrary.h"
+#include "MatEditPreviewDlg.h"
 
 #include "ViewManager.h"
 #include "Util/Clipboard.h"
+#include "AssetSystem/AssetGenerator.h"
 
 #include "Controls/PropertyItem.h"
 #include "Util/CubemapUtils.h"
@@ -18,10 +22,8 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include <QtViewPane.h>
 
-#include "MatEditPreviewDlg.h"
-#include "MaterialDialog.h"
-#include <CrySystem/Scaleform/IFlashUI.h>
 #include "Controls/QuestionDialog.h"
+#include <CrySystem/Scaleform/IFlashUI.h>
 
 #define IDW_MTL_BROWSER_PANE    AFX_IDW_CONTROLBAR_FIRST + 10
 #define IDW_MTL_PROPERTIES_PANE AFX_IDW_CONTROLBAR_FIRST + 11
@@ -1591,6 +1593,10 @@ void CMaterialDialog::OnSaveItem()
 			{
 				CQuestionDialog::SWarning(QObject::tr(""), QObject::tr("The material file cannot be saved. The file is located in a PAK archive or access is denied"));
 			}
+		}
+		else
+		{
+			AssetManagerHelpers::GenerateCryasset(pMtl->GetFilename(true));
 		}
 
 		pMtl->Reload();

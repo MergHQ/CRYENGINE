@@ -28,6 +28,7 @@ public:
 	virtual void                              GenerateThumbnail(const CAsset* pAsset) const override;
 	virtual CAssetEditor*                     Edit(CAsset* pAsset) const override;
 	virtual bool                              OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const override;
+	virtual bool                              RenameAsset(CAsset* pAsset, const char* szNewName) const override;
 private:
 	virtual CryIcon                           GetIconInternal() const override;
 

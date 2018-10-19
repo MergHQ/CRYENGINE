@@ -81,9 +81,9 @@ static bool CopyAssetFile(const string& oldFilename, const string& newFilename)
 class CAssetMetadata : public INewAsset
 {
 public:
-	CAssetMetadata(const CAssetType& type, const char* szMetadataFile)
+	CAssetMetadata(const CAssetType& type, const char* szMetadataFile, const char* szName)
 		: m_metadataFile(szMetadataFile)
-		, m_name(AssetLoader::GetAssetName(szMetadataFile))
+		, m_name(szName)
 		, m_folder(PathUtil::GetDirectory(m_metadataFile))
 	{
 		m_metadata.type = type.GetTypeName();
@@ -195,19 +195,21 @@ bool CAssetType::Create(const char* szFilepath, const void* pTypeSpecificParamet
 		return false;
 	}
 
-	ICryPak* const pIPak = GetISystem()->GetIPak();
-	if (!pIPak->MakeDir(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), PathUtil::GetPathWithoutFilename(szFilepath)).c_str()))
+	const CryPathString adjustedFilepath = PathUtil::AdjustCasing(szFilepath);
+
+	ICryPak* const pPak = GetISystem()->GetIPak();
+	if (!pPak->MakeDir(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), PathUtil::GetPathWithoutFilename(adjustedFilepath)).c_str()))
 	{
 		return false;
 	}
 
-	CAssetMetadata metadata(*this, szFilepath);
+	CAssetMetadata metadata(*this, adjustedFilepath, AssetLoader::GetAssetName(szFilepath));
 	if (!OnCreate(metadata, pTypeSpecificParameter))
 	{
 		return false;
 	}
 
-	CAssetPtr const pNewAsset = AssetLoader::CAssetFactory::CreateFromMetadata(szFilepath, metadata.GetMetadata());
+	CAssetPtr const pNewAsset = AssetLoader::CAssetFactory::CreateFromMetadata(adjustedFilepath, metadata.GetMetadata());
 
 	CEditableAsset editAsset(*pNewAsset);
 	if (!editAsset.WriteToFile())

@@ -141,4 +141,9 @@ EDITOR_COMMON_API string MatchGamePathToCaseOnFileSystem(const string& path);
 //! Returns the same path with correction that exactly match casing on files system. 
 //! If file is not present on the file system an empty string is returned.
 EDITOR_COMMON_API string MatchAbsolutePathToCaseOnFileSystem(const string& path);
+
+//! Adjust the path to follow CryPak casing mode, which may or may not be case-preserving.
+EDITOR_COMMON_API string AdjustCasing(const string& path);
+EDITOR_COMMON_API CryPathString AdjustCasing(const char* szPath);
+EDITOR_COMMON_API CryPathString AdjustCasing(const CryPathString& path);
 }

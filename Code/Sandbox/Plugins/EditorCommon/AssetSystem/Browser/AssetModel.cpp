@@ -451,17 +451,19 @@ bool CAssetModel::setData(const QModelIndex& index, const QVariant& value, int r
 			return false;
 		}
 
-		string newName = QtUtil::ToString(stringValue);
+		const CryPathString newName = PathUtil::AdjustCasing(QtUtil::ToString(stringValue).c_str());
+		const CryPathString newAssetFilepath = PathUtil::Make(pAsset->GetFolder(), pAsset->GetType()->MakeMetadataFilename(newName));
 
-		if (!PathUtil::IsValidFileName(stringValue))
+		string reasonToReject;
+		if (!CAssetType::IsValidAssetPath(newAssetFilepath, reasonToReject))
 		{
-			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Invalid asset name: %s", newName.c_str());
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Invalid asset path: %s. %s", newAssetFilepath.c_str(), reasonToReject.c_str());
 			return false;
 		}
 
 		// Check if the new name doesn't collide with existing name
-		const string newAssetFilepath = PathUtil::Make(pAsset->GetFolder(), newName, string().Format("%s.cryasset", pAsset->GetType()->GetFileExtension()));
-		if (CAssetManager::GetInstance()->FindAssetForMetadata(newAssetFilepath))
+		const CAsset* const pExistingAsset = CAssetManager::GetInstance()->FindAssetForMetadata(newAssetFilepath);
+		if (pExistingAsset && pExistingAsset != pAsset)
 		{
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Asset already exists: %s", newAssetFilepath.c_str());
 			return false;
