@@ -10,6 +10,9 @@
  */
 class CSmartObject : public CEntityObject
 {
+private:
+	Matrix34                              m_statObjWorldMatrix;
+
 protected:
 	IStatObj*                             m_pStatObj;
 	IMaterial*                            m_pHelperMtl;

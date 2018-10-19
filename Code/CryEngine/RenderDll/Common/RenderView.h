@@ -561,6 +561,9 @@ private:
 		void GenerateSortedFrustumsForTiledShadingByScreenspaceOverlap();
 	};
 
+	// A list of auxiliary stat objects to be injected for rendering
+	std::vector<std::pair<SRendParams, IStatObj*>> m_auxiliaryStatObjects;
+
 public:// temp
 	SShadows m_shadows;
 
@@ -574,6 +577,9 @@ public:
 
 	CRenderItemDrawer&       GetDrawer()       { return m_RenderItemDrawer; }
 	const CRenderItemDrawer& GetDrawer() const { return m_RenderItemDrawer; }
+
+	void                                                  InjectAuxiliaryStatObject(SRendParams rp, IStatObj* pStatObj) override { m_auxiliaryStatObjects.emplace_back(std::make_pair(rp, pStatObj)); }
+	const std::vector<std::pair<SRendParams, IStatObj*>> &GetAuxiliaryStatObjects() const override                               { return m_auxiliaryStatObjects; }
 };
 
 template<typename T>

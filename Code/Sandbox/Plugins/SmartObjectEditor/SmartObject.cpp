@@ -75,15 +75,15 @@ void CSmartObject::Display(CObjectRenderHelper& objRenderHelper)
 			color[2] = dc.GetColor().b * (1.0f / 255.0f);
 			color[3] = dc.GetColor().a * (1.0f / 255.0f);
 
-			Matrix34 tempTm = wtm;
+			m_statObjWorldMatrix = wtm;
 			SRendParams rp;
-			rp.pMatrix = &tempTm;
+			rp.pMatrix = &m_statObjWorldMatrix;
 			rp.AmbientColor = ColorF(color[0], color[1], color[2], 1);
 			rp.fAlpha = color[3];
 			rp.dwFObjFlags |= FOB_TRANS_MASK;
 			//rp.nShaderTemplate = EFT_HELPER;
 
-			m_pStatObj->Render(rp, passInfo);
+			passInfo.GetIRenderView()->InjectAuxiliaryStatObject(rp, m_pStatObj);
 		}
 	}
 

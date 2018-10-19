@@ -522,8 +522,8 @@ void CLevelEditorViewport::OnRender(SDisplayContext& context)
 			// Display Context handle forces rendering of the world go to the current viewport output window.
 
 			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(tmpCamera, SRenderingPassInfo::DEFAULT_FLAGS, false, this->m_displayContextKey);
+			RenderAll(CObjectRenderHelper{ context, passInfo });
 			m_engine->RenderWorld(renderFlags | SHDF_ALLOW_AO | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOWHDR | SHDF_ZPASS | SHDF_NOASYNC, passInfo, __FUNCTION__);
-			RenderAll(CObjectRenderHelper { context, passInfo });
 		}
 		m_renderer->EnableSwapBuffers(true);
 	}
@@ -537,8 +537,8 @@ void CLevelEditorViewport::OnRender(SDisplayContext& context)
 		// Display Context handle forces rendering of the world go to the current viewport output window.
 
 		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_Camera, SRenderingPassInfo::DEFAULT_FLAGS, false, this->m_displayContextKey);
+		RenderAll(CObjectRenderHelper{ context, passInfo });
 		m_engine->RenderWorld(renderFlags | SHDF_ALLOW_AO | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOWHDR | SHDF_ZPASS, passInfo, __FUNCTION__);
-		RenderAll(CObjectRenderHelper { context, passInfo });
 	}
 
 	if (!m_renderer->IsStereoEnabled() && !m_Camera.m_bOmniCamera)
