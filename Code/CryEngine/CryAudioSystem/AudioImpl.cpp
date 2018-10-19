@@ -70,6 +70,21 @@ void CImpl::Release()
 {
 }
 
+//////////////////////////////////////////////////////////////////////////
+void CImpl::SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnBeforeLibraryDataChanged()
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnAfterLibraryDataChanged()
+{
+}
+
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CImpl::OnLoseFocus()
 {
@@ -295,7 +310,7 @@ void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float& posY)
+void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float& posY, bool const showDetailedInfo)
 {
 }
 } // namespace Null

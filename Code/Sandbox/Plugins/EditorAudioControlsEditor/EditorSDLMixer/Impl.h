@@ -42,6 +42,7 @@ public:
 	virtual IConnection*   CreateConnectionToControl(EAssetType const assetType, IItem const* const pIItem) override;
 	virtual IConnection*   CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType const assetType) override;
 	virtual XmlNodeRef     CreateXMLNodeFromConnection(IConnection const* const pIConnection, EAssetType const assetType) override;
+	virtual XmlNodeRef     SetDataNode(char const* const szTag) override;
 	virtual void           EnableConnection(IConnection const* const pIConnection, bool const isLoading) override;
 	virtual void           DisableConnection(IConnection const* const pIConnection, bool const isLoading) override;
 	virtual void           DestructConnection(IConnection const* const pIConnection) override;

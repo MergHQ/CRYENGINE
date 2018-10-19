@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include <ATLEntityData.h>
-
 #include "GlobalData.h"
+#include <ATLEntityData.h>
+#include <PoolObject.h>
 
 #include <cri_atom_ex.h>
 
@@ -30,7 +30,7 @@ enum class EEventType : EnumFlagsType
 	Resume,
 };
 
-class CTrigger final : public ITrigger
+class CTrigger final : public ITrigger, public CPoolObject<CTrigger, stl::PSyncNone>
 {
 public:
 

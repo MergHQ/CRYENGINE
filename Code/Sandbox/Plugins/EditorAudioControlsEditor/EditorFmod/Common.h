@@ -4,6 +4,7 @@
 
 #include "Item.h"
 #include <CryIcon.h>
+#include <CryAudioImplFmod/GlobalData.h>
 
 namespace ACE
 {
@@ -11,6 +12,7 @@ namespace Impl
 {
 namespace Fmod
 {
+extern CryAudio::Impl::Fmod::SPoolSizes g_connections;
 extern Platforms g_platforms;
 
 static CryIcon s_errorIcon;

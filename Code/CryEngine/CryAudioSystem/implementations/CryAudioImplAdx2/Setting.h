@@ -3,6 +3,7 @@
 #pragma once
 
 #include <ATLEntityData.h>
+#include <PoolObject.h>
 
 namespace CryAudio
 {
@@ -10,7 +11,7 @@ namespace Impl
 {
 namespace Adx2
 {
-class CSetting final : public ISetting
+class CSetting final : public ISetting, public CPoolObject<CSetting, stl::PSyncNone>
 {
 public:
 

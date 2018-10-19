@@ -299,6 +299,13 @@ void CFileWriter::WriteLibrary(CLibrary& library)
 					pFileNode->setAttr(CryAudio::s_szNumSettingConnectionsAttribute, libScope.numSettingConnections);
 				}
 
+				XmlNodeRef const pImplDataNode = g_pIImpl->SetDataNode(CryAudio::s_szImplDataNodeTag);
+
+				if (pImplDataNode != nullptr)
+				{
+					pFileNode->addChild(pImplDataNode);
+				}
+
 				auto const numTypes = static_cast<int>(EAssetType::NumTypes);
 
 				for (int i = 0; i < numTypes; ++i)

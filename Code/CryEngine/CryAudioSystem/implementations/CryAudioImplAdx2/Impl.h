@@ -30,6 +30,9 @@ public:
 	virtual ERequestStatus      Init(uint32 const objectPoolSize, uint32 const eventPoolSize) override;
 	virtual void                ShutDown() override;
 	virtual void                Release() override;
+	virtual void                SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific) override;
+	virtual void                OnBeforeLibraryDataChanged() override;
+	virtual void                OnAfterLibraryDataChanged() override;
 	virtual ERequestStatus      OnLoseFocus() override;
 	virtual ERequestStatus      OnGetFocus() override;
 	virtual ERequestStatus      MuteAll() override;
@@ -70,7 +73,7 @@ public:
 
 	// Below data is only used when INCLUDE_ADX2_IMPL_PRODUCTION_CODE is defined!
 	virtual void GetFileData(char const* const szName, SFileData& fileData) const override;
-	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY) override;
+	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo) override;
 	// ~CryAudio::Impl::IImpl
 
 private:

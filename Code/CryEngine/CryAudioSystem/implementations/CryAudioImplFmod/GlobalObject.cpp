@@ -23,28 +23,13 @@ CGlobalObject::CGlobalObject(Objects const& objects)
 //////////////////////////////////////////////////////////////////////////
 void CGlobalObject::SetEnvironment(IEnvironment const* const pIEnvironment, float const amount)
 {
-	CEnvironment const* const pEnvironment = static_cast<CEnvironment const* const>(pIEnvironment);
-
-	if (pEnvironment != nullptr)
-	{
-		for (auto const pObject : m_objects)
-		{
-			if (pObject != this)
-			{
-				pObject->SetEnvironment(pEnvironment, amount);
-			}
-		}
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Invalid Environment pointer passed to the Fmod implementation of SetEnvironment");
-	}
+	Cry::Audio::Log(ELogType::Error, "Trying to set an environment on the global object!");
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CGlobalObject::SetParameter(IParameter const* const pIParameter, float const value)
 {
-	CParameter const* const pParameter = static_cast<CParameter const* const>(pIParameter);
+	CBaseParameter const* const pParameter = static_cast<CBaseParameter const* const>(pIParameter);
 
 	if (pParameter != nullptr)
 	{
@@ -65,7 +50,7 @@ void CGlobalObject::SetParameter(IParameter const* const pIParameter, float cons
 //////////////////////////////////////////////////////////////////////////
 void CGlobalObject::SetSwitchState(ISwitchState const* const pISwitchState)
 {
-	CSwitchState const* const pSwitchState = static_cast<CSwitchState const* const>(pISwitchState);
+	CBaseSwitchState const* const pSwitchState = static_cast<CBaseSwitchState const* const>(pISwitchState);
 
 	if (pSwitchState != nullptr)
 	{

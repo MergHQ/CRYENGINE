@@ -11,18 +11,6 @@ namespace Impl
 {
 namespace Wwise
 {
-struct SMemoryInfo final
-{
-	size_t totalMemory;              // total amount of memory used by the implementation in bytes
-	size_t secondaryPoolSize;        // total size in bytes of the Secondary Memory Pool used by an implementation
-	size_t secondaryPoolUsedSize;    // bytes allocated inside the Secondary Memory Pool used by an implementation
-	size_t secondaryPoolAllocations; // number of allocations performed in the Secondary Memory Pool used by an implementation
-	size_t poolUsedObjects;          // total number of active pool objects
-	size_t poolConstructedObjects;   // total number of constructed pool objects
-	size_t poolUsedMemory;           // memory used by the constructed objects
-	size_t poolAllocatedMemory;      // total memory allocated by the pool allocator
-};
-
 using DebugColor = std::array<float, 4>;
 
 extern DebugColor const g_colorWhite;
@@ -36,9 +24,9 @@ extern DebugColor const g_colorCyan;
 
 // Debug draw style for system info.
 extern float const g_debugSystemHeaderFontSize;
+extern float const g_debugSystemHeaderLineHeight;
 extern float const g_debugSystemFontSize;
 extern float const g_debugSystemLineHeight;
-extern float const g_debugSystemLineHeightClause;
 extern DebugColor const g_debugSystemColorHeader;
 extern DebugColor const g_debugSystemColorTextPrimary;
 extern DebugColor const g_debugSystemColorTextSecondary;

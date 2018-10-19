@@ -2,3 +2,14 @@
 
 #include "StdAfx.h"
 #include "Common.h"
+
+namespace ACE
+{
+namespace Impl
+{
+namespace SDLMixer
+{
+CryAudio::Impl::SDL_mixer::SPoolSizes g_connections;
+} // namespace SDLMixer
+} // namespace Impl
+} // namespace ACE

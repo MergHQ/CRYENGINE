@@ -30,6 +30,11 @@ static constexpr char const* s_szMutiplierAttribute = "value_multiplier";
 static constexpr char const* s_szShiftAttribute = "value_shift";
 static constexpr char const* s_szLocalizedAttribute = "localized";
 
+// XML attributes for impl data node
+static constexpr char const* s_szTriggersAttribute = "triggers";
+static constexpr char const* s_szParametersAttribute = "parameters";
+static constexpr char const* s_szSwitchStatesAttribute = "switchstates";
+
 // XML values
 static constexpr char const* s_szTrueValue = "true";
 static constexpr char const* s_szFalseValue = "false";
@@ -53,6 +58,13 @@ struct STriggerInfo final : public ITriggerInfo
 	CryFixedStringT<MaxFileNameLength> name;
 	CryFixedStringT<MaxFilePathLength> path;
 	bool                               isLocalized;
+};
+
+struct SPoolSizes final
+{
+	uint32 triggers = 0;
+	uint32 parameters = 0;
+	uint32 switchStates = 0;
 };
 } // namespace SDL_mixer
 } // namespace Impl

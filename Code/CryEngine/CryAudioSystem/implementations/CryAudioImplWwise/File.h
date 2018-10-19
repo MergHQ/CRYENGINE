@@ -3,6 +3,7 @@
 #pragma once
 
 #include <ATLEntityData.h>
+#include <PoolObject.h>
 #include <AK/SoundEngine/Common/AkTypes.h>
 
 namespace CryAudio
@@ -11,7 +12,7 @@ namespace Impl
 {
 namespace Wwise
 {
-class CFile final : public IFile
+class CFile final : public IFile, public CPoolObject<CFile, stl::PSyncNone>
 {
 public:
 

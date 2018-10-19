@@ -3,6 +3,7 @@
 #pragma once
 
 #include <ATLEntityData.h>
+#include <PoolObject.h>
 
 #include <cri_atom_ex.h>
 
@@ -12,7 +13,7 @@ namespace Impl
 {
 namespace Adx2
 {
-class CFile final : public IFile
+class CFile final : public IFile, public CPoolObject<CFile, stl::PSyncNone>
 {
 public:
 

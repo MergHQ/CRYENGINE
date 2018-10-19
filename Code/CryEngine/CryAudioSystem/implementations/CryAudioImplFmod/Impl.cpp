@@ -10,9 +10,11 @@
 #include "Listener.h"
 #include "GlobalObject.h"
 #include "Object.h"
+#include "Parameter.h"
 #include "ProgrammerSoundFile.h"
 #include "Setting.h"
 #include "StandaloneFile.h"
+#include "SwitchState.h"
 #include "Trigger.h"
 #include "VcaParameter.h"
 #include "VcaState.h"
@@ -33,12 +35,104 @@ namespace Impl
 {
 namespace Fmod
 {
+SPoolSizes g_poolSizes;
+SPoolSizes g_poolSizesLevelSpecific;
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+SPoolSizes g_debugPoolSizes;
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
 char const* const CImpl::s_szEventPrefix = "event:/";
 char const* const CImpl::s_szSnapshotPrefix = "snapshot:/";
 char const* const CImpl::s_szBusPrefix = "bus:/";
 char const* const CImpl::s_szVcaPrefix = "vca:/";
 
 static constexpr size_t s_maxFileSize = size_t(1) << size_t(31);
+
+//////////////////////////////////////////////////////////////////////////
+void CountPoolSizes(XmlNodeRef const pNode, SPoolSizes& poolSizes)
+{
+	uint32 numTriggers = 0;
+	pNode->getAttr(s_szTriggersAttribute, numTriggers);
+	poolSizes.triggers += numTriggers;
+
+	uint32 numParameters = 0;
+	pNode->getAttr(s_szParametersAttribute, numParameters);
+	poolSizes.parameters += numParameters;
+
+	uint32 numSwitchStates = 0;
+	pNode->getAttr(s_szSwitchStatesAttribute, numSwitchStates);
+	poolSizes.switchStates += numSwitchStates;
+
+	uint32 numEnvBuses = 0;
+	pNode->getAttr(s_szEnvBusesAttribute, numEnvBuses);
+	poolSizes.envBuses += numEnvBuses;
+
+	uint32 numEnvParameters = 0;
+	pNode->getAttr(s_szEnvParametersAttribute, numEnvParameters);
+	poolSizes.envParameters += numEnvParameters;
+
+	uint32 numVcaParameters = 0;
+	pNode->getAttr(s_szVcaParametersAttribute, numVcaParameters);
+	poolSizes.vcaParameters += numVcaParameters;
+
+	uint32 numVcaStates = 0;
+	pNode->getAttr(s_szVcaStatesAttribute, numVcaStates);
+	poolSizes.vcaStates += numVcaStates;
+
+	uint32 numFiles = 0;
+	pNode->getAttr(s_szFilesAttribute, numFiles);
+	poolSizes.files += numFiles;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void AllocateMemoryPools(uint32 const objectPoolSize, uint32 const eventPoolSize)
+{
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod Object Pool");
+	CObject::CreateAllocator(objectPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod Event Pool");
+	CEvent::CreateAllocator(eventPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod Trigger Pool");
+	CTrigger::CreateAllocator(g_poolSizes.triggers);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod Parameter Pool");
+	CParameter::CreateAllocator(g_poolSizes.parameters);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod Switch State Pool");
+	CSwitchState::CreateAllocator(g_poolSizes.switchStates);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod Environment Bus Pool");
+	CEnvironmentBus::CreateAllocator(g_poolSizes.envBuses);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod Environment Parameter Pool");
+	CEnvironmentParameter::CreateAllocator(g_poolSizes.envParameters);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod VCA Parameter Pool");
+	CVcaParameter::CreateAllocator(g_poolSizes.vcaParameters);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod VCA State Pool");
+	CVcaState::CreateAllocator(g_poolSizes.vcaStates);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod File Pool");
+	CFile::CreateAllocator(g_poolSizes.files);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void FreeMemoryPools()
+{
+	CObject::FreeMemoryPool();
+	CEvent::FreeMemoryPool();
+	CTrigger::FreeMemoryPool();
+	CParameter::FreeMemoryPool();
+	CSwitchState::FreeMemoryPool();
+	CEnvironmentBus::FreeMemoryPool();
+	CEnvironmentParameter::FreeMemoryPool();
+	CVcaParameter::FreeMemoryPool();
+	CVcaState::FreeMemoryPool();
+	CFile::FreeMemoryPool();
+}
 
 ///////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
@@ -66,11 +160,7 @@ void CImpl::Update()
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSize)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod Object Pool");
-	CObject::CreateAllocator(objectPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod Event Pool");
-	CEvent::CreateAllocator(eventPoolSize);
+	AllocateMemoryPools(objectPoolSize, eventPoolSize);
 
 	m_regularSoundBankFolder = AUDIO_SYSTEM_DATA_ROOT;
 	m_regularSoundBankFolder += "/";
@@ -168,8 +258,68 @@ void CImpl::Release()
 	delete this;
 	g_cvars.UnregisterVariables();
 
-	CObject::FreeMemoryPool();
-	CEvent::FreeMemoryPool();
+	FreeMemoryPools();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific)
+{
+	if (isLevelSpecific)
+	{
+		SPoolSizes levelPoolSizes;
+		CountPoolSizes(pNode, levelPoolSizes);
+
+		g_poolSizesLevelSpecific.triggers = std::max(g_poolSizesLevelSpecific.triggers, levelPoolSizes.triggers);
+		g_poolSizesLevelSpecific.parameters = std::max(g_poolSizesLevelSpecific.parameters, levelPoolSizes.parameters);
+		g_poolSizesLevelSpecific.switchStates = std::max(g_poolSizesLevelSpecific.switchStates, levelPoolSizes.switchStates);
+		g_poolSizesLevelSpecific.envBuses = std::max(g_poolSizesLevelSpecific.envBuses, levelPoolSizes.envBuses);
+		g_poolSizesLevelSpecific.envParameters = std::max(g_poolSizesLevelSpecific.envParameters, levelPoolSizes.envParameters);
+		g_poolSizesLevelSpecific.vcaParameters = std::max(g_poolSizesLevelSpecific.vcaParameters, levelPoolSizes.vcaParameters);
+		g_poolSizesLevelSpecific.vcaStates = std::max(g_poolSizesLevelSpecific.vcaStates, levelPoolSizes.vcaStates);
+		g_poolSizesLevelSpecific.files = std::max(g_poolSizesLevelSpecific.files, levelPoolSizes.files);
+	}
+	else
+	{
+		CountPoolSizes(pNode, g_poolSizes);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnBeforeLibraryDataChanged()
+{
+	ZeroStruct(g_poolSizes);
+	ZeroStruct(g_poolSizesLevelSpecific);
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	ZeroStruct(g_debugPoolSizes);
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnAfterLibraryDataChanged()
+{
+	g_poolSizes.triggers += g_poolSizesLevelSpecific.triggers;
+	g_poolSizes.parameters += g_poolSizesLevelSpecific.parameters;
+	g_poolSizes.switchStates += g_poolSizesLevelSpecific.switchStates;
+	g_poolSizes.envBuses += g_poolSizesLevelSpecific.envBuses;
+	g_poolSizes.envParameters += g_poolSizesLevelSpecific.envParameters;
+	g_poolSizes.vcaParameters += g_poolSizesLevelSpecific.vcaParameters;
+	g_poolSizes.vcaStates += g_poolSizesLevelSpecific.vcaStates;
+	g_poolSizes.files += g_poolSizesLevelSpecific.files;
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	// Used to hide pools without allocations in debug draw.
+	g_debugPoolSizes = g_poolSizes;
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
+	g_poolSizes.triggers = std::max<uint32>(1, g_poolSizes.triggers);
+	g_poolSizes.parameters = std::max<uint32>(1, g_poolSizes.parameters);
+	g_poolSizes.switchStates = std::max<uint32>(1, g_poolSizes.switchStates);
+	g_poolSizes.envBuses = std::max<uint32>(1, g_poolSizes.envBuses);
+	g_poolSizes.envParameters = std::max<uint32>(1, g_poolSizes.envParameters);
+	g_poolSizes.vcaParameters = std::max<uint32>(1, g_poolSizes.vcaParameters);
+	g_poolSizes.vcaStates = std::max<uint32>(1, g_poolSizes.vcaStates);
+	g_poolSizes.files = std::max<uint32>(1, g_poolSizes.files);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -646,7 +796,7 @@ void CImpl::DestructTrigger(ITrigger const* const pITrigger)
 ///////////////////////////////////////////////////////////////////////////
 IParameter const* CImpl::ConstructParameter(XmlNodeRef const pRootNode)
 {
-	CParameter* pParameter = nullptr;
+	IParameter* pIParameter = nullptr;
 	char const* const szTag = pRootNode->getTag();
 
 	if (_stricmp(szTag, s_szParameterTag) == 0)
@@ -657,7 +807,7 @@ IParameter const* CImpl::ConstructParameter(XmlNodeRef const pRootNode)
 		pRootNode->getAttr(s_szMutiplierAttribute, multiplier);
 		pRootNode->getAttr(s_szShiftAttribute, shift);
 
-		pParameter = new CParameter(StringToId(szName), multiplier, shift, szName, EParameterType::Parameter);
+		pIParameter = static_cast<IParameter*>(new CParameter(StringToId(szName), multiplier, shift));
 	}
 	else if (_stricmp(szTag, s_szVcaTag) == 0)
 	{
@@ -677,7 +827,7 @@ IParameter const* CImpl::ConstructParameter(XmlNodeRef const pRootNode)
 			pRootNode->getAttr(s_szMutiplierAttribute, multiplier);
 			pRootNode->getAttr(s_szShiftAttribute, shift);
 
-			pParameter = new CVcaParameter(StringToId(fullName.c_str()), multiplier, shift, szName, pVca);
+			pIParameter = static_cast<IParameter*>(new CVcaParameter(StringToId(fullName.c_str()), multiplier, shift, pVca));
 		}
 		else
 		{
@@ -689,13 +839,13 @@ IParameter const* CImpl::ConstructParameter(XmlNodeRef const pRootNode)
 		Cry::Audio::Log(ELogType::Warning, "Unknown Fmod tag: %s", szTag);
 	}
 
-	return static_cast<IParameter*>(pParameter);
+	return pIParameter;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructParameter(IParameter const* const pIParameter)
 {
-	auto const pParameter = static_cast<CParameter const*>(pIParameter);
+	auto const pParameter = static_cast<CBaseParameter const*>(pIParameter);
 
 	for (auto const pObject : m_constructedObjects)
 	{
@@ -708,7 +858,7 @@ void CImpl::DestructParameter(IParameter const* const pIParameter)
 ///////////////////////////////////////////////////////////////////////////
 ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
 {
-	CSwitchState* pSwitchState = nullptr;
+	ISwitchState* pISwitchState = nullptr;
 	char const* const szTag = pRootNode->getTag();
 
 	if (_stricmp(szTag, s_szParameterTag) == 0)
@@ -716,7 +866,7 @@ ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
 		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
 		char const* const szValue = pRootNode->getAttr(s_szValueAttribute);
 		float const value = static_cast<float>(atof(szValue));
-		pSwitchState = new CSwitchState(StringToId(szName), value, szName, EStateType::State);
+		pISwitchState = static_cast<ISwitchState*>(new CSwitchState(StringToId(szName), value));
 	}
 	else if (_stricmp(szTag, s_szVcaTag) == 0)
 	{
@@ -734,7 +884,7 @@ ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
 			char const* const szValue = pRootNode->getAttr(s_szValueAttribute);
 			float const value = static_cast<float>(atof(szValue));
 
-			pSwitchState = new CVcaState(StringToId(fullName.c_str()), value, szName, pVca);
+			pISwitchState = static_cast<ISwitchState*>(new CVcaState(StringToId(fullName.c_str()), value, pVca));
 		}
 		else
 		{
@@ -746,13 +896,13 @@ ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
 		Cry::Audio::Log(ELogType::Warning, "Unknown Fmod tag: %s", szTag);
 	}
 
-	return static_cast<ISwitchState*>(pSwitchState);
+	return pISwitchState;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructSwitchState(ISwitchState const* const pISwitchState)
 {
-	auto const pSwitchState = static_cast<CSwitchState const*>(pISwitchState);
+	auto const pSwitchState = static_cast<CBaseSwitchState const*>(pISwitchState);
 
 	for (auto const pObject : m_constructedObjects)
 	{
@@ -856,28 +1006,28 @@ void CImpl::SetLanguage(char const* const szLanguage)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::CreateVersionString(CryFixedStringT<MaxInfoStringLength>& stringOut) const
+void CImpl::CreateVersionString(CryFixedStringT<MaxInfoStringLength>& string) const
 {
 	// Remove the leading zeros on the upper 16 bit and inject the 2 dots between the 3 groups
-	size_t const stringLength = stringOut.size();
+	size_t const stringLength = string.size();
 	for (size_t i = 0; i < stringLength; ++i)
 	{
-		if (stringOut.c_str()[0] == '0')
+		if (string.c_str()[0] == '0')
 		{
-			stringOut.erase(0, 1);
+			string.erase(0, 1);
 		}
 		else
 		{
 			if (i < 4)
 			{
-				stringOut.insert(4 - i, '.'); // First dot
-				stringOut.insert(7 - i, '.'); // Second dot
+				string.insert(4 - i, '.'); // First dot
+				string.insert(7 - i, '.'); // Second dot
 				break;
 			}
 			else
 			{
 				// This shouldn't happen therefore clear the string and back out
-				stringOut.clear();
+				string.clear();
 				return;
 			}
 		}
@@ -1181,83 +1331,142 @@ void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
 }
 
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-///////////////////////////////////////////////////////////////////////////
-void GetMemoryInfo(SMemoryInfo& memoryInfo)
+//////////////////////////////////////////////////////////////////////////
+void DrawMemoryPoolInfo(
+	IRenderAuxGeom& auxGeom,
+	float const posX,
+	float& posY,
+	stl::SPoolMemoryUsage const& mem,
+	stl::SMemoryUsage const& pool,
+	char const* const szType)
 {
-	CryModuleMemoryInfo memInfo;
-	ZeroStruct(memInfo);
-	CryGetMemoryInfoForModule(&memInfo);
+	CryFixedStringT<MaxMiscStringLength> memUsedString;
 
-	memoryInfo.totalMemory = static_cast<size_t>(memInfo.allocated - memInfo.freed);
-
-	#if defined(PROVIDE_FMOD_IMPL_SECONDARY_POOL)
-	memoryInfo.secondaryPoolSize = g_audioImplMemoryPoolSecondary.MemSize();
-	memoryInfo.secondaryPoolUsedSize = memoryInfo.secondaryPoolSize - g_audioImplMemoryPoolSecondary.MemFree();
-	memoryInfo.secondaryPoolAllocations = g_audioImplMemoryPoolSecondary.FragmentCount();
-	#else
-	memoryInfo.secondaryPoolSize = 0;
-	memoryInfo.secondaryPoolUsedSize = 0;
-	memoryInfo.secondaryPoolAllocations = 0;
-	#endif // PROVIDE_FMOD_IMPL_SECONDARY_POOL
-
+	if (mem.nUsed < 1024)
 	{
-		auto& allocator = CObject::GetAllocator();
-		auto mem = allocator.GetTotalMemory();
-		auto pool = allocator.GetCounts();
-		memoryInfo.poolUsedObjects = pool.nUsed;
-		memoryInfo.poolConstructedObjects = pool.nAlloc;
-		memoryInfo.poolUsedMemory = mem.nUsed;
-		memoryInfo.poolAllocatedMemory = mem.nAlloc;
+		memUsedString.Format("%" PRISIZE_T " Byte", mem.nUsed);
+	}
+	else
+	{
+		memUsedString.Format("%" PRISIZE_T " KiB", mem.nUsed >> 10);
 	}
 
+	CryFixedStringT<MaxMiscStringLength> memAllocString;
+
+	if (mem.nAlloc < 1024)
 	{
-		auto& allocator = CEvent::GetAllocator();
-		auto mem = allocator.GetTotalMemory();
-		auto pool = allocator.GetCounts();
-		memoryInfo.poolUsedObjects += pool.nUsed;
-		memoryInfo.poolConstructedObjects += pool.nAlloc;
-		memoryInfo.poolUsedMemory += mem.nUsed;
-		memoryInfo.poolAllocatedMemory += mem.nAlloc;
+		memAllocString.Format("%" PRISIZE_T " Byte", mem.nAlloc);
 	}
+	else
+	{
+		memAllocString.Format("%" PRISIZE_T " KiB", mem.nAlloc >> 10);
+	}
+
+	posY += g_debugSystemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false,
+	                    "[%s] In Use: %" PRISIZE_T " | Constructed: %" PRISIZE_T " (%s) | Memory Pool: %s",
+	                    szType, pool.nUsed, pool.nAlloc, memUsedString.c_str(), memAllocString.c_str());
 }
 #endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY)
+void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo)
 {
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemHeaderFontSize, g_debugSystemColorHeader.data(), false, m_name.c_str());
+	CryModuleMemoryInfo memInfo;
+	ZeroStruct(memInfo);
+	CryGetMemoryInfoForModule(&memInfo);
 
-	SMemoryInfo memoryInfo;
-	GetMemoryInfo(memoryInfo);
-	memoryInfo.totalMemory += m_masterBankSize + m_masterStringsBankSize + m_masterAssetsBankSize;
+	CryFixedStringT<MaxMiscStringLength> memInfoString;
+	auto const memAlloc = static_cast<uint32>(memInfo.allocated - memInfo.freed);
 
-	posY += g_debugSystemLineHeightClause;
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Total Memory Used: %uKiB | Secondary Memory: %.2f / %.2f MiB | NumAllocs: %d",
-	                    static_cast<uint32>(memoryInfo.totalMemory / 1024),
-	                    (memoryInfo.secondaryPoolUsedSize / 1024) / 1024.0f,
-	                    (memoryInfo.secondaryPoolSize / 1024) / 1024.0f,
-	                    static_cast<int>(memoryInfo.secondaryPoolAllocations));
-
-	posY += g_debugSystemLineHeight;
-
-	if (m_pMasterAssetsBank != nullptr)
+	if (memAlloc < 1024)
 	{
-		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Master Bank: %uKiB | Master Strings Bank: %uKiB | Master Assets Bank: %uKiB",
-		                    static_cast<uint32>(m_masterBankSize / 1024),
-		                    static_cast<uint32>(m_masterStringsBankSize / 1024),
-		                    static_cast<uint32>(m_masterAssetsBankSize / 1024));
+		memInfoString.Format("%s (Total Memory: %u Byte)", m_name.c_str(), memAlloc);
 	}
 	else
 	{
-		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Master Bank: %uKiB | Master Strings Bank: %uKiB",
-		                    static_cast<uint32>(m_masterBankSize / 1024),
-		                    static_cast<uint32>(m_masterStringsBankSize / 1024));
+		memInfoString.Format("%s (Total Memory: %u KiB)", m_name.c_str(), memAlloc >> 10);
 	}
 
-	posY += g_debugSystemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "[Object Pool] In Use: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB",
-	                    memoryInfo.poolUsedObjects, memoryInfo.poolConstructedObjects, memoryInfo.poolUsedMemory, memoryInfo.poolAllocatedMemory);
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemHeaderFontSize, g_debugSystemColorHeader.data(), false, memInfoString.c_str());
+
+	if (showDetailedInfo)
+	{
+		posY += g_debugSystemLineHeight;
+
+		if (m_pMasterAssetsBank != nullptr)
+		{
+			auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Master Bank: %uKiB | Master Strings Bank: %uKiB | Master Assets Bank: %uKiB",
+			                    static_cast<uint32>(m_masterBankSize / 1024),
+			                    static_cast<uint32>(m_masterStringsBankSize / 1024),
+			                    static_cast<uint32>(m_masterAssetsBankSize / 1024));
+		}
+		else
+		{
+			auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Master Bank: %uKiB | Master Strings Bank: %uKiB",
+			                    static_cast<uint32>(m_masterBankSize / 1024),
+			                    static_cast<uint32>(m_masterStringsBankSize / 1024));
+		}
+
+		{
+			auto& allocator = CObject::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Objects");
+		}
+
+		{
+			auto& allocator = CEvent::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Events");
+		}
+
+		if (g_debugPoolSizes.triggers > 0)
+		{
+			auto& allocator = CTrigger::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Triggers");
+		}
+
+		if (g_debugPoolSizes.parameters > 0)
+		{
+			auto& allocator = CParameter::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Parameters");
+		}
+
+		if (g_debugPoolSizes.switchStates > 0)
+		{
+			auto& allocator = CSwitchState::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "SwitchStates");
+		}
+
+		if (g_debugPoolSizes.envBuses > 0)
+		{
+			auto& allocator = CEnvironmentBus::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "EnvironmentBuses");
+		}
+
+		if (g_debugPoolSizes.envParameters > 0)
+		{
+			auto& allocator = CEnvironmentParameter::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "EnvironmentParameters");
+		}
+
+		if (g_debugPoolSizes.vcaParameters > 0)
+		{
+			auto& allocator = CVcaParameter::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "VCAParameters");
+		}
+
+		if (g_debugPoolSizes.vcaStates > 0)
+		{
+			auto& allocator = CVcaState::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "VCAStates");
+		}
+
+		if (g_debugPoolSizes.files > 0)
+		{
+			auto& allocator = CFile::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Files");
+		}
+	}
 
 	if (g_numObjectsWithDoppler > 0)
 	{

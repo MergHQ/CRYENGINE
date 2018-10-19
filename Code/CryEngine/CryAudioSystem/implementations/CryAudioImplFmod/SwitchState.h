@@ -2,7 +2,8 @@
 
 #pragma once
 
-#include <ATLEntityData.h>
+#include "BaseSwitchState.h"
+#include <PoolObject.h>
 
 namespace CryAudio
 {
@@ -10,14 +11,7 @@ namespace Impl
 {
 namespace Fmod
 {
-enum class EStateType : EnumFlagsType
-{
-	None,
-	State,
-	VCA,
-};
-
-class CSwitchState : public ISwitchState
+class CSwitchState final : public CBaseSwitchState, public CPoolObject<CSwitchState, stl::PSyncNone>
 {
 public:
 
@@ -27,25 +21,8 @@ public:
 	CSwitchState& operator=(CSwitchState const&) = delete;
 	CSwitchState& operator=(CSwitchState&&) = delete;
 
-	explicit CSwitchState(
-		uint32 const id,
-		float const value,
-		char const* const szName,
-		EStateType const type);
-
+	explicit CSwitchState(uint32 const id, float const value);
 	virtual ~CSwitchState() override = default;
-
-	uint32                                       GetId() const    { return m_id; }
-	float                                        GetValue() const { return m_value; }
-	EStateType                                   GetType() const  { return m_type; }
-	CryFixedStringT<MaxControlNameLength> const& GetName() const  { return m_name; }
-
-private:
-
-	uint32 const                                m_id;
-	float const                                 m_value;
-	EStateType const                            m_type;
-	CryFixedStringT<MaxControlNameLength> const m_name;
 };
 } // namespace Fmod
 } // namespace Impl

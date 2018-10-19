@@ -35,6 +35,58 @@ namespace Impl
 {
 namespace SDL_mixer
 {
+SPoolSizes g_poolSizes;
+SPoolSizes g_poolSizesLevelSpecific;
+
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+SPoolSizes g_debugPoolSizes;
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+
+//////////////////////////////////////////////////////////////////////////
+void CountPoolSizes(XmlNodeRef const pNode, SPoolSizes& poolSizes)
+{
+	uint32 numTriggers = 0;
+	pNode->getAttr(s_szTriggersAttribute, numTriggers);
+	poolSizes.triggers += numTriggers;
+
+	uint32 numParameters = 0;
+	pNode->getAttr(s_szParametersAttribute, numParameters);
+	poolSizes.parameters += numParameters;
+
+	uint32 numSwitchStates = 0;
+	pNode->getAttr(s_szSwitchStatesAttribute, numSwitchStates);
+	poolSizes.switchStates += numSwitchStates;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void AllocateMemoryPools(uint32 const objectPoolSize, uint32 const eventPoolSize)
+{
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "SDL Mixer Object Pool");
+	CObject::CreateAllocator(objectPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "SDL Mixer Event Pool");
+	CEvent::CreateAllocator(eventPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "SDL Mixer Trigger Pool");
+	CTrigger::CreateAllocator(g_poolSizes.triggers);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "SDL Mixer Parameter Pool");
+	CParameter::CreateAllocator(g_poolSizes.parameters);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "SDL Mixer Switch State Pool");
+	CSwitchState::CreateAllocator(g_poolSizes.switchStates);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void FreeMemoryPools()
+{
+	CObject::FreeMemoryPool();
+	CEvent::FreeMemoryPool();
+	CTrigger::FreeMemoryPool();
+	CParameter::FreeMemoryPool();
+	CSwitchState::FreeMemoryPool();
+}
+
 //////////////////////////////////////////////////////////////////////////
 string GetFullFilePath(char const* const szFileName, char const* const szPath)
 {
@@ -98,11 +150,7 @@ void CImpl::Update()
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSize)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "SDL Mixer Object Pool");
-	CObject::CreateAllocator(objectPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "SDL Mixer Event Pool");
-	CEvent::CreateAllocator(eventPoolSize);
+	AllocateMemoryPools(objectPoolSize, eventPoolSize);
 
 	m_pCVarFileExtension = REGISTER_STRING("s_SDLMixerStandaloneFileExtension", ".mp3", 0, "the expected file extension for standalone files, played via the sdl_mixer");
 
@@ -140,14 +188,59 @@ void CImpl::Release()
 	delete this;
 	g_cvars.UnregisterVariables();
 
-	CObject::FreeMemoryPool();
-	CEvent::FreeMemoryPool();
+	FreeMemoryPools();
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::OnRefresh()
 {
 	SoundEngine::Refresh();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific)
+{
+	if (isLevelSpecific)
+	{
+		SPoolSizes levelPoolSizes;
+		CountPoolSizes(pNode, levelPoolSizes);
+
+		g_poolSizesLevelSpecific.triggers = std::max(g_poolSizesLevelSpecific.triggers, levelPoolSizes.triggers);
+		g_poolSizesLevelSpecific.parameters = std::max(g_poolSizesLevelSpecific.parameters, levelPoolSizes.parameters);
+		g_poolSizesLevelSpecific.switchStates = std::max(g_poolSizesLevelSpecific.switchStates, levelPoolSizes.switchStates);
+	}
+	else
+	{
+		CountPoolSizes(pNode, g_poolSizes);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnBeforeLibraryDataChanged()
+{
+	ZeroStruct(g_poolSizes);
+	ZeroStruct(g_poolSizesLevelSpecific);
+
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+	ZeroStruct(g_debugPoolSizes);
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnAfterLibraryDataChanged()
+{
+	g_poolSizes.triggers += g_poolSizesLevelSpecific.triggers;
+	g_poolSizes.parameters += g_poolSizesLevelSpecific.parameters;
+	g_poolSizes.switchStates += g_poolSizesLevelSpecific.switchStates;
+
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+	// Used to hide pools without allocations in debug draw.
+	g_debugPoolSizes = g_poolSizes;
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+
+	g_poolSizes.triggers = std::max<uint32>(1, g_poolSizes.triggers);
+	g_poolSizes.parameters = std::max<uint32>(1, g_poolSizes.parameters);
+	g_poolSizes.switchStates = std::max<uint32>(1, g_poolSizes.switchStates);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -672,53 +765,96 @@ void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
 }
 
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
-///////////////////////////////////////////////////////////////////////////
-void GetMemoryInfo(SMemoryInfo& memoryInfo)
+//////////////////////////////////////////////////////////////////////////
+void DrawMemoryPoolInfo(
+	IRenderAuxGeom& auxGeom,
+	float const posX,
+	float& posY,
+	stl::SPoolMemoryUsage const& mem,
+	stl::SMemoryUsage const& pool,
+	char const* const szType)
 {
-	CryModuleMemoryInfo memInfo;
-	ZeroStruct(memInfo);
-	CryGetMemoryInfoForModule(&memInfo);
+	CryFixedStringT<MaxMiscStringLength> memUsedString;
 
-	memoryInfo.totalMemory = static_cast<size_t>(memInfo.allocated - memInfo.freed);
-
+	if (mem.nUsed < 1024)
 	{
-		auto& allocator = CObject::GetAllocator();
-		auto mem = allocator.GetTotalMemory();
-		auto pool = allocator.GetCounts();
-		memoryInfo.poolUsedObjects = pool.nUsed;
-		memoryInfo.poolConstructedObjects = pool.nAlloc;
-		memoryInfo.poolUsedMemory = mem.nUsed;
-		memoryInfo.poolAllocatedMemory = mem.nAlloc;
+		memUsedString.Format("%" PRISIZE_T " Byte", mem.nUsed);
+	}
+	else
+	{
+		memUsedString.Format("%" PRISIZE_T " KiB", mem.nUsed >> 10);
 	}
 
+	CryFixedStringT<MaxMiscStringLength> memAllocString;
+
+	if (mem.nAlloc < 1024)
 	{
-		auto& allocator = CEvent::GetAllocator();
-		auto mem = allocator.GetTotalMemory();
-		auto pool = allocator.GetCounts();
-		memoryInfo.poolUsedObjects += pool.nUsed;
-		memoryInfo.poolConstructedObjects += pool.nAlloc;
-		memoryInfo.poolUsedMemory += mem.nUsed;
-		memoryInfo.poolAllocatedMemory += mem.nAlloc;
+		memAllocString.Format("%" PRISIZE_T " Byte", mem.nAlloc);
 	}
+	else
+	{
+		memAllocString.Format("%" PRISIZE_T " KiB", mem.nAlloc >> 10);
+	}
+
+	posY += g_debugSystemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false,
+	                    "[%s] In Use: %" PRISIZE_T " | Constructed: %" PRISIZE_T " (%s) | Memory Pool: %s",
+	                    szType, pool.nUsed, pool.nAlloc, memUsedString.c_str(), memAllocString.c_str());
 }
 #endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY)
+void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo)
 {
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemHeaderFontSize, g_debugSystemColorHeader.data(), false, m_name.c_str());
+	CryModuleMemoryInfo memInfo;
+	ZeroStruct(memInfo);
+	CryGetMemoryInfoForModule(&memInfo);
 
-	SMemoryInfo memoryInfo;
-	GetMemoryInfo(memoryInfo);
+	CryFixedStringT<MaxMiscStringLength> memInfoString;
+	auto const memAlloc = static_cast<uint32>(memInfo.allocated - memInfo.freed);
 
-	posY += g_debugSystemLineHeightClause;
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Total Memory Used: %uKiB",
-	                    static_cast<uint32>(memoryInfo.totalMemory / 1024));
+	if (memAlloc < 1024)
+	{
+		memInfoString.Format("%s (Total Memory: %u Byte)", m_name.c_str(), memAlloc);
+	}
+	else
+	{
+		memInfoString.Format("%s (Total Memory: %u KiB)", m_name.c_str(), memAlloc >> 10);
+	}
 
-	posY += g_debugSystemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "[Object Pool] In Use: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB",
-	                    memoryInfo.poolUsedObjects, memoryInfo.poolConstructedObjects, memoryInfo.poolUsedMemory, memoryInfo.poolAllocatedMemory);
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemHeaderFontSize, g_debugSystemColorHeader.data(), false, memInfoString.c_str());
+
+	if (showDetailedInfo)
+	{
+		{
+			auto& allocator = CObject::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Objects");
+		}
+
+		{
+			auto& allocator = CEvent::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Events");
+		}
+
+		if (g_debugPoolSizes.triggers > 0)
+		{
+			auto& allocator = CTrigger::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Triggers");
+		}
+
+		if (g_debugPoolSizes.parameters > 0)
+		{
+			auto& allocator = CParameter::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Parameters");
+		}
+
+		if (g_debugPoolSizes.switchStates > 0)
+		{
+			auto& allocator = CSwitchState::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "SwitchStates");
+		}
+	}
 
 	Vec3 const& listenerPosition = g_pListener->GetTransformation().GetPosition();
 	Vec3 const& listenerDirection = g_pListener->GetTransformation().GetForward();

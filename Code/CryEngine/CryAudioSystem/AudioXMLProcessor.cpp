@@ -12,7 +12,7 @@
 namespace CryAudio
 {
 //////////////////////////////////////////////////////////////////////////
-void ParseSystemDataFile(char const* const szFolderPath, SPoolSizes& poolSizesout)
+void ParseSystemDataFile(char const* const szFolderPath, SPoolSizes& poolSizesout, bool const isLevelSpecific)
 {
 	CryFixedStringT<MaxFilePathLength> rootFolderPath(szFolderPath);
 	rootFolderPath.TrimRight(R"(/\)");
@@ -36,9 +36,9 @@ void ParseSystemDataFile(char const* const szFolderPath, SPoolSizes& poolSizesou
 			{
 				if (_stricmp(pRootNode->getTag(), s_szRootNodeTag) == 0)
 				{
-					uint32 numtriggers = 0;
-					pRootNode->getAttr(s_szNumTriggersAttribute, numtriggers);
-					poolSizesout.triggers += numtriggers;
+					uint32 numTriggers = 0;
+					pRootNode->getAttr(s_szNumTriggersAttribute, numTriggers);
+					poolSizesout.triggers += numTriggers;
 
 					uint32 numParameters = 0;
 					pRootNode->getAttr(s_szNumParametersAttribute, numParameters);
@@ -88,6 +88,13 @@ void ParseSystemDataFile(char const* const szFolderPath, SPoolSizes& poolSizesou
 					pRootNode->getAttr(s_szNumSettingConnectionsAttribute, numSettingConnections);
 					poolSizesout.settingConnections += numSettingConnections;
 				}
+
+				XmlNodeRef const pImplDataNode = pRootNode->findChild(s_szImplDataNodeTag);
+
+				if (pImplDataNode != nullptr)
+				{
+					g_pIImpl->SetLibraryData(pImplDataNode, isLevelSpecific);
+				}
 			}
 		}
 		while (gEnv->pCryPak->FindNext(handle, &fd) >= 0);
@@ -119,7 +126,7 @@ void ParseLevelSpecificSystemData(char const* const szFolderPath, SPoolSizes& po
 					char const* const szSubFolderName = levelsFolderPath + szName;
 					SPoolSizes levelPoolSizes;
 
-					ParseSystemDataFile(szSubFolderName, levelPoolSizes);
+					ParseSystemDataFile(szSubFolderName, levelPoolSizes, true);
 
 					poolSizesOut.triggers = std::max(poolSizesOut.triggers, levelPoolSizes.triggers);
 					poolSizesOut.parameters = std::max(poolSizesOut.parameters, levelPoolSizes.parameters);
@@ -149,11 +156,12 @@ void CAudioXMLProcessor::ParseSystemData()
 {
 	ZeroStruct(g_poolSizes);
 
+	g_pIImpl->OnBeforeLibraryDataChanged();
 	g_pIImpl->GetInfo(g_implInfo);
 	g_configPath = AUDIO_SYSTEM_DATA_ROOT "/";
 	g_configPath += (g_implInfo.folderName + "/" + s_szConfigFolderName + "/").c_str();
 
-	ParseSystemDataFile(g_configPath.c_str(), g_poolSizes);
+	ParseSystemDataFile(g_configPath.c_str(), g_poolSizes, false);
 
 	// For level specific controls, we take the highest amount of any scope,
 	// to avoid reallocating when the scope changes.
@@ -196,6 +204,8 @@ void CAudioXMLProcessor::ParseSystemData()
 	g_poolSizes.environmentConnections = std::max<uint32>(1, g_poolSizes.environmentConnections);
 	g_poolSizes.preloadConnections = std::max<uint32>(1, g_poolSizes.preloadConnections);
 	g_poolSizes.settingConnections = std::max<uint32>(1, g_poolSizes.settingConnections);
+
+	g_pIImpl->OnAfterLibraryDataChanged();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -306,10 +316,11 @@ void CAudioXMLProcessor::ParseControlsFile(XmlNodeRef const pRootNode, EDataScop
 			{
 				ParseSettings(pChildNode, dataScope);
 			}
-			else if (_stricmp(szChildNodeTag, s_szPreloadsNodeTag) == 0 ||
-			         _stricmp(szChildNodeTag, s_szEditorDataTag) == 0)
+			else if ((_stricmp(szChildNodeTag, s_szImplDataNodeTag) == 0) ||
+			         (_stricmp(szChildNodeTag, s_szPreloadsNodeTag) == 0) ||
+			         (_stricmp(szChildNodeTag, s_szEditorDataTag) == 0))
 			{
-				// This tag is valid but ignored here.
+				// These tags are valid but ignored here.
 			}
 			else
 			{
@@ -337,7 +348,8 @@ void CAudioXMLProcessor::ParseDefaultControlsFile(XmlNodeRef const pRootNode)
 			{
 				ParseDefaultTriggers(pChildNode);
 			}
-			else if ((_stricmp(childNodeTag, s_szParametersNodeTag) == 0) ||
+			else if ((_stricmp(childNodeTag, s_szImplDataNodeTag) == 0) ||
+			         (_stricmp(childNodeTag, s_szParametersNodeTag) == 0) ||
 			         (_stricmp(childNodeTag, s_szSwitchesNodeTag) == 0) ||
 			         (_stricmp(childNodeTag, s_szEnvironmentsNodeTag) == 0) ||
 			         (_stricmp(childNodeTag, s_szPreloadsNodeTag) == 0) ||
@@ -414,7 +426,8 @@ void CAudioXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EData
 										ParsePreloads(pChildNode, dataScope, nullptr, versionNumber);
 									}
 								}
-								else if (_stricmp(szChildNodeTag, s_szTriggersNodeTag) == 0 ||
+								else if (_stricmp(szChildNodeTag, s_szImplDataNodeTag) == 0 ||
+								         _stricmp(szChildNodeTag, s_szTriggersNodeTag) == 0 ||
 								         _stricmp(szChildNodeTag, s_szParametersNodeTag) == 0 ||
 								         _stricmp(szChildNodeTag, s_szSwitchesNodeTag) == 0 ||
 								         _stricmp(szChildNodeTag, s_szEnvironmentsNodeTag) == 0 ||

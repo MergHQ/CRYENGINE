@@ -10,15 +10,8 @@ namespace Impl
 namespace Fmod
 {
 //////////////////////////////////////////////////////////////////////////
-CSwitchState::CSwitchState(
-	uint32 const id,
-	float const value,
-	char const* const szName,
-	EStateType const type)
-	: m_id(id)
-	, m_value(value)
-	, m_name(szName)
-	, m_type(type)
+CSwitchState::CSwitchState(uint32 const id, float const value)
+	: CBaseSwitchState(id, value, EStateType::State)
 {
 }
 } // namespace Fmod

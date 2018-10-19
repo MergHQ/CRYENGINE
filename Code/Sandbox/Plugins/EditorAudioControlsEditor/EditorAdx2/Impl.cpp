@@ -129,6 +129,69 @@ char const* TypeToTag(EItemType const type)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CountConnections(EAssetType const assetType, EItemType const itemType)
+{
+	switch (itemType)
+	{
+	case EItemType::Cue: // Intentional fall-through.
+	case EItemType::Snapshot:
+		{
+			++g_connections.triggers;
+			break;
+		}
+	case EItemType::AisacControl: // Intentional fall-through.
+	case EItemType::Category:     // Intentional fall-through.
+	case EItemType::GameVariable:
+		{
+			switch (assetType)
+			{
+			case EAssetType::Parameter:
+				{
+					++g_connections.parameters;
+					break;
+				}
+			case EAssetType::State:
+				{
+					++g_connections.switchStates;
+					break;
+				}
+			case EAssetType::Environment:
+				{
+					++g_connections.environments;
+					break;
+				}
+			default:
+				break;
+			}
+
+			break;
+		}
+	case EItemType::SelectorLabel:
+		{
+			++g_connections.switchStates;
+			break;
+		}
+	case EItemType::Bus:
+		{
+			++g_connections.environments;
+			break;
+		}
+	case EItemType::DspBusSetting:
+		{
+			++g_connections.settings;
+			break;
+		}
+	case EItemType::Binary:
+		{
+			++g_connections.files;
+			break;
+		}
+	default:
+		break;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 CItem* SearchForItem(CItem* const pItem, string const& name, EItemType const type, string const& cuesheetName)
 {
 	CItem* pSearchedItem = nullptr;
@@ -698,6 +761,63 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 			}
 			break;
 		}
+
+		CountConnections(assetType, type);
+	}
+
+	return pNode;
+}
+
+//////////////////////////////////////////////////////////////////////////
+XmlNodeRef CImpl::SetDataNode(char const* const szTag)
+{
+	XmlNodeRef pNode = GetISystem()->CreateXmlNode(szTag);
+	bool hasConnections = false;
+
+	if (g_connections.triggers > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::Adx2::s_szTriggersAttribute, g_connections.triggers);
+		hasConnections = true;
+	}
+
+	if (g_connections.parameters > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::Adx2::s_szParametersAttribute, g_connections.parameters);
+		hasConnections = true;
+	}
+
+	if (g_connections.switchStates > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::Adx2::s_szSwitchStatesAttribute, g_connections.switchStates);
+		hasConnections = true;
+	}
+
+	if (g_connections.environments > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::Adx2::s_szEnvironmentsAttribute, g_connections.environments);
+		hasConnections = true;
+	}
+
+	if (g_connections.settings > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::Adx2::s_szSettingsAttribute, g_connections.settings);
+		hasConnections = true;
+	}
+
+	if (g_connections.files > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::Adx2::s_szFilesAttribute, g_connections.files);
+		hasConnections = true;
+	}
+
+	if (!hasConnections)
+	{
+		pNode = nullptr;
+	}
+	else
+	{
+		// Reset connection count for next library.
+		ZeroStruct(g_connections);
 	}
 
 	return pNode;

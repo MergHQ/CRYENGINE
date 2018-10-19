@@ -32,6 +32,14 @@ static constexpr char const* s_szShiftAttribute = "value_shift";
 static constexpr char const* s_szLocalizedAttribute = "localized";
 static constexpr char const* s_szTimeAttribute = "time";
 
+// XML attributes for impl data node
+static constexpr char const* s_szTriggersAttribute = "triggers";
+static constexpr char const* s_szParametersAttribute = "parameters";
+static constexpr char const* s_szSwitchStatesAttribute = "switchstates";
+static constexpr char const* s_szEnvironmentsAttribute = "environments";
+static constexpr char const* s_szSettingsAttribute = "settings";
+static constexpr char const* s_szFilesAttribute = "files";
+
 // XML values
 static constexpr char const* s_szTrueValue = "true";
 static constexpr char const* s_szStopValue = "stop";
@@ -50,6 +58,16 @@ struct STriggerInfo final : public ITriggerInfo
 {
 	CryFixedStringT<MaxControlNameLength> name;
 	CryFixedStringT<MaxControlNameLength> cueSheet;
+};
+
+struct SPoolSizes final
+{
+	uint32 triggers = 0;
+	uint32 parameters = 0;
+	uint32 switchStates = 0;
+	uint32 environments = 0;
+	uint32 settings = 0;
+	uint32 files = 0;
 };
 } // namespace Adx2
 } // namespace Impl

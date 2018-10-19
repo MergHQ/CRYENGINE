@@ -27,6 +27,31 @@ constexpr uint32 g_parameterConnectionPoolSize = 256;
 constexpr uint32 g_stateConnectionPoolSize = 256;
 
 //////////////////////////////////////////////////////////////////////////
+void CountConnections(EAssetType const assetType)
+{
+	switch (assetType)
+	{
+	case EAssetType::Trigger:
+		{
+			++g_connections.triggers;
+			break;
+		}
+	case EAssetType::Parameter:
+		{
+			++g_connections.parameters;
+			break;
+		}
+	case EAssetType::State:
+		{
+			++g_connections.switchStates;
+			break;
+		}
+	default:
+		break;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
 	: m_pDataPanel(nullptr)
 	, m_assetAndProjectPath(AUDIO_SYSTEM_DATA_ROOT "/" +
@@ -505,6 +530,44 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 			}
 			break;
 		}
+		CountConnections(assetType);
+	}
+
+	return pNode;
+}
+
+//////////////////////////////////////////////////////////////////////////
+XmlNodeRef CImpl::SetDataNode(char const* const szTag)
+{
+	XmlNodeRef pNode = GetISystem()->CreateXmlNode(szTag);
+	bool hasConnections = false;
+
+	if (g_connections.triggers > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szTriggersAttribute, g_connections.triggers);
+		hasConnections = true;
+	}
+
+	if (g_connections.parameters > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szParametersAttribute, g_connections.parameters);
+		hasConnections = true;
+	}
+
+	if (g_connections.switchStates > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szSwitchStatesAttribute, g_connections.switchStates);
+		hasConnections = true;
+	}
+
+	if (!hasConnections)
+	{
+		pNode = nullptr;
+	}
+	else
+	{
+		// Reset connection count for next library.
+		ZeroStruct(g_connections);
 	}
 
 	return pNode;

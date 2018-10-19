@@ -13,6 +13,8 @@ namespace Impl
 {
 namespace PortAudio
 {
+extern uint32 g_triggerConnections;
+
 static CryIcon s_errorIcon;
 static CryIcon s_eventIcon;
 static CryIcon s_folderIcon;

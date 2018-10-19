@@ -133,6 +133,62 @@ char const* TypeToTag(EItemType const type)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CountConnections(EAssetType const assetType, EItemType const itemType)
+{
+	switch (itemType)
+	{
+	case EItemType::Event:
+		{
+			++g_connections.triggers;
+			break;
+		}
+	case EItemType::Parameter:
+		{
+			switch (assetType)
+			{
+			case EAssetType::Parameter:
+				{
+					++g_connections.parameters;
+					break;
+				}
+			case EAssetType::State:
+				{
+					++g_connections.switchStates;
+					break;
+				}
+			case EAssetType::Environment:
+				{
+					++g_connections.environments;
+					break;
+				}
+			default:
+				break;
+			}
+
+			break;
+		}
+	case EItemType::Switch:
+	case EItemType::State:
+		{
+			++g_connections.switchStates;
+			break;
+		}
+	case EItemType::AuxBus:
+		{
+			++g_connections.environments;
+			break;
+		}
+	case EItemType::SoundBank:
+		{
+			++g_connections.files;
+			break;
+		}
+	default:
+		break;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 CItem* SearchForItem(CItem* const pItem, string const& name, EItemType const type)
 {
 	CItem* pSearchedItem = nullptr;
@@ -655,6 +711,57 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 			}
 			break;
 		}
+
+		CountConnections(assetType, itemType);
+	}
+
+	return pNode;
+}
+
+//////////////////////////////////////////////////////////////////////////
+XmlNodeRef CImpl::SetDataNode(char const* const szTag)
+{
+	XmlNodeRef pNode = GetISystem()->CreateXmlNode(szTag);
+	bool hasConnections = false;
+
+	if (g_connections.triggers > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::Wwise::s_szTriggersAttribute, g_connections.triggers);
+		hasConnections = true;
+	}
+
+	if (g_connections.parameters > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::Wwise::s_szParametersAttribute, g_connections.parameters);
+		hasConnections = true;
+	}
+
+	if (g_connections.switchStates > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::Wwise::s_szSwitchStatesAttribute, g_connections.switchStates);
+		hasConnections = true;
+	}
+
+	if (g_connections.environments > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::Wwise::s_szEnvironmentsAttribute, g_connections.environments);
+		hasConnections = true;
+	}
+
+	if (g_connections.files > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::Wwise::s_szFilesAttribute, g_connections.files);
+		hasConnections = true;
+	}
+
+	if (!hasConnections)
+	{
+		pNode = nullptr;
+	}
+	else
+	{
+		// Reset connection count for next library.
+		ZeroStruct(g_connections);
 	}
 
 	return pNode;

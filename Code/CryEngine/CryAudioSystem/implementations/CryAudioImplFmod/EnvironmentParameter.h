@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Environment.h"
+#include <PoolObject.h>
 
 namespace CryAudio
 {
@@ -10,7 +11,7 @@ namespace Impl
 {
 namespace Fmod
 {
-class CEnvironmentParameter final : public CEnvironment
+class CEnvironmentParameter final : public CEnvironment, public CPoolObject<CEnvironmentParameter, stl::PSyncNone>
 {
 public:
 

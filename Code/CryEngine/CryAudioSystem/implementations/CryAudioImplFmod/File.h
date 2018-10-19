@@ -3,6 +3,7 @@
 #pragma once
 
 #include <ATLEntityData.h>
+#include <PoolObject.h>
 
 namespace CryAudio
 {
@@ -10,7 +11,7 @@ namespace Impl
 {
 namespace Fmod
 {
-class CFile final : public IFile
+class CFile final : public IFile, public CPoolObject<CFile, stl::PSyncNone>
 {
 public:
 

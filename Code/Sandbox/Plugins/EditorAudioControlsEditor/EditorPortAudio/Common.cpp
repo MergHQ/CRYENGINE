@@ -2,3 +2,14 @@
 
 #include "StdAfx.h"
 #include "Common.h"
+
+namespace ACE
+{
+namespace Impl
+{
+namespace PortAudio
+{
+uint32 g_triggerConnections;
+} // namespace PortAudio
+} // namespace Impl
+} // namespace ACE

@@ -27,6 +27,16 @@ static constexpr char const* s_szShiftAttribute = "value_shift";
 static constexpr char const* s_szLocalizedAttribute = "localized";
 static constexpr char const* s_szEventAttribute = "event";
 
+// XML attributes for impl data node
+static constexpr char const* s_szTriggersAttribute = "triggers";
+static constexpr char const* s_szParametersAttribute = "parameters";
+static constexpr char const* s_szSwitchStatesAttribute = "switchstates";
+static constexpr char const* s_szEnvBusesAttribute = "env_buses";
+static constexpr char const* s_szEnvParametersAttribute = "env_parameters";
+static constexpr char const* s_szVcaParametersAttribute = "vca_parameters";
+static constexpr char const* s_szVcaStatesAttribute = "vca_states";
+static constexpr char const* s_szFilesAttribute = "files";
+
 // XML values
 static constexpr char const* s_szTrueValue = "true";
 static constexpr char const* s_szStopValue = "stop";
@@ -42,6 +52,18 @@ static constexpr float const s_defaultStateValue = 0.0f;
 struct STriggerInfo final : public ITriggerInfo
 {
 	CryFixedStringT<MaxControlNameLength> name;
+};
+
+struct SPoolSizes final
+{
+	uint32 triggers = 0;
+	uint32 parameters = 0;
+	uint32 switchStates = 0;
+	uint32 envBuses = 0;
+	uint32 envParameters = 0;
+	uint32 vcaParameters = 0;
+	uint32 vcaStates = 0;
+	uint32 files = 0;
 };
 } // namespace Fmod
 } // namespace Impl

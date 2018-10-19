@@ -179,6 +179,78 @@ string TypeToEditorFolderName(EItemType const type)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CountConnections(EAssetType const assetType, EItemType const itemType)
+{
+	switch (itemType)
+	{
+	case EItemType::Event: // Intentional fall-through.
+	case EItemType::Key:   // Intentional fall-through.
+	case EItemType::Snapshot:
+		{
+			++g_connections.triggers;
+			break;
+		}
+	case EItemType::Parameter:
+		{
+			switch (assetType)
+			{
+			case EAssetType::Parameter:
+				{
+					++g_connections.parameters;
+					break;
+				}
+			case EAssetType::State:
+				{
+					++g_connections.switchStates;
+					break;
+				}
+			case EAssetType::Environment:
+				{
+					++g_connections.envParameters;
+					break;
+				}
+			default:
+				break;
+			}
+
+			break;
+		}
+	case EItemType::VCA:
+		{
+			switch (assetType)
+			{
+			case EAssetType::Parameter:
+				{
+					++g_connections.vcaParameters;
+					break;
+				}
+			case EAssetType::State:
+				{
+					++g_connections.vcaStates;
+					break;
+				}
+			default:
+				break;
+			}
+
+			break;
+		}
+	case EItemType::Return:
+		{
+			++g_connections.envBuses;
+			break;
+		}
+	case EItemType::Bank:
+		{
+			++g_connections.files;
+			break;
+		}
+	default:
+		break;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 CItem* SearchForItem(CItem* const pItem, string const& name, EItemType const type)
 {
 	CItem* pSearchedItem = nullptr;
@@ -758,6 +830,75 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 			}
 			break;
 		}
+
+		CountConnections(assetType, type);
+	}
+
+	return pNode;
+}
+
+//////////////////////////////////////////////////////////////////////////
+XmlNodeRef CImpl::SetDataNode(char const* const szTag)
+{
+	XmlNodeRef pNode = GetISystem()->CreateXmlNode(szTag);
+	bool hasConnections = false;
+
+	if (g_connections.triggers > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::Fmod::s_szTriggersAttribute, g_connections.triggers);
+		hasConnections = true;
+	}
+
+	if (g_connections.parameters > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::Fmod::s_szParametersAttribute, g_connections.parameters);
+		hasConnections = true;
+	}
+
+	if (g_connections.switchStates > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::Fmod::s_szSwitchStatesAttribute, g_connections.switchStates);
+		hasConnections = true;
+	}
+
+	if (g_connections.envBuses > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::Fmod::s_szEnvBusesAttribute, g_connections.envBuses);
+		hasConnections = true;
+	}
+
+	if (g_connections.envParameters > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::Fmod::s_szEnvParametersAttribute, g_connections.envParameters);
+		hasConnections = true;
+	}
+
+	if (g_connections.vcaParameters > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::Fmod::s_szVcaParametersAttribute, g_connections.vcaParameters);
+		hasConnections = true;
+	}
+
+	if (g_connections.vcaStates > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::Fmod::s_szVcaStatesAttribute, g_connections.vcaStates);
+		hasConnections = true;
+	}
+
+	if (g_connections.files > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::Fmod::s_szFilesAttribute, g_connections.files);
+		hasConnections = true;
+	}
+
+	if (!hasConnections)
+	{
+		pNode = nullptr;
+	}
+	else
+	{
+		// Reset connection count for next library.
+		ZeroStruct(g_connections);
 	}
 
 	return pNode;

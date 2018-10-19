@@ -13,9 +13,8 @@ namespace Fmod
 CVcaState::CVcaState(
 	uint32 const id,
 	float const value,
-	char const* const szName,
 	FMOD::Studio::VCA* const vca)
-	: CSwitchState(id, value, szName, EStateType::VCA)
+	: CBaseSwitchState(id, value, EStateType::VCA)
 	, m_vca(vca)
 {
 }

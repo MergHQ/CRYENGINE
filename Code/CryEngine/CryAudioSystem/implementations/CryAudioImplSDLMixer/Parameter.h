@@ -4,6 +4,7 @@
 
 #include "Common.h"
 #include <ATLEntityData.h>
+#include <PoolObject.h>
 
 namespace CryAudio
 {
@@ -11,7 +12,7 @@ namespace Impl
 {
 namespace SDL_mixer
 {
-class CParameter final : public IParameter
+class CParameter final : public IParameter, public CPoolObject<CParameter, stl::PSyncNone>
 {
 public:
 

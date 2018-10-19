@@ -3,6 +3,7 @@
 #pragma once
 
 #include <ATLEntityData.h>
+#include <PoolObject.h>
 
 #include <cri_atom_ex.h>
 
@@ -20,7 +21,7 @@ enum class EParameterType : EnumFlagsType
 	GameVariable,
 };
 
-class CParameter final : public IParameter
+class CParameter final : public IParameter, public CPoolObject<CParameter, stl::PSyncNone>
 {
 public:
 
