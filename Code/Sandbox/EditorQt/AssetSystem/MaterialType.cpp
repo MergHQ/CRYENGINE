@@ -102,3 +102,35 @@ bool CMaterialType::OnCreate(INewAsset& asset, const void* pTypeSpecificParamete
 
 	return true;
 }
+
+bool CMaterialType::RenameAsset(CAsset* pAsset, const char* szNewName) const
+{
+	CMaterialManager* const pMaterialManager = GetIEditor()->GetMaterialManager();
+	CRY_ASSERT(pMaterialManager);
+
+	const string materialName = pMaterialManager->FilenameToMaterial(pAsset->GetFile(0));
+	CMaterial* const pMaterial = static_cast<CMaterial*>(pMaterialManager->FindItemByName(materialName));
+
+	if (!CAssetType::RenameAsset(pAsset, szNewName))
+	{
+		return false;
+	}
+
+	// Material is not loaded into the material manager.
+	if (!pMaterial)
+	{
+		return true;
+	}
+
+	// The material manager is not case sensitive, so we need to manually handle cases when only the register has been changed.
+	// Otherwise, the material editor will show the name of the old material until the editor is restarted.
+	const string newMaterialName = pMaterialManager->FilenameToMaterial(pAsset->GetFile(0));
+	if (materialName.CompareNoCase(newMaterialName) == 0)
+	{
+		const bool isModified = pAsset->IsModified();
+		pMaterial->SetName(newMaterialName);
+		pAsset->SetModified(isModified);
+	}
+
+	return true;
+}

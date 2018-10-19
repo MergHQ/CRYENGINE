@@ -54,12 +54,11 @@ bool CSharpSourcefileAssetType::OnCreate(INewAsset& editAsset, const void* pCrea
 {
 	const string basePath = PathUtil::RemoveExtension(PathUtil::RemoveExtension(editAsset.GetMetadataFile()));
 	const string csFilePath = basePath + ".cs";
-	const string assetName = PathUtil::GetFileName(basePath);
 
 	string projectName = gEnv->pSystem->GetIProjectManager()->GetCurrentProjectName();
 
 	string cleanProjectName = GetCleanName(projectName);
-	string cleanAssetName = GetCleanName(assetName);
+	string cleanAssetName = GetCleanName(editAsset.GetName());
 	CryGUID guid = CryGUID::Create();
 
 	CCryFile assetFile(csFilePath.c_str(), "wb", ICryPak::FLAGS_NO_LOWCASE);

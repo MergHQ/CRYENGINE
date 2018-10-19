@@ -710,7 +710,7 @@ bool CAssetEditor::OnSaveAs()
 	{
 		return true; // Operation cancelled by user.
 	}
-	const string newAssetPath = assetBasePath + string().Format(".%s.cryasset", pAssetType->GetFileExtension());
+	const string newAssetPath = PathUtil::AdjustCasing(pAssetType->MakeMetadataFilename(assetBasePath));
 
 	if (newAssetPath.Compare(m_assetBeingEdited->GetMetadataFile()) == 0)
 	{

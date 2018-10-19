@@ -121,7 +121,7 @@ bool MoveFileAllowOverwrite(const char* szOldFilePath, const char* szNewFilePath
 	return QFile::remove(szNewFilePath) && QFile::rename(szOldFilePath, szNewFilePath);
 }
 
-EDITOR_COMMON_API bool CopyFileAllowOverwrite(const char* szSourceFilePath, const char* szDestinationFilePath)
+bool CopyFileAllowOverwrite(const char* szSourceFilePath, const char* szDestinationFilePath)
 {
 	GetISystem()->GetIPak()->MakeDir(GetDirectory(szDestinationFilePath));
 
@@ -158,7 +158,7 @@ bool RemoveDirectory(const char* szPath, bool bRecursive /* = true*/)
 	return false;
 }
 
-EDITOR_COMMON_API bool MakeFileWritable(const char* szFilePath)
+bool MakeFileWritable(const char* szFilePath)
 {
 	QFile f(QtUtil::ToQString(szFilePath));
 	return f.setPermissions(f.permissions() | QFileDevice::WriteOwner);
@@ -436,7 +436,7 @@ string GetUniqueName(const string& templateName, const std::vector<string>& othe
 	return string();
 }
 
-EDITOR_COMMON_API string GetUniqueName(const string& fileName, const string& folderPath)
+string GetUniqueName(const string& fileName, const string& folderPath)
 {
 	std::vector<string> resultSet;
 	const string absFolder = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), folderPath);
@@ -512,7 +512,7 @@ string AbsolutePathToGamePath(const string& path)
 	return AbsoluteToRelativePath(path, GetGameProjectAssetsPath());
 }
 
-EDITOR_COMMON_API QString ToUnixPath(const QString& path)
+QString ToUnixPath(const QString& path)
 {
 	if (path.indexOf('\\') != -1)
 	{
@@ -624,6 +624,32 @@ bool IsValidFileName(const QString& name)
 	}
 
 	return true;
+}
+
+//! Adjust the path to follow CryPak casing rules.
+template<typename TString>
+typename std::enable_if<detail::IsValidStringType<TString>::value, TString>::type
+inline /*TString*/ AdjustCasingImpl(const char* szPath)
+{
+	ICryPak* const pPak = GetIEditor()->GetSystem()->GetIPak();
+	char szAdjustedPath[ICryPak::g_nMaxPath];
+	pPak->AdjustFileName(szPath, szAdjustedPath, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
+	return PathUtil::ToUnixPath(TString(szAdjustedPath));
+}
+
+string AdjustCasing(const string& path)
+{
+	return AdjustCasingImpl<string>(path.c_str());
+}
+
+CryPathString AdjustCasing(const char* szPath)
+{
+	return AdjustCasingImpl<CryPathString>(szPath);
+}
+
+CryPathString AdjustCasing(const CryPathString& path)
+{
+	return AdjustCasingImpl<CryPathString>(path.c_str());
 }
 
 }

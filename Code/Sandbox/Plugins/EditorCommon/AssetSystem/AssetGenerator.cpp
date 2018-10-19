@@ -43,6 +43,8 @@ private:
 	std::atomic<size_t> m_precessedItemsCount;
 };
 
+static AssetManagerHelpers::CAssetGenerator* s_pInstance = nullptr;
+
 }
 
 namespace AssetManagerHelpers
@@ -51,6 +53,7 @@ namespace AssetManagerHelpers
 void CAssetGenerator::RegisterFileListener()
 {
 	static CAssetGenerator theInstance;
+	Private_AssetGenerator::s_pInstance = &theInstance;
 }
 
 // IFileChangeListener implementation.
@@ -62,8 +65,7 @@ void CAssetGenerator::OnFileChange(const char* szFilename, EChangeType changeTyp
 		return;
 	}
 
-	if (changeType != IFileChangeListener::eChangeType_Created
-	    && changeType != IFileChangeListener::eChangeType_RenamedNewName
+	if (changeType != IFileChangeListener::eChangeType_RenamedNewName
 	    && changeType != IFileChangeListener::eChangeType_Modified)
 	{
 		return;
@@ -90,7 +92,7 @@ void CAssetGenerator::OnFileChange(const char* szFilename, EChangeType changeTyp
 
 	// Refresh cryasset files for the following types even if exists. 
 	// These asset types do not have true asset editors to update cryasset files.
-	static const char* const update[] = { "mtl", "cdf", "dds" };
+	static const char* const update[] = { "cdf", "dds" };
 	const char* szExt = PathUtil::GetExt(szFilename);
 	const bool updateExisting = std::any_of(std::begin(update), std::end(update), [szExt](const char* szUpdatable)
 	{
@@ -244,6 +246,22 @@ void CAssetGenerator::OnCompilationQueueDepleted()
 	if (m_pTextureCompilerProgress)
 	{
 		m_pTextureCompilerProgress.reset();
+	}
+}
+
+void GenerateCryasset(const string& filePath)
+{
+	if (Private_AssetGenerator::s_pInstance)
+	{
+		if (PathUtil::IsRelativePath(filePath))
+		{ 
+			const char* const szAssetDirectory = GetIEditor()->GetProjectManager()->GetCurrentAssetDirectoryAbsolute();
+			Private_AssetGenerator::s_pInstance->GenerateCryasset(PathUtil::Make(szAssetDirectory, filePath.c_str()));
+		}
+		else
+		{
+			Private_AssetGenerator::s_pInstance->GenerateCryasset(filePath);
+		}
 	}
 }
 
