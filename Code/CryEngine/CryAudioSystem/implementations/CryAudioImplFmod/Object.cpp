@@ -6,6 +6,8 @@
 #include "CVars.h"
 #include "Environment.h"
 #include "Event.h"
+#include "Parameter.h"
+#include "SwitchState.h"
 #include "Listener.h"
 #include "Trigger.h"
 #include "VcaParameter.h"
@@ -137,14 +139,15 @@ void CObject::SetEnvironment(IEnvironment const* const pIEnvironment, float cons
 //////////////////////////////////////////////////////////////////////////
 void CObject::SetParameter(IParameter const* const pIParameter, float const value)
 {
-	auto const pParameter = static_cast<CParameter const*>(pIParameter);
+	auto const pBaseParameter = static_cast<CBaseParameter const*>(pIParameter);
 
-	if (pParameter != nullptr)
+	if (pBaseParameter != nullptr)
 	{
-		EParameterType const type = pParameter->GetType();
+		EParameterType const type = pBaseParameter->GetType();
 
 		if (type == EParameterType::Parameter)
 		{
+			auto const pParameter = static_cast<CParameter const*>(pBaseParameter);
 			uint32 const parameterId = pParameter->GetId();
 			FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 
@@ -226,7 +229,7 @@ void CObject::SetParameter(IParameter const* const pIParameter, float const valu
 		}
 		else if (type == EParameterType::VCA)
 		{
-			auto const pVca = static_cast<CVcaParameter const* const>(pParameter);
+			auto const pVca = static_cast<CVcaParameter const*>(pBaseParameter);
 			FMOD_RESULT const fmodResult = pVca->GetVca()->setVolume(pVca->GetValueMultiplier() * value + pVca->GetValueShift());
 			ASSERT_FMOD_OK;
 		}
@@ -240,14 +243,15 @@ void CObject::SetParameter(IParameter const* const pIParameter, float const valu
 //////////////////////////////////////////////////////////////////////////
 void CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 {
-	auto const pSwitchState = static_cast<CSwitchState const*>(pISwitchState);
+	auto const pBaseSwitchState = static_cast<CBaseSwitchState const*>(pISwitchState);
 
-	if (pSwitchState != nullptr)
+	if (pBaseSwitchState != nullptr)
 	{
-		EStateType const type = pSwitchState->GetType();
+		EStateType const type = pBaseSwitchState->GetType();
 
 		if (type == EStateType::State)
 		{
+			auto const pSwitchState = static_cast<CSwitchState const*>(pBaseSwitchState);
 			uint32 const parameterId = pSwitchState->GetId();
 			FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 
@@ -329,7 +333,7 @@ void CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 		}
 		else if (type == EStateType::VCA)
 		{
-			auto const pVca = static_cast<CVcaState const* const>(pSwitchState);
+			auto const pVca = static_cast<CVcaState const*>(pBaseSwitchState);
 			FMOD_RESULT const fmodResult = pVca->GetVca()->setVolume(pVca->GetValue());
 			ASSERT_FMOD_OK;
 		}

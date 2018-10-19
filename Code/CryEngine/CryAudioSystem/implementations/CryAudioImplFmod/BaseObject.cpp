@@ -208,7 +208,7 @@ bool CBaseObject::SetEvent(CEvent* const pEvent)
 
 			for (auto const& switchPair : m_switches)
 			{
-				CSwitchState const* const pSwitchState = switchPair.second;
+				CBaseSwitchState const* const pSwitchState = switchPair.second;
 				uint32 const parameterId = pSwitchState->GetId();
 
 				if (parameters.find(parameterId) != parameters.end())
@@ -278,13 +278,13 @@ void CBaseObject::UpdateVelocityTracking()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::RemoveParameter(CParameter const* const pParameter)
+void CBaseObject::RemoveParameter(CBaseParameter const* const pParameter)
 {
 	m_parameters.erase(pParameter);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::RemoveSwitch(CSwitchState const* const pSwitch)
+void CBaseObject::RemoveSwitch(CBaseSwitchState const* const pSwitch)
 {
 	m_switches.erase(pSwitch->GetId());
 }

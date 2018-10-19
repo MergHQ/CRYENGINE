@@ -4,6 +4,7 @@
 
 #include "GlobalData.h"
 #include <ATLEntityData.h>
+#include <PoolObject.h>
 #include <AK/SoundEngine/Common/AkTypes.h>
 
 namespace CryAudio
@@ -20,7 +21,7 @@ enum class ESwitchType : EnumFlagsType
 	SwitchGroup,
 };
 
-class CSwitchState final : public ISwitchState
+class CSwitchState final : public ISwitchState, public CPoolObject<CSwitchState, stl::PSyncNone>
 {
 public:
 

@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include <ATLEntityData.h>
-
 #include "GlobalData.h"
+#include <ATLEntityData.h>
+#include <PoolObject.h>
 
 #include <cri_atom_ex.h>
 
@@ -23,7 +23,7 @@ enum class ESwitchType : EnumFlagsType
 	GameVariable,
 };
 
-class CSwitchState final : public ISwitchState
+class CSwitchState final : public ISwitchState, public CPoolObject<CSwitchState, stl::PSyncNone>
 {
 public:
 

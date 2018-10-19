@@ -49,9 +49,9 @@ DebugColor const g_colorCyan {
 
 // Debug draw style for audio system info.
 float const g_debugSystemHeaderFontSize = 1.5f;
+float const g_debugSystemHeaderLineHeight = 20.0f;
 float const g_debugSystemFontSize = 1.35f;
 float const g_debugSystemLineHeight = 16.0f;
-float const g_debugSystemLineHeightClause = 20.0f;
 DebugColor const g_debugSystemColorHeader = g_colorOrange;
 DebugColor const g_debugSystemColorTextPrimary = g_colorGreyBright;
 DebugColor const g_debugSystemColorTextSecondary = g_colorBlue;

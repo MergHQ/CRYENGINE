@@ -1811,8 +1811,6 @@ ERequestStatus CSystem::ProcessObjectRequest(CAudioRequest const& request)
 	ERequestStatus result = ERequestStatus::Failure;
 	CATLAudioObject* const pObject = (request.pObject != nullptr) ? request.pObject : g_pObject;
 
-	CRY_ASSERT_MESSAGE((pObject->GetFlags() & EObjectFlags::InUse) != 0, "Object must be in use during CSystem::ProcessObjectRequest");
-
 	SObjectRequestDataBase const* const pBase =
 		static_cast<SObjectRequestDataBase const* const>(request.GetData());
 
@@ -2701,7 +2699,7 @@ void CSystem::HandleDrawDebug()
 
 			if (memAlloc < 1024)
 			{
-				memInfoString.Format("u Byte", memAlloc);
+				memInfoString.Format("%u Byte", memAlloc);
 			}
 			else
 			{
@@ -2725,7 +2723,7 @@ void CSystem::HandleDrawDebug()
 
 				{
 					auto& allocator = CATLStandaloneFile::GetAllocator();
-					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Files");
+					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Standalone Files");
 				}
 
 				if (g_debugPoolSizes.triggers > 0)
@@ -2790,7 +2788,7 @@ void CSystem::HandleDrawDebug()
 			if (g_pIImpl != nullptr)
 			{
 				posY += Debug::g_systemHeaderLineHeight;
-				g_pIImpl->DrawDebugInfo(*pAuxGeom, posX, posY);
+				g_pIImpl->DrawDebugInfo(*pAuxGeom, posX, posY, (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::DetailedMemoryInfo) != 0);
 			}
 
 			posY += Debug::g_systemHeaderLineHeight;

@@ -9,6 +9,7 @@ namespace Impl
 {
 namespace Fmod
 {
+CryAudio::Impl::Fmod::SPoolSizes g_connections;
 Platforms g_platforms;
 } // namespace Fmod
 } // namespace Impl

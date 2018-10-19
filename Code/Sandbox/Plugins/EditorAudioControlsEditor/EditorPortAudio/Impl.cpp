@@ -299,6 +299,25 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 		{
 			pNode->setAttr(CryAudio::Impl::PortAudio::s_szLocalizedAttribute, CryAudio::Impl::PortAudio::s_szTrueValue);
 		}
+
+		++g_triggerConnections;
+	}
+
+	return pNode;
+}
+
+//////////////////////////////////////////////////////////////////////////
+XmlNodeRef CImpl::SetDataNode(char const* const szTag)
+{
+	XmlNodeRef pNode = nullptr;
+
+	if (g_triggerConnections > 0)
+	{
+		pNode = GetISystem()->CreateXmlNode(szTag);
+		pNode->setAttr(CryAudio::Impl::PortAudio::s_szTriggersAttribute, g_triggerConnections);
+
+		// Reset connection count for next library.
+		g_triggerConnections = 0;
 	}
 
 	return pNode;

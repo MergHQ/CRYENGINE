@@ -5,7 +5,6 @@
 #include "CVars.h"
 #include "FileIOHandler.h"
 #include "Common.h"
-#include "GlobalData.h"
 #include "Environment.h"
 #include "Event.h"
 #include "File.h"
@@ -219,6 +218,74 @@ public:
 CAuxWwiseAudioThread g_auxAudioThread;
 std::map<AkUniqueID, float> g_maxAttenuations;
 
+SPoolSizes g_poolSizes;
+SPoolSizes g_poolSizesLevelSpecific;
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+SPoolSizes g_debugPoolSizes;
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+
+//////////////////////////////////////////////////////////////////////////
+void CountPoolSizes(XmlNodeRef const pNode, SPoolSizes& poolSizes)
+{
+	uint32 numTriggers = 0;
+	pNode->getAttr(s_szTriggersAttribute, numTriggers);
+	poolSizes.triggers += numTriggers;
+
+	uint32 numParameters = 0;
+	pNode->getAttr(s_szParametersAttribute, numParameters);
+	poolSizes.parameters += numParameters;
+
+	uint32 numSwitchStates = 0;
+	pNode->getAttr(s_szSwitchStatesAttribute, numSwitchStates);
+	poolSizes.switchStates += numSwitchStates;
+
+	uint32 numEnvironments = 0;
+	pNode->getAttr(s_szEnvironmentsAttribute, numEnvironments);
+	poolSizes.environments += numEnvironments;
+
+	uint32 numFiles = 0;
+	pNode->getAttr(s_szFilesAttribute, numFiles);
+	poolSizes.files += numFiles;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void AllocateMemoryPools(uint32 const objectPoolSize, uint32 const eventPoolSize)
+{
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Wwise Object Pool");
+	CObject::CreateAllocator(objectPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Wwise Event Pool");
+	CEvent::CreateAllocator(eventPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Wwise Trigger Pool");
+	CTrigger::CreateAllocator(g_poolSizes.triggers);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Wwise Parameter Pool");
+	CParameter::CreateAllocator(g_poolSizes.parameters);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Wwise Switch State Pool");
+	CSwitchState::CreateAllocator(g_poolSizes.switchStates);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Wwise Environment Pool");
+	CEnvironment::CreateAllocator(g_poolSizes.environments);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Wwise File Pool");
+	CFile::CreateAllocator(g_poolSizes.files);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void FreeMemoryPools()
+{
+	CObject::FreeMemoryPool();
+	CEvent::FreeMemoryPool();
+	CTrigger::FreeMemoryPool();
+	CParameter::FreeMemoryPool();
+	CSwitchState::FreeMemoryPool();
+	CEnvironment::FreeMemoryPool();
+	CFile::FreeMemoryPool();
+}
+
 //////////////////////////////////////////////////////////////////////////
 void LoadEventsMaxAttenuations(const string& soundbanksPath)
 {
@@ -356,11 +423,7 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 	// If something fails so severely during initialization that we need to fall back to the NULL implementation
 	// we will need to shut down what has been initialized so far. Therefore make sure to call Shutdown() before returning eARS_FAILURE!
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Wwise Object Pool");
-	CObject::CreateAllocator(objectPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Wwise Event Pool");
-	CEvent::CreateAllocator(eventPoolSize);
+	AllocateMemoryPools(objectPoolSize, eventPoolSize);
 
 	AkMemSettings memSettings;
 	memSettings.uMaxNumPools = 20;
@@ -757,8 +820,59 @@ void CImpl::Release()
 	g_pImpl = nullptr;
 	g_cvars.UnregisterVariables();
 
-	CObject::FreeMemoryPool();
-	CEvent::FreeMemoryPool();
+	FreeMemoryPools();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific)
+{
+	if (isLevelSpecific)
+	{
+		SPoolSizes levelPoolSizes;
+		CountPoolSizes(pNode, levelPoolSizes);
+
+		g_poolSizesLevelSpecific.triggers = std::max(g_poolSizesLevelSpecific.triggers, levelPoolSizes.triggers);
+		g_poolSizesLevelSpecific.parameters = std::max(g_poolSizesLevelSpecific.parameters, levelPoolSizes.parameters);
+		g_poolSizesLevelSpecific.switchStates = std::max(g_poolSizesLevelSpecific.switchStates, levelPoolSizes.switchStates);
+		g_poolSizesLevelSpecific.environments = std::max(g_poolSizesLevelSpecific.environments, levelPoolSizes.environments);
+		g_poolSizesLevelSpecific.files = std::max(g_poolSizesLevelSpecific.files, levelPoolSizes.files);
+	}
+	else
+	{
+		CountPoolSizes(pNode, g_poolSizes);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnBeforeLibraryDataChanged()
+{
+	ZeroStruct(g_poolSizes);
+	ZeroStruct(g_poolSizesLevelSpecific);
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	ZeroStruct(g_debugPoolSizes);
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnAfterLibraryDataChanged()
+{
+	g_poolSizes.triggers += g_poolSizesLevelSpecific.triggers;
+	g_poolSizes.parameters += g_poolSizesLevelSpecific.parameters;
+	g_poolSizes.switchStates += g_poolSizesLevelSpecific.switchStates;
+	g_poolSizes.environments += g_poolSizesLevelSpecific.environments;
+	g_poolSizes.files += g_poolSizesLevelSpecific.files;
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	// Used to hide pools without allocations in debug draw.
+	g_debugPoolSizes = g_poolSizes;
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+
+	g_poolSizes.triggers = std::max<uint32>(1, g_poolSizes.triggers);
+	g_poolSizes.parameters = std::max<uint32>(1, g_poolSizes.parameters);
+	g_poolSizes.switchStates = std::max<uint32>(1, g_poolSizes.switchStates);
+	g_poolSizes.environments = std::max<uint32>(1, g_poolSizes.environments);
+	g_poolSizes.files = std::max<uint32>(1, g_poolSizes.files);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1333,7 +1447,7 @@ void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CImpl::ParseSwitchOrState(XmlNodeRef const pNode, AkUInt32& outStateOrSwitchGroupId, AkUInt32& outStateOrSwitchId)
+bool CImpl::ParseSwitchOrState(XmlNodeRef const pNode, AkUInt32& stateOrSwitchGroupId, AkUInt32& stateOrSwitchId)
 {
 	bool bSuccess = false;
 	char const* const szStateOrSwitchGroupName = pNode->getAttr(s_szNameAttribute);
@@ -1348,8 +1462,8 @@ bool CImpl::ParseSwitchOrState(XmlNodeRef const pNode, AkUInt32& outStateOrSwitc
 
 			if ((szStateOrSwitchName != nullptr) && (szStateOrSwitchName[0] != 0))
 			{
-				outStateOrSwitchGroupId = AK::SoundEngine::GetIDFromString(szStateOrSwitchGroupName);
-				outStateOrSwitchId = AK::SoundEngine::GetIDFromString(szStateOrSwitchName);
+				stateOrSwitchGroupId = AK::SoundEngine::GetIDFromString(szStateOrSwitchGroupName);
+				stateOrSwitchId = AK::SoundEngine::GetIDFromString(szStateOrSwitchName);
 				bSuccess = true;
 			}
 		}
@@ -1489,43 +1603,41 @@ void CImpl::SetPanningRule(int const panningRule)
 }
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-///////////////////////////////////////////////////////////////////////////
-void GetMemoryInfo(SMemoryInfo& memoryInfo)
+//////////////////////////////////////////////////////////////////////////
+void DrawMemoryPoolInfo(
+	IRenderAuxGeom& auxGeom,
+	float const posX,
+	float& posY,
+	stl::SPoolMemoryUsage const& mem,
+	stl::SMemoryUsage const& pool,
+	char const* const szType)
 {
-	CryModuleMemoryInfo memInfo;
-	ZeroStruct(memInfo);
-	CryGetMemoryInfoForModule(&memInfo);
+	CryFixedStringT<MaxMiscStringLength> memUsedString;
 
-	memoryInfo.totalMemory = static_cast<size_t>(memInfo.allocated - memInfo.freed);
-
-	#if defined(PROVIDE_WWISE_IMPL_SECONDARY_POOL)
-	memoryInfo.secondaryPoolSize = g_audioImplMemoryPoolSecondary.MemSize();
-	memoryInfo.secondaryPoolUsedSize = memoryInfo.secondaryPoolSize - g_audioImplMemoryPoolSecondary.MemFree();
-	memoryInfo.secondaryPoolAllocations = g_audioImplMemoryPoolSecondary.FragmentCount();
-	#else
-	memoryInfo.secondaryPoolSize = 0;
-	memoryInfo.secondaryPoolUsedSize = 0;
-	memoryInfo.secondaryPoolAllocations = 0;
-	#endif // PROVIDE_WWISE_IMPL_SECONDARY_POOL
+	if (mem.nUsed < 1024)
 	{
-		auto& allocator = CObject::GetAllocator();
-		auto mem = allocator.GetTotalMemory();
-		auto pool = allocator.GetCounts();
-		memoryInfo.poolUsedObjects = pool.nUsed;
-		memoryInfo.poolConstructedObjects = pool.nAlloc;
-		memoryInfo.poolUsedMemory = mem.nUsed;
-		memoryInfo.poolAllocatedMemory = mem.nAlloc;
+		memUsedString.Format("%" PRISIZE_T " Byte", mem.nUsed);
+	}
+	else
+	{
+		memUsedString.Format("%" PRISIZE_T " KiB", mem.nUsed >> 10);
 	}
 
+	CryFixedStringT<MaxMiscStringLength> memAllocString;
+
+	if (mem.nAlloc < 1024)
 	{
-		auto& allocator = CEvent::GetAllocator();
-		auto mem = allocator.GetTotalMemory();
-		auto pool = allocator.GetCounts();
-		memoryInfo.poolUsedObjects += pool.nUsed;
-		memoryInfo.poolConstructedObjects += pool.nAlloc;
-		memoryInfo.poolUsedMemory += mem.nUsed;
-		memoryInfo.poolAllocatedMemory += mem.nAlloc;
+		memAllocString.Format("%" PRISIZE_T " Byte", mem.nAlloc);
 	}
+	else
+	{
+		memAllocString.Format("%" PRISIZE_T " KiB", mem.nAlloc >> 10);
+	}
+
+	posY += g_debugSystemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false,
+	                    "[%s] In Use: %" PRISIZE_T " | Constructed: %" PRISIZE_T " (%s) | Memory Pool: %s",
+	                    szType, pool.nUsed, pool.nAlloc, memUsedString.c_str(), memAllocString.c_str());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1537,29 +1649,73 @@ void CImpl::GetInitBankSize()
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY)
+void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo)
 {
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemHeaderFontSize, g_debugSystemColorHeader.data(), false, m_name.c_str());
+	CryModuleMemoryInfo memInfo;
+	ZeroStruct(memInfo);
+	CryGetMemoryInfoForModule(&memInfo);
 
-	SMemoryInfo memoryInfo;
-	GetMemoryInfo(memoryInfo);
-	memoryInfo.totalMemory += m_initBankSize;
+	CryFixedStringT<MaxMiscStringLength> memInfoString;
+	auto const memAlloc = static_cast<uint32>(memInfo.allocated - memInfo.freed);
 
-	posY += g_debugSystemLineHeightClause;
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Total Memory Used: %uKiB | Secondary Memory: %.2f / %.2f MiB | NumAllocs: %d",
-	                    static_cast<uint32>(memoryInfo.totalMemory / 1024),
-	                    (memoryInfo.secondaryPoolUsedSize / 1024) / 1024.0f,
-	                    (memoryInfo.secondaryPoolSize / 1024) / 1024.0f,
-	                    static_cast<int>(memoryInfo.secondaryPoolAllocations));
+	if (memAlloc < 1024)
+	{
+		memInfoString.Format("%s (Total Memory: %u Byte)", m_name.c_str(), memAlloc);
+	}
+	else
+	{
+		memInfoString.Format("%s (Total Memory: %u KiB)", m_name.c_str(), memAlloc >> 10);
+	}
 
-	posY += g_debugSystemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Init.bnk: %uKiB",
-	                    static_cast<uint32>(m_initBankSize / 1024));
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemHeaderFontSize, g_debugSystemColorHeader.data(), false, memInfoString.c_str());
 
-	posY += g_debugSystemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "[Object Pool] In Use: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB",
-	                    memoryInfo.poolUsedObjects, memoryInfo.poolConstructedObjects, memoryInfo.poolUsedMemory, memoryInfo.poolAllocatedMemory);
+	if (showDetailedInfo)
+	{
+		posY += g_debugSystemLineHeight;
+		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Init.bnk: %uKiB",
+		                    static_cast<uint32>(m_initBankSize / 1024));
+
+		{
+			auto& allocator = CObject::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Objects");
+		}
+
+		{
+			auto& allocator = CEvent::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Events");
+		}
+
+		if (g_debugPoolSizes.triggers > 0)
+		{
+			auto& allocator = CTrigger::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Triggers");
+		}
+
+		if (g_debugPoolSizes.parameters > 0)
+		{
+			auto& allocator = CParameter::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Parameters");
+		}
+
+		if (g_debugPoolSizes.switchStates > 0)
+		{
+			auto& allocator = CSwitchState::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "SwitchStates");
+		}
+
+		if (g_debugPoolSizes.environments > 0)
+		{
+			auto& allocator = CEnvironment::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Environments");
+		}
+
+		if (g_debugPoolSizes.files > 0)
+		{
+			auto& allocator = CFile::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Files");
+		}
+	}
 
 	if (g_numObjectsWithRelativeVelocity > 0)
 	{

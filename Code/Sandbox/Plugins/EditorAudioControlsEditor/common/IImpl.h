@@ -102,6 +102,11 @@ struct IImpl
 	//! \return An XML node with the connection serialized.
 	virtual XmlNodeRef CreateXMLNodeFromConnection(IConnection const* const pIConnection, EAssetType const assetType) = 0;
 
+	//! The middleware implementation can provide an XML node that contains the amount of controls of the current library as attributes.
+	//! \param szTag - Tag of the node.
+	//! \return An XML node that contains the amount of controls. Return nullptr if the node should not get written to the file.
+	virtual XmlNodeRef SetDataNode(char const* const szTag) = 0;
+
 	//! Whenever a connection is added to an audio system control this function should be called to keep the system informed of which connections are being used.
 	//! \param pIConnection - Connection that has been enabled.
 	//! \param isLoading - Is data currently being loaded or not.

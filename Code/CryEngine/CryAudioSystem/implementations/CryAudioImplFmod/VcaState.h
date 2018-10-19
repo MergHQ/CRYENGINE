@@ -2,7 +2,8 @@
 
 #pragma once
 
-#include "SwitchState.h"
+#include "BaseSwitchState.h"
+#include <PoolObject.h>
 
 namespace CryAudio
 {
@@ -10,7 +11,7 @@ namespace Impl
 {
 namespace Fmod
 {
-class CVcaState final : public CSwitchState
+class CVcaState final : public CBaseSwitchState, public CPoolObject<CVcaState, stl::PSyncNone>
 {
 public:
 
@@ -23,7 +24,6 @@ public:
 	explicit CVcaState(
 		uint32 const id,
 		float const value,
-		char const* const szName,
 		FMOD::Studio::VCA* const vca);
 
 	virtual ~CVcaState() override = default;

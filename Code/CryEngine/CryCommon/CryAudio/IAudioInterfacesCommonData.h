@@ -54,6 +54,7 @@ static constexpr char const* s_szGlobalPreloadRequestName = "global_audio_system
 
 static constexpr char const* s_szDefaultLibraryName = "default_controls";
 static constexpr char const* s_szRootNodeTag = "AudioSystemData";
+static constexpr char const* s_szImplDataNodeTag = "ImplData";
 static constexpr char const* s_szEditorDataTag = "EditorData";
 static constexpr char const* s_szTriggersNodeTag = "Triggers";
 static constexpr char const* s_szParametersNodeTag = "Parameters";

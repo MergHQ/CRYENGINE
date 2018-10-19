@@ -4,6 +4,7 @@
 
 #include "Common.h"
 #include <ATLEntityData.h>
+#include <PoolObject.h>
 
 namespace CryAudio
 {
@@ -11,7 +12,7 @@ namespace Impl
 {
 namespace SDL_mixer
 {
-class CSwitchState final : public ISwitchState
+class CSwitchState final : public ISwitchState, public CPoolObject<CSwitchState, stl::PSyncNone>
 {
 public:
 

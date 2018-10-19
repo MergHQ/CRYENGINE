@@ -22,7 +22,7 @@ enum class EEventType : EnumFlagsType
 	Resume,
 };
 
-class CTrigger final : public ITrigger
+class CTrigger final : public ITrigger, public CPoolObject<CTrigger, stl::PSyncNone>
 {
 public:
 

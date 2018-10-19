@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include <ATLEntityData.h>
-
 #include "GlobalData.h"
+#include <ATLEntityData.h>
+#include <PoolObject.h>
 
 #include <cri_atom_ex.h>
 
@@ -21,7 +21,7 @@ enum class EEnvironmentType : EnumFlagsType
 	AisacControl,
 };
 
-class CEnvironment final : public IEnvironment
+class CEnvironment final : public IEnvironment, public CPoolObject<CEnvironment, stl::PSyncNone>
 {
 public:
 

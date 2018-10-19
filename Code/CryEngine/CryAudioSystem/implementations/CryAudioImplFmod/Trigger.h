@@ -3,6 +3,7 @@
 #pragma once
 
 #include <ATLEntityData.h>
+#include <PoolObject.h>
 
 namespace CryAudio
 {
@@ -19,7 +20,7 @@ enum class EEventType : EnumFlagsType
 	Resume,
 };
 
-class CTrigger final : public ITrigger
+class CTrigger final : public ITrigger, public CPoolObject<CTrigger, stl::PSyncNone>
 {
 public:
 

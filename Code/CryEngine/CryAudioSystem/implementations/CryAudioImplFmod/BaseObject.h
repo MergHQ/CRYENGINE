@@ -13,8 +13,8 @@ namespace Impl
 namespace Fmod
 {
 class CEvent;
-class CParameter;
-class CSwitchState;
+class CBaseParameter;
+class CBaseSwitchState;
 class CEnvironment;
 class CBaseStandaloneFile;
 
@@ -41,8 +41,8 @@ public:
 	virtual ~CBaseObject() override;
 
 	void RemoveEvent(CEvent* const pEvent);
-	void RemoveParameter(CParameter const* const pParameter);
-	void RemoveSwitch(CSwitchState const* const pSwitch);
+	void RemoveParameter(CBaseParameter const* const pParameter);
+	void RemoveSwitch(CBaseSwitchState const* const pSwitch);
 	void RemoveEnvironment(CEnvironment const* const pEnvironment);
 	void RemoveFile(CBaseStandaloneFile const* const pStandaloneFile);
 
@@ -69,18 +69,18 @@ protected:
 
 	void UpdateVelocityTracking();
 
-	EObjectFlags                                m_flags;
+	EObjectFlags                                    m_flags;
 
-	std::vector<CEvent*>                        m_events;
-	std::vector<CBaseStandaloneFile*>           m_files;
-	std::map<CParameter const* const, float>    m_parameters;
-	std::map<uint32 const, CSwitchState const*> m_switches;
-	std::map<CEnvironment const* const, float>  m_environments;
+	std::vector<CEvent*>                            m_events;
+	std::vector<CBaseStandaloneFile*>               m_files;
+	std::map<CBaseParameter const* const, float>    m_parameters;
+	std::map<uint32 const, CBaseSwitchState const*> m_switches;
+	std::map<CEnvironment const* const, float>      m_environments;
 
-	std::vector<CEvent*>                        m_pendingEvents;
-	std::vector<CBaseStandaloneFile*>           m_pendingFiles;
+	std::vector<CEvent*>                            m_pendingEvents;
+	std::vector<CBaseStandaloneFile*>               m_pendingFiles;
 
-	FMOD_3D_ATTRIBUTES                          m_attributes;
+	FMOD_3D_ATTRIBUTES                              m_attributes;
 	float m_occlusion = 0.0f;
 	float m_absoluteVelocity = 0.0f;
 };

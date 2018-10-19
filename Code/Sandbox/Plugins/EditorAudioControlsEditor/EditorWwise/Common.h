@@ -4,6 +4,7 @@
 
 #include "Item.h"
 #include <CryIcon.h>
+#include <CryAudioImplWwise/GlobalData.h>
 
 namespace ACE
 {
@@ -11,6 +12,7 @@ namespace Impl
 {
 namespace Wwise
 {
+extern CryAudio::Impl::Wwise::SPoolSizes g_connections;
 extern Platforms g_platforms;
 
 static CryIcon s_errorIcon;

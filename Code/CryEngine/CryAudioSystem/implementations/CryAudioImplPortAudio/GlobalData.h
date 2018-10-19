@@ -20,6 +20,9 @@ static constexpr char const* s_szPathAttribute = "path";
 static constexpr char const* s_szLoopCountAttribute = "loop_count";
 static constexpr char const* s_szLocalizedAttribute = "localized";
 
+// XML attributes for impl data node
+static constexpr char const* s_szTriggersAttribute = "triggers";
+
 // XML values
 static constexpr char const* s_szTrueValue = "true";
 static constexpr char const* s_szStartValue = "start";

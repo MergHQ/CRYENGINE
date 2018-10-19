@@ -3,6 +3,7 @@
 #pragma once
 
 #include <ATLEntityData.h>
+#include <PoolObject.h>
 #include <AK/SoundEngine/Common/AkTypes.h>
 
 namespace CryAudio
@@ -18,7 +19,7 @@ enum class EEnvironmentType : EnumFlagsType
 	Rtpc,
 };
 
-class CEnvironment final : public IEnvironment
+class CEnvironment final : public IEnvironment, public CPoolObject<CEnvironment, stl::PSyncNone>
 {
 public:
 

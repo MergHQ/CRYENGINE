@@ -352,6 +352,11 @@ void CAnimationContext::Stop()
 		SetRecording(true);
 	}
 
+	if (m_pSequence != nullptr)
+	{
+		m_pSequence->Deactivate();
+	}
+
 	m_bPlaying = false;
 	m_bPaused = false;
 	m_bSingleFrame = true; //still need one frame update

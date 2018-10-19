@@ -26,6 +26,13 @@ static constexpr char const* s_szMutiplierAttribute = "value_multiplier";
 static constexpr char const* s_szShiftAttribute = "value_shift";
 static constexpr char const* s_szLocalizedAttribute = "localized";
 
+// XML attributes for impl data node
+static constexpr char const* s_szTriggersAttribute = "triggers";
+static constexpr char const* s_szParametersAttribute = "parameters";
+static constexpr char const* s_szSwitchStatesAttribute = "switchstates";
+static constexpr char const* s_szEnvironmentsAttribute = "environments";
+static constexpr char const* s_szFilesAttribute = "files";
+
 // XML values
 static constexpr char const* s_szTrueValue = "true";
 
@@ -38,6 +45,15 @@ static constexpr float const s_defaultStateValue = 0.0f;
 struct STriggerInfo final : public ITriggerInfo
 {
 	CryFixedStringT<MaxControlNameLength> name;
+};
+
+struct SPoolSizes final
+{
+	uint32 triggers = 0;
+	uint32 parameters = 0;
+	uint32 switchStates = 0;
+	uint32 environments = 0;
+	uint32 files = 0;
 };
 } // namespace Wwise
 } // namespace Impl

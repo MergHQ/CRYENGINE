@@ -15,7 +15,6 @@
 #include "Environment.h"
 #include "Setting.h"
 #include "StandaloneFile.h"
-#include "GlobalData.h"
 #include "IoInterface.h"
 #include <CrySystem/IStreamEngine.h>
 
@@ -39,6 +38,82 @@ namespace Impl
 {
 namespace Adx2
 {
+SPoolSizes g_poolSizes;
+SPoolSizes g_poolSizesLevelSpecific;
+
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+SPoolSizes g_debugPoolSizes;
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+
+//////////////////////////////////////////////////////////////////////////
+void CountPoolSizes(XmlNodeRef const pNode, SPoolSizes& poolSizes)
+{
+	uint32 numTriggers = 0;
+	pNode->getAttr(s_szTriggersAttribute, numTriggers);
+	poolSizes.triggers += numTriggers;
+
+	uint32 numParameters = 0;
+	pNode->getAttr(s_szParametersAttribute, numParameters);
+	poolSizes.parameters += numParameters;
+
+	uint32 numSwitchStates = 0;
+	pNode->getAttr(s_szSwitchStatesAttribute, numSwitchStates);
+	poolSizes.switchStates += numSwitchStates;
+
+	uint32 numEnvironments = 0;
+	pNode->getAttr(s_szEnvironmentsAttribute, numEnvironments);
+	poolSizes.environments += numEnvironments;
+
+	uint32 numSettings = 0;
+	pNode->getAttr(s_szSettingsAttribute, numSettings);
+	poolSizes.settings += numSettings;
+
+	uint32 numFiles = 0;
+	pNode->getAttr(s_szFilesAttribute, numFiles);
+	poolSizes.files += numFiles;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void AllocateMemoryPools(uint32 const objectPoolSize, uint32 const eventPoolSize)
+{
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Adx2 Object Pool");
+	CObject::CreateAllocator(objectPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Adx2 Event Pool");
+	CEvent::CreateAllocator(eventPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Adx2 Trigger Pool");
+	CTrigger::CreateAllocator(g_poolSizes.triggers);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Adx2 Parameter Pool");
+	CParameter::CreateAllocator(g_poolSizes.parameters);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Adx2 Switch State Pool");
+	CSwitchState::CreateAllocator(g_poolSizes.switchStates);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Adx2 Environment Pool");
+	CEnvironment::CreateAllocator(g_poolSizes.environments);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Adx2 Setting Pool");
+	CSetting::CreateAllocator(g_poolSizes.settings);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Adx2 File Pool");
+	CFile::CreateAllocator(g_poolSizes.files);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void FreeMemoryPools()
+{
+	CObject::FreeMemoryPool();
+	CEvent::FreeMemoryPool();
+	CTrigger::FreeMemoryPool();
+	CParameter::FreeMemoryPool();
+	CSwitchState::FreeMemoryPool();
+	CEnvironment::FreeMemoryPool();
+	CSetting::FreeMemoryPool();
+	CFile::FreeMemoryPool();
+}
+
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 std::map<string, std::vector<std::pair<string, float>>> g_cueRadiusInfo;
 
@@ -165,11 +240,7 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 {
 	ERequestStatus result = ERequestStatus::Success;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Adx2 Object Pool");
-	CObject::CreateAllocator(objectPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Adx2 Event Pool");
-	CEvent::CreateAllocator(eventPoolSize);
+	AllocateMemoryPools(objectPoolSize, eventPoolSize);
 
 	m_regularSoundBankFolder = AUDIO_SYSTEM_DATA_ROOT;
 	m_regularSoundBankFolder += "/";
@@ -233,8 +304,62 @@ void CImpl::Release()
 	delete this;
 	g_cvars.UnregisterVariables();
 
-	CObject::FreeMemoryPool();
-	CEvent::FreeMemoryPool();
+	FreeMemoryPools();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific)
+{
+	if (isLevelSpecific)
+	{
+		SPoolSizes levelPoolSizes;
+		CountPoolSizes(pNode, levelPoolSizes);
+
+		g_poolSizesLevelSpecific.triggers = std::max(g_poolSizesLevelSpecific.triggers, levelPoolSizes.triggers);
+		g_poolSizesLevelSpecific.parameters = std::max(g_poolSizesLevelSpecific.parameters, levelPoolSizes.parameters);
+		g_poolSizesLevelSpecific.switchStates = std::max(g_poolSizesLevelSpecific.switchStates, levelPoolSizes.switchStates);
+		g_poolSizesLevelSpecific.environments = std::max(g_poolSizesLevelSpecific.environments, levelPoolSizes.environments);
+		g_poolSizesLevelSpecific.settings = std::max(g_poolSizesLevelSpecific.settings, levelPoolSizes.settings);
+		g_poolSizesLevelSpecific.files = std::max(g_poolSizesLevelSpecific.files, levelPoolSizes.files);
+	}
+	else
+	{
+		CountPoolSizes(pNode, g_poolSizes);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnBeforeLibraryDataChanged()
+{
+	ZeroStruct(g_poolSizes);
+	ZeroStruct(g_poolSizesLevelSpecific);
+
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	ZeroStruct(g_debugPoolSizes);
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnAfterLibraryDataChanged()
+{
+	g_poolSizes.triggers += g_poolSizesLevelSpecific.triggers;
+	g_poolSizes.parameters += g_poolSizesLevelSpecific.parameters;
+	g_poolSizes.switchStates += g_poolSizesLevelSpecific.switchStates;
+	g_poolSizes.environments += g_poolSizesLevelSpecific.environments;
+	g_poolSizes.settings += g_poolSizesLevelSpecific.settings;
+	g_poolSizes.files += g_poolSizesLevelSpecific.files;
+
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	// Used to hide pools without allocations in debug draw.
+	g_debugPoolSizes = g_poolSizes;
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+
+	g_poolSizes.triggers = std::max<uint32>(1, g_poolSizes.triggers);
+	g_poolSizes.parameters = std::max<uint32>(1, g_poolSizes.parameters);
+	g_poolSizes.switchStates = std::max<uint32>(1, g_poolSizes.switchStates);
+	g_poolSizes.environments = std::max<uint32>(1, g_poolSizes.environments);
+	g_poolSizes.settings = std::max<uint32>(1, g_poolSizes.settings);
+	g_poolSizes.files = std::max<uint32>(1, g_poolSizes.files);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -680,7 +805,7 @@ void CImpl::DestructParameter(IParameter const* const pIParameter)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool ParseSwitchOrState(XmlNodeRef const pNode, string& outSelectorName, string& outSelectorLabelName)
+bool ParseSwitchOrState(XmlNodeRef const pNode, string& selectorName, string& selectorLabelName)
 {
 	bool foundAttributes = false;
 
@@ -696,8 +821,8 @@ bool ParseSwitchOrState(XmlNodeRef const pNode, string& outSelectorName, string&
 
 			if ((szSelctorLabelName != nullptr) && (szSelctorLabelName[0] != 0))
 			{
-				outSelectorName = szSelectorName;
-				outSelectorLabelName = szSelctorLabelName;
+				selectorName = szSelectorName;
+				selectorLabelName = szSelctorLabelName;
 				foundAttributes = true;
 			}
 		}
@@ -1064,55 +1189,114 @@ void CImpl::PauseAllObjects(CriBool const shouldPause)
 }
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-///////////////////////////////////////////////////////////////////////////
-void GetMemoryInfo(SMemoryInfo& memoryInfo)
+//////////////////////////////////////////////////////////////////////////
+void DrawMemoryPoolInfo(
+	IRenderAuxGeom& auxGeom,
+	float const posX,
+	float& posY,
+	stl::SPoolMemoryUsage const& mem,
+	stl::SMemoryUsage const& pool,
+	char const* const szType)
 {
-	CryModuleMemoryInfo memInfo;
-	ZeroStruct(memInfo);
-	CryGetMemoryInfoForModule(&memInfo);
+	CryFixedStringT<MaxMiscStringLength> memUsedString;
 
-	memoryInfo.totalMemory = static_cast<size_t>(memInfo.allocated - memInfo.freed);
-
+	if (mem.nUsed < 1024)
 	{
-		auto& allocator = CObject::GetAllocator();
-		auto mem = allocator.GetTotalMemory();
-		auto pool = allocator.GetCounts();
-		memoryInfo.poolUsedObjects = pool.nUsed;
-		memoryInfo.poolConstructedObjects = pool.nAlloc;
-		memoryInfo.poolUsedMemory = mem.nUsed;
-		memoryInfo.poolAllocatedMemory = mem.nAlloc;
+		memUsedString.Format("%" PRISIZE_T " Byte", mem.nUsed);
+	}
+	else
+	{
+		memUsedString.Format("%" PRISIZE_T " KiB", mem.nUsed >> 10);
 	}
 
+	CryFixedStringT<MaxMiscStringLength> memAllocString;
+
+	if (mem.nAlloc < 1024)
 	{
-		auto& allocator = CEvent::GetAllocator();
-		auto mem = allocator.GetTotalMemory();
-		auto pool = allocator.GetCounts();
-		memoryInfo.poolUsedObjects += pool.nUsed;
-		memoryInfo.poolConstructedObjects += pool.nAlloc;
-		memoryInfo.poolUsedMemory += mem.nUsed;
-		memoryInfo.poolAllocatedMemory += mem.nAlloc;
+		memAllocString.Format("%" PRISIZE_T " Byte", mem.nAlloc);
 	}
+	else
+	{
+		memAllocString.Format("%" PRISIZE_T " KiB", mem.nAlloc >> 10);
+	}
+
+	posY += g_debugSystemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false,
+	                    "[%s] In Use: %" PRISIZE_T " | Constructed: %" PRISIZE_T " (%s) | Memory Pool: %s",
+	                    szType, pool.nUsed, pool.nAlloc, memUsedString.c_str(), memAllocString.c_str());
 }
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY)
+void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo)
 {
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemHeaderFontSize, g_debugSystemColorHeader.data(), false, m_name.c_str());
+	CryModuleMemoryInfo memInfo;
+	ZeroStruct(memInfo);
+	CryGetMemoryInfoForModule(&memInfo);
 
-	SMemoryInfo memoryInfo;
-	GetMemoryInfo(memoryInfo);
-	memoryInfo.totalMemory += m_acfFileSize,
+	CryFixedStringT<MaxMiscStringLength> memInfoString;
+	auto const memAlloc = static_cast<uint32>(memInfo.allocated - memInfo.freed);
 
-	posY += g_debugSystemLineHeightClause;
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Total Memory Used: %uKiB | ACF: %uKiB",
-	                    static_cast<uint32>(memoryInfo.totalMemory / 1024),
-	                    static_cast<uint32>(m_acfFileSize / 1024));
+	if (memAlloc < 1024)
+	{
+		memInfoString.Format("%s (Total Memory: %u Byte)", m_name.c_str(), memAlloc);
+	}
+	else
+	{
+		memInfoString.Format("%s (Total Memory: %u KiB)", m_name.c_str(), memAlloc >> 10);
+	}
 
-	posY += g_debugSystemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "[Object Pool] In Use: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB",
-	                    memoryInfo.poolUsedObjects, memoryInfo.poolConstructedObjects, memoryInfo.poolUsedMemory, memoryInfo.poolAllocatedMemory);
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemHeaderFontSize, g_debugSystemColorHeader.data(), false, memInfoString.c_str());
+
+	if (showDetailedInfo)
+	{
+		{
+			auto& allocator = CObject::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Objects");
+		}
+
+		{
+			auto& allocator = CEvent::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Events");
+		}
+
+		if (g_debugPoolSizes.triggers > 0)
+		{
+			auto& allocator = CTrigger::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Triggers");
+		}
+
+		if (g_debugPoolSizes.parameters > 0)
+		{
+			auto& allocator = CParameter::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Parameters");
+		}
+
+		if (g_debugPoolSizes.switchStates > 0)
+		{
+			auto& allocator = CSwitchState::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "SwitchStates");
+		}
+
+		if (g_debugPoolSizes.environments > 0)
+		{
+			auto& allocator = CEnvironment::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Environments");
+		}
+
+		if (g_debugPoolSizes.settings > 0)
+		{
+			auto& allocator = CSetting::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Settings");
+		}
+
+		if (g_debugPoolSizes.files > 0)
+		{
+			auto& allocator = CFile::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Files");
+		}
+	}
 
 	posY += g_debugSystemLineHeight;
 	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "DSP Bus Setting: %s", g_debugCurrentDspBusSettingName.c_str());

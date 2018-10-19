@@ -87,6 +87,29 @@ struct IImpl
 	virtual void OnRefresh() = 0;
 
 	/**
+	 * Pass an implementation specific XML node that contains information about the current parsed library.
+	 * Is called for each library that contains the node, before calling Init.
+	 * @param pNode - an XML node containing information about the current parsed library
+	 * @param isLevelSpecific - false: the library is global. true: the library is level specific.
+	 * @return void
+	 */
+	virtual void SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific) = 0;
+
+	/**
+	 * Called before parsing all libraries for impl data.
+	 * @see OnAfterLibraryDataChanged, SetLibraryData
+	 * @return void
+	 */
+	virtual void OnBeforeLibraryDataChanged() = 0;
+
+	/**
+	 * Called when parsing all libraries for impl data is finished.
+	 * @see OnBeforeLibraryDataChanged, SetLibraryData
+	 * @return void
+	 */
+	virtual void OnAfterLibraryDataChanged() = 0;
+
+	/**
 	 * This method is called every time the main Game (or Editor) window loses focus.
 	 * @return ERequestStatus::Success if the action was successful, ERequestStatus::Failure otherwise.
 	 * @see OnGetFocus
@@ -419,9 +442,10 @@ struct IImpl
 	 * @param[out] auxGeom - a reference to the IRenderAuxGeom that draws the debug info.
 	 * @param[in] posX - x-axis position of the auxGeom.
 	 * @param[out] posY - y-axis position of the auxGeom.
+	 * @param[in] showDetailedInfo - should detailed memory info be shown or not.
 	 * @return void
 	 */
-	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY) = 0;
+	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo) = 0;
 };
 } // namespace Impl
 } // namespace CryAudio

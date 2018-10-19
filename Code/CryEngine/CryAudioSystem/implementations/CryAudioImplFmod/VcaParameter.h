@@ -2,7 +2,8 @@
 
 #pragma once
 
-#include "Parameter.h"
+#include "BaseParameter.h"
+#include <PoolObject.h>
 
 namespace CryAudio
 {
@@ -10,7 +11,7 @@ namespace Impl
 {
 namespace Fmod
 {
-class CVcaParameter final : public CParameter
+class CVcaParameter final : public CBaseParameter, public CPoolObject<CVcaParameter, stl::PSyncNone>
 {
 public:
 
@@ -24,7 +25,6 @@ public:
 		uint32 const id,
 		float const multiplier,
 		float const shift,
-		char const* const szName,
 		FMOD::Studio::VCA* const vca);
 
 	virtual ~CVcaParameter() override = default;
