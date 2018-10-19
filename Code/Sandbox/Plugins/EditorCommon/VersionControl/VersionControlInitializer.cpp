@@ -204,48 +204,49 @@ public:
 	virtual bool    Match(const QVariant& value, const QVariant& filterValue) override
 	{
 		auto filterVal = filterValue.toInt();
-		return filterVal == 0 || value.toInt() & filterVal;
+		return filterVal == 0 || value.toInt() & filterVal || (value.toInt() == 0 && filterVal & UP_TO_DATE_VAL);
 	}
 
-	virtual QWidget* CreateEditWidget(std::shared_ptr<CAttributeFilter> filter) override
+	virtual QWidget* CreateEditWidget(std::shared_ptr<CAttributeFilter> pFilter) override
 	{
-		QMenuComboBox* cb = new QMenuComboBox();
-		cb->SetMultiSelect(true);
-		cb->SetCanHaveEmptySelection(true);
+		QMenuComboBox* pComboBox = new QMenuComboBox();
+		pComboBox->SetMultiSelect(true);
+		pComboBox->SetCanHaveEmptySelection(true);
 
-		cb->AddItem(QObject::tr("Added locally"), CVersionControlFileStatus::eState_AddedLocally);
-		cb->AddItem(QObject::tr("Modified locally"), CVersionControlFileStatus::eState_ModifiedLocally);
-		cb->AddItem(QObject::tr("Checked out locally"), CVersionControlFileStatus::eState_CheckedOutLocally);
-		cb->AddItem(QObject::tr("Checked out remotely"), CVersionControlFileStatus::eState_CheckedOutRemotely);
-		cb->AddItem(QObject::tr("Updated remotely"), CVersionControlFileStatus::eState_UpdatedRemotely);
-		cb->AddItem(QObject::tr("Deleted remotely"), CVersionControlFileStatus::eState_DeletedRemotely);
+		pComboBox->AddItem(QObject::tr("Added"), CVersionControlFileStatus::eState_AddedLocally);
+		pComboBox->AddItem(QObject::tr("Checked out"), CVersionControlFileStatus::eState_CheckedOutLocally);
+		pComboBox->AddItem(QObject::tr("Checked out & Modified"), CVersionControlFileStatus::eState_ModifiedLocally);
+		pComboBox->AddItem(QObject::tr("Checked out remotely"), CVersionControlFileStatus::eState_CheckedOutRemotely);
+		pComboBox->AddItem(QObject::tr("Updated remotely"), CVersionControlFileStatus::eState_UpdatedRemotely);
+		pComboBox->AddItem(QObject::tr("Deleted remotely"), CVersionControlFileStatus::eState_DeletedRemotely);
+		pComboBox->AddItem(QObject::tr("Up-to-Date"), UP_TO_DATE_VAL);
 
-		QVariant& val = filter->GetFilterValue();
+		QVariant& val = pFilter->GetFilterValue();
 		if (val.isValid())
 		{
 			bool ok = false;
 			int valToI = val.toInt(&ok);
 			if (ok)
-				cb->SetChecked(valToI);
+				pComboBox->SetChecked(valToI);
 			else
 			{
 				QStringList items = val.toString().split(", ");
-				cb->SetChecked(items);
+				pComboBox->SetChecked(items);
 			}
 		}
 
-		cb->signalItemChecked.Connect([cb, filter]()
+		pComboBox->signalItemChecked.Connect([this, pComboBox, pFilter]()
 		{
-			const auto& indices = cb->GetCheckedIndices();
+			const auto& indices = pComboBox->GetCheckedIndices();
 			int sum = 0;
 			for (int index : indices)
 			{
-				sum += cb->GetData(index).toInt();
+				sum += pComboBox->GetData(index).toInt();
 			}
-			filter->SetFilterValue(sum);
+			pFilter->SetFilterValue(sum);
 		});
 
-		return cb;
+		return pComboBox;
 	}
 
 	virtual void UpdateWidget(QWidget* widget, const QVariant& value) override
@@ -256,6 +257,10 @@ public:
 			combo->SetChecked(value.toStringList());
 		}
 	}
+
+private:
+	// This is sort of a hack because up-to-date state is represented by 0 bitmask.
+	static constexpr int UP_TO_DATE_VAL = 1 << 31;
 };
 
 static CAttributeType<int> g_vcsStatusMaskAttributeType({ new CVCSStatusOperator() });
