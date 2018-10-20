@@ -3134,6 +3134,13 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 	CSvoManager::OnDisplayInfo(fTextPosX, fTextPosY, fTextStepY, DISPLAY_INFO_SCALE);
 	#endif
 
+	if (GetCVars()->e_ProcVegetation == 2 || m_supportOfflineProceduralVegetation)
+	{
+		int objectsNum = 0, maxNodesNum = 0;
+		int nodesNum = GetTerrain()->GetActiveProcObjNodesCount(objectsNum, maxNodesNum);
+		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "ProcVeg: sectors: %d / %d, instances: %d", nodesNum, maxNodesNum, objectsNum);
+	}
+
 	#undef MAX_PHYS_TIME
 	#undef TICKS_TO_MS
 	#undef CONVY
@@ -3364,13 +3371,6 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 	{
 		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY,
 		                     "GetDistanceToSectorWithWater() = %.2f", m_pTerrain->GetDistanceToSectorWithWater());
-	}
-
-	if (GetCVars()->e_ProcVegetation == 2)
-	{
-		int objectsNum = 0;
-		int nodesNum = GetTerrain()->GetActiveProcObjNodesCount(objectsNum);
-		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "ProcVeg: sectors num: %d, objects num: %d", nodesNum, objectsNum);
 	}
 
 	if (GetCVars()->e_MergedMeshesDebug)

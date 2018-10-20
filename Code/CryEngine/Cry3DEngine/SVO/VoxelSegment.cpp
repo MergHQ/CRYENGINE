@@ -1898,7 +1898,7 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 
 	if (bThisIsAreaParent || bThisIsLowLodNode)
 	{
-		if (bAllowStartStreaming && bThisIsAreaParent)
+		if (bAllowStartStreaming && bThisIsAreaParent && gEnv->IsEditor())
 		{
 			// check or activate or build procedural vegetation in the area
 			if (!GetTerrain()->CheckUpdateProcObjectsInArea(AABB(cloudBoxWS.min - Vec3(2.f, 2.f, 32.f), cloudBoxWS.max + Vec3(2.f)), m_bExportMode))
@@ -1935,6 +1935,10 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 							continue;
 
 					if (pNode->GetGIMode() != IRenderNode::eGM_StaticVoxelization)
+						continue;
+
+					// skip run-time procedural vegetation (voxelize only offline-procedural)
+					if ((pNode->GetRenderNodeType() == eERType_Vegetation) && (pNode->GetRndFlags() & ERF_PROCEDURAL) && !((CVegetation*)pNode)->GetStatObjGroup().offlineProcedural)
 						continue;
 
 					float maxViewDist = pNode->GetBBox().GetRadius() * GetCVars()->e_ViewDistRatio;
