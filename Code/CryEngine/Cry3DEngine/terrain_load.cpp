@@ -380,5 +380,7 @@ bool CTerrain::OpenTerrainTextureFile(SCommonFileHeader& hdrDiffTexHdr, STerrain
 	m_texCache[1].InitPool(0, m_arrBaseTexInfos.m_TerrainTextureLayer[1].nSectorSizePixels, eTexPoolFormat);
 	m_texCache[2].InitPool(0, nSectorHeightMapTextureDim, eTF_R32F);
 
+	m_isOfflineProceduralVegetationReady = false;
+
 	return true;
 }
