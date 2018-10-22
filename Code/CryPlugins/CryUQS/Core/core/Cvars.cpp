@@ -17,6 +17,7 @@ namespace UQS
 		int           SCvars::logQueryHistory;
 		float         SCvars::timeBudgetExcessThresholdInPercent;
 		int           SCvars::printTimeExcessWarningsToConsole;
+		int           SCvars::roundRobinLimit;
 
 		void SCvars::Register()
 		{
@@ -44,6 +45,11 @@ namespace UQS
 
 			REGISTER_CVAR2("uqs_printTimeExcessWarningsToConsole", &printTimeExcessWarningsToConsole, 1, VF_NULL,
 				"0/1: Print warnings due to time excess of queries also to the console, not just to the query history.");
+
+			REGISTER_CVAR2("uqs_roundRobinLimit", &roundRobinLimit, 4, VF_NULL,
+				"Max. number of (non-hierarchical) queries that will get a chance to do some work per frame.\n"
+				"A value of 0 or smaller has a special meaning:\n"
+				"It will allow *all* currently running queries to do some work (at the expense of possible congestion).");
 		}
 
 		void SCvars::Unregister()
@@ -56,6 +62,7 @@ namespace UQS
 			gEnv->pConsole->UnregisterVariable("uqs_logQueryHistory");
 			gEnv->pConsole->UnregisterVariable("uqs_timeBudgetExcessThresholdInPercent");
 			gEnv->pConsole->UnregisterVariable("uqs_printTimeExcessWarningsToConsole");
+			gEnv->pConsole->UnregisterVariable("uqs_roundRobinLimit");
 		}
 	}
 }
