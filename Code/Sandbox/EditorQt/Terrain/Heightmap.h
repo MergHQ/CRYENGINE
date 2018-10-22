@@ -2,11 +2,14 @@
 
 #pragma once
 
+#include "SandboxAPI.h"
 #include "RGBLayer.h"
 #include "TerrainCommon.h"
 #include "TerrainGrid.h"
 
 #include <Util/Image.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <CrySandbox/CrySignal.h>
 
 // Heightmap data type
 typedef float                    t_hmap;

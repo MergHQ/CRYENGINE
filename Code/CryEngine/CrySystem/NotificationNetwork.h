@@ -5,7 +5,9 @@
 #include <CrySystem/IConsole.h>
 #include <CryNetwork/INotificationNetwork.h>
 #include <CryNetwork/CrySocks.h>
+#include <CryThreading/CryThread.h>
 #include <CryThreading/IThreadManager.h>
+#include <queue>
 
 class CNotificationNetwork;
 namespace NotificationNetwork {

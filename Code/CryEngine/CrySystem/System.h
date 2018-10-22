@@ -14,6 +14,7 @@
 #include <CryString/CryName.h>
 #include <CryMath/LCGRandom.h>
 #include <CryRenderer/IRenderer.h>
+#include <CryThreading/CryThread.h>
 #include <bitset>
 
 struct IConsoleCmdArgs;

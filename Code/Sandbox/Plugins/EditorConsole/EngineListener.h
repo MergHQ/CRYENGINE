@@ -7,6 +7,7 @@
 #include <CryCore/BoostHelpers.h> // to make sure we get own throw_exceptions
 #include <CryString/CryString.h>
 #include <CrySystem/IConsole.h>
+#include <CryThreading/CryThread.h>
 
 #include <boost/circular_buffer.hpp>
 

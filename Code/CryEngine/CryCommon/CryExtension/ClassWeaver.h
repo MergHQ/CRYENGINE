@@ -19,6 +19,7 @@
 #include "RegFactoryNode.h"
 #include <CryExtension/ICryUnknown.h>
 #include <CryExtension/ICryFactory.h>
+#include <CryThreading/CryThread.h>
 
 namespace CW
 {

@@ -2,6 +2,7 @@
 #include "Player.h"
 #include "SpawnPoint.h"
 
+#include <CryCore/StaticInstanceList.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 
 #include <CryNetwork/Rmi.h>

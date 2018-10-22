@@ -77,7 +77,8 @@
 
 #include "Components/BehaviorTree/BehaviorTreeComponent.h"
 
-#include <algorithm>  // std::min()
+#include <CryCore/StaticInstanceList.h>
+#include <algorithm>
 
 
 FlyHelpers::CTacticalPointLanguageExtender g_flyHelpersTacticalLanguageExtender;

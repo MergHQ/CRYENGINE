@@ -5,6 +5,7 @@
 
 #include <CrySystem/ISystem.h>
 #include <CryCore/Containers/CryListenerSet.h>
+#include <CryThreading/MultiThread_Containers.h>
 
 class CSystemEventDispatcher : public ISystemEventDispatcher
 {

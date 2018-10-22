@@ -13,6 +13,7 @@
 #include "ZipDirFindRW.h"
 #include "CryPak.h"
 #include "ZipEncrypt.h"
+#include "FileIOWrapper.h"
 
 #ifndef OPTIMIZED_READONLY_ZIP_ENTRY
 

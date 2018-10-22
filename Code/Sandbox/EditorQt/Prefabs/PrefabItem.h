@@ -3,9 +3,11 @@
 #pragma once
 
 #include "BaseLibraryItem.h"
-#include <Cry3DEngine/I3DEngine.h>
+#include <Objects/BaseObject.h>
+#include <CryExtension/CryGUID.h>
 
 class CPrefabObject;
+class CSelectionGroup;
 
 // Helpers for object ID mapping for better code readability
 struct SObjectIdMapping

@@ -6,7 +6,8 @@ struct ISurfaceType;
 struct ISurfaceTypeManager;
 class ICrySizer;
 
-#include <CryRenderer/IShader.h> // EEfResTextures
+#include <CryRenderer/IShader.h>
+#include <CryThreading/CryThread.h>
 
 struct SShaderItem;
 struct SShaderParam;
@@ -23,7 +24,7 @@ struct SInputShaderResources;
 
 #include <CryRenderer/Tarray.h>
 
-#include <Cry3DEngine/CGF/CryHeaders.h>  // MAX_SUB_MATERIALS
+#include <Cry3DEngine/CGF/CryHeaders.h>
 
 //! Special names for materials.
 #define MTL_SPECIAL_NAME_COLLISION_PROXY         "collision_proxy"

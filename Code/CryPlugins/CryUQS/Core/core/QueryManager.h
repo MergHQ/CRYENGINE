@@ -38,7 +38,6 @@ namespace UQS
 				Functor1<const SQueryResult&>                          pCallback;
 				CQueryID                                               queryID;
 				CQueryID                                               parentQueryID;
-				int                                                    performanceOffenderMercyCountdown;  // countdown before finally marking a query as performance offender when exceeding its time-budget most among all others; offenders get moved to the end of the queue and get skipped until all preceding queries are finished
 			};
 
 			//===================================================================================
@@ -120,16 +119,22 @@ namespace UQS
 			                                                           UQS_NON_COPYABLE(CQueryManager);
 
 			void                                                       UpdateQueries();
+			void                                                       UpdateNonRoundRobinQueries(std::vector<SFinishedQueryInfo>& outFinishedQueries);
+			void                                                       BuildRoundRobinList(std::vector<const SRunningQueryInfo*>& outRoundRobinQueries);
+			void                                                       UpdateRoundRobinQueries(const std::vector<const SRunningQueryInfo*>& roundRobinQueries, std::vector<SFinishedQueryInfo>& outFinishedQueries);
+			void                                                       FinalizeFinishedQueries(const std::vector<SFinishedQueryInfo>& finishedQueries);
 			void                                                       ExpireDebugDrawStatisticHistory2D();
 			void                                                       NotifyCallbacksOfFinishedQuery(const SFinishedQueryInfo& finishedQueryInfo) const;
 			void                                                       NotifyOfQueryPerformanceWarning(const SRunningQueryInfo& problematicQuery, const char* szFmt, ...) const PRINTF_PARAMS(3, 4);
 
+			static CTimeValue                                          HelpUpdateSingleQuery(const SRunningQueryInfo& queryToUpdate, const CTimeValue& timeBudgetForThisQuery, std::vector<SFinishedQueryInfo>& outFinishedQueries);
 			static void                                                DebugPrintQueryStatistics(CLogger& logger, const CQueryBase& query, const CQueryID& queryID);
 			static int                                                 DebugDrawQueryStatistics(const CQueryBase::SStatistics& statisticsToDraw, const CQueryID& queryID, int row, const ColorF& color);
 
 		private:
 			CQueryID                                                   m_queryIDProvider;
 			std::list<SRunningQueryInfo>                               m_queries;
+			std::list<SRunningQueryInfo>::const_iterator               m_roundRobinStart;            // bookmark of where the next round-robin update will start; points into m_queries; care is being take to prevent this iterator from dangling whenever the m_queries container is changed
 			bool                                                       m_bQueriesUpdateInProgress;   // safety guard to detect calls to CancelQuery() in the middle of iterating through all m_queries (this would invalidate iterators!!!)
 			CQueryHistoryManager&                                      m_queryHistoryManager;        // for allocating new historic queries each time a query blueprint gets instantiated and runs
 			std::deque<SHistoryQueryInfo2D>                            m_debugDrawHistory2D;         // for 2D on-screen drawing of statistics of all current and some past queries

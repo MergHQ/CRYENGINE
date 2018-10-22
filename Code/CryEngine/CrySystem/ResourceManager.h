@@ -16,6 +16,7 @@
 #pragma once
 
 #include <CrySystem/File/IResourceManager.h>
+#include <CryThreading/CryThread.h>
 #include "AsyncPakManager.h"
 
 //////////////////////////////////////////////////////////////////////////

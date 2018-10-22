@@ -31,8 +31,9 @@
 #ifndef __functor_h__
 #define __functor_h__
 
-#include <list>
+#include "StlUtils.h"
 #include <CryCore/Assert/CryAssert.h>
+#include <list>
 /*
    To use:
 

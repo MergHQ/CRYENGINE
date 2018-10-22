@@ -3,6 +3,8 @@
 #ifndef _SMART_PTR_H_
 #define _SMART_PTR_H_
 
+#include <CryThreading/CryAtomics.h>
+
 void CryFatalError(const char*, ...) PRINTF_PARAMS(1, 2);
 #if CRY_PLATFORM_APPLE
 #include <cstddef>

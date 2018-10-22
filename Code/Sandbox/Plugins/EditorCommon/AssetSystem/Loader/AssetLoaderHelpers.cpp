@@ -11,6 +11,7 @@
 #include <Cry3DEngine/CGF/IChunkFile.h>  
 #include <Cry3DEngine/CGF/CGFContent.h>
 #include <CryString/CryPath.h>
+#include <stack>
 
 namespace AssetLoader
 {

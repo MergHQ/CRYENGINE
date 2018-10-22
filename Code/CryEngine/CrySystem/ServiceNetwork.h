@@ -16,6 +16,7 @@
 #include <CryNetwork/IServiceNetwork.h>
 #include <CryNetwork/CrySocks.h>
 #include <CryThreading/IThreadManager.h>
+#include <CryThreading/MultiThread_Containers.h>
 #include <CryMath/LCGRandom.h>
 
 class CServiceNetwork;

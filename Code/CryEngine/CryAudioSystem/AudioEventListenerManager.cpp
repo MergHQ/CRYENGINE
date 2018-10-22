@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "AudioEventListenerManager.h"
 #include "Common/Logger.h"
+#include <CryCore/StlUtils.h>
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler.h>
 
 namespace CryAudio

@@ -15,6 +15,7 @@
 #include "CryPak.h"
 #include "ZipEncrypt.h"
 #include "System.h"
+#include "FileIOWrapper.h"
 
 using namespace ZipFile;
 

@@ -7,6 +7,9 @@
 #pragma warning(disable: 4266)
 
 #include <CryCore/functor.h>
+#include <CryString/CryString.h>
+#include <CryMath/Cry_Math.h>
+#include <functional>
 
 class CAssetManager;
 class CBaseObject;

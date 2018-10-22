@@ -17,6 +17,7 @@
 #include <QDirIterator> 
 #include <condition_variable>
 #include <unordered_map>
+#include <stack>
 
 namespace Loader_Private
 {

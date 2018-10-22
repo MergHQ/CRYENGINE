@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "ParticleNodeTreeModel.h"
+#include <stack>
 
 namespace CryParticleEditor {
 

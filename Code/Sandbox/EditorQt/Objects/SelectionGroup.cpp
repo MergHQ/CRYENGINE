@@ -14,6 +14,9 @@
 #include <Objects/DisplayContext.h>
 #include <Preferences/SnappingPreferences.h>
 #include <Viewport.h>
+#include <Util/Math.h>
+#include <Cry3DEngine/IStatObj.h>
+#include <queue>
 
 void CSelectionGroup::Reserve(size_t count)
 {

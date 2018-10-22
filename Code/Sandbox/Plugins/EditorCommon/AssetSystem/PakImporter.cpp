@@ -9,9 +9,16 @@
 #include "FilePathUtil.h"
 #include "ThreadingUtils.h"
 #include "QtUtil.h"
+#include "Util/EditorUtils.h" // strstri
+#include <IEditor.h>
 
 #include <CrySystem/File/ICryPak.h>
 #include <CryString/CryPath.h>
+#include <QTimer>
+#include <QDir>
+#include <QFile>
+
+#include <stack>
 
 namespace AssetManagerHelpers
 {

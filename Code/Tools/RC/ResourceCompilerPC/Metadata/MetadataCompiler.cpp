@@ -6,6 +6,8 @@
 #include "FileUtil.h"
 #include "StringHelpers.h"
 #include "CGF/CGFLoader.h"
+#include <vector>
+#include <stack>
 
 namespace
 {

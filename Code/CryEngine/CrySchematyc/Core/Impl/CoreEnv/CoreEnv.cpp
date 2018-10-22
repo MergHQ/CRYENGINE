@@ -6,6 +6,7 @@
 #include <CrySchematyc/Env/IEnvRegistrar.h>
 
 #include <CrySchematyc/Env/Elements/EnvModule.h>
+#include <CryCore/StaticInstanceList.h>
 
 #include "CoreEnvSignals.h"
 

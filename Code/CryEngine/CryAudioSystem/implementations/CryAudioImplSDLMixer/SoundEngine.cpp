@@ -16,6 +16,7 @@
 
 #include <SDL.h>
 #include <SDL_mixer.h>
+#include <queue>
 
 namespace CryAudio
 {

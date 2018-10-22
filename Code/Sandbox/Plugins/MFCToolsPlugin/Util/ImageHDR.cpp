@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "ImageHDR.h"
 #include <CrySystem/File/CryFile.h>
+#include <CryThreading/CryThread.h>
 
 // We need globals because of the callbacks (they don't allow us to pass state)
 static CryMutex globalFileMutex;

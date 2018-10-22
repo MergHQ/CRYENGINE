@@ -23,7 +23,6 @@ namespace UQS
 			, pCallback(0)
 			, queryID(CQueryID::CreateInvalid())
 			, parentQueryID(CQueryID::CreateInvalid())
-			, performanceOffenderMercyCountdown(3)	// allow the query to be the most performance-offending one 3 times before taking counter measures
 		{}
 
 		//===================================================================================
@@ -83,6 +82,7 @@ namespace UQS
 
 		CQueryManager::CQueryManager(CQueryHistoryManager& queryHistoryManager)
 			: m_queryIDProvider(CQueryID::CreateInvalid())
+			, m_roundRobinStart(m_queries.cend())
 			, m_bQueriesUpdateInProgress(false)
 			, m_queryHistoryManager(queryHistoryManager)
 		{
@@ -117,8 +117,11 @@ namespace UQS
 			auto it = std::find_if(m_queries.begin(), m_queries.end(), CPredEqualQueryID(idOfQueryToCancel));
 			if (it != m_queries.end())
 			{
-				CQueryBase* pQueryToCancel = it->pQuery.get();
-				pQueryToCancel->Cancel();
+				it->pQuery->Cancel();
+				if (m_roundRobinStart == it)
+				{
+					m_roundRobinStart = std::next(it);
+				}
 				m_queries.erase(it);
 			}
 		}
@@ -274,268 +277,249 @@ namespace UQS
 			}
 		}
 
+		CTimeValue CQueryManager::HelpUpdateSingleQuery(const CQueryManager::SRunningQueryInfo& queryToUpdate, const CTimeValue& timeBudgetForThisQuery, std::vector<CQueryManager::SFinishedQueryInfo>& outFinishedQueries)
+		{
+			CRY_PROFILE_FUNCTION(UQS_PROFILED_SUBSYSTEM_TO_USE);
+
+			//
+			// - update the query and deal with its update status
+			// - keep track of the used time to return it to the caller
+			//
+
+			Shared::CUqsString error;
+			const CTimeValue timestampBeforeQueryUpdate = gEnv->pTimer->GetAsyncTime();
+			const CQueryBase::EUpdateState queryState = queryToUpdate.pQuery->Update(timeBudgetForThisQuery, error);
+			const CTimeValue timestampAfterQueryUpdate = gEnv->pTimer->GetAsyncTime();
+
+			//
+			// deal with the query's update status
+			//
+
+			switch (queryState)
+			{
+			case CQueryBase::EUpdateState::StillRunning:
+				// nothing (keep it running)
+				break;
+
+			case CQueryBase::EUpdateState::Finished:
+				{
+					const bool bQueryFinishedWithSuccess = true;
+					outFinishedQueries.emplace_back(
+						queryToUpdate.pQuery,
+						queryToUpdate.pQueryBlueprint,
+						queryToUpdate.pCallback,
+						queryToUpdate.queryID,
+						queryToUpdate.parentQueryID,
+						timestampAfterQueryUpdate,
+						bQueryFinishedWithSuccess, "");
+				}
+				break;
+
+			case CQueryBase::EUpdateState::ExceptionOccurred:
+				{
+					const bool bQueryFinishedWithSuccess = false;
+					outFinishedQueries.emplace_back(
+						queryToUpdate.pQuery,
+						queryToUpdate.pQueryBlueprint,
+						queryToUpdate.pCallback,
+						queryToUpdate.queryID,
+						queryToUpdate.parentQueryID,
+						timestampAfterQueryUpdate,
+						bQueryFinishedWithSuccess,
+						error.c_str());
+				}
+				break;
+
+			default:
+				CRY_ASSERT(0);
+			}
+
+			return timestampAfterQueryUpdate - timestampBeforeQueryUpdate;
+		}
+
 		void CQueryManager::UpdateQueries()
 		{
 			CRY_PROFILE_FUNCTION(UQS_PROFILED_SUBSYSTEM_TO_USE);
 
-			struct SWorstPerformingQuery
+			if (m_queries.empty())
+				return;
+
+			std::vector<const SRunningQueryInfo*> roundRobinQueries;
+			std::vector<SFinishedQueryInfo> finishedQueries;
+
+			finishedQueries.reserve(m_queries.size());
+			roundRobinQueries.reserve(m_queries.size());
+
+			m_bQueriesUpdateInProgress = true;
+
+			//
+			// first round-trip: update only those queries that do NOT need any time-budget (these are typically hierarchical queries that just schedule their child queries)
+			//
+
+			UpdateNonRoundRobinQueries(finishedQueries);
+
+			//
+			// second round-trip: collect queries that DO need some time-budget and put them into a temporary round-robin list
+			// (these are typically "leaf" queries that generate items and evaluate them in a time-sliced fashion over multiple frames)
+			//
+
+			BuildRoundRobinList(roundRobinQueries);
+
+			//
+			// update all queries in the round-robin container
+			//
+
+			UpdateRoundRobinQueries(roundRobinQueries, finishedQueries);
+
+			m_bQueriesUpdateInProgress = false;
+
+			//
+			// deal with freshly finished queries
+			//
+
+			FinalizeFinishedQueries(finishedQueries);
+		}
+
+		void CQueryManager::UpdateNonRoundRobinQueries(std::vector<SFinishedQueryInfo>& outFinishedQueries)
+		{
+			CRY_PROFILE_FUNCTION(UQS_PROFILED_SUBSYSTEM_TO_USE);
+
+			//
+			// update only those queries that do NOT need any time-budget (these are typically hierarchical queries that just schedule their child queries)
+			//
+
+			for (const SRunningQueryInfo& runningQueryInfo : m_queries)
 			{
-				explicit SWorstPerformingQuery(const std::list<SRunningQueryInfo>::iterator& it)
-					: itInQueries(it)
-				{}
-
-				std::list<SRunningQueryInfo>::iterator itInQueries;   // points into m_queries
-				float usedFractionOfTimeBudget = 0.0f;                // fraction of the time budget that was used in the last update cycle of .itInQueries
-			};
-
-			if (!m_queries.empty())
-			{
-				CRY_PROFILE_REGION(UQS_PROFILED_SUBSYSTEM_TO_USE, "UQS::Core::CQueryManager::UpdateQueries: updating all queries");
-
-				m_bQueriesUpdateInProgress = true;	// detect unintended calls to CancelQuery() while we're iterating through m_queries
-
-				//
-				// update all queries and collect the finished ones
-				//
-
-				const CTimeValue totalTimeBudget = SCvars::timeBudgetInSeconds;
-
-				std::vector<SFinishedQueryInfo> finishedOnes;
-				CTimeValue totalRemainingTimeBudget = totalTimeBudget;
-				CTimeValue totalTimeUsedSoFar;
-
-				SWorstPerformingQuery worstPerformingQuery(m_queries.end());
-				bool bEncounteredSomeNonPerformanceOffenderByNow = false;
-
-				for (auto it = m_queries.begin(); it != m_queries.end(); ++it)
+				if (!runningQueryInfo.pQuery->RequiresSomeTimeBudgetForExecution())
 				{
-					CRY_PROFILE_REGION(UQS_PROFILED_SUBSYSTEM_TO_USE, "UQS::Core::CQueryManager::UpdateQueries: inside m_queries iteration");
+					const CTimeValue dummyTimeBudget(0.0f);
+					HelpUpdateSingleQuery(runningQueryInfo, dummyTimeBudget, outFinishedQueries);
+				}
+			}
+		}
 
-					const SRunningQueryInfo& runningQueryInfo = *it;
+		void CQueryManager::BuildRoundRobinList(std::vector<const SRunningQueryInfo*>& outRoundRobinQueries)
+		{
+			CRY_PROFILE_FUNCTION(UQS_PROFILED_SUBSYSTEM_TO_USE);
 
-					CQueryBase* pQuery = runningQueryInfo.pQuery.get();
+			CRY_ASSERT(!m_queries.empty());	// optimization to circumvent special cases
 
-					const bool bThisQueryRequiresSomeTimeBudgetForExecution = pQuery->RequiresSomeTimeBudgetForExecution();
+			std::list<SRunningQueryInfo>::const_iterator it = m_roundRobinStart;
 
-					//
-					// - see if we need to skip this query due to punishment of having exceeded the time budget a lot and having interrupted the whole process before
-					// - the idea is to allow running all queries that *precede* the performance offender until they're finished and to halt the performance offender in the meanwhile
-					// - this is to make sure that the performance offender does no longer block these preceding queries by continuously interrupting everything
-					//
+			// start from the beginning if already residing at the end (this would be the initial situation or when removing the back-most query)
+			if (it == m_queries.cend())
+			{
+				it = m_roundRobinStart = m_queries.cbegin();
+			}
 
-					if (runningQueryInfo.performanceOffenderMercyCountdown == 0)
-					{
-						if (bEncounteredSomeNonPerformanceOffenderByNow)
-						{
-							NotifyOfQueryPerformanceWarning(runningQueryInfo, "system frame #%i: skipping query due to being a performance offender", (int)gEnv->nMainFrameID);
-							continue;
-						}
-					}
-					else if (bThisQueryRequiresSomeTimeBudgetForExecution)	// don't get infinitely blocked by parent queries that wait for their children (i.e. that wait for exactly this query we're now at)
-					{
-						bEncounteredSomeNonPerformanceOffenderByNow = true;
-					}
+			while (1)
+			{
+				// put this query in the round-robin list if it requires some time-budget
+				if (it->pQuery->RequiresSomeTimeBudgetForExecution())
+				{
+					outRoundRobinQueries.push_back(&(*it));
 
-					//
-					// Compute the granted time budget for every query again, since the previous query might have donated some unused time to the whole pool and
-					// more queries might have been spawned also.
-					// => let this query benefit a bit from that extra time
-					//
-					// As a further optimization to distribute the overall time budget as good as possible, we take a look at the current and remaining queries and ask them
-					// for whether they potentially require some time budget or not. If they don't need a time budget, then their unused time budget gets prematurely donated
-					// to the remaining queries (this happens implicitly).
-					//
-
-					CTimeValue timeBudgetForThisQuery;   // 0.0 seconds by default
-
-					if (bThisQueryRequiresSomeTimeBudgetForExecution)
-					{
-						size_t numRemainingQueriesThatRequireSomeTimeBudget = 1;
-
-						// see how many queries require a time budget
-						auto it2 = it;
-						++it2;
-						for (; it2 != m_queries.cend(); ++it2)
-						{
-							const CQueryBase* pQuery2 = it2->pQuery.get();
-							if (pQuery2->RequiresSomeTimeBudgetForExecution())
-							{
-								++numRemainingQueriesThatRequireSomeTimeBudget;
-							}
-						}
-
-						timeBudgetForThisQuery = totalRemainingTimeBudget.GetSeconds() / (float)numRemainingQueriesThatRequireSomeTimeBudget;
-					}
-
-					totalRemainingTimeBudget -= timeBudgetForThisQuery;
-
-					//
-					// - now update the query and deal with its update status
-					// - keep track of the used time for donating unused time to the whole pool (so that the upcoming queries can benefit from it)
-					//
-
-					Shared::CUqsString error;
-					const CTimeValue timestampBeforeQueryUpdate = gEnv->pTimer->GetAsyncTime();
-					const CQueryBase::EUpdateState queryState = pQuery->Update(timeBudgetForThisQuery, error);
-					const CTimeValue timestampAfterQueryUpdate = gEnv->pTimer->GetAsyncTime();
-
-					//
-					// deal with the query's update status
-					//
-
-					switch (queryState)
-					{
-					case CQueryBase::EUpdateState::StillRunning:
-						// nothing (keep it running)
+					// reached round-robin capacity?
+					if ((int)outRoundRobinQueries.size() == SCvars::roundRobinLimit)
 						break;
-
-					case CQueryBase::EUpdateState::Finished:
-						{
-							const bool bQueryFinishedWithSuccess = true;
-							finishedOnes.emplace_back(
-								runningQueryInfo.pQuery,
-								runningQueryInfo.pQueryBlueprint,
-								runningQueryInfo.pCallback,
-								runningQueryInfo.queryID,
-								runningQueryInfo.parentQueryID,
-								timestampAfterQueryUpdate,
-								bQueryFinishedWithSuccess, "");
-						}
-						break;
-
-					case CQueryBase::EUpdateState::ExceptionOccurred:
-						{
-							const bool bQueryFinishedWithSuccess = false;
-							finishedOnes.emplace_back(
-								runningQueryInfo.pQuery,
-								runningQueryInfo.pQueryBlueprint,
-								runningQueryInfo.pCallback,
-								runningQueryInfo.queryID,
-								runningQueryInfo.parentQueryID,
-								timestampAfterQueryUpdate,
-								bQueryFinishedWithSuccess,
-								error.c_str());
-						}
-						break;
-
-					default:
-						CRY_ASSERT(0);
-					}
-
-					//
-					// check for some unused time and donate it to the remaining queries
-					//
-
-					const CTimeValue timeUsedByThisQuery = (timestampAfterQueryUpdate - timestampBeforeQueryUpdate);
-
-					if (timeUsedByThisQuery <= timeBudgetForThisQuery)
-					{
-						const CTimeValue unusedTime = timeBudgetForThisQuery - timeUsedByThisQuery;
-						totalRemainingTimeBudget += unusedTime;
-					}
-					else if (bThisQueryRequiresSomeTimeBudgetForExecution)
-					{
-						//
-						// keep track of the potentially worst performing query (this one may get skipped in upcoming updates, depending on whether the overall time budget will get exceeded by the extra threshold)
-						//
-
-						const float usedFractionOfTimeBudget = (timeBudgetForThisQuery.GetValue() > 0) ? (timeUsedByThisQuery.GetMilliSeconds() / timeBudgetForThisQuery.GetMilliSeconds()) : 1.0f;
-
-						if (worstPerformingQuery.itInQueries == m_queries.end() || worstPerformingQuery.usedFractionOfTimeBudget < usedFractionOfTimeBudget)
-						{
-							worstPerformingQuery.itInQueries = it;
-							worstPerformingQuery.usedFractionOfTimeBudget = usedFractionOfTimeBudget;
-						}
-
-						//
-						// check for overall excess
-						//
-
-						totalTimeUsedSoFar += timeUsedByThisQuery;
-
-						if (totalTimeUsedSoFar > totalTimeBudget)
-						{
-							//
-							// see how much has been exceeded already, and if it's too much, then simply interrupt everything and mark the worst performing query as "performance offender" so that
-							// it will get skipped in subsequent updates until all its preceding queries are finished
-							//
-
-							const float overallFractionUsedSoFar = (totalTimeBudget.GetValue() > 0) ? (totalTimeUsedSoFar.GetMilliSeconds() / totalTimeBudget.GetMilliSeconds()) : 1.0f;
-
-							if (overallFractionUsedSoFar > 1.0f + SCvars::timeBudgetExcessThresholdInPercent * 0.01f)
-							{
-								CRY_ASSERT(worstPerformingQuery.itInQueries != m_queries.end());
-								CRY_ASSERT(worstPerformingQuery.itInQueries->performanceOffenderMercyCountdown >= 0);
-
-								if (worstPerformingQuery.itInQueries->performanceOffenderMercyCountdown > 0)
-								{
-									if (--worstPerformingQuery.itInQueries->performanceOffenderMercyCountdown > 0)
-									{
-										// this query still has some chances to consume less time than granted before getting flagged as performance offender
-										NotifyOfQueryPerformanceWarning(*worstPerformingQuery.itInQueries, "system frame #%i: query may get flagged as a performance offender after %i more chances to recover (consumed %.1f%% of its granted time: %fms vs %fms)",
-											(int)gEnv->nMainFrameID,
-											worstPerformingQuery.itInQueries->performanceOffenderMercyCountdown,
-											worstPerformingQuery.usedFractionOfTimeBudget * 100.0f,
-											timeUsedByThisQuery.GetMilliSeconds(),
-											timeBudgetForThisQuery.GetMilliSeconds());
-									}
-									else
-									{
-										// this query had enough chances to prevent excessive time consumption => now it's a performance offender
-										NotifyOfQueryPerformanceWarning(*worstPerformingQuery.itInQueries, "system frame #%i: query has just been flagged as a performance offender (consumed %.1f%% of its granted time: %fms vs %fms)",
-											(int)gEnv->nMainFrameID,
-											worstPerformingQuery.usedFractionOfTimeBudget * 100.0f,
-											timeUsedByThisQuery.GetMilliSeconds(),
-											timeBudgetForThisQuery.GetMilliSeconds());
-
-										// move this performance offender to the end of the queue such that preceding queries won't get offended anymore
-										SRunningQueryInfo worstOne = std::move(*worstPerformingQuery.itInQueries);
-										m_queries.erase(worstPerformingQuery.itInQueries);
-										m_queries.push_back(std::move(worstOne));
-									}
-								}
-
-								// prematurely interrupt processing of the remaining queries
-								break;
-							}
-						}
-					}
 				}
 
-				m_bQueriesUpdateInProgress = false;
+				// advance to next query (and wrap around at the end)
+				if (++it == m_queries.cend())
+					it = m_queries.cbegin();
+
+				// stop if one time around the list already
+				if (it == m_roundRobinStart)
+					break;
+			}
+
+			// continue the round-robin update on the next frame from here on
+			m_roundRobinStart = it;
+		}
+
+		void CQueryManager::UpdateRoundRobinQueries(const std::vector<const SRunningQueryInfo*>& roundRobinQueries, std::vector<SFinishedQueryInfo>& outFinishedQueries)
+		{
+			CRY_PROFILE_FUNCTION(UQS_PROFILED_SUBSYSTEM_TO_USE);
+
+			const CTimeValue totalTimeBudget(SCvars::timeBudgetInSeconds);
+			const CTimeValue extraTimeBufferBeforeWarning(SCvars::timeBudgetExcessThresholdInPercent * 0.01f * SCvars::timeBudgetInSeconds);
+
+			CTimeValue remainingOverallTimeBudget(SCvars::timeBudgetInSeconds);
+			CTimeValue totalTimeUsedSoFar;
+
+			for (auto it = roundRobinQueries.cbegin(); it != roundRobinQueries.cend(); ++it)
+			{
+				const size_t numRemainingQueries = roundRobinQueries.cend() - it;
+				const CTimeValue timeBudgetForThisQuery(remainingOverallTimeBudget.GetSeconds() / (float)numRemainingQueries);
+				const CTimeValue timeUsedByThisQuery = HelpUpdateSingleQuery(*(*it), timeBudgetForThisQuery, outFinishedQueries);
+
+				totalTimeUsedSoFar += timeUsedByThisQuery;
 
 				//
-				// if some queries have finished, then notify the listeners of the result and store their statistic for short-term 2D on-screen debug rendering
+				// check for some unused time and donate it to the remaining queries
 				//
 
-				if (!finishedOnes.empty())
+				if (timeUsedByThisQuery <= timeBudgetForThisQuery)
 				{
-					CRY_PROFILE_REGION(UQS_PROFILED_SUBSYSTEM_TO_USE, "UQS::Core::CQueryManager::UpdateQueries: notifying listeners of finished queries");
+					// donate the unused time
+					remainingOverallTimeBudget += (timeBudgetForThisQuery - timeUsedByThisQuery);
+				}
+				else
+				{
+					remainingOverallTimeBudget -= timeBudgetForThisQuery;
 
-					// first, notify all listeners that these queries have finished
-					for (const SFinishedQueryInfo& entry : finishedOnes)
+					//
+					// check for having exceeded even the extra time buffer and emit a warning if so
+					//
+
+					if (timeUsedByThisQuery > timeBudgetForThisQuery + extraTimeBufferBeforeWarning)
 					{
-						NotifyCallbacksOfFinishedQuery(entry);
-
-						// add a new entry to the debug history for 2D on-screen rendering
-						if (SCvars::debugDraw)
-						{
-							CQueryBase::SStatistics stats;
-							entry.pQuery->GetStatistics(stats);
-							SHistoryQueryInfo2D newHistoryEntry(entry.queryID, stats, entry.bQueryFinishedWithSuccess, gEnv->pTimer->GetAsyncTime());
-							m_debugDrawHistory2D.push_back(std::move(newHistoryEntry));
-						}
+						NotifyOfQueryPerformanceWarning(*(*it), "system frame #%i: query has just consumed %.1f%% of its granted time: %fms vs %fms",
+							(int)gEnv->nMainFrameID,
+							(timeUsedByThisQuery.GetMilliSeconds() / timeBudgetForThisQuery.GetMilliSeconds()) * 100.0f,
+							timeUsedByThisQuery.GetMilliSeconds(),
+							timeBudgetForThisQuery.GetMilliSeconds());
 					}
+				}
+			}
+		}
 
-					// now remove all the finished queries
-					for (const SFinishedQueryInfo& entry : finishedOnes)
+		void CQueryManager::FinalizeFinishedQueries(const std::vector<SFinishedQueryInfo>& finishedQueries)
+		{
+			CRY_PROFILE_FUNCTION(UQS_PROFILED_SUBSYSTEM_TO_USE);
+
+			//
+			// first, notify all listeners that these queries have finished
+			//
+
+			for (const SFinishedQueryInfo& entry : finishedQueries)
+			{
+				NotifyCallbacksOfFinishedQuery(entry);
+
+				// add a new entry to the debug history for 2D on-screen rendering
+				if (SCvars::debugDraw)
+				{
+					CQueryBase::SStatistics stats;
+					entry.pQuery->GetStatistics(stats);
+					SHistoryQueryInfo2D newHistoryEntry(entry.queryID, stats, entry.bQueryFinishedWithSuccess, gEnv->pTimer->GetAsyncTime());
+					m_debugDrawHistory2D.push_back(std::move(newHistoryEntry));
+				}
+			}
+
+			//
+			// now remove all the finished queries
+			//
+
+			for (const SFinishedQueryInfo& entry : finishedQueries)
+			{
+				auto it = std::find_if(m_queries.begin(), m_queries.end(), CPredEqualQueryID(entry.queryID));
+				if (it != m_queries.end())   // this may fail if a finished query got explicitly canceled in the callback from above
+				{
+					if (m_roundRobinStart == it)
 					{
-						auto it = std::find_if(m_queries.begin(), m_queries.end(), CPredEqualQueryID(entry.queryID));
-						if (it != m_queries.end())   // this may fail if a finished query got explicitly canceled in the callback from above
-						{
-							m_queries.erase(it);
-						}
+						m_roundRobinStart = std::next(it);
 					}
+					m_queries.erase(it);
 				}
 			}
 		}
@@ -681,6 +665,7 @@ namespace UQS
 			// operate on a copy in case the query's callback cancels queries recursively (happens in hierarchical queries)
 			std::list<SRunningQueryInfo> copyOfRunningQueries;
 			copyOfRunningQueries.swap(m_queries);
+			m_roundRobinStart = m_queries.cend();
 
 			for (const SRunningQueryInfo& runningQueryInfo : copyOfRunningQueries)
 			{

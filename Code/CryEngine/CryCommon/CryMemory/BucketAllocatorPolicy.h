@@ -6,6 +6,7 @@
 #define BUCKET_ALLOCATOR_DEFAULT_MAX_SEGMENTS 8
 
 #include <CryCore/Platform/CryWindows.h>
+#include <CryThreading/CryThread.h>
 #ifndef MEMORY_ALLOCATION_ALIGNMENT
 	#error MEMORY ALLOCATION_ALIGNMENT is not defined
 #endif

@@ -2,8 +2,11 @@
 #pragma once
 
 #include "EditorCommonAPI.h"
+#include <CrySandbox/CryFunction.h>
 
 #include <QDialog>
+#include <QString>
+#include <functional>
 
 class QCustomTitleBar;
 class QGridLayout;

@@ -5,6 +5,7 @@
 #include <IEditor.h>
 #include <AssetSystem/AssetManager.h>
 #include <AssetSystem/AssetImporter.h>
+#include <CryString/CryPath.h>
 
 CModel::CModel()
 	: m_pAsset(nullptr)

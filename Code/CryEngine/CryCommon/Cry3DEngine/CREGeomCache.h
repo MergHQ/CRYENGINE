@@ -12,6 +12,7 @@
 #define _CREGEOMCACHE_
 
 #pragma once
+#include <CryRenderer/RenderElements/RendElement.h>
 
 #if defined(USE_GEOM_CACHES)
 

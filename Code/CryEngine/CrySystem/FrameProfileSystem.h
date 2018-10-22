@@ -16,6 +16,7 @@
 #include <CryThreading/IJobManager.h>
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler.h>
 #include <CryInput/IInput.h>
+#include <CryThreading/CryThread.h>
 
 #ifdef USE_FRAME_PROFILER
 	#include <CryMath/Cry_Color.h>

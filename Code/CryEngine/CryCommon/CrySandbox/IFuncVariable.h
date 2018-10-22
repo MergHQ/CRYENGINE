@@ -2,11 +2,10 @@
 
 #pragma once
 
-#include <CryMath/Cry_Vector2.h>
-#include <CryMath/Cry_Vector3.h>
-#include <CryMath/Cry_Matrix33.h>
+#include <CryMath/Cry_Math.h>
 #include <CryMath/Cry_Color.h>
 #include <CryCore/smartptr.h>
+#include <CryCore/Containers/CryArray.h>
 #include <CryString/StringUtils.h>
 
 class ITexture;

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CryAudio/IAudioInterfacesCommonData.h>
+#include <map>
 
 namespace CryAudio
 {

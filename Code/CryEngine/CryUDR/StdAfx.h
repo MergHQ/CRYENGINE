@@ -7,6 +7,7 @@
 #include <CryCore/Project/CryModuleDefs.h>
 #define eCryModule eCryM_UniversalDebugRecordings
 #include <CryCore/Platform/platform.h>
+#include <stack>
 #include <CryUDR/InterfaceIncludes.h>
 
 // actual serialization is used for dumping recordings to files

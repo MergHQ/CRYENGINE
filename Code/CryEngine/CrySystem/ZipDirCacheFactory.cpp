@@ -14,6 +14,7 @@
 #include "CryPak.h"
 #include "System.h"
 #include "ZipEncrypt.h"
+#include "FileIOWrapper.h"
 #include <CryCore/Platform/IPlatformOS.h>
 
 using namespace ZipFile;

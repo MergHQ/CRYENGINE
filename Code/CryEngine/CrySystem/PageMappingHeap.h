@@ -4,8 +4,8 @@
 #define PAGEMAPPINGHEAP_H
 
 #include "MemoryAddressRange.h"
-
 #include <CryMemory/IMemory.h>
+#include <CryThreading/CryThread.h>
 
 class CPageMappingHeap : public IPageMappingHeap
 {

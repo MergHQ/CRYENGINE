@@ -6,6 +6,7 @@
 #include "Core/SmoothingGroup.h"
 #include "Convexes.h"
 #include "LoopPolygons.h"
+#include <stack>
 
 namespace Designer
 {

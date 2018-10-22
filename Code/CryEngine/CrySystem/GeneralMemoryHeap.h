@@ -4,6 +4,7 @@
 #define GENERALMEMORYHEAP_H
 
 #include <CryMemory/IMemory.h>
+#include <CryThreading/CryThread.h>
 #include <CryCore/Platform/CryDLMalloc.h>
 
 class CPageMappingHeap;

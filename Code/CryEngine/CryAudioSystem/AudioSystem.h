@@ -8,6 +8,7 @@
 #include <CrySystem/TimeValue.h>
 #include <CryInput/IInput.h>
 #include <CryThreading/IThreadManager.h>
+#include <CryThreading/CryThread.h>
 #include <concqueue/concqueue.hpp>
 
 namespace CryAudio

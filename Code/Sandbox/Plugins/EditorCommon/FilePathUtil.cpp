@@ -8,6 +8,7 @@
 #include <CryString/CryPath.h>
 #include <CrySystem/IProjectManager.h>
 #include <QDirIterator>
+#include <stack>
 
 namespace Private_FilePathUtil
 {

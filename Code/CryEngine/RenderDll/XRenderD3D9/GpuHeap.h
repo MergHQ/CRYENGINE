@@ -2,6 +2,7 @@
 
 #pragma once
 #include <stdint.h>
+#include <CryThreading/CryThread.h>
 
 namespace Detail
 {

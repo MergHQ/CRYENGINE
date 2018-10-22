@@ -6,6 +6,7 @@
 #include <zlib.h>
 #include "ZipFileFormat.h"
 #include "ZipDirStructures.h"
+#include "FileIOWrapper.h"
 #include <time.h>
 #include <stdlib.h>
 #include <CrySystem/ISystem.h>

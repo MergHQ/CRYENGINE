@@ -4,6 +4,7 @@
 
 #include <atomic>
 #include <array>
+#include <CryThreading/CryThread.h>
 
 #define CMDQUEUE_IMMEDIATE 0
 #define CMDQUEUE_NUM       1

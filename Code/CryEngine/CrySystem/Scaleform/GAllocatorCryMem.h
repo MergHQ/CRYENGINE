@@ -12,6 +12,7 @@
 	#pragma warning(disable : 6011)// Dereferencing NULL pointer
 	#include <GSysAlloc.h>
 	#pragma warning(pop)
+	#include <CryThreading/CryThread.h>
 
 class GFxMemoryArenaWrapper : public GSysAllocPaged
 {

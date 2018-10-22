@@ -3,6 +3,8 @@
 #ifndef __FileIOWrapper_h__
 #define __FileIOWrapper_h__
 
+#include <CryThreading/CryThread.h>
+
 class CIOWrapper
 {
 public:
