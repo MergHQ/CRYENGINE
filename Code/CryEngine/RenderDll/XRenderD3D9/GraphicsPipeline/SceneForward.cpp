@@ -508,8 +508,10 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 		eResSubset_TiledShadingTransparent = BIT(2),
 		eResSubset_Particles               = BIT(3),
 		eResSubset_EyeOverlay              = BIT(4),
+		eResSubset_ForwardShadows          = BIT(5),
 
-		eResSubset_All                     = eResSubset_General | eResSubset_TiledShadingOpaque | eResSubset_TiledShadingTransparent | eResSubset_Particles | eResSubset_EyeOverlay,
+		eResSubset_All                     = eResSubset_General   | eResSubset_TiledShadingOpaque | eResSubset_TiledShadingTransparent | 
+		                                     eResSubset_Particles | eResSubset_EyeOverlay         | eResSubset_ForwardShadows,
 		eResSubset_None                    = ~eResSubset_All
 	};
 	
@@ -518,8 +520,8 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 	{
 #if RENDERER_ENABLE_FULL_PIPELINE
 		{ m_opaquePassResources,            m_pOpaquePassResourceSet.get(),            eResSubset_General | eResSubset_TiledShadingOpaque      | eResSubset_Particles },
-		{ m_transparentPassResources,       m_pTransparentPassResourceSet.get(),       eResSubset_General | eResSubset_TiledShadingTransparent | eResSubset_Particles },
-		{ m_eyeOverlayPassResources,	    m_pEyeOverlayPassResourceSet.get(),        eResSubset_General | eResSubset_EyeOverlay              | eResSubset_Particles },
+		{ m_transparentPassResources,       m_pTransparentPassResourceSet.get(),       eResSubset_General | eResSubset_TiledShadingTransparent | eResSubset_Particles | eResSubset_ForwardShadows },
+		{ m_eyeOverlayPassResources,	    m_pEyeOverlayPassResourceSet.get(),        eResSubset_General | eResSubset_EyeOverlay              | eResSubset_Particles | eResSubset_ForwardShadows },
 #endif
 
 #if RENDERER_ENABLE_MOBILE_PIPELINE
@@ -560,8 +562,8 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 
 		const bool includeOpaquePassResources      = !!(resourceSubset & eResSubset_TiledShadingOpaque);
 		const bool includeTransparentPassResources = !!(resourceSubset & eResSubset_TiledShadingTransparent);
-		const bool includeEyeOverlayPassResources  = !!(resourceSubset & eResSubset_EyeOverlay);		
-		const bool includeForwardShadowResources   = !!(resourceSubset & (eResSubset_TiledShadingTransparent | eResSubset_Particles));
+		const bool includeEyeOverlayPassResources  = !!(resourceSubset & eResSubset_EyeOverlay);
+		const bool includeForwardShadowResources   = !!(resourceSubset & eResSubset_ForwardShadows);
 
 		// Samplers
 		{
