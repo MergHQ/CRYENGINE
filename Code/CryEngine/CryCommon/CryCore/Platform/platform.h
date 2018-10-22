@@ -641,23 +641,6 @@ enum ETriState
 	eTS_maybe
 };
 
-// Include MultiThreading support.
-#include <CryThreading/CryThread.h>
-
-// Include most commonly used STL headers.
-// They end up in precompiled header and make compilation faster.
-#include <memory>
-#include <vector>
-#include <list>
-#include <map>
-#include <set>
-#include <deque>
-#include <stack>
-#include <algorithm>
-#include <functional>
-#include <iterator>
-#include <CryMemory/STLAlignedAlloc.h>
-
 // In RELEASE disable printf and fprintf
 #if defined(_RELEASE) && !CRY_PLATFORM_DESKTOP && !defined(RELEASE_LOGGING)
 	#undef printf
@@ -686,12 +669,6 @@ enum ETriState
   typedef std::shared_ptr<const name> name ## ConstPtr; \
   typedef std::weak_ptr<name> name ##         WeakPtr;  \
   typedef std::weak_ptr<const name> name ##   ConstWeakPtr;
-
-// Include array.
-#include <CryCore/Containers/CryArray.h>
-
-// Include static auto registration function
-#include <CryCore/StaticInstanceList.h>
 
 #ifdef _WINDOWS_
 	#error windows.h should not be included through any headers within platform.h

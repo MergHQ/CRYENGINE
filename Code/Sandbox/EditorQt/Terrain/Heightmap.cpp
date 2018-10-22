@@ -13,8 +13,10 @@
 #include "GameEngine.h"
 #include "TerrainFormulaDlg.h"
 
-#include "QT/Widgets/QWaitProgress.h"
-#include "Controls/QuestionDialog.h"
+#include <Controls/QuestionDialog.h>
+#include <IUndoObject.h>
+#include <QT/Widgets/QWaitProgress.h>
+#include <Util/ImageUtil.h>
 
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryMath/Random.h>

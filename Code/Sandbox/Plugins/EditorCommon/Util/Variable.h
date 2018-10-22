@@ -2,9 +2,12 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include <CryCore/smartptr.h>
 #include <CryCore/functor.h>
 #include <CrySerialization/Forward.h>
+#include <CrySystem/XML/IXml.h>
+#include <CryCore/StlUtils.h>
 
 typedef Functor4<uint32, bool, const char*, const char*> TMissingAssetResolveCallback;
 

@@ -4,6 +4,7 @@
 
 #include <CrySystem/UserAnalytics/IUserAnalytics.h>
 #include <CrySystem/ISystem.h>
+#include <CryThreading/MultiThread_Containers.h>
 
 #if !defined(_RELEASE) && CRY_PLATFORM_WINDOWS
 

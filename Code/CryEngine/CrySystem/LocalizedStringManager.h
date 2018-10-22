@@ -1,24 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   LocalizedStringManager.h
-//  Version:     v1.00
-//  Created:     22/9/2005 by Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __LocalizedStringManager_h__
-#define __LocalizedStringManager_h__
 #pragma once
 
 #include <CrySystem/ILocalizationManager.h>
 #include <CryCore/StlUtils.h>
 #include <CryCore/Containers/VectorMap.h>
 #include <CryCore/Containers/CryListenerSet.h>
+#include <CryThreading/CryThread.h>
 
 #include "Huffman.h"
 
@@ -318,5 +306,3 @@ private:
 	mutable CryCriticalSection m_cs;
 	typedef CryAutoCriticalSection AutoLock;
 };
-
-#endif // __LocalizedStringManager_h__

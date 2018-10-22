@@ -17,6 +17,7 @@
 #include <CryNetwork/IServiceNetwork.h>
 #include <CryNetwork/IRemoteCommand.h>
 #include <CryThreading/IThreadManager.h>
+#include <CryThreading/CryThread.h>
 #include <CryNetwork/CrySocks.h>
 
 class CRemoteCommandManager;

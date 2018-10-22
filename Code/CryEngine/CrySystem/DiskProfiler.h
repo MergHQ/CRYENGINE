@@ -20,6 +20,7 @@
 #include <CrySystem/IStreamEngine.h>
 #include <CryMath/Cry_Color.h>
 #include <CryMemory/STLGlobalAllocator.h>
+#include <CryThreading/CryThread.h>
 
 class CDiskProfilerWindowsSpecific;
 

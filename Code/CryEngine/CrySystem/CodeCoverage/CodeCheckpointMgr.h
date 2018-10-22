@@ -14,6 +14,7 @@
 #pragma once
 
 #include <CrySystem/ICodeCheckpointMgr.h>
+#include <CryThreading/CryThread.h>
 
 /// The global manager of code coverage checkpoints. Must be thread safe.
 class CCodeCheckpointMgr : public ICodeCheckpointMgr

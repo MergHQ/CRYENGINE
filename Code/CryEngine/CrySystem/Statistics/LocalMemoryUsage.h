@@ -16,6 +16,7 @@
 #include <CryMath/Cry_Geo.h>
 #include <CryMemory/ILocalMemoryUsage.h>
 #include <CrySystem/TimeValue.h>
+#include <unordered_map>
 
 #define LOCALMEMORY_SECTOR_SIZE     32.f        //Size of one sector
 #define LOCALMEMORY_SECTOR_NR_X     128         //4096 / LOCALMEMORY_SECTOR_SIZE	Sector number of the world (x)

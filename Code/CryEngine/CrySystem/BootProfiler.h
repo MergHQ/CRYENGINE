@@ -5,6 +5,8 @@
 #if defined(ENABLE_LOADING_PROFILER)
 
 #include <CryThreading/IThreadManager.h>
+#include <CrySystem/ISystem.h>
+#include <CryThreading/MultiThread_Containers.h>
 
 class CBootProfilerRecord;
 class CBootProfilerSession;

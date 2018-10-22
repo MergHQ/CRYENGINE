@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 
 #include <CrySchematyc/CoreAPI.h>
+#include <CryCore/StaticInstanceList.h>
 
 #include "../CoreEnv.h"
 

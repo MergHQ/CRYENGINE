@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <CryThreading/CryAtomics.h>
+
 class CTimeValue
 {
 public:

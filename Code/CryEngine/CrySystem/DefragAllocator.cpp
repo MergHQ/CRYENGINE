@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include <CryMath/Cry_Math.h>
 #include <CryCore/CryEndian.h>
+#include <CryCore/StlUtils.h>
 #include "DefragAllocator.h"
 
 #ifdef CDBA_MORE_DEBUG

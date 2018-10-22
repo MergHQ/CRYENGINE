@@ -8,6 +8,7 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/IIndexedMesh.h>
 #include <CryPhysics/physinterface.h>
+#include <queue>
 
 void LogPrintf(const char* szFormat, ...);
 

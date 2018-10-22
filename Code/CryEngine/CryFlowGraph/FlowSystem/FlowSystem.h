@@ -8,6 +8,7 @@
 #include <CryFlowGraph/IFlowSystem.h>
 #include "FlowSystemCVars.h"
 #include <CryCore/Containers/CryListenerSet.h>
+#include <queue>
 
 class CFlowGraphBase;
 class CFlowGraphModuleManager;

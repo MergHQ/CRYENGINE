@@ -22,6 +22,7 @@
 #include <CryMath/Cry_Geo.h>
 #include <CryMemory/MemoryAccess.h>
 #include <CryMath/Cry_XOptimise.h>
+#include <Cry3DEngine/CryPodArray.h>
 
 #define DEFAULT_NEAR 0.25f
 #define DEFAULT_FAR  1024.0f

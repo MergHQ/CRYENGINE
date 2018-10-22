@@ -14,8 +14,9 @@
 #ifndef __DebugCallStack_h__
 #define __DebugCallStack_h__
 
-#include <CrySystem/IValidator.h>
 #include "IDebugCallStack.h"
+#include <CrySystem/IValidator.h>
+#include <map>
 
 #if CRY_PLATFORM_WINDOWS
 

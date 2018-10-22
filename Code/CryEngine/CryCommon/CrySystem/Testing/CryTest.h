@@ -24,6 +24,7 @@
 	#include <exception>
 #endif
 #include <CrySystem/ISystem.h>
+#include <CryCore/StlUtils.h>
 #include "ITestSystem.h"
 #include "Command.h"
 #include "TestInfo.h"

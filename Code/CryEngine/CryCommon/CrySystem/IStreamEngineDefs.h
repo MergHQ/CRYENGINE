@@ -78,6 +78,8 @@ enum EStreamSourceMediaType
 };
 
 #if defined(STREAMENGINE_ENABLE_STATS)
+#include <CryCore/Containers/CryArray.h>
+
 struct SStreamEngineStatistics
 {
 	struct SMediaTypeInfo

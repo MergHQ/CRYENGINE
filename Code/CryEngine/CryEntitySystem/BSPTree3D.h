@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AreaUtil.h"
+#include <CryEntitySystem/IEntitySystem.h>
 
 class CBSPTree3D final : public IBSPTree3D
 {

@@ -17,6 +17,7 @@
 #include "SaveReaderWriter_Memory.h"
 #include "PatternMatcher.h"
 #include <CryCore/Platform/CryWindows.h>
+#include <CryThreading/CryThread.h>
 
 ////////////////////////////////////////////////////////////////////////////
 // CMemoryFile

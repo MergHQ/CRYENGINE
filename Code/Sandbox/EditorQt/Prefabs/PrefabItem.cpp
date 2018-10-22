@@ -19,6 +19,7 @@
 #include <IUndoManager.h>
 
 #include <CryMath/Cry_Math.h>
+#include <queue>
 
 
 enum EPrefabVersions

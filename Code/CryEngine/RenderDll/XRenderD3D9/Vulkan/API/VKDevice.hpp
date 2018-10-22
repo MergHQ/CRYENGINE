@@ -15,6 +15,7 @@
 #include "VKCommandScheduler.hpp"
 
 #include "VKOcclusionQueryManager.hpp"
+#include <CryThreading/CryThread.h>
 
 namespace NCryVulkan
 {

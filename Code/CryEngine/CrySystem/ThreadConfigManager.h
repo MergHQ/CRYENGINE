@@ -4,6 +4,7 @@
 
 #include <map>
 #include <CryThreading/IThreadConfigManager.h>
+#include <CryThreading/CryThread.h>
 
 class XmlNodeRef;
 

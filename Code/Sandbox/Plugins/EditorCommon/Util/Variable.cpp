@@ -5,15 +5,17 @@
 
 #include "UIEnumsDatabase.h"
 #include "UsedResources.h"
+#include "EditorUtils.h"
+#include "QtUtil.h"
 
+#include <IEditor.h>
+#include <CrySystem/XML/IXml.h>
 #include <CrySerialization/Color.h>
 #include <CrySerialization/Decorators/Range.h>
 #include <CrySerialization/Decorators/Resources.h>
 #include <CrySerialization/Decorators/ResourcesAudio.h>
 #include <CrySerialization/Enum.h>
 #include <CrySerialization/Math.h>
-
-#include <QtUtil.h>
 
 void CVariableBase::SetHumanName(const string& name)
 {
@@ -739,16 +741,16 @@ struct SVariableSerializer
 		{
 			// Copy use case from PropertyItem control
 			if (dataType == IVariable::DT_UIENUM || dataType == IVariable::DT_EQUIP)
-			{	
+			{
 				CUIEnumsDatabase_SEnum* m_pEnumDBItem;
-				
+
 				if (dataType == IVariable::DT_EQUIP)
 				{
 					// hacky solution, use internal name for enum database to support many script variable names
 					// all current equip_ types use EquipmentPack name but better be safe than sorry
 					m_pEnumDBItem = GetIEditor()->GetUIEnumsDatabase()->FindEnum("SandboxEquipmentDatabase");
 				}
-				else 
+				else
 				{
 					m_pEnumDBItem = GetIEditor()->GetUIEnumsDatabase()->FindEnum(label);
 				}

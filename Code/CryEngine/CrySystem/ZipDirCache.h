@@ -3,6 +3,7 @@
 #ifndef _ZIP_DIR_CACHE_HDR_
 #define _ZIP_DIR_CACHE_HDR_
 
+#include <CryThreading/CryThread.h>
 
 /////////////////////////////////////////////////////////////
 // THe Zip Dir uses a special memory layout for keeping the structure of zip file.

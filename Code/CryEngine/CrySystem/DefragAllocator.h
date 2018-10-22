@@ -4,6 +4,8 @@
 #define DEVBUFFERALLOCATOR_H
 
 #include <CryMemory/IDefragAllocator.h>
+#include <CryThreading/CryThread.h>
+#include <CryCore/Containers/CryArray.h>
 
 #ifndef _RELEASE
 	#define CDBA_DEBUG

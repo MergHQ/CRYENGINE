@@ -2,13 +2,20 @@
 
 #pragma once
 
-#include <CrySystem/Pipe.h>
-#include <CryCore/StlUtils.h>
-#include <CryCore/BitFiddling.h>
-
-#include <queue>
+#include <CryThreading/CryThread.h>
 #include <set>
-#include <algorithm>
+
+namespace CryMT
+{
+	template<class T, class Alloc> class queue;
+	template<class T> class vector;
+}
+
+namespace stl
+{
+	template<typename T> void free_container(CryMT::vector<T>& v);
+	template<typename T, class Alloc> void free_container(CryMT::queue<T, Alloc>& v);
+}
 
 namespace CryMT
 {
@@ -564,12 +571,12 @@ inline bool N_ProducerSingleConsumerQueue<T >::TryPop(T* pResult)
 
 namespace stl
 {
-template<typename T> void free_container(CryMT::vector<T>& v)
-{
-	v.free_memory();
-}
-template<typename T> void free_container(CryMT::queue<T>& v)
-{
-	v.free_memory();
-}
+	template<typename T> void free_container(CryMT::vector<T>& v)
+	{
+		v.free_memory();
+	}
+	template<typename T, class Alloc> void free_container(CryMT::queue<T, Alloc>& v)
+	{
+		v.free_memory();
+	}
 }

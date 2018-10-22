@@ -7,6 +7,7 @@
 #include "CrySchematyc2/ILib.h"
 #include "CrySchematyc2/Script/IScriptGraph.h"
 #include "CrySchematyc2/Script/IScriptRegistry.h"
+#include <stack>
 
 namespace Schematyc2
 {

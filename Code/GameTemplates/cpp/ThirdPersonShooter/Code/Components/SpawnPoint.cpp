@@ -11,6 +11,7 @@
 #include <CrySchematyc/ResourceTypes.h>
 #include <CrySchematyc/MathTypes.h>
 #include <CrySchematyc/Utils/SharedString.h>
+#include <CryCore/StaticInstanceList.h>
 
 static void RegisterSpawnPointComponent(Schematyc::IEnvRegistrar& registrar)
 {

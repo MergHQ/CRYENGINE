@@ -1,12 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// Created by: Michael Kopietz
-// Modified: -
-//
-//---------------------------------------------------------------------------
-
-#ifndef __CCRYPOOLTHREADSAVE__
-#define __CCRYPOOLTHREADSAVE__
+#pragma once
+#include <CryThreading/CryThread.h>
 
 namespace NCryPoolAlloc
 {
@@ -41,5 +36,3 @@ public:
 };
 
 }
-
-#endif

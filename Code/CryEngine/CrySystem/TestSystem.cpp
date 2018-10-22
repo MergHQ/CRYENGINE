@@ -4,9 +4,9 @@
 #if !defined(CRY_TESTING_USE_EXCEPTIONS)
 	#include <setjmp.h>
 #endif
-#include <CrySystem/ISystem.h>                      // ISystem
-#include <CrySystem/IConsole.h>                     // IConsole
-#include <CryGame/IGameFramework.h>                 // IGameFramework
+#include <CrySystem/ISystem.h>
+#include <CrySystem/IConsole.h>
+#include <CryGame/IGameFramework.h>
 #include <CryCore/optional.h>
 #include "UnitTestExcelReporter.h"
 #include "TestSystem.h"

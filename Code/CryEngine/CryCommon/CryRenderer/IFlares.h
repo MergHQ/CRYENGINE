@@ -9,6 +9,7 @@
 #include <CrySandbox/IFuncVariable.h> // <> required for Interfuscator
 #include <CrySystem/XML/IXml.h>       // <> required for Interfuscator
 #include <CryCore/smartptr.h>
+#include <CryCore/Containers/CryArray.h>
 
 struct IShader;
 class CCamera;

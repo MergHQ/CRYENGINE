@@ -4,6 +4,7 @@
 
 #include <CrySystem/VR/IHMDManager.h>
 #include <CryCore/smartptr.h>
+#include <CryCore/StlUtils.h>
 
 struct ICVar;
 

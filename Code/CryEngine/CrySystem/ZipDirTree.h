@@ -3,6 +3,8 @@
 #ifndef _ZIP_DIR_TREE_HDR_
 #define _ZIP_DIR_TREE_HDR_
 
+#include <CryCore/StlUtils.h>
+
 namespace ZipDir
 {
 

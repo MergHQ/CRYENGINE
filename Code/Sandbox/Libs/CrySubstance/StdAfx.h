@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CryCore/Platform/platform.h>
+#include <CryThreading/CryThread.h>
 
 // std::unique_ptr and _smart_ptr conversions
 #include <CryCore/smartptr.h>
@@ -13,7 +14,6 @@
 #include <CryMemory/CrySizer.h> // Used by ChunkFile.h.
 
 #define TSmartPtr _smart_ptr
-
 
 // Global lock
 namespace Detail

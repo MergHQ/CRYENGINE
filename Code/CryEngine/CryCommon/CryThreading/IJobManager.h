@@ -16,6 +16,7 @@
 #include <CrySystem/ITimer.h>
 #include <CryCore/Containers/CryArray.h>
 #include <CryCore/smartptr.h>
+#include <CryThreading/CryThread.h>
 
 // Job manager settings
 
