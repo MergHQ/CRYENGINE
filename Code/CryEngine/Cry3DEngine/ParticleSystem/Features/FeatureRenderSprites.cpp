@@ -391,7 +391,7 @@ void CFeatureRenderSprites::SortSprites(SSpritesContext& spritesContext)
 				keys[i] = (float)ids.Load(particleId);
 			}
 		}
-		else if (isfinite(spritesContext.m_runtime.ComponentParams().m_maxTotalLIfe)
+		else if (std::isfinite(spritesContext.m_runtime.ComponentParams().m_maxTotalLIfe)
 		&& container.HasData(EPDT_SpawnFraction))
 		{
 			auto fractions = container.IStream(EPDT_SpawnFraction);
