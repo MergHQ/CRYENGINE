@@ -9,6 +9,7 @@
 #include <pthread.h>
 #endif
 #include <algorithm>
+#include <cctype>
 #include "../Error.hpp"
 #include "../STLHelper.hpp"
 #include "../tinyxml/tinyxml.h"
@@ -185,6 +186,7 @@ bool CCrySimpleJobCompile::Compile(const TiXmlElement* pElement, std::vector<uin
 	sprintf(tmpstr, "%d", tmpCounter);
 
 	const std::string TmpIn = SEnviropment::Instance().m_Temp + tmpstr + ".In";
+	const std::string TmpInLowercase = SEnviropment::Instance().m_Temp + tmpstr + ".in";
 	const std::string TmpOut = SEnviropment::Instance().m_Temp + tmpstr + ".Out";
 	CCrySimpleFileGuard FGTmpIn(TmpIn);
 	CCrySimpleFileGuard FGTmpOut(TmpOut);
@@ -218,6 +220,7 @@ bool CCrySimpleJobCompile::Compile(const TiXmlElement* pElement, std::vector<uin
 		std::string filteredError;
 		CSTLHelper::Replace(filteredError, outError, TmpIn + ".patched", "%filename%"); // DXPS does its own patching
 		CSTLHelper::Replace(filteredError, filteredError, TmpIn, "%filename%");
+		CSTLHelper::Replace(filteredError, filteredError, TmpInLowercase, "%filename%");
 		// replace any that don't have the full path
 		CSTLHelper::Replace(filteredError, filteredError, std::string(tmpstr) + ".In.patched", "%filename%"); // DXPS does its own patching
 		CSTLHelper::Replace(filteredError, filteredError, std::string(tmpstr) + ".In", "%filename%");
@@ -329,45 +332,30 @@ void CCompilerError::Init()
 		if (line.substr(0, 10) != "%filename%")
 			continue;
 
-		if (line[10] != '(')
+		if (line[10] != '(' && line[10] != ':')
 			continue;
 
-		uint32_t c = 11;
+		size_t c = 11;
 
 		int linenum = 0;
 		{
-			bool ln = true;
-			while (c < line.length() &&
-				((line[c] >= '0' && line[c] <= '9') || line[c] == ',' || line[c] == '-')
-				)
+			while (c < line.length() && std::isdigit(line[c]))
 			{
-				if (line[c] == ',') ln = false; // reached column, don't save the value - just keep reading to the end
+				linenum *= 10;
+				linenum += line[c] - '0';
 
-				if (ln)
-				{
-					linenum *= 10;
-					linenum += line[c] - '0';
-				}
 				c++;
 			}
-
-			if (c >= line.length())
-				continue;
-
-			if (line[c] != ')')
-				continue;
-
-			c++;
 		}
 
-		while (c < line.length() && (line[c] == ' ' || line[c] == ':'))
-			c++;
+		// skip column and other characters up to actual error string
+		c = line.find("error", c);
 
-		if (line.substr(c, 5) != "error")
-			continue;
-
-		m_errors.push_back(std::pair<int, std::string>(linenum, line));
-		m_hasherrors += line.substr(c);
+		if (c != std::string::npos)
+		{
+			m_errors.push_back(std::pair<int, std::string>(linenum, line));
+			m_hasherrors += line.substr(c);
+		}
 	}
 
 	std::sort(m_errors.begin(), m_errors.end(), SortByLinenum);
