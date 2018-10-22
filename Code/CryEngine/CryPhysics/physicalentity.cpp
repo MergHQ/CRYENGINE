@@ -2006,7 +2006,11 @@ struct SMemSerializer : ISerialize {
 	virtual void Update( ISerializeUpdateFunction * pUpdate ) {}
 	virtual void FlagPartialRead() {}
 	virtual void BeginGroup( const char * szName ) {}
-	virtual bool BeginOptionalGroup(const char* szName, bool condition) { return condition; }
+	virtual bool BeginOptionalGroup(const char* szName, bool condition) 
+	{
+		Value(szName, condition);
+		return condition; 
+	}
 	virtual void EndGroup() {}
 	virtual bool IsReading() const { return reading!=0; }
 	virtual bool ShouldCommitValues() const { return true; }
