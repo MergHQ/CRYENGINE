@@ -78,7 +78,8 @@ public:
 	virtual void        GetTriggerData(ControlId const triggerId, STriggerData& triggerData) override                                                                                          {}
 	virtual void        GetImplInfo(SImplInfo& implInfo) override                                                                                                                              {}
 	virtual void        Log(ELogType const type, char const* const szFormat, ...) override                                                                                                     {}
-	virtual void        ExecutePreviewTrigger(Impl::ITriggerInfo const& triggerInfo) override                                                                                                  {}
+	virtual void        ExecutePreviewTrigger(ControlId const triggerId) override                                                                                                              {}
+	virtual void        ExecutePreviewTriggerEx(Impl::ITriggerInfo const& triggerInfo) override                                                                                                {}
 	virtual void        StopPreviewTrigger() override                                                                                                                                          {}
 
 private:

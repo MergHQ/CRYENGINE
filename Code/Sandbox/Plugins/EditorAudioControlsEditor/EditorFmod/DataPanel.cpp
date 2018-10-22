@@ -26,6 +26,7 @@ namespace Impl
 namespace Fmod
 {
 CryAudio::Impl::Fmod::STriggerInfo g_previewTriggerInfo;
+bool g_isPreviewPlaying = false;
 
 //////////////////////////////////////////////////////////////////////////
 CDataPanel::CDataPanel(CImpl const& impl)
@@ -174,14 +175,19 @@ void CDataPanel::PlayEvent()
 	{
 		g_previewTriggerInfo.name = pItem->GetPathName().c_str();
 
-		gEnv->pAudioSystem->ExecutePreviewTrigger(g_previewTriggerInfo);
+		gEnv->pAudioSystem->ExecutePreviewTriggerEx(g_previewTriggerInfo);
+		g_isPreviewPlaying = true;
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CDataPanel::StopEvent()
 {
-	gEnv->pAudioSystem->StopPreviewTrigger();
+	if (g_isPreviewPlaying)
+	{
+		gEnv->pAudioSystem->StopPreviewTrigger();
+		g_isPreviewPlaying = false;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

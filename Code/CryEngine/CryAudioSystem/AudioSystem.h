@@ -91,7 +91,8 @@ public:
 	virtual void        Log(ELogType const type, char const* const szFormat, ...) override;
 
 	// Below data is only used when INCLUDE_AUDIO_PRODUCTION_CODE is defined!
-	virtual void ExecutePreviewTrigger(Impl::ITriggerInfo const& triggerInfo) override;
+	virtual void ExecutePreviewTrigger(ControlId const triggerId) override;
+	virtual void ExecutePreviewTriggerEx(Impl::ITriggerInfo const& triggerInfo) override;
 	virtual void StopPreviewTrigger() override;
 	// ~CryAudio::IAudioSystem
 

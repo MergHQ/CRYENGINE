@@ -530,12 +530,20 @@ struct IAudioSystem
 	//////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Constructs a trigger from the givene info struct and executes it on the preview object.
+	 * Executes a trigger from the given id on the preview object.
+	 * @param triggerId - id of the trigger.
+	 * @return void
+	 * @see StopPreviewTrigger
+	 */
+	virtual void ExecutePreviewTrigger(ControlId const triggerId) = 0;
+
+	/**
+	 * Constructs a trigger from the given info struct and executes it on the preview object.
 	 * @param triggerInfo - info struct to construct a trigger.
 	 * @return void
 	 * @see StopPreviewTrigger
 	 */
-	virtual void ExecutePreviewTrigger(Impl::ITriggerInfo const& triggerInfo) = 0;
+	virtual void ExecutePreviewTriggerEx(Impl::ITriggerInfo const& triggerInfo) = 0;
 
 	/**
 	 * Stops the active trigger on the preview object.

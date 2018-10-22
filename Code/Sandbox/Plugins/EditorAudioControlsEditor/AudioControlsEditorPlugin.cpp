@@ -11,7 +11,6 @@
 #include "ImplementationManager.h"
 #include "AssetIcons.h"
 
-#include <CryAudio/IObject.h>
 #include <CryMath/Cry_Camera.h>
 #include <CryCore/Platform/platform_impl.inl>
 #include <IUndoManager.h>
@@ -25,7 +24,6 @@ namespace ACE
 CAssetsManager g_assetsManager;
 CImplementationManager g_implementationManager;
 FileNames CAudioControlsEditorPlugin::s_currentFilenames;
-CryAudio::IObject* CAudioControlsEditorPlugin::s_pIAudioObject = nullptr;
 CryAudio::ControlId CAudioControlsEditorPlugin::s_audioTriggerId = CryAudio::InvalidControlId;
 EErrorCode CAudioControlsEditorPlugin::s_loadingErrorMask;
 CCrySignal<void()> CAudioControlsEditorPlugin::SignalAboutToLoad;
@@ -50,9 +48,6 @@ void InitPlatforms()
 //////////////////////////////////////////////////////////////////////////
 CAudioControlsEditorPlugin::CAudioControlsEditorPlugin()
 {
-	CryAudio::SCreateObjectData const objectData("Audio trigger preview", CryAudio::EOcclusionType::Ignore);
-	s_pIAudioObject = gEnv->pAudioSystem->CreateObject(objectData);
-
 	InitPlatforms();
 	InitAssetIcons();
 
@@ -68,13 +63,7 @@ CAudioControlsEditorPlugin::CAudioControlsEditorPlugin()
 CAudioControlsEditorPlugin::~CAudioControlsEditorPlugin()
 {
 	g_implementationManager.Release();
-
-	if (s_pIAudioObject != nullptr)
-	{
-		StopTriggerExecution();
-		gEnv->pAudioSystem->ReleaseObject(s_pIAudioObject);
-	}
-
+	StopTriggerExecution();
 	GetISystem()->GetISystemEventDispatcher()->RemoveListener(this);
 }
 
@@ -187,23 +176,20 @@ void CAudioControlsEditorPlugin::ReloadImplData(EReloadFlags const flags)
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorPlugin::ExecuteTrigger(string const& sTriggerName)
 {
-	if (!sTriggerName.empty() && (s_pIAudioObject != nullptr))
+	if (!sTriggerName.empty())
 	{
 		StopTriggerExecution();
-		CCamera const& camera = GetIEditor()->GetSystem()->GetViewCamera();
-		Matrix34 const& cameraMatrix = camera.GetMatrix();
-		s_pIAudioObject->SetTransformation(cameraMatrix);
 		s_audioTriggerId = CryAudio::StringToId(sTriggerName.c_str());
-		s_pIAudioObject->ExecuteTrigger(s_audioTriggerId);
+		gEnv->pAudioSystem->ExecutePreviewTrigger(s_audioTriggerId);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorPlugin::StopTriggerExecution()
 {
-	if (s_pIAudioObject && (s_audioTriggerId != CryAudio::InvalidControlId))
+	if (s_audioTriggerId != CryAudio::InvalidControlId)
 	{
-		s_pIAudioObject->StopTrigger(s_audioTriggerId);
+		gEnv->pAudioSystem->StopPreviewTrigger();
 		s_audioTriggerId = CryAudio::InvalidControlId;
 	}
 }
