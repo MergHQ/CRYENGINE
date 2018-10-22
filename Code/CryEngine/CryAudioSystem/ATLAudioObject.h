@@ -110,7 +110,7 @@ public:
 	void                           SetImplDataPtr(Impl::IObject* const pImplData) { m_pImplData = pImplData; }
 	Impl::IObject*                 GetImplDataPtr() const                         { return m_pImplData; }
 
-	CObjectTransformation const&   GetTransformation()                            { return m_transformation; }
+	CObjectTransformation const&   GetTransformation() const                      { return m_transformation; }
 
 	bool                           IsActive() const;
 

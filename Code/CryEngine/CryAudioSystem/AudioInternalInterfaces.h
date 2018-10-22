@@ -60,6 +60,7 @@ enum class EManagerRequestType : EnumFlagsType
 	ExecuteTriggerEx,
 	ExecuteDefaultTrigger,
 	ExecutePreviewTrigger,
+	ExecutePreviewTriggerEx,
 	StopPreviewTrigger,
 };
 
@@ -664,13 +665,32 @@ struct SManagerRequestData<EManagerRequestType::ExecuteDefaultTrigger> final : p
 template<>
 struct SManagerRequestData<EManagerRequestType::ExecutePreviewTrigger> final : public SManagerRequestDataBase
 {
-	explicit SManagerRequestData(Impl::ITriggerInfo const& triggerInfo_)
+	explicit SManagerRequestData(ControlId const triggerId_)
 		: SManagerRequestDataBase(EManagerRequestType::ExecutePreviewTrigger)
-		, triggerInfo(triggerInfo_)
+		, triggerId(triggerId_)
 	{}
 
 	explicit SManagerRequestData(SManagerRequestData<EManagerRequestType::ExecutePreviewTrigger> const* const pAMRData)
 		: SManagerRequestDataBase(EManagerRequestType::ExecutePreviewTrigger)
+		, triggerId(pAMRData->triggerId)
+	{}
+
+	virtual ~SManagerRequestData() override = default;
+
+	ControlId const triggerId;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SManagerRequestData<EManagerRequestType::ExecutePreviewTriggerEx> final : public SManagerRequestDataBase
+{
+	explicit SManagerRequestData(Impl::ITriggerInfo const& triggerInfo_)
+		: SManagerRequestDataBase(EManagerRequestType::ExecutePreviewTriggerEx)
+		, triggerInfo(triggerInfo_)
+	{}
+
+	explicit SManagerRequestData(SManagerRequestData<EManagerRequestType::ExecutePreviewTriggerEx> const* const pAMRData)
+		: SManagerRequestDataBase(EManagerRequestType::ExecutePreviewTriggerEx)
 		, triggerInfo(pAMRData->triggerInfo)
 	{}
 

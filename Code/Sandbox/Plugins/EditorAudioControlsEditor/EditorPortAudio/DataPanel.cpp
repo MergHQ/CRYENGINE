@@ -29,6 +29,7 @@ namespace Impl
 namespace PortAudio
 {
 CryAudio::Impl::PortAudio::STriggerInfo g_previewTriggerInfo;
+bool g_isPreviewPlaying = false;
 
 //////////////////////////////////////////////////////////////////////////
 CDataPanel::CDataPanel(CImpl const& impl)
@@ -186,14 +187,19 @@ void CDataPanel::PlayEvent()
 		g_previewTriggerInfo.path = pItem->GetPath().c_str();
 		g_previewTriggerInfo.isLocalized = (pItem->GetFlags() & EItemFlags::IsLocalized) != 0;
 
-		gEnv->pAudioSystem->ExecutePreviewTrigger(g_previewTriggerInfo);
+		gEnv->pAudioSystem->ExecutePreviewTriggerEx(g_previewTriggerInfo);
+		g_isPreviewPlaying = true;
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CDataPanel::StopEvent()
 {
-	gEnv->pAudioSystem->StopPreviewTrigger();
+	if (g_isPreviewPlaying)
+	{
+		gEnv->pAudioSystem->StopPreviewTrigger();
+		g_isPreviewPlaying = false;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

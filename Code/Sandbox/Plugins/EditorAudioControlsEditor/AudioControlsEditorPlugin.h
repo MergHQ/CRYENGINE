@@ -7,11 +7,6 @@
 
 #include "AssetsManager.h"
 
-namespace CryAudio
-{
-struct IObject;
-} // namespace CryAudio
-
 namespace ACE
 {
 class CImplementationManager;
@@ -61,7 +56,6 @@ private:
 	static void ReloadImplData(EReloadFlags const flags);
 
 	static FileNames           s_currentFilenames;
-	static CryAudio::IObject*  s_pIAudioObject;
 	static CryAudio::ControlId s_audioTriggerId;
 
 	static EErrorCode          s_loadingErrorMask;

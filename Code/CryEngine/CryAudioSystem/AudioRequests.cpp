@@ -62,6 +62,7 @@ SRequestData* AllocateRequestData(SRequestData const* const pRequestData)
 				AM_REQUEST_BLOCK(EManagerRequestType::ExecuteTriggerEx)
 				AM_REQUEST_BLOCK(EManagerRequestType::ExecuteDefaultTrigger)
 				AM_REQUEST_BLOCK(EManagerRequestType::ExecutePreviewTrigger)
+				AM_REQUEST_BLOCK(EManagerRequestType::ExecutePreviewTriggerEx)
 				AM_REQUEST_BLOCK(EManagerRequestType::StopPreviewTrigger)
 			default:
 				{

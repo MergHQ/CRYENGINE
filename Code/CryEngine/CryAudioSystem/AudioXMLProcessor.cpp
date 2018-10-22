@@ -18,7 +18,7 @@ void ParseSystemDataFile(char const* const szFolderPath, SPoolSizes& poolSizesou
 	rootFolderPath.TrimRight(R"(/\)");
 	CryFixedStringT<MaxFilePathLength + MaxFileNameLength> search(rootFolderPath + "/*.xml");
 	_finddata_t fd;
-	intptr_t handle = gEnv->pCryPak->FindFirst(search.c_str(), &fd);
+	intptr_t const handle = gEnv->pCryPak->FindFirst(search.c_str(), &fd);
 
 	if (handle != -1)
 	{
@@ -222,7 +222,7 @@ void CAudioXMLProcessor::ParseControlsData(char const* const szFolderPath, EData
 		sRootFolderPath.TrimRight(R"(/\)");
 		CryFixedStringT<MaxFilePathLength + MaxFileNameLength> sSearch(sRootFolderPath + "/*.xml");
 		_finddata_t fd;
-		intptr_t handle = gEnv->pCryPak->FindFirst(sSearch.c_str(), &fd);
+		intptr_t const handle = gEnv->pCryPak->FindFirst(sSearch.c_str(), &fd);
 
 		if (handle != -1)
 		{

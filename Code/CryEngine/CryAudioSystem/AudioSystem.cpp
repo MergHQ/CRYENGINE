@@ -687,10 +687,20 @@ void CSystem::StopTrigger(ControlId const triggerId /* = CryAudio::InvalidContro
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::ExecutePreviewTrigger(Impl::ITriggerInfo const& triggerInfo)
+void CSystem::ExecutePreviewTrigger(ControlId const triggerId)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	SManagerRequestData<EManagerRequestType::ExecutePreviewTrigger> const requestData(triggerInfo);
+	SManagerRequestData<EManagerRequestType::ExecutePreviewTrigger> const requestData(triggerId);
+	CAudioRequest const request(&requestData);
+	PushRequest(request);
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::ExecutePreviewTriggerEx(Impl::ITriggerInfo const& triggerInfo)
+{
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	SManagerRequestData<EManagerRequestType::ExecutePreviewTriggerEx> const requestData(triggerInfo);
 	CAudioRequest const request(&requestData);
 	PushRequest(request);
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
@@ -1504,6 +1514,27 @@ ERequestStatus CSystem::ProcessManagerRequest(CAudioRequest const& request)
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			SManagerRequestData<EManagerRequestType::ExecutePreviewTrigger> const* const pRequestData =
 				static_cast<SManagerRequestData<EManagerRequestType::ExecutePreviewTrigger> const*>(request.GetData());
+
+			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
+
+			if (pTrigger != nullptr)
+			{
+				pTrigger->Execute(g_previewObject, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
+				result = ERequestStatus::Success;
+			}
+			else
+			{
+				result = ERequestStatus::FailureInvalidControlId;
+			}
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+
+			break;
+		}
+	case EManagerRequestType::ExecutePreviewTriggerEx:
+		{
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+			SManagerRequestData<EManagerRequestType::ExecutePreviewTriggerEx> const* const pRequestData =
+				static_cast<SManagerRequestData<EManagerRequestType::ExecutePreviewTriggerEx> const*>(request.GetData());
 
 			g_previewTrigger.Execute(pRequestData->triggerInfo);
 			result = ERequestStatus::Success;
