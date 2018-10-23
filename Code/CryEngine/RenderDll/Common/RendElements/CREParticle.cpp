@@ -288,10 +288,9 @@ void CRenderer::EF_AddParticle(CREParticle* pParticle, SShaderItem& shaderItem, 
 	if (pRO)
 	{
 		uint32 nBatchFlags;
-		int nList;
-		auto nThreadID = gRenDev->GetMainThreadID();
+		ERenderListID nList;
 		EF_GetParticleListAndBatchFlags(nBatchFlags, nList, pRO, shaderItem, passInfo);
-		passInfo.GetRenderView()->AddRenderItem(pParticle, pRO, shaderItem, nList, nBatchFlags, passInfo, passInfo.GetRendItemSorter(), passInfo.IsShadowPass(), passInfo.IsAuxWindow());
+		passInfo.GetRenderView()->AddRenderItem(pParticle, pRO, shaderItem, nList, nBatchFlags, passInfo, passInfo.GetRendItemSorter());
 	}
 }
 
@@ -357,7 +356,7 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 	for (auto& job : aJobs)
 	{
 		// Generate the RenderItem for this particle container
-		int nList;
+		ERenderListID nList;
 		uint32 nBatchFlags;
 		SShaderItem shaderItem = *job.pShaderItem;
 		CRenderObject* pRenderObject = job.pRenderObject;
@@ -397,8 +396,7 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 
 			passInfo.GetRenderView()->AddRenderItem(
 				pRE, pRenderObject, shaderItem, nList, nBatchFlags, 
-				passInfo, passInfo.GetRendItemSorter(), passInfo.IsShadowPass(), 
-				passInfo.IsAuxWindow());
+				passInfo, passInfo.GetRendItemSorter());
 
 			pRE->SetAddedToView();
 		}
@@ -448,7 +446,7 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void CRenderer::EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, int& nList, CRenderObject* pRenderObject, const SShaderItem& shaderItem, const SRenderingPassInfo& passInfo)
+void CRenderer::EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, ERenderListID& nList, CRenderObject* pRenderObject, const SShaderItem& shaderItem, const SRenderingPassInfo& passInfo)
 {
 	nBatchFlags = FB_GENERAL;
 	nBatchFlags |= (pRenderObject->m_ObjFlags & FOB_AFTER_WATER) ? 0 : FB_BELOW_WATER;

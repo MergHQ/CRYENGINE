@@ -151,8 +151,10 @@ void CCompiledRenderObject::UpdatePerDrawCB(void* pData, size_t size)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCompiledRenderObject::CompilePerDrawCB(CRenderObject* pRenderObject)
+void CCompiledRenderObject::CompilePerDrawCB(CRenderObject* pRenderObject, uint64 objFlags)
 {
+	const auto accessorConfig = gcpRendD3D->GetObjectAccessorThreadConfig();
+
 	const CCompiledRenderObject* pRootCompiled = pRenderObject->m_pCompiledObject;
 	if (pRootCompiled && pRootCompiled != this && pRootCompiled->m_perDrawCB)
 	{
@@ -171,12 +173,12 @@ void CCompiledRenderObject::CompilePerDrawCB(CRenderObject* pRenderObject)
 
 	// Alpha Test
 	float dissolve = 0;
-	if (pRenderObject->m_ObjFlags & (FOB_DISSOLVE_OUT | FOB_DISSOLVE))
+	if (objFlags & (FOB_DISSOLVE_OUT | FOB_DISSOLVE))
 	{
 		dissolve = float(pRenderObject->m_DissolveRef) * (1.0f / 255.0f);
 		m_bDynamicInstancingPossible = false;
 	}
-	float dissolveOut = (pRenderObject->m_ObjFlags & FOB_DISSOLVE_OUT) ? 1.0f : -1.0f;
+	float dissolveOut = (objFlags & FOB_DISSOLVE_OUT) ? 1.0f : -1.0f;
 	dissolve *= dissolveOut;
 
 	float tessellationPatchIDOffset = alias_cast<float>(m_TessellationPatchIDOffset);
@@ -195,8 +197,7 @@ void CCompiledRenderObject::CompilePerDrawCB(CRenderObject* pRenderObject)
 		m_bDynamicInstancingPossible = false;
 
 	// Common shader per instance data.
-	const auto accessorConfig = gcpRendD3D->GetObjectAccessorThreadConfig();
-	const auto& matrix = pRenderObject->GetMatrix(accessorConfig);
+	const auto& matrix      = pRenderObject->GetMatrix     (accessorConfig);
 	const auto& bendingData = pRenderObject->GetBendingData(accessorConfig);
 
 	m_instanceData.matrix = matrix;
@@ -218,7 +219,7 @@ void CCompiledRenderObject::CompilePerDrawCB(CRenderObject* pRenderObject)
 
 	// (%TEMP_TERRAIN || (%TEMP_VEGETATION && %_RT_BLEND_WITH_TERRAIN_COLOR))
 	if ((nMaskGenFX & 0x200000000ULL) ||
-		(nMaskGenFX & 0x400000000ULL && pRenderObject->m_ObjFlags & FOB_BLEND_WITH_TERRAIN_COLOR))
+		(nMaskGenFX & 0x400000000ULL && objFlags & FOB_BLEND_WITH_TERRAIN_COLOR))
 	{
 		m_bDynamicInstancingPossible = false; //#TODO fix support of dynamic instancing for vegetation
 
@@ -266,7 +267,7 @@ void CCompiledRenderObject::CompilePerDrawCB(CRenderObject* pRenderObject)
 		UpdatePerDrawCB(cb, sizeof(HLSL_PerDrawConstantBuffer_TeVe));
 	}
 	// (%_RT_SKELETON_SSD || %_RT_SKELETON_SSD_LINEAR || %WRINKLE_BLENDING)
-	else if ((pRenderObject->m_ObjFlags & FOB_SKINNED) || bHasWrinkleBending)
+	else if ((objFlags & FOB_SKINNED) || bHasWrinkleBending)
 	{
 		m_bDynamicInstancingPossible = false;
 
@@ -498,7 +499,7 @@ void CCompiledRenderObject::TrackStats(const SGraphicsPipelinePassContext& RESTR
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilationOptions, const AABB &localAABB, CRenderView *pRenderView)
+bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilationOptions, uint64 objFlags, const AABB &localAABB, CRenderView *pRenderView)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
@@ -529,7 +530,7 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 	{
 		// Update AABB by tranforming from local space
 		const auto& camera = pRenderView->GetCamera(pRenderView->GetCurrentEye());
-		m_aabb = pRenderObject->TransformAABB(localAABB, camera.GetPosition(), gcpRendD3D->GetObjectAccessorThreadConfig());
+		m_aabb = pRenderObject->TransformAABB(objFlags, localAABB, camera.GetPosition(), gcpRendD3D->GetObjectAccessorThreadConfig());
 	}
 
 	const bool bMeshCompatibleRenderElement = reType == eDATA_Mesh || reType == eDATA_Terrain || reType == eDATA_GeomCache || reType == eDATA_ClientPoly;
@@ -550,7 +551,7 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 
 	if (!bInstanceDataUpdateOnly) // first update only: needed for per instance buffers
 	{
-		const bool bSupportTessellation = (pRenderObject->m_ObjFlags & FOB_ALLOW_TESSELLATION) && SDeviceObjectHelpers::CheckTessellationSupport(m_shaderItem);
+		const bool bSupportTessellation = (objFlags & FOB_ALLOW_TESSELLATION) && SDeviceObjectHelpers::CheckTessellationSupport(m_shaderItem);
 		geomInfo.bonesRemapGUID = (pRenderObject->m_data.m_pSkinningData) ? pRenderObject->m_data.m_pSkinningData->remapGUID : 0;
 		if (!m_pRenderElement->GetGeometryInfo(geomInfo, bSupportTessellation))
 		{
@@ -571,7 +572,7 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 	}
 
 	if (compilationOptions & eObjCompilationOption_PerInstanceConstantBuffer)
-		CompilePerDrawCB(pRenderObject);
+		CompilePerDrawCB(pRenderObject, objFlags);
 
 	if (!pRenderObject->m_Instances.empty() || m_bDynamicInstancingPossible)
 		CompilePerInstanceCB(pRenderObject, m_bDynamicInstancingPossible);
@@ -632,15 +633,13 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 	// Stencil ref value
 	uint8 stencilRef = 0; // @TODO: get from CRNTmpData::SRNUserData::m_pClipVolume::GetStencilRef
 	m_StencilRef = CRenderer::CV_r_VisAreaClipLightsPerPixel ? 0 : (stencilRef | BIT_STENCIL_INSIDE_CLIPVOLUME);
-	m_StencilRef |= !(pRenderObject->m_ObjFlags & FOB_DYNAMIC_OBJECT) ? BIT_STENCIL_RESERVED : 0;
+	m_StencilRef |= !(objFlags & FOB_DYNAMIC_OBJECT) ? BIT_STENCIL_RESERVED : 0;
 	const bool bAllowTerrainLayerBlending = CRendererCVars::CV_e_TerrainBlendingDebug == 2 || 
-		                                   (CRendererCVars::CV_e_TerrainBlendingDebug == 0 && (pRenderObject->m_ObjFlags & FOB_ALLOW_TERRAIN_LAYER_BLEND));
+		                                   (CRendererCVars::CV_e_TerrainBlendingDebug == 0 && (objFlags & FOB_ALLOW_TERRAIN_LAYER_BLEND));
 	const bool bTerrain = pRenderObject->m_data.m_pTerrainSectorTextureInfo != nullptr;
 	m_StencilRef |= (bAllowTerrainLayerBlending || bTerrain) ? BIT_STENCIL_ALLOW_TERRAINLAYERBLEND : 0;
-	m_StencilRef |= (pRenderObject->m_ObjFlags & FOB_ALLOW_DECAL_BLEND) ? BIT_STENCIL_ALLOW_DECALBLEND : 0;
+	m_StencilRef |= (objFlags & FOB_ALLOW_DECAL_BLEND) ? BIT_STENCIL_ALLOW_DECALBLEND : 0;
 	
-	m_bRenderNearest = (pRenderObject->m_ObjFlags & FOB_NEAREST) != 0;
-
 	if (m_shaderItem.m_pShader)
 	{
 		// Helps sort compiling order of the shaders.

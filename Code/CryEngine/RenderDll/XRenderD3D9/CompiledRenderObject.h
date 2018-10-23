@@ -103,12 +103,14 @@ public:
 	{
 		uint32                 m_sortValue;       //!< Encoded sort value, keeping info about material.
 		uint32                 m_nBatchFlags;     //!< see EBatchFlags, batch flags describe on what passes this object will be used (transparent,z-prepass,etc...)
-		uint32                 m_objSort;         //!< Custom object sorting value.
-		uint32                 m_nRenderList : 8; //!< Defines in which render list this compiled object belongs to, see ERenderListID
 		CCompiledRenderObject* m_pCompiledObject; //!< Compiled object with precompiled PSO
 		CRenderElement*        m_pRenderElement;  //!< Mesh subset, or a special rendering object
 
+		uint64                 m_ObjFlags;        //!< flags calculated at add-time
+		uint16                 m_ElmFlags;
+		float                  m_fDist;           //!< distance to render-view camera
 		AABB                   m_aabb;            //!< AABB in local space
+		ERenderListID          m_nRenderList;     //!< Defines in which render list this compiled object belongs to, see ERenderListID
 	};
 	//! Persistent object record all items added to the object for the general and for shadow pass.
 	//! These items are then efficiently expanded adding render items to CRenderView lists.
@@ -226,7 +228,6 @@ public:
 	uint32 m_nNumVertexStreams  : 8; //!< Number of vertex streams specified
 	uint32 m_nLastVertexStreamSlot  : 8; //!< Highest vertex stream slot
 	uint32 m_bOwnPerInstanceCB    : 1; //!< True if object owns its own per instance constant buffer, and is not sharing it with other compiled object
-	uint32 m_bRenderNearest       : 1; //!< True if object needs to be rendered with nearest camera
 	uint32 m_bIncomplete          : 1; //!< True if compilation failed
 	uint32 m_bHasTessellation     : 1; //!< True if tessellation is enabled
 	uint32 m_bSharedWithShadow    : 1; //!< True if objects is shared between shadow and general pass
@@ -291,7 +292,6 @@ public:
 		, m_nNumVertexStreams(0)
 		, m_nLastVertexStreamSlot(0)
 		, m_bOwnPerInstanceCB(false)
-		, m_bRenderNearest(false)
 		, m_bIncomplete(true)
 		, m_bHasTessellation(false)
 		, m_bSharedWithShadow(false)
@@ -308,7 +308,7 @@ public:
 
 	// Compile(): Returns true if the compilation is fully finished, false if compilation should be retriggered later
 
-	bool Compile(const EObjectCompilationOptions& compilationOptions, const AABB &localAABB, CRenderView *pRenderView);
+	bool Compile(const EObjectCompilationOptions& compilationOptions, uint64 objFlags, const AABB &localAABB, CRenderView *pRenderView);
 	void PrepareForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bInstanceOnly) const;
 
 	void DrawToCommandList(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, CDeviceCommandList* commandList, CConstantBuffer* pDynamicInstancingBuffer = nullptr, uint32 dynamicInstancingCount = 1) const;
@@ -327,7 +327,7 @@ public:
 	static void SetStaticPools(CRenderObjectsPools* pools) { s_pPools = pools; }
 
 private:
-	void CompilePerDrawCB(CRenderObject* pRenderObject);
+	void CompilePerDrawCB(CRenderObject* pRenderObject, uint64 objFlags);
 	void CompilePerInstanceCB(CRenderObject* pRenderObject, bool bForce);
 	void CompilePerDrawExtraResources(CRenderObject* pRenderObject);
 
