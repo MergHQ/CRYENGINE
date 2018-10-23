@@ -592,7 +592,6 @@ void CParserBin::Init()
 	FX_REGISTER_TOKEN(OceanShore);
 	FX_REGISTER_TOKEN(Hair);
 	FX_REGISTER_TOKEN(Compute);
-	FX_REGISTER_TOKEN(SkinPass);
 	FX_REGISTER_TOKEN(ForceGeneralPass);
 	FX_REGISTER_TOKEN(EyeOverlay);
 

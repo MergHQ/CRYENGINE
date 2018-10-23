@@ -358,8 +358,6 @@ void CSceneGBufferStage::ExecuteSceneOpaque()
 
 	int numItems_General = pRenderView->GetRenderItems(EFSLIST_GENERAL).size();
 	int velocityEnd_General = pRenderView->FindRenderListSplit(EFSLIST_GENERAL, FOB_HAS_PREVMATRIX);
-	int numItems_Skin = pRenderView->GetRenderItems(EFSLIST_SKIN).size();
-	int velocityEnd_Skin = pRenderView->FindRenderListSplit(EFSLIST_SKIN, FOB_HAS_PREVMATRIX);
 
 	{
 		// Opaque
@@ -369,7 +367,6 @@ void CSceneGBufferStage::ExecuteSceneOpaque()
 			m_opaquePass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS, velocityEnd_Nearest, numItems_Nearest);
 		}
 		m_opaquePass.DrawRenderItems(pRenderView, EFSLIST_GENERAL, velocityEnd_General, numItems_General);
-		m_opaquePass.DrawRenderItems(pRenderView, EFSLIST_SKIN, velocityEnd_Skin, numItems_Skin);
 		m_opaquePass.EndExecution();
 	}
 
@@ -381,7 +378,6 @@ void CSceneGBufferStage::ExecuteSceneOpaque()
 			m_opaqueVelocityPass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS, 0, velocityEnd_Nearest);
 		}
 		m_opaqueVelocityPass.DrawRenderItems(pRenderView, EFSLIST_GENERAL, 0, velocityEnd_General);
-		m_opaqueVelocityPass.DrawRenderItems(pRenderView, EFSLIST_SKIN, 0, velocityEnd_Skin);
 		m_opaqueVelocityPass.EndExecution();
 	}
 }

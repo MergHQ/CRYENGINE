@@ -1124,14 +1124,12 @@ static inline uint32 CalculateRenderItemBatchFlags(SShaderItem& SH, CRenderObjec
 			// if ((nMaterialLayers & MTL_LAYER_BLEND_DYNAMICFROZEN) && !(nResourcesNoDrawFlags & MTL_LAYER_FROZEN))
 			uint32 uMask = mask_nz_zr(nMaterialLayers & MTL_LAYER_BLEND_DYNAMICFROZEN, nResourcesNoDrawFlags & MTL_LAYER_FROZEN);
 
-			nFlags |= FB_MULTILAYERS & uMask;
-
 			//if ((nMaterialLayers & MTL_LAYER_BLEND_CLOAK) && !(nResourcesNoDrawFlags&MTL_LAYER_CLOAK))
 			uMask = mask_nz_zr(nMaterialLayers & MTL_LAYER_BLEND_CLOAK, nResourcesNoDrawFlags & MTL_LAYER_CLOAK);
 
 			//prevent general pass when fully cloaked
 			nFlags &= ~(uMask & (FB_TRANSPARENT | (((nMaterialLayers & MTL_LAYER_BLEND_CLOAK) == MTL_LAYER_BLEND_CLOAK) ? FB_GENERAL : 0)));
-			nFlags |= uMask & (FB_TRANSPARENT | FB_MULTILAYERS);
+			nFlags |= uMask & FB_TRANSPARENT;
 		}
 
 		//if ( ((ObjFlags & (FOB_DECAL)) | DecalFlags) == 0 ) // put the mask below
@@ -1238,7 +1236,7 @@ static inline void AddEf_HandleForceFlags(int& nList, int& nAW, uint32& nBatchFl
 	const int32 drawfrst = nz2one(nShaderFlags2 & EF2_FORCE_DRAWFIRST);
 	float fSort = static_cast<float>(100000 * (drawlast + drawfrst));
 
-	if (nShaderFlags2 & EF2_FORCE_ZPASS && !((nShaderFlags & EF_REFRACTIVE) && (nBatchFlags & FB_MULTILAYERS)))
+	if (nShaderFlags2 & EF2_FORCE_ZPASS && !(nShaderFlags & EF_REFRACTIVE))
 		nBatchFlags |= FB_Z;
 
 	{
@@ -1354,7 +1352,7 @@ void CRenderView::AddRenderObject(CRenderElement* re, SShaderItem& SH, CRenderOb
 		nList = EFSLIST_DECAL;
 	}
 
-	const uint32 nRenderlistsFlags = (FB_PREPROCESS | FB_MULTILAYERS | FB_TRANSPARENT);
+	const uint32 nRenderlistsFlags = (FB_PREPROCESS | FB_TRANSPARENT);
 	if (nBatchFlags & nRenderlistsFlags || nCloakLayerMask)
 	{
 		const auto transparentList = !!(nBatchFlags & FB_BELOW_WATER) ? EFSLIST_TRANSP_BW : EFSLIST_TRANSP_AW;
@@ -1390,7 +1388,6 @@ void CRenderView::AddRenderObject(CRenderElement* re, SShaderItem& SH, CRenderOb
 	//if (nList != EFSLIST_GENERAL && nList != EFSLIST_TERRAINLAYER) nBatchFlags &= ~FB_Z;
 	nBatchFlags &= ~(FB_Z & mask_nz_nz(nList ^ EFSLIST_GENERAL, nList ^ EFSLIST_TERRAINLAYER));
 
-	nList = (nBatchFlags & FB_SKIN) ? EFSLIST_SKIN : nList;
 	nList = (nBatchFlags & FB_EYE_OVERLAY) ? EFSLIST_EYE_OVERLAY : nList;
 
 	const EShaderDrawType shaderDrawType = pSH->m_eSHDType;
@@ -1550,7 +1547,6 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 		break;
 	case EFSLIST_ZPREPASS:
 	case EFSLIST_GENERAL:
-	case EFSLIST_SKIN:
 	case EFSLIST_NEAREST_OBJECTS:
 	case EFSLIST_DEBUG_HELPER:
 		if (CRenderer::CV_r_ZPassDepthSorting != 2)
@@ -2293,7 +2289,6 @@ void CRenderView::Job_SortRenderItemsInList(ERenderListID list)
 		break;
 
 	case EFSLIST_GENERAL:
-	case EFSLIST_SKIN:
 	case EFSLIST_NEAREST_OBJECTS:
 	case EFSLIST_DEBUG_HELPER:
 		{

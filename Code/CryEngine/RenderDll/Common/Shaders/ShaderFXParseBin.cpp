@@ -1259,7 +1259,6 @@ bool CShaderManBin::ParseBinFX_Global_Annotations(CParserBin& Parser, SParserFra
 		FX_TOKEN(ForceDrawLast)
 		FX_TOKEN(ForceDrawFirst)
 		FX_TOKEN(Hair)
-		FX_TOKEN(SkinPass)
 		FX_TOKEN(ForceGeneralPass)
 		FX_TOKEN(ForceDrawAfterWater)
 		FX_TOKEN(DepthFixup)
@@ -1476,12 +1475,6 @@ bool CShaderManBin::ParseBinFX_Global_Annotations(CParserBin& Parser, SParserFra
 			if (!ef)
 				break;
 			ef->m_Flags2 |= EF2_ALPHABLENDSHADOWS;
-			break;
-
-		case eT_SkinPass:
-			if (!ef)
-				break;
-			ef->m_Flags2 |= EF2_SKINPASS;
 			break;
 
 		case eT_EyeOverlay:

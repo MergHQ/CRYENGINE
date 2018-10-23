@@ -1718,7 +1718,6 @@ enum EShaderTechniqueID
 
 //! EFSLIST_ lists.
 //! \note Declaration order/index value has no explicit meaning.
-//! If you change this, you must also update SEF_ListDG::GetDescription.
 enum ERenderListID
 {
 	EFSLIST_INVALID = 0,             //!< Don't use, internally used.
@@ -1736,7 +1735,6 @@ enum ERenderListID
 	EFSLIST_AFTER_HDRPOSTPROCESS,    //!< After hdr post-processing screen effects.
 	EFSLIST_AFTER_POSTPROCESS,       //!< After post-processing screen effects.
 	EFSLIST_SHADOW_PASS,             //!< Shadow mask generation (usually from from shadow maps).
-	EFSLIST_SKIN,                    //!< Skin rendering pre-process.
 	EFSLIST_HALFRES_PARTICLES,       //!< Half resolution particles.
 	EFSLIST_PARTICLES_THICKNESS,     //!< Particles thickness passes.
 	EFSLIST_LENSOPTICS,              //!< Lens-optics processing.
@@ -1841,7 +1839,7 @@ enum ERenderListID
 #define EF2_HASALPHABLEND          0x4000000
 #define EF2_ZPREPASS               0x8000000
 #define EF2_VERTEXCOLORS           0x10000000
-#define EF2_SKINPASS               0x20000000
+// UNUSED                          0x20000000
 #define EF2_HW_TESSELLATION        0x40000000
 #define EF2_ALPHABLENDSHADOWS      0x80000000
 
