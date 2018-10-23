@@ -166,10 +166,10 @@ const char* GetPathRelativeToModFolder(const char* szAbsolutePath)
 	if (szAbsolutePath[0] == '\0')
 		return szAbsolutePath;
 
+	szAbsolutePath = AbsoluteToProjectPath(szAbsolutePath);
+
 	if (_strnicmp("engine", szAbsolutePath, 6) == 0 && (szAbsolutePath[6] == '\\' || szAbsolutePath[6] == '/'))
 		return szAbsolutePath;
-
-	szAbsolutePath = AbsoluteToProjectPath(szAbsolutePath);
 	
 	string gameFolder = PathUtil::GetGameFolder();
 	string modLocation;
