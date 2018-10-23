@@ -340,9 +340,25 @@ QVariant CAssetModel::data(const QModelIndex& index, int role) const
 				return pAsset->GetThumbnail();
 			case QThumbnailsView::s_ThumbnailColorRole:
 				return pAsset->GetType()->GetThumbnailColor();
-			case QThumbnailsView::s_ThumbnailTintedBackgroundRole:
-					// Use a tinted background only for the default type icons.
-					return !pAsset->GetType()->HasThumbnail() || !pAsset->IsThumbnailLoaded();
+			case QThumbnailsView::s_ThumbnailBackgroundColorRole:
+				// Use a tinted background only for the default type icons.
+				if (!pAsset->GetType()->HasThumbnail() || !pAsset->IsThumbnailLoaded())
+				{
+					const float lightnessFactor = 0.75f;
+					const float saturationFactor = 0.125f;
+
+					const QColor hslColor = pAsset->GetType()->GetThumbnailColor().toHsl();
+					const QColor backgroundColor = QColor::fromHslF(
+						hslColor.hslHueF(),
+						hslColor.hslSaturationF() * saturationFactor,
+						hslColor.lightnessF() * lightnessFactor,
+						hslColor.alphaF());
+					return backgroundColor;
+				}
+				else
+				{
+					return QVariant();
+				}
 			case QThumbnailsView::s_ThumbnailIconsRole:
 			{
 				QVariantList icons;
