@@ -30,8 +30,8 @@ class CRenderView;
 struct IRenderNode;
 struct IRenderMesh;
 
-#define MAX_REND_SHADERS                      4096
-#define MAX_REND_SHADER_RES                   16384
+#define MAX_REND_SHADERS                      (1U << 12)
+#define MAX_REND_SHADER_RES                   (1U << 14)
 
 struct CRY_ALIGN(32) SRendItem
 {
@@ -51,21 +51,41 @@ struct CRY_ALIGN(32) SRendItem
 	CRenderElement* pElem;
 	//uint32 nStencRef  : 8;
 
-	static float EncodeDistanceSortingValue(CRenderObject* pObj)
+	static uint32 EncodeObjFlagsValue(uint64 objFlags)
 	{
-		return pObj->m_fDistance + pObj->m_fSort;
+		return uint32(objFlags) & (0xFFFF0000);
 	}
 
-	static float EncodeCustomDistanceSortingValue(CRenderObject* pObj)
+	static uint16 EncodePriorityIntegerValue(CRenderObject* pObj)
+	{
+		return uint16(pObj->m_nSort);
+	}
+
+	static uint16 EncodeDistanceIntegerValue(float fDistance)
+	{
+		return HalfFlip(CryConvertFloatToHalf(std::min(fDistance, 65504.0f)));
+	}
+
+	static float EncodeCustomDistanceSortingValue(CRenderObject* pObj, float fDistance)
 	{
 		int nRenderAlways = pObj->m_pRenderNode->GetRndFlags() & ERF_RENDER_ALWAYS;
-		float comp = pObj->m_fDistance + pObj->m_fSort;
+		float comp = fDistance + pObj->m_fSort;
 		return nRenderAlways ? std::numeric_limits<float>::lowest() + comp : comp;
 	}
 
-	static uint32 EncodeObjFlagsSortingValue(CRenderObject* pObj)
+	static float EncodeDistanceSortingValue(CRenderObject* pObj, float fDistance)
 	{
-		return (pObj->m_ObjFlags & ~0xFFFF) + (pObj->m_nSort & 0xFFFF);
+		return fDistance + pObj->m_fSort;
+	}
+
+	static uint32 EncodeObjFlagsSortingValue(CRenderObject* pObj, uint64 objFlags, float fDistance)
+	{
+		return EncodeObjFlagsValue(objFlags) + EncodeDistanceIntegerValue(fDistance);
+	}
+
+	static uint32 EncodeObjFlagsSortingValue(CRenderObject* pObj, uint64 objFlags)
+	{
+		return EncodeObjFlagsValue(objFlags) + EncodePriorityIntegerValue(pObj);
 	}
 
 	static bool TestObjFlagsSortingValue(uint32 nFlag, uint32 sortingValue)

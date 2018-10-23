@@ -34,7 +34,7 @@ CRenderView::CRenderView(const char* name, EViewType type, CRenderView* pParentV
 {
 	for (int i = 0; i < EFSLIST_NUM; i++)
 	{
-		m_BatchFlags[i] = 0;
+		m_batchFlags[i] = 0;
 
 		m_renderItems[i].Init();
 		m_renderItems[i].SetNoneWorkerThreadID(gEnv->mMainThreadId);
@@ -176,7 +176,7 @@ void CRenderView::Clear()
 	for (int i = 0; i < EFSLIST_NUM; i++)
 	{
 		m_renderItems[i].clear();
-		m_BatchFlags[i] = 0;
+		m_batchFlags[i] = 0;
 	}
 
 	for (int i = 0; i < eDLT_NumLightTypes; i++)
@@ -836,8 +836,7 @@ void CRenderView::AddPolygon(const SRenderPolygonDescription& poly, const SRende
 
 	bool bSkipAdding = false;
 
-	bool bRenderToShadowMap = (m_viewType == eViewType_Shadow);
-	if (!bRenderToShadowMap)
+	if (!IsShadowGenView())
 	{
 		batchFlags |= (pl->m_nCPFlags & CREClientPoly::efAfterWater) ? 0 : FB_BELOW_WATER;
 
@@ -882,7 +881,7 @@ void CRenderView::AddPolygon(const SRenderPolygonDescription& poly, const SRende
 		}
 	}
 
-	AddRenderItem(pl, poly.pRenderObject, poly.shaderItem, renderListId, batchFlags, passInfo, SRendItemSorter(), bRenderToShadowMap, false);
+	AddRenderItem(pl, poly.pRenderObject, poly.shaderItem, renderListId, batchFlags, passInfo, SRendItemSorter());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1003,7 +1002,7 @@ CRenderView::RenderItems& CRenderView::GetRenderItems(int nRenderList)
 
 uint32 CRenderView::GetBatchFlags(int nRenderList) const
 {
-	return m_BatchFlags[nRenderList];
+	return m_batchFlags[nRenderList];
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1081,13 +1080,13 @@ const SRenderViewport& CRenderView::GetViewport() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-static inline uint32 CalculateRenderItemBatchFlags(SShaderItem& SH, CRenderObject* pObj, CRenderElement* re, const SRenderingPassInfo& passInfo, int nAboveWater) threadsafe
+static inline uint32 CalculateRenderItemBatchFlags(SShaderItem& shaderItem, CRenderObject* pObj, CRenderElement* re, const SRenderingPassInfo& passInfo, int nAboveWater) threadsafe
 {
-	uint32 nFlags = SH.m_nPreprocessFlags & FB_MASK;
+	uint32 nBatchFlags = shaderItem.m_nPreprocessFlags & FB_MASK;
 
-	SShaderTechnique* const __restrict pTech = SH.GetTechnique();
-	CShaderResources* const __restrict pR = (CShaderResources*)SH.m_pShaderResources;
-	CShader* const __restrict pS = (CShader*)SH.m_pShader;
+	SShaderTechnique* const __restrict pTech = shaderItem.GetTechnique();
+	CShaderResources* const __restrict pShaderResources = (CShaderResources*)shaderItem.m_pShaderResources;
+	CShader* const __restrict pShader = (CShader*)shaderItem.m_pShader;
 
 	float fAlpha = pObj->m_fAlpha;
 	uint32 uTransparent = 0; //(bool)(fAlpha < 1.0f); Not supported in new rendering pipeline 
@@ -1095,31 +1094,32 @@ static inline uint32 CalculateRenderItemBatchFlags(SShaderItem& SH, CRenderObjec
 
 	if (!passInfo.IsRecursivePass() && pTech)
 	{
+		const uint32 DecalFlags = pShader->m_Flags & EF_DECAL;
+		const bool isDecalOrOverlay = DecalFlags != 0;
+
 		CryPrefetch(pTech->m_nTechnique);
-		CryPrefetch(pR);
+		CryPrefetch(pShaderResources);
 
 		//if (pObj->m_fAlpha < 1.0f) nFlags |= FB_TRANSPARENT;
-		nFlags |= FB_TRANSPARENT * uTransparent;
+		nBatchFlags |= FB_TRANSPARENT * uTransparent;
 
-		if (!((nFlags & FB_Z) && (!(pObj->m_RState & OS_NODEPTH_WRITE) || (pS->m_Flags2 & EF2_FORCE_ZPASS))))
-			nFlags &= ~FB_Z;
+		if (!((nBatchFlags & FB_Z) && (!(pObj->m_RState & OS_NODEPTH_WRITE) || (pShader->m_Flags2 & EF2_FORCE_ZPASS))))
+			nBatchFlags &= ~FB_Z;
 
-		if ((ObjFlags & FOB_DISSOLVE) || (ObjFlags & FOB_DECAL) || CRenderer::CV_r_usezpass != 2 || pObj->m_fDistance > CRenderer::CV_r_ZPrepassMaxDist)
-			nFlags &= ~FB_ZPREPASS;
+		if ((ObjFlags & FOB_DECAL) || (ObjFlags & FOB_TERRAIN_LAYER) || isDecalOrOverlay || CRenderer::CV_r_usezpass != 2 || pObj->m_fDistance > CRenderer::CV_r_ZPrepassMaxDist)
+			nBatchFlags &= ~FB_ZPREPASS;
 
-		pObj->m_ObjFlags |= (nFlags & FB_ZPREPASS) ? FOB_ZPREPASS : 0;
-
-		const uint32 nMaterialLayers = pObj->m_nMaterialLayers;
-		const uint32 DecalFlags = pS->m_Flags & EF_DECAL;
+		pObj->m_ObjFlags |= (nBatchFlags & FB_ZPREPASS) ? FOB_ZPREPASS : 0;
 
 		if (passInfo.IsShadowPass())
-			nFlags &= ~FB_PREPROCESS;
+			nBatchFlags &= ~FB_PREPROCESS;
 
-		nFlags &= ~(FB_PREPROCESS & uTransparent);
+		nBatchFlags &= ~(FB_PREPROCESS & uTransparent);
 
+		const uint32 nMaterialLayers = pObj->m_nMaterialLayers;
 		if ((nMaterialLayers & ~uTransparent) && CRenderer::CV_r_usemateriallayers)
 		{
-			const uint32 nResourcesNoDrawFlags = static_cast<CShaderResources*>(pR)->CShaderResources::GetMtlLayerNoDrawFlags();
+			const uint32 nResourcesNoDrawFlags = static_cast<CShaderResources*>(pShaderResources)->CShaderResources::GetMtlLayerNoDrawFlags();
 
 			// if ((nMaterialLayers & MTL_LAYER_BLEND_DYNAMICFROZEN) && !(nResourcesNoDrawFlags & MTL_LAYER_FROZEN))
 			uint32 uMask = mask_nz_zr(nMaterialLayers & MTL_LAYER_BLEND_DYNAMICFROZEN, nResourcesNoDrawFlags & MTL_LAYER_FROZEN);
@@ -1128,8 +1128,8 @@ static inline uint32 CalculateRenderItemBatchFlags(SShaderItem& SH, CRenderObjec
 			uMask = mask_nz_zr(nMaterialLayers & MTL_LAYER_BLEND_CLOAK, nResourcesNoDrawFlags & MTL_LAYER_CLOAK);
 
 			//prevent general pass when fully cloaked
-			nFlags &= ~(uMask & (FB_TRANSPARENT | (((nMaterialLayers & MTL_LAYER_BLEND_CLOAK) == MTL_LAYER_BLEND_CLOAK) ? FB_GENERAL : 0)));
-			nFlags |= uMask & FB_TRANSPARENT;
+			nBatchFlags &= ~(uMask & (FB_TRANSPARENT | (((nMaterialLayers & MTL_LAYER_BLEND_CLOAK) == MTL_LAYER_BLEND_CLOAK) ? FB_GENERAL : 0)));
+			nBatchFlags |= uMask & (FB_TRANSPARENT);
 		}
 
 		//if ( ((ObjFlags & (FOB_DECAL)) | DecalFlags) == 0 ) // put the mask below
@@ -1137,66 +1137,77 @@ static inline uint32 CalculateRenderItemBatchFlags(SShaderItem& SH, CRenderObjec
 			if (pTech->m_nTechnique[TTYPE_MOTIONBLURPASS] > 0 && (ObjFlags & FOB_HAS_PREVMATRIX) && CRenderer::CV_r_MotionVectors)
 			{
 				uint32 uMask = mask_zr_zr(ObjFlags & (FOB_DECAL), DecalFlags);
-				nFlags |= FB_MOTIONBLUR & uMask;
+				nBatchFlags |= FB_MOTIONBLUR & uMask;
 			}
 		}
 
 		// apply motion blur to skinned vegetation when it moves (for example breaking trees)
 		if (pTech->m_nTechnique[TTYPE_MOTIONBLURPASS] > 0 && ((ObjFlags & FOB_SKINNED) != 0) && ((ObjFlags & FOB_HAS_PREVMATRIX) != 0) && CRenderer::CV_r_MotionVectors)
 		{
-			nFlags |= FB_MOTIONBLUR;
+			nBatchFlags |= FB_MOTIONBLUR;
 		}
 
 		SRenderObjData* pOD = pObj->GetObjData();
 		if (pTech->m_nTechnique[TTYPE_CUSTOMRENDERPASS] > 0)
 		{
 			const uint32 nVisionParams = (pOD && pOD->m_nVisionParams);
-			if (gRenDev->m_nThermalVisionMode && (pR->HeatAmount_unnormalized() || nVisionParams))
-				nFlags |= FB_CUSTOM_RENDER;
+			if (gRenDev->m_nThermalVisionMode && (pShaderResources->HeatAmount_unnormalized() || nVisionParams))
+				nBatchFlags |= FB_CUSTOM_RENDER;
 
 			const uint32 customvisions = CRenderer::CV_r_customvisions;
 			const uint32 nHUDSilhouettesParams = (pOD && pOD->m_nHUDSilhouetteParams);
 			if (customvisions && nHUDSilhouettesParams)
 			{
-				nFlags |= FB_CUSTOM_RENDER;
+				nBatchFlags |= FB_CUSTOM_RENDER;
 			}
 		}
 
 		if (pOD->m_nCustomFlags & COB_POST_3D_RENDER)
 		{
-			nFlags |= FB_POST_3D_RENDER;
+			nBatchFlags |= FB_POST_3D_RENDER;
 		}
 
-		if (nFlags & FB_LAYER_EFFECT)
+		if (nBatchFlags & FB_LAYER_EFFECT)
 		{
 			if ((!pOD->m_pLayerEffectParams) && !CRenderer::CV_r_DebugLayerEffect)
-				nFlags &= ~FB_LAYER_EFFECT;
+				nBatchFlags &= ~FB_LAYER_EFFECT;
 		}
 
-		if (pR && pR->IsAlphaTested())
+		if (pShaderResources && pShaderResources->IsAlphaTested())
 			pObj->m_ObjFlags |= FOB_ALPHATEST;
 	}
 	else if (passInfo.IsRecursivePass() && pTech && passInfo.GetRenderView()->IsViewFlag(SRenderViewInfo::eFlags_MirrorCamera))
 	{
-		nFlags &= (FB_TRANSPARENT | FB_GENERAL);
-		nFlags |= FB_TRANSPARENT * uTransparent;                                      // if (pObj->m_fAlpha < 1.0f)                   nFlags |= FB_TRANSPARENT;
+		nBatchFlags &= (FB_TRANSPARENT | FB_GENERAL);
+		nBatchFlags |= FB_TRANSPARENT * uTransparent;
+		// if (pObj->m_fAlpha < 1.0f) nFlags |= FB_TRANSPARENT;
 	}
 
 	{
 		//if ( (objFlags & FOB_ONLY_Z_PASS) || CRenderer::CV_r_ZPassOnly) && !(nFlags & (FB_TRANSPARENT))) - put it to the mask
-		const uint32 mask = mask_nz_zr((uint32)CRenderer::CV_r_ZPassOnly, nFlags & (FB_TRANSPARENT));
+		const uint32 mask = mask_nz_zr((uint32)CRenderer::CV_r_ZPassOnly, nBatchFlags & (FB_TRANSPARENT));
 
-		nFlags = iselmask(mask, FB_Z, nFlags);
+		nBatchFlags = iselmask(mask, FB_Z, nBatchFlags);
 	}
 
-	nFlags |= nAboveWater ? 0 : FB_BELOW_WATER;
+	nBatchFlags |= nAboveWater ? 0 : FB_BELOW_WATER;
 
 	// Cloak also requires resolve
-	const uint32 nCloakMask = mask_nz_zr(pObj->m_nMaterialLayers & MTL_LAYER_BLEND_CLOAK, (pR ? static_cast<CShaderResources*>(pR)->CShaderResources::GetMtlLayerNoDrawFlags() & MTL_LAYER_CLOAK : 0));
+	const uint32 nCloakMask = mask_nz_zr(pObj->m_nMaterialLayers & MTL_LAYER_BLEND_CLOAK, (pShaderResources ? pShaderResources->CShaderResources::GetMtlLayerNoDrawFlags() & MTL_LAYER_CLOAK : 0));
 	if (nCloakMask)
-		nFlags |= FB_REFRACTION;
+		nBatchFlags |= FB_REFRACTION;
 
-	return nFlags;
+	const uint32 nMaterialLayers = pObj->m_nMaterialLayers;
+	// Need to differentiate between something rendered with cloak layer material, and sorted with cloak.
+	// e.g. ironsight glows on gun should be sorted with cloak to not write depth - can be inconsistent with no depth from gun.
+	const uint32 nCloakRenderedMask = pShaderResources && mask_nz_zr(nMaterialLayers & MTL_LAYER_BLEND_CLOAK, pShaderResources->CShaderResources::GetMtlLayerNoDrawFlags() & MTL_LAYER_CLOAK);
+
+	if ((pShader->m_Flags & EF_REFRACTIVE) || nCloakRenderedMask)
+		nBatchFlags |= FB_REFRACTION;
+	if (pShader->m_Flags & EF_FORCEREFRACTIONUPDATE)
+		nBatchFlags |= FB_RESOLVE_FULL;
+
+	return nBatchFlags;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1269,7 +1280,7 @@ static inline void AddEf_HandleForceFlags(int& nList, int& nAW, uint32& nBatchFl
 	const uint32 afterldr = nz2mask(nShaderFlags2 & EF2_AFTERPOSTPROCESS) | (afterhdr & drawlast);
 
 	nList = iselmask(afterhdr, EFSLIST_AFTER_HDRPOSTPROCESS, nList);
-	nList = iselmask(afterldr, EFSLIST_AFTER_POSTPROCESS   , nList);
+	nList = iselmask(afterldr, EFSLIST_AFTER_POSTPROCESS, nList);
 
 	//if (nShaderFlags2 & EF2_FORCE_DRAWAFTERWATER) nAW = 1;   -> branchless
 	nAW |= nz2one(nShaderFlags2 & EF2_FORCE_DRAWAFTERWATER);
@@ -1277,80 +1288,25 @@ static inline void AddEf_HandleForceFlags(int& nList, int& nAW, uint32& nBatchFl
 	obj->m_fSort += fSort;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-void CRenderView::AddRenderObject(CRenderElement* re, SShaderItem& SH, CRenderObject* obj, const SRenderingPassInfo& passInfo, int nList, int nAW) threadsafe
+//////////////////////////////////////////////////////////////////////////
+static inline ERenderListID CalculateRenderItemList(const SShaderItem& shaderItem, CRenderObject* pObj, uint32& nBatchFlags, int nList, const SRenderingPassInfo& passInfo, int nAboveWater) threadsafe
 {
-	assert(nList > 0 && nList < EFSLIST_NUM);
-	if (!re || !SH.m_pShader)
-		return;
+	CShaderResources* const __restrict pShaderResources = (CShaderResources*)shaderItem.m_pShaderResources;
+	const uint32 nMaterialLayers = pObj->m_nMaterialLayers;
 
-	// shader item is not set up yet
-	if (SH.m_nPreprocessFlags == -1)
-	{
-		if (obj->m_bPermanent && obj->m_pRenderNode)
-			obj->m_pRenderNode->InvalidatePermanentRenderObject();
-
-		return;
-	}
-
-	CShader* const __restrict pSH = (CShader*)SH.m_pShader;
+	CShader* const __restrict pSH = (CShader*)shaderItem.m_pShader;
 	const uint32 nShaderFlags = pSH->m_Flags;
-	if (nShaderFlags & EF_NODRAW)
-		return;
 
-	if (passInfo.IsShadowPass())
-	{
-		if (pSH->m_HWTechniques.Num() && pSH->m_HWTechniques[0]->m_nTechnique[TTYPE_SHADOWGEN] >= 0)
-		{
- 			passInfo.GetRenderView()->AddRenderItem(re, obj, SH, passInfo.ShadowFrustumSide(), FB_GENERAL, passInfo, passInfo.GetRendItemSorter(), true, false);
-		}
-		return;
-	}
-
-	const uint32 nMaterialLayers = obj->m_nMaterialLayers;
-
-	CShaderResources* const __restrict pShaderResources = (CShaderResources*)SH.m_pShaderResources;
-
-	// Discard 0 alpha blended geometry - this should be discarded earlier on 3dengine side preferably
-	if (!obj->m_fAlpha)
-		return;
-	if (pShaderResources && pShaderResources->::CShaderResources::IsInvisible())
-		return;
-
-	// Need to differentiate between something rendered with cloak layer material, and sorted with cloak.
-	// e.g. ironsight glows on gun should be sorted with cloak to not write depth - can be inconsistent with no depth from gun.
-	const uint32 nCloakRenderedMask = pShaderResources && mask_nz_zr(nMaterialLayers & MTL_LAYER_BLEND_CLOAK, pShaderResources ? static_cast<CShaderResources*>(pShaderResources)->CShaderResources::GetMtlLayerNoDrawFlags() & MTL_LAYER_CLOAK : 0);
-	uint32 nCloakLayerMask = nz2mask(nMaterialLayers & MTL_LAYER_BLEND_CLOAK);
-
-#ifdef _DEBUG
-	static float sMatIdent[12] =
-	{
-		1, 0, 0, 0,
-		0, 1, 0, 0,
-		0, 0, 1, 0
-	};
-
-	if (memcmp(sMatIdent, obj->GetMatrix(passInfo).GetData(), 3 * 4 * 4))
-	{
-		if (!(obj->m_ObjFlags & FOB_TRANS_MASK))
-		{
-			assert(0);
-		}
-	}
-#endif
-
-	if (!(obj->m_ObjFlags & FOB_UPDATED_RTMASK))
-	{
-		AddEf_HandleOldRTMask(obj);
-	}
-
-	uint32 nBatchFlags = CalculateRenderItemBatchFlags(SH, obj, re, passInfo, nAW);
-
-	if (obj->m_ObjFlags & FOB_DECAL)
+	if (pObj->m_ObjFlags & FOB_DECAL)
 	{
 		// Send all decals to decals list
 		nList = EFSLIST_DECAL;
 	}
+
+	// Need to differentiate between something rendered with cloak layer material, and sorted with cloak.
+	// e.g. ironsight glows on gun should be sorted with cloak to not write depth - can be inconsistent with no depth from gun.
+	const uint32 nCloakRenderedMask = pShaderResources && mask_nz_zr(nMaterialLayers & MTL_LAYER_BLEND_CLOAK, pShaderResources ? pShaderResources->CShaderResources::GetMtlLayerNoDrawFlags() & MTL_LAYER_CLOAK : 0);
+	uint32 nCloakLayerMask = nz2mask(nMaterialLayers & MTL_LAYER_BLEND_CLOAK);
 
 	const uint32 nRenderlistsFlags = (FB_PREPROCESS | FB_TRANSPARENT);
 	if (nBatchFlags & nRenderlistsFlags || nCloakLayerMask)
@@ -1375,12 +1331,12 @@ void CRenderView::AddRenderObject(CRenderElement* re, SShaderItem& SH, CRenderOb
 	if ((((nBatchFlags & FB_TRANSPARENT) || (pSH->GetFlags2() & EF2_HAIR)) && !gRenDev->m_bVolumetricFogEnabled)
 		|| passInfo.IsRecursivePass() /* account for recursive scene traversal done in forward fashion*/)
 	{
-		SRenderObjData* pOD = obj->GetObjData();
+		SRenderObjData* pOD = pObj->GetObjData();
 		if (pOD && pOD->m_FogVolumeContribIdx == (uint16)-1)
 		{
 			I3DEngine* pEng = gEnv->p3DEngine;
 			ColorF newContrib;
-			pEng->TraceFogVolumes(obj->GetMatrix(passInfo).GetTranslation(), newContrib, passInfo);
+			pEng->TraceFogVolumes(pObj->GetMatrix(passInfo).GetTranslation(), newContrib, passInfo);
 
 			pOD->m_FogVolumeContribIdx = passInfo.GetRenderView()->PushFogVolumeContribution(newContrib, passInfo);
 		}
@@ -1392,7 +1348,7 @@ void CRenderView::AddRenderObject(CRenderElement* re, SShaderItem& SH, CRenderOb
 
 	const EShaderDrawType shaderDrawType = pSH->m_eSHDType;
 	const uint32 nShaderFlags2 = pSH->m_Flags2;
-	const uint64 ObjDecalFlag = obj->m_ObjFlags & FOB_DECAL;
+	const uint64 ObjDecalFlag = pObj->m_ObjFlags & FOB_DECAL;
 
 	// make sure decals go into proper render list
 	// also, set additional shadow flag (i.e. reuse the shadow mask generated for underlying geometry)
@@ -1402,7 +1358,7 @@ void CRenderView::AddRenderObject(CRenderElement* re, SShaderItem& SH, CRenderOb
 		// BK: Drop decals that are refractive (and cloaked!). They look bad if forced into refractive pass,
 		// and break if they're in the decal pass
 		if (nShaderFlags & (EF_REFRACTIVE | EF_FORCEREFRACTIONUPDATE) || nCloakRenderedMask)
-			return;
+			return ERenderListID(nList);
 
 		//SShaderTechnique *pTech = SH.GetTechnique();
 		//if (pTech && pTech->m_nTechnique[TTYPE_Z] > 0 && ((nShaderFlags2 & EF2_FORCE_ZPASS) || CV_r_deferredshading)) // deferred shading always enabled
@@ -1412,48 +1368,131 @@ void CRenderView::AddRenderObject(CRenderElement* re, SShaderItem& SH, CRenderOb
 		}
 
 		nList = EFSLIST_DECAL;
-		obj->m_ObjFlags |= FOB_INSHADOW;
+		pObj->m_ObjFlags |= FOB_INSHADOW;
 
 		if (ObjDecalFlag == 0 && pShaderResources)
-			obj->m_nSort = pShaderResources->m_SortPrio;
+			pObj->m_nSort = pShaderResources->m_SortPrio;
 	}
 
 	// Enable tessellation for water geometry
-	obj->m_ObjFlags |= (pSH->m_Flags2 & EF2_HW_TESSELLATION && pSH->m_eShaderType == eST_Water) ? FOB_ALLOW_TESSELLATION : 0;
+	pObj->m_ObjFlags |= (pSH->m_Flags2 & EF2_HW_TESSELLATION && pSH->m_eShaderType == eST_Water) ? FOB_ALLOW_TESSELLATION : 0;
 
 	const uint32 nForceFlags = (EF2_FORCE_DRAWLAST | EF2_FORCE_DRAWFIRST | EF2_FORCE_ZPASS | EF2_FORCE_TRANSPASS | EF2_FORCE_GENERALPASS | EF2_FORCE_DRAWAFTERWATER | EF2_FORCE_WATERPASS | EF2_AFTERHDRPOSTPROCESS | EF2_AFTERPOSTPROCESS);
 
 	if (nShaderFlags2 & nForceFlags)
 	{
-		AddEf_HandleForceFlags(nList, nAW, nBatchFlags, nShaderFlags, nShaderFlags2, obj);
+		AddEf_HandleForceFlags(nList, nAboveWater, nBatchFlags, nShaderFlags, nShaderFlags2, pObj);
 	}
 
 
 	// Always force cloaked geometry to render after water
 	//if (obj->m_nMaterialLayers & MTL_LAYER_BLEND_CLOAK) nAW = 1;   -> branchless
-	nAW |= nz2one(obj->m_nMaterialLayers & MTL_LAYER_BLEND_CLOAK);
+	nAboveWater |= nz2one(pObj->m_nMaterialLayers & MTL_LAYER_BLEND_CLOAK);
 
 	// final step, for post 3d items, remove them from any other list than POST_3D_RENDER
 	// (have to do this here as the batch needed to go through the normal nList assign path first)
 	nBatchFlags = iselmask(nz2mask(nBatchFlags & FB_POST_3D_RENDER), FB_POST_3D_RENDER, nBatchFlags);
 
 	// No need to sort opaque passes by water/after water. Ensure always on same list for more coherent sorting
-	nAW |= nz2one((nList == EFSLIST_GENERAL) | (nList == EFSLIST_TERRAINLAYER) | (nList == EFSLIST_DECAL));
+	nAboveWater |= nz2one((nList == EFSLIST_GENERAL) | (nList == EFSLIST_TERRAINLAYER) | (nList == EFSLIST_DECAL));
 
 #ifndef _RELEASE
 	nList = (shaderDrawType == eSHDT_DebugHelper) ? EFSLIST_DEBUG_HELPER : nList;
 #endif
 
-	passInfo.GetRenderView()->AddRenderItem(re, obj, SH, nList, nBatchFlags, passInfo, passInfo.GetRendItemSorter(), false, passInfo.IsAuxWindow());
+	const bool bShadowPass = passInfo.IsShadowPass();
+	if (!bShadowPass)
+	{
+		const bool bForceOpaqueForward = passInfo.IsAuxWindow();
+
+		const bool bHair = (pSH->m_Flags2 & EF2_HAIR) != 0;
+		const bool bRefractive = (pSH->m_Flags & EF_REFRACTIVE) != 0;
+		const bool bTransparent = pShaderResources && pShaderResources->IsTransparent();
+
+		if ((nList == EFSLIST_GENERAL && (bHair || bTransparent)) ||
+			((nList == EFSLIST_TRANSP_BW || nList == EFSLIST_TRANSP_AW) && bRefractive))
+		{
+			const auto transparentList = !(pObj->m_ObjFlags & FOB_AFTER_WATER) ? EFSLIST_TRANSP_BW : EFSLIST_TRANSP_AW;
+			nList = (pObj->m_ObjFlags & FOB_NEAREST) ? EFSLIST_TRANSP_NEAREST : transparentList;
+		}
+		else if (nList == EFSLIST_GENERAL && (!(pSH->m_Flags & EF_SUPPORTSDEFERREDSHADING_FULL) || bForceOpaqueForward))
+		{
+			// Redirect general list items to the forward opaque list when they _only_ support Forward+
+			nList = (pObj->m_ObjFlags & FOB_NEAREST) ? EFSLIST_FORWARD_OPAQUE_NEAREST : EFSLIST_FORWARD_OPAQUE;
+		}
+	}
+
+	// objects with FOB_NEAREST go to EFSLIST_NEAREST in shadow pass and general (but not FORWARD_OPAQUE)
+	if ((pObj->m_ObjFlags & FOB_NEAREST) && (bShadowPass || (nList == EFSLIST_GENERAL && CRenderer::CV_r_GraphicsPipeline > 0)))
+	{
+		nList = EFSLIST_NEAREST_OBJECTS;
+	}
+
+	return ERenderListID(nList);
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem, uint32 nList, uint32 nBatchFlags, const SRenderingPassInfo& passInfo, 
-								SRendItemSorter sorter, bool bShadowPass, bool bForceOpaqueForward) threadsafe
+///////////////////////////////////////////////////////////////////////////////
+void CRenderView::AddRenderObject(CRenderElement* pElem, SShaderItem& shaderItem, CRenderObject* pObj, const SRenderingPassInfo& passInfo, int nSuggestedList, int nAW) threadsafe
 {
-	assert(m_usageMode == eUsageModeWriting || m_bAddingClientPolys || nList == EFSLIST_PREPROCESS);  // Adding items only in writing mode
+	assert(nSuggestedList > 0 && nSuggestedList < EFSLIST_NUM);
+	if (!pElem || !shaderItem.m_pShader)
+		return;
 
-	CShader* RESTRICT_POINTER pShader = (CShader*)shaderItem.m_pShader;
+	// shader item is not set up yet
+	if (shaderItem.m_nPreprocessFlags == -1)
+	{
+		if (pObj->m_bPermanent && pObj->m_pRenderNode)
+			pObj->m_pRenderNode->InvalidatePermanentRenderObject();
+
+		return;
+	}
+
+	CShader* const __restrict pShader = (CShader*)shaderItem.m_pShader;
+	const uint32 nShaderFlags = pShader->m_Flags;
+	if (nShaderFlags & EF_NODRAW)
+		return;
+
+	if (passInfo.IsShadowPass())
+	{
+		if (pShader->m_HWTechniques.Num() && pShader->m_HWTechniques[0]->m_nTechnique[TTYPE_SHADOWGEN] >= 0)
+		{
+ 			passInfo.GetRenderView()->AddRenderItem(pElem, pObj, shaderItem, ERenderListID(passInfo.ShadowFrustumSide()), FB_GENERAL, passInfo, passInfo.GetRendItemSorter());
+		}
+		return;
+	}
+
+	CShaderResources* const __restrict pShaderResources = (CShaderResources*)shaderItem.m_pShaderResources;
+
+	// Discard 0 alpha blended geometry - this should be discarded earlier on 3dengine side preferably
+	if (!pObj->m_fAlpha)
+		return;
+	if (pShaderResources && pShaderResources->::CShaderResources::IsInvisible())
+		return;
+
+#ifdef _DEBUG
+	static float sMatIdent[12] =
+	{
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0
+	};
+
+	if (memcmp(sMatIdent, pObj->GetMatrix(passInfo).GetData(), 3 * 4 * 4))
+	{
+		if (!(pObj->m_ObjFlags & FOB_TRANS_MASK))
+		{
+			assert(0);
+		}
+	}
+#endif
+
+	if (!(pObj->m_ObjFlags & FOB_UPDATED_RTMASK))
+	{
+		AddEf_HandleOldRTMask(pObj);
+	}
+
+	uint32 nBatchFlags = CalculateRenderItemBatchFlags(shaderItem, pObj, pElem, passInfo, nAW);
+	ERenderListID nRenderList = CalculateRenderItemList(shaderItem, pObj, nBatchFlags, nSuggestedList, passInfo, nAW);
 
 #ifndef OMIT_SKY_ELEMENT_MATERIAL_WORKAROUND
 	// TODO: Clean up sky-code
@@ -1476,7 +1515,7 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 		// Redirect all "DistanceCloud"-type shaders to the SKY-list
 		if (pShader->m_eShaderType == eST_FX)
 		{
-			nList = EFSLIST_SKY;
+			nRenderList = EFSLIST_SKY;
 		}
 		// Redirect all "Sky"-type shaders to the SkyPass
 		else if (pShader->m_eShaderType == eST_Sky)
@@ -1487,91 +1526,49 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 	}
 #endif // !OMIT_SKY_ELEMENT_MATERIAL_WORKAROUND
 
-	if (!bShadowPass)
-	{
-		const bool bHair = (pShader->m_Flags2 & EF2_HAIR) != 0;
-		const bool bRefractive = (pShader->m_Flags & EF_REFRACTIVE) != 0;
-		const bool bTransparent = shaderItem.m_pShaderResources && static_cast<CShaderResources*>(shaderItem.m_pShaderResources)->IsTransparent();
+	passInfo.GetRenderView()->AddRenderItem(pElem, pObj, shaderItem, nRenderList, nBatchFlags, passInfo, passInfo.GetRendItemSorter());
+}
 
-		if ((nList == EFSLIST_GENERAL && (bHair || bTransparent)) || 
-		   ((nList == EFSLIST_TRANSP_BW || nList == EFSLIST_TRANSP_AW) && bRefractive))
-		{
-			const auto transparentList = !(pObj->m_ObjFlags & FOB_AFTER_WATER) ? EFSLIST_TRANSP_BW : EFSLIST_TRANSP_AW;
-			nList = (pObj->m_ObjFlags & FOB_NEAREST) ? EFSLIST_TRANSP_NEAREST : transparentList;
-		}
-		else if (nList == EFSLIST_GENERAL && (!(pShader->m_Flags & EF_SUPPORTSDEFERREDSHADING_FULL) || bForceOpaqueForward))
-		{
-			// Redirect general list items to the forward opaque list
-			nList = (pObj->m_ObjFlags & FOB_NEAREST) ? EFSLIST_FORWARD_OPAQUE_NEAREST : EFSLIST_FORWARD_OPAQUE;
-		}
+//////////////////////////////////////////////////////////////////////////
+void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem, ERenderListID nList, uint32 nBatchFlags, const SRenderingPassInfo& passInfo,
+								SRendItemSorter sorter) threadsafe
+{
+	assert(m_usageMode == eUsageModeWriting || m_bAddingClientPolys || nList == EFSLIST_PREPROCESS);  // Adding items only in writing mode
+
+	CShader* RESTRICT_POINTER pShader = (CShader*)shaderItem.m_pShader;
+
+	nBatchFlags |= shaderItem.m_nPreprocessFlags & FSPR_MASK;
+
+	if (passInfo.IsShadowPass() && (nList == EFSLIST_NEAREST_OBJECTS))
+	{
+		m_shadows.AddNearestCaster(pObj, passInfo);
 	}
 
 	// Calculate AABB
 	Vec3 aabb_min, aabb_max;
 	pElem->mfGetBBox(aabb_min, aabb_max);
 	const auto aabb = AABB{ aabb_min, aabb_max };
-	const auto transformed_aabb = pObj->TransformAABB(aabb, passInfo.GetCamera().GetPosition(), passInfo);
+	float objDistance;
 
-	nBatchFlags |= shaderItem.m_nPreprocessFlags & FSPR_MASK;
+	uint64 objFlags = pObj->m_ObjFlags;    // last time we read flags from renderObject
 
-	const uint32 nMaterialLayers = pObj->m_nMaterialLayers;
-	// Need to differentiate between something rendered with cloak layer material, and sorted with cloak.
-	// e.g. ironsight glows on gun should be sorted with cloak to not write depth - can be inconsistent with no depth from gun.
-	const uint32 nCloakRenderedMask = shaderItem.m_pShaderResources && mask_nz_zr(nMaterialLayers & MTL_LAYER_BLEND_CLOAK, static_cast<CShaderResources*>(shaderItem.m_pShaderResources)->CShaderResources::GetMtlLayerNoDrawFlags() & MTL_LAYER_CLOAK);
-
-	if ((pShader->m_Flags & EF_REFRACTIVE) || nCloakRenderedMask)
-		nBatchFlags |= FB_REFRACTION;
-	if (pShader->m_Flags & EF_FORCEREFRACTIONUPDATE)
-		nBatchFlags |= FB_RESOLVE_FULL;
-
-	// objects with FOB_NEAREST go to EFSLIST_NEAREST in shadow pass and general
-	if ((pObj->m_ObjFlags & FOB_NEAREST) && (bShadowPass || (nList == EFSLIST_GENERAL && CRenderer::CV_r_GraphicsPipeline > 0)))
 	{
-		nList = EFSLIST_NEAREST_OBJECTS;
+		// Use the (possibly) tighter AABB extracted from the render element and store distance squared.
+		const auto position = passInfo.GetCamera().GetPosition();
+		const auto transformed_aabb = pObj->TransformAABB(objFlags, aabb, position, passInfo);
 
-		if (bShadowPass)
-			m_shadows.AddNearestCaster(pObj, passInfo);
+		objDistance = Distance::Point_AABBSq(position, transformed_aabb) * GetZoomFactor();
 	}
 
-	SRendItem ri;
+	SRendItem ri = {0};
 
+	// First by ShaderID, then by ShaderTechnique, then by ShaderResourceID
 	ri.SortVal = SRendItem::PackShaderItem(shaderItem);
 	ri.nBatchFlags = nBatchFlags;
-
-	// ATTENTION: Keep in sync with symmetric switch in CRenderView::Job_SortRenderItemsInList(ERenderListID list), see below
-	switch (nList)
-	{
-	// No need to sort.
-	case EFSLIST_SHADOW_GEN:
-	case EFSLIST_FOG_VOLUME:
-		break;
-	case EFSLIST_ZPREPASS:
-	case EFSLIST_GENERAL:
-	case EFSLIST_NEAREST_OBJECTS:
-	case EFSLIST_DEBUG_HELPER:
-		if (CRenderer::CV_r_ZPassDepthSorting != 2)
-			goto fallthrough;
-	case EFSLIST_WATER_VOLUMES:
-	case EFSLIST_TRANSP_AW:
-	case EFSLIST_TRANSP_BW:
-	case EFSLIST_TRANSP_NEAREST:
-	case EFSLIST_WATER:
-	case EFSLIST_HALFRES_PARTICLES:
-	case EFSLIST_LENSOPTICS:
-	case EFSLIST_EYE_OVERLAY:
-	case EFSLIST_SKY:
-		// Use the (possibly) tighter AABB extracted from the render element and store distance squared.
-		ri.fDist = Distance::Point_AABBSq(passInfo.GetCamera().GetPosition(), transformed_aabb) * passInfo.GetZoomFactor() + pObj->m_fSort;
-		break;
-	fallthrough:
-	default:
-		ri.ObjSort = SRendItem::EncodeObjFlagsSortingValue(pObj);
-		break;
-	}
-
 	ri.rendItemSorter = sorter;
 	ri.pCompiledObject = nullptr;
 	ri.pElem = pElem;
+	ri.fDist = objDistance;
 	//ri.nStencRef = pObj->m_nClipVolumeStencilRef + 1; // + 1, we start at 1. 0 is reserved for MSAAed areas.
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1585,19 +1582,21 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 		// Must add this render item to the local array.
 		// This is not thread safe!!!, code at 3d engine makes sure this can never be called simultaneously on the same RenderObject on the same pass type.
 		//  General and shadows can be called simultaneously, they are writing to the separate arrays.
-		CPermanentRenderObject::SPermanentRendItem pri;
+		CPermanentRenderObject::SPermanentRendItem pri = {0};
 
 		pri.m_sortValue = ri.SortVal;
 		pri.m_nBatchFlags = nBatchFlags;
-		pri.m_objSort = ri.ObjSort;
 		pri.m_nRenderList = nList;
 		pri.m_pCompiledObject = nullptr;
+		pri.m_pRenderElement = pElem;
+		pri.m_fDist = objDistance;
+		//pri.nStencRef = ri.nStencRef
 
+		pri.m_ElmFlags = pElem->m_Flags;
+		pri.m_ObjFlags = objFlags;
 		pri.m_aabb = aabb;
 
-		pri.m_pRenderElement = pElem;
-
-		auto renderPassType = (bShadowPass) ? CPermanentRenderObject::eRenderPass_Shadows : CPermanentRenderObject::eRenderPass_General;
+		auto renderPassType = passInfo.IsShadowPass() ? CPermanentRenderObject::eRenderPass_Shadows : CPermanentRenderObject::eRenderPass_General;
 		pPermanentRendObj->m_permanentRenderItems[renderPassType].push_back(pri);
 
 		pPermanentRendObj->PrepareForUse(pElem, renderPassType);
@@ -1609,33 +1608,33 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 		// This item will need a temporary compiled object
 		EDataType reType = pElem ? pElem->mfGetType() : eDATA_Unknown;
 
-		bool bMeshCompatibleRenderElement = 
+		const bool meshCompatibleRenderElement = 
 			reType == eDATA_Mesh ||
 			reType == eDATA_Terrain ||
 			reType == eDATA_GeomCache ||
 			reType == eDATA_ClientPoly;
 
-		bool bCompiledRenderElement = 
+		const bool compiledRenderElement =
 			reType == eDATA_WaterVolume ||
 			reType == eDATA_WaterOcean ||
 			reType == eDATA_Sky ||
 			reType == eDATA_HDRSky ||
 			reType == eDATA_FogVolume;
 
-		bool bCustomRenderLoop =
+		const bool customRenderLoop =
 			reType == eDATA_LensOptics;
 
-		if (bMeshCompatibleRenderElement || bCompiledRenderElement) // temporary disable for these types
+		if (meshCompatibleRenderElement || compiledRenderElement) // temporary disable for these types
 		{
 			// Allocate new CompiledRenderObject.
 			ri.pCompiledObject = AllocCompiledObject(pObj, pElem, shaderItem);
 			pObj->m_pCompiledObject = ri.pCompiledObject;
-			ri.nBatchFlags |= ri.pCompiledObject ? FB_COMPILED_OBJECT : 0;
+			ri.nBatchFlags |= (ri.pCompiledObject ? FB_COMPILED_OBJECT : 0);
 
 			// Add to temporary objects to compile
-			m_temporaryCompiledObjects.push_back(STemporaryRenderObjectCompilationData{ ri.pCompiledObject, aabb });
+			m_temporaryCompiledObjects.push_back(STemporaryRenderObjectCompilationData{ ri.pCompiledObject, aabb, objFlags });
 		}
-		else if (bCustomRenderLoop)
+		else if (customRenderLoop)
 		{
 			ri.pRenderObject = pObj;
 		}
@@ -1647,7 +1646,7 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 		return;
 #endif
 
-	AddRenderItemToRenderLists<true>(ri, nList, pObj, shaderItem);
+	AddRenderItemToRenderLists<true>(ri, objFlags, nList, pObj, shaderItem);
 
 	////////////////////////////////////////////////////////////////////////
 	// Check if shader item needs update
@@ -1655,10 +1654,10 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 }
 
 //////////////////////////////////////////////////////////////////////////
-template<bool bConcurrent>
+template<bool isConcurrent>
 inline void UpdateRenderListBatchFlags(volatile uint32& listFlags, int newFlags) threadsafe
 {
-	if (bConcurrent)
+	if (isConcurrent)
 	{
 		CryInterlockedExchangeOr((volatile LONG*)&listFlags, newFlags);
 	}
@@ -1668,78 +1667,92 @@ inline void UpdateRenderListBatchFlags(volatile uint32& listFlags, int newFlags)
 	}
 }
 
-template<bool bConcurrent>
-inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRenderList, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem) threadsafe
+template<bool isConcurrent>
+inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, uint64 objFlags, ERenderListID renderList, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem) threadsafe
 {
-	const uint32 nBatchFlags = ri.nBatchFlags;
-
-	m_renderItems[nRenderList].push_back(ri);
-	UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[nRenderList], nBatchFlags);
+	uint32 nBatchFlags = ri.nBatchFlags;
+	float objDistance = ri.fDist;
+	bool distributeToOtherLists = !IsShadowGenView();
 
 #ifndef OMIT_SKY_ELEMENT_MATERIAL_WORKAROUND
-	if (nRenderList == EFSLIST_SKY)
-		return;
+	if (renderList == EFSLIST_SKY)
+		distributeToOtherLists = false;
 #endif
 
-	if (!IsShadowGenView())
+	if (distributeToOtherLists)
 	{
-		const bool bForwardOpaqueFlags = (nBatchFlags & (FB_DEBUG | FB_TILED_FORWARD)) != 0;
-		const bool bIsMaterialEmissive = (shaderItem.m_pShaderResources && shaderItem.m_pShaderResources->IsEmissive());
-		const bool bIsTransparent = nRenderList == EFSLIST_TRANSP_BW || nRenderList == EFSLIST_TRANSP_AW || nRenderList == EFSLIST_TRANSP_NEAREST;
-		const bool bIsSelectable = pObj->m_editorSelectionID > 0;
-		const bool bNearest = (pObj->m_ObjFlags & FOB_NEAREST) != 0;
+		const bool hasDeferredOpaqueFlags = (nBatchFlags & (FB_Z)) != 0;
+		const bool hasForwardOpaqueFlags = (nBatchFlags & (FB_DEBUG | FB_TILED_FORWARD)) != 0;
+		const bool isTransparent = renderList == EFSLIST_TRANSP_BW || renderList == EFSLIST_TRANSP_AW || renderList == EFSLIST_TRANSP_NEAREST;
+		const bool isForwardOpaque = renderList == EFSLIST_FORWARD_OPAQUE || renderList == EFSLIST_FORWARD_OPAQUE_NEAREST;
+		const bool isSelectable = pObj->m_editorSelectionID > 0;
 
-		const bool bGeneralList =
-			nRenderList == EFSLIST_GENERAL ||
-			nRenderList == EFSLIST_TERRAINLAYER ||
-			nRenderList == EFSLIST_DECAL ||
-			nRenderList == EFSLIST_NEAREST_OBJECTS;
+		// Object flags (TODO: access through SRenderObjectAccessThreadConfig)
+		const bool isNearest     = (objFlags & FOB_NEAREST  ) != 0;
+		const bool isDissolved   = (objFlags & FOB_DISSOLVE ) != 0;
+		const bool isAlphaTested = (objFlags & FOB_ALPHATEST) != 0;
 
-		if (!bGeneralList && (nBatchFlags & FB_Z))
+		// ZPrepass only for non-alpha tested/blended geometry (decals, terrain).
+		// We assume vegetation is special case due to potential massive overdraw
+		const bool isEmissive   = shaderItem.IsEmissive();
+		const bool isVegetation = shaderItem.IsVegetation();
+		const bool isTesselated = shaderItem.IsTesselated();
+
+		// These lists are traversed by the GBuffer-pass by default (see CSceneGBufferStage::ExecuteSceneOpaque)
+		const bool isGeneralList =
+			renderList == EFSLIST_NEAREST_OBJECTS ||
+			renderList == EFSLIST_GENERAL ||
+			renderList == EFSLIST_TERRAINLAYER ||
+			renderList == EFSLIST_DECAL;
+
+		if ((nBatchFlags & FB_ZPREPASS))
 		{
-			m_renderItems[EFSLIST_GENERAL].push_back(ri);
-			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_GENERAL], nBatchFlags);
+			const ERenderListID targetRenderList = EFSLIST_ZPREPASS;
+			m_renderItems[targetRenderList].push_back(PrepareRenderItemForRenderList(ri, nBatchFlags, objFlags, pObj, objDistance, targetRenderList));
+			UpdateRenderListBatchFlags<isConcurrent>(m_batchFlags[targetRenderList], nBatchFlags);
 		}
 
-		if ((nBatchFlags & FB_ZPREPASS) && !bNearest)
+		// Add unconventional objects that are supported in the GBuffer-pass to the GENERAL list (in addition to the original list)
+		if ((hasDeferredOpaqueFlags) && !(isGeneralList))
 		{
-			m_renderItems[EFSLIST_ZPREPASS].push_back(ri);
-			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_ZPREPASS], nBatchFlags);
+			m_renderItems[EFSLIST_GENERAL].push_back(PrepareRenderItemForRenderList(ri, nBatchFlags, objFlags, pObj, objDistance, EFSLIST_GENERAL));
+			UpdateRenderListBatchFlags<isConcurrent>(m_batchFlags[EFSLIST_GENERAL], nBatchFlags);
 		}
 
-		const bool bForwardOpaqueList = (nRenderList == EFSLIST_FORWARD_OPAQUE) || (nRenderList == EFSLIST_FORWARD_OPAQUE_NEAREST);
-		if ((bForwardOpaqueFlags || bIsMaterialEmissive) && !bIsTransparent && !bForwardOpaqueList)
+		// Add forward objects that are supported in the Forward-pass to the FORWARD_OPAQUE list (in addition to the original list)
+		if ((hasForwardOpaqueFlags | isEmissive) && !(isForwardOpaque | isTransparent | hasDeferredOpaqueFlags))
 		{
-			const int targetRenderList = bNearest ? EFSLIST_FORWARD_OPAQUE_NEAREST : EFSLIST_FORWARD_OPAQUE;
-			m_renderItems[targetRenderList].push_back(ri);
-			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[targetRenderList], nBatchFlags);
+			const ERenderListID targetRenderList = isNearest ? EFSLIST_FORWARD_OPAQUE_NEAREST : EFSLIST_FORWARD_OPAQUE;
+			m_renderItems[targetRenderList].push_back(PrepareRenderItemForRenderList(ri, nBatchFlags, objFlags, pObj, objDistance, targetRenderList));
+			UpdateRenderListBatchFlags<isConcurrent>(m_batchFlags[targetRenderList], nBatchFlags);
 		}
 
 		if (nBatchFlags & FB_PREPROCESS)
 		{
 			// Prevent water usage on non-water specific meshes (it causes reflections updates). Todo: this should be checked in editor side and not allow such usage
 			EShaderType shaderType = reinterpret_cast<CShader*>(shaderItem.m_pShader)->m_eShaderType;
-			if (shaderType != eST_Water || (shaderType == eST_Water && nRenderList == EFSLIST_WATER))
+			if (shaderType != eST_Water || (shaderType == eST_Water && renderList == EFSLIST_WATER))
 			{
-				m_renderItems[EFSLIST_PREPROCESS].push_back(ri);
-				UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_PREPROCESS], nBatchFlags);
+				m_renderItems[EFSLIST_PREPROCESS].push_back(PrepareRenderItemForRenderList(ri, nBatchFlags, objFlags, pObj, objDistance, EFSLIST_PREPROCESS));
+				UpdateRenderListBatchFlags<isConcurrent>(m_batchFlags[EFSLIST_PREPROCESS], nBatchFlags);
 			}
 		}
 
 		if (nBatchFlags & FB_CUSTOM_RENDER)
 		{
-			SRendItem rItem = ri;
-			rItem.fDist = SRendItem::EncodeCustomDistanceSortingValue(pObj); // custom sorting for silhouettes, etc...
-			m_renderItems[EFSLIST_CUSTOM].push_back(rItem);
-			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_CUSTOM], nBatchFlags);
+			m_renderItems[EFSLIST_CUSTOM].push_back(PrepareRenderItemForRenderList(ri, nBatchFlags, objFlags, pObj, objDistance, EFSLIST_CUSTOM));
+			UpdateRenderListBatchFlags<isConcurrent>(m_batchFlags[EFSLIST_CUSTOM], nBatchFlags);
 		}
 
-		if (bIsSelectable)
+		if (isSelectable)
 		{
-			m_renderItems[EFSLIST_HIGHLIGHT].push_back(ri);
-			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_HIGHLIGHT], nBatchFlags);
+			m_renderItems[EFSLIST_HIGHLIGHT].push_back(PrepareRenderItemForRenderList(ri, nBatchFlags, objFlags, pObj, objDistance, EFSLIST_HIGHLIGHT));
+			UpdateRenderListBatchFlags<isConcurrent>(m_batchFlags[EFSLIST_HIGHLIGHT], nBatchFlags);
 		}
 	}
+
+	m_renderItems[renderList].push_back(PrepareRenderItemForRenderList(ri, nBatchFlags, objFlags, pObj, objDistance, renderList));
+	UpdateRenderListBatchFlags<isConcurrent>(m_batchFlags[renderList], nBatchFlags);
 }
 
 void CRenderView::ExpandPermanentRenderObjects()
@@ -1816,7 +1829,6 @@ void CRenderView::ExpandPermanentRenderObjects()
 							}
 							else 
 							{
-								pri.m_nBatchFlags |= pri.m_pCompiledObject ? FB_COMPILED_OBJECT : 0;
 								needsCompilation = true;
 
 								// We might need to update the root compiled object.
@@ -1837,35 +1849,33 @@ void CRenderView::ExpandPermanentRenderObjects()
 
 					CheckAndScheduleForUpdate(shaderItem);
 
-					int renderList;
+					ERenderListID renderList;
 					if (renderPassType == CPermanentRenderObject::eRenderPass_Shadows)
-						renderList = record.shadowFrustumSide;
+						renderList = ERenderListID(record.shadowFrustumSide);
 					else
 						renderList = pri.m_nRenderList;
 
 					SRendItem ri;
 
 					ri.SortVal = pri.m_sortValue;
-					ri.nBatchFlags = pri.m_nBatchFlags;
-					ri.ObjSort = pri.m_objSort;
+					ri.nBatchFlags = pri.m_nBatchFlags | (pri.m_pCompiledObject ? FB_COMPILED_OBJECT : 0);
 					ri.rendItemSorter = SRendItemSorter(record.itemSorter);
 					ri.pCompiledObject = pri.m_pCompiledObject;
 					ri.pElem = pri.m_pRenderElement;
+					ri.fDist = pri.m_fDist;
 					//ri.nStencRef = pRenderObject->m_nClipVolumeStencilRef + 1; // + 1, we start at 1. 0 is reserved for MSAAed areas.
 
-					if (renderList == EFSLIST_TRANSP_BW || renderList == EFSLIST_TRANSP_AW || renderList == EFSLIST_TRANSP_NEAREST || renderList == EFSLIST_HALFRES_PARTICLES)
-						ri.fDist = SRendItem::EncodeDistanceSortingValue(pRenderObject);
-					AddRenderItemToRenderLists<false>(ri, renderList, pRenderObject, shaderItem);
+					AddRenderItemToRenderLists<false>(ri, pri.m_ObjFlags, renderList, pRenderObject, shaderItem);
 
 					// The need for compilation is not detected beforehand, and it only needs to be recompiled because the elements are either skinned, dirty, or need to be updated always.
 					// In this case object need to be recompiled to get skinning, or input stream updated but compilation of constant buffer is not needed.
-					if (!needsCompilation && pri.m_pRenderElement && pri.m_pRenderElement->m_Flags & (FCEF_DIRTY | FCEF_SKINNED | FCEF_UPDATEALWAYS))
+					if (!needsCompilation && pri.m_ElmFlags & (FCEF_DIRTY | FCEF_SKINNED | FCEF_UPDATEALWAYS))
 					{
 						needsCompilation = true;
 						if (!record.requiresInstanceDataUpdate)
 							compilationOptions &= ~eObjCompilationOption_PerInstanceConstantBuffer;
 
-						if(pri.m_pRenderElement->m_Flags & FCEF_SKINNED)
+						if(pri.m_ElmFlags & FCEF_SKINNED)
 							compilationOptions |= eObjCompilationOption_PerInstanceExtraResources;
 					}
 				}
@@ -1967,7 +1977,7 @@ void CRenderView::CompileModifiedRenderObjects()
 		for (int i = 0, num = items.size(); i < num; i++)
 		{
 			auto& pri = items[i];
-			if (!pri.m_pCompiledObject || !pri.m_pCompiledObject->Compile(compilationFlags, pri.m_aabb, this))
+			if (!pri.m_pCompiledObject || !pri.m_pCompiledObject->Compile(compilationFlags, pri.m_ObjFlags, pri.m_aabb, this))
 				bAllCompiled = false;
 
 			allCachedShadowPsosAreValid &= gcpRendD3D->GetGraphicsPipeline().GetShadowStage()->CanRenderCachedShadows(pri.m_pCompiledObject);
@@ -1994,7 +2004,7 @@ void CRenderView::CompileModifiedRenderObjects()
 	int numTempObjects = m_temporaryCompiledObjects.size();
 	for (const auto &t : m_temporaryCompiledObjects)
 	{
-		const bool isCompiled = t.pObject->Compile(eObjCompilationOption_All, t.localAABB, this);
+		const bool isCompiled = t.pObject->Compile(eObjCompilationOption_All, t.objFlags, t.localAABB, this);
 		const bool cachedShadowPsosAreValid = gcpRendD3D->GetGraphicsPipeline().GetShadowStage()->CanRenderCachedShadows(t.pObject);
 
 		if (!cachedShadowPsosAreValid && IsShadowGenView())
@@ -2143,7 +2153,7 @@ CRenderView::RenderItems& CRenderView::GetShadowItems(ShadowMapFrustum* pFrustum
 		static CRenderView::RenderItems empty;
 		return empty;
 	}
-	return pShadowsView->GetRenderItems(nFrustumSide);
+	return pShadowsView->GetRenderItems(ERenderListID(nFrustumSide));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2167,29 +2177,32 @@ void CRenderView::Job_PostWrite()
 		return;
 
 	ExpandPermanentRenderObjects();
+
 	SortLights();
 
-	const auto listCount = m_viewType == eViewType_Shadow ? OMNI_SIDES_NUM : EFSLIST_NUM;
+	const auto listCount = IsShadowGenView() ? OMNI_SIDES_NUM : EFSLIST_NUM;
 	for (int renderList = 0; renderList < listCount; renderList++)
 	{
-		if (renderList == EFSLIST_PREPROCESS && m_viewType != eViewType_Shadow)
+		if (renderList == EFSLIST_PREPROCESS && IsShadowGenView())
 		{
 			// These lists need not to be sorted here
 			continue;
 		}
 
-		auto& renderItems = GetRenderItems(renderList);
+		m_renderItems[renderList].CoalesceMemory();
+		auto& renderItems = GetRenderItems(ERenderListID(renderList));
 
 		if (!renderItems.empty())
 		{
 			auto lambda_job = [=]
 			{
-				Job_SortRenderItemsInList((ERenderListID)renderList);
+				Job_SortRenderItemsInList(ERenderListID(renderList));
 			};
 			gEnv->pJobManager->AddLambdaJob("SortRenderItems", lambda_job, JobManager::eRegularPriority, &m_jobstate_Sort);
 			//lambda_job();
 		}
 	}
+
 	m_bPostWriteExecuted = true;
 }
 
@@ -2209,37 +2222,95 @@ struct SCompareRendItemSelectionPass
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-void CRenderView::Job_SortRenderItemsInList(ERenderListID list)
+
+SRendItem CRenderView::PrepareRenderItemForRenderList(const SRendItem& ri_templ, uint32 nBatchFlags, uint64 objFlags, CRenderObject* pObj, float objDistance, ERenderListID renderList)
+{
+	SRendItem ri = ri_templ;
+
+	// Batch-flags can be specified on a per-list basis
+	ri.nBatchFlags = nBatchFlags;
+
+	if (IsShadowGenView())
+	{
+		ri.ObjSort = SRendItem::EncodeObjFlagsSortingValue(pObj, objFlags, objDistance);
+		return ri;
+	}
+
+	// ATTENTION: Keep in sync with symmetric switch in CRenderView::Job_SortRenderItemsInList(ERenderListID list), see below
+	switch (renderList)
+	{
+	case EFSLIST_SHADOW_GEN:
+	case EFSLIST_FOG_VOLUME:
+		// No need to sort.
+		break;
+	case EFSLIST_ZPREPASS:
+
+	case EFSLIST_NEAREST_OBJECTS:
+	case EFSLIST_GENERAL:
+	case EFSLIST_DEBUG_HELPER:
+
+	case EFSLIST_FORWARD_OPAQUE_NEAREST:
+	case EFSLIST_FORWARD_OPAQUE:
+		if (CRenderer::CV_r_ZPassDepthSorting == 2)
+			goto fallthrough;
+
+		ri.ObjSort = SRendItem::EncodeObjFlagsSortingValue(pObj, objFlags, objDistance);
+
+		// Take the object flag away when not put into the zprepass-list (used for splitting)
+		if (!(nBatchFlags & FB_ZPREPASS))
+			ri.ObjSort &= ~FOB_ZPREPASS;
+		else
+			ri.ObjSort |=  FOB_ZPREPASS;
+
+		break;
+	case EFSLIST_CUSTOM:
+		ri.fDist = SRendItem::EncodeCustomDistanceSortingValue(pObj, objDistance); // custom sorting for silhouettes, etc...
+		break;
+	case EFSLIST_WATER_VOLUMES:
+	case EFSLIST_TRANSP_AW:
+	case EFSLIST_TRANSP_BW:
+	case EFSLIST_TRANSP_NEAREST:
+	case EFSLIST_WATER:
+	case EFSLIST_HALFRES_PARTICLES:
+	case EFSLIST_LENSOPTICS:
+	case EFSLIST_EYE_OVERLAY:
+	case EFSLIST_SKY:
+	fallthrough:
+		ri.fDist   = SRendItem::EncodeDistanceSortingValue(pObj, objDistance);
+		break;
+	default:
+		ri.ObjSort = SRendItem::EncodeObjFlagsSortingValue(pObj, objFlags);
+		break;
+	}
+
+	return ri;
+}
+
+void CRenderView::Job_SortRenderItemsInList(ERenderListID renderList)
 {
 	FUNCTION_PROFILER_RENDERER();
 
-	auto& renderItems = GetRenderItems(list);
+	auto& renderItems = GetRenderItems(renderList);
 	if (renderItems.empty())
 		return;
 
 	int nStart = 0;
 	int n = renderItems.size();
 
-	if (m_viewType == eViewType_Shadow)
+	if (IsShadowGenView())
 	{
 		// Sort Shadow render items differently
-		//assert(m_shadows.m_frustums.size() == 1);// Should only have one current frustum.
 		if (m_shadows.m_pShadowFrustumOwner)
 		{
-			const auto side = list;
+			const auto side = renderList;
 			CRY_ASSERT(side >= 0 && side < OMNI_SIDES_NUM);
 			m_shadows.m_pShadowFrustumOwner->SortRenderItemsForFrustumAsync(side, &renderItems[0], renderItems.size());
 		}
+
 		return;
 	}
 
-	if (m_viewType != eViewType_Shadow)
-	{
-		// Reorder all but shadow gen
-		//std::sort(&renderItems[nStart],&renderItems[nStart] + n, SCompareByOnlyStableFlagsOctreeID());
-	}
-
-	switch (list)
+	switch (renderList)
 	{
 	case EFSLIST_PREPROCESS:
 		{
@@ -2316,7 +2387,7 @@ void CRenderView::Job_SortRenderItemsInList(ERenderListID list)
 	case EFSLIST_AFTER_HDRPOSTPROCESS:
 		{
 			PROFILE_FRAME(State_SortingLight);
-			SRendItem::mfSortByLight(&renderItems[nStart], n, true, false, list == EFSLIST_DECAL);
+			SRendItem::mfSortByLight(&renderItems[nStart], n, true, false, renderList == EFSLIST_DECAL);
 		}
 		break;
 	case EFSLIST_TERRAINLAYER:

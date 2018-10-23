@@ -434,11 +434,11 @@ public:
 	ILINE CRenderElement*         GetRE() const      { return m_pRE; }
 
 	template <typename ObjectAccessor>
-	AABB TransformAABB(const AABB &aabb, const Vec3 &cameraPosition, ObjectAccessor &&accessor) const
+	AABB TransformAABB(uint64 objFlags, const AABB &aabb, const Vec3 &cameraPosition, ObjectAccessor &&accessor) const
 	{
 		auto m = GetMatrix(std::forward<ObjectAccessor>(accessor));
 		// Convert from camera space to world space for nearest
-		if (m_ObjFlags & FOB_NEAREST)
+		if (objFlags & FOB_NEAREST)
 			m.AddTranslation(cameraPosition);
 
 		return AABB::CreateTransformedAABB(m, aabb);
