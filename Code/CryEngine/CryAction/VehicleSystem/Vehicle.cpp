@@ -1878,26 +1878,27 @@ void CVehicle::DebugDraw(const float frameTime)
 		}
 	}
 
-	if (cvars.v_debugdraw == eVDB_Sounds && IsPlayerPassenger())
+	REINST("update speed RTPC");
+	/*if (cvars.v_debugdraw == eVDB_Sounds && IsPlayerPassenger())
 	{
-		//static float color[] = { 1, 1, 1, 1 };
+		static float color[] = { 1, 1, 1, 1 };
 
 		for (TVehicleSoundEventId i = 0; i < m_soundEvents.size(); ++i)
 		{
-			if (SVehicleSoundInfo* info = GetSoundInfo(i))
+			if (GetSoundInfo(i) != nullptr)
 			{
-				REINST("update speed RTPC");
-				/*if (ISound* pSound = m_pIEntityAudioComponent->GetSound(info->soundId))
-				   {
-				   float speed = 0.f;
-				   if (pSound->GetParam("speed", &speed, false))
-				   {
-				    IRenderAuxText::Draw2dLabel(50.f, (float)(100+15*GetDebugIndex()), 1.25f, color, false, "%s: speed %.2f", info->name.c_str(), speed);
-				   }
-				   }*/
+				if (ISound* pSound = m_pIEntityAudioComponent->GetSound(info->soundId))
+				{
+					float speed = 0.f;
+					
+					if (pSound->GetParam("speed", &speed, false))
+					{
+						IRenderAuxText::Draw2dLabel(50.f, (float)(100+15*GetDebugIndex()), 1.25f, color, false, "%s: speed %.2f", info->name.c_str(), speed);
+					}
+				}
 			}
 		}
-	}
+	}*/
 }
 
 //------------------------------------------------------------------------
