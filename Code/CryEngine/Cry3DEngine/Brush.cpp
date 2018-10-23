@@ -844,7 +844,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 
  				pObj->m_fDistance = fObjDistance;
 				IF(!m_bDrawLast, 1)
-					pObj->m_nSort = fastround_positive(pObj->m_fDistance * 2.0f);
+					pObj->m_nSort = HalfFlip(CryConvertFloatToHalf(pObj->m_fDistance * 2.0f));
 				else
 					pObj->m_nSort = 0xFFFF;
 			}
@@ -864,7 +864,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 
 	pObj->m_fDistance = fObjDistance;
 	IF (!m_bDrawLast, 1)
-		pObj->m_nSort = fastround_positive(pObj->m_fDistance * 2.0f);
+		pObj->m_nSort = HalfFlip(CryConvertFloatToHalf(pObj->m_fDistance * 2.0f));
 	else
 		pObj->m_nSort = 0xFFFF;
 

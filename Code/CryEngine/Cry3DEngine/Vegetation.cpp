@@ -337,7 +337,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 
 	CRY_ASSERT(fEntDistance * 2.0f <= std::numeric_limits<decltype(CRenderObject::m_nSort)>::max());
 	pRenderObject->m_fDistance = fEntDistance;
-	pRenderObject->m_nSort = fastround_positive(fEntDistance * 2.0f);
+	pRenderObject->m_nSort = HalfFlip(CryConvertFloatToHalf(fEntDistance * 2.0f));
 
 	if (uint8 nMaterialLayers = GetMaterialLayers())
 	{

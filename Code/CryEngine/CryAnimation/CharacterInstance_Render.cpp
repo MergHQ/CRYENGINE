@@ -302,7 +302,7 @@ void CCharInstance::RenderCHR(const SRendParams& RendParams, const Matrix34& rRe
 	}
 
 	CRY_ASSERT(RendParams.fDistance * 2.0f <= std::numeric_limits<decltype(CRenderObject::m_nSort)>::max());
-	pObj->m_nSort = fastround_positive(RendParams.fDistance * 2.0f);
+	pObj->m_nSort = HalfFlip(CryConvertFloatToHalf(RendParams.fDistance * 2.0f));
 
 	if (!m_bHideMaster)
 	{

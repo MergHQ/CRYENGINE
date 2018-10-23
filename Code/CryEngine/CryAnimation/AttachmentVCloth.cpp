@@ -667,7 +667,7 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 	}
 
 	CRY_ASSERT(RendParams.fDistance * 2.0f <= std::numeric_limits<decltype(CRenderObject::m_nSort)>::max());
-	pObj->m_nSort = fastround_positive(RendParams.fDistance * 2.0f);
+	pObj->m_nSort = HalfFlip(CryConvertFloatToHalf(RendParams.fDistance * 2.0f));
 
 	const float SORT_BIAS_AMOUNT = 1.f;
 	if (pMaster->m_rpFlags & CS_FLAG_BIAS_SKIN_SORT_DIST)

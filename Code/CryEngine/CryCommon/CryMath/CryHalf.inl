@@ -14,6 +14,13 @@ typedef union floatint_union
 	uint32 i;
 } floatint_union;
 
+// Convert half to integer magnitude sortable form
+static inline uint16 HalfFlip(uint16 h)
+{
+	uint16 mask = -int16(h >> 15) | 0x8000;
+	return h ^ mask;
+}
+
 ILINE CryHalf CryConvertFloatToHalf(const float Value)
 {
 	MEMORY_RW_REORDERING_BARRIER;
