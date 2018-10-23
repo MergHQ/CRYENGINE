@@ -211,14 +211,34 @@ CRenderElement* CRenderElement::mfCopyConstruct(void)
 	*re = *this;
 	return re;
 }
-void CRenderElement::mfCenter(Vec3& centr, CRenderObject* pObj, const SRenderingPassInfo& passInfo)
+
+void CRenderElement::mfCenter(Vec3& Pos, CRenderObject* pObj, const SRenderingPassInfo& passInfo)
 {
-	centr(0, 0, 0);
+	Vec3 Mins, Maxs;
+	mfGetBBox(Mins, Maxs);
+
+	Pos = (Mins + Maxs) * 0.5f;
+	if (pObj)
+		Pos += pObj->GetMatrix(passInfo).GetTranslation();
 }
+
 void CRenderElement::mfGetPlane(Plane& pl)
 {
-	pl.n = Vec3(0, 0, 1);
-	pl.d = 0;
+	// TODO: plane orientation based on biggest bbox axis
+	Vec3 Mins, Maxs;
+	mfGetBBox(Mins, Maxs);
+
+	Vec3 p0 = Mins;
+	Vec3 p1 = Vec3(Maxs.x, Mins.y, Mins.z);
+	Vec3 p2 = Vec3(Mins.x, Maxs.y, Mins.z);
+	pl.SetPlane(p2, p0, p1);
+}
+
+void CRenderElement::mfGetBBox(Vec3& vMins, Vec3& vMaxs) const
+{
+	// Obj view max distance
+	vMins = Vec3(-100000.f, -100000.f, -100000.f);
+	vMaxs = Vec3( 100000.f,  100000.f,  100000.f);
 }
 
 void* CRenderElement::mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, int Flags) { return NULL; }
