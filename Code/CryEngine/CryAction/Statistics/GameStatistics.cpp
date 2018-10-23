@@ -260,7 +260,6 @@ bool CGameStatistics::ValidatePopScope(size_t checkScopeID)
 	}
 
 	SNodeLocator locator = m_gameScopes.GetLastScope().locator;
-	CStatsTracker* tracker = m_gameScopes.GetLastScope().tracker;
 
 	CRY_ASSERT(checkScopeID == INVALID_STAT_ID || checkScopeID == locator.scopeID);
 	if (checkScopeID != INVALID_STAT_ID && checkScopeID != locator.scopeID)

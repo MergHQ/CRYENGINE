@@ -431,7 +431,6 @@ void CInventory::SerializeInventoryForLevelChange(TSerialize ser)
 	{
 		string name;
 		int amount = 0;
-		int users = 0;
 		int capacity = 0;
 		if (ser.IsWriting())
 		{

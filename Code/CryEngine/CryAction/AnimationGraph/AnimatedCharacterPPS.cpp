@@ -356,7 +356,7 @@ void CAnimatedCharacter::PostProcessingUpdate()
 	bool fallen = false;
 	bool isFirstPerson = false;
 	bool allowLandBob = false;
-	bool isMultiplayer = gEnv->bMultiplayer;
+
 	if (IActor* pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(pEntity->GetId()))
 	{
 		fallen = pActor->IsFallen();
@@ -501,10 +501,6 @@ void CAnimatedCharacter::PostProcessingUpdate()
 QuatT CAnimatedCharacter::CalculateDesiredAnimMovement() const
 {
 	ANIMCHAR_PROFILE_DETAILED;
-
-	IEntity* pEntity = GetEntity();
-	CRY_ASSERT(pEntity);
-	IEntity* pParent = pEntity->GetParent();
 
 	QuatT desiredAnimMovement(IDENTITY);
 
@@ -1024,7 +1020,6 @@ void CAnimatedCharacter::UpdatePhysicalColliderMode()
 	}
 
 	m_forcedRefreshColliderMode = false;
-	EColliderMode prevColliderMode = m_colliderMode;
 	m_colliderMode = newColliderMode;
 
 	CRY_ASSERT(m_colliderMode != eColliderMode_Undefined);
@@ -1312,8 +1307,6 @@ void CAnimatedCharacter::GetCurrentEntityLocation()
 	m_actualEntSpeed = speed;
 
 	const float speed2D = Vec2(velocity).GetLength();
-
-	const float prevSpeed2D = m_actualEntSpeedHorizontal;
 	m_actualEntSpeedHorizontal = speed2D;
 
 	m_actualEntMovementDirHorizontal.x = (float)__fsel(-(speed2D - FLT_MIN), 0.0f, velocity.x / (speed2D + FLT_MIN));// approximates: (speed2D > FLT_MIN) ? (velocity2D / speed2D) : Vec2Constants<float>::fVec2_Zero;

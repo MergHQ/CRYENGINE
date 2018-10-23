@@ -157,7 +157,6 @@ void CVehicleViewSteer::Reset()
 	IEntity* pEntity = m_pVehicle->GetEntity();
 	assert(pEntity);
 	m_position = pEntity->GetWorldTM() * m_localSpaceCameraOffset;
-	Vec3 entityPos = pEntity->GetPos();
 	CalcLookAt(pEntity->GetWorldTM());
 	m_lastOffset = m_position - m_lookAt;
 	m_lastOffsetBeforeElev = m_lastOffset;
@@ -224,7 +223,6 @@ void CVehicleViewSteer::Update(float dt)
 	const float pedal = pVehicleMovement->GetEnginePedal();
 	const float maxSpeed = movementState.maxSpeed;
 	const Matrix34& pose = m_pAimPart ? m_pAimPart->GetWorldTM() : pEntity->GetWorldTM();
-	const Vec3 entityPos = pose.GetColumn3();
 	const Vec3 xAxis = pose.GetColumn0();
 	const Vec3 yAxis = pose.GetColumn1();
 	const Vec3 zAxis = pose.GetColumn2();

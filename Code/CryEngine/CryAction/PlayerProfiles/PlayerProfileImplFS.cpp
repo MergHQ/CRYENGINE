@@ -460,7 +460,6 @@ bool CPlayerProfileImplFSDir::LoginUser(SUserEntry* pEntry)
 
 	std::multimap<time_t, SLocalProfileInfo> profiles;
 
-	ICryPak* pCryPak = gEnv->pCryPak;
 	_finddata_t fd;
 
 	path.TrimRight("/\\");

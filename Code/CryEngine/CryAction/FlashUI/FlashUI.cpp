@@ -707,8 +707,12 @@ void CFlashUI::EnableEventStack(bool bEnable)
 //------------------------------------------------------------------------------------
 void CFlashUI::RegisterModule(IUIModule* pModule, const char* name)
 {
+#if defined(USE_CRY_ASSERT)
 	const bool ok = m_modules.Add(pModule, name);
 	CRY_ASSERT_MESSAGE(ok, "Module already registered!");
+#else
+	m_modules.Add(pModule, name);
+#endif
 }
 
 //------------------------------------------------------------------------------------
@@ -1563,8 +1567,6 @@ std::pair<string, int> CFlashUI::GetUIIdentifiersByInstanceStr(const char* sUIIn
 	if (*pExt != '\0' && strcmpi(pExt, "ui"))
 		return result;
 
-	uint instanceId = 0;
-
 	int str_length = strlen(name);
 	int index = 0;
 	int id_index = -1;
@@ -2206,7 +2208,6 @@ void RenderStackDebugInfo(bool render, const char* label, int loop)
 		float py = 0;
 		float px = 0;
 		const int count = stacklist.size();
-		int round = 0;
 
 		colorWhite[3] = 1.f;
 		for (int i = 0; i <= count / itemsPerRow; ++i)

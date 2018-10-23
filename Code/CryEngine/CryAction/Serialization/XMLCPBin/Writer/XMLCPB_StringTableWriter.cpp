@@ -51,8 +51,12 @@ void CStringTableWriter::CreateStringsFromConstants()
 	for (int i = 0; i < DT_NUM_CONST_STR; i++)
 	{
 		const char* pString = GetConstantString(i);
+#if defined(USE_CRY_ASSERT)
 		StringID id = AddString(pString, StringHasher::HashString(pString));
 		assert(id == i);
+#else
+		AddString(pString, StringHasher::HashString(pString));
+#endif
 	}
 }
 

@@ -31,9 +31,6 @@ CVehicleCVars::CVehicleCVars()
 	assert(s_pThis == 0);
 	s_pThis = this;
 
-	IConsole* pConsole = gEnv->pConsole;
-	assert(pConsole);
-
 #if ENABLE_VEHICLE_DEBUG
 	// debug draw
 	REGISTER_STRING("v_debugVehicle", "", 0, "Vehicle entity name to use for debugging output");

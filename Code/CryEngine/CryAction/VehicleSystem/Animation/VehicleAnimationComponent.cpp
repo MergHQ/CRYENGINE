@@ -143,8 +143,6 @@ void CVehicleAnimationComponent::AttachPassengerScope(CVehicleSeat* pSeat, Entit
 			}
 		}
 
-		uint32 numScopes = m_pActionController->GetTotalScopes();
-
 		if (pActor && pActor->GetAnimatedCharacter()->GetActionController())
 		{
 			m_pActionController->SetSlaveController(*pActor->GetAnimatedCharacter()->GetActionController(), targetScopeContext, attach, m_pADBPassenger);

@@ -796,7 +796,6 @@ void CVehicleSeatActionWeapons::StopFire()
 				}
 				else if (m_attackInput == eAI_Secondary)
 				{
-					IFireMode* const pFireMode = pWeapon->GetFireMode(pWeapon->GetCurrentFireMode());
 					audioControlID = pMovement->GetSecondaryWeaponAudioStopTrigger();
 				}
 
@@ -1061,7 +1060,7 @@ bool CVehicleSeatActionWeapons::GetFiringDir(EntityId weaponId, const IFireMode*
 
 		if (weapon.weaponEntityId == weaponId)
 		{
-			if (IEntity* pWeaponEntity = GetEntity(weapon))
+			if (GetEntity(weapon) != nullptr)
 			{
 				dir = probableHit - firingPos;
 				dir.NormalizeSafe();

@@ -217,7 +217,6 @@ public:
 
 		m_referenceJointID = -1;
 		bool const playFacial = params.playFacial;
-		bool const isVoice = playFacial || params.isVoice;
 
 		bool bIsSilentPlaybackMode = gEnv->IsEditor() && gEnv->pGameFramework->GetMannequinInterface().IsSilentPlaybackMode();
 
@@ -227,8 +226,6 @@ public:
 		{
 			m_referenceJointID = pCharacterInstance->GetIDefaultSkeleton().GetJointIDByCRC32(params.attachmentJoint.ToUInt32());
 		}
-
-		QuatT const soundOffset = GetBoneAbsLocationByID(m_referenceJointID);
 
 		if (!bIsSilentPlaybackMode)
 		{

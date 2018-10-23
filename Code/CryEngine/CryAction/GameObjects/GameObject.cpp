@@ -530,17 +530,11 @@ void CGameObject::Update(SEntityUpdateContext& ctx)
 	/*
 	 * UPDATE EXTENSIONS
 	 */
-#ifdef _DEBUG
-	IGameObjectSystem* pGameObjectSystem = m_pGOS;
-#endif
 	bool shouldUpdateAI = ShouldUpdateAI();
 	bool keepUpdating = shouldUpdateAI;
 	bool checkAIDisableOnSlots = !shouldUpdateAI && GetEntity()->GetAI();
 	for (TExtensions::iterator iter = m_extensions.begin(); iter != m_extensions.end(); ++iter)
 	{
-#ifdef _DEBUG
-		const char* name = pGameObjectSystem->GetName(iter->id);
-#endif
 		uint32 slotbit = 1;
 		for (uint32 i = 0; i < MAX_UPDATE_SLOTS_PER_EXTENSION; ++i)
 		{

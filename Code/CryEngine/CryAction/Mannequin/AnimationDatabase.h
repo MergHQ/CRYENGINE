@@ -127,7 +127,6 @@ public:
 
 		if (fragQuery.fragID < numFragmentTypes)
 		{
-			const CTagDefinition* fragTagDef = m_pFragDef->GetSubTagDefinition(fragQuery.fragID);
 			const SFragmentEntry& fragmentEntry = *m_fragmentList[fragQuery.fragID];
 			uint32 tagSetIdx = TAG_SET_IDX_INVALID;
 			const TFragmentOptionList* pOptionList = fragmentEntry.compiledList ? fragmentEntry.compiledList->GetBestMatch(fragQuery.tagState, fragQuery.requiredTags, pSelectedFragTags, &tagSetIdx) : NULL;
@@ -182,7 +181,6 @@ public:
 		if (m_pFragDef->IsValidTagID(inFragQuery.fragID))
 		{
 			SFragmentEntry& fragmentEntry = *m_fragmentList[inFragQuery.fragID];
-			const CTagDefinition* fragTagDef = m_pFragDef->GetSubTagDefinition(inFragQuery.fragID);
 			const TFragmentOptionList* pOptionList = fragmentEntry.compiledList ? fragmentEntry.compiledList->GetBestMatch(inFragQuery.tagState, inFragQuery.requiredTags, matchedTagState, tagSetIdx) : NULL;
 
 			if (pOptionList)

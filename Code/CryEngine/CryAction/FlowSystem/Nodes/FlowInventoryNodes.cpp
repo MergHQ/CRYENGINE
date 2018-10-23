@@ -98,8 +98,6 @@ public:
 			if (!pActor || pActor != gEnv->pGameFramework->GetClientActor())  // to avoid some extra RMIs and object creation. Tho, this causes the node to not work properly if it is used with non players entities. (which was never intended anyway)
 				return;
 
-			IEntitySystem* pEntSys = gEnv->pEntitySystem;
-
 			IInventory* pInventory = pActor->GetInventory();
 			if (!pInventory)
 				return;
@@ -262,8 +260,6 @@ public:
 	{
 		if (event == eFE_Activate && IsPortActive(pActInfo, 0))
 		{
-			IGameFramework* pGF = gEnv->pGameFramework;
-
 			IActor* pActor = GetInputActor(pActInfo);
 			if (!pActor || pActor != gEnv->pGameFramework->GetClientActor())  // to avoid some extra RMIs and object creation. Tho, this causes the node to not work properly if it is used with non players entities. (which was never intended anyway)
 				return;

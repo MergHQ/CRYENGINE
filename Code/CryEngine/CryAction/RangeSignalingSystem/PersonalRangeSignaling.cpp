@@ -674,7 +674,7 @@ void CPersonalRangeSignaling::DebugDraw(uint32 uOrder) const
 {
 	CRY_ASSERT(m_bInit == true);
 
-	float x = 120.0f;
+	/*float x = 120.0f;
 	float y = 100.0f + (float(uOrder) * 10.0f);
 	float r = 0.0f;
 	float g = 8.0f;
@@ -682,8 +682,8 @@ void CPersonalRangeSignaling::DebugDraw(uint32 uOrder) const
 
 	char txt[512] = "\0";
 
-	//cry_sprintf( txt, "%s > %s: %0.1f / %0.1f", GetActor()->GetEntity()->GetName(), m_sSignal.c_str(), m_fTimer, m_fRateMax );
-	//IRenderAuxText::Draw2dLabel( x,y, 13.0f, ColorF(r,g,b), false, "%s", txt);
+	cry_sprintf( txt, "%s > %s: %0.1f / %0.1f", GetActor()->GetEntity()->GetName(), m_sSignal.c_str(), m_fTimer, m_fRateMax );
+	IRenderAuxText::Draw2dLabel( x,y, 13.0f, ColorF(r,g,b), false, "%s", txt);*/
 }
 
 // Description:

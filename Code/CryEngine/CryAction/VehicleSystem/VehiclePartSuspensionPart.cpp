@@ -232,7 +232,6 @@ void CVehiclePartSuspensionPart::Update(const float frameTime)
 	{
 		IRenderAuxGeom* pAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 		SAuxGeomRenderFlags flags = pAuxGeom->GetRenderFlags();
-		SAuxGeomRenderFlags oldFlags = pAuxGeom->GetRenderFlags();
 		flags.SetDepthWriteFlag(e_DepthWriteOff);
 		flags.SetDepthTestFlag(e_DepthTestOff);
 		pAuxGeom->SetRenderFlags(flags);

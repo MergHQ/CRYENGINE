@@ -875,8 +875,6 @@ void PlaneBreak::SerializeWith(CBitArray& array)
 
 	SerializeWith_Begin(array, false);
 
-	SBreakEvent& breakEvent = m_be;
-
 	// TODO: entity glass breakage, in entity space
 
 	CBreakReplicator::SerialisePosition(array, m_be.pt, CNetworkCVars::Get().BreakMaxWorldSize, CBreakReplicator::m_accurateWorldPosNumBits);
@@ -1254,8 +1252,13 @@ int CBreakReplicator::PushBackNewStream(const EventPhysMono* pMono, BreakStream*
 	pStream->m_identifier.CreateFromPhysicalEntity(pMono);
 
 	// Have we already identified this object before?
+#if DEBUG_NET_BREAKAGE
 	int idx = GetIdentifier(&pStream->m_identifier, pMono->pEntity, true);
 	DEBUG_ASSERT(idx >= 0);
+#else
+	GetIdentifier(&pStream->m_identifier, pMono->pEntity, true);
+#endif
+
 	DEBUG_ASSERT(pStream->m_identifier.m_objType != CObjectIdentifier::k_unknown);
 
 	// NB: This code is run only on the server

@@ -1086,8 +1086,6 @@ void CAIProxy::UpdateCurrentWeapon()
 	EntityId currentWeaponId = 0;
 	m_CurrentWeaponCanFire = true;
 
-	const IItemSystem* pItemSystem = CCryAction::GetCryAction()->GetIItemSystem();
-
 	IActor* pActor = GetActor();
 	if (pActor)
 	{
@@ -1603,7 +1601,6 @@ void CAIProxy::UpdateMind(SOBJECTSTATE& state)
 				gEnv->pLog->LogError("Initialisation signal used \"%s\"", pSignal->GetSignalDescription().GetName());
 
 				// process only init. signals!
-				IEntity* pSender = gEnv->pEntitySystem->GetEntity(pSignal->GetSenderID());
 				SendSignal(pSignal);
 				if (pSignal->GetExtraData())
 					gEnv->pAISystem->FreeSignalExtraData(pSignal->GetExtraData());

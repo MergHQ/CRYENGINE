@@ -671,7 +671,6 @@ void CVehicleSystem::OnPrePhysicsTimeStep(float deltaTime)
 #if ENABLE_VEHICLE_DEBUG
 void CVehicleSystem::DumpClasses(IConsoleCmdArgs* pArgs)
 {
-	CVehicleSystem* pVS = static_cast<CVehicleSystem*>(CCryAction::GetCryAction()->GetIVehicleSystem());
 	CryLogAlways("Vehicle classes and instance counts:");
 	for (TVehicleClassCount::const_iterator it = s_classInstanceCounts.begin(); it != s_classInstanceCounts.end(); ++it)
 	{

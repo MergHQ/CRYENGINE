@@ -454,9 +454,7 @@ void CAnimatedCharacter::DebugRenderCurLocations() const
 	static Vec3 abump(0, 0, 0.11f);
 	static Vec3 ebump(0, 0.005f, 0.1f);
 	static float entDuration = 0.5f;
-	static float animDuration = 0.5f;
 	static float entTrailDuration = 10.0f;
-	static float animTrailDuration = 10.0f;
 	static ColorF entColor0(0, 0, 1, 1);
 	static ColorF entColor1(0.2f, 0.2f, 1, 1);
 
@@ -678,10 +676,6 @@ bool RunExtractCombineTest(bool flat)
 		up0 = (rgt0 % fwd0).GetNormalizedSafe(up0);
 		qt1.q = Quat(Matrix33::CreateFromVectors(rgt0, fwd0, up0));
 
-		Vec3 rgt1 = qt1.q * Vec3(1, 0, 0);
-		Vec3 fwd1 = qt1.q * Vec3(0, 1, 0);
-		Vec3 up1 = qt1.q * Vec3(0, 0, 1);
-
 		QuatT qth = ExtractHComponent(qt1);
 		QuatT qtv = ExtractVComponent(qt1);
 		QuatT qt2;
@@ -700,18 +694,6 @@ bool RunExtractCombineTest(bool flat)
 		if (c1 || c2 || c3)
 		{
 			errors++;
-
-			Vec3 rgt2 = qt2.q * Vec3(1, 0, 0);
-			Vec3 fwd2 = qt2.q * Vec3(0, 1, 0);
-			Vec3 up2 = qt2.q * Vec3(0, 0, 1);
-
-			Vec3 rgtH = qth.q * Vec3(1, 0, 0);
-			Vec3 fwdH = qth.q * Vec3(0, 1, 0);
-			Vec3 upH = qth.q * Vec3(0, 0, 1);
-
-			Vec3 rgtV = qtv.q * Vec3(1, 0, 0);
-			Vec3 fwdV = qtv.q * Vec3(0, 1, 0);
-			Vec3 upV = qtv.q * Vec3(0, 0, 1);
 		}
 	}
 
@@ -798,7 +780,6 @@ bool RunQuatPredicateTest()
 		q.Normalize();
 
 		Vec3 fwd = q.GetColumn1();
-		float rz1 = atan2f(fwd.y, fwd.x);
 		float rz2 = atan2f(-fwd.x, fwd.y);
 		float rz3 = q.GetRotZ();
 

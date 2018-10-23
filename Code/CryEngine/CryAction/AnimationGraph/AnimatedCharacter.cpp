@@ -24,7 +24,9 @@ const char* g_szColliderModeLayerString[eColliderModeLayer_COUNT] = { "AG", "Gam
 #define ANIMCHAR_MEM_DEBUG // Memory Allocation Tracking
 #undef  ANIMCHAR_MEM_DEBUG
 
+#if !defined(_RELEASE)
 #define ENABLE_NAN_CHECK
+#endif
 
 #ifndef _RELEASE
 	#define VALIDATE_CHARACTER_PTRS ValidateCharacterPtrs();
@@ -74,6 +76,7 @@ bool CheckNANVec(Vec3& v, IEntity* pEntity)
 {
 	if (!CheckNAN(v.x) || !CheckNAN(v.y) || !CheckNAN(v.z))
 	{
+#if !defined(EXCLUDE_NORMAL_LOG)
 		if (ICharacterInstance* pCharacter = pEntity->GetCharacter(0))
 		{
 			int numAnims = pCharacter->GetISkeletonAnim()->GetNumAnimsInFIFO(0);
@@ -83,6 +86,7 @@ bool CheckNANVec(Vec3& v, IEntity* pEntity)
 				CryLogAlways("NAN on AnimationID:%d, model:%s, entity:%s", anim.GetAnimationId(), pCharacter->GetFilePath(), pEntity->GetName());
 			}
 		}
+#endif
 
 		v.zero();
 		return false;
@@ -603,8 +607,6 @@ void CAnimatedCharacter::Update(SEntityUpdateContext& ctx, int slot)
 		GetCurrentEntityLocation();
 	}
 
-	float EntRotZ = RAD2DEG(m_entLocation.q.GetRotZ());
-
 	assert(m_entLocation.IsValid());
 
 	SetAnimationPostProcessParameters();
@@ -1061,11 +1063,12 @@ void CAnimatedCharacter::AddMovement(const SCharacterMoveRequest& request)
 //////////////////////////////////////////////////////////////////////////
 void CAnimatedCharacter::ValidateCharacterPtrs()
 {
+#if defined(USE_CRY_ASSERT)
 	ICharacterInstance* pCharacter = GetEntity()->GetCharacter(0);
 	ICharacterInstance* pShadowCharacter = m_hasShadowCharacter ? GetEntity()->GetCharacter(m_shadowCharacterSlot) : NULL;
-
 	const bool characterChanged = (pCharacter != m_pCharacter) || (m_pShadowCharacter != pShadowCharacter);
 	CRY_ASSERT_TRACE(!characterChanged, ("CharacterPtrs out of date in %s. Ensure that updateCharacterPtrs is called on the animatedCharacter whenever new models are loaded", GetEntity()->GetName()));
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1698,10 +1701,7 @@ void CAnimatedCharacter::SetAnimationPostProcessParameters(const QuatT& entityLo
 {
 	if (m_pCharacter != NULL)
 	{
-		const CCamera& viewCamera = GetISystem()->GetViewCamera();
 		const float scale = GetEntity()->GetWorldTM().GetColumn(0).GetLength();
-		const float fDistance = (viewCamera.GetPosition() - entityLocation.t).GetLength();
-		const float fZoomFactor = 0.001f + 0.999f * (RAD2DEG((viewCamera.GetFov())) / 60.f);
 
 		m_pCharacter->SetAttachmentLocation_DEPRECATED(QuatTS(entityLocation.q, entityLocation.t, scale));
 		if (m_pShadowCharacter)

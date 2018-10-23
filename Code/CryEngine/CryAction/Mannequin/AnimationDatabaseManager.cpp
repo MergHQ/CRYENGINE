@@ -284,8 +284,6 @@ void CAnimationControllerDefLibrary::CreateResource(THandle& hdlOut, const char*
 	char normalizedFilename[DEF_PATH_LENGTH];
 	NormalizeFilename(normalizedFilename, name);
 
-	uint32 crc32 = CCrc32::ComputeLowercase(normalizedFilename);
-
 	SControllerDef* pDef = NULL;
 	XmlNodeRef xml = gEnv->pSystem->GetXmlUtils()->LoadXmlFromFile(normalizedFilename);
 	if (xml)
@@ -712,7 +710,8 @@ void CAnimationDatabaseManager::GetAffectedFragmentsString(const CTagDefinition*
 				for (uint32 tagSetIndex = 0; tagSetIndex < numTagSets; ++tagSetIndex)
 				{
 					SFragTagState tagState;
-					uint32 numOptions = pCurrentDatabase->GetTagSetInfo(fragIndex, tagSetIndex, tagState);
+					pCurrentDatabase->GetTagSetInfo(fragIndex, tagSetIndex, tagState);
+
 					if (isGlobalTag)
 					{
 						if (pQueryTagDef->IsSet(tagState.globalTags, tagID))
@@ -1751,7 +1750,6 @@ XmlNodeRef CAnimationDatabaseManager::SaveDatabase
 	}
 
 	const CAnimationDatabase::TSubADBList& vSubADBs = subAnimDB ? subAnimDB->subADBs : animDB.m_subADBs;
-	const uint32 numSubADBs = vSubADBs.size();
 	if (!vSubADBs.empty())
 	{
 		XmlNodeRef subADBList;
@@ -2300,9 +2298,12 @@ EModifyFragmentIdResult CAnimationDatabaseManager::CreateFragmentID(const CTagDe
 	{
 		return eMFIR_DuplicateName;
 	}
-
+#if defined(USE_CRY_ASSERT)
 	const int newFragmentTagId = fragmentDefs->AddTag(szFragmentIdName);
 	assert(newFragmentTagId != FRAGMENT_ID_INVALID);
+#else
+	fragmentDefs->AddTag(szFragmentIdName);
+#endif
 
 	for (TControllerDefList::const_iterator cit = m_controllerDefs.begin(); cit != m_controllerDefs.end(); ++cit)
 	{
@@ -2531,8 +2532,12 @@ uint32 CAnimationDatabaseManager::AddFragmentEntry(IAnimationDatabase* pDatabase
 			pCurrDatabase->m_pTagDef->TagListToFlags(sTaglist.c_str(), targetTagState.globalTags);
 			FragmentID targetFragID = pCurrDatabase->m_pFragDef->Find(fragCRC);
 
+#if defined(USE_CRY_ASSERT)
 			uint32 currIdx = pCurrDatabase->AddEntry(targetFragID, targetTagState, fragment);
 			CRY_ASSERT(currIdx == idxRoot);
+#else
+			pCurrDatabase->AddEntry(targetFragID, targetTagState, fragment);
+#endif
 		}
 	}
 

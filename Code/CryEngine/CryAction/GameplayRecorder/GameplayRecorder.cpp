@@ -192,7 +192,7 @@ void CGameplayRecorder::CExampleMetadataListener::RecordGameData()
 void CGameplayRecorder::CExampleMetadataListener::OnData(const IMetadata* metadata)
 {
 	//DumpMetadata(metadata, 0);
-
+#if !defined(EXCLUDE_NORMAL_LOG)
 	CCompositeData data;
 	data.Compose(metadata);
 
@@ -224,6 +224,7 @@ void CGameplayRecorder::CExampleMetadataListener::OnData(const IMetadata* metada
 		}
 		break;
 	}
+#endif
 }
 
 IGameStateRecorder* CGameplayRecorder::EnableGameStateRecorder(bool bEnable, IGameplayListener* pL, bool bRecording)

@@ -148,7 +148,6 @@ void CPersistantDebug::UpdateTags(float frameTime, SObj& obj, bool doFirstPass)
 		if (iterList->vScreenPos.IsZero())
 			continue;
 
-		float tagMaxDist = iterList->params.viewDistance;
 		float fontSize = iterList->params.size * m_pETFontSizeMultiplier->GetFVal();
 
 		// Calculate size of text on screen (so we can place it properly)

@@ -69,10 +69,11 @@ public:
 
 		m_pPlatformOSSaveWriter->Close();
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 		float finalTime = gEnv->pTimer->GetAsyncTime().GetMilliSeconds();
-
 		CryLog("[SAVE GAME] Binary saveload: After writing, result: %s   filesize/uncompressed: %u/%u (%u kb / %u kb)   generation time: %d ms ",
 		       (m_pCompressor->m_errorWritingIntoFile) ? "FAIL" : "SUCCESS", m_bytesWrittenIntoFile, m_bytesWrittenIntoFileUncompressed, m_bytesWrittenIntoFile / 1024, m_bytesWrittenIntoFileUncompressed / 1024, int(finalTime - m_startingTime));
+#endif
 	}
 
 	bool Write(void* pSrc, uint32 numBytes)

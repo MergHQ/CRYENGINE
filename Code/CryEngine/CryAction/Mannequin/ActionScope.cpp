@@ -509,7 +509,6 @@ bool CActionScope::PlayPendingAnim(uint32 layer, float timePassed)
 	if ((sequencer.pos < sequencer.sequence.size()) || isBlendingOut)
 	{
 		uint8 fragPart = 0;
-		bool isTransition = false;
 		const SAnimationEntry* animation = NULL;
 		SAnimationEntry animNull;
 		animNull.animRef.SetByString(NULL);

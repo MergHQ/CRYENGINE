@@ -219,8 +219,12 @@ void CNetMessageDistpatcher::DispatchQueuedMessagesToLocalListeners()
 // ------------------------------------------------------------------------
 void CNetMessageDistpatcher::RegisterListener(INetMsgListener* pListener, const char* name)
 {
+#if !defined(_RELEASE)
 	const bool ok = m_listeners.Add(pListener, name);
 	NET_MSG_DISPATCHER_LOG("[RegisterListener]: %s Registering listener %s [total:%" PRISIZE_T "] - %s", DbgTranslateLocationToString(), name ? name : "[unnamed]", m_listeners.ValidListenerCount(), ok ? "OK" : "ALREADY REGISTERED");
+#else
+	m_listeners.Add(pListener, name);
+#endif
 }
 
 // ------------------------------------------------------------------------

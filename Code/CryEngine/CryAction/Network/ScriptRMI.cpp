@@ -459,7 +459,6 @@ void CScriptRMI::SetupEntity(EntityId eid, IEntity* pEntity, bool client, bool s
 	stack_string className = pClass->GetName();
 
 	IScriptTable* pEntityTable = pEntity->GetScriptTable();
-	IScriptSystem* pSS = pEntityTable->GetScriptSystem();
 
 	SmartScriptTable clientDispatchTable, serverDispatchTable, serverSynchedTable;
 	pEntityTable->GetValue(CLIENT_DISPATCH_FIELD, clientDispatchTable);
@@ -1003,7 +1002,6 @@ int CScriptRMI::ProxyFunction(IFunctionHandler* pH, void* pBuffer, int nSize)
 	if (gatherDebugInfo)
 		funcInfo = pMsg->DebugInfo();
 
-	INetContext* pNetContext = m_pThis->m_pParent->GetNetContext();
 	CCryAction* pFramework = m_pThis->m_pParent->GetFramework();
 
 	if (flags.n & eDF_ToServer)

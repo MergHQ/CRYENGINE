@@ -180,11 +180,13 @@ void CActionController::OnShutdown()
 
 	if (numControllers > 0)
 	{
+#if !defined(EXCLUDE_NORMAL_LOG)
 		for (TActionControllerList::iterator iter = s_actionControllers.begin(); iter != s_actionControllers.end(); ++iter)
 		{
 			CActionController* pAC = *iter;
 			CryLogAlways("ActionController not released - Owner Controller Def: %s", pAC->GetContext().controllerDef.m_filename.c_str());
 		}
+#endif
 		CryFatalError("ActionControllers (%u) not released at shutdown", numControllers);
 	}
 }
@@ -1520,7 +1522,6 @@ void CActionController::Flush()
 	ActionScopes scopeFlag = 1;
 	for (uint32 i=0; i<m_scopeCount; i++, scopeFlag <<= 1)
 	{
-		CActionScope& scope = m_scopeArray[i];
 		FlushScope(i, scopeFlag);
 	}
 
@@ -1676,7 +1677,6 @@ ActionScopes CActionController::EndActionsOnScope(ActionScopes scopeMask, IActio
 
 void CActionController::PushOntoQueue(IAction& action)
 {
-	const int priority = action.GetPriority();
 	const bool requeued = ((action.GetFlags() & IAction::Requeued) != 0);
 
 	for (TActionList::iterator iter = m_queuedActions.begin(); iter != m_queuedActions.end(); ++iter)
@@ -2014,7 +2014,6 @@ void CActionController::DebugDraw() const
 
 		if (scope.m_scopeContext.pCharInst)
 		{
-			IAnimationSet* animSet = scope.m_scopeContext.pCharInst->GetIAnimationSet();
 			for (uint32 l = 0; l < scope.m_numLayers; l++)
 			{
 				const CActionScope::SSequencer& sequencer = scope.m_layerSequencers[l];

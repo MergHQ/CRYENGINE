@@ -652,7 +652,7 @@ struct IVehicleAction
   TVehicleObjectId obj::m_objectId = InvalidVehicleObjectId;
 
 #define CAST_VEHICLEOBJECT(type, objptr) \
-  (objptr->GetId() == type::m_objectId) ? (type*)objptr : NULL
+  ((objptr->GetId() == type::m_objectId) ? (type*)objptr : NULL)
 
 // Summary:
 //   Vehicle implementation interface

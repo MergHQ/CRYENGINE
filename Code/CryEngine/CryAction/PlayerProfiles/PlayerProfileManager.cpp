@@ -73,6 +73,7 @@ void DumpSaveGames(IPlayerProfile* pProfile)
 
 void DumpActionMap(IPlayerProfile* pProfile, const char* name)
 {
+#if !defined(EXCLUDE_NORMAL_LOG)
 	IActionMap* pMap = pProfile->GetActionMap(name);
 	if (pMap)
 	{
@@ -91,10 +92,12 @@ void DumpActionMap(IPlayerProfile* pProfile, const char* name)
 			}
 		}
 	}
+#endif
 }
 
 void DumpMap(IConsoleCmdArgs* args)
 {
+#if !defined(EXCLUDE_NORMAL_LOG)
 	IActionMapManager* pAM = CCryAction::GetCryAction()->GetIActionMapManager();
 	IActionMapIteratorPtr iter = pAM->CreateActionMapIterator();
 	while (IActionMap* pMap = iter->Next())
@@ -115,6 +118,7 @@ void DumpMap(IConsoleCmdArgs* args)
 			}
 		}
 	}
+#endif
 }
 
 void TestProfile(IConsoleCmdArgs* args)
@@ -1665,8 +1669,12 @@ void CPlayerProfileManager::SaveOnlineAttributes(IPlayerProfile* pProfile)
 				if (iter->second >= k_onlineChecksums)
 				{
 					TFlowInputData data;
+#if defined(USE_CRY_ASSERT)
 					bool hasAttr = pProfile->GetAttribute(iter->first.c_str(), data);
 					CRY_ASSERT_MESSAGE(hasAttr, ("Expected %s to be set by SavingOnlineAttributes but wasn't", iter->first.c_str()));
+#else
+					pProfile->GetAttribute(iter->first.c_str(), data);
+#endif
 					SetUserData(&m_onlineData[iter->second], data);
 				}
 
@@ -1679,8 +1687,12 @@ void CPlayerProfileManager::SaveOnlineAttributes(IPlayerProfile* pProfile)
 			ICryStats* pStats = gEnv->pLobby ? gEnv->pLobby->GetStats() : nullptr;
 			if (pStats && pStats->GetLeaderboardType() == eCLLT_P2P)
 			{
+#if defined(USE_CRY_ASSERT)
 				ECryLobbyError error = pStats->StatsWriteUserData(GetExclusiveControllerDeviceIndex(), m_onlineData, m_onlineDataCount, NULL, CPlayerProfileManager::WriteUserDataCallback, this);
 				CRY_ASSERT(error == eCLE_Success);
+#else
+				pStats->StatsWriteUserData(GetExclusiveControllerDeviceIndex(), m_onlineData, m_onlineDataCount, NULL, CPlayerProfileManager::WriteUserDataCallback, this);
+#endif
 			}
 		}
 	}

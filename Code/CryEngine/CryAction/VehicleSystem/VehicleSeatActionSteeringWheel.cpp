@@ -198,7 +198,6 @@ void CVehicleSeatActionSteeringWheel::Update(float frameTime)
 					offset = params->jitterSuspAmp * m_jitterSuspensionResponse;
 
 					float invTopSpeed = 1.f / (status.topSpeed + 1.f);
-					float speedNorm = min(1.f, status.speed * invTopSpeed);
 					float accelNorm = min(1.f, status.localAccel.GetLengthSquared() * sqr(invTopSpeed));
 
 					float jitterAmp = params->jitterAmpLow + accelNorm * (params->jitterAmpHi - params->jitterAmpLow);

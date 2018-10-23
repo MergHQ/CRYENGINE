@@ -165,7 +165,7 @@ public:
 ////////////////////////////////////////////////////////////////////////////
 CDialogSystem::CDialogSystem()
 {
-	static bool sInitVars(InitCons());
+	InitCons();
 	m_nextSessionID = 1;
 
 	CCryAction::GetCryAction()->GetILevelSystem()->AddListener(this);
@@ -584,6 +584,7 @@ const char* ToActor(CDialogScript::TActorID id)
 ////////////////////////////////////////////////////////////////////////////
 void CDialogSystem::Dump(int verbosity)
 {
+#if !defined(EXCLUDE_NORMAL_LOG)
 	int i = 0;
 	TDialogScriptMap::const_iterator iter = m_dialogScriptMap.begin();
 	while (iter != m_dialogScriptMap.end())
@@ -603,11 +604,13 @@ void CDialogSystem::Dump(int verbosity)
 		++i;
 		++iter;
 	}
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////
 void CDialogSystem::DumpSessions()
 {
+#if !defined(EXCLUDE_NORMAL_LOG)
 	// all sessions
 	CryLogAlways("[DIALOG] AllSessions: Count=%" PRISIZE_T, m_allSessions.size());
 	for (TDialogSessionMap::const_iterator iter = m_allSessions.begin();
@@ -652,6 +655,7 @@ void CDialogSystem::DumpSessions()
 			CryLogAlways("  Session %d", id);
 		}
 	}
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////

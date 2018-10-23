@@ -47,7 +47,6 @@ static const char* SAVEGAME_TIMER_SECTION = "Timer";
 static const char* SAVEGAME_FLOWSYSTEM_SECTION = "FlowSystem";
 static const char* SAVEGAME_COLORGRADIANTMANAGER_SECTION = "ColorGradientManager";
 static const char* SAVEGAME_DIALOGSYSTEM_SECTION = "DialogSystem";
-static const char* SAVEGAME_AUDIOSYSTEM_SECTION = "AudioSystem";
 static const char* SAVEGAME_LTLINVENTORY_SECTION = "LTLInventory";
 static const char* SAVEGAME_VIEWSYSTEM_SECTION = "ViewSystem";
 static const char* SAVEGAME_MATERIALEFFECTS_SECTION = "MatFX";
@@ -99,8 +98,6 @@ ILevelInfo* GetLevelInfo()
 bool VerifyEntities(const TBasicEntityDatas& basicEntityData)
 {
 	CRY_ASSERT(gEnv);
-	IEntitySystem* pEntitySystem = gEnv->pEntitySystem;
-	CRY_ASSERT(pEntitySystem);
 
 	TBasicEntityDatas::const_iterator itEnd = basicEntityData.end();
 	for (TBasicEntityDatas::const_iterator it = basicEntityData.begin(); it != itEnd; ++it)
@@ -357,8 +354,10 @@ bool CGameSerialize::SaveGame(CCryAction* pCryAction, const char* method, const 
 		return false;
 	}
 
+#if CAPTURE_REPLAY_LOG
 	Vec3 camPos = gEnv->pSystem->GetViewCamera().GetPosition();
 	MEMSTAT_LABEL_FMT("Savegame_start (pos=%4.2f,%4.2f,%4.2f)", camPos.x, camPos.y, camPos.z);
+#endif
 
 	Clean();
 	checkpoint.Check("Clean");

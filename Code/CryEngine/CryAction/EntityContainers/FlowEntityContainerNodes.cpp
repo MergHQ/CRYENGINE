@@ -74,7 +74,7 @@ public:
 
 				if (CCryAction* pCryAction = CCryAction::GetCryAction())
 				{
-					CEntityContainerMgr& containerManager = CCryAction::GetCryAction()->GetEntityContainerMgr();
+					CEntityContainerMgr& containerManager = pCryAction->GetEntityContainerMgr();
 					EntityId containerId = pActInfo->pEntity->GetId();
 
 					if (IsPortActive(pActInfo, eI_AddEntity))

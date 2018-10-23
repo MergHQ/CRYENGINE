@@ -53,7 +53,7 @@ struct CGiveEquipmentPackNotifier
 CEquipmentManager::CEquipmentManager(CItemSystem* pItemSystem)
 	: m_pItemSystem(pItemSystem)
 {
-	static bool sInitVars(InitConsole());
+	InitConsole();
 }
 
 CEquipmentManager::~CEquipmentManager()

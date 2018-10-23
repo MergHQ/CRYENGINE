@@ -542,9 +542,7 @@ void CPose::Update(ICharacterInstance* pCharacter, const QuatT& location, const 
 
 	float groundHeight = 0.0f;
 	Vec3 groundNormal(0.0f, 0.0f, 1.0f);
-	bool bGroundHeightValid = GetGroundFromEntity(*m_pEntity, groundHeight, groundNormal);
-
-	//
+	GetGroundFromEntity(*m_pEntity, groundHeight, groundNormal);
 
 	float chainOffsetMin = 0.0f;
 	float chainOffsetMax = 0.0f;
