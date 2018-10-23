@@ -6,9 +6,9 @@
 // EditorCommon.
 #include <Controls/QuestionDialog.h>
 #include <FileDialogs/EngineFileDialog.h>
-#include <FilePathUtil.h>
-#include <QViewport.h>
 #include <Notifications/NotificationCenter.h>
+#include <PathUtils.h>
+#include <QViewport.h>
 #include <ThreadingUtils.h>
 
 // EditorQt.

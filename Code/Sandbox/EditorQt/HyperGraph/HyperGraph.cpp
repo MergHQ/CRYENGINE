@@ -3,14 +3,13 @@
 #include "StdAfx.h"
 #include "HyperGraph.h"
 
-#include "FilePathUtil.h"
 #include "GameEngine.h"
+#include "PathUtils.h"
 
 #include "HyperGraphManager.h"
 #include "Nodes/MissingNode.h"
 #include "Controls/HyperGraphEditorWnd.h"
 #include "FlowGraphPreferences.h"
-
 
 /*
    //////////////////////////////////////////////////////////////////////////

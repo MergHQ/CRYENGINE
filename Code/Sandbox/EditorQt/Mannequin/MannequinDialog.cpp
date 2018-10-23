@@ -15,7 +15,7 @@
 #include "GameEngine.h"
 
 #include <QT/Widgets/QWaitProgress.h>
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 
 #include <CryGame/IGameFramework.h>
 

@@ -9,7 +9,7 @@
 #include "AssetSystem/Browser/AssetBrowserDialog.h"
 
 #include "DragDrop.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 
 #include <QToolBar>
 #include <QEvent.h>

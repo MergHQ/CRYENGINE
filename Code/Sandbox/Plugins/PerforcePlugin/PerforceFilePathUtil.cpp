@@ -1,7 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include "StdAfx.h"
 #include "PerforceFilePathUtil.h"
-#include "FilePathUtil.h"
+
+#include "FileUtils.h"
+#include "PathUtils.h"
 
 namespace Private_PerforceFilePathUtil
 {
@@ -57,7 +59,7 @@ void SeparateFolders(const std::vector<string>& paths, std::vector<string>& outp
 	using namespace Private_PerforceFilePathUtil;
 	for (const string& path : paths)
 	{
-		if (DoesLookLikeFolder(path) || PathUtil::FolderExists(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), path)))
+		if (DoesLookLikeFolder(path) || FileUtils::FolderExists(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), path)))
 		{
 			outputFolders.push_back(path);
 		}

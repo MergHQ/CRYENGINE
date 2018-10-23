@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 #include "MaterialImageListCtrl.h"
 #include "MaterialManager.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 
 #define ME_BG_TEXTURE "%EDITOR%/Materials/Stripes.dds"
 

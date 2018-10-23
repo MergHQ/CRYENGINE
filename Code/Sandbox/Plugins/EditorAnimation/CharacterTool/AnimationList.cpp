@@ -1,39 +1,40 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-
-#include <CryAnimation/ICryAnimation.h>
-#include <QApplication>
-#include <QClipboard>
-#include "FileDialogs/SystemFileDialog.h"
-#include "Controls/QuestionDialog.h"
-#include <QDir>
-#include <QFile>
 #include "AnimationList.h"
-#include "Serialization.h"
-#include <CrySerialization/IArchiveHost.h>
-#include <CrySystem/File/IFileChangeMonitor.h>
-#include "IEditor.h"
-#include "SkeletonList.h"
-#include "Expected.h"
-#include "Explorer/Explorer.h"
-#include "../Cry3DEngine/CGF/CGFLoader.h"
-#include "IAnimationCompressionManager.h"
-#include <CrySystem/File/ICryPak.h>
+
 #include "AnimEventFootstepGenerator.h"
-#include "QPropertyTree/QPropertyDialog.h"
-#include "QPropertyTree/ContextList.h"
-#include "ListSelectionDialog.h"
-#include "Explorer/ExplorerFileList.h"
-#include "dll_string.h"
-#include "IResourceSelectorHost.h"
+#include "AnimationCompressionManager.h"
 #include "CharacterDocument.h"
 #include "CharacterToolSystem.h"
-#include "IBackgroundTaskManager.h"
 #include "CharacterToolSystem.h"
-#include "AnimationCompressionManager.h"
+#include "IAnimationCompressionManager.h"
+#include "Serialization.h"
+#include "SkeletonList.h"
+#include "../Cry3DEngine/CGF/CGFLoader.h"
+#include <Controls/QuestionDialog.h>
+#include <CryAnimation/ICryAnimation.h>
 #include <CryIcon.h>
-#include "FilePathUtil.h"
+#include <CrySerialization/IArchiveHost.h>
+#include <CrySystem/File/ICryPak.h>
+#include <CrySystem/File/IFileChangeMonitor.h>
+#include <Expected.h>
+#include <Explorer/Explorer.h>
+#include <Explorer/ExplorerFileList.h>
+#include <FileDialogs/SystemFileDialog.h>
+#include <IBackgroundTaskManager.h>
+#include <IEditor.h>
+#include <IResourceSelectorHost.h>
+#include <ListSelectionDialog.h>
+#include <PathUtils.h>
+#include <dll_string.h>
+
+#include <QApplication>
+#include <QClipboard>
+#include <QDir>
+#include <QFile>
+#include <QPropertyTree/ContextList.h>
+#include <QPropertyTree/QPropertyDialog.h>
 
 namespace CharacterTool {
 

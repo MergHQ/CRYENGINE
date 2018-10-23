@@ -2,9 +2,11 @@
 
 #include "StdAfx.h"
 #include "AlembicCompiler.h"
+
 #include "AlembicCompileDialog.h"
 #include "Dialogs/ResourceCompilerDialog.h"
-#include "FilePathUtil.h"
+#include "FileUtils.h"
+#include "PathUtils.h"
 
 namespace AlembicCompiler_Private
 {
@@ -201,7 +203,7 @@ bool CAlembicCompiler::CompileAlembic(string& fileName, const string& fullPath, 
 	const CString rcFilePath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), fullPath.GetString());
 
 	const string configPath = PathUtil::ReplaceExtension(rcFilePath.GetString(), "cbc");
-	XmlNodeRef config = PathUtil::FileExists(configPath) ? XmlHelpers::LoadXmlFromFile(configPath) : XmlNodeRef();
+	XmlNodeRef config = FileUtils::FileExists(configPath) ? XmlHelpers::LoadXmlFromFile(configPath) : XmlNodeRef();
 	CAlembicCompileDialog dialog(config);
 
 	if (!showDialog || dialog.DoModal() == IDOK)

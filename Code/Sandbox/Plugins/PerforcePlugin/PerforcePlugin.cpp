@@ -1,9 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include "StdAfx.h"
 #include "PerforcePlugin.h"
-#include "PerforceVCSAdapter.h"
-#include "FilePathUtil.h"
+
 #include "CryCore/Platform/platform_impl.inl"
+#include "PathUtils.h"
+#include "PerforceVCSAdapter.h"
 #include "VersionControl/VersionControlInitializer.h"
 
 namespace Private_PerforcePlugin

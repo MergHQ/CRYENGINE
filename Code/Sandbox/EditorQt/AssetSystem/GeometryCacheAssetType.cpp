@@ -1,10 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include <StdAfx.h>
 #include "GeometryCacheAssetType.h"
-#include "AssetSystem/AssetImporter.h"
-#include "AssetSystem/AssetImportContext.h"
+
 #include "Alembic/AlembicCompiler.h"
-#include "FilePathUtil.h"
+#include "AssetSystem/AssetImportContext.h"
+#include "AssetSystem/AssetImporter.h"
+#include "FileUtils.h"
+#include "PathUtils.h"
 
 REGISTER_ASSET_TYPE(CGeometryCacheType)
 
@@ -59,7 +61,7 @@ private:
 		const string absOutputSourceFilePath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), ctx.GetOutputSourceFilePath());
 
 		// We already have confirmation to overwrite the file. see CAssetImporter::Import() 
-		if (!PathUtil::CopyFileAllowOverwrite(ctx.GetInputFilePath(), absOutputSourceFilePath))
+		if (!FileUtils::CopyFileAllowOverwrite(ctx.GetInputFilePath(), absOutputSourceFilePath))
 		{
 			CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_ERROR, 
 				"Failed to copy source file to: %s \n"
@@ -68,7 +70,7 @@ private:
 			return{};
 		}
 
-		PathUtil::MakeFileWritable(absOutputSourceFilePath);
+		FileUtils::MakeFileWritable(absOutputSourceFilePath);
 
 		CAlembicCompiler compiler;
 		string assetFilename;

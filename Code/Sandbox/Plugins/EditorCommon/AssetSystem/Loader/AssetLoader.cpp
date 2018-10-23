@@ -2,19 +2,23 @@
 
 #include "StdAfx.h"
 #include "AssetLoader.h"
+
 #include "AssetLoaderHelpers.h"
 #include "AssetSystem/Asset.h"
-#include "FileReader.h"
 #include "CompletionPortFileReader.h"
+#include "FileReader.h"
 #include "Metadata.h"
-#include "FilePathUtil.h"
-#include <CrySystem/ISystem.h>
-#include <Cry3DEngine/I3DEngine.h>
+#include "PathUtils.h"
+#include "QtUtil.h"
+
 #include <Cry3DEngine/CGF/IChunkFile.h>  
+#include <Cry3DEngine/I3DEngine.h>
 #include <CryString/CryPath.h>
 #include <CrySystem/IProjectManager.h>
-#include <QtUtil.h>
+#include <CrySystem/ISystem.h>
+
 #include <QDirIterator> 
+
 #include <condition_variable>
 #include <unordered_map>
 #include <stack>

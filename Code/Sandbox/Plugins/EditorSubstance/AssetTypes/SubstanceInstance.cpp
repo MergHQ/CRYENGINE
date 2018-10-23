@@ -2,15 +2,15 @@
 
 #include "StdAfx.h"
 #include "SubstanceInstance.h"
+
 #include "SandboxPlugin.h"
+#include "EditorSubstanceManager.h"
 
 #include <AssetSystem/AssetEditor.h>
-#include "EditorSubstanceManager.h"
-#include <AssetSystem/EditableAsset.h>
 #include <AssetSystem/AssetImportContext.h>
-#include <FilePathUtil.h>
+#include <AssetSystem/EditableAsset.h>
+#include <PathUtils.h>
 #include <ThreadingUtils.h>
-
 
 namespace EditorSubstance
 {

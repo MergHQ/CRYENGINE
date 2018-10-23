@@ -5,7 +5,7 @@
 
 #include "AudioControlsEditorPlugin.h"
 
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 
 namespace ACE
 {

@@ -16,9 +16,10 @@
 #include <Cry3DEngine/I3DEngine.h>
 
 // EditorCommon
-#include <FilePathUtil.h>
 #include <FileDialogs/EngineFileDialog.h>
+#include <FileUtils.h>
 #include <Notifications/NotificationCenter.h>
+#include <PathUtils.h>
 
 // Editor
 #include <Material/Material.h>
@@ -171,7 +172,7 @@ struct SCharacterGenerator : ICharacterGenerator
 		{
 			const string assetPath = PathUtil::Make(m_outputFilePath, s);
 			const string absPath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), s);
-			if (PathUtil::FileExists(PathUtil::ReplaceExtension(absPath, "caf")))
+			if (FileUtils::FileExists(PathUtil::ReplaceExtension(absPath, "caf")))
 			{
 				m_outputFiles.push_back(s);
 			}

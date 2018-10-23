@@ -9,7 +9,7 @@
 #include <ModelUtils.h>
 #include <FileImportInfo.h>
 #include <DragDrop.h>
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 #include <QtUtil.h>
 
 #include <QDirIterator>

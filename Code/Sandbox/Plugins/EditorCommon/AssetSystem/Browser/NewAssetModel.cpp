@@ -6,9 +6,9 @@
 #include "AssetSystem/AssetType.h"
 #include "AssetModel.h"
 
-#include "QtUtil.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include "QThumbnailView.h"
+#include "QtUtil.h"
 
 #include <AssetSystem/AssetManager.h>
 #include <QDirIterator>

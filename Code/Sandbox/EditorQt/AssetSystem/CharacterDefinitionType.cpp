@@ -2,9 +2,10 @@
 
 #include "StdAfx.h"
 #include "CharacterDefinitionType.h"
-#include "QT/Widgets/QPreviewWidget.h"
+
 #include "AssetSystem/Asset.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
+#include "QT/Widgets/QPreviewWidget.h"
 #include <ThreadingUtils.h>
 
 REGISTER_ASSET_TYPE(CCharacterDefinitionType)

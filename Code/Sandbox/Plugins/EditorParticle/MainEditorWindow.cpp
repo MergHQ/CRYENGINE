@@ -23,11 +23,11 @@
 #include <AssetSystem/Asset.h>
 #include <AssetSystem/AssetManager.h>
 #include <AssetSystem/EditableAsset.h>
-#include <FileDialogs/EngineFileDialog.h>
-#include <Controls/QuestionDialog.h>
 #include <Controls/CurveEditorPanel.h>
+#include <Controls/QuestionDialog.h>
 #include <DragDrop.h>
-#include <FilePathUtil.h>
+#include <FileDialogs/EngineFileDialog.h>
+#include <PathUtils.h>
 
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/IArchiveHost.h>

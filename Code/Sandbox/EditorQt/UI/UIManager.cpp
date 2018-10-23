@@ -6,8 +6,8 @@
 #include "HyperGraph/FlowGraph.h"
 #include "HyperGraph/FlowGraphManager.h"
 
-#include "Controls/QuestionDialog.h"
-#include "FilePathUtil.h"
+#include <Controls/QuestionDialog.h>
+#include <PathUtils.h>
 
 #define UI_ACTIONS_FOLDER "UIActions"
 #define GRAPH_FILE_FILTER "Graph XML Files (*.xml)|*.xml"

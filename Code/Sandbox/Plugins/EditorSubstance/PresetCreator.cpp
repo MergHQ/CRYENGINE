@@ -3,20 +3,18 @@
 #include "StdAfx.h"
 #include "PresetCreator.h"
 
-#include <QDialogButtonBox>
-#include <QVBoxLayout>
-#include <QString>
-
-#include "FileDialogs/FileNameLineEdit.h"
-#include "FilePathUtil.h"
-#include "AssetSystem/Asset.h"
-#include "AssetSystem/AssetManager.h"
-#include "AssetSystem/Browser/AssetFoldersView.h"
-#include "OutputsWidget.h"
-#include "QAdvancedTreeView.h"
-#include "Controls/QuestionDialog.h"
 #include "OutputEditorDialog.h"
 #include "EditorSubstanceManager.h"
+
+#include <AssetSystem/Asset.h>
+#include <AssetSystem/AssetManager.h>
+#include <AssetSystem/Browser/AssetFoldersView.h>
+#include <Controls/QuestionDialog.h>
+#include <FileDialogs/FileNameLineEdit.h>
+#include <OutputsWidget.h>
+#include <PathUtils.h>
+#include <QAdvancedTreeView.h>
+#include <QBoxLayout>
 
 namespace EditorSubstance
 {

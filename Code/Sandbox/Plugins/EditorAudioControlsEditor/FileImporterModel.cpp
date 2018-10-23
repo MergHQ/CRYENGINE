@@ -5,7 +5,7 @@
 
 #include <ProxyModels/ItemModelAttribute.h>
 #include <EditorStyleHelper.h>
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 #include <QtUtil.h>
 
 namespace ACE

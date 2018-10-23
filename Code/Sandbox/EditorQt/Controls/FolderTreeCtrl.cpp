@@ -2,8 +2,9 @@
 
 #include <StdAfx.h>
 #include "FolderTreeCtrl.h"
+
 #include "Controls/DynamicPopupMenu.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include "Util/MFCUtil.h"
 
 IMPLEMENT_DYNAMIC(CFolderTreeCtrl, CTreeCtrl)

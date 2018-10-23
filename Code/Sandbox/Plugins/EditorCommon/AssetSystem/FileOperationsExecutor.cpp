@@ -1,9 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH. All rights reserved.
 #include "StdAfx.h"
 #include "FileOperationsExecutor.h"
+
 #include "IFilesGroupProvider.h"
+#include "PathUtils.h"
 #include "QtUtil.h"
-#include "FilePathUtil.h"
 
 namespace Private_FileOperationsExecutor
 {

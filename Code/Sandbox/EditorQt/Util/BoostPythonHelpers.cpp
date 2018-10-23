@@ -2,20 +2,7 @@
 
 #include "StdAfx.h"
 #include "BoostPythonHelpers.h"
-#include <CryCore/Containers/CryListenerSet.h>
 #include "Commands/PythonManager.h"
-#include "FilePathUtil.h"
-
-#include <boost/python.hpp>
-#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
-
-#include "boost/python/object.hpp"
-#include "boost/python/tuple.hpp"
-#include "boost/python/dict.hpp"
-#include "boost/python/to_python_converter.hpp"
-#include "boost/python/converter/registry.hpp"
-#include "boost/python/suite/indexing/vector_indexing_suite.hpp"
-#include <CryCore/ToolsHelpers/GuidUtil.h>
 #include "Objects/ObjectLayer.h"
 #include "Objects/BaseObject.h"
 #include "Objects/BrushObject.h"
@@ -29,8 +16,24 @@
 #include "Vegetation/VegetationObject.h"
 #include "Vegetation/VegetationMap.h"
 #include "Objects/GeomEntity.h"
-#include "Util/MFCUtil.h"
 #include "CryEditDoc.h"
+
+#include <PathUtils.h>
+
+#include <Util/MFCUtil.h>
+
+#include <CryCore/ToolsHelpers/GuidUtil.h>
+#include <CryCore/Containers/CryListenerSet.h>
+
+#include <boost/python.hpp>
+#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+#include "boost/python/object.hpp"
+#include "boost/python/tuple.hpp"
+#include "boost/python/dict.hpp"
+#include "boost/python/to_python_converter.hpp"
+#include "boost/python/converter/registry.hpp"
+#include "boost/python/suite/indexing/vector_indexing_suite.hpp"
+
 
 struct CryLogPythonOutput : public PyScript::IPyScriptListener
 {

@@ -6,14 +6,18 @@
 #include "Material/MaterialManager.h"
 #include "IIconManager.h"
 #include "ViewportInteraction.h"
-#include <Preferences/ViewportPreferences.h>
 #include "Objects/ParticleEffectObject.h"
 
+#include <PathUtils.h>
+#include <Preferences/ViewportPreferences.h>
+#include <RenderLock.h>
+
 #include <Cry3DEngine/I3DEngine.h>
-#include <CryEntitySystem/IEntitySystem.h>
 #include <CryAnimation/ICryAnimation.h>
-#include <CryRenderer/IRenderAuxGeom.h>
+#include <CryEntitySystem/IEntitySystem.h>
 #include <CryParticleSystem/IParticles.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+
 #include <QtUtil.h>
 #include <QDir.h>
 #include <QFileInfo>
@@ -23,9 +27,6 @@
 #include <QPaintEvent>
 #include <QPainter>
 #include <QCursor>
-
-#include "RenderLock.h"
-#include "FilePathUtil.h"
 
 namespace Private_PreviewWidget
 {

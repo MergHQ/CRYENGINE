@@ -8,7 +8,7 @@
 #include "RcCaller.h"
 
 #include <AssetSystem/AssetImportContext.h>
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 
 #include <QFile>
 

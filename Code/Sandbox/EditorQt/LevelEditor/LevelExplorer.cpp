@@ -21,7 +21,7 @@
 #include <Menu/MenuWidgetBuilders.h>
 #include <ProxyModels/AttributeFilterProxyModel.h>
 #include <ProxyModels/MergingProxyModel.h>
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 #include <MenuHelpers.h>
 #include <QAdvancedItemDelegate.h>
 #include <QAdvancedTreeView.h>

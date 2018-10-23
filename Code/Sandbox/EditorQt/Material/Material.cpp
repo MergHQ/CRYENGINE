@@ -2,18 +2,19 @@
 
 #include "StdAfx.h"
 #include "Material.h"
+
 #include "MaterialHelpers.h"
 #include "MaterialManager.h"
 #include "BaseLibrary.h"
-#include "AssetSystem/Asset.h"
 
-#include <Cry3DEngine/I3DEngine.h>
-#include <CryCore/Containers/CryArray.h>
+#include <AssetSystem/Asset.h>
 #include <Cry3DEngine/CGF/CryHeaders.h>
+#include <Cry3DEngine/I3DEngine.h>
 #include <CryAnimation/ICryAnimation.h>
-#include <ISourceControl.h>
+#include <CryCore/Containers/CryArray.h>
 #include <CryRenderer/IShader.h>
-#include <FilePathUtil.h>
+#include <ISourceControl.h>
+#include <PathUtils.h>
 
 
 SMaterialLayerResources::SMaterialLayerResources()

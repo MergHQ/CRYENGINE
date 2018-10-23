@@ -34,17 +34,18 @@
 #include <Controls/QuestionDialog.h>
 #include <EditorFramework/Inspector.h>
 #include <EditorFramework/PreferencesDialog.h>
+#include <EditorStyleHelper.h>
+#include <FileUtils.h>
 #include <LevelEditor/Tools/PickObjectTool.h>
 #include <Notifications/NotificationCenterTrayWidget.h>
 #include <Objects/ObjectLoader.h>
+#include <PathUtils.h>
 #include <Preferences/GeneralPreferences.h>
 #include <Preferences/SnappingPreferences.h>
-#include <Util/FileUtil.h>
-#include <EditorStyleHelper.h>
-#include <FilePathUtil.h>
 #include <QtUtil.h>
 #include <QtViewPane.h>
 #include <ThreadingUtils.h>
+#include <Util/FileUtil.h>
 
 // CryCommon
 #include <CrySandbox/ScopedVariableSetter.h>
@@ -99,7 +100,7 @@ void DeleteObsoleteMetadataFile(const string& level)
 {
 	const string filename(string().Format("%s.cryasset", level.c_str()));
 	const string absPath(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), filename));
-	PathUtil::RemoveFile(absPath);
+	FileUtils::RemoveFile(absPath);
 }
 
 bool UnpakCryFile(ICryPak* pCryPak, const string& cryFilename, const string& destinationFolder, std::function<void(float)> progress)
@@ -112,7 +113,7 @@ bool UnpakCryFile(ICryPak* pCryPak, const string& cryFilename, const string& des
 		return false;
 	}
 
-	PathUtil::Unpak(cryPakPath, destinationFolder, std::move(progress));
+	FileUtils::Unpak(cryPakPath, destinationFolder, std::move(progress));
 	pCryPak->ClosePack(cryPakPath);
 	return true;
 }
@@ -578,7 +579,7 @@ bool CLevelEditor::ConvertEditorXmlToLevelAssetType(const string& levelFolder, c
 	// Rename level.editor_xml to a new *.level
 	const string oldFilename = PathUtil::Make(levelFolder, "level.editor_xml");
 	const string newFilename = PathUtil::Make(levelFolder, PathUtil::ReplaceExtension(szName, CLevelType::GetFileExtensionStatic()));
-	if (PathUtil::MoveFileAllowOverwrite(oldFilename, newFilename))
+	if (FileUtils::MoveFileAllowOverwrite(oldFilename, newFilename))
 	{
 		CAssetType* pType = GetIEditorImpl()->GetAssetManager()->FindAssetType("Level");
 		CRY_ASSERT(pType);

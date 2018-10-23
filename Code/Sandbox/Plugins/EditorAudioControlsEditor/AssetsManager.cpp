@@ -11,7 +11,7 @@
 #include <IConnection.h>
 #include <IItem.h>
 
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 
 namespace ACE
 {

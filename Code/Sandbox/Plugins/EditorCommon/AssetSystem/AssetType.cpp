@@ -9,11 +9,11 @@
 #include "AssetSystem/EditableAsset.h"
 #include "AssetSystem/Loader/AssetLoaderHelpers.h"
 #include "AssetSystem/Loader/Metadata.h"
-#include "FilePathUtil.h"
+#include "FileUtils.h"
+#include "PathUtils.h"
 
 #include <CryString/StringUtils.h>
 #include <QFile>
-
 
 namespace Private_AssetType
 {
@@ -303,7 +303,7 @@ bool CAssetType::IsInPakOnly(const CAsset& asset) const
 	std::vector<string> filepaths(GetAssetFiles(asset, false, true));
 	for (string& path : filepaths)
 	{
-		if (PathUtil::IsFileInPakOnly(path))
+		if (FileUtils::IsFileInPakOnly(path))
 		{
 			return true;
 		}

@@ -14,10 +14,10 @@
 #include "MaterialSender.h"
 
 #include <AssetSystem/Browser/AssetBrowserDialog.h>
-#include <Preferences/GlobalHelperPreferences.h>
-#include <FilePathUtil.h>
 #include <ISourceControl.h>
 #include <ModelViewport.h>
+#include <PathUtils.h>
+#include <Preferences/GlobalHelperPreferences.h>
 #include <Viewport.h>
 
 #include <CryAnimation/ICryAnimation.h>

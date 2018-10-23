@@ -12,7 +12,7 @@
 #include <EditorFramework/PersonalizationManager.h>
 #include "SubstanceCommon.h"
 #include "EditorSubstanceManager.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.inl>

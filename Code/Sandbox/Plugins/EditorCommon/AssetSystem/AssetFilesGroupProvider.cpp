@@ -1,10 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH. All rights reserved.
 #include "StdAfx.h"
 #include "AssetFilesGroupProvider.h"
+
 #include "Asset.h"
 #include "AssetManager.h"
 #include "AssetSystem/Loader/AssetLoaderHelpers.h"
-#include "FilePathUtil.h"
+#include "FileUtils.h"
+#include "PathUtils.h"
 
 std::vector<string> CAssetFilesGroupProvider::GetFiles(bool includeGeneratedFile /*= true*/) const
 {
@@ -18,7 +20,7 @@ string CAssetFilesGroupProvider::GetGeneratedFile() const
 
 void CAssetFilesGroupProvider::Update()
 {
-	if (PathUtil::FileExists(PathUtil::Make(PathUtil::GetGameProjectAssetsRelativePath(), m_metadata)))
+	if (FileUtils::FileExists(PathUtil::Make(PathUtil::GetGameProjectAssetsRelativePath(), m_metadata)))
 	{
 		auto pAssetManager = CAssetManager::GetInstance();
 		CryLog("Executing reloading of asset %s", m_metadata.c_str());

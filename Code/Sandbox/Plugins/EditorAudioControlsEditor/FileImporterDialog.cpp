@@ -8,7 +8,7 @@
 #include "FolderSelectorDialog.h"
 
 #include <ProxyModels/AttributeFilterProxyModel.h>
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 #include <QtUtil.h>
 #include <CrySystem/ISystem.h>
 #include <CryIcon.h>

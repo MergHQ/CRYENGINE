@@ -2,15 +2,13 @@
 
 #include "StdAfx.h"
 #include "SkinnedMeshType.h"
-#include "QT/Widgets/QPreviewWidget.h"
 
-// For shared detail attributes.
 #include "MeshType.h"
+#include "QT/Widgets/QPreviewWidget.h"
 #include "SkeletonType.h"
 
 #include <AssetSystem/AssetEditor.h>
-
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 #include <ThreadingUtils.h>
 
 REGISTER_ASSET_TYPE(CSkinnedMeshType)

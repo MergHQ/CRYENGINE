@@ -14,12 +14,12 @@
 // EditorCommon
 #include <Controls/QuestionDialog.h>
 #include <CryIcon.h>
+#include <DragDrop.h>
+#include <FileDialogs/EngineFileDialog.h>
 #include <FileDialogs/ExtensionFilter.h>
 #include <FileDialogs/SystemFileDialog.h>
-#include <FileDialogs/EngineFileDialog.h>
-#include <FilePathUtil.h>
-#include <DragDrop.h>
 #include <Notifications/NotificationCenter.h>
+#include <PathUtils.h>
 #include <ThreadingUtils.h>
 
 #include <AssetSystem/Asset.h>

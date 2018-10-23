@@ -31,7 +31,7 @@
 #include <CryAnimation/ICryAnimation.h>
 #include <CryPhysics/IPhysicsDebugRenderer.h>
 
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 #include <QtViewPane.h>
 #include <Material/Material.h>
 #include <Material/MaterialManager.h>

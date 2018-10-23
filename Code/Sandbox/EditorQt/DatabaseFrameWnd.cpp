@@ -2,12 +2,13 @@
 
 #include "StdAfx.h"
 #include "DatabaseFrameWnd.h"
+
 #include "BaseLibraryItem.h"
 #include "BaseLibraryManager.h"
+#include "Controls/QuestionDialog.h"
 #include "Dialogs/QGroupDialog.h"
 #include "Util/Clipboard.h"
-#include "Controls/QuestionDialog.h"
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 
 class CUndoSelectLibraryUndo : public IUndoObject
 {

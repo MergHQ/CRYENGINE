@@ -13,7 +13,7 @@
 #include "Util/Mailer.h"
 #include "FileDialogs/SystemFileDialog.h"
 #include "Controls/QuestionDialog.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include "CryEditDoc.h"
 
 namespace

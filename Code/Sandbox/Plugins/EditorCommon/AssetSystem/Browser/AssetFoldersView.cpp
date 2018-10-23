@@ -5,9 +5,9 @@
 #include "AssetFoldersModel.h"
 #include "AssetThumbnailsGenerator.h"
 
+#include "PathUtils.h"
 #include "ProxyModels/DeepFilterProxyModel.h"
 #include "QAdvancedTreeView.h"
-#include "FilePathUtil.h"
 #include "QtUtil.h"
 
 #include <QItemSelectionModel>

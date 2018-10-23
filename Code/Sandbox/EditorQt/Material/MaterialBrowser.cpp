@@ -18,8 +18,8 @@
 #include <Dialogs/QNumericBoxDialog.h>
 #include <Dialogs/QStringDialog.h>
 #include <FileDialogs/EngineFileDialog.h>
-#include <FilePathUtil.h>
 #include <ISourceControl.h>
+#include <PathUtils.h>
 
 #include <CryThreading/IThreadManager.h>
 

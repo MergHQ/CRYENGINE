@@ -8,7 +8,7 @@
 #include "Image_DXTC.h"
 #include <CrySystem/File/CryFile.h>
 #include "GdiUtil.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 
 //////////////////////////////////////////////////////////////////////////
 bool CImageUtil::SaveBitmap(const string& szFileName, CImageEx& inImage, bool inverseY)

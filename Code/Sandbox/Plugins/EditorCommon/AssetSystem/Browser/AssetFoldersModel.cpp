@@ -7,11 +7,11 @@
 #include "AssetReverseDependenciesDialog.h"
 #include "AssetSystem/Asset.h"
 #include "AssetSystem/AssetManager.h"
-
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include "QThumbnailView.h"
 #include "QtUtil.h"
-#include "CryString/CryPath.h"
+
+#include <CryString/CryPath.h>
 
 #include <QDesktopServices>
 #include <QUrl>

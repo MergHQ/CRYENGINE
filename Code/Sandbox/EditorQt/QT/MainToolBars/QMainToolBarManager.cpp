@@ -8,11 +8,12 @@
 
 #include <CryIcon.h>
 
-#include <Commands/QCommandAction.h>
 #include <Commands/CustomCommand.h>
-#include <Util/UserDataUtil.h>
-#include <FilePathUtil.h>
+#include <Commands/QCommandAction.h>
+#include <FileUtils.h>
+#include <PathUtils.h>
 #include <QtUtil.h>
+#include <Util/UserDataUtil.h>
 
 #include <CryString/CryPath.h>
 #include <CrySystem/IProjectManager.h>
@@ -375,7 +376,7 @@ void QMainToolBarManager::RemoveToolBar(const QString& name)
 	m_ToolBarsDesc.remove(name);
 
 	QString fullPath(UserDataUtil::GetUserPath(PathUtil::Make(Private_ToolbarManager::szUserToolbarsPath, QtUtil::ToConstCharPtr(name), ".json").c_str()));
-	PathUtil::Remove(QtUtil::ToConstCharPtr(fullPath));
+	FileUtils::Remove(QtUtil::ToConstCharPtr(fullPath));
 
 	CEditorMainFrame* pMainFrame = CEditorMainFrame::GetInstance();
 	QToolBar* pToolBar = pMainFrame->findChild<QToolBar*>(name + "ToolBar");

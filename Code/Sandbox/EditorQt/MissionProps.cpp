@@ -2,11 +2,12 @@
 
 #include "stdafx.h"
 #include "MissionProps.h"
+
+#include "Controls/PropertyItem.h"
 #include "CryEditDoc.h"
 #include "mission.h"
 #include "missionscript.h"
-#include <FilePathUtil.h>
-#include "Controls/PropertyItem.h"
+#include <PathUtils.h>
 
 // CMissionProps dialog
 

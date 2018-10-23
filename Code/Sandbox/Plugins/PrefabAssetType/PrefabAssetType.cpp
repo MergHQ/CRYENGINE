@@ -16,7 +16,7 @@
 #include <Prefabs/PrefabManager.h>
 #include <IUndoObject.h>
 
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 
 REGISTER_ASSET_TYPE(CPrefabAssetType)
 

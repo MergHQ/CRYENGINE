@@ -1,16 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include "StdAfx.h"
 #include "AssetsVCSReverter.h"
+
 #include "AssetFilesProvider.h"
-#include "VersionControl/VersionControl.h"
+#include "AssetSystem/FileOperationsExecutor.h"
+#include "AssetSystem/Loader/AssetLoaderHelpers.h"
 #include "AssetsVCSStatusProvider.h"
 #include "Objects/IObjectLayer.h"
 #include "Objects/IObjectLayerManager.h"
 #include "Objects/ObjectManager.h"
-#include "AssetSystem/FileOperationsExecutor.h"
-#include "AssetSystem/Loader/AssetLoaderHelpers.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include "ThreadingUtils.h"
+#include "VersionControl.h"
 
 namespace Private_AssetsVCSReverter
 {

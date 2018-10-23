@@ -3,12 +3,12 @@
 #include "StdAfx.h"
 #include "MaterialType.h"
 
-#include <AssetSystem/Asset.h>
-#include <FilePathUtil.h>
-#include <ThreadingUtils.h>
-#include "QT/Widgets/QPreviewWidget.h"
 #include "Material/MaterialManager.h"
+#include "QT/Widgets/QPreviewWidget.h"
+#include <AssetSystem/Asset.h>
 #include <Cry3DEngine/I3DEngine.h>
+#include <PathUtils.h>
+#include <ThreadingUtils.h>
 
 REGISTER_ASSET_TYPE(CMaterialType)
 

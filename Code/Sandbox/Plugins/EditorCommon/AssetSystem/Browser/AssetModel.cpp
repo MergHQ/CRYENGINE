@@ -8,10 +8,10 @@
 #include "AssetSystem/Browser/AssetThumbnailsLoader.h"
 
 #include "DragDrop.h"
+#include "PathUtils.h"
 #include "QAdvancedItemDelegate.h"
 #include "QThumbnailView.h"
 #include "QtUtil.h"
-#include "FilePathUtil.h"
 
 QStringList CAssetModel::GetAssetTypesStrList()
 {

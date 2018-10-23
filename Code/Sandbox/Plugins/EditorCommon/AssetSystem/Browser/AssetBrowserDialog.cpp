@@ -8,12 +8,12 @@
 #include "AssetSystem/AssetManager.h"
 #include "AssetSystem/Loader/AssetLoaderHelpers.h"
 
-#include "QtUtil.h"
+#include "FileDialogs/FileNameLineEdit.h"
+#include "PathUtils.h"
+#include "ProxyModels/AttributeFilterProxyModel.h"
 #include "QAdvancedTreeView.h"
 #include "QThumbnailView.h"
-#include "ProxyModels/AttributeFilterProxyModel.h"
-#include "FileDialogs/FileNameLineEdit.h"
-#include "FilePathUtil.h"
+#include "QtUtil.h"
 
 #include <QDirIterator>
 #include <QLabel>

@@ -8,7 +8,7 @@
 #include "EditorSubstanceManager.h"
 
 #include "Controls/QuestionDialog.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 
 #include <QDialogButtonBox>
 

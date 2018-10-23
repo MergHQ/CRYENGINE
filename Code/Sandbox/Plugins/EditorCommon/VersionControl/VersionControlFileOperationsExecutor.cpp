@@ -3,13 +3,15 @@
 
 #include "StdAfx.h"
 #include "VersionControlFileOperationsExecutor.h"
+
 #include "VersionControl.h"
 #include "AssetsVCSStatusProvider.h"
 #include "AssetsVCSSynchronizer.h"
 #include "AssetFilesProvider.h"
 #include "AssetSystem/FileOperationsExecutor.h"
 #include "AssetSystem/IFilesGroupProvider.h"
-#include "FilePathUtil.h"
+#include "FileUtils.h"
+#include "PathUtils.h"
 #include "ThreadingUtils.h"
 
 namespace Private_VersionControlFileOperationsExecutor
@@ -50,7 +52,7 @@ void DeleteOnlyFolders(const std::vector<string>& paths)
 	std::vector<string> folders;
 	for (const string& path : paths)
 	{
-		if (PathUtil::FolderExists(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), path)))
+		if (FileUtils::FolderExists(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), path)))
 		{
 			folders.push_back(path);
 		}

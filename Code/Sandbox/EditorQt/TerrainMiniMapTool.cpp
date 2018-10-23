@@ -8,8 +8,8 @@
 
 #include <Util/ImageTIF.h>
 
+#include <PathUtils.h>
 #include <Serialization/Decorators/EditorActionButton.h>
-#include <FilePathUtil.h>
 #include <Viewport.h>
 
 #include <CryGame/IGameFramework.h>

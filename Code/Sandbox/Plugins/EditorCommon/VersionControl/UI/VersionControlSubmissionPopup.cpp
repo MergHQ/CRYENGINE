@@ -1,10 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include "StdAfx.h"
 #include "VersionControlSubmissionPopup.h"
+
 #include "VersionControlPendingChangesWidget.h"
 #include "PendingChange.h"
 #include "VersionControl/VersionControl.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include <QPlainTextEdit>
 
 namespace Private_VersionControlSubmissionPopup

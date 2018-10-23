@@ -21,7 +21,7 @@
 
 // EditorCommon
 #include <CrySerialization/Decorators/Resources.h>
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 #include <ThreadingUtils.h>
 
 // EditorQt

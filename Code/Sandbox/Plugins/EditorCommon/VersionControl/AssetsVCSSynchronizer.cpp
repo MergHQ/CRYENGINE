@@ -8,7 +8,7 @@
 #include "Objects/IObjectLayer.h"
 #include "Objects/IObjectLayerManager.h"
 #include "Objects/ObjectManager.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 
 namespace Private_AssetsVCSSynchronizer
 {

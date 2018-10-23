@@ -13,7 +13,7 @@
 
 #include <EditorFramework/PersonalizationManager.h>
 #include <FileDialogs/SystemFileDialog.h>
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 #include <Viewport.h>
 
 #define TERRAIN_PREVIEW_RESOLUTION 256
