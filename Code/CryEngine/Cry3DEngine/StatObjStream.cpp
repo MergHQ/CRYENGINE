@@ -398,8 +398,6 @@ bool CStatObj::UpdateStreamableComponents(float fImportance, const Matrix34A& ob
 
 			if (subObj.pStatObj && subObj.nType == STATIC_SUB_OBJECT_MESH && !subObj.bShadowProxy)
 			{
-				Matrix34 subObjMatrix = objMatrix * subObj.tm;
-
 				CStatObj* pSubStatObj = ((CStatObj*)subObj.pStatObj);
 
 				if (pSubStatObj->m_nLoadedTrisCount < 1)

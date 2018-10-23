@@ -281,7 +281,6 @@ void CParticleProfiler::WriteEntries(CCSVFileOutput& output) const
 
 	output.WriteHeader();
 
-	const CParticleEmitter* pEmitter = nullptr;
 	SStatistics runtimeStats;
 	const CParticleComponentRuntime* pCurrentRuntime = finalElements.front().m_pRuntime;
 
@@ -462,7 +461,6 @@ void CParticleProfiler::DrawMemoryStats()
 	uint usedBytes = 0;
 	for (CParticleEmitter* pEmitter : GetPSystem()->GetActiveEmitters())
 	{
-		CParticleEffect* pEffect = pEmitter->GetCEffect();
 		for (auto pRuntime : pEmitter->GetRuntimes())
 		{
 			if (!pRuntime->IsCPURuntime())

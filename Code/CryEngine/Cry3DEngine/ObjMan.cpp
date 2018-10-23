@@ -98,7 +98,10 @@ void CObjManager::UnloadObjects(bool bDeleteAll)
 		m_nameToObjectMap.clear();
 		m_lstLoadedObjects.clear();
 
+#if !defined(_RELEASE)
 		int nNumLeaks = 0;
+#endif //_RELEASE
+
 		std::vector<CStatObj*> garbage;
 		for (CStatObj* pStatObj = CStatObj::get_intrusive_list_root(); pStatObj; pStatObj = pStatObj->get_next_intrusive())
 		{
@@ -1056,7 +1059,6 @@ void CObjManager::ReregisterEntitiesInArea(AABB * pBox, bool bCleanUpTree)
 
 	for (int i = 0; i < lstEntitiesInArea.Count(); i++)
 	{
-		IVisArea* pPrevArea = lstEntitiesInArea[i].pNode->GetEntityVisArea();
 		Get3DEngine()->UnRegisterEntityDirect(lstEntitiesInArea[i].pNode);
 
 		if (lstEntitiesInArea[i].pNode->GetRenderNodeType() == eERType_Decal)
@@ -1198,8 +1200,11 @@ bool CObjManager::SphereRenderMeshIntersection(IRenderMesh* pRenderMesh, const V
 
 	// get indices
 	vtx_idx* pInds = pRenderMesh->GetIndexPtr(FSL_READ);
+
+#if defined(USE_CRY_ASSERT)
 	int nInds = pRenderMesh->GetIndicesCount();
 	assert(nInds % 3 == 0);
+#endif
 
 	// test tris
 	TRenderChunkArray& Chunks = pRenderMesh->GetChunks();

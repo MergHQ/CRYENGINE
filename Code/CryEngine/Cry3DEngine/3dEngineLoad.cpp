@@ -653,8 +653,11 @@ void C3DEngine::UnloadLevel()
 	stl::free_container(m_collisionClasses);
 
 	CRY_ASSERT(m_lstStaticLights.empty());
+
+#if defined(USE_CRY_ASSERT)
 	for (auto& renderNodes : m_renderNodesToDelete)
 		CRY_ASSERT(renderNodes.empty());
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

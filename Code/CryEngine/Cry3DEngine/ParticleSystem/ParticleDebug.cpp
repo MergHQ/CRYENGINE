@@ -89,7 +89,7 @@ void DebugDrawComponentRuntime(CParticleComponentRuntime& runtime, size_t emitte
 	const float screenHeight = float(pRenderAux->GetCamera().GetViewSurfaceZ());
 
 	const CParticleContainer& container = runtime.GetContainer();
-	const SComponentParams& params = runtime.ComponentParams();
+	//const SComponentParams& params = runtime.ComponentParams();
 	const uint numInstances = runtime.GetNumInstances();
 	IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
 	IFStream normAges = container.GetIFStream(EPDT_NormalAge);
@@ -313,14 +313,10 @@ void DebugParticleSystem(const TParticleEmitters& activeEmitters)
 
 	if (debugContainers || debugCollisions)
 	{
-		IRenderer* pRender = gEnv->pRenderer;
-		IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
-
 		size_t emitterBarIdx = 0;
 		size_t barIdx = 0;
 		for (CParticleEmitter* pEmitter : activeEmitters)
 		{
-			CParticleEffect* pEffect = pEmitter->GetCEffect();
 			for (auto pRuntime : pEmitter->GetRuntimes())
 			{
 				if (!pRuntime->IsCPURuntime())

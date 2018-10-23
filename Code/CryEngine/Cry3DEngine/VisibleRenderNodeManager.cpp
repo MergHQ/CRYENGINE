@@ -186,7 +186,6 @@ void CVisibleRenderNodesManager::UpdateVisibleNodes(int currentFrame, int maxNod
 			m_firstAddedNode = -1;
 		}
 
-		const auto numNodes = m_visibleNodes.size();
 		auto b = m_visibleNodes.begin() + m_lastStartUpdateNode;
 		if (b >= m_visibleNodes.end())
 		{

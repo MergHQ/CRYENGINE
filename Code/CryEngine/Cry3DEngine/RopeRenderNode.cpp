@@ -889,8 +889,6 @@ void CRopeRenderNode::Render(const SRendParams& rParams, const SRenderingPassInf
 	if (!m_pRenderMesh || m_pRenderMesh->GetVerticesCount() <= 3)
 		return; // false;
 
-	IRenderer* pRend = GetRenderer();
-
 	CRenderObject* pObj = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
 	if (!pObj)
 		return; // false;

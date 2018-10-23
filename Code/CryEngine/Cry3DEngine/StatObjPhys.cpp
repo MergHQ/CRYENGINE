@@ -3653,7 +3653,9 @@ int CStatObj::PhysicalizeFoliage(IPhysicalEntity* pTrunk, const Matrix34& mtxWor
 						if (w1 == 0) b1 = 0;
 						if (w2 == 0) b2 = 0;
 						if (w3 == 0) b3 = 0;
+#if defined(USE_CRY_ASSERT)
 						static const int maxBoneIdx = 255;
+#endif
 						assert(b0 <= maxBoneIdx);
 						assert(b1 <= maxBoneIdx);
 						assert(b2 <= maxBoneIdx);
@@ -3807,7 +3809,9 @@ SSkinningData* CStatObjFoliage::GetSkinningData(const Matrix34& RenderMat34, con
 	if (m_pStatObj && m_pStatObj->m_pRenderMesh)
 		m_pStatObj->m_pRenderMesh->NextDrawSkinned();
 
+#if defined(USE_CRY_ASSERT)
 	int nNumBones = ComputeSkinningTransformationsCount();
+#endif
 
 	// get data to fill
 	int nSkinningFrameID = passInfo.GetIRenderView()->GetSkinningPoolIndex();

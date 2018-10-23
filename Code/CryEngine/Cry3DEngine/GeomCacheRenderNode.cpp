@@ -670,7 +670,6 @@ bool CGeomCacheRenderNode::FillFrameAsync(const char* const pFloorFrameData, con
 	// Update meshes & clear instances
 	for (uint meshId = 0; meshId < numMeshes; ++meshId)
 	{
-		const SGeomCacheStaticMeshData& meshData = staticMeshData[meshId];
 		for (TRenderElementMap::iterator iter = m_pRenderElements.begin(); iter != m_pRenderElements.end(); ++iter)
 		{
 			SGeomCacheRenderElementData& data = iter->second;
@@ -872,9 +871,6 @@ void CGeomCacheRenderNode::UpdateTransformsRec(uint& currentNodeIndex, uint& cur
 void CGeomCacheRenderNode::FillRenderObject(const SRendParams& rendParams, const SRenderingPassInfo& passInfo, IMaterial* pMaterial, CRenderObject* pRenderObject)
 {
 	FUNCTION_PROFILER_3DENGINE;
-
-	IRenderNode* const pRenderNode = rendParams.pRenderNode;
-	IRenderer* const pRenderer = GetRenderer();
 
 	pRenderObject->m_pRenderNode = rendParams.pRenderNode;
 	pRenderObject->m_fDistance = rendParams.fDistance;
@@ -1507,7 +1503,6 @@ void CGeomCacheRenderNode::UpdatePhysicalMaterials()
 
 void CGeomCacheRenderNode::UpdateStreamableComponents(float fImportance, float fDistance, bool bFullUpdate, int nLod, const float fInvScale, bool bDrawNear)
 {
-	CObjManager* pObjManager = GetObjManager();
 	Matrix34A matrix = GetMatrix();
 
 	const bool bAllowStandIn = GetCVars()->e_Lods != 0;

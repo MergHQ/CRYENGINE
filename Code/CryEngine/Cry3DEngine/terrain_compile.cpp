@@ -53,7 +53,6 @@ void CTerrain::GetVegetationMaterials(std::vector<IMaterial*>*& pMatTable)
 	{
 		// get vegetation objects materials
 		PodArray<StatInstGroup>& rTable = GetObjManager()->m_lstStaticTypes;
-		int nObjectsCount = rTable.size();
 
 		// init struct values and load cgf's
 		for (uint32 i = 0; i < rTable.size(); i++)

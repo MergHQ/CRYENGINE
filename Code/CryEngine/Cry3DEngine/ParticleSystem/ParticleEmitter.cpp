@@ -735,7 +735,7 @@ IEntity* CParticleEmitter::GetEmitGeometryEntity() const
 	{
 		// Override m_emitterGeometry with geometry of owning or attached entity if it exists
 		if (IEntity* pParent = pEntity->GetParent())
-			pEntity = pEntity->GetParent();
+			pEntity = pParent;
 	}
 	return pEntity;
 }

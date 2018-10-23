@@ -1476,7 +1476,9 @@ void CVisAreaManager::PrecacheLevel(bool bPrecacheAllVisAreas, Vec3* pPrecachePo
 	CryLog("Precaching the level ...");
 	//  gEnv->pLog->UpdateLoadingScreen(0);
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	float fPrecacheTimeStart = GetTimer()->GetAsyncCurTime();
+#endif
 
 	GetRenderer()->EnableSwapBuffers((GetCVars()->e_PrecacheLevel >= 2) ? true : false);
 
@@ -1569,8 +1571,10 @@ void CVisAreaManager::PrecacheLevel(bool bPrecacheAllVisAreas, Vec3* pPrecachePo
 
 	GetRenderer()->EnableSwapBuffers(true);
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	float fPrecacheTime = GetTimer()->GetAsyncCurTime() - fPrecacheTimeStart;
 	CryLog("Level Precache finished in %.2f seconds", fPrecacheTime);
+#endif
 }
 
 void CVisAreaManager::GetObjectsAround(Vec3 vExploPos, float fExploRadius, PodArray<SRNInfo>* pEntList, bool bSkip_ERF_NO_DECALNODE_DECALS, bool bSkipDynamicObjects)

@@ -344,8 +344,6 @@ void CCharacterRenderNode::PrecacheCharacterCollect(const float fImportance, ICh
 		nLod = 1;
 	}
 
-	SFrameLodInfo lodParam = gEnv->p3DEngine->GetFrameLodInfo();
-
 	IAttachmentManager* pAttMan = pCharacter->GetIAttachmentManager();
 	ICharacterInstance* pCharInstance = pAttMan->GetSkelInstance();
 	if (pCharInstance && pCharInstance != pCharacter)

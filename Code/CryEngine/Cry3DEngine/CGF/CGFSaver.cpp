@@ -339,10 +339,8 @@ void CSaverCGF::SaveNodes(
 	for (int i = 0; i < numNodes; i++)
 	{
 		CNodeCGF* pNode = m_pCGF->GetNode(i);
-		const char* pNodeName = pNode->name;
 
 		// Check if not yet saved.
-		uint32 numSavedNodes = m_savedNodes.size();
 		//	if (m_savedNodes.find(pNode) == m_savedNodes.end())
 	#if defined(RESOURCE_COMPILER)
 		SaveNode(pNode, bSwapEndian, bStorePositionsAsF16, bUseQtangents, bStoreIndicesAsU16, pSkinningInfo);
@@ -447,13 +445,12 @@ int CSaverCGF::SaveNode(
 		pNode->nObjectChunkId = SaveHelperChunk(pNode, bSwapEndian);
 	}
 
-	int nextChunk = m_pChunkFile->NumChunks();
-
 	int positionIndex = pNode->pos_cont_id;
 	int rotationIndex = pNode->rot_cont_id;
 	int scaleIndex = pNode->scl_cont_id;
 
-	#if defined(RESOURCE_COMPILER)
+#if defined(RESOURCE_COMPILER)
+	int nextChunk = m_pChunkFile->NumChunks();
 	int controllerIndex = -1;
 	if (pSkinningInfo)
 	{
@@ -485,7 +482,7 @@ int CSaverCGF::SaveNode(
 			scaleIndex = ++nextChunk;
 		}
 	}
-	#endif
+#endif
 
 	chunk.pos_cont_id = positionIndex;
 	chunk.rot_cont_id = rotationIndex;

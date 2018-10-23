@@ -617,7 +617,6 @@ void CParticle::InitPos(SParticleUpdateContext const& context, QuatTS const& loc
 {
 	ResourceParticleParams const& params = GetParams();
 	SpawnParams const& spawnParams = GetMain().GetSpawnParams();
-	SPhysEnviron const& PhysEnv = GetMain().GetPhysEnviron();
 	const CParticleSource& rSource = GetSource();
 
 	// Position and orientation.

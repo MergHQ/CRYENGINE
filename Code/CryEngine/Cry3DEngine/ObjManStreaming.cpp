@@ -70,11 +70,13 @@ void CObjManager::UnregisterForStreaming(IStreamable* pObj)
 	if (m_arrStreamableObjects.size() > 0)
 	{
 		SStreamAbleObject streamAbleObject(pObj, false);
-		bool deleted = m_arrStreamableObjects.Delete(streamAbleObject);
 
 #ifdef OBJMAN_STREAM_STATS
+		bool deleted = m_arrStreamableObjects.Delete(streamAbleObject);
 		if (deleted && m_pStreamListener)
 			m_pStreamListener->OnDestroyedStreamedObject(pObj);
+#else
+		m_arrStreamableObjects.Delete(streamAbleObject);
 #endif
 
 		if (m_arrStreamableObjects.empty())
@@ -765,7 +767,6 @@ void CObjManager::ProcessObjectsStreaming_Finish()
 	if (m_bNeedProcessObjectsStreaming_Finish == false)
 		return;
 
-	int nNumStreamableObjects = m_arrStreamableObjects.Count();
 	m_bNeedProcessObjectsStreaming_Finish = false;
 
 	CRY_PROFILE_REGION(PROFILE_3DENGINE, "ProcessObjectsStreaming_Finish");
@@ -812,7 +813,7 @@ void CObjManager::ProcessObjectsStreaming_Finish()
 			// the pool size in the renderer is sufficient. NOTE: This is a weak
 			// test. Better test would be to actually preallocate the memory here and
 			// only submit the streaming job if the memory could be obtained.
-			int size = pStatObj->GetStreamableContentMemoryUsage();
+			pStatObj->GetStreamableContentMemoryUsage();
 
 			if (GetCVars()->e_StreamCgfDebug == 2)
 			{
@@ -936,7 +937,7 @@ void CObjManager::GetObjectsStreamingStatus(I3DEngine::SObjectsStreamingStatus& 
 			continue;
 
 		for (int l = 0; l < MAX_STATOBJ_LODS_NUM; l++)
-			if (CStatObj* pLod = (CStatObj*)pStatObj->GetLodObject(l))
+			if (pStatObj->GetLodObject(l) != nullptr)
 				outStatus.nTotal++;
 	}
 
@@ -978,7 +979,6 @@ void CObjManager::PrecacheStatObjMaterial(IMaterial* pMaterial, const float fEnt
 
 	if (CMatInfo* pMatInfo = static_cast<CMatInfo*>(pMaterial))
 	{
-		CStatObj* pCStatObj = static_cast<CStatObj*>(pStatObj);
 		pMatInfo->PrecacheMaterial(fEntDistance, (pStatObj ? pStatObj->GetRenderMesh() : NULL), bFullUpdate, bDrawNear);
 	}
 }

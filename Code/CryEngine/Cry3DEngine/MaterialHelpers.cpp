@@ -758,9 +758,12 @@ void MaterialHelpers::SetShaderParamsFromXml(SInputShaderResources& pShaderResou
 			SShaderParam Param;
 			cry_strcpy(Param.m_Name, key);
 			Param.m_Value.m_Color[0] = Param.m_Value.m_Color[1] = Param.m_Value.m_Color[2] = Param.m_Value.m_Color[3] = 0;
-
+#if defined(_DEBUG) && !defined(IGNORE_ASSERTS) // this is used in SkyLightNishita.cpp to redefine asserts
 			int res = sscanf(val, "%f,%f,%f,%f", &Param.m_Value.m_Color[0], &Param.m_Value.m_Color[1], &Param.m_Value.m_Color[2], &Param.m_Value.m_Color[3]);
 			assert(res);
+#else
+			sscanf(val, "%f,%f,%f,%f", &Param.m_Value.m_Color[0], &Param.m_Value.m_Color[1], &Param.m_Value.m_Color[2], &Param.m_Value.m_Color[3]);
+#endif
 
 			pShaderResources.m_ShaderParams.push_back(Param);
 		}

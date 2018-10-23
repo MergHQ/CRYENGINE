@@ -830,11 +830,7 @@ public:
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
-		CParticleContainer& parentContainer = runtime.GetParentContainer();
 		CParticleContainer& container = runtime.GetContainer();
-		const Quat defaultQuat = runtime.GetEmitter()->GetLocation().q;
-		IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
-		IQuatStream parentQuats = parentContainer.GetIQuatStream(EPQF_Orientation, defaultQuat);
 		const IFStream fractions = container.GetIFStream(EPDT_SpawnFraction);
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 
@@ -934,9 +930,6 @@ public:
 
 		const QuatT cameraMotion = GetPSystem()->GetCameraMotion();
 		CParticleContainer& container = runtime.GetContainer();
-		const CParticleContainer& parentContainer = runtime.GetParentContainer();
-		const auto parentIds = container.IStream(EPDT_ParentId);
-		const auto parentPositions = parentContainer.IStream(EPVF_Position);
 		auto positions = container.IOStream(EPVF_Position);
 		auto velocities = container.IOStream(EPVF_Velocity);
 
@@ -1136,7 +1129,6 @@ public:
 		CParticleContainer& container = runtime.GetContainer();
 		auto positions = container.IOStream(EPVF_Position);
 		auto velocities = container.IOStream(EPVF_Velocity);
-		auto ages = container.IOStream(EPDT_NormalAge);
 
  		UpdateCameraData(runtime);
 

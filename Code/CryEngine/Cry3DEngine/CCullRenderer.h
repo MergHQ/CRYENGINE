@@ -392,8 +392,6 @@ private:
 		const vec4 Y204 = Mul(Y20, Vec4Four());
 		const vec4 Y134 = Mul(Y13, Vec4Four());
 		const vec4 Y234 = Mul(Y23, Vec4Four());
-		const vec4 Y304 = Sub(Y104, Y204);
-		const vec4 Y334 = Sub(Y134, Y234);
 
 		vec4 Visible = Vec4FFFFFFFF();
 		uint16 y = MinY;
@@ -571,8 +569,6 @@ public:
 
 			const float nearestLinear = b / (nearestMax - a);
 			const vec4 vfEpsilon = NVMath::Vec4Epsilon();
-			const vec4 vfOne = NVMath::Vec4One();
-			const vec4 vZero = NVMath::Vec4Zero();
 
 			vec4* pSrcZ = reinterpret_cast<vec4*>(&m_ZInput[nStartLine * sizeX]);
 
@@ -1495,20 +1491,12 @@ public:
 			return;
 		}
 
-		//if(!m_DebugRender)
-		//	return;
-
-		const float FarPlaneInv = 255.f / GetISystem()->GetViewCamera().GetFarPlane();
-
 		SAuxGeomRenderFlags oFlags(e_Def2DPublicRenderflags);
 		oFlags.SetDepthTestFlag(e_DepthTestOff);
 		oFlags.SetDepthWriteFlag(e_DepthWriteOff);
 		oFlags.SetCullMode(e_CullModeNone);
 		oFlags.SetAlphaBlendMode(e_AlphaNone);
 		SAuxGeomRenderFlags prevFlags = pAux->SetRenderFlags(oFlags);
-
-		const float fScreenWidth  = float(pAux->GetCamera().GetViewSurfaceX());
-		const float fScreenHeight = float(pAux->GetCamera().GetViewSurfaceZ());
 
 		float fTopOffSet = 35.0f;
 		float fSideOffSet = 35.0f;

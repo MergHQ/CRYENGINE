@@ -56,7 +56,7 @@ Vec3 CDecal::GetWorldPosition()
 			if (m_ownerInfo.pRenderNode)
 			{
 				Matrix34A objMat;
-				if (IStatObj* pEntObject = m_ownerInfo.GetOwner(objMat))
+				if (m_ownerInfo.GetOwner(objMat) != nullptr)
 					vPos = objMat.TransformPoint(vPos);
 			}
 		}
@@ -105,7 +105,7 @@ void CDecal::Render(const float fCurTime, int nAfterWater, float fDistanceFading
 		Vec3 vRight, vUp, vNorm;
 		Matrix34A objMat;
 
-		if (IStatObj* pEntObject = m_ownerInfo.GetOwner(objMat))
+		if (m_ownerInfo.GetOwner(objMat) != nullptr)
 		{
 			vRight = objMat.TransformVector(m_vRight * m_fSize);
 			vUp = objMat.TransformVector(m_vUp * m_fSize);
@@ -227,10 +227,10 @@ void CDecal::Render(const float fCurTime, int nAfterWater, float fDistanceFading
 			bool bUseBending = GetCVars()->e_VegetationBending != 0;
 			if (m_ownerInfo.pRenderNode && m_ownerInfo.pRenderNode->GetRenderNodeType() == eERType_Vegetation)
 			{
-				CObjManager* pObjManager = GetObjManager();
 				CVegetation* pVegetation = (CVegetation*)m_ownerInfo.pRenderNode;
+				CRY_ASSERT_MESSAGE(pVegetation != nullptr, "pVegetation is nullptr");
 				pBody = pVegetation->GetStatObj();
-				assert(pObjManager && pVegetation && pBody);
+				CRY_ASSERT_MESSAGE(pBody != nullptr, "pBody is nullptr");
 
 				if (pVegetation && pBody && bUseBending)
 				{
@@ -244,8 +244,8 @@ void CDecal::Render(const float fCurTime, int nAfterWater, float fDistanceFading
 					SShaderItem& SH = pMat->GetShaderItem();
 					if (SH.m_pShaderResources)
 					{
-						IMaterial* pMatDecal = m_pMaterial;
-						SShaderItem& SHDecal = pMatDecal->GetShaderItem();
+						//IMaterial* pMatDecal = m_pMaterial;
+						//SShaderItem& SHDecal = pMatDecal->GetShaderItem();
 						if (bUseBending)
 						{
 							pObj->m_nMDV = SH.m_pShader->GetVertexModificator();

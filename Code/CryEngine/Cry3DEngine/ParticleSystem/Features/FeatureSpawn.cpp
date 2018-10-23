@@ -147,7 +147,6 @@ protected:
 		if (numInstances == 0)
 			return;
 
-		const CParticleEmitter* pEmitter = runtime.GetEmitter();
 		const bool isIndependent = runtime.GetEmitter()->IsIndependent() && !runtime.IsChild();
 		if (isIndependent)
 		{

@@ -36,11 +36,6 @@ void CObjManager::RenderDecalAndRoad(IRenderNode* pEnt, PodArray<SRenderLight*>*
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-#ifdef _DEBUG
-	const char* szName = pEnt->GetName();
-	const char* szClassName = pEnt->GetEntityClassName();
-#endif // _DEBUG
-
 	// do not draw if marked to be not drawn or already drawn in this frame
 	auto nRndFlags = pEnt->GetRndFlags();
 
@@ -116,11 +111,6 @@ void CObjManager::RenderVegetation(CVegetation* pEnt, PodArray<SRenderLight*>* p
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-#ifdef _DEBUG
-	const char* szName = pEnt->GetName();
-	const char* szClassName = pEnt->GetEntityClassName();
-#endif // _DEBUG
-
 	// check cvars
 	assert(passInfo.RenderVegetation());
 
@@ -173,11 +163,6 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<SRenderLight*>* pAffe
 	FUNCTION_PROFILER_3DENGINE;
 
 	const CVars* pCVars = GetCVars();
-
-#ifdef _DEBUG
-	const char* szName = pEnt->GetName();
-	const char* szClassName = pEnt->GetEntityClassName();
-#endif // _DEBUG
 
 	// do not draw if marked to be not drawn or already drawn in this frame
 	auto nRndFlags = pEnt->GetRndFlags();
@@ -473,8 +458,11 @@ bool CObjManager::RayRenderMeshIntersection(IRenderMesh* pRenderMesh, const Vec3
 
 	// get indices
 	vtx_idx* pInds = pRenderMesh->GetIndexPtr(FSL_READ);
+
+#if defined(USE_CRY_ASSERT)
 	int nInds = pRenderMesh->GetIndicesCount();
 	assert(nInds % 3 == 0);
+#endif
 
 	float fClosestHitDistance = -1;
 

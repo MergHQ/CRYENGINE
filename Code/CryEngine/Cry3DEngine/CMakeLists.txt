@@ -393,7 +393,6 @@ MACRO(setup_Cry3DEngine)
 		target_compile_options(${THIS_PROJECT} PRIVATE
 			-Wno-reorder
 			-Wno-unknown-pragmas
-			-Wno-unused-variable
 			-Wno-undefined-var-template
 			-Wno-parentheses
 			-Wno-unused-private-field
@@ -412,7 +411,6 @@ MACRO(setup_Cry3DEngine)
 		target_compile_options(${THIS_PROJECT} PRIVATE
 			-Wno-unused-function
 			-Wno-unused-value
-			-Wno-unused-variable
 			-Wno-strict-overflow
 			-Wno-sign-compare
 			-Wno-ignored-attributes

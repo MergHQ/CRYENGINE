@@ -411,7 +411,7 @@ string GetPresetXMLFilenamefromName(const string& presetName, const bool bForWri
 	const string filePath = presetName;
 
 	char szAdjustedFile[ICryPak::g_nMaxPath];
-	const char* szTemp = gEnv->pCryPak->AdjustFileName(filePath.c_str(), szAdjustedFile, bForWriting ? ICryPak::FLAGS_FOR_WRITING : 0);
+	gEnv->pCryPak->AdjustFileName(filePath.c_str(), szAdjustedFile, bForWriting ? ICryPak::FLAGS_FOR_WRITING : 0);
 	return string(szAdjustedFile);
 }
 
@@ -965,7 +965,6 @@ void CTimeOfDay::UpdateEnvLighting(bool forceUpdate)
 {
 	C3DEngine* p3DEngine((C3DEngine*)gEnv->p3DEngine);
 	IRenderer* pRenderer(gEnv->pRenderer);
-	const float fRecip255 = 1.0f / 255.0f;
 
 	if (pRenderer)
 	{
@@ -1235,7 +1234,6 @@ void CTimeOfDay::UpdateEnvLighting(bool forceUpdate)
 		const float cloudShadingCustomSunColorInfluence = GetVar(PARAM_CLOUDSHADING_SUNLIGHT_CUSTOM_COLOR_INFLUENCE).fValue[0];
 
 		const Vec3 cloudShadingSunColor = p3DEngine->GetSunColor() * cloudShadingMultipliers.x;
-		const Vec3 cloudShadingSkyColor = p3DEngine->GetSunColor() * cloudShadingMultipliers.y;
 
 		p3DEngine->SetGlobalParameter(E3DPARAM_CLOUDSHADING_SUNCOLOR, cloudShadingSunColor + (cloudShadingCustomSunColor - cloudShadingSunColor) * cloudShadingCustomSunColorInfluence);
 

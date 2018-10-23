@@ -1605,7 +1605,7 @@ int CStatObj::CountChildReferences()
 IStatObj* CStatObj::GetLowestLod()
 {
 	if (int nLowestLod = CStatObj::GetMinUsableLod())
-		return m_pLODs ? (CStatObj*)m_pLODs[CStatObj::GetMinUsableLod()] : (CStatObj*)NULL;
+		return m_pLODs ? (CStatObj*)m_pLODs[nLowestLod] : (CStatObj*)NULL;
 	return this;
 }
 

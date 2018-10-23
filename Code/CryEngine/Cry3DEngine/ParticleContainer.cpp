@@ -101,7 +101,10 @@ void CParticleContainer::OnEffectChange()
 	m_nEnvFlags = m_pParams->nEnvFlags;
 
 	// Update existing particle history arrays if needed.
+#if CRY_PLATFORM_DESKTOP
 	int nPrevSteps = m_nHistorySteps;
+#endif
+
 	m_nHistorySteps = m_pParams->GetTailSteps();
 
 	// Do not use coverage buffer culling for 'draw near' or 'on top' particles

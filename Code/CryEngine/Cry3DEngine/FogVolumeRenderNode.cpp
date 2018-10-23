@@ -457,7 +457,6 @@ void CFogVolumeRenderNode::Render(const SRendParams& rParam, const SRenderingPas
 	}
 	else
 	{
-		IRenderer* pRenderer = GetRenderer();
 		CRenderObject* pRenderObject = pRenderView->AllocateTemporaryRenderObject();
 
 		if (!pRenderObject)
@@ -604,7 +603,7 @@ void CFogVolumeRenderNode::GetVolumetricFogColorEllipsoid(const Vec3& worldPos, 
 {
 	const CCamera& cam(passInfo.GetCamera());
 	Vec3 camPos(cam.GetPosition());
-	Vec3 camDir(cam.GetViewdir());
+	//Vec3 camDir(cam.GetViewdir());
 	Vec3 cameraLookDir(worldPos - camPos);
 
 	resultColor = ColorF(1.0f, 1.0f, 1.0f, 1.0f);

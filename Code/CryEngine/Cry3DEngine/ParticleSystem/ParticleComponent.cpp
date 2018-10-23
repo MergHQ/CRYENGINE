@@ -237,7 +237,6 @@ void CParticleComponent::GetMaxParticleCounts(int& total, int& perFrame, float m
 void CParticleComponent::UpdateTimings()
 {
 	// Adjust parent lifetimes to include child lifetimes
-	STimingParams params {};
 	float maxChildEq = 0.0f, maxChildLife = 0.0f;
 	for (auto& pChild : m_children)
 	{

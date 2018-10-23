@@ -543,8 +543,6 @@ void CBrush::UpdatePhysicalMaterials(int bThreadSafe)
 
 void CBrush::Dephysicalize(bool bKeepIfReferenced)
 {
-	AABB WSBBox = GetBBox();
-
 	// delete old physics
 	if (m_pPhysEnt && 0 != GetSystem()->GetIPhysicalWorld()->DestroyPhysicalEntity(m_pPhysEnt, ((int)bKeepIfReferenced) * 4))
 		m_pPhysEnt = 0;
@@ -857,7 +855,6 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	const auto& userData = pTempData->userData;
 
 	const Vec3 vObjCenter = CBrush::GetBBox().GetCenter();
-	const Vec3 vObjPos = CBrush::GetPos();
 
 	const float fObjDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, CBrush::GetBBox())) * passInfo.GetZoomFactor();
 	CRY_ASSERT(fObjDistance * 2.0f <= std::numeric_limits<decltype(CRenderObject::m_nSort)>::max());
