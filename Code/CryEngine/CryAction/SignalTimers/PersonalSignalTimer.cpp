@@ -275,7 +275,6 @@ void CPersonalSignalTimer::DebugDraw(uint32 uOrder) const
 {
 	CRY_ASSERT(m_bInit == true);
 
-	IUIDraw* pUI = CCryAction::GetCryAction()->GetIUIDraw();
 	float x = 120.0f;
 	float y = 100.0f + (float(uOrder) * 10.0f);
 	float r = 0.0f;

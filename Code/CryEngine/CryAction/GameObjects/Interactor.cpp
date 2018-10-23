@@ -181,7 +181,6 @@ void CInteractor::PerformQueries(EntityId& id, int& idx)
 
 bool CInteractor::PerformDotFilteredProximityQuery(SQueryResult& r, float minDot)
 {
-	float minDistanceToCenterSq(999.9f);
 	IEntity* pNearestEntityToViewCenter(NULL);
 	float maxDot = -1.0f;
 

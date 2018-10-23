@@ -4,7 +4,7 @@
 #include "LevelFileUtils.h"
 
 #include "CryEditDoc.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 
 #include <QString>
 #include <QDir>

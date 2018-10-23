@@ -3,9 +3,9 @@
 #include "StdAfx.h"
 #include "AssetThumbnailsLoader.h"
 
-#include <AssetSystem/AssetType.h>
 #include <AssetSystem/AssetManager.h>
-#include <FilePathUtil.h>
+#include <AssetSystem/AssetType.h>
+#include <PathUtils.h>
 #include <ThreadingUtils.h>
 
 #include <CrySystem/IConsole.h>

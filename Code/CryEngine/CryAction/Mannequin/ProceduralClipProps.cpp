@@ -132,7 +132,6 @@ public:
 			{
 				m_attachedEntityId = 0;
 				m_attachmentCRC = params.attachmentName.crc;
-				IAttachmentObject* pNewAttachment = NULL;
 
 				EntityId attachEntityId = 0;
 

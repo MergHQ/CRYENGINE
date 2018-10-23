@@ -2,17 +2,16 @@
 
 #include "StdAfx.h"
 #include "MeshType.h"
+
+#include "AssetSystem/AssetResourceSelector.h"
+#include "PathUtils.h"
 #include "QT/Widgets/QPreviewWidget.h"
-#include "FilePathUtil.h"
-#include <ThreadingUtils.h>
 
 #include <AssetSystem/AssetEditor.h>
 #include <Cry3DEngine/I3DEngine.h>
-#include <ProxyModels/ItemModelAttribute.h>
-
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
-
-#include "AssetSystem/AssetResourceSelector.h"
+#include <ProxyModels/ItemModelAttribute.h>
+#include <ThreadingUtils.h>
 
 REGISTER_ASSET_TYPE(CMeshType);
 

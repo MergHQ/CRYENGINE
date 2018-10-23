@@ -218,7 +218,9 @@ void CParticleManager::PrintParticleMemory()
 	pSizer->Add(*this);
 	m_Emitters.GetMemoryUsage(pSizer);
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	stl::SPoolMemoryUsage memParticle = ParticleObjectAllocator().GetTotalMemory();
+#endif
 
 	CryLogAlways("Particle heap: %d KB used, %d KB freed, %d KB unused",
 	             int(memParticle.nUsed >> 10), int(memParticle.nPoolFree() >> 10), int(memParticle.nNonPoolFree() >> 10));
@@ -1366,7 +1368,7 @@ void CParticleManager::ListEffects()
 	  "Coll test, Coll hit, Clip, "
 	  "Reiter, Reject"
 	  );
-
+#if !defined(EXCLUDE_NORMAL_LOG)
 	for (auto& me : mapEffectStats)
 	{
 		SParticleCounts const& counts = me.second;
@@ -1388,6 +1390,7 @@ void CParticleManager::ListEffects()
 		  counts.particles.reiterate, counts.particles.reject
 		  );
 	}
+#endif
 }
 
 void CParticleManager::CreatePerfHUDWidget()

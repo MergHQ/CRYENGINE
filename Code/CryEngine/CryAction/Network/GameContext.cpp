@@ -1719,7 +1719,7 @@ void CGameContext::GetMemoryUsage(ICrySizer* s) const
 
 static ILINE bool IsDX11()
 {
-	ERenderType renderType = gEnv->pRenderer->GetRenderType();
+	//ERenderType renderType = gEnv->pRenderer->GetRenderType();
 	return true;//renderType == eRT_DX11;	// marcio: in this context, we assume DX11 for Crysis2, so immersiveness can work
 }
 

@@ -148,7 +148,9 @@ uint CFeatureMotionPhysics::ComputeEffectors(CParticleComponentRuntime& runtime,
 	CRY_PFX2_PROFILE_DETAIL;
 
 	auto hasGravity = area.m_nFlags & ENV_GRAVITY;
+#if defined(USE_CRY_ASSERT)
 	auto hasWind = area.m_nFlags & ENV_WIND;
+#endif
 	assert(hasGravity || hasWind);
 	assert(!(hasGravity && hasWind));
 
@@ -441,7 +443,7 @@ void CFeatureMotionPhysics::AngularLinearIntegral(CParticleComponentRuntime& run
 
 	for (auto particleGroupId : runtime.FullRangeV())
 	{
-		const floatv dT = DeltaTime(deltaTime, particleGroupId, normAges, lifeTimes);
+		DeltaTime(deltaTime, particleGroupId, normAges, lifeTimes);
 
 		if (spin2D)
 		{
@@ -788,7 +790,6 @@ public:
 		CParticleContainer& container = runtime.GetContainer();
 		const CParticleContainer& parentContainer = runtime.GetParentContainer();
 		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
-		const IFStream parentAges = parentContainer.GetIFStream(EPDT_NormalAge);
 		const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
 		const IQuatStream parentOrientations = parentContainer.GetIQuatStream(EPQF_Orientation);
 		IOVec3Stream parentPrevPositions = container.GetIOVec3Stream(EPVF_ParentPosition);

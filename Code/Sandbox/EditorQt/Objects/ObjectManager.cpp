@@ -37,19 +37,19 @@
 #include <EditorFramework/Events.h>
 #include <Gizmos/GizmoManager.h>
 #include <Gizmos/TransformManipulator.h>
+#include <IAIManager.h>
 #include <IObjectEnumerator.h>
 #include <LevelEditor/Tools/DeepSelection.h>
 #include <LevelEditor/Tools/ObjectMode.h>
 #include <Objects/InspectorWidgetCreator.h>
 #include <Objects/ObjectPropertyWidget.h>
+#include <PathUtils.h>
 #include <Preferences/GlobalHelperPreferences.h>
 #include <Preferences/ViewportPreferences.h>
-#include <QT/Widgets/QWaitProgress.h>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
-#include <FilePathUtil.h>
-#include <IAIManager.h>
 #include <QAdvancedPropertyTree.h>
+#include <QT/Widgets/QWaitProgress.h>
 #include <QtUtil.h>
+#include <Serialization/QPropertyTree/QPropertyTree.h>
 #include <Viewport.h>
 
 // CryEngine

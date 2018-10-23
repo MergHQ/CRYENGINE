@@ -294,7 +294,7 @@ public:
 			{
 				if (installedScopeMask & BIT64(i))
 				{
-					if (IActionController* pSlaveActionController = m_actionController->GetScope(i)->GetEnslavedActionController())
+					if (m_actionController->GetScope(i)->GetEnslavedActionController() != nullptr)
 					{
 						m_slaveScopeIds.push_back(i);
 						m_collisionCheck = true;
@@ -838,9 +838,6 @@ public:
 	virtual void OnEnter(float blendTime, float duration, const SPositionAdjustAnimParams& params)
 	{
 		m_posAdjuster.Init(m_scope->GetEntity(), blendTime);
-
-		CAnimation* anim = m_scope->GetTopAnim(0);
-
 		QuatT animStartLoc(IDENTITY);
 		const bool isRootEntity = IsRootEntity();
 		const bool hasParam = GetParam("TargetPos", m_posAdjuster.m_targetLoc);

@@ -861,8 +861,8 @@ void CPost3DRenderer::Reset(bool bOnSpecChange)
 bool CPost3DRenderer::HasModelsToRender() const
 {
 	CRenderView* pRenderView = gcpRendD3D->GetGraphicsPipeline().GetCurrentRenderView();
-	const uint32 batchMask = pRenderView->GetBatchFlags(EFSLIST_GENERAL)
-		| pRenderView->GetBatchFlags(EFSLIST_SKIN)
+	const uint32 batchMask = 
+		  pRenderView->GetBatchFlags(EFSLIST_GENERAL)
 		| pRenderView->GetBatchFlags(EFSLIST_DECAL)
 		| pRenderView->GetBatchFlags(EFSLIST_TRANSP_BW)
 		| pRenderView->GetBatchFlags(EFSLIST_TRANSP_AW);

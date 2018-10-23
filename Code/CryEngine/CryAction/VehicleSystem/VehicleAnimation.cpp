@@ -146,7 +146,7 @@ void CVehicleAnimation::Reset()
 	{
 		const SAnimationState& animState = m_animationStates[m_currentStateId];
 
-		if (IEntity* pEntity = m_pPartAnimated->GetEntity())
+		if (m_pPartAnimated->GetEntity() != nullptr)
 		{
 			for (TAnimationStateMaterialVector::const_iterator ite = animState.materials.begin(), end = animState.materials.end(); ite != end; ++ite)
 			{
@@ -226,8 +226,12 @@ bool CVehicleAnimation::StartAnimation()
 
 			if (!animState.sound.empty())
 			{
+#if defined(USE_CRY_ASSERT)
 				IEntityAudioComponent* pEntitySoundsProxy = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 				CRY_ASSERT(pEntitySoundsProxy);
+#else
+				pEntity->GetOrCreateComponent<IEntityAudioComponent>();
+#endif
 
 				REINST("send an animation start event?");
 				/*int soundFlags = FLAG_SOUND_DEFAULT_3D;
@@ -261,7 +265,7 @@ void CVehicleAnimation::StopAnimation()
 	IEntity* pEntity = m_pPartAnimated->GetEntity();
 	CRY_ASSERT(pEntity);
 
-	SAnimationState& animState = m_animationStates[m_currentStateId];
+	//SAnimationState& animState = m_animationStates[m_currentStateId];
 
 	if (ICharacterInstance* pCharInstance = pEntity->GetCharacter(m_pPartAnimated->GetSlot()))
 	{
@@ -295,8 +299,6 @@ bool CVehicleAnimation::ChangeState(TVehicleAnimStateId stateId)
 {
 	if (stateId <= InvalidVehicleAnimStateId || stateId > m_animationStates.size())
 		return false;
-
-	SAnimationState& animState = m_animationStates[stateId];
 
 	m_currentStateId = stateId;
 

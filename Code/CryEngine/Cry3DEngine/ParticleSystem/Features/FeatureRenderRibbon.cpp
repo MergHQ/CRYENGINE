@@ -349,7 +349,6 @@ void CFeatureRenderRibbon::WriteToGPUMem(const CParticleComponentRuntime& runtim
 
 	const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
 	const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
-	const IFStream sizes = container.GetIFStream(EPDT_Size);
 	const IFStream alphas = container.GetIFStream(EPDT_Alpha);
 	const IPidStream parentIds = container.IStream(EPDT_ParentId);
 	const IFStream parentAges = parentContainer.GetIFStream(EPDT_NormalAge);
@@ -361,8 +360,6 @@ void CFeatureRenderRibbon::WriteToGPUMem(const CParticleComponentRuntime& runtim
 	CWriteCombinedBuffer<Vec3, vertexBufferSize, vertexChunckSize> localPositions(pRenderVertices->aPositions);
 	CWriteCombinedBuffer<SParticleAxes, vertexBufferSize, vertexChunckSize> localAxes(pRenderVertices->aAxes);
 	CWriteCombinedBuffer<SParticleColorST, vertexBufferSize, vertexChunckSize> localColorSTs(pRenderVertices->aColorSTs);
-
-	const Vec3 camPos = camera.GetPosition();
 
 	uint totalRenderedParticles = 0;
 

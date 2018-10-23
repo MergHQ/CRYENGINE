@@ -2,13 +2,14 @@
 
 #include "StdAfx.h"
 #include "PakImporter.h"
+
 #include "AssetManagerHelpers.h"
-#include "Loader/AssetLoaderHelpers.h"
 #include "AssetSystem/AssetManager.h"
+#include "Loader/AssetLoaderHelpers.h"
 #include "Notifications/NotificationCenter.h"
-#include "FilePathUtil.h"
-#include "ThreadingUtils.h"
+#include "PathUtils.h"
 #include "QtUtil.h"
+#include "ThreadingUtils.h"
 #include "Util/EditorUtils.h" // strstri
 #include <IEditor.h>
 

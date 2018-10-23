@@ -21,10 +21,8 @@ struct MaterialHelpers CMatMan::s_materialHelpers;
 
 #if !defined(_RELEASE)
 static const char* szReplaceMe = "%ENGINE%/EngineAssets/TextureMsg/ReplaceMe.tif";
-static const char* szGeomNotBreakable = "%ENGINE%/EngineAssets/TextureMsg/GeomNotBreakable.tif";
 #else
 static const char* szReplaceMe = "%ENGINE%/EngineAssets/TextureMsg/ReplaceMeRelease.tif";
-static const char* szGeomNotBreakable = "%ENGINE%/EngineAssets/TextureMsg/ReplaceMeRelease.tif";
 #endif
 
 //////////////////////////////////////////////////////////////////////////
@@ -803,8 +801,13 @@ static void shGetVector4(const char* buf, float v[4])
 {
 	if (!buf)
 		return;
+
+#if defined(_DEBUG) && !defined(IGNORE_ASSERTS) // this is used in SkyLightNishita.cpp to redefine asserts
 	int res = sscanf(buf, "%f,%f,%f,%f", &v[0], &v[1], &v[2], &v[3]);
 	assert(res);
+#else
+	sscanf(buf, "%f,%f,%f,%f", &v[0], &v[1], &v[2], &v[3]);
+#endif
 }
 
 void CMatMan::ParsePublicParams(SInputShaderResources& sr, XmlNodeRef paramsNode)

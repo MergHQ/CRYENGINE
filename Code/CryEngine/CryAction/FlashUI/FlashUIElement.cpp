@@ -1539,8 +1539,12 @@ bool CFlashUIElement::CreateArray(const SUIParameterDesc*& pNewDesc, const char*
 	SFlashObjectInfo* pParent = GetFlashVarObj(pParentDesc);
 	if (pParent)
 	{
+#if defined(USE_CRY_ASSERT)
 		bool ok = m_pFlashplayer->CreateArray(pNewArray);
 		CRY_ASSERT_MESSAGE(ok, "Failed to create new flash array!");
+#else
+		m_pFlashplayer->CreateArray(pNewArray);
+#endif
 		pParent->pObj->SetMember(arrayName, pNewArray);
 
 		const_cast<SUIParameterDesc*>(pDesc)->pParent = pParentDesc;
@@ -1739,8 +1743,13 @@ void CFlashUIElement::AddTexture(IDynTextureSource* pDynTexture)
 	if (pDynTexture)
 	{
 		UIACTION_LOG("%s (%i): UIElement registered by texture \"%p\"", GetName(), m_iInstanceID, pDynTexture);
+
+#if defined(USE_CRY_ASSERT)
 		const bool ok = m_textures.PushBackUnique(pDynTexture);
 		CRY_ASSERT_MESSAGE(ok, "Texture already registered!");
+#else
+		m_textures.PushBackUnique(pDynTexture);
+#endif
 
 		SetVisible(true);
 
@@ -1760,8 +1769,13 @@ void CFlashUIElement::RemoveTexture(IDynTextureSource* pDynTexture)
 	if (pDynTexture)
 	{
 		UIACTION_LOG("%s (%i): UIElement unregistered by texture \"%p\"", GetName(), m_iInstanceID, pDynTexture);
+
+#if defined(USE_CRY_ASSERT)
 		const bool ok = m_textures.FindAndErase(pDynTexture);
 		CRY_ASSERT_MESSAGE(ok, "Texture was never registered or already unregistered!");
+#else
+		m_textures.FindAndErase(pDynTexture);
+#endif
 	}
 }
 
@@ -2195,8 +2209,13 @@ void CFlashUIElement::RemoveFlashVarObj(const SUIParameterDesc* pDesc)
 		if (it->second.first)
 		{
 			TVarMapLookup& map = m_variableObjectsLookup[it->second.second];
+
+#if defined(USE_CRY_ASSERT)
 			const bool ok = stl::member_find_and_erase(map, it->second.first);
 			CRY_ASSERT_MESSAGE(ok, "no lookup for this object!");
+#else
+			stl::member_find_and_erase(map, it->second.first);
+#endif
 		}
 		m_variableObjects.erase(it->first);
 	}
@@ -2230,8 +2249,12 @@ void CFlashUIElement::FreeVarObjects()
 //------------------------------------------------------------------------------------
 void CFlashUIElement::AddEventListener(IUIElementEventListener* pListener, const char* name)
 {
+#if defined(USE_CRY_ASSERT)
 	const bool ok = m_eventListener.Add(pListener, name);
 	CRY_ASSERT_MESSAGE(ok, "Listener already registered!");
+#else
+	m_eventListener.Add(pListener, name);
+#endif
 }
 
 //------------------------------------------------------------------------------------

@@ -302,7 +302,6 @@ void CWaterWaveRenderNode::Render(const SRendParams& rParam, const SRenderingPas
 		return; // false;
 
 	C3DEngine* p3DEngine(Get3DEngine());
-	IRenderer* pRenderer(GetRenderer());
 
 	// get render objects
 	CRenderObject* pRenderObj(passInfo.GetIRenderView()->AllocateTemporaryRenderObject());

@@ -602,7 +602,6 @@ bool CBreakableGlassSystem::ExtractPhysMesh(mesh_data* pPhysMesh, const int thin
 	{
 		// Pre-size outline buffer
 		const uint fragTriCount = min(fragTris.size(), fragOutline.max_size() - 2);
-		const uint vertCount = min(fragTriCount + 2, fragOutline.max_size());
 
 		for (int i = 0; i < fragTriCount + 2; ++i)
 		{

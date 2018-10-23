@@ -443,7 +443,7 @@ void CCullThread::RasterizeZBuffer(uint32 PolyLimit)
 		{
 			Matrix44 World(IDENTITY);
 			uint8* pInstance = pInstances + a * (sizeof(int) + 12 * sizeof(float));//meshoffset+worldmatrix43
-			const uint32 MeshOffset = *reinterpret_cast<const uint32*>(&pInstance[0]);
+
 			const float* pWorldMat = reinterpret_cast<const float*>(&pInstance[4]);
 			memcpy(&World, (void*)pWorldMat, 12 * sizeof(float));
 			Vec3 Pos = World.GetTranslation(), Extend;
@@ -573,9 +573,7 @@ void CCullThread::PrepareOcclusion()
 
 void CCullThread::PrepareOcclusion_ReprojectZBuffer()
 {
-
 	int bHWZBuffer = GetCVars()->e_CoverageBufferReproj;
-	int PolyLimit = GetCVars()->e_CoverageBufferRastPolyLimit;
 
 	if (bHWZBuffer > 3 && m_OCMBuffer.empty())
 		bHWZBuffer = 2;
@@ -703,11 +701,8 @@ void CCullThread::CheckOcclusion()
 	Matrix44A& RESTRICT_REFERENCE rMatFinalT = reinterpret_cast<Matrix44A*>(pBuffer)[1];
 
 	const Vec3 cameraPosition = m_passInfoForCheckOcclusion.GetCamera().GetPosition();
-	const AABB PosAABB = AABB(m_Position, 0.5f);
-	const float Bias = GetCVars()->e_CoverageBufferAABBExpand;
 	const float TerrainBias = GetCVars()->e_CoverageBufferTerrainExpand;
 	rMatFinalT = m_MatScreenViewProj.GetTransposed();
-	bool bEnabled = m_Enabled;
 
 	while (1)
 	{

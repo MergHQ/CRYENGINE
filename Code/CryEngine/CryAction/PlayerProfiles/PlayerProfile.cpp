@@ -291,7 +291,7 @@ bool CPlayerProfile::SerializeXML(CPlayerProfileManager::IProfileXMLSerializer* 
 			int requiredVersion = 0;
 			if (IsDefault() == false && pDefaultProfile)
 				requiredVersion = pDefaultProfile->m_attributesVersion;
-			bool ok = LoadAttributes(attributesNode, requiredVersion);
+			LoadAttributes(attributesNode, requiredVersion);
 		}
 		else
 		{

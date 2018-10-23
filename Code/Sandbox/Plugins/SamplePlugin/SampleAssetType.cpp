@@ -4,7 +4,7 @@
 #include "SampleAssetType.h"
 
 #include <AssetSystem/AssetEditor.h>
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 
 REGISTER_ASSET_TYPE(CSampleAssetType)
 

@@ -1472,8 +1472,6 @@ static inline void UpdateGeneralTangents(
 	DualQuatA wq[4];
 	__m128 _wq[4 * 2];
 	__m128 nq_len[4];
-	__m128 ot[4];
-	__m128 vOne = _mm_set1_ps(1.f);
 	int16 flip[4];
 	__m128 vweights[4];
 	__m128 vw[4];
@@ -1790,9 +1788,7 @@ static inline void UpdateGeneralTangentsNormals(
 	__m128 _wq[4 * 2];
 	__m128 vweights[4], vw[4];
 	__m128 nq_len[4];
-	__m128 vOne = _mm_set1_ps(1.f);
 	int16 flip[4];
-	__m128 ot[4];
 	CRY_ALIGN(16) Quat out_tangents[4];
 	CRY_ALIGN(16) Quat in_tangents[4];
 	#if MMRM_UNROLL_GEOMETRY_BAKING_LOOPS
@@ -2121,9 +2117,7 @@ static inline void UpdateGeneralTangents(
 	__m128 _wq[4 * 2];
 	__m128 vweights[4], vw[4];
 	__m128 nq_len[4];
-	__m128 vOne = _mm_set1_ps(1.f);
 	int16 flip[4];
-	__m128 ot[4];
 	CRY_ALIGN(16) Quat out_tangents[4];
 	CRY_ALIGN(16) Quat in_tangents[4];
 	#if MMRM_UNROLL_GEOMETRY_BAKING_LOOPS
@@ -2441,9 +2435,7 @@ static inline void UpdateGeneralTangentsNormals(
 	__m128 _wq[4 * 2];
 	__m128 vweights[4], vw[4];
 	__m128 nq_len[4];
-	__m128 vOne = _mm_set1_ps(1.f);
 	int16 flip[4];
-	__m128 ot[4];
 	CRY_ALIGN(16) Quat out_tangents[4];
 	CRY_ALIGN(16) Quat in_tangents[4];
 	#if MMRM_UNROLL_GEOMETRY_BAKING_LOOPS
@@ -3160,7 +3152,7 @@ Vec3 SampleWind(const Vec3 pos, const Vec3 (&samples)[(MMRM_WIND_DIM)][(MMRM_WIN
 	float pz = clamp_tpl(pos.z, 0.f, 1.f - FLT_EPSILON) * (MMRM_WIND_DIM - 1);
 	float ftix(floorf(px)), ftiy(floorf(py)), ftiz(floorf(pz));
 	float fx = px - ftix, fy = py - ftiy, fz = pz - ftiz;
-	int d = MMRM_WIND_DIM, ix = static_cast<int>(ftix), iy = static_cast<int>(ftiy), iz = static_cast<int>(ftiz);
+	int ix = static_cast<int>(ftix), iy = static_cast<int>(ftiy), iz = static_cast<int>(ftiz);
 
 	result += samples[ix][iy][iz] * (1.f - fz) * (1.f - fy) * (1.f - fx);
 	result += samples[ix + 1][iy][iz] * (1.f - fz) * (1.f - fy) * (fx);
@@ -3206,7 +3198,6 @@ static void TraceWindSample(const Vec3& offs, const Vec3& dw, const SMMRMInstanc
 		ColorB col1;
 		col1.lerpFloat(Col_Blue, Col_Red, (ui + 1) / 16.f);
 		const Vec3& pos = trace_pos;
-		const Vec3& vel = trace_vel;
 		const Vec3& size = context.max - context.min;
 
 		Vec3 realpos;
@@ -3285,11 +3276,17 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 	Matrix34A wmat, smat, iwmat, tmat;
 	const float fExtents = c_MergedMeshesExtent;
 	const aVec3 origin = context.min;
-	int iter = 0, max_iter = context.max_iter, frame_id = update->frame_count;
-	float c = 0, d = 0, iwsum = 0, dt = 0.f, dtcur = 0.f, dttot = context.dt, dtscale = context.dtscale, abstime = context.abstime
+	int iter = 0, max_iter = context.max_iter;
+	float c = 0, dt = 0.f, dtcur = 0.f, dttot = context.dt
 	, airResistance = update->group->physConfig.airResistance
 	, damping = update->group->physConfig.fDamping
-	, w[3] = { 0 }
+#if MMRM_SPINE_HEIGHT_BENDING || !MMRM_USE_VECTORIZED_SSE_INSTRUCTIONS
+	, d = 0.0f
+	, iwsum = 0.0f
+#endif
+#if MMRM_SPINE_HEIGHT_BENDING
+	, w[3] = { 0.0f }
+#endif
 	, kH = update->group->physConfig.kH
 	, kL = 1.f / (float)max_iter
 	, plasticity = 0.f
@@ -3300,16 +3297,25 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 	, rdt;
 	aVec3 sample_pos, geom_ctr = geom->aabb.GetCenter();
 	Vec3 its[2];
-	Vec3A ctr, offs, disp, ndisp, dw, dw0, dir[2], dirO[2], bending[3];
+	Vec3A ctr
+		, offs
+		, disp
+		, ndisp
+		, dw
+		, dw0
+#if MMRM_SPINE_HEIGHT_BENDING
+		, bending[3]
+#endif
+		, dir[2]
+		, dirO[2];
+
 	DualQuatA wq;
 	aQuat qrot;
 #if MMRM_USE_VECTORIZED_SSE_INSTRUCTIONS
-	const vec4 vSignMask = NVMath::Vec4(31u, 31u, 31u, 31u), vEpsilon = NVMath::Vec4Epsilon();
+	const vec4 vEpsilon = NVMath::Vec4Epsilon();
 	const vec4 vW = NVMath::Vec4(0.f, 0.f, 0.f, 1.f);
-	const vec4 vCvt = NVMath::Vec4((float)(1 << 8)), vRcvt = NVMath::Vec4(1.f / (float)(1 << 8));
 	const vec4 viwsum = NVMath::Vec4(1.f / 2.f), vOne = NVMath::Vec4One(), vZero = NVMath::Vec4Zero();
-	const vec4 vHalf = NVMath::Vec4(0.5f), vNegOne = NVMath::Vec4(-1.f);
-	const vec4 vMin = NVMath::Vec4(-127.f), vMax = NVMath::Vec4(128.f);
+	const vec4 vHalf = NVMath::Vec4(0.5f);
 	const vec4 vAR = NVMath::Vec4(airResistance), vDamping = NVMath::Vec4(damping), vGrav = NVMath::Vec4(0.f, 0.f, -9.81f, 0.f);
 #endif
 #if MMRM_USE_VECTORIZED_SSE_INSTRUCTIONS
@@ -3365,7 +3371,7 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 			iter = 0, max_iter = context.max_iter;
 		}
 #if MMRM_USE_VECTORIZED_SSE_INSTRUCTIONS
-		const vec4 vScale = NVMath::Vec4(fScale), rvScale = NVMath::Vec4(rScale);
+		const vec4 vScale = NVMath::Vec4(fScale);
 		const vec4 vDW = NVMath::Vec4(dw.x, dw.y, dw.z, 0.f);
 #endif
 #if MMRM_USE_VECTORIZED_SSE_INSTRUCTIONS
@@ -3573,7 +3579,7 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 										Lineseg spine(npt[off + l], npt[off + l + 1]);
 										if ((distanceSq = Distance::Lineseg_LinesegSq(spine, pl, &t0, &t1)) > radiusSq)
 											continue;
-										Vec3 spt = spine.GetPoint(t0);
+
 										Vec3 plpt = pl.GetPoint(t1) + projectile.dir * projectile.r * (1.0f - (distanceSq / radiusSq));
 										IF (contacts[l].i < 0 && l > 0, 1)
 										{
@@ -3967,7 +3973,7 @@ static inline void MergeInstanceListDeform(SMMRMInstanceContext& context)
 	const float fExtents = c_MergedMeshesExtent;
 	const Vec3 origin = context.min;
 	Quat qr;
-	float c = 0, d = 0, w[3] = { 0 }, iwsum = 0, dt = 0.0f, dtcur = 0.f, dttot = context.dt, abstime = context.abstime
+	float d = 0, w[3] = { 0 }, iwsum = 0, dt = 0.0f, dtcur = 0.f, dttot = context.dt, abstime = context.abstime
 	, airResistance = update->group->physConfig.airResistance
 	, airModulation = update->group->physConfig.airModulation
 	, airFrequency = update->group->physConfig.airFrequency
@@ -4289,7 +4295,7 @@ void SMMRMUpdateContext::MergeInstanceMeshesDeform(
 	size_t j = 0;
 	const size_t nsamples = header->numSamples;
 	SMMRMInstance* samples = header->instances;
-	SMMRMSpineVtxBase* spines = header->spines;
+
 #if MMRM_USE_BOUNDS_CHECK
 	mmrm_assert(CryInterlockedIncrement(const_cast<volatile int*>(&header->debugLock)) == 1);
 #endif
@@ -4559,7 +4565,6 @@ void CMergedMeshRenderNode::CalculateDensity()
 		}
 
 		const AABB& aabb = geom->aabb;
-		const Vec3& centre = aabb.GetCenter();
 		const Vec3& size = aabb.GetSize() * 0.5f;
 
 		const size_t numSamples = (header->instances ? header->numSamples : 0);
@@ -4598,8 +4603,6 @@ void CMergedMeshRenderNode::CalculateDensity()
 
 void CMergedMeshRenderNode::InitializeSamples(float fExtents, const uint8* pBuffer)
 {
-	Vec3 vInternalAABBMin = m_internalAABB.min;
-	size_t stepcount = 0u;
 	for (size_t i = 0; i < m_nGroups; ++i)
 	{
 		SMMRMGroupHeader* header = &m_groups[i];

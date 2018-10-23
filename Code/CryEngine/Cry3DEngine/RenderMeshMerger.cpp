@@ -35,11 +35,6 @@ int CRenderMeshMerger::Cmp_Materials(IMaterial* pMat1, IMaterial* pMat2)
 	SShaderItem& shaderItem1 = pMat1->GetShaderItem();
 	SShaderItem& shaderItem2 = pMat2->GetShaderItem();
 
-#ifdef _DEBUG
-	const char* pName1 = shaderItem1.m_pShader->GetName();
-	const char* pName2 = shaderItem2.m_pShader->GetName();
-#endif
-
 	// vert format
 	InputLayoutHandle nVertFormat1 = shaderItem1.m_pShader->GetVertexFormat();
 	InputLayoutHandle nVertFormat2 = shaderItem2.m_pShader->GetVertexFormat();
@@ -234,8 +229,6 @@ void CRenderMeshMerger::MakeListOfAllCRenderChunks(SMergeInfo& info)
 		Vec3 vMin, vMax;
 		pRM->GetBBox(vMin, vMax);
 
-		// get indices
-		uint32 nIndCount = pRM->GetIndicesCount();
 		vtx_idx* pSrcInds = pRM->GetIndexPtr(FSL_READ);
 
 		Vec3 vOSPos(0, 0, 0);
@@ -259,7 +252,7 @@ void CRenderMeshMerger::MakeListOfAllCRenderChunks(SMergeInfo& info)
 		CRenderChunk Ch = newMatInfo;
 		for (uint32 i = Ch.nFirstIndexId; i < Ch.nFirstIndexId + Ch.nNumIndices; i++)
 		{
-			assert(i >= 0 && i < nIndCount);
+			assert(i >= 0 && i < pRM->GetIndicesCount());
 			assert(pSrcInds[i] >= Ch.nFirstVertId && pSrcInds[i] < Ch.nFirstVertId + Ch.nNumVerts);
 			assert((int)pSrcInds[i] < pRM->GetVerticesCount());
 		}
@@ -1392,8 +1385,6 @@ void CRenderMeshMerger::MergeBuffersImpl(AABB* pBounds, SMergeBuffersData* _arrM
 			bMatrixHasRotation = false;
 		else
 			bMatrixHasRotation = true;
-
-		Vec3 vOffset = rMatrix.GetTranslation();
 
 		IRenderMesh* pRM = pRMI->pMesh;
 

@@ -2,12 +2,13 @@
 
 #include "stdafx.h"
 #include "MannTagEditorDialog.h"
-#include "MannequinDialog.h"
-#include "MannTagDefEditorDialog.h"
-#include <ICryMannequinEditor.h>
-#include <CryGame/IGameFramework.h>
+
 #include "Controls/QuestionDialog.h"
-#include "FilePathUtil.h"
+#include "MannTagDefEditorDialog.h"
+#include "MannequinDialog.h"
+#include <CryGame/IGameFramework.h>
+#include <ICryMannequinEditor.h>
+#include <PathUtils.h>
 
 enum
 {

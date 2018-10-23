@@ -2603,7 +2603,7 @@ private:
 
 	uint32 m_nRenderingFlags = 0;
 
-	float  m_fZoomFactor = 0.0f;
+	float  m_fZoomFactor = 1.0f;
 
 	uint32 m_nRenderMainFrameID = 0;
 

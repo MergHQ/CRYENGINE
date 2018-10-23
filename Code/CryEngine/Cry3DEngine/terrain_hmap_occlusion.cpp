@@ -60,8 +60,6 @@ bool CTerrain::IsBoxOccluded
 	// when camera is underground - number of steps allowed to skip
 	int nMaxTestsToScip = (GetVisAreaManager()->m_pCurPortal) ? 3 : 10000;
 
-	CVars* const __restrict pCVars = GetCVars();
-
 	// density of tests in meters for this object
 	float fMaxStep = fDistance * GetFloatCVar(e_TerrainOcclusionCullingPrecision);
 

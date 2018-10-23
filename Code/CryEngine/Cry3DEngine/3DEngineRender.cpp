@@ -843,10 +843,6 @@ void C3DEngine::RenderWorld(const int nRenderFlags, const SRenderingPassInfo& pa
 		return;
 	}
 
-#ifdef ENABLE_LW_PROFILERS
-	int64 renderStart = CryGetTicks();
-#endif
-
 	if (passInfo.IsGeneralPass())
 	{
 		if (GetCVars()->e_ScreenShot)
@@ -2180,7 +2176,6 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 	const int iDisplayResolutionY = pAux->GetCamera().GetViewSurfaceZ();
 	const float fDisplayMarginRes = 5.0f;
 	const float fDisplayMarginNormX = (float)fDisplayMarginRes / (float)iDisplayResolutionX;
-	const float fDisplayMarginNormY = (float)fDisplayMarginRes / (float)iDisplayResolutionY;
 	Vec2 overscanBorderNorm = Vec2(0.0f, 0.0f);
 	gEnv->pRenderer->EF_Query(EFQ_OverscanBorders, overscanBorderNorm);
 
@@ -3460,7 +3455,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 			if (pRenderTexture && gEnv->pRenderer)
 			{
 				// TODO: relative/normalized coordinate system in screen-space
-				float vpWidth = (float)gEnv->pRenderer->GetOverlayWidth(), vpHeight = (float)gEnv->pRenderer->GetOverlayHeight();
+				//float vpWidth = (float)gEnv->pRenderer->GetOverlayWidth(), vpHeight = (float)gEnv->pRenderer->GetOverlayHeight();
 				float iconWidth = (float)nIconSize /* / vpWidth * 800.0f */;
 				float iconHeight = (float)nIconSize /* / vpHeight * 600.0f */;
 				IRenderAuxImage::Draw2dImage(

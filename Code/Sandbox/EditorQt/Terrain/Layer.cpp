@@ -2,13 +2,14 @@
 
 #include "StdAfx.h"
 #include "Terrain/Layer.h"
+
 #include "Terrain/TerrainGrid.h"
 #include "Terrain/TerrainManager.h"
 
-#include "Controls/QuestionDialog.h"
-#include "Preferences/ViewportPreferences.h"
-#include "FilePathUtil.h"
-#include "CryEditDoc.h"
+#include <Controls/QuestionDialog.h>
+#include <CryEditDoc.h>
+#include <PathUtils.h>
+#include <Preferences/ViewportPreferences.h>
 
 #include <CryMemory/CrySizer.h>
 

@@ -31,9 +31,10 @@
 
 #include <Util/IndexedFiles.h>
 
-#include <Notifications/NotificationCenter.h>
-#include <FilePathUtil.h>
+#include <FileUtils.h>
 #include <ModelViewport.h>
+#include <Notifications/NotificationCenter.h>
+#include <PathUtils.h>
 #include <QFullScreenWidget.h>
 
 #include <CrySandbox/IEditorGame.h>
@@ -1352,7 +1353,7 @@ CRY_TEST(EditorCreateLevelTest, editor = true, game = false, timeout = 60.f)
 	{
 		char szFullPathBuf[ICryPak::g_nMaxPath];
 		const char* szFullPath = gEnv->pCryPak->AdjustFileName("examplelevel", szFullPathBuf, ICryPak::FOPEN_ONDISK);
-		PathUtil::RemoveDirectory(szFullPath);
+		FileUtils::RemoveDirectory(szFullPath);
 
 		gEnv->pCryPak->RemoveFile("examplelevel.level.cryasset");
 	};

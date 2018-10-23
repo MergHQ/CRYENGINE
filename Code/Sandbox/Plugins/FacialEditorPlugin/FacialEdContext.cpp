@@ -15,7 +15,7 @@
 #include <CryCore/StlUtils.h>
 #include <CrySystem/File/IAVI_Reader.h>
 #include "Controls/QuestionDialog.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include "IUndoObject.h"
 
 //////////////////////////////////////////////////////////////////////////

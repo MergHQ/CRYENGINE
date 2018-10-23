@@ -7,10 +7,11 @@
 #include "AssetReverseDependenciesDialog.h"
 #include "AssetSystem/Asset.h"
 #include "AssetSystem/AssetManager.h"
-
-#include "FilePathUtil.h"
+#include "PathUtils.h"
+#include "QThumbnailView.h"
 #include "QtUtil.h"
-#include "CryString/CryPath.h"
+
+#include <CryString/CryPath.h>
 
 #include <QDesktopServices>
 #include <QUrl>
@@ -136,6 +137,8 @@ QVariant CAssetFoldersModel::data(const QModelIndex& index, int role) const
 			else
 				return folder->m_name;
 		case Qt::DecorationRole:
+			// falls through
+		case QThumbnailsView::s_ThumbnailRole:
 			return CryIcon("icons:General/Folder.ico");
 		case (int)CAssetModel::Roles::TypeCheckRole:
 			return (int)EAssetModelRowType::eAssetModelRow_Folder;
@@ -145,6 +148,8 @@ QVariant CAssetFoldersModel::data(const QModelIndex& index, int role) const
 			return GetPrettyPath(GetPath(folder));
 		case (int)CAssetModel::Roles::InternalPointerRole:
 			return reinterpret_cast<intptr_t>(folder);
+		case QThumbnailsView::s_ThumbnailBackgroundColorRole:
+			return QColor(0x73, 0x73, 0x73);
 		default:
 			return QVariant();
 		}

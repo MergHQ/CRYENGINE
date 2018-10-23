@@ -1,13 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include "StdAfx.h"
-#include "VersionControl.h"
 #include "AssetFilesProvider.h"
-#include "FilePathUtil.h"
-#include "QtUtil.h"
-#include "AssetSystem/IFilesGroupProvider.h"
+
 #include "AssetSystem/AssetFilesGroupProvider.h"
-#include "Objects/IObjectLayer.h"
+#include "AssetSystem/IFilesGroupProvider.h"
+#include "FileUtils.h"
 #include "LevelEditor/LayerFileGroupProvider.h"
+#include "Objects/IObjectLayer.h"
+#include "PathUtils.h"
+#include "QtUtil.h"
+#include "VersionControl.h"
+
 #include <QFileInfo>
 
 namespace Private_AssetFileProvider
@@ -24,7 +27,7 @@ void ReplaceFoldersWithContent(std::vector<string>& files, std::vector<string>& 
 		if (info.isDir())
 		{
 			files.erase(files.begin() + i);
-			std::vector<string> dirsContent = PathUtil::GetDirectorysContent(qPath);
+			std::vector<string> dirsContent = FileUtils::GetDirectorysContent(qPath);
 			outputFiles.reserve(outputFiles.size() + dirsContent.size());
 			std::move(dirsContent.begin(), dirsContent.end(), std::back_inserter(outputFiles));
 		}
@@ -33,7 +36,7 @@ void ReplaceFoldersWithContent(std::vector<string>& files, std::vector<string>& 
 
 void InsertAssetFilePaths(const CAsset& asset, std::vector<string>& outputFiles, EInclude include, bool shouldReplaceFoldersWithContent)
 {
-	if (PathUtil::IsFileInPakOnly(asset.GetMetadataFile()))
+	if (FileUtils::IsFileInPakOnly(asset.GetMetadataFile()))
 	{
 		return;
 	}
@@ -67,7 +70,7 @@ void InsertAssetFilePaths(const CAsset& asset, std::vector<string>& outputFiles,
 void InsertLayerFilePaths(const IObjectLayer& layer, std::vector<string>& outputFiles, EInclude include)
 {
 	const string mainFile = layer.GetLayerFilepath();
-	if (PathUtil::IsFileInPakOnly(mainFile))
+	if (FileUtils::IsFileInPakOnly(mainFile))
 	{
 		return;
 	}
@@ -91,7 +94,7 @@ void InsertLayerFilePaths(const IObjectLayer& layer, std::vector<string>& output
 
 void InsertFileGroupPaths(const IFilesGroupProvider& fileGroup, std::vector<string>& outputFiles, EInclude include)
 {
-	if (PathUtil::IsFileInPakOnly(fileGroup.GetMainFile()))
+	if (FileUtils::IsFileInPakOnly(fileGroup.GetMainFile()))
 	{
 		return;
 	}

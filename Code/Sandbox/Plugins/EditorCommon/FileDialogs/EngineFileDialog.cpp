@@ -4,15 +4,15 @@
 
 #include "Controls/QMenuComboBox.h"
 #include "Controls/QuestionDialog.h"
+#include "EditorStyleHelper.h"
 #include "FileDialogs/FileNameLineEdit.h"
 #include "FileDialogs/FilePopupMenu.h"
-#include "FileDialogs/Internal/SelectExtensionDialog.h"
 #include "FileDialogs/Internal/FilePreviewContainer.h"
+#include "FileDialogs/Internal/SelectExtensionDialog.h"
 #include "FileSystem/FileListModel.h"
 #include "FileSystem/FileSortProxyModel.h"
 #include "FileSystem/FileTreeModel.h"
-#include "EditorStyleHelper.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include "QAdvancedItemDelegate.h"
 
 #include <CryIcon.h>

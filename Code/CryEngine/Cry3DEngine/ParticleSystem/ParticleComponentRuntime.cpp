@@ -466,13 +466,13 @@ void CParticleComponentRuntime::CalculateBounds()
 
 	IVec3Stream positions = m_container.GetIVec3Stream(EPVF_Position);
 	IFStream sizes = m_container.GetIFStream(EPDT_Size);
-	const floatv fMin = ToFloatv(std::numeric_limits<float>::max());
-	const floatv fMax = ToFloatv(-std::numeric_limits<float>::max());
 	const Slope<float> slope = ComponentParams().m_physicalSizeSlope;
 
 	SUpdateRange range = m_container.GetFullRange();
 
 #ifdef CRY_PFX2_USE_SSE
+	const floatv fMin = ToFloatv(std::numeric_limits<float>::max());
+	const floatv fMax = ToFloatv(-std::numeric_limits<float>::max());
 	Vec3v bbMin = Vec3v(fMin, fMin, fMin);
 	Vec3v bbMax = Vec3v(fMax, fMax, fMax);
 
@@ -583,7 +583,7 @@ void CParticleComponentRuntime::DebugStabilityCheck()
 	{
 		for (auto particleId : SpawnedRange())
 		{
-			TParticleId parentId = parentIds.Load(particleId);
+			parentIds.Load(particleId);
 			CRY_PFX2_ASSERT(parentIds.Load(particleId) != gInvalidId);      // recently spawn particles are not supposed to be orphan
 		}
 	}

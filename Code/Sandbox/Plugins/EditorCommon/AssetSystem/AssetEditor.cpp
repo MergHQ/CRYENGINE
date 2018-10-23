@@ -2,19 +2,20 @@
 #include "StdAfx.h"
 #include "AssetEditor.h"
 
+#include "AssetFilesGroupProvider.h"
 #include "AssetManager.h"
-#include "FileOperationsExecutor.h"
 #include "AssetType.h"
-#include "EditableAsset.h"
-#include "Loader/AssetLoaderHelpers.h"
 #include "Browser/AssetBrowserDialog.h"
-#include "Controls/SingleSelectionDialog.h"
 #include "Controls/QuestionDialog.h"
-#include "QtUtil.h"
-#include "FilePathUtil.h"
+#include "Controls/SingleSelectionDialog.h"
 #include "CryExtension/CryGUID.h"
 #include "DragDrop.h"
-#include "AssetFilesGroupProvider.h"
+#include "EditableAsset.h"
+#include "FileOperationsExecutor.h"
+#include "FileUtils.h"
+#include "Loader/AssetLoaderHelpers.h"
+#include "PathUtils.h"
+#include "QtUtil.h"
 #include "ThreadingUtils.h"
 
 #include <QCloseEvent>
@@ -811,7 +812,7 @@ bool CAssetEditor::SaveBackup(const string& backupFolder)
 		CRY_ASSERT(strncmp(file.c_str(), assetsRoot.c_str(), assetsRoot.size()));
 		CryPathString destFile = PathUtil::Make(backupFolder.c_str(), file.c_str() + assetsRoot.size());
 		pCryPak->MakeDir(PathUtil::GetDirectory(destFile.c_str()));
-		PathUtil::MoveFileAllowOverwrite(file.c_str(), destFile.c_str());
+		FileUtils::MoveFileAllowOverwrite(file.c_str(), destFile.c_str());
 	}
 	
 	// tempCopy restores asset files.

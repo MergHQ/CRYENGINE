@@ -634,7 +634,6 @@ bool CActionGame::Init(const SGameStartParams* pGameStartParams)
 void CActionGame::ServerInit(const SGameStartParams* pGameStartParams, bool* io_ok, bool* io_hasPbSvStarted)
 {
 	bool& ok = *io_ok;
-	bool& hasPbSvStarted = *io_hasPbSvStarted;
 
 	CRY_ASSERT(m_pGameContext->GetServerPort() != 0);
 
@@ -642,6 +641,7 @@ void CActionGame::ServerInit(const SGameStartParams* pGameStartParams, bool* io_
 	if (CCryAction::GetCryAction()->IsPbSvEnabled() && gEnv->bMultiplayer)
 	{
 		gEnv->pNetwork->StartupPunkBuster(true);
+		bool& hasPbSvStarted = *io_hasPbSvStarted;
 		hasPbSvStarted = true;
 	}
 #endif
@@ -683,10 +683,10 @@ void CActionGame::ServerInit(const SGameStartParams* pGameStartParams, bool* io_
 void CActionGame::ClientInit(const SGameStartParams* pGameStartParams, bool* io_ok, bool* io_hasPbSvStarted, bool* io_requireBlockingConnection)
 {
 	bool& ok = *io_ok;
-	bool& hasPbSvStarted = *io_hasPbSvStarted;
 	bool& clientRequiresBlockingConnection = *io_requireBlockingConnection;
 
 #ifdef __WITH_PB__
+	bool& hasPbSvStarted = *io_hasPbSvStarted;
 	if (hasPbSvStarted || CCryAction::GetCryAction()->IsPbClEnabled() && gEnv->bMultiplayer)
 		gEnv->pNetwork->StartupPunkBuster(false);
 #endif
@@ -934,7 +934,6 @@ bool CActionGame::BlockingSpawnPlayer()
 		return false;
 	if (pChannelMap->size() != 1)
 		return false;
-	CGameServerChannel* pChannel = pChannelMap->begin()->second;
 
 	m_pGameContext->AllowCallOnClientConnect();
 
@@ -1032,12 +1031,13 @@ bool CActionGame::BlockingConnect(BlockingConditionFunction condition, bool requ
 			GameWarning("BlockingConnect: It's taken %.2f seconds to achieve condition '%s' - either you're on slow connection, or you're doing something intensive", numSecondsTaken, conditionText);
 		}
 	}
-
+#if !defined(EXCLUDE_NORMAL_LOG)
 	if (ok == false)
 	{
 		float numSecondsTaken = (pTimer->GetAsyncTime() - startTime).GetSeconds();
 		CryLog("BlockingConnect: Failed to achieve condition '%s' (tried for %.2f seconds)", conditionText, numSecondsTaken);
 	}
+#endif
 
 	return ok;
 }
@@ -2629,8 +2629,6 @@ void CActionGame::OnCollisionLogged_Breakable(const EventPhys* pEvent)
 	CRY_PROFILE_FUNCTION(PROFILE_ACTION);
 
 	const EventPhysCollision* pCEvent = (const EventPhysCollision*) pEvent;
-	IEntity* pEntitySrc = pCEvent->pEntity[0] ? (IEntity*)pCEvent->pEntity[0]->GetForeignData(PHYS_FOREIGN_ID_ENTITY) : 0;
-	IEntity* pEntityTrg = pCEvent->pEntity[1] ? (IEntity*)pCEvent->pEntity[1]->GetForeignData(PHYS_FOREIGN_ID_ENTITY) : 0;
 
 	ISurfaceTypeManager* pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
 	ISurfaceType* pMat = pSurfaceTypeManager->GetSurfaceType(pCEvent->idmat[1]), * pMat0;
@@ -2638,11 +2636,7 @@ void CActionGame::OnCollisionLogged_Breakable(const EventPhys* pEvent)
 	float energy, hitenergy;
 
 	Vec3 vloc0 = pCEvent->vloc[0];
-	Vec3 vloc1 = pCEvent->vloc[1];
-
 	float mass0 = pCEvent->mass[0];
-
-	bool backface = (pCEvent->n.Dot(vloc0) >= 0.0f);
 
 	if (pMat)
 	{
@@ -2821,7 +2815,9 @@ void CActionGame::OnCollisionLogged_MaterialFX(const EventPhys* pEvent)
 	}
 	// --- Begin Material Effects Code ---
 	// Relative velocity, adjusted to be between 0 and 1 for sound effect parameters.
+#if !defined(EXCLUDE_NORMAL_LOG)
 	const int debug = CMaterialEffectsCVars::Get().mfx_Debug & 0x1;
+#endif
 
 	float impactVelSquared = (vloc0 - vloc1).GetLengthSquared();
 
@@ -2830,7 +2826,6 @@ void CActionGame::OnCollisionLogged_MaterialFX(const EventPhys* pEvent)
 
 	// Relative mass, also adjusted to fit into sound effect parameters.
 	// 100.0 is very heavy, the top end for the mass parameter.
-	float adjustedRelativeMass = (float)min(1.0f, fabsf(mass0 - pCEvent->mass[1]) * 0.01f);
 
 	const float particleImpactThresh = CMaterialEffectsCVars::Get().mfx_ParticleImpactThresh;
 	float partImpThresh = particleImpactThresh;
@@ -2858,7 +2853,9 @@ void CActionGame::OnCollisionLogged_MaterialFX(const EventPhys* pEvent)
 		IEntity* pEntityTrg = GetEntity(pCEvent->iForeignData[1], pCEvent->pForeignData[1]);
 
 		TMFXEffectId effectId = InvalidEffectId;
+#if !defined(_RELEASE)
 		const int defaultSurfaceIndex = pMaterialEffects->GetDefaultSurfaceIndex();
+#endif
 
 		SMFXRunTimeEffectParams params;
 		params.src = pEntitySrc ? pEntitySrc->GetId() : 0;
@@ -3092,7 +3089,7 @@ void CActionGame::OnCollisionLogged_MaterialFX(const EventPhys* pEvent)
 			{
 				pMaterialEffects->ExecuteEffect(effectId, params);
 			}
-
+#if !defined(EXCLUDE_NORMAL_LOG)
 			if (debug != 0)
 			{
 				pEntitySrc = GetEntity(pCEvent->iForeignData[0], pCEvent->pForeignData[0]);
@@ -3118,9 +3115,11 @@ void CActionGame::OnCollisionLogged_MaterialFX(const EventPhys* pEvent)
 				CryLogAlways("      : Mat1=%s", pSurfaceTypeManager->GetSurfaceType(pCEvent->idmat[1])->GetName());
 				CryLogAlways("impact-speed=%f fx-threshold=%f mass=%f speed=%f", sqrtf(impactVelSquared), partImpThresh, finalparam, adjustedRelativeVelocity);
 			}
+#endif
 		}
 		else
 		{
+#if !defined(EXCLUDE_NORMAL_LOG)
 			if (debug != 0)
 			{
 				pEntitySrc = GetEntity(pCEvent->iForeignData[0], pCEvent->pForeignData[0]);
@@ -3145,6 +3144,7 @@ void CActionGame::OnCollisionLogged_MaterialFX(const EventPhys* pEvent)
 				CryLogAlways("      : Mat0=%s", pSurfaceTypeManager->GetSurfaceType(pCEvent->idmat[0])->GetName());
 				CryLogAlways("      : Mat1=%s", pSurfaceTypeManager->GetSurfaceType(pCEvent->idmat[1])->GetName());
 			}
+#endif
 		}
 	}
 	else
@@ -4667,7 +4667,6 @@ void CActionGame::FixBrokenObjects(bool bRestoreBroken)
 					pEnt->Hide(false);
 					if (m_brokenObjs[i].islot >= 0)
 					{
-						IStatObj* pStatObj = pEnt->GetStatObj(m_brokenObjs[i].islot);
 						pEnt->SetStatObj(m_brokenObjs[i].pStatObjOrg, m_brokenObjs[i].islot, true);
 					}
 					else if (m_brokenObjs[i].pStatObjOrg)

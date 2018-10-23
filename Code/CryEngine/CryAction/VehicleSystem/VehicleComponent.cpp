@@ -455,13 +455,13 @@ void CVehicleComponent::Serialize(TSerialize ser, EEntityAspects aspects)
 	{
 		ser.Value("damage", m_damage);
 
-		if (ser.IsReading())
+		/*if (ser.IsReading())
 		{
 			float damageRatio = 1.0f;
 			if (m_pSharedParams->damageMax > 0.0f)
 				damageRatio = m_damage / m_pSharedParams->damageMax;
 			int damageLevel = int(min(damageRatio, 1.0f) / 0.25f);
-		}
+		}*/
 
 		for (TVehicleDamageBehaviorVector::iterator ite = m_damageBehaviors.begin(); ite != m_damageBehaviors.end(); ++ite)
 		{

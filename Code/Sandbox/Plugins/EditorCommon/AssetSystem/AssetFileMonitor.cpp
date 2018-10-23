@@ -2,10 +2,11 @@
 
 #include "StdAfx.h"
 #include "AssetFileMonitor.h"
+
+#include "AssetSystem/AssetManager.h"
 #include "Loader/AssetLoaderBackgroundTask.h"
 #include "Loader/AssetLoaderHelpers.h"
-#include "AssetSystem/AssetManager.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include "QtUtil.h"
 
 #include <CrySystem/File/ICryPak.h>

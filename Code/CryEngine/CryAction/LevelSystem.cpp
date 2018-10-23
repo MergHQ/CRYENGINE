@@ -1634,10 +1634,8 @@ ILevelInfo* CLevelSystem::LoadLevel(const char* _levelName)
 	{
 		return nullptr;
 	}
-
-	ILevelInfo* pResult = slicer.GetResult();
 	
-	CRY_ASSERT(pResult == m_pCurrentLevelInfo);
+	CRY_ASSERT(slicer.GetResult() == m_pCurrentLevelInfo);
 
 	return m_pCurrentLevelInfo;
 }
@@ -2213,7 +2211,9 @@ void CLevelSystem::UnLoadLevel()
 	CryLog("UnLoadLevel Start");
 	INDENT_LOG_DURING_SCOPE();
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	CTimeValue tBegin = gEnv->pTimer->GetAsyncTime();
+#endif
 
 	if (m_pLevelLoadTimeslicer)
 	{
@@ -2409,8 +2409,10 @@ void CLevelSystem::UnLoadLevel()
 
 	m_bLevelLoaded = false;
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	CTimeValue tUnloadTime = gEnv->pTimer->GetAsyncTime() - tBegin;
 	CryLog("UnLoadLevel End: %.1f sec", tUnloadTime.GetSeconds());
+#endif
 
 	// Must be sent last.
 	// Cleanup all containers

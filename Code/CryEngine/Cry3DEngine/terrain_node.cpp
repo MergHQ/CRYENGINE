@@ -53,8 +53,6 @@ CTerrainNode* CTerrainNode::GetTexuringSourceNode(int nTexMML, eTexureType eTexT
 
 CTerrainNode* CTerrainNode::GetReadyTexSourceNode(int nTexMML, eTexureType eTexType)
 {
-	Vec3 vSunDir = Get3DEngine()->GetSunDir().normalized();
-
 	CTerrainNode* pTexSourceNode = this;
 	while (pTexSourceNode)
 	{
@@ -512,8 +510,6 @@ void CTerrainNode::UpdateNodeTextureFromEditorData()
 	}
 
 	float sectorSizeM = GetBBox().GetSize().x;
-
-	int smallestEditorTileSizeM = GetTerrain()->GetTerrainSize() / 16;
 
 	ColorB* colors = (ColorB*)alloca(sizeof(ColorB) * texDim);
 

@@ -43,7 +43,6 @@ bool CLookAtSimple::Execute(const SAnimationPoseModifierParams& params)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION);
 
-	const IDefaultSkeleton& rIDefaultSkeleton = params.GetIDefaultSkeleton();
 	const QuatT& transformation = params.pPoseData->GetJointAbsolute(m_stateExecute.jointId);
 
 	Vec3 offsetAbsolute = m_stateExecute.jointOffsetRelative * transformation.q;

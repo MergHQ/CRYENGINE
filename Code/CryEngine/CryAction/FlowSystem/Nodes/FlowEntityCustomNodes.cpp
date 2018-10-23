@@ -701,7 +701,6 @@ public:
 				if (oldJointId != desiredJointId)
 				{
 					// If it's not on the right joint and we created it, then we can destroy it.
-					EntityId currentEntityId = m_actInfo.pEntity->GetId();
 					const string& currentAttachmentName = m_currentAttachmentName;
 					if (attachmentRegistry.OwnsAttachment(m_actInfo.pEntity->GetId(), currentAttachmentName))
 					{

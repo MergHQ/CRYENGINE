@@ -6,7 +6,7 @@
 #include <AssetSystem/Loader/AssetLoaderHelpers.h>
 #include <AssetSystem/MaterialType.h>
 #include <FileDialogs/EngineFileDialog.h>
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 
 #include <CryParticleSystem/IParticlesPfx2.h>
 

@@ -100,7 +100,7 @@ void CAIGroupProxy::Notify(uint32 notificationID, const AISignals::SignalSharedP
 	Members::iterator it = m_members.begin();
 	Members::iterator end = m_members.end();
 
-	for (uint32 k = 1; it != end; ++it)
+	for (; it != end; ++it)
 	{
 		if (IAIObject* aiObject = gEnv->pAISystem->GetAIObjectManager()->GetAIObject(*it))
 		{

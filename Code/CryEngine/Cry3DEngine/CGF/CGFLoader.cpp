@@ -3064,7 +3064,6 @@ bool CLoaderCGF::LoadBoneMappingStreamChunk(CMesh& mesh, const MESH_CHUNK_DESC_0
 		const SMeshBoneMapping_uint8* const pSrcBoneMapping = (const SMeshBoneMapping_uint8*)pStreamData;
 
 		const int vertexCount = mesh.GetVertexCount();
-		const int indexCount = mesh.GetIndexCount();
 
 		for (int subset = 0; subset < mesh.m_subsets.size(); ++subset)
 		{

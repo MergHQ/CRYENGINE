@@ -338,7 +338,6 @@ void CRealtimeRemoteUpdateListener::LoadEntities(XmlNodeRef& root)
 		while (!pIt->IsEnd())
 		{
 			IEntity* pEntity = pIt->Next();
-			IEntityClass* pEntityClass = pEntity->GetClass();
 			uint32 nEntityFlags = pEntity->GetFlags();
 
 			// Local player must not be deleted.

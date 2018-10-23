@@ -10,7 +10,7 @@
 #include "EditableAsset.h"
 #include "Loader/Metadata.h"
 
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include "QtUtil.h"
 #include "ThreadingUtils.h"
 

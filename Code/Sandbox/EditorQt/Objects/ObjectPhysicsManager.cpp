@@ -2,14 +2,15 @@
 
 #include "StdAfx.h"
 #include "ObjectPhysicsManager.h"
-#include "Objects/BaseObject.h"
-#include "EntityObject.h"
+
 #include "BrushObject.h"
+#include "EntityObject.h"
 #include "GameEngine.h"
-#include "Util/BoostPythonHelpers.h"
 #include "Material/MaterialManager.h"
+#include "Objects/BaseObject.h"
+#include "PathUtils.h"
 #include "QT/Widgets/QWaitProgress.h"
-#include "FilePathUtil.h"
+#include "Util/BoostPythonHelpers.h"
 #include <CryMath/Random.h>
 
 #define MAX_OBJECTS_PHYS_SIMULATION_TIME (5)

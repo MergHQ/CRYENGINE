@@ -730,7 +730,6 @@ static inline void DisplayDensitySpheres(IMergedMeshesManager* manager, AABB _bb
 	new_flags.SetAlphaBlendMode(e_AlphaBlended);
 	pAuxGeom->SetRenderFlags(new_flags);
 
-	Vec3 vertlist[12], v[8], e[2];
 	float d[8][MMRM_MAX_SURFACE_TYPES];
 	ISurfaceType* surfaceTypes[8][MMRM_MAX_SURFACE_TYPES];
 	const float rcp = 1.f / (float)(dim - 1);
@@ -1233,8 +1232,6 @@ DECLARE_JOB(
   , TPVRNPrepGeomJob
   , CGeometryManager::PrepareGeometry);
 
-static size_t s_jobQueueIndex[2] = { 0, 0 };
-
 CGeometryManager::CGeometryManager() : m_PreprocessedSize() {}
 CGeometryManager::~CGeometryManager() {}
 
@@ -1501,7 +1498,6 @@ bool CGeometryManager::PrepareLOD(SMMRMGeometry* geometry, CStatObj* host, size_
 
 	renderMesh->LockForThreadAccess();
 	int nvertices = renderMesh->GetVerticesCount();
-	InputLayoutHandle vtx_fmt = renderMesh->GetVertexFormat();
 
 	vtx.data = (Vec3*)renderMesh->GetPosPtr(vtx.iStride, FSL_READ);
 	colour.data = (uint32*)renderMesh->GetColorPtr(colour.iStride, FSL_READ);
@@ -2078,8 +2074,6 @@ bool CMergedMeshRenderNode::PrepareRenderMesh(RENDERMESH_UPDATE_TYPE type)
 	std::vector<size_t> groups(m_nGroups);
 	std::vector<SMMRM>& meshes = m_renderMeshes[type];
 	std::iota(groups.begin(), groups.end(), 0);
-	Vec3 extents = (m_visibleAABB.max - m_visibleAABB.min) * 0.5f;
-	Vec3 origin = m_pos - extents;
 	bool allDone = true;
 	Quat q;
 	for (size_t i = 0, end = groups.size(); i < end; ++i)
@@ -2282,8 +2276,6 @@ IRenderNode* CMergedMeshRenderNode::AddInstance(const SProcVegSample& sample)
 		return NULL;
 	}
 
-	const Vec3 extents = (m_visibleAABB.max - m_visibleAABB.min) * 0.5f;
-	const Vec3 origin = m_pos - extents;
 	size_t headerIndex = (size_t)-1;
 
 	SMMRMGeometry* procGeom = s_GeomManager.GetGeometry(sample.InstGroupId);
@@ -2526,7 +2518,7 @@ void CMergedMeshRenderNode::CreateRenderMesh(RENDERMESH_UPDATE_TYPE type, const 
 
 	// For all registered groups, build the update contexts
 	// and grab required vertex and index counts
-	for (size_t i = 0, j = 0; i < m_nGroups; ++i)
+	for (size_t i = 0; i < m_nGroups; ++i)
 	{
 		MEMORY_SCOPE_CHECK_HEAP();
 		SMMRMGroupHeader* group = &m_groups[i];
@@ -2568,7 +2560,7 @@ void CMergedMeshRenderNode::CreateRenderMesh(RENDERMESH_UPDATE_TYPE type, const 
 			for (; k < mesh->updates.size(); ++k)
 			{
 				SMMRMUpdateContext* update = &mesh->updates[k];
-				for (size_t j = 0, acumm = 0, nc = update->chunks.size(); j < nc; ++j)
+				for (size_t j = 0, nc = update->chunks.size(); j < nc; ++j)
 					accum += update->chunks[j].vcnt;
 				if (iv + accum > 0xffff)
 					goto done;
@@ -3019,8 +3011,6 @@ bool CMergedMeshRenderNode::PostRender(const SRenderingPassInfo& passInfo)
 	MEMORY_SCOPE_CHECK_HEAP();
 	FUNCTION_PROFILER_3DENGINE;
 
-	const uint32 frameId = passInfo.GetMainFrameID();
-
 	// Sadly because of the interleaved renderchunks structure, we can
 	// only start building a mesh when all culling tasks have completed.
 	IF (m_cullState.IsRunning(), 1)
@@ -3071,9 +3061,6 @@ bool CMergedMeshRenderNode::Compile(byte* pData, int& nSize, string* pName, std:
 		int _k = (int)floorf(abs(m_pos.z + segmentOffset.z) * fExtentsRec);
 		cry_sprintf(token, "sector_%d_%d_%d", _i, _j, _k);
 		*pName = token;
-
-		Vec3 extents = (m_visibleAABB.max - m_visibleAABB.min) * 0.5f;
-		Vec3 origin = m_pos - extents;
 
 		uint8* pPtr = pData;
 
@@ -3132,7 +3119,6 @@ void CMergedMeshRenderNode::FillSamples(DynArray<Vec2>& samples)
 	{
 		const SMMRMGroupHeader* header = Group(i);
 		const AABB& aabb = header->procGeom->aabb;
-		const Vec3& centre = aabb.GetCenter();
 		const Vec3& size = aabb.GetSize();
 		samples.reserve(samples.size() + header->numSamples * 4);
 		for (size_t j = 0; j < header->numSamples; ++j)
@@ -3294,7 +3280,6 @@ void CMergedMeshRenderNode::StreamOnComplete(IReadStream* pStream, unsigned nErr
 
 bool CMergedMeshRenderNode::StreamIn()
 {
-	int x = 0, y = 0;
 	int i, j, k;
 	char szFileName[_MAX_PATH];
 	const float fExtentsRec = 1.0f / c_MergedMeshesExtent;
@@ -3351,9 +3336,6 @@ void CMergedMeshRenderNode::DebugRender(int nLod)
 {
 #if MMRM_RENDER_DEBUG
 	const float fExtents = c_MergedMeshesExtent;
-	const float fExtentsRec = 1.0f / c_MergedMeshesExtent;
-	Vec3 extents = (m_visibleAABB.max - m_visibleAABB.min) * 0.5f;
-	Vec3 origin = m_pos - extents;
 	Quat q;
 
 	IRenderAuxGeom* pAuxGeomRender = gEnv->pRenderer->GetIRenderAuxGeom();
@@ -3479,9 +3461,12 @@ void CMergedMeshRenderNode::DebugRender(int nLod)
 				for (size_t l = 0, sbase = 0; header.spines && l < header.numSamples; ++l)
 				{
 					const SMMRMInstance& sample = header.instances[l];
-					const float fScale = (1.f / VEGETATION_CONV_FACTOR) * sample.scale;
 					DecompressQuat(q, sample);
+
+#if !MMRM_SIMULATION_USES_FP32
+					const float fScale = (1.f / VEGETATION_CONV_FACTOR) * sample.scale;
 					Matrix34 wmat = CreateRotationQ(q, ConvertInstanceAbsolute(sample, m_internalAABB.min, m_pos, m_zRotation, fExtents)) * Matrix34::CreateScale(Vec3(fScale, fScale, fScale));
+#endif
 					for (size_t j = 0, base = 0; j < header.procGeom->numSpines; ++j)
 					{
 						for (size_t k = 0; k < header.procGeom->pSpineInfo[j].nSpineVtx - 1; ++k)
@@ -4042,14 +4027,22 @@ bool CMergedMeshesManager::CompileAreas(DynArray<SMeshAreaCluster>& clusters, in
 	{
 		if (flags & CLUSTER_CONVEXHULL_GRAHAMSCAN)
 		{
+#if !defined(EXCLUDE_NORMAL_LOG)
 			size_t boundaries = convexhull_graham_scan(clusters[i].boundary_points);
 			CryLogAlways("MMRM: cluster %d has %d points on it's convex hull", (int)i, (int)boundaries);
+#else
+			convexhull_graham_scan(clusters[i].boundary_points);
+#endif
 			continue;
 		}
 		if (flags & CLUSTER_CONVEXHULL_GIFTWRAP)
 		{
+#if !defined(EXCLUDE_NORMAL_LOG)
 			size_t boundaries = convexhull_giftwrap(clusters[i].boundary_points);
 			CryLogAlways("MMRM: cluster %d has %d points on it's convex hull", (int)i, (int)boundaries);
+#else
+			convexhull_giftwrap(clusters[i].boundary_points);
+#endif
 			continue;
 		}
 		CryFatalError(
@@ -4326,17 +4319,18 @@ void CMergedMeshesManager::Update(const SRenderingPassInfo& passInfo)
 	, metaSize = 0u
 	, streamRequests = 0u
 	, maxStreamRequests = 16u;
+
+#if !defined(_RELEASE)
 	const int e_MergedMeshesDebug = GetCVars()->e_MergedMeshesDebug;
+#endif
 
 	const float dt = gEnv->pTimer->GetFrameTime();
-	const float sqDiagonalInternal = sqr(c_MergedMeshesExtent) * 1.25f;
 
 	uint32 frameId = passInfo.GetMainFrameID();
 
 	AABB visibleVolume;
 
 	const float fExtents = c_MergedMeshesExtent * 0.25f;
-	const Vec3 vDiag = Vec3(fExtents, fExtents, fExtents);
 	const float fActiveDist = GetCVars()->e_MergedMeshesActiveDist;
 	const float fVisibleDist = fExtents * fActiveDist;
 	const Vec3& vPos = passInfo.GetCamera().GetPosition();
@@ -4444,8 +4438,10 @@ void CMergedMeshesManager::Update(const SRenderingPassInfo& passInfo)
 			uint32 currentInstSize = node->m_Instances * sizeof(SMMRMInstance);
 			if (currentInstSize == 0) // Safe to skip over empty nodes
 				continue;
+
+#if !defined(_RELEASE)
 			uint32 currentSpineSize = node->SpineCount() * sizeof(SMMRMSpineVtxBase);
-			uint32 currentDeformSize = node->DeformCount() * sizeof(SMMRMDeformVertex);
+#endif
 
 			if (activeSize + currentInstSize < mainMemLimit)
 			{
@@ -4867,14 +4863,15 @@ void CDeformableNode::UpdateInternalDeform(
 	if (!geom)
 		return;
 	SMMRMUpdateContext* update = &pData->m_mmrmContext;
-	SMMRMGroupHeader* header = &pData->m_mmrmHeader;
 	if (pData->m_State == SDeformableData::READY)
 	{
 		FUNCTION_PROFILER_3DENGINE;
 		Matrix34 worldTM = pRenderObject->GetMatrix(passInfo);
 
 		// Create a new render mesh and dispatch the asynchronous updates
+#if MMRM_USE_BOUNDS_CHECK
 		size_t indices = group->procGeom->numIdx, vertices = group->procGeom->numVtx;
+#endif
 
 		update->general = (SVF_P3S_C4B_T2S*)vtxBuf.data;
 		update->tangents = (SPipTangents*)tgtBuf.data;

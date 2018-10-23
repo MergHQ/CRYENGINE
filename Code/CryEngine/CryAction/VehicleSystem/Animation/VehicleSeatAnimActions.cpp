@@ -76,9 +76,11 @@ void CVehicleSeatAnimActionExit::Exit()
 {
 	BaseAction::Exit();
 
+#if defined(USE_CRY_ASSERT)
 	// Leave the heli mid-air and this will trigger.
 	IActor* pActor = m_pSeat->GetPassengerActor();
 	CRY_ASSERT(gEnv->bMultiplayer || pActor);
+#endif
 
 	m_pSeat->StandUp();
 }

@@ -149,7 +149,7 @@ void CUIDraw::DrawLine(float fX1, float fY1, float fX2, float fY2, uint32 uiDiff
 		// m_pRenderer->SetWhiteTexture();
 	}
 
-	uint16 ausIndices[] = { 0, 1 };
+	//uint16 ausIndices[] = { 0, 1 };
 
 	//m_pRenderer->DrawDynVB(aVertices, ausIndices, 2, 2, prtLineList);
 
@@ -175,7 +175,7 @@ void CUIDraw::DrawTriangle(float fX0, float fY0, float fX1, float fY1, float fX2
 	aVertices[2].xyz = Vec3(fX2 + fOff, fY2 + fOff, 0.0f);
 	aVertices[2].st = Vec2(0, 0);
 
-	uint16 ausIndices[] = { 0, 1, 2 };
+	//uint16 ausIndices[] = { 0, 1, 2 };
 
 	//m_pRenderer->SetWhiteTexture();
 	//m_pRenderer->DrawDynVB(aVertices, ausIndices, 3, CRY_ARRAY_COUNT(ausIndices), prtTriangleList);
@@ -243,7 +243,7 @@ void CUIDraw::DrawQuad(float fX,
 		// m_pRenderer->SetWhiteTexture();
 	}
 
-	uint16 ausIndices[] = { 0, 1, 2, 3 };
+	//uint16 ausIndices[] = { 0, 1, 2, 3 };
 
 	//m_pRenderer->DrawDynVB(aVertices, ausIndices, 4, 4, prtTriangleStrip);
 
@@ -290,7 +290,7 @@ void CUIDraw::DrawQuadSimple(float fX,
 		// m_pRenderer->SetWhiteTexture();
 	}
 
-	uint16 ausIndices[] = { 0, 1, 2, 3 };
+	//uint16 ausIndices[] = { 0, 1, 2, 3 };
 
 	//m_pRenderer->DrawDynVB(aVertices, ausIndices, 4, 4, prtTriangleStrip);
 

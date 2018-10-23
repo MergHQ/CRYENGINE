@@ -449,7 +449,7 @@ public:
 		{
 			if (IsPortActive(pActInfo, EIP_Enable))
 			{
-				bool bResult = SetFSCommandHandler(pActInfo->pEntity, true);
+				SetFSCommandHandler(pActInfo->pEntity, true);
 				m_actInfo = *pActInfo;
 				m_bActive = true;
 			}

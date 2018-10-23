@@ -75,12 +75,6 @@ const char* CDistanceCloudRenderNode::GetName() const
 	return "DistanceCloud";
 }
 
-static inline uint16 HalfFlip(uint16 h)
-{
-	uint16 mask = -int16(h >> 15) | 0x8000;
-	return h ^ mask;
-}
-
 void CDistanceCloudRenderNode::Render(const SRendParams& rParam, const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;

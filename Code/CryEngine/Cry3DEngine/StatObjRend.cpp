@@ -131,8 +131,6 @@ void CStatObj::FillRenderObject(const SRendParams& rParams, IRenderNode* pRender
 	// Specify transformation
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	IRenderer* pRend = GetRenderer();
-
 	assert(pObj);
 	if (!pObj)
 		return;
@@ -210,7 +208,7 @@ void CStatObj::FillRenderObject(const SRendParams& rParams, IRenderNode* pRender
 		//clear, when exchange the state of pLightMapInfo to NULL, the pObj parameters must be update...
 		CRY_ASSERT(rParams.fDistance * 2.0f <= std::numeric_limits<decltype(CRenderObject::m_nSort)>::max());
 		pObj->m_fDistance = rParams.fDistance;
-		pObj->m_nSort = fastround_positive(rParams.fDistance * 2.0f);
+		pObj->m_nSort = HalfFlip(CryConvertFloatToHalf(rParams.fDistance * 2.0f));
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////

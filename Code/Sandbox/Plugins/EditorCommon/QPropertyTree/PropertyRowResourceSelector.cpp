@@ -3,13 +3,13 @@
 #include "stdafx.h"
 #include "PropertyRowResourceSelector.h"
 
+#include "DragDrop.h"
+#include "FileDialogs/EngineFileDialog.h"
+#include "PathUtils.h"
 #include "Serialization/Decorators/INavigationProvider.h"
 #include "Serialization/PropertyTree/IMenu.h"
 #include "Serialization/PropertyTree/PropertyTreeModel.h"
 #include "Serialization/QPropertyTree/QPropertyTree.h"
-#include "FileDialogs/EngineFileDialog.h"
-#include "DragDrop.h"
-#include "FilePathUtil.h"
 
 #include <IUndoManager.h>
 

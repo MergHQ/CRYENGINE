@@ -6,7 +6,8 @@
 #include "Asset.h"
 #include "AssetImportContext.h"
 #include "AssetType.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
+
 #include <CryString/CryPath.h>
 
 #include <ThreadingUtils.h>

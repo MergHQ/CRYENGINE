@@ -247,63 +247,65 @@ void CVehicleSeatActionRotateBone::PrePhysUpdate(const float dt)
 
 void CVehicleSeatActionRotateBone::UpdateSound(const float dt)
 {
-	if (!m_useRotationSounds)
-		return;
+	REINST("vehicle sounds");
 
-	IEntity* pEntity = m_pVehicle->GetEntity();
-	if (IEntityAudioComponent* pIEntityAudioComponent = pEntity->GetComponent<IEntityAudioComponent>())
-	{
-		if (m_stopCurrentSound)
-		{
-			m_stopCurrentSound = 0;
-			//StopSound(*pIEntityAudioComponent, m_rotatingSoundID);
-		}
+	//if (!m_useRotationSounds)
+	//	return;
 
-		// Calculate Rotation Speed for the Audio.
-		if (dt > FLT_EPSILON)
-		{
-			const float deltaPitch = (m_boneRotation.x - m_prevBoneRotation.x);
-			float deltaYaw = fabs_tpl(m_boneRotation.z - m_prevBoneRotation.z);
-			deltaYaw = (float)__fsel(deltaYaw - gf_PI, gf_PI2 - deltaYaw, deltaYaw);
-			const float rotDist = sqrt_tpl((deltaYaw * deltaYaw) + (deltaPitch * deltaPitch));
-			const float invTime = __fres(dt);
-			const float rotSpeed = invTime * rotDist;
-			const float prevSpeed = m_soundRotLastAppliedSpeed;
-			m_soundRotSpeed = (float)__fsel(rotSpeed - prevSpeed, rotSpeed, m_soundRotSpeed);
-			SmoothCD(m_soundRotSpeed, m_soundRotSpeedSmoothRate, dt, rotSpeed, m_soundRotSpeedSmoothTime);
-			if (fabs_tpl(prevSpeed - m_soundRotSpeed) > 0.001f)
-			{
-				const float rotationRate = clamp_tpl(m_soundRotSpeed * m_soundRotSpeedScalar, 0.f, 10.f);
-				//SetSoundParam(*pIEntityAudioComponent, m_rotatingSoundID, m_soundParamRotSpeed.c_str(), rotationRate);
-				m_soundRotLastAppliedSpeed = m_soundRotSpeed;
-			}
-		}
+	//IEntity* pEntity = m_pVehicle->GetEntity();
 
-		REINST("vehicle sounds");
-		//if(m_soundRotSpeed>0.001f)
-		//{
-		//	bool isNotPlaying = m_rotatingSoundID==INVALID_SOUNDID;
-		//	if(!isNotPlaying)
-		//	{
-		//		if(ISound* pSound = pIEntityAudioComponent->GetSound(m_rotatingSoundID))
-		//		{
-		//			isNotPlaying = !pSound->IsPlaying();
-		//		}
-		//		else
-		//		{
-		//			isNotPlaying = true;
-		//		}
-		//	}
+	//if (IEntityAudioComponent* pIEntityAudioComponent = pEntity->GetComponent<IEntityAudioComponent>())
+	//{
+	//	if (m_stopCurrentSound)
+	//	{
+	//		m_stopCurrentSound = 0;
+	//		StopSound(*pIEntityAudioComponent, m_rotatingSoundID);
+	//	}
 
-		//	// Play the sound...
-		//	if(isNotPlaying)
-		//	{
-		//		IActor* pDriver = m_pVehicle->GetDriver();
-		//		const bool firstPerson = pDriver && pDriver->IsClient();
-		//		m_rotatingSoundID=PlaySound(*pIEntityAudioComponent, firstPerson?m_soundNameFP.c_str():m_soundNameTP.c_str());
-		//	}
-		//}
-	}
+	//	// Calculate Rotation Speed for the Audio.
+	//	if (dt > FLT_EPSILON)
+	//	{
+	//		const float deltaPitch = (m_boneRotation.x - m_prevBoneRotation.x);
+	//		float deltaYaw = fabs_tpl(m_boneRotation.z - m_prevBoneRotation.z);
+	//		deltaYaw = (float)__fsel(deltaYaw - gf_PI, gf_PI2 - deltaYaw, deltaYaw);
+	//		const float rotDist = sqrt_tpl((deltaYaw * deltaYaw) + (deltaPitch * deltaPitch));
+	//		const float invTime = __fres(dt);
+	//		const float rotSpeed = invTime * rotDist;
+	//		const float prevSpeed = m_soundRotLastAppliedSpeed;
+	//		m_soundRotSpeed = (float)__fsel(rotSpeed - prevSpeed, rotSpeed, m_soundRotSpeed);
+	//		SmoothCD(m_soundRotSpeed, m_soundRotSpeedSmoothRate, dt, rotSpeed, m_soundRotSpeedSmoothTime);
+	//		if (fabs_tpl(prevSpeed - m_soundRotSpeed) > 0.001f)
+	//		{
+	//			const float rotationRate = clamp_tpl(m_soundRotSpeed * m_soundRotSpeedScalar, 0.f, 10.f);
+	//			SetSoundParam(*pIEntityAudioComponent, m_rotatingSoundID, m_soundParamRotSpeed.c_str(), rotationRate);
+	//			m_soundRotLastAppliedSpeed = m_soundRotSpeed;
+	//		}
+	//	}
+
+	//	if(m_soundRotSpeed>0.001f)
+	//	{
+	//		bool isNotPlaying = m_rotatingSoundID==INVALID_SOUNDID;
+	//		if(!isNotPlaying)
+	//		{
+	//			if(ISound* pSound = pIEntityAudioComponent->GetSound(m_rotatingSoundID))
+	//			{
+	//				isNotPlaying = !pSound->IsPlaying();
+	//			}
+	//			else
+	//			{
+	//				isNotPlaying = true;
+	//			}
+	//		}
+
+	//		// Play the sound...
+	//		if(isNotPlaying)
+	//		{
+	//			IActor* pDriver = m_pVehicle->GetDriver();
+	//			const bool firstPerson = pDriver && pDriver->IsClient();
+	//			m_rotatingSoundID=PlaySound(*pIEntityAudioComponent, firstPerson?m_soundNameFP.c_str():m_soundNameTP.c_str());
+	//		}
+	//	}
+	//}
 }
 
 void CVehicleSeatActionRotateBone::GetMemoryUsage(ICrySizer* s) const
@@ -366,15 +368,15 @@ void CVehicleSeatActionRotateBone::OnVehicleEvent(EVehicleEvent event, const SVe
 		const Quat currentRotation(params.fParam, params.vParam);
 		m_currentMovementRotation = currentRotation;
 	}
-	else if (event == eVE_Destroyed || (event == eVE_Hide && params.iParam))
+	/*else if (event == eVE_Destroyed || (event == eVE_Hide && params.iParam))
 	{
 		IEntity* pEntity = m_pVehicle->GetEntity();
 		if (IEntityAudioComponent* pIEntityAudioComponent = pEntity->GetComponent<IEntityAudioComponent>())
 		{
 			m_stopCurrentSound = 0;
-			//StopSound(*pIEntityAudioComponent, m_rotatingSoundID);
+			StopSound(*pIEntityAudioComponent, m_rotatingSoundID);
 		}
-	}
+	}*/
 
 }
 

@@ -408,8 +408,12 @@ public:
 	{
 		while (nDataSize & 3)
 		{
+#if defined(USE_CRY_ASSERT)
 			int nRes = GetPak()->FSeek(f, 1, SEEK_CUR);
 			assert(nRes == 0);
+#else
+			GetPak()->FSeek(f, 1, SEEK_CUR);
+#endif
 			assert(nDataSize);
 			nDataSize--;
 		}

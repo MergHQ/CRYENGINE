@@ -4,7 +4,7 @@
 #include "VehiclePaintsPanel.h"
 
 #include "VehicleData.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 
 #include "CryRenderer/IRenderer.h"
 

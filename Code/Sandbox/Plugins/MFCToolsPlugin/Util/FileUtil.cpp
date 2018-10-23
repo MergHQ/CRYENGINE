@@ -28,7 +28,7 @@
 #include <QApplication>
 #include <QClipboard>
 #include "Controls/QuestionDialog.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include "QtUtil.h"
 #include <CryCore/Platform/CryLibrary.h>
 #include <Preferences/GeneralPreferences.h>

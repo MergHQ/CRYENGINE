@@ -411,7 +411,6 @@ void CGeomCacheManager::LaunchStreamingJobs(const uint numStreams, const CTimeVa
 			continue;
 		}
 
-		const bool bIsStreaming = pRenderNode->IsStreaming();
 		const float playbackFrameTime = pStreamInfo->m_wantedPlaybackTime;
 		const float displayedFrameTime = pStreamInfo->m_displayedFrameTime;
 
@@ -476,7 +475,6 @@ void CGeomCacheManager::ValidateStream(SGeomCacheStreamInfo& streamInfo)
 	FUNCTION_PROFILER_3DENGINE;
 
 	const CGeomCacheRenderNode* pRenderNode = streamInfo.m_pRenderNode;
-	const bool bIsStreaming = pRenderNode->IsStreaming();
 	const float wantedPlaybackTime = streamInfo.m_wantedPlaybackTime;
 	const float displayedFrameTime = streamInfo.m_displayedFrameTime;
 
@@ -845,12 +843,8 @@ void CGeomCacheManager::LaunchDecompressJobs(SGeomCacheStreamInfo* pStreamInfo, 
 
 	assert(gEnv->mMainThreadId == CryGetCurrentThreadId());
 
-	const CGeomCacheRenderNode* pRenderNode = pStreamInfo->m_pRenderNode;
 	const CGeomCache* pGeomCache = pStreamInfo->m_pGeomCache;
-	const GeomCacheFile::EBlockCompressionFormat blockCompressionFormat = pGeomCache->GetBlockCompressionFormat();
 	const float currentCacheStreamingTime = pStreamInfo->m_pRenderNode->GetStreamingTime();
-	const uint wantedFloorFrame = pGeomCache->GetFloorFrameIndex(currentCacheStreamingTime);
-	const uint numStreamFrames = pStreamInfo->m_numFrames;
 	const uint frameDataSize = pStreamInfo->m_frameData.size();
 
 	// Need to check if there are still jobs running for the same render node on the stream abort list
@@ -999,7 +993,6 @@ void CGeomCacheManager::DecompressFrame_JobEntry(SGeomCacheStreamInfo* pStreamIn
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	const CGeomCacheRenderNode* pRenderNode = pStreamInfo->m_pRenderNode;
 	const CGeomCache* pGeomCache = pStreamInfo->m_pGeomCache;
 	const uint frameIndex = pDecompressHandle->m_startFrame + blockIndex;
 
@@ -1364,7 +1357,6 @@ void CGeomCacheManager::RetireHandles(SGeomCacheStreamInfo& streamInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	CGeomCacheRenderNode* pRenderNode = streamInfo.m_pRenderNode;
 	const CGeomCache* pGeomCache = streamInfo.m_pGeomCache;
 	const float currentCacheStreamingTime = streamInfo.m_pRenderNode->GetStreamingTime();
 	const uint wantedFloorFrame = pGeomCache->GetFloorFrameIndex(currentCacheStreamingTime);
@@ -1681,7 +1673,6 @@ void CGeomCacheManager::DrawDebugInfo()
 	const float streamInfoBoxSize = 10.0f;
 
 	uint numActiveStreams = 0;
-	uint numFramesMissed = 0;
 
 	const uint kNumColors = 8;
 	ColorF colors[kNumColors] = { Col_Red, Col_Green, Col_Yellow, Col_Blue, Col_Aquamarine, Col_Thistle, Col_Tan, Col_Salmon };
@@ -1694,7 +1685,6 @@ void CGeomCacheManager::DrawDebugInfo()
 		CGeomCacheRenderNode* pRenderNode = streamInfo.m_pRenderNode;
 		CGeomCache* pGeomCache = streamInfo.m_pGeomCache;
 		const char* pName = streamInfo.m_pRenderNode->GetName();
-		const char* pFilter = GetCVars()->e_GeomCacheDebugFilter->GetString();
 
 		const bool bDisplay = ((GetCVars()->e_GeomCacheDebug != 2) || (pRenderNode->IsStreaming() || streamInfo.m_pOldestDecompressHandle || streamInfo.m_pNewestReadRequestHandle))
 		                      && strstr(pName, GetCVars()->e_GeomCacheDebugFilter->GetString()) != NULL;

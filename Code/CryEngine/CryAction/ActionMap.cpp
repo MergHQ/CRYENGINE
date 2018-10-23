@@ -1485,8 +1485,6 @@ bool CActionMap::LoadRebindingDataFromXML(const XmlNodeRef& actionMapNode)
 
 bool CActionMap::SaveRebindingDataToXML(XmlNodeRef& actionMapNode) const
 {
-	const int iNumDeviceData = m_pActionMapManager->GetNumInputDeviceData();
-
 #if 0
 	// for debug reasons, we sort the ActionMap alphabetically
 	// CryName normally sorts by pointer address
@@ -1830,7 +1828,6 @@ bool CActionMap::SaveActionInputAttributesToXML(XmlNodeRef& actionInputNode, con
 
 			// Now save the blocked inputs
 			string blockedInputsStr("");
-			bool bBlockAllDeviceIndices = true;
 			for (size_t i = 0; i < inputBlockData.inputs.size(); i++)
 			{
 				const SActionInputBlocker& inputBlocker = inputBlockData.inputs[i];
@@ -1929,7 +1926,6 @@ IActionMapActionIteratorPtr CActionMap::CreateActionIterator()
 		{
 			if (m_cur == m_end)
 				return NULL;
-			const ActionId& actionId = m_cur->first;
 			const CActionMapAction& action = m_cur->second;
 
 			++m_cur;

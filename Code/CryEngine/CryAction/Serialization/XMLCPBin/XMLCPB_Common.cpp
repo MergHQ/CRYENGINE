@@ -105,6 +105,7 @@ void XMLCPB::InitializeDataTypeInfo()
 		s_TypeInfos[i].basicType = DT_STR;
 	}
 
+#if defined(USE_CRY_ASSERT)
 	// some checking
 	for (uint i = 0; i < DT_NUMTYPES; ++i)
 	{
@@ -112,6 +113,7 @@ void XMLCPB::InitializeDataTypeInfo()
 		assert(info.type == i);
 		assert(info.basicType < DT_NUM_BASIC_TYPES);
 	}
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

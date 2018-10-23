@@ -23,8 +23,6 @@ public:
 	CREWaterOcean();
 	virtual ~CREWaterOcean();
 
-	virtual void mfGetPlane(Plane& pl) override;
-
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const override
 	{
 		pSizer->AddObject(this, sizeof(*this));

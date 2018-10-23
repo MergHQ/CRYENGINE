@@ -300,7 +300,7 @@ void CItemSystem::RegisterForCollection(EntityId itemId)
 						nItemId = it->first;
 					}
 				}
-
+#if defined(USE_CRY_ASSERT) || !defined(EXCLUDE_NORMAL_LOG)
 				if (IItem* pItem = GetItem(nItemId))
 				{
 					CRY_ASSERT(!pItem->GetOwnerId());
@@ -309,6 +309,13 @@ void CItemSystem::RegisterForCollection(EntityId itemId)
 					UnregisterForCollection(nItemId);
 					gEnv->pEntitySystem->RemoveEntity(nItemId);
 				}
+#else
+				if (GetItem(nItemId) != nullptr)
+				{
+					UnregisterForCollection(nItemId);
+					gEnv->pEntitySystem->RemoveEntity(nItemId);
+				}
+#endif
 			}
 		}
 	}
@@ -921,7 +928,7 @@ void CItemSystem::CacheItemSound(const char* className)
 							const IItemParamsNode* sound = actions->GetChild(i);
 							if (!stricmp(sound->GetName(), "sound"))
 							{
-								const char* soundName = sound->GetNameAttribute();
+								//const char* soundName = sound->GetNameAttribute();
 								REINST("do we still need this type of data priming?")
 								//gEnv->pSoundSystem->Precache(soundName, 0, FLAG_SOUND_PRECACHE_EVENT_DEFAULT);
 							}
@@ -1142,7 +1149,6 @@ void CItemSystem::GiveItemCmd(IConsoleCmdArgs* args)
 		return;
 
 	IGameFramework* pGameFramework = gEnv->pGameFramework;
-	IActorSystem* pActorSystem = pGameFramework->GetIActorSystem();
 	IItemSystem* pItemSystem = pGameFramework->GetIItemSystem();
 
 	const char* itemName = args->GetArg(1);
@@ -1180,8 +1186,6 @@ void CItemSystem::GiveItemCmd(IConsoleCmdArgs* args)
 void CItemSystem::DropItemCmd(IConsoleCmdArgs* args)
 {
 	IGameFramework* pGameFramework = gEnv->pGameFramework;
-	IActorSystem* pActorSystem = pGameFramework->GetIActorSystem();
-	IItemSystem* pItemSystem = pGameFramework->GetIItemSystem();
 
 	const char* actorName = 0;
 
@@ -1234,7 +1238,6 @@ void CItemSystem::GiveItemsHelper(IConsoleCmdArgs* args, bool useGiveable, bool 
 		return;
 
 	IGameFramework* pGameFramework = gEnv->pGameFramework;
-	IActorSystem* pActorSystem = pGameFramework->GetIActorSystem();
 	CItemSystem* pItemSystem = static_cast<CItemSystem*>(pGameFramework->GetIItemSystem());
 
 	const char* actorName = 0;

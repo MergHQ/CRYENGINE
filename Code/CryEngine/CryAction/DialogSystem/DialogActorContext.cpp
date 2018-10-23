@@ -474,7 +474,7 @@ bool CDialogActorContext::Update(float dt)
 		case eDAC_SoundFacial:
 			{
 				bAdvance = true;
-				const bool bHasSound = m_pCurLine->m_audioID != CryAudio::InvalidControlId;
+				//const bool bHasSound = m_pCurLine->m_audioID != CryAudio::InvalidControlId;
 				const bool bHasFacial = !m_pCurLine->m_facial.empty() || m_pCurLine->m_flagResetFacial;
 				if (bHasFacial)
 				{

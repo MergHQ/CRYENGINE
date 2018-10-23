@@ -28,9 +28,9 @@
 #include <AssetSystem/Asset.h>
 #include <AssetSystem/AssetResourceSelector.h>
 #include <Controls/EditorDialog.h>
-#include <FilePathUtil.h>
-#include <QtUtil.h>
 #include <FileDialogs/EngineFileDialog.h>
+#include <PathUtils.h>
+#include <QtUtil.h>
 
 #include "FileSystem/FileSystem_Enumerator.h"
 #include "FileSystem/FileSystem_FileFilter.h"

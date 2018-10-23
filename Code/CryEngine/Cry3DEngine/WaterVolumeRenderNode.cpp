@@ -694,8 +694,6 @@ void CWaterVolumeRenderNode::Render_JobEntry(SRendParams rParam, SRenderingPassI
 	if (m_fogDensity == 0)
 		return;
 
-	IRenderer* pRenderer(GetRenderer());
-
 	const int fillThreadID = passInfo.ThreadID();
 
 	// get render objects

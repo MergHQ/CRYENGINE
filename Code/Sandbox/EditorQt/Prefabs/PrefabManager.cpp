@@ -3,18 +3,16 @@
 #include "StdAfx.h"
 #include "PrefabManager.h"
 
+#include "GameEngine.h"
+#include "Objects/PrefabObject.h"
+#include "PrefabEvents.h"
 #include "PrefabItem.h"
 #include "PrefabLibrary.h"
 
-#include "GameEngine.h"
-
-#include "Objects/PrefabObject.h"
-#include "AssetSystem/AssetImportContext.h"
-#include "AssetSystem/Browser/AssetBrowserDialog.h"
-
-#include "PrefabEvents.h"
-#include "FilePathUtil.h"
-#include "Controls/QuestionDialog.h"
+#include <AssetSystem/AssetImportContext.h>
+#include <AssetSystem/Browser/AssetBrowserDialog.h>
+#include <Controls/QuestionDialog.h>
+#include <PathUtils.h>
 
 namespace Private_PrefabManager
 {

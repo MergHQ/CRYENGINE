@@ -17,10 +17,7 @@
 
 #define DEF_CLONE(CLASS) IFlowNodePtr CLASS::Clone(SActivationInfo * pActInfo){ CLASS* p = new CLASS(pActInfo); p->m_bNeedsExec = m_bNeedsExec; p->m_bNeedsSink = m_bNeedsSink; return p; }
 
-static const char* RUN_SPEED_UICONFIG = "enum_int:VerySlow=0,Walk=1,Run=2,Sprint=3";
-static const char* STANCE_UICONFIG = "enum_int:Prone=0,Crouch=1,Combat=2,CombatAlerted=3,Relaxed=4,Stealth=5";
 static const char* FORCE_UICONFIG = "enum_int:No=0,IgnoreAll=1";
-static const char* SECONDARY_UICONFIG = "enum_int:No=0,Any=1,Left=2,Right=3";
 
 //////////////////////////////////////////////////////////////////////////
 // base AI Flow node
@@ -1760,7 +1757,6 @@ void CFlowNode_AIUnload::ProcessEvent(EFlowEvent event, SActivationInfo* pActInf
 		if (pEntity)
 		{
 			// first check is the owner a vehicle
-			IAIObject* pAI = pEntity->GetAI();
 			IVehicle* pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(pEntity->GetId());
 			if (!pVehicle)
 			{

@@ -417,7 +417,6 @@ void CGameplayAnalyst::DumpSuit(string& lines)
 		suit.usageStart = now;
 
 		int totalUsage = suit.usage[0] + suit.usage[1] + suit.usage[2] + suit.usage[3];
-		CTimeValue totalTime = suit.timeUsed[0] + suit.timeUsed[1] + suit.timeUsed[2] + suit.timeUsed[3];
 
 		lines.append(lineFormatter.Format(lineFmt, it->second.name.c_str(), totalUsage,
 		                                  suit.kills[0], suit.deaths[0], suit.usage[0], suit.timeUsed[0].GetSeconds(),

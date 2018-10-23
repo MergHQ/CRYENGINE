@@ -59,19 +59,19 @@
 // EditorCommon
 #include <AssetSystem/AssetManager.h>
 #include <AssetSystem/Browser/AssetModel.h>
+#include <ConfigurationManager.h>
+#include <EditorCommonInit.h>
 #include <EditorFramework/BroadcastManager.h>
 #include <EditorFramework/PersonalizationManager.h>
 #include <EditorFramework/Preferences.h>
 #include <EditorFramework/TrayArea.h>
 #include <Gizmos/GizmoManager.h>
+#include <ISourceControl.h>
 #include <LevelEditor/Tools/ObjectMode.h>
 #include <Notifications/NotificationCenterImpl.h>
+#include <PathUtils.h>
 #include <Preferences/GeneralPreferences.h>
 #include <Preferences/ViewportPreferences.h>
-#include <ConfigurationManager.h>
-#include <EditorCommonInit.h>
-#include <FilePathUtil.h>
-#include <ISourceControl.h>
 #include <UIEnumsDatabase.h>
 
 #include <CrySandbox/CryInterop.h>

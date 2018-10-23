@@ -9,7 +9,7 @@
 #include "AssetIcons.h"
 #include "FileImporterDialog.h"
 
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 #include <QtUtil.h>
 #include <FileDialogs/SystemFileDialog.h>
 

@@ -453,8 +453,6 @@ void CGameVolume_Water::CreatePhysicsArea(const uint32 segmentIndex, const Matri
 
 		if (isRiver)
 		{
-			int i = segmentIndex;
-			int j = vertexCount - 1 - segmentIndex;
 			pb.waterFlow = ((pVertices[1] - pVertices[0]).GetNormalized() + (pVertices[2] - pVertices[3]).GetNormalized()) / 2.f * streamSpeed;
 		}
 		pWaterArea->SetParams(&pb);

@@ -234,8 +234,12 @@ void CLipSyncProvider_TransitionQueue::StopLipSync(IEntityAudioComponent* pProxy
 					ISkeletonAnim* skeletonAnimation = pChar->GetISkeletonAnim();
 
 					// NOTE: there is no simple way to just stop the exact animation we started, but this should do too:
+#if defined(USE_CRY_ASSERT)
 					bool success = skeletonAnimation->StopAnimationInLayer(m_nAnimLayer, LIPSYNC_STOP_TRANSITION_TIME);
 					CRY_ASSERT(success);
+#else
+					skeletonAnimation->StopAnimationInLayer(m_nAnimLayer, LIPSYNC_STOP_TRANSITION_TIME);
+#endif
 				}
 			}
 
@@ -374,12 +378,13 @@ void CLipSyncProvider_TransitionQueue::SynchronizeAnimationToSound(const CryAudi
 
 void CLipSync_TransitionQueue::InjectLipSyncProvider()
 {
-	IEntity* pEntity = GetEntity();
+	REINST(add SetLipSyncProvider to interface)
+
+	/*IEntity* pEntity = GetEntity();
 	IEntityAudioComponent* pSoundProxy = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 	CRY_ASSERT(pSoundProxy);
 	m_pLipSyncProvider.reset(new CLipSyncProvider_TransitionQueue(pEntity->GetId()));
-	REINST(add SetLipSyncProvider to interface)
-	//pSoundProxy->SetLipSyncProvider(m_pLipSyncProvider);
+	pSoundProxy->SetLipSyncProvider(m_pLipSyncProvider);*/
 }
 
 void CLipSync_TransitionQueue::GetMemoryUsage(ICrySizer* pSizer) const
@@ -484,10 +489,10 @@ void CLipSync_TransitionQueue::PostRemoteSpawn()
 
 void CLipSync_TransitionQueue::OnShutDown()
 {
-	IEntity* pEntity = GetEntity();
-	if (IEntityAudioComponent* pSoundProxy = pEntity->GetComponent<IEntityAudioComponent>())
-	{
-		REINST(add SetLipSyncProvider to interface)
-		//pSoundProxy->SetLipSyncProvider(ILipSyncProviderPtr());
-	}
+	REINST(add SetLipSyncProvider to interface)
+		/*IEntity* pEntity = GetEntity();
+		if (IEntityAudioComponent* pSoundProxy = pEntity->GetComponent<IEntityAudioComponent>())
+		{
+			pSoundProxy->SetLipSyncProvider(ILipSyncProviderPtr());
+		}*/
 }

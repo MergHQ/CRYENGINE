@@ -294,7 +294,6 @@ int CLightEntity::UpdateGSMLightSourceDynamicShadowFrustum(int nDynamicLodCount,
 
 	float fGSMBoxSize = fGSMBoxSizeNextDynamicLod = (float)Get3DEngine()->m_fGsmRange;
 	Vec3 vCameraDir = passInfo.GetCamera().GetMatrix().GetColumn(1).GetNormalized();
-	float fDistToLight = passInfo.GetCamera().GetPosition().GetDistance(GetPos(true));
 
 	PodArray<SPlaneObject>& lstCastersHull = s_lstTmpCastersHull;
 
@@ -313,7 +312,6 @@ int CLightEntity::UpdateGSMLightSourceDynamicShadowFrustum(int nDynamicLodCount,
 
 	for (; nLod < nDynamicLodCount + nDistanceLodCount; nLod++)
 	{
-		const float fFOV = (m_light).m_fLightFrustumAngle * 2;
 		const bool bDoGSM = !!(m_light.m_Flags & DLF_SUN);
 
 		if (bDoGSM)
@@ -504,7 +502,6 @@ bool CLightEntity::ProcessFrustum(int nLod, float fGSMBoxSize, float fDistanceFr
 	CollectShadowCascadeForOnePassTraversal(pFr);
 
 	bool bDoGSM = fGSMBoxSize != 0;
-	bool bDoNextLod = false;
 
 	if (bDoGSM)// && (m_light.m_Flags & DLF_SUN || m_light.m_Flags & DLF_PROJECT))
 	{
@@ -587,8 +584,8 @@ void CLightEntity::InitShadowFrustum_SUN_Conserv(ShadowMapFrustum* pFr, int dwAl
 	pFr->bIncrementalUpdate = false;
 	pFr->bUseShadowsPool = false;
 
-	const AABB& box = GetBBox();
-	const float fBoxRadius = max(0.00001f, box.GetRadius());
+	//const AABB& box = GetBBox();
+	//const float fBoxRadius = max(0.00001f, box.GetRadius());
 
 	//	float fDistToLightSrc = pFr->vLightSrcRelPos.GetLength();
 	pFr->fFOV = (float)RAD2DEG(atan_tpl(fRadius / DISTANCE_TO_THE_SUN)) * 2.0f;
@@ -598,8 +595,6 @@ void CLightEntity::InitShadowFrustum_SUN_Conserv(ShadowMapFrustum* pFr, int dwAl
 
 	//Sampling parameters
 	//Calculate proper projection of frustum to the terrain receiving area but not based on fBoxRadius
-	float fGsmInitRange = Get3DEngine()->m_fGsmRange;
-	float fGsmStep = Get3DEngine()->m_fGsmRangeStep;
 
 	float arrWidthS[] = { 1.94f, 1.0f, 0.8f, 0.5f, 0.3f, 0.3f, 0.3f, 0.3f };
 
@@ -607,8 +602,6 @@ void CLightEntity::InitShadowFrustum_SUN_Conserv(ShadowMapFrustum* pFr, int dwAl
 	pFr->fWidthT = pFr->fWidthS;
 	pFr->fBlurS = 0.0f;//arrBlurS[nLod];
 	pFr->fBlurT = pFr->fBlurS;
-
-	Vec3 vLightDir = pFr->vLightSrcRelPos.normalized();
 
 	float fDist = pFr->vLightSrcRelPos.GetLength();
 
@@ -904,8 +897,8 @@ bool CLightEntity::GetGsmFrustumBounds(const CCamera& viewFrustum, ShadowMapFrus
 
 	//get composite shadow matrix to compute bounds
 	//FIX: check viewFrustum.GetMatrix().GetInverted()???
-	Matrix44A mCameraView = Matrix44A(viewFrustum.GetMatrix().GetInverted());
-	/*GetShadowMatrixOrtho( mShadowProj,
+	/*Matrix44A mCameraView = Matrix44A(viewFrustum.GetMatrix().GetInverted());
+	   GetShadowMatrixOrtho( mShadowProj,
 	   mShadowView,
 	   mCameraView, pShadowFrustum, false);*/
 
@@ -933,7 +926,7 @@ bool CLightEntity::GetGsmFrustumBounds(const CCamera& viewFrustum, ShadowMapFrus
 
 	bool bIntersected = false;
 	Vec3 vP0_NDC, vP1_NDC;
-	f32 fZ_NDC_Max = 0.0f; // nead plane
+	//f32 fZ_NDC_Max = 0.0f; // near plane
 	f32 fDisatanceToMaxBound = 0;
 	Vec3 vMaxBoundPoint(ZERO);
 
@@ -1774,15 +1767,6 @@ ShadowMapFrustum* CLightEntity::GetShadowFrustum(int nId)
 
 void CLightEntity::OnCasterDeleted(IShadowCaster* pCaster)
 {
-	if (!m_pShadowMapInfo)
-		return;
-
-	for (int nGsmId = 0; nGsmId < MAX_GSM_LODS_NUM; nGsmId++)
-	{
-		if (ShadowMapFrustum* pFr = m_pShadowMapInfo->pGSM[nGsmId])
-		{
-		}
-	}
 }
 
 void CLightEntity::GetMemoryUsage(ICrySizer* pSizer) const

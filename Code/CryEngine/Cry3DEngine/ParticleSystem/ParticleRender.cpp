@@ -176,7 +176,6 @@ SFarCulling::SFarCulling(const CParticleComponentRuntime& runtime, const CCamera
 
 SNearCulling::SNearCulling(const CParticleComponentRuntime& runtime, const CCamera& camera, bool clipNear)
 {
-	const CParticleEmitter& emitter = *runtime.GetEmitter();
 	const SVisibilityParams& visibility = runtime.ComponentParams().m_visibility;
 
 	const float camNearClip = clipNear ? camera.GetEdgeN().GetLength() : 0.0f;

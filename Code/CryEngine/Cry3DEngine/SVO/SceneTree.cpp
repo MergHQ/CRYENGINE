@@ -2410,9 +2410,6 @@ void CSvoEnv::CollectLights()
 			for (int n = 0; n < objCount; n++)
 			{
 				ILightSource* pRN = (ILightSource*)arrObjects[n];
-
-				static ICVar* e_svoMinNodeSize = gEnv->pConsole->GetCVar("e_svoMinNodeSize");
-
 				SRenderLight& rLight = pRN->GetLightProperties();
 
 				I3DEngine::SLightTI lightTI;
@@ -2527,8 +2524,6 @@ void CSvoEnv::CollectAnalyticalOccluders()
 	areaBox.Reset();
 	areaBox.Add(gEnv->pSystem->GetViewCamera().GetPosition());
 	areaBox.Expand(Vec3(GetCVars()->e_svoTI_ConeMaxLength, GetCVars()->e_svoTI_ConeMaxLength, GetCVars()->e_svoTI_ConeMaxLength));
-
-	Vec3 vCamPos = CVoxelSegment::m_voxCam.GetPosition();
 
 	// collect from static entities
 	if (int objCount = gEnv->p3DEngine->GetObjectsByTypeInBox(eERType_MovableBrush, areaBox, (IRenderNode**)0))

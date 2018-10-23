@@ -498,7 +498,6 @@ bool CRichSaveGameHelper::GetSaveGames(CPlayerProfileManager::SUserEntry* pEntry
 	profilePrefix += '_';
 	size_t profilePrefixLen = profilePrefix.length();
 
-	ICryPak* pCryPak = gEnv->pCryPak;
 	_finddata_t fd;
 
 	path.TrimRight("/\\");

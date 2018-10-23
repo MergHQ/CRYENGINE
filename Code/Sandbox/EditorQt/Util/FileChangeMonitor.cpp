@@ -7,9 +7,8 @@
 
 #include <Util/FileUtil.h>
 
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 #include <QtUtil.h>
-
 
 #include <CrySystem/IConsole.h>
 #include <CrySystem/ISystem.h>

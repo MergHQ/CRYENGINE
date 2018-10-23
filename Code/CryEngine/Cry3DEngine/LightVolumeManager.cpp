@@ -59,7 +59,7 @@ uint16 CLightVolumesMgr::RegisterVolume(const Vec3& vPos, f32 fRadius, uint8 nCl
 
 		// create new volume
 		size_t nIndex = ~0;
-		SLightVolInfo* pLightVolInfo = ::new(m_pLightVolsInfo.push_back_new(nIndex))SLightVolInfo(vPos, fRadius, nClipVolumeRef);
+		::new(m_pLightVolsInfo.push_back_new(nIndex))SLightVolInfo(vPos, fRadius, nClipVolumeRef);
 		*pCurrentVolumeID = static_cast<uint16>(nIndex + 1);
 
 		return *pCurrentVolumeID;
@@ -235,7 +235,6 @@ void C3DEngine::GetLightVolumes(threadID nThreadID, SLightVolume*& pLightVols, u
 void CLightVolumesMgr::DrawDebug(const SRenderingPassInfo& passInfo)
 {
 #ifndef _RELEASE
-	IRenderer* pRenderer = GetRenderer();
 	IRenderAuxGeom* pAuxGeom = GetRenderer()->GetIRenderAuxGeom();
 	if (!pAuxGeom || !passInfo.IsGeneralPass())
 		return;
@@ -244,7 +243,6 @@ void CLightVolumesMgr::DrawDebug(const SRenderingPassInfo& passInfo)
 	ColorF cBad = ColorF(1.0f, 0.0, 0.0f, 1.0f);
 	ColorF cWarning = ColorF(1.0f, 1.0, 0.0f, 1.0f);
 	ColorF cGood = ColorF(0.0f, 0.5, 1.0f, 1.0f);
-	ColorF cSingleCell = ColorF(0.0f, 1.0, 0.0f, 1.0f);
 
 	const uint32 nLightVols = m_pLightVolsInfo.size();
 	LightVolumeVector& lightVols = m_pLightVolumes[passInfo.ThreadID()];

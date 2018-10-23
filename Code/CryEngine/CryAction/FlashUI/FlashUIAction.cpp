@@ -247,8 +247,12 @@ void CUIActionManager::EnableAction(IUIAction* pAction, bool bEnable)
 //------------------------------------------------------------------------------------
 void CUIActionManager::AddListener(IUIActionListener* pListener, const char* name)
 {
+#if defined(USE_CRY_ASSERT)
 	const bool ok = m_listener.Add(pListener, name);
 	CRY_ASSERT_MESSAGE(ok, "Listener already registered!");
+#else
+	m_listener.Add(pListener, name);
+#endif
 }
 
 //------------------------------------------------------------------------------------

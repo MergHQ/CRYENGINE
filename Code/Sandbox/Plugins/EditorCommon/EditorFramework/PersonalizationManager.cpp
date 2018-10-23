@@ -3,7 +3,7 @@
 #include "stdafx.h"
 #include "PersonalizationManager.h"
 
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 
 #include <QFile>
 #include <QJsonDocument>

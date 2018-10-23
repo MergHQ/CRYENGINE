@@ -216,8 +216,6 @@ CLodValue CVegetation::ComputeLod(int wantedLod, const SRenderingPassInfo& passI
 
 		if (passInfo.IsGeneralPass())
 		{
-			const float fSpriteSwitchDist = GetSpriteSwitchDist();
-
 			if (m_pSpriteInfo)
 			{
 				m_pSpriteInfo->ucDissolveOut = 255;
@@ -312,7 +310,6 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 
 	const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 	const Vec3 vObjCenter = GetBBox().GetCenter();
-	const Vec3 vObjPos = GetPos();
 
 	float fEntDistance = pRenderObject->m_bPermanent ? 0 : sqrt_tpl(Distance::Point_AABBSq(vCamPos, GetBBox())) * passInfo.GetZoomFactor();
 	float fEntDistance2D = pRenderObject->m_bPermanent ? 0 : sqrt_tpl(vCamPos.GetSquaredDistance2D(m_vPos)) * passInfo.GetZoomFactor();
@@ -340,7 +337,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 
 	CRY_ASSERT(fEntDistance * 2.0f <= std::numeric_limits<decltype(CRenderObject::m_nSort)>::max());
 	pRenderObject->m_fDistance = fEntDistance;
-	pRenderObject->m_nSort = fastround_positive(fEntDistance * 2.0f);
+	pRenderObject->m_nSort = HalfFlip(CryConvertFloatToHalf(fEntDistance * 2.0f));
 
 	if (uint8 nMaterialLayers = GetMaterialLayers())
 	{
@@ -843,8 +840,6 @@ void CVegetation::OnRenderNodeBecomeVisibleAsync(SRenderNodeTempData* pTempData,
 	userData.objMat = mtx;
 
 	const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
-	StatInstGroup& vegetGroup = GetStatObjGroup();
-	float fEntDistance2D = sqrt_tpl(vCamPos.GetSquaredDistance2D(m_vPos)) * passInfo.GetZoomFactor();
 	float fEntDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, GetBBox())) * passInfo.GetZoomFactor();
 
 	userData.nWantedLod = CObjManager::GetObjectLOD(this, fEntDistance);
@@ -867,7 +862,6 @@ void CVegetation::UpdateSpriteInfo(SVegetationSpriteInfo& si, float fSpriteAmoun
 	StatInstGroup& vegetGroup = GetStatObjGroup();
 
 	const float nMin = 1;
-	const float nMax = 255;
 
 	si.ucAlphaTestRef = (byte)nMin;
 

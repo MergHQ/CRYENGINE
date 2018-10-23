@@ -200,7 +200,6 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	const CParticleComponentRuntime& runtime = spritesContext.m_runtime;
-	const SVisibilityParams& visibility = runtime.ComponentParams().m_visibility;
 	const CParticleEmitter& emitter = *runtime.GetEmitter();
 	const CCamera& camera = *spritesContext.m_camInfo.pCamera;
 	const Vec3 cameraPosition = camera.GetPosition();
@@ -329,7 +328,6 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 
 		Plane waterPlane;
 		const float waterSign = (cameraUnderWater == isAfterWater) ? -1.002f : 1.002f; // Slightly above one to fix rcp_fast inaccuracy
-		const uint count = spritesContext.m_particleIds.size();
 
 		numParticles = 0;
 		for (auto particleId : particleIds)

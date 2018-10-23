@@ -360,7 +360,7 @@ bool CFeatureCollision::PathWorldIntersection(SContactPoint& contact, const Quad
 		Vec3 posD = path.PosD(t0, t1);
 		Vec3 posH = path.PosD(t0, (t0 + t1) * 0.5f);
 		float sqrD = posD.len2(), sqrH = posH.len2(), dotDH = posD | posH;
-		float maxDev = kMaxPathDeviation * (path.timeD > path.time1 ? 0.75f : 1.0f);
+
 		if (sqrH * sqrD - sqr(dotDH) > sqr(kMaxPathDeviation) * sqrD)
 		{
 			float tDiv = (t0 + t1) * 0.5f;

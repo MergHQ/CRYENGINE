@@ -113,8 +113,6 @@ void CPlayerProfileImplConsole::InternalMakeFSSaveGamePath(SUserEntry* pEntry, c
 //------------------------------------------------------------------------
 bool CPlayerProfileImplConsole::SaveProfile(SUserEntry* pEntry, CPlayerProfile* pProfile, const char* name, bool initialSave, int /*reason = ePR_All*/)
 {
-	IPlatformOS* os = gEnv->pSystem->GetPlatformOS();
-
 	// save the profile into a specific location
 
 	// check if it's a valid filename

@@ -7,7 +7,7 @@
 #include "DialogCommon.h"
 #include "ImporterUtil.h"
 
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 #include <ThreadingUtils.h>
 
 #include <QDir>

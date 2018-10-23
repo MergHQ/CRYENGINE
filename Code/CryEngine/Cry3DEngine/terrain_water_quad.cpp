@@ -302,7 +302,7 @@ void COcean::Update(const SRenderingPassInfo& passInfo)
 		return;
 
 	const CCamera& rCamera = passInfo.GetCamera();
-	int32 nFillThreadID = passInfo.ThreadID();
+	//int32 nFillThreadID = passInfo.ThreadID();
 	uint32 nBufID = passInfo.GetFrameID() % CYCLE_BUFFERS_NUM;
 
 	Vec3 vCamPos = rCamera.GetPosition();
@@ -469,10 +469,7 @@ void COcean::Render(const SRenderingPassInfo& passInfo)
 	// if reaches render stage - means ocean is visible
 
 	C3DEngine* p3DEngine = (C3DEngine*)Get3DEngine();
-	IRenderer* pRenderer(GetRenderer());
 
-	int32 nBufID = (passInfo.GetFrameID() & 1);
-	Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 	float fWaterLevel = p3DEngine->GetWaterLevel();
 
 	const int fillThreadID = passInfo.ThreadID();
@@ -486,9 +483,6 @@ void COcean::Render(const SRenderingPassInfo& passInfo)
 	m_fLastFov = passInfo.GetCamera().GetFov();
 
 	// test for multiple lights and shadows support
-
-	SRenderObjData* pOD = pObject->GetObjData();
-
 	m_Camera = passInfo.GetCamera();
 	pObject->m_fAlpha = 1.f;//m_fWaterTranspRatio;
 
@@ -552,8 +546,6 @@ void COcean::Render(const SRenderingPassInfo& passInfo)
 
 void COcean::RenderBottomCap(const SRenderingPassInfo& passInfo)
 {
-	C3DEngine* p3DEngine = (C3DEngine*)Get3DEngine();
-
 	const CCamera& pCam = passInfo.GetCamera();
 	Vec3 vCamPos = pCam.GetPosition();
 
@@ -639,7 +631,6 @@ void COcean::RenderFog(const SRenderingPassInfo& passInfo)
 	if (!GetCVars()->e_Fog || !GetCVars()->e_FogVolumes)
 		return;
 
-	IRenderer* pRenderer(GetRenderer());
 	C3DEngine* p3DEngine(Get3DEngine());
 
 	const int fillThreadID = passInfo.ThreadID();
@@ -766,7 +757,6 @@ bool COcean::IsVisible(const SRenderingPassInfo& passInfo)
 	if (abs(m_nLastVisibleFrameId - passInfo.GetFrameID()) <= 2)
 		m_fLastVisibleFrameTime = 0.0f;
 
-	ITimer* pTimer(gEnv->pTimer);
 	m_fLastVisibleFrameTime += gEnv->pTimer->GetFrameTime();
 
 	if (m_fLastVisibleFrameTime > 2.0f)                                 // at least 2 seconds

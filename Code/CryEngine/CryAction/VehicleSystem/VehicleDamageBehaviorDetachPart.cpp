@@ -259,9 +259,6 @@ bool CVehicleDamageBehaviorDetachPart::MovePartToTheNewEntity(IEntity* pTargetEn
 	if (!pPartBase)
 		return false;
 
-	IEntity* pVehicleEntity = m_pVehicle->GetEntity();
-	CRY_ASSERT(pVehicleEntity);
-
 	assert(m_detachedEntityId == pTargetEntity->GetId());
 
 	IStatObj* pStatObj = pPartBase->GetStatObj();
@@ -279,8 +276,6 @@ bool CVehicleDamageBehaviorDetachPart::MovePartToTheNewEntity(IEntity* pTargetEn
 	pTargetEntity->SetSlotLocalTM(slot, localTM);
 
 	pPartBase->SetStatObj(NULL);
-
-	TVehiclePartVector& parts = m_pVehicle->GetParts();
 
 	const CVehiclePartBase::TVehicleChildParts& children = pPartBase->GetChildParts();
 	for (CVehiclePartBase::TVehicleChildParts::const_iterator ite = children.begin(), end = children.end(); ite != end; ++ite)

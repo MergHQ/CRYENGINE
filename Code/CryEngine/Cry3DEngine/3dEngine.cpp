@@ -771,7 +771,6 @@ void C3DEngine::ProcessCVarsChange()
 		UpdateStatInstGroups();
 
 		// re-register every instance in level
-		const float terrainSize = (float)GetTerrainSize();
 		GetObjManager()->ReregisterEntitiesInArea(nullptr, true);
 
 		// force recreation of terrain meshes
@@ -3149,31 +3148,31 @@ static inline __m128i float_to_half_SSE2(__m128 f, __m128i& s)
 
 	DECL_CONST4(mask_sign, 0x80000000u);
 	DECL_CONST4(mask_round, ~0xfffu);
-	DECL_CONST4(c_f32infty, 255 << 23);
+	//DECL_CONST4(c_f32infty, 255 << 23);
 	DECL_CONST4(c_magic, 15 << 23);
-	DECL_CONST4(c_nanbit, 0x200);
-	DECL_CONST4(c_infty_as_fp16, 0x7c00);
+	//DECL_CONST4(c_nanbit, 0x200);
+	//DECL_CONST4(c_infty_as_fp16, 0x7c00);
 	DECL_CONST4(c_clamp, (31 << 23) - 0x1000);
 
 	__m128 msign = GET_CONSTF(mask_sign);
 	__m128 justsign = _mm_and_ps(msign, f);
-	__m128i f32infty = GET_CONSTI(c_f32infty);
+	//__m128i f32infty = GET_CONSTI(c_f32infty);
 	__m128 absf = _mm_xor_ps(f, justsign);
 	__m128 mround = GET_CONSTF(mask_round);
-	__m128i absf_int = _mm_castps_si128(absf); // pseudo-op, but val needs to be copied once so count as mov
-	__m128i b_isnan = _mm_cmpgt_epi32(absf_int, f32infty);
-	__m128i b_isnormal = _mm_cmpgt_epi32(f32infty, _mm_castps_si128(absf));
-	__m128i nanbit = _mm_and_si128(b_isnan, GET_CONSTI(c_nanbit));
-	__m128i inf_or_nan = _mm_or_si128(nanbit, GET_CONSTI(c_infty_as_fp16));
+	//__m128i absf_int = _mm_castps_si128(absf); // pseudo-op, but val needs to be copied once so count as mov
+	//__m128i b_isnan = _mm_cmpgt_epi32(absf_int, f32infty);
+	//__m128i b_isnormal = _mm_cmpgt_epi32(f32infty, _mm_castps_si128(absf));
+	//__m128i nanbit = _mm_and_si128(b_isnan, GET_CONSTI(c_nanbit));
+	//__m128i inf_or_nan = _mm_or_si128(nanbit, GET_CONSTI(c_infty_as_fp16));
 
 	__m128 fnosticky = _mm_and_ps(absf, mround);
 	__m128 scaled = _mm_mul_ps(fnosticky, GET_CONSTF(c_magic));
 	__m128 clamped = _mm_min_ps(scaled, GET_CONSTF(c_clamp)); // logically, we want PMINSD on "biased", but this should gen better code
 	__m128i biased = _mm_sub_epi32(_mm_castps_si128(clamped), _mm_castps_si128(mround));
 	__m128i shifted = _mm_srli_epi32(biased, 13);
-	__m128i normal = _mm_and_si128(shifted, b_isnormal);
-	__m128i not_normal = _mm_andnot_si128(b_isnormal, inf_or_nan);
-	__m128i joined = _mm_or_si128(normal, not_normal);
+	//__m128i normal = _mm_and_si128(shifted, b_isnormal);
+	//__m128i not_normal = _mm_andnot_si128(b_isnormal, inf_or_nan);
+	//__m128i joined = _mm_or_si128(normal, not_normal);
 
 	//	__m128i sign_shift = _mm_srli_epi32(_mm_castps_si128(justsign), 16);
 	//	__m128i final = _mm_or_si128(joined, sign_shift);
@@ -3467,7 +3466,6 @@ void C3DEngine::UpdateWindGridArea(SWindGrid& rWindGrid, const SOptimizedOutdoor
 
 	static const float fBEND_RESPONSE = 0.25f;
 	static const float fMAX_BENDING = 2.f;
-	bool bIndoors = false;
 
 	// Rasterized box
 	AABB windBoxC = windBox;
@@ -5614,7 +5612,6 @@ void C3DEngine::SaveInternalState(struct IDataWriteStream& writer, const AABB& f
 	IVisAreaManager* pVisAreaManager = GetIVisAreaManager();
 	if ((NULL != pTerrain) && (NULL != pVisAreaManager))
 	{
-		const float levelBounds = 2048.0f;
 		const uint8 terrainMask = bTerrain ? 1 : 0;
 
 		// set export parameters

@@ -14,7 +14,7 @@
 #include <CryAnimation/ICryAnimation.h>
 #include <CrySystem/ILocalizationManager.h>
 #include "QT/Widgets/QWaitProgress.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include "Util/MFCUtil.h"
 #include "Util/FileUtil.h"
 #include "ModelViewport.h"

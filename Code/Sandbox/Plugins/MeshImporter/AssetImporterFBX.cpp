@@ -15,7 +15,7 @@
 #include <AssetSystem/AssetImportContext.h>
 #include <AssetSystem/AssetManager.h>
 #include <AssetSystem/AssetType.h>
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 #include <ThreadingUtils.h>
 
 #include <Cry3DEngine/I3DEngine.h>

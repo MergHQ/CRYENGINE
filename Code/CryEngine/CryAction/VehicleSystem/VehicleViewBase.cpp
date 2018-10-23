@@ -338,8 +338,8 @@ void CVehicleViewBase::Update(const float frameTime)
 {
 	const float recenterSpeed = 4.25f;
 
-	IActor* pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(m_pSeat->GetPassenger());
-	/*
+	/*IActor* pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(m_pSeat->GetPassenger());
+	
 	   if (false && pActor)
 	    m_viewAngleOffset = Ang3(pActor->GetViewAngleOffset());
 	 */

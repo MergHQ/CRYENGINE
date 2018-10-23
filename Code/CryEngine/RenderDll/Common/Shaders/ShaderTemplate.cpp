@@ -183,9 +183,6 @@ uint32 SShaderItem::PostLoad()
 		if (pTech->m_nTechnique[TTYPE_WATERCAUSTICPASS] > 0)
 			nPreprocessFlags |= FB_WATER_CAUSTIC;
 
-		if ((pSH->m_Flags2 & EF2_SKINPASS))
-			nPreprocessFlags |= FB_SKIN;
-
 		if (pSH->m_Flags2 & EF2_EYE_OVERLAY)
 			nPreprocessFlags |= FB_EYE_OVERLAY;
 

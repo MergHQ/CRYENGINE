@@ -975,8 +975,6 @@ STRUCT_INFO_END(CompatibilityParticleParams)
 //////////////////////////////////////////////////////////////////////////
 void CompatibilityParticleParams::Correct(CParticleEffect* pEffect)
 {
-	CTypeInfo const& info = ::TypeInfo(this);
-
 	// Convert any obsolete parameters set.
 	switch (nVersion)
 	{

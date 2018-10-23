@@ -18,11 +18,12 @@
 #include "AssetSystem/FileOperationsExecutor.h"
 
 #include "Controls/QuestionDialog.h"
-#include "Util/BoostPythonHelpers.h"
 #include "Material/Material.h"
-#include <CryString/StringUtils.h>
 #include "RoadObject.h"
-#include <FilePathUtil.h>
+#include "Util/BoostPythonHelpers.h"
+#include <CryString/StringUtils.h>
+#include <FileUtils.h>
+#include <PathUtils.h>
 #include <QtUtil.h>
 
 #include <EditorFramework/Editor.h>
@@ -725,7 +726,7 @@ void CObjectLayerManager::Serialize(CObjectArchive& ar)
 			{
 				SaveLayer(&ar, pLayer);
 			}
-			else if (pLayer->IsModified() || !PathUtil::FileExists(pLayer->GetLayerFilepath()))
+			else if (pLayer->IsModified() || !FileUtils::FileExists(pLayer->GetLayerFilepath()))
 			{
 				// Save external level to file.
 				SaveLayer(&ar, pLayer);
@@ -741,7 +742,7 @@ void CObjectLayerManager::DeletePendingLayers()
 {
 	for (auto it = m_toBeDeleted.begin(); it != m_toBeDeleted.end();)
 	{
-		if (!PathUtil::PathExists(*it))
+		if (!FileUtils::PathExists(*it))
 		{
 			it = m_toBeDeleted.erase(it);
 		}
@@ -765,12 +766,12 @@ void CObjectLayerManager::DeletePendingLayers()
 		{
 			filesToDelete.push_back(PathUtil::ToGamePath(path));
 			string bakFile = PathUtil::ReplaceExtension(path.c_str(), "bak").c_str();
-			if (PathUtil::FileExists(bakFile))
+			if (FileUtils::FileExists(bakFile))
 			{
 				filesToDelete.push_back(PathUtil::ToGamePath(bakFile));
 			}
 			bakFile += '2';
-			if (PathUtil::FileExists(bakFile))
+			if (FileUtils::FileExists(bakFile))
 			{
 				filesToDelete.push_back(PathUtil::ToGamePath(bakFile));
 			}

@@ -15,7 +15,7 @@
 #include <Material/MaterialHelpers.h>
 
 // EditorCommon
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include <Controls/QuestionDialog.h>
 
 #include <QFileInfo>

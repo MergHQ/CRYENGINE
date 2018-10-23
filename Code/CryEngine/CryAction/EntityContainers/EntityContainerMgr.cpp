@@ -360,7 +360,7 @@ void CEntityContainerMgr::DebugRender(EntityId containerId)
 	{
 		if (const IEntity* pEntityContainer = gEnv->pEntitySystem->GetEntity(containerId))
 		{
-			if (const CEntityContainer* pGroup = GetContainerConst(containerId))
+			if (GetContainerConst(containerId) != nullptr)
 			{
 				// Render at original position
 				DebugRender(containerId, pEntityContainer->GetWorldPos());

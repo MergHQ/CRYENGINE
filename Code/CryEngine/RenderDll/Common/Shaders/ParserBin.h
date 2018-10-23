@@ -486,7 +486,6 @@ enum EToken
 	eT_Hair,
 	eT_Compute,
 	eT_ForceGeneralPass,
-	eT_SkinPass,
 	eT_EyeOverlay,
 
 	eT_Metal,

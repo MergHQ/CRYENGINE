@@ -779,6 +779,7 @@ void CD3D9Renderer::SubmitRenderViewForRendering(int nFlags, const SRenderingPas
 			else
 			{
 				pRenderView->SetShaderRenderingFlags(nFlags);
+				pRenderView->SetZoomFactor(passInfo.GetZoomFactor());
 				RT_RenderScene(pRenderView);
 			}
 

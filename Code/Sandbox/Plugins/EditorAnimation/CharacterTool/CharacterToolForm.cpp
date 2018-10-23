@@ -28,7 +28,7 @@
 #include "UnsavedChangesDialog.h"
 #include "FileDialogs/EngineFileDialog.h"
 #include "FileDialogs/SystemFileDialog.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include "SplitViewport.h"
 #include "CharacterDocument.h"
 #include "AnimationList.h"

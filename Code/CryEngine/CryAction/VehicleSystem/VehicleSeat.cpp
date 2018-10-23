@@ -324,11 +324,9 @@ void CVehicleSeat::OnSpawnComplete()
 
 		static_cast<CVehicleSystem*>(CCryAction::GetCryAction()->GetIVehicleSystem())->SetInitializingSeat(this);
 
-		IEntity* pSerializerEntity = gEnv->pEntitySystem->SpawnEntity(params);
+		gEnv->pEntitySystem->SpawnEntity(params);
 
 		static_cast<CVehicleSystem*>(CCryAction::GetCryAction()->GetIVehicleSystem())->SetInitializingSeat(0);
-
-		CGameObject* pSerializerGameObject = (CGameObject*)pSerializerEntity->GetProxy(ENTITY_PROXY_USER);
 	}
 
 	for (TVehicleSeatActionVector::iterator it = m_seatActions.begin(), end = m_seatActions.end(); it != end; ++it)
@@ -545,7 +543,6 @@ bool CVehicleSeat::Enter(EntityId actorId, bool isTransitionEnabled)
 			pSeatToEnter = this;
 
 		// Transition Animation.
-		int seatID = pSeatToEnter->GetSeatId();
 		stack_string fragmentName = "EnterDoor";
 		fragmentName.append(pSeatToEnter->GetName().c_str());
 		FragmentID fragID = pContDef->m_fragmentIDs.Find(fragmentName.c_str());
@@ -1572,7 +1569,7 @@ void CVehicleSeat::Update(float deltaTime)
 			if (!seatActionData.isEnabled || !seatActionData.pSeatAction)
 				continue;
 
-			if (CVehicleSeatActionWeapons* pActionWeapons = CAST_VEHICLEOBJECT(CVehicleSeatActionWeapons, seatActionData.pSeatAction))
+			if (CAST_VEHICLEOBJECT(CVehicleSeatActionWeapons, seatActionData.pSeatAction) != nullptr)
 			{
 				seatActionData.pSeatAction->Update(deltaTime);
 			}
@@ -1819,7 +1816,6 @@ void CVehicleSeat::UpdateSounds(float deltaTime)
 		return;
 
 	SSeatSoundParams& params = GetSoundParams();
-	const char* moodName = params.moodName.c_str();
 
 	float mood = params.mood;
 

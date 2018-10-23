@@ -9,14 +9,14 @@
 #include "IBackgroundScheduleManager.h"
 
 #include <Gizmos/AxisHelper.h>
+#include <IObjectManager.h>
 #include <Objects/DisplayContext.h>
 #include <Objects/InspectorWidgetCreator.h>
+#include <PathUtils.h>
 #include <Preferences/ViewportPreferences.h>
 #include <RenderLock.h>
 #include <Serialization/Decorators/EditorActionButton.h>
 #include <Util/Variable.h>
-#include <FilePathUtil.h>
-#include <IObjectManager.h>
 
 #include <Cry3DEngine/ITimeOfDay.h>
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>

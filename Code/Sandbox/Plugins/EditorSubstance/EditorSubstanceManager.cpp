@@ -3,33 +3,33 @@
 #include "StdAfx.h"
 #include "EditorSubstanceManager.h"
 
+#include "AssetTypes/SubstanceArchive.h"
+#include "ISubstanceManager.h"
+#include "PresetCreator.h"
+#include "Renderers/Compressed.h"
+#include "Renderers/Preview.h"
 #include "SandboxPlugin.h"
-#include <CryString/CryPath.h>
+#include "SubstanceCommon.h"
+#include "SubstancePreset.h"
 
-#include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
-#include <CrySystem/File/IFileChangeMonitor.h>
-#include <CrySerialization/IArchiveHost.h>
-#include "CrySerialization/Serializer.h"
-#include "CrySerialization/STL.h"
-#include "IEditor.h"
 #include <AssetSystem/AssetEditor.h>
 #include <AssetSystem/AssetManager.h>
 #include <AssetSystem/AssetManagerHelpers.h>
-#include "Notifications/NotificationCenter.h"
-#include <FilePathUtil.h>
-#include "Util/FileUtil.h"
-#include "ThreadingUtils.h"
-#include "Util/Image.h"
-#include "Util/ImageUtil.h"
-#include "QtUtil.h"
+#include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
+#include <CrySerialization/IArchiveHost.h>
+#include <CrySerialization/STL.h>
+#include <CrySerialization/Serializer.h>
+#include <CrySystem/File/IFileChangeMonitor.h>
+#include <IEditor.h>
+#include <Notifications/NotificationCenter.h>
+#include <PathUtils.h>
+#include <QtUtil.h>
+#include <ThreadingUtils.h>
+#include <Util/FileUtil.h>
+#include <Util/Image.h>
+#include <Util/ImageUtil.h>
 
-#include "SubstanceCommon.h"
-#include "SubstancePreset.h"
-#include "ISubstanceManager.h"
-#include "PresetCreator.h"
-#include "AssetTypes/SubstanceArchive.h"
-#include "Renderers/Compressed.h"
-#include "Renderers/Preview.h"
+#include <CryString/CryPath.h>
 
 #include <QMenu>
 

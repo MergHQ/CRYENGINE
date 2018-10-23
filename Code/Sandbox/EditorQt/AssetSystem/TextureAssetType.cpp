@@ -2,7 +2,7 @@
 #include <StdAfx.h>
 #include "TextureAssetType.h"
 
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 
 REGISTER_ASSET_TYPE(CTextureType)
 

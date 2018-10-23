@@ -315,7 +315,6 @@ void DecodeMeshVerticesBranchless(SGeomCacheRenderMeshUpdateContext& updateConte
 	const uint numSIMDIterations = numVertices / numVerticesPerIteration;
 
 	float* pPrevPositionsF = updateContext.m_prevPositions.size() > 0 ? (float*)&updateContext.m_prevPositions[0] : NULL;
-	float* pStaticPositionsF = staticMeshData.m_positions.size() > 0 ? (float*)&staticMeshData.m_positions[0] : NULL;
 	float* pVelocitiesF = (float*)&updateContext.m_pVelocities[0];
 	__m128i* pFloorPositions128 = (__m128i*)&pFloorPositions[0];
 	__m128i* pCeilPositions128 = (__m128i*)&pCeilPositions[0];
@@ -465,7 +464,6 @@ void DecodeMeshVerticesBranchless(SGeomCacheRenderMeshUpdateContext& updateConte
 			                               DecodePosition(aabbMin, aabbSize, pCeilPositions[i], posConvertFactor), lerpFactor);
 		}
 
-		Vec3 oldPos = updateContext.m_pPositions[i];
 		updateContext.m_pPositions[i] = newPosition;
 		updateContext.m_prevPositions[i] = newPosition;
 
@@ -559,7 +557,6 @@ void DecodeIFrame(const CGeomCache* pGeomCache, char* pData)
 			continue;
 		}
 
-		const GeomCacheFile::SMeshFrameHeader* pFrameHeader = reinterpret_cast<GeomCacheFile::SMeshFrameHeader*>(pData);
 		pData += sizeof(GeomCacheFile::SMeshFrameHeader);
 
 		const GeomCacheFile::EStreams streamMask = currentStaticMeshData.m_animatedStreams;

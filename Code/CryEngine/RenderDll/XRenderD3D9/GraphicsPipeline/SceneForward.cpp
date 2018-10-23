@@ -1380,8 +1380,18 @@ void CSceneForwardStage::ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex)
 
 	PROFILE_LABEL_SCOPE("SKY_PASS");
 
+	CRenderView* pRenderView = RenderView();
+
+	const bool applyFog = pRenderView->IsGlobalFogEnabled() && !(GetGraphicsPipeline().IsPipelineFlag(CGraphicsPipeline::EPipelineFlags::NO_SHADER_FOG));
+	bool isProcedualSky = false;
+	bool hasSkyDomeTexture = false;
+
 	// Update sky dome texture if new data is available
 	int timestamp = 0;
+
+	m_pSkyDomeTextureMie = CRendererResources::s_ptexBlack;
+	m_pSkyDomeTextureRayleigh = CRendererResources::s_ptexBlack;
+	m_pSkyMoonTex = CRendererResources::s_ptexBlack;
 	if (m_pHDRSkyRE)
 	{
 		if (m_pHDRSkyRE->m_skyDomeTextureLastTimeStamp != m_pHDRSkyRE->m_pRenderParams->m_skyDomeTextureTimeStamp)
@@ -1395,7 +1405,13 @@ void CSceneForwardStage::ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex)
 			m_pHDRSkyRE->m_skyDomeTextureLastTimeStamp = m_pHDRSkyRE->m_pRenderParams->m_skyDomeTextureTimeStamp;
 		}
 
+		m_pSkyDomeTextureMie = m_pHDRSkyRE->m_pSkyDomeTextureMie;
+		m_pSkyDomeTextureRayleigh = m_pHDRSkyRE->m_pSkyDomeTextureRayleigh;
+		if (m_pHDRSkyRE->m_moonTexId > 0)
+			m_pSkyMoonTex = CTexture::GetByID(m_pHDRSkyRE->m_moonTexId);
+
 		timestamp = m_pHDRSkyRE->m_skyDomeTextureLastTimeStamp;
+		isProcedualSky = true;
 	}
 
 	CTexture* pSkyDomeTex = CRendererResources::s_ptexBlack;
@@ -1405,10 +1421,11 @@ void CSceneForwardStage::ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex)
 		auto* pResources = (CShaderResources*)skyMat->GetShaderItem().m_pShaderResources;
 
 		if (auto pSkyTexInfo = pResources->m_Textures[EFTT_DIFFUSE])
+		{
 			pSkyDomeTex = CTexture::ForName(pSkyTexInfo->m_Name, 0, eTF_Unknown);
+			hasSkyDomeTexture = true;
+		}
 	}
-
-	CRenderView* pRenderView = RenderView();
 
 	D3DViewPort viewport = RenderViewportToD3D11Viewport(RenderView()->GetViewport());
 	if (pRenderView->IsRecursive())
@@ -1417,24 +1434,11 @@ void CSceneForwardStage::ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex)
 	}
 	CRY_ASSERT(pColorTex->GetWidth() == viewport.Width && pColorTex->GetHeight() == viewport.Height);
 
-	const bool bFog = pRenderView->IsGlobalFogEnabled() && !(GetGraphicsPipeline().IsPipelineFlag(CGraphicsPipeline::EPipelineFlags::NO_SHADER_FOG));
-
-	m_pSkyDomeTextureMie = CRendererResources::s_ptexBlack;
-	m_pSkyDomeTextureRayleigh = CRendererResources::s_ptexBlack;
-	m_pSkyMoonTex = CRendererResources::s_ptexBlack;
-	if (m_pHDRSkyRE)
-	{
-		m_pSkyDomeTextureMie = m_pHDRSkyRE->m_pSkyDomeTextureMie;
-		m_pSkyDomeTextureRayleigh = m_pHDRSkyRE->m_pSkyDomeTextureRayleigh;
-		if (m_pHDRSkyRE->m_moonTexId > 0)
-			m_pSkyMoonTex = CTexture::GetByID(m_pHDRSkyRE->m_moonTexId);
-	}
-
 	uint64 rtMask = 0;
 
-	rtMask |= !!m_pHDRSkyRE ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
-	rtMask |= pSkyDomeTex   ? g_HWSR_MaskBit[HWSR_SAMPLE1] : 0;
-	rtMask |= bFog          ? g_HWSR_MaskBit[HWSR_FOG    ] : 0;
+	rtMask |= isProcedualSky    ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
+	rtMask |= hasSkyDomeTexture ? g_HWSR_MaskBit[HWSR_SAMPLE1] : 0;
+	rtMask |= applyFog          ? g_HWSR_MaskBit[HWSR_FOG    ] : 0;
 
 	if (m_skyPass.IsDirty(rtMask, timestamp, pSkyDomeTex->GetTextureID(), pDepthTex->GetTextureID()))
 	{

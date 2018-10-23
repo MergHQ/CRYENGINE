@@ -84,12 +84,13 @@ void CLipSyncProvider_FacialInstance::LipSyncWithSound(const CryAudio::ControlId
 
 void CLipSync_FacialInstance::InjectLipSyncProvider()
 {
-	IEntity* pEntity = GetEntity();
+	REINST(add SetLipSyncProvider to interface)
+
+	/*IEntity* pEntity = GetEntity();
 	IEntityAudioComponent* pSoundProxy = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 	CRY_ASSERT(pSoundProxy);
 	m_pLipSyncProvider.reset(new CLipSyncProvider_FacialInstance(pEntity->GetId()));
-	REINST(add SetLipSyncProvider to interface)
-	//pSoundProxy->SetLipSyncProvider(m_pLipSyncProvider);
+	pSoundProxy->SetLipSyncProvider(m_pLipSyncProvider);*/
 }
 
 void CLipSync_FacialInstance::GetMemoryUsage(ICrySizer* pSizer) const
@@ -199,10 +200,10 @@ void CLipSync_FacialInstance::PostRemoteSpawn()
 
 void CLipSync_FacialInstance::OnShutDown()
 {
-	IEntity* pEntity = GetEntity();
+	REINST(add SetLipSyncProvider to interface)
+	/*IEntity* pEntity = GetEntity();
 	if (IEntityAudioComponent* pSoundProxy = pEntity->GetComponent<IEntityAudioComponent>())
 	{
-		REINST(add SetLipSyncProvider to interface)
-		//pSoundProxy->SetLipSyncProvider(ILipSyncProviderPtr());
-	}
+		pSoundProxy->SetLipSyncProvider(ILipSyncProviderPtr());
+	}*/
 }

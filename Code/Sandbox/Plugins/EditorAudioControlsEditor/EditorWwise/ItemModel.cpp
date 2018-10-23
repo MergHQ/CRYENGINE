@@ -7,7 +7,7 @@
 
 #include <ModelUtils.h>
 #include <DragDrop.h>
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 #include <QtUtil.h>
 
 namespace ACE

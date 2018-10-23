@@ -675,8 +675,9 @@ float CTerrain::GetZMaxFromUnits(int nX0_units, int nY0_units, int nX1_units, in
 {
 	Array2d<struct CTerrainNode*>& sectorLayer = m_arrSecInfoPyramid[0];
 	int nLocalMask = (1 << m_nUnitsToSectorBitShift) - 1;
-
+#if defined(USE_CRY_ASSERT)
 	int nSizeXY = int(Cry3DEngineBase::GetTerrain()->GetTerrainSize() * CTerrain::GetInvUnitSize());
+#endif
 	assert(nX0_units <= nSizeXY && nY0_units <= nSizeXY);
 	assert(nX1_units <= nSizeXY && nY1_units <= nSizeXY);
 

@@ -22,7 +22,7 @@
 #include "MaterialSettings.h"
 #include "AutoLodSettings.h"
 #include "EditorMetaData.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include "MaterialHelpers.h"
 #include "MaterialPanel.h"
 #include "ImporterUtil.h"

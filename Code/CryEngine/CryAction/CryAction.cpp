@@ -387,6 +387,7 @@ CCryAction::~CCryAction()
 //------------------------------------------------------------------------
 void CCryAction::DumpMapsCmd(IConsoleCmdArgs* args)
 {
+#if !defined(EXCLUDE_NORMAL_LOG)
 	int nlevels = GetCryAction()->GetILevelSystem()->GetLevelCount();
 	if (!nlevels)
 		CryLogAlways("$3No levels found!");
@@ -401,6 +402,7 @@ void CCryAction::DumpMapsCmd(IConsoleCmdArgs* args)
 
 		CryLogAlways("  %s [$9%s$o] Scan:%.4s Level:%.4s", level->GetName(), level->GetPath(), (char*)&scanTag, (char*)&levelTag);
 	}
+#endif
 }
 //------------------------------------------------------------------------
 
@@ -826,8 +828,6 @@ void CCryAction::MapCmd(IConsoleCmdArgs* args)
 //------------------------------------------------------------------------
 void CCryAction::PlayCmd(IConsoleCmdArgs* args)
 {
-	IConsole* pConsole = gEnv->pConsole;
-
 	if (GetCryAction()->StartedGameContext())
 	{
 		GameWarning("Must stop the game before commencing playback");
@@ -1047,7 +1047,7 @@ void CCryAction::LegacyStatusCmd(IConsoleCmdArgs* args)
 				name = pActor->GetEntity()->GetName();
 				entId = pActor->GetEntity()->GetId();
 			}
-
+#if !defined(EXCLUDE_NORMAL_LOG)
 			INetChannel* pNetChannel = iter->second->GetNetChannel();
 			const char* ip = pNetChannel->GetName();
 			int ping = (int)(pNetChannel->GetPing(true) * 1000);
@@ -1055,6 +1055,7 @@ void CCryAction::LegacyStatusCmd(IConsoleCmdArgs* args)
 			int profileId = pNetChannel->GetProfileId();
 
 			CryLogAlways("name: %s  entID:%u id: %u  ip: %s  ping: %d  state: %d profile: %d", name, entId, iter->first, ip, ping, state, profileId);
+#endif
 		}
 	}
 }
@@ -3758,8 +3759,6 @@ void CCryAction::EndCurrentQuery()
 //------------------------------------------------------------------------
 void CCryAction::InitCVars()
 {
-	IConsole* pC = ::gEnv->pConsole;
-	assert(pC);
 	m_pEnableLoadingScreen = REGISTER_INT("g_enableloadingscreen", 1, VF_DUMPTODISK, "Enable/disable the loading screen");
 	REGISTER_INT("g_enableitems", 1, 0, "Enable/disable the item system");
 	m_pShowLanBrowserCVAR = REGISTER_INT("net_lanbrowser", 0, VF_CHEAT, "enable lan games browser");

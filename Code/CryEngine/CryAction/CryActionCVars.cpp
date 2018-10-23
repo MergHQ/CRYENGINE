@@ -13,9 +13,6 @@ CCryActionCVars::CCryActionCVars()
 	CRY_ASSERT(!s_pThis);
 	s_pThis = this;
 
-	IConsole* console = gEnv->pConsole;
-	assert(console);
-
 	REGISTER_CVAR2("g_playerInteractorRadius", &playerInteractorRadius, 1.8f, VF_CHEAT, "Maximum radius at which player can interact with other entities");
 	REGISTER_CVAR2("i_itemSystemDebugMemStats", &debugItemMemStats, 0, VF_CHEAT, "Display item memory stats on screen");
 

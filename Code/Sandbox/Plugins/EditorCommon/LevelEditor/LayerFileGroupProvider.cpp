@@ -2,11 +2,13 @@
 
 #include "StdAfx.h"
 #include "LayerFileGroupProvider.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
+#include "FileUtils.h"
 #include "Objects/IObjectLayerManager.h"
 #include "Objects/IObjectLayer.h"
 #include "Objects/ObjectManager.h"
 #include "IEditor.h"
+
 
 namespace Private_LayerFileGroup
 {
@@ -75,7 +77,7 @@ void CLayerFileGroupProvider::Update()
 	if (m_pLayer)
 	{
 		// if layer file exists we reload it
-		if (PathUtil::FileExists(PathUtil::Make(PathUtil::GetGameProjectAssetsRelativePath(), m_mainFile)))
+		if (FileUtils::FileExists(PathUtil::Make(PathUtil::GetGameProjectAssetsRelativePath(), m_mainFile)))
 		{
 			CryLog("Executing reloading of layer file %s", m_mainFile);
 			pLayerManager->ReloadLayer(m_pLayer);

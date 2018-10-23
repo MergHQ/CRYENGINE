@@ -1625,7 +1625,6 @@ bool CTimeDemoRecorder::PlayFrame()
 
 	CTimeValue time = GetTime();
 	CTimeValue deltaFrameTime = (time - m_lastFrameTime);
-	float frameTime = deltaFrameTime.GetSeconds();
 
 	if (m_bPaused)
 	{

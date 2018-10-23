@@ -309,8 +309,6 @@ void CVehiclePartTread::Update(const float frameTime)
 	}
 
 	// deform the tread to follow the wheels
-	QuatT absRoot = pSkeletonPose->GetAbsJointByID(0);
-
 	for (TWheelInfoVector::const_iterator ite = m_wheels.begin(), end = m_wheels.end(); ite != end; ++ite)
 	{
 		const SWheelInfo& wheelInfo = *ite;

@@ -787,14 +787,6 @@ void CD3D9Renderer::BeginFrame(const SDisplayContextKey& displayContextKey)
 		m_cEF.mfReloadAllShaders(1, SHGD_HW_SILHOUETTE_POM, gRenDev->GetMainFrameID());
 	}
 
-	PREFAST_SUPPRESS_WARNING(6326)
-	if ((CV_e_TerrainBlendingDebug != 0) != m_bAllowTerrainLayerBlending)
-	{
-		PREFAST_SUPPRESS_WARNING(6326)
-		m_bAllowTerrainLayerBlending = CV_e_TerrainBlendingDebug != 0;
-		m_cEF.mfReloadAllShaders(CV_r_reloadshaders, 0, gRenDev->GetMainFrameID());
-	}
-
 	if (CV_r_reloadshaders)
 	{
 		//exit(0);

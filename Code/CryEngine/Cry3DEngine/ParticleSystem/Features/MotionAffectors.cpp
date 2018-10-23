@@ -120,14 +120,11 @@ private:
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
-		const CParticleContainer& container = runtime.GetContainer();
-		const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
 		const float time = max(1.0f / 1024.0f, runtime.DeltaTime());
 		const floatv speed = ToFloatv(m_speed * isqrt_tpl(time));
 
 		for (auto particleGroupId : runtime.FullRangeV())
 		{
-			const Vec3v position = positions.Load(particleGroupId);
 			const Vec3v accel0 = localAccelerations.Load(particleGroupId);
 			const floatv keyX = runtime.ChaosV().RandSNorm();
 			const floatv keyY = runtime.ChaosV().RandSNorm();
@@ -316,7 +313,6 @@ private:
 		const CParticleContainer& parentContainer = runtime.GetParentContainer();
 		const Quat defaultQuat = runtime.GetEmitter()->GetLocation().q;
 		const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
-		const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
 		const IQuatStream parentQuats = parentContainer.GetIQuatStream(EPQF_Orientation, defaultQuat);
 		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
 		// m_decay is actually the distance at which gravity is halved.

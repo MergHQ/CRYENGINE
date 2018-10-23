@@ -91,9 +91,9 @@ protected:
 
 			if (m_projectVelocity)
 			{
-				Vec3 velocity = velocities.Load(particleId); float len = velocity.len();
+				Vec3 velocity = velocities.Load(particleId);
 				const Vec3 normalVelocity = norm * (norm | velocity);
-				velocity -= normalVelocity; float len1 = velocity.len();
+				velocity -= normalVelocity;
 				velocities.Store(particleId, velocity);
 			}
 

@@ -188,7 +188,6 @@ void CBlockPacker3D::UpdateUsageGrid(const SBlockMinMax& rectIn)
 
 	int dwW = m_dwWidth / nHS;
 	int dwH = m_dwHeight / nHS;
-	int dwD = m_dwDepth / nHS;
 
 	for (uint32 dwZ = rectUM.m_dwMinZ; dwZ < rectUM.m_dwMaxZ; ++dwZ)
 	{

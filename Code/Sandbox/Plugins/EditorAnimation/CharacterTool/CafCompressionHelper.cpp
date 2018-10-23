@@ -6,10 +6,10 @@
 #include "CafCompressionHelper.h"
 #include "Shared/AnimSettings.h"
 
-#include <FilePathUtil.h>
-#include <CrySystem/ISystem.h>
-#include <CrySystem/File/ICryPak.h>
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
+#include <CrySystem/File/ICryPak.h>
+#include <CrySystem/ISystem.h>
+#include <PathUtils.h>
 #include <QtCore/QDir>
 
 static const char* ANIMATION_COMPRESSION_TEMP_ROOT = "Editor/Tmp/AnimationCompression/";

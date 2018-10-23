@@ -205,7 +205,7 @@ int CScriptBind_GameStatistics::AddGameElement(IFunctionHandler* pH)
 			}
 			else if (anydata.GetType() == EScriptAnyType::Table)
 			{
-				IStatsTracker* tracker = m_pGS->AddGameElement(SNodeLocator(elem, scope, locID, lv), anydata.GetScriptTable());
+				m_pGS->AddGameElement(SNodeLocator(elem, scope, locID, lv), anydata.GetScriptTable());
 			}
 			else
 			{

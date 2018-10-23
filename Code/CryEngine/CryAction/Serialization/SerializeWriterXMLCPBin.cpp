@@ -53,8 +53,12 @@ void CSerializeWriterXMLCPBin::RecursiveAddXmlNodeRef(XMLCPB::CNodeLiveWriterRef
 	{
 		const char* pKey = NULL;
 		const char* pVal = NULL;
+#if defined(USE_CRY_ASSERT)
 		bool ok = xmlNode->getAttributeByIndex(i, &pKey, &pVal);
 		assert(ok);
+#else
+		xmlNode->getAttributeByIndex(i, &pKey, &pVal);
+#endif
 		BChild->AddAttr(pKey, pVal);
 	}
 

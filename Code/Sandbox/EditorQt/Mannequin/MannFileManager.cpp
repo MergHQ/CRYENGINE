@@ -16,7 +16,7 @@
 #include "Controls/InPlaceButton.h"
 
 #include <ISourceControl.h>
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 
 //////////////////////////////////////////////////////////////////////////
 BEGIN_MESSAGE_MAP(CMannFileManager, CXTResizeDialog)

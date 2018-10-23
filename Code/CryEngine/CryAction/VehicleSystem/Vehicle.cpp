@@ -821,7 +821,7 @@ void CVehicle::OnSpawnComplete()
 void CVehicle::InitPaint(const CVehicleParams& xmlContent)
 {
 	// check and apply "paint"
-	if (IScriptTable* pScriptTable = GetEntity()->GetScriptTable())
+	if (GetEntity()->GetScriptTable() != nullptr)
 	{
 		if (CVehicleParams paintsTable = xmlContent.findChild("Paints"))
 		{
@@ -998,7 +998,6 @@ void CVehicle::PostInit(IGameObject* pGameObject)
 	{
 		ICrySizer* pSizer = gEnv->pSystem->CreateSizer();
 		GetMemoryUsage(pSizer);
-		int vehicleSize = pSizer->GetTotalSize();
 		CryLog("Vehicle initialized: <%s> takes %" PRISIZE_T " bytes.", GetEntity()->GetName(), pSizer->GetTotalSize());
 
 		pSizer->Release();
@@ -1598,7 +1597,7 @@ void CVehicle::Update(SEntityUpdateContext& ctx, int slot)
 			{
 				CVehicleSeat* seat = ite->second;
 
-				if (CVehicleSeatActionWeapons* weapons = seat->GetSeatActionWeapons())
+				if (seat->GetSeatActionWeapons() != nullptr)
 				{
 					seat->Update(frameTime);
 				}
@@ -1879,26 +1878,27 @@ void CVehicle::DebugDraw(const float frameTime)
 		}
 	}
 
-	if (cvars.v_debugdraw == eVDB_Sounds && IsPlayerPassenger())
+	REINST("update speed RTPC");
+	/*if (cvars.v_debugdraw == eVDB_Sounds && IsPlayerPassenger())
 	{
 		static float color[] = { 1, 1, 1, 1 };
 
 		for (TVehicleSoundEventId i = 0; i < m_soundEvents.size(); ++i)
 		{
-			if (SVehicleSoundInfo* info = GetSoundInfo(i))
+			if (GetSoundInfo(i) != nullptr)
 			{
-				REINST("update speed RTPC");
-				/*if (ISound* pSound = m_pIEntityAudioComponent->GetSound(info->soundId))
-				   {
-				   float speed = 0.f;
-				   if (pSound->GetParam("speed", &speed, false))
-				   {
-				    IRenderAuxText::Draw2dLabel(50.f, (float)(100+15*GetDebugIndex()), 1.25f, color, false, "%s: speed %.2f", info->name.c_str(), speed);
-				   }
-				   }*/
+				if (ISound* pSound = m_pIEntityAudioComponent->GetSound(info->soundId))
+				{
+					float speed = 0.f;
+					
+					if (pSound->GetParam("speed", &speed, false))
+					{
+						IRenderAuxText::Draw2dLabel(50.f, (float)(100+15*GetDebugIndex()), 1.25f, color, false, "%s: speed %.2f", info->name.c_str(), speed);
+					}
+				}
 			}
 		}
-	}
+	}*/
 }
 
 //------------------------------------------------------------------------
@@ -1916,7 +1916,7 @@ void CVehicle::DebugDrawClientPredict()
 		bbox2.min.x += 0.2f;
 		bbox2.max.x -= 0.2f;
 		TDebugClientPredictData::iterator itInterp;
-		float y = 50.0f;
+
 		for (itInterp = m_debugClientPredictData.begin(); itInterp != m_debugClientPredictData.end(); ++itInterp)
 		{
 			Matrix34 matrix1 = Matrix34::Create(scale, itInterp->recordedPos.q, itInterp->recordedPos.t);
@@ -2939,7 +2939,6 @@ bool CVehicle::IsActionUsable(const SVehicleActionInfo& actionInfo, const SMovem
 #if ENABLE_VEHICLE_DEBUG
 			if (VehicleCVars().v_debugdraw > 1)
 			{
-				IRenderer* pRenderer = gEnv->pRenderer;
 				IRenderAuxGeom* pRenderAux = gEnv->pAuxGeomRenderer;
 				const Matrix34& worldTM = m_pVehicle->GetEntity()->GetWorldTM();
 				pRenderAux->DrawAABB(localbounds, worldTM, false, hit ? Col_Green : Col_Red, eBBD_Faceted);
@@ -3410,7 +3409,7 @@ IVehicleSeat* CVehicle::GetWeaponParentSeat(EntityId weaponId)
 		{
 			if (CVehicleSeatActionWeapons* pAction = CAST_VEHICLEOBJECT(CVehicleSeatActionWeapons, it->pSeatAction))
 			{
-				if (SVehicleWeapon* pWeaponInfo = pAction->GetVehicleWeapon(weaponId))
+				if (pAction->GetVehicleWeapon(weaponId) != nullptr)
 				{
 					return pSeat;
 				}
@@ -4971,7 +4970,7 @@ void CVehicle::ProcessFlipped()
 			SEntityProximityQuery query;
 			query.box = AABB(worldTM.GetTranslation() - Vec3(r, r, r), worldTM.GetTranslation() + Vec3(r, r, r));
 
-			int count = gEnv->pEntitySystem->QueryProximity(query);
+			gEnv->pEntitySystem->QueryProximity(query);
 			for (int i = 0; i < query.nCount; ++i)
 			{
 				IEntity* pEntity = query.pEntities[i];

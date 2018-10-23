@@ -13,7 +13,7 @@
 #include <Objects/InspectorWidgetCreator.h>
 #include <Preferences/ViewportPreferences.h>
 #include <Serialization/Decorators/EditorActionButton.h>
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 #include <Viewport.h>
 
 #include <Cry3DEngine/I3DEngine.h>

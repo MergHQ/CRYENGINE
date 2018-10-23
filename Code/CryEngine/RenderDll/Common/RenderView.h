@@ -141,6 +141,9 @@ public:
 	virtual void       SetShaderRenderingFlags(uint32 nFlags) override { m_shaderRenderingFlags = nFlags; }
 	virtual uint32     GetShaderRenderingFlags() const final           { return m_shaderRenderingFlags; };
 
+	virtual void       SetZoomFactor(float zFactor) override           { m_zFactor = zFactor; }
+	virtual float      GetZoomFactor() const final                     { return m_zFactor; };
+	
 	virtual void       SetCameras(const CCamera* pCameras, int cameraCount) final;
 	virtual void       SetPreviousFrameCameras(const CCamera* pCameras, int cameraCount) final;
 
@@ -395,6 +398,7 @@ private:
 	uint32           m_skipRenderingFlags;
 	/// @see EShaderRenderingFlags
 	uint32           m_shaderRenderingFlags;
+	float            m_zFactor = 1.0f;
 
 	int              m_frameId;
 	CTimeValue       m_frameTime;

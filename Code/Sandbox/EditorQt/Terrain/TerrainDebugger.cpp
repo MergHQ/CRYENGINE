@@ -1,6 +1,6 @@
 #include "StdAfx.h"
 #include "Terrain/TerrainManager.h"
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 
 namespace Private_TerrainDumper
 {

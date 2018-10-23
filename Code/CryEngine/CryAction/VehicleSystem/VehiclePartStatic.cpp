@@ -68,7 +68,7 @@ void CVehiclePartStatic::InitGeometry()
 
 	m_slot = GetEntity()->LoadGeometry(m_slot, m_filename, m_geometry);
 
-	if (IStatObj* pStatObj = GetEntity()->GetStatObj(m_slot))
+	if (GetEntity()->GetStatObj(m_slot) != nullptr)
 	{
 		if (m_hideCount == 0)
 			GetEntity()->SetSlotFlags(m_slot, GetEntity()->GetSlotFlags(m_slot) | ENTITY_SLOT_RENDER);

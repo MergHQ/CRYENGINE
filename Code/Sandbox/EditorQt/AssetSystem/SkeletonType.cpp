@@ -2,13 +2,13 @@
 
 #include "StdAfx.h"
 #include "SkeletonType.h"
+
+#include "PathUtils.h"
 #include "QT/Widgets/QPreviewWidget.h"
-#include "FilePathUtil.h"
-#include <ThreadingUtils.h>
 
 #include <AssetSystem/AssetEditor.h>
-
 #include <ProxyModels/ItemModelAttribute.h>
+#include <ThreadingUtils.h>
 
 REGISTER_ASSET_TYPE(CSkeletonType)
 

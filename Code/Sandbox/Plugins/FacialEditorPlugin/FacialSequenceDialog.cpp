@@ -10,7 +10,7 @@
 #include "Controls/TreeCtrlUtils.h"
 #include "Controls/QuestionDialog.h"
 #include <CryCore/Containers/VectorSet.h>
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include "Util/MFCUtil.h"
 #include "IUndoManager.h"
 #include "Resource.h"

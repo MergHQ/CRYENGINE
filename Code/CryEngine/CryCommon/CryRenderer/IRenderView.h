@@ -105,6 +105,9 @@ struct IRenderView : public CMultiThreadRefCount
 	virtual void   SetShaderRenderingFlags(uint32 nFlags) = 0;
 	virtual uint32 GetShaderRenderingFlags() const = 0;
 
+	virtual void       SetZoomFactor(float zFactor) = 0;
+	virtual float      GetZoomFactor() const = 0;
+
 	virtual void   SetCameras(const CCamera* pCameras, int cameraCount) = 0;
 	virtual void   SetPreviousFrameCameras(const CCamera* pCameras, int cameraCount) = 0;
 

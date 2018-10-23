@@ -845,8 +845,6 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 
 		SVegetationChunk* pChunk = StepData<SVegetationChunk>(pPtr, eEndian);
 
-		bool bStreamAllVegetation = true;
-
 		if (CheckSkipLoadObject(eType, pChunk->m_dwRndFlags, eLoadMode) || !CheckRenderFlagsMinSpec(GetObjManager()->m_lstStaticTypes[pChunk->m_nObjectTypeIndex].m_dwRndFlags))
 			return;
 
@@ -1103,16 +1101,16 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 		if (CheckSkipLoadObject(eType, pChunk->m_dwRndFlags, eLoadMode) || !CheckRenderFlagsMinSpec(pChunk->m_dwRndFlags) || Get3DEngine()->IsLayerSkipped(pChunk->m_nLayerId))
 		{
 			int auxCntSrc = pChunk->m_volumeTypeAndMiscBits >> volumeTypeAndMiscBitShift;
-			const float* pAuxDataSrc = StepData<float>(pPtr, auxCntSrc, eEndian);
+			StepData<float>(pPtr, auxCntSrc, eEndian);
 
 			for (uint32 j(0); j < pChunk->m_numVertices; ++j)
 			{
-				SWaterVolumeVertex* pVertex(StepData<SWaterVolumeVertex>(pPtr, eEndian));
+				StepData<SWaterVolumeVertex>(pPtr, eEndian);
 			}
 
 			for (uint32 j(0); j < pChunk->m_numVerticesPhysAreaContour; ++j)
 			{
-				SWaterVolumeVertex* pVertex(StepData<SWaterVolumeVertex>(pPtr, eEndian));
+				StepData<SWaterVolumeVertex>(pPtr, eEndian);
 			}
 
 			return;
@@ -1319,7 +1317,7 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 		{
 			for (uint32 j(0); j < pChunk->m_nVertexCount; ++j)
 			{
-				Vec3* pVertex(StepData<Vec3>(pPtr, eEndian));
+				StepData<Vec3>(pPtr, eEndian);
 			}
 
 			return;

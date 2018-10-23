@@ -74,8 +74,12 @@ void CWriter::Init(const char* pNameRootNode, const char* pFileName)
 		}
 	}
 
+#if defined(USE_CRY_ASSERT)
 	CNodeLiveWriter* pRoot = CreateAndAddLiveNode(pNameRootNode);
 	assert(pRoot->GetID() == XMLCPB_ROOTNODE_ID);
+#else
+	CreateAndAddLiveNode(pNameRootNode);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

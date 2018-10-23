@@ -117,7 +117,6 @@ void CVehicleDamages::ParseDamageMultipliers(TDamageMultipliers& multipliersByHi
 			string ammoType = multiplierTable.getAttr("ammoType");
 			if (!ammoType.empty())
 			{
-				int projectileType = 0;
 				if (pGR && ammoType != "default")
 				{
 					uint16 classId(~uint16(0));

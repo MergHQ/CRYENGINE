@@ -23,7 +23,7 @@
 #include "VehiclePaintsPanel.h"
 #include "VehicleXMLHelper.h"
 #include "Controls/QuestionDialog.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include "Util/MFCUtil.h"
 #include "Util/FileUtil.h"
 #include "IUndoObject.h"

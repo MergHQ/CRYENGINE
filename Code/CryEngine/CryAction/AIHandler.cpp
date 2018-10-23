@@ -1498,7 +1498,7 @@ void CAIHandler::SetAlertness(int value, bool triggerEvent /*=false*/)
 	if (value == -1 || m_CurrentAlertness == value)
 		return;
 
-	bool switchToIdle = m_CurrentAlertness > 0 && value == 0;
+	//bool switchToIdle = m_CurrentAlertness > 0 && value == 0;
 	bool switchToWeaponAlerted = m_CurrentAlertness == 0 && value > 0;
 
 	m_CurrentAlertness = value;
@@ -2314,7 +2314,6 @@ void CAIHandler::DoReadibilityPackForAIObjectsOfType(unsigned short int nType, c
 		return;
 	}
 
-	IAIActor* pAIActor = pAI->CastToIAIActor();
 	int groupId = pAI->GetGroupId();
 	IAISystem* pAISystem = gEnv->pAISystem;
 	int count = pAISystem->GetGroupCount(groupId, IAISystem::GROUP_ENABLED, nType);

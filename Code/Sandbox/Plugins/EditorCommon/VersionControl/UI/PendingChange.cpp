@@ -1,12 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include "StdAfx.h"
 #include "PendingChange.h"
+
 #include "VersionControl/AssetFilesProvider.h"
 #include "VersionControl/AssetsVCSStatusProvider.h"
 #include "VersionControl/VersionControl.h"
 #include "AssetSystem/Loader/Metadata.h"
 #include "AssetSystem/Loader/AssetLoaderHelpers.h"
-#include "FilePathUtil.h"
+#include "FileUtils.h"
+#include "PathUtils.h"
 
 namespace Private_PendingChange
 {
@@ -24,7 +26,7 @@ std::vector<std::unique_ptr<CPendingChange>>::const_iterator FindInPendingChange
 
 bool DoesFileExist(const string& file)
 {
-	return PathUtil::FileExists(PathUtil::Make(PathUtil::GetGameProjectAssetsRelativePath(), file));
+	return FileUtils::FileExists(PathUtil::Make(PathUtil::GetGameProjectAssetsRelativePath(), file));
 }
 
 //! This class is responsible for retrieving a file's content from VCS repository.
@@ -398,7 +400,7 @@ CPendingChange* CPendingChangeList::CreatePendingChangeFor(const string& file)
 		{
 			g_pendingChanges.push_back(std::make_unique<CPendingDeletionLayerChange>(file));
 		}
-		else if (PathUtil::FileExists(PathUtil::Make(PathUtil::GetGameProjectAssetsRelativePath(),file)))
+		else if (FileUtils::FileExists(PathUtil::Make(PathUtil::GetGameProjectAssetsRelativePath(),file)))
 		{
 			g_pendingChanges.push_back(std::make_unique<CPendingLayerChange>(file));
 		}

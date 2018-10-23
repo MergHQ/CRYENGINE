@@ -2,12 +2,13 @@
 
 #include "StdAfx.h"
 #include "AssetGenerator.h"
-#include "Loader/AssetLoaderBackgroundTask.h"
+
 #include "AssetSystem/AssetManager.h"
+#include "Loader/AssetLoaderBackgroundTask.h"
 #include "Notifications/NotificationCenter.h"
-#include "FilePathUtil.h"
-#include "ThreadingUtils.h"
+#include "PathUtils.h"
 #include "QtUtil.h"
+#include "ThreadingUtils.h"
 
 #include <CrySystem/IProjectManager.h>
 #include <CryString/CryPath.h>
