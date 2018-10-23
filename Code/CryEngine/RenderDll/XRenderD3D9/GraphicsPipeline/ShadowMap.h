@@ -43,6 +43,7 @@ public:
 	void Execute();
 
 	bool CreatePipelineStates(DevicePipelineStatesArray* pStateArray, const SGraphicsPipelineStateDescription& stateDesc, CGraphicsPipelineStateLocalCache* pStateCache);
+	bool CanRenderCachedShadows(const CCompiledRenderObject *obj) const;
 
 	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater) final;
 

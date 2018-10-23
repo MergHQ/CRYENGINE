@@ -327,7 +327,12 @@ bool CShadowMapStage::CreatePipelineStates(DevicePipelineStatesArray* pStateArra
 		pStateCache->Put(stateDesc, stageStates);
 	}
 
-	return true;
+	return bFullyCompiled;
+}
+
+bool CShadowMapStage::CanRenderCachedShadows(const CCompiledRenderObject *obj) const
+{
+	return obj && obj->m_pso[m_stageID][ePass_DirectionalLightCached] && obj->m_pso[m_stageID][ePass_DirectionalLightCached]->IsValid();
 }
 
 void CShadowMapStage::Update()
@@ -494,6 +499,8 @@ bool CShadowMapStage::PrepareOutputsForPass(const SShadowFrustumToRender& frustu
 
 	if (frustum.bUseShadowsPool)
 	{
+		CRY_ASSERT(!frustum.IsCached());
+
 		pDepthTarget = CRendererResources::s_ptexRT_ShadowPool;
 		clearMode = CShadowMapPass::eClearMode_FillRect;
 
@@ -535,12 +542,9 @@ bool CShadowMapStage::PrepareOutputsForPass(const SShadowFrustumToRender& frustu
 	targetPass.m_pClearDepthMapProvider = pClearDepthMapProvider;
 	targetPass.m_clearMode = clearMode;
 
+	targetPass.ExchangeRenderTarget(0, colorTargets[0]);
+	targetPass.ExchangeRenderTarget(1, colorTargets[1]);
 	targetPass.ExchangeDepthTarget(pDepthTarget);
-	if (colorTargets[0] || colorTargets[1])
-	{
-		targetPass.ExchangeRenderTarget(0, colorTargets[0]);
-		targetPass.ExchangeRenderTarget(1, colorTargets[1]);
-	}
 
 	D3DViewPort viewport = { float(arrViewport[0]), float(arrViewport[1]), float(arrViewport[2]), float(arrViewport[3]), 0, 1 };
 	targetPass.SetViewport(viewport);
@@ -592,7 +596,7 @@ void CShadowMapStage::PrepareOutputsForFrustumWithCaching(const ShadowMapFrustum
 	{
 		if (frustum.m_eFrustumType == ShadowMapFrustum::eFrustumType::e_GsmCached)
 		{
-			int nCachedMapIndex = frustum.nShadowMapLod - (CRendererCVars::CV_r_ShadowsCache - 1);
+			int nCachedMapIndex = frustum.nShadowCacheLod;
 			CRY_ASSERT(nCachedMapIndex >= 0 && nCachedMapIndex < CRY_ARRAY_COUNT(CRendererResources::s_ptexCachedShadowMap));
 
 			pDepthTarget = CRendererResources::s_ptexCachedShadowMap[clamp_tpl(nCachedMapIndex, 0, int(CRY_ARRAY_COUNT(CRendererResources::s_ptexCachedShadowMap) - 1))];
