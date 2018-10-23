@@ -1967,28 +1967,25 @@ void CRenderView::CompileModifiedRenderObjects()
 			pRenderObject->m_permanentRenderItems[CPermanentRenderObject::eRenderPass_General] : 
 			pRenderObject->m_permanentRenderItems[CPermanentRenderObject::eRenderPass_Shadows];
 
+		bool allCachedShadowPsosAreValid = true;
 		for (int i = 0, num = items.size(); i < num; i++)
 		{
 			auto& pri = items[i];
-			if (!pri.m_pCompiledObject)
-				continue;
-			if (!pri.m_pCompiledObject->Compile(compilationFlags, pri.m_aabb, this))
+			if (!pri.m_pCompiledObject || !pri.m_pCompiledObject->Compile(compilationFlags, pri.m_aabb, this))
 				bAllCompiled = false;
+
+			allCachedShadowPsosAreValid &= gcpRendD3D->GetGraphicsPipeline().GetShadowStage()->CanRenderCachedShadows(pri.m_pCompiledObject);
 		}
 
 		if (bAllCompiled)
-		{
 			CryInterlockedExchangeOr((volatile LONG*)&pRenderObject->m_compiledReadyMask, passMask);
-		}
 		else
-		{
 			CryInterlockedExchangeAnd((volatile LONG*)&pRenderObject->m_passReadyMask, ~passMask); // reset passReadyMask if compilation failed
 
-			if (IsShadowGenView())
-			{
-				// NOTE: this can race with the the main thread but the worst outcome will be that the object is rendered multiple times into the shadow cache
-				ShadowMapFrustum::ForceMarkNodeAsUncached(pRenderObject->m_pRenderNode);
-			}
+		if (!allCachedShadowPsosAreValid && IsShadowGenView())
+		{
+			// NOTE: this can race with the the main thread but the worst outcome will be that the object is rendered multiple times into the shadow cache
+			ShadowMapFrustum::ForceMarkNodeAsUncached(pRenderObject->m_pRenderNode);
 		}
 
 		pRenderObject->m_lastCompiledFrame = nFrameId;
@@ -2002,8 +1999,9 @@ void CRenderView::CompileModifiedRenderObjects()
 	for (const auto &t : m_temporaryCompiledObjects)
 	{
 		const bool isCompiled = t.pObject->Compile(eObjCompilationOption_All, t.localAABB, this);
+		const bool cachedShadowPsosAreValid = gcpRendD3D->GetGraphicsPipeline().GetShadowStage()->CanRenderCachedShadows(t.pObject);
 
-		if (IsShadowGenView())
+		if (!cachedShadowPsosAreValid && IsShadowGenView())
 		{
 			// NOTE: this can race with the the main thread but the worst outcome will be that the object is rendered multiple times into the shadow cache
 			ShadowMapFrustum::ForceMarkNodeAsUncached(t.pObject->m_pRO->m_pRenderNode);

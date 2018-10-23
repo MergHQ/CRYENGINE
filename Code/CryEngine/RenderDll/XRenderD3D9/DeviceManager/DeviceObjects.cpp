@@ -624,6 +624,8 @@ void CDeviceObjectFactory::ReloadPipelineStates(int currentFrameID)
 
 void CDeviceObjectFactory::UpdatePipelineStates()
 {
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER)
+
 	for (auto it = m_InvalidGraphicsPsos.begin(), itEnd = m_InvalidGraphicsPsos.end(); it != itEnd; )
 	{
 		auto itCurrentPSO = it++;
