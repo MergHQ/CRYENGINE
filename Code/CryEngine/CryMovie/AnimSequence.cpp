@@ -605,7 +605,7 @@ void CAnimSequence::PrecacheDynamic(SAnimTime time)
 
 void CAnimSequence::PrecacheEntity(IEntity* pEntity)
 {
-	if (m_precachedEntitiesSet.find(pEntity) != m_precachedEntitiesSet.end())
+	if (m_precachedEntitiesSet.find(pEntity) == m_precachedEntitiesSet.end())
 	{
 		if (IEntityRender* pIEntityRender = pEntity->GetRenderInterface())
 		{
