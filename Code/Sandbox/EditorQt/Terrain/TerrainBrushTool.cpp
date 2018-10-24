@@ -608,7 +608,9 @@ void CSmoothTool::Serialize(Serialization::IArchive& ar)
 
 void CSmoothTool::PaintTerrain(CHeightmap* pHeightmap, int tx, int ty, int tsize, float fInsideRadius, float brushSpeed)
 {
-	pHeightmap->SmoothSpot(tx, ty, tsize, GetBrush().height, GetBrush().hardness * brushSpeed);
+	// Increase Hardness from shared range[0:1] between all tools to [0:2]
+	const float smoothToolHardnessMultiplier = 2.f;
+	pHeightmap->SmoothSpot(tx, ty, tsize, GetBrush().height, smoothToolHardnessMultiplier * GetBrush().hardness * brushSpeed);
 }
 
 bool CSmoothTool::OnKeyUp(CViewport* view, uint32 key, uint32 nRepCnt, uint32 nFlags)
