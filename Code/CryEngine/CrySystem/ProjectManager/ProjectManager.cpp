@@ -31,8 +31,6 @@ CProjectManager::CProjectManager()
 	, m_sys_dll_game(nullptr)
 	, m_sys_game_folder(nullptr)
 {
-	RegisterCVars();
-
 	CryFindRootFolderAndSetAsCurrentWorkingDirectory();
 }
 
@@ -108,6 +106,8 @@ bool SProject::Serialize(Serialization::IArchive& ar)
 
 bool CProjectManager::ParseProjectFile()
 {
+	RegisterCVars();
+
 	const char* szEngineRootDirectory = gEnv->pSystem->GetRootFolder();
 
 	const ICmdLineArg* arg = gEnv->pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "project");

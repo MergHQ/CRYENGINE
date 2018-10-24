@@ -218,6 +218,8 @@ public:
 	void          SetProcessingGroup(bool isGroup) { m_bIsProcessingGroup = isGroup; }
 	bool          GetIsProcessingGroup(void) const { return m_bIsProcessingGroup; }
 
+	bool          ParseCVarOverridesFile(const char* szSysCVarOverridesPathConfigFile);
+
 protected: // ----------------------------------------------------------------------------------------
 	void DrawBuffer(int nScrollPos, const char* szEffect);
 

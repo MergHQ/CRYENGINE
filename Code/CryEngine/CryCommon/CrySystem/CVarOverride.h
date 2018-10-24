@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CryCore/CryCrc32.h>
+#include "CryUtils.h"
 
 enum class CVarOverrideType
 {
@@ -51,6 +52,8 @@ inline constexpr T GetCVarOverride(const char* szName, const T defaultValue)
 	return GetCVarOverride(CCrc32::ComputeLowercase_CompileTime(szName), defaultValue);
 }
 
+#ifndef USE_RUNTIME_CVAR_OVERRIDES
+
 struct CVarWhitelistEntry
 {
 public:
@@ -70,8 +73,38 @@ private:
 	const hash_type m_hash;
 };
 
+// Integers & Floats
+#define ADD_CVAR_OVERRIDE_NUMERIC(name, value) { name, value },
+#define ADD_CVAR_OVERRIDE_STRING(name, value)
+
+constexpr CVarOverride<CVarOverrideType::Numeric> g_engineCvarNumericOverrides[] = 
+{
 #if defined(CRY_CVAR_OVERRIDE_FILE)
 #	include CRY_CVAR_OVERRIDE_FILE
+#endif
+	{"_CVarNumericOverrideDummy", 0} // At least 1 element is required for compilation (cannot have empty array) and to remove trailing comma
+};
+
+#undef ADD_CVAR_OVERRIDE_NUMERIC
+#undef ADD_CVAR_OVERRIDE_STRING
+
+// strings
+#define ADD_CVAR_OVERRIDE_NUMERIC(name, value)
+#define ADD_CVAR_OVERRIDE_STRING(name, value) { name, value },
+
+constexpr CVarOverride<CVarOverrideType::String> g_engineCvarStringOverrides[] =
+{
+#if defined(CRY_CVAR_OVERRIDE_FILE)
+#	include CRY_CVAR_OVERRIDE_FILE
+#endif
+	{"_CVarNumericStringDummy", ""} // At least 1 element is required for compilation (cannot have empty array) and to remove trailing comma
+};
+
+#undef ADD_CVAR_OVERRIDE_NUMERIC
+#undef ADD_CVAR_OVERRIDE_STRING
+
+#if defined(CRY_CVAR_WHITELIST_FILE)
+#	include CRY_CVAR_WHITELIST_FILE
 #endif
 
 namespace detail
@@ -91,36 +124,27 @@ namespace detail
 			: false;
 	}
 }
-#define GET_CVAR_IMPL(container, hashedName, defaultValue) \
-	return detail::GetCVarOverrideImpl(container, CRY_ARRAY_COUNT(container), hashedName, defaultValue, 0)
 
-#if defined(CVAR_NUMERIC_OVERRIDES)
-template<>
-inline constexpr float GetCVarOverride<float>(const typename CVarOverride<CVarOverrideType::Numeric>::hash_type hashedName, const float defaultValue)
+constexpr float GetCVarOverride(const typename CVarOverride<CVarOverrideType::Numeric>::hash_type hashedName, const float defaultValue)
 {
-	GET_CVAR_IMPL(CVAR_NUMERIC_OVERRIDES, hashedName, defaultValue);
+	return detail::GetCVarOverrideImpl(g_engineCvarNumericOverrides, CRY_ARRAY_COUNT(g_engineCvarNumericOverrides), hashedName, defaultValue, 0);
 }
 
-template<>
-inline constexpr int GetCVarOverride<int>(const typename CVarOverride<CVarOverrideType::Numeric>::hash_type hashedName, const int defaultValue)
+constexpr int GetCVarOverride(const typename CVarOverride<CVarOverrideType::Numeric>::hash_type hashedName, const int defaultValue)
 {
-	GET_CVAR_IMPL(CVAR_NUMERIC_OVERRIDES, hashedName, defaultValue);
+	return detail::GetCVarOverrideImpl(g_engineCvarNumericOverrides, CRY_ARRAY_COUNT(g_engineCvarNumericOverrides), hashedName, defaultValue, 0);
 }
-#endif // defined(CVAR_NUMERIC_OVERRIDES)
 
-#if defined(CVAR_STRING_OVERRIDES)
-template<>
-inline constexpr const char* GetCVarOverride<const char*>(const typename CVarOverride<CVarOverrideType::String>::hash_type hashedName, const char* defaultValue)
+constexpr const char* GetCVarOverride(const typename CVarOverride<CVarOverrideType::String>::hash_type hashedName, const char* defaultValue)
 {
-	GET_CVAR_IMPL(CVAR_STRING_OVERRIDES, hashedName, defaultValue);
+	return detail::GetCVarOverrideImpl(g_engineCvarStringOverrides, CRY_ARRAY_COUNT(g_engineCvarStringOverrides), hashedName, defaultValue, 0);
 }
-#endif // defined(CVAR_STRING_OVERRIDES)
 
-#undef GET_CVAR_IMPL
+#endif // !USE_RUNTIME_CVAR_OVERRIDES
 
 constexpr bool IsCVarWhitelisted(const char* szName)
 {
-#if defined(CVARS_WHITELIST)
+#if defined(CVARS_WHITELIST) && !defined(USE_RUNTIME_CVAR_OVERRIDES)
 #	if defined(CVAR_WHITELIST_ENTRIES)
 	return detail::IsCVarWhitelistedImpl(CVAR_WHITELIST_ENTRIES, CRY_ARRAY_COUNT(CVAR_WHITELIST_ENTRIES), CCrc32::ComputeLowercase_CompileTime(szName), 0);
 #	else
