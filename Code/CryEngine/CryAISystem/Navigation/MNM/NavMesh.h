@@ -43,6 +43,8 @@ public:
 	enum { max_y = (1 << y_bits) - 1, };
 	enum { max_z = (1 << z_bits) - 1, };
 
+	typedef std::unordered_map<MNM::TileID, std::unordered_set<std::vector<MNM::TriangleID>*>> TrianglesSetsByTile;
+
 	struct SGridParams
 	{
 		SGridParams()
@@ -332,7 +334,7 @@ public:
 	template<typename TQuery>
 	void QueryTrianglesWithProcessing(const aabb_t& queryAabbWorld, const INavMeshQueryFilter* pFilter, TQuery&& query) const;
 
-	void RemoveTrianglesByFlags(const MNM::AreaAnnotation::value_type flags);
+	void RemoveTrianglesByFlags(const MNM::AreaAnnotation::value_type flags, const TrianglesSetsByTile& trianglesToUpdate);
 
 private:
 	template<typename TFilter, typename TQuery>
