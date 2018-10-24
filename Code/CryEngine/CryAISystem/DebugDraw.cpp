@@ -2239,10 +2239,13 @@ void CAISystem::DebugDrawAgent(CAIObject* pAgentObj) const
 			cy += 1.5f;
 		}
 
-		dc->Draw2dLabel(cx, cy, fontSize * 0.85f, pPipeUser->IsMovingToCover() ? green : grey, false, "%s", "MC");
-		dc->Draw2dLabel(cx + 14.0f, cy, fontSize * 0.85f, pPipeUser->IsMovingInCover() ? green : grey, false, "%s", "M");
-		dc->Draw2dLabel(cx + 20.0f, cy, fontSize * 0.85f, pPipeUser->IsInCover() ? green : grey, false, "%s", "IC");
-		dc->Draw2dLabel(cx + 34.0f, cy, fontSize * 0.85f, pPipeUser->IsCoverCompromised() ? red : grey, false, "%s", "CC");
+		if (pPipeUser->GetCoverUser())
+		{
+			dc->Draw2dLabel(cx, cy, fontSize * 0.85f, pPipeUser->IsMovingToCover() ? green : grey, false, "%s", "MC");
+			dc->Draw2dLabel(cx + 14.0f, cy, fontSize * 0.85f, pPipeUser->IsMovingInCover() ? green : grey, false, "%s", "M");
+			dc->Draw2dLabel(cx + 20.0f, cy, fontSize * 0.85f, pPipeUser->IsInCover() ? green : grey, false, "%s", "IC");
+			dc->Draw2dLabel(cx + 34.0f, cy, fontSize * 0.85f, pPipeUser->IsCoverCompromised() ? red : grey, false, "%s", "CC");
+		}
 
 		if (pPuppet)
 			dc->Draw2dLabel(cx + 48.0f, cy, fontSize * 0.85f, pPuppet->IsAlarmed() ? red : grey, false, "%s", "AL");
