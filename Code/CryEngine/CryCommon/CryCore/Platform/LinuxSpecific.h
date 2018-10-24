@@ -438,6 +438,15 @@ typedef void* HDC;
 typedef void* PROC;
 typedef void* PIXELFORMATDESCRIPTOR;
 
+// In RELEASE disable printf and fprintf
+#if defined(_RELEASE) && !defined(RELEASE_LOGGING)
+#include <cstdio>
+#undef printf
+#define printf(...)  (void) 0
+#undef fprintf
+#define fprintf(...) (void) 0
+#endif
+
 // General overloads of bitwise operators for enum types.
 // This makes the type of expressions like "eFoo_Flag1 | eFoo_Flag2" to be of type EFoo, instead of int.
 
