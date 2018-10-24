@@ -1315,10 +1315,10 @@ void CNavMesh::MarkTrianglesNotConnectedToSeeds(const MNM::AreaAnnotation::value
 	}
 }
 
-void CNavMesh::RemoveTrianglesByFlags(const MNM::AreaAnnotation::value_type flags)
+void CNavMesh::RemoveTrianglesByFlags(const MNM::AreaAnnotation::value_type flags, const TrianglesSetsByTile& trianglesToUpdate)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
-	
+
 	Tile::STriangle newTriangles[MNM::Constants::TileTrianglesMaxCount];
 	Tile::Vertex newVertices[MNM::Constants::TileTrianglesMaxCount * 3];
 
@@ -1326,6 +1326,9 @@ void CNavMesh::RemoveTrianglesByFlags(const MNM::AreaAnnotation::value_type flag
 	// 1. Storing if the vertex is part of any triangle
 	// 2. Storing vertex indices offsets for remapping
 	uint16 verticesAuxArray[MNM::Constants::TileTrianglesMaxCount * 3];
+
+	// Array used for remapping triangle ids in trianglesToUpdate
+	uint16 trianglesAuxArray[MNM::Constants::TileTrianglesMaxCount];
 
 	for (TileMap::const_iterator tileIt = m_tileMap.cbegin(); tileIt != m_tileMap.cend(); ++tileIt)
 	{
@@ -1342,8 +1345,13 @@ void CNavMesh::RemoveTrianglesByFlags(const MNM::AreaAnnotation::value_type flag
 		{
 			const Tile::STriangle& triangle = tile.triangles[triangleIdx];
 
-			if((triangle.areaAnnotation.GetFlags() & flags) != 0)
+			if ((triangle.areaAnnotation.GetFlags() & flags) != 0)
+			{
+				trianglesAuxArray[triangleIdx] = uint16(-1);
 				continue;
+			}
+
+			trianglesAuxArray[triangleIdx] = newTrianglesCount;
 
 			newTriangles[newTrianglesCount++] = triangle;
 			for (uint16 v = 0; v < 3; ++v)
@@ -1354,6 +1362,27 @@ void CNavMesh::RemoveTrianglesByFlags(const MNM::AreaAnnotation::value_type flag
 
 		if (newTrianglesCount == tile.triangleCount)
 			continue; // No triangles were removed
+
+		// Update TriangleIds
+		const auto it = trianglesToUpdate.find(tileId);
+		if (it != trianglesToUpdate.end())
+		{
+			for (auto trianglesIt = it->second.cbegin(); trianglesIt != it->second.cend(); ++trianglesIt)
+			{
+				std::vector<MNM::TriangleID>& triangleIds = **trianglesIt;
+				for (MNM::TriangleID& triangleId : triangleIds)
+				{
+					const TileID triangleTileId = ComputeTileID(triangleId);
+					if (triangleTileId == tileId)
+					{
+						// Update only triangle ids from current tile
+						const uint16 triangleIdx = ComputeTriangleIndex(triangleId);
+						const uint16 newTriangleIdx = trianglesAuxArray[triangleIdx];
+						triangleId = newTriangleIdx == uint16(-1) ? MNM::Constants::InvalidTriangleID : ComputeTriangleID(tileId, newTriangleIdx);
+					}
+				}
+			}
+		}
 
 		// Copy used vertices and compute offsets of vertex indices
 		uint16 newVerticesCount = 0;

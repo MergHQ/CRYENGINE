@@ -231,8 +231,12 @@ static void InitializeMaterial(CMaterial* pEditorMaterial, const FbxTool::SMater
 
 	// Lighting settings of fabric (non-metal).
 	// Setting specular from file might mess up rendering if it does not respect PBS conventions.
-	inputRes.m_LMaterial.m_Diffuse = ColorGammaToLinear(ColorF(255, 255, 255));
-	inputRes.m_LMaterial.m_Specular = ColorGammaToLinear(ColorF(61, 61, 61));
+	ColorF col = ColorF(1.0f, 1.0f, 1.0f);
+	col.srgb2rgb();
+	inputRes.m_LMaterial.m_Diffuse = col;
+	col = ColorF(0.24f, 0.24f, 0.24f);
+	col.srgb2rgb();
+	inputRes.m_LMaterial.m_Specular = col;
 	inputRes.m_LMaterial.m_Smoothness = 255.0f;
 
 	constexpr char* defaultTexture[FbxTool::eMaterialChannelType_COUNT]

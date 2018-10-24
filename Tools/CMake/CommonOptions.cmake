@@ -19,6 +19,8 @@ endif()
 
 option(OPTION_STATIC_LINKING_WITH_GAME_AS_DLL "Build game as DLL in a monolithic CryEngine build" OFF)
 
+option(OPTION_RUNTIME_CVAR_OVERRIDES "Use runtime CVar overrides to allow for multiple projects in the same solution without having to recompile" OFF)
+
 if(OPTION_ENGINE)
 	option(OPTION_UQS_SCHEMATYC_SUPPORT "Enable UQS functions in Schematyc" ON)
 else()

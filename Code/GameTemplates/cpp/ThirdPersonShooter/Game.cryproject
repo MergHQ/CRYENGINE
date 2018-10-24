@@ -2,7 +2,7 @@
 	"version": 3,
 	"type": "",
 	"info": {
-		"name": "Third Person Shooter Game Template",
+		"name": "Third Person Shooter",
 		"guid": "e3865104-7321-f784-b95f-43e034a4e34b"
 	},
 	"content": {
@@ -10,7 +10,7 @@
 		"code": [ "Code" ],
 		"libs": [
 			{
-				"name": "Third Person Shooter Game Template",
+				"name": "Third Person Shooter",
 				"shared": { "any": "", "win_x64": "", "win_x86": "" }
 			}
 		]

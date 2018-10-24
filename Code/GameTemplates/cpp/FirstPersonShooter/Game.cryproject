@@ -2,7 +2,7 @@
 	"version": 3,
 	"type": "",
 	"info": {
-		"name": "First Person Shooter Game Template",
+		"name": "First Person Shooter",
 		"guid": "18848a42-b446-94c0-8317-cb2b0eff8774"
 	},
 	"content": {
@@ -10,7 +10,7 @@
 		"code": [ "Code" ],
 		"libs": [
 			{
-				"name": "First Person Shooter Game Template",
+				"name": "First Person Shooter",
 				"shared": { "any": "", "win_x64": "", "win_x86": "" }
 			}
 		]

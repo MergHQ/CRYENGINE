@@ -2,7 +2,7 @@
 	"version": 3,
 	"type": "",
 	"info": {
-		"name": "Isometric Pathfinding Game Template",
+		"name": "Isometric Pathfinding",
 		"guid": "071b680b-d1d1-a72a-0799-48d84f3e0aa6"
 	},
 	"content": {
@@ -10,7 +10,7 @@
 		"code": [ "Code" ],
 		"libs": [
 			{
-				"name": "Isometric Pathfinding Game Template",
+				"name": "Isometric Pathfinding",
 				"shared": { "any": "", "win_x64": "", "win_x86": "" }
 			}
 		]

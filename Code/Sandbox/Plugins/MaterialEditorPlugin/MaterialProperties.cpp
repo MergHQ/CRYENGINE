@@ -311,19 +311,38 @@ void CMaterialSerializer::Serialize(Serialization::IArchive& ar)
 	{
 		ar.openBlock("lightingSettings", "Lighting Settings");
 
-		ar(shaderResources.m_LMaterial.m_Diffuse, "diffuseColor", "Diffuse Color");
-		ar(shaderResources.m_LMaterial.m_Specular, "specularColor", "Specular Color");
+		if (ar.isInput())
+		{
+			ColorF col;
+			ar(col, "diffuseColor", "Diffuse Color");
+			col.srgb2rgb();
+			shaderResources.m_LMaterial.m_Diffuse = col;
+			ar(col, "specularColor", "Specular Color");
+			col.srgb2rgb();
+			shaderResources.m_LMaterial.m_Specular = col;
+			ar(col, "emissiveColor", "Emissive Color");
+			col.srgb2rgb();
+			shaderResources.m_LMaterial.m_Emittance = col;
+			float emissiveIntensity;
+			ar(Serialization::Decorators::Range<float>(emissiveIntensity, 0.f, FLT_MAX, 0.f, 200.f, 1.f), "emissiveIntensity", "Emissive Intensity (kcd/m2)");
+			shaderResources.m_LMaterial.m_Emittance.a = emissiveIntensity;
+		}
+		else
+		{
+			ColorF col = shaderResources.m_LMaterial.m_Diffuse;
+			col.rgb2srgb();
+			ar(col, "diffuseColor", "Diffuse Color");
+			col = shaderResources.m_LMaterial.m_Specular;
+			col.rgb2srgb();
+			ar(col, "specularColor", "Specular Color");
 
-		ColorF emissiveColor = shaderResources.m_LMaterial.m_Emittance;
-		emissiveColor.a = 1.f; //alpha is used for emissive intensity
-		ar(emissiveColor, "emissiveColor", "Emissive Color");
-
-		float emissiveIntensity = shaderResources.m_LMaterial.m_Emittance.a;
-		//soft cap at 200
-		ar(Serialization::Decorators::Range<float>(emissiveIntensity, 0.f, FLT_MAX, 0.f, 200.f, 1.f), "emissiveIntensity", "Emissive Intensity (kcd/m2)");
-
-		emissiveColor.a = emissiveIntensity;
-		shaderResources.m_LMaterial.m_Emittance = emissiveColor;
+			float emissiveIntensity = shaderResources.m_LMaterial.m_Emittance.a;
+			ar(Serialization::Decorators::Range<float>(emissiveIntensity, 0.f, FLT_MAX, 0.f, 200.f, 1.f), "emissiveIntensity", "Emissive Intensity (kcd/m2)");
+			col = shaderResources.m_LMaterial.m_Emittance;
+			col.a = 1.f; //alpha is used for emissive intensity
+			col.rgb2srgb();
+			ar(col, "emissiveColor", "Emissive Color");
+		}
 
 		//Note: smoothness is a float but is between 0 and 255 apparently, let's display it between 0 and 1
 		float smoothness = shaderResources.m_LMaterial.m_Smoothness / 255.f;

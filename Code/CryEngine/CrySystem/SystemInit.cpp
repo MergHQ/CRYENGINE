@@ -1967,21 +1967,34 @@ bool CSystem::InitFileSystem(const SSystemInitParams& startupParams)
 #endif
 	}
 
-	// Load value of sys_game_folder from system.cfg into the sys_project console variable
-	ILoadConfigurationEntrySink* pCVarsWhiteListConfigSink = GetCVarsWhiteListConfigSink();
-#if CRY_PLATFORM_ANDROID && !defined(ANDROID_OBB)
-	string path = string(CryGetProjectStoragePath()) + "/system.cfg";
-	LoadConfiguration(path.c_str(), pCVarsWhiteListConfigSink, eLoadConfigInit, ELoadConfigurationFlags::SuppressConfigNotFoundWarning);
-#else
-	LoadConfiguration("%ENGINEROOT%/system.cfg", pCVarsWhiteListConfigSink, eLoadConfigInit, ELoadConfigurationFlags::SuppressConfigNotFoundWarning);
-#endif
-
 	// Now set up the log
 	InitLog(startupParams);
 
 	LogVersion();
 
 	((CCryPak*)m_env.pCryPak)->SetLog(m_env.pLog);
+
+	ILoadConfigurationEntrySink* pCVarsWhiteListConfigSink = GetCVarsWhiteListConfigSink();
+#if CRY_PLATFORM_ANDROID && !defined(ANDROID_OBB)
+	string path = string(CryGetProjectStoragePath()) + "/system.cfg";
+#else
+	string path = "%ENGINEROOT%/system.cfg";
+#endif
+
+#if defined(USE_RUNTIME_CVAR_OVERRIDES)
+	// We load the runtime CVar overrides before system.cfg
+	if (m_env.pConsole != nullptr)
+	{
+		const bool result = static_cast<CXConsole*>(m_env.pConsole)->ParseCVarOverridesFile(path);
+		if (!result)
+		{
+			CryMessageBox("Error: Failed to parse the runtime CVar overrides file, look for assert failure.", "ERROR", EMessageBox::eMB_Error);
+		}
+	}
+#endif
+
+	// Load value of sys_game_folder from system.cfg into the sys_project console variable
+	LoadConfiguration(path.c_str(), pCVarsWhiteListConfigSink, eLoadConfigInit, ELoadConfigurationFlags::SuppressConfigNotFoundWarning);
 
 	const char* szConfigPakPath = "%ENGINEROOT%/config.pak";
 	m_env.pCryPak->OpenPack(szConfigPakPath);
@@ -2907,12 +2920,13 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 	InlineInitializationProcessing("CSystem::Init PlatformOS");
 
 	{
-		m_FrameProfileSystem.Init();
-
 		//////////////////////////////////////////////////////////////////////////
 		// File system, must be very early
 		//////////////////////////////////////////////////////////////////////////
 		InitFileSystem(startupParams);
+
+		m_FrameProfileSystem.Init();
+
 		//////////////////////////////////////////////////////////////////////////
 		InlineInitializationProcessing("CSystem::Init InitFileSystem");
 

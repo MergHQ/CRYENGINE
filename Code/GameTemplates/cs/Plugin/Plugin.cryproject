@@ -2,7 +2,7 @@
 	"version": 3,
 	"type": "",
 	"info": {
-		"name": "Plugin Template",
+		"name": "Plugin",
 		"guid": "fd81c5ad-4ae8-cc4d-7565-c3950c212ee0"
 	},
 	"content": {
@@ -10,7 +10,7 @@
 		"code": [ "Code" ],
 		"libs": [
 			{
-				"name": "Plugin Template",
+				"name": "Plugin",
 				"shared": { "any": "", "win_x64": "", "win_x86": "" }
 			}
 		]

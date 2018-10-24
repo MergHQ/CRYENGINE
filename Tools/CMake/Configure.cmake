@@ -120,10 +120,19 @@ if (NOT EXISTS "${CMAKE_BINARY_DIR}/ProjectCVarOverrides.h")
 endif ()
 list(APPEND global_defines "CRY_CVAR_OVERRIDE_FILE=\"${CMAKE_BINARY_DIR}/ProjectCVarOverrides.h\"")
 
+if (NOT EXISTS "${CMAKE_BINARY_DIR}/ProjectCVarWhitelist.h")
+	file(WRITE "${CMAKE_BINARY_DIR}/ProjectCVarWhitelist.h" "")
+endif ()
+list(APPEND global_defines "CRY_CVAR_WHITELIST_FILE=\"${CMAKE_BINARY_DIR}/ProjectCVarWhitelist.h\"")
+
 if (NOT EXISTS "${CMAKE_BINARY_DIR}/ProjectEngineDefineOverrides.h")
 	file(WRITE "${CMAKE_BINARY_DIR}/ProjectEngineDefineOverrides.h" "")
 endif ()
 list(APPEND global_defines "CRY_ENGINE_DEFINE_OVERRIDE_FILE=\"${CMAKE_BINARY_DIR}/ProjectEngineDefineOverrides.h\"")
+
+if (OPTION_RUNTIME_CVAR_OVERRIDES)
+	list(APPEND global_defines "USE_RUNTIME_CVAR_OVERRIDES")
+endif()
 
 # Print current project settings
 MESSAGE(STATUS "CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME}")

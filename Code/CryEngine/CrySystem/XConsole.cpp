@@ -11,6 +11,7 @@
 #include <CryNetwork/IRemoteCommand.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include "XConsoleVariable.h"
+#include <regex>
 
 #define BACKGROUND_SERVER_CHAR '/'
 
@@ -433,6 +434,134 @@ void Command_DumpVars(IConsoleCmdArgs* Cmd)
 	pConsole->DumpVarsTxt(includeCheat);
 }
 #endif
+
+bool CXConsole::ParseCVarOverridesFile(const char* szSysCVarOverridesPathConfigFile)
+{
+#if defined(USE_RUNTIME_CVAR_OVERRIDES)
+	CRY_ASSERT_MESSAGE(m_mapVariables.empty(), "There should not be any cvars registered before parsing the runtime CVar overrides file, num: %i", m_mapVariables.size());
+	
+	string sys_cvar_overrides_path;
+	{
+		char path[_MAX_PATH];
+		const char* szAdjustedPath = gEnv->pCryPak->AdjustFileName(szSysCVarOverridesPathConfigFile, path, 0);
+		std::ifstream inFile;
+		inFile.open(szAdjustedPath);
+		if (!inFile.is_open())
+		{
+			CRY_ASSERT_MESSAGE(false, "Failed to open the system.cfg file containing sys_cvar_overrides_path: %s", szAdjustedPath);
+			return false;
+		}
+		std::stringstream strStream;
+		strStream << inFile.rdbuf();
+
+		const std::string content = strStream.str();
+		const std::regex parseCfgRegex(R"(^sys_cvar_overrides_path[ \t]*[=][ \t]*(.+).*)");
+		std::smatch regexMatch;
+		if (std::regex_search(content, regexMatch, parseCfgRegex) && regexMatch.size() == 2)
+		{
+			sys_cvar_overrides_path = regexMatch[1].str().c_str();
+		}
+		else
+		{
+			CRY_ASSERT_MESSAGE(false, "Failed to find/parse sys_cvar_overrides_path in system.cfg: %s", szAdjustedPath);
+			return false;
+		}
+	}
+
+	std::string content;
+	{
+		const string fullPath = PathUtil::IsRelativePath(sys_cvar_overrides_path) 
+			? PathUtil::Make(PathUtil::GetProjectFolder(), sys_cvar_overrides_path) 
+			: sys_cvar_overrides_path;
+
+		std::ifstream inFile;
+		inFile.open(fullPath);
+		if (!inFile.is_open())
+		{
+			CRY_ASSERT_MESSAGE(false, "Failed to open the cvar overrides file in sys_cvar_overrides_path: %s", sys_cvar_overrides_path.c_str());
+			return false;
+		}
+		std::stringstream strStream;
+		strStream << inFile.rdbuf();
+		content = strStream.str();
+	}
+
+	// remove commented out content
+	std::regex removeCommentsRegex(R"((/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+/)|(//.*[\r\n]))");
+	content = std::regex_replace(content, removeCommentsRegex, "");
+
+	const std::regex parseOverridesRegex(R"(^(ADD_CVAR_OVERRIDE_NUMERIC|ADD_CVAR_OVERRIDE_STRING)\([\s\t]*(.+?)[\s\t]*\,[\s\t]*(.+?)[\s\t]*\).*)");
+	std::smatch regexMatch;
+	while (std::regex_search(content, regexMatch, parseOverridesRegex))
+	{
+		if (regexMatch.size() == 4)
+		{
+			string cvarName = regexMatch[2].str().c_str();
+			cvarName = cvarName.Replace("\"", "");
+			string cvarValStr = regexMatch[3].str().c_str();
+
+			if (GetCVar(cvarName) != nullptr)
+			{
+				CRY_ASSERT_MESSAGE(false, "Trying to override a CVar that was already registered: %s", cvarName.c_str());
+				return false;
+			}
+
+			if (cvarValStr.find("\"") != string::npos)
+			{
+				// Check for beginning & ending quotes and then remove them
+				const size_t firstQuotePos = cvarValStr.find_first_of("\"");
+				const size_t lastQuotePos = cvarValStr.find_last_of("\"");
+				if (firstQuotePos != string::npos && lastQuotePos != string::npos && lastQuotePos != firstQuotePos)
+				{
+					cvarValStr.erase(lastQuotePos, 1);
+					cvarValStr.erase(firstQuotePos, 1);
+					RegisterString(cvarName, cvarValStr, VF_COPYNAME | VF_CONST_CVAR);
+				}
+				else
+				{
+					CRY_ASSERT_MESSAGE(false, "Error parsing runtime CVar override string: %s = %s", cvarName.c_str(), cvarValStr.c_str());
+					return false;
+				}
+			}
+			else if (cvarValStr.find(".") != string::npos)
+			{
+				char* end;
+				const float val = std::strtof(cvarValStr.c_str(), &end);
+				if (end == cvarValStr.end() || end == cvarValStr.end() - 1) // 'end' will be the f after the last decimal if it exists
+				{
+					RegisterFloat(cvarName, val, VF_COPYNAME | VF_CONST_CVAR);
+				}
+				else
+				{
+					CRY_ASSERT_MESSAGE(false, "Failed to parse runtime CVar override float value: %s = %s", cvarName.c_str(), cvarValStr.c_str());
+					return false;
+				}
+			}
+			else
+			{
+				char* end;
+				const int val = static_cast<int>(std::strtol(cvarValStr.c_str(), &end, 0));
+				if (end == cvarValStr.end())
+				{
+					RegisterInt(cvarName, val, VF_COPYNAME | VF_CONST_CVAR);
+				}
+				else
+				{
+					CRY_ASSERT_MESSAGE(false, "Failed to parse runtime CVar override integer value: %s = %s", cvarName.c_str(), cvarValStr.c_str());
+					return false;
+				}
+			}
+		}
+		else
+		{
+			CRY_ASSERT_MESSAGE(false, "Error matching regex while parsing CVar overrides file: %s", sys_cvar_overrides_path);
+			return false;
+		}
+		content = regexMatch.suffix();
+	}
+#endif // defined(USE_RUNTIME_CVAR_OVERRIDES)
+	return true;
+}
 
 //////////////////////////////////////////////////////////////////////////
 void CXConsole::PreProjectSystemInit()
@@ -933,10 +1062,17 @@ ICVar* CXConsole::Register(const char* sName, int* src, int iValue, int nFlags, 
 	ICVar* pCVar = stl::find_in_map(m_mapVariables, sName, NULL);
 	if (pCVar)
 	{
-		gEnv->pLog->LogError("[CVARS]: [DUPLICATE] CXConsole::Register(int): variable [%s] is already registered", pCVar->GetName());
+		if (pCVar->GetFlags() & VF_CONST_CVAR)
+		{
+			*src = pCVar->GetIVal();
+		}
+		else
+		{
+			gEnv->pLog->LogError("[CVARS]: [DUPLICATE] CXConsole::Register(int): variable [%s] is already registered", pCVar->GetName());
 #if LOG_CVAR_INFRACTIONS_CALLSTACK
-		gEnv->pSystem->debug_LogCallStack();
+			gEnv->pSystem->debug_LogCallStack();
 #endif // LOG_CVAR_INFRACTIONS_CALLSTACK
+		}
 		return pCVar;
 	}
 
@@ -992,10 +1128,17 @@ ICVar* CXConsole::Register(const char* sName, float* src, float fValue, int nFla
 	ICVar* pCVar = stl::find_in_map(m_mapVariables, sName, NULL);
 	if (pCVar)
 	{
-		gEnv->pLog->LogError("[CVARS]: [DUPLICATE] CXConsole::Register(float): variable [%s] is already registered", pCVar->GetName());
+		if (pCVar->GetFlags() & VF_CONST_CVAR)
+		{
+			*src = pCVar->GetFVal();
+		}
+		else
+		{
+			gEnv->pLog->LogError("[CVARS]: [DUPLICATE] CXConsole::Register(float): variable [%s] is already registered", pCVar->GetName());
 #if LOG_CVAR_INFRACTIONS_CALLSTACK
-		gEnv->pSystem->debug_LogCallStack();
+			gEnv->pSystem->debug_LogCallStack();
 #endif // LOG_CVAR_INFRACTIONS_CALLSTACK
+		}
 		return pCVar;
 	}
 	if (!allowModify)
@@ -1014,10 +1157,17 @@ ICVar* CXConsole::Register(const char* sName, const char** src, const char* defa
 	ICVar* pCVar = stl::find_in_map(m_mapVariables, sName, NULL);
 	if (pCVar)
 	{
-		gEnv->pLog->LogError("[CVARS]: [DUPLICATE] CXConsole::Register(const char*): variable [%s] is already registered", pCVar->GetName());
+		if (pCVar->GetFlags() & VF_CONST_CVAR)
+		{
+			*src = pCVar->GetString();
+		}
+		else
+		{
+			gEnv->pLog->LogError("[CVARS]: [DUPLICATE] CXConsole::Register(const char*): variable [%s] is already registered", pCVar->GetName());
 #if LOG_CVAR_INFRACTIONS_CALLSTACK
-		gEnv->pSystem->debug_LogCallStack();
+			gEnv->pSystem->debug_LogCallStack();
 #endif // LOG_CVAR_INFRACTIONS_CALLSTACK
+		}
 		return pCVar;
 	}
 	if (!allowModify)

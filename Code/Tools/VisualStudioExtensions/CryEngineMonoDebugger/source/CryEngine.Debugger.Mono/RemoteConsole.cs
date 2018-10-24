@@ -337,7 +337,7 @@ namespace CryEngine.Debugger.Mono
 #endif
 					}
 
-					_isConnected = _clientSocket != null ? _clientSocket.Connected : false;
+					_isConnected = _clientSocket.Client != null ? _clientSocket.Connected : false;
 					if (!_isConnected)
 					{
 						_autoCompleteIsDone = false;

@@ -2407,8 +2407,10 @@ void CPropertyItem::VarToValue()
 		{
 			Vec3 v(0, 0, 0);
 			m_pVariable->Get(v);
-			COLORREF col = CMFCUtils::ColorLinearToGamma(ColorF(v.x, v.y, v.z));
-			m_value.Format("%d,%d,%d", GetRValue(col), GetGValue(col), GetBValue(col));
+			ColorF color = ColorF(v, 1.f);
+			color.rgb2srgb();
+			auto col = ColorB(color);
+			m_value.Format("%d,%d,%d", col.r, col.g, col.b);
 		}
 		else
 		{
@@ -2490,7 +2492,8 @@ void CPropertyItem::ValueToVar()
 		COLORREF col = StringToColor(m_value);
 		if (m_pVariable->GetType() == IVariable::VECTOR)
 		{
-			ColorF colLin = CMFCUtils::ColorGammaToLinear(col);
+			ColorF colLin = ColorF(CMFCUtils::Rgb2Vec(col), 1.f);
+			colLin.srgb2rgb();
 			m_pVariable->Set(Vec3(colLin.r, colLin.g, colLin.b));
 		}
 		else
