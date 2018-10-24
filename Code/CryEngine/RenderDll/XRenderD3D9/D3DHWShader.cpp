@@ -294,18 +294,6 @@ CHWShader* CHWShader::mfForName(const char* name, const char* nameSource, uint32
 		pSH->m_EntryFunc = szEntryFunc;
 		pSH->m_CRC32 = CRC32;
 		pSH->m_eSHClass = eClass;
-
-		// Acquire cache resource
-		auto* hwSharedCache = CBaseResource::GetResource(cacheClassName, cacheNameCrc, true);
-		if (!hwSharedCache)
-		{
-			char dstName[256];
-			pSH->mfGetDstFileName(nullptr, dstName, 256, 0);
-
-			hwSharedCache = new SHWShaderCache(string{ dstName });
-			hwSharedCache->Register(cacheClassName, cacheNameCrc);
-		}
-		pSH->m_pCache = static_cast<SHWShaderCache*>(hwSharedCache);
 	}
 	else
 	{
@@ -329,12 +317,22 @@ CHWShader* CHWShader::mfForName(const char* name, const char* nameSource, uint32
 		}
 
 		// CRC mismatch
-		pSH->m_pCache->Reset();
-
 		pSH->mfFree();
 		pSH->m_CRC32 = CRC32;
 		pSH->m_eSHClass = eClass;
 	}
+
+	// Acquire cache resource
+	auto* hwSharedCache = CBaseResource::GetResource(cacheClassName, cacheNameCrc, true);
+	if (!hwSharedCache)
+	{
+		char dstName[256];
+		pSH->mfGetDstFileName(nullptr, dstName, 256, 0);
+
+		hwSharedCache = new SHWShaderCache(string{ dstName });
+		hwSharedCache->Register(cacheClassName, cacheNameCrc);
+	}
+	pSH->m_pCache = static_cast<SHWShaderCache*>(hwSharedCache);
 
 	if (CParserBin::m_bEditable || (CVrProjectionManager::IsMultiResEnabledStatic() && eClass == eHWSC_Vertex))
 	{
