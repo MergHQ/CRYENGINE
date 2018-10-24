@@ -2,7 +2,7 @@
 	"version": 3,
 	"type": "",
 	"info": {
-		"name": "Top Down Shooter Game Template",
+		"name": "Top Down Shooter",
 		"guid": "323ff9c3-aaab-aaa6-6f82-a0bf4dd27405"
 	},
 	"content": {
@@ -10,7 +10,7 @@
 		"code": [ "Code" ],
 		"libs": [
 			{
-				"name": "Top Down Shooter Game Template",
+				"name": "Top Down Shooter",
 				"shared": { "any": "", "win_x64": "", "win_x86": "" }
 			}
 		]

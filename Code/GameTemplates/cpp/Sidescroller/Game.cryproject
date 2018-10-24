@@ -2,7 +2,7 @@
 	"version": 3,
 	"type": "",
 	"info": {
-		"name": "Sidescroller Game Template",
+		"name": "Sidescroller",
 		"guid": "34995d13-f587-9695-de28-6cc71c9f68fa"
 	},
 	"content": {
@@ -10,7 +10,7 @@
 		"code": [ "Code" ],
 		"libs": [
 			{
-				"name": "Sidescroller Game Template",
+				"name": "Sidescroller",
 				"shared": { "any": "", "win_x64": "", "win_x86": "" }
 			}
 		]

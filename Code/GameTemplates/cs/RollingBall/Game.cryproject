@@ -2,7 +2,7 @@
 	"version": 3,
 	"type": "",
 	"info": {
-		"name": "Rolling Ball Game Template",
+		"name": "Rolling Ball",
 		"guid": "35978b08-5e7d-562f-7d15-ff4a18f37bc1"
 	},
 	"content": {
@@ -10,7 +10,7 @@
 		"code": [ "Code" ],
 		"libs": [
 			{
-				"name": "Rolling Ball Game Template",
+				"name": "Rolling Ball",
 				"shared": { "any": "", "win_x64": "", "win_x86": "" }
 			}
 		]

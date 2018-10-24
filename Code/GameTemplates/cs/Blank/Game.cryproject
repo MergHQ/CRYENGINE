@@ -2,7 +2,7 @@
 	"version": 3,
 	"type": "",
 	"info": {
-		"name": "Blank Game Template",
+		"name": "Blank",
 		"guid": "8448bff0-3de5-84f9-e6bd-ed9bc68050f0"
 	},
 	"content": {
@@ -10,7 +10,7 @@
 		"code": [ "Code" ],
 		"libs": [
 			{
-				"name": "Blank Game Template",
+				"name": "Blank",
 				"shared": { "any": "", "win_x64": "", "win_x86": "" }
 			}
 		]
