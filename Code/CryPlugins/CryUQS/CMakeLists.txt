@@ -15,7 +15,7 @@ add_subdirectory("Interfaces")
 add_subdirectory("Shared")
 add_subdirectory("StdLib")
 
-if (OPTION_SANDBOX AND WIN64)
+if (OPTION_SANDBOX AND WINDOWS)
 	add_subdirectory(EditorPlugin)
 	add_subdirectory(EditorPlugin_HistoryInspector)
 endif()

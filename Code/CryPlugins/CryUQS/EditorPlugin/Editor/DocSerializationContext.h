@@ -4,6 +4,7 @@
 
 #include <CrySerialization/Forward.h>
 #include <CrySerialization/StringList.h>
+#include <stack>
 
 class CUqsQueryDocument;
 class CUqsEditorContext;
