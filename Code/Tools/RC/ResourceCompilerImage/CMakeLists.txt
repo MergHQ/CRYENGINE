@@ -185,6 +185,17 @@ if (DURANGO_SDK_DIR AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Streaming/TextureSpl
 	)
 endif()
 
+sources_platform(WIN32)
+add_sources("NoUberFile"
+	SOURCE_GROUP "CryCommonTools"
+		"../../CryCommonTools/FileUtil_windows.cpp"
+)
+sources_platform(LINUX)
+add_sources("NoUberFile"
+	SOURCE_GROUP "CryCommonTools"
+		"../../CryCommonTools/FileUtil_posix.cpp"
+)
+
 end_sources()
 #END-FILE-LIST
 

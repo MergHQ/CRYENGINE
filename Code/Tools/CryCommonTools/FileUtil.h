@@ -2,8 +2,15 @@
 
 #pragma once
 
-#include <CryCore/Platform/CryWindows.h>  // DWORD
+#include <CryCore/Platform/platform.h>
 #include <CryString/UnicodeFunctions.h>
+
+#if CRY_PLATFORM_WINDOWS
+	#include <CryCore/Platform/CryWindows.h>
+	#include <tchar.h>
+#elif CRY_PLATFORM_POSIX
+	#define _T(x) x
+#endif
 
 namespace FileUtil
 {
@@ -23,6 +30,8 @@ namespace FileUtil
 
 	// Find all files matching filespec.
 	bool ScanDirectory(const string& path, const string& filespec, std::vector<string>& files, bool recursive, const string& dirToIgnore);
+
+	FILE* CryOpenFile(const string& filename, const char* mode);
 
 	// Ensures that directory specified by szPathIn exists by creating all needed (sub-)directories.
 	// Returns false in case of a failure.

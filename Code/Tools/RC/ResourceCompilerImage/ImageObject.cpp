@@ -2,6 +2,7 @@
 #include "stdafx.h"
 
 #include <assert.h>                 // assert()
+#include <FileUtil.h>
 #include "IRCLog.h"                 // IRCLog
 #include "IConfig.h"                // IConfig
 #include "ImageCompiler.h"          // CImageCompiler
@@ -953,10 +954,7 @@ ImageObject::~ImageObject()
 
 bool ImageObject::SaveImage(const char* filename, bool bForceDX10) const
 {
-	wstring wideFilename;
-	Unicode::Convert(wideFilename, filename);
-
-	FILE* const out = _wfopen(wideFilename.c_str(), L"wb");
+	FILE *out = FileUtil::CryOpenFile(filename, _T("wb"));
 	if (!out)
 	{
 		RCLogError("%s: failed to create file %s", __FUNCTION__, filename);
@@ -1086,10 +1084,7 @@ bool ImageObject::SaveExtendedData(FILE *out, bool bForceDX10) const
 
 bool ImageObject::LoadImage(const char* filename, bool bForceDX10)
 {
-	wstring wideFilename;
-	Unicode::Convert(wideFilename, filename);
-
-	FILE* const out = _wfopen(wideFilename.c_str(), L"rb");
+	FILE* const out = FileUtil::CryOpenFile(filename, _T("rb"));
 	if (!out)
 	{
 		RCLogError("%s: failed to open file %s", __FUNCTION__, filename);
