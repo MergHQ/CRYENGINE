@@ -4,21 +4,25 @@
 #include "QtUtil.h"
 
 // Qt
+#include <QAbstractItemView>
+#include <QAbstractProxyModel>
 #include <QApplication>
-#include <QStandardPaths>
-#include <QRegularExpression>
-#include <QWidget>
-#include <QLayout>
-#include <QScrollArea>
-#include <QProcess>
 #include <QDir>
+#include <QLayout>
 #include <QMenu>
 #include <QPainter>
 #include <QPixmap>
+#include <QProcess>
+#include <QRegularExpression>
+#include <QScrollArea>
+#include <QStandardPaths>
+#include <QWidget>
 
 // EditorCommon
 #include "EditorStyleHelper.h"
 #include "ProxyModels/MergingProxyModel.h"
+
+#include <CrySystem/ISystem.h>
 
 namespace QtUtil
 {

@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include "EditorFramework/Preferences.h"
 #include "Gizmos/ITransformManipulator.h"
 
@@ -8,6 +9,7 @@
 
 #include <CryExtension/CryGUID.h>
 #include <CrySerialization/yasli/decorators/Range.h>
+#include <unordered_set>
 
 
 // {87109FED-BDB5-4874-936D-338400079F58}

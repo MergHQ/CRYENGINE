@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "AssetSystem//IFilesGroupProvider.h"
+#include "AssetSystem/IFilesGroupProvider.h"
 
 struct IObjectLayer;
 

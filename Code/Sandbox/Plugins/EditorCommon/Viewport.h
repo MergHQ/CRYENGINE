@@ -7,10 +7,11 @@
 #include "IDisplayViewport.h"
 #include "IPostRenderer.h"
 
-#include <CryMath/Cry_Color.h>
+#include <CryMath/Cry_Math.h>
 #include <CrySerialization/IArchive.h>
 
 #include <QPoint>
+#include <QCursor>
 
 class CameraTransformEvent;
 class CBaseObject;

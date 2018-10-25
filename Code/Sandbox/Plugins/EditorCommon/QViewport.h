@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include "Gizmos/GizmoManager.h"
 #include "DisplayViewportAdapter.h"
 #include "QViewportEvents.h"

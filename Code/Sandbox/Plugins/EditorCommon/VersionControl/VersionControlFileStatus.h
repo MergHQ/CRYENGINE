@@ -1,7 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#include "CryString/CryString.h"
+#include "EditorCommonAPI.h"
+#include <CryString/CryString.h>
 
 //! This class holds current VCS status of a file.
 class EDITOR_COMMON_API CVersionControlFileStatus

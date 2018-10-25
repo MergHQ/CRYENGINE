@@ -5,6 +5,8 @@
 #include "VersionControlFileStatus.h"
 #include "VersionControlFileConflictStatus.h"
 #include "VersionControlError.h"
+#include <CrySandbox/CrySignal.h>
+#include <CryCore/StlUtils.h>
 #include <unordered_map>
 
 struct SPreferencePage;

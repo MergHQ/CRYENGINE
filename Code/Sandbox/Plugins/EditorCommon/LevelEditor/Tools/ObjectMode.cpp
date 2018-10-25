@@ -21,6 +21,7 @@
 #include "GameEngine.h"
 #include "Terrain/Heightmap.h"
 #include "ViewManager.h"
+#include <IEditor.h>
 
 /////////////////////////////
 // CObjectManipulatorOwner

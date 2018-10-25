@@ -5,6 +5,7 @@
 #include "AssetReverseDependenciesDialog.h"
 
 #include "AssetSystem/Asset.h"
+#include "AssetSystem/AssetEditor.h"
 #include "AssetSystem/AssetManager.h"
 #include "AssetSystem/EditableAsset.h"
 #include "AssetSystem/AssetImporter.h"
@@ -21,6 +22,7 @@
 #include "LineEditDelegate.h"
 
 #include "Controls/BreadcrumbsBar.h"
+#include "Controls/QuestionDialog.h"
 #include "DragDrop.h"
 #include "FileDialogs/SystemFileDialog.h"
 #include "Menu/MenuWidgetBuilders.h"
@@ -31,19 +33,26 @@
 #include "QAdvancedTreeView.h"
 #include "QControls.h"
 #include "QFilteringPanel.h"
+#include "QSearchBox.h"
 #include "QThumbnailView.h"
 #include "QtUtil.h"
 #include "QtViewPane.h"
 #include "ThreadingUtils.h"
 
+#include <IEditor.h>
+
+#include <QButtonGroup>
 #include <QDirIterator>
 #include <QDragEnterEvent>
+#include <QGridLayout>
+#include <QHBoxLayout>
 #include <QHeaderView>
 #include <QItemSelectionModel>
-#include <QSplitter>
-#include <QGridLayout>
+#include <QLineEdit>
 #include <QListView>
-#include <QButtonGroup>
+#include <QSplitter>
+#include <QToolButton>
+#include <QVariant>
 
 REGISTER_VIEWPANE_FACTORY(CAssetBrowser, "Asset Browser", "Tools", false);
 

@@ -2,16 +2,16 @@
 #pragma once
 
 #include "EditorCommonAPI.h"
-#include "BroadcastManager.h"
-#include "QtViewPane.h"
 #include "DockingSystem/DockableContainer.h"
 #include "Menu/MenuDesc.h"
-#include <QWidget>
+#include "QtViewPane.h"
 #include <QVariant>
+#include <QWidget>
 
+class BroadcastEvent;
 class CAbstractMenu;
 class CMenuUpdater;
-
+class CBroadcastManager;
 class QEvent;
 
 //! Base class for Editor(s) which means this should be the base class

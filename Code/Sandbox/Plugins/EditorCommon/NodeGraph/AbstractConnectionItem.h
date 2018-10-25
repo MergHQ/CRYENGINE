@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
+
 #include "AbstractNodeGraphViewModelItem.h"
 
 #include <CrySandbox/CrySignal.h>

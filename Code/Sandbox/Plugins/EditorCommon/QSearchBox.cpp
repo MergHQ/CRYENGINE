@@ -6,9 +6,10 @@
 #include <QTimer>
 #include <QAction>
 #include <QSortFilterProxyModel>
+#include <QTreeView>
 
 #include "ProxyModels/DeepFilterProxyModel.h"
-#include "CryIcon.h"
+#include <CryIcon.h>
 
 QSearchBox::QSearchBox(QWidget* parent /*= 0*/)
 	: QLineEdit(parent)

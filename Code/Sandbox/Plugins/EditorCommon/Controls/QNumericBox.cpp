@@ -4,6 +4,8 @@
 
 #include <BoostPythonMacros.h>
 
+#include <IEditor.h>
+
 #include <QLineEdit>
 #include <QVBoxLayout>
 #include <QHBoxLayout>

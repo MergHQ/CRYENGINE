@@ -10,7 +10,8 @@
 #include <QLabel>
 #include <QLineEdit>
 
-#include "EditorFramework/Inspector.h"
+#include <EditorFramework/Events.h>
+#include <EditorFramework/Inspector.h>
 #include <LevelEditor/LevelEditorSharedState.h>
 
 #include "SubMaterialView.h"

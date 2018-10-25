@@ -4,7 +4,9 @@
 #include "QTrackingTooltip.h"
 #include <QToolTip>
 #include <QApplication>
+#include <QBoxLayout>
 #include <QDesktopWidget>
+#include <QLabel>
 
 QSharedPointer<QTrackingTooltip> QTrackingTooltip::m_instance;
 

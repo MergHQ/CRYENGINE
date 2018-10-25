@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Util/UserDataUtil.h>
+#include <QtViewPane.h>
 #include <QWidget>
 
 class QAdvancedTreeView;

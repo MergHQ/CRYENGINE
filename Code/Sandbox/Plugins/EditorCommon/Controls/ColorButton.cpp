@@ -2,9 +2,12 @@
 #include "StdAfx.h"
 #include "ColorButton.h"
 
+#include <QApplication>
 #include <QColorDialog>
 #include <QDesktopWidget>
-#include "QtUtil.h"
+#include <QPainter>
+#include <QStyleOption>
+#include <QtUtil.h>
 
 CColorButton::CColorButton()
 	: m_color(Qt::white)

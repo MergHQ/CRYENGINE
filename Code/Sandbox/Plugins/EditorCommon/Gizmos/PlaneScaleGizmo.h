@@ -2,7 +2,9 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include "Gizmo.h"
+#include <CrySandbox/CrySignal.h>
 
 //////////////////////////////////////////////////////////////////////////
 // CPlaneScaleGizmo Gizmo.

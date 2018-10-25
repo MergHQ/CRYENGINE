@@ -5,8 +5,16 @@
 
 #include "IDataBaseItem.h"
 #include "RenderLock.h"
+#include "Controls/QuestionDialog.h"
 
 #include <CryAudio/IListener.h>
+#include <CryAudio/IAudioSystem.h>
+#include <CryPhysics/IPhysics.h>
+#include <CryRenderer/RenderElements/CRESky.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/IStatObj.h>
+#include <CryAnimation/IAttachment.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 //uint32 g_ypos = 0;
 

@@ -11,6 +11,7 @@
 #include "Serialization/PropertyTree/PropertyTreeModel.h"
 #include "Serialization/QPropertyTree/QPropertyTree.h"
 
+#include <IEditor.h>
 #include <IUndoManager.h>
 
 #include <CrySandbox/ScopedVariableSetter.h>

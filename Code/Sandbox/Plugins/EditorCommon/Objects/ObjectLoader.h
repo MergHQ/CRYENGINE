@@ -2,11 +2,20 @@
 
 #pragma once
 
-#include <CryCore/ToolsHelpers/GuidUtil.h>
-#include <CryExtension/CryGUID.h>
+#include "EditorCommonAPI.h"
 
-class CPakFile;
+#include <CryCore/ToolsHelpers/GuidUtil.h>
+#include <CrySystem/XML/IXml.h>
+#include <CryExtension/CryGUID.h>
+#include <CryCore/functor.h>
+#include <CryCore/smartptr.h>
+#include <map>
+#include <set>
+
+struct IObjectManager;
 class IGuidProvider;
+class CBaseObject;
+class CPakFile;
 
 typedef std::map<CryGUID, CryGUID> TGUIDRemap;
 

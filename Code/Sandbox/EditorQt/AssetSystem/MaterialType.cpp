@@ -2,10 +2,12 @@
 
 #include "StdAfx.h"
 #include "MaterialType.h"
+#include "IEditorImpl.h"
 
 #include "Material/MaterialManager.h"
 #include "QT/Widgets/QPreviewWidget.h"
 #include <AssetSystem/Asset.h>
+#include <AssetSystem/AssetEditor.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <PathUtils.h>
 #include <ThreadingUtils.h>

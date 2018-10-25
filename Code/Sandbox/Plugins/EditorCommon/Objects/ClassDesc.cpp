@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "ClassDesc.h"
 #include "IIconManager.h"
+#include <IEditor.h>
 
 int CObjectClassDesc::GetTextureIconId()
 {

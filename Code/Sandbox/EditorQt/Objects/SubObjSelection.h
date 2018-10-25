@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <CryMath/Cry_Math.h>
 
 //////////////////////////////////////////////////////////////////////////
 // Sub Object element type.
@@ -57,6 +58,7 @@ struct SSubObjSelOptions
 };
 
 extern SSubObjSelOptions g_SubObjSelOptions;
+class CViewport;
 
 //////////////////////////////////////////////////////////////////////////
 enum ESubObjSelectionModifyType

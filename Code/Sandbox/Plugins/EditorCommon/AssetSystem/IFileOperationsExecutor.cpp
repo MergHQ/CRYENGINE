@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "IFileOperationsExecutor.h"
+#include <CrySystem/ISystem.h>
 
 namespace Private_IFileOperationsExecutor
 {

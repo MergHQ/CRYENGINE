@@ -6,6 +6,8 @@
 #include "Asset.h"
 #include "AssetType.h"
 #include "AssetConverter.h"
+#include <CrySandbox/CrySignal.h>
+#include <CryCore/StlUtils.h>
 
 class CAssetImporter;
 class CDependencyTracker;

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include <CryMath/Cry_Math.h>
 #include <CryMath/Cry_Color.h>
 

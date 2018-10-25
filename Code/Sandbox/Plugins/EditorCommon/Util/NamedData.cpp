@@ -4,7 +4,8 @@
 #include "NamedData.h"
 #include "Util/PakFile.h"
 #include "Util/CryMemFile.h"
-
+#include <IEditor.h>
+#include <CryCore/StlUtils.h>
 #include <zlib.h>
 
 IMPLEMENT_SERIAL(CNamedData, CObject, 1)

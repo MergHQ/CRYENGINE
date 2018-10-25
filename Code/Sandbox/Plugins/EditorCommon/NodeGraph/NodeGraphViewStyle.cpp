@@ -10,6 +10,7 @@
 #include "NodePinWidgetStyle.h"
 
 #include "NodeGraphView.h"
+#include <CryCore/CryCrc32.h>
 
 namespace CryGraphEditor {
 

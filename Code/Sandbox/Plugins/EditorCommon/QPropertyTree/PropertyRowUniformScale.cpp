@@ -4,6 +4,8 @@
 
 #include "StdAfx.h"
 
+#include <IEditor.h>
+
 #include <EditorFramework/PersonalizationManager.h>
 #include <Serialization/PropertyTree/PropertyRow.h>
 #include <Serialization/PropertyTree/PropertyTreeModel.h>

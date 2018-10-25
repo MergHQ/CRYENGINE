@@ -1,6 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include "EditorCommonAPI.h"
+#include <CryMath/Cry_Math.h>
+#include <vector>
 
 //! Generates 2D convex hull from ptsIn using Graham's scan.
 void                   ConvexHull2DGraham(std::vector<Vec3>& ptsOut, const std::vector<Vec3>& ptsIn);

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include <CrySystem/File/ICryPak.h>
 
 struct ICryArchive;

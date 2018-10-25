@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include "Viewport/ViewportSettings.h"
 #include "IDisplayViewport.h"
 

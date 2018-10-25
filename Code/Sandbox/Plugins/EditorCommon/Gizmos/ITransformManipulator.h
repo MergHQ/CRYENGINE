@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include "CrySandbox/CrySignal.h"
+#include "EditorCommonAPI.h"
 #include "LevelEditor/LevelEditorSharedState.h"
+#include <CrySandbox/CrySignal.h>
 
 struct EDITOR_COMMON_API ITransformManipulator
 {

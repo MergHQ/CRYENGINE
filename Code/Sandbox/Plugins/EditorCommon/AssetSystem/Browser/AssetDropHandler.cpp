@@ -16,6 +16,7 @@
 #include <CrySandbox/ScopedVariableSetter.h>
 #include <CryString/StringUtils.h>
 #include <CryString/CryPath.h>
+#include <IEditor.h>
 
 namespace Private_AssetDropHandler
 {

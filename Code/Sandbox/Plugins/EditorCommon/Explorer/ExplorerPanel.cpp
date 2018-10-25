@@ -8,6 +8,7 @@
 #include "Explorer/ExplorerModel.h"
 #include "Expected.h"
 #include "QAdvancedItemDelegate.h"
+#include "QSearchBox.h"
 
 #include <QApplication>
 #include <QBoxLayout>

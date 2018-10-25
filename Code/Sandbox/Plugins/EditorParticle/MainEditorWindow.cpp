@@ -25,7 +25,9 @@
 #include <AssetSystem/EditableAsset.h>
 #include <Controls/CurveEditorPanel.h>
 #include <Controls/QuestionDialog.h>
+#include <Controls/CurveEditorPanel.h>
 #include <DragDrop.h>
+#include <EditorFramework/BroadcastManager.h>
 #include <FileDialogs/EngineFileDialog.h>
 #include <PathUtils.h>
 

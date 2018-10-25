@@ -6,6 +6,7 @@
 #include "AssetModel.h"
 #include "QtUtil.h"
 
+#include <QAbstractItemView>
 #include <QLineEdit>
 #include <QKeyEvent>
 

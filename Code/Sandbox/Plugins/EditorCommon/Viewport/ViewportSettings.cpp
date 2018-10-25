@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "ViewportSettings.h"
+#include <CrySystem/IConsole.h>
 
 SViewportHelperSettings::SViewportHelperSettings()
 	: enabled(true)

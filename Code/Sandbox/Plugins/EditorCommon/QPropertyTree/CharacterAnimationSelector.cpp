@@ -9,6 +9,7 @@
 #include "IResourceSelectorHost.h"
 
 #include <CryAnimation/ICryAnimation.h>
+#include <CryEntitySystem/IEntity.h>
 
 dll_string CharacterAnimationSelector(const SResourceSelectorContext& x, const char* previousValue, IEntity* pEntity)
 {

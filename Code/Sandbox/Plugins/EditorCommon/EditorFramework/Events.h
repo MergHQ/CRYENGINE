@@ -2,15 +2,18 @@
 #pragma once
 
 #include "EditorCommonAPI.h"
+
+#include <CryMath/Cry_Math.h>
+
 #include <QString>
 #include <QEvent>
 #include <QVariantMap>
 #include <QKeySequence>
-#include <CryInput/IInput.h>
 
 class QWidget;
 class CBroadcastManager;
 class CInspector;
+struct SInputEvent;
 
 class EDITOR_COMMON_API SandboxEvent : public QEvent
 {

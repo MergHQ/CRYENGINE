@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "Commands/CVarListDockable.h"
+#include "IEditorImpl.h"
 
 #include "Qt/QtMainFrame.h"
 
@@ -10,13 +11,19 @@
 #include <FileDialogs/SystemFileDialog.h>
 #include <ProxyModels/DeepFilterProxyModel.h>
 #include <QAdvancedTreeView.h>
+#include <QSearchBox.h>
+#include <CryIcon.h>
 
+#include <QAbstractButton>
 #include <QApplication>
+#include <QBoxLayout>
 #include <QClipboard>
 #include <QHeaderView>
 #include <QJsonDocument>
 #include <QMenuBar>
+#include <QPushButton>
 #include <QSpinBox>
+#include <QToolButton>
 
 REGISTER_HIDDEN_VIEWPANE_FACTORY(CCVarListDockable, "Console Variables", "", true);
 

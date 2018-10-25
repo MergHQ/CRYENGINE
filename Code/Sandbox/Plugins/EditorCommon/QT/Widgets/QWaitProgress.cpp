@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 #include "QWaitProgress.h"
-
+#include <IEditor.h>
 #include <QApplication>
 #include <QStatusBar>
 

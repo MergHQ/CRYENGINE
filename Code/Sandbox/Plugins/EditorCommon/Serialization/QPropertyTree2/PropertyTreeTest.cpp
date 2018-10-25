@@ -4,6 +4,7 @@
 
 #include "PropertyTree2.h"
 #include "Serialization/QPropertyTree/QPropertyTree.h"
+#include <IEditor.h>
 
 #include <CrySerialization/ClassFactory.h>
 #include <CrySerialization/Decorators/ActionButton.h>

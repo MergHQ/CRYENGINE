@@ -36,6 +36,7 @@
 #include <Serialization/Qt.h>
 #include <CryIcon.h>
 #include <EditorFramework/Inspector.h>
+#include <EditorFramework/BroadcastManager.h>
 #include <QtUtil.h>
 #include <Controls/QuestionDialog.h>
 #include <QtUtil.h>

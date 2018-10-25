@@ -63,6 +63,7 @@
 #include <CrySerialization/Decorators/ResourceSelector.h>
 #include <EditorCommonAPI.h>
 #include "AutoRegister.h"
+#include <IEditor.h>
 
 enum class EAssetResourcePickerState
 {

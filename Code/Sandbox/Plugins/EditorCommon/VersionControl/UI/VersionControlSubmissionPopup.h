@@ -2,6 +2,9 @@
 #pragma once
 
 #include "QWidget"
+#include "EditorCommonAPI.h"
+#include <Controls/EditorDialog.h>
+#include <AssetSystem/Asset.h>
 
 class QPlainTextEdit;
 class CVersionControlPendingChangesWidget;

@@ -30,7 +30,7 @@ bool SGizmoPreferences::Serialize(yasli::Archive& ar)
 	return true;
 }
 
-EDITOR_COMMON_API SGizmoPreferences gGizmoPreferences;
+SGizmoPreferences gGizmoPreferences;
 REGISTER_PREFERENCES_PAGE_PTR(SGizmoPreferences, &gGizmoPreferences)
 
 //////////////////////////////////////////////////////////////////////////

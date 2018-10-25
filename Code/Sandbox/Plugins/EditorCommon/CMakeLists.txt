@@ -840,6 +840,7 @@ add_sources("Uber_Serialization.cpp"
 
 add_sources("Uber_VersionControl.cpp"
 	SOURCE_GROUP "VersionControl"
+		"ISourceControl.h"
         "VersionControl/AssetFilesProvider.cpp"
         "VersionControl/AssetFilesProvider.h"
         "VersionControl/AssetsVCSCheckerOut.h"

@@ -14,6 +14,9 @@ class QLabel;
 struct CLayerChangeEvent;
 class CLevelExplorer;
 class QItemSelection;
+class CBaseObject;
+class CObjectLayer;
+struct CObjectEvent;
 
 class CLevelExplorer final : public CDockableEditor
 {

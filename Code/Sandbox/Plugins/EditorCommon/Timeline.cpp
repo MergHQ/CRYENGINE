@@ -7,7 +7,7 @@
 #include "CryIcon.h"
 #include "EditorStyleHelper.h"
 #include "ICommandManager.h"
-#include "IEditor.h"
+#include <IEditor.h>
 
 #include "QSearchBox.h"
 
@@ -16,6 +16,7 @@
 #include <vector>
 #include <algorithm>
 #include <CryCore/Containers/VectorSet.h>
+#include <CryCore/StlUtils.h>
 #include <CryString/StringUtils.h>
 
 #include <QMenu>
@@ -25,6 +26,7 @@
 #include <QLineEdit>
 #include <QScrollBar>
 #include <QApplication>
+#include <unordered_set>
 
 #ifdef min
 	#undef min

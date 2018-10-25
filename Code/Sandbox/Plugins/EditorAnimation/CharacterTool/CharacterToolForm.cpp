@@ -3,6 +3,7 @@
 #include "stdafx.h"
 
 #include "CharacterToolForm.h"
+#include <QApplication>
 #include <QAction>
 #include <QBoxLayout>
 #include <QDir>

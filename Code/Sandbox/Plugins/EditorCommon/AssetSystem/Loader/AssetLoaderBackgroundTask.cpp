@@ -9,6 +9,7 @@
 #include "IBackgroundTaskManager.h"
 #include "PathUtils.h"
 #include <CryString/CryPath.h>
+#include <IEditor.h>
 #include <future>
 
 namespace AssetLoaderBackgroundTask_Private

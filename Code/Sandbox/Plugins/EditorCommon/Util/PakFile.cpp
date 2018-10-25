@@ -4,6 +4,7 @@
 #include "Util/PakFile.h"
 #include "Util/CryMemFile.h"
 #include "Util/MemoryBlock.h"
+#include <IEditor.h>
 
 CPakFile::CPakFile()
 	: m_pArchive(NULL)

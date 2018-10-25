@@ -4,6 +4,7 @@
 #include "VehicleXMLSaver.h"
 
 #include <stack>
+#include <CrySystem/ISystem.h>
 #include <CrySystem/XML/IReadWriteXMLSink.h>
 #include "VehicleXMLHelper.h"
 

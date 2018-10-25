@@ -2,6 +2,8 @@
 #include "StdAfx.h"
 #include "VersionControlCache.h"
 #include "VersionControlFileStatusUpdate.h"
+#include <IEditor.h>
+#include <CrySystem/ISystem.h>
 
 void CVersionControlCache::UpdateFiles(const std::vector<CVersionControlFileStatusUpdate>& newFiles, bool shouldClear /*= false*/)
 {

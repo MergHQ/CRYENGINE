@@ -3,6 +3,7 @@
 #include "NodeGraphViewPreferences.h"
 
 #include <CrySerialization/yasli/decorators/Range.h>
+#include <CrySerialization/StringList.h>
 
 CNodeGraphViewPreferences g_NodeGraphViewPreferences;
 REGISTER_PREFERENCES_PAGE_PTR(CNodeGraphViewPreferences, &g_NodeGraphViewPreferences)

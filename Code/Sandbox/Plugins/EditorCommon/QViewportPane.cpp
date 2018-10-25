@@ -12,6 +12,8 @@
 #include "RenderViewport.h"
 #include "Viewport.h"
 
+#include <IEditor.h>
+
 #include <CryInput/IHardwareMouse.h>
 
 #include <QApplication>

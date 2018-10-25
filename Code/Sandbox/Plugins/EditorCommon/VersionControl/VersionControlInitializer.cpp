@@ -6,6 +6,7 @@
 #include "AssetFilesProvider.h"
 #include "UI/VersionControlMenuBuilder.h"
 #include "UI/VersionControlUIHelper.h"
+#include "AssetSystem/AssetManager.h"
 #include "AssetSystem/Browser/AssetModel.h"
 #include "AssetSystem/Loader/AssetLoaderHelpers.h"
 #include "AssetSystem/AssetManagerHelpers.h"
@@ -14,6 +15,8 @@
 #include "Objects/IObjectLayerManager.h"
 #include "Objects/IObjectLayer.h"
 #include "ThreadingUtils.h"
+#include "Controls/QMenuComboBox.h"
+#include <CryString/CryPath.h>
 
 namespace Private_VersionControlInitializer
 {

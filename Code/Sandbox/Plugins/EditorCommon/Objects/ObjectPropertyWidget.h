@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include "EditorFramework/Inspector.h"
 
 #include <memory>

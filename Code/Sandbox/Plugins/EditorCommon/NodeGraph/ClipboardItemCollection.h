@@ -2,10 +2,9 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include "AbstractNodeGraphViewModelItem.h"
 #include "ItemCollection.h"
-
-#include "EditorCommonAPI.h"
 
 namespace CryGraphEditor {
 

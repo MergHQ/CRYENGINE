@@ -13,11 +13,13 @@
 
 #include <QFilteringPanel.h>
 #include <EditorStyleHelper.h>
-#include <QStyledItemDelegate>
-#include <QAbstractItemModel>
 
-#include <QHelpEvent>
+#include <QAbstractItemModel>
+#include <QBoxLayout>
 #include <QEventLoop>
+#include <QHelpEvent>
+#include <QPainter>
+#include <QStyledItemDelegate>
 #include <QToolTip>
 
 class CDictionaryModel : public QAbstractItemModel

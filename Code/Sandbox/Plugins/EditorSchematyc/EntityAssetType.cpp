@@ -5,6 +5,7 @@
 
 #include "SchematycUtils.h"
 
+#include <AssetSystem/AssetEditor.h>
 #include <AssetSystem/Browser/AssetBrowserDialog.h>
 #include <AssetSystem/EditableAsset.h>
 #include <Controls/QuestionDialog.h>

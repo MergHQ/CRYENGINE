@@ -3,6 +3,7 @@
 
 #include "IPropertyTreeWidget.h"
 
+#include <IResourceSelectorHost.h>
 #include <QWidget>
 
 struct SStaticResourceSelectorEntry;

@@ -6,6 +6,8 @@
 #include "Serialization/Decorators/EditorActionButton.h"
 #include "Serialization/QPropertyTree/QPropertyTree.h"
 #include "Viewport.h"
+#include <QLabel>
+#include <QPushButton>
 
 CViewportHelperWnd::CViewportHelperWnd(QWidget* pParent, CViewport* pViewport)
 	: CDockableWidgetT<QScrollableBox>{pParent}

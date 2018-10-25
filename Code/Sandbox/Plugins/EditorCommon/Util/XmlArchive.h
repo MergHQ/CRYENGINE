@@ -4,6 +4,8 @@
 
 #include "EditorCommonAPI.h"
 #include "NamedData.h"
+#include "EditorUtils.h"
+#include <CrySystem/XML/IXml.h>
 
 class CPakFile;
 /*!

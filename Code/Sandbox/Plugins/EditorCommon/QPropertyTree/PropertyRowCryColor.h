@@ -7,6 +7,8 @@
 
 #include <Serialization.h>
 
+#include <QColor>
+
 struct IPropertyRowCryColor
 {
 	virtual bool   pickColor(PropertyTree* tree) = 0;

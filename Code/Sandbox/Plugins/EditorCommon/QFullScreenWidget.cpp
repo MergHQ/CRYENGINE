@@ -3,6 +3,8 @@
 
 #include "QFullScreenWidget.h"
 
+#include <IEditor.h>
+
 #include <QWidget.h>
 #include <QVBoxLayout>
 #include <QEvent>

@@ -7,6 +7,7 @@
 #include "AbstractNodeItem.h"
 #include "AbstractPinItem.h"
 #include "AbstractNodeGraphViewModel.h"
+#include <IEditor.h>
 
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/IArchiveHost.h>

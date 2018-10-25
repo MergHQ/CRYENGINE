@@ -10,12 +10,7 @@ class CAsset;
 class CAssetFilesGroupProvider : public IFilesGroupProvider
 {
 public:
-	CAssetFilesGroupProvider(CAsset* pAsset, bool shouldIncludeSourceFile)
-		: m_pAsset(pAsset)
-		, m_metadata(pAsset->GetMetadataFile())
-		, m_name(pAsset->GetName())
-		, m_shouldIncludeSourceFile(shouldIncludeSourceFile)
-	{}
+	CAssetFilesGroupProvider(CAsset* pAsset, bool shouldIncludeSourceFile);
 
 	virtual std::vector<string> GetFiles(bool includeGeneratedFile = true) const override final;
 

@@ -2,6 +2,8 @@
 
 #include <StdAfx.h>
 #include "QuestionTimeoutDialog.h"
+#include <QLabel>
+#include <QEvent>
 
 CQuestionTimeoutDialog::CQuestionTimeoutDialog()
 	: m_infoLabelText()

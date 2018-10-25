@@ -12,8 +12,10 @@
 
 // EditorInterface
 #include <IUndoManager.h>
+#include <IEditor.h>
 
 #include <CrySerialization/IArchive.h>
+#include <QBoxLayout>
 
 struct CObjectPropertyWidget::SBaseObjectSerializer
 {

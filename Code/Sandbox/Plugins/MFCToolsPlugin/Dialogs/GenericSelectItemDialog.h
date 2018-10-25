@@ -4,6 +4,7 @@
 #define __GENERICSELECTITEMDIALOG_H__
 #pragma once
 #include "MFCToolsDefines.h"
+#include <Util/Variable.h>
 
 // CGenericSelectItem dialog
 

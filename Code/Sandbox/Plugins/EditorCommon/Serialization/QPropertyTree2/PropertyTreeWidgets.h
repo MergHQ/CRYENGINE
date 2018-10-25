@@ -5,7 +5,11 @@
 
 #include "Controls/QNumericBox.h"
 #include "Controls/ColorButton.h"
+#include "Controls/QMenuComboBox.h"
 #include <QCheckBox>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QWidget>
 
 namespace PropertyTree2
 {

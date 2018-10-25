@@ -10,6 +10,9 @@
 #include "EditorFramework/PersonalizationManager.h"
 #include "ICommandManager.h"
 #include "Viewport.h"
+#include <IEditor.h>
+#include <CrySystem/ISystem.h>
+#include <CrySystem/IConsole.h>
 
 Q_DECLARE_METATYPE(CLevelEditorSharedState::CoordSystem)
 Q_DECLARE_METATYPE(CLevelEditorSharedState::Axis)

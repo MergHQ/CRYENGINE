@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include "ICryGraphEditor.h"
 
 #include <CrySandbox/CrySignal.h>

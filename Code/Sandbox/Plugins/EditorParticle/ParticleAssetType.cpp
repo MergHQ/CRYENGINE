@@ -2,6 +2,7 @@
 #include <StdAfx.h>
 #include "ParticleAssetType.h"
 
+#include <AssetSystem/AssetEditor.h>
 #include <AssetSystem/EditableAsset.h>
 #include <AssetSystem/Loader/AssetLoaderHelpers.h>
 #include <AssetSystem/MaterialType.h>

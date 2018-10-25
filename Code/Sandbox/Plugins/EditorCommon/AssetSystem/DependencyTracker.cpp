@@ -3,6 +3,8 @@
 #include "StdAfx.h"
 #include "DependencyTracker.h"
 #include "AssetManager.h"
+#include "PathUtils.h"
+#include "Util/EditorUtils.h"
 
 namespace Private_DependencyTracker
 {

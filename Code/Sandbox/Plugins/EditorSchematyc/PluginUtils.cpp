@@ -10,6 +10,7 @@
 #include <CryEntitySystem/IEntityClass.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/ISurfaceType.h>
 #include <CryGame/IGameFramework.h>
 #include <CryString/CryStringUtils.h>
 #include <CrySchematyc/Utils/Assert.h>

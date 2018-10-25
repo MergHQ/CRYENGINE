@@ -6,6 +6,7 @@
 #include "IEditorImpl.h"
 #include "SandboxAPI.h"
 #include <CryCore/Containers/CryListenerSet.h>
+#include <CryThreading/CryThread.h>
 
 struct IEditorGame;
 struct IFlowSystem;

@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "VehicleXMLHelper.h"
 #include <Util/Variable.h>
+#include <CrySystem/ISystem.h>
 
 #include <algorithm>
 

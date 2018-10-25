@@ -4,6 +4,8 @@
 #include "VersionControlMainWindow.h"
 #include "EditorFramework/TrayArea.h"
 #include "Controls/QPopupWidget.h"
+#include "QtUtil.h"
+#include "CryIcon.h"
 
 REGISTER_TRAY_AREA_WIDGET(CVersionControlTrayWidget, 10)
 

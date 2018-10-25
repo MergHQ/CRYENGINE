@@ -1,12 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#include <QWidget>
 #include "EditorCommonAPI.h"
+#include <QWidget>
 
-class QAdvancedTreeView;
 class CNotificationModel;
 class CNotificationFilterModel;
+class QAdvancedTreeView;
+class QToolButton;
 
 //! Shows a complete history of all notifications (except for progress/tasks)
 

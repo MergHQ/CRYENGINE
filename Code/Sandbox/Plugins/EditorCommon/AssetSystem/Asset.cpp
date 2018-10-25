@@ -14,7 +14,10 @@
 #include "QtUtil.h"
 #include "ThreadingUtils.h"
 
+#include <IEditor.h>
+
 #include <CryString/CryPath.h>
+#include <QFileInfo>
 
 
 namespace Private_Asset

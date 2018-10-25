@@ -10,10 +10,13 @@
 #include <QScrollArea>
 #include <QEvent.h>
 
+#include <EditorFramework/Events.h>
 #include <CrySandbox/ScopedVariableSetter.h>
 #include <CrySerialization/yasli/BinArchive.h>
 
 #include "QSearchBox.h"
+#include <QToolButton>
+#include <CryIcon.h>
 
 //TODOLIST:
 //- optimizations: 

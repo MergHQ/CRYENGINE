@@ -1,6 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include "EditorCommonAPI.h"
+#include <CryCore/StlUtils.h>
+#include <set>
 
 //! Class passed to resource gathering functions
 class EDITOR_COMMON_API CUsedResources

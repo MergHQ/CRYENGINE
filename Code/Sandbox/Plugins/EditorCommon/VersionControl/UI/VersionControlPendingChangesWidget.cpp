@@ -6,9 +6,13 @@
 #include "AssetSystem/Loader/AssetLoaderHelpers.h"
 #include "VersionControl/VersionControl.h"
 #include "ProxyModels/AttributeFilterProxyModel.h"
+#include <CryString/CryPath.h>
+#include <QApplication>
+#include <QBoxLayout>
 #include <QHeaderView>
-#include <QStyledItemDelegate>
 #include <QProxyStyle>
+#include <QStyledItemDelegate>
+#include <QTreeView>
 
 namespace Private_VersionControlPendingChangesTab
 {

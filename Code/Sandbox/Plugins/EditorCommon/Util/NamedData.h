@@ -4,6 +4,7 @@
 
 #include "EditorCommonAPI.h"
 #include "Util/MemoryBlock.h"
+#include <CryCore/StlUtils.h>
 
 class CPakFile;
 

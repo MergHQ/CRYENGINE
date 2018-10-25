@@ -3,6 +3,8 @@
 #include "stdafx.h"
 #include "XmlArchive.h"
 #include "Util/PakFile.h"
+#include "QtUtil.h"
+#include <IEditor.h>
 #include <QDir>
 
 bool CXmlArchive::Load(const string& file)

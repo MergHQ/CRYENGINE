@@ -78,7 +78,7 @@ struct SActionItem : SItem<K>
 
 	virtual void Accept(SItemVisitor<K>& visitor, const K& key) const override
 	{
-		if (key == m_key)
+		if (key == this->m_key)
 		{
 			visitor.Visit(*this);
 		}
@@ -112,7 +112,7 @@ struct SMenuItem : SItem<K>
 
 	virtual void Accept(SItemVisitor<K>& visitor, const K& key) const override
 	{
-		if (m_key == key)
+		if (this->m_key == key)
 		{
 			visitor.Visit(*this);
 		}
@@ -147,6 +147,8 @@ struct SAddItemVisitor : SItemVisitor<K>
 	{
 	}
 
+	virtual void Visit(const SItem<K>&) override {}
+
 	virtual void Visit(const SActionItem<K>& actionItem) override
 	{
 		CAbstractMenu* const pMenu = actionItem.FindMenu(m_pRootMenu);
@@ -171,6 +173,9 @@ struct SAddItemVisitor : SItemVisitor<K>
 template<typename K>
 struct SGetMenuNameVisitor : SItemVisitor<K>
 {
+	virtual void Visit(const SItem<K>&) override {}
+	virtual void Visit(const SActionItem<K>&) override {}
+
 	virtual void Visit(const SMenuItem<K>& menuItem) override
 	{
 		m_name = menuItem.m_name;

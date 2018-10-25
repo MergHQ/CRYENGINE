@@ -4,6 +4,8 @@
 
 #include <CrySerialization/yasli/BinArchive.h>
 
+#include <QWidget>
+
 namespace PropertyTree2
 {
 

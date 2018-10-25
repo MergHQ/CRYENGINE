@@ -2,6 +2,8 @@
 
 #pragma once
 
+struct CryGUID;
+
 struct IObjectLayer
 {
 	//! Get layer name.

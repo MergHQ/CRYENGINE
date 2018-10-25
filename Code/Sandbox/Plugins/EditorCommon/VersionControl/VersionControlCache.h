@@ -3,6 +3,7 @@
 
 #include "IVersionControlAdapter.h"
 #include "EditorCommonAPI.h"
+#include <CrySandbox/CrySignal.h>
 #include <unordered_map>
 #include <mutex>
 

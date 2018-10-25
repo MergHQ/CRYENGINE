@@ -3,6 +3,7 @@
 #pragma once
 
 #include "EditorCommonAPI.h"
+#include <CryMath/Cry_Math.h>
 
 struct EDITOR_COMMON_API AffineParts
 {

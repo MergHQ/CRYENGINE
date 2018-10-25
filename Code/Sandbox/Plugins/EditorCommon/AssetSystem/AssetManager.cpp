@@ -2,6 +2,7 @@
 #include "StdAfx.h"
 #include "AssetManager.h"
 
+#include "AssetEditor.h"
 #include "AssetFileMonitor.h"
 #include "AssetFilesGroupProvider.h"
 #include "AssetGenerator.h"
@@ -12,6 +13,7 @@
 #include "Browser/AssetModel.h"
 #include "DependencyTracker.h"
 #include "EditableAsset.h"
+#include "EditorFramework/BroadcastManager.h"
 #include "FileOperationsExecutor.h"
 #include "IFilesGroupProvider.h"
 #include "Loader/AssetLoaderBackgroundTask.h"
@@ -21,6 +23,7 @@
 #include "SourceFilesTracker.h"
 #include "ThreadingUtils.h"
 
+#include <IEditor.h>
 #include <CrySystem/IConsole.h>
 #include <CryString/CryPath.h>
 

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CryString/CryString.h>
+#include <CryString/StringUtils.h>
 
 #include <memory>
 #include <unordered_map>

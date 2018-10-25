@@ -9,6 +9,7 @@
 #include "PathUtils.h"
 #include "QtUtil.h"
 #include "ThreadingUtils.h"
+#include <IEditor.h>
 
 #include <CrySystem/IProjectManager.h>
 #include <CryString/CryPath.h>

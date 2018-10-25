@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "SubstanceArchive.h"
 #include "SandboxPlugin.h"
+#include <AssetSystem/AssetEditor.h>
 #include <CrySerialization/IArchiveHost.h>
 #include "EditorSubstanceManager.h"
 

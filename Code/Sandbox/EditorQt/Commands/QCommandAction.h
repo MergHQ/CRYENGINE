@@ -3,6 +3,7 @@
 #pragma once
 
 #include "SandboxAPI.h"
+#include "Command.h"
 #include <QAction>
 #include <QSet>
 #include <QKeySequence>

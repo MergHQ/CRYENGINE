@@ -2,17 +2,22 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
+
 #include "Objects/DisplayContext.h"
-#include "Util/Variable.h"
 #include "ClassDesc.h"
 #include "HitContext.h"
 #include "IIconManager.h"
 
 #include <IUndoObject.h>
 
+#include <CryCore/smartptr.h>
 #include <CryExtension/CryGUID.h>
 #include <CryMath/Cry_Color.h>
 #include <CryMath/Cry_Geo.h>
+#include <CrySandbox/CrySignal.h>
+
+#include <vector>
 
 class CAsset;
 class CEdGeometry;
@@ -23,6 +28,7 @@ class CObjectArchive;
 class CObjectLayer;
 class CPopupMenuItem;
 class CUndoBaseObject;
+class CVarObject;
 class SubObjectSelectionReferenceFrameCalculator;
 
 struct HitContext;
@@ -32,6 +38,7 @@ struct IObjectLayer;
 struct IObjectManager;
 struct ISelectionGroup;
 struct IStatObj;
+struct IVariable;
 struct Ray;
 struct SRayHitInfo;
 struct SDisplayContext;

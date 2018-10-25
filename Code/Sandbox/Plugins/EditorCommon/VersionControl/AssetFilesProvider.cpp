@@ -1,8 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include "StdAfx.h"
+
 #include "AssetFilesProvider.h"
 
+#include "AssetSystem/Asset.h"
 #include "AssetSystem/AssetFilesGroupProvider.h"
+#include "AssetSystem/AssetType.h"
 #include "AssetSystem/IFilesGroupProvider.h"
 #include "FileUtils.h"
 #include "LevelEditor/LayerFileGroupProvider.h"

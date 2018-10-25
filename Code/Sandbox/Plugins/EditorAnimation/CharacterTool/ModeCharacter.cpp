@@ -5,6 +5,7 @@
 #include "ModeCharacter.h"
 #include "ManipScene.h"
 #include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <QApplication>
 #include <QToolBar>
 #include <QAction>
 #include "Expected.h"
@@ -22,6 +23,7 @@
 #include "PropertiesPanel.h"
 #include "QViewport.h"
 #include <CryIcon.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 namespace CharacterTool
 {

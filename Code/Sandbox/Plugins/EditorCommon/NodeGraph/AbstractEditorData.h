@@ -1,9 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#include <QVariant.h>
+
+#include "EditorCommonAPI.h"
+
 #include <CrySandbox/CrySignal.h>
 #include <CrySerialization/IArchive.h>
+#include <QVariant>
 
 namespace CryGraphEditor {
 

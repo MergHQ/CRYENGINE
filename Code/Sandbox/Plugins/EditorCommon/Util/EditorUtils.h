@@ -5,7 +5,7 @@
 #include "EditorCommonAPI.h"
 
 #include <CrySystem/XML/IXml.h>
-#include <CrySystem/ISystem.h>
+#include <functional>
 
 struct IDisplayViewport;
 
@@ -142,25 +142,13 @@ EDITOR_COMMON_API bool OpenHelpPage(const char* szName);
 //////////////////////////////////////////////////////////////////////////
 namespace XmlHelpers
 {
-inline XmlNodeRef CreateXmlNode(const char* sTag)
-{
-	return GetISystem()->CreateXmlNode(sTag);
-}
+EDITOR_COMMON_API XmlNodeRef CreateXmlNode(const char* sTag);
 
-inline bool SaveXmlNode(XmlNodeRef node, const char* filename)
-{
-	return node->saveToFile(filename);
-}
+EDITOR_COMMON_API bool SaveXmlNode(XmlNodeRef node, const char* filename);
 
-inline XmlNodeRef LoadXmlFromFile(const char* fileName)
-{
-	return GetISystem()->LoadXmlFromFile(fileName);
-}
+EDITOR_COMMON_API XmlNodeRef LoadXmlFromFile(const char* fileName);
 
-inline XmlNodeRef LoadXmlFromBuffer(const char* buffer, size_t size)
-{
-	return GetISystem()->LoadXmlFromBuffer(buffer, size);
-}
+EDITOR_COMMON_API XmlNodeRef LoadXmlFromBuffer(const char* buffer, size_t size);
 }
 
 inline string TokenizeString(const string& str, const char* pszTokens, int& iStart)

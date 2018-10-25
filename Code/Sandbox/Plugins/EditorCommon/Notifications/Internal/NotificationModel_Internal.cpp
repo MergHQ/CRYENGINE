@@ -6,6 +6,7 @@
 
 // Qt
 #include <QClipboard>
+#include <QApplication>
 
 // EditorCommon
 #include "CryIcon.h"

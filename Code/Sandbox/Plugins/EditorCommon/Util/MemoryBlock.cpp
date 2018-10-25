@@ -3,6 +3,8 @@
 #include "StdAfx.h"
 #include "MemoryBlock.h"
 #include "Controls/QuestionDialog.h"
+#include <IEditor.h>
+#include <CrySystem/ISystem.h>
 
 #include <zlib.h>
 

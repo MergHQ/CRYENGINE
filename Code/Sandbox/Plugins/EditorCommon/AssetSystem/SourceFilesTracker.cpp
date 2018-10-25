@@ -2,6 +2,8 @@
 #include "StdAfx.h"
 #include "SourceFilesTracker.h"
 #include "Asset.h"
+#include <CryCore/StlUtils.h>
+#include <unordered_map>
 
 namespace Private_SourceFilesTracker
 {

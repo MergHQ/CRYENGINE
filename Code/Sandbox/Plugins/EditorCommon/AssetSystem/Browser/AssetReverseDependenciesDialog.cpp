@@ -14,7 +14,9 @@
 #include <QSortFilterProxyModel>
 #include <QHeaderView>
 #include <QSplitter>
+#include <QHBoxLayout>
 #include <QLabel>
+#include "Util/EditorUtils.h"
 
 namespace Private_AssetReverseDependenciesDialog
 {

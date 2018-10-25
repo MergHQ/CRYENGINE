@@ -13,10 +13,13 @@
 // Qt
 #include <QJsonDocument>
 #include <QFile>
+#include <QFileInfo>
 
 // Sandbox
 #include "CryEditDoc.h"
 #include "ViewManager.h"
+#include <EditorFramework/Events.h>
+#include <Util/Math.h>
 
 static const char* s_tagsPath = "/tags.json";
 

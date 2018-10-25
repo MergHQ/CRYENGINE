@@ -3,6 +3,8 @@
 
 #include "EditorCommonAPI.h"
 #include <vector>
+#include <CrySandbox/CrySignal.h>
+#include <QString>
 
 //! Abstract class that represents a single pending change.
 class EDITOR_COMMON_API CPendingChange

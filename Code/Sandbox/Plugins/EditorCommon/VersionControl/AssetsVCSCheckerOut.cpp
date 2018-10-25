@@ -5,6 +5,10 @@
 #include "AssetFilesProvider.h"
 #include "AssetsVCSStatusProvider.h"
 #include "AssetsVCSSynchronizer.h"
+#include "AssetSystem/AssetType.h"
+
+#include <CrySystem/ISystem.h>
+
 #include <algorithm>
 
 namespace Private_AssetsVCSCheckerOut

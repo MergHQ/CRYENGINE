@@ -7,6 +7,8 @@
 #include "AssetReverseDependenciesDialog.h"
 #include "AssetSystem/Asset.h"
 #include "AssetSystem/AssetManager.h"
+
+#include "Controls/QuestionDialog.h"
 #include "PathUtils.h"
 #include "QThumbnailView.h"
 #include "QtUtil.h"

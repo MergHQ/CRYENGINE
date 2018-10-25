@@ -1,9 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+
+#include "EditorCommonAPI.h"
 #include "AbstractEditorData.h"
 
-#include <CryMath/Cry_Vector2.h>
 #include <CryExtension/CryGUID.h>
 #include <CrySerialization/Math.h>
 

@@ -2,7 +2,8 @@
 
 #include "StdAfx.h"
 #include "XmlTemplate.h"
-
+#include <Util/FileUtil.h>
+#include <CryString/CryPath.h>
 #include <io.h>
 
 void CXmlTemplate::GetValues(XmlNodeRef& node, const XmlNodeRef& fromNode)

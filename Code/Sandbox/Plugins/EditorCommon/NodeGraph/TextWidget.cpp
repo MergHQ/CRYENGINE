@@ -12,6 +12,7 @@
 #include "AbstractNodeItem.h"
 
 #include <QtUtil.h>
+#include <QApplication>
 #include <QMouseEvent>
 #include <QGraphicsSceneMouseEvent>
 

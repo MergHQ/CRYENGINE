@@ -18,7 +18,10 @@
 #include "QtUtil.h"
 #include "ThreadingUtils.h"
 
+#include <IEditor.h>
+
 #include <QCloseEvent>
+#include <QToolButton>
 
 namespace Private_AssetEditor
 {

@@ -7,6 +7,7 @@
 #include "ProxyModels/ItemModelAttribute.h"
 
 class CAsset;
+class CAssetType;
 class CAttributeFilter;
 
 class CFileNameLineEdit;

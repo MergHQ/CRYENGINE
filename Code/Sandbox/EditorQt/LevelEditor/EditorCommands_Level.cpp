@@ -4,9 +4,11 @@
 // EditorCommon
 #include <ICommandManager.h>
 #include <IUndoObject.h>
+#include <EditorFramework/Events.h>
 #include <LevelEditor/LevelEditorSharedState.h>
 #include <ModelViewport.h>
 #include <Qt/Widgets/QWaitProgress.h>
+#include <UsedResources.h>
 
 // Sandbox
 #include "CryEditDoc.h"
@@ -19,11 +21,12 @@
 #include "Terrain/Heightmap.h"
 #include "Terrain/TerrainManager.h"
 #include "Material/MaterialManager.h"
+#include "LogFile.h"
 
 // CryCommon
 #include <CryGame/IGameFramework.h>
 #include <IItemSystem.h>
-#include "CrySystem/ICryLink.h"
+#include <CrySystem/ICryLink.h>
 
 namespace
 {

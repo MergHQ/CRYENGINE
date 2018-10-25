@@ -10,6 +10,7 @@
 #include <CryMath/Cry_Camera.h>
 #include "Controls/QuestionDialog.h"
 #include <CryAudio/IObject.h>
+#include <CrySystem/ISystem.h>
 
 #include "Resource.h"
 

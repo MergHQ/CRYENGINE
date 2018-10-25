@@ -10,6 +10,7 @@
 #include <AssetSystem/Asset.h>
 #include <AssetSystem/AssetType.h>
 #include <AssetSystem/AssetManager.h>
+#include <CryString/CryPath.h>
 
 namespace Private_MainWindow
 {

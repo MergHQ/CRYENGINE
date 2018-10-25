@@ -3,6 +3,7 @@
 #pragma once
 
 #include "EditorCommonAPI.h"
+#include <CryCore/functor.h>
 
 class CDynamicPopupMenu;
 class QMenu;

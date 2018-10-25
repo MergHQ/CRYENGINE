@@ -7,6 +7,7 @@
 #include "Objects/ISelectionGroup.h"
 
 #include <IUndoObject.h>
+#include <IEditor.h>
 
 #include <CrySerialization/Math.h>
 #include <CrySerialization/yasli/decorators/Range.h>

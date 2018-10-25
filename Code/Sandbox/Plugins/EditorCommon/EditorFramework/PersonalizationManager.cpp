@@ -5,6 +5,7 @@
 
 #include "PathUtils.h"
 
+#include <QDir>
 #include <QFile>
 #include <QJsonDocument>
 

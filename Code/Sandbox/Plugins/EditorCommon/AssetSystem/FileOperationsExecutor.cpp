@@ -5,6 +5,8 @@
 #include "IFilesGroupProvider.h"
 #include "PathUtils.h"
 #include "QtUtil.h"
+#include <QFileInfo>
+#include <QDir>
 
 namespace Private_FileOperationsExecutor
 {

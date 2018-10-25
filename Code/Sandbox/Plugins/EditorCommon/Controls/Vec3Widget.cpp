@@ -6,10 +6,12 @@
 #include "Controls/QNumericBox.h"
 
 #include <CryIcon.h>
+#include <IEditor.h>
 
 #include <CrySerialization/Math.h>
 
 #include <QHBoxLayout>
+#include <QToolButton>
 
 CVec3Widget::CVec3Widget()
 	: m_ignoreSignals(false)

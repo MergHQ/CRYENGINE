@@ -3,6 +3,7 @@
 
 #include "EditorCommonAPI.h"
 #include "EditorFramework/Preferences.h"
+#include <CrySandbox/CrySignal.h>
 
 //////////////////////////////////////////////////////////////////////////
 // General Preferences

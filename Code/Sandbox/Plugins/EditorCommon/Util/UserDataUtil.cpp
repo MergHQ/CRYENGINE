@@ -3,11 +3,13 @@
 #include <StdAfx.h>
 #include "UserDataUtil.h"
 
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonDocument>
 
 #include <QtUtil.h>
+#include <CrySystem/ISystem.h>
 
 namespace UserDataUtil
 {

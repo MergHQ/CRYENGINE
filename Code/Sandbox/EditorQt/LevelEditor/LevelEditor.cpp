@@ -22,6 +22,7 @@
 #include "IEditorImpl.h"
 #include "LevelIndependentFileMan.h"
 #include "ViewManager.h"
+#include "Objects/SelectionGroup.h"
 
 #include <Util/Clipboard.h>
 
@@ -33,6 +34,7 @@
 #include <Controls/DockableDialog.h>
 #include <Controls/QuestionDialog.h>
 #include <EditorFramework/Inspector.h>
+#include <EditorFramework/Events.h>
 #include <EditorFramework/PreferencesDialog.h>
 #include <EditorStyleHelper.h>
 #include <FileUtils.h>
@@ -46,6 +48,7 @@
 #include <QtViewPane.h>
 #include <ThreadingUtils.h>
 #include <Util/FileUtil.h>
+#include <IObjectManager.h>
 
 // CryCommon
 #include <CrySandbox/ScopedVariableSetter.h>

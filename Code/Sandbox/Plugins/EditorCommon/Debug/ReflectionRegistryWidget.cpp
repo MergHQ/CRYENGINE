@@ -12,6 +12,7 @@
 #include <QFilteringPanel.h>
 #include <QAbstractItemModel>
 #include <QMenuBar>
+#include <QVBoxLayout>
 
 #include <CryUtils/Debug.h>
 #include <CryString/StringUtils.h>

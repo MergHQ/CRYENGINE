@@ -9,6 +9,7 @@
 #include "IDisplayViewport.h"
 #include "HitContext.h"
 
+#include <IEditor.h>
 #include <CryMath/Cry_Geo.h>
 
 #define PLANE_SCALE  (0.3f)

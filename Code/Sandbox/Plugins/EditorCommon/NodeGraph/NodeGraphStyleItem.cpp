@@ -6,6 +6,7 @@
 #include "TextWidgetStyle.h"
 #include "HeaderWidgetStyle.h"
 #include "NodeGraphViewStyle.h"
+#include <CryCore/CryCrc32.h>
 
 
 namespace CryGraphEditor {

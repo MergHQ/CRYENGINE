@@ -11,6 +11,10 @@
 #include "QAdvancedTreeView.h"
 #include "QSearchBox.h"
 #include "QtUtil.h"
+#include "QControls.h"
+
+#include <IEditor.h>
+#include <CryIcon.h>
 
 #include <QAbstractItemView>
 #include <QCheckBox>
