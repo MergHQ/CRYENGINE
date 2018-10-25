@@ -503,7 +503,7 @@ bool CObjectMode::OnLButtonDown(CViewport* view, int nFlags, CPoint point)
 		if (bCtrlClick && bShiftClick)
 		{
 			// Ctrl-Click on terrain will move selected objects to specified location.
-			HandleMoveSelectionToPosition(point, bAltClick);
+			HandleMoveSelectionToPosition(pos, point, bAltClick);
 			bLockSelection = true;
 		}
 	}
@@ -846,25 +846,32 @@ bool CObjectMode::CheckVirtualKey(int virtualKey)
 	return false;
 }
 
-void CObjectMode::HandleMoveSelectionToPosition(const CPoint& point, bool overrideSnapToNormal)
+void CObjectMode::HandleMoveSelectionToPosition(Vec3& pos, const CPoint& point, bool overrideSnapToNormal)
 {
 	GetIEditor()->GetIUndoManager()->Begin();
-
 	// Find center of selection.
-	const ISelectionGroup* pSelection = GetIEditor()->GetISelectionGroup();
 
-	int selectionFlags = ISelectionGroup::eMS_None;
-	if (gSnappingPreferences.IsSnapToTerrainEnabled() && GetIEditor()->GetLevelEditorSharedState()->GetAxisConstraint() != CLevelEditorSharedState::Axis::Z)
-		selectionFlags |= ISelectionGroup::eMS_FollowTerrain;
-
-	if (gSnappingPreferences.IsSnapToGeometryEnabled())
-		selectionFlags |= ISelectionGroup::eMS_FollowGeometry;
-
-	// If the user is holding alt, then we must also snap to normal
+	int selectionFlags = ISelectionGroup::eMS_FollowGeometry;
 	if (overrideSnapToNormal)
 		selectionFlags |= ISelectionGroup::eMS_SnapToNormal;
 
-	pSelection->Move(m_mouseDownWorldPos - pSelection->GetCenter(), selectionFlags, point, true);
+	// Save current constraints so we can remove and re-add after we've moved objects to position
+	// If not then having a constraint on Z, for example, will result in moving to position 
+	// completely failing
+	auto pLevelEditorState = GetIEditor()->GetLevelEditorSharedState();
+	auto currentConstraints = pLevelEditorState->GetAxisConstraint();
+	pLevelEditorState->SetAxisConstraint(CLevelEditorSharedState::Axis::XY);
+
+	// Save the current positions, move tool relies on them - change from relying on undo system.
+	auto pSelection = GetIEditor()->GetISelectionGroup();
+	pSelection->FilterParents();
+	pSelection->SaveFilteredTransform();
+
+	pSelection->Move(pos - pSelection->GetCenter(), selectionFlags, point, true);
+
+	pSelection->FinishChanges();
+
+	pLevelEditorState->SetAxisConstraint(currentConstraints);
 
 	GetIEditor()->GetIUndoManager()->Accept("Move Selection");
 }

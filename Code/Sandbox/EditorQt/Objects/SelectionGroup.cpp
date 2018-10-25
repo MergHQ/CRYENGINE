@@ -146,7 +146,14 @@ void CSelectionGroup::Copy(const CSelectionGroup& from)
 
 Vec3 CSelectionGroup::GetCenter() const
 {
-	return GetBounds().GetCenter();
+	Vec3 c(0, 0, 0);
+	for (int i = 0; i < GetCount(); i++)
+	{
+		c += GetObject(i)->GetWorldPos();
+	}
+	if (GetCount() > 0)
+		c /= GetCount();
+	return c;
 }
 
 bool CSelectionGroup::GetManipulatorMatrix(Matrix34& tm) const
