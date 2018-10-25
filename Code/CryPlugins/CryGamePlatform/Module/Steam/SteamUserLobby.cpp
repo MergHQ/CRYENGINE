@@ -264,7 +264,10 @@ namespace Cry
 
 					if (!isShuttingDown)
 					{
-						m_service.GetMatchmaking()->OnLobbyRemoved(this);
+						if (CMatchmaking* pMatchmaking = m_service.GetMatchmaking())
+						{
+							pMatchmaking->OnLobbyRemoved(this);
+						}
 					}
 				}
 			}
