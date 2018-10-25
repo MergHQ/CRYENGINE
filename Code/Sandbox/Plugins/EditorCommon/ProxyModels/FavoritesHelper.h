@@ -6,6 +6,7 @@
 #include <QString>
 #include <QVariant>
 
+class CryIcon;
 class QAbstractItemView;
 class QAdvancedItemDelegate;
 class QModelIndex;

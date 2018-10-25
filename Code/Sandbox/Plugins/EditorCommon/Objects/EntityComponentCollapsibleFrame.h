@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
+
 #include <QCollapsibleFrame.h>
 
 struct IEntityComponent;

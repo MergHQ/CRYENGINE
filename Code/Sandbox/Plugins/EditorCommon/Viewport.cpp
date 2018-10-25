@@ -21,6 +21,7 @@
 
 #include <IViewportManager.h>
 #include <IUndoManager.h>
+#include <IEditor.h>
 
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryInput/IHardwareMouse.h>

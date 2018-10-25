@@ -6,7 +6,10 @@
 #include "PendingChange.h"
 #include "VersionControl/VersionControl.h"
 #include "PathUtils.h"
+#include "QtUtil.h"
+#include <QBoxLayout>
 #include <QPlainTextEdit>
+#include <QPushButton>
 
 namespace Private_VersionControlSubmissionPopup
 {

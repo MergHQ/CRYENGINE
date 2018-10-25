@@ -4,6 +4,7 @@
 #include "VehicleData.h"
 
 #include "VehicleXMLLoader.h"
+#include <CrySystem/IConsole.h>
 
 IVariable* CVehicleData::m_pDefaults(0);
 XmlNodeRef CVehicleData::m_xmlDef(0);

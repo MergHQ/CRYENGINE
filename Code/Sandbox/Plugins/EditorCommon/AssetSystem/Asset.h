@@ -3,10 +3,10 @@
 
 #include "EditorCommonAPI.h"
 
-#include "CryCore/smartptr.h"
+#include <CryCore/smartptr.h>
 
-#include "CryExtension/CryGUID.h"
-#include "CrySandbox/CrySignal.h"
+#include <CryExtension/CryGUID.h>
+#include <CrySandbox/CrySignal.h>
 
 #include <QIcon>
 

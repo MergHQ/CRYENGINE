@@ -4,6 +4,7 @@
 #include "AutoRegister.h"
 #include "Command.h"
 #include "CommandModuleDescription.h"
+#include "BoostPythonMacros.h"
 #include <CryCore/functor.h>
 
 typedef void (* TPfnDeleter)(void*);

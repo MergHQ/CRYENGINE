@@ -4,6 +4,7 @@
 
 #include "IEditor.h"
 #include <CryExtension/CryGUID.h>
+#include <CrySystem/XML/IXml.h>
 
 struct IDataBaseLibrary;
 class CUsedResources;

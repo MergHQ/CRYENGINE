@@ -9,7 +9,6 @@
 #include "IIconManager.h"
 
 #include <Cry3DEngine/I3DEngine.h>
-#include <CryMath/Cry_Geo.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 
 #define FREEZE_COLOR RGB(100, 100, 100)

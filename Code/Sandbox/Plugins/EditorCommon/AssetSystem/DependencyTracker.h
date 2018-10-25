@@ -6,6 +6,7 @@
 #include <future> 
 
 class CAsset;
+struct SAssetDependencyInfo;
 
 //! Dependency Tracker allows dependencies between assets to be tracked.
 class EDITOR_COMMON_API CDependencyTracker

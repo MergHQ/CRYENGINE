@@ -10,6 +10,7 @@
 
 #include <IEditorMaterial.h>
 #include <IUndoManager.h>
+#include <IEditor.h>
 
 #include <CryMovie/IMovieSystem.h>
 #include <CryPhysics/physinterface.h>

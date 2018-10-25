@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "UIEnumsDatabase.h"
+#include <CryCore/StlUtils.h>
 
 const string& CUIEnumsDatabase_SEnum::NameToValue(const string& name)
 {

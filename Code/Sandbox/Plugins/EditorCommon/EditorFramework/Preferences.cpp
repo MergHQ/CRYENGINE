@@ -2,6 +2,7 @@
 #include "StdAfx.h"
 #include "Preferences.h"
 #include "QtUtil.h"
+#include <IEditor.h>
 
 #include <CryString/CryPath.h>
 #include <CrySystem/IProjectManager.h>

@@ -6,6 +6,7 @@
 #include "AssetSystem/IFilesGroupProvider.h"
 #include "AssetSystem/AssetManagerHelpers.h"
 #include "Objects/IObjectLayer.h"
+#include <CryString/CryPath.h>
 
 namespace Private_AssetsVCSStatusProvider
 {

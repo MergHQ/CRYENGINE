@@ -13,6 +13,7 @@
 // EditorCommon
 #include "EditorFramework/PersonalizationManager.h"
 #include "QtUtil.h"
+#include <IEditor.h>
 
 QPopupWidget::QPopupWidget(const QString& name, QWidget* pContent, QSize sizeHint, bool bFixedSize /* = false*/, QWidget* pParent /* = nullptr*/)
 	: QFrame(pParent, Qt::SubWindow | Qt::FramelessWindowHint)

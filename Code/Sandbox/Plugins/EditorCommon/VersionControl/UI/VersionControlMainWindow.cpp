@@ -4,6 +4,9 @@
 #include "VersionControlWorkspaceOverviewTab.h"
 #include "VersionControlHistoryTab.h"
 #include "VersionControlSettingsTab.h"
+#include <QTabWidget>
+#include <QTabBar>
+#include <QBoxLayout>
 
 REGISTER_VIEWPANE_FACTORY(CVersionControlMainWindow, "Version Control System", "", true);
 

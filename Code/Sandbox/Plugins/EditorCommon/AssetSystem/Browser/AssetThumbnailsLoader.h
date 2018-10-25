@@ -4,14 +4,17 @@
 
 #include <AssetSystem/Asset.h>
 #include <CryCore/Containers/MiniQueue.h>
+#include <CrySandbox/CrySignal.h>
 
 #include <condition_variable>
 #include <memory>
 #include <mutex>
 #include <thread>
 #include <vector>
+#include <unordered_set>
 
 class CAsset;
+struct ICVar;
 
 class CAssetThumbnailsLoader
 {

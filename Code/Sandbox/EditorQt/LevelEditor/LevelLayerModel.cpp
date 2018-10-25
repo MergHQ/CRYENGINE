@@ -21,6 +21,14 @@
 #include "CryIcon.h"
 #include "QtUtil.h"
 #include "DragDrop.h"
+#include "IEditorImpl.h"
+#include "Objects/ObjectManager.h"
+#include <Cry3DEngine/ISurfaceType.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/IRenderNode.h>
+#include <CryAnimation/ICryAnimation.h>
+
+#include <QApplication>
 
 namespace LevelModelsAttributes
 {

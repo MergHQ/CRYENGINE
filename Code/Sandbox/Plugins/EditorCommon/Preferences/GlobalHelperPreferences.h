@@ -2,7 +2,9 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include <EditorFramework/Preferences.h>
+#include <CrySandbox/CrySignal.h>
 
 // These settings will apply to helpers in any opened viewport
 struct EDITOR_COMMON_API SGlobalHelperPreferences : public SPreferencePage

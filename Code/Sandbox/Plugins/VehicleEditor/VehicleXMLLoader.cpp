@@ -4,6 +4,7 @@
 #include "VehicleXMLLoader.h"
 
 #include <stack>
+#include <CrySystem/ISystem.h>
 #include <CrySystem/XML/IReadWriteXMLSink.h>
 
 #include "VehicleData.h"

@@ -3,6 +3,7 @@
 #include <StdAfx.h>
 
 #include "LevelExplorer.h"
+#include "IEditorImpl.h"
 
 #include "LevelEditor/LevelEditorViewport.h"
 #include "LevelEditor/LevelLayerModel.h"
@@ -11,9 +12,11 @@
 #include "Objects/Group.h"
 #include "Objects/ObjectLayer.h"
 #include "Objects/ObjectLayerManager.h"
+#include "Objects/ObjectManager.h"
 #include "QT/QtMainFrame.h"
 #include "CryEdit.h"
 
+#include <EditorFramework/Events.h>
 #include <Controls/DynamicPopupMenu.h>
 #include <Controls/QMenuComboBox.h>
 #include <Controls/QuestionDialog.h>

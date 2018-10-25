@@ -3,6 +3,7 @@
 #pragma once
 
 #include <IEditor.h>
+#include <EditorFramework/Editor.h>
 #include <QtViewPane.h>
 
 class QPresetsWidget;

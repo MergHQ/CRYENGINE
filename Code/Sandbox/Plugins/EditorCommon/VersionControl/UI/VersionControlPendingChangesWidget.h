@@ -2,9 +2,12 @@
 #pragma once
 
 #include "QWidget"
+#include "EditorCommonAPI.h"
+#include <CrySandbox/CrySignal.h>
 
 class QTreeView;
 class CPendingChange;
+class CAsset;
 
 class EDITOR_COMMON_API CVersionControlPendingChangesWidget : public QWidget
 {

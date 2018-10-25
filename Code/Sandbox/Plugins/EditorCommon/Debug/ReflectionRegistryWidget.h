@@ -2,6 +2,7 @@
 #pragma once
 
 #include "EditorFramework/Editor.h"
+#include "ProxyModels/ItemModelAttribute.h"
 
 #include <CryType/Type.h>
 #include <QAbstractItemModel>

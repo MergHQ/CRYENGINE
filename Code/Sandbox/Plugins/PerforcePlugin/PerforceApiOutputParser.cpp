@@ -5,6 +5,7 @@
 #include "VersionControl/VersionControlFileStatusUpdate.h"
 #include "VersionControl/VersionControlError.h"
 #include <p4/clientapi.h>
+#include <CrySystem/ISystem.h>
 #include <iostream>
 #include <unordered_map>
 #include <memory>

@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "GeometryUtil.h"
+#include <CrySystem/Profilers/FrameProfiler/FrameProfiler.h>
 
 #if 0
 struct SPointSorter

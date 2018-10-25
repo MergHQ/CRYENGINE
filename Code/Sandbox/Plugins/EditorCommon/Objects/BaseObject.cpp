@@ -24,6 +24,7 @@
 #include "Serialization/Decorators/EditorActionButton.h"
 #include "Util/AffineParts.h"
 #include "Util/Math.h"
+#include "Util/Variable.h"
 #include "Util/GeometryUtil.h" // To use the Andrew's algorithm in order to make convex hull from the points, this header is needed.
 #include "IAIManager.h"
 #include "IDisplayViewport.h"
@@ -33,10 +34,13 @@
 #include "IUndoObject.h"
 #include "QtUtil.h"
 #include "UsedResources.h"
+#include <IEditor.h>
 
 #include <CryMovie/IMovieSystem.h>
 #include <CrySystem/ICryLink.h>
 #include <CrySystem/ITimer.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <CryPhysics/physinterface.h>
 
 #include <CrySerialization/Color.h>
 #include <CrySerialization/Enum.h>

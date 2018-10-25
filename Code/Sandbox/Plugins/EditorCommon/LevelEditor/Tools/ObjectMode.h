@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include "EditorFramework/Preferences.h"
 #include "Gizmos/ITransformManipulator.h"
 
@@ -8,6 +9,7 @@
 
 #include <CryExtension/CryGUID.h>
 #include <CrySerialization/yasli/decorators/Range.h>
+#include <unordered_set>
 
 
 // {87109FED-BDB5-4874-936D-338400079F58}
@@ -133,7 +135,7 @@ protected:
 	//! Move selection to current mouse cursor position.
 	//! \param point - mouse position
 	//! \param overrideSnapToNormal - In this mode the current user setting for snap to normal is ignored. It must be explicitly specified
-	void         HandleMoveSelectionToPosition(const CPoint& point, bool overrideSnapToNormal);
+	void         HandleMoveSelectionToPosition(Vec3& pos, const CPoint& point, bool overrideSnapToNormal);
 	void         SetObjectCursor(CViewport* view, CBaseObject* hitObj, IObjectManager::ESelectOp selectMode);
 
 	virtual void DeleteThis() { delete this; }

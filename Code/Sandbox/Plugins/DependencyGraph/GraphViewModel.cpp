@@ -15,6 +15,7 @@
 #include "AssetSystem/DependencyTracker.h"
 #include "Notifications/NotificationCenter.h"
 #include <IEditor.h>
+#include <CryString/CryPath.h>
 
 class CGraphViewModel;
 

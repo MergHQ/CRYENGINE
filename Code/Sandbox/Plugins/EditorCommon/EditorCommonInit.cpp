@@ -5,6 +5,8 @@
 #include "ProxyModels/ItemModelAttribute.h"
 #include "IPlugin.h"
 
+#include <IEditor.h>
+
 #include <QMetaType>
 
 #include <CryCore/Platform/platform_impl.inl>

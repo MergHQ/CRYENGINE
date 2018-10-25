@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QAbstractNativeEventFilter>
 #include <vector>
+#include <functional>
 
 class EDITOR_COMMON_API CEventLoopHandler : public QObject, public QAbstractNativeEventFilter
 {

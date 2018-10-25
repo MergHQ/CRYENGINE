@@ -9,6 +9,9 @@
 #include "AssetSystem/Browser/AssetTooltip.h"
 #include "PreviewToolTip.h"
 #include "FileDialogs/EngineFileDialog.h"
+#include "PathUtils.h"
+#include <IEditor.h>
+#include <QFileInfo>
 
 namespace Private_AssetSelector
 {

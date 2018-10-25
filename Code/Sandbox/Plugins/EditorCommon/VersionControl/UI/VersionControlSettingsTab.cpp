@@ -2,6 +2,7 @@
 #include "StdAfx.h"
 #include "VersionControlSettingsTab.h"
 #include "EditorFramework/Preferences.h"
+#include <IEditor.h>
 #include <QVBoxLayout>
 
 CVersionControlSettingsTab::CVersionControlSettingsTab(QWidget* pParent /*= nullptr*/)

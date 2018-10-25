@@ -18,6 +18,7 @@
 #include "EditorFramework/Editor.h"
 #include "EditorFramework/Events.h"
 #include "EditorFramework/BroadcastManager.h"
+#include <CrySystem/Profilers/FrameProfiler/FrameProfiler.h>
 
 CInspector::CInspector(QWidget* pParent)
 	: CDockableWidget(pParent)

@@ -5,6 +5,8 @@
 #include "QtUtil.h"
 #include "IEditor.h"
 #include "ICommandManager.h"
+#include <CrySystem/ISystem.h>
+#include <QAction>
 
 struct CAbstractMenu::SMenuItem
 {

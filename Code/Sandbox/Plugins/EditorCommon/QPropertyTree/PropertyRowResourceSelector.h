@@ -5,6 +5,7 @@
 #include <Serialization/PropertyTree/IDrawContext.h>
 #include <Serialization/PropertyTree/PropertyRowField.h>
 #include <Serialization.h>
+#include <IResourceSelectorHost.h>
 
 namespace Serialization {
 struct INavigationProvider;

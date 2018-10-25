@@ -8,6 +8,7 @@
 
 #include <QBoxLayout>
 #include <QEvent.h>
+#include <QApplication>
 
 void CAssetTooltip::ShowTrackingTooltip(CAsset* asset, QWidget* parent /*= nullptr*/)
 {

@@ -1,6 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <CryThreading/CryAtomics.h>
+#include <CrySystem/ISystem.h>
 
 //
 // IBackgroundTaskManager runs background tasks in worker thread.

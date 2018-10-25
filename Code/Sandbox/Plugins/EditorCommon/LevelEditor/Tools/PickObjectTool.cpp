@@ -4,6 +4,7 @@
 #include "PickObjectTool.h"
 #include "Objects/BaseObject.h"
 #include "Viewport.h"
+#include <IEditor.h>
 
 IMPLEMENT_DYNAMIC(CPickObjectTool, CEditTool)
 

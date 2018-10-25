@@ -9,6 +9,7 @@
 #include <QTimer>
 #include <QUrl>
 #include <qevent.h>
+#include <QApplication>
 #include <unordered_map>
 
 //Notes for future usage:

@@ -5,6 +5,8 @@
 #include "IVersionControlAdapter.h"
 #include "VersionControlInitializer.h"
 #include "EditorFramework/Preferences.h"
+#include <CrySerialization/StringList.h>
+#include <CrySystem/ISystem.h>
 #include <memory>
 
 struct EDITOR_COMMON_API SVersionControlPreferences : public SPreferencePage

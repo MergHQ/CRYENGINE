@@ -7,6 +7,7 @@
 #include "dll_string.h"
 #include "KeyboardShortcut.h"
 
+#include <CrySystem/ISystem.h>
 #include <CryCore/functor.h>
 
 #include <vector>

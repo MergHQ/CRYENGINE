@@ -3,6 +3,8 @@
 #include "stdafx.h"
 #include <CryCore/Platform/platform.h>
 
+#include <IEditor.h>
+
 #include <Serialization/PropertyTree/PropertyTree.h>
 #include <Serialization/PropertyTree/PropertyRowImpl.h>
 #include <Serialization/PropertyTree/IDrawContext.h>

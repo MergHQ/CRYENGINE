@@ -2,10 +2,8 @@
 
 #pragma once
 
-#include "ICryGraphEditor.h"
-
 #include "EditorCommonAPI.h"
-
+#include "ICryGraphEditor.h"
 #include "QScrollableBox.h"
 
 #include <CrySerialization/IArchive.h>

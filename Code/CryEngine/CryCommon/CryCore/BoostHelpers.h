@@ -9,9 +9,9 @@
    - 02:07:2009: Created by Alex McCarthy
 *************************************************************************/
 
-#ifndef __BOOST_HELPERS_H__
-#define __BOOST_HELPERS_H__
+#pragma once
 #include <CryCore/Assert/CryAssert.h>
+#include <CrySystem/ISystem.h>
 
 #include <boost/version.hpp>
 //////////////////////////////////////////////////////////////////////////
@@ -57,5 +57,3 @@ using std::type_info;
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/find.hpp>
 #pragma warning(pop)
-
-#endif // __BOOST_HELPERS_H__

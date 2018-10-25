@@ -8,10 +8,12 @@
 #include "Util/Variable.h"
 
 #include <CryAnimation/ICryAnimation.h>
+#include <CryInput/IInput.h>
 
 struct IPhysicalEntity;
 struct ISkeletonAnim;
 class CAnimationSet;
+namespace CryAudio { struct IListener; }
 
 /////////////////////////////////////////////////////////////////////////////
 // CModelViewport window

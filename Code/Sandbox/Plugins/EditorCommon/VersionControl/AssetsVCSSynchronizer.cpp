@@ -9,6 +9,8 @@
 #include "Objects/IObjectLayerManager.h"
 #include "Objects/ObjectManager.h"
 #include "PathUtils.h"
+#include "QtUtil.h"
+#include <QDir>
 
 namespace Private_AssetsVCSSynchronizer
 {

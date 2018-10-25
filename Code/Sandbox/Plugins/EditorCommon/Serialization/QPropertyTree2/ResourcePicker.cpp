@@ -10,6 +10,10 @@
 
 #include <IEditor.h>
 #include <IUndoManager.h>
+#include <QBoxLayout>
+#include <QEvent>
+#include <QLineEdit>
+#include <QToolButton>
 
 namespace Private_ResourcePickers
 {

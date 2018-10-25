@@ -2,6 +2,12 @@
 #pragma once
 
 #include "EditorCommonAPI.h"
+#include <CryCore/smartptr.h>
+#include <CrySerialization/yasli/Serializer.h>
+#include <CrySerialization/yasli/Object.h>
+#include <CrySerialization/yasli/Archive.h>
+#include <QIcon>
+#include <QWidget>
 
 class QScrollArea;
 class QSearchBox;

@@ -8,6 +8,13 @@
 #include "FileUtils.h"
 #include "PathUtils.h"
 
+CAssetFilesGroupProvider::CAssetFilesGroupProvider(CAsset* pAsset, bool shouldIncludeSourceFile) 
+	: m_pAsset(pAsset)
+	, m_metadata(pAsset->GetMetadataFile())
+	, m_name(pAsset->GetName())
+	, m_shouldIncludeSourceFile(shouldIncludeSourceFile)
+{}
+
 std::vector<string> CAssetFilesGroupProvider::GetFiles(bool includeGeneratedFile /*= true*/) const
 {
 	return m_pAsset ? m_pAsset->GetType()->GetAssetFiles(*m_pAsset, m_shouldIncludeSourceFile, false, includeGeneratedFile) : std::vector<string>();

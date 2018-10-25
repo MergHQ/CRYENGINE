@@ -7,6 +7,9 @@
 #include "VersionControl/VersionControl.h"
 #include "VersionControl/AssetsVCSReverter.h"
 #include "AssetSystem/IFilesGroupProvider.h"
+#include "QtUtil.h"
+#include <CrySystem/ISystem.h>
+#include <QPushButton>
 #include <QVBoxLayout>
 
 namespace Private_VersionControlWorkspaceOverviewTab

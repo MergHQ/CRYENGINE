@@ -4,6 +4,7 @@
 #include "EditorCommonAPI.h"
 
 #include <QKeySequence>
+#include <QList>
 
 class EDITOR_COMMON_API CKeyboardShortcut
 {

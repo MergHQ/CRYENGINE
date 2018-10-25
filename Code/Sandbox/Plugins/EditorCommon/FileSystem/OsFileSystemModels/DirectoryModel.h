@@ -5,6 +5,10 @@
 
 class CAdvancedFileSystemModel;
 
+#pragma warning(push)
+// 'setSourceModel': no override available for virtual member function from base 'QSortFilterProxyModel'; function is hidden
+#pragma warning(disable:4264)
+
 /**
  * \brief specialized filter that filters out all files
  * \note used for the directory column
@@ -21,5 +25,8 @@ protected:
 	virtual bool filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const;
 
 public:
+
+	// Hiding base virtual is intended
 	virtual void setSourceModel(CAdvancedFileSystemModel* sourceFileSystem);
 };
+#pragma warning(pop)

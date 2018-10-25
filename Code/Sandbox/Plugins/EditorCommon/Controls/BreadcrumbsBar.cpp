@@ -1,12 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include <StdAfx.h>
 #include "BreadcrumbsBar.h"
+#include <CryIcon.h>
 
+#include <QAction>
+#include <QApplication>
 #include <QBoxLayout>
-#include <QToolButton>
 #include <QKeyEvent>
 #include <QLineEdit>
+#include <QMenu>
 #include <QMouseEvent>
+#include <QStyleOption>
+#include <QToolButton>
 
 CBreadcrumbsBar::CBreadcrumbsBar()
 {

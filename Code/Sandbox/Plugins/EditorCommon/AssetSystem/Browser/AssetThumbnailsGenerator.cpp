@@ -8,6 +8,7 @@
 #include "PathUtils.h"
 #include "QtUtil.h"
 #include "ThreadingUtils.h"
+#include <IEditor.h>
 
 namespace AsseThumbnailsGenerator
 {

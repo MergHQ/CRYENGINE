@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include <StdAfx.h>
 
+#include "IEditorImpl.h"
 #include "QCommandAction.h"
 #include "Util/BoostPythonHelpers.h"
 

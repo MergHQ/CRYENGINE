@@ -10,6 +10,7 @@
 #include <QPoint>
 #include <QStaticText>
 #include <QStyleOptionViewItem>
+#include <QTimer>
 
 #include "DrawingPrimitives/Ruler.h"
 

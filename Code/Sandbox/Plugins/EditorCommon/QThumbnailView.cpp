@@ -3,17 +3,23 @@
 #include "QThumbnailView.h"
 
 #include <qevent.h> // contains sub events
-#include <QListView>
+#include <QAbstractButton>
+#include <QAction>
+#include <QApplication>
 #include <QBoxLayout>
-#include <QDrag>
-#include <QStyledItemDelegate>
-#include <QDateTime>
 #include <QButtonGroup>
+#include <QDateTime>
+#include <QDrag>
+#include <QListView>
+#include <QStyledItemDelegate>
+#include <QToolButton>
 
 #include "QtUtil.h"
 #include "EditorFramework/Events.h"
 #include "EditorFramework/PersonalizationManager.h"
 #include "DragDrop.h"
+#include "Menu/AbstractMenu.h"
+#include <CryIcon.h>
 
 namespace Private_QThumbnailView
 {
@@ -440,6 +446,11 @@ void QThumbnailsView::ScrollToRow(const QModelIndex& indexInRow, QAbstractItemVi
 		CRY_ASSERT(indexInRow.model() == m_listView->model());
 		m_listView->scrollTo(indexInRow.sibling(indexInRow.row(), m_listView->modelColumn()), scrollHint);
 	}
+}
+
+QAbstractItemView* QThumbnailsView::GetInternalView()
+{
+	return m_listView;
 }
 
 void QThumbnailsView::AppendPreviewSizeActions(CAbstractMenu& menu)

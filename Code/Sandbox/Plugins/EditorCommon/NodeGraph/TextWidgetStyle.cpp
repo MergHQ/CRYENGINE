@@ -6,6 +6,8 @@
 #include "NodeWidgetStyle.h"
 #include "NodeGraphView.h"
 
+#include <QApplication>
+
 namespace CryGraphEditor {
 
 CTextWidgetStyle::CTextWidgetStyle(CNodeGraphViewStyleItem& viewItemStyle)

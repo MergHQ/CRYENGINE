@@ -7,9 +7,13 @@
 #include "FileDialogs/SystemFileDialog.h"
 #include "LevelEditor/LevelEditorSharedState.h"
 #include "IDisplayViewport.h"
+#include <CrySystem/ISystem.h>
 
 #include <QDesktopServices>
 #include <QJsonDocument>
+#include <QJsonObject>
+#include <QVariant>
+#include <QUrl>
 
 #include <cctype>
 #include <cstring>
@@ -244,4 +248,24 @@ void ParsePropertyString(const char* szProperties, const char* szDelim, const st
 		pEnd += std::strspn(pEnd, szDelim);
 		pBegin = pEnd;
 	}
+}
+
+XmlNodeRef XmlHelpers::CreateXmlNode(const char* sTag)
+{
+	return GetISystem()->CreateXmlNode(sTag);
+}
+
+bool XmlHelpers::SaveXmlNode(XmlNodeRef node, const char* filename)
+{
+	return node->saveToFile(filename);
+}
+
+XmlNodeRef XmlHelpers::LoadXmlFromFile(const char* fileName)
+{
+	return GetISystem()->LoadXmlFromFile(fileName);
+}
+
+XmlNodeRef XmlHelpers::LoadXmlFromBuffer(const char* buffer, size_t size)
+{
+	return GetISystem()->LoadXmlFromBuffer(buffer, size);
 }

@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH. All rights reserved.
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include "IFilesGroupProvider.h"
 
 class EDITOR_COMMON_API IFileOperationsExecutor

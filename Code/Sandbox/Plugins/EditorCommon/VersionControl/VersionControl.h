@@ -1,10 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include "IVersionControlAdapter.h"
 #include "VersionControlCache.h"
 #include "VersionControlFileConflictStatus.h"
 #include "VersionControlTaskManager.h"
+#include <CrySandbox/CrySignal.h>
 #include <memory>
 
 struct SPreferencePage;

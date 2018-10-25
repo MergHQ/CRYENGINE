@@ -3,6 +3,7 @@
 #include "stdafx.h"
 
 #include "QGroupDialog.h"
+#include <QLabel>
 #include <QLineEdit>
 #include <QVBoxLayout>
 

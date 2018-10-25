@@ -3,6 +3,7 @@
 #include "PerforceApiExecutor.h"
 #include "PerforceApiOutputParser.h"
 #include <p4/clientapi.h>
+#include <CrySystem/ISystem.h>
 
 namespace Private_CPerforceApiExecutor
 {

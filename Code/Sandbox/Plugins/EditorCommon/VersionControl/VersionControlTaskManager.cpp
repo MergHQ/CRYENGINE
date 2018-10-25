@@ -5,6 +5,8 @@
 #include "CryThreading/IThreadManager.h"
 #include "VersionControlErrorHandler.h"
 
+#include <IEditor.h>
+
 namespace Private_VersionControlTaskManager
 {
 

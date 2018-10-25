@@ -7,6 +7,7 @@
 
 #include "EditorFramework/Editor.h"
 #include "ProxyModels/ItemModelAttribute.h"
+#include <CrySandbox/CrySignal.h>
 
 class CAsset;
 class CAssetDropHandler;
@@ -18,6 +19,8 @@ class CLineEditDelegate;
 class QAction;
 class QAdvancedTreeView;
 class QAttributeFilterProxyModel;
+class QBoxLayout;
+class QButtonGroup;
 class QFilteringPanel;
 class QItemSelectionModel;
 class QMenu;
@@ -25,6 +28,7 @@ class QSplitter;
 class QThumbnailsView;
 class QTimer;
 class QToolButton;
+struct IUIContext;
 
 //Thumbnails should now be used, leaving for now in case it is temporarily useful
 #define ASSET_BROWSER_USE_PREVIEW_WIDGET 0

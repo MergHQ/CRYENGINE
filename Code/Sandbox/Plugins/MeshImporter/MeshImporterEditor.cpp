@@ -12,6 +12,7 @@
 
 // EditorCommon
 #include <AssetSystem/AssetManager.h>
+#include <EditorFramework/Events.h>
 #include <QtViewPane.h>
 
 // EditorQt

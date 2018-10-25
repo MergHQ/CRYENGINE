@@ -3,6 +3,8 @@
 #pragma once
 
 #include "ObjectEvent.h"
+#include <CryMath/Cry_Math.h>
+#include <CryMath/Cry_Geo.h>
 
 // Windows API defines this
 #ifdef GetObject

@@ -12,6 +12,7 @@
 #include <CryIcon.h>
 
 #include "NodeGraphViewStyle.h"
+#include <set>
 
 class QWidget;
 class QGraphicsItem;

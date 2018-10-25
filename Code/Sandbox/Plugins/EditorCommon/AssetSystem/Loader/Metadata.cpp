@@ -2,8 +2,10 @@
 
 #include "StdAfx.h"
 #include "Metadata.h"
-#include <chrono>
+#include "PathUtils.h"
 #include "Util/TimeUtil.h"
+#include <CrySystem/XML/IXml.h>
+#include <chrono>
 
 namespace AssetLoader
 {

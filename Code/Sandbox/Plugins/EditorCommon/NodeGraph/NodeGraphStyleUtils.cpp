@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "NodeGraphStyleUtils.h"
+#include <CryIcon.h>
 
 namespace CryGraphEditor {
 

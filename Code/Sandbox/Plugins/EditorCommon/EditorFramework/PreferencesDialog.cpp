@@ -5,6 +5,8 @@
 #include "Controls/QObjectTreeWidget.h"
 #include "EditorFramework/Preferences.h"
 #include "QAdvancedPropertyTree.h"
+#include "QControls.h"
+#include <IEditor.h>
 
 #include <QHBoxLayout>
 #include <QPushButton>

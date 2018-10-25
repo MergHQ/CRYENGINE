@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "QtMainFrame.h"
 
+#include "Commands/CommandManager.h"
 #include "Commands/KeybindEditor.h"
 #include "QT/MainToolBars/QToolBarCreator.h"
 #include "QT/QMainFrameMenuBar.h"
@@ -15,12 +16,15 @@
 #include "CryEditDoc.h"
 #include "LevelIndependentFileMan.h"
 #include "LinkTool.h"
+#include "LogFile.h"
 
 // MFC
 #include <QMfcApp/qmfchost.h>
 
 // EditorCommon
 #include <Controls/SaveChangesDialog.h>
+#include <EditorFramework/BroadcastManager.h>
+#include <EditorFramework/Events.h>
 #include <EditorFramework/PersonalizationManager.h>
 #include <Menu/MenuWidgetBuilders.h>
 #include <Preferences/GeneralPreferences.h>

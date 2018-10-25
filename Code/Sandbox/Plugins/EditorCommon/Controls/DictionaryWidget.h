@@ -11,7 +11,7 @@
 #include <QWidget>
 
 #include "QPopupWidget.h"
-#include "CrySandbox/CrySignal.h"
+#include <CrySandbox/CrySignal.h>
 #include "QAdvancedTreeView.h"
 #include "ProxyModels/AttributeFilterProxyModel.h"
 

@@ -4,6 +4,9 @@
 #include "DockableContainer.h"
 #include "QTrackingTooltip.h"
 #include "Menu/AbstractMenu.h"
+#include "Controls/EditorDialog.h"
+#include <QAction>
+#include <QBoxLayout>
 
 QToolWindowManagerClassFactory* CDockableContainer::s_dockingFactory = nullptr;
 

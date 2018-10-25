@@ -189,6 +189,17 @@ if (OPTION_FBX_SDK)
 	)
 endif()
 
+sources_platform(WIN32)
+add_sources("NoUberFile"
+	SOURCE_GROUP "CryCommonTools"
+		"../../CryCommonTools/FileUtil_windows.cpp"
+)
+sources_platform(LINUX)
+add_sources("NoUberFile"
+	SOURCE_GROUP "CryCommonTools"
+		"../../CryCommonTools/FileUtil_posix.cpp"
+)
+
 end_sources()
 #END-FILE-LIST
 

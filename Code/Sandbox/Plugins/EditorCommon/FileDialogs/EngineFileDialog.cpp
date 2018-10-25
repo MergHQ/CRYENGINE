@@ -14,10 +14,13 @@
 #include "FileSystem/FileTreeModel.h"
 #include "PathUtils.h"
 #include "QAdvancedItemDelegate.h"
+#include "QSearchBox.h"
 
 #include <CryIcon.h>
+#include <IEditor.h>
 
 #include <QAdvancedTreeView.h>
+#include <QBoxLayout>
 #include <QDir>
 #include <QFileInfo>
 #include <QHeaderView>

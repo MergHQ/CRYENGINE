@@ -4,8 +4,11 @@
 
 #include "NotificationCenterImpl.h"
 #include "QtUtil.h"
+#include <IEditor.h>
 
 #include <CrySystem/ICryLink.h>
+#include <CrySystem/ISystem.h>
+#include <QRegularExpression>
 
 SNotificationPreferences gNotificationPreferences;
 REGISTER_PREFERENCES_PAGE_PTR(SNotificationPreferences, &gNotificationPreferences)

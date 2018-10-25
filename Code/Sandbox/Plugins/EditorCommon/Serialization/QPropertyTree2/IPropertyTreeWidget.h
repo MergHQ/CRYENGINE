@@ -4,6 +4,10 @@
 #include <CryCore/smartptr.h>
 #include <CrySerialization/yasli/Serializer.h>
 #include <CrySerialization/yasli/TypeID.h>
+#include <CrySandbox/CrySignal.h>
+#include <QObject>
+
+class QMenu;
 
 namespace PropertyTree2
 {

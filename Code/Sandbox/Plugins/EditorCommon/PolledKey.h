@@ -6,6 +6,7 @@
 #include "BoostPythonMacros.h"
 
 #include "Command.h"
+#include <CrySystem/ISystem.h>
 
 class CPolledKeyCommand : public CUiCommand
 {

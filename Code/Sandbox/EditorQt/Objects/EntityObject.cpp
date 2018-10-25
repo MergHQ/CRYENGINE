@@ -330,7 +330,6 @@ void CEntityObject::Done()
 	UnloadScript();
 
 	ReleaseEventTargets();
-	RemoveAllEntityLinks();
 
 	for (CListenerSet<IEntityObjectListener*>::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
 	{

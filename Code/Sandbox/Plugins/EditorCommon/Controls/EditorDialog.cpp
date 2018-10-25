@@ -6,6 +6,8 @@
 #include "Controls/SandboxWindowing.h"
 #include "EditorFramework/PersonalizationManager.h"
 
+#include <IEditor.h>
+
 #include <QDesktopWidget>
 #include <QGridLayout>
 #include <QKeyEvent>

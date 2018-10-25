@@ -1,11 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
+class CAbstractMenu;
 class QListView;
+class QPrecisionSlider;
+class QButtonGroup;
 
 #include "ProxyModels/ItemModelAttribute.h"
 #include <EditorFramework/StateSerializable.h>
+#include <CrySandbox/CrySignal.h>
 #include "QAdvancedTreeView.h"
+#include <QTimer>
 
 //! Extends and specializes a QListView to behave as a thumbnail view (see windows explorer for inspiration)
 //! All items have the same size, default is 64x64 pixels. Set ItemSize and Spacing, the rest should work out of the box
@@ -64,7 +69,7 @@ public:
 	void ScrollToRow(const QModelIndex& indexInRow, QAbstractItemView::ScrollHint scrollHint = QAbstractItemView::EnsureVisible);
 
 	//! Use to configure the internal view if necessary
-	QAbstractItemView* GetInternalView() { return m_listView; }
+	QAbstractItemView* GetInternalView();
 
 	void AppendPreviewSizeActions(CAbstractMenu& menu);
 

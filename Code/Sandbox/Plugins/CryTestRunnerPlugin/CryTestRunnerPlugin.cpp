@@ -3,6 +3,7 @@
 #include "CryTestRunnerPlugin.h"
 #include "CryTestRunnerSystem.h"
 #include <Menu/MenuWidgetBuilders.h>
+#include <EditorFramework/Editor.h>
 #include <ProxyModels/DeepFilterProxyModel.h>
 #include <QAdvancedTreeView.h>
 #include <CryCore/Platform/platform_impl.inl>

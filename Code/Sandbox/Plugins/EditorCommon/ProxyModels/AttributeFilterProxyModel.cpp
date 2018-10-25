@@ -4,6 +4,7 @@
 #include "AttributeFilterProxyModel.h"
 #include "ProxyModels/ItemModelAttribute.h"
 #include <CrySandbox/CrySignal.h>
+#include <CryCore/StlUtils.h>
 
 QAttributeFilterProxyModel::QAttributeFilterProxyModel(BehaviorFlags behavior /*= AcceptIfChildMatches*/, QObject* pParent /*= nullptr*/, int role /*= Attributes::s_defaultRole*/)
 	: m_role(role)

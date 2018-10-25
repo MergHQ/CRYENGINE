@@ -2,6 +2,14 @@
 #include <StdAfx.h>
 #include "QAdvancedTreeView.h"
 
+#include "QtUtil.h"
+#include "QAdvancedItemDelegate.h"
+#include "DragDrop.h"
+#include "EditorStyleHelper.h"
+
+#include <IEditor.h>
+#include <CryIcon.h>
+
 #include <QAbstractProxyModel>
 #include <QAction>
 #include <QApplication>
@@ -11,12 +19,8 @@
 #include <QHoverEvent>
 #include <QItemSelectionModel>
 #include <QMenu>
+#include <QPainter>
 #include <QTimer>
-
-#include "QtUtil.h"
-#include "QAdvancedItemDelegate.h"
-#include "DragDrop.h"
-#include "EditorStyleHelper.h"
 
 namespace Private_QAdvancedTreeView
 {

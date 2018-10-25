@@ -9,6 +9,9 @@
 #include "AssetSystem/Loader/AssetLoaderHelpers.h"
 #include "FileUtils.h"
 #include "PathUtils.h"
+#include "AssetSystem/AssetManager.h"
+#include "Util/EditorUtils.h"
+#include <CrySystem/XML/IXml.h>
 
 namespace Private_PendingChange
 {

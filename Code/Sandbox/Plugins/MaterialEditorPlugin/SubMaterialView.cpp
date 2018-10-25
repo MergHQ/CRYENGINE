@@ -1,14 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include "StdAfx.h"
 #include "SubMaterialView.h"
-
-#include "Cry3DEngine/IMaterial.h"
-
 #include "MaterialEditor.h"
+#include <Cry3DEngine/IMaterial.h>
+#include <Menu/MenuWidgetBuilders.h>
+#include <QT/Widgets/QPreviewWidget.h>
+#include <EditorFramework/Events.h>
 #include <QAbstractItemModel>
-
-#include "Menu/MenuWidgetBuilders.h"
-#include "QT/Widgets/QPreviewWidget.h"
 
 class CSubMaterialView::Model : public QAbstractListModel
 {

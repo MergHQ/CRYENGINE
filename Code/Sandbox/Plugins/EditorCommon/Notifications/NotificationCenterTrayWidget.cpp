@@ -15,6 +15,8 @@
 #include "EditorStyleHelper.h"
 #include "QtUtil.h"
 
+#include <IEditor.h>
+
 // Qt
 #include <QApplication>
 #include <QDesktopWidget>

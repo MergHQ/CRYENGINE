@@ -5,11 +5,17 @@
 #include "PropertyTreeModel.h"
 #include "Serialization/PropertyTree/Color.h"
 
+#include <CryIcon.h>
+#include <CrySerialization/Color.h>
+#include <CrySerialization/ColorImpl.h>
 #include <CrySerialization/Decorators/ActionButton.h>
 #include <CrySerialization/yasli/decorators/Button.h>
 #include <CrySerialization/yasli/decorators/Range.h>
-#include <CrySerialization/ColorImpl.h>
-#include <CrySerialization/Color.h>
+#include <CrySerialization/yasli/StringList.h>
+#include <QAction>
+#include <QBoxLayout>
+#include <QMenu>
+#include <QToolButton>
 
 namespace PropertyTree2
 {

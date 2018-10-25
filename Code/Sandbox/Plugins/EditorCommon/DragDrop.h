@@ -5,6 +5,9 @@
 #include <QMimeData>
 #include <QStringList>
 #include <QDrag.h>
+#include <QPoint>
+
+class QDropEvent;
 
 //! Helper class to deal with passing custom data during Drag&Drop operations. Internally using mime data.
 //! Usage: 

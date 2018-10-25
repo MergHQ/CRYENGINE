@@ -4,6 +4,7 @@
 
 #include "EditorCommonAPI.h"
 
+#include <CrySandbox/CrySignal.h>
 #include <QTimer>
 #include <QColor>
 #include <QLineEdit>

@@ -4,9 +4,11 @@
 
 #include <Controls/EditorDialog.h>
 #include <ProxyModels/FavoritesHelper.h>
+#include <EditorFramework/Editor.h>
 
 #include <QAbstractItemModel>
 
+#include <CrySystem/IConsole.h>
 #include <CrySandbox/CrySignal.h>
 
 #include <memory>

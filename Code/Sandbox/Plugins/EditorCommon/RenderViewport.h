@@ -8,6 +8,7 @@
 #include "Viewport.h"
 #include <EditorFramework/Preferences.h>
 #include <CryExtension/CryGUID.h>
+#include <CrySandbox/CrySignal.h>
 #include <CryMath/Cry_Camera.h>
 
 class CBaseObject;

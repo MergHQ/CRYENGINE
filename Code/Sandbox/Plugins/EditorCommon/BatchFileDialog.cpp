@@ -2,19 +2,20 @@
 
 #include "stdafx.h"
 #include "BatchFileDialog.h"
+#include "FileDialogs/SystemFileDialog.h"
 #include "QPropertyTree/QPropertyDialog.h"
-#include <CrySerialization/StringList.h>
-#include <CrySerialization/STL.h>
+#include <IEditor.h>
+#include <CryCore/Platform/CryWindows.h>
 #include <CrySerialization/IArchive.h>
-#include <vector>
-#include <CrySystem/File/ICryPak.h>
+#include <CrySerialization/STL.h>
+#include <CrySerialization/StringList.h>
 #include <CryString/StringUtils.h>
+#include <CrySystem/File/ICryPak.h>
 #include <QApplication>
 #include <QBoxLayout>
 #include <QLabel>
 #include <QPushButton>
-#include <CryCore/Platform/CryWindows.h>
-#include "FileDialogs/SystemFileDialog.h"
+#include <vector>
 
 struct SBatchFileItem
 {

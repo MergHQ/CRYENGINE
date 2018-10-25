@@ -1,5 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
+#include <CryMath/Cry_Math.h>
+#include <CryMath/Cry_Vector3.h>
+#include <CrySerialization/IArchive.h>
+#include <CrySerialization/Math.h>
+#include <vector>
 
 class CTagLocations
 {

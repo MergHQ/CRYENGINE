@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <CryMath/Cry_Color.h>
-#include <CryMath/Cry_Geo.h>
+#include "EditorCommonAPI.h"
+#include <CryMath/Cry_Math.h>
 #include <CryRenderer/IRenderer.h>
 
 class CCamera;

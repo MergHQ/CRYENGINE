@@ -119,11 +119,7 @@ bool CAsset::IsXml(const string& filename)
 {
 	typedef std::unique_ptr<FILE, int(*)(FILE*)> file_ptr;
 
-	wstring widePath;
-	Unicode::Convert(widePath, filename);
-
-	file_ptr file(_wfopen(widePath.c_str(), L"rb"), fclose);
-
+	file_ptr file(FileUtil::CryOpenFile(filename.c_str(), _T("rb")), fclose);
 	if (!file.get())
 		return false;
 

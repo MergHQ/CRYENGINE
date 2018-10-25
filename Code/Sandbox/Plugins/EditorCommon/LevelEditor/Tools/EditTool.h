@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
+
 #include <CrySandbox/CrySignal.h>
 #include <CrySerialization/IArchive.h>
 #include <IEditor.h>

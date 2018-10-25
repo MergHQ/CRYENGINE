@@ -8,6 +8,7 @@
 #include "Loader/AssetLoaderHelpers.h"
 #include "PathUtils.h"
 #include "QtUtil.h"
+#include <IEditor.h>
 
 #include <CrySystem/File/ICryPak.h>
 #include <CryString/CryPath.h>

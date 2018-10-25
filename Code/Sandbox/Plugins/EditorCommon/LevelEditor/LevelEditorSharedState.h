@@ -2,9 +2,12 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
+
 // CryCommon
 #include <CryCore/smartptr.h>
 #include <CryMath/Cry_Geo.h>
+#include <CrySandbox/CrySignal.h>
 
 // EditorInterface
 #include <IEditor.h>

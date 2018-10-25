@@ -35,6 +35,7 @@
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySerialization/STL.h>
+#include <CrySandbox/CrySignal.h>
 
 #include <QCollapsibleFrame.h>
 #include <QApplication>

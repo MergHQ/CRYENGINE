@@ -34,6 +34,7 @@
 #include "ViewManager.h"
 
 // EditorCommon
+#include <IObjectManager.h>
 #include <Controls/QuestionDialog.h>
 #include <Notifications/NotificationCenter.h>
 #include <Preferences/ViewportPreferences.h>
@@ -68,6 +69,8 @@
 
 // added just because of the suspending/resuming of engine update, should be removed once we have msgboxes in a separate process
 #include "CryEdit.h"
+
+#include <QApplication>
 
 // Implementation of System Callback structure.
 struct SSystemUserCallback : public ISystemUserCallback

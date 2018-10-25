@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include "AxisHelperExtended.h"
 #include "AxisRotateGizmo.h"
 #include "AxisScaleGizmo.h"

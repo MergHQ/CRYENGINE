@@ -13,8 +13,8 @@
 #include <assert.h>
 #include <algorithm>
 #include <stdio.h>
+#include <FileUtil.h>
 #include <CrySystem/File/ICryPak.h>
-#include <CryString/UnicodeFunctions.h>
 
 /////////////////////////////////////////////////////////////////////
 // String pool implementation (from expat).
@@ -982,10 +982,7 @@ bool CXmlNode::saveToFile( const char *fileName )
 #endif // CRY_PLATFORM_WINDOWS && !defined(CRYTOOLS)
 	XmlString xml = getXML();
 
-	wstring widePath;
-	Unicode::Convert(widePath, fileName);
-
-	FILE *file = _wfopen(widePath.c_str(), L"wt");
+	FILE *file = FileUtil::CryOpenFile(fileName, _T("wt"));
 	if (file)
 	{
 		const char *sxml = (const char*)xml;
@@ -1273,7 +1270,7 @@ XmlNodeRef XmlParser::parse( const char *fileName )
 	} else {
 		return XmlNodeRef();
 	}
-#else !defined(CRYTOOLS)
+#else  // !defined(CRYTOOLS)
 	std::vector<char> buf;
 	FILE *file = fopen(fileName,"rb");
 	if (file) {
@@ -1289,7 +1286,7 @@ XmlNodeRef XmlParser::parse( const char *fileName )
 	} else {
 		return XmlNodeRef();
 	}
-#endif !defined(CRYTOOLS)
+#endif  // !defined(CRYTOOLS)
 }
 
 //! Parse xml from memory buffer.

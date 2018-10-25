@@ -5,13 +5,17 @@
 #include "AssetFoldersModel.h"
 #include "AssetThumbnailsGenerator.h"
 
+#include "DragDrop.h"
 #include "PathUtils.h"
 #include "ProxyModels/DeepFilterProxyModel.h"
 #include "QAdvancedTreeView.h"
+#include "QSearchBox.h"
 #include "QtUtil.h"
 
 #include <QItemSelectionModel>
 #include <QMenu>
+#include <QApplication>
+#include <QBoxLayout>
 
 namespace Private_AssetFolderView
 {

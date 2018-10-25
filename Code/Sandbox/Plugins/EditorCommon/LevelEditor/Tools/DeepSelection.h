@@ -2,6 +2,9 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
+#include <CryCore/smartptr.h>
+
 class CBaseObject;
 
 //! Deep Selection

@@ -6,12 +6,17 @@
 #include <QStyle>
 #include <QToolTip>
 #include <QClipboard>
+#include <QPainter>
+#include <QStyleOption>
+#include <QApplication>
+#include <QMenu>
 
 #include <CrySerialization/yasli/JSONIArchive.h>
 #include <CrySerialization/yasli/JSONOArchive.h>
 
 #include "QtUtil.h"
 #include "DragDrop.h"
+#include <EditorFramework/Events.h>
 
 namespace PropertyTree2
 {

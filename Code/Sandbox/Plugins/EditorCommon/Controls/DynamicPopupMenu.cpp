@@ -5,6 +5,8 @@
 
 #include "EditorCommonInit.h"
 #include "ICommandManager.h"
+#include <IEditor.h>
+#include <CryIcon.h>
 
 #include <QAction>
 #include <QCursor>

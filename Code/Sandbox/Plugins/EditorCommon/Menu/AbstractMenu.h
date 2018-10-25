@@ -4,6 +4,7 @@
 
 #include "EditorCommonAPI.h"
 
+#include <CryCore/smartptr.h>
 #include <CryString/CryString.h>
 #include <CrySandbox/CrySignal.h>
 

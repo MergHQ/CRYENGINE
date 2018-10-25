@@ -7,6 +7,9 @@
 #include <QPixmap>
 #include <QRectF>
 
+class QIcon;
+class CryIcon;
+
 namespace CryGraphEditor {
 
 namespace StyleUtils {

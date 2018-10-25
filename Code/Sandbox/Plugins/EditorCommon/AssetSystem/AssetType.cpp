@@ -13,7 +13,10 @@
 #include "PathUtils.h"
 
 #include <CryString/StringUtils.h>
+#include <IEditor.h>
 #include <QFile>
+#include <QFileInfo>
+#include <QDir>
 
 namespace Private_AssetType
 {

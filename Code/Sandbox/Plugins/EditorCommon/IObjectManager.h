@@ -14,7 +14,9 @@ class CSelectionGroup;
 class CTrackViewAnimNode;
 class CUsedResources;
 class CViewport;
+class XmlNodeRef;
 
+struct AABB;
 struct CObjectEvent;
 struct HitContext;
 struct IGizmoManager;
@@ -24,7 +26,11 @@ struct SDisplayContext;
 enum EObjectListenerEvent;
 
 #include "ObjectEvent.h"
+#include <CryMath/Cry_Math.h>
 #include <CryExtension/CryGUID.h>
+#include <CryCore/smartptr.h>
+#include <CryCore/functor.h>
+#include <CrySandbox/CrySignal.h>
 
 enum SerializeFlags
 {

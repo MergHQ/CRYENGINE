@@ -2,12 +2,16 @@
 
 #include "stdafx.h"
 #include "SandboxWindowing.h"
-#include <QKeyEvent>
-#include <IEditor.h>
-#include <EditorFramework/Events.h>
-#include <QtViewPane.h>
 #include <EditorFramework/Editor.h>
+#include <EditorFramework/Events.h>
+
+#include <IEditor.h>
+#include <CryIcon.h>
+
+#include <QKeyEvent>
 #include <QSizePolicy>
+#include <QToolButton>
+#include <QtViewPane.h>
 
 namespace Private_SandboxWindowing
 {

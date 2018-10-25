@@ -2,6 +2,10 @@
 
 #pragma once
 
+#include <CrySystem/XML/IXml.h>
+#include <CryString/CryString.h>
+#include <map>
+
 /*!
  *	CXmlTemplate is XML base template of parameters.
  *

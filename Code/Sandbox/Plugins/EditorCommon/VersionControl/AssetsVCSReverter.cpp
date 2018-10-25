@@ -3,15 +3,20 @@
 #include "AssetsVCSReverter.h"
 
 #include "AssetFilesProvider.h"
+#include "AssetSystem/AssetManager.h"
 #include "AssetSystem/FileOperationsExecutor.h"
 #include "AssetSystem/Loader/AssetLoaderHelpers.h"
 #include "AssetsVCSStatusProvider.h"
+#include "Controls/QuestionDialog.h"
 #include "Objects/IObjectLayer.h"
 #include "Objects/IObjectLayerManager.h"
 #include "Objects/ObjectManager.h"
 #include "PathUtils.h"
 #include "ThreadingUtils.h"
 #include "VersionControl.h"
+
+#include <QDialogButtonBox>
+#include <algorithm>
 
 namespace Private_AssetsVCSReverter
 {

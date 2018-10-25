@@ -7,6 +7,9 @@
 #include <Models/EntityEventsModel.h>
 #include <Dialogs/TreeViewDialog.h>
 #include "IResourceSelectorHost.h"
+
+#include <IEditor.h>
+
 #include <CryEntitySystem/IEntityClass.h>
 #include <CryEntitySystem/IEntity.h>
 

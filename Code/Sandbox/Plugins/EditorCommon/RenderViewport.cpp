@@ -18,6 +18,8 @@
 #include "RenderLock.h"
 #include "ViewportInteraction.h"
 
+#include <IEditor.h>
+
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryAISystem/IAISystem.h>
 #include <CryAnimation/ICryAnimation.h>

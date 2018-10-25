@@ -4,9 +4,11 @@
 #include <QAbstractItemModel>
 #include "ProxyModels/ItemModelAttribute.h"
 #include "ProxyModels/FavoritesHelper.h"
+#include "AutoRegister.h"
 
 class CAsset;
 class CAssetType;
+class CDragDropData;
 
 enum EAssetColumns
 {

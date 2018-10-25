@@ -7,7 +7,9 @@
 #include "QPresetsWidget.h"
 
 #include <EditorFramework/PersonalizationManager.h>
+#include <EditorFramework/Events.h>
 
+#include <CrySystem/Profilers/FrameProfiler/FrameProfiler.h>
 #include <QToolBar>
 
 REGISTER_VIEWPANE_FACTORY(CEditorEnvironmentWindow, "Environment Editor", "Tools", true);

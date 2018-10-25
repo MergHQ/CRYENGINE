@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include "LevelEditor/Tools/EditTool.h"
 struct IPickObjectCallback;
 

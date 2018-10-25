@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include "AbstractNodeContentWidget.h"
 #include "PinWidget.h"
 

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include <QScrollableBox.h>
 #include <QtViewPane.h>
 

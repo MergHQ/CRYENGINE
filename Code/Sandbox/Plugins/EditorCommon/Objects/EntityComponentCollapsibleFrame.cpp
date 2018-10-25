@@ -8,6 +8,7 @@
 #include "IObjectManager.h"
 #include "Objects/EntityObject.h"
 #include "IUndoObject.h"
+#include <IEditor.h>
 
 #include <CryEntitySystem/IEntityComponent.h>
 #include <CryEntitySystem/IEntity.h>

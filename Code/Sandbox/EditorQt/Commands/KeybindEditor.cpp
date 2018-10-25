@@ -8,6 +8,7 @@
 #include "Commands/CommandModel.h"
 #include "Commands/CommandManager.h"
 #include "Commands/CustomCommand.h"
+#include "IEditorImpl.h"
 #include "QCommandAction.h"
 #include "QSearchBox.h"
 #include "QAdvancedTreeView.h"
@@ -15,7 +16,8 @@
 #include "Util/BoostPythonHelpers.h"
 #include "Qt/QtUtil.h"
 #include "QT/QtMainFrame.h"
-#include "FileDialogs/SystemFileDialog.h"
+#include <FileDialogs/SystemFileDialog.h>
+#include <EditorFramework/Events.h>
 #include "QtViewPane.h"
 #include <QtUtil.h>
 #include <CryIcon.h>

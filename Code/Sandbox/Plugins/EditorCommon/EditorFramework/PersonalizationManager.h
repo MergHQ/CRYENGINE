@@ -2,6 +2,7 @@
 #pragma once
 #include "EditorCommonAPI.h"
 #include "Util/UserDataUtil.h"
+#include <IEditor.h>
 
 #include <QHash>
 #include <QTimer>

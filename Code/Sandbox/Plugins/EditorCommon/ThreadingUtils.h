@@ -4,6 +4,7 @@
 
 #include "StdAfx.h"
 #include "IBackgroundTaskManager.h"
+#include <IEditor.h>
 
 #include <future>
 #include <tuple>

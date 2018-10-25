@@ -15,6 +15,7 @@
 #include "IObjectManager.h"
 #include "Objects/IObjectLayerManager.h"
 #include "Objects/IObjectLayer.h"
+#include <CryString/CryPath.h>
 
 namespace Private_VersionControlMenuBuilder
 {

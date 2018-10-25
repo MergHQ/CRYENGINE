@@ -8,7 +8,6 @@
 #include "CryIcon.h"
 #include "ProxyModels/ItemModelAttribute.h"
 #include "Asset.h"
-#include "AssetEditor.h"
 #include "CryIcon.h"
 
 #include <CryString/CryString.h>
@@ -19,6 +18,7 @@
 #define ASSET_THUMBNAIL_SIZE 256
 
 class CAbstractMenu;
+class CAssetEditor;
 
 //! IAssetMetadata allows to edit asset.
 //! \sa CAssetType::OnEdit

@@ -6,6 +6,7 @@
 #include "Serialization.h"
 
 #include <CryCore/Containers/CryArray.h>
+#include <CryCore/StlUtils.h>
 
 #include <map>
 #include <memory>

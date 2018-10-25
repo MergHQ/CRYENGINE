@@ -4,6 +4,7 @@
 
 #include <CryCore/Platform/platform.h>
 #include "EditorCommonAPI.h"
+#include <CryCore/StlUtils.h>
 #include <vector>
 #include <map>
 

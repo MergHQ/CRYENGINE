@@ -2,11 +2,14 @@
 
 #pragma once
 
-#include <QAbstractItemModel>
-#include <ProxyModels/ItemModelAttribute.h>
-
 #include "LevelModel.h"
 
+#include <ObjectEvent.h>
+#include <IObjectManager.h>
+#include <Objects/BaseObject.h>
+#include <ProxyModels/ItemModelAttribute.h>
+
+#include <QAbstractItemModel>
 class CObjectLayer;
 class CLevelModelsManager;
 struct CLayerChangeEvent;

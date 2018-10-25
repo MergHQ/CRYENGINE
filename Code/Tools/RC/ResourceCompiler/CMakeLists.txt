@@ -111,6 +111,16 @@ add_sources("NoUberFile"
 		"../../CryCommonTools/ZipDir/ZipFileFormat_info.h"
 )
 
+sources_platform(WIN32)
+add_sources("NoUberFile"
+	SOURCE_GROUP "CryCommonTools"
+		"../../CryCommonTools/FileUtil_windows.cpp"
+)
+sources_platform(LINUX)
+add_sources("NoUberFile"
+	SOURCE_GROUP "CryCommonTools"
+		"../../CryCommonTools/FileUtil_posix.cpp"
+)
 end_sources()
 #END-FILE-LIST
 

@@ -18,6 +18,7 @@
 #include <CryCore/ToolsHelpers/EngineSettingsManager.inl>
 #include <CryString/CryPath.h>
 
+#include <QTimer>
 #include <deque>
 
 namespace AssetManagerHelpers

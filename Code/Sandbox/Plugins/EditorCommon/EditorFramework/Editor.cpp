@@ -2,6 +2,7 @@
 #include <StdAfx.h>
 #include "Editor.h"
 
+#include "BroadcastManager.h"
 #include "Controls/SaveChangesDialog.h"
 #include "Events.h"
 #include "ICommandManager.h"
@@ -11,6 +12,8 @@
 #include "PathUtils.h"
 #include "PersonalizationManager.h"
 #include "QtUtil.h"
+
+#include <IEditor.h>
 
 #include <QDesktopServices>
 #include <QFile>

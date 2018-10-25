@@ -18,10 +18,11 @@
 #include <CrySystem/IProjectManager.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 
+#include <QApplication>
 #include <QDir>
-#include <QTextStream>
 #include <QTemporaryDir>
 #include <QTemporaryFile>
+#include <QTextStream>
 
 void LogPrintf(const char* szFormat, ...);
 

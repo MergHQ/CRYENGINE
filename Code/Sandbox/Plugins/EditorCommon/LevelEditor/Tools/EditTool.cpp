@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "EditTool.h"
 #include "LevelEditor/LevelEditorSharedState.h"
+#include <IEditor.h>
 
 IMPLEMENT_DYNAMIC(CEditTool, CObject);
 

@@ -6,6 +6,9 @@
 #include "EditorFramework/PersonalizationManager.h"
 #include "QAdvancedItemDelegate.h"
 
+#include <IEditor.h>
+#include <CryIcon.h>
+
 #include <QTreeView>
 #include <QHeaderView>
 
