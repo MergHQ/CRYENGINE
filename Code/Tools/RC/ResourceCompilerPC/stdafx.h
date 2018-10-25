@@ -7,6 +7,7 @@
 
 #pragma once
 #include <CryCore/Platform/platform.h>
+#include <CryCore/Platform/CryLibrary.h>
 
 typedef string tstring;
 

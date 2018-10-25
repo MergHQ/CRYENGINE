@@ -34,7 +34,7 @@
 #define MAX_SYMBOL_LENGTH 512
 #define MAX_LOGLINE_LENGTH 4096
 
-#define DBGHELP_DLL_NAME "dbghelp.dll"
+#define DBGHELP_DLL_NAME CryLibraryDefName("dbghelp")
 
 #pragma region // FixedString ----------------------------------------------
 
@@ -276,10 +276,10 @@ bool CrashHandler::InitSymbols(ELogDestination logDestination)
 	}
 	
 	{
-		const HMODULE dbgHelpDll = GetModuleHandle(DBGHELP_DLL_NAME);
+		const HMODULE dbgHelpDll = CryLoadLibrary(DBGHELP_DLL_NAME);
 
 		char fullpath[MAX_PATH];
-		if (!GetModuleFileName(dbgHelpDll, fullpath, sizeof(fullpath)))
+		if (!CryGetModuleFileName(dbgHelpDll, fullpath, sizeof(fullpath)))
 		{
 			LogLine(logDestination, DBGHELP_DLL_NAME " - unable to obtain module name");
 		}
@@ -315,7 +315,7 @@ bool CrashHandler::InitSymbols(ELogDestination logDestination)
 		
 	// Get module file name.
 	char fullpath[MAX_PATH] = { 0 };
-	GetModuleFileName(NULL, fullpath, sizeof(fullpath));
+	CryGetModuleFileName(CryGetCurrentModule(), fullpath, sizeof(fullpath));
 	fullpath[sizeof(fullpath) - 1] = 0;
 
 	// Convert it into search path for symbols.
@@ -399,7 +399,7 @@ int CrashHandler::UpdateCallStack(EXCEPTION_POINTERS* const pex)
 		if (dwAddr) 
 		{
 			char fullpath[MAX_PATH];
-			if (GetModuleFileName((HMODULE)dwAddr, fullpath, sizeof(fullpath))) 
+			if (CryGetModuleFileName((HMODULE)dwAddr, fullpath, sizeof(fullpath))) 
 			{
 				char fdrive[MAX_PATH];
 				char fdir[MAX_PATH];
@@ -696,7 +696,7 @@ static void PutVersion(FixedString<1024>& str)
 	
 	{
 		char exe[MAX_PATH];
-		GetModuleFileName(NULL, exe, sizeof(exe));
+		CryGetModuleFileName(CryGetCurrentModule(), exe, sizeof(exe));
 
 		DWORD dwHandle;
 		const int verSize = GetFileVersionInfoSize(exe, &dwHandle);
@@ -745,20 +745,20 @@ void CrashHandler::WriteMinidump(EXCEPTION_POINTERS* const pExceptionInfo)
 	HMODULE hDll = NULL;
 	char szDbgHelpPath[MAX_PATH*2];
 
-	if (GetModuleFileName(NULL, szDbgHelpPath, MAX_PATH))
+	if (CryGetModuleFileName(CryGetCurrentModule(), szDbgHelpPath, MAX_PATH))
 	{
 		char *pSlash = strrchr(szDbgHelpPath, '\\');
 		if (pSlash)
 		{
 			strcpy(pSlash+1, DBGHELP_DLL_NAME);
-			hDll = ::LoadLibrary(szDbgHelpPath);
+			hDll = CryLoadLibrary(szDbgHelpPath);
 		}
 	}
 
 	if (hDll==NULL)
 	{
 		// load any version we can
-		hDll = ::LoadLibrary(DBGHELP_DLL_NAME);
+		hDll = CryLoadLibrary(DBGHELP_DLL_NAME);
 	}
 
 	LPCTSTR szResult = NULL;

@@ -32,6 +32,10 @@
    CryGetProcAddress(libHandle, procName):
     Import function from the library presented by libHandle.
 
+   CryGetModuleFileName(module, filename, size)
+    Finds the file referred to by *module*, storing it in *filename*.
+	If NULL is passed, it gets the path of the currently-running executable.
+	
    CryFreeLibrary(libHandle):
     Unload the library presented by libHandle.
 
@@ -42,28 +46,31 @@
  */
 
 #include <stdio.h>
-#include <CryCore/Platform/CryWindows.h>
+#include "CryPlatformDefines.h"
 
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
+	#include <CryCore/Platform/CryWindows.h>
 	#if CRY_PLATFORM_WINDOWS
 		#define CryLoadLibrary(libName) ::LoadLibraryA(libName)
 	#elif CRY_PLATFORM_DURANGO
 		#define CryLoadLibrary(libName) ::LoadLibraryExA(libName, 0, 0)
 	#endif
-	#define CryGetCurrentModule() ::GetModuleHandle(nullptr)
-	#define CrySharedLibrarySupported true
-	#define CrySharedLibraryPrefix    ""
-	#define CrySharedLibraryExtension ".dll"
+	#define CryGetCurrentModule()                         ::GetModuleHandle(nullptr)
+	#define CryGetModuleFileName(module, filename, size)  ::GetModuleFileName(module, filename, size)
+	#define CrySharedLibrarySupported   true
+	#define CrySharedLibraryPrefix      ""
+	#define CrySharedLibraryExtension   ".dll"
 	#define CryGetProcAddress(libHandle, procName) ::GetProcAddress((HMODULE)(libHandle), procName)
 	#define CryFreeLibrary(libHandle)              ::FreeLibrary((HMODULE)(libHandle))
 #elif CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 	#include <dlfcn.h>
+	#include <unistd.h>
 	#include <stdlib.h>
-	#include "platform.h"
+	#include <cstring>
 
-// for compatibility with code written for windows
-	#define CrySharedLibrarySupported   true
-	#define CrySharedLibraryPrefix      "lib"
+	// for compatibility with code written for windows
+	#define CrySharedLibrarySupported     true
+	#define CrySharedLibraryPrefix        "lib"
 	#if CRY_PLATFORM_APPLE
 		#define CrySharedLibraryExtension ".dylib"
 	#else
@@ -73,7 +80,27 @@
 	#define CryGetProcAddress(libHandle, procName) ::dlsym(libHandle, procName)
 	#define CryFreeLibrary(libHandle)              ::dlclose(libHandle)
 	#define CryGetCurrentModule()                  ::dlopen(NULL, RTLD_LAZY)
-	#define HMODULE void*
+	#define HMODULE                                void*
+
+static size_t CryGetModuleFileName(void* handle, char path[], size_t size)
+{
+	if(handle == nullptr)
+	{
+		readlink("/proc/self/exe", path, size);
+		return strlen(path);
+	}
+
+	Dl_info info;
+
+	::dladdr(handle, &info);
+	if(info.dli_sname == NULL && info.dli_saddr == NULL)
+		return 0;
+
+	size_t len = strlen(info.dli_fname);
+	std::memcpy(path, info.dli_fname, len);
+	return len;
+}
+
 static const char* gEnvName("MODULE_PATH");
 
 static const char* GetModulePath()
@@ -145,18 +172,17 @@ static HMODULE CryLoadLibrary(const char* libName, bool bLazy = false, bool bInM
 	return ::dlopen(finalPath, (bLazy ? RTLD_LAZY : RTLD_NOW) | RTLD_DEEPBIND);
 #else
 	return ::dlopen(finalPath, bLazy ? RTLD_LAZY : RTLD_NOW);
-#endif	
+#endif
 }
 #else
-	#define CrySharedLibrarySupported false
-	#define CrySharedLibraryPrefix    ""
-	#define CrySharedLibraryExtension ""
+	#define CrySharedLibrarySupported              false
+	#define CrySharedLibraryPrefix                 ""
+	#define CrySharedLibraryExtension              ""
 	#define CryLoadLibrary(libName)                NULL
 	#define CryGetProcAddress(libHandle, procName) NULL
 	#define CryFreeLibrary(libHandle)
 	#define GetModuleHandle(x)                     0
 	#define CryGetCurrentModule()                  NULL
-
 #endif
 
 #define CryLibraryDefName(libName)               CrySharedLibraryPrefix libName CrySharedLibraryExtension

@@ -471,7 +471,7 @@ void CPhysicsInterface::ProcessBreakablePhysics( CContentCGF *pCompiledCGF,CCont
 		return;
 
 	char path[1024];
-	GetModuleFileName(GetModuleHandle(NULL),path, 1024);
+	CryGetModuleFileName(CryGetCurrentModule(), path, sizeof(path));
 	char * ch = strrchr(path, '\\');
 	if(!ch)
 		return;
