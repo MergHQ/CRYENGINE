@@ -4627,7 +4627,7 @@ void CPhysicalWorld::GetMemoryStatistics(ICrySizer *pSizer)
 /*#if CRY_PLATFORM_WINDOWS
 	static char *sec_ids[] = { ".text",".textbss",".data",".idata" };
 	static char *sec_names[] = { "code section","code section","data section","data section" };
-	_IMAGE_DOS_HEADER *pMZ = (_IMAGE_DOS_HEADER*)GetModuleHandle("CryPhysics.dll");
+	_IMAGE_DOS_HEADER *pMZ = (_IMAGE_DOS_HEADER*)CryGetModuleHandle(CryLibraryDefName("CryPhysics");
 	_IMAGE_NT_HEADERS *pPE = (_IMAGE_NT_HEADERS*)((char*)pMZ+pMZ->e_lfanew);
 	IMAGE_SECTION_HEADER *sections = IMAGE_FIRST_SECTION(pPE);
 	for(i=0;i<pPE->FileHeader.NumberOfSections;i++) for(j=0;j<CRY_ARRAY_COUNT(sec_ids);j++)

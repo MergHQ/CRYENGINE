@@ -9,6 +9,8 @@
 #include "ImageUserDialog.h"
 
 #include <windowsx.h>
+#include <CryCore/Platform/CryLibrary.h>
+
 #undef SubclassWindow
 
 CUIBumpmapPanel::CUIBumpmapPanel() :m_hTab_Normalmapgen(0)
@@ -180,7 +182,7 @@ void CUIBumpmapPanel::ChooseAddBump( HWND hParentWnd )
 
 	ofn.lStructSize=sizeof(ofn);
 	ofn.hwndOwner=hParentWnd;
-	ofn.hInstance=(HINSTANCE)GetModuleHandle(NULL);
+	ofn.hInstance=(HINSTANCE)CryGetCurrentModule();
 	ofn.lpstrFilter="TIF Files (*.TIF)\0*.TIF\0";
 	ofn.lpstrDefExt="tif";
 	ofn.lpstrFile=bumpmapname;

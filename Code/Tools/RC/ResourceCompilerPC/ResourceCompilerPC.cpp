@@ -15,7 +15,7 @@
 #include "LuaCompiler.h"
 #include "../../CryXML/ICryXML.h"
 
-#include <CryCore/Platform/CryWindows.h>   // HANDLE
+#include <CryCore/Platform/CryLibrary.h>
 
 #include "ResourceCompilerPC.h"
 
@@ -46,21 +46,21 @@ BOOL APIENTRY DllMain(
 
 ICryXML* LoadICryXML()
 {
-	HMODULE hXMLLibrary = LoadLibraryA("CryXML.dll");
+	HMODULE hXMLLibrary = CryLoadLibraryDefName("CryXML");
 	if (NULL == hXMLLibrary)
 	{
 		char szCurrentDirectory[512];
 		GetCurrentDirectory(sizeof(szCurrentDirectory),szCurrentDirectory);
 
-		RCLogError("Unable to load xml library (CryXML.dll)");
+		RCLogError("Unable to load xml library (CryXML" CrySharedLibraryExtension ")");
 		RCLogError("  Current Directory: %s",szCurrentDirectory);		// useful to track down errors
 		return 0;
 	}
 
-	FnGetICryXML pfnGetICryXML = (FnGetICryXML)GetProcAddress(hXMLLibrary, "GetICryXML");
+	FnGetICryXML pfnGetICryXML = (FnGetICryXML)CryGetProcAddress(hXMLLibrary, "GetICryXML");
 	if (pfnGetICryXML == 0)
 	{
-		RCLogError("Unable to load xml library (CryXML.dll) - cannot find exported function GetICryXML().");
+		RCLogError("Unable to load xml library (CryXML" CrySharedLibraryExtension ") - cannot find exported function GetICryXML().");
 		return 0;
 	}
 

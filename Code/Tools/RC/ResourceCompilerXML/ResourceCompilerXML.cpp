@@ -6,7 +6,7 @@
 #include "IRCLog.h"
 #include "XML/xml.h"
 
-#include <CryCore/Platform/CryWindows.h>
+#include <CryCore/Platform/CryLibrary.h>
 
 // Must be included only once in DLL module.
 #include <platform_implRC.inl>
@@ -35,17 +35,17 @@ BOOL APIENTRY DllMain(
 
 ICryXML* LoadICryXML()
 {
-	HMODULE hXMLLibrary = LoadLibraryA("CryXML.dll");
+	HMODULE hXMLLibrary = CryLoadLibraryDefName("CryXML");
 	if (NULL == hXMLLibrary)
 	{
-		RCLogError("Unable to load xml library (CryXML.dll).");
+		RCLogError("Unable to load xml library (CryXML" CrySharedLibraryExtension ").");
 		return 0;
 	}
 
-	FnGetICryXML pfnGetICryXML = (FnGetICryXML)GetProcAddress(hXMLLibrary, "GetICryXML");
+	FnGetICryXML pfnGetICryXML = (FnGetICryXML)CryGetProcAddress(hXMLLibrary, "GetICryXML");
 	if (pfnGetICryXML == 0)
 	{
-		RCLogError("Unable to load xml library (CryXML.dll) - cannot find exported function GetICryXML().");
+		RCLogError("Unable to load xml library (CryXML" CrySharedLibraryExtension ") - cannot find exported function GetICryXML().");
 		return 0;
 	}
 

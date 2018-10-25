@@ -1468,7 +1468,7 @@ bool ResourceCompiler::RegisterConverters()
 		}
 		FnRegisterConverters fnRegister = 
 			hPlugin 
-			? (FnRegisterConverters)GetProcAddress(hPlugin, "RegisterConverters") 
+		    ? (FnRegisterConverters)CryGetProcAddress(hPlugin, "RegisterConverters")
 			: NULL;
 		if (!fnRegister)
 		{
@@ -3688,7 +3688,7 @@ static ICryXML* LoadICryXML()
 		RCLogError("Unable to load xml library (CryXML.dll)");
 		return 0;
 	}
-	FnGetICryXML pfnGetICryXML = (FnGetICryXML)GetProcAddress(hXMLLibrary, "GetICryXML");
+	FnGetICryXML pfnGetICryXML = (FnGetICryXML)CryGetProcAddress(hXMLLibrary, "GetICryXML");
 	if (pfnGetICryXML == 0)
 	{
 		RCLogError("Unable to load xml library (CryXML.dll) - cannot find exported function GetICryXML().");

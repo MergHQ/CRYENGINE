@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include <intrin.h>
+#include <CryCore/Platform/CryLibrary.h>
 
 static bool IsAMD()
 {
@@ -31,12 +32,12 @@ static bool IsIntel()
 static bool IsVistaOrAbove()
 {
 	typedef BOOL (WINAPI* FP_VerifyVersionInfo) (LPOSVERSIONINFOEX, DWORD, DWORDLONG);
-	FP_VerifyVersionInfo pvvi((FP_VerifyVersionInfo) GetProcAddress(GetModuleHandle("kernel32"), "VerifyVersionInfoA"));
+	FP_VerifyVersionInfo pvvi((FP_VerifyVersionInfo) CryGetProcAddress(GetModuleHandle("kernel32"), "VerifyVersionInfoA"));
 
 	if (pvvi)
 	{
 		typedef ULONGLONG (WINAPI* FP_VerSetConditionMask) (ULONGLONG, DWORD, BYTE);
-		FP_VerSetConditionMask pvscm((FP_VerSetConditionMask) GetProcAddress(GetModuleHandle("kernel32"), "VerSetConditionMask"));
+		FP_VerSetConditionMask pvscm((FP_VerSetConditionMask) CryGetProcAddress(GetModuleHandle("kernel32"), "VerSetConditionMask"));
 		assert(pvscm);
 
 		OSVERSIONINFOEX osvi;
@@ -66,7 +67,7 @@ static bool IsVistaOrAbove()
 static void GetNumCPUCoresGlpi(unsigned int& totAvailToSystem, unsigned int& totAvailToProcess)
 {
 	typedef BOOL (WINAPI *FP_GetLogicalProcessorInformation)(PSYSTEM_LOGICAL_PROCESSOR_INFORMATION, PDWORD);
-	FP_GetLogicalProcessorInformation pglpi((FP_GetLogicalProcessorInformation) GetProcAddress(GetModuleHandle("kernel32"), "GetLogicalProcessorInformation"));
+	FP_GetLogicalProcessorInformation pglpi((FP_GetLogicalProcessorInformation) CryGetProcAddress(GetModuleHandle("kernel32"), "GetLogicalProcessorInformation"));
 	if (pglpi && IsVistaOrAbove())
 	{
 		unsigned long bufferSize(0);
