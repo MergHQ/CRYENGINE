@@ -2558,7 +2558,7 @@ void CSystem::OpenLanguageAudioPak(char const* const szLanguage)
 		pakFilePath = PathUtil::AddSlash(g_cvars.sys_build_folder->GetString()) + string(PathUtil::GetGameFolder()) + CRY_NATIVE_PATH_SEPSTR + localizedPath;
 	}
 
-	if (!m_env.pCryPak->IsFileExist(pakFilePath) || !m_env.pCryPak->OpenPack(bindingRoot.c_str(), pakFilePath))
+	if (!m_env.pCryPak->OpenPack(bindingRoot.c_str(), pakFilePath))
 	{
 		// make sure the localized language is found - not really necessary, for TC
 		CryLogAlways("Localized language content(%s) not available or modified from the original installation.", szLanguage);
