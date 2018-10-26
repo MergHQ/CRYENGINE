@@ -120,8 +120,8 @@ static QVariant FullLevel_GetHeaderData(int section, Qt::Orientation orientation
 	if (role == Qt::DisplayRole)
 	{
 		//For Visible and Frozen we use Icons instead
-		if (section == eFullLevelColumns_Visible || section == eFullLevelColumns_Frozen || section == eFullLevelColumns_VCS 
-			|| section == eFullLevelColumns_LayerColor)
+		if (section == eFullLevelColumns_Visible || section == eFullLevelColumns_Frozen || section == eFullLevelColumns_VCS
+		    || section == eFullLevelColumns_LayerColor)
 		{
 			return QString("");
 		}
@@ -129,7 +129,7 @@ static QVariant FullLevel_GetHeaderData(int section, Qt::Orientation orientation
 	}
 	else if (role == Qt::ToolTipRole)
 	{
-			return pAttribute->GetName();
+		return pAttribute->GetName();
 	}
 	else if (role == Attributes::s_getAttributeRole)
 	{
@@ -162,7 +162,7 @@ static QVariant FullLevel_GetHeaderData(int section, Qt::Orientation orientation
 		default:
 			return "Layers";
 		}
-	
+
 	}
 	return QVariant();
 }
@@ -183,7 +183,7 @@ CLevelModel* CLevelModelsManager::GetLevelModel() const
 
 CLevelLayerModel* CLevelModelsManager::GetLayerModel(CObjectLayer* layer) const
 {
-	//it is possible that the layer is requested before it is created, 
+	//it is possible that the layer is requested before it is created,
 	//in this case attach to signalLayerModelsUpdated to request the model after creation.
 	if (layer)
 	{
@@ -246,8 +246,8 @@ void CLevelModelsManager::DeleteLayerModels()
 	auto it = m_layerModels.begin();
 	for (; it != m_layerModels.end(); ++it)
 	{
-		// Since deleteLater will queue up this model's deletion which will be handled next frame, we need to 
-		// make sure to disconnect the model so it doesn't handle events while in the process of dying. 
+		// Since deleteLater will queue up this model's deletion which will be handled next frame, we need to
+		// make sure to disconnect the model so it doesn't handle events while in the process of dying.
 		// May it rest in peace.
 		it->second->Disconnect();
 		it->second->deleteLater();
@@ -269,7 +269,7 @@ void CLevelModelsManager::CreateLayerModels()
 		{
 			continue;
 		}
-		auto layerModel = new CLevelLayerModel(pObjectLayer, this);
+		auto layerModel = CreateLevelLayerModel(pObjectLayer);
 		m_layerModels[pObjectLayer] = layerModel;
 		m_allObjectsModel->MountAppend(layerModel);
 	}
@@ -328,7 +328,7 @@ void CLevelModelsManager::OnLayerChange(const CLayerChangeEvent& event)
 	{
 	case CLayerChangeEvent::LE_AFTER_ADD:
 		{
-			auto layerModel = new CLevelLayerModel(event.m_layer, this);
+			auto layerModel = CreateLevelLayerModel(event.m_layer);
 			m_layerModels[event.m_layer] = layerModel;
 			m_allObjectsModel->MountAppend(layerModel);
 		}
@@ -393,6 +393,9 @@ void CLevelModelsManager::OnLayerUpdate(const CLayerChangeEvent& event)
 	{
 		if (auto pModel = GetLayerModel(event.m_layer))
 		{
+			disconnect(pModel, &CLevelLayerModel::beginResetModel, this, &CLevelModelsManager::OnLevelLayerModelResetBegin);
+			disconnect(pModel, &CLevelLayerModel::endResetModel, this, &CLevelModelsManager::OnLevelLayerModelResetEnd);
+
 			pModel->Disconnect();
 		}
 		DisconnectChildrenModels(event.m_layer);
@@ -410,4 +413,22 @@ void CLevelModelsManager::DisconnectChildrenModels(CObjectLayer* pLayer)
 		}
 		DisconnectChildrenModels(pChildLayer);
 	}
+}
+
+CLevelLayerModel* CLevelModelsManager::CreateLevelLayerModel(CObjectLayer* pLayer)
+{
+	CLevelLayerModel* pLevelLayerModel = new CLevelLayerModel(pLayer, this);
+	connect(pLevelLayerModel, &CLevelLayerModel::modelAboutToBeReset, this, &CLevelModelsManager::OnLevelLayerModelResetBegin);
+	connect(pLevelLayerModel, &CLevelLayerModel::modelReset, this, &CLevelModelsManager::OnLevelLayerModelResetEnd);
+	return pLevelLayerModel;
+}
+
+void CLevelModelsManager::OnLevelLayerModelResetBegin()
+{
+	signalLayerModelResetBegin();
+}
+
+void CLevelModelsManager::OnLevelLayerModelResetEnd()
+{
+	signalLayerModelResetEnd();
 }

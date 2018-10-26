@@ -57,8 +57,8 @@ private:
 
 	virtual void OnContextMenu(const QPoint& pos) const;
 
-	void         CreateContextMenuForLayers(CAbstractMenu &abstractMenu, const std::vector<CObjectLayer*>& layers) const;
-	void         CreateContextForSingleFolderLayer(CAbstractMenu &abstractMenu, const std::vector<CObjectLayer*>& layerFolders) const;
+	void         CreateContextMenuForLayers(CAbstractMenu& abstractMenu, const std::vector<CObjectLayer*>& layers) const;
+	void         CreateContextForSingleFolderLayer(CAbstractMenu& abstractMenu, const std::vector<CObjectLayer*>& layerFolders) const;
 	void         OnContextMenuForSingleLayer(CAbstractMenu& menu, CObjectLayer* layer) const;
 	void         OnClick(const QModelIndex& index);
 	void         OnDoubleClick(const QModelIndex& index);
@@ -93,6 +93,9 @@ private:
 	void        OnHeaderSectionCountChanged();
 	void        OnSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
 	void        OnRename(const QModelIndex& index) const;
+	//Register to any Reset event being called on a CLevelLayerModel
+	void        OnLayerModelResetBegin();
+	void        OnLayerModelResetEnd();
 	void        EditLayer(CObjectLayer* pLayer) const;
 
 	void        SetSourceModel(QAbstractItemModel* model);
@@ -112,6 +115,6 @@ private:
 	QFilteringPanel*            m_filterPanel;
 	QAttributeFilterProxyModel* m_pAttributeFilterProxyModel;
 
-	bool m_syncSelection;
-	bool m_ignoreSelectionEvents;
+	bool                        m_syncSelection;
+	bool                        m_ignoreSelectionEvents;
 };

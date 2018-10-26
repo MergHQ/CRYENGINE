@@ -55,33 +55,33 @@ void GeneratePrimitiveShape(PolygonList& polygonList, string primitiveType)
 		max -= BrushVec3(0.0, 0.0, 0.5);
 
 		bp.CreateSphere(
-		  min,
-		  max,
-		  16,
-		  &polygonList);
+			min,
+			max,
+			16,
+			&polygonList);
 	}
 	else if (primitiveType == "DesignerBox")
 	{
 		bp.CreateBox(
-		  min,
-		  max,
-		  &polygonList);
+			min,
+			max,
+			&polygonList);
 	}
 	else if (primitiveType == "DesignerCylinder")
 	{
 		bp.CreateCylinder(
-		  min,
-		  max,
-		  16,
-		  &polygonList);
+			min,
+			max,
+			16,
+			&polygonList);
 	}
 	else if (primitiveType == "DesignerCone")
 	{
 		bp.CreateCone(
-		  min,
-		  max,
-		  16,
-		  &polygonList);
+			min,
+			max,
+			16,
+			&polygonList);
 	}
 }
 
@@ -139,7 +139,6 @@ bool DesignerObject::Init(CBaseObject* prev, const string& file)
 
 void DesignerObject::Display(CObjectRenderHelper& objRenderHelper)
 {
-	const CSelectionGroup* pSelection = GetIEditor()->GetObjectManager()->GetSelection();
 	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 
 	if (dc.display2D)
@@ -284,7 +283,7 @@ void DesignerObject::OnContextMenu(CPopupMenuItem* menu)
 			BeginUndoAndEnsureSelection();
 			GetIEditor()->GetIUndoManager()->Accept("Select Object");
 			GetIEditor()->ExecuteCommand("general.open_pane 'Modeling'");
-	  });
+		});
 	// then show the rest of object properties
 	CBaseObject::OnContextMenu(menu);
 }
@@ -428,10 +427,10 @@ void DesignerObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 
 			if (ar.openBlock("Edit", "<Edit"))
 			{
-			  ar(Serialization::ActionButton([ = ]
+			  ar(Serialization::ActionButton([=]
 				{
 					GetIEditor()->ExecuteCommand("general.open_pane 'Modeling'");
-			  })
+				})
 			     , "edit", "^Edit");
 			  ar.closeBlock();
 			}
@@ -440,7 +439,7 @@ void DesignerObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 			{
 			  pObject->UpdateGameResource();
 			}
-	  });
+		});
 }
 
 void DesignerObject::SetMaterial(IEditorMaterial* mtl)
@@ -670,13 +669,13 @@ void DesignerObjectFlags::Serialize(Serialization::IArchive& ar)
 		Update();
 }
 
-template <typename T>
-void ModifyFlag(T& nFlags, const T &flag, const T &clearFlag, bool var)
+template<typename T>
+void ModifyFlag(T& nFlags, const T& flag, const T& clearFlag, bool var)
 {
 	nFlags = (var) ? (nFlags | flag) : (nFlags & (~clearFlag));
 }
-template <typename T>
-void ModifyFlag(T& nFlags, const T &flag, bool var)
+template<typename T>
+void ModifyFlag(T& nFlags, const T& flag, bool var)
 {
 	ModifyFlag(nFlags, flag, flag, var);
 }
