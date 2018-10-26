@@ -1150,10 +1150,7 @@ struct CPhysicalEntitySerializer : CPhysicalPlaceholderSerializer {
 				if (pparts!=&pent->m_defpart) 
 					ctx.pWorld->FreeEntityParts(pparts, nparts);
 			}
-#if CRY_PLATFORM_DURANGO	 
-#pragma warning(disable : 4390)
-#endif
-			if (pent->m_nPartsAlloc!=1) { size_t sz = sizeof(geom) * pent->m_nParts; MEMSTAT_USAGE(pent->m_parts, sz); }
+			if (pent->m_nPartsAlloc!=1) { MEMSTAT_USAGE(pent->m_parts, sizeof(geom) * pent->m_nParts); }
 			ctx.PushState();
 			ctx.pobj = pent->m_parts+i;
 			pent->m_parts[i].pPlaceholder = 0;

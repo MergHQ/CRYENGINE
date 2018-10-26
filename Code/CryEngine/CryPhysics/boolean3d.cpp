@@ -105,7 +105,6 @@ int CTriMesh::Subtract(IGeometry *pGeom, geom_world_data *pdata1,geom_world_data
 			nNewVtxAlloc,nNewTrisAlloc,nIsles,nTries=1,bCheckVolumes=0;
 	int iCurTri[2],iCurVtx[2],iCurVtx0[2],iCurPoly[2],iVtxCntStart[2],iCurTwin[2],iTwin0[2],bIsolatedCnt[2],idmask[2],matmask[2];
 	int *pTriSlots,*pVtxSlots,*pTris,*pBTris,*pBVtxMap,*pBVtxMapNew,*pVtxMap;
-	int iCaller = get_iCaller();
 	unsigned int *pTriMask[2],*pVtxMask[2];
 	Vec3 n,edge,edge1,*pdata0=m_pVertices.data,*pBackupVertices=0,*pBackupNormals=0;
 	int *pIds[2],dummyId,*pIds0=m_pForeignIdx,*pBackupIds=0,*pBackupVtxMap=0;

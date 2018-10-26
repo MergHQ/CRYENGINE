@@ -984,7 +984,7 @@ float CWheeledVehicleEntity::ComputeDrivingTorque(float time_interval)
 	if (m_nGears==0) return 0.f;
 
 	float wwheel=0,T=0,enginePower,power,w,wscale[2]={1,1},rTscale;
-	int i,iNewGear,nContacts,sg=sgnnz(m_gears[m_iCurGear]);
+	int i,iNewGear,nContacts;
 	if (m_kSteerToTrack!=0 && fabs_tpl(m_steer)>0.01f) {
 		wscale[i=isneg(m_steer)] = max(-1.0f,1.0f-fabs_tpl(m_steer*m_kSteerToTrack));
 		if (fabs_tpl(wscale[i])<0.05f) wscale[i] = sgnnz(wscale[i])*0.05f;

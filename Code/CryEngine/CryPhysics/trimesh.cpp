@@ -3760,7 +3760,7 @@ int CTriMesh::Boxify(primitives::box *pboxes,int nMaxBoxes, const SBoxificationP
 	float maxdot=cos_tpl(params.maxFaceTiltAngle), mindot=sqrt_tpl(1-maxdot*maxdot);
 	box BBox; GetBBox(&BBox);
 	float celldim=max(max(BBox.size.x,BBox.size.y),BBox.size.z)/params.voxResolution*2.001f, rcelldim=1.0f/celldim;
-	float minPatchArea=params.minFaceArea,maxCurve=maxdot,maxPatchDist=params.distFilter,minLayerFilling=params.minLayerFilling,
+	float minPatchArea=params.minFaceArea,maxPatchDist=params.distFilter,minLayerFilling=params.minLayerFilling,
 		maxLayerReusage=params.maxLayerReusage,minMatchArea=0.8f,maxPatchFaceDist=max(celldim,maxPatchDist),maxIslandConnections=params.maxVoxIslandConnections;
 
 	int i,j,ix,iy,iz,nboxes=0;
@@ -4614,7 +4614,7 @@ int CTriMesh::Proxify(IGeometry **&pOutGeoms, SProxifyParams *pparams)
 		const float cosTick=cos(2*gf_PI/NRAYS), sinTick=sin(2*gf_PI/NRAYS);
 		Vec3 pthit[NRAYS],nhit[NRAYS];
 		quotientf hratio[NRAYS];
-		int nhits,nGeoms0=nGeoms;
+		int nhits;
 
 		auto LongestNormStreak = [&](std::function<bool(const Vec3&,const Vec3&)> ncheck)
 		{	// find the longest streak or norms that pass a check

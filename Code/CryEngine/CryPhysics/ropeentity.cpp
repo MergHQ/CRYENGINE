@@ -630,7 +630,7 @@ void CRopeEntity::EnforceConstraints(float seglen, const quaternionf& qtv,const 
 			}
 		}
 	} else if (m_nAttach || m_nSegs && (!(m_flags & rope_subdivide_segs) || m_maxIters<sqr(m_nSegs)*10 && !m_bStrained && m_length>0)) {
-		Vec3 dir,ptend[2] = { m_segs[0].pt,m_segs[m_nSegs].pt };
+		Vec3 dir;
 		float diff,len2,seglen2=sqr(seglen),rseglen=1.0f/max(1e-10f,seglen),rseglen2=sqr(rseglen),k;
 		m_segs[0].kdP=m_segs[m_nSegs].kdP = 0;
 		if (m_flags & rope_subdivide_segs && m_vtx) {
@@ -1914,7 +1914,7 @@ int CRopeEntity::Step(float time_interval)
 	PHYS_ENTITY_PROFILER
 	
 	int iCaller = get_iCaller_int();
-	float seglen=m_length/m_nSegs,seglen2=sqr(seglen), rseglen=m_nSegs/max(1e-6f,m_length),rseglen2=sqr(rseglen),scale; 
+	float seglen=m_length/m_nSegs, rseglen=m_nSegs/max(1e-6f,m_length),scale; 
 	int i,j,k,iDir,iEnd,iter,bTargetPoseActive=m_bTargetPoseActive,bGridLocked=0,bHasContacts=0,nCheckParts=0;
 	int collTypes = m_collTypes;
 	Vec3 pos,gravity,dir,ptend[2],sz,BBox[2],ptnew,dv,dw,vrel,dir0,offstv(ZERO),collBBox[2];

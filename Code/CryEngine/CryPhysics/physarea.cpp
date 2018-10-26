@@ -959,7 +959,8 @@ int CPhysArea::GetStatus(pe_status *_status) const
 				ptres[1] = cnt.n;
 			}	else if (m_ptSpline) {
 				Vec3 p0,p1,p2,v0,v1,v2;
-				float tClosest,mindist = FindSplineClosestPt(ptloc, i,tClosest);
+				float tClosest;
+				FindSplineClosestPt(ptloc, i, tClosest);
 				p0 = m_ptSpline[max(0,i-1)]; p1 = m_ptSpline[i]; p2 = m_ptSpline[min(m_npt-1,i+1)];
 				v2 = (p0+p2)*0.5f-p1; v1 = p1-p0; v0 = (p0+p1)*0.5f;
 				ptres[0] = (v2*tClosest+v1)*tClosest+v0;
