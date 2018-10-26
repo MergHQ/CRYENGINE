@@ -153,7 +153,7 @@ private:
 	{
 		if (!m_filename.empty())
 		{
-			SetFileAttributesA(m_filename.c_str(), FILE_ATTRIBUTE_ARCHIVE);
+			FileUtil::MakeWritable(m_filename.c_str());
 			DeleteFile(m_filename.c_str());				
 		}
 	}

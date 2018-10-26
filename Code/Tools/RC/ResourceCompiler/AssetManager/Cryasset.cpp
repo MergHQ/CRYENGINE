@@ -60,8 +60,7 @@ bool CAsset::Save(const string& filename)
 	Unicode::Convert(wideExistingFile, tmpFilename);
 	Unicode::Convert(wideFile, filename);
 
-	// Force remove of the read only flag.
-	SetFileAttributesW(wideFile.c_str(), FILE_ATTRIBUTE_ARCHIVE);
+	FileUtil::MakeWritable(wideFile.c_str());
 
 	string correctedOutputName;
 	Unicode::Convert<Unicode::eEncoding_UTF8, Unicode::eEncoding_UTF16>(correctedOutputName, wideExistingFile);

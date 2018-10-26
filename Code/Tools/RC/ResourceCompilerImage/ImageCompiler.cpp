@@ -152,8 +152,7 @@ bool CImageCompiler::SaveOutput(const ImageObject* pImageObject, const char* szT
 		return false;
 	}
 
-	// Force remove of the read only flag.
-	SetFileAttributes(lpszPathName, FILE_ATTRIBUTE_ARCHIVE);
+	FileUtil::MakeWritable(lpszPathName);
 
 	if (m_Props.GetImageCompressor() == CImageProperties::eImageCompressor_Tif)
 	{

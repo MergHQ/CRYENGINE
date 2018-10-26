@@ -59,8 +59,8 @@ uint32 CAnimationCompressor::AddCompressedChunksToFile(const char* name, bool bi
 
 	SaveMotionParameters(&m_ChunkFile, bigEndianOutput);
 	SaveControllers(cgfSaver, bigEndianOutput);
-	SetFileAttributes( name,FILE_ATTRIBUTE_ARCHIVE );
-	m_ChunkFile.Write( name );
+	FileUtil::MakeWritable(name);
+	m_ChunkFile.Write(name);
 
 	FileUtil::SetFileTimes(name, oldTimeStamp);
 
@@ -110,7 +110,7 @@ uint32 CAnimationCompressor::SaveOnlyCompressedChunksInFile( const char * name, 
 	{
 		m_GlobalAnimationHeader.SaveToChunkFile(&chunkFile, bigEndianFormat);
 	}
-	SetFileAttributes( name,FILE_ATTRIBUTE_ARCHIVE );
+	FileUtil::MakeWritable(name);
 
 	chunkFile.Write( name );
 

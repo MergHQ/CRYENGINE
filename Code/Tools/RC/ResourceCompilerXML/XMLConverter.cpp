@@ -612,7 +612,7 @@ bool XMLCompiler::Process()
 
 	// Write out the destination file.
 	{
-		SetFileAttributes(sOutputFile.c_str(), FILE_ATTRIBUTE_ARCHIVE);
+		FileUtil::MakeWritable(sOutputFile.c_str());
 
 		FILE* const pDestinationFile = fopen(sOutputFile.c_str(), "wb");
 		if (pDestinationFile == 0)
