@@ -52,7 +52,7 @@ bool CfgFile::Load( const string &fileName )
 	m_fileName = fileName;
 	m_modified = false;
 
-	FILE *file = FileUtil::CryOpenFile(fileName, _T("rb"));
+	FILE *file = FileUtil::CryOpenFile(fileName, "rb");
 	if (!file)
 	{
 		RCLog("Can't open \"%s\"", fileName.c_str());
@@ -78,7 +78,7 @@ bool CfgFile::Load( const string &fileName )
 // Save configuration file, with the stored name in m_fileName
 bool CfgFile::Save()
 {
-	FILE *file = FileUtil::CryOpenFile(m_fileName, _T("wb"));
+	FILE *file = FileUtil::CryOpenFile(m_fileName, "wb");
 	if(!file)
 		return(false);
 

@@ -982,7 +982,7 @@ bool CXmlNode::saveToFile( const char *fileName )
 #endif // CRY_PLATFORM_WINDOWS && !defined(CRYTOOLS)
 	XmlString xml = getXML();
 
-	FILE *file = FileUtil::CryOpenFile(fileName, _T("wt"));
+	FILE *file = FileUtil::CryOpenFile(fileName, "wt");
 	if (file)
 	{
 		const char *sxml = (const char*)xml;

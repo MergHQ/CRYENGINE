@@ -4,7 +4,11 @@ FILE* FileUtil::CryOpenFile(const string& filename, const char* mode)
 {
 	wstring widePath;
 	Unicode::Convert(widePath, filename);
-	return _wfopen(widePath.c_str(), L"rb");
+
+	wstring wideMode;
+	Unicode::Convert(wideMode, mode);
+
+	return _wfopen(widePath.c_str(), wideMode.c_str());
 }
 
 void FileUtil::MakeWritable(const char* filename)
