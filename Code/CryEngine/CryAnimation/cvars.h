@@ -117,6 +117,7 @@ struct CRY_ALIGN(128) Console
 	DeclareConstIntCVar(ca_DebugADIKTargets, 0);
 	DeclareConstIntCVar(ca_SaveAABB, 0);
 	DeclareConstIntCVar(ca_DebugSkeletonEffects, 0);
+	DeclareConstIntCVar(ca_SkeletonEffectsPlayAudioInEngine, 0);
 	DeclareConstIntCVar(ca_cloth_vars_reset, 2);
 	DeclareConstIntCVar(ca_SerializeSkeletonAnim, 0);
 	DeclareConstIntCVar(ca_LockFeetWithIK, 1);
