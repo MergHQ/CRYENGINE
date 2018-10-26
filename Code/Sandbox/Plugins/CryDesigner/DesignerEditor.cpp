@@ -197,34 +197,37 @@ void DesignerEditor::Display(SDisplayContext& dc)
 	dc.SetDrawInFrontMode(true);
 	dc.PushMatrix(pObject->GetWorldTM());
 
-	if (!gDesignerSettings.bHighlightElements || !IsEdgeSelectMode(m_Tool))
-	{
-		Display::DisplayModel(dc, model, pSession->GetExcludedEdgeManager());
-	}
-
 	if (m_Tool != eDesigner_Invalid && GetTool(m_Tool))
 		GetTool(m_Tool)->Display(dc);
 
-	if (gDesignerSettings.bDisplayTriangulation)
-		Display::DisplayTriangulation(dc, ctx);
+	//Do not show selection if the object is not visible
+	if (pObject->IsVisible())
+	{
+		if ((!gDesignerSettings.bHighlightElements || !IsEdgeSelectMode(m_Tool)))
+		{
+			Display::DisplayModel(dc, model, pSession->GetExcludedEdgeManager());
+		}
 
-	if (gDesignerSettings.bDisplayVertexNormals)
-		Display::DisplayVertexNormals(dc, ctx);
+		if (gDesignerSettings.bDisplayTriangulation)
+			Display::DisplayTriangulation(dc, ctx);
 
-	if (gDesignerSettings.bDisplayPolygonNormals)
-		Display::DisplayPolygonNormals(dc, ctx);
+		if (gDesignerSettings.bDisplayVertexNormals)
+			Display::DisplayVertexNormals(dc, ctx);
 
-	ctx.pSelected->Display(pObject, dc);
+		if (gDesignerSettings.bDisplayPolygonNormals)
+			Display::DisplayPolygonNormals(dc, ctx);
 
+		ctx.pSelected->Display(pObject, dc);
+	}
 	dc.PopMatrix();
 	dc.SetDrawInFrontMode(false);
 }
 
 bool DesignerEditor::MouseCallback(
-  CViewport* view,
-  EMouseEvent event,
-  CPoint& point,
-  int flags)
+	CViewport* view,
+	EMouseEvent event,
+	CPoint& point,
+	int flags)
 {
 	MainContext ctx = DesignerSession::GetInstance()->GetMainContext();
 	CBaseObject* pObject = ctx.pObject;
@@ -352,8 +355,8 @@ bool DesignerEditor::OnKeyDown(CViewport* pView, uint32 nChar, uint32 nRepCnt, u
 }
 
 bool DesignerEditor::SetSelectionDesignerMode(
-  EDesignerTool tool,
-  bool bAllowMultipleMode)
+	EDesignerTool tool,
+	bool bAllowMultipleMode)
 {
 	// TODO: Selection should not be a tool, but state of the session, that tools use to operate
 	if (!IsSelectElementMode(tool) || m_DisabledTools.find(tool) != m_DisabledTools.end())
@@ -420,9 +423,9 @@ bool DesignerEditor::SetSelectionDesignerMode(
 }
 
 bool DesignerEditor::SwitchTool(
-  EDesignerTool tool,
-  bool bForceChange,
-  bool bAllowMultipleMode)
+	EDesignerTool tool,
+	bool bForceChange,
+	bool bAllowMultipleMode)
 {
 	DesignerSession* pSession = DesignerSession::GetInstance();
 
@@ -484,8 +487,8 @@ void DesignerEditor::SwitchToPrevTool()
 }
 
 void DesignerEditor::DisableTool(
-  IDesignerPanel* pEditPanel,
-  EDesignerTool tool)
+	IDesignerPanel* pEditPanel,
+	EDesignerTool tool)
 {
 	if (pEditPanel)
 		pEditPanel->DisableButton(tool);
@@ -493,11 +496,11 @@ void DesignerEditor::DisableTool(
 }
 
 void DesignerEditor::OnManipulatorDrag(
-  IDisplayViewport* view,
-  ITransformManipulator* pManipulator,
-  const Vec2i& p0,
-  const Vec3& value,
-  int nFlags)
+	IDisplayViewport* view,
+	ITransformManipulator* pManipulator,
+	const Vec2i& p0,
+	const Vec3& value,
+	int nFlags)
 {
 	if (pManipulator != m_pManipulator)
 	{
@@ -512,11 +515,11 @@ void DesignerEditor::OnManipulatorDrag(
 
 	CPoint p(p0.x, p0.y);
 	pTool->OnManipulatorDrag(
-	  view,
-	  pManipulator,
-	  p,
-	  value,
-	  nFlags);
+		view,
+		pManipulator,
+		p,
+		value,
+		nFlags);
 }
 
 void DesignerEditor::OnManipulatorBegin(IDisplayViewport* view, ITransformManipulator* pManipulator, const Vec2i& point, int flags)
@@ -588,9 +591,9 @@ void DesignerEditor::StoreSelectionUndo(bool bRestoreAfterUndoing)
 
 	if (CUndo::IsRecording())
 		CUndo::Record(new UndoSelection(
-		                *pSelected,
-		                pObject,
-		                bRestoreAfterUndoing));
+										*pSelected,
+										pObject,
+										bRestoreAfterUndoing));
 }
 
 BaseTool* DesignerEditor::GetTool(EDesignerTool tool) const
@@ -695,16 +698,16 @@ void DesignerEditor::UpdateTMManipulatorBasedOnElements(ElementSet* elements)
 }
 
 void DesignerEditor::UpdateTMManipulator(
-  const BrushVec3& localPos,
-  const BrushVec3& localNormal)
+	const BrushVec3& localPos,
+	const BrushVec3& localNormal)
 {
 	const Matrix33 localOrthogonalTM = Matrix33::CreateOrthogonalBase(localNormal);
 	return UpdateTMManipulator(localPos, localOrthogonalTM);
 }
 
 void DesignerEditor::UpdateTMManipulator(
-  const BrushVec3& localPos,
-  const Matrix33& localOrts)
+	const BrushVec3& localPos,
+	const Matrix33& localOrts)
 {
 	const CBaseObject* const pObject = DesignerSession::GetInstance()->GetBaseObject();
 

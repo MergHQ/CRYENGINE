@@ -8,6 +8,7 @@
 
 class CMannFragmentEditor;
 struct SMannequinContexts;
+class CFragmentBrowser;
 
 class CFragmentTreeCtrl : public CXTTreeCtrl
 {
@@ -15,9 +16,26 @@ protected:
 	BOOL PreTranslateMessage(MSG* pMsg);
 };
 
+
 class CFragmentBrowser
 	: public CXTResizeFormView
 {
+	class CTreeCtrlExpansionStateSaver
+	{
+	public:
+		explicit CTreeCtrlExpansionStateSaver(CFragmentBrowser& fragmentBrowser);
+		CTreeCtrlExpansionStateSaver(CFragmentBrowser& fragmentBrowser, HTREEITEM parent);
+		void Save();
+		void Restore();
+	private:
+		template<typename TFunc>
+		void TraverseHierarchy(TFunc func);
+
+		CFragmentBrowser & m_fragmentBrowser;
+		HTREEITEM m_parent;
+		std::vector<CString> m_savedExpandedNodesPaths;
+	};
+
 	typedef CXTResizeFormView PARENT;
 
 	DECLARE_DYNAMIC(CFragmentBrowser)
@@ -87,7 +105,8 @@ protected:
 	void         CleanFragmentID(FragmentID fragID);
 	void         CleanFragment(FragmentID fragID);
 	void         BuildFragment(FragmentID fragID);
-	HTREEITEM    FindInChildren(const char* szTagStr, HTREEITEM parent);
+	void         RebuildFragment(FragmentID fragID);
+	HTREEITEM    FindInChildren(const char* szTagStr, HTREEITEM hParent);
 
 	// Drag / drop helpers
 	friend class CFragmentBrowserBaseDropTarget;
@@ -154,7 +173,7 @@ private:
 private:
 	UINT                       m_nFragmentClipboardFormat;
 
-	CFragmentTreeCtrl          m_TreeCtrl;
+	CFragmentTreeCtrl          m_treeCtrl;
 	CComboBox                  m_cbContext;
 	CEditWithSelectAllOnLClick m_editFilterTags;
 	CEditWithSelectAllOnLClick m_editFilterFragmentIDs;
@@ -241,3 +260,29 @@ private:
 	COleDropTarget*               m_pDropTarget;
 	OnScopeContextChangedCallback m_onScopeContextChangedCallback;
 };
+
+
+template<typename TFunc>
+void CFragmentBrowser::CTreeCtrlExpansionStateSaver::TraverseHierarchy(TFunc func)
+{
+	CTreeCtrl& treeCtrl = m_fragmentBrowser.m_treeCtrl;
+
+	std::vector<HTREEITEM> parentStack;
+	parentStack.reserve(64); //should be enough to avoid unnecessary allocations
+	parentStack.push_back(m_parent);
+	while (!parentStack.empty())
+	{
+		HTREEITEM hCurrentParent = parentStack.back();
+		parentStack.pop_back();
+		if (treeCtrl.ItemHasChildren(hCurrentParent))
+		{
+			HTREEITEM hCurrentChild = treeCtrl.GetChildItem(hCurrentParent);
+			while (hCurrentChild != NULL)
+			{
+				func(hCurrentChild);
+				parentStack.push_back(hCurrentChild);
+				hCurrentChild = treeCtrl.GetNextItem(hCurrentChild, TVGN_NEXT);
+			}
+		}
+	}
+}

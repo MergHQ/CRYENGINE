@@ -1180,8 +1180,9 @@ CBaseObject* CObjectManager::CloneObject(CBaseObject* obj)
 {
 	CRY_ASSERT(obj);
 
-	CBaseObject* clone = NewObject(obj->GetClassDesc(), obj);
-	return clone;
+	CBaseObject* pClone = NewObject(obj->GetClassDesc(), obj);
+	pClone->ClearFlags(OBJFLAG_SELECTED);
+	return pClone;
 }
 
 CBaseObject* CObjectManager::FindObject(const CryGUID& guid) const

@@ -190,6 +190,7 @@ void Console::Init()
 	                   "If set to 1, will prevent models from unloading from memory\nupon destruction of the last referencing character");
 	// if this is not empty string, the animations of characters with the given model will be logged
 	DefineConstIntCVar(ca_DebugSkeletonEffects, 0, VF_CHEAT, "If true, dump log messages when skeleton effects are handled.");
+	DefineConstIntCVar(ca_SkeletonEffectsPlayAudioInEngine, 0, VF_CHEAT, "If true, skeleton audio effects are spawned and played within CE. Otherwise, audio events have to be handled by game code (as it has been done historically).");
 	DefineConstIntCVar(ca_lipsync_phoneme_offset, 20, VF_CHEAT, "Offset phoneme start time by this value in milliseconds");
 	DefineConstIntCVar(ca_lipsync_phoneme_crossfade, 70, VF_CHEAT, "Cross fade time between phonemes in milliseconds");
 	DefineConstIntCVar(ca_eyes_procedural, 1, 0, "Enables/Disables procedural eyes animation");
