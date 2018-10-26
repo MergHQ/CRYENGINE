@@ -330,7 +330,7 @@ PakManager::ECallResult PakManager::CreatePakFile(
 		if (!bUpdate)
 		{
 			// Delete old pak file.
-			::SetFileAttributes(pakFilename.c_str(), FILE_ATTRIBUTE_ARCHIVE);
+			FileUtil::MakeWritable(pakFilename.c_str());
 			::DeleteFile(pakFilename.c_str());
 		}
 
@@ -449,7 +449,7 @@ PakManager::ECallResult PakManager::CreatePakFile(
 				const string existingPak = PathUtil::ReplaceExtension(pakFilenameToWrite, "pak");
 				if (FileUtil::FileExists(existingPak))
 				{
-					::SetFileAttributes(existingPak.c_str(), FILE_ATTRIBUTE_ARCHIVE);
+					FileUtil::MakeWritable(existingPak.c_str());
 					::MoveFileEx(existingPak.c_str(), pakFilenameToWrite.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
 				}
 			}

@@ -978,11 +978,11 @@ XmlString CXmlNode::getXML( int level ) const
 bool CXmlNode::saveToFile( const char *fileName )
 {
 #if CRY_PLATFORM_WINDOWS && !defined(CRYTOOLS)
-	CrySetFileAttributes( fileName,0x00000080 ); // FILE_ATTRIBUTE_NORMAL
+	CrySetFileAttributes(fileName, FILE_ATTRIBUTE_NORMAL);
 #endif // CRY_PLATFORM_WINDOWS && !defined(CRYTOOLS)
 	XmlString xml = getXML();
 
-	FILE *file = FileUtil::CryOpenFile(fileName, _T("wt"));
+	FILE *file = FileUtil::CryOpenFile(fileName, "wt");
 	if (file)
 	{
 		const char *sxml = (const char*)xml;

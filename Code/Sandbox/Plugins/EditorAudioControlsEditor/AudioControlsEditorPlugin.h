@@ -27,7 +27,12 @@ class CAudioControlsEditorPlugin final : public IPlugin, public ISystemEventList
 {
 public:
 
-	explicit CAudioControlsEditorPlugin();
+	CAudioControlsEditorPlugin(CAudioControlsEditorPlugin const&) = delete;
+	CAudioControlsEditorPlugin(CAudioControlsEditorPlugin&&) = delete;
+	CAudioControlsEditorPlugin& operator=(CAudioControlsEditorPlugin const&) = delete;
+	CAudioControlsEditorPlugin& operator=(CAudioControlsEditorPlugin&&) = delete;
+
+	CAudioControlsEditorPlugin();
 	virtual ~CAudioControlsEditorPlugin() override;
 
 	// IPlugin
@@ -42,10 +47,10 @@ public:
 	static void       StopTriggerExecution();
 	static EErrorCode GetLoadingErrorMask() { return s_loadingErrorMask; }
 
-	static CCrySignal<void()> SignalAboutToLoad;
-	static CCrySignal<void()> SignalLoaded;
-	static CCrySignal<void()> SignalAboutToSave;
-	static CCrySignal<void()> SignalSaved;
+	static CCrySignal<void()> SignalOnBeforeLoad;
+	static CCrySignal<void()> SignalOnAfterLoad;
+	static CCrySignal<void()> SignalOnBeforeSave;
+	static CCrySignal<void()> SignalOnAfterSave;
 
 private:
 

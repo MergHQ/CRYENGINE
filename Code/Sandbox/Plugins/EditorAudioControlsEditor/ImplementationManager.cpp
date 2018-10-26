@@ -19,12 +19,6 @@ using TPfnGetAudioInterface = Impl::IImpl* (*)(ISystem*);
 Impl::IImpl* g_pIImpl = nullptr;
 
 //////////////////////////////////////////////////////////////////////////
-CImplementationManager::CImplementationManager()
-	: m_hMiddlewarePlugin(nullptr)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 CImplementationManager::~CImplementationManager()
 {
 	if (m_hMiddlewarePlugin != nullptr)
@@ -39,7 +33,7 @@ CImplementationManager::~CImplementationManager()
 //////////////////////////////////////////////////////////////////////////
 bool CImplementationManager::LoadImplementation()
 {
-	SignalImplementationAboutToChange();
+	SignalOnBeforeImplementationChange();
 	GetIEditor()->GetIUndoManager()->Suspend();
 
 	bool isLoaded = true;
@@ -98,7 +92,7 @@ bool CImplementationManager::LoadImplementation()
 	}
 
 	GetIEditor()->GetIUndoManager()->Resume();
-	SignalImplementationChanged();
+	SignalOnAfterImplementationChange();
 	return isLoaded;
 }
 

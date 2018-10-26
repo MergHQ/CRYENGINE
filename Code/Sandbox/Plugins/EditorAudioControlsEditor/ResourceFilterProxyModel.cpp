@@ -5,19 +5,10 @@
 
 #include "SystemSourceModel.h"
 #include "Control.h"
-
-#include <ModelUtils.h>
+#include "Common/ModelUtils.h"
 
 namespace ACE
 {
-//////////////////////////////////////////////////////////////////////////
-CResourceFilterProxyModel::CResourceFilterProxyModel(EAssetType const type, Scope const scope, QObject* const pParent)
-	: QDeepFilterProxyModel(QDeepFilterProxyModel::Behavior::AcceptIfChildMatches, pParent)
-	, m_type(type)
-	, m_scope(scope)
-{
-}
-
 //////////////////////////////////////////////////////////////////////////
 bool CResourceFilterProxyModel::rowMatchesFilter(int sourceRow, QModelIndex const& sourceParent) const
 {

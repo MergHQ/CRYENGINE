@@ -2,11 +2,9 @@
 
 #pragma once
 
+#include "Common/ControlInfo.h"
+#include "Common/FileImportInfo.h"
 #include <QWidget>
-
-#include <ControlInfo.h>
-#include <FileImportInfo.h>
-
 #include <FileDialogs/ExtensionFilter.h>
 
 class QVBoxLayout;
@@ -20,6 +18,10 @@ class CMiddlewareDataWidget final : public QWidget
 public:
 
 	CMiddlewareDataWidget() = delete;
+	CMiddlewareDataWidget(CMiddlewareDataWidget const&) = delete;
+	CMiddlewareDataWidget(CMiddlewareDataWidget&&) = delete;
+	CMiddlewareDataWidget& operator=(CMiddlewareDataWidget const&) = delete;
+	CMiddlewareDataWidget& operator=(CMiddlewareDataWidget&&) = delete;
 
 	explicit CMiddlewareDataWidget(QWidget* const pParent);
 	virtual ~CMiddlewareDataWidget() override;

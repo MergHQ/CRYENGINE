@@ -167,10 +167,8 @@ struct entity_grid_checker {
 		}
 		//fetch some memory references to avoid reloads
 		primitives::grid& RESTRICT_REFERENCE entgrid = *pgrid;
-		const Vec3 entgrid_origin			= entgrid.origin;
 		const int icellX = icell.x, icellY = icell.y;
 		const Vec2 entgrid_step	= entgrid.step;
-		const Vec2 entgrid_stepr	= entgrid.stepr;
 		pe_entgrid pEntGrid = pgrid->cells;
 		pe_gridthunk *const __restrict pgthunks = pWorld->m_gthunks;
 		const int gridIdx = entgrid.getcell_safe(icellX,icellY);
@@ -344,8 +342,7 @@ gotcontacts:
 		int& iSolidNode, CPhysicalEntity *pentLog,int i, int& ihit)
 	{ 
 		primitives::grid& RESTRICT_REFERENCE entgrid = *pgrid;
-		const Vec3 entgrid_origin	= entgrid.origin;
-		const Vec2 entgrid_stepr	= entgrid.stepr;
+		const Vec2 entgrid_stepr = entgrid.stepr;
 		
 		float facing;
 		for(j--; j>=0; j--) 

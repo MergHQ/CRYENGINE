@@ -5,9 +5,9 @@
 
 #include "Common.h"
 #include "Impl.h"
+#include "../Common/ModelUtils.h"
+#include "../Common/FileImportInfo.h"
 
-#include <ModelUtils.h>
-#include <FileImportInfo.h>
 #include <DragDrop.h>
 #include <PathUtils.h>
 #include <QtUtil.h>
@@ -125,7 +125,7 @@ bool CanDropExternalData(QMimeData const* const pData)
 //////////////////////////////////////////////////////////////////////////
 bool DropExternalData(QMimeData const* const pData, FileImportInfos& outFileImportInfos)
 {
-	CRY_ASSERT_MESSAGE(outFileImportInfos.empty(), "Passed container must be empty.");
+	CRY_ASSERT_MESSAGE(outFileImportInfos.empty(), "Passed container must be empty during %s", __FUNCTION__);
 
 	if (CanDropExternalData(pData))
 	{

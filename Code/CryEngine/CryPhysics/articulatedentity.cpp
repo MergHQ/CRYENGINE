@@ -375,27 +375,25 @@ int CArticulatedEntity::SetParams(pe_params *_params, int bThreadSafe)
 
 	if (CRigidEntity::SetParams(_params,1)) {
 		if (_params->type==pe_params_pos::type_id) {
-			pe_params_pos *params = (pe_params_pos*)_params;
-			{ WriteLock lock(m_lockUpdate);
-				if ((prevq.v-m_qrot.v).len2()>0) {
-					m_offsPivot = (m_qrot*!prevq)*m_offsPivot;
-					m_posPivot = m_pos + m_offsPivot;
-					for(int i=0;i<m_nJoints;i++) if (m_joints[i].iParent<0)	{
-						if (m_joints[i].flags & joint_rotate_pivot)
-							m_joints[i].pivot[0] = (m_qrot*!prevq)*m_joints[i].pivot[0];
-					}
-				}
-				if (m_iSimClass > 2)
-					m_bPartPosForced |= 2;
-				else for(int i=0;i<m_nJoints;i++) {
-					int j = m_joints[i].iStartPart;
-					m_joints[i].quat = m_qrot*m_parts[j].q*!m_infos[j].q0;
-					m_joints[i].body.pos = m_qrot*m_parts[j].pos-m_joints[i].quat*m_infos[j].pos0+m_pos;
-					m_joints[i].body.q = m_joints[i].quat*!m_joints[i].body.qfb;
-					SyncJointWithBody(i);
-				}
+			WriteLock lock(m_lockUpdate);
+			if ((prevq.v-m_qrot.v).len2()>0) {
+				m_offsPivot = (m_qrot*!prevq)*m_offsPivot;
 				m_posPivot = m_pos + m_offsPivot;
+				for(int i=0;i<m_nJoints;i++) if (m_joints[i].iParent<0)	{
+					if (m_joints[i].flags & joint_rotate_pivot)
+						m_joints[i].pivot[0] = (m_qrot*!prevq)*m_joints[i].pivot[0];
+				}
 			}
+			if (m_iSimClass > 2)
+				m_bPartPosForced |= 2;
+			else for(int i=0;i<m_nJoints;i++) {
+				int j = m_joints[i].iStartPart;
+				m_joints[i].quat = m_qrot*m_parts[j].q*!m_infos[j].q0;
+				m_joints[i].body.pos = m_qrot*m_parts[j].pos-m_joints[i].quat*m_infos[j].pos0+m_pos;
+				m_joints[i].body.q = m_joints[i].quat*!m_joints[i].body.qfb;
+				SyncJointWithBody(i);
+			}
+			m_posPivot = m_pos + m_offsPivot;
 		}
 		if (_params->type==pe_params_part::type_id)	{
 			pe_params_part *params = (pe_params_part*)_params;
@@ -1217,7 +1215,7 @@ int CArticulatedEntity::Step(float time_interval)
 	int i,j,bboxUpdated,bBounced=0;
 	Vec3 gravity;
 	int bWasAwake = m_bAwake;
-	float maxPenetrationPrev = m_maxPenetrationCur;
+	//float maxPenetrationPrev = m_maxPenetrationCur;
 	box bbox;
 	pe_params_buoyancy pb[4];
 	if (m_nBodyContacts>=m_nCollLyingMode) {

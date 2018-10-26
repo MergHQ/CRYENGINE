@@ -905,7 +905,6 @@ int CLivingEntity::SetStateFromSnapshot(CStream &stm, int flags)
 		stm.Read(tmp); m_timeFlying = tmp*(10.0f/65536);
 	} else m_timeFlying = 0;
 	unsigned int imft; stm.ReadNumberInBits(imft,2);
-	static float flytable[] = {0.0f, 0.2f, 0.5f, 1.0f};
 	stm.Read(bnz);
 	m_bFlying = bnz ? 1:0;
 	ReleaseGroundCollider();
@@ -953,9 +952,9 @@ int CLivingEntity::SetStateFromSnapshot(TSerialize ser, int flags)
 			helper.pos += helper.vel * dtBack;
 		}
 
-		const float MAX_DIFFERENCE = std::max( helper.vel.GetLength() * 0.1f, 0.1f );
+/*		const float MAX_DIFFERENCE = std::max( helper.vel.GetLength() * 0.1f, 0.1f );
 
-/*
+
 		{
 			IPersistantDebug * pPD = gEnv->pGameFramework->GetIPersistantDebug();
 			Vec3 pts[3] = {debugOnlyOriginalHelperPos, helper.pos, m_pos};
@@ -972,7 +971,6 @@ int CLivingEntity::SetStateFromSnapshot(TSerialize ser, int flags)
 		}
 */
 
-		float distance = m_pos.GetDistance(helper.pos);
 		setpos.pos = helper.pos;
 
 		SetParams( &setpos, (m_flags & pef_update)!=0 || get_iCaller()<MAX_PHYS_THREADS);	// apply changes immediately for custom-step entities	or if called from a phys thread
@@ -1808,8 +1806,8 @@ int CLivingEntity::Step(float time_interval)
 					if (tmin<=ip.time_interval) {
 						tmin = max(tlim,tmin-m_pWorld->m_vars.maxContactGapPlayer);
 						pos += gwd[0].v*tmin; 
-						static const float g_cosSlide=cos_tpl(0.3f), g_sinSlide=sin_tpl(0.3f);
-						/*if (bFlying) {
+						/*static const float g_cosSlide=cos_tpl(0.3f), g_sinSlide=sin_tpl(0.3f);
+						if (bFlying) {
 							if ((ncontact*axis)*(1-m_bSwimming)>g_cosSlide)
 								ncontact = axis*g_cosSlide + (pos-ptcontact-axis*(axis*(pos-ptcontact))).normalized()*g_sinSlide;
 						} else */
@@ -1903,22 +1901,21 @@ int CLivingEntity::Step(float time_interval)
 
 				if (m_parts[0].flagsCollider!=0 && (bUnprojected || !(m_flags & lef_loosen_stuck_checks))) {
 					ip.bSweepTest = false;
-					gwd[0].offset = pos + gwd[0].R*m_parts[0].pos; 
-					gwd[0].v = -axis; 
+					gwd[0].offset = pos + gwd[0].R*m_parts[0].pos;
+					gwd[0].v = -axis;
 					ip.bStopAtFirstTri = true; ip.bNoBorder = true; ip.time_interval = m_size.z*10;
-					for(i=0; i<nents; ++i) 
+					for(i=0; i<nents; ++i)
 						if (pPrecompEnts[i].iSimClass==0) {
-							CPhysicalEntity *const pent = pPrecompEnts[i].pent;
-							for(int j1=pPrecompEnts[i].iPartsBegin; j1<pPrecompEnts[i].iPartsEnd; ++j1) 
+							for(int j1=pPrecompEnts[i].iPartsBegin; j1<pPrecompEnts[i].iPartsEnd; ++j1)
 								if (pPrecompParts[j1].partflags & collider_flags && !(pPrecompParts[j1].partflags & geom_no_coll_response)) {
 									gwd[1].R = Matrix33(pPrecompParts[j1].partrot);
 									gwd[1].offset = pPrecompParts[j1].partoff;
 									gwd[1].scale = pPrecompParts[j1].partscale;
 									if(m_pCylinderGeom->Intersect(pPrecompParts[j1].pgeom, gwd,gwd+1, &ip, pcontacts)) { 
 									if (pcontacts->t>m_pWorld->m_vars.maxContactGapPlayer)
-										vel.zero(),m_bStuck=1;	
-									pos = pos0; m_timeUseLowCap=1.0f; 
-									goto nomove; 
+										vel.zero(),m_bStuck=1;
+									pos = pos0; m_timeUseLowCap=1.0f;
+									goto nomove;
 								}
 							}
 					} nomove:;

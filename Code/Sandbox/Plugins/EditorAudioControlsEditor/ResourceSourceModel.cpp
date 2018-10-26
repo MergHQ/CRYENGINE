@@ -5,8 +5,8 @@
 
 #include "Library.h"
 #include "AssetIcons.h"
+#include "Common/ModelUtils.h"
 
-#include <ModelUtils.h>
 #include <QtUtil.h>
 
 namespace ACE

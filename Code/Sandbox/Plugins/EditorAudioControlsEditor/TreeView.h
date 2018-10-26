@@ -12,9 +12,14 @@ class CTreeView final : public QAdvancedTreeView
 
 public:
 
-	explicit CTreeView(QWidget* const pParent, QAdvancedTreeView::BehaviorFlags const flags = QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute));
-
 	CTreeView() = delete;
+	CTreeView(CTreeView const&) = delete;
+	CTreeView(CTreeView&&) = delete;
+	CTreeView& operator=(CTreeView const&) = delete;
+	CTreeView& operator=(CTreeView&&) = delete;
+
+	explicit CTreeView(QWidget* const pParent, QAdvancedTreeView::BehaviorFlags const flags = QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute));
+	virtual ~CTreeView() override = default;
 
 	bool IsEditing() const { return state() == QAbstractItemView::EditingState; }
 
@@ -42,9 +47,9 @@ private:
 	void   RestoreExpandedRecursively(QModelIndex const& index);
 	void   RestoreSelectionRecursively(QModelIndex const& index);
 
-	int          m_nameRole = 0;
-	int          m_typeRole = 0;
-	int          m_nameColumn = 0;
+	int          m_nameRole;
+	int          m_typeRole;
+	int          m_nameColumn;
 	QSet<uint32> m_expandedBackup;
 	QSet<uint32> m_selectionBackup;
 };

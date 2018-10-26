@@ -222,7 +222,6 @@ float CGeometry::BuildOcclusionCubemap(geom_world_data *pgwd, int iMode, SOcclus
 {
 		radius_check_data rcd;
 	float rscale = pgwd->scale==1.0f ? 1.0f:1.0f/pgwd->scale;
-	int nRes = cubemap0->N;
 	rcd.iCaller = get_iCaller();
 	ReadLockCond lock0(m_lockUpdate,isneg(m_lockUpdate)^1);
 
@@ -905,7 +904,6 @@ void TestBV(CBVTree* pBVtree, BV *pBV, int iCaller, int level, bool& okay, int m
 {
 	// Walk the entire tree testing the level depth
 	okay = okay && (level < maxDepth);
-	BBox* bbox = (BBox*)pBV;
 	float split = pBVtree->SplitPriority(pBV);
 	if (split>0 && okay)
 	{

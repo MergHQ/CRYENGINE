@@ -110,7 +110,6 @@ macro(setup_CryPhysics)
 			-Wno-shift-negative-value
 			-Wno-writable-strings
 			-Wno-c++11-narrowing
-			-Wno-unused-variable
 			-Wno-parentheses
 			-Wno-reorder
 			-Wno-unused-value
@@ -132,7 +131,6 @@ macro(setup_CryPhysics)
 		target_compile_options(${THIS_PROJECT} PRIVATE
 			-Wno-unused-function
 			-Wno-unused-value
-			-Wno-unused-variable
 			-Wno-sign-compare
 			-Wno-ignored-attributes
 			-Wno-invalid-offsetof

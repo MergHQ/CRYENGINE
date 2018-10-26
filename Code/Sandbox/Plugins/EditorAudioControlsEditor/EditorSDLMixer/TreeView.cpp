@@ -2,8 +2,8 @@
 
 #include "StdAfx.h"
 #include "TreeView.h"
+#include "../Common/ModelUtils.h"
 
-#include <ModelUtils.h>
 #include <CryAudio/IAudioSystem.h>
 
 #include <QHeaderView>
@@ -17,6 +17,8 @@ namespace SDLMixer
 //////////////////////////////////////////////////////////////////////////
 CTreeView::CTreeView(QWidget* const pParent, QAdvancedTreeView::BehaviorFlags const flags /*= QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute)*/)
 	: QAdvancedTreeView(QAdvancedTreeView::BehaviorFlags(flags), pParent)
+	, m_nameRole(0)
+	, m_nameColumn(0)
 {
 	QObject::connect(header(), &QHeaderView::sortIndicatorChanged, [this]() { scrollTo(currentIndex()); });
 }

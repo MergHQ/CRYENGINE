@@ -20,6 +20,10 @@ class CFolderSelectorDialog final : public CEditorDialog
 public:
 
 	CFolderSelectorDialog() = delete;
+	CFolderSelectorDialog(CFolderSelectorDialog const&) = delete;
+	CFolderSelectorDialog(CFolderSelectorDialog&&) = delete;
+	CFolderSelectorDialog& operator=(CFolderSelectorDialog const&) = delete;
+	CFolderSelectorDialog& operator=(CFolderSelectorDialog&&) = delete;
 
 	explicit CFolderSelectorDialog(QString const& assetFolderPath, QString const& targetPath, QWidget* const pParent);
 	virtual ~CFolderSelectorDialog() override;

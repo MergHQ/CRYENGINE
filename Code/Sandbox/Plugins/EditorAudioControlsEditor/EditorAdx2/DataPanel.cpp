@@ -7,8 +7,8 @@
 #include "FilterProxyModel.h"
 #include "ItemModel.h"
 #include "TreeView.h"
+#include "../Common/ModelUtils.h"
 
-#include <ModelUtils.h>
 #include <QFilteringPanel.h>
 #include <QSearchBox.h>
 #include <QtUtil.h>
@@ -206,7 +206,7 @@ void CDataPanel::Reset()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CDataPanel::OnAboutToReload()
+void CDataPanel::OnBeforeReload()
 {
 	m_pTreeView->BackupExpanded();
 	m_pTreeView->BackupSelection();
@@ -214,7 +214,7 @@ void CDataPanel::OnAboutToReload()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CDataPanel::OnReloaded()
+void CDataPanel::OnAfterReload()
 {
 	m_pModel->Reset();
 	m_pTreeView->RestoreExpanded();

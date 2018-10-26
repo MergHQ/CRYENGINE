@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <IImpl.h>
+#include "../Common/IImpl.h"
 
 #include "Item.h"
 
@@ -46,8 +46,8 @@ public:
 	virtual void           EnableConnection(IConnection const* const pIConnection, bool const isLoading) override;
 	virtual void           DisableConnection(IConnection const* const pIConnection, bool const isLoading) override;
 	virtual void           DestructConnection(IConnection const* const pIConnection) override;
-	virtual void           OnAboutToReload() override;
-	virtual void           OnReloaded() override;
+	virtual void           OnBeforeReload() override;
+	virtual void           OnAfterReload() override;
 	virtual void           OnSelectConnectedItem(ControlId const id) const override;
 	virtual void           OnFileImporterOpened() override {}
 	virtual void           OnFileImporterClosed() override {}

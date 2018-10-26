@@ -123,10 +123,10 @@ struct IImpl
 	virtual void DestructConnection(IConnection const* const pIConnection) = 0;
 
 	//! Executed before data gets reloaded.
-	virtual void OnAboutToReload() = 0;
+	virtual void OnBeforeReload() = 0;
 
 	//! Executed after data has been reloaded.
-	virtual void OnReloaded() = 0;
+	virtual void OnAfterReload() = 0;
 
 	//! Request to select a middleware control which is connected to the selected audio system control.
 	//! \param id - Id of the middleware control to select.

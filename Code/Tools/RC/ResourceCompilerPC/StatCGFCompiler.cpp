@@ -958,7 +958,7 @@ bool CStatCGFCompiler::Process()
 
 			cgfSaver.SaveContent(pCompiledCGF, bNeedEndianSwap, bStorePositionsAsF16, bUseQuaternions, bStoreIndicesAsU16);
 
-			SetFileAttributes(outputFile, FILE_ATTRIBUTE_ARCHIVE);
+			FileUtil::MakeWritable(outputFile);
 
 			if (!chunkFile.Write(outputFile))
 			{
@@ -1031,7 +1031,7 @@ bool CStatCGFCompiler::Process()
 					lodCgfSaver.SetVertexStreamCompacting(bCompactVertexStreams);
 					lodCgfSaver.SetSubsetTexelDensityComputing(bComputeSubsetTexelDensity);
 					lodCgfSaver.SaveContent(pLodCgf, bNeedEndianSwap, bStorePositionsAsF16, bUseQuaternions, bStoreIndicesAsU16);
-					SetFileAttributes(lodFilename, FILE_ATTRIBUTE_ARCHIVE);
+					FileUtil::MakeWritable(lodFilename);
 					lodChunkFile.Write(lodFilename);
 					m_CC.pRC->AddInputOutputFilePair(m_CC.GetSourcePath(), lodFilename);
 					outputFiles.emplace_back(lodFilename);

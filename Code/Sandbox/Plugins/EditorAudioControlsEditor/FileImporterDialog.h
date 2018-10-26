@@ -2,9 +2,8 @@
 
 #pragma once
 
+#include "Common/FileImportInfo.h"
 #include <Controls/EditorDialog.h>
-
-#include <FileImportInfo.h>
 #include <QDir>
 
 class QAttributeFilterProxyModel;
@@ -22,6 +21,10 @@ class CFileImporterDialog final : public CEditorDialog
 public:
 
 	CFileImporterDialog() = delete;
+	CFileImporterDialog(CFileImporterDialog const&) = delete;
+	CFileImporterDialog(CFileImporterDialog&&) = delete;
+	CFileImporterDialog& operator=(CFileImporterDialog const&) = delete;
+	CFileImporterDialog& operator=(CFileImporterDialog&&) = delete;
 
 	explicit CFileImporterDialog(
 		FileImportInfos const& fileInfos,
@@ -31,6 +34,8 @@ public:
 		QString const& targetFolderName,
 		bool const isLocalized,
 		QWidget* const pParent);
+
+	virtual ~CFileImporterDialog() override = default;
 
 	// QDialog
 	virtual QSize sizeHint() const override;

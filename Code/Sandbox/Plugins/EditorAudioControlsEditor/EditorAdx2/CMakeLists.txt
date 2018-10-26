@@ -24,7 +24,6 @@ add_sources("EditorAdx2_uber_0.cpp"
 		"BaseConnection.h"
 		"CueConnection.cpp"
 		"CueConnection.h"
-		"GenericConnection.cpp"
 		"GenericConnection.h"
 		"ParameterConnection.cpp"
 		"ParameterConnection.h"
@@ -55,7 +54,7 @@ end_sources()
 #END-FILE-LIST
 
 CryEditorPlugin(EditorCryAudioImplAdx2 SOLUTION_FOLDER "Sandbox/Plugins/EditorAudioControlsEditor/Impl" OUTDIR EditorPlugins/ace)
-target_include_directories(${THIS_PROJECT} PRIVATE ../common "${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/Common" "${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/implementations")
+target_include_directories(${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/Common" "${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/implementations")
 target_compile_definitions(${THIS_PROJECT} PRIVATE -DNOT_USE_CRY_MEMORY_MANAGER -DACE_PLUGIN_EXPORTS)
 
 if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

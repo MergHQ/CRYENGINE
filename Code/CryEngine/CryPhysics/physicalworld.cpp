@@ -1984,7 +1984,6 @@ int CPhysicalWorld::GetEntitiesAround(const Vec3 &ptmin,const Vec3 &ptmax, CPhys
 									if (!pGridEnt->IsPlaceholder() && pentTrg->m_nParts) {
 										COverlapChecker Overlapper;
 										box bbox[2]; 
-										primitive *pgeom = bbox+1;
 										bbox[0].Basis.SetIdentity(); bbox[0].bOriented = 0; 
 										bbox[0].center = (ptmin+ptmax)*0.5f; bbox[0].size = (ptmax-ptmin)*0.5f;
 										const geom& part = pentTrg->m_parts[0];
@@ -3580,7 +3579,6 @@ void CPhysicalWorld::SimulateExplosion(pe_explosion *pexpl, IPhysicalEntity **pS
 	geom_world_data gwd,gwd1;
 	box bboxPart,bbox;
 	sphere sphExpl;
-	CPhysicalPlaceholder **pSkipPcs = (CPhysicalPlaceholder**)pSkipEnts;
 	CPhysicalEntity *pGridRef = &g_StaticPhysicalEntity;
 	pe_explosion explLoc = *pexpl;
 	for(i=0;i<nSkipEnts;i++) if (pSkipEnts[i] && GetGrid(pSkipEnts[i])!=GetGrid(pGridRef))
@@ -4325,7 +4323,7 @@ static void CreateTriMesh(CTriMesh& gtrimesh, primitives::triangle* tri)
 
 float CPhysicalWorld::PrimitiveWorldIntersection(const SPWIParams &pp, WriteLockCond *pLockContactsExp, const char *pNameTag)
 {
-	int i,j,j1,ncont,nents,iActive=0;
+	int i,j,j1,ncont,nents=0;
 	int iCaller = get_iCaller(1);
 	Vec3 BBox[2],sz,mask[2]={ Vec3(ZERO),Vec3(ZERO) };
 	box bbox;
@@ -4504,7 +4502,6 @@ int CPhysicalWorld::RayTraceEntity(IPhysicalEntity *pient, Vec3 origin,Vec3 dir,
 		return 0;
 
 	int i,ncont;
-	Vec3 BBox[2],sz;
 	box bbox;
 	WriteLock lock(m_lockCaller[get_iCaller()]);
 	Vec3 pos;
@@ -4910,7 +4907,7 @@ void CPhysicalWorld::PumpLoggedEvents()
 
 	for(pClient=m_pEventClients[EventPhysPostPump::id][1]; pClient; pClient=pClient->next) {
 		BLOCK_PROFILER(pClient->ticks);
-		int bContinue = pClient->OnEvent(NULL);
+		pClient->OnEvent(NULL);
 	}
 
 #ifndef PHYS_FUNC_PROFILER_DISABLED

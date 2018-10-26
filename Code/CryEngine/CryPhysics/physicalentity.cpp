@@ -3960,7 +3960,6 @@ int CPhysicalEntity::GenerateJoints()
 				psj.pt /= ncont; psj.n.normalize();
 				int icodeMat = GetMatId(m_parts[i].pPhysGeom->pGeom->GetPrimitiveId(0,0),i)<<16 | 
 											 GetMatId(m_parts[j].pPhysGeom->pGeom->GetPrimitiveId(0,0),j);
-				int icodeMat1 = icodeMat>>16 | icodeMat<<16;
 				for(i1=0,pJoint=&sampleJoint,ihead=5; i1<nFakeJoints; i1++) if (pFakeJoints[i1].id!=joint_impulse) {
 					int icode = pFakeJoints[i1].ipart[1]<<16 | pFakeJoints[i1].ipart[0];
 					if (icode==(i<<16|j) || icode==(j<<16|i)) {

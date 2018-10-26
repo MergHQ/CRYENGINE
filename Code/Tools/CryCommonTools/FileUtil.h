@@ -32,6 +32,9 @@ namespace FileUtil
 	bool ScanDirectory(const string& path, const string& filespec, std::vector<string>& files, bool recursive, const string& dirToIgnore);
 
 	FILE* CryOpenFile(const string& filename, const char* mode);
+	void MakeWritable(const char* filename);
+	void MakeWritable(const wchar_t* filename);
+	void MakeReadOnly(const char* filename);
 
 	// Ensures that directory specified by szPathIn exists by creating all needed (sub-)directories.
 	// Returns false in case of a failure.
@@ -124,7 +127,7 @@ namespace FileUtil
 		wstring widePath;
 		Unicode::Convert(widePath, filename);
 
-		SetFileAttributesW(widePath.c_str(), FILE_ATTRIBUTE_ARCHIVE);
+		FileUtil::MakeWritable(widePath.c_str());
 
 		const HANDLE hf = CreateFileW(widePath.c_str(), FILE_WRITE_ATTRIBUTES, FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
 		if (hf != INVALID_HANDLE_VALUE)

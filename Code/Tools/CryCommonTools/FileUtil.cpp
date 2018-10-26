@@ -98,7 +98,7 @@ bool FileUtil::CopyFileAllowOverwrite(const string& existingFilename, const stri
 
 	for (int i = 0; i <= numberOfAdditionalAttempts; ++i)
 	{
-		SetFileAttributesW(wideNewFilename.c_str(), FILE_ATTRIBUTE_ARCHIVE);
+		FileUtil::MakeWritable(wideNewFilename.c_str());
 
 		if (::CopyFileW(wideExistingFilename.c_str(), wideNewFilename.c_str(), false) != 0)
 		{

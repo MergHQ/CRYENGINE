@@ -18,8 +18,8 @@ public:
 
 signals:
 
-	void SignalImplementationSettingsAboutToChange();
-	void SignalImplementationSettingsChanged();
+	void SignalOnBeforeImplementationSettingsChange();
+	void SignalOnAfterImplementationSettingsChanged();
 	void SignalEnableSaveButton(bool);
 
 private:

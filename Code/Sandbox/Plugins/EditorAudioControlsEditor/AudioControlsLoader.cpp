@@ -56,12 +56,6 @@ EAssetType TagToType_BackwardsComp(char const* const szTag)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CAudioControlsLoader::CAudioControlsLoader()
-	: m_errorCodeMask(EErrorCode::None)
-	, m_loadOnlyDefaultControls(false)
-{}
-
-//////////////////////////////////////////////////////////////////////////
 void CAudioControlsLoader::LoadAll(bool const loadOnlyDefaultControls /*= false*/)
 {
 	m_loadOnlyDefaultControls = loadOnlyDefaultControls;

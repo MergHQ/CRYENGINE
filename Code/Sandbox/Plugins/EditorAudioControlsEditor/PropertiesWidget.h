@@ -2,8 +2,8 @@
 
 #pragma once
 
+#include "Common/SharedData.h"
 #include <QWidget>
-#include <SharedData.h>
 
 class QPropertyTree;
 class QLabel;
@@ -20,14 +20,18 @@ class CPropertiesWidget final : public QWidget
 
 public:
 
+	CPropertiesWidget() = delete;
+	CPropertiesWidget(CPropertiesWidget const&) = delete;
+	CPropertiesWidget(CPropertiesWidget&&) = delete;
+	CPropertiesWidget& operator=(CPropertiesWidget const&) = delete;
+	CPropertiesWidget& operator=(CPropertiesWidget&&) = delete;
+
 	explicit CPropertiesWidget(QWidget* const pParent);
 	virtual ~CPropertiesWidget() override;
 
-	CPropertiesWidget() = delete;
-
 	void Reset();
-	void OnAboutToReload();
-	void OnReloaded();
+	void OnBeforeReload();
+	void OnAfterReload();
 
 signals:
 

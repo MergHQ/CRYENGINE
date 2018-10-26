@@ -213,8 +213,6 @@ bool CResponseManager::CancelSignalProcessing(const SSignal& signalToCancel)
 //--------------------------------------------------------------------------------------------------
 void CResponseManager::Update()
 {
-	float currentTime = CResponseSystem::GetInstance()->GetCurrentDrsTime();
-
 	for (ResponseInstanceList::iterator it = m_runningResponses.begin(); it != m_runningResponses.end(); )
 	{
 		if ((*it)->Update())

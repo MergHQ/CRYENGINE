@@ -1045,6 +1045,6 @@ void CTrackStorage::SaveDataBase905(const char* name, bool bPrepareForInPlaceStr
 		RCLogError("Failed creating directory for %s", name);
 	}
 
-	SetFileAttributes( name,FILE_ATTRIBUTE_ARCHIVE );
-	chunkFile.Write( name );
+	FileUtil::MakeWritable(name);
+	chunkFile.Write(name);
 }

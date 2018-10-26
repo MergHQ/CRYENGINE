@@ -12,9 +12,18 @@ class CLibrary final : public CAsset, public CryAudio::CPoolObject<CLibrary, stl
 {
 public:
 
-	explicit CLibrary(string const& name);
-
 	CLibrary() = delete;
+	CLibrary(CLibrary const&) = delete;
+	CLibrary(CLibrary&&) = delete;
+	CLibrary& operator=(CLibrary const&) = delete;
+	CLibrary& operator=(CLibrary&&) = delete;
+
+	explicit CLibrary(string const& name)
+		: CAsset(name, EAssetType::Library)
+		, m_pakStatus(EPakStatus::None)
+	{}
+
+	virtual ~CLibrary() override = default;
 
 	// CAsset
 	virtual void SetModified(bool const isModified, bool const isForced = false) override;

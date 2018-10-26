@@ -19,6 +19,10 @@ class CProjectLoader final
 public:
 
 	CProjectLoader() = delete;
+	CProjectLoader(CProjectLoader const&) = delete;
+	CProjectLoader(CProjectLoader&&) = delete;
+	CProjectLoader& operator=(CProjectLoader const&) = delete;
+	CProjectLoader& operator=(CProjectLoader&&) = delete;
 
 	explicit CProjectLoader(
 		string const& projectPath,

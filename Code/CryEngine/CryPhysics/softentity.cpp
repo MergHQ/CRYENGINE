@@ -1428,8 +1428,8 @@ int CSoftEntity::Step(float time_interval)
 		return 1;
 	}
 
-	int i,j,nEnts=0,i0,i1,nCheckParts=0,bGridLocked=0,nhostPt=0,ijob=-2;
-	Vec3 v,w,d,center,BBox0[2],BBox[2],lastposHost(ZERO),vHost(ZERO),wHost(ZERO),pos0;
+	int i,j,nEnts=0,i0,i1,nCheckParts=0,bGridLocked=0,nhostPt=0;
+	Vec3 v,w,d,center,BBox[2],lastposHost(ZERO),vHost(ZERO),wHost(ZERO),pos0;
 	quaternionf lastqHost(IDENTITY);
 	RigidBody rbody;
 	float rmax,kr;

@@ -12,8 +12,8 @@
 #include "AssetIcons.h"
 #include "AssetUtils.h"
 #include "TreeView.h"
+#include "Common/ModelUtils.h"
 
-#include <ModelUtils.h>
 #include <QtUtil.h>
 #include <CrySystem/File/CryFile.h>
 #include <Controls/QuestionDialog.h>
@@ -137,7 +137,7 @@ CSystemControlsWidget::CSystemControlsWidget(QWidget* const pParent)
 	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::currentChanged, this, &CSystemControlsWidget::StopControlExecution);
 	QObject::connect(m_pMountingProxyModel, &CMountingProxyModel::rowsInserted, this, &CSystemControlsWidget::SelectNewAsset);
 
-	g_assetsManager.SignalLibraryAboutToBeRemoved.Connect([this](CLibrary* const pLibrary)
+	g_assetsManager.SignalOnBeforeLibraryRemoved.Connect([this](CLibrary* const pLibrary)
 		{
 			size_t const libCount = g_assetsManager.GetLibraryCount();
 
@@ -163,18 +163,18 @@ CSystemControlsWidget::CSystemControlsWidget(QWidget* const pParent)
 			}
 		}, reinterpret_cast<uintptr_t>(this));
 
-	CAudioControlsEditorPlugin::SignalAboutToLoad.Connect([&]()
+	CAudioControlsEditorPlugin::SignalOnBeforeLoad.Connect([&]()
 	    {
-	                                                      StopControlExecution();
+	                                                       StopControlExecution();
 			}, reinterpret_cast<uintptr_t>(this));
 
-	g_implementationManager.SignalImplementationAboutToChange.Connect([this]()
+	g_implementationManager.SignalOnBeforeImplementationChange.Connect([this]()
 		{
 			StopControlExecution();
 			ClearFilters();
 		}, reinterpret_cast<uintptr_t>(this));
 
-	g_implementationManager.SignalImplementationChanged.Connect([this]()
+	g_implementationManager.SignalOnAfterImplementationChange.Connect([this]()
 		{
 			setEnabled(g_pIImpl != nullptr);
 		}, reinterpret_cast<uintptr_t>(this));
@@ -183,11 +183,11 @@ CSystemControlsWidget::CSystemControlsWidget(QWidget* const pParent)
 //////////////////////////////////////////////////////////////////////////
 CSystemControlsWidget::~CSystemControlsWidget()
 {
-	g_assetsManager.SignalLibraryAboutToBeRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_assetsManager.SignalOnBeforeLibraryRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_assetsManager.SignalAssetRenamed.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	CAudioControlsEditorPlugin::SignalAboutToLoad.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_implementationManager.SignalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_implementationManager.SignalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::SignalOnBeforeLoad.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implementationManager.SignalOnBeforeImplementationChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implementationManager.SignalOnAfterImplementationChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 
 	StopControlExecution();
 	DeleteModels();
@@ -671,6 +671,11 @@ void CSystemControlsWidget::OnDeleteSelectedControls()
 						{
 							g_assetsManager.DeleteAsset(pAsset);
 						}
+						else if ((pLibrary->GetPakStatus() & EPakStatus::InPak) == 0)
+						{
+							// Newly created, unsaved library.
+							g_assetsManager.DeleteAsset(pAsset);
+						}
 						else
 						{
 							pakLibraryNames.emplace_back(pAsset->GetName());
@@ -956,14 +961,14 @@ bool CSystemControlsWidget::IsDefaultControlSelected() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemControlsWidget::OnAboutToReload()
+void CSystemControlsWidget::OnBeforeReload()
 {
 	m_pTreeView->BackupExpanded();
 	m_pTreeView->BackupSelection();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemControlsWidget::OnReloaded()
+void CSystemControlsWidget::OnAfterReload()
 {
 	m_pTreeView->RestoreExpanded();
 	m_pTreeView->RestoreSelection();

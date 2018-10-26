@@ -26,7 +26,13 @@ public:
 	CControl& operator=(CControl const&) = delete;
 	CControl& operator=(CControl&&) = delete;
 
-	explicit CControl(string const& name, ControlId const id, EAssetType const type);
+	explicit CControl(string const& name, ControlId const id, EAssetType const type)
+		: CAsset(name, type)
+		, m_id(id)
+		, m_scope(GlobalScopeId)
+		, m_isAutoLoad(true)
+	{}
+
 	virtual ~CControl() override;
 
 	// CAsset
@@ -58,8 +64,8 @@ public:
 
 private:
 
-	void SignalControlAboutToBeModified();
-	void SignalControlModified();
+	void SignalOnBeforeControlModified();
+	void SignalOnAfterControlModified();
 	void SignalConnectionAdded(Impl::IItem* const pIItem);
 	void SignalConnectionRemoved(Impl::IItem* const pIItem);
 	void SignalConnectionModified();

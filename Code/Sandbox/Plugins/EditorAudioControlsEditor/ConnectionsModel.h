@@ -2,8 +2,8 @@
 
 #pragma once
 
+#include "Common/SharedData.h"
 #include <QAbstractItemModel>
-#include <SharedData.h>
 
 namespace ACE
 {

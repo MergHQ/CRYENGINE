@@ -49,8 +49,8 @@ bool CAnimationManager::SaveAIMImage(const char* name, FILETIME timeStamp, bool 
 		header->SaveToChunkFile(&chunkFile, bigEndianOutput);
 	}
 
-	SetFileAttributes( name,FILE_ATTRIBUTE_ARCHIVE );
-	chunkFile.Write( name );
+	FileUtil::MakeWritable(name);
+	chunkFile.Write(name);
 
 	FileUtil::SetFileTimes(name, timeStamp);
 	const __int64 fileSize = FileUtil::GetFileSize(name);
@@ -100,9 +100,8 @@ bool CAnimationManager::SaveCAFImage(const char* name, FILETIME timeStamp, bool 
 		header->SaveToChunkFile(&chunkFile, bigEndianOutput);
 	}
 
-
-	SetFileAttributes( name,FILE_ATTRIBUTE_ARCHIVE );
-	chunkFile.Write( name );
+	FileUtil::MakeWritable(name);
+	chunkFile.Write(name);
 
 	FileUtil::SetFileTimes(name, timeStamp);
 	const __int64 fileSize = FileUtil::GetFileSize(name);

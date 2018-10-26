@@ -229,7 +229,7 @@ public:
 				}
 
 				// Force remove of the read only flag.
-				SetFileAttributes(finalPath, FILE_ATTRIBUTE_ARCHIVE);
+				FileUtil::MakeWritable(finalPath);
 				MoveFileEx(tempPath, finalPath, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
 				m_pRC->AddInputOutputFilePair(data->path, finalPath);
 			}

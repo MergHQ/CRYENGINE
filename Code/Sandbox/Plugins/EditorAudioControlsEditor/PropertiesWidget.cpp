@@ -46,21 +46,21 @@ CPropertiesWidget::CPropertiesWidget(QWidget* const pParent)
 		setEnabled(false);
 	}
 
-	g_assetsManager.SignalAssetAdded.Connect([this]()
+	g_assetsManager.SignalOnAfterAssetAdded.Connect([this]()
 		{
 			if (!g_assetsManager.IsLoading())
 			{
 			  RevertPropertyTree();
 			}
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
-	g_assetsManager.SignalAssetRemoved.Connect([this]()
+	g_assetsManager.SignalOnAfterAssetRemoved.Connect([this]()
 		{
 			if (!g_assetsManager.IsLoading())
 			{
 			  RevertPropertyTree();
 			}
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	g_assetsManager.SignalControlModified.Connect([this]()
 		{
@@ -68,7 +68,7 @@ CPropertiesWidget::CPropertiesWidget(QWidget* const pParent)
 			{
 			  RevertPropertyTree();
 			}
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	g_assetsManager.SignalAssetRenamed.Connect([this]()
 		{
@@ -76,12 +76,12 @@ CPropertiesWidget::CPropertiesWidget(QWidget* const pParent)
 			{
 			  RevertPropertyTree();
 			}
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
-	g_implementationManager.SignalImplementationChanged.Connect([this]()
+	g_implementationManager.SignalOnAfterImplementationChange.Connect([this]()
 		{
 			setEnabled(g_pIImpl != nullptr);
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	QObject::connect(m_pPropertyTree, &QPropertyTree::signalAboutToSerialize, [&]() { m_suppressUpdates = true; });
 	QObject::connect(m_pPropertyTree, &QPropertyTree::signalSerialized, [&]() { m_suppressUpdates = false; });
@@ -91,11 +91,11 @@ CPropertiesWidget::CPropertiesWidget(QWidget* const pParent)
 //////////////////////////////////////////////////////////////////////////
 CPropertiesWidget::~CPropertiesWidget()
 {
-	g_assetsManager.SignalAssetAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_assetsManager.SignalAssetRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_assetsManager.SignalOnAfterAssetAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_assetsManager.SignalOnAfterAssetRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_assetsManager.SignalControlModified.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_assetsManager.SignalAssetRenamed.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_implementationManager.SignalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implementationManager.SignalOnAfterImplementationChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -113,7 +113,7 @@ void CPropertiesWidget::OnSetSelectedAssets(Assets const& selectedAssets, bool c
 
 	for (auto const pAsset : selectedAssets)
 	{
-		CRY_ASSERT_MESSAGE(pAsset != nullptr, "Selected asset is null pointer.");
+		CRY_ASSERT_MESSAGE(pAsset != nullptr, "Selected asset is null pointer during %s", __FUNCTION__);
 		serializers.emplace_back(*pAsset);
 	}
 
@@ -161,15 +161,15 @@ void CPropertiesWidget::OnSetSelectedAssets(Assets const& selectedAssets, bool c
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CPropertiesWidget::OnAboutToReload()
+void CPropertiesWidget::OnBeforeReload()
 {
-	m_pConnectionsWidget->OnAboutToReload();
+	m_pConnectionsWidget->OnBeforeReload();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CPropertiesWidget::OnReloaded()
+void CPropertiesWidget::OnAfterReload()
 {
-	m_pConnectionsWidget->OnReloaded();
+	m_pConnectionsWidget->OnAfterReload();
 }
 
 //////////////////////////////////////////////////////////////////////////

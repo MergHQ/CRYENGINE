@@ -7,7 +7,7 @@
 
 namespace ACE
 {
-struct SControlInfo
+struct SControlInfo final
 {
 	SControlInfo(string const& name_, ControlId const id_, CryIcon const& icon_)
 		: name(name_)

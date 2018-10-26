@@ -305,7 +305,7 @@ void CRigidEntity::RemoveGeometry(int id, int bThreadSafe)
 	int i,bRecalcMass=0;
 	for(i=0;i<m_nParts && m_parts[i].id!=id;i++);
 	if (i==m_nParts) return;
-	phys_geometry *pgeom = m_parts[i].pPhysGeomProxy;
+	//phys_geometry *pgeom = m_parts[i].pPhysGeomProxy;
 
 	if (m_parts[i].mass>0) {
 		//Vec3 bodypos = m_pos + m_qrot*(m_parts[i].pos+m_parts[i].q*pgeom->origin*m_parts[i].scale); 
@@ -1425,7 +1425,7 @@ int CRigidEntity::CheckForNewContacts(geom_world_data *pgwd0,intersection_params
 	bool bStopAtFirstTri = pip->bStopAtFirstTri, bCheckBBox;
 	Vec3 sz,BBox[2],BBox1[2],prevOutsidePivot=pip->ptOutsidePivot[0];
 	EventPhysBBoxOverlap event;
-	int bPivotFilled=isneg(pip->ptOutsidePivot[0].x-1E9f);
+	//int bPivotFilled=isneg(pip->ptOutsidePivot[0].x-1E9f);
 	pip->bThreadSafe = 1;
 	box bbox;
 	itmax = -1;
@@ -2059,7 +2059,7 @@ void CRigidEntity::VerifyExistingContacts(float maxdist)
 {
 	int i,bConfirmed,nRemoved=0;
 	geom_world_data gwd;
-	Vec3 ptres[2],n,ptclosest[2];
+	//Vec3 ptres[2],n,ptclosest[2];
 	entity_contact *pContact,*pContactNext;
 	{ ReadLock lock(m_lockColliders);
 
@@ -2216,7 +2216,6 @@ void CRigidEntity::UpdateConstraints(float time_interval)
 			m_pConstraintInfos[i].bActive = 0;
 			continue;
 		}
-		int flagsForce = 0;
 		if (m_pConstraintInfos[i].flags & constraint_area && m_pConstraintInfos[i].pConstraintEnt) {
 			pe_status_area sa; sa.ptClosest = m_pConstraints[i].pt[0];
 			m_pConstraintInfos[i].pConstraintEnt->GetStatus(&sa);
@@ -3368,7 +3367,7 @@ int CRigidEntity::Update(float time_interval, float damping)
 {
 	int i,j,iCaller=get_iCaller_int();
 	float dt,E,E_accum, Emin = m_bFloating && m_nColliders+m_nPrevColliders==0 ? m_EminWater : m_Emin;
-	Vec3 L_accum,pt[4];
+	Vec3 L_accum;// , pt[4];
 	coord_block_BBox partCoordTmp[2];
 	//m_nStickyContacts = m_nSlidingContacts = 0;
 	m_nStepBackCount = (m_nStepBackCount&-(int)m_bSteppedBack)+m_bSteppedBack;
@@ -4885,9 +4884,8 @@ void CRigidEntity::DrawHelperInformation(IPhysRenderer *pRenderer, int flags)
 				// determine the reference frame of the constraint
 				QuatT frames[2]; GetContactFrames(m_pConstraints[i], frames);
 				const Vec3& posBody0 = m_pConstraints[i].pbody[0]->pos;
-				const Vec3& posBody1 = m_pConstraints[i].pbody[1]->pos;									
 				quaternionf qframe0 = frames[0].q * m_pConstraintInfos[i].qframe_rel[0];
-				quaternionf qframe1 = frames[1].q * m_pConstraintInfos[i].qframe_rel[1];					
+				quaternionf qframe1 = frames[1].q * m_pConstraintInfos[i].qframe_rel[1];
 				Vec3 u = qframe0 * Vec3(1,0,0);
 				Vec3 posFrame = m_pConstraints[i].pt[0];
 				Vec3 l = posFrame - posBody0;

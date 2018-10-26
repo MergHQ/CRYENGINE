@@ -913,7 +913,6 @@ int bin2ascii(const unsigned char *pin,int sz, unsigned char *pout)
 int ascii2bin(const unsigned char *pin,int sz, unsigned char *pout)
 {
 	int a[4],nout,count0;
-	const unsigned char *pin0=pin;
 	for(nout=count0=0; *pin || count0; nout+=3) {
 		for(int i=0;i<4;i++) if (count0>0) 
 			a[i]=0, count0--; 
@@ -1308,7 +1307,6 @@ public:
 			int iPlane = GetProjCubePlane(pt[0]);
 			const int az = iPlane>>1, ay = dec_mod3[az], ax = inc_mod3[az];
 			int* rawdata = cubemap->grid[iPlane];
-			const float scale = scaleSign[iPlane&1];
 			float z = 1.f/(fabsf(pt[0][az])+1e-6f);
 			int ix0 = min(N-1,max(0, float2int((pt[0][ax]*z+1.f)*cubemap->halfN)));
 			int iy0 = min(N-1,max(0, float2int((pt[0][ay]*z+1.f)*cubemap->halfN)));

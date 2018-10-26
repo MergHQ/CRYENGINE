@@ -8,12 +8,6 @@
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-CLibrary::CLibrary(string const& name)
-	: CAsset(name, EAssetType::Library)
-	, m_pakStatus(EPakStatus::None)
-{}
-
-//////////////////////////////////////////////////////////////////////////
 void CLibrary::SetModified(bool const isModified, bool const isForced /* = false */)
 {
 	if (!g_assetsManager.IsLoading() || isForced)

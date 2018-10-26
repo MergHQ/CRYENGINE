@@ -7,22 +7,13 @@
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
 #include "AssetUtils.h"
+#include "Common/IConnection.h"
+#include "Common/IItem.h"
 
-#include <IConnection.h>
-#include <IItem.h>
 #include <CrySerialization/StringList.h>
 
 namespace ACE
 {
-//////////////////////////////////////////////////////////////////////////
-CControl::CControl(string const& name, ControlId const id, EAssetType const type)
-	: CAsset(name, type)
-	, m_id(id)
-	, m_scope(GlobalScopeId)
-	, m_isAutoLoad(true)
-{
-}
-
 //////////////////////////////////////////////////////////////////////////
 CControl::~CControl()
 {
@@ -34,7 +25,7 @@ void CControl::SetName(string const& name)
 {
 	if ((!name.IsEmpty()) && (name != m_name) && ((m_flags& EAssetFlags::IsDefaultControl) == 0))
 	{
-		SignalControlAboutToBeModified();
+		SignalOnBeforeControlModified();
 
 		if (m_type != EAssetType::State)
 		{
@@ -45,7 +36,7 @@ void CControl::SetName(string const& name)
 			m_name = AssetUtils::GenerateUniqueName(name, m_type, m_pParent);
 		}
 
-		SignalControlModified();
+		SignalOnAfterControlModified();
 		g_assetsManager.OnAssetRenamed(this);
 	}
 }
@@ -55,9 +46,9 @@ void CControl::SetDescription(string const& description)
 {
 	if (description != m_description)
 	{
-		SignalControlAboutToBeModified();
+		SignalOnBeforeControlModified();
 		m_description = description;
-		SignalControlModified();
+		SignalOnAfterControlModified();
 	}
 }
 
@@ -135,9 +126,9 @@ void CControl::SetScope(Scope const scope)
 {
 	if (m_scope != scope)
 	{
-		SignalControlAboutToBeModified();
+		SignalOnBeforeControlModified();
 		m_scope = scope;
-		SignalControlModified();
+		SignalOnAfterControlModified();
 	}
 }
 
@@ -146,9 +137,9 @@ void CControl::SetAutoLoad(bool const isAutoLoad)
 {
 	if (isAutoLoad != m_isAutoLoad)
 	{
-		SignalControlAboutToBeModified();
+		SignalOnBeforeControlModified();
 		m_isAutoLoad = isAutoLoad;
-		SignalControlModified();
+		SignalOnAfterControlModified();
 	}
 }
 
@@ -195,7 +186,7 @@ void CControl::AddConnection(IConnection* const pIConnection)
 			pIConnection->SignalConnectionChanged.Connect(this, &CControl::SignalConnectionModified);
 			m_connections.push_back(pIConnection);
 			SignalConnectionAdded(pIItem);
-			SignalControlModified();
+			SignalOnAfterControlModified();
 		}
 	}
 }
@@ -221,7 +212,7 @@ void CControl::RemoveConnection(Impl::IItem* const pIItem)
 
 				m_connections.erase(iter);
 				SignalConnectionRemoved(pIItem);
-				SignalControlModified();
+				SignalOnAfterControlModified();
 				break;
 			}
 
@@ -251,7 +242,7 @@ void CControl::ClearConnections()
 		}
 
 		m_connections.clear();
-		SignalControlModified();
+		SignalOnAfterControlModified();
 	}
 }
 
@@ -316,21 +307,21 @@ void CControl::ReloadConnections()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CControl::SignalControlModified()
+void CControl::SignalOnAfterControlModified()
 {
 	if (!g_assetsManager.IsLoading())
 	{
-		g_assetsManager.OnControlModified(this);
+		g_assetsManager.OnAfterControlModified(this);
 		SetModified(true);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CControl::SignalControlAboutToBeModified()
+void CControl::SignalOnBeforeControlModified()
 {
 	if (!g_assetsManager.IsLoading())
 	{
-		g_assetsManager.OnControlAboutToBeModified(this);
+		g_assetsManager.OnBeforeControlModified(this);
 	}
 }
 
@@ -349,7 +340,7 @@ void CControl::SignalConnectionRemoved(Impl::IItem* const pIItem)
 //////////////////////////////////////////////////////////////////////////
 void CControl::SignalConnectionModified()
 {
-	SignalControlModified();
+	SignalOnAfterControlModified();
 }
 
 //////////////////////////////////////////////////////////////////////////
