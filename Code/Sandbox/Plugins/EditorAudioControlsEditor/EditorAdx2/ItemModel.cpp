@@ -4,8 +4,8 @@
 #include "ItemModel.h"
 
 #include "Common.h"
+#include "../Common/ModelUtils.h"
 
-#include <ModelUtils.h>
 #include <DragDrop.h>
 #include <PathUtils.h>
 #include <QtUtil.h>

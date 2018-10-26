@@ -2,8 +2,8 @@
 
 #pragma once
 
+#include "Common/SharedData.h"
 #include <QWidget>
-#include <SharedData.h>
 
 class QPropertyTree;
 class QAttributeFilterProxyModel;
@@ -20,15 +20,19 @@ class CConnectionsWidget final : public QWidget
 
 public:
 
+	CConnectionsWidget() = delete;
+	CConnectionsWidget(CConnectionsWidget const&) = delete;
+	CConnectionsWidget(CConnectionsWidget&&) = delete;
+	CConnectionsWidget& operator=(CConnectionsWidget const&) = delete;
+	CConnectionsWidget& operator=(CConnectionsWidget&&) = delete;
+
 	explicit CConnectionsWidget(QWidget* const pParent);
 	virtual ~CConnectionsWidget() override;
 
-	CConnectionsWidget() = delete;
-
 	void SetControl(CControl* const pControl, bool const restoreSelection);
 	void Reset();
-	void OnAboutToReload();
-	void OnReloaded();
+	void OnBeforeReload();
+	void OnAfterReload();
 
 signals:
 

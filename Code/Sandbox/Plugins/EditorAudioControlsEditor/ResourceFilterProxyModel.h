@@ -2,8 +2,8 @@
 
 #pragma once
 
+#include "Common/SharedData.h"
 #include <ProxyModels/DeepFilterProxyModel.h>
-#include <SharedData.h>
 
 namespace ACE
 {
@@ -11,9 +11,19 @@ class CResourceFilterProxyModel final : public QDeepFilterProxyModel
 {
 public:
 
-	explicit CResourceFilterProxyModel(EAssetType const type, Scope const scope, QObject* const pParent);
-
 	CResourceFilterProxyModel() = delete;
+	CResourceFilterProxyModel(CResourceFilterProxyModel const&) = delete;
+	CResourceFilterProxyModel(CResourceFilterProxyModel&&) = delete;
+	CResourceFilterProxyModel& operator=(CResourceFilterProxyModel const&) = delete;
+	CResourceFilterProxyModel& operator=(CResourceFilterProxyModel&&) = delete;
+
+	explicit CResourceFilterProxyModel(EAssetType const type, Scope const scope, QObject* const pParent)
+		: QDeepFilterProxyModel(QDeepFilterProxyModel::Behavior::AcceptIfChildMatches, pParent)
+		, m_type(type)
+		, m_scope(scope)
+	{}
+
+	virtual ~CResourceFilterProxyModel() override = default;
 
 private:
 

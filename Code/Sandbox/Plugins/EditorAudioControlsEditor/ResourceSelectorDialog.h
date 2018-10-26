@@ -2,8 +2,8 @@
 
 #pragma once
 
+#include "Common/SharedData.h"
 #include <Controls/EditorDialog.h>
-#include <SharedData.h>
 
 class QSearchBox;
 class QDialogButtonBox;
@@ -25,10 +25,14 @@ class CResourceSelectorDialog final : public CEditorDialog
 
 public:
 
+	CResourceSelectorDialog() = delete;
+	CResourceSelectorDialog(CResourceSelectorDialog const&) = delete;
+	CResourceSelectorDialog(CResourceSelectorDialog&&) = delete;
+	CResourceSelectorDialog& operator=(CResourceSelectorDialog const&) = delete;
+	CResourceSelectorDialog& operator=(CResourceSelectorDialog&&) = delete;
+
 	explicit CResourceSelectorDialog(EAssetType const type, Scope const scope, QWidget* const pParent);
 	virtual ~CResourceSelectorDialog() override;
-
-	CResourceSelectorDialog() = delete;
 
 	char const* ChooseItem(char const* currentValue);
 

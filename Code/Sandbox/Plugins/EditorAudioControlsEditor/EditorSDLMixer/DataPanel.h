@@ -2,8 +2,8 @@
 
 #pragma once
 
+#include "../Common/SharedData.h"
 #include <QWidget>
-#include <SharedData.h>
 
 class QFilteringPanel;
 class QPushButton;
@@ -33,8 +33,8 @@ public:
 	virtual ~CDataPanel() override;
 
 	void Reset();
-	void OnAboutToReload();
-	void OnReloaded();
+	void OnBeforeReload();
+	void OnAfterReload();
 	void OnSelectConnectedItem(ControlId const id);
 	void OnFileImporterOpened();
 	void OnFileImporterClosed();

@@ -13,7 +13,13 @@ class CFileMonitorBase : public QTimer, public IFileChangeListener
 
 public:
 
-	void Disable();
+	CFileMonitorBase() = delete;
+	CFileMonitorBase(CFileMonitorBase const&) = delete;
+	CFileMonitorBase(CFileMonitorBase&&) = delete;
+	CFileMonitorBase& operator=(CFileMonitorBase const&) = delete;
+	CFileMonitorBase& operator=(CFileMonitorBase&&) = delete;
+
+	void              Disable();
 
 signals:
 
@@ -23,8 +29,6 @@ protected:
 
 	explicit CFileMonitorBase(int const delay, QObject* const pParent);
 	virtual ~CFileMonitorBase() override;
-
-	CFileMonitorBase() = delete;
 
 	// IFileChangeListener
 	virtual void OnFileChange(char const* szFileName, EChangeType type) override;

@@ -15,8 +15,16 @@ class CFilterProxyModel final : public QAttributeFilterProxyModel
 public:
 
 	CFilterProxyModel() = delete;
+	CFilterProxyModel(CFilterProxyModel const&) = delete;
+	CFilterProxyModel(CFilterProxyModel&&) = delete;
+	CFilterProxyModel& operator=(CFilterProxyModel const&) = delete;
+	CFilterProxyModel& operator=(CFilterProxyModel&&) = delete;
 
-	explicit CFilterProxyModel(QObject* const pParent);
+	explicit CFilterProxyModel(QObject* const pParent)
+		: QAttributeFilterProxyModel(QDeepFilterProxyModel::Behavior::AcceptIfChildMatches, pParent)
+	{}
+
+	virtual ~CFilterProxyModel() override = default;
 
 private:
 

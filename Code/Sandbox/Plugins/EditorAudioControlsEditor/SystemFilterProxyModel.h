@@ -10,7 +10,17 @@ class CSystemFilterProxyModel final : public QAttributeFilterProxyModel
 {
 public:
 
-	CSystemFilterProxyModel(QObject* const pParent);
+	CSystemFilterProxyModel() = delete;
+	CSystemFilterProxyModel(CSystemFilterProxyModel const&) = delete;
+	CSystemFilterProxyModel(CSystemFilterProxyModel&&) = delete;
+	CSystemFilterProxyModel& operator=(CSystemFilterProxyModel const&) = delete;
+	CSystemFilterProxyModel& operator=(CSystemFilterProxyModel&&) = delete;
+
+	CSystemFilterProxyModel(QObject* const pParent)
+		: QAttributeFilterProxyModel(QDeepFilterProxyModel::Behavior::AcceptIfChildMatches, pParent)
+	{}
+
+	virtual ~CSystemFilterProxyModel() override = default;
 
 protected:
 

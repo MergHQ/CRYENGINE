@@ -10,7 +10,13 @@ class CFileLoader final
 {
 public:
 
-	CFileLoader();
+	CFileLoader(CFileLoader const&) = delete;
+	CFileLoader(CFileLoader&&) = delete;
+	CFileLoader& operator=(CFileLoader const&) = delete;
+	CFileLoader& operator=(CFileLoader&&) = delete;
+
+	CFileLoader() = default;
+
 	FileNames  GetLoadedFilenamesList();
 	void       CreateInternalControls();
 	void       LoadAll();
@@ -41,6 +47,6 @@ private:
 	CAsset*   AddUniqueFolderPath(CAsset* pParent, QString const& path);
 
 	FileNames  m_loadedFilenames;
-	EErrorCode m_errorCodeMask;
+	EErrorCode m_errorCodeMask = EErrorCode::None;
 };
 } // namespace ACE

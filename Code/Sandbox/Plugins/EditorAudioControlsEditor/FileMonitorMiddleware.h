@@ -12,9 +12,14 @@ class CFileMonitorMiddleware final : public CFileMonitorBase
 
 public:
 
-	explicit CFileMonitorMiddleware(int const delay, QObject* const pParent);
-
 	CFileMonitorMiddleware() = delete;
+	CFileMonitorMiddleware(CFileMonitorMiddleware const&) = delete;
+	CFileMonitorMiddleware(CFileMonitorMiddleware&&) = delete;
+	CFileMonitorMiddleware& operator=(CFileMonitorMiddleware const&) = delete;
+	CFileMonitorMiddleware& operator=(CFileMonitorMiddleware&&) = delete;
+
+	explicit CFileMonitorMiddleware(int const delay, QObject* const pParent);
+	virtual ~CFileMonitorMiddleware() override = default;
 
 	void Enable();
 

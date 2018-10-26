@@ -10,11 +10,17 @@ class CResourceSourceModel final : public CSystemSourceModel
 {
 public:
 
+	CResourceSourceModel() = delete;
+	CResourceSourceModel(CResourceSourceModel const&) = delete;
+	CResourceSourceModel(CResourceSourceModel&&) = delete;
+	CResourceSourceModel& operator=(CResourceSourceModel const&) = delete;
+	CResourceSourceModel& operator=(CResourceSourceModel&&) = delete;
+
 	explicit CResourceSourceModel(QObject* const pParent)
 		: CSystemSourceModel(pParent)
 	{}
 
-	CResourceSourceModel() = delete;
+	virtual ~CResourceSourceModel() override = default;
 
 	static QVariant GetHeaderData(int const section, Qt::Orientation const orientation, int const role);
 

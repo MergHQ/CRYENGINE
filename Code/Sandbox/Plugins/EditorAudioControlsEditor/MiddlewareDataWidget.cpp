@@ -27,12 +27,12 @@ CMiddlewareDataWidget::CMiddlewareDataWidget(QWidget* const pParent)
 	m_pLayout->setContentsMargins(0, 0, 0, 0);
 	InitImplDataWidget();
 
-	g_implementationManager.SignalImplementationAboutToChange.Connect([this]()
+	g_implementationManager.SignalOnBeforeImplementationChange.Connect([this]()
 		{
 			ClearImplDataWidget();
 		}, reinterpret_cast<uintptr_t>(this));
 
-	g_implementationManager.SignalImplementationChanged.Connect([this]()
+	g_implementationManager.SignalOnAfterImplementationChange.Connect([this]()
 		{
 			InitImplDataWidget();
 		}, reinterpret_cast<uintptr_t>(this));
@@ -41,8 +41,8 @@ CMiddlewareDataWidget::CMiddlewareDataWidget(QWidget* const pParent)
 //////////////////////////////////////////////////////////////////////////
 CMiddlewareDataWidget::~CMiddlewareDataWidget()
 {
-	g_implementationManager.SignalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_implementationManager.SignalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implementationManager.SignalOnBeforeImplementationChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implementationManager.SignalOnAfterImplementationChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 
 	ClearImplDataWidget();
 }

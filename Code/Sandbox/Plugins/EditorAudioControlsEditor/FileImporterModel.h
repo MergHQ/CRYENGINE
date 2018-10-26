@@ -2,9 +2,8 @@
 
 #pragma once
 
+#include "Common/FileImportInfo.h"
 #include <QAbstractItemModel>
-
-#include <FileImportInfo.h>
 #include <QDir>
 
 namespace ACE
@@ -23,8 +22,13 @@ public:
 		Count, };
 
 	CFileImporterModel() = delete;
+	CFileImporterModel(CFileImporterModel const&) = delete;
+	CFileImporterModel(CFileImporterModel&&) = delete;
+	CFileImporterModel& operator=(CFileImporterModel const&) = delete;
+	CFileImporterModel& operator=(CFileImporterModel&&) = delete;
 
 	explicit CFileImporterModel(FileImportInfos& fileImportInfos, QObject* const pParent);
+	virtual ~CFileImporterModel() override = default;
 
 	static QString const s_newAction;
 	static QString const s_replaceAction;

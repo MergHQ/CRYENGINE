@@ -40,7 +40,13 @@ void AddNonStreamsBank(AssetNames& banks, string const& fileName)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CProjectLoader::CProjectLoader(string const& projectPath, string const& banksPath, string const& localizedBanksPath, CItem& rootItem, ItemCache& itemCache, CImpl const& impl)
+CProjectLoader::CProjectLoader(
+	string const& projectPath,
+	string const& banksPath,
+	string const& localizedBanksPath,
+	CItem& rootItem,
+	ItemCache& itemCache,
+	CImpl const& impl)
 	: m_rootItem(rootItem)
 	, m_itemCache(itemCache)
 	, m_projectPath(projectPath)

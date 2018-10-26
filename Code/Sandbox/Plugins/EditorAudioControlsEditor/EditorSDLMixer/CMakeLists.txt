@@ -48,6 +48,6 @@ end_sources()
 #END-FILE-LIST
 
 CryEditorPlugin(EditorCryAudioImplSDLMixer SOLUTION_FOLDER "Sandbox/Plugins/EditorAudioControlsEditor/Impl" OUTDIR EditorPlugins/ace)
-target_include_directories(${THIS_PROJECT} PRIVATE ../common "${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/Common" "${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/implementations")
+target_include_directories(${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/Common" "${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/implementations")
 target_compile_definitions(${THIS_PROJECT} PRIVATE -DNOT_USE_CRY_MEMORY_MANAGER -DACE_PLUGIN_EXPORTS -DUSE_BACKWARDS_COMPATIBILITY)
 

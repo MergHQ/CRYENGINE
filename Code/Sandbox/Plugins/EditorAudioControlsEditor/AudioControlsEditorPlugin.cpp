@@ -26,10 +26,10 @@ CImplementationManager g_implementationManager;
 FileNames CAudioControlsEditorPlugin::s_currentFilenames;
 CryAudio::ControlId CAudioControlsEditorPlugin::s_audioTriggerId = CryAudio::InvalidControlId;
 EErrorCode CAudioControlsEditorPlugin::s_loadingErrorMask;
-CCrySignal<void()> CAudioControlsEditorPlugin::SignalAboutToLoad;
-CCrySignal<void()> CAudioControlsEditorPlugin::SignalLoaded;
-CCrySignal<void()> CAudioControlsEditorPlugin::SignalAboutToSave;
-CCrySignal<void()> CAudioControlsEditorPlugin::SignalSaved;
+CCrySignal<void()> CAudioControlsEditorPlugin::SignalOnBeforeLoad;
+CCrySignal<void()> CAudioControlsEditorPlugin::SignalOnAfterLoad;
+CCrySignal<void()> CAudioControlsEditorPlugin::SignalOnBeforeSave;
+CCrySignal<void()> CAudioControlsEditorPlugin::SignalOnAfterSave;
 
 REGISTER_VIEWPANE_FACTORY(CMainWindow, "Audio Controls Editor", "Tools", true)
 
@@ -70,7 +70,7 @@ CAudioControlsEditorPlugin::~CAudioControlsEditorPlugin()
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorPlugin::SaveData()
 {
-	SignalAboutToSave();
+	SignalOnBeforeSave();
 
 	if (g_pIImpl != nullptr)
 	{
@@ -79,7 +79,7 @@ void CAudioControlsEditorPlugin::SaveData()
 	}
 
 	s_loadingErrorMask = EErrorCode::None;
-	SignalSaved();
+	SignalOnAfterSave();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -87,7 +87,7 @@ void CAudioControlsEditorPlugin::ReloadData(EReloadFlags const flags)
 {
 	if ((flags& EReloadFlags::SendSignals) != 0)
 	{
-		SignalAboutToLoad();
+		SignalOnBeforeLoad();
 	}
 
 	if ((flags& EReloadFlags::ReloadSystemControls) != 0)
@@ -145,7 +145,7 @@ void CAudioControlsEditorPlugin::ReloadData(EReloadFlags const flags)
 
 	if ((flags& EReloadFlags::SendSignals) != 0)
 	{
-		SignalLoaded();
+		SignalOnAfterLoad();
 	}
 }
 

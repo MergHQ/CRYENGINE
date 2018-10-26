@@ -13,6 +13,12 @@ class CSystemLibraryModel : public QAbstractItemModel
 {
 public:
 
+	CSystemLibraryModel() = delete;
+	CSystemLibraryModel(CSystemLibraryModel const&) = delete;
+	CSystemLibraryModel(CSystemLibraryModel&&) = delete;
+	CSystemLibraryModel& operator=(CSystemLibraryModel const&) = delete;
+	CSystemLibraryModel& operator=(CSystemLibraryModel&&) = delete;
+
 	CSystemLibraryModel(CLibrary* const pLibrary, QObject* const pParent);
 	virtual ~CSystemLibraryModel() override;
 

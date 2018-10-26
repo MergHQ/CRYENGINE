@@ -11,8 +11,17 @@ class CFolderSelectorFilterModel final : public QDeepFilterProxyModel
 public:
 
 	CFolderSelectorFilterModel() = delete;
+	CFolderSelectorFilterModel(CFolderSelectorFilterModel const&) = delete;
+	CFolderSelectorFilterModel(CFolderSelectorFilterModel&&) = delete;
+	CFolderSelectorFilterModel& operator=(CFolderSelectorFilterModel const&) = delete;
+	CFolderSelectorFilterModel& operator=(CFolderSelectorFilterModel&&) = delete;
 
-	explicit CFolderSelectorFilterModel(QString const& assetpath, QObject* const pParent);
+	explicit CFolderSelectorFilterModel(QString const& assetpath, QObject* const pParent)
+		: QDeepFilterProxyModel(QDeepFilterProxyModel::Behavior::AcceptIfChildMatches, pParent)
+		, m_assetPath(assetpath)
+	{}
+
+	virtual ~CFolderSelectorFilterModel() override = default;
 
 protected:
 

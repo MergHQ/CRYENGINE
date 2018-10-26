@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <SharedData.h>
+#include "Common/SharedData.h"
 
 #include <CryString/CryString.h>
 #include <CrySerialization/Forward.h>
@@ -24,6 +24,13 @@ CRY_CREATE_ENUM_FLAG_OPERATORS(EAssetFlags);
 class CAsset
 {
 public:
+
+	CAsset() = delete;
+	CAsset(CAsset const&) = delete;
+	CAsset(CAsset&&) = delete;
+	CAsset& operator=(CAsset const&) = delete;
+	CAsset& operator=(CAsset&&) = delete;
+
 	virtual ~CAsset() {}
 
 	EAssetType    GetType() const   { return m_type; }
@@ -57,9 +64,11 @@ public:
 
 protected:
 
-	explicit CAsset(string const& name, EAssetType const type);
-
-	CAsset() = delete;
+	explicit CAsset(string const& name, EAssetType const type)
+		: m_name(name)
+		, m_type(type)
+		, m_flags(EAssetFlags::None)
+	{}
 
 	CAsset*          m_pParent = nullptr;
 	Assets           m_children;

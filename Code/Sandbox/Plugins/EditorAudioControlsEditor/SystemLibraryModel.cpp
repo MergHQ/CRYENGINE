@@ -8,9 +8,9 @@
 #include "ImplementationManager.h"
 #include "AssetIcons.h"
 #include "AssetUtils.h"
+#include "Common/IItem.h"
+#include "Common/ModelUtils.h"
 
-#include <ModelUtils.h>
-#include <IItem.h>
 #include <QtUtil.h>
 #include <DragDrop.h>
 
@@ -24,7 +24,7 @@ CSystemLibraryModel::CSystemLibraryModel(CLibrary* const pLibrary, QObject* cons
 	, m_pLibrary(pLibrary)
 	, m_nameColumn(static_cast<int>(CSystemSourceModel::EColumns::Name))
 {
-	CRY_ASSERT_MESSAGE(pLibrary != nullptr, "Library is null pointer.");
+	CRY_ASSERT_MESSAGE(pLibrary != nullptr, "Library is null pointer during %s", __FUNCTION__);
 	ConnectSignals();
 }
 
@@ -37,7 +37,7 @@ CSystemLibraryModel::~CSystemLibraryModel()
 //////////////////////////////////////////////////////////////////////////
 void CSystemLibraryModel::ConnectSignals()
 {
-	g_assetsManager.SignalAssetAboutToBeAdded.Connect([this](CAsset* const pAsset)
+	g_assetsManager.SignalOnBeforeAssetAdded.Connect([this](CAsset* const pAsset)
 		{
 			if (AssetUtils::GetParentLibrary(pAsset) == m_pLibrary)
 			{
@@ -45,7 +45,7 @@ void CSystemLibraryModel::ConnectSignals()
 
 			  if (pAsset->GetType() == EAssetType::Library)
 			  {
-			    CRY_ASSERT_MESSAGE(pAsset == m_pLibrary, "Parent is not the current library.");
+			    CRY_ASSERT_MESSAGE(pAsset == m_pLibrary, "Parent is not the current library during %s", __FUNCTION__);
 			    beginInsertRows(QModelIndex(), row, row);
 				}
 			  else
@@ -56,7 +56,7 @@ void CSystemLibraryModel::ConnectSignals()
 			}
 		}, reinterpret_cast<uintptr_t>(this));
 
-	g_assetsManager.SignalAssetAdded.Connect([this](CAsset* const pAsset)
+	g_assetsManager.SignalOnAfterAssetAdded.Connect([this](CAsset* const pAsset)
 		{
 			if (AssetUtils::GetParentLibrary(pAsset) == m_pLibrary)
 			{
@@ -64,7 +64,7 @@ void CSystemLibraryModel::ConnectSignals()
 			}
 		}, reinterpret_cast<uintptr_t>(this));
 
-	g_assetsManager.SignalAssetAboutToBeRemoved.Connect([this](CAsset* const pAsset)
+	g_assetsManager.SignalOnBeforeAssetRemoved.Connect([this](CAsset* const pAsset)
 		{
 			if (AssetUtils::GetParentLibrary(pAsset) == m_pLibrary)
 			{
@@ -82,7 +82,7 @@ void CSystemLibraryModel::ConnectSignals()
 
 			        if (pParent->GetType() == EAssetType::Library)
 			        {
-			          CRY_ASSERT_MESSAGE(pParent == m_pLibrary, "Parent is not the current library.");
+			          CRY_ASSERT_MESSAGE(pParent == m_pLibrary, "Parent is not the current library during %s", __FUNCTION__);
 			          beginRemoveRows(QModelIndex(), index, index);
 							}
 			        else
@@ -98,7 +98,7 @@ void CSystemLibraryModel::ConnectSignals()
 			}
 		}, reinterpret_cast<uintptr_t>(this));
 
-	g_assetsManager.SignalAssetRemoved.Connect([this](CAsset* const pParent, CAsset* const pAsset)
+	g_assetsManager.SignalOnAfterAssetRemoved.Connect([this](CAsset* const pParent, CAsset* const pAsset)
 		{
 			if (AssetUtils::GetParentLibrary(pParent) == m_pLibrary)
 			{
@@ -110,10 +110,10 @@ void CSystemLibraryModel::ConnectSignals()
 //////////////////////////////////////////////////////////////////////////
 void CSystemLibraryModel::DisconnectSignals()
 {
-	g_assetsManager.SignalAssetAboutToBeAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_assetsManager.SignalAssetAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_assetsManager.SignalAssetAboutToBeRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_assetsManager.SignalAssetRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_assetsManager.SignalOnBeforeAssetAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_assetsManager.SignalOnAfterAssetAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_assetsManager.SignalOnBeforeAssetRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_assetsManager.SignalOnAfterAssetRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -554,7 +554,7 @@ bool CSystemLibraryModel::canDropMimeData(QMimeData const* pData, Qt::DropAction
 	if (parent.isValid())
 	{
 		CAsset const* const pParent = static_cast<CAsset*>(parent.internalPointer());
-		CRY_ASSERT_MESSAGE(pParent != nullptr, "Parent is null pointer.");
+		CRY_ASSERT_MESSAGE(pParent != nullptr, "Parent is null pointer during %s", __FUNCTION__);
 
 		if (pParent != nullptr)
 		{
@@ -568,7 +568,7 @@ bool CSystemLibraryModel::canDropMimeData(QMimeData const* pData, Qt::DropAction
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(m_pLibrary != nullptr, "Library is null pointer.");
+		CRY_ASSERT_MESSAGE(m_pLibrary != nullptr, "Library is null pointer during %s", __FUNCTION__);
 
 		if (m_pLibrary != nullptr)
 		{
@@ -597,12 +597,12 @@ bool CSystemLibraryModel::dropMimeData(QMimeData const* pData, Qt::DropAction ac
 	if (parent.isValid())
 	{
 		auto const pAsset = static_cast<CAsset*>(parent.internalPointer());
-		CRY_ASSERT_MESSAGE(pAsset != nullptr, "Asset is null pointer.");
+		CRY_ASSERT_MESSAGE(pAsset != nullptr, "Asset is null pointer during %s", __FUNCTION__);
 		wasDropped = CSystemSourceModel::DropData(pData, pAsset);
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(m_pLibrary != nullptr, "Library is null pointer.");
+		CRY_ASSERT_MESSAGE(m_pLibrary != nullptr, "Library is null pointer during %s", __FUNCTION__);
 		wasDropped = CSystemSourceModel::DropData(pData, m_pLibrary);
 	}
 

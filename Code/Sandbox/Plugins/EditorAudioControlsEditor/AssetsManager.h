@@ -20,6 +20,11 @@ class CAssetsManager final
 {
 public:
 
+	CAssetsManager(CAssetsManager const&) = delete;
+	CAssetsManager(CAssetsManager&&) = delete;
+	CAssetsManager& operator=(CAssetsManager const&) = delete;
+	CAssetsManager& operator=(CAssetsManager&&) = delete;
+
 	CAssetsManager();
 	~CAssetsManager();
 
@@ -62,8 +67,8 @@ public:
 
 	void             UpdateAllConnectionStates();
 
-	void             OnControlAboutToBeModified(CControl* const pControl);
-	void             OnControlModified(CControl* const pControl);
+	void             OnBeforeControlModified(CControl* const pControl);
+	void             OnAfterControlModified(CControl* const pControl);
 	void             OnConnectionAdded(CControl* const pControl, Impl::IItem* const pIItem);
 	void             OnConnectionRemoved(CControl* const pControl, Impl::IItem* const pIItem);
 	void             OnAssetRenamed(CAsset* const pAsset);
@@ -74,14 +79,14 @@ public:
 	FileNames const& GetModifiedLibraries() const { return m_modifiedLibraryNames; }
 
 	CCrySignal<void(bool)>             SignalIsDirty;
-	CCrySignal<void()>                 SignalLibraryAboutToBeAdded;
-	CCrySignal<void(CLibrary*)>        SignalLibraryAdded;
-	CCrySignal<void(CLibrary*)>        SignalLibraryAboutToBeRemoved;
-	CCrySignal<void()>                 SignalLibraryRemoved;
-	CCrySignal<void(CAsset*)>          SignalAssetAboutToBeAdded;
-	CCrySignal<void(CAsset*)>          SignalAssetAdded;
-	CCrySignal<void(CAsset*)>          SignalAssetAboutToBeRemoved;
-	CCrySignal<void(CAsset*, CAsset*)> SignalAssetRemoved;
+	CCrySignal<void()>                 SignalOnBeforeLibraryAdded;
+	CCrySignal<void(CLibrary*)>        SignalOnAfterLibraryAdded;
+	CCrySignal<void(CLibrary*)>        SignalOnBeforeLibraryRemoved;
+	CCrySignal<void()>                 SignalOnAfterLibraryRemoved;
+	CCrySignal<void(CAsset*)>          SignalOnBeforeAssetAdded;
+	CCrySignal<void(CAsset*)>          SignalOnAfterAssetAdded;
+	CCrySignal<void(CAsset*)>          SignalOnBeforeAssetRemoved;
+	CCrySignal<void(CAsset*, CAsset*)> SignalOnAfterAssetRemoved;
 	CCrySignal<void(CAsset*)>          SignalAssetRenamed;
 	CCrySignal<void(CControl*)>        SignalControlModified;
 	CCrySignal<void(CControl*)>        SignalConnectionAdded;

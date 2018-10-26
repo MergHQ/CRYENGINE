@@ -5,10 +5,10 @@
 
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
+#include "Common/IConnection.h"
+#include "Common/IItem.h"
+#include "Common/ModelUtils.h"
 
-#include <ModelUtils.h>
-#include <IConnection.h>
-#include <IItem.h>
 #include <QtUtil.h>
 #include <DragDrop.h>
 
@@ -19,7 +19,7 @@ namespace ACE
 //////////////////////////////////////////////////////////////////////////
 bool ProcessDragDropData(QMimeData const* const pData, ControlIds& ids)
 {
-	CRY_ASSERT_MESSAGE(ids.empty(), "Passed container must be empty.");
+	CRY_ASSERT_MESSAGE(ids.empty(), "Passed container must be empty during %s", __FUNCTION__);
 	CDragDropData const* const pDragDropData = CDragDropData::FromMimeData(pData);
 
 	if (pDragDropData->HasCustomData(ModelUtils::s_szImplMimeType))
@@ -107,7 +107,7 @@ void CConnectionsModel::ConnectSignals()
 			}
 		}, reinterpret_cast<uintptr_t>(this));
 
-	g_implementationManager.SignalImplementationAboutToChange.Connect([this]()
+	g_implementationManager.SignalOnBeforeImplementationChange.Connect([this]()
 		{
 			beginResetModel();
 			m_pControl = nullptr;
@@ -115,7 +115,7 @@ void CConnectionsModel::ConnectSignals()
 			endResetModel();
 		}, reinterpret_cast<uintptr_t>(this));
 
-	g_implementationManager.SignalImplementationChanged.Connect([this]()
+	g_implementationManager.SignalOnAfterImplementationChange.Connect([this]()
 		{
 			beginResetModel();
 			ResetCache();
@@ -128,8 +128,8 @@ void CConnectionsModel::DisconnectSignals()
 {
 	g_assetsManager.SignalConnectionAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_assetsManager.SignalConnectionRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_implementationManager.SignalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_implementationManager.SignalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implementationManager.SignalOnBeforeImplementationChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implementationManager.SignalOnAfterImplementationChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////

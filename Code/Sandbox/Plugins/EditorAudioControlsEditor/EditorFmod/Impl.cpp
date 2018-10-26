@@ -402,7 +402,7 @@ IItem* CImpl::GetItem(ControlId const id) const
 CryIcon const& CImpl::GetItemIcon(IItem const* const pIItem) const
 {
 	auto const pItem = static_cast<CItem const* const>(pIItem);
-	CRY_ASSERT_MESSAGE(pItem != nullptr, "Impl item is null pointer.");
+	CRY_ASSERT_MESSAGE(pItem != nullptr, "Impl item is null pointer during %s", __FUNCTION__);
 	return GetTypeIcon(pItem->GetType());
 }
 
@@ -410,7 +410,7 @@ CryIcon const& CImpl::GetItemIcon(IItem const* const pIItem) const
 QString const& CImpl::GetItemTypeName(IItem const* const pIItem) const
 {
 	auto const pItem = static_cast<CItem const* const>(pIItem);
-	CRY_ASSERT_MESSAGE(pItem != nullptr, "Impl item is null pointer.");
+	CRY_ASSERT_MESSAGE(pItem != nullptr, "Impl item is null pointer during %s", __FUNCTION__);
 	return TypeToString(pItem->GetType());
 }
 
@@ -927,7 +927,7 @@ void CImpl::DisableConnection(IConnection const* const pIConnection, bool const 
 
 		if (connectionCount < 1)
 		{
-			CRY_ASSERT_MESSAGE(connectionCount >= 0, "Connection count is < 0");
+			CRY_ASSERT_MESSAGE(connectionCount >= 0, "Connection count is < 0 during %s", __FUNCTION__);
 			connectionCount = 0;
 			pItem->SetFlags(pItem->GetFlags() & ~EItemFlags::IsConnected);
 		}
@@ -943,20 +943,20 @@ void CImpl::DestructConnection(IConnection const* const pIConnection)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::OnAboutToReload()
+void CImpl::OnBeforeReload()
 {
 	if (m_pDataPanel != nullptr)
 	{
-		m_pDataPanel->OnAboutToReload();
+		m_pDataPanel->OnBeforeReload();
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::OnReloaded()
+void CImpl::OnAfterReload()
 {
 	if (m_pDataPanel != nullptr)
 	{
-		m_pDataPanel->OnReloaded();
+		m_pDataPanel->OnAfterReload();
 	}
 }
 

@@ -7,9 +7,9 @@
 #include "ImplementationManager.h"
 #include "AssetIcons.h"
 #include "AssetUtils.h"
+#include "Common/IItem.h"
+#include "Common/ModelUtils.h"
 
-#include <ModelUtils.h>
-#include <IItem.h>
 #include <QtUtil.h>
 #include <DragDrop.h>
 
@@ -67,7 +67,7 @@ bool IsParentValid(EAssetType const parentType, EAssetType const assetType)
 //////////////////////////////////////////////////////////////////////////
 bool ProcessDragDropData(QMimeData const* const pData, Assets& outItems)
 {
-	CRY_ASSERT_MESSAGE(outItems.empty(), "Passed container must be empty.");
+	CRY_ASSERT_MESSAGE(outItems.empty(), "Passed container must be empty during %s", __FUNCTION__);
 	CDragDropData const* const pDragDropData = CDragDropData::FromMimeData(pData);
 
 	if (pDragDropData->HasCustomData(ModelUtils::s_szSystemMimeType))
@@ -89,7 +89,7 @@ bool ProcessDragDropData(QMimeData const* const pData, Assets& outItems)
 //////////////////////////////////////////////////////////////////////////
 bool ProcessImplDragDropData(QMimeData const* const pData, std::vector<Impl::IItem*>& outItems)
 {
-	CRY_ASSERT_MESSAGE(outItems.empty(), "Passed container must be empty.");
+	CRY_ASSERT_MESSAGE(outItems.empty(), "Passed container must be empty during %s", __FUNCTION__);
 	CDragDropData const* const pDragDropData = CDragDropData::FromMimeData(pData);
 
 	if (pDragDropData->HasCustomData(ModelUtils::s_szImplMimeType))
@@ -229,21 +229,21 @@ CSystemSourceModel::~CSystemSourceModel()
 //////////////////////////////////////////////////////////////////////////
 void CSystemSourceModel::ConnectSignals()
 {
-	CAudioControlsEditorPlugin::SignalAboutToLoad.Connect([&]()
+	CAudioControlsEditorPlugin::SignalOnBeforeLoad.Connect([&]()
+	    {
+	                                                       beginResetModel();
+	                                                       m_ignoreLibraryUpdates = true;
+	                                                       endResetModel();
+			}, reinterpret_cast<uintptr_t>(this));
+
+	CAudioControlsEditorPlugin::SignalOnAfterLoad.Connect([&]()
 	    {
 	                                                      beginResetModel();
-	                                                      m_ignoreLibraryUpdates = true;
+	                                                      m_ignoreLibraryUpdates = false;
 	                                                      endResetModel();
 			}, reinterpret_cast<uintptr_t>(this));
 
-	CAudioControlsEditorPlugin::SignalLoaded.Connect([&]()
-	    {
-	                                                 beginResetModel();
-	                                                 m_ignoreLibraryUpdates = false;
-	                                                 endResetModel();
-			}, reinterpret_cast<uintptr_t>(this));
-
-	g_assetsManager.SignalLibraryAboutToBeAdded.Connect([this]()
+	g_assetsManager.SignalOnBeforeLibraryAdded.Connect([this]()
 		{
 			if (!m_ignoreLibraryUpdates)
 			{
@@ -252,7 +252,7 @@ void CSystemSourceModel::ConnectSignals()
 			}
 		}, reinterpret_cast<uintptr_t>(this));
 
-	g_assetsManager.SignalLibraryAdded.Connect([this](CLibrary* const pLibrary)
+	g_assetsManager.SignalOnAfterLibraryAdded.Connect([this](CLibrary* const pLibrary)
 		{
 			if (!m_ignoreLibraryUpdates)
 			{
@@ -260,7 +260,7 @@ void CSystemSourceModel::ConnectSignals()
 			}
 		}, reinterpret_cast<uintptr_t>(this));
 
-	g_assetsManager.SignalLibraryAboutToBeRemoved.Connect([this](CLibrary* const pLibrary)
+	g_assetsManager.SignalOnBeforeLibraryRemoved.Connect([this](CLibrary* const pLibrary)
 		{
 			if (!m_ignoreLibraryUpdates)
 			{
@@ -278,7 +278,7 @@ void CSystemSourceModel::ConnectSignals()
 			}
 		}, reinterpret_cast<uintptr_t>(this));
 
-	g_assetsManager.SignalLibraryRemoved.Connect([this]()
+	g_assetsManager.SignalOnAfterLibraryRemoved.Connect([this]()
 		{
 			if (!m_ignoreLibraryUpdates)
 			{
@@ -290,12 +290,12 @@ void CSystemSourceModel::ConnectSignals()
 //////////////////////////////////////////////////////////////////////////
 void CSystemSourceModel::DisconnectSignals()
 {
-	CAudioControlsEditorPlugin::SignalAboutToLoad.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	CAudioControlsEditorPlugin::SignalLoaded.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_assetsManager.SignalLibraryAboutToBeAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_assetsManager.SignalLibraryAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_assetsManager.SignalLibraryAboutToBeRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_assetsManager.SignalLibraryRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::SignalOnBeforeLoad.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::SignalOnAfterLoad.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_assetsManager.SignalOnBeforeLibraryAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_assetsManager.SignalOnAfterLibraryAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_assetsManager.SignalOnBeforeLibraryRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_assetsManager.SignalOnAfterLibraryRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -718,7 +718,7 @@ bool CSystemSourceModel::canDropMimeData(QMimeData const* pData, Qt::DropAction 
 	if (parent.isValid())
 	{
 		CLibrary const* const pParent = static_cast<CLibrary*>(parent.internalPointer());
-		CRY_ASSERT_MESSAGE(pParent != nullptr, "Parent is null pointer.");
+		CRY_ASSERT_MESSAGE(pParent != nullptr, "Parent is null pointer during %s", __FUNCTION__);
 
 		if (pParent != nullptr)
 		{
@@ -747,7 +747,7 @@ bool CSystemSourceModel::dropMimeData(QMimeData const* pData, Qt::DropAction act
 	if (parent.isValid())
 	{
 		auto const pLibrary = static_cast<CLibrary*>(parent.internalPointer());
-		CRY_ASSERT_MESSAGE(pLibrary != nullptr, "Library is null pointer.");
+		CRY_ASSERT_MESSAGE(pLibrary != nullptr, "Library is null pointer during %s", __FUNCTION__);
 
 		if (pLibrary != nullptr)
 		{

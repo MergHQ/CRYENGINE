@@ -7,10 +7,10 @@
 #include "ImplementationManager.h"
 #include "TreeView.h"
 #include "ConnectionsModel.h"
+#include "Common/IConnection.h"
+#include "Common/IItem.h"
+#include "Common/ModelUtils.h"
 
-#include <ModelUtils.h>
-#include <IConnection.h>
-#include <IItem.h>
 #include <QtUtil.h>
 #include <Controls/QuestionDialog.h>
 #include <CrySerialization/IArchive.h>
@@ -88,7 +88,7 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 			}
 		}, reinterpret_cast<uintptr_t>(this));
 
-	g_implementationManager.SignalImplementationAboutToChange.Connect([this]()
+	g_implementationManager.SignalOnBeforeImplementationChange.Connect([this]()
 		{
 			m_pTreeView->selectionModel()->clear();
 			RefreshConnectionProperties();
@@ -101,7 +101,7 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 CConnectionsWidget::~CConnectionsWidget()
 {
 	g_assetsManager.SignalConnectionRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_implementationManager.SignalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implementationManager.SignalOnBeforeImplementationChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 
 	m_pConnectionModel->DisconnectSignals();
 	m_pConnectionModel->deleteLater();
@@ -342,13 +342,13 @@ void CConnectionsWidget::ResizeColumns()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CConnectionsWidget::OnAboutToReload()
+void CConnectionsWidget::OnBeforeReload()
 {
 	m_pTreeView->BackupSelection();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CConnectionsWidget::OnReloaded()
+void CConnectionsWidget::OnAfterReload()
 {
 	m_pTreeView->RestoreSelection();
 }

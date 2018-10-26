@@ -11,7 +11,13 @@ class CAudioControlsLoader final
 {
 public:
 
-	CAudioControlsLoader();
+	CAudioControlsLoader(CAudioControlsLoader const&) = delete;
+	CAudioControlsLoader(CAudioControlsLoader&&) = delete;
+	CAudioControlsLoader& operator=(CAudioControlsLoader const&) = delete;
+	CAudioControlsLoader& operator=(CAudioControlsLoader&&) = delete;
+
+	CAudioControlsLoader() = default;
+
 	FileNames  GetLoadedFilenamesList();
 	void       LoadAll(bool const loadOnlyDefaultControls = false);
 	void       LoadControls(string const& folderPath);
@@ -44,8 +50,8 @@ private:
 	static string const s_controlsLevelsFolder;
 	static string const s_assetsFolderPath;
 	FileNames           m_loadedFilenames;
-	EErrorCode          m_errorCodeMask;
-	bool                m_loadOnlyDefaultControls;
+	EErrorCode          m_errorCodeMask = EErrorCode::None;
+	bool                m_loadOnlyDefaultControls = false;
 
 	FileNames           m_defaultTriggerNames { CryAudio::s_szGetFocusTriggerName, CryAudio::s_szLoseFocusTriggerName, CryAudio::s_szMuteAllTriggerName, CryAudio::s_szUnmuteAllTriggerName };
 	FileNames           m_defaultParameterNames { "absolute_velocity", "object_speed", "relative_velocity", "object_doppler" };

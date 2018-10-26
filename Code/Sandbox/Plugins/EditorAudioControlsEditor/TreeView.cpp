@@ -12,6 +12,9 @@ namespace ACE
 //////////////////////////////////////////////////////////////////////////
 CTreeView::CTreeView(QWidget* const pParent, QAdvancedTreeView::BehaviorFlags const flags /*= QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute)*/)
 	: QAdvancedTreeView(QAdvancedTreeView::BehaviorFlags(flags), pParent)
+	, m_nameRole(0)
+	, m_typeRole(0)
+	, m_nameColumn(0)
 {
 	QObject::connect(header(), &QHeaderView::sortIndicatorChanged, [this]() { scrollTo(currentIndex()); });
 }

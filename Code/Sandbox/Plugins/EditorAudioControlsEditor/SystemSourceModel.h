@@ -30,6 +30,12 @@ public:
 		Name,
 		Count, };
 
+	CSystemSourceModel() = delete;
+	CSystemSourceModel(CSystemSourceModel const&) = delete;
+	CSystemSourceModel(CSystemSourceModel&&) = delete;
+	CSystemSourceModel& operator=(CSystemSourceModel const&) = delete;
+	CSystemSourceModel& operator=(CSystemSourceModel&&) = delete;
+
 	CSystemSourceModel(QObject* const pParent);
 	virtual ~CSystemSourceModel() override;
 

@@ -12,9 +12,14 @@ class CFileMonitorSystem final : public CFileMonitorBase
 
 public:
 
-	explicit CFileMonitorSystem(int const delay, QObject* const pParent);
-
 	CFileMonitorSystem() = delete;
+	CFileMonitorSystem(CFileMonitorSystem const&) = delete;
+	CFileMonitorSystem(CFileMonitorSystem&&) = delete;
+	CFileMonitorSystem& operator=(CFileMonitorSystem const&) = delete;
+	CFileMonitorSystem& operator=(CFileMonitorSystem&&) = delete;
+
+	explicit CFileMonitorSystem(int const delay, QObject* const pParent);
+	virtual ~CFileMonitorSystem() override = default;
 
 	void Enable();
 	void EnableDelayed();

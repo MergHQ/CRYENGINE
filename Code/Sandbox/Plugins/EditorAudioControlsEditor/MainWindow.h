@@ -2,9 +2,9 @@
 
 #pragma once
 
+#include "Common/SharedData.h"
 #include <EditorFramework/Editor.h>
 #include <IEditor.h>
-#include <SharedData.h>
 
 class QAction;
 class QLabel;
@@ -26,6 +26,11 @@ class CMainWindow final : public CDockableEditor, public IEditorNotifyListener, 
 	Q_OBJECT
 
 public:
+
+	CMainWindow(CMainWindow const&) = delete;
+	CMainWindow(CMainWindow&&) = delete;
+	CMainWindow& operator=(CMainWindow const&) = delete;
+	CMainWindow& operator=(CMainWindow&&) = delete;
 
 	CMainWindow();
 	virtual ~CMainWindow() override;
@@ -88,8 +93,8 @@ private:
 	void                   ReloadSystemData();
 	void                   ReloadMiddlewareData();
 	void                   RefreshAudioSystem();
-	void                   OnAboutToReload();
-	void                   OnReloaded();
+	void                   OnBeforeReload();
+	void                   OnAfterReload();
 	bool                   TryClose();
 
 	Assets                 GetSelectedAssets();

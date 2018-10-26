@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <IItem.h>
+#include "../Common/IItem.h"
 #include <PoolObject.h>
 
 namespace ACE

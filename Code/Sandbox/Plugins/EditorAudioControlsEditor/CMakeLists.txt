@@ -49,7 +49,6 @@ add_sources("EditorAudioControlsEditor_uber_0.cpp"
 		"AssetsManager.h"
 		"Control.cpp"
 		"Control.h"
-		"Folder.cpp"
 		"Folder.h"
 		"Library.cpp"
 		"Library.h"
@@ -106,5 +105,5 @@ end_sources()
 #END-FILE-LIST
 
 CryEditorPlugin(EditorAudioControlsEditor PCH "StdAfx.cpp" SOLUTION_FOLDER "Sandbox/Plugins/EditorAudioControlsEditor")
-target_include_directories( ${THIS_PROJECT} PRIVATE .. common "${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/Common" "${CRYENGINE_DIR}/Code/CryEngine/CryAction")
+target_include_directories( ${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/Common" "${CRYENGINE_DIR}/Code/CryEngine/CryAction")
 

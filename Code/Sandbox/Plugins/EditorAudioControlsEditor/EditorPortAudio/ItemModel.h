@@ -2,10 +2,11 @@
 
 #pragma once
 
+#include "../Common/SharedData.h"
+#include "../Common/FileImportInfo.h"
+
 #include <QAbstractItemModel>
 
-#include <SharedData.h>
-#include <FileImportInfo.h>
 #include <FileDialogs/ExtensionFilter.h>
 #include <CryAudio/IAudioInterfacesCommonData.h>
 

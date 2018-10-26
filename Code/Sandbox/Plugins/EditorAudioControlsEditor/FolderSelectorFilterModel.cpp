@@ -8,13 +8,6 @@
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-CFolderSelectorFilterModel::CFolderSelectorFilterModel(QString const& assetpath, QObject* const pParent)
-	: QDeepFilterProxyModel(QDeepFilterProxyModel::Behavior::AcceptIfChildMatches, pParent)
-	, m_assetPath(assetpath)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 bool CFolderSelectorFilterModel::rowMatchesFilter(int sourceRow, QModelIndex const& sourceParent) const
 {
 	bool matchesFilter = false;

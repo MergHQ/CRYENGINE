@@ -2,8 +2,7 @@
 
 #include "StdAfx.h"
 #include "FilterProxyModel.h"
-
-#include <ModelUtils.h>
+#include "../Common/ModelUtils.h"
 
 namespace ACE
 {
@@ -11,12 +10,6 @@ namespace Impl
 {
 namespace PortAudio
 {
-//////////////////////////////////////////////////////////////////////////
-CFilterProxyModel::CFilterProxyModel(QObject* const pParent)
-	: QAttributeFilterProxyModel(QDeepFilterProxyModel::Behavior::AcceptIfChildMatches, pParent)
-{
-}
-
 //////////////////////////////////////////////////////////////////////////
 bool CFilterProxyModel::rowMatchesFilter(int sourceRow, QModelIndex const& sourceParent) const
 {

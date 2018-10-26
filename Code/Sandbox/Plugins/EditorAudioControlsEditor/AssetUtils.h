@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <SharedData.h>
+#include "Common/SharedData.h"
 #include <CryString/CryString.h>
 
 namespace ACE

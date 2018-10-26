@@ -2,8 +2,8 @@
 
 #pragma once
 
+#include "../Common/SharedData.h"
 #include <QAdvancedTreeView.h>
-#include <SharedData.h>
 
 namespace ACE
 {
@@ -15,9 +15,14 @@ class CTreeView final : public QAdvancedTreeView
 {
 public:
 
-	explicit CTreeView(QWidget* const pParent, QAdvancedTreeView::BehaviorFlags const flags = QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute));
-
 	CTreeView() = delete;
+	CTreeView(CTreeView const&) = delete;
+	CTreeView(CTreeView&&) = delete;
+	CTreeView& operator=(CTreeView const&) = delete;
+	CTreeView& operator=(CTreeView&&) = delete;
+
+	explicit CTreeView(QWidget* const pParent, QAdvancedTreeView::BehaviorFlags const flags = QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute));
+	virtual ~CTreeView() override = default;
 
 	void ExpandSelection();
 	void CollapseSelection();
@@ -28,7 +33,7 @@ public:
 	void BackupSelection();
 	void RestoreSelection();
 
-	void SetNameRole(int const nameRole) { m_nameRole = nameRole; }
+	void SetNameRole(int const nameRole)     { m_nameRole = nameRole; }
 	void SetNameColumn(int const nameColumn) { m_nameColumn = nameColumn; }
 
 private:
@@ -42,8 +47,8 @@ private:
 	void      RestoreExpandedRecursively(QModelIndex const& index);
 	void      RestoreSelectionRecursively(QModelIndex const& index);
 
-	int             m_nameRole = 0;
-	int             m_nameColumn = 0;
+	int             m_nameRole;
+	int             m_nameColumn;
 	QSet<ControlId> m_expandedBackup;
 	QSet<ControlId> m_selectionBackup;
 };

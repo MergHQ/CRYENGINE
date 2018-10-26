@@ -9,16 +9,9 @@
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-CAsset::CAsset(string const& name, EAssetType const type)
-	: m_name(name)
-	, m_type(type)
-	, m_flags(EAssetFlags::None)
-{}
-
-//////////////////////////////////////////////////////////////////////////
 CAsset* CAsset::GetChild(size_t const index) const
 {
-	CRY_ASSERT_MESSAGE(index < m_children.size(), "Asset child index out of bounds.");
+	CRY_ASSERT_MESSAGE(index < m_children.size(), "Asset child index out of bounds during %s", __FUNCTION__);
 
 	CAsset* pAsset = nullptr;
 
