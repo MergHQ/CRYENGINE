@@ -17,6 +17,7 @@ struct SSectorTextureSet;
 //////////////////////////////////////////////////////////////////////////
 enum ERenderObjectFlags : uint64
 {
+	// FOB-flags excluded from rendItem sorting
 	FOB_TRANS_ROTATE                = BIT64(0),
 	FOB_TRANS_SCALE                 = BIT64(1),
 	FOB_TRANS_TRANSLATE             = BIT64(2),
@@ -34,26 +35,33 @@ enum ERenderObjectFlags : uint64
 	FOB_SOFT_PARTICLE               = BIT64(14),
 	FOB_REQUIRES_RESOLVE            = BIT64(15),
 	FOB_UPDATED_RTMASK              = BIT64(16),
+
+	// FOB-flags included in rendItem sorting
 	FOB_AFTER_WATER                 = BIT64(17),
 	FOB_BENDED                      = BIT64(18),
-	FOB_ZPREPASS                    = BIT64(19),
+	FOB_LIGHTVOLUME                 = BIT64(19),
 	FOB_INSHADOW                    = BIT64(20),
-	FOB_DISSOLVE                    = BIT64(21),
+	FOB_DECAL_TEXGEN_2D             = BIT64(21),
 	FOB_MOTION_BLUR                 = BIT64(22),
-	FOB_NEAREST                     = BIT64(23), //!< [Rendered in Camera Space]
-	FOB_SKINNED                     = BIT64(24),
-	FOB_DISSOLVE_OUT                = BIT64(25),
-	FOB_DYNAMIC_OBJECT              = BIT64(26),
-	FOB_ALLOW_TESSELLATION          = BIT64(27),
-	FOB_DECAL_TEXGEN_2D             = BIT64(28),
+	FOB_SKINNED                     = BIT64(23),
+	FOB_DISSOLVE_OUT                = BIT64(24),
+	FOB_DYNAMIC_OBJECT              = BIT64(25),
+	FOB_ALLOW_TESSELLATION          = BIT64(26),
+
+	FOB_NEAREST                     = BIT64(27),  //!< [Rendered in Camera Space]
+	FOB_DISSOLVE                    = BIT64(28),
 	FOB_ALPHATEST                   = BIT64(29),  // Careful when moving (used in ObjSort)
-	FOB_HAS_PREVMATRIX              = BIT64(30),  // Careful when moving (used in ObjSort)
-	FOB_LIGHTVOLUME                 = BIT64(31),
+	FOB_ZPREPASS                    = BIT64(30),
+	FOB_HAS_PREVMATRIX              = BIT64(31),  // Careful when moving (used in ObjSort)
+
+	// FOB-flags excluded from rendItem sorting
 	FOB_TERRAIN_LAYER               = BIT64(32),
 	FOB_HUD_REQUIRE_DEPTHTEST       = BIT64(33),
 	FOB_ALLOW_TERRAIN_LAYER_BLEND   = BIT64(34),
 	FOB_ALLOW_DECAL_BLEND           = BIT64(35),
 
+	FOB_SORT_MASK                   = (0x00000000FFFF0000ULL & (FOB_ZPREPASS | FOB_DISSOLVE | FOB_ALPHATEST | FOB_HAS_PREVMATRIX)),
+	FOB_DISCARD_MASK                = (FOB_ALPHATEST | FOB_DISSOLVE),
 	FOB_TRANS_MASK                  = (FOB_TRANS_ROTATE | FOB_TRANS_SCALE | FOB_TRANS_TRANSLATE),
 	FOB_DECAL_MASK                  = (FOB_DECAL | FOB_DECAL_TEXGEN_2D),
 	FOB_PARTICLE_MASK               = (FOB_SOFT_PARTICLE | FOB_NO_FOG | FOB_INSHADOW | FOB_NEAREST | FOB_MOTION_BLUR | FOB_LIGHTVOLUME | FOB_ALLOW_TESSELLATION | FOB_IN_DOORS | FOB_AFTER_WATER),

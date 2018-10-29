@@ -2349,36 +2349,35 @@ void CRenderView::Job_SortRenderItemsInList(ERenderListID renderList)
 		break;
 
 	case EFSLIST_ZPREPASS:
-		//if (m_bUseGPUFriendlyBatching[nThread])
 		{
 			PROFILE_FRAME(State_SortingZPass);
 			if (CRenderer::CV_r_ZPassDepthSorting == 1)
-				SRendItem::mfSortForZPass(&renderItems[nStart], n);
+				SRendItem::mfSortForZPass(&renderItems[nStart], n, true);
 			else if (CRenderer::CV_r_ZPassDepthSorting == 2)
 				SRendItem::mfSortByDist(&renderItems[nStart], n, false, true);
 		}
 		break;
 
-	case EFSLIST_GENERAL:
 	case EFSLIST_NEAREST_OBJECTS:
+	case EFSLIST_GENERAL:
 	case EFSLIST_DEBUG_HELPER:
 		{
 			PROFILE_FRAME(State_SortingGBuffer);
-			if (CRenderer::CV_r_ZPassDepthSorting == 0)
-				SRendItem::mfSortByLight(&renderItems[nStart], n, true, false, false);
+ 			if (CRenderer::CV_r_ZPassDepthSorting == 0)
+				SRendItem::mfSortForDepthPass(&renderItems[nStart], n);
 			else if (CRenderer::CV_r_ZPassDepthSorting == 1)
-				SRendItem::mfSortForZPass(&renderItems[nStart], n);
+				SRendItem::mfSortForZPass(&renderItems[nStart], n, false);
 			else if (CRenderer::CV_r_ZPassDepthSorting == 2)
 				SRendItem::mfSortByDist(&renderItems[nStart], n, false, true);
 		}
 		break;
 
-	case EFSLIST_FORWARD_OPAQUE:
 	case EFSLIST_FORWARD_OPAQUE_NEAREST:
+	case EFSLIST_FORWARD_OPAQUE:
 		{
 			{
 				PROFILE_FRAME(State_SortingForwardOpaque);
-				SRendItem::mfSortByLight(&renderItems[nStart], n, true, false, false);
+				SRendItem::mfSortForDepthPass(&renderItems[nStart], n);
 			}
 		}
 		break;
@@ -2449,7 +2448,7 @@ int CRenderView::FindRenderListSplit(ERenderListID nList, uint32 objFlag)
 	{
 		int middle = (first + last) / 2;
 
-		if (SRendItem::TestObjFlagsSortingValue(objFlag, renderItems[middle].ObjSort))
+		if (SRendItem::TestIndividualObjFlag(objFlag, renderItems[middle].ObjSort))
 			first = middle + 1;
 		else
 			last = middle - 1;
