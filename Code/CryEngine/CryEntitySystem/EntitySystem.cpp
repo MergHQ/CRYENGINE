@@ -697,10 +697,12 @@ void CEntitySystem::DeleteEntity(CEntity* pEntity)
 //////////////////////////////////////////////////////////////////////
 void CEntitySystem::ClearEntityArray()
 {
+#if defined(USE_CRY_ASSERT)
 	for(const CEntity* const pEntity : m_entityArray)
 	{
 		CRY_ASSERT_TRACE(pEntity == nullptr, ("About to \"leak\" entity id %d (%s)", pEntity->GetId(), pEntity->GetName()));
 	}
+#endif
 
 	m_entityArray.fill_nullptr();
 	m_bSupportLegacy64bitGuids = false;
@@ -1341,8 +1343,6 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 
 			m_updatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> EComponentIterationResult
 			{
-				const CTimeValue timeBeforeComponentUpdate = gEnv->pTimer->GetAsyncTime();
-
 				// Cache entity info before sending the event, as the entity may be removed by the event
 				const SProfiledEntityEvent::SEntityInfo componentEntityInfo(*rec.pComponent->GetEntity());
 
@@ -2190,7 +2190,6 @@ void CEntitySystem::DebugDrawLayerInfo()
 
 	bool shouldRenderAllLayerStats = CVar::es_LayerDebugInfo >= 2;
 	bool shouldRenderMemoryStats = CVar::es_LayerDebugInfo == 3;
-	bool shouldRenderAllLayerPakStats = CVar::es_LayerDebugInfo == 4;
 	bool shouldShowLayerActivation = CVar::es_LayerDebugInfo == 5;
 
 	float tx = 0;
@@ -3182,7 +3181,9 @@ void CEntitySystem::DumpEntity(CEntity* pEntity)
 
 	string name(pEntity->GetName());
 	name += string("[$9") + pEntity->GetClass()->GetName() + string("$o]");
+#if !defined(EXCLUDE_NORMAL_LOG)
 	Vec3 pos(pEntity->GetWorldPos());
+#endif
 	const char* sStatus = pEntity->IsActivatedForUpdates() ? "[$3Active$o]" : "[$9Inactive$o]";
 	if (pEntity->IsHidden())
 		sStatus = "[$9Hidden$o]";

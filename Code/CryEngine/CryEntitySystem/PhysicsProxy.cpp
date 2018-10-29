@@ -1086,7 +1086,6 @@ int CEntityPhysics::AddSlotGeometry(int nSlot, SEntityPhysicalizeParams& params,
 	IStatObj* pStatObj = GetEntity()->GetStatObj(nSlot | ENTITY_SLOT_ACTUAL & - bNoSubslots);
 	if (!pStatObj)
 		return -1;
-	int physId = -1;
 
 	pe_geomparams partpos;
 	Matrix34 mtx;

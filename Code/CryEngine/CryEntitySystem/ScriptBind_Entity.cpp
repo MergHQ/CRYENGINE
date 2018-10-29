@@ -807,10 +807,10 @@ int CScriptBind_Entity::GetBoneLocal(IFunctionHandler* pH, const char* boneName,
 	Matrix33 boneMat(pEntity->GetSlotWorldTM(0) * Matrix34(pCharacter->GetISkeletonPose()->GetAbsJointByID(pBone_id)));
 	Matrix33 localMat(boneMat.GetTransposed() * trgMat);
 
-	Matrix33 m = boneMat * localMat;
+	//Matrix33 m = boneMat * localMat;
 
 	//	Vec3 p((pEntity->GetSlotWorldTM(0)*pCharacter->GetISkeleton()->GetAbsJMatrixByID(pBone_id)).GetTranslation());
-	Vec3 p((pEntity->GetSlotWorldTM(0) * Matrix34(pCharacter->GetISkeletonPose()->GetAbsJointByID(pBone_id))).GetTranslation());
+	//Vec3 p((pEntity->GetSlotWorldTM(0) * Matrix34(pCharacter->GetISkeletonPose()->GetAbsJointByID(pBone_id))).GetTranslation());
 
 	//gEnv->pAuxGeomRenderer->DrawLine(p, ColorB(255, 255, 0, 255), p-(m.GetColumn(1)*100), ColorB(128, 0, 255, 255));
 	//return pH->EndFunction(Ang3::GetAnglesXYZ(Quat(localMat)));
@@ -8589,6 +8589,6 @@ int CScriptBind_Entity::CreateDRSProxy(IFunctionHandler* pH)
 {
 	GET_ENTITY;
 
-	IEntityDynamicResponseComponent* pDRSProxy = crycomponent_cast<IEntityDynamicResponseComponent*>(pEntity->CreateProxy(ENTITY_PROXY_DYNAMICRESPONSE));
+	crycomponent_cast<IEntityDynamicResponseComponent*>(pEntity->CreateProxy(ENTITY_PROXY_DYNAMICRESPONSE));
 	return pH->EndFunction();
 }

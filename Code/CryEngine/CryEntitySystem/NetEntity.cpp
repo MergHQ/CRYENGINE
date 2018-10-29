@@ -191,8 +191,11 @@ bool CNetEntity::NetSerializeEntity(TSerialize ser, EEntityAspects aspect, uint8
 
 void CNetEntity::RmiRegister(const SRmiHandler& handler)
 {
+#if defined(USE_CRY_ASSERT)
 	auto found = std::find_if(m_rmiHandlers.begin(), m_rmiHandlers.end(),
 		[&handler](SRmiHandler &p) { return p.decoder == handler.decoder; });
+#endif
+
 	CRY_ASSERT_MESSAGE(found == m_rmiHandlers.end(), "Registering a duplicate RMI message.");
 
 	CRY_ASSERT_MESSAGE(m_rmiHandlers.size() < std::numeric_limits<decltype(SRmiIndex::value)>::max(),

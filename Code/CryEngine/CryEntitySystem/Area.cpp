@@ -2488,8 +2488,6 @@ void CArea::ResolveEntityIds()
 {
 	if ((m_state & Cry::AreaManager::EAreaState::EntityIdsResolved) == 0)
 	{
-		size_t index = 0;
-
 		for (std::pair<EntityId, EntityGUID>& identifierPair : m_entityIdentifiers)
 		{
 			identifierPair.first = g_pIEntitySystem->FindEntityByGuid(identifierPair.second);
@@ -3411,16 +3409,23 @@ float CArea::GetExtent(EGeomForm eForm)
 			}
 			else
 			{
+				size_t const numAreaPoints = m_areaPoints.size();
+				size_t const numAreaSegments = m_areaSegments.size();
+
 				if (eForm == GeomForm_Edges && m_height > 0.0f)
 				{
 					// Add vertical edges
-					ext.ReserveParts(m_areaPoints.size() + m_areaSegments.size());
-					for (auto const& point : m_areaPoints)
+					ext.ReserveParts(numAreaPoints + numAreaSegments);
+
+					for (size_t i = 0; i < numAreaPoints; ++i)
+					{
 						ext.AddPart(m_height);
+					}
 				}
 
 				// Add horizontal edges/surfaces
-				ext.ReserveParts(m_areaSegments.size());
+				ext.ReserveParts(numAreaSegments);
+
 				for (const auto& segment : m_areaSegments)
 				{
 					float extent = (segment->bbox.min - segment->bbox.max).GetLength();

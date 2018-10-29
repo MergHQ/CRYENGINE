@@ -490,7 +490,6 @@ size_t CEntityScript::CountInOutEvents(IScriptTable* pEventsTable, std::vector<S
 	IScriptTable::Iterator it = pEventsTable->BeginIteration();
 	while (pEventsTable->MoveNext(it))
 	{
-		HSCRIPTFUNCTION func = 0;
 		if (!bOutput)
 		{
 			if (it.value.GetType() != EScriptAnyType::Table)

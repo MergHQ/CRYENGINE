@@ -420,7 +420,6 @@ bool CAreaManager::QueryAudioAreas(Vec3 const& pos, SAudioAreaInfo* const pResul
 		// Add a Z offset of at least 0.11 to be slightly above the offset of 0.1 set through "CShapeObject::GetShapeZOffset".
 		Vec3 const position(pos + Vec3(0.0f, 0.0f, 0.11f));
 
-		uint32 numAreas = 0;
 		CRY_ASSERT(m_areasAtPos[Threads::Audio].empty());
 
 		if (m_areaGrid.GetAreas(position, m_areasAtPos[Threads::Audio]))
