@@ -10,7 +10,6 @@ struct AIConsoleVars
 
 	void Init();
 
-	DeclareConstIntCVar(UseCalculationStopperCounter, 0);
 	DeclareConstIntCVar(DebugDraw, -1);
 
 	DeclareConstIntCVar(DebugDrawCover, 0);

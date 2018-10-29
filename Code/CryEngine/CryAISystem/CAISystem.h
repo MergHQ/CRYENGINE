@@ -204,6 +204,38 @@ public:
 	//Basic////////////////////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+	//Subsystem updates///////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	void SubsystemUpdateActionManager();
+	void SubsystemUpdateRadialOcclusionRaycast();
+	void SubsystemUpdateLightManager();
+	void SubsystemUpdateNavigation(const CTimeValue frameStartTime, const float frameDeltaTime);
+	void SubsystemUpdateBannedSOs(const float frameDeltaTime);
+	void SubsystemUpdateSystemComponents(const float frameDeltaTime);
+	void SubsystemUpdateCommunicationManager(const float frameDeltaTime);
+	void SubsystemUpdateVisionMap(const float frameDeltaTime);
+	void SubsystemUpdateAuditionMap(const float frameDeltaTime);
+	void SubsystemUpdateGroupManager(const float frameDeltaTime);
+	void SubsystemUpdateCoverSystem(const float frameDeltaTime);
+	void SubsystemUpdateNavigationSystem();
+	void SubsystemUpdatePlayers();
+	void SubsystemUpdateGroups(const CTimeValue frameStartTime);
+	void SubsystemUpdateMovementSystem(const float frameDeltaTime);
+	void SubsystemUpdateLeaders(const float frameDeltaTime);
+	void SubsystemUpdateSmartObjectManager();
+	void SubsystemUpdateGlobalRayCaster(const float frameDeltaTime);
+	void SubsystemUpdateGlobalIntersectionTester(const float frameDeltaTime);
+	void SubsystemUpdateClusterDetector(const float frameDeltaTime);
+	void SubsystemUpdateInterestManager(const float frameDeltaTime);
+	void SubsystemUpdateBehaviorTreeManager();
+	void SubsystemUpdateTacticalPointSystem();
+	void SubsystemUpdateAmbientFire();
+	void SubsystemUpdateExpensiveAccessoryQuota();
+
+	void SubsystemUpdateActorsAndTargetTrackAndORCA(const float frameDeltaTime);
+	void SubsystemUpdateTargetTrackManager();
+	void SubsystemUpdateCollisionAvoidanceSystem(const float frameDeltaTime);
+
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//Time/Updates/////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -438,9 +470,6 @@ public:
 		return GetFrameStartTimeSeconds();
 	}
 
-	//WTF are these?///////////////////////////////////////////////////////////////////////////////////////////////
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 	//IAISystem/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -576,9 +605,6 @@ public:
 	void SerializeInternal(TSerialize ser);
 
 	void SingleDryUpdate(CAIActor* pAIActor);
-
-	void UpdateAmbientFire();
-	void UpdateExpensiveAccessoryQuota();
 
 	// just steps through objects - for debugging
 	void         DebugOutputObjects(const char* txt) const;
@@ -838,7 +864,7 @@ public:
 	};
 	std::vector<SDebugFakeHitEffect> m_DEBUG_fakeHitEffect;
 
-	void UpdateDebugStuff();
+	void TryUpdateDebugStuff();
 
 	void DebugDrawEnabledActors();
 	void DebugDrawEnabledPlayers() const;
@@ -913,7 +939,7 @@ public:
 	void DEBUG_AddFakeDamageIndicator(CAIActor* pShooter, float t);
 
 	void DebugDrawSelectedTargets();
-	void DebugDrawPhysicsAccess();
+	void TryDebugDrawPhysicsAccess();
 
 	struct SDebugLine
 	{
@@ -1023,6 +1049,9 @@ public:
 	static bool CompareFloatsFPUBugWorkaround(float fLeft, float fRight);
 
 private:
+	bool        InitUpdate(const CTimeValue frameStartTime, const float frameDeltaTime);
+	bool        InitializeSmartObjectsIfNotInitialized();
+
 	void        ResetAIActorSets(bool clearSets);
 
 	void        DetachFromTerritoryAllAIObjectsOfType(const char* szTerritoryName, unsigned short int nType);

@@ -100,7 +100,10 @@ struct SSaltBufferArray
 		CRY_ASSERT(handle.GetIndex() < EntityArraySize);
 
 		const EntityIndex index = handle.GetIndex();
+
+#if defined(USE_CRY_ASSERT)
 		const EntitySalt oldSalt = m_buffer[index].m_salt;
+#endif
 
 		CRY_ASSERT_MESSAGE(IsUsed(index), "Tried to remove entity identifier that was already marked as not in use!");
 		CRY_ASSERT(handle.GetSalt() == oldSalt);

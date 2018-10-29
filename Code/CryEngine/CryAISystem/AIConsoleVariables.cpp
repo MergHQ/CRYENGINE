@@ -107,8 +107,6 @@ void AIConsoleVars::Init()
 
 	DefineConstIntCVarName("ai_UpdateAllAlways", UpdateAllAlways, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "If non-zero then over-rides the auto-disabling of invisible/distant AI");
-	DefineConstIntCVarName("ai_UseCalculationStopperCounter", UseCalculationStopperCounter, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
-	                       "Uses a (calibrated) counter instead of time in AI updates");
 
 	// is not cheat protected because it changes during game, depending on your settings
 	REGISTER_CVAR2("ai_UpdateInterval", &AIUpdateInterval, 0.13f, VF_NULL,

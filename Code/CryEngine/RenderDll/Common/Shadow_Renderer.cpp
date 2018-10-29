@@ -17,7 +17,7 @@ void ShadowMapFrustum::SortRenderItemsForFrustumAsync(int side, SRendItem* pFirs
 		MarkShadowGenMaskForSide(side);
 	}
 
-	SRendItem::mfSortByLight(pFirst, nNumRendItems, true, false, false);
+	SRendItem::mfSortForDepthPass(pFirst, nNumRendItems);
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -28,7 +28,6 @@
 #include <CryAISystem/IAISystemComponent.h>
 #include "AuditionMap/AuditionMap.h"
 #include "SmartObjects.h"
-#include "CalculationStopper.h"
 #include "AIRadialOcclusion.h"
 #include "AIActions.h"
 #include "FireCommand.h"
@@ -153,30 +152,6 @@ void ClearAIObjectIteratorPools()
 	stl::free_container(SAIObjectMapIterOfTypeInRange<CCountedRef>::pool);
 	stl::free_container(SAIObjectMapIterInShape<CCountedRef>::pool);
 	stl::free_container(SAIObjectMapIterOfTypeInShape<CCountedRef>::pool);
-}
-
-void RemoveNonActors(CAISystem::AIActorSet& actorSet)
-{
-	for (CAISystem::AIActorSet::iterator it = actorSet.begin(); it != actorSet.end(); )
-	{
-		IAIObject* pAIObject = it->GetAIObject();
-		CRY_ASSERT_TRACE(pAIObject, ("An AI Actors set contains a null entry for object id %d!", it->GetObjectID()));
-
-		// [AlexMcC|29.06.10] We can't trust that this is an AI Actor, because CWeakRef::GetAIObject()
-		// doesn't do any type checking. If this weakref becomes invalid, then the id is used by another
-		// object (which can happen if we chainload or load a savegame), this might not be an actor anymore.
-		const bool bIsActor = pAIObject ? (pAIObject->CastToCAIActor() != NULL) : false;
-		CRY_ASSERT_MESSAGE(bIsActor, "A non-actor is in an AI actor set!");
-
-		if (pAIObject && bIsActor)
-		{
-			++it;
-		}
-		else
-		{
-			it = actorSet.erase(it);
-		}
-	}
 }
 
 //====================================================================
@@ -1869,18 +1844,6 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 
 	DebugOutputObjects("End of reset");
 
-#ifdef CALIBRATE_STOPPER
-	AILogAlways("Calculation stopper calibration:");
-	for (CCalculationStopper::TMapCallRate::const_iterator it = CCalculationStopper::m_mapCallRate.begin(); it != CCalculationStopper::m_mapCallRate.end(); ++it)
-	{
-		const std::pair<unsigned, float>& result = it->second;
-		const string& name = it->first;
-		float rate = result.second > 0.0f ? result.first / result.second : -1.0f;
-		AILogAlways("%s calls = %d time = %6.2f sec call-rate = %7.2f", f
-			name.c_str(), result.first, result.second, rate);
-	}
-#endif
-
 #ifdef CRYAISYSTEM_DEBUG
 	if (gAIEnv.pBubblesSystem)
 		gAIEnv.pBubblesSystem->Reset();
@@ -2545,408 +2508,64 @@ void CAISystem::Update(CTimeValue frameStartTime, float frameDeltaTime)
 	CRYPROFILE_SCOPE_PROFILE_MARKER("AI System: Update");
 	AISYSTEM_LIGHT_PROFILER();
 
-	static CTimeValue lastFrameStartTime;
-	if (frameStartTime == lastFrameStartTime)
-		return;
-
-	lastFrameStartTime = frameStartTime;
-
-	if (!m_bInitialized || !IsEnabled())
-		return;
-
-	if (!gAIEnv.CVars.AiSystem)
+	if (!InitUpdate(frameStartTime, frameDeltaTime))
 		return;
 
 	CCCPOINT(CAISystem_Update);
 
-	//	for (AIGroupMap::iterator it = m_mapAIGroups.begin(); it != m_mapAIGroups.end(); ++it)
-	//		it->second->Validate();
-
 	{
-		CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate - 1")
-
-		if (m_pSmartObjectManager && !m_pSmartObjectManager->IsInitialized())
-			InitSmartObjects();
-
-		if (m_pAIActionManager)
-			m_pAIActionManager->Update();
-
-		m_frameStartTime = frameStartTime;
-		m_frameStartTimeSeconds = frameStartTime.GetSeconds();
-		m_frameDeltaTime = frameDeltaTime;
-
-		CAIRadialOcclusionRaycast::UpdateActiveCount();
-
-		m_lightManager.Update(false);
-
-#ifdef STOPPER_CAN_USE_COUNTER
-		CCalculationStopper::m_useCounter = gAIEnv.CVars.UseCalculationStopperCounter != 0;
-#endif
-
-		m_pNavigation->Update(frameStartTime, frameDeltaTime);
-
-		assert(m_pSmartObjectManager);
-		PREFAST_ASSUME(m_pSmartObjectManager);
-		m_pSmartObjectManager->UpdateBannedSOs(m_frameDeltaTime);
+		CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate 1")
+		InitializeSmartObjectsIfNotInitialized();
+		SubsystemUpdateActionManager();
+		SubsystemUpdateRadialOcclusionRaycast();
+		SubsystemUpdateLightManager();
+		SubsystemUpdateNavigation(frameStartTime, frameDeltaTime);
+		SubsystemUpdateBannedSOs(frameDeltaTime);
 	}
 
 	{
-		CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate - 2");
-		{
-			CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate - 2 - Subsystems");
-			SubSystemCall(Update(frameDeltaTime));
-		}
-
-		UpdateAmbientFire();
-		UpdateExpensiveAccessoryQuota();
-
-		gAIEnv.pCommunicationManager->Update(frameDeltaTime);
-		gAIEnv.pVisionMap->Update(frameDeltaTime);
-		gAIEnv.pAuditionMap->Update(frameDeltaTime);
-		gAIEnv.pGroupManager->Update(frameDeltaTime);
-		gAIEnv.pCoverSystem->Update(frameDeltaTime);
-
-		{
-			CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate - 2 - NavigationSystem");
-
-			gAIEnv.pNavigationSystem->Update(false);
-		}
+		CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate 2")
+		SubsystemUpdateSystemComponents(frameDeltaTime);
+		SubsystemUpdateAmbientFire();
+		SubsystemUpdateExpensiveAccessoryQuota();
+		SubsystemUpdateCommunicationManager(frameDeltaTime);
+		SubsystemUpdateVisionMap(frameDeltaTime);
+		SubsystemUpdateAuditionMap(frameDeltaTime);
+		SubsystemUpdateGroupManager(frameDeltaTime);
+		SubsystemUpdateCoverSystem(frameDeltaTime);
+		SubsystemUpdateNavigationSystem();
 	}
 
 	{
 		CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate 3")
-
-		// Marcio: Update all players.
-		AIObjectOwners::const_iterator ai = gAIEnv.pAIObjectManager->m_Objects.find(AIOBJECT_PLAYER);
-
-		for (; ai != gAIEnv.pAIObjectManager->m_Objects.end() && ai->first == AIOBJECT_PLAYER; ++ai)
-		{
-			CAIPlayer* pPlayer = CastToCAIPlayerSafe(ai->second.GetAIObject());
-			if (pPlayer)
-				pPlayer->Update(IAIObject::EUpdateType::Full);
-		}
-
-		{
-			CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate 3 - Groups");
-
-			const int64 dt = (frameStartTime - m_lastGroupUpdateTime).GetMilliSecondsAsInt64();
-			if (dt > gAIEnv.CVars.AIUpdateInterval)
-			{
-				for (AIGroupMap::iterator it = m_mapAIGroups.begin(); it != m_mapAIGroups.end(); ++it)
-					it->second->Update();
-
-				m_lastGroupUpdateTime = frameStartTime;
-			}
-		}
+		SubsystemUpdatePlayers();
+		SubsystemUpdateGroups(frameStartTime);
 	}
 
+	SubsystemUpdateMovementSystem(frameDeltaTime);
+
 	{
-		CRY_PROFILE_REGION(PROFILE_AI, "MovementSystem");
-		gAIEnv.pMovementSystem->Update(frameDeltaTime);
+		CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate 4");
+		SubsystemUpdateActorsAndTargetTrackAndORCA(frameDeltaTime);
+		SubsystemUpdateLeaders(frameDeltaTime);
+		SubsystemUpdateSmartObjectManager();	
+		SubsystemUpdateInterestManager(frameDeltaTime);
 	}
 
-	{
-		CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate 4 - Puppet Update");
-
-		AIAssert(!m_iteratingActorSet);
-		m_iteratingActorSet = true;
-
-		RemoveNonActors(m_enabledAIActorsSet);
-
-		AIActorVector& fullUpdates = m_tmpFullUpdates;
-		fullUpdates.resize(0);
-
-		AIActorVector& dryUpdates = m_tmpDryUpdates;
-		dryUpdates.resize(0);
-
-		AIActorVector& allUpdates = m_tmpAllUpdates;
-		allUpdates.resize(0);
-
-		uint32 activeAIActorCount = m_enabledAIActorsSet.size();
-		gAIEnv.pStatsManager->SetStat(eStat_ActiveActors, static_cast<float>(activeAIActorCount));
-
-		uint32 fullUpdateCount = 0;
-		if (activeAIActorCount > 0)
-		{
-			const float updateInterval = max(gAIEnv.CVars.AIUpdateInterval, 0.0001f);
-			const float updatesPerSecond = (activeAIActorCount / updateInterval) + m_enabledActorsUpdateError;
-			unsigned actorUpdateCount = (unsigned)floorf(updatesPerSecond * m_frameDeltaTime);
-			if (m_frameDeltaTime > 0.0f)
-				m_enabledActorsUpdateError = updatesPerSecond - actorUpdateCount / m_frameDeltaTime;
-
-			uint32 skipped = 0;
-			m_enabledActorsUpdateHead %= activeAIActorCount;
-			uint32 idx = m_enabledActorsUpdateHead;
-
-			for (uint32 i = 0; i < activeAIActorCount; ++i)
-			{
-				// [AlexMcC|29.06.10] We can't trust that this is an AI Actor, because CWeakRef::GetAIObject()
-				// doesn't do any type checking. If this weakref becomes invalid, then the id is used by another
-				// object (which can happen if we chainload or load a savegame), this might not be an actor anymore.
-
-				IAIObject* object = m_enabledAIActorsSet[idx++ % activeAIActorCount].GetAIObject();
-				CAIActor* actor = object->CastToCAIActor();
-				AIAssert(actor);
-
-				if (actor)
-				{
-					if (object->GetAIType() != AIOBJECT_PLAYER)
-					{
-						if (fullUpdates.size() < actorUpdateCount)
-							fullUpdates.push_back(actor);
-						else
-							dryUpdates.push_back(actor);
-					}
-					else if (fullUpdates.size() < actorUpdateCount)
-					{
-						++skipped;
-					}
-
-					allUpdates.push_back(actor);
-				}
-			}
-
-			{
-				CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate 4 - Full Updates");
-
-				AIActorVector::iterator it = fullUpdates.begin();
-				AIActorVector::iterator end = fullUpdates.end();
-
-				for (; it != end; ++it)
-				{
-					CAIActor* pAIActor = *it;
-					if (CPuppet* pPuppet = pAIActor->CastToCPuppet())
-						pPuppet->SetUpdatePriority(CalcPuppetUpdatePriority(pPuppet));
-
-					// Full update
-					pAIActor->Update(IAIObject::EUpdateType::Full);
-
-					if (!pAIActor->m_bUpdatedOnce && m_bUpdateSmartObjects && pAIActor->IsEnabled())
-					{
-						if (CPipeUser* pPipeUser = pAIActor->CastToCPipeUser())
-						{
-							if (!pPipeUser->GetCurrentGoalPipe() || !pPipeUser->GetCurrentGoalPipe()->GetSubpipe())
-							{
-								pAIActor->m_bUpdatedOnce = true;
-							}
-						}
-						else
-						{
-							pAIActor->m_bUpdatedOnce = true;
-						}
-					}
-
-					m_totalActorsUpdateCount++;
-
-					if (m_totalActorsUpdateCount >= (int)activeAIActorCount)
-					{
-						// full update cycle finished on all ai objects
-						// now allow updating smart objects
-						m_bUpdateSmartObjects = true;
-						m_totalActorsUpdateCount = 0;
-					}
-
-					fullUpdateCount++;
-				}
-
-				// CE-1629: special case if there is only a CAIPlayer (and no other CAIActor) to ensure that smart-objects will get updated
-				if (fullUpdates.empty() && actorUpdateCount > 0)
-				{
-					m_bUpdateSmartObjects = true;
-				}
-
-				// Advance update head.
-				m_enabledActorsUpdateHead += fullUpdateCount;
-				m_enabledActorsUpdateHead += skipped;
-			}
-
-			{
-				CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate 4 - Dry Updates");
-
-				AIActorVector::iterator it = dryUpdates.begin();
-				AIActorVector::iterator end = dryUpdates.end();
-
-				for (; it != end; ++it)
-					SingleDryUpdate(*it);
-			}
-
-			{
-				CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate 4 - Subsystems Actors Updates");
-
-				for (IAISystemComponent* systemComponent : m_setSystemComponents)
-				{
-					if (systemComponent->WantActorUpdates(IAIObject::EUpdateType::Full))
-					{
-						for (CAIActor* pAIActor : fullUpdates)
-						{
-							systemComponent->ActorUpdate(pAIActor, IAIObject::EUpdateType::Full, frameDeltaTime);
-						}
-					}
-					if (systemComponent->WantActorUpdates(IAIObject::EUpdateType::Dry))
-					{
-						for (CAIActor* pAIActor : dryUpdates)
-						{
-							systemComponent->ActorUpdate(pAIActor, IAIObject::EUpdateType::Dry, frameDeltaTime);
-						}
-					}
-				}
-			}
-
-			{
-				gAIEnv.pTargetTrackManager->ShareFreshestTargetData();
-			}
-		}
-
-		if (gAIEnv.CVars.EnableORCA)
-		{
-			CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate 4 - Collision Avoidance");
-			gAIEnv.pCollisionAvoidanceSystem->Update(frameDeltaTime);
-		}
-
-		if (activeAIActorCount > 0)
-		{
-			{
-				CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate 4 - Proxy Updates");
-				{
-					{
-						AIActorVector::iterator fit = fullUpdates.begin();
-						AIActorVector::iterator fend = fullUpdates.end();
-
-						for (; fit != fend; ++fit)
-							(*fit)->UpdateProxy(IAIObject::EUpdateType::Full);
-					}
-
-					{
-						AIActorVector::iterator dit = dryUpdates.begin();
-						AIActorVector::iterator dend = dryUpdates.end();
-
-						for (; dit != dend; ++dit)
-							(*dit)->UpdateProxy(IAIObject::EUpdateType::Dry);
-					}
-				}
-			}
-
-			gAIEnv.pStatsManager->SetStat(eStat_FullUpdates, static_cast<float>(fullUpdateCount));
-
-			RemoveNonActors(m_disabledAIActorsSet);
-		}
-		else
-		{
-			// No active puppets, allow updating smart objects
-			m_bUpdateSmartObjects = true;
-		}
-
-		// Update disabled
-
-		RemoveNonActors(m_disabledAIActorsSet);
-
-		if (!m_disabledAIActorsSet.empty())
-		{
-			uint32 inactiveAIActorCount = m_disabledAIActorsSet.size();
-			const float updateInterval = 0.3f;
-			const float updatesPerSecond = (inactiveAIActorCount / updateInterval) + m_disabledActorsUpdateError;
-			unsigned aiActorDisabledUpdateCount = (unsigned)floorf(updatesPerSecond * m_frameDeltaTime);
-			if (m_frameDeltaTime > 0.0f)
-				m_disabledActorsUpdateError = updatesPerSecond - aiActorDisabledUpdateCount / m_frameDeltaTime;
-
-			m_disabledActorsHead %= inactiveAIActorCount;
-			uint32 idx = m_disabledActorsHead;
-
-			for (unsigned i = 0; (i < aiActorDisabledUpdateCount) && inactiveAIActorCount; ++i)
-			{
-				// [AlexMcC|29.06.10] We can't trust that this is an AI Actor, because CWeakRef::GetAIObject()
-				// doesn't do any type checking. If this weakref becomes invalid, then the id is used by another
-				// object (which can happen if we chainload or load a savegame), this might not be an actor anymore.
-				IAIObject* object = m_disabledAIActorsSet[idx++ % inactiveAIActorCount].GetAIObject();
-				CAIActor* actor = object ? object->CastToCAIActor() : NULL;
-				AIAssert(actor);
-
-				actor->UpdateDisabled(IAIObject::EUpdateType::Full);
-
-				// [AlexMcC|28.09.09] UpdateDisabled might remove the puppet from the disabled set, so the size might change
-				inactiveAIActorCount = m_disabledAIActorsSet.size();
-			}
-
-			// Advance update head.
-			m_disabledActorsHead += aiActorDisabledUpdateCount;
-		}
-
-		AIAssert(m_iteratingActorSet);
-		m_iteratingActorSet = false;
-
-		//
-		//	update all leaders here (should be not every update (full update only))
-		const static float leaderUpdateRate(.2f);
-		static float leaderNoUpdatedTime(.0f);
-		leaderNoUpdatedTime += m_frameDeltaTime;
-		if (leaderNoUpdatedTime > leaderUpdateRate)
-		{
-			leaderNoUpdatedTime = 0.0f;
-			AIObjectOwners::iterator aio = gAIEnv.pAIObjectManager->m_Objects.find(AIOBJECT_LEADER);
-
-			for (; aio != gAIEnv.pAIObjectManager->m_Objects.end(); ++aio)
-			{
-				if (aio->first != AIOBJECT_LEADER)
-					break;
-
-				CLeader* pLeader = aio->second.GetAIObject()->CastToCLeader();
-				if (pLeader)
-					pLeader->Update(IAIObject::EUpdateType::Full);
-			}
-		}
-		// leaders update over
-		if (m_bUpdateSmartObjects)
-			m_pSmartObjectManager->Update();
-
-		//	fLastUpdateTime = currTime;
-		++m_nTickCount;
+	SubsystemUpdateBehaviorTreeManager();
+	SubsystemUpdateGlobalRayCaster(frameDeltaTime);
+	SubsystemUpdateGlobalIntersectionTester(frameDeltaTime);
+	SubsystemUpdateClusterDetector(frameDeltaTime);
+	SubsystemUpdateTacticalPointSystem();
 
 #ifdef CRYAISYSTEM_DEBUG
-		UpdateDebugStuff();
+	TryUpdateDebugStuff();
+	TryDebugDrawPhysicsAccess();
 #endif //CRYAISYSTEM_DEBUG
-
-		// Update interest system
-		ICentralInterestManager* pInterestManager = CCentralInterestManager::GetInstance();
-		if (pInterestManager->Enable(gAIEnv.CVars.InterestSystem != 0))
-		{
-			pInterestManager->Update(frameDeltaTime);
-		}
-	}
-
-	gAIEnv.pBehaviorTreeManager->Update();
-
-	{
-		{
-			CRY_PROFILE_REGION(PROFILE_AI, "GlobalRayCaster");
-			gAIEnv.pRayCaster->SetQuota(gAIEnv.CVars.RayCasterQuota);
-			gAIEnv.pRayCaster->Update(frameDeltaTime);
-		}
-
-		{
-			CRY_PROFILE_REGION(PROFILE_AI, "GlobalIntersectionTester");
-			gAIEnv.pIntersectionTester->SetQuota(gAIEnv.CVars.IntersectionTesterQuota);
-			gAIEnv.pIntersectionTester->Update(frameDeltaTime);
-		}
-
-		{
-			CRY_PROFILE_REGION(PROFILE_AI, "ClusterDetector");
-			gAIEnv.pClusterDetector->Update(frameDeltaTime);
-		}
-
-		if (gAIEnv.CVars.DebugDrawPhysicsAccess)
-		{
-#ifdef CRYAISYSTEM_DEBUG
-			DebugDrawPhysicsAccess();
-#endif //CRYAISYSTEM_DEBUG
-		}
-	}
-
-	// Update asynchronous TPS processing
-	float fMaxTime = gAIEnv.CVars.TacticalPointUpdateTime;
-	gAIEnv.pTacticalPointSystem->Update(fMaxTime);
 
 	// Housekeeping
 	gAIEnv.pObjectContainer->ReleaseDeregisteredObjects(false);
+	++m_nTickCount;
 }
 
 //
@@ -5867,6 +5486,34 @@ bool CAISystem::GetObjectDebugParamsFromName(const char* szObjectName, SObjectDe
 		outParams.entityPos = pObject->GetPos();
 	}
 	return true;
+}
+
+bool CAISystem::InitUpdate(const CTimeValue frameStartTime, const float frameDeltaTime)
+{
+	static CTimeValue lastFrameStartTime;
+	if (frameStartTime == lastFrameStartTime)
+		return false;
+
+	lastFrameStartTime = frameStartTime;
+
+	if (!m_bInitialized || !IsEnabled())
+		return false;
+
+	if (!gAIEnv.CVars.AiSystem)
+		return false;
+
+	m_frameStartTime = frameStartTime;
+	m_frameStartTimeSeconds = frameStartTime.GetSeconds();
+	m_frameDeltaTime = frameDeltaTime;
+
+	return true;
+}
+
+bool CAISystem::InitializeSmartObjectsIfNotInitialized()
+{
+	if (m_pSmartObjectManager && !m_pSmartObjectManager->IsInitialized())
+		return InitSmartObjects();
+	return false;
 }
 
 void CAISystem::ResetAIActorSets(bool clearSets)

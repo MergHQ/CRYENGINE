@@ -418,33 +418,27 @@ void CD3D9Renderer::ChangeLog()
 
 void CD3D9Renderer::DrawTexelsPerMeterInfo()
 {
-	/*
 #ifndef _RELEASE
 	if (CV_r_TexelsPerMeter > 0)
 	{
-		FX_SetState(GS_NODEPTHTEST);
+		CRenderDisplayContext* pDC = GetActiveDisplayContext();
 
-		int x = 800 - 310 + 2;
-		int y = 600 - 20 + 2;
+		int x = pDC->m_DisplayWidth - 310 + 2;
+		int y = pDC->m_DisplayHeight - 20 + 2;
 		int w = 296;
 		int h = 6;
-
-		Draw2dImage(x - 2, y - 2, w + 4, h + 4, CRendererResources::s_ptexWhite->GetTextureID(), 0, 0, 1, 1, 0, 1, 1, 1, 1, 0);
-		Draw2dImage(x, y, w, h, CRendererResources::s_ptexPaletteTexelsPerMeter->GetTextureID(), 0, 0, 1, 1, 0, 1, 1, 1, 1, 0);
+		
+		IRenderAuxImage::Draw2dImage(x - 2, y - 2, w + 4, h + 4, CRendererResources::s_ptexWhite->GetTextureID(), 0, 0, 1, 1, 0, 1, 1, 1, 1, 0);
+		IRenderAuxImage::Draw2dImage(x, y, w, h, CRendererResources::s_ptexPaletteTexelsPerMeter->GetTextureID(), 0, 0, 1, 1, 0, 1, 1, 1, 1, 0);
 
 		float color[4] = { 1, 1, 1, 1 };
 
-		x = x * m_width / 800;
-		y = y * m_height / 600;
-		w = w * m_width / 800;
-
-		IRenderAuxText::Draw2dLabel(x - 100, y - 20, 1.2f, color, false, "r_TexelsPerMeter:");
+		IRenderAuxText::Draw2dLabel(x - 120, y - 20, 1.2f, color, false, "r_TexelsPerMeter:");
 		IRenderAuxText::Draw2dLabel(x - 2, y - 20, 1.2f, color, false, "0");
 		IRenderAuxText::Draw2dLabel(x + w / 2 - 5, y - 20, 1.2f, color, false, "%.0f", CV_r_TexelsPerMeter);
 		IRenderAuxText::Draw2dLabel(x + w - 50, y - 20, 1.2f, color, false, ">= %.0f", CV_r_TexelsPerMeter * 2.0f);
 	}
 #endif
-*/
 }
 
 #if CRY_PLATFORM_DURANGO

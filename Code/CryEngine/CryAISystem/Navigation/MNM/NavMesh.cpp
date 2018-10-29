@@ -1764,7 +1764,7 @@ MNM::ERayCastResult CNavMesh::RayCast_v3(const vector3_t& fromLocalPosition, Tri
 		real_t rayIntersectionParam;
 		uint16 intersectionEdgeIndex;
 		const bool bEndingInside = FindNextIntersectingTriangleEdge(fromLocalPosition, toLocalPosition, currentTriangleVertices, rayIntersectionParam, intersectionEdgeIndex);
-		if (rayIntersectionParam == real_t(1.0f))
+		if (rayIntersectionParam >= real_t(1.0f))
 		{
 			if (!bEndingInside && intersectionEdgeIndex == uint16(MNM::Constants::InvalidEdgeIndex))
 			{
@@ -2983,11 +2983,16 @@ bool CNavMesh::FindNextIntersectingTriangleEdge(const vector3_t& rayStartPos3D, 
 	    /     |            \               that gives us the actual 'leaving' edge.  
 	          |                            There is also needed check whether the intersection really lies on the edge (mainly because of precision and rounding errors)
 	          V             
-	           Re                 When none of the values of 'leaving' intersection parameters is bigger than 1.0, it means, that the ray is ending inside the triangle.
-			                      Note: Relation between 'det' and intersection parameters is described in DetailedIntersectSegmentSegment function.
+	           Re                 When none of the values of 'leaving' intersection parameters are smaller than 1.0, it means, that the ray is ending inside the triangle.
+	                              Note: Relation between 'det' and intersection parameters is described in DetailedIntersectSegmentSegment function.
 	*/
 	
-	rayIntersectionParam = 1.0f;
+	// We are interested in finding edges intersecting the ray where the intersection param minIntersectionParam (p) should be less or equal 1.0 ( I = p * (Re - Rs)), 
+	// but due to numerical inaccuracy we set initial value slightly bigger than 1.0 to make sure to find the edge where the ray should be leaving (or is ending).
+	// Meaning of the minIntersectionParam values at the end of the function:
+	// minIntersectionParam < 1.0 : ray is going outside of the triangle, neighbor triangle will be checked next.
+	// minIntersectionParam >= 1.0 : ray is ending inside or directly on the edge (or corner) of the triangle, ray won't go further. 
+	real_t minIntersectionParam(1.05f);
 	intersectingEdgeIndex = uint16(MNM::Constants::InvalidEdgeIndex);
 
 	const vector2_t rayStartPos = vector2_t(rayStartPos3D);
@@ -3013,19 +3018,19 @@ bool CNavMesh::FindNextIntersectingTriangleEdge(const vector3_t& rayStartPos3D, 
 		{
 			// Ray is possibly leaving the triangle through this edge line
 
-			// Modified version of n/det < rayIntersectionParam condition because signed division in fixed point aritmetics is not reliable for small values of divisor
+			// Modified version of n/det < minIntersectionParam condition because signed division in fixed point aritmetics is not reliable for small values of divisor
 			// (dividing positive number with negative can lead to positive result)
-			if (n <= rayIntersectionParam * det)
+			if (n <= minIntersectionParam * det)
 			{
 				isEndingInside = false;
 
 				// Make sure that the intersections really lies on the edge segment (only checking for the nearest intersection isn't enough because of precision and rounding errors)
 				const real_t m = diff.cross(rayDir);
-				const real_t maxAllowedValue = (real_t(1.0f) * det) + tolerance;
+				const real_t maxAllowedValue = det + tolerance;
 
 				if (m >= minAllowedValue && m <= maxAllowedValue)
 				{
-					rayIntersectionParam = n / det;
+					minIntersectionParam = n / det;
 					intersectingEdgeIndex = edgeIndex;
 				}
 			}
@@ -3036,6 +3041,9 @@ bool CNavMesh::FindNextIntersectingTriangleEdge(const vector3_t& rayStartPos3D, 
 			isEndingInside = false;
 		}
 	}
+
+	rayIntersectionParam = minIntersectionParam;
+
 	return isEndingInside;
 }
 

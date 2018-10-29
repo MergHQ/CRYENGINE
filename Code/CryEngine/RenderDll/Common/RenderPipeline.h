@@ -53,7 +53,7 @@ struct CRY_ALIGN(32) SRendItem
 
 	static uint32 EncodeObjFlagsValue(uint64 objFlags)
 	{
-		return uint32(objFlags) & (0xFFFF0000);
+		return uint32(objFlags) & (0xFFFF0000 & FOB_SORT_MASK);
 	}
 
 	static uint16 EncodePriorityIntegerValue(CRenderObject* pObj)
@@ -88,21 +88,17 @@ struct CRY_ALIGN(32) SRendItem
 		return EncodeObjFlagsValue(objFlags) + EncodePriorityIntegerValue(pObj);
 	}
 
-	static bool TestObjFlagsSortingValue(uint32 nFlag, uint32 sortingValue)
+	static inline void ExtractShaderItem(uint32 value, SShaderItem& sh)
 	{
-		return (nFlag & sortingValue) != 0;
-	}
-
-	static inline void ExtractShaderItem(uint32 nVal, SShaderItem& sh)
-	{
-		CShader* pShader = (CShader*)(CShaderMan::s_pContainer->m_RList[CBaseResource::RListIndexFromId((nVal >> 20) & (MAX_REND_SHADERS - 1))]);
+		uint32 nShaderId = (value >> 20) & (MAX_REND_SHADERS - 1);
+		CShader* pShader = (CShader*)(CShaderMan::s_pContainer->m_RList[CBaseResource::RListIndexFromId(nShaderId)]);
 		sh.m_pShader = static_cast<IShader*>(pShader);
-		uint32 nTechnique = (nVal & 0x3f);
+		uint32 nTechnique = ((value >> 14) & 0x3f);
 		if (nTechnique == 0x3f)
 			nTechnique = -1;
 		sh.m_nTechnique = nTechnique;
-		int nRes = (nVal >> 6) & (MAX_REND_SHADER_RES - 1);
-		sh.m_pShaderResources = (IRenderShaderResources*)((nRes) ? CShader::s_ShaderResources_known[nRes] : nullptr);
+		int nResID = (value) & (MAX_REND_SHADER_RES - 1);
+		sh.m_pShaderResources = (IRenderShaderResources*)((nResID) ? CShader::s_ShaderResources_known[nResID] : nullptr);
 	}
 
 	static inline uint32 PackShaderItem(const SShaderItem& shaderItem)
@@ -111,9 +107,18 @@ struct CRY_ALIGN(32) SRendItem
 		uint32 nShaderId = ((CShader*)shaderItem.m_pShader)->mfGetID();
 		assert(nResID < CShader::s_ShaderResources_known.size());
 		assert(nShaderId != 0);
-		uint32 value = (nResID << 6) | (nShaderId << 20) | (shaderItem.m_nTechnique & 0x3f);
+		uint32 value = (nShaderId << 20) | ((shaderItem.m_nTechnique & 0x3f) << 14) | (nResID);
 		return value;
 	}
+
+	/////////////////////////////////////////////////////////////////////
+
+	static inline bool TestIndividualObjFlag(uint32 objFlag, uint32 objIncludeFilter)
+	{
+		return ((objFlag & objIncludeFilter) != 0);
+	}
+
+	/////////////////////////////////////////////////////////////////////
 
 	// Sort by SortVal member of RI
 	static void mfSortPreprocess(SRendItem* First, int Num);
@@ -122,7 +127,8 @@ struct CRY_ALIGN(32) SRendItem
 	// Sort by light
 	static void mfSortByLight(SRendItem* First, int Num, bool bSort, const bool bIgnoreRePtr, bool bSortDecals);
 	// Special sorting for ZPass (compromise between depth and batching)
-	static void mfSortForZPass(SRendItem* First, int Num);
+	static void mfSortForZPass(SRendItem* First, int Num, bool bZPre);
+	static void mfSortForDepthPass(SRendItem* First, int Num);
 };
 
 //==================================================================

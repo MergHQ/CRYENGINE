@@ -126,9 +126,8 @@ void DesignerSession::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	case eNotify_OnBeginLoad:
 	case eNotify_OnBeginNewScene:
 	case eNotify_OnBeginSceneOpen:
-		// make sure we clear the cache here
-		ClearCache();
-	// fallthrough
+		EndSession();
+	// fall through
 	case eNotify_OnBeginSceneSave:
 		bExclusiveModeBeforeSave = gDesignerSettings.bExclusiveMode;
 		if (gDesignerSettings.bExclusiveMode)

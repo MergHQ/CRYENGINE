@@ -421,7 +421,6 @@ void CBreakableManager::BreakIntoPieces(GeomRef& geoOrig, const Matrix34& mxSrcT
 	}
 
 	IEntityClass* pClass = g_pIEntitySystem->GetClassRegistry()->FindClass("Breakage");
-	I3DEngine* p3DEngine = gEnv->p3DEngine;
 	IPhysicalWorld* pPhysicalWorld = gEnv->pPhysicalWorld;
 	PhysicsVars* pVars = pPhysicalWorld->GetPhysVars();
 
@@ -1432,8 +1431,6 @@ void CBreakableManager::UnhidePartRemovedObjectsByIndex(const int32* pPartRemova
 
 	for (int k = iNumPartRemovalIndices - 1; k >= 0; k--)
 	{
-		int iEventIndex = pPartRemovalIndices[k];
-
 		CEntity* pEntity = nullptr;
 		EntityId originalBrokenId = 0;
 

@@ -8,7 +8,6 @@
 #include <CryCore/Containers/CryListenerSet.h>
 #include "Timer.h"
 
-//forward declaration
 struct IIpnut;
 struct INetwork;
 struct IFFont;
@@ -24,9 +23,6 @@ enum ScrollDir
 	sdNONE
 };
 
-//////////////////////////////////////////////////////////////////////////
-// Console command holds information about commands registered to console.
-//////////////////////////////////////////////////////////////////////////
 struct CConsoleCommand
 {
 	string             m_sName;    // Console command name
@@ -34,7 +30,7 @@ struct CConsoleCommand
 	string             m_sHelp;    // optional help string - can be shown in the console with "<commandname> ?"
 	int                m_nFlags;   // bitmask consist of flag starting with VF_ e.g. VF_CHEAT
 	ConsoleCommandFunc m_func;     // Pointer to console command.
-	bool               m_isManagedExternally;// true if console command is added from C# and the notification of console commands will be through C# class method invocation via mono
+	bool               m_isManagedExternally; // true if console command is added from C# and the notification of console commands will be through C# class method invocation via mono
 
 	//////////////////////////////////////////////////////////////////////////
 	CConsoleCommand()
@@ -51,9 +47,6 @@ struct CConsoleCommand
 	}
 };
 
-//////////////////////////////////////////////////////////////////////////
-// Implements IConsoleCmdArgs.
-//////////////////////////////////////////////////////////////////////////
 struct CConsoleCommandArgs : public IConsoleCmdArgs
 {
 	CConsoleCommandArgs(string& line, std::vector<string>& args) : m_line(line), m_args(args) {}
@@ -84,21 +77,6 @@ struct string_nocase_lt
 	}
 };
 
-/* - very dangerous to use with STL containers
-   struct string_nocase_lt
-   {
-   bool operator()( const char *s1,const char *s2 ) const
-   {
-    return stricmp(s1,s2) < 0;
-   }
-   bool operator()( const string &s1,const string &s2 ) const
-   {
-    return stricmp(s1.c_str(),s2.c_str()) < 0;
-   }
-   };
- */
-
-//forward declarations
 class ITexture;
 struct IRenderer;
 
@@ -108,13 +86,8 @@ struct IRenderer;
 class CXConsole : public IConsole, public IInputEventListener, public IRemoteConsoleListener
 {
 public:
-	typedef std::deque<string>              ConsoleBuffer;
-	typedef ConsoleBuffer::iterator         ConsoleBufferItor;
-	typedef ConsoleBuffer::reverse_iterator ConsoleBufferRItor;
 
-	// constructor
 	CXConsole(CSystem& system);
-	// destructor
 	virtual ~CXConsole();
 
 	void PreProjectSystemInit();
@@ -124,9 +97,7 @@ public:
 	bool GetStatus() const       { return m_bConsoleActive; }
 	
 	void FreeRenderResources();
-	
 	void Copy();
-	
 	void Paste();
 
 	// interface IConsole ---------------------------------------------------------
@@ -208,12 +179,11 @@ public:
 
 	virtual void OnConsoleCommand(const char* cmd) override;
 
-	// Returns
-	//   0 if the operation failed
+	// Returns 0 if the operation failed
 	ICVar*        RegisterCVarGroup(const char* sName, const char* szFileName);
 
 	virtual void  PrintCheatVars(bool bUseLastHashRange) override;
-	virtual char* GetCheatVarAt(uint32 nOffset) override;
+	virtual const char* GetCheatVarAt(uint32 nOffset) override;
 
 	void          SetProcessingGroup(bool isGroup) { m_bIsProcessingGroup = isGroup; }
 	bool          GetIsProcessingGroup(void) const { return m_bIsProcessingGroup; }
@@ -221,23 +191,22 @@ public:
 	bool          ParseCVarOverridesFile(const char* szSysCVarOverridesPathConfigFile);
 
 protected: // ----------------------------------------------------------------------------------------
-	void DrawBuffer(int nScrollPos, const char* szEffect);
-
+	
 	void RegisterVar(ICVar* pCVar, ConsoleVarFunc pChangeFunc = 0);
 
 	bool ProcessInput(const SInputEvent& event);
+	void DrawBuffer(int nScrollPos, const char* szEffect);
 	void AddLine(const char* inputStr);
 	void AddLinePlus(const char* inputStr);
 	void AddInputChar(const uint32 c);
 	void RemoveInputChar(bool bBackSpace);
 	void ExecuteInputBuffer();
 	void ExecuteCommand(CConsoleCommand& cmd, string& params, bool bIgnoreDevMode = false);
-
 	void ScrollConsole();
 
 #if ALLOW_AUDIT_CVARS
 	void AuditCVars(IConsoleCmdArgs* pArg);
-#endif // ALLOW_AUDIT_CVARS
+#endif
 
 #ifndef _RELEASE
 	// will be removed once the HTML version is good enough
@@ -252,26 +221,44 @@ protected: // ------------------------------------------------------------------
 	void DisplayHelp(const char* help, const char* name);
 	void DisplayVarValue(ICVar* pVar);
 
-	// Arguments:
-	//   bFromConsole - true=from console, false=from outside
-	void               SplitCommands(const char* line, std::list<string>& split);
-	void               ExecuteStringInternal(const char* command, const bool bFromConsole, const bool bSilentMode = false);
-	void               ExecuteDeferredCommands();
+	void SplitCommands(const char* line, std::list<string>& split);
+	// bFromConsole: true=from console, false=from outside
+	void ExecuteStringInternal(const char* command, const bool bFromConsole, const bool bSilentMode = false);
+	void ExecuteDeferredCommands();
 
 	static const char* GetFlagsString(const uint32 dwFlags);
-
 	static void        CmdDumpAllAnticheatVars(IConsoleCmdArgs* pArgs);
 	static void        CmdDumpLastHashedAnticheatVars(IConsoleCmdArgs* pArgs);
 
 private: // ----------------------------------------------------------
 
-	typedef std::map<const char*, ICVar*, string_nocase_lt> ConsoleVariablesMap;    // key points into string stored in ICVar or in .exe/.dll
-	typedef ConsoleVariablesMap::iterator                   ConsoleVariablesMapItor;
+	struct SConfigVar
+	{
+		string m_value;
+		bool   m_partOfGroup;
+		uint32 nCVarOrFlags;
+	};
 
-	typedef std::vector<std::pair<const char*, ICVar*>>     ConsoleVariablesVector;
+	struct SDeferredCommand
+	{
+		string command;
+		bool   silentMode;
 
-	typedef CListenerSet<IManagedConsoleCommandListener*>   TManagedConsoleCommandListener;
-	TManagedConsoleCommandListener m_managedConsoleCommandListeners;
+		SDeferredCommand(const string& command, bool silentMode)
+			: command(command), silentMode(silentMode)
+		{}
+	};
+
+	typedef std::deque<string>                                                                                              ConsoleBuffer;
+	typedef std::unordered_map<string, CConsoleCommand, stl::hash_stricmp<string>, stl::hash_stricmp<string>>               ConsoleCommandsMap;
+	typedef std::unordered_map<string, string, stl::hash_stricmp<string>, stl::hash_stricmp<string>>                        ConsoleBindsMap;
+	typedef std::unordered_map<string, IConsoleArgumentAutoComplete*, stl::hash_stricmp<string>, stl::hash_stricmp<string>> ArgumentAutoCompleteMap;
+	typedef std::unordered_map<string, SConfigVar, stl::hash_stricmp<string>, stl::hash_stricmp<string>>                    ConfigVars;
+	typedef std::list<SDeferredCommand>                                                                                     TDeferredCommandList;
+	typedef std::list<IConsoleVarSink*>                                                                                     ConsoleVarSinks;
+	typedef CListenerSet<IManagedConsoleCommandListener*>                                                                   TManagedConsoleCommandListener;
+	typedef std::unordered_map<string, ICVar*, stl::hash_stricmp<string>, stl::hash_stricmp<string>>                        ConsoleVariablesMap;
+	typedef std::vector<std::pair<const char*, ICVar*>>                                                                     ConsoleVariablesVector;
 
 	void LogChangeMessage(const char* name, const bool isConst, const bool isCheat, const bool isReadOnly, const bool isDeprecated,
 	                      const char* oldValue, const char* newValue, const bool isProcessingGroup, const bool allowChange);
@@ -293,35 +280,6 @@ private: // ----------------------------------------------------------
 	virtual ICVar* Register(const char* name, int* src, int defaultvalue, int flags = 0, const char* help = "", ConsoleVarFunc pChangeFunc = 0, bool allowModify = true) override;
 	virtual ICVar* Register(const char* name, const char** src, const char* defaultvalue, int flags = 0, const char* help = "", ConsoleVarFunc pChangeFunc = 0, bool allowModify = true) override;
 	virtual ICVar* Register(ICVar* pVar) override { RegisterVar(pVar); return pVar; }
-
-	typedef std::map<string, CConsoleCommand, string_nocase_lt>                        ConsoleCommandsMap;
-	typedef ConsoleCommandsMap::iterator                                               ConsoleCommandsMapItor;
-
-	typedef std::map<string, string>                                                   ConsoleBindsMap;
-	typedef ConsoleBindsMap::iterator                                                  ConsoleBindsMapItor;
-
-	typedef std::map<string, IConsoleArgumentAutoComplete*, stl::less_stricmp<string>> ArgumentAutoCompleteMap;
-
-	struct SConfigVar
-	{
-		string m_value;
-		bool   m_partOfGroup;
-		uint32 nCVarOrFlags;
-	};
-	typedef std::map<string, SConfigVar, string_nocase_lt> ConfigVars;
-
-	struct SDeferredCommand
-	{
-		string command;
-		bool   silentMode;
-
-		SDeferredCommand(const string& command, bool silentMode)
-			: command(command), silentMode(silentMode)
-		{}
-	};
-	typedef std::list<SDeferredCommand> TDeferredCommandList;
-
-	typedef std::list<IConsoleVarSink*> ConsoleVarSinks;
 
 	// --------------------------------------------------------------------------------
 
@@ -346,6 +304,7 @@ private: // ----------------------------------------------------------
 	ConsoleVariablesVector         m_randomCheckedVariables;
 	ConsoleVariablesVector         m_alwaysCheckedVariables;
 	std::vector<IOutputPrintSink*> m_OutputSinks;             // objects in this vector are not released
+	TManagedConsoleCommandListener m_managedConsoleCommandListeners;
 
 	TDeferredCommandList           m_deferredCommands;        // A fifo of deferred commands
 	bool                           m_deferredExecution;       // True when deferred commands are processed

@@ -88,7 +88,7 @@ public:
 
 	//! Compile is called on a non mesh render elements, must be called only in rendering thread
 	//! Returns false if compile failed, and render element must not be rendered
-	virtual bool          Compile(CRenderObject* pObj, CRenderView *pRenderView, bool updateInstanceDataOnly) = 0;
+	virtual bool          Compile(CRenderObject* pObj, uint64 objFlags, uint16 elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly) = 0;
 
 	//! Custom Drawing for the non mesh render elements.
 	//! Must be thread safe for the parallel recording
@@ -235,7 +235,7 @@ public:
 
 	//! Compile is called on a non mesh render elements, must be called only in rendering thread
 	//! Returns false if compile failed, and render element must not be rendered
-	virtual bool          Compile(CRenderObject* pObj, CRenderView *pRenderView, bool updateInstanceDataOnly)  { return false; };
+	virtual bool          Compile(CRenderObject* pObj, uint64 objFlags, uint16 elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly)  { return false; };
 
 	//! Custom Drawing for the non mesh render elements.
 	//! Must be thread safe for the parallel recording

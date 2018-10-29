@@ -186,7 +186,7 @@ class CMockConsole : public IConsole
 	virtual void PrintCheatVars(bool bUseLastHashRange) override
 	{
 	}
-	virtual char * GetCheatVarAt(uint32 nOffset) override
+	virtual const char * GetCheatVarAt(uint32 nOffset) override
 	{
 		return nullptr;
 	}

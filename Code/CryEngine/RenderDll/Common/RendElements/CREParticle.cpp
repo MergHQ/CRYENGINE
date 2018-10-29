@@ -514,7 +514,7 @@ void CRenderer::EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, ERenderList
 		nList = EFSLIST_GENERAL;
 }
 
-bool CREParticle::Compile(CRenderObject* pRenderObject, CRenderView *pRenderView, bool updateInstanceDataOnly)
+bool CREParticle::Compile(CRenderObject* pRenderObject, uint64 objFlags, uint16 elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly)
 {
 	if (updateInstanceDataOnly)
 	{
@@ -525,9 +525,9 @@ bool CREParticle::Compile(CRenderObject* pRenderObject, CRenderView *pRenderView
 	}
 
 	const bool isPulledVertices = (pRenderObject->m_ParticleObjFlags & CREParticle::ePOF_USE_VERTEX_PULL_MODEL) != 0;
-	const bool isPointSprites = (pRenderObject->m_ObjFlags & FOB_POINT_SPRITE) != 0;
+	const bool isPointSprites = (objFlags & FOB_POINT_SPRITE) != 0;
 	const bool bVolumeFog = (pRenderObject->m_ParticleObjFlags & CREParticle::ePOF_VOLUME_FOG) != 0;
-	const bool bUseTessShader = !bVolumeFog && (pRenderObject->m_ObjFlags & FOB_ALLOW_TESSELLATION) != 0;
+	const bool bUseTessShader = !bVolumeFog && (objFlags & FOB_ALLOW_TESSELLATION) != 0;
 	const bool isGpuParticles = m_pGpuRuntime != nullptr;
 
 	auto& graphicsPipeline = gcpRendD3D->GetGraphicsPipeline();
@@ -558,7 +558,7 @@ bool CREParticle::Compile(CRenderObject* pRenderObject, CRenderView *pRenderView
 	stateDesc.shaderItem = shaderItem;
 	stateDesc.shaderItem.m_nTechnique = techniqueId;
 	stateDesc.technique = TTYPE_GENERAL;
-	stateDesc.objectFlags = pRenderObject->m_ObjFlags;
+	stateDesc.objectFlags = objFlags;
 	stateDesc.renderState = pRenderObject->m_RState;
 	if (isGpuParticles)
 	{
@@ -596,9 +596,9 @@ bool CREParticle::Compile(CRenderObject* pRenderObject, CRenderView *pRenderView
 	}
 	if (!bUseTessShader)
 		stateDesc.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_NO_TESSELLATION];
-	if (pRenderObject->m_ObjFlags & FOB_INSHADOW)
+	if (objFlags & FOB_INSHADOW)
 		stateDesc.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_PARTICLE_SHADOW];
-	if (pRenderObject->m_ObjFlags & FOB_SOFT_PARTICLE)
+	if (objFlags & FOB_SOFT_PARTICLE)
 		stateDesc.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_SOFT_PARTICLE];
 	if (pRenderObject->m_RState & OS_ALPHA_BLEND)
 		stateDesc.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_ALPHABLEND];
@@ -606,7 +606,7 @@ bool CREParticle::Compile(CRenderObject* pRenderObject, CRenderView *pRenderView
 		stateDesc.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_ANIM_BLEND];
 	if (pRenderObject->m_RState & OS_ENVIRONMENT_CUBEMAP)
 		stateDesc.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_ENVIRONMENT_CUBEMAP];
-	if (!(pRenderObject->m_ObjFlags & FOB_NO_FOG))
+	if (!(objFlags & FOB_NO_FOG))
 	{
 		stateDesc.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_FOG];
 		if (gcpRendD3D->m_bVolumetricFogEnabled)

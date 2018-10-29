@@ -7,7 +7,8 @@
 
 SGraphicsPipelineStateDescription::SGraphicsPipelineStateDescription(
   CRenderObject* pObj,
-  CRenderElement* pRE,
+  uint64 objFlags,
+  uint16 elmFlags,
   const SShaderItem& _shaderItem,
   EShaderTechniqueID _technique,
   InputLayoutHandle _vertexFormat,
@@ -16,7 +17,7 @@ SGraphicsPipelineStateDescription::SGraphicsPipelineStateDescription(
 {
 	shaderItem = _shaderItem;
 	technique = _technique;
-	objectFlags = pObj->m_ObjFlags;
+	objectFlags = objFlags;
 	objectFlags_MDV = pObj->m_nMDV;
 	objectRuntimeMask = pObj->m_nRTMask;
 	vertexFormat = _vertexFormat;
@@ -24,7 +25,7 @@ SGraphicsPipelineStateDescription::SGraphicsPipelineStateDescription(
 	primitiveType = _primitiveType;
 	renderState = pObj->m_RState;
 
-	if ((pObj->m_ObjFlags & FOB_SKINNED) && (pRE->m_Flags & FCEF_SKINNED) && CRenderer::CV_r_usehwskinning && !CRenderer::CV_r_character_nodeform)
+	if ((objFlags & FOB_SKINNED) && (elmFlags & FCEF_SKINNED) && CRenderer::CV_r_usehwskinning && !CRenderer::CV_r_character_nodeform)
 	{
 		SSkinningData* pSkinningData = NULL;
 		SRenderObjData* pOD = pObj->GetObjData();

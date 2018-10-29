@@ -10,9 +10,11 @@
 #include "CryEdit.h"
 #include "MinimapPanel.h"
 #include "TerrainDialog.h"
+#include "TerrainMoveTool.h"
 #include "TerrainTexturePainter.h"
 
 #include <Commands/QCommandAction.h>
+#include <EditorFramework/Events.h>
 
 extern CCryEditApp theApp;
 
@@ -54,6 +56,22 @@ void PyExportTerrainArea()            { GetTerrainDialog()->OnExportTerrainArea(
 void PyExportTerrainAreaWithObjects() { GetTerrainDialog()->OnExportTerrainAreaWithObjects(); }
 void PyReloadTerrain()                { GetTerrainDialog()->OnReloadTerrain(); }
 void PySelectTerrain()                { GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::SelectArea); }
+
+void SetTerrainTool(CRuntimeClass* pToolClass)
+{
+	auto pLevelEditorState = GetIEditorImpl()->GetLevelEditorSharedState();
+	auto pCurrentTool = pLevelEditorState->GetEditTool();
+
+	if (pCurrentTool && pCurrentTool->GetRuntimeClass() == pToolClass)
+		return;
+
+	CEditTool* pTerrainTool = (CEditTool*)pToolClass->CreateObject();
+
+	if (!pTerrainTool)
+		return;
+
+	pLevelEditorState->SetEditTool(pTerrainTool);
+}
 
 }
 
@@ -192,17 +210,16 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PySelectTerrain, terrain, select_terrain,
                                      "terrain.select_terrain()");
 REGISTER_EDITOR_COMMAND_TEXT(terrain, select_terrain, "Select Terrain");
 
-
 CTerrainEditor::CTerrainEditor(QWidget* parent)
 {
 	setAttribute(Qt::WA_DeleteOnClose);
-	QTabWidget* pTabs = new QTabWidget(this);
-	SetContent(pTabs);
-	pTabs->setTabsClosable(false);
+	m_pTabWidget = new QTabWidget(this);
+	SetContent(m_pTabWidget);
+	m_pTabWidget->setTabsClosable(false);
 
-	pTabs->addTab(new QTerrainSculptPanel(), "Sculpt");
-	pTabs->addTab(new QTerrainLayerPanel(), "Paint");
-	pTabs->addTab(new QMinimapPanel(), "Mini Map");
+	m_sculptTabIdx = m_pTabWidget->addTab(new QTerrainSculptPanel(), "Sculpt");
+	m_paintTabIdx = m_pTabWidget->addTab(new QTerrainLayerPanel(), "Paint");
+	m_pTabWidget->addTab(new QMinimapPanel(), "Mini Map");
 
 	InitTerrainMenu();
 	InstallReleaseMouseFilter(this);
@@ -315,4 +332,68 @@ void CTerrainEditor::InitTerrainMenu()
 
 	sec = pLayerMenu->GetNextEmptySection();
 	pLayerMenu->AddAction(GetAction("terrain.flood_layer"), sec);
+
+	CAbstractMenu* pToolsMenu = GetRootMenu()->CreateMenu(tr("Tools"), 0);
+	pToolsMenu->AddAction(GetAction("terrain.flatten_tool"), sec);
+	pToolsMenu->AddAction(GetAction("terrain.smooth_tool"), sec);
+	pToolsMenu->AddAction(GetAction("terrain.raise_lower_tool"), sec);
+	pToolsMenu->AddAction(GetAction("terrain.duplicate_tool"), sec);
+	pToolsMenu->AddAction(GetAction("terrain.make_holes_tool"), sec);
+	pToolsMenu->AddAction(GetAction("terrain.fill_holes_tool"), sec);
+	pToolsMenu->AddAction(GetAction("terrain.paint_texture_tool"), sec);
+
+	ForceRebuildMenu();
+}
+
+void CTerrainEditor::customEvent(QEvent* pEvent)
+{
+	CDockableEditor::customEvent(pEvent);
+
+	if (!pEvent->isAccepted() && pEvent->type() == SandboxEvent::Command)
+	{
+		CommandEvent* pCommandEvent = static_cast<CommandEvent*>(pEvent);
+		const string& command = pCommandEvent->GetCommand();
+
+		int switchTabIdx = -1;
+		if (command == "terrain.flatten_tool")
+		{
+			switchTabIdx = m_sculptTabIdx;
+			SetTerrainTool(RUNTIME_CLASS(CFlattenTool));
+		}
+		else if (command == "terrain.smooth_tool")
+		{
+			switchTabIdx = m_sculptTabIdx;
+			SetTerrainTool(RUNTIME_CLASS(CSmoothTool));
+		}
+		else if (command == "terrain.raise_lower_tool")
+		{
+			switchTabIdx = m_sculptTabIdx;
+			SetTerrainTool(RUNTIME_CLASS(CRiseLowerTool));
+		}
+		else if (command == "terrain.duplicate_tool")
+		{
+			switchTabIdx = m_sculptTabIdx;
+			SetTerrainTool(RUNTIME_CLASS(CTerrainMoveTool));
+		}
+		else if (command == "terrain.make_holes_tool")
+		{
+			switchTabIdx = m_sculptTabIdx;
+			SetTerrainTool(RUNTIME_CLASS(CMakeHolesTool));
+		}
+		else if (command == "terrain.fill_holes_tool")
+		{
+			switchTabIdx = m_sculptTabIdx;
+			SetTerrainTool(RUNTIME_CLASS(CFillHolesTool));
+		}
+		else if (command == "terrain.paint_texture_tool")
+		{
+			switchTabIdx = m_paintTabIdx;
+			SetTerrainTool(RUNTIME_CLASS(CTerrainTexturePainter));
+		}
+
+		if (switchTabIdx > -1)
+		{
+			m_pTabWidget->setCurrentIndex(switchTabIdx);
+		}
+	}
 }

@@ -1345,8 +1345,10 @@ void CObjManager::UnregisterForGarbage(CStatObj* pObject)
 bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempData, CRenderObject*& pRenderObject, const CLodValue* pLodValue, const Matrix34& transformationMatrix, const SRenderingPassInfo& passInfo) const
 {
 	CRY_ASSERT(pRenderObject == nullptr);
-	const bool shouldGetOrCreatePermanentObject = (GetCVars()->e_PermanentRenderObjects && (pTempData || pRenderObject) && GetCVars()->e_DebugDraw == 0 && (!pLodValue || !pLodValue->DissolveRefA())) && 
+	const bool multipleLevelsOfDetail = pLodValue && pLodValue->DissolveRefA();
+	const bool shouldGetOrCreatePermanentObject = (GetCVars()->e_PermanentRenderObjects && (pTempData || pRenderObject) && GetCVars()->e_DebugDraw == 0 && !multipleLevelsOfDetail) &&
 		!(passInfo.IsRecursivePass() || (pTempData && (pTempData->userData.m_pFoliage || (pTempData->userData.pOwnerNode && (pTempData->userData.pOwnerNode->GetRndFlags() & ERF_SELECTED)))));
+
 	if (shouldGetOrCreatePermanentObject)
 	{
 		if (pLodValue && pLodValue->LodA() == -1 && pLodValue->LodB() == -1)
@@ -1359,11 +1361,10 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 			return true;
 
 		int nLod = pLodValue ? CLAMP(0, pLodValue->LodA(), MAX_STATOBJ_LODS_NUM - 1) : 0;
+		pRenderObject = pTempData->GetRenderObject(nLod);
 
 		uint32 passId = passInfo.IsShadowPass() ? 1 : 0;
 		uint32 passMask = BIT(passId);
-
-		pRenderObject = pTempData->GetRenderObject(nLod);
 
 		// Update instance only for dirty objects
 		const auto instanceDataDirty = pRenderObject->m_bInstanceDataDirty[passId];
@@ -1392,6 +1393,9 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 	}
 	else
 	{
+		// Release persistent ROs associated with this temp-data
+		pTempData->FreeRenderObjects();
+
 		// Fallback to temporary render object
 		pRenderObject = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
 	}

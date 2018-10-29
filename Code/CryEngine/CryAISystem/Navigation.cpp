@@ -20,7 +20,6 @@
 #include "PolygonSetOps/Polygon2d.h"
 
 #include "DebugDrawContext.h"
-#include "CalculationStopper.h"
 #include <CrySystem/File/CryBufferedFileReader.h>
 
 static const int maxForbiddenNameLen = 1024;

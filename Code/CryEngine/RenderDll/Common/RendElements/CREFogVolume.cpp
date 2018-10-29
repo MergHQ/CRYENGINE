@@ -158,7 +158,7 @@ CREFogVolume::~CREFogVolume()
 	}
 }
 
-bool CREFogVolume::Compile(CRenderObject* pObj,CRenderView *pRenderView, bool updateInstanceDataOnly)
+bool CREFogVolume::Compile(CRenderObject* pObj, uint64 objFlags, uint16 elmFlags, const AABB &localAABB,CRenderView *pRenderView, bool updateInstanceDataOnly)
 {
 	if (!m_pCompiledObject)
 	{
@@ -194,7 +194,8 @@ bool CREFogVolume::Compile(CRenderObject* pObj,CRenderView *pRenderView, bool up
 	// create PSOs which match to specific material.
 	SGraphicsPipelineStateDescription psoDescription(
 	  pObj,
-	  this,
+	  objFlags,
+	  elmFlags,
 	  shaderItem,
 	  TTYPE_GENERAL, // set as default, this may be overwritten in CreatePipelineStates().
 	  vertexFormat,

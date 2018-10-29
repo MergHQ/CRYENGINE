@@ -10,6 +10,10 @@
 #include <functional>
 #include <vector>
 
+static_assert(FOB_HAS_PREVMATRIX > FOB_ZPREPASS, "FOB-sort is in wrong order");
+static_assert(FOB_ZPREPASS > FOB_ALPHATEST && FOB_ZPREPASS > FOB_DISSOLVE, "FOB-sort is in wrong order");
+static_assert((FOB_SORT_MASK & ~FOB_DISCARD_MASK) & FOB_ZPREPASS, "FOB-sort mask doesn't contain zprepass");
+
 ///////////////////////////////////////////////////////////////////////////////
 // sort operators for render items
 struct SCompareItemPreprocess
@@ -36,23 +40,54 @@ struct SCompareRendItem
 {
 	bool operator()(const SRendItem& a, const SRendItem& b) const
 	{
-		int nMotionVectorsA = (a.ObjSort & FOB_HAS_PREVMATRIX);
-		int nMotionVectorsB = (b.ObjSort & FOB_HAS_PREVMATRIX);
-		if (nMotionVectorsA != nMotionVectorsB)
-			return nMotionVectorsA > nMotionVectorsB;
-
-		int nAlphaTestA = (a.ObjSort & FOB_ALPHATEST);
-		int nAlphaTestB = (b.ObjSort & FOB_ALPHATEST);
-		if (nAlphaTestA != nAlphaTestB)
-			return nAlphaTestA < nAlphaTestB;
-
-		if (a.SortVal != b.SortVal)         // Sort by shaders
+		// Sort by shaders (almost all the same)
+		// NOTE: SortVal has arbitrary ordering
+		// TODO: order by nearest distance per ID-bin
+		if (a.SortVal != b.SortVal)
 			return a.SortVal < b.SortVal;
 
-		if (a.pElem != b.pElem)               // Sort by geometry
+		// Sorting by geometry, it's less important than sorting by shaders
+		// NOTE: pElem has arbitrary ordering
+		// TODO: order by nearest distance per Element-bin
+		if (a.pElem != b.pElem)
 			return a.pElem < b.pElem;
 
-		return (a.ObjSort & 0xFFFF) < (b.ObjSort & 0xFFFF);   // Sort by distance
+		// Sort by distance
+		return (a.ObjSort & 0xFFFF) < (b.ObjSort & 0xFFFF);
+	}
+};
+
+///////////////////////////////////////////////////////////////////////////////
+struct SCompareRendItemZPrePass
+{
+	bool operator()(const SRendItem& a, const SRendItem& b) const
+	{
+		// Cluster all alpha-testing shader-types together (needs texture, everything else not)
+		uint32 nSortObjFlagsA = (a.ObjSort & (FOB_SORT_MASK & FOB_ALPHATEST));
+		uint32 nSortObjFlagsB = (b.ObjSort & (FOB_SORT_MASK & FOB_ALPHATEST));
+		if (nSortObjFlagsA != nSortObjFlagsB)
+			return nSortObjFlagsA < nSortObjFlagsB;
+
+		// Sort by depth/distance layers (pick half-float exponent, approximation to perspective Z)
+		uint32 depthLayerA = (a.ObjSort >> 10) & 0x3F;
+		uint32 depthLayerB = (b.ObjSort >> 10) & 0x3F;
+		if (depthLayerA != depthLayerB)
+			return depthLayerA < depthLayerB;
+
+		// Sort by shaders (almost all the same)
+		// NOTE: SortVal has arbitrary ordering
+		// TODO: order by nearest distance per ID-bin
+		if (a.SortVal != b.SortVal)
+			return a.SortVal < b.SortVal;
+
+		// Sorting by geometry, it's less important than sorting by shaders
+		// NOTE: pElem has arbitrary ordering
+		// TODO: order by nearest distance per Element-bin
+		if (a.pElem != b.pElem)
+			return a.pElem < b.pElem;
+
+		// Sort by distance
+		return (a.ObjSort & 0xFFFF) < (b.ObjSort & 0xFFFF);
 	}
 };
 
@@ -61,32 +96,35 @@ struct SCompareRendItemZPass
 {
 	bool operator()(const SRendItem& a, const SRendItem& b) const
 	{
-		const int layerSize = 50;  // Note: ObjSort contains round(entityDist * 2) for meshes
+		// Bin/split list by VELOCITY first (see CSceneGBufferStage::ExecuteSceneOpaque)
+		// Bin/split list by ZPREPASS afterwards
+		// Cluster all discarding shader-types together (which are not already disabled because of zprepass)
 
-		int nMotionVectorsA = (a.ObjSort & FOB_HAS_PREVMATRIX);
-		int nMotionVectorsB = (b.ObjSort & FOB_HAS_PREVMATRIX);
-		if (nMotionVectorsA != nMotionVectorsB)
-			return nMotionVectorsA > nMotionVectorsB;
+		uint32 nSortObjFlagsA = (a.ObjSort & (FOB_SORT_MASK & ~FOB_DISCARD_MASK));
+		uint32 nSortObjFlagsB = (b.ObjSort & (FOB_SORT_MASK & ~FOB_DISCARD_MASK));
+		if (nSortObjFlagsA != nSortObjFlagsB)
+			return nSortObjFlagsA < nSortObjFlagsB;
 
-		int nAlphaTestA = (a.ObjSort & FOB_ALPHATEST);
-		int nAlphaTestB = (b.ObjSort & FOB_ALPHATEST);
-		if (nAlphaTestA != nAlphaTestB)
-			return nAlphaTestA < nAlphaTestB;
-
-		// Sort by depth/distance layers
-		int depthLayerA = (a.ObjSort & 0xFFFF) / layerSize;
-		int depthLayerB = (b.ObjSort & 0xFFFF) / layerSize;
+		// Sort by depth/distance layers (pick half-float exponent, approximation to perspective Z)
+		uint32 depthLayerA = !(nSortObjFlagsA & FOB_ZPREPASS) ? (a.ObjSort >> 10) & 0x3F : 0x3F;
+		uint32 depthLayerB = !(nSortObjFlagsB & FOB_ZPREPASS) ? (b.ObjSort >> 10) & 0x3F : 0x3F;
 		if (depthLayerA != depthLayerB)
 			return depthLayerA < depthLayerB;
 
-		if (a.SortVal != b.SortVal)    // Sort by shaders
+		// Sort by shaders
+		// NOTE: SortVal has arbitrary ordering
+		// TODO: order by nearest distance per ID-bin
+		if (a.SortVal != b.SortVal)
 			return a.SortVal < b.SortVal;
 
-		// Sorting by geometry less important than sorting by shaders
-		if (a.pElem != b.pElem)    // Sort by geometry
+		// Sorting by geometry, it's less important than sorting by shaders
+		// NOTE: pElem has arbitrary ordering
+		// TODO: order by nearest distance per Element-bin
+		if (a.pElem != b.pElem)
 			return a.pElem < b.pElem;
 
-		return (a.ObjSort & 0xFFFF) < (b.ObjSort & 0xFFFF);    // Sort by distance
+		// Sort by distance
+		return (a.ObjSort & 0xFFFF) < (b.ObjSort & 0xFFFF);
 	}
 };
 
@@ -164,9 +202,17 @@ void SRendItem::mfSortPreprocess(SRendItem* First, int Num)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SRendItem::mfSortForZPass(SRendItem* First, int Num)
+void SRendItem::mfSortForZPass(SRendItem* First, int Num, bool bZPre)
 {
-	std::sort(First, First + Num, SCompareRendItemZPass());
+	if (bZPre)
+		std::sort(First, First + Num, SCompareRendItemZPrePass());
+	else
+		std::sort(First, First + Num, SCompareRendItemZPass());
+}
+
+void SRendItem::mfSortForDepthPass(SRendItem* First, int Num)
+{
+	std::sort(First, First + Num, SCompareRendItemZPrePass());
 }
 
 //////////////////////////////////////////////////////////////////////////

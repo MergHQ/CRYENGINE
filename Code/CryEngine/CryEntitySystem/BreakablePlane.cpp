@@ -881,9 +881,6 @@ int CBreakablePlane::ProcessImpact(const SProcessImpactIn& in, SProcessImpactOut
 		    pRndMesh->GetVerticesCount() == pmd->nVertices && pRndMesh->GetIndicesCount() == pmd->nTris * 3
 		    )
 		{
-			Matrix34 mtxInv = in.mtx.GetInverted();
-			Vec3 ptHit = mtxInv * in.pthit;
-			Vec3 dirHit = mtxInv.TransformVector(in.hitvel.normalized());
 			SExtractMeshIslandOut islandOut;
 
 			SExtractMeshIslandIn islandIn;

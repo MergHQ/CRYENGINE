@@ -4757,8 +4757,11 @@ void CAISystem::DebugDrawSelectedTargets()
 	}
 }
 
-void CAISystem::DebugDrawPhysicsAccess()
+void CAISystem::TryDebugDrawPhysicsAccess()
 {
+	if (!gAIEnv.CVars.DebugDrawPhysicsAccess)
+		return;
+
 	auto rstats = gAIEnv.pRayCaster->GetContentionStats();
 	stack_string text;
 

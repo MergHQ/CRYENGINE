@@ -688,7 +688,7 @@ public:
 		SUpdateRecord(ICVar* pCVar);
 		bool operator==(const SUpdateRecord& rhs)
 		{
-			return type == rhs.type && (strcmp(name, rhs.name) == 0);
+			return type == rhs.type && cry_stricmp(name, rhs.name) == 0;
 		}
 	};
 

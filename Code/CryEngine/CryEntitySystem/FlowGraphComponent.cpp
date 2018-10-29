@@ -508,8 +508,6 @@ void CEntityComponentSetterFlowNode::ProcessEvent(EFlowEvent event, SActivationI
 			{
 				size_t inputIndex = 0;
 
-				ptrdiff_t offset = 0;
-
 				for (int i = 0; i < m_envComponent.GetDesc().GetMembers().size(); ++i, ++flowgraphInputIndex)
 				{
 					IEntityComponent* pComponent = components[componentIndex];

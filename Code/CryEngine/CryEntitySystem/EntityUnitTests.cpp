@@ -231,8 +231,8 @@ CRY_TEST_SUITE(EntityTestsSuit)
 	CRY_TEST(QueryInvalidGUID)
 	{
 		SScopedSpawnEntity entity("UnifiedComponentTestEntity");
-		CUnifiedEntityComponent* pComponent = entity.pEntity->GetOrCreateComponent<CUnifiedEntityComponent>();
-		CLegacyEntityComponentWithInterface* pLegacyComponent = entity.pEntity->GetOrCreateComponent<CLegacyEntityComponentWithInterface>();
+		entity.pEntity->GetOrCreateComponent<CUnifiedEntityComponent>();
+		entity.pEntity->GetOrCreateComponent<CLegacyEntityComponentWithInterface>();
 		CRY_TEST_CHECK_EQUAL(entity.pEntity->GetComponentsCount(), 2);
 		// Querying the lowest level GUIDs is disallowed
 		CRY_TEST_CHECK_EQUAL(entity.pEntity->GetComponent<IEntityComponent>(), nullptr);
@@ -658,9 +658,6 @@ CRY_TEST_SUITE(EntityTestsSuit)
 		IEntity* pFirstEntity = nullptr;
 		IEntity* pSecondEntity = nullptr;
 		CTestLinkComponent* pComponent = nullptr;
-		bool isCalled = false;
-		CTimeValue startTime;
-		CTimeValue expectedDuration;
 		string linkString = "Test Link";
 
 		SEntitySpawnParams spawnParams;
@@ -707,10 +704,7 @@ CRY_TEST_SUITE(EntityTestsSuit)
 	public:
 		int m_priority = 1;
 
-		virtual void Initialize() override
-		{
-			int a = 0;
-		}
+		virtual void Initialize() override {}
 
 		virtual ComponentEventPriority GetEventPriority() const override { return m_priority; }
 		virtual Cry::Entity::EventFlags GetEventMask() const override { return Cry::Entity::EEvent::Update; }

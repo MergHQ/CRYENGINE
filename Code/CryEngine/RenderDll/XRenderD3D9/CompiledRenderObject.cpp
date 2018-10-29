@@ -192,7 +192,7 @@ void CCompiledRenderObject::CompilePerDrawCB(CRenderObject* pRenderObject, uint6
 	  float((params & 0x000000ff)) * (1.0f / 255.0f));
 
 	Matrix44A objPrevMatr;
-	bool bMotionBlurMatrix = CMotionBlur::GetPrevObjToWorldMat(pRenderObject, objPrevMatr);
+	bool bMotionBlurMatrix = CMotionBlur::GetPrevObjToWorldMat(pRenderObject, objFlags, objPrevMatr);
 	if (bMotionBlurMatrix)
 		m_bDynamicInstancingPossible = false;
 
@@ -499,7 +499,7 @@ void CCompiledRenderObject::TrackStats(const SGraphicsPipelinePassContext& RESTR
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilationOptions, uint64 objFlags, const AABB &localAABB, CRenderView *pRenderView)
+bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilationOptions, uint64 objFlags, uint16 elmFlags, const AABB &localAABB, CRenderView *pRenderView)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
@@ -541,7 +541,7 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 
 		// Compile render element specific data.
 		m_bCustomRenderElement = true;
-		const bool bCompiled = m_pRenderElement->Compile(pRenderObject, pRenderView, updateInstanceDataOnly);
+		const bool bCompiled = m_pRenderElement->Compile(pRenderObject, objFlags, elmFlags, localAABB, pRenderView, updateInstanceDataOnly);
 		m_bIncomplete = !bCompiled;
 
 		return bCompiled;
@@ -649,7 +649,7 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 	// Create Pipeline States
 	if (compilationOptions & eObjCompilationOption_PipelineState)
 	{
-		SGraphicsPipelineStateDescription psoDescription(pRenderObject, pRenderElement, m_shaderItem, TTYPE_GENERAL, geomInfo.eVertFormat, 0 /*geomInfo.CalcStreamMask()*/, ERenderPrimitiveType(geomInfo.primitiveType));
+		SGraphicsPipelineStateDescription psoDescription(pRenderObject, objFlags, elmFlags, m_shaderItem, TTYPE_GENERAL, geomInfo.eVertFormat, 0 /*geomInfo.CalcStreamMask()*/, ERenderPrimitiveType(geomInfo.primitiveType));
 
 		const bool bEnabledInstancing = m_perDrawInstances > 1;
 		if (bEnabledInstancing && m_pInstancingConstBuffer)
