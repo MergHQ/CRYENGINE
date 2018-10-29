@@ -27,7 +27,7 @@ struct SGraphicsPipelineStateDescription
 		, renderState(0)
 		, vertexFormat(InputLayoutHandle::Unspecified)
 	{}
-	SGraphicsPipelineStateDescription(CRenderObject* pObj, CRenderElement* pRE, const SShaderItem& shaderItem, EShaderTechniqueID technique, InputLayoutHandle vertexFormat, uint32 streamMask, ERenderPrimitiveType primitiveType);
+	SGraphicsPipelineStateDescription(CRenderObject* pObj, uint64 objFlags, uint16 elmFlags, const SShaderItem& shaderItem, EShaderTechniqueID technique, InputLayoutHandle vertexFormat, uint32 streamMask, ERenderPrimitiveType primitiveType);
 
 	bool operator==(const SGraphicsPipelineStateDescription& other) const
 	{

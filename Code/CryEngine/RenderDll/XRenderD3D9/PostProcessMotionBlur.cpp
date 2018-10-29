@@ -21,11 +21,11 @@ CThreadSafeRendererContainer<CMotionBlur::OMBParamsMap::value_type> CMotionBlur:
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CMotionBlur::GetPrevObjToWorldMat(CRenderObject* pObj, Matrix44A& res)
+bool CMotionBlur::GetPrevObjToWorldMat(CRenderObject* pObj, uint64 objFlags, Matrix44A& res)
 {
 	assert(pObj);
 
-	if (pObj->m_ObjFlags & FOB_HAS_PREVMATRIX)
+	if (objFlags & FOB_HAS_PREVMATRIX)
 	{
 		uint32 nThreadID = gRenDev->GetRenderThreadID();
 		SRenderObjData* const __restrict pOD = pObj->GetObjData();

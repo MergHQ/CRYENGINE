@@ -1632,7 +1632,7 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 			ri.nBatchFlags |= (ri.pCompiledObject ? FB_COMPILED_OBJECT : 0);
 
 			// Add to temporary objects to compile
-			m_temporaryCompiledObjects.push_back(STemporaryRenderObjectCompilationData{ ri.pCompiledObject, aabb, objFlags });
+			m_temporaryCompiledObjects.push_back(STemporaryRenderObjectCompilationData{ ri.pCompiledObject, aabb, objFlags, pElem->m_Flags });
 		}
 		else if (customRenderLoop)
 		{
@@ -1977,7 +1977,7 @@ void CRenderView::CompileModifiedRenderObjects()
 		for (int i = 0, num = items.size(); i < num; i++)
 		{
 			auto& pri = items[i];
-			if (!pri.m_pCompiledObject || !pri.m_pCompiledObject->Compile(compilationFlags, pri.m_ObjFlags, pri.m_aabb, this))
+			if (!pri.m_pCompiledObject || !pri.m_pCompiledObject->Compile(compilationFlags, pri.m_ObjFlags, pri.m_ElmFlags, pri.m_aabb, this))
 				bAllCompiled = false;
 
 			allCachedShadowPsosAreValid &= gcpRendD3D->GetGraphicsPipeline().GetShadowStage()->CanRenderCachedShadows(pri.m_pCompiledObject);
@@ -2004,7 +2004,7 @@ void CRenderView::CompileModifiedRenderObjects()
 	int numTempObjects = m_temporaryCompiledObjects.size();
 	for (const auto &t : m_temporaryCompiledObjects)
 	{
-		const bool isCompiled = t.pObject->Compile(eObjCompilationOption_All, t.objFlags, t.localAABB, this);
+		const bool isCompiled = t.pObject->Compile(eObjCompilationOption_All, t.objFlags, t.elmFlags, t.localAABB, this);
 		const bool cachedShadowPsosAreValid = gcpRendD3D->GetGraphicsPipeline().GetShadowStage()->CanRenderCachedShadows(t.pObject);
 
 		if (!cachedShadowPsosAreValid && IsShadowGenView())

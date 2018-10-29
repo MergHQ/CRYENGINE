@@ -43,7 +43,7 @@ public:
 
 	bool          GetGeometryInfo(SGeometryInfo& geomInfo, bool bSupportTessellation = false);
 	InputLayoutHandle GetVertexFormat() const;
-	bool          Compile(CRenderObject* pObj,CRenderView *pRenderView, bool updateInstanceDataOnly);
+	bool          Compile(CRenderObject* pObj, uint64 objFlags, uint16 elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly);
 	void          DrawToCommandList(CRenderObject* pObj, const SGraphicsPipelinePassContext& ctx, CDeviceCommandList* commandList);
 
 	//protected:

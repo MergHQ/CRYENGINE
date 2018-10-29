@@ -500,6 +500,7 @@ private:
 		CCompiledRenderObject* pObject;
 		AABB                   localAABB;
 		uint64                 objFlags;
+		uint16                 elmFlags;
 	};
 	lockfree_add_vector<STemporaryRenderObjectCompilationData> m_temporaryCompiledObjects;
 

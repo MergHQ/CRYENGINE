@@ -101,7 +101,7 @@ public:
 	virtual void            OnBeginFrame(const SRenderingPassInfo& passInfo);
 
 	static void             SetupObject(CRenderObject* pObj, const SRenderingPassInfo& passInfo);
-	static bool             GetPrevObjToWorldMat(CRenderObject* pObj, Matrix44A& res);
+	static bool             GetPrevObjToWorldMat(CRenderObject* pObj, uint64 objFlags, Matrix44A& res);
 	static void             InsertNewElements();
 	static void             FreeData();
 
