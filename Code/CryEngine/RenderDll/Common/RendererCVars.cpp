@@ -3166,7 +3166,7 @@ const CCVarUpdateRecorder::SUpdateRecord* CCVarUpdateRecorder::GetCVar(const cha
 {
 	for (auto& cvar : m_updatedCVars[gRenDev->GetRenderThreadID()])
 	{
-		if (cry_strcmp(cvar.name, cvarName) == 0)
+		if (cry_stricmp(cvar.name, cvarName) == 0)
 			return &cvar;
 	}
 

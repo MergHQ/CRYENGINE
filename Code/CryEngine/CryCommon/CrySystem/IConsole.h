@@ -361,7 +361,7 @@ struct IConsole
 	//! Get the hash calculated.
 	virtual uint64 GetCheatVarHash() = 0;
 	virtual void   PrintCheatVars(bool bUseLastHashRange) = 0;
-	virtual char*  GetCheatVarAt(uint32 nOffset) = 0;
+	virtual const char* GetCheatVarAt(uint32 nOffset) = 0;
 
 	//! Console variable sink.
 	//! Adds a new console variables sink callback.
