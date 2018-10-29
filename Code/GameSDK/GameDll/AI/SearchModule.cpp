@@ -523,7 +523,7 @@ void SearchGroup::InitActors()
 			observerParams.eyePosition = agent.GetPos();
 			observerParams.eyeDirection = agent.GetViewDir();
 
-			observerParams.fovCos = cosf(120.0f);
+			observerParams.fovCos = cosf(DEG2RAD(m_actorFov));
 			observerParams.sightRange = 8.0f;
 
 			IScriptTable* entityTable = agent.GetScriptTable();
