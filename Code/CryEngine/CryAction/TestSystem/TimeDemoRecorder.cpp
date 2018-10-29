@@ -1920,10 +1920,6 @@ void CTimeDemoRecorder::StartSession()
 		SetConsoleVar("ai_IgnorePlayer", 1);
 		SetConsoleVar("ai_SoundPerception", 0);
 	}
-	else
-	{
-		SetConsoleVar("ai_UseCalculationStopperCounter", 1);  // To make AI async time independent.
-	}
 
 	// No wait for key-press on level load.
 	SetConsoleVar("hud_startPaused", 0);
@@ -2011,10 +2007,6 @@ void CTimeDemoRecorder::StopSession()
 		SetConsoleVar("ai_SystemUpdate", 1);
 		SetConsoleVar("ai_IgnorePlayer", 0);
 		SetConsoleVar("ai_SoundPerception", 1);
-	}
-	else
-	{
-		SetConsoleVar("ai_UseCalculationStopperCounter", 0);  // To make AI async time independent.
 	}
 	SetConsoleVar("mov_NoCutscenes", 0);
 
