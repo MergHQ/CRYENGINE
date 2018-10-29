@@ -1,10 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include "StdAfx.h"
 
+#include "QT/QToolTabManager.h"
 #include "Terrain/TerrainLayerUndoObject.h"
 #include "Terrain/TerrainManager.h"
 #include "TerrainTexturePainter.h"
 
+#include <EditorFramework/Events.h>
 #include <FileDialogs/SystemFileDialog.h>
 #include <BoostPythonMacros.h>
 
@@ -121,7 +123,7 @@ static void PyMoveTerrainLayerUp()
 	const int index = GetIEditorImpl()->GetTerrainManager()->GetSelectedLayerIndex();
 	if (index > 0)
 	{
-		MoveTerrainLayer(index, index-1);
+		MoveTerrainLayer(index, index - 1);
 	}
 }
 
@@ -129,7 +131,7 @@ static void PyMoveTerrainLayerDown()
 {
 	const int index = GetIEditorImpl()->GetTerrainManager()->GetSelectedLayerIndex();
 	const int count = GetIEditorImpl()->GetTerrainManager()->GetLayerCount();
-	if (count > 1 && index < count-1)
+	if (count > 1 && index < count - 1)
 	{
 		MoveTerrainLayer(index, index + 2);
 	}
@@ -195,7 +197,6 @@ REGISTER_EDITOR_COMMAND_TEXT(terrain, move_layer_to_bottom, "Move to Bottom")
 REGISTER_PYTHON_COMMAND(Private_TerrainLayerCommands::PyFloodTerrainLayer, terrain, flood_layer, "Floods the selected layer over the all terrain")
 REGISTER_EDITOR_COMMAND_TEXT(terrain, flood_layer, "Flood Layer")
 
-
 namespace Private_TerrainCommands
 {
 
@@ -225,3 +226,86 @@ static void PyRefineTerrainTiles()
 
 REGISTER_PYTHON_COMMAND(Private_TerrainCommands::PyRefineTerrainTiles, terrain, refine_tiles, "Split the tiles into smaller tiles")
 REGISTER_EDITOR_COMMAND_TEXT(terrain, refine_tiles, "Refine Terrain Texture Tiles")
+
+namespace Private_TerrainToolsCommands
+{
+void EnsureTerrainEditorActive()
+{
+	CTabPaneManager* pPaneManager = CTabPaneManager::GetInstance();
+	if (pPaneManager)
+	{
+		pPaneManager->OpenOrCreatePane("Terrain Editor");
+	}
+}
+
+void Flatten()
+{
+	EnsureTerrainEditorActive();
+	CommandEvent("terrain.flatten_tool").SendToKeyboardFocus();
+}
+
+void Smooth()
+{
+	EnsureTerrainEditorActive();
+	CommandEvent("terrain.smooth_tool").SendToKeyboardFocus();
+}
+
+void RaiseLower()
+{
+	EnsureTerrainEditorActive();
+	CommandEvent("terrain.raise_lower_tool").SendToKeyboardFocus();
+}
+
+void Duplicate()
+{
+	EnsureTerrainEditorActive();
+	CommandEvent("terrain.duplicate_tool").SendToKeyboardFocus();
+}
+
+void MakeHoles()
+{
+	EnsureTerrainEditorActive();
+	CommandEvent("terrain.make_holes_tool").SendToKeyboardFocus();
+}
+
+void FillHoles()
+{
+	EnsureTerrainEditorActive();
+	CommandEvent("terrain.fill_holes_tool").SendToKeyboardFocus();
+}
+
+void PaintLayer()
+{
+	EnsureTerrainEditorActive();
+	CommandEvent("terrain.paint_texture_tool").SendToKeyboardFocus();
+}
+}
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_TerrainToolsCommands::Flatten, terrain, flatten_tool,
+                                   CCommandDescription("Switch to terrain flatten tool"))
+REGISTER_EDITOR_UI_COMMAND_DESC(terrain, flatten_tool, "Terrain Flatten Tool", "", "", false)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_TerrainToolsCommands::Smooth, terrain, smooth_tool,
+                                   CCommandDescription("Switch to terrain smooth tool"))
+REGISTER_EDITOR_UI_COMMAND_DESC(terrain, smooth_tool, "Terrain Smooth Tool", "", "", false)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_TerrainToolsCommands::RaiseLower, terrain, raise_lower_tool,
+                                   CCommandDescription("Switch to terrain raise/lower tool"))
+REGISTER_EDITOR_UI_COMMAND_DESC(terrain, raise_lower_tool, "Terrain Raise/Lower Tool", "", "", false)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_TerrainToolsCommands::Duplicate, terrain, duplicate_tool,
+                                   CCommandDescription("Switch to terrain duplicate tool"))
+REGISTER_EDITOR_UI_COMMAND_DESC(terrain, duplicate_tool, "Terrain Duplicate Tool", "", "", false)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_TerrainToolsCommands::MakeHoles, terrain, make_holes_tool,
+                                   CCommandDescription("Switch to terrain make holes tool"))
+REGISTER_EDITOR_UI_COMMAND_DESC(terrain, make_holes_tool, "Terrain Make Holes Tool", "", "", false)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_TerrainToolsCommands::FillHoles, terrain, fill_holes_tool,
+                                   CCommandDescription("Switch to terrain fill holes tool"))
+REGISTER_EDITOR_UI_COMMAND_DESC(terrain, fill_holes_tool, "Terrain Fill Holes Tool", "", "", false)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_TerrainToolsCommands::PaintLayer, terrain, paint_texture_tool,
+                                   CCommandDescription("Switch to terrain texture painting tool"))
+REGISTER_EDITOR_UI_COMMAND_DESC(terrain, paint_texture_tool, "Terrain Texture Paint Tool", "", "", false)
+REGISTER_COMMAND_REMAPPING(edit_mode, terrain_painter, terrain, paint_texture_tool)

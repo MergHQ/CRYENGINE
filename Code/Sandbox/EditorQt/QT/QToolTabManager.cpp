@@ -420,31 +420,26 @@ CWnd* CTabPaneManager::OpenMFCPane(const char* sPaneClassName)
 
 	IViewPaneClass* pViewPaneClass = (IViewPaneClass*)pClassDesc;
 
+	QTabPane* pTool = nullptr;
 	// Check if view view pane class support only 1 pane at a time.
 	if (pViewPaneClass->SinglePane())
 	{
-		QTabPane* tool = FindTabPaneByClass(sPaneClassName);
-		if (tool)
-		{
-			// first activate then focus - else focus will not work
-			GetToolManager()->bringToFront(tool);
-			tool->activateWindow();
-			tool->setFocus();
-			return tool->m_MfcWnd;
-		}
+		pTool = FindTabPaneByClass(sPaneClassName);
 	}
 
-	QTabPane* tool = CreateTabPane(sPaneClassName, NULL, -1, true);
+	if (!pTool)
+	{
+		pTool = CreateTabPane(sPaneClassName, NULL, -1, true);
+	}
 
-	if (!tool)
+	if (!pTool)
 	{
 		return nullptr;
 	}
 
-	tool->setFocus();
-	tool->activateWindow();
+	FocusTabPane(pTool);
 
-	return tool->m_MfcWnd;
+	return pTool->m_MfcWnd;
 }
 
 CWnd* CTabPaneManager::FindMFCPane(const char* sPaneClassName)
@@ -470,26 +465,35 @@ IPane* CTabPaneManager::OpenOrCreatePane(const char* sPaneClassName)
 {
 	QTabPane* tool = FindTabPaneByClass(sPaneClassName);
 
-	if (tool)
+	if (!tool)
 	{
-		// first activate then focus - else focus will not work
-		GetToolManager()->bringToFront(tool);
-		tool->activateWindow();
-		tool->setFocus();
-		return tool->m_pane;
+		tool = CreateTabPane(sPaneClassName);
 	}
-
-	tool = CreateTabPane(sPaneClassName);
 
 	if (!tool)
 	{
 		return nullptr;
 	}
 
-	tool->setFocus();
-	tool->activateWindow();
+	FocusTabPane(tool);
 
 	return tool->m_pane;
+}
+
+void CTabPaneManager::FocusTabPane(QTabPane* pPane)
+{
+	QWidget* pTopMostParent = pPane;
+
+	while (QWidget* pParent = pTopMostParent->parentWidget())
+	{
+		pTopMostParent = pParent;
+	}
+
+	pTopMostParent->setWindowState((pTopMostParent->windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
+
+	pPane->setFocus();
+	pPane->activateWindow();
+	GetToolManager()->bringToFront(pPane);
 }
 
 bool CTabPaneManager::CloseTabPane(QTabPane* tool)
@@ -975,7 +979,8 @@ void CTabPaneManager::PushUserEvent(const char* szEventName, const char* szTitle
 	USER_ANALYTICS_EVENT_ARG(szEventName, &attributes);
 }
 
-QTabPane::QTabPane() : QBaseTabPane()
+QTabPane::QTabPane()
+	: QBaseTabPane()
 {
 	m_bViewCreated = false;
 	m_pane = nullptr;
@@ -994,6 +999,17 @@ void QTabPane::showContextMenu(const QPoint& point)
 	connect(menu.addAction(tr("Close")), &QAction::triggered, [this]() { close(); });
 
 	menu.exec(QPoint(point.x(), point.y()));
+}
+
+void QTabPane::focusInEvent(QFocusEvent* pEvent)
+{
+	if (m_pane && m_pane->GetWidget())
+	{
+		// Since QTabPane is just a wrapper class for proper panels and editors
+		// delegate focus to direct child whenever focus is received.
+		QWidget* pWidget = m_pane->GetWidget();
+		pWidget->setFocus();
+	}
 }
 
 #define WM_FRAME_CAN_CLOSE (WM_APP + 1000)

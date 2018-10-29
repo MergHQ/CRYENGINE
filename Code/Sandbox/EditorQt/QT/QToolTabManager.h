@@ -6,6 +6,7 @@
 #include <Controls/SandboxWindowing.h>
 
 class CWnd;
+class QFocusEvent;
 
 //Internal class for IPane management.
 class QTabPane : public QBaseTabPane
@@ -25,6 +26,7 @@ protected:
 	void          closeEvent(QCloseEvent* event);
 	virtual QSize sizeHint() const        { return m_defaultSize; }
 	virtual QSize minimumSizeHint() const { return m_minimumSize; }
+	void focusInEvent(QFocusEvent* pEvent);
 };
 
 class SANDBOX_API CTabPaneManager : public CUserData
@@ -93,6 +95,7 @@ private:
 
 	QTabPane*                 FindTabPane(IPane* pane);
 
+	void                      FocusTabPane(QTabPane* pPane);
 	bool                      CloseTabPane(QTabPane* pane);
 
 	bool                      LoadLayoutFromFile(const char* fullFilename);

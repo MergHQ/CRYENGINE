@@ -46,6 +46,8 @@ public:
 			string m_name;
 		};
 
+		virtual ~IWidgetBuilder() {}
+
 		//! Adds this action to widget. Does not take ownership of the action.
 		virtual void AddAction(QAction* pAction) {}
 

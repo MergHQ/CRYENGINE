@@ -186,6 +186,9 @@ protected:
 	//! React on docking layout change
 	virtual void OnLayoutChange(const QVariantMap& state);
 
+protected:
+	void ForceRebuildMenu();
+
 private:
 	void PopulateRecentFilesMenu(CAbstractMenu* menu);
 	void OnMainFrameAboutToClose(BroadcastEvent& event);

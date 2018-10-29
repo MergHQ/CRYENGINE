@@ -178,6 +178,11 @@ void CEditor::InitMenuDesc()
 
 }
 
+void CEditor::ForceRebuildMenu()
+{
+	m_pMenu->Build(MenuWidgetBuilders::CMenuBuilder(m_pPaneMenu));
+}
+
 void CEditor::SetContent(QWidget* content)
 {
 	//TODO : only one content can be set

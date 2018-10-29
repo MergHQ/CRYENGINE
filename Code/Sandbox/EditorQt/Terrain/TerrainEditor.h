@@ -4,6 +4,8 @@
 
 #include "EditorFramework/Editor.h"
 
+class QTabWidget;
+
 class CTerrainEditor : public CDockableEditor
 {
 public:
@@ -17,4 +19,12 @@ public:
 
 	virtual void                              SetLayout(const QVariantMap& state);
 	virtual QVariantMap                       GetLayout() const override;
+
+protected:
+	virtual void customEvent(QEvent* pEvent) override;
+
+private:
+	QTabWidget* m_pTabWidget;
+	int         m_sculptTabIdx;
+	int         m_paintTabIdx;
 };
