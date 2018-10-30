@@ -106,9 +106,6 @@
 #include <future>
 #include <condition_variable>
 #include <ciso646>
-#include <ccomplex>
-#include <ctgmath>
-#include <cstdbool>
 
 //////////////////////////////////////////////////////////////////////////
 // CRT

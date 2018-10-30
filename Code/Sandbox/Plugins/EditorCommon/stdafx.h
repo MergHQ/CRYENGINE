@@ -70,7 +70,6 @@ Q_DECLARE_METATYPE(CryGUID);
 	#include <atomic>
 	#include <bitset>
 	#include <cassert>
-	#include <ccomplex>
 	#include <cctype>
 	#include <cerrno>
 	#include <cfenv>
@@ -86,15 +85,12 @@ Q_DECLARE_METATYPE(CryGUID);
 	#include <condition_variable>
 	#include <csetjmp>
 	#include <csignal>
-	#include <cstdalign>
 	#include <cstdarg>
-	#include <cstdbool>
 	#include <cstddef>
 	#include <cstdint>
 	#include <cstdio>
 	#include <cstdlib>
 	#include <cstring>
-	#include <ctgmath>
 	#include <ctime>
 	#include <cwchar>
 	#include <cwctype>
