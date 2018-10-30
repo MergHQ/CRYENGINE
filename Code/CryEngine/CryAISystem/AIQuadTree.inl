@@ -387,7 +387,6 @@ template<typename SAIQuadTreeElement>
 void CAIQuadTree<SAIQuadTreeElement >::Dump(const char* debugName) const
 {
 	AILogAlways("QuadTree %s", debugName);
-	int indentLevel = 0;
 
 	if (m_cells.empty())
 	{

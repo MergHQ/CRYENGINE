@@ -19,8 +19,6 @@
 #include <CryMath/Cry_Vector3.h>
 #include "AIDebugDrawHelpers.h"
 
-static float g_drawOffset = 0.1f;
-
 //====================================================================
 // DebugDrawCircleOutline
 //====================================================================

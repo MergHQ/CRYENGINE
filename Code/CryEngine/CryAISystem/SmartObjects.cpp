@@ -551,8 +551,12 @@ void CSmartObjectClass::UnregisterSmartObject(CSmartObject* pSmartObject)
 {
 	AIAssert(pSmartObject);
 
+#if defined(USE_CRY_ASSERT)
 	const bool foundSmartObject = RemoveSmartObject(pSmartObject, false);
 	AIAssert(foundSmartObject);
+#else
+	RemoveSmartObject(pSmartObject, false);
+#endif
 }
 
 bool CSmartObjectClass::RemoveSmartObject(CSmartObject* pSmartObject, bool bCanDelete)
@@ -1214,7 +1218,6 @@ void CSmartObjectManager::RecalculateUserSize()
 		if (!itConditions->second.sEvent.empty())
 			continue;
 
-		CSmartObjectClass* pClass = itConditions->first;
 		CCondition* pCondition = &itConditions->second;
 		if (pCondition->bEnabled && pCondition->pObjectClass && pCondition->iRuleType == 1)
 		{
@@ -2924,8 +2927,12 @@ void CSmartObjectManager::BindSmartObjectToEntity(EntityId id, CSmartObject* pSO
 	AIAssert(pSO && id);
 	if (!pSO || id == 0)
 		return;
+
+#if defined(USE_CRY_ASSERT)
 	CSmartObject* oldSO = GetSmartObject(id);
 	assert(oldSO == NULL);
+#endif
+
 	g_smartObjectEntityMap[id] = pSO;
 }
 
@@ -3223,8 +3230,8 @@ void CSmartObjectManager::DebugDraw()
 		float age = (fTime - m_vDebugUse[i].m_Time).GetSeconds();
 		if (age < 0.5f)
 		{
-			Vec3 from = m_vDebugUse[i].m_pUser->GetPos();
-			Vec3 to = m_vDebugUse[i].m_pObject->GetPos();
+			//Vec3 from = m_vDebugUse[i].m_pUser->GetPos();
+			//Vec3 to = m_vDebugUse[i].m_pObject->GetPos();
 			age = abs(1.0f - 4.0f * age);
 			age = abs(1.0f - 2.0f * age);
 			//ColorF color1(age, age, 1.0f, abs(1.0f-2.0f*age)), color2(1.0f-age, 1.0f-age, 1.0f, abs(1.0f-2.0f*age));
@@ -3357,7 +3364,6 @@ void CSmartObjectManager::DoRemove(IEntity* pEntity, bool bDeleteSmartObject)
 		// in case this is a navigation smart object entity!
 		UnregisterFromNavigation(pSmartObject);
 
-		CDebugUse debugUse = { 0.0f, pSmartObject, pSmartObject };
 		VectorDebugUse::iterator it = m_vDebugUse.begin();
 		while (it != m_vDebugUse.end())
 		{
@@ -3394,9 +3400,7 @@ void CSmartObjectManager::DoRemove(IEntity* pEntity, bool bDeleteSmartObject)
 			}
 		}
 
-		float x = pSmartObject->m_fKey;
-
-		// don't keep a reference to vector classes, coz it will be modified on
+		// don't keep a reference to vector classes, because it will be modified on
 		// each call to DeleteSmartObject and at the end it will be even deleted
 		CSmartObjectClasses vClasses = pSmartObject->GetClasses();
 
@@ -3793,7 +3797,6 @@ void CSmartObjectManager::DrawTemplate(CSmartObject* pSmartObject, bool bStaticO
 
 	ValidateTemplate(pSmartObject, bStaticOnly);
 
-	const Matrix34& wtm = pSmartObject->GetEntity()->GetWorldTM();
 	ColorB colors[] = {
 		0x40808080u, 0xff808080u, //eSOV_Unknown,
 		0x408080ffu, 0xff8080ffu, //eSOV_InvalidStatic,

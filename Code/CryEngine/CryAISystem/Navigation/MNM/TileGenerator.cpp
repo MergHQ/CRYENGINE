@@ -768,8 +768,6 @@ void CTileGenerator::FilterWalkable(const AABB& aabb, bool fullyContained)
 				const size_t pcount = pcell.count;
 				const size_t pindex = pcell.index;
 
-				bool pCellValid(false);
-
 				for (size_t ps = 0; ps < pcount; ++ps)
 				{
 					const size_t psindex = pindex + ps;
@@ -1282,8 +1280,6 @@ size_t RunStream(const CompactSpanGrid& spanGrid, size_t climbableVoxelCount, Li
 
 					if (!IsBorderLabel(label))
 					{
-						uint16 ndata = data[nindex];
-
 						if (data[nindex] == minimum)
 						{
 							const StreamElement probe(nx, ny, nindex);
@@ -2383,7 +2379,6 @@ void CTileGenerator::CalcPaintValues(const AABB& aabb)
 	PaintMarkups(aabb);
 
 	const size_t borderH = BorderSizeH(m_params);
-	const size_t borderV = BorderSizeV(m_params);
 	const size_t erosion = m_params.flags & Params::NoErosion ? 0 : m_params.agent.radius << 1;
 
 	for (size_t y = borderH; y < gridHeight - borderH; ++y)
@@ -3465,7 +3460,6 @@ size_t CTileGenerator::Triangulate()
 								const Vec3i hv2(hole.verts[vi2].x, hole.verts[vi2].y, hole.verts[vi2].z);
 								const Vec2i hIn0(hv1.y - hv0.y, hv0.x - hv1.x);
 								const Vec2i hIn1(hv2.y - hv1.y, hv1.x - hv2.x);
-								const bool bHVReflex = (hIn0.Dot(Vec2i(hv2 - hv1)) > 0);
 
 								// Check cv1 is external to the hole.
 								const bool outH0 = hIn0.Dot(diff_2D) > 0;
@@ -3782,8 +3776,6 @@ void SplitSAH(const aabb_t& aabb, BVTriangle* triangles, size_t firstTri, size_t
 			continue;
 
 		raabb += bin.aabb;
-
-		const BVBin& left = bins[BinCount - i - 2];
 
 		rightArea += bin.area;
 		rightTriCount = bin.triCount;

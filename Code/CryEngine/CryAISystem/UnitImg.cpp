@@ -119,7 +119,6 @@ void CUnitImg::ExecuteTask()
 				break;
 			case UA_SEARCH:
 				{
-					const char* signal = "ORDER_SEARCH";
 					if (m_pCurrentAction->m_Point.IsZero())
 					{
 						Vec3 hidePosition(0, 0, 0);

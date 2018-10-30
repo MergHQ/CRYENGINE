@@ -451,8 +451,12 @@ public:
 	//Removes a class from the current set
 	void UnregisterSmartObjectClass(CSmartObjectClass* pClass)
 	{
+#ifdef ENABLE_AI_ASSERT
 		const bool foundClass = stl::find_and_erase(m_vClasses, pClass);
 		AIAssert(foundClass);
+#else
+		stl::find_and_erase(m_vClasses, pClass);
+#endif
 	}
 
 	CSmartObjectClasses& GetClasses()      { return m_vClasses; }

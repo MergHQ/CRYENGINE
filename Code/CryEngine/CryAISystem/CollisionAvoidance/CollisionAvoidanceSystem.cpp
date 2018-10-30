@@ -285,7 +285,6 @@ size_t CCollisionAvoidanceSystem::ComputeOptimalAvoidanceVelocity(Vec2* feasible
                                                                  const float minSpeed, const float maxSpeed, SCandidateVelocity* output) const
 {
 	const Vec2& desiredVelocity = agent.desiredVelocity;
-	const Vec2& currentVelocity = agent.currentVelocity;
 	if (vertexCount > 2)
 	{
 		Vec2 velocity;
@@ -362,9 +361,6 @@ bool CCollisionAvoidanceSystem::FindFirstWalkableVelocity(AgentID agentID, SCand
 	for (size_t i = 0; i < candidateCount; ++i)
 	{
 		SCandidateVelocity& candidate = candidates[i];
-
-		const Vec3 from = agent.currentLocation;
-		const Vec3 to = agent.currentLocation + Vec3(candidate.velocity.x * 0.125f, candidate.velocity.y * 0.125f, 0.0f);
 
 		output = ClampSpeedWithNavigationMesh(m_agentsNavigationProperties[agentID], agent.currentLocation, agent.currentVelocity, candidate.velocity);
 		if (output.GetLength2() < 0.1)
@@ -462,7 +458,6 @@ void CCollisionAvoidanceSystem::Update(float updateTime)
 		if (!constraintCount)
 			continue;
 
-		Vec2 candidate = agent.desiredVelocity;
 		// TODO: as a temporary solution, avoid to reset the new Velocity.
 		// In this case if no ORCA speed can be found, we use our desired one
 		//newVelocity.zero();
@@ -585,7 +580,7 @@ size_t CCollisionAvoidanceSystem::ComputeNearbyAgents(const SAgentParams& agent,
 	size_t nearbyAgentIndex = 0;
 
 	Vec3 agentLocation = agent.currentLocation;
-	Vec2 agentLookDirection = agent.currentLookDirection;
+	//Vec2 agentLookDirection = agent.currentLookDirection;
 
 	for (; ait != aend; ++ait, ++nearbyAgentIndex)
 	{
@@ -605,8 +600,8 @@ size_t CCollisionAvoidanceSystem::ComputeNearbyAgents(const SAgentParams& agent,
 
 			if (nearby && sameFloor && !ignore)
 			{
-				Vec2 direction = relativePosition.GetNormalized();
-				bool isVisible = agentLookDirection.Dot(Vec2(otherAgent.currentLocation) - (Vec2(agentLocation) - (direction * otherAgent.radius))) > 0.0f;
+				//Vec2 direction = relativePosition.GetNormalized();
+				//bool isVisible = agentLookDirection.Dot(Vec2(otherAgent.currentLocation) - (Vec2(agentLocation) - (direction * otherAgent.radius))) > 0.0f;
 
 				//if (isVisible)
 				{
@@ -629,14 +624,11 @@ size_t CCollisionAvoidanceSystem::ComputeNearbyAgents(const SAgentParams& agent,
 size_t CCollisionAvoidanceSystem::ComputeNearbyObstacles(const SAgentParams& agent, size_t agentIndex, float range,
                                                         NearbyObstacles& nearbyObstacles) const
 {
-	const float Epsilon = 0.00001f;
-
 	Obstacles::const_iterator oit = m_obstacles.begin();
 	Obstacles::const_iterator oend = m_obstacles.end();
 	uint16 obstacleIndex = 0;
 
 	Vec3 agentLocation = agent.currentLocation;
-	Vec2 agentLookDirection = agent.currentLookDirection;
 
 	for (; oit != oend; ++oit, ++obstacleIndex)
 	{
@@ -650,7 +642,7 @@ size_t CCollisionAvoidanceSystem::ComputeNearbyObstacles(const SAgentParams& age
 
 		if (nearby && sameFloor)
 		{
-			Vec2 direction = relativePosition.GetNormalized();
+			//Vec2 direction = relativePosition.GetNormalized();
 
 			//if (agent.currentLookDirection.Dot(relativePosition - (direction * obstacle.radius)) > 0.0f)
 			nearbyObstacles.push_back(SNearbyObstacle(distanceSq, obstacleIndex));
@@ -663,8 +655,6 @@ size_t CCollisionAvoidanceSystem::ComputeNearbyObstacles(const SAgentParams& age
 size_t CCollisionAvoidanceSystem::ComputeConstraintLinesForAgent(const SAgentParams& agent, size_t agentIndex, float timeHorizonScale,
                                                                 NearbyAgents& nearbyAgents, size_t maxAgentsConsidered, NearbyObstacles& nearbyObstacles, ConstraintLines& lines) const
 {
-	const float Epsilon = 0.00001f;
-
 	NearbyObstacles::const_iterator oit = nearbyObstacles.begin();
 	NearbyObstacles::const_iterator oend = nearbyObstacles.end();
 
@@ -727,10 +717,7 @@ void CCollisionAvoidanceSystem::ComputeObstacleConstraintLine(const SAgentParams
 	static const float minimumTimeHorizonScale = 0.25f;
 	const float adjustedTimeHorizonScale = max(min(timeHorizonScale, (heuristicWeightForDistance * distanceSq)), minimumTimeHorizonScale);
 	const float TimeHorizon = gAIEnv.CVars.CollisionAvoidanceObstacleTimeHorizon * adjustedTimeHorizonScale;
-	const float TimeStep = gAIEnv.CVars.CollisionAvoidanceTimeStep;
-
 	const float invTimeHorizon = 1.0f / TimeHorizon;
-	const float invTimeStep = 1.0f / TimeStep;
 
 	Vec2 u;
 
@@ -782,9 +769,6 @@ void CCollisionAvoidanceSystem::ComputeObstacleConstraintLine(const SAgentParams
 		const Vec2 w = relativePosition / distance;
 
 		line.direction = Vec2(-w.y, w.x);
-
-		const Vec2 point = ((radii - distance) * invTimeStep) * w;
-		const float dot = (agent.currentVelocity - point).Dot(line.direction);
 		line.point = cutoffCenter + obstacle.radius * invTimeHorizon * Vec2(-line.direction.y, line.direction.x);
 	}
 	else
@@ -803,7 +787,6 @@ Vec2 CCollisionAvoidanceSystem::ClampSpeedWithNavigationMesh(const SNavigationPr
 	Vec2 outputVelocity = velocityToClamp;
 	if (gAIEnv.CVars.CollisionAvoidanceClampVelocitiesWithNavigationMesh == 1)
 	{
-		const float TimeHorizon = 0.25f * gAIEnv.CVars.CollisionAvoidanceAgentTimeHorizon;
 		const float invTimeHorizon = 1.0f / gAIEnv.CVars.CollisionAvoidanceAgentTimeHorizon;
 		const float TimeStep = gAIEnv.CVars.CollisionAvoidanceTimeStep;
 
@@ -1042,7 +1025,6 @@ void CCollisionAvoidanceSystem::DebugDraw()
 
 	for (const SObstacleParams& obstacle : m_obstacles)
 	{
-		Vec3 agentLocation = obstacle.currentLocation;
 		dc->DrawRangeCircle(obstacle.currentLocation + Vec3(0, 0, 0.3f), obstacle.radius, 0.1f, ColorF(0.8f, 0.196078f, 0.6f, 0.5f), ColorF(0.8f, 0.196078f, 0.196078f), true);
 	}
 

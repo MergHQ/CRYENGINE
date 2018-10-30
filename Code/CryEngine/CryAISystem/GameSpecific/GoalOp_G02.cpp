@@ -234,8 +234,6 @@ void COPCharge::ValidateRange()
 		return;
 	ray_hit hit;
 
-	Vec3 delta = m_chargeEnd - m_chargeStart;
-
 	Vec3 hitPos;
 	float hitDist;
 
@@ -520,11 +518,6 @@ void COPCharge::ExecuteDry(CPipeUser* pOperand)
 #ifdef _DEBUG
 		m_pOperand->m_DEBUGmovementReason = CPipeUser::AIMORE_MOVE;
 #endif
-	}
-
-	if (m_state == STATE_APPROACH || m_state == STATE_CHARGE || m_state == STATE_FOLLOW_TROUGH)
-	{
-		Vec3 deltaMove = pOperand->GetPhysicsPos() - m_lastOpPos;
 	}
 
 	m_lastOpPos = pOperand->GetPhysicsPos();

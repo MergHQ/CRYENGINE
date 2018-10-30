@@ -1191,9 +1191,6 @@ bool CNavPath::CheckPath(const TPathPoints& pathList, float radius, const INavMe
 
 	if (usingMNM)
 	{
-		const size_t MaxWayTriangleCount = 512;
-		MNM::TriangleID way[MaxWayTriangleCount] = { 0 };
-
 		const NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(GetMeshID());
 
 		const MNM::real_t verticalRange(3.0f);
@@ -1662,7 +1659,6 @@ float CNavPath::GetDistToSmartObject(bool b2D) const
 	const TPathPoints::const_iterator pathEndIt = m_pathPoints.end();
 	for (; pathIt != pathEndIt; ++pathIt)
 	{
-		Vec3 thisPos = pathIt->vPos;
 		dist += b2D ? Distance::Point_Point2D(curPos, pathIt->vPos) : Distance::Point_Point(curPos, pathIt->vPos);
 
 		TPathPoints::const_iterator pathItNext = pathIt;

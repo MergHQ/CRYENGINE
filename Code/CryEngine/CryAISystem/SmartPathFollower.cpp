@@ -40,7 +40,6 @@ float InterpolatedPath::FindNextSegmentIndex(size_t startIndex) const
 
 		// Move index to start of search
 		std::advance(iter, startIndex);
-		float previousDistance = iter->distance;
 		if (++iter != m_points.end())
 		{
 			addition = 1.0f;
@@ -351,8 +350,6 @@ void InterpolatedPath::ShortenToIndex(float endIndex)
 		// Create the cut index based on the next integer index after the endIndex
 		size_t cutIndex = static_cast<size_t>(endIndex) + 1;
 
-		float delta = fmodf(endIndex, 1.0f);
-
 		// Create a new point based on the original
 		SPathControlPoint2 newEndPoint(m_points[static_cast<size_t>(endIndex)]);
 		newEndPoint.pos = GetPositionAtSegmentIndex(endIndex);
@@ -590,9 +587,6 @@ bool CSmartPathFollower::CanReachTarget(float testIndex) const
 
 	const Vec3 startPos(m_curPos);
 
-	// Assume safe until proved otherwise
-	bool safeLineToTarget = false;
-
 	//////////////////////////////////////////////////////////////////////////
 	/// Navigation Mesh Handling
 
@@ -600,7 +594,6 @@ bool CSmartPathFollower::CanReachTarget(float testIndex) const
 	if (testIndex < 0.0f)
 		return false;
 
-	const SPathControlPoint2& segStartPoint = m_path[static_cast<size_t>(testIndex)];
 	Vec3 testPos(m_path.GetPositionAtSegmentIndex(testIndex));
 
 	{
@@ -783,8 +776,6 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 
 	bool targetReachable = true;
 	//m_reachTestCount = 0;
-
-	CAISystem* pAISystem = GetAISystem();
 
 	// If path has changed
 	const bool bPathHasChanged = (m_pathVersion != m_pNavPath->GetVersion());
@@ -1102,7 +1093,7 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 		// TODO: The following is deprecated. Passing motion requests using velocity only is imprecise,
 		// unstable with frame time (due to interactions between animation and physics) and requires
 		// hacks and magic numbers to make it work semi-reliably.
-		if (bool allowMovement = true)
+		if (true)
 		{
 			Vec3 velocity = followTargetPos - curPos;
 			if (m_params.use2D)
@@ -1512,8 +1503,13 @@ bool CSmartPathFollower::CheckWalkability(const Vec2* path, const size_t length)
 					return false;
 
 				MNM::vector3_t v0, v1, v2;
+
+#if defined(USE_CRY_ASSERT)
 				const bool success = mesh.navMesh.GetVertices(triEnd, v0, v1, v2);
 				CRY_ASSERT(success);
+#else
+				mesh.navMesh.GetVertices(triEnd, v0, v1, v2);
+#endif
 				const MNM::vector3_t closest = MNM::ClosestPtPointTriangle(mnmEndLoc, v0, v1, v2);
 				currentZ = closest.GetVec3().z;
 

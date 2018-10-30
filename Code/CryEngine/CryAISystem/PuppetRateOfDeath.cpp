@@ -44,7 +44,6 @@ float CPuppet::GetTargetAliveTime()
 	else
 	{
 		Vec3 vTargetDir = pLiveTarget->GetPos() - GetPos();
-		const float fTargetDist = vTargetDir.NormalizeSafe();
 
 		// Scale target life time based on target speed.
 		const float fMoveInc = gAIEnv.CVars.RODMoveInc;
@@ -327,7 +326,6 @@ std::vector<Vec3> CPuppet::s_projectedPoints(16);
 Vec3 CPuppet::UpdateTargetTracking(CWeakRef<CAIObject> refTarget, const Vec3& vTargetPos)
 {
 	const float fFrametime = GetAISystem()->GetFrameDeltaTime();
-	const float fReactionTime = GetFiringReactionTime(vTargetPos);
 
 	// Update the fire reaction timer
 	UpdateFireReactionTimer(vTargetPos);
@@ -510,7 +508,7 @@ bool CPuppet::CanDamageTarget(IAIObject* target) const
 	CAIObject* fireTargetObject = GetFireTargetObject();
 	tAIObjectID fireTargetID = fireTargetObject ? fireTargetObject->GetAIObjectID() : 0;
 
-	CAIObject* player = GetAISystem()->GetPlayer();
+	//CAIObject* player = GetAISystem()->GetPlayer();
 
 	bool isCurrentFireTarget = !target || (target->GetAIObjectID() == fireTargetID);
 	//bool targetIsPlayer = target && player && target->GetAIObjectID() == player->GetAIObjectID();

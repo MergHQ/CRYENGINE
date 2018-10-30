@@ -421,7 +421,7 @@ const char* CNavigation::GetNearestPathOfTypeInRange(IAIObject* requester, const
 		else
 		{
 			// Distance to nearest point on path.
-			ListPositions::const_iterator nearest = path.NearestPointOnPath(reqPos, false, d, tmp);
+			path.NearestPointOnPath(reqPos, false, d, tmp);
 		}
 
 		if (d < closestShapeDist)

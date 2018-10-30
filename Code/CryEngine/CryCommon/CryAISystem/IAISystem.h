@@ -81,7 +81,6 @@ namespace AISignals {
 typedef CryFixedArray<IPhysicalEntity*, 32> PhysSkipList;
 
 //! \cond INTERNAL
-//! If this is changed be sure to change the table aiCollisionEntitiesTable in AICollision.cpp.
 enum EAICollisionEntities
 {
 	AICE_STATIC                        = ent_static | ent_terrain | ent_ignore_noncolliding,

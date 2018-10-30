@@ -32,7 +32,15 @@ public:
 		: m_pDebugRenderer(gAIEnv.CVars.NetworkDebug ? gAIEnv.GetNetworkDebugRenderer() : gAIEnv.GetDebugRenderer()),
 		m_uiDepth(m_pDebugRenderer->PushState())  {}
 
-	~CDebugDrawContext()  { unsigned int uiDepth = m_pDebugRenderer->PopState(); assert(uiDepth + 1 == m_uiDepth); }
+	~CDebugDrawContext()
+	{
+#if defined(USE_CRY_ASSERT)
+		unsigned int uiDepth = m_pDebugRenderer->PopState();
+		assert(uiDepth + 1 == m_uiDepth);
+#else
+		m_pDebugRenderer->PopState();
+#endif
+	}
 
 	IAIDebugRenderer* operator->() const { return m_pDebugRenderer; }
 };

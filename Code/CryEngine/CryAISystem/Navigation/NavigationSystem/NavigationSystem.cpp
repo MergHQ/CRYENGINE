@@ -1476,9 +1476,6 @@ void NavigationSystem::CommitMarkupData(const TileTaskResult& result, const MNM:
 	CRY_ASSERT(m_markupsData.capacity() == m_markupVolumes.capacity());
 	
 	const VolumeDefCopy& def = m_volumeDefCopy[result.volumeCopy];
-	const NavigationMesh& mesh = m_meshes[result.meshID];
-
-	MNM::SMarkupVolumeData::MeshTriangles* pMeshMarkupTriangles = nullptr;
 	
 	// Remove old triangle ids for the tile first
 	for (NavigationVolumeID markupID : def.markupIds)
@@ -1901,7 +1898,9 @@ void NavigationSystem::RemoveAllTrianglesByFlags(const MNM::AreaAnnotation::valu
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	const CTimeValue startTime = gEnv->pTimer->GetAsyncTime();
+#endif
 
 	for (const AgentType& agentType : m_agentTypes)
 	{
@@ -3144,7 +3143,6 @@ MNM::ERayCastResult NavigationSystem::NavMeshRayCast(const NavigationMeshID mesh
 		return MNM::ERayCastResult::InvalidStart;
 
 	const NavigationMesh& mesh = m_meshes[meshID];
-	const MNM::CNavMesh& navMesh = mesh.navMesh;
 
 	const MNM::vector3_t mnmStartPos = mesh.navMesh.ToMeshSpace(startPos);
 	const MNM::vector3_t mnmToPos = mesh.navMesh.ToMeshSpace(endPos);
@@ -3429,8 +3427,12 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 						continue;
 					}
 
+#if defined(USE_CRY_ASSERT)
 					const NavigationVolumeID createdVolumeId = CreateVolume(&volumeVerticesBuffer.front(), verticesCount, volumeHeight, volumeId);
 					CRY_ASSERT(volumeId == createdVolumeId);
+#else
+					CreateVolume(&volumeVerticesBuffer.front(), verticesCount, volumeHeight, volumeId);
+#endif
 
 					m_volumesManager.RegisterAreaFromLoadedData(volumeAreaName.c_str(), volumeId);
 				}
@@ -4083,7 +4085,6 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 			{
 				const uint32 meshIDuint32 = mit->id;
 				const NavigationMesh& mesh = m_meshes[NavigationMeshID(meshIDuint32)];
-				const MNM::BoundingVolume& volume = m_volumes[mesh.boundary];
 				const MNM::CNavMesh& navMesh = mesh.navMesh;
 
 				// Saving mesh id

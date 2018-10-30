@@ -194,7 +194,6 @@ PathEntityOut PathFollower::Update(const PathEntityIn& pathEntity, const float e
 	CRY_ASSERT(m_pCurrentPath);
 
 	const PathLocation targetLocationOld = m_targetLocation;
-	const PathLocation lookAtLocationOld = m_lookAtLocation;
 
 	// TODO: Arrived at path end?
 

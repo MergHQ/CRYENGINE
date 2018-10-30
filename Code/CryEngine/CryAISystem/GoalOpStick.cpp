@@ -357,8 +357,6 @@ void COPStick::RegeneratePath(CPipeUser* pPipeUser, const Vec3& vDestination)
 	m_pTraceDirective->m_fEndAccuracy = m_fEndAccuracy;
 	m_vLastUsedTargetPos = vDestination;
 	pPipeUser->m_nPathDecision = PATHFINDER_STILLFINDING;
-
-	const Vec3 vPipeUserPos = pPipeUser->GetPhysicsPos();
 }
 
 //===================================================================

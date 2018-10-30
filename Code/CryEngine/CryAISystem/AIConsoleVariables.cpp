@@ -12,8 +12,6 @@ void AIConsoleVars::Init()
 {
 	AILogProgress("[AISYSTEM] Initialization: Creating console vars");
 
-	IConsole* pConsole = gEnv->pConsole;
-
 	REGISTER_CVAR2("ai_CompatibilityMode", &CompatibilityMode, "", VF_NULL,
 	               "Set AI features to behave in earlier milestones - please use sparingly");
 

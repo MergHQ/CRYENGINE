@@ -799,8 +799,6 @@ bool CTargetTrackManager::ShouldStimulusBeHandled(tAIObjectID aiObjectID, const 
 //////////////////////////////////////////////////////////////////////////
 bool CTargetTrackManager::HandleStimulusEvent(CTargetTrackGroup* pGroup, TargetTrackHelpers::STargetTrackStimulusEvent& stimulusEvent)
 {
-	bool bResult = false;
-
 	assert(pGroup);
 
 	if (!pGroup->IsEnabled())

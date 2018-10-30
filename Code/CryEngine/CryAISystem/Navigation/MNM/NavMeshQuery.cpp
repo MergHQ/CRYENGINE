@@ -850,7 +850,6 @@ void CNavMeshQuery::DebugDrawQueryInvalidation(const INavMeshQueryDebug::SInvali
 						return;
 					}
 
-					const STile& tile = pMesh->GetTile(queryInvalidation.tileID);
 					Tile::STileData tileData;
 					pMesh->GetTileData(queryInvalidation.tileID, tileData);
 

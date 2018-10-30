@@ -58,7 +58,6 @@ void DrawSpanGrid(const Vec3 volumeMin, const Vec3 voxelSize, const CompactSpanG
 {
 	const size_t width  = grid.GetWidth();
 	const size_t height = grid.GetHeight();
-	const size_t gridSize = width * height;
 
 	IRenderAuxGeom* renderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 	size_t aabbCount = 0;
@@ -132,7 +131,6 @@ void DrawSpanGrid(const Vec3 volumeMin, const Vec3 voxelSize, const CompactSpanG
 {
 	const size_t width = grid.GetWidth();
 	const size_t height = grid.GetHeight();
-	const size_t gridSize = width * height;
 
 	IRenderAuxGeom* renderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 
@@ -191,7 +189,6 @@ void DrawSpanGridTop(const Vec3 volumeMin, const Vec3 voxelSize, const CompactSp
 {
 	const size_t width = grid.GetWidth();
 	const size_t height = grid.GetHeight();
-	const size_t gridSize = width * height;
 
 	IRenderAuxGeom* renderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 

@@ -156,9 +156,6 @@ bool CAISystem::CheckVisibilityToBody(CAIActor* pObserver, CAIActor* pBody, floa
 	if (IAIObject::eFOV_Outside == pObserver->IsObjectInFOV(pBody, pObserver->GetParameters().m_PerceptionParams.perceptionScale.visual * 0.75f))
 		return false;
 
-	//--------------- ACCURATE MEASURING
-	float dist = sqrtf(distSq);
-
 	PhysSkipList skipList;
 	pObserver->GetPhysicalSkipEntities(skipList);
 	pBody->GetPhysicalSkipEntities(skipList);

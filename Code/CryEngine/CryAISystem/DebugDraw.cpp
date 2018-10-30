@@ -186,8 +186,6 @@ void CAISystem::DebugDrawRecorderRange() const
 			pDir = (Vec3*)(pDirStream->GetCurrent(fCurrDirTime));
 			if (pPos)
 			{
-				const Vec3& vDir = (pDir ? *pDir : Vec3Constants<float>::fVec3_OneZ);
-
 				// Create label text that depicts everything that happened at this moment from all streams
 				string sCursorText;
 				sCursorText.Format("%s CURRENT\n%.1fs", pAIObject->GetName(), fCurrPosTime);
@@ -1018,8 +1016,6 @@ void CAISystem::DebugDrawPuppetPaths()
 	{
 		lastTime = thisTime;
 		pPipeUser->m_Path.Clear("DebugRequestPathInDirection");
-		Vec3 vStartPos = pPipeUser->GetPhysicsPos();
-		const float maxDist = 15.0f;
 	}
 
 	DebugDrawPathSingle(pPipeUser);
@@ -1256,7 +1252,6 @@ void CAISystem::DebugDrawCrowdControl()
 			continue;
 
 		Vec3 center = pPuppet->GetPhysicsPos() + Vec3(0, 0, 0.75f);
-		const float rad = pPuppet->GetMovementAbility().pathRadius;
 
 		/* Draw circle sector */
 		pPuppet->m_steeringOccupancy.DebugDraw(center, ColorB(0, 196, 255, 240));
@@ -1361,7 +1356,6 @@ void CAISystem::DebugDrawAdaptiveUrgency() const
 		if (pPuppet->m_adaptiveUrgencyScaleDownPathLen <= 0.0001f)
 			continue;
 
-		int minIdx = MovementUrgencyToIndex(pPuppet->m_adaptiveUrgencyMin);
 		int maxIdx = MovementUrgencyToIndex(pPuppet->m_adaptiveUrgencyMax);
 		int curIdx = MovementUrgencyToIndex(pPuppet->GetState().fMovementUrgency);
 
@@ -1429,8 +1423,7 @@ void CAISystem::DrawRadarPath(CPipeUser* pPipeUser, const Matrix34& world, const
 		li = pPipeUser->m_OrigPath.GetPath().begin();
 		linext = li;
 		++linext;
-		// (MATT) BUG! Surely. m_Path or m_OrigPath, which is it? Appears elsewhere too. {2008/05/29}
-		Vec3 endPt = pPipeUser->m_Path.GetNextPathPos();
+
 		CDebugDrawContext dc;
 		while (linext != pPipeUser->m_OrigPath.GetPath().end())
 		{
@@ -3279,8 +3272,6 @@ void CAISystem::DebugDrawStatsTarget(const char* pName)
 	const ColorB blueMarine(0, 255, 179);
 	// ---
 
-	const Vec3& pos = pTargetObject->GetPos();
-
 	if (pTargetPuppet)
 	{
 		// Draw fire command handler stuff.
@@ -3444,10 +3435,6 @@ void CAISystem::DebugDrawStatsTarget(const char* pName)
 	CDebugDrawContext dc2;
 	dc2->SetAlphaBlended(true);
 	dc2->SetDepthWrite(false);
-
-	const CCamera& cam = GetISystem()->GetViewCamera();
-	Vec3 axisx = cam.GetMatrix().TransformVector(Vec3(1, 0, 0));
-	Vec3 axisy = cam.GetMatrix().TransformVector(Vec3(0, 0, 1));
 
 	if (pTargetPipeUser)
 	{
@@ -3754,8 +3741,6 @@ void CAISystem::DebugDrawEnabledActors()
 	CDebugDrawContext dc;
 	dc->TextToScreen(xPos, yPos, "---- Enabled AI Actors  ----");
 	yOffset += yStep * 2;
-
-	int nEnabled = m_enabledAIActorsSet.size();
 
 	AIActorSet::const_iterator it = m_enabledAIActorsSet.begin();
 	AIActorSet::const_iterator itEnd = m_enabledAIActorsSet.end();
@@ -4497,7 +4482,7 @@ void CAISystem::DebugDrawAreas() const
 		{
 			float dist = 0;
 			Vec3 nearestPt;
-			ListPositions::const_iterator it = territoryShape->NearestPointOnPath(pPipeUser->GetPos(), false, dist, nearestPt);
+			territoryShape->NearestPointOnPath(pPipeUser->GetPos(), false, dist, nearestPt);
 			Vec3 p0 = pPipeUser->GetPos() - Vec3(0, 0, 0.5f);
 			dc->Draw3dLabel(p0 * 0.7f + nearestPt * 0.3f, 1, "Terr");
 			dc->DrawLine(p0, ColorB(30, 208, 224), nearestPt, ColorB(30, 208, 224));
@@ -4508,7 +4493,7 @@ void CAISystem::DebugDrawAreas() const
 		{
 			float dist = 0;
 			Vec3 nearestPt;
-			ListPositions::const_iterator it = refShape->NearestPointOnPath(pPipeUser->GetPos(), false, dist, nearestPt);
+			refShape->NearestPointOnPath(pPipeUser->GetPos(), false, dist, nearestPt);
 			Vec3 p0 = pPipeUser->GetPos() - Vec3(0, 0, 1.0f);
 			dc->Draw3dLabel(p0 * 0.7f + nearestPt * 0.3f, 1, "Ref");
 			dc->DrawLine(p0, ColorB(135, 224, 30), nearestPt, ColorB(135, 224, 30));
@@ -4645,7 +4630,6 @@ void CAISystem::DebugDrawInterestSystem(int iLevel) const
 	ColorB cGreen = ColorB(0, 255, 0);
 	ColorB cYellow = ColorB(255, 255, 0);
 	ColorB cRed = ColorB(255, 0, 0);
-	ColorB cTransparentRed = ColorB(200, 0, 0, 100);
 
 	if (iLevel > 0)
 	{

@@ -168,7 +168,6 @@ void CAILightManager::Update(bool forceUpdate)
 
 	CTimeValue t = GetAISystem()->GetFrameStartTime();
 	int64 dt = (t - m_lastUpdateTime).GetMilliSecondsAsInt64();
-	int nDynLightsAtStart = m_dynLights.size();     // Just for debugging - the vector can shrink
 
 	//	if (dt > 0.25f || forceUpdate)
 	{

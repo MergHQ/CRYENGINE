@@ -59,7 +59,6 @@ PathLocation TracePathForward(const Path& path, const PathLocation& start, const
 	{
 		PathLocation result;
 		result.segmentIndex = start.segmentIndex;
-		const float distanceAlongSegment = distance;
 		const float normalizedDistanceDelta = distance / path.GetSegmentLength(start.segmentIndex);
 		result.normalizedSegmentPosition = start.normalizedSegmentPosition + normalizedDistanceDelta;
 
@@ -105,7 +104,6 @@ PathLocation TracePathForwardLooping(const Path& path, const PathLocation& start
 	{
 		PathLocation result;
 		result.segmentIndex = start.segmentIndex;
-		const float distanceAlongSegment = distance;
 		const float normalizedDistanceDelta = distance / path.GetSegmentLength(start.segmentIndex);
 		result.normalizedSegmentPosition = start.normalizedSegmentPosition + normalizedDistanceDelta;
 

@@ -833,7 +833,6 @@ void COPFollowPath::Serialize(TSerialize ser)
 EGoalOpResult COPFollowPath::Execute(CPipeUser* pPipeUser)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
-	CAIObject* pTarget = (CAIObject*)pPipeUser->GetAttentionTarget();
 	CAISystem* pSystem = GetAISystem();
 
 	// for a temporary, until all functionality have made.
@@ -2742,8 +2741,6 @@ EGoalOpResult COPDeValue::Execute(CPipeUser* pPipeUser)
 EGoalOpResult COPTacticalPos::Execute(CPipeUser* pPipeUser)
 {
 	EGoalOpResult ret = eGOR_FAILED;
-
-	CAISystem* pAISystem = GetAISystem();
 
 	switch (m_state)
 	{

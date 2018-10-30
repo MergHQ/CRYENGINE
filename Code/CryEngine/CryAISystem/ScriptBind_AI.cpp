@@ -6915,7 +6915,6 @@ int CScriptBind_AI::EvalHidespot(IFunctionHandler* pH)
 	}
 
 	Vec3 floorPos = pShooterAIActor->GetFloorPosition(pShooter->GetPos());
-	const SAIBodyInfo& bodyInfo = pShooterAIActor->GetBodyInfo();
 
 	// Hard-coded for human size
 	Vec3 waistPos = floorPos + Vec3(0, 0, 0.75f);
@@ -7463,7 +7462,6 @@ int CScriptBind_AI::IsAgentInTargetFOV(IFunctionHandler* pH)
 	viewDir.z = 0.0f;
 	viewDir.NormalizeSafe();
 
-	Vec3 p(pTarget->GetPos() + Vec3(0, 0, 0.5f));
 	float dot = dirToTarget.Dot(viewDir);
 
 	if (dot > cosf(DEG2RAD(FOV / 2)))
@@ -11253,7 +11251,7 @@ int CScriptBind_AI::UpdateGlobalPerceptionScale(IFunctionHandler* pH, float visu
 int CScriptBind_AI::QueueBubbleMessage(IFunctionHandler* pH, ScriptHandle entityID, const char* message)
 {
 	EntityId id = static_cast<EntityId>(entityID.n);
-	if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id))
+	if (gEnv->pEntitySystem->GetEntity(id) != nullptr)
 	{
 		AIQueueBubbleMessage("Message from LUA", id, message, eBNS_Balloon | eBNS_LogWarning);
 	}

@@ -386,11 +386,10 @@ void CAIVehicle::FireCommand(void)
 			Vec3 vNormalizedTargetDir = vTargetDir;
 
 			vNormalizedTargetDir.NormalizeSafe();
-			float distanceToTheTarget = vTargetDir.GetLength();
 			// If the target is not in front of him. can't fire.
 
 			vUnitTargetDir.NormalizeSafe();
-			//			gEnv->pAISystem->AddDebugLine( vFirePos, vFirePos + vUnitTargetDir * 20.0f , 255, 0, 0, 1.0f);
+			// gEnv->pAISystem->AddDebugLine( vFirePos, vFirePos + vUnitTargetDir * 20.0f , 255, 0, 0, 1.0f);
 
 			float fDifference = vUnitTargetDir.Dot(vFwdDir);
 			if (fDifference < cos_tpl(DEG2RAD(30.0f)))
@@ -509,7 +508,6 @@ void CAIVehicle::FireCommand(void)
 			Vec3 vCenterToFirePos = vFirePos - vMyPos;
 			vTargetDirFromCenter.z = vTargetDirFromFirePos.z = vCenterToFirePos.z = 0.0f;
 			float distanceFromCenter = vTargetDirFromCenter.GetLength();
-			float distanceFromFirePos = vTargetDirFromFirePos.GetLength();
 			float distanceFromCenterToFire = vCenterToFirePos.GetLength();
 			fDuration = 4.0f;
 			fBoxRange = 5.0f;
@@ -809,8 +807,7 @@ void CAIVehicle::Navigate(CAIObject* pTarget)
 	}
 
 	Vec3 vDir, vTargetPos;
-	float fTime = GetAISystem()->GetFrameDeltaTime();
-	//	int TargetType = AIOBJECT_NONE;
+	// int TargetType = AIOBJECT_NONE;
 
 	if (pTarget)
 	{
@@ -880,8 +877,6 @@ void CAIVehicle::AlertPuppets(void)
 
 	Vec3 vn(v);
 	vn.Normalize();
-
-	IEntity* pVehicleEntity = GetEntity();
 
 	// Find the vehicle rectangle to avoid
 	AABB localBounds;
@@ -1110,13 +1105,10 @@ bool CAIVehicle::GetEnemyTarget(int objectType, Vec3& hitPosition, float fDamage
 //------------------------------------------------------------------------------------------------------------------
 bool CAIVehicle::HandleVerticalMovement(const Vec3& targetPos)
 {
-
 	if (m_bPoweredUp)
 		return false;
 
-	Vec3 myPos(GetPos());
 	Vec3 diff(targetPos - GetPos());
-
 	Vec3 diff2d(diff);
 	diff2d.z = 0;
 	float ratio = diff2d.len2() > 0 ? fabs(diff.z) / diff2d.len() : fabs(diff.z);

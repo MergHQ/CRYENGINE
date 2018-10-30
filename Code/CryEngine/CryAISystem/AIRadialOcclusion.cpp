@@ -85,8 +85,6 @@ void CAIRadialOcclusion::RasterizeEdge(const Vec3& start, const Vec3& end, bool 
 	}
 
 	// Rasterize the span
-	float d0 = v0.len();
-	float d1 = v1.len();
 	float a0 = atan2f(v0.y, v0.x);
 	float a1 = atan2f(v1.y, v1.x);
 

@@ -521,7 +521,6 @@ CLeaderAction::eActionUpdateResult CLeaderAction_Search::Update()
 			}
 			else // search units
 			{
-				Vec3 unitPos(unit.m_refUnit.GetAIObject()->GetPos());
 				TPointMap::iterator oit = m_HideSpots.begin(), oend = m_HideSpots.end();
 				Vec3 obstaclePos(ZERO);
 				TPointMap::iterator itFound = oend;
@@ -807,7 +806,6 @@ void CLeaderAction_Attack_SwitchPositions::UpdatePointList(CAIObject* pTarget)
 		QueryEventMap queryEvents;
 		gAIEnv.pSmartObjectManager->TriggerEvent("CheckTargetNear", pTargetEntity, pDummyEntity, &queryEvents);
 
-		CAIObject* pFormationOwner = m_pLeader->GetFormationOwner().GetAIObject();
 		int size = m_PointProperties.size();
 
 		const QueryEventMap::const_iterator itEnd = queryEvents.end();
@@ -1459,7 +1457,6 @@ CLeaderAction::eActionUpdateResult CLeaderAction_Attack_SwitchPositions::Update(
 						if (fabs(pos.z - otherPos.z) < otherUnit.GetHeight() * 1.1f)
 							if (Distance::Point_Line2D(otherPos, pos, targetPos, proj) < otherUnit.GetWidth() / 2)
 							{
-								float distanceToEnemy = Distance::Point_PointSq(targetPos, pos);
 								float unitToEnemy = Distance::Point_PointSq(otherPos, targetPos);
 								if (unitToEnemy > 2 * 2)
 								{
@@ -1530,7 +1527,6 @@ CLeaderAction::eActionUpdateResult CLeaderAction_Attack_SwitchPositions::Update(
 					}
 					else
 					{
-						CAIActor* pAIActor = pUnit->CastToCAIActor();
 						AISignals::IAISignalExtraData* pData = GetAISystem()->CreateSignalExtraData();
 						if (pData)
 						{
@@ -1671,7 +1667,6 @@ CLeaderAction::eActionUpdateResult CLeaderAction_Attack_SwitchPositions::Update(
 						}
 						else
 						{
-							CAIActor* pAIActor = pUnit->CastToCAIActor();
 							AISignals::IAISignalExtraData* pData = GetAISystem()->CreateSignalExtraData();
 							if (pData)
 							{
