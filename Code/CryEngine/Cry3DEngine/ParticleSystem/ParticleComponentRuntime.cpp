@@ -16,6 +16,7 @@ CParticleComponentRuntime::CParticleComponentRuntime(CParticleEmitter* pEmitter,
 	, m_pComponent(pComponent)
 	, m_bounds(AABB::RESET)
 	, m_alive(true)
+	, m_deltaTime(-1.0f)
 	, m_chaos(0)
 	, m_chaosV(0)
 {
