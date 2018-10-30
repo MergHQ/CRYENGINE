@@ -1169,7 +1169,7 @@ ISourceControl* CEditorImpl::GetSourceControl()
 	return 0;
 }
 
-IProjectManager* CEditorImpl::GetProjectManager()
+Cry::IProjectManager* CEditorImpl::GetProjectManager()
 {
 	return m_pSystem->GetIProjectManager();
 }

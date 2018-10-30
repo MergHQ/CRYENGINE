@@ -3063,7 +3063,7 @@ ESystemConfigSpec CSystem::GetMaxConfigSpec() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-IProjectManager* CSystem::GetIProjectManager()
+Cry::IProjectManager* CSystem::GetIProjectManager()
 {
 	return m_pProjectManager;
 }

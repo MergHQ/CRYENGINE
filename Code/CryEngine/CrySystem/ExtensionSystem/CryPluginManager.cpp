@@ -214,10 +214,10 @@ void CCryPluginManager::LoadProjectPlugins()
 
 #if CrySharedLibrarySupported
 	// Load plug-ins specified in the .cryproject file from disk
-	CProjectManager* pProjectManager = static_cast<CProjectManager*>(gEnv->pSystem->GetIProjectManager());
-	const std::vector<SPluginDefinition>& pluginDefinitions = pProjectManager->GetPluginDefinitions();
+	auto* pProjectManager = static_cast<Cry::CProjectManager*>(gEnv->pSystem->GetIProjectManager());
+	const std::vector<Cry::SPluginDefinition>& pluginDefinitions = pProjectManager->GetPluginDefinitions();
 
-	for (const SPluginDefinition& pluginDefinition : pluginDefinitions)
+	for (const Cry::SPluginDefinition& pluginDefinition : pluginDefinitions)
 	{
 		if (!pluginDefinition.platforms.empty() && !stl::find(pluginDefinition.platforms, EPlatform::Current))
 		{
@@ -229,7 +229,7 @@ void CCryPluginManager::LoadProjectPlugins()
 		string pluginName = PathUtil::GetFileName(pluginDefinition.path);
 		bool bValid = true;
 
-		for (const std::pair<uint8, SPluginDefinition>& defaultPlugin : CCryPluginManager::GetDefaultPlugins())
+		for (const std::pair<uint8, Cry::SPluginDefinition>& defaultPlugin : CCryPluginManager::GetDefaultPlugins())
 		{
 			if (defaultPlugin.second.path.compareNoCase(pluginName) == 0)
 			{
@@ -268,7 +268,7 @@ void CCryPluginManager::LoadProjectPlugins()
 
 #if !defined(CRY_IS_MONOLITHIC_BUILD) && !defined(CRY_PLATFORM_CONSOLE)
 	// Always load the CryUserAnalytics plugin
-	SPluginDefinition userAnalyticsPlugin{ EType::Native, "CryUserAnalytics" };
+	Cry::SPluginDefinition userAnalyticsPlugin{ EType::Native, "CryUserAnalytics" };
 	if (std::find(std::begin(pluginDefinitions), std::end(pluginDefinitions), userAnalyticsPlugin) == std::end(pluginDefinitions))
 	{
 		LoadPluginBinary(userAnalyticsPlugin.type, userAnalyticsPlugin.path, false);

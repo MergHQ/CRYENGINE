@@ -14,7 +14,6 @@
 // Temporary using statement to not break YASLI_ENUM_BEGIN_NESTED below
 // Before fixing, validate that serialization to disk is the same, it currently serializes a string.
 using namespace Cry;
-using namespace Cry::ProjectManagerInternals;
 
 #if CRY_PLATFORM_WINDOWS
 #include <Shlwapi.h>
@@ -87,21 +86,6 @@ void CProjectManager::StoreConsoleVariable(const char* szCVarName, const char* s
 void CProjectManager::SaveProjectChanges()
 {
 	gEnv->pSystem->GetArchiveHost()->SaveJsonFile(m_project.filePath, Serialization::SStruct(m_project));
-}
-
-bool SProject::Serialize(Serialization::IArchive& ar)
-{
-	// Only save to the latest format
-	if (ar.isOutput())
-	{
-		version = LatestProjectFileVersion;
-	}
-
-	ar(version, "version", "version");
-
-	SProjectFileParser<LatestProjectFileVersion> parser;
-	parser.Serialize(ar, *this);
-	return true;
 }
 
 bool CProjectManager::ParseProjectFile()

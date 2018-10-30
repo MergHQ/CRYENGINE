@@ -15,132 +15,134 @@
 	#define CRYSYSTEM_API DLL_IMPORT
 #endif
 
-struct ILog;
-struct IProfileLogSystem;
-struct IEntitySystem;
-struct IEntity;
-struct ICryPak;
-struct IKeyboard;
-struct IMouse;
-struct IRemoteConsole;
-struct IInput;
-struct IRenderer;
-struct IRenderAuxGeom;
-struct IConsole;
+class CBootProfilerRecord;
+class CCamera;
+class CFrameProfilerSection;
+class CPNoise3;
 class CRndGen;
-struct ILogCallback;
-struct IValidator;
-struct IManualFrameStepController;
+class ICmdLine;
+class ICrySizer;
+class IDiskProfiler;
+class IImeManager;
+class IOpticsManager;
+class IXMLBinarySerializer;
 class XmlNodeRef;
-struct IXmlUtils;
+
+struct CLoadingTimeProfiler;
 struct CryGUID;
-typedef CryGUID CryInterfaceID;
-namespace Telemetry {
-struct ITelemetrySystem;
-}
-struct IProcess;
+struct FrameProfiler;
 struct I3DEngine;
-struct ITimer;
+struct IAISystem;
+struct IAVI_Reader;
+struct IBudgetingSystem;
+struct ICharacterManager;
+struct ICodeCheckpointMgr;
+struct IConsole;
+struct ICryFactoryRegistry;
+struct ICryFont;
+struct ICryLobby;
+struct ICryPak;
+struct ICryPerfHUD;
+struct ICrySchematycCore;
+struct IDialogSystem;
+struct IEntity;
+struct IEntitySystem;
+struct IFileChangeMonitor;
+struct IFlash;
+struct IFlashLoadMovieHandler;
+struct IFlashPlayer;
+struct IFlashPlayerBootStrapper;
+struct IFlashUI;
+struct IFlowSystem;
+struct IFrameProfileSystem;
 struct IGameFramework;
 struct IGameStartup;
-struct IScriptSystem;
-struct IAISystem;
-struct IFlash;
-struct INetwork;
-struct INetContext;
-struct ICryLobby;
-struct ICryFont;
-struct IMovieSystem;
-struct IPhysicalWorld;
+struct IHardwareMouse;
+struct IHmdDevice;
+struct IInput;
+struct IKeyboard;
+struct ILocalizationManager;
+struct ILocalMemoryUsage;
+struct ILZ4Decompressor;
+struct IManualFrameStepController;
+struct IMaterialEffects;
 struct IMemoryManager;
+struct IMonoEngineModule;
+struct IMouse;
+struct IMovieSystem;
+struct INameTable;
+struct INetContext;
+struct INetwork;
+struct INotificationNetwork;
+struct IOutputPrintSink;
+struct IOverloadSceneManager;
+struct IParticleManager;
+struct IPhysicalWorld;
+struct IPhysicsDebugRenderer;
+struct IPhysRenderer;
+struct IPlatformOS;
+struct IProcess;
+struct IProfileLogSystem;
+struct IReadWriteXMLSink;
+struct IRemoteCommandManager;
+struct IRemoteConsole;
+struct IRenderAuxGeom;
+struct IRenderer;
+struct IResourceManager;
+struct IScaleformHelper;
+struct IScriptSystem;
+struct IServiceNetwork;
+struct IStatoscope;
+struct IStreamEngine;
+struct ISystem;
+struct ITextModeConsole;
+struct IThreadManager;
+struct ITimer;
+struct IUserAnalyticsSystem;
+struct IValidator;
+struct IWindowMessageHandler;
+struct IXmlUtils;
+struct IZLibCompressor;
+struct IZLibDecompressor;
+struct SDisplayContextKey;
+struct SFileVersion;
+
 namespace CryAudio
 {
 struct IAudioSystem;
 }
-struct ISystem;
+
+namespace Telemetry
+{
+struct ITelemetrySystem;
+}
 
 namespace Cry {
+
 namespace Reflection {
-
 struct IModule;
+}   // ~Reflection namespace
 
-} // ~Reflection namespace
 namespace Script {
-
 struct ICoreEnvironment;
 struct ICoreRegistry;
+}   // ~Script namespace
 
-} // ~Script namespace
+namespace UDR {
+struct IUDR;
+}
+
+struct IPluginManager;
+struct IProjectManager;
+
 } // ~Cry namespace
 
-struct IFrameProfileSystem;
-struct IStatoscope;
-class IDiskProfiler;
-struct FrameProfiler;
-struct IStreamEngine;
-struct ICharacterManager;
-struct SFileVersion;
-struct INameTable;
-struct IBudgetingSystem;
-struct IFlowSystem;
-struct IDialogSystem;
 namespace DRS {
 struct IDynamicResponseSystem;
 }
-struct IMaterialEffects;
-struct IParticleManager;
-class IOpticsManager;
-struct IHardwareMouse;
-struct IFlashPlayer;
-struct IFlashPlayerBootStrapper;
-struct IFlashLoadMovieHandler;
-struct IHmdDevice;
-class ICrySizer;
+
 namespace CryTest {
 struct ITestSystem;
-}
-class IXMLBinarySerializer;
-struct IReadWriteXMLSink;
-struct IResourceManager;
-struct ITextModeConsole;
-struct IAVI_Reader;
-class CPNoise3;
-struct IFileChangeMonitor;
-struct ILocalizationManager;
-struct ICryFactoryRegistry;
-struct ICodeCheckpointMgr;
-struct IZLibCompressor;
-struct IZLibDecompressor;
-struct ILZ4Decompressor;
-struct IOutputPrintSink;
-struct IPhysicsDebugRenderer;
-struct IPhysRenderer;
-struct IOverloadSceneManager;
-struct IFlashUI;
-struct IThreadManager;
-struct IServiceNetwork;
-struct IUserAnalyticsSystem;
-struct IRemoteCommandManager;
-struct IWindowMessageHandler;
-struct IScaleformHelper;
-struct IProjectManager;
-
-namespace Cry
-{
-namespace UDR
-{
-struct IUDR;
-}
-}
-
-class IImeManager;
-struct SDisplayContextKey;
-
-class CBootProfilerRecord;
-
-namespace Cry
-{
-struct IPluginManager;
 }
 
 namespace UIFramework
@@ -158,27 +160,10 @@ struct IManager;
 struct IHost;
 }
 
-struct IMonoEngineModule;
-
-struct ILocalMemoryUsage;
-
-typedef void* WIN_HWND;
-
-class CCamera;
-struct CLoadingTimeProfiler;
-
-class ICmdLine;
-class CFrameProfilerSection;
-
-struct INotificationNetwork;
-struct IPlatformOS;
-struct ICryPerfHUD;
-
 namespace JobManager {
 struct IJobManager;
 }
 
-struct ICrySchematycCore;
 namespace Schematyc2
 {
 struct IFramework;
@@ -188,6 +173,9 @@ namespace minigui
 {
 struct IMiniGUI;
 }
+
+typedef CryGUID CryInterfaceID;
+typedef void*   WIN_HWND;
 
 #define PROC_MENU     1
 #define PROC_3DENGINE 2
@@ -402,7 +390,7 @@ enum ESystemEvent
 	//! Sent once the Editor finished initialization.
 	ESYSTEM_EVENT_EDITOR_ON_INIT,
 
-	//! Sent when frontend is initialised.
+	//! Sent when frontend is initialized.
 	ESYSTEM_EVENT_FRONTEND_INITIALISED,
 
 	//! Sent once the Editor switches between in-game and editing mode.
@@ -465,8 +453,8 @@ enum ESystemEvent
 #endif
 
 	//! Currently durango only.
-	//! Triggers when streaming install had failed to open newly recevied pak files
-	//! + may be triggerd on platform error as well: like scratched disks or network problems
+	//! Triggers when streaming install had failed to open newly received pak files
+	//! + may be triggered on platform error as well: like scratched disks or network problems
 	//! when installing from store
 	ESYSTEM_EVENT_STREAMING_INSTALL_ERROR,
 
@@ -1137,7 +1125,7 @@ public:
 	SSystemGlobalEnvironment()
 	{
 		mAsyncDipState.nValue = 0;
-	};
+	}
 
 	CRY_ALIGN(64) UAsyncDipState mAsyncDipState;
 };
@@ -1339,7 +1327,7 @@ struct ISystem
 	virtual IRemoteConsole*         GetIRemoteConsole() = 0;
 	virtual IUserAnalyticsSystem*   GetIUserAnalyticsSystem() = 0;
 	virtual Cry::IPluginManager*    GetIPluginManager() = 0;
-	virtual IProjectManager*        GetIProjectManager() = 0;
+	virtual Cry::IProjectManager*   GetIProjectManager() = 0;
 
 	//! \return Can be NULL, because it only exists when running through the editor, not in pure game mode.
 	virtual IResourceManager*                  GetIResourceManager() = 0;

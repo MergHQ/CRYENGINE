@@ -57,7 +57,7 @@ public:
 
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
 
-	using TDefaultPluginPair = std::pair<uint8 /* version with which the plug-in was made default */, SPluginDefinition>;
+	using TDefaultPluginPair = std::pair<uint8 /* version with which the plug-in was made default */, Cry::SPluginDefinition>;
 
 	// Gets the plug-ins, along with the version that they were made default in
 	// This is called in order to update the default plug-ins for projects on upgrade
@@ -68,12 +68,12 @@ public:
 		{
 			{ 
 				// Plug-ins made default with version 1
-				{ 1, SPluginDefinition { EType::Native, "CryDefaultEntities" } },
-				{ 1, SPluginDefinition { EType::Native, "CrySensorSystem" } },
-				{ 1, SPluginDefinition { EType::Native, "CryPerceptionSystem" } },
+				{ 1, Cry::SPluginDefinition { EType::Native, "CryDefaultEntities" } },
+				{ 1, Cry::SPluginDefinition { EType::Native, "CrySensorSystem" } },
+				{ 1, Cry::SPluginDefinition { EType::Native, "CryPerceptionSystem" } },
 				// Plug-ins made default with version 3
-				{ 3, SPluginDefinition { EType::Native, "CryGamePlatform", { EPlatform::PS4 } } },
-				{ 3, SPluginDefinition { EType::Native, "CryGamePlatformPSN", { EPlatform::PS4 } } },
+				{ 3, Cry::SPluginDefinition { EType::Native, "CryGamePlatform", { EPlatform::PS4 } } },
+				{ 3, Cry::SPluginDefinition { EType::Native, "CryGamePlatformPSN", { EPlatform::PS4 } } },
 			}
 		};
 	}

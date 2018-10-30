@@ -247,7 +247,7 @@ public:
 	//! Retrieve interface to the source control.
 	ISourceControl*                  GetSourceControl();
 	//! Get project manager interface
-	virtual IProjectManager*         GetProjectManager() override;
+	virtual Cry::IProjectManager*    GetProjectManager() override;
 	//! Retrieve true if source control is provided and enabled in settings
 	virtual bool                     IsSourceControlAvailable() override;
 	//! Setup Material Editor mode

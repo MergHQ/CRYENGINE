@@ -95,7 +95,7 @@ void CCSharpOutputWindow::OnDoubleClick(const QModelIndex& index)
 	const SCSharpCompilerError* pError = gEnv->pMonoRuntime->GetCompileErrorAt(index.row());
 	if (pError != nullptr)
 	{
-		const IProjectManager* pProjectManager = gEnv->pSystem->GetIProjectManager();
+		const Cry::IProjectManager* pProjectManager = gEnv->pSystem->GetIProjectManager();
 		if (pProjectManager != nullptr)
 		{
 			pPlugin->OpenCSharpFile(pError->m_fileName, pError->m_line);

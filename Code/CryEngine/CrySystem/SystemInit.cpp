@@ -2909,7 +2909,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 	InlineInitializationProcessing("CSystem::Init Load project configuration");
 
 	// Load project directory early, since it relies on overriding current working folder
-	m_pProjectManager = new CProjectManager();
+	m_pProjectManager = new Cry::CProjectManager();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Create PlatformOS

@@ -17,37 +17,37 @@
 #include <CryThreading/CryThread.h>
 #include <bitset>
 
-struct IConsoleCmdArgs;
-class CServerThrottle;
-struct ICryFactoryRegistryImpl;
-struct IZLibCompressor;
-class CLoadingProfilerSystem;
-struct SThreadMetaData;
-class CResourceManager;
-class CThreadManager;
-class IPhysicsThreadTask;
-class ICrySizer;
-class CStreamEngine;
-class CXmlUtils;
-class CJSONUtils;
-class CrySizerStats;
-class CrySizerImpl;
-class CThreadProfiler;
-class IDiskProfiler;
-class CLocalizedStringsManager;
-class CDownloadManager;
-struct ICryPerfHUD;
-class CNULLRenderAuxGeom;
-class CManualFrameStepController;
-class CProjectManager;
-class CCpuFeatures;
 class CCmdLine;
-struct ICVar;
-struct IResourceCollector;
-struct IFFont;
-class CMTRand_int32;
+class CCpuFeatures;
 class CCryPluginManager;
+class CDownloadManager;
+class CJSONUtils;
+class CLoadingProfilerSystem;
+class CLocalizedStringsManager;
+class CManualFrameStepController;
+class CMTRand_int32;
+class CNULLRenderAuxGeom;
+class CResourceManager;
+class CrySizerImpl;
+class CrySizerStats;
+class CServerThrottle;
+class CStreamEngine;
+class CThreadManager;
+class CThreadProfiler;
 class CUserAnalyticsSystem;
+class CXmlUtils;
+class ICrySizer;
+class IDiskProfiler;
+class IPhysicsThreadTask;
+
+struct IConsoleCmdArgs;
+struct ICryFactoryRegistryImpl;
+struct ICryPerfHUD;
+struct ICVar;
+struct IFFont;
+struct IResourceCollector;
+struct IZLibCompressor;
+struct SThreadMetaData;
 
 namespace minigui
 {
@@ -58,6 +58,11 @@ namespace LiveCreate
 {
 struct IManager;
 struct IHost;
+}
+
+namespace Cry
+{
+class CProjectManager;
 }
 
 #if CRY_PLATFORM_ANDROID
@@ -285,7 +290,7 @@ public:
 
 	//! Renders the statistics; this is called from RenderEnd, but if the
 	//! Host application (Editor) doesn't employ the Render cycle in ISystem,
-	//! it may call this method to render the essencial statistics
+	//! it may call this method to render the essential statistics
 	void         RenderStatistics() override;
 	void         RenderPhysicsStatistics(IPhysicalWorld* pWorld) override;
 
@@ -302,7 +307,7 @@ public:
 #endif
 
 	void                         Relaunch(bool bRelaunch) override;
-	bool                         IsRelaunch() const override        { return m_bRelaunch; };
+	bool                         IsRelaunch() const override        { return m_bRelaunch; }
 	void                         SerializingFile(int mode) override { m_iLoadingMode = mode; }
 	int                          IsSerializingFile() const override { return m_iLoadingMode; }
 	void                         Quit() override;
@@ -320,15 +325,15 @@ public:
 	IRenderer*                   GetIRenderer() override         { return m_env.pRenderer; }
 	IInput*                      GetIInput() override            { return m_env.pInput; }
 	ITimer*                      GetITimer() override            { return m_env.pTimer; }
-	ICryPak*                     GetIPak() override              { return m_env.pCryPak; };
-	IConsole*                    GetIConsole() override          { return m_env.pConsole; };
+	ICryPak*                     GetIPak() override              { return m_env.pCryPak; }
+	IConsole*                    GetIConsole() override          { return m_env.pConsole; }
 	IRemoteConsole*              GetIRemoteConsole() override;
 	IScriptSystem*               GetIScriptSystem() override     { return m_env.pScriptSystem; }
 	I3DEngine*                   GetI3DEngine() override         { return m_env.p3DEngine; }
 	ICharacterManager*           GetIAnimationSystem() override  { return m_env.pCharacterManager; }
 	CryAudio::IAudioSystem*      GetIAudioSystem() override      { return m_env.pAudioSystem; }
 	IPhysicalWorld*              GetIPhysicalWorld() override    { return m_env.pPhysicalWorld; }
-	IMovieSystem*                GetIMovieSystem() override      { return m_env.pMovieSystem; };
+	IMovieSystem*                GetIMovieSystem() override      { return m_env.pMovieSystem; }
 	IAISystem*                   GetAISystem() override          { return m_env.pAISystem; }
 	IMemoryManager*              GetIMemoryManager() override    { return m_pMemoryManager; }
 	IEntitySystem*               GetIEntitySystem() override     { return m_env.pEntitySystem; }
@@ -340,13 +345,13 @@ public:
 	ILog*                        GetILog() override              { return m_env.pLog; }
 	ICmdLine*                    GetICmdLine() override;
 	IStreamEngine*               GetStreamEngine() override;
-	IValidator*                  GetIValidator() override        { return m_pValidator; };
+	IValidator*                  GetIValidator() override { return m_pValidator; }
 	IPhysicsDebugRenderer*       GetIPhysicsDebugRenderer() override;
 	IPhysRenderer*               GetIPhysRenderer() override;
 	IFrameProfileSystem*         GetIProfileSystem() override         { return &m_FrameProfileSystem; }
 	virtual IDiskProfiler*       GetIDiskProfiler() override          { return m_pDiskProfiler; }
 	CThreadProfiler*             GetThreadProfiler()                  { return m_pThreadProfiler; }
-	INameTable*                  GetINameTable() override             { return m_env.pNameTable; };
+	INameTable*                  GetINameTable() override             { return m_env.pNameTable; }
 	IBudgetingSystem*            GetIBudgetingSystem() override       { return(m_pIBudgetingSystem); }
 	IFlowSystem*                 GetIFlowSystem() override            { return m_env.pFlowSystem; }
 	IDialogSystem*               GetIDialogSystem() override          { return m_env.pDialogSystem; }
@@ -358,7 +363,7 @@ public:
 #endif
 	IUserAnalyticsSystem*        GetIUserAnalyticsSystem() override;
 	Cry::IPluginManager*         GetIPluginManager() override;
-	IProjectManager*             GetIProjectManager() override;
+	Cry::IProjectManager*        GetIProjectManager() override;
 
 	IResourceManager*            GetIResourceManager() override;
 	ITextModeConsole*            GetITextModeConsole() override;
@@ -380,12 +385,12 @@ public:
 	virtual void   SetLoadingProgressListener(ILoadingProgressListener* pLoadingProgressListener) override
 	{
 		m_pProgressListener = pLoadingProgressListener;
-	};
+	}
 
 	virtual ILoadingProgressListener* GetLoadingProgressListener() const override
 	{
 		return m_pProgressListener;
-	};
+	}
 
 	void         SetIFlowSystem(IFlowSystem* pFlowSystem) override                              { m_env.pFlowSystem = pFlowSystem; }
 	void         SetIDialogSystem(IDialogSystem* pDialogSystem) override                        { m_env.pDialogSystem = pDialogSystem; }
@@ -413,7 +418,7 @@ public:
 	virtual Serialization::IArchiveHost* GetArchiveHost() const override { return m_pArchiveHost; }
 
 	void                                 SetViewCamera(CCamera& Camera) override;
-	const CCamera& GetViewCamera() const override       { return m_ViewCamera; }
+	const CCamera& GetViewCamera() const override { return m_ViewCamera; }
 
 	virtual uint32 GetCPUFlags() override;
 	virtual int    GetLogicalCPUCount() override;
@@ -651,7 +656,7 @@ public:
 	//! recreates the variable if necessary
 	ICVar*            attachVariable(const char* szVarName, int* pContainer, const char* szComment, int dwFlags = 0);
 
-	CCpuFeatures*     GetCPUFeatures()                { return m_pCpu; };
+	CCpuFeatures*     GetCPUFeatures()                { return m_pCpu; }
 
 	string&           GetDelayedScreeenshot()         { return m_sDelayedScreeenshot; }
 
@@ -1014,7 +1019,7 @@ protected: // -------------------------------------------------------------
 	INotificationNetwork*                 m_pNotificationNetwork;
 	CCryPluginManager*                    m_pPluginManager;
 	CUserAnalyticsSystem*                 m_pUserAnalyticsSystem;
-	CProjectManager*                      m_pProjectManager;
+	Cry::CProjectManager*                 m_pProjectManager;
 	CManualFrameStepController*           m_pManualFrameStepController = nullptr;
 
 	bool   m_hasWindowFocus = true;
