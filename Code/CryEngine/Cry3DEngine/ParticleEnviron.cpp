@@ -285,8 +285,6 @@ void SWorldPhysEnviron::FinishUpdate()
 
 void SPhysEnviron::Update(SPhysEnviron const& envSource, AABB const& box, bool bIndoors, uint32 nFlags, bool bNonUniformAreas, const void* pObjectSkip)
 {
-	assert(envSource.IsCurrent());
-
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	Clear();

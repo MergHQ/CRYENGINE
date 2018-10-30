@@ -653,9 +653,6 @@ void CParticleManager::Update()
 			GetRenderer()->SyncComputeVerticesJobs();
 		}
 
-		m_PhysEnv.Update();
-		m_pParticleSystem->Update();
-
 		DumpAndResetVertexIndexPoolUsage();
 
 		bool bStatoscopeEffectStats = false;
@@ -668,7 +665,7 @@ void CParticleManager::Update()
 		if (GetSystem()->IsPaused() || (GetCVars()->e_ParticlesDebug & AlphaBit('z')))
 			return;
 
-		uint32 nActiveEmitter = 0;
+		m_PhysEnv.Update();
 
 		// Check emitter states.
 		for (auto& e : m_Emitters)
@@ -682,14 +679,19 @@ void CParticleManager::Update()
 
 			e.Update();
 
+			bool bUpdatedEnviron = false;
 			if (e.IsActive())
 			{
 				// Has particles
 				if (e.GetEnvFlags() & EFF_ANY)
+				{
 					e.UpdateEffects();
+					bUpdatedEnviron = true;
+				}
+				else if (bUpdatedEnviron)
+					m_PhysEnv.Update();
 				if (e.GetEnvFlags() & REN_ANY)
 					e.Register(true);
-				nActiveEmitter++;
 				if (bRenderedLastFrame)
 					e.AddUpdateParticlesJob();
 			}
@@ -705,6 +707,8 @@ void CParticleManager::Update()
 				EraseEmitter(&e);
 			}
 		}
+
+		m_pParticleSystem->Update();
 
 		m_PhysEnv.FinishUpdate();
 	}
@@ -727,8 +731,9 @@ CParticleEmitter* CParticleManager::CreateEmitter(const ParticleLoc& loc, const 
 	pEmitter->IParticleEmitter::AddRef();
 
 	if (pEmitter->GetEnvFlags() & EFF_FORCE)
-		// Move emitters that create forces to the front, so they are updated first.
-		m_Emitters.move(m_Emitters.begin(), pEmitter);
+		if (m_Emitters.size() > 1)
+			// Move emitters that create forces to the front, so they are updated first.
+			m_Emitters.move(m_Emitters.begin(), pEmitter);
 
 	for (auto& pListener : m_ListenersList)
 	{
