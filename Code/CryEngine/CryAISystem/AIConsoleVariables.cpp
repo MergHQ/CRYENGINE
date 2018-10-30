@@ -342,6 +342,7 @@ void AIConsoleVars::Init()
 	DefineConstIntCVarName("ai_DebugDrawNavigationQueriesList", DebugDrawNavigationQueriesList, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 		"Displays a navigation queries list in the screen with all batches and elapsed times.\n"
 		"Requires ai_debugDraw, ai_debugDrawNavigation and ai_storeNavigationQueriesHistory to be enabled.\n"
+		"Note that, by their nature, instant queries won't be listed here.\n"
 		"Usage: ai_DebugDrawNavigationQueriesList [0/1]\n"
 		"Default is 0 (off)\n"
 		"0 - off\n"

@@ -10,135 +10,173 @@
 #define NAV_MESH_QUERY_DEBUG
 #endif // _RELEASE
 
+struct INavMeshQueryProcessing;
+
 namespace MNM
 {
+	typedef size_t NavMeshQueryId;
 	typedef DynArray<TriangleID> TriangleIDArray;
-}
 
-//! INavMeshQueryProcessing is a structure used for processing triangles in NavMesh triangle queries. See INavMesh::QueryTrianglesWithProcessing
-struct INavMeshQueryProcessing
-{
-	enum class EResult
+	#ifdef NAV_MESH_QUERY_DEBUG
+	struct INavMeshQueryDebug;
+	#endif // NAV_MESH_QUERY_DEBUG
+
+	//! INavMeshQuery is used for querying the NavMesh using a INavMeshQueryProcessing
+	//! that takes the NavMesh triangles resulting from the query 
+	//! and applies an extra (processing) operation
+	struct INavMeshQuery
 	{
-		Continue, // Continue processing with next set of triangles
-		Stop,     // Processing is done and should be stopped
-	};
-	virtual EResult operator() (const MNM::TriangleIDArray& triangleIDArray) = 0;
-};
-
-namespace MNM
-{
-
-typedef size_t NavMeshQueryId;
-
-#ifdef NAV_MESH_QUERY_DEBUG
-struct INavMeshQueryDebug;
-#endif // NAV_MESH_QUERY_DEBUG
-
-struct INavMeshQuery
-{
-public:
-	struct SNavMeshQueryConfig
-	{
-		//! Specify how (incomplete) NavMeshQueries should react to NavMesh changes
-		enum class EActionOnNavMeshChange
+		//! SNavMeshQueryConfig is used to hold the configuration parameters of a query
+		//! The parameters specify how the query should be performed.
+		//! They are set only once before executing the query
+		struct SNavMeshQueryConfig
 		{
-			//! Query ignores the NavMesh change and keeps processing triangles unless NavMesh change happens in the same tile the query is processing
-			Ignore,
+			//! Specify how overlapping between a NavMesh triangle and a QueryAABB should be calculated
+			enum class EOverlappingMode
+			{
+				//! Returns true if there's any overlap between TriangleAABB and QueryAABB.
+				BoundingBox_Partial,
 
-			//! Query immediately gets invalidated and stops processing when the NavMesh changes
-			InvalidateAlways,
+				//! Returns true if TriangleAABB is inside QueryAABB
+				BoundingBox_Full,
 
-			//! InvalidateIfProccesed: Query only gets invalidated and stops processing when the invalidated NavMesh Tile has already been processed by the Query. If this does not apply, query keeps processing triangles.
-			InvalidateIfProccesed
+				//! Returns true if the Triangle intersects the QueryAABB
+				Triangle_Partial,
+
+				//! Returns true if all three vertices of the Triangle are inside the QueryAABB
+				Triangle_Full
+			};
+		#ifdef NAV_MESH_QUERY_DEBUG
+			void DebugDraw() const;
+		#endif // NAV_MESH_QUERY_DEBUG
+		
+		protected:
+			SNavMeshQueryConfig(const NavigationMeshID meshId_,
+				const char* szCallerName_,
+				const aabb_t& aabb_,
+				const EOverlappingMode overlappingMode_ = EOverlappingMode::BoundingBox_Partial,
+				const INavMeshQueryFilter* pQueryFilter_ = nullptr)
+				: meshId(meshId_)
+				, szCallerName(szCallerName_)
+				, aabb(aabb_)
+				, overlappingMode(overlappingMode_)
+				, pQueryFilter(pQueryFilter_)
+			{
+				if (pQueryFilter_)
+				{
+					pQueryFilter = pQueryFilter_->Clone();
+				}
+			}
+
+			~SNavMeshQueryConfig()
+			{
+				if (pQueryFilter)
+				{
+					pQueryFilter->Release();
+				}
+			}
+
+		public:
+			const NavigationMeshID         meshId;
+			const char*                    szCallerName;
+			const aabb_t                   aabb;
+			const EOverlappingMode         overlappingMode;
+			const INavMeshQueryFilter*     pQueryFilter;
 		};
 
-		//! Specify how overlapping between a NavMesh triangle and a QueryAABB should be calculated
-		enum class EOverlappingMode
+		//! SNavMeshQueryConfigInstant is a specialized SNavMeshQueryConfig used to perform CNavMeshQueryInstant that will run only once in one frame.
+		struct SNavMeshQueryConfigInstant final : public SNavMeshQueryConfig
 		{
-			//! Returns true if there's any overlap between TriangleAABB and QueryAABB.
-			BoundingBox_Partial,
-
-			//! Returns true if TriangleAABB is inside QueryAABB
-			BoundingBox_Full,
-
-			//! Returns true if the Triangle intersects the QueryAABB
-			Triangle_Partial,
-
-			//! Returns true if all three vertices of the Triangle are inside the QueryAABB
-			Triangle_Full
+			SNavMeshQueryConfigInstant(const NavigationMeshID meshId,
+				const char* szCallerName_,
+				const aabb_t& aabb_,
+				const EOverlappingMode overlappingMode_ = EOverlappingMode::BoundingBox_Partial,
+				const INavMeshQueryFilter* pQueryFilter_ = nullptr)
+				: SNavMeshQueryConfig(meshId, szCallerName_, aabb_, overlappingMode_, pQueryFilter_)
+			{
+				// Empty
+			}
 		};
 
-		//! Describes the query configuration
-		//! /param pQueryFilter_ is only used to perform a deep copy
-		//! /param pQueryProcessing_ should persist while the query is running
-		SNavMeshQueryConfig(const NavigationAgentTypeID agentTypeId_, 
-			const char* szCallerName_, 
-			const AABB& aabb_, 
-			const Vec3& position_, 
-			const EActionOnNavMeshChange actionOnNavMeshRegeneration_ = EActionOnNavMeshChange::Ignore,
-			const EActionOnNavMeshChange actionOnNavMeshAnnotationChange_ = EActionOnNavMeshChange::Ignore,
-			const EOverlappingMode overlappingMode_ = EOverlappingMode::BoundingBox_Partial,
-			const INavMeshQueryFilter* pQueryFilter_ = nullptr,
-			INavMeshQueryProcessing* pQueryProcessing_ = nullptr)
-			: agentTypeId(agentTypeId_)
-			, szCallerName(szCallerName_)
-			, aabb(aabb_)
-			, position(position_)
-			, actionOnNavMeshRegeneration(actionOnNavMeshRegeneration_)
-			, actionOnNavMeshAnnotationChange(actionOnNavMeshAnnotationChange_)
-			, overlappingMode(overlappingMode_)
-			, pQueryFilter(nullptr)
-			, pQueryProcessing(pQueryProcessing_)
+		//! SNavMeshQueryConfigBatch is a specialized SNavMeshQueryConfig used to perform CNavMeshQueryBatch that may run multiple times.
+		struct SNavMeshQueryConfigBatch final : public SNavMeshQueryConfig
 		{
-			if (pQueryFilter_)
+			//! Specify how (incomplete) NavMeshQueries should react to NavMesh changes
+			enum class EActionOnNavMeshChange
 			{
-				pQueryFilter = pQueryFilter_->Clone();
-			}
-		}
+				//! Query ignores the NavMesh change and keeps processing triangles unless NavMesh change happens in the same tile the query is processing
+				Ignore,
 
-		~SNavMeshQueryConfig()
-		{
-			if (pQueryFilter)
+				//! Query immediately gets invalidated and stops processing when the NavMesh changes
+				InvalidateAlways,
+
+				//! InvalidateIfProccesed: Query only gets invalidated and stops processing when the invalidated NavMesh Tile has already been processed by the Query. If this does not apply, query keeps processing triangles.
+				InvalidateIfProccesed
+			};
+
+			SNavMeshQueryConfigBatch(const NavigationMeshID meshId,
+				const char* szCallerName_,
+				const aabb_t& aabb_,
+				const EOverlappingMode overlappingMode_ = EOverlappingMode::BoundingBox_Partial,
+				const INavMeshQueryFilter* pQueryFilter_ = nullptr,
+				const size_t processingTrianglesMaxSize_ = 1024,
+				const EActionOnNavMeshChange actionOnNavMeshRegeneration_ = EActionOnNavMeshChange::Ignore,
+				const EActionOnNavMeshChange actionOnNavMeshAnnotationChange_ = EActionOnNavMeshChange::Ignore)
+				: SNavMeshQueryConfig(meshId, szCallerName_, aabb_, overlappingMode_, pQueryFilter_)
+				, processingTrianglesMaxSize(processingTrianglesMaxSize_)
+				, actionOnNavMeshRegeneration(actionOnNavMeshRegeneration_)
+				, actionOnNavMeshAnnotationChange(actionOnNavMeshAnnotationChange_)
 			{
-				pQueryFilter->Release();
+				// Empty
 			}
-		}
-
-		const NavigationAgentTypeID    agentTypeId;
-		const char*                    szCallerName;
-		const AABB                     aabb;
-		const Vec3                     position;
-		const EActionOnNavMeshChange   actionOnNavMeshRegeneration;
-		const EActionOnNavMeshChange   actionOnNavMeshAnnotationChange;
-		const EOverlappingMode         overlappingMode;
-		const INavMeshQueryFilter*     pQueryFilter;
-		INavMeshQueryProcessing*       pQueryProcessing;
-	};
-
-	//! Describes the execution status of the NavMeshQuery
-	enum class EQueryStatus
-	{
-		Running,
-		Done,
-		InvalidDueToNavMeshRegeneration,
-		InvalidDueToNavMeshAnnotationChanges,
-		InvalidDueToCachedNavMeshIdNotFound
-	};
-
-	virtual NavMeshQueryId                  GetId() const = 0;
-	virtual const SNavMeshQueryConfig&      GetQueryConfig() const = 0;
-	virtual EQueryStatus                    GetStatus() const = 0;
-	virtual bool                            HasInvalidStatus() const = 0;
-
-	virtual EQueryStatus                    PullTrianglesBatch(const size_t batchCount, TriangleIDArray& outTriangles) = 0;
 
 #ifdef NAV_MESH_QUERY_DEBUG
-	virtual const INavMeshQueryDebug&       GetQueryDebug() const = 0;
+			void DebugDraw() const;
 #endif // NAV_MESH_QUERY_DEBUG
-protected:
-	~INavMeshQuery() {}
-};
 
-DECLARE_SHARED_POINTERS(INavMeshQuery)
+			const NavigationMeshID         meshId;
+			const size_t                   processingTrianglesMaxSize;
+			const EActionOnNavMeshChange   actionOnNavMeshRegeneration;
+			const EActionOnNavMeshChange   actionOnNavMeshAnnotationChange;
+		};
+
+		//! Describes the execution status of the INavMeshQuery
+		enum class EQueryStatus
+		{
+			Uninitialized,
+			Running,
+			Done_QueryProcessingStopped,
+			Done_Complete,
+			Invalid_InitializationFailed,
+			Invalid_NavMeshRegenerated,
+			Invalid_NavMeshAnnotationChanged,
+			Invalid_CachedNavMeshIdNotFound,
+
+			Count = 8
+		};
+
+		virtual NavMeshQueryId                  GetId() const = 0;
+		virtual const SNavMeshQueryConfig&      GetQueryConfig() const = 0;
+		virtual EQueryStatus                    GetStatus() const = 0;
+		virtual bool                            IsValid() const = 0;
+		virtual bool                            IsDone() const = 0;
+		virtual bool                            IsRunning() const = 0;
+
+#ifdef NAV_MESH_QUERY_DEBUG
+		virtual const INavMeshQueryDebug&       GetQueryDebug() const = 0;
+		virtual bool operator< (const INavMeshQuery & other) const = 0;
+#endif // NAV_MESH_QUERY_DEBUG
+
+		//! Runs the query with the specified configuration in the constructor. Resulting triangles are passed to the queryProcessing in batches of given size (by default 32)
+		//! /param queryProcessing Applies a processing operation on the resulting triangles from the query
+		//! /param processingBatchSize specifies the maximum size of triangles that can be processed in a single batch. By default is 32 (query processing will be executed every 32 triangles).
+		//! /return Status of the query after the Run operation has been completed
+		virtual INavMeshQuery::EQueryStatus     Run(INavMeshQueryProcessing& queryProcessing, const size_t processingBatchSize = 32) = 0;
+	protected:
+		~INavMeshQuery() {}
+	};
+
+	DECLARE_SHARED_POINTERS(INavMeshQuery)
+
+	typedef INavMeshQuery::SNavMeshQueryConfig::EOverlappingMode ENavMeshQueryOverlappingMode;
 }

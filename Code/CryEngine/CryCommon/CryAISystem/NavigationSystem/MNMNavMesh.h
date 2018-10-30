@@ -3,6 +3,8 @@
 #pragma once
 
 #include "MNMTile.h"
+#include <CryAISystem/NavigationSystem/NavigationIdTypes.h>
+#include <CryAISystem/NavigationSystem/INavMeshQuery.h>
 
 struct INavMeshQueryFilter;
 struct INavMeshQueryProcessing;
@@ -125,6 +127,26 @@ struct SOrderedSnappingMetrics
 	LocalDynArray<SSnappingMetric, 4> metricsArray;
 };
 
+//! Helper struct used in GetClosestTriangle
+struct SClosestTriangle
+{
+	TriangleID id;
+	vector3_t  position;
+	real_t     distance;
+
+	SClosestTriangle()
+		: id(Constants::InvalidTriangleID)
+		, position(0)
+		, distance(std::numeric_limits<real_t>::max())
+	{}
+
+	SClosestTriangle(const TriangleID triangleId_, const vector3_t& position_, const real_t distance_)
+		: id(triangleId_)
+		, position(position_)
+		, distance(distance_)
+	{}
+};
+
 namespace NavMesh
 {
 
@@ -200,40 +222,37 @@ struct INavMesh
 	virtual ~INavMesh() {}
 
 	//! Fills a NavMesh::SParams structure with a mesh parameters.
-	virtual void GetMeshParams(NavMesh::SParams& outParams) const = 0;
+	virtual void                  GetMeshParams(NavMesh::SParams& outParams) const = 0;
 
 	//! Finds a TileID by the tile's grid coordinate.
 	//! \return Valid TileID, if such tile exists. Otherwise, return MNM::Constants::InvalidTileID.
-	virtual TileID FindTileIDByTileGridCoord(const vector3_t& tileGridCoord) const = 0;
+	virtual TileID                FindTileIDByTileGridCoord(const vector3_t& tileGridCoord) const = 0;
 
-	//! Queries NavMesh triangles inside a bounding box.
-	//! \param queryLocalAabb Bounding box for the query in a mesh coordinate space.
-	//! \param pOptionalFilter Pointer to the optional triangle filter. If provided, then it's called for each triangleId.
-	//! \param maxTrianglesCount Size of output buffer for result triangleId's.
-	//! \param pOutTriangles Array buffer for result triangleId's.
-	//! \return Count of found triangleId's.
-	virtual size_t QueryTriangles(const aabb_t& queryLocalAabb, const INavMeshQueryFilter* pOptionalFilter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const = 0;
+	//! Gets all triangles from the mesh and overlap with the provided aabb
+	//! Overlapping is calculated using the mode ENavMeshQueryOverlappingMode::BoundingBox_Partial
+	//! Triangles are filtered using SAcceptAllQueryTrianglesFilter
+	virtual DynArray<TriangleID>  QueryTriangles(const aabb_t& localAabb) const = 0;
 
-	//! Queries NavMesh triangles inside a bounding box and process them
-	//! \param queryLocalAabb Bounding box for the query in a mesh coordinate space.
-	//! \param pOptionalFilter Pointer to the optional triangle filter. If provided, then it's called for each triangleId.
-	//! \param pQueryProcessing Pointer to the function object structure responsible for processing queried triangles. See INavMeshQueryProcessing.
-	virtual void QueryTrianglesWithProcessing(const aabb_t& queryLocalAabb, const INavMeshQueryFilter* pOptionalFilter, INavMeshQueryProcessing* pQueryProcessing) const = 0;
+	//! Gets all triangles that belongs to the mesh and overlap with the provided aabb using the specified overlappingMode and filter
+	virtual DynArray<TriangleID>  QueryTriangles(const aabb_t& localAabb, const ENavMeshQueryOverlappingMode overlappingMode, const INavMeshQueryFilter* pFilter) const = 0;
+
+	//! Gets the triangle (id, position and distance) from the mesh that is the closest to the provided position that overlaps with the aabb
+	virtual SClosestTriangle      QueryClosestTriangle(const vector3_t& worldPos, const aabb_t& localAabbAroundPosition) const = 0;
+
+	//! Gets the triangle (id, position and distance) from the mesh that is the closest to the provided position that overlaps with the aabb using the specified overlappingMode and filter
+	virtual SClosestTriangle      QueryClosestTriangle(const vector3_t& worldPos, const aabb_t& localAabbAroundPosition, const ENavMeshQueryOverlappingMode overlappingMode, const MNM::real_t maxDistance, const INavMeshQueryFilter* pFilter) const = 0;
 
 	//! Finds a single triangle closest to the point. /see QueryTriangles() for a way to get candidate triangles.
-	//! \param queryLocalPosition Query point in a mesh coordinate space.
-	//! \param pCandidateTriangles Array of triangleID to search.
-	//! \param candidateTrianglesCount Size of pCandidateTriangles array.
-	//! \param pOutClosestLocalPosition Optional pointer for a return value of a snapped to the triangle point in the mesh coordinate space.
-	//! \param pOutClosestDistanceSq Optional pointer for a return value of squared distance between query point and a snapped to the triangle point.
-	//! \return ID of a found closest triangle.
-	virtual TriangleID FindClosestTriangle(const vector3_t& queryLocalPosition, const TriangleID* pCandidateTriangles, const size_t candidateTrianglesCount, vector3_t* pOutClosestLocalPosition, float* pOutClosestDistanceSq) const = 0;
+	//! \param localPosition Query point in a mesh coordinate space.
+	//! \param candidateTriangles Array of triangleID to search.
+	//! \return A struct containing the id of the closest triangle, position and minimum distance
+	virtual SClosestTriangle      FindClosestTriangle(const vector3_t& localPosition, const DynArray<TriangleID>& candidateTriangles) const = 0;
 
 	//! Fills a STileData structure for a read-only tile data access
 	//! \param tileId Id of tile
 	//! \param outTileData STileData structure to fill
 	//! \return true if tile is found and outTileData is filled.
-	virtual bool GetTileData(const TileID tileId, Tile::STileData& outTileData) const = 0;
+	virtual bool                  GetTileData(const TileID tileId, Tile::STileData& outTileData) const = 0;
 
 	//! Returns triangle area annotation
 	//! \param triangleID id of the triangle
@@ -244,7 +263,7 @@ struct INavMesh
 	//! \param triangleID Id of the triangle
 	//! \param filter Query filter to check triangle with
 	//! \return Returns true if the triangle is valid and passes the provided filter
-	virtual bool CanTrianglePassFilter(const TriangleID triangleID, const INavMeshQueryFilter& filter) const = 0;
+	virtual bool                  CanTrianglePassFilter(const TriangleID triangleID, const INavMeshQueryFilter& filter) const = 0;
 };
 
 } // namespace MNM

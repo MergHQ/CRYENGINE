@@ -8,6 +8,7 @@
 #include "DebugDrawContext.h"
 #include "AIBubblesSystem/AIBubblesSystem.h"
 #include <CryThreading/IJobManager_JobDelegator.h>
+#include <CryAISystem/NavigationSystem/INavMeshQueryManager.h>
 
 //#pragma optimize("", off)
 //#pragma inline_depth(0)
@@ -313,8 +314,8 @@ bool CMNMPathfinder::CheckIfPointsAreOnStraightWalkableLine(const NavigationMesh
 	const MNM::vector3_t endMeshLoc = navMesh.ToMeshSpace(destination);
 
 	const MNM::real_t verticalRange(2.0f);
-	MNM::TriangleID triStart = navMesh.GetTriangleAt(startMeshLoc, verticalRange, verticalRange, pFilter);
-	MNM::TriangleID triEnd = navMesh.GetTriangleAt(endMeshLoc, verticalRange, verticalRange, pFilter);
+	const MNM::TriangleID triStart =  navMesh.QueryTriangleAt(startMeshLoc, verticalRange, verticalRange, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, pFilter);
+	const MNM::TriangleID triEnd = navMesh.QueryTriangleAt(endMeshLoc, verticalRange, verticalRange, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, pFilter);
 
 	if (!triStart || !triEnd)
 		return false;

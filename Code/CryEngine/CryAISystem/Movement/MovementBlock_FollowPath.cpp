@@ -7,7 +7,7 @@
 #include "PipeUser.h"
 #include "Cover/CoverSystem.h"
 #include "Navigation/NavigationSystem/NavigationSystem.h"
-
+#include <CryAISystem/NavigationSystem/INavMeshQueryManager.h>
 
 namespace Movement
 {
@@ -279,8 +279,8 @@ bool FollowPath::IsPathTraversableOnNavMesh(const INavMeshQueryFilter* pFilter) 
 
 				const MNM::vector3_t mnmStartLoc = navMeshUsedByPath.ToMeshSpace(segmentPos1);
 				const MNM::vector3_t mnmEndLoc = navMeshUsedByPath.ToMeshSpace(segmentPos2);
-				const MNM::TriangleID triStart = navMeshUsedByPath.GetTriangleAt(mnmStartLoc, verticalRange, verticalRange, pFilter);
-				const MNM::TriangleID triEnd = navMeshUsedByPath.GetTriangleAt(mnmEndLoc, verticalRange, verticalRange, pFilter);
+				const MNM::TriangleID triStart = navMeshUsedByPath.QueryTriangleAt(mnmStartLoc, verticalRange, verticalRange, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, pFilter);
+				const MNM::TriangleID triEnd = navMeshUsedByPath.QueryTriangleAt(mnmEndLoc, verticalRange, verticalRange, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, pFilter);
 
 				if (!triStart || !triEnd)
 				{

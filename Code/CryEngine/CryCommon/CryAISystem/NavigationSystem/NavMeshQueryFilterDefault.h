@@ -92,3 +92,57 @@ struct SNavMeshQueryFilterDefaultWithCosts final : public SNavMeshQueryFilterBas
 
 	float costs[MaxAreasCount];
 };
+
+//! SAcceptAllQueryTrianglesFilter accepts all triangles
+struct SAcceptAllQueryTrianglesFilter final : public SNavMeshQueryFilterBase<SAcceptAllQueryTrianglesFilter>
+{
+	typedef SNavMeshQueryFilterBase<SAcceptAllQueryTrianglesFilter> TBaseFilter;
+
+	SAcceptAllQueryTrianglesFilter()
+	{
+		// Empty
+	}
+
+	SAcceptAllQueryTrianglesFilter(const SAcceptAllQueryTrianglesFilter& other)
+		: TBaseFilter(other)
+	{
+		// Empty
+	}
+
+	virtual INavMeshQueryFilter* Clone() const override
+	{
+		return new SAcceptAllQueryTrianglesFilter(*this);
+	}
+
+	virtual void Release() const override
+	{
+		delete this;
+	}
+
+	bool operator==(const SAcceptAllQueryTrianglesFilter& other) const
+	{
+		return TBaseFilter::operator==(other);
+	}
+
+	virtual bool PassFilter(const MNM::AreaAnnotation annotation) const override
+	{
+		return true;
+	}
+
+	virtual bool PassFilter(const MNM::Tile::STriangle& triangle) const override
+	{
+		return true;
+	}
+
+	virtual float GetCostMultiplier(const MNM::Tile::STriangle& triangle) const override
+	{
+		return 1.0f;
+	}
+
+	virtual MNM::real_t GetCost(const MNM::vector3_t& fromPos, const MNM::vector3_t& toPos,
+		const MNM::Tile::STriangle& currentTriangle, const MNM::Tile::STriangle& nextTriangle,
+		const MNM::TriangleID currentTriangleId, const MNM::TriangleID nextTriangleId) const override
+	{
+		return (fromPos - toPos).lenNoOverflow();
+	}
+};

@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "CollisionAvoidanceSystem.h"
 #include "Navigation/NavigationSystem/NavigationSystem.h"
+#include "Navigation/MNM/NavMeshQueryManager.h"
 
 #include "DebugDrawContext.h"
 
@@ -806,12 +807,29 @@ Vec2 CCollisionAvoidanceSystem::ClampSpeedWithNavigationMesh(const SNavigationPr
 
 			const INavMeshQueryFilter* pFilter = agentNavProperties.pQueryFilter;
 
-			const MNM::TriangleID triStart = navMesh.GetTriangleAt(startMeshLoc, verticalRange, verticalRange, pFilter);
-			MNM::TriangleID triEnd = navMesh.GetTriangleAt(endMeshLoc, verticalRange, verticalRange, pFilter);
+			const MNM::TriangleID triStart = navMesh.QueryTriangleAt(
+				startMeshLoc, 
+				verticalRange, 
+				verticalRange, 
+				MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, 
+				pFilter
+			);
+
+			MNM::TriangleID triEnd = navMesh.QueryTriangleAt(
+				endMeshLoc, 
+				verticalRange, 
+				verticalRange, 
+				MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, 
+				pFilter
+			);
+
 			if (!triEnd)
 			{
 				MNM::vector3_t closestEndLocation;
-				triEnd = navMesh.GetClosestTriangle(endMeshLoc, verticalRange, horizontalRange, pFilter, nullptr, &closestEndLocation);
+				const MNM::aabb_t localAabb(MNM::vector3_t(-horizontalRange, -horizontalRange, -verticalRange), MNM::vector3_t(horizontalRange, horizontalRange, verticalRange));
+				const MNM::SClosestTriangle closestTriangle = navMesh.QueryClosestTriangle(endMeshLoc, localAabb, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, MNM::real_t::max(), pFilter);
+				closestEndLocation = closestTriangle.position;
+				triEnd = closestTriangle.id;
 				navMesh.PushPointInsideTriangle(triEnd, closestEndLocation, MNM::real_t(.05f));
 				endMeshLoc = closestEndLocation;
 			}

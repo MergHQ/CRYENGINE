@@ -10,14 +10,19 @@ namespace MNM
 
 	class CNavMeshQueryManager final : public INavMeshQueryManager
 	{
-		typedef std::unordered_set<CNavMeshQuery*> CNavMeshQueriesPtrSet;
+		typedef std::unordered_set<INavMeshQuery*> INavMeshQueriesPtrSet;
 
+#ifdef NAV_MESH_QUERY_DEBUG
+
+
+#endif // NAV_MESH_QUERY_DEBUG
 	public:
 		CNavMeshQueryManager();
 		~CNavMeshQueryManager();
 
 		virtual void                                               Clear() override;
-		virtual INavMeshQueryPtr                                   CreateQuery(const INavMeshQuery::SNavMeshQueryConfig& queryConf) override;
+		virtual INavMeshQueryPtr                                   CreateQueryBatch(const INavMeshQuery::SNavMeshQueryConfigBatch& queryConf) override;
+		virtual INavMeshQuery::EQueryStatus                        RunInstantQuery(const INavMeshQuery::SNavMeshQueryConfigInstant& queryConf, INavMeshQueryProcessing& queryProcessing, const size_t processingBatchSize = 1024) override;
 
 #ifdef NAV_MESH_QUERY_DEBUG
 		virtual void                                               DebugDrawQueriesList() const override;
@@ -27,9 +32,7 @@ namespace MNM
 	private:
 		void                                                       RegisterCVars() const;
 		void                                                       UnregisterCVars() const;
-		void                                                       RemoveQuery(CNavMeshQuery* pQuery);
 
-		CNavMeshQueriesPtrSet                                      m_queries;
 		NavMeshQueryId                                             m_queryIdCount;
 
 #ifdef NAV_MESH_QUERY_DEBUG
