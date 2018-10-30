@@ -56,15 +56,3 @@ end_sources()
 CryEditorPlugin(EditorCryAudioImplAdx2 SOLUTION_FOLDER "Sandbox/Plugins/EditorAudioControlsEditor/Impl" OUTDIR EditorPlugins/ace)
 target_include_directories(${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/Common" "${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/implementations")
 target_compile_definitions(${THIS_PROJECT} PRIVATE -DNOT_USE_CRY_MEMORY_MANAGER -DACE_PLUGIN_EXPORTS)
-
-if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-	target_compile_options(${THIS_PROJECT} PRIVATE
-		-Wno-unused-variable
-		-Wno-format
-	)
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	target_compile_options(${THIS_PROJECT} PRIVATE
-		-Wno-unused-variable
-		-Wno-format
-	)
-endif()
