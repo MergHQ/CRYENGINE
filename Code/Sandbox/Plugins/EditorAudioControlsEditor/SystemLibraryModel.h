@@ -19,7 +19,7 @@ public:
 	CSystemLibraryModel& operator=(CSystemLibraryModel const&) = delete;
 	CSystemLibraryModel& operator=(CSystemLibraryModel&&) = delete;
 
-	CSystemLibraryModel(CLibrary* const pLibrary, QObject* const pParent);
+	CSystemLibraryModel(CLibrary* pLibrary, QObject* pParent);
 	virtual ~CSystemLibraryModel() override;
 
 	void DisconnectSignals();

@@ -42,10 +42,6 @@ public:
 	void   OnBeforeReload();
 	void   OnAfterReload();
 
-signals:
-
-	void SignalSelectedControlChanged();
-
 private slots:
 
 	void OnRenameSelectedControls(string const& name);

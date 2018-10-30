@@ -34,10 +34,6 @@ public:
 	void OnBeforeReload();
 	void OnAfterReload();
 
-signals:
-
-	void SignalSelectConnectedImplItem(ControlId const itemId);
-
 private slots:
 
 	void OnContextMenu(QPoint const& pos);

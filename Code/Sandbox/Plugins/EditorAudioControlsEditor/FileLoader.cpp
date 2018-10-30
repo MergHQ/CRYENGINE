@@ -4,8 +4,8 @@
 #include "FileLoader.h"
 
 #include "Common.h"
-#include "FileWriter.h"
 #include "AudioControlsEditorPlugin.h"
+#include "Control.h"
 
 #include <CrySystem/File/CryFile.h>
 #include <QtUtil.h>
@@ -55,6 +55,169 @@ EAssetType TagToType(char const* const szTag)
 	}
 
 	return type;
+}
+
+//////////////////////////////////////////////////////////////////////////
+CAsset* AddUniqueFolderPath(CAsset* pParent, QString const& path)
+{
+	QStringList const folderNames = path.split(QRegularExpression(R"((\\|\/))"), QString::SkipEmptyParts);
+
+	int const numFolders = folderNames.length();
+
+	for (int i = 0; i < numFolders; ++i)
+	{
+		if (!folderNames[i].isEmpty())
+		{
+			CAsset* const pChild = g_assetsManager.CreateFolder(QtUtil::ToString(folderNames[i]), pParent);
+
+			if (pChild != nullptr)
+			{
+				pParent = pChild;
+			}
+		}
+	}
+
+	return pParent;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CreateDefaultControls()
+{
+	// Create default controls if they don't exist.
+	// These controls need to always exist in your project!
+	CAsset* const pLibrary = static_cast<CAsset*>(g_assetsManager.CreateLibrary(CryAudio::s_szDefaultLibraryName));
+
+	if (pLibrary != nullptr)
+	{
+		EAssetFlags const flags = (EAssetFlags::IsDefaultControl | EAssetFlags::IsHiddenInResourceSelector);
+
+		g_assetsManager.CreateDefaultControl(CryAudio::s_szGetFocusTriggerName, EAssetType::Trigger, pLibrary, flags, "Unmutes all audio. Gets triggered when the editor window gets focus.");
+		g_assetsManager.CreateDefaultControl(CryAudio::s_szLoseFocusTriggerName, EAssetType::Trigger, pLibrary, flags, "Mutes all audio. Gets triggered when the editor window loses focus.");
+		g_assetsManager.CreateDefaultControl(CryAudio::s_szMuteAllTriggerName, EAssetType::Trigger, pLibrary, flags, "Mutes all audio. Gets triggered when the editor mute action is used.");
+		g_assetsManager.CreateDefaultControl(CryAudio::s_szUnmuteAllTriggerName, EAssetType::Trigger, pLibrary, flags, "Unmutes all audio. Gets triggered when the editor unmute action is used.");
+		g_assetsManager.CreateDefaultControl(CryAudio::s_szPauseAllTriggerName, EAssetType::Trigger, pLibrary, flags, "Pauses playback of all audio.");
+		g_assetsManager.CreateDefaultControl(CryAudio::s_szResumeAllTriggerName, EAssetType::Trigger, pLibrary, flags, "Resumes playback of all audio.");
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void LoadConnections(XmlNodeRef const pRoot, CControl* const pControl)
+{
+	int const numChildren = pRoot->getChildCount();
+
+	for (int i = 0; i < numChildren; ++i)
+	{
+		XmlNodeRef const pNode = pRoot->getChild(i);
+		pControl->LoadConnectionFromXML(pNode);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void LoadLibraryEditorData(XmlNodeRef const pLibraryNode, CAsset& library)
+{
+	string description = "";
+	pLibraryNode->getAttr(s_szDescriptionAttribute, description);
+
+	if (!description.IsEmpty())
+	{
+		library.SetDescription(description);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void LoadFolderData(XmlNodeRef const pFolderNode, CAsset& parentAsset)
+{
+	CAsset* const pAsset = AddUniqueFolderPath(&parentAsset, pFolderNode->getAttr(CryAudio::s_szNameAttribute));
+
+	if (pAsset != nullptr)
+	{
+		string description = "";
+		pFolderNode->getAttr(s_szDescriptionAttribute, description);
+
+		if (!description.IsEmpty())
+		{
+			pAsset->SetDescription(description);
+		}
+
+		int const numChildren = pFolderNode->getChildCount();
+
+		for (int i = 0; i < numChildren; ++i)
+		{
+			LoadFolderData(pFolderNode->getChild(i), *pAsset);
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void LoadAllFolders(XmlNodeRef const pFoldersNode, CAsset& library)
+{
+	if (pFoldersNode != nullptr)
+	{
+		int const numChildren = pFoldersNode->getChildCount();
+
+		for (int i = 0; i < numChildren; ++i)
+		{
+			LoadFolderData(pFoldersNode->getChild(i), library);
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void LoadControlsEditorData(XmlNodeRef const pParentNode)
+{
+	if (pParentNode != nullptr)
+	{
+		EAssetType const controlType = TagToType(pParentNode->getTag());
+		string description = "";
+		pParentNode->getAttr(s_szDescriptionAttribute, description);
+
+		if ((controlType != EAssetType::None) && !description.IsEmpty())
+		{
+			CControl* const pControl = g_assetsManager.FindControl(pParentNode->getAttr(CryAudio::s_szNameAttribute), controlType);
+
+			if (pControl != nullptr)
+			{
+				pControl->SetDescription(description);
+			}
+		}
+	}
+}
+//////////////////////////////////////////////////////////////////////////
+void LoadAllControlsEditorData(XmlNodeRef const pControlsNode)
+{
+	if (pControlsNode != nullptr)
+	{
+		int const numChildren = pControlsNode->getChildCount();
+
+		for (int i = 0; i < numChildren; ++i)
+		{
+			LoadControlsEditorData(pControlsNode->getChild(i));
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void LoadEditorData(XmlNodeRef const pEditorDataNode, CAsset& library)
+{
+	int const numChildren = pEditorDataNode->getChildCount();
+
+	for (int i = 0; i < numChildren; ++i)
+	{
+		XmlNodeRef const pChild = pEditorDataNode->getChild(i);
+
+		if (pChild->isTag(s_szLibraryNodeTag))
+		{
+			LoadLibraryEditorData(pChild, library);
+		}
+		else if (pChild->isTag(s_szFoldersNodeTag))
+		{
+			LoadAllFolders(pChild, library);
+		}
+		else if (pChild->isTag(s_szControlsNodeTag))
+		{
+			LoadAllControlsEditorData(pChild);
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -158,29 +321,6 @@ void CFileLoader::LoadAllLibrariesInFolder(string const& folderPath, string cons
 
 		pCryPak->FindClose(handle);
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-CAsset* CFileLoader::AddUniqueFolderPath(CAsset* pParent, QString const& path)
-{
-	QStringList const folderNames = path.split(QRegularExpression(R"((\\|\/))"), QString::SkipEmptyParts);
-
-	int const numFolders = folderNames.length();
-
-	for (int i = 0; i < numFolders; ++i)
-	{
-		if (!folderNames[i].isEmpty())
-		{
-			CAsset* const pChild = g_assetsManager.CreateFolder(QtUtil::ToString(folderNames[i]), pParent);
-
-			if (pChild != nullptr)
-			{
-				pParent = pChild;
-			}
-		}
-	}
-
-	return pParent;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -294,12 +434,6 @@ void CFileLoader::LoadScopes()
 }
 
 //////////////////////////////////////////////////////////////////////////
-FileNames CFileLoader::GetLoadedFilenamesList()
-{
-	return m_loadedFilenames;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CFileLoader::CreateInternalControls()
 {
 	// Create internal default controls.
@@ -315,39 +449,6 @@ void CFileLoader::CreateInternalControls()
 
 		EAssetFlags const flags = (EAssetFlags::IsDefaultControl | EAssetFlags::IsInternalControl);
 		g_assetsManager.CreateDefaultControl("do_nothing", EAssetType::Trigger, pLibrary, flags, "Used to bypass the default stop behavior of the audio system.");
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileLoader::CreateDefaultControls()
-{
-	// Create default controls if they don't exist.
-	// These controls need to always exist in your project!
-	CAsset* const pLibrary = static_cast<CAsset*>(g_assetsManager.CreateLibrary(CryAudio::s_szDefaultLibraryName));
-
-	if (pLibrary != nullptr)
-	{
-		EAssetFlags const flags = (EAssetFlags::IsDefaultControl | EAssetFlags::IsHiddenInResourceSelector);
-
-		g_assetsManager.CreateDefaultControl(CryAudio::s_szGetFocusTriggerName, EAssetType::Trigger, pLibrary, flags, "Unmutes all audio. Gets triggered when the editor window gets focus.");
-		g_assetsManager.CreateDefaultControl(CryAudio::s_szLoseFocusTriggerName, EAssetType::Trigger, pLibrary, flags, "Mutes all audio. Gets triggered when the editor window loses focus.");
-		g_assetsManager.CreateDefaultControl(CryAudio::s_szMuteAllTriggerName, EAssetType::Trigger, pLibrary, flags, "Mutes all audio. Gets triggered when the editor mute action is used.");
-		g_assetsManager.CreateDefaultControl(CryAudio::s_szUnmuteAllTriggerName, EAssetType::Trigger, pLibrary, flags, "Unmutes all audio. Gets triggered when the editor unmute action is used.");
-		g_assetsManager.CreateDefaultControl(CryAudio::s_szPauseAllTriggerName, EAssetType::Trigger, pLibrary, flags, "Pauses playback of all audio.");
-		g_assetsManager.CreateDefaultControl(CryAudio::s_szResumeAllTriggerName, EAssetType::Trigger, pLibrary, flags, "Resumes playback of all audio.");
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileLoader::LoadConnections(XmlNodeRef const pRoot, CControl* const pControl)
-{
-
-	int const numChildren = pRoot->getChildCount();
-
-	for (int i = 0; i < numChildren; ++i)
-	{
-		XmlNodeRef const pNode = pRoot->getChild(i);
-		pControl->LoadConnectionFromXML(pNode);
 	}
 }
 
@@ -404,115 +505,6 @@ void CFileLoader::LoadPlatformSpecificConnections(XmlNodeRef const pNode, CContr
 				{
 					pControl->LoadConnectionFromXML(pConnectionNode, platformIndex);
 				}
-			}
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileLoader::LoadEditorData(XmlNodeRef const pEditorDataNode, CAsset& library)
-{
-	int const numChildren = pEditorDataNode->getChildCount();
-
-	for (int i = 0; i < numChildren; ++i)
-	{
-		XmlNodeRef const pChild = pEditorDataNode->getChild(i);
-
-		if (pChild->isTag(s_szLibraryNodeTag))
-		{
-			LoadLibraryEditorData(pChild, library);
-		}
-		else if (pChild->isTag(s_szFoldersNodeTag))
-		{
-			LoadAllFolders(pChild, library);
-		}
-		else if (pChild->isTag(s_szControlsNodeTag))
-		{
-			LoadAllControlsEditorData(pChild);
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileLoader::LoadLibraryEditorData(XmlNodeRef const pLibraryNode, CAsset& library)
-{
-	string description = "";
-	pLibraryNode->getAttr(s_szDescriptionAttribute, description);
-
-	if (!description.IsEmpty())
-	{
-		library.SetDescription(description);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileLoader::LoadAllFolders(XmlNodeRef const pFoldersNode, CAsset& library)
-{
-	if (pFoldersNode != nullptr)
-	{
-		int const numChildren = pFoldersNode->getChildCount();
-
-		for (int i = 0; i < numChildren; ++i)
-		{
-			LoadFolderData(pFoldersNode->getChild(i), library);
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileLoader::LoadFolderData(XmlNodeRef const pFolderNode, CAsset& parentAsset)
-{
-	CAsset* const pAsset = AddUniqueFolderPath(&parentAsset, pFolderNode->getAttr(CryAudio::s_szNameAttribute));
-
-	if (pAsset != nullptr)
-	{
-		string description = "";
-		pFolderNode->getAttr(s_szDescriptionAttribute, description);
-
-		if (!description.IsEmpty())
-		{
-			pAsset->SetDescription(description);
-		}
-
-		int const numChildren = pFolderNode->getChildCount();
-
-		for (int i = 0; i < numChildren; ++i)
-		{
-			LoadFolderData(pFolderNode->getChild(i), *pAsset);
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileLoader::LoadAllControlsEditorData(XmlNodeRef const pControlsNode)
-{
-	if (pControlsNode != nullptr)
-	{
-		int const numChildren = pControlsNode->getChildCount();
-
-		for (int i = 0; i < numChildren; ++i)
-		{
-			LoadControlsEditorData(pControlsNode->getChild(i));
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileLoader::LoadControlsEditorData(XmlNodeRef const pParentNode)
-{
-	if (pParentNode != nullptr)
-	{
-		EAssetType const controlType = TagToType(pParentNode->getTag());
-		string description = "";
-		pParentNode->getAttr(s_szDescriptionAttribute, description);
-
-		if ((controlType != EAssetType::None) && !description.IsEmpty())
-		{
-			CControl* const pControl = g_assetsManager.FindControl(pParentNode->getAttr(CryAudio::s_szNameAttribute), controlType);
-
-			if (pControl != nullptr)
-			{
-				pControl->SetDescription(description);
 			}
 		}
 	}

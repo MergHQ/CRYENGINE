@@ -26,10 +26,6 @@ public:
 	explicit CMiddlewareDataWidget(QWidget* const pParent);
 	virtual ~CMiddlewareDataWidget() override;
 
-signals:
-
-	void SignalSelectConnectedSystemControl(ControlId const systemControlId, ControlId const implItemId);
-
 private:
 
 	void InitImplDataWidget();

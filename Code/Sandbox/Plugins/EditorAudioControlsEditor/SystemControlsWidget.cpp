@@ -9,9 +9,11 @@
 #include "SystemFilterProxyModel.h"
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
+#include "PropertiesWidget.h"
 #include "AssetIcons.h"
 #include "AssetUtils.h"
 #include "TreeView.h"
+#include "Common/IImpl.h"
 #include "Common/ModelUtils.h"
 
 #include <QtUtil.h>
@@ -132,10 +134,16 @@ CSystemControlsWidget::CSystemControlsWidget(QWidget* const pParent)
 		setEnabled(false);
 	}
 
-	QObject::connect(m_pTreeView, &CTreeView::customContextMenuRequested, this, &CSystemControlsWidget::OnContextMenu);
-	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &CSystemControlsWidget::SignalSelectedControlChanged);
-	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::currentChanged, this, &CSystemControlsWidget::StopControlExecution);
 	QObject::connect(m_pMountingProxyModel, &CMountingProxyModel::rowsInserted, this, &CSystemControlsWidget::SelectNewAsset);
+	QObject::connect(m_pTreeView, &CTreeView::customContextMenuRequested, this, &CSystemControlsWidget::OnContextMenu);
+	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::currentChanged, this, &CSystemControlsWidget::StopControlExecution);
+	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, [&]()
+		{
+			if (g_pPropertiesWidget != nullptr)
+			{
+			  g_pPropertiesWidget->OnSetSelectedAssets(GetSelectedAssets(), !m_isReloading);
+			}
+		});
 
 	g_assetsManager.SignalOnBeforeLibraryRemoved.Connect([this](CLibrary* const pLibrary)
 		{

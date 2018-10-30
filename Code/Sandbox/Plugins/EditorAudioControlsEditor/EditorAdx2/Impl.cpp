@@ -19,6 +19,7 @@
 #include <CryCore/StlUtils.h>
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySystem/ILocalizationManager.h>
+#include <CrySystem/XML/IXml.h>
 
 namespace ACE
 {

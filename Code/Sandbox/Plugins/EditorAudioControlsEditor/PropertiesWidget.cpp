@@ -3,9 +3,11 @@
 #include "StdAfx.h"
 #include "PropertiesWidget.h"
 
+#include "Common.h"
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
 #include "ConnectionsWidget.h"
+#include "Common/IImpl.h"
 
 #include <QtUtil.h>
 #include <Serialization/QPropertyTree/QPropertyTree.h>
@@ -85,7 +87,6 @@ CPropertiesWidget::CPropertiesWidget(QWidget* const pParent)
 
 	QObject::connect(m_pPropertyTree, &QPropertyTree::signalAboutToSerialize, [&]() { m_suppressUpdates = true; });
 	QObject::connect(m_pPropertyTree, &QPropertyTree::signalSerialized, [&]() { m_suppressUpdates = false; });
-	QObject::connect(m_pConnectionsWidget, &CConnectionsWidget::SignalSelectConnectedImplItem, this, &CPropertiesWidget::SignalSelectConnectedImplItem);
 }
 
 //////////////////////////////////////////////////////////////////////////

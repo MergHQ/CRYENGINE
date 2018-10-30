@@ -7,7 +7,7 @@
 namespace ACE
 {
 // Available levels where the controls can be stored.
-struct SScopeInfo
+struct SScopeInfo final
 {
 	SScopeInfo(string const& name_ = "", bool const isLocalOnly_ = false)
 		: name(name_)

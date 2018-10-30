@@ -25,7 +25,7 @@ public:
 	CFolderSelectorDialog& operator=(CFolderSelectorDialog const&) = delete;
 	CFolderSelectorDialog& operator=(CFolderSelectorDialog&&) = delete;
 
-	explicit CFolderSelectorDialog(QString const& assetFolderPath, QString const& targetPath, QWidget* const pParent);
+	explicit CFolderSelectorDialog(QString const& assetFolderPath, QString const& targetPath, QWidget* pParent);
 	virtual ~CFolderSelectorDialog() override;
 
 signals:

@@ -10,6 +10,7 @@
 #include "FileLoader.h"
 #include "ImplementationManager.h"
 #include "AssetIcons.h"
+#include "Common/IImpl.h"
 
 #include <CryMath/Cry_Camera.h>
 #include <CryCore/Platform/platform_impl.inl>

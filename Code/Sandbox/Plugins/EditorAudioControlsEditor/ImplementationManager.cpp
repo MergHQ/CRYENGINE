@@ -5,6 +5,7 @@
 
 #include "Common.h"
 #include "AudioControlsEditorPlugin.h"
+#include "Common/IImpl.h"
 
 #include <IUndoManager.h>
 #include <CrySystem/IConsole.h>
@@ -15,8 +16,6 @@ namespace ACE
 {
 typedef void (WINAPI * PGNSI)();
 using TPfnGetAudioInterface = Impl::IImpl* (*)(ISystem*);
-
-Impl::IImpl* g_pIImpl = nullptr;
 
 //////////////////////////////////////////////////////////////////////////
 CImplementationManager::~CImplementationManager()

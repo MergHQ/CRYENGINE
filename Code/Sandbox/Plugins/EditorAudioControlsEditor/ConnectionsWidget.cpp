@@ -3,11 +3,13 @@
 #include "StdAfx.h"
 #include "ConnectionsWidget.h"
 
+#include "Common.h"
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
 #include "TreeView.h"
 #include "ConnectionsModel.h"
 #include "Common/IConnection.h"
+#include "Common/IImpl.h"
 #include "Common/IItem.h"
 #include "Common/ModelUtils.h"
 
@@ -160,7 +162,10 @@ void CConnectionsWidget::OnContextMenu(QPoint const& pos)
 				pContextMenu->addSeparator();
 				pContextMenu->addAction(tr("Select in Middleware Data"), [=]()
 					{
-						SignalSelectConnectedImplItem(itemId);
+						if (g_pIImpl != nullptr)
+						{
+						  g_pIImpl->OnSelectConnectedItem(itemId);
+						}
 					});
 			}
 		}

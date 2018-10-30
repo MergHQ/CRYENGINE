@@ -3,9 +3,11 @@
 #include "StdAfx.h"
 #include "ConnectionsModel.h"
 
+#include "Common.h"
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
 #include "Common/IConnection.h"
+#include "Common/IImpl.h"
 #include "Common/IItem.h"
 #include "Common/ModelUtils.h"
 

@@ -6,8 +6,10 @@
 #include "Common.h"
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
+#include "SystemControlsWidget.h"
 #include "AssetIcons.h"
 #include "FileImporterDialog.h"
+#include "Common/IImpl.h"
 
 #include <PathUtils.h>
 #include <QtUtil.h>
@@ -62,7 +64,11 @@ void CMiddlewareDataWidget::InitImplDataWidget()
 
 		g_pIImpl->SignalSelectConnectedSystemControl.Connect([&](ControlId const systemControlId, ControlId const implItemId)
 			{
-				SignalSelectConnectedSystemControl(systemControlId, implItemId);
+				if (g_pSystemControlsWidget != nullptr)
+				{
+				  g_pSystemControlsWidget->SelectConnectedSystemControl(systemControlId, implItemId);
+				}
+
 			}, reinterpret_cast<uintptr_t>(this));
 
 		g_pIImpl->SignalImportFiles.Connect([&](ExtensionFilterVector const& extensionFilters, QStringList const& supportedType, QString const& targetFolderName, bool const isLocalized)

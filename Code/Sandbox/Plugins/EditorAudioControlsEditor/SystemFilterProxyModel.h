@@ -16,7 +16,7 @@ public:
 	CSystemFilterProxyModel& operator=(CSystemFilterProxyModel const&) = delete;
 	CSystemFilterProxyModel& operator=(CSystemFilterProxyModel&&) = delete;
 
-	CSystemFilterProxyModel(QObject* const pParent)
+	CSystemFilterProxyModel(QObject* pParent)
 		: QAttributeFilterProxyModel(QDeepFilterProxyModel::Behavior::AcceptIfChildMatches, pParent)
 	{}
 

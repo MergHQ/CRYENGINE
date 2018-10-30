@@ -8,7 +8,7 @@
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-CNameValidator::CNameValidator(QRegularExpression const& regex, QWidget* const pParent)
+CNameValidator::CNameValidator(QRegularExpression const& regex, QWidget* pParent)
 	: QRegularExpressionValidator(regex, pParent)
 	, m_pParent(pParent)
 {

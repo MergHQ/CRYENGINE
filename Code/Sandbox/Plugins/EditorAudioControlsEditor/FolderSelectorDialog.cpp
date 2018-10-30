@@ -20,7 +20,7 @@
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-CFolderSelectorDialog::CFolderSelectorDialog(QString const& assetFolderPath, QString const& targetPath, QWidget* const pParent)
+CFolderSelectorDialog::CFolderSelectorDialog(QString const& assetFolderPath, QString const& targetPath, QWidget* pParent)
 	: CEditorDialog("AudioFileImportPathSelectorDialog", pParent)
 	, m_pFileSystemModel(new CAdvancedFileSystemModel(this))
 	, m_pFilterProxyModel(new CFolderSelectorFilterModel(assetFolderPath, this))

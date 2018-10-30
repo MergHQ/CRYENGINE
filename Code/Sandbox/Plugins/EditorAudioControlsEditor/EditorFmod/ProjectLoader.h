@@ -4,7 +4,7 @@
 
 #include "Item.h"
 
-#include <CrySystem/XML/IXml.h>
+class XmlNodeRef;
 
 namespace ACE
 {

@@ -65,12 +65,6 @@ protected slots:
 	void OnPropertiesWidgetDestruction(QObject* const pObject);
 	void OnMiddlewareDataWidgetDestruction(QObject* const pObject);
 
-signals:
-
-	void SignalSelectedSystemControlChanged();
-	void SignalSelectConnectedSystemControl(ControlId const systemControlId, ControlId const implItemId);
-	void SignalSelectConnectedImplItem(ControlId const itemId);
-
 private slots:
 
 	void OnPreferencesDialog();
@@ -103,9 +97,6 @@ private:
 	CPropertiesWidget*     CreatePropertiesWidget();
 	CMiddlewareDataWidget* CreateMiddlewareDataWidget();
 
-	CSystemControlsWidget*        m_pSystemControlsWidget;
-	CPropertiesWidget*            m_pPropertiesWidget;
-	CMiddlewareDataWidget*        m_pMiddlewareDataWidget;
 	QToolBar*                     m_pToolBar;
 	QAction*                      m_pSaveAction;
 	QLabel* const                 m_pImplNameLabel;

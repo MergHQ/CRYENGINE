@@ -25,7 +25,7 @@ public:
 
 	explicit CKeyConnection(
 		ControlId const id,
-		string const event = "")
+		string const& event = "")
 		: CBaseConnection(id)
 		, m_event(event)
 	{}
@@ -37,7 +37,7 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar) override;
 	// ~CBaseConnection
 
-	string GetEvent() const { return m_event; }
+	string const& GetEvent() const { return m_event; }
 
 private:
 

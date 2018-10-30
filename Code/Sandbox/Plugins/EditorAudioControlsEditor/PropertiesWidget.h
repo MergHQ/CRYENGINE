@@ -7,12 +7,10 @@
 
 class QPropertyTree;
 class QLabel;
-class QString;
 
 namespace ACE
 {
 class CConnectionsWidget;
-class CAsset;
 
 class CPropertiesWidget final : public QWidget
 {
@@ -32,13 +30,6 @@ public:
 	void Reset();
 	void OnBeforeReload();
 	void OnAfterReload();
-
-signals:
-
-	void SignalSelectConnectedImplItem(ControlId const itemId);
-
-public slots:
-
 	void OnSetSelectedAssets(Assets const& selectedAssets, bool const restoreSelection);
 
 private:
