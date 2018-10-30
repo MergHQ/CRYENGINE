@@ -319,7 +319,7 @@ void CCSharpEditorPlugin::UpdatePluginsAndSolution()
 
 void CCSharpEditorPlugin::RegenerateSolution() const
 {
-	IProjectManager* pProjectManager = gEnv->pSystem->GetIProjectManager();
+	Cry::IProjectManager* pProjectManager = gEnv->pSystem->GetIProjectManager();
 	if (!pProjectManager)
 	{
 		return;

@@ -44,7 +44,7 @@ void CCSharpOutputModel::ResetModel()
 
 QVariant CCSharpOutputModel::data(const QModelIndex& index, int role) const
 {
-	const IProjectManager* pProjectManager = gEnv->pSystem->GetIProjectManager();
+	const Cry::IProjectManager* pProjectManager = gEnv->pSystem->GetIProjectManager();
 	stack_string assetsDirectoryLower = stack_string(pProjectManager->GetCurrentAssetDirectoryAbsolute());
 	assetsDirectoryLower.append("/");
 	assetsDirectoryLower.MakeLower();

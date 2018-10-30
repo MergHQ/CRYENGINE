@@ -65,7 +65,7 @@ bool CCompiledMonoLibrary::Load(int loadIndex)
 		}
 
 		std::vector<string> pluginPaths;
-		IProjectManager* projectManager = gEnv->pSystem->GetIProjectManager();
+		Cry::IProjectManager* projectManager = gEnv->pSystem->GetIProjectManager();
 		uint16 pluginCount = projectManager->GetPluginCount();
 		for (uint16 i = 0; i < pluginCount; ++i)
 		{

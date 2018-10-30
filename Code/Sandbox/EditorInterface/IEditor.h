@@ -56,7 +56,6 @@ struct IMovieSystem;
 struct INotificationCenter;
 struct IObjectManager;
 struct IPane;
-struct IProjectManager;
 struct IPythonManager;
 struct IRenderer;
 struct IRenderNode;
@@ -75,6 +74,11 @@ enum ESystemConfigSpec;
 namespace FileSystem
 {
 class CEnumerator;
+}
+
+namespace Cry
+{
+struct IProjectManager;
 }
 
 enum EReloadScriptsType
@@ -280,7 +284,7 @@ struct IEditor
 	virtual ISourceControl* GetSourceControl() = 0;
 
 	//! Get project manager interface
-	virtual IProjectManager* GetProjectManager() = 0;
+	virtual Cry::IProjectManager* GetProjectManager() = 0;
 
 	//! Gets the level editor primary interface
 	virtual ILevelEditor*            GetLevelEditor() = 0;
