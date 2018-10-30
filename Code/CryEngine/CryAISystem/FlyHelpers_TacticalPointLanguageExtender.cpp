@@ -87,7 +87,6 @@ bool CTacticalPointLanguageExtender::GeneratePoints(TGenerateParameters& paramet
 			flyPath.MakeLooping();
 		}
 
-		const size_t segmentCount = flyPath.GetSegmentCount();
 		for (size_t i = 0; i < flyPath.GetSegmentCount(); ++i)
 		{
 			const Lineseg segment = flyPath.GetSegment(i);
@@ -114,9 +113,12 @@ void CTacticalPointLanguageExtender::RegisterWithTacticalPointSystem()
 {
 	ITacticalPointSystem* pTacticalPointSystem = gEnv->pAISystem->GetTacticalPointSystem();
 	CRY_ASSERT(pTacticalPointSystem);
-
+#if defined(USE_CRY_ASSERT)
 	const bool successfullyAddedLanguageExtender = pTacticalPointSystem->AddLanguageExtender(this);
 	CRY_ASSERT_MESSAGE(successfullyAddedLanguageExtender, "Failed to add tactical point language extender.");
+#else
+	pTacticalPointSystem->AddLanguageExtender(this);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -133,9 +135,12 @@ void CTacticalPointLanguageExtender::UnregisterFromTacticalPointSystem()
 {
 	ITacticalPointSystem* pTacticalPointSystem = gEnv->pAISystem->GetTacticalPointSystem();
 	CRY_ASSERT(pTacticalPointSystem);
-
+#if defined(USE_CRY_ASSERT)
 	const bool successfullyRemovedLanguageExtender = pTacticalPointSystem->RemoveLanguageExtender(this);
 	CRY_ASSERT_MESSAGE(successfullyRemovedLanguageExtender, "Failed to remove tactical point language extender.");
+#else
+	pTacticalPointSystem->RemoveLanguageExtender(this);
+#endif
 }
 
 }

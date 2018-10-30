@@ -818,7 +818,6 @@ void CGameTokenSystem::ClearDebugHistory()
 //////////////////////////////////////////////////////////////////////////
 void CGameTokenSystem::DrawToken(const char* pTokenName, const char* pTokenValue, const CTimeValue& timeChanged, int line)
 {
-	IRenderer* pRenderer = gEnv->pRenderer;
 	float notChanged[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 	float changed[] = { 1.0f, 0.0f, 0.0f, 1.0f };
 	float color[] = { 0.f, 0.f, 0.f, 0.f };

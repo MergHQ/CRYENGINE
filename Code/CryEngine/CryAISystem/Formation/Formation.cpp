@@ -263,7 +263,7 @@ Vec3 CFormation::GetPointSmooth(const Vec3& headPos, float followDist, float sid
 	Vec3 thePos(0, 0, 0), smoothOffset(0, 0, 0);//,smoothPosAlongCurve(0,0,0);
 	float smoothD = .5f;
 	float weight = (float)smoothValue;
-	Vec3 peppe = m_pPathMarker->GetPointAtDistance(headPos, followDist);
+	//Vec3 peppe = m_pPathMarker->GetPointAtDistance(headPos, followDist);
 	followDist -= smoothD * smoothValue / 2;
 	if (followDist < 0)
 		followDist = 0;

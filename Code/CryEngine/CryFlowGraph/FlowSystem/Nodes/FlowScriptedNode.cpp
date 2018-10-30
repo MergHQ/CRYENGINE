@@ -421,7 +421,6 @@ void CFlowSimpleScriptedNode::GetConfiguration(SFlowNodeConfig& config)
 
 void CFlowSimpleScriptedNode::ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 {
-	IScriptSystem* pSS = gEnv->pScriptSystem;
 	switch (event)
 	{
 	case eFE_Activate:

@@ -5,7 +5,7 @@
 
 #include "Common.h"
 #include "AudioControlsEditorPlugin.h"
-#include "ImplementationManager.h"
+#include "Common/IImpl.h"
 
 #include <CryString/CryPath.h>
 

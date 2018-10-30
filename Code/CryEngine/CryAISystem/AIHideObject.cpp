@@ -653,8 +653,6 @@ void CAIHideObject::GetCoverHeightAlongCoverPath(float distanceAlongPath, const 
 		}
 	}
 
-	bool highRightEdge = (it == itEnd);
-
 	if ((fabs_tpl(highDistanceLeft - distanceAlongPath) < 0.75f) &&
 	    (lowRightEdge || (fabs_tpl(highDistanceRight - distanceAlongPath) < 0.75f)))
 		hasHighCover = true;
@@ -666,7 +664,6 @@ void CAIHideObject::SetupPathExpand(CPipeUser* pOperand)
 {
 	Vec3 hidePos(GetObjectPos());
 	Vec3 hideDir(GetObjectDir());
-	float hideRadius(GetObjectRadius());
 	float agentRadius = pOperand ? pOperand->GetParameters().m_fPassRadius : DEFAULT_AGENT_RADIUS;
 
 	// Move the path origin on ground.

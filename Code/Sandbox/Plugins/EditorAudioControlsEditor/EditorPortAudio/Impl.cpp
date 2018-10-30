@@ -12,6 +12,7 @@
 #include <CryAudioImplPortAudio/GlobalData.h>
 #include <CrySystem/ISystem.h>
 #include <CryCore/StlUtils.h>
+#include <CrySystem/XML/IXml.h>
 
 namespace ACE
 {

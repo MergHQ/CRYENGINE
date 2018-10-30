@@ -226,9 +226,13 @@ QueuedRayID CAuditionMapRayCastManager::QueueRay(const SRayCastRequestInfo& requ
 	  AIRayCast::SRequesterDebugInfo("CAuditionMapRayCastManager::QueueRay"));
 	assert(queuedRayId != 0);
 
+#if defined(USE_CRY_ASSERT)
 	std::pair<PendingRays::iterator, bool> result = m_pendingRays.insert(
 	  PendingRays::value_type(queuedRayId, requestInfo));
 	assert(result.second);
+#else
+	m_pendingRays.insert(PendingRays::value_type(queuedRayId, requestInfo));
+#endif
 
 	return queuedRayId;
 }

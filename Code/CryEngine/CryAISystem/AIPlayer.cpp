@@ -1153,8 +1153,7 @@ bool CAIPlayer::IsGrabbedEntityInView(const Vec3& pos) const
 {
 	bool bInViewDist = true;
 
-	IEntitySystem* pEntitySystem = gEnv->pEntitySystem;
-	assert(pEntitySystem);
+	assert(gEnv->pEntitySystem);
 
 	IEntity* pObjectEntity = GetGrabbedEntity();
 

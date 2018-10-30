@@ -61,9 +61,10 @@ void CommunicationTestManager::Stop(EntityId actorID)
 		m_playingActors.erase(it);
 
 		m_player.Stop(playID);
-
+#if !defined(EXCLUDE_NORMAL_LOG)
 		IEntity* entity = gEnv->pEntitySystem->GetEntity(actorID);
 		CryLogAlways("Cancelled communications test for '%s'...", entity ? entity->GetName() : "<null>");
+#endif
 	}
 }
 
@@ -194,9 +195,11 @@ void CommunicationTestManager::PlayNext(EntityId actorID)
 
 void CommunicationTestManager::Report(EntityId actorID, const PlayingActor& playingActor, const char* configName)
 {
+#if !defined(EXCLUDE_NORMAL_LOG)
 	IEntity* entity = gEnv->pEntitySystem->GetEntity(actorID);
 
 	CryLogAlways("Finished communication test for '%s' using '%s'...", entity ? entity->GetName() : "<null>", configName);
 	CryLogAlways("Attempted: %u", playingActor.totalCount);
 	CryLogAlways("Failed: %u", playingActor.failedCount);
+#endif
 }

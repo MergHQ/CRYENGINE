@@ -10,7 +10,7 @@
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-CTreeView::CTreeView(QWidget* const pParent, QAdvancedTreeView::BehaviorFlags const flags /*= QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute)*/)
+CTreeView::CTreeView(QWidget* pParent, QAdvancedTreeView::BehaviorFlags flags /*= QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute)*/)
 	: QAdvancedTreeView(QAdvancedTreeView::BehaviorFlags(flags), pParent)
 	, m_nameRole(0)
 	, m_typeRole(0)

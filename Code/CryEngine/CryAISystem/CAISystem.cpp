@@ -101,7 +101,6 @@ protected:
 // used to determine if a forbidden area should be rasterised
 
 static const size_t AILogMaxIdLen = 32;
-static const char* sCodeCoverageContextFile = "ccContext.txt";
 
 #define SubSystemCall(call)                                              \
   for (auto& systemComponent : m_setSystemComponents)                    \
@@ -3701,9 +3700,9 @@ float CAISystem::GetRayPerceptionModifier(const Vec3& start, const Vec3& end, co
 	float intersects[max_intersects];
 	float fPerception = 1.0f;
 	Vec3 hit;
-
+#ifdef CRYAISYSTEM_DEBUG
 	int icvDrawPerceptionDebugging = gAIEnv.CVars.DrawPerceptionDebugging;
-
+#endif
 	PerceptionModifierShapeMap::iterator pmsi = m_mapPerceptionModifiers.begin(), pmsiEnd = m_mapPerceptionModifiers.end();
 	for (; pmsi != pmsiEnd; ++pmsi)
 	{
@@ -4527,8 +4526,6 @@ unsigned int CAISystem::GetDangerSpots(const IAIObject* requester, float range, 
 
 	const Vec3& reqPos = requester->GetPos();
 
-	const CAIActor* pActor = requester->CastToCAIActor();
-	uint8 factionID = pActor->GetFactionID();
 	uint32 i = 0;
 
 	if (flags & DANGER_EXPLOSIVE)
@@ -5008,9 +5005,7 @@ bool CAISystem::GetNearestPunchableObjectPosition(IAIObject* pRef, const Vec3& s
 	PhysicalEntityListAutoPtr entities;
 	unsigned nEntities = GetEntitiesFromAABB(entities, aabb, AICE_DYNAMIC);
 
-	const CPathObstacles& pathAdjustmentObstacles = pPuppet->GetPathAdjustmentObstacles();
-	IAISystem::tNavCapMask navCapMask = pPuppet->GetMovementAbility().pathfindingProperties.navCapMask;
-	const float passRadius = pPuppet->GetParameters().m_fPassRadius;
+	pPuppet->GetPathAdjustmentObstacles();
 
 	Vec3 dirToTarget = targetPos - searchPos;
 	dirToTarget.Normalize();

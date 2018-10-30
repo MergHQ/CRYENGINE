@@ -5,8 +5,10 @@
 
 #include "Common.h"
 #include "AudioControlsEditorPlugin.h"
-#include "ImplementationManager.h"
+#include "Control.h"
+#include "LibraryScope.h"
 #include "Common/IConnection.h"
+#include "Common/IImpl.h"
 #include "Common/IItem.h"
 
 #include <CryString/StringUtils.h>
@@ -14,7 +16,9 @@
 
 namespace ACE
 {
-uint32 const CFileWriter::s_currentFileVersion = 3;
+static constexpr uint32 g_currentFileVersion = 3;
+
+using LibraryStorage = std::map<Scope, SLibraryScope>;
 
 //////////////////////////////////////////////////////////////////////////
 char const* TypeToTag(EAssetType const assetType)
@@ -53,43 +57,43 @@ char const* TypeToTag(EAssetType const assetType)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CountControls(EAssetType const type, SLibraryScope& scope)
+void CountControls(EAssetType const type, SLibraryScope& libScope)
 {
 	switch (type)
 	{
 	case EAssetType::Trigger:
 		{
-			++scope.numTriggers;
+			++libScope.numTriggers;
 			break;
 		}
 	case EAssetType::Parameter:
 		{
-			++scope.numParameters;
+			++libScope.numParameters;
 			break;
 		}
 	case EAssetType::Switch:
 		{
-			++scope.numSwitches;
+			++libScope.numSwitches;
 			break;
 		}
 	case EAssetType::State:
 		{
-			++scope.numStates;
+			++libScope.numStates;
 			break;
 		}
 	case EAssetType::Environment:
 		{
-			++scope.numEnvironments;
+			++libScope.numEnvironments;
 			break;
 		}
 	case EAssetType::Preload:
 		{
-			++scope.numPreloads;
+			++libScope.numPreloads;
 			break;
 		}
 	case EAssetType::Setting:
 		{
-			++scope.numSettings;
+			++libScope.numSettings;
 			break;
 		}
 	default:
@@ -98,42 +102,319 @@ void CountControls(EAssetType const type, SLibraryScope& scope)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CountConnections(EAssetType const type, SLibraryScope& scope)
+void CountConnections(EAssetType const type, SLibraryScope& libScope)
 {
 	switch (type)
 	{
 	case EAssetType::Trigger:
 		{
-			++scope.numTriggerConnections;
+			++libScope.numTriggerConnections;
 			break;
 		}
 	case EAssetType::Parameter:
 		{
-			++scope.numParameterConnections;
+			++libScope.numParameterConnections;
 			break;
 		}
 	case EAssetType::State:
 		{
-			++scope.numStateConnections;
+			++libScope.numStateConnections;
 			break;
 		}
 	case EAssetType::Environment:
 		{
-			++scope.numEnvironmentConnections;
+			++libScope.numEnvironmentConnections;
 			break;
 		}
 	case EAssetType::Preload:
 		{
-			++scope.numPreloadConnections;
+			++libScope.numPreloadConnections;
 			break;
 		}
 	case EAssetType::Setting:
 		{
-			++scope.numSettingConnections;
+			++libScope.numSettingConnections;
 			break;
 		}
 	default:
 		break;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void WriteConnectionsToXML(XmlNodeRef const pNode, CControl* const pControl, SLibraryScope& libScope, int const platformIndex = -1)
+{
+	EAssetType const type = pControl->GetType();
+	size_t const numConnections = pControl->GetConnectionCount();
+
+	for (size_t i = 0; i < numConnections; ++i)
+	{
+		IConnection const* const pIConnection = pControl->GetConnectionAt(i);
+
+		if (pIConnection != nullptr)
+		{
+			if (((type != EAssetType::Preload) && (type != EAssetType::Setting)) || (pIConnection->IsPlatformEnabled(static_cast<PlatformIndexType>(platformIndex))))
+			{
+				XmlNodeRef const pChild = g_pIImpl->CreateXMLNodeFromConnection(pIConnection, type);
+
+				if (pChild != nullptr)
+				{
+					// Don't add identical nodes!
+					bool shouldAddNode = true;
+					int const numNodeChilds = pNode->getChildCount();
+
+					for (int j = 0; j < numNodeChilds; ++j)
+					{
+						XmlNodeRef const pTempNode = pNode->getChild(j);
+
+						if ((pTempNode != nullptr) && (_stricmp(pTempNode->getTag(), pChild->getTag()) == 0))
+						{
+							int const numAttributes1 = pTempNode->getNumAttributes();
+							int const numAttributes2 = pChild->getNumAttributes();
+
+							if (numAttributes1 == numAttributes2)
+							{
+								shouldAddNode = false;
+								char const* key1 = nullptr;
+								char const* val1 = nullptr;
+								char const* key2 = nullptr;
+								char const* val2 = nullptr;
+
+								for (int k = 0; k < numAttributes1; ++k)
+								{
+									pTempNode->getAttributeByIndex(k, &key1, &val1);
+									pChild->getAttributeByIndex(k, &key2, &val2);
+
+									if ((_stricmp(key1, key2) != 0) || (_stricmp(val1, val2) != 0))
+									{
+										shouldAddNode = true;
+										break;
+									}
+								}
+
+								if (!shouldAddNode)
+								{
+									break;
+								}
+							}
+						}
+					}
+
+					if (shouldAddNode)
+					{
+						pNode->addChild(pChild);
+						CountConnections(type, libScope);
+					}
+				}
+			}
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void WriteControlToXML(XmlNodeRef const pNode, CControl* const pControl, string const& path, SLibraryScope& libScope)
+{
+	EAssetType const type = pControl->GetType();
+	XmlNodeRef const pChildNode = pNode->createNode(TypeToTag(type));
+	pChildNode->setAttr(CryAudio::s_szNameAttribute, pControl->GetName());
+	CountControls(type, libScope);
+
+	if (!path.empty())
+	{
+		pChildNode->setAttr(s_szPathAttribute, path);
+	}
+
+	if (type == EAssetType::Switch)
+	{
+		size_t const numChildren = pControl->ChildCount();
+
+		for (size_t i = 0; i < numChildren; ++i)
+		{
+			CAsset* const pAsset = pControl->GetChild(i);
+
+			if ((pAsset != nullptr) && (pAsset->GetType() == EAssetType::State))
+			{
+				WriteControlToXML(pChildNode, static_cast<CControl*>(pAsset), "", libScope);
+			}
+		}
+	}
+	else if ((type == EAssetType::Preload) || (type == EAssetType::Setting))
+	{
+		if (pControl->IsAutoLoad())
+		{
+			pChildNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::s_szDataLoadType);
+		}
+
+		size_t const numPlatforms = g_platforms.size();
+
+		for (size_t i = 0; i < numPlatforms; ++i)
+		{
+			XmlNodeRef const pFileNode = pChildNode->createNode(CryAudio::s_szPlatformTag);
+			pFileNode->setAttr(CryAudio::s_szNameAttribute, g_platforms[i]);
+			WriteConnectionsToXML(pFileNode, pControl, libScope, i);
+
+			if (pFileNode->getChildCount() > 0)
+			{
+				pChildNode->addChild(pFileNode);
+			}
+		}
+	}
+	else
+	{
+		WriteConnectionsToXML(pChildNode, pControl, libScope);
+	}
+
+	pControl->SetModified(false);
+	pNode->addChild(pChildNode);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void WriteItem(CAsset* const pAsset, string const& path, LibraryStorage& library)
+{
+	if (pAsset != nullptr)
+	{
+		if (pAsset->GetType() == EAssetType::Folder)
+		{
+			size_t const itemCount = pAsset->ChildCount();
+
+			for (size_t i = 0; i < itemCount; ++i)
+			{
+				// Use forward slash only to ensure cross platform compatibility.
+				string newPath = path.empty() ? "" : path + "/";
+				newPath += pAsset->GetName();
+				WriteItem(pAsset->GetChild(i), newPath, library);
+			}
+
+			pAsset->SetModified(false);
+		}
+		else
+		{
+			auto const pControl = static_cast<CControl*>(pAsset);
+
+			if (pControl != nullptr)
+			{
+				SLibraryScope& libScope = library[pControl->GetScope()];
+				libScope.isDirty = true;
+				WriteControlToXML(libScope.GetXmlNode(pControl->GetType()), pControl, path, libScope);
+			}
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void WriteLibraryEditorData(CAsset const& library, XmlNodeRef const pParentNode)
+{
+	string const& description = library.GetDescription();
+
+	if (!description.IsEmpty() && (library.GetFlags() & EAssetFlags::IsDefaultControl) == 0)
+	{
+		pParentNode->setAttr(s_szDescriptionAttribute, description);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void WriteFolderEditorData(CAsset const& library, XmlNodeRef const pParentNode)
+{
+	size_t const itemCount = library.ChildCount();
+
+	for (size_t i = 0; i < itemCount; ++i)
+	{
+		CAsset const* const pAsset = library.GetChild(i);
+
+		if (pAsset->GetType() == EAssetType::Folder)
+		{
+			XmlNodeRef const pFolderNode = pParentNode->createNode(s_szFolderTag);
+
+			if (pFolderNode != nullptr)
+			{
+				pFolderNode->setAttr(CryAudio::s_szNameAttribute, pAsset->GetName());
+				string const description = pAsset->GetDescription();
+
+				if (!description.IsEmpty() && ((pAsset->GetFlags() & EAssetFlags::IsDefaultControl) == 0))
+				{
+					pFolderNode->setAttr(s_szDescriptionAttribute, description);
+				}
+
+				WriteFolderEditorData(*pAsset, pFolderNode);
+				pParentNode->addChild(pFolderNode);
+			}
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void WriteControlsEditorData(CAsset const& parentAsset, XmlNodeRef const pParentNode)
+{
+	size_t const itemCount = parentAsset.ChildCount();
+
+	for (size_t i = 0; i < itemCount; ++i)
+	{
+		CAsset const& asset = *parentAsset.GetChild(i);
+		EAssetType const type = asset.GetType();
+		char const* const szTag = TypeToTag(type);
+
+		if (szTag != nullptr)
+		{
+			XmlNodeRef const pControlNode = pParentNode->createNode(TypeToTag(type));
+
+			if (pControlNode != nullptr)
+			{
+				string const& description = asset.GetDescription();
+
+				if (!description.IsEmpty() && ((asset.GetFlags() & EAssetFlags::IsDefaultControl) == 0))
+				{
+					pControlNode->setAttr(CryAudio::s_szNameAttribute, asset.GetName());
+					pControlNode->setAttr(s_szDescriptionAttribute, description);
+					pParentNode->addChild(pControlNode);
+				}
+			}
+		}
+
+		if ((type == EAssetType::Folder) || (type == EAssetType::Switch))
+		{
+			WriteControlsEditorData(asset, pParentNode);
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void GetScopes(CAsset const* const pAsset, std::unordered_set<Scope>& scopes)
+{
+	if (pAsset->GetType() == EAssetType::Folder)
+	{
+		size_t const numChildren = pAsset->ChildCount();
+
+		for (size_t i = 0; i < numChildren; ++i)
+		{
+			GetScopes(pAsset->GetChild(i), scopes);
+		}
+	}
+	else
+	{
+		auto const pControl = static_cast<CControl const*>(pAsset);
+
+		if (pControl != nullptr)
+		{
+			scopes.insert(pControl->GetScope());
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void DeleteLibraryFile(string const& filepath)
+{
+	// TODO: Mark for delete in source control.
+	DWORD const fileAttributes = GetFileAttributesA(filepath.c_str());
+
+	if ((fileAttributes & FILE_ATTRIBUTE_READONLY) != 0)
+	{
+		// file is read-only
+		SetFileAttributesA(filepath.c_str(), FILE_ATTRIBUTE_NORMAL);
+	}
+
+	if ((fileAttributes == INVALID_FILE_ATTRIBUTES) || !DeleteFile(filepath.c_str()))
+	{
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "[Audio Controls Editor] Failed to delete file %s", filepath);
 	}
 }
 
@@ -222,7 +503,7 @@ void CFileWriter::WriteLibrary(CLibrary& library)
 			{
 				XmlNodeRef pFileNode = GetISystem()->CreateXmlNode(CryAudio::s_szRootNodeTag);
 				pFileNode->setAttr(CryAudio::s_szNameAttribute, library.GetName());
-				pFileNode->setAttr(CryAudio::s_szVersionAttribute, s_currentFileVersion);
+				pFileNode->setAttr(CryAudio::s_szVersionAttribute, g_currentFileVersion);
 
 				// Don't write control counts for default library, because default controls are not pooled.
 				// But connections of default controls need to get written.
@@ -393,283 +674,6 @@ void CFileWriter::WriteLibrary(CLibrary& library)
 			}
 
 			m_foundLibraryPaths.insert(libraryPath.MakeLower() + ".xml");
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileWriter::WriteItem(CAsset* const pAsset, string const& path, LibraryStorage& library)
-{
-	if (pAsset != nullptr)
-	{
-		if (pAsset->GetType() == EAssetType::Folder)
-		{
-			size_t const itemCount = pAsset->ChildCount();
-
-			for (size_t i = 0; i < itemCount; ++i)
-			{
-				// Use forward slash only to ensure cross platform compatibility.
-				string newPath = path.empty() ? "" : path + "/";
-				newPath += pAsset->GetName();
-				WriteItem(pAsset->GetChild(i), newPath, library);
-			}
-
-			pAsset->SetModified(false);
-		}
-		else
-		{
-			auto const pControl = static_cast<CControl*>(pAsset);
-
-			if (pControl != nullptr)
-			{
-				SLibraryScope& scope = library[pControl->GetScope()];
-				scope.isDirty = true;
-				WriteControlToXML(scope.GetXmlNode(pControl->GetType()), pControl, path, scope);
-			}
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileWriter::GetScopes(CAsset const* const pAsset, std::unordered_set<Scope>& scopes)
-{
-	if (pAsset->GetType() == EAssetType::Folder)
-	{
-		size_t const numChildren = pAsset->ChildCount();
-
-		for (size_t i = 0; i < numChildren; ++i)
-		{
-			GetScopes(pAsset->GetChild(i), scopes);
-		}
-	}
-	else
-	{
-		auto const pControl = static_cast<CControl const*>(pAsset);
-
-		if (pControl != nullptr)
-		{
-			scopes.insert(pControl->GetScope());
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileWriter::WriteControlToXML(XmlNodeRef const pNode, CControl* const pControl, string const& path, SLibraryScope& scope)
-{
-	EAssetType const type = pControl->GetType();
-	XmlNodeRef const pChildNode = pNode->createNode(TypeToTag(type));
-	pChildNode->setAttr(CryAudio::s_szNameAttribute, pControl->GetName());
-	CountControls(type, scope);
-
-	if (!path.empty())
-	{
-		pChildNode->setAttr(s_szPathAttribute, path);
-	}
-
-	if (type == EAssetType::Switch)
-	{
-		size_t const numChildren = pControl->ChildCount();
-
-		for (size_t i = 0; i < numChildren; ++i)
-		{
-			CAsset* const pAsset = pControl->GetChild(i);
-
-			if ((pAsset != nullptr) && (pAsset->GetType() == EAssetType::State))
-			{
-				WriteControlToXML(pChildNode, static_cast<CControl*>(pAsset), "", scope);
-			}
-		}
-	}
-	else if ((type == EAssetType::Preload) || (type == EAssetType::Setting))
-	{
-		if (pControl->IsAutoLoad())
-		{
-			pChildNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::s_szDataLoadType);
-		}
-
-		size_t const numPlatforms = g_platforms.size();
-
-		for (size_t i = 0; i < numPlatforms; ++i)
-		{
-			XmlNodeRef const pFileNode = pChildNode->createNode(CryAudio::s_szPlatformTag);
-			pFileNode->setAttr(CryAudio::s_szNameAttribute, g_platforms[i]);
-			WriteConnectionsToXML(pFileNode, pControl, scope, i);
-
-			if (pFileNode->getChildCount() > 0)
-			{
-				pChildNode->addChild(pFileNode);
-			}
-		}
-	}
-	else
-	{
-		WriteConnectionsToXML(pChildNode, pControl, scope);
-	}
-
-	pControl->SetModified(false);
-	pNode->addChild(pChildNode);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileWriter::WriteConnectionsToXML(XmlNodeRef const pNode, CControl* const pControl, SLibraryScope& scope, int const platformIndex /*= -1*/)
-{
-	EAssetType const type = pControl->GetType();
-	size_t const numConnections = pControl->GetConnectionCount();
-
-	for (size_t i = 0; i < numConnections; ++i)
-	{
-		IConnection const* const pIConnection = pControl->GetConnectionAt(i);
-
-		if (pIConnection != nullptr)
-		{
-			if (((type != EAssetType::Preload) && (type != EAssetType::Setting)) || (pIConnection->IsPlatformEnabled(static_cast<PlatformIndexType>(platformIndex))))
-			{
-				XmlNodeRef const pChild = g_pIImpl->CreateXMLNodeFromConnection(pIConnection, type);
-
-				if (pChild != nullptr)
-				{
-					// Don't add identical nodes!
-					bool shouldAddNode = true;
-					int const numNodeChilds = pNode->getChildCount();
-
-					for (int j = 0; j < numNodeChilds; ++j)
-					{
-						XmlNodeRef const pTempNode = pNode->getChild(j);
-
-						if ((pTempNode != nullptr) && (_stricmp(pTempNode->getTag(), pChild->getTag()) == 0))
-						{
-							int const numAttributes1 = pTempNode->getNumAttributes();
-							int const numAttributes2 = pChild->getNumAttributes();
-
-							if (numAttributes1 == numAttributes2)
-							{
-								shouldAddNode = false;
-								char const* key1 = nullptr;
-								char const* val1 = nullptr;
-								char const* key2 = nullptr;
-								char const* val2 = nullptr;
-
-								for (int k = 0; k < numAttributes1; ++k)
-								{
-									pTempNode->getAttributeByIndex(k, &key1, &val1);
-									pChild->getAttributeByIndex(k, &key2, &val2);
-
-									if ((_stricmp(key1, key2) != 0) || (_stricmp(val1, val2) != 0))
-									{
-										shouldAddNode = true;
-										break;
-									}
-								}
-
-								if (!shouldAddNode)
-								{
-									break;
-								}
-							}
-						}
-					}
-
-					if (shouldAddNode)
-					{
-						pNode->addChild(pChild);
-						CountConnections(type, scope);
-					}
-				}
-			}
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileWriter::DeleteLibraryFile(string const& filepath)
-{
-	// TODO: Mark for delete in source control.
-	DWORD const fileAttributes = GetFileAttributesA(filepath.c_str());
-
-	if ((fileAttributes & FILE_ATTRIBUTE_READONLY) != 0)
-	{
-		// file is read-only
-		SetFileAttributesA(filepath.c_str(), FILE_ATTRIBUTE_NORMAL);
-	}
-
-	if ((fileAttributes == INVALID_FILE_ATTRIBUTES) || !DeleteFile(filepath.c_str()))
-	{
-		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "[Audio Controls Editor] Failed to delete file %s", filepath);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileWriter::WriteLibraryEditorData(CAsset const& library, XmlNodeRef const pParentNode) const
-{
-	string const& description = library.GetDescription();
-
-	if (!description.IsEmpty() && (library.GetFlags() & EAssetFlags::IsDefaultControl) == 0)
-	{
-		pParentNode->setAttr(s_szDescriptionAttribute, description);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileWriter::WriteFolderEditorData(CAsset const& library, XmlNodeRef const pParentNode) const
-{
-	size_t const itemCount = library.ChildCount();
-
-	for (size_t i = 0; i < itemCount; ++i)
-	{
-		CAsset const* const pAsset = library.GetChild(i);
-
-		if (pAsset->GetType() == EAssetType::Folder)
-		{
-			XmlNodeRef const pFolderNode = pParentNode->createNode(s_szFolderTag);
-
-			if (pFolderNode != nullptr)
-			{
-				pFolderNode->setAttr(CryAudio::s_szNameAttribute, pAsset->GetName());
-				string const description = pAsset->GetDescription();
-
-				if (!description.IsEmpty() && ((pAsset->GetFlags() & EAssetFlags::IsDefaultControl) == 0))
-				{
-					pFolderNode->setAttr(s_szDescriptionAttribute, description);
-				}
-
-				WriteFolderEditorData(*pAsset, pFolderNode);
-				pParentNode->addChild(pFolderNode);
-			}
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileWriter::WriteControlsEditorData(CAsset const& parentAsset, XmlNodeRef const pParentNode) const
-{
-	size_t const itemCount = parentAsset.ChildCount();
-
-	for (size_t i = 0; i < itemCount; ++i)
-	{
-		CAsset const& asset = *parentAsset.GetChild(i);
-		EAssetType const type = asset.GetType();
-		char const* const szTag = TypeToTag(type);
-
-		if (szTag != nullptr)
-		{
-			XmlNodeRef const pControlNode = pParentNode->createNode(TypeToTag(type));
-
-			if (pControlNode != nullptr)
-			{
-				string const& description = asset.GetDescription();
-
-				if (!description.IsEmpty() && ((asset.GetFlags() & EAssetFlags::IsDefaultControl) == 0))
-				{
-					pControlNode->setAttr(CryAudio::s_szNameAttribute, asset.GetName());
-					pControlNode->setAttr(s_szDescriptionAttribute, description);
-					pParentNode->addChild(pControlNode);
-				}
-			}
-		}
-
-		if ((type == EAssetType::Folder) || (type == EAssetType::Switch))
-		{
-			WriteControlsEditorData(asset, pParentNode);
 		}
 	}
 }

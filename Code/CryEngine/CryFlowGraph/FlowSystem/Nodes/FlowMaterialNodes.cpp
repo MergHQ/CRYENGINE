@@ -563,7 +563,6 @@ public:
 			IRenderShaderResources* pRendShaderRes;
 			if (!ObtainMaterialPtrs(pActInfo->pEntity, slot, subMtlId, false, pSubMtl, pRendShaderRes))
 				return;
-			DynArrayRef<SShaderParam>& shaderParams = pRendShaderRes->GetParameters();
 
 			if (!paramNameFloat.empty())
 			{

@@ -116,11 +116,6 @@ void AIInitLog(ISystem* system)
 	if (!system)
 		return;
 	IConsole* console = gEnv->pConsole;
-	#ifdef _DEBUG
-	int isDebug = 1;
-	#else
-	int isDebug = 0;
-	#endif
 
 	if (console)
 		pSystem = system;

@@ -8,6 +8,7 @@
 #include "ImplementationManager.h"
 #include "AssetUtils.h"
 #include "Common/IConnection.h"
+#include "Common/IImpl.h"
 #include "Common/IItem.h"
 
 #include <PathUtils.h>

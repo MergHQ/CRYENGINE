@@ -3,10 +3,11 @@
 #include "StdAfx.h"
 #include "SystemSourceModel.h"
 
+#include "Common.h"
 #include "AudioControlsEditorPlugin.h"
-#include "ImplementationManager.h"
 #include "AssetIcons.h"
 #include "AssetUtils.h"
+#include "Common/IImpl.h"
 #include "Common/IItem.h"
 #include "Common/ModelUtils.h"
 
@@ -49,8 +50,8 @@ bool IsParentValid(EAssetType const parentType, EAssetType const assetType)
 
 	switch (parentType)
 	{
-	case EAssetType::Folder:
-	case EAssetType::Library: // Intentional fall-through.
+	case EAssetType::Folder: // Intentional fall-through.
+	case EAssetType::Library:
 		isValid = (assetType != EAssetType::State);
 		break;
 	case EAssetType::Switch:

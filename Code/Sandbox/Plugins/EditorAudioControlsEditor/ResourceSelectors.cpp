@@ -12,7 +12,7 @@
 
 namespace ACE
 {
-dll_string ShowSelectDialog(SResourceSelectorContext const& context, char const* szPreviousValue, EAssetType const controlType)
+dll_string ShowSelectDialog(SResourceSelectorContext const& context, char const* szPreviousValue, EAssetType controlType)
 {
 	char* szLevelName;
 	gEnv->pGameFramework->GetEditorLevel(&szLevelName, nullptr);
@@ -22,37 +22,37 @@ dll_string ShowSelectDialog(SResourceSelectorContext const& context, char const*
 	return dialog.ChooseItem(szPreviousValue);
 }
 
-dll_string AudioTriggerSelector(SResourceSelectorContext const& context, char const* const szPreviousValue)
+dll_string AudioTriggerSelector(SResourceSelectorContext const& context, char const* szPreviousValue)
 {
 	return ShowSelectDialog(context, szPreviousValue, EAssetType::Trigger);
 }
 
-dll_string AudioSwitchSelector(SResourceSelectorContext const& context, char const* const szPreviousValue)
+dll_string AudioSwitchSelector(SResourceSelectorContext const& context, char const* szPreviousValue)
 {
 	return ShowSelectDialog(context, szPreviousValue, EAssetType::Switch);
 }
 
-dll_string AudioSwitchStateSelector(SResourceSelectorContext const& context, char const* const szPreviousValue)
+dll_string AudioSwitchStateSelector(SResourceSelectorContext const& context, char const* szPreviousValue)
 {
 	return ShowSelectDialog(context, szPreviousValue, EAssetType::State);
 }
 
-dll_string AudioParameterSelector(SResourceSelectorContext const& context, char const* const szPreviousValue)
+dll_string AudioParameterSelector(SResourceSelectorContext const& context, char const* szPreviousValue)
 {
 	return ShowSelectDialog(context, szPreviousValue, EAssetType::Parameter);
 }
 
-dll_string AudioEnvironmentSelector(SResourceSelectorContext const& context, char const* const szPreviousValue)
+dll_string AudioEnvironmentSelector(SResourceSelectorContext const& context, char const* szPreviousValue)
 {
 	return ShowSelectDialog(context, szPreviousValue, EAssetType::Environment);
 }
 
-dll_string AudioPreloadRequestSelector(SResourceSelectorContext const& context, char const* const szPreviousValue)
+dll_string AudioPreloadRequestSelector(SResourceSelectorContext const& context, char const* szPreviousValue)
 {
 	return ShowSelectDialog(context, szPreviousValue, EAssetType::Preload);
 }
 
-dll_string AudioSettingSelector(SResourceSelectorContext const& context, char const* const szPreviousValue)
+dll_string AudioSettingSelector(SResourceSelectorContext const& context, char const* szPreviousValue)
 {
 	return ShowSelectDialog(context, szPreviousValue, EAssetType::Setting);
 }

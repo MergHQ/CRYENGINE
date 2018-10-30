@@ -972,7 +972,6 @@ bool CPuppet::GetTargetTrackBestTarget(CWeakRef<CAIObject>& refBestTarget, SAIPo
 	tAIObjectID objectId = GetAIObjectID();
 	CRY_ASSERT(objectId > 0);
 
-	tAIObjectID targetId = 0;
 	gAIEnv.pTargetTrackManager->Update(objectId);
 	const uint32 uTargetMethod = (TargetTrackHelpers::eDTM_Select_Highest);
 	if (gAIEnv.pTargetTrackManager->GetDesiredTarget(objectId, uTargetMethod, refBestTarget, pTargetInfo))
@@ -2463,7 +2462,6 @@ bool CPuppet::SteerAround3D(const Vec3& targetPos, const CAIObject* object, cons
 	const CAIActor* pActor = object->CastToCAIActor();
 	float avoidanceR = m_movementAbility.avoidanceRadius;
 	avoidanceR += pActor->m_movementAbility.avoidanceRadius;
-	float avoidanceRSq = square(avoidanceR);
 
 	Vec3 delta = objectPos - myPos;
 	// skip if we're not close
@@ -3107,12 +3105,7 @@ void CPuppet::FireCommand(float updateTime)
 		if (m_bLooseAttention && m_refLooseAttentionTarget != pTarget && GetSubType() != CAIObject::STP_2D_FLY)
 			targetValid = false;
 
-	float distToTargetSqr = FLT_MAX;
-
 	bool canFire = targetValid && !m_fireDisabled && AllowedToFire();
-
-	bool useLiveTargetForMemory = m_targetLostTime < m_CurrentWeaponDescriptor.coverFireTime;
-
 	Vec3 aimTargetBeforeTargetTracking(ZERO);
 
 	// As a default handling, aim at the target.
@@ -3219,7 +3212,6 @@ void CPuppet::FireCommand(float updateTime)
 	SAIWeaponInfo weaponInfo;
 	GetProxy()->QueryWeaponInfo(weaponInfo);
 
-	IEntity* pEntity = 0; // Call GetEntity only once [6/17/2010 evgeny]
 	if (m_wasReloading && !weaponInfo.isReloading)
 		SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnReloaded(), GetAIObjectID()));
 	
@@ -3383,7 +3375,6 @@ void CPuppet::HandleWeaponEffectBurstDrawFire(CAIObject* pTarget, Vec3& aimTarge
 			 */
 			Vec3 dirTargetToShooter = shooterGroundPos - targetGroundPos;
 			dirTargetToShooter.z = 0.0f;
-			float dist = dirTargetToShooter.NormalizeSafe();
 
 			const Vec3& firePos = GetFirePos();
 
@@ -3425,7 +3416,6 @@ void CPuppet::HandleWeaponEffectBurstDrawFire(CAIObject* pTarget, Vec3& aimTarge
 			Vec3 right(forw.y, -forw.x, 0);
 			Vec3 up(0, 0, 1);
 			right.NormalizeSafe();
-			float distToTarget = Distance::Point_Point(aimTarget, GetPos());
 
 			float t = m_spreadFireTime + m_burstEffectTime * m_CurrentWeaponDescriptor.sweepFrequency;
 			float mag = amount * m_CurrentWeaponDescriptor.sweepWidth / 2;
@@ -3504,7 +3494,6 @@ void CPuppet::HandleWeaponEffectBurstSnipe(CAIObject* pTarget, Vec3& aimTarget, 
 	const Vec3& firePos = GetFirePos();
 	Vec3 dirTargetToShooter = aimTarget - firePos;
 	dirTargetToShooter.z = 0.0f;
-	float dist = dirTargetToShooter.NormalizeSafe();
 	Vec3 right(dirTargetToShooter.y, -dirTargetToShooter.x, 0);
 	Vec3 up(0, 0, 1);
 	float noiseScale = 1.0f;
@@ -3517,7 +3506,7 @@ void CPuppet::HandleWeaponEffectBurstSnipe(CAIObject* pTarget, Vec3& aimTarget, 
 		// Aim towards the head position.
 		if (m_burstEffectTime < drawFireTime)
 		{
-			Vec3 shooterGroundPos = GetPhysicsPos();
+			//Vec3 shooterGroundPos = GetPhysicsPos();
 			Vec3 targetGroundPos;
 
 			//					float floorHeight = min(targetGroundPos.z, shooterGroundPos.z);
@@ -3583,7 +3572,7 @@ void CPuppet::HandleWeaponEffectBurstSnipe(CAIObject* pTarget, Vec3& aimTarget, 
 			//			float t = m_spreadFireTime + m_burstEffectTime*m_CurrentWeaponDescriptor.sweepFrequency;
 			float mag = amount * m_CurrentWeaponDescriptor.sweepWidth / 2 * clamp_tpl((distToTarget - 1.0f) / 5.0f, 0.0f, 1.0f);
 
-			CPNoise3* pNoise = gEnv->pSystem->GetNoiseGen();
+			//CPNoise3* pNoise = gEnv->pSystem->GetNoiseGen();
 
 			float tsweep = m_burstEffectTime * m_CurrentWeaponDescriptor.sweepFrequency;
 

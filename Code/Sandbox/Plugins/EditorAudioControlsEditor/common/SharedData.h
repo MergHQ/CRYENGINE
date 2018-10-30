@@ -65,7 +65,7 @@ using FileNames = std::set<string>;
 using AssetNames = std::vector<string>;
 
 using Scope = uint32;
-static constexpr char const* const s_szGlobalScopeName = "global";
+static constexpr char const* s_szGlobalScopeName = "global";
 static constexpr Scope GlobalScopeId = CryAudio::StringToId(s_szGlobalScopeName);
 
 using PlatformIndexType = uint16;

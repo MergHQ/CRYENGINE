@@ -10,7 +10,7 @@ CAIEntityComponent::~CAIEntityComponent()
 
 	if (gEnv->pAISystem)
 	{
-		if (IAIObject* pAIObject = m_objectReference.GetAIObject())
+		if (m_objectReference.GetAIObject() != nullptr)
 		{
 			gEnv->pAISystem->GetAIObjectManager()->RemoveObject(GetAIObjectID());
 		}

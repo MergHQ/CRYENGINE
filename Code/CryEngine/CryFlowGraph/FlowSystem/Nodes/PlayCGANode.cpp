@@ -507,7 +507,7 @@ private:
 				bool needsManualUpdate = (m_layer == 0);
 				if (IGameObject* pGameObject = gEnv->pGameFramework->GetGameObject(pActInfo->pEntity->GetId()))
 				{
-					if (IAnimatedCharacter* pAnimatedCharacter = static_cast<IAnimatedCharacter*>(pGameObject->QueryExtension("AnimatedCharacter")))
+					if (pGameObject->QueryExtension("AnimatedCharacter") != nullptr)
 					{
 						needsManualUpdate = false;
 					}

@@ -161,7 +161,6 @@ void CoverUser::Update(float timeDelta)
 
 			m_distanceFromCoverLocationSqr = (currentPos - coverPos).len2();
 
-			EntityId compromisedByEntityId = INVALID_ENTITYID;
 			bool wasCompromised = m_compromised;
 			m_compromised = UpdateCompromised(coverPos, coverNormal, m_params.minEffectiveCoverHeight);
 			if (!wasCompromised && m_compromised)

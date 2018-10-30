@@ -8,6 +8,7 @@
 #include <CryAudioImplWwise/GlobalData.h>
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
+#include <CrySystem/XML/IXml.h>
 
 namespace ACE
 {

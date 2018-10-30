@@ -808,9 +808,6 @@ void CAIGroup::Update()
 {
 	CCCPOINT(CAIGroup_Update);
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
-
-	CAISystem* pAISystem(GetAISystem());
-
 	UpdateReinforcementLogic();
 }
 

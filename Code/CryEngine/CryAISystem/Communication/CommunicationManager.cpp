@@ -1235,11 +1235,13 @@ void CCommunicationManager::StopCommunication(const CommPlayID& playID)
 
 		UpdateGlobalListeners(CommunicationCancelled, playing.actorID, m_player.GetCommunicationID(playID));
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 		if (gAIEnv.CVars.DebugDrawCommunication == 5)
 		{
 			CommID commID = m_player.GetCommunicationID(playID);
 			CryLogAlways("CommunicationManager::StopCommunication: %s[%u] as playID[%u]", GetCommunicationName(commID), commID.id, playID.id);
 		}
+#endif
 
 		//Erasing first will corrupt the playID handle.
 		//m_playing.erase(it); // erase before stopping - to simplify handling in the OnCommunicationFinished
@@ -1300,11 +1302,13 @@ void CCommunicationManager::OnCommunicationFinished(const CommPlayID& playID, ui
 
 		UpdateGlobalListeners(CommunicationFinished, playing.actorID, m_player.GetCommunicationID(playID));
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 		if (gAIEnv.CVars.DebugDrawCommunication == 5)
 		{
 			CommID commID = m_player.GetCommunicationID(playID);
 			CryLogAlways("CommunicationManager::OnCommunicationFinished: %s[%u] as playID[%u]", GetCommunicationName(commID), commID.id, playID.id);
 		}
+#endif
 
 		if (stateFlags != CommunicationPlayer::PlayState::FinishedAll)
 		{

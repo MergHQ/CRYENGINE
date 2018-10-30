@@ -2,10 +2,15 @@
 
 #pragma once
 
-#include "Control.h"
+#include "Common/SharedData.h"
+
+class XmlNodeRef;
 
 namespace ACE
 {
+class CAsset;
+class CControl;
+
 class CFileLoader final
 {
 public:
@@ -17,34 +22,19 @@ public:
 
 	CFileLoader() = default;
 
-	FileNames  GetLoadedFilenamesList();
+	FileNames  GetLoadedFilenamesList() const { return m_loadedFilenames; }
 	void       CreateInternalControls();
 	void       LoadAll();
-	void       LoadControls();
 	void       LoadScopes();
 	EErrorCode GetErrorCodeMask() const { return m_errorCodeMask; }
 
 private:
 
-	using SwitchStates = std::vector<char const*>;
-
+	void      LoadControls();
 	void      LoadAllLibrariesInFolder(string const& folderPath, string const& level);
 	void      LoadControlsLibrary(XmlNodeRef const pRoot, string const& filepath, string const& level, string const& filename, uint32 const version);
 	CControl* LoadControl(XmlNodeRef const pNode, Scope const scope, uint32 const version, CAsset* const pParentItem);
-
 	void      LoadPlatformSpecificConnections(XmlNodeRef const pNode, CControl* const pControl, uint32 const version);
-	void      LoadConnections(XmlNodeRef const root, CControl* const pControl);
-
-	void      CreateDefaultControls();
-
-	void      LoadEditorData(XmlNodeRef const pEditorDataNode, CAsset& library);
-	void      LoadLibraryEditorData(XmlNodeRef const pLibraryNode, CAsset& library);
-	void      LoadAllFolders(XmlNodeRef const pFoldersNode, CAsset& library);
-	void      LoadFolderData(XmlNodeRef const pFolderNode, CAsset& parentAsset);
-	void      LoadAllControlsEditorData(XmlNodeRef const pControlsNode);
-	void      LoadControlsEditorData(XmlNodeRef const pParentNode);
-
-	CAsset*   AddUniqueFolderPath(CAsset* pParent, QString const& path);
 
 	FileNames  m_loadedFilenames;
 	EErrorCode m_errorCodeMask = EErrorCode::None;

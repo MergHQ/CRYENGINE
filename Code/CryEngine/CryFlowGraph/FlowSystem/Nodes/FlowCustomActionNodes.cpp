@@ -39,7 +39,7 @@ public:
 			OutputPortConfig<EntityId>("ObjectId", "Entity ID of the object on which the action is executing"),
 			{ 0 }
 		};
-		config.pInputPorts = 0; // in_config;
+		config.pInputPorts = in_config;
 		config.pOutputPorts = out_config;
 		config.sDescription = _HELP("This node is the start of the Custom Action");
 		config.SetCategory(EFLN_APPROVED);
@@ -93,7 +93,7 @@ public:
 			OutputPortConfig<EntityId>("ObjectId", "Entity ID of the object on which the action is executing"),
 			{ 0 }
 		};
-		config.pInputPorts = 0; // in_config;
+		config.pInputPorts = in_config;
 		config.pOutputPorts = out_config;
 		config.sDescription = _HELP("This node is the succeed path of the Custom Action");
 		config.SetCategory(EFLN_APPROVED);
@@ -147,7 +147,7 @@ public:
 			OutputPortConfig<EntityId>("ObjectId", "Entity ID of the object on which the action is executing"),
 			{ 0 }
 		};
-		config.pInputPorts = 0; // in_config;
+		config.pInputPorts = in_config;
 		config.pOutputPorts = out_config;
 		config.sDescription = _HELP("This node is the succeed wait path of the Custom Action");
 		config.SetCategory(EFLN_APPROVED);
@@ -201,7 +201,7 @@ public:
 			OutputPortConfig<EntityId>("ObjectId", "Entity ID of the object on which the action is executing"),
 			{ 0 }
 		};
-		config.pInputPorts = 0; // in_config;
+		config.pInputPorts = in_config;
 		config.pOutputPorts = out_config;
 		config.sDescription = _HELP("This node is the succeed wait complete path of the Custom Action");
 		config.SetCategory(EFLN_APPROVED);

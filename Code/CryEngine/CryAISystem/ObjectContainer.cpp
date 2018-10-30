@@ -177,9 +177,11 @@ bool CObjectContainer::DeregisterObjectUntyped(CAbstractUntypedRef* ref)
 	}
 	else
 	{
+#if defined(USE_CRY_ASSERT)
 		int prevIndex = m_objects.get_index_for_id(id);
 		CAIObject* pObject = m_objects.get_index(prevIndex);
 		CRY_ASSERT_TRACE(false, ("Previous object was %s (%d)", pObject ? pObject->GetName() : "<NULL OBJECT>", pObject ? pObject->GetAIObjectID() : 0));
+#endif
 
 		return false;
 	}
@@ -302,8 +304,6 @@ void CObjectContainer::DumpRegistered()
 void CObjectContainer::Serialize(TSerialize ser)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Object Container serialization");
-
-	CAISystem* pAISystem = GetAISystem();
 
 	// Deal with the deregistration list as it makes no sense to serialize those objects
 	ReleaseDeregisteredObjects(true);

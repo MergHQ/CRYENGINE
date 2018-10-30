@@ -393,9 +393,6 @@ void CSmartObjectOffMeshNavigation::UpdateEditorDebugHelpers()
 
 	pRenderAux->SetRenderFlags(renderFlags);
 
-	TRegisteredObjects::const_iterator objectIt = m_registeredObjects.begin();
-	TRegisteredObjects::const_iterator endIt = m_registeredObjects.end();
-
 	const float alpha = clamp_tpl((1.0f + sinf(time)) * 0.5f, 0.25f, 0.7f);
 	const ColorB color(255, 0, 0, (uint8)(alpha * 255));
 

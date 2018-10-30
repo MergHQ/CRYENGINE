@@ -18,7 +18,7 @@ public:
 	CCreateFolderDialog& operator=(CCreateFolderDialog const&) = delete;
 	CCreateFolderDialog& operator=(CCreateFolderDialog&&) = delete;
 
-	explicit CCreateFolderDialog(QWidget* const pParent);
+	explicit CCreateFolderDialog(QWidget* pParent);
 	virtual ~CCreateFolderDialog() override = default;
 
 signals:

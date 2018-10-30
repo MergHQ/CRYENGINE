@@ -5078,8 +5078,6 @@ void RegisterBehaviorTreeNodes_AI()
 
 	IBehaviorTreeManager& manager = *gAIEnv.pBehaviorTreeManager;
 
-	const char* COLOR_SDK = "ff00ff";
-
 	// Keep alphabetically sorted for better readability
 	REGISTER_BEHAVIOR_TREE_NODE(manager, AimAroundWhileUsingAMachingGun);
 	REGISTER_BEHAVIOR_TREE_NODE(manager, AnimationTagWrapper);
@@ -5089,6 +5087,14 @@ void RegisterBehaviorTreeNodes_AI()
 	REGISTER_BEHAVIOR_TREE_NODE(manager, SmartObjectStatesWrapper);
 	REGISTER_BEHAVIOR_TREE_NODE(manager, ThrowGrenade);
 	REGISTER_BEHAVIOR_TREE_NODE(manager, TurnBody);
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	const char* COLOR_SDK = "ff00ff";
+#else
+	CRY_DISABLE_WARN_UNUSED_VARIABLES();
+	const char* COLOR_SDK = nullptr;
+	CRY_RESTORE_WARN_UNUSED_VARIABLES();
+#endif
 
 	// Keep alphabetically sorted for better readability
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, AdjustCoverStance, "GameSDK\\Adjust cover stance", COLOR_SDK);

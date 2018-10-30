@@ -91,7 +91,6 @@ namespace MNM
 
 		const int screenX = 0;
 		const int screenY = 0;
-		const float instructionsTextSize = 1.2f;
 		const int screenWidth = pAux->GetCamera().GetViewSurfaceX();
 		const int screenHeight = pAux->GetCamera().GetViewSurfaceZ();
 		const Vec2 viewportOrigin(static_cast <float> (screenX), static_cast <float> (screenY));

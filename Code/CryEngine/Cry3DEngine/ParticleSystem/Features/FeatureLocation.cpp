@@ -882,7 +882,6 @@ public:
 	{
 		CParticleFeature::Serialize(ar);
 		SERIALIZE_VAR(ar, m_spawnOnly);
-		SERIALIZE_VAR(ar, m_positionOnly);
 	}
 
 	virtual void PostInitParticles(CParticleComponentRuntime& runtime) override
@@ -898,29 +897,30 @@ public:
 		const auto parentPositions = parentContainer.IStream(EPVF_Position);
 		const auto parentOrientations = parentContainer.IStream(EPQF_Orientation);
 		auto positions = container.IOStream(EPVF_Position);
+		auto orientations = container.IOStream(EPQF_Orientation);
 		auto velocities = container.IOStream(EPVF_Velocity);
 
 		for (auto particleId : runtime.SpawnedRange())
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
 			const Vec3 wParentPosition = parentPositions.Load(parentId);
+			const Quat wParentOrientation = parentOrientations.Load(parentId);
+			const QuatT worldToParent = QuatT(wParentPosition, wParentOrientation).GetInverted();
+
 			Vec3 wPosition = positions.Load(particleId);
-			if (m_positionOnly)
-			{
-				wPosition += wCameraPose.t - wParentPosition;
-			}
-			else
-			{
-				const Quat wParentOrientation = parentOrientations.Load(parentId);
-				const QuatT worldToParent = QuatT(wParentPosition, wParentOrientation).GetInverted();
-
-				wPosition = wCameraPose * (worldToParent * wPosition);
-
-				Vec3 wVelocity = velocities.Load(particleId);
-				wVelocity = wCameraPose.q * (worldToParent.q * wVelocity);
-				velocities.Store(particleId, wVelocity);
-			}
+			wPosition = wCameraPose * (worldToParent * wPosition);
 			positions.Store(particleId, wPosition);
+
+			if (container.HasData(EPQF_Orientation))
+			{
+				Quat wOrientation = orientations.Load(particleId);
+				wOrientation = wCameraPose.q * (worldToParent.q * wOrientation);
+				orientations.Store(particleId, wOrientation);
+			}
+
+			Vec3 wVelocity = velocities.Load(particleId);
+			wVelocity = wCameraPose.q * (worldToParent.q * wVelocity);
+			velocities.Store(particleId, wVelocity);
 		}
 	}
 
@@ -928,33 +928,37 @@ public:
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
-		const QuatT cameraMotion = GetPSystem()->GetCameraMotion();
+		const CCamera& camera = gEnv->p3DEngine->GetRenderingCamera();
+		const QuatT wCurCameraPose = QuatT(camera.GetMatrix());
+		const QuatT wPrevCameraPose = GetPSystem()->GetLastCameraPose();
+		const Quat cameraRotation = wCurCameraPose.q * wPrevCameraPose.q.GetInverted();
+
 		CParticleContainer& container = runtime.GetContainer();
 		auto positions = container.IOStream(EPVF_Position);
+		auto orientations = container.IOStream(EPQF_Orientation);
 		auto velocities = container.IOStream(EPVF_Velocity);
 
 		for (auto particleId : container.GetNonSpawnedRange())
 		{
 			Vec3 wPosition = positions.Load(particleId);
-			if (m_positionOnly)
-			{
-				wPosition += cameraMotion.t;
-			}
-			else
-			{
-				wPosition = cameraMotion * wPosition;
-
-				Vec3 wVelocity = velocities.Load(particleId);
-				wVelocity = cameraMotion.q * wVelocity;
-				velocities.Store(particleId, wVelocity);
-			}
+			wPosition = cameraRotation * (wPosition - wPrevCameraPose.t) + wCurCameraPose.t;
 			positions.Store(particleId, wPosition);
+
+			if (container.HasData(EPQF_Orientation))
+			{
+				Quat wOrientation = orientations.Load(particleId);
+				wOrientation = cameraRotation * wOrientation;
+				orientations.Store(particleId, wOrientation);
+			}
+
+			Vec3 wVelocity = velocities.Load(particleId);
+			wVelocity = cameraRotation * wVelocity;
+			velocities.Store(particleId, wVelocity);
 		}
 	}
 
 private:
-	bool m_spawnOnly    = false;
-	bool m_positionOnly = false;
+	bool m_spawnOnly = false;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationBindToCamera, "Location", "BindToCamera", colorLocation);

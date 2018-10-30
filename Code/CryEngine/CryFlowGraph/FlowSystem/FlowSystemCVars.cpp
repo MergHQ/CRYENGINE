@@ -154,8 +154,6 @@ CFlowSystemCVars::CFlowSystemCVars()
 	assert(s_pThis == 0);
 	s_pThis = this;
 
-	IConsole* pConsole = gEnv->pConsole;
-
 	REGISTER_COMMAND("fg_Inspector", Inspector, 0,
 	                 "Toggles FlowGraph System DefaultInspector.\n"
 	                 "Usage: fg_Inspector [0/1]\n"

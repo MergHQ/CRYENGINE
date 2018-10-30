@@ -2488,7 +2488,6 @@ public:
 		if (IsPortActive(pActInfo, EIP_Beam))
 		{
 			const char* entityName = pActInfo->pEntity->GetName();
-			bool isPlayer = gEnv->pGameFramework->GetClientActorId() == pActInfo->pEntity->GetId();
 
 			const Vec3 vPrevSca = pActInfo->pEntity->GetScale();
 

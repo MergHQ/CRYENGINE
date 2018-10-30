@@ -16,7 +16,7 @@ public:
 	CFolderSelectorFilterModel& operator=(CFolderSelectorFilterModel const&) = delete;
 	CFolderSelectorFilterModel& operator=(CFolderSelectorFilterModel&&) = delete;
 
-	explicit CFolderSelectorFilterModel(QString const& assetpath, QObject* const pParent)
+	explicit CFolderSelectorFilterModel(QString const& assetpath, QObject* pParent)
 		: QDeepFilterProxyModel(QDeepFilterProxyModel::Behavior::AcceptIfChildMatches, pParent)
 		, m_assetPath(assetpath)
 	{}

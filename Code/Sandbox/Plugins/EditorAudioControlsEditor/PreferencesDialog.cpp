@@ -5,8 +5,8 @@
 
 #include "Common.h"
 #include "AudioControlsEditorPlugin.h"
-#include "ImplementationManager.h"
 #include "NameValidator.h"
+#include "Common/IImpl.h"
 
 #include <QtUtil.h>
 #include <FileDialogs/SystemFileDialog.h>

@@ -146,7 +146,6 @@ void CLeader::Update(EUpdateType type)
 	if (m_pCurrentAction && (eUpdateResult = m_pCurrentAction->Update()) != CLeaderAction::ACTION_RUNNING)
 	{
 		// order completed or not issued
-		bool search = m_pCurrentAction->GetType() == LA_ATTACK && !IsPlayer() && !m_pGroup->GetAttentionTarget(true, true).IsValid();
 		ELeaderAction iActionType = m_pCurrentAction->GetType();
 		ELeaderActionSubType iActionSubType = m_pCurrentAction->GetSubType();
 		// get previous leaderAction's unit properties
@@ -767,7 +766,6 @@ int CLeader::AssignFormationPoints(bool bIncludeLeader, uint32 unitProp)
 					if (unit.m_refUnit == refAILeader && !bIncludeLeader)
 						continue;
 					Vec3 endPos(pPoint->GetPos());
-					Vec3 otherPos(unit.m_refUnit.GetAIObject()->GetPos());
 					if (bOwnerInTriangularRegion)
 						endPos.z = gEnv->p3DEngine->GetTerrainElevation(endPos.x, endPos.y);
 
@@ -802,13 +800,11 @@ int CLeader::AssignFormationPoints(bool bIncludeLeader, uint32 unitProp)
 		//		float fMinDist = 987654321.f;
 		for (int i = 1; i < itUnit->m_FormationPointIndex; i++)
 		{
-			CAIObject* pPoint = pFormation->GetFormationPoint(i);
 			if ((unit.GetProperties() & unitProp) && unit.m_refUnit != m_refFormationOwner
 			    && (unit.GetClass() & pFormation->GetPointClass(i)) && !pFormation->GetPointOwner(i))
 			{
 				CCCPOINT(CLeader_AssignFormationPoints_B);
 
-				int currentIndex = itUnit->m_FormationPointIndex;
 				pFormation->FreeFormationPoint(unit.m_refUnit);
 				pFormation->GetNewFormationPoint(unit.m_refUnit, i);
 				itUnit->m_FormationPointIndex = i;

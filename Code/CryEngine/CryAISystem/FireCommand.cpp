@@ -83,12 +83,10 @@ EAIFireState CFireCommandInstant::Update(IAIObject* pITarget, bool canFire, EFir
 		canFire = false;
 	}
 
-	bool canHit = m_drawFire.Update(dt, m_pShooter, pITarget, descriptor, outShootTargetPos, canFire);
+	m_drawFire.Update(dt, m_pShooter, pITarget, descriptor, outShootTargetPos, canFire);
 
 	if (!canFire)
 		return eAIFS_Off;
-
-	const float clampAngle = DEG2RAD(5.0f);
 
 	float FakeHitChance = gAIEnv.CVars.RODFakeHitChance;
 	if (m_pShooter->m_targetZone == AIZONE_KILL)
@@ -750,7 +748,6 @@ float CFireCommandLob::EvaluateThrow(const Vec3& targetPos, const Vec3& targetVi
 
 	if (bPredicted && IsValidDestination(eReqGrenadeType, outThrowHitPos, minimumDistanceToFriendsSq))
 	{
-		const Vec3& shooterPos = m_pShooter->GetPos();
 		const Vec3 targetToHit = outThrowHitPos - targetPos;
 
 		// Prefer positions that are close to the target

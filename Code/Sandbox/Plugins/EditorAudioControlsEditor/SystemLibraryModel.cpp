@@ -5,7 +5,6 @@
 
 #include "SystemSourceModel.h"
 #include "AudioControlsEditorPlugin.h"
-#include "ImplementationManager.h"
 #include "AssetIcons.h"
 #include "AssetUtils.h"
 #include "Common/IItem.h"

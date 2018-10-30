@@ -43,8 +43,12 @@ uint32 Group::GetMemberCount() const
 
 void Group::AddMember(tAIObjectID objectID)
 {
+#if defined(USE_CRY_ASSERT)
 	std::pair<Group::Members::iterator, bool> miresult = m_members.insert(objectID);
 	assert(miresult.second);
+#else
+	m_members.insert(objectID);
+#endif
 
 	m_proxy->MemberAdded(objectID);
 }

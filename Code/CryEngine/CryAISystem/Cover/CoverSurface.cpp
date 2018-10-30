@@ -955,8 +955,6 @@ void CoverSurface::DebugDraw() const
 		uint32 locationCount = m_locations.size();
 		for (uint32 i = 0; i < locationCount; ++i)
 		{
-			const Location& location = m_locations[i];
-
 			Vec3 pos = GetLocation(i, 0.5f);
 
 			const float height = 0.05f;

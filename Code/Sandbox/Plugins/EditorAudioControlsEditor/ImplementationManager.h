@@ -2,18 +2,12 @@
 
 #pragma once
 
-#include "Common/IImpl.h"
-#include <QObject>
 #include <CrySandbox/CrySignal.h>
 
 namespace ACE
 {
-extern Impl::IImpl* g_pIImpl;
-
-class CImplementationManager final : public QObject
+class CImplementationManager final
 {
-	Q_OBJECT
-
 public:
 
 	CImplementationManager(CImplementationManager const&) = delete;
@@ -22,7 +16,7 @@ public:
 	CImplementationManager& operator=(CImplementationManager&&) = delete;
 
 	CImplementationManager() = default;
-	virtual ~CImplementationManager() override;
+	~CImplementationManager();
 
 	bool LoadImplementation();
 	void Release();

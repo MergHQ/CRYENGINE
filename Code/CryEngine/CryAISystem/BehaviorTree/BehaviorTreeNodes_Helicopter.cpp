@@ -114,8 +114,8 @@ public:
 		CPipeUser* pPipeUser = context.entity.GetAI()->CastToCPipeUser();
 
 		const Vec3 currentPosition = pPipeUser->GetPos();
-		const Vec3 velocity = pPipeUser->GetVelocity();
-		const float speed = velocity.GetLength();
+		//const Vec3 velocity = pPipeUser->GetVelocity();
+		//const float speed = velocity.GetLength();
 
 		pPipeUser->m_State.predictedCharacterStates.nStates = 0;
 		const Vec3 currentPositionToTargetPosition = runtimeData.targetPosition - currentPosition;
@@ -501,8 +501,6 @@ public:
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
 		runtimeData.targetEntityId = 0;
-
-		CPipeUser* pPipeUser = context.entity.GetAI()->CastToCPipeUser();
 
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(context.entityId);
 		CRY_ASSERT(pEntity);

@@ -479,7 +479,7 @@ uint32 CCoverSystem::GetCover(const Vec3& center, float range, const Vec3* eyes,
 {
 	m_externalQueryBuffer.resize(0);
 
-	uint32 count = m_locations.query_sphere(center, range, m_externalQueryBuffer);
+	m_locations.query_sphere(center, range, m_externalQueryBuffer);
 	uint32 outputCount = 0;
 
 	CoverCollection::const_iterator it = m_externalQueryBuffer.begin();

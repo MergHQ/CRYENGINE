@@ -38,7 +38,8 @@ UseExactPositioningBase::TryRequestingExactPositioningResult UseExactPositioning
 void UseExactPositioning::HandleExactPositioningError(const MovementUpdateContext& context)
 {
 	const EntityId actorEntityId = context.actor.GetEntityId();
-	if (IEntity* entity = gEnv->pEntitySystem->GetEntity(actorEntityId))
+	//if (IEntity* entity = gEnv->pEntitySystem->GetEntity(actorEntityId))
+	if (gEnv->pEntitySystem->GetEntity(actorEntityId) != nullptr)
 	{
 		// Consider teleporting to the startpoint here, with code like the following
 		// (needs to be discussed further)

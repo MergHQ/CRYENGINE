@@ -5,17 +5,6 @@
 #include "CAISystem.h"
 #include "DebugDrawContext.h"
 
-static EAICollisionEntities aiCollisionEntitiesTable[] =
-{
-	AICE_STATIC,
-	AICE_ALL,
-	AICE_ALL_SOFT,
-	AICE_DYNAMIC,
-	AICE_STATIC_EXCEPT_TERRAIN,
-	AICE_ALL_EXCEPT_TERRAIN,
-	AICE_ALL_INLUDING_LIVING
-};
-
 IPhysicalEntity* g_AIEntitiesInBoxPreAlloc[GetPhysicalEntitiesInBoxMaxResultCount];
 
 // For automatic cleanup of memory allocated by physics

@@ -308,7 +308,6 @@ EGoalOpResult COPCrysis2AdjustAim::Execute(CPipeUser* pPipeUser)
 		m_nextUpdateMs += 150;
 	else if (elapsedMs >= m_nextUpdateMs)
 	{
-		PostureManager::PostureID postureID = -1;
 		PostureManager::PostureInfo* posture;
 
 		PostureManager& postureManager = pPuppet->GetPostureManager();
@@ -477,7 +476,7 @@ void COPCrysis2AdjustAim::DebugDraw(CPipeUser* pPipeUser) const
 
 	// m_selector.DebugDraw(pPipeUser);
 
-	Vec3 basePos = pPipeUser->GetPhysicsPos();
+	//Vec3 basePos = pPipeUser->GetPhysicsPos();
 	Vec3 targetPos = pPipeUser->GetProbableTargetPosition();
 
 	CDebugDrawContext dc;
@@ -637,7 +636,6 @@ EGoalOpResult COPCrysis2Peek::Execute(CPipeUser* pPipeUser)
 
 	if (elapsedMs >= m_nextUpdateMs)
 	{
-		PostureManager::PostureID postureID = -1;
 		PostureManager::PostureInfo* posture;
 
 		PostureManager& postureManager = pPuppet->GetPostureManager();
@@ -1615,9 +1613,6 @@ bool COPCrysis2StickPath::ExecuteState_Navigate(CPuppet* pPuppet, bool bDryUpdat
 
 	if (!bDryUpdate)
 	{
-		CAIObject* pTarget = m_refTarget.GetAIObject();
-		assert(pTarget);
-
 		const Vec3 vMyPos = pPuppet->GetPos();
 
 		Vec3 vNearestMyPoint(ZERO);
@@ -3363,7 +3358,6 @@ ILINE float GetSubpathTo(const ListPositions& path, size_t startIndex, float sta
 		pathOut.push_back(lastNode);
 
 		size_t startOffset = (startSegmentFraction >= 0.001f ? 0 : 1);
-		size_t endOffset = (endSegmentFraction >= 0.001f ? 0 : 1);
 
 		for (size_t i = startIndex - startOffset; i > endIndex; --i)
 		{
@@ -3964,7 +3958,6 @@ EGoalOpResult COPCrysis2FlightFireWeapons::Execute(CPipeUser* pPipeUser)
 {
 	EGoalOpResult ret = eGOR_IN_PROGRESS;
 
-	Vec3 forward = pPipeUser->GetEntity()->GetForwardDir();
 	Vec3 playerPos;// = GetAISystem()->GetPlayer()->GetPos();
 
 	if (!GetTarget(pPipeUser, playerPos))

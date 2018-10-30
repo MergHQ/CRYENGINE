@@ -18,7 +18,7 @@ public:
 	CTreeView& operator=(CTreeView const&) = delete;
 	CTreeView& operator=(CTreeView&&) = delete;
 
-	explicit CTreeView(QWidget* const pParent, QAdvancedTreeView::BehaviorFlags const flags = QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute));
+	explicit CTreeView(QWidget* pParent, QAdvancedTreeView::BehaviorFlags flags = QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute));
 	virtual ~CTreeView() override = default;
 
 	bool IsEditing() const { return state() == QAbstractItemView::EditingState; }
@@ -32,9 +32,9 @@ public:
 	void BackupSelection();
 	void RestoreSelection();
 
-	void SetNameRole(int const nameRole)     { m_nameRole = nameRole; }
-	void SetTypeRole(int const typeRole)     { m_typeRole = typeRole; }
-	void SetNameColumn(int const nameColumn) { m_nameColumn = nameColumn; }
+	void SetNameRole(int nameRole)     { m_nameRole = nameRole; }
+	void SetTypeRole(int typeRole)     { m_typeRole = typeRole; }
+	void SetNameColumn(int nameColumn) { m_nameColumn = nameColumn; }
 
 private:
 

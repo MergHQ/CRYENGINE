@@ -1341,11 +1341,11 @@ void CAIActor::Serialize(TSerialize ser)
 void CAIActor::SetAttentionTarget(CWeakRef<CAIObject> refTarget)
 {
 	CCCPOINT(CAIActor_SetAttentionTarget);
-	CAIObject* pAttTarget = refTarget.GetAIObject();
 
 	m_refAttentionTarget = refTarget;
 
 #ifdef CRYAISYSTEM_DEBUG
+	CAIObject* pAttTarget = refTarget.GetAIObject();
 	RecorderEventData recorderEventData(pAttTarget ? pAttTarget->GetName() : "<none>");
 	RecordEvent(IAIRecordable::E_ATTENTIONTARGET, &recorderEventData);
 #endif
@@ -2068,8 +2068,6 @@ void CAIActor::GetMovementSpeedRange(float fUrgency, bool bSlowForStrafe, float&
 {
 	AgentMovementSpeeds::EAgentMovementUrgency urgency;
 	AgentMovementSpeeds::EAgentMovementStance stance;
-
-	bool vehicle = GetType() == AIOBJECT_VEHICLE;
 
 	if (fUrgency < 0.5f * (AISPEED_SLOW + AISPEED_WALK))
 		urgency = AgentMovementSpeeds::AMU_SLOW;

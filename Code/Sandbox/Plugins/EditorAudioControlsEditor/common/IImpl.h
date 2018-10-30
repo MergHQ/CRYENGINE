@@ -5,7 +5,6 @@
 #include "ControlInfo.h"
 #include "FileImportInfo.h"
 
-#include <CrySystem/XML/IXml.h>
 #include <CrySandbox/CrySignal.h>
 #include <FileDialogs/ExtensionFilter.h>
 
@@ -18,6 +17,7 @@
 class QWidget;
 class CryIcon;
 class QString;
+class XmlNodeRef;
 
 namespace ACE
 {

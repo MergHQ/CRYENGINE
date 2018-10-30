@@ -119,7 +119,6 @@ int WorldMonitor::EntityRemovedHandler(const EventPhys* pPhysEvent)
 	EntityAABBChange change;
 	if (ShallEventPhysEntityDeletedBeHandled(pPhysEvent, change))
 	{
-		const EventPhysEntityDeleted* event = static_cast<const EventPhysEntityDeleted*>(pPhysEvent);
 		pthis->m_callback(change.entityId, change.aabb);
 
 		if (gAIEnv.CVars.DebugDrawNavigationWorldMonitor)
@@ -142,7 +141,6 @@ int WorldMonitor::EntityRemovedHandlerAsync(const EventPhys* pPhysEvent)
 	EntityAABBChange change;
 	if (ShallEventPhysEntityDeletedBeHandled(pPhysEvent, change))
 	{
-		const EventPhysEntityDeleted* event = static_cast<const EventPhysEntityDeleted*>(pPhysEvent);
 		pthis->m_queuedAABBChanges.push_back(change);
 	}
 

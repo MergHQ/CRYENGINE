@@ -436,7 +436,7 @@ void MovementSystem::UpdateActors(float updateTime)
 	{
 		MovementActor& actor = *actorIt;
 
-		const ActorUpdateStatus status = UpdateActor(actor, updateTime);
+		UpdateActor(actor, updateTime);
 
 		++actorIt;
 	}

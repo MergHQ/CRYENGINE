@@ -43,9 +43,6 @@ CTargetTrackGroup::CTargetTrackGroup(TargetTrackHelpers::ITargetTrackPoolProxy* 
 	assert(m_aiObjectId > 0);
 	assert(m_uConfigHash > 0);
 
-	CAISystem* pAISystem = GetAISystem();
-	assert(pAISystem);
-
 	CWeakRef<CAIObject> refAIObject = gAIEnv.pObjectContainer->GetWeakRef(aiObjectId);
 	const bool bAIObjectValid = refAIObject.IsValid();
 
@@ -450,8 +447,8 @@ bool CTargetTrackGroup::TestTrackAgainstFilters(CTargetTrack* pTrack, TargetTrac
 	bool bResult = true;
 
 	// [Kevin:26.02.2010] Need a better method than using the track manager here...
-	CTargetTrackManager* pManager = gAIEnv.pTargetTrackManager;
-	assert(pManager);
+	//CTargetTrackManager* pManager = gAIEnv.pTargetTrackManager;
+	//assert(pManager);
 
 	const uint32 uFilterBitmask = eMethod & TargetTrackHelpers::eDTM_FILTER_MASK;
 
@@ -704,7 +701,6 @@ void CTargetTrackGroup::DebugDrawTargets(int nMode, int nTargetedCount, bool bEx
 
 		CWeakRef<CAIObject> refTarget = pTrack->GetAIObject();
 		assert(refTarget.IsValid());
-		CAIObject* pTarget = refTarget.GetAIObject();
 
 		switch (eType)
 		{

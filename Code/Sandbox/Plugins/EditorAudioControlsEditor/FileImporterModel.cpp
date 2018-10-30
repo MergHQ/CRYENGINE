@@ -20,7 +20,7 @@ static CItemModelAttribute s_targetAttribute("Target", &Attributes::s_stringAttr
 static CItemModelAttribute s_importAttribute("Import", &Attributes::s_booleanAttributeType, CItemModelAttribute::Visible, false, Qt::Unchecked, Qt::CheckStateRole);
 
 //////////////////////////////////////////////////////////////////////////
-CItemModelAttribute* GetAttributeForColumn(CFileImporterModel::EColumns const column)
+CItemModelAttribute* GetAttributeForColumn(CFileImporterModel::EColumns column)
 {
 	CItemModelAttribute* pAttribute = nullptr;
 
@@ -44,7 +44,7 @@ CItemModelAttribute* GetAttributeForColumn(CFileImporterModel::EColumns const co
 }
 
 //////////////////////////////////////////////////////////////////////////
-CFileImporterModel::CFileImporterModel(FileImportInfos& fileInfos, QObject* const pParent)
+CFileImporterModel::CFileImporterModel(FileImportInfos& fileInfos, QObject* pParent)
 	: QAbstractItemModel(pParent)
 	, m_fileImportInfos(fileInfos)
 	, m_gameFolder(QtUtil::ToQString(PathUtil::GetGameFolder()))

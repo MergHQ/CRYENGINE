@@ -5,13 +5,14 @@
 
 #include "Common.h"
 #include "AudioControlsEditorPlugin.h"
-#include "PreferencesDialog.h"
 #include "ImplementationManager.h"
+#include "PreferencesDialog.h"
 #include "SystemControlsWidget.h"
 #include "PropertiesWidget.h"
 #include "MiddlewareDataWidget.h"
 #include "FileMonitorMiddleware.h"
 #include "FileMonitorSystem.h"
+#include "Common/IImpl.h"
 #include "Common/ModelUtils.h"
 
 #include <CrySystem/File/CryFile.h>
@@ -31,10 +32,7 @@ namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
 CMainWindow::CMainWindow()
-	: m_pSystemControlsWidget(nullptr)
-	, m_pPropertiesWidget(nullptr)
-	, m_pMiddlewareDataWidget(nullptr)
-	, m_pImplNameLabel(new QLabel(this))
+	: m_pImplNameLabel(new QLabel(this))
 	, m_pToolBar(new QToolBar("ACE Tools", this))
 	, m_pMonitorSystem(new CFileMonitorSystem(1000, this))
 	, m_pMonitorMiddleware(new CFileMonitorMiddleware(500, this))
@@ -161,13 +159,11 @@ CSystemControlsWidget* CMainWindow::CreateSystemControlsWidget()
 {
 	auto pSystemControlsWidget = new CSystemControlsWidget(this);
 
-	if (m_pSystemControlsWidget == nullptr)
+	if (g_pSystemControlsWidget == nullptr)
 	{
-		m_pSystemControlsWidget = pSystemControlsWidget;
+		g_pSystemControlsWidget = pSystemControlsWidget;
 	}
 
-	QObject::connect(pSystemControlsWidget, &CSystemControlsWidget::SignalSelectedControlChanged, this, &CMainWindow::SignalSelectedSystemControlChanged);
-	QObject::connect(this, &CMainWindow::SignalSelectConnectedSystemControl, pSystemControlsWidget, &CSystemControlsWidget::SelectConnectedSystemControl);
 	QObject::connect(pSystemControlsWidget, &QObject::destroyed, this, &CMainWindow::OnSystemControlsWidgetDestruction);
 
 	return pSystemControlsWidget;
@@ -178,23 +174,14 @@ CPropertiesWidget* CMainWindow::CreatePropertiesWidget()
 {
 	auto pPropertiesWidget = new CPropertiesWidget(this);
 
-	if (m_pPropertiesWidget == nullptr)
+	if (g_pPropertiesWidget == nullptr)
 	{
-		m_pPropertiesWidget = pPropertiesWidget;
+		g_pPropertiesWidget = pPropertiesWidget;
 	}
 
-	QObject::connect(this, &CMainWindow::SignalSelectedSystemControlChanged, [&]()
-		{
-			if (m_pPropertiesWidget != nullptr)
-			{
-			  m_pPropertiesWidget->OnSetSelectedAssets(GetSelectedAssets(), !m_isReloading);
-			}
-		});
-
 	QObject::connect(pPropertiesWidget, &QObject::destroyed, this, &CMainWindow::OnPropertiesWidgetDestruction);
-	QObject::connect(pPropertiesWidget, &CPropertiesWidget::SignalSelectConnectedImplItem, this, &CMainWindow::SignalSelectConnectedImplItem);
 
-	m_pPropertiesWidget->OnSetSelectedAssets(GetSelectedAssets(), !m_isReloading);
+	g_pPropertiesWidget->OnSetSelectedAssets(GetSelectedAssets(), !m_isReloading);
 	return pPropertiesWidget;
 }
 
@@ -203,20 +190,12 @@ CMiddlewareDataWidget* CMainWindow::CreateMiddlewareDataWidget()
 {
 	auto pMiddlewareDataWidget = new CMiddlewareDataWidget(this);
 
-	if (m_pMiddlewareDataWidget == nullptr)
+	if (g_pMiddlewareDataWidget == nullptr)
 	{
-		m_pMiddlewareDataWidget = pMiddlewareDataWidget;
+		g_pMiddlewareDataWidget = pMiddlewareDataWidget;
 	}
 
 	QObject::connect(pMiddlewareDataWidget, &QObject::destroyed, this, &CMainWindow::OnMiddlewareDataWidgetDestruction);
-	QObject::connect(pMiddlewareDataWidget, &CMiddlewareDataWidget::SignalSelectConnectedSystemControl, this, &CMainWindow::SignalSelectConnectedSystemControl);
-	QObject::connect(this, &CMainWindow::SignalSelectConnectedImplItem, [&](ControlId const itemId)
-		{
-			if (g_pIImpl != nullptr)
-			{
-			  g_pIImpl->OnSelectConnectedItem(itemId);
-			}
-		});
 
 	return pMiddlewareDataWidget;
 }
@@ -226,9 +205,9 @@ void CMainWindow::OnSystemControlsWidgetDestruction(QObject* const pObject)
 {
 	auto pWidget = static_cast<CSystemControlsWidget*>(pObject);
 
-	if (m_pSystemControlsWidget == pWidget)
+	if (g_pSystemControlsWidget == pWidget)
 	{
-		m_pSystemControlsWidget = nullptr;
+		g_pSystemControlsWidget = nullptr;
 	}
 }
 
@@ -237,9 +216,9 @@ void CMainWindow::OnPropertiesWidgetDestruction(QObject* const pObject)
 {
 	auto pWidget = static_cast<CPropertiesWidget*>(pObject);
 
-	if (m_pPropertiesWidget == pWidget)
+	if (g_pPropertiesWidget == pWidget)
 	{
-		m_pPropertiesWidget = nullptr;
+		g_pPropertiesWidget = nullptr;
 	}
 }
 
@@ -248,9 +227,9 @@ void CMainWindow::OnMiddlewareDataWidgetDestruction(QObject* const pObject)
 {
 	auto pWidget = static_cast<CMiddlewareDataWidget*>(pObject);
 
-	if (m_pMiddlewareDataWidget == pWidget)
+	if (g_pMiddlewareDataWidget == pWidget)
 	{
-		m_pMiddlewareDataWidget = nullptr;
+		g_pMiddlewareDataWidget = nullptr;
 	}
 }
 
@@ -281,7 +260,7 @@ void CMainWindow::closeEvent(QCloseEvent* pEvent)
 //////////////////////////////////////////////////////////////////////////
 void CMainWindow::keyPressEvent(QKeyEvent* pEvent)
 {
-	if ((m_pSystemControlsWidget != nullptr) && (!m_pSystemControlsWidget->IsEditing()))
+	if ((g_pSystemControlsWidget != nullptr) && (!g_pSystemControlsWidget->IsEditing()))
 	{
 		if ((pEvent->key() == Qt::Key_S) && (pEvent->modifiers() == Qt::ControlModifier))
 		{
@@ -352,17 +331,17 @@ void CMainWindow::Reload(bool const hasImplChanged /*= false*/)
 			CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadSystemControls | EReloadFlags::ReloadImplData | EReloadFlags::SendSignals);
 		}
 
-		if (m_pSystemControlsWidget != nullptr)
+		if (g_pSystemControlsWidget != nullptr)
 		{
-			m_pSystemControlsWidget->Reset();
+			g_pSystemControlsWidget->Reset();
 		}
 
 		if (!hasImplChanged)
 		{
-			if (m_pPropertiesWidget != nullptr)
+			if (g_pPropertiesWidget != nullptr)
 			{
-				m_pPropertiesWidget->OnSetSelectedAssets(GetSelectedAssets(), false);
-				m_pPropertiesWidget->Reset();
+				g_pPropertiesWidget->OnSetSelectedAssets(GetSelectedAssets(), false);
+				g_pPropertiesWidget->Reset();
 			}
 		}
 
@@ -472,9 +451,9 @@ void CMainWindow::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	{
 		CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadScopes);
 
-		if (m_pPropertiesWidget != nullptr)
+		if (g_pPropertiesWidget != nullptr)
 		{
-			m_pPropertiesWidget->Reset();
+			g_pPropertiesWidget->Reset();
 		}
 	}
 }
@@ -524,9 +503,9 @@ void CMainWindow::ReloadMiddlewareData()
 
 	CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadImplData | EReloadFlags::BackupConnections);
 
-	if (m_pPropertiesWidget != nullptr)
+	if (g_pPropertiesWidget != nullptr)
 	{
-		m_pPropertiesWidget->Reset();
+		g_pPropertiesWidget->Reset();
 	}
 
 	OnAfterReload();
@@ -537,9 +516,9 @@ void CMainWindow::ReloadMiddlewareData()
 //////////////////////////////////////////////////////////////////////////
 void CMainWindow::OnBeforeReload()
 {
-	if (m_pSystemControlsWidget != nullptr)
+	if (g_pSystemControlsWidget != nullptr)
 	{
-		m_pSystemControlsWidget->OnBeforeReload();
+		g_pSystemControlsWidget->OnBeforeReload();
 	}
 
 	if (g_pIImpl != nullptr)
@@ -547,18 +526,18 @@ void CMainWindow::OnBeforeReload()
 		g_pIImpl->OnBeforeReload();
 	}
 
-	if (m_pPropertiesWidget != nullptr)
+	if (g_pPropertiesWidget != nullptr)
 	{
-		m_pPropertiesWidget->OnBeforeReload();
+		g_pPropertiesWidget->OnBeforeReload();
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CMainWindow::OnAfterReload()
 {
-	if (m_pSystemControlsWidget != nullptr)
+	if (g_pSystemControlsWidget != nullptr)
 	{
-		m_pSystemControlsWidget->OnAfterReload();
+		g_pSystemControlsWidget->OnAfterReload();
 	}
 
 	if (g_pIImpl != nullptr)
@@ -566,9 +545,9 @@ void CMainWindow::OnAfterReload()
 		g_pIImpl->OnAfterReload();
 	}
 
-	if (m_pPropertiesWidget != nullptr)
+	if (g_pPropertiesWidget != nullptr)
 	{
-		m_pPropertiesWidget->OnAfterReload();
+		g_pPropertiesWidget->OnAfterReload();
 	}
 }
 
@@ -584,9 +563,9 @@ void CMainWindow::OnPreferencesDialog()
 
 	QObject::connect(pPreferencesDialog, &CPreferencesDialog::SignalOnAfterImplementationSettingsChanged, [&]()
 		{
-			if (m_pPropertiesWidget != nullptr)
+			if (g_pPropertiesWidget != nullptr)
 			{
-			  m_pPropertiesWidget->Reset();
+			  g_pPropertiesWidget->Reset();
 			}
 
 			OnAfterReload();
@@ -601,9 +580,9 @@ Assets CMainWindow::GetSelectedAssets()
 {
 	Assets assets;
 
-	if (m_pSystemControlsWidget != nullptr)
+	if (g_pSystemControlsWidget != nullptr)
 	{
-		assets = m_pSystemControlsWidget->GetSelectedAssets();
+		assets = g_pSystemControlsWidget->GetSelectedAssets();
 	}
 
 	return assets;

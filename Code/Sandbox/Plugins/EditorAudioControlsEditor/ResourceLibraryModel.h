@@ -18,7 +18,7 @@ public:
 	CResourceLibraryModel& operator=(CResourceLibraryModel const&) = delete;
 	CResourceLibraryModel& operator=(CResourceLibraryModel&&) = delete;
 
-	explicit CResourceLibraryModel(CLibrary* const pLibrary, QObject* const pParent)
+	explicit CResourceLibraryModel(CLibrary* pLibrary, QObject* pParent)
 		: CSystemLibraryModel(pLibrary, pParent)
 	{}
 

@@ -667,8 +667,13 @@ void CVisionMap::AddToObserverPVS(ObserverInfo& observerInfo, const ObservableIn
 {
 	observerInfo.needsVisibilityUpdate = true;
 	const RayCastRequest::Priority priority = GetRayCastRequestPriority(observerInfo.observerParams, observableInfo.observableParams);
+
+#if defined(USE_CRY_ASSERT)
 	std::pair<PVS::iterator, bool> result = observerInfo.pvs.insert(PVS::value_type(observableInfo.observableID, PVSEntry(observableInfo, priority)));
 	assert(result.second);
+#else
+	observerInfo.pvs.insert(PVS::value_type(observableInfo.observableID, PVSEntry(observableInfo, priority)));
+#endif
 }
 
 void CVisionMap::UpdatePVS(ObserverInfo& observerInfo)
@@ -689,7 +694,6 @@ void CVisionMap::UpdatePVS(ObserverInfo& observerInfo)
 
 		for (PVS::iterator pvsIt = pvs.begin(), end = pvs.end(); pvsIt != end; )
 		{
-			const ObservableID& observableID = pvsIt->first;
 			const ObservableInfo& observableInfo = pvsIt->second.observableInfo;
 
 			if (!ShouldObserve(observerInfo, observableInfo))
@@ -727,7 +731,7 @@ void CVisionMap::UpdatePVS(ObserverInfo& observerInfo)
 		{
 			// the sight range is defined query the obsevableGrid
 			m_queryObservables.clear();
-			uint32 observableCount = m_observablesGrid.query_sphere_distance(observerInfo.observerParams.eyePosition, observerInfo.observerParams.sightRange, m_queryObservables);
+			m_observablesGrid.query_sphere_distance(observerInfo.observerParams.eyePosition, observerInfo.observerParams.sightRange, m_queryObservables);
 
 			for (QueryObservables::iterator it = m_queryObservables.begin(), end = m_queryObservables.end(); it != end; ++it)
 			{
@@ -774,9 +778,13 @@ void CVisionMap::QueueRay(const ObserverInfo& observerInfo, PVSEntry& pvsEntry)
 		AIRayCast::SRequesterDebugInfo("CVisionMap::QueueRay", observerInfo.observerParams.entityId));
 	assert(queuedRayID);
 
+#if defined(USE_CRY_ASSERT)
 	std::pair<PendingRays::iterator, bool> result = m_pendingRays.insert(
 	  PendingRays::value_type(queuedRayID, PendingRayInfo(observerInfo, pvsEntry)));
 	assert(result.second);
+#else
+	m_pendingRays.insert(PendingRays::value_type(queuedRayID, PendingRayInfo(observerInfo, pvsEntry)));
+#endif
 
 #if VISIONMAP_DEBUG
 	if (queuedRayID)

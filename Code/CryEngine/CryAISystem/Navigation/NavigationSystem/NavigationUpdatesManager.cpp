@@ -58,7 +58,6 @@ void CMNMUpdatesManager::UpdatePostponedChanges()
 	{
 		if (queueAndState.status == EUpdateRequestStatus::RequestInQueue)
 		{
-			const size_t activeSize = m_activeUpdateRequestsQueue.size();
 			for (size_t i = 0; i < m_pospondedUpdateRequests.size(); ++i)
 			{
 				const size_t requestId = m_pospondedUpdateRequests[i];
@@ -562,7 +561,6 @@ void CMNMUpdatesManager::SheduleTileUpdateRequests(const SRequestParams& request
 			{
 				uint64 key = TileUpdateRequestKey(meshID, x, y, z);
 				size_t requestIdx;
-				TileUpdateRequest* pTask = nullptr;
 
 				auto iresult = m_updateRequestsMap.insert(TileUpdatesMap::value_type(key, 0));
 				if (iresult.second)
@@ -598,7 +596,6 @@ bool CMNMUpdatesManager::HasBufferedRegenerationRequests() const
 //------------------------------------------------------------------------
 void CMNMUpdatesManager::ApplyBufferedRegenerationRequests()
 {
-	const size_t activeSize = m_activeUpdateRequestsQueue.size();
 	for (size_t i = 0; i < m_ignoredUpdateRequests.size(); ++i)
 	{
 		const size_t requestId = m_ignoredUpdateRequests[i];
@@ -708,7 +705,6 @@ void CMNMUpdatesManager::DebugDraw()
 		
 		const NavigationMesh& mesh = m_pNavigationSystem->m_meshes[tileRequest.meshID];
 		const MNM::CNavMesh::SGridParams& paramsGrid = mesh.navMesh.GetGridParams();
-		const AgentType& agentType = m_pNavigationSystem->m_agentTypes[mesh.agentTypeID - 1];
 
 		AABB aabb(AABB::RESET);
 		aabb.Add(Vec3(float(tileRequest.x * paramsGrid.tileSize.x), float(tileRequest.y * paramsGrid.tileSize.y), float(tileRequest.z * paramsGrid.tileSize.z)));

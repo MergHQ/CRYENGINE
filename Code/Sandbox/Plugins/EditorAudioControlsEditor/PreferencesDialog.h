@@ -12,7 +12,7 @@ class CPreferencesDialog final : public CEditorDialog
 
 public:
 
-	explicit CPreferencesDialog(QWidget* const pParent);
+	explicit CPreferencesDialog(QWidget* pParent);
 
 	CPreferencesDialog() = delete;
 

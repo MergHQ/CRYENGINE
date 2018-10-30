@@ -290,7 +290,6 @@ SCachedObstacle* CPathObstacles::GetOrClearCachedObstacle(IPhysicalEntity* entit
 	unsigned entityHash = GetHashFromEntities(&entity, 1);
 
 	const TCachedObstacles::reverse_iterator itEnd = s_cachedObstacles.rend();
-	const TCachedObstacles::reverse_iterator itBegin = s_cachedObstacles.rbegin();
 	for (TCachedObstacles::reverse_iterator it = s_cachedObstacles.rbegin(); it != itEnd; ++it)
 	{
 		SCachedObstacle& cachedObstacle = **it;
@@ -675,7 +674,6 @@ void CPathObstacles::GetPathObstacles_AIObject(CAIObject* pObject, SPathObstacle
 			if (pObject->GetVelocity().GetLengthSquared() <= maxSpeedSq)
 			{
 				const NavigationMeshID meshID = pathObstaclesInfo.pNavPath->GetMeshID();
-				const bool usingMNM = (meshID != NavigationMeshID(0));
 				const Vec3 objectPos = pObject->GetPhysicsPos();
 
 				const bool considerObject = IsInNavigationMesh(meshID, objectPos, 2.0f, pathObstaclesInfo.minAvRadius + 0.5f);

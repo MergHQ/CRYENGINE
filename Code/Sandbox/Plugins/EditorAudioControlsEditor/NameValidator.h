@@ -19,7 +19,7 @@ public:
 	CNameValidator& operator=(CNameValidator const&) = delete;
 	CNameValidator& operator=(CNameValidator&&) = delete;
 
-	explicit CNameValidator(QRegularExpression const& regex, QWidget* const pParent);
+	explicit CNameValidator(QRegularExpression const& regex, QWidget* pParent);
 	virtual ~CNameValidator() override = default;
 
 	// QRegularExpressionValidator

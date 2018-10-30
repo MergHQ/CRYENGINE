@@ -5,9 +5,9 @@
 
 #include "Common.h"
 #include "AudioControlsEditorPlugin.h"
-#include "ImplementationManager.h"
 #include "AssetUtils.h"
 #include "Common/IConnection.h"
+#include "Common/IImpl.h"
 #include "Common/IItem.h"
 
 #include <CrySerialization/StringList.h>

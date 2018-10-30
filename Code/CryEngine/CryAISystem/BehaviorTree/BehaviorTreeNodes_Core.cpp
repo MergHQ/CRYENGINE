@@ -830,7 +830,6 @@ public:
 			return LoadFailure;
 		}
 
-		const int defaultChildIndex = childCount - 1;
 		for (int i = 0; i < childCount; ++i)
 		{
 			Case priorityCase;
@@ -3205,8 +3204,16 @@ void RegisterBehaviorTreeNodes_Core()
 	assert(gAIEnv.pBehaviorTreeManager);
 
 	IBehaviorTreeManager& manager = *gAIEnv.pBehaviorTreeManager;
-	
+
+	CRY_DISABLE_WARN_UNUSED_VARIABLES();
 	const char* COLOR_FLOW = "00ff00";
+	const char* COLOR_CONDITION = "00ffff";
+	const char* COLOR_FAIL = "ff0000";
+	const char* COLOR_TIME = "ffffff";
+	const char* COLOR_CORE = "0000ff";
+	const char* COLOR_DEBUG = "000000";
+	CRY_RESTORE_WARN_UNUSED_VARIABLES();
+	
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Sequence, "Flow\\Sequence", COLOR_FLOW);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Selector, "Flow\\Selector", COLOR_FLOW);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Priority, "Flow\\Priority selector", COLOR_FLOW);
@@ -3216,12 +3223,9 @@ void RegisterBehaviorTreeNodes_Core()
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, StateMachine, "Flow\\State Machine\\State machine", COLOR_FLOW);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, SendTransitionEvent, "Flow\\State Machine\\Send transition event", COLOR_FLOW);
 
-	const char* COLOR_CONDITION = "00ffff";
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, IfCondition, "Conditions\\Condition gate", COLOR_CONDITION);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, AssertCondition, "Conditions\\Check condition", COLOR_CONDITION);
 
-	const char* COLOR_FAIL = "ff0000";
-	const char* COLOR_TIME = "ffffff";
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Timeout, "Time\\Timeout", COLOR_FAIL);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, IfTime, "Time\\Timestamp gate", COLOR_TIME);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Wait, "Time\\Wait", COLOR_TIME);
@@ -3229,13 +3233,11 @@ void RegisterBehaviorTreeNodes_Core()
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, WaitForEvent, "Time\\Wait for event", COLOR_TIME);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, WaitUntilTime, "Time\\Wait for timestamp", COLOR_TIME);
 
-	const char* COLOR_CORE = "0000ff";
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Fail, "Core\\Fail", COLOR_FAIL);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, RandomGate, "Core\\Random gate", COLOR_CORE);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, SendEvent, "Core\\Send Event", COLOR_CORE);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, SuppressFailure, "Core\\Suppress failure", COLOR_FAIL);
 
-	const char* COLOR_DEBUG = "000000";
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, AssertTime, "Debug\\Check timestamp", COLOR_DEBUG);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Halt, "Debug\\Halt", COLOR_DEBUG);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Log, "Debug\\Log message", COLOR_DEBUG);

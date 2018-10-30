@@ -526,7 +526,6 @@ bool CNavMesh::IsTriangleAcceptableForLocation(const vector3_t& localPosition, T
 		TriangleID candidates[MaxTriCandidateCount];
 
 		const size_t candidateCount = GetTriangles(aabb, candidates, MaxTriCandidateCount, nullptr);
-		MNM::real_t distMinSq = MNM::real_t::max();
 
 		if (candidateCount)
 		{
