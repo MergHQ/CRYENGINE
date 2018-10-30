@@ -911,21 +911,24 @@ CBaseObject* CObjectManager::NewObject(CObjectArchive& ar, CBaseObject* pUndoObj
 		objNode->getAttr("Name", objName);
 		pObject->m_name = objName;
 
+		pObject->InitVariables();
+		pObject->SetIdInPrefab(idInPrefab);
+
+		// @FIXME: Make sure this id not taken.
+		CBaseObject* obj = FindObject(pObject->GetId());
+
 		string layerName;
+		CObjectLayer* pLayer = nullptr;
 		if (bLoadInCurrentLayer)
 		{
-			pObject->SetLayer(GetLayersManager()->GetCurrentLayer());
+			pLayer = GetLayersManager()->GetCurrentLayer();
 		}
 		else
 		{
 			if (objNode->getAttr("Layer", layerName))
 			{
-				CObjectLayer* pLayer = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->FindLayerByName(layerName);
-				if (pLayer)
-				{
-					pObject->SetLayer(pLayer);
-				}
-				else
+				pLayer = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->FindLayerByName(layerName);
+				if (!pLayer)
 				{
 					CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Could not find layer %s for object %s", (const char*)layerName, (const char*)objName);
 					return nullptr;
@@ -938,17 +941,11 @@ CBaseObject* CObjectManager::NewObject(CObjectArchive& ar, CBaseObject* pUndoObj
 			}
 		}
 
-		pObject->InitVariables();
-		pObject->SetIdInPrefab(idInPrefab);
-
-		// @FIXME: Make sure this id not taken.
-		CBaseObject* obj = FindObject(pObject->GetId());
-
 		if (obj && !CGuidCollisionResolver(pObject, ar).Resolve())
 		{
 			string error;
 			error.Format(_T("[Error] Object %s in layer %s is a duplicate of object %s in layer %s. %s has been removed. %s"),
-			             (const char*)pObject->GetName(), (const char*)pObject->GetLayer()->GetName(), (const char*)obj->GetName(),
+			             (const char*)pObject->GetName(), (const char*)pLayer->GetName(), (const char*)obj->GetName(),
 			             (const char*)obj->GetLayer()->GetName(), pObject->GetName(),
 			             CryLinkService::CCryLinkUriFactory::GetUriV("Editor", "selection.select_and_go_to %s", obj->GetName()));
 
@@ -961,6 +958,8 @@ CBaseObject* CObjectManager::NewObject(CObjectArchive& ar, CBaseObject* pUndoObj
 
 			return nullptr;
 		}
+
+		pObject->SetLayer(pLayer);
 	}
 
 	if (!pObject->Init(0, ""))
