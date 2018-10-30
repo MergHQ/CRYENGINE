@@ -113,6 +113,7 @@ public:
 
 
 	virtual IDataBaseLibrary* AddLibrary(const string& library, bool bSetFullFilename = false) override;
+	virtual IDataBaseLibrary* LoadLibrary(const string& filename, bool bReload = false) override;
 	virtual string MakeFilename(const string& library) override;
 
 	// Allows to generate prefab assets from level files of CE5.5
@@ -122,7 +123,6 @@ public:
 	void UpdateAllPrefabsToLatestVersion();
 
 protected:
-	virtual IDataBaseLibrary* LoadLibrary(const string& filename, bool bReload = false) override;
 
 	virtual CBaseLibraryItem* MakeNewItem() override;
 	virtual CBaseLibrary*     MakeNewLibrary() override;

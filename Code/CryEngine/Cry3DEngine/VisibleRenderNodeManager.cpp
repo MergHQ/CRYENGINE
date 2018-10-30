@@ -30,9 +30,6 @@ CRenderObject* SRenderNodeTempData::GetRenderObject(int lod)
 {
 	CRY_ASSERT(!invalidRenderObjects);
 
-	// Object creation must be locked because CheckCreateRenderObject can be called on same node from different threads
-	arrPermanentObjectLock[lod].WLock();
-
 	// Do we have to create a new permanent render object?
 	if (userData.arrPermanentRenderObjects[lod] == nullptr)
 	{
@@ -40,15 +37,13 @@ CRenderObject* SRenderNodeTempData::GetRenderObject(int lod)
 		hasValidRenderObjects = true;
 	}
 
-	CRenderObject* pRenderObject = userData.arrPermanentRenderObjects[lod];
-	arrPermanentObjectLock[lod].WUnlock();
-
-	return pRenderObject;
+	return userData.arrPermanentRenderObjects[lod];
 }
 
 void SRenderNodeTempData::FreeRenderObjects()
 {
-	CRY_ASSERT(hasValidRenderObjects);
+	if (!hasValidRenderObjects)
+		return;
 
 	// Release permanent CRenderObject(s)
 	for (int lod = 0; lod < MAX_STATOBJ_LODS_NUM; ++lod)
@@ -69,18 +64,13 @@ void SRenderNodeTempData::InvalidateRenderObjectsInstanceData()
 	if (!hasValidRenderObjects)
 		return;
 
-	// Release permanent CRenderObject(s)
+	// Invalidate permanent CRenderObject(s) instance-data
 	for (int lod = 0; lod < MAX_STATOBJ_LODS_NUM; ++lod)
 	{
-		// Object creation must be locked because CheckCreateRenderObject can be called on same node from different threads
-		arrPermanentObjectLock[lod].RLock();
-
 		if (userData.arrPermanentRenderObjects[lod])
 		{
 			userData.arrPermanentRenderObjects[lod]->SetInstanceDataDirty();
 		}
-
-		arrPermanentObjectLock[lod].RUnlock();
 	}
 }
 

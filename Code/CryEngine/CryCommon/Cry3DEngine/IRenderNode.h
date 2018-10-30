@@ -122,8 +122,6 @@ struct SRenderNodeTempData
 public:
 	SUserData           userData;
 
-	CryRWLock           arrPermanentObjectLock[MAX_STATOBJ_LODS_NUM];
-
 	std::atomic<uint32> hasValidRenderObjects;
 	std::atomic<uint32> invalidRenderObjects;
 

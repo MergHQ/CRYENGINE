@@ -112,6 +112,29 @@ struct INavigationSystem
 		uint32 tileCount;
 	};
 
+	//! Helper struct used in GetMeshBorders
+	struct SNavMeshBorderWithNormal
+	{
+		Vec3 v0;
+		Vec3 v1;
+		Vec3 normalOut;
+
+		SNavMeshBorderWithNormal()
+			: v0(ZERO)
+			, v1(ZERO)
+			, normalOut(ZERO)
+		{}
+
+		SNavMeshBorderWithNormal(const Vec3& v0_, const Vec3& v1_, const Vec3& normalOut_)
+			: v0(v0_)
+			, v1(v1_)
+			, normalOut(normalOut_)
+		{}
+	};
+
+	typedef DynArray<SNavMeshBorderWithNormal> NavMeshBorderWithNormalArray;
+
+
 	// <interfuscator:shuffle>
 	virtual ~INavigationSystem() {}
 	virtual NavigationAgentTypeID           CreateAgentType(const char* name, const CreateAgentTypeParams& params) = 0;
@@ -352,26 +375,39 @@ struct INavigationSystem
 	//! \returns MNM::ERayCastResult::Hit if the ray has hit a NavMesh boundary before end position or other value in case of no hit or an error.
 	virtual MNM::ERayCastResult NavMeshRayCast(const NavigationMeshID meshID, const MNM::TriangleID startTriangleId, const Vec3& startPos, const MNM::TriangleID endTriangleId, const Vec3& endPos, const INavMeshQueryFilter* pFilter, MNM::SRayHitOutput* pOutHit) const = 0;
 
-	//! Returns all borders (unconnected edges) of NavMesh triangles in the specified AABB.
-	//! There are 3 Vec3's per border edge, vertex 0, vertex 1, and a normal pointing out from the edge.
+	//! Query for the triangle borders that overlap the aabb. 
+	//! Overlapping is calculated using the mode ENavMeshQueryOverlappingMode::BoundingBox_Partial
+	//! Triangles are filtered using SAcceptAllQueryTrianglesFilter
+	//! Triangles annotations are filtered using SAcceptAllQueryTrianglesFilter
 	//! \param meshID Id of the navigation mesh.
-	//! \param aabb Axis aligned bounding box for querying triangles.
-	//! \param pOutBorders Output array of found borders. Its size should be at least maxBorderCount * 3 (triplets of Vec3 - 2 edge vertices and its normal) or null if the caller is interested only in number of returned borders.
-	//! \param maxBorderCount Number of maximum borders count that can be filled in pOutBorders.
-	//! \param pFilter Pointer to navigation query filter. Can be null to accept all triangles.
-	//! \param minIslandArea Deprecated parameter for filtering out triangles in small areas.
-	//! \returns Number of found bordering triangle edges.
-	virtual size_t GetTriangleBorders(const NavigationMeshID meshID, const AABB& aabb, Vec3* pOutBorders, size_t maxBorderCount, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const = 0;
+	//! \param localAabb Axis aligned bounding box for querying triangles.
+	//! \returns An array containing the border and the normal pointing out of the found borders
+	virtual NavMeshBorderWithNormalArray QueryTriangleBorders(const NavigationMeshID meshID, const MNM::aabb_t& localAabb) const = 0;
+
+	//! Query for the triangle borders that overlap the aabb. 
+	//! \param meshID Id of the navigation mesh.
+	//! \param localAabb Axis aligned bounding box for querying triangles.
+	//! \param overlappingMode Overlapping mode use to calculate when an overlap between the triangle and the aabb should be considered
+	//! \param pQueryFilter Triangle filter used in the query. If nullptr uses SAcceptAllQueryTrianglesFilter
+	//! \param pAnnotationFilter Triangle annotation filter used in the query. If nullptr uses SAcceptAllQueryTrianglesFilter
+	//! \returns An array containing the border and the normal pointing out of the found borders
+	virtual NavMeshBorderWithNormalArray QueryTriangleBorders(const NavigationMeshID meshID, const MNM::aabb_t& localAabb, MNM::ENavMeshQueryOverlappingMode overlappingMode, const INavMeshQueryFilter* pQueryFilter, const INavMeshQueryFilter* pAnnotationFilter) const = 0;
+
+	//! Gets triangle centers.
+	//! Overlapping is calculated using the mode ENavMeshQueryOverlappingMode::BoundingBox_Partial
+	//! Triangles are filtered using SAcceptAllQueryTrianglesFilter
+	//! \param meshID Id of the navigation mesh.
+	//! \param localAabb Axis aligned bounding box for querying triangles.
+	//! \returns An array containing the triangle centers
+	virtual DynArray<Vec3> QueryTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const MNM::aabb_t& localAabb) const = 0;
 
 	//! Gets triangle centers.
 	//! \param meshID Id of the navigation mesh.
-	//! \param aabb Axis aligned bounding box for querying triangles.
-	//! \param pOutCenterLocations Output array of triangles' center locations. Must not be null.
-	//! \param maxCenterLocationCount Maximum number of elements that can be filled in pOutCenterLocations and pOutIslandIds
-	//! \param pFilter Pointer to navigation query filter. Can be null to accept all triangles.
-	//! \param minIslandArea Deprecated parameter for filtering out triangles in small areas.
-	//! \returns Number of found triangles' centers.
-	virtual size_t GetTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const AABB& aabb, Vec3* pOutCenterLocations, size_t maxCenterLocationCount, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const = 0;
+	//! \param localAabb Axis aligned bounding box for querying triangles.
+	//! \param overlappingMode Overlapping mode use to calculate when an overlap between the triangle and the aabb should be considered
+	//! \param pFilter Pointer to navigation query filter. If nullptr uses SAcceptAllQueryTrianglesFilter
+	//! \returns An array containing the triangle centers
+	virtual DynArray<Vec3> QueryTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const MNM::aabb_t& localAabb, MNM::ENavMeshQueryOverlappingMode overlappingMode, const INavMeshQueryFilter* pFilter) const = 0;
 
 	//! Returns global island id of the triangle at location.
 	//! \param agentTypeID Navigation agent type id.
@@ -443,9 +479,8 @@ struct INavigationSystem
 	//! \param hrange Horizontal search range
 	//! \param meshLocation Pointer to position on the NavMesh closest to input position if it was found
 	//! \param pFilter Pointer to navigation query filter. Can be null to accept all triangles.
-	//! \param minIslandArea Minimal size of the island area of triangles to consider during the search
 	//! \returns True if the closest point was found, false otherwise
-	virtual bool GetClosestPointInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, float vrange, float hrange, Vec3* meshLocation, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const = 0;
+	virtual bool GetClosestPointInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, float vrange, float hrange, Vec3* meshLocation, const INavMeshQueryFilter* pFilter) const = 0;
 
 	//! (DEPRECATED) A cheap test to see if two points are connected, without the expense of computing a full path between them. Variation with snapping metric(s) should be used now instead.
 	//! \param agentID Navigation agent type id.
@@ -462,17 +497,6 @@ struct INavigationSystem
 	//! \param pFilter Pointer to navigation query filter. Can be null to accept all triangles.
 	//! \returns Triangle id of the triangle at location or MNM::Constants::InvalidTriangleID if no triangle is found.
 	virtual MNM::TriangleID GetTriangleIDWhereLocationIsAtForMesh(const NavigationAgentTypeID agentID, const Vec3& location, const INavMeshQueryFilter* pFilter) = 0;
-
-	//! (DEPRECATED) Gets triangle centers and island ids.
-	//! \param meshID Id of the navigation mesh.
-	//! \param aabb Axis aligned bounding box for querying triangles.
-	//! \param pOutCenterLocations Output array of triangles' center locations. Must not be null.
-	//! \param pOutIslandIds Output array of triangles' island ids (relative to the current NavMesh). Must not be null.
-	//! \param maxCount Maximum number of elements that can be filled in pOutCenterLocations and pOutIslandIds.
-	//! \param pFilter Pointer to navigation query filter. Can be null to accept all triangles.
-	//! \param minIslandArea Parameter for filtering out triangles in small areas.
-	//! \returns Number of found triangles.
-	virtual size_t GetTriangleInfo(const NavigationMeshID meshID, const AABB& aabb, Vec3* pOutCenterLocations, uint32* pOutIslandIds, size_t maxCount, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const = 0;
 
 	//! (DEPRECATED) Returns global island id of the triangle at location. The function is using hard-coded vertical ranges (1.0f) for querying triangles.
 	//! \param agentTypeID Navigation agent type id.

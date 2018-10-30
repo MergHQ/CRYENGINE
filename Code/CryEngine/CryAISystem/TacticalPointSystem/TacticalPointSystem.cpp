@@ -31,6 +31,8 @@
 #include "Puppet.h"
 
 #include "Navigation/NavigationSystem/NavigationSystem.h"
+#include <CryAISystem/NavigationSystem/INavMeshQueryManager.h>
+
 
 // Maximum time that an async query can execute before it is aborted as an error
 const float MAX_SYNC_TIME_MS = 20;
@@ -1703,17 +1705,17 @@ bool CTacticalPointSystem::GenerateInternal(TTacticalPointQuery query, const Que
 
 			if (navAgentTypeId != undefinedNavAgentTypeId)
 			{
-				AABB searchAABB;
-				searchAABB.max = objPos + Vec3(+fSearchDist, +fSearchDist, 0.2f);
-				searchAABB.min = objPos + Vec3(-fSearchDist, -fSearchDist, -20.0f);
+				const MNM::aabb_t searchAABB(
+					 MNM::vector3_t(objPos + Vec3(-fSearchDist, -fSearchDist, -20.0f)),
+					 MNM::vector3_t(objPos + Vec3(fSearchDist, +fSearchDist, 0.2f))
+				);
 
 				if (const NavigationMeshID meshID = gAIEnv.pNavigationSystem->GetEnclosingMeshID(navAgentTypeId, searchPivotPos))
 				{
-					const size_t maxCenterLocationCount = 512;
-					Vec3 centerLocations[maxCenterLocationCount];
-					if (size_t locationCount = gAIEnv.pNavigationSystem->GetTriangleCenterLocationsInMesh(meshID, searchAABB, centerLocations, maxCenterLocationCount, nullptr))
+					const DynArray<Vec3> centerLocations = gAIEnv.pNavigationSystem->QueryTriangleCenterLocationsInMesh(meshID, searchAABB);
+					if (!centerLocations.empty())
 					{
-						for (size_t i = 0; i < locationCount; ++i)
+						for (size_t i = 0; i < centerLocations.size(); ++i)
 						{
 							accumulator.push_back(CTacticalPoint(centerLocations[i]));
 						}

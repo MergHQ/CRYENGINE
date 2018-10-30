@@ -33,7 +33,7 @@ namespace MNM
 				return false;
 			}
 
-			m_data.batchHistory.push_back(queryBatch);
+			m_data.batchHistory.insert(queryBatch.batchNumber, queryBatch);
 			m_data.trianglesCount += queryBatch.triangleDataArray.size();
 			m_data.elapsedTimeRunningInMs += queryBatch.elapsedTimeInMs;
 

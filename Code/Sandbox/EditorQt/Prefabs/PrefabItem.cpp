@@ -69,6 +69,14 @@ void CPrefabItem::SetPrefabClassName(string prefabClassNameString)
 	m_PrefabClassName = prefabClassNameString;
 }
 
+void CPrefabItem::SetName(const string& name)
+{
+	// There is no much point of creating undo here, because setting a new prefab name should always be done along with renaming the prefab library, which does not support undo.
+	CBaseLibraryItem::SetName(name, true);
+
+	signalNameChanged();
+}
+
 void CPrefabItem::Serialize(SerializeContext& ctx)
 {
 	CBaseLibraryItem::Serialize(ctx);

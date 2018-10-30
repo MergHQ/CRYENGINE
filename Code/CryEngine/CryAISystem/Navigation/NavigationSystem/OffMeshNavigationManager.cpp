@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "OffMeshNavigationManager.h"
+#include "Navigation/MNM/NavMeshQueryManager.h"
 
 #include "NavigationSystem.h"
 
@@ -77,7 +78,7 @@ bool OffMeshNavigationManager::AddCustomLink(const NavigationMeshID& meshID, MNM
 	const MNM::real_t range = MNM::real_t(1.0f);
 
 	// Get entry triangle
-	startTriangleID = mesh.navMesh.GetTriangleAt(fixedStartPoint, range, range, nullptr);
+	startTriangleID = mesh.navMesh.QueryTriangleAt(fixedStartPoint, range, range);
 
 	if (!startTriangleID)
 	{
@@ -86,7 +87,7 @@ bool OffMeshNavigationManager::AddCustomLink(const NavigationMeshID& meshID, MNM
 	}
 
 	// Get entry triangle
-	endTriangleID = mesh.navMesh.GetTriangleAt(fixedEndPoint, range, range, nullptr);
+	endTriangleID = mesh.navMesh.QueryTriangleAt(fixedEndPoint, range, range);
 
 	if (!endTriangleID)
 	{

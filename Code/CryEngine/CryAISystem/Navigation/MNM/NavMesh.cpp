@@ -8,6 +8,9 @@
 #include "TileConnectivity.h"
 #include "WayQuery.h"
 #include "../NavigationSystem/OffMeshNavigationManager.h"
+#include "../NavigationSystem/NavigationSystem.h"
+#include "../MNM//NavMeshQueryManager.h"
+#include "../MNM/NavMeshQueryProcessing.h"
 
 #if defined(min)
 	#undef min
@@ -221,382 +224,119 @@ void CNavMesh::Init(const SGridParams& params, const SAgentSettings& agentSettin
 	m_tiles.Init(params.tileCount);
 }
 
-//! Filter to support old GetTriangles() function (and such), which allow to specify minIslandArea, without NavMesh query filter
-struct SMinIslandAreaQueryTrianglesFilter
+DynArray<TriangleID> CNavMesh::QueryTriangles(const aabb_t& localAabb) const 
 {
-	SMinIslandAreaQueryTrianglesFilter(const CNavMesh& navMesh_, float minIslandArea_)
-		: navMesh(navMesh_)
-		, minIslandArea(minIslandArea_)
-	{}
-
-	bool PassFilter(const Tile::STriangle& triangle) const
-	{
-		return navMesh.GetIslands().GetIslandArea(triangle.islandID) >= minIslandArea;
-	}
-
-	const CNavMesh& navMesh;
-	float           minIslandArea;
-};
-
-//! Filter to support old GetTriangles() function (and such), which allow to specify minIslandArea, with NavMesh query filter
-struct SNavigationQueryFilterWithMinIslandFilter
-{
-	SNavigationQueryFilterWithMinIslandFilter(const INavMeshQueryFilter& filter, const CNavMesh& navMesh, float minIslandArea)
-		: filter(filter)
-		, navMesh(navMesh)
-		, minIslandArea(minIslandArea)
-	{}
-
-	bool PassFilter(const Tile::STriangle& triangle) const
-	{
-		return filter.PassFilter(triangle) && (navMesh.GetIslands().GetIslandArea(triangle.islandID) >= minIslandArea);
-	}
-
-	const INavMeshQueryFilter& filter;
-	const CNavMesh& navMesh;
-	float           minIslandArea;
-};
-
-template<typename TFilter>
-size_t CNavMesh::QueryTileTrianglesLinear(const TileID tileID, const STile& tile, const aabb_t& queryAabbTile, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
-{
-	CRY_ASSERT(maxTrianglesCount > 0);
-	if (maxTrianglesCount == 0)
-		return 0;
-
-	size_t triCount = 0;
-	for (size_t i = 0; i < tile.triangleCount; ++i)
-	{
-		const Tile::STriangle& triangle = tile.triangles[i];
-
-		const Tile::Vertex& v0 = tile.vertices[triangle.vertex[0]];
-		const Tile::Vertex& v1 = tile.vertices[triangle.vertex[1]];
-		const Tile::Vertex& v2 = tile.vertices[triangle.vertex[2]];
-
-		const aabb_t triaabb(vector3_t::minimize(v0, v1, v2), vector3_t::maximize(v0, v1, v2));
-
-		if (queryAabbTile.overlaps(triaabb))
-		{
-			const TriangleID triangleID = ComputeTriangleID(tileID, static_cast<uint16>(i));
-
-			if (filter.PassFilter(triangle))
-			{
-				pOutTriangles[triCount++] = triangleID;
-
-				if (triCount == maxTrianglesCount)
-					break;
-			}
-		}
-	}
-	return triCount;
+	return QueryTriangles(localAabb, ENavMeshQueryOverlappingMode::BoundingBox_Partial, nullptr);
 }
 
-template<typename TFilter>
-size_t CNavMesh::QueryTileTrianglesBV(const TileID tileID, const STile& tile, const aabb_t& queryAabbTile, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
+DynArray<TriangleID> CNavMesh::QueryTriangles(const aabb_t& localAabb, const ENavMeshQueryOverlappingMode overlappingMode, const INavMeshQueryFilter* pFilter) const 
 {
-	CRY_ASSERT(maxTrianglesCount > 0);
-	if (maxTrianglesCount == 0)
-		return 0;
+	const ::MNM::INavMeshQuery::SNavMeshQueryConfigInstant config(
+		m_meshId,
+		"CNavMesh::GetTriangles",
+		localAabb,
+		overlappingMode,
+		pFilter
+	);
 
-	size_t triCount = 0;
-
-	const size_t nodeCount = tile.nodeCount;
-	size_t nodeID = 0;
-	while (nodeID < nodeCount)
-	{
-		const Tile::SBVNode& node = tile.nodes[nodeID];
-
-		if (!queryAabbTile.overlaps(node.aabb))
-			nodeID += node.leaf ? 1 : node.offset;
-		else
-		{
-			++nodeID;
-
-			if (node.leaf)
-			{
-				const uint16 triangleIdx = node.offset;
-				const TriangleID triangleID = ComputeTriangleID(tileID, triangleIdx);
-				const Tile::STriangle& triangle = GetTriangleUnsafe(tileID, triangleIdx);
-
-				if (filter.PassFilter(triangle))
-				{
-					pOutTriangles[triCount++] = triangleID;
-
-					if (triCount == maxTrianglesCount)
-						break;
-				}
-			}
-		}
-	}
-	return triCount;
+	CDefaultProcessing queryProcessing;
+	GetAISystem()->GetNavigationSystem()->GetNavMeshQueryManager()->RunInstantQuery(config, queryProcessing);
+	return std::move(queryProcessing.GetTriangleIdArray());
 }
 
-template<typename TFilter>
-size_t CNavMesh::QueryTileTriangles(const TileID tileID, const vector3_t& tileOrigin, const aabb_t& queryAabbWorld, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
+TriangleID CNavMesh::QueryTriangleAt(const vector3_t& localPosition, const real_t verticalDownwardRange, const real_t verticalUpwardRange) const 
 {
-	const STile& tile = GetTile(tileID);
-
-	const vector3_t tileMin(0, 0, 0);
-	const vector3_t tileMax(m_params.tileSize.x, m_params.tileSize.y, m_params.tileSize.z);
-
-	aabb_t queryAabbTile(queryAabbWorld);
-	queryAabbTile.min = vector3_t::maximize(queryAabbTile.min - tileOrigin, tileMin);
-	queryAabbTile.max = vector3_t::minimize(queryAabbTile.max - tileOrigin, tileMax);
-
-	if (!tile.nodeCount)
-	{
-		return QueryTileTrianglesLinear(tileID, tile, queryAabbTile, filter, maxTrianglesCount, pOutTriangles);
-	}
-	else
-	{
-		return QueryTileTrianglesBV(tileID, tile, queryAabbTile, filter, maxTrianglesCount, pOutTriangles);
-	}
+	return QueryTriangleAt(localPosition, verticalDownwardRange, verticalUpwardRange, ENavMeshQueryOverlappingMode::BoundingBox_Partial, nullptr);
 }
 
-template<typename TFilter>
-size_t CNavMesh::QueryTrianglesWithFilterInternal(const aabb_t& queryLocalAabb, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
+TriangleID CNavMesh::QueryTriangleAt(const vector3_t& localPosition, const real_t verticalDownwardRange, const real_t verticalUpwardRange, const ENavMeshQueryOverlappingMode overlappingMode, const INavMeshQueryFilter* pFilter) const 
 {
-	CRY_ASSERT(pOutTriangles);
-	CRY_ASSERT(maxTrianglesCount > 0);
-	if (!(pOutTriangles && maxTrianglesCount > 0))
-	{
-		return 0;
-	}
-
-	const size_t minX = (std::max(queryLocalAabb.min.x, real_t(0)) / real_t(m_params.tileSize.x)).as_uint();
-	const size_t minY = (std::max(queryLocalAabb.min.y, real_t(0)) / real_t(m_params.tileSize.y)).as_uint();
-	const size_t minZ = (std::max(queryLocalAabb.min.z, real_t(0)) / real_t(m_params.tileSize.z)).as_uint();
-
-	const size_t maxX = (std::max(queryLocalAabb.max.x, real_t(0)) / real_t(m_params.tileSize.x)).as_uint();
-	const size_t maxY = (std::max(queryLocalAabb.max.y, real_t(0)) / real_t(m_params.tileSize.y)).as_uint();
-	const size_t maxZ = (std::max(queryLocalAabb.max.z, real_t(0)) / real_t(m_params.tileSize.z)).as_uint();
-
-	size_t triCount = 0;
-
-	TriangleID* pTrianglesBegin = pOutTriangles;
-	size_t maxTrianglesCountLeft = maxTrianglesCount;
-
-	for (uint y = minY; y <= maxY; ++y)
-	{
-		for (uint x = minX; x <= maxX; ++x)
-		{
-			for (uint z = minZ; z <= maxZ; ++z)
-			{
-				if (const TileID tileID = GetTileID(x, y, z))
-				{
-					const vector3_t tileOrigin = GetTileOrigin(x, y, z);
-
-					const size_t trianglesInTileCount = QueryTileTriangles(tileID, tileOrigin, queryLocalAabb, filter, maxTrianglesCountLeft, pTrianglesBegin);
-
-					CRY_ASSERT(maxTrianglesCountLeft >= trianglesInTileCount);
-					maxTrianglesCountLeft -= trianglesInTileCount;
-					pTrianglesBegin += trianglesInTileCount;
-					triCount += trianglesInTileCount;
-
-					if (maxTrianglesCountLeft == 0)
-					{
-						return triCount;
-					}
-				}
-			}
-		}
-	}
-
-	return triCount;
-}
-
-void CNavMesh::QueryTrianglesWithProcessing(const aabb_t& queryAabbWorld, const INavMeshQueryFilter* pFilter, INavMeshQueryProcessing* pQuery) const
-{
-	if (pFilter)
-	{
-		return QueryTrianglesWithProcessingInternal(queryAabbWorld, *pFilter, *pQuery);
-	}
-	else
-	{
-		return QueryTrianglesWithProcessingInternal(queryAabbWorld, DefaultQueryFilters::g_acceptAllTriangles, *pQuery);
-	}
-}
-
-TriangleID CNavMesh::FindClosestTriangleInternal(
-  const vector3_t& localPosition,
-  const TriangleID* pCandidateTriangles,
-  const size_t candidateTrianglesCount,
-  vector3_t* pOutClosestLocalPosition,
-  real_t::unsigned_overflow_type* pOutClosestDistanceSq) const
-{
-	TriangleID closestID = Constants::InvalidTriangleID;
-	MNM::real_t::unsigned_overflow_type closestDistanceSq = std::numeric_limits<MNM::real_t::unsigned_overflow_type>::max();
-	vector3_t closestPos(real_t::max());
-
-	if (candidateTrianglesCount)
-	{
-		MNM::vector3_t a, b, c;
-
-		for (size_t i = 0; i < candidateTrianglesCount; ++i)
-		{
-			const TriangleID triangleId = pCandidateTriangles[i];
-
-			if (GetVertices(triangleId, a, b, c))
-			{
-				const MNM::vector3_t ptClosest = ClosestPtPointTriangle(localPosition, a, b, c);
-				const MNM::real_t::unsigned_overflow_type dSq = (ptClosest - localPosition).lenSqNoOverflow();
-
-				if (dSq < closestDistanceSq)
-				{
-					closestID = triangleId;
-					closestDistanceSq = dSq;
-					closestPos = ptClosest;
-				}
-			}
-		}
-	}
-
-	if (closestID != Constants::InvalidTriangleID)
-	{
-		if (pOutClosestLocalPosition)
-		{
-			*pOutClosestLocalPosition = closestPos;
-		}
-
-		if (pOutClosestDistanceSq)
-		{
-			*pOutClosestDistanceSq = closestDistanceSq;
-		}
-	}
-
-	return closestID;
-}
-
-#pragma warning(push)
-#pragma warning(disable:28285)
-size_t CNavMesh::GetTriangles(aabb_t localAabb, TriangleID* triangles, size_t maxTriCount, const INavMeshQueryFilter* pFilter, float minIslandArea) const
-{
-	if (minIslandArea <= 0.0f)
-	{
-		if (pFilter)
-		{
-			return QueryTrianglesWithFilterInternal(localAabb, *pFilter, maxTriCount, triangles);
-		}
-		else
-		{
-			return QueryTrianglesWithFilterInternal(localAabb, DefaultQueryFilters::g_acceptAllTriangles, maxTriCount, triangles);
-		}
-	}
-	else
-	{
-		if (pFilter)
-		{
-			static const SNavigationQueryFilterWithMinIslandFilter filter(*pFilter, *this, minIslandArea);
-			return QueryTrianglesWithFilterInternal(localAabb, filter, maxTriCount, triangles);
-		}
-		else
-		{
-			static const SMinIslandAreaQueryTrianglesFilter filter(*this, minIslandArea);
-			return QueryTrianglesWithFilterInternal(localAabb, filter, maxTriCount, triangles);
-		}
-	}
-}
-#pragma warning(pop)
-
-TriangleID CNavMesh::GetTriangleAt(const vector3_t& localPosition, const real_t verticalDownwardRange, const real_t verticalUpwardRange, const INavMeshQueryFilter* pFilter, float minIslandArea /*= 0.0f*/) const
-{
-	const MNM::aabb_t aabb(
+	const aabb_t aabb(
 		MNM::vector3_t(localPosition.x, localPosition.y, localPosition.z - verticalDownwardRange),
-		MNM::vector3_t(localPosition.x, localPosition.y, localPosition.z + verticalUpwardRange));
+		MNM::vector3_t(localPosition.x, localPosition.y, localPosition.z + verticalUpwardRange)
+	);
 
-	CTriangleAtQuery query(this, localPosition);
-	QueryTrianglesWithProcessing(aabb, pFilter, query);
+	const INavMeshQuery::SNavMeshQueryConfigInstant config(
+		m_meshId,
+		"CNavMesh::QueryTriangleAt",
+		aabb,
+		overlappingMode,
+		pFilter
+	);
 
-	return query.GetTriangleId();
+	CTriangleAtQueryProcessing queryProcessing(m_meshId, localPosition);
+	GetAISystem()->GetNavigationSystem()->GetNavMeshQueryManager()->RunInstantQuery(config, queryProcessing);
+	return queryProcessing.GetTriangleId();
 }
 
-bool CNavMesh::IsTriangleAcceptableForLocation(const vector3_t& localPosition, TriangleID triangleID) const
+SClosestTriangle CNavMesh::QueryClosestTriangle(const vector3_t& worldPos, const aabb_t& localAabbAroundPosition) const 
 {
-	// Function is only used in RayCast_v1
-	//TODO: Use filter?
-
-	const MNM::real_t range = MNM::real_t(1.0f);
-	if (triangleID)
-	{
-		const MNM::aabb_t aabb(
-		  MNM::vector3_t(localPosition.x - range, localPosition.y - range, localPosition.z - range),
-		  MNM::vector3_t(localPosition.x + range, localPosition.y + range, localPosition.z + range));
-
-		const size_t MaxTriCandidateCount = 1024;
-		TriangleID candidates[MaxTriCandidateCount];
-
-		const size_t candidateCount = GetTriangles(aabb, candidates, MaxTriCandidateCount, nullptr);
-
-		if (candidateCount)
-		{
-			MNM::vector3_t a, b, c;
-
-			for (size_t i = 0; i < candidateCount; ++i)
-			{
-				GetVertices(candidates[i], a, b, c);
-
-				if (candidates[i] == triangleID && PointInTriangle(vector2_t(localPosition), vector2_t(a), vector2_t(b), vector2_t(c)))
-				{
-					return true;
-				}
-			}
-		}
-	}
-
-	return false;
+	return QueryClosestTriangle( worldPos, localAabbAroundPosition, ENavMeshQueryOverlappingMode::BoundingBox_Partial, real_t::max(), nullptr);
 }
 
-TriangleID CNavMesh::GetClosestTriangle(const vector3_t& localPosition, real_t vrange, real_t hrange, const INavMeshQueryFilter* pFilter, real_t* distance,
-                                        vector3_t* closest, float minIslandArea) const
+SClosestTriangle CNavMesh::QueryClosestTriangle(const vector3_t& worldPos, const aabb_t& localAabbAroundPosition, const ENavMeshQueryOverlappingMode overlappingMode, const MNM::real_t maxDistance, const INavMeshQueryFilter* pFilter) const 
+{
+	const MNM::aabb_t aabb(worldPos + localAabbAroundPosition.min, worldPos + localAabbAroundPosition.max);
+
+	const INavMeshQuery::SNavMeshQueryConfigInstant config(
+		m_meshId,
+		"CNavMesh::QueryClosestTriangle",
+		aabb,
+		overlappingMode,
+		pFilter
+	);
+
+	CNearestTriangleQueryProcessing queryProcessing(m_meshId, worldPos, maxDistance);
+	GetAISystem()->GetNavigationSystem()->GetNavMeshQueryManager()->RunInstantQuery(config, queryProcessing);
+
+	return MNM::SClosestTriangle(queryProcessing.GetClosestTriangleId(),
+		queryProcessing.GetClosestPosition(),
+		queryProcessing.GetClosestDistance());
+}
+
+bool CNavMesh::QueryIsTriangleAcceptableForLocation(const vector3_t& localPosition, const TriangleID triangleID) const 
+{
+	return QueryIsTriangleAcceptableForLocation(localPosition, triangleID, real_t(1.0f), ENavMeshQueryOverlappingMode::BoundingBox_Partial, nullptr);
+}
+
+bool CNavMesh::QueryIsTriangleAcceptableForLocation(const vector3_t& localPosition, const TriangleID triangleID, const real_t range, const ENavMeshQueryOverlappingMode overlappingMode, const INavMeshQueryFilter* pFilter) const 
 {
 	const MNM::aabb_t aabb(
-	  MNM::vector3_t(localPosition.x - hrange, localPosition.y - hrange, localPosition.z - vrange),
-	  MNM::vector3_t(localPosition.x + hrange, localPosition.y + hrange, localPosition.z + vrange));
+		MNM::vector3_t(localPosition.x - range, localPosition.y - range, localPosition.z - range),
+		MNM::vector3_t(localPosition.x + range, localPosition.y + range, localPosition.z + range));
 
-	CNearestTriangleQuery query(this, localPosition);
-	QueryTrianglesWithProcessing(aabb, pFilter, query);
+	const INavMeshQuery::SNavMeshQueryConfigInstant config(
+		m_meshId,
+		"CNavMesh::QueryIsTriangleAcceptableForLocation",
+		aabb,
+		overlappingMode,
+		pFilter
+	);
 
-	const MNM::TriangleID closestTriangleId = query.GetClosestTriangleId();
-
-	if (closestTriangleId != MNM::Constants::InvalidTriangleID)
-	{
-		if (distance)
-		{
-			*distance = query.GetClosestDistance();
-		}
-		if (closest)
-		{
-			*closest = query.GetClosestPosition();
-		}
-	}
-	return closestTriangleId;
+	CFindTriangleQueryProcessing queryProcessing(m_meshId, triangleID, localPosition);
+	GetAISystem()->GetNavigationSystem()->GetNavMeshQueryManager()->RunInstantQuery(config, queryProcessing);
+	return queryProcessing.WasTriangleFound();
 }
 
-TriangleID CNavMesh::GetClosestTriangle(const vector3_t& localPosition, const aabb_t& aroundPositionAABB, const INavMeshQueryFilter* pFilter,
-	real_t* distance /*= nullptr*/, vector3_t* closest /*= nullptr*/,
-	const real_t maxDistance /*= real_t::max()*/, const float minIslandArea /*= 0.0f*/) const
+INavigationSystem::NavMeshBorderWithNormalArray CNavMesh::QueryMeshBorders(const aabb_t& localAabb) const 
 {
-	const MNM::aabb_t aabb(localPosition + aroundPositionAABB.min, localPosition + aroundPositionAABB.max);
-
-	CNearestTriangleQuery query(this, localPosition, maxDistance);
-	QueryTrianglesWithProcessing(aabb, pFilter, query);
-
-	const MNM::TriangleID closestTriangleId = query.GetClosestTriangleId();
-
-	if (closestTriangleId != MNM::Constants::InvalidTriangleID)
-	{
-		if (distance)
-		{
-			*distance = query.GetClosestDistance();
-		}
-		if (closest)
-		{
-			*closest = query.GetClosestPosition();
-		}
-	}
-	return closestTriangleId;
+	return QueryMeshBorders(localAabb, ENavMeshQueryOverlappingMode::BoundingBox_Partial, nullptr, nullptr);
 }
 
+INavigationSystem::NavMeshBorderWithNormalArray CNavMesh::QueryMeshBorders(const aabb_t& localAabb, ENavMeshQueryOverlappingMode overlappingMode, const INavMeshQueryFilter* pQueryFilter, const INavMeshQueryFilter* pAnnotationFilter) const 
+{
+	const INavMeshQuery::SNavMeshQueryConfigInstant config(
+		m_meshId,
+		"CNavMesh::QueryMeshBorders",
+		localAabb,
+		overlappingMode,
+		pQueryFilter
+	);
+
+	CGetMeshBordersQueryProcessing queryProcessing(m_meshId, pAnnotationFilter ? *pAnnotationFilter : DefaultQueryFilters::g_acceptAllTriangles);
+	GetAISystem()->GetNavigationSystem()->GetNavMeshQueryManager()->RunInstantQuery(config, queryProcessing);
+	return std::move(queryProcessing.GetBordersNormals());
+}
 
 bool CNavMesh::GetVertices(TriangleID triangleID, vector3_t& v0, vector3_t& v1, vector3_t& v2) const
 {
@@ -642,22 +382,6 @@ bool CNavMesh::GetLinkedEdges(TriangleID triangleID, size_t& linkedEdges) const
 	}
 
 	return false;
-}
-
-size_t CNavMesh::GetMeshBorders(const aabb_t& localAabb, const INavMeshQueryFilter* pFilter, Vec3* pBorders, const size_t maxBorderCount, const float minIslandArea /* = 0.0f*/) const
-{
-	if (pFilter)
-	{
-		CGetMeshBordersQueryWithFilter query(this, pBorders, maxBorderCount, *pFilter);
-		QueryTrianglesWithProcessing(localAabb, pFilter, query);
-		return query.GetFoundBordersCount();
-	}
-	else
-	{
-		CGetMeshBordersQueryNoFilter query(this, pBorders, maxBorderCount);
-		QueryTrianglesWithProcessing(localAabb, pFilter, query);
-		return query.GetFoundBordersCount();
-	}
 }
 
 bool CNavMesh::GetTriangle(TriangleID triangleID, Tile::STriangle& triangle) const
@@ -733,7 +457,7 @@ bool CNavMesh::SnapPosition(
 		{
 		case SSnappingMetric::EType::Vertical:
 		{
-			if (const TriangleID closestId = GetTriangleAt(localPosition, verticalDownRange, verticalUpRange, pFilter))
+			if (const TriangleID closestId = QueryTriangleAt(localPosition, verticalDownRange, verticalUpRange, ENavMeshQueryOverlappingMode::BoundingBox_Partial, pFilter))
 			{
 				if (pTriangleId)
 					*pTriangleId = closestId;
@@ -755,12 +479,15 @@ bool CNavMesh::SnapPosition(
 		case SSnappingMetric::EType::Circular:
 		{
 			const MNM::real_t horizontalRange = snappingMetric.horizontalRange == -FLT_MAX ? horizontalDefaultRange : MNM::real_t(snappingMetric.horizontalRange);
-			const MNM::aabb_t aroundPositionAABB(MNM::vector3_t(-horizontalRange, -horizontalRange, -verticalDownRange), MNM::vector3_t(horizontalRange, horizontalRange, verticalUpRange));
+			const MNM::aabb_t localAabb(MNM::vector3_t(-horizontalRange, -horizontalRange, -verticalDownRange), MNM::vector3_t(horizontalRange, horizontalRange, verticalUpRange));
 			const MNM::real_t maxDistance = snappingMetric.type == SSnappingMetric::EType::Circular ? horizontalRange : real_t::max();
-			if (const TriangleID closestId = GetClosestTriangle(localPosition, aroundPositionAABB, pFilter, nullptr, pSnappedLocalPosition, maxDistance))
+			const MNM::SClosestTriangle closestTriangle = QueryClosestTriangle(localPosition, localAabb, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, maxDistance, pFilter);
+			if (closestTriangle.id != MNM::Constants::InvalidTriangleID)
 			{
+				if (pSnappedLocalPosition)
+					*pSnappedLocalPosition = closestTriangle.position;
 				if (pTriangleId)
-					*pTriangleId = closestId;
+					*pTriangleId = closestTriangle.id;
 				return true;
 			}
 			break;
@@ -788,7 +515,8 @@ bool CNavMesh::SnapPosition(
 	{
 	case SSnappingMetric::EType::Vertical:
 	{
-		if (const TriangleID closestId = GetTriangleAt(localPosition, verticalDownRange, verticalUpRange, pFilter))
+		const TriangleID closestId = QueryTriangleAt(localPosition, verticalDownRange, verticalUpRange, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, pFilter);
+		if (closestId != MNM::Constants::InvalidTriangleID)
 		{
 			if (pTriangleId)
 				*pTriangleId = closestId;
@@ -810,12 +538,15 @@ bool CNavMesh::SnapPosition(
 	case SSnappingMetric::EType::Circular:
 	{
 		const MNM::real_t horizontalRange = snappingMetric.horizontalRange == -FLT_MAX ? horizontalDefaultRange : MNM::real_t(snappingMetric.horizontalRange);
-		const MNM::aabb_t aroundPositionAABB(MNM::vector3_t(-horizontalRange, -horizontalRange, -verticalDownRange), MNM::vector3_t(horizontalRange, horizontalRange, verticalUpRange));
+		const MNM::aabb_t localAabb(MNM::vector3_t(-horizontalRange, -horizontalRange, -verticalDownRange), MNM::vector3_t(horizontalRange, horizontalRange, verticalUpRange));
 		const MNM::real_t maxDistance = snappingMetric.type == SSnappingMetric::EType::Circular ? horizontalRange : real_t::max();
-		if (const TriangleID closestId = GetClosestTriangle(localPosition, aroundPositionAABB, pFilter, nullptr, pSnappedLocalPosition, maxDistance))
+		const MNM::SClosestTriangle closestTriangle = QueryClosestTriangle(localPosition, localAabb, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, maxDistance, pFilter);
+		if (closestTriangle.id != MNM::Constants::InvalidTriangleID)
 		{
+			if (pSnappedLocalPosition)
+				*pSnappedLocalPosition = closestTriangle.position;
 			if (pTriangleId)
-				*pTriangleId = closestId;
+				*pTriangleId = closestTriangle.id;
 			return true;
 		}
 		break;
@@ -941,7 +672,7 @@ CNavMesh::EWayQueryResult CNavMesh::FindWay(SWayQueryRequest& inputRequest, SWay
 	}
 	else
 	{
-		return FindWayInternal(inputRequest, workingSet, DefaultQueryFilters::g_acceptAllTriangles, result);
+		return FindWayInternal(inputRequest, workingSet, DefaultQueryFilters::g_acceptAllTrianglesCheap, result);
 	}
 }
 
@@ -1476,7 +1207,7 @@ MNM::ERayCastResult CNavMesh::RayCast(const vector3_t& fromLocalPosition, Triang
 		}
 		else
 		{
-			return RayCast_v3(fromLocalPosition, fromTri, toLocalPosition, toTri, DefaultQueryFilters::g_acceptAllTriangles, raycastRequest);
+			return RayCast_v3(fromLocalPosition, fromTri, toLocalPosition, toTri, DefaultQueryFilters::g_acceptAllTrianglesCheap, raycastRequest);
 		}
 	}
 	}
@@ -2152,7 +1883,7 @@ MNM::ERayCastResult CNavMesh::RayCast_v1(const vector3_t& fromLocalPosition, Tri
 
 		raycastRequest.wayTriCount = triCount;
 
-		bool isEndingTriangleAcceptable = IsTriangleAcceptableForLocation(toLocalPosition, raycastRequest.way[triCount - 1]);
+		bool isEndingTriangleAcceptable = QueryIsTriangleAcceptableForLocation(toLocalPosition, raycastRequest.way[triCount - 1]);
 		return isEndingTriangleAcceptable ? ERayCastResult::NoHit : ERayCastResult::DisconnectedLocations;
 	}
 
@@ -2529,48 +2260,17 @@ TileID CNavMesh::FindTileIDByTileGridCoord(const vector3_t& tileGridCoord) const
 	return GetTileID(nx, ny, nz);
 }
 
-size_t CNavMesh::QueryTriangles(const aabb_t& queryLocalAabb, const INavMeshQueryFilter* pOptionalFilter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
+MNM::SClosestTriangle CNavMesh::FindClosestTriangle(const vector3_t& localPosition, const DynArray<TriangleID>& candidateTriangles) const
 {
-	CRY_ASSERT(pOutTriangles);
-	CRY_ASSERT(maxTrianglesCount > 0);
+	CNearestTriangleQueryProcessing queryProcessing(m_meshId, localPosition);
+	queryProcessing.AddTriangleArray(candidateTriangles);
+	queryProcessing.Process();
 
-	if (!(pOutTriangles && maxTrianglesCount > 0))
-	{
-		return 0;
-	}
-
-	if (pOptionalFilter)
-	{
-		return QueryTrianglesWithFilterInternal(queryLocalAabb, *pOptionalFilter, maxTrianglesCount, pOutTriangles);
-	}
-	else
-	{
-		return QueryTrianglesWithFilterInternal(queryLocalAabb, DefaultQueryFilters::g_acceptAllTriangles, maxTrianglesCount, pOutTriangles);
-	}
-}
-
-TriangleID CNavMesh::FindClosestTriangle(const vector3_t& localPosition, const TriangleID* pCandidateTriangles, const size_t candidateTrianglesCount, vector3_t* pOutClosestLocalPosition, float* pOutClosestDistanceSq) const
-{
-	CRY_ASSERT(pCandidateTriangles);
-	CRY_ASSERT(candidateTrianglesCount > 0);
-
-	if (!(pCandidateTriangles && candidateTrianglesCount > 0))
-	{
-		return Constants::InvalidTriangleID;
-	}
-
-	real_t::unsigned_overflow_type closestDistanceSq;
-	const TriangleID resultTriangleId = FindClosestTriangleInternal(localPosition, pCandidateTriangles, candidateTrianglesCount, pOutClosestLocalPosition, &closestDistanceSq);
-	if (resultTriangleId != Constants::InvalidTriangleID)
-	{
-		if (pOutClosestDistanceSq)
-		{
-			// Can't assign overflow_type directly to real_t, but it's still at the same scale, so we can calculate float from it.
-			// See fixed_t::as_float().
-			*pOutClosestDistanceSq = (closestDistanceSq / (float)real_t::integer_scale);
-		}
-	}
-	return resultTriangleId;
+	return MNM::SClosestTriangle(
+		queryProcessing.GetClosestTriangleId(),
+		queryProcessing.GetClosestPosition(),
+		queryProcessing.GetClosestDistance()
+	);
 }
 
 bool CNavMesh::GetTileData(const TileID tileId, Tile::STileData& outTileData) const

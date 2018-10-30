@@ -20,6 +20,7 @@ public:
 	virtual const char* GetObjectClassName() const             { return "Prefab"; }
 	virtual string      GetObjectFilePath(const CAsset* pAsset) const;
 	virtual void        PreDeleteAssetFiles(const CAsset& asset) const override;
+	virtual bool        RenameAsset(CAsset* pAsset, const char* szNewName) const override;
 
 private:
 
