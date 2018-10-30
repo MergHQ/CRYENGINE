@@ -221,8 +221,6 @@ int CFontRenderer::GetGlyph(CGlyphBitmap* pGlyphBitmap, uint8* iGlyphWidth, uint
 	if (iGlyphHeight)
 		*iGlyphHeight = m_pGlyph->bitmap.rows;
 
-	int iTopOffset = (m_iGlyphBitmapHeight - (int)(m_iGlyphBitmapHeight * m_fSizeRatio)) + m_pGlyph->bitmap_top;
-
 	iCharOffsetX = (char)m_pGlyph->bitmap_left;
 	//	iCharOffsetY = (char)m_pGlyph->bitmap_top;
 	iCharOffsetY = (char)((int)(m_iGlyphBitmapHeight * m_fSizeRatio) - m_pGlyph->bitmap_top);   // is that correct? - we need the baseline
