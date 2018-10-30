@@ -234,8 +234,12 @@ void CFlowSystem::RegisterAllNodeTypes()
 	m_nextNodeTypeID = InvalidFlowNodeTypeId;
 
 	// register all types
+#if defined(USE_CRY_ASSERT)
 	TFlowNodeTypeId typeId = RegisterType("InvalidType", 0);
 	assert(typeId == InvalidFlowNodeTypeId);
+#else
+	RegisterType("InvalidType", 0);
+#endif
 	RegisterType("Debug:Log", new CSingletonFlowFactory<CFlowLogNode>());
 	RegisterType("Game:Start", new CAutoFlowFactory<CFlowStartNode>());
 	RegisterType("TrackEvent", new CAutoFlowFactory<CFlowTrackEventNode>());

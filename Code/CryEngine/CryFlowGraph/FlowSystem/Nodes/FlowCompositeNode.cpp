@@ -35,7 +35,6 @@ void CCompositeInteriorNode::ProcessEvent(EFlowEvent event, SActivationInfo* pAc
 	case eFE_Activate:
 		{
 			size_t numPorts = m_pFactory->GetInputPortCount(false);
-			TFlowNodeId interfaceNode = m_pFactory->GetInterfaceNode();
 			CCompositeGraph* pMyGraph = (CCompositeGraph*) pActInfo->pGraph;
 			pActInfo = pMyGraph->GetParentInfo();
 

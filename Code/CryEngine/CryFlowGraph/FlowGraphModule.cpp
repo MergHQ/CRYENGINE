@@ -35,8 +35,6 @@ class CEngineModule_FlowGraph : public IFlowSystemEngineModule
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool Initialize( SSystemGlobalEnvironment &env,const SSystemInitParams &initParams ) override
 	{
-		ISystem* pSystem = env.pSystem;
-		
 		CFlowSystem* pFlowSystem = new CFlowSystem();
 		env.pFlowSystem = pFlowSystem;
 		pFlowSystem->PreInit();

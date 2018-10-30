@@ -308,8 +308,6 @@ public:
 			const string file = GetPortString(pActInfo, EIP_File);
 			const int loc = GetPortInt(pActInfo, EIP_Location);
 
-			ICryPak* pPak = gEnv->pCryPak;
-
 			// Qualify path
 			string szLoadPath;
 			switch (loc)

@@ -76,9 +76,9 @@ void CFlowDelayNode::Serialize(SActivationInfo* pActInfo, TSerialize ser)
 			// we can directly read into the m_activations array
 			// regular update is handled by CFlowGraph
 			ser.Value("m_activations", m_activations);
-			Activations::iterator iter = m_activations.begin();
 #if 0
 			CryLogAlways("CDelayNode read: current time(ms): %f", curTime.GetMilliSeconds());
+			Activations::iterator iter = m_activations.begin();
 			while (iter != m_activations.end())
 			{
 				CryLogAlways("CDelayNode read: ms=%d  timevalue(ms): %f", (*iter).first, (*iter).second.m_timeout.GetMilliSeconds());

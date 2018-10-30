@@ -118,7 +118,6 @@ public:
 			break;
 		case eFE_Update:
 			{
-				ISystem* pSystem = GetISystem();
 				IRenderer* pRenderer = gEnv->pRenderer;
 
 				float frameTime = gEnv->pTimer->GetFrameTime();

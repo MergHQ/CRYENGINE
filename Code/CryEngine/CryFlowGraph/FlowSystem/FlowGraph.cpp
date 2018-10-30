@@ -1482,7 +1482,6 @@ bool CFlowGraphBase::ReadXML(const XmlNodeRef& root)
 		{
 			XmlNodeRef node = nodes->getChild(i);
 			const char* type = node->getAttr(NODE_TYPE_ATTR);
-			const char* name = node->getAttr(NODE_NAME_ATTR);
 			if (0 == strcmp(type, "_comment"))
 				continue;
 			if (0 == strcmp(type, "_commentbox"))
@@ -1945,7 +1944,6 @@ void CFlowGraphBase::GetGraphStats(int& nodeCount, int& edgeCount)
 {
 	nodeCount = m_flowData.size();
 	edgeCount = m_edges.size();
-	size_t cool = m_nodeNameToId.size();
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -287,7 +287,7 @@ void CFlowGraphModuleManager::ScanFolder(const string& folderName, bool bGlobal)
 					PathUtil::MakeGamePath(folderName);
 
 					// initial load: creates module, registers nodes
-					CFlowGraphModule* pModule = PreLoadModuleFile(moduleName.c_str(), PathUtil::GetPathWithoutFilename(folderName) + fd.name, bGlobal);
+					PreLoadModuleFile(moduleName.c_str(), PathUtil::GetPathWithoutFilename(folderName) + fd.name, bGlobal);
 				}
 			}
 
