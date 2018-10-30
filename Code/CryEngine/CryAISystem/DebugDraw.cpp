@@ -954,8 +954,8 @@ void CAISystem::DebugDrawDebugAgent()
 void CAISystem::DebugDrawNavigation() const
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
-
-	m_pNavigation->DebugDraw();
+	if(m_pNavigation)
+		m_pNavigation->DebugDraw();
 }
 
 void CAISystem::DebugDrawLightManager()
