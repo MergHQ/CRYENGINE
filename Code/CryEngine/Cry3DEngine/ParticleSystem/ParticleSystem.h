@@ -70,7 +70,6 @@ public:
 
 	static float             GetMaxAngularDensity(const CCamera& camera);
 	QuatT                    GetLastCameraPose() const        { return m_lastCameraPose; }
-	QuatT                    GetCameraMotion() const          { return m_cameraMotion; }
 	const TParticleEmitters& GetActiveEmitters() const        { return m_emitters; }
 	IMaterial*               GetFlareMaterial();
 
@@ -98,7 +97,6 @@ private:
 	_smart_ptr<IMaterial>    m_pFlareMaterial;
 	bool                     m_bResetEmitters = false;
 	QuatT                    m_lastCameraPose = IDENTITY;
-	QuatT                    m_cameraMotion   = ZERO;
 	uint                     m_numClears      = 0;
 	uint                     m_numFrames      = 0;
 	uint                     m_nextEmitterId  = 0;
