@@ -1885,7 +1885,7 @@ void CVehicle::DebugDraw(const float frameTime)
 
 		for (TVehicleSoundEventId i = 0; i < m_soundEvents.size(); ++i)
 		{
-			if (GetSoundInfo(i) != nullptr)
+			if (SVehicleSoundInfo* info = GetSoundInfo(i))
 			{
 				if (ISound* pSound = m_pIEntityAudioComponent->GetSound(info->soundId))
 				{
