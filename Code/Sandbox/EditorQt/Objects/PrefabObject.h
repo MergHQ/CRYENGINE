@@ -138,6 +138,7 @@ protected:
 private:
 	void DeleteChildrenWithoutUpdating();
 	void AttachLoadedChildrenToPrefab(CObjectArchive& ar, IObjectLayer* pThisLayer);
+	void SetPrefab(CPrefabItem* pPrefab);
 
 protected:
 	_smart_ptr<CPrefabItem>           m_pPrefabItem;

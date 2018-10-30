@@ -19,15 +19,15 @@ public:
 	~CBaseLibraryItem();
 
 	//! Set item name.
-	//! Its virtual, in case you want to override it in derrived item.
+	//! Its virtual, in case you want to override it in derived item.
 	virtual void SetName(const string& name)
 	{
 		SetName(name, false);
 	}
 	//! Set item name.
-	inline void SetName(const char* name) // for CString conversion
+	inline void SetName(const char* szName) // for CString conversion
 	{
-		SetName(name, false);
+		SetName(string(szName));
 	}
 	//! Get item name.
 	const string& GetName() const;
@@ -37,7 +37,7 @@ public:
 	//! eg. library Pickup and item PickupRL form full item name: "Pickups.PickupRL".
 	string GetFullName() const;
 
-	//! Get only nameof group from prototype.
+	//! Get only name of group from prototype.
 	string GetGroupName();
 	//! Get short name of prototype without group.
 	string GetShortName();

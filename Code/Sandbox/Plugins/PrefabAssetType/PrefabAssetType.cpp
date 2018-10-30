@@ -72,6 +72,38 @@ void CPrefabAssetType::PreDeleteAssetFiles(const CAsset& asset) const
 	pManager->DeleteItem(item);
 }
 
+bool CPrefabAssetType::RenameAsset(CAsset* pAsset, const char* szNewName) const
+{
+	CPrefabManager* const pManager = GetIEditor()->GetPrefabManager();
+
+	if (!pManager->FindLibrary(pAsset->GetFile(0)))
+	{
+		pManager->LoadLibrary(pAsset->GetFile(0));
+	}
+
+	IDataBaseItem* const pItem = pManager->FindItem(pAsset->GetGUID());
+	if (!pItem)
+	{
+		CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_ERROR,
+			"Unable to rename prefab with id \"%s\".\n"
+			"Please make sure that the file \"%s\" exists and has the corresponding id.",
+			pAsset->GetGUID().ToString().c_str(),
+			pAsset->GetFile(0).c_str());
+		return false;
+	}
+
+	if (!CAssetType::RenameAsset(pAsset, szNewName))
+	{
+		return false;
+	}
+
+	pItem->SetName(pAsset->GetName());
+	CBaseLibrary* const pLibrary = static_cast<CBaseLibrary*>(pItem->GetLibrary());
+	pLibrary->SetFilename(pAsset->GetFile(0));
+	pLibrary->SetName(PathUtil::RemoveExtension(pAsset->GetFile(0)));
+	return pLibrary->Save();
+}
+
 bool CPrefabAssetType::OnCreate(INewAsset& asset, const void* pCreateParams) const
 {
 	using namespace Private_PrefabAssetType;

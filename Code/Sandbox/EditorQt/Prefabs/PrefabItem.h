@@ -31,6 +31,8 @@ public:
 
 	virtual EDataBaseItemType GetType() const { return EDB_TYPE_PREFAB; }
 
+	virtual void SetName(const string& name) override;
+
 	void                      Serialize(SerializeContext& ctx);
 
 	//! Make prefab from selection of objects.
@@ -61,6 +63,11 @@ public:
 	std::set<CryGUID> FindAllPrefabsGUIDsInChildren(const std::set<CryGUID>& toIgnore);
 
 	void           CheckVersionAndUpgrade();
+
+	//! Called when the item name changed.
+	//! \sa SetName
+	CCrySignal<void()> signalNameChanged;
+
 private:
 	//! Function to serialize changes to the main prefab lib (this changes only the internal XML representation m_objectsNode)
 	void           ModifyLibraryPrefab(CSelectionGroup& objectsInPrefabAsFlatSelection, CPrefabObject* pPrefabObject, const SObjectChangedContext& context, const TObjectIdMapping& guidMapping);

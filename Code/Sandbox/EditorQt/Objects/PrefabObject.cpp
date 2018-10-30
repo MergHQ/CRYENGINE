@@ -241,8 +241,8 @@ CPrefabObject::CPrefabObject()
 void CPrefabObject::Done()
 {
 	LOADING_TIME_PROFILE_SECTION_ARGS(GetName().c_str());
-	m_pPrefabItem = 0;
 
+	SetPrefab(nullptr);
 	DeleteAllMembers();
 	CBaseObject::Done();
 }
@@ -711,7 +711,8 @@ void CPrefabObject::SetPrefab(CPrefabItem* pPrefab, bool bForceReload)
 
 	DeleteChildrenWithoutUpdating();
 
-	m_pPrefabItem = pPrefab;
+	SetPrefab(pPrefab);
+	
 	m_prefabGUID = pPrefab->GetGUID();
 	m_prefabName = pPrefab->GetFullName();
 
@@ -760,6 +761,21 @@ void CPrefabObject::SetPrefab(CPrefabItem* pPrefab, bool bForceReload)
 	eventsDelay.Resume();
 
 	pPrefabManager->SetSkipPrefabUpdate(false);
+}
+
+void CPrefabObject::SetPrefab(CPrefabItem* pPrefab)
+{
+	if (m_pPrefabItem)
+	{
+		m_pPrefabItem->signalNameChanged.DisconnectObject(this);
+	}
+
+	if (pPrefab)
+	{
+		pPrefab->signalNameChanged.Connect(this, &CBaseObject::UpdateUIVars);
+	}
+
+	m_pPrefabItem = pPrefab;
 }
 
 void CPrefabObject::AttachLoadedChildrenToPrefab(CObjectArchive& ar, IObjectLayer* pLayer)
