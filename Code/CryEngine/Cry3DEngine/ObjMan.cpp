@@ -1394,7 +1394,8 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 	else
 	{
 		// Release persistent ROs associated with this temp-data
-		pTempData->FreeRenderObjects();
+		if (pTempData)
+			pTempData->FreeRenderObjects();
 
 		// Fallback to temporary render object
 		pRenderObject = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
