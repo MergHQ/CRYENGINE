@@ -735,8 +735,8 @@ void CAttachmentManager::InitAttachmentList(const CharacterAttachment* parrAttac
 		m_arrProxies[i].m_ProxyModelRelativePrev = m_arrProxies[i].m_ProxyModelRelative;
 	}
 
-	uint32 numAttachmnets = GetAttachmentCount();
-	for (uint32 i = 0; i < numAttachmnets; i++)
+	uint32 currNumAttachments = GetAttachmentCount();
+	for (uint32 i = 0; i < currNumAttachments; i++)
 	{
 		IAttachment* pIAttachment = GetInterfaceByIndex(i);
 		if (pIAttachment->GetType() == CA_BONE)
@@ -1396,10 +1396,13 @@ void CAttachmentManager::UpdateAllRemapTables()
 void CAttachmentManager::VerifyProxyLinks()
 {
 	//verify and re-adjust proxy links
-	uint32 numAttachmnets = GetAttachmentCount();
-	for (uint32 a = 0; a < numAttachmnets; a++)
+	uint32 numAttachments = GetAttachmentCount();
+	for (uint32 a = 0; a < numAttachments; a++)
 	{
 		IAttachment* pIAttachment = GetInterfaceByIndex(a);
+
+		if (pIAttachment == nullptr)
+			continue;
 
 		if (pIAttachment->GetType() == CA_BONE)
 		{
@@ -1408,6 +1411,7 @@ void CAttachmentManager::VerifyProxyLinks()
 			if (numUsedProxies == 0)
 				continue;
 
+			assert(numUsedProxies <= 100);
 			string arrProxyNames[100];
 			for (uint32 p = 0; p < numUsedProxies; p++)
 			{
@@ -1439,6 +1443,7 @@ void CAttachmentManager::VerifyProxyLinks()
 			if (numUsedProxies == 0)
 				continue;
 
+			assert(numUsedProxies <= 100);
 			string arrProxyNames[100];
 			for (uint32 p = 0; p < numUsedProxies; p++)
 			{
@@ -1465,23 +1470,26 @@ void CAttachmentManager::VerifyProxyLinks()
 
 	}
 
-	const CDefaultSkeleton& rDefaultSkeleton = *m_pSkelInstance->m_pDefaultSkeleton;
-	uint32 numProxies = m_arrProxies.size();
-	for (uint32 i = 0; i < numProxies; i++)
+	if (m_pSkelInstance != nullptr && m_pSkelInstance->m_pDefaultSkeleton != nullptr)
 	{
-		const char* strJointName = m_arrProxies[i].m_strJointName.c_str();
-		int16 nJointID = rDefaultSkeleton.GetJointIDByName(strJointName);
-		if (nJointID < 0)
+		const CDefaultSkeleton& rDefaultSkeleton = *m_pSkelInstance->m_pDefaultSkeleton;
+		uint32 numProxies = m_arrProxies.size();
+		for (uint32 i = 0; i < numProxies; i++)
 		{
-			CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_ERROR, "CryAnimation: Proxy '%s' specified wrong joint name '%s'", m_arrProxies[i].m_strProxyName.c_str(), strJointName);
-			m_arrProxies.erase(m_arrProxies.begin() + i);
-			numProxies = m_arrProxies.size();
-			--i;
-			continue;
+			const char* strJointName = m_arrProxies[i].m_strJointName.c_str();
+			int16 nJointID = rDefaultSkeleton.GetJointIDByName(strJointName);
+			if (nJointID < 0)
+			{
+				CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_ERROR, "CryAnimation: Proxy '%s' specified wrong joint name '%s'", m_arrProxies[i].m_strProxyName.c_str(), strJointName);
+				m_arrProxies.erase(m_arrProxies.begin() + i);
+				numProxies = m_arrProxies.size();
+				--i;
+				continue;
+			}
+			m_arrProxies[i].m_nJointID = nJointID;
+			QuatT jointQT = rDefaultSkeleton.GetDefaultAbsJointByID(nJointID);
+			m_arrProxies[i].m_ProxyRelativeDefault = jointQT.GetInverted() * m_arrProxies[i].m_ProxyAbsoluteDefault;
 		}
-		m_arrProxies[i].m_nJointID = nJointID;
-		QuatT jointQT = rDefaultSkeleton.GetDefaultAbsJointByID(nJointID);
-		m_arrProxies[i].m_ProxyRelativeDefault = jointQT.GetInverted() * m_arrProxies[i].m_ProxyAbsoluteDefault;
 	}
 }
 
