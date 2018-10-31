@@ -130,6 +130,11 @@ struct ProcessingContext
 	ProcessingContext(const size_t maxWaySize)
 		: queryResult(maxWaySize)
 		, status(Invalid)
+		, constructedPathsCount(0)
+		, totalTimeConstructPath(0.0f)
+		, peakTimeConstructPath(0.0f)
+		, totalTimeBeautifyPath(0.0f)
+		, peakTimeBeautifyPath(0.0f)
 	{
 	}
 	
@@ -175,6 +180,14 @@ struct ProcessingContext
 
 	volatile EProcessingStatus   status;
 	JobManager::SJobState        jobState;
+
+	uint32                       constructedPathsCount;
+
+	float                        totalTimeConstructPath;
+	float                        peakTimeConstructPath;
+
+	float                        totalTimeBeautifyPath;
+	float                        peakTimeBeautifyPath;
 };
 
 struct IsProcessingRequestRelatedToQueuedPathId
@@ -381,11 +394,25 @@ public:
 
 	void                      Update();
 
+	//! If a processing context is available
+	//! setups all required data to process it and
+	//! puts the request into the context to solve it
+	//! The request will eventually get resolved by a parallel job ProcessPathRequestJob that will run the A* solver (may take several frames)
 	void                      SetupNewValidPathRequests();
+
+	//! Dispatches all path requests, removing them from the failed/successful
+	//! Failed requests are dispatched first
+	//! After that, successful requests are dispatched
+	//! Dispatching a request involves calling the callback
 	void                      DispatchResults();
 
 	size_t                    GetRequestQueueSize() const { return m_requestedPathsQueue.size(); }
 
+	//! Executed when the NavMesh changes
+	//! Checks which valid PathRequests on the pool are affected by the change
+	//! A request is considered to be affected if it's on the same meshId and
+	//! the path contains the provided tileId or contains a tile which has tileId as a neighbor
+	//! Affected requests are then re-started on the same context as if they were new
 	void                      OnNavigationMeshChanged(NavigationMeshID meshId, MNM::TileID tileId);
 
 	// Utility function, which takes a triangles way found by MNM::CNavMesh::FindWay() and converts it into a way-point path.
@@ -398,23 +425,34 @@ public:
 	  CPathHolder<PathPointDescriptor>& outputPath);
 
 private:
-
+	// Spawns the appropriate jobs for the pool of processing contexts
 	void              SpawnJobs();
+
+	// Spawns a job depending on the status of the processing context
+	// If the context (the path request) is still in progress, it spawns a process operation
+	// If the context (the path request) is completed, it spawns a construct operation
 	void              SpawnAppropriateJobIfPossible(MNM::PathfinderUtils::ProcessingContext& processingContext);
+
+	// Same as before but now the operations get executed, not just spawned
 	void              ExecuteAppropriateOperationIfPossible(MNM::PathfinderUtils::ProcessingContext& processingContext);
 	void              SpawnPathfinderProcessingJob(MNM::PathfinderUtils::ProcessingContext& processingContext);
 	void              SpawnPathConstructionJob(MNM::PathfinderUtils::ProcessingContext& processingContext);
 	void              WaitForJobToFinish(MNM::PathfinderUtils::ProcessingContext& processingContext);
 	void              ProcessPathRequest(MNM::PathfinderUtils::ProcessingContext& processingContext);
+
+	// Constructs the path (way-point) from a sequence of triangle ids
+	// It may beautify the path by string pulling
+	// Sets the processing context as completed
 	void              ConstructPathIfWayWasFound(MNM::PathfinderUtils::ProcessingContext& processingContext);
 
+	// Setups and initialized all required data to start the path request
 	EMNMPathResult    SetupForNextPathRequest(MNM::QueuedPathID requestID, const MNM::PathfinderUtils::QueuedRequest& request, MNM::PathfinderUtils::ProcessingContext& processingContext);
 	void              PathRequestFailed(MNM::QueuedPathID requestID, const MNM::PathfinderUtils::QueuedRequest& request, const EMNMPathResult result);
 
 	void              CancelResultDispatchingForRequest(MNM::QueuedPathID requestId);
 
 	void              DebugAllStatistics();
-	void              DebugStatistics(MNM::PathfinderUtils::ProcessingContext& processingContext, const float textY);
+	void              DebugStatistics(MNM::PathfinderUtils::ProcessingContext& processingContext, const int contextNumber, const float textY);
 
 	friend void       ProcessPathRequestJob(MNM::PathfinderUtils::ProcessingContext* pProcessingContext);
 	friend void       ConstructPathIfWayWasFoundJob(MNM::PathfinderUtils::ProcessingContext* pProcessingContext);

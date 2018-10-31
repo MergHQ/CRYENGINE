@@ -731,20 +731,20 @@ CNavMesh::EWayQueryResult CNavMesh::FindWayInternal(SWayQueryRequest& inputReque
 
 			WayTriangleData lastBestNodeID(inputRequest.From(), 0);
 
-			while (workingSet.aStarOpenList.CanDoStep())
+			while (workingSet.aStarNodesList.CanDoStep())
 			{
 				// switch the smallest element with the last one and pop the last element
-				AStarOpenList::OpenNodeListElement element = workingSet.aStarOpenList.PopBestNode();
+				AStarNodesList::OpenNodeListElement element = workingSet.aStarNodesList.PopBestNode();
 				WayTriangleData bestNodeID = element.triData;
 
 				lastBestNodeID = bestNodeID;
 				IF_UNLIKELY (bestNodeID.triangleID == inputRequest.To())
 				{
-					workingSet.aStarOpenList.StepDone();
+					workingSet.aStarNodesList.StepDone();
 					break;
 				}
 
-				AStarOpenList::Node* bestNode = element.pNode;
+				AStarNodesList::Node* bestNode = element.pNode;
 				const vector3_t bestNodeLocation = bestNode->location - mnmMeshOrigin;
 
 				const TileID tileID = ComputeTileID(bestNodeID.triangleID);
@@ -829,8 +829,8 @@ CNavMesh::EWayQueryResult CNavMesh::FindWayInternal(SWayQueryRequest& inputReque
 					if (nextTri == bestNode->prevTriangle)
 						continue;
 
-					AStarOpenList::Node* nextNode = NULL;
-					const bool inserted = workingSet.aStarOpenList.InsertNode(nextTri, &nextNode);
+					AStarNodesList::Node* nextNode = NULL;
+					const bool inserted = workingSet.aStarNodesList.InsertNode(nextTri, &nextNode);
 
 					assert(nextNode);
 					vector3_t nextNodeLocation;
@@ -881,11 +881,11 @@ CNavMesh::EWayQueryResult CNavMesh::FindWayInternal(SWayQueryRequest& inputReque
 					{
 						nextNode->open = true;
 						nextNode->location = nextNodeLocation + mnmMeshOrigin;
-						workingSet.aStarOpenList.AddToOpenList(nextTri, nextNode, total);
+						workingSet.aStarNodesList.AddToOpenList(nextTri, nextNode, total);
 					}
 				}
 
-				workingSet.aStarOpenList.StepDone();
+				workingSet.aStarNodesList.StepDone();
 			}
 
 			if (lastBestNodeID.triangleID == inputRequest.To())
@@ -898,7 +898,7 @@ CNavMesh::EWayQueryResult CNavMesh::FindWayInternal(SWayQueryRequest& inputReque
 
 				while (wayTriangle.triangleID != inputRequest.From())
 				{
-					const AStarOpenList::Node* node = workingSet.aStarOpenList.FindNode(wayTriangle);
+					const AStarNodesList::Node* node = workingSet.aStarNodesList.FindNode(wayTriangle);
 					assert(node);
 					outputWay[wayTriCount++] = nextInsertion;
 
@@ -919,7 +919,7 @@ CNavMesh::EWayQueryResult CNavMesh::FindWayInternal(SWayQueryRequest& inputReque
 				result.SetWaySize(wayTriCount);
 				return eWQR_Done;
 			}
-			else if (!workingSet.aStarOpenList.Empty())
+			else if (!workingSet.aStarNodesList.Empty())
 			{
 				//We did not finish yet...
 				return eWQR_Continuing;

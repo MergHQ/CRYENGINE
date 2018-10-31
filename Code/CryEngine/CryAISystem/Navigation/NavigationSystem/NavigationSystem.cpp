@@ -5065,8 +5065,8 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 		const MNM::vector3_t startToEnd = (fixedPointStartLoc - fixedPointEndLoc);
 		const MNM::real_t startToEndDist = startToEnd.lenNoOverflow();
 		MNM::SWayQueryWorkingSet workingSet;
-		workingSet.aStarOpenList.SetFrameTimeQuota(0.0f);
-		workingSet.aStarOpenList.SetUpForPathSolving(navMesh.GetTriangleCount(), closestTriangleStart.id, fixedPointStartLoc, startToEndDist);
+		workingSet.aStarNodesList.SetFrameTimeQuota(0.0f);
+		workingSet.aStarNodesList.SetUpForPathSolving(navMesh.GetTriangleCount(), closestTriangleStart.id, fixedPointStartLoc, startToEndDist);
 
 		CTimeValue timeStart = gEnv->pTimer->GetAsyncTime();
 
