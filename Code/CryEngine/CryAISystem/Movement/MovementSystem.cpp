@@ -160,7 +160,7 @@ private:
 	MovementRequestID m_id;
 };
 
-void MovementSystem::CancelRequest(const MovementRequestID& requestID)
+void MovementSystem::UnsuscribeFromRequestCallback(const MovementRequestID& requestID)
 {
 	const Requests::iterator requestIt = std::find_if(m_requests.begin(), m_requests.end(), RequestMatchesIdPredicate(requestID));
 

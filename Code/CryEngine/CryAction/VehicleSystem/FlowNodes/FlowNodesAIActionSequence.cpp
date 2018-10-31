@@ -302,7 +302,7 @@ void CFlowNode_AISequenceAction_ApproachAndEnterVehicle::HandleSequenceEvent(AIA
 		{
 			if (m_movementRequestID)
 			{
-				gEnv->pAISystem->GetMovementSystem()->CancelRequest(m_movementRequestID);
+				gEnv->pAISystem->GetMovementSystem()->UnsuscribeFromRequestCallback(m_movementRequestID);
 				m_movementRequestID = MovementRequestID::Invalid();
 				UnregisterFromVehicleEvent(NULL);
 			}

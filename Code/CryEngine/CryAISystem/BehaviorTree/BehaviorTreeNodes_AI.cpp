@@ -485,7 +485,7 @@ public:
 		{
 			if (this->movementRequestID)
 			{
-				gEnv->pAISystem->GetMovementSystem()->CancelRequest(this->movementRequestID);
+				gEnv->pAISystem->GetMovementSystem()->UnsuscribeFromRequestCallback(this->movementRequestID);
 				this->movementRequestID = MovementRequestID();
 			}
 		}
@@ -3699,7 +3699,7 @@ public:
 		{
 			if (this->movementRequestID)
 			{
-				gEnv->pAISystem->GetMovementSystem()->CancelRequest(this->movementRequestID);
+				gEnv->pAISystem->GetMovementSystem()->UnsuscribeFromRequestCallback(this->movementRequestID);
 				this->movementRequestID = 0;
 			}
 		}

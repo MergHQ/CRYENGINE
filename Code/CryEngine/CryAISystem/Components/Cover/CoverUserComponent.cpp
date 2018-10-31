@@ -258,7 +258,7 @@ void CEntityAICoverUserComponent::CancelMovementRequest()
 {
 	if (m_moveToCoverRequestId != MovementRequestID::Invalid())
 	{
-		gEnv->pAISystem->GetMovementSystem()->CancelRequest(m_moveToCoverRequestId);
+		gEnv->pAISystem->GetMovementSystem()->UnsuscribeFromRequestCallback(m_moveToCoverRequestId);
 		m_moveToCoverRequestId = MovementRequestID::Invalid();
 	}
 }
