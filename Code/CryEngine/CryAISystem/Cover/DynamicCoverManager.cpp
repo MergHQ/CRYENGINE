@@ -98,7 +98,7 @@ void DynamicCoverManager::AddEntity(EntityId entityID)
 	gEnv->pEntitySystem->AddEntityEventListener(entityID, ENTITY_EVENT_XFORM, this);
 	gEnv->pEntitySystem->AddEntityEventListener(entityID, ENTITY_EVENT_DONE, this);
 
-	m_entityCover.insert(EntityCover::value_type(entityID, EntityCoverState(gEnv->pTimer->GetFrameStartTime())));
+	m_entityCover.insert(EntityCover::value_type(entityID, EntityCoverState(GetAISystem()->GetFrameStartTime())));
 }
 
 void DynamicCoverManager::RemoveEntity(EntityId entityID)
@@ -165,7 +165,7 @@ void DynamicCoverManager::Update(float updateTime)
 	EntityCover::iterator it = m_entityCover.begin();
 	EntityCover::iterator end = m_entityCover.end();
 
-	CTimeValue now = gEnv->pTimer->GetFrameStartTime();
+	CTimeValue now = GetAISystem()->GetFrameStartTime();
 
 	for (; it != end; ++it)
 	{
@@ -251,7 +251,7 @@ void DynamicCoverManager::MoveEvent(EntityId entityID, const Matrix34& worldTM)
 			m_entityCoverSampler.Cancel(entityID);
 
 			state.state = EntityCoverState::Moving;
-			state.lastMovement = gEnv->pTimer->GetFrameStartTime();
+			state.lastMovement = GetAISystem()->GetFrameStartTime();
 			state.lastWorldTM = worldTM;
 
 			RemoveEntityCoverSurfaces(state);

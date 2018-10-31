@@ -36,7 +36,7 @@ namespace BehaviorTree
 			{
 				if (this->movementRequestID)
 				{
-					gAIEnv.pMovementSystem->CancelRequest(this->movementRequestID);
+					gAIEnv.pMovementSystem->UnsuscribeFromRequestCallback(this->movementRequestID);
 					this->movementRequestID = MovementRequestID();
 				}
 			}
@@ -156,7 +156,7 @@ namespace BehaviorTree
 			{
 				if (this->movementRequestID)
 				{
-					gEnv->pAISystem->GetMovementSystem()->CancelRequest(this->movementRequestID);
+					gEnv->pAISystem->GetMovementSystem()->UnsuscribeFromRequestCallback(this->movementRequestID);
 					this->movementRequestID = MovementRequestID();
 				}
 			}

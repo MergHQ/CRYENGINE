@@ -76,7 +76,13 @@ namespace Movement
 		// interested in satisfying the request the planner is working on.
 		// Note: This doesn't mean that the actor wants to stop! The planner
 		// may continue executing the plan until a new request comes in.
+		// To completely stop the request call CancelCurrentRequestAndStop
 		virtual void CancelCurrentRequest(IMovementActor& actor) = 0;
+
+		// The movement system calls this when the actor wants to cancel
+		// and stop the current request
+		// Unlike CancelCurrentRequest this method stops the current request
+		virtual void CancelCurrentRequestAndStop(IMovementActor& actor) = 0;
 
 		// Do some work and report back the 'Status' of the current request.
 		virtual Status Update(const MovementUpdateContext& context) = 0;

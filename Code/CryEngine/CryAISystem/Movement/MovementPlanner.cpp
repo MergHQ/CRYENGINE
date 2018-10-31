@@ -92,13 +92,18 @@ void GenericPlanner::CancelCurrentRequest(IMovementActor& actor)
 	// This means that if the actor is running along a path he will
 	// keep running along that path.
 	//
-	// The idea is that an actor should only stop if a stop is
-	// explicitly requested.
-	//
-	// Let's see how it works out in practice :)
-	//
+	// The idea is that an actor should only stop if
+	// CancelCurrentRequestAndStop is explicitly called
 
 	m_requestId = MovementRequestID();
+}
+
+void GenericPlanner::CancelCurrentRequestAndStop(IMovementActor& actor)
+{
+	CancelCurrentRequest(actor);
+
+	m_plan.Clear(actor);
+	m_plan.AddBlock<Movement::MovementBlocks::HarshStop>();
 }
 
 IPlanner::Status GenericPlanner::Update(const MovementUpdateContext& context)

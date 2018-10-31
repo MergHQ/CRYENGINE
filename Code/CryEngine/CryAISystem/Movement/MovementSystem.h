@@ -33,7 +33,7 @@ public:
 	virtual void              UnregisterEntity(const EntityId entityId) override;
 	virtual bool              IsEntityRegistered(const EntityId entityId) override;
 	virtual MovementRequestID QueueRequest(const MovementRequest& request) override;
-	virtual void              CancelRequest(const MovementRequestID& id) override;
+	virtual void              UnsuscribeFromRequestCallback(const MovementRequestID& id) override;
 	virtual void              GetRequestStatus(const MovementRequestID& id, MovementRequestStatus& status) const override;
 	virtual void              Update(float updateTime) override;
 	virtual void              Reset() override;

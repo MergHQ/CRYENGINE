@@ -395,6 +395,13 @@ void AIConsoleVars::Init()
 	                       "Default is 0 (off)\n"
 	                       "0 - off\n"
 	                       "1 - on\n");
+	DefineConstIntCVarName("ai_DebugDrawSignalsHistory", DebugDrawSignalsHistory, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
+                           "Displays a history of the 20 most recent signals sent by AI. \n"
+                           "Most recent signals are displayed at the top of the list. As time passes, old signals will turn gray.\n"
+                           "Usage: ai_DebugDrawSignalsList [0/1]\n"
+                           "Default is 0 (off)\n"
+                           "0 - off\n"
+                           "1 - on\n");
 	DefineConstIntCVarName("ai_DebugDrawCoverPlanes", DebugDrawCoverPlanes, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Displays cover planes.\n"
 	                       "Usage: ai_DebugDrawCoverPlanes [0/1]\n"

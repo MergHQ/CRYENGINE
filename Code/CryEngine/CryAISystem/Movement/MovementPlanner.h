@@ -26,6 +26,7 @@ public:
 	virtual bool   IsUpdateNeeded() const override;
 	virtual void   StartWorkingOnRequest(const MovementRequestID& requestId, const MovementRequest& request, const MovementUpdateContext& context) override;
 	virtual void   CancelCurrentRequest(IMovementActor& actor) override;
+	virtual void   CancelCurrentRequestAndStop(IMovementActor& actor) override;
 	virtual Status Update(const MovementUpdateContext& context) override;
 	virtual bool   IsReadyForNewRequest() const override;
 	virtual void   GetStatus(MovementRequestStatus& status) const override;

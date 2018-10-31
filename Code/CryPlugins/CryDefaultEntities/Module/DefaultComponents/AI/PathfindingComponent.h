@@ -80,7 +80,7 @@ namespace Cry
 			{
 				CRY_ASSERT(m_movementRequestId.id != 0);
 
-				gEnv->pAISystem->GetMovementSystem()->CancelRequest(m_movementRequestId);
+				gEnv->pAISystem->GetMovementSystem()->UnsuscribeFromRequestCallback(m_movementRequestId);
 				m_movementRequestId = 0;
 
 				if (m_pathFinderRequestId != 0)

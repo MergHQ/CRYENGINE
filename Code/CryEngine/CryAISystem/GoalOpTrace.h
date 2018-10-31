@@ -30,12 +30,12 @@ public:
 	void Reset()
 	{
 		m_closest = std::numeric_limits<float>::max();
-		m_lastProgress = gEnv->pTimer->GetCurrTime();
+		m_lastProgress = GetAISystem()->GetFrameStartTime();
 	}
 
 	Status Update(const float distToEnd)
 	{
-		const float now = gEnv->pTimer->GetCurrTime();
+		const CTimeValue now = GetAISystem()->GetFrameStartTime();
 
 		if (distToEnd + 0.05f < m_closest)
 		{
@@ -44,7 +44,7 @@ public:
 		}
 		else
 		{
-			const float timeWithoutProgress = now - m_lastProgress;
+			const float timeWithoutProgress = now.GetDifferenceInSeconds(m_lastProgress);
 
 			if (timeWithoutProgress > 2.0f)
 			{
@@ -56,8 +56,8 @@ public:
 	}
 
 private:
-	float m_closest;
-	float m_lastProgress;
+	float      m_closest;
+	CTimeValue m_lastProgress;
 };
 
 ////////////////////////////////////////////////////////////

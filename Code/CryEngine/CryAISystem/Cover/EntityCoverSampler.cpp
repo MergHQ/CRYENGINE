@@ -61,7 +61,7 @@ void EntityCoverSampler::Update()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-	CTimeValue now = gEnv->pTimer->GetFrameStartTime();
+	CTimeValue now = GetAISystem()->GetFrameStartTime();
 
 	while (!m_queue.empty())
 	{

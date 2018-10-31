@@ -46,7 +46,7 @@ void CAIMoveSimulation::CancelMove()
 
 	for (const SMovingAI& movingAI : m_movingAIs)
 	{
-		gEnv->pAISystem->GetMovementSystem()->CancelRequest(movingAI.m_movementRequestID);
+		gEnv->pAISystem->GetMovementSystem()->UnsuscribeFromRequestCallback(movingAI.m_movementRequestID);
 	}
 	m_movingAIs.clear();
 }

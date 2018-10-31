@@ -481,7 +481,7 @@ void CEntityAINavigationComponent::CancelCurrentMovementRequest()
 
 	if (m_movementRequestId != MovementRequestID::Invalid())
 	{
-		gEnv->pAISystem->GetMovementSystem()->CancelRequest(m_movementRequestId);
+		gEnv->pAISystem->GetMovementSystem()->UnsuscribeFromRequestCallback(m_movementRequestId);
 		m_movementRequestId = MovementRequestID::Invalid();
 	}
 }

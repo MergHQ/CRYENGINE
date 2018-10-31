@@ -166,12 +166,12 @@ struct IMovementSystem
 
 	//! Ask the movement system to satisfy your request.
 	//! The movement system will contact you via the callback to inform you whether the request has been satisfied or not.
-	//! If you submit a callback you are responsible for calling CancelRequest before the callback becomes invalid.
+	//! If you submit a callback you are responsible for calling UnsuscribeFromRequestCallback before the callback becomes invalid.
 	virtual MovementRequestID QueueRequest(const MovementRequest& request) = 0;
 
 	//! Tell the movement system you are no longer interested in getting your request satisfied.
 	//! Note that this doesn't necessarily mean that the actor will stop, it simply means that you no longer care about the outcome.
-	virtual void CancelRequest(const MovementRequestID& id) = 0;
+	virtual void UnsuscribeFromRequestCallback(const MovementRequestID& id) = 0;
 
 	//! Get information about the current status of a request.
 	//! You'll see if it's in queue, path finding, or what block of a plan it's currently executing.

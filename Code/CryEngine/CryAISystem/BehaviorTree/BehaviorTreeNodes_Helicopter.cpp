@@ -351,7 +351,7 @@ public:
 			return;
 		}
 
-		runtimeData.lastUpdateTime = gEnv->pTimer->GetFrameStartTime();
+		runtimeData.lastUpdateTime = GetAISystem()->GetFrameStartTime();
 
 		const FlyHelpers::PathEntityIn pathEntityIn = FlyHelpers::CreatePathEntityIn(pPipeUser);
 		runtimeData.pathFollower.Init(path, m_params, pathEntityIn);
@@ -378,7 +378,7 @@ public:
 		CPipeUser* pPipeUser = context.entity.GetAI()->CastToCPipeUser();
 		const FlyHelpers::PathEntityIn pathEntityIn = FlyHelpers::CreatePathEntityIn(pPipeUser);
 
-		const CTimeValue timeNow = gEnv->pTimer->GetFrameStartTime();
+		const CTimeValue timeNow = GetAISystem()->GetFrameStartTime();
 		const CTimeValue timeDelta = timeNow - runtimeData.lastUpdateTime;
 		runtimeData.lastUpdateTime = timeNow;
 

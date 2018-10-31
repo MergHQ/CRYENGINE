@@ -301,10 +301,19 @@ namespace AISignals
 		m_signalDescriptionsVec.erase(std::remove(m_signalDescriptionsVec.begin(), m_signalDescriptionsVec.end(), &signalDescription), m_signalDescriptionsVec.end());
 	}
 
+#ifdef SIGNAL_MANAGER_DEBUG
+	SignalSharedPtr CSignalManager::CreateSignal(const int nSignal, const ISignalDescription& signalDescription, const tAIObjectID senderID, IAISignalExtraData* pEData)
+	{
+		std::shared_ptr<CSignal> pSignal = std::shared_ptr<CSignal>(new CSignal(nSignal, signalDescription, senderID, pEData));
+		AddSignalToDebugHistory(*pSignal);
+		return pSignal;
+	}
+#else
 	SignalSharedPtr CSignalManager::CreateSignal(const int nSignal, const ISignalDescription& signalDescription, const tAIObjectID senderID, IAISignalExtraData* pEData) const
 	{
 		return std::shared_ptr<CSignal>(new CSignal(nSignal, signalDescription, senderID, pEData));
 	}
+#endif //SIGNAL_MANAGER_DEBUG
 
 	SignalSharedPtr CSignalManager::CreateSignal_DEPRECATED(const int nSignal, const char* szCustomSignalTypeName, const tAIObjectID senderID, IAISignalExtraData* pEData)
 	{
@@ -318,6 +327,70 @@ namespace AISignals
 
 		return CreateSignal(nSignal, signalDesc, senderID, pEData);
 	}
+
+#ifdef SIGNAL_MANAGER_DEBUG
+	void CSignalManager::DebugDrawSignalsHistory() const
+	{
+		if (!gAIEnv.CVars.DebugDrawSignalsHistory)
+		{
+			return;
+		}
+		
+		// Setup
+		const ColorF headerColor = Col_Red;
+		const ColorF newSignalColor = Col_White;
+		const ColorF oldSignalColor = Col_Gray;
+
+
+		const float spacing = 20.0f;
+
+		const float headerTextSize = 1.75f;
+		const float signalTextSize = 1.5f;
+
+		IRenderer* pRenderer = gEnv->pRenderer;
+		IRenderAuxGeom* pAux = pRenderer->GetIRenderAuxGeom();
+
+		SAuxGeomRenderFlags flags = pAux->GetRenderFlags();
+		SAuxGeomRenderFlags renderFlagsRestore = flags;
+
+		flags.SetMode2D3DFlag(e_Mode2D);
+		flags.SetDrawInFrontMode(e_DrawInFrontOn);
+		flags.SetDepthTestFlag(e_DepthTestOff);
+		pAux->SetRenderFlags(flags);
+		pAux->SetRenderFlags(renderFlagsRestore);
+
+		const int screenX = 0;
+		const int screenY = 0;
+		const int screenWidth = pAux->GetCamera().GetViewSurfaceX();
+		const int screenHeight = pAux->GetCamera().GetViewSurfaceZ();
+		const Vec2 viewportOrigin(static_cast <float> (screenX), static_cast <float> (screenY));
+		const Vec2 viewportSize(static_cast <float> (screenWidth), static_cast <float> (screenHeight));
+
+		Vec2 screenPosition = Vec2(10, 10);
+		IRenderAuxText::Draw2dLabel(screenPosition.x, screenPosition.y, headerTextSize, headerColor, false, "Signals history");
+		screenPosition.y += spacing;
+		screenPosition.y += spacing;
+
+		for (const auto& signalDebug : m_debugSignalsHistory)
+		{
+			const float timeBeforeSignalSwitchesToDifferentColor = 5.0f;
+			const CTimeValue now = GetAISystem()->GetFrameStartTime();
+			const float elapsedTime = now.GetDifferenceInSeconds(signalDebug.timestamp);
+			const float blendFactor = fmin(elapsedTime, timeBeforeSignalSwitchesToDifferentColor) / timeBeforeSignalSwitchesToDifferentColor;
+
+			const ColorF blendedColor = ((1.0f - blendFactor) * newSignalColor) + ( blendFactor * oldSignalColor);
+			IRenderAuxText::Draw2dLabel(
+				screenPosition.x, 
+				screenPosition.y, 
+				signalTextSize, 
+				blendedColor, 
+				false, 
+				"N: %d \tSenderId: %u \t%s", signalDebug.signal.GetNSignal(), signalDebug.signal.GetSenderID(), signalDebug.signal.GetSignalDescription().GetName()
+			);
+			screenPosition.y += spacing;
+		}
+	}
+#endif //SIGNAL_MANAGER_DEBUG
 
 	const ISignalDescription* CSignalManager::RegisterSignalDescription(const ESignalTag signalTag,  const char* signalDescriptionName)
 	{
@@ -929,6 +1002,18 @@ namespace AISignals
 
 		m_signalDescriptionMap.clear();
 	}
+
+#ifdef SIGNAL_MANAGER_DEBUG
+	void CSignalManager::AddSignalToDebugHistory(const CSignal& signal)
+	{
+		const size_t debugDrawSignalsListCountMax = 20;
+		if (m_debugSignalsHistory.size() > debugDrawSignalsListCountMax)
+		{
+			m_debugSignalsHistory.pop_back();
+		}
+		m_debugSignalsHistory.emplace_front(signal, GetAISystem()->GetFrameStartTimeSeconds());
+	}
+#endif //SIGNAL_MANAGER_DEBUG
 
 	SERIALIZATION_ENUM_BEGIN(ESignalFilter, "Signal Filter")
 		SERIALIZATION_ENUM(ESignalFilter::SIGNALFILTER_SENDER, "sender", "Sender")

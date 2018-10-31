@@ -1399,7 +1399,7 @@ bool CCommunicationManager::Play(const CommPlayID& playID, SCommunicationRequest
 		playing.animName = comm.variations[variation].animationName;
 		playing.skipSound = request.skipCommSound;
 		playing.minSilence = request.minSilence;
-		playing.startTime = gEnv->pTimer->GetCurrTime();
+		playing.startTime = GetAISystem()->GetFrameStartTime();
 
 		if (request.eventListener)
 			request.eventListener->OnCommunicationEvent(CommunicationStarted, request.actorID, playID);
@@ -1960,7 +1960,7 @@ void CCommunicationManager::CullPlayingCommunications()
 	// time we consider it stuck and remove it.
 
 	const float maxTimeAllowedPlaying = 7.0f;
-	float now = gEnv->pTimer->GetCurrTime();
+	CTimeValue now = GetAISystem()->GetFrameStartTime();
 
 	PlayingCommunications::iterator it = m_playing.begin();
 	PlayingCommunications::iterator end = m_playing.end();
@@ -1969,7 +1969,7 @@ void CCommunicationManager::CullPlayingCommunications()
 	{
 		PlayingCommunication& comm = it->second;
 
-		float elapsed = now - comm.startTime;
+		const float elapsed = now.GetDifferenceInSeconds(comm.startTime);
 
 		if (elapsed > maxTimeAllowedPlaying)
 		{

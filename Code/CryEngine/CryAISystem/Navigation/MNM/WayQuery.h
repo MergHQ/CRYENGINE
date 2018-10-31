@@ -122,7 +122,7 @@ protected:
 	float      m_peakSearchTime;
 };
 
-struct AStarOpenList
+struct AStarNodesList
 	: public AStarContention
 {
 	typedef AStarContention ContentionPolicy;
@@ -205,7 +205,7 @@ struct AStarOpenList
 		m_openList.reserve(MinOpenListSize);
 		m_nodeLookUp.clear();
 
-		std::pair<AStarOpenList::Nodes::iterator, bool> firstEntryIt = m_nodeLookUp.insert(std::make_pair(WayTriangleData(fromTriangleID, 0), AStarOpenList::Node(fromTriangleID, 0, startLocation, 0, dist_start_to_end, true)));
+		std::pair<AStarNodesList::Nodes::iterator, bool> firstEntryIt = m_nodeLookUp.insert(std::make_pair(WayTriangleData(fromTriangleID, 0), AStarNodesList::Node(fromTriangleID, 0, startLocation, 0, dist_start_to_end, true)));
 		m_openList.push_back(OpenNodeListElement(WayTriangleData(fromTriangleID, 0), &firstEntryIt.first->second, dist_start_to_end));
 
 	}
@@ -324,13 +324,15 @@ struct SWayQueryWorkingSet
 
 	void Reset()
 	{
-		aStarOpenList.Reset();
+		aStarNodesList.Reset();
 		nextLinkedTriangles.clear();
 		nextLinkedTriangles.reserve(32);
 	}
 
 	TNextLinkedTriangles nextLinkedTriangles;
-	AStarOpenList        aStarOpenList;
+
+	//! Contains open and closed nodes
+	AStarNodesList       aStarNodesList;
 };
 
 struct SWayQueryResult
