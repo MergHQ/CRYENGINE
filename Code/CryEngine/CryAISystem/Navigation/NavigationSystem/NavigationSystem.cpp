@@ -312,12 +312,6 @@ NavigationMeshID NavigationSystem::CreateMesh(const char* name, NavigationAgentT
                                               const CreateMeshParams& params, NavigationMeshID requestedID)
 #endif
 {
-	if (requestedID == NavigationMeshID(0))
-	{
-		CRY_ASSERT_MESSAGE(requestedID != NavigationMeshID(0), "NavigationSystem::CreateMesh requestedID should be different than 0 (invalid value)!");
-		return NavigationMeshID();
-	}
-
 	auto NearestFactor = [](size_t n, size_t f)
 	{ 
 		while (n % f)
@@ -356,7 +350,7 @@ NavigationMeshID NavigationSystem::CreateMesh(const char* name, NavigationAgentT
 		else
 			m_meshes.insert(requestedID, NavigationMesh(agentTypeID));
 		NavigationMesh& mesh = m_meshes[id];
-		mesh.navMesh.Init(paramsGrid, agentType.settings.agent);
+		mesh.navMesh.Init(id, paramsGrid, agentType.settings.agent);
 		mesh.name = name;
 		mesh.exclusions = agentType.exclusions;
 		mesh.markups = agentType.markups;

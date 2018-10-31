@@ -221,6 +221,9 @@ struct INavMesh
 {
 	virtual ~INavMesh() {}
 
+	//! Returns unique navigation mesh id. Can be used to retrieve the NavigationMesh object by calling NavigationSystem::GetMesh
+	virtual NavigationMeshID      GetMeshId() const = 0;
+
 	//! Fills a NavMesh::SParams structure with a mesh parameters.
 	virtual void                  GetMeshParams(NavMesh::SParams& outParams) const = 0;
 
