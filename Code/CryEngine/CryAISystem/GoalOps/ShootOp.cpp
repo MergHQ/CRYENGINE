@@ -61,7 +61,7 @@ void ShootOp::Enter(CPipeUser& pipeUser)
 	movementRequest.type = MovementRequest::Stop;
 	gEnv->pAISystem->GetMovementSystem()->QueueRequest(movementRequest);
 
-	m_timeWhenShootingShouldEnd = gEnv->pTimer->GetFrameStartTime() + CTimeValue(m_duration);
+	m_timeWhenShootingShouldEnd = GetAISystem()->GetFrameStartTime() + CTimeValue(m_duration);
 }
 
 void ShootOp::Leave(CPipeUser& pipeUser)
@@ -79,7 +79,7 @@ void ShootOp::Update(CPipeUser& pipeUser)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-	const CTimeValue& now = gEnv->pTimer->GetFrameStartTime();
+	const CTimeValue& now = GetAISystem()->GetFrameStartTime();
 
 	if (now >= m_timeWhenShootingShouldEnd)
 		GoalOpSucceeded();

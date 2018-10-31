@@ -314,7 +314,7 @@ bool CAISystem::Init()
 	m_nTickCount = 0;
 	gAIEnv.pWorld = gEnv->pPhysicalWorld;
 
-	m_frameStartTime = gEnv->pTimer->GetFrameStartTime();
+	m_frameStartTime = GetAISystem()->GetFrameStartTime();
 	m_fLastPuppetUpdateTime = m_frameStartTime;
 	m_frameDeltaTime = 0.0f;
 	m_frameStartTimeSeconds = m_frameStartTime.GetSeconds();
@@ -1750,7 +1750,7 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 		// Reset the AI recordable stuff when entering game mode.
 		if (reason == IAISystem::RESET_ENTER_GAME)
 		{
-			CTimeValue startTime = gEnv->pTimer->GetFrameStartTime();
+			CTimeValue startTime = GetAISystem()->GetFrameStartTime();
 			CRecorderUnit* pRecord = static_cast<CRecorderUnit*>(pObject->GetAIDebugRecord());
 			if (pRecord)
 			{

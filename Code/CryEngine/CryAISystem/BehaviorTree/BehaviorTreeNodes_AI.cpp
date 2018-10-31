@@ -55,11 +55,6 @@ CAIActor* GetAIActor(const BehaviorTree::UpdateContext& context)
 	assert(context.entity.GetAI());
 	return context.entity.GetAI()->CastToCAIActor();
 }
-
-const CTimeValue& GetFrameStartTime(const BehaviorTree::UpdateContext& context)
-{
-	return gEnv->pTimer->GetFrameStartTime();
-}
 }
 
 namespace BehaviorTree
@@ -3109,7 +3104,7 @@ protected:
 		runtimeData.fireTarget->SetPos(fireTargetPosition);
 		pipeUser.SetFireTarget(runtimeData.fireTarget);
 		pipeUser.SetFireMode(FIREMODE_AIM);
-		runtimeData.startTime = gEnv->pTimer->GetFrameStartTime();
+		runtimeData.startTime = GetAISystem()->GetFrameStartTime();
 		runtimeData.timeSpentWithCorrectDirection = 0.0f;
 	}
 
@@ -3160,7 +3155,7 @@ protected:
 				return Success;
 		}
 
-		const CTimeValue& now = gEnv->pTimer->GetFrameStartTime();
+		const CTimeValue& now = GetAISystem()->GetFrameStartTime();
 		if (now > runtimeData.startTime + CTimeValue(8.0f))
 		{
 			gEnv->pLog->LogWarning("Agent '%s' failed to aim towards %f %f %f. Timed out...", pipeUser.GetName(), fireTargetAIObject->GetPos().x, fireTargetAIObject->GetPos().y, fireTargetAIObject->GetPos().z);
@@ -3264,7 +3259,7 @@ protected:
 		pipeUser->SetFireMode(FIREMODE_AIM);
 
 		UpdateAimingPosition(runtimeData);
-		runtimeData.lastUpdateTime = gEnv->pTimer->GetFrameStartTime();
+		runtimeData.lastUpdateTime = GetAISystem()->GetFrameStartTime();
 	}
 
 	virtual void OnTerminate(const UpdateContext& context) override
@@ -3290,7 +3285,7 @@ protected:
 		IF_UNLIKELY (!runtimeData.fireTarget)
 			return Success;
 
-		const CTimeValue now = gEnv->pTimer->GetFrameStartTime();
+		const CTimeValue now = GetAISystem()->GetFrameStartTime();
 		const float elapsedSecondsFromPreviousUpdate = now.GetDifferenceInSeconds(runtimeData.lastUpdateTime);
 		if (elapsedSecondsFromPreviousUpdate > m_minSecondsBeweenUpdates)
 		{
@@ -4382,7 +4377,7 @@ protected:
 
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
-		const CTimeValue& now = gEnv->pTimer->GetFrameStartTime();
+		const CTimeValue& now = GetAISystem()->GetFrameStartTime();
 		runtimeData.endTime = now + CTimeValue(m_duration);
 		runtimeData.nextPostureQueryTime = now;
 
@@ -4420,7 +4415,7 @@ protected:
 
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
-		const CTimeValue& now = gEnv->pTimer->GetFrameStartTime();
+		const CTimeValue& now = GetAISystem()->GetFrameStartTime();
 		if (now > runtimeData.endTime)
 			return Success;
 
@@ -4789,7 +4784,7 @@ protected:
 		movementRequest.type = MovementRequest::Stop;
 		gEnv->pAISystem->GetMovementSystem()->QueueRequest(movementRequest);
 
-		runtimeData.timeWhenShootingShouldEnd = gEnv->pTimer->GetFrameStartTime() + CTimeValue(m_duration);
+		runtimeData.timeWhenShootingShouldEnd = GetAISystem()->GetFrameStartTime() + CTimeValue(m_duration);
 		runtimeData.timeObstructed = 0.0f;
 	}
 
@@ -4818,7 +4813,7 @@ protected:
 	{
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
-		const CTimeValue& now = gEnv->pTimer->GetFrameStartTime();
+		const CTimeValue& now = GetAISystem()->GetFrameStartTime();
 
 		if (now >= runtimeData.timeWhenShootingShouldEnd)
 			return Success;
@@ -4967,7 +4962,7 @@ protected:
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
 		runtimeData.grenadeHasBeenThrown = false;
-		runtimeData.timeWhenWeShouldGiveUpThrowing = GetFrameStartTime(context) + CTimeValue(m_timeout);
+		runtimeData.timeWhenWeShouldGiveUpThrowing = GetAISystem()->GetFrameStartTime() + CTimeValue(m_timeout);
 
 		if (CPuppet* puppet = GetPuppet(context))
 		{
@@ -4995,7 +4990,7 @@ protected:
 		{
 			return Success;
 		}
-		else if (GetFrameStartTime(context) >= runtimeData.timeWhenWeShouldGiveUpThrowing)
+		else if (GetAISystem()->GetFrameStartTime() >= runtimeData.timeWhenWeShouldGiveUpThrowing)
 		{
 			return Failure;
 		}

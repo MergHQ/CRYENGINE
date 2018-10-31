@@ -427,8 +427,6 @@ void CVisionMap::ObservableChanged(const ObservableID& observableID, const Obser
 	{
 		CRY_PROFILE_REGION(PROFILE_AI, "CVisionMap::ObservableChanged_VisibilityChanged");
 
-		CTimeValue now = gEnv->pTimer->GetFrameStartTime();
-
 		for (Observers::iterator observersIt = m_observers.begin(), end = m_observers.end(); observersIt != end; ++observersIt)
 		{
 			ObserverInfo& observerInfo = observersIt->second;
@@ -1041,7 +1039,7 @@ void CVisionMap::UpdateVisibilityStatus(ObserverInfo& observerInfo)
 
 void CVisionMap::UpdateObservers()
 {
-	CTimeValue now = gEnv->pTimer->GetFrameStartTime();
+	CTimeValue now = GetAISystem()->GetFrameStartTime();
 
 	// Update PVS ////////////////////////////////////////////////////////////
 

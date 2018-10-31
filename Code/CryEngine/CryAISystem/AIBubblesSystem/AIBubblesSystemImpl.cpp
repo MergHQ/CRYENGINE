@@ -213,7 +213,7 @@ void CAIBubblesSystem::Update()
 	if (!m_entityRequestsMap.empty())
 	{
 		CDebugDrawContext debugDrawContext;
-		const CTimeValue currentTimestamp = gEnv->pTimer->GetFrameStartTime();
+		const CTimeValue currentTimestamp = GetAISystem()->GetFrameStartTime();
 		EntityRequestsMap::iterator it = m_entityRequestsMap.begin();
 		EntityRequestsMap::iterator end = m_entityRequestsMap.end();
 		for (; it != end; ++it)

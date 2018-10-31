@@ -45,7 +45,7 @@ void CMNMUpdatesManager::UpdatePostponedChanges()
 {
 	if (m_bPostponeUpdatesForStabilization)
 	{
-		if (gEnv->pTimer->GetFrameStartTime().GetDifferenceInSeconds(m_lastUpdateTime) < gAIEnv.CVars.NavmeshStabilizationTimeToUpdate)
+		if (GetAISystem()->GetFrameStartTime().GetDifferenceInSeconds(m_lastUpdateTime) < gAIEnv.CVars.NavmeshStabilizationTimeToUpdate)
 		{
 			return;
 		}
@@ -170,7 +170,7 @@ void CMNMUpdatesManager::EntityChanged(int physicalEntityId, const AABB& aabb)
 		return;
 	}
 
-	m_lastUpdateTime = gEnv->pTimer->GetFrameStartTime();
+	m_lastUpdateTime = GetAISystem()->GetFrameStartTime();
 
 	auto it = m_postponedEntityUpdatesMap.find(physicalEntityId);
 	if (it != m_postponedEntityUpdatesMap.end())
@@ -194,7 +194,7 @@ void CMNMUpdatesManager::WorldChanged(const AABB& aabb)
 #if NAV_MESH_REGENERATION_ENABLED
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-	m_lastUpdateTime = gEnv->pTimer->GetFrameStartTime();
+	m_lastUpdateTime = GetAISystem()->GetFrameStartTime();
 
 	SRequestParams queueAndState = GetRequestParams(false);
 	RequestQueueWorldUpdate(queueAndState, aabb);
@@ -239,7 +239,7 @@ CMNMUpdatesManager::EUpdateRequestStatus CMNMUpdatesManager::RequestMeshUpdate(N
 
 	if (!bImmediateUpdate)
 	{
-		m_lastUpdateTime = gEnv->pTimer->GetFrameStartTime();
+		m_lastUpdateTime = GetAISystem()->GetFrameStartTime();
 	}
 
 	SRequestParams requestParams = GetRequestParams(m_bExplicitRegenerationToggle);
@@ -261,7 +261,7 @@ CMNMUpdatesManager::EUpdateRequestStatus CMNMUpdatesManager::RequestMeshDifferen
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 	
-	m_lastUpdateTime = gEnv->pTimer->GetFrameStartTime();
+	m_lastUpdateTime = GetAISystem()->GetFrameStartTime();
 	
 	SRequestParams queueAndState = GetRequestParams(m_bExplicitRegenerationToggle);
 	if (!RequestQueueMeshDifferenceUpdate(queueAndState, meshID, oldVolume, newVolume))

@@ -1555,7 +1555,7 @@ void CAIRecorder::Reset(void)
 {
 	DestroyDummyObjects();
 
-	const CTimeValue frameStartTime = gEnv->pTimer->GetFrameStartTime();
+	const CTimeValue frameStartTime = GetAISystem()->GetFrameStartTime();
 	for (TUnits::iterator unitIter = m_Units.begin(); unitIter != m_Units.end(); ++unitIter)
 	{
 		unitIter->second->ResetStreams(frameStartTime);
