@@ -124,7 +124,7 @@ public:
 	CNavMesh();
 	~CNavMesh();
 
-	void                 Init(const SGridParams& params, const SAgentSettings& agentSettings);
+	void                 Init(const NavigationMeshID meshId, const SGridParams& params, const SAgentSettings& agentSettings);
 
 	static inline size_t ComputeTileName(size_t x, size_t y, size_t z)
 	{
@@ -346,6 +346,7 @@ public:
 	bool SnapPosition(const vector3_t& localPosition, const MNM::SSnappingMetric& snappingMetric, const INavMeshQueryFilter* pFilter, vector3_t* pSnappedLocalPosition, MNM::TriangleID* pTriangleId) const;
 
 	// MNM::INavMesh
+	virtual NavigationMeshID      GetMeshId() const override;
 	virtual void                  GetMeshParams(NavMesh::SParams& outParams) const override;
 	virtual TileID                FindTileIDByTileGridCoord(const vector3_t& tileGridCoord) const override;
 	virtual SClosestTriangle      FindClosestTriangle(const vector3_t& localPosition, const DynArray<TriangleID>& candidateTriangles) const override;
@@ -473,7 +474,7 @@ protected:
 		return container.tile.triangles[triangleIdx];
 	}
 
-	const NavigationMeshID m_meshId;
+	NavigationMeshID       m_meshId;
 	TileContainerArray     m_tiles;
 	size_t                 m_triangleCount;
 

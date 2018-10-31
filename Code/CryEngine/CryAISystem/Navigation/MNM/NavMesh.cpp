@@ -216,8 +216,10 @@ CNavMesh::~CNavMesh()
 {
 }
 
-void CNavMesh::Init(const SGridParams& params, const SAgentSettings& agentSettings)
+void CNavMesh::Init(const NavigationMeshID meshId, const SGridParams& params, const SAgentSettings& agentSettings)
 {
+	m_meshId = meshId;
+
 	m_params = params;
 	m_agentSettings = agentSettings;
 
@@ -2238,6 +2240,11 @@ TileID CNavMesh::GetNeighbourTileID(const TileID tileId, size_t side) const
 	CRY_ASSERT(tileId > 0);
 	const TileContainer& container = m_tiles[tileId - 1];
 	return GetNeighbourTileID(container.x, container.y, container.z, side);
+}
+
+NavigationMeshID CNavMesh::GetMeshId() const 
+{
+	return m_meshId;
 }
 
 void CNavMesh::GetMeshParams(NavMesh::SParams& outParams) const
