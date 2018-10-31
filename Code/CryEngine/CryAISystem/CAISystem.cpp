@@ -2562,6 +2562,10 @@ void CAISystem::Update(CTimeValue frameStartTime, float frameDeltaTime)
 	TryDebugDrawPhysicsAccess();
 #endif //CRYAISYSTEM_DEBUG
 
+#ifdef SIGNAL_MANAGER_DEBUG
+	GetSignalManager()->DebugDrawSignalsHistory();
+#endif //SIGNAL_MANAGER_DEBUG
+
 	// Housekeeping
 	gAIEnv.pObjectContainer->ReleaseDeregisteredObjects(false);
 	++m_nTickCount;

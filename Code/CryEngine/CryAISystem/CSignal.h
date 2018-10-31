@@ -104,6 +104,19 @@ namespace AISignals
 		typedef std::unordered_map<uint32, SignalDescriptionUniquePtr> CrcToSignalDescriptionUniquePtrMap;
 		typedef std::vector<const CSignalDescription*> SignalsDescriptionsPtrVec;
 
+#ifdef SIGNAL_MANAGER_DEBUG
+		struct SSignalDebug
+		{
+			const CSignal    signal;
+			const CTimeValue timestamp;
+
+			SSignalDebug(const CSignal signal_, const CTimeValue timestamp_)
+				: signal(signal_)
+				, timestamp(timestamp_)
+			{}
+		};
+#endif //SIGNAL_MANAGER_DEBUG
+
 	public:
 		CSignalManager();
 		~CSignalManager();
@@ -117,16 +130,34 @@ namespace AISignals
 		virtual const ISignalDescription&          RegisterGameSignalDescription(const char * signalName) override;
 		virtual void                               DeregisterGameSignalDescription(const ISignalDescription& signalDescription) override;
 
+#ifdef SIGNAL_MANAGER_DEBUG
+		virtual SignalSharedPtr                    CreateSignal(const int nSignal, const ISignalDescription& signalDescription, const tAIObjectID senderID = 0, IAISignalExtraData* pEData = nullptr) override;
+#else
 		virtual SignalSharedPtr                    CreateSignal(const int nSignal, const ISignalDescription& signalDescription, const tAIObjectID senderID = 0, IAISignalExtraData* pEData = nullptr) const override;
+#endif //SIGNAL_MANAGER_DEBUG
+
 		virtual SignalSharedPtr                    CreateSignal_DEPRECATED(const int nSignal, const char* szCustomSignalTypeName, const tAIObjectID senderID = 0, IAISignalExtraData* pEData = nullptr) override;
+
+#ifdef SIGNAL_MANAGER_DEBUG
+		virtual void                               DebugDrawSignalsHistory() const override;
+#endif //SIGNAL_MANAGER_DEBUG
+
 	private:
 		const ISignalDescription*                  RegisterSignalDescription(const ESignalTag signalTag, const char* signalDescriptionName);
 
 		void                                       RegisterBuiltInSignalDescriptions();
 		void                                       DeregisterBuiltInSignalDescriptions();
 
+#ifdef SIGNAL_MANAGER_DEBUG
+		void                                       AddSignalToDebugHistory(const CSignal& signal);
+#endif //SIGNAL_MANAGER_DEBUG
+
 		SBuiltInSignalsDescriptions                m_builtInSignals;
 		CrcToSignalDescriptionUniquePtrMap         m_signalDescriptionMap;
 		SignalsDescriptionsPtrVec                  m_signalDescriptionsVec;
+
+#ifdef SIGNAL_MANAGER_DEBUG
+		std::deque<SSignalDebug>                   m_debugSignalsHistory;
+#endif //SIGNAL_MANAGER_DEBUG
 	};
 }

@@ -10,6 +10,10 @@
 
 #include <memory>
 
+#ifndef _RELEASE
+#define SIGNAL_MANAGER_DEBUG
+#endif // _RELEASE
+
 // Signal ids
 #define AISIGNAL_INCLUDE_DISABLED     0
 #define AISIGNAL_DEFAULT              1
@@ -1019,9 +1023,18 @@ private:
 		virtual const ISignalDescription&          RegisterGameSignalDescription(const char* szSignalName) = 0;
 		virtual void                               DeregisterGameSignalDescription(const ISignalDescription& signalDescription) = 0;
 
-
+#ifdef SIGNAL_MANAGER_DEBUG
+		virtual SignalSharedPtr                    CreateSignal(const int nSignal, const ISignalDescription& signalDescription, const tAIObjectID senderID = 0, IAISignalExtraData* pEData = nullptr) = 0;
+#else
 		virtual SignalSharedPtr                    CreateSignal(const int nSignal, const ISignalDescription& signalDescription, const tAIObjectID senderID = 0, IAISignalExtraData* pEData = nullptr) const = 0;
+#endif //SIGNAL_MANAGER_DEBUG
+
 		virtual SignalSharedPtr                    CreateSignal_DEPRECATED(const int nSignal, const char* szCustomSignalTypeName, const tAIObjectID senderID = 0, IAISignalExtraData* pEData = nullptr) = 0;
+
+#ifdef SIGNAL_MANAGER_DEBUG
+		virtual void                               DebugDrawSignalsHistory() const = 0;
+#endif //SIGNAL_MANAGER_DEBUG
+
 	protected:
 		~ISignalManager() {}
 	};

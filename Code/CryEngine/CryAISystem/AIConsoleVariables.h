@@ -19,6 +19,7 @@ struct AIConsoleVars
 	DeclareConstIntCVar(DebugDrawNavigationQueriesList, 0);
 	DeclareConstIntCVar(DebugTriangleOnCursor, 0);
 	DeclareConstIntCVar(DebugDrawNavigationWorldMonitor, 0);
+	DeclareConstIntCVar(DebugDrawSignalsHistory, 0);
 	DeclareConstIntCVar(NavigationSystemMT, 1);
 	DeclareConstIntCVar(StoreNavigationQueriesHistory, 0);
 	DeclareConstIntCVar(NavGenThreadJobs, 1);
