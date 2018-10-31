@@ -645,23 +645,25 @@ CRGBLayer::CTerrainTextureTile* CRGBLayer::LoadTileIfNeeded(const uint32 dwTileX
 				pTileImage->Allocate(m_dwTileResolution, m_dwTileResolution);
 				pTileImage->Fill(0xff);
 
-				// for more convenience in the beginning:
-				CLayer* pLayer = GetIEditorImpl()->GetTerrainManager()->GetLayer(0);
-
-				if (pLayer)
+				if (GetIEditorImpl()->GetTerrainManager()->GetLayerCount() > 0)
 				{
-					pLayer->PrecacheTexture();
+					// for more convenience in the beginning:
+					CLayer* pLayer = GetIEditorImpl()->GetTerrainManager()->GetLayer(0);
 
-					CImagePainter painter;
+					if (pLayer)
+					{
+						pLayer->PrecacheTexture();
 
-					uint32 dwTileSize = pTileImage->GetWidth();
-					uint32 dwTileSizeReduced = dwTileSize - 1;
-					uint32 dwTileOffsetX = dwTileX * dwTileSizeReduced;
-					uint32 dwTileOffsetY = dwTileY * dwTileSizeReduced;
+						CImagePainter painter;
 
-					painter.FillWithPattern(*pTileImage, dwTileOffsetX, dwTileOffsetY, pLayer->GetTexture());
+						uint32 dwTileSize = pTileImage->GetWidth();
+						uint32 dwTileSizeReduced = dwTileSize - 1;
+						uint32 dwTileOffsetX = dwTileX * dwTileSizeReduced;
+						uint32 dwTileOffsetY = dwTileY * dwTileSizeReduced;
+
+						painter.FillWithPattern(*pTileImage, dwTileOffsetX, dwTileOffsetY, pLayer->GetTexture());
+					}
 				}
-
 			}
 
 			pTile->m_bDirty = false;
