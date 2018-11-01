@@ -219,18 +219,12 @@ public:
 		Reset();
 	}
 
-	struct IsProcessCompleted
-	{
-		bool operator()(const ProcessingContext& context) { return context.status == ProcessingContext::Completed; }
-	};
-
 	struct IsProcessInvalid
 	{
 		bool operator()(const ProcessingContext& context) { return context.status == ProcessingContext::Invalid; }
 	};
 
 	size_t              GetFreeSlotsCount() const     { return std::count_if(m_pool.begin(), m_pool.end(), IsProcessInvalid()); }
-	size_t              GetOccupiedSlotsCount() const { return std::count_if(m_pool.begin(), m_pool.end(), IsProcessCompleted()); }
 	size_t              GetMaxSlots() const           { return m_pool.size(); }
 
 	ProcessingContextId GetFirstAvailableContextId()
