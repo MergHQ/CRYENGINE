@@ -23,22 +23,26 @@ public:
 
 	CSceneRenderPass();
 
-	void SetupPassContext(uint32 stageID, uint32 stagePassID, EShaderTechniqueID technique, uint32 filter, ERenderListID renderList = EFSLIST_GENERAL, uint32 excludeFilter = 0, bool drawCompiledRenderObject = true);
+	// Called in Init()
+	void SetFlags(EPassFlags flags) { m_passFlags = flags; }
+	void SetDepthBias(float constBias, float slopeBias, float biasClamp);
 	void SetPassResources(CDeviceResourceLayoutPtr pResourceLayout, CDeviceResourceSetPtr pPerPassResources);
-	void SetRenderTargets(CTexture* pDepthTarget, CTexture* pColorTarget0, CTexture* pColorTarget1 = NULL, CTexture* pColorTarget2 = NULL, CTexture* pColorTarget3 = NULL);
-	void ExchangeRenderTarget(uint32 slot, CTexture* pNewColorTarget, ResourceViewHandle hRenderTargetView = EDefaultResourceViews::RenderTarget);
-	void ExchangeDepthTarget(CTexture* pNewDepthTarget, ResourceViewHandle hDepthStencilView = EDefaultResourceViews::DepthStencil);
-	void SetFlags(EPassFlags flags)  { m_passFlags = flags; }
+
+	// Called in Update()
 	void SetViewport(const D3DViewPort& viewport);
 	void SetViewport(const SRenderViewport& viewport);
-	void SetDepthBias(float constBias, float slopeBias, float biasClamp);
+	void SetRenderTargets(CTexture* pDepthTarget, CTexture* pColorTarget0, CTexture* pColorTarget1 = NULL, CTexture* pColorTarget2 = NULL, CTexture* pColorTarget3 = NULL);
+
+	// Called in Execute()
+	void SetupDrawContext(uint32 stageID, uint32 stagePassID, EShaderTechniqueID technique, uint32 includeFilter, uint32 excludeFilter = 0);
+	void ExchangeRenderTarget(uint32 slot, CTexture* pNewColorTarget, ResourceViewHandle hRenderTargetView = EDefaultResourceViews::RenderTarget);
+	void ExchangeDepthTarget(CTexture* pNewDepthTarget, ResourceViewHandle hDepthStencilView = EDefaultResourceViews::DepthStencil);
 
 	void BeginExecution();
 	void EndExecution();
 	void Execute();
 
-	void DrawRenderItems(CRenderView* pRenderView, ERenderListID list, int listStart = -1, int listEnd = -1);
-	void DrawTransparentRenderItems(CRenderView* pRenderView, ERenderListID list);
+	void DrawRenderItems(CRenderView* pRenderView, ERenderListID list, int listStart = 0, int listEnd = 0x7FFFFFFF);
 
 	// Called from rendering backend (has to be threadsafe)
 	void                PrepareRenderPassForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList);
@@ -56,10 +60,13 @@ public:
 	
 	CDeviceResourceLayoutPtr   GetResourceLayout() const { return m_pResourceLayout; }
 	const CDeviceRenderPassPtr GetRenderPass()     const { return m_pRenderPass; }
-	ERenderListID GetRenderList()                  const { return m_renderList; }
 
 protected:
 	static bool OnResourceInvalidated(void* pThis, SResourceBindPoint bindPoint, UResourceReference pResource, uint32 flags) threadsafe;
+
+private:
+	void DrawOpaqueRenderItems(SGraphicsPipelinePassContext& passContext, CRenderView* pRenderView, ERenderListID list, int listStart, int listEnd);
+	void DrawTransparentRenderItems(SGraphicsPipelinePassContext& passContext, CRenderView* pRenderView, ERenderListID list, int listStart, int listEnd);
 
 protected:
 	CDeviceRenderPassDesc    m_renderPassDesc;
@@ -75,10 +82,8 @@ protected:
 	uint32                   m_batchFilter;
 	uint32                   m_excludeFilter;
 	EPassFlags               m_passFlags;
-	ERenderListID            m_renderList;
 
 	uint32                   m_numRenderItemGroups;
-	uint32                   m_profilerSectionIndex;
 
 	float                    m_depthConstBias = 0.0f;
 	float                    m_depthSlopeBias = 0.0f;

@@ -19,22 +19,17 @@ CSceneRenderPass::CSceneRenderPass()
 	, m_passFlags(ePassFlags_None)
 {
 	m_numRenderItemGroups = 0;
-	m_profilerSectionIndex = ~0u;
 
 	SetLabel("SCENE_PASS");
 }
 
-void CSceneRenderPass::SetupPassContext(uint32 stageID, uint32 stagePassID, EShaderTechniqueID technique, uint32 filter, ERenderListID renderList, uint32 excludeFilter, bool drawCompiledRenderObject)
+void CSceneRenderPass::SetupDrawContext(uint32 stageID, uint32 stagePassID, EShaderTechniqueID technique, uint32 filter, uint32 excludeFilter)
 {
-	// the scene render passes which draw CCompiledRenderObject must follow the strict rule of PSOs array and PSO cache in CCompiledRenderObject
-	const bool drawable = (drawCompiledRenderObject && stageID < eStage_SCENE_NUM) || !drawCompiledRenderObject;
-	assert(drawable);
 	m_stageID = stageID;
 	m_passID = stagePassID;
 	m_technique = technique;
-	m_batchFilter = drawable ? filter : 0;
+	m_batchFilter = filter;
 	m_excludeFilter = excludeFilter;
-	m_renderList = renderList;
 }
 
 void CSceneRenderPass::SetPassResources(CDeviceResourceLayoutPtr pResourceLayout, CDeviceResourceSetPtr pPerPassResources)
@@ -220,10 +215,6 @@ void CSceneRenderPass::BeginExecution()
 	s_recursionCounter += 1;
 	
 	m_numRenderItemGroups = 0;
-	
-#if defined(ENABLE_SIMPLE_GPU_TIMERS)
-	m_profilerSectionIndex = gcpRendD3D->m_pPipelineProfiler->InsertMultithreadedSection(GetLabel());
-#endif
 
 	if (gcpRendD3D->GetGraphicsPipeline().GetRenderPassScheduler().IsActive())
 		gcpRendD3D->GetGraphicsPipeline().GetRenderPassScheduler().AddPass(this);
@@ -326,37 +317,98 @@ inline void DebugDrawRenderResolve(const std::vector<TRect_tpl<uint16>> &ns, con
 #endif
 }
 
-void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID list, int listStart, int listEnd)
+const char* RenderListNames[] =
+{
+	"INVALID",
+
+	"GENERAL",
+	"TERRAIN",
+	"SHADOWS",
+	"DECAL",
+	"WATER_VOLUMES",
+	"GENERAL",
+	"GENERAL",
+	"NEAREST",
+	"WATER",
+	"AFTER_HDRPOSTPROCESS",
+	"AFTER_POSTPROCESS",
+	"SHADOW_PASS",
+	"HALFRES_PARTICLES",
+	"PARTICLES_THICKNESS",
+	"LENSOPTICS",
+	"VOXELIZE",
+	"EYE",
+	"FOG_VOLUME",
+	"NEAREST",
+	"GENERAL",
+	"NEAREST",
+	"DEBUG_HELPER",
+	"SKY",
+
+	"PREPROCESS",
+	"NON-NEAREST",
+	"CUSTOM",
+	"HIGHLIGHT",
+};
+
+void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID renderList, int listStart, int listEnd)
 {
 	CRY_ASSERT(s_recursionCounter == 1);
-	CRY_ASSERT(list != EFSLIST_TRANSP_BW && list != EFSLIST_TRANSP_AW && list != EFSLIST_TRANSP_NEAREST);
 
-	const uint32 nBatchFlags = pRenderView->GetBatchFlags(list);
-	const bool bNearest = (list == EFSLIST_NEAREST_OBJECTS) || (list == EFSLIST_FORWARD_OPAQUE_NEAREST);
-
-	if (m_batchFilter != FB_MASK && !(nBatchFlags & m_batchFilter))
+	// Completely skip filling of the command list.
+	if (CRenderer::CV_r_NoDraw == 2)
 		return;
 
-	const auto &renderItems = pRenderView->GetRenderItems(list);
+	// Skip nearest objects lists
+	const bool bNearest =
+		(renderList == EFSLIST_NEAREST_OBJECTS) ||
+		(renderList == EFSLIST_FORWARD_OPAQUE_NEAREST) ||
+		(renderList == EFSLIST_TRANSP_NEAREST);
+	if (bNearest && (CRenderer::CV_r_nodrawnear == 1) && (m_passFlags & CSceneRenderPass::ePassFlags_RenderNearest))
+		return;
 
-	listStart = listStart < 0 ? 0 : listStart;
-	listEnd = listEnd < 0 ? renderItems.size() : listEnd;
+	if (m_batchFilter != FB_MASK && !(pRenderView->GetBatchFlags(renderList) & m_batchFilter))
+		return;
 
+	// Produce valid range of renderable items and skip processing when there are none
+	listEnd   = std::min<int>(listEnd, pRenderView->GetRenderItems(renderList).size());
+	listStart = std::min<int>(listStart, listEnd);
+
+	if (listStart >= listEnd)
+		return;
+
+	CryStackStringT<char, 80> label; label.Format("%s%s (%s)", m_batchFilter & FB_Z ? "Z " : "", GetLabel(), RenderListNames[pRenderView->GetRecordingRenderList(renderList)]);
 	SGraphicsPipelinePassContext passContext(pRenderView, this, m_technique, m_batchFilter, m_excludeFilter);
 	passContext.stageID = m_stageID;
 	passContext.passID = m_passID;
 	passContext.renderNearest = bNearest && (m_passFlags & CSceneRenderPass::ePassFlags_RenderNearest);
-	passContext.renderListId = list;
-	passContext.profilerSectionIndex = m_profilerSectionIndex;
-	passContext.rendItems.start = listStart;
-	passContext.rendItems.end = listEnd;
-	passContext.renderItemGroup = m_numRenderItemGroups++;
+	passContext.renderListId = renderList;
+#if defined(ENABLE_PROFILING_CODE)
+	passContext.recordListId = pRenderView->GetRecordingRenderList(renderList); // use pseudo-list for stats recording only
+#endif
 #if defined(DO_RENDERSTATS)
 	if (gcpRendD3D->CV_r_stats == 6 || gcpRendD3D->m_pDebugRenderNode || gcpRendD3D->m_bCollectDrawCallsInfoPerNode)
 		passContext.pDrawCallInfoPerNode = gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerNode();
 	if (gcpRendD3D->m_bCollectDrawCallsInfo)
 		passContext.pDrawCallInfoPerMesh = gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerMesh();
 #endif
+
+	passContext.groupLabel = label;
+	passContext.groupIndex = m_numRenderItemGroups++;
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+	passContext.profilerSectionIndex = gcpRendD3D->m_pPipelineProfiler->InsertMultithreadedSection(passContext.groupLabel.c_str());
+#endif
+
+	const bool bTransparent = (renderList == EFSLIST_TRANSP_BW || renderList == EFSLIST_TRANSP_AW || renderList == EFSLIST_TRANSP_NEAREST);
+	if (!bTransparent)
+		DrawOpaqueRenderItems(passContext, pRenderView, renderList, listStart, listEnd);
+	else
+		DrawTransparentRenderItems(passContext, pRenderView, renderList, listStart, listEnd);
+}
+
+void CSceneRenderPass::DrawOpaqueRenderItems(SGraphicsPipelinePassContext& passContext, CRenderView* pRenderView, ERenderListID renderList, int listStart, int listEnd)
+{
+	passContext.rendItems = { listStart, listEnd };
 
 	if (gcpRendD3D->GetGraphicsPipeline().GetRenderPassScheduler().IsActive())
 	{
@@ -368,39 +420,17 @@ void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID l
 		pRenderView->DrawCompiledRenderItems(passContext);
 }
 
-void CSceneRenderPass::DrawTransparentRenderItems(CRenderView* pRenderView, ERenderListID list)
+void CSceneRenderPass::DrawTransparentRenderItems(SGraphicsPipelinePassContext& passContext, CRenderView* pRenderView, ERenderListID renderList, int listStart, int listEnd)
 {
-	CRY_ASSERT(s_recursionCounter == 1);
-	CRY_ASSERT(list == EFSLIST_TRANSP_BW || list == EFSLIST_TRANSP_AW || list == EFSLIST_TRANSP_NEAREST);
-
 	std::vector<SGraphicsPipelinePassContext> passes;
-
-	const uint32 nBatchFlags = pRenderView->GetBatchFlags(list);
-	const bool bNearest = list == EFSLIST_TRANSP_NEAREST;
-
-	if (m_batchFilter != FB_MASK && !(nBatchFlags & m_batchFilter))
-		return;
-
-	SGraphicsPipelinePassContext passContext(pRenderView, this, m_technique, m_batchFilter, m_excludeFilter);
-	passContext.stageID = m_stageID;
-	passContext.passID = m_passID;
-	passContext.renderNearest = bNearest && (m_passFlags & CSceneRenderPass::ePassFlags_RenderNearest);
-	passContext.renderListId = list;
-	passContext.profilerSectionIndex = m_profilerSectionIndex;
-#if defined(DO_RENDERSTATS)
-	if (gcpRendD3D->CV_r_stats == 6 || gcpRendD3D->m_pDebugRenderNode || gcpRendD3D->m_bCollectDrawCallsInfoPerNode)
-		passContext.pDrawCallInfoPerNode = gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerNode();
-	if (gcpRendD3D->m_bCollectDrawCallsInfo)
-		passContext.pDrawCallInfoPerMesh = gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerMesh();
-#endif
 
 	// Wait for the transparent items' refractive passes sort job (if any)
 	pRenderView->WaitForOptimizeTransparentRenderItemsResolvesJob();
 
-	if (!pRenderView->HasResolveForList(list))
+	if (!pRenderView->HasResolveForList(renderList))
 	{
-		passContext.rendItems = { 0, static_cast<int>(pRenderView->GetRenderItems(list).size()) };
-		passContext.renderItemGroup = m_numRenderItemGroups++;
+		passContext.rendItems = { listStart, listEnd };
+
 		passes.emplace_back(std::move(passContext));
 	}
 	else
@@ -413,17 +443,19 @@ void CSceneRenderPass::DrawTransparentRenderItems(CRenderView* pRenderView, ERen
 			const auto &vp = pRenderView->GetViewport();
 
 			SGraphicsPipelinePassContext resolvePass = { GraphicsPipelinePassType::resolve, pRenderView, this };
-			resolvePass.profilerSectionIndex = m_profilerSectionIndex;
-			resolvePass.stageID = m_stageID;
-			resolvePass.passID = m_passID;
-			resolvePass.renderItemGroup = m_numRenderItemGroups++;
+			resolvePass.stageID    = passContext.stageID;
+			resolvePass.passID     = passContext.passID;
+			resolvePass.groupLabel = passContext.groupLabel;
+			resolvePass.groupIndex = passContext.groupIndex;
 			resolvePass.resolveScreenBounds.push_back(TRect_tpl<uint16>{ static_cast<uint16>(vp.x), static_cast<uint16>(vp.y), static_cast<uint16>(vp.width), static_cast<uint16>(vp.height) });
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+			resolvePass.profilerSectionIndex = passContext.profilerSectionIndex;
+#endif
 
 			if (CRendererCVars::CV_r_RefractionPartialResolvesDebug)
 				DebugDrawRenderResolve(resolvePass.resolveScreenBounds, 0);
 
-			passContext.rendItems = { 0, static_cast<int>(pRenderView->GetRenderItems(list).size()) };
-			passContext.renderItemGroup = m_numRenderItemGroups++;
+			passContext.rendItems = { listStart, listEnd };
 
 			passes.emplace_back(std::move(resolvePass));
 			passes.emplace_back(std::move(passContext));
@@ -431,8 +463,7 @@ void CSceneRenderPass::DrawTransparentRenderItems(CRenderView* pRenderView, ERen
 		else
 		{
 			// Segments were percomputed in job "OptimizeTransparentRenderItemsResolvesJob"
-
-			const auto& segments = static_cast<const CRenderView*>(pRenderView)->GetTransparentSegments(list);
+			const auto& segments = static_cast<const CRenderView*>(pRenderView)->GetTransparentSegments(renderList);
 
 			std::size_t count = 0;
 			for (const auto &s : segments)
@@ -442,20 +473,24 @@ void CSceneRenderPass::DrawTransparentRenderItems(CRenderView* pRenderView, ERen
 
 				if (s.resolveRects.size())
 				{
-					SGraphicsPipelinePassContext ctx = { GraphicsPipelinePassType::resolve, pRenderView, this };
-					ctx.profilerSectionIndex = m_profilerSectionIndex;
-					ctx.stageID = m_stageID;
-					ctx.passID = m_passID;
-					ctx.renderItemGroup = m_numRenderItemGroups++;
-					ctx.resolveScreenBounds = s.resolveRects;
-					passes.emplace_back(std::move(ctx));
+					SGraphicsPipelinePassContext resolvePass = { GraphicsPipelinePassType::resolve, pRenderView, this };
+					resolvePass.stageID    = passContext.stageID;
+					resolvePass.passID     = passContext.passID;
+					resolvePass.groupLabel = passContext.groupLabel;
+					resolvePass.groupIndex = passContext.groupIndex;
+					resolvePass.resolveScreenBounds = s.resolveRects;
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+					resolvePass.profilerSectionIndex = passContext.profilerSectionIndex;
+#endif
 
 					if (CRendererCVars::CV_r_RefractionPartialResolvesDebug)
 						DebugDrawRenderResolve(s.resolveRects, count++);
+
+					passes.emplace_back(std::move(resolvePass));
 				}
 
 				passContext.rendItems = s.rendItems;
-				passContext.renderItemGroup = m_numRenderItemGroups++;
+
 				passes.push_back(passContext);
 
 			}

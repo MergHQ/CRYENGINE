@@ -335,27 +335,29 @@ void CVolumetricFogStage::Init()
 		m_sceneRenderPassResources.AcceptChangedBindPoints();
 
 		m_passInjectParticleDensity.SetLabel("ParticleInjection");
-		m_passInjectParticleDensity.SetupPassContext(m_stageID, 0, TTYPE_GENERAL, FB_GENERAL, EFSLIST_FOG_VOLUME, 0, false);
+		m_passInjectParticleDensity.SetFlags(CSceneRenderPass::ePassFlags_None);
 		m_passInjectParticleDensity.SetPassResources(m_pSceneRenderResourceLayout, m_pSceneRenderPassResourceSet);
-		m_passInjectParticleDensity.SetRenderTargets(
-		  // Depth
-		  nullptr,
-		  // Color 0
-		  m_pVolFogBufDensityColor,
-		  // Color 1
-		  m_pVolFogBufDensity,
-		  // Color 2
-		  m_pVolFogBufEmissive);
 	}
 }
 
 void CVolumetricFogStage::Update()
 {
 	const CRenderView* pRenderView = RenderView();
-	CRY_ASSERT(pRenderView);
+	const SRenderViewport& viewport = pRenderView->GetViewport();
 
 	if (!IsVisible())
 		return;
+
+	m_passInjectParticleDensity.SetViewport(viewport);
+	m_passInjectParticleDensity.SetRenderTargets(
+		// Depth
+		nullptr,
+		// Color 0
+		m_pVolFogBufDensityColor,
+		// Color 1
+		m_pVolFogBufDensity,
+		// Color 2
+		m_pVolFogBufEmissive);
 
 	const int32 renderWidth  = pRenderView->GetRenderResolution()[0];
 	const int32 renderHeight = pRenderView->GetRenderResolution()[1];
@@ -763,10 +765,6 @@ void CVolumetricFogStage::ExecuteInjectParticipatingMedia(const SScopedComputeCo
 
 		auto& pass = m_passInjectParticleDensity;
 
-		CSceneRenderPass::EPassFlags passFlags = CSceneRenderPass::ePassFlags_None;
-		pass.SetFlags(passFlags);
-		pass.SetViewport(viewport);
-
 		pass.ExchangeRenderTarget(0, m_pVolFogBufDensityColor);
 		pass.ExchangeRenderTarget(1, m_pVolFogBufDensity);
 		pass.ExchangeRenderTarget(2, m_pVolFogBufEmissive);
@@ -778,6 +776,7 @@ void CVolumetricFogStage::ExecuteInjectParticipatingMedia(const SScopedComputeCo
 		renderItemDrawer.InitDrawSubmission();
 
 		pass.BeginExecution();
+		pass.SetupDrawContext(m_stageID, 0, TTYPE_GENERAL, FB_GENERAL);
 		pass.DrawRenderItems(pRenderView, EFSLIST_FOG_VOLUME);
 		pass.EndExecution();
 

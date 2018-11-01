@@ -221,6 +221,7 @@ public:
 	void       AddPermanentObjectImpl(CPermanentRenderObject* pObject, const SRenderingPassInfo& passInfo);
 
 	ItemsRange GetItemsRange(ERenderListID renderList);
+	ERenderListID GetRecordingRenderList(ERenderListID nRenderListOrSide) const { return IsShadowGenView() ? EFSLIST_SHADOW_GEN : nRenderListOrSide; }
 
 	// Find render item index in the sorted list, after when object flag changes.
 	int FindRenderListSplit(ERenderListID list, uint32 objFlag);

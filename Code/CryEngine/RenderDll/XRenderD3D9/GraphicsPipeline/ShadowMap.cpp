@@ -394,21 +394,23 @@ void CShadowMapStage::PrepareShadowPasses(SShadowFrustumToRender& frustumToRende
 
 			if (PrepareOutputsForPass(frustumToRender, side, curPass))
 			{
-				curPass.SetupPassContext(m_stageID, passID, TTYPE_SHADOWGEN, FB_MASK, EFSLIST_SHADOW_GEN);
 				curPass.m_pFrustumToRender = &frustumToRender;
 				curPass.m_nShadowFrustumSide = side;
+				curPass.m_eShadowPassID = passID;
 
 				PrepareShadowPassForFrustum(frustumToRender, side, curPass);
 				UpdateShadowFrustumFromPass(curPass, *pFrustum);
 
 				curPass.m_bRequiresRender =
-				  (CRendererCVars::CV_r_ShadowMapsUpdate && !pShadowView->GetRenderItems(side).empty()) ||
+				  (CRendererCVars::CV_r_ShadowMapsUpdate && !pShadowView->GetRenderItems(ERenderListID(side)).empty()) ||
 				   pFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance ||
 				  (pFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmCached && !pFrustum->bIncrementalUpdate);
 
 				cry_strcpy(curPass.m_ProfileLabel, profileLabel);
 
 				curPass.SetLabel(curPass.m_ProfileLabel);
+				curPass.SetPassResources(m_pResourceLayout, curPass.GetResources());
+
 				curPass.PrepareResources(pMainView);
 				curPass.PrepareRenderPassForUse(GetDeviceObjectFactory().GetCoreCommandList());
 			}
@@ -830,7 +832,7 @@ void CShadowMapStage::CopyShadowMap(const CShadowMapPass& sourcePass, CShadowMap
 	CRY_ASSERT(pSrc->nShadowMapLod == pDst->nShadowMapLod);
 
 	const bool bEmptySrcFrustum = !pSrc->ShouldSample();
-	const auto& renderItems = reinterpret_cast<CRenderView*>(targetPass.m_pFrustumToRender->pShadowsView.get())->GetRenderItems(0);
+	const auto& renderItems = reinterpret_cast<CRenderView*>(targetPass.m_pFrustumToRender->pShadowsView.get())->GetRenderItems(ERenderListID(0));
 	const auto& depthTarget = targetPass.GetPassDesc().GetDepthTarget();
 
 	// do we need to merge static shadows into the dynamic shadow map?
@@ -987,9 +989,6 @@ void CShadowMapStage::Execute()
 {
 	PROFILE_LABEL_SCOPE("SHADOWMAPS");
 
-	if (!m_pResourceLayout)
-		return;
-
 	CD3D9Renderer* rd = gcpRendD3D;
 	const int nThreadID = gRenDev->GetRenderThreadID();
 	CRenderItemDrawer& rendItemDrawer = RenderView()->GetDrawer();
@@ -1004,8 +1003,8 @@ void CShadowMapStage::Execute()
 			CRenderView* pShadowsView = reinterpret_cast<CRenderView*>(curPass.GetFrustum()->pShadowsView.get());
 
 			curPass.PreRender();
-			curPass.SetPassResources(m_pResourceLayout, curPass.GetResources());
 			curPass.BeginExecution();
+			curPass.SetupDrawContext(m_stageID, curPass.m_eShadowPassID, TTYPE_SHADOWGEN, FB_MASK);
 			curPass.DrawRenderItems(pShadowsView, (ERenderListID)curPass.m_nShadowFrustumSide);
 			curPass.EndExecution();
 
@@ -1028,8 +1027,8 @@ void CShadowMapStage::Execute()
 				CRenderView* pShadowsView = reinterpret_cast<CRenderView*>(curPass.GetFrustum()->pShadowsView.get());
 
 				curPass.PreRender();
-				curPass.SetPassResources(m_pResourceLayout, curPass.GetResources());
 				curPass.BeginExecution();
+				curPass.SetupDrawContext(m_stageID, curPass.m_eShadowPassID, TTYPE_SHADOWGEN, FB_MASK);
 				curPass.DrawRenderItems(pShadowsView, (ERenderListID)curPass.m_nShadowFrustumSide);
 				curPass.EndExecution();
 			}
