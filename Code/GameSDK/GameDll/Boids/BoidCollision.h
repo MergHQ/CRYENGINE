@@ -20,7 +20,7 @@
 
 
 #include <CryPhysics/DeferredActionQueue.h>
-
+#include "Game.h"
 
 class CBoidCollision
 {

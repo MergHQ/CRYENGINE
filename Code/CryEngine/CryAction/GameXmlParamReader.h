@@ -14,8 +14,7 @@
 
 #pragma once
 
-#ifndef _GAME_XML_PARAM_READER_H_
-	#define _GAME_XML_PARAM_READER_H_
+#include <CrySystem/XML/IXml.h>
 
 class CGameXmlParamReader
 {
@@ -226,5 +225,3 @@ private:
 	CryFixedStringT<4> m_gameModeFilter;
 	bool               m_devmodeFilter;
 };
-
-#endif //_GAME_XML_PARAM_READER_H_

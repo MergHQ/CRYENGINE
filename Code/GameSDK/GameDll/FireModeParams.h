@@ -25,6 +25,7 @@ History:
 #include "UI/UITypes.h"
 
 #include "Weapon.h"
+#include "Game.h"
 
 struct SAIDescriptor
 {

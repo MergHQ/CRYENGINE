@@ -17,6 +17,7 @@ History:
 #include "../AutoAimManager.h"
 #include "../TacticalManager.h"
 #include "EntityUtility/EntityScriptCalls.h"
+#include "GameConstantCVars.h"
 #include "UI/HUD/HUDUtils.h"
 #include <GameObjects/GameObject.h>
 

@@ -5,6 +5,7 @@
 #include "Item.h"
 #include "GameRules.h"
 
+#include <Cry3DEngine/ISurfaceType.h>
 #include <CryFlowGraph/IFlowBaseNode.h>
 #include <CryAnimation/ICryAnimation.h>
 

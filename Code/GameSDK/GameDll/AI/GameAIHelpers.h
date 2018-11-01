@@ -5,7 +5,8 @@
 #ifndef GameAIHelpers_h
 #define GameAIHelpers_h
 
-
+#include <CryEntitySystem/IEntityBasicTypes.h>
+#include <CryEntitySystem/IEntitySystem.h>
 #include "IGameAIModule.h"
 
 // For an overview of the GameAISystem take a look in GameAISystem.cpp

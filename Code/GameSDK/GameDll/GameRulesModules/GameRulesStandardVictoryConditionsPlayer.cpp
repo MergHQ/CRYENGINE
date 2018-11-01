@@ -28,6 +28,7 @@
 #include "GameCodeCoverage/GameCodeCoverageTracker.h"
 #include "Network/Lobby/GameLobby.h"
 #include "PersistantStats.h"
+#include "GameCVars.h"
 
 #if CRY_WATCH_ENABLED
 #define WATCH_SURVONE_LV1(...)  { if (1 <= g_pGameCVars->g_SurvivorOneVictoryConditions_watchLvl) CryWatch(__VA_ARGS__); }

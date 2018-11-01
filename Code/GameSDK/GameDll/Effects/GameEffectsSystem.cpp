@@ -11,6 +11,7 @@
 #include "Effects/RenderElements/GameRenderElement.h"
 #include "GameRules.h"
 #include <CryRenderer/IRenderAuxGeom.h>
+#include "Game.h"
 
 //--------------------------------------------------------------------------------------------------
 // Desc: Defines

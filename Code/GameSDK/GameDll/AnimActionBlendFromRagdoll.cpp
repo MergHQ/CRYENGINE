@@ -16,6 +16,7 @@ History:
 
 #include "AnimActionBlendFromRagdoll.h"
 #include "Actor.h"
+#include "Game.h"
 
 #include <CryExtension/CryCreateClassInstance.h>
 

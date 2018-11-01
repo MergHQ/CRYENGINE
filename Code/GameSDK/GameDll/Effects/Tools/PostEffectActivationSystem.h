@@ -5,6 +5,10 @@
 
 #pragma once
 
+#include <CryMemory/CrySizer.h>
+
+struct IItemParamsNode;
+
 // Defines
 const int MAX_POST_EFFECT_NAME = 64;
 

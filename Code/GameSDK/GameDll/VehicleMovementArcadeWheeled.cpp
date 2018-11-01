@@ -23,6 +23,7 @@ History:
 #include "IVehicleSystem.h"
 #include "Network/NetActionSync.h"
 #include <CryAISystem/IAgent.h>
+#include <Cry3DEngine/ISurfaceType.h>
 #include <CryGame/GameUtils.h>
 #include <CryGame/IGameTokens.h>
 #include "Player.h"

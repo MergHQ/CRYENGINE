@@ -32,6 +32,7 @@ History:
 #include "GamePhysicsSettings.h"
 
 #include <GameObjects/GameObject.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #if CRY_PLATFORM_WINDOWS
 	#pragma warning(disable: 4244)

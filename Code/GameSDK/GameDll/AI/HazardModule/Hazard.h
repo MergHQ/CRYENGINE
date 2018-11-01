@@ -11,10 +11,9 @@
 
 #include "HazardShared.h"
 
-
 // Forward declarations:
 class Agent;
-
+struct IPersistantDebug;
 
 namespace HazardSystem
 {

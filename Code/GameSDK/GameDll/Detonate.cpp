@@ -23,6 +23,7 @@ History:
 
 #include "WeaponSharedParams.h"
 #include "GameCodeCoverage/GameCodeCoverageTracker.h"
+#include "IGameplayRecorder.h"
 
 
 CRY_IMPLEMENT_GTI(CDetonate, CSingle);

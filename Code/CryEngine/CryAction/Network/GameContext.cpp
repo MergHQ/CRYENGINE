@@ -18,7 +18,7 @@
 #include "IGameSessionHandler.h"
 #include "CryAction.h"
 #include "GameRulesSystem.h"
-#include <CryScriptSystem/ScriptHelpers.h>
+#include <CryScriptSystem/IScriptSystem.h>
 #include "GameObjects/GameObject.h"
 #include "ScriptRMI.h"
 #include <CryPhysics/IPhysics.h>

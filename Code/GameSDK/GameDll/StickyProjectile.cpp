@@ -5,6 +5,7 @@
 #include "Player.h"
 #include "WeaponSystem.h"
 #include "GamePhysicsSettings.h"
+#include <Cry3DEngine/ISurfaceType.h>
 
 namespace
 {

@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "DangerousRigidBody.h"
 #include "GameRules.h"
+#include "GameCVars.h"
 
 int CDangerousRigidBody::sDangerousRigidBodyHitTypeId	= -1;
 

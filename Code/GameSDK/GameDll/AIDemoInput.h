@@ -9,6 +9,7 @@
 
 //#include "IEntitySystem.h"
 #include "IPlayerInput.h"
+#include <CryMath/MTPseudoRandom.h>
 //#include "GameRulesModules/IGameRulesSpawningModule.h"
 //#include "GameCVars.h"
 

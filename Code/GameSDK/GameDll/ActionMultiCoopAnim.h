@@ -17,6 +17,8 @@ Description:
 #include "ICryMannequin.h"
 
 class CPlayer;
+struct IAnimatedCharacter;
+struct ICharacterInstance;
 
 class CActionMultiCoopAnimation : public TAction<SAnimationContext>, public IEntityEventListener
 {

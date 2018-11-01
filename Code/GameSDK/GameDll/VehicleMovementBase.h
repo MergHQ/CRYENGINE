@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <CryRenderer/IRenderer.h> // required by ParticleParams.h
 #include <CryParticleSystem/ParticleParams.h>
 #include <IVehicleSystem.h>
 #include <IForceFeedbackSystem.h>

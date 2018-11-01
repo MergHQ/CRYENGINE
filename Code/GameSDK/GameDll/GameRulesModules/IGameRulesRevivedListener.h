@@ -15,6 +15,8 @@
 #ifndef _IGAME_RULES_REVIVED_LISTENER_H_
 #define _IGAME_RULES_REVIVED_LISTENER_H_
 
+#include <CryEntitySystem/IEntityBasicTypes.h>
+
 #if _MSC_VER > 1000
 # pragma once
 #endif

@@ -127,6 +127,7 @@
 #include "ClientHitEffectsMP.h"
 
 #include <CryPhysics/IDeferredCollisionEvent.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 #include "MPTrackViewManager.h"
 #include "MPPathFollowingManager.h"
@@ -147,6 +148,7 @@
 #include "UI/UIMultiPlayer.h"
 
 #include <IPerceptionManager.h>
+#include <IGameplayRecorder.h>
 
 #if NUM_ASPECTS > 8
 	#define GAMERULES_LIMITS_ASPECT				eEA_GameServerC

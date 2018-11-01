@@ -2,6 +2,8 @@
 
 #include "StdAfx.h"
 #include "ProceduralContextMovementControlMethod.h"
+#include "Game.h"
+#include <IActorSystem.h>
 
 
 CRYREGISTER_CLASS( CProceduralContextMovementControlMethod );

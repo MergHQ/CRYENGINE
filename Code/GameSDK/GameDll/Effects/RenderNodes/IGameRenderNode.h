@@ -5,8 +5,12 @@
 
 #pragma once
 
+#include <CryPhysics/IPhysics.h> // Required by IRenderer
+#include <CryRenderer/IRenderer.h> // required by IRenderNode and RenderElement.
 #include "Effects/RenderElements/GameRenderElement.h"
 #include "Effects/GameEffectsSystem.h"
+#include <Cry3DEngine/IRenderNode.h>
+#include <CryCore/smartptr.h>
 
 // Forward declares
 struct IGameRenderNodeParams;

@@ -12,6 +12,8 @@
 	#include <CryAISystem/IAIObject.h>
 	#include <CryMath/Cry_Vector3.h>
 	#include <CryAnimation/ICryAnimation.h>
+	#include <IActorSystem.h>
+	#include "Game.h"
 
 struct VisionID;
 struct IAnimationGraphState;

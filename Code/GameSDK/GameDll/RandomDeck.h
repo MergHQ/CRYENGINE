@@ -10,6 +10,8 @@ History:
 #ifndef __RANDOMDECK_H__
 #define __RANDOMDECK_H__
 
+#include <CryMath/MTPseudoRandom.h>
+
 // Functor object for the stl shuffle algorithm currently used by CRandomDeck
 class CRandomIntGenerator
 {

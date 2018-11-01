@@ -10,6 +10,7 @@ History:
 
 #include "StdAfx.h"
 #include "PlayerStumble.h"
+#include <CryMath/Random.h>
 
 using namespace PlayerActor::Stumble;
 

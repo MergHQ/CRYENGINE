@@ -16,6 +16,7 @@
 #include "GameCVars.h"
 #include "Utility/CryWatch.h"
 #include <CryCore/TypeInfo_impl.h>
+#include "Game.h"
 
 // this define allows for structured 'newed' from allocators other than the circular buffer to be added to the stats system
 // we can allow this to ease the transition to the circular buffer system but it generally defeats the purpose

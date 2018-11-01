@@ -21,6 +21,7 @@
 
 #include "GameRulesTypes.h"
 #include "GameRulesModules/IGameRulesStateModule.h"
+#include <CryCore/Containers/CryFixedArray.h>
 
 class CGameRules;
 class CPlayer;

@@ -14,6 +14,9 @@
 #include "StdAfx.h"
 #include "FishFlock.h"
 #include "BoidFish.h"
+#include "BoidObject.h"  // for Frand, SBoidContext
+#include "Flock.h"       // for CFlock, SBoidsCreateContext (ptr only)
+#include <Cry3DEngine/I3DEngine.h>
 
 //////////////////////////////////////////////////////////////////////////
 

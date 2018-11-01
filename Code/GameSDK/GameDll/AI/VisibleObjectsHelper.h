@@ -17,6 +17,7 @@
 
 #include <CryAISystem/IVisionMap.h>
 #include <CryAISystem/VisionMapTypes.h>
+#include <CryEntitySystem/IEntityBasicTypes.h>
 
 class Agent;
 

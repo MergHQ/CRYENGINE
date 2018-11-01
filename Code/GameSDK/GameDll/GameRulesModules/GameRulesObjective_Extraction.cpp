@@ -38,6 +38,7 @@
 #include "Audio/Announcer.h"
 #include "Weapon.h"
 #include "PlayerVisTable.h"
+#include "GameCVars.h"
 
 //#include "CryFixedString.h"
 

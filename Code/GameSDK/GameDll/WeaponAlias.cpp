@@ -8,6 +8,8 @@ History:
 
 #include "StdAfx.h"
 #include "WeaponAlias.h"
+#include <CryEntitySystem/IEntityClass.h>
+#include <CryEntitySystem/IEntitySystem.h>
 
 //---------------------------------------
 CWeaponAlias::CWeaponAlias()

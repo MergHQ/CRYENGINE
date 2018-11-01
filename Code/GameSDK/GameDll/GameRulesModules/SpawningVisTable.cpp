@@ -14,6 +14,7 @@ History:
 
 #include "StdAfx.h"
 #include "SpawningVisTable.h"
+#include "GameCVars.h"
 #include "GameRules.h"
 #include "GameRulesMPSpawning.h"
 

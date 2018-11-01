@@ -15,6 +15,9 @@
 #include "StdAfx.h"
 #include "PrefabManager.h"
 #include "RuntimePrefab.h"
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/IRenderNode.h>
+#include <Cry3DEngine/IStatObj.h>
 
 using namespace CryGame;
 

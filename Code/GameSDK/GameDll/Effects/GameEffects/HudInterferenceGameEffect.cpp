@@ -6,6 +6,7 @@
 // Includes
 #include "StdAfx.h"
 #include "HudInterferenceGameEffect.h"
+#include <Cry3DEngine/I3DEngine.h>
 
 //==================================================================================================
 // Name: EInterferenceFilterFlags

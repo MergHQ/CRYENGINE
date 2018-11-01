@@ -18,7 +18,6 @@ History:
 #define _SCRIPTBIND_INTERACTIVE_OBJECT_H_
 
 #include <CryScriptSystem/IScriptSystem.h>
-#include <CryScriptSystem/ScriptHelpers.h>
 
 #include "InteractiveObjectRegistry.h"
 

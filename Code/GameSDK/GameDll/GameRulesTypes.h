@@ -15,6 +15,8 @@
 #define __GAMERULESTYPES_H__
 
 #include "AutoEnum.h"
+#include <CryEntitySystem/IEntityBasicTypes.h>
+#include <CryNetwork/ISerialize.h>
 
 class CActor;
 

@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include <CryRenderer/IRenderer.h>
 #include "VehicleMovementBase.h"
 
 #include "Game.h"
@@ -12,6 +13,7 @@
 #include <CryGame/GameUtils.h>
 #include "VehicleClient.h"
 #include "GamePhysicsSettings.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #define RUNSOUND_FADEIN_TIME 0.5f
 #define RUNSOUND_FADEOUT_TIME 0.5f

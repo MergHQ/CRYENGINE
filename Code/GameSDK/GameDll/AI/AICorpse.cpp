@@ -4,6 +4,7 @@
 #include "AICorpse.h"
 
 #include <CryAnimation/ICryAnimation.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <IItemSystem.h>
 
 #include "Game.h"

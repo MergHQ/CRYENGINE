@@ -7,6 +7,8 @@
 
 #include <IGameObject.h>
 #include <CryCore/CryFlags.h>
+#include <CryCore/Containers/CryFixedArray.h>
+#include "Game.h"
 
 #define AI_CORPSES_ENABLE_SERIALIZE 0
 

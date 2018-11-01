@@ -16,6 +16,7 @@
 #include "GameRulesCommonDamageHandling.h"
 #include <CrySystem/XML/IXml.h>
 #include "GameRules.h"
+#include "GameCVars.h"
 #include "Actor.h"
 #include "Player.h"
 #include "PersistantDebug.h"

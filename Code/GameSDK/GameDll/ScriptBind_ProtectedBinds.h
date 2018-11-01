@@ -13,13 +13,8 @@ History:
 #ifndef __SCRIPTBIND_PROTECTED_H__
 #define __SCRIPTBIND_PROTECTED_H__
 
-//Base class include
-#include <CryScriptSystem/ScriptHelpers.h>
+#include <CryScriptSystem/IScriptSystem.h>
 
-//Important includes
-//#include <IScriptSystem.h>
-
-//Pre-declarations
 struct ISystem;
 struct IPlayerProfile;
 

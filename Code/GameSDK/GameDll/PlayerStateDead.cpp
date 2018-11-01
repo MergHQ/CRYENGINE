@@ -24,6 +24,7 @@ History:
 #include "PickAndThrowProxy.h"
 
 #include "AI/AICorpse.h"
+#include <IGameplayRecorder.h>
 
 CPlayerStateDead::CPlayerStateDead()
 	: m_swapToCorpseTimeout(10.0f)

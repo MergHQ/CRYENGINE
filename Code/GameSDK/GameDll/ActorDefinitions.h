@@ -20,6 +20,8 @@
 #include "IAnimatedCharacter.h"
 #include "IMovementController.h"
 #include <CryCore/CryFlags.h>
+#include <CryPhysics/IPhysics.h>
+#include "AutoEnum.h"
 
 struct IVehicle;
 struct IInventory;

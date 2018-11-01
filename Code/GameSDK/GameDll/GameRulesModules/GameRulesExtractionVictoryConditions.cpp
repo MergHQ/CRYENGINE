@@ -20,6 +20,7 @@
 #include "IGameRulesRoundsModule.h"
 #include "Utility/CryDebugLog.h"
 #include "GameRulesTypes.h"
+#include "Game.h"
 
 #define DbgLog(...) CRY_DEBUG_LOG(GAMEMODE_EXTRACTION, __VA_ARGS__)
 #define DbgLogAlways(...) CRY_DEBUG_LOG_ALWAYS(GAMEMODE_EXTRACTION, __VA_ARGS__)

@@ -2,6 +2,8 @@
 
 #include "StdAfx.h"
 #include "ProceduralContextColliderMode.h"
+#include "Game.h"
+#include <IActorSystem.h>
 
 
 CRYREGISTER_CLASS( CProceduralContextColliderMode );

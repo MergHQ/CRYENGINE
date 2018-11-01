@@ -20,6 +20,7 @@ History:
 #include "Player.h"
 #include "GameRules.h"
 #include <CryParticleSystem/ParticleParams.h>
+#include <Cry3DEngine/GeomRef.h>
 #include "FireMode.h"
 #include <CryAISystem/IFactionMap.h>
 

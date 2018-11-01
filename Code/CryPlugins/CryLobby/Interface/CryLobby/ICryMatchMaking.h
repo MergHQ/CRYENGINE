@@ -2,6 +2,7 @@
 #pragma once
 
 #include <CommonICryMatchMaking.h>
+#include <CryNetwork/INetwork.h>
 
 // Overview of ICryMatchMaking
 // MatchMaking provides a way for gamers to find each other to play multi player game sessions.

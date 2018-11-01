@@ -2,6 +2,8 @@
 
 #include "StdAfx.h"
 #include "RadioChatterModule.h"
+#include <CryMath/Random.h>
+#include <CryMath/Cry_Camera.h>
 
 void RadioChatterModule::Update(float updateTime)
 {

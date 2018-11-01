@@ -16,8 +16,11 @@ History:
 #ifndef __SCOPE_RETICULE_H__
 #define __SCOPE_RETICULE_H__
 
+#include <CryCore/smartptr.h>
+
 
 struct SScopeParams;
+struct IMaterial;
 class CWeapon;
 
 

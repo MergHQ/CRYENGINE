@@ -17,6 +17,7 @@ History:
 #include "Game.h"
 #include "GameRules.h"
 #include <CryParticleSystem/ParticleParams.h>
+#include <Cry3DEngine/GeomRef.h>
 #include "Actor.h"
 #include "Player.h"
 #include "Weapon.h"

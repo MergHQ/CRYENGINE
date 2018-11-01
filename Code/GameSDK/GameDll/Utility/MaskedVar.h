@@ -18,6 +18,8 @@ History:
 #ifndef __MASKEDVAR_H__
 #define __MASKEDVAR_H__
 
+#include <CryMath/Random.h>
+
 #ifdef _RELEASE
 #define MASKEDVAR_DEBUG_VAL_ENABLED  (0)
 #else

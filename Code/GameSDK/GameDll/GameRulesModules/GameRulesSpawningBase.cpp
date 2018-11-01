@@ -19,6 +19,7 @@ History:
 #include "IGameRulesRoundsModule.h"
 #include "IGameRulesPlayerStatsModule.h"
 #include "IGameRulesObjectivesModule.h"
+#include "GameCVars.h"
 
 struct compare_spawns
 {

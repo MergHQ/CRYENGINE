@@ -10,6 +10,7 @@ History:
 #include "FeatureTestMgr.h"
 #include "AutoTester.h"
 #include "FeatureTester.h"
+#include "GameCVars.h"
 
 #if ENABLE_FEATURE_TESTER_MGR
 

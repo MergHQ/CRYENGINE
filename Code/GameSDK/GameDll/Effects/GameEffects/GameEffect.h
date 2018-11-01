@@ -8,9 +8,13 @@
 #include "ItemString.h"
 #include "Effects/GameEffectsSystemDefines.h"
 #include "IViewSystem.h"
+#include <CryMemory/CrySizer.h>
 
 // Forward declares
 struct SGameEffectParams;
+struct IParticleEmitter;
+struct IMaterial;
+struct IParticleEffect;
 
 //==================================================================================================
 // Name: Flag macros

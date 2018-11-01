@@ -21,6 +21,7 @@
 #include "RecordingSystemClientSender.h"
 #include "RecordingSystemServerForwarder.h"
 #include "RecordingSystemDefines.h"
+#include "GameCVars.h"
 
 class CActor;
 class CBufferUtil;

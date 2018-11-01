@@ -8,7 +8,10 @@
 
 #pragma once
 
-#include "Audio/AudioSignalPlayer.h"
+#include <CryEntitySystem/IEntityBasicTypes.h>
+
+struct IEntityAudioComponent;
+class CAudioSignalPlayer;
 
 class CGameAudioUtils
 {

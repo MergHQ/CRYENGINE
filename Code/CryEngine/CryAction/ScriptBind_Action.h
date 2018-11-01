@@ -6,7 +6,6 @@
 #pragma once
 
 #include <CryScriptSystem/IScriptSystem.h>
-#include <CryScriptSystem/ScriptHelpers.h>
 #include <IViewSystem.h>
 
 // FIXME: Cell SDK GCC bug workaround.

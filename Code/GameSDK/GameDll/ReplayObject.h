@@ -16,6 +16,7 @@ History:
 #define __REPLAYOBJECT_H__
 
 #include <ICryMannequin.h>
+#include <IGameObject.h>
 
 class CReplayObjectAction : public TAction<SAnimationContext>
 {

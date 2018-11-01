@@ -19,6 +19,7 @@
 #include "Melee.h"
 
 #include "UI/HUD/HUDEventDispatcher.h"
+#include "GameCVars.h"
 
 /*
 #define CHECK_OWNER_REQUEST()	\

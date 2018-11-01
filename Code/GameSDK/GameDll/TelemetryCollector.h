@@ -28,6 +28,7 @@ History:
 #include <CryNetwork/INetwork.h>
 #include "DownloadMgr.h"
 #include <CryCore/Containers/CryFixedArray.h>
+#include <CryCore/Platform/IPlatformOS.h>
 #include <queue>
 
 #ifdef ENABLE_PROFILING_CODE

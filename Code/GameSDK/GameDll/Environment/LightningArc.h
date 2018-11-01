@@ -5,10 +5,8 @@
 
 #pragma once
 
-
 #include "Effects/GameEffects/LightningGameEffect.h"
-
-
+#include <IGameObject.h>
 
 class CLightningArc : public CGameObjectExtensionHelper<CLightningArc, IGameObjectExtension>
 {

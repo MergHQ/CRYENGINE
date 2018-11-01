@@ -54,6 +54,7 @@
 #include "AI/ScriptBind_GameAI.h"
 #include "UI/HUD/ScriptBind_HUD.h"
 #include "Environment/ScriptBind_InteractiveObject.h"
+#include "Network/Lobby/MatchMakingTelemetry.h"
 #include "Network/Lobby/ScriptBind_MatchMaking.h"
 #include "Turret/Turret/ScriptBind_Turret.h"
 #include "ScriptBind_ProtectedBinds.h"
@@ -6191,6 +6192,11 @@ void CGame::EnsureSigninState()
 	}
 }
 #endif
+
+void GameWarningImpl(const char* format, va_list args)
+{
+	GetISystem()->WarningV(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, 0, NULL, format, args);
+}
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////

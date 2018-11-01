@@ -9,6 +9,7 @@ History:
 *************************************************************************/
 
 #include "StdAfx.h"
+#include <CryFont/IFont.h>
 #include "PlayerInput.h"
 #include "Player.h"
 #include "PlayerStateEvents.h"
@@ -30,7 +31,7 @@ History:
 #include "GameRulesModules/IGameRulesSpectatorModule.h"
 
 #include "Utility/CryWatch.h"
-#include "UI/HUD//HUDEventWrapper.h"
+#include "UI/HUD/HUDEventWrapper.h"
 
 #include <IWorldQuery.h>
 #include <IInteractor.h>

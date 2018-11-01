@@ -11,6 +11,7 @@
 #include <CryAISystem/IAIObjectManager.h>
 #include <CryAISystem/IAIActorProxy.h>
 #include <CryAISystem/IFactionMap.h>
+#include <IActorSystem.h>
 
 //////////////////////////////////////////////////////////////////////////
 void CAICounters::Reset( bool bUnload )

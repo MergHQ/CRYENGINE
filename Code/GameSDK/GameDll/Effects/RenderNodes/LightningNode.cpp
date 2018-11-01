@@ -5,6 +5,8 @@
 #include "Effects/GameEffects/LightningGameEffect.h"
 #include "Utility/Hermite.h"
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <CryMath/Random.h>
 
 void CLightningRenderNode::CTriStrip::Reset()
 {

@@ -24,6 +24,24 @@
 #include "PlayerStateEvents.h"
 
 #include "Weapon.h"
+#include "CryGame/GameUtils.h"
+#include <Actor.h>                          // for CActor
+#include <CryAction/IActionMapManager.h>    // for ActionId, IActionFilter, IActionMapManager
+#include <CryCore/functor.h>                // for functor, CBMemberTranslator2
+#include <CryEntitySystem/IEntity.h>        // for IEntity
+#include <CryEntitySystem/IEntitySystem.h>  // for IEntitySystem
+#include <CryGame/IGameFramework.h>         // for IGameFramework
+#include <CryMath/Cry_Camera.h>             // for CCamera
+#include <CryMath/Range.h>                  // for TRange
+#include <CryPhysics/physinterface.h>       // for IPhysicalEntity (ptr only), ray_hit, entity_query_flags::ent_all, entity_query_flags::ent_water, rwi_flags::rwi_ignore_back_faces, rwi_flags::rwi_stop_at_pierceable
+#include <CryPhysics/RayCastQueue.h>        // for RayCastRequest, RayCastResult, QueuedRayID, RayCastRequest::Priority::HighestPriority
+#include <CryScriptSystem/IScriptSystem.h>  // for IScriptSystem
+#include <CrySystem/IConsole.h>             // for ICVar, IConsole
+#include <Game.h>                           // for CGame, g_pGame, CGame::GlobalRayCaster
+#include <IForceFeedbackSystem.h>           // for IForceFeedbackSystem
+#include <IItem.h>                          // for IItem
+#include <IItemSystem.h>                    // for IItemSystem
+#include <IPlayerInput.h>                   // for IPlayerInput, IPlayerInput::EInputType::PLAYER_INPUT
 
 #define CINEMATIC_INPUT_MOUSE_RECENTER_TIMEOUT 3.0f
 #define CINEMATIC_INPUT_MAX_AIM_DISTANCE       250.0f

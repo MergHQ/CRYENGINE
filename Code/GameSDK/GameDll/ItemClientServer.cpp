@@ -14,7 +14,7 @@ History:
 #include "Item.h"
 #include "ItemSharedParams.h"
 #include "Actor.h"
-
+#include "Game.h"
 
 //------------------------------------------------------------------------
 EntityId CItem::NetGetOwnerId() const

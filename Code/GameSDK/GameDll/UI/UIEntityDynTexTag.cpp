@@ -12,6 +12,8 @@
 
 #include "StdAfx.h"
 #include "UIEntityDynTexTag.h"
+#include <CryMath/Cry_Camera.h>
+#include <Cry3DEngine/I3DEngine.h>
 
 ////////////////////////////////////////////////////////////////////////////
 void CUIEntityDynTexTag::InitEventSystem()

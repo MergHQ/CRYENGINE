@@ -19,6 +19,8 @@ History:
 #include "ReplayActor.h"
 #include "RecordingSystem.h"
 #include "Effects/GameEffects/ParameterGameEffect.h"
+#include "Game.h"
+#include <CryGame/GameUtils.h>
 
 REGISTER_DATA_CALLBACKS(CPlayerHealthGameEffect::LoadStaticData,CPlayerHealthGameEffect::ReleaseStaticData,CPlayerHealthGameEffect::ReloadStaticData,PlayerHealthData);
 

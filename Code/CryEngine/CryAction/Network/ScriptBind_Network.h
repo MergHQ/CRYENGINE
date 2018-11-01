@@ -17,7 +17,6 @@
 #pragma once
 
 #include <CryScriptSystem/IScriptSystem.h>
-#include <CryScriptSystem/ScriptHelpers.h>
 
 class CGameContext;
 class CCryAction;

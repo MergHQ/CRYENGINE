@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "VehicleActionAutoTarget.h"
+#include <IActorSystem.h>
 
 const char* CVehicleActionAutoTarget::m_name = "VehicleActionAutoTarget";
 

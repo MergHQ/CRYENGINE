@@ -15,6 +15,7 @@ History:
 #include "StdAfx.h"
 #include "GameRulesMPSimpleSpawning.h"
 #include "GameRules.h"
+#include "Game.h"
 
 #include "ActorManager.h"
 

@@ -7,6 +7,7 @@
 #include "GamePhysicsSettings.h"
 #include "Actor.h"
 #include "ScriptBind_Actor.h"
+#include <Cry3DEngine/ISurfaceType.h>
 #include <CryNetwork/ISerialize.h>
 #include <CryGame/GameUtils.h>
 #include <CryAnimation/ICryAnimation.h>
@@ -69,6 +70,7 @@
 
 #include "ProceduralContextRagdoll.h"
 #include "AnimActionBlendFromRagdoll.h"
+#include "IGameplayRecorder.h"
 
 IItemSystem *CActor::m_pItemSystem=0;
 IGameFramework	*CActor::m_pGameFramework=0;

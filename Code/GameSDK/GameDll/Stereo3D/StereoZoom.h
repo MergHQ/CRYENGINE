@@ -12,6 +12,8 @@ History:
 #ifndef STEREOZOOM_H
 #define STEREOZOOM_H
 
+#include <CrySystem/XML/IXml.h>
+
 namespace Stereo3D
 {
   namespace Zoom

@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "BodyDefinitions.h"
+#include <CryAnimation/IAttachment.h>
 
 CBodyDestrutibilityInstance::~CBodyDestrutibilityInstance()
 {

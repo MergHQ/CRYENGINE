@@ -6,7 +6,7 @@
 #include "Utility/Hermite.h"
 #include "WeaponFPAiming.h"
 #include "WeaponOffset.h"
-
+#include <CryGame/GameUtils.h>
 
 namespace
 {

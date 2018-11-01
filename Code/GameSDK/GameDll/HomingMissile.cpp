@@ -28,6 +28,10 @@ History:
 	#define DEBUG_HOMINGMISSILE 0
 #endif
 
+#if DEBUG_HOMINGMISSILE
+	#include <CryRenderer/IRenderAuxGeom.h>
+#endif
+
 #define HM_TIME_TO_UPDATE 0.0f
 
 //------------------------------------------------------------------------

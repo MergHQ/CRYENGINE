@@ -22,27 +22,24 @@
 #include <IGameObject.h>
 #include <IGameRulesSystem.h>
 #include <IItemSystem.h>
-#include "Game.h"
 #include "IViewSystem.h"
-#include "GameCVars.h"
 #include "GameRulesTypes.h"
 #include "CinematicInput.h"
 #include "Audio/AudioSignalPlayer.h"
 #include "Utility/CryHash.h"
 #include "Voting.h"
+#include "GameRulesModules/GameRulesModulesRegistration.h"
+#include "AutoEnum.h"
+#include <queue>
 
 #define MAX_CONCURRENT_EXPLOSIONS 64
 
-struct IActor;
 class CActor;
 class CPlayer;
 
-struct IGameObject;
-struct IActorSystem;
-struct SGameRulesScoreInfo;
 struct SGameRulesPlayerStat;
+struct CryUserID;
 
-class CEquipmentLoadout;
 class CBattlechatter;
 class CAreaAnnouncer;
 class CMiscAnnouncer;
@@ -71,8 +68,6 @@ class IGameRulesPrematchListener;
 
 class CMPTrackViewManager;
 class CMPPathFollowingManager;
-
-#include "GameRulesModules/GameRulesModulesRegistration.h"
 
 #define EQUIPMENT_LOADOUT_NUM_SLOTS     10
 

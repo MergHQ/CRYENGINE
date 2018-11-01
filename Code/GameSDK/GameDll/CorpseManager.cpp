@@ -14,6 +14,7 @@ History:
 #include "StdAfx.h"
 #include "CorpseManager.h"
 #include "GameCVars.h"
+#include "Game.h"
 #include "GameRules.h"
 #include "RecordingSystem.h"
 

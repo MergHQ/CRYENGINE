@@ -16,6 +16,8 @@ History:
 #include <IActorSystem.h>
 #include <IVehicleSystem.h>
 #include <IMovementController.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <Cry3DEngine/ISurfaceType.h>
 #include "Actor.h"
 #include "Game.h"
 #include "GameCVars.h"

@@ -16,6 +16,7 @@ History:
 #pragma once
 
 #include <IGameObject.h>
+#include <Cry3DEngine/I3DEngine.h>
 
 class CRain : public CGameObjectExtensionHelper<CRain, IGameObjectExtension>
 {

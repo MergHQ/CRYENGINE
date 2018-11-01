@@ -14,8 +14,10 @@ History:
 
 #pragma once
 
-#ifndef BODY_DAMAGE_MANAGER_CVARS_H
-#define BODY_DAMAGE_MANAGER_CVARS_H
+#include <CrySystem/IConsole.h>
+
+struct IActor;
+struct IConsoleCmdArgs;
 
 class CBodyManagerCVars
 {
@@ -56,5 +58,3 @@ private:
 
 	static ICVar* g_bodyDestruction_debugFilter;
 };
-
-#endif

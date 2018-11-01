@@ -4,10 +4,11 @@
 *************************************************************************/
 #include "StdAfx.h"
 #include "CornerSmoother.h"
+#include "GameCVars.h"
 #include <CryRenderer/IRenderAuxGeom.h>
 #include "Utility/Hermite.h"
 #include <CryAISystem/IPathfinder.h> // for pathfollower
-#include "GameCVars.h"
+#include <IActorSystem.h>
 
 namespace CornerSmoothing
 {

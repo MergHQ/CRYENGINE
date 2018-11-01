@@ -20,8 +20,7 @@
 
 
 #include <CryScriptSystem/IScriptSystem.h>
-#include <CryScriptSystem/ScriptHelpers.h>
-
+#include <CryMemory/CrySizer.h>
 
 struct IItemSystem;
 struct IGameFramework;

@@ -7,6 +7,8 @@
 #include "EnvironmentalWeapon.h"
 #include "GameRulesModules/IGameRulesObjectivesModule.h"
 #include "MultiplayerEntities/CarryEntity.h"
+#include <CryPhysics/IPhysics.h>
+#include "Game.h"
 
 //------------------------------------------------------------------------------------------
 CMovingPlatformMgr::CMovingPlatformMgr()

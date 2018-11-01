@@ -19,6 +19,7 @@
 #include <CryGame/IGameStatistics.h>
 #include "StatHelpers.h"
 #include "GameRules.h"
+#include "Game.h"
 #include "Weapon.h"
 #include "Player.h"
 #include "Network/Lobby/GameLobbyData.h"
@@ -406,6 +407,24 @@ void CStatsRecordingMgr::DataFailedToDownload(
 	CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "Failed to download online data posting permissions, will use defaults");
 	m_scheduleRemoveIDataListener=true;
 	m_submitPermissions=0;
+}
+
+void CStatsRecordingMgr::TryTrackEvent(IActor *pActor, size_t eventID, const SStatAnyValue &value /*= SStatAnyValue()*/)
+{
+	if (pActor)
+	{
+		CStatsRecordingMgr *pStatsRecordingMgr = g_pGame->GetStatsRecorder();
+
+		if (pStatsRecordingMgr != NULL && pStatsRecordingMgr->ShouldRecordEvent(eventID, pActor))
+		{
+			IStatsTracker	*pStatsTracker = pStatsRecordingMgr->GetStatsTracker(pActor);
+
+			if (pStatsTracker)
+			{
+				pStatsTracker->Event(eventID, value);
+			}
+		}
+	}
 }
 
 bool CStatsRecordingMgr::IsTrackingEnabled()

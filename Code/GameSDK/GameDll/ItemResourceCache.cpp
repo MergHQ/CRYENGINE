@@ -16,7 +16,7 @@ History:
 #include "ItemResourceCache.h"
 #include "ItemSharedParams.h"
 #include "GameCVars.h"
-#include <CryAnimation/ICryAnimation.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 //------------------------------------------------------------------------
 

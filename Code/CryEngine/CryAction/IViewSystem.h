@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CryNetwork/ISerialize.h>
+#include <CryEntitySystem/IEntityBasicTypes.h>
 
 #define VIEWID_NORMAL     0
 #define VIEWID_FOLLOWHEAD 1

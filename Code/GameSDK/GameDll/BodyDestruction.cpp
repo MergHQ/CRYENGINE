@@ -18,7 +18,9 @@ History:
 #include "Utility/CryHash.h"
 #include "BodyManagerCVars.h"
 
-#include <CryAnimation/ICryAnimation.h>
+#include <CryAnimation/IAttachment.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <CryMath/Random.h>
 
 #include "EntityUtility/EntityScriptCalls.h"
 #include "EntityUtility/EntityEffects.h"

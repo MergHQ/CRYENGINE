@@ -18,6 +18,7 @@ History:
 #pragma once
 
 #include <CryLiveCreate/IRealtimeRemoteUpdate.h>
+#include <CrySystem/XML/IXml.h>
 
 class CGameRealtimeRemoteUpdateListener : public IRealtimeUpdateGameHandler
 {

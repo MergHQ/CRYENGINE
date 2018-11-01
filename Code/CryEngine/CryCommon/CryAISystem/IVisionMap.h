@@ -6,6 +6,8 @@
 #pragma once
 
 #include <CryPhysics/physinterface.h>
+#include <CryEntitySystem/IEntity.h>
+#include <CryCore/functor.h>
 
 //! This pierceability level (10) will still allow AI to see through leaves and such.
 #define AI_VISION_RAY_CAST_PIERCEABILITY (10)

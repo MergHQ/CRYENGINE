@@ -4,6 +4,7 @@
 #include "CheckpointGame.h"
 #include "Game.h"
 #include <ICheckPointSystem.h>
+#include <CrySystem/XML/IXml.h>
 
 #include "GameActions.h"
 #include "Player.h"
@@ -12,6 +13,18 @@ CCheckpointGame CCheckpointGame::m_Instance;
 
 const static char* PLAYER_DATA_SECTION			= "PlayerData";
 const static char* INVENTORY_SECTION			= "PlayerInventory";
+
+//get data or log warning
+template<class T>
+static bool CheckpointGetAttrSave(XmlNodeRef source, const char *name, T &data)
+{
+	CRY_ASSERT(source != NULL);
+	CRY_ASSERT(name);
+	bool found = source->getAttr(name, data);
+	if (!found)
+		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Failed reading %s from checkpoint node %s.", name, source->getTag());
+	return found;
+}
 
 //////////////////////////////////////////////////////////////////////////
 CCheckpointGame::CCheckpointGame()

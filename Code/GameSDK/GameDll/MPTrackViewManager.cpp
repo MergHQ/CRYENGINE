@@ -5,6 +5,7 @@
 #include "Utility/CryHash.h"
 #include "Utility/CryWatch.h"
 #include "GameRules.h"
+#include "GameCVars.h"
 
 static const float s_TrackViewMinTimeDifferenceForSynch = 0.25f;
 

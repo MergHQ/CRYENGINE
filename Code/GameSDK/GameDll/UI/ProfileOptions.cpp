@@ -9,6 +9,7 @@
 #include "IPlayerProfiles.h"
 #include "ScreenResolution.h"
 #include "GameXmlParamReader.h"
+#include <CryRenderer/IRenderer.h>
 
 //////////////////////////////////////////////////////////////////////////
 

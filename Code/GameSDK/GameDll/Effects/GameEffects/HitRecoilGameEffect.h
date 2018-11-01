@@ -19,10 +19,12 @@ History:
 
 #include "GameEffect.h"
 #include <IForceFeedbackSystem.h>
+#include <CryMemory/CrySizer.h>
 
 class CPlayer;
 class CProjectile;
 struct HitInfo;
+struct IEntityClass;
 
 
 

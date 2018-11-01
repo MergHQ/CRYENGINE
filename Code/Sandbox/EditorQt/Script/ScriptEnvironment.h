@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <CryScriptSystem/ScriptHelpers.h>
+#include <CryScriptSystem/IScriptSystem.h>
 
 class EditorScriptEnvironment
 	: public IEditorNotifyListener

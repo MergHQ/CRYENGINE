@@ -15,7 +15,6 @@
 #pragma once
 
 #include <CryScriptSystem/IScriptSystem.h>
-#include <CryScriptSystem/ScriptHelpers.h>
 #include <CrySystem/Scaleform/IFlashUI.h>
 #include <CryCore/Containers/CryListenerSet.h>
 

@@ -19,7 +19,6 @@
 #pragma once
 
 #include <CryScriptSystem/IScriptSystem.h>
-#include <CryScriptSystem/ScriptHelpers.h>
 
 // These numerical values are deprecated; use the strings instead
 enum EAIPathType

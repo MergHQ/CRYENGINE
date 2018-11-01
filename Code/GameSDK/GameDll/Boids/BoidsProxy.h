@@ -16,6 +16,7 @@
 #pragma once
 
 #include <CryEntitySystem/IEntityComponent.h>
+#include <CryMemory/CrySizer.h>
 
 class CFlock;
 class CBoidObject;

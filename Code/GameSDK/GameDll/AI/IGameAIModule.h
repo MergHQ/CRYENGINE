@@ -5,6 +5,9 @@
 #ifndef IGameAIModule_h
 #define IGameAIModule_h
 
+#include <CryEntitySystem/IEntityBasicTypes.h>
+#include <CryNetwork/ISerialize.h>
+
 // For an overview of the GameAISystem take a look in GameAISystem.cpp
 
 struct IGameAIModule

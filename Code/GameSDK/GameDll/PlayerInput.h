@@ -16,6 +16,7 @@ History:
 
 #pragma once
 
+#include "GameCVars.h"
 #include "IActionMapManager.h"
 #include "IPlayerInput.h"
 #include "Player.h"

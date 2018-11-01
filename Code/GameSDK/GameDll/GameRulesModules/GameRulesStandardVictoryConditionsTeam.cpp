@@ -28,6 +28,7 @@
 #include "Utility/CryWatch.h"
 #include "Utility/CryDebugLog.h"
 #include "AutoEnum.h"
+#include "GameCVars.h"
 #include "PersistantStats.h"
 #include <CryCore/TypeInfo_impl.h>
 

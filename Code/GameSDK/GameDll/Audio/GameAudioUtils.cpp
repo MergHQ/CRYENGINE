@@ -5,6 +5,7 @@
 
 #include "StdAfx.h"
 #include "Audio/GameAudioUtils.h"
+#include <CryEntitySystem/IEntitySystem.h>
 
 //---------------------------------------
 CGameAudioUtils::CGameAudioUtils()

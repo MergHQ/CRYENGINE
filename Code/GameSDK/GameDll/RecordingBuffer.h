@@ -3,6 +3,9 @@
 #ifndef __RECORDINGBUFFER_H__
 #define __RECORDINGBUFFER_H__
 
+#include <CryMemory/MemoryAccess.h>
+#include <CryMemory/CrySizer.h>
+
 class CBufferUtil;
 
 enum ERecordingBufferPacketType

@@ -14,12 +14,11 @@ History:
 *************************************************************************/
 
 #pragma once
-
-#ifndef _CINEMATIC_INPUT_H_
-#define _CINEMATIC_INPUT_H_
+#include <CryAction/IActionMapManager.h>
+#include <CryPhysics/RayCastQueue.h>
+#include <CryEntitySystem/IEntityBasicTypes.h>  // for EntityId
 
 #define CINEMATIC_INPUT_PC_MOUSE 1
-
 
 class CWeapon;
 
@@ -134,5 +133,3 @@ private:
 	bool	m_lastUpdateWithMouse;
 #endif
 };
-
-#endif

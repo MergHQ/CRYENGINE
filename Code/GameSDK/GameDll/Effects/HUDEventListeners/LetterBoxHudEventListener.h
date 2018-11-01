@@ -7,6 +7,7 @@
 
 // Includes
 #include "UI/HUD/HUDEventDispatcher.h"
+#include <CryMath/Cry_Color.h>
 
 //==================================================================================================
 // Name: SLetterBoxParams

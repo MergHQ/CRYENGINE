@@ -9,6 +9,7 @@
 #include "ScreenResolution.h"
 
 #include "UI/WarningsManager.h"
+#include <Cry3DEngine/I3DEngine.h>
 
 //////////////////////////////////////////////////////////////////////////
 
