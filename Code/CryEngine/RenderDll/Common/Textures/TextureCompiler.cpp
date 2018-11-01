@@ -165,16 +165,15 @@ static bool CopyDummy(const char* szImposter, const char* szSrcFile, const char*
 	success = (pSrcFile && (hDestFile != INVALID_HANDLE_VALUE));
 	if (success)
 	{
-	#define CHUNK_SIZE 64 * 1024
-
-		char* buf = new char[CHUNK_SIZE];
+		constexpr size_t chunkSize = 64 * 1024;
+		char* buf = new char[chunkSize];
 		size_t readBytes = 0;
 		DWORD writtenBytes = 0;
 		size_t totalBytes = 0;
 
 		while (!gEnv->pCryPak->FEof(pSrcFile))
 		{
-			readBytes = gEnv->pCryPak->FReadRaw(buf, sizeof(char), CHUNK_SIZE, pSrcFile);
+			readBytes = gEnv->pCryPak->FReadRaw(buf, sizeof(char), chunkSize, pSrcFile);
 			success = WriteFile(hDestFile, buf, sizeof(char) * readBytes, &writtenBytes, NULL) != FALSE;
 
 			if (!success || (readBytes != writtenBytes))
@@ -187,8 +186,6 @@ static bool CopyDummy(const char* szImposter, const char* szSrcFile, const char*
 		}
 
 		delete[] buf;
-
-	#undef CHUNK_SIZE
 
 		// Prevent zero-byte files being returned as valid DDSs.
 		success = success && (totalBytes != 0);
@@ -552,37 +549,46 @@ private:
  */
 bool CTextureCompiler::HasQueuedResourceCompiler(const char* szSrcFile, const char* szDstFile)
 {
-	// check if to be generated from the same source
-	m_rwLockWatch.RLock();
-	TWatchItem queued = m_mWatchList.find(szDstFile);
-	bool doadd = (queued == m_mWatchList.end());
-	bool exists = (!doadd && (queued->second == szSrcFile));
-	m_rwLockWatch.RUnlock();
+	CryAutoReadLock<CryRWLock> lock(m_rwLockWatch);
 
+	// check if to be generated from the same source
+	TWatchItem queued = m_mWatchList.find(szDstFile);
+	const bool doAdd = (queued == m_mWatchList.end());
+	const bool exists = (!doAdd && (queued->second == szSrcFile));
 	return exists;
 }
 
 CResourceCompilerHelper::ERcCallResult CTextureCompiler::QueueResourceCompiler(const char* szSrcFile, const char* szDstFile, const bool bWindow, const bool bRefresh)
 {
+	if (AddToWatchList(szDstFile, szSrcFile))
+	{
+		ForkOffResourceCompiler(szSrcFile, szDstFile, bWindow, bRefresh);
+	}
+
+	return eRcCallResult_queued;
+}
+
+bool CTextureCompiler::AddToWatchList(const char* szDstFile, const char* szSrcFile)
+{
 	// check if to be generated from the same source
 	if (HasQueuedResourceCompiler(szSrcFile, szDstFile))
 	{
-		return eRcCallResult_queued;
+		return false;
 	}
 
+	CryAutoWriteLock<CryRWLock> lock(m_rwLockWatch);
+
 	// replace/place source
-	m_rwLockWatch.WLock();
 	TWatchItem queued = m_mWatchList.find(szDstFile);
-	bool doadd = (queued == m_mWatchList.end());
-	bool exists = (!doadd && (queued->second == szSrcFile));
+	const bool doAdd = (queued == m_mWatchList.end());
+	const bool exists = (!doAdd && (queued->second == szSrcFile));
 
 	if (exists)
 	{
-		m_rwLockWatch.WUnlock();
-		return eRcCallResult_queued;
+		return false;
 	}
 
-	if (!doadd)
+	if (!doAdd)
 	{
 		queued->second = szSrcFile;
 	}
@@ -597,7 +603,6 @@ CResourceCompilerHelper::ERcCallResult CTextureCompiler::QueueResourceCompiler(c
 			{
 				// If this fails it's not critical, although it'll show
 				// the "ReplaceMe" texture instead of a proper one.
-				//	return eRcCallResult_notFound;
 			}
 
 			// Provide cubemap's diffuse texture dummy as well if it is necessary
@@ -610,34 +615,28 @@ CResourceCompilerHelper::ERcCallResult CTextureCompiler::QueueResourceCompiler(c
 				{
 					// If this fails it's not critical, although it'll show
 					// the "ReplaceMe" texture instead of a proper one.
-					//	return eRcCallResult_notFound;
 				}
 			}
 		}
 	}
-	m_rwLockWatch.WUnlock();
-
-	ForkOffResourceCompiler(szSrcFile, szDstFile, bWindow, bRefresh);
-	return eRcCallResult_queued;
+	return true;
 }
 
 void CTextureCompiler::ForkOffResourceCompiler(const char* szSrcFile, const char* szDstFile, const bool bWindow, const bool bRefresh)
 {
-	m_rwLockProcessing.WLock();
-	bool empty = !m_qProcessingList.size();
-	#if defined(STLPORT)
-	m_qProcessingList.push_back(TProcItem());
-	#else
-	m_qProcessingList.emplace_back(TProcItem());
-	#endif
-	TProcItem& addedrc = m_qProcessingList.back();
+	CryAutoWriteLock<CryRWLock> lock(m_rwLockProcessing);
 
-	// have to be valid after the unlock
+	bool empty = !m_qProcessingList.size();
+#if defined(STLPORT)
+	m_qProcessingList.push_back(TProcItem());
+#else
+	m_qProcessingList.emplace_back(TProcItem());
+#endif
+	TProcItem& addedrc = m_qProcessingList.back();
 	addedrc.src = szSrcFile;
 	addedrc.dst = szDstFile;
 	addedrc.windowed = bWindow;
 	addedrc.refresh = bRefresh;
-	m_rwLockProcessing.WUnlock();
 
 	// This approach spawns 1 new thread every time we had an empty list.
 	// The thread automatically consumes the list for as long as it's not empty
@@ -672,13 +671,7 @@ void CTextureCompiler::ConsumeQueuedResourceCompiler(TProcItem* item)
 {
 	// no need to protect
 	int pending = m_qProcessingList.size();
-
-	m_rwLockNotify.RLock();
-	std::for_each(m_sNotifyList.begin(), m_sNotifyList.end(), [=](IAsyncTextureCompileListener* notify)
-	{
-		notify->OnCompilationQueueTriggered(pending);
-	});
-	m_rwLockNotify.RUnlock();
+	NotifyCompilationQueueTriggered(pending);
 
 	while (item)
 	{
@@ -689,15 +682,9 @@ void CTextureCompiler::ConsumeQueuedResourceCompiler(TProcItem* item)
 			continue;
 		}
 
-		{
-			m_rwLockNotify.RLock();
-			std::for_each(m_sNotifyList.begin(), m_sNotifyList.end(), [=](IAsyncTextureCompileListener* notify)
-			{
-				notify->OnCompilationStarted(item->src.c_str(), item->dst.c_str(), pending);
-			});
-			m_rwLockNotify.RUnlock();
+		NotifyCompilationStarted(item, pending);
 
-			iLog->Log("Compile texture from \"%s\", to \"%s\"\n", item->src.c_str(), item->dst.c_str());
+		iLog->Log("Compile texture from \"%s\", to \"%s\"\n", item->src.c_str(), item->dst.c_str());
 
 			// Always use a temporary file as outfile, otherwise RC may write to the
 			// file before it's even loaded as a dummy.
@@ -706,47 +693,73 @@ void CTextureCompiler::ConsumeQueuedResourceCompiler(TProcItem* item)
 				item->returnval = InvokeResourceCompiler(item->src.c_str(), tmpAsset.GetTmpPath().c_str(), item->windowed, true);
 			}
 
-			m_rwLockNotify.RLock();
-			std::for_each(m_sNotifyList.begin(), m_sNotifyList.end(), [=](IAsyncTextureCompileListener* notify)
-			{
-				notify->OnCompilationFinished(item->src.c_str(), item->dst.c_str(), item->returnval);
-			});
-			m_rwLockNotify.RUnlock();
-		}
-
-		TProcQueue::iterator foundrc;
-
-		m_rwLockWatch.WLock();
-		m_rwLockProcessing.WLock();
-
-		for (foundrc = m_qProcessingList.begin(); (&(*foundrc) != item) && (foundrc != m_qProcessingList.end()); ++foundrc)
-			;
-		if (foundrc != m_qProcessingList.end())
-		{
-			m_mWatchList.erase(item->dst);
-			m_qProcessingList.erase(foundrc);
-			if (m_qProcessingList.size())
-				item = &m_qProcessingList.front();
-			else
-				item = NULL;
-			pending = m_qProcessingList.size();
-		}
-		// Severe container-damage, should not happen.
-		else
-		{
-			assert(0);
-		}
-
-		m_rwLockWatch.WUnlock();
-		m_rwLockProcessing.WUnlock();
+		NotifyCompilationFinished(item);
+		GetNextItem(item, pending);
 	}
 
-	m_rwLockNotify.RLock();
-	std::for_each(m_sNotifyList.begin(), m_sNotifyList.end(), [=](IAsyncTextureCompileListener* notify)
+	NotifyCompilationQueueDepleted();
+}
+
+void CTextureCompiler::GetNextItem(TProcItem* &item, int &pending)
+{
+	CryAutoWriteLock<CryRWLock> lockWatch(m_rwLockWatch);
+	CryAutoWriteLock<CryRWLock> lockProcessing(m_rwLockProcessing);
+
+	TProcQueue::iterator foundrc;
+	for (foundrc = m_qProcessingList.begin(); (&(*foundrc) != item) && (foundrc != m_qProcessingList.end()); ++foundrc)
+	{
+		// empty by intention
+	}
+
+	if (foundrc == m_qProcessingList.end())
+	{
+		CRY_ASSERT_MESSAGE(foundrc != m_qProcessingList.end(), "Severe container-damage, should not happen.");
+		return;
+	}
+
+	m_mWatchList.erase(item->dst);
+	m_qProcessingList.erase(foundrc);
+	if (m_qProcessingList.size())
+		item = &m_qProcessingList.front();
+	else
+		item = NULL;
+	pending = m_qProcessingList.size();
+}
+
+void CTextureCompiler::NotifyCompilationQueueDepleted()
+{
+	CryAutoReadLock<CryRWLock> lock(m_rwLockNotify);
+	for (IAsyncTextureCompileListener* notify : m_sNotifyList)
 	{
 		notify->OnCompilationQueueDepleted();
-	});
-	m_rwLockNotify.RUnlock();
+	};
+}
+
+void CTextureCompiler::NotifyCompilationFinished(TProcItem* item)
+{
+	CryAutoReadLock<CryRWLock> lock(m_rwLockNotify);
+	for (IAsyncTextureCompileListener* notify : m_sNotifyList)
+	{
+		notify->OnCompilationFinished(item->src.c_str(), item->dst.c_str(), item->returnval);
+	};
+}
+
+void CTextureCompiler::NotifyCompilationStarted(TProcItem* item, int pending)
+{
+	CryAutoReadLock<CryRWLock> lock(m_rwLockNotify);
+	for (IAsyncTextureCompileListener* notify : m_sNotifyList)
+	{
+		notify->OnCompilationStarted(item->src.c_str(), item->dst.c_str(), pending);
+	};
+}
+
+void CTextureCompiler::NotifyCompilationQueueTriggered(int pending)
+{
+	CryAutoReadLock<CryRWLock> lock(m_rwLockNotify);
+	for (IAsyncTextureCompileListener* notify : m_sNotifyList)
+	{
+		notify->OnCompilationQueueTriggered(pending);
+	};
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -915,16 +928,15 @@ CTextureCompiler::EResult CTextureCompiler::ProcessTextureIfNeeded(
 //////////////////////////////////////////////////////////////////////////
 void CTextureCompiler::AddAsyncTextureCompileListener(IAsyncTextureCompileListener* pListener)
 {
-	m_rwLockNotify.WLock();
+	CryAutoWriteLock<CryRWLock> lock(m_rwLockNotify);
 	m_sNotifyList.insert(pListener);
-	m_rwLockNotify.WUnlock();
+
 }
 
 void CTextureCompiler::RemoveAsyncTextureCompileListener(IAsyncTextureCompileListener* pListener)
 {
-	m_rwLockNotify.WLock();
+	CryAutoWriteLock<CryRWLock> lock(m_rwLockNotify);
 	m_sNotifyList.erase(pListener);
-	m_rwLockNotify.WUnlock();
 }
 
 #else

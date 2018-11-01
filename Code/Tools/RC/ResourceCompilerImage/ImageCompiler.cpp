@@ -2062,21 +2062,7 @@ void CImageCompiler::AnalyzeImageAndSuggest(const ImageObject* pSourceImage)
 		assert(hwndW);
 		SetWindowText(hwndW, "");
 
-		// check if normal map highQ compression is not a waste of memory
-		if (StringHelpers::EqualsIgnoreCase(presetName, "Normals"))
-		{
-			// force full image conversion (even if zoomed or clipped)
-			const bool bInternalPreview = m_bInternalPreview;
-			m_bInternalPreview = false;
-			const float fDXTError = pSourceImage->GetDXT1NormalsCompressionError(&m_Props);
-			m_bInternalPreview = bInternalPreview;
-
-			// empirical threshold
-			if (fDXTError < 0.02f)
-			{
-				SetWindowText(hwndW, "For this normal map you can use Normalmap_lowQ preset which has nearly the same quality and saves memory!");
-			}
-		}
+		// Here we can perform additional checks and update the text of the warning line, if necessary. See the file history for an example.
 	}
 
 	if (m_Props.GetMipRenormalize())

@@ -40,7 +40,6 @@ private:
 	std::unique_ptr<CProgressNotification> m_pTextureCompilerProgress;
 	string m_rcSettings;
 	std::mutex m_textureCompilerMutex;
-	size_t m_waitForTextureCompiler = 0;
 };
 
 };
