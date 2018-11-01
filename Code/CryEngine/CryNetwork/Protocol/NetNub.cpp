@@ -1369,11 +1369,12 @@ bool CNetNub::ProcessPingQuery(const TNetAddress& from, const uint8* pData, uint
 
 void CNetNub::ProcessLanQuery(const TNetAddress& from)
 {
-	NET_ASSERT(m_pGameQuery);
-
-	XmlNodeRef xml = m_pGameQuery->GetGameState();
-	XmlString str = xml->getXML();
-	m_pSocketMain->Send((const uint8*)str.c_str(), str.length(), from);
+	if (m_pGameQuery)
+	{
+		XmlNodeRef xml = m_pGameQuery->GetGameState();
+		XmlString str = xml->getXML();
+		m_pSocketMain->Send((const uint8*)str.c_str(), str.length(), from);
+	}
 }
 
 void CNetNub::LobbySafeDisconnect(CNetChannel* pChannel, EDisconnectionCause cause, const char* reason)
