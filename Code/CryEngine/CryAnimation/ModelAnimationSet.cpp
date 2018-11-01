@@ -701,8 +701,12 @@ f32 CAnimationSet::GetDuration_sec(int nAnimationId) const
 	{
 		uint32 GlobalAnimationID = anim->m_nGlobalAnimId;
 		GlobalAnimationHeaderLMG& rGlobalAnimHeader = g_AnimationManager.m_arrGlobalLMG[GlobalAnimationID];
+
+#if defined(USE_CRY_ASSERT)
 		uint32 lmg = rGlobalAnimHeader.IsAssetLMG();
 		assert(lmg);
+#endif
+
 		if (rGlobalAnimHeader.IsAssetLMGValid() == 0)
 			return 0;
 		if (rGlobalAnimHeader.IsAssetInternalType())
@@ -845,8 +849,6 @@ void CAnimationSet::AddRef(const int32 nAnimationId) const
 		}
 		else
 		{
-			uint32 totalExamples = 0;
-
 			uint32 numBlendSpaces = rLMG.m_arrCombinedBlendSpaces.size();
 			for (uint32 bs = 0; bs < numBlendSpaces; bs++)
 			{
@@ -907,8 +909,6 @@ void CAnimationSet::Release(const int32 nAnimationId) const
 		}
 		else
 		{
-			uint32 totalExamples = 0;
-
 			uint32 numBlendSpaces = rLMG.m_arrCombinedBlendSpaces.size();
 			for (uint32 bs = 0; bs < numBlendSpaces; bs++)
 			{

@@ -206,7 +206,6 @@ bool CAttachmentMerger::CanMerge(const MergeContext& context1, const MergeContex
 	if (context1.nMaxLodCount == 0 || context2.nMaxLodCount == 0) // can always merge with empty attachment
 		return true;
 
-	uint nMemorySize = 0;
 	for (int lod = 0; lod < MAX_STATOBJ_LODS_NUM; ++lod)
 	{
 		if (context1.nAccumulatedVertexCount[lod] + context2.nAccumulatedVertexCount[lod] > std::numeric_limits<vtx_idx>::max())
@@ -625,7 +624,7 @@ void CAttachmentMerger::Merge(CAttachmentMerged* pDstAttachment, const DynArray<
 					}
 
 					MeshStreams srcStreams(lodData.pMesh);
-					uint vertexCount = CopyVertices(dstStreams, vertexBase, srcStreams, lodData.pMesh->GetVerticesCount(), lodData.mTransform);
+					CopyVertices(dstStreams, vertexBase, srcStreams, lodData.pMesh->GetVerticesCount(), lodData.mTransform);
 					uint maxBoneID = CopySkinning(dstStreams, vertexBase, srcStreams, lodData.pMesh->GetVerticesCount(), arrChunkBoneIDs);
 
 					for (auto const& chunk : lodData.GetShadowChunks())
@@ -665,7 +664,7 @@ void CAttachmentMerger::Merge(CAttachmentMerged* pDstAttachment, const DynArray<
 					CRY_ASSERT(maxBoneIndex <= std::numeric_limits<JointIdType>::max());
 
 					MeshStreams srcStreams(lodData.pMesh, FSL_READ, false);
-					uint vertexCount = CopyVertices(dstStreams, vertexBase, srcStreams, lodData.pMesh->GetVerticesCount());
+					CopyVertices(dstStreams, vertexBase, srcStreams, lodData.pMesh->GetVerticesCount());
 					SkinToBone(dstStreams, vertexBase, srcStreams, lodData.pMesh->GetVerticesCount(), jointID);
 
 					for (auto const& chunk : lodData.GetShadowChunks())

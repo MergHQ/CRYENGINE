@@ -280,7 +280,6 @@ bool GlobalAnimationHeaderAIM::ReadController(IChunkFile::ChunkDesc* pChunkDesc,
 			pController->m_arrTimes.resize(numKeys);
 
 			const int startTime = (numKeys > 0) ? pCryKey[0].nTime : 0;
-			int lastTime = INT_MIN;
 			for (size_t i = 0; i < numKeys; ++i)
 			{
 				pController->m_arrTimes[i] = (pCryKey[i].nTime - startTime) / TICKS_CONVERT;
@@ -1137,11 +1136,10 @@ void VExampleInit::Init(const CDefaultSkeleton* pDefaultSkeleton, const DynArray
 
 	Quatd qDefaultMidAimPose = !m_arrAbsPose[nWeaponBoneIdx].q;
 	Quatd arrOriginalAimPoses[27];
-	uint32 numRotJoints = rRot.size();
+
 	for (uint32 ap = 0; ap < numAimPoses; ap++)
 	{
 		ComputeAimPose(rAIM, pDefaultSkeleton, rRot, rPos, m_arrAbsPose, ap);
-		Quat q = m_arrAbsPose[nWeaponBoneIdx].q;
 		arrOriginalAimPoses[ap] = qDefaultMidAimPose * m_arrAbsPose[nWeaponBoneIdx].q;
 	}
 
@@ -1528,8 +1526,6 @@ void VExampleInit::Init(const CDefaultSkeleton* pDefaultSkeleton, const DynArray
 				q0 = q1;
 				x0 = x1;
 			}
-
-			uint32 ddd = 0;
 		}
 
 		CHUNK_GAHAIM_INFO::VirtualExampleInit2 ve;
@@ -1596,7 +1592,6 @@ void VExampleInit::CopyPoses2(const DynArray<SJointsAimIK_Rot>& rRot, const DynA
 	uint32 numRot = rRot.size();
 	for (uint32 r = 0; r < numRot; r++)
 	{
-		const char* pJointName = rRot[r].m_strJointName;
 		int32 j = rRot[r].m_nJointIdx;
 		assert(j > 0);
 		rAIM.m_arrAimIKPosesAIM[skey].m_arrRotation[r] = m_arrDefaultRelPose[j].q;
@@ -1624,7 +1619,6 @@ void VExampleInit::CopyPoses2(const DynArray<SJointsAimIK_Rot>& rRot, const DynA
 	uint32 numPos = rPos.size();
 	for (uint32 r = 0; r < numPos; r++)
 	{
-		const char* pJointName = rPos[r].m_strJointName;
 		int32 j = rPos[r].m_nJointIdx;
 		assert(j > 0);
 		rAIM.m_arrAimIKPosesAIM[skey].m_arrPosition[r] = m_arrDefaultRelPose[j].t;
@@ -1743,6 +1737,7 @@ void VExampleInit::RecursiveTest(const Vec2d& ControlPoint, GlobalAnimationHeade
 #pragma warning(disable : 6262) // this is only run in RC which has enough stack space
 uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeaderAIM& rAIM, const DynArray<SJointsAimIK_Rot>& rRot, const DynArray<SJointsAimIK_Pos>& rPos, int nWBone, int i0, int i1, int i2, int i3, const Vec4d& w0, const Vec4d& w1, const Vec4d& w2, const Vec4d& w3)
 {
+#if defined(USE_CRY_ASSERT)
 	f64 sum0 = w0.x + w0.y + w0.z + w0.w;
 	assert(fabs(sum0 - 1.0f) < 0.00001);
 	f64 sum1 = w1.x + w1.y + w1.z + w1.w;
@@ -1751,6 +1746,7 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 	assert(fabs(sum2 - 1.0f) < 0.00001);
 	f64 sum3 = w3.x + w3.y + w3.z + w3.w;
 	assert(fabs(sum3 - 1.0f) < 0.00001);
+#endif
 
 	Quatd mid;
 	mid.w = f32(rAIM.m_MiddleAimPose.w);
@@ -1767,6 +1763,7 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 	Blend4AimPose(rAIM, rRot, rPos, i0, i1, i2, i3, w3, m_arrRelPose3, m_arrAbsPose3);
 	Quatd tq3 = mid * m_arrAbsPose3[nWBone].q;
 
+#if defined(USE_CRY_ASSERT)
 	Vec2d tp0 = Vec2d(PolarCoordinate(tq0));
 	assert(fabs(tp0.x) < 3.1416f);
 	assert(fabs(tp0.y) < 2.0f);
@@ -1782,6 +1779,7 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 	Vec2d tp3 = Vec2d(PolarCoordinate(tq3));
 	assert(fabs(tp3.x) < 3.1416f);
 	assert(fabs(tp3.y) < 2.0f);
+#endif
 
 	f64 t;
 	uint32 c = 0;
@@ -1856,7 +1854,6 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 	}
 	assert(c);
 	assert(c < 1000);
-	f64 length = (polar[c] - polar[0]).GetLength();
 	polar[c] = polar[0];
 
 	Vec2d ControlPointEnd = ControlPoint + Vec2d(1, 0) * 10;
@@ -1896,7 +1893,6 @@ void VExampleInit::ComputeAimPose(GlobalAnimationHeaderAIM& rAIM, const CDefault
 		if (rRot[r].m_nPreEvaluate)
 		{
 			int32 j = rRot[r].m_nJointIdx;
-			const char* pName = rRot[r].m_strJointName;
 			QuatTd qtemp;
 			qtemp.q = rAIM.m_arrAimIKPosesAIM[nAimPoseMid].m_arrRotation[r];
 			qtemp.t = m_arrDefaultRelPose[j].t;

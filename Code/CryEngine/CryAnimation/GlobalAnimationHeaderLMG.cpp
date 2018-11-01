@@ -216,7 +216,6 @@ bool GlobalAnimationHeaderLMG::LoadAndParseXML(CAnimationSet* pAnimationSet, boo
 bool GlobalAnimationHeaderLMG::LoadFromXML(CAnimationSet* pAnimationSet, XmlNodeRef root)
 {
 	const char* pathnameLMG = GetFilePath();
-	const char* fileExt = PathUtil::GetExt(pathnameLMG);
 
 	InvalidateAssetCreated();
 	InvalidateAssetLMG();
@@ -1301,7 +1300,6 @@ void GlobalAnimationHeaderLMG::Init_TurnSpeed(const CAnimationSet* pAnimationSet
 		for (uint32 k = 0; k < numKeys; k++, fk += 1.0f)
 			pController->GetOP(fk, rot_keys[k], pos_keys[k]);
 
-		uint32 skey = uint32(m_DimPara[dim].m_skey * (numKeys - 1));
 		uint32 ekey = uint32(m_DimPara[dim].m_ekey * (numKeys - 1));
 		uint32 poses = 0;
 		f32 turnspeed = 0.0f;
@@ -1362,7 +1360,6 @@ void GlobalAnimationHeaderLMG::Init_TurnAngle(const CAnimationSet* pAnimationSet
 		for (uint32 k = 0; k < numKeys; k++, fk += 1.0f)
 			pController->GetO(fk, rot_keys[k]);
 
-		uint32 skey = uint32(m_DimPara[dim].m_skey * (numKeys - 1));
 		uint32 ekey = uint32(m_DimPara[dim].m_ekey * (numKeys - 1));
 		f32 turnangle = 0.0f;
 		for (uint32 k = 0; k < ekey; k++)
@@ -1420,7 +1417,6 @@ void GlobalAnimationHeaderLMG::Init_TravelAngle(const CAnimationSet* pAnimationS
 
 		uint32 skey = uint32(m_DimPara[dim].m_skey * (numKeys - 1));
 		uint32 ekey = uint32(m_DimPara[dim].m_ekey * (numKeys - 1));
-		f32 fTravelAngle = 0.0f;
 		Vec3 totalMovement(0.0f, 0.0f, 0.0f);
 		for (uint32 k = skey; k < ekey; k++)
 		{
@@ -1476,7 +1472,6 @@ void GlobalAnimationHeaderLMG::Init_SlopeAngle(const CAnimationSet* pAnimationSe
 		for (uint32 k = 0; k < numKeys; k++, fk += 1.0f)
 			pController->GetOP(fk, rot_keys[k], pos_keys[k]);
 
-		uint32 skey = uint32(m_DimPara[dim].m_skey * (numKeys - 1));
 		uint32 ekey = uint32(m_DimPara[dim].m_ekey * (numKeys - 1));
 		uint32 poses = 0;
 		f32 fSlopeAngle = 0.0f;
@@ -1536,7 +1531,6 @@ void GlobalAnimationHeaderLMG::Init_TravelDist(const CAnimationSet* pAnimationSe
 
 		f32 fTravelDist = (key1.t - key0.t).GetLength();
 
-		f32 anf3 = m_arrParameter[i].m_Para[dim];
 		m_arrParameter[i].m_Para[dim] = fTravelDist;
 	}
 	if (init_count == numAssets)

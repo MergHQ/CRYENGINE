@@ -370,7 +370,6 @@ void CSkeletonAnim::Commands_BasePlayback(const CAnimation& rAnim, Command::CBuf
 		ac->m_fWeight = rAnim.GetTransitionWeight();
 
 		f32 time_new0 = rAnim.GetCurrentSegmentNormalizedTime();
-		int32 segtotal = rCAF.m_Segments - 1;
 		int32 segcount = rAnim.m_currentSegmentIndex[0];
 		f32 segdur = rCAF.GetSegmentDuration(segcount);
 		f32 totdur = rCAF.GetTotalDuration();

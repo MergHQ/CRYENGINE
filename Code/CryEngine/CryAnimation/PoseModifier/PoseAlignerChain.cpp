@@ -45,7 +45,6 @@ ILINE bool AlignJointToPlane(const SAnimationPoseModifierParams& params, uint32 
 	if (!pPoseData)
 		return false;
 
-	QuatT* const __restrict pPoseRelative = pPoseData->GetJointsRelative();
 	QuatT* const __restrict pPoseAbsolute = pPoseData->GetJointsAbsolute();
 
 	QuatT& jointAbsolute = pPoseAbsolute[jointIndex];

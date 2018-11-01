@@ -254,9 +254,8 @@ void CSkeletonPhysics::Job_Physics_SynchronizeFromEntity(Skeleton::CPoseData& po
 	if (pPhysicalEntity)
 	{
 		QuatT transform(IDENTITY);
-
-		CDefaultSkeleton::SJoint* pModelJoints = &rDefaultSkeleton.m_arrModelJoints[0];
 		QuatT location;
+
 		for (uint i = 0; i < jointCount; ++i)
 		{
 			PhysData& rCurPhysData = pPhysBuffer[i];

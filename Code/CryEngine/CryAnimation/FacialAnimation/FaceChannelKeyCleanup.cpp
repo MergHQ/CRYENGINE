@@ -105,7 +105,6 @@ void VerifyStructure(int numKeys, FaceChannelCleanupKeysKeyEntry* keyEntries)
 		TreeEntry(MAIN_TREE,                             &FaceChannelCleanupKeysKeyEntry::parent,     &FaceChannelCleanupKeysKeyEntry::children)
 	};
 	enum {NUM_TREE_REMOVAL_ENTRIES = CRY_ARRAY_COUNT(treeEntries)};
-	int countChangedItem = -1;
 	for (int treeIndex = 0; treeIndex < NUM_TREE_REMOVAL_ENTRIES; ++treeIndex)
 	{
 		int root = treeEntries[treeIndex].root;

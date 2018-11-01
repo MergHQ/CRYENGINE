@@ -48,8 +48,10 @@ uint32 CAttachmentSKIN::Immediate_AddBinding( IAttachmentObject* pIAttachmentObj
 	CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
 	CDefaultSkeleton* pDefaultSkeleton = pInstanceSkel->m_pDefaultSkeleton;
 
+#ifdef EDITOR_PCDEBUGCODE
 	const char* pSkelFilePath = pDefaultSkeleton->GetModelFilePath();
 	const char* pSkinFilePath = m_pModelSkin->GetModelFilePath();
+#endif
 
 	uint32 numJointsSkel = pDefaultSkeleton->m_arrModelJoints.size();
 	uint32 numJointsSkin = m_pModelSkin->m_arrModelJoints.size();
@@ -93,12 +95,15 @@ uint32 CAttachmentSKIN::Immediate_AddBinding( IAttachmentObject* pIAttachmentObj
 			{
 				CryLogAlways("SKEL: %s",pDefaultSkeleton->GetModelFilePath() );
 				CryLogAlways("SKIN: %s",m_pModelSkin->GetModelFilePath() );
+
+#if !defined(EXCLUDE_NORMAL_LOG)
 				uint32 numJointCount = pDefaultSkeleton->GetJointCount();
 				for (uint32 i=0; i<numJointCount; i++)
 				{
 					const char* pJointName = pDefaultSkeleton->GetJointNameByID(i);
 					CryLogAlways("%03d JointName: %s",i,pJointName );
 				}
+#endif
 			}
 
 			// Free the new attachment as we cannot use it
@@ -202,7 +207,6 @@ void CAttachmentSKIN::UpdateRemapTable()
 	const char* pSkelFilePath = pDefaultSkeleton->GetModelFilePath();
 	const char* pSkinFilePath = m_pModelSkin->GetModelFilePath();
 
-	uint32 numJointsSkel = pDefaultSkeleton->m_arrModelJoints.size();
 	uint32 numJointsSkin = m_pModelSkin->m_arrModelJoints.size();
 
 	m_arrRemapTable.resize(numJointsSkin, 0);

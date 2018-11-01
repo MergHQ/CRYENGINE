@@ -69,8 +69,6 @@ uint32 CModelMesh::IsVBufferValid()
 	if (m_pIRenderMesh == 0)
 		return 0;
 	m_pIRenderMesh->LockForThreadAccess();
-	uint32 numIndices = m_pIRenderMesh->GetIndicesCount();
-	uint32 numVertices = m_pIRenderMesh->GetVerticesCount();
 	vtx_idx* pIndices = m_pIRenderMesh->GetIndexPtr(FSL_READ);
 	if (pIndices == 0)
 		return 0;
@@ -108,7 +106,6 @@ ClosestTri CModelMesh::GetAttachmentTriangle(const Vec3& RMWPosition, const Join
 		return cf;
 	m_pIRenderMesh->LockForThreadAccess();
 	uint32 numIndices = m_pIRenderMesh->GetIndicesCount();
-	uint32 numVertices = m_pIRenderMesh->GetVerticesCount();
 	vtx_idx* pIndices = m_pIRenderMesh->GetIndexPtr(FSL_READ);
 	if (pIndices == 0)
 		return cf;
@@ -197,7 +194,6 @@ uint32 CModelMesh::InitSWSkinBuffer()
 size_t CModelMesh::SizeOfModelMesh() const
 {
 	uint32 nSize = sizeof(CModelMesh);
-	uint32 numRenderChunks = m_arrRenderChunks.size();
 	nSize += m_arrRenderChunks.get_alloc_size();
 
 	return nSize;
@@ -324,7 +320,6 @@ void CModelMesh::CreateMorphsBuffer(CMesh* pMesh)
 		uint32 numMorphVerts = (uint32)frame.vertices.size();
 		for (uint32 j = 0; j < numMorphVerts; ++j)
 		{
-			const Vec3& deltaPos = frame.vertices[j].position;
 			uint32 vertexIndex = (uint32)frame.vertices[j].index;
 			++vertexBuckets[vertexIndex];
 		}

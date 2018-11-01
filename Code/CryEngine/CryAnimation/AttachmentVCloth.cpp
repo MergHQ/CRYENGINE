@@ -45,10 +45,11 @@ uint32 CAttachmentVCLOTH::Immediate_AddBinding(IAttachmentObject* pIAttachmentOb
 	CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
 	CDefaultSkeleton* pDefaultSkeleton = pInstanceSkel->m_pDefaultSkeleton;
 
+#ifdef EDITOR_PCDEBUGCODE
 	const char* pSkelFilePath = pDefaultSkeleton->GetModelFilePath();
 	const char* pSkinFilePath = m_pRenderSkin->GetModelFilePath();
+#endif
 
-	uint32 numJointsSkel = pDefaultSkeleton->m_arrModelJoints.size();
 	uint32 numJointsSkin = m_pRenderSkin->m_arrModelJoints.size();
 
 	uint32 NotMatchingNames = 0;
@@ -77,12 +78,15 @@ uint32 CAttachmentVCLOTH::Immediate_AddBinding(IAttachmentObject* pIAttachmentOb
 			{
 				CryLogAlways("SKEL: %s", pDefaultSkeleton->GetModelFilePath());
 				CryLogAlways("SKIN: %s", m_pRenderSkin->GetModelFilePath());
+
+#if !defined(EXCLUDE_NORMAL_LOG)
 				uint32 numJointCount = pDefaultSkeleton->GetJointCount();
 				for (uint32 i = 0; i < numJointCount; i++)
 				{
 					const char* pJointName = pDefaultSkeleton->GetJointNameByID(i);
 					CryLogAlways("%03d JointName: %s", i, pJointName);
 				}
+#endif
 			}
 
 			// Free the new attachment as we cannot use it
@@ -130,7 +134,6 @@ const SVClothParams& CAttachmentVCLOTH::GetClothParams()
 
 uint32 CAttachmentVCLOTH::AddSimBinding(const ISkin& pISkinRender, uint32 nLoadingFlags)
 {
-	uint32 nLogWarnings = (nLoadingFlags&CA_DisableLogWarnings) == 0;
 	CSkin* pCSkinRenderModel = (CSkin*)&pISkinRender;
 
 	//only the VCLOTH-Instance is allowed to keep a smart-ptr CSkin object 
@@ -145,10 +148,11 @@ uint32 CAttachmentVCLOTH::AddSimBinding(const ISkin& pISkinRender, uint32 nLoadi
 	CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
 	CDefaultSkeleton* pDefaultSkeleton = pInstanceSkel->m_pDefaultSkeleton;
 
+#ifdef EDITOR_PCDEBUGCODE
 	const char* pSkelFilePath = pDefaultSkeleton->GetModelFilePath();
 	const char* pSkinFilePath = m_pSimSkin->GetModelFilePath();
+#endif
 
-	uint32 numJointsSkel = pDefaultSkeleton->m_arrModelJoints.size();
 	uint32 numJointsSkin = m_pSimSkin->m_arrModelJoints.size();
 
 	uint32 NotMatchingNames = 0;
@@ -248,7 +252,6 @@ void CAttachmentVCLOTH::UpdateRemapTable()
 	const char* pSkelFilePath = pDefaultSkeleton->GetModelFilePath();
 	const char* pSkinFilePath = m_pRenderSkin->GetModelFilePath();
 
-	uint32 numJointsSkel = pDefaultSkeleton->m_arrModelJoints.size();
 	uint32 numJointsSkin = m_pRenderSkin->m_arrModelJoints.size();
 
 	m_arrRemapTable.resize(numJointsSkin, 0);
@@ -258,7 +261,7 @@ void CAttachmentVCLOTH::UpdateRemapTable()
 		if (nID >= 0)
 			m_arrRemapTable[js] = nID;
 		else
-			CryFatalError("ModelError: data-corruption when executing UpdateRemapTable for SKEL (%s) and SKIN (%s) ", pSkelFilePath, pSkinFilePath); //a fail in this case is virtually impossible, because the SKINs are alread attached 
+			CryFatalError("ModelError: data-corruption when executing UpdateRemapTable for SKEL (%s) and SKIN (%s) ", pSkelFilePath, pSkinFilePath); //a fail in this case is virtually impossible, because the SKINs are already attached 
 	}
 
 	// Patch the remapping 
@@ -1213,7 +1216,6 @@ void CClothSimulator::StartStep(float time_interval, const QuatT& location)
 	}
 
 	// blend world space with local space movement
-	const float rotationBlend = m_config.rotationBlend; //max(m_angModulator, m_config.rotationBlend);
 	if ((m_config.rotationBlend > 0.f || m_config.translationBlend > 0.f) && !m_permCollidables.empty())
 	{
 		Quaternion dq(IDENTITY);
@@ -1443,7 +1445,6 @@ void CClothSimulator::BendByTriangleAngleSolve(float kBend)
 
 	const float k = kBend;
 	SParticleHot* p = m_particlesHot;
-	SParticleCold* pO = m_particlesCold;
 
 	for (auto it = m_listBendTrianglePairs.begin(); it != m_listBendTrianglePairs.end(); it++)
 	{
@@ -2395,8 +2396,6 @@ void CClothSimulator::DrawHelperInformation()
 		}
 		if (pProxy)
 		{
-			QuatTS wlocation = m_location * pProxy->m_ProxyModelRelative;
-
 			for (int i = 0; i < m_debugCollidableSubsteppingQuatT.size(); i++)
 			{
 				QuatT q = m_debugCollidableSubsteppingQuatT[i];

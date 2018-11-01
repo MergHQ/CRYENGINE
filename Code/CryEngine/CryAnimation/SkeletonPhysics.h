@@ -204,8 +204,10 @@ private:
 
 	int    GetModelJointChildIndex(int nBone, int i) const
 	{
+#if defined(USE_CRY_ASSERT)
 		int32 numChildren = int32(GetModelJointPointer(nBone)->m_numChildren);
 		assert(i >= 0 && i < numChildren);
+#endif
 		return nBone + GetModelJointPointer(nBone)->m_nOffsetChildren + i;
 	}
 	int  GetPhysicsLod() const { return m_bHasPhysicsProxies ? 1 : 0; }

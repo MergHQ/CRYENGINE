@@ -330,10 +330,6 @@ void CryCGALoader::InitNodes(CHeaderTCB* pSkinningInfo, CDefaultSkeleton* pCGAMo
 
 	m_arrControllers = pSkinningInfo->m_arrControllersTCB;
 
-#ifdef _DEBUG
-	uint32 numController = m_arrControllers.size();
-#endif
-
 	//-------------------------------------------------------------------------
 	//-------------------------------------------------------------------------
 	//-------------------------------------------------------------------------
@@ -394,7 +390,9 @@ void CryCGALoader::InitNodes(CHeaderTCB* pSkinningInfo, CDefaultSkeleton* pCGAMo
 			nd.rot_cont_id = pGFXNode2->rot_cont_id;
 			nd.scl_cont_id = pGFXNode2->scl_cont_id;
 
+#if defined(USE_CRY_ASSERT)
 			int numChunks = (int)m_arrChunkNodes.size();
+#endif
 
 			if (nd.pos_cont_id != 0xffff)
 				assert(nd.pos_cont_id < numChunks);
@@ -482,9 +480,6 @@ void CryCGALoader::InitNodes(CHeaderTCB* pSkinningInfo, CDefaultSkeleton* pCGAMo
 	//------------------------------------------------------------------------
 	//---    init nodes                                                    ---
 	//------------------------------------------------------------------------
-	uint32 numControllers0 = m_CtrlVec3.size();
-	uint32 numControllers1 = m_CtrlQuat.size();
-
 	uint32 numAktiveNodes = 0;
 	uint32 numNodes = m_arrChunkNodes.size();
 	for (uint32 i = 0; i < numNodes; i++)

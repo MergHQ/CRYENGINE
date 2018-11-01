@@ -10,8 +10,11 @@
 uint32 GlobalAnimationHeaderCAF::LoadCAF()
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
+
+#if INCLUDE_MEMSTAT_CONTEXTS
 	const char* pname = m_FilePath.c_str();
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "CAF Animation %s", pname);
+#endif
 
 	m_nFlags = 0;
 	OnAssetNotFound();
@@ -635,7 +638,6 @@ bool GlobalAnimationHeaderCAFStreamContent::ReadMotionParameters(IChunkFile::Chu
 		m_nFlags |= CA_ASSET_CREATED;
 
 		m_FilePathDBACRC32 = 0;        //if 0, then this is a streamable CAF file
-		uint32 nCompression = pChunk->mp.m_nCompression;
 		int32 nStartKey = pChunk->mp.m_nStart;
 		int32 nEndKey = pChunk->mp.m_nEnd;
 		if (pChunk->mp.m_nAssetFlags & CA_ASSET_ADDITIVE)

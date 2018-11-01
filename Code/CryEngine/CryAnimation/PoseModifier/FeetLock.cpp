@@ -32,7 +32,10 @@ bool CFeetPoseStore::Execute(const SAnimationPoseModifierParams& params)
 
 	const CDefaultSkeleton& rDefaultSkeleton = (const CDefaultSkeleton&)params.GetIDefaultSkeleton();
 	QuatT* pRelPose = pPoseData->GetJointsRelative();
+
+#ifdef _DEBUG
 	QuatT* pAbsPose = pPoseData->GetJointsAbsolute();
+#endif // _DEBUG
 
 	for (uint32 h = 0; h < MAX_FEET_AMOUNT; h++)
 	{

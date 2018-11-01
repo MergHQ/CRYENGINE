@@ -401,7 +401,6 @@ uint32 CAttachmentManager::ParseXMLAttachmentList(CharacterAttachment* parrAttac
 void CAttachmentManager::InitAttachmentList(const CharacterAttachment* parrAttachments, uint32 numAttachments, const string pathname, uint32 nLoadingFlags, int nKeepModelInMemory)
 {
 	uint32 nLogWarnings = (nLoadingFlags & CA_DisableLogWarnings) == 0;
-	CSkeletonPose& rSkelPose = (CSkeletonPose&)*m_pSkelInstance->GetISkeletonPose();
 	CDefaultSkeleton& rDefaultSkeleton = *m_pSkelInstance->m_pDefaultSkeleton;
 
 	// flush once, because, here we will execute immediate commands
@@ -453,7 +452,6 @@ void CAttachmentManager::InitAttachmentList(const CharacterAttachment* parrAttac
 			pAttachment->HideAttachment(attach.m_AttFlags & FLAGS_ATTACH_HIDE_ATTACHMENT);
 			SimulationParams& ap = pAttachment->GetSimulationParams();
 			ap = attach.ap;
-			CSkeletonPose& rSkelPose = (CSkeletonPose&)*m_pSkelInstance->GetISkeletonPose();
 
 			if (IsSKEL || IsCGA || IsCDF)
 			{
@@ -723,7 +721,6 @@ void CAttachmentManager::InitAttachmentList(const CharacterAttachment* parrAttac
 	}
 	pICharacter->SetHasVertexAnimation(bHasVertexAnimation);
 
-	uint32 count = GetAttachmentCount();
 	ProjectAllAttachment();
 	VerifyProxyLinks();
 
@@ -828,8 +825,6 @@ IAttachment* CAttachmentManager::CreateAttachment(const char* szAttName, uint32 
 		CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_ERROR, "CryAnimation: Attachment CRC32 for '%s' clashes with attachment name '%s' (crc's are created using lower case only), attachment will not be created", strAttachmentName.c_str(), pIAttachmentCRC32->GetName());
 		return 0;
 	}
-
-	CDefaultSkeleton& rDefaultSkeleton = *m_pSkelInstance->m_pDefaultSkeleton;
 
 	//----------------------------------------------------------------------------------
 	if (type == CA_BONE)
@@ -1501,7 +1496,9 @@ void CAttachmentManager::PrepareAllRedirectedTransformations(Skeleton::CPoseData
 	m_fTurbulenceGlobal += gf_PI * fAverageFrameTime, m_fTurbulenceLocal = 0;
 
 	DEFINE_PROFILER_FUNCTION();
+#ifndef _RELEASE
 	const QuatTS& rPhysLocation = m_pSkelInstance->m_location;
+#endif
 	uint32 nproxies = m_arrProxies.size();
 	for (uint32 i = 0; i < nproxies; i++)
 	{
@@ -1539,7 +1536,6 @@ void CAttachmentManager::PrepareAllRedirectedTransformations(Skeleton::CPoseData
 
 void CAttachmentManager::GenerateProxyModelRelativeTransformations(Skeleton::CPoseData& rPoseData)
 {
-	const QuatTS& rPhysLocation = m_pSkelInstance->m_location;
 	uint32 nproxies = m_arrProxies.size();
 	for (uint32 i = 0; i < nproxies; i++)
 	{
@@ -1579,12 +1575,7 @@ int CAttachmentManager::GenerateAttachedInstanceContexts()
 	if (m_TypeSortingRequired)
 		SortByType();
 
-	auto& sc = g_pCharacterManager->GetContextSyncQueue();
-
 	int result = 0;
-
-	uint32 m =
-	  m_sortedRanges[eRange_BoneExecuteUnsafe].end - m_sortedRanges[eRange_BoneExecute].begin;
 
 	for (uint32 i = m_sortedRanges[eRange_BoneExecute].begin;
 	     i < m_sortedRanges[eRange_BoneExecuteUnsafe].end; i++)

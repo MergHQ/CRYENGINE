@@ -65,7 +65,6 @@ uint32 CSkeletonAnim::BlendManager(f32 fDeltaTime, DynArray<CAnimation>& arrAFIF
 		}
 		else
 		{
-			uint32 counter = 0;
 			uint32 num = pParametric->m_numExamples;
 			for (uint32 a = 0; a < num; a++)
 			{
@@ -290,7 +289,6 @@ void CSkeletonAnim::UpdateParameters(CAnimation* arrAnimFiFo, uint32 nMaxActiveI
 			if (pAnim->m_nAssetType == AIM_File)
 			{
 				GlobalAnimationHeaderAIM& rAIM = g_AnimationManager.m_arrGlobalAIM[pAnim->m_nGlobalAnimId];
-				const int32 segcount = rCurAnim.m_currentSegmentIndex[0];
 				f32 fSegTime = max(rAIM.m_fTotalDuration, 1.0f / ANIMATION_30Hz);
 				fSegTime = max(fSegTime, 1.0f / ANIMATION_30Hz);
 				rCurAnim.SetCurrentSegmentExpectedDurationSeconds(fSegTime);
@@ -1245,8 +1243,6 @@ void CSkeletonAnim::BlendManagerDebug()
 	for (uint32 nVLayerNo = 0; nVLayerNo < numVIRTUALLAYERS; nVLayerNo++)
 	{
 		DynArray<CAnimation>& rCurLayer = m_layers[nVLayerNo].m_transitionQueue.m_animations;
-		uint32 numAnimsPerLayer = rCurLayer.size();
-
 		BlendManagerDebug(rCurLayer, nVLayerNo);
 	}
 

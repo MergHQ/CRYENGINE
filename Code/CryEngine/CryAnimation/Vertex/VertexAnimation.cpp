@@ -208,7 +208,6 @@ bool CVertexAnimation::CompileCommands(CVertexCommandBuffer& commandBuffer)
 	if (!m_skinData.vertexTransformCount)
 		return false;
 
-	uint stateCount = uint(m_frameStates.size());
 	if (VertexCommandCopy* pCommand = commandBuffer.AddCommand<VertexCommandCopy>())
 	{
 		pCommand->pVertexPositions = m_skinData.pVertexPositions;

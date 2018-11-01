@@ -245,8 +245,6 @@ void CSkeletonAnim::ProcessAnimations(const QuatTS& rAnimLocationCurr)
 		m_pSkeletonPose->m_bSetDefaultPoseExecute = false;
 	}
 
-	Skeleton::CPoseData& poseData = m_pSkeletonPose->GetPoseDataExplicitWriteable();
-
 	if (m_pInstance->m_CharEditMode == 0)
 	{
 		int nCurrentFrameID = g_pCharacterManager->m_nUpdateCounter;
@@ -271,8 +269,6 @@ void CSkeletonAnim::ProcessAnimations(const QuatTS& rAnimLocationCurr)
 void CSkeletonAnim::ProcessAnimationUpdate(const QuatTS rAnimLocationCurr)
 {
 	DEFINE_PROFILER_FUNCTION();
-
-	CSkeletonPose* const __restrict pSkeletonPose = m_pSkeletonPose;
 
 	CPoseBlenderAim* pPBAim = static_cast<CPoseBlenderAim*>(m_pSkeletonPose->m_PoseBlenderAim.get());
 	if (pPBAim)
@@ -481,7 +477,7 @@ void CSkeletonAnim::GetMemoryUsage(ICrySizer* pSizer) const
 
 Vec3 CSkeletonAnim::GetCurrentVelocity() const
 {
-	float fColDebug[4] = { 1, 1, 0, 1 };
+	//float fColDebug[4] = { 1, 1, 0, 1 };
 	f32 fDT = m_pInstance->m_fDeltaTime;
 	if (fDT == 0)
 	{

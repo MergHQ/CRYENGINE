@@ -107,8 +107,6 @@ void Arrow(const QuatT& location, const Vec3& direction, float length, ColorB co
 	SAuxGeomRenderFlags renderFlags(e_Def3DPublicRenderflags);
 	g_pAuxGeom->SetRenderFlags(renderFlags);
 
-	Vec3 absAxisY = location.q.GetColumn1();
-
 	Vec3 vdir = direction.GetNormalized();
 	Matrix33 m;
 	m.m00 = 1;
@@ -169,11 +167,9 @@ void CurvedArrow(const QuatT& location, float moveSpeed, float travelAngle, floa
 
 	f64 fStepSize = 1.0 / 50.0;
 	QuatTd wpos = location * Quat::CreateRotationZ(travelAngle);
-	f64 fTurnSpeed = turnSpeed * fStepSize;
 	g_pAuxGeom->DrawSphere(wpos.t, 0.05f, ColorB(0xff, 0, 0));
 
 	Vec3d absAxisX = wpos.q.GetColumn0();
-	Vec3d absAxisY = wpos.q.GetColumn1();
 
 	const f64 size = 0.015;
 	Matrix33d SlopeMat33 = Matrix33::CreateRotationAA(slope, absAxisX);

@@ -102,7 +102,10 @@ void CSimulation::UpdatePendulumSimulation(const CAttachmentManager* pAttachment
 
 	const uint32 nBindPose = pSkelInstance->m_CharEditMode & (CA_BindPose | CA_AllowRedirection);
 	const uint32 nAllowRedirect = nBindPose & CA_BindPose ? nBindPose & CA_AllowRedirection : 1;
+
+#ifdef EDITOR_PCDEBUGCODE
 	uint32 nSetupError = 0;
+#endif
 
 	if (nBindPose == 0 && m_fMaxAngle && m_useSimulation && fSimulationAxisSq && sqr(m_vBobPosition))
 	{
@@ -716,7 +719,10 @@ void CSimulation::ProjectJointOutOfLozenge(const CAttachmentManager* pAttachment
 	const CDefaultSkeleton& rDefaultSkeleton = *pSkelInstance->m_pDefaultSkeleton;
 	const uint32 nBindPose = pSkelInstance->m_CharEditMode & (CA_BindPose | CA_AllowRedirection);
 	const uint32 nAllowRedirect = nBindPose & CA_BindPose ? nBindPose & CA_AllowRedirection : 1;
+
+#ifdef EDITOR_PCDEBUGCODE
 	const QuatTS& rPhysLocation = pSkelInstance->m_location;
+#endif
 
 	const f32 fSimulationAxisSq = m_vSimulationAxis | m_vSimulationAxis;
 	const f32 fSimulationAxisLen = sqrt_tpl(fSimulationAxisSq);

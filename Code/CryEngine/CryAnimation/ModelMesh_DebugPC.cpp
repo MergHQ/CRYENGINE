@@ -184,7 +184,6 @@ void CModelMesh::DrawDebugInfo(CDefaultSkeleton* pCSkel, int nLOD, const Matrix3
 	const SFrameLodInfo frameLodInfo = gEnv->p3DEngine->GetFrameLodInfo();
 
 	int32 numLODs = frameLodInfo.nMaxLod;
-	int index = 0;
 	float color[4] = { 1, 1, 1, 1 };
 
 	int nTris = m_pIRenderMesh->GetVerticesCount();
@@ -223,8 +222,6 @@ void CModelMesh::DrawDebugInfo(CDefaultSkeleton* pCSkel, int nLOD, const Matrix3
 		break;
 	case 2:
 		{
-
-			IMaterialManager* pMatMan = g_pI3DEngine->GetMaterialManager();
 			int fMult = 1;
 			//int nTris = m_pDefaultSkeleton->GetRenderMesh(nLOD)->GetSysVertCount();
 			ColorB clr = ColorB(255, 255, 255, 255);

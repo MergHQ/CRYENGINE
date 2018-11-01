@@ -617,7 +617,11 @@ bool CSkin::LoadNewSKIN(const char* szFilePath, uint32 nLoadingFlags)
 	//----------------------------------------------------------------------------------------------------------------------
 
 	m_arrModelMeshes.resize(lodCount, CModelMesh());
+
+#ifdef EDITOR_PCDEBUGCODE
 	CContentCGF* pBaseContent = cgfs.m_arrContentCGF[0];
+#endif
+
 	for (uint32 lod = 0; lod < lodCount; lod++)
 	{
 		CContentCGF* pLodContent = cgfs.m_arrContentCGF[lod];
