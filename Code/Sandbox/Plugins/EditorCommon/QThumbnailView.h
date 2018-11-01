@@ -104,9 +104,6 @@ private:
 
 	void AddSizingButton(int size, int iconNumber);
 
-	// Save persistent personalization properties
-	void SaveState() const;
-
 	Delegate*         m_pDelegate;
 	QSize             m_minItemSize;
 	QSize             m_maxItemSize;

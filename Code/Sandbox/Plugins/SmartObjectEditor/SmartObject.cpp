@@ -203,8 +203,6 @@ IStatObj* CSmartObject::GetIStatObj()
 
 	return nullptr;
 
-	//#DMITRYL: delete further code?
-
 	// Try to load the object specified in the SO class template
 	m_pClassTemplate = nullptr;
 	string classes;

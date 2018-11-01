@@ -1,15 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <StdAfx.h>
-#include <QSearchBox.h>
-
-#include <QTimer>
-#include <QAction>
-#include <QSortFilterProxyModel>
-#include <QTreeView>
+#include "StdAfx.h"
+#include "QSearchBox.h"
 
 #include "ProxyModels/DeepFilterProxyModel.h"
+
 #include <CryIcon.h>
+
+#include <QAction>
+#include <QSortFilterProxyModel>
+#include <QTimer>
+#include <QTreeView>
 
 QSearchBox::QSearchBox(QWidget* parent /*= 0*/)
 	: QLineEdit(parent)
@@ -24,11 +25,6 @@ QSearchBox::QSearchBox(QWidget* parent /*= 0*/)
 
 	m_action = addAction(CryIcon(QPixmap("icons:General/Search.ico")), QLineEdit::TrailingPosition);//TODO : make a real delete icon !!
 	connect(m_action, &QAction::triggered, this, &QSearchBox::OnClear);
-}
-
-QSearchBox::~QSearchBox()
-{
-
 }
 
 void QSearchBox::SetSearchFunction(std::function<void(const QString&)> function)
@@ -52,7 +48,7 @@ void QSearchBox::SetModel(QSortFilterProxyModel* model, SearchMode mode)
 			break;
 		case SearchMode::TokenizedString:
 			CRY_ASSERT(0);
-			//intentional fallthrough
+			// intentional fall through
 		case SearchMode::String:
 		default:
 			m_searchFunction = [model](const QString& str) { model->setFilterFixedString(str); };
@@ -64,7 +60,6 @@ void QSearchBox::SetModel(QSortFilterProxyModel* model, SearchMode mode)
 		setEnabled(false);
 		m_searchFunction = std::function<void(const QString&)>();
 	}
-
 }
 
 void QSearchBox::SetModel(QDeepFilterProxyModel* model, SearchMode mode /*= SearchMode::TokenizedString*/)

@@ -315,8 +315,6 @@ QThumbnailsView::QThumbnailsView(QListView* pListView, bool showSizeButtons /* =
 	}
 
 	setLayout(layout);
-	
-	SetState(GET_PERSONALIZATION_STATE(QThumbnailsView));
 }
 
 QThumbnailsView::~QThumbnailsView()
@@ -545,8 +543,7 @@ void QThumbnailsView::OnModelReset()
 
 void QThumbnailsView::OnPreviewSizeButtonClicked(int value)
 {
-	SetItemSize(QSize(value, value));
-	SaveState();
+	SetItemSize(QSize(value,value));
 }
 
 QVariantMap QThumbnailsView::GetState() const
@@ -569,11 +566,6 @@ void QThumbnailsView::SetState(const QVariantMap& state)
 	{
 		SetItemSize(QSize(64, 64));
 	}
-}
-
-void QThumbnailsView::SaveState() const
-{
-	SET_PERSONALIZATION_PROPERTY(QThumbnailsView, "size", QtUtil::ToQVariant(GetItemSize()));
 }
 
 void QThumbnailsView::StartUpdateTimer()
