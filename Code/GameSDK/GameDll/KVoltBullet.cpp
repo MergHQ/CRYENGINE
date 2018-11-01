@@ -14,6 +14,7 @@ History:
 #include "StdAfx.h"
 #include "KVoltBullet.h"
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <Cry3DEngine/ISurfaceType.h>
 #include "Actor.h"
 #include "GameRules.h"
 #include "Player.h"

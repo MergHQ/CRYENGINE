@@ -20,6 +20,7 @@ History:
 #include "StatHelpers.h"
 #include "Weapon.h"
 #include "GameActions.h"
+#include <CryGame/GameUtils.h>
 
 static const float POSITION_DUMP_INTERVAL = 1.0f;
 static const float POSITION_THRESHOLD = 0.5f;

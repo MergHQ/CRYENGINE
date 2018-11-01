@@ -2,6 +2,7 @@
 #pragma once
 
 #include "CommonICryMatchMaking.h"
+#include "ICryStats.h"
 
 class CCryLobbyPacket;
 

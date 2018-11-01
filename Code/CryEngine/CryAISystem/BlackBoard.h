@@ -19,7 +19,6 @@
 #endif
 
 #include <CryScriptSystem/IScriptSystem.h>
-#include <CryScriptSystem/ScriptHelpers.h>
 #include <CryAISystem/IBlackBoard.h>
 
 class CBlackBoard : public IBlackBoard

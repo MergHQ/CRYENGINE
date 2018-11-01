@@ -8,6 +8,7 @@
 #include <CryEntitySystem/IEntity.h>
 #include <CryAISystem/IVisionMap.h>
 #include <CryAISystem/IAISystemComponent.h>
+#include "Game.h"
 
 class Agent;
 

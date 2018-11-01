@@ -14,6 +14,8 @@
 #include "PrefabManager.h"
 #include "RuntimePrefab.h"
 #include <CryCore/Base64.h>
+#include <CryRenderer/IRenderer.h>
+#include <Cry3DEngine/IRenderNode.h>
 
 using namespace CryGame;
  

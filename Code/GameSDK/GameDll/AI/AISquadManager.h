@@ -6,6 +6,9 @@
 #define AISquadManager_h
 
 #include <CryAISystem/IClusterDetector.h>
+#include <CryEntitySystem/IEntityBasicTypes.h>
+#include <CryCore/CryCrc32.h>
+#include <CryMath/Cry_Color.h>
 
 typedef ClusterId SquadId;
 #define UnknownSquadId SquadId(~0)

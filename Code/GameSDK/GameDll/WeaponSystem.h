@@ -32,6 +32,7 @@ History:
 #include "WeaponAlias.h"
 #include "FireModePluginParams.h"
 #include "GameTypeInfo.h"
+#include <queue>
 
 class CGame;
 class CProjectile;

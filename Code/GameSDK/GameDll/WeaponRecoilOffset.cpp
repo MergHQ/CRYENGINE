@@ -8,8 +8,8 @@
 #include "FireMode.h"
 #include "WeaponFPAiming.h"
 #include "Mannequin/Serialization.h"
-
-
+#include <CryMath/Random.h>
+#include <CryGame/GameUtils.h>
 
 SStaticWeaponRecoilParams::SStaticWeaponRecoilParams()
 	:	dampStrength(0.0f)

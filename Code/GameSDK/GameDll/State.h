@@ -20,6 +20,7 @@ History:
 
 #include <CryCore/CryFlags.h>
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <queue>
 
 #include "AutoEnum.h"
 

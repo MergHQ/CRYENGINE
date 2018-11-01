@@ -21,6 +21,7 @@ History:
 
 #include <IItemSystem.h>
 #include <CryAISystem/IFactionMap.h>
+#include <CryMath/Random.h>
 #include "Weapon.h"
 #include "Single.h"
 

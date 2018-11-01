@@ -5,6 +5,8 @@
 #pragma once
 
 #include <CryScriptSystem/IScriptSystem.h> // <> required for Interfuscator
+#include <CryEntitySystem/IEntitySystem.h>
+#include <CryMemory/CrySizer.h>
 
 //////////////////////////////////////////////////////////////////////////
 

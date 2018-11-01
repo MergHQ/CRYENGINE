@@ -4,6 +4,7 @@
 
 // Includes
 #include "StdAfx.h"
+#include <CryRenderer/IRenderer.h>
 #include "MenuRender3DModelMgr.h"
 #include "FrontEndModelCache.h"
 #include "Graphics/2DRenderUtils.h"
@@ -11,6 +12,7 @@
 #include <CryString/StringUtils.h>
 #include "GameCVars.h"
 #include "UI/UIManager.h"
+#include <CryAnimation/IAttachment.h>
 
 // Defines
 #if MP_FE_CACHE_LOG_FILE_ACCESSES

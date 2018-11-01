@@ -18,8 +18,9 @@ History:
 #define _CAMERA_MODES_H_
 
 #include "ICameraMode.h"
+#include <CryRenderer/Tarray.h>
+#include <CryEntitySystem/IEntityBasicTypes.h>  // for EntityId
 
-struct SPlayerStats;
 struct SDeathCamSPParams;
 struct IItem;
 

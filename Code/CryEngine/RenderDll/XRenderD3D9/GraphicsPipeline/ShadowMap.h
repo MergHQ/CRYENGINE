@@ -21,7 +21,7 @@ class CShadowMapStage : public CGraphicsPipelineStage
 		EPerPassTexture_TerrainBaseMap = CSceneGBufferStage::ePerPassTexture_TerrainBaseMap,
 	};
 
-	enum EPass
+	enum EPass : uint8
 	{
 		ePass_DirectionalLight       = 0,
 		ePass_DirectionalLightCached = 1,
@@ -74,6 +74,7 @@ private:
 
 		SShadowFrustumToRender*  m_pFrustumToRender;
 		int                      m_nShadowFrustumSide;
+		EPass                    m_eShadowPassID;
 		bool                     m_bRequiresRender;
 
 		CConstantBufferPtr       m_pPerPassConstantBuffer;

@@ -15,7 +15,7 @@ History:
 #include "GameRulesTypes.h"
 #include "GameRulesModules/IGameRulesKillListener.h"
 #include "../../DownloadMgr.h"
-#include "UI/HUD//HUDEventDispatcher.h"
+#include "UI/HUD/HUDEventDispatcher.h"
 #include "Network/Lobby/GameLobbyManager.h"
 
 

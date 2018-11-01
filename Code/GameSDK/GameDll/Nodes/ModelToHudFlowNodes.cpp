@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include <CryRenderer/IRenderer.h>
 #include "GameObjects/GameObject.h"
 #include "ModelToHudFlowNodes.h"
 #include <CrySystem/Scaleform/IFlashUI.h>

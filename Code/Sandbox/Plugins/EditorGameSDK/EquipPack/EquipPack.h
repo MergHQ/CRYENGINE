@@ -5,6 +5,8 @@
 #include <vector>
 #include <deque>
 
+class XmlNodeRef;
+
 struct SEquipment
 {
 	SEquipment()

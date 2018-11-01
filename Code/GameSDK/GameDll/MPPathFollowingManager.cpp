@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "MPPathFollowingManager.h"
 #include "GameRules.h"
+#include "GameCVars.h"
 
 CMPPathFollowingManager::CMPPathFollowingManager()
 {

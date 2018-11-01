@@ -149,9 +149,13 @@ bool CRenderPipelineProfiler::FilterLabel(const char* name)
 {
 	return
 		(strcmp(name, "UpdateTextureRegion") == 0) ||
+		(strcmp(name, "LINEARIZE_DEPTH") == 0) ||
+		(strcmp(name, "DELINEARIZE_DEPTH") == 0) ||
 		(strcmp(name, "DOWNSAMPLE_DEPTH") == 0) ||
+		(strcmp(name, "DOWNSAMPLE_STABLE") == 0) ||
 		(strcmp(name, "SCREEN_STRETCH_RECT") == 0) ||
 		(strcmp(name, "STRETCHRECT") == 0) ||
+		(strcmp(name, "TEXBLUR_GAUSSIAN") == 0) ||
 		(strcmp(name, "DRAWSTRINGW") == 0) ||
 		(strcmp(name, "DRAWSTRINGU") == 0);
 }
@@ -283,12 +287,9 @@ void CRenderPipelineProfiler::UpdateMultithreadedSection(uint32 index, bool bSec
 
 		if (bIssueTimestamp)
 		{
-			static CryCriticalSection s_lock;
-			AUTO_LOCK(s_lock);
-
 			if (bSectionStart)
 				section.startTimestamp = frameData.m_timestampGroup.IssueTimestamp(pCommandList);
-			else
+			else 
 				section.endTimestamp = frameData.m_timestampGroup.IssueTimestamp(pCommandList);
 		}
 	}

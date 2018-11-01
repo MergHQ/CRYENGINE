@@ -16,6 +16,9 @@
 #include "BirdsFlock.h"
 #include <CryAnimation/ICryAnimation.h>
 #include <CryEntitySystem/IBreakableManager.h>
+#include <Cry3DEngine/ISurfaceType.h>
+#include <CryMath/Random.h>
+#include <CryGame/GameUtils.h>
 
 #define MAX_BIRDS_DISTANCE 300
 

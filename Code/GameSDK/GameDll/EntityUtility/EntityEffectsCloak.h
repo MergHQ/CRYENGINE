@@ -18,6 +18,8 @@ History:
 #ifndef __ENTITY_EFFECTS_CLOAK_H__
 #define __ENTITY_EFFECTS_CLOAK_H__
 
+#include <CryEntitySystem/IEntityBasicTypes.h>
+
 namespace EntityEffects
 {
 	namespace Cloak

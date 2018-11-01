@@ -27,6 +27,7 @@
 #include "StdAfx.h"
 #include "GameRulesCombiCaptureObjective.h"
 #include <CrySystem/XML/IXml.h>
+#include "GameCVars.h"
 #include "GameRules.h"
 #include "Player.h"
 #include "Utility/CryWatch.h"

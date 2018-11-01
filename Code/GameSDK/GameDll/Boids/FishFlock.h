@@ -2,9 +2,8 @@
 
 #pragma once
 
-#include <CryScriptSystem/IScriptSystem.h>
-#include <CryAISystem/IAISystem.h>
 #include "Flock.h"
+struct IEntity;
 
 //////////////////////////////////////////////////////////////////////////
 class CFishFlock : public CFlock

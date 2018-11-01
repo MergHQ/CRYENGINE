@@ -13,6 +13,7 @@ History:
 #define __MOVEMENT_TRANSITIONS_H
 
 #include <CryAISystem/IAgent.h>
+#include <CryGame/GameUtils.h>
 #include "MovementTransitionsController.h"
 
 struct STransitionSelectionParams;

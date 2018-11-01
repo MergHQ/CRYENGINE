@@ -15,6 +15,9 @@
 #ifndef __GAMEAIRECORDER_H__
 #define __GAMEAIRECORDER_H__
 
+#include <CryEntitySystem/IEntityBasicTypes.h>
+#include <CrySystem/File/ICryPak.h>
+
 class Agent;
 
 

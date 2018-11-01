@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <CryCore/functor.h>
+
 struct IFactionMap;
 
 struct IFactionDataSource

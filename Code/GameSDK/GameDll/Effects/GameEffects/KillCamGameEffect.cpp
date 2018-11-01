@@ -11,6 +11,7 @@
 #include "Network/Lobby/GameLobby.h"
 #include "UI/UIManager.h"
 #include "UI/UIHUD3D.h"
+#include <CryRenderer/IRenderer.h>
 
 REGISTER_EFFECT_DEBUG_DATA(CKillCamGameEffect::DebugOnInputEvent,CKillCamGameEffect::DebugDisplay,KillCam);
 REGISTER_DATA_CALLBACKS(CKillCamGameEffect::LoadStaticData,CKillCamGameEffect::ReleaseStaticData,CKillCamGameEffect::ReloadStaticData,KillCamData);

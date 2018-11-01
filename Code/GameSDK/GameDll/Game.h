@@ -4,20 +4,15 @@
 
 #include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
-#include <IGameObjectSystem.h>
-#include <IGameObject.h>
-#include <CryCore/Platform/IPlatformOS.h>
-#include <IActorSystem.h>
-#include <CryCore/StlUtils.h>
 #include <CryPhysics/RayCastQueue.h>
 #include <CryPhysics/IntersectionTestQueue.h>
 
-#include "TelemetryCollector.h"
-
 #include "Network/GameNetworkDefines.h"
-#include "Network/Lobby/MatchMakingTelemetry.h"
-
-#include <CryCore/Platform/CryWindows.h>
+#include "TelemetryCollector.h"
+#include <CryCore/Platform/IPlatformOS.h>
+#include <CryInput/IInput.h>
+#include <CryLobby/ICryLobbyEvent.h>
+#include <CryAction/IActionMapManager.h>
 
 #define GAME_NAME     "GAMESDK"
 #define GAME_LONGNAME "CRYENGINE GAME SDK"
@@ -68,6 +63,7 @@ class CGameTokenSignalCreator;
 class CProfileOptions;
 class CTacticalManager;
 class CWarningsManager;
+class CMatchmakingTelemetry;
 #if defined(ENABLE_PROFILING_CODE)
 class CTelemetryBuffer;
 #endif

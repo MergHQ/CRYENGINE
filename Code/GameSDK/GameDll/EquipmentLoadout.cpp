@@ -44,6 +44,7 @@ History:
 #include "Network/Lobby/GameAchievements.h"
 #include "Network/Lobby/GameLobbyData.h"
 #include "Network/Lobby/GameLobby.h"
+#include <CryGame/GameUtils.h>
 
 //------------------------------------------------------------------------
 #define EQUIPMENT_LOADOUT_ITEMS_XML_PATH		"Scripts/GameRules/EquipmentLoadoutItems.xml"

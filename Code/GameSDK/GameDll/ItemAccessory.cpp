@@ -18,6 +18,7 @@ History:
 #include "RecordingSystem.h"
 #include "ItemAnimation.h"
 #include "EquipmentLoadout.h"
+#include <IGameplayRecorder.h>
 
 //------------------------------------------------------------------------
 CItem *CItem::AddAccessory(IEntityClass* pClass)

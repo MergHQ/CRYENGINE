@@ -15,9 +15,12 @@
 #ifndef __ICHECKPOINTSYSTEM_H__
 #define __ICHECKPOINTSYSTEM_H__
 
+#include <CryEntitySystem/IEntityBasicTypes.h>
+
 typedef CryFixedStringT<32> FixedCheckpointString;
 
 struct ICheckpointSystem;
+class XmlNodeRef;
 
 //container for checkpoint metadata
 struct SCheckpointData
@@ -44,10 +47,10 @@ struct ICheckpointGameHandler
 	virtual ~ICheckpointGameHandler() {}
 
 	// Writing game-specific data
-	virtual void OnWriteData(XmlNodeRef parentNode) {}
+	virtual void OnWriteData(XmlNodeRef parentNode) = 0;
 
 	// Reading game-specific data
-	virtual void OnReadData(XmlNodeRef parentNode) {}
+	virtual void OnReadData(XmlNodeRef parentNode) = 0;
 
 	// Engine reset control
 	virtual void OnPreResetEngine()  {}

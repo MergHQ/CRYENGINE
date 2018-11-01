@@ -13,6 +13,7 @@
 #include "FrogBoids.h"
 #include <CrySystem/ITimer.h>
 #include <CryAnimation/ICryAnimation.h>
+#include <CryMath/Random.h>
 
 #define MIN_REST_TIME 2.0f
 #define MAX_REST_TIME 4.0f

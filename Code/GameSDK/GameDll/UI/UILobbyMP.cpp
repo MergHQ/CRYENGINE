@@ -13,8 +13,9 @@
 #include "UILobbyMP.h"
 
 #include <CryGame/IGameFramework.h>
-#include "Game.h"
 #include "Actor.h"
+#include "Game.h"
+#include "GameCVars.h"
 #include "GameRules.h"
 #include "Network/Lobby/GameLobby.h"
 #include "Network/Lobby/GameBrowser.h"

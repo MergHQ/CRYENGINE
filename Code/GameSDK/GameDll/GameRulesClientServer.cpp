@@ -87,6 +87,7 @@ static const int sSimulateExplosionMaxEntitiesToSkip = 20;
 #include "EnvironmentalWeapon.h"
 
 #include <IPerceptionManager.h>
+#include <IGameplayRecorder.h>
 
 //------------------------------------------------------------------------
 // Our local client has hit something locally

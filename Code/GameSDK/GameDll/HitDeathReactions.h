@@ -17,6 +17,7 @@ History:
 #include "Actor.h"										// CActor::KillParams
 #include <IGameRulesSystem.h>					// HitInfo
 #include "PlayerAnimation.h"
+#include "GameCVars.h"
 
 class CActor;
 struct ICharacterInstance;

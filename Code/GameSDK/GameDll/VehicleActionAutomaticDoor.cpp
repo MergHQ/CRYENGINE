@@ -17,7 +17,6 @@ History:
 #include "Game.h"
 
 #include <CryScriptSystem/IScriptSystem.h>
-#include <CryScriptSystem/ScriptHelpers.h>
 #include <CryGame/GameUtils.h>
 
 const float DOOR_OPENED = 0.0f;

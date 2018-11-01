@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "HUDEventDispatcher.h"
+#include <CryGame/GameUtils.h>
 
 //////////////////////////////////////////////////////////////////////////
 namespace

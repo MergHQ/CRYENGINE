@@ -6,6 +6,7 @@
 #include "PersistantStats.h"
 #include "GamePhysicsSettings.h"
 #include "WaypointPath.h"
+#include "GameCVars.h"
 //#include "Utility/CryWatch.h"
 
 CVehicleMovementMPVTOL::CVehicleMovementMPVTOL() 

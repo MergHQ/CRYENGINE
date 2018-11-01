@@ -4,6 +4,7 @@
 #include "ConditionDistanceToEntity.h"
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 #include <CrySerialization/IArchive.h>
+#include <CryEntitySystem/IEntitySystem.h>
 #include <cmath>
 
 CConditionDistanceToEntity::CConditionDistanceToEntity()

@@ -21,6 +21,7 @@ Description:
 #endif
 
 class IPathFollower;
+struct IActor;
 
 namespace CornerSmoothing
 {

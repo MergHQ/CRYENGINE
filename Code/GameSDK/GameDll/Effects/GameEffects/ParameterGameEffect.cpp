@@ -9,6 +9,7 @@
 
 #include "ItemParams.h"
 #include "RecordingSystem.h"
+#include "Game.h"
 
 const char* PARAMETER_GAME_EFFECT_NAME = "ParameterGameEffect";
 

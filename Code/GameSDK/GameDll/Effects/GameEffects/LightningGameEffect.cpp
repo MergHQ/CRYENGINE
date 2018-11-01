@@ -6,7 +6,8 @@
 #include "Effects/RenderNodes/LightningNode.h"
 #include "GameXmlParamReader.h"
 #include <CryAnimation/IAttachment.h>
-
+#include <CryRenderer/IRenderAuxGeom.h>
+#include "Game.h"
 
 
 REGISTER_DATA_CALLBACKS(

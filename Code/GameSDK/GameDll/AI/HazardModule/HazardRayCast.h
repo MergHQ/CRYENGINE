@@ -8,6 +8,7 @@
 #define HazardRayCast_h
 
 #include <CryEntitySystem/IEntity.h>
+#include <CryPhysics/RayCastQueue.h>
 
 #include "HazardShared.h"
 #include "Hazard.h"

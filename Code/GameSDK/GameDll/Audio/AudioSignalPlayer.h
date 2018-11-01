@@ -5,6 +5,7 @@
 #ifndef AUDIO_SIGNAL_PLAYER
 #define AUDIO_SIGNAL_PLAYER
 
+#include <CryEntitySystem/IEntityBasicTypes.h>
 #include "GameAudio.h"
 
 

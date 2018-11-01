@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <CryCore/smartptr.h>
+
 // Defines
 #define	GAME_FX_SYSTEM					CGameEffectsSystem::Instance()
 
@@ -107,6 +109,7 @@
 struct IGameEffect;
 struct IGameRenderNode;
 struct IGameRenderElement;
+struct IItemParamsNode;
 
 // Typedefs
 typedef void (*DataLoadCallback)(IItemParamsNode *paramNode);

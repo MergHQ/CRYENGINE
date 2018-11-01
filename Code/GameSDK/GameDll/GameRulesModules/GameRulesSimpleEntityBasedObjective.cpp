@@ -26,6 +26,7 @@
 #include "GameRulesModules/GameRulesSpawningBase.h"
 #include "GameRulesModules/IGameRulesRoundsModule.h"
 #include "ActorManager.h"
+#include "GameCVars.h"
 
 #define SIMPLE_ENTITY_BASED_OBJECTIVE_FLAGS_ADD_EXISTING_ENTITY		0x80
 #define SIMPLE_ENTITY_BASED_OBJECTIVE_FLAGS_REMOVE								0x40

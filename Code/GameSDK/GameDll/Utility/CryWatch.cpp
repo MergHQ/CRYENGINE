@@ -19,6 +19,7 @@ History:
 #include "CryWatch.h"
 #include <CrySystem/ISystem.h>
 #include <CryRenderer/IRenderer.h>
+#include <CryFont/IFont.h>
 #include "GameCVars.h"
 #include <CryString/StringUtils.h>
 

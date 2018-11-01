@@ -48,14 +48,21 @@ struct SGraphicsPipelinePassContext
 	uint32             batchExcludeFilter;
 
 	ERenderListID      renderListId = EFSLIST_INVALID;
+#if defined(ENABLE_PROFILING_CODE)
+	ERenderListID      recordListId = EFSLIST_INVALID;
+#endif
 
 	// Stage ID of a scene stage (EStandardGraphicsPipelineStage)
 	uint32 stageID = 0;
 	// Pass ID, in case a stage has several different scene passes
 	uint32 passID = 0;
+	
+	std::string groupLabel;
+	uint32 groupIndex;
 
-	uint32 renderItemGroup;
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
 	uint32 profilerSectionIndex;
+#endif
 
 	// rend items
 	CRenderView* pRenderView;
@@ -68,8 +75,10 @@ struct SGraphicsPipelinePassContext
 	bool               renderNearest = false;
 	EShaderTechniqueID techniqueID;
 
+#if defined(DO_RENDERSTATS)
 	std::map<struct IRenderNode*, IRenderer::SDrawCallCountInfo>* pDrawCallInfoPerNode = nullptr;
 	std::map<struct IRenderMesh*, IRenderer::SDrawCallCountInfo>* pDrawCallInfoPerMesh = nullptr;
+#endif
 };
 
 class CGraphicsPipelineStage

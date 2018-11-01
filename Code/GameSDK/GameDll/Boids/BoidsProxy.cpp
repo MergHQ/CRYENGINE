@@ -16,6 +16,7 @@
 #include "BoidsProxy.h"
 #include "Flock.h"
 #include <CryNetwork/ISerialize.h>
+#include <CryMath/Cry_Camera.h>
 
 CRYREGISTER_CLASS(CBoidsProxy)
 CRYREGISTER_CLASS(CBoidObjectProxy)

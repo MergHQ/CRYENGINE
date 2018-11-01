@@ -14,6 +14,7 @@
 #include "StdAfx.h"
 #include "BoidObject.h"
 
+#include <Cry3DEngine/ISurfaceType.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include "BoidsProxy.h"
 

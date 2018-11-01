@@ -460,25 +460,18 @@ bool CStandardGraphicsPipeline::FillCommonScenePassStates(const SGraphicsPipelin
 
 	// Set resource states
 	bool bTwoSided = false;
-	{
-		if (pRes->m_ResFlags & MTL_FLAG_2SIDED)
-		{
-			bTwoSided = true;
-		}
 
-		if (pRes->IsAlphaTested())
-		{
-			psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_ALPHATEST];
-		}
+	if (pRes->m_ResFlags & MTL_FLAG_2SIDED)
+		bTwoSided = true;
 
-		if (pRes->m_Textures[EFTT_DIFFUSE] && pRes->m_Textures[EFTT_DIFFUSE]->m_Ext.m_pTexModifier)
-		{
-			psoDesc.m_ShaderFlags_MD |= pRes->m_Textures[EFTT_DIFFUSE]->m_Ext.m_nUpdateFlags;
-		}
+	if (pRes->IsAlphaTested())
+		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_ALPHATEST];
 
-		if (pRes->m_pDeformInfo)
-			psoDesc.m_ShaderFlags_MDV |= pRes->m_pDeformInfo->m_eType;
-	}
+	if (pRes->m_Textures[EFTT_DIFFUSE] && pRes->m_Textures[EFTT_DIFFUSE]->m_Ext.m_pTexModifier)
+		psoDesc.m_ShaderFlags_MD |= pRes->m_Textures[EFTT_DIFFUSE]->m_Ext.m_nUpdateFlags;
+
+	if (pRes->m_pDeformInfo)
+		psoDesc.m_ShaderFlags_MDV |= pRes->m_pDeformInfo->m_eType;
 
 	psoDesc.m_ShaderFlags_MDV |= psoDesc.m_pShader->m_nMDV;
 
@@ -703,6 +696,7 @@ void CStandardGraphicsPipeline::ExecuteMinimumForwardShading()
 	m_pSceneGBufferStage->ExecuteMinimumZpass();
 
 	// forward opaque and transparent passes for recursive rendering
+	m_pSceneForwardStage->ExecuteSky(pColorTex, pDepthTex);
 	m_pSceneForwardStage->ExecuteMinimum(pColorTex, pDepthTex);
 
 	// Insert fence which is used on consoles to prevent overwriting video memory
@@ -743,6 +737,7 @@ void CStandardGraphicsPipeline::ExecuteMobilePipeline()
 {
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	CRenderView* pRenderView = GetCurrentRenderView();
+	CTexture* pZTexture = pRenderView->GetDepthTarget();
 	
 	if (CRenderer::CV_r_GraphicsPipelineMobile == 2)
 		m_pSceneGBufferStage->Execute();
@@ -764,6 +759,7 @@ void CStandardGraphicsPipeline::ExecuteMobilePipeline()
 	}
 
 	// Opaque and transparent forward passes
+	m_pSceneForwardStage->ExecuteSky(CRendererResources::s_ptexHDRTarget, pZTexture);
 	m_pSceneForwardStage->ExecuteMobile();
 
 	// Insert fence which is used on consoles to prevent overwriting video memory
@@ -891,7 +887,7 @@ void CStandardGraphicsPipeline::Execute()
 		m_pTiledLightVolumesStage->Execute();
 	}
 
-	// Water volume caustics
+	// Water volume caustics (before m_pTiledShadingStage->Execute())
 	m_pWaterStage->ExecuteWaterVolumeCaustics();
 
 	SetPipelineFlags(GetPipelineFlags() | EPipelineFlags::NO_SHADER_FOG);
@@ -905,10 +901,10 @@ void CStandardGraphicsPipeline::Execute()
 		m_pClipVolumesStage->Execute();
 
 		if (CRenderer::CV_r_DeferredShadingTiled > 1)
-		{		
+		{
 			m_pShadowMaskStage->Prepare();
 			m_pShadowMaskStage->Execute();
-			
+
 			m_pTiledShadingStage->Execute();
 
 			if (CRenderer::CV_r_DeferredShadingSSS)
@@ -918,8 +914,14 @@ void CStandardGraphicsPipeline::Execute()
 		}
 	}
 
-	// Opaque forward passes
-	m_pSceneForwardStage->ExecuteOpaque();
+	{
+		PROFILE_LABEL_SCOPE("FORWARD");
+
+		// Opaque forward passes
+		m_pSceneForwardStage->ExecuteSky(CRendererResources::s_ptexHDRTarget, pZTexture);
+		m_pSceneForwardStage->ExecuteOpaque();
+	}
+
 	// Deferred ocean caustics
 	m_pWaterStage->ExecuteDeferredOceanCaustics();
 	// Fog
@@ -932,22 +934,27 @@ void CStandardGraphicsPipeline::Execute()
 	m_pVolumetricCloudsStage->Execute();
 	// Water fog volumes
 	m_pWaterStage->ExecuteWaterFogVolumeBeforeTransparent();
-	// Transparent (below water)
-	m_pSceneForwardStage->ExecuteTransparentBelowWater();
-	// Ocean and water volumes
-	m_pWaterStage->Execute();
-	// Transparent (above water)
-	m_pSceneForwardStage->ExecuteTransparentAboveWater();
 
-	if (CRenderer::CV_r_TranspDepthFixup)
 	{
-		m_pSceneForwardStage->ExecuteTransparentDepthFixup();
-	}
+		PROFILE_LABEL_SCOPE("FORWARD");
 
-	// Half-res particles
-	if (CRenderer::CV_r_ParticlesHalfRes)
-	{
-		m_pSceneForwardStage->ExecuteTransparentLoRes(1 + crymath::clamp<int>(CRenderer::CV_r_ParticlesHalfResAmount, 0, 1));
+		// Transparent (below water)
+		m_pSceneForwardStage->ExecuteTransparentBelowWater();
+		// Ocean and water volumes
+		m_pWaterStage->Execute();
+		// Transparent (above water)
+		m_pSceneForwardStage->ExecuteTransparentAboveWater();
+
+		if (CRenderer::CV_r_TranspDepthFixup)
+		{
+			m_pSceneForwardStage->ExecuteTransparentDepthFixup();
+		}
+
+		// Half-res particles
+		if (CRenderer::CV_r_ParticlesHalfRes)
+		{
+			m_pSceneForwardStage->ExecuteTransparentLoRes(1 + crymath::clamp<int>(CRenderer::CV_r_ParticlesHalfResAmount, 0, 1));
+		}
 	}
 
 	// Insert fence which is used on consoles to prevent overwriting video memory

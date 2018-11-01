@@ -14,6 +14,7 @@ History:
 #include "StdAfx.h"
 #include "ScreenLayoutManager.h"
 #include "UI/HUD/HUDEventDispatcher.h"
+#include <CryMath/Cry_Camera.h>
 
 static const float EPSILON = FLT_EPSILON;
 

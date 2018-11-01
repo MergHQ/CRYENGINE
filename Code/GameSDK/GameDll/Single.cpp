@@ -47,6 +47,8 @@ History:
 #include "Melee.h"
 
 #include <IPerceptionManager.h>
+#include <IGameplayRecorder.h>
+#include <CryGame/GameUtils.h>
 
 CRY_IMPLEMENT_GTI(CSingle, CFireMode);
 

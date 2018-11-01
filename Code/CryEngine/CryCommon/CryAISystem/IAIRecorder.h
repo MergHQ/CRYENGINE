@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <CryMath/Cry_Color.h>
+
 // These lines will enable AI signal profiling
 //#ifndef AI_LOG_SIGNALS
 //	#define AI_LOG_SIGNALS

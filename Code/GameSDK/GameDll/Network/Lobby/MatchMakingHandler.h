@@ -20,6 +20,7 @@ History:
 // Important Includes
 //For eLDI_Max
 #include "GameLobbyData.h"
+#include <CryLobby/ICryMatchMaking.h>
 
 
 #if GAMELOBBY_USE_COUNTRY_FILTERING

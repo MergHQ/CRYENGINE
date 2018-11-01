@@ -26,6 +26,7 @@
 #include <CryMath/Cry_Camera.h>
 #include <CryString/CryPath.h>
 #include <CryEntitySystem/IBreakableManager.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 
 #define FISH_PHYSICS_DENSITY 850

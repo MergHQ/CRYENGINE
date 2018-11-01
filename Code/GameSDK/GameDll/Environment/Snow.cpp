@@ -14,6 +14,8 @@ History:
 #include "StdAfx.h"
 #include "Snow.h"
 #include "Game.h"
+#include <CryMath/Cry_Camera.h>
+#include <Cry3DEngine/I3DEngine.h>
 
 CSnow::CSnow()
 	: m_bEnabled(false)

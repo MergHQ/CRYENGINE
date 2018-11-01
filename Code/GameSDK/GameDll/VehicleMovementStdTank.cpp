@@ -15,6 +15,7 @@ History:
 #include "Game.h"
 #include "GameCVars.h"
 #include <CryGame/GameUtils.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #include "IVehicleSystem.h"
 #include "VehicleMovementStdTank.h"

@@ -9,6 +9,7 @@
 #include <CryNetwork/ISerialize.h>
 #include "IGameObject.h"
 #include "Network/SerializeDirHelper.h"
+#include "AutoEnum.h"
 
 class CPlayer;
 

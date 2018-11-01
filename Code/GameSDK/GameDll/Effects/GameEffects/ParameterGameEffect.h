@@ -10,6 +10,7 @@
 // Includes
 #include "GameEffect.h"
 #include "Effects/GameEffectsSystem.h"
+#include <CryCore/Containers/CryFixedArray.h>
 
 // Forward declarations
 

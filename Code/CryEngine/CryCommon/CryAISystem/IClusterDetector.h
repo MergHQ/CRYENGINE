@@ -13,6 +13,8 @@
 #ifndef __I_Cluster_Detector_h__
 #define __I_Cluster_Detector_h__
 
+#include <CryCore/functor.h>
+
 typedef uint32 ClusterPointProperties;
 typedef uint32 ClusterId;
 

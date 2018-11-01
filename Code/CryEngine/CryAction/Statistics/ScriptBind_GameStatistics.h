@@ -8,7 +8,6 @@
 #endif
 
 #include <CryScriptSystem/IScriptSystem.h>
-#include <CryScriptSystem/ScriptHelpers.h>
 
 #define STATISTICS_CHECK_BINDING 1
 

@@ -17,6 +17,7 @@
 #include "ItemAnimation.h"
 
 #include <IForceFeedbackSystem.h>
+#include <IGameplayRecorder.h>
 
 
 CRY_IMPLEMENT_GTI(CShotgun, CSingle);

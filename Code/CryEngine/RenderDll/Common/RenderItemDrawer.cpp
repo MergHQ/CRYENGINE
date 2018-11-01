@@ -46,7 +46,7 @@ void DrawCompiledRenderItemsToCommandList(
 #endif
 
 	if (shouldIssueStartTimeStamp)
-		commandList->GetGraphicsInterface()->BeginProfilerEvent(passContext.pSceneRenderPass->GetLabel());
+		commandList->GetGraphicsInterface()->BeginProfilerEvent(passContext.groupLabel.c_str());
 
 	// Execute pass
 	if (passContext.type == GraphicsPipelinePassType::resolve)
@@ -151,7 +151,7 @@ void DrawCompiledRenderItemsToCommandList(
 
 	// End profile section
 	if (shouldIssueEndTimeStamp)
-		commandList->GetGraphicsInterface()->EndProfilerEvent(passContext.pSceneRenderPass->GetLabel());
+		commandList->GetGraphicsInterface()->EndProfilerEvent(passContext.groupLabel.c_str());
 
 #if defined(ENABLE_PROFILING_CODE)
 	#if defined(ENABLE_SIMPLE_GPU_TIMERS)
@@ -162,7 +162,7 @@ void DrawCompiledRenderItemsToCommandList(
 	}
 	#endif
 
-	gcpRendD3D->AddRecordedProfilingStats(commandList->EndProfilingSection(), passContext.pSceneRenderPass->GetRenderList(), true);
+	gcpRendD3D->AddRecordedProfilingStats(commandList->EndProfilingSection(), passContext.recordListId, true);
 #endif
 }
 

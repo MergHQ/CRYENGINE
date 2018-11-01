@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 #include "Wiggle.h"
 #include "Hermite.h"
-
+#include <CryMath/Random.h>
 
 
 CWiggle::CWiggle()

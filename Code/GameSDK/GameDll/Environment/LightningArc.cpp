@@ -6,7 +6,7 @@
 #include "Effects/GameEffects/LightningGameEffect.h"
 #include "Effects/RenderNodes/LightningNode.h"
 #include "EntityUtility/EntityScriptCalls.h"
-
+#include <CryMath/Random.h>
 
 
 void CLightningArc::GetMemoryUsage(ICrySizer *pSizer) const {}

@@ -21,7 +21,7 @@ History:
 #include "ActorImpulseHandler.h"
 #include "GameCodeCoverage/GameCodeCoverageTracker.h"
 
-#include <CryAnimation/ICryAnimation.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 void CMeleeCollisionHelper::OnRayCastDataReceived( const QueuedRayID& rayID, const RayCastResult& result )
 {

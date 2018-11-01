@@ -483,16 +483,14 @@ void CMNMPathfinder::OnNavigationMeshChanged(const NavigationMeshID meshId, cons
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-	const size_t maximumAmountOfSlotsToUpdate = m_processingContextsPool.GetOccupiedSlotsCount();
-	for (size_t i = 0; i < maximumAmountOfSlotsToUpdate; ++i)
+	for (size_t i = 0; i < m_processingContextsPool.GetMaxSlots(); ++i)
 	{
 		MNM::PathfinderUtils::ProcessingContext& processingContext = m_processingContextsPool.GetContextAtPosition(i);
-		MNM::PathfinderUtils::ProcessingRequest& processingRequest = processingContext.processingRequest;
-
-		if (!processingRequest.IsValid())
+		if (processingContext.status == MNM::PathfinderUtils::ProcessingContext::Invalid)
 			continue;
 
-		if (processingRequest.meshID != meshId)
+		MNM::PathfinderUtils::ProcessingRequest& processingRequest = processingContext.processingRequest;
+		if (!processingRequest.IsValid() || processingRequest.meshID != meshId)
 			continue;
 
 		if (!processingContext.workingSet.aStarNodesList.TileWasVisited(tileId))
@@ -519,14 +517,28 @@ void CMNMPathfinder::OnNavigationMeshChanged(const NavigationMeshID meshId, cons
 		//////////////////////////////////////////////////////////////////////////
 		/// Re-start current request for next update
 
+		// If the request was already completed, we don't want to dispatch it because it contains old data
+		if (processingContext.status == MNM::PathfinderUtils::ProcessingContext::Completed)
+		{
+			CancelResultDispatchingForRequest(processingRequest.queuedID);
+		}
+
 		// Copy onto the stack to call function to avoid self delete.
 		MNM::QueuedPathID requestId = processingRequest.queuedID;
-		MNM::PathfinderUtils::QueuedRequest requestParams = processingRequest.data;
+		MNM::PathfinderUtils::QueuedRequest queuedRequest = processingRequest.data;
 
-		const EMNMPathResult result = SetupForNextPathRequest(requestId, requestParams, processingContext);
+		const EMNMPathResult result = SetupForNextPathRequest(requestId, queuedRequest, processingContext);
 		if (result != EMNMPathResult::Success)
 		{
-			PathRequestFailed(requestId, requestParams, result);
+			// Context is released automatically because we set the context as invalid
+			// Processing contexts with a invalid status are considered free by the pool, so they can be reused again
+			processingContext.status = MNM::PathfinderUtils::ProcessingContext::Invalid;
+			MNM::PathfinderUtils::PathfindingFailedEvent failedEvent(requestId, queuedRequest, result);
+			m_pathfindingFailedEventsToDispatch.push_back(failedEvent);
+		}
+		else
+		{
+			processingContext.status = MNM::PathfinderUtils::ProcessingContext::InProgress;
 		}
 	}
 }
@@ -597,7 +609,7 @@ EMNMPathResult CMNMPathfinder::SetupForNextPathRequest(MNM::QueuedPathID request
 void CMNMPathfinder::ProcessPathRequest(MNM::PathfinderUtils::ProcessingContext& processingContext)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
-	
+
 	if (processingContext.status != MNM::PathfinderUtils::ProcessingContext::InProgress)
 		return;
 
@@ -781,10 +793,7 @@ void CMNMPathfinder::ConstructPathIfWayWasFound(MNM::PathfinderUtils::Processing
 	successEvent.callback = processingRequest.data.requestParams.resultCallback;
 	successEvent.requestId = processingRequest.queuedID;
 
-	processingRequest.Reset();
-
 	m_pathfindingCompletedEventsToDispatch.push_back(successEvent);
-
 	processingContext.status = MNM::PathfinderUtils::ProcessingContext::Completed;
 	return;
 }

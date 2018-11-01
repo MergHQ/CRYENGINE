@@ -18,6 +18,7 @@
 #pragma once
 #endif
 
+#include <CryMath/Random.h>
 #include <CryScriptSystem/IScriptSystem.h>
 #include <CryAISystem/IAISystem.h>
 //#include "Flock.h"

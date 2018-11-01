@@ -4,6 +4,7 @@
 #define __DANGEROUS_RIGID_BODY_H__
 
 #include <IGameObject.h>
+struct SGameObjectEvent;
 
 class CDangerousRigidBody : public CGameObjectExtensionHelper<CDangerousRigidBody, IGameObjectExtension, 1>
 {

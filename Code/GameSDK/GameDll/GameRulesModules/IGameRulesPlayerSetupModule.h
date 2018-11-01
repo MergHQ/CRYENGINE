@@ -19,6 +19,9 @@
 # pragma once
 #endif
 
+#include <CryEntitySystem/IEntityBasicTypes.h>
+
+struct IActor;
 
 class IGameRulesPlayerSetupModule
 {

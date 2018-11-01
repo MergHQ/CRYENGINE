@@ -11,6 +11,7 @@
 #include "PlayerVisTable.h"
 #include "IVehicleSystem.h"
 #include "Utility/CryWatch.h"
+#include <CryGame/GameUtils.h>
 
 #if !defined(_RELEASE)
 	#define ENABLE_NAN_CHECK

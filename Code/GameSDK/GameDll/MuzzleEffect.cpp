@@ -5,6 +5,7 @@
 #include "Weapon.h"
 #include "FireMode.h"
 #include "FireModeParams.h"
+#include "GameCVars.h"
 
 
 namespace

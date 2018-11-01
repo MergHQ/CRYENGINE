@@ -5,6 +5,7 @@
 
 #include "IViewSystem.h"
 #include "Actor.h"
+#include "Game.h"
 
 struct IHUDAsset;
 struct IFlashVariableObject;

@@ -15,6 +15,7 @@
 
 #include "Utility/CryWatch.h"
 #include <CryMath/Cry_GeoDistance.h>
+#include <CryGame/GameUtils.h>
 
 
 /*

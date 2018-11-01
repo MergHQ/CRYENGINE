@@ -9,6 +9,7 @@
 
 #include <float.h>
 #include <limits.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <CrySystem/ITimer.h>
 #include <CryScriptSystem/IScriptSystem.h>
 #include <CryAnimation/ICryAnimation.h>

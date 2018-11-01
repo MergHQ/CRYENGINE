@@ -11,6 +11,7 @@
 #include "Actor.h"
 #include "Player.h"
 
+#include <Cry3DEngine/ISurfaceType.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <IItemSystem.h>
 #include <CryAISystem/IAgent.h>

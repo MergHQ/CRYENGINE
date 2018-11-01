@@ -2,6 +2,12 @@
 
 #ifndef __INTERSECTIONASSISTANCEUNIT_H
 #define __INTERSECTIONASSISTANCEUNIT_H
+#include <CryPhysics/IntersectionTestQueue.h>
+
+struct IPhysicalEntity;
+struct IntersectionTestResult;
+
+namespace primitives { struct box; }
 
 #define NUM_TEST_OFFSETS 8
 

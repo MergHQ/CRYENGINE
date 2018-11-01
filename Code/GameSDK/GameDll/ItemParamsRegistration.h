@@ -18,6 +18,8 @@ History:
 # pragma once
 #endif
 
+#include <set>
+
 #define INSTANCE_MEMBERS(varType, varName) varType varName;
 #define INSTANCE_MEMBER_ARRAYS(varType, varNum, varName) varType varName[varNum];
 

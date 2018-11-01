@@ -18,6 +18,7 @@ History:
 #include "IVehicleSystem.h"
 #include "VehicleMovementStdBoat.h"
 #include <CryAISystem/IAgent.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 #include "Network/NetActionSync.h"
 
 

@@ -20,6 +20,7 @@ History:
 
 #include <CryLobby/ICryLobby.h>
 #include "GameMechanismManager/GameMechanismBase.h"
+#include "Game.h"
 
 class CGameLobby;
 class CMatchMakingHandler;

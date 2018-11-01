@@ -7,6 +7,7 @@
 #include "PlayerVisTable.h"
 #include <IVehicleSystem.h>
 #include <IViewSystem.h>
+#include <IGameplayRecorder.h>
 #include "GameActions.h"
 
 

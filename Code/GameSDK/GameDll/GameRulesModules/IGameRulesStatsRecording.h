@@ -18,6 +18,7 @@
 struct HitInfo;
 class XmlNodeRef;
 struct IStatsTracker;
+struct IActor;
 
 #include "../GameRulesTypes.h"
 

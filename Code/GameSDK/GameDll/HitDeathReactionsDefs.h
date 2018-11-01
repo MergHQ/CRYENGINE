@@ -12,10 +12,11 @@ History:
 #ifndef __HIT_DEATH_REACTIONS_DEFS_H
 #define __HIT_DEATH_REACTIONS_DEFS_H
 
-#include <CryScriptSystem/ScriptHelpers.h>							// SmartScriptTable
+#include <CryScriptSystem/IScriptSystem.h>							// SmartScriptTable
 #include <CryAISystem/IAgent.h>											// EStance enumeration
 #include <CryAnimation/CryCharAnimationParams.h>			// anim flags
 #include <CryAnimation/ICryAnimation.h>
+#include <CryGame/IGameFramework.h>
 #include "ICryMannequin.h"
 
 

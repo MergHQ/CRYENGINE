@@ -27,6 +27,7 @@ History:
 #include <IUIDraw.h>
 #include "RecordingSystem.h"
 #include "Network/Lobby/GameLobby.h"
+#include <IGameplayRecorder.h>
 
 // -----------------------------------------------------------------------
 

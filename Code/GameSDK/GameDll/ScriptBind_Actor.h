@@ -20,11 +20,12 @@
 
 
 #include <CryScriptSystem/IScriptSystem.h>
-#include <CryScriptSystem/ScriptHelpers.h>
 
 
 struct IGameFramework;
 struct IActor;
+struct IEntityClass;
+struct IInventory;
 
 
 // <title Actor>

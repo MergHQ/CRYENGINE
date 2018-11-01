@@ -17,6 +17,7 @@
 #pragma once
 
 #include <CryScriptSystem/IScriptSystem.h> // <> required for Interfuscator
+#include <CryNetwork/ISerialize.h>
 
 template<typename T>
 class CCoherentValue

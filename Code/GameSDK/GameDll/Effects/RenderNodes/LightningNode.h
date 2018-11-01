@@ -4,7 +4,6 @@
 #define _LIGHTINING_NODE_
 
 
-
 #include "IGameRenderNode.h"
 
 

@@ -21,9 +21,10 @@ History:
 #include "AmmoParams.h"
 #include "Actor.h"
 #include "WeaponSystem.h"
+#include "GameCVars.h"
 #include <CryAnimation/ICryAnimation.h>
 #include <CryAISystem/IAIObject.h>
-
+#include <Cry3DEngine/ISurfaceType.h>
 #include <IPerceptionManager.h>
 
 struct SPhysicsRayWrapper

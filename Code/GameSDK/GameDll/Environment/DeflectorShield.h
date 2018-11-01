@@ -7,9 +7,11 @@
 # pragma once
 #endif
 
+#include "IGameObject.h"
 
 
 class CProjectile;
+struct EventPhysCollision;
 
 
 class CDeflectorShield : public CGameObjectExtensionHelper<CDeflectorShield, IGameObjectExtension>

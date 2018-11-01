@@ -20,6 +20,7 @@ History:
 #define __GAME_PARAMETERS_H__
 
 #include "ItemParamsRegistration.h"
+#include <CryCore/smartptr.h>
 
 //Interface that should be implemented by any data structure that could
 //be potentially shared between instances of the same class.

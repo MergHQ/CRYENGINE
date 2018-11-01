@@ -14,6 +14,7 @@ History:
 
 #include "StdAfx.h"
 #include "SkillRanking.h"
+#include <CryRenderer/Tarray.h>
 
 #if !defined(_RELEASE) && !CRY_PLATFORM_ORBIS 
 	#define ENABLE_SKILL_DEBUG 1

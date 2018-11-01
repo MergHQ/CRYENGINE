@@ -193,11 +193,10 @@ void CBrush::SetMatrix(const Matrix34& mat)
 	if (m_Matrix == mat)
 		return;
 
-	m_Matrix = mat;
-
 	bool replacePhys = fabs(mat.GetColumn(0).len() - m_Matrix.GetColumn(0).len())
 	                   + fabs(mat.GetColumn(1).len() - m_Matrix.GetColumn(1).len())
 	                   + fabs(mat.GetColumn(2).len() - m_Matrix.GetColumn(2).len()) > FLT_EPSILON;
+	m_Matrix = mat;
 
 	InvalidatePermanentRenderObjectMatrix();
 

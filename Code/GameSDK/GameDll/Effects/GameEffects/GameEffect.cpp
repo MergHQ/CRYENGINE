@@ -8,6 +8,7 @@
 #include "Effects/GameEffectsSystem.h"
 #include <CryAnimation/ICryAnimation.h>
 #include "Actor.h"
+#include "Game.h"
 
 //--------------------------------------------------------------------------------------------------
 // Name: CGameEffect

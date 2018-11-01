@@ -330,8 +330,6 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 	else
 		nNewColDepth = 32;
 
-	bool wasFullscreen = previousWindowState == EWindowState::Fullscreen;
-
 	// Save the new dimensions
 	m_cbpp = nNewColDepth;
 #if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
@@ -341,7 +339,8 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 
 	m_VSync = !IsEditorMode() ? CV_r_vsync : 0;
 
-	if (IsFullscreen() && nNewColDepth == 16)
+	const bool isFullscreen = IsFullscreen();
+	if (isFullscreen && nNewColDepth == 16)
 	{
 		m_zbpp = 16;
 		m_sbpp = 0;
@@ -373,7 +372,7 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 
 		AdjustWindowForChange(nNewDisplayWidth, nNewDisplayHeight, previousWindowState);
 
-		pBC->ChangeOutputIfNecessary(IsFullscreen(), m_VSync != 0);
+		pBC->ChangeOutputIfNecessary(isFullscreen, m_VSync != 0);
 
 #if DURANGO_ENABLE_ASYNC_DIPS
 		WaitForAsynchronousDevice();
@@ -381,18 +380,26 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 
 // 		OnD3D11PostCreateDevice(m_devInfo.Device());
 
-		pBC->SetFullscreenState(IsFullscreen());
+		const bool wasFullscreen = previousWindowState == EWindowState::Fullscreen;
+		const bool resolutionChanged = nNewDisplayWidth != CRendererResources::s_renderWidth || nNewDisplayHeight != CRendererResources::s_renderHeight;
+		if (isFullscreen && wasFullscreen && resolutionChanged)
+		{
+			// Forces resolution and aspect-ratio changes while in fullscreen
+			pBC->SetFullscreenState(!isFullscreen);
+		}
+
+		pBC->SetFullscreenState(isFullscreen);
 		pBC->ChangeDisplayResolution(nNewDisplayWidth, nNewDisplayHeight);
 
 		if (gEnv->pHardwareMouse)
-			gEnv->pHardwareMouse->GetSystemEventListener()->OnSystemEvent(ESYSTEM_EVENT_TOGGLE_FULLSCREEN, IsFullscreen() ? 1 : 0, 0);
+			gEnv->pHardwareMouse->GetSystemEventListener()->OnSystemEvent(ESYSTEM_EVENT_TOGGLE_FULLSCREEN, isFullscreen ? 1 : 0, 0);
 #endif
 	}
 	else
 	{
 		pDC->ChangeDisplayResolution(nNewDisplayWidth, nNewDisplayHeight);
 		if (pDC->IsSwapChainBacked())
-			static_cast<CSwapChainBackedRenderDisplayContext*>(pDC)->SetFullscreenState(IsFullscreen());
+			static_cast<CSwapChainBackedRenderDisplayContext*>(pDC)->SetFullscreenState(isFullscreen);
 	}
 
 	CRendererResources::OnDisplayResolutionChanged(nNewDisplayWidth, nNewDisplayHeight);

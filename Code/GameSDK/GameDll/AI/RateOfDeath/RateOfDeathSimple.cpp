@@ -15,6 +15,7 @@
 #include <CryAISystem/IAIObject.h>
 #include <CryAISystem/IAIActor.h>
 #include <CryAISystem/IAIActorProxy.h>
+#include <CryMath/Random.h>
 
 
 

@@ -5,6 +5,7 @@
 #include <map>
 
 class CEquipPack;
+class XmlNodeRef;
 typedef std::map<string, CEquipPack*> TEquipPackMap;
 
 class CEquipPackLib

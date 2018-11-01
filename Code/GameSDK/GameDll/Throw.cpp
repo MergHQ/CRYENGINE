@@ -27,9 +27,9 @@ History:
 #include "GameCodeCoverage/GameCodeCoverageTracker.h"
 #include "PlayerAnimation.h"
 
-
 #include "UI/HUD/HUDEventDispatcher.h"
 #include "UI/HUD/HUDUtils.h"
+#include <IGameplayRecorder.h>
 
 #define MAX_TRAJECTORY_TIME 5.0f
 

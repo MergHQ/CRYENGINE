@@ -6,7 +6,7 @@
 #define ScriptBind_GameAI_h
 
 #include <CryScriptSystem/IScriptSystem.h>
-#include <CryScriptSystem/ScriptHelpers.h>
+#include <CryMemory/CrySizer.h>
 #include "RangeModule.h" // For RangeID
 
 struct IGameFramework;

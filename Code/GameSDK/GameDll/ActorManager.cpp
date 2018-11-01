@@ -7,6 +7,7 @@
 #include "PlayerVisTable.h"
 
 #include "IActorSystem.h"
+#include "Game.h"
 
 
 CActorManager * CActorManager::GetActorManager()

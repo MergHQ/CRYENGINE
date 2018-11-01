@@ -11,6 +11,7 @@
 #include "Player.h"
 
 #include "PlayerAnimation.h"
+#include <CryGame/GameUtils.h>
 
 
 namespace

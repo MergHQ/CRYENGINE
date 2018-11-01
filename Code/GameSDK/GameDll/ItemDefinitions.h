@@ -19,6 +19,7 @@ History:
 #endif
 
 #include "ItemString.h"
+#include "AutoEnum.h"
 
 struct SAttachmentHelper;
 struct SAccessoryParams;

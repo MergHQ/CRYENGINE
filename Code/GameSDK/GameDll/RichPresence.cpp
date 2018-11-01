@@ -9,6 +9,7 @@
 #include "Network/GameNetworkUtils.h"
 #include "Network/Squad/SquadManager.h"
 #include "GameRules.h"
+#include "GameCVars.h"
 
 CRichPresence::CRichPresence() :
 	REGISTER_GAME_MECHANISM(CRichPresence),

@@ -6,6 +6,7 @@
 // Includes
 #include <CryGame/IGameFramework.h>
 #include <CryCore/Containers/CryFixedArray.h>
+#include <Cry3DEngine/IMaterial.h>
 
 // Forward declares
 struct CEntityAttachment;

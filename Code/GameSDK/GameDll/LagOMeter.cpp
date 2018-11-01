@@ -25,6 +25,8 @@
 #include "TelemetryCollector.h"
 #include <CryAction/IDebugHistory.h>
 #include <CrySystem/Profilers/IStatoscope.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+#include "GameCVars.h"
 
 //========================================================================
 CLagOMeter::CLagOMeter()

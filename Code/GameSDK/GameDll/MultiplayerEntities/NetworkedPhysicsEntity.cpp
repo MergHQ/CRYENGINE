@@ -15,6 +15,9 @@
 
 #include "StdAfx.h"
 #include "NetworkedPhysicsEntity.h"
+#include <CryMemory/CrySizer.h>
+#include <CryPhysics/physinterface.h>
+#include <CryMath/Random.h>
 
 //-----------------------------------------------------------------------------
 CNetworkedPhysicsEntity::CNetworkedPhysicsEntity()

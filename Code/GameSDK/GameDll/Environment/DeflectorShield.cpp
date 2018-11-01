@@ -5,7 +5,8 @@
 #include "Projectile.h"
 #include "WeaponSystem.h"
 #include <CryAISystem/IAIObjectManager.h>
-
+#include <CryPhysics/IPhysics.h>
+#include <CryMath/Random.h>
 
 void CDeflectorShield::GetMemoryUsage(ICrySizer *pSizer) const {}
 void CDeflectorShield::InitClient(int channelId) {}

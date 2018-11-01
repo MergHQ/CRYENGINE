@@ -58,6 +58,7 @@
 #include "Melee.h"
 #include "GameRulesModules/IGameRulesObjectivesModule.h"
 #include "GameRulesModules/IGameRulesTeamsModule.h"
+#include "IGameplayRecorder.h"
 
 //#pragma optimize("", off)
 //#pragma inline_depth(0)

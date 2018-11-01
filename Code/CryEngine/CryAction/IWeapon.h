@@ -4,6 +4,7 @@
 
 #include <CryAISystem/IAgent.h>
 #include "IActionMapManager.h"
+#include "IGameObject.h"
 
 struct IWeapon;
 struct IActor;

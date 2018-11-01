@@ -134,7 +134,7 @@ private:
 	void  ExecuteWaterVolumeCausticsGen(N3DEngineCommon::SCausticInfo& causticInfo);
 	void  ExecuteReflection();
 
-	void  ExecuteSceneRenderPass(CSceneRenderPass& pass, ERenderListID renderList);
+	void  ExecuteSceneRenderPass(CSceneRenderPass& pass, uint32 stagePassID, uint32 includeFilter, uint32 excludeFilter, ERenderListID renderList);
 
 	int32 GetCurrentFrameID(const int32 frameID) const;
 	int32 GetPreviousFrameID(const int32 frameID) const;

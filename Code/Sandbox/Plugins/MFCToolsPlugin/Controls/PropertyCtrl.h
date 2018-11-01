@@ -25,6 +25,9 @@ struct CPropertyCtrlNotify
 	CPropertyCtrlNotify() : pItem(0), pVariable(0) {}
 };
 
+#pragma warning(push)
+#pragma warning(disable:4264) // warning C4264: 'BOOL CWnd::Create(LPCTSTR,LPCTSTR,DWORD,const RECT &,CWnd *,UINT,CCreateContext *)': no override available for virtual member function from base 'CWnd'; function is hidden
+
 /** Custom control to handle Properties hierarchies.
  */
 class MFC_TOOLS_PLUGIN_API CPropertyCtrl : public CWnd
@@ -412,3 +415,5 @@ protected:
 
 	bool                           m_bSendCallbackOnNonModified;
 };
+
+#pragma warning(pop)

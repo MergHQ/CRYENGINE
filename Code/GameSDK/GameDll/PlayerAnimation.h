@@ -14,6 +14,7 @@ History:
 #define __PLAYERANIMATION_H__
 
 #include "ICryMannequin.h"
+#include "Game.h"
 
 typedef TAction<SAnimationContext> TPlayerAction;
 

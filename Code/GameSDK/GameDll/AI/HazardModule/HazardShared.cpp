@@ -5,6 +5,7 @@
 #include "StdAfx.h"
 
 #include "HazardShared.h"
+#include <CryNetwork/ISerialize.h>
 
 
 using namespace HazardSystem;

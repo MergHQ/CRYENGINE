@@ -15,6 +15,7 @@
 #ifndef __CARRYENTITY_H__
 #define __CARRYENTITY_H__
 
+#include <CryEntitySystem/IEntitySystem.h>
 #include "NetworkedPhysicsEntity.h"
 
 typedef CNetworkedPhysicsEntity TParent;

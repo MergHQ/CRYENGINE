@@ -12,6 +12,7 @@
 #include "Player.h"
 #include "PlayerStateEvents.h"
 #include "GameConstantCVars.h"
+#include <CryGame/GameUtils.h>
 
 
 // ===========================================================================

@@ -9,6 +9,7 @@
 #include "HazardModule.h"
 
 #include "../../Single.h"
+#include "Game.h"
 
 using namespace HazardSystem;
 

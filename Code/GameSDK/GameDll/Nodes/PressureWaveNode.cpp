@@ -11,6 +11,7 @@
 #include <CrySystem/ISystem.h>
 #include <IWorldQuery.h>
 #include <CryFlowGraph/IFlowBaseNode.h>
+#include <CryPhysics/IPhysics.h>
 
 class CPressureWaveNode : public CFlowBaseNode<eNCT_Instanced>
 {

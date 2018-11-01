@@ -8,6 +8,7 @@
 #include "Item.h"
 
 #include <CryFlowGraph/IFlowBaseNode.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 void CHUDFader::Stop()
 {

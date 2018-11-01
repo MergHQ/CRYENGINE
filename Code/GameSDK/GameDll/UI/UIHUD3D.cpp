@@ -14,6 +14,7 @@
 #include "UIHUD3D.h"
 
 #include <CryEntitySystem/IEntitySystem.h>
+#include <CryRenderer/IRenderer.h>
 #include <Cry3DEngine/IMaterial.h>
 
 #include "UIManager.h"

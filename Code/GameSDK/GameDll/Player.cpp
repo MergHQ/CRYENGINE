@@ -143,6 +143,7 @@
 #include <CrySystem/VR/IHMDManager.h>
 
 #include <IPerceptionManager.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 DEFINE_STATE_MACHINE(CPlayer, Movement);
 

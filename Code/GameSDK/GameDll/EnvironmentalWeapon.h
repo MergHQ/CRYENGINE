@@ -11,9 +11,14 @@ class  CActor;
 class  CPlayer;
 struct EventPhysCollision; 
 struct HitInfo;
+struct AnimEventInstance;
 
+#include <CryEntitySystem/IEntitySystem.h>
+#include <CryCore/Containers/CryFixedArray.h>
+#include <Cry3DEngine/IStatObj.h>
 #include "GameRulesModules/IGameRulesRevivedListener.h"
 #include "IntersectionAssistanceUnit.h"
+#include "IGameObject.h"
 
 struct IEnvironmentalWeaponEventListener
 {

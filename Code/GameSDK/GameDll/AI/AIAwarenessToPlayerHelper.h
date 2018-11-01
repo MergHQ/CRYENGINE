@@ -10,6 +10,8 @@ Description: Helper to calculate a value that represents AI awareness toward the
 #ifndef __AIAWARENESSTOPLAYERHELPER_H__
 #define __AIAWARENESSTOPLAYERHELPER_H__
 
+#include <CryEntitySystem/IEntityBasicTypes.h>
+
 struct IAIActor;
 struct IAIObject;
 class CActor;

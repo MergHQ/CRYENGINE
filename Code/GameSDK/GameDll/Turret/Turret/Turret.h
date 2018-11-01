@@ -14,6 +14,7 @@
 #include "GameRulesModules/IGameRulesKillListener.h"
 #include "AutoAimManager.h"
 #include "AI/AIAwarenessToPlayerHelper.h"
+#include <IGameObject.h>
 
 class IActionController;
 struct SAnimationContext;

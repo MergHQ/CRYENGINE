@@ -16,6 +16,7 @@ History:
 #include "BodyManagerCVars.h"
 #include "Actor.h"
 #include "BodyManager.h"
+#include "Game.h"
 
 int CBodyManagerCVars::g_bodyDamage_log = 0;
 int CBodyManagerCVars::g_bodyDestruction_debug = 0;

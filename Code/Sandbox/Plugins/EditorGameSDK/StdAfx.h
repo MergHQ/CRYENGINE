@@ -15,10 +15,6 @@
 #include <CryCore/functor.h>
 #include <CryCore/smartptr.h>
 #include <CryMath/Cry_Geo.h>
-#include <CrySystem/ISystem.h>
-#include <Cry3DEngine/I3DEngine.h>
-#include <CryEntitySystem/IEntity.h>
-#include <CryRenderer/IRenderAuxGeom.h>
 #include <CryExtension/CryGUID.h>
 
 // STL headers.
@@ -27,8 +23,3 @@
 #include <map>
 #include <set>
 #include <algorithm>
-
-#include "IEditor.h"
-#include "LogFile.h"
-
-#include "EditorCommon.h"

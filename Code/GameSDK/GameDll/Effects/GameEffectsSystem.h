@@ -8,6 +8,7 @@
 // Includes
 #include "GameEffectsSystemDefines.h"
 #include "GameRulesTypes.h"
+#include <CryInput/IInput.h>
 
 //==================================================================================================
 // Name: CGameEffectsSystem

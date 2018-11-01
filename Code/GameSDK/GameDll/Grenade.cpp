@@ -20,8 +20,10 @@ History:
 #include "SmokeManager.h"
 #include "PersistantStats.h"
 #include "GameRules.h"
+#include "GameCVars.h"
 
 #include <CryAISystem/IAIObject.h>
+#include <Cry3DEngine/ISurfaceType.h>
 #include <IPerceptionManager.h>
 
 //------------------------------------------------------------------------
