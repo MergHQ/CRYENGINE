@@ -2,7 +2,8 @@
 
 #pragma once
 
-#include <IAudioImpl.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
+#include <ITriggerInfo.h>
 
 namespace CryAudio
 {

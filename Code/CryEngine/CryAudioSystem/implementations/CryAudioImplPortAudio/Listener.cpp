@@ -10,12 +10,6 @@ namespace Impl
 namespace PortAudio
 {
 //////////////////////////////////////////////////////////////////////////
-CListener::CListener(CObjectTransformation const& transformation)
-	: m_transformation(transformation)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CListener::SetName(char const* const szName)
 {
 #if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)

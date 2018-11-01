@@ -32,7 +32,6 @@ void CSkeletonPose::SkeletonPostProcess(Skeleton::CPoseData& poseData)
 	//
 
 	QuatT* const __restrict pRelativePose = poseData.GetJointsRelative();
-	QuatT* const __restrict pAbsolutePose = poseData.GetJointsAbsolute();
 
 	poseData.ValidateRelative(*m_pInstance->m_pDefaultSkeleton);
 
@@ -130,9 +129,10 @@ void CSkeletonPose::UpdateBBox(uint32 update)
 	GetPoseData().Validate(*m_pInstance->m_pDefaultSkeleton);
 
 	AABB rAABB;
-
+#if BBOX_ERROR_CHECKING
 	uint32 nErrorCode = 0;
 	const f32 fMaxBBox = 13000.0f;
+#endif
 	rAABB.min.Set(+99999.0f, +99999.0f, +99999.0f);
 	rAABB.max.Set(-99999.0f, -99999.0f, -99999.0f);
 

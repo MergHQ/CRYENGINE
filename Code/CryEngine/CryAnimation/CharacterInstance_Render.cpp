@@ -133,8 +133,6 @@ void CCharInstance::Render(const struct SRendParams& RendParams, const SRenderin
 
 void CCharInstance::RenderCGA(const struct SRendParams& RendParams, const Matrix34& RenderMat34, const SRenderingPassInfo& passInfo)
 {
-	int nList = (int)CharacterManager::GetRendererMainThreadId();
-
 	if (GetSkinningTransformationCount())
 		CryFatalError("CryAnimation: CGA should not have Dual-Quaternions for Skinning");
 
@@ -158,10 +156,6 @@ void CCharInstance::RenderCGA(const struct SRendParams& RendParams, const Matrix
 				nodeRP.pMatrix = &tm34;
 				nodeRP.dwFObjFlags |= FOB_TRANS_MASK;
 				nodeRP.pInstance = &m_SkeletonPose.m_arrCGAJoints[i];
-
-				// apply additional depth sort offset, if set
-				const Vec3 depthSortOffset = (orthoTm34 * Matrix34(poseData.GetJointAbsolute(i))).TransformVector(m_SkeletonPose.m_arrCGAJoints[i].m_CGAObjectInstance->GetDepthSortOffset());
-				// TODO: ^ Dot me against the camera's forward vector. Is orthoTm34 already operating in the camera-space?
 
 				// apply custom joint material, if set
 				nodeRP.pMaterial = m_SkeletonPose.m_arrCGAJoints[i].m_pMaterial ? m_SkeletonPose.m_arrCGAJoints[i].m_pMaterial.get() : pMaterial;

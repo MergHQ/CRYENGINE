@@ -96,7 +96,7 @@ bool CProjectManager::ParseProjectFile()
 
 	const ICmdLineArg* arg = gEnv->pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "project");
 	string projectFile = arg != nullptr ? arg->GetValue() : m_sys_project->GetString();
-	if (projectFile.size() == 0)
+	if (projectFile.empty())
 	{
 		CryLogAlways("\nRunning CRYENGINE without a project!");
 		CryLogAlways("	Using Engine Folder %s", szEngineRootDirectory);

@@ -41,8 +41,6 @@ void VertexCommandTangents::Execute(VertexCommandTangents& command, CVertexData&
 
 	for (uint i = 0; i < command.tangetUpdateDataCount; ++i)
 	{
-		const uint base = i * 3;
-
 		const STangentUpdateTriangles& data = command.pTangentUpdateData[i];
 
 		const vtx_idx idx1 = data.idx1;
@@ -186,8 +184,6 @@ void VertexCommandTangents::Execute(VertexCommandTangents& command, CVertexData&
 
 	for (uint i = 0; i < command.tangetUpdateDataCount; ++i)
 	{
-		const uint base = i * 3;
-
 		const STangentUpdateTriangles& data = command.pTangentUpdateData[i];
 
 		const vtx_idx idx1 = data.idx1;
@@ -372,8 +368,6 @@ void VertexCommandSkin::ExecuteInternal(VertexCommandSkin& command, CVertexData&
 	Quat qtangent;
 	float flip;
 	Vec3 newPos;
-
-	const uint vertexTransformCount = command.vertexTransformCount;
 
 	for (uint i = 0; i < vertexCount; ++i)
 	{
@@ -735,7 +729,10 @@ void VertexCommandAdd::Execute(VertexCommandAdd& command, CVertexData& vertexDat
 	__m128 _offset;
 
 	const __m128 _xyzMask = _mm_castsi128_ps(_mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff));
+
+#ifndef USE_VERTEXCOMMAND_SSE4
 	const __m128 _wMask = _mm_castsi128_ps(_mm_set_epi32(0xffffffff, 0, 0, 0));
+#endif
 
 	const uint count = command.count;
 	for (uint i = 0; i < count; ++i)

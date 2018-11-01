@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Common.h"
-#include <ATLEntityData.h>
+#include <IFile.h>
 
 namespace CryAudio
 {

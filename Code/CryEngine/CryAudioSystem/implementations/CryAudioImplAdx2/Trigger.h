@@ -3,7 +3,7 @@
 #pragma once
 
 #include "GlobalData.h"
-#include <ATLEntityData.h>
+#include <ITrigger.h>
 #include <PoolObject.h>
 
 #include <cri_atom_ex.h>
@@ -46,7 +46,14 @@ public:
 		uint32 const acbId,
 		ETriggerType const triggerType,
 		EEventType const eventType,
-		CriSint32 const changeoverTime = static_cast<CriSint32>(s_defaultChangeoverTime));
+		CriSint32 const changeoverTime = static_cast<CriSint32>(s_defaultChangeoverTime))
+		: m_id(id)
+		, m_cueName(szCueName)
+		, m_cueSheetId(acbId)
+		, m_triggerType(triggerType)
+		, m_eventType(eventType)
+		, m_changeoverTime(changeoverTime)
+	{}
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	explicit CTrigger(
@@ -56,16 +63,24 @@ public:
 		ETriggerType const triggerType,
 		EEventType const eventType,
 		char const* const szCueSheetName,
-		CriSint32 const changeoverTime = static_cast<CriSint32>(s_defaultChangeoverTime));
+		CriSint32 const changeoverTime = static_cast<CriSint32>(s_defaultChangeoverTime))
+		: m_id(id)
+		, m_cueName(szCueName)
+		, m_cueSheetId(acbId)
+		, m_triggerType(triggerType)
+		, m_eventType(eventType)
+		, m_cueSheetName(szCueSheetName)
+		, m_changeoverTime(changeoverTime)
+	{}
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 	virtual ~CTrigger() override = default;
 
 	// CryAudio::Impl::ITrigger
-	virtual ERequestStatus Load()  const override;
-	virtual ERequestStatus Unload() const override;
-	virtual ERequestStatus LoadAsync(IEvent* const pIEvent) const override;
-	virtual ERequestStatus UnloadAsync(IEvent* const pIEvent) const override;
+	virtual ERequestStatus Load()  const override                            { return ERequestStatus::Success; }
+	virtual ERequestStatus Unload() const override                           { return ERequestStatus::Success; }
+	virtual ERequestStatus LoadAsync(IEvent* const pIEvent) const override   { return ERequestStatus::Success; }
+	virtual ERequestStatus UnloadAsync(IEvent* const pIEvent) const override { return ERequestStatus::Success; }
 	// ~CryAudio::Impl::ITrigger
 
 	uint32          GetId() const             { return m_id; }

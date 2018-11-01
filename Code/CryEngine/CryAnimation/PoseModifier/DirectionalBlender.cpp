@@ -21,8 +21,6 @@ bool SDirectionalBlender::ExecuteDirectionalIK(const SAnimationPoseModifierParam
 	if (!pPoseData)
 		return false;
 
-	float fColDebug[4] = { 1, 1, 0, 1 };
-
 	const CDefaultSkeleton& defaultSkeleton = PoseModifierHelper::GetDefaultSkeleton(params);
 	const CDefaultSkeleton::SJoint* parrModelJoints = &defaultSkeleton.m_arrModelJoints[0];
 
@@ -38,8 +36,9 @@ bool SDirectionalBlender::ExecuteDirectionalIK(const SAnimationPoseModifierParam
 	for (uint32 i = 1; i < numJoints; i++)
 		pAbsPose[i] = pAbsPose[defaultSkeleton.GetJointParentIDByID(i)] * pRelPose[i];
 
-	//	g_pAuxGeom->Draw2dLabel( 1,g_YLine, 1.6f, fColDebug, false,"rAnimLocationNext: %f (%f %f %f)",rAnimLocationNext.q.w,rAnimLocationNext.q.v.x,rAnimLocationNext.q.v.y,rAnimLocationNext.q.v.z );
-	//	g_YLine+=16.0f;
+	// float fColDebug[4] = { 1, 1, 0, 1 };
+	// g_pAuxGeom->Draw2dLabel( 1,g_YLine, 1.6f, fColDebug, false,"rAnimLocationNext: %f (%f %f %f)",rAnimLocationNext.q.w,rAnimLocationNext.q.v.x,rAnimLocationNext.q.v.y,rAnimLocationNext.q.v.z );
+	// g_YLine+=16.0f;
 
 	const QuatT wRefJoint = QuatT(rAnimLocationNext) * pAbsPose[rDirBlends->m_nReferenceJointIdx];
 
@@ -47,7 +46,6 @@ bool SDirectionalBlender::ExecuteDirectionalIK(const SAnimationPoseModifierParam
 	Vec3 up = (rDirBlends->m_nReferenceJointIdx) ? wRefJoint.q.GetColumn0() : wRefJoint.q.GetColumn2();
 	const Vec3 si = up % fw;
 
-	const Matrix33 p33 = Matrix33(wRefJoint.q);
 	Plane LR_Plane;
 	LR_Plane.SetPlane(up % fw, wRefJoint.t);
 	Plane FB_Plane;
@@ -293,8 +291,6 @@ void SDirectionalBlender::AccumulateAimPoses(const SAnimationPoseModifierParams&
 
 	////////////////////////////////////////////////////////////////////////////
 
-	const float fTextColor[4] = { 1, 0, 0, 1 };
-
 	QuatT qtemp;
 	const DynArray<Vec3>& rAimMidPosistions = rAim.m_arrAimIKPosesAIM[AimPoseMid].m_arrPosition;
 	const Quat* const __restrict pMiddleRot = &rAim.m_arrAimIKPosesAIM[AimPoseMid].m_arrRotation[0];
@@ -305,6 +301,7 @@ void SDirectionalBlender::AccumulateAimPoses(const SAnimationPoseModifierParams&
 	QuatT* const __restrict jointsRelative = pPoseData->GetJointsRelative();
 	const QuatT* const __restrict jointsAbsolute = pPoseData->GetJointsAbsolute();
 
+	//const float fTextColor[4] = { 1, 0, 0, 1 };
 	//g_pAuxGeom->Draw2dLabel( 1,g_YLine, 1.4f, fTextColor, false,"rAim.m_nExist: %016x",rAim.m_nExist);
 	//g_YLine+=16.0f;
 

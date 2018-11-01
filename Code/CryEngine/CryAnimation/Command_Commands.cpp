@@ -190,9 +190,7 @@ void SampleAddAnimFull::Execute(const CState& state, CEvaluationContext& context
 
 	const QuatT* const pDefaultPose = state.m_pDefaultSkeleton->m_poseDefaultData.GetJointsRelative();
 	const float* const pDefaultScale = state.m_pDefaultSkeleton->m_poseDefaultData.GetScalingRelative();
-
 	const QuatT* const pFallbackPose = state.m_pFallbackPoseData->GetJointsRelative();
-	const float* const pFallbackScale = state.m_pFallbackPoseData->GetScalingRelative();
 
 	const auto& rCAF = [&]() -> const GlobalAnimationHeaderCAF&
 	{
@@ -317,8 +315,6 @@ void SampleAddPoseFull::Execute(const CState& state, CEvaluationContext& context
 	const CDefaultSkeleton::SJoint* const pModelJoint = state.m_pDefaultSkeleton->m_arrModelJoints.data();
 
 	const QuatT* const pDefaultPose = state.m_pDefaultSkeleton->m_poseDefaultData.GetJointsRelative();
-	const float* const pDefaultScale = state.m_pDefaultSkeleton->m_poseDefaultData.GetScalingRelative();
-
 	const QuatT* const pFallbackPose = state.m_pFallbackPoseData->GetJointsRelative();
 	const float* const pFallbackScale = state.m_pFallbackPoseData->GetScalingRelative();
 
@@ -437,7 +433,6 @@ void NormalizeFull::Execute(const CState& state, CEvaluationContext& context) co
 
 	assert(ac.m_TargetBuffer <= Command::TargetBuffer);
 	QuatT* parrRelPoseDst = (QuatT*)  CBTemp[ac.m_TargetBuffer + 0];
-	JointState* parrStatusDst = (JointState*)CBTemp[ac.m_TargetBuffer + 1];
 
 	f32 fDotLocator = fabsf(parrRelPoseDst[0].q | parrRelPoseDst[0].q);
 	if (fDotLocator > 0.0001f)
@@ -602,19 +597,16 @@ void SampleAddAnimPart::Execute(const CState& state, CEvaluationContext& context
 		{
 			if (parrStatusDst[j] & eJS_Orientation)
 			{
-				const Quat rot = parrRelPoseDst[j].q;
 				assert(parrRelPoseDst[j].q.IsValid());
 				o++;
 			}
 			if (parrStatusDst[j] & eJS_Position)
 			{
-				const Vec3 pos = parrRelPoseDst[j].t;
 				assert(parrRelPoseDst[j].t.IsValid());
 				p++;
 			}
 			if (parrStatusDst[j] & eJS_Scale)
 			{
-				const float scl = parrScalingDst[j];
 				assert(NumberValid(parrScalingDst[j]));
 				s++;
 			}
@@ -689,7 +681,6 @@ void PoseModifier::Execute(const CState& state, CEvaluationContext& context) con
 	DEFINE_PROFILER_FUNCTION();
 
 	const PoseModifier& ac = *this;
-	void** CBTemp = context.m_buffers;
 
 	SAnimationPoseModifierParams params;
 	params.pCharacterInstance = state.m_pInstance;
@@ -755,7 +746,9 @@ void ProcessAnimationDrivenIkFunction(CCharInstance& instance, IAnimationPoseDat
 	if (!pPoseData)
 		return;
 
+#if defined(USE_CRY_ASSERT)
 	int jointCount = int(pPoseData->GetJointCount());
+#endif
 
 	const CDefaultSkeleton& modelSkeleton = *instance.m_pDefaultSkeleton;
 
@@ -903,11 +896,9 @@ void VerifyFull::Execute(const CState& state, CEvaluationContext& context) const
 
 	assert(ac.m_TargetBuffer <= Command::TargetBuffer);
 	QuatT* parrRelPoseDst = (QuatT*)    CBTemp[ac.m_TargetBuffer + 0];
-	JointState* parrStatusDst = (JointState*)  CBTemp[ac.m_TargetBuffer + 1];
 	uint32 numJoints = state.m_jointCount;
 	for (uint32 j = 0; j < numJoints; j++)
 	{
-		JointState s4 = parrStatusDst[j];
 		assert(parrRelPoseDst[j].q.IsValid());
 		assert(parrRelPoseDst[j].t.IsValid());
 	}

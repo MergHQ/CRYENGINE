@@ -3,7 +3,7 @@
 #pragma once
 
 #include "FileIOHandler.h"
-#include <IAudioImpl.h>
+#include <IImpl.h>
 
 namespace CryAudio
 {
@@ -59,13 +59,13 @@ public:
 	virtual ISetting const*     ConstructSetting(XmlNodeRef const pRootNode) override;
 	virtual void                DestructSetting(ISetting const* const pISetting) override;
 	virtual IObject*            ConstructGlobalObject() override;
-	virtual IObject*            ConstructObject(CObjectTransformation const& transformation, char const* const szName = nullptr) override;
+	virtual IObject*            ConstructObject(CTransformation const& transformation, char const* const szName = nullptr) override;
 	virtual void                DestructObject(IObject const* const pIObject) override;
-	virtual IListener*          ConstructListener(CObjectTransformation const& transformation, char const* const szName = nullptr) override;
+	virtual IListener*          ConstructListener(CTransformation const& transformation, char const* const szName = nullptr) override;
 	virtual void                DestructListener(IListener* const pIListener) override;
-	virtual IEvent*             ConstructEvent(CATLEvent& event) override;
+	virtual IEvent*             ConstructEvent(CryAudio::CEvent& event) override;
 	virtual void                DestructEvent(IEvent const* const pIEvent) override;
-	virtual IStandaloneFile*    ConstructStandaloneFile(CATLStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITrigger const* pITrigger = nullptr) override;
+	virtual IStandaloneFile*    ConstructStandaloneFile(CryAudio::CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITrigger const* pITrigger = nullptr) override;
 	virtual void                DestructStandaloneFile(IStandaloneFile const* const pIStandaloneFile) override;
 
 	// Below data is only used when INCLUDE_WWISE_IMPL_PRODUCTION_CODE is defined!

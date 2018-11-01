@@ -27,7 +27,7 @@ namespace Impl
 namespace Fmod
 {
 //////////////////////////////////////////////////////////////////////////
-CObject::CObject(CObjectTransformation const& transformation)
+CObject::CObject(CTransformation const& transformation)
 	: m_transformation(transformation)
 	, m_previousAbsoluteVelocity(0.0f)
 	, m_position(transformation.GetPosition())
@@ -43,7 +43,7 @@ CObject::~CObject()
 {
 	if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0)
 	{
-		CRY_ASSERT_MESSAGE(g_numObjectsWithDoppler > 0, "g_numObjectsWithDoppler is 0 but an object with doppler tracking still exists.");
+		CRY_ASSERT_MESSAGE(g_numObjectsWithDoppler > 0, "g_numObjectsWithDoppler is 0 but an object with doppler tracking still exists during %s", __FUNCTION__);
 		g_numObjectsWithDoppler--;
 	}
 }
@@ -71,7 +71,7 @@ void CObject::Update(float const deltaTime)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetTransformation(CObjectTransformation const& transformation)
+void CObject::SetTransformation(CTransformation const& transformation)
 {
 	m_position = transformation.GetPosition();
 
@@ -154,9 +154,9 @@ void CObject::SetParameter(IParameter const* const pIParameter, float const valu
 			for (auto const pEvent : m_events)
 			{
 				FMOD::Studio::EventInstance* const pEventInstance = pEvent->GetInstance();
-				CRY_ASSERT_MESSAGE(pEventInstance != nullptr, "Event instance doesn't exist.");
+				CRY_ASSERT_MESSAGE(pEventInstance != nullptr, "Event instance doesn't exist during %s", __FUNCTION__);
 				CTrigger const* const pTrigger = pEvent->GetTrigger();
-				CRY_ASSERT_MESSAGE(pTrigger != nullptr, "Trigger doesn't exist.");
+				CRY_ASSERT_MESSAGE(pTrigger != nullptr, "Trigger doesn't exist during %s", __FUNCTION__);
 
 				FMOD::Studio::EventDescription* pEventDescription = nullptr;
 				fmodResult = pEventInstance->getDescription(&pEventDescription);
@@ -258,9 +258,9 @@ void CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 			for (auto const pEvent : m_events)
 			{
 				FMOD::Studio::EventInstance* const pEventInstance = pEvent->GetInstance();
-				CRY_ASSERT_MESSAGE(pEventInstance != nullptr, "Event instance doesn't exist.");
+				CRY_ASSERT_MESSAGE(pEventInstance != nullptr, "Event instance doesn't exist during %s", __FUNCTION__);
 				CTrigger const* const pTrigger = pEvent->GetTrigger();
-				CRY_ASSERT_MESSAGE(pTrigger != nullptr, "Trigger doesn't exist.");
+				CRY_ASSERT_MESSAGE(pTrigger != nullptr, "Trigger doesn't exist during %s", __FUNCTION__);
 
 				FMOD::Studio::EventDescription* pEventDescription = nullptr;
 				fmodResult = pEventInstance->getDescription(&pEventDescription);
@@ -345,7 +345,7 @@ void CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
+void CObject::SetOcclusion(float const occlusion)
 {
 	for (auto const pEvent : m_events)
 	{
@@ -394,7 +394,7 @@ void CObject::ToggleFunctionality(EObjectFunctionality const type, bool const en
 					Fill3DAttributeVelocity(zeroVelocity, m_attributes);
 					Set3DAttributes();
 
-					CRY_ASSERT_MESSAGE(g_numObjectsWithDoppler > 0, "g_numObjectsWithDoppler is 0 but an object with doppler tracking still exists.");
+					CRY_ASSERT_MESSAGE(g_numObjectsWithDoppler > 0, "g_numObjectsWithDoppler is 0 but an object with doppler tracking still exists during %s", __FUNCTION__);
 					g_numObjectsWithDoppler--;
 				}
 			}

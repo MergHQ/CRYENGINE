@@ -246,7 +246,7 @@ struct IProjectManager
 	//! Gets details on a specific plug-in by index
 	//! \see GetPluginCount
 	virtual void   GetPluginInfo(uint16 index, Cry::IPluginManager::EType& typeOut, string& pathOut, DynArray<EPlatform>& platformsOut) const = 0;
-	//! Loads a project template, allowing substition of aliases prefixed by '$' in the provided lambda
+	//! Loads a project template, allowing substitution of aliases prefixed by '$' in the provided lambda
 	virtual string LoadTemplateFile(const char* szPath, std::function<string(const char* szAlias)> aliasReplacementFunc) const = 0;
 };
 

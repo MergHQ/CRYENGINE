@@ -35,12 +35,6 @@ FMOD_RESULT F_CALLBACK FileCallback(FMOD_CHANNELCONTROL* pChannelControl, FMOD_C
 }
 
 //////////////////////////////////////////////////////////////////////////
-CStandaloneFile::CStandaloneFile(char const* const szFile, CATLStandaloneFile& atlStandaloneFile)
-	: CBaseStandaloneFile(szFile, atlStandaloneFile)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CStandaloneFile::StartLoading()
 {
 	FMOD_RESULT fmodResult = s_pLowLevelSystem->createSound(m_fileName, FMOD_CREATESTREAM | FMOD_NONBLOCKING | FMOD_3D, nullptr, &m_pLowLevelSound);

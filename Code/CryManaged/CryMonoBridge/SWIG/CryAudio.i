@@ -23,7 +23,7 @@
 %ignore CryAudio::SRequestInfo::pOwner;
 %ignore CryAudio::SRequestInfo::pUserData;
 %ignore CryAudio::SRequestInfo::pUserDataOwner;
-%ignore CryAudio::SRequestInfo::SRequestInfo(ERequestResult const, void* const, void* const, void* const,EnumFlagsType const, ControlId const, IObject* const, CATLStandaloneFile*, CATLEvent* );
+%ignore CryAudio::SRequestInfo::SRequestInfo(ERequestResult const, void* const, void* const, void* const,EnumFlagsType const, ControlId const, IObject* const, CStandaloneFile*, CEvent* );
 
 %ignore CryAudio::SRequestUserData::pOwner;
 %ignore CryAudio::SRequestUserData::pUserData;
@@ -53,8 +53,8 @@
 %ignore CryAudio::IAudioSystem::ReportStartedFile;
 %ignore CryAudio::IAudioSystem::ReportStoppedFile;
 %ignore CryAudio::IAudioSystem::ReportFinishedEvent;
-%ignore CryAudio::CATLStandaloneFile;
-%ignore CryAudio::CATLEvent;
+%ignore CryAudio::CStandaloneFile;
+%ignore CryAudio::CEvent;
 
 %include "../../../../CryEngine/CryCommon/CryAudio/IAudioSystem.h"
 %include "../../../../CryEngine/CryCommon/CryAudio/IObject.h"

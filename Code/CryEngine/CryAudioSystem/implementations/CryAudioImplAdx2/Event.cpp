@@ -12,16 +12,6 @@ namespace Impl
 namespace Adx2
 {
 //////////////////////////////////////////////////////////////////////////
-CEvent::CEvent(CATLEvent& event)
-	: m_event(event)
-	, m_pObject(nullptr)
-	, m_triggerId(InvalidCRC32)
-	, m_playbackId(CRIATOMEX_INVALID_PLAYBACK_ID)
-	, m_flags(EEventFlags::None)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 CEvent::~CEvent()
 {
 	if (m_pObject != nullptr)

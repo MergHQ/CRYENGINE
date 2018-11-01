@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include <ATLEntityData.h>
+#include <ISetting.h>
 #include <PoolObject.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace CryAudio
 {
@@ -21,7 +22,10 @@ public:
 	CSetting& operator=(CSetting const&) = delete;
 	CSetting& operator=(CSetting&&) = delete;
 
-	explicit CSetting(char const* const szName);
+	explicit CSetting(char const* const szName)
+		: m_name(szName)
+	{}
+
 	virtual ~CSetting() override = default;
 
 	// ISetting

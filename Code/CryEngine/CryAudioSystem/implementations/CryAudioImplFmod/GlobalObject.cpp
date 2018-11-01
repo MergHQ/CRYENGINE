@@ -15,12 +15,6 @@ namespace Impl
 namespace Fmod
 {
 //////////////////////////////////////////////////////////////////////////
-CGlobalObject::CGlobalObject(Objects const& objects)
-	: m_objects(objects)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CGlobalObject::SetEnvironment(IEnvironment const* const pIEnvironment, float const amount)
 {
 	Cry::Audio::Log(ELogType::Error, "Trying to set an environment on the global object!");
@@ -29,7 +23,7 @@ void CGlobalObject::SetEnvironment(IEnvironment const* const pIEnvironment, floa
 //////////////////////////////////////////////////////////////////////////
 void CGlobalObject::SetParameter(IParameter const* const pIParameter, float const value)
 {
-	CBaseParameter const* const pParameter = static_cast<CBaseParameter const* const>(pIParameter);
+	auto const pParameter = static_cast<CBaseParameter const*>(pIParameter);
 
 	if (pParameter != nullptr)
 	{
@@ -50,7 +44,7 @@ void CGlobalObject::SetParameter(IParameter const* const pIParameter, float cons
 //////////////////////////////////////////////////////////////////////////
 void CGlobalObject::SetSwitchState(ISwitchState const* const pISwitchState)
 {
-	CBaseSwitchState const* const pSwitchState = static_cast<CBaseSwitchState const* const>(pISwitchState);
+	auto const pSwitchState = static_cast<CBaseSwitchState const*>(pISwitchState);
 
 	if (pSwitchState != nullptr)
 	{
@@ -69,7 +63,7 @@ void CGlobalObject::SetSwitchState(ISwitchState const* const pISwitchState)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CGlobalObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
+void CGlobalObject::SetOcclusion(float const occlusion)
 {
 	Cry::Audio::Log(ELogType::Error, "Trying to set occlusion and obstruction values on the global object!");
 }

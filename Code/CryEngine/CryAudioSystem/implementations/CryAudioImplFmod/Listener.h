@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Common.h"
-#include <ATLEntityData.h>
+#include <IListener.h>
 
 namespace CryAudio
 {
@@ -21,17 +21,17 @@ public:
 	CListener& operator=(CListener const&) = delete;
 	CListener& operator=(CListener&&) = delete;
 
-	explicit CListener(CObjectTransformation const& transformation, int const id);
+	explicit CListener(CTransformation const& transformation, int const id);
 	virtual ~CListener() override = default;
 
 	ILINE int                 GetId() const     { return m_id; }
 	ILINE FMOD_3D_ATTRIBUTES& Get3DAttributes() { return m_attributes; }
 
 	// CryAudio::Impl::IListener
-	virtual void                         Update(float const deltaTime) override;
-	virtual void                         SetName(char const* const szName) override;
-	virtual void                         SetTransformation(CObjectTransformation const& transformation) override;
-	virtual CObjectTransformation const& GetTransformation() const override { return m_transformation; }
+	virtual void                   Update(float const deltaTime) override;
+	virtual void                   SetName(char const* const szName) override;
+	virtual void                   SetTransformation(CTransformation const& transformation) override;
+	virtual CTransformation const& GetTransformation() const override { return m_transformation; }
 	// ~CryAudio::Impl::IListener
 
 	Vec3 const& GetPosition() const { return m_position; }
@@ -47,13 +47,13 @@ private:
 
 	void SetVelocity();
 
-	int                   m_id;
-	bool                  m_isMovingOrDecaying;
-	Vec3                  m_velocity;
-	Vec3                  m_position;
-	Vec3                  m_previousPosition;
-	CObjectTransformation m_transformation;
-	FMOD_3D_ATTRIBUTES    m_attributes;
+	int                m_id;
+	bool               m_isMovingOrDecaying;
+	Vec3               m_velocity;
+	Vec3               m_position;
+	Vec3               m_previousPosition;
+	CTransformation    m_transformation;
+	FMOD_3D_ATTRIBUTES m_attributes;
 
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	CryFixedStringT<MaxObjectNameLength> m_name;

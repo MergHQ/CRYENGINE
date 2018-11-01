@@ -131,7 +131,9 @@ void CharacterManager::PreloadModelsCHR()
 
 	CryLog("===== Preloading Characters ====");
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	CTimeValue startTime = gEnv->pTimer->GetAsyncTime();
+#endif
 
 	//bool bChrCacheExist = GetISystem()->GetIResourceManager()->LoadLevelCachePak( CHR_LEVEL_CACHE_PAK,"" );
 
@@ -141,7 +143,6 @@ void CharacterManager::PreloadModelsCHR()
 	//CLevelStatObjLoader cgfStreamer;
 
 	int nChrCounter = 0;
-	int nInLevelCacheCount = 0;
 
 	// Request objects loading from Streaming System.
 	CryPathString filename;
@@ -211,11 +212,11 @@ void CharacterManager::PreloadModelsCHR()
 			CryFatalError("SKIN NumRefs: %d", numRefs);
 	}
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	CTimeValue endTime = gEnv->pTimer->GetAsyncTime();
-
 	float dt = (endTime - startTime).GetSeconds();
-
 	CryLog("===== Finished Preloading %d Characters in %.2f seconds ====", nChrCounter, dt);
+#endif
 
 	//GetISystem()->GetIResourceManager()->UnloadLevelCachePak( CHR_LEVEL_CACHE_PAK );
 }
@@ -227,11 +228,12 @@ void CharacterManager::PreloadModelsCGA()
 
 	CryLog("===== Preloading CGAs ====");
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	CTimeValue startTime = gEnv->pTimer->GetAsyncTime();
+#endif
 
 	//bool bCGACacheExist = false;
 
-	bool bCgfCacheExist = false;
 	static ICVar* pCVar_e_StreamCgf = gEnv->pConsole->GetCVar("e_StreamCgf");
 	if (pCVar_e_StreamCgf && pCVar_e_StreamCgf->GetIVal() != 0)
 	{
@@ -263,7 +265,7 @@ void CharacterManager::PreloadModelsCGA()
 			filename = sFilenameInResource;
 			uint32 nFileOnDisk = gEnv->pCryPak->IsFileExist(filename);
 			assert(nFileOnDisk);
-			CDefaultSkeleton* pSkelTemp = 0;    //temp-pointer to access the refcounter, without calling the destructor
+
 			if (nFileOnDisk)
 			{
 				LoadAnimationImageFile("animations/animations.img", "animations/DirectionalBlends.img");
@@ -293,10 +295,11 @@ void CharacterManager::PreloadModelsCGA()
 
 	//GetISystem()->GetIResourceManager()->UnloadLevelCachePak( CGA_LEVEL_CACHE_PAK );
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	CTimeValue endTime = gEnv->pTimer->GetAsyncTime();
-
 	float dt = (endTime - startTime).GetSeconds();
 	CryLog("===== Finished Preloading %d CGAs in %.2f seconds ====", nChrCounter, dt);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -307,7 +310,9 @@ void CharacterManager::PreloadModelsCDF()
 
 	CryLog("===== Preloading CDFs ====");
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	CTimeValue startTime = gEnv->pTimer->GetAsyncTime();
+#endif
 
 	int nCounter = 0;
 
@@ -337,10 +342,11 @@ void CharacterManager::PreloadModelsCDF()
 		SLICE_AND_SLEEP();
 	}
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	CTimeValue endTime = gEnv->pTimer->GetAsyncTime();
-
 	float dt = (endTime - startTime).GetSeconds();
 	CryLog("===== Finished Preloading %d CDFs in %.2f seconds ====", nCounter, dt);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -361,12 +367,13 @@ ICharacterInstance* CharacterManager::CreateInstance(const char* szFilePath, uin
 #endif
 
 	const char* fileExt = PathUtil::GetExt(strFilePath.c_str());
-	uint32 isSKIN = stricmp(fileExt, CRY_SKIN_FILE_EXT) == 0;
+	
 	uint32 isSKEL = stricmp(fileExt, CRY_SKEL_FILE_EXT) == 0;
 	uint32 isCGA = stricmp(fileExt, "cga") == 0;
 	uint32 isCDF = stricmp(fileExt, "cdf") == 0;
 
 #ifdef EDITOR_PCDEBUGCODE
+	uint32 isSKIN = stricmp(fileExt, CRY_SKIN_FILE_EXT) == 0;
 	if (isSKIN)
 		return CreateSKELInstance(strFilePath.c_str(), nLoadingFlags);       //Load SKIN and install it as a SKEL file (this is only needed in CharEdit-Mode to preview the model)
 #endif
@@ -908,7 +915,6 @@ void CharacterManager::RegisterModelSKEL(CDefaultSkeleton* pDefaultSkeleton, uin
 	LOADING_TIME_PROFILE_SECTION(g_pISystem);
 	CDefaultSkeletonReferences dsr;
 	dsr.m_pDefaultSkeleton = pDefaultSkeleton;
-	uint32 size = m_arrModelCacheSKEL.size();
 	if ((nLoadingFlags & CA_CharEditModel) == 0)
 		m_arrModelCacheSKEL.push_back(dsr);
 #ifdef EDITOR_PCDEBUGCODE
@@ -1015,7 +1021,6 @@ void CharacterManager::RegisterModelSKIN(CSkin* pDefaultSkinning, uint32 nLoadin
 	LOADING_TIME_PROFILE_SECTION(g_pISystem);
 	CDefaultSkinningReferences dsr;
 	dsr.m_pDefaultSkinning = pDefaultSkinning;
-	uint32 size = m_arrModelCacheSKIN.size();
 	if ((nLoadingFlags & CA_CharEditModel) == 0)
 		m_arrModelCacheSKIN.push_back(dsr);
 #ifdef EDITOR_PCDEBUGCODE
@@ -1023,6 +1028,7 @@ void CharacterManager::RegisterModelSKIN(CSkin* pDefaultSkinning, uint32 nLoadin
 		m_arrModelCacheSKIN_CharEdit.push_back(dsr);
 #endif
 }
+
 // Deletes the given body from the model cache. This is done when there are no instances using this body info.
 void CharacterManager::UnregisterModelSKIN(CSkin* pDefaultSkeleton)
 {
@@ -1346,13 +1352,6 @@ SClothGeometry* CharacterManager::LoadVClothGeometry(const CAttachmentVCLOTH& pA
 			int i2 = pIndices[base++];
 			int i3 = pIndices[base];
 
-			const Vec3& v1 = pVtx[i1];
-			const Vec3& v2 = pVtx[i2];
-			const Vec3& v3 = pVtx[i3];
-
-			Vec3 u = v2 - v1;
-			Vec3 v = v3 - v1;
-
 			float w1x = pUVs[i1].x;
 			float w1y = pUVs[i1].y;
 			float w2x = pUVs[i2].x;
@@ -1486,7 +1485,6 @@ void CharacterManager::GetCharacterInstancesSize(class ICrySizer* pSizer) const
 {
 	SIZER_SUBCOMPONENT_NAME(pSizer, "Character instances");
 
-	uint32 nSize = 0;
 	uint32 numModelCache = m_arrModelCacheSKEL.size();
 	for (uint32 m = 0; m < numModelCache; ++m)
 	{
@@ -1729,8 +1727,8 @@ void CharacterManager::Update(bool bPaused)
 
 	if (Console::GetInst().ca_DebugModelCache)
 	{
-		float fWhite[4] = { 1, 1, 1, 1 };
 #ifdef EDITOR_PCDEBUGCODE
+		float fWhite[4] = { 1, 1, 1, 1 };
 		uint32 numMCSkelCE = m_arrModelCacheSKEL_CharEdit.size();
 		uint32 numMCSkinCE = m_arrModelCacheSKIN_CharEdit.size();
 		if (numMCSkelCE + numMCSkinCE)
@@ -1988,7 +1986,6 @@ CDefaultSkeleton* CharacterManager::GetModelByAimPoseID(uint32 nGlobalIDAimPose)
 			CDefaultSkeleton* pDefaultSkeleton = (CDefaultSkeleton*)pModelBase;
 			if (pDefaultSkeleton->m_ObjectType == CHR)
 			{
-				const char* PathName = pDefaultSkeleton->GetModelFilePath();
 				CAnimationSet* pAnimationSet = pDefaultSkeleton->m_pAnimationSet;
 				int32 status = pAnimationSet->FindAimposeByGlobalID(nGlobalIDAimPose);
 				if (status > 0)
@@ -2109,7 +2106,6 @@ void CharacterManager::DebugModelCache(uint32 printtxt, std::vector<CDefaultSkel
 	if (nPrintFlags & 1)
 	{
 		uint32 nTotalSkelMemory = 0;
-		uint32 nTotalSkeletonMemory = 0;
 		uint32 numTSkelInstances = 0;
 
 		uint32 numModelSKELs = parrModelCacheSKEL.size();
@@ -2459,7 +2455,7 @@ void CharacterManager::DatabaseUnloading()
 	//----------------------------------------------------------------------------------------------------
 
 	m_StartGAH_Iterator = 0;
-	float fColor[4] = { 1, 0, 0, 1 };
+	// float fColor[4] = { 1, 0, 0, 1 };
 	//	g_pAuxGeom->Draw2dLabel( 1,g_YLine, 1.2f, fColor, false,"DatabaseUnloading");
 	//	g_YLine+=12.0f;
 
@@ -2471,7 +2467,7 @@ void CharacterManager::DatabaseUnloading()
 		if (rGHDBA.m_pDatabaseInfo == 0)
 			continue;
 
-		const char* pName = rGHDBA.m_strFilePathDBA;
+		//const char* pName = rGHDBA.m_strFilePathDBA;
 		uint32 nDBACRC32 = rGHDBA.m_FilePathDBACRC32;
 		if (rGHDBA.m_nUsedAnimations || rGHDBA.m_bDBALock)
 		{
@@ -2506,9 +2502,6 @@ void CharacterManager::DatabaseUnloading()
 			continue;
 		if (rGHDBA.m_nUsedAnimations)
 			continue;
-#ifdef _DEBUG
-		const char* pName = rGHDBA.m_strFilePathDBA;
-#endif
 
 		m_AllowStartOfAnimation = 0;
 		uint32 numModels = m_arrModelCacheSKEL.size();
@@ -2625,7 +2618,9 @@ public:
 		for (ResourceSet::const_iterator it = m_set.begin(); it != m_set.end(); ++it)
 		{
 			const char* pFilePath = (*it).c_str();
+#if !defined(_RELEASE) || defined(RELEASE_LOGGING)
 			uint32 dbacrc32 = g_AnimationManager.GetDBACRC32fromFilePath(pFilePath);
+#endif
 			uint32 cafcrc32 = CCrc32::ComputeLowercase(pFilePath);
 
 			uint32 pos = 0;
@@ -2922,7 +2917,6 @@ ICharacterInstance* CharacterManager::LoadCharacterDefinition(const string pathn
 		return NULL;
 
 	m_arrCacheForCDF[cdfId].AddRef();
-	const uint32 numRefs = m_arrCacheForCDF[cdfId].m_nRefCounter;
 
 	// It is a bad idea to store reference to m_cdfFiles[ind], since this vector
 	// is going to be changed in nested call to LoadCharacterDefinition / LoadCDF
@@ -3033,8 +3027,8 @@ void CharacterManager::SkelExtension(CCharInstance* pCharacter, const CharacterD
 			pCurrentSkeleton->SetKeepInMemory(true);
 			pCharacter->RuntimeInit(pExtendedSkeleton);
 		}
+		}
 	}
-}
 
 void CharacterManager::ExtendDefaultSkeletonWithSkinAttachments(ICharacterInstance* pICharacter, const char* /*unused*/, const char** szSkinAttachments, const uint32 skinsCount, const uint32 loadingFlags)
 {
@@ -3045,11 +3039,11 @@ void CharacterManager::ExtendDefaultSkeletonWithSkinAttachments(ICharacterInstan
 	{
 		assert(originalSkeletonFilename[0] == '_');
 		originalSkeletonFilename++; // All extended skeletons have an '_' in front of the filepath to not confuse them with regular skeletons.
-	}
+}
 
 	CDefaultSkeleton* pOriginalSkeleton = g_pCharacterManager->CheckIfModelSKELLoaded(originalSkeletonFilename, loadingFlags);
 	if (!pOriginalSkeleton)
-	{
+{
 		return;
 	}
 
@@ -3214,60 +3208,60 @@ CDefaultSkeleton* CharacterManager::CreateExtendedSkel(CDefaultSkeleton* const p
 	{
 		// Initialize with the source skeleton hierarchy.
 		uint32 numJoints = pSourceSkeleton->m_arrModelJoints.size();
-		for (uint32 j = 0; j < numJoints; j++)
-		{
+	for (uint32 j = 0; j < numJoints; j++)
+	{
 			const int32 parentIndex = pSourceSkeleton->m_arrModelJoints[j].m_idxParent;
 			lh.m_arrHierarchy[j].m_DefaultAbsolute = pSourceSkeleton->m_poseDefaultData.GetJointsAbsolute()[j];
 			lh.m_arrHierarchy[j].m_idxParent = parentIndex;
-			lh.m_arrHierarchy[j].m_idxNext = 0;
-			lh.m_arrHierarchy[j].m_idxFirst = 0;
+		lh.m_arrHierarchy[j].m_idxNext = 0;
+		lh.m_arrHierarchy[j].m_idxFirst = 0;
 			lh.m_arrHierarchy[j].m_fMass = pSourceSkeleton->m_arrModelJoints[j].m_fMass;
 			lh.m_arrHierarchy[j].m_PhysInfo = pSourceSkeleton->m_arrBackupPhysInfo[j];
 			lh.m_arrHierarchy[j].m_strJointName = pSourceSkeleton->m_arrModelJoints[j].m_strJointName;
 			lh.m_arrHierarchy[j].m_nJointCRC32Lower = pSourceSkeleton->m_arrModelJoints[j].m_nJointCRC32Lower;
 			lh.m_arrHierarchy[j].m_nCRC32Parent = parentIndex < 0 ? 0 : pSourceSkeleton->m_arrModelJoints[parentIndex].m_nJointCRC32Lower;
-		}
+	}
 
 		// Extend with joints from mismatching skins.
 		const uint32 nExtensionNeeded = mismatchingSkins.size();
 		for (uint32 e = 0; e < nExtensionNeeded; ++e)
-		{
+	{
 			const CSkin* pSkin = CheckIfModelSKINLoaded(mismatchingSkins[e], nLoadingFlags);
 			assert(pSkin);
 
 			const CSkin::SJointInfo* parrModelJoints = &pSkin->m_arrModelJoints[0];
 			if (lh.find(numJoints, parrModelJoints[0].m_nJointCRC32Lower) < 0)
-			{
+		{
 				CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_ERROR, "CryAnimation: Skin root joint '%s' was not found in skeleton (with root '%s'), while attaching skin '%s' to skeleton '%s'.", parrModelJoints->m_NameModelSkin.c_str(), lh.m_arrHierarchy[0].m_strJointName, pSkin->GetModelFilePath(), pSourceSkeleton->GetModelFilePath());
 				lh.m_arrHierarchy[numJoints].m_DefaultAbsolute = parrModelJoints[0].m_DefaultAbsolute;
-				lh.m_arrHierarchy[numJoints].m_idxParent = 0;
-				lh.m_arrHierarchy[numJoints].m_idxNext = 0;
-				lh.m_arrHierarchy[numJoints].m_idxFirst = 0;
-				lh.m_arrHierarchy[numJoints].m_fMass = 0;
-				lh.m_arrHierarchy[numJoints].m_PhysInfo.pPhysGeom = 0;
+			lh.m_arrHierarchy[numJoints].m_idxParent = 0;
+			lh.m_arrHierarchy[numJoints].m_idxNext = 0;
+			lh.m_arrHierarchy[numJoints].m_idxFirst = 0;
+			lh.m_arrHierarchy[numJoints].m_fMass = 0;
+			lh.m_arrHierarchy[numJoints].m_PhysInfo.pPhysGeom = 0;
 				lh.m_arrHierarchy[numJoints].m_strJointName = parrModelJoints[0].m_NameModelSkin;
 				lh.m_arrHierarchy[numJoints].m_nJointCRC32Lower = parrModelJoints[0].m_nJointCRC32Lower;
 				lh.m_arrHierarchy[numJoints].m_nCRC32Parent = pSourceSkeleton->m_arrModelJoints[0].m_nJointCRC32Lower;
 				++numJoints;
-			}
+		}
 
 			const uint32 numSkinJoints = pSkin->m_arrModelJoints.size();
 			for (uint32 s = 1; s < numSkinJoints; ++s)
-			{
+		{
 				if (lh.find(numJoints, parrModelJoints[s].m_nJointCRC32Lower) < 0)
 				{
 					lh.insert(numJoints, s, parrModelJoints);
 					++numJoints;
-				}
+		}
 			}
 
-			if (numJoints >= MAX_JOINT_AMOUNT)
+		if (numJoints >= MAX_JOINT_AMOUNT)
 			{
-				CryFatalError("ModelError: bone count over limit");
-			}
+			CryFatalError("ModelError: bone count over limit");
+	}
 		}
 
-		lh.rebuild(numJoints);
+	lh.rebuild(numJoints);
 
 		pExtendedSkeleton->m_arrModelJoints.resize(numJoints);
 		pExtendedSkeleton->m_poseDefaultData.Initialize(numJoints);
@@ -3280,9 +3274,9 @@ CDefaultSkeleton* CharacterManager::CreateExtendedSkel(CDefaultSkeleton* const p
 		pExtendedSkeleton->m_poseDefaultData.GetJointsRelative()[0] = lh.m_arrExtModelJoints[0].m_DefaultAbsolute;
 		pExtendedSkeleton->m_poseDefaultData.GetJointsAbsolute()[0] = lh.m_arrExtModelJoints[0].m_DefaultAbsolute;
 
-		for (uint32 i = 1; i < numJoints; i++)
-		{
-			int32 p = lh.m_arrExtModelJoints[i].m_idxParent;
+	for (uint32 i = 1; i < numJoints; i++)
+	{
+		int32 p = lh.m_arrExtModelJoints[i].m_idxParent;
 			pExtendedSkeleton->m_arrModelJoints[i].m_idxParent = p;
 			pExtendedSkeleton->m_arrModelJoints[i].m_strJointName = lh.m_arrExtModelJoints[i].m_strJointName;
 			pExtendedSkeleton->m_arrModelJoints[i].m_nJointCRC32Lower = lh.m_arrExtModelJoints[i].m_nJointCRC32Lower;
@@ -3291,8 +3285,8 @@ CDefaultSkeleton* CharacterManager::CreateExtendedSkel(CDefaultSkeleton* const p
 			pExtendedSkeleton->m_arrModelJoints[i].m_fMass = lh.m_arrExtModelJoints[i].m_fMass;
 			pExtendedSkeleton->m_poseDefaultData.GetJointsAbsolute()[i] = lh.m_arrExtModelJoints[i].m_DefaultAbsolute;
 			pExtendedSkeleton->m_poseDefaultData.GetJointsRelative()[i] = pExtendedSkeleton->m_poseDefaultData.GetJointsAbsolute()[p].GetInverted() * lh.m_arrExtModelJoints[i].m_DefaultAbsolute;
-		}
 	}
+}
 
 	RegisterModelSKEL(pExtendedSkeleton, nLoadingFlags);
 
@@ -3374,7 +3368,7 @@ void CharacterManager::GetLoadedModels(IDefaultSkeleton** pIDefaultSkeletons, ui
 		nCount = m_arrModelCacheSKEL.size();
 		return;
 	}
-	uint32 numDefaultSkeletons = min(uint32(m_arrModelCacheSKEL.size()), nCount);
+
 	for (uint32 i = 0; i < nCount; i++)
 		pIDefaultSkeletons[i] = m_arrModelCacheSKEL[i].m_pDefaultSkeleton;
 }
@@ -3411,7 +3405,6 @@ void CharacterManager::ClearPoseModifiersFromSynchQueue()
 	for (uint32 i = 0; i < count; ++i)
 	{
 		CharacterInstanceProcessing::SContext& ctx = m_ContextSyncQueue.GetContext(i);
-		CSkeletonPose* pSkeletonPose = (CSkeletonPose*)ctx.pInstance->GetISkeletonPose();
 		CSkeletonAnim* pSkeletonAnim = (CSkeletonAnim*)ctx.pInstance->GetISkeletonAnim();
 		for (uint j = 0; j < numVIRTUALLAYERS; ++j)
 		{
@@ -3824,7 +3817,6 @@ bool CharacterManager::StreamKeepCDFResident(const char* szFilePath, int nLod, i
 				const bool isCDF = (0 == stricmp(fileExt, CRY_CHARACTER_DEFINITION_FILE_EXT));
 				const bool isSKEL = (0 == stricmp(fileExt, CRY_SKEL_FILE_EXT));
 				const bool isCGA = (0 == stricmp(fileExt, CRY_ANIM_GEOMETRY_FILE_EXT));
-				const bool isCGF = (0 == stricmp(fileExt, CRY_GEOMETRY_FILE_EXT));
 
 				if (isSKEL || isCGA)
 				{
@@ -3851,7 +3843,6 @@ bool CharacterManager::StreamKeepCDFResident(const char* szFilePath, int nLod, i
 				const char* fileExt = PathUtil::GetExt(attachmentInfo.m_strBindingPath);
 
 				const bool isCDF = (0 == stricmp(fileExt, CRY_CHARACTER_DEFINITION_FILE_EXT));
-				const bool isCGF = (0 == stricmp(fileExt, CRY_GEOMETRY_FILE_EXT));
 				const bool isCHR = (0 == stricmp(fileExt, CRY_SKEL_FILE_EXT));      //will not make sense in then future, because you can't see anything
 
 				if (isCHR)

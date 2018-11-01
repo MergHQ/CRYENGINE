@@ -156,8 +156,6 @@ void CryCHRLoader::StreamOnComplete(IReadStream* pStream, unsigned nError)
 	else if (m_pModelSkin)
 	{
 		EndStreamSkinSync(pStream);
-
-		int nRenderLod = (int)pStream->GetParams().dwUserData;
 	}
 
 	ClearModel();
@@ -629,14 +627,13 @@ bool CDefaultSkeleton::LoadAnimations(CParamLoader& paramLoader)
 	for (int32 i = nListIDs - 1; i >= 0; --i)
 	{
 		const SAnimListInfo& animList = paramLoader.GetParsedList(m_animListIDs[i]);
-		uint32 numAnimNames = animList.arrAnimFiles.size();
 
 		// this is where the Animation List Cache kicks in
 		if (!animList.headersLoaded)
 		{
 			paramLoader.ExpandWildcards(m_animListIDs[i]);
 			numAnimAssets += LoadAnimationFiles(paramLoader, m_animListIDs[i]);
-			// this list has been processed, dont do it again!
+			// this list has been processed, don't do it again!
 			paramLoader.SetHeadersLoaded(m_animListIDs[i]);
 		}
 		else
@@ -653,8 +650,6 @@ bool CDefaultSkeleton::LoadAnimations(CParamLoader& paramLoader)
 		m_pAnimationSet->GetFacialAnimations().SwapElementsWithVector(facialAnimations);
 
 	AnimEventLoader::LoadAnimationEventDatabase(this, GetModelAnimEventDatabaseCStr());
-
-	uint32 dddd = g_AnimationManager.m_arrGlobalCAF.size();
 
 	if (numAnimAssets > 1)
 	{

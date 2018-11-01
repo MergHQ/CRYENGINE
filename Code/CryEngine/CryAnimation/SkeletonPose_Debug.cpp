@@ -31,9 +31,6 @@ void CSkeletonPose::DrawPose(const Skeleton::CPoseData& pose, const Matrix34& rR
 {
 	g_pAuxGeom->SetRenderFlags(e_Def3DPublicRenderflags | e_DepthTestOff);
 
-	Vec3 vdir = m_pInstance->m_Viewdir;
-	CDefaultSkeleton* pDefaultSkeleton = m_pInstance->m_pDefaultSkeleton;
-
 	static Ang3 ang_root(0, 0, 0);
 	ang_root += Ang3(0.01f, 0.02f, 0.03f);
 	static Ang3 ang_rot(0, 0, 0);

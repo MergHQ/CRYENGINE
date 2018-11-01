@@ -4,7 +4,7 @@
 
 #include "Common.h"
 #include "GlobalData.h"
-#include <ATLEntityData.h>
+#include <ITrigger.h>
 #include <PoolObject.h>
 
 namespace CryAudio
@@ -41,7 +41,17 @@ public:
 		int const numLoops = 1,
 		int const fadeInTime = 0,
 		int const fadeOutTime = 0,
-		bool const isPanningEnabled = true);
+		bool const isPanningEnabled = true)
+		: m_type(type)
+		, m_sampleId(sampleId)
+		, m_attenuationMinDistance(attenuationMinDistance)
+		, m_attenuationMaxDistance(attenuationMaxDistance)
+		, m_volume(volume)
+		, m_numLoops(numLoops)
+		, m_fadeInTime(fadeInTime)
+		, m_fadeOutTime(fadeOutTime)
+		, m_isPanningEnabled(isPanningEnabled)
+	{}
 
 	virtual ~CTrigger() override = default;
 

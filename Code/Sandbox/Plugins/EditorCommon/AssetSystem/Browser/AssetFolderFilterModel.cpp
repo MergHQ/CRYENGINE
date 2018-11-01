@@ -68,7 +68,7 @@ public:
 		return false;
 	}
 
-	// This is a workaround to solve an Access violation exception throws in this metod if it has the default implementation.
+	// This is a workaround to solve an Access violation exception throws in this method if it has the default implementation.
 	// The exception [sometimes] occurs if the the user changes current folder in the Asset Browser while some cryasset files 
 	// are being deleted or renamed on the disk [e.g. from the outside or by the Asset Browser means]. 
 	QModelIndex parent(const QModelIndex& proxyChild) const

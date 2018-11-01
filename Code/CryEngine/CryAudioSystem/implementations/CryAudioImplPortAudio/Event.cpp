@@ -90,7 +90,7 @@ static int StreamCallback(
 }
 
 //////////////////////////////////////////////////////////////////////////
-CEvent::CEvent(CATLEvent& event_)
+CEvent::CEvent(CryAudio::CEvent& event_)
 	: pSndFile(nullptr)
 	, pStream(nullptr)
 	, pData(nullptr)
@@ -105,9 +105,9 @@ CEvent::CEvent(CATLEvent& event_)
 //////////////////////////////////////////////////////////////////////////
 CEvent::~CEvent()
 {
-	CRY_ASSERT_MESSAGE(pStream == nullptr, "PortAudio pStream hasn't been closed on event destruction.");
-	CRY_ASSERT_MESSAGE(pSndFile == nullptr, "PortAudio pSndFile hasn't been closed on event destruction.");
-	CRY_ASSERT_MESSAGE(pData == nullptr, "PortAudio pData hasn't been freed on event destruction.");
+	CRY_ASSERT_MESSAGE(pStream == nullptr, "PortAudio pStream hasn't been closed  during %s", __FUNCTION__);
+	CRY_ASSERT_MESSAGE(pSndFile == nullptr, "PortAudio pSndFile hasn't been closed  during %s", __FUNCTION__);
+	CRY_ASSERT_MESSAGE(pData == nullptr, "PortAudio pData hasn't been freed  during %s", __FUNCTION__);
 
 	if (pObject != nullptr)
 	{
@@ -123,10 +123,10 @@ bool CEvent::Execute(
 	CryFixedStringT<MaxFilePathLength> const& filePath,
 	PaStreamParameters const& streamParameters)
 {
-	CRY_ASSERT_MESSAGE(state == EEventState::None, "PortAudio event is not in None state during Execute.");
-	CRY_ASSERT_MESSAGE(pStream == nullptr, "PortAudio pStream is valid during event execution.");
-	CRY_ASSERT_MESSAGE(pSndFile == nullptr, "PortAudio pSndFile is valid during event execution.");
-	CRY_ASSERT_MESSAGE(pData == nullptr, "PortAudio pData is valid during event execution.");
+	CRY_ASSERT_MESSAGE(state == EEventState::None, "PortAudio event is not in None state during %s", __FUNCTION__);
+	CRY_ASSERT_MESSAGE(pStream == nullptr, "PortAudio pStream is valid during %s", __FUNCTION__);
+	CRY_ASSERT_MESSAGE(pSndFile == nullptr, "PortAudio pSndFile is valid during %s", __FUNCTION__);
+	CRY_ASSERT_MESSAGE(pData == nullptr, "PortAudio pData is valid during %s", __FUNCTION__);
 
 	SF_INFO sfInfo;
 	ZeroStruct(sfInfo);
@@ -206,17 +206,17 @@ void CEvent::Update()
 	{
 		if (state == EEventState::Stopped)
 		{
-			CRY_ASSERT_MESSAGE(pStream == nullptr, "PortAudio pStream still valid during event update.");
-			CRY_ASSERT_MESSAGE(pSndFile == nullptr, "PortAudio pSndFile still valid during event update.");
-			CRY_ASSERT_MESSAGE(pData == nullptr, "PortAudio pData still valid during event update.");
+			CRY_ASSERT_MESSAGE(pStream == nullptr, "PortAudio pStream still valid during %s", __FUNCTION__);
+			CRY_ASSERT_MESSAGE(pSndFile == nullptr, "PortAudio pSndFile still valid during %s", __FUNCTION__);
+			CRY_ASSERT_MESSAGE(pData == nullptr, "PortAudio pData still valid during %s", __FUNCTION__);
 			state = EEventState::WaitingForDestruction;
 			gEnv->pAudioSystem->ReportFinishedEvent(event, true);
 		}
 		else if (state == EEventState::Done)
 		{
-			CRY_ASSERT_MESSAGE(pStream != nullptr, "PortAudio pStream not valid during event update.");
-			CRY_ASSERT_MESSAGE(pSndFile != nullptr, "PortAudio pSndFile not valid during event update.");
-			CRY_ASSERT_MESSAGE(pData != nullptr, "PortAudio pData not valid during event update.");
+			CRY_ASSERT_MESSAGE(pStream != nullptr, "PortAudio pStream not valid during %s", __FUNCTION__);
+			CRY_ASSERT_MESSAGE(pSndFile != nullptr, "PortAudio pSndFile not valid during %s", __FUNCTION__);
+			CRY_ASSERT_MESSAGE(pData != nullptr, "PortAudio pData not valid during %s", __FUNCTION__);
 
 			if (remainingLoops != 0)
 			{

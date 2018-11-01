@@ -20,7 +20,10 @@ public:
 	CStandaloneFile& operator=(CStandaloneFile const&) = delete;
 	CStandaloneFile& operator=(CStandaloneFile&&) = delete;
 
-	explicit CStandaloneFile(char const* const szFile, CATLStandaloneFile& atlStandaloneFile);
+	explicit CStandaloneFile(char const* const szFile, CryAudio::CStandaloneFile& standaloneFile)
+		: CBaseStandaloneFile(szFile, standaloneFile)
+	{}
+
 	virtual ~CStandaloneFile() override = default;
 
 	// CStandaloneFileBase

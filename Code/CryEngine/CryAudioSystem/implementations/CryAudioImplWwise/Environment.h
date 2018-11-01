@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include <ATLEntityData.h>
+#include <IEnvironment.h>
 #include <PoolObject.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
 #include <AK/SoundEngine/Common/AkTypes.h>
 
 namespace CryAudio

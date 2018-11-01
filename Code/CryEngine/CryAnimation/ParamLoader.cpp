@@ -222,7 +222,6 @@ bool CParamLoader::ExpandWildcards(uint32 listID)
 	{
 		const char* szFolder = animList.arrWildcardAnimFiles[w].m_FilePathQ;
 		const char* szFile = PathUtil::GetFile(szFolder);
-		const char* szFilename = PathUtil::GetFileName(szFolder);
 		const char* szExt = PathUtil::GetExt(szFolder);
 
 		uint32 IsLMG = (strcmp(szExt, "lmg") == 0) || (strcmp(szExt, "bspace") == 0) || (strcmp(szExt, "comb") == 0);
@@ -239,10 +238,6 @@ bool CParamLoader::ExpandWildcards(uint32 listID)
 		int32 iPathLength = min((int32)(szFile - szFolder), iFirstWildcard);
 
 		bool parseSubfolders = (iFirstWildcard != (int32)(szFile - szFolder));
-
-		// conversion to offset from beginning of name
-		const char* fileWildcard = strchr(szFile, '*');
-		int32 offset = (int32)(fileWildcard - szFile);
 
 		stack_string filepath = PathUtil::GetParentDirectory(stack_string(szFolder));
 		char* starPos = strchr(szAnimName, '*');
@@ -484,8 +479,6 @@ int32 CParamLoader::LoadAnimList(const XmlNodeRef calNode, const char* paramFile
 		return -1;
 
 	// check if List has already been processed
-	int32 nListIDs = m_parsedLists.size();
-
 	int32 newID = ListProcessed(paramFileName);
 	if (newID != -1)
 		return newID;
@@ -641,7 +634,7 @@ int32 CParamLoader::LoadAnimList(const XmlNodeRef calNode, const char* paramFile
 						if (stricmp(nodeTag, "Params") == 0)
 						{
 							int32 numChildren = topRoot->getChildCount();
-							for (int32 iChild = 0; iChild < topRoot->getChildCount(); ++iChild)
+							for (int32 iChild = 0; iChild < numChildren; ++iChild)
 							{
 								XmlNodeRef node = topRoot->getChild(iChild);
 
@@ -817,7 +810,6 @@ bool CParamLoader::NoModelTracksDatabaseInDependencies(SAnimListInfo& animList, 
 {
 	DynArray<string>& mTB = animList.modelTracksDatabases;
 
-	uint32 numDBA = mTB.size();
 	if (std::find(mTB.begin(), mTB.end(), dataBase) != mTB.end())
 	{
 		return false;
@@ -1308,7 +1300,6 @@ bool CParamLoader::LoadIKDefLimbIK(const XmlNodeRef limbNode)
 					continue;
 				//do a simple verification
 				int32 idx = pDefaultSkeleton->GetJointParentIDByID(nMiddleIdx);
-				const char* strRoot = pDefaultSkeleton->GetJointNameByID(idx);
 				if (idx != nRootIdx)
 					continue;
 
@@ -1400,7 +1391,6 @@ bool CParamLoader::LoadIKDefLimbIK(const XmlNodeRef limbNode)
 					continue;
 				//do a simple verification
 				int32 idx = pDefaultSkeleton->GetJointParentIDByID(nLeg02Idx);
-				const char* strRoot = pDefaultSkeleton->GetJointNameByID(idx);
 				if (idx != nRootIdx)
 					continue;
 

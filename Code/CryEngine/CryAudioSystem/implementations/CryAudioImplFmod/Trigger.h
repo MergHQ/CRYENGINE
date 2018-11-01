@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <ATLEntityData.h>
+#include <ITrigger.h>
 #include <PoolObject.h>
 
 namespace CryAudio
@@ -36,7 +36,14 @@ public:
 		FMOD::Studio::EventDescription* const pEventDescription,
 		FMOD_GUID const guid,
 		bool const hasProgrammerSound = false,
-		char const* const szKey = "");
+		char const* const szKey = "")
+		: m_id(id)
+		, m_eventType(eventType)
+		, m_pEventDescription(pEventDescription)
+		, m_guid(guid)
+		, m_hasProgrammerSound(hasProgrammerSound)
+		, m_key(szKey)
+	{}
 
 	virtual ~CTrigger() override = default;
 
@@ -63,11 +70,6 @@ private:
 	bool const                                  m_hasProgrammerSound;
 	CryFixedStringT<MaxControlNameLength> const m_key;
 };
-
-using ParameterIdToIndex = std::map<uint32, int>;
-using TriggerToParameterIndexes = std::map<CTrigger const* const, ParameterIdToIndex>;
-
-extern TriggerToParameterIndexes g_triggerToParameterIndexes;
 } // namespace Fmod
 } // namespace Impl
 } // namespace CryAudio

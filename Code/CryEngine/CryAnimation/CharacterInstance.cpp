@@ -165,7 +165,10 @@ void CCharInstance::StartAnimationProcessing(const SAnimationProcessParams& para
 void CCharInstance::CopyPoseFrom(const ICharacterInstance& rICharInstance)
 {
 	const ISkeletonPose* srcIPose = rICharInstance.GetISkeletonPose();
+
+#if defined(USE_CRY_ASSERT)
 	const IDefaultSkeleton& rIDefaultSkeleton = rICharInstance.GetIDefaultSkeleton();
+#endif
 
 	CRY_ASSERT_TRACE(srcIPose, ("CopyPoseFrom: %s Copying from an invalid pose!", GetFilePath()));
 	if (srcIPose)
@@ -182,7 +185,6 @@ void CCharInstance::CopyPoseFrom(const ICharacterInstance& rICharInstance)
 void CCharInstance::UpdatePhysicsCGA(Skeleton::CPoseData& poseData, float fScale, const QuatTS& rAnimLocationNext)
 {
 	DEFINE_PROFILER_FUNCTION();
-	CAnimationSet* pAnimationSet = m_pDefaultSkeleton->m_pAnimationSet;
 
 	if (!m_SkeletonPose.GetCharacterPhysics())
 		return;
@@ -199,8 +201,7 @@ void CCharInstance::UpdatePhysicsCGA(Skeleton::CPoseData& poseData, float fScale
 	assert(numNodes);
 
 	int i, iLayer, iLast = -1;
-	bool bSetVel = 0;
-	uint32 nType = m_SkeletonPose.GetCharacterPhysics()->GetType();
+	bool bSetVel = false;
 	bool bBakeRotation = m_SkeletonPose.GetCharacterPhysics()->GetType() == PE_ARTICULATED;
 	if (bSetVel = bBakeRotation)
 	{
@@ -624,7 +625,6 @@ void CCharInstance::EnableProceduralFacialAnimation(bool bEnable)
 
 void CCharInstance::SkeletonPostProcess()
 {
-	f32 fZoomAdjustedDistanceFromCamera = m_fPostProcessZoomAdjustedDistanceFromCamera;
 	QuatTS rPhysLocation = m_location;
 	m_SkeletonPose.SkeletonPostProcess(m_SkeletonPose.GetPoseDataExplicitWriteable());
 	m_skeletonEffectManager.Update(&m_SkeletonAnim, &m_SkeletonPose, rPhysLocation);
@@ -652,8 +652,8 @@ void CCharInstance::SkinningTransformationsComputation(SSkinningData* pSkinningD
 
 	QuatT defaultInverse;
 	//--- Deliberate querying off the end of arrays for speed, prefetching off the end of an array is safe & avoids extra branches
-	const QuatT* absPose_PreFetchOnly = &pJointsAbsolute[0];
 #ifndef _DEBUG
+	const QuatT* absPose_PreFetchOnly = &pJointsAbsolute[0];
 	CryPrefetch(&pJointsAbsoluteDefault[0]);
 	CryPrefetch(&absPose_PreFetchOnly[0]);
 	CryPrefetch(&pSkinningTransformations[0]);

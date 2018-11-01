@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <IAudioImpl.h>
+#include <IImpl.h>
 #include "SoundEngine.h"
 
 struct ICVar;
@@ -59,13 +59,13 @@ public:
 	virtual ISetting const*     ConstructSetting(XmlNodeRef const pRootNode) override;
 	virtual void                DestructSetting(ISetting const* const pISetting) override;
 	virtual IObject*            ConstructGlobalObject() override;
-	virtual IObject*            ConstructObject(CObjectTransformation const& transformation, char const* const szName = nullptr) override;
+	virtual IObject*            ConstructObject(CTransformation const& transformation, char const* const szName = nullptr) override;
 	virtual void                DestructObject(IObject const* const pIObject) override;
-	virtual IListener*          ConstructListener(CObjectTransformation const& transformation, char const* const szName = nullptr) override;
+	virtual IListener*          ConstructListener(CTransformation const& transformation, char const* const szName = nullptr) override;
 	virtual void                DestructListener(IListener* const pIListener) override;
-	virtual IEvent*             ConstructEvent(CATLEvent& event) override;
+	virtual IEvent*             ConstructEvent(CryAudio::CEvent& event) override;
 	virtual void                DestructEvent(IEvent const* const pIEvent) override;
-	virtual IStandaloneFile*    ConstructStandaloneFile(CATLStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITrigger const* pITrigger = nullptr) override;
+	virtual IStandaloneFile*    ConstructStandaloneFile(CryAudio::CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITrigger const* pITrigger = nullptr) override;
 	virtual void                DestructStandaloneFile(IStandaloneFile const* const pIStandaloneFile) override;
 	virtual void                GamepadConnected(DeviceId const deviceUniqueID) override;
 	virtual void                GamepadDisconnected(DeviceId const deviceUniqueID) override;

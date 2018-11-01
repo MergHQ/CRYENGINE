@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <ATLEntityData.h>
+#include <ITrigger.h>
 #include <PoolObject.h>
 #include <portaudio.h>
 
@@ -38,7 +38,17 @@ public:
 		PaStreamParameters const& streamParameters_,
 		CryFixedStringT<MaxFilePathLength> const& folder,
 		CryFixedStringT<MaxFilePathLength> const& name,
-		bool const isLocalized);
+		bool const isLocalized)
+		: pathId(pathId_)
+		, numLoops(numLoops_)
+		, sampleRate(sampleRate_)
+		, eventType(eventType_)
+		, filePath(filePath_)
+		, streamParameters(streamParameters_)
+		, m_folder(folder)
+		, m_name(name)
+		, m_isLocalized(isLocalized)
+	{}
 
 	virtual ~CTrigger() override = default;
 

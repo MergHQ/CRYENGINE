@@ -25,7 +25,6 @@ class CProjectManager final
 {
 public:
 	CProjectManager();
-	virtual ~CProjectManager() {}
 
 	bool ParseProjectFile();
 	void MigrateFromLegacyWorkflowIfNecessary();
@@ -44,7 +43,7 @@ public:
 	virtual void         StoreConsoleVariable(const char* szCVarName, const char* szValue) override;
 	virtual void         SaveProjectChanges() override;
 
-	virtual const uint16 GetPluginCount() const override { return static_cast<uint16>(m_project.plugins.size()); };
+	virtual const uint16 GetPluginCount() const override { return static_cast<uint16>(m_project.plugins.size()); }
 	virtual void         GetPluginInfo(uint16 index, IPluginManager::EType& typeOut, string& pathOut, DynArray<EPlatform>& platformsOut) const override;
 
 	virtual string       LoadTemplateFile(const char* szPath, std::function<string(const char* szAlias)> aliasReplacementFunc) const override;
@@ -64,8 +63,6 @@ protected:
 	void AddDefaultPlugins(unsigned int previousVersion);
 
 	void AddPlugin(const SPluginDefinition& definition);
-
-	void FindSourceFilesInDirectoryRecursive(const char* szDirectory, const char* szExtension, std::vector<string>& sourceFiles) const;
 
 	bool CanMigrateFromLegacyWorkflow() const { return m_project.version == 0 && m_sys_game_folder->GetString()[0] != '\0' && !m_project.filePath.empty(); }
 

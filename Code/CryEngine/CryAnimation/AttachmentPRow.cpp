@@ -115,9 +115,6 @@ void CAttachmentPROW::HideInShadow(uint32 x)
 
 void CPendulaRow::PostUpdate(const CAttachmentManager* pAttachmentManager, const char* pJointName)
 {
-	const CCharInstance* pSkelInstance = pAttachmentManager->m_pSkelInstance;
-	const CDefaultSkeleton& rDefaultSkeleton = *pSkelInstance->m_pDefaultSkeleton;
-
 	m_fConeAngle = max(0.00f, m_fConeAngle);
 
 	m_nSimFPS = m_nSimFPS < 10 ? 10 : m_nSimFPS;
@@ -414,7 +411,6 @@ void CPendulaRow::UpdatePendulumRow(const CAttachmentManager* pAttachmentManager
 				const QuatT absJoint = rPoseData.GetJointAbsolute(dm.m_jointID) * qyz;
 				const QuatTS AttLocation = rPhysLocation * absJoint;
 
-				const Vec3 op = dm.m_vBobPosition;
 				f32 t = 1;
 				const QuatT AttLocationLerp = QuatT::CreateNLerp(dm.m_vLocationPrev, QuatT(AttLocation.q, AttLocation.t), t);
 				const Vec3 hn = (AttLocationLerp.q * qx).GetColumn2();
@@ -438,7 +434,7 @@ void CPendulaRow::UpdatePendulumRow(const CAttachmentManager* pAttachmentManager
 					const Vec3 ipos = (Vec3::CreateLerp(dm.m_vAttModelRelativePrev, rPhysLocation.q * absJoint.t, t) - absProxyLerp.t) * absProxyLerp.q;
 					if (proxy.GetDistance(ipos, m_vCapsule.y) < 0.001f)
 					{
-						f32 dist = proxy.GetDistance(ipos, m_vCapsule.y);
+						//f32 dist = proxy.GetDistance(ipos, m_vCapsule.y);
 						//g_pAuxGeom->Draw2dLabel( 1, g_YLine, 1.3f, ColorF(0,1,0,1), false,"Capsule for '%s' starts inside of proxy: %s (dist: %f)",pAttName,proxy.GetName(),dist), g_YLine+=16.0f;
 						continue;
 					}

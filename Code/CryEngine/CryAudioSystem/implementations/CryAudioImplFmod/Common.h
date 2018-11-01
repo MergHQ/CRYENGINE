@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <SharedAudioData.h>
+#include <SharedData.h>
 #include <fmod_common.h>
 
 #define FMOD_IMPL_INFO_STRING "Fmod Studio - "
@@ -28,38 +28,44 @@ namespace Impl
 namespace Fmod
 {
 class CListener;
+class CTrigger;
 
 extern CListener* g_pListener;
 extern uint32 g_numObjectsWithDoppler;
 
 static constexpr char const* s_szAbsoluteVelocityParameterName = "absolute_velocity";
 
+using ParameterIdToIndex = std::map<uint32, int>;
+using TriggerToParameterIndexes = std::map<CTrigger const* const, ParameterIdToIndex>;
+
+extern TriggerToParameterIndexes g_triggerToParameterIndexes;
+
 ///////////////////////////////////////////////////////////////////////////
-inline void Fill3DAttributeTransformation(CObjectTransformation const& transformation, FMOD_3D_ATTRIBUTES& outAttributes)
+inline void Fill3DAttributeTransformation(CTransformation const& transformation, FMOD_3D_ATTRIBUTES& attributes)
 {
-	outAttributes.forward.x = transformation.GetForward().x;
-	outAttributes.forward.z = transformation.GetForward().y;
-	outAttributes.forward.y = transformation.GetForward().z;
+	attributes.forward.x = transformation.GetForward().x;
+	attributes.forward.z = transformation.GetForward().y;
+	attributes.forward.y = transformation.GetForward().z;
 
-	outAttributes.position.x = transformation.GetPosition().x;
-	outAttributes.position.z = transformation.GetPosition().y;
-	outAttributes.position.y = transformation.GetPosition().z;
+	attributes.position.x = transformation.GetPosition().x;
+	attributes.position.z = transformation.GetPosition().y;
+	attributes.position.y = transformation.GetPosition().z;
 
-	outAttributes.up.x = transformation.GetUp().x;
-	outAttributes.up.z = transformation.GetUp().y;
-	outAttributes.up.y = transformation.GetUp().z;
+	attributes.up.x = transformation.GetUp().x;
+	attributes.up.z = transformation.GetUp().y;
+	attributes.up.y = transformation.GetUp().z;
 
-	outAttributes.velocity.x = 0.0f;
-	outAttributes.velocity.z = 0.0f;
-	outAttributes.velocity.y = 0.0f;
+	attributes.velocity.x = 0.0f;
+	attributes.velocity.z = 0.0f;
+	attributes.velocity.y = 0.0f;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-inline void Fill3DAttributeVelocity(Vec3 const& inVelocity, FMOD_3D_ATTRIBUTES& outAttributes)
+inline void Fill3DAttributeVelocity(Vec3 const& velocity, FMOD_3D_ATTRIBUTES& attributes)
 {
-	outAttributes.velocity.x = inVelocity.x;
-	outAttributes.velocity.z = inVelocity.y;
-	outAttributes.velocity.y = inVelocity.z;
+	attributes.velocity.x = velocity.x;
+	attributes.velocity.z = velocity.y;
+	attributes.velocity.y = velocity.z;
 }
 } // namespace Fmod
 } // namespace Impl

@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include <ATLEntityData.h>
+#include <IParameter.h>
 #include <PoolObject.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
 
 #include <cri_atom_ex.h>
 

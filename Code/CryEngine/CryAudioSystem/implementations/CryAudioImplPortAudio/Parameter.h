@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <ATLEntityData.h>
+#include <IParameter.h>
 
 namespace CryAudio
 {

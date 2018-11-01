@@ -437,9 +437,8 @@ void IK_SolverCCD(const Vec3& vTarget, const IKLimbType& rIKLimbType, Skeleton::
 	}
 
 	f32 inumLinks = 1.0f / f32(numLinks);
-	int32 nRootIdx = rIKLimbType.m_arrJointChain[1].m_idxJoint;              //Root
 	int32 nEndEffIdx = rIKLimbType.m_arrJointChain[numLinks - 1].m_idxJoint; //EndEffector
-	ANIM_ASSET_ASSERT(nRootIdx < nEndEffIdx);
+	ANIM_ASSET_ASSERT(rIKLimbType.m_arrJointChain[1].m_idxJoint < nEndEffIdx);
 	int32 iJointIterator = 1;   //numLinks-2;
 
 	// Cyclic Coordinate Descent

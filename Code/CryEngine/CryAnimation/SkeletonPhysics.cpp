@@ -1674,7 +1674,6 @@ void CSkeletonPhysics::SynchronizeWithPhysicalEntity(IPhysicalEntity* pent, cons
 
 void CSkeletonPhysics::CreateRagdollDefaultPose(Skeleton::CPoseData& poseData)
 {
-	const QuatT* const __restrict pJointRelative = poseData.GetJointsRelative();
 	const QuatT* const __restrict pJointAbsolute = poseData.GetJointsAbsolute();
 	uint32 numJoints = poseData.GetJointCount();
 	const int nLod = 1;
@@ -2059,7 +2058,6 @@ void CSkeletonPhysics::Physics_SynchronizeToAux(const Skeleton::CPoseData& poseD
 	int nLod = m_bPhysicsRelinquished ? GetPhysicsLod() : 0;
 
 	pe_action_target_vtx atv;
-	Matrix34 mtx = Matrix34(m_location);
 	int bRopesAwake = 0;
 	for (int j = 0; j < m_nAuxPhys; ++j)
 	{
@@ -2623,7 +2621,7 @@ int CSkeletonPhysics::GetFallingDir() const
 	const QuatT* pJointsAbsolute = poseData.GetJointsAbsolute();
 
 	pe_status_dynamics sd;
-	int status = m_pCharPhysics->GetStatus(&sd);
+	m_pCharPhysics->GetStatus(&sd);
 
 	Vec3 n(ZERO);
 	for (uint32 i = 0; i < m_nSpineBones; ++i)

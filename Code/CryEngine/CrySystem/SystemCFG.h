@@ -1,13 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-//
-//	File: SystemCfg.h
-//
-//	History:
-//	-Jan 22,2004:Created
-//
-//////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include <math.h>

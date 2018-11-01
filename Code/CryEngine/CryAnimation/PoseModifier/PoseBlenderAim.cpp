@@ -113,7 +113,6 @@ bool CPoseBlenderAim::PrepareInternal(const SAnimationPoseModifierParams& params
 	if (nDirIKLayer < 1 || nDirIKLayer >= numVIRTUALLAYERS)
 		return false;
 	f32 fDirIKLayerWeight = pSkeletonAnim->m_layers[nDirIKLayer].m_transitionQueue.m_fLayerTransitionWeight;
-	f32 t0 = 1.0f - fDirIKLayerWeight;
 	f32 t1 = fDirIKLayerWeight;
 	for (uint32 i = 0; i < MAX_EXEC_QUEUE * 2; i++)
 	{

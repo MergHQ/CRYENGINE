@@ -36,7 +36,7 @@ FMOD_RESULT F_CALLBACK EventCallback(FMOD_STUDIO_EVENT_CALLBACK_TYPE type, FMOD_
 
 		if (pEvent != nullptr)
 		{
-			gEnv->pAudioSystem->ReportFinishedEvent(pEvent->GetATLEvent(), true);
+			gEnv->pAudioSystem->ReportFinishedEvent(pEvent->GetEvent(), true);
 		}
 	}
 
@@ -57,7 +57,7 @@ FMOD_RESULT F_CALLBACK ProgrammerSoundCallback(FMOD_STUDIO_EVENT_CALLBACK_TYPE t
 		{
 			if (type == FMOD_STUDIO_EVENT_CALLBACK_CREATE_PROGRAMMER_SOUND)
 			{
-				CRY_ASSERT_MESSAGE(pInOutParameters != nullptr, "pInOutParameters is null pointer");
+				CRY_ASSERT_MESSAGE(pInOutParameters != nullptr, "pInOutParameters is null pointer during %s", __FUNCTION__);
 				auto const pInOutProperties = reinterpret_cast<FMOD_STUDIO_PROGRAMMER_SOUND_PROPERTIES*>(pInOutParameters);
 				char const* const szKey = pEvent->GetTrigger()->GetKey().c_str();
 
@@ -75,7 +75,7 @@ FMOD_RESULT F_CALLBACK ProgrammerSoundCallback(FMOD_STUDIO_EVENT_CALLBACK_TYPE t
 			}
 			else if (type == FMOD_STUDIO_EVENT_CALLBACK_DESTROY_PROGRAMMER_SOUND)
 			{
-				CRY_ASSERT_MESSAGE(pInOutParameters != nullptr, "pInOutParameters is null pointer");
+				CRY_ASSERT_MESSAGE(pInOutParameters != nullptr, "pInOutParameters is null pointer during %s", __FUNCTION__);
 				auto const pInOutProperties = reinterpret_cast<FMOD_STUDIO_PROGRAMMER_SOUND_PROPERTIES*>(pInOutParameters);
 
 				auto* pSound = reinterpret_cast<FMOD::Sound*>(pInOutProperties->sound);
@@ -86,7 +86,7 @@ FMOD_RESULT F_CALLBACK ProgrammerSoundCallback(FMOD_STUDIO_EVENT_CALLBACK_TYPE t
 			else if ((type == FMOD_STUDIO_EVENT_CALLBACK_START_FAILED) || (type == FMOD_STUDIO_EVENT_CALLBACK_STOPPED))
 			{
 				ASSERT_FMOD_OK;
-				gEnv->pAudioSystem->ReportFinishedEvent(pEvent->GetATLEvent(), true);
+				gEnv->pAudioSystem->ReportFinishedEvent(pEvent->GetEvent(), true);
 			}
 		}
 	}
@@ -162,9 +162,9 @@ bool CBaseObject::SetEvent(CEvent* const pEvent)
 		m_events.push_back(pEvent);
 
 		FMOD::Studio::EventInstance* const pEventInstance = pEvent->GetInstance();
-		CRY_ASSERT_MESSAGE(pEventInstance != nullptr, "Event instance doesn't exist.");
+		CRY_ASSERT_MESSAGE(pEventInstance != nullptr, "Event instance doesn't exist during %s", __FUNCTION__);
 		CTrigger const* const pTrigger = pEvent->GetTrigger();
-		CRY_ASSERT_MESSAGE(pTrigger != nullptr, "Trigger doesn't exist.");
+		CRY_ASSERT_MESSAGE(pTrigger != nullptr, "Trigger doesn't exist during %s", __FUNCTION__);
 
 		FMOD::Studio::EventDescription* pEventDescription = nullptr;
 		FMOD_RESULT fmodResult = pEventInstance->getDescription(&pEventDescription);
@@ -395,7 +395,7 @@ ERequestStatus CBaseObject::ExecuteTrigger(ITrigger const* const pITrigger, IEve
 					pEvent->SetId(pTrigger->GetId());
 					pEvent->SetObject(this);
 
-					CRY_ASSERT_MESSAGE(std::find(m_pendingEvents.begin(), m_pendingEvents.end(), pEvent) == m_pendingEvents.end(), "Event was already in the pending list");
+					CRY_ASSERT_MESSAGE(std::find(m_pendingEvents.begin(), m_pendingEvents.end(), pEvent) == m_pendingEvents.end(), "Event was already in the pending list during %s", __FUNCTION__);
 					m_pendingEvents.push_back(pEvent);
 					requestResult = ERequestStatus::Success;
 				}
@@ -431,7 +431,7 @@ ERequestStatus CBaseObject::ExecuteTrigger(ITrigger const* const pITrigger, IEve
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 					fmodResult = pEventDescription->getInstanceCount(&count);
 					ASSERT_FMOD_OK;
-					CRY_ASSERT_MESSAGE(count < capacity, "Instance count (%d) is higher or equal than array capacity (%d).", count, capacity);
+					CRY_ASSERT_MESSAGE(count < capacity, "Instance count (%d) is higher or equal than array capacity (%d) during %s", count, capacity, __FUNCTION__);
 #endif          // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 					FMOD::Studio::EventInstance* eventInstances[capacity];
@@ -485,7 +485,7 @@ ERequestStatus CBaseObject::PlayFile(IStandaloneFile* const pIStandaloneFile)
 		pStandaloneFile->m_pObject = this;
 		pStandaloneFile->StartLoading();
 
-		CRY_ASSERT_MESSAGE(std::find(m_pendingFiles.begin(), m_pendingFiles.end(), pStandaloneFile) == m_pendingFiles.end(), "standalone file was already in the pending standalone files list");
+		CRY_ASSERT_MESSAGE(std::find(m_pendingFiles.begin(), m_pendingFiles.end(), pStandaloneFile) == m_pendingFiles.end(), "Standalone file was already in the pending standalone files list during %s", __FUNCTION__);
 		m_pendingFiles.push_back(pStandaloneFile);
 		return ERequestStatus::Success;
 	}

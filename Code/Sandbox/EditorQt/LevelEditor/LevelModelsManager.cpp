@@ -8,7 +8,7 @@
 
 #include "Objects/ObjectLayerManager.h"
 
-namespace CLevelModelsManager_Private
+namespace Private_LevelModelsManager
 {
 namespace
 {
@@ -168,7 +168,7 @@ static QVariant FullLevel_GetHeaderData(int section, Qt::Orientation orientation
 }
 
 } // namespace
-} // namespace CLevelModelsManager_Private
+} // namespace Private_LevelModelsManager
 
 CLevelModelsManager& CLevelModelsManager::GetInstance()
 {
@@ -221,7 +221,7 @@ CLevelModelsManager::CLevelModelsManager()
 	m_allObjectsModel->SetDragCallback(&LevelModelsUtil::GetDragDropData);
 
 	m_fullLevelModel = new CMountingProxyModel(WrapMemberFunction(this, &CLevelModelsManager::CreateLayerModelFromIndex));
-	m_fullLevelModel->SetHeaderDataCallbacks(CLevelModelsManager_Private::eFullLevelColumns_Size, &CLevelModelsManager_Private::FullLevel_GetHeaderData, Attributes::s_getAttributeRole);
+	m_fullLevelModel->SetHeaderDataCallbacks(Private_LevelModelsManager::eFullLevelColumns_Size, &Private_LevelModelsManager::FullLevel_GetHeaderData, Attributes::s_getAttributeRole);
 	m_fullLevelModel->SetSourceModel(m_levelModel);
 	m_fullLevelModel->SetDragCallback(&LevelModelsUtil::GetDragDropData);
 

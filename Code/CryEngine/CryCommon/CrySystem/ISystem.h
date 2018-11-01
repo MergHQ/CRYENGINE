@@ -342,7 +342,7 @@ enum ESystemEvent
 	//! Called when the game framework has been initialized, not loading should happen in this event.
 	ESYSTEM_EVENT_GAME_POST_INIT_DONE,
 
-	//! Called when the sanbox has finished initialization
+	//! Called when the Sandbox has finished initialization
 	ESYSTEM_EVENT_SANDBOX_POST_INIT_DONE,
 
 	//! Sent when the system is doing a full shutdown.
@@ -1479,7 +1479,7 @@ struct ISystem
 	virtual void SaveConfiguration() = 0;
 
 	//! Loads system configuration
-	//! \param pCallback 0 means normal LoadConfigVar behaviour is used.
+	//! \param pCallback 0 means normal LoadConfigVar behavior is used.
 	//! \param bQuiet when set to true will suppress warning message if config file is not found.
 	virtual void LoadConfiguration(const char* sFilename, ILoadConfigurationEntrySink* pSink = 0, ELoadConfigurationType configType = eLoadConfigDefault,
 	                               ELoadConfigurationFlags flags = ELoadConfigurationFlags::None) = 0;
@@ -1597,7 +1597,7 @@ struct ISystem
 
 	//! GetSystemUpdate stats (all systems update without except console).
 	//! Very useful on dedicated server as we throttle it to fixed frequency.
-	//! \return zeroes if no updates happened yet.
+	//! \return zeros if no updates happened yet.
 	virtual void GetUpdateStats(SSystemUpdateStats& stats) = 0;
 
 	//! Useful to investigate memory fragmentation.

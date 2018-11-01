@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <ATLEntityData.h>
+#include <IObject.h>
 #include <PoolObject.h>
 
 namespace CryAudio
@@ -26,20 +26,20 @@ public:
 	virtual ~CObject() override = default;
 
 	// CryAudio::Impl::IObject
-	virtual void                         Update(float const deltaTime) override;
-	virtual void                         SetTransformation(CObjectTransformation const& transformation) override;
-	virtual CObjectTransformation const& GetTransformation() const override { return CObjectTransformation::GetEmptyObject(); }
-	virtual void                         SetEnvironment(IEnvironment const* const pIEnvironment, float const amount) override;
-	virtual void                         SetParameter(IParameter const* const pIParameter, float const value) override;
-	virtual void                         SetSwitchState(ISwitchState const* const pISwitchState) override;
-	virtual void                         SetObstructionOcclusion(float const obstruction, float const occlusion) override;
-	virtual void                         SetOcclusionType(EOcclusionType const occlusionType) override;
-	virtual ERequestStatus               ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent) override;
-	virtual void                         StopAllTriggers() override;
-	virtual ERequestStatus               PlayFile(IStandaloneFile* const pIStandaloneFile) override;
-	virtual ERequestStatus               StopFile(IStandaloneFile* const pIStandaloneFile) override;
-	virtual ERequestStatus               SetName(char const* const szName) override;
-	virtual void                         ToggleFunctionality(EObjectFunctionality const type, bool const enable) override;
+	virtual void                   Update(float const deltaTime) override;
+	virtual void                   SetTransformation(CTransformation const& transformation) override;
+	virtual CTransformation const& GetTransformation() const override { return CTransformation::GetEmptyObject(); }
+	virtual void                   SetEnvironment(IEnvironment const* const pIEnvironment, float const amount) override;
+	virtual void                   SetParameter(IParameter const* const pIParameter, float const value) override;
+	virtual void                   SetSwitchState(ISwitchState const* const pISwitchState) override;
+	virtual void                   SetOcclusion(float const occlusion) override;
+	virtual void                   SetOcclusionType(EOcclusionType const occlusionType) override;
+	virtual ERequestStatus         ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent) override;
+	virtual void                   StopAllTriggers() override;
+	virtual ERequestStatus         PlayFile(IStandaloneFile* const pIStandaloneFile) override;
+	virtual ERequestStatus         StopFile(IStandaloneFile* const pIStandaloneFile) override;
+	virtual ERequestStatus         SetName(char const* const szName) override;
+	virtual void                   ToggleFunctionality(EObjectFunctionality const type, bool const enable) override;
 
 	// Below data is only used when INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE is defined!
 	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter) override;

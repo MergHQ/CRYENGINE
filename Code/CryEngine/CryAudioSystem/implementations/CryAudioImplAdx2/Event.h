@@ -2,14 +2,14 @@
 
 #pragma once
 
-#include <ATLEntityData.h>
+#include <IEvent.h>
 #include <PoolObject.h>
 
 #include <cri_atom_ex.h>
 
 namespace CryAudio
 {
-class CATLEvent;
+class CEvent;
 
 namespace Impl
 {
@@ -35,14 +35,21 @@ public:
 	CEvent& operator=(CEvent const&) = delete;
 	CEvent& operator=(CEvent&&) = delete;
 
-	explicit CEvent(CATLEvent& event);
+	explicit CEvent(CryAudio::CEvent& event)
+		: m_event(event)
+		, m_pObject(nullptr)
+		, m_triggerId(InvalidCRC32)
+		, m_playbackId(CRIATOMEX_INVALID_PLAYBACK_ID)
+		, m_flags(EEventFlags::None)
+	{}
+
 	virtual ~CEvent() override;
 
 	// CryAudio::Impl::IEvent
 	virtual ERequestStatus Stop() override;
 	// ~CryAudio::Impl::IEvent
 
-	CATLEvent&          GetATLEvent() const                                 { return m_event; }
+	CryAudio::CEvent&   GetEvent() const                                    { return m_event; }
 	void                SetObject(CBaseObject* const pObject)               { m_pObject = pObject; }
 
 	uint32              GetTriggerId() const                                { return m_triggerId; }
@@ -59,7 +66,7 @@ public:
 
 private:
 
-	CATLEvent&          m_event;
+	CryAudio::CEvent&   m_event;
 	CBaseObject*        m_pObject;
 	uint32              m_triggerId;
 	CriAtomExPlaybackId m_playbackId;

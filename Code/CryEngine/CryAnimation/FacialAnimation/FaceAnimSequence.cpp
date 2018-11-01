@@ -334,7 +334,7 @@ void CFacialAnimSequence::Animate(const QuatTS& rAnimLocationNext, CFacialAnimSe
 		float fProceduralStrength = 0.0f;
 		bool bHasBakedLipsynch = false;
 
-		CCharInstance* pCharacter = pInstance->m_pAnimContext->GetInstance()->GetMasterCharacter();
+		//CCharInstance* pCharacter = pInstance->m_pAnimContext->GetInstance()->GetMasterCharacter();
 		//pCharacter->m_Morphing.m_fMorphVertexDrag = 1.0f;
 
 		int numChannels = (int)m_data.m_channels.size();

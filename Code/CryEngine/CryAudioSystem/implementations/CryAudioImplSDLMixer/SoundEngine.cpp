@@ -84,12 +84,12 @@ inline const SampleId GetIDFromString(char const* const szName)
 }
 
 //////////////////////////////////////////////////////////////////////////
-inline void GetDistanceAngleToObject(const CObjectTransformation& listener, const CObjectTransformation& object, float& out_distance, float& out_angle)
+inline void GetDistanceAngleToObject(CTransformation const& listener, CTransformation const& object, float& distance, float& angle)
 {
 	const Vec3 listenerToObject = object.GetPosition() - listener.GetPosition();
 
 	// Distance
-	out_distance = listenerToObject.len();
+	distance = listenerToObject.len();
 
 	// Angle
 	// Project point to plane formed by the listeners position/direction
@@ -98,7 +98,7 @@ inline void GetDistanceAngleToObject(const CObjectTransformation& listener, cons
 
 	// Get angle between listener position and projected point
 	const Vec3 listenerDir = listener.GetForward().GetNormalizedFast();
-	out_angle = RAD2DEG(asin_tpl(objectDir.Cross(listenerDir).Dot(n)));
+	angle = RAD2DEG(asin_tpl(objectDir.Cross(listenerDir).Dot(n)));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -114,7 +114,7 @@ void SoundEngine::RegisterStandaloneFileFinishedCallback(FnStandaloneFileCallbac
 }
 
 //////////////////////////////////////////////////////////////////////////
-void EventFinishedPlaying(CATLEvent& audioEvent)
+void EventFinishedPlaying(CryAudio::CEvent& audioEvent)
 {
 	if (g_fnEventFinishedCallback)
 	{
@@ -123,7 +123,7 @@ void EventFinishedPlaying(CATLEvent& audioEvent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void StandaloneFileFinishedPlaying(CATLStandaloneFile& standaloneFile, char const* const szFileName)
+void StandaloneFileFinishedPlaying(CryAudio::CStandaloneFile& standaloneFile, char const* const szFileName)
 {
 	if (g_fnStandaloneFileFinishedCallback)
 	{
@@ -199,7 +199,7 @@ void ProcessChannelFinishedRequests(ChannelFinishedRequests& queue)
 								{
 									standaloneFilesIt = pAudioObject->m_standaloneFiles.erase(standaloneFilesCurrent);
 									standaloneFilesEnd = pAudioObject->m_standaloneFiles.end();
-									StandaloneFileFinishedPlaying(pStandaloneFileInstance->m_atlFile, pStandaloneFileInstance->m_name.c_str());
+									StandaloneFileFinishedPlaying(pStandaloneFileInstance->m_file, pStandaloneFileInstance->m_name.c_str());
 
 									SampleIdUsageCounterMap::iterator it = g_usageCounters.find(pStandaloneFileInstance->m_sampleId);
 									CRY_ASSERT(it != g_usageCounters.end() && it->second > 0);

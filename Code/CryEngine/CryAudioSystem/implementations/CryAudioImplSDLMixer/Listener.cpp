@@ -10,24 +10,11 @@ namespace Impl
 namespace SDL_mixer
 {
 //////////////////////////////////////////////////////////////////////////
-CListener::CListener(CObjectTransformation const& transformation, ListenerId const id)
-	: m_transformation(transformation)
-	, m_id(id)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CListener::SetName(char const* const szName)
 {
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
 	m_name = szName;
 #endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CListener::SetTransformation(CObjectTransformation const& transformation)
-{
-	m_transformation = transformation;
 }
 } // namespace SDL_mixer
 } // namespace Impl

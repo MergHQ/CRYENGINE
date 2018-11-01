@@ -18,19 +18,6 @@ namespace Impl
 namespace SDL_mixer
 {
 //////////////////////////////////////////////////////////////////////////
-CObject::CObject(CObjectTransformation const& transformation, uint32 const id)
-	: m_id(id)
-	, m_transformation(transformation)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObject::SetTransformation(CObjectTransformation const& transformation)
-{
-	m_transformation = transformation;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CObject::SetParameter(IParameter const* const pIParameter, float const value)
 {
 	if (pIParameter != nullptr)

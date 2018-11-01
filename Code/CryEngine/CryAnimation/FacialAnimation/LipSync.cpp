@@ -276,7 +276,6 @@ bool CFacialSentence::GetPhonemeInfo(int phonemeId, SPhonemeInfo& phonemeInfo) c
 //////////////////////////////////////////////////////////////////////////
 void CFacialSentence::Serialize(XmlNodeRef& node, bool bLoading)
 {
-	CPhonemesLibrary* pPhonemeLib = (CPhonemesLibrary*)gEnv->pCharacterManager->GetIFacialAnimation()->GetPhonemeLibrary();
 	if (bLoading)
 	{
 		m_phonemes.clear();

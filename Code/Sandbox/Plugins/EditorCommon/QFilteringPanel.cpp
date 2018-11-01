@@ -108,7 +108,6 @@ public:
 	void Update() { m_model->Update(); }
 
 private:
-	void OnIndexClicked(const QModelIndex& index);
 	void OnSaveCurrentFilter();
 	void OnLoadSelectedFilter();
 	void OnDeleteSelectedFilter();

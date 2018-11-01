@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <ATLEntityData.h>
+#include <IParameter.h>
 #include <PoolObject.h>
 #include <AK/SoundEngine/Common/AkTypes.h>
 
@@ -22,7 +22,12 @@ public:
 	CParameter& operator=(CParameter const&) = delete;
 	CParameter& operator=(CParameter&&) = delete;
 
-	explicit CParameter(AkRtpcID const id_, float const mult_, float const shift_);
+	explicit CParameter(AkRtpcID const id_, float const mult_, float const shift_)
+		: mult(mult_)
+		, shift(shift_)
+		, id(id_)
+	{}
+
 	virtual ~CParameter() override = default;
 
 	float const    mult;

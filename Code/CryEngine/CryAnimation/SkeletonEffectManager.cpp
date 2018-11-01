@@ -50,6 +50,7 @@ void CSkeletonEffectManager::Update(ISkeletonAnim* pSkeleton, ISkeletonPose* pSk
 
 void CSkeletonEffectManager::KillAllEffects()
 {
+#if !defined(EXCLUDE_NORMAL_LOG)
 	if (Console::GetInst().ca_DebugSkeletonEffects)
 	{
 		for (int effectIndex = 0, effectCount = m_particlesEffects.size(); effectIndex < effectCount; ++effectIndex)
@@ -58,6 +59,7 @@ void CSkeletonEffectManager::KillAllEffects()
 			CryLogAlways("CSkeletonEffectManager::KillAllEffects(this=%p): Killing effect \"%s\" because animated character is in simplified movement.", this, (pEffect ? pEffect->GetName() : "<EFFECT NULL>"));
 		}
 	}
+#endif
 
 	for (int i = 0, count = m_particlesEffects.size(); i < count; ++i)
 	{

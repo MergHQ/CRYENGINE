@@ -89,11 +89,6 @@ bool CSkeletonAnim::StartAnimationById(int32 id, const struct CryCharAnimationPa
 	const ModelAnimationHeader* pAnim = NULL;
 	int32 nAnimID = id;
 
-	const ModelAnimationHeader* pAnimAim0 = NULL;
-	int32 nAnimAimID0 = -1;
-	const ModelAnimationHeader* pAnimAim1 = NULL;
-	int32 nAnimAimID1 = -1;
-
 	CAnimationSet* pAnimationSet = m_pInstance->m_pDefaultSkeleton->m_pAnimationSet;
 
 	assert(Params.m_fTransTime < 60.0f); //transition times longer than 1 minute are useless

@@ -125,27 +125,27 @@ CEditorImpl::CEditorImpl(CGameEngine* ge)
 	m_bExiting = false;
 	m_pClassFactory = CClassFactory::Instance();
 
-	m_pGlobalBroadcastManager = new CBroadcastManager();
-	m_pNotificationCenter = new CNotificationCenter();
-	m_pTrayArea = new CTrayArea();
-	m_pCommandManager = new CEditorCommandManager();
-	m_pPersonalizationManager = new CPersonalizationManager();
-	m_pPreferences = new CPreferences();
+	m_pGlobalBroadcastManager = new CBroadcastManager;
+	m_pNotificationCenter = new CNotificationCenter;
+	m_pTrayArea = new CTrayArea;
+	m_pCommandManager = new CEditorCommandManager;
+	m_pPersonalizationManager = new CPersonalizationManager;
+	m_pPreferences = new CPreferences;
 	CAutoRegisterPreferencesHelper::RegisterAll();
-	m_pPythonManager = new CEditorPythonManager();
+	m_pPythonManager = new CEditorPythonManager;
 	m_pPythonManager->Init();//must be initialized before plugins are initialized
-	m_pAssetManager = new CAssetManager();
+	m_pAssetManager = new CAssetManager;
 	CAssetModel::CAutoRegisterColumn::RegisterAll();
-	m_pPolledKeyManager = new CPolledKeyManager();
-	m_pEditorFileMonitor.reset(new CEditorFileMonitor());
+	m_pPolledKeyManager = new CPolledKeyManager;
+	m_pEditorFileMonitor.reset(new CEditorFileMonitor);
 	m_pBackgroundTaskManager.reset(new BackgroundTaskManager::CTaskManager);
 	m_pBackgroundScheduleManager.reset(new BackgroundScheduleManager::CScheduleManager);
 	m_pBGTasks.reset(new BackgroundTaskManager::CBackgroundTasksListener);
 
 	m_pUIEnumsDatabase = new CUIEnumsDatabase;
 	m_pPluginManager = new CPluginManager;
-	m_pTerrainManager = new CTerrainManager();
-	m_pVegetationMap = new CVegetationMap();
+	m_pTerrainManager = new CTerrainManager;
+	m_pVegetationMap = new CVegetationMap;
 	m_pObjectManager = new CObjectManager;
 	m_pGizmoManager = new CGizmoManager;
 	m_pViewManager = new CViewManager;
@@ -154,7 +154,7 @@ CEditorImpl::CEditorImpl(CGameEngine* ge)
 	m_pAIManager = new CAIManager;
 	m_pUIManager = new CUIManager;
 	m_pCustomActionsManager = new CCustomActionsEditorManager;
-	m_pMaterialManager = new CMaterialManager();
+	m_pMaterialManager = new CMaterialManager;
 	m_pEntityManager = new CEntityPrototypeManager;
 	m_particleManager = new CParticleManager;
 	m_pPrefabManager = new CPrefabManager;
@@ -165,7 +165,7 @@ CEditorImpl::CEditorImpl(CGameEngine* ge)
 	m_pFlowGraphModuleManager = new CEditorFlowGraphModuleManager;
 	m_pFlowGraphDebuggerEditor = new CFlowGraphDebuggerEditor;
 	m_pMatFxGraphManager = new CMaterialFXGraphMan;
-	m_pDevManager = new CDevManager();
+	m_pDevManager = new CDevManager;
 	m_pSourceControl = nullptr;
 	m_pScriptEnv = new EditorScriptEnvironment();
 
@@ -173,9 +173,9 @@ CEditorImpl::CEditorImpl(CGameEngine* ge)
 	CAutoRegisterResourceSelector::RegisterAll();
 
 	m_pRuler = new CRuler;
-	m_pConfigurationManager = new CConfigurationManager();
+	m_pConfigurationManager = new CConfigurationManager;
 
-	m_pMainThreadWorker = new CMainThreadWorker();
+	m_pMainThreadWorker = new CMainThreadWorker;
 
 	m_bUpdates = true;
 

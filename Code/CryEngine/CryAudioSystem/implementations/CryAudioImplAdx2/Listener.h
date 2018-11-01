@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <ATLEntityData.h>
+#include <IListener.h>
 #include <PoolObject.h>
 
 #include "Common.h"
@@ -25,14 +25,14 @@ public:
 	CListener& operator=(CListener const&) = delete;
 	CListener& operator=(CListener&&) = delete;
 
-	explicit CListener(CObjectTransformation const& transformation, uint16 const id, CriAtomEx3dListenerHn const pHandle);
+	explicit CListener(CTransformation const& transformation, uint16 const id, CriAtomEx3dListenerHn const pHandle);
 	virtual ~CListener() override = default;
 
 	// CryAudio::Impl::IListener
-	virtual void                         Update(float const deltaTime) override;
-	virtual void                         SetName(char const* const szName) override;
-	virtual void                         SetTransformation(CObjectTransformation const& transformation) override;
-	virtual CObjectTransformation const& GetTransformation() const override { return m_transformation; }
+	virtual void                   Update(float const deltaTime) override;
+	virtual void                   SetName(char const* const szName) override;
+	virtual void                   SetTransformation(CTransformation const& transformation) override;
+	virtual CTransformation const& GetTransformation() const override { return m_transformation; }
 	// ~CryAudio::Impl::IListener
 
 	uint16                GetId() const       { return m_id; }
@@ -54,7 +54,7 @@ private:
 	Vec3                        m_velocity;
 	Vec3                        m_position;
 	Vec3                        m_previousPosition;
-	CObjectTransformation       m_transformation;
+	CTransformation             m_transformation;
 	S3DAttributes               m_3dAttributes;
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)

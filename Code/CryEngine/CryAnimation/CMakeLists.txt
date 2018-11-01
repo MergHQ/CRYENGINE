@@ -232,7 +232,6 @@ end_sources()
 MACRO(setup_CryAnimation)
     if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 		target_compile_options(${THIS_PROJECT} PRIVATE
-			-Wno-unused-variable
 			-Wno-reorder
 			-Wno-unknown-pragmas
 			-Wno-parentheses
@@ -252,7 +251,6 @@ MACRO(setup_CryAnimation)
 		target_compile_options(${THIS_PROJECT} PRIVATE
 			-Wno-unused-function
 			-Wno-unused-value
-			-Wno-unused-variable
 			-Wno-aligned-new
 			-Wno-int-in-bool-context
 			-Wno-invalid-offsetof

@@ -16,9 +16,10 @@
 #include "Setting.h"
 #include "StandaloneFile.h"
 #include "IoInterface.h"
-#include <CrySystem/IStreamEngine.h>
 
+#include <FileInfo.h>
 #include <Logger.h>
+#include <CrySystem/IStreamEngine.h>
 #include <CrySystem/File/ICryPak.h>
 #include <CrySystem/IProjectManager.h>
 #include <CryAudio/IAudioSystem.h>
@@ -201,9 +202,9 @@ static void errorCallback(Char8 const* const errid, Uint32 const p1, Uint32 cons
 //////////////////////////////////////////////////////////////////////////
 CriError selectIoFunc(CriChar8 const* szPath, CriFsDeviceId* pDeviceId, CriFsIoInterfacePtr* pIoInterface)
 {
-	CRY_ASSERT_MESSAGE(szPath != nullptr, "szPath is null pointer");
-	CRY_ASSERT_MESSAGE(pDeviceId != nullptr, "pDeviceId is null pointer");
-	CRY_ASSERT_MESSAGE(pIoInterface != nullptr, "pIoInterface is null pointer");
+	CRY_ASSERT_MESSAGE(szPath != nullptr, "szPath is null pointer during %s", __FUNCTION__);
+	CRY_ASSERT_MESSAGE(pDeviceId != nullptr, "pDeviceId is null pointer during %s", __FUNCTION__);
+	CRY_ASSERT_MESSAGE(pIoInterface != nullptr, "pIoInterface is null pointer during %s", __FUNCTION__);
 
 	*pDeviceId = CRIFS_DEFAULT_DEVICE;
 	*pIoInterface = &g_IoInterface;
@@ -565,7 +566,7 @@ IObject* CImpl::ConstructGlobalObject()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IObject* CImpl::ConstructObject(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
+IObject* CImpl::ConstructObject(CTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
 	auto const pObject = new CObject(transformation);
 
@@ -591,7 +592,7 @@ void CImpl::DestructObject(IObject const* const pIObject)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IListener* CImpl::ConstructListener(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
+IListener* CImpl::ConstructListener(CTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
 	IListener* pIListener = nullptr;
 
@@ -618,14 +619,14 @@ IListener* CImpl::ConstructListener(CObjectTransformation const& transformation,
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructListener(IListener* const pIListener)
 {
-	CRY_ASSERT_MESSAGE(pIListener == g_pListener, "pIListener is not g_pListener");
+	CRY_ASSERT_MESSAGE(pIListener == g_pListener, "pIListener is not g_pListener during %s", __FUNCTION__);
 	criAtomEx3dListener_Destroy(g_pListener->GetHandle());
 	delete g_pListener;
 	g_pListener = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
-IEvent* CImpl::ConstructEvent(CATLEvent& event)
+IEvent* CImpl::ConstructEvent(CryAudio::CEvent& event)
 {
 	return static_cast<IEvent*>(new CEvent(event));
 }
@@ -638,7 +639,7 @@ void CImpl::DestructEvent(IEvent const* const pIEvent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-IStandaloneFile* CImpl::ConstructStandaloneFile(CATLStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITrigger const* pITrigger /*= nullptr*/)
+IStandaloneFile* CImpl::ConstructStandaloneFile(CryAudio::CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITrigger const* pITrigger /*= nullptr*/)
 {
 	return static_cast<IStandaloneFile*>(new CStandaloneFile);
 }

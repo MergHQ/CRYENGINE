@@ -873,18 +873,14 @@ bool AnimSearchHelper::AddAnimation(uint32 crc, uint32 gahIndex)
 void AnimSearchHelper::AddAnimation(const string& path, uint32 gahIndex)
 {
 	stack_string pathDir = PathUtil::GetPathWithoutFilename(path);
-	PathUtil::ToUnixPath(pathDir);
-	if (strcmp(pathDir, "animations/human/male/behavior/fear/") == 0)
-		int A = 0;
-	if (strcmp(pathDir, "animations\\human\\male\\behavior\\fear\\") == 0)
-		int A = 0;
+	stack_string const unixPath = PathUtil::ToUnixPath(pathDir);
 
-	uint32 crc = CCrc32::ComputeLowercase(pathDir);
+	uint32 crc = CCrc32::ComputeLowercase(unixPath);
 	if (AddAnimation(crc, gahIndex))
 	{
-		for (int32 lastSlashPos = pathDir.rfind('/'); lastSlashPos >= 0; lastSlashPos = pathDir.rfind('/', lastSlashPos - 1))
+		for (int32 lastSlashPos = unixPath.rfind('/'); lastSlashPos >= 0; lastSlashPos = unixPath.rfind('/', lastSlashPos - 1))
 		{
-			uint32 parentDirCRC = CCrc32::ComputeLowercase(pathDir, size_t(lastSlashPos + 1), 0);
+			uint32 parentDirCRC = CCrc32::ComputeLowercase(unixPath, size_t(lastSlashPos + 1), 0);
 			TSubFolderCrCVector* pSubFolderVec = NULL;
 			TSubFoldersMap::iterator parentFolderIter = m_SubFoldersMap.find(parentDirCRC);
 			if (parentFolderIter == m_SubFoldersMap.end())
@@ -997,7 +993,6 @@ void CAnimationManager::DebugAnimUsage(uint32 printtxt)
 		{
 			m_arrGlobalHeaderDBA[b].m_nEmpty = 0;
 			const char* pName = m_arrGlobalHeaderDBA[b].m_strFilePathDBA;
-			uint32 nDBACRC32 = m_arrGlobalHeaderDBA[b].m_FilePathDBACRC32;
 			uint32 nUsedAssets = m_arrGlobalHeaderDBA[b].m_nUsedAnimations;
 			size_t nSizeOfDBA = m_arrGlobalHeaderDBA[b].SizeOf_DBA();
 			uint32 nLastUsedTimeSec = m_arrGlobalHeaderDBA[b].m_nLastUsedTimeDelta / 1000;

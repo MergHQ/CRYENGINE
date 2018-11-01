@@ -705,9 +705,6 @@ bool CCryEditApp::InitInstance()
 		return false;
 	}
 
-	CEditCommandLineInfo cmdInfo;
-	///ParseCommandLine(cmdInfo);
-
 	auto pGameEngine = InitGameSystem();
 	if (!pGameEngine)
 	{
@@ -724,6 +721,7 @@ bool CCryEditApp::InitInstance()
 		return false;
 	}
 
+	CEditCommandLineInfo cmdInfo;
 	InitFromCommandLine(cmdInfo);
 
 	m_pEditor->Init();

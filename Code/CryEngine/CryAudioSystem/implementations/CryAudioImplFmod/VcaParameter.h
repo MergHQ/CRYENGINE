@@ -25,7 +25,10 @@ public:
 		uint32 const id,
 		float const multiplier,
 		float const shift,
-		FMOD::Studio::VCA* const vca);
+		FMOD::Studio::VCA* const vca)
+		: CBaseParameter(id, multiplier, shift, EParameterType::VCA)
+		, m_vca(vca)
+	{}
 
 	virtual ~CVcaParameter() override = default;
 

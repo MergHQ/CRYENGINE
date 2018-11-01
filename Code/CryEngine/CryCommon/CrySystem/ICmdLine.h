@@ -1,28 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description:	This is the interface to access command line arguments.
-                This will avoid the need to parse command line in multiple
-                places, and thus, reduce unnecessary code duplication.
-
-   -------------------------------------------------------------------------
-   History:
-    - 30:7:2004   12:00 : Created by Márcio Martins
-
-*************************************************************************/
-
 #pragma once
 
 //! The type of command line argument.
 enum ECmdLineArgType
 {
 
-	eCLAT_Normal = 0,        //!< Argument was not preceeded by anything.
-	eCLAT_Pre,               //!< Argument was preceeded by a minus sign '-'.
-	eCLAT_Post,              //!< Argument was preceeded by a plus sign '+'.
+	eCLAT_Normal = 0,        //!< Argument was not preceded by anything.
+	eCLAT_Pre,               //!< Argument was preceded by a minus sign '-'.
+	eCLAT_Post,              //!< Argument was preceded by a plus sign '+'.
 	eCLAT_Executable,        //!< Argument is the executable filename.
 };
 

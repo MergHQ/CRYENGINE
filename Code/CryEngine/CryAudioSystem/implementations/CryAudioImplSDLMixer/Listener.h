@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <ATLEntityData.h>
+#include <IListener.h>
 
 namespace CryAudio
 {
@@ -22,14 +22,18 @@ public:
 	CListener& operator=(CListener const&) = delete;
 	CListener& operator=(CListener&&) = delete;
 
-	explicit CListener(CObjectTransformation const& transformation, ListenerId const id);
+	explicit CListener(CTransformation const& transformation, ListenerId const id)
+		: m_transformation(transformation)
+		, m_id(id)
+	{}
+
 	virtual ~CListener() override = default;
 
 	// CryAudio::Impl::IListener
-	virtual void                         Update(float const deltaTime) override {}
-	virtual void                         SetName(char const* const szName) override;
-	virtual void                         SetTransformation(CObjectTransformation const& transformation) override;
-	virtual CObjectTransformation const& GetTransformation() const override { return m_transformation; }
+	virtual void                   Update(float const deltaTime) override                            {}
+	virtual void                   SetName(char const* const szName) override;
+	virtual void                   SetTransformation(CTransformation const& transformation) override { m_transformation = transformation; }
+	virtual CTransformation const& GetTransformation() const override                                { return m_transformation; }
 	// ~CryAudio::Impl::IListener
 
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
@@ -38,8 +42,8 @@ public:
 
 private:
 
-	ListenerId const      m_id;
-	CObjectTransformation m_transformation;
+	ListenerId const m_id;
+	CTransformation  m_transformation;
 
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
 	CryFixedStringT<MaxObjectNameLength> m_name;

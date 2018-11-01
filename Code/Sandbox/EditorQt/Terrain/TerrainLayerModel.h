@@ -48,5 +48,4 @@ private:
 
 	CTerrainManager* m_pTerrainManager;
 	QList<QIcon>     m_previews;
-
 };

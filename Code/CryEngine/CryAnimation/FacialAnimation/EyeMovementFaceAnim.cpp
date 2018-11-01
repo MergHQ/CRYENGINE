@@ -194,7 +194,6 @@ void CEyeMovementFaceAnim::InitialiseBoneIDs()
 	CAttachmentManager* pMasterAttachmentManager = (CAttachmentManager*)m_pInstance->GetMasterCharacter()->GetIAttachmentManager();
 	if (pMasterAttachmentManager)
 	{
-		CCharInstance* pMasterCharacterInstance = pMasterAttachmentManager->m_pSkelInstance;
 		CDefaultSkeleton& rDefaultSkeleton = *pMasterAttachmentManager->m_pSkelInstance->m_pDefaultSkeleton;
 		for (EyeID eye = EyeID(0); eye < EyeCOUNT; eye = EyeID(eye + 1))
 			m_eyeBoneIDs[eye] = rDefaultSkeleton.GetJointIDByName(szEyeBoneNames[eye]);
@@ -254,7 +253,6 @@ void CEyeMovementFaceAnim::DisplayDebugInfoForEye(const QuatTS& rAnimLocationNex
 	CCharInstance* pMasterCharacterInstance = pMasterAttachmentManager->m_pSkelInstance;
 	CSkeletonPose* pSkeletonPose = &pMasterCharacterInstance->m_SkeletonPose;
 
-	QuatT eyeBoneTransform = (pSkeletonPose ? pSkeletonPose->GetAbsJointByID(m_eyeBoneIDs[eye]) : QuatT(IDENTITY));
 	Vec3 pos = rAnimLocationNext.t;
 	float color[4] = { 1, 1, 1, 1 };
 	pos += (pSkeletonPose ? pSkeletonPose->GetAbsJointByID(m_eyeBoneIDs[eye]).t : Vec3(ZERO));

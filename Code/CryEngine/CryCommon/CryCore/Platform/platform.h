@@ -411,7 +411,7 @@ void            CryFindRootFolderAndSetAsCurrentWorkingDirectory();
 
 inline void     CryHeapCheck()
 {
-#if CRY_PLATFORM_WINDOWS // todo: this might be readded with later xdks?
+#if CRY_PLATFORM_WINDOWS // todo: this might be read with later xdks?
 	int Result = _heapchk();
 	assert(Result != _HEAPBADBEGIN);
 	assert(Result != _HEAPBADNODE);

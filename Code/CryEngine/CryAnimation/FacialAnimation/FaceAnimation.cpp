@@ -545,11 +545,13 @@ void CFacialAnimationContext::StopSequence(CFacialAnimSequence* pSequence)
 		}
 	}
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	if (Console::GetInst().ca_DebugFacial)
 	{
 		const char* szSequenceName = pSequence ? pSequence->GetName() : "NULL";
 		CryLogAlways("Stop Facial Sequence %s", szSequenceName);
 	}
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

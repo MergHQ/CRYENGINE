@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Common.h"
-#include <ATLEntityData.h>
+#include <IEvent.h>
 #include <PoolObject.h>
 
 namespace FMOD
@@ -20,7 +20,7 @@ class ParameterInstance;
 
 namespace CryAudio
 {
-class CATLEvent;
+class CEvent;
 
 namespace Impl
 {
@@ -40,7 +40,21 @@ public:
 	CEvent& operator=(CEvent const&) = delete;
 	CEvent& operator=(CEvent&&) = delete;
 
-	explicit CEvent(CATLEvent* const pEvent);
+	explicit CEvent(CryAudio::CEvent* const pEvent)
+		: m_pEvent(pEvent)
+		, m_id(InvalidCRC32)
+		, m_state(EEventState::None)
+		, m_lowpassFrequencyMax(0.0f)
+		, m_lowpassFrequencyMin(0.0f)
+		, m_pInstance(nullptr)
+		, m_pMasterTrack(nullptr)
+		, m_pLowpass(nullptr)
+		, m_pOcclusionParameter(nullptr)
+		, m_pAbsoluteVelocityParameter(nullptr)
+		, m_pObject(nullptr)
+		, m_pTrigger(nullptr)
+	{}
+
 	virtual ~CEvent() override;
 
 	// CryAudio::Impl::IEvent
@@ -49,7 +63,7 @@ public:
 
 	bool                         PrepareForOcclusion();
 	void                         SetOcclusion(float const occlusion);
-	CATLEvent&                   GetATLEvent() const                                       { return *m_pEvent; }
+	CryAudio::CEvent&            GetEvent() const                                          { return *m_pEvent; }
 
 	uint32                       GetId() const                                             { return m_id; }
 	void                         SetId(uint32 const id)                                    { m_id = id; }
@@ -74,7 +88,7 @@ public:
 
 private:
 
-	CATLEvent*                       m_pEvent;
+	CryAudio::CEvent*                m_pEvent;
 	uint32                           m_id;
 
 	EEventState                      m_state;

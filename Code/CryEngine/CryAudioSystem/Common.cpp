@@ -2,9 +2,18 @@
 
 #include "stdafx.h"
 #include "Common.h"
-#include "AudioSystem.h"
-#include "ATLEntities.h"
-#include "ATLAudioObject.h"
+#include "System.h"
+#include "Object.h"
+#include "LoseFocusTrigger.h"
+#include "GetFocusTrigger.h"
+#include "MuteAllTrigger.h"
+#include "UnmuteAllTrigger.h"
+#include "PauseAllTrigger.h"
+#include "ResumeAllTrigger.h"
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#include "PreviewTrigger.h"
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -12,13 +21,13 @@ TriggerImplId g_uniqueConnectionId = 0;
 Impl::IImpl* g_pIImpl = nullptr;
 CSystem g_system;
 ESystemStates g_systemStates = ESystemStates::None;
-AudioTriggerLookup g_triggers;
-AudioParameterLookup g_parameters;
-AudioSwitchLookup g_switches;
-AudioPreloadRequestLookup g_preloadRequests;
-AudioEnvironmentLookup g_environments;
+TriggerLookup g_triggers;
+ParameterLookup g_parameters;
+SwitchLookup g_switches;
+PreloadRequestLookup g_preloadRequests;
+EnvironmentLookup g_environments;
 SettingLookup g_settings;
-CATLAudioObject* g_pObject = nullptr;
+CObject* g_pObject = nullptr;
 CLoseFocusTrigger g_loseFocusTrigger;
 CGetFocusTrigger g_getFocusTrigger;
 CMuteAllTrigger g_muteAllTrigger;
@@ -29,11 +38,13 @@ CResumeAllTrigger g_resumeAllTrigger;
 SImplInfo g_implInfo;
 CryFixedStringT<MaxFilePathLength> g_configPath = "";
 
+TriggerInstanceId g_triggerInstanceIdCounter = 0;
+
 SPoolSizes g_poolSizes;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 CPreviewTrigger g_previewTrigger;
-CATLAudioObject g_previewObject(CObjectTransformation::GetEmptyObject());
+CObject g_previewObject(CTransformation::GetEmptyObject());
 SPoolSizes g_debugPoolSizes;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }      // namespace CryAudio

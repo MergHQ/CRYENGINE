@@ -3,7 +3,7 @@
 #pragma once
 
 #include "GlobalData.h"
-#include <ATLEntityData.h>
+#include <IEnvironment.h>
 #include <PoolObject.h>
 
 #include <cri_atom_ex.h>

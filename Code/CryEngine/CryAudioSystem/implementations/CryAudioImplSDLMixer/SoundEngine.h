@@ -3,12 +3,12 @@
 #pragma once
 
 #include "Common.h"
-#include <ATLEntityData.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace CryAudio
 {
-class CATLEvent;
-class CATLStandaloneFile;
+class CEvent;
+class CStandaloneFile;
 
 namespace Impl
 {
@@ -23,8 +23,8 @@ class CTrigger;
 
 namespace SoundEngine
 {
-using FnEventCallback = void (*)(CATLEvent&);
-using FnStandaloneFileCallback = void (*)(CATLStandaloneFile&, char const*);
+using FnEventCallback = void (*)(CryAudio::CEvent&);
+using FnStandaloneFileCallback = void (*)(CryAudio::CStandaloneFile&, char const*);
 
 // Global events
 bool Init();

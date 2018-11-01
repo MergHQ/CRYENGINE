@@ -38,8 +38,8 @@ struct SFileObject
 //////////////////////////////////////////////////////////////////////////
 CriFsIoError IoFileExists(CriChar8 const* szPath, CriBool* pResult)
 {
-	CRY_ASSERT_MESSAGE(szPath != nullptr, "szPath is null pointer");
-	CRY_ASSERT_MESSAGE(pResult != nullptr, "pResult is null pointer");
+	CRY_ASSERT_MESSAGE(szPath != nullptr, "szPath is null pointer during %s", __FUNCTION__);
+	CRY_ASSERT_MESSAGE(pResult != nullptr, "pResult is null pointer during %s", __FUNCTION__);
 
 	*pResult = (gEnv->pCryPak->IsFileExist(static_cast<char const*>(szPath)) ? CRI_TRUE : CRI_FALSE);
 
@@ -49,8 +49,8 @@ CriFsIoError IoFileExists(CriChar8 const* szPath, CriBool* pResult)
 //////////////////////////////////////////////////////////////////////////
 CriFsIoError IoFileOpen(CriChar8 const* szPath, CriFsFileMode mode, CriFsFileAccess access, CriFsFileHn* pFileHn)
 {
-	CRY_ASSERT_MESSAGE(szPath != nullptr, "szPath is null pointer");
-	CRY_ASSERT_MESSAGE(pFileHn != nullptr, "pFileHn is null pointer");
+	CRY_ASSERT_MESSAGE(szPath != nullptr, "szPath is null pointer during %s", __FUNCTION__);
+	CRY_ASSERT_MESSAGE(pFileHn != nullptr, "pFileHn is null pointer during %s", __FUNCTION__);
 
 	CriFsIoError result = CRIFS_IO_ERROR_OK;
 
@@ -89,7 +89,7 @@ CriFsIoError IoFileOpen(CriChar8 const* szPath, CriFsFileMode mode, CriFsFileAcc
 //////////////////////////////////////////////////////////////////////////
 CriFsIoError IoFileClose(CriFsFileHn pFileHn)
 {
-	CRY_ASSERT_MESSAGE(pFileHn != nullptr, "pFileHn is null pointer");
+	CRY_ASSERT_MESSAGE(pFileHn != nullptr, "pFileHn is null pointer during %s", __FUNCTION__);
 
 	CriFsIoError result = CRIFS_IO_ERROR_NG;
 
@@ -110,8 +110,8 @@ CriFsIoError IoFileClose(CriFsFileHn pFileHn)
 //////////////////////////////////////////////////////////////////////////
 CriFsIoError IoFileGetFileSize(CriFsFileHn pFileHn, CriSint64* pFileSize)
 {
-	CRY_ASSERT_MESSAGE(pFileHn != nullptr, "pFileHn is null pointer");
-	CRY_ASSERT_MESSAGE(pFileSize != nullptr, "pFileSize is null pointer");
+	CRY_ASSERT_MESSAGE(pFileHn != nullptr, "pFileHn is null pointer during %s", __FUNCTION__);
+	CRY_ASSERT_MESSAGE(pFileSize != nullptr, "pFileSize is null pointer during %s", __FUNCTION__);
 
 	auto const pFileObject = static_cast<SFileObject*>(pFileHn);
 	*pFileSize = pFileObject->fileSize;
@@ -122,11 +122,11 @@ CriFsIoError IoFileGetFileSize(CriFsFileHn pFileHn, CriSint64* pFileSize)
 //////////////////////////////////////////////////////////////////////////
 CriFsIoError IoFileRead(CriFsFileHn pFileHn, CriSint64 offset, CriSint64 readSize, void* pBuffer, CriSint64 bufferSize)
 {
-	CRY_ASSERT_MESSAGE(pFileHn != nullptr, "pFileHn is null pointer");
-	CRY_ASSERT_MESSAGE(offset >= 0, "offset is < 0");
-	CRY_ASSERT_MESSAGE(readSize >= 0, "readSize is < 0");
-	CRY_ASSERT_MESSAGE(pBuffer != nullptr, "pBuffer is null pointer");
-	CRY_ASSERT_MESSAGE(bufferSize >= 0, "bufferSize is < 0");
+	CRY_ASSERT_MESSAGE(pFileHn != nullptr, "pFileHn is null pointer during %s", __FUNCTION__);
+	CRY_ASSERT_MESSAGE(offset >= 0, "offset is < 0 during %s", __FUNCTION__);
+	CRY_ASSERT_MESSAGE(readSize >= 0, "readSize is < 0 during %s", __FUNCTION__);
+	CRY_ASSERT_MESSAGE(pBuffer != nullptr, "pBuffer is null pointer during %s", __FUNCTION__);
+	CRY_ASSERT_MESSAGE(bufferSize >= 0, "bufferSize is < 0 during %s", __FUNCTION__);
 
 	CriFsIoError result = CRIFS_IO_ERROR_NG;
 
@@ -150,8 +150,8 @@ CriFsIoError IoFileRead(CriFsFileHn pFileHn, CriSint64 offset, CriSint64 readSiz
 //////////////////////////////////////////////////////////////////////////
 CriFsIoError IoFileIsReadComplete(CriFsFileHn pFileHn, CriBool* pResult)
 {
-	CRY_ASSERT_MESSAGE(pFileHn != nullptr, "pFileHn is null pointer");
-	CRY_ASSERT_MESSAGE(pResult != nullptr, "pResult is null pointer");
+	CRY_ASSERT_MESSAGE(pFileHn != nullptr, "pFileHn is null pointer during %s", __FUNCTION__);
+	CRY_ASSERT_MESSAGE(pResult != nullptr, "pResult is null pointer during %s", __FUNCTION__);
 
 	*pResult = CRI_TRUE;
 
@@ -161,8 +161,8 @@ CriFsIoError IoFileIsReadComplete(CriFsFileHn pFileHn, CriBool* pResult)
 //////////////////////////////////////////////////////////////////////////
 CriFsIoError IoFileGetReadSize(CriFsFileHn pFileHn, CriSint64* pReadSize)
 {
-	CRY_ASSERT_MESSAGE(pFileHn != nullptr, "pFileHn is null pointer");
-	CRY_ASSERT_MESSAGE(pReadSize != nullptr, "pReadSize is null pointer");
+	CRY_ASSERT_MESSAGE(pFileHn != nullptr, "pFileHn is null pointer during %s", __FUNCTION__);
+	CRY_ASSERT_MESSAGE(pReadSize != nullptr, "pReadSize is null pointer during %s", __FUNCTION__);
 
 	auto const pFileObject = static_cast<SFileObject*>(pFileHn);
 	*pReadSize = pFileObject->readSize;

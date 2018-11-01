@@ -264,9 +264,10 @@ void QCustomTitleBar::onBeginDrag()
 
 void QCustomTitleBar::onFrameContentsChanged(QWidget* newContents)
 {
-	m_minimizeButton->setVisible(parentWidget()->windowFlags() & Qt::WindowMinimizeButtonHint || parentWidget()->windowFlags() & Qt::MSWindowsFixedSizeDialogHint);
-	m_maximizeButton->setVisible(parentWidget()->windowFlags() & Qt::WindowMaximizeButtonHint || parentWidget()->windowFlags() & Qt::MSWindowsFixedSizeDialogHint);
-	m_closeButton->setVisible(parentWidget()->windowFlags() & Qt::WindowCloseButtonHint);
+	const auto flags = parentWidget()->windowFlags();
+	m_minimizeButton->setVisible(flags & Qt::WindowMinimizeButtonHint || flags & Qt::MSWindowsFixedSizeDialogHint);
+	m_maximizeButton->setVisible(flags & Qt::WindowMaximizeButtonHint || flags & Qt::MSWindowsFixedSizeDialogHint);
+	m_closeButton->setVisible(flags & Qt::WindowCloseButtonHint);
 
 	QString winTitle = parentWidget()->windowTitle();
 	if (!winTitle.size())

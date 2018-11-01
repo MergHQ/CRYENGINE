@@ -280,7 +280,7 @@ bool AttachmentVClothPreProcess::BendByTriangleAngle(std::vector<Vec3> const& vt
 	m_listBendTriangles.clear();
 
 	int nTriangles = (int)idx.size() / 3;
-	int nEdges = (int)idx.size();
+	//int nEdges = (int)idx.size();
 	const int* meshIdx = &idx[0];
 	const Vec3* meshVtx = &vtx[0];
 

@@ -8,7 +8,7 @@
 #include "FileUtils.h"
 #include "PathUtils.h"
 
-namespace AlembicCompiler_Private
+namespace Private_AlembicCompiler
 {
 
 // RAII handler of temporary asset data. Based on RenderDll::TextureCompiler::CTemporaryAsset. 
@@ -219,7 +219,7 @@ bool CAlembicCompiler::CompileAlembic(string& fileName, const string& fullPath, 
 		const CString vertexIndexFormat = (sizeof(vtx_idx) == sizeof(uint16)) ? "u16" : "u32";
 
 		string targetPath = PathUtil::ReplaceExtension(rcFilePath.GetString(), CRY_GEOM_CACHE_FILE_EXT);
-		AlembicCompiler_Private::CTemporaryAsset tmpAsset(targetPath);
+		Private_AlembicCompiler::CTemporaryAsset tmpAsset(targetPath);
 		const string tmpDir = PathUtil::GetPathWithoutFilename(tmpAsset.GetTmpPath());
 
 		CString additionalSettings;

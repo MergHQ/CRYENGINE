@@ -185,9 +185,6 @@ void CTransitionQueue::UnloadAnimationAssets(int index)
 	{
 		if (pAnim->m_nAssetType == CAF_File)
 		{
-#ifdef _DEBUG
-			const char* pname = pAnim->GetAnimName();
-#endif
 			GlobalAnimationHeaderCAF& rGAH = g_AnimationManager.m_arrGlobalCAF[nGlobalID];
 
 			if (rGAH.m_nRef_at_Runtime)
@@ -205,9 +202,6 @@ void CTransitionQueue::UnloadAnimationAssets(int index)
 			const ModelAnimationHeader* pSamplerAnim = m_pAnimationSet->GetModelAnimationHeader(nAnimID);
 			if (pSamplerAnim && pSamplerAnim->m_nAssetType == CAF_File)
 			{
-#ifdef _DEBUG
-				const char* pname = pSamplerAnim->GetAnimName();
-#endif
 				int32 nGlobalIDByAnimID = m_pAnimationSet->GetGlobalIDByAnimID_Fast(nAnimID);
 				GlobalAnimationHeaderCAF& rGAH = g_AnimationManager.m_arrGlobalCAF[nGlobalIDByAnimID];
 
