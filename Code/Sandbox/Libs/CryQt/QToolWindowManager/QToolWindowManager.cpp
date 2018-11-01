@@ -1285,9 +1285,6 @@ void QToolWindowManager::raiseCurrentArea()
 void QToolWindowManager::clear()
 {
 	releaseToolWindows(toolWindows(), true);
-	// make sure pending deletions are processed, so two unique tools don't co-exist
-	qApp->processEvents();
-	QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 	if (!m_areas.isEmpty())
 	{
 		m_lastArea = m_areas.first();
