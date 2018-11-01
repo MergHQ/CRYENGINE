@@ -1039,6 +1039,10 @@ QVariant QFilteringPanel::GetFilterState() const
 
 void QFilteringPanel::SetFilterState(const QVariant& state)
 {
+	if (m_attributes.empty())
+	{
+		return;
+	}
 	if (state.isValid() && state.type() == QVariant::List)
 	{
 		QVariantList filtersList = state.value<QVariantList>();
