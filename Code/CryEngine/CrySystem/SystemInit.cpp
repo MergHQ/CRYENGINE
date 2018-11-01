@@ -350,7 +350,7 @@ static void CmdCrashTest(IConsoleCmdArgs* pArgs)
 
 				struct Derived : public Base
 				{
-					virtual void PureVirtual() const {};
+					virtual void PureVirtual() const {}
 				};
 
 				Derived d;
@@ -2765,7 +2765,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 	}
 #endif
 
-	m_pCmdLine = new CCmdLine(startupParams.szSystemCmdLine);
 	m_currentLanguageAudio = "";
 #if defined(DEDICATED_SERVER)
 	m_bNoCrashDialog = true;

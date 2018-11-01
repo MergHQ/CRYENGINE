@@ -1,14 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-//
-//	File: SystemCFG.cpp
-//  Description: handles system cfg
-//
-//	History:
-//	-Jan 21,2004: created
-//
-//////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "System.h"
 #include <time.h>

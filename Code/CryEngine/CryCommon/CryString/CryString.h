@@ -1616,7 +1616,7 @@ inline typename CryStringT<T>::size_type CryStringT<T >::find_last_of(const valu
 		// For every character in the character set.
 		for (c = charsFirst; c != charsLast; ++c)
 		{
-			// If the current character matches any of the charcaters in the input string...
+			// If the current character matches any of the characters in the input string...
 			if (*c == *str)
 			{
 				// This is the value we must return.
@@ -1749,7 +1749,7 @@ inline typename CryStringT<T>::size_type CryStringT<T >::find_last_not_of(const 
 		// For every character in the character set.
 		for (c = charsFirst; c != charsLast; ++c)
 		{
-			// If the current character matches any of the charcaters in the input string...
+			// If the current character matches any of the characters in the input string...
 			if (*c == *str)
 			{
 				// So we signal it was found and stop this search.

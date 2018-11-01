@@ -1,12 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _CRY_WINDOW_MESSAGE_HANDLER_H_
-#define _CRY_WINDOW_MESSAGE_HANDLER_H_
+#pragma once
+
 #include <CryCore/Platform/CryWindows.h>
 #if CRY_PLATFORM_WINDOWS
 //! Window message handler for Windows OS
 struct IWindowMessageHandler
 {
+	virtual ~IWindowMessageHandler() {}
 	//! The low-level pre-process message handler for Windows
 	//! This is called before TranslateMessage/DispatchMessage (which will eventually end up in the HandleMessage handler)
 	//! Typically, do not implement this function, unless you need to see messages before the IME can touch it
@@ -27,5 +28,4 @@ struct IWindowMessageHandler
 struct IWindowMessageHandler
 {
 };
-#endif
 #endif
