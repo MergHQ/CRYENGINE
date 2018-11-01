@@ -477,7 +477,7 @@ void CRoadObject::AlignHeightMap()
 		GetIEditorImpl()->GetIUndoManager()->Begin();
 
 	CHeightmap* heightmap = GetIEditorImpl()->GetHeightmap();
-	float unitSize = heightmap->GetUnitSize();
+	const float unitSize = heightmap->GetUnitSize();
 	const Matrix34& wtm = GetWorldTM();
 
 	int minx = 0, miny = 0, maxx = 0, maxy = 0;
@@ -489,13 +489,11 @@ void CRoadObject::AlignHeightMap()
 	{
 		float fminx = 0, fminy = 0, fmaxx = 0, fmaxy = 0;
 		bool bIsInitminmax = false;
-		int kn = int (0.5f + (GetBezierSegmentLength(i) + 1) * 4);
-
-		Vec3 tmp;
+		const int kn = int (0.5f + (GetBezierSegmentLength(i) + 1) * 4);
 
 		for (int k = 0; k <= kn; ++k)
 		{
-			float t = float(k) / kn;
+			const float t = float(k) / kn;
 			Vec3 p = GetBezierPos(i, t);
 			Vec3 n = GetLocalBezierNormal(i, t);
 
@@ -508,8 +506,6 @@ void CRoadObject::AlignHeightMap()
 
 			p1 = wtm.TransformPoint(p1);
 			p2 = wtm.TransformPoint(p2);
-
-			tmp = p1;
 
 			if (!bIsInitminmax)
 			{
@@ -529,9 +525,15 @@ void CRoadObject::AlignHeightMap()
 			fmaxy = max(fmaxy, p2.y);
 		}
 
+		fminx = max(fminx, 0.f);
+		fminy = max(fminy, 0.f);
+		fmaxx = min(fmaxx, static_cast<float>(heightmap->GetWidth() - 2));
+		fmaxy = min(fmaxy, static_cast<float>(heightmap->GetHeight() - 2));
+
 		heightmap->RecordUndo(int(fminy / unitSize) - 1, int(fminx / unitSize) - 1, int(fmaxy / unitSize) + unitSize - int(fminy / unitSize) + 1, int(fmaxx / unitSize) + unitSize - int(fminx / unitSize) + 1);
 
 		for (int ty = int(fminx / unitSize); ty <= int(fmaxx / unitSize) + unitSize; ++ty)
+		{
 			for (int tx = int(fminy / unitSize); tx <= int(fmaxy / unitSize) + unitSize; ++tx)
 			{
 				int x = ty * unitSize;
@@ -614,29 +616,20 @@ void CRoadObject::AlignHeightMap()
 					Vec3 nproj = n;
 					nproj.z = 0.0f;
 
-					float kof = nproj.GetLength();
+					const float length = (p1_0 - p).GetLength() / nproj.GetLength();
 
-					float length = (p1_0 - p).GetLength() / kof;
-
-					Vec3 pos;
-
-					if (e.z < 0.0f)
-						pos = p1 - length * n;
-					else
-						pos = p1 + length * n;
-
-					float fWidth = GetLocalWidth(i, t);
+					const float fWidth = GetLocalWidth(i, t);
 					if (length <= fWidth / 2 + mv_borderWidth + 0.5 * unitSize)
 					{
-						//int tx = pos_directed_rounding(y / unitSize);
-						//int ty = pos_directed_rounding(x / unitSize);
+						const Vec3 pos = e.z < 0.f ? p1 - length * n: p1 + length * n;
 
 						float z;
 						if (length <= fWidth / 2 + 0.5 * unitSize)
+						{
 							z = pos.z;
+						}
 						else
 						{
-							//continue;
 							float kof = (length - (fWidth / 2 + 0.5 * unitSize)) / mv_borderWidth;
 							kof = 1.0f - (cos(kof * 3.141593f) + 1.0f) / 2;
 							float z1 = heightmap->GetXY(tx, ty);
@@ -660,6 +653,7 @@ void CRoadObject::AlignHeightMap()
 					}
 				}
 			}
+		}
 		//break;
 	}
 
