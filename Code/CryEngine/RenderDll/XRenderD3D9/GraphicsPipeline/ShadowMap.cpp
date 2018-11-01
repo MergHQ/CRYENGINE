@@ -714,6 +714,7 @@ CShadowMapStage::CShadowMapPass::CShadowMapPass(CShadowMapStage* pStage)
 {
 	m_pFrustumToRender = nullptr;
 	m_nShadowFrustumSide = 0;
+	m_eShadowPassID = EPass(0);
 	m_pShadowMapStage = pStage;
 
 	m_pPerPassResourceSet = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
@@ -725,6 +726,7 @@ CShadowMapStage::CShadowMapPass::CShadowMapPass(CShadowMapPass&& other)
 	: CSceneRenderPass(std::move(other))
 	, m_pFrustumToRender(std::move(other.m_pFrustumToRender))
 	, m_nShadowFrustumSide(std::move(other.m_nShadowFrustumSide))
+	, m_eShadowPassID(std::move(other.m_eShadowPassID))
 	, m_bRequiresRender(std::move(other.m_bRequiresRender))
 	, m_pPerPassConstantBuffer(std::move(other.m_pPerPassConstantBuffer))
 	, m_pPerViewConstantBuffer(std::move(other.m_pPerViewConstantBuffer))
