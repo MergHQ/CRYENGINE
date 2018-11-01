@@ -2,36 +2,13 @@
 
 #pragma once
 
-#include "ATLEntities.h"
+#include "RayInfo.h"
+#include <CryAudio/IAudioInterfacesCommonData.h>
 #include <CryPhysics/IPhysics.h>
 
 namespace CryAudio
 {
-class CATLAudioObject;
-struct SATLSoundPropagationData;
-
-static const size_t s_maxRayHits = 10;
-
-class CAudioRayInfo
-{
-public:
-
-	CAudioRayInfo() = default;
-
-	void Reset();
-
-	CATLAudioObject* pObject = nullptr;
-	size_t           samplePosIndex = 0;
-	size_t           numHits = 0;
-	float            totalSoundOcclusion = 0.0f;
-	ray_hit          hits[s_maxRayHits];
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	Vec3  startPosition = ZERO;
-	Vec3  direction = ZERO;
-	float distanceToFirstObstacle = FLT_MAX;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-};
+class CObject;
 
 class CPropagationProcessor
 {
@@ -45,13 +22,13 @@ public:
 
 	static bool s_bCanIssueRWIs;
 
-	using RayInfoVec = std::vector<CAudioRayInfo>;
+	using RayInfoVec = std::vector<CRayInfo>;
 	using RayOcclusionVec = std::vector<float>;
 
-	CPropagationProcessor(CObjectTransformation const& transformation, EObjectFlags& flags);
+	CPropagationProcessor(CObject& object);
 	~CPropagationProcessor();
 
-	void Init(CATLAudioObject* const pObject);
+	void Init();
 
 	// PhysicsSystem callback
 	static int  OnObstructionTest(EventPhys const* pEvent);
@@ -59,8 +36,8 @@ public:
 
 	void        Update();
 	void        SetOcclusionType(EOcclusionType const occlusionType);
-	void        GetPropagationData(SATLSoundPropagationData& propagationData) const;
-	void        ProcessPhysicsRay(CAudioRayInfo* const pAudioRayInfo);
+	float       GetOcclusion() const { return m_occlusion; }
+	void        ProcessPhysicsRay(CRayInfo* const pRayInfo);
 	void        ReleasePendingRays();
 	bool        HasPendingRays() const { return m_remainingRays > 0; }
 	bool        HasNewOcclusionValues();
@@ -84,24 +61,23 @@ private:
 	void   UpdateOcclusionPlanes();
 	bool   CanRunOcclusion();
 
-	float                        m_lastQuerriedOcclusion;
-	float                        m_occlusion;
-	float                        m_currentListenerDistance;
-	float                        m_occlusionRayOffset;
-	RayOcclusionVec              m_raysOcclusion;
+	float           m_lastQuerriedOcclusion;
+	float           m_occlusion;
+	float           m_currentListenerDistance;
+	float           m_occlusionRayOffset;
+	RayOcclusionVec m_raysOcclusion;
 
-	size_t                       m_remainingRays;
-	size_t                       m_rayIndex;
+	size_t          m_remainingRays;
+	size_t          m_rayIndex;
 
-	CObjectTransformation const& m_transformation;
-	EObjectFlags&                m_flags;
+	CObject&        m_object;
 
-	RayInfoVec                   m_raysInfo;
-	EOcclusionType               m_occlusionType;
-	EOcclusionType               m_originalOcclusionType;
-	EOcclusionType               m_occlusionTypeWhenAdaptive;
+	RayInfoVec      m_raysInfo;
+	EOcclusionType  m_occlusionType;
+	EOcclusionType  m_originalOcclusionType;
+	EOcclusionType  m_occlusionTypeWhenAdaptive;
 
-	static int                   s_occlusionRayFlags;
+	static int      s_occlusionRayFlags;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:

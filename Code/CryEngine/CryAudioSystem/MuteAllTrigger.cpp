@@ -1,0 +1,51 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
+#include "stdafx.h"
+#include "MuteAllTrigger.h"
+#include "TriggerConnection.h"
+#include "DefaultTriggerUtils.h"
+#include "Common/IImpl.h"
+
+namespace CryAudio
+{
+//////////////////////////////////////////////////////////////////////////
+CMuteAllTrigger::~CMuteAllTrigger()
+{
+	CRY_ASSERT_MESSAGE(m_connections.empty(), "There are still connections during %s", __FUNCTION__);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CMuteAllTrigger::Execute() const
+{
+	if (!m_connections.empty())
+	{
+		ExecuteDefaultTriggerConnections(this, m_connections);
+	}
+	else
+	{
+		g_pIImpl->MuteAll();
+	}
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	g_systemStates |= ESystemStates::IsMuted;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CMuteAllTrigger::AddConnections(TriggerConnections const& connections)
+{
+	CRY_ASSERT_MESSAGE(m_connections.empty(), "There are still connections during %s", __FUNCTION__);
+	m_connections = connections;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CMuteAllTrigger::Clear()
+{
+	for (auto const pConnection : m_connections)
+	{
+		delete pConnection;
+	}
+
+	m_connections.clear();
+}
+} // namespace CryAudio

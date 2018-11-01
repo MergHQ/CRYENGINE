@@ -23,7 +23,10 @@ public:
 	explicit CProgrammerSoundFile(
 		char const* const szFile,
 		FMOD_GUID const eventGuid,
-		CATLStandaloneFile& atlStandaloneFile);
+		CryAudio::CStandaloneFile& standaloneFile)
+		: CBaseStandaloneFile(szFile, standaloneFile)
+		, m_eventGuid(eventGuid)
+	{}
 
 	virtual ~CProgrammerSoundFile() override = default;
 

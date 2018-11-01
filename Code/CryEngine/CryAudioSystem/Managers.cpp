@@ -2,21 +2,21 @@
 
 #include "stdafx.h"
 #include "Managers.h"
-#include "AudioEventManager.h"
-#include "AudioStandaloneFileManager.h"
-#include "AudioObjectManager.h"
-#include "AudioListenerManager.h"
+#include "EventManager.h"
+#include "FileManager.h"
+#include "ObjectManager.h"
+#include "ListenerManager.h"
 #include "FileCacheManager.h"
-#include "AudioEventListenerManager.h"
-#include "AudioXMLProcessor.h"
+#include "EventListenerManager.h"
+#include "XMLProcessor.h"
 
 namespace CryAudio
 {
 CEventManager g_eventManager;
 CFileManager g_fileManager;
 CObjectManager g_objectManager;
-CAudioListenerManager g_listenerManager;
+CListenerManager g_listenerManager;
 CFileCacheManager g_fileCacheManager;
-CAudioEventListenerManager g_eventListenerManager;
-CAudioXMLProcessor g_xmlProcessor;
+CEventListenerManager g_eventListenerManager;
+CXMLProcessor g_xmlProcessor;
 } // namespace CryAudio

@@ -39,7 +39,7 @@ inline void FillAKVector(Vec3 const& vCryVector, AkVector& vAKVector)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-inline void FillAKObjectPosition(CObjectTransformation const& transformation, AkSoundPosition& outTransformation)
+inline void FillAKObjectPosition(CTransformation const& transformation, AkSoundPosition& outTransformation)
 {
 	AkVector vec1, vec2;
 	FillAKVector(transformation.GetPosition(), vec1);
@@ -50,7 +50,7 @@ inline void FillAKObjectPosition(CObjectTransformation const& transformation, Ak
 }
 
 ///////////////////////////////////////////////////////////////////////////
-inline void FillAKListenerPosition(CObjectTransformation const& transformation, AkListenerPosition& outTransformation)
+inline void FillAKListenerPosition(CTransformation const& transformation, AkListenerPosition& outTransformation)
 {
 	AkVector vec1, vec2;
 	FillAKVector(transformation.GetPosition(), vec1);

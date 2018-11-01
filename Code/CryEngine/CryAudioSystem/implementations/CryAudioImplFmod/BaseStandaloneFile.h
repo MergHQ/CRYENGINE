@@ -3,11 +3,12 @@
 #pragma once
 
 #include "Common.h"
-#include <ATLEntityData.h>
+#include <IStandaloneFile.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace CryAudio
 {
-class CATLStandaloneFile;
+class CStandaloneFile;
 
 namespace Impl
 {
@@ -25,7 +26,11 @@ public:
 	CBaseStandaloneFile& operator=(CBaseStandaloneFile const&) = delete;
 	CBaseStandaloneFile& operator=(CBaseStandaloneFile&&) = delete;
 
-	explicit CBaseStandaloneFile(char const* const szFile, CATLStandaloneFile& atlStandaloneFile);
+	explicit CBaseStandaloneFile(char const* const szFile, CryAudio::CStandaloneFile& standaloneFile)
+		: m_standaloneFile(standaloneFile)
+		, m_fileName(szFile)
+	{}
+
 	virtual ~CBaseStandaloneFile() override;
 
 	virtual void StartLoading() = 0;
@@ -37,7 +42,7 @@ public:
 	void         ReportFileStarted();
 	void         ReportFileFinished();
 
-	CATLStandaloneFile&                m_atlStandaloneFile;
+	CryAudio::CStandaloneFile&         m_standaloneFile;
 	CryFixedStringT<MaxFilePathLength> m_fileName;
 	CBaseObject*                       m_pObject = nullptr;
 	static FMOD::System*               s_pLowLevelSystem;

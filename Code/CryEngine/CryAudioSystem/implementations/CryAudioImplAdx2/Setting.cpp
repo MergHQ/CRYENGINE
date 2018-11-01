@@ -16,12 +16,6 @@ namespace Impl
 namespace Adx2
 {
 //////////////////////////////////////////////////////////////////////////
-CSetting::CSetting(char const* const szName)
-	: m_name(szName)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CSetting::Load() const
 {
 	criAtomEx_AttachDspBusSetting(static_cast<CriChar8 const*>(m_name), nullptr, 0);

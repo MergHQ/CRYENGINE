@@ -2,7 +2,8 @@
 
 #pragma once
 
-#include <ATLEntityData.h>
+#include <ISwitchState.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace CryAudio
 {
@@ -38,7 +39,11 @@ protected:
 	explicit CBaseSwitchState(
 		uint32 const id,
 		float const value,
-		EStateType const type);
+		EStateType const type)
+		: m_id(id)
+		, m_value(value)
+		, m_type(type)
+	{}
 
 	uint32 const     m_id;
 	float const      m_value;

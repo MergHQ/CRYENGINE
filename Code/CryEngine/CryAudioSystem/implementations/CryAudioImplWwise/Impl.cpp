@@ -4,6 +4,7 @@
 #include "Impl.h"
 #include "CVars.h"
 #include "FileIOHandler.h"
+#include "AuxThread.h"
 #include "Common.h"
 #include "Environment.h"
 #include "Event.h"
@@ -15,12 +16,12 @@
 #include "StandaloneFile.h"
 #include "SwitchState.h"
 #include "Trigger.h"
+
+#include <FileInfo.h>
 #include <Logger.h>
-#include <SharedAudioData.h>
+#include <SharedData.h>
 #include <CrySystem/File/ICryPak.h>
 #include <CrySystem/IProjectManager.h>
-#include <CryThreading/IThreadManager.h>
-#include <CryThreading/IThreadConfigManager.h>
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	#include "Debug.h"
@@ -140,82 +141,7 @@ namespace Impl
 {
 namespace Wwise
 {
-class CAuxWwiseAudioThread final : public IThread
-{
-public:
-
-	CAuxWwiseAudioThread()
-		: m_bQuit(false)
-		, m_threadState(EAuxWwiseAudioThreadState::Wait)
-	{}
-
-	virtual ~CAuxWwiseAudioThread() override = default;
-
-	enum class EAuxWwiseAudioThreadState : EnumFlagsType
-	{
-		Wait,
-		Start,
-		Stop,
-	};
-
-	void Init()
-	{
-		if (!gEnv->pThreadManager->SpawnThread(this, "AuxWwiseAudioThread"))
-		{
-			CryFatalError(R"(Error spawning "AuxWwiseAudioThread" thread.)");
-		}
-	}
-
-	virtual void ThreadEntry() override
-	{
-		while (!m_bQuit)
-		{
-			m_lock.Lock();
-
-			if (m_threadState == EAuxWwiseAudioThreadState::Stop)
-			{
-				m_threadState = EAuxWwiseAudioThreadState::Wait;
-				m_sem.Notify();
-			}
-
-			while (m_threadState == EAuxWwiseAudioThreadState::Wait)
-			{
-				m_sem.Wait(m_lock);
-			}
-
-			m_lock.Unlock();
-
-			if (m_bQuit)
-			{
-				break;
-			}
-
-			g_pImpl->Update();
-		}
-	}
-
-	void SignalStopWork()
-	{
-		m_bQuit = true;
-		m_threadState = EAuxWwiseAudioThreadState::Start;
-		m_sem.Notify();
-		gEnv->pThreadManager->JoinThread(this, eJM_Join);
-	}
-
-	bool IsActive()
-	{
-		// JoinThread returns true if thread is not running.
-		// JoinThread returns false if thread is still running
-		return !gEnv->pThreadManager->JoinThread(this, eJM_TryJoin);
-	}
-
-	volatile bool             m_bQuit;
-	EAuxWwiseAudioThreadState m_threadState;
-	CryMutex                  m_lock;
-	CryConditionVariable      m_sem;
-};
-
-CAuxWwiseAudioThread g_auxAudioThread;
+CAuxThread g_auxAudioThread;
 std::map<AkUniqueID, float> g_maxAttenuations;
 
 SPoolSizes g_poolSizes;
@@ -356,7 +282,7 @@ CSwitchState const* ParseWwiseRtpcSwitch(XmlNodeRef const pNode)
 	{
 		Cry::Audio::Log(
 			ELogType::Warning,
-			"The Wwise Rtpc %s inside ATLSwitchState does not have a valid name.",
+			"The Wwise Rtpc %s inside SwitchState does not have a valid name.",
 			szName);
 	}
 
@@ -1081,13 +1007,13 @@ IObject* CImpl::ConstructGlobalObject()
 	AK::SoundEngine::RegisterGameObj(g_globalObjectId);
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
-	CObjectTransformation transformation;
+	CTransformation transformation;
 	ZeroStruct(transformation);
 	return static_cast<IObject*>(new CObject(AK_INVALID_GAME_OBJECT, transformation));
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IObject* CImpl::ConstructObject(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
+IObject* CImpl::ConstructObject(CTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	AKRESULT const wwiseResult = AK::SoundEngine::RegisterGameObj(m_gameObjectId, szName);
@@ -1119,7 +1045,7 @@ void CImpl::DestructObject(IObject const* const pIObject)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IListener* CImpl::ConstructListener(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
+IListener* CImpl::ConstructListener(CTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
 	IListener* pIListener = nullptr;
 
@@ -1167,7 +1093,7 @@ IListener* CImpl::ConstructListener(CObjectTransformation const& transformation,
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructListener(IListener* const pIListener)
 {
-	CRY_ASSERT_MESSAGE(pIListener == g_pListener, "pIListener is not g_pListener");
+	CRY_ASSERT_MESSAGE(pIListener == g_pListener, "pIListener is not g_pListener during %s", __FUNCTION__);
 	AKRESULT const wwiseResult = AK::SoundEngine::UnregisterGameObj(g_pListener->GetId());
 
 	if (!IS_WWISE_OK(wwiseResult))
@@ -1180,7 +1106,7 @@ void CImpl::DestructListener(IListener* const pIListener)
 }
 
 //////////////////////////////////////////////////////////////////////////
-IEvent* CImpl::ConstructEvent(CATLEvent& event)
+IEvent* CImpl::ConstructEvent(CryAudio::CEvent& event)
 {
 	return static_cast<IEvent*>(new CEvent(event));
 }
@@ -1192,7 +1118,7 @@ void CImpl::DestructEvent(IEvent const* const pIEvent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-IStandaloneFile* CImpl::ConstructStandaloneFile(CATLStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITrigger const* pITrigger /*= nullptr*/)
+IStandaloneFile* CImpl::ConstructStandaloneFile(CryAudio::CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITrigger const* pITrigger /*= nullptr*/)
 {
 	return static_cast<IStandaloneFile*>(new CStandaloneFile);
 }
@@ -1472,7 +1398,7 @@ bool CImpl::ParseSwitchOrState(XmlNodeRef const pNode, AkUInt32& stateOrSwitchGr
 	{
 		Cry::Audio::Log(
 			ELogType::Warning,
-			"A Wwise SwitchGroup or StateGroup %s inside ATLSwitchState needs to have exactly one WwiseValue.",
+			"A Wwise SwitchGroup or StateGroup %s inside SwitchState needs to have exactly one WwiseValue.",
 			szStateOrSwitchGroupName);
 	}
 
@@ -1510,7 +1436,7 @@ void CImpl::ParseRtpcImpl(XmlNodeRef const pNode, AkRtpcID& rtpcId, float& multi
 void CImpl::SignalAuxAudioThread()
 {
 	g_auxAudioThread.m_lock.Lock();
-	g_auxAudioThread.m_threadState = CAuxWwiseAudioThread::EAuxWwiseAudioThreadState::Start;
+	g_auxAudioThread.m_threadState = CAuxThread::EAuxThreadState::Start;
 	g_auxAudioThread.m_lock.Unlock();
 	g_auxAudioThread.m_sem.Notify();
 }
@@ -1519,10 +1445,10 @@ void CImpl::SignalAuxAudioThread()
 void CImpl::WaitForAuxAudioThread()
 {
 	g_auxAudioThread.m_lock.Lock();
-	g_auxAudioThread.m_threadState = CAuxWwiseAudioThread::EAuxWwiseAudioThreadState::Stop;
+	g_auxAudioThread.m_threadState = CAuxThread::EAuxThreadState::Stop;
 
 	// Wait until the AuxWwiseAudioThread is actually waiting again and not processing any work.
-	while (g_auxAudioThread.m_threadState != CAuxWwiseAudioThread::EAuxWwiseAudioThreadState::Wait)
+	while (g_auxAudioThread.m_threadState != CAuxThread::EAuxThreadState::Wait)
 	{
 		g_auxAudioThread.m_sem.Wait(g_auxAudioThread.m_lock);
 	}

@@ -2,7 +2,8 @@
 
 #pragma once
 
-#include <ATLEntityData.h>
+#include <IParameter.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace CryAudio
 {
@@ -40,7 +41,12 @@ protected:
 		uint32 const id,
 		float const multiplier,
 		float const shift,
-		EParameterType const type);
+		EParameterType const type)
+		: m_id(id)
+		, m_multiplier(multiplier)
+		, m_shift(shift)
+		, m_type(type)
+	{}
 
 	uint32 const         m_id;
 	float const          m_multiplier;

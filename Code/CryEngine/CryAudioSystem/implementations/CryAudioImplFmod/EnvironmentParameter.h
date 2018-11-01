@@ -4,6 +4,7 @@
 
 #include "Environment.h"
 #include <PoolObject.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace CryAudio
 {
@@ -25,7 +26,13 @@ public:
 		uint32 const id,
 		float const multiplier,
 		float const shift,
-		char const* const szName);
+		char const* const szName)
+		: CEnvironment(EEnvironmentType::Parameter)
+		, m_id(id)
+		, m_multiplier(multiplier)
+		, m_shift(shift)
+		, m_name(szName)
+	{}
 
 	virtual ~CEnvironmentParameter() override = default;
 

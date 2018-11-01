@@ -126,21 +126,21 @@ static CryAudio::IObject* CreateAudioObject()
 	return pAudioObject;
 }
 
-static CryAudio::CObjectTransformation* CreateAudioTransformation(float m00, float m01, float m02, float m03,
-                                                                  float m10, float m11, float m12, float m13,
-                                                                  float m20, float m21, float m22, float m23)
+static CryAudio::CTransformation* CreateAudioTransformation(float m00, float m01, float m02, float m03,
+                                                            float m10, float m11, float m12, float m13,
+                                                            float m20, float m21, float m22, float m23)
 {
 	Matrix34_tpl<float> m34 = Matrix34_tpl<float>(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23);
-	CryAudio::CObjectTransformation* pAudioTransformation = new CryAudio::CObjectTransformation(m34);
+	CryAudio::CTransformation* pAudioTransformation = new CryAudio::CTransformation(m34);
 	return pAudioTransformation;
 }
 
-static void SetAudioTransformation(CryAudio::IObject* pAudioObject, CryAudio::CObjectTransformation* pObjectTransformation)
+static void SetAudioTransformation(CryAudio::IObject* pAudioObject, CryAudio::CTransformation* pObjectTransformation)
 {
 	pAudioObject->SetTransformation(*pObjectTransformation);
 }
 
-static void ReleaseAudioTransformation(CryAudio::CObjectTransformation* pObjectTransformation)
+static void ReleaseAudioTransformation(CryAudio::CTransformation* pObjectTransformation)
 {
 	delete pObjectTransformation;
 }
@@ -220,7 +220,7 @@ static uint SRIGetControlId(CryAudio::SRequestInfo* pRequestInfo)
 
 static CryAudio::IObject* SRIGetAudioObject(CryAudio::SRequestInfo* pRequestInfo)
 {
-	return pRequestInfo->pAudioObject;
+	return pRequestInfo->pIObject;
 }
 
 static void AddAudioRequestListener(AudioRequestListener listener)
@@ -233,12 +233,12 @@ static void RemoveAudioRequestListener(AudioRequestListener listener)
 	gEnv->pAudioSystem->RemoveRequestListener(listener, nullptr);
 }
 
-static CryAudio::IListener* CreateAudioListener(CryAudio::CObjectTransformation const& transformation)
+static CryAudio::IListener* CreateAudioListener(CryAudio::CTransformation const& transformation)
 {
 	return gEnv->pAudioSystem->CreateListener(transformation);
 }
 
-static void SetAudioListenerTransformation(CryAudio::IListener* pAudioListener, CryAudio::CObjectTransformation* pCObjectTransformation)
+static void SetAudioListenerTransformation(CryAudio::IListener* pAudioListener, CryAudio::CTransformation* pCObjectTransformation)
 {
 	pAudioListener->SetTransformation(*pCObjectTransformation);
 }

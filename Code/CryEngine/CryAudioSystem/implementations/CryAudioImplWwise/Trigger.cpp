@@ -27,14 +27,8 @@ void PrepareEventCallback(
 	if (pEvent != nullptr)
 	{
 		pEvent->m_id = eventId;
-		gEnv->pAudioSystem->ReportFinishedEvent(pEvent->m_atlEvent, wwiseResult == AK_Success);
+		gEnv->pAudioSystem->ReportFinishedEvent(pEvent->m_event, wwiseResult == AK_Success);
 	}
-}
-//////////////////////////////////////////////////////////////////////////
-CTrigger::CTrigger(AkUniqueID const id, float const maxAttenuation)
-	: m_id(id)
-	, m_maxAttenuation(maxAttenuation)
-{
 }
 
 //////////////////////////////////////////////////////////////////////////

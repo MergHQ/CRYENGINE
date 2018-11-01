@@ -21,7 +21,10 @@ public:
 	CSwitchState& operator=(CSwitchState const&) = delete;
 	CSwitchState& operator=(CSwitchState&&) = delete;
 
-	explicit CSwitchState(uint32 const id, float const value);
+	explicit CSwitchState(uint32 const id, float const value)
+		: CBaseSwitchState(id, value, EStateType::State)
+	{}
+
 	virtual ~CSwitchState() override = default;
 };
 } // namespace Fmod

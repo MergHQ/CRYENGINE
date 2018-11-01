@@ -10,7 +10,7 @@ namespace Impl
 namespace Fmod
 {
 //////////////////////////////////////////////////////////////////////////
-CListener::CListener(CObjectTransformation const& transformation, int const id)
+CListener::CListener(CTransformation const& transformation, int const id)
 	: m_id(id)
 	, m_transformation(transformation)
 	, m_isMovingOrDecaying(false)
@@ -66,7 +66,7 @@ void CListener::SetName(char const* const szName)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CListener::SetTransformation(CObjectTransformation const& transformation)
+void CListener::SetTransformation(CTransformation const& transformation)
 {
 	m_transformation = transformation;
 	m_position = transformation.GetPosition();

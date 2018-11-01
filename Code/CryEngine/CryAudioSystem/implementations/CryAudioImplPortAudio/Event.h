@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <ATLEntityData.h>
+#include <IEvent.h>
 #include <portaudio.h>
 #include <atomic>
 #include <PoolObject.h>
@@ -13,7 +13,7 @@ using SNDFILE = struct SNDFILE_tag;
 
 namespace CryAudio
 {
-class CATLEvent;
+class CEvent;
 
 namespace Impl
 {
@@ -40,7 +40,7 @@ public:
 	CEvent& operator=(CEvent const&) = delete;
 	CEvent& operator=(CEvent&&) = delete;
 
-	explicit CEvent(CATLEvent& event_);
+	explicit CEvent(CryAudio::CEvent& event_);
 	virtual ~CEvent() override;
 
 	bool Execute(
@@ -60,7 +60,7 @@ public:
 	CObject*                 pObject;
 	int                      numChannels;
 	int                      remainingLoops;
-	CATLEvent&               event;
+	CryAudio::CEvent&        event;
 	uint32                   pathId;
 	PaSampleFormat           sampleFormat;
 	std::atomic<EEventState> state;

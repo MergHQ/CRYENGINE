@@ -61,16 +61,6 @@ FMOD_RESULT F_CALLBACK ProgrammerSoundFileCallback(FMOD_STUDIO_EVENT_CALLBACK_TY
 }
 
 //////////////////////////////////////////////////////////////////////////
-CProgrammerSoundFile::CProgrammerSoundFile(
-	char const* const szFile,
-	FMOD_GUID const eventGuid,
-	CATLStandaloneFile& atlStandaloneFile)
-	: CBaseStandaloneFile(szFile, atlStandaloneFile)
-	, m_eventGuid(eventGuid)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CProgrammerSoundFile::StartLoading()
 {
 	FMOD::Studio::EventDescription* pEventDescription = nullptr;

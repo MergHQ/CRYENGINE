@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <ATLEntityData.h>
+#include <IListener.h>
 #include <AK/SoundEngine/Common/AkTypes.h>
 
 namespace CryAudio
@@ -21,15 +21,15 @@ public:
 	CListener& operator=(CListener const&) = delete;
 	CListener& operator=(CListener&&) = delete;
 
-	explicit CListener(CObjectTransformation const& transformation, AkGameObjectID const id);
+	explicit CListener(CTransformation const& transformation, AkGameObjectID const id);
 
 	virtual ~CListener() override = default;
 
 	// CryAudio::Impl::IListener
-	virtual void                         Update(float const deltaTime) override;
-	virtual void                         SetName(char const* const szName) override;
-	virtual void                         SetTransformation(CObjectTransformation const& transformation) override;
-	virtual CObjectTransformation const& GetTransformation() const override { return m_transformation; }
+	virtual void                   Update(float const deltaTime) override;
+	virtual void                   SetName(char const* const szName) override;
+	virtual void                   SetTransformation(CTransformation const& transformation) override;
+	virtual CTransformation const& GetTransformation() const override { return m_transformation; }
 	// ~CryAudio::Impl::IListener
 
 	AkGameObjectID GetId() const       { return m_id; }
@@ -43,13 +43,13 @@ public:
 
 private:
 
-	AkGameObjectID const  m_id;
-	bool                  m_hasMoved;
-	bool                  m_isMovingOrDecaying;
-	Vec3                  m_velocity;
-	Vec3                  m_position;
-	Vec3                  m_previousPosition;
-	CObjectTransformation m_transformation;
+	AkGameObjectID const m_id;
+	bool                 m_hasMoved;
+	bool                 m_isMovingOrDecaying;
+	Vec3                 m_velocity;
+	Vec3                 m_position;
+	Vec3                 m_previousPosition;
+	CTransformation      m_transformation;
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	CryFixedStringT<MaxObjectNameLength> m_name;

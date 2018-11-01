@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "IAudioInterfacesCommonData.h"
+
 /**
  * @namespace CryAudio
  * @brief Most parent audio namespace used throughout the entire engine.
@@ -25,7 +27,7 @@ struct IListener
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
 	 */
-	virtual void SetTransformation(CObjectTransformation const& transformation, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+	virtual void SetTransformation(CTransformation const& transformation, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Sets this audio listener's name.

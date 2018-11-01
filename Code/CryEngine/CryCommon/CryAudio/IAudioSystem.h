@@ -30,8 +30,8 @@ namespace CryAudio
 // Forward declarations.
 struct IObject;
 struct IListener;
-class CATLEvent;
-class CATLStandaloneFile;
+class CEvent;
+class CStandaloneFile;
 
 namespace Impl
 {
@@ -129,18 +129,18 @@ struct SRequestInfo
 		void* const pUserDataOwner_,
 		ESystemEvents const systemEvent_,
 		ControlId const audioControlId_,
-		IObject* const pAudioObject_,
-		CATLStandaloneFile* pStandaloneFile_,
-		CATLEvent* pAudioEvent_)
+		IObject* const pIObject_,
+		CStandaloneFile* pStandaloneFile_,
+		CEvent* pEvent_)
 		: requestResult(requestResult_)
 		, pOwner(pOwner_)
 		, pUserData(pUserData_)
 		, pUserDataOwner(pUserDataOwner_)
 		, systemEvent(systemEvent_)
 		, audioControlId(audioControlId_)
-		, pAudioObject(pAudioObject_)
+		, pIObject(pIObject_)
 		, pStandaloneFile(pStandaloneFile_)
-		, pAudioEvent(pAudioEvent_)
+		, pEvent(pEvent_)
 	{}
 
 	SRequestInfo(SRequestInfo const&) = delete;
@@ -154,9 +154,9 @@ struct SRequestInfo
 	void* const          pUserDataOwner;
 	ESystemEvents const  systemEvent;
 	ControlId const      audioControlId;
-	IObject* const       pAudioObject;
-	CATLStandaloneFile*  pStandaloneFile;
-	CATLEvent*           pAudioEvent;
+	IObject* const       pIObject;
+	CStandaloneFile*     pStandaloneFile;
+	CEvent*              pEvent;
 };
 
 struct SCreateObjectData
@@ -164,7 +164,7 @@ struct SCreateObjectData
 	explicit SCreateObjectData(
 		char const* const szName_ = nullptr,
 		EOcclusionType const occlusionType_ = EOcclusionType::Ignore,
-		CObjectTransformation const& transformation_ = CObjectTransformation::GetEmptyObject(),
+		CTransformation const& transformation_ = CTransformation::GetEmptyObject(),
 		EntityId const entityId_ = INVALID_ENTITYID,
 		bool const setCurrentEnvironments_ = false)
 		: szName(szName_)
@@ -183,10 +183,10 @@ struct SCreateObjectData
 	// Callers might pass a vector or matrix to the constructor, which implicitly convert to CAudioObjectTransformation.
 	// Implicit conversion introduces a temporary object, and a reference could potentially dangle,
 	// as the temporary gets destroyed before this request gets passed to the AudioSystem where it gets ultimately copied for internal processing.
-	CObjectTransformation const transformation;
+	CTransformation const transformation;
 
-	EntityId const              entityId;
-	bool const                  setCurrentEnvironments;
+	EntityId const        entityId;
+	bool const            setCurrentEnvironments;
 };
 
 struct SExecuteTriggerData : public SCreateObjectData
@@ -195,7 +195,7 @@ struct SExecuteTriggerData : public SCreateObjectData
 		ControlId const triggerId_,
 		char const* const szName_ = nullptr,
 		EOcclusionType const occlusionType_ = EOcclusionType::Ignore,
-		CObjectTransformation const& transformation_ = CObjectTransformation::GetEmptyObject(),
+		CTransformation const& transformation_ = CTransformation::GetEmptyObject(),
 		EntityId const entityId_ = INVALID_ENTITYID,
 		bool const setCurrentEnvironments_ = false)
 		: SCreateObjectData(szName_, occlusionType_, transformation_, entityId_, setCurrentEnvironments_),
@@ -327,7 +327,7 @@ struct IAudioSystem
 	 * @return void
 	 * @see ReportStoppedFile
 	 */
-	virtual void ReportStartedFile(CATLStandaloneFile& standaloneFile, bool const bSuccessfullyStarted, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+	virtual void ReportStartedFile(CStandaloneFile& standaloneFile, bool const bSuccessfullyStarted, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Used by audio middleware implementations to inform the AudioSystem that a file stopped playback.
@@ -336,7 +336,7 @@ struct IAudioSystem
 	 * @return void
 	 * @see ReportStartedFile
 	 */
-	virtual void ReportStoppedFile(CATLStandaloneFile& standaloneFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+	virtual void ReportStoppedFile(CStandaloneFile& standaloneFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Used by audio middleware implementations to inform the AudioSystem that an event finished producing sound.
@@ -345,7 +345,7 @@ struct IAudioSystem
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
 	 */
-	virtual void ReportFinishedEvent(CATLEvent& event, bool const bSuccess, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+	virtual void ReportFinishedEvent(CEvent& event, bool const bSuccess, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Used by audio middleware implementations to inform the AudioSystem that an event was virtualized.
@@ -353,7 +353,7 @@ struct IAudioSystem
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
 	 */
-	virtual void ReportVirtualizedEvent(CATLEvent& event, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+	virtual void ReportVirtualizedEvent(CEvent& event, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Used by audio middleware implementations to inform the AudioSystem that an event was physicalized.
@@ -362,7 +362,7 @@ struct IAudioSystem
 	 * @return void
 	 */
 
-	virtual void ReportPhysicalizedEvent(CATLEvent& event, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+	virtual void ReportPhysicalizedEvent(CEvent& event, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 	/**
 	 * Used to instruct the AudioSystem that it should stop all playing sounds.
 	 * @param userData - optional struct used to pass additional data to the internal request.
@@ -465,7 +465,7 @@ struct IAudioSystem
 	 * @return Pointer to a freshly constructed CryAudio::IListener instance.
 	 * @see ReleaseListener
 	 */
-	virtual IListener* CreateListener(CObjectTransformation const& transformation, char const* const szName = nullptr) = 0;
+	virtual IListener* CreateListener(CTransformation const& transformation, char const* const szName = nullptr) = 0;
 
 	/**
 	 * Destructs the passed audio listener instance.

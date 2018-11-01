@@ -4,6 +4,7 @@
 
 #include <CryAudio/IAudioSystem.h>
 #include <CrySystem/IStreamEngine.h>
+#include <CryMemory/IMemory.h>
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 struct IRenderAuxGeom;
@@ -12,7 +13,7 @@ struct IRenderAuxGeom;
 namespace CryAudio
 {
 struct ICustomMemoryHeap;
-class CATLAudioFileEntry;
+class CFileEntry;
 
 namespace Impl
 {
@@ -20,20 +21,20 @@ struct IImpl;
 } // namespace Impl
 
 // Filter for drawing debug info to the screen
-enum class EAudioFileCacheManagerDebugFilter : EnumFlagsType
+enum class EFileCacheManagerDebugFilter : EnumFlagsType
 {
 	All            = 0,
 	Globals        = BIT(6), // a
 	LevelSpecifics = BIT(7), // b
 	UseCounted     = BIT(8), // c
 };
-CRY_CREATE_ENUM_FLAG_OPERATORS(EAudioFileCacheManagerDebugFilter);
+CRY_CREATE_ENUM_FLAG_OPERATORS(EFileCacheManagerDebugFilter);
 
 class CFileCacheManager final : public IStreamCallback
 {
 public:
 
-	CFileCacheManager();
+	CFileCacheManager() = default;
 	~CFileCacheManager();
 
 	CFileCacheManager(CFileCacheManager const&) = delete;
@@ -44,10 +45,10 @@ public:
 	// Public methods
 	void           Initialize();
 	FileEntryId    TryAddFileCacheEntry(XmlNodeRef const pFileNode, EDataScope const dataScope, bool const bAutoLoad);
-	bool           TryRemoveFileCacheEntry(FileEntryId const audioFileEntryId, EDataScope const dataScope);
+	bool           TryRemoveFileCacheEntry(FileEntryId const id, EDataScope const dataScope);
 	void           UpdateLocalizedFileCacheEntries();
-	ERequestStatus TryLoadRequest(PreloadRequestId const audioPreloadRequestId, bool const bLoadSynchronously, bool const bAutoLoadOnly);
-	ERequestStatus TryUnloadRequest(PreloadRequestId const audioPreloadRequestId);
+	ERequestStatus TryLoadRequest(PreloadRequestId const preloadRequestId, bool const bLoadSynchronously, bool const bAutoLoadOnly);
+	ERequestStatus TryUnloadRequest(PreloadRequestId const preloadRequestId);
 	ERequestStatus UnloadDataByScope(EDataScope const dataScope);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -57,7 +58,7 @@ public:
 private:
 
 	// Internal type definitions.
-	using AudioFileEntries = std::map<FileEntryId, CATLAudioFileEntry*>;
+	using FileEntries = std::map<FileEntryId, CFileEntry*>;
 
 	// IStreamCallback
 	virtual void StreamAsyncOnComplete(IReadStream* pStream, unsigned int nError) override;
@@ -66,19 +67,19 @@ private:
 
 	// Internal methods
 	void AllocateHeap(size_t const size, char const* const szUsage);
-	bool UncacheFileCacheEntryInternal(CATLAudioFileEntry* const pAudioFileEntry, bool const bNow, bool const bIgnoreUsedCount = false);
+	bool UncacheFileCacheEntryInternal(CFileEntry* const pFileEntry, bool const bNow, bool const bIgnoreUsedCount = false);
 	bool DoesRequestFitInternal(size_t const requestSize);
 	bool FinishStreamInternal(IReadStreamPtr const pStream, int unsigned const error);
-	bool AllocateMemoryBlockInternal(CATLAudioFileEntry* const __restrict pAudioFileEntry);
-	void UncacheFile(CATLAudioFileEntry* const pAudioFileEntry);
+	bool AllocateMemoryBlockInternal(CFileEntry* const __restrict pFileEntry);
+	void UncacheFile(CFileEntry* const pFileEntry);
 	void TryToUncacheFiles();
-	void UpdateLocalizedFileEntryData(CATLAudioFileEntry* const pAudioFileEntry);
-	bool TryCacheFileCacheEntryInternal(CATLAudioFileEntry* const pAudioFileEntry, FileEntryId const audioFileEntryId, bool const bLoadSynchronously, bool const bOverrideUseCount = false, size_t const useCount = 0);
+	void UpdateLocalizedFileEntryData(CFileEntry* const pFileEntry);
+	bool TryCacheFileCacheEntryInternal(CFileEntry* const pFileEntry, FileEntryId const id, bool const bLoadSynchronously, bool const bOverrideUseCount = false, size_t const useCount = 0);
 
 	// Internal members
-	AudioFileEntries                m_audioFileEntries;
+	FileEntries                     m_fileEntries;
 	_smart_ptr<::ICustomMemoryHeap> m_pMemoryHeap;
-	size_t                          m_currentByteTotal;
-	size_t                          m_maxByteTotal;
+	size_t                          m_currentByteTotal = 0;
+	size_t                          m_maxByteTotal = 0;
 };
 } // namespace CryAudio

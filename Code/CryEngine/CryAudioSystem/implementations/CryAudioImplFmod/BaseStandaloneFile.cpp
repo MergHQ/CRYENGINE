@@ -14,13 +14,6 @@ namespace Impl
 namespace Fmod
 {
 //////////////////////////////////////////////////////////////////////////
-CBaseStandaloneFile::CBaseStandaloneFile(char const* const szFile, CATLStandaloneFile& atlStandaloneFile)
-	: m_atlStandaloneFile(atlStandaloneFile)
-	, m_fileName(szFile)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 CBaseStandaloneFile::~CBaseStandaloneFile()
 {
 	if (m_pObject != nullptr)
@@ -32,13 +25,13 @@ CBaseStandaloneFile::~CBaseStandaloneFile()
 //////////////////////////////////////////////////////////////////////////
 void CBaseStandaloneFile::ReportFileStarted()
 {
-	gEnv->pAudioSystem->ReportStartedFile(m_atlStandaloneFile, true);
+	gEnv->pAudioSystem->ReportStartedFile(m_standaloneFile, true);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CBaseStandaloneFile::ReportFileFinished()
 {
-	gEnv->pAudioSystem->ReportStoppedFile(m_atlStandaloneFile);
+	gEnv->pAudioSystem->ReportStoppedFile(m_standaloneFile);
 }
 } // namespace Fmod
 } // namespace Impl

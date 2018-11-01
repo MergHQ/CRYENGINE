@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <ATLEntityData.h>
+#include <ITrigger.h>
 #include <PoolObject.h>
 #include <AK/SoundEngine/Common/AkTypes.h>
 
@@ -22,7 +22,11 @@ public:
 	CTrigger& operator=(CTrigger const&) = delete;
 	CTrigger& operator=(CTrigger&&) = delete;
 
-	explicit CTrigger(AkUniqueID const id, float const maxAttenuation);
+	explicit CTrigger(AkUniqueID const id, float const maxAttenuation)
+		: m_id(id)
+		, m_maxAttenuation(maxAttenuation)
+	{}
+
 	virtual ~CTrigger() override = default;
 
 	// CryAudio::Impl::ITrigger

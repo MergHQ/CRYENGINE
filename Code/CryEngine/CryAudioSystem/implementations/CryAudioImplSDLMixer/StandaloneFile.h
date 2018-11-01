@@ -3,11 +3,12 @@
 #pragma once
 
 #include "Common.h"
-#include <ATLEntityData.h>
+#include <IStandaloneFile.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace CryAudio
 {
-class CATLStandaloneFile;
+class CStandaloneFile;
 
 namespace Impl
 {
@@ -23,10 +24,14 @@ public:
 	CStandaloneFile& operator=(CStandaloneFile const&) = delete;
 	CStandaloneFile& operator=(CStandaloneFile&&) = delete;
 
-	explicit CStandaloneFile(char const* const szName, CATLStandaloneFile& atlStandaloneFile);
+	explicit CStandaloneFile(char const* const szName, CryAudio::CStandaloneFile& standaloneFile)
+		: m_file(standaloneFile)
+		, m_name(szName)
+	{}
+
 	virtual ~CStandaloneFile() override = default;
 
-	CATLStandaloneFile&                m_atlFile;
+	CryAudio::CStandaloneFile&         m_file;
 	SampleId                           m_sampleId = 0; // ID unique to the file, only needed for the 'finished' request
 	CryFixedStringT<MaxFilePathLength> m_name;
 	ChannelList                        m_channels;

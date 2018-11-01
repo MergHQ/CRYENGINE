@@ -46,7 +46,7 @@ void CObject::Update(float const deltaTime)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetTransformation(CObjectTransformation const& transformation)
+void CObject::SetTransformation(CTransformation const& transformation)
 {
 }
 
@@ -66,7 +66,7 @@ void CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
+void CObject::SetOcclusion(float const occlusion)
 {
 }
 
@@ -109,7 +109,7 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 	}
 	else
 	{
-		Cry::Audio::Log(ELogType::Error, "Invalid AudioObjectData, ATLTriggerData or EventData passed to the PortAudio implementation of ExecuteTrigger.");
+		Cry::Audio::Log(ELogType::Error, "Invalid AudioObjectData, TriggerData or EventData passed to the PortAudio implementation of ExecuteTrigger.");
 	}
 
 	return requestResult;

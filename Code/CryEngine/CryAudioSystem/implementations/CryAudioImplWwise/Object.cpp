@@ -36,7 +36,7 @@ void EndEventCallback(AkCallbackType callbackType, AkCallbackInfo* pCallbackInfo
 {
 	if (callbackType == AK_EndOfEvent)
 	{
-		CATLEvent* const pEvent = static_cast<CATLEvent* const>(pCallbackInfo->pCookie);
+		CryAudio::CEvent* const pEvent = static_cast<CryAudio::CEvent* const>(pCallbackInfo->pCookie);
 
 		if (pEvent != nullptr)
 		{
@@ -62,7 +62,7 @@ void SetParameterById(AkRtpcID const rtpcId, AkRtpcValue const value, AkGameObje
 }
 
 //////////////////////////////////////////////////////////////////////////
-CObject::CObject(AkGameObjectID const id, CObjectTransformation const& transformation)
+CObject::CObject(AkGameObjectID const id, CTransformation const& transformation)
 	: m_id(id)
 	, m_needsToUpdateEnvironments(false)
 	, m_needsToUpdateVirtualStates(false)
@@ -92,7 +92,7 @@ CObject::~CObject()
 {
 	if ((m_flags& EObjectFlags::TrackRelativeVelocity) != 0)
 	{
-		CRY_ASSERT_MESSAGE(g_numObjectsWithRelativeVelocity > 0, "g_numObjectsWithRelativeVelocity is 0 but an object with relative velocity tracking still exists.");
+		CRY_ASSERT_MESSAGE(g_numObjectsWithRelativeVelocity > 0, "g_numObjectsWithRelativeVelocity is 0 but an object with relative velocity tracking still exists during %s", __FUNCTION__);
 		g_numObjectsWithRelativeVelocity--;
 	}
 }
@@ -128,7 +128,7 @@ void CObject::Update(float const deltaTime)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetTransformation(CObjectTransformation const& transformation)
+void CObject::SetTransformation(CTransformation const& transformation)
 {
 	m_position = transformation.GetPosition();
 
@@ -343,7 +343,7 @@ void CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
+void CObject::SetOcclusion(float const occlusion)
 {
 	if (m_id != g_globalObjectId)
 	{
@@ -351,7 +351,7 @@ void CObject::SetObstructionOcclusion(float const obstruction, float const occlu
 		{
 			AKRESULT const wwiseResult = AK::SoundEngine::SetObjectObstructionAndOcclusion(
 				m_id,
-				g_listenerId,                     // Set obstruction/occlusion for only the default listener for now.
+				g_listenerId,                     // Set occlusion for only the default listener for now.
 				static_cast<AkReal32>(occlusion), // The occlusion value is currently used on obstruction as well until a correct obstruction value is calculated.
 				static_cast<AkReal32>(occlusion));
 
@@ -360,19 +360,19 @@ void CObject::SetObstructionOcclusion(float const obstruction, float const occlu
 				Cry::Audio::Log(
 					ELogType::Warning,
 					"Wwise - failed to set Obstruction %f and Occlusion %f on object %" PRISIZE_T,
-					obstruction,
+					occlusion,
 					occlusion,
 					m_id);
 			}
 		}
 		else
 		{
-			Cry::Audio::Log(ELogType::Warning, "Wwise - invalid listener Id during SetObjectObstructionAndOcclusion!");
+			Cry::Audio::Log(ELogType::Warning, "Wwise - invalid listener Id during %s!", __FUNCTION__);
 		}
 	}
 	else
 	{
-		Cry::Audio::Log(ELogType::Error, "Trying to set occlusion and obstruction values on the global object!");
+		Cry::Audio::Log(ELogType::Error, "Trying to set occlusion value on the global object!");
 	}
 }
 
@@ -416,7 +416,7 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 			PostEnvironmentAmounts();
 		}
 
-		AkPlayingID const id = AK::SoundEngine::PostEvent(pTrigger->m_id, objectId, AK_EndOfEvent, &EndEventCallback, &pEvent->m_atlEvent);
+		AkPlayingID const id = AK::SoundEngine::PostEvent(pTrigger->m_id, objectId, AK_EndOfEvent, &EndEventCallback, &pEvent->m_event);
 
 		if (id != AK_INVALID_PLAYING_ID)
 		{
@@ -440,7 +440,7 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 	}
 	else
 	{
-		Cry::Audio::Log(ELogType::Error, "Invalid AudioObjectData, ATLTriggerData or EventData passed to the Wwise implementation of ExecuteTrigger.");
+		Cry::Audio::Log(ELogType::Error, "Invalid AudioObjectData, TriggerData or EventData passed to the Wwise implementation of ExecuteTrigger.");
 	}
 
 	return result;
@@ -685,7 +685,7 @@ void CObject::ToggleFunctionality(EObjectFunctionality const type, bool const en
 						m_flags &= ~EObjectFlags::TrackRelativeVelocity;
 						SetParameterById(s_relativeVelocityParameterId, 0.0f, m_id);
 
-						CRY_ASSERT_MESSAGE(g_numObjectsWithRelativeVelocity > 0, "g_numObjectsWithRelativeVelocity is 0 but an object with relative velocity tracking still exists.");
+						CRY_ASSERT_MESSAGE(g_numObjectsWithRelativeVelocity > 0, "g_numObjectsWithRelativeVelocity is 0 but an object with relative velocity tracking still exists during %s", __FUNCTION__);
 						g_numObjectsWithRelativeVelocity--;
 					}
 				}

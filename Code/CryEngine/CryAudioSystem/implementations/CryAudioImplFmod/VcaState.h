@@ -24,7 +24,10 @@ public:
 	explicit CVcaState(
 		uint32 const id,
 		float const value,
-		FMOD::Studio::VCA* const vca);
+		FMOD::Studio::VCA* const vca)
+		: CBaseSwitchState(id, value, EStateType::VCA)
+		, m_vca(vca)
+	{}
 
 	virtual ~CVcaState() override = default;
 

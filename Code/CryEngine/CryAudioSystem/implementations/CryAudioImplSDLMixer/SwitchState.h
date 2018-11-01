@@ -3,8 +3,9 @@
 #pragma once
 
 #include "Common.h"
-#include <ATLEntityData.h>
+#include <ISwitchState.h>
 #include <PoolObject.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace CryAudio
 {
@@ -25,19 +26,23 @@ public:
 	explicit CSwitchState(
 		SampleId const sampleId,
 		float const value,
-		char const* const szName);
+		char const* const szName)
+		: m_sampleId(sampleId)
+		, m_value(value)
+		, m_name(szName)
+	{}
 
 	virtual ~CSwitchState() override = default;
 
-	SampleId                                               GetSampleId() const { return m_sampleId; }
-	float                                                  GetValue() const    { return m_value; }
-	CryFixedStringT<CryAudio::MaxControlNameLength> const& GetName() const     { return m_name; }
+	SampleId                                     GetSampleId() const { return m_sampleId; }
+	float                                        GetValue() const    { return m_value; }
+	CryFixedStringT<MaxControlNameLength> const& GetName() const     { return m_name; }
 
 private:
 
-	SampleId const m_sampleId;
-	float const    m_value;
-	CryFixedStringT<CryAudio::MaxControlNameLength> const m_name;
+	SampleId const                              m_sampleId;
+	float const                                 m_value;
+	CryFixedStringT<MaxControlNameLength> const m_name;
 };
 } // namespace SDL_mixer
 } // namespace Impl

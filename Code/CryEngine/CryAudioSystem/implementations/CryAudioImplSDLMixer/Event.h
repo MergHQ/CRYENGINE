@@ -3,12 +3,12 @@
 #pragma once
 
 #include "Common.h"
-#include <ATLEntityData.h>
+#include <IEvent.h>
 #include <PoolObject.h>
 
 namespace CryAudio
 {
-class CATLEvent;
+class CEvent;
 
 namespace Impl
 {
@@ -26,7 +26,10 @@ public:
 	CEvent& operator=(CEvent const&) = delete;
 	CEvent& operator=(CEvent&&) = delete;
 
-	explicit CEvent(CATLEvent& event);
+	explicit CEvent(CryAudio::CEvent& event)
+		: m_event(event)
+	{}
+
 	virtual ~CEvent() override = default;
 
 	// CryAudio::Impl::IEvent
@@ -36,9 +39,9 @@ public:
 	void Pause();
 	void Resume();
 
-	CATLEvent&      m_event;
-	ChannelList     m_channels;
-	CTrigger const* m_pTrigger = nullptr;
+	CryAudio::CEvent& m_event;
+	ChannelList       m_channels;
+	CTrigger const*   m_pTrigger = nullptr;
 };
 } // namespace SDL_mixer
 } // namespace Impl

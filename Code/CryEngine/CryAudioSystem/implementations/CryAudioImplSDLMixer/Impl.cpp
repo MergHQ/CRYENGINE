@@ -15,6 +15,7 @@
 #include "SwitchState.h"
 #include "Trigger.h"
 
+#include <FileInfo.h>
 #include <Logger.h>
 #include <CrySystem/File/CryFile.h>
 #include <CryAudio/IAudioSystem.h>
@@ -107,13 +108,13 @@ string GetFullFilePath(char const* const szFileName, char const* const szPath)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void OnEventFinished(CATLEvent& audioEvent)
+void OnEventFinished(CryAudio::CEvent& audioEvent)
 {
 	gEnv->pAudioSystem->ReportFinishedEvent(audioEvent, true);
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void OnStandaloneFileFinished(CATLStandaloneFile& standaloneFile, const char* szFile)
+void OnStandaloneFileFinished(CryAudio::CStandaloneFile& standaloneFile, const char* szFile)
 {
 	gEnv->pAudioSystem->ReportStoppedFile(standaloneFile);
 }
@@ -637,11 +638,11 @@ void CImpl::DestructSetting(ISetting const* const pISetting)
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructGlobalObject()
 {
-	return static_cast<IObject*>(new CObject(CObjectTransformation::GetEmptyObject(), 0));
+	return static_cast<IObject*>(new CObject(CTransformation::GetEmptyObject(), 0));
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IObject* CImpl::ConstructObject(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
+IObject* CImpl::ConstructObject(CTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
 	static uint32 id = 1;
 	auto const pObject = new CObject(transformation, id++);
@@ -662,7 +663,7 @@ void CImpl::DestructObject(IObject const* const pIObject)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IListener* CImpl::ConstructListener(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
+IListener* CImpl::ConstructListener(CTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
 	static ListenerId id = 0;
 	g_pListener = new CListener(transformation, id++);
@@ -680,13 +681,13 @@ IListener* CImpl::ConstructListener(CObjectTransformation const& transformation,
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructListener(IListener* const pIListener)
 {
-	CRY_ASSERT_MESSAGE(pIListener == g_pListener, "pIListener is not g_pListener");
+	CRY_ASSERT_MESSAGE(pIListener == g_pListener, "pIListener is not g_pListener during %s", __FUNCTION__);
 	delete g_pListener;
 	g_pListener = nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IEvent* CImpl::ConstructEvent(CATLEvent& event)
+IEvent* CImpl::ConstructEvent(CryAudio::CEvent& event)
 {
 	return static_cast<IEvent*>(new CEvent(event));
 }
@@ -698,7 +699,7 @@ void CImpl::DestructEvent(IEvent const* const pIEvent)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IStandaloneFile* CImpl::ConstructStandaloneFile(CATLStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITrigger const* pITrigger /*= nullptr*/)
+IStandaloneFile* CImpl::ConstructStandaloneFile(CryAudio::CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITrigger const* pITrigger /*= nullptr*/)
 {
 	static string s_localizedfilesFolder = PathUtil::GetLocalizationFolder() + "/" + m_language + "/";
 	static string filePath;
@@ -720,7 +721,7 @@ void CImpl::DestructStandaloneFile(IStandaloneFile const* const pIStandaloneFile
 {
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
 	const CStandaloneFile* const pStandaloneEvent = static_cast<const CStandaloneFile*>(pIStandaloneFile);
-	CRY_ASSERT_MESSAGE(pStandaloneEvent->m_channels.size() == 0, "Events always have to be stopped/finished before they get deleted");
+	CRY_ASSERT_MESSAGE(pStandaloneEvent->m_channels.size() == 0, "Events always have to be stopped/finished before they get deleted during %s", __FUNCTION__);
 #endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 	delete pIStandaloneFile;
 }

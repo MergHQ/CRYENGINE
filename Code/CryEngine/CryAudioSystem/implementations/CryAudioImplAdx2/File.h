@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <ATLEntityData.h>
+#include <IFile.h>
 #include <PoolObject.h>
 
 #include <cri_atom_ex.h>

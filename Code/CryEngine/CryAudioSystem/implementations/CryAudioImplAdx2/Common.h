@@ -40,31 +40,31 @@ struct S3DAttributes final
 };
 
 //////////////////////////////////////////////////////////////////////////
-inline void Fill3DAttributeTransformation(CObjectTransformation const& inTransformation, S3DAttributes& outAttributes)
+inline void Fill3DAttributeTransformation(CTransformation const& transformation, S3DAttributes& attributes)
 {
-	outAttributes.pos.x = static_cast<CriFloat32>(inTransformation.GetPosition().x);
-	outAttributes.pos.y = static_cast<CriFloat32>(inTransformation.GetPosition().z);
-	outAttributes.pos.z = static_cast<CriFloat32>(inTransformation.GetPosition().y);
+	attributes.pos.x = static_cast<CriFloat32>(transformation.GetPosition().x);
+	attributes.pos.y = static_cast<CriFloat32>(transformation.GetPosition().z);
+	attributes.pos.z = static_cast<CriFloat32>(transformation.GetPosition().y);
 
-	outAttributes.fwd.x = static_cast<CriFloat32>(inTransformation.GetForward().x);
-	outAttributes.fwd.y = static_cast<CriFloat32>(inTransformation.GetForward().z);
-	outAttributes.fwd.z = static_cast<CriFloat32>(inTransformation.GetForward().y);
+	attributes.fwd.x = static_cast<CriFloat32>(transformation.GetForward().x);
+	attributes.fwd.y = static_cast<CriFloat32>(transformation.GetForward().z);
+	attributes.fwd.z = static_cast<CriFloat32>(transformation.GetForward().y);
 
-	outAttributes.up.x = static_cast<CriFloat32>(inTransformation.GetUp().x);
-	outAttributes.up.y = static_cast<CriFloat32>(inTransformation.GetUp().z);
-	outAttributes.up.z = static_cast<CriFloat32>(inTransformation.GetUp().y);
+	attributes.up.x = static_cast<CriFloat32>(transformation.GetUp().x);
+	attributes.up.y = static_cast<CriFloat32>(transformation.GetUp().z);
+	attributes.up.z = static_cast<CriFloat32>(transformation.GetUp().y);
 
-	outAttributes.vel.x = 0.0f;
-	outAttributes.vel.y = 0.0f;
-	outAttributes.vel.z = 0.0f;
+	attributes.vel.x = 0.0f;
+	attributes.vel.y = 0.0f;
+	attributes.vel.z = 0.0f;
 }
 
 //////////////////////////////////////////////////////////////////////////
-inline void Fill3DAttributeVelocity(Vec3 const& inVelocity, S3DAttributes& outAttributes)
+inline void Fill3DAttributeVelocity(Vec3 const& velocity, S3DAttributes& attributes)
 {
-	outAttributes.vel.x = static_cast<CriFloat32>(inVelocity.x);
-	outAttributes.vel.y = static_cast<CriFloat32>(inVelocity.z);
-	outAttributes.vel.z = static_cast<CriFloat32>(inVelocity.y);
+	attributes.vel.x = static_cast<CriFloat32>(velocity.x);
+	attributes.vel.y = static_cast<CriFloat32>(velocity.z);
+	attributes.vel.z = static_cast<CriFloat32>(velocity.y);
 }
 } // namespace Adx2
 } // namespace Impl

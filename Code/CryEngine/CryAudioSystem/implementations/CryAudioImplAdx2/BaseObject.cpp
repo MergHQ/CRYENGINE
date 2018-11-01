@@ -19,7 +19,7 @@ namespace Impl
 namespace Adx2
 {
 CryLockT<CRYLOCK_RECURSIVE> g_mutex;
-std::unordered_map<CriAtomExPlaybackId, CATLEvent*> g_activeEvents;
+std::unordered_map<CriAtomExPlaybackId, CryAudio::CEvent*> g_activeEvents;
 
 //////////////////////////////////////////////////////////////////////////
 void VoiceEventCallback(
@@ -37,11 +37,11 @@ void VoiceEventCallback(
 
 		if (iter != g_activeEvents.end())
 		{
-			auto const pAtlEvent = iter->second;
+			auto const pEvent = iter->second;
 			g_activeEvents.erase(iter);
 			g_mutex.Unlock();
 
-			gEnv->pAudioSystem->ReportFinishedEvent(*pAtlEvent, true);
+			gEnv->pAudioSystem->ReportFinishedEvent(*pEvent, true);
 		}
 		else
 		{
@@ -61,7 +61,7 @@ CBaseObject::CBaseObject()
 	ZeroStruct(m_3dAttributes);
 	m_p3dSource = criAtomEx3dSource_Create(&g_3dSourceConfig, nullptr, 0);
 	m_pPlayer = criAtomExPlayer_Create(&g_playerConfig, nullptr, 0);
-	CRY_ASSERT_MESSAGE(m_pPlayer != nullptr, "m_pPlayer is null pointer");
+	CRY_ASSERT_MESSAGE(m_pPlayer != nullptr, "m_pPlayer is null pointer during %s", __FUNCTION__);
 	m_events.reserve(2);
 	criAtomEx_SetVoiceEventCallback(VoiceEventCallback, nullptr);
 }
@@ -215,7 +215,7 @@ bool CBaseObject::StartEvent(CTrigger const* const pTrigger, CEvent* const pEven
 					UpdateVelocityTracking();
 
 					g_mutex.Lock();
-					g_activeEvents[id] = &pEvent->GetATLEvent();
+					g_activeEvents[id] = &pEvent->GetEvent();
 					g_mutex.Unlock();
 
 					eventStarted = true;
@@ -357,7 +357,7 @@ void CBaseObject::UpdateVelocityTracking()
 			criAtomEx3dSource_SetVelocity(m_p3dSource, &zeroVelocity);
 			criAtomEx3dSource_Update(m_p3dSource);
 
-			CRY_ASSERT_MESSAGE(g_numObjectsWithDoppler > 0, "g_numObjectsWithDoppler is 0 but an object with doppler tracking still exists.");
+			CRY_ASSERT_MESSAGE(g_numObjectsWithDoppler > 0, "g_numObjectsWithDoppler is 0 but an object with doppler tracking still exists during %s", __FUNCTION__);
 			g_numObjectsWithDoppler--;
 		}
 	}

@@ -24,7 +24,9 @@ public:
 	explicit CParameter(
 		uint32 const id,
 		float const multiplier,
-		float const shift);
+		float const shift)
+		: CBaseParameter(id, multiplier, shift, EParameterType::Parameter)
+	{}
 
 	virtual ~CParameter() override = default;
 };

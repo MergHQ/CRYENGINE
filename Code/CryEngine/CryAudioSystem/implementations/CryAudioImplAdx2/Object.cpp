@@ -26,7 +26,7 @@ namespace Adx2
 static constexpr CriChar8 const* s_szOcclusionAisacName = "occlusion";
 
 //////////////////////////////////////////////////////////////////////////
-CObject::CObject(CObjectTransformation const& transformation)
+CObject::CObject(CTransformation const& transformation)
 	: m_transformation(transformation)
 	, m_occlusion(0.0f)
 	, m_previousAbsoluteVelocity(0.0f)
@@ -45,7 +45,7 @@ CObject::~CObject()
 {
 	if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0)
 	{
-		CRY_ASSERT_MESSAGE(g_numObjectsWithDoppler > 0, "g_numObjectsWithDoppler is 0 but an object with doppler tracking still exists.");
+		CRY_ASSERT_MESSAGE(g_numObjectsWithDoppler > 0, "g_numObjectsWithDoppler is 0 but an object with doppler tracking still exists during %s", __FUNCTION__);
 		g_numObjectsWithDoppler--;
 	}
 }
@@ -60,7 +60,7 @@ void CObject::Update(float const deltaTime)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetTransformation(CObjectTransformation const& transformation)
+void CObject::SetTransformation(CTransformation const& transformation)
 {
 	m_position = transformation.GetPosition();
 
@@ -209,7 +209,7 @@ void CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
+void CObject::SetOcclusion(float const occlusion)
 {
 	criAtomExPlayer_SetAisacControlByName(m_pPlayer, s_szOcclusionAisacName, static_cast<CriFloat32>(occlusion));
 	criAtomExPlayer_UpdateAll(m_pPlayer);

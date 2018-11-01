@@ -7,7 +7,7 @@
 #include "EnvironmentBus.h"
 #include "EnvironmentParameter.h"
 #include "Trigger.h"
-#include <SharedAudioData.h>
+#include <SharedData.h>
 #include <CryAudio/IAudioSystem.h>
 
 namespace CryAudio
@@ -16,23 +16,6 @@ namespace Impl
 {
 namespace Fmod
 {
-//////////////////////////////////////////////////////////////////////////
-CEvent::CEvent(CATLEvent* const pEvent)
-	: m_pEvent(pEvent)
-	, m_id(InvalidCRC32)
-	, m_state(EEventState::None)
-	, m_lowpassFrequencyMax(0.0f)
-	, m_lowpassFrequencyMin(0.0f)
-	, m_pInstance(nullptr)
-	, m_pMasterTrack(nullptr)
-	, m_pLowpass(nullptr)
-	, m_pOcclusionParameter(nullptr)
-	, m_pAbsoluteVelocityParameter(nullptr)
-	, m_pObject(nullptr)
-	, m_pTrigger(nullptr)
-{
-}
-
 //////////////////////////////////////////////////////////////////////////
 CEvent::~CEvent()
 {
@@ -191,9 +174,9 @@ void CEvent::TrySetEnvironment(CEnvironment const* const pEnvironment, float con
 			uint32 const parameterId = pEnvParam->GetId();
 
 			FMOD::Studio::EventInstance* const pEventInstance = GetInstance();
-			CRY_ASSERT_MESSAGE(pEventInstance != nullptr, "Event instance doesn't exist.");
+			CRY_ASSERT_MESSAGE(pEventInstance != nullptr, "Event instance doesn't exist during %s", __FUNCTION__);
 			CTrigger const* const pTrigger = GetTrigger();
-			CRY_ASSERT_MESSAGE(pTrigger != nullptr, "Trigger doesn't exist.");
+			CRY_ASSERT_MESSAGE(pTrigger != nullptr, "Trigger doesn't exist during %s", __FUNCTION__);
 
 			FMOD::Studio::EventDescription* pEventDescription = nullptr;
 			FMOD_RESULT fmodResult = pEventInstance->getDescription(&pEventDescription);

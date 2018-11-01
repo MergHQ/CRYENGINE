@@ -13,16 +13,6 @@ namespace Impl
 namespace Wwise
 {
 //////////////////////////////////////////////////////////////////////////
-CEvent::CEvent(CATLEvent& atlEvent_)
-	: m_state(EEventState::None)
-	, m_id(AK_INVALID_UNIQUE_ID)
-	, m_atlEvent(atlEvent_)
-	, m_pObject(nullptr)
-	, m_maxAttenuation(0.0f)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 CEvent::~CEvent()
 {
 	if (m_pObject != nullptr)
@@ -70,11 +60,11 @@ void CEvent::UpdateVirtualState(float const distance)
 
 		if (m_state == EEventState::Virtual)
 		{
-			gEnv->pAudioSystem->ReportVirtualizedEvent(m_atlEvent);
+			gEnv->pAudioSystem->ReportVirtualizedEvent(m_event);
 		}
 		else
 		{
-			gEnv->pAudioSystem->ReportPhysicalizedEvent(m_atlEvent);
+			gEnv->pAudioSystem->ReportPhysicalizedEvent(m_event);
 		}
 	}
 }

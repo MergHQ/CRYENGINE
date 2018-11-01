@@ -14,7 +14,7 @@ namespace Impl
 namespace Wwise
 {
 //////////////////////////////////////////////////////////////////////////
-CListener::CListener(CObjectTransformation const& transformation, AkGameObjectID const id)
+CListener::CListener(CTransformation const& transformation, AkGameObjectID const id)
 	: m_id(id)
 	, m_transformation(transformation)
 	, m_hasMoved(false)
@@ -74,7 +74,7 @@ void CListener::SetName(char const* const szName)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CListener::SetTransformation(CObjectTransformation const& transformation)
+void CListener::SetTransformation(CTransformation const& transformation)
 {
 	m_transformation = transformation;
 	m_position = transformation.GetPosition();

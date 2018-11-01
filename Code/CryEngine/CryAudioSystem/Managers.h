@@ -7,16 +7,16 @@ namespace CryAudio
 class CEventManager;
 class CFileManager;
 class CObjectManager;
-class CAudioListenerManager;
+class CListenerManager;
 class CFileCacheManager;
-class CAudioEventListenerManager;
-class CAudioXMLProcessor;
+class CEventListenerManager;
+class CXMLProcessor;
 
 extern CEventManager g_eventManager;
 extern CFileManager g_fileManager;
 extern CObjectManager g_objectManager;
-extern CAudioListenerManager g_listenerManager;
+extern CListenerManager g_listenerManager;
 extern CFileCacheManager g_fileCacheManager;
-extern CAudioEventListenerManager g_eventListenerManager;
-extern CAudioXMLProcessor g_xmlProcessor;
+extern CEventListenerManager g_eventListenerManager;
+extern CXMLProcessor g_xmlProcessor;
 } // namespace CryAudio

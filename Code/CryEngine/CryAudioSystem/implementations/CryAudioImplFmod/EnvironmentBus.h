@@ -23,7 +23,11 @@ public:
 
 	explicit CEnvironmentBus(
 		FMOD::Studio::EventDescription* const pEventDescription,
-		FMOD::Studio::Bus* const pBus);
+		FMOD::Studio::Bus* const pBus)
+		: CEnvironment(EEnvironmentType::Bus)
+		, m_pEventDescription(pEventDescription)
+		, m_pBus(pBus)
+	{}
 
 	virtual ~CEnvironmentBus() override = default;
 

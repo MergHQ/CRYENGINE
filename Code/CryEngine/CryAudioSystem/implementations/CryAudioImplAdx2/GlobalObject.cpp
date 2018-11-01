@@ -16,7 +16,7 @@ namespace Impl
 namespace Adx2
 {
 //////////////////////////////////////////////////////////////////////////
-void CGlobalObject::SetTransformation(CObjectTransformation const& transformation)
+void CGlobalObject::SetTransformation(CTransformation const& transformation)
 {
 	Cry::Audio::Log(ELogType::Error, "Trying to set transformation on the global object!");
 }
@@ -137,7 +137,7 @@ void CGlobalObject::SetSwitchState(ISwitchState const* const pISwitchState)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CGlobalObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
+void CGlobalObject::SetOcclusion(float const occlusion)
 {
 	Cry::Audio::Log(ELogType::Error, "Trying to set occlusion and obstruction values on the global object!");
 }

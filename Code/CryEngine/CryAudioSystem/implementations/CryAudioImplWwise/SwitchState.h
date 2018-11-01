@@ -3,7 +3,7 @@
 #pragma once
 
 #include "GlobalData.h"
-#include <ATLEntityData.h>
+#include <ISwitchState.h>
 #include <PoolObject.h>
 #include <AK/SoundEngine/Common/AkTypes.h>
 
@@ -35,7 +35,12 @@ public:
 		ESwitchType const type_,
 		AkUInt32 const stateOrSwitchGroupId_,
 		AkUInt32 const stateOrSwitchId_,
-		float const rtpcValue_ = s_defaultStateValue);
+		float const rtpcValue_ = s_defaultStateValue)
+		: type(type_)
+		, stateOrSwitchGroupId(stateOrSwitchGroupId_)
+		, stateOrSwitchId(stateOrSwitchId_)
+		, rtpcValue(rtpcValue_)
+	{}
 
 	virtual ~CSwitchState() override = default;
 

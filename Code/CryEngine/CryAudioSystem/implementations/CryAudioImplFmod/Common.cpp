@@ -11,6 +11,7 @@ namespace Fmod
 {
 CListener* g_pListener = nullptr;
 uint32 g_numObjectsWithDoppler = 0;
+TriggerToParameterIndexes g_triggerToParameterIndexes;
 } // namespace Fmod
 } // namespace Impl
 } // namespace CryAudio

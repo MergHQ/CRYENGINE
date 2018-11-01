@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <ATLEntityData.h>
+#include <ISwitchState.h>
 
 namespace CryAudio
 {

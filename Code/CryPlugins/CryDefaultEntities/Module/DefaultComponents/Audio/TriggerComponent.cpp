@@ -166,7 +166,7 @@ void CTriggerComponent::ProcessEvent(const SEntityEvent& event)
 			{
 				CryAudio::SRequestInfo const* const pRequestInfo = reinterpret_cast<CryAudio::SRequestInfo const* const>(event.nParam[0]);
 
-				if (m_pIEntityAudioComponent->GetAuxObjectIdFromAudioObject(pRequestInfo->pAudioObject) == m_auxObjectId)
+				if (m_pIEntityAudioComponent->GetAuxObjectIdFromAudioObject(pRequestInfo->pIObject) == m_auxObjectId)
 				{
 					Schematyc::IObject* const pSchematycObject = GetEntity()->GetSchematycObject();
 
