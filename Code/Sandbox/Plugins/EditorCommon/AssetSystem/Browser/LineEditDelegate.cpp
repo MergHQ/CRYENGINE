@@ -37,11 +37,6 @@ public:
 	CCrySignal<void()> signalEditingAborted;
 
 protected:
-	virtual void focusOutEvent(QFocusEvent* pEvent) override
-	{
-		signalEditingAborted();
-	}
-
 	virtual void keyPressEvent(QKeyEvent* pEvent) override
 	{
 		if (pEvent->key() == Qt::Key_Escape)
