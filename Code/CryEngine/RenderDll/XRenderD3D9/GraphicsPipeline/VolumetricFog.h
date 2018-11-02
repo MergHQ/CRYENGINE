@@ -37,6 +37,11 @@ public:
 	CVolumetricFogStage();
 	virtual ~CVolumetricFogStage();
 
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		return gRenDev->m_bVolumetricFogEnabled && RenderView()->IsGlobalFogEnabled();
+	}
+
 	void Init() final;
 	void Update() final;
 
@@ -75,7 +80,6 @@ private:
 
 	bool      ReplaceShadowMapWithStaticShadowMap(CShadowUtils::SShadowCascades& shadowCascades, uint32 shadowCascadeSlot) const;
 
-	bool      IsVisible() const;
 	bool      IsTexturesValid() const;
 	void      UpdateFrame();
 	void      ExecuteDownscaleShadowmap();

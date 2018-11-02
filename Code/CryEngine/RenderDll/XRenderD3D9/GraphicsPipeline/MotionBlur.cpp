@@ -19,9 +19,7 @@ float CMotionBlurStage::ComputeMotionScale()
 
 void CMotionBlurStage::Execute()
 {
-	if (!CRenderer::CV_r_MotionBlur || gRenDev->m_nDisableTemporalEffects)
-		return;
-
+	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("MB");
 
 	CD3D9Renderer* rd = gcpRendD3D;

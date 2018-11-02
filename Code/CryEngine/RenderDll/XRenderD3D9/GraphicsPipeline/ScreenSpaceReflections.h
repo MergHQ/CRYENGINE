@@ -9,7 +9,12 @@
 class CScreenSpaceReflectionsStage : public CGraphicsPipelineStage
 {
 public:
-	void Init();
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		return CRendererCVars::CV_r_SSReflections > 0;
+	}
+
+	void Init() final;
 	void Execute();
 
 private:

@@ -31,6 +31,7 @@ void CTiledShadingStage::Init()
 
 void CTiledShadingStage::Execute()
 {
+	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("TILED_SHADING");
 
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;

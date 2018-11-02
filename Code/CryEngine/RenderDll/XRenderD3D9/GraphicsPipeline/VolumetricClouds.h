@@ -16,6 +16,11 @@ public:
 	CVolumetricCloudsStage();
 	virtual ~CVolumetricCloudsStage();
 
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		return gcpRendD3D->m_bVolumetricCloudsEnabled;
+	}
+
 	void Init() final;
 	void Update() final;
 

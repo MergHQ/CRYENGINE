@@ -11,7 +11,12 @@ class CRenderView;
 class CLensOpticsStage : public CGraphicsPipelineStage
 {
 public:
-	void      Init();
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		return CRenderer::CV_r_flares && !CRenderer::CV_r_durango_async_dips;
+	}
+
+	void      Init() final;
 	void      Execute();
 
 	bool      HasContent() const { return m_primitivesRendered>0; }

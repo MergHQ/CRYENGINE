@@ -9,6 +9,11 @@
 class CHeightMapAOStage : public CGraphicsPipelineStage
 {
 public:
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		return CRendererCVars::CV_r_HeightMapAO > 0;
+	}
+
 	void Update() final;
 	void Execute();
 

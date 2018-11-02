@@ -36,6 +36,8 @@ void CDepthReadbackStage::Init()
 
 void CDepthReadbackStage::Execute()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	if (!IsReadbackRequired())
 	{
 		ReleaseResources();

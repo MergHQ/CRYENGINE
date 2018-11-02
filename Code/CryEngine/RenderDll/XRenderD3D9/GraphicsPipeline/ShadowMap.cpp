@@ -989,6 +989,7 @@ void CShadowMapStage::ClearShadowMaps(PassGroupList& shadowMapPasses)
 
 void CShadowMapStage::Execute()
 {
+	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("SHADOWMAPS");
 
 	CD3D9Renderer* rd = gcpRendD3D;

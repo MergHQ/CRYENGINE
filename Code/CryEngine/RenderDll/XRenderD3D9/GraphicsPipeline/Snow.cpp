@@ -110,14 +110,15 @@ void CSnowStage::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
 
 void CSnowStage::ExecuteDeferredSnowGBuffer()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	const SSnowParams& snowVolParams = m_SnowVolParams;
 	const SRainParams& rainVolParams = m_RainVolParams;
 
-	if ((CRenderer::CV_r_snow < 1)
-	    || (snowVolParams.m_fSnowAmount < 0.05f
-	        && snowVolParams.m_fFrostAmount < 0.05f
-	        && snowVolParams.m_fSurfaceFreezing < 0.05f)
-	    || snowVolParams.m_fRadius < 0.05f)
+	if ((snowVolParams.m_fSnowAmount      < 0.05f &&
+	     snowVolParams.m_fFrostAmount     < 0.05f &&
+	     snowVolParams.m_fSurfaceFreezing < 0.05f) ||
+	     snowVolParams.m_fRadius          < 0.05f)
 	{
 		return;
 	}
@@ -262,14 +263,15 @@ void CSnowStage::ExecuteDeferredSnowGBuffer()
 
 void CSnowStage::ExecuteDeferredSnowDisplacement()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
 	const SSnowParams& snowVolParams = m_SnowVolParams;
 	const SRainParams& rainVolParams = m_RainVolParams;
 
-	if ((CRenderer::CV_r_snow < 1 || CRenderer::CV_r_snow_displacement < 1)
-	    || snowVolParams.m_fSnowAmount < 0.05f
-	    || snowVolParams.m_fRadius < 0.05f)
+	if (snowVolParams.m_fSnowAmount < 0.05f ||
+	    snowVolParams.m_fRadius     < 0.05f)
 	{
 		return;
 	}
@@ -482,10 +484,7 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 
 void CSnowStage::Execute()
 {
-	if ((CRenderer::CV_r_snow < 1) || !CRenderer::CV_r_PostProcess || !CRendererResources::s_ptexSceneTarget)
-	{
-		return;
-	}
+	FUNCTION_PROFILER_RENDERER();
 
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 	const SRainParams& rainVolParams = m_RainVolParams;

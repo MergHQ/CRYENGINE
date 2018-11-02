@@ -15,6 +15,11 @@ public:
 	CDeferredDecalsStage();
 	virtual ~CDeferredDecalsStage();
 
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		return CRenderer::CV_r_deferredDecals > 0;
+	}
+
 	void Init() final;
 	void Execute();
 

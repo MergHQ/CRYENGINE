@@ -25,6 +25,11 @@ public:
 	};
 
 public:
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		return RenderView()->IsGlobalFogEnabled() && CRenderer::CV_r_usezpass != 0;
+	}
+
 	void Init() final;
 	void Resize(int renderWidth, int renderHeight) final;
 	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater) final;

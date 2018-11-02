@@ -12,7 +12,12 @@ public:
 	CTiledShadingStage();
 	~CTiledShadingStage();
 
-	void Init();
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		return CRendererCVars::CV_r_DeferredShadingTiled > 1;
+	}
+
+	void Init() final;
 	void Execute();
 
 private:

@@ -28,11 +28,6 @@ void CSunShaftsStage::Init()
 	m_passShaftsGen1.SetRequirePerViewConstantBuffer(true);
 }
 
-bool CSunShaftsStage::IsActive()
-{
-	return CRenderer::CV_r_sunshafts && CRenderer::CV_r_PostProcess;
-}
-
 int CSunShaftsStage::GetDownscaledTargetsIndex()
 {
 	return gRenDev->EF_GetRenderQuality() >= eRQ_High ? 0 : 1;
@@ -59,10 +54,8 @@ void CSunShaftsStage::GetCompositionParams(Vec4& params0, Vec4& params1)
 
 void CSunShaftsStage::Execute()
 {
+	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("SUNSHAFTS_GEN");
-
-	if (!IsActive())
-		return;
 
 	CSunShafts* pSunShafts = (CSunShafts*)PostEffectMgr()->GetEffect(EPostEffectID::SunShafts);
 	float rayAttenuation = clamp_tpl<float>(pSunShafts->m_pRaysAttenuation->GetParam(), 0.0f, 10.0f);

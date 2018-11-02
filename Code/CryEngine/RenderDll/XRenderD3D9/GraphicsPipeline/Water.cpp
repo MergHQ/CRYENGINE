@@ -361,6 +361,8 @@ void CWaterStage::Resize(int renderWidth, int renderHeight)
 
 void CWaterStage::ExecuteWaterVolumeCaustics()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	CRenderView* pRenderView = RenderView();
 	CRY_ASSERT(pRenderView);
 
@@ -396,7 +398,14 @@ void CWaterStage::ExecuteWaterVolumeCaustics()
 		ExecuteWaterNormalGen();
 	}
 
-	ExecuteOceanMaskGen();
+	// Needed by ePass_FogVolume and ExecuteDeferredOceanCaustics()
+	{
+		N3DEngineCommon::SOceanInfo& OceanInfo = gcpRendD3D->m_p3DEngineCommon.m_OceanInfo;
+		const bool bOceanVolumeVisible = (OceanInfo.m_nOceanRenderFlags & OCR_OCEANVOLUME_VISIBLE) != 0;
+
+		if (m_bOceanMaskGen && bOceanVolumeVisible)
+			ExecuteOceanMaskGen();
+	}
 
 	// Check if there are any water volumes that have caustics enabled
 	bool isEmpty = bEmpty;
@@ -458,11 +467,6 @@ void CWaterStage::ExecuteWaterVolumeCaustics()
 
 void CWaterStage::ExecuteDeferredWaterVolumeCaustics()
 {
-	if (!CRendererResources::s_ptexSceneTarget)
-	{
-		return;
-	}
-
 	PROFILE_LABEL_SCOPE("DEFERRED_WATERVOLUME_CAUSTICS");
 
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
@@ -503,12 +507,7 @@ void CWaterStage::ExecuteDeferredWaterVolumeCaustics()
 
 void CWaterStage::ExecuteDeferredOceanCaustics()
 {
-	if (!CRenderer::CV_r_watercaustics
-	    || !CRenderer::CV_r_watercausticsdeferred
-	    || !CRendererResources::s_ptexSceneTarget)
-	{
-		return;
-	}
+	FUNCTION_PROFILER_RENDERER();
 
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 	I3DEngine* RESTRICT_POINTER pEng = gEnv->p3DEngine;
@@ -526,7 +525,6 @@ void CWaterStage::ExecuteDeferredOceanCaustics()
 	}
 
 	PROFILE_LABEL_SCOPE("OCEAN_CAUSTICS");
-	PROFILE_FRAME(DrawShader_DeferredCausticsPass);
 
 	// Caustics are done with projection from sun - hence they update too fast with regular
 	// sun direction. Use a smooth sun direction update instead to workaround this
@@ -741,6 +739,8 @@ void CWaterStage::ExecuteDeferredOceanCaustics()
 
 void CWaterStage::ExecuteWaterFogVolumeBeforeTransparent()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	const CRenderView* pRenderView = RenderView();
 	CRY_ASSERT(pRenderView);
 
@@ -758,6 +758,8 @@ void CWaterStage::ExecuteWaterFogVolumeBeforeTransparent()
 
 void CWaterStage::Execute()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	CRenderView* pRenderView = RenderView();
 	CRY_ASSERT(pRenderView);
 
@@ -1360,14 +1362,6 @@ void CWaterStage::ExecuteWaterNormalGen()
 
 void CWaterStage::ExecuteOceanMaskGen()
 {
-	N3DEngineCommon::SOceanInfo& OceanInfo = gcpRendD3D->m_p3DEngineCommon.m_OceanInfo;
-	const bool bOceanVolumeVisible = (OceanInfo.m_nOceanRenderFlags & OCR_OCEANVOLUME_VISIBLE) != 0;
-
-	if (!m_bOceanMaskGen || !bOceanVolumeVisible)
-	{
-		return;
-	}
-
 	PROFILE_LABEL_SCOPE("OCEAN_MASK_GEN");
 
 	// prepare per pass device resource

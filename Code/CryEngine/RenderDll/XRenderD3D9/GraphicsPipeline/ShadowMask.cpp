@@ -196,6 +196,8 @@ void CShadowMaskStage::Init()
 
 void CShadowMaskStage::Prepare()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
 	CRenderView* pRenderView = RenderView();
@@ -312,8 +314,10 @@ void CShadowMaskStage::Prepare()
 
 void CShadowMaskStage::Execute()
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
+	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("SHADOWMASK");
+
+	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
 	// sun shadows
 	if (m_sunShadowPrimitives > 0)

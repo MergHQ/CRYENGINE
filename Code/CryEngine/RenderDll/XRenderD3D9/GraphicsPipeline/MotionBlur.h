@@ -9,6 +9,11 @@
 class CMotionBlurStage : public CGraphicsPipelineStage
 {
 public:
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		return CRenderer::CV_r_MotionBlur && !gRenDev->m_nDisableTemporalEffects;
+	}
+
 	void Execute();
 
 private:

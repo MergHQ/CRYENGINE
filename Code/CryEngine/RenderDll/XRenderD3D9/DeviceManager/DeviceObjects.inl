@@ -234,6 +234,8 @@ inline void EraseExpiredEntriesFromCache(TCache& cache, int currentFrame, int er
 
 inline void CDeviceObjectFactory::OnEndFrame(int frameID)
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	// Garbage collect native API resources and objects
 #if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 	m_pDX11Scheduler->EndOfFrame(false);

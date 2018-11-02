@@ -13,12 +13,10 @@ void CScreenSpaceReflectionsStage::Init()
 
 void CScreenSpaceReflectionsStage::Execute()
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
-	if (!CRenderer::CV_r_SSReflections)
-		return;
-
+	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("SS_REFLECTIONS");
+
+	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
 	Matrix44 mViewProj = GetCurrentViewInfo().cameraProjMatrix;
 	Matrix44 mReprojToPrev = GetCurrentViewInfo().GetReprojection();

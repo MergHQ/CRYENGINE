@@ -301,20 +301,13 @@ bool CSceneCustomStage::DoDebugRendering()
 	return (bViewTexelDensity || bViewWireframe);
 }
 
-bool CSceneCustomStage::DoDebugOverlay()
-{
-	bool bDebugDraw = CRenderer::CV_e_DebugDraw != 0;
-
-	return (bDebugDraw);
-}
-
 void CSceneCustomStage::Prepare()
 {
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 
 	bool bViewTexelDensity = CRenderer::CV_r_TexelsPerMeter > 0;
 	bool bViewWireframe = pRenderer->GetWireframeMode() != R_SOLID_MODE;
-	bool bDebugDraw = CRenderer::CV_e_DebugDraw != 0;
+	bool bDebugDraw = IsDebugOverlayEnabled();
 	// should probably somehow allow some editor viewports to not use this pass
 	bool bSelectionIDPass = pRenderer->IsEditorMode() && !gEnv->IsEditorGameMode();
 
@@ -377,6 +370,8 @@ void CSceneCustomStage::ExecuteDebugger()
 
 void CSceneCustomStage::ExecuteDebugOverlay()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	CRenderView* pRenderView = RenderView();
 	auto& renderItemDrawer = pRenderView->GetDrawer();
 	const bool bReverseDepth = true;
@@ -417,6 +412,8 @@ void CSceneCustomStage::ExecuteDebugOverlay()
 
 void CSceneCustomStage::ExecuteSelectionHighlight()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	CRenderView* pRenderView = RenderView();
 	auto& renderItemDrawer = pRenderView->GetDrawer();
@@ -490,6 +487,8 @@ void CSceneCustomStage::ExecuteSelectionHighlight()
 
 void CSceneCustomStage::ExecuteSilhouettePass()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	CRenderView* pRenderView = RenderView();
 
 	if (!(pRenderView->GetBatchFlags(EFSLIST_CUSTOM) & FB_CUSTOM_RENDER))
@@ -523,6 +522,8 @@ void CSceneCustomStage::ExecuteSilhouettePass()
 
 void CSceneCustomStage::ExecuteHelpers()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	CRenderView* pRenderView = RenderView();
 	auto& renderItemDrawer = pRenderView->GetDrawer();
 

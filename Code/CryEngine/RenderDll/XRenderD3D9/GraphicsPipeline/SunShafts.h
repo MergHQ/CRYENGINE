@@ -9,10 +9,14 @@
 class CSunShaftsStage : public CGraphicsPipelineStage
 {
 public:
-	void      Init();
+	bool      IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		return CRenderer::CV_r_sunshafts && CRenderer::CV_r_PostProcess;
+	}
+
+	void      Init() final;
 	void      Execute();
 
-	bool      IsActive();
 	CTexture* GetFinalOutputRT();
 	void      GetCompositionParams(Vec4& params0, Vec4& params1);
 

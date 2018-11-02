@@ -8,6 +8,11 @@
 class CAutoExposureStage : public CGraphicsPipelineStage
 {
 public:
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		return RenderView()->GetCurrentEye() != CCamera::eEye_Right;
+	}
+
 	void Execute();
 
 private:

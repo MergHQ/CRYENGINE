@@ -9,6 +9,11 @@
 class CDepthOfFieldStage : public CGraphicsPipelineStage
 {
 public:
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		return CRenderer::CV_r_dof > 0;
+	}
+
 	void Execute();
 
 private:

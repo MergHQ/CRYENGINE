@@ -843,6 +843,7 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 
 void CSceneForwardStage::ExecuteOpaque()
 {
+	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("OPAQUE");
 
 	CRenderView* pRenderView = RenderView();
@@ -919,16 +920,21 @@ void CSceneForwardStage::ExecuteTransparent(bool bBelowWater)
 
 void CSceneForwardStage::ExecuteTransparentBelowWater()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	ExecuteTransparent(true);
 }
 
 void CSceneForwardStage::ExecuteTransparentAboveWater()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	ExecuteTransparent(false);
 }
 
 void CSceneForwardStage::ExecuteTransparentDepthFixup()
 {
+	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("MERGE_DEPTH");
 
 	CTexture* pSrcRT  = CRendererResources::s_ptexHDRTarget;
@@ -961,6 +967,8 @@ void CSceneForwardStage::ExecuteTransparentDepthFixup()
 
 void CSceneForwardStage::ExecuteTransparentLoRes(int subRes)
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	CRenderView* pRenderView = RenderView();
 	if (pRenderView->GetRenderItems(EFSLIST_HALFRES_PARTICLES).empty())
 		return;
@@ -1022,6 +1030,8 @@ void CSceneForwardStage::ExecuteTransparentLoRes(int subRes)
 
 void CSceneForwardStage::ExecuteAfterPostProcessHDR()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	CRenderView* pRenderView = RenderView();
 	if (pRenderView->GetRenderItems(EFSLIST_AFTER_HDRPOSTPROCESS).empty())
 		return;
@@ -1052,6 +1062,8 @@ void CSceneForwardStage::ExecuteAfterPostProcessHDR()
 
 void CSceneForwardStage::ExecuteAfterPostProcessLDR()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	CRenderView* pRenderView = RenderView();
 	if (pRenderView->GetRenderItems(EFSLIST_AFTER_POSTPROCESS).empty())
 		return;
@@ -1373,6 +1385,8 @@ static void FillSkyTextureData(CTexture* pTexture, const void* pData, const uint
 
 void CSceneForwardStage::ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex)
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	if (!m_pHDRSkyRE && !m_pSkyRE)
 		return;
 

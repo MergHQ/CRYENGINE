@@ -462,34 +462,34 @@ void CSceneGBufferStage::ExecuteLinearizeDepth()
 
 void CSceneGBufferStage::ExecuteGBufferVisualization()
 {
-	// GBuffer Debug Visualization
-	if (CRenderer::CV_r_DeferredShadingDebugGBuffer)
-	{
-		PROFILE_LABEL_SCOPE("BUFFER_VISUALIZATION");
+	FUNCTION_PROFILER_RENDERER();
+	PROFILE_LABEL_SCOPE("GBUFFER_VISUALIZATION");
 
-		static CCryNameTSCRC tech("DebugGBuffer");
+	static CCryNameTSCRC tech("DebugGBuffer");
 
-		m_passBufferVisualization.SetTechnique(CShaderMan::s_shDeferredShading, tech, 0);
-		m_passBufferVisualization.SetRenderTarget(0, CRendererResources::s_ptexSceneDiffuseTmp);
-		m_passBufferVisualization.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
-		m_passBufferVisualization.SetState(GS_NODEPTHTEST);
+	m_passBufferVisualization.SetTechnique(CShaderMan::s_shDeferredShading, tech, 0);
+	m_passBufferVisualization.SetRenderTarget(0, CRendererResources::s_ptexSceneDiffuseTmp);
+	m_passBufferVisualization.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
+	m_passBufferVisualization.SetState(GS_NODEPTHTEST);
 
-		m_passBufferVisualization.SetTexture(0, CRendererResources::s_ptexLinearDepth);
-		m_passBufferVisualization.SetTexture(1, CRendererResources::s_ptexSceneNormalsMap);
-		m_passBufferVisualization.SetTexture(2, CRendererResources::s_ptexSceneDiffuse);
-		m_passBufferVisualization.SetTexture(3, CRendererResources::s_ptexSceneSpecular);
-		m_passBufferVisualization.SetSampler(0, EDefaultSamplerStates::PointClamp);
+	m_passBufferVisualization.SetTexture(0, CRendererResources::s_ptexLinearDepth);
+	m_passBufferVisualization.SetTexture(1, CRendererResources::s_ptexSceneNormalsMap);
+	m_passBufferVisualization.SetTexture(2, CRendererResources::s_ptexSceneDiffuse);
+	m_passBufferVisualization.SetTexture(3, CRendererResources::s_ptexSceneSpecular);
+	m_passBufferVisualization.SetSampler(0, EDefaultSamplerStates::PointClamp);
 
-		m_passBufferVisualization.BeginConstantUpdate();
-		static CCryNameR paramName("DebugViewMode");
-		m_passBufferVisualization.SetConstant(paramName, Vec4((float)CRenderer::CV_r_DeferredShadingDebugGBuffer, 0, 0, 0), eHWSC_Pixel);
+	m_passBufferVisualization.BeginConstantUpdate();
+	static CCryNameR paramName("DebugViewMode");
+	m_passBufferVisualization.SetConstant(paramName, Vec4((float)CRenderer::CV_r_DeferredShadingDebugGBuffer, 0, 0, 0), eHWSC_Pixel);
 			
-		m_passBufferVisualization.Execute();
-	}
+	m_passBufferVisualization.Execute();
 }
 
 void CSceneGBufferStage::ExecuteMicroGBuffer()
 {
+	FUNCTION_PROFILER_RENDERER();
+	PROFILE_LABEL_SCOPE("GBUFFER_MICRO");
+
 	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 
 	CRenderView* pRenderView = RenderView();
@@ -517,6 +517,7 @@ void CSceneGBufferStage::ExecuteMicroGBuffer()
 
 void CSceneGBufferStage::Execute()
 {
+	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("GBUFFER");
 
 	// NOTE: no more external state changes in here, everything should have been setup
@@ -598,24 +599,22 @@ void CSceneGBufferStage::Execute()
 
 void CSceneGBufferStage::ExecuteMinimumZpass()
 {
+	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("MINIMUM_ZPASS");
+
+	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 
 	// NOTE: no more external state changes in here, everything should have been setup
 	auto& rViewport = GetViewport();
 	CRenderView* pRenderView = RenderView();
 	auto& rendItemDrawer = pRenderView->GetDrawer();
 
-	if (CRendererCVars::CV_r_usezpass >= 2)
-	{
-		auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
+	m_depthPrepass.PrepareRenderPassForUse(commandList);
 
-		m_depthPrepass.PrepareRenderPassForUse(commandList);
+	rendItemDrawer.InitDrawSubmission();
 
-		rendItemDrawer.InitDrawSubmission();
+	ExecuteDepthPrepass();
 
-		ExecuteDepthPrepass();
-
-		rendItemDrawer.JobifyDrawSubmission();
-		rendItemDrawer.WaitForDrawSubmission();
-	}
+	rendItemDrawer.JobifyDrawSubmission();
+	rendItemDrawer.WaitForDrawSubmission();
 }

@@ -15,7 +15,12 @@ class CColorGradingStage : public CGraphicsPipelineStage
 public:
 	CColorGradingStage();
 
-	void Init();
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		return CRenderer::CV_r_colorgrading > 0 && CRenderer::CV_r_colorgrading_charts && gcpRendD3D->m_pColorGradingControllerD3D;
+	}
+
+	void Init() final;
 	void Execute();
 
 	void SetStaticColorChart(_smart_ptr<CTexture> pStaticColorChart) { AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_lock); std::swap(m_pChartStatic, pStaticColorChart); }
