@@ -311,7 +311,7 @@ bool CPrefabObject::CreateFrom(std::vector<CBaseObject*>& objects)
 void CPrefabObject::CreateFrom(std::vector<CBaseObject*>& objects, Vec3 center, CPrefabItem* pItem)
 {
 	CUndo undo("Create Prefab");
-	CPrefabObject* pPrefab = static_cast<CPrefabObject*>(GetIEditorImpl()->NewObject(PREFAB_OBJECT_CLASS_NAME));
+	CPrefabObject* pPrefab = static_cast<CPrefabObject*>(GetIEditorImpl()->NewObject(PREFAB_OBJECT_CLASS_NAME, pItem->GetGUID().ToString().c_str()));
 	pPrefab->SetPrefab(pItem, false);
 
 	if (!pPrefab)
@@ -1632,6 +1632,20 @@ void CPrefabObject::SetAutoUpdatePrefab(bool autoUpdate)
 		}
 		m_pendingChanges.clear();
 	}
+}
+
+const char* CPrefabObjectClassDesc::GenerateObjectName(const char* szCreationParams)
+{
+	//pCreationParams is the GUID of the prefab item. 
+	//This item might not have been loaded yet, so we need to make sure it is
+	CPrefabItem * item = static_cast<CPrefabItem*>(GetIEditor()->GetPrefabManager()->LoadItem(CryGUID::FromString(szCreationParams)));
+
+	if (item)
+	{
+		return item->GetName();
+	}
+	
+	return ClassName();
 }
 
 void CPrefabObjectClassDesc::EnumerateObjects(IObjectEnumerator* pEnumerator)

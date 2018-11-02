@@ -37,6 +37,10 @@ struct IClassDesc
 	//! This method returns the UI name of the class.
 	virtual const char* UIName() { return ClassName(); }
 
+	//! This method is used to determine a name for an object of this class
+	//! \param pCreationParams string representing object creation params
+	virtual const char* GenerateObjectName(const char* szCreationParams) { return ClassName(); }
+
 	//! Creates the object associated with the description. Default implementation returns nullptr as this may not be used by all class types.
 	//! Use the templated CreateObject overload for convenience
 	virtual void* CreateObject() { return nullptr; }
