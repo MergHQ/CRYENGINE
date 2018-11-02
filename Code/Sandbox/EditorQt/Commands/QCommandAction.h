@@ -20,6 +20,7 @@ class QCommandAction : public QAction, public CUiCommand::UiInfo
 public:
 	QCommandAction(const QString& actionName, const QString& actionText, QObject* parent, const char* command = 0);
 	QCommandAction(const QString& actionName, const char* command, QObject* parent);
+	QCommandAction(const QCommandAction& cmd);
 	QCommandAction(const CUiCommand& cmd);
 	QCommandAction(const CCustomCommand& cmd);
 	QCommandAction(const CPolledKeyCommand& cmd);

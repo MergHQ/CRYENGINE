@@ -376,6 +376,7 @@
         <file alias="General/Sun.ico">icons/general_Sun.ico</file>
         <file alias="General/SymLink.ico">icons/general_SymLink.ico</file>
         <file alias="General/Sync_Square.ico">icons/general_Sync_Square.ico</file>
+        <file alias="general_sync_selection.ico">icons/general_sync_selection.ico</file>
         <file alias="General/Tick.ico">icons/general_Tick.ico</file>
         <file alias="General/Tick_Box.ico">icons/general_Tick_Box.ico</file>
         <file alias="General/Tick_Box_Tinted.ico">icons/general_Tick_Box_Tinted.ico</file>
@@ -445,6 +446,12 @@
         <file alias="Layouts/layout_flowgraph.ico">icons/layout_flowgraph.ico</file>
         <file alias="Layouts/layout_leveldesign.ico">icons/layout_leveldesign.ico</file>
         <file alias="Layouts/layout_modelling.ico">icons/layout_modelling.ico</file>
+
+        <!--Level Explorer-->
+        <file alias="level_explorer_active_layer_content_only.ico">icons/level_explorer_active_layer_content_only.ico</file>
+        <file alias="level_explorer_full_hierarchy.ico">icons/level_explorer_full_hierarchy.ico</file>
+        <file alias="level_explorer_layers_only.ico">icons/level_explorer_layers_only.ico</file>
+        <file alias="level_explorer_objects_only.ico">icons/level_explorer_objects_only.ico</file>
 
         <!--Logo-->
         <file alias="Logo/Cryengine_Logo.png">icons/logo_cryengine.png</file>

@@ -166,6 +166,13 @@ CLevelExplorer::CLevelExplorer(QWidget* pParent)
 	, m_ignoreSelectionEvents(false)
 	, m_treeView(nullptr)
 {
+	auto pCommandManager = GetIEditor()->GetICommandManager();
+	m_pShowActiveLayer = pCommandManager->CreateNewAction("level_explorer.show_active_layer_contents");
+	m_pShowAllObjects = pCommandManager->CreateNewAction("level_explorer.show_all_objects");
+	m_pShowFullHierarchy = pCommandManager->CreateNewAction("level_explorer.show_full_hierarchy");
+	m_pShowLayers = pCommandManager->CreateNewAction("level_explorer.show_layers");
+	m_pSyncSelection = pCommandManager->CreateNewAction("level_explorer.sync_selection");
+	
 	SetModelType(FullHierarchy);
 
 	m_treeView = new QAdvancedTreeView(QAdvancedTreeView::UseItemModelAttribute);
@@ -207,8 +214,27 @@ CLevelExplorer::CLevelExplorer(QWidget* pParent)
 	// trigger our own custom sizes for columns
 	OnHeaderSectionCountChanged();
 
+	m_pShortcutBarLayout = new QBoxLayout(QBoxLayout::LeftToRight);
+	m_pShortcutBarLayout->setMargin(0);
+	m_pShortcutBarLayout->setSpacing(4);
+
+	m_pShortcutBarLayout->addWidget(CreateToolButton(m_pShowFullHierarchy));
+	m_pShortcutBarLayout->addWidget(CreateToolButton(m_pShowLayers));
+	m_pShortcutBarLayout->addWidget(CreateToolButton(m_pShowAllObjects));
+	m_pShortcutBarLayout->addWidget(CreateToolButton(m_pShowActiveLayer));
+	m_pShortcutBarLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Minimum));
+	m_pShortcutBarLayout->addWidget(CreateToolButton(m_pSyncSelection));
+
+	m_pMainLayout = new QBoxLayout(QBoxLayout::TopToBottom);
+	m_pMainLayout->addWidget(m_treeView);
+	m_pMainLayout->addLayout(m_pShortcutBarLayout);
+	m_pMainLayout->setMargin(0);
+	m_pMainLayout->setSpacing(0);
+
 	m_filterPanel = new QFilteringPanel("LevelExplorer", m_pAttributeFilterProxyModel);
-	m_filterPanel->SetContent(m_treeView);
+	QWidget* pContent = new QWidget();
+	pContent->setLayout(m_pMainLayout);
+	m_filterPanel->SetContent(pContent);
 	m_filterPanel->GetSearchBox()->SetAutoExpandOnSearch(m_treeView);
 
 	InitMenuBar();
@@ -239,6 +265,13 @@ CLevelExplorer::~CLevelExplorer()
 	pObjManager->signalSelectionChanged.DisconnectObject(this);
 
 	CLevelModelsManager::GetInstance().signalLayerModelsUpdated.DisconnectObject(this);
+}
+
+QToolButton* CLevelExplorer::CreateToolButton(QAction* pAction)
+{
+	QToolButton* pToolButton = new QToolButton(this);
+	pToolButton->setDefaultAction(pAction);
+	return pToolButton;
 }
 
 void CLevelExplorer::InitMenuBar()
@@ -294,41 +327,14 @@ void CLevelExplorer::InitMenuBar()
 
 		int sec = menuView->GetNextEmptySection();
 
-		auto action = menuView->CreateAction(tr("Show All Objects"), sec);
-		action->setCheckable(true);
-		action->setChecked(m_modelType == Objects);
-		connect(action, &QAction::triggered, this, [&]()
-		{
-			SetModelType(Objects);
-		});
-
-		action = menuView->CreateAction(tr("Show Layers"), sec);
-		action->setCheckable(true);
-		action->setChecked(m_modelType == Layers);
-		connect(action, &QAction::triggered, this, [&]()
-		{
-			SetModelType(Layers);
-		});
-
-		action = menuView->CreateAction(tr("Show Full Hierarchy"), sec);
-		action->setCheckable(true);
-		action->setChecked(m_modelType == FullHierarchy);
-		connect(action, &QAction::triggered, this, [&]()
-		{
-			SetModelType(FullHierarchy);
-		});
-
-		action = menuView->CreateAction(tr("Show Active Layer Contents"), sec);
-		action->setCheckable(true);
-		action->setChecked(m_modelType == ActiveLayer);
-		connect(action, &QAction::triggered, this, [&]()
-		{
-			SetModelType(ActiveLayer);
-		});
+		menuView->AddAction(m_pShowFullHierarchy, sec);
+		menuView->AddAction(m_pShowLayers, sec);
+		menuView->AddAction(m_pShowAllObjects, sec);
+		menuView->AddAction(m_pShowActiveLayer, sec);
 
 		sec = menuView->GetNextEmptySection();
 
-		action = menuView->CreateAction(tr("Expand All"), sec);
+		auto action = menuView->CreateAction(tr("Expand All"), sec);
 		connect(action, &QAction::triggered, this, [&]()
 		{
 			OnExpandAllLayers();
@@ -342,13 +348,7 @@ void CLevelExplorer::InitMenuBar()
 
 		sec = menuView->GetNextEmptySection();
 
-		action = menuView->CreateAction(tr("Sync Selection"), sec);
-		action->setCheckable(true);
-		action->setChecked(m_syncSelection);
-		connect(action, &QAction::triggered, [&]()
-		{
-			SetSyncSelection(!m_syncSelection);
-		});
+		menuView->AddAction(m_pSyncSelection, sec);
 
 		if (m_filterPanel)
 		{
@@ -356,7 +356,7 @@ void CLevelExplorer::InitMenuBar()
 		}
 	});
 
-	GetRootMenu()->AddCommandAction("level.focus_on_active_layer", 0);
+	GetRootMenu()->AddCommandAction("level_explorer.focus_on_active_layer", 0);
 }
 
 void CLevelExplorer::SetLayout(const QVariantMap& state)
@@ -425,14 +425,40 @@ void CLevelExplorer::customEvent(QEvent* event)
 			IsolateVisibility(index);
 		}
 	}
-	else if (command == "level.focus_on_active_layer")
+	else if (command == "level_explorer.focus_on_active_layer")
 	{
 		FocusActiveLayer();
+	}
+	else if (command == "level_explorer.show_full_hierarchy")
+	{
+		SetModelType(FullHierarchy);
+	}
+	else if (command == "level_explorer.show_layers")
+	{
+		SetModelType(Layers);
+	}
+	else if (command == "level_explorer.show_all_objects")
+	{
+		SetModelType(Objects);
+	}
+	else if (command == "level_explorer.show_active_layer_contents")
+	{
+		SetModelType(ActiveLayer);
+	}
+	else if (command == "level_explorer.sync_selection")
+	{
+		SetSyncSelection(!m_syncSelection);
 	}
 	else
 	{
 		CDockableEditor::customEvent(event);
 	}
+}
+
+void CLevelExplorer::resizeEvent(QResizeEvent* event)
+{
+	m_pShortcutBarLayout->setDirection(width() > height() ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight);
+	m_pMainLayout->setDirection(width() > height() ? QBoxLayout::LeftToRight : QBoxLayout::TopToBottom);
 }
 
 void CLevelExplorer::OnContextMenu(const QPoint& pos) const
@@ -1042,21 +1068,30 @@ void CLevelExplorer::SetModelType(ModelType aModelType)
 		columnStateMap = m_treeView->GetState();
 	}
 
+	m_pShowActiveLayer->setChecked(false);
+	m_pShowAllObjects->setChecked(false);
+	m_pShowFullHierarchy->setChecked(false);
+	m_pShowLayers->setChecked(false);
+
 	switch (m_modelType)
 	{
 	case ModelType::Objects:
 		model = CLevelModelsManager::GetInstance().GetAllObjectsListModel();
+		m_pShowAllObjects->setChecked(true);
 		break;
 	case ModelType::Layers:
 		model = CLevelModelsManager::GetInstance().GetLevelModel();
+		m_pShowLayers->setChecked(true);
 		break;
 	case ModelType::FullHierarchy:
 		model = CLevelModelsManager::GetInstance().GetFullHierarchyModel();
+		m_pShowFullHierarchy->setChecked(true);
 		break;
 	case ModelType::ActiveLayer:
 		{
 			auto layer = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetCurrentLayer();
 			model = CLevelModelsManager::GetInstance().GetLayerModel(layer);
+			m_pShowActiveLayer->setChecked(true);
 			break;
 		}
 	}
@@ -1077,6 +1112,7 @@ void CLevelExplorer::SetSyncSelection(bool syncSelection)
 	if (m_syncSelection != syncSelection)
 	{
 		m_syncSelection = syncSelection;
+		m_pSyncSelection->setChecked(m_syncSelection);
 
 		if (m_syncSelection)
 			SyncSelection();

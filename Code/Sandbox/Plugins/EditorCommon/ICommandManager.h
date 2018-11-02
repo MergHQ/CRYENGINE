@@ -13,7 +13,7 @@ class QAction;
 
 struct ICommandManager
 {
-	virtual           ~ICommandManager() {}
+	virtual ~ICommandManager() {}
 	virtual bool      AddCommand(CCommand* pCommand, TPfnDeleter deleter = nullptr) = 0;
 	virtual bool      AddCommandModule(CCommandModuleDescription* pCommand) = 0;
 	virtual void      SetUiDescription(const char* module, const char* name, const CUiCommand::UiInfo& info) const = 0;
@@ -28,6 +28,8 @@ struct ICommandManager
 	virtual void      GetCommandList(std::vector<string>& cmds) const = 0;
 	virtual void      GetCommandList(std::vector<CCommand*>& cmds) const = 0;
 	virtual void      RemapCommand(const char* oldModule, const char* oldName, const char* newModule, const char* newName) = 0;
+	// Creates a new action for the given command, this action is already populated with predefined icons, text, etc but has independent state
+	virtual QAction*  CreateNewAction(const char* cmdFullName) const = 0;
 };
 
 /// A set of helper template methods for an easy registration of commands
@@ -156,67 +158,67 @@ bool CommandManagerHelper::RegisterCommand(ICommandManager* pCmdMgr, const char*
 typedef CAutoRegister<ICommandManager> CAutoRegisterCommandHelper;
 
 #define REGISTER_EDITOR_COMMAND(functionPtr, moduleName, functionName, description)                                                             \
-  namespace Private_CryCommand                                                                                                                  \
-  {                                                                                                                                             \
-  void RegisterCommand ## moduleName ## functionName()                                                                                          \
-  {                                                                                                                                             \
-    CommandManagerHelper::RegisterCommand(GetIEditor()->GetICommandManager(), # moduleName, # functionName, description, functor(functionPtr)); \
-  }                                                                                                                                             \
-  CAutoRegisterCommandHelper g_AutoRegCmdHelper ## moduleName ## functionName(RegisterCommand ## moduleName ## functionName);                   \
-  }
+	namespace Private_CryCommand                                                                                                                  \
+	{                                                                                                                                             \
+	void RegisterCommand ## moduleName ## functionName()                                                                                          \
+	{                                                                                                                                             \
+		CommandManagerHelper::RegisterCommand(GetIEditor()->GetICommandManager(), # moduleName, # functionName, description, functor(functionPtr)); \
+	}                                                                                                                                             \
+	CAutoRegisterCommandHelper g_AutoRegCmdHelper ## moduleName ## functionName(RegisterCommand ## moduleName ## functionName);                   \
+	}
 
 #define REGISTER_EDITOR_AND_SCRIPT_COMMAND(functionPtr, moduleName, functionName, description) \
-  REGISTER_EDITOR_COMMAND(functionPtr, moduleName, functionName, description)                  \
-  REGISTER_ONLY_PYTHON_COMMAND(functionPtr, moduleName, functionName, description.GetDescription())
+	REGISTER_EDITOR_COMMAND(functionPtr, moduleName, functionName, description)                  \
+	REGISTER_ONLY_PYTHON_COMMAND(functionPtr, moduleName, functionName, description.GetDescription())
 
 #define REGISTER_COMMAND_REMAPPING(oldModuleName, oldFunctionName, newModuleName, newFunctionName)                                                                                                                  \
-  namespace Private_CryCommand                                                                                                                                                                                      \
-  {                                                                                                                                                                                                                 \
-  void RemapCommand ## oldModuleName ## oldFunctionName ## newModuleName ## newFunctionName()                                                                                                                       \
-  {                                                                                                                                                                                                                 \
-    ICommandManager* pCmdMgr = GetIEditor()->GetICommandManager();                                                                                                                                                  \
-    pCmdMgr->RemapCommand( # oldModuleName, # oldFunctionName, # newModuleName, # newFunctionName);                                                                                                                 \
-  }                                                                                                                                                                                                                 \
-  CAutoRegisterCommandHelper g_AutoRegCmdRemapHelper ## oldModuleName ## oldFunctionName ## newModuleName ## newFunctionName(RemapCommand ## oldModuleName ## oldFunctionName ## newModuleName ## newFunctionName); \
-  }
+	namespace Private_CryCommand                                                                                                                                                                                      \
+	{                                                                                                                                                                                                                 \
+	void RemapCommand ## oldModuleName ## oldFunctionName ## newModuleName ## newFunctionName()                                                                                                                       \
+	{                                                                                                                                                                                                                 \
+		ICommandManager* pCmdMgr = GetIEditor()->GetICommandManager();                                                                                                                                                  \
+		pCmdMgr->RemapCommand( # oldModuleName, # oldFunctionName, # newModuleName, # newFunctionName);                                                                                                                 \
+	}                                                                                                                                                                                                                 \
+	CAutoRegisterCommandHelper g_AutoRegCmdRemapHelper ## oldModuleName ## oldFunctionName ## newModuleName ## newFunctionName(RemapCommand ## oldModuleName ## oldFunctionName ## newModuleName ## newFunctionName); \
+	}
 
 #define REGISTER_EDITOR_COMMAND_MODULE(moduleName, moduleUiName, description)                             \
-  namespace Private_CryCommand                                                                            \
-  {                                                                                                       \
-  void RegisterCommandModule ## moduleName()                                                              \
-  {                                                                                                       \
-    static CCommandModuleDescription s_desc( # moduleName, moduleUiName, description);                    \
-    ICommandManager* cmdMgr = GetIEditor()->GetICommandManager();                                         \
-    cmdMgr->AddCommandModule(&s_desc);                                                                    \
-  }                                                                                                       \
-  CAutoRegisterCommandHelper g_AutoRegCmdModuleHelper ## moduleName(RegisterCommandModule ## moduleName); \
-  }
+	namespace Private_CryCommand                                                                            \
+	{                                                                                                       \
+	void RegisterCommandModule ## moduleName()                                                              \
+	{                                                                                                       \
+		static CCommandModuleDescription s_desc( # moduleName, moduleUiName, description);                    \
+		ICommandManager* cmdMgr = GetIEditor()->GetICommandManager();                                         \
+		cmdMgr->AddCommandModule(&s_desc);                                                                    \
+	}                                                                                                       \
+	CAutoRegisterCommandHelper g_AutoRegCmdModuleHelper ## moduleName(RegisterCommandModule ## moduleName); \
+	}
 
 #define REGISTER_EDITOR_COMMAND_MODULE_WITH_DESC(moduleDescType, moduleName, moduleUiName, description)   \
-  namespace Private_CryCommand                                                                            \
-  {                                                                                                       \
-  void RegisterCommandModule ## moduleName()                                                              \
-  {                                                                                                       \
-    static moduleDescType s_desc( # moduleName, moduleUiName, description);                               \
-    ICommandManager* cmdMgr = GetIEditor()->GetICommandManager();                                         \
-    cmdMgr->AddCommandModule(&s_desc);                                                                    \
-  }                                                                                                       \
-  CAutoRegisterCommandHelper g_AutoRegCmdModuleHelper ## moduleName(RegisterCommandModule ## moduleName); \
-  }
+	namespace Private_CryCommand                                                                            \
+	{                                                                                                       \
+	void RegisterCommandModule ## moduleName()                                                              \
+	{                                                                                                       \
+		static moduleDescType s_desc( # moduleName, moduleUiName, description);                               \
+		ICommandManager* cmdMgr = GetIEditor()->GetICommandManager();                                         \
+		cmdMgr->AddCommandModule(&s_desc);                                                                    \
+	}                                                                                                       \
+	CAutoRegisterCommandHelper g_AutoRegCmdModuleHelper ## moduleName(RegisterCommandModule ## moduleName); \
+	}
 
 typedef CAutoRegister<CUiCommand::UiInfo> CAutoRegisterUiCommandHelper;
 
 #define REGISTER_EDITOR_UI_COMMAND_DESC(moduleName, functionName, buttonText, shortcut, icon, checkable)                          \
-  namespace Private_CryUiCommandDesc                                                                                              \
-  {                                                                                                                               \
-  void RegisterUiDesc ## moduleName ## functionName()                                                                             \
-  {                                                                                                                               \
-    CUiCommand::UiInfo s_uiInfo(buttonText, icon, shortcut, checkable);                                                           \
-    ICommandManager* cmdMgr = GetIEditor()->GetICommandManager();                                                                 \
-    cmdMgr->SetUiDescription( # moduleName, # functionName, s_uiInfo);                                                            \
-  }                                                                                                                               \
-  CAutoRegisterUiCommandHelper g_AutoRegUIDescHelper ## moduleName ## functionName(RegisterUiDesc ## moduleName ## functionName); \
-  }
+	namespace Private_CryUiCommandDesc                                                                                              \
+	{                                                                                                                               \
+	void RegisterUiDesc ## moduleName ## functionName()                                                                             \
+	{                                                                                                                               \
+		CUiCommand::UiInfo s_uiInfo(buttonText, icon, shortcut, checkable);                                                           \
+		ICommandManager* cmdMgr = GetIEditor()->GetICommandManager();                                                                 \
+		cmdMgr->SetUiDescription( # moduleName, # functionName, s_uiInfo);                                                            \
+	}                                                                                                                               \
+	CAutoRegisterUiCommandHelper g_AutoRegUIDescHelper ## moduleName ## functionName(RegisterUiDesc ## moduleName ## functionName); \
+	}
 
 #define REGISTER_EDITOR_COMMAND_SHORTCUT(moduleName, functionName, shortcut) REGISTER_EDITOR_UI_COMMAND_DESC(moduleName, functionName, "", shortcut, "", false)
 #define REGISTER_EDITOR_COMMAND_ICON(moduleName, functionName, icon)         REGISTER_EDITOR_UI_COMMAND_DESC(moduleName, functionName, "", CKeyboardShortcut(), icon, false)

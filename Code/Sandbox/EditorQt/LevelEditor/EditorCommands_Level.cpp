@@ -351,11 +351,6 @@ void SetCustomCoords()
 {
 	GetIEditor()->GetLevelEditorSharedState()->SetCoordSystem(CLevelEditorSharedState::CoordSystem::UserDefined);
 }
-
-void FocusOnActiveLayer()
-{
-	CommandEvent("level.focus_on_active_layer").SendToKeyboardFocus();
-}
 }
 }
 
@@ -491,8 +486,3 @@ REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::SetCustomCoords, level
                                    CCommandDescription("Use custom coordinate system"))
 REGISTER_EDITOR_UI_COMMAND_DESC(level, set_custom_coordinate_system, "Custom", "", "", true)
 REGISTER_COMMAND_REMAPPING(general, set_custom_coordinate_system, level, set_custom_coordinate_system)
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::FocusOnActiveLayer, level, focus_on_active_layer,
-                                   CCommandDescription("Focus on active layer"))
-
-REGISTER_EDITOR_UI_COMMAND_DESC(level, focus_on_active_layer, "", "", "", false)

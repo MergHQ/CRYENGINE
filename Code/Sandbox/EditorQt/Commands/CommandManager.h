@@ -36,12 +36,13 @@ public:
 	virtual CCommand*                GetCommand(const char* cmdFullName) const override;
 	virtual void                     SetChecked(const char* cmdFullName, bool checked);
 	virtual QAction*                 GetAction(const char* cmdFullName, const char* text = nullptr) const override;
+	virtual QAction*                 CreateNewAction(const char* cmdFullName) const override;
 
 	void                             SetEditorUIActionsEnabled(bool bEnabled);
 
 	//! Used in the console dialog
-	bool   IsRegistered(const char* module, const char* name) const override;
-	bool   IsRegistered(const char* cmdLine) const override;
+	bool IsRegistered(const char* module, const char* name) const override;
+	bool IsRegistered(const char* cmdLine) const override;
 
 	//! Turning off the warning is needed for reloading the ribbon bar.
 	void            TurnDuplicateWarningOn()  { m_bWarnDuplicate = true; }

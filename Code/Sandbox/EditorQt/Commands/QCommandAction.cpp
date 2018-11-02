@@ -38,11 +38,23 @@ QCommandAction::QCommandAction(const QString& actionName, const char* command, Q
 	connect(this, &QCommandAction::triggered, this, &QCommandAction::OnTriggered);
 }
 
+QCommandAction::QCommandAction(const QCommandAction& action)
+	: QAction(action.text(), nullptr)
+	, UiInfo(QtUtil::ToConstCharPtr(action.text()), action.UiInfo::icon, action.key, action.UiInfo::isCheckable)
+{
+	setIcon(action.QAction::icon());
+	setCheckable(action.QAction::isCheckable());
+	setObjectName(action.objectName());
+	setProperty("QCommandAction", action.property("QCommandAction"));
+	setShortcuts(action.QAction::shortcuts());
+
+	connect(this, &QCommandAction::triggered, this, &QCommandAction::OnTriggered);
+}
+
 QCommandAction::QCommandAction(const CUiCommand& cmd)
-	: QAction(cmd.GetDescription().c_str(), 0)
+	: QAction(cmd.GetDescription().c_str(), nullptr)
 {
 	setObjectName(cmd.GetName().c_str());
-	const char* szCommandString = cmd.GetCommandString().c_str();
 	setProperty("QCommandAction", QVariant(QString(cmd.GetCommandString())));
 	connect(this, &QCommandAction::triggered, this, &QCommandAction::OnTriggered);
 	setShortcutContext(Qt::ApplicationShortcut);
@@ -54,10 +66,9 @@ QCommandAction::QCommandAction(const CUiCommand& cmd)
 }
 
 QCommandAction::QCommandAction(const CCustomCommand& cmd)
-	: QAction(cmd.GetName().c_str(), 0)
+	: QAction(cmd.GetName().c_str(), nullptr)
 {
 	setObjectName(tr("Custom Command"));
-	const char* szCommandString = cmd.GetCommandString().c_str();
 	setProperty("QCommandAction", QVariant(QString(cmd.GetCommandString())));
 	connect(this, &QCommandAction::triggered, [&]()
 	{
