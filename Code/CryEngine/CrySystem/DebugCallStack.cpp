@@ -784,15 +784,24 @@ void DebugCallStack::FillStackTrace(int maxStackEntries, int skipNumFunctions, H
 			}
 		}
 
-		// If we don't have a symbol for the address, output module name and offset from base address so we can look it up later
+		// If we don't have a symbol for the address, we attempt to output module name and offset from base address so we can look it up later
+		// When the module base is unknown, we only output the raw function address
 		IMAGEHLP_MODULE64 modInfo;
 		modInfo.SizeOfStruct = sizeof(modInfo);
-		SymGetModuleInfo64(GetCurrentProcess(), stack_frame.AddrPC.Offset, &modInfo);
+		if (!SymGetModuleInfo64(GetCurrentProcess(), stack_frame.AddrPC.Offset, &modInfo))
+		{
+			CryLogAlways("Failed to get module info for 0x%" PRIx64 ", last error: %d", stack_frame.AddrPC.Offset, GetLastError());
+			m_functions.push_back(string().Format("function=0x%" PRIx64 " ", stack_frame.AddrPC.Offset));
+			continue;
+		}
+
 		DWORD64 modOffset = stack_frame.AddrPC.Offset - modInfo.BaseOfImage;
 
 		void* p = (void*)(uintptr_t)stack_frame.AddrPC.Offset;
 		char str[300];
-		cry_sprintf(str, "function=%s+0x%" PRIx64, strrchr(modInfo.ImageName, '\\') + 1, modOffset);
+		char* szImageNameLastPathSeparator = strrchr(modInfo.ImageName, '\\');
+		char* szImageName = szImageNameLastPathSeparator ? szImageNameLastPathSeparator + 1 : modInfo.ImageName;
+		cry_sprintf(str, "function=%s+0x%" PRIx64, szImageName, modOffset);
 		m_functions.push_back(str);
 	}
 }
