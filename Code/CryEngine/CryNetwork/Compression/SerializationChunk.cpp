@@ -25,18 +25,6 @@
 	#define NAME_FROM_OP(pOp) ""
 #endif
 
-#if ENABLE_CORRUPT_PACKET_DUMP
-static const char* eOpNames[] =
-{
-	"eO_NoOp",
-	#define SERIALIZATION_TYPE(T) "eO_" # T,
-	#include <CryNetwork/SerializationTypes.h>
-	#undef SERIALIZATION_TYPE
-	"eO_String",
-	"eO_OptionalGroup"
-};
-#endif
-
 namespace
 {
 const int NUM_BITS_FOR_OPS_SIZE = 16;
