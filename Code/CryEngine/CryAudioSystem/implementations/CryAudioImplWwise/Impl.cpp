@@ -1021,7 +1021,7 @@ IObject* CImpl::ConstructGlobalObject()
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	{
 		CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
-		g_gameObjectIds[g_globalObjectId] = pGlobalObject;
+		g_gameObjectIds[AK_INVALID_GAME_OBJECT] = pGlobalObject;
 	}
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
@@ -1069,7 +1069,7 @@ void CImpl::DestructObject(IObject const* const pIObject)
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	{
 		CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
-		g_gameObjectIds.erase(objectID);
+		g_gameObjectIds.erase(pObject->m_id);
 	}
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
