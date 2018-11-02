@@ -563,7 +563,7 @@ CMessageQueue::CMessageQueue(CConfig* pConfig)
 
 	for (int i = 0; i < eMSS_NUM_LIVE_SLOT_TYPES; i++)
 	{
-		SMsgSlot* pSlot = AllocSlot(m_rootSlots[i], eMSS_Root);
+		AllocSlot(m_rootSlots[i], eMSS_Root);
 	}
 
 	s_messageHistory.reserve(MESSAGE_HISTORY_RESERVE_SIZE);
@@ -2067,8 +2067,6 @@ void CMessageQueue::RegularCleanup(const SSchedulingParams& params)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_NETWORK);
 
-	CTimeValue oldTime = params.now - 0.5f;
-
 	int curVersion = CNetwork::Get()->GetMessageQueueConfigVersion();
 	if (m_version != curVersion)
 	{
@@ -2170,8 +2168,10 @@ void CMessageQueue::AckMessages(SSendableHandle* pMsgs, size_t nMsgs, uint32 nSe
 		{
 			--i;
 			SMsgSlot* pEnt = GetSlot(pMsgs[i]);
+#if defined(USE_CRY_ASSERT)
 			EMsgSlotState state = GetState(pMsgs[i].id);
 			NET_ASSERT(state == eMSS_Waiting || state == eMSS_Limbo);
+#endif
 			SetState(pMsgs[i].id, eMSS_Dead);
 			pEnt->msg.pSendable->UpdateState(nSeq, eNSSU_Ack);
 			// WARNING: pEnt no longer valid (UpdateState may queue messages!!)
@@ -2533,8 +2533,6 @@ void CMessageQueue::DebugDrawSchedulerSends(const SSchedulingParams& params)
 	float y = drawScale * 30.0f;
 
 	float white[4] = { 1, 1, 1, 1 };
-	float shade_white[4] = { 1, 1, 1, 0.5f };
-	float red[4] = { 1, 0, 0, 1 };
 	float yellow[4] = { 1, 1, 0, 1 };
 	float green[4] = { 0, 1, 0, 1 };
 	float cyan[4] = { 0, 1, 1, 1 };

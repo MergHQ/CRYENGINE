@@ -378,7 +378,6 @@ void netProfileEndProfile()
 	}
 
 	// fix up root stats
-	SNetProfileStackEntry* child = s_netProfileRoot->m_child;
 	SNetProfileCount* counts = &s_netProfileRoot->counts;
 
 	float one1024th = 1.0f / float(ONE_K_BITS);

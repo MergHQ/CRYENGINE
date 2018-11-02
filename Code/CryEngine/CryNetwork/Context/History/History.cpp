@@ -35,7 +35,7 @@ void CHistory::Flush(const SSyncContext& ctx)
 EHistorySendResult CHistory::CSyncContext::Send(const SSendContext& ctx)
 {
 	NET_ASSERT(m_pHistory);
-	if (SElem* pElem = GetPrevElem(ctx))
+	if (GetPrevElem(ctx) != nullptr)
 		m_item.RemoveOlderThan(m_pElem->seq);
 	uint32 newValue;
 	if (m_pHistory->SendCurrentValue(ctx, this, newValue))

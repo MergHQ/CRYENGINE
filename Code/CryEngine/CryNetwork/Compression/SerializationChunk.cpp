@@ -139,7 +139,9 @@ public:
 	void Value(const char* name, T& value, uint32 policy)
 	{
 		NET_ASSERT(m_op < m_pChunk->m_ops.size());
+#if defined(USE_CRY_ASSERT)
 		SOp op = m_pChunk->m_ops[m_op];
+#endif
 #if TRACK_ENCODING
 		NET_ASSERT(0 == strcmp(name, op.name.c_str()));
 #endif
@@ -170,7 +172,9 @@ public:
 	void Value(const char* name, SSerializeString& value, uint32 policy)
 	{
 		NET_ASSERT(m_op < m_pChunk->m_ops.size());
+#if defined(USE_CRY_ASSERT)
 		SOp op = m_pChunk->m_ops[m_op];
+#endif
 #if TRACK_ENCODING
 		NET_ASSERT(0 == strcmp(name, op.name.c_str()));
 #endif
@@ -261,7 +265,9 @@ public:
 	template<class T>
 	void Value(const char* name, T& value, uint32 policy)
 	{
+#if defined(USE_CRY_ASSERT)
 		SOp op = m_pChunk->m_ops[m_op];
+#endif
 #if TRACK_ENCODING
 		NET_ASSERT(0 == strcmp(name, op.name.c_str()));
 #endif
@@ -285,7 +291,9 @@ public:
 
 	void Value(const char* name, SSerializeString& value, uint32 policy)
 	{
+#if defined(USE_CRY_ASSERT)
 		SOp op = m_pChunk->m_ops[m_op];
+#endif
 #if TRACK_ENCODING
 		NET_ASSERT(0 == strcmp(name, op.name.c_str()));
 #endif
@@ -548,8 +556,10 @@ void CSerializationChunk::EncodeToStream(CByteInputStream& input, CNetOutputSeri
 	// TODO: this probably isn't necessary under the current implementation... maybe it could be removed and save a few cycles on serialization
 	MiniQueue<TOps::const_iterator, 128> endGroupOps;
 
+#if defined(USE_CRY_ASSERT)
 	ChunkID savedChunkID = input.GetTyped<ChunkID>();
 	uint8 savedProfile = input.GetTyped<uint8>();
+#endif
 	NET_ASSERT(savedChunkID == chunkID);
 	NET_ASSERT(savedProfile == nProfile);
 

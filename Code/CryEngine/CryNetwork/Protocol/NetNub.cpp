@@ -238,12 +238,12 @@ CNetNub::CNetNub(const TNetAddress& addr, IGameNub* pGameNub,
 #if TIMER_DEBUG
 	char buffer[128];
 	cry_sprintf(buffer, "CNetNub::CNetNub() m_statsTimer [%p]", this);
+	m_statsTimer = TIMER.ADDTIMER(g_time, TimerCallback, this, buffer);
 #else
-	char* buffer = NULL;
+	m_statsTimer = TIMER.ADDTIMER(g_time, TimerCallback, this, nullptr);
 #endif // TIMER_DEBUG
 
 	m_pLobby = gEnv->pLobby;
-	m_statsTimer = TIMER.ADDTIMER(g_time, TimerCallback, this, buffer);
 	++g_objcnt.nub;
 }
 
@@ -431,8 +431,6 @@ bool CNetNub::ConnectTo(const char* address, const char* connectionString)
 	CNubConnectingLock conlk(this);
 	NetLogAlways("connection requested to: %s", address);
 	ICryLobby* pLobby = gEnv->pLobby;
-	const char* nat_prefix = "<nat>";
-	size_t nat_prefixLen = strlen(nat_prefix);
 	const char* sessionPrefix = "<session>";
 	CrySessionHandle session = CrySessionInvalidHandle;
 	string addressStr = address;
@@ -546,8 +544,11 @@ void CNetNub::LogChannelPerformanceMetrics(uint32 id) const
 		if (!(pNetChannel->IsLocal()) && ((id == 0) || (id == pNetChannel->GetLocalChannelID())))
 		{
 			foundChannel = true;
+
+#if !defined(EXCLUDE_NORMAL_LOG)
 			const INetChannel::SPerformanceMetrics* pMetrics = pNetChannel->GetPerformanceMetrics();
 			NetLogAlways(" %5d :   %6d  :   %3d   :  %3d   : %s", pNetChannel->GetLocalChannelID(), pMetrics->m_bandwidthShares, pMetrics->m_packetRate, pMetrics->m_packetRateIdle, pNetChannel->GetName());
+#endif
 		}
 	}
 
@@ -665,11 +666,10 @@ void CNetNub::TimerCallback(NetTimerId, void* p, CTimeValue)
 #if TIMER_DEBUG
 		char buffer[128];
 		cry_sprintf(buffer, "CNetNub::TimerCallback() m_statsTimer [%p]", pThis);
-#else
-		char* buffer = NULL;
-#endif // TIMER_DEBUG
-
 		pThis->m_statsTimer = TIMER.ADDTIMER(g_time + STATS_UPDATE_INTERVAL_NUB, TimerCallback, pThis, buffer);
+#else
+		pThis->m_statsTimer = TIMER.ADDTIMER(g_time + STATS_UPDATE_INTERVAL_NUB, TimerCallback, pThis, nullptr);
+#endif // TIMER_DEBUG
 	}
 }
 

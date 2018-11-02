@@ -110,7 +110,7 @@ ESocketError CInternetSimulatorSocket::Send(const uint8* pBuffer, size_t nLength
 		pPS->nLength = nLength;
 		pPS->to = to;
 		pPS->pThis = this;
-		NetTimerId timer = ACCURATE_NET_TIMER.ADDTIMER(sendTime, SimulatorUpdate, pPS, "CInternetSimulatorSocket::Send() timer");
+		ACCURATE_NET_TIMER.ADDTIMER(sendTime, SimulatorUpdate, pPS, "CInternetSimulatorSocket::Send() timer");
 		return eSE_Ok;
 	}
 }
@@ -155,7 +155,7 @@ ESocketError CInternetSimulatorSocket::SendVoice(const uint8* pBuffer, size_t nL
 		pPS->nLength = nLength;
 		pPS->to = to;
 		pPS->pThis = this;
-		NetTimerId timer = ACCURATE_NET_TIMER.ADDTIMER(sendTime, SimulatorUpdate, pPS, "CInternetSimulatorSocket::SendVoice() timer");
+		ACCURATE_NET_TIMER.ADDTIMER(sendTime, SimulatorUpdate, pPS, "CInternetSimulatorSocket::SendVoice() timer");
 		return eSE_Ok;
 	}
 }

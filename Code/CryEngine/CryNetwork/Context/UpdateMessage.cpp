@@ -96,7 +96,7 @@ NetworkAspectType CUpdateMessage::ComputeSendAspectMask(INetSender* pSender, SHi
 
 	const uint8 forceSendData = (m_syncFlags & eSCF_AssumeEnabled) != 0;
 
-	CHistory* pAuthHistory = m_pView->GetHistory(eH_Auth);
+	//CHistory* pAuthHistory = m_pView->GetHistory(eH_Auth);
 	CHistory* pHistory = m_pView->GetHistory(eH_AspectData);
 
 	NetworkAspectType aspectMask = maySend & pHistory->indexMask;

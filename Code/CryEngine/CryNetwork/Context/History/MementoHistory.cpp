@@ -147,7 +147,6 @@ bool CMementoHistory::ReadCurrentValue(const SReceiveContext& ctx, bool commit)
 	ChunkID chunkID = GetChunkIDFromObject(ctx.ctxObj, ctx.index);
 	uint8 profile = ctx.ctxObj.main->vAspectProfiles[ctx.index];
 	CHistory* pProfHistory = ctx.pView->GetHistory(eH_Profile);
-	CHistory* pAuthHistory = ctx.pView->GetHistory(eH_Auth);
 
 	if (pProfHistory->indexMask & (1 << ctx.index))
 	{

@@ -1088,8 +1088,8 @@ void CNetContextState::SetAspectProfile(EntityId id, NetworkAspectType aspectBit
 
 	if (profile > MaxProfilesPerAspect)
 	{
-		SContextObjectRef obj = GetContextObject(netID);
 #if ENABLE_DEBUG_KIT
+		SContextObjectRef obj = GetContextObject(netID);
 		if (CNetCVars::Get().LogLevel)
 			NetWarning("WARNING: Illegal profile %d passed for aspect %s on entity %s (%d)", profile, m_pContext->GetAspectName(BitIndex(aspectBit)), obj.main ? obj.main->GetName() : "<<unknown>>", id);
 #endif
@@ -1816,9 +1816,12 @@ bool CNetContextState::AllocateObject(EntityId userID, SNetObjectID netID, Netwo
 
 	NET_ASSERT(obj.salt == netID.salt);
 
-	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(userID);
 	if (CVARS.LogLevel > 1)
 	{
+#if !defined(EXCLUDE_NORMAL_LOG)
+		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(userID);
+#endif
+
 		NetLog("AllocateObject: userID:%.8x (%s) netID:%s aspectBits:%.2x [%s %s] controller:%p",
 		       userID,
 		       pEntity ? pEntity->GetName() : "",
@@ -2175,7 +2178,6 @@ void CNetContextState::EnableAspects(EntityId userID, NetworkAspectType aspectBi
 	}
 	if (!m_multiplayer)
 		return;
-	SContextObject& obj = m_vObjects[netID.id];
 	SContextObjectEx& objx = m_vObjectsEx[netID.id];
 	if (enabled)
 		aspectBits |= objx.nAspectsEnabled;
@@ -2201,7 +2203,6 @@ void CNetContextState::ReconfigureObject(SNetObjectID netID, NetworkAspectType a
 	ASSERT_GLOBAL_LOCK;
 	if (!m_multiplayer)
 		return;
-	SContextObject& obj = m_vObjects[netID.id];
 	SContextObjectEx& objx = m_vObjectsEx[netID.id];
 	// what has changed
 	NetworkAspectType aspectsReconfigured = aspects ^ objx.nAspectsEnabled;
@@ -2223,7 +2224,6 @@ void CNetContextState::TurnAspectsOn(SNetObjectID netID, NetworkAspectType aspec
 	ASSERT_GLOBAL_LOCK;
 	if (!m_multiplayer)
 		return;
-	SContextObject& obj = m_vObjects[netID.id];
 	SContextObjectEx& objx = m_vObjectsEx[netID.id];
 
 	NET_ASSERT((aspects & objx.nAspectsEnabled) == 0);
@@ -2272,7 +2272,6 @@ void CNetContextState::TurnAspectsOff(SNetObjectID netID, NetworkAspectType aspe
 	ASSERT_GLOBAL_LOCK;
 	if (!m_multiplayer)
 		return;
-	SContextObject& obj = m_vObjects[netID.id];
 	SContextObjectEx& objx = m_vObjectsEx[netID.id];
 
 	NET_ASSERT((aspects & objx.nAspectsEnabled) == aspects);
@@ -2558,14 +2557,18 @@ void CNetContextState::GC_SetParentObject(EntityId objId, EntityId parentId)
 		{
 			if (!objNetId)
 			{
+#if !defined(EXCLUDE_NORMAL_LOG)
 				IEntity* pEntity = gEnv->pEntitySystem->GetEntity(objId);
+#endif
 
 				NetLog("CNetContextState::GC_SetParentObject() Being asked to clear parent object but object is not bound (obj %s(%d))", (pEntity != NULL) ? pEntity->GetName() : "<unknown>", objId);
 				return;
 			}
 			if (m_vObjects[objNetId.id].parent == 0)
 			{
+#if !defined(EXCLUDE_NORMAL_LOG)
 				IEntity* pEntity = gEnv->pEntitySystem->GetEntity(objId);
+#endif
 
 				NetLog("CNetContextState::GC_SetParentObject() Being asked to clear parent object but object has no parent (obj %s(%d))", (pEntity != NULL) ? pEntity->GetName() : "<unknown>", objId);
 				return;
@@ -2573,8 +2576,10 @@ void CNetContextState::GC_SetParentObject(EntityId objId, EntityId parentId)
 		}
 		else
 		{
+#if !defined(EXCLUDE_NORMAL_LOG)
 			IEntity* pEntity = gEnv->pEntitySystem->GetEntity(objId);
 			IEntity* pParentEntity = gEnv->pEntitySystem->GetEntity(parentId);
+#endif
 
 			NetLog("CNetContextState::GC_SetParentObject() Unable to set parent object (obj %s(%d) parent %s(%d))", (pEntity != NULL) ? pEntity->GetName() : "<unknown>", objId, (pParentEntity != NULL) ? pParentEntity->GetName() : "<unknown>", parentId);
 			return;
@@ -2988,7 +2993,9 @@ void CNetContextState::NetDump(ENetDumpType type)
 				if (pEntity)
 				{
 					const bool isDynamicEntity = !pEntity->IsLoadedFromLevelFile();
+#if !defined(EXCLUDE_NORMAL_LOG)
 					const char* szEntityName = pEntity->GetName();
+#endif
 
 					if (((nLoop == 0) && !isDynamicEntity) || ((nLoop == 1) && isDynamicEntity))
 					{
@@ -2999,9 +3006,11 @@ void CNetContextState::NetDump(ENetDumpType type)
 						SContextObjectRef obj = GetContextObject(iterNetIDs->second);
 						if (obj.main && obj.xtra)
 						{
-							INetChannel* pChan = obj.main->pController ? obj.main->pController->GetAssociatedChannel() : NULL;
 							//IGameChannel* pGameChan = pChan ? pChan-> : NULL;
+#if !defined(EXCLUDE_NORMAL_LOG)
+							INetChannel* pChan = obj.main->pController ? obj.main->pController->GetAssociatedChannel() : NULL;
 							TNetChannelID chanid = pChan ? pChan->GetLocalChannelID() : 0;
+#endif
 
 							NetLog("  %d %s %s flags(alc,ctrl,stc,own):%d%d%d%d aspects:%.2x class %s channel=%p controlchan %d",
 							       iterNetIDs->first, iterNetIDs->second.GetText(), szEntityName,
