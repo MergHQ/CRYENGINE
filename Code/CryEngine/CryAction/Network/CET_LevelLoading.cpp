@@ -57,19 +57,18 @@ public:
 
 	EContextEstablishTaskResult OnStep(SContextEstablishState& state)
 	{
-		ILevelInfo* pILevel = NULL;
-		string levelName = CCryAction::GetCryAction()->GetGameContext()->GetLevelName();
+		CCryAction* pAction = CCryAction::GetCryAction();
+		CGameContext* pGameContext = pAction->GetGameContext();
+		string levelName = pGameContext ? pGameContext->GetLevelName() : string("");
 		if (levelName.empty())
 		{
 			GameWarning("No level name set");
 			return eCETR_Failed;
 		}
 
-		CCryAction* pAction = CCryAction::GetCryAction();
-
 		pAction->StartNetworkStallTicker(true);
 		GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_LOAD_START, reinterpret_cast<UINT_PTR>(levelName.c_str()), 0);
-		pILevel = pAction->GetILevelSystem()->LoadLevel(levelName);
+		ILevelInfo* pILevel = pAction->GetILevelSystem()->LoadLevel(levelName);
 		GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_LOAD_END, 0, 0);
 		pAction->StopNetworkStallTicker();
 
@@ -144,7 +143,8 @@ public:
 	virtual EContextEstablishTaskResult OnStep( SContextEstablishState& state ) override
 	{
 		CCryAction* pAction = CCryAction::GetCryAction();
-		const string levelName = pAction->GetGameContext()->GetLevelName();
+		CGameContext* pGameContext = pAction->GetGameContext();
+		string levelName = pGameContext ? pGameContext->GetLevelName() : string("");
 		if (!m_bStarted)
 		{
 			if (levelName.empty())
@@ -214,7 +214,8 @@ public:
 	bool Start()
 	{
 		CCryAction* pAction = CCryAction::GetCryAction();
-		m_levelName = pAction->GetGameContext()->GetLevelName();
+		CGameContext* pGameContext = pAction->GetGameContext();
+		m_levelName = pGameContext ? pGameContext->GetLevelName() : string("");
 		if (m_levelName.empty())
 		{
 			GameWarning("No level name set");

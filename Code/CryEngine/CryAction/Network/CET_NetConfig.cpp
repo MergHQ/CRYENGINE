@@ -22,7 +22,12 @@ public:
 
 	virtual EContextEstablishTaskResult OnStep(SContextEstablishState& /*state*/) override
 	{
-		CCryAction::GetCryAction()->GetGameContext()->GetNetContext()->StartedEstablishingContext(m_token);
+		if (CGameContext* pGameContext = CCryAction::GetCryAction()->GetGameContext())
+		{
+			INetContext* pNetContext = pGameContext->GetNetContext();
+			CRY_ASSERT_MESSAGE(pNetContext, "Task should never be updated without NetContext");
+			pNetContext->StartedEstablishingContext(m_token);
+		}
 		return eCETR_Ok;
 	}
 	// ~IContextEstablishTask
@@ -48,7 +53,12 @@ public:
 
 	virtual EContextEstablishTaskResult OnStep(SContextEstablishState& /*state*/) override
 	{
-		CCryAction::GetCryAction()->GetGameContext()->GetNetContext()->EstablishedContext(m_token);
+		if (CGameContext* pGameContext = CCryAction::GetCryAction()->GetGameContext())
+		{
+			INetContext* pNetContext = pGameContext->GetNetContext();
+			CRY_ASSERT_MESSAGE(pNetContext, "Task should never be updated without NetContext");
+			pNetContext->EstablishedContext(m_token);
+		}
 		return eCETR_Ok;
 	}
 	// ~IContextEstablishTask
@@ -106,7 +116,12 @@ public:
 		EntityId entityId = GetEntity(state);
 		if (!entityId || !gEnv->pEntitySystem->GetEntity(entityId))
 			return eCETR_Ok; // Proceed even if there is no Actor
-		CCryAction::GetCryAction()->GetGameContext()->GetNetContext()->DelegateAuthority(entityId, state.pSender);
+		if (CGameContext* pGameContext = CCryAction::GetCryAction()->GetGameContext())
+		{
+			INetContext* pNetContext = pGameContext->GetNetContext();
+			CRY_ASSERT_MESSAGE(pNetContext, "Task should never be updated without NetContext");
+			pNetContext->DelegateAuthority(entityId, state.pSender);
+		}
 		return eCETR_Ok;
 	}
 	// ~IContextEstablishTask

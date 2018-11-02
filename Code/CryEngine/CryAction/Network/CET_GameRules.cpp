@@ -75,13 +75,19 @@ public:
 
 	EContextEstablishTaskResult OnStep(SContextEstablishState& state)
 	{
+		CGameContext* pGameContext = CCryAction::GetCryAction()->GetGameContext();
+		if (!pGameContext)
+		{
+			return eCETR_Ok;
+		}
+
 		// check our game rules have been registered
-		if (CCryAction::GetCryAction()->GetGameContext()->GetRequestedGameRules().empty())
+		if (pGameContext->GetRequestedGameRules().empty())
 		{
 			GameWarning("SendGameRules: No game rules set");
 			return eCETR_Failed;
 		}
-		if (CCryAction::GetCryAction()->GetGameContext()->GetLevelName().empty())
+		if (pGameContext->GetLevelName().empty())
 		{
 			GameWarning("SendGameRules: no level name set");
 			return eCETR_Failed;
