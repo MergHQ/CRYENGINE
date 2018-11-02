@@ -6,6 +6,7 @@
 
 #include "EditorFramework/Editor.h"
 
+class QAction;
 class QAdvancedTreeView;
 class QFilteringPanel;
 class QAttributeFilterProxyModel;
@@ -13,10 +14,12 @@ class QAbstractItemModel;
 class QLabel;
 struct CLayerChangeEvent;
 class CLevelExplorer;
+class QBoxLayout;
 class QItemSelection;
 class CBaseObject;
 class CObjectLayer;
 struct CObjectEvent;
+class QToolButton;
 
 class CLevelExplorer final : public CDockableEditor
 {
@@ -32,6 +35,7 @@ public:
 	virtual void        SetLayout(const QVariantMap& state) override;
 	virtual QVariantMap GetLayout() const override;
 	virtual void        customEvent(QEvent* event) override;
+	virtual void        resizeEvent(QResizeEvent* event) override;
 	//////////////////////////////////////////////////////////////////////////
 
 	enum ModelType
@@ -53,6 +57,7 @@ public:
 	void GrabFocusSearchBar() { OnFind(); }
 
 private:
+	QToolButton* CreateToolButton(QAction* pAction);
 	void         InitMenuBar();
 
 	virtual void OnContextMenu(const QPoint& pos) const;
@@ -114,6 +119,14 @@ private:
 	QAdvancedTreeView*          m_treeView;
 	QFilteringPanel*            m_filterPanel;
 	QAttributeFilterProxyModel* m_pAttributeFilterProxyModel;
+	QBoxLayout*                 m_pMainLayout;
+	QBoxLayout*                 m_pShortcutBarLayout;
+
+	QAction*                    m_pShowActiveLayer;
+	QAction*                    m_pShowAllObjects;
+	QAction*                    m_pShowFullHierarchy;
+	QAction*                    m_pShowLayers;
+	QAction*                    m_pSyncSelection;
 
 	bool                        m_syncSelection;
 	bool                        m_ignoreSelectionEvents;

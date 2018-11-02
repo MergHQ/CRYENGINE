@@ -40,11 +40,6 @@ public:
 	CSceneCustomStage();
 
 	static bool DoDebugRendering();
-	static bool DoDebugOverlay();
-
-	void Init() final;
-	void Update() final;
-	void Prepare();
 
 	bool IsStageActive(EShaderRenderingFlags flags) const final
 	{
@@ -53,6 +48,10 @@ public:
 
 		return true;
 	}
+
+	void Init() final;
+	void Update() final;
+	void Prepare();
 
 	void Execute();
 	void ExecuteSilhouettePass();
@@ -63,6 +62,9 @@ public:
 
 	bool CreatePipelineStates(DevicePipelineStatesArray* pStateArray, const SGraphicsPipelineStateDescription& stateDesc, CGraphicsPipelineStateLocalCache* pStateCache);
 	bool CreatePipelineState(const SGraphicsPipelineStateDescription& desc, EPass passID, CDeviceGraphicsPSOPtr& outPSO);
+
+	bool IsSelectionHighlightEnabled() const { return gEnv->IsEditor() && !gEnv->IsEditorGameMode(); }
+	bool IsDebugOverlayEnabled() const { return CRenderer::CV_e_DebugDraw > 0; }
 
 private:
 	bool SetAndBuildPerPassResources(bool bOnInit);

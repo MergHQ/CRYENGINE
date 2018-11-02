@@ -232,7 +232,9 @@ void CColorGradingStage::PreparePrimitives(CColorGradingController& controller, 
 
 void CColorGradingStage::Execute()
 {
-	if (!CRenderer::CV_r_colorgrading || !CRenderer::CV_r_colorgrading_charts || !gcpRendD3D->m_pColorGradingControllerD3D)
+	FUNCTION_PROFILER_RENDERER();
+
+	if (!gcpRendD3D->m_pColorGradingControllerD3D)
 	{
 		m_pChartToUse = nullptr;
 		return;

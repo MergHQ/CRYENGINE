@@ -1363,17 +1363,21 @@ bool CNetwork::UpdateTick(bool mt)
 	{
 		CRY_PROFILE_REGION_WAITING(PROFILE_NETWORK, "Wait - Network Wakeup");
 
+#if LOG_SOCKET_TIMEOUTS
 		NET_STOP_THREAD_TIMER();
 		bool inTime = m_pInternalSocketIOManager->NetworkSleep();
 		NET_TICK_THREAD_TIMER();
 
-	#if LOG_SOCKET_TIMEOUTS
 		CTimeValue afterSleep = gEnv->pTimer->GetAsyncCurTime();
 		if (!inTime)
 		{
 			NetLog("CNetwork::UpdateTick(): stall detected, semaphore sleep was %" PRIi64, (afterSleep - beforeSleep).GetMilliSecondsAsInt64());
 		}
-	#endif // LOG_SOCKET_TIMEOUTS
+#else
+		NET_STOP_THREAD_TIMER();
+		m_pInternalSocketIOManager->NetworkSleep();
+		NET_TICK_THREAD_TIMER();
+#endif // LOG_SOCKET_TIMEOUTS
 	}
 
 #endif // LOCK_NETWORK_FREQUENCY
@@ -1746,21 +1750,23 @@ void CNetwork::LogNetworkInfo()
 
 				memcpy(&(temp.sin_addr), hp->h_addr_list[i], hp->h_length);
 
-	#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
+#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
+#if !defined(EXCLUDE_NORMAL_LOG)
 				const in_addr_windows* pin_addr_win = reinterpret_cast<const in_addr_windows*>(&temp.sin_addr);
 				CryLog("  ip:%d.%d.%d.%d",    //  port:%d  family:%x",
 				       (int)(pin_addr_win->S_un.S_un_b.s_b1),
 				       (int)(pin_addr_win->S_un.S_un_b.s_b2),
 				       (int)(pin_addr_win->S_un.S_un_b.s_b3),
 				       (int)(pin_addr_win->S_un.S_un_b.s_b4));
-	#else
+#endif
+#else
 				CryLogAlways("  ip:%d.%d.%d.%d",    //  port:%d  family:%x",
 				             (int)(temp.sin_addr.S_un.S_un_b.s_b1),
 				             (int)(temp.sin_addr.S_un.S_un_b.s_b2),
 				             (int)(temp.sin_addr.S_un.S_un_b.s_b3),
 				             (int)(temp.sin_addr.S_un.S_un_b.s_b4));
 				//		(int)temp.sin_port,(unsigned int)temp.sin_family);
-	#endif
+#endif
 				i++;
 			}
 		}

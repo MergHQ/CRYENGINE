@@ -602,10 +602,7 @@ void CVolumetricCloudsStage::Update()
 
 void CVolumetricCloudsStage::ExecuteShadowGen()
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	const bool bVolumetricClouds = rd->m_bVolumetricCloudsEnabled;
-	if (!bVolumetricClouds)
-		return;
+	FUNCTION_PROFILER_RENDERER();
 
 	const int64 nCurrentFrameID = RenderView()->GetFrameId();
 	const int32 currEye = static_cast<int32>(RenderView()->GetCurrentEye());
@@ -659,11 +656,9 @@ void CVolumetricCloudsStage::ExecuteShadowGen()
 
 void CVolumetricCloudsStage::Execute()
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	const bool bVolumetricClouds = rd->m_bVolumetricCloudsEnabled;
+	FUNCTION_PROFILER_RENDERER();
 
-	if (!bVolumetricClouds)
-		return;
+	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
 	if (!AreTexturesValid())
 		return;

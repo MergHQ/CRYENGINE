@@ -5,8 +5,7 @@
 
 void CBloomStage::Execute()
 {
-	if (!CRenderer::CV_r_HDRBloom || !CRenderer::CV_r_PostProcess)
-		return;
+	FUNCTION_PROFILER_RENDERER();
 
 	// Approximate function (1 - r)^4 by a sum of Gaussians: 0.0174*G(0.008,r) + 0.192*G(0.0576,r)
 	const float sigma1 = sqrtf(0.008f);

@@ -16,6 +16,9 @@ void CLensOpticsStage::Init()
 
 void CLensOpticsStage::Execute()
 {
+	FUNCTION_PROFILER_RENDERER();
+	PROFILE_LABEL_SCOPE("LENS_OPTICS");
+
 	CRenderView* pRenderView = RenderView();
 
 	auto& lensOpticsElements = pRenderView->GetRenderItems(EFSLIST_LENSOPTICS);

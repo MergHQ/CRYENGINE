@@ -611,11 +611,10 @@ void CNetChannel::TimerCallback(NetTimerId id, void* pUser, CTimeValue time)
 #if TIMER_DEBUG
 			char buffer[128];
 			cry_sprintf(buffer, "CNetChannel::TimerCallback() m_statsTimer [%s][%p]", pThis->GetNickname(), pThis);
-#else
-			char* buffer = NULL;
-#endif // TIMER_DEBUG
-
 			pThis->m_statsTimer = TIMER.ADDTIMER(g_time + STATS_UPDATE_INTERVAL, TimerCallback, pThis, buffer);
+#else
+			pThis->m_statsTimer = TIMER.ADDTIMER(g_time + STATS_UPDATE_INTERVAL, TimerCallback, pThis, nullptr);
+#endif // TIMER_DEBUG
 		}
 	}
 }
@@ -870,11 +869,11 @@ void CNetChannel::Init(CNetNub* pNub, IGameChannel* pGameChannel)
 #if TIMER_DEBUG
 	char buffer[128];
 	cry_sprintf(buffer, "CNetChannel::Init() m_statsTimer [%s][%p]", GetNickname(), this);
+	m_statsTimer = TIMER.ADDTIMER(g_time, TimerCallback, this, buffer);
 #else
-	char* buffer = NULL;
+	m_statsTimer = TIMER.ADDTIMER(g_time, TimerCallback, this, nullptr);
 #endif // TIMER_DEBUG
 
-	m_statsTimer = TIMER.ADDTIMER(g_time, TimerCallback, this, buffer);
 	CNetChannel::SendSetRemoteChannelIDWith(SSetRemoteChannelID(m_localChannelID), this);
 
 	if (!IsLocal())

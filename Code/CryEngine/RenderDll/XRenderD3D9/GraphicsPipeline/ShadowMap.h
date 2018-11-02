@@ -36,6 +36,11 @@ class CShadowMapStage : public CGraphicsPipelineStage
 public:
 	CShadowMapStage();
 
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		return !RenderView()->IsRecursive() && RenderView()->GetCurrentEye() != CCamera::eEye_Right;
+	}
+
 	void Init()   final;
 	void Update() final;
 

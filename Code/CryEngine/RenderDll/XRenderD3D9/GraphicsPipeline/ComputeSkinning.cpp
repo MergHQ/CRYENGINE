@@ -435,6 +435,7 @@ void CComputeSkinningStage::Prepare()
 
 void CComputeSkinningStage::Execute()
 {
+	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("CHARACTER_DEFORMATION");
 
 	// Prepare buffers and textures which have been used by pixel shaders for use in the compute queue

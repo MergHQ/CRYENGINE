@@ -300,8 +300,7 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 
 void CDeferredDecalsStage::Execute()
 {
-	if (!CRenderer::CV_r_deferredDecals)
-		return;
+	FUNCTION_PROFILER_RENDERER();
 
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 

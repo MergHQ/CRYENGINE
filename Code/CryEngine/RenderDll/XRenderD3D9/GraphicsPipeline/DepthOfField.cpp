@@ -40,8 +40,7 @@ Vec4 CDepthOfFieldStage::ToUnitDisk(Vec4& origin, float blades, float fstop)
 
 void CDepthOfFieldStage::Execute()
 {
-	if (CRenderer::CV_r_dof == 0)
-		return;
+	FUNCTION_PROFILER_RENDERER();
 
 	CD3D9Renderer* rd = gcpRendD3D;
 

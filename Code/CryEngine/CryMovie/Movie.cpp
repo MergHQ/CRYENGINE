@@ -1427,8 +1427,7 @@ void CMovieSystem::ControlCapture()
 		return;
 	}
 
-	bool bBothStartAndEnd = m_bStartCapture && m_bEndCapture;
-	assert(!bBothStartAndEnd);
+	assert(!(m_bStartCapture && m_bEndCapture));
 
 	if (m_bStartCapture)
 	{

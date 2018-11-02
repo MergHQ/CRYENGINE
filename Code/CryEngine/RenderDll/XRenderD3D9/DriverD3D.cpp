@@ -974,6 +974,10 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 		}
 	}
 
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+	m_pPipelineProfiler->BeginSection("BEGIN");
+#endif
+
 	//////////////////////////////////////////////////////////////////////
 	// Pre-Frame management
 	//////////////////////////////////////////////////////////////////////
@@ -1097,12 +1101,16 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 	//////////////////////////////////////////////////////////////////////
 	ChangeLog();
 
+	m_nStencilMaskRef = STENCIL_VALUE_OUTDOORS + 1;
+
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+	m_pPipelineProfiler->EndSection("BEGIN");
+#endif
+
 	if (!m_SceneRecurseCount)
 	{
 		m_SceneRecurseCount++;
 	}
-
-	m_nStencilMaskRef = STENCIL_VALUE_OUTDOORS + 1;
 }
 
 bool CD3D9Renderer::CheckDeviceLost()
@@ -3221,7 +3229,7 @@ static uint32 ComputePresentInterval(bool vsync, uint32 refreshNumerator, uint32
 
 void CD3D9Renderer::RT_EndFrame()
 {
-	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
+	FUNCTION_PROFILER_RENDERER();
 
 	if (!m_SceneRecurseCount)
 	{
@@ -3293,6 +3301,10 @@ void CD3D9Renderer::RT_EndFrame()
 #endif
 
 	m_SceneRecurseCount--;
+
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+	m_pPipelineProfiler->BeginSection("END");
+#endif
 
 #if !defined(RELEASE)
 	int numInvalidDrawcalls =
@@ -3559,6 +3571,10 @@ void CD3D9Renderer::RT_EndFrame()
 		}
 		m_mtxStopAtRenderFrameEnd.Unlock();
 	}
+
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+	m_pPipelineProfiler->EndSection("END");
+#endif
 }
 
 void CD3D9Renderer::RT_EndMeasurement()

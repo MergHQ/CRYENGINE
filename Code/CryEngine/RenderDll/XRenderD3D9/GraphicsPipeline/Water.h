@@ -96,10 +96,6 @@ public:
 public:
 	CWaterStage();
 
-	void Init() final;
-	void Update() final;
-	void Prepare();
-	void Resize(int renderWidth, int renderHeight) override final;
 	bool IsStageActive(EShaderRenderingFlags flags) const final
 	{
 		if (flags & EShaderRenderingFlags::SHDF_FORWARD_MINIMAL)
@@ -107,6 +103,11 @@ public:
 
 		return true;
 	}
+
+	void Init() final;
+	void Update() final;
+	void Prepare();
+	void Resize(int renderWidth, int renderHeight) override final;
 
 	void  ExecuteWaterVolumeCaustics();
 	void  ExecuteDeferredWaterVolumeCaustics();
@@ -120,6 +121,8 @@ public:
 	bool  CreatePipelineStates(uint32 passMask, DevicePipelineStatesArray& pStateArray, const SGraphicsPipelineStateDescription& stateDesc, CGraphicsPipelineStateLocalCache* pStateCache);
 	bool  CreatePipelineState(CDeviceGraphicsPSOPtr& outPSO, const SGraphicsPipelineStateDescription& desc, EPass passID, std::function<void(CDeviceGraphicsPSODesc& psoDesc)> modifier);
 
+	bool  IsDeferredVolumeCausticsEnabled() const { return CRenderer::CV_r_watercaustics && CRenderer::CV_r_watercausticsdeferred && CRenderer::CV_r_watervolumecaustics; }
+	bool  IsDeferredOceanCausticsEnabled() const { return CRenderer::CV_r_watercaustics && CRenderer::CV_r_watercausticsdeferred; }
 	bool  IsNormalGenActive() const { return m_bWaterNormalGen; }
 
 private:

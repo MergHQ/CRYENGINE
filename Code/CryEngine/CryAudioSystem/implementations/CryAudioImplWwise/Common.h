@@ -16,6 +16,10 @@
 #define ASSERT_WWISE_OK(x) (CRY_ASSERT(x == AK_Success))
 #define IS_WWISE_OK(x)     (x == AK_Success)
 
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	#include <CryThreading/CryThread.h>
+#endif // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+
 namespace CryAudio
 {
 namespace Impl
@@ -62,6 +66,14 @@ inline void FillAKListenerPosition(CTransformation const& transformation, AkList
 
 extern AkGameObjectID g_listenerId; // To be removed once multi-listener support is implemented.
 extern AkGameObjectID g_globalObjectId;
-} // namespace Wwise
-} // namespace Impl
-} // namespace CryAudio
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+class CEvent;
+class CObject;
+extern CryCriticalSection g_cs;
+extern std::unordered_map<AkPlayingID, CEvent*> g_playingIds;
+extern std::unordered_map<AkGameObjectID, CObject*> g_gameObjectIds;
+#endif // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+}      // namespace Wwise
+}      // namespace Impl
+}      // namespace CryAudio

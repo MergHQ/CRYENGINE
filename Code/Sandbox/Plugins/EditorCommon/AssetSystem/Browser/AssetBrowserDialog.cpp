@@ -24,6 +24,8 @@
 #include <QDialogButtonBox>
 #include <QVariant>
 
+#include <numeric>
+
 namespace Private_AssetBrowserDialog
 {
 
@@ -134,7 +136,9 @@ CAssetBrowserDialog::CAssetBrowserDialog(const std::vector<string>& assetTypeNam
 {
 	using namespace Private_AssetBrowserDialog;
 
-	AddPersonalizedProjectProperty("Layout", [this]()
+	const QString propertyName = QtUtil::ToQString(std::accumulate(assetTypeNames.begin(), assetTypeNames.end(), "Layout"));
+
+	AddPersonalizedProjectProperty(propertyName, [this]()
 	{
 		return m_pBrowser->GetLayout();
 	}, [this](const QVariant& variant)
@@ -143,7 +147,6 @@ CAssetBrowserDialog::CAssetBrowserDialog(const std::vector<string>& assetTypeNam
 		{
 			QVariantMap map = variant.value<QVariantMap>();
 			map.remove("filters");
-
 			m_pBrowser->SetLayout(map);
 		}
 	});

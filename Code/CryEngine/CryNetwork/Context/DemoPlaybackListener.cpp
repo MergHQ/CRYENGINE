@@ -267,8 +267,8 @@ CDemoPlaybackListener::CDemoPlaybackListener(CNetContext* pContext, const char* 
 
 	char version[32];
 	gEnv->pSystem->GetProductVersion().ToString(version);
-	const SStreamRecord* pRecord = m_pInput->Next();
-	/*
+	/*const SStreamRecord* pRecord = m_pInput->Next();
+	
 	   if ( strcmp(pRecord->key, "version") != 0 || strcmp(pRecord->value, version) != 0 )
 	   {
 	   m_pInput.reset();

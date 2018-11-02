@@ -54,6 +54,8 @@ public:
 
 	bool CreatePipelineStates(DevicePipelineStatesArray* pStateArray, const SGraphicsPipelineStateDescription& stateDesc, CGraphicsPipelineStateLocalCache* pStateCache);
 
+	bool IsGBufferVisualizationEnabled() const { return CRendererCVars::CV_r_DeferredShadingDebugGBuffer > 0; }
+
 private:
 	bool CreatePipelineState(const SGraphicsPipelineStateDescription& desc, EPass passID, CDeviceGraphicsPSOPtr& outPSO);
 

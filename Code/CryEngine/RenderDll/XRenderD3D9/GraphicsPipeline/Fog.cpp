@@ -83,6 +83,8 @@ void CFogStage::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
 
 void CFogStage::Execute()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	bool bFogEnabled = RenderView()->IsGlobalFogEnabled();
 
 	if (!(bFogEnabled && CRenderer::CV_r_usezpass != 0))

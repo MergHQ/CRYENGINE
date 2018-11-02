@@ -790,7 +790,7 @@ CBaseObject* CObjectManager::NewObject(CObjectClassDesc* cls, CBaseObject* prev,
 		{
 			if (obj->GetName().IsEmpty())
 			{
-				obj->SetName(GenUniqObjectName(cls->ClassName()));
+				obj->SetName(GenUniqObjectName(cls->GenerateObjectName(file.c_str())));
 			}
 
 			// Create game object itself.

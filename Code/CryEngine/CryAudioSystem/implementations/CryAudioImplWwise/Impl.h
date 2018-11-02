@@ -99,14 +99,12 @@ private:
 	using AudioInputDevices = std::map<DeviceId, SInputDeviceInfo>;
 	AudioInputDevices m_mapInputDevices;
 
-#if !defined(WWISE_FOR_RELEASE)
-	bool m_bCommSystemInitialized;
-#endif  // !WWISE_FOR_RELEASE
-
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	void GetInitBankSize();
+
+	bool   m_bCommSystemInitialized;
 	CryFixedStringT<MaxInfoStringLength> m_name;
-	size_t                               m_initBankSize = 0;
+	size_t m_initBankSize = 0;
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 #if defined(WWISE_USE_OCULUS)

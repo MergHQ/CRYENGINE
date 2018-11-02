@@ -55,9 +55,6 @@ void CErrorDistributionTest::TestRead()
 	for (uint32 k = 0; k < m_testValues.size(); k++)
 	{
 		int32 value = 0;
-
-		if (k == 99994)
-			int i = 0;
 		
 		if (!m_distribution.ReadValue(value, m_inStream, bLastZero))
 			value = (int32)m_inStream->ReadBits(32);
@@ -146,10 +143,12 @@ void CErrorDistribution::LogPerformance()
 	for (auto t : m_totalTime)
 		total += t;
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	float wt = (float)m_totalTime[eOpType_Write] / (float)total;
 	float rt = (float)m_totalTime[eOpType_Read] / (float)total;
 
 	NetLogAlways("Distribution times - w: %f r: %f", wt, rt);
+#endif
 
 	for (auto& t : m_totalTime)
 		t = 0;

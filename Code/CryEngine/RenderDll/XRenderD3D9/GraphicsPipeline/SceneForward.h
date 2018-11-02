@@ -68,6 +68,9 @@ public:
 	void         SetSkyRE(CREHDRSky* pHDRSkyRE);
 	void         SetSkyMat(IMaterial* pMat);
 
+	bool IsTransparentLoResEnabled() const { return CRendererCVars::CV_r_ParticlesHalfRes > 0; }
+	bool IsTransparentDepthFixupEnabled() const { return CRendererCVars::CV_r_TranspDepthFixup > 0; }
+
 	void FillCloudShadingParams(SCloudShadingParams& cloudParams, bool enable = true) const;
 
 private:

@@ -4337,6 +4337,8 @@ float CRenderer::GetShadowJittering() const
 
 void CRenderer::SyncMainWithRender()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	// Update timing of the graphics pipeline
 	{
 		CTimeValue time = gEnv->pTimer->GetFrameStartTime(ITimer::ETIMER_UI);

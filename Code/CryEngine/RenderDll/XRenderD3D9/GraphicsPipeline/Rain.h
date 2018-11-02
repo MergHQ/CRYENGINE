@@ -13,6 +13,11 @@ public:
 	CRainStage();
 	virtual ~CRainStage();
 
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		return CRenderer::CV_r_rain && CRenderer::CV_r_PostProcess;
+	}
+
 	void Init() final;
 	void Update() final;
 	void Destroy();
@@ -20,6 +25,9 @@ public:
 	void ExecuteRainOcclusion();
 	void ExecuteDeferredRainGBuffer();
 	void Execute();
+
+	bool IsDeferredRainEnabled() const { return CRendererCVars::CV_r_rain && gcpRendD3D->m_bDeferredRainEnabled; }
+	bool IsRainOcclusionEnabled() const { return CRendererCVars::CV_r_rain && gcpRendD3D->m_bDeferredRainOcclusionEnabled; }
 
 private:
 	static const int32  m_slices = 12;

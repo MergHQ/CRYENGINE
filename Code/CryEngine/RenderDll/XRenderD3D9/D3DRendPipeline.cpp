@@ -689,6 +689,10 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 		{
 			GetGraphicsPipeline().ExecuteDebugger();
 		}
+		else if (CRenderer::CV_r_GraphicsPipelineMobile > 0)
+		{
+			GetGraphicsPipeline().ExecuteMobilePipeline();
+		}
 		else
 		{
 			GetGraphicsPipeline().Execute();

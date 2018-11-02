@@ -10,8 +10,12 @@ class COmniCameraStage : public CGraphicsPipelineStage
 public:
 	COmniCameraStage() = default;
 
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		return RenderView()->GetCamera(CCamera::eEye_Left).m_bOmniCamera;
+	}
+
 	void Execute();
-	bool IsEnabled() const;
 
 protected:
 	CTexture* m_pOmniCameraTexture = nullptr;

@@ -13,14 +13,22 @@ public:
 	CSnowStage();
 	virtual ~CSnowStage();
 
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		return CRenderer::CV_r_snow && CRenderer::CV_r_PostProcess;
+	}
+
 	void Init() final;
 	void Update() final;
 	void Resize(int renderWidth, int renderHeight) final;
 	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater) final;
 
-	void         ExecuteDeferredSnowGBuffer();
-	void         ExecuteDeferredSnowDisplacement();
-	void         Execute();
+	void ExecuteDeferredSnowGBuffer();
+	void ExecuteDeferredSnowDisplacement();
+	void Execute();
+
+	bool IsDeferredSnowEnabled() const { return CRendererCVars::CV_r_snow && gcpRendD3D->m_bDeferredSnowEnabled; }
+	bool IsDeferredSnowDisplacementEnabled() const { return CRendererCVars::CV_r_snow && CRendererCVars::CV_r_snow_displacement && gcpRendD3D->m_bDeferredSnowEnabled; }
 
 private:
 	// Snow particle properties

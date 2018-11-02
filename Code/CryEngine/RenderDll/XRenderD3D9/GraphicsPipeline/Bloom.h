@@ -8,6 +8,11 @@
 class CBloomStage : public CGraphicsPipelineStage
 {
 public:
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		return CRenderer::CV_r_HDRBloom && CRenderer::CV_r_PostProcess;
+	}
+
 	void Execute();
 
 private:

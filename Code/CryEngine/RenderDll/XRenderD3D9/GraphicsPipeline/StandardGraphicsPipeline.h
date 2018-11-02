@@ -109,9 +109,11 @@ public:
 	void Execute() final;
 	void ShutDown() final;
 
+	// Non-standard pipelines
 	void ExecuteDebugger();
 	void ExecuteBillboards();
 	void ExecuteMinimumForwardShading();
+	void ExecuteMobilePipeline();
 
 	bool CreatePipelineStates(DevicePipelineStatesArray* pStateArray,
 	                          SGraphicsPipelineStateDescription stateDesc,
@@ -229,7 +231,6 @@ public:
 
 private:
 	void ExecuteHDRPostProcessing();
-	void ExecuteMobilePipeline();
 
 	int m_numInvalidDrawcalls = 0;
 };

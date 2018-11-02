@@ -1088,7 +1088,6 @@ void CCTPEndpoint::SendPacketsIfNecessary(CTimeValue nTime, bool isDisconnecting
 			}
 			bResend = true;
 		}
-		int age = m_nOutputSeq - m_nInputAck;
 
 #if NEW_BANDWIDTH_MANAGEMENT
 		uint16 maxOutputSize = m_PacketRateCalculator.GetMaxPacketSize();
@@ -1117,6 +1116,7 @@ void CCTPEndpoint::SendPacketsIfNecessary(CTimeValue nTime, bool isDisconnecting
 		}
 		bSend |= ((params.nSize + params.nSpareBytes) != 0);
 #else
+		int age = m_nOutputSeq - m_nInputAck;
 		params.nSize = m_PacketRateCalculator.GetIdealPacketSize(age, IsIdle(), maxOutputSize);
 		bSend |= (params.nSize != 0);
 #endif // NEW_BANDWIDTH_MANAGEMENT
@@ -2628,7 +2628,6 @@ void CCTPEndpoint::SchedulerDebugDraw()
 
 void CCTPEndpoint::ChannelStatsDraw()
 {
-	ITextModeConsole* pTMC = gEnv->pSystem->GetITextModeConsole();
 	float drawScale = CNetCVars::Get().DebugDrawScale;
 	static float y = drawScale * 30.f;
 	static int yframe = -1;

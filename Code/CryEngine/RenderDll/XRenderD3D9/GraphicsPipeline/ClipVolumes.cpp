@@ -132,6 +132,8 @@ void CClipVolumesStage::Update()
 
 void CClipVolumesStage::GenerateClipVolumeInfo()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	CRenderView* pRenderView = RenderView();
 	const auto& clipVolumes = pRenderView->GetClipVolumes();
 
@@ -176,6 +178,8 @@ void CClipVolumesStage::GenerateClipVolumeInfo()
 
 void CClipVolumesStage::Prepare()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	m_bClipVolumesValid = false;
 	m_bOutdoorVisible = false;
 
@@ -444,6 +448,7 @@ void CClipVolumesStage::Prepare()
 
 void CClipVolumesStage::Execute()
 {
+	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("CLIPVOLUMES");
 
 	// Render clip volumes to stencil

@@ -152,6 +152,8 @@ void CPostEffectStage::Update()
 
 bool CPostEffectStage::Execute()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	// TODO: each viewport would need to have its own post effect manager when we will support multi-viewport.
 	CPostEffectsMgr* pPostMgr = PostEffectMgr();
 

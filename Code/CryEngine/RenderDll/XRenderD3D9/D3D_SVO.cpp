@@ -66,6 +66,8 @@ void CSvoRenderer::SetEditingHelper(const Sphere& sp)
 
 void CSvoRenderer::UpdateCompute(CRenderView* pRenderView)
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	InitCVarValues();
 
 	if (!e_svoEnabled)
@@ -764,6 +766,8 @@ void CSvoRenderer::DrawPonts(PodArray<SVF_P3F_C4B_T2F>& arrVerts)
 
 void CSvoRenderer::UpdateRender(CRenderView* pRenderView)
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	m_pRenderView = pRenderView;
 	int nPrevAsync = CRenderer::CV_r_shadersasynccompiling;
 	if (gEnv->IsEditor())

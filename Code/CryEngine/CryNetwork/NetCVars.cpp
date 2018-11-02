@@ -35,8 +35,6 @@ CNetCVars::CNetCVars()
 	NET_ASSERT(!s_pThis);
 	s_pThis = this;
 
-	IConsole* c = gEnv->pConsole;
-
 #if ALLOW_ENCRYPTION
 	#if defined(_DEBUG) || defined(DEBUG)
 	REGISTER_COMMAND_DEV_ONLY("net_ExpKeyXch_test", CExponentialKeyExchange::Test, 0, "");
@@ -140,15 +138,15 @@ CNetCVars::CNetCVars()
 #if STATS_COLLECTOR_INTERACTIVE
 	REGISTER_CVAR2_DEV_ONLY("net_showdatabits", &ShowDataBits, 0, 0, "show bits used for different data");
 #endif
-#if defined(DEDICATED_SERVER)
-	static const int DEFAULT_CHEAT_PROTECTION = 3;
-#else
-	#if ENABLE_DEBUG_KIT
-	static const int DEFAULT_CHEAT_PROTECTION = 3;
-	#else
-	static const int DEFAULT_CHEAT_PROTECTION = 0;//0 for GameK01 for now
-	#endif
-#endif // defined(DEDICATED_SERVER)
+//#if defined(DEDICATED_SERVER)
+//	static const int DEFAULT_CHEAT_PROTECTION = 3;
+//#else
+//	#if ENABLE_DEBUG_KIT
+//	static const int DEFAULT_CHEAT_PROTECTION = 3;
+//	#else
+//	static const int DEFAULT_CHEAT_PROTECTION = 0;//0 for GameK01 for now
+//	#endif
+//#endif // defined(DEDICATED_SERVER)
 #if !defined(OLD_VOICE_SYSTEM_DEPRECATED)
 	pVoiceCodec = REGISTER_STRING_DEV_ONLY("sv_voicecodec", "speex", VF_REQUIRE_LEVEL_RELOAD, "");
 	REGISTER_CVAR2_DEV_ONLY("sv_voice_enable_groups", &EnableVoiceGroups, 1, VF_NULL, "");

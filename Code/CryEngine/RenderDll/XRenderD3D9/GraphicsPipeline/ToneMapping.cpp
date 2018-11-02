@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "ToneMapping.h"
 
+#include "Bloom.h"
 #include "SunShafts.h"
 #include "ColorGrading.h"
 #include "D3DPostProcess.h"
@@ -11,22 +12,17 @@
 
 void CToneMappingStage::Execute()
 {
-	// 0 is used for disable debugging and 1 is used to just show the average and estimated luminance, and exposure values.
-	if (CRenderer::CV_r_HDRDebug > 1)
-	{
-		ExecuteDebug();
-		return;
-	}
-
+	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("TONEMAPPING");
 
 	CSunShaftsStage*    pSunShaftsStage    = (CSunShaftsStage   *)GetStdGraphicsPipeline().GetStage(eStage_Sunshafts);
+	CBloomStage*        pBloomStage        = (CBloomStage       *)GetStdGraphicsPipeline().GetStage(eStage_Bloom);
 	CColorGradingStage* pColorGradingStage = (CColorGradingStage*)GetStdGraphicsPipeline().GetStage(eStage_ColorGrading);
 
-	bool bSunShafts = false;
 	bool bHighQualitySunshafts = false;
-	bool bColorGrading = false;
-	bool bBloomEnabled = CRenderer::CV_r_HDRBloom && CRenderer::CV_r_PostProcess;
+	bool bColorGradingEnabled = pColorGradingStage->IsStageActive(EShaderRenderingFlags(0));
+	bool bSunShaftsEnabled = pSunShaftsStage->IsStageActive(EShaderRenderingFlags(0));
+	bool bBloomEnabled = pBloomStage->IsStageActive(EShaderRenderingFlags(0));
 	bool bApplyDithering = CRenderer::CV_r_HDRDithering && CRenderer::CV_r_PostProcess;
 	bool bVignettingEnabled = CRenderer::CV_r_HDRVignetting && CRenderer::CV_r_PostProcess;
 
@@ -34,18 +30,18 @@ void CToneMappingStage::Execute()
 	CTexture* pSunShaftsTex = CRendererResources::s_ptexBlack;
 	CTexture* pColorChartTex = CRendererResources::s_ptexBlack;
 
-	bSunShafts = pSunShaftsStage->IsActive();
-
-	if (bSunShafts)
+	if (bSunShaftsEnabled)
 		pSunShaftsTex = pSunShaftsStage->GetFinalOutputRT();
 
-	if (CTexture* pColorChartTexTentative = pColorGradingStage->GetColorChart())
+	if (bColorGradingEnabled)
 	{
-		bColorGrading = true;
-		pColorChartTex = pColorChartTexTentative;
+		if (CTexture* pColorChartTexTentative = pColorGradingStage->GetColorChart())
+			pColorChartTex = pColorChartTexTentative;
+		else
+			bColorGradingEnabled = false;
 	}
 
-	int featureMask = ((int)bSunShafts << 1) | ((int)bColorGrading << 2) | ((int)bBloomEnabled << 3) |
+	int featureMask = ((int)bSunShaftsEnabled << 1) | ((int)bColorGradingEnabled << 2) | ((int)bBloomEnabled << 3) |
 	                  ((CRenderer::CV_r_HDREyeAdaptationMode & 0xF) << 5) | ((CRenderer::CV_r_HDRDebug & 0xF) << 9);
 
 	if (m_passToneMapping.IsDirty(featureMask, pSunShaftsTex->GetTextureID(), pColorChartTex->GetTextureID(), CRendererResources::s_ptexCurLumTexture->GetTextureID()))
@@ -53,13 +49,13 @@ void CToneMappingStage::Execute()
 		uint64 rtMask = 0;
 		if (CRenderer::CV_r_HDREyeAdaptationMode == 2)
 			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE4];
-		if (bColorGrading)
+		if (bColorGradingEnabled)
 			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE1];
 		if (bVignettingEnabled)
 			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2];
 		if (bBloomEnabled)
 			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE3];
-		if (bSunShafts)
+		if (bSunShaftsEnabled)
 			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE5];
 		if (bApplyDithering)
 			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE6];
@@ -102,7 +98,7 @@ void CToneMappingStage::Execute()
 	m_passToneMapping.SetConstant(bloomColorName, hdrSetupParams[1] * Vec4(Vec3(1.0f / 8.0f), 1.0f), eHWSC_Pixel); // Division by 8.0f was done in shader before, remove this at some point
 
 	Vec4 shaftsSunCol(0, 0, 0, 0);
-	if (bSunShafts)
+	if (bSunShaftsEnabled)
 	{
 		Vec4 sunShaftParams[2];
 		pSunShaftsStage->GetCompositionParams(sunShaftParams[0], sunShaftParams[1]);
@@ -120,6 +116,7 @@ void CToneMappingStage::Execute()
 
 void CToneMappingStage::ExecuteDebug()
 {
+	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("TONEMAPPING-DEBUG");
 
 	CShader* pShader = CShaderMan::s_shHDRPostProcess;

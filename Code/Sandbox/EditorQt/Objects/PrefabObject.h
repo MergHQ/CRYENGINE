@@ -176,6 +176,7 @@ class CPrefabObjectClassDesc : public CObjectClassDesc
 public:
 	ObjectType     GetObjectType()   { return OBJTYPE_PREFAB; }
 	const char*    ClassName()       { return PREFAB_OBJECT_CLASS_NAME; }
+	const char* GenerateObjectName(const char* szCreationParams);
 	const char*    Category()        { return CATEGORY_PREFABS; }
 	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CPrefabObject); }
 

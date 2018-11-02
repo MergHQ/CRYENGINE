@@ -1236,7 +1236,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 
 bool CTiledLightVolumesStage::IsSeparateVolumeListGen()
 {
-	return !(CRenderer::CV_r_DeferredShadingTiled < 3 && !CRenderer::CV_r_GraphicsPipelineMobile) && !gcpRendD3D->GetGraphicsPipeline().GetOmniCameraStage()->IsEnabled();
+	return !(CRenderer::CV_r_DeferredShadingTiled < 3 && !CRenderer::CV_r_GraphicsPipelineMobile);
 }
 
 
@@ -1373,6 +1373,7 @@ void CTiledLightVolumesStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 
 
 void CTiledLightVolumesStage::Execute()
 {
+	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("TILED_LIGHT_VOLUMES");
 
 	int screenWidth  = GetViewport().width;

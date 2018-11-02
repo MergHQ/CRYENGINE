@@ -176,6 +176,8 @@ void CAutoExposureStage::AdjustExposure()
 
 void CAutoExposureStage::Execute()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	MeasureLuminance();
 	AdjustExposure();
 }

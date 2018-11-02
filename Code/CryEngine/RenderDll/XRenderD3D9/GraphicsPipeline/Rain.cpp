@@ -164,12 +164,10 @@ void CRainStage::Update()
 
 void CRainStage::ExecuteDeferredRainGBuffer()
 {
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-
-	if (!rd->m_bDeferredRainEnabled)
-		return;
-
+	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("DEFERRED_RAIN_GBUFFER");
+
+	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
 	CTexture* CRendererResources__s_ptexSceneSpecular = CRendererResources::s_ptexSceneSpecular;
 #if defined(DURANGO_USE_ESRAM)
@@ -305,10 +303,9 @@ void CRainStage::ExecuteDeferredRainGBuffer()
 
 void CRainStage::Execute()
 {
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
+	FUNCTION_PROFILER_RENDERER();
 
-	if ((CRenderer::CV_r_rain < 1) || !CRenderer::CV_r_PostProcess)
-		return;
+	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
 	const auto& rainVolParams = m_RainVolParams;
 	const auto shouldApplyOcclusion = rd->m_bDeferredRainOcclusionEnabled;
@@ -472,9 +469,6 @@ void CRainStage::Execute()
 void CRainStage::ExecuteRainOcclusion()
 {
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-
-	if (!rd->m_bDeferredRainOcclusionEnabled)
-		return;
 
 	// TODO: m_RainInfo needs to be unique for each view-port if the engine supports multi view-port rendering.
 	SRainParams& rainVolParams = rd->m_p3DEngineCommon.m_RainInfo;

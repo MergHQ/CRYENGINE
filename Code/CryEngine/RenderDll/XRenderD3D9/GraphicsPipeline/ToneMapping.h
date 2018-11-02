@@ -11,7 +11,10 @@ public:
 	void Execute();
 	void ExecuteDebug();
 	void ExecuteFixedExposure(CTexture* pColorTex, CTexture* pDepthTex);
+
 	void DisplayDebugInfo();
+
+	bool IsDebugInfoEnabled() const { return CRendererCVars::CV_r_HDRDebug == 1 && !RenderView()->IsRecursive(); }
 
 private:
 	_smart_ptr<CTexture> m_pColorChartTex;

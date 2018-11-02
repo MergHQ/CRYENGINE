@@ -15,13 +15,12 @@ void CHeightMapAOStage::Update()
 
 void CHeightMapAOStage::Execute()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	CD3D9Renderer* const __restrict pRenderer = gcpRendD3D;
 
 	CRY_ASSERT(!m_bHeightMapAOExecuted);
 	m_bHeightMapAOExecuted = true;
-
-	if (!CRenderer::CV_r_HeightMapAO)
-		return;
 
 	if (CDeferredShading::Instance().GetResolvedStencilRT() == nullptr)
 	{

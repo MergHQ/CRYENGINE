@@ -380,6 +380,18 @@ QCommandAction* CEditorCommandManager::GetCommandAction(string command, const ch
 	return nullptr;
 }
 
+QAction* CEditorCommandManager::CreateNewAction(const char* cmdFullName) const
+{
+	QCommandAction* pCommandAction = GetCommandAction(cmdFullName);
+	if (!pCommandAction)
+	{
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Unable to create action for \"%s\". Command doesn't exist", cmdFullName);
+		return nullptr;
+	}
+
+	return new QCommandAction(*pCommandAction);
+}
+
 void CEditorCommandManager::RegisterAction(QCommandAction* action, const string& command)
 {
 	auto it = m_commands.find(command);

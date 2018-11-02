@@ -345,9 +345,6 @@ void CVolumetricFogStage::Update()
 	const CRenderView* pRenderView = RenderView();
 	const SRenderViewport& viewport = pRenderView->GetViewport();
 
-	if (!IsVisible())
-		return;
-
 	m_passInjectParticleDensity.SetViewport(viewport);
 	m_passInjectParticleDensity.SetRenderTargets(
 		// Depth
@@ -582,14 +579,9 @@ void CVolumetricFogStage::Update()
 
 void CVolumetricFogStage::Execute()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	ResetFrame();
-
-	CRenderView* pRenderView = RenderView();
-
-	if (!IsVisible() || (pRenderView == nullptr))
-	{
-		return;
-	}
 
 	if (!IsTexturesValid())
 	{
@@ -833,12 +825,6 @@ CTexture* CVolumetricFogStage::GetDensityTex() const
 CTexture* CVolumetricFogStage::GetPrevDensityTex() const
 {
 	return (GetTemporalBufferId() ? m_pFogDensityVolume[1] : m_pFogDensityVolume[0]);
-}
-
-bool CVolumetricFogStage::IsVisible() const
-{
-	bool v = gRenDev->m_bVolumetricFogEnabled && RenderView()->IsGlobalFogEnabled();
-	return v;
 }
 
 bool CVolumetricFogStage::IsTexturesValid() const

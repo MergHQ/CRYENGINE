@@ -291,7 +291,7 @@ void CSDLMouse::Update(bool focus)
 
 void CSDLMouse::GrabInput()
 {
-	SInputSymbol* pSymbol = NULL;
+	//SInputSymbol* pSymbol = NULL;
 	//unsigned width, height;
 
 	if (m_bGrabInput)

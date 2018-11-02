@@ -499,6 +499,8 @@ Vec2_tpl<uint32_t> CSwapChainBackedRenderDisplayContext::FindClosestMatchingScre
 #if CRY_PLATFORM_WINDOWS
 void CSwapChainBackedRenderDisplayContext::EnforceFullscreenPreemption()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	if (IsMainContext() && CRenderer::CV_r_FullscreenPreemption && gcpRendD3D->IsFullscreen())
 	{
 		HRESULT hr = m_swapChain.Present(0, DXGI_PRESENT_TEST);

@@ -66,7 +66,6 @@ CNetOutputSerializeImpl::CNetOutputSerializeImpl(IStreamAllocator* pAllocator, s
 
 ESerializeChunkResult CNetOutputSerializeImpl::SerializeChunk(ChunkID chunk, uint8 profile, TMemHdl* phData, CTimeValue* pTimeInfo, CMementoMemoryManager& mmm)
 {
-	CTimeValue temp;
 	if (!phData || *phData == CMementoMemoryManager::InvalidHdl)
 	{
 		return eSCR_Failed;

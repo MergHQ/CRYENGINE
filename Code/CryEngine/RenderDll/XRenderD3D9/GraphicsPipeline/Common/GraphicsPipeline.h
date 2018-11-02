@@ -141,6 +141,8 @@ protected:
 
 	void ResetUtilityPassCache()
 	{
+		FUNCTION_PROFILER_RENDERER();
+
 		for (auto& it : m_utilityPassCaches)
 		{
 			it.numUsed = 0;

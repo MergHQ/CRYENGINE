@@ -133,7 +133,9 @@ const SRenderViewShaderConstants& CRenderView::GetShaderConstants() const
 
 void CRenderView::Clear()
 {
-	CRY_ASSERT(m_usageMode == IRenderView::eUsageModeReadingDone || 
+	FUNCTION_PROFILER_RENDERER();
+
+	CRY_ASSERT(m_usageMode == IRenderView::eUsageModeReadingDone ||
 	           m_usageMode == IRenderView::eUsageModeWritingDone || 
 	           m_usageMode == IRenderView::eUsageModeUndefined);
 
@@ -2500,6 +2502,7 @@ void CRenderView::PostWriteShadowViews()
 void CRenderView::PrepareShadowViews()
 {
 	FUNCTION_PROFILER_RENDERER();
+
 	for (auto & fr : m_shadows.m_renderFrustums)
 	{
 		if (fr.pFrustum->m_eFrustumType != ShadowMapFrustum::e_Nearest)

@@ -9,6 +9,11 @@
 class CScreenSpaceSSSStage : public CGraphicsPipelineStage
 {
 public:
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		return CRendererCVars::CV_r_DeferredShadingSSS > 0;
+	}
+
 	void Execute(CTexture* pIrradianceTex);
 
 private:

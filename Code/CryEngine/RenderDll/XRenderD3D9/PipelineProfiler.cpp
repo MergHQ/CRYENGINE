@@ -135,6 +135,8 @@ void CRenderPipelineProfiler::Finish()
 
 void CRenderPipelineProfiler::Display()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	// Get newest timestamps completed on gpu
 	int prevFrameIndex = int(m_frameDataLRU - m_frameData);
 
