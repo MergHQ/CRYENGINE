@@ -527,7 +527,7 @@ void CAnimEntityNode::UpdateDynamicParams_PureGame()
 			if (propertyScriptTable && !propertyName.empty())
 			{
 				SScriptPropertyParamInfo paramInfo;
-				bool isUnknownTable = ObtainPropertyTypeInfo(propertyName.c_str(), propertyScriptTable, paramInfo);
+				ObtainPropertyTypeInfo(propertyName.c_str(), propertyScriptTable, paramInfo);
 
 				if (paramInfo.animNodeParamInfo.valueType == eAnimValue_Unknown)
 				{
@@ -1430,8 +1430,6 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 
 				if (key >= 0)
 				{
-					int breakhere = 0;
-
 					//Only activate once
 					if (m_iCurMannequinKey != key)
 					{
@@ -1447,8 +1445,6 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 							if (pAnimChar)
 							{
 								const FragmentID fragID = pAnimChar->GetActionController()->GetContext().controllerDef.m_fragmentIDs.Find(valueName);
-
-								bool isValid = !(FRAGMENT_ID_INVALID == fragID);
 
 								// Find tags
 								string tagName = manKey.m_tags;
@@ -1477,8 +1473,6 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 
 										if (!found)
 										{
-											const TagID tagID = pAnimChar->GetActionController()->GetContext().state.GetDef().Find(curTagName);
-
 											if (tagDefinition)
 											{
 												const int tagCRC = CCrc32::ComputeLowercase(curTagName);
@@ -2105,8 +2099,12 @@ void CAnimEntityNode::ApplyEventKey(CEventTrack* track, int keyIndex, SEventKey&
 				{
 					Vec3 vTemp(0, 0, 0);
 					float x = 0, y = 0, z = 0;
+#if defined(USE_CRY_ASSERT)
 					int res = sscanf(key.m_eventValue, "%f,%f,%f", &x, &y, &z);
 					assert(res == 3);
+#else
+					sscanf(key.m_eventValue, "%f,%f,%f", &x, &y, &z);
+#endif
 					vTemp(x, y, z);
 					pScriptProxy->CallEvent(key.m_event, vTemp);
 				}
@@ -2159,13 +2157,10 @@ void CAnimEntityNode::ReleaseAllAnims()
 		return;
 	}
 
+#if defined(USE_CRY_ASSERT)
 	IAnimationSet* pAnimations = pCharacter->GetIAnimationSet();
 	assert(pAnimations);
-
-	for (TStringSetIt It = m_setAnimationSinks.begin(); It != m_setAnimationSinks.end(); ++It)
-	{
-		const char* pszName = (*It).c_str();
-	}
+#endif
 
 	m_setAnimationSinks.clear();
 
@@ -2210,8 +2205,10 @@ void CAnimEntityNode::OnEndAnimation(const char* sAnimation)
 		return;
 	}
 
+#if defined(USE_CRY_ASSERT)
 	IAnimationSet* pAnimations = pCharacter->GetIAnimationSet();
 	assert(pAnimations);
+#endif
 }
 
 // return active keys ( maximum: 2 in case of overlap ) in the right order
@@ -2338,10 +2335,6 @@ static bool HaveKeysChanged(int32 activeKeys[], int32 previousKeys[])
 
 void CAnimEntityNode::AnimateCharacterTrack(class CCharacterTrack* pTrack, SAnimContext& animContext, int layer, int trackIndex, SAnimState& animState, IEntity* pEntity, ICharacterInstance* pCharacter)
 {
-	ISystem* pISystem = GetISystem();
-	IRenderer* pIRenderer = gEnv->pRenderer;
-	IRenderAuxGeom* pAuxGeom = pIRenderer->GetIRenderAuxGeom();
-
 	pTrack->GetActiveKey(animContext.time, 0);  // To sort keys
 
 	int32 activeKeys[2] = { -1, -1 };

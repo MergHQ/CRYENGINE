@@ -357,8 +357,10 @@ void CAnimPostFXNode::Activate(bool activate)
 	// Reset each postFX param to its default.
 	for (size_t i = 0; i < m_tracks.size(); ++i)
 	{
+#if defined(USE_CRY_ASSERT)
 		IAnimTrack* pTrack = m_tracks[i];
 		assert(pTrack);
+#endif
 		size_t paramIndex = (size_t)m_tracks[i]->GetParameterType().GetType() - eAnimParamType_User;
 		assert(paramIndex < m_pDescription->m_nodeParams.size());
 

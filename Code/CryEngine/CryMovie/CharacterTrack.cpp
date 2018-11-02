@@ -66,7 +66,6 @@ void CCharacterTrack::SerializeKey(SCharacterKey& key, XmlNodeRef& keyNode, bool
 float CCharacterTrack::GetKeyDuration(int key) const
 {
 	assert(key >= 0 && key < (int)m_keys.size());
-	const float EPSILON = 0.001f;
 	if (m_keys[key].m_bLoop)
 	{
 		SAnimTime lastTime = m_timeRange.end;

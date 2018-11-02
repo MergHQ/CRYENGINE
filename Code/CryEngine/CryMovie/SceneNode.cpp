@@ -175,8 +175,6 @@ void CAnimSceneNode::Animate(SAnimContext& animContext)
 	CGotoTrack* pGotoTrack = nullptr;
 	CCaptureTrack* pCaptureTrack = nullptr;
 
-	int nCurrentSoundTrackIndex = 0;
-
 	if (gEnv->IsEditor() && m_time > animContext.time)
 	{
 		m_lastPrecachePoint = SAnimTime::Min();
@@ -518,7 +516,6 @@ void CAnimSceneNode::ApplyCameraKey(SCameraKey& key, SAnimContext& animContext)
 
 	// First, check the child nodes of this director, then global nodes.
 	IAnimNode* pFirstCameraNode = m_pSequence->FindNodeByName(key.m_selection, this);
-	IAnimEntityNode* pFirstCameraNodeEntity = pFirstCameraNode ? pFirstCameraNode->QueryEntityNodeInterface() : NULL;
 
 	if (pFirstCameraNode == NULL)
 	{
@@ -1016,7 +1013,7 @@ void CAnimSceneNode::PrecacheDynamic(SAnimTime time)
 				CCameraTrack* pCameraTrack = static_cast<CCameraTrack*>(pAnimTrack);
 
 				SCameraKey key;
-				int keyID = pCameraTrack->GetActiveKey(time + SAnimTime(fPrecacheCameraTime), &key);
+				pCameraTrack->GetActiveKey(time + SAnimTime(fPrecacheCameraTime), &key);
 
 				if (time < key.m_time && (time + SAnimTime(fPrecacheCameraTime)) > key.m_time && key.m_time > m_lastPrecachePoint)
 				{
