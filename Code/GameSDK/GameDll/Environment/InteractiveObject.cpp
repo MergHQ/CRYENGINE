@@ -23,6 +23,7 @@ History:
 
 #include "EntityUtility/EntityScriptCalls.h"
 #include "StatsRecordingMgr.h"
+#include "GameCVars.h"
 
 CInteractiveObjectEx::CInteractiveObjectEx()
 : m_state(eState_NotUsed)
