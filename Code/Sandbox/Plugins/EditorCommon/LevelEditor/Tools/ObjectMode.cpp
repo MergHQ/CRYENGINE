@@ -503,9 +503,14 @@ bool CObjectMode::OnLButtonDown(CViewport* view, int nFlags, CPoint point)
 		// Check for Move to position.
 		if (bCtrlClick && bShiftClick)
 		{
-			// Ctrl-Click on terrain will move selected objects to specified location.
-			HandleMoveSelectionToPosition(pos, point, bAltClick);
-			bLockSelection = true;
+			// If we didn't hit against an object nor terrain, then we shouldn't move to selection
+			bool hasCollidedWithTerrain;
+			view->ViewToWorld(point, &hasCollidedWithTerrain);
+			if (hitInfo.object || hasCollidedWithTerrain)
+			{
+				HandleMoveSelectionToPosition(pos, point, bAltClick);
+				bLockSelection = true;
+			}
 		}
 	}
 
