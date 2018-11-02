@@ -5,6 +5,11 @@
 
 #include "Impl.h"
 
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	#include "Event.h"
+	#include "Object.h"
+#endif // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+
 namespace CryAudio
 {
 namespace Impl
@@ -18,6 +23,12 @@ AkGameObjectID g_listenerId = AK_INVALID_GAME_OBJECT; // To be removed once mult
 AkGameObjectID g_globalObjectId = AK_INVALID_GAME_OBJECT;
 
 uint32 g_numObjectsWithRelativeVelocity = 0;
-} // namespace Wwise
-} // namespace Impl
-} // namespace CryAudio
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+CryCriticalSection g_cs;
+std::unordered_map<AkPlayingID, CEvent*> g_playingIds;
+std::unordered_map<AkGameObjectID, CObject*> g_gameObjectIds;
+#endif // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+}      // namespace Wwise
+}      // namespace Impl
+}      // namespace CryAudio

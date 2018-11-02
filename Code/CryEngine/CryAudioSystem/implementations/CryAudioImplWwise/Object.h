@@ -34,7 +34,7 @@ public:
 	CObject& operator=(CObject const&) = delete;
 	CObject& operator=(CObject&&) = delete;
 
-	explicit CObject(AkGameObjectID const id, CTransformation const& transformation);
+	explicit CObject(AkGameObjectID const id, CTransformation const& transformation, char const* const szName);
 	virtual ~CObject() override;
 
 	// CryAudio::Impl::IObject
@@ -58,6 +58,10 @@ public:
 	// ~CryAudio::Impl::IObject
 
 	void RemoveEvent(CEvent* const pEvent);
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	char const* GetName() const { return m_name.c_str(); }
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 	AkGameObjectID const m_id;
 
@@ -84,7 +88,8 @@ private:
 	Vec3                 m_velocity;
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	std::map<char const* const, float> m_parameterInfo;
+	CryFixedStringT<MaxObjectNameLength> m_name;
+	std::map<char const* const, float>   m_parameterInfo;
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 };
 } // namespace Wwise

@@ -42,11 +42,22 @@ public:
 	void SetInitialVirtualState(float const distance);
 	void UpdateVirtualState(float const distance);
 
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	void        SetName(char const* const szName) { m_name = szName; }
+	char const* GetName() const                   { return m_name.c_str(); }
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+
 	EEventState       m_state;
 	AkUniqueID        m_id;
 	CryAudio::CEvent& m_event;
 	CObject*          m_pObject;
 	float             m_maxAttenuation;
+
+private:
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	CryFixedStringT<MaxControlNameLength> m_name;
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 };
 } // namespace Wwise
 } // namespace Impl

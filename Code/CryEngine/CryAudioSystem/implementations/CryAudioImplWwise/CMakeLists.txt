@@ -196,8 +196,6 @@ if (AUDIO_WWISE)
 
 	set( ANDROID_RELEASE_LIBS ${COMMON_WWISE_LIBS} ${ANDROID_WWISE_LIBS} )
 	set( ANDROID_NONRELEASE_LIBS ${COMM_CENTRAL_LIBS} ${ANDROID_RELEASE_LIBS} )
-
-	target_compile_definitions(${THIS_PROJECT} PRIVATE -DWWISE_FOR_$<UPPER_CASE:$<CONFIG>>)
 	
 	foreach(wwise_lib ${${WWISE_PLATFORM_PREFIX}_RELEASE_LIBS})
 		target_link_libraries( ${THIS_PROJECT} PRIVATE optimized ${wwise_lib} )

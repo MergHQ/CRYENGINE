@@ -45,11 +45,11 @@
 	#define OCULUS_SPATIALIZER_DLL "OculusSpatializerWwise.dll"
 #endif // WWISE_USE_OCULUS
 
-#if !defined(WWISE_FOR_RELEASE)
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	#include <AK/Comm/AkCommunication.h> // Communication between Wwise and the game (excluded in release build)
 	#include <AK/Tools/Common/AkMonitorError.h>
 	#include <AK/Tools/Common/AkPlatformFuncs.h>
-#endif // WWISE_FOR_RELEASE
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 /////////////////////////////////////////////////////////////////////////////////
 //                              MEMORY HOOKS SETUP
@@ -118,7 +118,7 @@ void APUFreeHook(void* in_pMemAddress)
 #endif  // CRY_PLATFORM_DURANGO
 }
 
-#if !defined(WWISE_FOR_RELEASE)
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 static void ErrorMonitorCallback(
 	AK::Monitor::ErrorCode in_eErrorCode,   ///< Error code number value
 	const AkOSChar* in_pszError,            ///< Message or error string to be displayed
@@ -129,11 +129,17 @@ static void ErrorMonitorCallback(
 {
 	char* szTemp = nullptr;
 	CONVERT_OSCHAR_TO_CHAR(in_pszError, szTemp);
+
+	CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
+	CryAudio::Impl::Wwise::CEvent const* const pEvent = stl::find_in_map(CryAudio::Impl::Wwise::g_playingIds, in_playingID, nullptr);
+	CryAudio::Impl::Wwise::CObject const* const pObject = stl::find_in_map(CryAudio::Impl::Wwise::g_gameObjectIds, in_gameObjID, nullptr);
+	char const* const szEventName = (pEvent != nullptr) ? pEvent->GetName() : "Unknown PlayingID";
+	char const* const szObjectName = (pObject != nullptr) ? pObject->GetName() : "Unknown GameObjID";
 	Cry::Audio::Log(
 		((in_eErrorLevel& AK::Monitor::ErrorLevel_Error) != 0) ? CryAudio::ELogType::Error : CryAudio::ELogType::Comment,
-		"<Wwise> %s ErrorCode: %d PlayingID: %u GameObjID: %" PRISIZE_T, szTemp, in_eErrorCode, in_playingID, in_gameObjID);
+		"<Wwise> %s | ErrorCode: %d | PlayingID: %u (%s) | GameObjID: %" PRISIZE_T " (%s)", szTemp, in_eErrorCode, in_playingID, szEventName, in_gameObjID, szObjectName);
 }
-#endif // WWISE_FOR_RELEASE
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -293,9 +299,9 @@ CSwitchState const* ParseWwiseRtpcSwitch(XmlNodeRef const pNode)
 CImpl::CImpl()
 	: m_gameObjectId(1)
 	, m_initBankId(AK_INVALID_BANK_ID)
-#if !defined(WWISE_FOR_RELEASE)
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	, m_bCommSystemInitialized(false)
-#endif // !WWISE_FOR_RELEASE
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #if defined(WWISE_USE_OCULUS)
 	, m_pOculusSpatializerLibrary(nullptr)
 #endif // WWISE_USE_OCULUS
@@ -533,7 +539,7 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 		return ERequestStatus::Failure;
 	}
 
-#if !defined(WWISE_FOR_RELEASE)
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	if (g_cvars.m_enableCommSystem == 1)
 	{
 		m_bCommSystemInitialized = true;
@@ -557,7 +563,7 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 			m_bCommSystemInitialized = false;
 		}
 	}
-#endif  // !WWISE_FOR_RELEASE
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 #if defined(WWISE_USE_OCULUS)
 	m_pOculusSpatializerLibrary = CryLoadLibrary(OCULUS_SPATIALIZER_DLL);
@@ -655,7 +661,7 @@ void CImpl::ShutDown()
 {
 	AKRESULT wwiseResult = AK_Fail;
 
-#if !defined(WWISE_FOR_RELEASE)
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	if (m_bCommSystemInitialized)
 	{
 		AK::Comm::Term();
@@ -669,7 +675,7 @@ void CImpl::ShutDown()
 
 		m_bCommSystemInitialized = false;
 	}
-#endif  // !WWISE_FOR_RELEASE
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 	AK::MusicEngine::Term();
 
@@ -995,9 +1001,10 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 IObject* CImpl::ConstructGlobalObject()
 {
 	g_globalObjectId = m_gameObjectId++;
+	char const* const szName = "GlobalObject";
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	AKRESULT const wwiseResult = AK::SoundEngine::RegisterGameObj(g_globalObjectId, "GlobalObject");
+	AKRESULT const wwiseResult = AK::SoundEngine::RegisterGameObj(g_globalObjectId, szName);
 
 	if (!IS_WWISE_OK(wwiseResult))
 	{
@@ -1009,7 +1016,16 @@ IObject* CImpl::ConstructGlobalObject()
 
 	CTransformation transformation;
 	ZeroStruct(transformation);
-	return static_cast<IObject*>(new CObject(AK_INVALID_GAME_OBJECT, transformation));
+	auto const pGlobalObject = new CObject(AK_INVALID_GAME_OBJECT, transformation, szName);
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	{
+		CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
+		g_gameObjectIds[g_globalObjectId] = pGlobalObject;
+	}
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+
+	return static_cast<IObject*>(pGlobalObject);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1026,7 +1042,16 @@ IObject* CImpl::ConstructObject(CTransformation const& transformation, char cons
 	AK::SoundEngine::RegisterGameObj(m_gameObjectId);
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
-	return static_cast<IObject*>(new CObject(m_gameObjectId++, transformation));
+	auto const pObject = new CObject(m_gameObjectId++, transformation, szName);
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	{
+		CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
+		g_gameObjectIds[pObject->m_id] = pObject;
+	}
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+
+	return static_cast<IObject*>(pObject);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1040,6 +1065,13 @@ void CImpl::DestructObject(IObject const* const pIObject)
 	{
 		Cry::Audio::Log(ELogType::Warning, "Wwise DestructObject failed with AKRESULT: %d", wwiseResult);
 	}
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	{
+		CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
+		g_gameObjectIds.erase(objectID);
+	}
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 	delete pObject;
 }
@@ -1114,6 +1146,16 @@ IEvent* CImpl::ConstructEvent(CryAudio::CEvent& event)
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructEvent(IEvent const* const pIEvent)
 {
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	auto const pEvent = static_cast<CEvent const*>(pIEvent);
+
+	if (pEvent != nullptr)
+	{
+		CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
+		g_playingIds.erase(pEvent->m_id);
+	}
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+
 	delete pIEvent;
 }
 
@@ -1190,10 +1232,11 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode, float& radiu
 				maxAttenuation = attenuationPair->second;
 			}
 
-			pTrigger = new CTrigger(uniqueId, maxAttenuation);
-
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+			pTrigger = new CTrigger(uniqueId, maxAttenuation, szName);
 			radius = maxAttenuation;
+#else
+			pTrigger = new CTrigger(uniqueId, maxAttenuation);
 #endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 		}
 		else
@@ -1218,9 +1261,10 @@ ITrigger const* CImpl::ConstructTrigger(ITriggerInfo const* const pITriggerInfo)
 
 	if (pTriggerInfo != nullptr)
 	{
-		AkUniqueID const uniqueId = AK::SoundEngine::GetIDFromString(pTriggerInfo->name.c_str());
+		char const* const szName = pTriggerInfo->name.c_str();
+		AkUniqueID const uniqueId = AK::SoundEngine::GetIDFromString(szName);
 
-		pITrigger = static_cast<ITrigger const*>(new CTrigger(uniqueId, 0.0f));
+		pITrigger = static_cast<ITrigger const*>(new CTrigger(uniqueId, 0.0f, szName));
 	}
 
 	return pITrigger;

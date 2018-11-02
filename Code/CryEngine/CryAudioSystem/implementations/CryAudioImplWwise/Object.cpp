@@ -62,7 +62,7 @@ void SetParameterById(AkRtpcID const rtpcId, AkRtpcValue const value, AkGameObje
 }
 
 //////////////////////////////////////////////////////////////////////////
-CObject::CObject(AkGameObjectID const id, CTransformation const& transformation)
+CObject::CObject(AkGameObjectID const id, CTransformation const& transformation, char const* const szName)
 	: m_id(id)
 	, m_needsToUpdateEnvironments(false)
 	, m_needsToUpdateVirtualStates(false)
@@ -74,6 +74,9 @@ CObject::CObject(AkGameObjectID const id, CTransformation const& transformation)
 	, m_position(transformation.GetPosition())
 	, m_previousPosition(transformation.GetPosition())
 	, m_velocity(ZERO)
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	, m_name(szName)
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 {
 	m_auxSendValues.reserve(4);
 
@@ -402,8 +405,8 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
-	CTrigger const* const pTrigger = static_cast<CTrigger const* const>(pITrigger);
-	CEvent* const pEvent = static_cast<CEvent* const>(pIEvent);
+	auto const pTrigger = static_cast<CTrigger const*>(pITrigger);
+	auto const pEvent = static_cast<CEvent*>(pIEvent);
 
 	if ((pTrigger != nullptr) && (pEvent != nullptr))
 	{
@@ -420,6 +423,15 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 
 		if (id != AK_INVALID_PLAYING_ID)
 		{
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+			pEvent->SetName(pTrigger->GetName());
+
+			{
+				CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
+				g_playingIds[id] = pEvent;
+			}
+#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+
 			pEvent->m_id = id;
 			pEvent->m_pObject = this;
 			pEvent->m_maxAttenuation = pTrigger->m_maxAttenuation;
@@ -488,6 +500,8 @@ ERequestStatus CObject::SetName(char const* const szName)
 
 	wwiseResult = AK::SoundEngine::RegisterGameObj(m_id, szName);
 	CRY_ASSERT(wwiseResult == AK_Success);
+
+	m_name = szName;
 
 	return ERequestStatus::SuccessNeedsRefresh;
 #else
