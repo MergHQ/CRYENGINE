@@ -403,8 +403,6 @@ CDictionaryWidget::CDictionaryWidget(QWidget* pParent, QFilteringPanel* pFilteri
 
 CDictionaryWidget::~CDictionaryWidget()
 {
-	m_pMergingModel->UnmountAll();
-
 	m_pFilter->deleteLater();
 	m_pTreeView->deleteLater();
 	m_pMergingModel->deleteLater();
