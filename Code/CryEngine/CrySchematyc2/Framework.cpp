@@ -50,7 +50,7 @@ namespace Schematyc2
 		static const char* OLD_SCRIPT_SUB_FOLDER = "docs";
 		static const char* OLD_SCRIPT_EXTENSION  = "xml";
 		static const char* g_szScriptsFolder     = "scripts";
-		static const char* g_szScriptExtension   = "ssf";
+		//static const char* g_szScriptExtension   = "ssf";
 		static const char* g_szSettingsFolder    = "settings";
 		static const char* g_szSettingsExtension = "xml";
 

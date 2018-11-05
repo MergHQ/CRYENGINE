@@ -331,16 +331,16 @@ namespace Schematyc2
 
 	SRuntimeResult CScriptGraphSwitchNode::Execute(IObject* pObject, const SRuntimeActivationParams& activationParams, CRuntimeNodeData& data)
 	{
-		const IAny*  pValue = data.GetInput(EInputIdx::Value);
+		/*const IAny*  pValue = data.GetInput(EInputIdx::Value);
 		const uint32 caseCount = *data.GetAttribute<uint32>(EAttributeId::CaseCount);
 		for(uint32 caseIdx = 0; caseIdx < caseCount; ++ caseIdx)
 		{
 			const IAny* pCaseValue = data.GetAttribute(EAttributeId::FirstCase + caseIdx);
-			//if(pValue->Equal(*pCaseValue))
+			if(pValue->Equal(*pCaseValue))
 			{
 
 			}
-		}
+		}*/
 		return SRuntimeResult(ERuntimeStatus::Continue, EOutputIdx::Default);
 	}
 }

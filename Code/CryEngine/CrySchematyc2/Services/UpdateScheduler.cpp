@@ -172,9 +172,11 @@ namespace Schematyc2
 				pUpdateSlots = &m_grid[cellIdx].globalUpdateCallbacks;
 			}
 
-			const bool erased = stl::find_and_erase_if(*pUpdateSlots, [&pScope](const CRelevanceGrid::SUpdateCallback& cb) { return pScope == cb.pScope; });
 #if DEBUG_RELEVANCE_GRID
+			const bool erased = stl::find_and_erase_if(*pUpdateSlots, [&pScope](const CRelevanceGrid::SUpdateCallback& cb) { return pScope == cb.pScope; });
 			CRY_ASSERT_MESSAGE(erased, "Unable to find scope for entity %x at cell %u", pScope->GetEntity() ? pScope->GetEntity()->GetId() : INVALID_ENTITYID, cellIdx);
+#else
+			stl::find_and_erase_if(*pUpdateSlots, [&pScope](const CRelevanceGrid::SUpdateCallback& cb) { return pScope == cb.pScope; });
 #endif
 		}
 	}
@@ -207,8 +209,13 @@ namespace Schematyc2
 		CRY_ASSERT(!pScope->m_bInStaticRelevanceGrid);
 		CRY_ASSERT(pScope->m_bInDynamicRelevanceGrid);
 		pScope->m_bInDynamicRelevanceGrid = false;
+
+#if defined(USE_CRY_ASSERT)
 		const bool erased = stl::find_and_erase_if(m_dynamicObjects, [&pScope](const CRelevanceGrid::SDynamicObject& dynObj) { return pScope == dynObj.updateCallback.pScope; });
 		CRY_ASSERT(erased);
+#else
+		stl::find_and_erase_if(m_dynamicObjects, [&pScope](const CRelevanceGrid::SDynamicObject& dynObj) { return pScope == dynObj.updateCallback.pScope; });
+#endif
 	}
 
 	////////////////////////////////////////////////////////////////
@@ -461,9 +468,6 @@ namespace Schematyc2
 		}
 		m_debugUpdateFrame = gEnv->pRenderer->GetFrameID();
 
-		size_t relevantEntitiesCount(0);
-		const SRelevantEntity* relevantEntities = pRelevanceContext->GetRelevantEntities(relevantEntitiesCount);
-
 		IRenderAuxGeom* pRenderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 		if (pRenderAuxGeom == nullptr)
 		{
@@ -520,7 +524,6 @@ namespace Schematyc2
 		{
 			ushort cellX = relevantCell.x;
 			ushort cellY = relevantCell.y;
-			ushort cellIdx = relevantCell.cellIdx;
 			{
 				AABB aabb = buildCellAabb(cellX, cellY);
 				aabb.Expand(Vec3(0.02f));
@@ -1002,9 +1005,14 @@ namespace Schematyc2
 		if (scope.m_bUpdateBindPending)
 		{
 			scope.m_bUpdateBindPending = false;
+#if defined(USE_CRY_ASSERT)
 			bool erased = stl::find_and_erase_if(m_pendingNewPriorityObservers,
 				[&scope](SPendingObserver& observer) { return observer.pScope == &scope; });
 			CRY_ASSERT(erased);
+#else
+			stl::find_and_erase_if(m_pendingNewPriorityObservers,
+				[&scope](SPendingObserver& observer) { return observer.pScope == &scope; });
+#endif
 		}
 		else
 		{
@@ -1012,8 +1020,12 @@ namespace Schematyc2
 			CRY_ASSERT(it != m_observers.end());
 			if (it != m_observers.end())
 			{
+#if defined(USE_CRY_ASSERT)
 				bool res = stl::push_back_unique(it->second.dirtyIndices, scope.m_bucketIndex);
 				CRY_ASSERT(res);
+#else
+				stl::push_back_unique(it->second.dirtyIndices, scope.m_bucketIndex);
+#endif
 
 				SObserver& observer = it->second.observers[scope.m_bucketIndex];
 				observer.pScope = nullptr;
@@ -1096,8 +1108,12 @@ namespace Schematyc2
 			{
 				TObserverVector& observers = m_observers[newObserver.priority].observers;
 
+#if defined(USE_CRY_ASSERT)
 				bool res = stl::push_back_unique(pendingPriorities, newObserver.priority);
 				CRY_ASSERT(!res || observers.empty());
+#else
+				stl::push_back_unique(pendingPriorities, newObserver.priority);
+#endif
 
 				AddObserver(observers, *newObserver.pScope, newObserver.callback, newObserver.filter);
 				newObserver.pScope->m_bUpdateBindPending = false;
@@ -1116,7 +1132,6 @@ namespace Schematyc2
 		CRY_PROFILE_FUNCTION(PROFILE_GAME);
 
 		size_t updatedCount = 0;
-		size_t itemToUpdate = 0;
 
 		const UpdateFrequency strideMask = (UpdateFrequency(1) << m_frequency) - 1;
 		const UpdateFrequency currentStride = frameId & strideMask;

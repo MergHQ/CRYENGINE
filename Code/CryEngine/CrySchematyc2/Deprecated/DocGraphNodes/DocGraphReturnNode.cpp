@@ -45,9 +45,8 @@ namespace Schematyc2
 		CDocGraphNodeBase::Refresh(params);
 		CDocGraphNodeBase::AddInput("In", EScriptGraphPortFlags::MultiLink | EScriptGraphPortFlags::EndSequence | EScriptGraphPortFlags::Execute);
 
-		const IScriptFile& file = CDocGraphNodeBase::GetFile();
-		const IDocGraph&   graph = CDocGraphNodeBase::GetGraph();
-		const size_t       graphOutputCount = graph.GetOutputCount();
+		const IDocGraph& graph = CDocGraphNodeBase::GetGraph();
+		const size_t graphOutputCount = graph.GetOutputCount();
 		for(size_t graphOutputIdx = 0; graphOutputIdx < graphOutputCount; ++ graphOutputIdx)
 		{
 			IAnyConstPtr pGraphOutputValue = graph.GetOutputValue(graphOutputIdx);
