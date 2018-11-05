@@ -26,20 +26,46 @@
 const int CMannequinDialog::s_minPanelSize = 5;
 static const char* kMannequin_setkeyproperty = "e_mannequin_setkeyproperty";
 
-void SetMannequinDialogKeyPropertyCmd(IConsoleCmdArgs* pArgs)
+namespace
 {
-	if (pArgs->GetArgCount() < 3)
+	void SetMannequinDialogKeyPropertyCmd(IConsoleCmdArgs* pArgs)
 	{
-		return;
+		if (pArgs->GetArgCount() < 3)
+		{
+			return;
+		}
+
+		const char* propertyName = pArgs->GetArg(1);
+		const char* propertyValue = pArgs->GetArg(2);
+
+		CMannequinDialog* pMannequinDialog = CMannequinDialog::GetCurrentInstance();
+
+		assert(pMannequinDialog != NULL);
+		pMannequinDialog->SetKeyProperty(propertyName, propertyValue);
 	}
 
-	const char* propertyName = pArgs->GetArg(1);
-	const char* propertyValue = pArgs->GetArg(2);
+	//! A simple RAII helper class to avoid issues occurring from Qt -> MFC -> Qt-Dialogs
+	//! Before calling Qt-Dialogs from MFC, focus is taken from the actual Qt-Window (containing MFC-Widgets).
+	//! Thus, all actual states of the window are preserved and messing up with MFC is avoided.
+	//! This is only a temporary solution and only needed, as long as Mannequin is powered by MFC.
+	class HelperQtWindowSetInactiveRAII
+	{
+	public:
+		HelperQtWindowSetInactiveRAII() : m_pActiveWindow(QApplication::activeWindow())
+		{
+			QApplication::setActiveWindow(nullptr);
+		}
 
-	CMannequinDialog* pMannequinDialog = CMannequinDialog::GetCurrentInstance();
-
-	assert(pMannequinDialog != NULL);
-	pMannequinDialog->SetKeyProperty(propertyName, propertyValue);
+		~HelperQtWindowSetInactiveRAII()
+		{
+			if (m_pActiveWindow)
+			{
+				QApplication::setActiveWindow(m_pActiveWindow);
+			}
+		}
+	private:
+		QWidget* m_pActiveWindow;
+	};
 }
 
 class CMannequinPaneClass : public IViewPaneClass
@@ -1369,6 +1395,8 @@ void CMannequinDialog::OnNewSequence()
 
 void CMannequinDialog::OnLoadSequence()
 {
+	HelperQtWindowSetInactiveRAII qt_window;
+
 	m_wndPreviewerPage.OnLoadSequence();
 	GetDockingPaneManager()->ShowPane(CMannequinDialog::IDW_PREVIEWER_PANE);
 }
@@ -1683,6 +1711,8 @@ void CMannequinDialog::UpdateForFragment()
 
 void CMannequinDialog::OnMenuLoadPreviewFile()
 {
+	HelperQtWindowSetInactiveRAII qt_window;
+
 	const bool canDiscardChanges = CheckChangedData();
 	if (!canDiscardChanges)
 	{
