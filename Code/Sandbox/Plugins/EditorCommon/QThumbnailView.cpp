@@ -254,6 +254,7 @@ QThumbnailsView::QThumbnailsView(QListView* pListView, bool showSizeButtons /* =
 	: QWidget(parent)
 	, m_minItemSize(16, 16)
 	, m_maxItemSize(256, 256)
+	, m_defaultSize(64, 64)
 	, m_timerStarted(false)
 	, m_restoreSelection(true)
 	, m_previewSizeButtons(nullptr)
@@ -313,6 +314,8 @@ QThumbnailsView::QThumbnailsView(QListView* pListView, bool showSizeButtons /* =
 		}
 		layout->addLayout(bottomBox);
 	}
+
+	SetItemSize(m_defaultSize);
 
 	setLayout(layout);
 }
@@ -564,7 +567,7 @@ void QThumbnailsView::SetState(const QVariantMap& state)
 	}
 	else // set default value if one was not found
 	{
-		SetItemSize(QSize(64, 64));
+		SetItemSize(m_defaultSize);
 	}
 }
 

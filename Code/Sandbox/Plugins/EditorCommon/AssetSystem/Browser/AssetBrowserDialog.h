@@ -60,6 +60,9 @@ public:
 	static string               SaveSingleAssetForType(const string& assetTypeName, OverwriteMode overwriteMode = OverwriteMode::AllowOverwrite);
 	static string               CreateSingleAssetForType(const string& assetTypeName, OverwriteMode overwriteMode);
 
+protected:
+	virtual void showEvent(QShowEvent* pEvent) override;
+
 private:
 	void OnAccept();
 	void OnAcceptSave();
