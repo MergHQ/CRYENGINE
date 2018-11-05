@@ -140,6 +140,7 @@ if (AUDIO_WWISE)
 		iZTrashFiltersFX
 		iZTrashMultibandDistortionFX
 		AuroHeadphoneFX
+		ResonanceAudioFX
 	)
 
 	set( COMMON_WWISE_LIBS ${WWISE_CORE_LIBS} ${WWISE_PLUGIN_LIBS} )
