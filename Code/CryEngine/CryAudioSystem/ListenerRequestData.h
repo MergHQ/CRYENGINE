@@ -3,6 +3,7 @@
 #pragma once
 
 #include "RequestData.h"
+#include "Common/PoolObject.h"
 #include <CryAudio/IAudioSystem.h>
 
 namespace CryAudio
@@ -46,7 +47,7 @@ struct SListenerRequestData final : public SListenerRequestDataBase
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SListenerRequestData<EListenerRequestType::SetTransformation> final : public SListenerRequestDataBase
+struct SListenerRequestData<EListenerRequestType::SetTransformation> final : public SListenerRequestDataBase, public CPoolObject<SListenerRequestData<EListenerRequestType::SetTransformation>, stl::PSyncMultiThread>
 {
 	explicit SListenerRequestData(
 		CTransformation const& transformation_,

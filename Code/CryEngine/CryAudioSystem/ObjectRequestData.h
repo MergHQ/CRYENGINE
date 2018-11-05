@@ -3,6 +3,7 @@
 #pragma once
 
 #include "RequestData.h"
+#include "Common/PoolObject.h"
 #include <CryAudio/IAudioSystem.h>
 
 namespace CryAudio
@@ -147,7 +148,7 @@ struct SObjectRequestData<EObjectRequestType::StopFile> final : public SObjectRe
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SObjectRequestData<EObjectRequestType::ExecuteTrigger> final : public SObjectRequestDataBase
+struct SObjectRequestData<EObjectRequestType::ExecuteTrigger> final : public SObjectRequestDataBase, public CPoolObject<SObjectRequestData<EObjectRequestType::ExecuteTrigger>, stl::PSyncMultiThread>
 {
 	explicit SObjectRequestData(ControlId const triggerId_)
 		: SObjectRequestDataBase(EObjectRequestType::ExecuteTrigger)
@@ -166,7 +167,7 @@ struct SObjectRequestData<EObjectRequestType::ExecuteTrigger> final : public SOb
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SObjectRequestData<EObjectRequestType::StopTrigger> final : public SObjectRequestDataBase
+struct SObjectRequestData<EObjectRequestType::StopTrigger> final : public SObjectRequestDataBase, public CPoolObject<SObjectRequestData<EObjectRequestType::StopTrigger>, stl::PSyncMultiThread>
 {
 	explicit SObjectRequestData(ControlId const triggerId_)
 		: SObjectRequestDataBase(EObjectRequestType::StopTrigger)
@@ -185,7 +186,7 @@ struct SObjectRequestData<EObjectRequestType::StopTrigger> final : public SObjec
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SObjectRequestData<EObjectRequestType::SetTransformation> final : public SObjectRequestDataBase
+struct SObjectRequestData<EObjectRequestType::SetTransformation> final : public SObjectRequestDataBase, public CPoolObject<SObjectRequestData<EObjectRequestType::SetTransformation>, stl::PSyncMultiThread>
 {
 	explicit SObjectRequestData(CTransformation const& transformation_)
 		: SObjectRequestDataBase(EObjectRequestType::SetTransformation)
@@ -242,7 +243,7 @@ struct SObjectRequestData<EObjectRequestType::SetOcclusionRayOffset> final : pub
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SObjectRequestData<EObjectRequestType::SetParameter> final : public SObjectRequestDataBase
+struct SObjectRequestData<EObjectRequestType::SetParameter> final : public SObjectRequestDataBase, public CPoolObject<SObjectRequestData<EObjectRequestType::SetParameter>, stl::PSyncMultiThread>
 {
 	explicit SObjectRequestData(ControlId const parameterId_, float const value_)
 		: SObjectRequestDataBase(EObjectRequestType::SetParameter)
@@ -264,7 +265,7 @@ struct SObjectRequestData<EObjectRequestType::SetParameter> final : public SObje
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SObjectRequestData<EObjectRequestType::SetSwitchState> final : public SObjectRequestDataBase
+struct SObjectRequestData<EObjectRequestType::SetSwitchState> final : public SObjectRequestDataBase, public CPoolObject<SObjectRequestData<EObjectRequestType::SetSwitchState>, stl::PSyncMultiThread>
 {
 	explicit SObjectRequestData(ControlId const switchId_, SwitchStateId const switchStateId_)
 		: SObjectRequestDataBase(EObjectRequestType::SetSwitchState)
@@ -286,7 +287,7 @@ struct SObjectRequestData<EObjectRequestType::SetSwitchState> final : public SOb
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SObjectRequestData<EObjectRequestType::SetCurrentEnvironments> final : public SObjectRequestDataBase
+struct SObjectRequestData<EObjectRequestType::SetCurrentEnvironments> final : public SObjectRequestDataBase, public CPoolObject<SObjectRequestData<EObjectRequestType::SetCurrentEnvironments>, stl::PSyncMultiThread>
 {
 	explicit SObjectRequestData(EntityId const entityToIgnore_)
 		: SObjectRequestDataBase(EObjectRequestType::SetCurrentEnvironments)
@@ -305,7 +306,7 @@ struct SObjectRequestData<EObjectRequestType::SetCurrentEnvironments> final : pu
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SObjectRequestData<EObjectRequestType::SetEnvironment> final : public SObjectRequestDataBase
+struct SObjectRequestData<EObjectRequestType::SetEnvironment> final : public SObjectRequestDataBase, public CPoolObject<SObjectRequestData<EObjectRequestType::SetEnvironment>, stl::PSyncMultiThread>
 {
 	explicit SObjectRequestData(EnvironmentId const environmentId_, float const amount_)
 		: SObjectRequestDataBase(EObjectRequestType::SetEnvironment)
@@ -327,7 +328,7 @@ struct SObjectRequestData<EObjectRequestType::SetEnvironment> final : public SOb
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> final : public SObjectRequestDataBase
+struct SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> final : public SObjectRequestDataBase, public CPoolObject<SObjectRequestData<EObjectRequestType::ProcessPhysicsRay>, stl::PSyncMultiThread>
 {
 	explicit SObjectRequestData(CRayInfo* const pRayInfo_)
 		: SObjectRequestDataBase(EObjectRequestType::ProcessPhysicsRay)

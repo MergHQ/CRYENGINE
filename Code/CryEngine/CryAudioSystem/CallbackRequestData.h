@@ -3,6 +3,7 @@
 #pragma once
 
 #include "RequestData.h"
+#include "Common/PoolObject.h"
 #include <CryAudio/IAudioSystem.h>
 
 namespace CryAudio
@@ -49,7 +50,7 @@ struct SCallbackRequestData final : public SCallbackRequestDataBase
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SCallbackRequestData<ECallbackRequestType::ReportStartedEvent> final : public SCallbackRequestDataBase
+struct SCallbackRequestData<ECallbackRequestType::ReportStartedEvent> final : public SCallbackRequestDataBase, public CPoolObject<SCallbackRequestData<ECallbackRequestType::ReportStartedEvent>, stl::PSyncMultiThread>
 {
 	explicit SCallbackRequestData(CEvent& event_, bool const isVirtual_)
 		: SCallbackRequestDataBase(ECallbackRequestType::ReportStartedEvent)
@@ -71,7 +72,7 @@ struct SCallbackRequestData<ECallbackRequestType::ReportStartedEvent> final : pu
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SCallbackRequestData<ECallbackRequestType::ReportFinishedEvent> final : public SCallbackRequestDataBase
+struct SCallbackRequestData<ECallbackRequestType::ReportFinishedEvent> final : public SCallbackRequestDataBase, public CPoolObject<SCallbackRequestData<ECallbackRequestType::ReportFinishedEvent>, stl::PSyncMultiThread>
 {
 	explicit SCallbackRequestData(CEvent& event_, bool const bSuccess_)
 		: SCallbackRequestDataBase(ECallbackRequestType::ReportFinishedEvent)
@@ -93,7 +94,7 @@ struct SCallbackRequestData<ECallbackRequestType::ReportFinishedEvent> final : p
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SCallbackRequestData<ECallbackRequestType::ReportVirtualizedEvent> final : public SCallbackRequestDataBase
+struct SCallbackRequestData<ECallbackRequestType::ReportVirtualizedEvent> final : public SCallbackRequestDataBase, public CPoolObject<SCallbackRequestData<ECallbackRequestType::ReportVirtualizedEvent>, stl::PSyncMultiThread>
 {
 	explicit SCallbackRequestData(CEvent& event_)
 		: SCallbackRequestDataBase(ECallbackRequestType::ReportVirtualizedEvent)
@@ -112,7 +113,7 @@ struct SCallbackRequestData<ECallbackRequestType::ReportVirtualizedEvent> final 
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedEvent> final : public SCallbackRequestDataBase
+struct SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedEvent> final : public SCallbackRequestDataBase, public CPoolObject<SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedEvent>, stl::PSyncMultiThread>
 {
 	explicit SCallbackRequestData(CEvent& event_)
 		: SCallbackRequestDataBase(ECallbackRequestType::ReportPhysicalizedEvent)
@@ -131,7 +132,7 @@ struct SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedEvent> final
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> final : public SCallbackRequestDataBase
+struct SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> final : public SCallbackRequestDataBase, public CPoolObject<SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance>, stl::PSyncNone> // Intentionally not PSyncMultiThread because this gets only called from the audio thread.
 {
 	explicit SCallbackRequestData(ControlId const triggerId_)
 		: SCallbackRequestDataBase(ECallbackRequestType::ReportFinishedTriggerInstance)

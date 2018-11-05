@@ -64,9 +64,260 @@ enum class ELoggingOptions : EnumFlagsType
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ELoggingOptions);
 
+static constexpr uint16 g_systemExecuteTriggerExPoolSize = 16;
+static constexpr uint16 g_systemRegisterObjectPoolSize = 16;
+static constexpr uint16 g_systemReleaseObjectPoolSize = 16;
+
+static constexpr uint16 g_objectExecuteTriggerPoolSize = 64;
+static constexpr uint16 g_objectStopTriggerPoolSize = 128;
+static constexpr uint16 g_objectSetTransformationPoolSize = 128;
+static constexpr uint16 g_objectSetParameterPoolSize = 128;
+static constexpr uint16 g_objectSetSwitchStatePoolSize = 64;
+static constexpr uint16 g_objectSetCurrentEnvironmentsPoolSize = 16;
+static constexpr uint16 g_objectSetEnvironmentPoolSize = 64;
+static constexpr uint16 g_objectProcessPhysicsRayPoolSize = 128;
+
+static constexpr uint16 g_listenerSetTransformationPoolSize = 2;
+
+static constexpr uint16 g_callbackReportStartedEventPoolSize = 4;
+static constexpr uint16 g_callbackReportFinishedEventPoolSize = 128;
+static constexpr uint16 g_callbackReportVirtualizedEventPoolSize = 32;
+static constexpr uint16 g_callbackReportPhysicalizedEventPoolSize = 32;
+static constexpr uint16 g_callbackReportFinishedTriggerInstancePoolSize = 128;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+struct RequestCount final
+{
+	uint16 systemExecuteTriggerEx = 0;
+	uint16 systemRegisterObject = 0;
+	uint16 systemReleaseObject = 0;
+
+	uint16 objectExecuteTrigger = 0;
+	uint16 objectStopTrigger = 0;
+	uint16 objectSetTransformation = 0;
+	uint16 objectSetParameter = 0;
+	uint16 objectSetSwitchState = 0;
+	uint16 objectSetCurrentEnvironments = 0;
+	uint16 objectSetEnvironment = 0;
+	uint16 objectProcessPhysicsRay = 0;
+
+	uint16 listenerSetTransformation = 0;
+
+	uint16 callbackReportStartedEvent = 0;
+	uint16 callbackReportFinishedEvent = 0;
+	uint16 callbackReportVirtualizedEvent = 0;
+	uint16 callbackReportPhysicalizedEvent = 0;
+	uint16 callbackReportFinishedTriggerInstance = 0;
+};
+
+RequestCount g_requestsPerUpdate;
+RequestCount g_requestPeaks;
+
+//////////////////////////////////////////////////////////////////////////
+void CountRequestPerUpdate(CRequest const& request)
+{
+	auto const pRequestData = request.GetData();
+
+	if (pRequestData != nullptr)
+	{
+		switch (request.GetData()->requestType)
+		{
+		case ERequestType::SystemRequest:
+			{
+				auto const pBase = static_cast<SSystemRequestDataBase const*>(pRequestData);
+
+				switch (pBase->systemRequestType)
+				{
+				case ESystemRequestType::RegisterObject:
+					{
+						g_requestsPerUpdate.systemRegisterObject++;
+
+						break;
+					}
+				case ESystemRequestType::ReleaseObject:
+					{
+						g_requestsPerUpdate.systemReleaseObject++;
+
+						break;
+					}
+				case ESystemRequestType::ExecuteTriggerEx:
+					{
+						g_requestsPerUpdate.systemExecuteTriggerEx++;
+
+						break;
+					}
+				default:
+					{
+						break;
+					}
+				}
+
+				break;
+			}
+		case ERequestType::ObjectRequest:
+			{
+				auto const pBase = static_cast<SObjectRequestDataBase const*>(pRequestData);
+
+				switch (pBase->objectRequestType)
+				{
+				case EObjectRequestType::ExecuteTrigger:
+					{
+						g_requestsPerUpdate.objectExecuteTrigger++;
+
+						break;
+					}
+				case EObjectRequestType::StopTrigger:
+					{
+						g_requestsPerUpdate.objectStopTrigger++;
+
+						break;
+					}
+				case EObjectRequestType::SetTransformation:
+					{
+						g_requestsPerUpdate.objectSetTransformation++;
+
+						break;
+					}
+				case EObjectRequestType::SetParameter:
+					{
+						g_requestsPerUpdate.objectSetParameter++;
+
+						break;
+					}
+				case EObjectRequestType::SetSwitchState:
+					{
+						g_requestsPerUpdate.objectSetSwitchState++;
+
+						break;
+					}
+				case EObjectRequestType::SetCurrentEnvironments:
+					{
+						g_requestsPerUpdate.objectSetCurrentEnvironments++;
+
+						break;
+					}
+				case EObjectRequestType::SetEnvironment:
+					{
+						g_requestsPerUpdate.objectSetEnvironment++;
+
+						break;
+					}
+				case EObjectRequestType::ProcessPhysicsRay:
+					{
+						g_requestsPerUpdate.objectProcessPhysicsRay++;
+
+						break;
+					}
+				default:
+					{
+						break;
+					}
+				}
+
+				break;
+			}
+		case ERequestType::ListenerRequest:
+			{
+				auto const pBase = static_cast<SListenerRequestDataBase const*>(pRequestData);
+
+				if (pBase->listenerRequestType == EListenerRequestType::SetTransformation)
+				{
+					g_requestsPerUpdate.listenerSetTransformation++;
+				}
+
+				break;
+			}
+		case ERequestType::CallbackRequest:
+			{
+				auto const pBase = static_cast<SCallbackRequestDataBase const*>(pRequestData);
+
+				switch (pBase->callbackRequestType)
+				{
+				case ECallbackRequestType::ReportStartedEvent:
+					{
+						g_requestsPerUpdate.callbackReportStartedEvent++;
+
+						break;
+					}
+				case ECallbackRequestType::ReportFinishedEvent:
+					{
+						g_requestsPerUpdate.callbackReportFinishedEvent++;
+
+						break;
+					}
+				case ECallbackRequestType::ReportVirtualizedEvent:
+					{
+						g_requestsPerUpdate.callbackReportVirtualizedEvent++;
+
+						break;
+					}
+				case ECallbackRequestType::ReportPhysicalizedEvent:
+					{
+						g_requestsPerUpdate.callbackReportPhysicalizedEvent++;
+
+						break;
+					}
+				case ECallbackRequestType::ReportFinishedTriggerInstance:
+					{
+						g_requestsPerUpdate.callbackReportFinishedTriggerInstance++;
+
+						break;
+					}
+				default:
+					{
+						break;
+					}
+				}
+
+				break;
+			}
+		default:
+			{
+				break;
+			}
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void SetRequestCountPeak()
+{
+	g_requestPeaks.systemRegisterObject = std::max(g_requestPeaks.systemRegisterObject, g_requestsPerUpdate.systemRegisterObject);
+	g_requestPeaks.systemReleaseObject = std::max(g_requestPeaks.systemReleaseObject, g_requestsPerUpdate.systemReleaseObject);
+	g_requestPeaks.systemExecuteTriggerEx = std::max(g_requestPeaks.systemExecuteTriggerEx, g_requestsPerUpdate.systemExecuteTriggerEx);
+
+	g_requestPeaks.objectExecuteTrigger = std::max(g_requestPeaks.objectExecuteTrigger, g_requestsPerUpdate.objectExecuteTrigger);
+	g_requestPeaks.objectStopTrigger = std::max(g_requestPeaks.objectStopTrigger, g_requestsPerUpdate.objectStopTrigger);
+	g_requestPeaks.objectSetTransformation = std::max(g_requestPeaks.objectSetTransformation, g_requestsPerUpdate.objectSetTransformation);
+	g_requestPeaks.objectSetParameter = std::max(g_requestPeaks.objectSetParameter, g_requestsPerUpdate.objectSetParameter);
+	g_requestPeaks.objectSetSwitchState = std::max(g_requestPeaks.objectSetSwitchState, g_requestsPerUpdate.objectSetSwitchState);
+	g_requestPeaks.objectSetCurrentEnvironments = std::max(g_requestPeaks.objectSetCurrentEnvironments, g_requestsPerUpdate.objectSetCurrentEnvironments);
+	g_requestPeaks.objectSetEnvironment = std::max(g_requestPeaks.objectSetEnvironment, g_requestsPerUpdate.objectSetEnvironment);
+	g_requestPeaks.objectProcessPhysicsRay = std::max(g_requestPeaks.objectProcessPhysicsRay, g_requestsPerUpdate.objectProcessPhysicsRay);
+
+	g_requestPeaks.listenerSetTransformation = std::max(g_requestPeaks.listenerSetTransformation, g_requestsPerUpdate.listenerSetTransformation);
+
+	g_requestPeaks.callbackReportStartedEvent = std::max(g_requestPeaks.callbackReportStartedEvent, g_requestsPerUpdate.callbackReportStartedEvent);
+	g_requestPeaks.callbackReportFinishedEvent = std::max(g_requestPeaks.callbackReportFinishedEvent, g_requestsPerUpdate.callbackReportFinishedEvent);
+	g_requestPeaks.callbackReportVirtualizedEvent = std::max(g_requestPeaks.callbackReportVirtualizedEvent, g_requestsPerUpdate.callbackReportVirtualizedEvent);
+	g_requestPeaks.callbackReportPhysicalizedEvent = std::max(g_requestPeaks.callbackReportPhysicalizedEvent, g_requestsPerUpdate.callbackReportPhysicalizedEvent);
+	g_requestPeaks.callbackReportFinishedTriggerInstance = std::max(g_requestPeaks.callbackReportFinishedTriggerInstance, g_requestsPerUpdate.callbackReportFinishedTriggerInstance);
+
+	ZeroStruct(g_requestsPerUpdate);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void ResetRequestCounts()
+{
+	ZeroStruct(g_requestsPerUpdate);
+	ZeroStruct(g_requestPeaks);
+}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
 //////////////////////////////////////////////////////////////////////////
 void AllocateMemoryPools()
 {
+	// Controls
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Trigger Pool");
 	CTrigger::CreateAllocator(g_poolSizes.triggers);
 
@@ -88,6 +339,7 @@ void AllocateMemoryPools()
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Settings Pool");
 	CSetting::CreateAllocator(g_poolSizes.settings);
 
+	// Connections
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Trigger Connection Pool");
 	CTriggerConnection::CreateAllocator(g_poolSizes.triggerConnections);
 
@@ -105,11 +357,67 @@ void AllocateMemoryPools()
 
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Setting Connection Pool");
 	CSettingConnection::CreateAllocator(g_poolSizes.settingConnections);
+
+	// System requests
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SSystemRequestData<ESystemRequestType::ExecuteTriggerEx>");
+	SSystemRequestData<ESystemRequestType::ExecuteTriggerEx>::CreateAllocator(g_systemExecuteTriggerExPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SSystemRequestData<ESystemRequestType::RegisterObject>");
+	SSystemRequestData<ESystemRequestType::RegisterObject>::CreateAllocator(g_systemRegisterObjectPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SSystemRequestData<ESystemRequestType::ReleaseObject>");
+	SSystemRequestData<ESystemRequestType::ReleaseObject>::CreateAllocator(g_systemReleaseObjectPoolSize);
+
+	// Object requests
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SObjectRequestData<EObjectRequestType::ExecuteTrigger>");
+	SObjectRequestData<EObjectRequestType::ExecuteTrigger>::CreateAllocator(g_objectExecuteTriggerPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SObjectRequestData<EObjectRequestType::StopTrigger>");
+	SObjectRequestData<EObjectRequestType::StopTrigger>::CreateAllocator(g_objectStopTriggerPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SObjectRequestData<EObjectRequestType::SetTransformation>");
+	SObjectRequestData<EObjectRequestType::SetTransformation>::CreateAllocator(g_objectSetTransformationPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SObjectRequestData<EObjectRequestType::SetParameter>");
+	SObjectRequestData<EObjectRequestType::SetParameter>::CreateAllocator(g_objectSetParameterPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SObjectRequestData<EObjectRequestType::SetSwitchState>");
+	SObjectRequestData<EObjectRequestType::SetSwitchState>::CreateAllocator(g_objectSetSwitchStatePoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SObjectRequestData<EObjectRequestType::SetCurrentEnvironments>");
+	SObjectRequestData<EObjectRequestType::SetCurrentEnvironments>::CreateAllocator(g_objectSetCurrentEnvironmentsPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SObjectRequestData<EObjectRequestType::SetEnvironment>");
+	SObjectRequestData<EObjectRequestType::SetEnvironment>::CreateAllocator(g_objectSetEnvironmentPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SObjectRequestData<EObjectRequestType::ProcessPhysicsRay>");
+	SObjectRequestData<EObjectRequestType::ProcessPhysicsRay>::CreateAllocator(g_objectProcessPhysicsRayPoolSize);
+
+	// Listener requests
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SListenerRequestData<EListenerRequestType::SetTransformation>");
+	SListenerRequestData<EListenerRequestType::SetTransformation>::CreateAllocator(g_listenerSetTransformationPoolSize);
+
+	// Callback requests
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SCallbackRequestData<ECallbackRequestType::ReportStartedEvent>");
+	SCallbackRequestData<ECallbackRequestType::ReportStartedEvent>::CreateAllocator(g_callbackReportStartedEventPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SCallbackRequestData<ECallbackRequestType::ReportFinishedEvent>");
+	SCallbackRequestData<ECallbackRequestType::ReportFinishedEvent>::CreateAllocator(g_callbackReportFinishedEventPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SCallbackRequestData<ECallbackRequestType::ReportVirtualizedEvent>");
+	SCallbackRequestData<ECallbackRequestType::ReportVirtualizedEvent>::CreateAllocator(g_callbackReportVirtualizedEventPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedEvent>");
+	SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedEvent>::CreateAllocator(g_callbackReportPhysicalizedEventPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance>");
+	SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance>::CreateAllocator(g_callbackReportFinishedTriggerInstancePoolSize);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void FreeMemoryPools()
 {
+	// Controls
 	CTrigger::FreeMemoryPool();
 	CParameter::FreeMemoryPool();
 	CSwitch::FreeMemoryPool();
@@ -118,12 +426,38 @@ void FreeMemoryPools()
 	CPreloadRequest::FreeMemoryPool();
 	CSetting::FreeMemoryPool();
 
+	// Connections
 	CTriggerConnection::FreeMemoryPool();
 	CParameterConnection::FreeMemoryPool();
 	CSwitchStateConnection::FreeMemoryPool();
 	CEnvironmentConnection::FreeMemoryPool();
 	CFileEntry::FreeMemoryPool();
 	CSettingConnection::FreeMemoryPool();
+
+	// System requests
+	SSystemRequestData<ESystemRequestType::ExecuteTriggerEx>::FreeMemoryPool();
+	SSystemRequestData<ESystemRequestType::RegisterObject>::FreeMemoryPool();
+	SSystemRequestData<ESystemRequestType::ReleaseObject>::FreeMemoryPool();
+
+	// Object requests
+	SObjectRequestData<EObjectRequestType::ExecuteTrigger>::FreeMemoryPool();
+	SObjectRequestData<EObjectRequestType::StopTrigger>::FreeMemoryPool();
+	SObjectRequestData<EObjectRequestType::SetTransformation>::FreeMemoryPool();
+	SObjectRequestData<EObjectRequestType::SetParameter>::FreeMemoryPool();
+	SObjectRequestData<EObjectRequestType::SetSwitchState>::FreeMemoryPool();
+	SObjectRequestData<EObjectRequestType::SetCurrentEnvironments>::FreeMemoryPool();
+	SObjectRequestData<EObjectRequestType::SetEnvironment>::FreeMemoryPool();
+	SObjectRequestData<EObjectRequestType::ProcessPhysicsRay>::FreeMemoryPool();
+
+	// Listener reqeusts
+	SListenerRequestData<EListenerRequestType::SetTransformation>::FreeMemoryPool();
+
+	// Callback requests
+	SCallbackRequestData<ECallbackRequestType::ReportStartedEvent>::FreeMemoryPool();
+	SCallbackRequestData<ECallbackRequestType::ReportFinishedEvent>::FreeMemoryPool();
+	SCallbackRequestData<ECallbackRequestType::ReportVirtualizedEvent>::FreeMemoryPool();
+	SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedEvent>::FreeMemoryPool();
+	SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance>::FreeMemoryPool();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -248,6 +582,10 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 				SSystemRequestData<ESystemRequestType::AutoLoadSetting> const requestData4(EDataScope::LevelSpecific);
 				CRequest const request4(&requestData4);
 				PushRequest(request4);
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+				ResetRequestCounts();
+#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
 			}
 
 			break;
@@ -1050,6 +1388,7 @@ void CSystem::ReleaseImpl()
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	g_pIImpl->DestructObject(g_previewObject.GetImplDataPtr());
 	g_previewObject.Release();
+	ResetRequestCounts();
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	g_xmlProcessor.ClearPreloadsData(EDataScope::All);
@@ -1191,11 +1530,25 @@ void CSystem::ProcessRequests(Requests& requestQueue)
 			}
 		}
 	}
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	if ((g_cvars.m_drawDebug & Debug::EDrawFilter::RequestInfo) != 0)
+	{
+		SetRequestCountPeak();
+	}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ProcessRequest(CRequest& request)
 {
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	if ((g_cvars.m_drawDebug & Debug::EDrawFilter::RequestInfo) != 0)
+	{
+		CountRequestPerUpdate(request);
+	}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
 	ERequestStatus result = ERequestStatus::None;
 
 	if (request.GetData())
@@ -1216,13 +1569,13 @@ void CSystem::ProcessRequest(CRequest& request)
 			}
 		case ERequestType::CallbackRequest:
 			{
-				result = ProcessCallbackManagerRequest(request);
+				result = ProcessCallbackRequest(request);
 
 				break;
 			}
 		case ERequestType::SystemRequest:
 			{
-				result = ProcessManagerRequest(request);
+				result = ProcessSystemRequest(request);
 
 				break;
 			}
@@ -1239,7 +1592,7 @@ void CSystem::ProcessRequest(CRequest& request)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CSystem::ProcessManagerRequest(CRequest const& request)
+ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 {
 	ERequestStatus result = ERequestStatus::Failure;
 	SSystemRequestDataBase const* const pBase = static_cast<SSystemRequestDataBase const*>(request.GetData());
@@ -1696,7 +2049,7 @@ ERequestStatus CSystem::ProcessManagerRequest(CRequest const& request)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CSystem::ProcessCallbackManagerRequest(CRequest& request)
+ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 {
 	ERequestStatus result = ERequestStatus::Failure;
 	SCallbackRequestDataBase const* const pBase =
@@ -2448,6 +2801,10 @@ ERequestStatus CSystem::HandleRefresh(char const* const szLevelName)
 	g_xmlProcessor.ClearPreloadsData(EDataScope::All);
 	g_xmlProcessor.ClearControlsData(EDataScope::All);
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	ResetRequestCounts();
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
 	g_pIImpl->OnRefresh();
 
 	g_xmlProcessor.ParseSystemData();
@@ -2691,6 +3048,65 @@ void DrawMemoryPoolInfo(
 }
 
 //////////////////////////////////////////////////////////////////////////
+void DrawRequestCategoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, char const* const szType)
+{
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::g_systemColorTextSecondary.data(), false, "%s Request Peak:", szType);
+	posY += Debug::g_systemLineHeight;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void DrawRequestPeakInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, char const* const szType, uint16 const peak, uint16 poolSize)
+{
+	bool const poolSizeExceeded = peak > poolSize;
+	float const* pColor = poolSizeExceeded ? Debug::g_colorRed.data() : Debug::g_systemColorTextPrimary.data();
+	CryFixedStringT<MaxMiscStringLength> debugText;
+
+	if (poolSizeExceeded)
+	{
+		debugText.Format("%s: %u (Pool Size: %u)", szType, peak, poolSize);
+	}
+	else
+	{
+		debugText.Format("%s: %u", szType, peak);
+	}
+
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, pColor, false, debugText.c_str());
+	posY += Debug::g_systemLineHeight;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void DrawRequestDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
+{
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_managerHeaderFontSize, Debug::g_globalColorHeader.data(), false, "Audio Requests");
+	posY += Debug::g_managerHeaderLineHeight;
+
+	DrawRequestCategoryInfo(auxGeom, posX, posY, "System");
+	DrawRequestPeakInfo(auxGeom, posX, posY, "ExecuteTriggerEx", g_requestPeaks.systemExecuteTriggerEx, g_systemExecuteTriggerExPoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "RegisterObject", g_requestPeaks.systemRegisterObject, g_systemRegisterObjectPoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "ReleaseObject", g_requestPeaks.systemReleaseObject, g_systemReleaseObjectPoolSize);
+
+	DrawRequestCategoryInfo(auxGeom, posX, posY, "Object");
+	DrawRequestPeakInfo(auxGeom, posX, posY, "ExecuteTrigger", g_requestPeaks.objectExecuteTrigger, g_objectExecuteTriggerPoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "StopTrigger", g_requestPeaks.objectStopTrigger, g_objectStopTriggerPoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "SetTransformation", g_requestPeaks.objectSetTransformation, g_objectSetTransformationPoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "SetParameter", g_requestPeaks.objectSetParameter, g_objectSetParameterPoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "SetSwitchState", g_requestPeaks.objectSetSwitchState, g_objectSetSwitchStatePoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "SetCurrentEnvironments", g_requestPeaks.objectSetCurrentEnvironments, g_objectSetCurrentEnvironmentsPoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "SetEnvironment", g_requestPeaks.objectSetEnvironment, g_objectSetEnvironmentPoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "ProcessPhysicsRay", g_requestPeaks.objectProcessPhysicsRay, g_objectProcessPhysicsRayPoolSize);
+
+	DrawRequestCategoryInfo(auxGeom, posX, posY, "Listener");
+	DrawRequestPeakInfo(auxGeom, posX, posY, "SetTransformation", g_requestPeaks.listenerSetTransformation, g_listenerSetTransformationPoolSize);
+
+	DrawRequestCategoryInfo(auxGeom, posX, posY, "Callback");
+	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportStartedEvent", g_requestPeaks.callbackReportStartedEvent, g_callbackReportStartedEventPoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportFinishedEvent", g_requestPeaks.callbackReportFinishedEvent, g_callbackReportFinishedEventPoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportVirtualizedEvent", g_requestPeaks.callbackReportVirtualizedEvent, g_callbackReportVirtualizedEventPoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportPhysicalizedEvent", g_requestPeaks.callbackReportPhysicalizedEvent, g_callbackReportPhysicalizedEventPoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportFinishedTriggerInstance", g_requestPeaks.callbackReportFinishedTriggerInstance, g_callbackReportFinishedTriggerInstancePoolSize);
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CSystem::HandleDrawDebug()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AUDIO);
@@ -2915,6 +3331,11 @@ void CSystem::HandleDrawDebug()
 			debugDraw += "File Cache Manager, ";
 		}
 
+		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::RequestInfo) != 0)
+		{
+			debugDraw += "Requests, ";
+		}
+
 		if (!debugDraw.IsEmpty())
 		{
 			debugDraw.erase(debugDraw.length() - 2, 2);
@@ -2940,6 +3361,12 @@ void CSystem::HandleDrawDebug()
 		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ActiveEvents) != 0)
 		{
 			g_eventManager.DrawDebugInfo(*pAuxGeom, posX, posY);
+			posX += 600.0f;
+		}
+
+		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::RequestInfo) != 0)
+		{
+			DrawRequestDebugInfo(*pAuxGeom, posX, posY);
 			posX += 600.0f;
 		}
 

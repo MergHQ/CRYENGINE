@@ -88,19 +88,19 @@ extern TriggerInstanceId g_triggerInstanceIdCounter;
 
 struct SPoolSizes final
 {
-	uint32 triggers = 0;
-	uint32 parameters = 0;
-	uint32 switches = 0;
-	uint32 states = 0;
-	uint32 environments = 0;
-	uint32 preloads = 0;
-	uint32 settings = 0;
-	uint32 triggerConnections = 0;
-	uint32 parameterConnections = 0;
-	uint32 stateConnections = 0;
-	uint32 environmentConnections = 0;
-	uint32 preloadConnections = 0;
-	uint32 settingConnections = 0;
+	uint16 triggers = 0;
+	uint16 parameters = 0;
+	uint16 switches = 0;
+	uint16 states = 0;
+	uint16 environments = 0;
+	uint16 preloads = 0;
+	uint16 settings = 0;
+	uint16 triggerConnections = 0;
+	uint16 parameterConnections = 0;
+	uint16 stateConnections = 0;
+	uint16 environmentConnections = 0;
+	uint16 preloadConnections = 0;
+	uint16 settingConnections = 0;
 };
 
 extern SPoolSizes g_poolSizes;

@@ -203,6 +203,7 @@ void CCVars::RegisterVariables()
 	               "v: List active Events.\n"
 	               "w: List active Audio Objects.\n"
 	               "x: Draw FileCache Manager debug info.\n"
+	               "y: Draw Request debug info.\n"
 	               );
 
 	REGISTER_CVAR2("s_FileCacheManagerDebugFilter", &m_fileCacheManagerDebugFilter, 0, VF_CHEAT | VF_CHEAT_NOCHECK | VF_BITFIELD,
