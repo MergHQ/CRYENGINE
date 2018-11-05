@@ -2048,7 +2048,6 @@ namespace Schematyc2
 				case SVMOp::CONTAINER_REMOVE_BY_INDEX:
 					{
 						const SVMContainerRemoveByIndexOp*	pContainerRemoveByIndexOp = static_cast<const SVMContainerRemoveByIndexOp*>(pOp);
-						char																stringBuffer[StringUtils::s_sizeTStringBufferSize] = "";
 						stringStreamOutCallback("\tCONTAINER_REMOVE_BY_INDEX ");
 						stringStreamOutCallback(GetContainer(pContainerRemoveByIndexOp->iContainer)->GetName());
 						stringStreamOutCallback("\n");
@@ -2068,7 +2067,6 @@ namespace Schematyc2
 				case SVMOp::CONTAINER_CLEAR:
 					{
 						const SVMContainerClearOp*	pContainerClearOp = static_cast<const SVMContainerClearOp*>(pOp);
-						char												stringBuffer[StringUtils::s_sizeTStringBufferSize] = "";
 						stringStreamOutCallback("\tCONTAINER_CLEAR ");
 						stringStreamOutCallback(GetContainer(pContainerClearOp->iContainer)->GetName());
 						stringStreamOutCallback("\n");
@@ -2088,7 +2086,6 @@ namespace Schematyc2
 				case SVMOp::CONTAINER_GET:
 					{
 						const SVMContainerGetOp*	pContainerGetOp = static_cast<const SVMContainerGetOp*>(pOp);
-						char											stringBuffer[StringUtils::s_sizeTStringBufferSize] = "";
 						stringStreamOutCallback("\tCONTAINER_GET ");
 						stringStreamOutCallback(GetContainer(pContainerGetOp->iContainer)->GetName());
 						stringStreamOutCallback("\n");

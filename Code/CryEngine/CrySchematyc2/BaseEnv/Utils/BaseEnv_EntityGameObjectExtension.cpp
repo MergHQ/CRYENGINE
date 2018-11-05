@@ -57,7 +57,7 @@ namespace SchematycBaseEnv
 	{
 		SetGameObject(pGameObject);
 		
-		IEntityAttributesComponent* pAttribComponent = GetEntity()->GetOrCreateComponent<IEntityAttributesComponent>();
+		GetEntity()->GetOrCreateComponent<IEntityAttributesComponent>();
 
 		// NOTE pavloi 2016.11.25: CEntityClassRegistrar::RegisterEntityClass() sets a pointer to SEntityClass in the userProxyData
 		const CEntityClassRegistrar::SEntityClass* pClassUserData = static_cast<CEntityClassRegistrar::SEntityClass*>(GetEntity()->GetClass()->GetUserProxyData());

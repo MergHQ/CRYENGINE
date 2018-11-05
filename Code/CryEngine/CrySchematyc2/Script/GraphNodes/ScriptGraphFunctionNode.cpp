@@ -441,7 +441,7 @@ namespace Schematyc2
 		IPropertiesPtr             pComponentProperties = pObject->GetComponentInstanceProperties(pParams->componentIdx);
 		if(pComponentProperties)
 		{
-			SEnvFunctionResult result = pParams->pEnvFunctionDescriptor->Execute(SEnvFunctionContext(), pComponentProperties->ToVoidPtr(), inputs, outputs);
+			pParams->pEnvFunctionDescriptor->Execute(SEnvFunctionContext(), pComponentProperties->ToVoidPtr(), inputs, outputs);
 		}
 		else
 		{

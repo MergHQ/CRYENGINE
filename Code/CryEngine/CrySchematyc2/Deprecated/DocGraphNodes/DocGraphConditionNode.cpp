@@ -383,19 +383,19 @@ namespace Schematyc2
 			const IScriptFile& file = CDocGraphNodeBase::GetFile();
 			const IDocGraph&   graph = CDocGraphNodeBase::GetGraph();
 			CDomainContext     domainContext(SDomainContextScope(&file, graph.GetScopeGUID()));
-			if(IGlobalFunctionConstPtr pFunction = gEnv->pSchematyc2->GetEnvRegistry().GetGlobalFunction(refGUID))
+			if(gEnv->pSchematyc2->GetEnvRegistry().GetGlobalFunction(refGUID) != nullptr)
 			{
 				return EConditionType::EnvGlobal;
 			}
-			else if(IComponentMemberFunctionConstPtr pFunction = gEnv->pSchematyc2->GetEnvRegistry().GetComponentMemberFunction(refGUID))
+			else if(gEnv->pSchematyc2->GetEnvRegistry().GetComponentMemberFunction(refGUID) != nullptr)
 			{
 				return EConditionType::EnvComponent;
 			}
-			else if(IActionMemberFunctionConstPtr pFunction = gEnv->pSchematyc2->GetEnvRegistry().GetActionMemberFunction(refGUID))
+			else if(gEnv->pSchematyc2->GetEnvRegistry().GetActionMemberFunction(refGUID) != nullptr)
 			{
 				return EConditionType::EnvAction;
 			}
-			else if(const IDocGraph* pGraph = domainContext.GetDocGraph(refGUID))
+			else if(domainContext.GetDocGraph(refGUID) != nullptr)
 			{
 				return EConditionType::Script;
 			}
@@ -566,10 +566,8 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphConditionNode::CompileInputs(IDocGraphNodeCompiler& compiler) const
 	{
-		const IScriptFile& file = CDocGraphNodeBase::GetFile();
-		const IDocGraph&   graph = CDocGraphNodeBase::GetGraph();
-		const SGUID        contextGUID = CDocGraphNodeBase::GetContextGUID();
-		const SGUID        refGUID = CDocGraphNodeBase::GetRefGUID();
+		const SGUID contextGUID = CDocGraphNodeBase::GetContextGUID();
+		const SGUID refGUID = CDocGraphNodeBase::GetRefGUID();
 		compiler.CreateStackFrame(*this, EStackFrame::FirstFunctionInput);
 		switch(m_conditionType)
 		{

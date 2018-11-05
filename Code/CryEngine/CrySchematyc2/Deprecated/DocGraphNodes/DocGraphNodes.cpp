@@ -50,9 +50,8 @@ namespace Schematyc2
 		LOADING_TIME_PROFILE_SECTION;
 		CDocGraphNodeBase::Refresh(params);
 		CDocGraphNodeBase::AddOutput("Out", EScriptGraphPortFlags::BeginSequence | EScriptGraphPortFlags::Execute);
-		const IScriptFile& file = CDocGraphNodeBase::GetFile();
-		const IDocGraph&   graph = CDocGraphNodeBase::GetGraph();
-		const size_t       graphInputCount = graph.GetInputCount();
+		const IDocGraph& graph = CDocGraphNodeBase::GetGraph();
+		const size_t graphInputCount = graph.GetInputCount();
 		m_outputValues.resize(EOutput::FirstParam + graphInputCount);
 		for(size_t graphInputIdx = 0; graphInputIdx < graphInputCount; ++ graphInputIdx)
 		{
@@ -72,8 +71,7 @@ namespace Schematyc2
 		{
 		case EOutput::Out:
 			{
-				const IScriptFile& file = CDocGraphNodeBase::GetFile();
-				const IDocGraph&   graph = CDocGraphNodeBase::GetGraph();
+				const IDocGraph& graph = CDocGraphNodeBase::GetGraph();
 				preCompiler.BindFunctionToGUID(graph.GetGUID());
 				for(size_t graphInputIdx = 0, graphInputCount = graph.GetInputCount(); graphInputIdx < graphInputCount; ++ graphInputIdx)
 				{
