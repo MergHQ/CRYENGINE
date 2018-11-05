@@ -384,12 +384,13 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 		const bool resolutionChanged = nNewDisplayWidth != CRendererResources::s_renderWidth || nNewDisplayHeight != CRendererResources::s_renderHeight;
 		if (isFullscreen && wasFullscreen && resolutionChanged)
 		{
-			// Forces resolution and aspect-ratio changes while in fullscreen
+			// Leave fullscreen before resizing as SetFullscreenState doesn't
+			// resize the swapchain unless the fullscreen state changes
 			pBC->SetFullscreenState(!isFullscreen);
 		}
 
-		pBC->SetFullscreenState(isFullscreen);
 		pBC->ChangeDisplayResolution(nNewDisplayWidth, nNewDisplayHeight);
+		pBC->SetFullscreenState(isFullscreen);
 
 		if (gEnv->pHardwareMouse)
 			gEnv->pHardwareMouse->GetSystemEventListener()->OnSystemEvent(ESYSTEM_EVENT_TOGGLE_FULLSCREEN, isFullscreen ? 1 : 0, 0);
