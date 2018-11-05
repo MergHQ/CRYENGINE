@@ -814,29 +814,24 @@ void SRenderThread::SyncMainWithRender(bool bFrameToFrame)
 
 	if (!IsMultithreaded())
 	{
-		gRenDev->SyncMainWithRender();
+		if (bFrameToFrame)
+			gRenDev->SyncMainWithRender();
+
 		return;
 	}
 
 #ifndef STRIP_RENDER_THREAD
 	WaitFlushFinishedCond();
 
-	{
-		START_PROFILE_RT_SCOPE();
-		CPostEffectsMgr* pPostEffectMgr = PostEffectMgr();
-		if (pPostEffectMgr)
-		{
-			// Must be called before the thread ID's get swapped
-			pPostEffectMgr->SyncMainWithRender();
-		}
-
-		gRenDev->SyncMainWithRender();
-		END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.miscTime);
-	}
-
 	// Register all times of this frame (including from two lines above)
 	if (bFrameToFrame)
 	{
+		{
+			START_PROFILE_RT_SCOPE();
+			gRenDev->SyncMainWithRender();
+			END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.miscTime);
+		}
+
 		gcpRendD3D->RT_EndMeasurement();
 	}
 
@@ -856,11 +851,12 @@ void SRenderThread::SyncMainWithRender(bool bFrameToFrame)
 		SRenderStatistics::s_pPreviousOutput = &gRenDev->m_frameRenderStats[m_nCurThreadFill   ];
 		SRenderStatistics::s_pCurrentOutput->Begin(SRenderStatistics::s_pPreviousOutput);
 	}
-	//gRenDev->m_RP.m_pCurrentRenderView->PrepareForRendering();
-
-	if (gEnv->pCharacterManager)
+	if (bFrameToFrame)
 	{
-		gEnv->pCharacterManager->UpdateRendererFrame();
+		//gRenDev->m_RP.m_pCurrentRenderView->PrepareForRendering();
+
+		if (gEnv->pCharacterManager)
+			gEnv->pCharacterManager->UpdateRendererFrame();
 	}
 
 	SignalFlushCond();
@@ -942,18 +938,7 @@ bool CRenderer::FlushRTCommands(bool bWait, bool bImmediatelly, bool bForce)
 	IF (!pRT, 0)
 		return true;
 	if (pRT->IsRenderThread(true))
-	{
-		SSystemGlobalEnvironment* pEnv = iSystem->GetGlobalEnvironment();
-		if (pEnv && pEnv->IsEditor())
-		{
-			CPostEffectsMgr* pPostEffectMgr = PostEffectMgr();
-			if (pPostEffectMgr)
-			{
-				pPostEffectMgr->SyncMainWithRender();
-			}
-		}
 		return true;
-	}
 	if (!bForce && (!m_bStartLevelLoading || !pRT->IsMultithreaded()))
 		return false;
 	if (!bImmediatelly && pRT->CheckFlushCond())

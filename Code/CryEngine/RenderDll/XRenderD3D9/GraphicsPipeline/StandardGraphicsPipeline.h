@@ -225,7 +225,16 @@ private:
 	// particle data for writing directly to VMEM
 	CParticleBufferSet            m_particleBuffer;
 
+	std::unique_ptr<CStretchRectPass       > m_HDRToFramePass;
+	std::unique_ptr<CStretchRectPass       > m_PostToFramePass;
+	std::unique_ptr<CStretchRectPass       > m_FrameToFramePass;
+
+	std::unique_ptr<CDepthDownsamplePass   > m_LZSubResPass[3];
+	std::unique_ptr<CStableDownsamplePass  > m_HQSubResPass[2];
+	std::unique_ptr<CStretchRectPass       > m_LQSubResPass[2];
+
 public:
+	std::unique_ptr<CStretchRectPass       > m_ResolvePass;
 	std::unique_ptr<CDownsamplePass        > m_DownscalePass;
 	std::unique_ptr<CSharpeningUpsamplePass> m_UpscalePass;
 

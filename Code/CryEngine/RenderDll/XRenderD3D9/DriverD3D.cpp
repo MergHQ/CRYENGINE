@@ -1303,7 +1303,7 @@ void CD3D9Renderer::ResolveHighDynamicRangeDisplay()
 	CRY_ASSERT(pOutput->GetColorTarget() != pDC->GetCurrentBackBuffer());
 
 	// TODO: add HDR meta-data coding to back-buffer copy
-	CStretchRectPass::GetPass().Execute(pOutput->GetColorTarget(), pDC->GetCurrentBackBuffer());
+	GetGraphicsPipeline().m_ResolvePass->Execute(pOutput->GetColorTarget(), pDC->GetCurrentBackBuffer());
 }
 
 //////////////////////////////////////////////////////////////////////////

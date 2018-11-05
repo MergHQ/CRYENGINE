@@ -430,7 +430,7 @@ class CPostEffectsMgr;
 static CPostEffectsMgr* PostEffectMgr();
 
 // Post process effects manager
-class CPostEffectsMgr
+class CPostEffectsMgr : public ISyncMainWithRenderListener
 {
 public:
 	CPostEffectsMgr()
@@ -462,10 +462,15 @@ public:
 		m_activeEffectsDebug.reserve(16);
 		m_activeParamsDebug.reserve(32);
 #endif
+		if (gEnv && gEnv->pRenderer)
+			gEnv->pRenderer->RegisterSyncWithMainListener(this);
 	}
 
 	virtual ~CPostEffectsMgr()
 	{
+		if (gEnv && gEnv->pRenderer)
+			gEnv->pRenderer->RemoveSyncWithMainListener(this);
+
 		Release();
 	}
 
@@ -486,7 +491,7 @@ public:
 	// release resources when required
 	void OnBeginFrame(const SRenderingPassInfo& passInfo);
 	// Sync main thread post effect data with render thread post effect data
-	void SyncMainWithRender();
+	void SyncMainWithRender() final;
 
 	// Get techniques list
 	CPostEffectVec& GetEffects()

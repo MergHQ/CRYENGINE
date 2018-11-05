@@ -149,6 +149,19 @@ void CStandardGraphicsPipeline::Init()
 	InitStages();
 
 	// Out-of-pipeline passes for display
+	m_HDRToFramePass  .reset(new CStretchRectPass);
+	m_PostToFramePass .reset(new CStretchRectPass);
+	m_FrameToFramePass.reset(new CStretchRectPass);
+
+	m_LZSubResPass[0].reset(new CDepthDownsamplePass);
+	m_LZSubResPass[1].reset(new CDepthDownsamplePass);
+	m_LZSubResPass[2].reset(new CDepthDownsamplePass);
+	m_HQSubResPass[0].reset(new CStableDownsamplePass);
+	m_HQSubResPass[1].reset(new CStableDownsamplePass);
+	m_LQSubResPass[0].reset(new CStretchRectPass);
+	m_LQSubResPass[1].reset(new CStretchRectPass);
+
+	m_ResolvePass  .reset(new CStretchRectPass);
 	m_DownscalePass.reset(new CDownsamplePass);
 	m_UpscalePass  .reset(new CSharpeningUpsamplePass);
 
@@ -177,6 +190,20 @@ void CStandardGraphicsPipeline::ShutDown()
 	m_mainViewConstantBuffer.Clear();
 	m_defaultDrawExtraRL.ClearResources();
 	m_pDefaultDrawExtraRS.reset();
+
+	m_HDRToFramePass.reset();
+	m_PostToFramePass.reset();
+	m_FrameToFramePass.reset();
+
+	m_LZSubResPass[0].reset();
+	m_LZSubResPass[1].reset();
+	m_LZSubResPass[2].reset();
+	m_HQSubResPass[0].reset();
+	m_HQSubResPass[1].reset();
+	m_LQSubResPass[0].reset();
+	m_LQSubResPass[1].reset();
+
+	m_ResolvePass.reset();
 	m_DownscalePass.reset();
 	m_UpscalePass.reset();
 
@@ -586,7 +613,7 @@ void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
 
 	// Note: MB uses s_ptexHDRTargetPrev to avoid doing another copy, so this should be right before the MB pass
 	{
-		GetOrCreateUtilityPass<CStretchRectPass>()->Execute(CRendererResources::s_ptexHDRTarget, CRendererResources::s_ptexHDRTargetPrev);
+		m_FrameToFramePass->Execute(CRendererResources::s_ptexHDRTarget, CRendererResources::s_ptexHDRTargetPrev);
 	}
 
 	if (m_pDepthOfFieldStage->IsStageActive(m_renderingFlags))
@@ -606,9 +633,9 @@ void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
 		PROFILE_LABEL_SCOPE("HALFRES_DOWNSAMPLE_HDRTARGET");
 
 		if (CRendererCVars::CV_r_HDRBloomQuality > 1)
-			GetOrCreateUtilityPass<CStableDownsamplePass>()->Execute(CRendererResources::s_ptexHDRTarget, CRendererResources::s_ptexHDRTargetScaled[0][0], true);
+			m_HQSubResPass[0]->Execute(CRendererResources::s_ptexHDRTarget, CRendererResources::s_ptexHDRTargetScaled[0][0], true);
 		else
-			GetOrCreateUtilityPass<CStretchRectPass>()->Execute(CRendererResources::s_ptexHDRTarget, CRendererResources::s_ptexHDRTargetScaled[0][0]);
+			m_LQSubResPass[0]->Execute(CRendererResources::s_ptexHDRTarget, CRendererResources::s_ptexHDRTargetScaled[0][0]);
 	}
 
 	// Quarter resolution downsampling
@@ -618,9 +645,9 @@ void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
 		PROFILE_LABEL_SCOPE("QUARTER_RES_DOWNSAMPLE_HDRTARGET");
 
 		if (CRendererCVars::CV_r_HDRBloomQuality > 0)
-			GetOrCreateUtilityPass<CStableDownsamplePass>()->Execute(CRendererResources::s_ptexHDRTargetScaled[0][0], CRendererResources::s_ptexHDRTargetScaled[1][0], CRendererCVars::CV_r_HDRBloomQuality >= 1);
+			m_HQSubResPass[1]->Execute(CRendererResources::s_ptexHDRTargetScaled[0][0], CRendererResources::s_ptexHDRTargetScaled[1][0], CRendererCVars::CV_r_HDRBloomQuality >= 1);
 		else
-			GetOrCreateUtilityPass<CStretchRectPass>()->Execute(CRendererResources::s_ptexHDRTargetScaled[0][0], CRendererResources::s_ptexHDRTargetScaled[1][0]);
+			m_LQSubResPass[1]->Execute(CRendererResources::s_ptexHDRTargetScaled[0][0], CRendererResources::s_ptexHDRTargetScaled[1][0]);
 	}
 
 	// reads CRendererResources::s_ptexHDRTargetScaled[1][0]
@@ -855,9 +882,9 @@ void CStandardGraphicsPipeline::Execute()
 		pSourceDepth = pZTexture;  // On Durango reading device depth is faster since it is in ESRAM
 #endif
 
-		GetOrCreateUtilityPass<CDepthDownsamplePass>()->Execute(pSourceDepth, CRendererResources::s_ptexLinearDepthScaled[0], (pSourceDepth == pZTexture), true);
-		GetOrCreateUtilityPass<CDepthDownsamplePass>()->Execute(CRendererResources::s_ptexLinearDepthScaled[0], CRendererResources::s_ptexLinearDepthScaled[1], false, false);
-		GetOrCreateUtilityPass<CDepthDownsamplePass>()->Execute(CRendererResources::s_ptexLinearDepthScaled[1], CRendererResources::s_ptexLinearDepthScaled[2], false, false);
+		m_LZSubResPass[0]->Execute(pSourceDepth, CRendererResources::s_ptexLinearDepthScaled[0], (pSourceDepth == pZTexture), true);
+		m_LZSubResPass[1]->Execute(CRendererResources::s_ptexLinearDepthScaled[0], CRendererResources::s_ptexLinearDepthScaled[1], false, false);
+		m_LZSubResPass[2]->Execute(CRendererResources::s_ptexLinearDepthScaled[1], CRendererResources::s_ptexLinearDepthScaled[2], false, false);
 	}
 
 	// Depth readback (for occlusion culling)
@@ -929,9 +956,7 @@ void CStandardGraphicsPipeline::Execute()
 			m_pTiledShadingStage->Execute();
 
 			if (m_pScreenSpaceSSSStage->IsStageActive(m_renderingFlags))
-			{
 				m_pScreenSpaceSSSStage->Execute(CRendererResources::s_ptexSceneTargetR11G11B10F[0]);
-			}
 		}
 	}
 
@@ -1005,19 +1030,19 @@ void CStandardGraphicsPipeline::Execute()
 			m_pSceneForwardStage->ExecuteAfterPostProcessHDR();
 
 			// CRendererResources::s_ptexDisplayTarget -> CRenderOutput->m_pColorTarget (PostAA)
+			// Post effects disabled, copy diffuse to color target
 			if (!m_pPostEffectStage->Execute())
-			{
-				// Post effects disabled, copy diffuse to color target
-				CStretchRectPass::GetPass().Execute(CRendererResources::s_ptexDisplayTargetDst, pRenderView->GetRenderOutput()->GetColorTarget());
-			}
+				m_PostToFramePass->Execute(CRendererResources::s_ptexDisplayTargetDst, pRenderView->GetRenderOutput()->GetColorTarget());
 
 			// CRenderOutput->m_pColorTarget
 			m_pSceneForwardStage->ExecuteAfterPostProcessLDR();
 		}
 
 		if (m_pSceneCustomStage->IsSelectionHighlightEnabled())
+		{
 			m_pSceneCustomStage->ExecuteHelpers();
 			m_pSceneCustomStage->ExecuteSelectionHighlight();
+		}
 
 		if (m_pSceneCustomStage->IsDebugOverlayEnabled())
 			m_pSceneCustomStage->ExecuteDebugOverlay();
@@ -1029,7 +1054,7 @@ void CStandardGraphicsPipeline::Execute()
 	else
 	{
 		// Raw HDR copy
-		GetOrCreateUtilityPass<CStretchRectPass>()->Execute(CRendererResources::s_ptexHDRTarget, pRenderView->GetRenderOutput()->GetColorTarget());
+		m_HDRToFramePass->Execute(CRendererResources::s_ptexHDRTarget, pRenderView->GetRenderOutput()->GetColorTarget());
 	}
 
 	if (m_pOmniCameraStage->IsStageActive(m_renderingFlags))

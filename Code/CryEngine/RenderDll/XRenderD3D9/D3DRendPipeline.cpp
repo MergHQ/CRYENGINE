@@ -164,7 +164,6 @@ void CD3D9Renderer::RT_GraphicsPipelineShutdown()
 {
 	CREParticle::ResetPool();
 
-	CStretchRectPass::Shutdown();
 	CStretchRegionPass::Shutdown();
 
 	if (m_pStereoRenderer)

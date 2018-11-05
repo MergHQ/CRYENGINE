@@ -21,21 +21,6 @@ ResourceViewHandle s_RTVDefaults[] =
 // CStretchRectPass
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-CStretchRectPass *CStretchRectPass::s_pPass = nullptr;
-
-CStretchRectPass &CStretchRectPass::GetPass()
-{
-	if (!s_pPass)
-		s_pPass = new CStretchRectPass;
-	return *s_pPass;
-}
-void CStretchRectPass::Shutdown()
-{
-	if (s_pPass)
-		delete s_pPass;
-	s_pPass = NULL;
-}
-
 void CStretchRectPass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
 {
 	//Check if the required shader is loaded
@@ -90,14 +75,14 @@ void CStretchRectPass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
 		if (bBigDownsample)
 		{
 			// Use rotated grid + middle sample (~Quincunx)
-			params0 = Vec4(s1 * 0.96f, t1 * 0.25f, -s1 * 0.25f, t1 * 0.96f);
-			params1 = Vec4(-s1 * 0.96f, -t1 * 0.25f, s1 * 0.25f, -t1 * 0.96f);
+			params0 = Vec4( s1 * 0.96f,  t1 * 0.25f, -s1 * 0.25f,  t1 * 0.96f);
+			params1 = Vec4(-s1 * 0.96f, -t1 * 0.25f,  s1 * 0.25f, -t1 * 0.96f);
 		}
 		else
 		{
 			// Use box filtering (faster - can skip bilinear filtering, only 4 taps)
-			params0 = Vec4(-s1, -t1, s1, -t1);
-			params1 = Vec4(s1, t1, -s1, t1);
+			params0 = Vec4(-s1, -t1,  s1, -t1);
+			params1 = Vec4( s1,  t1, -s1,  t1);
 		}
 
 		m_pass.BeginConstantUpdate();
