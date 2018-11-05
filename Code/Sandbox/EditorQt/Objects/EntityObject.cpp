@@ -100,6 +100,7 @@ public:
 	EntityLinkTool()
 		: CPickObjectTool(&m_picker)
 	{
+		SetMultiplePicks(true);
 	}
 
 	~EntityLinkTool()
