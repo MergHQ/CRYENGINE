@@ -13,6 +13,8 @@
 #include <CryRenderer/IRenderAuxGeom.h>
 #include "XConsoleVariable.h"
 #include <regex>
+#include <fstream>
+#include <sstream>
 
 #define BACKGROUND_SERVER_CHAR '/'
 
