@@ -207,7 +207,7 @@ extern "C"
 			const char* slevel = "";
 			if (level == 1)
 				slevel = "  ";
-			int nRes = lua_getinfo(L, "lnS", &ar);
+			lua_getinfo(L, "lnS", &ar);
 			if (ar.name)
 				CryLog("$6%s    > %s, (%s: %d)", slevel, ar.name, ar.short_src, ar.currentline);
 			else
@@ -280,7 +280,9 @@ IScriptTable* CScriptSystem::GetLocalVariables(int nLevel, bool bRecursive)
 	pObj->AddRef();
 
 	// Attach a new table
+#if !defined(_RELEASE)
 	const int checkStack = lua_gettop(L);
+#endif
 	lua_newtable(L);
 	lua_pushvalue(L, -1);
 	AttachTable(pObj);
@@ -302,7 +304,9 @@ IScriptTable* CScriptSystem::GetLocalVariables(int nLevel, bool bRecursive)
 
 		// Assign variable names and values for the current frame to the table on top of the stack
 		int i = 1;
+#if !defined(_RELEASE)
 		const int checkInner = lua_gettop(L);
+#endif
 		assert(checkInner == checkStack + 1 + bRecursive && "Too much stack space used");
 		assert(lua_istable(L, -1) && "The target table must be on the top of the stack");
 		while ((name = lua_getlocal(L, &ar, i++)) != NULL)
@@ -1791,13 +1795,17 @@ bool CScriptSystem::GetGlobalAny(const char* sKey, ScriptAnyValue& any)
 //////////////////////////////////////////////////////////////////////
 void CScriptSystem::ForceGarbageCollection()
 {
+#if !defined(EXCLUDE_NORMAL_LOG)
 	int beforeUsage = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
+#endif
 
 	// Do a full garbage collection cycle.
 	lua_gc(L, LUA_GCCOLLECT, 0);
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	int fracUsage = lua_gc(L, LUA_GCCOUNTB, 0);
 	int totalUsage = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + fracUsage;
+#endif
 
 #if USE_RAW_LUA_ALLOCS
 	// Nothing to do.
@@ -2645,7 +2653,6 @@ void CScriptSystem::ResetTimers()
 //////////////////////////////////////////////////////////////////////////
 HSCRIPTFUNCTION CScriptSystem::CompileBuffer(const char* sBuffer, size_t nSize, const char* sBufferDesc)
 {
-	int iIndex = -1;
 	const char* sBufferDescription = "Pre Compiled Code";
 	if (sBufferDesc)
 		sBufferDescription = sBufferDesc;
