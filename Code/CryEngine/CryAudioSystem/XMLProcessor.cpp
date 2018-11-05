@@ -80,55 +80,55 @@ void ParseSystemDataFile(char const* const szFolderPath, SPoolSizes& poolSizes, 
 			{
 				if (_stricmp(pRootNode->getTag(), s_szRootNodeTag) == 0)
 				{
-					uint32 numTriggers = 0;
+					uint16 numTriggers = 0;
 					pRootNode->getAttr(s_szNumTriggersAttribute, numTriggers);
 					poolSizes.triggers += numTriggers;
 
-					uint32 numParameters = 0;
+					uint16 numParameters = 0;
 					pRootNode->getAttr(s_szNumParametersAttribute, numParameters);
 					poolSizes.parameters += numParameters;
 
-					uint32 numSwitches = 0;
+					uint16 numSwitches = 0;
 					pRootNode->getAttr(s_szNumSwitchesAttribute, numSwitches);
 					poolSizes.switches += numSwitches;
 
-					uint32 numStates = 0;
+					uint16 numStates = 0;
 					pRootNode->getAttr(s_szNumStatesAttribute, numStates);
 					poolSizes.states += numStates;
 
-					uint32 numEnvironments = 0;
+					uint16 numEnvironments = 0;
 					pRootNode->getAttr(s_szNumEnvironmentsAttribute, numEnvironments);
 					poolSizes.environments += numEnvironments;
 
-					uint32 numPreloads = 0;
+					uint16 numPreloads = 0;
 					pRootNode->getAttr(s_szNumPreloadsAttribute, numPreloads);
 					poolSizes.preloads += numPreloads;
 
-					uint32 numSettings = 0;
+					uint16 numSettings = 0;
 					pRootNode->getAttr(s_szNumSettingsAttribute, numSettings);
 					poolSizes.settings += numSettings;
 
-					uint32 numTriggerConnections = 0;
+					uint16 numTriggerConnections = 0;
 					pRootNode->getAttr(s_szNumTriggerConnectionsAttribute, numTriggerConnections);
 					poolSizes.triggerConnections += numTriggerConnections;
 
-					uint32 numParameterConnections = 0;
+					uint16 numParameterConnections = 0;
 					pRootNode->getAttr(s_szNumParameterConnectionsAttribute, numParameterConnections);
 					poolSizes.parameterConnections += numParameterConnections;
 
-					uint32 numStateConnections = 0;
+					uint16 numStateConnections = 0;
 					pRootNode->getAttr(s_szNumStateConnectionsAttribute, numStateConnections);
 					poolSizes.stateConnections += numStateConnections;
 
-					uint32 numEnvironmentConnections = 0;
+					uint16 numEnvironmentConnections = 0;
 					pRootNode->getAttr(s_szNumEnvironmentConnectionsAttribute, numEnvironmentConnections);
 					poolSizes.environmentConnections += numEnvironmentConnections;
 
-					uint32 numPreloadConnections = 0;
+					uint16 numPreloadConnections = 0;
 					pRootNode->getAttr(s_szNumPreloadConnectionsAttribute, numPreloadConnections);
 					poolSizes.preloadConnections += numPreloadConnections;
 
-					uint32 numSettingConnections = 0;
+					uint16 numSettingConnections = 0;
 					pRootNode->getAttr(s_szNumSettingConnectionsAttribute, numSettingConnections);
 					poolSizes.settingConnections += numSettingConnections;
 				}
@@ -234,20 +234,20 @@ void CXMLProcessor::ParseSystemData()
 
 	// Need to set pool sizes to at least 1, because there could be files that don't contain the
 	// counts yet, which could result in asserts of the pool object.
-	g_poolSizes.triggers = std::max<uint32>(1, g_poolSizes.triggers);
-	g_poolSizes.parameters = std::max<uint32>(1, g_poolSizes.parameters);
-	g_poolSizes.switches = std::max<uint32>(1, g_poolSizes.switches);
-	g_poolSizes.states = std::max<uint32>(1, g_poolSizes.states);
-	g_poolSizes.environments = std::max<uint32>(1, g_poolSizes.environments);
-	g_poolSizes.preloads = std::max<uint32>(1, g_poolSizes.preloads);
-	g_poolSizes.settings = std::max<uint32>(1, g_poolSizes.settings);
+	g_poolSizes.triggers = std::max<uint16>(1, g_poolSizes.triggers);
+	g_poolSizes.parameters = std::max<uint16>(1, g_poolSizes.parameters);
+	g_poolSizes.switches = std::max<uint16>(1, g_poolSizes.switches);
+	g_poolSizes.states = std::max<uint16>(1, g_poolSizes.states);
+	g_poolSizes.environments = std::max<uint16>(1, g_poolSizes.environments);
+	g_poolSizes.preloads = std::max<uint16>(1, g_poolSizes.preloads);
+	g_poolSizes.settings = std::max<uint16>(1, g_poolSizes.settings);
 
-	g_poolSizes.triggerConnections = std::max<uint32>(1, g_poolSizes.triggerConnections);
-	g_poolSizes.parameterConnections = std::max<uint32>(1, g_poolSizes.parameterConnections);
-	g_poolSizes.stateConnections = std::max<uint32>(1, g_poolSizes.stateConnections);
-	g_poolSizes.environmentConnections = std::max<uint32>(1, g_poolSizes.environmentConnections);
-	g_poolSizes.preloadConnections = std::max<uint32>(1, g_poolSizes.preloadConnections);
-	g_poolSizes.settingConnections = std::max<uint32>(1, g_poolSizes.settingConnections);
+	g_poolSizes.triggerConnections = std::max<uint16>(1, g_poolSizes.triggerConnections);
+	g_poolSizes.parameterConnections = std::max<uint16>(1, g_poolSizes.parameterConnections);
+	g_poolSizes.stateConnections = std::max<uint16>(1, g_poolSizes.stateConnections);
+	g_poolSizes.environmentConnections = std::max<uint16>(1, g_poolSizes.environmentConnections);
+	g_poolSizes.preloadConnections = std::max<uint16>(1, g_poolSizes.preloadConnections);
+	g_poolSizes.settingConnections = std::max<uint16>(1, g_poolSizes.settingConnections);
 
 	g_pIImpl->OnAfterLibraryDataChanged();
 }

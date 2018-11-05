@@ -91,11 +91,13 @@ bool CFunctionHandler::GetParamAny(int nIdx, ScriptAnyValue& any)
 	bool bRes = m_pSS->ToAny(any, nRealIdx);
 	if (!bRes)
 	{
+#if !defined(_RELEASE)
 		ScriptVarType paramType = GetParamType(nIdx);
 		const char* sParamType = ScriptVarTypeAsCStr(paramType);
 		const char* sType = ScriptAnyTypeToString(any.GetType());
 		// Report wrong param.
 		ScriptWarning("[Script Error] Wrong parameter type. Function %s expect parameter %d of type %s (Provided type %s)", m_sFuncName, nIdx, sType, sParamType);
+#endif
 		m_pSS->LogStackTrace();
 	}
 	return bRes;

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "RequestData.h"
+#include "Common/PoolObject.h"
 #include <CryAudio/IAudioSystem.h>
 
 namespace CryAudio
@@ -470,7 +471,7 @@ struct SSystemRequestData<ESystemRequestType::ReleaseListener> final : public SS
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SSystemRequestData<ESystemRequestType::RegisterObject> final : public SSystemRequestDataBase
+struct SSystemRequestData<ESystemRequestType::RegisterObject> final : public SSystemRequestDataBase, public CPoolObject<SSystemRequestData<ESystemRequestType::RegisterObject>, stl::PSyncMultiThread>
 {
 	explicit SSystemRequestData(CObject** const ppObject_, SCreateObjectData const& data)
 		: SSystemRequestDataBase(ESystemRequestType::RegisterObject)
@@ -504,7 +505,7 @@ struct SSystemRequestData<ESystemRequestType::RegisterObject> final : public SSy
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SSystemRequestData<ESystemRequestType::ReleaseObject> final : public SSystemRequestDataBase
+struct SSystemRequestData<ESystemRequestType::ReleaseObject> final : public SSystemRequestDataBase, public CPoolObject<SSystemRequestData<ESystemRequestType::ReleaseObject>, stl::PSyncMultiThread>
 {
 	explicit SSystemRequestData(CObject* const pObject_)
 		: SSystemRequestDataBase(ESystemRequestType::ReleaseObject)
@@ -523,7 +524,7 @@ struct SSystemRequestData<ESystemRequestType::ReleaseObject> final : public SSys
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SSystemRequestData<ESystemRequestType::ExecuteTriggerEx> final : public SSystemRequestDataBase
+struct SSystemRequestData<ESystemRequestType::ExecuteTriggerEx> final : public SSystemRequestDataBase, public CPoolObject<SSystemRequestData<ESystemRequestType::ExecuteTriggerEx>, stl::PSyncMultiThread>
 {
 	explicit SSystemRequestData(SExecuteTriggerData const& data)
 		: SSystemRequestDataBase(ESystemRequestType::ExecuteTriggerEx)

@@ -228,6 +228,13 @@ CAssetBrowserDialog::CAssetBrowserDialog(const std::vector<string>& assetTypeNam
 	pMainLayout->addWidget(pButtons, Qt::AlignRight);
 	setLayout(pMainLayout);
 }
+	
+void CAssetBrowserDialog::showEvent(QShowEvent* pEvent)
+{
+	CEditorDialog::showEvent(pEvent);
+
+	m_pPathEdit->setFocus();
+}
 
 CAsset* CAssetBrowserDialog::GetSelectedAsset()
 {

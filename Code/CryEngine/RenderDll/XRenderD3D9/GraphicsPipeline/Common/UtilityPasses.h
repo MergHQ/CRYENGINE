@@ -35,16 +35,10 @@ class CStretchRectPass : public IUtilityRenderPass
 public:
 	void Execute(CTexture* pSrcRT, CTexture* pDestRT);
 
-	static CStretchRectPass &GetPass();
-	static void Shutdown();
-
 	static EPassId GetPassId() { return EPassId::StretchRectPass; }
 
 protected:
 	CFullscreenPass m_pass;
-
-private:
-	static CStretchRectPass *s_pPass;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

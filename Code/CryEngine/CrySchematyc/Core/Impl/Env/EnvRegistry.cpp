@@ -378,10 +378,10 @@ void CEnvRegistry::Refresh()
 
 	m_elements.clear();
 
-	for (const Packages::value_type& package : m_packages)
-	{
-		// #SchematycTODO : Re-register package elements!!!
-	}
+	//for (const Packages::value_type& package : m_packages)
+	//{
+	//	// #SchematycTODO : Re-register package elements!!!
+	//}
 }
 
 bool CEnvRegistry::RegisterPackageElements(const EnvPackageElements& packageElements)
@@ -392,7 +392,9 @@ bool CEnvRegistry::RegisterPackageElements(const EnvPackageElements& packageElem
 
 	for (const SEnvPackageElement& packageElement : packageElements)
 	{
-		if (IEnvElement* pExistingElement = GetElement(packageElement.elementGUID))
+		IEnvElement* pExistingElement = GetElement(packageElement.elementGUID);
+
+		if (pExistingElement != nullptr)
 		{
 			CStackString temp;
 			GUID::ToString(temp, packageElement.elementGUID);

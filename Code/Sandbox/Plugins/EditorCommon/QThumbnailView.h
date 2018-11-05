@@ -35,7 +35,7 @@ public:
 			BottomRight
 		};
 
-		QIcon icon;
+		QIcon     icon;
 		EPosition position;
 	};
 public:
@@ -71,7 +71,7 @@ public:
 	//! Use to configure the internal view if necessary
 	QAbstractItemView* GetInternalView();
 
-	void AppendPreviewSizeActions(CAbstractMenu& menu);
+	void               AppendPreviewSizeActions(CAbstractMenu& menu);
 
 	CCrySignal<void()> signalShowContextMenu;
 
@@ -104,17 +104,18 @@ private:
 
 	void AddSizingButton(int size, int iconNumber);
 
-	Delegate*         m_pDelegate;
-	QSize             m_minItemSize;
-	QSize             m_maxItemSize;
-	QSize             m_itemSize;
-	QTimer            m_timer;
-	QListView*        m_listView;
-	QPrecisionSlider* m_slider;
-	QButtonGroup*     m_previewSizeButtons;
-	const int         m_numOfPreviewSizes = 4;
-	bool              m_timerStarted;
-	bool			  m_restoreSelection;
+	Delegate*                                  m_pDelegate;
+	QSize                                      m_minItemSize;
+	QSize                                      m_maxItemSize;
+	const QSize                                m_defaultSize;
+	QSize                                      m_itemSize;
+	QTimer                                     m_timer;
+	QListView*                                 m_listView;
+	QPrecisionSlider*                          m_slider;
+	QButtonGroup*                              m_previewSizeButtons;
+	const int                                  m_numOfPreviewSizes = 4;
+	bool                                       m_timerStarted;
+	bool                                       m_restoreSelection;
 	std::vector<CAdvancedPersistentModelIndex> m_selectedBackup;
 };
 

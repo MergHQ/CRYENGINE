@@ -61,14 +61,18 @@ IScriptGraphNodePtr CScriptGraphNodeFactory::CreateNode(const CryGUID& typeGUID,
 
 void CScriptGraphNodeFactory::PopulateNodeCreationMenu(IScriptGraphNodeCreationMenu& nodeCreationMenu, const IScriptView& scriptView, const IScriptGraph& graph)
 {
+#if SCHEMATYC_LOGGING_ENABLED
 	const int64 startTime = CryGetTicks();
+#endif
 
 	for (Creators::value_type& creator : m_creators)
 	{
 		creator.second->PopulateNodeCreationMenu(nodeCreationMenu, scriptView, graph);
 	}
 
+#if SCHEMATYC_LOGGING_ENABLED
 	const float time = gEnv->pTimer->TicksToSeconds(CryGetTicks() - startTime);
 	SCHEMATYC_CORE_COMMENT("Populating node creatiion menu : time = %f(s)", time);
+#endif
 }
 }

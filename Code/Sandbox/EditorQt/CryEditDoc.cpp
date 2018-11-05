@@ -1443,6 +1443,15 @@ void CCryEditDoc::InitEmptyLevel(int resolution, float unitSize, bool bUseTerrai
 		GetIEditorImpl()->ReloadTemplates();
 		m_environmentTemplate = GetIEditorImpl()->FindTemplate("Environment");
 
+		if (!bUseTerrain && m_environmentTemplate)
+		{
+			if (XmlNodeRef envState = m_environmentTemplate->findChild("EnvState"))
+			{
+				XmlNodeRef showTerrainSurface = envState->findChild("ShowTerrainSurface");
+				showTerrainSurface->setAttr("value", "false");
+			}
+		}
+
 		GetCurrentMission(true);  // true = skip loading the AI in case the content needs to get synchronized (otherwise it would attempt to load AI stuff from the previously loaded level (!) which might give confusing warnings)
 		GetIEditorImpl()->GetGameEngine()->SetMissionName(GetCurrentMission()->GetName().GetString());
 		GetIEditorImpl()->GetGameEngine()->SetLevelCreated(true);

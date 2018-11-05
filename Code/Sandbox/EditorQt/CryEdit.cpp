@@ -1068,7 +1068,8 @@ CCryEditApp::ECreateLevelResult CCryEditApp::CreateLevel(const string& levelName
 	// First cleanup previous document
 	GetIEditorImpl()->CloseDocument();
 	// Create empty document
-	GetIEditorImpl()->SetDocument(new CCryEditDoc);
+	CCryEditDoc* pDoc = new CCryEditDoc();
+	GetIEditorImpl()->SetDocument(pDoc);
 
 	if (CViewport* pViewPort = GetIEditorImpl()->GetActiveView())
 	{
@@ -1077,13 +1078,13 @@ CCryEditApp::ECreateLevelResult CCryEditApp::CreateLevel(const string& levelName
 
 	GetIEditorImpl()->GetGameEngine()->SetLevelPath(levelPath);
 	gEnv->pGameFramework->SetEditorLevel(levelName, levelPath);
-	GetIEditorImpl()->GetDocument()->InitEmptyLevel(resolution, unitSize, bUseTerrain);
+	pDoc->InitEmptyLevel(resolution, unitSize, bUseTerrain);
 	CProgressNotification notification("Creating Level", QtUtil::ToQString(levelName));
 
 	// Save the document to this folder
-	GetIEditorImpl()->GetDocument()->SetPathName(filename.GetBuffer());
+	pDoc->SetPathName(filename.GetBuffer());
 
-	if (GetIEditorImpl()->GetDocument()->Save())
+	if (pDoc->Save())
 	{
 		// Create sample Objectives.xml in level data.
 		CreateSampleMissionObjectives();
@@ -1100,29 +1101,11 @@ CCryEditApp::ECreateLevelResult CCryEditApp::CreateLevel(const string& levelName
 
 		GetIEditorImpl()->GetHeightmap()->InitTerrain();
 
-		//GetIEditorImpl()->GetGameEngine()->LoadAINavigationData();
-		if (!bUseTerrain)
-		{
-			XmlNodeRef m_node = GetIEditorImpl()->GetDocument()->GetEnvironmentTemplate();
-			if (m_node)
-			{
-				XmlNodeRef envState = m_node->findChild("EnvState");
-				if (envState)
-				{
-					XmlNodeRef showTerrainSurface = envState->findChild("ShowTerrainSurface");
-					showTerrainSurface->setAttr("value", "false");
-					GetIEditorImpl()->GetGameEngine()->ReloadEnvironment();
-				}
-			}
-		}
-		else
-		{
-			// we need to reload environment after terrain creation in order for water to be initialized
-			GetIEditorImpl()->GetGameEngine()->ReloadEnvironment();
-		}
+		// we need to reload environment after terrain creation in order for water to be initialized
+		GetIEditorImpl()->GetGameEngine()->ReloadEnvironment();
 	}
 
-	GetIEditorImpl()->GetDocument()->SetDocumentReady(true);
+	pDoc->SetDocumentReady(true);
 
 	return ECLR_OK;
 }

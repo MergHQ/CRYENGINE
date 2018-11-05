@@ -38,6 +38,7 @@ enum class EDrawFilter : EnumFlagsType
 	ActiveEvents           = BIT(27), // v
 	ActiveObjects          = BIT(28), // w
 	FileCacheManagerInfo   = BIT(29), // x
+	RequestInfo            = BIT(30), // y
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EDrawFilter);
 

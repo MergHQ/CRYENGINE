@@ -1113,7 +1113,7 @@ void CScriptRegistry::AddElement(const IScriptElementPtr& pElement, IScriptEleme
 		// #SchematycTODO : We should do this when patching up script elements!!!
 		if (szFilePath)
 		{
-			CScript* pScript = CreateScript(szFilePath, pElement);
+			CreateScript(szFilePath, pElement);
 		}
 	}
 

@@ -2021,7 +2021,7 @@ void CAIActor::HandleSoundEvent(SAIEVENT* pAIEvent)
 		}
 	}
 }
-#pragma optimize("", off)
+
 void CAIActor::HandleBulletRain(SAIEVENT* pAIEvent)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);

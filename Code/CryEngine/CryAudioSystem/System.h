@@ -92,8 +92,8 @@ private:
 	void           OnLanguageChanged();
 	void           ProcessRequests(Requests& requestQueue);
 	void           ProcessRequest(CRequest& request);
-	ERequestStatus ProcessManagerRequest(CRequest const& request);
-	ERequestStatus ProcessCallbackManagerRequest(CRequest& request);
+	ERequestStatus ProcessSystemRequest(CRequest const& request);
+	ERequestStatus ProcessCallbackRequest(CRequest& request);
 	ERequestStatus ProcessObjectRequest(CRequest const& request);
 	ERequestStatus ProcessListenerRequest(SRequestData const* const pPassedRequestData);
 	void           NotifyListener(CRequest const& request);
