@@ -32,8 +32,10 @@ ITypeDesc* CCoreRegistry::RegisterType(const Type::CTypeDesc& typeDesc, CGuid gu
 	auto resultByGuid = m_typeIndicesByGuid.find(guid);
 	if (resultByGuid != m_typeIndicesByGuid.end())
 	{
+#if defined(USE_CRY_ASSERT)
 		const CTypeDesc& foundTypeDesc = m_typesByIndex[resultByGuid->second];
 		const SSourceFileInfo& srcPos = foundTypeDesc.m_sourcePos;
+#endif
 
 		CRY_ASSERT_MESSAGE(resultByGuid == m_typeIndicesByGuid.end(),
 		                   "Type registration rejected. Guid %s already used for type '%s', registered in file '%s', line '%d', function '%s'.",
@@ -49,8 +51,10 @@ ITypeDesc* CCoreRegistry::RegisterType(const Type::CTypeDesc& typeDesc, CGuid gu
 	auto resultByTypeId = m_typeIndicesByTypeId.find(typeDesc.GetTypeId().GetValue());
 	if (resultByTypeId != m_typeIndicesByTypeId.end())
 	{
+#if defined(USE_CRY_ASSERT)
 		const CTypeDesc& foundTypeDesc = m_typesByIndex[resultByTypeId->second];
 		const SSourceFileInfo& srcPos = foundTypeDesc.m_sourcePos;
+#endif
 
 		CRY_ASSERT_MESSAGE(resultByTypeId == m_typeIndicesByTypeId.end(),
 		                   "Type registration rejected. Type '%s' is already registered with label '%s' {%s} in file '%s', line '%d', function '%s'.",
@@ -145,7 +149,9 @@ IFunctionDesc* CCoreRegistry::RegisterFunction(const Reflection::CFunction& func
 	const IFunctionDesc* pFunctionDesc = GetFunctionByGuid(guid);
 	if (pFunctionDesc)
 	{
+#if defined(USE_CRY_ASSERT)
 		const SSourceFileInfo& srcPos = pFunctionDesc->GetSourceInfo();
+#endif
 
 		CRY_ASSERT_MESSAGE(!pFunctionDesc,
 			"Function registration rejected. Guid '{%s}' already used for function '%s', registered in file '%s', line '%d', function '%s'.",
@@ -163,7 +169,9 @@ IFunctionDesc* CCoreRegistry::RegisterFunction(const Reflection::CFunction& func
 	// ~TODO
 	if (pFunctionDesc)
 	{
+#if defined(USE_CRY_ASSERT)
 		const SSourceFileInfo& srcPos = pFunctionDesc->GetSourceInfo();
+#endif
 
 		CRY_ASSERT_MESSAGE(!pFunctionDesc,
 			"Function registration rejected. Function '%s' is already registered with label '%s' '{%s}' in file '%s', line '%d', function '%s'.",

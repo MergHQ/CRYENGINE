@@ -41,7 +41,6 @@ MACRO(setup_CryReflection)
 			-Wno-unknown-pragmas
 			-Wno-reorder
 			-Wno-parentheses
-			-Wno-unused-variable
 			-Wno-format
 			-Wno-c++11-narrowing
 			-Wno-switch
@@ -54,7 +53,6 @@ MACRO(setup_CryReflection)
 		target_compile_options(${THIS_PROJECT} PRIVATE
 			-Wno-unused-function
 			-Wno-unused-value
-			-Wno-unused-variable
 			-Wno-sign-compare
 			-Wno-ignored-attributes
 			-Wno-int-in-bool-context

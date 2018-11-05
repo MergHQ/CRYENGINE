@@ -83,10 +83,12 @@ bool CTypeDesc::AddBaseType(CTypeId typeId, Type::CBaseCastFunction baseCastFunc
 	CRY_ASSERT_MESSAGE(IsClass(), "Base can only be added to class types.");
 	if (IsClass())
 	{
+#if defined(USE_CRY_ASSERT)
 		auto compare = [typeId](const CBaseTypeDesc* pDesc) -> bool
 		{
 			return (pDesc->GetTypeId() == typeId);
 		};
+#endif
 
 		CRY_ASSERT_MESSAGE(std::find_if(m_classMembers.baseTypesByIndex.begin(), m_classMembers.baseTypesByIndex.end(), compare) == m_classMembers.baseTypesByIndex.end(), "Type already registered as base.");
 		CBaseTypeDesc* pBaseTypeDesc = new CBaseTypeDesc(typeId, baseCastFunction);
@@ -142,10 +144,12 @@ IVariableDesc* CTypeDesc::AddVariable(CTypeId typeId, ptrdiff_t offset, const ch
 	if (IsClass())
 	{
 		// TODO: Decide if we should always check.
+#if defined(USE_CRY_ASSERT)
 		auto compare = [offset](const CVariableDesc* pDesc) -> bool
 		{
 			return (pDesc->GetOffset() == offset);
 		};
+#endif
 		CRY_ASSERT_MESSAGE(std::find_if(m_classMembers.variablesByIndex.begin(), m_classMembers.variablesByIndex.end(), compare) == m_classMembers.variablesByIndex.end(), "Variable already registered.");
 
 		CVariableDesc* pVariableDesc = new CVariableDesc(offset, szLabel, *this, typeId, guid, isConst, isPublic, srcPos);
@@ -171,11 +175,13 @@ IEnumValueDesc* CTypeDesc::AddEnumValue(const char* szLabel, uint64 value, const
 	if (IsEnum())
 	{
 		// TODO: Decide if we should always check.
+#if defined(USE_CRY_ASSERT)
 		CEnumValueDesc enumNameValue(szLabel, value, "");
 		auto compare = [&enumNameValue](const CEnumValueDesc* pDesc) -> bool
 		{
 			return (*pDesc == enumNameValue);
 		};
+#endif
 		CRY_ASSERT_MESSAGE(std::find_if(m_enumMembers.valuesByIndex.begin(), m_enumMembers.valuesByIndex.end(), compare) == m_enumMembers.valuesByIndex.end(), "Name '%s' with value '%d' already exists.", szLabel, value);
 		// ~TODO
 
