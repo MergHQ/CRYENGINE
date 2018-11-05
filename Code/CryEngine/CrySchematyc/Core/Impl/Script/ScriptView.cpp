@@ -410,7 +410,7 @@ void CScriptView::VisitEnvComponents(const EnvComponentConstVisitor& visitor) co
 		};
 		VisitScriptComponentInstances(visitScriptComponentInstances, EDomainScope::All);
 
-		const IEnvClass* pEnvClass = GetEnvClass();
+		//const IEnvClass* pEnvClass = GetEnvClass();
 		auto visitEnvComponent = [&visitor, &exclusions](const IEnvComponent& envComponent) -> EVisitStatus
 		{
 			if (std::find(exclusions.begin(), exclusions.end(), &envComponent) == exclusions.end())
