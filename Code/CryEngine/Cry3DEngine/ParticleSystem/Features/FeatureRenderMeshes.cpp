@@ -193,7 +193,7 @@ public:
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
-		if (!runtime.IsCPURuntime())
+		if (!runtime.IsCPURuntime() || !runtime.GetComponent()->IsVisible())
 			return;
 		auto& passInfo = renderContext.m_passInfo;
 		SRendParams renderParams = renderContext.m_renderParams;

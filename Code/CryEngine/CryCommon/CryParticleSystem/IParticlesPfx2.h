@@ -84,6 +84,7 @@ struct IParticleComponent : public _i_reference_target_t
 	virtual void                SwapFeatures(const uint* swapIds, uint numSwapIds) = 0;
 	virtual IParticleComponent* GetParent() const = 0;
 	virtual void                SetParent(IParticleComponent* parent) = 0;
+	virtual bool                CanBeParent(IParticleComponent* child = nullptr) const = 0;
 	virtual Vec2                GetNodePosition() const = 0;
 	virtual void                SetNodePosition(Vec2 position) = 0;
 };

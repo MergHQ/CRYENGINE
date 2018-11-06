@@ -110,7 +110,7 @@ void CFeatureRenderDecals::RenderDeferred(const CParticleComponentRuntime& runti
 
 	if (renderContext.m_passInfo.IsRecursivePass())
 		return;
-	if (!runtime.IsCPURuntime())
+	if (!runtime.IsCPURuntime() || !runtime.GetComponent()->IsVisible())
 		return;
 
 	const auto& passInfo = renderContext.m_passInfo;

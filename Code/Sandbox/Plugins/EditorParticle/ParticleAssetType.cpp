@@ -138,6 +138,7 @@ bool CParticlesType::OnCreate(INewAsset& asset, const void* pTypeSpecificParamet
 		pfx2::PParticleEffect pEffect = pParticleSystem->CreateEffect();
 		pParticleSystem->RenameEffect(pEffect, pfxFilePath.c_str());
 		MakeNewComponent(pEffect.get());
+		pEffect->Update();
 
 		if (!Serialization::SaveJsonFile(pfxFilePath.c_str(), *pEffect))
 		{

@@ -214,12 +214,28 @@ void CParticleComponent::SetParent(IParticleComponent* pParentComponent)
 {
 	if (m_parent == pParentComponent)
 		return;
+	if (pParentComponent && !pParentComponent->CanBeParent(this))
+		return;
 	if (m_parent)
 		stl::find_and_erase(m_parent->m_children, this);
 	m_parent = static_cast<CParticleComponent*>(pParentComponent);
 	if (m_parent)
 		stl::push_back_unique(m_parent->m_children, this);
 	SetChanged();
+}
+
+bool CParticleComponent::CanBeParent(IParticleComponent* child) const
+{
+	if (m_params.m_usesGPU)
+		return false;
+	if (child)
+	{
+		// Prevent cycles
+		for (const IParticleComponent* parent = this; parent; parent = parent->GetParent())
+			if (parent == child)
+				return false;
+	}
+	return true;
 }
 
 void CParticleComponent::GetMaxParticleCounts(int& total, int& perFrame, float minFPS, float maxFPS) const

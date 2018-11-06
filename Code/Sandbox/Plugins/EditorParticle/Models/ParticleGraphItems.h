@@ -126,7 +126,6 @@ public:
 
 	// CryGraphEditor::CAbstractPinItem
 	virtual CryGraphEditor::CAbstractNodeItem& GetNodeItem() const override { return static_cast<CryGraphEditor::CAbstractNodeItem&>(m_nodeItem); }
-	// ~CryGraphEditor::CAbstractPinItem
 
 protected:
 	CNodeItem& m_nodeItem;
@@ -140,6 +139,7 @@ public:
 	// CBasePinItem
 	virtual EPinType GetPinType() const { return EPinType::Parent; }
 
+	// CryGraphEditor::CAbstractPinItem
 	virtual QString  GetName() const override { return QString("Parent"); }
 	virtual QString  GetDescription() const override { return QString("Parent effect."); }
 	virtual QString  GetTypeName() const override { return QString("Effect"); }
@@ -150,9 +150,8 @@ public:
 	virtual bool     IsInputPin() const override  { return true; }
 	virtual bool     IsOutputPin() const override { return false; }
 
-	virtual bool     CanConnect(const CryGraphEditor::CAbstractPinItem* pOtherPin) const override { return pOtherPin && pOtherPin->IsOutputPin() && !IsConnected(); }
+	virtual bool     CanConnect(const CryGraphEditor::CAbstractPinItem* pOtherPin) const override;
 	virtual bool     IsConnected() const override { return GetConnectionItems().size() > 0; }
-	// ~CBasePinItem
 };
 
 class CChildPinItem : public CBasePinItem
@@ -163,6 +162,7 @@ public:
 	// CBasePinItem
 	virtual EPinType GetPinType() const { return EPinType::Child; }
 
+	// CryGraphEditor::CAbstractPinItem
 	virtual QString  GetName() const override { return QString("Children"); }
 	virtual QString  GetDescription() const override { return QString("Child effects."); }
 	virtual QString  GetTypeName() const override { return QString("Effect"); }
@@ -173,9 +173,8 @@ public:
 	virtual bool     IsInputPin() const override  { return false; }
 	virtual bool     IsOutputPin() const override { return true; }
 
-	virtual bool     CanConnect(const CryGraphEditor::CAbstractPinItem* pOtherPin) const override { return !pOtherPin || pOtherPin->IsInputPin(); }
+	virtual bool     CanConnect(const CryGraphEditor::CAbstractPinItem* pOtherPin) const override;
 	virtual bool     IsConnected() const override { return GetConnectionItems().size() > 0; }
-	// ~CBasePinItem
 };
 
 class CFeaturePinItem : public CBasePinItem
@@ -184,9 +183,10 @@ public:
 	CFeaturePinItem(CFeatureItem& feature);
 	virtual ~CFeaturePinItem() {}
 
-	// CryGraphEditor::CAbstractPinItem
+	// CBasePinItem
 	virtual EPinType GetPinType() const { return EPinType::Feature; }
 
+	// CryGraphEditor::CAbstractPinItem
 	virtual QString  GetName() const override;
 	virtual QString  GetDescription() const override { return GetName(); }
 	virtual QString  GetTypeName() const override { return QString(); }
@@ -199,8 +199,7 @@ public:
 
 	virtual bool     CanConnect(const CryGraphEditor::CAbstractPinItem* pOtherPin) const override;
 	virtual bool     IsConnected() const override { return m_connections.size() > 0; }
-	// ~CryGraphEditor::CAbstractPinItem
-
+	// ~
 	CFeatureItem& GetFeatureItem() const { return m_featureItem; }
 
 private:
@@ -225,8 +224,7 @@ public:
 	virtual void  SetDeactivated(bool isDeactivated) override;
 
 	virtual void  Serialize(Serialization::IArchive& archive) override;
-	// ~CryGraphEditor::CAbstractNodeGraphViewModelItem
-
+	// ~
 	QString                 GetGroupName() const;
 	QString                 GetName() const;
 	uint32                  GetIndex() const;
@@ -251,24 +249,16 @@ class CConnectionItem : public CryGraphEditor::CAbstractConnectionItem
 {
 public:
 	CConnectionItem(CBasePinItem& sourcePin, CBasePinItem& targetPin, CryGraphEditor::CNodeGraphViewModel& viewModel);
-	virtual ~CConnectionItem();
 
 	// CryGraphEditor::CAbstractConnectionItem
 	virtual CryGraphEditor::CConnectionWidget* CreateWidget(CryGraphEditor::CNodeGraphView& view) override;
 
-	virtual CryGraphEditor::CAbstractPinItem&  GetSourcePinItem() const override { return m_sourcePin; }
-	virtual CryGraphEditor::CAbstractPinItem&  GetTargetPinItem() const override { return m_targetPin; }
-
 	virtual QVariant                           GetId() const override;
 	virtual bool                               HasId(QVariant id) const override;
-	// ~CryGraphEditor::CAbstractConnectionItem
-
+	// ~
 	void OnConnectionRemoved();
 
 private:
-	CBasePinItem& m_sourcePin;
-	CBasePinItem& m_targetPin;
-
 	uint32        m_id;
 };
 
