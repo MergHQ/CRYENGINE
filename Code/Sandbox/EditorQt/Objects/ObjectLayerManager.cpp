@@ -798,11 +798,11 @@ void CObjectLayerManager::SaveLayer(CObjectArchive* pArchive, CObjectLayer* pLay
 
 	if (CFileUtil::OverwriteFile(file))
 	{
-		CFileUtil::CreateDirectory(path);
+		GetISystem()->GetIPak()->MakeDir(path);
 
 		// Make a backup of file.
 		if (gEditorFilePreferences.filesBackup)
-			CFileUtil::BackupFile(file);
+			FileUtils::BackupFile(file);
 
 		// Serialize this layer.
 		XmlNodeRef rootFileNode = XmlHelpers::CreateXmlNode("ObjectLayer");

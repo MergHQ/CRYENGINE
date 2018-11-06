@@ -157,7 +157,7 @@ void UpdateLevels(const std::vector<string>& levels)
 			continue;
 		}
 		DeleteObsoleteMetadataFile(oldFilePath);
-		CFileUtil::BackupFile(PathUtil::Make(levelFolder, szOldFilename));
+		FileUtils::BackupFile(PathUtil::Make(levelFolder, szOldFilename));
 
 		++countOfImported;
 		notif.SetProgress(float(i + 1) / n);

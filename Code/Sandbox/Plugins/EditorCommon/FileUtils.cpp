@@ -6,6 +6,7 @@
 #include "PathUtils.h"
 #include "QtUtil.h"
 #include <CryString/CryPath.h>
+#include <CrySystem/File/CryFile.h>
 #include <CrySystem/File/ICryPak.h>
 #include <CrySystem/IProjectManager.h>
 #include <IEditor.h>
@@ -204,6 +205,67 @@ std::vector<string> GetDirectorysContent(const QString& dirPath, int depthLevel 
 bool IsFileInPakOnly(const string& path)
 {
 	return !FileExists(path) && GetISystem()->GetIPak()->IsFileExist(PathUtil::AbsolutePathToGamePath(path), ICryPak::eFileLocation_InPak);
+}
+
+EDITOR_COMMON_API bool CompareFiles(const string& filePath1, const string& filePath2)
+{
+	// Try to open both files for read.  If either fails we say they are different (most likely one doesn't exist).
+	CCryFile file1, file2;
+	if (!file1.Open(filePath1, "rb") || !file2.Open(filePath2, "rb"))
+	{
+		return false;
+	}
+
+	// If the files are different sizes return false
+	uint64 size1 = file1.GetLength();
+	uint64 size2 = file2.GetLength();
+	if (size1 != size2)
+	{
+		return false;
+	}
+
+	// Sizes are the same, we need to compare the bytes.
+	const uint64 bufSize = 4096;
+	char buf1[bufSize], buf2[bufSize];
+	for (uint64 i = 0; i < size1; i += bufSize)
+	{
+		size_t amtRead1 = file1.ReadRaw(buf1, bufSize);
+		size_t amtRead2 = file2.ReadRaw(buf2, bufSize);
+
+		// Not a match if we didn't read the same amount from each file
+		if (amtRead1 != amtRead2)
+		{
+			return false;
+		}
+
+		// Not a match if we didn't read the amount of data we expected
+		if (amtRead1 != bufSize && i + amtRead1 != size1)
+		{
+			return false;
+		}
+
+		// Not a match if the buffers aren't the same
+		if (memcmp(buf1, buf2, amtRead1) != 0)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+EDITOR_COMMON_API void BackupFile(const char* szFilePath)
+{
+	if (!FileExists(szFilePath))
+	{
+		return;
+	}
+
+	const CryPathString adjusted(PathUtil::MatchAbsolutePathToCaseOnFileSystem(szFilePath));
+	const CryPathString bakFilename = PathUtil::ReplaceExtension(adjusted, "bak");
+	const CryPathString bakFilename2 = PathUtil::ReplaceExtension(adjusted, "bak2");
+	MoveFileAllowOverwrite(bakFilename, bakFilename2);
+	MoveFileAllowOverwrite(szFilePath, bakFilename);
 }
 
 }

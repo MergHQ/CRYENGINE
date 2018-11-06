@@ -11,6 +11,7 @@
 
 #include "DataBaseDialog.h"
 #include "GameTokenDialog.h"
+#include <Util/TempFileHelper.h>
 
 #define GAMETOCKENS_LIBS_PATH "Libs/GameTokens/"
 

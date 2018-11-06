@@ -38,6 +38,7 @@
 #include "Util/PakFile.h"
 #include "Vegetation/VegetationMap.h"
 #include "ViewManager.h"
+#include <Util/TempFileHelper.h>
 
 #include <Cry3DEngine/ITimeOfDay.h>
 #include <CryGame/IGameFramework.h>
@@ -965,7 +966,7 @@ bool CCryEditDoc::SaveLevel(const string& filename)
 	CAutoCheckOutDialogEnableForAll enableForAll;
 
 	string levelFolder = PathUtil::GetPathWithoutFilename(filename);
-	CFileUtil::CreateDirectory(levelFolder);
+	GetISystem()->GetIPak()->MakeDir(levelFolder);
 	GetIEditorImpl()->GetGameEngine()->SetLevelPath(levelFolder);
 
 	CopyFilesIfSavedToNewLocation(levelFolder);

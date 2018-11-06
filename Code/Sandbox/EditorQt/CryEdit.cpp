@@ -36,6 +36,7 @@
 #include <Notifications/NotificationCenter.h>
 #include <PathUtils.h>
 #include <QFullScreenWidget.h>
+#include <Util/TempFileHelper.h>
 
 #include <CrySandbox/IEditorGame.h>
 #include <CrySystem/Testing/CryTest.h>

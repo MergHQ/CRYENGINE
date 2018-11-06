@@ -7,26 +7,30 @@
 
 namespace FileUtils
 {
-//! Removes the file or directory at the given path. If the path points to a directory it will be removed recursively (does not use CryPak)
+//! Removes the file or directory at the given path. If the path points to a directory it will be removed recursively (does not use CryPak).
 EDITOR_COMMON_API bool Remove(const char* szPath);
-//! Removes the file at the given file path (does not use CryPak)
+//! Removes the file at the given file path (does not use CryPak).
 EDITOR_COMMON_API bool RemoveFile(const char* szFilePath);
-//! Moves the file at the given file path to the new file path allowing overwriting of the target.
+//! Moves the file at the given file path to the new file path allowing overwriting of the target (does not use CryPak).
 EDITOR_COMMON_API bool MoveFileAllowOverwrite(const char* szOldFilePath, const char* szNewFilePath);
-//! Copies the file at the given file path to the target file path allowing overwriting of the target.
+//! Copies the file at the given file path to the target file path allowing overwriting of the target (does not use CryPak).
 EDITOR_COMMON_API bool CopyFileAllowOverwrite(const char* szSourceFilePath, const char* szDestinationFilePath);
-//! Removes the directory at the given path
+//! Removes the directory at the given path (does not use CryPak).
 EDITOR_COMMON_API bool RemoveDirectory(const char* szPath, bool bRecursive = true);
-//! Sets the file permission from read only to read-write.
+//! Sets the file permission from read only to read-write (does not use CryPak).
 EDITOR_COMMON_API bool MakeFileWritable(const char* szFilePath);
 //! Returns true if the file exists on disk (does not use CryPak)
 EDITOR_COMMON_API bool FileExists(const string& path);
 //! Returns true if the path (file of folder) exists on disk (does not use CryPak)
 EDITOR_COMMON_API bool PathExists(const string& path);
-//! Returns true if the gives is folder that exists on disk
+//! Returns true if the gives is folder that exists on disk (does not use CryPak).
 EDITOR_COMMON_API bool FolderExists(const string& path);
-//! Returns true if the file exists only in paks
+//! Makes a backup file (does not use CryPak).
+EDITOR_COMMON_API void BackupFile(const char* szFilePath);
+//! Returns true if the file exists only in paks.
 EDITOR_COMMON_API bool IsFileInPakOnly(const string& path);
+// Returns true if the files have the same content, false otherwise.
+EDITOR_COMMON_API bool CompareFiles(const string& filePath1, const string& filePath2);
 
 //! Extracts all the files from a pak file. The pak should already be open by GetISystem()->GetIPak()->OpenPack();
 //! The function will silently overwrite existing files.
