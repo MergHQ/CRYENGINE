@@ -1519,6 +1519,9 @@ uint64 CSvoRenderer::GetRunTimeFlags(bool bDiffuseMode, bool bPixelShader)
 	if (e_svoTI_ShadowsFromHeightmap && bPixelShader)
 		rtFlags |= g_HWSR_MaskBit[HWSR_QUALITY1];
 
+	if (e_svoTI_TranslucentBrightness && bPixelShader)
+		rtFlags |= g_HWSR_MaskBit[HWSR_NO_TESSELLATION];
+
 	return rtFlags;
 }
 

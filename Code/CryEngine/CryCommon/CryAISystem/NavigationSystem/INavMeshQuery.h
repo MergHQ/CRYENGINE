@@ -17,9 +17,9 @@ namespace MNM
 	typedef size_t NavMeshQueryId;
 	typedef DynArray<TriangleID> TriangleIDArray;
 
-	#ifdef NAV_MESH_QUERY_DEBUG
+#ifdef NAV_MESH_QUERY_DEBUG
 	struct INavMeshQueryDebug;
-	#endif // NAV_MESH_QUERY_DEBUG
+#endif // NAV_MESH_QUERY_DEBUG
 
 	//! INavMeshQuery is used for querying the NavMesh using a INavMeshQueryProcessing
 	//! that takes the NavMesh triangles resulting from the query 
@@ -46,10 +46,10 @@ namespace MNM
 				//! Returns true if all three vertices of the Triangle are inside the QueryAABB
 				Triangle_Full
 			};
-		#ifdef NAV_MESH_QUERY_DEBUG
+#ifdef NAV_MESH_QUERY_DEBUG
 			void DebugDraw() const;
-		#endif // NAV_MESH_QUERY_DEBUG
-		
+#endif // NAV_MESH_QUERY_DEBUG
+
 		protected:
 			SNavMeshQueryConfig(const NavigationMeshID meshId_,
 				const char* szCallerName_,
@@ -62,18 +62,6 @@ namespace MNM
 				, overlappingMode(overlappingMode_)
 				, pQueryFilter(pQueryFilter_)
 			{
-				if (pQueryFilter_)
-				{
-					pQueryFilter = pQueryFilter_->Clone();
-				}
-			}
-
-			~SNavMeshQueryConfig()
-			{
-				if (pQueryFilter)
-				{
-					pQueryFilter->Release();
-				}
 			}
 
 		public:
@@ -96,9 +84,12 @@ namespace MNM
 			{
 				// Empty
 			}
+
 		};
 
 		//! SNavMeshQueryConfigBatch is a specialized SNavMeshQueryConfig used to perform CNavMeshQueryBatch that may run multiple times.
+		//! Since the NavMeshConfig may live during multiple frames, it holds a copy of the passed NavMeshQueryFilter to have control over
+		//! its lifetime. When the config is destroyed, the copy of the filter is destroyed as well.
 		struct SNavMeshQueryConfigBatch final : public SNavMeshQueryConfig
 		{
 			//! Specify how (incomplete) NavMeshQueries should react to NavMesh changes
@@ -122,7 +113,7 @@ namespace MNM
 				const size_t processingTrianglesMaxSize_ = 1024,
 				const EActionOnNavMeshChange actionOnNavMeshRegeneration_ = EActionOnNavMeshChange::Ignore,
 				const EActionOnNavMeshChange actionOnNavMeshAnnotationChange_ = EActionOnNavMeshChange::Ignore)
-				: SNavMeshQueryConfig(meshId, szCallerName_, aabb_, overlappingMode_, pQueryFilter_)
+				: SNavMeshQueryConfig(meshId, szCallerName_, aabb_, overlappingMode_, pQueryFilter_ ? pQueryFilter_->Clone() : nullptr)
 				, processingTrianglesMaxSize(processingTrianglesMaxSize_)
 				, actionOnNavMeshRegeneration(actionOnNavMeshRegeneration_)
 				, actionOnNavMeshAnnotationChange(actionOnNavMeshAnnotationChange_)
@@ -130,11 +121,24 @@ namespace MNM
 				// Empty
 			}
 
+			SNavMeshQueryConfigBatch(const SNavMeshQueryConfigBatch& other)
+				: SNavMeshQueryConfig(other.meshId, other.szCallerName, other.aabb, other.overlappingMode, other.pQueryFilter ? other.pQueryFilter->Clone() : nullptr)
+				, processingTrianglesMaxSize(other.processingTrianglesMaxSize)
+				, actionOnNavMeshRegeneration(other.actionOnNavMeshRegeneration)
+				, actionOnNavMeshAnnotationChange(other.actionOnNavMeshAnnotationChange)
+			{
+			}
+
+			~SNavMeshQueryConfigBatch()
+			{
+				if (pQueryFilter)
+					pQueryFilter->Release();
+			}
+
 #ifdef NAV_MESH_QUERY_DEBUG
 			void DebugDraw() const;
 #endif // NAV_MESH_QUERY_DEBUG
 
-			const NavigationMeshID         meshId;
 			const size_t                   processingTrianglesMaxSize;
 			const EActionOnNavMeshChange   actionOnNavMeshRegeneration;
 			const EActionOnNavMeshChange   actionOnNavMeshAnnotationChange;
@@ -173,7 +177,7 @@ namespace MNM
 		//! /return Status of the query after the Run operation has been completed
 		virtual INavMeshQuery::EQueryStatus     Run(INavMeshQueryProcessing& queryProcessing, const size_t processingBatchSize = 32) = 0;
 	protected:
-		~INavMeshQuery() {}
+		~INavMeshQuery() = default;
 	};
 
 	DECLARE_SHARED_POINTERS(INavMeshQuery)

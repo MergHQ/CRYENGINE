@@ -120,6 +120,8 @@ void CBrush::Render(const struct SRendParams& _EntDrawParams, const SRenderingPa
 {
 	FUNCTION_PROFILER_3DENGINE;
 
+	DBG_LOCK_TO_THREAD(this);
+
 	if (!m_pStatObj || m_dwRndFlags & ERF_HIDDEN)
 		return; //false;
 
@@ -774,6 +776,8 @@ bool CBrush::GetLodDistances(const SFrameLodInfo& frameLodInfo, float* distances
 void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInfo, SSectorTextureSet* pTerrainTexInfo, PodArray<SRenderLight*>* pAffectingLights)
 {
 	FUNCTION_PROFILER_3DENGINE;
+
+	DBG_LOCK_TO_THREAD(this);
 
 	// Collision proxy is visible in Editor while in editing mode.
 	if (m_dwRndFlags & (ERF_COLLISION_PROXY | ERF_RAYCAST_PROXY))

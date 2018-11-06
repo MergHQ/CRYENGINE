@@ -682,6 +682,8 @@ void CWaterVolumeRenderNode::Render_JobEntry(SRendParams rParam, SRenderingPassI
 {
 	FUNCTION_PROFILER_3DENGINE;
 
+	DBG_LOCK_TO_THREAD(this);
+
 	// hack: special case for when inside amphibious vehicle
 	if (Get3DEngine()->GetOceanRenderFlags() & OCR_NO_DRAW)
 		return;

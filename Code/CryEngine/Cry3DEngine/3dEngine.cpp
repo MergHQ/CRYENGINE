@@ -4840,6 +4840,8 @@ SRenderNodeTempData* C3DEngine::CheckAndCreateRenderNodeTempData(IRenderNode* pR
 	if (!pRNode)
 		return nullptr;
 
+	DBG_LOCK_TO_THREAD(pRNode);
+
 	const int currentFrame = passInfo.GetFrameID();
 	SRenderNodeTempData* pTempData = pRNode->m_pTempData;
 

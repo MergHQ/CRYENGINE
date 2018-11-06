@@ -136,6 +136,7 @@ struct pixout_TraceSunShadows
 // _RT_REVERSE_DEPTH            Generate sun shadow mask by SVO ray tracing
 // _RT_PROJECTION_MULTI_RES     Compute simple specular using ALD results of diffuse tracing
 // _RT_QUALITY1                 Include terrain heightmap (whole level) into ray-traced sun shadows
+// _RT_NO_TESSELLATION          Use full sphere tracing for translucent geoemtry
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Functions
@@ -150,12 +151,15 @@ float3 GetDiffuseKernel(out int GI_DIFFUSE_KERNEL_TILING, int nElemId, const boo
 		nElemId = nElemId & (nGiDiffuseSampleNum - 1);
 
 		GI_DIFFUSE_KERNEL_TILING = sqrt(nGiDiffuseSampleNum / 2);
+
+#if %_RT_NO_TESSELLATION
 		if (bFullSphere)
 		{
 			const float3 arrGiDiffuseKernel[nGiDiffuseSampleNum] = kernel_S_128;
 			return arrGiDiffuseKernel[nElemId];
 		}
 		else
+#endif
 		{
 			const float3 arrGiDiffuseKernel[nGiDiffuseSampleNum] = kernel_HS_128;
 			return arrGiDiffuseKernel[nElemId];
@@ -167,12 +171,15 @@ float3 GetDiffuseKernel(out int GI_DIFFUSE_KERNEL_TILING, int nElemId, const boo
 		nElemId = nElemId & (nGiDiffuseSampleNum - 1);
 
 		GI_DIFFUSE_KERNEL_TILING = sqrt(nGiDiffuseSampleNum / 2);
+
+#if %_RT_NO_TESSELLATION
 		if (bFullSphere)
 		{
 			const float3 arrGiDiffuseKernel[nGiDiffuseSampleNum] = kernel_S_512;
 			return arrGiDiffuseKernel[nElemId];
 		}
 		else
+#endif
 		{
 			const float3 arrGiDiffuseKernel[nGiDiffuseSampleNum] = kernel_HS_512;
 			return arrGiDiffuseKernel[nElemId];
@@ -1509,9 +1516,11 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 			else
 				kernOpa = normalize(float3(kernOpa.x, kernOpa.y, -kernOpa.z));
 
+#if %_RT_NO_TESSELLATION
 			if (IsDiffuseMode())
 				kern = lerp(kernOpa, kern, saturate(fAverTransmittanceY * 4));
 			else
+#endif
 				kern = kernOpa;
 		}
 
@@ -1534,7 +1543,7 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 
 		r.startpoint = vPos0;
 
-		#if %_RT_TILED_SHADING
+		#if %_RT_TILED_SHADING && %_RT_NO_TESSELLATION
 		  r.startpoint += (vFocus * fAverTransmittanceY) * (VOX_MIN_VOX_SIZE + fDistM*.025f);
 		#endif
 
@@ -1576,7 +1585,9 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 
 		vC = ConeTraceTreeAndSky(fRayLen, r, SvoParamsDiffuse.x + power / 10000, SvoParamsInject.z, 0, false, false, normalize(vNor0));
 
+#if %_RT_NO_TESSELLATION
 		vC *= lerp(1.f, SvoParamsInject.w, saturate(fAverTransmittanceY * 8));
+#endif
 
 		vC /= nPassesNum;
 
@@ -1774,7 +1785,7 @@ pixout_TraceSunShadows TraceSunShadowsPS(vtxOutWPOS IN)
 		nXY.y = (nXY.y + (int(SVO_FrameIdByte.x / 2) & 1)) & 1;
 		float3 vOffset = sunDir * (0.5f * (float)nXY.x + 0.25f * (float)nXY.y);
 
-		bool bTraceShadows = (fTransmittanceY > 0.1 || dot(sunDir, vNor0) > 0);
+		bool useDualDepth = (fTransmittanceY || dot(sunDir, vNor0) > 0);
 
 		for (int i = 0; i < 2; i++)
 		{
@@ -1784,52 +1795,45 @@ pixout_TraceSunShadows TraceSunShadowsPS(vtxOutWPOS IN)
 			r.direction = sunDir;
 			r.startpoint = arrPosMinMax[i] + r.direction * 0.25f + vOffset * saturate(2.f - distance * 0.25f);
 
-			if(bTraceShadows)
-			{
-				// trace SVO
-				#if %_RT_TILED_SHADING
+			// trace SVO, TODO: fix back face skipping
+#if %_RT_TILED_SHADING
 			float4 vPos1 = 0, vNor1 = 0;
-					float3 vSurfNorm = (r.direction - normalize(IN.CamVec) * 0.5f);
-					OUT.SVO_Shadow[i] = saturate(1.f - ConeTraceTree(r, SvoParamsCommon.x, vPos1, vNor1, 0, 63, 0.f, 1.f, 0, 0, 0, false, false, false, vSurfNorm, 0, 1.f).a);
-				#endif
+			float3 vSurfNorm = (r.direction - normalize(IN.CamVec) * 0.5f);
+			OUT.SVO_Shadow[i] = saturate(1.f - ConeTraceTree(r, SvoParamsCommon.x, vPos1, vNor1, 0, 63, 0.f, 1.f, 0, 0, 0, false, false, false, vSurfNorm, 0, 1.f).a);
+#endif
 
-				// trace heightmap
-				#if %_RT_QUALITY1 
-				if (OUT.SVO_Shadow[i] > 0)
-				{
-					const int samplesNum = 64;
-					const float maxShadowLen = 512.f; // in meters
-					const float shadowHardness = 1.f / 10.f;
-
-					const float texturePoolItemSizeScale = 1.f / 16.f; // 1.f / sqrt(e_TerrainTextureStreamingPoolItemsNum)
-					const float3 worldToTc = float3(1.f / VOX_WORLD_SIZE * texturePoolItemSizeScale, 1.f / VOX_WORLD_SIZE * texturePoolItemSizeScale, 1.f);
-					const float tcMin = 0.01 * texturePoolItemSizeScale;
-					const float tcMax = 0.98 * texturePoolItemSizeScale;
-
-					float3 vStepSize = r.direction / samplesNum * maxShadowLen;
-					float3 vPos = arrPosMinMax[i] + vStepSize;
-					vPos.z += distance * 0.001;
-					vPos *= worldToTc;
-					vStepSize *= worldToTc;
-
-					for (int t = 0; t < samplesNum; t++)
-					{
-						float h = tex2DlodLC(levelHeightmap, vPos.yx).x;
-
-						if (vPos.x > tcMin && vPos.x < tcMax && vPos.y >tcMin && vPos.y < tcMax)
-							OUT.SVO_Shadow[i] = min(OUT.SVO_Shadow[i], saturate(1.f - (h - vPos.z) * shadowHardness));
-
-						vPos += vStepSize;
-					}
-				}
-				#endif
-			}
-			else
+			// trace heightmap
+#if %_RT_QUALITY1 
+			if (OUT.SVO_Shadow[i] > 0)
 			{
-				OUT.SVO_Shadow[i] = 0;
-			}
+				const int samplesNum = 64;
+				const float maxShadowLen = 512.f; // in meters
+				const float shadowHardness = 1.f / 10.f;
 
-			if (fDepthMin / fDepthMax > VOX_DEPTH_RANGE_THRESHOLD)
+				const float texturePoolItemSizeScale = 1.f / 16.f; // 1.f / sqrt(e_TerrainTextureStreamingPoolItemsNum)
+				const float3 worldToTc = float3(1.f / VOX_WORLD_SIZE * texturePoolItemSizeScale, 1.f / VOX_WORLD_SIZE * texturePoolItemSizeScale, 1.f);
+				const float tcMin = 0.01 * texturePoolItemSizeScale;
+				const float tcMax = 0.98 * texturePoolItemSizeScale;
+
+				float3 vStepSize = r.direction / samplesNum * maxShadowLen;
+				float3 vPos = arrPosMinMax[i] + vStepSize;
+				vPos.z += distance * 0.001;
+				vPos *= worldToTc;
+				vStepSize *= worldToTc;
+
+				for (int t = 0; t < samplesNum; t++)
+				{
+					float h = tex2DlodLC(levelHeightmap, vPos.yx).x;
+
+					if (vPos.x > tcMin && vPos.x < tcMax && vPos.y >tcMin && vPos.y < tcMax)
+						OUT.SVO_Shadow[i] = min(OUT.SVO_Shadow[i], saturate(1.f - (h - vPos.z) * shadowHardness));
+
+					vPos += vStepSize;
+				}
+			}
+#endif
+
+			if (fDepthMin / fDepthMax > VOX_DEPTH_RANGE_THRESHOLD || !useDualDepth)
 			{
 				// skip second trace if min/max depths are close
 				OUT.SVO_Shadow[1] = OUT.SVO_Shadow[0];

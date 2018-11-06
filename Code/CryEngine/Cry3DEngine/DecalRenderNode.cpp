@@ -596,6 +596,8 @@ void CDecalRenderNode::Render(const SRendParams& rParam, const SRenderingPassInf
 {
 	FUNCTION_PROFILER_3DENGINE;
 
+	DBG_LOCK_TO_THREAD(this);
+
 	if (!passInfo.RenderDecals())
 		return; // false;
 

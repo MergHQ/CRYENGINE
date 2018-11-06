@@ -265,6 +265,8 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 {
 	FUNCTION_PROFILER_3DENGINE;
 
+	DBG_LOCK_TO_THREAD(this);
+
 	auto pTempData = m_pTempData;
 	if (!pTempData)
 	{

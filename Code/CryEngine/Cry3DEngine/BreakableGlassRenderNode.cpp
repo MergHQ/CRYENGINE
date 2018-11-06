@@ -940,6 +940,8 @@ void CBreakableGlassRenderNode::SetCVars(const SBreakableGlassCVars* pCVars)
 //--------------------------------------------------------------------------------------------------
 void CBreakableGlassRenderNode::Render(const SRendParams& renderParams, const SRenderingPassInfo& passInfo)
 {
+	DBG_LOCK_TO_THREAD(this);
+
 	if (m_glassParams.pGlassMaterial && m_pBreakableGlassRE)
 	{
 		IMaterial* pMaterial = m_glassParams.pGlassMaterial;

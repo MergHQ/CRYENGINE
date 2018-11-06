@@ -150,7 +150,8 @@ REGISTER_CVAR_AUTO(int, e_svoTI_AnalyticalGI, 0, VF_EXPERIMENTAL,
 REGISTER_CVAR_AUTO(int, e_svoTI_TraceVoxels, 1, VF_EXPERIMENTAL,
                    "Include voxels into tracing\nAllows to exclude voxel tracing if only proxies are needed");
 REGISTER_CVAR_AUTO(float, e_svoTI_TranslucentBrightness, 0, VF_NULL,
-                   "Adjusts the brightness of semi translucent surfaces\nAffects mostly vegetation leaves and grass");
+                   "Adjusts the brightness of semi translucent surfaces\nAffects mostly vegetation leaves and grass\n"
+									 "Setting this parameter to zero disables custom GI processing for translucent surfaces");
 REGISTER_CVAR_AUTO(int, e_svoStreamVoxels, 0, VF_EXPERIMENTAL,
                    "Enable steaming of voxel data from disk instead of run-time voxelization\n"
                    "Steaming used only in launcher, in the editor voxels are always run-time generated\n"

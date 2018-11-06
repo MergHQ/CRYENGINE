@@ -79,6 +79,8 @@ void CDistanceCloudRenderNode::Render(const SRendParams& rParam, const SRenderin
 {
 	FUNCTION_PROFILER_3DENGINE;
 
+	DBG_LOCK_TO_THREAD(this);
+
 	IMaterial* pMaterial(GetMaterial());
 
 	if (!passInfo.RenderClouds() || !pMaterial)

@@ -5,6 +5,9 @@
 #include <atomic>
 #include <CryAudio/IAudioSystem.h>
 #include <CryEntitySystem/IEntity.h>
+#include <CryThreading/Debug.h>
+
+#define TRACK_THREADED_ACCESS_TO_RENDERNODES
 
 #define SUPP_HMAP_OCCL
 
@@ -616,6 +619,10 @@ public:
 	//! Used to request visiting of the node during one-pass traversal
 	uint32 m_onePassTraversalFrameId = 0;
 	uint32 m_onePassTraversalShadowCascades = 0;
+
+#ifdef TRACK_THREADED_ACCESS_TO_RENDERNODES
+	DBG_THREAD_ACCESS_INFO;
+#endif
 };
 
 inline void IRenderNode::SetViewDistRatio(int nViewDistRatio)
