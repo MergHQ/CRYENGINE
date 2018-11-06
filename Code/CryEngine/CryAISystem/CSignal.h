@@ -110,7 +110,7 @@ namespace AISignals
 			const CSignal    signal;
 			const CTimeValue timestamp;
 
-			SSignalDebug(const CSignal signal_, const CTimeValue timestamp_)
+			SSignalDebug(const CSignal& signal_, const CTimeValue timestamp_)
 				: signal(signal_)
 				, timestamp(timestamp_)
 			{}
