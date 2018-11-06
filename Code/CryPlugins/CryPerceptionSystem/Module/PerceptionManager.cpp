@@ -18,6 +18,7 @@
 
 //#include "DebugDrawContext.h"
 
+#ifdef CRYAISYSTEM_DEBUG
 // AI Stimulus names for debugging
 static const char* g_szAIStimulusType[EAIStimulusType::AISTIM_LAST] =
 {
@@ -45,6 +46,7 @@ static const char* g_szAIGrenadeStimType[AIGRENADE_LAST] =
 	" FLASH_BANG",
 	" SMOKE"
 };
+#endif
 
 CPerceptionManager* CPerceptionManager::s_pInstance = nullptr;
 
@@ -1055,7 +1057,6 @@ void CPerceptionManager::HandleBulletHit(const SStimulusRecord& stim)
 
 	IEntity* pShooterEnt = gEnv->pEntitySystem->GetEntity(stim.sourceId);
 	IAIObject* pShooterObject = pShooterEnt ? pShooterEnt->GetAI() : nullptr;
-	IAIActor* pShooterActor = pShooterObject ? pShooterObject->CastToIAIActor() : nullptr;
 
 	// Send bullet events
 	size_t activeCount = lookUp.GetActiveCount();
@@ -1855,7 +1856,6 @@ void CPerceptionManager::DebugDrawPerformance(IAIDebugRenderer* pDebugRenderer, 
 
 		for (size_t actorIndex = 0; actorIndex < activeActorCount; ++actorIndex)
 		{
-			IAIActor* pAIActor = lookUp.GetActor<IAIActor>(actorIndex);
 			pDebugRenderer->DrawSphere(lookUp.GetPosition(actorIndex), 1.0f, ColorB(255, 0, 0));
 		}
 	}
