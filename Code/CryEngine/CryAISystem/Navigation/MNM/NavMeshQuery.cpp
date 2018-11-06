@@ -154,11 +154,6 @@ CNavMeshQuery::CTriangleIterator::CTriangleIterator(const NavigationMeshID meshI
 	m_hasNext = m_tileId != Constants::InvalidTileID || m_minTileX <= m_maxTileX || m_minTileY <= m_maxTileY || m_minTileZ <= m_maxTileZ;
 }
 
-CNavMeshQuery::CTriangleIterator::~CTriangleIterator()
-{
-	// Empty
-}
-
 NavigationMeshID CNavMeshQuery::CTriangleIterator::GetMeshId() const
 {
 	return m_meshId;
@@ -401,11 +396,6 @@ CNavMeshQuery::CNavMeshQuery(const NavMeshQueryId queryId, const SNavMeshQueryCo
 	, m_batchCount(0)
 	, m_queryDebug(*this)
 #endif // NAV_MESH_QUERY_DEBUG
-{
-	// Empty
-}
-
-CNavMeshQuery::~CNavMeshQuery()
 {
 	// Empty
 }
@@ -654,11 +644,6 @@ bool CNavMeshQuery::TriangleIntersectsQueryAabb(const MNM::aabb_t& queryAabbInTi
 CNavMeshQueryInstant::CNavMeshQueryInstant(const NavMeshQueryId queryId, const INavMeshQuery::SNavMeshQueryConfigInstant& queryConfig)
 	: BaseClass(queryId, m_queryConfig)
 	, m_queryConfig(queryConfig)
-{
-	// Empty
-}
-
-CNavMeshQueryInstant::~CNavMeshQueryInstant()
 {
 	// Empty
 }

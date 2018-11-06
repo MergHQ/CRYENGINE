@@ -99,7 +99,7 @@ protected:
 		CTriangleIterator(const NavigationMeshID meshId, const aabb_t& queryAabb);
 		CTriangleIterator(const CTriangleIterator& other) = default;
 		CTriangleIterator& operator=(const CTriangleIterator&) = default;
-		~CTriangleIterator();
+		~CTriangleIterator() = default;
 
 
 		NavigationMeshID       GetMeshId() const;
@@ -178,7 +178,12 @@ public:
 
 protected:
 	CNavMeshQuery(const NavMeshQueryId queryId, const SNavMeshQueryConfig& queryConfig);
-	~CNavMeshQuery();
+
+	CNavMeshQuery(const CNavMeshQuery&) = default;
+	CNavMeshQuery(CNavMeshQuery&&) = default;
+	CNavMeshQuery& operator=(const CNavMeshQuery&) = default;
+	CNavMeshQuery& operator=(CNavMeshQuery&&) = default;
+	~CNavMeshQuery() = default;
 
 	void                                SetStatus(const INavMeshQuery::EQueryStatus status);
 
@@ -219,7 +224,13 @@ class CNavMeshQueryInstant final : public CNavMeshQuery
 	friend class CNavMeshQueryManager;
 private:
 	CNavMeshQueryInstant(const NavMeshQueryId queryId, const INavMeshQuery::SNavMeshQueryConfigInstant& queryConfig);
-	virtual ~CNavMeshQueryInstant();
+
+	CNavMeshQueryInstant(const CNavMeshQueryInstant&) = default;
+	CNavMeshQueryInstant(CNavMeshQueryInstant&&) = default;
+	CNavMeshQueryInstant& operator=(const CNavMeshQueryInstant&) = default;
+	CNavMeshQueryInstant& operator=(CNavMeshQueryInstant&&) = default;
+	~CNavMeshQueryInstant() = default;
+
 	virtual INavMeshQuery::EQueryStatus QueryTiles(INavMeshQueryProcessing& queryProcessing, const size_t processingBatchSize) override;
 
 	template <typename TFilter>
@@ -249,6 +260,11 @@ class CNavMeshQueryBatch final : public CNavMeshQuery
 private:
 	CNavMeshQueryBatch(const NavMeshQueryId queryId, const INavMeshQuery::SNavMeshQueryConfigBatch& queryConfig);
 	~CNavMeshQueryBatch();
+
+	CNavMeshQueryBatch(const CNavMeshQueryBatch&) = default;
+	CNavMeshQueryBatch(CNavMeshQueryBatch&&) = default;
+	CNavMeshQueryBatch& operator=(const CNavMeshQueryBatch&) = default;
+	CNavMeshQueryBatch& operator=(CNavMeshQueryBatch&&) = default;
 
 	void                                InitializeRuntimeData();
 
