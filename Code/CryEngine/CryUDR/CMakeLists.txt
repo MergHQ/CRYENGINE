@@ -40,7 +40,6 @@ end_sources()
 macro(setup_CryUDR)
 	if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 		target_compile_options(${THIS_PROJECT} PRIVATE
-			-Wno-unused-variable
 			-Wno-reorder
 			-Wno-unknown-pragmas
 			-Wno-parentheses
@@ -59,7 +58,6 @@ macro(setup_CryUDR)
 		target_compile_options(${THIS_PROJECT} PRIVATE
 			-Wno-unused-function
 			-Wno-unused-value
-			-Wno-unused-variable
 			-Wno-sign-compare
 			-Wno-unused-but-set-variable
 			-Wno-misleading-indentation
