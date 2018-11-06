@@ -466,6 +466,8 @@ void COcean::Render(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
+	DBG_LOCK_TO_THREAD(this);
+
 	// if reaches render stage - means ocean is visible
 
 	C3DEngine* p3DEngine = (C3DEngine*)Get3DEngine();

@@ -46,6 +46,8 @@ void CCloudBlockerRenderNode::OffsetPosition(const Vec3& delta)
 
 void CCloudBlockerRenderNode::Render(const struct SRendParams& EntDrawParams, const SRenderingPassInfo& passInfo)
 {
+	DBG_LOCK_TO_THREAD(this);
+
 	// recursive pass isn't supported currently.
 	if (!passInfo.RenderClouds() || passInfo.IsRecursivePass())
 	{

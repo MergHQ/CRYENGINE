@@ -295,6 +295,8 @@ void CWaterWaveRenderNode::Render(const SRendParams& rParam, const SRenderingPas
 {
 	FUNCTION_PROFILER_3DENGINE;
 
+	DBG_LOCK_TO_THREAD(this);
+
 	if (m_pRenderMesh == 0)
 		return; //  false;
 

@@ -793,6 +793,8 @@ void CParticleEmitter::Render(SRendParams const& RenParams, const SRenderingPass
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	PARTICLE_LIGHT_PROFILER();
 
+	DBG_LOCK_TO_THREAD(this);
+
 	IF (!passInfo.RenderParticles(), 0)
 		return;
 

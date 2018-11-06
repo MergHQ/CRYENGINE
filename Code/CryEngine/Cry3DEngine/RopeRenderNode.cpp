@@ -874,6 +874,8 @@ void CRopeRenderNode::Render(const SRendParams& rParams, const SRenderingPassInf
 {
 	FUNCTION_PROFILER_3DENGINE;
 
+	DBG_LOCK_TO_THREAD(this);
+
 	if (GetCVars()->e_Ropes == 0 || (m_dwRndFlags & ERF_HIDDEN) || m_pMaterial == NULL)
 		return; // false;
 

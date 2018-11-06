@@ -63,6 +63,8 @@ void CCharacterRenderNode::Render(const SRendParams& inputRendParams, const SRen
 {
 	FUNCTION_PROFILER_3DENGINE;
 
+	DBG_LOCK_TO_THREAD(this);
+
 	if (!m_pCharacterInstance || m_dwRndFlags & ERF_HIDDEN)
 		return;
 

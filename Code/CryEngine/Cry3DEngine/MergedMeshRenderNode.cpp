@@ -2699,6 +2699,8 @@ void CMergedMeshRenderNode::Render(const struct SRendParams& EntDrawParams, cons
 	Vec3 extents, origin;
 	uint32 frameId;
 
+	DBG_LOCK_TO_THREAD(this);
+
 	if (!passInfo.RenderVegetation() || GetCVars()->e_MergedMeshes == 0)
 		return;
 

@@ -1810,6 +1810,8 @@ void CLightEntity::UpdateCastShadowFlag(float fDistance, const SRenderingPassInf
 
 void CLightEntity::Render(const SRendParams& rParams, const SRenderingPassInfo& passInfo)
 {
+	DBG_LOCK_TO_THREAD(this);
+
 #if defined(FEATURE_SVO_GI)
 	if (GetCVars()->e_svoTI_SkipNonGILights && GetCVars()->e_svoTI_Apply && !GetGIMode())
 		return;

@@ -1264,6 +1264,8 @@ void CTerrainNode::Render(const SRendParams& RendParams, const SRenderingPassInf
 {
 	FUNCTION_PROFILER_3DENGINE;
 
+	DBG_LOCK_TO_THREAD(this);
+
 	if (GetCVars()->e_TerrainDrawThisSectorOnly)
 	{
 		if (

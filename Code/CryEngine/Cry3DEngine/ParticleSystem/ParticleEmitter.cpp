@@ -113,6 +113,8 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	PARTICLE_LIGHT_PROFILER();
 
+	DBG_LOCK_TO_THREAD(this);
+
 	if (!passInfo.RenderParticles() || passInfo.IsRecursivePass())
 		return;
 	if (passInfo.IsShadowPass())

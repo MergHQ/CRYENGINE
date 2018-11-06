@@ -476,6 +476,8 @@ void CRoadRenderNode::Render(const SRendParams& RendParams, const SRenderingPass
 {
 	FUNCTION_PROFILER_3DENGINE;
 
+	DBG_LOCK_TO_THREAD(this);
+
 	if (!passInfo.RenderRoads())
 		return; // false;
 
