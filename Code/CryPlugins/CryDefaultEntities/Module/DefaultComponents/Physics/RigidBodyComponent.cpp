@@ -178,7 +178,7 @@ void CRigidBodyComponent::ProcessEvent(const SEntityEvent& event)
 			{
 				pe_action_awake pa;
 				pa.bAwake = !m_isResting;
-				int result = m_pEntity->GetPhysicalEntity()->Action(&pa);
+				m_pEntity->GetPhysicalEntity()->Action(&pa);
 			}
 		}
 		break;
