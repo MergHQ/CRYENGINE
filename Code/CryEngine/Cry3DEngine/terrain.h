@@ -215,9 +215,9 @@ public:
 	static float      GetInvUnitSize()               { return m_fInvUnitSize; }
 	int               GetHeightmapUnits() const      { return m_nTerrainUnits; }
 
-	ILINE static bool InsideTerrainUnits(int xu, int yu)
+	ILINE bool InsideTerrainUnits(int xu, int yu) const
 	{
-		return min(xu, yu) >= 0 && max(xu, yu) < m_nTerrainSize;
+		return min(xu, yu) >= 0 && max(xu, yu) < m_nTerrainUnits;
 	}
 	ILINE void ClampUnits(int& xu, int& yu) const
 	{
@@ -510,7 +510,7 @@ protected:
 	static float                   m_fUnitSize;      // in meters
 	static float                   m_fInvUnitSize;   // in 1/meters
 	static int                     m_nTerrainSize;   // in meters
-	int                            m_nTerrainUnits;
+	int                            m_nTerrainUnits;  // in units
 	static int                     m_nSectorSize;       // in meters
 	static int                     m_nSectorsTableSize; // sector width/height of the finest LOD level (sector count is the square of this value)
 

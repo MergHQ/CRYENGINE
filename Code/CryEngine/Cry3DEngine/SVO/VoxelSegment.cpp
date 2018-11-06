@@ -1921,7 +1921,7 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 				{
 					IRenderNode* pNode = arrRenderNodes[d];
 
-					if (pNode->GetRndFlags() & (ERF_COLLISION_PROXY | ERF_RAYCAST_PROXY))
+					if (pNode->GetRndFlags() & (ERF_COLLISION_PROXY | ERF_RAYCAST_PROXY | ERF_PENDING_DELETE))
 						continue;
 
 					if (!GetCVars()->e_svoTI_VoxelizeHiddenObjects && (pNode->GetRndFlags() & ERF_HIDDEN))

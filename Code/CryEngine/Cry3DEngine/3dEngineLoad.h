@@ -23,12 +23,12 @@ public:
 		PreloadLevelObjects,
 #endif
 		PreloadLevelCharacters,
-		LoadSvoTiSettings,
 		LoadTerrain,
 		LoadVisAreas,
 		SyncMergedMeshesPreparation,
 		LoadParticles,
 		LoadMissionData,
+		LoadSvoTiSettings,
 
 		// Results
 		Done,
