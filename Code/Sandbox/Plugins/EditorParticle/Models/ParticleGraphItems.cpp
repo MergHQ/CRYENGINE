@@ -383,6 +383,22 @@ bool CFeaturePinItem::CanConnect(const CryGraphEditor::CAbstractPinItem* pOtherP
 	return true;
 }
 
+bool CParentPinItem::CanConnect(const CryGraphEditor::CAbstractPinItem* pOtherPin) const
+{
+	if (pOtherPin && pOtherPin->IsOutputPin() && !IsConnected())
+	{
+		const auto& otherNodeItem = static_cast<const CNodeItem&>(pOtherPin->GetNodeItem());
+		if (otherNodeItem.GetComponentInterface().CanBeParent(&m_nodeItem.GetComponentInterface()))
+			return true;
+	}
+	return false;
+}
+
+bool CChildPinItem::CanConnect(const CryGraphEditor::CAbstractPinItem* pOtherPin) const
+{
+	return !pOtherPin || (pOtherPin->IsInputPin() && pOtherPin->CanConnect(this));
+}
+
 CFeatureItem::CFeatureItem(pfx2::IParticleFeature& feature, CNodeItem& node, CryGraphEditor::CNodeGraphViewModel& viewModel)
 	: CAbstractNodeGraphViewModelItem(viewModel)
 	, m_featureInterface(feature)
@@ -473,27 +489,20 @@ QColor CFeatureItem::GetColor() const
 }
 
 CConnectionItem::CConnectionItem(CBasePinItem& sourcePin, CBasePinItem& targetPin, CryGraphEditor::CNodeGraphViewModel& viewModel)
-	: CryGraphEditor::CAbstractConnectionItem(viewModel)
-	, m_sourcePin(sourcePin)
-	, m_targetPin(targetPin)
+	: CryGraphEditor::CAbstractConnectionItem(sourcePin, targetPin, viewModel)
 {
-	m_sourcePin.AddConnection(*this);
-	m_targetPin.AddConnection(*this);
+	sourcePin.AddConnection(*this);
+	targetPin.AddConnection(*this);
 
-	string sourceNodeName = QtUtil::ToString(m_sourcePin.GetNodeItem().GetName());
-	string sourceNodePin = QtUtil::ToString(m_sourcePin.GetName());
-	string targetNodeName = QtUtil::ToString(m_targetPin.GetNodeItem().GetName());
-	string targetNodePin = QtUtil::ToString(m_targetPin.GetName());
+	string sourceNodeName = QtUtil::ToString(sourcePin.GetNodeItem().GetName());
+	string sourceNodePin = QtUtil::ToString(sourcePin.GetName());
+	string targetNodeName = QtUtil::ToString(targetPin.GetNodeItem().GetName());
+	string targetNodePin = QtUtil::ToString(targetPin.GetName());
 
 	string id;
 	id.Format("%s-%s::%s-%s", sourceNodeName, sourceNodePin, targetNodeName, targetNodePin);
 
 	m_id = CCrc32::Compute(id.c_str());
-}
-
-CConnectionItem::~CConnectionItem()
-{
-
 }
 
 CryGraphEditor::CConnectionWidget* CConnectionItem::CreateWidget(CryGraphEditor::CNodeGraphView& view)
@@ -513,8 +522,8 @@ bool CConnectionItem::HasId(QVariant id) const
 
 void CConnectionItem::OnConnectionRemoved()
 {
-	m_sourcePin.RemoveConnection(*this);
-	m_targetPin.RemoveConnection(*this);
+	GetSourcePinItem().RemoveConnection(*this);
+	GetTargetPinItem().RemoveConnection(*this);
 }
 
 }

@@ -100,8 +100,6 @@ namespace Cry
 					if (pDevice == nullptr)
 						return;
 
-					SEntityUpdateContext* pUpdateContext = reinterpret_cast<SEntityUpdateContext*>(event.nParam[0]);
-
 					for (SHand& hand : m_hands)
 					{
 						EKeyId triggerKeyId;
@@ -169,7 +167,7 @@ namespace Cry
 						}
 						else if (hand.heldEntityId != INVALID_ENTITYID)
 						{
-							if (IEntity* pHeldEntity = gEnv->pEntitySystem->GetEntity(hand.heldEntityId))
+							if (gEnv->pEntitySystem->GetEntity(hand.heldEntityId) != nullptr)
 							{
 								pe_params_pos pp;
 								pp.pos = m_pEntity->GetSlotWorldTM(hand.slotId).GetTranslation();

@@ -235,6 +235,7 @@ bool CParticleGraphModel::RemoveConnection(CryGraphEditor::CAbstractConnectionIt
 		// TODO: ConnectTo(...) should do the job for us!
 		sourceNode.GetComponentInterface().SetChanged();
 		targetNode.GetComponentInterface().SetChanged();
+		m_effect.Update();
 		// ~TODO
 
 		CConnectionItem* pConnection = static_cast<CConnectionItem*>(&connection);
@@ -343,6 +344,7 @@ CNodeItem* CParticleGraphModel::CreateNode(const char* szTemplateName, const QPo
 	{
 		if (szTemplateName == nullptr || *szTemplateName == '\0' || Serialization::LoadJsonFile(*pComponent, szTemplateName))
 		{
+			m_effect.Update();
 			pComponent->SetNodePosition(Vec2(position.x(), position.y()));
 			return CreateNodeItem(*pComponent);
 		}
@@ -379,6 +381,7 @@ CConnectionItem* CParticleGraphModel::CreateConnection(CBasePinItem& sourcePin, 
 		// TODO: ConnectTo(...) should do the job for us!
 		sourceNode.GetComponentInterface().SetChanged();
 		targetNode.GetComponentInterface().SetChanged();
+		m_effect.Update();
 		// ~TODO
 
 		// TODO: Move this into a CNodeGraphViewModel method that gets called from here.
@@ -401,10 +404,6 @@ CNodeItem* CParticleGraphModel::CreateNodeItem(pfx2::IParticleComponent& compone
 	CNodeItem* pNodeItem = new CNodeItem(component, *this);
 	const uint32 crc = CCrc32::Compute(component.GetName());
 	m_nodes.push_back(pNodeItem);
-
-	// TODO: AddComponent(...) should do the job for us!
-	m_effect.SetChanged();
-	// ~TODO
 
 	// TODO: Move this into a CNodeGraphViewModel method that gets called from here.
 	SignalCreateNode(*pNodeItem);

@@ -57,7 +57,7 @@ public:
 		if (!GetCVars()->e_DynamicLights)
 			return;
 
-		if (!runtime.IsCPURuntime())
+		if (!runtime.IsCPURuntime() || !runtime.GetComponent()->IsVisible())
 			return;
 
 		SRenderLight light;

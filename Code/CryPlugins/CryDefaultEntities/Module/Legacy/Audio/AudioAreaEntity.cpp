@@ -199,13 +199,8 @@ void CAudioAreaEntity::OnResetState()
 
 void CAudioAreaEntity::SetEnvironmentId(const CryAudio::ControlId environmentId)
 {
-	const CryAudio::EnvironmentId oldEnvironmentId = m_pProxy->GetEnvironmentId();
-	m_pProxy->SetEnvironmentId(environmentId);
-
-	//
 	// TODO: The audio environment is being tampered with, we need to inform all entities affected by the area.
-	//
-
+	m_pProxy->SetEnvironmentId(environmentId);
 }
 
 void CAudioAreaEntity::UpdateFadeValue(const float distance)

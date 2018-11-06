@@ -42,7 +42,7 @@
 
 #define CRY_PFX2_PARTICLES_ALIGNMENT 16
 
-#if (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS || CRY_PLATFORM_APPLE) && !CRY_PLATFORM_NEON
+#ifdef CRY_PLATFORM_SSE2
 	#define CRY_PFX2_USE_SSE
 	#if (CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS)
 		#define CRY_PFX2_USE_SEE4
@@ -65,7 +65,6 @@ using TFloatArray                      = THeapArray<float>;
 
 template<typename T> using TDynArray   = FastDynArray<T, uint, NAlloc::ModuleAlloc>;
 template<typename T> using TSmartArray = TDynArray<_smart_ptr<T>>;
-
 
 #ifdef CRY_PFX2_USE_SSE
 
@@ -140,7 +139,7 @@ struct TIndexRange
 		: m_begin(+b)
 		, m_end(Align(+e, nStride))
 	{
-		CRY_ASSERT(IsAligned(+b, nStride));
+		CRY_PFX2_DEBUG_ASSERT(IsAligned(+b, nStride));
 	}
 
 	template<typename TIndex2, int nStride2>
@@ -150,19 +149,6 @@ struct TIndexRange
 
 typedef TIndexRange<TParticleId> SUpdateRange;
 typedef TIndexRange<TParticleGroupId, CRY_PFX2_PARTICLESGROUP_STRIDE> SGroupRange;
-
-enum EFeatureType
-{
-	EFT_Generic = 0x0,        // this feature does nothing in particular. Can have many of this per component.
-	EFT_Spawn   = BIT(0),     // this feature spawns particles. At least one is needed in a component.
-	EFT_Size    = BIT(1),     // this feature changes particles sizes. At least one is required per component.
-	EFT_Life    = BIT(2),     // this feature changes particles life time. At least one is required per component.
-	EFT_Render  = BIT(3),     // this feature renders particles. Each component can only have either none or just one of this.
-	EFT_Motion  = BIT(4),     // this feature moves particles around. Each component can only have either none or just one of this.
-	EFT_Child   = BIT(5),     // this feature spawns instances from parent particles. At least one is needed for child components
-
-	EFT_END     = BIT(6)
-};
 
 template<typename C>
 struct SkipEmptySerialize

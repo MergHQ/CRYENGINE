@@ -97,6 +97,7 @@ CVariableOArchive::CVariableOArchive()
 	m_resourceHandlers["Model"] = &CVariableOArchive::SerializeObjectFilename;
 	m_resourceHandlers["StaticModel"] = &CVariableOArchive::SerializeObjectFilename;
 	m_resourceHandlers["Particle"] = &CVariableOArchive::SerializeParticleName;
+	m_resourceHandlers["ParticleLegacy"] = &CVariableOArchive::SerializeParticleName;
 
 	m_structHandlers[TypeID::get < Serialization::IResourceSelector > ().name()] = &CVariableOArchive::SerializeIResourceSelector;
 	m_structHandlers[TypeID::get < Serialization::RangeDecorator < float >> ().name()] = &CVariableOArchive::SerializeRangeFloat;

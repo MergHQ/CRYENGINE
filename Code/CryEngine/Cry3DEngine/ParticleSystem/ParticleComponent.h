@@ -175,6 +175,7 @@ public:
 	virtual void                SwapFeatures(const uint* swapIds, uint numSwapIds) override;
 	virtual IParticleComponent* GetParent() const override                                { return m_parent; }
 	virtual void                SetParent(IParticleComponent* pParentComponent) override;
+	virtual bool                CanBeParent(IParticleComponent* child = nullptr) const override;
 	virtual Vec2                GetNodePosition() const override;
 	virtual void                SetNodePosition(Vec2 position) override;
 	// ~IParticleComponent

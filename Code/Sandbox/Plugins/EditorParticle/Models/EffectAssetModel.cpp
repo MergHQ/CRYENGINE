@@ -68,22 +68,9 @@ public:
 		if (!pEffect)
 		{
 			const char* const szPfxFilePath = pAsset->GetFile(0);
-
-			pEffect = GetParticleSystem()->FindEffect(szPfxFilePath);
+			pEffect = GetParticleSystem()->FindEffect(szPfxFilePath, true);
 			if (!pEffect)
-			{
-				pEffect = GetParticleSystem()->FindEffect(szPfxFilePath, true);
-				if (!pEffect)
-				{
-					return nullptr;
-				}
-			}
-			else
-			{
-				// Reload effect from file every time it is opened, since it might be that the effect has changed
-				// in memory. Opening means reading the current state from disk.
-				Serialization::LoadJsonFile(*pEffect, szPfxFilePath);
-			}
+				return nullptr;
 		}
 
 		CEffectAsset* const pEffectAsset = new CEffectAsset();

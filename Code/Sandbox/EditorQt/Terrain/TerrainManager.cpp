@@ -10,6 +10,7 @@
 #include "CryEditDoc.h"
 
 #include "QT/Widgets/QWaitProgress.h"
+#include <Util/TempFileHelper.h>
 
 namespace {
 const char* kHeightmapFile = "Heightmap.dat";
@@ -285,7 +286,7 @@ void CTerrainManager::CreateDefaultLayer()
 	CLayer* layer = new CLayer;
 	AddLayer(layer);
 	layer->SetLayerName("Default");
-	layer->LoadTexture("%ENGINE%/engineassets/textures/grey.dds");
+	layer->LoadTexture("%ENGINE%/EngineAssets/Textures/grey.dds");
 	layer->SetLayerId(0);
 
 	// Create default surface type.

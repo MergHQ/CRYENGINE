@@ -10,6 +10,7 @@
 #include "TerrainLighting.h"
 
 #include <Preferences/GeneralPreferences.h>
+#include <Util/TempFileHelper.h>
 
 #include <Cry3DEngine/ITimeOfDay.h>
 #include <CryGame/IGame.h>

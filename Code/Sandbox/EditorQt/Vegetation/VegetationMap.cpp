@@ -7,6 +7,8 @@
 #include "Terrain/Heightmap.h"
 #include "Terrain/Layer.h"
 
+#include <Util/TempFileHelper.h>
+
 #include "QT/Widgets/QWaitProgress.h"
 #include "Util/ImageTIF.h"
 #include "IAIManager.h"

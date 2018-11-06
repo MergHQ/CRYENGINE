@@ -293,27 +293,3 @@ private:
 	static bool ExtractDccFilenameFromAssetDatabase(const CString& assetFilename, CString& dccFilename);
 	static bool ExtractDccFilenameUsingNamingConventions(const CString& assetFilename, CString& dccFilename);
 };
-
-//
-// A helper for creating a temp file to write to, then copying that over the destination
-// file only if it changes (to avoid requiring the user to check out source controlled
-// file unnecessarily)
-//
-class MFC_TOOLS_PLUGIN_API CTempFileHelper
-{
-public:
-	CTempFileHelper(const char* pFileName);
-	~CTempFileHelper();
-
-	// Gets the path to the temp file that should be written to
-	const CString& GetTempFilePath() { return m_tempFileName; }
-
-	// After the temp file has been written and closed, this should be called to update
-	// the destination file.
-	// If bBackup is true CFileUtil::BackupFile will be called if the file has changed.
-	bool UpdateFile(bool bBackup);
-
-private:
-	CString m_fileName;
-	CString m_tempFileName;
-};

@@ -12,6 +12,7 @@
 #include <AssetSystem/AssetImportContext.h>
 #include <AssetSystem/Browser/AssetBrowserDialog.h>
 #include <Controls/QuestionDialog.h>
+#include <FileUtils.h>
 #include <PathUtils.h>
 
 namespace Private_PrefabManager
@@ -797,7 +798,7 @@ void CPrefabManager::importAssetsFromLevel(XmlNodeRef& levelRoot)
 
 			ImportPrefabLibrary(libNode, path);
 
-			CFileUtil::BackupFile(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), path).c_str());
+			FileUtils::BackupFile(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), path).c_str());
 		}
 		else
 		{

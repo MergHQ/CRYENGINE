@@ -100,8 +100,6 @@ void CCharacterControllerComponent::ProcessEvent(const SEntityEvent& event)
 {
 	if (event.event == ENTITY_EVENT_UPDATE)
 	{
-		SEntityUpdateContext* pCtx = (SEntityUpdateContext*)event.nParam[0];
-
 		IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysics();
 		CRY_ASSERT_MESSAGE(pPhysicalEntity != nullptr, "Physical entity removed without call to IEntity::UpdateComponentEventMask!");
 
