@@ -491,12 +491,10 @@ void CCryMatchMaking::Tick(CTimeValue tv)
 	#endif
 }
 
-	#if !defined(_RELEASE)
+#if !defined(_RELEASE)
 void CCryMatchMaking::DrawDebugText()
 {
 	static float white[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	static float red[] = { 1.0f, 0.0f, 0.0f, 1.0f };
-	static float green[] = { 0.0f, 1.0f, 0.0f, 1.0f };
 
 	if (CLobbyCVars::Get().showMatchMakingTasks != 0)
 	{
@@ -514,7 +512,10 @@ void CCryMatchMaking::DrawDebugText()
 		}
 	}
 
-		#if NETWORK_HOST_MIGRATION
+#if NETWORK_HOST_MIGRATION
+	static float red[] = { 1.0f, 0.0f, 0.0f, 1.0f };
+	static float green[] = { 0.0f, 1.0f, 0.0f, 1.0f };
+
 	for (uint32 debugIndex = 0; debugIndex < MAX_MATCHMAKING_SESSIONS; ++debugIndex)
 	{
 		float ypos = 50.0f;
@@ -634,9 +635,9 @@ void CCryMatchMaking::DrawDebugText()
 			}
 		}
 	}
-		#endif // NETWORK_HOST_MIGRATION
+#endif // NETWORK_HOST_MIGRATION
 }
-	#endif // !defined(_RELEASE)
+#endif // !defined(_RELEASE)
 
 void CCryMatchMaking::StartTaskRunning(CryMatchMakingTaskID mmTaskID)
 {
@@ -815,7 +816,6 @@ SCryMatchMakingConnectionUID CCryMatchMaking::GetHostConnectionUID(CrySessionHan
 {
 	LOBBY_AUTO_LOCK;
 
-	SCryMatchMakingConnectionUID uid = CryMatchMakingInvalidConnectionUID;
 	CryLobbySessionHandle h = GetSessionHandleFromGameSessionHandle(gh);
 
 	if (h != CryLobbyInvalidSessionHandle)
@@ -1768,7 +1768,6 @@ void CCryMatchMaking::SessionDisconnectRemoteConnection(CryLobbySessionHandle h,
 {
 	const uint32 MaxBufferSize = CryLobbyPacketHeaderSize + CryLobbyPacketConnectionUIDSize + CryLobbyPacketUINT8Size;
 	uint8 buffer[MaxBufferSize];
-	uint32 bufferSize = 0;
 	SSession* pSession = m_sessions[h];
 	SCryMatchMakingConnectionUID uid = (id == CryMatchMakingInvalidConnectionID) ? pSession->localConnection->uid : pSession->remoteConnection[id]->uid;
 
@@ -2626,7 +2625,6 @@ void CCryMatchMaking::ProcessHostMigrationStateCheckData(const TNetAddress& addr
 
 void CCryMatchMaking::ProcessSessionDeleteRemoteConnection(const TNetAddress& addr, CCrySharedLobbyPacket* pPacket)
 {
-	uint32 bufferPos = 0;
 	SCryMatchMakingConnectionUID uid;
 	CryLobbySessionHandle h;
 	CryMatchMakingConnectionID id;
@@ -3299,7 +3297,6 @@ void CCryMatchMaking::ProcessServerPing(const TNetAddress& addr, CCrySharedLobby
 {
 	CryMatchMakingConnectionID id;
 	CryLobbySessionHandle handle = CryLobbyInvalidSessionHandle;
-	bool hintsChanged = false;
 
 	pPacket->StartRead();
 	SCryMatchMakingConnectionUID uid = pPacket->GetFromConnectionUID();
@@ -3776,7 +3773,9 @@ void CCryMatchMaking::StatusCmd(eStatusCmdMode mode)
 			pSession = m_sessions[sessionIndex];
 			if ((pSession->localFlags & CRYSESSION_LOCAL_FLAG_USED) && (pSession->createFlags & CRYSESSION_CREATE_FLAG_NUB))
 			{
+#if !defined(EXCLUDE_NORMAL_LOG)
 				const char* pOwner = (pSession->localFlags & CRYSESSION_LOCAL_FLAG_HOST) ? "Server" : "Client";
+#endif
 
 				CryLogAlways("-----------------------------------------");
 				CryLogAlways("%s Status:", pOwner);
@@ -4084,7 +4083,10 @@ void CCryMatchMaking::TickSessionSetupDedicatedServerNameResolve(CryMatchMakingT
 	STask* pTask = m_task[mmTaskID];
 	CNameRequestPtr* ppReq = (CNameRequestPtr*)m_lobby->MemGetPtr(pTask->params[TDM_SETUP_DEDICATED_SERVER_NAME_REQUESTER]);
 	ENameRequestResult result = (*ppReq)->GetResult();
+
+#if !defined(EXCLUDE_NORMAL_LOG)
 	CLobbyCVars& cvars = CLobbyCVars::Get();
+#endif
 
 	switch (result)
 	{

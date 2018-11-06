@@ -150,7 +150,6 @@ if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 		-Wno-bitwise-op-parentheses
 		-Wno-logical-op-parentheses
 		-Wno-unknown-pragmas
-		-Wno-unused-variable
 		-Wno-unused-value
 		-Wno-unused-private-field
 		-Wno-format
@@ -160,7 +159,6 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	target_compile_options(${THIS_PROJECT} PRIVATE
 		-Wno-unused-function
 		-Wno-unused-value
-		-Wno-unused-variable
 		-Wno-sign-compare
 		-Wno-unused-but-set-variable
 		-Wno-misleading-indentation
