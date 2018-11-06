@@ -1021,7 +1021,6 @@ ECryLobbyError CCryLANMatchMaking::SessionDelete(CrySessionHandle gh, CryLobbyTa
 
 	if ((h < MAX_MATCHMAKING_SESSIONS) && (m_sessions[h].localFlags & CRYSESSION_LOCAL_FLAG_USED))
 	{
-		SSession* pSession = &m_sessions[h];
 		CryMatchMakingTaskID tid;
 
 		error = StartTask(eT_SessionDelete, &tid, taskID, h, (void*)cb, cbArg);
@@ -1031,6 +1030,8 @@ ECryLobbyError CCryLANMatchMaking::SessionDelete(CrySessionHandle gh, CryLobbyTa
 			FROM_GAME_TO_LOBBY(&CCryLANMatchMaking::StartTaskRunning, this, tid);
 
 	#if NETWORK_HOST_MIGRATION
+			SSession* pSession = &m_sessions[h];
+
 			// Since we're deleting this session, terminate any host migration
 			if (pSession->hostMigrationInfo.m_state != eHMS_Idle)
 			{
@@ -1396,7 +1397,6 @@ void CCryLANMatchMaking::TickSessionJoin(CryMatchMakingTaskID mmTaskID)
 void CCryLANMatchMaking::ProcessSessionRequestJoin(const TNetAddress& addr, CCrySharedLobbyPacket* pPacket)
 {
 	ECryLobbyError error = eCLE_Success;
-	uint32 bufferPos = 0;
 	CryLobbySessionHandle h;
 	CryLobbyConnectionID c;
 	CryMatchMakingTaskID returnTaskID;
@@ -1709,7 +1709,6 @@ void CCryLANMatchMaking::ProcessSessionRequestJoinResult(const TNetAddress& addr
 
 void CCryLANMatchMaking::ProcessSessionAddRemoteConnections(const TNetAddress& addr, CCrySharedLobbyPacket* pPacket)
 {
-	uint32 bufferPos = 0;
 	CryLobbySessionHandle h;
 
 	pPacket->StartRead();

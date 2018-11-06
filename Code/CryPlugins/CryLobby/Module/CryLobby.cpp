@@ -1255,8 +1255,9 @@ void CCryLobby::ConnectionRemoveRef(CryLobbyConnectionID c)
 
 							while (GetNextPacketFromBuffer(pData, data.dataSize, dataPos, &packet))
 							{
+#if !defined(EXCLUDE_NORMAL_LOG)
 								uint32 encodedPacketType = pDataHeader->lobbyPacketType;
-
+#endif
 								DecodePacketDataHeader(&packet);
 
 								if (KeepPacketAfterDisconnect(pDataHeader->lobbyPacketType))
@@ -1830,7 +1831,9 @@ void CCryLobby::ProcessPacket(const TNetAddress& addr, CryLobbyConnectionID conn
 
 				if (counterIn == qdata.counter)
 				{
+#if !defined(NO_NETWORK_SECURITY_LOGS)
 					const uint8 qDataCounter = qdata.counter;
+#endif
 					// Other end has received the packet we are trying to send
 					OnSendComplete(addr);
 					SECURE_NET_LOG("[lobby] Got ack on connection " PRFORMAT_LCINFO " counterIn=%u, qDataCounter=%u", PRARG_LCINFO(connectionID, pConnection->addr), counterIn, qDataCounter);
@@ -2065,7 +2068,9 @@ void CCryLobby::ProcessCachedPacketBuffer(void)
 
 						if (pPacketHeader->counterIn == qdata.counter)
 						{
+#if !defined(NO_NETWORK_SECURITY_LOGS)
 							const uint8 qDataCounter = qdata.counter;
+#endif
 							// Other end has received the packet we are trying to send
 							OnSendComplete(addr);
 							SECURE_NET_LOG("[lobby] Got ack(first) on connection " PRFORMAT_LCINFO " counterIn=%u, qDataCounter=%u", PRARG_LCINFO(connectionID, pConnection->addr), pPacketHeader->counterIn, qDataCounter);
@@ -2104,7 +2109,9 @@ void CCryLobby::ProcessCachedPacketBuffer(void)
 
 				while (GetNextPacketFromBuffer(pDecodedData, length, dataPos, &packet))
 				{
+#if !defined(EXCLUDE_NORMAL_LOG)
 					uint32 encodedPacketType = pDataHeader->lobbyPacketType;
+#endif
 					DecodePacketDataHeader(&packet);
 
 					if (KeepPacketAfterDisconnect(pDataHeader->lobbyPacketType))
@@ -2143,7 +2150,9 @@ void CCryLobby::ProcessCachedPacketBuffer(void)
 
 				while (GetNextPacketFromBuffer(pDecodedData, length, dataPos, &packet))
 				{
+#if !defined(EXCLUDE_NORMAL_LOG)
 					uint32 encodedPacketType = pDataHeader->lobbyPacketType;
+#endif
 					DecodePacketDataHeader(&packet);
 					NetLog("    Process packet %d (%d) size %d", pDataHeader->lobbyPacketType, encodedPacketType, pDataHeader->dataSize);
 					ProcessPacket(addr, connectionID, &packet);

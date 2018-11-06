@@ -108,7 +108,9 @@ CryMatchMakingConnectionID CCryDedicatedServer::AddRemoteConnection(CryLobbySess
 void CCryDedicatedServer::TickArbitratorNameLookup(CTimeValue tv)
 {
 	ENameRequestResult result = m_pNameReq->GetResult();
+#if !defined(EXCLUDE_NORMAL_LOG)
 	CLobbyCVars& cvars = CLobbyCVars::Get();
+#endif
 
 	switch (result)
 	{
