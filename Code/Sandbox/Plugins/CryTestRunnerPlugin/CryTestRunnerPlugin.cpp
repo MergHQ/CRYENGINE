@@ -1,12 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include "StdAfx.h"
+#include <CryCore/Platform/platform_impl.inl>
 #include "CryTestRunnerPlugin.h"
 #include "CryTestRunnerSystem.h"
 #include <Menu/MenuWidgetBuilders.h>
 #include <EditorFramework/Editor.h>
 #include <ProxyModels/DeepFilterProxyModel.h>
 #include <QAdvancedTreeView.h>
-#include <CryCore/Platform/platform_impl.inl>
 #include <QHeaderView>
 #include <QTextEdit>
 

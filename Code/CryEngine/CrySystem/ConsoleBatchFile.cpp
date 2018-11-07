@@ -132,8 +132,8 @@ bool CConsoleBatchFile::ExecuteConfigFile(const char* sFilename)
 			{
 				// Parse the line from .cfg, splitting CVar name and value from the string (format is CVarName=CVarValue)
 				const size_t pos = strLine.find_first_of('=');
-				const string variableName = strLine.substr(0, pos);
-				const string variableValue = strLine.substr(pos + 1);
+				const string variableName = strLine.substr(0, pos).Trim();
+				const string variableValue = strLine.substr(pos + 1).Trim();
 
 				// Notify console to set the value, or defer if the CVar had not been registered yet (likely since parsing occurs very early)
 				m_pConsole->LoadConfigVar(variableName, variableValue);

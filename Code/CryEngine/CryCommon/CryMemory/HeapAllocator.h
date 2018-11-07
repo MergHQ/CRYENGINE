@@ -6,7 +6,6 @@
 #ifndef _HEAP_ALLOCATOR_H
 #define _HEAP_ALLOCATOR_H
 
-#include <algorithm> // for std::max
 #include <CryThreading/Synchronization.h>
 #include <CryParticleSystem/Options.h>
 #include "CrySizer.h"
@@ -365,7 +364,7 @@ public:
 
 		NAlloc::AllocArray alloc(NAlloc::AllocArray a, size_t new_size, size_t align, bool allow_slack = false)
 		{
-			align = std::max(align, (size_t)nALIGN);
+			align = max(align, (size_t)nALIGN);
 			if (new_size)
 			{
 				new_size = Align(new_size, align);

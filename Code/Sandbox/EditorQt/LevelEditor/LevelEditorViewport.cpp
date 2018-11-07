@@ -151,7 +151,7 @@ CLevelEditorViewport::~CLevelEditorViewport()
 	}
 }
 
-bool CLevelEditorViewport::CreateRenderContext(HWND hWnd, IRenderer::EViewportType viewportType)
+bool CLevelEditorViewport::CreateRenderContext(CRY_HWND hWnd, IRenderer::EViewportType viewportType)
 {
 	return CRenderViewport::CreateRenderContext(hWnd, IRenderer::eViewportType_Default);
 }

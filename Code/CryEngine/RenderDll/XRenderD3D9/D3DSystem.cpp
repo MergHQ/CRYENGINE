@@ -60,14 +60,15 @@ void CD3D9Renderer::DisplaySplash()
 
 	HBITMAP hImage = (HBITMAP)LoadImage(CryGetCurrentModule(), "splash.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
+	HWND hwnd = (HWND)m_hWnd;
 	if (hImage != INVALID_HANDLE_VALUE)
 	{
 		RECT rect;
-		HDC hDC = GetDC(m_hWnd);
+		HDC hDC = GetDC(hwnd);
 		HDC hDCBitmap = CreateCompatibleDC(hDC);
 		BITMAP bm;
 
-		GetClientRect(m_hWnd, &rect);
+		GetClientRect(hwnd, &rect);
 		GetObjectA(hImage, sizeof(bm), &bm);
 		SelectObject(hDCBitmap, hImage);
 
@@ -77,7 +78,7 @@ void CD3D9Renderer::DisplaySplash()
 		//    BitBlt(hDC, x, y, bm.bmWidth, bm.bmHeight, hDCBitmap, 0, 0, SRCCOPY);
 
 		RECT Rect;
-		GetWindowRect(m_hWnd, &Rect);
+		GetWindowRect(hwnd, &Rect);
 		StretchBlt(hDC, 0, 0, Rect.right - Rect.left, Rect.bottom - Rect.top, hDCBitmap, 0, 0, bm.bmWidth, bm.bmHeight, SRCCOPY);
 
 		DeleteObject(hImage);
@@ -161,7 +162,7 @@ SDisplayContextKey CD3D9Renderer::CreateSwapChainBackedContext(const SDisplayCon
 
 	SDisplayContextKey key;
 	if (desc.handle)
-		key.key.emplace<HWND>(desc.handle);
+		key.key.emplace<CRY_HWND>(desc.handle);
 	else
 		key.key.emplace<uint32_t>(pDC->m_uniqueId);
 
@@ -245,7 +246,7 @@ CSwapChainBackedRenderDisplayContext* CD3D9Renderer::GetBaseDisplayContext() con
 	return m_pBaseDisplayContext.get();
 }
 
-WIN_HWND CD3D9Renderer::GetCurrentContextHWND()
+CRY_HWND CD3D9Renderer::GetCurrentContextHWND()
 {
 	return m_pActiveContext && m_pActiveContext->IsSwapChainBacked() ? 
 		static_cast<CSwapChainBackedRenderDisplayContext*>(m_pActiveContext.get())->GetWindowHandle() : 
@@ -255,14 +256,14 @@ WIN_HWND CD3D9Renderer::GetCurrentContextHWND()
 #ifdef CRY_PLATFORM_WINDOWS
 RectI CD3D9Renderer::GetDefaultContextWindowCoordinates()
 {
-	auto hWnd = m_pBaseDisplayContext->GetWindowHandle();
+	HWND hWnd = (HWND)m_pBaseDisplayContext->GetWindowHandle();
 	{
 		AUTO_LOCK(gs_contextLock); // Not thread safe without this
 
 		for (const auto& pair : m_displayContexts)
 		{
-			if (pair.second->IsMainViewport() && stl::holds_alternative<HWND>(pair.first.key))
-				hWnd = stl::get<HWND>(pair.first.key);
+			if (pair.second->IsMainViewport() && stl::holds_alternative<CRY_HWND>(pair.first.key))
+				hWnd = (HWND)stl::get<CRY_HWND>(pair.first.key);
 		}
 	}
 
@@ -477,15 +478,16 @@ HRESULT CD3D9Renderer::AdjustWindowForChange(const int displayWidth, const int d
 #elif CRY_PLATFORM_WINDOWS
 	RectI monitorBounds = pDC->GetCurrentMonitorBounds();
 
+	HWND hwnd = (HWND)m_hWnd;
 	if (IsFullscreen())
 	{
 		if (previousWindowState != EWindowState::Fullscreen)
 		{
 			constexpr auto fullscreenStyle = WS_POPUP | WS_VISIBLE;
-			SetWindowLongPtrW(m_hWnd, GWL_STYLE, fullscreenStyle);
+			SetWindowLongPtrW(hwnd, GWL_STYLE, fullscreenStyle);
 		}
 			
-		SetWindowPos(m_hWnd, HWND_TOPMOST, 0, 0, displayWidth, displayHeight, SWP_SHOWWINDOW);
+		SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, displayWidth, displayHeight, SWP_SHOWWINDOW);
 	}
 	else if (m_windowState == EWindowState::BorderlessWindow || m_windowState == EWindowState::BorderlessFullscreen)
 	{
@@ -493,12 +495,12 @@ HRESULT CD3D9Renderer::AdjustWindowForChange(const int displayWidth, const int d
 		{
 			// Set fullscreen-mode style
 			constexpr auto fullscreenWindowStyle = WS_POPUP | WS_VISIBLE;
-			SetWindowLongPtrW(m_hWnd, GWL_STYLE, fullscreenWindowStyle);
+			SetWindowLongPtrW(hwnd, GWL_STYLE, fullscreenWindowStyle);
 		}
 
 		const int x = monitorBounds.x + (monitorBounds.w - displayWidth) / 2;
 		const int y = monitorBounds.y + (monitorBounds.h - displayHeight) / 2;
-		SetWindowPos(m_hWnd, HWND_NOTOPMOST, x, y, displayWidth, displayHeight, SWP_SHOWWINDOW);
+		SetWindowPos(hwnd, HWND_NOTOPMOST, x, y, displayWidth, displayHeight, SWP_SHOWWINDOW);
 	}
 	else
 	{
@@ -510,11 +512,11 @@ HRESULT CD3D9Renderer::AdjustWindowForChange(const int displayWidth, const int d
 		}
 		if (previousWindowState != EWindowState::Windowed)
 		{
-			SetWindowLongPtrW(m_hWnd, GWL_STYLE, windowedStyle);
+			SetWindowLongPtrW(hwnd, GWL_STYLE, windowedStyle);
 		}
 
 		RECT windowRect;
-		GetWindowRect(m_hWnd, &windowRect);
+		GetWindowRect(hwnd, &windowRect);
 
 		const int x = windowRect.left;
 		const int y = windowRect.top;
@@ -525,7 +527,7 @@ HRESULT CD3D9Renderer::AdjustWindowForChange(const int displayWidth, const int d
 
 		const int width = windowRect.right - windowRect.left;
 		const int height = windowRect.bottom - windowRect.top;
-		SetWindowPos(m_hWnd, HWND_NOTOPMOST, x, y, width, height, SWP_SHOWWINDOW);
+		SetWindowPos(hwnd, HWND_NOTOPMOST, x, y, width, height, SWP_SHOWWINDOW);
 	}
 #endif
 
@@ -615,7 +617,7 @@ void CD3D9Renderer::DestroyWindow(void)
 	}
 	if (m_hWnd)
 	{
-		::DestroyWindow(m_hWnd);
+		::DestroyWindow((HWND)m_hWnd);
 		m_hWnd = NULL;
 	}
 	if (m_hIconBig)
@@ -665,10 +667,10 @@ void CD3D9Renderer::RestoreGamma(void)
 
 	m_hWndDesktop = GetDesktopWindow();
 
-	if (HDC dc = GetDC(m_hWndDesktop))
+	if (HDC dc = GetDC((HWND)m_hWndDesktop))
 	{
 		SetDeviceGammaRamp(dc, &orgGamma);
-		ReleaseDC(m_hWndDesktop, dc);
+		ReleaseDC((HWND)m_hWndDesktop, dc);
 	}
 #endif
 }
@@ -683,7 +685,7 @@ void CD3D9Renderer::GetDeviceGamma()
 
 	m_hWndDesktop = GetDesktopWindow();
 
-	if (HDC dc = GetDC(m_hWndDesktop))
+	if (HDC dc = GetDC((HWND)m_hWndDesktop))
 	{
 		g_doGamma = true;
 
@@ -697,7 +699,7 @@ void CD3D9Renderer::GetDeviceGamma()
 			}
 		}
 
-		ReleaseDC(m_hWndDesktop, dc);
+		ReleaseDC((HWND)m_hWndDesktop, dc);
 	}
 #endif
 }
@@ -716,7 +718,7 @@ void CD3D9Renderer::SetDeviceGamma(SGammaRamp* gamma)
 
 	m_hWndDesktop = GetDesktopWindow();  // TODO: DesktopWindow - does not represent actual output window thus gamma affects all desktop monitors !!!
 
-	if (HDC dc = GetDC(m_hWndDesktop))
+	if (HDC dc = GetDC((HWND)m_hWndDesktop))
 	{
 		g_doGamma = true;
 		// INFO!!! - very strange: in the same time
@@ -724,7 +726,7 @@ void CD3D9Renderer::SetDeviceGamma(SGammaRamp* gamma)
 		// SetDeviceGammaRamp -> FALSE but WORKS!!!
 		// at least for desktop window DC... be careful
 		SetDeviceGammaRamp(dc, gamma);
-		ReleaseDC(m_hWndDesktop, dc);
+		ReleaseDC((HWND)m_hWndDesktop, dc);
 	}
 #endif
 }
@@ -963,7 +965,7 @@ LRESULT CALLBACK LowLevelKeyboardProc(INT nCode, WPARAM wParam, LPARAM lParam)
 #endif
 
 #if defined(SUPPORT_DEVICE_INFO)
-HWND CD3D9Renderer::CreateWindowCallback()
+CRY_HWND CD3D9Renderer::CreateWindowCallback()
 {
 	const CRenderDisplayContext* pDC = gcpRendD3D->GetBaseDisplayContext();
 
@@ -1053,7 +1055,7 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 			return false;
 		}
 		m_hWnd = CreateWindowExA(exstyle, wc.lpszClassName, m_WinTitle, style, x, y, width, height, NULL, NULL, wc.hInstance, NULL);
-		ShowWindow(m_hWnd, SW_HIDE);
+		ShowWindow((HWND)m_hWnd, SW_HIDE);
 	}
 	else
 	{
@@ -1101,7 +1103,7 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 			wstring wideTitle = Unicode::Convert<wstring>(m_WinTitle);
 
 			m_hWnd = CreateWindowExW(exstyle, pClassName, wideTitle.c_str(), style, x, y, width, height, NULL, NULL, wc.hInstance, NULL);
-			if (m_hWnd && !IsWindowUnicode(m_hWnd))
+			if (m_hWnd && !IsWindowUnicode((HWND)m_hWnd))
 			{
 				CryFatalError("Expected an UNICODE window for launcher");
 				return false;
@@ -1113,15 +1115,16 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 				SetWindowsHookExW(WH_KEYBOARD_LL, LowLevelKeyboardProc, NULL, 0);
 		}
 
-		if (m_hWnd)
+		HWND hwnd = (HWND)m_hWnd;
+		if (hwnd)
 		{
-			ShowWindow(m_hWnd, SW_SHOWNORMAL);
-			const bool wasFocusSet = SetFocus(m_hWnd) != nullptr;
+			ShowWindow(hwnd, SW_SHOWNORMAL);
+			const bool wasFocusSet = SetFocus(hwnd) != nullptr;
 			CRY_ASSERT(wasFocusSet);
 			// Attempt to move the window to the foreground and activate it
 			// Note that this will fail if the user alt-tabbed away to another application while the engine was starting
 			// See https://msdn.microsoft.com/en-us/library/windows/desktop/ms633539(v=vs.85).aspx
-			SetForegroundWindow(m_hWnd);
+			SetForegroundWindow(hwnd);
 		}
 	}
 #endif
@@ -1131,13 +1134,13 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 
 	// Update base context hWnd and key
 	SDisplayContextKey baseContextKey;
-	baseContextKey.key.emplace<HWND>(m_pBaseDisplayContext->GetWindowHandle());
+	baseContextKey.key.emplace<CRY_HWND>(m_pBaseDisplayContext->GetWindowHandle());
 	m_pBaseDisplayContext->CreateSwapChain(m_hWnd, IsFullscreen(), m_VSync != 0);
 	{
 		AUTO_LOCK(gs_contextLock);
 		m_displayContexts.erase(baseContextKey);
 
-		baseContextKey.key.emplace<HWND>(m_hWnd);
+		baseContextKey.key.emplace<CRY_HWND>(m_hWnd);
 		m_displayContexts.emplace(std::make_pair(std::move(baseContextKey), m_pBaseDisplayContext));
 	}
 
@@ -1167,7 +1170,7 @@ bool CD3D9Renderer::SetWindowIcon(const char* path)
 	{
 		if (m_hWnd)
 		{
-			SendMessage(m_hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIconBig);
+			SendMessage((HWND)m_hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIconBig);
 		}
 		if (m_hIconBig)
 		{
@@ -1185,11 +1188,11 @@ bool CD3D9Renderer::SetWindowIcon(const char* path)
 	{
 		if (m_hWnd)
 		{
-			SendMessage(m_hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIconSmall);
+			SendMessage((HWND)m_hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIconSmall);
 		}
 		if (m_hWnd)
 		{
-			SendMessage(m_hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIconSmall);
+			SendMessage((HWND)m_hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIconSmall);
 		}
 		if (m_hIconSmall)
 		{
@@ -1342,7 +1345,7 @@ static void Command_ColorGradingChartImage(IConsoleCmdArgs* pCmd)
 	}
 }
 
-WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int colorBits, int depthBits, int stencilBits, WIN_HWND Glhwnd, bool bReInit, bool bShaderCacheGen)
+CRY_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int colorBits, int depthBits, int stencilBits, CRY_HWND Glhwnd, bool bReInit, bool bShaderCacheGen)
 {
 	LOADING_TIME_PROFILE_SECTION;
 
@@ -1400,7 +1403,7 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 
 	iLog->Log("Creating window called '%s' (%dx%d)", m_WinTitle, width, height);
 
-	if (Glhwnd == (WIN_HWND)1)
+	if (Glhwnd == (CRY_HWND)1)
 	{
 		Glhwnd = 0;
 		m_bEditor = true;
@@ -2318,7 +2321,7 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11PostCreateDevice(D3DDevice* pd3dDevice)
 
 #if CRY_PLATFORM_WINDOWS
 // Renderer looks for multi-monitor setup changes and fullscreen key combination
-bool CD3D9Renderer::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+bool CD3D9Renderer::HandleMessage(CRY_HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	switch (message)
 	{

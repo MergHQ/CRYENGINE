@@ -7,7 +7,7 @@
 #include <CryCore/Platform/platform.h>
 #include <CryCore/StlUtils.h>
 #include <CryCore/Project/ProjectDefines.h>
-#include <CryString/CryPath.h> // need to include before AK includes windows.h
+#include <CryCore/Platform/CryWindows.h> // need to include before AK includes windows.h
 
 #if CRY_PLATFORM_DURANGO
 	#define PROVIDE_WWISE_IMPL_SECONDARY_POOL
@@ -31,7 +31,7 @@ namespace Wwise
 {
 // Memory Allocation
 #if defined(PROVIDE_WWISE_IMPL_SECONDARY_POOL)
-typedef NCryPoolAlloc::CThreadSafe<NCryPoolAlloc::CBestFit<NCryPoolAlloc::CReferenced<NCryPoolAlloc::CMemoryDynamic, 4* 1024, true>, NCryPoolAlloc::CListItemReference>> MemoryPoolReferenced;
+typedef NCryPoolAlloc::CThreadSafe<NCryPoolAlloc::CBestFit<NCryPoolAlloc::CReferenced<NCryPoolAlloc::CMemoryDynamic, 4 * 1024, true>, NCryPoolAlloc::CListItemReference>> MemoryPoolReferenced;
 
 extern MemoryPoolReferenced g_audioImplMemoryPoolSecondary;
 
@@ -42,7 +42,7 @@ inline void* Secondary_Allocate(size_t const nSize)
 	// and at the beginning the handle is saved.
 
 	/* Allocate in Referenced Secondary Pool */
-	uint32 const allocHandle = g_audioImplMemoryPoolSecondary.Allocate<uint32>(nSize, MEMORY_ALLOCATION_ALIGNMENT);
+	uint32 const allocHandle = g_audioImplMemoryPoolSecondary.Allocate<uint32>(nSize, CRY_MEMORY_ALLOCATION_ALIGNMENT);
 	CRY_ASSERT(allocHandle > 0);
 	void* pAlloc = NULL;
 

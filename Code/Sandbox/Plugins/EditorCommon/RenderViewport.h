@@ -196,7 +196,7 @@ protected:
 	// Draw a selected region if it has been selected
 	void         RenderSelectedRegion(SDisplayContext& context);
 
-	virtual bool CreateRenderContext(HWND hWnd, IRenderer::EViewportType viewportType = IRenderer::EViewportType::eViewportType_Secondary);
+	virtual bool CreateRenderContext(CRY_HWND hWnd, IRenderer::EViewportType viewportType = IRenderer::EViewportType::eViewportType_Secondary);
 	virtual void DestroyRenderContext();
 
 	bool         AdjustObjectPosition(const ray_hit& hit, Vec3& outNormal, Vec3& outPos) const;

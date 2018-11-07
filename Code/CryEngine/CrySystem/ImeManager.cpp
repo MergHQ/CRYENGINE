@@ -56,7 +56,7 @@ bool CImeManager::SetScaleformHandler(IWindowMessageHandler* pHandler)
 
 #if CRY_PLATFORM_WINDOWS
 // Preprocess message
-void CImeManager::PreprocessMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+void CImeManager::PreprocessMessage(CRY_HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	if (m_pScaleformMessageHandler)
 	{
@@ -65,7 +65,7 @@ void CImeManager::PreprocessMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 }
 
 // Handle message
-bool CImeManager::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+bool CImeManager::HandleMessage(CRY_HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	if (m_pScaleformMessageHandler)
 	{

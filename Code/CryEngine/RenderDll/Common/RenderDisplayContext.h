@@ -141,7 +141,7 @@ class CSwapChainBackedRenderDisplayContext : public CRenderDisplayContext
 
 private:
 	// Handle and a pointer to WIN32 window
-	HWND                     m_hWnd = 0;
+	CRY_HWND                 m_hWnd = 0;
 
 	CSwapChain               m_swapChain;
 	DXGIOutput*              m_pOutput = nullptr;
@@ -154,7 +154,7 @@ private:
 	bool                     m_bVSync = false;
 
 private:
-	void                 CreateSwapChain(HWND hWnd, bool isFullscreen, bool vsync);
+	void                 CreateSwapChain(CRY_HWND hWnd, bool isFullscreen, bool vsync);
 	void                 CreateOutput();
 	void                 ShutDown();
 	void                 ReleaseResources() override;
@@ -196,7 +196,7 @@ public:
 	CTexture*            GetPresentedBackBuffer() const override { return m_pBackBufferPresented; }
 	CTexture*            GetStorableColorOutput() override;
 
-	HWND                 GetWindowHandle() const { return m_hWnd; }
+	CRY_HWND             GetWindowHandle() const { return m_hWnd; }
 	//! Gets the resolution of the monitor that this context's window is currently present on
 	RectI                GetCurrentMonitorBounds() const;
 

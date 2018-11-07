@@ -25,8 +25,8 @@ public:
 
 #if CRY_PLATFORM_WINDOWS
 	// IWindowMessageHandler
-	virtual void PreprocessMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-	virtual bool HandleMessage(HWND hWnd, UINT UMsg, WPARAM wParam, LPARAM lParam, LRESULT* pResult);
+	virtual void PreprocessMessage(CRY_HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+	virtual bool HandleMessage(CRY_HWND hWnd, UINT UMsg, WPARAM wParam, LPARAM lParam, LRESULT* pResult);
 	// ~IWindowMessageHandler
 #endif
 

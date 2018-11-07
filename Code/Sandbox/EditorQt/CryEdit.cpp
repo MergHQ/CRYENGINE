@@ -41,6 +41,7 @@
 #include <CrySandbox/IEditorGame.h>
 #include <CrySystem/Testing/CryTest.h>
 #include <CrySystem/Testing/CryTestCommands.h>
+#include <CryString/CryWinStringUtils.h>
 #include <IGameRulesSystem.h>
 
 namespace

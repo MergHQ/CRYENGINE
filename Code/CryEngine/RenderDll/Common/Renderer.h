@@ -811,9 +811,9 @@ public:
 
 	virtual ERenderType GetRenderType() const override;
 
-	virtual WIN_HWND    Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, WIN_HWND Glhwnd = 0, bool bReInit = false, bool bShaderCacheGen = false) override = 0;
+	virtual CRY_HWND    Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, CRY_HWND Glhwnd = 0, bool bReInit = false, bool bShaderCacheGen = false) override = 0;
 
-	virtual WIN_HWND    GetCurrentContextHWND() { return GetHWND(); }
+	virtual CRY_HWND    GetCurrentContextHWND() { return GetHWND(); }
 
 	virtual int         GetFeatures() override { return m_Features; }
 
@@ -1285,7 +1285,7 @@ public:
 		CryModuleMemalignFree(Ptr);
 	}
 
-	virtual WIN_HWND GetHWND() override = 0;
+	virtual CRY_HWND GetHWND() override = 0;
 
 	void             SetTextureAlphaChannelFromRGB(byte* pMemBuffer, int nTexSize);
 

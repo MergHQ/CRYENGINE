@@ -462,7 +462,7 @@ void CGameStartup::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 
 //////////////////////////////////////////////////////////////////////////
 #if CRY_PLATFORM_WINDOWS
-bool CGameStartup::HandleMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam, LRESULT *pResult)
+bool CGameStartup::HandleMessage(CRY_HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam, LRESULT *pResult)
 {
 	switch(msg)
 	{

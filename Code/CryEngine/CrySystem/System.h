@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CrySystem/ISystem.h>
+#include <CryCore/Platform/CryLibrary.h>
 
 #include "MemoryFragmentationProfiler.h"
 #include "PakVars.h"
@@ -376,7 +377,7 @@ public:
 	IZLibCompressor*             GetIZLibCompressor() override      { return m_pIZLibCompressor; }
 	IZLibDecompressor*           GetIZLibDecompressor() override    { return m_pIZLibDecompressor; }
 	ILZ4Decompressor*            GetLZ4Decompressor() override      { return m_pILZ4Decompressor; }
-	WIN_HWND                     GetHWND() override                 { return m_hWnd; }
+	CRY_HWND                     GetHWND() override                 { return m_hWnd; }
 	//////////////////////////////////////////////////////////////////////////
 	// retrieves the perlin noise singleton instance
 	CPNoise3*      GetNoiseGen() override;
@@ -509,18 +510,18 @@ public:
 	virtual bool         UnloadEngineModule(const char* dllName) override;
 
 #if CRY_PLATFORM_WINDOWS
-	friend LRESULT WINAPI WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+	friend LRESULT WINAPI WndProc(CRY_HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 #endif
 	virtual void*         GetRootWindowMessageHandler() override;
 	virtual void          RegisterWindowMessageHandler(IWindowMessageHandler* pHandler) override;
 	virtual void          UnregisterWindowMessageHandler(IWindowMessageHandler* pHandler) override;
-	virtual int           PumpWindowMessage(bool bAll, WIN_HWND hWnd) override;
+	virtual int           PumpWindowMessage(bool bAll, CRY_HWND hWnd) override;
 	virtual bool          IsImeSupported() const override;
 	virtual IImeManager*  GetImeManager() const override { return m_pImeManager; }
 
 	// IWindowMessageHandler
 #if CRY_PLATFORM_WINDOWS
-	virtual bool HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT* pResult);
+	virtual bool HandleMessage(CRY_HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT* pResult);
 #endif
 	// ~IWindowMessageHandler
 
@@ -864,7 +865,7 @@ private: // ------------------------------------------------------
 	ILoadConfigurationEntrySink* m_pCVarsWhitelistConfigSink;
 #endif // defined(CVARS_WHITELIST)
 
-	WIN_HWND m_hWnd = nullptr;
+	CRY_HWND m_hWnd = nullptr;
 
 	// this is the memory statistics that is retained in memory between frames
 	// in which it's not gathered

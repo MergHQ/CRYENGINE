@@ -238,7 +238,7 @@ void CHardwareMouse::ConfineCursor(bool confine)
 		return;
 
 #if CRY_PLATFORM_WINDOWS
-	HWND hWnd = GetConfinedWindowHandle();
+	HWND hWnd = (HWND)GetConfinedWindowHandle();
 	if (hWnd)
 	{
 		RECT rcClient;
@@ -518,17 +518,17 @@ void CHardwareMouse::RemoveListener(IHardwareMouseEventListener* pHardwareMouseE
 
 //-----------------------------------------------------------------------------------------------------
 
-void CHardwareMouse::SetConfinedWnd(HWND wnd)
+void CHardwareMouse::SetConfinedWnd(CRY_HWND wnd)
 {
 	m_confinedWnd = wnd;
 }
 
 //-----------------------------------------------------------------------------------------------------
 
-HWND CHardwareMouse::GetConfinedWindowHandle() const
+CRY_HWND CHardwareMouse::GetConfinedWindowHandle() const
 {
 	if (m_confinedWnd == nullptr)
-		return (HWND) gEnv->pRenderer->GetHWND();
+		return gEnv->pRenderer->GetHWND();
 	else
 		return m_confinedWnd;
 }
@@ -602,7 +602,7 @@ void CHardwareMouse::SetHardwareMousePosition(float fX, float fY)
 #if CRY_PLATFORM_WINDOWS
 	if (gEnv->pRenderer)
 	{
-		HWND hWnd = GetConfinedWindowHandle();
+		HWND hWnd =(HWND)GetConfinedWindowHandle();
 		if (hWnd == ::GetFocus() && m_allowConfine)
 		{
 			// Move cursor position only if our window is focused.
@@ -647,7 +647,7 @@ void CHardwareMouse::GetHardwareMouseClientPosition(float* pfX, float* pfY)
 	if (gEnv == NULL || gEnv->pRenderer == NULL)
 		return;
 
-	HWND hWnd = GetConfinedWindowHandle();
+	HWND hWnd = (HWND)GetConfinedWindowHandle();
 	CRY_ASSERT_MESSAGE(hWnd, "Impossible to get client coordinates from a non existing window!");
 
 	if (hWnd)
@@ -674,7 +674,7 @@ void CHardwareMouse::GetHardwareMouseClientPosition(float* pfX, float* pfY)
 void CHardwareMouse::SetHardwareMouseClientPosition(float fX, float fY)
 {
 #if CRY_PLATFORM_WINDOWS
-	HWND hWnd = GetConfinedWindowHandle();
+	HWND hWnd = (HWND)GetConfinedWindowHandle();
 	CRY_ASSERT_MESSAGE(hWnd, "Impossible to set position of the mouse relative to client coordinates from a non existing window!");
 
 	if (hWnd)

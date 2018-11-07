@@ -5,7 +5,7 @@
 #include "resource.h"
 #include <CryCore/Platform/CryLibrary.h>
 #include <CrySystem/IConsole.h>
-
+#include <CryString/CryWinStringUtils.h>
 #include <CryCore/Platform/CryWindows.h>
 #include <ShellAPI.h> // requires <windows.h>
 

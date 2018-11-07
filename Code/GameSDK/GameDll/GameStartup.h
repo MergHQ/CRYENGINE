@@ -39,7 +39,7 @@ private:
 	static void FullScreenCVarChanged(ICVar* pVar);
 
 #if CRY_PLATFORM_WINDOWS
-	bool HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT* pResult);
+	bool HandleMessage(CRY_HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT* pResult);
 #endif
 
 	IGame*                   m_pGame;

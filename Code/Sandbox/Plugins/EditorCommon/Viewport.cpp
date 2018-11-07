@@ -934,12 +934,9 @@ bool CViewport::IsWindowVisible() const
 	//return !region.isEmpty();
 }
 
-HWND CViewport::GetSafeHwnd() const
+CRY_HWND CViewport::GetSafeHwnd() const
 {
-	//QWindow *window = m_viewWidget->windowHandle();
-	//HWND h = static_cast<HWND>(QGuiApplication::platformNativeInterface()->nativeResourceForWindow("handle", window));
-	HWND h = (HWND)m_viewWidget->winId();
-	return h;
+	return (CRY_HWND)m_viewWidget->winId();
 }
 
 CWnd* CViewport::GetCWnd() const

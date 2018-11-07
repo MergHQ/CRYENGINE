@@ -84,7 +84,7 @@ void GImeHelper::SetImeFocus(GFxMovieView* pMovie, bool bSet)
 
 	#if CRY_PLATFORM_WINDOWS
 // Implement IWindowMessageHandler::PreprocessMessage
-void GImeHelper::PreprocessMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+void GImeHelper::PreprocessMessage(CRY_HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	if (uMsg == WM_KEYDOWN || uMsg == WM_KEYUP || ImmIsUIMessageW(NULL, uMsg, wParam, lParam) == TRUE)
 	{
@@ -94,7 +94,7 @@ void GImeHelper::PreprocessMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 }
 
 // Implement IWindowMessageHandler::HandleMessage
-bool GImeHelper::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+bool GImeHelper::HandleMessage(CRY_HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	// Find out if this needs IME handling
 	switch (uMsg)
@@ -102,7 +102,7 @@ bool GImeHelper::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 	case WM_IME_SETCONTEXT:
 		// This is a special case, Scaleform wants to set lParam to 0 for this, and then forward it to the OS
 		// We manually forward, and then indicate that the message is handled already, since we can't modify lParam here
-		DefWindowProcW(hWnd, uMsg, wParam, 0);
+		DefWindowProcW((HWND)hWnd, uMsg, wParam, 0);
 		*pResult = 0;
 		return true;
 	case WM_IME_STARTCOMPOSITION:

@@ -105,7 +105,7 @@ void CD3D9Renderer::InitRenderer()
 	m_pBaseDisplayContext = std::make_shared<CSwapChainBackedRenderDisplayContext>(IRenderer::SDisplayContextDescription{}, "Base-SwapShain", m_uniqueDisplayContextId++);
 	{
 		SDisplayContextKey baseContextKey;
-		baseContextKey.key.emplace<HWND>(m_pBaseDisplayContext->GetWindowHandle());
+		baseContextKey.key.emplace<CRY_HWND>(m_pBaseDisplayContext->GetWindowHandle());
 		m_displayContexts.emplace(std::make_pair(std::move(baseContextKey), m_pBaseDisplayContext));
 	}
 
@@ -604,7 +604,7 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 		// Match monitor resolution in borderless full screen mode
 		if (m_windowState == EWindowState::BorderlessFullscreen)
 		{
-			HMONITOR hMonitor = MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTONEAREST);
+			HMONITOR hMonitor = MonitorFromWindow((HWND)m_hWnd, MONITOR_DEFAULTTONEAREST);
 			MONITORINFO monitorInfo;
 			monitorInfo.cbSize = sizeof(monitorInfo);
 			GetMonitorInfo(hMonitor, &monitorInfo);
@@ -2522,7 +2522,7 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 	if (GetS3DRend().IsStereoEnabled())
 	{
 		SDisplayContextKey displayContextKey;
-		displayContextKey.key.emplace<HWND>(pDC->GetWindowHandle());
+		displayContextKey.key.emplace<CRY_HWND>(pDC->GetWindowHandle());
 		gEnv->pRenderer->GetIRenderAuxGeom(/*eType*/)->SetCurrentDisplayContext(displayContextKey);
 	}
 

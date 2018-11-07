@@ -254,7 +254,7 @@ void C2DViewport::OnPaint()
 	m_bContentValid = false;
 }
 
-bool C2DViewport::CreateRenderContext(HWND hWnd)
+bool C2DViewport::CreateRenderContext(CRY_HWND hWnd)
 {
 	Vec3 clCol = CMFCUtils::Rgb2Vec(m_colorBackground);
 
