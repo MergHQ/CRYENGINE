@@ -442,6 +442,8 @@ public:
 	bool                               GetAgentTypeProperties(const NavigationAgentTypeID agentTypeID, AgentType& agentTypeProperties) const;
 
 	virtual MNM::AreaAnnotation        GetAreaTypeAnnotation(const NavigationAreaTypeID areaTypeID) const override;
+	virtual void                       SetGlobalFilterFlags(const MNM::AreaAnnotation::value_type includeFlags, const MNM::AreaAnnotation::value_type excludeFlags) override;
+	virtual void                       GetGlobalFilterFlags(MNM::AreaAnnotation::value_type& includeFlags, MNM::AreaAnnotation::value_type& excludeFlags) const override;
 
 	virtual const MNM::IAnnotationsLibrary& GetAnnotationLibrary() const override { return m_annotationsLibrary; }
 	const MNM::CAnnotationsLibrary&         GetAnnotations()     { return m_annotationsLibrary; }

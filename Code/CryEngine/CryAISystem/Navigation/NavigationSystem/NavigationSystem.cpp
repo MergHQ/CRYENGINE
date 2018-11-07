@@ -163,6 +163,9 @@ NavigationSystem::NavigationSystem(const char* configName)
 
 	ReloadConfig();
 
+	MNM::DefaultQueryFilters::g_globalFilter.excludeFlags |= m_annotationsLibrary.GetInaccessibleAreaFlag().value;
+	MNM::DefaultQueryFilters::g_globalFilterVirtual.excludeFlags |= m_annotationsLibrary.GetInaccessibleAreaFlag().value;
+
 	m_pEditorBackgroundUpdate = new NavigationSystemBackgroundUpdate(*this);
 
 #ifdef NAVIGATION_SYSTEM_CONSOLE_AUTOCOMPLETE
@@ -281,6 +284,21 @@ MNM::AreaAnnotation NavigationSystem::GetAreaTypeAnnotation(const NavigationArea
 	annotation.SetType(pAreaType->id);
 	annotation.SetFlags(pAreaType->defaultFlags);
 	return annotation;
+}
+
+void NavigationSystem::SetGlobalFilterFlags(const MNM::AreaAnnotation::value_type includeFlags, const MNM::AreaAnnotation::value_type excludeFlags)
+{
+	MNM::DefaultQueryFilters::g_globalFilter.includeFlags = includeFlags;
+	MNM::DefaultQueryFilters::g_globalFilter.excludeFlags = excludeFlags;
+
+	MNM::DefaultQueryFilters::g_globalFilterVirtual.includeFlags = includeFlags;
+	MNM::DefaultQueryFilters::g_globalFilterVirtual.excludeFlags = excludeFlags;
+}
+
+void NavigationSystem::GetGlobalFilterFlags(MNM::AreaAnnotation::value_type& includeFlags, MNM::AreaAnnotation::value_type& excludeFlags) const
+{
+	includeFlags = MNM::DefaultQueryFilters::g_globalFilter.includeFlags;
+	excludeFlags = MNM::DefaultQueryFilters::g_globalFilter.excludeFlags;
 }
 
 #ifdef SW_NAVMESH_USE_GUID

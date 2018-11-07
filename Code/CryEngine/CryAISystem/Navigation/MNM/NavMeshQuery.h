@@ -19,20 +19,31 @@ namespace MNM
 
 namespace DefaultQueryFilters
 {
-	//! Filter for QueryTriangles, which accepts all triangles.
+	//! Global filter for QueryTriangles that is used when no user filter is provided.
 	//! Note, that the signature of PassFilter(), GetCostMultiplier() and GetCost() functions is same as in INavMeshQueryFilter, but it's not virtual.
 	//! This way, templated implementation functions can avoid unnecessary checks and virtual calls.
-	struct SAcceptAllQueryTrianglesFilterCheap
+	struct SQueryTrianglesFilterGlobal
 	{
-		inline bool PassFilter(const Tile::STriangle&) const { return true; }
+		SQueryTrianglesFilterGlobal()
+			: includeFlags(-1)
+			, excludeFlags(0)
+		{}
+		
+		inline bool PassFilter(const Tile::STriangle& triangle) const
+		{
+			return (triangle.areaAnnotation.GetFlags() & includeFlags) && !(triangle.areaAnnotation.GetFlags() & excludeFlags);
+		}
 		inline float GetCostMultiplier(const MNM::Tile::STriangle& triangle) const { return 1.0f; }
+
+		MNM::AreaAnnotation::value_type includeFlags;
+		MNM::AreaAnnotation::value_type excludeFlags;
 	};
 	
 	// Use this one for functions that expect a templated filter type
-	extern const SAcceptAllQueryTrianglesFilterCheap g_acceptAllTrianglesCheap;
+	extern SQueryTrianglesFilterGlobal g_globalFilter;
 
 	// Use this one for functions that expect a INavMeshQueryFilter type
-	extern const SAcceptAllQueryTrianglesFilter g_acceptAllTriangles;
+	extern SNavMeshQueryFilterDefault g_globalFilterVirtual;
 }
 
 SERIALIZATION_ENUM_BEGIN_NESTED2(INavMeshQuery, SNavMeshQueryConfig, EOverlappingMode, "EOverlappingMode")

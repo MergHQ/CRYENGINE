@@ -146,6 +146,18 @@ struct INavigationSystem
 	virtual const MNM::IAnnotationsLibrary& GetAnnotationLibrary() const = 0;
 	virtual MNM::AreaAnnotation             GetAreaTypeAnnotation(const NavigationAreaTypeID areaTypeID) const = 0;
 
+	//! Sets include and exclude flags of global NavMesh filter.
+	//! Global filter is used when no filter is passed to Navigation system functions
+	//! \param includeFlags Mask of navigation area flags, at least one of whose must be set in triangle to be accepted by the filter.
+	//! \param excludeFlags Mask of navigation area flags, none of whose must be set in triangle to be accepted by the filter.
+	virtual void                            SetGlobalFilterFlags(const MNM::AreaAnnotation::value_type includeFlags, const MNM::AreaAnnotation::value_type excludeFlags) = 0;
+	
+	//! Get include and exclude flags of global NavMesh filter.
+	//! Global filter is used when no filter is passed to Navigation system functions
+	//! \param includeFlags Reference to mask of navigation area flags, at least one of whose must be set in triangle to be accepted by the filter.
+	//! \param excludeFlags Reference to mask of navigation area flags, none of whose must be set in triangle to be accepted by the filter.
+	virtual void                            GetGlobalFilterFlags(MNM::AreaAnnotation::value_type& includeFlags, MNM::AreaAnnotation::value_type& excludeFlags) const = 0;
+
 	virtual MNM::INavMeshQueryManager*      GetNavMeshQueryManager() = 0;
 
 #ifdef SW_NAVMESH_USE_GUID

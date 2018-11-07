@@ -335,7 +335,7 @@ INavigationSystem::NavMeshBorderWithNormalArray CNavMesh::QueryMeshBorders(const
 		pQueryFilter
 	);
 
-	CGetMeshBordersQueryProcessing queryProcessing(m_meshId, pAnnotationFilter ? *pAnnotationFilter : DefaultQueryFilters::g_acceptAllTriangles);
+	CGetMeshBordersQueryProcessing queryProcessing(m_meshId, pAnnotationFilter ? *pAnnotationFilter : DefaultQueryFilters::g_globalFilterVirtual);
 	GetAISystem()->GetNavigationSystem()->GetNavMeshQueryManager()->RunInstantQuery(config, queryProcessing);
 	return std::move(queryProcessing.GetBordersNormals());
 }
@@ -674,7 +674,7 @@ CNavMesh::EWayQueryResult CNavMesh::FindWay(SWayQueryRequest& inputRequest, SWay
 	}
 	else
 	{
-		return FindWayInternal(inputRequest, workingSet, DefaultQueryFilters::g_acceptAllTrianglesCheap, result);
+		return FindWayInternal(inputRequest, workingSet, DefaultQueryFilters::g_globalFilter, result);
 	}
 }
 
@@ -1209,7 +1209,7 @@ MNM::ERayCastResult CNavMesh::RayCast(const vector3_t& fromLocalPosition, Triang
 		}
 		else
 		{
-			return RayCast_v3(fromLocalPosition, fromTri, toLocalPosition, toTri, DefaultQueryFilters::g_acceptAllTrianglesCheap, raycastRequest);
+			return RayCast_v3(fromLocalPosition, fromTri, toLocalPosition, toTri, DefaultQueryFilters::g_globalFilter, raycastRequest);
 		}
 	}
 	}
