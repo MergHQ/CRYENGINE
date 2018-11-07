@@ -585,6 +585,8 @@ typedef unsigned char          uchar;
 typedef unsigned int           uint;
 typedef const char*            cstr;
 
+#define CRY_MEMORY_ALLOCATION_ALIGNMENT 16
+
 //! Align function works on integer or pointer values. Only supports power-of-two alignment.
 template<typename T>
 ILINE T Align(T nData, size_t nAlign)

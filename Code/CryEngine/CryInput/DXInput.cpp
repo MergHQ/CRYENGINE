@@ -41,7 +41,7 @@
 
 CDXInput* CDXInput::This = 0;
 
-CDXInput::CDXInput(ISystem* pSystem, HWND hwnd) : CBaseInput()
+CDXInput::CDXInput(ISystem* pSystem, CRY_HWND hwnd) : CBaseInput()
 {
 	assert(!This && "CDXInput has been instantiated more than once");
 
@@ -159,7 +159,7 @@ int CDXInput::ShowCursor(const bool bShow)
 	return ::ShowCursor(bShow);
 }
 
-bool CDXInput::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+bool CDXInput::HandleMessage(CRY_HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	// Check for text input character
 	// Note: Text input is separate from "normal" input through CryInput

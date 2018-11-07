@@ -11,6 +11,7 @@
 #ifndef _ITEXTURE_H_
 #define _ITEXTURE_H_
 
+#include <CryCore/CryEnumMacro.h>
 #include <CryMath/Cry_Math.h>
 #include <CryMath/Cry_Color.h>
 #include "Tarray.h"
@@ -168,7 +169,7 @@ enum ETextureFlags : uint32
 	FT_USAGE_UAV_RWTEXTURE     = BIT32(31), // R: enable RW usage for the UAV, otherwise UAVs are write-only (see FT_USAGE_UNORDERED_ACCESS)
 };
 
-DEFINE_ENUM_FLAG_OPERATORS(ETextureFlags);
+CRY_CREATE_ENUM_FLAG_OPERATORS(ETextureFlags);
 
 //////////////////////////////////////////////////////////////////////
 enum class EFilterPreset : uint8

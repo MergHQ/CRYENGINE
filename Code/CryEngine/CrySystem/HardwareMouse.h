@@ -49,7 +49,7 @@ public:
 	virtual bool                         SetExclusiveEventListener(IHardwareMouseEventListener* pExclusiveEventListener);
 	virtual void                         RemoveExclusiveEventListener(IHardwareMouseEventListener* pExclusiveEventListener);
 	virtual IHardwareMouseEventListener* GetCurrentExclusiveEventListener() { return m_pExclusiveEventListener; }
-	virtual void                         SetConfinedWnd(HWND wnd);
+	virtual void                         SetConfinedWnd(CRY_HWND wnd);
 	virtual void                         SetGameMode(bool bGameMode);
 	virtual void                         IncrementCounter();
 	virtual void                         DecrementCounter();
@@ -84,7 +84,7 @@ private:
 	void        EvaluateCursorConfinement();
 	//! respond to focus-in, focus-out events
 	void        HandleFocusEvent(bool bFocus);
-	HWND        GetConfinedWindowHandle() const;
+	CRY_HWND    GetConfinedWindowHandle() const;
 
 	typedef std::list<IHardwareMouseEventListener*> TListHardwareMouseEventListeners;
 	TListHardwareMouseEventListeners m_listHardwareMouseEventListeners;
@@ -102,7 +102,7 @@ private:
 	string     m_curCursorPath;
 	bool       m_shouldUseSystemCursor;
 	bool       m_usingSystemCursor;
-	HWND       m_confinedWnd;
+	CRY_HWND   m_confinedWnd;
 
 #if CRY_PLATFORM_WINDOWS
 	HCURSOR    m_hCursor;

@@ -546,7 +546,7 @@ void CModelViewport::OnRender(SDisplayContext& context)
 	if (m_renderer)
 	{
 		SDisplayContextKey displayContextKey;
-		displayContextKey.key.emplace<HWND>(static_cast<HWND>(GetSafeHwnd()));
+		displayContextKey.key.emplace<CRY_HWND>(static_cast<CRY_HWND>(GetSafeHwnd()));
 
 		CRect rcClient;
 		GetClientRect(&rcClient);

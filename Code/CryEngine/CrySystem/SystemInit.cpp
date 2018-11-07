@@ -1364,9 +1364,9 @@ bool CSystem::InitRenderer(SSystemInitParams& startupParams)
 	if (m_env.pRenderer)
 	{
 #ifndef RELEASE
-		const WIN_HWND hwnd = (startupParams.bEditor) ? (WIN_HWND)1 : m_hWnd;
+		const CRY_HWND hwnd = (startupParams.bEditor) ? (CRY_HWND)1 : m_hWnd;
 #else
-		const WIN_HWND hwnd = m_hWnd;
+		const CRY_HWND hwnd = m_hWnd;
 #endif
 
 		int width = m_rWidth->GetIVal();
@@ -2720,7 +2720,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 	QueryVersionInfo();
 	DetectGameFolderAccessRights();
 
-	m_hWnd = (WIN_HWND)startupParams.hWnd;
+	m_hWnd = (CRY_HWND)startupParams.hWnd;
 
 	m_binariesDir = startupParams.szBinariesDir;
 	

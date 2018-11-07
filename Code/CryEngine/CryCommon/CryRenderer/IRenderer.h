@@ -57,7 +57,7 @@ struct ICaptureFrameListener
 
 // Forward declarations.
 //////////////////////////////////////////////////////////////////////
-typedef void* WIN_HWND;
+typedef void* CRY_HWND;
 typedef void* WIN_HINSTANCE;
 typedef void* WIN_HDC;
 typedef void* WIN_HGLRC;
@@ -878,15 +878,15 @@ struct SDisplayContextKey
 		bool operator!=(const SInvalidKey&) const { return false; }
 	};
 
-	CryVariant<SInvalidKey, uint32_t, HWND> key;
+	CryVariant<SInvalidKey, uint32_t, CRY_HWND> key;
 	bool operator<(const SDisplayContextKey &o) const { return key < o.key; }
 	bool operator==(const SDisplayContextKey &o) const { return key == o.key; }
 	bool operator!=(const SDisplayContextKey &o) const { return !(*this == o); }
 
 	bool operator==(const uint32_t &o) const { return key == o; }
 	bool operator!=(const uint32_t &o) const { return !(*this == o); }
-	bool operator==(const HWND &o) const { return key == o; }
-	bool operator!=(const HWND &o) const { return !(*this == o); }
+	bool operator==(const CRY_HWND &o) const { return key == o; }
+	bool operator!=(const CRY_HWND &o) const { return !(*this == o); }
 };
 
 //! \cond INTERNAL
@@ -940,7 +940,7 @@ struct IRenderer//: public IRendererCallbackServer
 
 	struct SDisplayContextDescription
 	{
-		HWND handle  = 0; // WIN_HWND
+		CRY_HWND handle  = 0;
 
 		ColorF clearColor               = Clr_Empty;
 		ColorF clearDepthStencil        = Clr_FarPlane_Rev;
@@ -960,7 +960,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual ERenderType GetRenderType() const = 0;
 
 	//! Initializes the renderer, parameters are self-explanatory.
-	virtual WIN_HWND Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, WIN_HWND Glhwnd = 0, bool bReInit = false, bool bShaderCacheGen = false) = 0;
+	virtual CRY_HWND Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, CRY_HWND Glhwnd = 0, bool bReInit = false, bool bShaderCacheGen = false) = 0;
 	virtual void     PostInit() = 0;
 
 	//! Start active rendering of the intro movies while initializing the rest of the engine.
@@ -1476,7 +1476,7 @@ struct IRenderer//: public IRendererCallbackServer
 	//! Resume renderer that was stopped at the end of the frame with StopRendererAtFrameEnd().
 	virtual void     ResumeRendererFromFrameEnd() = 0;
 
-	virtual WIN_HWND GetHWND() = 0;
+	virtual CRY_HWND GetHWND() = 0;
 
 	//! Set the window icon to be displayed on the output window.
 	//! The parameter is the path to a DDS texture file to be used as the icon.

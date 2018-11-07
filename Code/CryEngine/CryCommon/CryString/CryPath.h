@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <CryCore/Platform/CryWindows.h>
 #include <CryString/CryString.h>
 #include <CryString/CryFixedString.h>
 #include <algorithm>

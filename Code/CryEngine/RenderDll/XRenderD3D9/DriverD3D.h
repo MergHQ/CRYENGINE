@@ -230,7 +230,7 @@ public:
 	bool                             IsFullscreen()           { return m_windowState == EWindowState::Fullscreen; }
 
 #if defined(SUPPORT_DEVICE_INFO)
-	static HWND CreateWindowCallback();
+	static CRY_HWND CreateWindowCallback();
 	DeviceInfo& DevInfo() { return m_devInfo; }
 #endif
 
@@ -298,7 +298,7 @@ public:
 
 	//===============================================================================
 
-	virtual WIN_HWND Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, WIN_HWND Glhwnd = 0, bool bReInit = false, bool bShaderCacheGen = false) override;
+	virtual CRY_HWND Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, CRY_HWND Glhwnd = 0, bool bReInit = false, bool bShaderCacheGen = false) override;
 
 	virtual void     GetVideoMemoryUsageStats(size_t& vidMemUsedThisFrame, size_t& vidMemUsedRecently, bool bGetPoolsSizes = false) override;
 
@@ -312,7 +312,7 @@ public:
 	// Returns a pair with a success flag, and the previous active context key.
 	// In case of failure the key is the current active context key.
 	std::pair<bool, SDisplayContextKey>   SetCurrentContext(const SDisplayContextKey& key) threadsafe;
-	virtual WIN_HWND                      GetCurrentContextHWND() override;
+	virtual CRY_HWND                      GetCurrentContextHWND() override;
 
 	uint32_t                   GenerateUniqueContextId() { return m_uniqueDisplayContextId++; }
 	SDisplayContextKey         AddCustomContext(const CRenderDisplayContextPtr &context) threadsafe;
@@ -626,7 +626,7 @@ public:
 	virtual void     EF_EndEf3D(const int nPrecacheUpdateId, const int nNearPrecacheUpdateId, const SRenderingPassInfo& passInfo) override;
 	virtual void     EF_EndEf2D(const bool bSort) override; // 2d only
 
-	virtual WIN_HWND GetHWND() override { return m_hWnd; }
+	virtual CRY_HWND GetHWND() override { return m_hWnd; }
 	virtual bool     SetWindowIcon(const char* path) override;
 	static void      SetWindowIconCVar(ICVar* pVar);
 
@@ -725,7 +725,7 @@ private:
 #if CRY_PLATFORM_WINDOWS
 public:
 	// Called to inspect window messages sent to this renderer's windows
-	virtual bool HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, LRESULT* pResult) override;
+	virtual bool HandleMessage(CRY_HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, LRESULT* pResult) override;
 #endif
 
 public:
@@ -830,14 +830,14 @@ private:
 	bool m_bInitialized = false;
 
 	// Windows context
-	char    m_WinTitle[80];
-	HWND    m_hWnd;                 // The main app window
-	HWND    m_hWndDesktop;          // The desktop window
+	char      m_WinTitle[80];
+	CRY_HWND  m_hWnd;                 // The main app window
+	CRY_HWND  m_hWndDesktop;          // The desktop window
 #if CRY_PLATFORM_WINDOWS
-	HICON   m_hIconBig;             // Icon currently being used on the taskbar
-	HICON   m_hIconSmall;           // Icon currently being used on the window
-	HCURSOR m_hCursor;              // Cursor currently being used on the window
-	string  m_iconPath;             // Path to the icon currently loaded
+	HICON     m_hIconBig;             // Icon currently being used on the taskbar
+	HICON     m_hIconSmall;           // Icon currently being used on the window
+	HCURSOR   m_hCursor;              // Cursor currently being used on the window
+	string    m_iconPath;             // Path to the icon currently loaded
 #endif
 
 	uint32                           m_uLastBlendFlagsPassGroup;

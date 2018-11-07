@@ -224,7 +224,7 @@ bool BucketAllocator<TraitsT >::Refill(uint8 bucket)
 	#ifdef BUCKET_ALLOCATOR_PACK_SMALL_SIZES
 	UINT_PTR alignmentMask = 0;
 	#else
-	UINT_PTR alignmentMask = MEMORY_ALLOCATION_ALIGNMENT - 1;
+	UINT_PTR alignmentMask = CRY_MEMORY_ALLOCATION_ALIGNMENT - 1;
 	#endif
 
 	if ((SmallBlockLength % itemSize) == 0)

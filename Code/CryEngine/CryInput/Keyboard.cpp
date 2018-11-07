@@ -104,7 +104,7 @@ bool CKeyboard::SetExclusiveMode(bool value)
 	if (value)
 	{
 		m_baseflags = DISCL_EXCLUSIVE | DISCL_FOREGROUND;
-		hr = GetDirectInputDevice()->SetCooperativeLevel(GetDXInput().GetHWnd(), GetDeviceFlags());
+		hr = GetDirectInputDevice()->SetCooperativeLevel((HWND)GetDXInput().GetHWnd(), GetDeviceFlags());
 
 		if (FAILED(hr))
 		{
@@ -115,7 +115,7 @@ bool CKeyboard::SetExclusiveMode(bool value)
 	else
 	{
 		m_baseflags = DISCL_NONEXCLUSIVE | DISCL_FOREGROUND;
-		hr = GetDirectInputDevice()->SetCooperativeLevel(GetDXInput().GetHWnd(), GetDeviceFlags());
+		hr = GetDirectInputDevice()->SetCooperativeLevel((HWND)GetDXInput().GetHWnd(), GetDeviceFlags());
 		if (FAILED(hr))
 		{
 			gEnv->pLog->LogToFile("Cannot Set Keyboard Non-Exclusive Mode\n");
@@ -134,7 +134,7 @@ void CKeyboard::ChangeDisableWinKeys(ICVar* pVar)
 	Unacquire();
 	s_disableWinKeys = pVar->GetIVal();
 	HRESULT hr;
-	hr = GetDirectInputDevice()->SetCooperativeLevel(GetDXInput().GetHWnd(), GetDeviceFlags());
+	hr = GetDirectInputDevice()->SetCooperativeLevel((HWND)GetDXInput().GetHWnd(), GetDeviceFlags());
 	if (FAILED(hr))
 	{
 		gEnv->pLog->LogToFile("Error changing enabled state of windows keys\n");

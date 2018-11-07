@@ -464,7 +464,7 @@ void CRenderViewport::Update()
 		// Render
 		if (!m_bRenderContextCreated)
 		{
-			HWND hWnd = GetSafeHwnd();
+			CRY_HWND hWnd = GetSafeHwnd();
 			if (!CreateRenderContext(hWnd))
 				return;
 		}
@@ -1569,7 +1569,7 @@ void CRenderViewport::GetResolution(int& x, int& y)
 	y = m_currentResolution.height;
 }
 
-bool CRenderViewport::CreateRenderContext(HWND hWnd, IRenderer::EViewportType viewportType)
+bool CRenderViewport::CreateRenderContext(CRY_HWND hWnd, IRenderer::EViewportType viewportType)
 {
 	// Create context.
 	if (hWnd && m_renderer && !m_bRenderContextCreated)

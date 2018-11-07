@@ -76,7 +76,7 @@ DXGI_FORMAT CSwapChain::GetSwapChainFormat()
 }
 
 #if !CRY_PLATFORM_DURANGO && !CRY_RENDERER_GNM
-CSwapChain CSwapChain::CreateSwapChain(HWND hWnd, DXGIOutput* pOutput, uint32_t width, uint32_t height, bool isMainContext, bool isFullscreen, bool vsync)
+CSwapChain CSwapChain::CreateSwapChain(CRY_HWND hWnd, DXGIOutput* pOutput, uint32_t width, uint32_t height, bool isMainContext, bool isFullscreen, bool vsync)
 {
 	IDXGISwapChain* piSwapChain = nullptr;
 	DXGI_SWAP_CHAIN_DESC scDesc;
@@ -94,7 +94,7 @@ CSwapChain CSwapChain::CreateSwapChain(HWND hWnd, DXGIOutput* pOutput, uint32_t 
 
 	scDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_SHADER_INPUT;
 	scDesc.BufferCount = CRenderer::CV_r_MaxFrameLatency + 1;
-	scDesc.OutputWindow = hWnd;
+	scDesc.OutputWindow = (HWND)hWnd;
 
 	// Always create a swapchain for windowed mode as per Microsoft recommendations here: https://msdn.microsoft.com/en-us/library/windows/desktop/bb174579(v=vs.85).aspx
 	// Specifically: "We recommend that you create a windowed swap chain and allow the end user to change the swap chain to full screen through SetFullscreenState; that is, do not set the Windowed member of DXGI_SWAP_CHAIN_DESC to FALSE to force the swap chain to be full screen."

@@ -216,7 +216,7 @@ void CryGFxTextClipboard::OnTextStore(const wchar_t* szText, UPInt length)
 }
 
 #if CRY_PLATFORM_WINDOWS
-bool CryGFxTextClipboard::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+bool CryGFxTextClipboard::HandleMessage(CRY_HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	if (uMsg == WM_CLIPBOARDUPDATE)
 	{

@@ -47,7 +47,7 @@ public:
 		: m_path(szPath)
 		, m_size(0)
 		, m_useCount(0)
-		, m_memoryBlockAlignment(MEMORY_ALLOCATION_ALIGNMENT)
+		, m_memoryBlockAlignment(CRY_MEMORY_ALLOCATION_ALIGNMENT)
 		, m_flags(EFileFlags::NotFound)
 		, m_dataScope(EDataScope::All)
 		, m_streamTaskType(eStreamTaskTypeCount)

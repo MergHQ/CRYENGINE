@@ -8,6 +8,7 @@
 #include "IValidator.h"
 #include "ILog.h"
 #include <memory>
+#include <CryCore/CryEnumMacro.h>
 
 #ifdef CRYSYSTEM_EXPORTS
 	#define CRYSYSTEM_API DLL_EXPORT
@@ -175,7 +176,7 @@ struct IMiniGUI;
 }
 
 typedef CryGUID CryInterfaceID;
-typedef void*   WIN_HWND;
+typedef void* CRY_HWND;
 
 #define PROC_MENU     1
 #define PROC_3DENGINE 2
@@ -758,7 +759,7 @@ enum class ELoadConfigurationFlags : uint32
 	None                          = 0,
 	SuppressConfigNotFoundWarning = BIT(0)
 };
-DEFINE_ENUM_FLAG_OPERATORS(ELoadConfigurationFlags);
+CRY_CREATE_ENUM_FLAG_OPERATORS(ELoadConfigurationFlags);
 
 struct SPlatformInfo
 {
@@ -782,7 +783,7 @@ struct SPlatformInfo
 
 	struct SWinInfo
 	{
-		char        path[MAX_PATH];
+		char        path[_MAX_PATH];
 		EWinVersion ver;
 		uint32_t    build;
 		bool        is64Bit;
@@ -1336,7 +1337,7 @@ struct ISystem
 	virtual ISystemEventDispatcher*            GetISystemEventDispatcher() = 0;
 	virtual IFileChangeMonitor*                GetIFileChangeMonitor() = 0;
 
-	virtual WIN_HWND                           GetHWND() = 0;
+	virtual CRY_HWND                           GetHWND() = 0;
 
 	virtual INetwork*                          GetINetwork() = 0;
 	virtual IRenderer*                         GetIRenderer() = 0;
@@ -1672,7 +1673,7 @@ struct ISystem
 	//! If hWnd is not NULL, only messages for the given window are processed (ignored on non-windows platforms)
 	//! Returns the number of messages pumped, or -1 if the OS indicated the application should quit
 	//! Note: Calling GetMessage or PeekMessage yourself will skip the pre-process handling required for IME support
-	virtual int PumpWindowMessage(bool bAll, WIN_HWND hWnd = 0) = 0;
+	virtual int PumpWindowMessage(bool bAll, CRY_HWND hWnd = 0) = 0;
 
 	//! Check if IME is supported on the current platform
 	//! Note: This flag depends on compile-time settings, it cannot be enabled or disabled at runtime

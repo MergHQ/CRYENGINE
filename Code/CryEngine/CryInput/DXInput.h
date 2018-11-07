@@ -36,7 +36,7 @@ class CKeyboard;
 class CDXInput : public CBaseInput, public IWindowMessageHandler
 {
 public:
-	CDXInput(ISystem* pSystem, HWND hwnd);
+	CDXInput(ISystem* pSystem, CRY_HWND hwnd);
 	virtual ~CDXInput();
 
 	// IInput overrides
@@ -48,16 +48,16 @@ public:
 	virtual int  ShowCursor(const bool bShow) override;
 	// ~IInput
 
-	HWND           GetHWnd() const        { return m_hwnd;  }
+	CRY_HWND       GetHWnd() const        { return m_hwnd;  }
 	LPDIRECTINPUT8 GetDirectInput() const { return m_pDI; }
 	bool           IsImeComposing() const { return m_bImeComposing; }
 
 private:
 	// IWindowMessageHandler
-	bool HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, LRESULT* pResult);
+	bool HandleMessage(CRY_HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, LRESULT* pResult);
 
 	// very platform specific params
-	HWND             m_hwnd;
+	CRY_HWND         m_hwnd;
 	LPDIRECTINPUT8   m_pDI;
 	uint16           m_highSurrogate;
 	bool             m_bImeComposing;

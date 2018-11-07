@@ -119,7 +119,7 @@ void CRenderDisplayContext::ReleaseResources()
 
 //////////////////////////////////////////////////////////////////////////
 
-void CSwapChainBackedRenderDisplayContext::CreateSwapChain(HWND hWnd, bool isFullscreen, bool vsync)
+void CSwapChainBackedRenderDisplayContext::CreateSwapChain(CRY_HWND hWnd, bool isFullscreen, bool vsync)
 {
 	CRY_ASSERT(hWnd);
 	m_hWnd = hWnd;
@@ -319,7 +319,7 @@ void CSwapChainBackedRenderDisplayContext::CreateOutput()
 {
 #if CRY_PLATFORM_WINDOWS
 	CRY_ASSERT(m_hWnd);
-	HMONITOR hMonitor = MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTONEAREST);
+	HMONITOR hMonitor = MonitorFromWindow((HWND)m_hWnd, MONITOR_DEFAULTTONEAREST);
 
 	if (m_pOutput != nullptr)
 	{
@@ -369,7 +369,7 @@ void CSwapChainBackedRenderDisplayContext::ChangeOutputIfNecessary(bool isFullsc
 {
 	bool isWindowOnExistingOutputMonitor = false;
 #if CRY_PLATFORM_WINDOWS
-	HMONITOR hMonitor = MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTONEAREST);
+	HMONITOR hMonitor = MonitorFromWindow((HWND)m_hWnd, MONITOR_DEFAULTTONEAREST);
 
 	DXGI_OUTPUT_DESC outputDesc;
 	if (m_pOutput != nullptr && SUCCEEDED(m_pOutput->GetDesc(&outputDesc)))
@@ -414,7 +414,7 @@ void CSwapChainBackedRenderDisplayContext::ChangeOutputIfNecessary(bool isFullsc
 
 #ifdef SUPPORT_DEVICE_INFO
 	// Disable automatic DXGI alt + enter behavior
-	gcpRendD3D->DevInfo().Factory()->MakeWindowAssociation(m_hWnd, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);
+	gcpRendD3D->DevInfo().Factory()->MakeWindowAssociation((HWND)m_hWnd, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);
 #endif
 
 	SetFullscreenState(isFullscreen);
@@ -506,8 +506,8 @@ void CSwapChainBackedRenderDisplayContext::EnforceFullscreenPreemption()
 		HRESULT hr = m_swapChain.Present(0, DXGI_PRESENT_TEST);
 		if (hr == DXGI_STATUS_OCCLUDED)
 		{
-			if (::GetFocus() == m_hWnd)
-				::BringWindowToTop(m_hWnd);
+			if (::GetFocus() == (HWND)m_hWnd)
+				::BringWindowToTop((HWND)m_hWnd);
 		}
 	}
 }
@@ -517,7 +517,7 @@ RectI CSwapChainBackedRenderDisplayContext::GetCurrentMonitorBounds() const
 {
 #ifdef CRY_PLATFORM_WINDOWS
 	// When moving the window, update the preferred monitor dimensions so full-screen will pick the closest monitor
-	HMONITOR hMonitor = MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTONEAREST); 
+	HMONITOR hMonitor = MonitorFromWindow((HWND)m_hWnd, MONITOR_DEFAULTTONEAREST);
 
 	MONITORINFO monitorInfo;
 	monitorInfo.cbSize = sizeof(MONITORINFO);

@@ -40,6 +40,7 @@ struct IHardwareMouseEventListener
 };
 
 //-----------------------------------------------------------------------------------------------------
+typedef void* CRY_HWND;
 
 /*! Interface for managing the main OS cursor's state */
 struct IHardwareMouse
@@ -68,7 +69,7 @@ struct IHardwareMouse
 	virtual IHardwareMouseEventListener* GetCurrentExclusiveEventListener() = 0;
 
 	//! Called only in Editor when switching from editing to game mode.
-	virtual void SetConfinedWnd(HWND wnd) = 0;
+	virtual void SetConfinedWnd(CRY_HWND wnd) = 0;
 	virtual void SetGameMode(bool bGameMode) = 0;
 
 	//! Increment when you want to show the cursor, decrement otherwise.

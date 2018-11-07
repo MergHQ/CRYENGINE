@@ -77,7 +77,7 @@ static int GetDXGIAdapterOverride()
 #endif
 }
 
-static void ProcessWindowMessages(HWND hWnd)
+static void ProcessWindowMessages(CRY_HWND hWnd)
 {
 #if CRY_PLATFORM_WINDOWS
 	iSystem->PumpWindowMessage(true, hWnd);
@@ -141,7 +141,7 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 
 #if CRY_RENDERER_OPENGL || CRY_RENDERER_OPENGLES
 
-	HWND hWnd = pCreateWindowCallback ? pCreateWindowCallback() : 0;
+	CRY_HWND hWnd = pCreateWindowCallback ? pCreateWindowCallback() : 0;
 	if (!hWnd)
 	{
 		Release();
@@ -151,7 +151,7 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 	const int r_overrideDXGIAdapter = GetDXGIAdapterOverride();
 	const int r_multithreaded = GetMultithreaded();
 	unsigned int nAdapterOrdinal = r_overrideDXGIAdapter >= 0 ? r_overrideDXGIAdapter : 0;
-	FillSwapChainDesc(m_swapChainDesc, backbufferWidth, backbufferHeight, hWnd, windowed);
+	FillSwapChainDesc(m_swapChainDesc, backbufferWidth, backbufferHeight, (HWND)hWnd, windowed);
 
 	if (!SUCCEEDED(CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)&m_pFactory)) || !m_pFactory)
 	{
@@ -281,7 +281,7 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 		return false;
 	}
 
-	HWND hWnd = pCreateWindowCallback ? pCreateWindowCallback() : 0;
+	CRY_HWND hWnd = pCreateWindowCallback ? pCreateWindowCallback() : 0;
 	if (!hWnd)
 	{
 		Release();
@@ -476,7 +476,7 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 #endif
 #endif
 
-	HWND hWnd = pCreateWindowCallback ? pCreateWindowCallback() : 0;
+	CRY_HWND hWnd = pCreateWindowCallback ? pCreateWindowCallback() : 0;
 	if (!hWnd)
 	{
 		Release();

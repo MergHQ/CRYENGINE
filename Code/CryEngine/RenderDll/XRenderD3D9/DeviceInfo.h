@@ -20,7 +20,7 @@ typedef std::vector<MsgQueueItem> MsgQueue;
 	#endif
 
 typedef HRESULT (CALLBACK * OnCreateDeviceCallback)(D3DDevice*);
-typedef HWND (*             CreateWindowCallback)();
+typedef CRY_HWND (*         CreateWindowCallback)();
 
 struct DeviceInfo
 {

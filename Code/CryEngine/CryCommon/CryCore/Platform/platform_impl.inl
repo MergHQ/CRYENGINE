@@ -11,8 +11,6 @@
 #include <CryExtension/ICryFactoryRegistryImpl.h>
 #include <CryString/UnicodeFunctions.h>
 #include <CrySystem/CryUtils.h>
-#include <CryCore/Platform/CryWindows.h>
-
 #include <CryFlowGraph/IFlowBaseNode.h>
 
 //////////////////////////////////////////////////////////////////////////

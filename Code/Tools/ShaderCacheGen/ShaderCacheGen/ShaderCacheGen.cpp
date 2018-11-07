@@ -3,13 +3,12 @@
 #include "stdafx.h"
 
 // Insert your headers here
-#include <CrySystem/ISystem.h>
-#include <CryCore/Platform/CryLibrary.h>
-#include <CrySystem/IConsole.h>
-#include <CryString/StringUtils.h>
 #include <CryCore/Platform/platform_impl.inl>
-
 #include <CryCore/Platform/CryWindows.h>
+#include <CryCore/Platform/CryLibrary.h>
+#include <CrySystem/ISystem.h>
+#include <CrySystem/IConsole.h>
+#include <CryString/CryWinStringUtils.h>
 #include <ShellAPI.h>
 
 // We need shell api for Current Root Extraction.

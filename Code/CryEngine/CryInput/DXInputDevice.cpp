@@ -112,7 +112,7 @@ bool CDXInputDevice::CreateDirectInputDevice(LPCDIDATAFORMAT dataFormat, DWORD c
 	m_pDataFormat = dataFormat;
 	m_dwCoopLevel = coopLevel;
 
-	hr = m_pDevice->SetCooperativeLevel(GetDXInput().GetHWnd(), m_dwCoopLevel);
+	hr = m_pDevice->SetCooperativeLevel((HWND)GetDXInput().GetHWnd(), m_dwCoopLevel);
 	if (FAILED(hr))
 	{
 		return false;

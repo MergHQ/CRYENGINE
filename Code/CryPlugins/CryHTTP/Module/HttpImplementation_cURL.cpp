@@ -1,10 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "HttpImplementation_cURL.h"
 
 // Included only once per DLL module.
 #include <CryCore/Platform/platform_impl.inl>
+
+#include "HttpImplementation_cURL.h"
 
 namespace Cry
 {

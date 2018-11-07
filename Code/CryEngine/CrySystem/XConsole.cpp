@@ -16,6 +16,10 @@
 #include <fstream>
 #include <sstream>
 
+#if CRY_PLATFORM_WINDOWS
+#include <CryString/CryWinStringUtils.h>
+#endif
+
 #define BACKGROUND_SERVER_CHAR '/'
 
 //#define DEFENCE_CVAR_HASH_LOGGING
