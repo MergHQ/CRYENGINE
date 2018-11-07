@@ -28,8 +28,6 @@ public:
 	virtual void                   SetTransformation(CTransformation const& transformation) override;
 	virtual CTransformation const& GetTransformation() const override { return m_transformation; }
 	virtual void                   SetEnvironment(IEnvironment const* const pIEnvironment, float const amount) override;
-	virtual void                   SetParameter(IParameter const* const pIParameter, float const value) override;
-	virtual void                   SetSwitchState(ISwitchState const* const pISwitchState) override;
 	virtual void                   SetOcclusion(float const occlusion) override;
 	virtual void                   SetOcclusionType(EOcclusionType const occlusionType) override;
 	virtual void                   ToggleFunctionality(EObjectFunctionality const type, bool const enable) override;

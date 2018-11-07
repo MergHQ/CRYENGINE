@@ -34,23 +34,26 @@ namespace Impl
 {
 namespace PortAudio
 {
-uint32 g_triggerPoolSize = 0;
-uint32 g_triggerPoolSizeLevelSpecific = 0;
+std::vector<CObject*> g_constructedObjects;
+std::vector<CTrigger*> g_triggers;
+
+uint16 g_triggerPoolSize = 0;
+uint16 g_triggerPoolSizeLevelSpecific = 0;
 
 #if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
-uint32 g_debugTriggerPoolSize = 0;
+uint16 g_debugTriggerPoolSize = 0;
 #endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
-void CountPoolSizes(XmlNodeRef const pNode, uint32& poolSizes)
+void CountPoolSizes(XmlNodeRef const pNode, uint16& poolSizes)
 {
-	uint32 numTriggers = 0;
+	uint16 numTriggers = 0;
 	pNode->getAttr(s_szTriggersAttribute, numTriggers);
 	poolSizes += numTriggers;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void AllocateMemoryPools(uint32 const objectPoolSize, uint32 const eventPoolSize)
+void AllocateMemoryPools(uint16 const objectPoolSize, uint16 const eventPoolSize)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Port Audio Object Pool");
 	CObject::CreateAllocator(objectPoolSize);
@@ -117,8 +120,9 @@ bool GetSoundInfo(char const* const szPath, SF_INFO& sfInfo, PaStreamParameters&
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSize)
+ERequestStatus CImpl::Init(uint16 const objectPoolSize, uint16 const eventPoolSize)
 {
+	g_constructedObjects.reserve(static_cast<size_t>(objectPoolSize));
 	AllocateMemoryPools(objectPoolSize, eventPoolSize);
 
 	char const* szAssetDirectory = gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryRelative();
@@ -183,7 +187,7 @@ void CImpl::SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific)
 {
 	if (isLevelSpecific)
 	{
-		uint32 triggerLevelPoolSize;
+		uint16 triggerLevelPoolSize;
 		CountPoolSizes(pNode, triggerLevelPoolSize);
 
 		g_triggerPoolSizeLevelSpecific = std::max(g_triggerPoolSizeLevelSpecific, triggerLevelPoolSize);
@@ -215,49 +219,58 @@ void CImpl::OnAfterLibraryDataChanged()
 	g_debugTriggerPoolSize = g_triggerPoolSize;
 #endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 
-	g_triggerPoolSize = std::max<uint32>(1, g_triggerPoolSize);
+	g_triggerPoolSize = std::max<uint16>(1, g_triggerPoolSize);
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::OnLoseFocus()
+void CImpl::OnLoseFocus()
 {
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::OnGetFocus()
+void CImpl::OnGetFocus()
 {
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::MuteAll()
+void CImpl::MuteAll()
 {
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::UnmuteAll()
+void CImpl::UnmuteAll()
 {
-	return ERequestStatus::Success;
+}
+
+///////////////////////////////////////////////////////////////////////////
+void CImpl::PauseAll()
+{
+}
+
+///////////////////////////////////////////////////////////////////////////
+void CImpl::ResumeAll()
+{
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CImpl::StopAllSounds()
 {
+	for (auto const pObject : g_constructedObjects)
+	{
+		pObject->StopAllTriggers();
+	}
+
 	return ERequestStatus::Success;
 }
 
-///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::PauseAll()
+//////////////////////////////////////////////////////////////////////////
+void CImpl::SetGlobalParameter(IParameter const* const pIParameter, float const value)
 {
-	return ERequestStatus::Success;
 }
 
-///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ResumeAll()
+//////////////////////////////////////////////////////////////////////////
+void CImpl::SetGlobalSwitchState(ISwitchState const* const pISwitchState)
 {
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -343,14 +356,17 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructGlobalObject()
 {
-	return new CObject();
+	auto pObject = new CObject();
+	stl::push_back_unique(g_constructedObjects, pObject);
+
+	return static_cast<IObject*>(pObject);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructObject(CTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
 	auto pObject = new CObject();
-	stl::push_back_unique(m_constructedObjects, pObject);
+	stl::push_back_unique(g_constructedObjects, pObject);
 
 	return static_cast<IObject*>(pObject);
 }
@@ -359,7 +375,7 @@ IObject* CImpl::ConstructObject(CTransformation const& transformation, char cons
 void CImpl::DestructObject(IObject const* const pIObject)
 {
 	auto const pObject = static_cast<CObject const*>(pIObject);
-	stl::find_and_erase(m_constructedObjects, pObject);
+	stl::find_and_erase(g_constructedObjects, pObject);
 	delete pObject;
 }
 
@@ -470,7 +486,7 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode, float& radiu
 				name.c_str(),
 				isLocalized);
 
-			m_triggers.push_back(pTrigger);
+			g_triggers.push_back(pTrigger);
 		}
 	}
 	else
@@ -575,7 +591,7 @@ void CImpl::DestructSetting(ISetting const* const pISetting)
 //////////////////////////////////////////////////////////////////////////
 void CImpl::OnRefresh()
 {
-	m_triggers.clear();
+	g_triggers.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -609,7 +625,7 @@ void CImpl::SetLanguage(char const* const szLanguage)
 //////////////////////////////////////////////////////////////////////////
 void CImpl::UpdateLocalizedTriggers()
 {
-	for (auto const pTrigger : m_triggers)
+	for (auto const pTrigger : g_triggers)
 	{
 		if (pTrigger->m_isLocalized)
 		{

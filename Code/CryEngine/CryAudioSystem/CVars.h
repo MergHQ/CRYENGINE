@@ -51,7 +51,9 @@ private:
 	static void CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs);
 	static void CmdStopTrigger(IConsoleCmdArgs* pCmdArgs);
 	static void CmdSetParameter(IConsoleCmdArgs* pCmdArgs);
+	static void CmdSetGlobalParameter(IConsoleCmdArgs* pCmdArgs);
 	static void CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs);
+	static void CmdSetGlobalSwitchState(IConsoleCmdArgs* pCmdArgs);
 	static void CmdLoadRequest(IConsoleCmdArgs* pCmdArgs);
 	static void CmdUnloadRequest(IConsoleCmdArgs* pCmdArgs);
 	static void CmdLoadSetting(IConsoleCmdArgs* pCmdArgs);

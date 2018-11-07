@@ -51,10 +51,6 @@ ERequestStatus PlayFile(CObject* const pObject, CStandaloneFile* const pStandalo
 // stops all the events associated with this trigger
 bool StopTrigger(CTrigger const* const pTrigger);
 
-// Objects
-bool RegisterObject(CObject* const pObject);
-bool UnregisterObject(CObject const* const pObject);
-
 // Callbacks
 void RegisterEventFinishedCallback(FnEventCallback pCallbackFunction);
 void RegisterStandaloneFileFinishedCallback(FnStandaloneFileCallback pCallbackFunction);

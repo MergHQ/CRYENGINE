@@ -63,12 +63,12 @@ struct STriggerInfo final : public ITriggerInfo
 
 struct SPoolSizes final
 {
-	uint32 triggers = 0;
-	uint32 parameters = 0;
-	uint32 switchStates = 0;
-	uint32 environments = 0;
-	uint32 settings = 0;
-	uint32 files = 0;
+	uint16 triggers = 0;
+	uint16 parameters = 0;
+	uint16 switchStates = 0;
+	uint16 environments = 0;
+	uint16 settings = 0;
+	uint16 files = 0;
 };
 } // namespace Adx2
 } // namespace Impl

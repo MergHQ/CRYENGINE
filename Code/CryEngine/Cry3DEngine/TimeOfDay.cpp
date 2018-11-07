@@ -904,7 +904,7 @@ void CTimeOfDay::SetTime(float fHour, bool bForceUpdate)
 	// Inform audio of this change.
 	if (m_timeOfDayRtpcId != CryAudio::InvalidControlId)
 	{
-		gEnv->pAudioSystem->SetParameter(m_timeOfDayRtpcId, m_fTime);
+		gEnv->pAudioSystem->SetGlobalParameter(m_timeOfDayRtpcId, m_fTime);
 	}
 
 	gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_TIME_OF_DAY_SET, 0, 0);

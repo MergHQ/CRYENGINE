@@ -18,6 +18,7 @@ namespace Wwise
 {
 CImpl* g_pImpl = nullptr;
 CListener* g_pListener = nullptr;
+CObject* g_pObject = nullptr;
 
 AkGameObjectID g_listenerId = AK_INVALID_GAME_OBJECT; // To be removed once multi-listener support is implemented.
 AkGameObjectID g_globalObjectId = AK_INVALID_GAME_OBJECT;

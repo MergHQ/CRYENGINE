@@ -218,7 +218,7 @@ void CAudioAreaAmbienceEntity::UpdateRtpc(float fadeValue)
 
 	if (m_globalRtpcId != CryAudio::InvalidControlId)
 	{
-		gEnv->pAudioSystem->SetParameter(m_globalRtpcId, fadeValue);
+		gEnv->pAudioSystem->SetGlobalParameter(m_globalRtpcId, fadeValue);
 	}
 
 	m_fadeValue = fadeValue;

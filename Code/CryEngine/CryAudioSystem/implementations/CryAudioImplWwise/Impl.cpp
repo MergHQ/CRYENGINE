@@ -160,29 +160,29 @@ SPoolSizes g_debugPoolSizes;
 //////////////////////////////////////////////////////////////////////////
 void CountPoolSizes(XmlNodeRef const pNode, SPoolSizes& poolSizes)
 {
-	uint32 numTriggers = 0;
+	uint16 numTriggers = 0;
 	pNode->getAttr(s_szTriggersAttribute, numTriggers);
 	poolSizes.triggers += numTriggers;
 
-	uint32 numParameters = 0;
+	uint16 numParameters = 0;
 	pNode->getAttr(s_szParametersAttribute, numParameters);
 	poolSizes.parameters += numParameters;
 
-	uint32 numSwitchStates = 0;
+	uint16 numSwitchStates = 0;
 	pNode->getAttr(s_szSwitchStatesAttribute, numSwitchStates);
 	poolSizes.switchStates += numSwitchStates;
 
-	uint32 numEnvironments = 0;
+	uint16 numEnvironments = 0;
 	pNode->getAttr(s_szEnvironmentsAttribute, numEnvironments);
 	poolSizes.environments += numEnvironments;
 
-	uint32 numFiles = 0;
+	uint16 numFiles = 0;
 	pNode->getAttr(s_szFilesAttribute, numFiles);
 	poolSizes.files += numFiles;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void AllocateMemoryPools(uint32 const objectPoolSize, uint32 const eventPoolSize)
+void AllocateMemoryPools(uint16 const objectPoolSize, uint16 const eventPoolSize)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Wwise Object Pool");
 	CObject::CreateAllocator(objectPoolSize);
@@ -297,7 +297,7 @@ CSwitchState const* ParseWwiseRtpcSwitch(XmlNodeRef const pNode)
 
 ///////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
-	: m_gameObjectId(1)
+	: m_gameObjectId(2) // Start with id 2, because id 1 would get ignored when setting a parameter on all constructed objects.
 	, m_initBankId(AK_INVALID_BANK_ID)
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	, m_bCommSystemInitialized(false)
@@ -350,7 +350,7 @@ void CImpl::Update()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSize)
+ERequestStatus CImpl::Init(uint16 const objectPoolSize, uint16 const eventPoolSize)
 {
 	// If something fails so severely during initialization that we need to fall back to the NULL implementation
 	// we will need to shut down what has been initialized so far. Therefore make sure to call Shutdown() before returning eARS_FAILURE!
@@ -800,53 +800,47 @@ void CImpl::OnAfterLibraryDataChanged()
 	g_debugPoolSizes = g_poolSizes;
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
-	g_poolSizes.triggers = std::max<uint32>(1, g_poolSizes.triggers);
-	g_poolSizes.parameters = std::max<uint32>(1, g_poolSizes.parameters);
-	g_poolSizes.switchStates = std::max<uint32>(1, g_poolSizes.switchStates);
-	g_poolSizes.environments = std::max<uint32>(1, g_poolSizes.environments);
-	g_poolSizes.files = std::max<uint32>(1, g_poolSizes.files);
+	g_poolSizes.triggers = std::max<uint16>(1, g_poolSizes.triggers);
+	g_poolSizes.parameters = std::max<uint16>(1, g_poolSizes.parameters);
+	g_poolSizes.switchStates = std::max<uint16>(1, g_poolSizes.switchStates);
+	g_poolSizes.environments = std::max<uint16>(1, g_poolSizes.environments);
+	g_poolSizes.files = std::max<uint16>(1, g_poolSizes.files);
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::OnLoseFocus()
+void CImpl::OnLoseFocus()
 {
 	// With Wwise we drive this via events.
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::OnGetFocus()
+void CImpl::OnGetFocus()
 {
 	// With Wwise we drive this via events.
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::MuteAll()
+void CImpl::MuteAll()
 {
 	// With Wwise we drive this via events.
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::UnmuteAll()
+void CImpl::UnmuteAll()
 {
 	// With Wwise we drive this via events.
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::PauseAll()
+void CImpl::PauseAll()
 {
 	// With Wwise we drive this via events.
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ResumeAll()
+void CImpl::ResumeAll()
 {
 	// With Wwise we drive this via events.
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -855,6 +849,101 @@ ERequestStatus CImpl::StopAllSounds()
 	AK::SoundEngine::StopAll();
 
 	return ERequestStatus::Success;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::SetGlobalParameter(IParameter const* const pIParameter, float const value)
+{
+	auto const pParameter = static_cast<CParameter const*>(pIParameter);
+
+	if (pParameter != nullptr)
+	{
+		auto const rtpcValue = static_cast<AkRtpcValue>(pParameter->mult * value + pParameter->shift);
+
+		AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(pParameter->id, rtpcValue, AK_INVALID_GAME_OBJECT);
+
+		if (!IS_WWISE_OK(wwiseResult))
+		{
+			Cry::Audio::Log(
+				ELogType::Warning,
+				"Wwise - failed to set the Rtpc %" PRISIZE_T " globally to value %f",
+				pParameter->id,
+				static_cast<AkRtpcValue>(value));
+		}
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Wwise - Invalid RtpcData passed to the Wwise implementation of %s", __FUNCTION__);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::SetGlobalSwitchState(ISwitchState const* const pISwitchState)
+{
+	auto const pSwitchState = static_cast<CSwitchState const*>(pISwitchState);
+
+	if (pSwitchState != nullptr)
+	{
+		switch (pSwitchState->type)
+		{
+		case ESwitchType::StateGroup:
+			{
+				AKRESULT const wwiseResult = AK::SoundEngine::SetState(
+					pSwitchState->stateOrSwitchGroupId,
+					pSwitchState->stateOrSwitchId);
+
+				if (!IS_WWISE_OK(wwiseResult))
+				{
+					Cry::Audio::Log(
+						ELogType::Warning,
+						"Wwise failed to set the StateGroup %" PRISIZE_T "to state %" PRISIZE_T,
+						pSwitchState->stateOrSwitchGroupId,
+						pSwitchState->stateOrSwitchId);
+				}
+
+				break;
+			}
+		case ESwitchType::SwitchGroup:
+			{
+				Cry::Audio::Log(ELogType::Warning, "Wwise - SwitchGroups cannot get set globally!");
+
+				break;
+			}
+		case ESwitchType::Rtpc:
+			{
+				AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(
+					pSwitchState->stateOrSwitchGroupId,
+					static_cast<AkRtpcValue>(pSwitchState->rtpcValue),
+					AK_INVALID_GAME_OBJECT);
+
+				if (!IS_WWISE_OK(wwiseResult))
+				{
+					Cry::Audio::Log(
+						ELogType::Warning,
+						"Wwise - failed to set the Rtpc %" PRISIZE_T " globally to value %f",
+						pSwitchState->stateOrSwitchGroupId,
+						static_cast<AkRtpcValue>(pSwitchState->rtpcValue),
+						AK_INVALID_GAME_OBJECT);
+				}
+
+				break;
+			}
+		case ESwitchType::None:
+			{
+				break;
+			}
+		default:
+			{
+				Cry::Audio::Log(ELogType::Warning, "Wwise - Unknown ESwitchType: %" PRISIZE_T, pSwitchState->type);
+
+				break;
+			}
+		}
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Wwise - Invalid SwitchState passed to the Wwise implementation of %s", __FUNCTION__);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1016,16 +1105,16 @@ IObject* CImpl::ConstructGlobalObject()
 
 	CTransformation transformation;
 	ZeroStruct(transformation);
-	auto const pGlobalObject = new CObject(AK_INVALID_GAME_OBJECT, transformation, szName);
+	g_pObject = new CObject(g_globalObjectId, transformation, szName);
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	{
 		CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
-		g_gameObjectIds[AK_INVALID_GAME_OBJECT] = pGlobalObject;
+		g_gameObjectIds[g_globalObjectId] = g_pObject;
 	}
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
-	return static_cast<IObject*>(pGlobalObject);
+	return static_cast<IObject*>(g_pObject);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1074,6 +1163,11 @@ void CImpl::DestructObject(IObject const* const pIObject)
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 	delete pObject;
+
+	if (objectID == g_globalObjectId)
+	{
+		g_pObject = nullptr;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////

@@ -57,14 +57,14 @@ struct STriggerInfo final : public ITriggerInfo
 
 struct SPoolSizes final
 {
-	uint32 triggers = 0;
-	uint32 parameters = 0;
-	uint32 switchStates = 0;
-	uint32 envBuses = 0;
-	uint32 envParameters = 0;
-	uint32 vcaParameters = 0;
-	uint32 vcaStates = 0;
-	uint32 files = 0;
+	uint16 triggers = 0;
+	uint16 parameters = 0;
+	uint16 switchStates = 0;
+	uint16 envBuses = 0;
+	uint16 envParameters = 0;
+	uint16 vcaParameters = 0;
+	uint16 vcaStates = 0;
+	uint16 files = 0;
 };
 } // namespace Fmod
 } // namespace Impl

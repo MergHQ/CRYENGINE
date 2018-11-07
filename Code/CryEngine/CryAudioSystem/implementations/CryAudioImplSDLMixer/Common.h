@@ -15,11 +15,15 @@ class CStandaloneFile;
 
 extern bool g_bMuted;
 extern CListener* g_pListener;
+extern CObject* g_pObject;
 
 using SampleId = uint;
 using ChannelList = std::vector<int>;
 using EventInstanceList = std::vector<CEvent*>;
 using StandAloneFileInstanceList = std::vector<CStandaloneFile*>;
+
+using Objects = std::vector<CObject*>;
+extern Objects g_objects;
 
 float GetVolumeMultiplier(CObject* const pObject, SampleId const sampleId);
 int   GetAbsoluteVolume(int const triggerVolume, float const multiplier);

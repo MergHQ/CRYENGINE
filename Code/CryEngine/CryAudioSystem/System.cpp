@@ -51,6 +51,7 @@
 	#include "PreviewTrigger.h"
 	#include "Debug.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
+	#include <CryThreading/CryThread.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 namespace CryAudio
@@ -64,9 +65,13 @@ enum class ELoggingOptions : EnumFlagsType
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ELoggingOptions);
 
+static constexpr uint16 g_systemExecuteTriggerPoolSize = 4;
 static constexpr uint16 g_systemExecuteTriggerExPoolSize = 16;
+static constexpr uint16 g_systemStopTriggerPoolSize = 4;
 static constexpr uint16 g_systemRegisterObjectPoolSize = 16;
 static constexpr uint16 g_systemReleaseObjectPoolSize = 16;
+static constexpr uint16 g_systemSetParameterPoolSize = 4;
+static constexpr uint16 g_systemSetSwitchStatePoolSize = 4;
 
 static constexpr uint16 g_objectExecuteTriggerPoolSize = 64;
 static constexpr uint16 g_objectStopTriggerPoolSize = 128;
@@ -86,11 +91,19 @@ static constexpr uint16 g_callbackReportPhysicalizedEventPoolSize = 32;
 static constexpr uint16 g_callbackReportFinishedTriggerInstancePoolSize = 128;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+
+CryCriticalSection g_cs;
+std::vector<CryAudio::IObject*> g_registeredObjects;
+
 struct RequestCount final
 {
+	uint16 systemExecuteTrigger = 0;
 	uint16 systemExecuteTriggerEx = 0;
+	uint16 systemStopTrigger = 0;
 	uint16 systemRegisterObject = 0;
 	uint16 systemReleaseObject = 0;
+	uint16 systemSetParameter = 0;
+	uint16 systemSetSwitchState = 0;
 
 	uint16 objectExecuteTrigger = 0;
 	uint16 objectStopTrigger = 0;
@@ -140,9 +153,33 @@ void CountRequestPerUpdate(CRequest const& request)
 
 						break;
 					}
+				case ESystemRequestType::ExecuteTrigger:
+					{
+						g_requestsPerUpdate.systemExecuteTrigger++;
+
+						break;
+					}
 				case ESystemRequestType::ExecuteTriggerEx:
 					{
 						g_requestsPerUpdate.systemExecuteTriggerEx++;
+
+						break;
+					}
+				case ESystemRequestType::StopTrigger:
+					{
+						g_requestsPerUpdate.systemStopTrigger++;
+
+						break;
+					}
+				case ESystemRequestType::SetParameter:
+					{
+						g_requestsPerUpdate.systemSetParameter++;
+
+						break;
+					}
+				case ESystemRequestType::SetSwitchState:
+					{
+						g_requestsPerUpdate.systemSetSwitchState++;
 
 						break;
 					}
@@ -284,7 +321,11 @@ void SetRequestCountPeak()
 {
 	g_requestPeaks.systemRegisterObject = std::max(g_requestPeaks.systemRegisterObject, g_requestsPerUpdate.systemRegisterObject);
 	g_requestPeaks.systemReleaseObject = std::max(g_requestPeaks.systemReleaseObject, g_requestsPerUpdate.systemReleaseObject);
+	g_requestPeaks.systemExecuteTrigger = std::max(g_requestPeaks.systemExecuteTrigger, g_requestsPerUpdate.systemExecuteTrigger);
 	g_requestPeaks.systemExecuteTriggerEx = std::max(g_requestPeaks.systemExecuteTriggerEx, g_requestsPerUpdate.systemExecuteTriggerEx);
+	g_requestPeaks.systemStopTrigger = std::max(g_requestPeaks.systemStopTrigger, g_requestsPerUpdate.systemStopTrigger);
+	g_requestPeaks.systemSetParameter = std::max(g_requestPeaks.systemSetParameter, g_requestsPerUpdate.systemSetParameter);
+	g_requestPeaks.systemSetSwitchState = std::max(g_requestPeaks.systemSetSwitchState, g_requestsPerUpdate.systemSetSwitchState);
 
 	g_requestPeaks.objectExecuteTrigger = std::max(g_requestPeaks.objectExecuteTrigger, g_requestsPerUpdate.objectExecuteTrigger);
 	g_requestPeaks.objectStopTrigger = std::max(g_requestPeaks.objectStopTrigger, g_requestsPerUpdate.objectStopTrigger);
@@ -359,14 +400,26 @@ void AllocateMemoryPools()
 	CSettingConnection::CreateAllocator(g_poolSizes.settingConnections);
 
 	// System requests
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SSystemRequestData<ESystemRequestType::ExecuteTrigger>");
+	SSystemRequestData<ESystemRequestType::ExecuteTrigger>::CreateAllocator(g_systemExecuteTriggerPoolSize);
+
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SSystemRequestData<ESystemRequestType::ExecuteTriggerEx>");
 	SSystemRequestData<ESystemRequestType::ExecuteTriggerEx>::CreateAllocator(g_systemExecuteTriggerExPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SSystemRequestData<ESystemRequestType::StopTrigger>");
+	SSystemRequestData<ESystemRequestType::StopTrigger>::CreateAllocator(g_systemStopTriggerPoolSize);
 
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SSystemRequestData<ESystemRequestType::RegisterObject>");
 	SSystemRequestData<ESystemRequestType::RegisterObject>::CreateAllocator(g_systemRegisterObjectPoolSize);
 
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SSystemRequestData<ESystemRequestType::ReleaseObject>");
 	SSystemRequestData<ESystemRequestType::ReleaseObject>::CreateAllocator(g_systemReleaseObjectPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SSystemRequestData<ESystemRequestType::SetParameter>");
+	SSystemRequestData<ESystemRequestType::SetParameter>::CreateAllocator(g_systemSetParameterPoolSize);
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SSystemRequestData<ESystemRequestType::SetSwitchState>");
+	SSystemRequestData<ESystemRequestType::SetSwitchState>::CreateAllocator(g_systemSetSwitchStatePoolSize);
 
 	// Object requests
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SObjectRequestData<EObjectRequestType::ExecuteTrigger>");
@@ -435,9 +488,13 @@ void FreeMemoryPools()
 	CSettingConnection::FreeMemoryPool();
 
 	// System requests
+	SSystemRequestData<ESystemRequestType::ExecuteTrigger>::FreeMemoryPool();
 	SSystemRequestData<ESystemRequestType::ExecuteTriggerEx>::FreeMemoryPool();
+	SSystemRequestData<ESystemRequestType::StopTrigger>::FreeMemoryPool();
 	SSystemRequestData<ESystemRequestType::RegisterObject>::FreeMemoryPool();
 	SSystemRequestData<ESystemRequestType::ReleaseObject>::FreeMemoryPool();
+	SSystemRequestData<ESystemRequestType::SetParameter>::FreeMemoryPool();
+	SSystemRequestData<ESystemRequestType::SetSwitchState>::FreeMemoryPool();
 
 	// Object requests
 	SObjectRequestData<EObjectRequestType::ExecuteTrigger>::FreeMemoryPool();
@@ -848,8 +905,8 @@ bool CSystem::Initialize()
 			&CPropagationProcessor::OnObstructionTest,
 			1);
 
-		m_objectPoolSize = static_cast<uint32>(g_cvars.m_objectPoolSize);
-		m_eventPoolSize = static_cast<uint32>(g_cvars.m_eventPoolSize);
+		m_objectPoolSize = static_cast<uint16>(g_cvars.m_objectPoolSize);
+		m_eventPoolSize = static_cast<uint16>(g_cvars.m_eventPoolSize);
 
 		g_objectManager.Initialize(m_objectPoolSize);
 		g_eventManager.Initialize(m_eventPoolSize);
@@ -977,9 +1034,57 @@ void CSystem::ExecuteDefaultTrigger(EDefaultTriggerType const type, SRequestUser
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CSystem::SetParameter(ControlId const parameterId, float const value, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
+{
+	SSystemRequestData<ESystemRequestType::SetParameter> const requestData(parameterId, value);
+	CRequest request(&requestData);
+	request.flags = userData.flags;
+	request.pOwner = userData.pOwner;
+	request.pUserData = userData.pUserData;
+	request.pUserDataOwner = userData.pUserDataOwner;
+	PushRequest(request);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::SetGlobalParameter(ControlId const parameterId, float const value, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
+{
+	SSystemRequestData<ESystemRequestType::SetGlobalParameter> const requestData(parameterId, value);
+	CRequest request(&requestData);
+	request.flags = userData.flags;
+	request.pOwner = userData.pOwner;
+	request.pUserData = userData.pUserData;
+	request.pUserDataOwner = userData.pUserDataOwner;
+	PushRequest(request);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::SetSwitchState(ControlId const switchId, SwitchStateId const switchStateId, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+{
+	SSystemRequestData<ESystemRequestType::SetSwitchState> const requestData(switchId, switchStateId);
+	CRequest request(&requestData);
+	request.flags = userData.flags;
+	request.pOwner = userData.pOwner;
+	request.pUserData = userData.pUserData;
+	request.pUserDataOwner = userData.pUserDataOwner;
+	PushRequest(request);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::SetGlobalSwitchState(ControlId const switchId, SwitchStateId const switchStateId, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+{
+	SSystemRequestData<ESystemRequestType::SetGlobalSwitchState> const requestData(switchId, switchStateId);
+	CRequest request(&requestData);
+	request.flags = userData.flags;
+	request.pOwner = userData.pOwner;
+	request.pUserData = userData.pUserData;
+	request.pUserDataOwner = userData.pUserDataOwner;
+	PushRequest(request);
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CSystem::ExecuteTrigger(ControlId const triggerId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SObjectRequestData<EObjectRequestType::ExecuteTrigger> const requestData(triggerId);
+	SSystemRequestData<ESystemRequestType::ExecuteTrigger> const requestData(triggerId);
 	CRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -993,7 +1098,7 @@ void CSystem::StopTrigger(ControlId const triggerId /* = CryAudio::InvalidContro
 {
 	if (triggerId != InvalidControlId)
 	{
-		SObjectRequestData<EObjectRequestType::StopTrigger> const requestData(triggerId);
+		SSystemRequestData<ESystemRequestType::StopTrigger> const requestData(triggerId);
 		CRequest request(&requestData);
 		request.flags = userData.flags;
 		request.pOwner = userData.pOwner;
@@ -1003,7 +1108,7 @@ void CSystem::StopTrigger(ControlId const triggerId /* = CryAudio::InvalidContro
 	}
 	else
 	{
-		SObjectRequestData<EObjectRequestType::StopAllTriggers> const requestData;
+		SSystemRequestData<ESystemRequestType::StopAllTriggers> const requestData;
 		CRequest request(&requestData);
 		request.flags = userData.flags;
 		request.pOwner = userData.pOwner;
@@ -1017,9 +1122,65 @@ void CSystem::StopTrigger(ControlId const triggerId /* = CryAudio::InvalidContro
 void CSystem::ExecutePreviewTrigger(ControlId const triggerId)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	SSystemRequestData<ESystemRequestType::ExecutePreviewTrigger> const requestData(triggerId);
-	CRequest const request(&requestData);
-	PushRequest(request);
+	switch (triggerId)
+	{
+	case LoseFocusTriggerId:
+		{
+			SSystemRequestData<ESystemRequestType::ExecuteDefaultTrigger> const requestData(EDefaultTriggerType::LoseFocus);
+			CRequest const request(&requestData);
+			PushRequest(request);
+
+			break;
+		}
+	case GetFocusTriggerId:
+		{
+			SSystemRequestData<ESystemRequestType::ExecuteDefaultTrigger> const requestData(EDefaultTriggerType::GetFocus);
+			CRequest const request(&requestData);
+			PushRequest(request);
+
+			break;
+		}
+	case MuteAllTriggerId:
+		{
+			SSystemRequestData<ESystemRequestType::ExecuteDefaultTrigger> const requestData(EDefaultTriggerType::MuteAll);
+			CRequest const request(&requestData);
+			PushRequest(request);
+
+			break;
+		}
+	case UnmuteAllTriggerId:
+		{
+			SSystemRequestData<ESystemRequestType::ExecuteDefaultTrigger> const requestData(EDefaultTriggerType::UnmuteAll);
+			CRequest const request(&requestData);
+			PushRequest(request);
+
+			break;
+		}
+	case PauseAllTriggerId:
+		{
+			SSystemRequestData<ESystemRequestType::ExecuteDefaultTrigger> const requestData(EDefaultTriggerType::PauseAll);
+			CRequest const request(&requestData);
+			PushRequest(request);
+
+			break;
+		}
+	case ResumeAllTriggerId:
+		{
+			SSystemRequestData<ESystemRequestType::ExecuteDefaultTrigger> const requestData(EDefaultTriggerType::ResumeAll);
+			CRequest const request(&requestData);
+			PushRequest(request);
+
+			break;
+		}
+	default:
+		{
+			SSystemRequestData<ESystemRequestType::ExecutePreviewTrigger> const requestData(triggerId);
+			CRequest const request(&requestData);
+			PushRequest(request);
+
+			break;
+		}
+	}
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
@@ -1041,30 +1202,6 @@ void CSystem::StopPreviewTrigger()
 	CRequest const request(&requestData);
 	PushRequest(request);
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CSystem::SetParameter(ControlId const parameterId, float const value, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
-{
-	SObjectRequestData<EObjectRequestType::SetParameter> const requestData(parameterId, value);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
-	PushRequest(request);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CSystem::SetSwitchState(ControlId const switchId, SwitchStateId const switchStateId, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
-{
-	SObjectRequestData<EObjectRequestType::SetSwitchState> const requestData(switchId, switchStateId);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
-	PushRequest(request);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1332,12 +1469,35 @@ CryAudio::IObject* CSystem::CreateObject(SCreateObjectData const& objectData /*=
 	CRequest request(&requestData);
 	request.flags = ERequestFlags::ExecuteBlocking;
 	PushRequest(request);
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	{
+		CryAutoLock<CryCriticalSection> const lock(g_cs);
+		g_registeredObjects.push_back(static_cast<CryAudio::IObject*>(pObject));
+	}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
 	return static_cast<CryAudio::IObject*>(pObject);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ReleaseObject(CryAudio::IObject* const pIObject)
 {
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	{
+		CryAutoLock<CryCriticalSection> const lock(g_cs);
+
+		if (std::find(g_registeredObjects.begin(), g_registeredObjects.end(), pIObject) != g_registeredObjects.end())
+		{
+			stl::find_and_erase(g_registeredObjects, pIObject);
+		}
+		else
+		{
+			CRY_ASSERT_MESSAGE(false, "Unregistered object passed during %s", __FUNCTION__);
+		}
+	}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
 	SSystemRequestData<ESystemRequestType::ReleaseObject> const requestData(static_cast<CObject*>(pIObject));
 	CRequest const request(&requestData);
 	PushRequest(request);
@@ -1627,6 +1787,48 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			break;
 		}
+	case ESystemRequestType::ExecuteTrigger:
+		{
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ExecuteTrigger> const* const>(request.GetData());
+
+			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
+
+			if (pTrigger != nullptr)
+			{
+				pTrigger->Execute(*g_pObject, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
+				result = ERequestStatus::Success;
+			}
+			else
+			{
+				result = ERequestStatus::FailureInvalidControlId;
+			}
+
+			break;
+		}
+	case ESystemRequestType::StopTrigger:
+		{
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::StopTrigger> const* const>(request.GetData());
+
+			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
+
+			if (pTrigger != nullptr)
+			{
+				result = g_pObject->HandleStopTrigger(pTrigger);
+			}
+			else
+			{
+				result = ERequestStatus::FailureInvalidControlId;
+			}
+
+			break;
+		}
+	case ESystemRequestType::StopAllTriggers:
+		{
+			g_pObject->StopAllTriggers();
+			result = ERequestStatus::Success;
+
+			break;
+		}
 	case ESystemRequestType::ExecuteTriggerEx:
 		{
 			SSystemRequestData<ESystemRequestType::ExecuteTriggerEx> const* const pRequestData =
@@ -1671,14 +1873,22 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 			{
 			case EDefaultTriggerType::LoseFocus:
 				{
-					g_loseFocusTrigger.Execute();
+					if ((g_systemStates& ESystemStates::IsMuted) == 0)
+					{
+						g_loseFocusTrigger.Execute();
+					}
+
 					result = ERequestStatus::Success;
 
 					break;
 				}
 			case EDefaultTriggerType::GetFocus:
 				{
-					g_getFocusTrigger.Execute();
+					if ((g_systemStates& ESystemStates::IsMuted) == 0)
+					{
+						g_getFocusTrigger.Execute();
+					}
+
 					result = ERequestStatus::Success;
 
 					break;
@@ -1687,6 +1897,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 				{
 					g_muteAllTrigger.Execute();
 					result = ERequestStatus::Success;
+					g_systemStates |= ESystemStates::IsMuted;
 
 					break;
 				}
@@ -1694,6 +1905,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 				{
 					g_unmuteAllTrigger.Execute();
 					result = ERequestStatus::Success;
+					g_systemStates &= ~ESystemStates::IsMuted;
 
 					break;
 				}
@@ -1702,12 +1914,20 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 					g_pauseAllTrigger.Execute();
 					result = ERequestStatus::Success;
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+					g_systemStates |= ESystemStates::IsPaused;
+#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
+
 					break;
 				}
 			case EDefaultTriggerType::ResumeAll:
 				{
 					g_resumeAllTrigger.Execute();
 					result = ERequestStatus::Success;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+					g_systemStates &= ~ESystemStates::IsPaused;
+#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
 
 					break;
 				}
@@ -1770,6 +1990,86 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		{
 			SSystemRequestData<ESystemRequestType::UnloadSingleRequest> const* const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::UnloadSingleRequest> const*>(request.GetData());
 			result = g_fileCacheManager.TryUnloadRequest(pRequestData->preloadRequestId);
+
+			break;
+		}
+	case ESystemRequestType::SetParameter:
+		{
+			SSystemRequestData<ESystemRequestType::SetParameter> const* const pRequestData =
+				static_cast<SSystemRequestData<ESystemRequestType::SetParameter> const* const>(request.GetData());
+
+			CParameter const* const pParameter = stl::find_in_map(g_parameters, pRequestData->parameterId, nullptr);
+
+			if (pParameter != nullptr)
+			{
+				pParameter->Set(*g_pObject, pRequestData->value);
+				result = ERequestStatus::Success;
+			}
+			else
+			{
+				result = ERequestStatus::FailureInvalidControlId;
+			}
+
+			break;
+		}
+	case ESystemRequestType::SetGlobalParameter:
+		{
+			SSystemRequestData<ESystemRequestType::SetParameter> const* const pRequestData =
+				static_cast<SSystemRequestData<ESystemRequestType::SetParameter> const* const>(request.GetData());
+
+			CParameter const* const pParameter = stl::find_in_map(g_parameters, pRequestData->parameterId, nullptr);
+
+			if (pParameter != nullptr)
+			{
+				pParameter->SetGlobal(pRequestData->value);
+				result = ERequestStatus::Success;
+			}
+			else
+			{
+				result = ERequestStatus::FailureInvalidControlId;
+			}
+
+			break;
+		}
+	case ESystemRequestType::SetSwitchState:
+		{
+			result = ERequestStatus::FailureInvalidControlId;
+			SSystemRequestData<ESystemRequestType::SetSwitchState> const* const pRequestData =
+				static_cast<SSystemRequestData<ESystemRequestType::SetSwitchState> const* const>(request.GetData());
+
+			CSwitch const* const pSwitch = stl::find_in_map(g_switches, pRequestData->switchId, nullptr);
+
+			if (pSwitch != nullptr)
+			{
+				CSwitchState const* const pState = stl::find_in_map(pSwitch->GetStates(), pRequestData->switchStateId, nullptr);
+
+				if (pState != nullptr)
+				{
+					pState->Set(*g_pObject);
+					result = ERequestStatus::Success;
+				}
+			}
+
+			break;
+		}
+	case ESystemRequestType::SetGlobalSwitchState:
+		{
+			result = ERequestStatus::FailureInvalidControlId;
+			SSystemRequestData<ESystemRequestType::SetSwitchState> const* const pRequestData =
+				static_cast<SSystemRequestData<ESystemRequestType::SetSwitchState> const* const>(request.GetData());
+
+			CSwitch const* const pSwitch = stl::find_in_map(g_switches, pRequestData->switchId, nullptr);
+
+			if (pSwitch != nullptr)
+			{
+				CSwitchState const* const pState = stl::find_in_map(pSwitch->GetStates(), pRequestData->switchStateId, nullptr);
+
+				if (pState != nullptr)
+				{
+					pState->SetGlobal();
+					result = ERequestStatus::Success;
+				}
+			}
 
 			break;
 		}
@@ -3081,9 +3381,13 @@ void DrawRequestDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 	posY += Debug::g_managerHeaderLineHeight;
 
 	DrawRequestCategoryInfo(auxGeom, posX, posY, "System");
+	DrawRequestPeakInfo(auxGeom, posX, posY, "ExecuteTrigger", g_requestPeaks.systemExecuteTrigger, g_systemExecuteTriggerPoolSize);
 	DrawRequestPeakInfo(auxGeom, posX, posY, "ExecuteTriggerEx", g_requestPeaks.systemExecuteTriggerEx, g_systemExecuteTriggerExPoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "StopTrigger", g_requestPeaks.systemStopTrigger, g_systemStopTriggerPoolSize);
 	DrawRequestPeakInfo(auxGeom, posX, posY, "RegisterObject", g_requestPeaks.systemRegisterObject, g_systemRegisterObjectPoolSize);
 	DrawRequestPeakInfo(auxGeom, posX, posY, "ReleaseObject", g_requestPeaks.systemReleaseObject, g_systemReleaseObjectPoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "SetParameter", g_requestPeaks.systemSetParameter, g_systemSetParameterPoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "SetSwitchState", g_requestPeaks.systemSetSwitchState, g_systemSetSwitchStatePoolSize);
 
 	DrawRequestCategoryInfo(auxGeom, posX, posY, "Object");
 	DrawRequestPeakInfo(auxGeom, posX, posY, "ExecuteTrigger", g_requestPeaks.objectExecuteTrigger, g_objectExecuteTriggerPoolSize);
@@ -3142,8 +3446,11 @@ void CSystem::HandleDrawDebug()
 				memInfoString.Format("%u KiB", memAlloc >> 10);
 			}
 
+			char const* const szMuted = ((g_systemStates& ESystemStates::IsMuted) != 0) ? " - Muted" : "";
+			char const* const szPaused = ((g_systemStates& ESystemStates::IsPaused) != 0) ? " - Paused" : "";
+
 			pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemHeaderFontSize, Debug::g_globalColorHeader.data(), false,
-			                      "Audio System (Total Memory: %s)", memInfoString.c_str());
+			                      "Audio System (Total Memory: %s)%s%s", memInfoString.c_str(), szMuted, szPaused);
 
 			if ((g_cvars.m_drawDebug & Debug::EDrawFilter::DetailedMemoryInfo) != 0)
 			{
@@ -3394,6 +3701,11 @@ void CSystem::HandleRetriggerControls()
 	if ((g_systemStates& ESystemStates::IsMuted) != 0)
 	{
 		ExecuteDefaultTrigger(EDefaultTriggerType::MuteAll);
+	}
+
+	if ((g_systemStates& ESystemStates::IsPaused) != 0)
+	{
+		ExecuteDefaultTrigger(EDefaultTriggerType::PauseAll);
 	}
 }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE

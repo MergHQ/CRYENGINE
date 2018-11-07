@@ -240,33 +240,38 @@ void CCVars::RegisterVariables()
 
 	REGISTER_COMMAND("s_ExecuteTrigger", CmdExecuteTrigger, VF_CHEAT,
 	                 "Execute an Audio Trigger.\n"
-	                 "The first argument is the name of the AudioTrigger to be executed, the second argument is an optional AudioObject ID.\n"
-	                 "If the second argument is provided, the AudioTrigger is executed on the AudioObject with the given ID,\n"
-	                 "otherwise, the AudioTrigger is executed on the GlobalAudioObject\n"
-	                 "Usage: s_ExecuteTrigger Play_chicken_idle 605 or s_ExecuteTrigger MuteDialog\n");
+	                 "The argument is the name of the AudioTrigger to be executed on the GlobalAudioObject.\n"
+	                 "Usage: s_ExecuteTrigger MuteDialog\n");
 
 	REGISTER_COMMAND("s_StopTrigger", CmdStopTrigger, VF_CHEAT,
 	                 "Execute an Audio Trigger.\n"
-	                 "The first argument is the name of the AudioTrigger to be stopped, the second argument is an optional AudioObject ID.\n"
-	                 "If the second argument is provided, the AudioTrigger is stopped on the AudioObject with the given ID,\n"
-	                 "otherwise, the AudioTrigger is stopped on the GlobalAudioObject\n"
-	                 "Usage: s_StopTrigger Play_chicken_idle 605 or s_StopTrigger MuteDialog\n");
+	                 "The argument is the name of the AudioTrigger to be stopped on the GlobalAudioObject.\n"
+	                 "If no argument ois provided, all playing triggers on the GlobalAudioObject get stopped.\n"
+	                 "Usage: s_StopTrigger MuteDialog\n");
 
 	REGISTER_COMMAND("s_SetParameter", CmdSetParameter, VF_CHEAT,
 	                 "Set an Audio Parameter value.\n"
-	                 "The first argument is the name of the parameter to be set, the second argument is the float value to be set,"
-	                 "the third argument is an optional AudioObject ID.\n"
-	                 "If the third argument is provided, the parameter is set on the AudioObject with the given ID,\n"
-	                 "otherwise, the AudioParameter is set on the GlobalAudioObject\n"
-	                 "Usage: s_SetParameter character_speed  0.0  601 or s_SetParameter volume_music 1.0\n");
+	                 "The first argument is the name of the parameter to be set, the second argument is the float value to be set."
+	                 "The AudioParameter is set on the GlobalAudioObject.\n"
+	                 "Usage: s_SetParameter volume_music 1.0\n");
+
+	REGISTER_COMMAND("s_SetGlobalParameter", CmdSetGlobalParameter, VF_CHEAT,
+	                 "Set an Audio Parameter value.\n"
+	                 "The first argument is the name of the parameter to be set, the second argument is the float value to be set."
+	                 "The AudioParameter is set on all constructed AudioObjects.\n"
+	                 "Usage: s_SetParameter volume_music 1.0\n");
 
 	REGISTER_COMMAND("s_SetSwitchState", CmdSetSwitchState, VF_CHEAT,
 	                 "Set an Audio Switch to a provided State.\n"
-	                 "The first argument is the name of the AudioSwitch to, the second argument is the name of the SwitchState to be set,"
-	                 "the third argument is an optional AudioObject ID.\n"
-	                 "If the third argument is provided, the AudioSwitch is set on the AudioObject with the given ID,\n"
-	                 "otherwise, the AudioSwitch is set on the GlobalAudioObject\n"
-	                 "Usage: s_SetSwitchState SurfaceType concrete 601 or s_SetSwitchState weather rain\n");
+	                 "The first argument is the name of the AudioSwitch to, the second argument is the name of the SwitchState to be set."
+	                 "The AudioSwitch is set on the GlobalAudioObject.\n"
+	                 "Usage: s_SetSwitchState weather rain\n");
+
+	REGISTER_COMMAND("s_SetGlobalSwitchState", CmdSetGlobalSwitchState, VF_CHEAT,
+	                 "Set an Audio Switch to a provided State.\n"
+	                 "The first argument is the name of the AudioSwitch to, the second argument is the name of the SwitchState to be set."
+	                 "The AudioSwitch is set on all constructed AudioObjects.\n"
+	                 "Usage: s_SetSwitchState weather rain\n");
 
 	REGISTER_COMMAND("s_LoadRequest", CmdLoadRequest, VF_CHEAT,
 	                 "Loads a preload request. The preload request has to be non-autoloaded.\n"
@@ -339,7 +344,7 @@ void CCVars::CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
 {
 	int const numArgs = pCmdArgs->GetArgCount();
 
-	if ((numArgs == 2) || (numArgs == 3))
+	if (numArgs == 2)
 	{
 		ControlId const triggerId = CryAudio::StringToId(pCmdArgs->GetArg(1));
 		gEnv->pAudioSystem->ExecuteTrigger(triggerId);
@@ -355,7 +360,11 @@ void CCVars::CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
 {
 	int const numArgs = pCmdArgs->GetArgCount();
 
-	if ((numArgs == 2) || (numArgs == 3))
+	if (numArgs == 1)
+	{
+		gEnv->pAudioSystem->StopTrigger(InvalidControlId);
+	}
+	else if (numArgs == 2)
 	{
 		ControlId const triggerId = CryAudio::StringToId(pCmdArgs->GetArg(1));
 		gEnv->pAudioSystem->StopTrigger(triggerId);
@@ -371,7 +380,7 @@ void CCVars::CmdSetParameter(IConsoleCmdArgs* pCmdArgs)
 {
 	int const numArgs = pCmdArgs->GetArgCount();
 
-	if ((numArgs == 3) || (numArgs == 4))
+	if (numArgs == 3)
 	{
 		ControlId const parameterId = CryAudio::StringToId(pCmdArgs->GetArg(1));
 		double const value = atof(pCmdArgs->GetArg(2));
@@ -384,11 +393,28 @@ void CCVars::CmdSetParameter(IConsoleCmdArgs* pCmdArgs)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CCVars::CmdSetGlobalParameter(IConsoleCmdArgs* pCmdArgs)
+{
+	int const numArgs = pCmdArgs->GetArgCount();
+
+	if (numArgs == 3)
+	{
+		ControlId const parameterId = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		double const value = atof(pCmdArgs->GetArg(2));
+		gEnv->pAudioSystem->SetGlobalParameter(parameterId, static_cast<float>(value));
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Usage: s_SetGlobalParameter [ParameterName] [ParameterValue]");
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CCVars::CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
 {
 	int const numArgs = pCmdArgs->GetArgCount();
 
-	if ((numArgs == 3) || (numArgs == 4))
+	if (numArgs == 3)
 	{
 		ControlId const switchId = CryAudio::StringToId(pCmdArgs->GetArg(1));
 		SwitchStateId const switchStateId = CryAudio::StringToId(pCmdArgs->GetArg(2));
@@ -397,6 +423,23 @@ void CCVars::CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
 	else
 	{
 		Cry::Audio::Log(ELogType::Error, "Usage: s_SetSwitchState [SwitchName] [SwitchStateName]");
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CCVars::CmdSetGlobalSwitchState(IConsoleCmdArgs* pCmdArgs)
+{
+	int const numArgs = pCmdArgs->GetArgCount();
+
+	if (numArgs == 3)
+	{
+		ControlId const switchId = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		SwitchStateId const switchStateId = CryAudio::StringToId(pCmdArgs->GetArg(2));
+		gEnv->pAudioSystem->SetGlobalSwitchState(switchId, switchStateId);
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Usage: s_SetGlobalSwitchState [SwitchName] [SwitchStateName]");
 	}
 }
 

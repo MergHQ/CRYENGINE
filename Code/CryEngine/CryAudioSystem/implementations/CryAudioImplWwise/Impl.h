@@ -24,19 +24,21 @@ public:
 
 	// CryAudio::Impl::IImpl
 	virtual void                Update() override;
-	virtual ERequestStatus      Init(uint32 const objectPoolSize, uint32 const eventPoolSize) override;
+	virtual ERequestStatus      Init(uint16 const objectPoolSize, uint16 const eventPoolSize) override;
 	virtual void                ShutDown() override;
 	virtual void                Release() override;
 	virtual void                SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific) override;
 	virtual void                OnBeforeLibraryDataChanged() override;
 	virtual void                OnAfterLibraryDataChanged() override;
-	virtual ERequestStatus      OnLoseFocus() override;
-	virtual ERequestStatus      OnGetFocus() override;
-	virtual ERequestStatus      MuteAll() override;
-	virtual ERequestStatus      UnmuteAll() override;
-	virtual ERequestStatus      PauseAll() override;
-	virtual ERequestStatus      ResumeAll() override;
+	virtual void                OnLoseFocus() override;
+	virtual void                OnGetFocus() override;
+	virtual void                MuteAll() override;
+	virtual void                UnmuteAll() override;
+	virtual void                PauseAll() override;
+	virtual void                ResumeAll() override;
 	virtual ERequestStatus      StopAllSounds() override;
+	virtual void                SetGlobalParameter(IParameter const* const pIParameter, float const value) override;
+	virtual void                SetGlobalSwitchState(ISwitchState const* const pISwitchState) override;
 	virtual void                GamepadConnected(DeviceId const deviceUniqueID) override;
 	virtual void                GamepadDisconnected(DeviceId const deviceUniqueID) override;
 	virtual void                OnRefresh() override;

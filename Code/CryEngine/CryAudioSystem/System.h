@@ -33,7 +33,9 @@ public:
 	virtual void        ExecuteTrigger(ControlId const triggerId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        StopTrigger(ControlId const triggerId = InvalidControlId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        SetParameter(ControlId const parameterId, float const value, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void        SetGlobalParameter(ControlId const parameterId, float const value, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        SetSwitchState(ControlId const switchId, SwitchStateId const switchStateId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void        SetGlobalSwitchState(ControlId const switchId, SwitchStateId const switchStateId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        StopFile(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        ReportStartedFile(CStandaloneFile& standaloneFile, bool const bSuccessfullyStarted, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
@@ -111,8 +113,8 @@ private:
 	volatile float        m_accumulatedFrameTime = 0.0f;
 	std::atomic<uint32>   m_externalThreadFrameId{ 0 };
 	uint32                m_lastExternalThreadFrameId = 0;
-	uint32                m_objectPoolSize = 0;
-	uint32                m_eventPoolSize = 0;
+	uint16                m_objectPoolSize = 0;
+	uint16                m_eventPoolSize = 0;
 	SImplInfo             m_implInfo;
 	CMainThread           m_mainThread;
 

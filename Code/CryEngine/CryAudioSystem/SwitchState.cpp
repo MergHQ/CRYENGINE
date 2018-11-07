@@ -13,22 +13,31 @@ namespace CryAudio
 //////////////////////////////////////////////////////////////////////////
 CSwitchState::~CSwitchState()
 {
-	for (auto const pStateImpl : m_connections)
+	for (auto const pConnection : m_connections)
 	{
-		delete pStateImpl;
+		delete pConnection;
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CSwitchState::Set(CObject const& object) const
 {
-	for (auto const pSwitchStateImpl : m_connections)
+	for (auto const pConnection : m_connections)
 	{
-		pSwitchStateImpl->Set(object);
+		pConnection->Set(object);
 	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	const_cast<CObject&>(object).StoreSwitchValue(m_switchId, m_switchStateId);
 #endif   // INCLUDE_AUDIO_PRODUCTION_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSwitchState::SetGlobal() const
+{
+	for (auto const pConnection : m_connections)
+	{
+		pConnection->SetGlobal();
+	}
 }
 } // namespace CryAudio

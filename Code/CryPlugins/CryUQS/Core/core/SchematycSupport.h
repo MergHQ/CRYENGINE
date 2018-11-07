@@ -2,6 +2,8 @@
 
 #pragma once
 
+// *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
+
 #if UQS_SCHEMATYC_SUPPORT
 
 namespace UQS

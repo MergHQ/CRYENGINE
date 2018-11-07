@@ -29,7 +29,9 @@ namespace Fmod
 {
 class CListener;
 class CTrigger;
+class CGlobalObject;
 
+extern CGlobalObject* g_pObject;
 extern CListener* g_pListener;
 extern uint32 g_numObjectsWithDoppler;
 

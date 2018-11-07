@@ -9,6 +9,8 @@
 #include "Parameter.h"
 #include "SwitchState.h"
 #include "Trigger.h"
+#include "VcaParameter.h"
+#include "VcaState.h"
 
 #include <Logger.h>
 #include <CryAudio/IAudioSystem.h>
@@ -337,6 +339,214 @@ void CBaseObject::Update(float const deltaTime)
 			}
 			++iter;
 		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CBaseObject::SetParameter(IParameter const* const pIParameter, float const value)
+{
+	auto const pBaseParameter = static_cast<CBaseParameter const*>(pIParameter);
+
+	if (pBaseParameter != nullptr)
+	{
+		EParameterType const type = pBaseParameter->GetType();
+
+		if (type == EParameterType::Parameter)
+		{
+			auto const pParameter = static_cast<CParameter const*>(pBaseParameter);
+			uint32 const parameterId = pParameter->GetId();
+			FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
+
+			for (auto const pEvent : m_events)
+			{
+				FMOD::Studio::EventInstance* const pEventInstance = pEvent->GetInstance();
+				CRY_ASSERT_MESSAGE(pEventInstance != nullptr, "Event instance doesn't exist during %s", __FUNCTION__);
+				CTrigger const* const pTrigger = pEvent->GetTrigger();
+				CRY_ASSERT_MESSAGE(pTrigger != nullptr, "Trigger doesn't exist during %s", __FUNCTION__);
+
+				FMOD::Studio::EventDescription* pEventDescription = nullptr;
+				fmodResult = pEventInstance->getDescription(&pEventDescription);
+				ASSERT_FMOD_OK;
+
+				if (g_triggerToParameterIndexes.find(pTrigger) != g_triggerToParameterIndexes.end())
+				{
+					ParameterIdToIndex& parameters = g_triggerToParameterIndexes[pTrigger];
+
+					if (parameters.find(parameterId) != parameters.end())
+					{
+						fmodResult = pEventInstance->setParameterValueByIndex(parameters[parameterId], pParameter->GetValueMultiplier() * value + pParameter->GetValueShift());
+						ASSERT_FMOD_OK;
+					}
+					else
+					{
+						int parameterCount = 0;
+						fmodResult = pEventInstance->getParameterCount(&parameterCount);
+						ASSERT_FMOD_OK;
+
+						for (int index = 0; index < parameterCount; ++index)
+						{
+							FMOD_STUDIO_PARAMETER_DESCRIPTION parameterDescription;
+							fmodResult = pEventDescription->getParameterByIndex(index, &parameterDescription);
+							ASSERT_FMOD_OK;
+
+							if (parameterId == StringToId(parameterDescription.name))
+							{
+								parameters.emplace(parameterId, index);
+								fmodResult = pEventInstance->setParameterValueByIndex(index, pParameter->GetValueMultiplier() * value + pParameter->GetValueShift());
+								ASSERT_FMOD_OK;
+								break;
+							}
+						}
+					}
+				}
+				else
+				{
+					int parameterCount = 0;
+					fmodResult = pEventInstance->getParameterCount(&parameterCount);
+					ASSERT_FMOD_OK;
+
+					for (int index = 0; index < parameterCount; ++index)
+					{
+						FMOD_STUDIO_PARAMETER_DESCRIPTION parameterDescription;
+						fmodResult = pEventDescription->getParameterByIndex(index, &parameterDescription);
+						ASSERT_FMOD_OK;
+
+						if (parameterId == StringToId(parameterDescription.name))
+						{
+							g_triggerToParameterIndexes[pTrigger].emplace(std::make_pair(parameterId, index));
+							fmodResult = pEventInstance->setParameterValueByIndex(index, pParameter->GetValueMultiplier() * value + pParameter->GetValueShift());
+							ASSERT_FMOD_OK;
+							break;
+						}
+					}
+				}
+			}
+
+			auto const iter(m_parameters.find(pParameter));
+
+			if (iter != m_parameters.end())
+			{
+				iter->second = value;
+			}
+			else
+			{
+				m_parameters.emplace(pParameter, value);
+			}
+		}
+		else if (type == EParameterType::VCA)
+		{
+			auto const pVca = static_cast<CVcaParameter const*>(pBaseParameter);
+			FMOD_RESULT const fmodResult = pVca->GetVca()->setVolume(pVca->GetValueMultiplier() * value + pVca->GetValueShift());
+			ASSERT_FMOD_OK;
+		}
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Invalid AudioObjectData or ParameterData passed to the Fmod implementation of SetParameter");
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CBaseObject::SetSwitchState(ISwitchState const* const pISwitchState)
+{
+	auto const pBaseSwitchState = static_cast<CBaseSwitchState const*>(pISwitchState);
+
+	if (pBaseSwitchState != nullptr)
+	{
+		EStateType const type = pBaseSwitchState->GetType();
+
+		if (type == EStateType::State)
+		{
+			auto const pSwitchState = static_cast<CSwitchState const*>(pBaseSwitchState);
+			uint32 const parameterId = pSwitchState->GetId();
+			FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
+
+			for (auto const pEvent : m_events)
+			{
+				FMOD::Studio::EventInstance* const pEventInstance = pEvent->GetInstance();
+				CRY_ASSERT_MESSAGE(pEventInstance != nullptr, "Event instance doesn't exist during %s", __FUNCTION__);
+				CTrigger const* const pTrigger = pEvent->GetTrigger();
+				CRY_ASSERT_MESSAGE(pTrigger != nullptr, "Trigger doesn't exist during %s", __FUNCTION__);
+
+				FMOD::Studio::EventDescription* pEventDescription = nullptr;
+				fmodResult = pEventInstance->getDescription(&pEventDescription);
+				ASSERT_FMOD_OK;
+
+				if (g_triggerToParameterIndexes.find(pTrigger) != g_triggerToParameterIndexes.end())
+				{
+					ParameterIdToIndex& parameters = g_triggerToParameterIndexes[pTrigger];
+
+					if (parameters.find(parameterId) != parameters.end())
+					{
+						fmodResult = pEventInstance->setParameterValueByIndex(parameters[parameterId], pSwitchState->GetValue());
+						ASSERT_FMOD_OK;
+					}
+					else
+					{
+						int parameterCount = 0;
+						fmodResult = pEventInstance->getParameterCount(&parameterCount);
+						ASSERT_FMOD_OK;
+
+						for (int index = 0; index < parameterCount; ++index)
+						{
+							FMOD_STUDIO_PARAMETER_DESCRIPTION parameterDescription;
+							fmodResult = pEventDescription->getParameterByIndex(index, &parameterDescription);
+							ASSERT_FMOD_OK;
+
+							if (parameterId == StringToId(parameterDescription.name))
+							{
+								parameters.emplace(parameterId, index);
+								fmodResult = pEventInstance->setParameterValueByIndex(index, pSwitchState->GetValue());
+								ASSERT_FMOD_OK;
+								break;
+							}
+						}
+					}
+				}
+				else
+				{
+					int parameterCount = 0;
+					fmodResult = pEventInstance->getParameterCount(&parameterCount);
+					ASSERT_FMOD_OK;
+
+					for (int index = 0; index < parameterCount; ++index)
+					{
+						FMOD_STUDIO_PARAMETER_DESCRIPTION parameterDescription;
+						fmodResult = pEventDescription->getParameterByIndex(index, &parameterDescription);
+						ASSERT_FMOD_OK;
+
+						if (parameterId == StringToId(parameterDescription.name))
+						{
+							g_triggerToParameterIndexes[pTrigger].emplace(std::make_pair(parameterId, index));
+							fmodResult = pEventInstance->setParameterValueByIndex(index, pSwitchState->GetValue());
+							ASSERT_FMOD_OK;
+							break;
+						}
+					}
+				}
+			}
+
+			auto const iter(m_switches.find(pSwitchState->GetId()));
+
+			if (iter != m_switches.end())
+			{
+				iter->second = pSwitchState;
+			}
+			else
+			{
+				m_switches.emplace(pSwitchState->GetId(), pSwitchState);
+			}
+		}
+		else if (type == EStateType::VCA)
+		{
+			auto const pVca = static_cast<CVcaState const*>(pBaseSwitchState);
+			FMOD_RESULT const fmodResult = pVca->GetVca()->setVolume(pVca->GetValue());
+			ASSERT_FMOD_OK;
+		}
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Invalid switch pointer passed to the Fmod implementation of SetSwitchState");
 	}
 }
 

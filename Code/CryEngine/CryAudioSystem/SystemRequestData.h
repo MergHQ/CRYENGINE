@@ -24,6 +24,10 @@ enum class ESystemRequestType : EnumFlagsType
 	ClearPreloadsData,
 	PreloadSingleRequest,
 	UnloadSingleRequest,
+	SetParameter,
+	SetGlobalParameter,
+	SetSwitchState,
+	SetGlobalSwitchState,
 	AutoLoadSetting,
 	LoadSetting,
 	UnloadSetting,
@@ -41,10 +45,13 @@ enum class ESystemRequestType : EnumFlagsType
 	ReleaseListener,
 	RegisterObject,
 	ReleaseObject,
+	ExecuteTrigger,
 	ExecuteTriggerEx,
 	ExecuteDefaultTrigger,
 	ExecutePreviewTrigger,
 	ExecutePreviewTriggerEx,
+	StopTrigger,
+	StopAllTriggers,
 	StopPreviewTrigger,
 };
 
@@ -266,6 +273,94 @@ struct SSystemRequestData<ESystemRequestType::UnloadSingleRequest> final : publi
 	virtual ~SSystemRequestData() override = default;
 
 	PreloadRequestId const preloadRequestId;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SSystemRequestData<ESystemRequestType::SetParameter> final : public SSystemRequestDataBase, public CPoolObject<SSystemRequestData<ESystemRequestType::SetParameter>, stl::PSyncMultiThread>
+{
+	explicit SSystemRequestData(ControlId const parameterId_, float const value_)
+		: SSystemRequestDataBase(ESystemRequestType::SetParameter)
+		, parameterId(parameterId_)
+		, value(value_)
+	{}
+
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::SetParameter> const* const pASRData)
+		: SSystemRequestDataBase(ESystemRequestType::SetParameter)
+		, parameterId(pASRData->parameterId)
+		, value(pASRData->value)
+	{}
+
+	virtual ~SSystemRequestData() override = default;
+
+	ControlId const parameterId;
+	float const     value;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SSystemRequestData<ESystemRequestType::SetGlobalParameter> final : public SSystemRequestDataBase
+{
+	explicit SSystemRequestData(ControlId const parameterId_, float const value_)
+		: SSystemRequestDataBase(ESystemRequestType::SetGlobalParameter)
+		, parameterId(parameterId_)
+		, value(value_)
+	{}
+
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::SetGlobalParameter> const* const pASRData)
+		: SSystemRequestDataBase(ESystemRequestType::SetGlobalParameter)
+		, parameterId(pASRData->parameterId)
+		, value(pASRData->value)
+	{}
+
+	virtual ~SSystemRequestData() override = default;
+
+	ControlId const parameterId;
+	float const     value;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SSystemRequestData<ESystemRequestType::SetSwitchState> final : public SSystemRequestDataBase, public CPoolObject<SSystemRequestData<ESystemRequestType::SetSwitchState>, stl::PSyncMultiThread>
+{
+	explicit SSystemRequestData(ControlId const switchId_, SwitchStateId const switchStateId_)
+		: SSystemRequestDataBase(ESystemRequestType::SetSwitchState)
+		, switchId(switchId_)
+		, switchStateId(switchStateId_)
+	{}
+
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::SetSwitchState> const* const pASRData)
+		: SSystemRequestDataBase(ESystemRequestType::SetSwitchState)
+		, switchId(pASRData->switchId)
+		, switchStateId(pASRData->switchStateId)
+	{}
+
+	virtual ~SSystemRequestData() override = default;
+
+	ControlId const     switchId;
+	SwitchStateId const switchStateId;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SSystemRequestData<ESystemRequestType::SetGlobalSwitchState> final : public SSystemRequestDataBase
+{
+	explicit SSystemRequestData(ControlId const switchId_, SwitchStateId const switchStateId_)
+		: SSystemRequestDataBase(ESystemRequestType::SetGlobalSwitchState)
+		, switchId(switchId_)
+		, switchStateId(switchStateId_)
+	{}
+
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::SetGlobalSwitchState> const* const pASRData)
+		: SSystemRequestDataBase(ESystemRequestType::SetGlobalSwitchState)
+		, switchId(pASRData->switchId)
+		, switchStateId(pASRData->switchStateId)
+	{}
+
+	virtual ~SSystemRequestData() override = default;
+
+	ControlId const     switchId;
+	SwitchStateId const switchStateId;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -524,6 +619,25 @@ struct SSystemRequestData<ESystemRequestType::ReleaseObject> final : public SSys
 
 //////////////////////////////////////////////////////////////////////////
 template<>
+struct SSystemRequestData<ESystemRequestType::ExecuteTrigger> final : public SSystemRequestDataBase, public CPoolObject<SSystemRequestData<ESystemRequestType::ExecuteTrigger>, stl::PSyncMultiThread>
+{
+	explicit SSystemRequestData(ControlId const triggerId_)
+		: SSystemRequestDataBase(ESystemRequestType::ExecuteTrigger)
+		, triggerId(triggerId_)
+	{}
+
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::ExecuteTrigger> const* const pASRData)
+		: SSystemRequestDataBase(ESystemRequestType::ExecuteTrigger)
+		, triggerId(pASRData->triggerId)
+	{}
+
+	virtual ~SSystemRequestData() override = default;
+
+	ControlId const triggerId;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
 struct SSystemRequestData<ESystemRequestType::ExecuteTriggerEx> final : public SSystemRequestDataBase, public CPoolObject<SSystemRequestData<ESystemRequestType::ExecuteTriggerEx>, stl::PSyncMultiThread>
 {
 	explicit SSystemRequestData(SExecuteTriggerData const& data)
@@ -573,6 +687,25 @@ struct SSystemRequestData<ESystemRequestType::ExecuteDefaultTrigger> final : pub
 	virtual ~SSystemRequestData() override = default;
 
 	EDefaultTriggerType const triggerType;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SSystemRequestData<ESystemRequestType::StopTrigger> final : public SSystemRequestDataBase, public CPoolObject<SSystemRequestData<ESystemRequestType::StopTrigger>, stl::PSyncMultiThread>
+{
+	explicit SSystemRequestData(ControlId const triggerId_)
+		: SSystemRequestDataBase(ESystemRequestType::StopTrigger)
+		, triggerId(triggerId_)
+	{}
+
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::StopTrigger> const* const pASRData)
+		: SSystemRequestDataBase(ESystemRequestType::StopTrigger)
+		, triggerId(pASRData->triggerId)
+	{}
+
+	virtual ~SSystemRequestData() override = default;
+
+	ControlId const triggerId;
 };
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)

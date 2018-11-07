@@ -12,12 +12,11 @@ namespace Impl
 {
 namespace Adx2
 {
-class CBaseObject;
+class CGlobalObject;
 class CListener;
 
+extern CGlobalObject* g_pObject;
 extern CListener* g_pListener;
-
-using Objects = std::vector<CBaseObject*>;
 
 using AcbHandles = std::map<uint32, CriAtomExAcbHn>;
 extern AcbHandles g_acbHandles;

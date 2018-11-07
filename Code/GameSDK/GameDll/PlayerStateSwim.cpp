@@ -420,7 +420,7 @@ void CPlayerStateSwim::UpdateAudio(CPlayer const& player)
 		if (fabs_tpl(submersionDepth - m_previousSubmersionDepth) > 0.1f || submersionDepth == 0.0f)
 		{
 			m_previousSubmersionDepth = submersionDepth;
-			gEnv->pAudioSystem->SetParameter(m_submersionDepthParam, submersionDepth);
+			gEnv->pAudioSystem->SetGlobalParameter(m_submersionDepthParam, submersionDepth);
 		}
 	}
 }
