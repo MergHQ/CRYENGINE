@@ -623,10 +623,10 @@ public:
 	DynArray<uint32> m_animListIDs;
 	IAnimationSet*       GetIAnimationSet()       { return m_pAnimationSet; }
 	const IAnimationSet* GetIAnimationSet() const { return m_pAnimationSet.get(); }
-	bool LoadAnimations(class CParamLoader& paramLoader);   //loads animations by using the output of the ParamLoader
+	bool LoadAnimations(class CChrParamLoader& paramLoader);   //loads animations by using the output of the ParamLoader
 	const string         GetDefaultAnimDir();
-	uint32               LoadAnimationFiles(CParamLoader& paramLoader, uint32 listID);  // load animation files that were parsed from the param file into memory (That are not in DBA)
-	uint32               ReuseAnimationFiles(CParamLoader& paramLoader, uint32 listID); // files that are already in memory can be reused
+	uint32               LoadAnimationFiles(CChrParamLoader& paramLoader, uint32 listID);  // load animation files that were parsed from the param file into memory (That are not in DBA)
+	uint32               ReuseAnimationFiles(CChrParamLoader& paramLoader, uint32 listID); // files that are already in memory can be reused
 
 	//! Returns sorted range of crc32 identifiers representing joints belonging to the given animation lod. If the returned range is empty, it signifies that LoD includes all joints.
 	std::pair<const uint32*, const uint32*> FindClosestAnimationLod(const int lodValue) const;

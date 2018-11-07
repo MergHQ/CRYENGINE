@@ -10,7 +10,7 @@
 
 // ---------------------------------------------------------------------------
 
-static bool IsFileExists(const char* filename)
+static bool DoesFileExist(const char* filename)
 {
 	string path = PathUtil::Make(PathUtil::GetGameFolder(), filename);
 	DWORD fileAttributes = GetFileAttributesA(path.c_str());
@@ -161,14 +161,14 @@ public:
 
 		std::vector<string> filesToRemove;
 		filesToRemove.reserve(filenames.size());
-		for (size_t i = 0; i < filenames.size(); ++i)
+		for (const string& filename : filenames)
 		{
-			string iCafName = PathUtil::ReplaceExtension(filenames[i], "i_caf");
-			string animSettingsName = PathUtil::ReplaceExtension(filenames[i], "animsettings");
-			if (!IsFileExists(animSettingsName.c_str()) && !IsFileExists(iCafName.c_str()))
+			string iCafName = PathUtil::ReplaceExtension(filename, "i_caf");
+			string animSettingsName = PathUtil::ReplaceExtension(filename, "animsettings");
+			if (!DoesFileExist(animSettingsName.c_str()) && !DoesFileExist(iCafName.c_str()))
 			{
-				filesToRemove.push_back(filenames[i]);
-				filesToRemove.push_back(PathUtil::ReplaceExtension(filenames[i], "$animsettings"));
+				filesToRemove.push_back(filename);
+				filesToRemove.push_back(PathUtil::ReplaceExtension(filename, "$animsettings"));
 			}
 		}
 
@@ -294,9 +294,9 @@ void CAnimationCompressionManager::OnFileChange(const char* filename, EChangeTyp
 		string animationPath = PathUtil::ReplaceExtension(filename, "caf");
 		string settingsFilepath = PathUtil::ReplaceExtension(filename, "animsettings");
 		string filepath = filename;
-		if (IsFileExists(filepath.c_str()))
+		if (DoesFileExist(filepath.c_str()))
 		{
-			if (IsFileExists(settingsFilepath))
+			if (DoesFileExist(settingsFilepath))
 			{
 				QueueAnimationCompression(animationPath.c_str());
 			}
@@ -307,7 +307,7 @@ void CAnimationCompressionManager::OnFileChange(const char* filename, EChangeTyp
 		string animationPath = PathUtil::ReplaceExtension(filename, "caf");
 		string settingsFilepath = filename;
 		string filepath = PathUtil::ReplaceExtension(filename, "i_caf");
-		if (IsFileExists(filepath.c_str()) && IsFileExists(settingsFilepath))
+		if (DoesFileExist(filepath.c_str()) && DoesFileExist(settingsFilepath))
 			QueueAnimationCompression(animationPath.c_str());
 	}
 }

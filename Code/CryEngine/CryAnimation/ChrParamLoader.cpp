@@ -1,7 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "ParamLoader.h"
+#include "ChrParamLoader.h"
 
 #include "CharacterManager.h"
 #include "Model.h"
@@ -83,18 +83,18 @@ bool FindJointInParentHierarchy(const CDefaultSkeleton* const pDefaultSkeleton, 
 }
 }
 
-CParamLoader::CParamLoader() : m_pDefaultSkeleton(nullptr)
+CChrParamLoader::CChrParamLoader() : m_pDefaultSkeleton(nullptr)
 {
 	m_parsedLists.reserve(256);
 }
 
-CParamLoader::~CParamLoader(void)
+CChrParamLoader::~CChrParamLoader(void)
 {
 	ClearLists();
 }
 
 // for a given list id (of an already loaded list) return all list i
-bool CParamLoader::BuildDependencyList(int32 rootListID, DynArray<uint32>& listIDs)
+bool CChrParamLoader::BuildDependencyList(int32 rootListID, DynArray<uint32>& listIDs)
 {
 	SAnimListInfo& animList = m_parsedLists[rootListID];
 
@@ -107,7 +107,7 @@ bool CParamLoader::BuildDependencyList(int32 rootListID, DynArray<uint32>& listI
 	return true;
 }
 
-int32 CParamLoader::ListProcessed(const char* paramFileName)
+int32 CChrParamLoader::FindAlreadyProcessedListID(const char* paramFileName) const
 {
 	// check if List has already been processed
 	int32 nListIDs = m_parsedLists.size();
@@ -124,7 +124,7 @@ int32 CParamLoader::ListProcessed(const char* paramFileName)
 #define MAX_STRING_LENGTH (256)
 
 // finds the first occurence of
-CAF_ID CParamLoader::MemFindFirst(const char** ppAnimPath, const char* szMask, uint32 crcFolder, CAF_ID nCafID)
+CAF_ID CChrParamLoader::MemFindFirst(const char** ppAnimPath, const char* szMask, uint32 crcFolder, CAF_ID nCafID)
 {
 	LOADING_TIME_PROFILE_SECTION(g_pISystem);
 
@@ -150,7 +150,7 @@ CAF_ID CParamLoader::MemFindFirst(const char** ppAnimPath, const char* szMask, u
 	return CAF_ID(-1, -1);
 }
 
-void CParamLoader::ExpandWildcardsForPath(SAnimListInfo& animList, const char* szMask, uint32 crcFolder, const char* szAnimNamePre, const char* szAnimNamePost)
+void CChrParamLoader::ExpandWildcardsForPath(SAnimListInfo& animList, const char* szMask, uint32 crcFolder, const char* szAnimNamePre, const char* szAnimNamePost)
 {
 	const char* szAnimPath;
 	CAF_ID nCafID = MemFindFirst(&szAnimPath, szMask, crcFolder, CAF_ID(0, 0));
@@ -174,7 +174,7 @@ void CParamLoader::ExpandWildcardsForPath(SAnimListInfo& animList, const char* s
 	}
 }
 
-bool CParamLoader::ExpandWildcards(uint32 listID)
+bool CChrParamLoader::ExpandWildcards(uint32 listID)
 {
 	LOADING_TIME_PROFILE_SECTION(g_pISystem);
 
@@ -471,24 +471,24 @@ bool CParamLoader::ExpandWildcards(uint32 listID)
 }
 
 // check if a list has already been parsed and is in memory, if not, parse it and load it into m_parsedLists
-int32 CParamLoader::LoadAnimList(const XmlNodeRef calNode, const char* paramFileName, string strAnimDirName)
+int32 CChrParamLoader::LoadAnimList(const XmlNodeRef animListXmlNode, const char* paramFileName, string strAnimDirName)
 {
 	LOADING_TIME_PROFILE_SECTION(g_pISystem);
 
-	if (!calNode)
+	if (!animListXmlNode)
 		return -1;
 
 	// check if List has already been processed
-	int32 newID = ListProcessed(paramFileName);
-	if (newID != -1)
-		return newID;
+	int32 alreadyProcessedListID = FindAlreadyProcessedListID(paramFileName);
+	if (alreadyProcessedListID != -1)
+		return alreadyProcessedListID;
 
 	SAnimListInfo animList(paramFileName);
-	const char* pFilePath = m_pDefaultSkeleton->GetModelFilePath();
-	const char* pFileName = PathUtil::GetFile(pFilePath);
-	animList.arrAnimFiles.push_back(SAnimFile(stack_string(NULL_ANIM_FILE "/") + pFileName, "null"));
+	const char* szFilePath = m_pDefaultSkeleton->GetModelFilePath();
+	const char* szFileName = PathUtil::GetFile(szFilePath);
+	animList.arrAnimFiles.push_back(SAnimFile(stack_string(NULL_ANIM_FILE "/") + szFileName, "null"));
 
-	const int BITE = 512;
+	const int MAX_STRLEN = 512;
 
 	// [Alexey} - TODO! FIXME!!! FIXME!!!
 	// We have 50 from 100 identical file parsing!!!
@@ -504,80 +504,81 @@ int32 CParamLoader::LoadAnimList(const XmlNodeRef calNode, const char* paramFile
 	//} else
 	//	m_checkMap[string(calFileName)] = 0;
 
-	uint32 count = calNode->getChildCount();
-	for (uint32 i = 0; i < count; ++i)
+	uint32 xmlChildrenCount = animListXmlNode->getChildCount();
+	for (uint32 i = 0; i < xmlChildrenCount; ++i)
 	{
+		const XmlNodeRef currentChild = animListXmlNode->getChild(i);
 
-		XmlNodeRef assignmentNode = calNode->getChild(i);
-
-		if (stricmp(assignmentNode->getTag(), "Animation"))
+		if (stricmp(currentChild->getTag(), "Animation"))
+		{
+			// should output some warning
 			continue;
+		}
 
-		CryFixedStringT<BITE> line;
+		CryFixedStringT<MAX_STRLEN> animPath;
+		CryFixedStringT<MAX_STRLEN> animName;
+		CryFixedStringT<MAX_STRLEN> currentPathToken;
 
-		CryFixedStringT<BITE> key;
-		CryFixedStringT<BITE> value;
+		animName.append(currentChild->getAttr("name"));
+		animPath.append(currentChild->getAttr("path"));
 
-		key.append(assignmentNode->getAttr("name"));
-		line.append(assignmentNode->getAttr("path"));
-
-		int32 pos = 0;
-		value = line.Tokenize(" \t\n\r=", pos);
+		int32 tokenizeCharIndex = 0;
+		currentPathToken = animPath.Tokenize(" \t\n\r=", tokenizeCharIndex);
 
 		// now only needed for aim poses
-		char buffer[BITE];
-		cry_strcpy(buffer, line.c_str());
+		char szLine[MAX_STRLEN];
+		cry_strcpy(szLine, animPath.c_str());
 
-		if (value.empty() || value.at(0) == '?')
+		if (currentPathToken.empty() || currentPathToken.at(0) == '?')
 		{
 			continue;
 		}
 
-		if (0 == stricmp(key, "#filepath"))
+		if (0 == stricmp(animName, "#filepath"))
 		{
-			strAnimDirName = PathUtil::ToUnixPath(line.c_str());
+			strAnimDirName = PathUtil::ToUnixPath(animPath.c_str());
 			strAnimDirName.TrimRight('/'); // delete the trailing slashes
 			continue;
 		}
 
-		if (0 == stricmp(key, "#ParseSubFolders"))
+		if (0 == stricmp(animName, "#ParseSubFolders"))
 		{
 			Warning(paramFileName, VALIDATOR_WARNING, "Ignoring deprecated #ParseSubFolders directive");
 			continue;
 		}
 
 		// remove first '\' and replace '\' with '/'
-		value.replace('\\', '/');
-		value.TrimLeft('/');
+		currentPathToken.replace('\\', '/');
+		currentPathToken.TrimLeft('/');
 
 		// process the possible directives
-		if (key.at(0) == '$')
+		if (animName.at(0) == '$')
 		{
-			if (!stricmp(key, "$AnimationDir") || !stricmp(key, "$AnimDir") || !stricmp(key, "$AnimationDirectory") || !stricmp(key, "$AnimDirectory"))
+			if (!stricmp(animName, "$AnimationDir") || !stricmp(animName, "$AnimDir") || !stricmp(animName, "$AnimationDirectory") || !stricmp(animName, "$AnimDirectory"))
 			{
-				Warning(paramFileName, VALIDATOR_ERROR, "Deprecated directive \"%s\"", key.c_str());
+				Warning(paramFileName, VALIDATOR_ERROR, "Deprecated directive \"%s\"", animName.c_str());
 			}
-			else if (!stricmp(key, "$AnimEventDatabase"))
+			else if (!stricmp(animName, "$AnimEventDatabase"))
 			{
 				if (animList.animEventDatabase.empty())
-					animList.animEventDatabase = value.c_str();
+					animList.animEventDatabase = currentPathToken.c_str();
 				//				else
 				//					Warning(calFileName, VALIDATOR_WARNING, "Failed to set animation event database \"%s\". Animation event database is already set to \"%s\"", value.c_str(), m_animEventDatabase.c_str());
 			}
-			else if (!stricmp(key, "$TracksDatabase"))
+			else if (!stricmp(animName, "$TracksDatabase"))
 			{
-				int wildcardPos = value.find('*');
-				if (wildcardPos >= 0)
+				int wildcardCharIndex = currentPathToken.find('*');
+				if (wildcardCharIndex >= 0)
 				{
 					//--- Wildcard include
 
-					stack_string path = value.Left(wildcardPos);
-					PathUtil::ToUnixPath(path);
-					stack_string filename = PathUtil::GetFile(value.c_str());
+					stack_string pathBeforeWildcard = currentPathToken.Left(wildcardCharIndex);
+					PathUtil::ToUnixPath(pathBeforeWildcard);
+					stack_string filename = PathUtil::GetFile(currentPathToken.c_str());
 
 					std::vector<string> dbaFiles;
 					SDirectoryEnumeratorHelper dirParser;
-					dirParser.ScanDirectoryRecursive("", path, filename, dbaFiles);
+					dirParser.ScanDirectoryRecursive("", pathBeforeWildcard, filename, dbaFiles);
 
 					const uint32 numDBAs = dbaFiles.size();
 					for (uint32 d = 0; d < numDBAs; d++)
@@ -588,34 +589,32 @@ int32 CParamLoader::LoadAnimList(const XmlNodeRef calNode, const char* paramFile
 				}
 				else
 				{
-					if (!AddIfNewModelTracksDatabase(animList, value.c_str()))
-						Warning(paramFileName, VALIDATOR_WARNING, "Duplicate model tracks database declared \"%s\"", value.c_str());
+					if (!AddIfNewModelTracksDatabase(animList, currentPathToken.c_str()))
+						Warning(paramFileName, VALIDATOR_WARNING, "Duplicate model tracks database declared \"%s\"", currentPathToken.c_str());
 
-					CryFixedStringT<BITE> flags;
-					flags.append(assignmentNode->getAttr("flags"));
+					CryFixedStringT<MAX_STRLEN> flags;
+					flags.append(currentChild->getAttr("flags"));
 
 					// flag handling
 					if (!flags.empty())
 					{
 						if (strstr(flags.c_str(), "persistent"))
 						{
-							animList.lockedDatabases.push_back(value.c_str());
+							animList.lockedDatabases.push_back(currentPathToken.c_str());
 						}
 					}
 				}
 			}
-			else if (!stricmp(key, "$Include"))
+			// This part repeats the code in LoadXml, should be refactored 
+			else if (!stricmp(animName, "$Include"))
 			{
-				int32 listID = ListProcessed(value.c_str());
-
+				int32 listID = FindAlreadyProcessedListID(currentPathToken.c_str());
 				if (listID == -1)
 				{
-
 					// load the new params file, but only parse the AnimationList section
-
 					XmlNodeRef topRoot;
 #ifdef EDITOR_PCDEBUGCODE
-					string cacheKey = value;
+					string cacheKey = currentPathToken;
 					cacheKey.MakeLower();
 					CachedCHRPARAMS::iterator it = m_cachedCHRPARAMS.find(cacheKey);
 					if (it != m_cachedCHRPARAMS.end())
@@ -625,7 +624,7 @@ int32 CParamLoader::LoadAnimList(const XmlNodeRef calNode, const char* paramFile
 					else
 #endif
 					{
-						topRoot = g_pISystem->LoadXmlFromFile(value.c_str());
+						topRoot = g_pISystem->LoadXmlFromFile(currentPathToken.c_str());
 					}
 
 					if (topRoot)
@@ -641,7 +640,7 @@ int32 CParamLoader::LoadAnimList(const XmlNodeRef calNode, const char* paramFile
 								const char* newNodeTag = node->getTag();
 								if (stricmp(newNodeTag, "AnimationList") == 0)
 								{
-									listID = LoadAnimList(node, value, strAnimDirName);
+									listID = LoadAnimList(node, currentPathToken, strAnimDirName);
 								}
 							}
 						}
@@ -656,45 +655,45 @@ int32 CParamLoader::LoadAnimList(const XmlNodeRef calNode, const char* paramFile
 				}
 
 			}
-			else if (!stricmp(key, "$FaceLib"))
+			else if (!stricmp(animName, "$FaceLib"))
 			{
 				if (animList.faceLibFile.empty())
 				{
-					animList.faceLibFile = value.c_str();
+					animList.faceLibFile = currentPathToken.c_str();
 					animList.faceLibDir = strAnimDirName;
 				}
 				else
-					Warning(paramFileName, VALIDATOR_WARNING, "Failed to set face lib \"%s\". Face lib is already set to \"%s\"", value.c_str(), animList.faceLibFile.c_str());
+					Warning(paramFileName, VALIDATOR_WARNING, "Failed to set face lib \"%s\". Face lib is already set to \"%s\"", currentPathToken.c_str(), animList.faceLibFile.c_str());
 			}
 			else
-				Warning(paramFileName, VALIDATOR_ERROR, "Unknown directive in '%s'", key.c_str());
+				Warning(paramFileName, VALIDATOR_ERROR, "Unknown directive in '%s'", animName.c_str());
 		}
 		else
 		{
 			// Check whether the filename is a facial animation, by checking the extension.
-			const char* szExtension = PathUtil::GetExt(value);
+			const char* szExtension = PathUtil::GetExt(currentPathToken);
 			stack_string szFileName;
-			szFileName.Format("%s/%s", strAnimDirName.c_str(), value.c_str());
+			szFileName.Format("%s/%s", strAnimDirName.c_str(), currentPathToken.c_str());
 
 			// is there any wildcard in the file name?
-			if (strchr(value, '*') != NULL || strchr(value, '?') != NULL)
+			if (strchr(currentPathToken, '*') != NULL || strchr(currentPathToken, '?') != NULL)
 			{
-				animList.arrWildcardAnimFiles.push_back(SAnimFile(szFileName, key));
+				animList.arrWildcardAnimFiles.push_back(SAnimFile(szFileName, animName));
 			}
 			else
 			{
 				const char* failedToCreateAlias = "Failed to create animation alias \"%s\" for file \"%s\". Such alias already exists.\"";
 				if (szExtension != 0 && stricmp("fsq", szExtension) == 0)
 				{
-					bool added = AddIfNewFacialAnimationAlias(animList, key, szFileName.c_str());
+					bool added = AddIfNewFacialAnimationAlias(animList, animName, szFileName.c_str());
 					if (!added)
-						Warning(paramFileName, VALIDATOR_WARNING, failedToCreateAlias, key.c_str(), szFileName.c_str());
+						Warning(paramFileName, VALIDATOR_WARNING, failedToCreateAlias, animName.c_str(), szFileName.c_str());
 				}
 				else
 				{
-					bool added = AddIfNewAnimationAlias(animList, key, szFileName.c_str());
+					bool added = AddIfNewAnimationAlias(animList, animName, szFileName.c_str());
 					if (!added)
-						Warning(paramFileName, VALIDATOR_WARNING, failedToCreateAlias, key.c_str(), szFileName.c_str());
+						Warning(paramFileName, VALIDATOR_WARNING, failedToCreateAlias, animName.c_str(), szFileName.c_str());
 				}
 			}
 
@@ -705,7 +704,7 @@ int32 CParamLoader::LoadAnimList(const XmlNodeRef calNode, const char* paramFile
 				if ((stricmp("lmg", szExtension) == 0) || (stricmp("bspace", szExtension) == 0) || (stricmp("comb", szExtension) == 0) || (stricmp("caf", szExtension) == 0))
 				{
 					//PREFAST_SUPPRESS_WARNING(6031) strtok (buffer, " \t\n\r=");
-					const char* fname = strtok(buffer, " \t\n\r=(");
+					const char* fname = strtok(szLine, " \t\n\r=(");
 					while ((fname = strtok(NULL, " \t\n\r,()")) != NULL && fname[0] != 0)
 					{
 						if (fname[0] == '/')
@@ -721,7 +720,7 @@ int32 CParamLoader::LoadAnimList(const XmlNodeRef calNode, const char* paramFile
 	return m_parsedLists.size() - 1;
 }
 
-bool CParamLoader::AddIfNewAnimationAlias(SAnimListInfo& animList, const char* animName, const char* szFileName)
+bool CChrParamLoader::AddIfNewAnimationAlias(SAnimListInfo& animList, const char* animName, const char* szFileName)
 {
 #if defined(_RELEASE)
 	// We assume there are no duplicates in _RELEASE
@@ -773,11 +772,11 @@ bool CParamLoader::AddIfNewAnimationAlias(SAnimListInfo& animList, const char* a
 	return true;
 }
 
-const SAnimFile* CParamLoader::FindAnimationAliasInDependencies(SAnimListInfo& animList, const char* animName)
+const SAnimFile* CChrParamLoader::FindAnimationAliasInDependencies(SAnimListInfo& animList, const char* szFileName)
 {
 #if !defined(RELEASE)
 	FindByAliasName pd;
-	pd.fileCrc = CCrc32::ComputeLowercase(animName);
+	pd.fileCrc = CCrc32::ComputeLowercase(szFileName);
 	DynArray<SAnimFile>::const_iterator found_it = std::find_if(animList.arrAnimFiles.begin(), animList.arrAnimFiles.end(), pd);
 	if (found_it != animList.arrAnimFiles.end())
 		return &(*found_it);
@@ -787,7 +786,7 @@ const SAnimFile* CParamLoader::FindAnimationAliasInDependencies(SAnimListInfo& a
 	{
 		SAnimListInfo& childList = m_parsedLists[animList.dependencies[i]];
 
-		const SAnimFile* pFoundAnimFile = FindAnimationAliasInDependencies(childList, animName);
+		const SAnimFile* pFoundAnimFile = FindAnimationAliasInDependencies(childList, szFileName);
 		if (pFoundAnimFile)
 			return pFoundAnimFile;
 	}
@@ -795,7 +794,7 @@ const SAnimFile* CParamLoader::FindAnimationAliasInDependencies(SAnimListInfo& a
 	return NULL;
 }
 
-bool CParamLoader::AddIfNewFacialAnimationAlias(SAnimListInfo& animList, const char* animName, const char* szFileName)
+bool CChrParamLoader::AddIfNewFacialAnimationAlias(SAnimListInfo& animList, const char* animName, const char* szFileName)
 {
 	if (NoFacialAnimationAliasInDependencies(animList, animName))
 	{
@@ -806,7 +805,7 @@ bool CParamLoader::AddIfNewFacialAnimationAlias(SAnimListInfo& animList, const c
 	return false;
 };
 
-bool CParamLoader::NoModelTracksDatabaseInDependencies(SAnimListInfo& animList, const char* dataBase)
+bool CChrParamLoader::NoModelTracksDatabaseInDependencies(SAnimListInfo& animList, const char* dataBase)
 {
 	DynArray<string>& mTB = animList.modelTracksDatabases;
 
@@ -826,7 +825,7 @@ bool CParamLoader::NoModelTracksDatabaseInDependencies(SAnimListInfo& animList, 
 	return true;
 }
 
-bool CParamLoader::AddIfNewModelTracksDatabase(SAnimListInfo& animList, const char* dataBase)
+bool CChrParamLoader::AddIfNewModelTracksDatabase(SAnimListInfo& animList, const char* dataBase)
 {
 
 	stack_string tmp = dataBase;
@@ -840,7 +839,7 @@ bool CParamLoader::AddIfNewModelTracksDatabase(SAnimListInfo& animList, const ch
 		return false;
 };
 
-bool CParamLoader::NoFacialAnimationAliasInDependencies(SAnimListInfo& animList, const char* animName)
+bool CChrParamLoader::NoFacialAnimationAliasInDependencies(SAnimListInfo& animList, const char* animName)
 {
 	for (uint32 i = 0; i < animList.facialAnimations.size(); ++i)
 		if (0 == stricmp(animList.facialAnimations[i], animName))
@@ -858,52 +857,55 @@ bool CParamLoader::NoFacialAnimationAliasInDependencies(SAnimListInfo& animList,
 	return true;
 }
 
-bool CParamLoader::LoadXML(CDefaultSkeleton* pDefaultSkeleton, string defaultAnimDir, const char* const paramFileName, DynArray<uint32>& listIDs)
+// this function needs some better error management
+bool CChrParamLoader::LoadFromXml(CDefaultSkeleton* pDefaultSkeleton, string defaultAnimDir, const char* const szParamFileName, DynArray<uint32>& listIDs)
 {
 	LOADING_TIME_PROFILE_SECTION(g_pISystem);
 
-	XmlNodeRef topRoot;
+	XmlNodeRef xmlRootNode;
 #ifdef EDITOR_PCDEBUGCODE
-	string key = paramFileName;
-	key.MakeLower();
-	CachedCHRPARAMS::iterator it = m_cachedCHRPARAMS.find(key);
-	if (it != m_cachedCHRPARAMS.end())
+	string lowercaseFileName = szParamFileName;
+	lowercaseFileName.MakeLower();
+	CachedCHRPARAMS::iterator itr = m_cachedCHRPARAMS.find(lowercaseFileName);
+	if (itr != m_cachedCHRPARAMS.end())
 	{
-		topRoot = g_pISystem->LoadXmlFromBuffer(it->second.data(), it->second.size());
+		xmlRootNode = g_pISystem->LoadXmlFromBuffer(itr->second.data(), itr->second.size());
 	}
 	else
 #endif
 	{
-		topRoot = g_pISystem->LoadXmlFromFile(paramFileName);
+		xmlRootNode = g_pISystem->LoadXmlFromFile(szParamFileName);
 	}
 
 	m_pDefaultSkeleton = pDefaultSkeleton;
-	m_defaultAnimDir = defaultAnimDir;
 
 	//in case we reload the CHRPARAMS again, we have to make sure we do a full initializations
-	pDefaultSkeleton->m_IKLimbTypes.clear();
-	pDefaultSkeleton->m_ADIKTargets.clear();
+	{ 
+		pDefaultSkeleton->m_IKLimbTypes.clear();
+		pDefaultSkeleton->m_ADIKTargets.clear();
 
-	pDefaultSkeleton->m_poseBlenderLookDesc.m_error = -1;  //not initialized by default
-	pDefaultSkeleton->m_poseBlenderLookDesc.m_blends.clear();
-	pDefaultSkeleton->m_poseBlenderLookDesc.m_rotations.clear();
-	pDefaultSkeleton->m_poseBlenderLookDesc.m_positions.clear();
+		pDefaultSkeleton->m_poseBlenderLookDesc.m_error = -1;  //not initialized by default
+		pDefaultSkeleton->m_poseBlenderLookDesc.m_blends.clear();
+		pDefaultSkeleton->m_poseBlenderLookDesc.m_rotations.clear();
+		pDefaultSkeleton->m_poseBlenderLookDesc.m_positions.clear();
 
-	pDefaultSkeleton->m_poseBlenderAimDesc.m_error = -1;   //not initialized by default
-	pDefaultSkeleton->m_poseBlenderAimDesc.m_blends.clear();
-	pDefaultSkeleton->m_poseBlenderAimDesc.m_rotations.clear();
-	pDefaultSkeleton->m_poseBlenderAimDesc.m_positions.clear();
-	pDefaultSkeleton->m_poseBlenderAimDesc.m_procAdjustments.clear();
+		pDefaultSkeleton->m_poseBlenderAimDesc.m_error = -1;   //not initialized by default
+		pDefaultSkeleton->m_poseBlenderAimDesc.m_blends.clear();
+		pDefaultSkeleton->m_poseBlenderAimDesc.m_rotations.clear();
+		pDefaultSkeleton->m_poseBlenderAimDesc.m_positions.clear();
+		pDefaultSkeleton->m_poseBlenderAimDesc.m_procAdjustments.clear();
+	}
 
-	if (!topRoot)
+	if (!xmlRootNode)
 	{
 		return false;
 	}
 
-	uint32 numChildren = topRoot->getChildCount();
+	// Parse the xml tree
+	uint32 numChildren = xmlRootNode->getChildCount();
 	for (uint32 i = 0; i < numChildren; ++i)
 	{
-		XmlNodeRef node = topRoot->getChild(i);
+		XmlNodeRef node = xmlRootNode->getChild(i);
 
 		const char* nodeTag = node->getTag();
 
@@ -914,7 +916,7 @@ bool CParamLoader::LoadXML(CDefaultSkeleton* pDefaultSkeleton, string defaultAni
 		}
 		else if (stricmp(nodeTag, "BBoxExcludeList") == 0)
 		{
-			g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, paramFileName, "BBoxExcludeList is ignored: this feature is not supported.");
+			g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, szParamFileName, "BBoxExcludeList is ignored: this feature is not supported.");
 			continue;
 		}
 		else if (stricmp(nodeTag, "BBoxIncludeList") == 0)
@@ -943,11 +945,11 @@ bool CParamLoader::LoadXML(CDefaultSkeleton* pDefaultSkeleton, string defaultAni
 		}
 		else if (stricmp(nodeTag, "AnimationList") == 0)
 		{
-			int32 rootNode = LoadAnimList(node, paramFileName, m_defaultAnimDir);
+			int32 rootNode = LoadAnimList(node, szParamFileName, defaultAnimDir);
 			BuildDependencyList(rootNode, listIDs); // add to the list a depth-first list of all the referenced animlist IDs, including the root. Root comes last.
 			if (rootNode < 0)
 			{
-				g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, paramFileName, "Failed to load animations: %s", paramFileName);
+				g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, szParamFileName, "Failed to load animations: %s", szParamFileName);
 				return 0;
 			}
 		}
@@ -956,7 +958,7 @@ bool CParamLoader::LoadXML(CDefaultSkeleton* pDefaultSkeleton, string defaultAni
 	return true;
 }
 
-bool CParamLoader::LoadLod(const XmlNodeRef lodNode)
+bool CChrParamLoader::LoadLod(const XmlNodeRef lodNode)
 {
 	m_pDefaultSkeleton->m_arrAnimationLOD.clear();
 
@@ -1002,7 +1004,7 @@ bool CParamLoader::LoadLod(const XmlNodeRef lodNode)
 	return true;
 }
 
-bool CParamLoader::LoadBBoxInclusionList(const XmlNodeRef node)
+bool CChrParamLoader::LoadBBoxInclusionList(const XmlNodeRef node)
 {
 	if (m_pDefaultSkeleton == 0)
 		return false;
@@ -1034,7 +1036,7 @@ bool CParamLoader::LoadBBoxInclusionList(const XmlNodeRef node)
 	return true;
 }
 
-bool CParamLoader::LoadBBoxExtension(const XmlNodeRef node)
+bool CChrParamLoader::LoadBBoxExtension(const XmlNodeRef node)
 {
 	if (m_pDefaultSkeleton == 0)
 		return false;
@@ -1068,7 +1070,7 @@ bool CParamLoader::LoadBBoxExtension(const XmlNodeRef node)
 	return true;
 }
 
-bool CParamLoader::LoadShadowCapsulesList(const XmlNodeRef node)
+bool CChrParamLoader::LoadShadowCapsulesList(const XmlNodeRef node)
 {
 	if (m_pDefaultSkeleton == 0)
 		return false;
@@ -1126,7 +1128,7 @@ bool CParamLoader::LoadShadowCapsulesList(const XmlNodeRef node)
 	return true;
 }
 
-bool CParamLoader::ParseIKDef(const XmlNodeRef ikNode)
+bool CChrParamLoader::ParseIKDef(const XmlNodeRef ikNode)
 {
 	CDefaultSkeleton* pDefaultSkeleton = m_pDefaultSkeleton;
 
@@ -1233,7 +1235,7 @@ bool CParamLoader::ParseIKDef(const XmlNodeRef ikNode)
 	return true;
 }
 
-void CParamLoader::ClearLists()
+void CChrParamLoader::ClearLists()
 {
 	int32 n = m_parsedLists.size();
 	for (int32 i = 0; i < n; i++)
@@ -1247,7 +1249,7 @@ void CParamLoader::ClearLists()
 }
 
 PREFAST_SUPPRESS_WARNING(6262)
-bool CParamLoader::LoadIKDefLimbIK(const XmlNodeRef limbNode)
+bool CChrParamLoader::LoadIKDefLimbIK(const XmlNodeRef limbNode)
 {
 	CDefaultSkeleton* pDefaultSkeleton = m_pDefaultSkeleton;
 
@@ -1645,7 +1647,7 @@ bool CParamLoader::LoadIKDefLimbIK(const XmlNodeRef limbNode)
 	return true;
 }
 
-bool CParamLoader::LoadIKDefAnimDrivenIKTargets(const XmlNodeRef adNode)
+bool CChrParamLoader::LoadIKDefAnimDrivenIKTargets(const XmlNodeRef adNode)
 {
 	CDefaultSkeleton* pDefaultSkeleton = m_pDefaultSkeleton;
 
@@ -1696,7 +1698,7 @@ bool CParamLoader::LoadIKDefAnimDrivenIKTargets(const XmlNodeRef adNode)
 	return true;
 }
 
-bool CParamLoader::LoadIKDefFeetLock(XmlNodeRef aimNode)
+bool CChrParamLoader::LoadIKDefFeetLock(XmlNodeRef aimNode)
 {
 	CDefaultSkeleton* pDefaultSkeleton = m_pDefaultSkeleton;
 
@@ -1717,7 +1719,7 @@ bool CParamLoader::LoadIKDefFeetLock(XmlNodeRef aimNode)
 	return true;
 }
 
-bool CParamLoader::LoadIKDefRecoil(XmlNodeRef aimNode)
+bool CChrParamLoader::LoadIKDefRecoil(XmlNodeRef aimNode)
 {
 	CDefaultSkeleton* pDefaultSkeleton = m_pDefaultSkeleton;
 
@@ -1791,7 +1793,7 @@ bool CParamLoader::LoadIKDefRecoil(XmlNodeRef aimNode)
 	return true;
 }
 
-bool CParamLoader::LoadIKDefLookIK(const XmlNodeRef lookNode)
+bool CChrParamLoader::LoadIKDefLookIK(const XmlNodeRef lookNode)
 {
 	CDefaultSkeleton* pDefaultSkeleton = m_pDefaultSkeleton;
 	PoseBlenderLookDesc& poseBlenderLookDesc = pDefaultSkeleton->m_poseBlenderLookDesc;
@@ -1997,7 +1999,7 @@ bool CParamLoader::LoadIKDefLookIK(const XmlNodeRef lookNode)
 	return true;
 }
 
-bool CParamLoader::LoadIKDefAimIK(XmlNodeRef aimNode)
+bool CChrParamLoader::LoadIKDefAimIK(XmlNodeRef aimNode)
 {
 	CDefaultSkeleton* pDefaultSkeleton = m_pDefaultSkeleton;
 	PoseBlenderAimDesc& poseBlenderAimDesc = pDefaultSkeleton->m_poseBlenderAimDesc;
@@ -2204,21 +2206,21 @@ bool CParamLoader::LoadIKDefAimIK(XmlNodeRef aimNode)
 }
 
 #ifdef EDITOR_PCDEBUGCODE
-void CParamLoader::InjectCHRPARAMS(const char* filename, const char* content, size_t contentLength)
+void CChrParamLoader::InjectCHRPARAMS(const char* filename, const char* content, size_t contentLength)
 {
 	string key = filename;
 	key.MakeLower();
 	m_cachedCHRPARAMS[key].assign(content, content + contentLength);
 }
 
-bool CParamLoader::HasInjectedCHRPARAMS(const char* filename) const
+bool CChrParamLoader::HasInjectedCHRPARAMS(const char* filename) const
 {
 	string key = filename;
 	key.MakeLower();
 	return m_cachedCHRPARAMS.find(key) != m_cachedCHRPARAMS.end();
 }
 
-void CParamLoader::ClearCHRPARAMSCache()
+void CChrParamLoader::ClearCHRPARAMSCache()
 {
 	stl::free_container(m_cachedCHRPARAMS);
 }

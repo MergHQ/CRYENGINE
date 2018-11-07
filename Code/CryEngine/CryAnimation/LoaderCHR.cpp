@@ -527,7 +527,7 @@ bool CDefaultSkeleton::LoadNewSKEL(const char* szFilePath, uint32 nLoadingFlags)
 
 void CDefaultSkeleton::LoadCHRPARAMS(const char* paramFileName)
 {
-	CParamLoader& paramLoader = g_pCharacterManager->GetParamLoader();
+	CChrParamLoader& paramLoader = g_pCharacterManager->GetParamLoader();
 #ifdef EDITOR_PCDEBUGCODE
 	bool hasInjectedParams = paramLoader.HasInjectedCHRPARAMS(paramFileName);
 #else
@@ -539,7 +539,7 @@ void CDefaultSkeleton::LoadCHRPARAMS(const char* paramFileName)
 		// this will be refilled by LoadXML
 		m_animListIDs.clear();
 
-		bool ok = paramLoader.LoadXML(this, GetDefaultAnimDir(), paramFileName, m_animListIDs);
+		bool ok = paramLoader.LoadFromXml(this, GetDefaultAnimDir(), paramFileName, m_animListIDs);
 		if (ok)
 			LoadAnimations(paramLoader);
 	}
@@ -548,7 +548,7 @@ void CDefaultSkeleton::LoadCHRPARAMS(const char* paramFileName)
 //------------------------------------------------------------------------------------------------------------
 // loads animations for a model by composing a complete animation list and loading it into an AnimationSet
 //------------------------------------------------------------------------------------------------------------
-bool CDefaultSkeleton::LoadAnimations(CParamLoader& paramLoader)
+bool CDefaultSkeleton::LoadAnimations(CChrParamLoader& paramLoader)
 {
 	//LOADING_TIME_PROFILE_SECTION(g_pISystem);
 
@@ -626,19 +626,20 @@ bool CDefaultSkeleton::LoadAnimations(CParamLoader& paramLoader)
 
 	for (int32 i = nListIDs - 1; i >= 0; --i)
 	{
-		const SAnimListInfo& animList = paramLoader.GetParsedList(m_animListIDs[i]);
+		int32 currentListID = m_animListIDs[i];
+		const SAnimListInfo& animList = paramLoader.GetParsedList(currentListID);
 
 		// this is where the Animation List Cache kicks in
 		if (!animList.headersLoaded)
 		{
-			paramLoader.ExpandWildcards(m_animListIDs[i]);
-			numAnimAssets += LoadAnimationFiles(paramLoader, m_animListIDs[i]);
+			paramLoader.ExpandWildcards(currentListID);
+			numAnimAssets += LoadAnimationFiles(paramLoader, currentListID);
 			// this list has been processed, don't do it again!
-			paramLoader.SetHeadersLoaded(m_animListIDs[i]);
+			paramLoader.SetHeadersLoaded(currentListID);
 		}
 		else
 		{
-			numAnimAssets += ReuseAnimationFiles(paramLoader, m_animListIDs[i]);
+			numAnimAssets += ReuseAnimationFiles(paramLoader, currentListID);
 		}
 
 		if (!animList.facialAnimations.empty())
@@ -750,7 +751,7 @@ void CDefaultSkeleton::LoadFaceLib(const char* faceLibFile, const char* animDirN
 //-------------------------------------------------------------------------------------------------
 #define MAX_STRING_LENGTH (256)
 
-uint32 CDefaultSkeleton::ReuseAnimationFiles(CParamLoader& paramLoader, uint32 listID)
+uint32 CDefaultSkeleton::ReuseAnimationFiles(CChrParamLoader& paramLoader, uint32 listID)
 {
 	LOADING_TIME_PROFILE_SECTION(g_pISystem);
 
@@ -771,17 +772,16 @@ uint32 CDefaultSkeleton::ReuseAnimationFiles(CParamLoader& paramLoader, uint32 l
 	return result;
 }
 
-uint32 CDefaultSkeleton::LoadAnimationFiles(CParamLoader& paramLoader, uint32 listID)
+uint32 CDefaultSkeleton::LoadAnimationFiles(CChrParamLoader& paramLoader, uint32 listID)
 {
-	const char* pFullFilePath = GetModelFilePath();
-	const char* szExt = PathUtil::GetExt(pFullFilePath);
+	const char* szFullModelFilePath = GetModelFilePath();
+	const char* szModelExtension = PathUtil::GetExt(szFullModelFilePath);
 	stack_string strGeomFileNameNoExt;
-	strGeomFileNameNoExt.assign(pFullFilePath, *szExt ? szExt - 1 : szExt);
+	strGeomFileNameNoExt.assign(szFullModelFilePath, *szModelExtension ? szModelExtension - 1 : szModelExtension);
 
 	LOADING_TIME_PROFILE_SECTION(g_pISystem);
 	// go through all Anims on stack and load them
 	uint32 nAnimID = 0;
-	int32 numAnims = 0;
 
 	const SAnimListInfo& animList = paramLoader.GetParsedList(listID);
 
@@ -796,7 +796,7 @@ uint32 CDefaultSkeleton::LoadAnimationFiles(CParamLoader& paramLoader, uint32 li
 		int nAnimID0 = m_pAnimationSet->GetAnimIDByName(strInternalType_Para1D);
 		if (nAnimID0 >= 0)
 		{
-			ModelAnimationHeader* pAnim = (ModelAnimationHeader*)m_pAnimationSet->GetModelAnimationHeader(nAnimID0);
+			ModelAnimationHeader* pAnim = (ModelAnimationHeader*) m_pAnimationSet->GetModelAnimationHeader(nAnimID0);
 			if (pAnim)
 			{
 				nAnimID++;
@@ -806,60 +806,64 @@ uint32 CDefaultSkeleton::LoadAnimationFiles(CParamLoader& paramLoader, uint32 li
 	}
 #endif
 
-	numAnims = animList.arrAnimFiles.size();
-	for (int i = 0; i < numAnims; i++)
+	for (const SAnimFile& animFile : animList.arrAnimFiles)
 	{
-		const char* pFilePath = animList.arrAnimFiles[i].m_FilePathQ;
-		const char* pAnimName = animList.arrAnimFiles[i].m_AnimNameQ;
-		const char* fileExt = PathUtil::GetExt(pFilePath);
+		const char* szAnimFilePath = animFile.m_FilePathQ;
+		const char* szAnimName = animFile.m_AnimNameQ;
+		const char* szAnimFileExt = PathUtil::GetExt(szAnimFilePath);
 
-		bool IsBAD = (0 == stricmp(fileExt, ""));
-		if (IsBAD)
-			continue;
-
-		bool IsCHR = (0 == stricmp(fileExt, CRY_SKEL_FILE_EXT));
-		if (IsCHR)
-			continue;
-		bool IsSKIN = (0 == stricmp(fileExt, CRY_SKIN_FILE_EXT));
-		if (IsSKIN)
-			continue;
-		bool IsCDF = (0 == stricmp(fileExt, "cdf"));
-		if (IsCDF)
-			continue;
-		bool IsCGA = (0 == stricmp(fileExt, "cga"));
-		if (IsCGA)
+		bool bIsBAD = (0 == stricmp(szAnimFileExt, ""));
+		if (bIsBAD)
 			continue;
 
-		uint32 IsCAF = (stricmp(fileExt, "caf") == 0);
-		uint32 IsLMG = (stricmp(fileExt, "lmg") == 0) || (stricmp(fileExt, "bspace") == 0) || (stricmp(fileExt, "comb") == 0);
-		assert(IsCAF + IsLMG);
+		bool bIsCHR = (0 == stricmp(szAnimFileExt, CRY_SKEL_FILE_EXT));
+		if (bIsCHR)
+			continue;
+		bool bIsSKIN = (0 == stricmp(szAnimFileExt, CRY_SKIN_FILE_EXT));
+		if (bIsSKIN)
+			continue;
+		bool bIsCDF = (0 == stricmp(szAnimFileExt, "cdf"));
+		if (bIsCDF)
+			continue;
+		bool bIsCGA = (0 == stricmp(szAnimFileExt, "cga"));
+		if (bIsCGA)
+			continue;
 
-		bool IsAimPose = 0;
-		bool IsLookPose = 0;
-		if (IsCAF)
+		bool bIsCaf = (stricmp(szAnimFileExt, "caf") == 0);
+		bool bIsI_Caf = (stricmp(szAnimFileExt, "i_caf") == 0);
+
+		bIsCaf = bIsCaf || bIsI_Caf; // The LoadCHR function is able to process i_caf files, if the RC has created an appropriate .caf file in the cache 
+		
+		
+		bool bIsLmg = (stricmp(szAnimFileExt, "lmg") == 0) || (stricmp(szAnimFileExt, "bspace") == 0) || (stricmp(szAnimFileExt, "comb") == 0);
+		if (!bIsCaf && !bIsLmg)
 		{
-			uint32 numAimDB = m_poseBlenderAimDesc.m_blends.size();
-			for (uint32 d = 0; d < numAimDB; d++)
+			gEnv->pLog->LogError("CryAnimation: Animation file \"%s\" could not be read (it's an animation of \"%s.%s\"). "
+				"File extension not recognized.",
+				szAnimFilePath, strGeomFileNameNoExt.c_str(), CRY_SKEL_FILE_EXT);
+			continue;
+		}
+
+		bool bIsAimPose = false;
+		bool bIsLookPose = false;
+		if (bIsCaf)
+		{
+			for (const DirectionalBlends& curAimDirectionalBlends : m_poseBlenderAimDesc.m_blends)
 			{
-				const char* strAimIK_Token = m_poseBlenderAimDesc.m_blends[d].m_AnimToken;
-				IsAimPose = (CryStringUtils::stristr(pAnimName, strAimIK_Token) != 0);
-				if (IsAimPose)
+				const char* strAimIK_Token = curAimDirectionalBlends.m_AnimToken;
+				bIsAimPose = (CryStringUtils::stristr(szAnimName, strAimIK_Token) != 0);
+				if (bIsAimPose)
 					break;
 			}
-			uint32 numLookDB = m_poseBlenderLookDesc.m_blends.size();
-			for (uint32 d = 0; d < numLookDB; d++)
+			for (const DirectionalBlends& curLookDirectionalBlends : m_poseBlenderLookDesc.m_blends)
 			{
-				const char* strLookIK_Token = m_poseBlenderLookDesc.m_blends[d].m_AnimToken;
-				IsLookPose = (CryStringUtils::stristr(pAnimName, strLookIK_Token) != 0);
-				if (IsLookPose)
+				const char* strLookIK_Token = curLookDirectionalBlends.m_AnimToken;
+				bIsLookPose = (CryStringUtils::stristr(szAnimName, strLookIK_Token) != 0);
+				if (bIsLookPose)
 					break;
 			}
 		}
-
-		if (IsCAF && IsAimPose)
-			IsCAF = 0;
-		if (IsCAF && IsLookPose)
-			IsCAF = 0;
+		bool bIsAimOrLookPose = bIsAimPose || bIsLookPose;
 
 		// ben: it can happen that a AnimID is defined in a list and in one of its dependencies that
 		// was included after the definition of that animation, this is a different behavior than
@@ -867,22 +871,22 @@ uint32 CDefaultSkeleton::LoadAnimationFiles(CParamLoader& paramLoader, uint32 li
 		CryFixedStringT<256> standupAnimType;
 
 		int32 nGlobalAnimID = -1;
-		if (IsCAF)
+		if (bIsCaf && !bIsAimOrLookPose)
 		{
-			nGlobalAnimID = m_pAnimationSet->LoadFileCAF(pFilePath, pAnimName);
+			nGlobalAnimID = m_pAnimationSet->LoadFileCAF(szAnimFilePath, szAnimName);
 		}
 
-		if (IsAimPose || IsLookPose)
+		if (bIsAimOrLookPose)
 		{
-			nGlobalAnimID = m_pAnimationSet->LoadFileAIM(pFilePath, pAnimName, this);
+			nGlobalAnimID = m_pAnimationSet->LoadFileAIM(szAnimFilePath, szAnimName, this);
 		}
 
-		if (IsLMG)
+		if (bIsLmg)
 		{
-			nGlobalAnimID = m_pAnimationSet->LoadFileLMG(pFilePath, pAnimName);
+			nGlobalAnimID = m_pAnimationSet->LoadFileLMG(szAnimFilePath, szAnimName);
 		}
 
-		int nAnimID0 = m_pAnimationSet->GetAnimIDByName(pAnimName);
+		int nAnimID0 = m_pAnimationSet->GetAnimIDByName(szAnimName);
 		if (nAnimID0 >= 0)
 		{
 			ModelAnimationHeader* pAnim = (ModelAnimationHeader*)m_pAnimationSet->GetModelAnimationHeader(nAnimID0);
@@ -895,7 +899,7 @@ uint32 CDefaultSkeleton::LoadAnimationFiles(CParamLoader& paramLoader, uint32 li
 		}
 		else
 		{
-			gEnv->pLog->LogError("CryAnimation: Animation (caf) file \"%s\" could not be read (it's an animation of \"%s.%s\")", animList.arrAnimFiles[i].m_FilePathQ, strGeomFileNameNoExt.c_str(), CRY_SKEL_FILE_EXT);
+			gEnv->pLog->LogError("CryAnimation: Animation (caf) file \"%s\" could not be read (it's an animation of \"%s.%s\")", szAnimFilePath, strGeomFileNameNoExt.c_str(), CRY_SKEL_FILE_EXT);
 		}
 	}
 
