@@ -3,7 +3,7 @@
 #pragma once
 
 #include <CryAnimation/ICryAnimation.h>
-#include "ParamLoader.h"
+#include "ChrParamLoader.h"
 #include "AttachmentVCloth.h"
 #include "CharacterInstanceProcessing.h"
 
@@ -161,7 +161,7 @@ public:
 	friend class CCharInstance;
 	friend class CDefaultSkeleton;
 	friend class CSkin;
-	friend class CParamLoader;
+	friend class CChrParamLoader;
 #if BLENDSPACE_VISUALIZATION
 	friend class CSkeletonAnim;
 	friend struct SParametricSamplerInternal;
@@ -206,7 +206,7 @@ public:
 	CAnimationManager&       GetAnimationManager()       { return m_AnimationManager; };
 	const CAnimationManager& GetAnimationManager() const { return m_AnimationManager; };
 
-	CParamLoader&            GetParamLoader()            { return m_ParamLoader; };
+	CChrParamLoader&            GetParamLoader()            { return m_ParamLoader; };
 
 	CFacialAnimation*        GetFacialAnimation()        { return m_pFacialAnimation; }
 	const CFacialAnimation*  GetFacialAnimation() const  { return m_pFacialAnimation; }
@@ -390,7 +390,7 @@ private:
 
 	CFacialAnimation*                          m_pFacialAnimation;
 
-	CParamLoader                               m_ParamLoader;
+	CChrParamLoader                               m_ParamLoader;
 
 	std::vector<f32>                           m_arrFrameTimes;
 

@@ -143,7 +143,7 @@
             "LoaderCHR.cpp",
             "LoaderDBA.cpp",
             "LoaderTCB.cpp",
-            "ParamLoader.cpp",
+            "ChrParamLoader.cpp",
             "AnimEventList.h",
             "AnimEventLoader.h",
             "CharacterManager.h",
@@ -151,7 +151,7 @@
             "LoaderCHR.h",
             "LoaderDBA.h",
             "LoaderTCB.h",
-            "ParamLoader.h"
+            "ChrParamLoader.h"
         ],
         "CharacterManager/AnimLoader": [
             "AnimationManager.cpp",

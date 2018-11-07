@@ -139,7 +139,7 @@ QVariant CLevelLayerModel::GetHeaderData(int section, Qt::Orientation orientatio
 		if (section == eObjectColumns_Visible)
 			return CryIcon("icons:General/Visibility_True.ico");
 		if (section == eObjectColumns_Frozen)
-			return CryIcon("icons:Navigation/Basics_Select_False.ico");
+			return CryIcon("icons:General/editable.ico");
 		if (section == eObjectColumns_VCS)
 			return CryIcon("icons:VersionControl/icon.ico");
 	}

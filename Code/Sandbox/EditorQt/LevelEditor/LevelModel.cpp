@@ -549,7 +549,7 @@ QVariant CLevelModel::headerData(int section, Qt::Orientation orientation, int r
 		if (section == eLayerColumns_Visible)
 			return CryIcon("icons:General/Visibility_True.ico");
 		if (section == eLayerColumns_Frozen)
-			return CryIcon("icons:Navigation/Basics_Select_False.ico");
+			return CryIcon("icons:General/editable.ico");
 		if (section == eLayerColumns_VCS)
 			return CryIcon("icons:VersionControl/icon.ico");
 	}

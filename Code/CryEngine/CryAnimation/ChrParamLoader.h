@@ -55,7 +55,7 @@ class CryCHRLoader;
 struct SAnimListInfo
 {
 	string              fileName;
-	DynArray<int>       dependencies;
+	DynArray<int32>       dependencies;
 
 	string              faceLibFile;
 	string              faceLibDir;
@@ -84,7 +84,7 @@ struct SAnimListInfo
 		arrLoadedAnimFiles.reserve(0);
 		headersLoaded = false;
 	}
-	void HeadersLoaded()
+	void SetHeadersLoaded()
 	{
 		arrAnimFiles.clear();
 		arrLoadedAnimFiles.reserve(arrLoadedAnimFiles.size());
@@ -97,23 +97,28 @@ struct SAnimListInfo
 	}
 };
 
-class CParamLoader
+//! Loads .chrparams files
+//! \note possibly to be called .skelparams later
+class CChrParamLoader
 {
 public:
-	CParamLoader();
-	~CParamLoader(void);
+	CChrParamLoader();
+	~CChrParamLoader(void);
 
-	void                 ClearLists();
+	void ClearLists();
 
-	bool                 LoadXML(CDefaultSkeleton* pDefaultSkeleton, string defaultAnimDir, const char* const paramFileName, DynArray<uint32>& listIDs);
-	bool                 ExpandWildcards(uint32 listID);
+	//! Loads chrparams lists from XML
+	bool LoadFromXml(CDefaultSkeleton* pDefaultSkeleton, string defaultAnimDir, const char* const paramFileName, DynArray<uint32>& listIDs);
 
-	const SAnimListInfo& GetParsedList(const uint32 i)                                                    { return m_parsedLists[i]; };
-	uint32               GetParsedListNumber()                                                            { return m_parsedLists.size(); };
+	//! Searches through the loaded animation list, expanding all of the entries with '*'s into lists of files matching the pattern
+	bool ExpandWildcards(uint32 listID);
 
-	void                 PrepareHeaderList(uint32 listID)                                                 { m_parsedLists[listID].PrepareHeaderList(); };
-	void                 SetHeadersLoaded(uint32 listID)                                                  { m_parsedLists[listID].HeadersLoaded(); };
-	void                 AddLoadedHeader(uint32 listID, const ModelAnimationHeader& modelAnimationHeader) { m_parsedLists[listID].arrLoadedAnimFiles.push_back(modelAnimationHeader); }
+	const SAnimListInfo& GetParsedList(const uint32 i)                                    { return m_parsedLists[i]; };
+	uint32 GetParsedListNumber()                                                          { return m_parsedLists.size(); };
+
+	void PrepareHeaderList(uint32 listID)                                                 { m_parsedLists[listID].PrepareHeaderList(); };
+	void SetHeadersLoaded(uint32 listID)                                                  { m_parsedLists[listID].SetHeadersLoaded(); };
+	void AddLoadedHeader(uint32 listID, const ModelAnimationHeader& modelAnimationHeader) { m_parsedLists[listID].arrLoadedAnimFiles.push_back(modelAnimationHeader); }
 
 #ifdef EDITOR_PCDEBUGCODE
 	bool HasInjectedCHRPARAMS(const char* filename) const;
@@ -124,7 +129,8 @@ public:
 private:
 	void   ExpandWildcardsForPath(SAnimListInfo& animList, const char* szMask, uint32 crcFolder, const char* szAnimNamePre, const char* szAnimNamePost);
 
-	int    LoadAnimList(const XmlNodeRef calNode, const char* paramFileName, string strAnimDirName);
+	// returns the index of the list in m_parsedLists
+	int32  LoadAnimList(const XmlNodeRef calNode, const char* paramFileName, string strAnimDirName);
 	bool   BuildDependencyList(int rootListID, DynArray<uint32>& listIDs);
 	CAF_ID MemFindFirst(const char** ppAnimPath, const char* szMask, uint32 crcFolder, CAF_ID nCafID);
 
@@ -139,12 +145,11 @@ private:
 	bool   LoadBBoxInclusionList(const XmlNodeRef node);
 	bool   LoadBBoxExtension(const XmlNodeRef node);
 	bool   LoadShadowCapsulesList(const XmlNodeRef node);
-	int    ListProcessed(const char* paramFileName);
+	int32  FindAlreadyProcessedListID(const char* paramFileName) const;
 
 	// helper functions for interfacing SAnimListInfo
 	bool             AddIfNewAnimationAlias(SAnimListInfo& animList, const char* animName, const char* szFileName);
 	const SAnimFile* FindAnimationAliasInDependencies(SAnimListInfo& animList, const char* szFileName);
-
 	bool             AddIfNewFacialAnimationAlias(SAnimListInfo& animList, const char* animName, const char* szFileName);
 	bool             NoFacialAnimationAliasInDependencies(SAnimListInfo& animList, const char* animName);
 	bool             AddIfNewModelTracksDatabase(SAnimListInfo& animList, const char* dataBase);
@@ -156,5 +161,4 @@ private:
 #endif
 	DynArray<SAnimListInfo> m_parsedLists;
 	CDefaultSkeleton*       m_pDefaultSkeleton;
-	string                  m_defaultAnimDir;
 };

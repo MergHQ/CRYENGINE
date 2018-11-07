@@ -15,8 +15,8 @@ namespace MNM
 
 namespace DefaultQueryFilters
 {
-	const SAcceptAllQueryTrianglesFilterCheap g_acceptAllTrianglesCheap;
-	const SAcceptAllQueryTrianglesFilter g_acceptAllTriangles;
+	SQueryTrianglesFilterGlobal g_globalFilter;
+	SNavMeshQueryFilterDefault g_globalFilterVirtual;
 }
 
 //====================================================================
@@ -656,7 +656,7 @@ INavMeshQuery::EQueryStatus CNavMeshQueryInstant::QueryTiles(INavMeshQueryProces
 	}
 	else
 	{
-		return QueryTilesInternal(queryProcessing, DefaultQueryFilters::g_acceptAllTrianglesCheap, processingBatchSize);
+		return QueryTilesInternal(queryProcessing, DefaultQueryFilters::g_globalFilter, processingBatchSize);
 	}
 }
 
@@ -748,7 +748,7 @@ INavMeshQuery::EQueryStatus CNavMeshQueryBatch::QueryTiles(INavMeshQueryProcessi
 	}
 	else
 	{
-		return QueryTilesInternal(queryProcessing, DefaultQueryFilters::g_acceptAllTrianglesCheap, processingBatchSize);
+		return QueryTilesInternal(queryProcessing, DefaultQueryFilters::g_globalFilter, processingBatchSize);
 	}
 }
 
