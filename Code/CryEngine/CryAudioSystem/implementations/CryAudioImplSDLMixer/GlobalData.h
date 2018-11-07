@@ -63,9 +63,9 @@ struct STriggerInfo final : public ITriggerInfo
 
 struct SPoolSizes final
 {
-	uint32 triggers = 0;
-	uint32 parameters = 0;
-	uint32 switchStates = 0;
+	uint16 triggers = 0;
+	uint16 parameters = 0;
+	uint16 switchStates = 0;
 };
 } // namespace SDL_mixer
 } // namespace Impl

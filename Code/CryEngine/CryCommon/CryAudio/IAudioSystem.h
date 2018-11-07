@@ -284,7 +284,7 @@ struct IAudioSystem
 	virtual void StopTrigger(ControlId const triggerId = InvalidControlId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
-	 * Globally set a parameter to a given value.
+	 * Set a parameter to a given value on the global object.
 	 * @param parameterId - ID of the parameter in question.
 	 * @param value - floating point value to which the parameter should be set.
 	 * @param userData - optional struct used to pass additional data to the internal request.
@@ -293,13 +293,31 @@ struct IAudioSystem
 	virtual void SetParameter(ControlId const parameterId, float const value, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
-	 * Globally set a switch to a given state.
+	 * Set a parameter to a given value on all objects.
+	 * @param parameterId - ID of the parameter in question.
+	 * @param value - floating point value to which the parameter should be set.
+	 * @param userData - optional struct used to pass additional data to the internal request.
+	 * @return void
+	 */
+	virtual void SetGlobalParameter(ControlId const parameterId, float const value, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+
+	/**
+	 * Set a switch to a given state on the global object.
 	 * @param switchId - ID of the switch in question.
 	 * @param switchStateId - ID of the switch's state in question.
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
 	 */
 	virtual void SetSwitchState(ControlId const switchId, SwitchStateId const switchStateId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+
+	/**
+	 * Set a switch to a given state on all objects.
+	 * @param switchId - ID of the switch in question.
+	 * @param switchStateId - ID of the switch's state in question.
+	 * @param userData - optional struct used to pass additional data to the internal request.
+	 * @return void
+	 */
+	virtual void SetGlobalSwitchState(ControlId const switchId, SwitchStateId const switchStateId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Globally plays a file.

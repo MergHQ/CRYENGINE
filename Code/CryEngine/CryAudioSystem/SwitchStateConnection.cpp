@@ -21,4 +21,11 @@ void CSwitchStateConnection::Set(CObject const& object) const
 {
 	object.GetImplDataPtr()->SetSwitchState(m_pImplData);
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CSwitchStateConnection::SetGlobal() const
+{
+	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during %s", __FUNCTION__);
+	g_pIImpl->SetGlobalSwitchState(m_pImplData);
+}
 } // namespace CryAudio

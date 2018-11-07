@@ -64,10 +64,6 @@ using ChannelFinishedRequests = std::deque<int>;
 ChannelFinishedRequests g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::Count)];
 CryCriticalSection g_channelFinishedCriticalSection;
 
-// Objects
-using Objects = std::vector<CObject*>;
-Objects g_objects;
-
 SoundEngine::FnEventCallback g_fnEventFinishedCallback;
 SoundEngine::FnStandaloneFileCallback g_fnStandaloneFileFinishedCallback;
 
@@ -319,8 +315,6 @@ bool SoundEngine::Init()
 
 	LoadMetadata("", false);
 	LoadMetadata("", true);
-
-	g_objects.reserve(128);
 
 	return true;
 }
@@ -762,28 +756,6 @@ ERequestStatus SoundEngine::PlayFile(CObject* const pObject, CStandaloneFile* co
 	}
 
 	return status;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool SoundEngine::RegisterObject(CObject* const pObject)
-{
-	if (pObject != nullptr)
-	{
-		g_objects.push_back(pObject);
-		return true;
-	}
-	return false;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool SoundEngine::UnregisterObject(CObject const* const pObject)
-{
-	if (pObject != nullptr)
-	{
-		stl::find_and_erase(g_objects, pObject);
-		return true;
-	}
-	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////

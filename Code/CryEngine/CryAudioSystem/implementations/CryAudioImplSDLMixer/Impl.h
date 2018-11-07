@@ -27,7 +27,7 @@ public:
 
 	// CryAudio::Impl::IImpl
 	virtual void                Update() override;
-	virtual ERequestStatus      Init(uint32 const objectPoolSize, uint32 const eventPoolSize) override;
+	virtual ERequestStatus      Init(uint16 const objectPoolSize, uint16 const eventPoolSize) override;
 	virtual void                ShutDown() override;
 	virtual void                Release() override;
 	virtual void                OnRefresh() override;
@@ -41,6 +41,8 @@ public:
 	virtual ERequestStatus      PauseAll() override;
 	virtual ERequestStatus      ResumeAll() override;
 	virtual ERequestStatus      StopAllSounds() override;
+	virtual void                SetGlobalParameter(IParameter const* const pIParameter, float const value) override;
+	virtual void                SetGlobalSwitchState(ISwitchState const* const pISwitchState) override;
 	virtual ERequestStatus      RegisterInMemoryFile(SFileInfo* const pFileInfo) override;
 	virtual ERequestStatus      UnregisterInMemoryFile(SFileInfo* const pFileInfo) override;
 	virtual ERequestStatus      ConstructFile(XmlNodeRef const pRootNode, SFileInfo* const pFileInfo) override;

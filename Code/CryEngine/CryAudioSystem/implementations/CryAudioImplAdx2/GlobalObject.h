@@ -14,30 +14,20 @@ class CGlobalObject final : public CBaseObject
 {
 public:
 
-	CGlobalObject() = delete;
 	CGlobalObject(CGlobalObject const&) = delete;
 	CGlobalObject(CGlobalObject&&) = delete;
 	CGlobalObject& operator=(CGlobalObject const&) = delete;
 	CGlobalObject& operator=(CGlobalObject&&) = delete;
 
-	explicit CGlobalObject(Objects const& objects)
-		: m_objects(objects)
-	{}
-
-	virtual ~CGlobalObject() override = default;
+	CGlobalObject();
+	virtual ~CGlobalObject() override;
 
 	// CryAudio::Impl::IObject
 	virtual void SetTransformation(CTransformation const& transformation) override;
 	virtual void SetEnvironment(IEnvironment const* const pIEnvironment, float const amount) override;
-	virtual void SetParameter(IParameter const* const pIParameter, float const value) override;
-	virtual void SetSwitchState(ISwitchState const* const pISwitchState) override;
 	virtual void SetOcclusion(float const occlusion) override;
 	virtual void SetOcclusionType(EOcclusionType const occlusionType) override;
 	// ~CryAudio::Impl::IObject
-
-private:
-
-	Objects const& m_objects;
 };
 } // namespace Adx2
 } // namespace Impl

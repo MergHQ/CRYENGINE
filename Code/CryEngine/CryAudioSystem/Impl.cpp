@@ -67,7 +67,7 @@ void CImpl::Update()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSize)
+ERequestStatus CImpl::Init(uint16 const objectPoolSize, uint16 const eventPoolSize)
 {
 	return ERequestStatus::Success;
 }
@@ -137,6 +137,16 @@ ERequestStatus CImpl::ResumeAll()
 ERequestStatus CImpl::StopAllSounds()
 {
 	return ERequestStatus::Success;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::SetGlobalParameter(IParameter const* const pIParameter, float const value)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::SetGlobalSwitchState(ISwitchState const* const pISwitchState)
+{
 }
 
 //////////////////////////////////////////////////////////////////////////

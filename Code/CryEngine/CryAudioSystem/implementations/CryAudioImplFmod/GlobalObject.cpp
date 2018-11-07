@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "GlobalObject.h"
+#include "Common.h"
 #include "Environment.h"
 #include "Parameter.h"
 #include "SwitchState.h"
@@ -15,51 +16,22 @@ namespace Impl
 namespace Fmod
 {
 //////////////////////////////////////////////////////////////////////////
+CGlobalObject::CGlobalObject()
+{
+	CRY_ASSERT_MESSAGE(g_pObject == nullptr, "g_pObject is not nullptr during %s", __FUNCTION__);
+	g_pObject = this;
+}
+
+//////////////////////////////////////////////////////////////////////////
+CGlobalObject::~CGlobalObject()
+{
+	g_pObject = nullptr;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CGlobalObject::SetEnvironment(IEnvironment const* const pIEnvironment, float const amount)
 {
 	Cry::Audio::Log(ELogType::Error, "Trying to set an environment on the global object!");
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CGlobalObject::SetParameter(IParameter const* const pIParameter, float const value)
-{
-	auto const pParameter = static_cast<CBaseParameter const*>(pIParameter);
-
-	if (pParameter != nullptr)
-	{
-		for (auto const pObject : m_objects)
-		{
-			if (pObject != this)
-			{
-				pObject->SetParameter(pParameter, value);
-			}
-		}
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Invalid parameter pointer passed to the Fmod implementation of SetParameter");
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CGlobalObject::SetSwitchState(ISwitchState const* const pISwitchState)
-{
-	auto const pSwitchState = static_cast<CBaseSwitchState const*>(pISwitchState);
-
-	if (pSwitchState != nullptr)
-	{
-		for (auto const pObject : m_objects)
-		{
-			if (pObject != this)
-			{
-				pObject->SetSwitchState(pISwitchState);
-			}
-		}
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Invalid switch pointer passed to the Fmod implementation of SetSwitchState");
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////

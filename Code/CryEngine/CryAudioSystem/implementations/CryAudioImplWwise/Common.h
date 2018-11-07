@@ -28,9 +28,11 @@ namespace Wwise
 {
 class CImpl;
 class CListener;
+class CObject;
 
 extern CImpl* g_pImpl;
 extern CListener* g_pListener;
+extern CObject* g_pObject;
 
 extern uint32 g_numObjectsWithRelativeVelocity;
 

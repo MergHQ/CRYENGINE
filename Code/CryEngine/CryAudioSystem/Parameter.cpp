@@ -38,4 +38,21 @@ void CParameter::Set(CObject const& object, float const value) const
 	const_cast<CObject&>(object).StoreParameterValue(GetId(), value);
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CParameter::SetGlobal(float const value) const
+{
+	for (auto const pConnection : m_connections)
+	{
+		pConnection->SetGlobal(value);
+	}
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	// Log the "no-connections" case only on user generated controls.
+	if (m_connections.empty())
+	{
+		Cry::Audio::Log(ELogType::Warning, R"(Parameter "%s" set globally without connections)", GetName());
+	}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+}
 } // namespace CryAudio

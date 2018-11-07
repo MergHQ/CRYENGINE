@@ -46,21 +46,21 @@ SPoolSizes g_debugPoolSizes;
 //////////////////////////////////////////////////////////////////////////
 void CountPoolSizes(XmlNodeRef const pNode, SPoolSizes& poolSizes)
 {
-	uint32 numTriggers = 0;
+	uint16 numTriggers = 0;
 	pNode->getAttr(s_szTriggersAttribute, numTriggers);
 	poolSizes.triggers += numTriggers;
 
-	uint32 numParameters = 0;
+	uint16 numParameters = 0;
 	pNode->getAttr(s_szParametersAttribute, numParameters);
 	poolSizes.parameters += numParameters;
 
-	uint32 numSwitchStates = 0;
+	uint16 numSwitchStates = 0;
 	pNode->getAttr(s_szSwitchStatesAttribute, numSwitchStates);
 	poolSizes.switchStates += numSwitchStates;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void AllocateMemoryPools(uint32 const objectPoolSize, uint32 const eventPoolSize)
+void AllocateMemoryPools(uint16 const objectPoolSize, uint16 const eventPoolSize)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "SDL Mixer Object Pool");
 	CObject::CreateAllocator(objectPoolSize);
@@ -149,8 +149,9 @@ void CImpl::Update()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSize)
+ERequestStatus CImpl::Init(uint16 const objectPoolSize, uint16 const eventPoolSize)
 {
+	g_objects.reserve(static_cast<size_t>(objectPoolSize));
 	AllocateMemoryPools(objectPoolSize, eventPoolSize);
 
 	m_pCVarFileExtension = REGISTER_STRING("s_SDLMixerStandaloneFileExtension", ".mp3", 0, "the expected file extension for standalone files, played via the sdl_mixer");
@@ -239,9 +240,9 @@ void CImpl::OnAfterLibraryDataChanged()
 	g_debugPoolSizes = g_poolSizes;
 #endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 
-	g_poolSizes.triggers = std::max<uint32>(1, g_poolSizes.triggers);
-	g_poolSizes.parameters = std::max<uint32>(1, g_poolSizes.parameters);
-	g_poolSizes.switchStates = std::max<uint32>(1, g_poolSizes.switchStates);
+	g_poolSizes.triggers = std::max<uint16>(1, g_poolSizes.triggers);
+	g_poolSizes.parameters = std::max<uint16>(1, g_poolSizes.parameters);
+	g_poolSizes.switchStates = std::max<uint16>(1, g_poolSizes.switchStates);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -301,6 +302,42 @@ ERequestStatus CImpl::StopAllSounds()
 {
 	SoundEngine::Stop();
 	return ERequestStatus::Success;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::SetGlobalParameter(IParameter const* const pIParameter, float const value)
+{
+	auto const pParameter = static_cast<CParameter const*>(pIParameter);
+
+	if (pParameter != nullptr)
+	{
+		for (auto const pObject : g_objects)
+		{
+			pObject->SetParameter(pParameter, value);
+		}
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Invalid parameter pointer passed to the SDL Mixer implementation of %s", __FUNCTION__);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::SetGlobalSwitchState(ISwitchState const* const pISwitchState)
+{
+	auto const pSwitchState = static_cast<CSwitchState const*>(pISwitchState);
+
+	if (pSwitchState != nullptr)
+	{
+		for (auto const pObject : g_objects)
+		{
+			pObject->SetSwitchState(pSwitchState);
+		}
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Invalid switch state pointer passed to the SDL Mixer implementation of %s", __FUNCTION__);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -638,7 +675,9 @@ void CImpl::DestructSetting(ISetting const* const pISetting)
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructGlobalObject()
 {
-	return static_cast<IObject*>(new CObject(CTransformation::GetEmptyObject(), 0));
+	g_pObject = new CObject(CTransformation::GetEmptyObject(), 0);
+	g_objects.push_back(g_pObject);
+	return static_cast<IObject*>(g_pObject);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -646,7 +685,7 @@ IObject* CImpl::ConstructObject(CTransformation const& transformation, char cons
 {
 	static uint32 id = 1;
 	auto const pObject = new CObject(transformation, id++);
-	SoundEngine::RegisterObject(pObject);
+	g_objects.push_back(pObject);
 
 	return static_cast<IObject*>(pObject);
 }
@@ -656,9 +695,18 @@ void CImpl::DestructObject(IObject const* const pIObject)
 {
 	if (pIObject != nullptr)
 	{
-		CObject const* pObject = static_cast<CObject const*>(pIObject);
-		SoundEngine::UnregisterObject(pObject);
-		delete pObject;
+		auto const pObject = static_cast<CObject const*>(pIObject);
+		stl::find_and_erase(g_objects, pObject);
+
+		if (pObject == g_pObject)
+		{
+			delete pObject;
+			g_pObject = nullptr;
+		}
+		else
+		{
+			delete pObject;
+		}
 	}
 }
 

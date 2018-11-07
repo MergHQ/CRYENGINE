@@ -39,6 +39,7 @@ namespace Impl
 {
 namespace Adx2
 {
+std::vector<CBaseObject*> g_constructedObjects;
 SPoolSizes g_poolSizes;
 SPoolSizes g_poolSizesLevelSpecific;
 
@@ -49,33 +50,33 @@ SPoolSizes g_debugPoolSizes;
 //////////////////////////////////////////////////////////////////////////
 void CountPoolSizes(XmlNodeRef const pNode, SPoolSizes& poolSizes)
 {
-	uint32 numTriggers = 0;
+	uint16 numTriggers = 0;
 	pNode->getAttr(s_szTriggersAttribute, numTriggers);
 	poolSizes.triggers += numTriggers;
 
-	uint32 numParameters = 0;
+	uint16 numParameters = 0;
 	pNode->getAttr(s_szParametersAttribute, numParameters);
 	poolSizes.parameters += numParameters;
 
-	uint32 numSwitchStates = 0;
+	uint16 numSwitchStates = 0;
 	pNode->getAttr(s_szSwitchStatesAttribute, numSwitchStates);
 	poolSizes.switchStates += numSwitchStates;
 
-	uint32 numEnvironments = 0;
+	uint16 numEnvironments = 0;
 	pNode->getAttr(s_szEnvironmentsAttribute, numEnvironments);
 	poolSizes.environments += numEnvironments;
 
-	uint32 numSettings = 0;
+	uint16 numSettings = 0;
 	pNode->getAttr(s_szSettingsAttribute, numSettings);
 	poolSizes.settings += numSettings;
 
-	uint32 numFiles = 0;
+	uint16 numFiles = 0;
 	pNode->getAttr(s_szFilesAttribute, numFiles);
 	poolSizes.files += numFiles;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void AllocateMemoryPools(uint32 const objectPoolSize, uint32 const eventPoolSize)
+void AllocateMemoryPools(uint16 const objectPoolSize, uint16 const eventPoolSize)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Adx2 Object Pool");
 	CObject::CreateAllocator(objectPoolSize);
@@ -233,14 +234,14 @@ CImpl::CImpl()
 	, m_name("Adx2 (" CRI_ATOM_VER_NUM ")")
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 {
-	m_constructedObjects.reserve(256);
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSize)
+ERequestStatus CImpl::Init(uint16 const objectPoolSize, uint16 const eventPoolSize)
 {
 	ERequestStatus result = ERequestStatus::Success;
 
+	g_constructedObjects.reserve(static_cast<size_t>(objectPoolSize));
 	AllocateMemoryPools(objectPoolSize, eventPoolSize);
 
 	m_regularSoundBankFolder = AUDIO_SYSTEM_DATA_ROOT;
@@ -355,12 +356,12 @@ void CImpl::OnAfterLibraryDataChanged()
 	g_debugPoolSizes = g_poolSizes;
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
-	g_poolSizes.triggers = std::max<uint32>(1, g_poolSizes.triggers);
-	g_poolSizes.parameters = std::max<uint32>(1, g_poolSizes.parameters);
-	g_poolSizes.switchStates = std::max<uint32>(1, g_poolSizes.switchStates);
-	g_poolSizes.environments = std::max<uint32>(1, g_poolSizes.environments);
-	g_poolSizes.settings = std::max<uint32>(1, g_poolSizes.settings);
-	g_poolSizes.files = std::max<uint32>(1, g_poolSizes.files);
+	g_poolSizes.triggers = std::max<uint16>(1, g_poolSizes.triggers);
+	g_poolSizes.parameters = std::max<uint16>(1, g_poolSizes.parameters);
+	g_poolSizes.switchStates = std::max<uint16>(1, g_poolSizes.switchStates);
+	g_poolSizes.environments = std::max<uint16>(1, g_poolSizes.environments);
+	g_poolSizes.settings = std::max<uint16>(1, g_poolSizes.settings);
+	g_poolSizes.files = std::max<uint16>(1, g_poolSizes.files);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -420,6 +421,100 @@ ERequestStatus CImpl::StopAllSounds()
 {
 	criAtomExPlayer_StopAllPlayers();
 	return ERequestStatus::Success;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::SetGlobalParameter(IParameter const* const pIParameter, float const value)
+{
+	auto const pParameter = static_cast<CParameter const*>(pIParameter);
+
+	if (pParameter != nullptr)
+	{
+		EParameterType const type = pParameter->GetType();
+
+		switch (type)
+		{
+		case EParameterType::AisacControl:
+			{
+				for (auto const pObject : g_constructedObjects)
+				{
+
+					pObject->SetParameter(pParameter, value);
+				}
+
+				break;
+			}
+		case EParameterType::Category:
+			{
+				criAtomExCategory_SetVolumeByName(pParameter->GetName(), static_cast<CriFloat32>(pParameter->GetMultiplier() * value + pParameter->GetValueShift()));
+
+				break;
+			}
+		case EParameterType::GameVariable:
+			{
+				criAtomEx_SetGameVariableByName(pParameter->GetName(), static_cast<CriFloat32>(pParameter->GetMultiplier() * value + pParameter->GetValueShift()));
+
+				break;
+			}
+		default:
+			{
+				Cry::Audio::Log(ELogType::Warning, "Adx2 - Unknown EParameterType: %" PRISIZE_T, type);
+
+				break;
+			}
+		}
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Adx2 - Invalid Parameter pointer passed to the Adx2 implementation of %s", __FUNCTION__);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::SetGlobalSwitchState(ISwitchState const* const pISwitchState)
+{
+	auto const pSwitchState = static_cast<CSwitchState const*>(pISwitchState);
+
+	if (pSwitchState != nullptr)
+	{
+		ESwitchType const type = pSwitchState->GetType();
+
+		switch (type)
+		{
+		case ESwitchType::Selector:
+		case ESwitchType::AisacControl:
+			{
+				for (auto const pObject : g_constructedObjects)
+				{
+					pObject->SetSwitchState(pISwitchState);
+				}
+
+				break;
+			}
+		case ESwitchType::Category:
+			{
+				criAtomExCategory_SetVolumeByName(pSwitchState->GetName(), pSwitchState->GetValue());
+
+				break;
+			}
+		case ESwitchType::GameVariable:
+			{
+				criAtomEx_SetGameVariableByName(pSwitchState->GetName(), pSwitchState->GetValue());
+
+				break;
+			}
+		default:
+			{
+				Cry::Audio::Log(ELogType::Warning, "Adx2 - Unknown ESwitchType: %" PRISIZE_T, type);
+
+				break;
+			}
+		}
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Invalid switch pointer passed to the Adx2 implementation of %s", __FUNCTION__);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -555,14 +650,14 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructGlobalObject()
 {
-	auto const pObject = new CGlobalObject(m_constructedObjects);
+	new CGlobalObject;
 
-	if (!stl::push_back_unique(m_constructedObjects, pObject))
+	if (!stl::push_back_unique(g_constructedObjects, static_cast<CBaseObject*>(g_pObject)))
 	{
 		Cry::Audio::Log(ELogType::Warning, "Trying to construct an already registered object.");
 	}
 
-	return static_cast<IObject*>(pObject);
+	return static_cast<IObject*>(g_pObject);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -570,7 +665,7 @@ IObject* CImpl::ConstructObject(CTransformation const& transformation, char cons
 {
 	auto const pObject = new CObject(transformation);
 
-	if (!stl::push_back_unique(m_constructedObjects, pObject))
+	if (!stl::push_back_unique(g_constructedObjects, pObject))
 	{
 		Cry::Audio::Log(ELogType::Warning, "Trying to construct an already registered object.");
 	}
@@ -583,7 +678,7 @@ void CImpl::DestructObject(IObject const* const pIObject)
 {
 	auto const pObject = static_cast<CBaseObject const*>(pIObject);
 
-	if (!stl::find_and_erase(m_constructedObjects, pObject))
+	if (!stl::find_and_erase(g_constructedObjects, pObject))
 	{
 		Cry::Audio::Log(ELogType::Warning, "Trying to delete a non-existing object.");
 	}
@@ -1174,7 +1269,7 @@ void CImpl::Set3dSourceConfig()
 //////////////////////////////////////////////////////////////////////////
 void CImpl::MuteAllObjects(CriBool const shouldMute)
 {
-	for (auto const pObject : m_constructedObjects)
+	for (auto const pObject : g_constructedObjects)
 	{
 		pObject->MutePlayer(shouldMute);
 	}
@@ -1183,7 +1278,7 @@ void CImpl::MuteAllObjects(CriBool const shouldMute)
 //////////////////////////////////////////////////////////////////////////
 void CImpl::PauseAllObjects(CriBool const shouldPause)
 {
-	for (auto const pObject : m_constructedObjects)
+	for (auto const pObject : g_constructedObjects)
 	{
 		pObject->PausePlayer(shouldPause);
 	}

@@ -13,6 +13,8 @@ namespace SDL_mixer
 {
 bool g_bMuted = false;
 CListener* g_pListener = nullptr;
+CObject* g_pObject = nullptr;
+Objects g_objects;
 
 //////////////////////////////////////////////////////////////////////////
 int GetAbsoluteVolume(int const triggerVolume, float const multiplier)

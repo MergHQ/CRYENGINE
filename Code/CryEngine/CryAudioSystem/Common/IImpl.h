@@ -48,7 +48,7 @@ struct IImpl
 	 * @return ERequestStatus::Success if the initialization was successful, ERequestStatus::Failure otherwise.
 	 * @see ShutDown
 	 */
-	virtual ERequestStatus Init(uint32 const objectPoolSize, uint32 const eventPoolSize) = 0;
+	virtual ERequestStatus Init(uint16 const objectPoolSize, uint16 const eventPoolSize) = 0;
 
 	/**
 	 * Shuts down all of the internal components and the audio middleware.
@@ -143,6 +143,21 @@ struct IImpl
 	 * @see MuteAll
 	 */
 	virtual ERequestStatus StopAllSounds() = 0;
+
+	/**
+	 * Sets a parameter on all objects.
+	 * @param pIParameter - Parameter to set
+	 * @param value - Value to set
+	 * @return void
+	 */
+	virtual void SetGlobalParameter(IParameter const* const pIParameter, float const value) = 0;
+
+	/**
+	 * Sets a switch state on all objects.
+	 * @param pISwitchState - Switch state to set
+	 * @return void
+	 */
+	virtual void SetGlobalSwitchState(ISwitchState const* const pISwitchState) = 0;
 
 	/**
 	 * Inform the audio middleware about the memory location of a preloaded audio-data file

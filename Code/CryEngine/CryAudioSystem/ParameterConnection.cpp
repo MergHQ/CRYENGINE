@@ -21,4 +21,11 @@ void CParameterConnection::Set(CObject const& object, float const value) const
 {
 	object.GetImplDataPtr()->SetParameter(m_pImplData, value);
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CParameterConnection::SetGlobal(float const value) const
+{
+	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during %s", __FUNCTION__);
+	g_pIImpl->SetGlobalParameter(m_pImplData, value);
+}
 } // namespace CryAudio

@@ -27,9 +27,10 @@ public:
 		: m_pImplData(pImplData)
 	{}
 
-	virtual ~CSwitchStateConnection();
+	~CSwitchStateConnection();
 
 	void Set(CObject const& object) const;
+	void SetGlobal() const;
 
 private:
 

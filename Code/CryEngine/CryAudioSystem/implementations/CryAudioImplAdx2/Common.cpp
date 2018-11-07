@@ -9,6 +9,7 @@ namespace Impl
 {
 namespace Adx2
 {
+CGlobalObject* g_pObject = nullptr;
 CListener* g_pListener = nullptr;
 
 AcbHandles g_acbHandles;
