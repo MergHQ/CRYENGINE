@@ -793,7 +793,10 @@ void CXMLProcessor::ParseEnvironments(XmlNodeRef const pEnvironmentRoot, EDataSc
 					}
 				}
 
-				connections.shrink_to_fit();
+				if (connections.size() < numConnections)
+				{
+					connections.shrink_to_fit();
+				}
 
 				if (!connections.empty())
 				{
@@ -871,7 +874,10 @@ void CXMLProcessor::ParseSettings(XmlNodeRef const pRoot, EDataScope const dataS
 						}
 					}
 
-					connections.shrink_to_fit();
+					if (connections.size() < numConnections)
+					{
+						connections.shrink_to_fit();
+					}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 					auto const pNewSetting = new CSetting(settingId, dataScope, isAutoLoad, connections, szSettingName);
@@ -938,7 +944,10 @@ void CXMLProcessor::ParseTriggers(XmlNodeRef const pXMLTriggerRoot, EDataScope c
 					}
 				}
 
-				connections.shrink_to_fit();
+				if (connections.size() < numConnections)
+				{
+					connections.shrink_to_fit();
+				}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 				CTrigger* const pNewTrigger = new CTrigger(triggerId, dataScope, connections, maxRadius, szTriggerName);
@@ -993,7 +1002,10 @@ void CXMLProcessor::ParseDefaultTriggers(XmlNodeRef const pXMLTriggerRoot)
 				}
 			}
 
-			connections.shrink_to_fit();
+			if (connections.size() < numConnections)
+			{
+				connections.shrink_to_fit();
+			}
 
 			switch (triggerId)
 			{
@@ -1148,7 +1160,10 @@ void CXMLProcessor::ParseParameters(XmlNodeRef const pXMLParameterRoot, EDataSco
 					}
 				}
 
-				connections.shrink_to_fit();
+				if (connections.size() < numConnections)
+				{
+					connections.shrink_to_fit();
+				}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 				auto const pParameter = new CParameter(parameterId, dataScope, connections, szParameterName);
