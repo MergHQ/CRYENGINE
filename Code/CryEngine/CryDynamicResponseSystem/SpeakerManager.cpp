@@ -696,7 +696,7 @@ void CSpeakerManager::SetNumActiveSpeaker(int newAmountOfSpeaker)
 
 		if (m_audioParameterIdGlobal != CryAudio::InvalidControlId)
 		{
-			gEnv->pAudioSystem->SetParameter(m_audioParameterIdGlobal, static_cast<float>(newAmountOfSpeaker));
+			gEnv->pAudioSystem->SetGlobalParameter(m_audioParameterIdGlobal, static_cast<float>(newAmountOfSpeaker));
 		}
 	}
 }
