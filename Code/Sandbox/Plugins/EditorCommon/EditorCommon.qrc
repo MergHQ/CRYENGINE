@@ -485,8 +485,6 @@
         <file alias="Navigation/Basics_Rotate.ico">icons/navigation_basics_rotate.ico</file>
         <file alias="Navigation/Basics_Scale.ico">icons/navigation_basics_scale.ico</file>
         <file alias="Navigation/Basics_Select.ico">icons/navigation_basics_select.ico</file>
-        <file alias="Navigation/Basics_Select_Tinted.ico">icons/general_lock_false_tinted.ico</file>
-        <file alias="Navigation/Basics_Select_False.ico">icons/general_lock_true.ico</file>
         <file alias="Navigation/Basics_Select_False_Tinted.ico">icons/general_lock_true_tinted.ico</file>
         <file alias="Navigation/Coordinates_Local.ico">icons/navigation_coordinates_local.ico</file>
         <file alias="Navigation/Coordinates_Parent.ico">icons/navigation_coordinates_parent.ico</file>
