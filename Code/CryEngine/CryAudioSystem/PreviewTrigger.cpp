@@ -53,7 +53,6 @@ void CPreviewTrigger::Execute(Impl::ITriggerInfo const& triggerInfo)
 			pEvent->SetTriggerId(GetId());
 			pEvent->m_triggerImplId = m_pConnection->m_triggerImplId;
 			pEvent->m_triggerInstanceId = g_triggerInstanceIdCounter;
-			pEvent->SetDataScope(GetDataScope());
 
 			if (activateResult == ERequestStatus::Success)
 			{

@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Entity.h"
 #include "Common/PoolObject.h"
 #include "Common/SharedData.h"
 
@@ -23,10 +22,9 @@ public:
 
 	void      Release();
 	void      Stop();
-	void      SetDataScope(EDataScope const dataScope) { m_dataScope = dataScope; }
-	bool      IsPlaying() const                        { return (m_state == EEventState::Playing) || (m_state == EEventState::Virtual); }
-	void      SetTriggerId(ControlId const id)         { m_triggerId = id; }
-	ControlId GetTriggerId() const                     { return m_triggerId; }
+	bool      IsPlaying() const                { return (m_state == EEventState::Playing) || (m_state == EEventState::Virtual); }
+	void      SetTriggerId(ControlId const id) { m_triggerId = id; }
+	ControlId GetTriggerId() const             { return m_triggerId; }
 	void      SetVirtual();
 	void      SetPlaying();
 
@@ -37,7 +35,6 @@ public:
 	float             GetTriggerRadius() const                        { return m_triggerRadius; }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-	EDataScope        m_dataScope = EDataScope::None;
 	CObject*          m_pObject = nullptr;
 	TriggerImplId     m_triggerImplId = InvalidTriggerImplId;
 	TriggerInstanceId m_triggerInstanceId = InvalidTriggerInstanceId;

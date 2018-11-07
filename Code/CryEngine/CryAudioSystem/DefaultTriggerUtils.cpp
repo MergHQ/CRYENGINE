@@ -35,7 +35,6 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			pEvent->m_pObject = g_pObject;
-			pEvent->SetDataScope(pControl->GetDataScope());
 			pEvent->SetTriggerId(pControl->GetId());
 			pEvent->m_triggerImplId = pConnection->m_triggerImplId;
 			pEvent->m_triggerInstanceId = g_triggerInstanceIdCounter;

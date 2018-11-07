@@ -71,7 +71,6 @@ void CTrigger::Execute(
 			pEvent->SetTriggerId(GetId());
 			pEvent->m_triggerImplId = pConnection->m_triggerImplId;
 			pEvent->m_triggerInstanceId = g_triggerInstanceIdCounter;
-			pEvent->SetDataScope(GetDataScope());
 
 			if (activateResult == ERequestStatus::Success)
 			{
@@ -148,7 +147,6 @@ void CTrigger::Execute(
 			pEvent->SetTriggerId(GetId());
 			pEvent->m_triggerImplId = pConnection->m_triggerImplId;
 			pEvent->m_triggerInstanceId = triggerInstanceId;
-			pEvent->SetDataScope(GetDataScope());
 
 			if (activateResult == ERequestStatus::Success)
 			{
@@ -227,7 +225,6 @@ void CTrigger::LoadAsync(CObject& object, bool const doLoad) const
 			pEvent->SetTriggerId(GetId());
 			pEvent->m_triggerImplId = pConnection->m_triggerImplId;
 			pEvent->m_triggerInstanceId = g_triggerInstanceIdCounter;
-			pEvent->SetDataScope(GetDataScope());
 			pEvent->m_state = doLoad ? EEventState::Loading : EEventState::Unloading;
 
 			object.AddEvent(pEvent);
