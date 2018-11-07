@@ -808,45 +808,39 @@ void CImpl::OnAfterLibraryDataChanged()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::OnLoseFocus()
+void CImpl::OnLoseFocus()
 {
 	// With Wwise we drive this via events.
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::OnGetFocus()
+void CImpl::OnGetFocus()
 {
 	// With Wwise we drive this via events.
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::MuteAll()
+void CImpl::MuteAll()
 {
 	// With Wwise we drive this via events.
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::UnmuteAll()
+void CImpl::UnmuteAll()
 {
 	// With Wwise we drive this via events.
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::PauseAll()
+void CImpl::PauseAll()
 {
 	// With Wwise we drive this via events.
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ResumeAll()
+void CImpl::ResumeAll()
 {
 	// With Wwise we drive this via events.
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////

@@ -34,12 +34,12 @@ public:
 	virtual void                SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific) override;
 	virtual void                OnBeforeLibraryDataChanged() override;
 	virtual void                OnAfterLibraryDataChanged() override;
-	virtual ERequestStatus      OnLoseFocus() override;
-	virtual ERequestStatus      OnGetFocus() override;
-	virtual ERequestStatus      MuteAll() override;
-	virtual ERequestStatus      UnmuteAll() override;
-	virtual ERequestStatus      PauseAll() override;
-	virtual ERequestStatus      ResumeAll() override;
+	virtual void                OnLoseFocus() override;
+	virtual void                OnGetFocus() override;
+	virtual void                MuteAll() override;
+	virtual void                UnmuteAll() override;
+	virtual void                PauseAll() override;
+	virtual void                ResumeAll() override;
 	virtual ERequestStatus      StopAllSounds() override;
 	virtual void                SetGlobalParameter(IParameter const* const pIParameter, float const value) override;
 	virtual void                SetGlobalSwitchState(ISwitchState const* const pISwitchState) override;
@@ -82,8 +82,6 @@ private:
 
 	size_t m_memoryAlignment;
 	string m_language;
-
-	bool   m_isMuted;
 
 	ICVar* m_pCVarFileExtension;
 

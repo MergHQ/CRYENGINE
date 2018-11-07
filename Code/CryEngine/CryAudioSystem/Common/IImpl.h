@@ -97,45 +97,45 @@ struct IImpl
 
 	/**
 	 * This method is called every time the main Game (or Editor) window loses focus.
-	 * @return ERequestStatus::Success if the action was successful, ERequestStatus::Failure otherwise.
+	 * @return void
 	 * @see OnGetFocus
 	 */
-	virtual ERequestStatus OnLoseFocus() = 0;
+	virtual void OnLoseFocus() = 0;
 
 	/**
 	 * This method is called every time the main Game (or Editor) window gets focus.
-	 * @return ERequestStatus::Success if the action was successful, ERequestStatus::Failure otherwise.
+	 * @return void
 	 * @see OnLoseFocus
 	 */
-	virtual ERequestStatus OnGetFocus() = 0;
+	virtual void OnGetFocus() = 0;
 
 	/**
 	 * Mute all sounds, after this call there should be no audio coming from the audio middleware.
-	 * @return ERequestStatus::Success if the action was successful, ERequestStatus::Failure otherwise.
+	 * @return void
 	 * @see UnmuteAll, StopAllSounds
 	 */
-	virtual ERequestStatus MuteAll() = 0;
+	virtual void MuteAll() = 0;
 
 	/**
 	 * Restore the audio output of the audio middleware after a call to MuteAll().
-	 * @return ERequestStatus::Success if the action was successful, ERequestStatus::Failure otherwise.
+	 * @return void
 	 * @see MuteAll
 	 */
-	virtual ERequestStatus UnmuteAll() = 0;
+	virtual void UnmuteAll() = 0;
 
 	/**
 	 * Pauses playback of all audio events.
-	 * @return ERequestStatus::Success if the action was successful, ERequestStatus::Failure otherwise.
+	 * @return void
 	 * @see ResumeAll
 	 */
-	virtual ERequestStatus PauseAll() = 0;
+	virtual void PauseAll() = 0;
 
 	/**
 	 * Resumes playback of all audio events.
-	 * @return ERequestStatus::Success if the action was successful, ERequestStatus::Failure otherwise.
+	 * @return void
 	 * @see PauseAll
 	 */
-	virtual ERequestStatus ResumeAll() = 0;
+	virtual void ResumeAll() = 0;
 
 	/**
 	 * Stop all currently playing sounds. Has no effect on anything triggered after this method is called.

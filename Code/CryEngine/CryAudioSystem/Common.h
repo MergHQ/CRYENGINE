@@ -43,9 +43,10 @@ enum class ESystemStates : EnumFlagsType
 {
 	None             = 0,
 	ImplShuttingDown = BIT(0),
+	IsMuted          = BIT(1),
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	PoolsAllocated   = BIT(1),
-	IsMuted          = BIT(2),
+	IsPaused         = BIT(2),
+	PoolsAllocated   = BIT(3),
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ESystemStates);

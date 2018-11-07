@@ -122,7 +122,6 @@ void OnStandaloneFileFinished(CryAudio::CStandaloneFile& standaloneFile, const c
 ///////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
 	: m_pCVarFileExtension(nullptr)
-	, m_isMuted(false)
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
 	, m_name("SDL Mixer 2.0.2")
 #endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
@@ -246,55 +245,39 @@ void CImpl::OnAfterLibraryDataChanged()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::OnLoseFocus()
-{
-	if (!m_isMuted)
-	{
-		SoundEngine::Mute();
-	}
-
-	return ERequestStatus::Success;
-}
-
-///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::OnGetFocus()
-{
-	if (!m_isMuted)
-	{
-		SoundEngine::UnMute();
-	}
-
-	return ERequestStatus::Success;
-}
-
-///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::MuteAll()
+void CImpl::OnLoseFocus()
 {
 	SoundEngine::Mute();
-	m_isMuted = true;
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::UnmuteAll()
+void CImpl::OnGetFocus()
 {
 	SoundEngine::UnMute();
-	m_isMuted = false;
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::PauseAll()
+void CImpl::MuteAll()
+{
+	SoundEngine::Mute();
+}
+
+///////////////////////////////////////////////////////////////////////////
+void CImpl::UnmuteAll()
+{
+	SoundEngine::UnMute();
+}
+
+///////////////////////////////////////////////////////////////////////////
+void CImpl::PauseAll()
 {
 	SoundEngine::Pause();
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ResumeAll()
+void CImpl::ResumeAll()
 {
 	SoundEngine::Resume();
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////

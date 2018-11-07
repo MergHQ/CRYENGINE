@@ -1122,9 +1122,65 @@ void CSystem::StopTrigger(ControlId const triggerId /* = CryAudio::InvalidContro
 void CSystem::ExecutePreviewTrigger(ControlId const triggerId)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	SSystemRequestData<ESystemRequestType::ExecutePreviewTrigger> const requestData(triggerId);
-	CRequest const request(&requestData);
-	PushRequest(request);
+	switch (triggerId)
+	{
+	case LoseFocusTriggerId:
+		{
+			SSystemRequestData<ESystemRequestType::ExecuteDefaultTrigger> const requestData(EDefaultTriggerType::LoseFocus);
+			CRequest const request(&requestData);
+			PushRequest(request);
+
+			break;
+		}
+	case GetFocusTriggerId:
+		{
+			SSystemRequestData<ESystemRequestType::ExecuteDefaultTrigger> const requestData(EDefaultTriggerType::GetFocus);
+			CRequest const request(&requestData);
+			PushRequest(request);
+
+			break;
+		}
+	case MuteAllTriggerId:
+		{
+			SSystemRequestData<ESystemRequestType::ExecuteDefaultTrigger> const requestData(EDefaultTriggerType::MuteAll);
+			CRequest const request(&requestData);
+			PushRequest(request);
+
+			break;
+		}
+	case UnmuteAllTriggerId:
+		{
+			SSystemRequestData<ESystemRequestType::ExecuteDefaultTrigger> const requestData(EDefaultTriggerType::UnmuteAll);
+			CRequest const request(&requestData);
+			PushRequest(request);
+
+			break;
+		}
+	case PauseAllTriggerId:
+		{
+			SSystemRequestData<ESystemRequestType::ExecuteDefaultTrigger> const requestData(EDefaultTriggerType::PauseAll);
+			CRequest const request(&requestData);
+			PushRequest(request);
+
+			break;
+		}
+	case ResumeAllTriggerId:
+		{
+			SSystemRequestData<ESystemRequestType::ExecuteDefaultTrigger> const requestData(EDefaultTriggerType::ResumeAll);
+			CRequest const request(&requestData);
+			PushRequest(request);
+
+			break;
+		}
+	default:
+		{
+			SSystemRequestData<ESystemRequestType::ExecutePreviewTrigger> const requestData(triggerId);
+			CRequest const request(&requestData);
+			PushRequest(request);
+
+			break;
+		}
+	}
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
@@ -1817,14 +1873,22 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 			{
 			case EDefaultTriggerType::LoseFocus:
 				{
-					g_loseFocusTrigger.Execute();
+					if ((g_systemStates& ESystemStates::IsMuted) == 0)
+					{
+						g_loseFocusTrigger.Execute();
+					}
+
 					result = ERequestStatus::Success;
 
 					break;
 				}
 			case EDefaultTriggerType::GetFocus:
 				{
-					g_getFocusTrigger.Execute();
+					if ((g_systemStates& ESystemStates::IsMuted) == 0)
+					{
+						g_getFocusTrigger.Execute();
+					}
+
 					result = ERequestStatus::Success;
 
 					break;
@@ -1833,6 +1897,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 				{
 					g_muteAllTrigger.Execute();
 					result = ERequestStatus::Success;
+					g_systemStates |= ESystemStates::IsMuted;
 
 					break;
 				}
@@ -1840,6 +1905,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 				{
 					g_unmuteAllTrigger.Execute();
 					result = ERequestStatus::Success;
+					g_systemStates &= ~ESystemStates::IsMuted;
 
 					break;
 				}
@@ -1848,12 +1914,20 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 					g_pauseAllTrigger.Execute();
 					result = ERequestStatus::Success;
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+					g_systemStates |= ESystemStates::IsPaused;
+#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
+
 					break;
 				}
 			case EDefaultTriggerType::ResumeAll:
 				{
 					g_resumeAllTrigger.Execute();
 					result = ERequestStatus::Success;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+					g_systemStates &= ~ESystemStates::IsPaused;
+#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
 
 					break;
 				}
@@ -3372,8 +3446,11 @@ void CSystem::HandleDrawDebug()
 				memInfoString.Format("%u KiB", memAlloc >> 10);
 			}
 
+			char const* const szMuted = ((g_systemStates& ESystemStates::IsMuted) != 0) ? " - Muted" : "";
+			char const* const szPaused = ((g_systemStates& ESystemStates::IsPaused) != 0) ? " - Paused" : "";
+
 			pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemHeaderFontSize, Debug::g_globalColorHeader.data(), false,
-			                      "Audio System (Total Memory: %s)", memInfoString.c_str());
+			                      "Audio System (Total Memory: %s)%s%s", memInfoString.c_str(), szMuted, szPaused);
 
 			if ((g_cvars.m_drawDebug & Debug::EDrawFilter::DetailedMemoryInfo) != 0)
 			{
@@ -3624,6 +3701,11 @@ void CSystem::HandleRetriggerControls()
 	if ((g_systemStates& ESystemStates::IsMuted) != 0)
 	{
 		ExecuteDefaultTrigger(EDefaultTriggerType::MuteAll);
+	}
+
+	if ((g_systemStates& ESystemStates::IsPaused) != 0)
+	{
+		ExecuteDefaultTrigger(EDefaultTriggerType::PauseAll);
 	}
 }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE

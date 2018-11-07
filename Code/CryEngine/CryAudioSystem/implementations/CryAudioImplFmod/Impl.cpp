@@ -145,7 +145,6 @@ CImpl::CImpl()
 	, m_pMasterAssetsBank(nullptr)
 	, m_pMasterStreamsBank(nullptr)
 	, m_pMasterStringsBank(nullptr)
-	, m_isMuted(false)
 {
 }
 
@@ -326,55 +325,39 @@ void CImpl::OnAfterLibraryDataChanged()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::OnLoseFocus()
-{
-	if (!m_isMuted)
-	{
-		MuteMasterBus(true);
-	}
-
-	return ERequestStatus::Success;
-}
-
-///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::OnGetFocus()
-{
-	if (!m_isMuted)
-	{
-		MuteMasterBus(false);
-	}
-
-	return ERequestStatus::Success;
-}
-
-///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::MuteAll()
+void CImpl::OnLoseFocus()
 {
 	MuteMasterBus(true);
-	m_isMuted = true;
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::UnmuteAll()
+void CImpl::OnGetFocus()
 {
 	MuteMasterBus(false);
-	m_isMuted = false;
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::PauseAll()
+void CImpl::MuteAll()
+{
+	MuteMasterBus(true);
+}
+
+///////////////////////////////////////////////////////////////////////////
+void CImpl::UnmuteAll()
+{
+	MuteMasterBus(false);
+}
+
+///////////////////////////////////////////////////////////////////////////
+void CImpl::PauseAll()
 {
 	PauseMasterBus(true);
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ResumeAll()
+void CImpl::ResumeAll()
 {
 	PauseMasterBus(false);
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////

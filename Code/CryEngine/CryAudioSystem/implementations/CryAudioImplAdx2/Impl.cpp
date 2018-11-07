@@ -227,8 +227,7 @@ void userFree(void* const pObj, void* const pMem)
 
 ///////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
-	: m_isMuted(false)
-	, m_pAcfBuffer(nullptr)
+	: m_pAcfBuffer(nullptr)
 	, m_dbasId(CRIATOMEXDBAS_ILLEGAL_ID)
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	, m_name("Adx2 (" CRI_ATOM_VER_NUM ")")
@@ -365,55 +364,39 @@ void CImpl::OnAfterLibraryDataChanged()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::OnLoseFocus()
-{
-	if (!m_isMuted)
-	{
-		MuteAllObjects(CRI_TRUE);
-	}
-
-	return ERequestStatus::Success;
-}
-
-///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::OnGetFocus()
-{
-	if (!m_isMuted)
-	{
-		MuteAllObjects(CRI_FALSE);
-	}
-
-	return ERequestStatus::Success;
-}
-
-///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::MuteAll()
+void CImpl::OnLoseFocus()
 {
 	MuteAllObjects(CRI_TRUE);
-	m_isMuted = true;
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::UnmuteAll()
+void CImpl::OnGetFocus()
 {
 	MuteAllObjects(CRI_FALSE);
-	m_isMuted = false;
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::PauseAll()
+void CImpl::MuteAll()
+{
+	MuteAllObjects(CRI_TRUE);
+}
+
+///////////////////////////////////////////////////////////////////////////
+void CImpl::UnmuteAll()
+{
+	MuteAllObjects(CRI_FALSE);
+}
+
+///////////////////////////////////////////////////////////////////////////
+void CImpl::PauseAll()
 {
 	PauseAllObjects(CRI_TRUE);
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ResumeAll()
+void CImpl::ResumeAll()
 {
 	PauseAllObjects(CRI_FALSE);
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
