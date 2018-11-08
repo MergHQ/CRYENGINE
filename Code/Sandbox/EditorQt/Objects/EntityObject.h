@@ -371,11 +371,6 @@ protected:
 	//! Force IEntity to the local position/angles/scale.
 	void XFormGameEntity();
 
-	//! Sets correct binding for IEntity.
-	virtual void BindToParent();
-	virtual void BindIEntityChilds();
-	virtual void UnbindIEntity();
-
 	void         DrawAIInfo(SDisplayContext& dc, IAIObject* aiObj);
 
 	//////////////////////////////////////////////////////////////////////////
@@ -569,9 +564,6 @@ private:
 	void         ResetCallbacks();
 	void         SetVariableCallback(IVariable* pVar, IVariable::OnSetCallback func);
 	void         ClearCallbacks();
-
-	virtual void OnAttachChild(CBaseObject* pChild) override;
-	virtual void OnDetachThis() override;
 
 	virtual void OnLink(CBaseObject* pParent) override;
 	virtual void OnUnLink() override;

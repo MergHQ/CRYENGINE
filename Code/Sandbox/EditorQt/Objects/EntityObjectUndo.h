@@ -97,47 +97,6 @@ protected:
 	std::vector<SCachedComponent> m_cachedPropertiesRedo;
 };
 
-class CUndoAttachEntity : public IUndoObject
-{
-public:
-	CUndoAttachEntity(CEntityObject* pAttachedObject, bool bAttach)
-		: m_attachedEntityGUID(pAttachedObject->GetId())
-		, m_attachmentTarget(pAttachedObject->GetAttachTarget())
-		, m_attachmentType(pAttachedObject->GetAttachType())
-		, m_bAttach(bAttach)
-	{}
-
-	virtual void Undo(bool bUndo) override
-	{
-		if (!m_bAttach) SetAttachmentTypeAndTarget();
-	}
-
-	virtual void Redo() override
-	{
-		if (m_bAttach) SetAttachmentTypeAndTarget();
-	}
-
-private:
-	void SetAttachmentTypeAndTarget()
-	{
-		CObjectManager* pObjectManager = static_cast<CObjectManager*>(GetIEditorImpl()->GetObjectManager());
-		CEntityObject* pEntity = static_cast<CEntityObject*>(pObjectManager->FindObject(m_attachedEntityGUID));
-
-		if (pEntity)
-		{
-			pEntity->SetAttachType(m_attachmentType);
-			pEntity->SetAttachTarget(m_attachmentTarget);
-		}
-	}
-
-	virtual const char* GetDescription() { return "Attachment Changed"; }
-
-	CryGUID                        m_attachedEntityGUID;
-	CEntityObject::EAttachmentType m_attachmentType;
-	string                         m_attachmentTarget;
-	bool                           m_bAttach;
-};
-
 //////////////////////////////////////////////////////////////////////////
 //! Undo object for adding an entity component
 class CUndoAddComponent : public IUndoObject

@@ -645,16 +645,9 @@ void CBaseObject::Done()
 		if (bSuspended)
 			GetIEditor()->ResumeUpdateCGroup(pGroup);
 	}
-	else
-	{
-		DetachThis();
-	}
 
 	if (GetLinkedTo())
 		UnLink();
-
-	// From children
-	DetachAll(true, true);
 
 	SetLookAt(0);
 	if (m_lookatSource)
@@ -2709,8 +2702,8 @@ void CBaseObject::GetAllPrefabFlagedChildren(ISelectionGroup& outAllChildren, CB
 
 void CBaseObject::AttachChild(CBaseObject* pChild, bool shouldKeepPos, bool bInvalidateTM)
 {
-	std::vector<CBaseObject*> children = { pChild };
-	AttachChildren(children, shouldKeepPos, bInvalidateTM);
+	// Make sure no one was calling this
+	CRY_ASSERT_MESSAGE(0, "AttachChild not implemented for type");
 }
 
 void CBaseObject::DetachThis(bool bKeepPos, bool bPlaceOnRoot)
@@ -2724,8 +2717,43 @@ void CBaseObject::DetachThis(bool bKeepPos, bool bPlaceOnRoot)
 
 void CBaseObject::RemoveChild(CBaseObject* pChild)
 {
-	std::vector<CBaseObject*> children = { pChild };
-	RemoveChildren(children);
+	// Make sure no one was calling this
+	CRY_ASSERT_MESSAGE(0, "RemoveChild not implemented for type");
+}
+
+void CBaseObject::DetachAll(bool bKeepPos /*= true*/, bool bPlaceOnRoot /*= false*/)
+{
+	// Make sure no one was calling this
+	CRY_ASSERT_MESSAGE(0, "DetachAll not implemented for type");
+}
+
+void CBaseObject::AttachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepPos /*= true*/, bool shouldInvalidateTM /*= true*/)
+{
+	// Make sure no one was calling this
+	CRY_ASSERT_MESSAGE(0, "AttachChildren not implemented for type");
+}
+
+void CBaseObject::DetachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepPos /*= true*/, bool shouldPlaceOnRoot /*= false*/)
+{
+	// Make sure no one was calling this
+	CRY_ASSERT_MESSAGE(0, "DetachChildren not implemented for type");
+}
+
+void CBaseObject::AddMember(CBaseObject* pMember, bool bKeepPos /*=true */)
+{
+	CRY_ASSERT_MESSAGE(0, "AddMember not implemented for type");
+}
+
+void CBaseObject::AddMembers(std::vector<CBaseObject*>& objects, bool shouldKeepPos /*= true*/)
+{
+	// Make sure no one was calling this
+	CRY_ASSERT_MESSAGE(0, "AddMembers not implemented for type");
+}
+
+void CBaseObject::RemoveMembers(std::vector<CBaseObject*>& members, bool shouldKeepPos /*= true*/, bool shouldPlaceOnRoot /*= false*/)
+{
+	// Make sure no one was calling this
+	CRY_ASSERT_MESSAGE(0, "RemoveMembers not implemented for type");
 }
 
 void CBaseObject::ResolveParent(CBaseObject* parent)
@@ -3697,14 +3725,6 @@ void CBaseObject::SetTransformDelegate(ITransformDelegate* pTransformDelegate, b
 			InvalidateTM(0);
 		}
 	}
-}
-
-void CBaseObject::AddMember(CBaseObject* pMember, bool bKeepPos /*=true */)
-{
-	LOADING_TIME_PROFILE_SECTION;
-	AttachChild(pMember, bKeepPos);
-	if (CBaseObject* pPrefab = GetPrefab())
-		pPrefab->AddMember(pMember, bKeepPos);
 }
 
 bool CBaseObject::CanLinkTo(CBaseObject* pLinkTo) const
