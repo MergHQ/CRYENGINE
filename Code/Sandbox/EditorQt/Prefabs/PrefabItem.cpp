@@ -449,7 +449,7 @@ void CPrefabItem::ModifyInstancedPrefab(CSelectionGroup& objectsInPrefabAsFlatSe
 				pPrefabObject->SetObjectPrefabFlagAndLayer(pClone);
 
 				if (!pClone->GetParent())
-					pPrefabObject->AttachChild(pClone, false);
+					pPrefabObject->AddMember(pClone, false);
 
 				// GUID -> PrefabGUID
 				RemapIDsInNodeAndChildren(changedObject, guidMapping, false);

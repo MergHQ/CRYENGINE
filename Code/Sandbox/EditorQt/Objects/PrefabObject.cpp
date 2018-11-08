@@ -1345,7 +1345,7 @@ void CPrefabObject::CalcBoundBox()
 
 void CPrefabObject::RemoveChild(CBaseObject* child)
 {
-	CBaseObject::RemoveChild(child);
+	CGroup::RemoveChild(child);
 }
 
 void CPrefabObject::GenerateGUIDsForObjectAndChildren(CBaseObject* pObject)

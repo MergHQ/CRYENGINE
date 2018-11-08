@@ -81,7 +81,10 @@ public:
 
 	//packer params
 	uint              nPackID[OMNI_SIDES_NUM];
-	TRect_tpl<uint32> shadowPoolPack[OMNI_SIDES_NUM];
+	union {
+		TRect_tpl<uint32>  shadowPoolPack[OMNI_SIDES_NUM];
+		TRect_tpl<float>   shadowCascade;
+	};
 
 	uint8             nShadowPoolUpdateRate;                                   // For time-sliced updates: Update rate in frames count
 

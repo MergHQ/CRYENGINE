@@ -546,8 +546,8 @@ void PyAttachObject(const char* pParent, const char* pChild, const char* pAttach
 		pChildEntity->SetAttachTarget(pAttachmentTarget);
 	}
 
-	CUndo undo("Attach object");
-	pParentObject->AttachChild(pChildObject);
+	CUndo undo("Link Object");
+	pParentObject->LinkTo(pChildObject);
 }
 
 void PyDetachObject(const char* pObjectName)

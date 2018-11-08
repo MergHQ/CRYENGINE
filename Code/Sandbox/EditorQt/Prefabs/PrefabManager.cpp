@@ -892,9 +892,10 @@ void CPrefabManager::ExpandGroup(CBaseObject* pObject, CSelectionGroup& selectio
 	if (pObject->IsKindOf(RUNTIME_CLASS(CGroup)) && !pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
 	{
 		CGroup* pGroup = static_cast<CGroup*>(pObject);
-		const TBaseObjects& groupMembers = pGroup->GetMembers();
-		for (int i = 0, count = groupMembers.size(); i < count; ++i)
-			ExpandGroup(groupMembers[i], selection);
+		for (int i = 0, count = pGroup->GetChildCount(); i < count; ++i)
+		{
+			ExpandGroup(pGroup->GetChild(i), selection);
+		}
 	}
 }
 

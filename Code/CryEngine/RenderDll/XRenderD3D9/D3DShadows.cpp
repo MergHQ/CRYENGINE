@@ -467,10 +467,10 @@ CShadowUtils::SShadowsSetupInfo CD3D9Renderer::ConfigShadowTexgen(CRenderView* p
 		if (pFr->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance)
 		{
 			Matrix44 mCropView(IDENTITY);
-			mCropView.m00 = (float)pFr->shadowPoolPack[0].GetDim().x / pFr->pDepthTex->GetWidth();
-			mCropView.m11 = (float)pFr->shadowPoolPack[0].GetDim().y / pFr->pDepthTex->GetHeight();
-			mCropView.m30 = (float)pFr->shadowPoolPack[0].Min.x / pFr->pDepthTex->GetWidth();
-			mCropView.m31 = (float)pFr->shadowPoolPack[0].Min.y / pFr->pDepthTex->GetHeight();
+			mCropView.m00 = pFr->shadowCascade.GetDim().x / pFr->pDepthTex->GetWidth();
+			mCropView.m11 = pFr->shadowCascade.GetDim().y / pFr->pDepthTex->GetHeight();
+			mCropView.m30 = pFr->shadowCascade.Min.x / pFr->pDepthTex->GetWidth();
+			mCropView.m31 = pFr->shadowCascade.Min.y / pFr->pDepthTex->GetHeight();
 
 			mTexScaleBiasMat = mTexScaleBiasMat * mCropView;
 		}

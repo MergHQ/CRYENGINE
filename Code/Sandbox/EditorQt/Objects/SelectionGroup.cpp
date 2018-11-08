@@ -561,11 +561,10 @@ static void RecursiveFlattenHierarchy(CBaseObject* pObj, CSelectionGroup& newGro
 	}
 	else if (flattenGroups)
 	{
-		const TBaseObjects& groupMembers = static_cast<CGroup*>(pObj)->GetMembers();
-		for (int i = 0, count = groupMembers.size(); i < count; ++i)
+		for (int i = 0, count = pObj->GetChildCount(); i < count; ++i)
 		{
-			newGroup.AddObject(groupMembers[i]);
-			RecursiveFlattenHierarchy(groupMembers[i], newGroup, flattenGroups);
+			newGroup.AddObject(pObj->GetChild(i));
+			RecursiveFlattenHierarchy(pObj->GetChild(i), newGroup, flattenGroups);
 		}
 	}
 }

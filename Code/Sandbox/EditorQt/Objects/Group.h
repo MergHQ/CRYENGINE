@@ -42,7 +42,7 @@ public:
 
 	void          CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
-	//! Attach new child node.
+	//! Add/remove members
 	virtual bool        CanAddMembers(std::vector<CBaseObject*>& objects);
 	virtual bool        CanAddMember(CBaseObject* pMember);
 	virtual void        AddMember(CBaseObject* pMember, bool bKeepPos = true) override;
@@ -50,22 +50,20 @@ public:
 	virtual void        RemoveMember(CBaseObject* pMember, bool shouldKeepPos = true, bool shouldPlaceOnRoot = false) override;
 	virtual void        RemoveMembers(std::vector<CBaseObject*>& members, bool shouldKeepPos = true, bool shouldPlaceOnRoot = false) override;
 
-	const TBaseObjects& GetMembers() const { return m_members; }
-	virtual void        DetachThis(bool bKeepPos, bool bPlaceOnRoot = false) override;
 	virtual void        DetachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepPos = true, bool shouldPlaceOnRoot = false) override;
 
 	//! Detach all childs of this node.
 	virtual void DetachAll(bool bKeepPos = true, bool bPlaceOnRoot = false) override;
 	virtual void AttachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepPos = true, bool shouldInvalidateTM = true) override;
 
-	virtual void SetMaterial(IEditorMaterial* mtl);
+	virtual void        SetMaterial(IEditorMaterial* mtl);
 
-	void         GetBoundBox(AABB& box);
-	void         GetLocalBounds(AABB& box);
-	bool         HitTest(HitContext& hc);
-	virtual bool HitHelperTestForChildObjects(HitContext& hc);
+	void                GetBoundBox(AABB& box);
+	void                GetLocalBounds(AABB& box);
+	bool                HitTest(HitContext& hc);
+	virtual bool        HitHelperTestForChildObjects(HitContext& hc);
 
-	void         Serialize(CObjectArchive& ar);
+	void                Serialize(CObjectArchive& ar);
 
 	//! Overwrite event handler from CBaseObject.
 	void OnEvent(ObjectEvent event);
@@ -94,8 +92,6 @@ public:
 
 	virtual void DeleteAllMembers();
 	virtual void GetAllLinkedObjects(std::vector<CBaseObject*>& objects, CBaseObject* pObject);
-
-	void         BindToParent();
 
 	virtual bool SuspendUpdate(bool bForceSuspend = true) { return true; }
 	virtual void ResumeUpdate()                           {}
@@ -134,12 +130,8 @@ protected:
 
 	void         SetChildsParent(CBaseObject* pObj) { pObj->m_parent = this; }
 
-	void         FilterOutNonMembers(std::vector<CBaseObject*>& objects);
 	//Groups and derived shouldn't have visual properties visible. Specifically in prefabs where there is no way to reliably store global prefab properties (they get saved in the layer and not in the xml)
 	virtual void SerializeGeneralVisualProperties(Serialization::IArchive& ar, bool bMultiEdit) override;
-
-	// This list contains children which are actually members of this group, rather than regular attached ones.
-	TBaseObjects m_members;
 
 	AABB         m_bbox;
 	bool         m_bBBoxValid        : 1;

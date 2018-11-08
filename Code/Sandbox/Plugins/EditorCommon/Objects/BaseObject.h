@@ -433,12 +433,12 @@ public:
 	virtual void RemoveMember(CBaseObject* pMember, bool bKeepPos = true, bool bPlaceOnRoot = false) {}
 
 	//! Detach all children of this node.
-	virtual void DetachAll(bool bKeepPos = true, bool bPlaceOnRoot = false)                                                    {}
+	virtual void DetachAll(bool bKeepPos = true, bool bPlaceOnRoot = false);
 
-	virtual void AttachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepPos = true, bool shouldInvalidateTM = true) {}
-	virtual void DetachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepPos = true, bool shouldPlaceOnRoot = false) {}
-	virtual void AddMembers(std::vector<CBaseObject*>& objects, bool shouldKeepPos = true)                                     {}
-	virtual void RemoveMembers(std::vector<CBaseObject*>& members, bool shouldKeepPos = true, bool shouldPlaceOnRoot = false)  {}
+	virtual void AttachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepPos = true, bool shouldInvalidateTM = true);
+	virtual void DetachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepPos = true, bool shouldPlaceOnRoot = false);
+	virtual void AddMembers(std::vector<CBaseObject*>& objects, bool shouldKeepPos = true);
+	virtual void RemoveMembers(std::vector<CBaseObject*>& members, bool shouldKeepPos = true, bool shouldPlaceOnRoot = false);
 
 	// Detach this node from parent.
 	virtual void DetachThis(bool bKeepPos = true, bool bPlaceOnRoot = false);
@@ -861,9 +861,6 @@ private:
 
 	bool IsInSelectionBox() const { return m_bInSelectionBox; }
 
-	// For subclasses to do actual attach/detach work
-	virtual void OnAttachChild(CBaseObject* pChild) {}
-	virtual void OnDetachThis()                     {}
 	void         SetMaterialByName(const char* mtlName);
 
 	virtual void OnLink(CBaseObject* pParent) {}
