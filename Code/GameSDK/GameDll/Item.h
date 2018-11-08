@@ -1,22 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
- -------------------------------------------------------------------------
-  $Id$
-  $DateTime$
-  Description: C++ Item Implementation
-  
- -------------------------------------------------------------------------
-  History:
-  - 27:10:2004   11:25 : Created by Márcio Martins
-
-*************************************************************************/
-#ifndef __ITEM_H__
-#define __ITEM_H__
-
-#if _MSC_VER > 1000
 # pragma once
-#endif
 
 
 #include <CryScriptSystem/IScriptSystem.h>
@@ -45,8 +29,8 @@
 
 class CItemSharedParams;
 class CTagState;
-class IActionController;
 
+struct IActionController;
 struct IAttachmentManager;
 struct ICharacterInstance;
 struct SParams;
@@ -901,6 +885,3 @@ public:
 	static SItemFragmentTagCRCs sFragmentTagCRCs;
 	static SItemActionParamCRCs  sActionParamCRCs;
 };
-
-
-#endif //__ITEM_H__

@@ -11,14 +11,13 @@
    - 06:02:2012: Created by Tom Berry
 
 *************************************************************************/
-#ifndef __CVEHICLEANIMATION_H__
-#define __CVEHICLEANIMATION_H__
+#pragma once
 
 #include <ICryMannequinDefs.h>
 
 class CVehicle;
-class IAnimationDatabase;
-class IActionController;
+struct IAnimationDatabase;
+struct IActionController;
 struct SAnimationContext;
 
 class CVehicleAnimationComponent : public IVehicleAnimationComponent
@@ -54,5 +53,3 @@ private:
 	IActionController*        m_pActionController;
 	TagID                     m_typeTag;
 };
-
-#endif //!__CVEHICLEANIMATION_H__

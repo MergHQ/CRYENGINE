@@ -5,11 +5,14 @@
 #include "ICryMannequin.h"
 #include <CryInput/IInput.h>
 
-class IAnimationDatabase;
+struct IActionController;
+struct IAnimationDatabase;
+struct IMannequinEditorManager;
+struct SEditorAnimationContext;
+
 class CSequencerTrack;
 class CSequencerNode;
 class CSequencerSequence;
-struct IMannequinEditorManager;
 
 const uint32 HISTORY_ITEM_INVALID = 0xffffffff;
 const uint32 CONTEXT_DATA_NONE = 0xffffffff;
@@ -35,13 +38,13 @@ struct SScopeContextViewData
 	{
 	}
 
-	_smart_ptr<ICharacterInstance>  charInst;
-	IStatObj*                       pStatObj;
-	IEntity*                        entity;
-	QuatT                           oldAttachmentLoc;
-	struct SEditorAnimationContext* m_pAnimContext;
-	class IActionController*        m_pActionController;
-	bool                            enabled;
+	_smart_ptr<ICharacterInstance> charInst;
+	IStatObj*                      pStatObj;
+	IEntity*                       entity;
+	QuatT                          oldAttachmentLoc;
+	SEditorAnimationContext*       m_pAnimContext;
+	IActionController*             m_pActionController;
+	bool                           enabled;
 };
 
 struct SScopeContextData
@@ -172,7 +175,7 @@ struct SMannequinContextViewData
 
 	IEntity*                        m_pEntity;
 	struct SEditorAnimationContext* m_pAnimContext;
-	class IActionController*        m_pActionController;
+	IActionController*              m_pActionController;
 	TBackgroundObjects              backgroundObjects;
 	std::vector<int>                backgroundProps;
 };

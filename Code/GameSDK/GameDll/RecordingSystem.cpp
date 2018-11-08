@@ -3006,7 +3006,7 @@ void CRecordingSystem::OnPlaybackStart(void)
 							int rank = (int) initialState.playerJoined.rank;
 							int reincarnations = (int) initialState.playerJoined.reincarnations;
 
-							class IActionController* pActionController = NULL;
+							IActionController* pActionController = NULL;
 							// Setup the replay actor's data.
 							{
 								CReplayActor* pReplayActor = GetReplayActor(cloneEntityId, false);

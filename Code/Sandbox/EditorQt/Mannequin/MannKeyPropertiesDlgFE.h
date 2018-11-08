@@ -6,7 +6,7 @@
 #include "SequencerKeyPropertiesDlg.h"
 #include "Dialogs/BaseFrameWnd.h"
 
-class IAnimationDatabase;
+struct IAnimationDatabase;
 struct SMannequinContexts;
 
 class SequencerKeys;

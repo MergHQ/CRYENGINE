@@ -7,7 +7,7 @@
 #include "SkeletonLoader.h"
 
 struct IPakSystem;
-class ICryXML;
+struct ICryXML;
 struct IResourceCompiler;
 
 class SkeletonManager

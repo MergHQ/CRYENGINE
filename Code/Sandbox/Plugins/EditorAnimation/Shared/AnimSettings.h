@@ -9,7 +9,7 @@
 #include <CrySerialization/BlackBox.h>
 
 struct ICharacterInstance;
-class ICryXML;
+struct ICryXML;
 struct IPakSystem;
 
 #include <CrySerialization/Forward.h>

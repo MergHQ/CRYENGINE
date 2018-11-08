@@ -1,20 +1,19 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __JOYSTICKCTRL_H__
-#define __JOYSTICKCTRL_H__
+#pragma once
 
 #include <CryInput/IJoystick.h>
 #include "ScrollableWindow.h"
 
-class IJoystickCtrlContainer
+struct IJoystickCtrlContainer
 {
-public:
 	enum JoystickAction
 	{
 		JOYSTICK_ACTION_START,
 		JOYSTICK_ACTION_END
 	};
 
+	virtual ~IJoystickCtrlContainer() {}
 	virtual void              OnAction(JoystickAction action) = 0;
 	virtual void              OnFreezeLayoutChanged() = 0;
 	virtual IJoystickChannel* GetPotentialJoystickChannel() = 0;
@@ -30,9 +29,9 @@ public:
 
 class IJoystickActionMode;
 
-class IJoystickActionContext
+struct IJoystickActionContext
 {
-public:
+	virtual ~IJoystickActionContext() {}
 	virtual void BeginUndo() = 0;
 	virtual void AcceptUndo(const char* name) = 0;
 	virtual void RestoreUndo() = 0;
@@ -45,17 +44,17 @@ public:
 	virtual void SetJoystickBeingManipulatedPosition(const Vec2& vJoystickBeingManipulatedPosition) = 0;
 };
 
-class IJoystickUndoContext
+struct IJoystickUndoContext
 {
-public:
+	virtual ~IJoystickUndoContext() {}
 	virtual void OnSplineChangesUnOrReDone() = 0;
 	virtual void OnJoytickChangesUnOrReDone() = 0;
 	virtual void SerializeJoystickSet(IJoystickSet* pJoystickSet, XmlNodeRef node, bool bLoading) = 0;
 };
 
-class IJoystickMiddleMouseButtonHandlerContext
+struct IJoystickMiddleMouseButtonHandlerContext
 {
-public:
+	virtual ~IJoystickMiddleMouseButtonHandlerContext() {}
 	virtual Vec2 GetPosition() const = 0;
 	virtual void SetPosition(const Vec2& position) = 0;
 };
@@ -168,5 +167,3 @@ private:
 
 	JoystickMiddleMouseButtonHandler* m_pMiddleMouseButtonHandler;
 };
-
-#endif //__JOYSTICKCTRL_H__

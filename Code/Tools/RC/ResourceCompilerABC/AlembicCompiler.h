@@ -18,7 +18,8 @@
 
 #include <condition_variable>
 
-class ICryXML;
+struct ICryXML;
+
 class GeomCacheEncoder;
 class IXMLSerializer;
 

@@ -28,9 +28,8 @@ private:
 };
 
 // Callback called by animation node when its animated.
-class IAnimNodeAnimator
+struct IAnimNodeAnimator
 {
-public:
 	virtual ~IAnimNodeAnimator() {}
 
 	virtual void Animate(CTrackViewAnimNode* pNode, const SAnimContext& ac) = 0;
