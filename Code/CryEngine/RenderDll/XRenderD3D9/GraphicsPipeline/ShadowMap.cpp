@@ -868,10 +868,7 @@ void CShadowMapStage::CopyShadowMap(const CShadowMapPass& sourcePass, CShadowMap
 			m_CopyShadowMapPass.Execute();
 		}
 
-		pDst->shadowPoolPack[0] = { 
-			0, 0, 
-			static_cast<uint32>(pDst->nTextureWidth), static_cast<uint32>(pDst->nTextureHeight) 
-		};
+		pDst->shadowCascade = TRect_tpl<float>{ 0, 0, static_cast<float>(pDst->nTextureWidth), static_cast<float>(pDst->nTextureHeight) };
 	}
 	else
 	{
@@ -888,13 +885,13 @@ void CShadowMapStage::CopyShadowMap(const CShadowMapPass& sourcePass, CShadowMap
 		  crop.w = 2.0f * pDst->nTextureHeight / float(pSrc->nTextureHeight)
 		  );
 
-		pDst->shadowPoolPack[0].Min = {
-			static_cast<uint32>((crop.x * 0.5f + 0.5f) * pSrc->pDepthTex->GetWidth() + 0.5f),
-			static_cast<uint32>((-(crop.y + crop.w) * 0.5f + 0.5f) * pSrc->pDepthTex->GetHeight() + 0.5f)
+		pDst->shadowCascade.Min = {
+			(crop.x * 0.5f + 0.5f) * pSrc->pDepthTex->GetWidth() + 0.5f,
+			(-(crop.y + crop.w) * 0.5f + 0.5f) * pSrc->pDepthTex->GetHeight() + 0.5f
 		};
-		pDst->shadowPoolPack[0].Max = pDst->shadowPoolPack[0].Min + Vec2_tpl<uint32>{
-			static_cast<uint32>(pDst->nTextureWidth),
-			static_cast<uint32>(pDst->nTextureHeight)
+		pDst->shadowCascade.Max = pDst->shadowCascade.Min + Vec2_tpl<float>{
+			static_cast<float>(pDst->nTextureWidth),
+			static_cast<float>(pDst->nTextureHeight)
 		};
 
 		pDst->pDepthTex = pSrc->pDepthTex;

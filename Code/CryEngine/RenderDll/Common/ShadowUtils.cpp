@@ -771,10 +771,10 @@ Matrix44 CShadowUtils::GetClipToTexSpaceMatrix(const ShadowMapFrustum* pFrustum,
 		const int texHeight = max(pFrustum->pDepthTex->GetHeight(), 1);
 
 		Matrix44 mCropView(IDENTITY);
-		mCropView.m00 = pFrustum->shadowPoolPack[0].GetDim().x / float(texWidth);
-		mCropView.m11 = pFrustum->shadowPoolPack[0].GetDim().y / float(texHeight);
-		mCropView.m30 = pFrustum->shadowPoolPack[0].Min.x      / float(texWidth);
-		mCropView.m31 = pFrustum->shadowPoolPack[0].Min.y      / float(texHeight);
+		mCropView.m00 = pFrustum->shadowCascade.GetDim().x / float(texWidth);
+		mCropView.m11 = pFrustum->shadowCascade.GetDim().y / float(texHeight);
+		mCropView.m30 = pFrustum->shadowCascade.Min.x      / float(texWidth);
+		mCropView.m31 = pFrustum->shadowCascade.Min.y      / float(texHeight);
 
 		mClipToTexSpace = mClipToTexSpace * mCropView;
 	}
@@ -811,12 +811,12 @@ CShadowUtils::SShadowSamplingInfo CShadowUtils::GetDeferredShadowSamplingInfo(Sh
 		blendInfo.y = 1.0f / (1.0f - fBlendVal);
 
 		if (pFr->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance && 
-			pFr->shadowPoolPack[0].GetDim().x > 0 && pFr->shadowPoolPack[0].GetDim().y > 0)
+			pFr->shadowCascade.GetDim().x > 0 && pFr->shadowCascade.GetDim().y > 0)
 		{
-			blendTcNormalize.x =  pFr->pDepthTex->GetWidth()                       / float(pFr->shadowPoolPack[0].GetDim().x);
-			blendTcNormalize.y =  pFr->pDepthTex->GetHeight()                      / float(pFr->shadowPoolPack[0].GetDim().y);
-			blendTcNormalize.z = -static_cast<float>(pFr->shadowPoolPack[0].Min.x) / float(pFr->shadowPoolPack[0].GetDim().x);
-			blendTcNormalize.w = -static_cast<float>(pFr->shadowPoolPack[0].Min.y) / float(pFr->shadowPoolPack[0].GetDim().y);
+			blendTcNormalize.x =  pFr->pDepthTex->GetWidth()  / pFr->shadowCascade.GetDim().x;
+			blendTcNormalize.y =  pFr->pDepthTex->GetHeight() / pFr->shadowCascade.GetDim().y;
+			blendTcNormalize.z = -pFr->shadowCascade.Min.x    / pFr->shadowCascade.GetDim().x;
+			blendTcNormalize.w = -pFr->shadowCascade.Min.y    / pFr->shadowCascade.GetDim().y;
 		}
 
 		if (const ShadowMapFrustum* pPrevFr = pFr->pPrevFrustum)
