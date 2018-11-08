@@ -147,10 +147,10 @@ float CTerrain::GetZApr(float x, float y) const
 	float uX = x * GetInvUnitSize();
 	float uY = y * GetInvUnitSize();
 
-	int nX = int(uX);
-	int nY = int(uY);
+	int nX = static_cast<int>(uX);
+	int nY = static_cast<int>(uY);
 
-	if (m_pParentNode && InsideTerrainUnits(nX, nY))
+	if (m_pParentNode && min(x, y) > 0 && InsideTerrainUnits(static_cast<int>(x), static_cast<int>(y)))
 	{
 		Vec4 vZ = Get4ZUnits(nX, nY);
 		return GetHeightTriangulated(vZ, uX - nX, uY - nY);
@@ -175,7 +175,7 @@ Vec4 CTerrain::GetNormalAndZ(float x, float y, float size) const
 		int nX = int(uX);
 		int nY = int(uY);
 
-		if (!InsideTerrainUnits(nX, nY))
+		if (min(x, y) < 0 || !InsideTerrainUnits(static_cast<int>(x), static_cast<int>(y)))
 			return vNoTerrain;
 
 		Vec4 vZ = Get4ZUnits(nX, nY);
