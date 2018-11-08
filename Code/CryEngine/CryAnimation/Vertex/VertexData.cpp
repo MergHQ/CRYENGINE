@@ -213,8 +213,7 @@ bool CSoftwareMesh::Create(IRenderMesh& renderMesh, const DynArray<RChunk>& rend
 
 	AllocateVertices(vertexCount);
 
-	const bool texCoordsAre32Bits = renderMesh.GetVertexFormat() == EDefaultInputLayouts::P3F_C4B_T2F;
-	CRY_ASSERT(texCoordsAre32Bits || renderMesh.GetVertexFormat() == EDefaultInputLayouts::P3S_C4B_T2S);
+	CRY_ASSERT(renderMesh.GetVertexFormat() == EDefaultInputLayouts::P3F_C4B_T2F || renderMesh.GetVertexFormat() == EDefaultInputLayouts::P3S_C4B_T2S);
 
 	strided_pointer<Vec3> positions = GetWritePositions();
 	strided_pointer<uint32> colors = GetWriteColors();
@@ -224,10 +223,7 @@ bool CSoftwareMesh::Create(IRenderMesh& renderMesh, const DynArray<RChunk>& rend
 	{
 		positions[i] = *((const Vec3*)(pPositions + i * positionStride)) + positionOffset;
 		colors[i] = *((const uint32*)(pColors + i * colorStride));
-		if (texCoordsAre32Bits)
-			coords[i] = *((const Vec2*)(pCoords + i * coordStride));
-		else
-			coords[i] = ((const Vec2f16*)(pCoords + i * coordStride))->ToVec2();
+		coords[i] = *((const Vec2*)(pCoords + i * coordStride));
 
 		const SPipQTangents& tangent = *(const SPipQTangents*)(pTangents + i * tangentStride);
 		tangents[i] = SPipQTangents(tangent).GetQ();
