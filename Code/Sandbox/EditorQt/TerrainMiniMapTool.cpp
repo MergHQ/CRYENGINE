@@ -290,6 +290,11 @@ void CTerrainMiniMapTool::Generate(bool bHideProxy)
 		{
 			XmlNodeRef ChildNode = root->getChild(i);
 			const char* pTagName = ChildNode->getTag();
+			if (!pTagName)
+			{
+				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "[MiniMap: %s] Console variable has no tag name", MAP_SCREENSHOT_SETTINGS);
+				continue;
+			}
 			ICVar* pVar = gEnv->pConsole->GetCVar(pTagName);
 			if (pVar)
 			{
