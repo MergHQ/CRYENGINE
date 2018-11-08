@@ -1356,32 +1356,44 @@ void CPrefabObject::GenerateGUIDsForObjectAndChildren(CBaseObject* pObject)
 
 	objectsToAssign.push_back(pObject);
 
-	if (pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
+	bool isObjectPrefab = pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject));
+
+	if (isObjectPrefab)
 	{
 		CRY_ASSERT_MESSAGE(static_cast<CPrefabObject*>(pObject)->m_pPrefabItem != m_pPrefabItem, "Object has the same prefab item");
 	}
 
-	//We need to find all the children of this object
-	pObject->GetAllChildren(objectsToAssign);
+	SetObjectPrefabFlagAndLayer(pObject);
+	//This is serialized in the IdInPrefab field and also assigned as the new prefab GUID
+	InitObjectPrefabId(pObject);
+	//We need this for search, serialization and other things
+	SetPrefabFlagForLinkedObjects(pObject);
 
-	//Make sure to generate all the GUIDS for the children of this object
-	for (CBaseObject* pObjectToAssign : objectsToAssign)
+	CryGUID newGuid = CPrefabChildGuidProvider(this).GetFor(pObject);
+
+	if (CUndo::IsRecording())
 	{
-		SetObjectPrefabFlagAndLayer(pObjectToAssign);
-		//This is serialized in the IdInPrefab field and also assigned as the new prefab GUID
-		InitObjectPrefabId(pObjectToAssign);
-		//We need this for search, serialization and other things
-		SetPrefabFlagForLinkedObjects(pObjectToAssign);
-
-		CryGUID newGuid = CPrefabChildGuidProvider(this).GetFor(pObjectToAssign);
-		if (CUndo::IsRecording())
-		{
-			CUndo::Record(new CUndoChangeGuid(pObjectToAssign, newGuid));
-		}
-		//Assign the new GUID
-		GetObjectManager()->ChangeObjectId(pObjectToAssign->GetId(), newGuid);
+		CUndo::Record(new CUndoChangeGuid(pObject, newGuid));
 	}
 
+	//Assign the new GUID
+	GetObjectManager()->ChangeObjectId(pObject->GetId(), newGuid);
+
+	if (isObjectPrefab)
+	{
+		CPrefabObject* pPrefabObject = static_cast<CPrefabObject*>(pObject);
+		for (size_t i = 0, childCount = pObject->GetChildCount(); i < childCount; ++i)
+		{
+			pPrefabObject->GenerateGUIDsForObjectAndChildren(pPrefabObject->GetChild(i));
+		}
+	}
+	else
+	{
+		for (size_t i = 0, childCount = pObject->GetChildCount(); i < childCount; ++i)
+		{
+			GenerateGUIDsForObjectAndChildren(pObject->GetChild(i));
+		}
+	}
 }
 
 void CPrefabObject::SetMaterial(IEditorMaterial* pMaterial)
