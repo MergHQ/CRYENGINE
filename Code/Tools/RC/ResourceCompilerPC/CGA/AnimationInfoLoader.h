@@ -4,7 +4,7 @@
 
 #include "PathHelpers.h"
 
-class ICryXML;
+struct ICryXML;
 
 inline void UnifyPath(string& str)
 {

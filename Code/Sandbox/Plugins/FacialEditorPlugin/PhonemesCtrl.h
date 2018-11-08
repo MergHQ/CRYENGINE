@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __PhonemesCtrl_h__
-#define __PhonemesCtrl_h__
 #pragma once
 
 #include <CryMath/ISplines.h>
@@ -20,9 +18,8 @@ struct SPhonemeInfo;
 // The user wants to bake out the phonemes to curves.
 #define PHONEMECTRLN_BAKE          (0x0005)
 
-class IPhonemeUndoContext
+struct IPhonemeUndoContext
 {
-public:
 	//////////////////////////////////////////////////////////////////////////
 	struct Phoneme
 	{
@@ -41,6 +38,7 @@ public:
 	};
 	//////////////////////////////////////////////////////////////////////////
 
+	virtual ~IPhonemeUndoContext() {}
 	virtual void SetPhonemes(const std::vector<std::vector<Phoneme>>& phonemes) = 0;
 	virtual void GetPhonemes(std::vector<std::vector<Phoneme>>& phonemes) = 0;
 	virtual void OnPhonemeChangesUnOrRedone() = 0;
@@ -211,5 +209,3 @@ private:
 
 	std::set<HMENU>       m_phonemePopupMenus;
 };
-
-#endif // __PhonemesCtrl_h__

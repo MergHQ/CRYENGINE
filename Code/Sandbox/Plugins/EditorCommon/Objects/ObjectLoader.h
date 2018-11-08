@@ -12,8 +12,9 @@
 #include <map>
 #include <set>
 
+struct IGuidProvider;
 struct IObjectManager;
-class IGuidProvider;
+
 class CBaseObject;
 class CPakFile;
 

@@ -1100,7 +1100,7 @@ bool CPickAndThrowWeapon::UpdateAimAnims( SParams_WeaponFPAiming &aimAnimParams)
 }
 
 //---------------------------------------------------------------------------
-void CPickAndThrowWeapon::UpdateTags(const class IActionController *pActionController, class CTagState &tagState, bool selected) const
+void CPickAndThrowWeapon::UpdateTags(const IActionController *pActionController, class CTagState &tagState, bool selected) const
 {
 	CWeapon::UpdateTags(pActionController, tagState, selected);
 

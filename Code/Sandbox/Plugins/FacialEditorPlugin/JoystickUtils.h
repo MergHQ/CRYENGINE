@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __JOYSTICKUTILS_H__
-#define __JOYSTICKUTILS_H__
+#pragma once
 
 class IJoystick;
 class IJoystickChannel;
@@ -16,5 +15,3 @@ void  RemoveKey(IJoystickChannel* pChannel, float time);
 void  RemoveKeysInRange(IJoystickChannel* pChannel, float startTime, float endTime);
 void  PlaceKey(IJoystickChannel* pChannel, float time);
 }
-
-#endif //__JOYSTICKUTILS_H__

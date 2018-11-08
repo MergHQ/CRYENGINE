@@ -8,7 +8,7 @@
 #include "Util/ArcBall.h"
 #include "Gizmos/AxisHelper.h"
 
-class IActionController;
+struct IActionController;
 class CMannequinDialog;
 
 //////////////////////////////////////////////////////////////////////////

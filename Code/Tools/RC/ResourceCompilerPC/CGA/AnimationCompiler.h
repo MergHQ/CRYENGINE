@@ -76,7 +76,7 @@ struct AnimationJob
 };
 
 
-class ICryXML;
+struct ICryXML;
 
 class CAnimationConverter : public IConverter
 {

@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __SplineCtrlEx_h__
-#define __SplineCtrlEx_h__
 #pragma once
 
 #include <CryMath/ISplines.h>
@@ -27,9 +25,9 @@
 
 class CTimelineCtrl;
 
-class IKeyTimeSet
+struct IKeyTimeSet
 {
-public:
+	virtual ~IKeyTimeSet() {}
 	virtual int   GetKeyTimeCount() const = 0;
 	virtual float GetKeyTime(int index) const = 0;
 	virtual void  MoveKeyTimes(int numChanges, int* indices, float scale, float offset, bool copyKeys) = 0;
@@ -41,18 +39,17 @@ public:
 	virtual void  EndEdittingKeyTimes() = 0;
 };
 
-class ISplineSet
+struct ISplineSet
 {
-public:
+	virtual ~ISplineSet() {}
 	virtual ISplineInterpolator* GetSplineFromID(const string& id) = 0;
 	virtual string               GetIDFromSpline(ISplineInterpolator* pSpline) = 0;
 	virtual int                  GetSplineCount() const = 0;
 	virtual int                  GetKeyCountAtTime(float time, float threshold) const = 0;
 };
 
-class ISplineCtrlUndo : public IUndoObject
+struct ISplineCtrlUndo : public IUndoObject
 {
-public:
 	virtual bool IsSelectionChanged() const = 0;
 };
 
@@ -354,5 +351,3 @@ protected:
 
 	ISplineCtrlUndo*             m_pCurrentUndo;
 };
-
-#endif // __SplineCtrl_h__

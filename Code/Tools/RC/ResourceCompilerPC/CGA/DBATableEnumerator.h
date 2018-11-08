@@ -6,7 +6,7 @@
 #include <vector>
 
 struct IPakSystem;
-class ICryXML;
+struct ICryXML;
 struct SDBATable;
 
 struct DBATableEntry

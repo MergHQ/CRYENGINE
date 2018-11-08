@@ -54,9 +54,8 @@ private:
 	bool m_shouldDispatch { false };
 };
 
-class IGuidProvider
+struct IGuidProvider
 {
-public:
 	virtual ~IGuidProvider() {}
 	virtual CryGUID GetFrom(const CryGUID& loadedGuid) const = 0;
 	CryGUID         GetFor(CBaseObject*) const;

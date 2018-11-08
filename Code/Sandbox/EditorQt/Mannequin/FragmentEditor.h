@@ -13,8 +13,9 @@
 
 #include "MannequinBase.h"
 
+struct IAnimationDatabase;
+
 class CFragment;
-class IAnimationDatabase;
 
 // CMannFragmentEditor dialog
 class CMannFragmentEditor : public CMannDopeSheet

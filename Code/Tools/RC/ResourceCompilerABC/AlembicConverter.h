@@ -12,7 +12,7 @@
 
 #include "IConverter.h"
 
-class ICryXML;
+struct ICryXML;
 
 class AlembicConverter : public IConverter
 {

@@ -752,7 +752,7 @@ struct IMannequinListener
 {
 	virtual ~IMannequinListener() {}
 
-	virtual void OnEvent(const SMannHistoryItem& historyItem, const class IActionController& actionController) = 0;
+	virtual void OnEvent(const SMannHistoryItem& historyItem, const struct IActionController& actionController) = 0;
 };
 
 struct SMannequinErrorReport
@@ -939,9 +939,8 @@ struct SMiniSubADB
 typedef void(*MannErrorCallback)(const SMannequinErrorReport& errorReport, void* _context);
 typedef void(*MannAssetCallback)(const SAnimAssetReport& assetReport, void* _context);
 
-class IAnimationDatabase
+struct IAnimationDatabase
 {
-public:
 	virtual ~IAnimationDatabase() {}
 
 	virtual bool        Validate(const struct IAnimationSet* animSet, MannErrorCallback errorCallback = NULL, MannErrorCallback warningCallback = NULL, void* errorCallbackContext = NULL) const = 0;
@@ -986,9 +985,8 @@ public:
 	virtual void                  QueryUsedTags(const FragmentID fragmentID, const SFragTagState& filter, SFragTagState& usedTags) const = 0;
 };
 
-class IAnimationDatabaseManager
+struct IAnimationDatabaseManager
 {
-public:
 	virtual ~IAnimationDatabaseManager() {}
 
 	virtual int                       GetTotalDatabases() const = 0;
@@ -1020,7 +1018,7 @@ enum EPriorityComparison
 	Higher
 };
 
-class IActionController;
+struct IActionController;
 class IAction;
 typedef _smart_ptr<IAction> IActionPtr;
 class CAnimation;
@@ -1198,9 +1196,8 @@ private:
 };
 
 //! Main interface into an action controller, managing fragment playback on a specific entity
-class IActionController
+struct IActionController
 {
-public:
 	virtual void OnEvent(const SGameObjectEvent& event) = 0;
 	//! Should be called when the specified character encounters an animation event
 	//! \par Example

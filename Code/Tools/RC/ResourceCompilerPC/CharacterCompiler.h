@@ -11,7 +11,7 @@ class CContentCGF;
 class CChunkFile;
 struct CNodeCGF;
 class CPhysicsInterface;
-class ICryXML;
+struct ICryXML;
 class CLoaderCGF;
 class ILoaderCGFListener;
 struct CMaterialCGF;

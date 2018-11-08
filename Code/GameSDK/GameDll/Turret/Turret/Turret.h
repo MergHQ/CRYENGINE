@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __TURRET__H__
-#define __TURRET__H__
+#pragma once
 
 #include <CryAISystem/IVisionMap.h>
 
@@ -16,12 +15,12 @@
 #include "AI/AIAwarenessToPlayerHelper.h"
 #include <IGameObject.h>
 
-class IActionController;
-struct SAnimationContext;
+struct IActionController;
 struct HitInfo;
-class CLaserBeam;
+struct SAnimationContext;
 struct SLaserParams;
 
+class CLaserBeam;
 
 enum ETurretBehaviorState
 {
@@ -373,5 +372,3 @@ private:
 
 	DECLARE_STATE_MACHINE( CTurret, Behaviour );
 };
-
-#endif

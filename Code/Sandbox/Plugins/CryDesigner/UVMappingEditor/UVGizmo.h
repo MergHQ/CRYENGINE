@@ -17,9 +17,9 @@ namespace Designer {
 namespace UVMapping
 {
 
-class IGizmoTransform
+struct IGizmoTransform
 {
-public:
+	virtual ~IGizmoTransform() {}
 	virtual void OnTransformGizmo(int mode, const Vec3& offset) = 0;
 	virtual void OnGizmoLMBDown(int mode) = 0;
 	virtual void OnGizmoLMBUp(int mode) = 0;
