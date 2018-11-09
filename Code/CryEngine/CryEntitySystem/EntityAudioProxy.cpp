@@ -296,7 +296,6 @@ bool CEntityComponentAudio::ExecuteTrigger(
 
 			if (audioObjectPair.first != CryAudio::InvalidAuxObjectId)
 			{
-				(SRepositionAudioProxy(m_pEntity->GetWorldTM(), userData))(audioObjectPair);
 				audioObjectPair.second.pIObject->ExecuteTrigger(audioTriggerId, userData);
 				return true;
 			}
@@ -311,7 +310,6 @@ bool CEntityComponentAudio::ExecuteTrigger(
 		{
 			for (auto const& auxObjectPair : m_mapAuxObjects)
 			{
-				(SRepositionAudioProxy(m_pEntity->GetWorldTM(), userData))(auxObjectPair);
 				auxObjectPair.second.pIObject->ExecuteTrigger(audioTriggerId, userData);
 			}
 			return !m_mapAuxObjects.empty();
