@@ -121,7 +121,6 @@ private:
 	Requests              m_requestQueue;
 	RequestsSyncCallbacks m_syncCallbacks;
 	CRequest              m_syncRequest;
-	CRequest              m_request;
 	CryEvent              m_mainEvent;
 	CryEvent              m_audioThreadWakeupEvent;
 

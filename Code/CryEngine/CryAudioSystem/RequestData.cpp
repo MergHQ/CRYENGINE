@@ -9,12 +9,12 @@
 
 namespace CryAudio
 {
-#define CRY_AUDIO_REQUEST_CASE_BLOCK(CLASS, ENUM, P_SOURCE, P_RESULT)            \
-case ENUM:                                                                       \
-	{                                                                              \
-		P_RESULT = new CLASS<ENUM>(static_cast<CLASS<ENUM> const* const>(P_SOURCE)); \
-                                                                                 \
-		break;                                                                       \
+#define CRY_AUDIO_REQUEST_CASE_BLOCK(CLASS, ENUM, P_SOURCE, P_RESULT)                          \
+case ENUM:                                                                                     \
+	{                                                                                            \
+		P_RESULT = std::make_shared<CLASS<ENUM>>(static_cast<CLASS<ENUM> const* const>(P_SOURCE)); \
+                                                                                               \
+		break;                                                                                     \
 	}
 
 #define CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ENUM)   CRY_AUDIO_REQUEST_CASE_BLOCK(SSystemRequestData, ENUM, pRequestData, pResult)
@@ -23,10 +23,10 @@ case ENUM:                                                                      
 #define CRY_AUDIO_LISTENER_REQUEST_BLOCK(ENUM) CRY_AUDIO_REQUEST_CASE_BLOCK(SListenerRequestData, ENUM, pRequestData, pResult)
 
 ////////////////////////////////////////////////////////////////////////////
-SRequestData* AllocateRequestData(SRequestData const* const pRequestData)
+std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pRequestData)
 {
 	CRY_ASSERT(pRequestData != nullptr);
-	SRequestData* pResult = nullptr;
+	std::shared_ptr<SRequestData> pResult = nullptr;
 
 	switch (pRequestData->requestType)
 	{

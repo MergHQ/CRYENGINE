@@ -1650,50 +1650,52 @@ void CSystem::Log(ELogType const type, char const* const szFormat, ...)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ProcessRequests(Requests& requestQueue)
 {
-	while (requestQueue.dequeue(m_request))
+	CRequest request;
+
+	while (requestQueue.dequeue(request))
 	{
-		if (m_request.status == ERequestStatus::None)
+		if (request.status == ERequestStatus::None)
 		{
-			m_request.status = ERequestStatus::Pending;
-			ProcessRequest(m_request);
+			request.status = ERequestStatus::Pending;
+			ProcessRequest(request);
 		}
 		else
 		{
 			// TODO: handle pending requests!
 		}
 
-		if (m_request.status != ERequestStatus::Pending)
+		if (request.status != ERequestStatus::Pending)
 		{
-			if ((m_request.flags & ERequestFlags::CallbackOnAudioThread) != 0)
+			if ((request.flags & ERequestFlags::CallbackOnAudioThread) != 0)
 			{
-				NotifyListener(m_request);
+				NotifyListener(request);
 
-				if ((m_request.flags & ERequestFlags::ExecuteBlocking) != 0)
+				if ((request.flags & ERequestFlags::ExecuteBlocking) != 0)
 				{
 					m_mainEvent.Set();
 				}
 			}
-			else if ((m_request.flags & ERequestFlags::CallbackOnExternalOrCallingThread) != 0)
+			else if ((request.flags & ERequestFlags::CallbackOnExternalOrCallingThread) != 0)
 			{
-				if ((m_request.flags & ERequestFlags::ExecuteBlocking) != 0)
+				if ((request.flags & ERequestFlags::ExecuteBlocking) != 0)
 				{
-					m_syncRequest = m_request;
+					m_syncRequest = request;
 					m_mainEvent.Set();
 				}
 				else
 				{
-					if (m_request.pObject == nullptr)
+					if (request.pObject == nullptr)
 					{
 						g_pObject->IncrementSyncCallbackCounter();
 					}
 					else
 					{
-						m_request.pObject->IncrementSyncCallbackCounter();
+						request.pObject->IncrementSyncCallbackCounter();
 					}
-					m_syncCallbacks.enqueue(m_request);
+					m_syncCallbacks.enqueue(request);
 				}
 			}
-			else if ((m_request.flags & ERequestFlags::ExecuteBlocking) != 0)
+			else if ((request.flags & ERequestFlags::ExecuteBlocking) != 0)
 			{
 				m_mainEvent.Set();
 			}
