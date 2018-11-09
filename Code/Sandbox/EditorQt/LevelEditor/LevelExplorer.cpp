@@ -172,7 +172,7 @@ CLevelExplorer::CLevelExplorer(QWidget* pParent)
 	m_pShowFullHierarchy = pCommandManager->CreateNewAction("level_explorer.show_full_hierarchy");
 	m_pShowLayers = pCommandManager->CreateNewAction("level_explorer.show_layers");
 	m_pSyncSelection = pCommandManager->CreateNewAction("level_explorer.sync_selection");
-	
+
 	SetModelType(FullHierarchy);
 
 	m_treeView = new QAdvancedTreeView(QAdvancedTreeView::UseItemModelAttribute);
@@ -303,7 +303,7 @@ void CLevelExplorer::InitMenuBar()
 	});
 
 	//Edit
-	AddToMenu(CEditor::MenuItems::EditMenu);
+	AddToMenu({ CEditor::MenuItems::EditMenu, CEditor::MenuItems::Delete, CEditor::MenuItems::Find });
 	CAbstractMenu* editMenu = GetMenu(CEditor::MenuItems::EditMenu);
 
 	sec = editMenu->GetNextEmptySection();

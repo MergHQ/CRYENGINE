@@ -461,6 +461,15 @@ CTimeDemoRecorder::CTimeDemoRecorder()
 	, m_nCurrentDemoLevel(0)
 	, m_lastChainDemoTime(0.0f)
 {
+}
+
+//////////////////////////////////////////////////////////////////////////
+CTimeDemoRecorder::~CTimeDemoRecorder()
+{
+}
+
+void CTimeDemoRecorder::OnRegistered()
+{
 	s_pTimeDemoRecorder = this;
 
 	//gEnv->pGameFramework->GetIGameplayRecorder()->EnableGameStateRecorder(false, this, false);
@@ -521,8 +530,7 @@ CTimeDemoRecorder::CTimeDemoRecorder()
 	                  OnChange_demo_num_orientations);
 }
 
-//////////////////////////////////////////////////////////////////////////
-CTimeDemoRecorder::~CTimeDemoRecorder()
+void CTimeDemoRecorder::OnUnregistered()
 {
 	IConsole* pConsole = gEnv->pConsole;
 

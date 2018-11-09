@@ -40,7 +40,7 @@ DECLARE_PYTHON_MODULE(level_explorer);
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelExplorerCommands::FocusOnActiveLayer, level_explorer, focus_on_active_layer,
                                    CCommandDescription("Focus on active layer"))
-REGISTER_EDITOR_UI_COMMAND_DESC(level_explorer, focus_on_active_layer, "Focus On Active Layer", "", "", false)
+REGISTER_EDITOR_UI_COMMAND_DESC(level_explorer, focus_on_active_layer, "Focus On Active Layer", "", "icons:level_explorer_focus_active_layer.ico", false)
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelExplorerCommands::ShowAllObjects, level_explorer, show_all_objects,
                                    CCommandDescription("Switches Level Explorer view mode to show only objects"))

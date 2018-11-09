@@ -311,7 +311,8 @@ CCryAction::CCryAction(SSystemInitParams& initParams)
 	m_pCallbackTimer(0),
 	m_pLanQueryListener(0),
 	m_pDevMode(0),
-	m_pTimeDemoRecorder(0),
+	m_pTimeDemoRecorder(nullptr),
+	m_pDefaultTimeDemoRecorder(nullptr),
 	m_pGameQueryListener(0),
 	m_pRuntimeAreaManager(NULL),
 	m_pScriptA(0),
@@ -1856,7 +1857,8 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 	if (m_pSystem->IsDevMode())
 		m_pDevMode = new CDevMode();
 
-	m_pTimeDemoRecorder = new CTimeDemoRecorder();
+	m_pDefaultTimeDemoRecorder = stl::make_unique<CTimeDemoRecorder>();
+	SetITimeDemoRecorder(m_pDefaultTimeDemoRecorder.get());
 
 	CScriptRMI::RegisterCVars();
 	CGameObject::CreateCVars();
@@ -2497,7 +2499,8 @@ void CCryAction::ShutDown()
 	SAFE_DELETE(m_pAnimationGraphCvars);
 	SAFE_DELETE(m_pGameObjectSystem);
 	SAFE_DELETE(m_pMannequin);
-	SAFE_DELETE(m_pTimeDemoRecorder);
+	SetITimeDemoRecorder(nullptr);
+	m_pDefaultTimeDemoRecorder.reset();
 	SAFE_DELETE(m_pGameSerialize);
 	SAFE_DELETE(m_pPersistantDebug);
 	SAFE_DELETE(m_pPlayerProfileManager);
@@ -4276,6 +4279,25 @@ ITimeDemoRecorder* CCryAction::GetITimeDemoRecorder() const
 	return m_pTimeDemoRecorder;
 }
 
+ITimeDemoRecorder* CCryAction::SetITimeDemoRecorder(ITimeDemoRecorder* pRecorder)
+{
+	if (m_pTimeDemoRecorder != pRecorder)
+	{
+		if (m_pTimeDemoRecorder)
+		{
+			m_pTimeDemoRecorder->OnUnregistered();
+		}
+
+		std::swap(m_pTimeDemoRecorder, pRecorder);
+
+		if (m_pTimeDemoRecorder)
+		{
+			m_pTimeDemoRecorder->OnRegistered();
+		}
+	}
+	return pRecorder;
+}
+
 IPlayerProfileManager* CCryAction::GetIPlayerProfileManager()
 {
 	return m_pPlayerProfileManager;
@@ -5082,8 +5104,10 @@ bool CCryAction::IsImmersiveMPEnabled()
 //////////////////////////////////////////////////////////////////////////
 bool CCryAction::IsInTimeDemo()
 {
-	if (m_pTimeDemoRecorder && m_pTimeDemoRecorder->IsTimeDemoActive())
-		return true;
+	if (m_pTimeDemoRecorder)
+	{
+		 return m_pTimeDemoRecorder->IsChainLoading() || m_pTimeDemoRecorder->IsPlaying() || m_pTimeDemoRecorder->IsRecording();
+	}
 	return false;
 }
 

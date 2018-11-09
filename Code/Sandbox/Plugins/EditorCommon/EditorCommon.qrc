@@ -449,6 +449,7 @@
 
         <!--Level Explorer-->
         <file alias="level_explorer_active_layer_content_only.ico">icons/level_explorer_active_layer_content_only.ico</file>
+        <file alias="level_explorer_focus_active_layer.ico">icons/level_explorer_focus_active_layer.ico</file>
         <file alias="level_explorer_full_hierarchy.ico">icons/level_explorer_full_hierarchy.ico</file>
         <file alias="level_explorer_layers_only.ico">icons/level_explorer_layers_only.ico</file>
         <file alias="level_explorer_objects_only.ico">icons/level_explorer_objects_only.ico</file>
