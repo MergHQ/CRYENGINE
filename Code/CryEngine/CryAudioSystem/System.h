@@ -131,6 +131,8 @@ private:
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:
+
+	void ResetRequestCount();
 	void ScheduleIRenderAuxGeomForRendering(IRenderAuxGeom* pRenderAuxGeom);
 
 private:

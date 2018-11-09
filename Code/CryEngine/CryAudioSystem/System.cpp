@@ -97,6 +97,8 @@ std::vector<CryAudio::IObject*> g_registeredObjects;
 
 struct RequestCount final
 {
+	uint16 requests = 0;
+
 	uint16 systemExecuteTrigger = 0;
 	uint16 systemExecuteTriggerEx = 0;
 	uint16 systemStopTrigger = 0;
@@ -133,6 +135,8 @@ void CountRequestPerUpdate(CRequest const& request)
 
 	if (pRequestData != nullptr)
 	{
+		g_requestsPerUpdate.requests++;
+
 		switch (request.GetData()->requestType)
 		{
 		case ERequestType::SystemRequest:
@@ -319,6 +323,8 @@ void CountRequestPerUpdate(CRequest const& request)
 //////////////////////////////////////////////////////////////////////////
 void SetRequestCountPeak()
 {
+	g_requestPeaks.requests = std::max(g_requestPeaks.requests, g_requestsPerUpdate.requests);
+
 	g_requestPeaks.systemRegisterObject = std::max(g_requestPeaks.systemRegisterObject, g_requestsPerUpdate.systemRegisterObject);
 	g_requestPeaks.systemReleaseObject = std::max(g_requestPeaks.systemReleaseObject, g_requestsPerUpdate.systemReleaseObject);
 	g_requestPeaks.systemExecuteTrigger = std::max(g_requestPeaks.systemExecuteTrigger, g_requestsPerUpdate.systemExecuteTrigger);
@@ -345,13 +351,6 @@ void SetRequestCountPeak()
 	g_requestPeaks.callbackReportFinishedTriggerInstance = std::max(g_requestPeaks.callbackReportFinishedTriggerInstance, g_requestsPerUpdate.callbackReportFinishedTriggerInstance);
 
 	ZeroStruct(g_requestsPerUpdate);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void ResetRequestCounts()
-{
-	ZeroStruct(g_requestsPerUpdate);
-	ZeroStruct(g_requestPeaks);
 }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -641,7 +640,7 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 				PushRequest(request4);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-				ResetRequestCounts();
+				ResetRequestCount();
 #endif    // INCLUDE_AUDIO_PRODUCTION_CODE
 			}
 
@@ -1204,6 +1203,16 @@ void CSystem::StopPreviewTrigger()
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+//////////////////////////////////////////////////////////////////////////
+void CSystem::ResetRequestCount()
+{
+	SSystemRequestData<ESystemRequestType::ResetRequestCount> const requestData;
+	CRequest const request(&requestData);
+	PushRequest(request);
+}
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+
 //////////////////////////////////////////////////////////////////////////
 void CSystem::PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
@@ -1548,7 +1557,7 @@ void CSystem::ReleaseImpl()
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	g_pIImpl->DestructObject(g_previewObject.GetImplDataPtr());
 	g_previewObject.Release();
-	ResetRequestCounts();
+	ResetRequestCount();
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	g_xmlProcessor.ClearPreloadsData(EDataScope::All);
@@ -1692,10 +1701,7 @@ void CSystem::ProcessRequests(Requests& requestQueue)
 	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	if ((g_cvars.m_drawDebug & Debug::EDrawFilter::RequestInfo) != 0)
-	{
-		SetRequestCountPeak();
-	}
+	SetRequestCountPeak();
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
@@ -1703,10 +1709,7 @@ void CSystem::ProcessRequests(Requests& requestQueue)
 void CSystem::ProcessRequest(CRequest& request)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	if ((g_cvars.m_drawDebug & Debug::EDrawFilter::RequestInfo) != 0)
-	{
-		CountRequestPerUpdate(request);
-	}
+	CountRequestPerUpdate(request);
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	ERequestStatus result = ERequestStatus::None;
@@ -2188,6 +2191,16 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			g_previewTrigger.Stop();
+			result = ERequestStatus::Success;
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+
+			break;
+		}
+	case ESystemRequestType::ResetRequestCount:
+		{
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+			ZeroStruct(g_requestsPerUpdate);
+			ZeroStruct(g_requestPeaks);
 			result = ERequestStatus::Success;
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -3102,7 +3115,7 @@ ERequestStatus CSystem::HandleRefresh(char const* const szLevelName)
 	g_xmlProcessor.ClearControlsData(EDataScope::All);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	ResetRequestCounts();
+	ResetRequestCount();
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	g_pIImpl->OnRefresh();
@@ -3357,7 +3370,7 @@ void DrawRequestCategoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& p
 //////////////////////////////////////////////////////////////////////////
 void DrawRequestPeakInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, char const* const szType, uint16 const peak, uint16 poolSize)
 {
-	bool const poolSizeExceeded = peak > poolSize;
+	bool const poolSizeExceeded = (peak > poolSize) && (poolSize != 0);
 	float const* pColor = poolSizeExceeded ? Debug::g_colorRed.data() : Debug::g_systemColorTextPrimary.data();
 	CryFixedStringT<MaxMiscStringLength> debugText;
 
@@ -3379,6 +3392,8 @@ void DrawRequestDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 {
 	auxGeom.Draw2dLabel(posX, posY, Debug::g_managerHeaderFontSize, Debug::g_globalColorHeader.data(), false, "Audio Requests");
 	posY += Debug::g_managerHeaderLineHeight;
+
+	DrawRequestPeakInfo(auxGeom, posX, posY, "Total", g_requestPeaks.requests, 0);
 
 	DrawRequestCategoryInfo(auxGeom, posX, posY, "System");
 	DrawRequestPeakInfo(auxGeom, posX, posY, "ExecuteTrigger", g_requestPeaks.systemExecuteTrigger, g_systemExecuteTriggerPoolSize);
