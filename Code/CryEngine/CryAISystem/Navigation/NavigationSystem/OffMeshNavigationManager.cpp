@@ -77,8 +77,10 @@ bool OffMeshNavigationManager::AddCustomLink(const NavigationMeshID& meshID, MNM
 
 	const MNM::real_t range = MNM::real_t(1.0f);
 
+	SAcceptAllQueryTrianglesFilter acceptAllFilter;
+
 	// Get entry triangle
-	startTriangleID = mesh.navMesh.QueryTriangleAt(fixedStartPoint, range, range);
+	startTriangleID = mesh.navMesh.QueryTriangleAt(fixedStartPoint, range, range, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, &acceptAllFilter);
 
 	if (!startTriangleID)
 	{
@@ -87,7 +89,7 @@ bool OffMeshNavigationManager::AddCustomLink(const NavigationMeshID& meshID, MNM
 	}
 
 	// Get entry triangle
-	endTriangleID = mesh.navMesh.QueryTriangleAt(fixedEndPoint, range, range);
+	endTriangleID = mesh.navMesh.QueryTriangleAt(fixedEndPoint, range, range, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, &acceptAllFilter);
 
 	if (!endTriangleID)
 	{
