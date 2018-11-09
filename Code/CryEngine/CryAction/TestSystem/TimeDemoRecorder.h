@@ -72,25 +72,22 @@ public:
 	CTimeDemoRecorder();
 	virtual ~CTimeDemoRecorder();
 
-	void Reset();
-
-	void PreUpdate();
-	void PostUpdate();
-
-	void GetMemoryStatistics(class ICrySizer* pSizer) const;
-
-	bool IsTimeDemoActive() const { return m_bChainloadingDemo || m_bPlaying || m_bRecording; }
-	bool IsChainLoading() const   { return m_bChainloadingDemo; }
-
 	//////////////////////////////////////////////////////////////////////////
 	// Implements ITimeDemoRecorder interface.
 	//////////////////////////////////////////////////////////////////////////
-	virtual bool            IsRecording() const override { return m_bRecording; };
-	virtual bool            IsPlaying() const override   { return m_bPlaying; };
-	virtual void            RegisterListener(ITimeDemoListener* pListener) override;
-	virtual void            UnregisterListener(ITimeDemoListener* pListener) override;
-	virtual void            GetCurrentFrameRecord(STimeDemoFrameRecord& externalRecord) const override;
-	virtual STimeDemoInfo*  GetLastPlayedTimeDemo() const override;
+	virtual bool IsRecording() const override    { return m_bRecording; };
+	virtual bool IsPlaying() const override      { return m_bPlaying; };
+	virtual bool IsChainLoading() const override { return m_bChainloadingDemo; }
+	virtual void RegisterListener(ITimeDemoListener* pListener) override;
+	virtual void UnregisterListener(ITimeDemoListener* pListener) override;
+	virtual void GetCurrentFrameRecord(STimeDemoFrameRecord& externalRecord) const override;
+	virtual STimeDemoInfo* GetLastPlayedTimeDemo() const override;
+	virtual void Reset() override;
+	virtual void PreUpdate() override;
+	virtual void PostUpdate() override;
+	virtual void OnRegistered() override;
+	virtual void OnUnregistered() override;
+	virtual void GetMemoryStatistics(class ICrySizer* pSizer) const override;
 	//////////////////////////////////////////////////////////////////////////
 
 private:

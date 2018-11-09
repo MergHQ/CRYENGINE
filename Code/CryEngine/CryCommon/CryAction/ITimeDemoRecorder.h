@@ -54,11 +54,23 @@ struct ITimeDemoRecorder
 {
 	virtual ~ITimeDemoRecorder(){}
 
-	virtual bool IsRecording() const = 0;
-	virtual bool IsPlaying() const = 0;
+	virtual bool           IsRecording() const = 0;
+	virtual bool           IsPlaying() const = 0;
+	virtual bool           IsChainLoading() const = 0;
 
-	virtual void            RegisterListener(ITimeDemoListener* pListener) = 0;
-	virtual void            UnregisterListener(ITimeDemoListener* pListener) = 0;
-	virtual void            GetCurrentFrameRecord(STimeDemoFrameRecord& record) const = 0;
-	virtual STimeDemoInfo*  GetLastPlayedTimeDemo() const = 0;
+	virtual void           RegisterListener(ITimeDemoListener* pListener) = 0;
+	virtual void           UnregisterListener(ITimeDemoListener* pListener) = 0;
+	virtual void           GetCurrentFrameRecord(STimeDemoFrameRecord& record) const = 0;
+	virtual STimeDemoInfo* GetLastPlayedTimeDemo() const = 0;
+
+	virtual void           Reset() = 0;
+	virtual void           PreUpdate() = 0;
+	virtual void           PostUpdate() = 0;
+
+	//! Called when recorder is registered with GameFramework (\see IGameFramework::SetITimeDemoRecorder)
+	virtual void           OnRegistered() = 0;
+	//! Called when recorder is unregistered from GameFramework (\see IGameFramework::SetITimeDemoRecorder)
+	virtual void           OnUnregistered() = 0;
+
+	virtual void           GetMemoryStatistics(class ICrySizer* pSizer) const = 0;
 };

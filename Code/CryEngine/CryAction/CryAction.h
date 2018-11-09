@@ -170,6 +170,7 @@ public:
 	virtual ICustomEventManager*          GetICustomEventManager() const;
 	virtual IRealtimeRemoteUpdate*        GetIRealTimeRemoteUpdate();
 	virtual ITimeDemoRecorder*            GetITimeDemoRecorder() const;
+	virtual ITimeDemoRecorder*            SetITimeDemoRecorder(ITimeDemoRecorder* pRecorder);
 
 	virtual bool                          StartGameContext(const SGameStartParams* pGameStartParams);
 	virtual bool                          ChangeGameContext(const SGameContextParams* pGameContextParams);
@@ -541,7 +542,8 @@ private:
 	CDevMode* m_pDevMode;
 
 	// TimeDemo recorder.
-	CTimeDemoRecorder* m_pTimeDemoRecorder;
+	ITimeDemoRecorder* m_pTimeDemoRecorder;
+	std::unique_ptr<CTimeDemoRecorder> m_pDefaultTimeDemoRecorder;
 
 	// game queries
 	CGameQueryListener* m_pGameQueryListener;
