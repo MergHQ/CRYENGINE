@@ -45,19 +45,6 @@ public:
 	int    m_hideInactiveObjects = 0;
 	int    m_objectsRayType = 0;
 	ICVar* m_pDebugFilter = nullptr;
-
-private:
-
-	static void CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs);
-	static void CmdStopTrigger(IConsoleCmdArgs* pCmdArgs);
-	static void CmdSetParameter(IConsoleCmdArgs* pCmdArgs);
-	static void CmdSetGlobalParameter(IConsoleCmdArgs* pCmdArgs);
-	static void CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs);
-	static void CmdSetGlobalSwitchState(IConsoleCmdArgs* pCmdArgs);
-	static void CmdLoadRequest(IConsoleCmdArgs* pCmdArgs);
-	static void CmdUnloadRequest(IConsoleCmdArgs* pCmdArgs);
-	static void CmdLoadSetting(IConsoleCmdArgs* pCmdArgs);
-	static void CmdUnloadSetting(IConsoleCmdArgs* pCmdArgs);
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 

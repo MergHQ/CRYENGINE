@@ -53,6 +53,7 @@ enum class ESystemRequestType : EnumFlagsType
 	StopTrigger,
 	StopAllTriggers,
 	StopPreviewTrigger,
+	ResetRequestCount,
 };
 
 //////////////////////////////////////////////////////////////////////////

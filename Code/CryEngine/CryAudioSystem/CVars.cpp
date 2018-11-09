@@ -2,9 +2,10 @@
 
 #include "stdafx.h"
 #include "CVars.h"
+#include "Common.h"
+#include "System.h"
 #include "Common/Logger.h"
 #include "PropagationProcessor.h"
-#include <CrySystem/ISystem.h>
 #include <CrySystem/IConsole.h>
 
 namespace CryAudio
@@ -14,6 +15,182 @@ void OnOcclusionRayTypesChanged(ICVar* const pCvar)
 {
 	CPropagationProcessor::UpdateOcclusionRayFlags();
 }
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+//////////////////////////////////////////////////////////////////////////
+void CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
+{
+	int const numArgs = pCmdArgs->GetArgCount();
+
+	if (numArgs == 2)
+	{
+		ControlId const triggerId = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		gEnv->pAudioSystem->ExecuteTrigger(triggerId);
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Usage: s_ExecuteTrigger [TriggerName]");
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
+{
+	int const numArgs = pCmdArgs->GetArgCount();
+
+	if (numArgs == 1)
+	{
+		gEnv->pAudioSystem->StopTrigger(InvalidControlId);
+	}
+	else if (numArgs == 2)
+	{
+		ControlId const triggerId = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		gEnv->pAudioSystem->StopTrigger(triggerId);
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Usage: s_StopTrigger [TriggerName]");
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CmdSetParameter(IConsoleCmdArgs* pCmdArgs)
+{
+	int const numArgs = pCmdArgs->GetArgCount();
+
+	if (numArgs == 3)
+	{
+		ControlId const parameterId = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		double const value = atof(pCmdArgs->GetArg(2));
+		gEnv->pAudioSystem->SetParameter(parameterId, static_cast<float>(value));
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Usage: s_SetParameter [ParameterName] [ParameterValue]");
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CmdSetGlobalParameter(IConsoleCmdArgs* pCmdArgs)
+{
+	int const numArgs = pCmdArgs->GetArgCount();
+
+	if (numArgs == 3)
+	{
+		ControlId const parameterId = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		double const value = atof(pCmdArgs->GetArg(2));
+		gEnv->pAudioSystem->SetGlobalParameter(parameterId, static_cast<float>(value));
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Usage: s_SetGlobalParameter [ParameterName] [ParameterValue]");
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
+{
+	int const numArgs = pCmdArgs->GetArgCount();
+
+	if (numArgs == 3)
+	{
+		ControlId const switchId = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		SwitchStateId const switchStateId = CryAudio::StringToId(pCmdArgs->GetArg(2));
+		gEnv->pAudioSystem->SetSwitchState(switchId, switchStateId);
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Usage: s_SetSwitchState [SwitchName] [SwitchStateName]");
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CmdSetGlobalSwitchState(IConsoleCmdArgs* pCmdArgs)
+{
+	int const numArgs = pCmdArgs->GetArgCount();
+
+	if (numArgs == 3)
+	{
+		ControlId const switchId = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		SwitchStateId const switchStateId = CryAudio::StringToId(pCmdArgs->GetArg(2));
+		gEnv->pAudioSystem->SetGlobalSwitchState(switchId, switchStateId);
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Usage: s_SetGlobalSwitchState [SwitchName] [SwitchStateName]");
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CmdLoadRequest(IConsoleCmdArgs* pCmdArgs)
+{
+	int const numArgs = pCmdArgs->GetArgCount();
+
+	if (numArgs == 2)
+	{
+		ControlId const id = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		gEnv->pAudioSystem->PreloadSingleRequest(id, false);
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Usage: s_LoadRequest [PreloadRequestName]");
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CmdUnloadRequest(IConsoleCmdArgs* pCmdArgs)
+{
+	int const numArgs = pCmdArgs->GetArgCount();
+
+	if (numArgs == 2)
+	{
+		ControlId const id = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		gEnv->pAudioSystem->UnloadSingleRequest(id);
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Usage: s_UnloadRequest [PreloadRequestName]");
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CmdLoadSetting(IConsoleCmdArgs* pCmdArgs)
+{
+	int const numArgs = pCmdArgs->GetArgCount();
+
+	if (numArgs == 2)
+	{
+		ControlId const id = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		gEnv->pAudioSystem->LoadSetting(id);
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Usage: s_LoadSetting [SettingName]");
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CmdUnloadSetting(IConsoleCmdArgs* pCmdArgs)
+{
+	int const numArgs = pCmdArgs->GetArgCount();
+
+	if (numArgs == 2)
+	{
+		ControlId const id = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		gEnv->pAudioSystem->UnloadSetting(id);
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Usage: s_UnloadSetting [SettingName]");
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CmdResetRequestCount(IConsoleCmdArgs* pCmdArgs)
+{
+	g_system.ResetRequestCount();
+}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
 void CCVars::RegisterVariables()
@@ -292,6 +469,10 @@ void CCVars::RegisterVariables()
 	                 "Unloads a setting.\n"
 	                 "The argument is the name of the setting to unload.\n"
 	                 "Usage: s_UnloadSetting main_menu\n");
+
+	REGISTER_COMMAND("s_ResetRequestCount", CmdResetRequestCount, VF_CHEAT,
+	                 "Resets the request counts shown in s_DrawAudioDebug y.\n"
+	                 "Usage: s_resetRequestCount\n");
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
@@ -334,177 +515,8 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_UnloadRequest");
 		pConsole->UnregisterVariable("s_LoadSetting");
 		pConsole->UnregisterVariable("s_UnloadSetting");
+		pConsole->UnregisterVariable("s_ResetRequestCount");
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	}
 }
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-//////////////////////////////////////////////////////////////////////////
-void CCVars::CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
-{
-	int const numArgs = pCmdArgs->GetArgCount();
-
-	if (numArgs == 2)
-	{
-		ControlId const triggerId = CryAudio::StringToId(pCmdArgs->GetArg(1));
-		gEnv->pAudioSystem->ExecuteTrigger(triggerId);
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Usage: s_ExecuteTrigger [TriggerName]");
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CCVars::CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
-{
-	int const numArgs = pCmdArgs->GetArgCount();
-
-	if (numArgs == 1)
-	{
-		gEnv->pAudioSystem->StopTrigger(InvalidControlId);
-	}
-	else if (numArgs == 2)
-	{
-		ControlId const triggerId = CryAudio::StringToId(pCmdArgs->GetArg(1));
-		gEnv->pAudioSystem->StopTrigger(triggerId);
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Usage: s_StopTrigger [TriggerName]");
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CCVars::CmdSetParameter(IConsoleCmdArgs* pCmdArgs)
-{
-	int const numArgs = pCmdArgs->GetArgCount();
-
-	if (numArgs == 3)
-	{
-		ControlId const parameterId = CryAudio::StringToId(pCmdArgs->GetArg(1));
-		double const value = atof(pCmdArgs->GetArg(2));
-		gEnv->pAudioSystem->SetParameter(parameterId, static_cast<float>(value));
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Usage: s_SetParameter [ParameterName] [ParameterValue]");
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CCVars::CmdSetGlobalParameter(IConsoleCmdArgs* pCmdArgs)
-{
-	int const numArgs = pCmdArgs->GetArgCount();
-
-	if (numArgs == 3)
-	{
-		ControlId const parameterId = CryAudio::StringToId(pCmdArgs->GetArg(1));
-		double const value = atof(pCmdArgs->GetArg(2));
-		gEnv->pAudioSystem->SetGlobalParameter(parameterId, static_cast<float>(value));
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Usage: s_SetGlobalParameter [ParameterName] [ParameterValue]");
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CCVars::CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
-{
-	int const numArgs = pCmdArgs->GetArgCount();
-
-	if (numArgs == 3)
-	{
-		ControlId const switchId = CryAudio::StringToId(pCmdArgs->GetArg(1));
-		SwitchStateId const switchStateId = CryAudio::StringToId(pCmdArgs->GetArg(2));
-		gEnv->pAudioSystem->SetSwitchState(switchId, switchStateId);
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Usage: s_SetSwitchState [SwitchName] [SwitchStateName]");
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CCVars::CmdSetGlobalSwitchState(IConsoleCmdArgs* pCmdArgs)
-{
-	int const numArgs = pCmdArgs->GetArgCount();
-
-	if (numArgs == 3)
-	{
-		ControlId const switchId = CryAudio::StringToId(pCmdArgs->GetArg(1));
-		SwitchStateId const switchStateId = CryAudio::StringToId(pCmdArgs->GetArg(2));
-		gEnv->pAudioSystem->SetGlobalSwitchState(switchId, switchStateId);
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Usage: s_SetGlobalSwitchState [SwitchName] [SwitchStateName]");
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CCVars::CmdLoadRequest(IConsoleCmdArgs* pCmdArgs)
-{
-	int const numArgs = pCmdArgs->GetArgCount();
-
-	if (numArgs == 2)
-	{
-		ControlId const id = CryAudio::StringToId(pCmdArgs->GetArg(1));
-		gEnv->pAudioSystem->PreloadSingleRequest(id, false);
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Usage: s_LoadRequest [PreloadRequestName]");
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CCVars::CmdUnloadRequest(IConsoleCmdArgs* pCmdArgs)
-{
-	int const numArgs = pCmdArgs->GetArgCount();
-
-	if (numArgs == 2)
-	{
-		ControlId const id = CryAudio::StringToId(pCmdArgs->GetArg(1));
-		gEnv->pAudioSystem->UnloadSingleRequest(id);
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Usage: s_UnloadRequest [PreloadRequestName]");
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CCVars::CmdLoadSetting(IConsoleCmdArgs* pCmdArgs)
-{
-	int const numArgs = pCmdArgs->GetArgCount();
-
-	if (numArgs == 2)
-	{
-		ControlId const id = CryAudio::StringToId(pCmdArgs->GetArg(1));
-		gEnv->pAudioSystem->LoadSetting(id);
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Usage: s_LoadSetting [SettingName]");
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CCVars::CmdUnloadSetting(IConsoleCmdArgs* pCmdArgs)
-{
-	int const numArgs = pCmdArgs->GetArgCount();
-
-	if (numArgs == 2)
-	{
-		ControlId const id = CryAudio::StringToId(pCmdArgs->GetArg(1));
-		gEnv->pAudioSystem->UnloadSetting(id);
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Usage: s_UnloadSetting [SettingName]");
-	}
-}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }      // namespace CryAudio
