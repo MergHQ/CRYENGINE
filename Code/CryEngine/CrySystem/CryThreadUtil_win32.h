@@ -224,17 +224,16 @@ bool CryIsThreadAlive(TThreadHandle pThreadHandle)
 //////////////////////////////////////////////////////////////////////////
 namespace CryThreadUtil
 {
+#if defined(USE_FPE)
 ///////////////////////////////////////////////////////////////////////////
 void EnableFloatExceptions(EFPE_Severity eFPESeverity)
 {
-	// Optimization
 	// Enable DAZ/FZ
 	// Denormals Are Zeros
 	// Flush-to-Zero
 	_controlfp(_DN_FLUSH, _MCW_DN);
 	_mm_setcsr(_mm_getcsr() | _MM_FLUSH_ZERO_ON);
 
-#ifndef _RELEASE
 	if (eFPESeverity == eFPE_None)
 	{
 		// mask all floating exceptions off.
@@ -280,7 +279,6 @@ void EnableFloatExceptions(EFPE_Severity eFPESeverity)
 			_mm_setcsr((_mm_getcsr() & ~_MM_MASK_MASK) | (_MM_MASK_INEXACT | _MM_MASK_DENORM));
 		}
 	}
-#endif // _RELEASE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -336,8 +334,6 @@ void EnableFloatExceptions(threadID nThreadId, EFPE_Severity eFPESeverity)
 	floatControlWord = (floatControlWord & ~_MCW_DN) | _DN_FLUSH;
 	floatMxCsr = (floatMxCsr & ~_MM_FLUSH_ZERO_MASK) | (_MM_FLUSH_ZERO_ON);
 
-#ifndef _RELEASE
-
 	// Reset FPE bits
 	floatControlWord = floatControlWord | _MCW_EM;
 	floatMxCsr = floatMxCsr | _MM_MASK_MASK;
@@ -377,7 +373,6 @@ void EnableFloatExceptions(threadID nThreadId, EFPE_Severity eFPESeverity)
 		floatControlWord = (floatControlWord & ~_MCW_EM) | (_EM_INEXACT | _EM_DENORMAL);
 		floatMxCsr = (floatMxCsr & ~_MM_MASK_MASK) | (_MM_MASK_INEXACT | _MM_MASK_DENORM);
 	}
-#endif
 
 	ctx.ContextFlags = CONTEXT_ALL;
 	if (SetThreadContext(hThread, &ctx) == 0)
@@ -411,4 +406,10 @@ void SetFloatingPointExceptionMask(uint nMask)
 
 	_controlfp_s(&temp, nMask, kAllowedBits);
 }
+#else
+	void EnableFloatExceptions(EFPE_Severity eFPESeverity) {}
+	void EnableFloatExceptions(threadID nThreadId, EFPE_Severity eFPESeverity) {}
+	uint GetFloatingPointExceptionMask() { return 0; }
+	void SetFloatingPointExceptionMask(uint nMask) {}
+#endif
 }

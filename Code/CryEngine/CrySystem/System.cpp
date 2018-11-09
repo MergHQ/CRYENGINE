@@ -1806,11 +1806,6 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 		g_breakListenerOn = false;
 	}
 #endif //EXCLUDE_UPDATE_ON_CONSOLE
-#if CRY_PLATFORM_WINDOWS
-	// enable/disable SSE fp exceptions (#nan and /0)
-	// need to do it each frame since sometimes they are being reset
-	_mm_setcsr(_mm_getcsr() & ~0x280 | (g_cvars.sys_float_exceptions > 0 ? 0 : 0x280));
-#endif
 
 	m_nUpdateCounter++;
 #ifndef EXCLUDE_UPDATE_ON_CONSOLE

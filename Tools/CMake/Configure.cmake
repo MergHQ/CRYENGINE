@@ -251,6 +251,12 @@ if (OPTION_ENGINE)
 	if(OPTION_GEOM_CACHES)
 		list(APPEND global_defines USE_GEOM_CACHES=1)
 	endif()
+	
+	option(OPTION_FPE "Enable floating point exceptions" OFF)
+
+	if(OPTION_FPE)
+		list(APPEND global_defines USE_FPE=1)
+	endif()
 endif()
 include("${TOOLS_CMAKE_DIR}/modules/Boost.cmake")
 
