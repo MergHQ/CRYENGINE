@@ -16,13 +16,13 @@ enum class ERequestType : EnumFlagsType
 };
 
 //////////////////////////////////////////////////////////////////////////
-struct SRequestData : public _i_multithread_reference_target_t
+struct SRequestData
 {
 	explicit SRequestData(ERequestType const requestType_)
 		: requestType(requestType_)
 	{}
 
-	virtual ~SRequestData() override = default;
+	virtual ~SRequestData() = default;
 
 	SRequestData(SRequestData const&) = delete;
 	SRequestData(SRequestData&&) = delete;
@@ -32,5 +32,5 @@ struct SRequestData : public _i_multithread_reference_target_t
 	ERequestType const requestType;
 };
 
-SRequestData* AllocateRequestData(SRequestData const* const pRequestData);
+std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pRequestData);
 } // namespace CryAudio

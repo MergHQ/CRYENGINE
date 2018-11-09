@@ -53,6 +53,6 @@ public:
 private:
 
 	// Must be private as it needs "AllocateRequestData"!
-	_smart_ptr<SRequestData> pData = nullptr;
+	std::shared_ptr<SRequestData> pData = nullptr;
 };
 } // namespace CryAudio
