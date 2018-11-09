@@ -594,9 +594,9 @@ bool CAssetBrowser::GetImportFolder(string& folderPath) const
 {
 	const auto getSelectedFolder = [this](string& folderPath)
 	{
-		auto folderSelection = m_foldersView->GetSelectedFolders();
-		folderPath = QtUtil::ToString(folderSelection.front());
-		return folderSelection.size() == 1;
+		 auto folderSelection = m_foldersView->GetSelectedFolders();
+		 folderPath = QtUtil::ToString(folderSelection.front());
+		 return folderSelection.size() == 1;
 	};
 
 	return GetDropFolder(folderPath) || getSelectedFolder(folderPath);
@@ -1049,6 +1049,7 @@ void CAssetBrowser::EditNewAsset()
 	if (filteredIndex.isValid())
 	{
 		pView->edit(filteredIndex);
+		pView->scrollTo(filteredIndex);
 		pView->selectionModel()->select(filteredIndex, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 	}
 	else
