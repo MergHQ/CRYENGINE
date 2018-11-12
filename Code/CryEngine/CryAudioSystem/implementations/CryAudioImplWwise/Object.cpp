@@ -36,11 +36,12 @@ void EndEventCallback(AkCallbackType callbackType, AkCallbackInfo* pCallbackInfo
 {
 	if (callbackType == AK_EndOfEvent)
 	{
-		CryAudio::CEvent* const pEvent = static_cast<CryAudio::CEvent* const>(pCallbackInfo->pCookie);
+		auto const pEvent = static_cast<CEvent* const>(pCallbackInfo->pCookie);
 
 		if (pEvent != nullptr)
 		{
-			gEnv->pAudioSystem->ReportFinishedEvent(*pEvent, true);
+			pEvent->m_toBeRemoved = true;
+			gEnv->pAudioSystem->ReportFinishedEvent(pEvent->m_event, true);
 		}
 	}
 }
@@ -119,7 +120,10 @@ void CObject::Update(float const deltaTime)
 		{
 			for (auto const pEvent : m_events)
 			{
-				pEvent->UpdateVirtualState(m_distanceToListener);
+				if (!pEvent->m_toBeRemoved)
+				{
+					pEvent->UpdateVirtualState(m_distanceToListener);
+				}
 			}
 		}
 	}
@@ -419,7 +423,7 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 			PostEnvironmentAmounts();
 		}
 
-		AkPlayingID const id = AK::SoundEngine::PostEvent(pTrigger->m_id, objectId, AK_EndOfEvent, &EndEventCallback, &pEvent->m_event);
+		AkPlayingID const id = AK::SoundEngine::PostEvent(pTrigger->m_id, objectId, AK_EndOfEvent, &EndEventCallback, pEvent);
 
 		if (id != AK_INVALID_PLAYING_ID)
 		{

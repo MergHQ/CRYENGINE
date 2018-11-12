@@ -6,6 +6,7 @@
 #include <SharedData.h>
 #include <PoolObject.h>
 #include <AK/SoundEngine/Common/AkTypes.h>
+#include <atomic>
 
 namespace CryAudio
 {
@@ -31,6 +32,7 @@ public:
 		, m_event(event_)
 		, m_pObject(nullptr)
 		, m_maxAttenuation(0.0f)
+		, m_toBeRemoved(false)
 	{}
 
 	virtual ~CEvent() override;
@@ -52,6 +54,7 @@ public:
 	CryAudio::CEvent& m_event;
 	CObject*          m_pObject;
 	float             m_maxAttenuation;
+	std::atomic_bool  m_toBeRemoved;
 
 private:
 
