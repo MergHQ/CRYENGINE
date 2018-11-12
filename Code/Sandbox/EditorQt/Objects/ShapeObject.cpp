@@ -27,6 +27,7 @@
 
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryAISystem/IAISystem.h>
+#include <CryAISystem/IAgent.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryInput/IHardwareMouse.h>
 

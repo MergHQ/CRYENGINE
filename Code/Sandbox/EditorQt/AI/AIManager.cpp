@@ -437,48 +437,6 @@ void CAIManager::EnumAnchorActions()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAIManager::GetSmartObjectStates(std::vector<string>& values) const
-{
-	if (!m_pAISystem)
-		return;
-
-	const char* sStateName;
-	for (int i = 0; sStateName = m_pAISystem->GetSmartObjectManager()->GetSmartObjectStateName(i); ++i)
-		values.push_back(sStateName);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAIManager::GetSmartObjectActions(std::vector<string>& values) const
-{
-	if (!m_pAISystem)
-		return;
-
-	IAIActionManager* pAIActionManager = m_pAISystem->GetAIActionManager();
-	assert(pAIActionManager);
-	if (!pAIActionManager)
-		return;
-
-	values.clear();
-
-	for (int i = 0; IAIAction* pAIAction = pAIActionManager->GetAIAction(i); ++i)
-	{
-		const char* szActionName = pAIAction->GetName();
-		if (szActionName)
-		{
-			values.push_back(szActionName);
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAIManager::AddSmartObjectState(const char* sState)
-{
-	if (!m_pAISystem)
-		return;
-	m_pAISystem->GetSmartObjectManager()->RegisterSmartObjectState(sState);
-}
-
-//////////////////////////////////////////////////////////////////////////
 bool CAIManager::NewAction(string& filename)
 {
 	CFileUtil::CreateDirectory(PathUtil::Make(PathUtil::GetGameFolder(), AI_ACTIONS_PATH));

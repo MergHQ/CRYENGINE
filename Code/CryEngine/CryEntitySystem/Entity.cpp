@@ -18,12 +18,9 @@
 #include "EntitySlot.h"
 #include "RopeProxy.h"
 #include <CryAISystem/IAISystem.h>
-#include <CryAISystem/IAgent.h>
-#include <CryAISystem/IAIActorProxy.h>
+#include <CryAISystem/IAIObjectManager.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryAnimation/ICryAnimation.h>
-#include <CryAISystem/IAIObjectManager.h>
-#include <CryAISystem/IAIActor.h>
 #include "EntityLayer.h"
 #include "GeomCacheAttachmentManager.h"
 #include "CharacterBoneAttachmentManager.h"
@@ -430,10 +427,6 @@ void CEntity::ShutDown()
 	{
 		static_cast<CAreaManager*>(g_pIEntitySystem->GetAreaManager())->ExitAllAreas(m_id);
 	}
-
-	if (gEnv->pAISystem && gEnv->pAISystem->GetSmartObjectManager())
-		gEnv->pAISystem->GetSmartObjectManager()->RemoveSmartObject(this);
-
 
 	m_simpleEventListeners.clear();
 	m_eventListenerMask.Clear();

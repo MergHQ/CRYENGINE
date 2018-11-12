@@ -48,8 +48,8 @@
 // CryEngine
 #include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/IGeomCache.h>
-#include <CryAISystem/IAIActor.h>
 #include <CryAISystem/IAIObject.h>
+#include <CryAISystem/IAIActor.h>
 #include <CryAnimation/IVertexAnimation.h>
 #include <CryExtension/ICryFactoryRegistry.h>
 #include <CryMovie/IMovieSystem.h>
@@ -3474,19 +3474,6 @@ void CEntityObject::DrawDefault(SDisplayContext& dc, COLORREF labelColor)
 	if (m_pEntity && CanBeDrawn(dc, bDisplaySelectionHelper))
 	{
 		const Vec3 wp = m_pEntity->GetWorldPos();
-
-		if (gEnv->pAISystem)
-		{
-			ISmartObjectManager* pSmartObjectManager = gEnv->pAISystem->GetSmartObjectManager();
-			if (!pSmartObjectManager->ValidateSOClassTemplate(m_pEntity))
-			{
-				DrawLabel(dc, wp, RGB(255, 0, 0), 1.f, 4);
-			}
-			if (IsSelected() || IsHighlighted())
-			{
-				pSmartObjectManager->DrawSOClassTemplate(m_pEntity);
-			}
-		}
 
 		// Draw "ghosted" data around the entity's actual position in simulation mode
 		if (GetIEditorImpl()->GetGameEngine()->GetSimulationMode())

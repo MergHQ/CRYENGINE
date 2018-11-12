@@ -111,6 +111,29 @@ void CSmartObject::Display(CObjectRenderHelper& objRenderHelper)
 	DrawDefault(dc);
 }
 
+void CSmartObject::DrawDefault(SDisplayContext& dc, COLORREF labelColor)
+{
+	bool bDisplaySelectionHelper = false;
+	if (m_pEntity && CanBeDrawn(dc, bDisplaySelectionHelper))
+	{
+		const Vec3 wp = m_pEntity->GetWorldPos();
+		if (gEnv->pAISystem)
+		{
+			ISmartObjectManager* pSmartObjectManager = gEnv->pAISystem->GetSmartObjectManager();
+			if (!pSmartObjectManager->ValidateSOClassTemplate(m_pEntity))
+			{
+				DrawLabel(dc, wp, RGB(255, 0, 0), 1.f, 4);
+			}
+			if (IsSelected() || IsHighlighted())
+			{
+				pSmartObjectManager->DrawSOClassTemplate(m_pEntity);
+			}
+		}
+	}
+
+	__super::DrawDefault(dc, labelColor);
+}
+
 bool CSmartObject::HitTest(HitContext& hc)
 {
 	if (GetIStatObj())

@@ -25,15 +25,16 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Overrides from CBaseObject.
 	//////////////////////////////////////////////////////////////////////////
-	virtual bool Init(CBaseObject* prev, const string& file);
-	virtual void InitVariables() {}
-	virtual void Done();
-	virtual void Display(CObjectRenderHelper& objRenderHelper);
-	virtual bool HitTest(HitContext& hc);
-	virtual void GetLocalBounds(AABB& box);
+	virtual bool Init(CBaseObject* prev, const string& file) override;
+	virtual void InitVariables() override {}
+	virtual void Done() override;
+	virtual void Display(CObjectRenderHelper& objRenderHelper) override;
+	virtual bool HitTest(HitContext& hc) override;
+	virtual void GetLocalBounds(AABB& box) override;
 	bool         IsScalable() const override { return false; }
-	virtual void OnEvent(ObjectEvent eventID);
-	virtual void GetScriptProperties(XmlNodeRef xmlEntityNode);
+	virtual void OnEvent(ObjectEvent eventID) override;
+	virtual void GetScriptProperties(XmlNodeRef xmlEntityNode) override;
+	virtual void DrawDefault(SDisplayContext& dc, COLORREF labelColor = RGB(255, 255, 255)) override;
 
 	//////////////////////////////////////////////////////////////////////////
 

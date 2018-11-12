@@ -6,7 +6,6 @@
 
 #include "Util/Variable.h"
 
-#include <CryAISystem/IAgent.h>
 #include <CryAISystem/INavigationSystem.h>
 #include <CryAISystem/NavigationSystem/INavigationUpdatesManager.h>
 #include <EditorFramework/Preferences.h>
@@ -194,19 +193,13 @@ public:
 	virtual void                OnAreaModified(const AABB& aabb, const CBaseObject* modifiedByObject = nullptr) override;
 	virtual bool                IsReadyToGameExport(unsigned int& adjustedExportFlags) const override;
 
-	virtual bool                NewAction(string& filename) override;
 	virtual const MapTemplates& GetMapTemplates() const override { return m_mapTemplates; }
-	virtual void                GetSmartObjectActions(std::vector<string>& values) const override;
+	virtual bool                NewAction(string& filename) override;
 	// !IAIManager
 
 	IAISystem*            GetAISystem();
 	CAIBehaviorLibrary*   GetBehaviorLibrary()     { return m_pBehaviorLibrary; }
 	CCoverSurfaceManager* GetCoverSurfaceManager() { return m_coverSurfaceManager.get(); }
-
-	//////////////////////////////////////////////////////////////////////////
-	//! Smart Objects States and Actions enumeration
-	void GetSmartObjectStates(std::vector<string>& values) const;
-	void AddSmartObjectState(const char* sState);
 
 	//////////////////////////////////////////////////////////////////////////
 	//! AI Anchor Actions enumeration.
