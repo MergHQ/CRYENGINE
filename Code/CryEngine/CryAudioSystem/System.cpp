@@ -1270,6 +1270,10 @@ void CSystem::ReportFinishedEvent(
 	bool const bSuccess,
 	SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	event.m_toBeRemoved = true;
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+
 	SCallbackRequestData<ECallbackRequestType::ReportFinishedEvent> const requestData(event, bSuccess);
 	CRequest request(&requestData);
 	request.flags = userData.flags;
@@ -1282,6 +1286,10 @@ void CSystem::ReportFinishedEvent(
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ReportVirtualizedEvent(CEvent& event, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	CRY_ASSERT_MESSAGE(!event.m_toBeRemoved, "Event is already to be removed during %s", __FUNCTION__);
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+
 	SCallbackRequestData<ECallbackRequestType::ReportVirtualizedEvent> const requestData(event);
 	CRequest request(&requestData);
 	request.flags = userData.flags;
@@ -1294,6 +1302,10 @@ void CSystem::ReportVirtualizedEvent(CEvent& event, SRequestUserData const& user
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ReportPhysicalizedEvent(CEvent& event, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	CRY_ASSERT_MESSAGE(!event.m_toBeRemoved, "Event is already to be removed during %s", __FUNCTION__);
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+
 	SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedEvent> const requestData(event);
 	CRequest request(&requestData);
 	request.flags = userData.flags;

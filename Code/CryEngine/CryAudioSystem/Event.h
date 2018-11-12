@@ -5,6 +5,10 @@
 #include "Common/PoolObject.h"
 #include "Common/SharedData.h"
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#include <atomic>
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
 namespace CryAudio
 {
 class CObject;
@@ -33,6 +37,8 @@ public:
 	char const* const GetTriggerName() const                          { return m_szTriggerName; }
 	void              SetTriggerRadius(float const radius)            { m_triggerRadius = radius; }
 	float             GetTriggerRadius() const                        { return m_triggerRadius; }
+
+	std::atomic_bool m_toBeRemoved{ false };
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	CObject*          m_pObject = nullptr;
