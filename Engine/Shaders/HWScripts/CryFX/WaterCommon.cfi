@@ -116,19 +116,11 @@ SPerPassWaterParams GetPerPassWaterParams()
 {
 	SPerPassWaterParams params;
 
-#if %_RT_COMPUTE_SKINNING
 	params.viewProjPrev = cbPerPassWater.viewProjPrev;
 	params.reprojectToPrev = cbPerPassWater.reprojectToPrev;
 	params.causticViewProjMatr = cbPerPassWater.causticViewProjMatr;
 	params.waterRippleLookup = cbPerPassWater.waterRippleLookup;
 	params.ssrParams = cbPerPassWater.ssrParams;
-#else
-	params.viewProjPrev = CV_PrevViewProjMatr;
-	params.reprojectToPrev = CV_ReprojectToPrev;
-	params.causticViewProjMatr = CV_ViewProjMatr;
-	params.waterRippleLookup = WaterRipplesLookupParams;
-	params.ssrParams = float4(1, 1, 1, 28);
-#endif
 
 	return params;
 }
@@ -137,7 +129,6 @@ SFogParams GetFogParams()
 {
 	SFogParams params;
 
-#if %_RT_COMPUTE_SKINNING
 	params.viewPos.xyz = g_VS_WorldViewPos.xyz;
 	params.padding0 = 0.0f;
 
@@ -164,34 +155,6 @@ SFogParams GetFogParams()
 
 	params.radialColor = cbFog.vfColGradRadial.xyz;
 	params.invZFar = cbFog.vfColGradRadial.w;
-#else
-	params.viewPos.xyz = PS_WorldViewPos.xyz;
-	params.padding0 = 0.0f;
-
-	params.heightDensityScale = vfParams.x;
-	params.heightDensityAtBaseHeight = vfParams.y;
-	params.heightDiffFromBase = vfParams.z;
-	params.expHeightDiffFromBase = vfParams.w;
-
-	params.rampParams = vfRampParams;
-
-	params.sunDir = vfSunDir.xyz;
-	params.densityClamp = vfSunDir.w;
-
-	params.colGradBase = vfColGradBase;
-	params.padding1 = 0.0f;
-
-	params.colGradDelta = vfColGradDelta;
-	params.padding2 = 0.0f;
-
-	params.heightColGradScale = vfColGradParams.x;
-	params.heightColGradOffset = vfColGradParams.y;
-	params.radialSizeCtrl = vfColGradParams.z;
-	params.radialLobeCtrl = vfColGradParams.w;
-
-	params.radialColor = vfColGradRadial.xyz;
-	params.invZFar = vfColGradRadial.w;
-#endif
 
 	return params;
 }
@@ -200,13 +163,8 @@ SVolumetricFogShadowParams GetVolumetricFogShadowParams()
 {
 	SVolumetricFogShadowParams params;
 
-#if %_RT_COMPUTE_SKINNING
 	params.volFogShadowDarkening = cbVolFogShadow.volFogShadowDarkening;
 	params.volFogShadowDarkeningSunAmb = cbVolFogShadow.volFogShadowDarkeningSunAmb;
-#else
-	params.volFogShadowDarkening = volFogShadowDarkening;
-	params.volFogShadowDarkeningSunAmb = volFogShadowDarkeningSunAmb;
-#endif
 
 	return params;
 }
@@ -215,7 +173,6 @@ SVolumetricFogParams GetVolumetricFogParams()
 {
 	SVolumetricFogParams params;
 
-#if %_RT_COMPUTE_SKINNING
 	params.sunDir = CV_SunLightDir.xyz;
 	params.padding0 = 0.0f;
 
@@ -272,61 +229,6 @@ SVolumetricFogParams GetVolumetricFogParams()
 	params.timeParams.y = CV_AnimGenParams.z * 0.5f;
 	params.timeParams.z = CV_AnimGenParams.y;
 	params.timeParams.w = CV_AnimGenParams.w;
-#else
-	params.sunDir = vfSunDir.xyz;
-	params.padding0 = 0.0f;
-
-	params.nearDist = vfSamplingParams.x;
-	params.invFarMinusNearDist = vfSamplingParams.y;
-	params.maxIndex = vfSamplingParams.z;
-	params.invMaxIndex = vfSamplingParams.w;
-
-	params.screenSize = PS_ScreenSize.xy;
-	params.farMinusNearDist = vfDistributionParams.y;
-	params.invMaxIndexMinusOne = vfDistributionParams.z;
-
-	params.viewPos = PS_WorldViewPos.xyz;
-	params.framwCountJitter = vfDistributionParams.w;
-
-	params.scatterCoefficient = vfScatteringParams.x;
-	params.extinctionCoefficient = vfScatteringParams.y;
-	params.blendFactor = vfScatteringBlendParams.x;
-	params.blendMode = vfScatteringBlendParams.y;
-
-	params.cDiffuse1 = vfScatteringColor.xyz;
-	params.padding1 = 0.0f;
-
-	params.cDiffuse2 = vfScatteringSecondaryColor.xyz;
-	params.padding2 = 0.0f;
-
-	params.anisotropy1.x = vfScatteringParams.z;
-	params.anisotropy1.y = vfScatteringParams.w;
-	params.anisotropy2.x = vfScatteringColor.w;
-	params.anisotropy2.y = vfScatteringSecondaryColor.w;
-
-	params.heightDensityScale = vfHeightDensityParams.x;
-	params.densityAtViewer = vfHeightDensityParams.y;
-	params.fogVisibility = vfHeightDensityParams.z;
-	params.clampTransmittance = vfHeightDensityParams.w;
-
-	params.rampStart = vfHeightDensityRampParams.x;
-	params.rampEnd = vfHeightDensityRampParams.y;
-	params.oneOverRampDiff = vfHeightDensityRampParams.z;
-	params.rampStartOverRampDiff = vfHeightDensityRampParams.w;
-
-	params.farDistTopLeft = vfDistanceParams.x;
-	params.farDistTopCenter = vfDistanceParams.y;
-	params.farDistCenterLeft = vfDistanceParams.z;
-	params.farDistCenter = vfDistanceParams.w;
-
-	params.globalProbeColor0 = vfGlobalEnvProbeParams0.xyz;
-	params.globalProbeAttenuation0 = vfGlobalEnvProbeParams0.w;
-
-	params.globalProbeColor1 = vfGlobalEnvProbeParams1.xyz;
-	params.globalProbeAttenuation1 = vfGlobalEnvProbeParams1.w;
-
-	params.timeParams = vfTimeParams;
-#endif
 
 	return params;
 }
@@ -421,17 +323,10 @@ VolumetricFogSampling GetVolumetricFogSampling()
 {
 	VolumetricFogSampling vfs;
 
-#if %_RT_COMPUTE_SKINNING
 	vfs.volumetricFogTex = volFogSamplingTex;
 	vfs.globalEnvProbeTex0 = volFogGlobalEnvProbeTex0;
 	vfs.globalEnvProbeTex1 = volFogGlobalEnvProbeTex1;
 	vfs.trilinearClampSState = ssMaterialTrilinearClamp;
-#else
-	vfs.volumetricFogTex = VolumetricFogTexture;
-	vfs.globalEnvProbeTex0 = vfGlobalEnvProbeTexture0;
-	vfs.globalEnvProbeTex1 = vfGlobalEnvProbeTexture1;
-	vfs.trilinearClampSState = vfTrilinearClampSState;
-#endif
 
 	return vfs;
 }
@@ -531,7 +426,6 @@ SWaterVolumeParams GetWaterVolumeParams()
 {
 	SWaterVolumeParams params;
 
-#if %_RT_COMPUTE_SKINNING
 	params.WorldMatrix = cbWaterVolume.WorldMatrix;
 	params.OceanParams0 = cbWaterVolume.OceanParams0;
 	params.OceanParams1 = cbWaterVolume.OceanParams1;
@@ -545,21 +439,6 @@ SWaterVolumeParams GetWaterVolumeParams()
 	params.cUnderWaterInScatterConst = cbWaterVolume.cUnderWaterInScatterConst;
 	params.volFogShadowRange = cbWaterVolume.volFogShadowRange;
 	params.vCausticParams = cbWaterVolume.vCausticParams;
-#else
-	params.WorldMatrix = float4x4(Get_SPI_ObjWorldMat(0), float4(0.0f, 0.0f, 0.0f, 1.0f));
-	params.OceanParams0 = OceanParams0;
-	params.OceanParams1 = OceanParams1;
-	params.vBBoxMin = vBBoxMin;
-	params.vBBoxMax = vBBoxMax;
-	params.cFogColorDensity = cFogColorDensity;
-	params.cViewerColorToWaterPlane = cViewerColorToWaterPlane;
-	params.cFogPlane = cFogPlane;
-	params.cPerpDist = cPerpDist;
-	params.cFogColorShallowWaterLevel = cFogColorShallowWaterLevel;
-	params.cUnderWaterInScatterConst = cUnderWaterInScatterConst;
-	params.volFogShadowRange = volFogShadowRange;
-	params.vCausticParams = vCausticParams;
-#endif
 
 	return params;
 }

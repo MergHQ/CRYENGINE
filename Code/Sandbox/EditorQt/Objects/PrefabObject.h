@@ -54,7 +54,6 @@ public:
 	virtual void       Done() override;
 
 	virtual void       Display(CObjectRenderHelper& objRenderHelper) override;
-	virtual bool       HitTest(HitContext& hc) override;
 
 	const ColorB&      GetSelectionPreviewHighlightColor() override;
 
@@ -122,7 +121,6 @@ protected:
 	CPrefabObject();
 
 	void         SetPrefabGuid(CryGUID guid) { m_prefabGUID = guid; }
-	bool         HitTestMembers(HitContext& hcOrg);
 	virtual void PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx);
 	virtual void CalcBoundBox();
 	void         DeleteThis() { delete this; }
