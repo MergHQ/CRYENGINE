@@ -210,10 +210,6 @@ bool CREWaterVolume::Compile(CRenderObject* pObj, uint64 objFlags, uint16 elmFla
 		}
 	}
 
-	// TODO: remove this if old graphics pipeline and material preview is removed.
-	// NOTE: this is to use a typed constant buffer instead of per batch constant buffer.
-	psoDescription.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_COMPUTE_SKINNING];
-
 	// fog related runtime mask, this changes eventual PSOs.
 	const bool bFog = pRenderView->IsGlobalFogEnabled();
 	const bool bVolumetricFog = (rd->m_bVolumetricFogEnabled != 0);

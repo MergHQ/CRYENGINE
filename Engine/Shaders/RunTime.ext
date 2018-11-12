@@ -1169,13 +1169,6 @@ Property
 		Precache = DebugPassVS
 		Precache = CloakVS
 		Precache = DynamicOverlay
-
-		Precache = WaterSurfaceVS
-		Precache = WaterSurfacePS
-		Precache = WaterSurfaceHS
-		Precache = WaterSurfaceDS
-		Precache = WaterFogVolume_VS
-		Precache = WaterFogVolume_PS
 }
 
 Property

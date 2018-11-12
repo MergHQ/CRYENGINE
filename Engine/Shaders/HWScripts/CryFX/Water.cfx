@@ -287,17 +287,10 @@ SWaterParams GetWaterParams()
 {
 	SWaterParams params;
 
-#if %_RT_COMPUTE_SKINNING
 	params.mReflProj = cbWater.mReflProj;
 	params.OceanParams0 = cbWater.OceanParams0;
 	params.OceanParams1 = cbWater.OceanParams1;
 	params.cOceanFogColorDensity = cbWater.cOceanFogColorDensity;
-#else
-	params.mReflProj = mReflProj;
-	params.OceanParams0 = OceanParams0;
-	params.OceanParams1 = OceanParams1;
-	params.cOceanFogColorDensity = cOceanFogColorDensity;
-#endif
 
 	return params;
 }
@@ -1055,14 +1048,9 @@ pixout WaterPS(v2f_hs IN)
 	half3 R = reflect(-vView, lerpedNormal);
 	half4 cReflCM = GetEnvironmentCMap(envCubeTex, ssMaterialTrilinearClamp, R, fGloss);
 	half3 cSpecularAcc = DecodeHDRCubemap(cReflCM) * ReflectionScale;
-
 #else
-
 	half2 reflNewst = (IN.envTC.xy / IN.envTC.w) + vNormal.xy * ReflectionBumpScale;
-#if %_RT_COMPUTE_SKINNING
 	half3 cSpecularAcc = oceanReflectionTex.Sample(ssMaterialTrilinearClamp, reflNewst.xy) / PS_HDR_RANGE_ADAPT_MAX;
-#endif
-
 #endif
 
 
