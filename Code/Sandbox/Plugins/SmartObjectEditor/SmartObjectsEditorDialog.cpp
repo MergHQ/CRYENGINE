@@ -24,6 +24,9 @@
 #include <Util/FileUtil.h>
 #include <Util/MFCUtil.h>
 
+// Engine
+#include <CryAISystem/IAgent.h>
+
 #define SOED_DIALOGFRAME_CLASSNAME "SmartObjectsEditorDialog"
 #define CLASS_TEMPLATES_FOLDER     "Libs/SmartObjects/ClassTemplates/"
 

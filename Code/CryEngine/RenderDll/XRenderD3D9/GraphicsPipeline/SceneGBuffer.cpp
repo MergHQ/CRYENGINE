@@ -77,7 +77,7 @@ bool CSceneGBufferStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 	const uint64 objectFlags = desc.objectFlags;
 	CSceneRenderPass* pSceneRenderPass = (passID == ePass_DepthPrepass) ? &m_depthPrepass : &m_opaquePass;
 
-	if (passID != ePass_DepthPrepass)
+	if (passID == ePass_DepthPrepass)
 	{
 		// No blending or depth-write omission allowed in ZPrepass (depth test omission is okay)
 		CRY_ASSERT(!(psoDesc.m_RenderState & GS_BLEND_MASK) || !(psoDesc.m_RenderState & GS_DEPTHWRITE));

@@ -23,8 +23,6 @@ public:
 	//! DEPRECATED, only there for smart object plugin support
 	virtual bool		NewAction(string& filename) = 0;
 
-	virtual void GetSmartObjectActions(std::vector<string>& values) const = 0;
-
 	//! Method for notifying AI system that area in the world has changed. This should be called when there is no corresponding physics event that AI could be listening to. 
 	//! Set modifiedByObject parameter to object that triggered the change or null if there is no such object.
 	virtual void OnAreaModified(const AABB& aabb, const CBaseObject* modifiedByObject = nullptr) = 0;

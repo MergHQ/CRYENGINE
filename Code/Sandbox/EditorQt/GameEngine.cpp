@@ -1191,40 +1191,6 @@ void CGameEngine::GenerateAiAll(uint32 flags)
 	{
 		GenerateAINavigationMesh();
 	}
-
-	wait.Step(95);
-	CryLog("Validating SmartObjects");
-
-	// quick temp code to validate smart objects on level export
-	{
-		static CObjectClassDesc* pClass = GetIEditorImpl()->GetObjectManager()->FindClass("SmartObject");
-		CRY_ASSERT_MESSAGE(pClass != nullptr, "SmartObject class desc not found");
-		//this code now assumes SmartObjects are declared and are inherited from CEntityObject.h.
-		//See SmartObject.h in the SmartObjectsEditor plugin where it will now reside.
-
-		string error;
-		CBaseObjectsArray objects;
-		GetIEditorImpl()->GetObjectManager()->GetObjects(objects);
-
-		CBaseObjectsArray::iterator it, itEnd = objects.end();
-		for (it = objects.begin(); it != itEnd; ++it)
-		{
-			CBaseObject* pBaseObject = *it;
-			if (pBaseObject->GetClassDesc() == pClass)
-			{
-				CEntityObject* pSOEntity = (CEntityObject*)pBaseObject;
-
-				if (!gEnv->pAISystem->GetSmartObjectManager()->ValidateSOClassTemplate(pSOEntity->GetIEntity()))
-				{
-					const Vec3 pos = pSOEntity->GetWorldPos();
-
-					CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "SmartObject '%s' at (%.2f, %.2f, %.2f) is invalid!",
-					           (const char*)pSOEntity->GetName(), pos.x, pos.y, pos.z);
-				}
-			}
-		}
-	}
-
 	wait.Step(100);
 }
 

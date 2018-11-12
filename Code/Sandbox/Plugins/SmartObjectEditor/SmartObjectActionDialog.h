@@ -34,4 +34,7 @@ protected:
 	afx_msg void OnRefreshBtn();
 public:
 	virtual BOOL OnInitDialog();
+
+private:
+	void GetSmartObjectActions(std::vector<string>& values) const;
 };
