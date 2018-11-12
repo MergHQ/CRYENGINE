@@ -57,6 +57,8 @@ struct HitContext
 	//! Optional camera for culling perspective viewports.
 	CCamera*          camera;
 
+	//! Ignores groups/prefabs being locked
+	bool         ignoreHierarchyLocks;
 	//! Testing performed in 2D viewport.
 	bool         b2DViewport;
 	//! Hit test only gizmo objects
@@ -105,6 +107,7 @@ struct HitContext
 		, rect{0, 0, 0, 0}
 		, bounds{nullptr}
 		, camera{nullptr}
+		, ignoreHierarchyLocks{false}
 		, b2DViewport{false}
 		, bSkipIfGizmoHighlighted{false}
 		, bUseSelectionHelpers{false}

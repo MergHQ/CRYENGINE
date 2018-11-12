@@ -153,6 +153,7 @@ private:
 		virtual void GetManipulatorPosition(Vec3& position) {}
 	};
 
+	void HitTest(HitContext& hitContext, CViewport* pView, const CPoint& point);
 	void CheckDeepSelection(HitContext& hitContext, CViewport* pWnd);
 
 	CPoint       m_cMouseDownPos;

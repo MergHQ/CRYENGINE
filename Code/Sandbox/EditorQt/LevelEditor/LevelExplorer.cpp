@@ -1322,25 +1322,15 @@ void CLevelExplorer::OnSelectionChanged(const QItemSelection& selected, const QI
 
 		objectsToSelect.reserve(objects.size());
 
-		for (auto object : objects)
+		for (auto pObject : objects)
 		{
-			if (object->IsFrozen())
+			if (pObject->IsFrozen())
 			{
-				unselectObjectIndices.append(FindObjectIndex(object));
+				unselectObjectIndices.append(FindObjectIndex(pObject));
 			}
 			else
 			{
-				CBaseObject* pParent = object->GetGroup();
-				if (pParent)
-				{
-					CGroup* pGroup = static_cast<CGroup*>(pParent);
-					if (!pGroup->IsOpen())
-					{
-						unselectObjectIndices.append(FindObjectIndex(object));
-					}
-				}
-
-				objectsToSelect.push_back(object);
+				objectsToSelect.push_back(pObject);
 			}
 		}
 	}

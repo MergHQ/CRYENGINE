@@ -865,22 +865,6 @@ void CPrefabObject::PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx
 	}
 }
 
-bool CPrefabObject::HitTest(HitContext& hc)
-{
-	if (IsOpen())
-	{
-		return CGroup::HitTest(hc);
-	}
-
-	if (CGroup::HitTest(hc))
-	{
-		hc.object = this;
-		return true;
-	}
-
-	return false;
-}
-
 const ColorB& CPrefabObject::GetSelectionPreviewHighlightColor()
 {
 	return gViewportSelectionPreferences.colorPrefabBBox;
@@ -1512,48 +1496,6 @@ bool CPrefabObject::CanAddMembers(std::vector<CBaseObject*>& objects)
 	}
 
 	return true;
-}
-
-bool CPrefabObject::HitTestMembers(HitContext& hcOrg)
-{
-	float mindist = FLT_MAX;
-
-	HitContext hc = hcOrg;
-
-	CBaseObject* selected = 0;
-	std::vector<CBaseObject*> allChildrenObj;
-	GetAllPrefabFlagedChildren(allChildrenObj);
-	int numberOfChildren = allChildrenObj.size();
-	for (int i = 0; i < numberOfChildren; ++i)
-	{
-		CBaseObject* pObj = allChildrenObj[i];
-
-		if (pObj == this || pObj->IsFrozen() || pObj->IsHidden())
-			continue;
-
-		if (!GetObjectManager()->HitTestObject(pObj, hc))
-			continue;
-
-		if (hc.dist >= mindist)
-			continue;
-
-		mindist = hc.dist;
-
-		if (hc.object)
-			selected = hc.object;
-		else
-			selected = pObj;
-
-		hc.object = 0;
-	}
-
-	if (selected)
-	{
-		hcOrg.object = selected;
-		hcOrg.dist = mindist;
-		return true;
-	}
-	return false;
 }
 
 bool CPrefabObject::SuspendUpdate(bool bForceSuspend)

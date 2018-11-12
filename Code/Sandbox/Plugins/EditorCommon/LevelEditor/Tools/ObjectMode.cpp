@@ -172,6 +172,26 @@ IMPLEMENT_DYNCREATE(CObjectMode, CEditTool)
 SDeepSelectionPreferences gDeepSelectionPreferences;
 REGISTER_PREFERENCES_PAGE_PTR(SDeepSelectionPreferences, &gDeepSelectionPreferences)
 
+
+//////////////////////////////////////////////////////////////////////////
+// Class description.
+//////////////////////////////////////////////////////////////////////////
+class CObjectMode_ClassDesc : public IClassDesc
+{
+	//! This method returns an Editor defined GUID describing the class this plugin class is associated with.
+	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_EDITTOOL; }
+
+	//! This method returns the human readable name of the class.
+	virtual const char* ClassName() { return "EditTool.ObjectMode"; }
+
+	//! This method returns Category of this class, Category is specifing where this plugin class fits best in
+	//! create panel.
+	virtual const char*    Category() { return "Select"; }
+	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CObjectMode); }
+};
+
+REGISTER_CLASS_DESC(CObjectMode_ClassDesc);
+
 //////////////////////////////////////////////////////////////////////////
 CObjectMode::CObjectMode()
 	: m_objectManipulatorOwner(this)
@@ -372,18 +392,6 @@ bool CObjectMode::OnLButtonDown(CViewport* view, int nFlags, CPoint point)
 	Vec3 pos = view->SnapToGrid(view->ViewToWorld(point));
 	CLevelEditorSharedState::EditMode editMode = GetIEditor()->GetLevelEditorSharedState()->GetEditMode();
 
-	// Show marker position in the status bar
-	//cry_sprintf(szNewStatusText, "X:%g Y:%g Z:%g",pos.x,pos.y,pos.z );
-
-	// Swap X/Y
-	float unitSize = 1;
-	CHeightmap* pHeightmap = GetIEditor()->GetHeightmap();
-	if (pHeightmap)
-		unitSize = pHeightmap->GetUnitSize();
-	float hx = pos.y / unitSize;
-	float hy = pos.x / unitSize;
-	float hz = GetIEditor()->GetTerrainElevation(pos.x, pos.y);
-
 	// Get control key status.
 	const bool bAltClick = (nFlags & MK_ALT);
 	const bool bCtrlClick = (nFlags & MK_CONTROL);
@@ -394,61 +402,21 @@ bool CObjectMode::OnLButtonDown(CViewport* view, int nFlags, CPoint point)
 	// Alt click might be beginning of marque deselection - so we must not remove selection
 	const bool bNoRemoveSelection = bAddSelect || bToggle || bAltClick;
 
-	// Check deep selection mode activated
-	// The Deep selection has two mode.
-	// The normal mode pops the context menu, another is the cyclic selection on clinking.
-	bool bTabPressed = CheckVirtualKey(VK_TAB);
-	bool bZKeyPressed = CheckVirtualKey('Z');
-
-	CDeepSelection::EDeepSelectionMode dsMode =
-	  (bTabPressed ? (bZKeyPressed ? CDeepSelection::DSM_POP : CDeepSelection::DSM_CYCLE) : CDeepSelection::DSM_NONE);
-
 	bool bLockSelection = GetIEditor()->IsSelectionLocked();
 
 	int numSelected = 0;
 
 	HitContext hitInfo(view);
+	HitTest(hitInfo, view, point);
 
-	if (dsMode == CDeepSelection::DSM_POP)
+	if (hitInfo.axis != CLevelEditorSharedState::Axis::None)
 	{
-		m_pDeepSelection->Reset(true);
-		m_pDeepSelection->SetMode(dsMode);
-		hitInfo.pDeepSelection = m_pDeepSelection;
-	}
-	else if (dsMode == CDeepSelection::DSM_CYCLE)
-	{
-		if (!m_pDeepSelection->OnCycling(point))
+		GetIEditor()->GetLevelEditorSharedState()->SetAxisConstraint(hitInfo.axis);
+		// if edit mode is set to selection, then we treat gizmo as a selection component and we should not lock the selection
+		if (editMode != CLevelEditorSharedState::EditMode::Select)
 		{
-			// Start of the deep selection cycling mode.
-			m_pDeepSelection->Reset(false);
-			m_pDeepSelection->SetMode(dsMode);
-			hitInfo.pDeepSelection = m_pDeepSelection;
+			bLockSelection = true;
 		}
-	}
-	else
-	{
-		if (m_pDeepSelection->GetPreviousMode() == CDeepSelection::DSM_NONE)
-			m_pDeepSelection->Reset(true);
-
-		m_pDeepSelection->SetMode(CDeepSelection::DSM_NONE);
-		hitInfo.pDeepSelection = 0;
-	}
-
-	if (view->HitTest(point, hitInfo))
-	{
-		if (hitInfo.axis != CLevelEditorSharedState::Axis::None)
-		{
-			GetIEditor()->GetLevelEditorSharedState()->SetAxisConstraint(hitInfo.axis);
-			// if edit mode is set to selection, then we treat gizmo as a selection component and we should not lock the selection
-			if (editMode != CLevelEditorSharedState::EditMode::Select)
-			{
-				bLockSelection = true;
-			}
-		}
-
-		//////////////////////////////////////////////////////////////////////////
-		// Deep Selection
-		CheckDeepSelection(hitInfo, view);
 	}
 
 	CBaseObject* hitObj = hitInfo.object;
@@ -456,38 +424,36 @@ bool CObjectMode::OnLButtonDown(CViewport* view, int nFlags, CPoint point)
 	CLevelEditorSharedState::CoordSystem coordSys = GetIEditor()->GetLevelEditorSharedState()->GetCoordSystem();
 	Vec3 gridPosition = (hitObj) ? hitObj->GetWorldPos() : pos;
 
+	Matrix34 constructionMatrix = Matrix34::CreateIdentity();
+
 	if (coordSys == CLevelEditorSharedState::CoordSystem::UserDefined)
 	{
-		Matrix34 userTM = Matrix34::CreateIdentity();
-		GetIEditor()->GetISelectionGroup()->GetManipulatorMatrix(userTM);
-		userTM.SetTranslation(Vec3(0, 0, 0));
-		userTM.SetTranslation(gridPosition);
-		view->SetConstructionMatrix(userTM);
+		GetIEditor()->GetISelectionGroup()->GetManipulatorMatrix(constructionMatrix);
+		constructionMatrix.SetTranslation(gridPosition);
 	}
 	else if (coordSys == CLevelEditorSharedState::CoordSystem::World || !hitObj)
 	{
-		Matrix34 tm = Matrix34::CreateIdentity();
-		tm.SetTranslation(gridPosition);
-		view->SetConstructionMatrix(tm);
+		constructionMatrix.SetTranslation(gridPosition);
 	}
 	else if (coordSys == CLevelEditorSharedState::CoordSystem::Parent)
 	{
 		if (hitInfo.object->GetParent())
 		{
-			Matrix34 parentTM = hitInfo.object->GetParent()->GetWorldTM();
-			parentTM.OrthonormalizeFast();
-			parentTM.SetTranslation(gridPosition);
-			view->SetConstructionMatrix(parentTM);
+			constructionMatrix = hitInfo.object->GetParent()->GetWorldTM();
+			constructionMatrix.OrthonormalizeFast();
+			constructionMatrix.SetTranslation(gridPosition);
 		}
 		else
 		{
-			view->SetConstructionMatrix(hitInfo.object->GetWorldTM());
+			constructionMatrix = hitInfo.object->GetWorldTM();
 		}
 	}
 	else if (coordSys == CLevelEditorSharedState::CoordSystem::Local)
 	{
-		view->SetConstructionMatrix(hitInfo.object->GetWorldTM());
+		constructionMatrix = hitInfo.object->GetWorldTM();
 	}
+
+	view->SetConstructionMatrix(constructionMatrix);
 
 	if (gSnappingPreferences.IsSnapToTerrainEnabled() && GetIEditor()->GetLevelEditorSharedState()->GetAxisConstraint() != CLevelEditorSharedState::Axis::Z)
 	{
@@ -732,15 +698,15 @@ bool CObjectMode::OnLButtonDblClk(CViewport* view, int nFlags, CPoint point)
 	}
 	else
 	{
-		// Check if double clicked on object.
 		HitContext hitInfo(view);
-		view->HitTest(point, hitInfo);
+		hitInfo.ignoreHierarchyLocks = true;
+		HitTest(hitInfo, view, point);
+		CBaseObject* pObject = hitInfo.object;
 
-		CBaseObject* hitObj = hitInfo.object;
-		if (hitObj)
+		if (pObject)
 		{
-			// Fire double click event on hit object.
-			hitObj->OnEvent(EVENT_DBLCLICK);
+			GetIEditor()->GetObjectManager()->SelectObject(pObject);
+			pObject->OnEvent(EVENT_DBLCLICK);
 		}
 	}
 	return true;
@@ -1009,7 +975,6 @@ bool CObjectMode::OnMouseMove(CViewport* view, int nFlags, CPoint point)
 		if (!ang.IsEquivalent(Ang3(0, 0, 0)))
 			m_bTransformChanged = true;
 
-		//m_cMouseDownPos = point;
 		GetIEditor()->GetISelectionGroup()->Rotate(ang);
 		bSomethingDone = true;
 	}
@@ -1230,24 +1195,47 @@ void CObjectMode::SetObjectCursor(CViewport* view, CBaseObject* hitObj, IObjectM
 	view->SetCurrentCursor(cursor, m_cursorStr);
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Class description.
-//////////////////////////////////////////////////////////////////////////
-class CObjectMode_ClassDesc : public IClassDesc
+void CObjectMode::HitTest(HitContext& hitContext, CViewport* pView, const CPoint& point)
 {
-	//! This method returns an Editor defined GUID describing the class this plugin class is associated with.
-	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_EDITTOOL; }
+	// Check deep selection mode activated
+	// The Deep selection has two mode.
+	// The normal mode pops the context menu, another is the cyclic selection on clinking.
+	bool bTabPressed = CheckVirtualKey(VK_TAB);
+	bool bZKeyPressed = CheckVirtualKey('Z');
 
-	//! This method returns the human readable name of the class.
-	virtual const char* ClassName() { return "EditTool.ObjectMode"; }
+	CDeepSelection::EDeepSelectionMode dsMode =
+		(bTabPressed ? (bZKeyPressed ? CDeepSelection::DSM_POP : CDeepSelection::DSM_CYCLE) : CDeepSelection::DSM_NONE);
 
-	//! This method returns Category of this class, Category is specifing where this plugin class fits best in
-	//! create panel.
-	virtual const char*    Category()        { return "Select"; }
-	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CObjectMode); }
-};
+	if (dsMode == CDeepSelection::DSM_POP)
+	{
+		m_pDeepSelection->Reset(true);
+		m_pDeepSelection->SetMode(dsMode);
+		hitContext.pDeepSelection = m_pDeepSelection;
+	}
+	else if (dsMode == CDeepSelection::DSM_CYCLE)
+	{
+		if (!m_pDeepSelection->OnCycling(point))
+		{
+			// Start of the deep selection cycling mode.
+			m_pDeepSelection->Reset(false);
+			m_pDeepSelection->SetMode(dsMode);
+			hitContext.pDeepSelection = m_pDeepSelection;
+		}
+	}
+	else
+	{
+		if (m_pDeepSelection->GetPreviousMode() == CDeepSelection::DSM_NONE)
+			m_pDeepSelection->Reset(true);
 
-REGISTER_CLASS_DESC(CObjectMode_ClassDesc);
+		m_pDeepSelection->SetMode(CDeepSelection::DSM_NONE);
+		hitContext.pDeepSelection = 0;
+	}
+
+	if (pView->HitTest(point, hitContext))
+	{
+		CheckDeepSelection(hitContext, pView);
+	}
+}
 
 void CObjectMode::CheckDeepSelection(HitContext& hitContext, CViewport* pWnd)
 {

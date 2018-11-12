@@ -707,7 +707,7 @@ void CGroup::GetLocalBounds(AABB& box)
 bool CGroup::HitTest(HitContext& hc)
 {
 	bool selected = false;
-	if (m_opened)
+	if (m_opened || hc.ignoreHierarchyLocks)
 	{
 		selected = HitTestMembers(hc);
 	}

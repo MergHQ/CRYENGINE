@@ -1468,7 +1468,7 @@ bool CEditorImpl::IsGroupOpen(CBaseObject* pObject)
 
 void CEditorImpl::OpenGroup(CBaseObject* pObject)
 {
-	if (!pObject || !IsCGroup(pObject))
+	if (!pObject || (!IsCGroup(pObject) && !IsCPrefabObject(pObject)))
 		return;
 
 	CGroup* pGroup = static_cast<CGroup*>(pObject);

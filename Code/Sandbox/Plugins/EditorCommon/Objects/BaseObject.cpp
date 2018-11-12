@@ -1853,6 +1853,14 @@ void CBaseObject::SetSelected(bool bSelect)
 {
 	bSelect ? SetFlags(OBJFLAG_SELECTED) : ClearFlags(OBJFLAG_SELECTED);
 	UpdateHighlightPassState(bSelect, IsHighlighted());
+
+	// Make sure object is currently editable
+	CBaseObject* pParent = m_parent;
+	while (pParent)
+	{
+		GetIEditor()->OpenGroup(pParent);
+		pParent = pParent->GetParent();
+	}
 }
 
 bool CBaseObject::IsHiddenBySpec() const
