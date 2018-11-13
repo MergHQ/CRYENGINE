@@ -45,7 +45,8 @@ void CMNMUpdatesManager::UpdatePostponedChanges()
 {
 	if (m_bPostponeUpdatesForStabilization)
 	{
-		if (GetAISystem()->GetFrameStartTime().GetDifferenceInSeconds(m_lastUpdateTime) < gAIEnv.CVars.NavmeshStabilizationTimeToUpdate)
+		// Uses global timer instead of AI timer because this has to work in Editor mode as well (AI timer only runs in Game and Physics/AI Mode)
+		if (gEnv->pTimer->GetFrameStartTime().GetDifferenceInSeconds(m_lastUpdateTime) < gAIEnv.CVars.NavmeshStabilizationTimeToUpdate)
 		{
 			return;
 		}
@@ -73,7 +74,17 @@ void CMNMUpdatesManager::UpdatePostponedChanges()
 		}
 		else
 		{
-			//m_ignoredUpdateRequestsSet.insert(m_activeUpdateRequestsQueue.end(), m_posponedUpdateRequestsSet.begin(), m_posponedUpdateRequestsSet.end());
+			// Move update postponed requests to ignore array
+			// TODO: There's currently no way to apply ignored requests apart from Exporting the level. Add an Option to Apply ignored requests.
+			for (size_t i = 0; i < m_pospondedUpdateRequests.size(); ++i)
+			{
+				const size_t requestId = m_pospondedUpdateRequests[i];
+				TileUpdateRequest& request = m_updateRequests[requestId];
+				CRY_ASSERT(request.state == TileUpdateRequest::EState::Postponed);
+
+				request.state = TileUpdateRequest::EState::Ignored;
+				m_ignoredUpdateRequests.push_back(requestId);
+			}
 		}
 		m_pospondedUpdateRequests.clear();
 	}
@@ -170,7 +181,8 @@ void CMNMUpdatesManager::EntityChanged(int physicalEntityId, const AABB& aabb)
 		return;
 	}
 
-	m_lastUpdateTime = GetAISystem()->GetFrameStartTime();
+	// Uses global timer instead of AI timer because this has to work in Editor mode as well (AI timer only runs in Game and Physics/AI Mode)
+	m_lastUpdateTime = gEnv->pTimer->GetFrameStartTime();
 
 	auto it = m_postponedEntityUpdatesMap.find(physicalEntityId);
 	if (it != m_postponedEntityUpdatesMap.end())
@@ -194,7 +206,8 @@ void CMNMUpdatesManager::WorldChanged(const AABB& aabb)
 #if NAV_MESH_REGENERATION_ENABLED
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-	m_lastUpdateTime = GetAISystem()->GetFrameStartTime();
+	// Uses global timer instead of AI timer because this has to work in Editor mode as well (AI timer only runs in Game and Physics/AI Mode)
+	m_lastUpdateTime = gEnv->pTimer->GetFrameStartTime();
 
 	SRequestParams queueAndState = GetRequestParams(false);
 	RequestQueueWorldUpdate(queueAndState, aabb);
@@ -239,7 +252,8 @@ CMNMUpdatesManager::EUpdateRequestStatus CMNMUpdatesManager::RequestMeshUpdate(N
 
 	if (!bImmediateUpdate)
 	{
-		m_lastUpdateTime = GetAISystem()->GetFrameStartTime();
+		// Uses global timer instead of AI timer because this has to work in Editor mode as well (AI timer only runs in Game and Physics/AI Mode)
+		m_lastUpdateTime = gEnv->pTimer->GetFrameStartTime();
 	}
 
 	SRequestParams requestParams = GetRequestParams(m_bExplicitRegenerationToggle);
@@ -261,7 +275,8 @@ CMNMUpdatesManager::EUpdateRequestStatus CMNMUpdatesManager::RequestMeshDifferen
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 	
-	m_lastUpdateTime = GetAISystem()->GetFrameStartTime();
+	// Uses global timer instead of AI timer because this has to work in Editor mode as well (AI timer only runs in Game and Physics/AI Mode)
+	m_lastUpdateTime = gEnv->pTimer->GetFrameStartTime();
 	
 	SRequestParams queueAndState = GetRequestParams(m_bExplicitRegenerationToggle);
 	if (!RequestQueueMeshDifferenceUpdate(queueAndState, meshID, oldVolume, newVolume))
