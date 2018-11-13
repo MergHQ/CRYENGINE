@@ -242,14 +242,14 @@ CNotificationCenterTrayWidget
 CNotificationWidget
 {
 	qproperty-notificationDuration: 2250;
-	background-color: rgb(97,172,236);
 	max-height: 512px;
 	min-width: 256px;
 }
 
-CNotificationWidget > QWidget
+/* Only put a border on NotificationWidgets that are spawned on top of the main window*/
+QCustomWindowFrame > CNotificationWidget > QWidget
 {
-	margin: 1 1 1 1;
+	border: 1px solid rgb(97,172,236);
 }
 
 CNotificationWidget QLabel#title

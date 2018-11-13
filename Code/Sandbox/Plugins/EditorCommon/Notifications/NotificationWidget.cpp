@@ -29,7 +29,7 @@
 // Qt::Tool is commonly used for pop ups
 
 CNotificationWidget::CNotificationWidget(int notificationId, QWidget* pParent /* = nullptr*/)
-	: QWidget(pParent, Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint)
+	: QWidget(pParent, Qt::Tool | Qt::FramelessWindowHint)
 	, m_id(notificationId)
 	, m_pHideTimer(nullptr)
 	, m_count(1)

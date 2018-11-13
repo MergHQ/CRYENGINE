@@ -55,6 +55,10 @@ public:
 		if (!gNotificationPreferences.allowPopUps())
 			return;
 
+		QWidget* pWindow = m_pNotificationCenterWidget->window();
+		if (pWindow->windowState() & Qt::WindowMinimized)
+			return;
+
 		if (pNotificationDesc->IsLogMessage())
 		{
 			for (CNotificationWidget* pNotification : m_notificationPopups)
@@ -67,7 +71,7 @@ public:
 			}
 		}
 
-		CNotificationWidget* pNotification = new CNotificationWidget(pNotificationDesc->GetId());
+		CNotificationWidget* pNotification = new CNotificationWidget(pNotificationDesc->GetId(), pWindow);
 		Add(pNotification);
 
 		// Used for when the editor is loading up. Accumulate notifications to be displayed after
@@ -220,6 +224,9 @@ private:
 		{
 			yDelta += m_notificationPopups[i]->height() + notificationDistance;
 		}
+
+		if (m_pNotificationCenterWidget->window()->windowState() & Qt::WindowMinimized)
+			return false;
 
 		pNotification->ShowAt(m_pNotificationCenterWidget->mapToGlobal(QPoint(0, yDelta)));
 
