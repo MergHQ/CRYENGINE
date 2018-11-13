@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Common.h"
-#include <ISwitchState.h>
+#include <ISwitchStateConnection.h>
 #include <PoolObject.h>
 #include <CryAudio/IAudioInterfacesCommonData.h>
 
@@ -13,7 +13,7 @@ namespace Impl
 {
 namespace SDL_mixer
 {
-class CSwitchState final : public ISwitchState, public CPoolObject<CSwitchState, stl::PSyncNone>
+class CSwitchState final : public ISwitchStateConnection, public CPoolObject<CSwitchState, stl::PSyncNone>
 {
 public:
 

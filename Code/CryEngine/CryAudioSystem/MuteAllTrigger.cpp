@@ -2,7 +2,6 @@
 
 #include "stdafx.h"
 #include "MuteAllTrigger.h"
-#include "TriggerConnection.h"
 #include "DefaultTriggerUtils.h"
 #include "Common/IImpl.h"
 
@@ -39,7 +38,7 @@ void CMuteAllTrigger::Clear()
 {
 	for (auto const pConnection : m_connections)
 	{
-		delete pConnection;
+		g_pIImpl->DestructTriggerConnection(pConnection);
 	}
 
 	m_connections.clear();

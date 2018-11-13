@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <IEnvironment.h>
+#include <IEnvironmentConnection.h>
 #include <PoolObject.h>
 #include <CryAudio/IAudioInterfacesCommonData.h>
 #include <AK/SoundEngine/Common/AkTypes.h>
@@ -20,7 +20,7 @@ enum class EEnvironmentType : EnumFlagsType
 	Rtpc,
 };
 
-class CEnvironment final : public IEnvironment, public CPoolObject<CEnvironment, stl::PSyncNone>
+class CEnvironment final : public IEnvironmentConnection, public CPoolObject<CEnvironment, stl::PSyncNone>
 {
 public:
 

@@ -15,10 +15,10 @@ struct IEvent;
  * data needed for identifying and using the corresponding ITrigger
  * (e.g. a middleware-specific event ID or name, a sound-file name to be passed to an API function)
  */
-struct ITrigger
+struct ITriggerConnection
 {
 	/** @cond */
-	virtual ~ITrigger() = default;
+	virtual ~ITriggerConnection() = default;
 	/** @endcond */
 
 	/**

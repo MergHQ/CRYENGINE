@@ -16,16 +16,16 @@ using DeviceId = uint8;
 
 namespace Impl
 {
-struct IEnvironment;
+struct IEnvironmentConnection;
 struct IEvent;
 struct IFile;
 struct IListener;
 struct IObject;
-struct IParameter;
-struct ISetting;
-struct IStandaloneFile;
-struct ISwitchState;
-struct ITrigger;
+struct IParameterConnection;
+struct ISettingConnection;
+struct IStandaloneFileConnection;
+struct ISwitchStateConnection;
+struct ITriggerConnection;
 struct ITriggerInfo;
 struct SFileInfo;
 
@@ -150,18 +150,18 @@ struct IImpl
 	 * @param value - Value to set
 	 * @return void
 	 */
-	virtual void SetGlobalParameter(IParameter const* const pIParameter, float const value) = 0;
+	virtual void SetGlobalParameter(IParameterConnection const* const pIParameterConnection, float const value) = 0;
 
 	/**
 	 * Sets a switch state on all objects.
-	 * @param pISwitchState - Switch state to set
+	 * @param pISwitchStateConnection - Switch state to set
 	 * @return void
 	 */
-	virtual void SetGlobalSwitchState(ISwitchState const* const pISwitchState) = 0;
+	virtual void SetGlobalSwitchState(ISwitchStateConnection const* const pISwitchStateConnection) = 0;
 
 	/**
 	 * Inform the audio middleware about the memory location of a preloaded audio-data file
-	 * @param pFileInfo - ATL-specific information describing the resources used by the preloaded file being reported
+	 * @param pFileInfo - audio system-specific information describing the resources used by the preloaded file being reported
 	 * @return ERequestStatus::Success if the audio middleware is able to use the preloaded file, ERequestStatus::Failure otherwise
 	 * @see UnregisterInMemoryFile
 	 */
@@ -169,7 +169,7 @@ struct IImpl
 
 	/**
 	 * Inform the audio middleware that the memory containing the preloaded audio-data file should no longer be used
-	 * @param pFileInfo - ATL-specific information describing the resources used by the preloaded file being invalidated
+	 * @param pFileInfo - audio system-specific information describing the resources used by the preloaded file being invalidated
 	 * @return ERequestStatus::Success if the audio middleware was able to unregister the preloaded file supplied, ERequestStatus::Failure otherwise
 	 * @see RegisterInMemoryFile
 	 */
@@ -180,7 +180,7 @@ struct IImpl
 	 * referenced by pFileInfo with the data necessary to correctly access and store the file's contents in memory.
 	 * Create an object implementing IFile to hold implementation-specific data about the file and store a pointer to it in a member of pFileInfo
 	 * @param pRootNode - an XML node containing the necessary information about the file
-	 * @param pFileInfo - a pointer to the struct containing the data used by the ATL to load the file into memory
+	 * @param pFileInfo - a pointer to the struct containing the data used by the audio system to load the file into memory
 	 * @return ERequestStatus::Success if the XML node was parsed successfully, ERequestStatus::Failure otherwise
 	 * @see DestructFile
 	 */
@@ -197,133 +197,133 @@ struct IImpl
 
 	/**
 	 * Get the full path to the folder containing the file described by the pFileInfo
-	 * @param pFileInfo - ATL-specific information describing the file whose location is being queried
+	 * @param pFileInfo - audio system-specific information describing the file whose location is being queried
 	 * @return A C-string containing the path to the folder where the file corresponding to the pFileInfo is stored
 	 */
 	virtual char const* const GetFileLocation(SFileInfo* const pFileInfo) = 0;
 
 	/**
-	 * Parse the implementation-specific XML node that represents an ATLTriggerImpl, return a pointer to the data needed for identifying
-	 * and using this ATLTriggerImpl instance inside the AudioImplementation
-	 * @param pRootNode - an XML node corresponding to the new ATLTriggerImpl to be created
+	 * Parse the implementation-specific XML node that represents an ITriggerConnection, return a pointer to the data needed for identifying
+	 * and using this trigger connection instance inside the AudioImplementation
+	 * @param pRootNode - an XML node corresponding to the new ITriggerConnection to be created
 	 * @param radius - the max attenuation radius of the trigger. Set to 0.0f for 2D sounds. Used for debug draw.
 	 * @return ITrigger pointer to the audio implementation-specific data needed by the audio middleware and the
-	 * @return AudioImplementation code to use the corresponding ATLTriggerImpl; nullptr if the new AudioTriggerImplData instance was not created
+	 * @return AudioImplementation code to use the corresponding ITriggerConnection; nullptr if the new AudioTriggerImplData instance was not created
 	 * @see DestructTrigger
 	 */
-	virtual ITrigger const* ConstructTrigger(XmlNodeRef const pRootNode, float& radius) = 0;
+	virtual ITriggerConnection const* ConstructTriggerConnection(XmlNodeRef const pRootNode, float& radius) = 0;
 
 	/**
 	 * Construct a trigger with the given info struct, return a pointer to the data needed for identifying
 	 * and using this trigger connection instance inside the AudioImplementation
-	 * @param info - reference to an info struct corresponding to the new ATLTriggerImpl to be created
+	 * @param info - reference to an info struct corresponding to the new ITriggerConnection to be created
 	 * @return ITrigger pointer to the audio implementation-specific data needed by the audio middleware and the
-	 * @return AudioImplementation code to use the corresponding ATLTriggerImpl; nullptr if the new AudioTriggerImplData instance was not created
+	 * @return AudioImplementation code to use the corresponding ITriggerConnection; nullptr if the new ITriggerConnection instance was not created
 	 * @see DestructTrigger
 	 */
-	virtual ITrigger const* ConstructTrigger(ITriggerInfo const* const pITriggerInfo) = 0;
+	virtual ITriggerConnection const* ConstructTriggerConnection(ITriggerInfo const* const pITriggerInfo) = 0;
 
 	/**
 	 * Free the memory and potentially other resources used by the supplied ITrigger instance
-	 * @param pITrigger - pointer to the object implementing ITrigger to be discarded
+	 * @param pITriggerConnection - pointer to the object implementing pITriggerConnection to be discarded
 	 * @return void
 	 * @see ConstructTrigger
 	 */
-	virtual void DestructTrigger(ITrigger const* const pITrigger) = 0;
+	virtual void DestructTriggerConnection(ITriggerConnection const* const pITriggerConnection) = 0;
 
 	/**
 	 * Create an object implementing ConstructStandaloneFile that stores all of the data needed by the AudioImplementation
 	 * to identify and use an audio standalone file. Return a pointer to that object.
-	 * @param standaloneFile - reference to the CATLStandaloneFile associated with the IStandaloneFile object we want to construct. It's used as an ID to link the two objects.
+	 * @param standaloneFile - reference to the CStandaloneFile associated with the IStandaloneFile object we want to construct. It's used as an ID to link the two objects.
 	 * @param szFile - full path to the file that wants to be played
 	 * @param bLocalized - is the file specified in szFile localized or not
-	 * @param pITrigger - if set, routes the playing of the audio file through the specified implementation trigger
+	 * @param pITriggerConnection - if set, routes the playing of the audio file through the specified implementation trigger
 	 * @return IStandaloneFile pointer to the audio implementation-specific data needed by the audio middleware and the
 	 * @return AudioImplementation code to use the corresponding audio standalone file.
-	 * @return nullptr if the new IStandaloneFile instance was not created.
+	 * @return nullptr if the new IStandaloneFileConnection instance was not created.
 	 * @see DestructStandaloneFile
 	 */
-	virtual IStandaloneFile* ConstructStandaloneFile(CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITrigger const* pITrigger = nullptr) = 0;
+	virtual IStandaloneFileConnection* ConstructStandaloneFileConnection(CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITriggerConnection const* pITriggerConnection = nullptr) = 0;
 
 	/**
-	 * Free the memory and potentially other resources used by the supplied IStandaloneFile instance
-	 * @param pIStandaloneFile - pointer to the object implementing IStandaloneFile to be discarded
+	 * Free the memory and potentially other resources used by the supplied IStandaloneFileConnection instance
+	 * @param pIStandaloneFileConnection - pointer to the object implementing IStandaloneFileConnection to be discarded
 	 * @return void
 	 * @see ConstructStandaloneFile
 	 */
-	virtual void DestructStandaloneFile(IStandaloneFile const* const pIStandaloneFile) = 0;
+	virtual void DestructStandaloneFileConnection(IStandaloneFileConnection const* const pIStandaloneFileConnection) = 0;
 
 	/**
-	 * Parse the implementation-specific XML node that represents an ATLRtpcImpl, return a pointer to the data needed for identifying
-	 * and using this ATLRtpcImpl instance inside the AudioImplementation
-	 * @param pRootNode - an XML node corresponding to the new ATLRtpcImpl to be created
+	 * Parse the implementation-specific XML node that represents an IParameterConnection, return a pointer to the data needed for identifying
+	 * and using this IParameterConnection instance inside the AudioImplementation
+	 * @param pRootNode - an XML node corresponding to the new IParameterConnection to be created
 	 * @return IParameter pointer to the audio implementation-specific data needed by the audio middleware and the
-	 * @return AudioImplementation code to use the corresponding ATLRtpcImpl; nullptr if the new AudioTrigger instance was not created
+	 * @return AudioImplementation code to use the corresponding IParameterConnection; nullptr if the new IParameterConnection instance was not created
 	 * @see DestructParameter
 	 */
-	virtual IParameter const* ConstructParameter(XmlNodeRef const pRootNode) = 0;
+	virtual IParameterConnection const* ConstructParameterConnection(XmlNodeRef const pRootNode) = 0;
 
 	/**
-	 * Free the memory and potentially other resources used by the supplied IAudioParameter instance
-	 * @param pIParameter - pointer to the object implementing IAudioParameter to be discarded
+	 * Free the memory and potentially other resources used by the supplied IParameterConnection instance
+	 * @param pIParameterConnection - pointer to the object implementing IParameterConnection to be discarded
 	 * @return void
 	 * @see ConstructParameter
 	 */
-	virtual void DestructParameter(IParameter const* const pIParameter) = 0;
+	virtual void DestructParameterConnection(IParameterConnection const* const pIParameterConnection) = 0;
 
 	/**
-	 * Parse the implementation-specific XML node that represents an ATLSwitchStateImpl, return a pointer to the data needed for identifying
-	 * and using this ATLSwitchStateImpl instance inside the AudioImplementation
-	 * @param pRootNode - an XML node corresponding to the new ATLSwitchStateImpl to be created
+	 * Parse the implementation-specific XML node that represents an ISwitchStateConnection, return a pointer to the data needed for identifying
+	 * and using this ISwitchStateConnection instance inside the AudioImplementation
+	 * @param pRootNode - an XML node corresponding to the new ISwitchStateConnection to be created
 	 * @return ISwitchState pointer to the audio implementation-specific data needed by the audio middleware and the
-	 * @return AudioImplementation code to use the corresponding ATLSwitchStateImpl; nullptr if the new AudioTriggerImplData instance was not created
+	 * @return AudioImplementation code to use the corresponding ISwitchStateConnection; nullptr if the new ISwitchStateConnection instance was not created
 	 * @see DestructSwitchState
 	 */
-	virtual ISwitchState const* ConstructSwitchState(XmlNodeRef const pRootNode) = 0;
+	virtual ISwitchStateConnection const* ConstructSwitchStateConnection(XmlNodeRef const pRootNode) = 0;
 
 	/**
-	 * Free the memory and potentially other resources used by the supplied ISwitchState instance
-	 * @param pISwitchState - pointer to the object implementing ISwitchState to be discarded
+	 * Free the memory and potentially other resources used by the supplied ISwitchStateConnection instance
+	 * @param pISwitchStateConnection - pointer to the object implementing ISwitchStateConnection to be discarded
 	 * @return void
 	 * @see ConstructSwitchState
 	 */
-	virtual void DestructSwitchState(ISwitchState const* const pISwitchState) = 0;
+	virtual void DestructSwitchStateConnection(ISwitchStateConnection const* const pISwitchStateConnection) = 0;
 
 	/**
-	 * Parse the implementation-specific XML node that represents an ATLEnvironmentImpl, return a pointer to the data needed for identifying
-	 * and using this ATLEnvironmentImpl instance inside the AudioImplementation
-	 * @param pRootNode - an XML node corresponding to the new ATLEnvironmentImpl to be created
+	 * Parse the implementation-specific XML node that represents an IEnvironmentConnection, return a pointer to the data needed for identifying
+	 * and using this IEnvironmentConnection instance inside the AudioImplementation
+	 * @param pRootNode - an XML node corresponding to the new IEnvironmentConnection to be created
 	 * @return IEnvironment pointer to the audio implementation-specific data needed by the audio middleware and the
-	 * @return AudioImplementation code to use the corresponding ATLEnvironmentImpl; nullptr if the new IEnvironment instance was not created
+	 * @return AudioImplementation code to use the corresponding IEnvironmentConnection; nullptr if the new IEnvironmentConnection instance was not created
 	 * @see DestructEnvironment
 	 */
-	virtual IEnvironment const* ConstructEnvironment(XmlNodeRef const pRootNode) = 0;
+	virtual IEnvironmentConnection const* ConstructEnvironmentConnection(XmlNodeRef const pRootNode) = 0;
 
 	/**
-	 * Free the memory and potentially other resources used by the supplied IEnvironment instance
-	 * @param pIEnvironment - pointer to the object implementing IEnvironment to be discarded
+	 * Free the memory and potentially other resources used by the supplied IEnvironmentConnection instance
+	 * @param pIEnvironmentConnection - pointer to the object implementing IEnvironmentConnection to be discarded
 	 * @return void
 	 * @see ConstructEnvironment
 	 */
-	virtual void DestructEnvironment(IEnvironment const* const pIEnvironment) = 0;
+	virtual void DestructEnvironmentConnection(IEnvironmentConnection const* const pIEnvironmentConnection) = 0;
 
 	/**
-	 * Parse the implementation-specific XML node that represents an ATLSettingImpl, return a pointer to the data needed for identifying
-	 * and using this ATLSettingImpl instance inside the AudioImplementation
-	 * @param pRootNode - an XML node corresponding to the new ATLSettingImpl to be created
+	 * Parse the implementation-specific XML node that represents an ISettingConnection, return a pointer to the data needed for identifying
+	 * and using this ISettingConnection instance inside the AudioImplementation
+	 * @param pRootNode - an XML node corresponding to the new ISettingConnection to be created
 	 * @return ISetting pointer to the audio implementation-specific data needed by the audio middleware and the
-	 * @return AudioImplementation code to use the corresponding ATLSettingImpl; nullptr if the new ISetting instance was not created
+	 * @return AudioImplementation code to use the corresponding ISettingConnection; nullptr if the new ISettingConnection instance was not created
 	 * @see DestructSetting
 	 */
-	virtual ISetting const* ConstructSetting(XmlNodeRef const pRootNode) = 0;
+	virtual ISettingConnection const* ConstructSettingConnection(XmlNodeRef const pRootNode) = 0;
 
 	/**
-	 * Free the memory and potentially other resources used by the supplied ISetting instance
-	 * @param pISetting - pointer to the object implementing ISetting to be discarded
+	 * Free the memory and potentially other resources used by the supplied ISettingConnection instance
+	 * @param pISettingConnection - pointer to the object implementing ISettingConnection to be discarded
 	 * @return void
 	 * @see ConstructSetting
 	 */
-	virtual void DestructSetting(ISetting const* const pISetting) = 0;
+	virtual void DestructSettingConnection(ISettingConnection const* const pISettingConnection) = 0;
 
 	/**
 	 * Create an object implementing IObject that stores all of the data needed by the AudioImplementation
@@ -375,7 +375,7 @@ struct IImpl
 	/**
 	 * Create an object implementing IEvent that stores all of the data needed by the AudioImplementation
 	 * to identify and use an AudioEvent. Return a pointer to that object.
-	 * @param event - ATL Audio-Event associated with the newly created AudioEvent
+	 * @param event - implementation event associated with the newly created AudioEvent
 	 * @return IEvent pointer to the audio implementation-specific data needed by the audio middleware and the
 	 * @return AudioImplementation code to use the corresponding AudioEvent; nullptr if the new IEvent instance was not created
 	 * @see DestructEvent

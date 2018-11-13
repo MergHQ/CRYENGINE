@@ -7,10 +7,10 @@
 #include "EventManager.h"
 #include "Object.h"
 #include "Event.h"
-#include "TriggerConnection.h"
 #include "Common/IEvent.h"
 #include "Common/IImpl.h"
-#include "Common/ITrigger.h"
+#include "Common/IObject.h"
+#include "Common/ITriggerConnection.h"
 #include "Common/ITriggerInfo.h"
 #include "Common/Logger.h"
 
@@ -33,25 +33,23 @@ CPreviewTrigger::~CPreviewTrigger()
 //////////////////////////////////////////////////////////////////////////
 void CPreviewTrigger::Execute(Impl::ITriggerInfo const& triggerInfo)
 {
-	Impl::ITrigger const* const pITrigger = g_pIImpl->ConstructTrigger(&triggerInfo);
+	g_pIImpl->DestructTriggerConnection(m_pConnection);
+	m_pConnection = nullptr;
+	m_pConnection = g_pIImpl->ConstructTriggerConnection(&triggerInfo);
 
-	if (pITrigger != nullptr)
+	if (m_pConnection != nullptr)
 	{
-		delete m_pConnection;
-		m_pConnection = new CTriggerConnection(++g_uniqueConnectionId, pITrigger);
-
 		STriggerInstanceState triggerInstanceState;
 		triggerInstanceState.triggerId = GetId();
 
 		CEvent* const pEvent = g_eventManager.ConstructEvent();
-		ERequestStatus const activateResult = m_pConnection->Execute(g_previewObject.GetImplDataPtr(), pEvent->m_pImplData);
+		ERequestStatus const activateResult = g_previewObject.GetImplDataPtr()->ExecuteTrigger(m_pConnection, pEvent->m_pImplData);
 
 		if (activateResult == ERequestStatus::Success || activateResult == ERequestStatus::Pending)
 		{
 			pEvent->SetTriggerName(GetName());
 			pEvent->m_pObject = &g_previewObject;
 			pEvent->SetTriggerId(GetId());
-			pEvent->m_triggerImplId = m_pConnection->m_triggerImplId;
 			pEvent->m_triggerInstanceId = g_triggerInstanceIdCounter;
 
 			if (activateResult == ERequestStatus::Success)
@@ -104,7 +102,7 @@ void CPreviewTrigger::Stop()
 //////////////////////////////////////////////////////////////////////////
 void CPreviewTrigger::Clear()
 {
-	delete m_pConnection;
+	g_pIImpl->DestructTriggerConnection(m_pConnection);
 	m_pConnection = nullptr;
 }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE

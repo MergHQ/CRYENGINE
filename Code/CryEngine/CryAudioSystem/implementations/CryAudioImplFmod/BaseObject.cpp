@@ -343,9 +343,9 @@ void CBaseObject::Update(float const deltaTime)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::SetParameter(IParameter const* const pIParameter, float const value)
+void CBaseObject::SetParameter(IParameterConnection const* const pIParameterConnection, float const value)
 {
-	auto const pBaseParameter = static_cast<CBaseParameter const*>(pIParameter);
+	auto const pBaseParameter = static_cast<CBaseParameter const*>(pIParameterConnection);
 
 	if (pBaseParameter != nullptr)
 	{
@@ -447,9 +447,9 @@ void CBaseObject::SetParameter(IParameter const* const pIParameter, float const 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::SetSwitchState(ISwitchState const* const pISwitchState)
+void CBaseObject::SetSwitchState(ISwitchStateConnection const* const pISwitchStateConnection)
 {
-	auto const pBaseSwitchState = static_cast<CBaseSwitchState const*>(pISwitchState);
+	auto const pBaseSwitchState = static_cast<CBaseSwitchState const*>(pISwitchStateConnection);
 
 	if (pBaseSwitchState != nullptr)
 	{
@@ -551,10 +551,10 @@ void CBaseObject::SetSwitchState(ISwitchState const* const pISwitchState)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CBaseObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent)
+ERequestStatus CBaseObject::ExecuteTrigger(ITriggerConnection const* const pITriggerConnection, IEvent* const pIEvent)
 {
 	ERequestStatus requestResult = ERequestStatus::Failure;
-	auto const pTrigger = static_cast<CTrigger const*>(pITrigger);
+	auto const pTrigger = static_cast<CTrigger const*>(pITriggerConnection);
 	auto const pEvent = static_cast<CEvent*>(pIEvent);
 
 	if ((pTrigger != nullptr) && (pEvent != nullptr))
@@ -686,9 +686,9 @@ void CBaseObject::StopAllTriggers()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CBaseObject::PlayFile(IStandaloneFile* const pIStandaloneFile)
+ERequestStatus CBaseObject::PlayFile(IStandaloneFileConnection* const pIStandaloneFileConnection)
 {
-	CBaseStandaloneFile* const pStandaloneFile = static_cast<CBaseStandaloneFile* const>(pIStandaloneFile);
+	auto const pStandaloneFile = static_cast<CBaseStandaloneFile*>(pIStandaloneFileConnection);
 
 	if (pStandaloneFile != nullptr)
 	{
@@ -708,9 +708,9 @@ ERequestStatus CBaseObject::PlayFile(IStandaloneFile* const pIStandaloneFile)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CBaseObject::StopFile(IStandaloneFile* const pIStandaloneFile)
+ERequestStatus CBaseObject::StopFile(IStandaloneFileConnection* const pIStandaloneFileConnection)
 {
-	CBaseStandaloneFile* const pStandaloneFile = static_cast<CBaseStandaloneFile* const>(pIStandaloneFile);
+	auto const pStandaloneFile = static_cast<CBaseStandaloneFile*>(pIStandaloneFileConnection);
 
 	if (pStandaloneFile != nullptr)
 	{

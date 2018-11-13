@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <ISwitchState.h>
+#include <ISwitchStateConnection.h>
 
 namespace CryAudio
 {
@@ -10,7 +10,7 @@ namespace Impl
 {
 namespace PortAudio
 {
-class CSwitchState final : public ISwitchState
+class CSwitchState final : public ISwitchStateConnection
 {
 public:
 

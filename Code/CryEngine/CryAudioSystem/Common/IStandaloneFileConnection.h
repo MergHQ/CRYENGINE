@@ -11,10 +11,10 @@ namespace Impl
  * data needed for identifying and using the corresponding IStandaloneFile.
  * (e.g. middleware-specific custom data that is associated with the standalone file)
  */
-struct IStandaloneFile
+struct IStandaloneFileConnection
 {
 	/** @cond */
-	virtual ~IStandaloneFile() = default;
+	virtual ~IStandaloneFileConnection() = default;
 	/** @endcond */
 };
 } // namespace Impl

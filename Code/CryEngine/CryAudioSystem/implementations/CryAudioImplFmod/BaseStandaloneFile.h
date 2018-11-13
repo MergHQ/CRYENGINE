@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Common.h"
-#include <IStandaloneFile.h>
+#include <IStandaloneFileConnection.h>
 #include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace CryAudio
@@ -16,7 +16,7 @@ namespace Fmod
 {
 class CBaseObject;
 
-class CBaseStandaloneFile : public IStandaloneFile
+class CBaseStandaloneFile : public IStandaloneFileConnection
 {
 public:
 

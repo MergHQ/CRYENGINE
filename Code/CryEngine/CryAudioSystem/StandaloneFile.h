@@ -9,7 +9,7 @@ namespace CryAudio
 {
 namespace Impl
 {
-struct IStandaloneFile;
+struct IStandaloneFileConnection;
 } // namespace Impl
 
 enum class EStandaloneFileState : EnumFlagsType
@@ -28,10 +28,10 @@ public:
 
 	bool IsPlaying() const { return (m_state == EStandaloneFileState::Playing) || (m_state == EStandaloneFileState::Stopping); }
 
-	CObject*               m_pObject = nullptr;
-	Impl::IStandaloneFile* m_pImplData = nullptr;
-	EStandaloneFileState   m_state = EStandaloneFileState::None;
-	CHashedString          m_hashedFilename;
+	CObject*                         m_pObject = nullptr;
+	Impl::IStandaloneFileConnection* m_pImplData = nullptr;
+	EStandaloneFileState             m_state = EStandaloneFileState::None;
+	CHashedString                    m_hashedFilename;
 
 	// Needed only during middleware switch.
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)

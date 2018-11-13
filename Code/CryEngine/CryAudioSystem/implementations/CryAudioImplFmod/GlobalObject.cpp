@@ -29,7 +29,7 @@ CGlobalObject::~CGlobalObject()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CGlobalObject::SetEnvironment(IEnvironment const* const pIEnvironment, float const amount)
+void CGlobalObject::SetEnvironment(IEnvironmentConnection const* const pIEnvironmentConnection, float const amount)
 {
 	Cry::Audio::Log(ELogType::Error, "Trying to set an environment on the global object!");
 }

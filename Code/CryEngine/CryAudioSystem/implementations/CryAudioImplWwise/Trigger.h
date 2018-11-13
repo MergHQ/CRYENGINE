@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <ITrigger.h>
+#include <ITriggerConnection.h>
 #include <PoolObject.h>
 #include <AK/SoundEngine/Common/AkTypes.h>
 
@@ -12,7 +12,7 @@ namespace Impl
 {
 namespace Wwise
 {
-class CTrigger final : public ITrigger, public CPoolObject<CTrigger, stl::PSyncNone>
+class CTrigger final : public ITriggerConnection, public CPoolObject<CTrigger, stl::PSyncNone>
 {
 public:
 
@@ -37,12 +37,12 @@ public:
 
 	virtual ~CTrigger() override = default;
 
-	// CryAudio::Impl::ITrigger
+	// CryAudio::Impl::ITriggerConnection
 	virtual ERequestStatus Load() const override;
 	virtual ERequestStatus Unload() const override;
 	virtual ERequestStatus LoadAsync(IEvent* const pIEvent) const override;
 	virtual ERequestStatus UnloadAsync(IEvent* const pIEvent) const override;
-	// ~CryAudio::Impl::ITrigger
+	// ~CryAudio::Impl::ITriggerConnection
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	char const* GetName() const { return m_name.c_str(); }

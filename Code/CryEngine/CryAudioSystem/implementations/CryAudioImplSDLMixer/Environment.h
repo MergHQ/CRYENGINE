@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <IEnvironment.h>
+#include <IEnvironmentConnection.h>
 
 namespace CryAudio
 {
@@ -10,7 +10,7 @@ namespace Impl
 {
 namespace SDL_mixer
 {
-class CEnvironment final : public IEnvironment
+class CEnvironment final : public IEnvironmentConnection
 {
 public:
 

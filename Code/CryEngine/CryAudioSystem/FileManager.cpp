@@ -30,7 +30,7 @@ void CFileManager::ReleaseImplData()
 	// Don't clear m_constructedStandaloneFiles here as we need the files to survive a middleware switch!
 	for (auto const pFile : m_constructedStandaloneFiles)
 	{
-		g_pIImpl->DestructStandaloneFile(pFile->m_pImplData);
+		g_pIImpl->DestructStandaloneFileConnection(pFile->m_pImplData);
 		pFile->m_pImplData = nullptr;
 	}
 }
@@ -47,10 +47,10 @@ void CFileManager::Release()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CStandaloneFile* CFileManager::ConstructStandaloneFile(char const* const szFile, bool const isLocalized, Impl::ITrigger const* const pITrigger)
+CStandaloneFile* CFileManager::ConstructStandaloneFile(char const* const szFile, bool const isLocalized, Impl::ITriggerConnection const* const pITriggerConnection)
 {
 	auto const pStandaloneFile = new CStandaloneFile();
-	pStandaloneFile->m_pImplData = g_pIImpl->ConstructStandaloneFile(*pStandaloneFile, szFile, isLocalized, pITrigger);
+	pStandaloneFile->m_pImplData = g_pIImpl->ConstructStandaloneFileConnection(*pStandaloneFile, szFile, isLocalized, pITriggerConnection);
 	pStandaloneFile->m_hashedFilename = CHashedString(szFile);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -67,7 +67,7 @@ void CFileManager::ReleaseStandaloneFile(CStandaloneFile* const pStandaloneFile)
 	if (pStandaloneFile != nullptr)
 	{
 		m_constructedStandaloneFiles.erase(std::remove(m_constructedStandaloneFiles.begin(), m_constructedStandaloneFiles.end(), pStandaloneFile), m_constructedStandaloneFiles.end());
-		g_pIImpl->DestructStandaloneFile(pStandaloneFile->m_pImplData);
+		g_pIImpl->DestructStandaloneFileConnection(pStandaloneFile->m_pImplData);
 		delete pStandaloneFile;
 	}
 }

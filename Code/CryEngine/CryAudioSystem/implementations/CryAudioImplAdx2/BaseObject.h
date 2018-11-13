@@ -44,12 +44,12 @@ public:
 	virtual void                   Update(float const deltaTime) override                            {}
 	virtual void                   SetTransformation(CTransformation const& transformation) override {}
 	virtual CTransformation const& GetTransformation() const override                                { return CTransformation::GetEmptyObject(); }
-	virtual void                   SetParameter(IParameter const* const pIParameter, float const value) override;
-	virtual void                   SetSwitchState(ISwitchState const* const pISwitchState) override;
-	virtual ERequestStatus         ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent) override;
+	virtual void                   SetParameter(IParameterConnection const* const pIParameterConnection, float const value) override;
+	virtual void                   SetSwitchState(ISwitchStateConnection const* const pISwitchStateConnection) override;
+	virtual ERequestStatus         ExecuteTrigger(ITriggerConnection const* const pITriggerConnection, IEvent* const pIEvent) override;
 	virtual void                   StopAllTriggers() override;
-	virtual ERequestStatus         PlayFile(IStandaloneFile* const pIStandaloneFile) override;
-	virtual ERequestStatus         StopFile(IStandaloneFile* const pIStandaloneFile) override;
+	virtual ERequestStatus         PlayFile(IStandaloneFileConnection* const pIStandaloneFileConnection) override;
+	virtual ERequestStatus         StopFile(IStandaloneFileConnection* const pIStandaloneFileConnection) override;
 	virtual ERequestStatus         SetName(char const* const szName) override;
 	virtual void                   ToggleFunctionality(EObjectFunctionality const type, bool const enable) override {}
 

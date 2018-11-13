@@ -3,7 +3,7 @@
 #pragma once
 
 #include "GlobalData.h"
-#include <ISwitchState.h>
+#include <ISwitchStateConnection.h>
 #include <PoolObject.h>
 
 #include <cri_atom_ex.h>
@@ -23,7 +23,7 @@ enum class ESwitchType : EnumFlagsType
 	GameVariable,
 };
 
-class CSwitchState final : public ISwitchState, public CPoolObject<CSwitchState, stl::PSyncNone>
+class CSwitchState final : public ISwitchStateConnection, public CPoolObject<CSwitchState, stl::PSyncNone>
 {
 public:
 

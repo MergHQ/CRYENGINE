@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <IParameter.h>
+#include <IParameterConnection.h>
 #include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace CryAudio
@@ -18,7 +18,7 @@ enum class EParameterType : EnumFlagsType
 	VCA,
 };
 
-class CBaseParameter : public IParameter
+class CBaseParameter : public IParameterConnection
 {
 public:
 

@@ -35,11 +35,6 @@
 #include "Switch.h"
 #include "SwitchState.h"
 #include "Trigger.h"
-#include "EnvironmentConnection.h"
-#include "ParameterConnection.h"
-#include "SettingConnection.h"
-#include "SwitchStateConnection.h"
-#include "TriggerConnection.h"
 #include "Common/Logger.h"
 #include "Common/IObject.h"
 #include "PropagationProcessor.h"
@@ -379,24 +374,9 @@ void AllocateMemoryPools()
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Settings Pool");
 	CSetting::CreateAllocator(g_poolSizes.settings);
 
-	// Connections
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Trigger Connection Pool");
-	CTriggerConnection::CreateAllocator(g_poolSizes.triggerConnections);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Parameter Connection Pool");
-	CParameterConnection::CreateAllocator(g_poolSizes.parameterConnections);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System State Connection Pool");
-	CSwitchStateConnection::CreateAllocator(g_poolSizes.stateConnections);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Environment Connection Pool");
-	CEnvironmentConnection::CreateAllocator(g_poolSizes.environmentConnections);
-
+	// Files
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Preload Connection Pool");
-	CFileEntry::CreateAllocator(g_poolSizes.preloadConnections);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Setting Connection Pool");
-	CSettingConnection::CreateAllocator(g_poolSizes.settingConnections);
+	CFileEntry::CreateAllocator(g_poolSizes.files);
 
 	// System requests
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "Audio System Pool for SSystemRequestData<ESystemRequestType::ExecuteTrigger>");
@@ -478,13 +458,8 @@ void FreeMemoryPools()
 	CPreloadRequest::FreeMemoryPool();
 	CSetting::FreeMemoryPool();
 
-	// Connections
-	CTriggerConnection::FreeMemoryPool();
-	CParameterConnection::FreeMemoryPool();
-	CSwitchStateConnection::FreeMemoryPool();
-	CEnvironmentConnection::FreeMemoryPool();
+	// Files
 	CFileEntry::FreeMemoryPool();
-	CSettingConnection::FreeMemoryPool();
 
 	// System requests
 	SSystemRequestData<ESystemRequestType::ExecuteTrigger>::FreeMemoryPool();

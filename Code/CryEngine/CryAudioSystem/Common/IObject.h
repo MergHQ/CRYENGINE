@@ -10,12 +10,12 @@ namespace CryAudio
 {
 namespace Impl
 {
-struct IEnvironment;
+struct IEnvironmentConnection;
 struct IEvent;
-struct IParameter;
-struct ISwitchState;
-struct ITrigger;
-struct IStandaloneFile;
+struct IParameterConnection;
+struct ISwitchStateConnection;
+struct ITriggerConnection;
+struct IStandaloneFileConnection;
 
 enum class EObjectFunctionality : EnumFlagsType
 {
@@ -55,26 +55,26 @@ struct IObject
 
 	/**
 	 * Set the provided value for the specified environment on the object.
-	 * @param pIEnvironment - implementation-specific environment to set
+	 * @param pIEnvironmentConnection - implementation-specific environment to set
 	 * @param amount - the fade value for the provided IEnvironment, 0.0f means no effect at all, 1.0f corresponds to the full effect
 	 * @return void
 	 */
-	virtual void SetEnvironment(IEnvironment const* const pIEnvironment, float const amount) = 0;
+	virtual void SetEnvironment(IEnvironmentConnection const* const pIEnvironmentConnection, float const amount) = 0;
 
 	/**
 	 * Set the provided parameter to the specified value on the object.
-	 * @param pIParameter - implementation-specific parameter to set
+	 * @param pIParameterConnection - implementation-specific parameter to set
 	 * @param value - the value to set the parameter to
 	 * @return void
 	 */
-	virtual void SetParameter(IParameter const* const pIParameter, float const value) = 0;
+	virtual void SetParameter(IParameterConnection const* const pIParameterConnection, float const value) = 0;
 
 	/**
 	 * Set the provided state (on a switch) on the object.
 	 * @param pISwitchState - implementation-specific state to set
 	 * @return void
 	 */
-	virtual void SetSwitchState(ISwitchState const* const pISwitchState) = 0;
+	virtual void SetSwitchState(ISwitchStateConnection const* const pISwitchState) = 0;
 
 	/**
 	 * Set the provided occlusion value.
@@ -96,7 +96,7 @@ struct IObject
 	 * @param pIEvent - implementation-specific event corresponding to this particular trigger activation
 	 * @return ERequestStatus - indicates the outcome of underlying process
 	 */
-	virtual ERequestStatus ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent) = 0;
+	virtual ERequestStatus ExecuteTrigger(ITriggerConnection const* const pITrigger, IEvent* const pIEvent) = 0;
 
 	/**
 	 * Stop all triggers currently active on the object.
@@ -110,7 +110,7 @@ struct IObject
 	 * @return ERequestStatus - indicates the outcome of underlying process
 	 * @see StopFile
 	 */
-	virtual ERequestStatus PlayFile(IStandaloneFile* const pIStandaloneFile) = 0;
+	virtual ERequestStatus PlayFile(IStandaloneFileConnection* const pIStandaloneFile) = 0;
 
 	/**
 	 * Stop a stand alone file.
@@ -118,7 +118,7 @@ struct IObject
 	 * @return ERequestStatus - indicates the outcome of underlying process
 	 * @see PlayFile
 	 */
-	virtual ERequestStatus StopFile(IStandaloneFile* const pIStandaloneFile) = 0;
+	virtual ERequestStatus StopFile(IStandaloneFileConnection* const pIStandaloneFile) = 0;
 
 	/**
 	 * Sets this object's name.

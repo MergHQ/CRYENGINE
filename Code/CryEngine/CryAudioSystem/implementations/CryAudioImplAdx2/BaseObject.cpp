@@ -79,9 +79,9 @@ CBaseObject::~CBaseObject()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::SetParameter(IParameter const* const pIParameter, float const value)
+void CBaseObject::SetParameter(IParameterConnection const* const pIParameterConnection, float const value)
 {
-	auto const pParameter = static_cast<CParameter const*>(pIParameter);
+	auto const pParameter = static_cast<CParameter const*>(pIParameterConnection);
 
 	if (pParameter != nullptr)
 	{
@@ -123,9 +123,9 @@ void CBaseObject::SetParameter(IParameter const* const pIParameter, float const 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::SetSwitchState(ISwitchState const* const pISwitchState)
+void CBaseObject::SetSwitchState(ISwitchStateConnection const* const pISwitchStateConnection)
 {
-	auto const pSwitchState = static_cast<CSwitchState const*>(pISwitchState);
+	auto const pSwitchState = static_cast<CSwitchState const*>(pISwitchStateConnection);
 
 	if (pSwitchState != nullptr)
 	{
@@ -174,11 +174,11 @@ void CBaseObject::SetSwitchState(ISwitchState const* const pISwitchState)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CBaseObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent)
+ERequestStatus CBaseObject::ExecuteTrigger(ITriggerConnection const* const pITriggerConnection, IEvent* const pIEvent)
 {
 	ERequestStatus requestResult = ERequestStatus::Failure;
 
-	auto const pTrigger = static_cast<CTrigger const*>(pITrigger);
+	auto const pTrigger = static_cast<CTrigger const*>(pITriggerConnection);
 	auto const pEvent = static_cast<CEvent*>(pIEvent);
 
 	if ((pTrigger != nullptr) && (pEvent != nullptr))
@@ -243,13 +243,13 @@ void CBaseObject::StopAllTriggers()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CBaseObject::PlayFile(IStandaloneFile* const pIStandaloneFile)
+ERequestStatus CBaseObject::PlayFile(IStandaloneFileConnection* const pIStandaloneFileConnection)
 {
 	return ERequestStatus::Failure;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CBaseObject::StopFile(IStandaloneFile* const pIStandaloneFile)
+ERequestStatus CBaseObject::StopFile(IStandaloneFileConnection* const pIStandaloneFileConnection)
 {
 	return ERequestStatus::Failure;
 }

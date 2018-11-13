@@ -3,7 +3,7 @@
 #pragma once
 
 #include "GlobalData.h"
-#include <ISwitchState.h>
+#include <ISwitchStateConnection.h>
 #include <PoolObject.h>
 #include <AK/SoundEngine/Common/AkTypes.h>
 
@@ -21,7 +21,7 @@ enum class ESwitchType : EnumFlagsType
 	SwitchGroup,
 };
 
-class CSwitchState final : public ISwitchState, public CPoolObject<CSwitchState, stl::PSyncNone>
+class CSwitchState final : public ISwitchStateConnection, public CPoolObject<CSwitchState, stl::PSyncNone>
 {
 public:
 

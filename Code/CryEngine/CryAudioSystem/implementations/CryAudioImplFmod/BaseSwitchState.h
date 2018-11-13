@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <ISwitchState.h>
+#include <ISwitchStateConnection.h>
 #include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace CryAudio
@@ -18,7 +18,7 @@ enum class EStateType : EnumFlagsType
 	VCA,
 };
 
-class CBaseSwitchState : public ISwitchState
+class CBaseSwitchState : public ISwitchStateConnection
 {
 public:
 

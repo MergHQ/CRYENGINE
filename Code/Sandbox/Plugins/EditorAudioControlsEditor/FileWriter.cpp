@@ -102,46 +102,6 @@ void CountControls(EAssetType const type, SLibraryScope& libScope)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CountConnections(EAssetType const type, SLibraryScope& libScope)
-{
-	switch (type)
-	{
-	case EAssetType::Trigger:
-		{
-			++libScope.numTriggerConnections;
-			break;
-		}
-	case EAssetType::Parameter:
-		{
-			++libScope.numParameterConnections;
-			break;
-		}
-	case EAssetType::State:
-		{
-			++libScope.numStateConnections;
-			break;
-		}
-	case EAssetType::Environment:
-		{
-			++libScope.numEnvironmentConnections;
-			break;
-		}
-	case EAssetType::Preload:
-		{
-			++libScope.numPreloadConnections;
-			break;
-		}
-	case EAssetType::Setting:
-		{
-			++libScope.numSettingConnections;
-			break;
-		}
-	default:
-		break;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 void WriteConnectionsToXML(XmlNodeRef const pNode, CControl* const pControl, SLibraryScope& libScope, int const platformIndex = -1)
 {
 	EAssetType const type = pControl->GetType();
@@ -203,7 +163,11 @@ void WriteConnectionsToXML(XmlNodeRef const pNode, CControl* const pControl, SLi
 					if (shouldAddNode)
 					{
 						pNode->addChild(pChild);
-						CountConnections(type, libScope);
+
+						if (type == EAssetType::Preload)
+						{
+							++libScope.numFiles;
+						}
 					}
 				}
 			}
@@ -545,34 +509,9 @@ void CFileWriter::WriteLibrary(CLibrary& library)
 					}
 				}
 
-				if (libScope.numTriggerConnections > 0)
+				if (libScope.numFiles > 0)
 				{
-					pFileNode->setAttr(CryAudio::s_szNumTriggerConnectionsAttribute, libScope.numTriggerConnections);
-				}
-
-				if (libScope.numParameterConnections > 0)
-				{
-					pFileNode->setAttr(CryAudio::s_szNumParameterConnectionsAttribute, libScope.numParameterConnections);
-				}
-
-				if (libScope.numStateConnections > 0)
-				{
-					pFileNode->setAttr(CryAudio::s_szNumStateConnectionsAttribute, libScope.numStateConnections);
-				}
-
-				if (libScope.numEnvironmentConnections > 0)
-				{
-					pFileNode->setAttr(CryAudio::s_szNumEnvironmentConnectionsAttribute, libScope.numEnvironmentConnections);
-				}
-
-				if (libScope.numPreloadConnections > 0)
-				{
-					pFileNode->setAttr(CryAudio::s_szNumPreloadConnectionsAttribute, libScope.numPreloadConnections);
-				}
-
-				if (libScope.numSettingConnections > 0)
-				{
-					pFileNode->setAttr(CryAudio::s_szNumSettingConnectionsAttribute, libScope.numSettingConnections);
+					pFileNode->setAttr(CryAudio::s_szNumFilesAttribute, libScope.numFiles);
 				}
 
 				XmlNodeRef const pImplDataNode = g_pIImpl->SetDataNode(CryAudio::s_szImplDataNodeTag);

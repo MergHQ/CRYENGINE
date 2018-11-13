@@ -97,9 +97,9 @@ void CObject::SetTransformation(CTransformation const& transformation)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetEnvironment(IEnvironment const* const pIEnvironment, float const amount)
+void CObject::SetEnvironment(IEnvironmentConnection const* const pIEnvironmentConnection, float const amount)
 {
-	auto const pEnvironment = static_cast<CEnvironment const*>(pIEnvironment);
+	auto const pEnvironment = static_cast<CEnvironment const*>(pIEnvironmentConnection);
 
 	if (pEnvironment != nullptr)
 	{
@@ -128,7 +128,7 @@ void CObject::SetEnvironment(IEnvironment const* const pIEnvironment, float cons
 	}
 	else
 	{
-		Cry::Audio::Log(ELogType::Error, "Invalid IEnvironment pointer passed to the Fmod implementation of SetEnvironment");
+		Cry::Audio::Log(ELogType::Error, "Invalid IEnvironmentConnection pointer passed to the Fmod implementation of %s", __FUNCTION__);
 	}
 }
 

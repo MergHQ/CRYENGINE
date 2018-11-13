@@ -42,6 +42,5 @@ private:
 	void ParseSettings(XmlNodeRef const pRoot, EDataScope const dataScope);
 
 	void DeletePreloadRequest(CPreloadRequest const* const pPreloadRequest);
-	void DeleteEnvironment(CEnvironment const* const pEnvironment);
 };
 } // namespace CryAudio
