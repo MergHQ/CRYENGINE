@@ -839,8 +839,6 @@ CBaseObject* CObjectManager::NewObject(CObjectArchive& ar, CBaseObject* pUndoObj
 		id = CryGUID::Create();
 	}
 
-	idInPrefab = id;
-
 	if (ar.GetGuidProvider())
 	{
 		// Make new guid for this object.
@@ -912,11 +910,6 @@ CBaseObject* CObjectManager::NewObject(CObjectArchive& ar, CBaseObject* pUndoObj
 		pObject->m_name = objName;
 
 		pObject->InitVariables();
-		pObject->SetIdInPrefab(idInPrefab);
-
-		// @FIXME: Make sure this id not taken.
-		CBaseObject* obj = FindObject(pObject->GetId());
-
 		string layerName;
 		CObjectLayer* pLayer = nullptr;
 		if (bLoadInCurrentLayer)
@@ -940,6 +933,9 @@ CBaseObject* CObjectManager::NewObject(CObjectArchive& ar, CBaseObject* pUndoObj
 				return nullptr;
 			}
 		}
+
+		// @FIXME: Make sure this id not taken.
+		CBaseObject* obj = FindObject(pObject->GetId());
 
 		if (obj && !CGuidCollisionResolver(pObject, ar).Resolve())
 		{

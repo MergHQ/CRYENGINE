@@ -737,8 +737,12 @@ void CPrefabObject::SetPrefab(CPrefabItem* pPrefab, bool bForceReload)
 
 	CObjectArchive ar(GetObjectManager(), objectsXml, true);
 	ar.EnableProgressBar(false); // No progress bar is shown when loading objects.
-	CPrefabChildGuidProvider guidProvider = { this };
-	ar.SetGuidProvider(&guidProvider);
+	/*
+	Here we set the guid provider to null so that it will not attempt to regenerate GUIDS in LoadObjects (specifically in the call to NewObject).
+	We need the serialized Id to stay the same as the prefab xml Id until AddMember (called in AttachLoadedChildrenToPrefab) is called
+	AddMember will "slide" the current Id to IdInPrefab (which we need for prefab instance and library update) and generate a new unique Id for the prefab instance
+	*/
+	ar.SetGuidProvider(nullptr); 
 	ar.EnableReconstructPrefabObject(true);
 	// new prefabs are instantiated in current layer to avoid mishaps with missing layers. Then, we just set their layer to our own below
 	ar.LoadInCurrentLayer(true);
@@ -747,6 +751,9 @@ void CPrefabObject::SetPrefab(CPrefabItem* pPrefab, bool bForceReload)
 	GetObjectManager()->ForceID(GetId().hipart >> 32);
 	ar.ResolveObjects();
 
+	//Now actually set a GUID provider
+	CPrefabChildGuidProvider guidProvider = { this };
+	ar.SetGuidProvider(&guidProvider);
 	AttachLoadedChildrenToPrefab(ar, pThisLayer);
 
 	// Forcefully validate TM and then trigger InvalidateTM() on prefab (and all its children).
@@ -796,10 +803,11 @@ void CPrefabObject::AttachLoadedChildrenToPrefab(CObjectArchive& ar, IObjectLaye
 		}
 		SetObjectPrefabFlagAndLayer(obj);
 	}
-
-	const bool keepPos = false;
-	const bool invalidateTM = false; // Don't invalidate each child independently - we'll do it later.
-	AttachChildren(objects, keepPos, invalidateTM);
+	//This is necessary to avoid prefab item modify and add to be called when loading nested prefab (SetSkipPrefabUpdate will be set to false when exiting from nested SetPrefab) 
+	//As we are loading from an archive we don't need to do any kind of update operation
+	SetModifyInProgress(true);
+	AddMembers(objects, false);
+	SetModifyInProgress(false);
 }
 
 void CPrefabObject::DeleteChildrenWithoutUpdating()
@@ -1590,7 +1598,7 @@ void CPrefabObject::SetAutoUpdatePrefab(bool autoUpdate)
 
 const char* CPrefabObjectClassDesc::GenerateObjectName(const char* szCreationParams)
 {
-	//pCreationParams is the GUID of the prefab item. 
+	//szCreationParams is the GUID of the prefab item. 
 	//This item might not have been loaded yet, so we need to make sure it is
 	CPrefabItem * item = static_cast<CPrefabItem*>(GetIEditor()->GetPrefabManager()->LoadItem(CryGUID::FromString(szCreationParams)));
 
