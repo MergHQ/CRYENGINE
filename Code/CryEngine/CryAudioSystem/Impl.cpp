@@ -2,16 +2,16 @@
 
 #include "stdafx.h"
 #include "Impl.h"
-#include "Common/IEnvironment.h"
+#include "Common/IEnvironmentConnection.h"
 #include "Common/IEvent.h"
 #include "Common/IFile.h"
 #include "Common/IListener.h"
 #include "Common/IObject.h"
-#include "Common/IParameter.h"
-#include "Common/ISetting.h"
-#include "Common/IStandaloneFile.h"
-#include "Common/ISwitchState.h"
-#include "Common/ITrigger.h"
+#include "Common/IParameterConnection.h"
+#include "Common/ISettingConnection.h"
+#include "Common/IStandaloneFileConnection.h"
+#include "Common/ISwitchStateConnection.h"
+#include "Common/ITriggerConnection.h"
 #include "Common/ITriggerInfo.h"
 #include "Common/FileInfo.h"
 
@@ -34,7 +34,7 @@ struct SListener final : IListener
 	virtual CTransformation const& GetTransformation() const override                                { return CTransformation::GetEmptyObject(); }
 };
 
-struct STrigger final : ITrigger
+struct STrigger final : ITriggerConnection
 {
 	virtual ERequestStatus Load() const override                             { return ERequestStatus::Success; }
 	virtual ERequestStatus Unload() const override                           { return ERequestStatus::Success; }
@@ -47,15 +47,15 @@ struct SObject final : IObject
 	virtual void                   Update(float const deltaTime) override                                                                        {}
 	virtual void                   SetTransformation(CTransformation const& transformation) override                                             {}
 	virtual CTransformation const& GetTransformation() const override                                                                            { return CTransformation::GetEmptyObject(); }
-	virtual void                   SetEnvironment(IEnvironment const* const pIEnvironment, float const amount) override                          {}
-	virtual void                   SetParameter(IParameter const* const pIParameter, float const value) override                                 {}
-	virtual void                   SetSwitchState(ISwitchState const* const pISwitchState) override                                              {}
+	virtual void                   SetEnvironment(IEnvironmentConnection const* const pIEnvironment, float const amount) override                {}
+	virtual void                   SetParameter(IParameterConnection const* const pIParameterConnection, float const value) override             {}
+	virtual void                   SetSwitchState(ISwitchStateConnection const* const pISwitchStateConnection) override                          {}
 	virtual void                   SetOcclusion(float const occlusion) override                                                                  {}
 	virtual void                   SetOcclusionType(EOcclusionType const occlusionType) override                                                 {}
-	virtual ERequestStatus         ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent) override                               { return ERequestStatus::Success; }
+	virtual ERequestStatus         ExecuteTrigger(ITriggerConnection const* const pITriggerConnection, IEvent* const pIEvent) override           { return ERequestStatus::Success; }
 	virtual void                   StopAllTriggers() override                                                                                    {}
-	virtual ERequestStatus         PlayFile(IStandaloneFile* const pIStandaloneFile) override                                                    { return ERequestStatus::Success; }
-	virtual ERequestStatus         StopFile(IStandaloneFile* const pIStandaloneFile) override                                                    { return ERequestStatus::Success; }
+	virtual ERequestStatus         PlayFile(IStandaloneFileConnection* const pIStandaloneFileConnection) override                                { return ERequestStatus::Success; }
+	virtual ERequestStatus         StopFile(IStandaloneFileConnection* const pIStandaloneFileConnection) override                                { return ERequestStatus::Success; }
 	virtual ERequestStatus         SetName(char const* const szName) override                                                                    { return ERequestStatus::Success; }
 	virtual void                   ToggleFunctionality(EObjectFunctionality const type, bool const enable) override                              {}
 	virtual void                   DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter) override {}
@@ -134,12 +134,12 @@ ERequestStatus CImpl::StopAllSounds()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalParameter(IParameter const* const pIParameter, float const value)
+void CImpl::SetGlobalParameter(IParameterConnection const* const pIParameterConnection, float const value)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalSwitchState(ISwitchState const* const pISwitchState)
+void CImpl::SetGlobalSwitchState(ISwitchStateConnection const* const pISwitchStateConnection)
 {
 }
 
@@ -228,15 +228,15 @@ void CImpl::DestructEvent(IEvent const* const pIEvent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-IStandaloneFile* CImpl::ConstructStandaloneFile(CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITrigger const* pITrigger /*= nullptr*/)
+IStandaloneFileConnection* CImpl::ConstructStandaloneFileConnection(CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITriggerConnection const* pITriggerConnection /*= nullptr*/)
 {
-	return new IStandaloneFile();
+	return new IStandaloneFileConnection();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DestructStandaloneFile(IStandaloneFile const* const pIStandaloneFile)
+void CImpl::DestructStandaloneFileConnection(IStandaloneFileConnection const* const pIStandaloneFileConnection)
 {
-	delete pIStandaloneFile;
+	delete pIStandaloneFileConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -250,63 +250,63 @@ void CImpl::GamepadDisconnected(DeviceId const deviceUniqueID)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode, float& radius)
+ITriggerConnection const* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode, float& radius)
 {
 	return nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ITrigger const* CImpl::ConstructTrigger(ITriggerInfo const* const pITriggerInfo)
+ITriggerConnection const* CImpl::ConstructTriggerConnection(ITriggerInfo const* const pITriggerInfo)
 {
 	return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructTrigger(ITrigger const* const pITrigger)
+void CImpl::DestructTriggerConnection(ITriggerConnection const* const pITriggerConnection)
 {
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IParameter const* CImpl::ConstructParameter(XmlNodeRef const pRootNode)
-{
-	return nullptr;
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructParameter(IParameter const* const pIParameter)
-{
-}
-
-///////////////////////////////////////////////////////////////////////////
-ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
+IParameterConnection const* CImpl::ConstructParameterConnection(XmlNodeRef const pRootNode)
 {
 	return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructSwitchState(ISwitchState const* const pISwitchState)
+void CImpl::DestructParameterConnection(IParameterConnection const* const pIParameterConnection)
 {
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IEnvironment const* CImpl::ConstructEnvironment(XmlNodeRef const pRootNode)
+ISwitchStateConnection const* CImpl::ConstructSwitchStateConnection(XmlNodeRef const pRootNode)
 {
 	return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructEnvironment(IEnvironment const* const pIEnvironment)
+void CImpl::DestructSwitchStateConnection(ISwitchStateConnection const* const pISwitchStateConnection)
+{
+}
+
+///////////////////////////////////////////////////////////////////////////
+IEnvironmentConnection const* CImpl::ConstructEnvironmentConnection(XmlNodeRef const pRootNode)
+{
+	return nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////
+void CImpl::DestructEnvironmentConnection(IEnvironmentConnection const* const pIEnvironmentConnection)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-ISetting const* CImpl::ConstructSetting(XmlNodeRef const pRootNode)
+ISettingConnection const* CImpl::ConstructSettingConnection(XmlNodeRef const pRootNode)
 {
 	return nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DestructSetting(ISetting const* const pISetting)
+void CImpl::DestructSettingConnection(ISettingConnection const* const pISettingConnection)
 {
 }
 

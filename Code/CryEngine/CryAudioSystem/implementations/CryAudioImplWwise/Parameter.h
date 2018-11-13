@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <IParameter.h>
+#include <IParameterConnection.h>
 #include <PoolObject.h>
 #include <AK/SoundEngine/Common/AkTypes.h>
 
@@ -12,7 +12,7 @@ namespace Impl
 {
 namespace Wwise
 {
-class CParameter final : public IParameter, public CPoolObject<CParameter, stl::PSyncNone>
+class CParameter final : public IParameterConnection, public CPoolObject<CParameter, stl::PSyncNone>
 {
 public:
 

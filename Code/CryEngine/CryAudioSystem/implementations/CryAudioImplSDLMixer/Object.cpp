@@ -18,11 +18,11 @@ namespace Impl
 namespace SDL_mixer
 {
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetParameter(IParameter const* const pIParameter, float const value)
+void CObject::SetParameter(IParameterConnection const* const pIParameterConnection, float const value)
 {
-	if (pIParameter != nullptr)
+	if (pIParameterConnection != nullptr)
 	{
-		auto const pParameter = static_cast<CParameter const* const>(pIParameter);
+		auto const pParameter = static_cast<CParameter const* const>(pIParameterConnection);
 		float parameterValue = pParameter->GetMultiplier() * crymath::clamp(value, 0.0f, 1.0f) + pParameter->GetShift();
 		parameterValue = crymath::clamp(parameterValue, 0.0f, 1.0f);
 		SampleId const sampleId = pParameter->GetSampleId();
@@ -32,11 +32,11 @@ void CObject::SetParameter(IParameter const* const pIParameter, float const valu
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetSwitchState(ISwitchState const* const pISwitchState)
+void CObject::SetSwitchState(ISwitchStateConnection const* const pISwitchStateConnection)
 {
-	if (pISwitchState != nullptr)
+	if (pISwitchStateConnection != nullptr)
 	{
-		auto const pSwitchState = static_cast<CSwitchState const* const>(pISwitchState);
+		auto const pSwitchState = static_cast<CSwitchState const* const>(pISwitchStateConnection);
 		float const switchValue = pSwitchState->GetValue();
 		SampleId const sampleId = pSwitchState->GetSampleId();
 		m_volumeMultipliers[sampleId] = switchValue;
@@ -45,11 +45,11 @@ void CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent)
+ERequestStatus CObject::ExecuteTrigger(ITriggerConnection const* const pITriggerConnection, IEvent* const pIEvent)
 {
-	if ((pITrigger != nullptr) && (pIEvent != nullptr))
+	if ((pITriggerConnection != nullptr) && (pIEvent != nullptr))
 	{
-		auto const pTrigger = static_cast<CTrigger const*>(pITrigger);
+		auto const pTrigger = static_cast<CTrigger const*>(pITriggerConnection);
 		auto const pEvent = static_cast<CEvent*>(pIEvent);
 		return SoundEngine::ExecuteEvent(this, pTrigger, pEvent);
 	}
@@ -58,17 +58,17 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::PlayFile(IStandaloneFile* const pIStandaloneFile)
+ERequestStatus CObject::PlayFile(IStandaloneFileConnection* const pIStandaloneFileConnection)
 {
-	return SoundEngine::PlayFile(this, static_cast<CStandaloneFile*>(pIStandaloneFile));
+	return SoundEngine::PlayFile(this, static_cast<CStandaloneFile*>(pIStandaloneFileConnection));
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::StopFile(IStandaloneFile* const pIStandaloneFile)
+ERequestStatus CObject::StopFile(IStandaloneFileConnection* const pIStandaloneFileConnection)
 {
 	ERequestStatus status = ERequestStatus::Failure;
 
-	auto const pStandaloneFile = static_cast<CStandaloneFile*>(pIStandaloneFile);
+	auto const pStandaloneFile = static_cast<CStandaloneFile*>(pIStandaloneFileConnection);
 
 	for (auto const pTempStandaloneFile : m_standaloneFiles)
 	{

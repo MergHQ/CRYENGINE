@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Common.h"
-#include <IParameter.h>
+#include <IParameterConnection.h>
 #include <PoolObject.h>
 #include <CryAudio/IAudioInterfacesCommonData.h>
 
@@ -13,7 +13,7 @@ namespace Impl
 {
 namespace SDL_mixer
 {
-class CParameter final : public IParameter, public CPoolObject<CParameter, stl::PSyncNone>
+class CParameter final : public IParameterConnection, public CPoolObject<CParameter, stl::PSyncNone>
 {
 public:
 

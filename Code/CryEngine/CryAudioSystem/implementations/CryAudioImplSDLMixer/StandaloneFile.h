@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Common.h"
-#include <IStandaloneFile.h>
+#include <IStandaloneFileConnection.h>
 #include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace CryAudio
@@ -14,7 +14,7 @@ namespace Impl
 {
 namespace SDL_mixer
 {
-class CStandaloneFile final : public IStandaloneFile
+class CStandaloneFile final : public IStandaloneFileConnection
 {
 public:
 

@@ -166,10 +166,10 @@ void CObject::SetTransformation(CTransformation const& transformation)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetEnvironment(IEnvironment const* const pIEnvironment, float const amount)
+void CObject::SetEnvironment(IEnvironmentConnection const* const pIEnvironmentConnection, float const amount)
 {
 	static float const envEpsilon = 0.0001f;
-	CEnvironment const* const pEnvironment = static_cast<CEnvironment const* const>(pIEnvironment);
+	auto const pEnvironment = static_cast<CEnvironment const*>(pIEnvironmentConnection);
 
 	if (pEnvironment != nullptr)
 	{
@@ -241,13 +241,13 @@ void CObject::SetEnvironment(IEnvironment const* const pIEnvironment, float cons
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetParameter(IParameter const* const pIParameter, float const value)
+void CObject::SetParameter(IParameterConnection const* const pIParameterConnection, float const value)
 {
-	CParameter const* const pParameter = static_cast<CParameter const* const>(pIParameter);
+	auto const pParameter = static_cast<CParameter const*>(pIParameterConnection);
 
 	if (pParameter != nullptr)
 	{
-		AkRtpcValue rtpcValue = static_cast<AkRtpcValue>(pParameter->mult * value + pParameter->shift);
+		auto const rtpcValue = static_cast<AkRtpcValue>(pParameter->mult * value + pParameter->shift);
 
 		AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(pParameter->id, rtpcValue, m_id);
 
@@ -268,9 +268,9 @@ void CObject::SetParameter(IParameter const* const pIParameter, float const valu
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetSwitchState(ISwitchState const* const pISwitchState)
+void CObject::SetSwitchState(ISwitchStateConnection const* const pISwitchStateConnection)
 {
-	CSwitchState const* const pSwitchState = static_cast<CSwitchState const* const>(pISwitchState);
+	auto const pSwitchState = static_cast<CSwitchState const*>(pISwitchStateConnection);
 
 	if (pSwitchState != nullptr)
 	{
@@ -405,11 +405,11 @@ void CObject::SetOcclusionType(EOcclusionType const occlusionType)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent)
+ERequestStatus CObject::ExecuteTrigger(ITriggerConnection const* const pITriggerConnection, IEvent* const pIEvent)
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
-	auto const pTrigger = static_cast<CTrigger const*>(pITrigger);
+	auto const pTrigger = static_cast<CTrigger const*>(pITriggerConnection);
 	auto const pEvent = static_cast<CEvent*>(pIEvent);
 
 	if ((pTrigger != nullptr) && (pEvent != nullptr))
@@ -482,13 +482,13 @@ void CObject::StopAllTriggers()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::PlayFile(IStandaloneFile* const pIStandaloneFile)
+ERequestStatus CObject::PlayFile(IStandaloneFileConnection* const pIStandaloneFileConnection)
 {
 	return ERequestStatus::Failure;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::StopFile(IStandaloneFile* const pIStandaloneFile)
+ERequestStatus CObject::StopFile(IStandaloneFileConnection* const pIStandaloneFileConnection)
 {
 	return ERequestStatus::Failure;
 }

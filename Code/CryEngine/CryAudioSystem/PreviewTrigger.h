@@ -11,6 +11,7 @@ class CTriggerConnection;
 
 namespace Impl
 {
+struct ITriggerConnection;
 struct ITriggerInfo;
 } // namespace Impl
 
@@ -32,7 +33,7 @@ public:
 
 private:
 
-	CTriggerConnection* m_pConnection;
+	Impl::ITriggerConnection const* m_pConnection;
 };
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }      // namespace CryAudio

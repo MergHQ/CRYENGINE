@@ -24,7 +24,7 @@ public:
 
 	// CryAudio::Impl::IObject
 	virtual void SetTransformation(CTransformation const& transformation) override;
-	virtual void SetEnvironment(IEnvironment const* const pIEnvironment, float const amount) override;
+	virtual void SetEnvironment(IEnvironmentConnection const* const pIEnvironment, float const amount) override;
 	virtual void SetOcclusion(float const occlusion) override;
 	virtual void SetOcclusionType(EOcclusionType const occlusionType) override;
 	// ~CryAudio::Impl::IObject

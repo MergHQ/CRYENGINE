@@ -51,11 +51,6 @@ enum class ETriggerStatus : EnumFlagsType
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ETriggerStatus);
 
-struct STriggerImplState
-{
-	ETriggerStatus flags = ETriggerStatus::None;
-};
-
 struct SUserDataBase
 {
 	SUserDataBase() = default;
@@ -87,7 +82,6 @@ struct STriggerInstanceState final : public SUserDataBase
 // CObject-related typedefs
 using ObjectStandaloneFileMap = std::map<CStandaloneFile*, SUserDataBase>;
 using ObjectEventSet = std::set<CEvent*>;
-using ObjectTriggerImplStates = std::map<TriggerImplId, STriggerImplState>;
 using ObjectTriggerStates = std::map<TriggerInstanceId, STriggerInstanceState>;
 
 class CObject final : public IObject, public CPoolObject<CObject, stl::PSyncNone>
@@ -126,7 +120,6 @@ public:
 	void                           ReportStartedEvent(CEvent* const pEvent);
 	void                           ReportFinishedEvent(CEvent* const pEvent, bool const bSuccess);
 	void                           ReportFinishedStandaloneFile(CStandaloneFile* const pStandaloneFile);
-	void                           ReportFinishedLoadingTriggerImpl(TriggerImplId const id, bool const bLoad);
 	void                           GetStartedStandaloneFileRequestData(CStandaloneFile* const pStandaloneFile, CRequest& request);
 
 	void                           StopAllTriggers();
@@ -189,7 +182,6 @@ private:
 	ObjectStandaloneFileMap m_activeStandaloneFiles;
 	ObjectEventSet          m_activeEvents;
 	ObjectTriggerStates     m_triggerStates;
-	ObjectTriggerImplStates m_triggerImplStates;
 	Impl::IObject*          m_pImplData;
 	EObjectFlags            m_flags;
 	CTransformation         m_transformation;

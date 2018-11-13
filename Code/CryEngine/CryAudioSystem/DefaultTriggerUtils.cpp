@@ -6,12 +6,10 @@
 #include "EventManager.h"
 #include "Object.h"
 #include "Event.h"
-#include "TriggerConnection.h"
 #include "Common/IEvent.h"
 #include "Common/IImpl.h"
 #include "Common/IObject.h"
-#include "Common/ISetting.h"
-#include "Common/ITrigger.h"
+#include "Common/ITriggerConnection.h"
 #include "Common/Logger.h"
 
 namespace CryAudio
@@ -25,7 +23,7 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 	for (auto const pConnection : connections)
 	{
 		CEvent* const pEvent = g_eventManager.ConstructEvent();
-		ERequestStatus const activateResult = pConnection->Execute(g_pObject->GetImplDataPtr(), pEvent->m_pImplData);
+		ERequestStatus const activateResult = g_pObject->GetImplDataPtr()->ExecuteTrigger(pConnection, pEvent->m_pImplData);
 
 		if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual) || (activateResult == ERequestStatus::Pending))
 		{
@@ -36,7 +34,6 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 
 			pEvent->m_pObject = g_pObject;
 			pEvent->SetTriggerId(pControl->GetId());
-			pEvent->m_triggerImplId = pConnection->m_triggerImplId;
 			pEvent->m_triggerInstanceId = g_triggerInstanceIdCounter;
 
 			if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual))

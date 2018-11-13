@@ -264,12 +264,12 @@ ERequestStatus CImpl::StopAllSounds()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalParameter(IParameter const* const pIParameter, float const value)
+void CImpl::SetGlobalParameter(IParameterConnection const* const pIParameterConnection, float const value)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalSwitchState(ISwitchState const* const pISwitchState)
+void CImpl::SetGlobalSwitchState(ISwitchStateConnection const* const pISwitchStateConnection)
 {
 }
 
@@ -415,15 +415,15 @@ void CImpl::DestructEvent(IEvent const* const pIEvent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-IStandaloneFile* CImpl::ConstructStandaloneFile(CryAudio::CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITrigger const* pITrigger /*= nullptr*/)
+IStandaloneFileConnection* CImpl::ConstructStandaloneFileConnection(CryAudio::CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITriggerConnection const* pITriggerConnection /*= nullptr*/)
 {
-	return static_cast<IStandaloneFile*>(new CStandaloneFile);
+	return static_cast<IStandaloneFileConnection*>(new CStandaloneFile);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DestructStandaloneFile(IStandaloneFile const* const pIStandaloneFile)
+void CImpl::DestructStandaloneFileConnection(IStandaloneFileConnection const* const pIStandaloneFileConnection)
 {
-	delete pIStandaloneFile;
+	delete pIStandaloneFileConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -437,7 +437,7 @@ void CImpl::GamepadDisconnected(DeviceId const deviceUniqueID)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode, float& radius)
+ITriggerConnection const* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode, float& radius)
 {
 	CTrigger* pTrigger = nullptr;
 	char const* const szTag = pRootNode->getTag();
@@ -494,14 +494,14 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode, float& radiu
 		Cry::Audio::Log(ELogType::Warning, "Unknown PortAudio tag: %s", szTag);
 	}
 
-	return static_cast<ITrigger*>(pTrigger);
+	return static_cast<ITriggerConnection*>(pTrigger);
 }
 
 //////////////////////////////////////////////////////////////////////////
-ITrigger const* CImpl::ConstructTrigger(ITriggerInfo const* const pITriggerInfo)
+ITriggerConnection const* CImpl::ConstructTriggerConnection(ITriggerInfo const* const pITriggerInfo)
 {
 #if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
-	ITrigger const* pITrigger = nullptr;
+	ITriggerConnection const* pITriggerConnection = nullptr;
 	auto const pTriggerInfo = static_cast<STriggerInfo const*>(pITriggerInfo);
 
 	if (pTriggerInfo != nullptr)
@@ -524,68 +524,68 @@ ITrigger const* CImpl::ConstructTrigger(ITriggerInfo const* const pITriggerInfo)
 
 		if (GetSoundInfo(path.c_str(), sfInfo, streamParameters))
 		{
-			pITrigger = static_cast<ITrigger const*>(new CTrigger(StringToId(path.c_str()), 0, static_cast<double>(sfInfo.samplerate), EEventType::Start, path.c_str(), streamParameters, folderName.c_str(), name.c_str(), pTriggerInfo->isLocalized));
+			pITriggerConnection = static_cast<ITriggerConnection const*>(new CTrigger(StringToId(path.c_str()), 0, static_cast<double>(sfInfo.samplerate), EEventType::Start, path.c_str(), streamParameters, folderName.c_str(), name.c_str(), pTriggerInfo->isLocalized));
 		}
 	}
 
-	return pITrigger;
+	return pITriggerConnection;
 #else
 	return nullptr;
 #endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructTrigger(ITrigger const* const pITrigger)
+void CImpl::DestructTriggerConnection(ITriggerConnection const* const pITriggerConnection)
 {
-	delete pITrigger;
+	delete pITriggerConnection;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IParameter const* CImpl::ConstructParameter(XmlNodeRef const pRootNode)
+IParameterConnection const* CImpl::ConstructParameterConnection(XmlNodeRef const pRootNode)
 {
-	return static_cast<IParameter*>(new CParameter);
+	return static_cast<IParameterConnection*>(new CParameter);
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructParameter(IParameter const* const pIParameter)
+void CImpl::DestructParameterConnection(IParameterConnection const* const pIParameterConnection)
 {
-	delete pIParameter;
+	delete pIParameterConnection;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
+ISwitchStateConnection const* CImpl::ConstructSwitchStateConnection(XmlNodeRef const pRootNode)
 {
-	return static_cast<ISwitchState*>(new CSwitchState);
+	return static_cast<ISwitchStateConnection*>(new CSwitchState);
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructSwitchState(ISwitchState const* const pISwitchState)
+void CImpl::DestructSwitchStateConnection(ISwitchStateConnection const* const pISwitchStateConnection)
 {
-	delete pISwitchState;
+	delete pISwitchStateConnection;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IEnvironment const* CImpl::ConstructEnvironment(XmlNodeRef const pRootNode)
+IEnvironmentConnection const* CImpl::ConstructEnvironmentConnection(XmlNodeRef const pRootNode)
 {
-	return static_cast<IEnvironment*>(new CEnvironment);
+	return static_cast<IEnvironmentConnection*>(new CEnvironment);
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructEnvironment(IEnvironment const* const pIEnvironment)
+void CImpl::DestructEnvironmentConnection(IEnvironmentConnection const* const pIEnvironmentConnection)
 {
-	delete pIEnvironment;
+	delete pIEnvironmentConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ISetting const* CImpl::ConstructSetting(XmlNodeRef const pRootNode)
+ISettingConnection const* CImpl::ConstructSettingConnection(XmlNodeRef const pRootNode)
 {
-	return static_cast<ISetting*>(new CSetting);
+	return static_cast<ISettingConnection*>(new CSetting);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DestructSetting(ISetting const* const pISetting)
+void CImpl::DestructSettingConnection(ISettingConnection const* const pISettingConnection)
 {
-	delete pISetting;
+	delete pISettingConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////

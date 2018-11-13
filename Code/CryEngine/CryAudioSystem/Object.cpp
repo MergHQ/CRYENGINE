@@ -22,7 +22,6 @@
 #include "UnmuteAllTrigger.h"
 #include "PauseAllTrigger.h"
 #include "ResumeAllTrigger.h"
-#include "EnvironmentConnection.h"
 #include "ObjectRequestData.h"
 #include "CallbackRequestData.h"
 #include "Common/Logger.h"
@@ -45,7 +44,6 @@ void CObject::Release()
 {
 	// Do not clear the object's name though!
 	m_activeEvents.clear();
-	m_triggerImplStates.clear();
 	m_activeStandaloneFiles.clear();
 
 	for (auto& triggerStatesPair : m_triggerStates)
@@ -65,7 +63,6 @@ void CObject::Release()
 void CObject::AddEvent(CEvent* const pEvent)
 {
 	m_activeEvents.insert(pEvent);
-	m_triggerImplStates.emplace(pEvent->m_triggerImplId, STriggerImplState());
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	// Set the max activity radius of all active events on this object.
@@ -137,7 +134,6 @@ void CObject::ReportFinishedEvent(CEvent* const pEvent, bool const bSuccess)
 	CRY_ASSERT_MESSAGE(m_activeEvents.find(pEvent) != m_activeEvents.end(), "An event was not found in active list during %s", __FUNCTION__);
 
 	m_activeEvents.erase(pEvent);
-	m_triggerImplStates.erase(pEvent->m_triggerImplId);
 
 	ObjectTriggerStates::iterator const iter(m_triggerStates.find(pEvent->m_triggerInstanceId));
 
@@ -154,24 +150,6 @@ void CObject::ReportFinishedEvent(CEvent* const pEvent, bool const bSuccess)
 				if (--(triggerInstanceState.numPlayingEvents) == 0 && triggerInstanceState.numLoadingEvents == 0)
 				{
 					ReportFinishedTriggerInstance(iter);
-				}
-
-				break;
-			}
-		case EEventState::Loading:
-			{
-				if (bSuccess)
-				{
-					ReportFinishedLoadingTriggerImpl(pEvent->m_triggerImplId, true);
-				}
-
-				break;
-			}
-		case EEventState::Unloading:
-			{
-				if (bSuccess)
-				{
-					ReportFinishedLoadingTriggerImpl(pEvent->m_triggerImplId, false);
 				}
 
 				break;
@@ -222,19 +200,6 @@ void CObject::ReportFinishedStandaloneFile(CStandaloneFile* const pStandaloneFil
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CObject::ReportFinishedLoadingTriggerImpl(TriggerImplId const id, bool const bLoad)
-{
-	if (bLoad)
-	{
-		m_triggerImplStates[id].flags |= ETriggerStatus::Loaded;
-	}
-	else
-	{
-		m_triggerImplStates[id].flags &= ~ETriggerStatus::Loaded;
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////
 ERequestStatus CObject::HandleStopTrigger(CTrigger const* const pTrigger)
 {
 	for (auto const pEvent : m_activeEvents)
@@ -253,7 +218,7 @@ void CObject::HandleSetEnvironment(CEnvironment const* const pEnvironment, float
 {
 	for (auto const pEnvImpl : pEnvironment->m_connections)
 	{
-		m_pImplData->SetEnvironment(pEnvImpl->m_pImplData, value);
+		m_pImplData->SetEnvironment(pEnvImpl, value);
 	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)

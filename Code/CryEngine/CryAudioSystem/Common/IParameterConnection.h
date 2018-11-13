@@ -8,13 +8,13 @@ namespace Impl
 {
 /**
  * An implementation may use this interface to define a class for storing implementation-specific
- * data needed for identifying and using the corresponding IEnvironment
- * (e.g. a middleware-specific bus ID or name to be passed to an API function)
+ * data needed for identifying and using the corresponding IParameter
+ * (e.g. a middleware-specific control ID or a parameter name to be passed to an API function)
  */
-struct IEnvironment
+struct IParameterConnection
 {
 	/** @cond */
-	virtual ~IEnvironment() = default;
+	virtual ~IParameterConnection() = default;
 	/** @endcond */
 };
 } // namespace Impl

@@ -82,12 +82,7 @@ static constexpr char const* s_szNumStatesAttribute = "states";
 static constexpr char const* s_szNumEnvironmentsAttribute = "environments";
 static constexpr char const* s_szNumPreloadsAttribute = "preloads";
 static constexpr char const* s_szNumSettingsAttribute = "settings";
-static constexpr char const* s_szNumTriggerConnectionsAttribute = "trigger_connections";
-static constexpr char const* s_szNumParameterConnectionsAttribute = "parameter_connections";
-static constexpr char const* s_szNumStateConnectionsAttribute = "state_connections";
-static constexpr char const* s_szNumEnvironmentConnectionsAttribute = "environment_connections";
-static constexpr char const* s_szNumPreloadConnectionsAttribute = "preload_connections";
-static constexpr char const* s_szNumSettingConnectionsAttribute = "setting_connections";
+static constexpr char const* s_szNumFilesAttribute = "files";
 static constexpr char const* s_szTypeAttribute = "type";
 
 static constexpr char const* s_szDataLoadType = "autoload";

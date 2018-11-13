@@ -92,9 +92,9 @@ void CObject::SetTransformation(CTransformation const& transformation)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetEnvironment(IEnvironment const* const pIEnvironment, float const amount)
+void CObject::SetEnvironment(IEnvironmentConnection const* const pIEnvironmentConnection, float const amount)
 {
-	auto const pEnvironment = static_cast<CEnvironment const*>(pIEnvironment);
+	auto const pEnvironment = static_cast<CEnvironment const*>(pIEnvironmentConnection);
 
 	if (pEnvironment != nullptr)
 	{

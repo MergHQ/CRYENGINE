@@ -11,10 +11,10 @@ namespace Impl
  * data needed for identifying and using the corresponding ISetting
  * (e.g. a middleware-specific setting ID or name to be passed to an API function)
  */
-struct ISetting
+struct ISettingConnection
 {
 	/** @cond */
-	virtual ~ISetting() = default;
+	virtual ~ISettingConnection() = default;
 	/** @endcond */
 
 	/**

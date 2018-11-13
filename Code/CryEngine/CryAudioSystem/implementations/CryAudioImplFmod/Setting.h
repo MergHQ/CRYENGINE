@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <ISetting.h>
+#include <ISettingConnection.h>
 
 namespace CryAudio
 {
@@ -10,7 +10,7 @@ namespace Impl
 {
 namespace Fmod
 {
-class CSetting final : public ISetting
+class CSetting final : public ISettingConnection
 {
 public:
 
@@ -22,10 +22,10 @@ public:
 	CSetting() = default;
 	virtual ~CSetting() override = default;
 
-	// ISetting
+	// ISettingConnection
 	virtual void Load() const override   {}
 	virtual void Unload() const override {}
-	// ~ISetting
+	// ~ISettingConnection
 };
 } // namespace Fmod
 } // namespace Impl

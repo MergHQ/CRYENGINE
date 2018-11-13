@@ -12,7 +12,7 @@ class CStandaloneFile;
 
 namespace Impl
 {
-struct ITrigger;
+struct ITriggerConnection;
 } // namespace Impl
 
 class CFileManager final
@@ -29,7 +29,7 @@ public:
 
 	void             ReleaseImplData();
 	void             Release();
-	CStandaloneFile* ConstructStandaloneFile(char const* const szFile, bool const bLocalized, Impl::ITrigger const* const pITrigger = nullptr);
+	CStandaloneFile* ConstructStandaloneFile(char const* const szFile, bool const bLocalized, Impl::ITriggerConnection const* const pITriggerConnection = nullptr);
 	void             ReleaseStandaloneFile(CStandaloneFile* const pStandaloneFile);
 
 private:

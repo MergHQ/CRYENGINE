@@ -4,11 +4,6 @@
 #include "XMLProcessor.h"
 #include "Managers.h"
 #include "FileCacheManager.h"
-#include "EnvironmentConnection.h"
-#include "ParameterConnection.h"
-#include "SettingConnection.h"
-#include "SwitchStateConnection.h"
-#include "TriggerConnection.h"
 #include "LoseFocusTrigger.h"
 #include "GetFocusTrigger.h"
 #include "MuteAllTrigger.h"
@@ -108,29 +103,9 @@ void ParseSystemDataFile(char const* const szFolderPath, SPoolSizes& poolSizes, 
 					pRootNode->getAttr(s_szNumSettingsAttribute, numSettings);
 					poolSizes.settings += numSettings;
 
-					uint16 numTriggerConnections = 0;
-					pRootNode->getAttr(s_szNumTriggerConnectionsAttribute, numTriggerConnections);
-					poolSizes.triggerConnections += numTriggerConnections;
-
-					uint16 numParameterConnections = 0;
-					pRootNode->getAttr(s_szNumParameterConnectionsAttribute, numParameterConnections);
-					poolSizes.parameterConnections += numParameterConnections;
-
-					uint16 numStateConnections = 0;
-					pRootNode->getAttr(s_szNumStateConnectionsAttribute, numStateConnections);
-					poolSizes.stateConnections += numStateConnections;
-
-					uint16 numEnvironmentConnections = 0;
-					pRootNode->getAttr(s_szNumEnvironmentConnectionsAttribute, numEnvironmentConnections);
-					poolSizes.environmentConnections += numEnvironmentConnections;
-
-					uint16 numPreloadConnections = 0;
-					pRootNode->getAttr(s_szNumPreloadConnectionsAttribute, numPreloadConnections);
-					poolSizes.preloadConnections += numPreloadConnections;
-
-					uint16 numSettingConnections = 0;
-					pRootNode->getAttr(s_szNumSettingConnectionsAttribute, numSettingConnections);
-					poolSizes.settingConnections += numSettingConnections;
+					uint16 numFiles = 0;
+					pRootNode->getAttr(s_szNumFilesAttribute, numFiles);
+					poolSizes.files += numFiles;
 				}
 
 				XmlNodeRef const pImplDataNode = pRootNode->findChild(s_szImplDataNodeTag);
@@ -179,13 +154,7 @@ void ParseLevelSpecificSystemData(char const* const szFolderPath, SPoolSizes& po
 					poolSizes.environments = std::max(poolSizes.environments, levelPoolSizes.environments);
 					poolSizes.preloads = std::max(poolSizes.preloads, levelPoolSizes.preloads);
 					poolSizes.settings = std::max(poolSizes.settings, levelPoolSizes.settings);
-
-					poolSizes.triggerConnections = std::max(poolSizes.triggerConnections, levelPoolSizes.triggerConnections);
-					poolSizes.parameterConnections = std::max(poolSizes.parameterConnections, levelPoolSizes.parameterConnections);
-					poolSizes.stateConnections = std::max(poolSizes.stateConnections, levelPoolSizes.stateConnections);
-					poolSizes.environmentConnections = std::max(poolSizes.environmentConnections, levelPoolSizes.environmentConnections);
-					poolSizes.preloadConnections = std::max(poolSizes.preloadConnections, levelPoolSizes.preloadConnections);
-					poolSizes.settingConnections = std::max(poolSizes.settingConnections, levelPoolSizes.settingConnections);
+					poolSizes.files = std::max(poolSizes.files, levelPoolSizes.files);
 				}
 			}
 		}
@@ -219,13 +188,7 @@ void CXMLProcessor::ParseSystemData()
 	g_poolSizes.environments += maxLevelPoolSizes.environments;
 	g_poolSizes.preloads += maxLevelPoolSizes.preloads;
 	g_poolSizes.settings += maxLevelPoolSizes.settings;
-
-	g_poolSizes.triggerConnections += maxLevelPoolSizes.triggerConnections;
-	g_poolSizes.parameterConnections += maxLevelPoolSizes.parameterConnections;
-	g_poolSizes.stateConnections += maxLevelPoolSizes.stateConnections;
-	g_poolSizes.environmentConnections += maxLevelPoolSizes.environmentConnections;
-	g_poolSizes.preloadConnections += maxLevelPoolSizes.preloadConnections;
-	g_poolSizes.settingConnections += maxLevelPoolSizes.settingConnections;
+	g_poolSizes.files += maxLevelPoolSizes.files;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	// Used to hide pools without allocations in debug draw.
@@ -241,13 +204,7 @@ void CXMLProcessor::ParseSystemData()
 	g_poolSizes.environments = std::max<uint16>(1, g_poolSizes.environments);
 	g_poolSizes.preloads = std::max<uint16>(1, g_poolSizes.preloads);
 	g_poolSizes.settings = std::max<uint16>(1, g_poolSizes.settings);
-
-	g_poolSizes.triggerConnections = std::max<uint16>(1, g_poolSizes.triggerConnections);
-	g_poolSizes.parameterConnections = std::max<uint16>(1, g_poolSizes.parameterConnections);
-	g_poolSizes.stateConnections = std::max<uint16>(1, g_poolSizes.stateConnections);
-	g_poolSizes.environmentConnections = std::max<uint16>(1, g_poolSizes.environmentConnections);
-	g_poolSizes.preloadConnections = std::max<uint16>(1, g_poolSizes.preloadConnections);
-	g_poolSizes.settingConnections = std::max<uint16>(1, g_poolSizes.settingConnections);
+	g_poolSizes.files = std::max<uint16>(1, g_poolSizes.files);
 
 	g_pIImpl->OnAfterLibraryDataChanged();
 }
@@ -601,7 +558,7 @@ void CXMLProcessor::ClearControlsData(EDataScope const dataScope)
 
 			if ((pEnvironment->GetDataScope() == dataScope) || dataScope == EDataScope::All)
 			{
-				DeleteEnvironment(pEnvironment);
+				delete pEnvironment;
 				iterEnvironments = g_environments.erase(iterEnvironments);
 				iterEnvironmentsEnd = g_environments.end();
 				continue;
@@ -783,11 +740,10 @@ void CXMLProcessor::ParseEnvironments(XmlNodeRef const pEnvironmentRoot, EDataSc
 
 					if (pEnvironmentImplNode != nullptr)
 					{
-						Impl::IEnvironment const* const pIEnvironment = g_pIImpl->ConstructEnvironment(pEnvironmentImplNode);
+						Impl::IEnvironmentConnection const* const pConnection = g_pIImpl->ConstructEnvironmentConnection(pEnvironmentImplNode);
 
-						if (pIEnvironment != nullptr)
+						if (pConnection != nullptr)
 						{
-							CEnvironmentConnection const* const pConnection = new CEnvironmentConnection(pIEnvironment);
 							connections.push_back(pConnection);
 						}
 					}
@@ -864,11 +820,10 @@ void CXMLProcessor::ParseSettings(XmlNodeRef const pRoot, EDataScope const dataS
 
 						if (pSettingImplNode != nullptr)
 						{
-							Impl::ISetting const* const pISetting = g_pIImpl->ConstructSetting(pSettingImplNode);
+							Impl::ISettingConnection const* const pConnection = g_pIImpl->ConstructSettingConnection(pSettingImplNode);
 
-							if (pISetting != nullptr)
+							if (pConnection != nullptr)
 							{
-								CSettingConnection const* const pConnection = new CSettingConnection(pISetting);
 								connections.push_back(pConnection);
 							}
 						}
@@ -930,11 +885,10 @@ void CXMLProcessor::ParseTriggers(XmlNodeRef const pXMLTriggerRoot, EDataScope c
 					if (pTriggerImplNode)
 					{
 						float radius = 0.0f;
-						Impl::ITrigger const* const pITrigger = g_pIImpl->ConstructTrigger(pTriggerImplNode, radius);
+						Impl::ITriggerConnection const* const pConnection = g_pIImpl->ConstructTriggerConnection(pTriggerImplNode, radius);
 
-						if (pITrigger != nullptr)
+						if (pConnection != nullptr)
 						{
-							CTriggerConnection const* const pConnection = new CTriggerConnection(++g_uniqueConnectionId, pITrigger);
 							connections.push_back(pConnection);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -992,11 +946,10 @@ void CXMLProcessor::ParseDefaultTriggers(XmlNodeRef const pXMLTriggerRoot)
 				if (pConnectionNode != nullptr)
 				{
 					float radius = 0.0f;
-					Impl::ITrigger const* const pITrigger = g_pIImpl->ConstructTrigger(pConnectionNode, radius);
+					Impl::ITriggerConnection const* const pConnection = g_pIImpl->ConstructTriggerConnection(pConnectionNode, radius);
 
-					if (pITrigger != nullptr)
+					if (pConnection != nullptr)
 					{
-						CTriggerConnection const* const pConnection = new CTriggerConnection(++g_uniqueConnectionId, pITrigger);
 						connections.push_back(pConnection);
 					}
 				}
@@ -1092,12 +1045,10 @@ void CXMLProcessor::ParseSwitches(XmlNodeRef const pXMLSwitchRoot, EDataScope co
 
 								if (pStateImplNode != nullptr)
 								{
-									Impl::ISwitchState const* const pISwitchState = g_pIImpl->ConstructSwitchState(pStateImplNode);
+									Impl::ISwitchStateConnection const* const pConnection = g_pIImpl->ConstructSwitchStateConnection(pStateImplNode);
 
-									if (pISwitchState != nullptr)
+									if (pConnection != nullptr)
 									{
-										// Only add the connection if the middleware recognizes the control
-										CSwitchStateConnection const* const pConnection = new CSwitchStateConnection(pISwitchState);
 										connections.push_back(pConnection);
 									}
 								}
@@ -1150,11 +1101,10 @@ void CXMLProcessor::ParseParameters(XmlNodeRef const pXMLParameterRoot, EDataSco
 
 					if (pParameterImplNode != nullptr)
 					{
-						Impl::IParameter const* const pExternalParameterImpl = g_pIImpl->ConstructParameter(pParameterImplNode);
+						Impl::IParameterConnection const* const pConnection = g_pIImpl->ConstructParameterConnection(pParameterImplNode);
 
-						if (pExternalParameterImpl != nullptr)
+						if (pConnection != nullptr)
 						{
-							CParameterConnection const* const pConnection = new CParameterConnection(pExternalParameterImpl);
 							connections.push_back(pConnection);
 						}
 					}
@@ -1197,20 +1147,6 @@ void CXMLProcessor::DeletePreloadRequest(CPreloadRequest const* const pPreloadRe
 		}
 
 		delete pPreloadRequest;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CXMLProcessor::DeleteEnvironment(CEnvironment const* const pEnvironment)
-{
-	if (pEnvironment != nullptr)
-	{
-		for (auto const pEnvImpl : pEnvironment->m_connections)
-		{
-			delete pEnvImpl;
-		}
-
-		delete pEnvironment;
 	}
 }
 } // namespace CryAudio

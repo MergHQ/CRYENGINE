@@ -2,17 +2,19 @@
 
 #include "stdafx.h"
 #include "Setting.h"
-#include "SettingConnection.h"
-#include "Common/ISetting.h"
+#include "Common/IImpl.h"
+#include "Common/ISettingConnection.h"
 
 namespace CryAudio
 {
 //////////////////////////////////////////////////////////////////////////
 CSetting::~CSetting()
 {
+	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during %s", __FUNCTION__);
+
 	for (auto const pConnection : m_connections)
 	{
-		delete pConnection;
+		g_pIImpl->DestructSettingConnection(pConnection);
 	}
 }
 
@@ -21,7 +23,7 @@ void CSetting::Load() const
 {
 	for (auto const pConnection : m_connections)
 	{
-		pConnection->GetImplData()->Load();
+		pConnection->Load();
 	}
 }
 
@@ -30,7 +32,7 @@ void CSetting::Unload() const
 {
 	for (auto const pConnection : m_connections)
 	{
-		pConnection->GetImplData()->Unload();
+		pConnection->Unload();
 	}
 }
 } // namespace CryAudio

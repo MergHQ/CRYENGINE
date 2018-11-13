@@ -7,13 +7,12 @@
 #include "Object.h"
 #include "Event.h"
 #include "Trigger.h"
-#include "TriggerConnection.h"
 #include "StandaloneFile.h"
 #include "Common/IEvent.h"
 #include "Common/IImpl.h"
 #include "Common/IObject.h"
-#include "Common/IStandaloneFile.h"
-#include "Common/ITrigger.h"
+#include "Common/IStandaloneFileConnection.h"
+#include "Common/ITriggerConnection.h"
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	#include "Common/Logger.h"
@@ -24,9 +23,11 @@ namespace CryAudio
 //////////////////////////////////////////////////////////////////////////
 CTrigger::~CTrigger()
 {
+	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during %s", __FUNCTION__);
+
 	for (auto const pConnection : m_connections)
 	{
-		delete pConnection;
+		g_pIImpl->DestructTriggerConnection(pConnection);
 	}
 }
 
@@ -58,7 +59,7 @@ void CTrigger::Execute(
 	for (auto const pConnection : m_connections)
 	{
 		CEvent* const pEvent = g_eventManager.ConstructEvent();
-		ERequestStatus const activateResult = pConnection->Execute(object.GetImplDataPtr(), pEvent->m_pImplData);
+		ERequestStatus const activateResult = object.GetImplDataPtr()->ExecuteTrigger(pConnection, pEvent->m_pImplData);
 
 		if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual) || (activateResult == ERequestStatus::Pending))
 		{
@@ -69,7 +70,6 @@ void CTrigger::Execute(
 
 			pEvent->m_pObject = &object;
 			pEvent->SetTriggerId(GetId());
-			pEvent->m_triggerImplId = pConnection->m_triggerImplId;
 			pEvent->m_triggerInstanceId = g_triggerInstanceIdCounter;
 
 			if (activateResult == ERequestStatus::Success)
@@ -134,7 +134,7 @@ void CTrigger::Execute(
 	for (auto const pConnection : m_connections)
 	{
 		CEvent* const pEvent = g_eventManager.ConstructEvent();
-		ERequestStatus const activateResult = pConnection->Execute(object.GetImplDataPtr(), pEvent->m_pImplData);
+		ERequestStatus const activateResult = object.GetImplDataPtr()->ExecuteTrigger(pConnection, pEvent->m_pImplData);
 
 		if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual) || (activateResult == ERequestStatus::Pending))
 		{
@@ -145,7 +145,6 @@ void CTrigger::Execute(
 
 			pEvent->m_pObject = &object;
 			pEvent->SetTriggerId(GetId());
-			pEvent->m_triggerImplId = pConnection->m_triggerImplId;
 			pEvent->m_triggerInstanceId = triggerInstanceId;
 
 			if (activateResult == ERequestStatus::Success)
@@ -204,14 +203,14 @@ void CTrigger::LoadAsync(CObject& object, bool const doLoad) const
 		{
 			if (((triggerInstanceState.flags & ETriggerStatus::Loaded) == 0) && ((triggerInstanceState.flags & ETriggerStatus::Loading) == 0))
 			{
-				prepUnprepResult = pConnection->m_pImplData->LoadAsync(pEvent->m_pImplData);
+				prepUnprepResult = pConnection->LoadAsync(pEvent->m_pImplData);
 			}
 		}
 		else
 		{
 			if (((triggerInstanceState.flags & ETriggerStatus::Loaded) != 0) && ((triggerInstanceState.flags & ETriggerStatus::Unloading) == 0))
 			{
-				prepUnprepResult = pConnection->m_pImplData->UnloadAsync(pEvent->m_pImplData);
+				prepUnprepResult = pConnection->UnloadAsync(pEvent->m_pImplData);
 			}
 		}
 
@@ -223,7 +222,6 @@ void CTrigger::LoadAsync(CObject& object, bool const doLoad) const
 
 			pEvent->m_pObject = &object;
 			pEvent->SetTriggerId(GetId());
-			pEvent->m_triggerImplId = pConnection->m_triggerImplId;
 			pEvent->m_triggerInstanceId = g_triggerInstanceIdCounter;
 			pEvent->m_state = doLoad ? EEventState::Loading : EEventState::Unloading;
 
@@ -253,8 +251,8 @@ void CTrigger::PlayFile(
 {
 	if (!m_connections.empty())
 	{
-		Impl::ITrigger const* const pITrigger = m_connections[0]->m_pImplData;
-		CStandaloneFile* const pFile = g_fileManager.ConstructStandaloneFile(szName, isLocalized, pITrigger);
+		Impl::ITriggerConnection const* const pITriggerConnection = m_connections[0];
+		CStandaloneFile* const pFile = g_fileManager.ConstructStandaloneFile(szName, isLocalized, pITriggerConnection);
 		ERequestStatus const status = object.GetImplDataPtr()->PlayFile(pFile->m_pImplData);
 
 		if (status == ERequestStatus::Success || status == ERequestStatus::Pending)
@@ -295,8 +293,8 @@ void CTrigger::PlayFile(CObject& object, CStandaloneFile* const pFile) const
 
 	if (!m_connections.empty())
 	{
-		Impl::ITrigger const* const pITrigger = m_connections[0]->m_pImplData;
-		pFile->m_pImplData = g_pIImpl->ConstructStandaloneFile(*pFile, pFile->m_hashedFilename.GetText().c_str(), pFile->m_isLocalized, pITrigger);
+		Impl::ITriggerConnection const* const pITriggerConnection = m_connections[0];
+		pFile->m_pImplData = g_pIImpl->ConstructStandaloneFileConnection(*pFile, pFile->m_hashedFilename.GetText().c_str(), pFile->m_isLocalized, pITriggerConnection);
 		ERequestStatus const status = object.GetImplDataPtr()->PlayFile(pFile->m_pImplData);
 
 		if (status == ERequestStatus::Success || status == ERequestStatus::Pending)
@@ -314,7 +312,7 @@ void CTrigger::PlayFile(CObject& object, CStandaloneFile* const pFile) const
 		{
 			Cry::Audio::Log(ELogType::Error, R"(PlayFile failed with "%s" on object "%s")", pFile->m_hashedFilename.GetText().c_str(), object.m_name.c_str());
 
-			g_pIImpl->DestructStandaloneFile(pFile->m_pImplData);
+			g_pIImpl->DestructStandaloneFileConnection(pFile->m_pImplData);
 			pFile->m_pImplData = nullptr;
 		}
 	}

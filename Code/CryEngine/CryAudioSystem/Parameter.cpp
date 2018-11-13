@@ -2,7 +2,9 @@
 
 #include "stdafx.h"
 #include "Parameter.h"
-#include "ParameterConnection.h"
+#include "Common/IImpl.h"
+#include "Common/IObject.h"
+#include "Common/IParameterConnection.h"
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	#include "Object.h"
@@ -14,9 +16,11 @@ namespace CryAudio
 //////////////////////////////////////////////////////////////////////////
 CParameter::~CParameter()
 {
+	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during %s", __FUNCTION__);
+
 	for (auto const pConnection : m_connections)
 	{
-		delete pConnection;
+		g_pIImpl->DestructParameterConnection(pConnection);
 	}
 }
 
@@ -25,7 +29,7 @@ void CParameter::Set(CObject const& object, float const value) const
 {
 	for (auto const pConnection : m_connections)
 	{
-		pConnection->Set(object, value);
+		object.GetImplDataPtr()->SetParameter(pConnection, value);
 	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -42,9 +46,11 @@ void CParameter::Set(CObject const& object, float const value) const
 //////////////////////////////////////////////////////////////////////////
 void CParameter::SetGlobal(float const value) const
 {
+	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during %s", __FUNCTION__);
+
 	for (auto const pConnection : m_connections)
 	{
-		pConnection->SetGlobal(value);
+		g_pIImpl->SetGlobalParameter(pConnection, value);
 	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)

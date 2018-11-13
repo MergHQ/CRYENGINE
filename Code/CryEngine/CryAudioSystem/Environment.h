@@ -24,6 +24,8 @@ public:
 	{}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
+	~CEnvironment();
+
 	EnvironmentConnections const m_connections;
 };
 } // namespace CryAudio

@@ -42,7 +42,6 @@ public:
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	CObject*          m_pObject = nullptr;
-	TriggerImplId     m_triggerImplId = InvalidTriggerImplId;
 	TriggerInstanceId m_triggerInstanceId = InvalidTriggerInstanceId;
 	EEventState       m_state = EEventState::None;
 	Impl::IEvent*     m_pImplData = nullptr;

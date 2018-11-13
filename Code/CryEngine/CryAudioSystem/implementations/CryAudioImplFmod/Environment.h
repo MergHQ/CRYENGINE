@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <IEnvironment.h>
+#include <IEnvironmentConnection.h>
 #include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace CryAudio
@@ -18,7 +18,7 @@ enum class EEnvironmentType : EnumFlagsType
 	Parameter,
 };
 
-class CEnvironment : public IEnvironment
+class CEnvironment : public IEnvironmentConnection
 {
 public:
 

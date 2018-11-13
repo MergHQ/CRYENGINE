@@ -407,9 +407,9 @@ ERequestStatus CImpl::StopAllSounds()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalParameter(IParameter const* const pIParameter, float const value)
+void CImpl::SetGlobalParameter(IParameterConnection const* const pIParameterConnection, float const value)
 {
-	auto const pParameter = static_cast<CParameter const*>(pIParameter);
+	auto const pParameter = static_cast<CParameter const*>(pIParameterConnection);
 
 	if (pParameter != nullptr)
 	{
@@ -454,9 +454,9 @@ void CImpl::SetGlobalParameter(IParameter const* const pIParameter, float const 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalSwitchState(ISwitchState const* const pISwitchState)
+void CImpl::SetGlobalSwitchState(ISwitchStateConnection const* const pISwitchStateConnection)
 {
-	auto const pSwitchState = static_cast<CSwitchState const*>(pISwitchState);
+	auto const pSwitchState = static_cast<CSwitchState const*>(pISwitchStateConnection);
 
 	if (pSwitchState != nullptr)
 	{
@@ -469,7 +469,7 @@ void CImpl::SetGlobalSwitchState(ISwitchState const* const pISwitchState)
 			{
 				for (auto const pObject : g_constructedObjects)
 				{
-					pObject->SetSwitchState(pISwitchState);
+					pObject->SetSwitchState(pISwitchStateConnection);
 				}
 
 				break;
@@ -717,16 +717,16 @@ void CImpl::DestructEvent(IEvent const* const pIEvent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-IStandaloneFile* CImpl::ConstructStandaloneFile(CryAudio::CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITrigger const* pITrigger /*= nullptr*/)
+IStandaloneFileConnection* CImpl::ConstructStandaloneFileConnection(CryAudio::CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITriggerConnection const* pITriggerConnection /*= nullptr*/)
 {
-	return static_cast<IStandaloneFile*>(new CStandaloneFile);
+	return static_cast<IStandaloneFileConnection*>(new CStandaloneFile);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DestructStandaloneFile(IStandaloneFile const* const pIStandaloneFile)
+void CImpl::DestructStandaloneFileConnection(IStandaloneFileConnection const* const pIStandaloneFileConnection)
 {
-	CRY_ASSERT(pIStandaloneFile != nullptr);
-	delete pIStandaloneFile;
+	CRY_ASSERT(pIStandaloneFileConnection != nullptr);
+	delete pIStandaloneFileConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -740,9 +740,9 @@ void CImpl::GamepadDisconnected(DeviceId const deviceUniqueID)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode, float& radius)
+ITriggerConnection const* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode, float& radius)
 {
-	ITrigger const* pITrigger = nullptr;
+	ITriggerConnection const* pITriggerConnection = nullptr;
 
 	if (_stricmp(pRootNode->getTag(), s_szCueTag) == 0)
 	{
@@ -786,9 +786,9 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode, float& radiu
 			}
 		}
 
-		pITrigger = static_cast<ITrigger const*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, eventType, szCueSheetName));
+		pITriggerConnection = static_cast<ITriggerConnection const*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, eventType, szCueSheetName));
 #else
-		pITrigger = static_cast<ITrigger const*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, eventType));
+		pITriggerConnection = static_cast<ITriggerConnection const*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, eventType));
 #endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 	}
 	else if (_stricmp(pRootNode->getTag(), s_szSnapshotTag) == 0)
@@ -798,9 +798,9 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode, float& radiu
 		pRootNode->getAttr(s_szTimeAttribute, changeoverTime);
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-		pITrigger = static_cast<ITrigger const*>(new CTrigger(StringToId(szName), szName, 0, ETriggerType::Snapshot, EEventType::Start, "", static_cast<CriSint32>(changeoverTime)));
+		pITriggerConnection = static_cast<ITriggerConnection const*>(new CTrigger(StringToId(szName), szName, 0, ETriggerType::Snapshot, EEventType::Start, "", static_cast<CriSint32>(changeoverTime)));
 #else
-		pITrigger = static_cast<ITrigger const*>(new CTrigger(StringToId(szName), szName, 0, ETriggerType::Snapshot, EEventType::Start, static_cast<CriSint32>(changeoverTime)));
+		pITriggerConnection = static_cast<ITriggerConnection const*>(new CTrigger(StringToId(szName), szName, 0, ETriggerType::Snapshot, EEventType::Start, static_cast<CriSint32>(changeoverTime)));
 #endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 	}
 	else
@@ -808,14 +808,14 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode, float& radiu
 		Cry::Audio::Log(ELogType::Warning, "Unknown Adx2 tag: %s", pRootNode->getTag());
 	}
 
-	return pITrigger;
+	return pITriggerConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ITrigger const* CImpl::ConstructTrigger(ITriggerInfo const* const pITriggerInfo)
+ITriggerConnection const* CImpl::ConstructTriggerConnection(ITriggerInfo const* const pITriggerInfo)
 {
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-	ITrigger const* pITrigger = nullptr;
+	ITriggerConnection const* pITriggerConnection = nullptr;
 	auto const pTriggerInfo = static_cast<STriggerInfo const*>(pITriggerInfo);
 
 	if (pTriggerInfo != nullptr)
@@ -823,25 +823,25 @@ ITrigger const* CImpl::ConstructTrigger(ITriggerInfo const* const pITriggerInfo)
 		char const* const szName = pTriggerInfo->name.c_str();
 		char const* const szCueSheetName = pTriggerInfo->cueSheet.c_str();
 
-		pITrigger = static_cast<ITrigger const*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, EEventType::Start, szCueSheetName));
+		pITriggerConnection = static_cast<ITriggerConnection const*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, EEventType::Start, szCueSheetName));
 	}
 
-	return pITrigger;
+	return pITriggerConnection;
 #else
 	return nullptr;
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructTrigger(ITrigger const* const pITrigger)
+void CImpl::DestructTriggerConnection(ITriggerConnection const* const pITriggerConnection)
 {
-	delete pITrigger;
+	delete pITriggerConnection;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IParameter const* CImpl::ConstructParameter(XmlNodeRef const pRootNode)
+IParameterConnection const* CImpl::ConstructParameterConnection(XmlNodeRef const pRootNode)
 {
-	IParameter const* pParameter = nullptr;
+	IParameterConnection const* pIParameterConnection = nullptr;
 
 	char const* const szTag = pRootNode->getTag();
 	EParameterType type = EParameterType::None;
@@ -867,20 +867,20 @@ IParameter const* CImpl::ConstructParameter(XmlNodeRef const pRootNode)
 		pRootNode->getAttr(s_szMutiplierAttribute, multiplier);
 		pRootNode->getAttr(s_szShiftAttribute, shift);
 
-		pParameter = static_cast<IParameter const*>(new CParameter(szName, type, multiplier, shift));
+		pIParameterConnection = static_cast<IParameterConnection const*>(new CParameter(szName, type, multiplier, shift));
 	}
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "Unknown Adx2 tag: %s", szTag);
 	}
 
-	return pParameter;
+	return pIParameterConnection;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructParameter(IParameter const* const pIParameter)
+void CImpl::DestructParameterConnection(IParameterConnection const* const pIParameterConnection)
 {
-	delete pIParameter;
+	delete pIParameterConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -915,9 +915,9 @@ bool ParseSwitchOrState(XmlNodeRef const pNode, string& selectorName, string& se
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
+ISwitchStateConnection const* CImpl::ConstructSwitchStateConnection(XmlNodeRef const pRootNode)
 {
-	ISwitchState const* pSwitchState = nullptr;
+	ISwitchStateConnection const* pISwitchStateConnection = nullptr;
 
 	char const* const szTag = pRootNode->getTag();
 	ESwitchType type = ESwitchType::None;
@@ -946,7 +946,7 @@ ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
 
 		if (ParseSwitchOrState(pRootNode, szSelectorName, szSelectorLabelName))
 		{
-			pSwitchState = static_cast<ISwitchState const*>(new CSwitchState(type, szSelectorName, szSelectorLabelName));
+			pISwitchStateConnection = static_cast<ISwitchStateConnection const*>(new CSwitchState(type, szSelectorName, szSelectorLabelName));
 		}
 	}
 	else if (type != ESwitchType::None)
@@ -956,7 +956,7 @@ ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
 
 		if (pRootNode->getAttr(s_szValueAttribute, value))
 		{
-			pSwitchState = static_cast<ISwitchState const*>(new CSwitchState(type, szName, "", static_cast<CriFloat32>(value)));
+			pISwitchStateConnection = static_cast<ISwitchStateConnection const*>(new CSwitchState(type, szName, "", static_cast<CriFloat32>(value)));
 		}
 	}
 	else
@@ -964,19 +964,19 @@ ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
 		Cry::Audio::Log(ELogType::Warning, "Unknown Adx2 tag: %s", szTag);
 	}
 
-	return pSwitchState;
+	return pISwitchStateConnection;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructSwitchState(ISwitchState const* const pISwitchState)
+void CImpl::DestructSwitchStateConnection(ISwitchStateConnection const* const pISwitchStateConnection)
 {
-	delete pISwitchState;
+	delete pISwitchStateConnection;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IEnvironment const* CImpl::ConstructEnvironment(XmlNodeRef const pRootNode)
+IEnvironmentConnection const* CImpl::ConstructEnvironmentConnection(XmlNodeRef const pRootNode)
 {
-	IEnvironment const* pEnvironment = nullptr;
+	IEnvironmentConnection const* pEnvironmentConnection = nullptr;
 
 	char const* const szTag = pRootNode->getTag();
 
@@ -984,7 +984,7 @@ IEnvironment const* CImpl::ConstructEnvironment(XmlNodeRef const pRootNode)
 	{
 		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
 
-		pEnvironment = static_cast<IEnvironment const*>(new CEnvironment(szName, EEnvironmentType::Bus));
+		pEnvironmentConnection = static_cast<IEnvironmentConnection const*>(new CEnvironment(szName, EEnvironmentType::Bus));
 	}
 	else if (_stricmp(szTag, s_szAisacControlTag) == 0)
 	{
@@ -994,46 +994,46 @@ IEnvironment const* CImpl::ConstructEnvironment(XmlNodeRef const pRootNode)
 		pRootNode->getAttr(s_szMutiplierAttribute, multiplier);
 		pRootNode->getAttr(s_szShiftAttribute, shift);
 
-		pEnvironment = static_cast<IEnvironment const*>(new CEnvironment(szName, EEnvironmentType::AisacControl, multiplier, shift));
+		pEnvironmentConnection = static_cast<IEnvironmentConnection const*>(new CEnvironment(szName, EEnvironmentType::AisacControl, multiplier, shift));
 	}
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "Unknown Adx2 tag: %s", szTag);
 	}
 
-	return pEnvironment;
+	return pEnvironmentConnection;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructEnvironment(IEnvironment const* const pIEnvironment)
+void CImpl::DestructEnvironmentConnection(IEnvironmentConnection const* const pIEnvironmentConnection)
 {
-	delete pIEnvironment;
+	delete pIEnvironmentConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ISetting const* CImpl::ConstructSetting(XmlNodeRef const pRootNode)
+ISettingConnection const* CImpl::ConstructSettingConnection(XmlNodeRef const pRootNode)
 {
-	ISetting const* pISetting = nullptr;
+	ISettingConnection const* pISettingConnection = nullptr;
 
 	char const* const szTag = pRootNode->getTag();
 
 	if (_stricmp(szTag, s_szDspBusSettingTag) == 0)
 	{
 		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
-		pISetting = static_cast<ISetting const*>(new CSetting(szName));
+		pISettingConnection = static_cast<ISettingConnection const*>(new CSetting(szName));
 	}
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "Unknown Adx2 tag: %s", szTag);
 	}
 
-	return pISetting;
+	return pISettingConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DestructSetting(ISetting const* const pISetting)
+void CImpl::DestructSettingConnection(ISettingConnection const* const pISettingConnection)
 {
-	delete pISetting;
+	delete pISettingConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////

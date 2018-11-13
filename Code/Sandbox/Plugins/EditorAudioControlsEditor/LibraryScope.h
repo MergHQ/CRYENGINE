@@ -62,11 +62,6 @@ struct SLibraryScope final
 	uint32     numEnvironments = 0;
 	uint32     numPreloads = 0;
 	uint32     numSettings = 0;
-	uint32     numTriggerConnections = 0;
-	uint32     numParameterConnections = 0;
-	uint32     numStateConnections = 0;
-	uint32     numEnvironmentConnections = 0;
-	uint32     numPreloadConnections = 0;
-	uint32     numSettingConnections = 0;
+	uint32     numFiles = 0;
 };
 } // namespace ACE

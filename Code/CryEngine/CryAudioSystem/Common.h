@@ -17,6 +17,11 @@ static constexpr ControlId ResumeAllTriggerId = StringToId(s_szResumeAllTriggerN
 namespace Impl
 {
 struct IImpl;
+struct IEnvironmentConnection;
+struct IParameterConnection;
+struct ISettingConnection;
+struct ISwitchStateConnection;
+struct ITriggerConnection;
 } // namespace Impl
 
 class CSystem;
@@ -33,11 +38,6 @@ class CSwitch;
 class CPreloadRequest;
 class CEnvironment;
 class CSetting;
-class CTriggerConnection;
-class CParameterConnection;
-class CSwitchStateConnection;
-class CEnvironmentConnection;
-class CSettingConnection;
 
 enum class ESystemStates : EnumFlagsType
 {
@@ -58,13 +58,12 @@ using PreloadRequestLookup = std::map<PreloadRequestId, CPreloadRequest*>;
 using EnvironmentLookup = std::map<EnvironmentId, CEnvironment const*>;
 using SettingLookup = std::map<ControlId, CSetting const*>;
 
-using TriggerConnections = std::vector<CTriggerConnection const*>;
-using ParameterConnections = std::vector<CParameterConnection const*>;
-using SwitchStateConnections = std::vector<CSwitchStateConnection const*>;
-using EnvironmentConnections = std::vector<CEnvironmentConnection const*>;
-using SettingConnections = std::vector<CSettingConnection const*>;
+using TriggerConnections = std::vector<Impl::ITriggerConnection const*>;
+using ParameterConnections = std::vector<Impl::IParameterConnection const*>;
+using SwitchStateConnections = std::vector<Impl::ISwitchStateConnection const*>;
+using EnvironmentConnections = std::vector<Impl::IEnvironmentConnection const*>;
+using SettingConnections = std::vector<Impl::ISettingConnection const*>;
 
-extern TriggerImplId g_uniqueConnectionId;
 extern Impl::IImpl* g_pIImpl;
 extern CSystem g_system;
 extern ESystemStates g_systemStates;
@@ -96,12 +95,7 @@ struct SPoolSizes final
 	uint16 environments = 0;
 	uint16 preloads = 0;
 	uint16 settings = 0;
-	uint16 triggerConnections = 0;
-	uint16 parameterConnections = 0;
-	uint16 stateConnections = 0;
-	uint16 environmentConnections = 0;
-	uint16 preloadConnections = 0;
-	uint16 settingConnections = 0;
+	uint16 files = 0;
 };
 
 extern SPoolSizes g_poolSizes;

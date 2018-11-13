@@ -2,7 +2,9 @@
 
 #include "stdafx.h"
 #include "SwitchState.h"
-#include "SwitchStateConnection.h"
+#include "Common/IImpl.h"
+#include "Common/IObject.h"
+#include "Common/ISwitchStateConnection.h"
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	#include "Object.h"
@@ -13,9 +15,11 @@ namespace CryAudio
 //////////////////////////////////////////////////////////////////////////
 CSwitchState::~CSwitchState()
 {
+	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during %s", __FUNCTION__);
+
 	for (auto const pConnection : m_connections)
 	{
-		delete pConnection;
+		g_pIImpl->DestructSwitchStateConnection(pConnection);
 	}
 }
 
@@ -24,7 +28,7 @@ void CSwitchState::Set(CObject const& object) const
 {
 	for (auto const pConnection : m_connections)
 	{
-		pConnection->Set(object);
+		object.GetImplDataPtr()->SetSwitchState(pConnection);
 	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -35,9 +39,11 @@ void CSwitchState::Set(CObject const& object) const
 //////////////////////////////////////////////////////////////////////////
 void CSwitchState::SetGlobal() const
 {
+	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during %s", __FUNCTION__);
+
 	for (auto const pConnection : m_connections)
 	{
-		pConnection->SetGlobal();
+		g_pIImpl->SetGlobalSwitchState(pConnection);
 	}
 }
 } // namespace CryAudio

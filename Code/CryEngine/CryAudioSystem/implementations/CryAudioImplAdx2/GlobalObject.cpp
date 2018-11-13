@@ -34,7 +34,7 @@ void CGlobalObject::SetTransformation(CTransformation const& transformation)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CGlobalObject::SetEnvironment(IEnvironment const* const pIEnvironment, float const amount)
+void CGlobalObject::SetEnvironment(IEnvironmentConnection const* const pIEnvironment, float const amount)
 {
 	Cry::Audio::Log(ELogType::Error, "Trying to set an environment on the global object!");
 }

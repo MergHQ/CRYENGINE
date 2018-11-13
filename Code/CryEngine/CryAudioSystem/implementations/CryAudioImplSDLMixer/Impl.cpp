@@ -288,9 +288,9 @@ ERequestStatus CImpl::StopAllSounds()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalParameter(IParameter const* const pIParameter, float const value)
+void CImpl::SetGlobalParameter(IParameterConnection const* const pIParameterConnection, float const value)
 {
-	auto const pParameter = static_cast<CParameter const*>(pIParameter);
+	auto const pParameter = static_cast<CParameter const*>(pIParameterConnection);
 
 	if (pParameter != nullptr)
 	{
@@ -306,9 +306,9 @@ void CImpl::SetGlobalParameter(IParameter const* const pIParameter, float const 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalSwitchState(ISwitchState const* const pISwitchState)
+void CImpl::SetGlobalSwitchState(ISwitchStateConnection const* const pISwitchStateConnection)
 {
-	auto const pSwitchState = static_cast<CSwitchState const*>(pISwitchState);
+	auto const pSwitchState = static_cast<CSwitchState const*>(pISwitchStateConnection);
 
 	if (pSwitchState != nullptr)
 	{
@@ -441,7 +441,7 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode, float& radius)
+ITriggerConnection const* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode, float& radius)
 {
 	CTrigger* pTrigger = nullptr;
 
@@ -530,14 +530,14 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode, float& radiu
 		Cry::Audio::Log(ELogType::Warning, "Unknown SDL Mixer tag: %s", pRootNode->getTag());
 	}
 
-	return static_cast<ITrigger*>(pTrigger);
+	return static_cast<ITriggerConnection*>(pTrigger);
 }
 
 //////////////////////////////////////////////////////////////////////////
-ITrigger const* CImpl::ConstructTrigger(ITriggerInfo const* const pITriggerInfo)
+ITriggerConnection const* CImpl::ConstructTriggerConnection(ITriggerInfo const* const pITriggerInfo)
 {
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
-	ITrigger const* pITrigger = nullptr;
+	ITriggerConnection const* pITriggerConnection = nullptr;
 	auto const pTriggerInfo = static_cast<STriggerInfo const*>(pITriggerInfo);
 
 	if (pTriggerInfo != nullptr)
@@ -545,28 +545,28 @@ ITrigger const* CImpl::ConstructTrigger(ITriggerInfo const* const pITriggerInfo)
 		string const fullFilePath = GetFullFilePath(pTriggerInfo->name.c_str(), pTriggerInfo->path.c_str());
 		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true, pTriggerInfo->isLocalized);
 
-		pITrigger = static_cast<ITrigger const*>(new CTrigger(EEventType::Start, sampleId, -1.0f, -1.0f, 128, 0, 0, 0, false));
+		pITriggerConnection = static_cast<ITriggerConnection const*>(new CTrigger(EEventType::Start, sampleId, -1.0f, -1.0f, 128, 0, 0, 0, false));
 	}
 
-	return pITrigger;
+	return pITriggerConnection;
 #else
 	return nullptr;
 #endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructTrigger(ITrigger const* const pITrigger)
+void CImpl::DestructTriggerConnection(ITriggerConnection const* const pITriggerConnection)
 {
-	if (pITrigger != nullptr)
+	if (pITriggerConnection != nullptr)
 	{
-		auto const pTrigger = static_cast<CTrigger const* const>(pITrigger);
+		auto const pTrigger = static_cast<CTrigger const* const>(pITriggerConnection);
 		SoundEngine::StopTrigger(pTrigger);
 		delete pTrigger;
 	}
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IParameter const* CImpl::ConstructParameter(XmlNodeRef const pRootNode)
+IParameterConnection const* CImpl::ConstructParameterConnection(XmlNodeRef const pRootNode)
 {
 	CParameter* pParameter = nullptr;
 
@@ -590,17 +590,17 @@ IParameter const* CImpl::ConstructParameter(XmlNodeRef const pRootNode)
 		pParameter = new CParameter(sampleId, multiplier, shift, szFileName);
 	}
 
-	return static_cast<IParameter*>(pParameter);
+	return static_cast<IParameterConnection*>(pParameter);
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructParameter(IParameter const* const pIParameter)
+void CImpl::DestructParameterConnection(IParameterConnection const* const pIParameterConnection)
 {
-	delete pIParameter;
+	delete pIParameterConnection;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
+ISwitchStateConnection const* CImpl::ConstructSwitchStateConnection(XmlNodeRef const pRootNode)
 {
 	CSwitchState* pSwitchState = nullptr;
 
@@ -622,37 +622,37 @@ ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
 		pSwitchState = new CSwitchState(sampleId, value, szFileName);
 	}
 
-	return static_cast<ISwitchState*>(pSwitchState);
+	return static_cast<ISwitchStateConnection*>(pSwitchState);
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructSwitchState(ISwitchState const* const pISwitchState)
+void CImpl::DestructSwitchStateConnection(ISwitchStateConnection const* const pISwitchStateConnection)
 {
-	delete pISwitchState;
+	delete pISwitchStateConnection;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IEnvironment const* CImpl::ConstructEnvironment(XmlNodeRef const pRootNode)
+IEnvironmentConnection const* CImpl::ConstructEnvironmentConnection(XmlNodeRef const pRootNode)
 {
-	return static_cast<IEnvironment*>(new CEnvironment);
+	return static_cast<IEnvironmentConnection*>(new CEnvironment);
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructEnvironment(IEnvironment const* const pIEnvironment)
+void CImpl::DestructEnvironmentConnection(IEnvironmentConnection const* const pIEnvironmentConnection)
 {
-	delete pIEnvironment;
+	delete pIEnvironmentConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ISetting const* CImpl::ConstructSetting(XmlNodeRef const pRootNode)
+ISettingConnection const* CImpl::ConstructSettingConnection(XmlNodeRef const pRootNode)
 {
-	return static_cast<ISetting*>(new CSetting);
+	return static_cast<ISettingConnection*>(new CSetting);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DestructSetting(ISetting const* const pISetting)
+void CImpl::DestructSettingConnection(ISettingConnection const* const pISettingConnection)
 {
-	delete pISetting;
+	delete pISettingConnection;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -730,7 +730,7 @@ void CImpl::DestructEvent(IEvent const* const pIEvent)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IStandaloneFile* CImpl::ConstructStandaloneFile(CryAudio::CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITrigger const* pITrigger /*= nullptr*/)
+IStandaloneFileConnection* CImpl::ConstructStandaloneFileConnection(CryAudio::CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITriggerConnection const* pITriggerConnection /*= nullptr*/)
 {
 	static string s_localizedfilesFolder = PathUtil::GetLocalizationFolder() + "/" + m_language + "/";
 	static string filePath;
@@ -744,17 +744,17 @@ IStandaloneFile* CImpl::ConstructStandaloneFile(CryAudio::CStandaloneFile& stand
 		filePath = string(szFile) + m_pCVarFileExtension->GetString();
 	}
 
-	return static_cast<IStandaloneFile*>(new CStandaloneFile(filePath, standaloneFile));
+	return static_cast<IStandaloneFileConnection*>(new CStandaloneFile(filePath, standaloneFile));
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructStandaloneFile(IStandaloneFile const* const pIStandaloneFile)
+void CImpl::DestructStandaloneFileConnection(IStandaloneFileConnection const* const pIStandaloneFileConnection)
 {
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
-	const CStandaloneFile* const pStandaloneEvent = static_cast<const CStandaloneFile*>(pIStandaloneFile);
+	auto const pStandaloneEvent = static_cast<CStandaloneFile const*>(pIStandaloneFileConnection);
 	CRY_ASSERT_MESSAGE(pStandaloneEvent->m_channels.size() == 0, "Events always have to be stopped/finished before they get deleted during %s", __FUNCTION__);
 #endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
-	delete pIStandaloneFile;
+	delete pIStandaloneFileConnection;
 }
 
 ///////////////////////////////////////////////////////////////////////////

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <ITrigger.h>
+#include <ITriggerConnection.h>
 #include <PoolObject.h>
 
 namespace CryAudio
@@ -20,7 +20,7 @@ enum class EEventType : EnumFlagsType
 	Resume,
 };
 
-class CTrigger final : public ITrigger, public CPoolObject<CTrigger, stl::PSyncNone>
+class CTrigger final : public ITriggerConnection, public CPoolObject<CTrigger, stl::PSyncNone>
 {
 public:
 
@@ -47,12 +47,12 @@ public:
 
 	virtual ~CTrigger() override = default;
 
-	// CryAudio::Impl::ITrigger
+	// CryAudio::Impl::ITriggerConnection
 	virtual ERequestStatus Load()  const override                            { return ERequestStatus::Success; }
 	virtual ERequestStatus Unload() const override                           { return ERequestStatus::Success; }
 	virtual ERequestStatus LoadAsync(IEvent* const pIEvent) const override   { return ERequestStatus::Success; }
 	virtual ERequestStatus UnloadAsync(IEvent* const pIEvent) const override { return ERequestStatus::Success; }
-	// ~CryAudio::Impl::ITrigger
+	// ~CryAudio::Impl::ITriggerConnection
 
 	uint32                                       GetId() const               { return m_id; }
 	EEventType                                   GetEventType() const        { return m_eventType; }

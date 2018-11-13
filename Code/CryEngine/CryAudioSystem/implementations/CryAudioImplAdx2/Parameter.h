@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <IParameter.h>
+#include <IParameterConnection.h>
 #include <PoolObject.h>
 #include <CryAudio/IAudioInterfacesCommonData.h>
 
@@ -22,7 +22,7 @@ enum class EParameterType : EnumFlagsType
 	GameVariable,
 };
 
-class CParameter final : public IParameter, public CPoolObject<CParameter, stl::PSyncNone>
+class CParameter final : public IParameterConnection, public CPoolObject<CParameter, stl::PSyncNone>
 {
 public:
 

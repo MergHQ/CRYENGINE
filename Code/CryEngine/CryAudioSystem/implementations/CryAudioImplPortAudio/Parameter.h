@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <IParameter.h>
+#include <IParameterConnection.h>
 
 namespace CryAudio
 {
@@ -10,7 +10,7 @@ namespace Impl
 {
 namespace PortAudio
 {
-class CParameter final : public IParameter
+class CParameter final : public IParameterConnection
 {
 public:
 
