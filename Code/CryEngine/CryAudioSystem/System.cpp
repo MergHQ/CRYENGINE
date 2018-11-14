@@ -2354,22 +2354,20 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 {
 	ERequestStatus result = ERequestStatus::Failure;
-	SCallbackRequestDataBase const* const pBase =
-		static_cast<SCallbackRequestDataBase const* const>(request.GetData());
+	auto const pBase = static_cast<SCallbackRequestDataBase const*>(request.GetData());
 
 	switch (pBase->callbackRequestType)
 	{
 	case ECallbackRequestType::ReportStartedEvent:
 		{
-			SCallbackRequestData<ECallbackRequestType::ReportStartedEvent> const* const pRequestData =
-				static_cast<SCallbackRequestData<ECallbackRequestType::ReportStartedEvent> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportStartedEvent> const*>(request.GetData());
 			CEvent& event = pRequestData->event;
 
 			event.m_state = pRequestData->isVirtual ? EEventState::Virtual : EEventState::Playing;
 
 			if (event.m_pObject != g_pObject)
 			{
-				g_objectManager.ReportStartedEvent(&event);
+				event.m_pObject->ReportStartedEvent(&event);
 			}
 			else
 			{
@@ -2382,13 +2380,12 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 		}
 	case ECallbackRequestType::ReportFinishedEvent:
 		{
-			SCallbackRequestData<ECallbackRequestType::ReportFinishedEvent> const* const pRequestData =
-				static_cast<SCallbackRequestData<ECallbackRequestType::ReportFinishedEvent> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportFinishedEvent> const*>(request.GetData());
 			CEvent& event = pRequestData->event;
 
 			if (event.m_pObject != g_pObject)
 			{
-				g_objectManager.ReportFinishedEvent(&event, pRequestData->bSuccess);
+				event.m_pObject->ReportFinishedEvent(&event, pRequestData->bSuccess);
 			}
 			else
 			{
@@ -2403,8 +2400,7 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 		}
 	case ECallbackRequestType::ReportVirtualizedEvent:
 		{
-			SCallbackRequestData<ECallbackRequestType::ReportVirtualizedEvent> const* const pRequestData =
-				static_cast<SCallbackRequestData<ECallbackRequestType::ReportVirtualizedEvent> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportVirtualizedEvent> const*>(request.GetData());
 
 			pRequestData->event.SetVirtual();
 
@@ -2414,8 +2410,7 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 		}
 	case ECallbackRequestType::ReportPhysicalizedEvent:
 		{
-			SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedEvent> const* const pRequestData =
-				static_cast<SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedEvent> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedEvent> const*>(request.GetData());
 
 			pRequestData->event.SetPlaying();
 
@@ -2425,12 +2420,19 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 		}
 	case ECallbackRequestType::ReportStartedFile:
 		{
-			SCallbackRequestData<ECallbackRequestType::ReportStartedFile> const* const pRequestData =
-				static_cast<SCallbackRequestData<ECallbackRequestType::ReportStartedFile> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportStartedFile> const*>(request.GetData());
 
 			CStandaloneFile& standaloneFile = pRequestData->standaloneFile;
 
-			g_objectManager.GetStartedStandaloneFileRequestData(&standaloneFile, request);
+			if (standaloneFile.m_pObject != g_pObject)
+			{
+				standaloneFile.m_pObject->GetStartedStandaloneFileRequestData(&standaloneFile, request);
+			}
+			else
+			{
+				g_pObject->GetStartedStandaloneFileRequestData(&standaloneFile, request);
+			}
+
 			standaloneFile.m_state = (pRequestData->bSuccess) ? EStandaloneFileState::Playing : EStandaloneFileState::None;
 
 			result = (pRequestData->bSuccess) ? ERequestStatus::Success : ERequestStatus::Failure;
@@ -2439,19 +2441,18 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 		}
 	case ECallbackRequestType::ReportStoppedFile:
 		{
-			SCallbackRequestData<ECallbackRequestType::ReportStoppedFile> const* const pRequestData =
-				static_cast<SCallbackRequestData<ECallbackRequestType::ReportStoppedFile> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportStoppedFile> const*>(request.GetData());
 
 			CStandaloneFile& standaloneFile = pRequestData->standaloneFile;
 
-			g_objectManager.GetStartedStandaloneFileRequestData(&standaloneFile, request);
-
 			if (standaloneFile.m_pObject != g_pObject)
 			{
-				g_objectManager.ReportFinishedStandaloneFile(&standaloneFile);
+				standaloneFile.m_pObject->GetStartedStandaloneFileRequestData(&standaloneFile, request);
+				standaloneFile.m_pObject->ReportFinishedStandaloneFile(&standaloneFile);
 			}
 			else
 			{
+				g_pObject->GetStartedStandaloneFileRequestData(&standaloneFile, request);
 				g_pObject->ReportFinishedStandaloneFile(&standaloneFile);
 			}
 
