@@ -642,6 +642,8 @@ void QToolWindowSingleTabAreaFrame::setContents(QWidget* widget)
 {
 	if (m_pContents)
 	{
+		QObject::disconnect(m_pContents, &QWidget::windowTitleChanged, this, &QWidget::setWindowTitle);
+		QObject::disconnect(m_pContents, &QWidget::windowIconChanged, this, &QWidget::setWindowIcon);
 		m_pLayout->removeWidget(m_pContents);
 	}
 	if (widget)
@@ -651,6 +653,8 @@ void QToolWindowSingleTabAreaFrame::setContents(QWidget* widget)
 		setObjectName(widget->objectName());
 		setWindowIcon(widget->windowIcon());
 		setWindowTitle(widget->windowTitle());
+		QObject::connect(widget, &QWidget::windowTitleChanged, this, &QWidget::setWindowTitle);
+		QObject::connect(widget, &QWidget::windowIconChanged, this, &QWidget::setWindowIcon);
 	}
 	m_pContents = widget;
 }
