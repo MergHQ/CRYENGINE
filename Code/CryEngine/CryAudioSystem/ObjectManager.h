@@ -33,11 +33,6 @@ public:
 	void            ReleaseImplData();
 	void            Update(float const deltaTime);
 	void            RegisterObject(CObject* const pObject);
-
-	void            ReportStartedEvent(CEvent* const pEvent);
-	void            ReportFinishedEvent(CEvent* const pEvent, bool const bSuccess);
-	void            GetStartedStandaloneFileRequestData(CStandaloneFile* const pStandaloneFile, CRequest& request);
-	void            ReportFinishedStandaloneFile(CStandaloneFile* const pStandaloneFile);
 	void            ReleasePendingRays();
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)

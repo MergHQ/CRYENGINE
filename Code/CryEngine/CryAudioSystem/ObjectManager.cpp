@@ -130,66 +130,6 @@ void CObjectManager::RegisterObject(CObject* const pObject)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObjectManager::ReportStartedEvent(CEvent* const pEvent)
-{
-	if (pEvent != nullptr)
-	{
-		CObject* const pObject = pEvent->m_pObject;
-		CRY_ASSERT_MESSAGE(pObject, "Event reported as started has no audio object during %s", __FUNCTION__);
-		pObject->ReportStartedEvent(pEvent);
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Warning, "NULL pEvent during %s", __FUNCTION__);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObjectManager::ReportFinishedEvent(CEvent* const pEvent, bool const bSuccess)
-{
-	if (pEvent != nullptr)
-	{
-		CObject* const pObject = pEvent->m_pObject;
-		CRY_ASSERT_MESSAGE(pObject, "Event reported as finished has no audio object during %s", __FUNCTION__);
-		pObject->ReportFinishedEvent(pEvent, bSuccess);
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Warning, "NULL pEvent during %s", __FUNCTION__);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObjectManager::GetStartedStandaloneFileRequestData(CStandaloneFile* const pStandaloneFile, CRequest& request)
-{
-	if (pStandaloneFile != nullptr)
-	{
-		CObject* const pObject = pStandaloneFile->m_pObject;
-		CRY_ASSERT_MESSAGE(pObject, "Standalone file request without audio object!");
-		pObject->GetStartedStandaloneFileRequestData(pStandaloneFile, request);
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Warning, "NULL _pStandaloneFile in CObjectManager::GetStartedStandaloneFileRequestData");
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObjectManager::ReportFinishedStandaloneFile(CStandaloneFile* const pStandaloneFile)
-{
-	if (pStandaloneFile != nullptr)
-	{
-		CObject* const pObject = pStandaloneFile->m_pObject;
-		CRY_ASSERT_MESSAGE(pObject, "Standalone file reported as finished has no audio object during %s", __FUNCTION__);
-		pObject->ReportFinishedStandaloneFile(pStandaloneFile);
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Warning, "NULL _pStandaloneFile during %s", __FUNCTION__);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::ReleasePendingRays()
 {
 	for (auto const pObject : m_constructedObjects)
