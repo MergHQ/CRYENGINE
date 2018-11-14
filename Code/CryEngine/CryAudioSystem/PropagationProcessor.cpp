@@ -99,8 +99,7 @@ int CPropagationProcessor::OnObstructionTest(EventPhys const* pEvent)
 		{
 			pRayInfo->numHits = std::min(static_cast<size_t>(pRWIResult->nHits) + 1, s_maxRayHits);
 			SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> requestData(pRayInfo);
-			CRequest request(&requestData);
-			request.pObject = pRayInfo->pObject;
+			CRequest const request(&requestData, pRayInfo->pObject);
 			g_system.PushRequest(request);
 		}
 		else

@@ -502,9 +502,7 @@ CSystem::~CSystem()
 void CSystem::AddRequestListener(void (*func)(SRequestInfo const* const), void* const pObjectToListenTo, ESystemEvents const eventMask)
 {
 	SSystemRequestData<ESystemRequestType::AddRequestListener> const requestData(pObjectToListenTo, func, eventMask);
-	CRequest request(&requestData);
-	request.flags = ERequestFlags::ExecuteBlocking;
-	request.pOwner = pObjectToListenTo; // This makes sure that the listener is notified.
+	CRequest const request(&requestData, nullptr, ERequestFlags::ExecuteBlocking, pObjectToListenTo); // This makes sure that the listener is notified.
 	PushRequest(request);
 }
 
@@ -512,9 +510,7 @@ void CSystem::AddRequestListener(void (*func)(SRequestInfo const* const), void* 
 void CSystem::RemoveRequestListener(void (*func)(SRequestInfo const* const), void* const pObjectToListenTo)
 {
 	SSystemRequestData<ESystemRequestType::RemoveRequestListener> const requestData(pObjectToListenTo, func);
-	CRequest request(&requestData);
-	request.flags = ERequestFlags::ExecuteBlocking;
-	request.pOwner = pObjectToListenTo; // This makes sure that the listener is notified.
+	CRequest const request(&requestData, nullptr, ERequestFlags::ExecuteBlocking, pObjectToListenTo); // This makes sure that the listener is notified.
 	PushRequest(request);
 }
 
@@ -906,10 +902,9 @@ void CSystem::Release()
 	{
 		RemoveRequestListener(&CSystem::OnCallback, nullptr);
 
-		SSystemRequestData<ESystemRequestType::ReleaseImpl> const releaseImplData;
-		CRequest releaseImplRequest(&releaseImplData);
-		releaseImplRequest.flags = ERequestFlags::ExecuteBlocking;
-		PushRequest(releaseImplRequest);
+		SSystemRequestData<ESystemRequestType::ReleaseImpl> const requestData;
+		CRequest const request(&requestData, nullptr, ERequestFlags::ExecuteBlocking);
+		PushRequest(request);
 
 		m_mainThread.Deactivate();
 
@@ -951,11 +946,7 @@ void CSystem::Release()
 void CSystem::SetImpl(Impl::IImpl* const pIImpl, SRequestUserData const& userData /*= SAudioRequestUserData::GetEmptyObject()*/)
 {
 	SSystemRequestData<ESystemRequestType::SetImpl> const requestData(pIImpl);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -963,11 +954,7 @@ void CSystem::SetImpl(Impl::IImpl* const pIImpl, SRequestUserData const& userDat
 void CSystem::LoadTrigger(ControlId const triggerId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SObjectRequestData<EObjectRequestType::LoadTrigger> const requestData(triggerId);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -975,11 +962,7 @@ void CSystem::LoadTrigger(ControlId const triggerId, SRequestUserData const& use
 void CSystem::UnloadTrigger(ControlId const triggerId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SObjectRequestData<EObjectRequestType::UnloadTrigger> const requestData(triggerId);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -987,11 +970,7 @@ void CSystem::UnloadTrigger(ControlId const triggerId, SRequestUserData const& u
 void CSystem::ExecuteTriggerEx(SExecuteTriggerData const& triggerData, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SSystemRequestData<ESystemRequestType::ExecuteTriggerEx> const requestData(triggerData);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -999,11 +978,7 @@ void CSystem::ExecuteTriggerEx(SExecuteTriggerData const& triggerData, SRequestU
 void CSystem::ExecuteDefaultTrigger(EDefaultTriggerType const type, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
 	SSystemRequestData<ESystemRequestType::ExecuteDefaultTrigger> const requestData(type);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1011,11 +986,7 @@ void CSystem::ExecuteDefaultTrigger(EDefaultTriggerType const type, SRequestUser
 void CSystem::SetParameter(ControlId const parameterId, float const value, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SSystemRequestData<ESystemRequestType::SetParameter> const requestData(parameterId, value);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1023,11 +994,7 @@ void CSystem::SetParameter(ControlId const parameterId, float const value, SRequ
 void CSystem::SetGlobalParameter(ControlId const parameterId, float const value, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SSystemRequestData<ESystemRequestType::SetGlobalParameter> const requestData(parameterId, value);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1035,11 +1002,7 @@ void CSystem::SetGlobalParameter(ControlId const parameterId, float const value,
 void CSystem::SetSwitchState(ControlId const switchId, SwitchStateId const switchStateId, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
 	SSystemRequestData<ESystemRequestType::SetSwitchState> const requestData(switchId, switchStateId);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1047,11 +1010,7 @@ void CSystem::SetSwitchState(ControlId const switchId, SwitchStateId const switc
 void CSystem::SetGlobalSwitchState(ControlId const switchId, SwitchStateId const switchStateId, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
 	SSystemRequestData<ESystemRequestType::SetGlobalSwitchState> const requestData(switchId, switchStateId);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1059,11 +1018,7 @@ void CSystem::SetGlobalSwitchState(ControlId const switchId, SwitchStateId const
 void CSystem::ExecuteTrigger(ControlId const triggerId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SSystemRequestData<ESystemRequestType::ExecuteTrigger> const requestData(triggerId);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1073,21 +1028,13 @@ void CSystem::StopTrigger(ControlId const triggerId /* = CryAudio::InvalidContro
 	if (triggerId != InvalidControlId)
 	{
 		SSystemRequestData<ESystemRequestType::StopTrigger> const requestData(triggerId);
-		CRequest request(&requestData);
-		request.flags = userData.flags;
-		request.pOwner = userData.pOwner;
-		request.pUserData = userData.pUserData;
-		request.pUserDataOwner = userData.pUserDataOwner;
+		CRequest const request(&requestData, userData);
 		PushRequest(request);
 	}
 	else
 	{
 		SSystemRequestData<ESystemRequestType::StopAllTriggers> const requestData;
-		CRequest request(&requestData);
-		request.flags = userData.flags;
-		request.pOwner = userData.pOwner;
-		request.pUserData = userData.pUserData;
-		request.pUserDataOwner = userData.pUserDataOwner;
+		CRequest const request(&requestData, userData);
 		PushRequest(request);
 	}
 }
@@ -1192,11 +1139,13 @@ void CSystem::ResetRequestCount()
 void CSystem::PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SObjectRequestData<EObjectRequestType::PlayFile> const requestData(playFileInfo.szFile, playFileInfo.usedTriggerForPlayback, playFileInfo.bLocalized);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = (userData.pOwner != nullptr) ? userData.pOwner : &g_system;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(
+		&requestData,
+		nullptr,
+		userData.flags,
+		((userData.pOwner != nullptr) ? userData.pOwner : &g_system),
+		userData.pUserData,
+		userData.pUserDataOwner);
 	PushRequest(request);
 }
 
@@ -1204,11 +1153,7 @@ void CSystem::PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const
 void CSystem::StopFile(char const* const szName, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
 	SObjectRequestData<EObjectRequestType::StopFile> const requestData(szName);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1219,11 +1164,7 @@ void CSystem::ReportStartedFile(
 	SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
 	SCallbackRequestData<ECallbackRequestType::ReportStartedFile> const requestData(standaloneFile, bSuccessfullyStarted);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1231,11 +1172,7 @@ void CSystem::ReportStartedFile(
 void CSystem::ReportStoppedFile(CStandaloneFile& standaloneFile, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SCallbackRequestData<ECallbackRequestType::ReportStoppedFile> const requestData(standaloneFile);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1251,11 +1188,7 @@ void CSystem::ReportFinishedEvent(
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	SCallbackRequestData<ECallbackRequestType::ReportFinishedEvent> const requestData(event, bSuccess);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1267,11 +1200,7 @@ void CSystem::ReportVirtualizedEvent(CEvent& event, SRequestUserData const& user
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	SCallbackRequestData<ECallbackRequestType::ReportVirtualizedEvent> const requestData(event);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1283,11 +1212,7 @@ void CSystem::ReportPhysicalizedEvent(CEvent& event, SRequestUserData const& use
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedEvent> const requestData(event);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1295,11 +1220,7 @@ void CSystem::ReportPhysicalizedEvent(CEvent& event, SRequestUserData const& use
 void CSystem::StopAllSounds(SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SSystemRequestData<ESystemRequestType::StopAllSounds> const requestData;
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1307,11 +1228,7 @@ void CSystem::StopAllSounds(SRequestUserData const& userData /* = SAudioRequestU
 void CSystem::Refresh(char const* const szLevelName, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SSystemRequestData<ESystemRequestType::RefreshSystem> const requestData(szLevelName);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1322,11 +1239,7 @@ void CSystem::ParseControlsData(
 	SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SSystemRequestData<ESystemRequestType::ParseControlsData> const requestData(szFolderPath, dataScope);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1337,11 +1250,7 @@ void CSystem::ParsePreloadsData(
 	SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SSystemRequestData<ESystemRequestType::ParsePreloadsData> const requestData(szFolderPath, dataScope);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1349,11 +1258,7 @@ void CSystem::ParsePreloadsData(
 void CSystem::PreloadSingleRequest(PreloadRequestId const id, bool const bAutoLoadOnly, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
 	SSystemRequestData<ESystemRequestType::PreloadSingleRequest> const requestData(id, bAutoLoadOnly);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1361,11 +1266,7 @@ void CSystem::PreloadSingleRequest(PreloadRequestId const id, bool const bAutoLo
 void CSystem::UnloadSingleRequest(PreloadRequestId const id, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
 	SSystemRequestData<ESystemRequestType::UnloadSingleRequest> const requestData(id);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1373,11 +1274,7 @@ void CSystem::UnloadSingleRequest(PreloadRequestId const id, SRequestUserData co
 void CSystem::AutoLoadSetting(EDataScope const dataScope, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
 	SSystemRequestData<ESystemRequestType::AutoLoadSetting> const requestData(dataScope);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1385,11 +1282,7 @@ void CSystem::AutoLoadSetting(EDataScope const dataScope, SRequestUserData const
 void CSystem::LoadSetting(ControlId const id, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
 	SSystemRequestData<ESystemRequestType::LoadSetting> const requestData(id);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1397,11 +1290,7 @@ void CSystem::LoadSetting(ControlId const id, SRequestUserData const& userData /
 void CSystem::UnloadSetting(ControlId const id, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
 	SSystemRequestData<ESystemRequestType::UnloadSetting> const requestData(id);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1409,11 +1298,7 @@ void CSystem::UnloadSetting(ControlId const id, SRequestUserData const& userData
 void CSystem::RetriggerControls(SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SSystemRequestData<ESystemRequestType::RetriggerControls> const requestData;
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1424,11 +1309,7 @@ void CSystem::ReloadControlsData(
 	SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SSystemRequestData<ESystemRequestType::ReloadControlsData> const requestData(szFolderPath, szLevelName);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
@@ -1443,8 +1324,7 @@ CryAudio::IListener* CSystem::CreateListener(CTransformation const& transformati
 {
 	CListener* pListener = nullptr;
 	SSystemRequestData<ESystemRequestType::RegisterListener> const requestData(&pListener, transformation, szName);
-	CRequest request(&requestData);
-	request.flags = ERequestFlags::ExecuteBlocking;
+	CRequest const request(&requestData, nullptr, ERequestFlags::ExecuteBlocking);
 	PushRequest(request);
 
 	return static_cast<CryAudio::IListener*>(pListener);
@@ -1463,8 +1343,7 @@ CryAudio::IObject* CSystem::CreateObject(SCreateObjectData const& objectData /*=
 {
 	CObject* pObject = nullptr;
 	SSystemRequestData<ESystemRequestType::RegisterObject> const requestData(&pObject, objectData);
-	CRequest request(&requestData);
-	request.flags = ERequestFlags::ExecuteBlocking;
+	CRequest const request(&requestData, nullptr, ERequestFlags::ExecuteBlocking);
 	PushRequest(request);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -1505,8 +1384,7 @@ void CSystem::GetFileData(char const* const szName, SFileData& fileData)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	SSystemRequestData<ESystemRequestType::GetFileData> const requestData(szName, fileData);
-	CRequest request(&requestData);
-	request.flags = ERequestFlags::ExecuteBlocking;
+	CRequest const request(&requestData, nullptr, ERequestFlags::ExecuteBlocking);
 	PushRequest(request);
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
@@ -3261,8 +3139,7 @@ void CSystem::OnCallback(SRequestInfo const* const pRequestInfo)
 void CSystem::GetImplInfo(SImplInfo& implInfo)
 {
 	SSystemRequestData<ESystemRequestType::GetImplInfo> const requestData(implInfo);
-	CRequest request(&requestData);
-	request.flags = ERequestFlags::ExecuteBlocking;
+	CRequest const request(&requestData, nullptr, ERequestFlags::ExecuteBlocking);
 	PushRequest(request);
 }
 
