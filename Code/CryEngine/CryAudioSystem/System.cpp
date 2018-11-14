@@ -1246,6 +1246,7 @@ void CSystem::ReportFinishedEvent(
 	SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	CRY_ASSERT_MESSAGE(!event.m_toBeRemoved, R"(Event "%s" is already to be removed during %s)", event.GetTriggerName(), __FUNCTION__);
 	event.m_toBeRemoved = true;
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -1262,7 +1263,7 @@ void CSystem::ReportFinishedEvent(
 void CSystem::ReportVirtualizedEvent(CEvent& event, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	CRY_ASSERT_MESSAGE(!event.m_toBeRemoved, "Event is already to be removed during %s", __FUNCTION__);
+	CRY_ASSERT_MESSAGE(!event.m_toBeRemoved, R"(Event "%s" is already to be removed during %s)", event.GetTriggerName(), __FUNCTION__);
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	SCallbackRequestData<ECallbackRequestType::ReportVirtualizedEvent> const requestData(event);
@@ -1278,7 +1279,7 @@ void CSystem::ReportVirtualizedEvent(CEvent& event, SRequestUserData const& user
 void CSystem::ReportPhysicalizedEvent(CEvent& event, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	CRY_ASSERT_MESSAGE(!event.m_toBeRemoved, "Event is already to be removed during %s", __FUNCTION__);
+	CRY_ASSERT_MESSAGE(!event.m_toBeRemoved, R"(Event "%s" is already to be removed during %s)", event.GetTriggerName(), __FUNCTION__);
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedEvent> const requestData(event);
@@ -1528,6 +1529,8 @@ void CSystem::ReleaseImpl()
 {
 	// Reject new requests during shutdown.
 	g_systemStates |= ESystemStates::ImplShuttingDown;
+
+	g_pIImpl->OnBeforeRelease();
 
 	// Release middleware specific data before its shutdown.
 	g_fileManager.ReleaseImplData();

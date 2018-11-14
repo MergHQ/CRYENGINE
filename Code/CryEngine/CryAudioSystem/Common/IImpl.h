@@ -59,9 +59,16 @@ struct IImpl
 	virtual void ShutDown() = 0;
 
 	/**
+	 * The audio system signals that the implementation is about to be released.
+	 * @return void
+	 * @see ShutDown, Init, Release
+	 */
+	virtual void OnBeforeRelease() = 0;
+
+	/**
 	 * Frees all of the resources used by the class and destroys the instance. This action is not reversible.
 	 * @return void
-	 * @see ShutDown, Init
+	 * @see ShutDown, Init, OnBeforeRelease
 	 */
 	virtual void Release() = 0;
 

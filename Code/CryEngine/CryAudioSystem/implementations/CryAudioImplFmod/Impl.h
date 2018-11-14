@@ -24,6 +24,7 @@ public:
 	virtual void                          Update() override;
 	virtual ERequestStatus                Init(uint16 const objectPoolSize, uint16 const eventPoolSize) override;
 	virtual void                          ShutDown() override;
+	virtual void                          OnBeforeRelease() override {}
 	virtual void                          Release() override;
 	virtual void                          SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific) override;
 	virtual void                          OnBeforeLibraryDataChanged() override;

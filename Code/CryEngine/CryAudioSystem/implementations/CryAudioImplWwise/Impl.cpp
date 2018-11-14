@@ -299,6 +299,7 @@ CSwitchState const* ParseWwiseRtpcSwitch(XmlNodeRef const pNode)
 CImpl::CImpl()
 	: m_gameObjectId(2) // Start with id 2, because id 1 would get ignored when setting a parameter on all constructed objects.
 	, m_initBankId(AK_INVALID_BANK_ID)
+	, m_toBeReleased(false)
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	, m_bCommSystemInitialized(false)
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
@@ -743,6 +744,12 @@ void CImpl::ShutDown()
 		m_pOculusSpatializerLibrary = nullptr;
 	}
 #endif  // WWISE_USE_OCULUS
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnBeforeRelease()
+{
+	m_toBeReleased = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////

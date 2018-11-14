@@ -4,6 +4,7 @@
 
 #include "FileIOHandler.h"
 #include <IImpl.h>
+#include <atomic>
 
 namespace CryAudio
 {
@@ -26,6 +27,7 @@ public:
 	virtual void                          Update() override;
 	virtual ERequestStatus                Init(uint16 const objectPoolSize, uint16 const eventPoolSize) override;
 	virtual void                          ShutDown() override;
+	virtual void                          OnBeforeRelease() override;
 	virtual void                          Release() override;
 	virtual void                          SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific) override;
 	virtual void                          OnBeforeLibraryDataChanged() override;
@@ -76,6 +78,7 @@ public:
 	// ~CryAudio::Impl::IImpl
 
 	void SetPanningRule(int const panningRule);
+	bool IsToBeReleased() const { return m_toBeReleased; }
 
 private:
 
@@ -91,6 +94,8 @@ private:
 
 	CryFixedStringT<MaxFilePathLength> m_regularSoundBankFolder;
 	CryFixedStringT<MaxFilePathLength> m_localizedSoundBankFolder;
+
+	std::atomic_bool                   m_toBeReleased;
 
 	struct SInputDeviceInfo
 	{
