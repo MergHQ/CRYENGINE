@@ -4,6 +4,7 @@
 #include "Object.h"
 #include "Common.h"
 #include "CVars.h"
+#include "Impl.h"
 #include "Environment.h"
 #include "Event.h"
 #include "Listener.h"
@@ -34,15 +35,11 @@ static AkRtpcID const s_relativeVelocityParameterId = AK::SoundEngine::GetIDFrom
 //////////////////////////////////////////////////////////////////////////
 void EndEventCallback(AkCallbackType callbackType, AkCallbackInfo* pCallbackInfo)
 {
-	if (callbackType == AK_EndOfEvent)
+	if ((callbackType == AK_EndOfEvent) && !g_pImpl->IsToBeReleased() && (pCallbackInfo->pCookie != nullptr))
 	{
 		auto const pEvent = static_cast<CEvent* const>(pCallbackInfo->pCookie);
-
-		if (pEvent != nullptr)
-		{
-			pEvent->m_toBeRemoved = true;
-			gEnv->pAudioSystem->ReportFinishedEvent(pEvent->m_event, true);
-		}
+		pEvent->m_toBeRemoved = true;
+		gEnv->pAudioSystem->ReportFinishedEvent(pEvent->m_event, true);
 	}
 }
 
