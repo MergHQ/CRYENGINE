@@ -28,10 +28,10 @@ class CCurveEditorPanel;
 
 namespace pfx2
 {
-	struct IParticleEffectPfx2;
+struct IParticleEffectPfx2;
 }
 
-namespace CryParticleEditor 
+namespace CryParticleEditor
 {
 
 class CEffectAssetModel;
@@ -59,27 +59,28 @@ public:
 
 protected:
 	// CAssetEditor
-	virtual bool OnOpenAsset(CAsset* pAsset) override;
-	virtual bool OnSaveAsset(CEditableAsset& editAsset) override;
-	virtual void OnDiscardAssetChanges(CEditableAsset& editAsset) override;
-	virtual bool OnAboutToCloseAsset(string& reason) const override;
-	virtual void OnCloseAsset() override;
+	virtual bool                                  OnOpenAsset(CAsset* pAsset) override;
+	virtual bool                                  OnSaveAsset(CEditableAsset& editAsset) override;
+	virtual void                                  OnDiscardAssetChanges(CEditableAsset& editAsset) override;
+	virtual bool                                  OnAboutToCloseAsset(string& reason) const override;
+	virtual void                                  OnCloseAsset() override;
 	virtual std::unique_ptr<IAssetEditingSession> CreateEditingSession() override;
+	virtual bool                                  AllowsInstantEditing() const override { return true; }
 	// ~CAssetEditor
 
 	// CEditor
 	virtual void CreateDefaultLayout(CDockableContainer* pSender) override;
 	// ~CEditor
 
-	void                       AssignToEntity(CBaseObject* pObject, const string& newAssetName);
-	bool                       AssetSaveDialog(string* pOutputName);
+	void AssignToEntity(CBaseObject* pObject, const string& newAssetName);
+	bool AssetSaveDialog(string* pOutputName);
 
-	void                       OnShowEffectOptions();
+	void OnShowEffectOptions();
 
 private:
 	void         InitMenu();
 	void         InitToolbar(QVBoxLayout* pWindowLayout);
-	void RegisterDockingWidgets();
+	void         RegisterDockingWidgets();
 
 	virtual bool OnUndo() override;
 	virtual bool OnRedo() override;
@@ -101,11 +102,11 @@ private:
 	std::unique_ptr<CEffectAssetModel> m_pEffectAssetModel;
 
 	//
-	QToolBar*           m_pEffectToolBar;
-	CInspector*         m_pInspector;
+	QToolBar*   m_pEffectToolBar;
+	CInspector* m_pInspector;
 
-	QAction*            m_pReloadEffectMenuAction;
-	QAction*            m_pShowEffectOptionsMenuAction;
+	QAction*    m_pReloadEffectMenuAction;
+	QAction*    m_pShowEffectOptionsMenuAction;
 };
 
 }

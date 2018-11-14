@@ -149,6 +149,10 @@ void CMaterialEditor::InitMenuBar()
 	//TODO: consider adding a toolbar for material actions
 	CAbstractMenu* materialMenu = GetRootMenu()->CreateMenu(tr("Material"), 0, 3);
 	materialMenu->signalAboutToShow.Connect(this, &CMaterialEditor::FillMaterialMenu);
+
+	// Enable instant editing if possible
+	CAbstractMenu* const pEditMenu = GetMenu(CEditor::MenuItems::EditMenu);
+	pEditMenu->AddAction(m_pLockAction);
 }
 
 void CMaterialEditor::OnEditorNotifyEvent(EEditorNotifyEvent event)
