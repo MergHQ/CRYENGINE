@@ -11,6 +11,7 @@
 #include "CryExtension/CryGUID.h"
 #include "DragDrop.h"
 #include "EditableAsset.h"
+#include "EditorFramework/Events.h"
 #include "FileOperationsExecutor.h"
 #include "FileUtils.h"
 #include "Loader/AssetLoaderHelpers.h"
@@ -139,6 +140,8 @@ CAssetEditor::CAssetEditor(const char* assetType, QWidget* pParent /*= nullptr*/
 	CRY_ASSERT(type);//type must exist
 	m_supportedAssetTypes.push_back(type);
 
+	m_pLockAction = GetIEditor()->GetICommandManager()->CreateNewAction("asset.toggle_instant_editing");
+
 	Init();
 }
 
@@ -153,6 +156,8 @@ CAssetEditor::CAssetEditor(const QStringList& assetTypes, QWidget* pParent /*= n
 		CRY_ASSERT(type);//type must exist
 		m_supportedAssetTypes.push_back(type);
 	}
+
+	m_pLockAction = GetIEditor()->GetICommandManager()->CreateNewAction("asset.toggle_instant_editing");
 
 	Init();
 }
@@ -527,6 +532,22 @@ void CAssetEditor::closeEvent(QCloseEvent* pEvent)
 	}
 }
 
+void CAssetEditor::customEvent(QEvent* pEvent)
+{
+	CDockableEditor::customEvent(pEvent);
+
+	if (!pEvent->isAccepted() && pEvent->type() == SandboxEvent::Command)
+	{
+		CommandEvent* pCommandEvent = static_cast<CommandEvent*>(pEvent);
+		const string& command = pCommandEvent->GetCommand();
+
+		if (command == "asset.toggle_instant_editing")
+		{
+			SetInstantEditingMode(m_pLockAction->isChecked());
+		}
+	}
+}
+
 void CAssetEditor::dragEnterEvent(QDragEnterEvent* pEvent)
 {
 	auto pDragDropData = CDragDropData::FromMimeData(pEvent->mimeData());
@@ -657,11 +678,7 @@ QToolButton* CAssetEditor::CreateLockButton()
 	}
 
 	m_pLockButton = new QToolButton();
-	m_pLockButton->setCheckable(true);
-	m_pLockButton->setIcon(CryIcon("icons:General/Instant_Editing.ico"));
-	m_pLockButton->setToolTip(tr("Instant Editing"));
-
-	connect(m_pLockButton, &QToolButton::toggled, this, &CAssetEditor::SetInstantEditingMode);
+	m_pLockButton->setDefaultAction(m_pLockAction);
 
 	const bool foundInstantEditor = std::any_of(m_supportedAssetTypes.cbegin(), m_supportedAssetTypes.cend(), [](const CAssetType* pType)
 	{
@@ -851,8 +868,8 @@ void CAssetEditor::SetInstantEditingMode(bool isActive)
 		}
 	}
 
-	if (m_pLockButton && m_pLockButton->isChecked() != isActive)
+	if (m_pLockAction && m_pLockAction->isChecked() != isActive)
 	{
-		m_pLockButton->setChecked(isActive);
+		m_pLockAction->setChecked(isActive);
 	}
 }

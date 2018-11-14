@@ -85,22 +85,20 @@ void CObject::AddStandaloneFile(CStandaloneFile* const pStandaloneFile, SUserDat
 //////////////////////////////////////////////////////////////////////////
 void CObject::SendFinishedTriggerInstanceRequest(STriggerInstanceState const& triggerInstanceState)
 {
-	SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> requestData(triggerInstanceState.triggerId);
-	CRequest request(&requestData);
-	request.pObject = this;
-	request.pOwner = triggerInstanceState.pOwnerOverride;
-	request.pUserData = triggerInstanceState.pUserData;
-	request.pUserDataOwner = triggerInstanceState.pUserDataOwner;
+	SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> const requestData(triggerInstanceState.triggerId);
+
+	ERequestFlags flags = ERequestFlags::None;
 
 	if ((triggerInstanceState.flags & ETriggerStatus::CallbackOnExternalThread) != 0)
 	{
-		request.flags = ERequestFlags::CallbackOnExternalOrCallingThread;
+		flags = ERequestFlags::CallbackOnExternalOrCallingThread;
 	}
 	else if ((triggerInstanceState.flags & ETriggerStatus::CallbackOnAudioThread) != 0)
 	{
-		request.flags = ERequestFlags::CallbackOnAudioThread;
+		flags = ERequestFlags::CallbackOnAudioThread;
 	}
 
+	CRequest const request(&requestData, this, flags, triggerInstanceState.pOwnerOverride, triggerInstanceState.pUserData, triggerInstanceState.pUserDataOwner);
 	g_system.PushRequest(request);
 }
 
@@ -259,7 +257,7 @@ void CObject::ReportFinishedTriggerInstance(ObjectTriggerStates::iterator const&
 //////////////////////////////////////////////////////////////////////////
 void CObject::PushRequest(SRequestData const& requestData, SRequestUserData const& userData)
 {
-	CRequest const request(userData.flags, this, userData.pOwner, userData.pUserData, userData.pUserDataOwner, &requestData);
+	CRequest const request(&requestData, userData, this);
 	g_system.PushRequest(request);
 }
 

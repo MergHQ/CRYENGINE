@@ -24,6 +24,8 @@ public:
 	virtual void                                  OnCloseAsset() override;
 	virtual void                                  OnDiscardAssetChanges(CEditableAsset& editAsset) override;
 
+	virtual bool                                  AllowsInstantEditing() const override { return true; }
+
 	virtual std::unique_ptr<IAssetEditingSession> CreateEditingSession() override;
 
 	void                                          SetMaterial(CMaterial* pMaterial);

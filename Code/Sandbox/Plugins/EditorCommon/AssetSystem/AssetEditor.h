@@ -8,6 +8,7 @@
 
 #include <CrySandbox/CrySignal.h>
 
+class QAction;
 class QToolButton;
 
 //! Base class for editors integrated with the asset system.
@@ -39,11 +40,14 @@ public:
 	//! Returns true if this asset type is supported by this editor
 	bool CanOpenAsset(const CAssetType* pType);
 
+	//! Returns true if this editor supports instant editing mode
+	virtual bool AllowsInstantEditing() const { return false; }
+
 	//! Closes the currently edited asset. Returns false if the user refused closing in case of unsaved changes.
 	bool Close();
 
 	//! Unconditionally discard all changes.
-	//! \sa OnDiscardAssetChanges 
+	//! \sa OnDiscardAssetChanges
 	void DiscardAssetChanges();
 
 	//! Returns true if this editor is editing an asset
@@ -105,10 +109,13 @@ protected:
 	virtual bool CanQuit(std::vector<string>& unsavedChanges) final;
 
 	virtual void closeEvent(QCloseEvent* pEvent) final;
+	virtual void customEvent(QEvent* pEvent) override;
 	virtual void dragEnterEvent(QDragEnterEvent* pEvent) override;
 	virtual void dropEvent(QDropEvent* pEvent) override;
 
 	QToolButton* CreateLockButton();
+
+	QAction* m_pLockAction;
 
 private:
 	void Init();

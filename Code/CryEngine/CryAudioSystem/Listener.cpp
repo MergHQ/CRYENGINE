@@ -14,11 +14,7 @@ namespace CryAudio
 void CListener::SetTransformation(CTransformation const& transformation, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SListenerRequestData<EListenerRequestType::SetTransformation> requestData(transformation, this);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	g_system.PushRequest(request);
 }
 
@@ -49,11 +45,7 @@ CTransformation const& CListener::GetTransformation() const
 void CListener::SetName(char const* const szName, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
 	SListenerRequestData<EListenerRequestType::SetName> requestData(szName, this);
-	CRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
+	CRequest const request(&requestData, userData);
 	g_system.PushRequest(request);
 }
 

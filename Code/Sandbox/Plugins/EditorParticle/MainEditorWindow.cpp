@@ -136,6 +136,10 @@ void CParticleEditor::InitMenu()
 		action = pFileMenu->CreateAction(CryIcon("icons:General/File_Import.ico"), tr("Import Selected Pfx1 Effect"), sec);
 		connect(action, &QAction::triggered, this, &CParticleEditor::OnImportPfx1);
 	}
+
+	// Enable instant editing if possible
+	CAbstractMenu* const pEditMenu = GetMenu(CEditor::MenuItems::EditMenu);
+	pEditMenu->AddAction(m_pLockAction);
 }
 
 void CParticleEditor::InitToolbar(QVBoxLayout* pWindowLayout)
