@@ -2171,3 +2171,8 @@ CVersionControlWorkspaceOverviewTab QPushButton#submit
     width: -1px;
 }
 
+CSelectProjectDialog
+{
+    min-width: 920px;
+    min-height: 550px;
+}

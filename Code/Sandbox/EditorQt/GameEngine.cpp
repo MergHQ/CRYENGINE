@@ -20,6 +20,7 @@
 #include "Particles/ParticleManager.h"
 #include "Prefabs/PrefabEvents.h"
 #include "Prefabs/PrefabManager.h"
+#include "ProjectManagement/UI/SelectProjectDialog.h"
 #include "Terrain/Heightmap.h"
 #include "Terrain/SurfaceType.h"
 #include "Terrain/TerrainGrid.h"
@@ -319,12 +320,7 @@ static void CmdGotoEditor(IConsoleCmdArgs* pArgs)
 	}
 }
 
-bool CGameEngine::Init(
-  bool bPreviewMode,
-  bool bTestMode,
-  bool bShaderCacheGen,
-  const char* sInCmdLine,
-  IInitializeUIInfo* logo)
+bool CGameEngine::Init(bool bPreviewMode, bool bTestMode, bool bShaderCacheGen, const char* sInCmdLine, IInitializeUIInfo* logo)
 {
 	m_pSystemUserCallback = new SSystemUserCallback(logo);
 
@@ -355,6 +351,25 @@ bool CGameEngine::Init(
 
 	// We do this manually in the Editor
 	startupParams.bExecuteCommandLine = false;
+
+	if (strstr(sInCmdLine, "-project") == 0)
+	{
+		CSelectProjectDialog dlg(true);
+		if (dlg.exec() != QDialog::Accepted)
+		{
+			return false;
+		}
+
+		const string projPath = dlg.GetPathToProject();
+		if (projPath.empty())
+		{
+			CRY_ASSERT_MESSAGE(false, "Expected non-empty path to a project");
+			return false;
+		}
+
+		cry_strcat(startupParams.szSystemCmdLine, " -project ");
+		cry_strcat(startupParams.szSystemCmdLine, projPath);
+	}
 
 	if (!CryInitializeEngine(startupParams, true))
 	{

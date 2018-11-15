@@ -355,6 +355,11 @@
         <file alias="General/Pointer_Up_Numeric.ico">icons/general_Pointer_Up_Numeric.ico</file>
         <file alias="General/Pointer_Up_Numeric_Tinted.ico">icons/general_Pointer_Up_Numeric_Tinted.ico</file>
         <file alias="General/Pointer_Up_Tinted.ico">icons/general_Pointer_Up_Tinted.ico</file>
+        <file alias="General/Project_Default.ico">icons/general_project_default.ico</file>
+        <file alias="General/Project_Language_Cpp.ico">icons/general_project_language_subicon_cpp.ico</file>
+        <file alias="General/Project_Language_CSharp.ico">icons/general_project_language_subicon_csharp.ico</file>
+        <file alias="General/Project_Language_Unknown.ico">icons/general_project_language_subicon_unknown.ico</file>
+        <file alias="General/Project_Language_VisualScripting.ico">icons/general_project_language_subicon_visualscripting.ico</file>
         <file alias="General/Python.ico">icons/general_Python.ico</file>
         <file alias="General/Redo_Classic.ico">icons/general_Redo_Classic.ico</file>
         <file alias="General/Reload.ico">icons/general_Reload.ico</file>
@@ -377,6 +382,7 @@
         <file alias="General/SymLink.ico">icons/general_SymLink.ico</file>
         <file alias="General/Sync_Square.ico">icons/general_Sync_Square.ico</file>
         <file alias="general_sync_selection.ico">icons/general_sync_selection.ico</file>
+        <file alias="General/Template_Default.ico">icons/general_template_default.ico</file>
         <file alias="General/Tick.ico">icons/general_Tick.ico</file>
         <file alias="General/Tick_Box.ico">icons/general_Tick_Box.ico</file>
         <file alias="General/Tick_Box_Tinted.ico">icons/general_Tick_Box_Tinted.ico</file>
@@ -828,7 +834,7 @@
         <file alias="Window/Window_Restore.ico">icons/window_restore.ico</file>
         <file alias="Window/Window_Split.ico">icons/window_split.ico</file>
 
-        <!--Version Contro-->
+        <!--Version Control-->
         <file alias="VersionControl/icon.ico">icons/versioncontrol_icon.ico</file>
         <file alias="VersionControl/checked_out.ico">icons/versioncontrol_checked_out.ico</file>
         <file alias="VersionControl/checked_out_modified.ico">icons/versioncontrol_checked_out_modified.ico</file>
