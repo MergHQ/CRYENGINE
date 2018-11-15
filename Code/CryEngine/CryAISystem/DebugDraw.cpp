@@ -638,45 +638,6 @@ void CAISystem::DrawDebugShapes(ShapeContainer& shapes, float dt)
 	}
 }
 
-void CAISystem::DebugDrawFakeTracers() const
-{
-	CRY_PROFILE_FUNCTION(PROFILE_AI);
-
-	CDebugDrawContext dc;
-	dc->SetAlphaBlended(true);
-
-	for (size_t i = 0; i < m_DEBUG_fakeTracers.size(); ++i)
-	{
-		Vec3 p0 = m_DEBUG_fakeTracers[i].p0;
-		Vec3 p1 = m_DEBUG_fakeTracers[i].p1;
-		Vec3 dir = p1 - p0;
-		float u = 1 - m_DEBUG_fakeTracers[i].t / m_DEBUG_fakeTracers[i].tmax;
-		p0 += dir * u * 0.5f;
-		p1 = p0 + dir * 0.5f;
-
-		float a = (m_DEBUG_fakeTracers[i].a * m_DEBUG_fakeTracers[i].t / m_DEBUG_fakeTracers[i].tmax) * 0.75f + 0.25f;
-		Vec3 mid((p0 + p1) / 2);
-		dc->DrawLine(p0, ColorB(128, 128, 128, 0), mid, ColorB(255, 255, 255, (uint8)(255 * a)), 6.0f);
-		dc->DrawLine(p1, ColorB(128, 128, 128, 0), mid, ColorB(255, 255, 255, (uint8)(255 * a)), 6.0f);
-	}
-}
-
-void CAISystem::DebugDrawFakeHitEffects() const
-{
-	CRY_PROFILE_FUNCTION(PROFILE_AI);
-
-	CDebugDrawContext dc;
-	dc->SetAlphaBlended(true);
-
-	for (size_t i = 0; i < m_DEBUG_fakeHitEffect.size(); ++i)
-	{
-		float a = m_DEBUG_fakeHitEffect[i].t / m_DEBUG_fakeHitEffect[i].tmax;
-		Vec3 pos = m_DEBUG_fakeHitEffect[i].p + m_DEBUG_fakeHitEffect[i].n * (1 - sqr(a));
-		float r = m_DEBUG_fakeHitEffect[i].r * (0.5f + (1 - a) * 0.5f);
-		dc->DrawSphere(pos, r, ColorB(m_DEBUG_fakeHitEffect[i].c.r, m_DEBUG_fakeHitEffect[i].c.g, m_DEBUG_fakeHitEffect[i].c.b, (uint8)(m_DEBUG_fakeHitEffect[i].c.a * a)));
-	}
-}
-
 void CAISystem::DebugDrawFakeDamageInd() const
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
@@ -4937,12 +4898,6 @@ void CAISystem::DebugDraw()
 
 	DebugDrawUpdate();        // Called only in this line => Maybe we should remove it from the interface?
 
-	if (gAIEnv.CVars.DrawFakeTracers > 0)
-		DebugDrawFakeTracers();
-
-	if (gAIEnv.CVars.DrawFakeHitEffects > 0)
-		DebugDrawFakeHitEffects();
-
 	if (gAIEnv.CVars.DrawFakeDamageInd > 0)
 		DebugDrawFakeDamageInd();
 
@@ -5070,58 +5025,6 @@ void CAISystem::DebugDraw()
 #endif //CRYAISYSTEM_DEBUG
 }
 
-//-----------------------------------------------------------------------------------------------------------
-void CAISystem::DebugDrawFakeTracer(const Vec3& pos, const Vec3& dir)
-{
-#ifdef CRYAISYSTEM_DEBUG
-	CAIObject* pPlayer = GetPlayer();
-	if (!pPlayer) return;
-
-	Vec3 dirNorm = dir.GetNormalizedSafe();
-	const Vec3& playerPos = pPlayer->GetPos();
-	Vec3 dirShooterToPlayer = playerPos - pos;
-
-	float projDist = dirNorm.Dot(dirShooterToPlayer);
-
-	float distShooterToPlayer = dirShooterToPlayer.NormalizeSafe();
-
-	if (projDist < 0.0f)
-		return;
-
-	Vec3 nearestPt = pos + dirNorm * distShooterToPlayer;
-
-	float tracerDist = Distance::Point_Point(nearestPt, playerPos);
-
-	const float maxTracerDist = 20.0f;
-	if (tracerDist > maxTracerDist)
-		return;
-
-	float a = 1 - tracerDist / maxTracerDist;
-
-	ray_hit hit;
-	float maxd = distShooterToPlayer * 2.0f;
-	if (gEnv->pPhysicalWorld->RayWorldIntersection(
-	      pos, dirNorm * maxd, COVER_OBJECT_TYPES,
-	      AI_VISION_RAY_CAST_FLAG_BLOCKED_BY_SOLID_COVER,
-	      &hit, 1))
-	{
-		maxd = hit.dist;
-		// fake hit fx
-		Vec3 p = hit.pt + hit.n * 0.1f;
-		ColorF col(cry_random(0.4f, 0.7f), cry_random(0.4f, 0.7f), cry_random(0.4f, 0.7f), 0.9f);
-		m_DEBUG_fakeHitEffect.push_back(SDebugFakeHitEffect(p, hit.n, cry_random(0.45f, 0.9f), cry_random(0.5f, 0.8f), col));
-	}
-
-	const float maxTracerLen = 50.0f;
-	float d0 = distShooterToPlayer - cry_random(0.75f, 1.0f) * maxTracerLen / 2;
-	float d1 = d0 + cry_random(0.5f, 1.0f) * maxTracerLen;
-
-	Limit(d0, 0.0f, maxd);
-	Limit(d1, 0.0f, maxd);
-
-	m_DEBUG_fakeTracers.push_back(SDebugFakeTracer(pos + dirNorm * d0, pos + dirNorm * d1, a, cry_random(0.15f, 0.3f)));
-#endif //CRYAISYSTEM_DEBUG
-}
 
 //-----------------------------------------------------------------------------------------------------------
 void CAISystem::AddDebugLine(const Vec3& start, const Vec3& end, uint8 r, uint8 g, uint8 b, float time)

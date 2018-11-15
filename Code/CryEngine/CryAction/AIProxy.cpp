@@ -1168,9 +1168,6 @@ void CAIProxy::OnShoot(IWeapon* pWeapon, EntityId shooterId, EntityId ammoId, IE
 		return;
 	}
 
-	//    if (pEntity->GetAI() && pEntity->GetAI()->GetAIType() != AIOBJECT_PLAYER)
-	//      gEnv->pAISystem->DebugDrawFakeTracer(pos, dir);
-
 	m_shotBulletCount++;
 	m_lastShotTime = gEnv->pTimer->GetFrameStartTime();
 

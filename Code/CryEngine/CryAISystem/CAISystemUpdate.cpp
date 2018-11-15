@@ -148,7 +148,7 @@ EPuppetUpdatePriority CAISystem::CalcPuppetUpdatePriority(CPuppet* pPuppet) cons
 }
 
 #ifdef CRYAISYSTEM_DEBUG
-void CAISystem::TryUpdateDebugStuff()
+void CAISystem::TryUpdateDebugFakeDamageIndicators()
 {
 	#if CRY_PLATFORM_WINDOWS
 
@@ -158,50 +158,6 @@ void CAISystem::TryUpdateDebugStuff()
 	{
 		m_vecDebugLines.clear();
 		m_vecDebugBoxes.clear();
-	}
-
-	// Update fake tracers
-	if (gAIEnv.CVars.DrawFakeTracers > 0)
-	{
-		for (size_t i = 0; i < m_DEBUG_fakeTracers.size(); )
-		{
-			m_DEBUG_fakeTracers[i].t -= m_frameDeltaTime;
-			if (m_DEBUG_fakeTracers[i].t < 0.0f)
-			{
-				m_DEBUG_fakeTracers[i] = m_DEBUG_fakeTracers.back();
-				m_DEBUG_fakeTracers.pop_back();
-			}
-			else
-			{
-				++i;
-			}
-		}
-	}
-	else
-	{
-		m_DEBUG_fakeTracers.clear();
-	}
-
-	// Update fake hit effects
-	if (gAIEnv.CVars.DrawFakeHitEffects > 0)
-	{
-		for (size_t i = 0; i < m_DEBUG_fakeHitEffect.size(); )
-		{
-			m_DEBUG_fakeHitEffect[i].t -= m_frameDeltaTime;
-			if (m_DEBUG_fakeHitEffect[i].t < 0.0f)
-			{
-				m_DEBUG_fakeHitEffect[i] = m_DEBUG_fakeHitEffect.back();
-				m_DEBUG_fakeHitEffect.pop_back();
-			}
-			else
-			{
-				++i;
-			}
-		}
-	}
-	else
-	{
-		m_DEBUG_fakeHitEffect.clear();
 	}
 
 	// Update fake damage indicators
@@ -252,6 +208,8 @@ struct SSortedPuppetB
 void CAISystem::SubsystemUpdateActionManager()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	CRY_ASSERT(m_pAIActionManager);
+
 	if (m_pAIActionManager)
 		m_pAIActionManager->Update();
 }
@@ -272,7 +230,9 @@ void CAISystem::SubsystemUpdateNavigation(const CTimeValue frameStartTime, const
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI)
 	CRY_ASSERT(m_pNavigation);
-	m_pNavigation->Update(frameStartTime, frameDeltaTime);
+
+	if (m_pNavigation)
+		m_pNavigation->Update(frameStartTime, frameDeltaTime);
 }
 
 void CAISystem::SubsystemUpdateBannedSOs(const float frameDeltaTime)
@@ -285,7 +245,7 @@ void CAISystem::SubsystemUpdateBannedSOs(const float frameDeltaTime)
 
 void CAISystem::SubsystemUpdateSystemComponents(const float frameDeltaTime)
 {
-	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	CRY_PROFILE_FUNCTION(PROFILE_AI)	
 	for (auto& systemComponent : m_setSystemComponents)
 	{
 		systemComponent->Update(frameDeltaTime);
@@ -295,36 +255,54 @@ void CAISystem::SubsystemUpdateSystemComponents(const float frameDeltaTime)
 void CAISystem::SubsystemUpdateCommunicationManager(const float frameDeltaTime)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	CRY_ASSERT(gAIEnv.pCommunicationManager);
 	gAIEnv.pCommunicationManager->Update(frameDeltaTime);
 }
 
-void CAISystem::SubsystemUpdateVisionMap(const float frameDeltaTime)
+void CAISystem::TrySubsystemUpdateVisionMap(const float frameDeltaTime, const bool isAutomaticUpdate)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	CRY_ASSERT(gAIEnv.pVisionMap);
+	if (!ShouldUpdateSubsystem(IAISystem::ESubsystemUpdateFlag::VisionMap, isAutomaticUpdate))
+		return;
+
 	gAIEnv.pVisionMap->Update(frameDeltaTime);
 }
 
-void CAISystem::SubsystemUpdateAuditionMap(const float frameDeltaTime)
+void CAISystem::TrySubsystemUpdateAuditionMap(const float frameDeltaTime, const bool isAutomaticUpdate)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	CRY_ASSERT(gAIEnv.pAuditionMap);
+	if (!ShouldUpdateSubsystem(IAISystem::ESubsystemUpdateFlag::AuditionMap, isAutomaticUpdate))
+		return;
+	
 	gAIEnv.pAuditionMap->Update(frameDeltaTime);
 }
 
 void CAISystem::SubsystemUpdateGroupManager(const float frameDeltaTime)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	CRY_ASSERT(gAIEnv.pGroupManager);
 	gAIEnv.pGroupManager->Update(frameDeltaTime);
 }
 
-void CAISystem::SubsystemUpdateCoverSystem(const float frameDeltaTime)
+void CAISystem::TrySubsystemUpdateCoverSystem(const float frameDeltaTime, const bool isAutomaticUpdate)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	CRY_ASSERT(gAIEnv.pCoverSystem);
+	if (!ShouldUpdateSubsystem(IAISystem::ESubsystemUpdateFlag::CoverSystem, isAutomaticUpdate))
+		return;
+
 	gAIEnv.pCoverSystem->Update(frameDeltaTime);
 }
 
-void CAISystem::SubsystemUpdateNavigationSystem()
+void CAISystem::TrySubsystemUpdateNavigationSystem(const bool isAutomaticUpdate)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	CRY_ASSERT(gAIEnv.pCoverSystem);
+	if (!ShouldUpdateSubsystem(IAISystem::ESubsystemUpdateFlag::NavigationSystem, isAutomaticUpdate))
+		return;
+	
 	gAIEnv.pNavigationSystem->Update(false);
 }
 
@@ -355,10 +333,13 @@ void CAISystem::SubsystemUpdateGroups(const CTimeValue frameStartTime)
 	}
 }
 
-void CAISystem::SubsystemUpdateMovementSystem(const float frameDeltaTime)
+void CAISystem::TrySubsystemUpdateMovementSystem(const float frameDeltaTime, const bool isAutomaticUpdate)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI)
 	CRY_ASSERT(gAIEnv.pMovementSystem);
+	if (!ShouldUpdateSubsystem(IAISystem::ESubsystemUpdateFlag::MovementSystem, isAutomaticUpdate))
+		return;
+
 	gAIEnv.pMovementSystem->Update(frameDeltaTime);
 }
 
@@ -396,26 +377,35 @@ void CAISystem::SubsystemUpdateSmartObjectManager()
 	}
 }
 
-void CAISystem::SubsystemUpdateGlobalRayCaster(const float frameDeltaTime)
+void CAISystem::TrySubsystemUpdateGlobalRayCaster(const float frameDeltaTime, const bool isAutomaticUpdate)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI)
 	CRY_ASSERT(gAIEnv.pRayCaster);
+	if (!gAIEnv.pRayCaster || !ShouldUpdateSubsystem(IAISystem::ESubsystemUpdateFlag::GlobalRaycaster, isAutomaticUpdate))
+		return;
+
 	gAIEnv.pRayCaster->SetQuota(gAIEnv.CVars.RayCasterQuota);
 	gAIEnv.pRayCaster->Update(frameDeltaTime);
 }
 
-void CAISystem::SubsystemUpdateGlobalIntersectionTester(const float frameDeltaTime)
+void CAISystem::TrySubsystemUpdateGlobalIntersectionTester(const float frameDeltaTime, const bool isAutomaticUpdate)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI)
 	CRY_ASSERT(gAIEnv.pIntersectionTester);
+	if (!gAIEnv.pIntersectionTester || !ShouldUpdateSubsystem(IAISystem::ESubsystemUpdateFlag::GlobalIntersectionTester, isAutomaticUpdate))
+		return;
+
 	gAIEnv.pIntersectionTester->SetQuota(gAIEnv.CVars.IntersectionTesterQuota);
 	gAIEnv.pIntersectionTester->Update(frameDeltaTime);
 }
 
-void CAISystem::SubsystemUpdateClusterDetector(const float frameDeltaTime)
+void CAISystem::TrySubsystemUpdateClusterDetector(const float frameDeltaTime, const bool isAutomaticUpdate)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI)
 	CRY_ASSERT(gAIEnv.pClusterDetector);
+	if (!gAIEnv.pClusterDetector || !ShouldUpdateSubsystem(IAISystem::ESubsystemUpdateFlag::ClusterDetector, isAutomaticUpdate))
+		return;
+
 	gAIEnv.pClusterDetector->Update(frameDeltaTime);
 }
 
@@ -428,10 +418,13 @@ void CAISystem::SubsystemUpdateInterestManager(const float frameDeltaTime)
 		pInterestManager->Update(frameDeltaTime);
 }
 
-void CAISystem::SubsystemUpdateBehaviorTreeManager()
+void CAISystem::TrySubsystemUpdateBehaviorTreeManager(const bool isAutomaticUpdate)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI)
 	CRY_ASSERT(gAIEnv.pBehaviorTreeManager);
+	if (!gAIEnv.pBehaviorTreeManager || !ShouldUpdateSubsystem(IAISystem::ESubsystemUpdateFlag::BehaviorTreeManager, isAutomaticUpdate))
+		return;
+
 	gAIEnv.pBehaviorTreeManager->Update();
 }
 

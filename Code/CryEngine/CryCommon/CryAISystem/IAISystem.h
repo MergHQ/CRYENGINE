@@ -33,6 +33,7 @@ class INavPath;
 namespace BehaviorTree
 {
 struct IBehaviorTreeManager;
+struct IGraftManager;
 }
 struct IFunctionHandler;
 class ICentralInterestManager;
@@ -501,6 +502,23 @@ struct IAISystem
 		RESET_UNLOAD_LEVEL
 	};
 
+	//! SubsystemUpdateFlags are used to let client code customize the update order of IA subsystems
+	//! To do so client code has to call GetOverrideUpdateFlags() and specify which subsystems wants to override
+	//! This action will prevent CE code to Update the subsystem automatically (avoiding updating a subsystem twice)
+	//! After this, the client code can call UpdateSubsystem providing the right flag to update the subsystem when necessary
+	enum class ESubsystemUpdateFlag
+	{
+		AuditionMap              = BIT(0),
+		BehaviorTreeManager      = BIT(1),
+		ClusterDetector          = BIT(2),
+		CoverSystem              = BIT(3),
+		MovementSystem           = BIT(4),
+		NavigationSystem         = BIT(5),
+		GlobalIntersectionTester = BIT(6),
+		GlobalRaycaster          = BIT(7),
+		VisionMap                = BIT(8),
+	};
+
 	//! Bit mask using ENavigationType.
 	//! \note NavCapMask is no longer a primitive type.  This
 	//! thin wrapper around primitive unsigned is necessary to transparently support
@@ -576,6 +594,12 @@ struct IAISystem
 	virtual IAISystem::GlobalRayCaster*          GetGlobalRaycaster() = 0;
 	virtual IAISystem::GlobalIntersectionTester* GetGlobalIntersectionTester() = 0;
 
+	//! Gets the override update flags
+	//! Flags indicate which subsystems are updated automatically by the AI system (0) or manually by client code (1)
+	//! This is required to avoid updating a subsystem twice
+	//! If a subsystem update is overriden (1) client code should call UpdateSubsystem providing the right flag when desired
+	virtual CEnumFlags<ESubsystemUpdateFlag>&    GetOverrideUpdateFlags() = 0;
+
 	//If disabled most things early out
 	virtual void Enable(bool enable = true) = 0;
 	virtual bool IsEnabled() const = 0;
@@ -583,7 +607,16 @@ struct IAISystem
 	//! Every frame (multiple time steps per frame possible?)
 	//! \param currentTime AI time since game start in seconds (GetCurrentTime).
 	//! \param frameTime AI time since last update (GetFrameTime).
-	virtual void                                  Update(CTimeValue currentTime, float frameTime) = 0;
+	virtual void                                  Update(const CTimeValue currentTime, const float frameTime) = 0;
+
+	//! Updates only a specific subsystem specified by the provided flag
+	//! Such subsystem MUST be enabled by setting the right flag calling GetUpdateOverrideFlags() before executing of this function
+	//! Otherwise the system will not execute the subsystem update (it will simply ignore this call)
+	//! This function is not meant to be used internally by the IAISystem.
+	//! \param currentTime AI time since game start in seconds (GetCurrentTime).
+	//! \param frameTime AI time since last update (GetFrameTime).
+	//! \param subsystemUpdateFlag Subsystem to update
+	virtual void                                  UpdateSubsystem(const CTimeValue currentTime, const float frameTime, const ESubsystemUpdateFlag subsystemUpdateFlag) = 0;
 
 	virtual bool                                  RegisterSystemComponent(IAISystemComponent* pComponent) = 0;
 	virtual bool                                  UnregisterSystemComponent(IAISystemComponent* pComponent) = 0;
@@ -667,9 +700,6 @@ struct IAISystem
 	virtual void LogEvent(const char* id, const char* format, ...) PRINTF_PARAMS(3, 4) = 0;
 	virtual void LogComment(const char* id, const char* format, ...) PRINTF_PARAMS(3, 4) = 0;
 
-	//! Draws a fake tracer around the player.
-	virtual void DebugDrawFakeTracer(const Vec3& pos, const Vec3& dir) = 0;
-
 	virtual void GetMemoryStatistics(ICrySizer* pSizer) = 0;
 
 	// debug members ============= DO NOT USE
@@ -683,12 +713,14 @@ struct IAISystem
 
 	virtual ITargetTrackManager*                GetTargetTrackManager() const = 0;
 	virtual BehaviorTree::IBehaviorTreeManager* GetIBehaviorTreeManager() const = 0;
+	virtual BehaviorTree::IGraftManager*        GetIGraftManager() const = 0;
 	virtual ICoverSystem*                       GetCoverSystem() const = 0;
 	virtual INavigationSystem*                  GetNavigationSystem() const = 0;
 	virtual IMNMPathfinder*                     GetMNMPathfinder() const = 0;
 	virtual ICommunicationManager*              GetCommunicationManager() const = 0;
 	virtual ITacticalPointSystem*               GetTacticalPointSystem(void) = 0;
 	virtual ICentralInterestManager*            GetCentralInterestManager(void) = 0;
+	virtual ICentralInterestManager const *     GetCentralInterestManager(void) const = 0;
 	virtual INavigation*                        GetINavigation() = 0;
 	virtual IAIRecorder*                        GetIAIRecorder() = 0;
 	virtual struct IMovementSystem*             GetMovementSystem() const = 0;
