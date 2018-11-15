@@ -502,7 +502,7 @@ CSystem::~CSystem()
 void CSystem::AddRequestListener(void (*func)(SRequestInfo const* const), void* const pObjectToListenTo, ESystemEvents const eventMask)
 {
 	SSystemRequestData<ESystemRequestType::AddRequestListener> const requestData(pObjectToListenTo, func, eventMask);
-	CRequest const request(&requestData, nullptr, ERequestFlags::ExecuteBlocking, pObjectToListenTo); // This makes sure that the listener is notified.
+	CRequest const request(&requestData, ERequestFlags::ExecuteBlocking, pObjectToListenTo); // This makes sure that the listener is notified.
 	PushRequest(request);
 }
 
@@ -510,7 +510,7 @@ void CSystem::AddRequestListener(void (*func)(SRequestInfo const* const), void* 
 void CSystem::RemoveRequestListener(void (*func)(SRequestInfo const* const), void* const pObjectToListenTo)
 {
 	SSystemRequestData<ESystemRequestType::RemoveRequestListener> const requestData(pObjectToListenTo, func);
-	CRequest const request(&requestData, nullptr, ERequestFlags::ExecuteBlocking, pObjectToListenTo); // This makes sure that the listener is notified.
+	CRequest const request(&requestData, ERequestFlags::ExecuteBlocking, pObjectToListenTo); // This makes sure that the listener is notified.
 	PushRequest(request);
 }
 
@@ -526,13 +526,10 @@ void CSystem::ExternalUpdate()
 	{
 		NotifyListener(request);
 
-		if (request.pObject == nullptr)
+		if (request.GetData()->requestType == ERequestType::ObjectRequest)
 		{
-			g_pObject->DecrementSyncCallbackCounter();
-		}
-		else
-		{
-			request.pObject->DecrementSyncCallbackCounter();
+			auto const pBase = static_cast<SObjectRequestDataBase const*>(request.GetData());
+			pBase->pObject->DecrementSyncCallbackCounter();
 		}
 	}
 
@@ -903,7 +900,7 @@ void CSystem::Release()
 		RemoveRequestListener(&CSystem::OnCallback, nullptr);
 
 		SSystemRequestData<ESystemRequestType::ReleaseImpl> const requestData;
-		CRequest const request(&requestData, nullptr, ERequestFlags::ExecuteBlocking);
+		CRequest const request(&requestData, ERequestFlags::ExecuteBlocking);
 		PushRequest(request);
 
 		m_mainThread.Deactivate();
@@ -1138,10 +1135,9 @@ void CSystem::ResetRequestCount()
 //////////////////////////////////////////////////////////////////////////
 void CSystem::PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SObjectRequestData<EObjectRequestType::PlayFile> const requestData(playFileInfo.szFile, playFileInfo.usedTriggerForPlayback, playFileInfo.bLocalized);
+	SSystemRequestData<ESystemRequestType::PlayFile> const requestData(playFileInfo.szFile, playFileInfo.usedTriggerForPlayback, playFileInfo.bLocalized);
 	CRequest const request(
 		&requestData,
-		nullptr,
 		userData.flags,
 		((userData.pOwner != nullptr) ? userData.pOwner : &g_system),
 		userData.pUserData,
@@ -1152,7 +1148,7 @@ void CSystem::PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const
 //////////////////////////////////////////////////////////////////////////
 void CSystem::StopFile(char const* const szName, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
-	SObjectRequestData<EObjectRequestType::StopFile> const requestData(szName);
+	SSystemRequestData<ESystemRequestType::StopFile> const requestData(szName);
 	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
@@ -1324,7 +1320,7 @@ CryAudio::IListener* CSystem::CreateListener(CTransformation const& transformati
 {
 	CListener* pListener = nullptr;
 	SSystemRequestData<ESystemRequestType::RegisterListener> const requestData(&pListener, transformation, szName);
-	CRequest const request(&requestData, nullptr, ERequestFlags::ExecuteBlocking);
+	CRequest const request(&requestData, ERequestFlags::ExecuteBlocking);
 	PushRequest(request);
 
 	return static_cast<CryAudio::IListener*>(pListener);
@@ -1343,7 +1339,7 @@ CryAudio::IObject* CSystem::CreateObject(SCreateObjectData const& objectData /*=
 {
 	CObject* pObject = nullptr;
 	SSystemRequestData<ESystemRequestType::RegisterObject> const requestData(&pObject, objectData);
-	CRequest const request(&requestData, nullptr, ERequestFlags::ExecuteBlocking);
+	CRequest const request(&requestData, ERequestFlags::ExecuteBlocking);
 	PushRequest(request);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -1384,7 +1380,7 @@ void CSystem::GetFileData(char const* const szName, SFileData& fileData)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	SSystemRequestData<ESystemRequestType::GetFileData> const requestData(szName, fileData);
-	CRequest const request(&requestData, nullptr, ERequestFlags::ExecuteBlocking);
+	CRequest const request(&requestData, ERequestFlags::ExecuteBlocking);
 	PushRequest(request);
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
@@ -1467,7 +1463,7 @@ void CSystem::Log(ELogType const type, char const* const szFormat, ...)
 		cry_vsprintf(buffer, szFormat, ArgList);
 		va_end(ArgList);
 
-		ELoggingOptions const loggingOptions = static_cast<ELoggingOptions>(m_loggingOptions);
+		auto const loggingOptions = static_cast<ELoggingOptions>(m_loggingOptions);
 
 		switch (type)
 		{
@@ -1552,14 +1548,12 @@ void CSystem::ProcessRequests(Requests& requestQueue)
 				}
 				else
 				{
-					if (request.pObject == nullptr)
+					if (request.GetData()->requestType == ERequestType::ObjectRequest)
 					{
-						g_pObject->IncrementSyncCallbackCounter();
+						auto const pBase = static_cast<SObjectRequestDataBase const*>(request.GetData());
+						pBase->pObject->IncrementSyncCallbackCounter();
 					}
-					else
-					{
-						request.pObject->IncrementSyncCallbackCounter();
-					}
+
 					m_syncCallbacks.enqueue(request);
 				}
 			}
@@ -1628,34 +1622,34 @@ void CSystem::ProcessRequest(CRequest& request)
 ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 {
 	ERequestStatus result = ERequestStatus::Failure;
-	SSystemRequestDataBase const* const pBase = static_cast<SSystemRequestDataBase const*>(request.GetData());
+	auto const pBase = static_cast<SSystemRequestDataBase const*>(request.GetData());
 
 	switch (pBase->systemRequestType)
 	{
 	case ESystemRequestType::AddRequestListener:
 		{
-			SSystemRequestData<ESystemRequestType::AddRequestListener> const* const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::AddRequestListener> const*>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::AddRequestListener> const*>(request.GetData());
 			result = g_eventListenerManager.AddRequestListener(pRequestData);
 
 			break;
 		}
 	case ESystemRequestType::RemoveRequestListener:
 		{
-			SSystemRequestData<ESystemRequestType::RemoveRequestListener> const* const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::RemoveRequestListener> const*>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::RemoveRequestListener> const*>(request.GetData());
 			result = g_eventListenerManager.RemoveRequestListener(pRequestData->func, pRequestData->pObjectToListenTo);
 
 			break;
 		}
 	case ESystemRequestType::SetImpl:
 		{
-			SSystemRequestData<ESystemRequestType::SetImpl> const* const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::SetImpl> const*>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::SetImpl> const*>(request.GetData());
 			result = HandleSetImpl(pRequestData->pIImpl);
 
 			break;
 		}
 	case ESystemRequestType::RefreshSystem:
 		{
-			SSystemRequestData<ESystemRequestType::RefreshSystem> const* const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::RefreshSystem> const*>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::RefreshSystem> const*>(request.GetData());
 			result = HandleRefresh(pRequestData->levelName);
 
 			break;
@@ -1704,8 +1698,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::ExecuteTriggerEx:
 		{
-			SSystemRequestData<ESystemRequestType::ExecuteTriggerEx> const* const pRequestData =
-				static_cast<SSystemRequestData<ESystemRequestType::ExecuteTriggerEx> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ExecuteTriggerEx> const*>(request.GetData());
 
 			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
 
@@ -1739,8 +1732,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::ExecuteDefaultTrigger:
 		{
-			SSystemRequestData<ESystemRequestType::ExecuteDefaultTrigger> const* const pRequestData =
-				static_cast<SSystemRequestData<ESystemRequestType::ExecuteDefaultTrigger> const*>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ExecuteDefaultTrigger> const*>(request.GetData());
 
 			switch (pRequestData->triggerType)
 			{
@@ -1818,7 +1810,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::ParseControlsData:
 		{
-			SSystemRequestData<ESystemRequestType::ParseControlsData> const* const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ParseControlsData> const*>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ParseControlsData> const*>(request.GetData());
 			g_xmlProcessor.ParseControlsData(pRequestData->folderPath.c_str(), pRequestData->dataScope);
 
 			result = ERequestStatus::Success;
@@ -1827,7 +1819,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::ParsePreloadsData:
 		{
-			SSystemRequestData<ESystemRequestType::ParsePreloadsData> const* const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ParsePreloadsData> const*>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ParsePreloadsData> const*>(request.GetData());
 			g_xmlProcessor.ParsePreloadsData(pRequestData->folderPath.c_str(), pRequestData->dataScope);
 
 			result = ERequestStatus::Success;
@@ -1836,7 +1828,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::ClearControlsData:
 		{
-			SSystemRequestData<ESystemRequestType::ClearControlsData> const* const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ClearControlsData> const*>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ClearControlsData> const*>(request.GetData());
 			g_xmlProcessor.ClearControlsData(pRequestData->dataScope);
 
 			result = ERequestStatus::Success;
@@ -1845,7 +1837,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::ClearPreloadsData:
 		{
-			SSystemRequestData<ESystemRequestType::ClearPreloadsData> const* const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ClearPreloadsData> const*>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ClearPreloadsData> const*>(request.GetData());
 			g_xmlProcessor.ClearPreloadsData(pRequestData->dataScope);
 
 			result = ERequestStatus::Success;
@@ -1854,22 +1846,21 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::PreloadSingleRequest:
 		{
-			SSystemRequestData<ESystemRequestType::PreloadSingleRequest> const* const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::PreloadSingleRequest> const*>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::PreloadSingleRequest> const*>(request.GetData());
 			result = g_fileCacheManager.TryLoadRequest(pRequestData->preloadRequestId, ((request.flags & ERequestFlags::ExecuteBlocking) != 0), pRequestData->bAutoLoadOnly);
 
 			break;
 		}
 	case ESystemRequestType::UnloadSingleRequest:
 		{
-			SSystemRequestData<ESystemRequestType::UnloadSingleRequest> const* const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::UnloadSingleRequest> const*>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::UnloadSingleRequest> const*>(request.GetData());
 			result = g_fileCacheManager.TryUnloadRequest(pRequestData->preloadRequestId);
 
 			break;
 		}
 	case ESystemRequestType::SetParameter:
 		{
-			SSystemRequestData<ESystemRequestType::SetParameter> const* const pRequestData =
-				static_cast<SSystemRequestData<ESystemRequestType::SetParameter> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::SetParameter> const*>(request.GetData());
 
 			CParameter const* const pParameter = stl::find_in_map(g_parameters, pRequestData->parameterId, nullptr);
 
@@ -1887,8 +1878,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::SetGlobalParameter:
 		{
-			SSystemRequestData<ESystemRequestType::SetParameter> const* const pRequestData =
-				static_cast<SSystemRequestData<ESystemRequestType::SetParameter> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::SetParameter> const*>(request.GetData());
 
 			CParameter const* const pParameter = stl::find_in_map(g_parameters, pRequestData->parameterId, nullptr);
 
@@ -1907,8 +1897,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 	case ESystemRequestType::SetSwitchState:
 		{
 			result = ERequestStatus::FailureInvalidControlId;
-			SSystemRequestData<ESystemRequestType::SetSwitchState> const* const pRequestData =
-				static_cast<SSystemRequestData<ESystemRequestType::SetSwitchState> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::SetSwitchState> const*>(request.GetData());
 
 			CSwitch const* const pSwitch = stl::find_in_map(g_switches, pRequestData->switchId, nullptr);
 
@@ -1928,8 +1917,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 	case ESystemRequestType::SetGlobalSwitchState:
 		{
 			result = ERequestStatus::FailureInvalidControlId;
-			SSystemRequestData<ESystemRequestType::SetSwitchState> const* const pRequestData =
-				static_cast<SSystemRequestData<ESystemRequestType::SetSwitchState> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::SetSwitchState> const*>(request.GetData());
 
 			CSwitch const* const pSwitch = stl::find_in_map(g_switches, pRequestData->switchId, nullptr);
 
@@ -2023,7 +2011,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::AutoLoadSetting:
 		{
-			SSystemRequestData<ESystemRequestType::AutoLoadSetting> const* const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::AutoLoadSetting> const*>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::AutoLoadSetting> const*>(request.GetData());
 
 			for (auto const& settingPair : g_settings)
 			{
@@ -2042,7 +2030,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::LoadSetting:
 		{
-			SSystemRequestData<ESystemRequestType::LoadSetting> const* const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::LoadSetting> const*>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::LoadSetting> const*>(request.GetData());
 
 			CSetting const* const pSetting = stl::find_in_map(g_settings, pRequestData->id, nullptr);
 
@@ -2060,7 +2048,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::UnloadSetting:
 		{
-			SSystemRequestData<ESystemRequestType::UnloadSetting> const* const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::UnloadSetting> const*>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::UnloadSetting> const*>(request.GetData());
 
 			CSetting const* const pSetting = stl::find_in_map(g_settings, pRequestData->id, nullptr);
 
@@ -2078,7 +2066,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::UnloadAFCMDataByScope:
 		{
-			SSystemRequestData<ESystemRequestType::UnloadAFCMDataByScope> const* const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::UnloadAFCMDataByScope> const*>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::UnloadAFCMDataByScope> const*>(request.GetData());
 			result = g_fileCacheManager.UnloadDataByScope(pRequestData->dataScope);
 
 			break;
@@ -2102,8 +2090,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 	case ESystemRequestType::ExecutePreviewTrigger:
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			SSystemRequestData<ESystemRequestType::ExecutePreviewTrigger> const* const pRequestData =
-				static_cast<SSystemRequestData<ESystemRequestType::ExecutePreviewTrigger> const*>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ExecutePreviewTrigger> const*>(request.GetData());
 
 			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
 
@@ -2123,8 +2110,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 	case ESystemRequestType::ExecutePreviewTriggerEx:
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			SSystemRequestData<ESystemRequestType::ExecutePreviewTriggerEx> const* const pRequestData =
-				static_cast<SSystemRequestData<ESystemRequestType::ExecutePreviewTriggerEx> const*>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ExecutePreviewTriggerEx> const*>(request.GetData());
 
 			g_previewTrigger.Execute(pRequestData->triggerInfo);
 			result = ERequestStatus::Success;
@@ -2170,7 +2156,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 	case ESystemRequestType::ReloadControlsData:
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			SSystemRequestData<ESystemRequestType::ReloadControlsData> const* const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ReloadControlsData> const*>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ReloadControlsData> const*>(request.GetData());
 
 			for (auto const pObject : g_objectManager.GetObjects())
 			{
@@ -2207,29 +2193,25 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::GetFileData:
 		{
-			SSystemRequestData<ESystemRequestType::GetFileData> const* const pRequestData =
-				static_cast<SSystemRequestData<ESystemRequestType::GetFileData> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::GetFileData> const*>(request.GetData());
 			g_pIImpl->GetFileData(pRequestData->name.c_str(), pRequestData->fileData);
 			break;
 		}
 	case ESystemRequestType::GetImplInfo:
 		{
-			SSystemRequestData<ESystemRequestType::GetImplInfo> const* const pRequestData =
-				static_cast<SSystemRequestData<ESystemRequestType::GetImplInfo> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::GetImplInfo> const*>(request.GetData());
 			g_pIImpl->GetInfo(pRequestData->implInfo);
 			break;
 		}
 	case ESystemRequestType::RegisterListener:
 		{
-			SSystemRequestData<ESystemRequestType::RegisterListener> const* const pRequestData =
-				static_cast<SSystemRequestData<ESystemRequestType::RegisterListener> const*>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::RegisterListener> const*>(request.GetData());
 			*pRequestData->ppListener = g_listenerManager.CreateListener(pRequestData->transformation, pRequestData->name.c_str());
 			break;
 		}
 	case ESystemRequestType::ReleaseListener:
 		{
-			SSystemRequestData<ESystemRequestType::ReleaseListener> const* const pRequestData =
-				static_cast<SSystemRequestData<ESystemRequestType::ReleaseListener> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ReleaseListener> const*>(request.GetData());
 
 			CRY_ASSERT(pRequestData->pListener != nullptr);
 
@@ -2243,8 +2225,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::RegisterObject:
 		{
-			SSystemRequestData<ESystemRequestType::RegisterObject> const* const pRequestData =
-				static_cast<SSystemRequestData<ESystemRequestType::RegisterObject> const*>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::RegisterObject> const*>(request.GetData());
 
 			auto const pNewObject = new CObject(pRequestData->transformation);
 			g_objectManager.RegisterObject(pNewObject);
@@ -2268,8 +2249,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::ReleaseObject:
 		{
-			SSystemRequestData<ESystemRequestType::ReleaseObject> const* const pRequestData =
-				static_cast<SSystemRequestData<ESystemRequestType::ReleaseObject> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ReleaseObject> const*>(request.GetData());
 
 			CRY_ASSERT(pRequestData->pObject != nullptr);
 
@@ -2441,17 +2421,15 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 {
 	ERequestStatus result = ERequestStatus::Failure;
-	CObject* const pObject = (request.pObject != nullptr) ? request.pObject : g_pObject;
 
-	SObjectRequestDataBase const* const pBase =
-		static_cast<SObjectRequestDataBase const* const>(request.GetData());
+	auto const pBase = static_cast<SObjectRequestDataBase const*>(request.GetData());
+	CObject* const pObject = (pBase->pObject != nullptr) ? pBase->pObject : g_pObject;
 
 	switch (pBase->objectRequestType)
 	{
 	case EObjectRequestType::LoadTrigger:
 		{
-			SObjectRequestData<EObjectRequestType::LoadTrigger> const* const pRequestData =
-				static_cast<SObjectRequestData<EObjectRequestType::LoadTrigger> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::LoadTrigger> const*>(request.GetData());
 
 			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
 
@@ -2469,8 +2447,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 		}
 	case EObjectRequestType::UnloadTrigger:
 		{
-			SObjectRequestData<EObjectRequestType::UnloadTrigger> const* const pRequestData =
-				static_cast<SObjectRequestData<EObjectRequestType::UnloadTrigger> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::UnloadTrigger> const*>(request.GetData());
 
 			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
 
@@ -2488,8 +2465,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 		}
 	case EObjectRequestType::PlayFile:
 		{
-			SObjectRequestData<EObjectRequestType::PlayFile> const* const pRequestData =
-				static_cast<SObjectRequestData<EObjectRequestType::PlayFile> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::PlayFile> const*>(request.GetData());
 
 			if (pRequestData != nullptr && !pRequestData->file.empty())
 			{
@@ -2516,8 +2492,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 		}
 	case EObjectRequestType::StopFile:
 		{
-			SObjectRequestData<EObjectRequestType::StopFile> const* const pRequestData =
-				static_cast<SObjectRequestData<EObjectRequestType::StopFile> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::StopFile> const*>(request.GetData());
 
 			if (pRequestData != nullptr && !pRequestData->file.empty())
 			{
@@ -2529,8 +2504,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 		}
 	case EObjectRequestType::ExecuteTrigger:
 		{
-			SObjectRequestData<EObjectRequestType::ExecuteTrigger> const* const pRequestData =
-				static_cast<SObjectRequestData<EObjectRequestType::ExecuteTrigger> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::ExecuteTrigger> const*>(request.GetData());
 
 			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
 
@@ -2548,8 +2522,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 		}
 	case EObjectRequestType::StopTrigger:
 		{
-			SObjectRequestData<EObjectRequestType::StopTrigger> const* const pRequestData =
-				static_cast<SObjectRequestData<EObjectRequestType::StopTrigger> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::StopTrigger> const*>(request.GetData());
 
 			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
 
@@ -2575,8 +2548,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 		{
 			CRY_ASSERT_MESSAGE(pObject != g_pObject, "Received a request to set a transformation on the global object during %s", __FUNCTION__);
 
-			SObjectRequestData<EObjectRequestType::SetTransformation> const* const pRequestData =
-				static_cast<SObjectRequestData<EObjectRequestType::SetTransformation> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::SetTransformation> const*>(request.GetData());
 
 			pObject->HandleSetTransformation(pRequestData->transformation);
 			result = ERequestStatus::Success;
@@ -2585,8 +2557,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 		}
 	case EObjectRequestType::SetParameter:
 		{
-			SObjectRequestData<EObjectRequestType::SetParameter> const* const pRequestData =
-				static_cast<SObjectRequestData<EObjectRequestType::SetParameter> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::SetParameter> const*>(request.GetData());
 
 			CParameter const* const pParameter = stl::find_in_map(g_parameters, pRequestData->parameterId, nullptr);
 
@@ -2605,8 +2576,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 	case EObjectRequestType::SetSwitchState:
 		{
 			result = ERequestStatus::FailureInvalidControlId;
-			SObjectRequestData<EObjectRequestType::SetSwitchState> const* const pRequestData =
-				static_cast<SObjectRequestData<EObjectRequestType::SetSwitchState> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::SetSwitchState> const*>(request.GetData());
 
 			CSwitch const* const pSwitch = stl::find_in_map(g_switches, pRequestData->switchId, nullptr);
 
@@ -2627,8 +2597,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 		{
 			CRY_ASSERT_MESSAGE(pObject != g_pObject, "Received a request to set the occlusion type on the global object during %s", __FUNCTION__);
 
-			SObjectRequestData<EObjectRequestType::SetOcclusionType> const* const pRequestData =
-				static_cast<SObjectRequestData<EObjectRequestType::SetOcclusionType> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::SetOcclusionType> const*>(request.GetData());
 
 			SetOcclusionType(*pObject, pRequestData->occlusionType);
 			result = ERequestStatus::Success;
@@ -2639,8 +2608,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 		{
 			CRY_ASSERT_MESSAGE(pObject != g_pObject, "Received a request to set the occlusion ray offset on the global object during %s", __FUNCTION__);
 
-			SObjectRequestData<EObjectRequestType::SetOcclusionRayOffset> const* const pRequestData =
-				static_cast<SObjectRequestData<EObjectRequestType::SetOcclusionRayOffset> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::SetOcclusionRayOffset> const*>(request.GetData());
 
 			pObject->HandleSetOcclusionRayOffset(pRequestData->occlusionRayOffset);
 			result = ERequestStatus::Success;
@@ -2649,8 +2617,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 		}
 	case EObjectRequestType::SetCurrentEnvironments:
 		{
-			SObjectRequestData<EObjectRequestType::SetCurrentEnvironments> const* const pRequestData =
-				static_cast<SObjectRequestData<EObjectRequestType::SetCurrentEnvironments> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::SetCurrentEnvironments> const*>(request.GetData());
 
 			SetCurrentEnvironmentsOnObject(pObject, pRequestData->entityToIgnore);
 
@@ -2660,8 +2627,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 		{
 			if (pObject != g_pObject)
 			{
-				SObjectRequestData<EObjectRequestType::SetEnvironment> const* const pRequestData =
-					static_cast<SObjectRequestData<EObjectRequestType::SetEnvironment> const* const>(request.GetData());
+				auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::SetEnvironment> const*>(request.GetData());
 
 				CEnvironment const* const pEnvironment = stl::find_in_map(g_environments, pRequestData->environmentId, nullptr);
 
@@ -2684,8 +2650,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 		}
 	case EObjectRequestType::ProcessPhysicsRay:
 		{
-			SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> const* const pRequestData =
-				static_cast<SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> const*>(request.GetData());
 
 			pObject->ProcessPhysicsRay(pRequestData->pRayInfo);
 			result = ERequestStatus::Success;
@@ -2694,8 +2659,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	case EObjectRequestType::SetName:
 		{
-			SObjectRequestData<EObjectRequestType::SetName> const* const pRequestData =
-				static_cast<SObjectRequestData<EObjectRequestType::SetName> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::SetName> const*>(request.GetData());
 
 			result = pObject->HandleSetName(pRequestData->name.c_str());
 
@@ -2710,8 +2674,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	case EObjectRequestType::ToggleAbsoluteVelocityTracking:
 		{
-			SObjectRequestData<EObjectRequestType::ToggleAbsoluteVelocityTracking> const* const pRequestData =
-				static_cast<SObjectRequestData<EObjectRequestType::ToggleAbsoluteVelocityTracking> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::ToggleAbsoluteVelocityTracking> const*>(request.GetData());
 
 			if (pRequestData->isEnabled)
 			{
@@ -2735,8 +2698,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 		}
 	case EObjectRequestType::ToggleRelativeVelocityTracking:
 		{
-			SObjectRequestData<EObjectRequestType::ToggleRelativeVelocityTracking> const* const pRequestData =
-				static_cast<SObjectRequestData<EObjectRequestType::ToggleRelativeVelocityTracking> const* const>(request.GetData());
+			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::ToggleRelativeVelocityTracking> const*>(request.GetData());
 
 			if (pRequestData->isEnabled)
 			{
@@ -2778,15 +2740,13 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 ERequestStatus CSystem::ProcessListenerRequest(SRequestData const* const pPassedRequestData)
 {
 	ERequestStatus result = ERequestStatus::Failure;
-	SListenerRequestDataBase const* const pBase =
-		static_cast<SListenerRequestDataBase const* const>(pPassedRequestData);
+	auto const pBase = static_cast<SListenerRequestDataBase const*>(pPassedRequestData);
 
 	switch (pBase->listenerRequestType)
 	{
 	case EListenerRequestType::SetTransformation:
 		{
-			SListenerRequestData<EListenerRequestType::SetTransformation> const* const pRequestData =
-				static_cast<SListenerRequestData<EListenerRequestType::SetTransformation> const* const>(pPassedRequestData);
+			auto const pRequestData = static_cast<SListenerRequestData<EListenerRequestType::SetTransformation> const* const>(pPassedRequestData);
 
 			CRY_ASSERT(pRequestData->pListener != nullptr);
 
@@ -2801,8 +2761,7 @@ ERequestStatus CSystem::ProcessListenerRequest(SRequestData const* const pPassed
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	case EListenerRequestType::SetName:
 		{
-			SListenerRequestData<EListenerRequestType::SetName> const* const pRequestData =
-				static_cast<SListenerRequestData<EListenerRequestType::SetName> const* const>(pPassedRequestData);
+			auto const pRequestData = static_cast<SListenerRequestData<EListenerRequestType::SetName> const*>(pPassedRequestData);
 
 			pRequestData->pListener->HandleSetName(pRequestData->name.c_str());
 			result = ERequestStatus::Success;
@@ -2828,12 +2787,13 @@ void CSystem::NotifyListener(CRequest const& request)
 	CStandaloneFile* pStandaloneFile = nullptr;
 	ControlId controlID = InvalidControlId;
 	CEvent* pEvent = nullptr;
+	CObject* pObject = nullptr;
 
 	switch (request.GetData()->requestType)
 	{
 	case ERequestType::SystemRequest:
 		{
-			SSystemRequestDataBase const* const pBase = static_cast<SSystemRequestDataBase const* const>(request.GetData());
+			auto const pBase = static_cast<SSystemRequestDataBase const*>(request.GetData());
 
 			switch (pBase->systemRequestType)
 			{
@@ -2857,13 +2817,13 @@ void CSystem::NotifyListener(CRequest const& request)
 		}
 	case ERequestType::CallbackRequest:
 		{
-			SCallbackRequestDataBase const* const pBase = static_cast<SCallbackRequestDataBase const* const>(request.GetData());
+			auto const pBase = static_cast<SCallbackRequestDataBase const*>(request.GetData());
 
 			switch (pBase->callbackRequestType)
 			{
 			case ECallbackRequestType::ReportFinishedTriggerInstance:
 				{
-					SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> const* const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> const* const>(pBase);
+					auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> const*>(pBase);
 					controlID = pRequestData->triggerId;
 					systemEvent = ESystemEvents::TriggerFinished;
 
@@ -2871,14 +2831,14 @@ void CSystem::NotifyListener(CRequest const& request)
 				}
 			case ECallbackRequestType::ReportStartedEvent:
 				{
-					SCallbackRequestData<ECallbackRequestType::ReportStartedEvent> const* const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportStartedEvent> const* const>(pBase);
+					auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportStartedEvent> const*>(pBase);
 					pEvent = &pRequestData->event;
 
 					break;
 				}
 			case ECallbackRequestType::ReportStartedFile:
 				{
-					SCallbackRequestData<ECallbackRequestType::ReportStartedFile> const* const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportStartedFile> const* const>(pBase);
+					auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportStartedFile> const*>(pBase);
 					pStandaloneFile = &pRequestData->standaloneFile;
 					systemEvent = ESystemEvents::FileStarted;
 
@@ -2886,7 +2846,7 @@ void CSystem::NotifyListener(CRequest const& request)
 				}
 			case ECallbackRequestType::ReportStoppedFile:
 				{
-					SCallbackRequestData<ECallbackRequestType::ReportStoppedFile> const* const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportStoppedFile> const* const>(pBase);
+					auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportStoppedFile> const*>(pBase);
 					pStandaloneFile = &pRequestData->standaloneFile;
 					systemEvent = ESystemEvents::FileStopped;
 
@@ -2898,13 +2858,14 @@ void CSystem::NotifyListener(CRequest const& request)
 		}
 	case ERequestType::ObjectRequest:
 		{
-			SObjectRequestDataBase const* const pBase = static_cast<SObjectRequestDataBase const* const>(request.GetData());
+			auto const pBase = static_cast<SObjectRequestDataBase const*>(request.GetData());
+			pObject = pBase->pObject;
 
 			switch (pBase->objectRequestType)
 			{
 			case EObjectRequestType::ExecuteTrigger:
 				{
-					SObjectRequestData<EObjectRequestType::ExecuteTrigger> const* const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::ExecuteTrigger> const* const>(pBase);
+					auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::ExecuteTrigger> const*>(pBase);
 					controlID = pRequestData->triggerId;
 					systemEvent = ESystemEvents::TriggerExecuted;
 
@@ -2963,7 +2924,7 @@ void CSystem::NotifyListener(CRequest const& request)
 		request.pUserDataOwner,
 		systemEvent,
 		controlID,
-		static_cast<IObject*>(request.pObject),
+		static_cast<IObject*>(pObject),
 		pStandaloneFile,
 		pEvent);
 
@@ -3225,7 +3186,7 @@ void CSystem::OnCallback(SRequestInfo const* const pRequestInfo)
 void CSystem::GetImplInfo(SImplInfo& implInfo)
 {
 	SSystemRequestData<ESystemRequestType::GetImplInfo> const requestData(implInfo);
-	CRequest const request(&requestData, nullptr, ERequestFlags::ExecuteBlocking);
+	CRequest const request(&requestData, ERequestFlags::ExecuteBlocking);
 	PushRequest(request);
 }
 
