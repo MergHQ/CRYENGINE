@@ -79,4 +79,10 @@ namespace Cry
 		virtual void UpdateAfterRender() = 0;
 		virtual void UpdateAfterRenderSubmit() = 0;
 	};
+
+YASLI_ENUM_BEGIN_NESTED(IPluginManager, EPluginType, "PluginType")
+YASLI_ENUM_VALUE_NESTED(IPluginManager, EPluginType::Native, "Native")
+YASLI_ENUM_VALUE_NESTED(IPluginManager, EPluginType::Managed, "Managed")
+YASLI_ENUM_END()
+
 }

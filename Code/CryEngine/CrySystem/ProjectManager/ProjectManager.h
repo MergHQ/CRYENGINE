@@ -9,16 +9,6 @@
 namespace Cry
 {
 
-YASLI_ENUM_BEGIN(EPlatform, "Platform")
-YASLI_ENUM(EPlatform::Windows, "Windows", "Windows")
-YASLI_ENUM(EPlatform::Linux, "Linux", "Linux")
-YASLI_ENUM(EPlatform::MacOS, "MacOS", "MacOS")
-YASLI_ENUM(EPlatform::XboxOne, "XboxOne", "XboxOne")
-YASLI_ENUM(EPlatform::PS4, "PS4", "PS4")
-YASLI_ENUM(EPlatform::Android, "Android", "Android")
-YASLI_ENUM(EPlatform::iOS, "iOS", "iOS")
-YASLI_ENUM_END()
-
 class CProjectManager final
 	: public IProjectManager
 	, public ILoadConfigurationEntrySink

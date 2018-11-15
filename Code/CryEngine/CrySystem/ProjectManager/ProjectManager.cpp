@@ -19,11 +19,6 @@ using namespace Cry;
 #include <Shlwapi.h>
 #endif
 
-YASLI_ENUM_BEGIN_NESTED(IPluginManager, EPluginType, "PluginType")
-YASLI_ENUM_VALUE_NESTED(IPluginManager, EPluginType::Native, "Native")
-YASLI_ENUM_VALUE_NESTED(IPluginManager, EPluginType::Managed, "Managed")
-YASLI_ENUM_END()
-
 CProjectManager::CProjectManager()
 	: m_sys_project(nullptr)
 	, m_sys_game_name(nullptr)
