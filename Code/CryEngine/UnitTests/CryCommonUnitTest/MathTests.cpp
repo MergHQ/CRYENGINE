@@ -6,6 +6,7 @@
 #include <CryMath/LCGRandom.h>
 #include <CryMath/SNoise.h>
 #include <CryMath/RadixSort.h>
+#include <CryMath/Cry_GeoProjection.h>
 #include <CryMemory/HeapAllocator.h>
 using namespace crymath;
 
@@ -599,3 +600,73 @@ TEST(CryMathTest, RadixSortTest)
 }
 
 #endif // CRY_HARDWARE_VECTOR4
+
+TEST(CryMathTest, Projection_PointOntoPlane)
+{
+	// plane normal going up
+	{
+		Plane plane = Plane::CreatePlane(Vec3(0, 0, 1), Vec3(0, 0, 10));
+		Vec3 pointOnPlane = Projection::PointOntoPlane(Vec3(999, 999, 999), plane);
+		REQUIRE(pointOnPlane.IsEquivalent(Vec3(999, 999, 10)));
+	}
+
+	// plane normal going down
+	{
+		Plane plane = Plane::CreatePlane(Vec3(0, 0, -1), Vec3(0, 0, 10));
+		Vec3 pointOnPlane = Projection::PointOntoPlane(Vec3(999, 999, 999), plane);
+		REQUIRE(pointOnPlane.IsEquivalent(Vec3(999, 999, 10)));
+	}
+
+	// plane normal going right
+	{
+		Plane plane = Plane::CreatePlane(Vec3(1, 0, 0), Vec3(10, 0, 0));
+		Vec3 pointOnPlane = Projection::PointOntoPlane(Vec3(999, 999, 999), plane);
+		REQUIRE(pointOnPlane.IsEquivalent(Vec3(10, 999, 999)));
+	}
+
+	// plane normal going left
+	{
+		Plane plane = Plane::CreatePlane(Vec3(-1, 0, 0), Vec3(10, 0, 0));
+		Vec3 pointOnPlane = Projection::PointOntoPlane(Vec3(999, 999, 999), plane);
+		REQUIRE(pointOnPlane.IsEquivalent(Vec3(10, 999, 999)));
+	}
+
+	// plane normal going into the screen
+	{
+		Plane plane = Plane::CreatePlane(Vec3(0, 1, 0), Vec3(0, 10, 0));
+		Vec3 pointOnPlane = Projection::PointOntoPlane(Vec3(999, 999, 999), plane);
+		REQUIRE(pointOnPlane.IsEquivalent(Vec3(999, 10, 999)));
+	}
+
+	// plane normal going out of the screen
+	{
+		Plane plane = Plane::CreatePlane(Vec3(0, -1, 0), Vec3(0, 10, 0));
+		Vec3 pointOnPlane = Projection::PointOntoPlane(Vec3(999, 999, 999), plane);
+		REQUIRE(pointOnPlane.IsEquivalent(Vec3(999, 10, 999)));
+	}
+}
+
+TEST(CryMathTest, Projection_PointOntoLine)
+{
+	// line collinear to the cardinal x-axis
+	{
+		Line line(Vec3(10, 10, 10), Vec3(1, 0, 0));
+		Vec3 pointOnLine = Projection::PointOntoLine(Vec3(999, 999, 999), line);
+		REQUIRE(pointOnLine.IsEquivalent(Vec3(999, 10, 10)));
+	}
+
+	// line collinear to the cardinal y-axis
+	{
+		Line line(Vec3(10, 10, 10), Vec3(0, 1, 0));
+		Vec3 pointOnLine = Projection::PointOntoLine(Vec3(999, 999, 999), line);
+		REQUIRE(pointOnLine.IsEquivalent(Vec3(10, 999, 10)));
+	}
+
+	// line collinear to the cardinal z-axis
+	{
+		Line line(Vec3(10, 10, 10), Vec3(0, 0, 1));
+		Vec3 pointOnLine = Projection::PointOntoLine(Vec3(999, 999, 999), line);
+		REQUIRE(pointOnLine.IsEquivalent(Vec3(10, 10, 999)));
+	}
+}
+
