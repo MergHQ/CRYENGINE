@@ -17,6 +17,9 @@
 #include "EnvironmentDisturbanceManager.h"
 #include "AICorpse.h"
 
+class CAIProxyManager;
+class CScriptBind_AIAction;
+
 class CGameAISystem
 {
 public:
@@ -32,6 +35,7 @@ public:
 	void ResumeAllModules(EntityId entityID);
 	void Update(float frameTime);
 	void Reset(bool bUnload);
+	void CompleteInit();
 	void Serialize(TSerialize ser);
 	void PostSerialize();
 
@@ -42,6 +46,7 @@ public:
 	CAICounters& GetAICounters() { return m_AICounters; }
 	AISquadManager& GetAISquadManager() { return m_AISquadManager; }
 	GameAI::EnvironmentDisturbanceManager& GetEnvironmentDisturbanceManager() { return m_environmentDisturbanceManager; }
+	CAIProxyManager& GetAIProxyManager() { return *m_pAIProxyManager; }
 
 #ifdef INCLUDE_GAME_AI_RECORDER
 	CGameAIRecorder &GetGameAIRecorder() { return m_gameAIRecorder; }
@@ -76,6 +81,9 @@ private:
 	State m_state;
 
 	CAICorpseManager* m_pCorpsesManager;
+	CAIProxyManager* m_pAIProxyManager;
+
+	CScriptBind_AIAction* m_pScriptBindAIAction;
 
 #ifdef INCLUDE_GAME_AI_RECORDER
 	CGameAIRecorder m_gameAIRecorder;

@@ -1714,6 +1714,9 @@ void SCVars::InitCVars(IConsole *pConsole)
 	REGISTER_CVAR2("ai_ProximityToHostileAlertnessIncrementThresholdDistance", &ai_ProximityToHostileAlertnessIncrementThresholdDistance, 10.0f, VF_CHEAT,
 		"Threshold distance used to calculate the proximity to hostile target alertness increment.");
 
+	REGISTER_CVAR(ai_DebugSignalTimers, 0, VF_CHEAT, "Enable Signal Timers Debug Screen\n");
+	REGISTER_CVAR(ai_DebugRangeSignaling, 0, VF_CHEAT, "Enable Range Signaling Debug Screen\n");
+
 	REGISTER_CVAR(g_actorViewDistRatio, 127, 0, "Sets the view dist ratio for actors.\n");
 	REGISTER_CVAR(g_playerLodRatio, 80, VF_REQUIRE_LEVEL_RELOAD, "Sets the lod ratio for players.\n");
 
@@ -3037,6 +3040,8 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("ai_CompleteCloakDelay", true);
 	pConsole->UnregisterVariable("ai_HazardsDebug", true);
 	pConsole->UnregisterVariable("ai_ProximityToHostileAlertnessIncrementThresholdDistance", true);
+	pConsole->UnregisterVariable("ai_DebugSignalTimers", true);
+	pConsole->UnregisterVariable("ai_DebugRangeSignaling", true);
 
 	pConsole->UnregisterVariable("g_actorViewDistRatio", true);
 	pConsole->UnregisterVariable("g_playerLodRatio", true);

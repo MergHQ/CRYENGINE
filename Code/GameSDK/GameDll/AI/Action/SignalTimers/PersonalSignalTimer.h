@@ -14,9 +14,10 @@
 #ifndef _PERSONAL_SIGNAL_TIMER_H_
 #define _PERSONAL_SIGNAL_TIMER_H_
 
-#include "AIProxy.h"
+#include "AI/Action/AIProxy.h"
 
 class CSignalTimer;
+struct IFFont;
 
 class CPersonalSignalTimer : public IAIProxyListener
 {

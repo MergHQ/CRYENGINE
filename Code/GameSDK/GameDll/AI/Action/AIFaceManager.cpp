@@ -14,9 +14,12 @@
  *********************************************************************/
 #include "StdAfx.h"
 #include "AIFaceManager.h"
+
+#include <IActorSystem.h>
+
 #include <CryAnimation/ICryAnimation.h>
 #include <CryNetwork/ISerialize.h>
-#include <IActorSystem.h>
+#include <CryMath/Random.h>
 
 CAIFaceManager::TExprState CAIFaceManager::s_Expressions[EE_Count + 1];
 //

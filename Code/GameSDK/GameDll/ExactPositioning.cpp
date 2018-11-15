@@ -629,7 +629,7 @@ void CExactPositioning::UpdateTargetPointToFinishPoint()
 		return;
 
 	/*
-	CPersistantDebug* pPD = CCryAction::GetCryAction()->GetPersistantDebug();
+	CPersistantDebug* pPD = gEnv->pGameFramework->GetPersistantDebug();
 	bool debug = CAnimationGraphCVars::Get().m_debugExactPos != 0;
 	if (debug)
 		pPD->Begin( string( pEntity->GetName() ) + "_recalculatetriggerpositions", true );			

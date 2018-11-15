@@ -28,6 +28,7 @@ namespace AISignals
 	struct IAISignalExtraData;
 }
 struct IEntity;
+struct IFireController;
 class CAIHandler;
 class CommunicationHandler;
 
@@ -36,13 +37,6 @@ struct IAIProxyListener
 {
 	virtual ~IAIProxyListener() {}
 	virtual void OnAIProxyEnabled(bool bEnabled) = 0;
-};
-
-struct IFireController
-{
-	virtual ~IFireController(){}
-	virtual bool RequestFire(bool bFire) = 0;
-	virtual void UpdateTargetPosAI(const Vec3& pos) = 0;
 };
 
 class CAIProxy

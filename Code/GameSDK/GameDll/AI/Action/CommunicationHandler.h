@@ -5,7 +5,11 @@
 
 #pragma once
 
+#include <IAnimationGraph.h>
+
 #include <CryAISystem/IAgent.h>
+
+class CAIProxy;
 
 class CommunicationHandler
 	: public IAICommunicationHandler

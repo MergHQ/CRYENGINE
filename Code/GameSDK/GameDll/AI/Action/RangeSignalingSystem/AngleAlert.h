@@ -2,46 +2,52 @@
 
 /********************************************************************
    ---------------------------------------------------------------------
-   File name:   Range.h
+   File name:   AngleAlert.h
    $Id$
    $DateTime$
    Description: Single Range donut
    ---------------------------------------------------------------------
    History:
-   - 24:08:2007 : Created by Ricardo Pillosu
+   - 11:09:2007 : Created by Ricardo Pillosu
 
  *********************************************************************/
-#ifndef _RANGE_H_
-#define _RANGE_H_
+#ifndef _ANGLE_ALERT_H_
+#define _ANGLE_ALERT_H_
+
+namespace AISignals
+{
+	struct IAISignalExtraData;
+}
 
 class CPersonalRangeSignaling;
 
-class CRange
+class CAngleAlert
 {
 
 public:
 	// Base ----------------------------------------------------------
-	CRange(CPersonalRangeSignaling* pPersonal);
-	virtual ~CRange();
-	void Init(float fRadius, float fBoundary, const char* sSignal, AISignals::IAISignalExtraData* pData = NULL);
+	CAngleAlert(CPersonalRangeSignaling* pPersonal);
+	virtual ~CAngleAlert();
+	void Init(float fAngle, float fBoundary, const char* sSignal, AISignals::IAISignalExtraData* pData = NULL);
 
 	// Utils ---------------------------------------------------------
-	bool IsInRange(const Vec3& vPos) const;
-	bool IsInRangePlusBoundary(const Vec3& vPos) const;
+	bool  Check(const Vec3& vPos) const;
+	bool  CheckPlusBoundary(const Vec3& vPos) const;
+	float GetAngleTo(const Vec3& vPos) const;
 
-	bool operator<(const CRange& Range) const
+	bool  operator<(const CAngleAlert& AngleAlert) const
 	{
-		return(m_fRadius < Range.m_fRadius);
+		return(m_fAngle < AngleAlert.m_fAngle);
 	}
 
-	bool IsInRange(float fSquaredDIst) const
+	bool Check(float fAngle) const
 	{
-		return(fSquaredDIst < m_fRadius);
+		return(fAngle < m_fAngle);
 	}
 
-	bool IsInRangePlusBoundary(float fSquaredDIst) const
+	bool CheckPlusBoundary(float fAngle) const
 	{
-		return(fSquaredDIst < m_fBoundary);
+		return(fAngle < m_fBoundary);
 	}
 
 	const string& GetSignal() const
@@ -55,12 +61,10 @@ public:
 	}
 
 private:
-
-private:
 	CPersonalRangeSignaling*       m_pPersonal;
 	AISignals::IAISignalExtraData* m_pSignalData;
-	float                          m_fRadius;
+	float                          m_fAngle;
 	float                          m_fBoundary;
 	string                         m_sSignal;
 };
-#endif // _RANGE_H_
+#endif // _ANGLE_ALERT_H_

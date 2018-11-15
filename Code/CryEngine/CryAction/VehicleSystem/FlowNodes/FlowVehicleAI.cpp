@@ -10,8 +10,10 @@
 #include "VehicleSystem/Vehicle.h"
 #include "VehicleSystem/VehicleSeat.h"
 
+#include <CryAISystem/IAIObject.h>
 #include <CryAISystem/IAIActor.h>
 #include <CryAISystem/IGoalPipe.h>
+#include <CryAISystem/IAIActorProxy.h>
 
 #include <CryFlowGraph/IFlowBaseNode.h>
 

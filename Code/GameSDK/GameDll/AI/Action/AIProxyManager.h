@@ -19,6 +19,8 @@
 #include <CryAISystem/IAIActorProxy.h>
 #include <CryAISystem/IAIGroupProxy.h>
 
+class CAIProxy;
+
 class CAIProxyManager
 	: public IEntitySystemSink
 	  , public IAIActorProxyFactory

@@ -22,27 +22,30 @@
 
 #include "StdAfx.h"
 #include "AIProxy.h"
-#include "AI/AIProxyManager.h"
+
+#include "AI/GameAISystem.h"
+#include "AI/Action/AIProxyManager.h"
+#include "AI/Action/CommunicationHandler.h"
+#include "AI/Action/AIHandler.h"
+#include "AI/Action/RangeSignalingSystem/RangeSignaling.h"
+#include "AI/Action/SignalTimers/SignalTimers.h"
+
+#include <CryAction.h>
+#include <IItemSystem.h>
+#include <IVehicleSystem.h>
+#include <AnimationGraph/AnimatedCharacter.h>
+
 #include <CryAISystem/IAIAction.h>
 #include <CryAISystem/IAISystem.h>
 #include <CryAISystem/IAgent.h>
-#include "AIHandler.h"
-#include "IItemSystem.h"
-#include "IVehicleSystem.h"
 #include <CryAnimation/ICryAnimation.h>
-#include "CryAction.h"
 
-#include "RangeSignalingSystem/RangeSignaling.h"
-#include "SignalTimers/SignalTimers.h"
 #include <CryAISystem/IAIDebugRenderer.h>
-
-#include "AI/CommunicationHandler.h"
 
 #include <CryAISystem/IAIObject.h>
 #include <CryAISystem/IAIActor.h>
 #include <CryAISystem/ISignal.h>
 #include <CryAISystem/IAIObjectManager.h>
-#include "AnimationGraph/AnimatedCharacter.h"
 
 //
 //----------------------------------------------------------------------------------------------------------
@@ -93,14 +96,14 @@ CAIProxy::~CAIProxy()
 	if (m_pAIHandler)
 		m_pAIHandler->Release();
 
-	CCryAction::GetCryAction()->GetAIProxyManager()->OnAIProxyDestroyed(this);
+	g_pGame->GetGameAISystem()->GetAIProxyManager().OnAIProxyDestroyed(this);
 }
 
 //
 //----------------------------------------------------------------------------------------------------------
 EntityId CAIProxy::GetLinkedDriverEntityId()
 {
-	IVehicleSystem* pVehicleSystem = CCryAction::GetCryAction()->GetIVehicleSystem();
+	IVehicleSystem* pVehicleSystem = gEnv->pGameFramework->GetIVehicleSystem();
 	IVehicle* pVehicle = pVehicleSystem->GetVehicle(m_pGameObject->GetEntityId());
 	if (pVehicle)
 		if (IVehicleSeat* pVehicleSeat = pVehicle->GetSeatById(1))  //1 means driver
@@ -117,7 +120,7 @@ bool CAIProxy::IsDriver()
 	{
 		if (pActor->GetLinkedVehicle())
 		{
-			IVehicleSystem* pVehicleSystem = CCryAction::GetCryAction()->GetIVehicleSystem();
+			IVehicleSystem* pVehicleSystem = gEnv->pGameFramework->GetIVehicleSystem();
 			IVehicle* pVehicle = pVehicleSystem->GetVehicle(pActor->GetLinkedVehicle()->GetEntityId());
 			if (pVehicle)
 			{
@@ -356,7 +359,7 @@ IWeapon* CAIProxy::GetWeaponByEntityId(EntityId eid)
 	}
 
 	// if failed - fallback to GameSDK implementation
-	const IItemSystem* pItemSystem = CCryAction::GetCryAction()->GetIItemSystem();
+	const IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem();
 	IItem* pItem = pItemSystem ? pItemSystem->GetItem(eid) : nullptr;
 	return pItem ? pItem->GetIWeapon() : nullptr;
 }
@@ -458,7 +461,7 @@ IWeapon* CAIProxy::GetSecWeapon(const ERequestedGrenadeType prefGrenadeType, ERe
 
 IFireController* CAIProxy::GetFireController(uint32 controllerNum)
 {
-	IVehicleSystem* pVehicleSystem = CCryAction::GetCryAction()->GetIVehicleSystem();
+	IVehicleSystem* pVehicleSystem = gEnv->pGameFramework->GetIVehicleSystem();
 
 	if (IVehicle* pVehicle = (IVehicle*) pVehicleSystem->GetVehicle(m_pGameObject->GetEntityId()))
 		return pVehicle->GetFireController(controllerNum);
@@ -1164,7 +1167,7 @@ void CAIProxy::OnShoot(IWeapon* pWeapon, EntityId shooterId, EntityId ammoId, IE
 	IEntity* pEntity = m_pGameObject->GetEntity();
 	if (!pEntity)
 	{
-		AIWarningID(">> ", "CAIProxy::OnShoot null entity");
+		gEnv->pAISystem->Warning(">> ", "CAIProxy::OnShoot null entity");
 		return;
 	}
 
@@ -1217,7 +1220,7 @@ void CAIProxy::OnEndBurst(IWeapon* pWeapon, EntityId actorId)
 	assert(pEntity);
 	if (!pEntity)
 	{
-		AIWarningID(">> ", "CAIProxy::OnEndBurst null entity");
+		gEnv->pAISystem->Warning(">> ", "CAIProxy::OnEndBurst null entity");
 		return;
 	}
 	SendSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnWeaponEndBurst(), pEntity->GetAIObjectID()));
@@ -1370,8 +1373,8 @@ void CAIProxy::Reset(EObjectResetType type)
 				pMC->RequestMovement(mr);
 		}
 
-		CCryAction::GetCryAction()->GetRangeSignaling()->OnProxyReset(m_pGameObject->GetEntityId());
-		CCryAction::GetCryAction()->GetSignalTimer()->OnProxyReset(m_pGameObject->GetEntityId());
+		CRangeSignaling::ref().OnProxyReset(m_pGameObject->GetEntityId());
+		CSignalTimer::ref().OnProxyReset(m_pGameObject->GetEntityId());
 	}
 
 	m_aimQueryMode = QueryAimFromMovementController;
@@ -1625,7 +1628,7 @@ void CAIProxy::UpdateMind(SOBJECTSTATE& state)
 //----------------------------------------------------------------------------------------------------------
 void CAIProxy::OnReused(IEntity* pEntity, SEntitySpawnParams& params)
 {
-	m_pGameObject = CCryAction::GetCryAction()->GetGameObject(params.id);
+	m_pGameObject = gEnv->pGameFramework->GetGameObject(params.id);
 	m_pIActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(params.id);
 
 	EnableUpdate(false);
@@ -1951,7 +1954,7 @@ float CAIProxy::GetActorHealth() const
 	if (pActor != NULL)
 		return pActor->GetHealth();
 
-	const IVehicleSystem* pVehicleSystem = CCryAction::GetCryAction()->GetIVehicleSystem();
+	const IVehicleSystem* pVehicleSystem = gEnv->pGameFramework->GetIVehicleSystem();
 	const IVehicle* pVehicle = const_cast<IVehicleSystem*>(pVehicleSystem)->GetVehicle(m_pGameObject->GetEntityId());
 	if (pVehicle)
 		return ((1.0f - pVehicle->GetDamageRatio()) * 1000.0f);
@@ -1967,7 +1970,7 @@ float CAIProxy::GetActorMaxHealth() const
 	if (pActor != NULL)
 		return pActor->GetMaxHealth();
 
-	const IVehicleSystem* pVehicleSystem = CCryAction::GetCryAction()->GetIVehicleSystem();
+	const IVehicleSystem* pVehicleSystem = gEnv->pGameFramework->GetIVehicleSystem();
 	const IVehicle* pVehicle = const_cast<IVehicleSystem*>(pVehicleSystem)->GetVehicle(m_pGameObject->GetEntityId());
 	if (pVehicle)
 		return 1000.0f;
@@ -2012,7 +2015,7 @@ bool CAIProxy::IsDead() const
 	if (const IActor* pActor = GetActor())
 		return pActor->IsDead();
 
-	IVehicleSystem* pVehicleSystem = CCryAction::GetCryAction()->GetIVehicleSystem();
+	IVehicleSystem* pVehicleSystem = gEnv->pGameFramework->GetIVehicleSystem();
 	IVehicle* pVehicle = pVehicleSystem->GetVehicle(m_pGameObject->GetEntityId());
 	return pVehicle ? pVehicle->IsDestroyed() : false;
 }
@@ -2070,7 +2073,7 @@ void CAIProxy::RemoveWeaponListener(IWeapon* pWeapon)
 
 IWeapon* CAIProxy::GetWeaponFromId(EntityId entityId)
 {
-	const IItemSystem* pItemSystem = CCryAction::GetCryAction()->GetIItemSystem();
+	const IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem();
 	IItem* pItem = pItemSystem ? pItemSystem->GetItem(entityId) : nullptr;
 
 	return pItem ? pItem->GetIWeapon() : nullptr;

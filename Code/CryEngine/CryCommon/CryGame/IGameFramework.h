@@ -13,7 +13,6 @@ struct pe_explosion;
 struct IPhysicalEntity;
 struct EventPhysRemoveEntityParts;
 struct ICombatLog;
-struct IAIActorProxy;
 struct ICooperativeAnimationManager;
 struct IGameSessionHandler;
 struct IRealtimeRemoteUpdate;
@@ -1060,6 +1059,8 @@ struct IGameFramework
 	//! Internal, client uses 'QueryExtension<ExtensionInterface>()
 	//! \param interfaceID Interface id.
 	virtual ICryUnknownPtr QueryExtensionInterfaceById(const CryInterfaceID& interfaceID) const = 0;
+
+	virtual IScriptTable* GetActionScriptBindTable() = 0;
 
 	// </interfuscator:shuffle>
 };

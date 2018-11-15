@@ -112,7 +112,7 @@ void CExactPositioningTrigger::Update( float frameTime, Vec3 userPos, Quat userO
 	{
 #ifdef INCLUDE_EXACTPOS_DEBUGGING
 		bool debug = (CAnimationGraphCVars::Get().m_debugExactPos != 0);
-		CPersistantDebug* pPD = CCryAction::GetCryAction()->GetPersistantDebug();
+		CPersistantDebug* pPD = gEnv->pGameFramework->GetPersistantDebug();
 #endif
 
 		Vec3 bump(0.0f, 0.0f, 0.1f);

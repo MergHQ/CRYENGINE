@@ -1289,6 +1289,9 @@ struct SCVars
 
 	float ai_ProximityToHostileAlertnessIncrementThresholdDistance;
 
+	int ai_DebugSignalTimers;
+	int ai_DebugRangeSignaling;
+
 	int g_actorViewDistRatio;
 	int g_playerLodRatio;
 	float g_itemsLodRatioScale;

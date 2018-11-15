@@ -98,6 +98,12 @@
 #include "AI/GameAISystem.h"
 #include "AI/AICorpse.h"
 
+#include "AI/Action/AIProxyManager.h"
+#include "AI/Action/AIHandler.h"
+#include "AI/Action/AIProxy.h"
+#include "AI/Action/RangeSignalingSystem/RangeSignaling.h"
+#include "AI/Action/SignalTimers/SignalTimers.h"
+
 #include "Network/Lobby/GameUserPackets.h"
 #include "Network/Lobby/GameAchievements.h"
 #include "Network/Lobby/GameBrowser.h"
@@ -1255,6 +1261,11 @@ bool CGame::CompleteInit()
 #ifdef GAME_DEBUG_MEM
 	DumpMemInfo("CGame::CompleteInit");
 #endif
+
+	if (m_pGameAISystem)
+	{
+		m_pGameAISystem->CompleteInit();
+	}
 
 	return true;
 }
@@ -3010,6 +3021,15 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags) PREFAST_SUPPRESS_WAR
 
 	CryProfile::ProfilerFrameEnd(gEnv->nMainFrameID);
 
+	if ((updateFlags & ESYSUPDATE_EDITOR_ONLY) == 0 &&  (updateFlags & ESYSUPDATE_EDITOR_AI_PHYSICS)!= 0 && !gEnv->bMultiplayer)
+	{
+		CRangeSignaling::ref().SetDebug(g_pGameCVars->ai_DebugRangeSignaling == 1);
+		CRangeSignaling::ref().Update(frameTime);
+
+		CSignalTimer::ref().SetDebug(g_pGameCVars->ai_DebugSignalTimers == 1);
+		CSignalTimer::ref().Update(frameTime);
+	}
+
 	return 1;
 }
 
@@ -3081,6 +3101,9 @@ void CGame::EditorResetGame(bool bStart)
 
 	if (m_pMovingPlatformMgr)
 		m_pMovingPlatformMgr->Reset();
+
+	CRangeSignaling::ref().OnEditorSetGameMode(bStart);
+	CSignalTimer::ref().OnEditorSetGameMode(bStart);
 }
 
 void CGame::Shutdown()
@@ -3168,6 +3191,12 @@ void CGame::OnPostUpdate(float fDeltaTime)
 #if ENABLE_VISUAL_DEBUG_PROTOTYPE
 	UpdateVisualDebug(fDeltaTime);
 #endif // ENABLE_VISUAL_DEBUG_PROTOTYPE
+
+	CRangeSignaling::ref().SetDebug(g_pGameCVars->ai_DebugRangeSignaling == 1);
+	CRangeSignaling::ref().Update(fDeltaTime);
+
+	CSignalTimer::ref().SetDebug(g_pGameCVars->ai_DebugSignalTimers == 1);
+	CSignalTimer::ref().Update(fDeltaTime);
 }
 
 void CGame::OnSaveGame(ISaveGame* pSaveGame)

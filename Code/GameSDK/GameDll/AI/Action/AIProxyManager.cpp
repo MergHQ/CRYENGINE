@@ -61,7 +61,7 @@ IAIActorProxy* CAIProxyManager::CreateActorProxy(EntityId entityID)
 {
 	CAIProxy* pResult = NULL;
 
-	if (IGameObject* gameObject = CCryAction::GetCryAction()->GetGameObject(entityID))
+	if (IGameObject* gameObject = gEnv->pGameFramework->GetGameObject(entityID))
 	{
 		pResult = new CAIProxy(gameObject);
 

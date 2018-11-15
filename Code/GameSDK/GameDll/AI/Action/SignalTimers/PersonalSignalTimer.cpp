@@ -15,7 +15,12 @@
 #include "PersonalSignalTimer.h"
 #include "SignalTimers.h"
 #include "IUIDraw.h"
+
 #include <CryAISystem/IAIObject.h>
+#include <CryFont/IFont.h>
+#include <CryMath/Random.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+
 // Description:
 //   Constructor
 // Arguments:

@@ -14,23 +14,26 @@
  *********************************************************************/
 
 #include "StdAfx.h"
-#include <CryAISystem/IAISystem.h>
-#include <CryAnimation/ICryAnimation.h>
-#include <CryNetwork/ISerialize.h>
-#include <IActorSystem.h>
-#include <IAnimationGraph.h>
 #include "AIHandler.h"
 #include "AIProxy.h"
+
 #include "PersistantDebug.h"
 #include "CryActionCVars.h"
+
+#include <IActorSystem.h>
+#include <IAnimationGraph.h>
+
+#include <CryAnimation/ICryAnimation.h>
+#include <CryNetwork/ISerialize.h>
+#include <CryMath/Random.h>
+
+#include <CryAISystem/IAISystem.h>
 #include <CryAISystem/IBlackBoard.h>
 #include <CryAISystem/IAIObject.h>
 #include <CryAISystem/IAIActor.h>
 #include <CryAISystem/ISignal.h>
 #include <CryAISystem/IPathfinder.h>
-
 #include <CryAISystem/IAIActor.h>
-#include "Mannequin/AnimActionTriState.h"
 
 // ============================================================================
 // ============================================================================
@@ -41,26 +44,26 @@ static const int MANNEQUIN_EXACTPOS_PRIORITY = 3;       // currently equal to PP
 // ============================================================================
 // ============================================================================
 
-class CAnimActionExactPositioning : public CAnimActionTriState
+class CAnimActionExactPositioning : public CAnimActionTriStateGameSDK
 {
 public:
-	typedef CAnimActionTriState TBase;
+	typedef CAnimActionTriStateGameSDK TBase;
 
 	DEFINE_ACTION("ExactPositioning");
 
-	CAnimActionExactPositioning(FragmentID fragmentID, IAnimatedCharacter& animChar, bool isOneShot, float maxMiddleDuration, bool isNavSO, const QuatT& targetLocation, IAnimActionTriStateListener* pListener);
+	CAnimActionExactPositioning(FragmentID fragmentID, IAnimatedCharacter& animChar, bool isOneShot, float maxMiddleDuration, bool isNavSO, const QuatT& targetLocation, IAnimActionTriStateListenerGameSDK* pListener);
 
 public:
-	inline static bool IsExactPositioningAction(const CAnimActionTriState* pAnimActionTriState)
+	inline static bool IsExactPositioningAction(const CAnimActionTriStateGameSDK* pAnimActionTriState)
 	{
 		return pAnimActionTriState->GetName()[0] == 'E'; // Horrible, poor man's RTTI
 	}
 
 private:
-	// CAnimActionTriState implementation ---------------------------------------
+	// CAnimActionTriStateGameSDK implementation ---------------------------------------
 	virtual void OnEnter() override;
 	virtual void OnExit() override;
-	// ~CAnimActionTriState implementation --------------------------------------
+	// ~CAnimActionTriStateGameSDK implementation --------------------------------------
 
 private:
 	bool m_isNavSO;
@@ -70,7 +73,7 @@ private:
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-CAnimActionExactPositioning::CAnimActionExactPositioning(FragmentID fragmentID, IAnimatedCharacter& animChar, bool isOneShot, float maxMiddleDuration, bool isNavSO, const QuatT& targetLocation, IAnimActionTriStateListener* pListener)
+CAnimActionExactPositioning::CAnimActionExactPositioning(FragmentID fragmentID, IAnimatedCharacter& animChar, bool isOneShot, float maxMiddleDuration, bool isNavSO, const QuatT& targetLocation, IAnimActionTriStateListenerGameSDK* pListener)
 	:
 	TBase(
 	  isNavSO ? MANNEQUIN_NAVSO_EXACTPOS_PRIORITY : MANNEQUIN_EXACTPOS_PRIORITY,
@@ -227,7 +230,7 @@ const char* CAIHandler::GetInitialBehaviorName()
 
 	if (!m_pScriptObject || !m_pScriptObject->GetValue("PropertiesInstance", pEntityPropertiesInstance))
 	{
-		AIWarningID("<CAIHandler> ", "can't find PropertiesInstance. Entity %s", m_pEntity->GetName());
+		gEnv->pAISystem->Warning("<CAIHandler> ", "can't find PropertiesInstance. Entity %s", m_pEntity->GetName());
 		return 0;
 	}
 
@@ -287,7 +290,7 @@ bool CAIHandler::SetCommonTables()
 	if (!gEnv->pScriptSystem->GetGlobalValue("AIBehavior", m_pBehaviorTable)
 	    && !gEnv->pScriptSystem->GetGlobalValue("AIBehaviour", m_pBehaviorTable))
 	{
-		AIWarningID("<CAIHandler> ", "Can't find AIBehavior table!");
+		gEnv->pAISystem->Warning("<CAIHandler> ", "Can't find AIBehavior table!");
 		return false;
 	}
 
@@ -296,7 +299,7 @@ bool CAIHandler::SetCommonTables()
 
 	if (!m_pBehaviorTable->GetValue("DEFAULT", m_pDEFAULTDefaultBehavior))
 	{
-		AIWarningID("<CAIHandler> ", "can't find DEFAULT. Entity %s", m_pEntity->GetName());
+		gEnv->pAISystem->Warning("<CAIHandler> ", "can't find DEFAULT. Entity %s", m_pEntity->GetName());
 		return false;
 	}
 
@@ -1061,7 +1064,7 @@ void CAIHandler::SetBehavior(const char* szNextBehaviorName, const AISignals::IA
 			m_bDelayedBehaviorConstructor = true;
 			if (pData)
 			{
-				AIWarningID("<CAIHandler::CallScript> ", "SetBehavior: signal extra data ignored for delayed constructor (PipeUser: '%s'; Behaviour: '%s')",
+				gEnv->pAISystem->Warning("<CAIHandler::CallScript> ", "SetBehavior: signal extra data ignored for delayed constructor (PipeUser: '%s'; Behaviour: '%s')",
 				            m_pEntity->GetName(), szNextBehaviorName);
 			}
 		}
@@ -1142,7 +1145,7 @@ void CAIHandler::FindOrLoadBehavior(const char* szBehaviorName, SmartScriptTable
 		{
 			if (m_pEntity && m_pEntity->GetName())
 			{
-				AIWarningID("<CAIHandler> ", "entity %s failed to change behavior to %s.",
+				gEnv->pAISystem->Warning("<CAIHandler> ", "entity %s failed to change behavior to %s.",
 				            m_pEntity->GetName(), szBehaviorName ? szBehaviorName : "<null>");
 			}
 		}
@@ -1265,7 +1268,7 @@ bool CAIHandler::CallScript(IScriptTable* scriptTable, const char* funcName, flo
 		if (bFound)
 		{
 #if !defined(_RELEASE) && !defined(CONSOLE_CONST_CVAR_MODE)
-			IPersistantDebug* pPD = CCryAction::GetCryAction()->GetIPersistantDebug();
+			IPersistantDebug* pPD = gEnv->pGameFramework->GetIPersistantDebug();
 
 			// TODO : (MATT) I don't think we usually do this with statics {2008/01/23:16:30:25}
 			static ICVar* pAIShowBehaviorCalls = NULL;
@@ -1513,7 +1516,7 @@ void CAIHandler::SetAlertness(int value, bool triggerEvent /*=false*/)
 		m_pEntity->SendEvent(event);
 	}
 
-	/*IActor* const pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(m_pEntity->GetId());
+	/*IActor* const pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_pEntity->GetId());
 	if (pActor)
 	{
 		if (switchToWeaponAlerted)
@@ -2101,7 +2104,7 @@ bool CAIHandler::FindOrLoadTable(IScriptTable* pGlobalTable, const char* szTable
 	SmartScriptTable pAvailableTable;
 	if (!pGlobalTable->GetValue("AVAILABLE", pAvailableTable))
 	{
-		AIWarningID("<CAIHandler> ", "AVAILABLE table not found. Aborting loading table");
+		gEnv->pAISystem->Warning("<CAIHandler> ", "AVAILABLE table not found. Aborting loading table");
 		return false;
 	}
 
@@ -2123,7 +2126,7 @@ bool CAIHandler::FindOrLoadTable(IScriptTable* pGlobalTable, const char* szTable
 	}
 
 	// could not load script for character
-	AIWarningID("<CAIHandler> ", "can't load script for character [%s]. Entity %s", szFileName, m_pEntity->GetName());
+	gEnv->pAISystem->Warning("<CAIHandler> ", "can't load script for character [%s]. Entity %s", szFileName, m_pEntity->GetName());
 
 	return false;
 }
@@ -2348,7 +2351,7 @@ void CAIHandler::DoReadibilityPackForAIObjectsOfType(unsigned short int nType, c
 
 //
 //------------------------------------------------------------------------------
-void CAIHandler::OnAnimActionTriStateEnter(CAnimActionTriState* pActionTriState)
+void CAIHandler::OnAnimActionTriStateEnter(CAnimActionTriStateGameSDK* pActionTriState)
 {
 	if (CAnimActionExactPositioning::IsExactPositioningAction(pActionTriState))
 		return;
@@ -2370,7 +2373,7 @@ void CAIHandler::OnAnimActionTriStateEnter(CAnimActionTriState* pActionTriState)
 
 //
 //------------------------------------------------------------------------------
-void CAIHandler::OnAnimActionTriStateMiddle(CAnimActionTriState* pActionTriState)
+void CAIHandler::OnAnimActionTriStateMiddle(CAnimActionTriStateGameSDK* pActionTriState)
 {
 	if (CAnimActionExactPositioning::IsExactPositioningAction(pActionTriState))
 		return;
@@ -2399,7 +2402,7 @@ void CAIHandler::OnAnimActionTriStateMiddle(CAnimActionTriState* pActionTriState
 
 //
 //------------------------------------------------------------------------------
-void CAIHandler::OnAnimActionTriStateExit(CAnimActionTriState* pActionTriState)
+void CAIHandler::OnAnimActionTriStateExit(CAnimActionTriStateGameSDK* pActionTriState)
 {
 	if (!CAnimActionExactPositioning::IsExactPositioningAction(pActionTriState))
 	{
@@ -2677,7 +2680,7 @@ void CAIHandler::SAnimActionTracker::StopAllActionsOfType(bool isOneShot)
 
 //
 //------------------------------------------------------------------------------
-void CAIHandler::SAnimActionTracker::Remove(CAnimActionTriState* pAction)
+void CAIHandler::SAnimActionTracker::Remove(CAnimActionTriStateGameSDK* pAction)
 {
 	TAnimActionVector::iterator itEnd = m_animActions.end();
 	for (TAnimActionVector::iterator it = m_animActions.begin(); it != itEnd; ++it)
@@ -2693,7 +2696,7 @@ void CAIHandler::SAnimActionTracker::Remove(CAnimActionTriState* pAction)
 
 //
 //------------------------------------------------------------------------------
-void CAIHandler::SAnimActionTracker::Add(CAnimActionTriState* pAction)
+void CAIHandler::SAnimActionTracker::Add(CAnimActionTriStateGameSDK* pAction)
 {
 	m_animActions.push_back(AnimActionPtr(pAction));
 }
