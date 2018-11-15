@@ -38,22 +38,34 @@
 
 namespace
 {
-CPipeUser* GetPipeUser(const BehaviorTree::UpdateContext& context)
+CPipeUser* GetPipeUser(const BehaviorTree::Node& node, const BehaviorTree::UpdateContext& context)
 {
-	assert(context.entity.GetAI());
-	return context.entity.GetAI()->CastToCPipeUser();
+	IAIObject * aiObject = context.entity.GetAI();
+
+	if (!aiObject)
+	{
+		const string errorMessage = "Node requires an AI Object to work properly because it uses PipeUser. Behavior Tree may not behave as expected.";
+		CRY_ASSERT_MESSAGE(aiObject, errorMessage.c_str());
+		BehaviorTree::ErrorReporter(node, context).LogError(errorMessage.c_str());
+		return nullptr;
+	}
+
+	return aiObject->CastToCPipeUser();
 }
 
-CPuppet* GetPuppet(const BehaviorTree::UpdateContext& context)
+CPuppet* GetPuppet(const BehaviorTree::Node& node, const BehaviorTree::UpdateContext& context)
 {
-	assert(context.entity.GetAI());
-	return context.entity.GetAI()->CastToCPuppet();
-}
+	IAIObject * aiObject = context.entity.GetAI();
 
-CAIActor* GetAIActor(const BehaviorTree::UpdateContext& context)
-{
-	assert(context.entity.GetAI());
-	return context.entity.GetAI()->CastToCAIActor();
+	if (!aiObject)
+	{
+		const string errorMessage = "Node requires an AI Object to work properly because it uses Puppet. Behavior Tree may not behave as expected.";
+		CRY_ASSERT_MESSAGE(aiObject, errorMessage.c_str());
+		BehaviorTree::ErrorReporter(node, context).LogError(errorMessage.c_str());
+		return nullptr;
+	}
+
+	return aiObject->CastToCPuppet();
 }
 }
 
@@ -135,13 +147,18 @@ protected:
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_AI);
 
+		IPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return;
+		}
+
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
 		runtimeData.goalPipeId = gEnv->pAISystem->AllocGoalPipeId();
 
-		IPipeUser& pipeUser = *GetPipeUser(context);
-		pipeUser.SelectPipe(AIGOALPIPE_RUN_ONCE, m_goalPipeName, NULL, runtimeData.goalPipeId);
-		pipeUser.RegisterGoalPipeListener(&runtimeData, runtimeData.goalPipeId, "GoalPipeBehaviorTreeNode");
+		pPipeUser->SelectPipe(AIGOALPIPE_RUN_ONCE, m_goalPipeName, NULL, runtimeData.goalPipeId);
+		pPipeUser->RegisterGoalPipeListener(&runtimeData, runtimeData.goalPipeId, "GoalPipeBehaviorTreeNode");
 
 		runtimeData.entityToRemoveListenerFrom = context.entityId;
 
@@ -152,10 +169,15 @@ protected:
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_AI);
 
+		IPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return;
+		}
+
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 		runtimeData.UnregisterGoalPipeListener();
-		IPipeUser& pipeUser = *GetPipeUser(context);
-		pipeUser.SelectPipe(AIGOALPIPE_LOOP, "_first_");
+		pPipeUser->SelectPipe(AIGOALPIPE_LOOP, "_first_");
 	}
 
 	virtual Status Update(const UpdateContext& context) override
@@ -292,8 +314,13 @@ public:
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
 	{
-		CPipeUser& pipeUser = *GetPipeUser(context);
-		IAIActorProxy* proxy = pipeUser.GetProxy();
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return;
+		}
+
+		IAIActorProxy* proxy = pPipeUser->GetProxy();
 
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
@@ -302,7 +329,7 @@ protected:
 			proxy->SetBehaviour(m_behaviorName);
 			runtimeData.behaviorIsRunning = true;
 
-			pipeUser.RegisterBehaviorListener(&runtimeData);
+			pPipeUser->RegisterBehaviorListener(&runtimeData);
 			runtimeData.entityToRemoveListenerFrom = context.entityId;
 		}
 		else
@@ -317,7 +344,13 @@ protected:
 
 		runtimeData.UnregisterBehaviorListener();
 
-		IAIActorProxy* proxy = GetPipeUser(context)->GetProxy();
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return;
+		}
+
+		IAIActorProxy* proxy = pPipeUser->GetProxy();
 		if (proxy)
 		{
 			proxy->SetBehaviour("");
@@ -704,10 +737,9 @@ public:
 	{
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
-		CPipeUser* pipeUser = GetPipeUser(context);
+		CPipeUser* pipeUser = GetPipeUser(*this, context);
 		IF_UNLIKELY (!pipeUser)
 		{
-			ErrorReporter(*this, context).LogError("Expected pipe user");
 			return;
 		}
 
@@ -732,9 +764,15 @@ public:
 
 	virtual void OnTerminate(const UpdateContext& context) override
 	{
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return;
+		}
+
 		if (m_fireMode != FIREMODE_OFF)
 		{
-			GetPipeUser(context)->SetFireMode(FIREMODE_OFF);
+			pPipeUser->SetFireMode(FIREMODE_OFF);
 		}
 
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
@@ -759,18 +797,22 @@ private:
 		if (runtimeData.pendingStatus != Running)
 			return runtimeData.pendingStatus;
 
-		CPipeUser& pipeUser = *GetPipeUser(context);
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return Failure;
+		}
 
 		if (m_destination == Target || m_destination == LastOp || m_destination == ReferencePoint)
 		{
-			ChaseTarget(pipeUser, context.entityId, runtimeData);
+			ChaseTarget(*pPipeUser, context.entityId, runtimeData);
 		}
 
 		const bool stopMovementWhenWithinCertainDistance = runtimeData.effectiveStopDistanceSq > 0.0f;
 
 		if (stopMovementWhenWithinCertainDistance)
 		{
-			if (GetSquaredDistanceToDestination(pipeUser, runtimeData) < runtimeData.effectiveStopDistanceSq)
+			if (GetSquaredDistanceToDestination(*pPipeUser, runtimeData) < runtimeData.effectiveStopDistanceSq)
 			{
 				runtimeData.ReleaseCurrentMovementRequest();
 				RequestStop(context.entityId);
@@ -1090,7 +1132,13 @@ public:
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
 	{
-		CommitQuery(*GetPipeUser(context), context);
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return;
+		}
+
+		CommitQuery(*pPipeUser, context);
 	}
 
 	virtual void OnTerminate(const UpdateContext& context) override
@@ -1152,7 +1200,11 @@ private:
 		runtimeData.queryInstance.UnlockResults();
 		assert(runtimeData.queryInstance.GetOptionUsed() >= 0);
 
-		CPipeUser& pipeUser = *GetPipeUser(context);
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return Failure;
+		}
 
 		STacticalPointResult point = runtimeData.queryInstance.GetBestResult();
 		assert(point.IsValid());
@@ -1163,7 +1215,7 @@ private:
 			{
 				if (CAIObject* pAIObject = gAIEnv.pObjectContainer->GetAIObject(point.aiObjectId))
 				{
-					pipeUser.SetRefPointPos(pAIObject->GetPos(), pAIObject->GetEntityDir());
+					pPipeUser->SetRefPointPos(pAIObject->GetPos(), pAIObject->GetEntityDir());
 					return Success;
 				}
 				else
@@ -1173,25 +1225,25 @@ private:
 			}
 			else if (point.flags & eTPDF_CoverID)
 			{
-				pipeUser.SetRefPointPos(point.vPos, Vec3Constants<float>::fVec3_OneY);
+				pPipeUser->SetRefPointPos(point.vPos, Vec3Constants<float>::fVec3_OneY);
 				return Success;
 			}
 
 			// we can expect a position. vObjDir may not be set if this is not a hidespot, but should be zero.
-			pipeUser.SetRefPointPos(point.vPos, point.vObjDir);
+			pPipeUser->SetRefPointPos(point.vPos, point.vObjDir);
 			return Success;
 		}
 		else if (m_register == AI_REG_COVER)
 		{
 			assert(point.flags & eTPDF_CoverID);
 
-			if (gAIEnv.pCoverSystem->IsCoverOccupied(point.coverID) && gAIEnv.pCoverSystem->GetCoverOccupant(point.coverID) != pipeUser.GetEntityID())
+			if (gAIEnv.pCoverSystem->IsCoverOccupied(point.coverID) && gAIEnv.pCoverSystem->GetCoverOccupant(point.coverID) != pPipeUser->GetEntityID())
 			{
 				// Found cover was occupied by someone else in the meantime
 				return Failure;
 			}
 
-			pipeUser.SetCoverRegister(point.coverID);
+			pPipeUser->SetCoverRegister(point.coverID);
 			return Success;
 		}
 		else
@@ -1402,26 +1454,35 @@ public:
 
 	virtual void OnInitialize(const UpdateContext& context)
 	{
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return;
+		}
+
 		if (m_duration >= 0.0f)
 		{
 			RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 			runtimeData.timer.Reset(m_duration, m_variation);
 		}
 
-		CPipeUser* pipeUser = GetPipeUser(context);
-		ClearCoverPosture(pipeUser);
+		ClearCoverPosture(pPipeUser);
 	}
 
 	virtual Status Update(const UpdateContext& context)
 	{
-		CPipeUser& pipeUser = *GetPipeUser(context);
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return Failure;
+		}
 
-		if (pipeUser.IsInCover())
+		if (pPipeUser->IsInCover())
 		{
 			RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
-			const CoverHeight coverHeight = pipeUser.CalculateEffectiveCoverHeight();
-			pipeUser.m_State.bodystate = (coverHeight == HighCover) ? STANCE_HIGH_COVER : STANCE_LOW_COVER;
+			const CoverHeight coverHeight = pPipeUser->CalculateEffectiveCoverHeight();
+			pPipeUser->m_State.bodystate = (coverHeight == HighCover) ? STANCE_HIGH_COVER : STANCE_LOW_COVER;
 			return runtimeData.timer.Elapsed() ? Success : Running;
 		}
 		else
@@ -1520,7 +1581,13 @@ public:
 protected:
 	virtual Status Update(const UpdateContext& context) override
 	{
-		IAIActorProxy* proxy = GetPipeUser(context)->GetProxy();
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return Failure;
+		}
+
+		IAIActorProxy* proxy = pPipeUser->GetProxy();
 
 		if (proxy)
 			proxy->SetAlertnessState(m_alertness);
@@ -1772,7 +1839,13 @@ protected:
 		if (m_waitUntilFinished)
 			request.eventListener = &runtimeData;
 
-		IAIActorProxy* proxy = GetPipeUser(context)->GetProxy();
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return;
+		}
+
+		IAIActorProxy* proxy = pPipeUser->GetProxy();
 		IF_UNLIKELY (!proxy)
 		{
 			ErrorReporter(*this, context).LogError("Communication failed to start, agent did not have a valid AI proxy.");
@@ -1981,10 +2054,14 @@ public:
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
 	{
-		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return;
+		}
 
-		CPipeUser* pipeUser = GetPipeUser(context);
-		IAIActorProxy* proxy = pipeUser->GetProxy();
+		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
+		IAIActorProxy* proxy = pPipeUser->GetProxy();
 		runtimeData.signalWasSet = proxy->SetAGInput(GetAGInputMode(), m_configurationData.m_name, m_configurationData.m_urgent);
 
 		assert(runtimeData.signalWasSet);
@@ -1993,23 +2070,27 @@ protected:
 
 		if (m_configurationData.m_setBodyDirectionTowardsAttentionTarget)
 		{
-			if (IAIObject* target = pipeUser->GetAttentionTarget())
+			if (IAIObject* target = pPipeUser->GetAttentionTarget())
 			{
-				pipeUser->SetBodyTargetDir((target->GetPos() - pipeUser->GetPos()).GetNormalizedSafe());
+				pPipeUser->SetBodyTargetDir((target->GetPos() - pPipeUser->GetPos()).GetNormalizedSafe());
 			}
 		}
 	}
 
 	virtual void OnTerminate(const UpdateContext& context) override
 	{
-		CPipeUser* pipeUser = GetPipeUser(context);
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return;
+		}
 
 		if (m_configurationData.m_setBodyDirectionTowardsAttentionTarget)
 		{
-			pipeUser->ResetBodyTargetDir();
+			pPipeUser->ResetBodyTargetDir();
 		}
 
-		IAIActorProxy* proxy = pipeUser->GetProxy();
+		IAIActorProxy* proxy = pPipeUser->GetProxy();
 		proxy->ResetAGInput(GetAGInputMode());
 
 		switch (m_configurationData.m_playMode)
@@ -2026,13 +2107,19 @@ protected:
 
 	virtual Status Update(const UpdateContext& context) override
 	{
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return Failure;
+		}
+
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 		IF_UNLIKELY (!runtimeData.signalWasSet)
 			return Success;
 
 		if (m_configurationData.m_playMode == PlayOnce)
 		{
-			IAIActorProxy* proxy = GetPipeUser(context)->GetProxy();
+			IAIActorProxy* proxy = pPipeUser->GetProxy();
 			if (proxy->IsSignalAnimationPlayed(m_configurationData.m_name))
 				return Success;
 		}
@@ -2171,17 +2258,16 @@ protected:
 
 	void SendSignal(const UpdateContext& context)
 	{
-		if (CPipeUser* pipeUser = GetPipeUser(context))
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
 		{
-			const AISignals::ISignalDescription& signalDesc = GetAISystem()->GetSignalManager()->GetSignalDescription(m_signalName.c_str());
-			const AISignals::SignalSharedPtr pSignal = GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, signalDesc, pipeUser->GetAIObjectID());
-			
-			GetAISystem()->SendSignal(m_filter, pSignal);
+			return;
 		}
-		else
-		{
-			ErrorReporter(*this, context).LogError("Expected agent to be pipe user but it wasn't.");
-		}
+
+		const AISignals::ISignalDescription& signalDesc = GetAISystem()->GetSignalManager()->GetSignalDescription(m_signalName.c_str());
+		const AISignals::SignalSharedPtr pSignal = GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, signalDesc, pPipeUser->GetAIObjectID());
+
+		GetAISystem()->SendSignal(m_filter, pSignal);
 	}
 
 private:
@@ -2304,6 +2390,12 @@ public:
 protected:
 	virtual Status Update(const UpdateContext& context) override
 	{
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return Failure;
+		}
+
 		EStance slopeVerifiedStance = m_stance;
 
 		if (IEntity* entity = gEnv->pEntitySystem->GetEntity(context.entityId))
@@ -2334,8 +2426,7 @@ protected:
 			}
 		}
 
-		CPipeUser* pipeUser = GetPipeUser(context);
-		pipeUser->m_State.bodystate = slopeVerifiedStance;
+		pPipeUser->m_State.bodystate = slopeVerifiedStance;
 		return Success;
 	}
 
@@ -2889,7 +2980,13 @@ public:
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
 	{
-		GetRuntimeData<RuntimeData>(context).lookTarget = GetPipeUser(context)->CreateLookTarget();
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return;
+		}
+
+		GetRuntimeData<RuntimeData>(context).lookTarget = pPipeUser->CreateLookTarget();
 	}
 
 	virtual void OnTerminate(const UpdateContext& context) override
@@ -2900,30 +2997,34 @@ protected:
 
 	virtual Status Update(const UpdateContext& context) override
 	{
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return Failure;
+		}
+
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
 		assert(runtimeData.lookTarget.get());
 
-		CPipeUser& pipeUser = *GetPipeUser(context);
-
 		if (m_targetType == AttentionTarget)
 		{
-			if (IAIObject* target = pipeUser.GetAttentionTarget())
+			if (IAIObject* target = pPipeUser->GetAttentionTarget())
 			{
 				*runtimeData.lookTarget = target->GetPos();
 			}
 		}
 		else if (m_targetType == ClosestGroupMember)
 		{
-			const Group& group = gAIEnv.pGroupManager->GetGroup(pipeUser.GetGroupId());
+			const Group& group = gAIEnv.pGroupManager->GetGroup(pPipeUser->GetGroupId());
 			const Group::Members& members = group.GetMembers();
 			Group::Members::const_iterator it = members.begin();
 			Group::Members::const_iterator end = members.end();
 			float closestDistSq = std::numeric_limits<float>::max();
 			tAIObjectID closestID = INVALID_AIOBJECTID;
 			Vec3 closestPos(ZERO);
-			const Vec3& myPosition = pipeUser.GetPos();
-			const tAIObjectID myAIObjectID = pipeUser.GetAIObjectID();
+			const Vec3& myPosition = pPipeUser->GetPos();
+			const tAIObjectID myAIObjectID = pPipeUser->GetAIObjectID();
 			for (; it != end; ++it)
 			{
 				const tAIObjectID memberID = *it;
@@ -2951,7 +3052,7 @@ protected:
 		}
 		else if (m_targetType == ReferencePoint)
 		{
-			if (IAIObject* rerefencePoint = pipeUser.GetRefPoint())
+			if (IAIObject* rerefencePoint = pPipeUser->GetRefPoint())
 			{
 				*runtimeData.lookTarget = rerefencePoint->GetPos();
 			}
@@ -3075,15 +3176,19 @@ public:
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
 	{
-		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return;
+		}
 
-		CPipeUser& pipeUser = *GetPipeUser(context);
+		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
 		Vec3 fireTargetPosition(ZERO);
 
 		if (m_aimAtReferencePoint)
 		{
-			CAIObject* referencePoint = pipeUser.GetRefPoint();
+			CAIObject* referencePoint = pPipeUser->GetRefPoint();
 			IF_UNLIKELY (!referencePoint)
 			{
 				return;
@@ -3091,7 +3196,7 @@ protected:
 
 			fireTargetPosition = referencePoint->GetPos();
 		}
-		else if (IAIObject* target = pipeUser.GetAttentionTarget())
+		else if (IAIObject* target = pPipeUser->GetAttentionTarget())
 		{
 			fireTargetPosition = target->GetPos();
 		}
@@ -3102,27 +3207,37 @@ protected:
 
 		gAIEnv.pAIObjectManager->CreateDummyObject(runtimeData.fireTarget);
 		runtimeData.fireTarget->SetPos(fireTargetPosition);
-		pipeUser.SetFireTarget(runtimeData.fireTarget);
-		pipeUser.SetFireMode(FIREMODE_AIM);
+		pPipeUser->SetFireTarget(runtimeData.fireTarget);
+		pPipeUser->SetFireMode(FIREMODE_AIM);
 		runtimeData.startTime = GetAISystem()->GetFrameStartTime();
 		runtimeData.timeSpentWithCorrectDirection = 0.0f;
 	}
 
 	virtual void OnTerminate(const UpdateContext& context) override
 	{
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return;
+		}
+
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
 		if (runtimeData.fireTarget)
 			runtimeData.fireTarget.Release();
 
-		CPipeUser& pipeUser = *GetPipeUser(context);
-
-		pipeUser.SetFireTarget(NILREF);
-		pipeUser.SetFireMode(FIREMODE_OFF);
+		pPipeUser->SetFireTarget(NILREF);
+		pPipeUser->SetFireMode(FIREMODE_OFF);
 	}
 
 	virtual Status Update(const UpdateContext& context) override
 	{
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return Failure;
+		}
+		
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
 		IF_UNLIKELY (!runtimeData.fireTarget)
@@ -3139,8 +3254,7 @@ protected:
 		if (aimForever)
 			return Running;
 
-		CPipeUser& pipeUser = *GetPipeUser(context);
-		const SAIBodyInfo& bodyInfo = pipeUser.QueryBodyInfo();
+		const SAIBodyInfo& bodyInfo = pPipeUser->QueryBodyInfo();
 
 		const Vec3 desiredDirection = (fireTargetAIObject->GetPos() - bodyInfo.vFirePos).GetNormalized();
 		const Vec3 currentDirection = bodyInfo.vFireDir;
@@ -3158,7 +3272,7 @@ protected:
 		const CTimeValue& now = GetAISystem()->GetFrameStartTime();
 		if (now > runtimeData.startTime + CTimeValue(8.0f))
 		{
-			gEnv->pLog->LogWarning("Agent '%s' failed to aim towards %f %f %f. Timed out...", pipeUser.GetName(), fireTargetAIObject->GetPos().x, fireTargetAIObject->GetPos().y, fireTargetAIObject->GetPos().z);
+			gEnv->pLog->LogWarning("Agent '%s' failed to aim towards %f %f %f. Timed out...", pPipeUser->GetName(), fireTargetAIObject->GetPos().x, fireTargetAIObject->GetPos().y, fireTargetAIObject->GetPos().z);
 			return Success;
 		}
 
@@ -3229,34 +3343,31 @@ public:
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
 	{
-		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
-
-		CPipeUser* pipeUser = GetPipeUser(context);
-
-		IF_UNLIKELY (!pipeUser)
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
 		{
-			ErrorReporter(*this, context).LogError("Agent must be a pipe user but isn't.");
 			return;
 		}
 
-		CAIObject* pRefPoint = pipeUser->GetRefPoint();
+		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
+		CAIObject* pRefPoint = pPipeUser->GetRefPoint();
 
 		if (pRefPoint)
 		{
 			runtimeData.initialDirection = pRefPoint->GetEntityDir();
 			runtimeData.mountedWeaponPivot = pRefPoint->GetPos();
 		}
-		else
+		else 
 		{
-			runtimeData.initialDirection = pipeUser->GetEntityDir();
-			runtimeData.mountedWeaponPivot = pipeUser->GetPos();
+			runtimeData.initialDirection = pPipeUser->GetEntityDir();
+			runtimeData.mountedWeaponPivot = pPipeUser->GetPos();
 		}
 
 		runtimeData.initialDirection.Normalize();
 
 		gAIEnv.pAIObjectManager->CreateDummyObject(runtimeData.fireTarget);
-		pipeUser->SetFireTarget(runtimeData.fireTarget);
-		pipeUser->SetFireMode(FIREMODE_AIM);
+		pPipeUser->SetFireTarget(runtimeData.fireTarget);
+		pPipeUser->SetFireMode(FIREMODE_AIM);
 
 		UpdateAimingPosition(runtimeData);
 		runtimeData.lastUpdateTime = GetAISystem()->GetFrameStartTime();
@@ -3264,17 +3375,21 @@ protected:
 
 	virtual void OnTerminate(const UpdateContext& context) override
 	{
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return;
+		}
+
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
 		if (runtimeData.fireTarget)
 			runtimeData.fireTarget.Release();
 
-		CPipeUser* pipeUser = GetPipeUser(context);
-
-		if (pipeUser)
+		if (pPipeUser)
 		{
-			pipeUser->SetFireTarget(NILREF);
-			pipeUser->SetFireMode(FIREMODE_OFF);
+			pPipeUser->SetFireTarget(NILREF);
+			pPipeUser->SetFireMode(FIREMODE_OFF);
 		}
 	}
 
@@ -3444,7 +3559,11 @@ public:
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
 	{
-		CPipeUser* pipeUser = GetPipeUser(context);
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return;
+		}
 
 		Vec3 desiredBodyDirection(ZERO);
 		switch (m_turnTarget)
@@ -3456,19 +3575,19 @@ protected:
 			break;
 
 		case TurnTarget_Random:
-			desiredBodyDirection = pipeUser->GetEntityDir();
+			desiredBodyDirection = pPipeUser->GetEntityDir();
 			break;
 
 		case TurnTarget_AttentionTarget:
-			if (IAIObject* target = pipeUser->GetAttentionTarget())
+			if (IAIObject* target = pPipeUser->GetAttentionTarget())
 			{
 				if (m_alignWithTarget)
 				{
-					desiredBodyDirection = pipeUser->GetEntityDir();
+					desiredBodyDirection = pPipeUser->GetEntityDir();
 				}
 				else
 				{
-					desiredBodyDirection = target->GetPos() - pipeUser->GetPhysicsPos();
+					desiredBodyDirection = target->GetPos() - pPipeUser->GetPhysicsPos();
 				}
 				desiredBodyDirection.z = 0.0f;
 				desiredBodyDirection.Normalize();
@@ -3476,7 +3595,7 @@ protected:
 			break;
 
 		case TurnTarget_RefPoint:
-			CAIObject* refPointObject = pipeUser->GetRefPoint();
+			CAIObject* refPointObject = pPipeUser->GetRefPoint();
 			if (refPointObject != NULL)
 			{
 				if (m_alignWithTarget)
@@ -3485,7 +3604,7 @@ protected:
 				}
 				else
 				{
-					desiredBodyDirection = refPointObject->GetPos() - pipeUser->GetPhysicsPos();
+					desiredBodyDirection = refPointObject->GetPos() - pPipeUser->GetPhysicsPos();
 				}
 				desiredBodyDirection.z = 0.0f;
 				desiredBodyDirection.Normalize();
@@ -3497,7 +3616,7 @@ protected:
 
 		if (!desiredBodyDirection.IsZero())
 		{
-			pipeUser->SetBodyTargetDir(desiredBodyDirection);
+			pPipeUser->SetBodyTargetDir(desiredBodyDirection);
 		}
 
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
@@ -3508,11 +3627,23 @@ protected:
 
 	virtual void OnTerminate(const UpdateContext& context) override
 	{
-		GetPipeUser(context)->ResetBodyTargetDir();
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return;
+		}
+
+		pPipeUser->ResetBodyTargetDir();
 	}
 
 	virtual Status Update(const UpdateContext& context) override
 	{
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return Failure;
+		}
+		
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
 		if (runtimeData.desiredBodyDirection.IsZero())
@@ -3521,11 +3652,9 @@ protected:
 			return Success;
 		}
 
-		CPipeUser& pipeUser = *GetPipeUser(context);
-
 		// If animation body direction is within the angle threshold,
 		// wait for some time and then mark the agent as ready to move
-		const Vec3 actualBodyDir = pipeUser.GetBodyInfo().vAnimBodyDir;
+		const Vec3 actualBodyDir = pPipeUser->GetBodyInfo().vAnimBodyDir;
 		const bool turnedTowardsDesiredDirection = (actualBodyDir.Dot(runtimeData.desiredBodyDirection) > m_stopWithinAngleCosined);
 		if (turnedTowardsDesiredDirection)
 			runtimeData.correctBodyDirectionTime += gEnv->pTimer->GetFrameTime();
@@ -3649,10 +3778,14 @@ public:
 protected:
 	virtual Status Update(const UpdateContext& context) override
 	{
-		CPipeUser& pipeUser = *GetPipeUser(context);
-		gAIEnv.pTargetTrackManager->ResetAgent(pipeUser.GetAIObjectID());
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return Failure;
+		}
 
-		pipeUser.GetProxy()->ResendTargetSignalsNextFrame();
+		gAIEnv.pTargetTrackManager->ResetAgent(pPipeUser->GetAIObjectID());
+		pPipeUser->GetProxy()->ResendTargetSignalsNextFrame();
 
 		return Success;
 	}
@@ -3900,9 +4033,14 @@ public:
 protected:
 	virtual Status Update(const UpdateContext& context) override
 	{
-		CPipeUser& pipeUser = *GetPipeUser(context);
-		IAIObject* referencePoint = pipeUser.GetRefPoint();
-		IEntity* entity = pipeUser.GetEntity();
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return Failure;
+		}
+
+		IAIObject* referencePoint = pPipeUser->GetRefPoint();
+		IEntity* entity = pPipeUser->GetEntity();
 
 		IF_UNLIKELY (referencePoint == NULL || entity == NULL)
 		{
@@ -4118,23 +4256,27 @@ public:
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
 	{
-		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return;
+		}
 
-		CPipeUser& pipeUser = *GetPipeUser(context);
+		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
 		runtimeData.pendingStatus = Failure;
 
 		Vec3 targetPosition(ZERO);
-		if (GetTargetPosition(pipeUser, OUT targetPosition))
+		if (GetTargetPosition(*pPipeUser, OUT targetPosition))
 		{
-			if (gEnv->pAISystem->GetNavigationSystem()->IsLocationValidInNavigationMesh(pipeUser.GetNavigationTypeID(), targetPosition, nullptr, 5.0f, 0.5f))
+			if (gEnv->pAISystem->GetNavigationSystem()->IsLocationValidInNavigationMesh(pPipeUser->GetNavigationTypeID(), targetPosition, nullptr, 5.0f, 0.5f))
 			{
-				const MNMPathRequest request(pipeUser.GetEntity()->GetWorldPos(),
+				const MNMPathRequest request(pPipeUser->GetEntity()->GetWorldPos(),
 				                             targetPosition, ZERO, -1, 0.0f, 0.0f, true,
 				                             functor(runtimeData, &RuntimeData::PathfinderCallback),
-				                             pipeUser.GetNavigationTypeID(), eMNMDangers_None);
+				                             pPipeUser->GetNavigationTypeID(), eMNMDangers_None);
 
-				runtimeData.queuedPathID = gAIEnv.pMNMPathfinder->RequestPathTo(pipeUser.GetEntityID(), request);
+				runtimeData.queuedPathID = gAIEnv.pMNMPathfinder->RequestPathTo(pPipeUser->GetEntityID(), request);
 
 				if (runtimeData.queuedPathID)
 					runtimeData.pendingStatus = Running;
@@ -4239,14 +4381,28 @@ protected:
 	virtual void OnInitialize(const UpdateContext& context) override
 	{
 		BaseClass::OnInitialize(context);
-		SOBJECTSTATE& state = GetPipeUser(context)->GetState();
+
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return;
+		}
+
+		SOBJECTSTATE& state = pPipeUser->GetState();
 		state.mannequinRequest.CreateSetTagCommand(m_nameCRC);
 	}
 
 	virtual void OnTerminate(const UpdateContext& context) override
 	{
 		BaseClass::OnTerminate(context);
-		SOBJECTSTATE& state = GetPipeUser(context)->GetState();
+
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return;
+		}
+
+		SOBJECTSTATE& state = pPipeUser->GetState();
 		state.mannequinRequest.CreateClearTagCommand(m_nameCRC);
 	}
 
@@ -4381,7 +4537,7 @@ protected:
 		runtimeData.endTime = now + CTimeValue(m_duration);
 		runtimeData.nextPostureQueryTime = now;
 
-		if (CPipeUser* pipeUser = GetPipeUser(context))
+		if (CPipeUser* pipeUser = GetPipeUser(*this, context))
 		{
 			pipeUser->SetAdjustingAim(true);
 			pipeUser->SetFireMode(m_fireMode);
@@ -4392,7 +4548,7 @@ protected:
 
 	virtual void OnTerminate(const UpdateContext& context) override
 	{
-		if (CPipeUser* pipeUser = GetPipeUser(context))
+		if (CPipeUser* pipeUser = GetPipeUser(*this, context))
 		{
 			pipeUser->SetFireMode(FIREMODE_OFF);
 			pipeUser->SetAdjustingAim(false);
@@ -4413,20 +4569,24 @@ protected:
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_AI);
 
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return Failure;
+		}
+
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
 		const CTimeValue& now = GetAISystem()->GetFrameStartTime();
 		if (now > runtimeData.endTime)
 			return Success;
 
-		CPipeUser* pipeUser = GetPipeUser(context);
-
-		if (!pipeUser->IsInCover())
+		if (!pPipeUser->IsInCover())
 			return Failure;
 
 		if (m_aimObstructedTimeout >= 0.0f)
 		{
-			const bool isAimObstructed = pipeUser && (pipeUser->GetState().aimObstructed || pipeUser->GetAimState() == AI_AIM_OBSTRUCTED);
+			const bool isAimObstructed = pPipeUser && (pPipeUser->GetState().aimObstructed || pPipeUser->GetAimState() == AI_AIM_OBSTRUCTED);
 			if (isAimObstructed)
 			{
 				runtimeData.timeObstructed += gEnv->pTimer->GetFrameTime();
@@ -4444,37 +4604,37 @@ protected:
 		if (now < runtimeData.nextPostureQueryTime)
 			return Running;
 
-		IF_UNLIKELY (!pipeUser)
+		IF_UNLIKELY (!pPipeUser)
 		{
 			ErrorReporter(*this, context).LogError("Agent must be a pipe user but isn't.");
 			return Failure;
 		}
 
-		CPuppet* puppet = pipeUser->CastToCPuppet();
+		CPuppet* puppet = pPipeUser->CastToCPuppet();
 		IF_UNLIKELY (!puppet)
 		{
 			ErrorReporter(*this, context).LogError("Agent must be a puppet but isn't.");
 			return Failure;
 		}
 
-		const IAIObject* target = pipeUser->GetAttentionTarget();
+		const IAIObject* target = pPipeUser->GetAttentionTarget();
 		IF_UNLIKELY (!target)
 			return Failure;
 
 		const Vec3 targetPosition = target->GetPos();
 
-		const CoverID& coverID = pipeUser->GetCoverID();
+		const CoverID& coverID = pPipeUser->GetCoverID();
 		IF_UNLIKELY (coverID == 0)
 			return Failure;
 
 		Vec3 coverNormal(1, 0, 0);
-		const Vec3 coverPosition = gAIEnv.pCoverSystem->GetCoverLocation(coverID, pipeUser->GetParameters().distanceToCover, NULL, &coverNormal);
+		const Vec3 coverPosition = gAIEnv.pCoverSystem->GetCoverLocation(coverID, pPipeUser->GetParameters().distanceToCover, NULL, &coverNormal);
 
 		if (runtimeData.postureQueryID == 0)
 		{
 			// Query posture
 			PostureManager::PostureQuery query;
-			query.actor = pipeUser->CastToCAIActor();
+			query.actor = pPipeUser->CastToCAIActor();
 			query.allowLean = true;
 			query.allowProne = false;
 			query.checks = PostureManager::DefaultChecks;
@@ -4504,12 +4664,12 @@ protected:
 				{
 					runtimeData.nextPostureQueryTime = now + CTimeValue(2.0f);
 
-					pipeUser->m_State.bodystate = postureInfo->stance;
-					pipeUser->m_State.lean = postureInfo->lean;
-					pipeUser->m_State.peekOver = postureInfo->peekOver;
+					pPipeUser->m_State.bodystate = postureInfo->stance;
+					pPipeUser->m_State.lean = postureInfo->lean;
+					pPipeUser->m_State.peekOver = postureInfo->peekOver;
 
 					const char* const coverActionName = postureInfo->agInput.c_str();
-					pipeUser->m_State.coverRequest.SetCoverAction(coverActionName, postureInfo->lean);
+					pPipeUser->m_State.coverRequest.SetCoverAction(coverActionName, postureInfo->lean);
 				}
 				else
 				{
@@ -4521,8 +4681,8 @@ protected:
 		const bool hasCoverPosture = (runtimeData.bestPostureID != -1);
 		if (hasCoverPosture)
 		{
-			const Vec3 targetDirection = targetPosition - pipeUser->GetPos();
-			pipeUser->m_State.coverRequest.SetCoverBodyDirectionWithThreshold(coverNormal, targetDirection, DEG2RAD(30.0f));
+			const Vec3 targetDirection = targetPosition - pPipeUser->GetPos();
+			pPipeUser->m_State.coverRequest.SetCoverBodyDirectionWithThreshold(coverNormal, targetDirection, DEG2RAD(30.0f));
 		}
 
 		return Running;
@@ -4724,10 +4884,9 @@ protected:
 	{
 		BaseClass::OnInitialize(context);
 
-		CPipeUser* pipeUser = GetPipeUser(context);
-		IF_UNLIKELY (!pipeUser)
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
 		{
-			ErrorReporter(*this, context).LogError("Agent wasn't a pipe user.");
 			return;
 		}
 
@@ -4735,14 +4894,14 @@ protected:
 
 		if (m_shootAt == ShootOp::ShootAt::LocalSpacePosition)
 		{
-			SetupFireTargetForLocalPosition(*pipeUser, runtimeData);
+			SetupFireTargetForLocalPosition(*pPipeUser, runtimeData);
 		}
 		else if (m_shootAt == ShootOp::ShootAt::ReferencePoint)
 		{
-			SetupFireTargetForReferencePoint(*pipeUser, runtimeData);
+			SetupFireTargetForReferencePoint(*pPipeUser, runtimeData);
 		}
 
-		pipeUser->SetFireMode(m_fireMode);
+		pPipeUser->SetFireMode(m_fireMode);
 
 		if (m_stance != STANCE_NULL)
 		{
@@ -4776,11 +4935,11 @@ protected:
 				}
 			}
 
-			pipeUser->m_State.bodystate = slopeVerifiedStance;
+			pPipeUser->m_State.bodystate = slopeVerifiedStance;
 		}
 
 		MovementRequest movementRequest;
-		movementRequest.entityID = pipeUser->GetEntityID();
+		movementRequest.entityID = pPipeUser->GetEntityID();
 		movementRequest.type = MovementRequest::Stop;
 		gEnv->pAISystem->GetMovementSystem()->QueueRequest(movementRequest);
 
@@ -4790,27 +4949,33 @@ protected:
 
 	virtual void OnTerminate(const UpdateContext& context) override
 	{
-		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return;
+		}
 
-		CPipeUser* pipeUser = GetPipeUser(context);
+		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
 		if (runtimeData.dummyTarget)
 		{
-			if (pipeUser)
-			{
-				pipeUser->SetFireTarget(NILREF);
-			}
-
+			pPipeUser->SetFireTarget(NILREF);
 			runtimeData.dummyTarget.Release();
 		}
 
-		pipeUser->SetFireMode(FIREMODE_OFF);
+		pPipeUser->SetFireMode(FIREMODE_OFF);
 
 		BaseClass::OnTerminate(context);
 	}
 
 	virtual Status Update(const UpdateContext& context) override
 	{
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return Failure;
+		}
+		
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
 		const CTimeValue& now = GetAISystem()->GetFrameStartTime();
@@ -4820,8 +4985,7 @@ protected:
 
 		if (m_aimObstructedTimeout >= 0.0f)
 		{
-			CPipeUser* pipeUser = GetPipeUser(context);
-			const bool isAimObstructed = pipeUser && (pipeUser->GetState().aimObstructed || pipeUser->GetAimState() == AI_AIM_OBSTRUCTED);
+			const bool isAimObstructed = pPipeUser && (pPipeUser->GetState().aimObstructed || pPipeUser->GetAimState() == AI_AIM_OBSTRUCTED);
 			if (isAimObstructed)
 			{
 				runtimeData.timeObstructed += gEnv->pTimer->GetFrameTime();
@@ -4964,7 +5128,7 @@ protected:
 		runtimeData.grenadeHasBeenThrown = false;
 		runtimeData.timeWhenWeShouldGiveUpThrowing = GetAISystem()->GetFrameStartTime() + CTimeValue(m_timeout);
 
-		if (CPuppet* puppet = GetPuppet(context))
+		if (CPuppet* puppet = GetPuppet(*this, context))
 		{
 			puppet->SetFireMode(FIREMODE_SECONDARY);
 			puppet->RequestThrowGrenade(m_grenadeType, AI_REG_ATTENTIONTARGET);
@@ -4977,7 +5141,13 @@ protected:
 
 	virtual void OnTerminate(const UpdateContext& context) override
 	{
-		GetPipeUser(context)->SetFireMode(FIREMODE_OFF);
+		CPipeUser* pPipeUser = GetPipeUser(*this, context);
+		IF_UNLIKELY(!pPipeUser)
+		{
+			return;
+		}
+		
+		pPipeUser->SetFireMode(FIREMODE_OFF);
 
 		BaseClass::OnTerminate(context);
 	}
@@ -5028,7 +5198,7 @@ public:
 protected:
 	virtual Status Update(const UpdateContext& context) override
 	{
-		if (CPipeUser* pipeUser = GetPipeUser(context))
+		if (CPipeUser* pipeUser = GetPipeUser(*this, context))
 		{
 			gAIEnv.pTargetTrackManager->PullDownThreatLevel(pipeUser->GetAIObjectID(), AITHREAT_SUSPECT);
 		}
