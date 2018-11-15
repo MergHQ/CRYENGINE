@@ -20,8 +20,10 @@
 
 #include "AIFaceManager.h"
 #include "ICryMannequin.h"
-#include "Mannequin/AnimActionTriState.h"
+#include "AI/Action/Mannequin/AnimActionTriStateSDK.h"
+
 #include "IMovementController.h" // for the exactpositioning types
+#include "Mannequin/AnimActionTriState.h"
 
 struct IScriptSystem;
 struct IScriptTable;
@@ -37,10 +39,10 @@ class CMovementRequest;
 
 //
 //------------------------------------------------------------------------------
-class CAnimActionAIAction : public CAnimActionTriState
+class CAnimActionAIAction : public CAnimActionTriStateGameSDK
 {
 public:
-	typedef CAnimActionTriState TBase;
+	typedef CAnimActionTriStateGameSDK TBase;
 
 	enum EAIActionType
 	{
@@ -57,7 +59,7 @@ public:
 
 	DEFINE_ACTION("AIAction");
 
-	CAnimActionAIAction(bool isUrgent, FragmentID fragmentID, IAnimatedCharacter& animChar, EAIActionType type, const string& value, IAnimActionTriStateListener& listener, bool skipIntro = false)
+	CAnimActionAIAction(bool isUrgent, FragmentID fragmentID, IAnimatedCharacter& animChar, EAIActionType type, const string& value, IAnimActionTriStateListenerGameSDK& listener, bool skipIntro = false)
 		: TBase((isUrgent ? URGENT_ACTION_PRIORITY : NORMAL_ACTION_PRIORITY), fragmentID, animChar, (type == EAT_OneShot), -1, skipIntro, &listener)
 		, m_type(type)
 		, m_value(value)
@@ -94,7 +96,7 @@ private:
 class CAIHandler
 	: public IAnimationGraphStateListener
 	  , IExactPositioningListener
-	  , IAnimActionTriStateListener
+	  , IAnimActionTriStateListenerGameSDK
 {
 	friend class CAIProxy;
 
@@ -109,9 +111,9 @@ class CAIHandler
 	//------------------  ~IExactPositioningListener
 
 	//------------------  IAnimActionTriStateListener
-	virtual void OnAnimActionTriStateEnter(CAnimActionTriState* pActionTriState);
-	virtual void OnAnimActionTriStateMiddle(CAnimActionTriState* pActionTriState);
-	virtual void OnAnimActionTriStateExit(CAnimActionTriState* pActionTriState);
+	virtual void OnAnimActionTriStateEnter(CAnimActionTriStateGameSDK* pActionTriState);
+	virtual void OnAnimActionTriStateMiddle(CAnimActionTriStateGameSDK* pActionTriState);
+	virtual void OnAnimActionTriStateExit(CAnimActionTriStateGameSDK* pActionTriState);
 	//------------------  ~IAnimActionTriStateListener
 public:
 	CAIHandler(IGameObject* pGameObject);
@@ -215,8 +217,6 @@ protected:
 	void               SerializeScriptAI(TSerialize& ser);
 
 	void               SetAlertness(int value, bool triggerEvent = false);
-	/// Iterates to the next valid readability sound while testing readability sounds.
-	void               NextReadabilityTest();
 
 	void               ResetCommonTables();
 	bool               SetCommonTables();
@@ -306,12 +306,12 @@ protected:
 		void ForceFinishAll();                     // forcefinish all animactions (keep listening for events)
 		void StopAll();                            // stop all animactions (keep listening for events)
 		void StopAllActionsOfType(bool isOneShot); // stop all animactions of specified type (keep listening for events)
-		void Add(CAnimActionTriState* pAction);
-		void Remove(CAnimActionTriState* pAction);
+		void Add(CAnimActionTriStateGameSDK* pAction);
+		void Remove(CAnimActionTriStateGameSDK* pAction);
 		bool IsNotEmpty() const { return !m_animActions.empty(); }
 
 	private:
-		typedef _smart_ptr<CAnimActionTriState> AnimActionPtr;
+		typedef _smart_ptr<CAnimActionTriStateGameSDK> AnimActionPtr;
 		typedef std::vector<AnimActionPtr>      TAnimActionVector;
 		TAnimActionVector m_animActions;
 	};

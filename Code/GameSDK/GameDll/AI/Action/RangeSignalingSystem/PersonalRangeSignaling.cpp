@@ -18,8 +18,11 @@
 #include "AngleAlert.h"
 #include "IUIDraw.h"
 
+#include <IActorSystem.h>
+
 #include <functional>
 #include <CryAISystem/IAIObject.h>
+#include <CryFont/IFont.h>
 
 // Description:
 //   Constructor
@@ -249,7 +252,7 @@ bool CPersonalRangeSignaling::Update(float fElapsedTime, uint32 uDebugOrder)
 		}
 
 		// Iterate all actors and check range to them
-		IActorIteratorPtr pActorIt = CCryAction::GetCryAction()->GetIActorSystem()->CreateActorIterator();
+		IActorIteratorPtr pActorIt = gEnv->pGameFramework->GetIActorSystem()->CreateActorIterator();
 		while (IActor* pActor = pActorIt->Next())
 		{
 			EntityId entityId = pActor->GetEntityId();
@@ -494,7 +497,7 @@ IActor* CPersonalRangeSignaling::GetActor()
 {
 	CRY_ASSERT(m_bInit == true);
 
-	return(CCryAction::GetCryAction()->GetIActorSystem()->GetActor(m_EntityId));
+	return(gEnv->pGameFramework->GetIActorSystem()->GetActor(m_EntityId));
 }
 
 // Description:

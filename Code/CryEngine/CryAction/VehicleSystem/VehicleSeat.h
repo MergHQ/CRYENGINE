@@ -16,7 +16,6 @@
 
 #include "IVehicleSystem.h"
 #include "IMovementController.h"
-#include "AIProxy.h"
 #include "AnimationGraph/AnimatedCharacter.h"
 
 class CGameChannel;

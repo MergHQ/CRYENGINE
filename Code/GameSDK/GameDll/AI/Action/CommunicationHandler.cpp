@@ -4,6 +4,8 @@
 #include "CommunicationHandler.h"
 #include "AIProxy.h"
 
+#include <IActorSystem.h>
+
 namespace ATLUtils
 {
 void SetSwitchState(const char* switchIdName, const char* switchValue, IEntityAudioComponent* pIEntityAudioComponent)
@@ -371,7 +373,7 @@ IAnimationGraphState* CommunicationHandler::GetAGState()
 	if (m_agState)
 		return m_agState;
 
-	if (IActor* actor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(m_entityId))
+	if (IActor* actor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_entityId))
 	{
 		if (m_agState = actor->GetAnimationGraphState())
 		{

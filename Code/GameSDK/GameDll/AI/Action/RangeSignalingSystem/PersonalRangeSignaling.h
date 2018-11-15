@@ -14,11 +14,12 @@
 #ifndef _PERSONAL_RANGE_SIGNALING_H_
 #define _PERSONAL_RANGE_SIGNALING_H_
 
-#include "AIProxy.h"
+#include "AI/Action/AIProxy.h"
 
 class CRangeSignaling;
 class CRange;
 class CAngleAlert;
+struct IFFont;
 
 class CPersonalRangeSignaling : public IAIProxyListener
 {
