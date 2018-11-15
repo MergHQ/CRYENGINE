@@ -104,22 +104,22 @@ const TileID CNavMesh::TileContainerArray::AllocateTileContainer()
 
 	++m_tileCount;
 
-	size_t tileID;
+	TileID tileID;
 
 	if (m_freeIndexes.empty())
 	{
-		tileID = m_tileCount;
+		tileID = TileID(m_tileCount);
 
 		if (m_tileCount > m_tileCapacity)
 			Grow(std::max<size_t>(4, m_tileCapacity >> 1));
 	}
 	else
 	{
-		tileID = m_freeIndexes.back() + 1;
+		tileID = TileID(m_freeIndexes.back() + 1);
 		m_freeIndexes.pop_back();
 	}
 
-	return static_cast<TileID>(tileID);
+	return tileID;
 }
 
 void CNavMesh::TileContainerArray::FreeTileContainer(const TileID tileID)
@@ -412,12 +412,12 @@ const AreaAnnotation* CNavMesh::GetTriangleAnnotation(TriangleID triangleID) con
 	return nullptr;
 }
 
-void CNavMesh::SetTrianglesAnnotation(const MNM::TriangleID* pTrianglesArray, const size_t trianglesCount, const MNM::AreaAnnotation areaAnnotation, std::vector<TileID>& affectedTiles)
+void CNavMesh::SetTrianglesAnnotation(const TriangleID* pTrianglesArray, const size_t trianglesCount, const MNM::AreaAnnotation areaAnnotation, std::vector<TileID>& affectedTiles)
 {
 	for (size_t i = 0; i < trianglesCount; ++i)
 	{
-		const MNM::TriangleID triangleId = pTrianglesArray[i];
-		if (const MNM::TileID tileId = MNM::ComputeTileID(triangleId))
+		const TriangleID triangleId = pTrianglesArray[i];
+		if (const TileID tileId = MNM::ComputeTileID(triangleId))
 		{
 			const uint16 triangleIndex = MNM::ComputeTriangleIndex(triangleId);
 			MNM::Tile::STriangle& triangle = GetTriangleUnsafe(tileId, triangleIndex);
@@ -444,7 +444,7 @@ bool CNavMesh::CanTrianglePassFilter(const TriangleID triangleID, const INavMesh
 
 bool CNavMesh::SnapPosition(
 	const vector3_t& localPosition, const SOrderedSnappingMetrics& snappingMetrics, const INavMeshQueryFilter* pFilter,
-	vector3_t* pSnappedLocalPosition, MNM::TriangleID* pTriangleId) const
+	vector3_t* pSnappedLocalPosition, TriangleID* pTriangleId) const
 {
 	const MNM::real_t verticalDefaultDownRange = MNMUtils::CalculateMinVerticalRange(m_agentSettings.height, m_params.voxelSize.z);
 	const MNM::real_t verticalDefaultUpRange = MNM::real_t(min(2u, m_agentSettings.height) * m_params.voxelSize.z);
@@ -484,7 +484,7 @@ bool CNavMesh::SnapPosition(
 			const MNM::aabb_t localAabb(MNM::vector3_t(-horizontalRange, -horizontalRange, -verticalDownRange), MNM::vector3_t(horizontalRange, horizontalRange, verticalUpRange));
 			const MNM::real_t maxDistance = snappingMetric.type == SSnappingMetric::EType::Circular ? horizontalRange : real_t::max();
 			const MNM::SClosestTriangle closestTriangle = QueryClosestTriangle(localPosition, localAabb, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, maxDistance, pFilter);
-			if (closestTriangle.id != MNM::Constants::InvalidTriangleID)
+			if (closestTriangle.id.IsValid())
 			{
 				if (pSnappedLocalPosition)
 					*pSnappedLocalPosition = closestTriangle.position;
@@ -504,7 +504,7 @@ bool CNavMesh::SnapPosition(
 
 bool CNavMesh::SnapPosition(
 	const vector3_t& localPosition, const SSnappingMetric& snappingMetric, const INavMeshQueryFilter* pFilter,
-	vector3_t* pSnappedLocalPosition, MNM::TriangleID* pTriangleId) const
+	vector3_t* pSnappedLocalPosition, TriangleID* pTriangleId) const
 {
 	const MNM::real_t verticalDefaultDownRange = MNMUtils::CalculateMinVerticalRange(m_agentSettings.height, m_params.voxelSize.z);
 	const MNM::real_t verticalDefaultUpRange = MNM::real_t(min(2u, m_agentSettings.height) * m_params.voxelSize.z);
@@ -518,7 +518,7 @@ bool CNavMesh::SnapPosition(
 	case SSnappingMetric::EType::Vertical:
 	{
 		const TriangleID closestId = QueryTriangleAt(localPosition, verticalDownRange, verticalUpRange, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, pFilter);
-		if (closestId != MNM::Constants::InvalidTriangleID)
+		if (closestId.IsValid())
 		{
 			if (pTriangleId)
 				*pTriangleId = closestId;
@@ -543,7 +543,7 @@ bool CNavMesh::SnapPosition(
 		const MNM::aabb_t localAabb(MNM::vector3_t(-horizontalRange, -horizontalRange, -verticalDownRange), MNM::vector3_t(horizontalRange, horizontalRange, verticalUpRange));
 		const MNM::real_t maxDistance = snappingMetric.type == SSnappingMetric::EType::Circular ? horizontalRange : real_t::max();
 		const MNM::SClosestTriangle closestTriangle = QueryClosestTriangle(localPosition, localAabb, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, maxDistance, pFilter);
-		if (closestTriangle.id != MNM::Constants::InvalidTriangleID)
+		if (closestTriangle.id.IsValid())
 		{
 			if (pSnappedLocalPosition)
 				*pSnappedLocalPosition = closestTriangle.position;
@@ -719,8 +719,8 @@ CNavMesh::EWayQueryResult CNavMesh::FindWayInternal(SWayQueryRequest& inputReque
 		if (inputRequest.From() == inputRequest.To())
 		{
 			WayTriangleData* pOutputWay = result.GetWayData();
-			pOutputWay[0] = WayTriangleData(inputRequest.From(), 0);
-			pOutputWay[1] = WayTriangleData(inputRequest.To(), 0);
+			pOutputWay[0] = WayTriangleData(inputRequest.From(), OffMeshLinkID());
+			pOutputWay[1] = WayTriangleData(inputRequest.To(), OffMeshLinkID());
 			result.SetWaySize(2);
 			return eWQR_Done;
 		}
@@ -731,7 +731,7 @@ CNavMesh::EWayQueryResult CNavMesh::FindWayInternal(SWayQueryRequest& inputReque
 			const vector3_t startLocation = inputRequest.GetFromLocation();
 			const vector3_t endLocation = inputRequest.GetToLocation();
 
-			WayTriangleData lastBestNodeID(inputRequest.From(), 0);
+			WayTriangleData lastBestNodeID(inputRequest.From(), OffMeshLinkID());
 
 			while (workingSet.aStarNodesList.CanDoStep())
 			{
@@ -767,7 +767,7 @@ CNavMesh::EWayQueryResult CNavMesh::FindWayInternal(SWayQueryRequest& inputReque
 					{
 						const Tile::SLink& link = tile.links[triangle.firstLink + l];
 
-						WayTriangleData nextTri(0, 0);
+						WayTriangleData nextTri = WayTriangleData();
 
 						if (link.side == Tile::SLink::Internal)
 						{
@@ -894,7 +894,7 @@ CNavMesh::EWayQueryResult CNavMesh::FindWayInternal(SWayQueryRequest& inputReque
 			{
 				size_t wayTriCount = 0;
 				WayTriangleData wayTriangle = lastBestNodeID;
-				WayTriangleData nextInsertion(wayTriangle.triangleID, 0);
+				WayTriangleData nextInsertion(wayTriangle.triangleID, OffMeshLinkID());
 
 				WayTriangleData* outputWay = result.GetWayData();
 
@@ -1101,8 +1101,8 @@ void CNavMesh::RemoveTrianglesByFlags(const MNM::AreaAnnotation::value_type flag
 		{
 			for (auto trianglesIt = it->second.cbegin(); trianglesIt != it->second.cend(); ++trianglesIt)
 			{
-				std::vector<MNM::TriangleID>& triangleIds = **trianglesIt;
-				for (MNM::TriangleID& triangleId : triangleIds)
+				std::vector<TriangleID>& triangleIds = **trianglesIt;
+				for (TriangleID& triangleId : triangleIds)
 				{
 					const TileID triangleTileId = ComputeTileID(triangleId);
 					if (triangleTileId == tileId)
@@ -1110,7 +1110,7 @@ void CNavMesh::RemoveTrianglesByFlags(const MNM::AreaAnnotation::value_type flag
 						// Update only triangle ids from current tile
 						const uint16 triangleIdx = ComputeTriangleIndex(triangleId);
 						const uint16 newTriangleIdx = trianglesAuxArray[triangleIdx];
-						triangleId = newTriangleIdx == uint16(-1) ? MNM::Constants::InvalidTriangleID : ComputeTriangleID(tileId, newTriangleIdx);
+						triangleId = newTriangleIdx == uint16(-1) ? TriangleID() : ComputeTriangleID(tileId, newTriangleIdx);
 					}
 				}
 			}
@@ -1218,7 +1218,7 @@ MNM::ERayCastResult CNavMesh::RayCast(const vector3_t& fromLocalPosition, Triang
 struct RaycastNode
 {
 	RaycastNode()
-		: triangleID(MNM::Constants::InvalidTriangleID)
+		: triangleID()
 		, percentageOfTotalDistance(-1.0f)
 		, incidentEdge((uint16) MNM::Constants::InvalidEdgeIndex)
 	{}
@@ -1235,7 +1235,7 @@ struct RaycastNode
 		, incidentEdge(otherNode.incidentEdge)
 	{}
 
-	ILINE bool IsValid() const { return triangleID != MNM::Constants::InvalidTriangleID; }
+	ILINE bool IsValid() const { return triangleID.IsValid(); }
 
 	ILINE bool operator<(const RaycastNode& other) const
 	{
@@ -1303,7 +1303,7 @@ MNM::ERayCastResult CNavMesh::RayCast_v2(const vector3_t& fromLocalPosition, Tri
 		closedList.insert(currentNode.triangleID);
 
 		TileID tileID = ComputeTileID(currentNode.triangleID);
-		if (tileID != MNM::Constants::InvalidTileID)
+		if (tileID.IsValid())
 		{
 			const TileContainer* container = &m_tiles[tileID - 1];
 			const STile* tile = &container->tile;
@@ -1458,7 +1458,7 @@ MNM::ERayCastResult CNavMesh::RayCast_v3(const vector3_t& fromLocalPosition, Tri
 	if (!IsLocationInTriangle(fromLocalPosition, fromTriangleID))
 		return ERayCastResult::InvalidStart;
 
-	if (toTriangleID != MNM::Constants::InvalidTriangleID && !IsLocationInTriangle(toLocalPosition, toTriangleID))
+	if (toTriangleID.IsValid() && !IsLocationInTriangle(toLocalPosition, toTriangleID))
 		return ERayCastResult::InvalidEnd;
 
 	RaycastCameFromMap cameFrom;
@@ -1467,16 +1467,16 @@ MNM::ERayCastResult CNavMesh::RayCast_v3(const vector3_t& fromLocalPosition, Tri
 	RayHit rayHit;
 	rayHit.distance = 0.0f;
 	rayHit.edge = MNM::Constants::InvalidEdgeIndex;
-	rayHit.triangleID = MNM::Constants::InvalidTriangleID;
+	rayHit.triangleID = TriangleID();
 
 	TriangleID currentTriangleID = fromTriangleID;
 	
-	while (currentTriangleID != MNM::Constants::InvalidTriangleID)
+	while (currentTriangleID.IsValid())
 	{
 		const TileID currentTileID = ComputeTileID(currentTriangleID);
-		CRY_ASSERT(currentTileID != MNM::Constants::InvalidTileID);
+		CRY_ASSERT(currentTileID.IsValid());
 
-		if (currentTileID == MNM::Constants::InvalidTileID)
+		if (!currentTileID.IsValid())
 			break;
 		
 		const TileContainer& currentContainer = m_tiles[currentTileID - 1];
@@ -1507,7 +1507,7 @@ MNM::ERayCastResult CNavMesh::RayCast_v3(const vector3_t& fromLocalPosition, Tri
 			rayHit.triangleID = currentTriangleID;
 			rayHit.edge = intersectionEdgeIndex;
 			rayHit.distance = 1.0f;
-			if (currentTriangleID == toTriangleID || toTriangleID == MNM::Constants::InvalidTriangleID)
+			if (currentTriangleID == toTriangleID || !toTriangleID.IsValid())
 			{
 				// Ray segment is ending in end triangle or position, return no hit
 				return ConstructRaycastResult(ERayCastResult::NoHit, rayHit, rayHit.triangleID, cameFrom, raycastRequest);
@@ -1536,14 +1536,14 @@ MNM::ERayCastResult CNavMesh::RayCast_v3(const vector3_t& fromLocalPosition, Tri
 		}
 		
 		TriangleID neighbourTriangleID = StepOverEdgeToNeighbourTriangle(fromLocalPosition, toLocalPosition, currentTileID, currentTriangleID, intersectionEdgeIndex, filter);
-		if (neighbourTriangleID != MNM::Constants::InvalidTriangleID)
+		if (neighbourTriangleID.IsValid())
 		{
 			std::pair<RaycastCameFromMap::iterator, bool> insertResult = cameFrom.insert({ neighbourTriangleID, currentTriangleID });
 			if (!insertResult.second)
 			{
 				// Triangle was already visited, we have a loop
 				// This shouldn't happen in normal circumstances and it can mean that we have e.g. degenerate triangle
-				neighbourTriangleID = MNM::Constants::InvalidTriangleID;
+				neighbourTriangleID = TriangleID();
 			}
 		}
 		currentTriangleID = neighbourTriangleID;
@@ -1553,7 +1553,7 @@ MNM::ERayCastResult CNavMesh::RayCast_v3(const vector3_t& fromLocalPosition, Tri
 }
 
 template<typename TFilter>
-MNM::TriangleID CNavMesh::StepOverEdgeToNeighbourTriangle(const vector3_t& rayStart, const vector3_t& rayEnd, const TileID currentTileID, const TriangleID currentTriangleID, const uint16 edgeIndex, const TFilter& filter) const
+TriangleID CNavMesh::StepOverEdgeToNeighbourTriangle(const vector3_t& rayStart, const vector3_t& rayEnd, const TileID currentTileID, const TriangleID currentTriangleID, const uint16 edgeIndex, const TFilter& filter) const
 {
 	const TileContainer& currentContainer = m_tiles[currentTileID - 1];
 	const STile& currentTile = currentContainer.tile;
@@ -1578,7 +1578,7 @@ MNM::TriangleID CNavMesh::StepOverEdgeToNeighbourTriangle(const vector3_t& raySt
 		{
 			// Internal link between two triangles in the same tile
 			const Tile::STriangle& neighbourTriangle = GetTriangleUnsafe(currentTileID, link.triangle);
-			return filter.PassFilter(neighbourTriangle) ? ComputeTriangleID(currentTileID, link.triangle) : MNM::Constants::InvalidTriangleID;
+			return filter.PassFilter(neighbourTriangle) ? ComputeTriangleID(currentTileID, link.triangle) : TriangleID();
 		}
 
 		// Edge is on the tile boundaries, there can be more neighbour triangles adjacent to this edge
@@ -1619,7 +1619,7 @@ MNM::TriangleID CNavMesh::StepOverEdgeToNeighbourTriangle(const vector3_t& raySt
 		}
 	}
 
-	return MNM::Constants::InvalidTriangleID;
+	return TriangleID();
 }
 
 MNM::ERayCastResult CNavMesh::ConstructRaycastResult(const ERayCastResult returnResult, const RayHit& rayHit, const TriangleID lastTriangleID, const RaycastCameFromMap& cameFromMap,
@@ -1652,11 +1652,11 @@ MNM::ERayCastResult CNavMesh::ConstructRaycastResult(const ERayCastResult return
 
 bool CNavMesh::IsLocationInTriangle(const vector3_t& localPosition, const TriangleID triangleID) const
 {
-	if (triangleID == MNM::Constants::InvalidTriangleID)
+	if (!triangleID.IsValid())
 		return false;
 
 	TileID tileID = ComputeTileID(triangleID);
-	if (tileID == MNM::Constants::InvalidTileID)
+	if (!tileID.IsValid())
 		return false;
 
 	const TileContainer* container = &m_tiles[tileID - 1];
@@ -1698,14 +1698,14 @@ MNM::ERayCastResult CNavMesh::RayCast_v1(const vector3_t& fromLocalPosition, Tri
 			const vector2_t c = vector2_t(tileOrigin) + vector2_t(tile->vertices[triangle.vertex[2]]);
 
 			if (!PointInTriangle(vector2_t(fromLocalPosition), a, b, c))
-				fromTri = 0;
+				fromTri = TriangleID();
 		}
 
 		if (!fromTri)
 		{
 			RayHit& hit = raycastRequest.hit;
 			hit.distance = -real_t::max();
-			hit.triangleID = 0;
+			hit.triangleID = TriangleID();
 			hit.edge = 0;
 
 			return ERayCastResult::Hit;
@@ -1735,7 +1735,7 @@ MNM::ERayCastResult CNavMesh::RayCast_v1(const vector3_t& fromLocalPosition, Tri
 			}
 
 			const Tile::STriangle& triangle = tile->triangles[ComputeTriangleIndex(currentID)];
-			TriangleID nextID = 0;
+			TriangleID nextID = TriangleID();
 			real_t possibleDistance = distance;
 			size_t possibleIncidentEdge = MNM::Constants::InvalidEdgeIndex;
 			const TileContainer* possibleContainer = NULL;
@@ -1843,7 +1843,7 @@ MNM::ERayCastResult CNavMesh::RayCast_v1(const vector3_t& fromLocalPosition, Tri
 					if (std::find(raycastRequest.way, raycastRequest.way + triCount, nextID) != (raycastRequest.way + triCount))
 					{
 						assert(0);
-						nextID = 0;
+						nextID = TriangleID();
 					}
 
 					// If distance is equals to 0, it means that our starting position is placed
@@ -1995,13 +1995,13 @@ TileID CNavMesh::SetTile(size_t x, size_t y, size_t z, STile& tile)
 
 	const size_t tileName = ComputeTileName(x, y, z);
 
-	std::pair<TileMap::iterator, bool> iresult = m_tileMap.insert(TileMap::value_type(tileName, 0));
+	std::pair<TileMap::iterator, bool> iresult = m_tileMap.insert(TileMap::value_type(tileName, TileID()));
 
-	size_t tileID;
+	TileID tileID;
 
 	if (iresult.second)
 	{
-		iresult.first->second = tileID = m_tiles.AllocateTileContainer();
+		iresult.first->second = tileID = TileID(m_tiles.AllocateTileContainer());
 
 		m_profiler.AddStat(TileCount, 1);
 	}
@@ -2154,7 +2154,7 @@ TileID CNavMesh::GetTileID(size_t x, size_t y, size_t z) const
 	TileMap::const_iterator it = m_tileMap.find(tileName);
 	if (it != m_tileMap.end())
 		return it->second;
-	return 0;
+	return TileID();
 }
 
 const STile& CNavMesh::GetTile(TileID tileID) const
@@ -2261,7 +2261,7 @@ TileID CNavMesh::FindTileIDByTileGridCoord(const vector3_t& tileGridCoord) const
 
 	if (nx < 0 || ny < 0 || nz < 0)
 	{
-		return Constants::InvalidTileID;
+		return TileID();
 	}
 
 	return GetTileID(nx, ny, nz);

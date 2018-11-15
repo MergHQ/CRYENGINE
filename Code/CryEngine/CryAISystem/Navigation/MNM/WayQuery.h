@@ -130,7 +130,7 @@ struct AStarNodesList
 	struct Node
 	{
 		Node()
-			: prevTriangle(0, 0)
+			: prevTriangle()
 			, open(false)
 		{
 		}
@@ -205,8 +205,8 @@ struct AStarNodesList
 		m_openList.reserve(MinOpenListSize);
 		m_nodeLookUp.clear();
 
-		std::pair<AStarNodesList::Nodes::iterator, bool> firstEntryIt = m_nodeLookUp.insert(std::make_pair(WayTriangleData(fromTriangleID, 0), AStarNodesList::Node(fromTriangleID, 0, startLocation, 0, dist_start_to_end, true)));
-		m_openList.push_back(OpenNodeListElement(WayTriangleData(fromTriangleID, 0), &firstEntryIt.first->second, dist_start_to_end));
+		std::pair<AStarNodesList::Nodes::iterator, bool> firstEntryIt = m_nodeLookUp.insert(std::make_pair(WayTriangleData(fromTriangleID, OffMeshLinkID()), AStarNodesList::Node(fromTriangleID, OffMeshLinkID(), startLocation, 0, dist_start_to_end, true)));
+		m_openList.push_back(OpenNodeListElement(WayTriangleData(fromTriangleID, OffMeshLinkID()), &firstEntryIt.first->second, dist_start_to_end));
 
 	}
 

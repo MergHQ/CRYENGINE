@@ -277,7 +277,7 @@ void CSmartObjectOffMeshNavigation::RegisterSmartObject(CSmartObject* pSmartObje
 						MNM::OffMeshLinkPtr linkData(new OffMeshLink_SmartObject(smartObjectEntityId, pSmartObject, pSmartObjectClass, validHelpers[fromIndex], validHelpers[toIndex]));
 
 						// Register the new link with the off-mesh navigation system
-						MNM::OffMeshLinkID linkID = MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID;
+						MNM::OffMeshLinkID linkID = MNM::OffMeshLinkID();
 
 						MNM::LinkAdditionRequest request(smartObjectEntityId, targetMeshID, linkData, linkID);
 						request.SetCallback(functor(linkIDList, &CSmartObjectOffMeshNavigation::OffMeshLinkIDList::OnLinkAdditionRequestForSmartObjectServiced));

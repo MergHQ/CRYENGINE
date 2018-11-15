@@ -57,8 +57,8 @@ struct SAgentSettings
 struct WayTriangleData
 {
 	WayTriangleData()
-		: triangleID(0)
-		, offMeshLinkID(0)
+		: triangleID()
+		, offMeshLinkID()
 		, costMultiplier(1.0f)
 		, incidentEdge((unsigned int)MNM::Constants::InvalidEdgeIndex)
 	{}
@@ -72,12 +72,12 @@ struct WayTriangleData
 
 	operator bool() const
 	{
-		return (triangleID != 0);
+		return (triangleID.IsValid());
 	}
 
 	bool operator<(const WayTriangleData& other) const
 	{
-		return triangleID == other.triangleID ? offMeshLinkID < other.offMeshLinkID : triangleID < other.triangleID;
+		return triangleID == other.triangleID ? offMeshLinkID < other.offMeshLinkID : triangleID.GetValue() < other.triangleID.GetValue();
 	}
 
 	bool operator==(const WayTriangleData& other) const
@@ -85,10 +85,10 @@ struct WayTriangleData
 		return ((triangleID == other.triangleID) && (offMeshLinkID == other.offMeshLinkID));
 	}
 
-	TriangleID    triangleID;
-	OffMeshLinkID offMeshLinkID;
-	float         costMultiplier;
-	unsigned int  incidentEdge;
+	TriangleID     triangleID;
+	OffMeshLinkID  offMeshLinkID;
+	float          costMultiplier;
+	unsigned int   incidentEdge;
 };
 
 template<typename Ty>

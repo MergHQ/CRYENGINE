@@ -82,8 +82,8 @@ protected:
 
 			//! Builds an invalid TriangleInfo
 			STriangleInfo()
-				: tileId(Constants::InvalidTileID)
-				, triangleId(Constants::InvalidTriangleID)
+				: tileId()
+				, triangleId()
 				, triangleIdx(0)
 				, triangle()
 			{
@@ -207,7 +207,7 @@ protected:
 	void                                DebugDrawQueryInvalidation(const MNM::INavMeshQueryDebug::SInvalidationData& invalidationData) const;
 #endif // NAV_MESH_QUERY_DEBUG
 
-	aabb_t                              CaculateQueryAabbInTileSpace(MNM::TileID tileId) const;
+	aabb_t                              CaculateQueryAabbInTileSpace(TileID tileId) const;
 	bool                                TriangleIntersectsQueryAabb(const aabb_t& queryAabbInTileSpace, const CTriangleIterator::STriangleInfo& triangleInfo) const;
 
 private:
@@ -218,7 +218,7 @@ protected:
 #ifdef NAV_MESH_QUERY_DEBUG
 	size_t                              m_batchCount;
 	CNavMeshQueryDebug                  m_queryDebug;
-	TriangleIDArray                     m_trianglesDebug;
+	TriangleIDArray                 m_trianglesDebug;
 #endif // NAV_MESH_QUERY_DEBUG
 
 private:

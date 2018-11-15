@@ -121,7 +121,7 @@ namespace MNM
 
 					for (size_t i = 0; i < tileData.trianglesCount; ++i)
 					{
-						const uint16 triangleIdx = static_cast<uint16>(i);
+						const TileTriangleIndex triangleIdx(static_cast<TileTriangleIndex>(i));
 						const MNM::TriangleID triangleId = ComputeTriangleID(tileId, triangleIdx);
 
 						MNM::vector3_t v0;
@@ -190,9 +190,9 @@ namespace MNM
 
 		static bool GetVertices(const MNM::TileID tileId, const MNM::Tile::STileData& tileData, const MNM::TriangleID triangleId, MNM::vector3_t& v0, MNM::vector3_t& v1, MNM::vector3_t& v2)
 		{
-			if (tileId != MNM::Constants::InvalidTileID)
+			if (tileId.IsValid())
 			{
-				if (triangleId != MNM::Constants::InvalidTriangleID)
+				if (triangleId.IsValid())
 				{
 					const uint16 triangleIdx = MNM::ComputeTriangleIndex(triangleId);
 
@@ -209,7 +209,7 @@ namespace MNM
 
 		//! Fill an array of STriangleData by asking the NavMesh with a TriangleId.
 		//! This function should only run while the TriangleIds are still valid, otherwise the behavior is undefined. For this reason it will run in the ctor, that is executed right after processing the NavMesh Triangles.
-		static MNM::INavMeshQueryDebug::SBatchData::TriangleDataArray GetTriangleData(const MNM::INavMesh* pMesh, const MNM::TriangleIDArray& triangleIDArray)
+		static MNM::INavMeshQueryDebug::SBatchData::TriangleDataArray GetTriangleData(const MNM::INavMesh* pMesh, const TriangleIDArray& triangleIDArray)
 		{
 			MNM::INavMeshQueryDebug::SBatchData::TriangleDataArray triangleDataArray;
 			if (!pMesh)

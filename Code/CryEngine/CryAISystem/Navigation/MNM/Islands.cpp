@@ -102,7 +102,7 @@ void CIslands::ResetSeedConnectivityStates(const ESeedConnectivityState state)
 	}
 }
 
-void CIslands::FloodFillOnTriangles(CNavMesh& navMesh, const MNM::TriangleID sourceTriangleId, const size_t reserveCount, 
+void CIslands::FloodFillOnTriangles(CNavMesh& navMesh, const TriangleID sourceTriangleId, const size_t reserveCount, 
 	std::function<bool(const STile& prevTile, const Tile::STriangle& prevTriangle, const STile& nextTile, Tile::STriangle& nextTriangle)> executeFunc)
 {
 	std::vector<TriangleID> trianglesToVisit;
@@ -112,7 +112,7 @@ void CIslands::FloodFillOnTriangles(CNavMesh& navMesh, const MNM::TriangleID sou
 
 	while (!trianglesToVisit.empty())
 	{
-		const MNM::TriangleID currentTriangleID = trianglesToVisit.back();
+		const TriangleID currentTriangleID = trianglesToVisit.back();
 		trianglesToVisit.pop_back();
 
 		const TileID currentTileId = ComputeTileID(currentTriangleID);
@@ -139,7 +139,7 @@ void CIslands::FloodFillOnTriangles(CNavMesh& navMesh, const MNM::TriangleID sou
 }
 
 template<typename T>
-void CIslands::FloodFillOnTrianglesWithBackupValue(CNavMesh& navMesh, const MNM::TriangleID sourceTriangleId, const T sourceValue, const size_t reserveCount,
+void CIslands::FloodFillOnTrianglesWithBackupValue(CNavMesh& navMesh, const TriangleID sourceTriangleId, const T sourceValue, const size_t reserveCount,
 	std::function<bool(const STile& prevTile, const Tile::STriangle& prevTriangle, const T prevValue, const STile& nextTile, Tile::STriangle& nextTriangle, T& nextValue)> executeFunc)
 {
 	struct STriangleWithValue
@@ -219,7 +219,7 @@ void CIslands::ComputeStaticIslands(CNavMesh& navMesh, SConnectionRequests& conn
 			for (size_t index = 0; index < totalTrianglesToVisit; ++index)
 			{
 				// Get next triangle to start the evaluation from
-				const MNM::TriangleID currentTriangleID = trianglesToVisit[index];
+				const TriangleID currentTriangleID = trianglesToVisit[index];
 
 				const TileID currentTileId = ComputeTileID(currentTriangleID);
 				CRY_ASSERT_MESSAGE(currentTileId > 0, "ComputeStaticIslands is trying to access a triangle ID associated with an invalid tile id.");
@@ -264,20 +264,20 @@ void CIslands::ComputeStaticIslands(CNavMesh& navMesh, SConnectionRequests& conn
 	}
 }
 
-void CIslands::UpdateIslandsForTriangles(CNavMesh& navMesh, const NavigationMeshID meshID, const MNM::TriangleID* pTrianglesArray, const size_t trianglesCount, MNM::IslandConnections& islandConnections)
+void CIslands::UpdateIslandsForTriangles(CNavMesh& navMesh, const NavigationMeshID meshID, const TriangleID* pTrianglesArray, const size_t trianglesCount, MNM::IslandConnections& islandConnections)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 	
 	SConnectionRequests connectionRequests;
 
-	std::unordered_map<StaticIslandID, std::vector<MNM::TriangleID>> splitUpdateSources;
+	std::unordered_map<StaticIslandID, std::vector<TriangleID>> splitUpdateSources;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Get source triangles for updating
 	//////////////////////////////////////////////////////////////////////////
 	for (size_t i = 0; i < trianglesCount; ++i)
 	{
-		const MNM::TriangleID triangleID = pTrianglesArray[i];
+		const TriangleID triangleID = pTrianglesArray[i];
 
 		const TileID currentTileId = ComputeTileID(triangleID);
 		const CNavMesh::TileContainer& currentContainer = navMesh.m_tiles[currentTileId - 1];
@@ -331,7 +331,7 @@ void CIslands::UpdateIslandsForTriangles(CNavMesh& navMesh, const NavigationMesh
 	//////////////////////////////////////////////////////////////////////////
 	for (size_t i = 0; i < trianglesCount; ++i)
 	{
-		const MNM::TriangleID sourceTriangleID = pTrianglesArray[i];
+		const TriangleID sourceTriangleID = pTrianglesArray[i];
 		const TileID sourceTileId = ComputeTileID(sourceTriangleID);
 		const CNavMesh::TileContainer& sourceContainer = navMesh.m_tiles[sourceTileId - 1];
 		const STile& sourceTile = sourceContainer.tile;
@@ -423,7 +423,7 @@ void CIslands::UpdateIslandsForTriangles(CNavMesh& navMesh, const NavigationMesh
 
 		bool wantCreateNewIsland = false;
 
-		for (const MNM::TriangleID sourceTriangleID : islandSplitSources.second)
+		for (const TriangleID sourceTriangleID : islandSplitSources.second)
 		{
 			const TileID sourceTileId = ComputeTileID(sourceTriangleID);
 			const CNavMesh::TileContainer& sourceContainer = navMesh.m_tiles[sourceTileId - 1];
@@ -507,7 +507,7 @@ void CIslands::UpdateIslandsForTriangles(CNavMesh& navMesh, const NavigationMesh
 	//////////////////////////////////////////////////////////////////////////
 	for (size_t i = 0; i < trianglesCount; ++i)
 	{
-		const MNM::TriangleID sourceTriangleID = pTrianglesArray[i];
+		const TriangleID sourceTriangleID = pTrianglesArray[i];
 
 		const TileID sourceTileId = ComputeTileID(sourceTriangleID);
 		const CNavMesh::TileContainer& sourceContainer = navMesh.m_tiles[sourceTileId - 1];

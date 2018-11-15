@@ -106,7 +106,7 @@ CNavMeshQuery::CTriangleIterator::CTriangleIterator()
 	, m_maxTileX(0)
 	, m_maxTileY(0)
 	, m_maxTileZ(0)
-	, m_tileId(Constants::InvalidTileID)
+	, m_tileId()
 	, m_tileX(0)
 	, m_tileY(0)
 	, m_tileZ(0)
@@ -124,7 +124,7 @@ CNavMeshQuery::CTriangleIterator::CTriangleIterator(const NavigationMeshID meshI
 	, m_maxTileX(0)
 	, m_maxTileY(0)
 	, m_maxTileZ(0)
-	, m_tileId(Constants::InvalidTileID)
+	, m_tileId()
 	, m_tileX(0)
 	, m_tileY(0)
 	, m_tileZ(0)
@@ -151,7 +151,7 @@ CNavMeshQuery::CTriangleIterator::CTriangleIterator(const NavigationMeshID meshI
 	m_tileZ = m_minTileZ;
 
 	m_tileId = m_pNavMesh->GetTileID(m_tileX, m_tileY, m_tileZ);
-	m_hasNext = m_tileId != Constants::InvalidTileID || m_minTileX <= m_maxTileX || m_minTileY <= m_maxTileY || m_minTileZ <= m_maxTileZ;
+	m_hasNext = m_tileId.IsValid() || m_minTileX <= m_maxTileX || m_minTileY <= m_maxTileY || m_minTileZ <= m_maxTileZ;
 }
 
 NavigationMeshID CNavMeshQuery::CTriangleIterator::GetMeshId() const
@@ -227,7 +227,7 @@ bool CNavMeshQuery::CTriangleIterator::UpdateNavMeshPointer()
 
 bool CNavMeshQuery::CTriangleIterator::IsEnabledBoundingVolumes() const
 {
-	IF_UNLIKELY(m_tileId == Constants::InvalidTileID)
+	IF_UNLIKELY(!m_tileId.IsValid())
 	{
 		return false;
 	}
@@ -245,7 +245,7 @@ bool CNavMeshQuery::CTriangleIterator::Next()
 	}
 
 	// Current tile is invalid and is the last tile 
-	if (m_tileId == Constants::InvalidTileID && m_tileX == m_maxTileX && m_tileY == m_maxTileY && m_tileZ == m_maxTileZ)
+	if (!m_tileId.IsValid() && m_tileX == m_maxTileX && m_tileY == m_maxTileY && m_tileZ == m_maxTileZ)
 	{
 		m_hasNext = false;
 		return false;
@@ -324,7 +324,7 @@ CNavMeshQuery::CTriangleIterator::STriangleInfo CNavMeshQuery::CTriangleIterator
 
 bool CNavMeshQuery::CTriangleIterator::NextTriangleLinear()
 {
-	if (m_tileId != Constants::InvalidTileID && m_triangleIdxTile + 1 < m_pNavMesh->GetTile(m_tileId).GetTrianglesCount())
+	if (m_tileId.IsValid() && m_triangleIdxTile + 1 < m_pNavMesh->GetTile(m_tileId).GetTrianglesCount())
 	{
 		++m_triangleIdxTile;
 		return true;
@@ -334,7 +334,7 @@ bool CNavMeshQuery::CTriangleIterator::NextTriangleLinear()
 
 CNavMeshQuery::CTriangleIterator::STriangleInfo CNavMeshQuery::CTriangleIterator::GetTriangleLinear() const
 {
-	IF_UNLIKELY(m_tileId == Constants::InvalidTileID)
+	IF_UNLIKELY(!m_tileId.IsValid())
 	{
 		return CTriangleIterator::STriangleInfo();
 	}
@@ -346,7 +346,7 @@ CNavMeshQuery::CTriangleIterator::STriangleInfo CNavMeshQuery::CTriangleIterator
 	}
 
 	const Tile::STriangle& triangle = tile.GetTriangles()[m_triangleIdxTile];
-	const MNM::TriangleID triangleId = ComputeTriangleID(m_tileId, m_triangleIdxTile);
+	const TriangleID triangleId = ComputeTriangleID(m_tileId, m_triangleIdxTile);
 
 	return STriangleInfo(m_tileId, triangleId, m_triangleIdxTile, triangle);
 }
@@ -354,7 +354,7 @@ CNavMeshQuery::CTriangleIterator::STriangleInfo CNavMeshQuery::CTriangleIterator
 bool CNavMeshQuery::CTriangleIterator::NextTriangleBoundingVolumes()
 {
 	const STile& tile = m_pNavMesh->GetTile(m_tileId);
-	if (m_tileId != Constants::InvalidTileID && m_triangleIdxTile + 1 < tile.GetBVNodesCount())
+	if (m_tileId.IsValid() && m_triangleIdxTile + 1 < tile.GetBVNodesCount())
 	{
 		const Tile::SBVNode& node = tile.GetBVNodes()[m_triangleIdxTile];
 		m_triangleIdxTile += node.leaf ? 1 : node.offset;
@@ -365,7 +365,7 @@ bool CNavMeshQuery::CTriangleIterator::NextTriangleBoundingVolumes()
 
 CNavMeshQuery::CTriangleIterator::STriangleInfo CNavMeshQuery::CTriangleIterator::GetTriangleBoundingVolumes() const
 {
-	IF_UNLIKELY(m_tileId == Constants::InvalidTileID)
+	IF_UNLIKELY(!m_tileId.IsValid())
 	{
 		return CTriangleIterator::STriangleInfo();
 	}
@@ -589,7 +589,7 @@ void CNavMeshQuery::DebugDrawQueryInvalidation(const MNM::INavMeshQueryDebug::SI
 }
 #endif // NAV_MESH_QUERY_DEBUG
 
-MNM::aabb_t CNavMeshQuery::CaculateQueryAabbInTileSpace(MNM::TileID tileId) const
+MNM::aabb_t CNavMeshQuery::CaculateQueryAabbInTileSpace(TileID tileId) const
 {
 	const CNavMesh::SGridParams gridParams = m_triangleIterator.GetNavMesh()->GetGridParams();
 
@@ -666,7 +666,7 @@ INavMeshQuery::EQueryStatus CNavMeshQueryInstant::QueryTilesInternal(INavMeshQue
 	aabb_t cachedQueryAabbInTileSpace;
 	INavMeshQueryProcessing::EResult queryProcessingResult;
 
-	TileID cachedTileId = Constants::InvalidTileID;
+	TileID cachedTileId = TileID();
 	bool queryProcessingStopped = false;
 
 	while (m_triangleIterator.HasNext() && !queryProcessingStopped)
@@ -759,7 +759,7 @@ INavMeshQuery::EQueryStatus CNavMeshQueryBatch::QueryTilesInternal(INavMeshQuery
 	INavMeshQueryProcessing::EResult queryProcessingResult;
 
 	size_t remainingTrianglesCount = m_queryConfig.processingTrianglesMaxSize;
-	TileID cachedTileId = Constants::InvalidTileID;
+	TileID cachedTileId = TileID();
 	bool queryProcessingStopped = false;
 
 	while (m_triangleIterator.HasNext() && !queryProcessingStopped && remainingTrianglesCount > 0 )

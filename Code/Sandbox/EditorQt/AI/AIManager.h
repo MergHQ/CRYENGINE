@@ -263,7 +263,7 @@ private:
 	bool               ReloadTemplates();
 	CSOParamBase*      LoadTemplateParams(XmlNodeRef root) const;
 
-	void               OnNavigationMeshChanged(NavigationAgentTypeID agentTypeId, NavigationMeshID navigationMeshId, uint32 i);
+	void               OnNavigationMeshChanged(NavigationAgentTypeID agentTypeId, NavigationMeshID navigationMeshId, MNM::TileID i);
 
 	void               StartNavigationWorldMonitor();
 	void               StopNavigationWorldMonitor();

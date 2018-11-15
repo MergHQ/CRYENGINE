@@ -8,7 +8,7 @@
 
 // This needs to be static because OffMeshNavigationManager expects all link ids to be
 // unique, and there is one of these per navigation mesh.
-MNM::OffMeshLinkID MNM::OffMeshNavigation::s_linkIDGenerator = MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID;
+MNM::OffMeshLinkID MNM::OffMeshNavigation::s_linkIDGenerator = MNM::OffMeshLinkID();
 
 void MNM::OffMeshNavigation::TileLinks::CopyLinks(TriangleLink* links, uint16 linkCount)
 {
@@ -57,16 +57,20 @@ void MNM::OffMeshNavigation::AddLink(NavigationMesh& navigationMesh, const Trian
 	//////////////////////////////////////////////////////////////////////////
 	// If a valid link ID has been passed in, use it instead of generating a new one
 	// This can occur when re-adding existing links to a modified mesh.
-	if (linkID == MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID)
+	if (!linkID.IsValid())
 	{
 		// Generate new link id
 		// NOTE: Zero is an invalid link ID
-		while (++s_linkIDGenerator == MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID)
-			;
+		do
+		{
+			s_linkIDGenerator = MNM::OffMeshLinkID(s_linkIDGenerator.GetValue() + 1);
+		} 
+		while (!s_linkIDGenerator.IsValid());
+
 		linkID = s_linkIDGenerator;
 	}
 	// A link ID should never be larger than the latest generated
-	CRY_ASSERT_TRACE(linkID <= s_linkIDGenerator, ("A link ID should not be larger than the latest generated (linkID = %u, lastGenerated = %u)", linkID, s_linkIDGenerator));
+	CRY_ASSERT_TRACE(linkID <= s_linkIDGenerator, ("A link ID should not be larger than the latest generated (linkID = %u, lastGenerated = %u)", linkID.GetValue(), s_linkIDGenerator.GetValue()));
 
 	//////////////////////////////////////////////////////////////////////////
 	// Begin insert/copy process

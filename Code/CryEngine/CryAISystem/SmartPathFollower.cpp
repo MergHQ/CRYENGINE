@@ -626,7 +626,7 @@ bool CSmartPathFollower::CanReachTarget(float testIndex) const
 			}
 
 			MNM::TriangleID triangleEndID = navMesh.QueryTriangleAt(endLocationInMeshCoordinates, verticalRange, verticalRange, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, m_params.pQueryFilter);
-			if (triangleEndID != MNM::Constants::InvalidTriangleID)
+			if (triangleEndID.IsValid())
 			{
 				// Couldn't find a triangle for the end position. Pick the closest one.
 				MNM::vector3_t closestEndLocation;

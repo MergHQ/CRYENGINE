@@ -135,7 +135,7 @@ struct SClosestTriangle
 	real_t     distance;
 
 	SClosestTriangle()
-		: id(Constants::InvalidTriangleID)
+		: id()
 		, position(0)
 		, distance(std::numeric_limits<real_t>::max())
 	{}

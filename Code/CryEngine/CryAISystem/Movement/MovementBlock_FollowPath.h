@@ -61,9 +61,9 @@ private:
 	void                            RegisterAsPlanMonitor();
 	void                            UnregisterAsPlanMonitor();
 
-	void                            OnNavigationMeshChanged(NavigationAgentTypeID navigationAgentTypeID, NavigationMeshID meshID, uint32 tileID);
-	void                            OnNavigationAnnotationChanged(NavigationAgentTypeID navigationAgentTypeID, NavigationMeshID meshID, uint32 tileID);
-	void                            QueueNavigationChange(NavigationAgentTypeID navigationAgentTypeID, NavigationMeshID meshID, uint32 tileID, const SMeshTileChange::ChangeFlags& changeFlag);
+	void                            OnNavigationMeshChanged(NavigationAgentTypeID navigationAgentTypeID, NavigationMeshID meshID, MNM::TileID tileID);
+	void                            OnNavigationAnnotationChanged(NavigationAgentTypeID navigationAgentTypeID, NavigationMeshID meshID, MNM::TileID tileID);
+	void                            QueueNavigationChange(NavigationAgentTypeID navigationAgentTypeID, NavigationMeshID meshID, MNM::TileID tileID, const SMeshTileChange::ChangeFlags& changeFlag);
 
 	bool                            IsPathOverlappingWithAnyAffectedNavMeshTileBounds() const;
 	bool                            IsPathTraversableOnNavMesh(const INavMeshQueryFilter* pFilter) const;

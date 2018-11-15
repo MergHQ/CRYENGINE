@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "NavigationIdTypes.h"
+
 namespace MNM
 {
 
@@ -52,9 +54,6 @@ namespace Constants
 {
 enum Edges { InvalidEdgeIndex = ~0u };
 
-enum TileIdConstants { InvalidTileID = 0, };
-enum TriangleIDConstants { InvalidTriangleID = 0, };
-
 enum EStaticIsland : uint32
 {
 	eStaticIsland_InvalidIslandID    = 0,
@@ -67,18 +66,15 @@ enum EGlobalIsland
 	eGlobalIsland_InvalidIslandID = 0,
 };
 
-enum EOffMeshLink
-{
-	eOffMeshLinks_InvalidOffMeshLinkID = 0,
-};
-
 }   // namespace Constants
 
-// Basic types used in the MNM namespace.
-// #MNM_TODO pavloi 2016.07.19: convert to use strong typed wrappers instead of typedefs (like TNavigationID)
-typedef uint32 TileID;
-typedef uint32 TriangleID; // #MNM_TODO pavloi 2016.07.19: actually, it means TileTriangleID
-typedef uint32 OffMeshLinkID;
+
+typedef TNavigationID<TileIDTag>         TileID;
+typedef TNavigationID<TileTriangleIDTag> TriangleID;
+typedef TNavigationID<OffMeshLinkIDTag>  OffMeshLinkID;
+
+//! TileTriangleIndex identifies the index of each triangle within a tile
+typedef uint16 TileTriangleIndex;
 
 //! StaticIslandIDs identify triangles that are statically connected inside a mesh and that are reachable without the use of any off mesh links.
 typedef uint32 StaticIslandID;
@@ -126,20 +122,20 @@ struct GlobalIslandID
 	uint64 id;
 };
 
-// #MNM_TODO pavloi 2016.07.26: replace TriangleID with CTileTriangleID and provide these functions as member getters (and consider using bit field)
-inline TriangleID ComputeTriangleID(TileID tileID, uint16 triangleIdx)
+// #MNM_TODO pavloi 2016.07.26: replace MNM::TriangleID with CTileTriangleID and provide these functions as member getters (and consider using bit field)
+inline MNM::TriangleID ComputeTriangleID(const MNM::TileID tileID, const uint16 triangleIdx)
 {
-	return (tileID << 10) | (triangleIdx & ((1 << 10) - 1));
+	return MNM::TriangleID((tileID.GetValue() << 10) | (triangleIdx & ((1 << 10) - 1)));
 }
 
-inline TileID ComputeTileID(TriangleID triangleID)
+inline MNM::TileID ComputeTileID(const MNM::TriangleID triangleID)
 {
-	return triangleID >> 10;
+	return MNM::TileID(triangleID.GetValue() >> 10);
 }
 
-inline uint16 ComputeTriangleIndex(TriangleID triangleID)
+inline TileTriangleIndex ComputeTriangleIndex(const MNM::TriangleID triangleID)
 {
-	return triangleID & ((1 << 10) - 1);
+	return triangleID.GetValue() & ((1 << 10) - 1);
 }
 
 } // namespace MNM

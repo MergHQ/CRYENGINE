@@ -1068,7 +1068,7 @@ void CAIManager::LateUpdate()
 	}
 }
 
-void CAIManager::OnNavigationMeshChanged(NavigationAgentTypeID, NavigationMeshID, uint32)
+void CAIManager::OnNavigationMeshChanged(NavigationAgentTypeID, NavigationMeshID, MNM::TileID)
 {
 	m_refreshMnmOnGameExit = true;
 }

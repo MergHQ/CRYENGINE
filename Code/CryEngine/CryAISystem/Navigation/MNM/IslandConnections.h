@@ -24,8 +24,8 @@ public:
 	void Reset();
 	void ResetForMesh(const NavigationMeshID meshId);
 
-	void SetOneWayOffmeshConnectionBetweenIslands(const MNM::GlobalIslandID fromIslandId, const MNM::AreaAnnotation fromIslandAnnotation, const MNM::GlobalIslandID toIslandId, const MNM::AreaAnnotation toIslandAnnotation, const MNM::OffMeshLinkID offMeshLinkId, const MNM::TriangleID toTriangleId, const uint32 connectionObjectOwnerId);
-	void RemoveOffMeshLinkConnection(const MNM::OffMeshLinkID offMeshLinkId);
+	void SetOneWayOffmeshConnectionBetweenIslands(const MNM::GlobalIslandID fromIslandId, const MNM::AreaAnnotation fromIslandAnnotation, const MNM::GlobalIslandID toIslandId, const MNM::AreaAnnotation toIslandAnnotation, const OffMeshLinkID offMeshLinkId, const TriangleID toTriangleId, const uint32 connectionObjectOwnerId);
+	void RemoveOffMeshLinkConnection(const OffMeshLinkID offMeshLinkId);
 
 	void SetTwoWayConnectionBetweenIslands(const MNM::GlobalIslandID islandId1, const MNM::AreaAnnotation islandAnnotation1, const MNM::GlobalIslandID islandId2, const MNM::AreaAnnotation islandAnnotation2, const int connectionChange);
 	
@@ -66,7 +66,7 @@ private:
 		MNM::AreaAnnotation toIslandAnnotation;  // target island annotation for early filtering out target island node, so it doesn't need to be accessed and opened. The same value is stored in respective island node.
 		uint16              outConnectionsCount; // number of triangle-triangle connections going from source island to target island
 		uint16              inConnectionsCount;  // number of triangle-triangle connections going from target island to source island
-		uint32              offMeshLinkID;       // non-zero only when the link is representing off-mesh link
+		OffMeshLinkID       offMeshLinkID;       // non-zero only when the link is representing off-mesh link
 	};
 
 	// SIslandNode is a structure representing vertex in directed graph of islands connectivity.
@@ -86,14 +86,14 @@ private:
 	// Structure used for storing additional off-mesh links data
 	struct SOffMeshLinkData
 	{
-		SOffMeshLinkData(const MNM::GlobalIslandID fromIslandId, const MNM::TriangleID toTriangleId, const uint32 connectionObjectOwnerId)
+		SOffMeshLinkData(const MNM::GlobalIslandID fromIslandId, const TriangleID toTriangleId, const uint32 connectionObjectOwnerId)
 			: fromIslandId(fromIslandId)
 			, toTriangleId(toTriangleId)
 			, connectionObjectOwnerId(connectionObjectOwnerId)
 		{}
 
 		MNM::GlobalIslandID fromIslandId; // global id of island, where the link starts
-		MNM::TriangleID toTriangleId;     // target triangle id (currently not used, but kept for now)
+		TriangleID toTriangleId;          // target triangle id (currently not used, but kept for now)
 		uint32 connectionObjectOwnerId;   // id of the object that created the link, entity id (currently not used, but kept for now)
 	};
 
@@ -119,12 +119,12 @@ private:
 
 	typedef std::deque<MNM::GlobalIslandID, TIslandOpenListAllocator>                   TIslandOpenList;
 	typedef std::unordered_map<MNM::GlobalIslandID, SIslandNode, GlobalIslandIDHasher>  TIslandConnectionsMap;
-	typedef std::unordered_map<MNM::OffMeshLinkID, SOffMeshLinkData>					TIslandOffMeshLinkDataMap;
+	typedef std::unordered_map<OffMeshLinkID, SOffMeshLinkData>					        TIslandOffMeshLinkDataMap;
 	typedef std::vector<EIslandNodeState>                                               TIslandNodeStatesArray;
 
 	template <typename TFilter>
 	bool CanNavigateBetweenIslandsInternal(const IEntity* pEntityToTestOffGridLinks, const MNM::GlobalIslandID fromIsland, const MNM::GlobalIslandID toIsland, const TFilter& filter) const;
-	void ModifyConnectionToIsland(SIslandNode& islandNode, const MNM::StaticIslandID toIslandId, const MNM::AreaAnnotation toIslandAnnotation, const MNM::OffMeshLinkID offMeshLinkId, const int outConnectionsCountChange, const int inConnectionsCountChange);
+	void ModifyConnectionToIsland(SIslandNode& islandNode, const MNM::StaticIslandID toIslandId, const MNM::AreaAnnotation toIslandAnnotation, const OffMeshLinkID offMeshLinkId, const int outConnectionsCountChange, const int inConnectionsCountChange);
 
 	TIslandNodeStatesArray& PrepareIslandNodeStatesArray(const MNM::GlobalIslandID fromIsland) const;
 

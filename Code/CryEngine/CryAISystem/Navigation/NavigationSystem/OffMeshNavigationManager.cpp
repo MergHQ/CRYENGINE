@@ -123,7 +123,7 @@ bool OffMeshNavigationManager::AddCustomLink(const NavigationMeshID& meshID, MNM
 
 	// Register the new link with the off-mesh navigation system
 	offMeshNavigation.AddLink(mesh, startTriangleID, endTriangleID, *&linkID);
-	CRY_ASSERT_TRACE(linkID != MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID, ("Adding new offmesh link failed"));
+	CRY_ASSERT_TRACE(linkID.IsValid(), ("Adding new offmesh link failed"));
 
 	MNM::OffMeshLinkPtr pOffMeshLink;
 	if (bCloneLinkData)
@@ -188,8 +188,8 @@ void OffMeshNavigationManager::ProcessQueuedRequests()
 			{
 			case MNM::eOffMeshOperationType_Add:
 				{
-					MNM::TriangleID startTriangleID = MNM::TriangleID(0);
-					MNM::TriangleID endTriangleID = MNM::TriangleID(0);
+					MNM::TriangleID startTriangleID = MNM::TriangleID();
+					MNM::TriangleID endTriangleID = MNM::TriangleID();
 					const bool linkGotSuccessfullyAdded = AddCustomLink(it->meshId, it->pLinkData, it->linkId, &startTriangleID, &endTriangleID, it->bCloneLinkData);
 					if (it->callback)
 					{
