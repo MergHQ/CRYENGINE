@@ -132,7 +132,7 @@ void CFeatureRenderSprites::AddToComponent(CParticleComponent* pComponent, SComp
 		pParams->m_shaderData.m_sphericalApproximation = m_sphericalProjection;
 	else
 		pParams->m_shaderData.m_sphericalApproximation = 0.0f;
-	pParams->m_physicalSizeSlope.scale *= max(+m_aspectRatio, 1.0f);
+	pParams->m_scaleParticleSize *= max(+m_aspectRatio, 1.0f);
 	pParams->m_renderObjectSortBias = m_sortBias;
 }
 

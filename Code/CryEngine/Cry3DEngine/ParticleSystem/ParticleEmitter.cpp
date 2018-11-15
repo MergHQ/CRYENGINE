@@ -211,10 +211,10 @@ void CParticleEmitter::Update()
 namespace Bounds
 {
 	float Expansion       = 1.125f;
-	float ShrinkThreshold = 0.25f;
+	float ShrinkThreshold = 0.125f;
 }
 
-void CParticleEmitter::UpdateBoundingBox()
+void CParticleEmitter::UpdateBounds()
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
@@ -240,6 +240,11 @@ void CParticleEmitter::UpdateBoundingBox()
 			m_nextBounds = AABB(center - extent, center + extent);
 		}
 	}
+}
+
+void CParticleEmitter::AddBounds(const AABB& bb)
+{
+	m_realBounds.Add(bb);
 }
 
 bool CParticleEmitter::UpdateParticles()
@@ -271,7 +276,8 @@ bool CParticleEmitter::UpdateParticles()
 	m_alive = m_stats.components.alive > 0;
 
 	PostUpdate();
-	UpdateBoundingBox();
+	if (!m_pEffect->RenderDeferred.size() || !m_registered)
+		UpdateBounds();
 	m_timeUpdated = m_time;
 	return true;
 }
@@ -300,6 +306,8 @@ void CParticleEmitter::RenderDeferred(const SRenderContext& renderContext)
 			pComponent->RenderDeferred(*pRuntime, renderContext);
 		}
 	}
+
+	UpdateBounds();
 }
 
 void CParticleEmitter::DebugRender(const SRenderingPassInfo& passInfo) const
@@ -329,7 +337,7 @@ void CParticleEmitter::DebugRender(const SRenderingPassInfo& passInfo) const
 			if (!pRuntime->GetBounds().IsReset())
 			{
 				const float volumeRatio = div_min(pRuntime->GetBounds().GetVolume(), m_realBounds.GetVolume(), 1.0f);
-				const ColorB componentColor = ColorF(1, 0.5, 0) * (alphaColor * sqrt(volumeRatio));
+				const ColorB componentColor = ColorF(1, 0.5, 0) * (alphaColor * sqrt(sqrt(volumeRatio)));
 				pRenderAux->DrawAABB(pRuntime->GetBounds(), false, componentColor, eBBD_Faceted);
 				string label = string().Format("%s #%d", pRuntime->GetComponent()->GetName(),
 					pRuntime->GetContainer().GetRealNumParticles());
@@ -441,6 +449,7 @@ void CParticleEmitter::Activate(bool activate)
 		m_timeStable = m_time + timings.m_equilibriumTime;
 		m_timeDeath = m_time + timings.m_maxTotalLIfe;
 		m_bounds = m_realBounds = m_nextBounds = AABB::RESET;
+		m_boundsChanged = false;
 		m_alive = true;
 
 		m_effectEditVersion = -1; // Force creation of Runtimes next Update
@@ -683,7 +692,6 @@ void CParticleEmitter::UpdateRuntimes()
 		}
 		else
 		{
-			pRuntime->RemoveAllSubInstances();
 			pRuntime->Initialize();
 			if (pRuntime->HasParticles())
 				pComponent->OnEdit(*pRuntime);
