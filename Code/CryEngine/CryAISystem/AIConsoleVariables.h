@@ -88,8 +88,6 @@ struct AIConsoleVars
 	DeclareConstIntCVar(DebugDrawExpensiveAccessoryQuota, 0);
 	DeclareConstIntCVar(DebugTargetSilhouette, 0);
 	DeclareConstIntCVar(DebugDrawDamageControl, 0);
-	DeclareConstIntCVar(DrawFakeTracers, 0);
-	DeclareConstIntCVar(DrawFakeHitEffects, 0);
 	DeclareConstIntCVar(DrawFakeDamageInd, 0);
 	DeclareConstIntCVar(DrawPlayerRanges, 0);
 	DeclareConstIntCVar(DrawPerceptionIndicators, 0);

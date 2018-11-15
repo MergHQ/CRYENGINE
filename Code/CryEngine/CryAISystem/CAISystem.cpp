@@ -1627,8 +1627,6 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 			stl::free_container(m_tmpAllUpdates);
 
 #ifdef CRYAISYSTEM_DEBUG
-			stl::free_container(m_DEBUG_fakeTracers);
-			stl::free_container(m_DEBUG_fakeHitEffect);
 			stl::free_container(m_DEBUG_fakeDamageInd);
 #endif //CRYAISYSTEM_DEBUG
 
@@ -1767,8 +1765,6 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 	m_lastStatsTargetTrajectoryPoint.Set(0, 0, 0);
 	m_lstStatsTargetTrajectory.clear();
 
-	m_DEBUG_fakeTracers.clear();
-	m_DEBUG_fakeHitEffect.clear();
 	m_DEBUG_fakeDamageInd.clear();
 	m_DEBUG_screenFlash = 0.0f;
 
@@ -2501,7 +2497,7 @@ void CAISystem::RegisterSchematycEnvPackage(Schematyc::IEnvRegistrar& registrar)
 
 //
 //-----------------------------------------------------------------------------------------------------------
-void CAISystem::Update(CTimeValue frameStartTime, float frameDeltaTime)
+void CAISystem::Update(const CTimeValue frameStartTime, const float frameDeltaTime)
 {
 	CRY_PROFILE_REGION(PROFILE_AI, "AI System: Update");
 	CRYPROFILE_SCOPE_PROFILE_MARKER("AI System: Update");
@@ -2511,7 +2507,7 @@ void CAISystem::Update(CTimeValue frameStartTime, float frameDeltaTime)
 		return;
 
 	CCCPOINT(CAISystem_Update);
-
+	const bool isAutomaticUpdate = true;
 	{
 		CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate 1")
 		InitializeSmartObjectsIfNotInitialized();
@@ -2528,11 +2524,11 @@ void CAISystem::Update(CTimeValue frameStartTime, float frameDeltaTime)
 		SubsystemUpdateAmbientFire();
 		SubsystemUpdateExpensiveAccessoryQuota();
 		SubsystemUpdateCommunicationManager(frameDeltaTime);
-		SubsystemUpdateVisionMap(frameDeltaTime);
-		SubsystemUpdateAuditionMap(frameDeltaTime);
+		TrySubsystemUpdateVisionMap(frameDeltaTime, isAutomaticUpdate);
+		TrySubsystemUpdateAuditionMap(frameDeltaTime, isAutomaticUpdate);
 		SubsystemUpdateGroupManager(frameDeltaTime);
-		SubsystemUpdateCoverSystem(frameDeltaTime);
-		SubsystemUpdateNavigationSystem();
+		TrySubsystemUpdateCoverSystem(frameDeltaTime, isAutomaticUpdate);
+		TrySubsystemUpdateNavigationSystem(isAutomaticUpdate);
 	}
 
 	{
@@ -2541,7 +2537,7 @@ void CAISystem::Update(CTimeValue frameStartTime, float frameDeltaTime)
 		SubsystemUpdateGroups(frameStartTime);
 	}
 
-	SubsystemUpdateMovementSystem(frameDeltaTime);
+	TrySubsystemUpdateMovementSystem(frameDeltaTime, isAutomaticUpdate);
 
 	{
 		CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate 4");
@@ -2551,14 +2547,14 @@ void CAISystem::Update(CTimeValue frameStartTime, float frameDeltaTime)
 		SubsystemUpdateInterestManager(frameDeltaTime);
 	}
 
-	SubsystemUpdateBehaviorTreeManager();
-	SubsystemUpdateGlobalRayCaster(frameDeltaTime);
-	SubsystemUpdateGlobalIntersectionTester(frameDeltaTime);
-	SubsystemUpdateClusterDetector(frameDeltaTime);
+	TrySubsystemUpdateBehaviorTreeManager(isAutomaticUpdate);
+	TrySubsystemUpdateGlobalRayCaster(frameDeltaTime, isAutomaticUpdate);
+	TrySubsystemUpdateGlobalIntersectionTester(frameDeltaTime, isAutomaticUpdate);
+	TrySubsystemUpdateClusterDetector(frameDeltaTime, isAutomaticUpdate);
 	SubsystemUpdateTacticalPointSystem();
 
 #ifdef CRYAISYSTEM_DEBUG
-	TryUpdateDebugStuff();
+	TryUpdateDebugFakeDamageIndicators();
 	TryDebugDrawPhysicsAccess();
 #endif //CRYAISYSTEM_DEBUG
 
@@ -2569,6 +2565,44 @@ void CAISystem::Update(CTimeValue frameStartTime, float frameDeltaTime)
 	// Housekeeping
 	gAIEnv.pObjectContainer->ReleaseDeregisteredObjects(false);
 	++m_nTickCount;
+}
+
+void CAISystem::UpdateSubsystem(const CTimeValue frameStartTime, const float frameDeltaTime, const ESubsystemUpdateFlag subsystemUpdateFlag)
+{
+	const bool isAutomaticUpdate = false;
+	switch (subsystemUpdateFlag)
+	{
+	case IAISystem::ESubsystemUpdateFlag::AuditionMap:
+		TrySubsystemUpdateAuditionMap(frameDeltaTime, isAutomaticUpdate);
+		break;
+	case IAISystem::ESubsystemUpdateFlag::BehaviorTreeManager:
+		TrySubsystemUpdateBehaviorTreeManager(isAutomaticUpdate);
+		break;
+	case IAISystem::ESubsystemUpdateFlag::ClusterDetector:
+		TrySubsystemUpdateClusterDetector(frameDeltaTime, isAutomaticUpdate);
+		break;
+	case IAISystem::ESubsystemUpdateFlag::CoverSystem:
+		TrySubsystemUpdateCoverSystem(frameDeltaTime, isAutomaticUpdate);
+		break;
+	case IAISystem::ESubsystemUpdateFlag::MovementSystem:
+		TrySubsystemUpdateMovementSystem(frameDeltaTime, isAutomaticUpdate);
+		break;
+	case IAISystem::ESubsystemUpdateFlag::NavigationSystem:
+		TrySubsystemUpdateNavigationSystem(isAutomaticUpdate);
+		break;
+	case IAISystem::ESubsystemUpdateFlag::VisionMap:
+		TrySubsystemUpdateVisionMap(frameDeltaTime, isAutomaticUpdate);
+		break;
+	case IAISystem::ESubsystemUpdateFlag::GlobalIntersectionTester:
+		TrySubsystemUpdateGlobalIntersectionTester(frameDeltaTime, isAutomaticUpdate);
+		break;
+	case IAISystem::ESubsystemUpdateFlag::GlobalRaycaster:
+		TrySubsystemUpdateGlobalRayCaster(frameDeltaTime, isAutomaticUpdate);
+		break;
+	default:
+		CRY_ASSERT_MESSAGE(false, "Provided flag is not valid.");
+		break;
+	}
 }
 
 //
@@ -5513,6 +5547,18 @@ bool CAISystem::InitializeSmartObjectsIfNotInitialized()
 	if (m_pSmartObjectManager && !m_pSmartObjectManager->IsInitialized())
 		return InitSmartObjects();
 	return false;
+}
+
+bool CAISystem::ShouldUpdateSubsystem(const IAISystem::ESubsystemUpdateFlag subsystemUpdateFlag, const bool isAutomaticUpdate) const
+{
+	const bool shouldUpdateAutomatic = isAutomaticUpdate && !m_overrideUpdateFlags.Check(subsystemUpdateFlag);
+	const bool shouldUpdateOverride = !isAutomaticUpdate && m_overrideUpdateFlags.Check(subsystemUpdateFlag);
+	const bool shouldUpdate = (shouldUpdateAutomatic || shouldUpdateOverride);
+
+	CRY_ASSERT_MESSAGE(isAutomaticUpdate || m_overrideUpdateFlags.Check(subsystemUpdateFlag),
+		"Tried to manually update IA subsystem %s but UpdateFlags were not overriden. Subsystem will not be updated.", Serialization::getEnumLabel(subsystemUpdateFlag));
+
+	return shouldUpdate;
 }
 
 void CAISystem::ResetAIActorSets(bool clearSets)

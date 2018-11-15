@@ -610,11 +610,6 @@ void AIConsoleVars::Init()
 
 	DefineConstIntCVarName("ai_DebugDrawDamageControl", DebugDrawDamageControl, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Debugs the damage control system 0=disabled, 1=collect, 2=collect&draw.");
-
-	DefineConstIntCVarName("ai_DrawFakeTracers", DrawFakeTracers, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
-	                       "Draws fake tracers around the player.");
-	DefineConstIntCVarName("ai_DrawFakeHitEffects", DrawFakeHitEffects, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
-	                       "Draws fake hit effects the player.");
 	DefineConstIntCVarName("ai_DrawFakeDamageInd", DrawFakeDamageInd, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Draws fake damage indicators on the player.");
 	DefineConstIntCVarName("ai_DrawPlayerRanges", DrawPlayerRanges, 0, VF_CHEAT | VF_CHEAT_NOCHECK,

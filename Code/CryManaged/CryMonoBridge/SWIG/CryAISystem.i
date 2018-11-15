@@ -62,6 +62,7 @@ using namespace BehaviorTree;
 %ignore IAISystem::SerializeObjectIDs;
 %ignore IAISystem::Serialize;
 %ignore IAISystem::NavCapMask::Serialize;
+%ignore IAISystem::ESubsystemUpdateFlag;
 %include "../../../../CryEngine/CryCommon/CryAISystem/IAISystem.h"
 %feature("director") IAICommunicationHandler::IEventListener;
 %include "../../../../CryEngine/CryCommon/CryAISystem/IAgent.h"
