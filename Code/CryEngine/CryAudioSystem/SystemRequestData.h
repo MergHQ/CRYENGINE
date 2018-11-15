@@ -28,6 +28,10 @@ enum class ESystemRequestType : EnumFlagsType
 	SetGlobalParameter,
 	SetSwitchState,
 	SetGlobalSwitchState,
+	LoadTrigger,
+	UnloadTrigger,
+	PlayFile,
+	StopFile,
 	AutoLoadSetting,
 	LoadSetting,
 	UnloadSetting,
@@ -362,6 +366,91 @@ struct SSystemRequestData<ESystemRequestType::SetGlobalSwitchState> final : publ
 
 	ControlId const     switchId;
 	SwitchStateId const switchStateId;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SSystemRequestData<ESystemRequestType::LoadTrigger> final : public SSystemRequestDataBase
+{
+	explicit SSystemRequestData(ControlId const triggerId_)
+		: SSystemRequestDataBase(ESystemRequestType::LoadTrigger)
+		, triggerId(triggerId_)
+	{}
+
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::LoadTrigger> const* const pASRData)
+		: SSystemRequestDataBase(ESystemRequestType::LoadTrigger)
+		, triggerId(pASRData->triggerId)
+	{}
+
+	virtual ~SSystemRequestData() override = default;
+
+	ControlId const triggerId;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SSystemRequestData<ESystemRequestType::UnloadTrigger> final : public SSystemRequestDataBase
+{
+	explicit SSystemRequestData(ControlId const triggerId_)
+		: SSystemRequestDataBase(ESystemRequestType::UnloadTrigger)
+		, triggerId(triggerId_)
+	{}
+
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::UnloadTrigger> const* const pASRData)
+		: SSystemRequestDataBase(ESystemRequestType::UnloadTrigger)
+		, triggerId(pASRData->triggerId)
+	{}
+
+	virtual ~SSystemRequestData() override = default;
+
+	ControlId const triggerId;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SSystemRequestData<ESystemRequestType::PlayFile> final : public SSystemRequestDataBase
+{
+	explicit SSystemRequestData(
+		CryFixedStringT<MaxFilePathLength> const& file_,
+		ControlId const usedTriggerId_,
+		bool const bLocalized_)
+		: SSystemRequestDataBase(ESystemRequestType::PlayFile)
+		, file(file_)
+		, usedTriggerId(usedTriggerId_)
+		, bLocalized(bLocalized_)
+	{}
+
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::PlayFile> const* const pASRData)
+		: SSystemRequestDataBase(ESystemRequestType::PlayFile)
+		, file(pASRData->file)
+		, usedTriggerId(pASRData->usedTriggerId)
+		, bLocalized(pASRData->bLocalized)
+	{}
+
+	virtual ~SSystemRequestData() override = default;
+
+	CryFixedStringT<MaxFilePathLength> const file;
+	ControlId const                          usedTriggerId;
+	bool const                               bLocalized;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SSystemRequestData<ESystemRequestType::StopFile> final : public SSystemRequestDataBase
+{
+	explicit SSystemRequestData(CryFixedStringT<MaxFilePathLength> const& file_)
+		: SSystemRequestDataBase(ESystemRequestType::StopFile)
+		, file(file_)
+	{}
+
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::StopFile> const* const pASRData)
+		: SSystemRequestDataBase(ESystemRequestType::StopFile)
+		, file(pASRData->file)
+	{}
+
+	virtual ~SSystemRequestData() override = default;
+
+	CryFixedStringT<MaxFilePathLength> const file;
 };
 
 //////////////////////////////////////////////////////////////////////////

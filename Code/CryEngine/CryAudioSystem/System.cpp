@@ -953,7 +953,7 @@ void CSystem::SetImpl(Impl::IImpl* const pIImpl, SRequestUserData const& userDat
 //////////////////////////////////////////////////////////////////////////
 void CSystem::LoadTrigger(ControlId const triggerId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SObjectRequestData<EObjectRequestType::LoadTrigger> const requestData(triggerId);
+	SSystemRequestData<ESystemRequestType::LoadTrigger> const requestData(triggerId);
 	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
@@ -961,7 +961,7 @@ void CSystem::LoadTrigger(ControlId const triggerId, SRequestUserData const& use
 //////////////////////////////////////////////////////////////////////////
 void CSystem::UnloadTrigger(ControlId const triggerId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SObjectRequestData<EObjectRequestType::UnloadTrigger> const requestData(triggerId);
+	SSystemRequestData<ESystemRequestType::UnloadTrigger> const requestData(triggerId);
 	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
@@ -1946,6 +1946,81 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			break;
 		}
+	case ESystemRequestType::LoadTrigger:
+		{
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::LoadTrigger> const*>(request.GetData());
+
+			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
+
+			if (pTrigger != nullptr)
+			{
+				pTrigger->LoadAsync(*g_pObject, true);
+				result = ERequestStatus::Success;
+			}
+			else
+			{
+				result = ERequestStatus::FailureInvalidControlId;
+			}
+
+			break;
+		}
+	case ESystemRequestType::UnloadTrigger:
+		{
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::UnloadTrigger> const*>(request.GetData());
+
+			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
+
+			if (pTrigger != nullptr)
+			{
+				pTrigger->LoadAsync(*g_pObject, false);
+				result = ERequestStatus::Success;
+			}
+			else
+			{
+				result = ERequestStatus::FailureInvalidControlId;
+			}
+
+			break;
+		}
+	case ESystemRequestType::PlayFile:
+		{
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::PlayFile> const*>(request.GetData());
+
+			if (pRequestData != nullptr && !pRequestData->file.empty())
+			{
+				if (pRequestData->usedTriggerId != InvalidControlId)
+				{
+					CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->usedTriggerId, nullptr);
+
+					if (pTrigger != nullptr)
+					{
+						pTrigger->PlayFile(
+							*g_pObject,
+							pRequestData->file.c_str(),
+							pRequestData->bLocalized,
+							request.pOwner,
+							request.pUserData,
+							request.pUserDataOwner);
+					}
+				}
+
+				result = ERequestStatus::Success;
+			}
+
+			break;
+		}
+	case ESystemRequestType::StopFile:
+		{
+			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::StopFile> const*>(request.GetData());
+
+			if (pRequestData != nullptr && !pRequestData->file.empty())
+			{
+				g_pObject->HandleStopFile(pRequestData->file.c_str());
+				result = ERequestStatus::Success;
+			}
+
+			break;
+		}
 	case ESystemRequestType::AutoLoadSetting:
 		{
 			SSystemRequestData<ESystemRequestType::AutoLoadSetting> const* const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::AutoLoadSetting> const*>(request.GetData());
@@ -2764,6 +2839,17 @@ void CSystem::NotifyListener(CRequest const& request)
 			{
 			case ESystemRequestType::SetImpl:
 				systemEvent = ESystemEvents::ImplSet;
+				break;
+			case ESystemRequestType::ExecuteTrigger:
+				{
+					auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ExecuteTrigger> const*>(pBase);
+					controlID = pRequestData->triggerId;
+					systemEvent = ESystemEvents::TriggerExecuted;
+
+					break;
+				}
+			case ESystemRequestType::PlayFile:
+				systemEvent = ESystemEvents::FilePlay;
 				break;
 			}
 
