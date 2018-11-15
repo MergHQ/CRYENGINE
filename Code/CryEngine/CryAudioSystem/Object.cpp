@@ -98,7 +98,7 @@ void CObject::SendFinishedTriggerInstanceRequest(STriggerInstanceState const& tr
 		flags = ERequestFlags::CallbackOnAudioThread;
 	}
 
-	CRequest const request(&requestData, this, flags, triggerInstanceState.pOwnerOverride, triggerInstanceState.pUserData, triggerInstanceState.pUserDataOwner);
+	CRequest const request(&requestData, flags, triggerInstanceState.pOwnerOverride, triggerInstanceState.pUserData, triggerInstanceState.pUserDataOwner);
 	g_system.PushRequest(request);
 }
 
@@ -257,7 +257,7 @@ void CObject::ReportFinishedTriggerInstance(ObjectTriggerStates::iterator const&
 //////////////////////////////////////////////////////////////////////////
 void CObject::PushRequest(SRequestData const& requestData, SRequestUserData const& userData)
 {
-	CRequest const request(&requestData, userData, this);
+	CRequest const request(&requestData, userData);
 	g_system.PushRequest(request);
 }
 
@@ -1084,7 +1084,7 @@ void CObject::StoreEnvironmentValue(ControlId const id, float const value)
 //////////////////////////////////////////////////////////////////////////
 void CObject::ExecuteTrigger(ControlId const triggerId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SObjectRequestData<EObjectRequestType::ExecuteTrigger> requestData(triggerId);
+	SObjectRequestData<EObjectRequestType::ExecuteTrigger> requestData(this, triggerId);
 	PushRequest(requestData, userData);
 }
 
@@ -1093,12 +1093,12 @@ void CObject::StopTrigger(ControlId const triggerId /* = CryAudio::InvalidContro
 {
 	if (triggerId != InvalidControlId)
 	{
-		SObjectRequestData<EObjectRequestType::StopTrigger> requestData(triggerId);
+		SObjectRequestData<EObjectRequestType::StopTrigger> requestData(this, triggerId);
 		PushRequest(requestData, userData);
 	}
 	else
 	{
-		SObjectRequestData<EObjectRequestType::StopAllTriggers> requestData;
+		SObjectRequestData<EObjectRequestType::StopAllTriggers> requestData(this);
 		PushRequest(requestData, userData);
 	}
 }
@@ -1106,35 +1106,35 @@ void CObject::StopTrigger(ControlId const triggerId /* = CryAudio::InvalidContro
 //////////////////////////////////////////////////////////////////////////
 void CObject::SetTransformation(CTransformation const& transformation, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SObjectRequestData<EObjectRequestType::SetTransformation> requestData(transformation);
+	SObjectRequestData<EObjectRequestType::SetTransformation> requestData(this, transformation);
 	PushRequest(requestData, userData);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CObject::SetParameter(ControlId const parameterId, float const value, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SObjectRequestData<EObjectRequestType::SetParameter> requestData(parameterId, value);
+	SObjectRequestData<EObjectRequestType::SetParameter> requestData(this, parameterId, value);
 	PushRequest(requestData, userData);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CObject::SetSwitchState(ControlId const switchId, SwitchStateId const switchStateId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SObjectRequestData<EObjectRequestType::SetSwitchState> requestData(switchId, switchStateId);
+	SObjectRequestData<EObjectRequestType::SetSwitchState> requestData(this, switchId, switchStateId);
 	PushRequest(requestData, userData);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CObject::SetEnvironment(EnvironmentId const environmentId, float const amount, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SObjectRequestData<EObjectRequestType::SetEnvironment> requestData(environmentId, amount);
+	SObjectRequestData<EObjectRequestType::SetEnvironment> requestData(this, environmentId, amount);
 	PushRequest(requestData, userData);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CObject::SetCurrentEnvironments(EntityId const entityToIgnore, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SObjectRequestData<EObjectRequestType::SetCurrentEnvironments> requestData(entityToIgnore);
+	SObjectRequestData<EObjectRequestType::SetCurrentEnvironments> requestData(this, entityToIgnore);
 	PushRequest(requestData, userData);
 }
 
@@ -1143,7 +1143,7 @@ void CObject::SetOcclusionType(EOcclusionType const occlusionType, SRequestUserD
 {
 	if (occlusionType < EOcclusionType::Count)
 	{
-		SObjectRequestData<EObjectRequestType::SetOcclusionType> requestData(occlusionType);
+		SObjectRequestData<EObjectRequestType::SetOcclusionType> requestData(this, occlusionType);
 		PushRequest(requestData, userData);
 	}
 }
@@ -1151,14 +1151,14 @@ void CObject::SetOcclusionType(EOcclusionType const occlusionType, SRequestUserD
 //////////////////////////////////////////////////////////////////////////
 void CObject::SetOcclusionRayOffset(float const offset, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
-	SObjectRequestData<EObjectRequestType::SetOcclusionRayOffset> requestData(offset);
+	SObjectRequestData<EObjectRequestType::SetOcclusionRayOffset> requestData(this, offset);
 	PushRequest(requestData, userData);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CObject::LoadTrigger(ControlId const triggerId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SObjectRequestData<EObjectRequestType::LoadTrigger> const requestData(triggerId);
+	SObjectRequestData<EObjectRequestType::LoadTrigger> const requestData(this, triggerId);
 	CRequest const request(&requestData, userData);
 	PushRequest(requestData, userData);
 }
@@ -1166,7 +1166,7 @@ void CObject::LoadTrigger(ControlId const triggerId, SRequestUserData const& use
 //////////////////////////////////////////////////////////////////////////
 void CObject::UnloadTrigger(ControlId const triggerId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SObjectRequestData<EObjectRequestType::UnloadTrigger> const requestData(triggerId);
+	SObjectRequestData<EObjectRequestType::UnloadTrigger> const requestData(this, triggerId);
 	CRequest const request(&requestData, userData);
 	PushRequest(requestData, userData);
 }
@@ -1174,35 +1174,35 @@ void CObject::UnloadTrigger(ControlId const triggerId, SRequestUserData const& u
 //////////////////////////////////////////////////////////////////////////
 void CObject::PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SObjectRequestData<EObjectRequestType::PlayFile> requestData(playFileInfo.szFile, playFileInfo.usedTriggerForPlayback, playFileInfo.bLocalized);
+	SObjectRequestData<EObjectRequestType::PlayFile> requestData(this, playFileInfo.szFile, playFileInfo.usedTriggerForPlayback, playFileInfo.bLocalized);
 	PushRequest(requestData, userData);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CObject::StopFile(char const* const szFile, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SObjectRequestData<EObjectRequestType::StopFile> requestData(szFile);
+	SObjectRequestData<EObjectRequestType::StopFile> requestData(this, szFile);
 	PushRequest(requestData, userData);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CObject::SetName(char const* const szName, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SObjectRequestData<EObjectRequestType::SetName> requestData(szName);
+	SObjectRequestData<EObjectRequestType::SetName> requestData(this, szName);
 	PushRequest(requestData, userData);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CObject::ToggleAbsoluteVelocityTracking(bool const enable, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SObjectRequestData<EObjectRequestType::ToggleAbsoluteVelocityTracking> requestData(enable);
+	SObjectRequestData<EObjectRequestType::ToggleAbsoluteVelocityTracking> requestData(this, enable);
 	PushRequest(requestData, userData);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CObject::ToggleRelativeVelocityTracking(bool const enable, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SObjectRequestData<EObjectRequestType::ToggleRelativeVelocityTracking> requestData(enable);
+	SObjectRequestData<EObjectRequestType::ToggleRelativeVelocityTracking> requestData(this, enable);
 	PushRequest(requestData, userData);
 }
 

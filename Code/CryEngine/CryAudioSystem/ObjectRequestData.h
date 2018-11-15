@@ -8,6 +8,7 @@
 
 namespace CryAudio
 {
+class CObject;
 class CRayInfo;
 
 enum class EObjectRequestType : EnumFlagsType
@@ -36,26 +37,28 @@ enum class EObjectRequestType : EnumFlagsType
 //////////////////////////////////////////////////////////////////////////
 struct SObjectRequestDataBase : public SRequestData
 {
-	explicit SObjectRequestDataBase(EObjectRequestType const objectRequestType_)
+	explicit SObjectRequestDataBase(EObjectRequestType const objectRequestType_, CObject* const pObject_)
 		: SRequestData(ERequestType::ObjectRequest)
 		, objectRequestType(objectRequestType_)
+		, pObject(pObject_)
 	{}
 
 	virtual ~SObjectRequestDataBase() override = default;
 
 	EObjectRequestType const objectRequestType;
+	CObject* const           pObject;
 };
 
 //////////////////////////////////////////////////////////////////////////
 template<EObjectRequestType T>
 struct SObjectRequestData final : public SObjectRequestDataBase
 {
-	SObjectRequestData()
-		: SObjectRequestDataBase(T)
+	SObjectRequestData(CObject* const pObject_)
+		: SObjectRequestDataBase(T, pObject_)
 	{}
 
-	explicit SObjectRequestData(SObjectRequestData<T> const* const pAORData)
-		: SObjectRequestDataBase(T)
+	explicit SObjectRequestData(SObjectRequestData<T> const* const pORData)
+		: SObjectRequestDataBase(T, pORData->pObject)
 	{}
 
 	virtual ~SObjectRequestData() override = default;
@@ -65,14 +68,14 @@ struct SObjectRequestData final : public SObjectRequestDataBase
 template<>
 struct SObjectRequestData<EObjectRequestType::LoadTrigger> final : public SObjectRequestDataBase
 {
-	explicit SObjectRequestData(ControlId const triggerId_)
-		: SObjectRequestDataBase(EObjectRequestType::LoadTrigger)
+	explicit SObjectRequestData(CObject* const pObject_, ControlId const triggerId_)
+		: SObjectRequestDataBase(EObjectRequestType::LoadTrigger, pObject_)
 		, triggerId(triggerId_)
 	{}
 
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::LoadTrigger> const* const pAORData)
-		: SObjectRequestDataBase(EObjectRequestType::LoadTrigger)
-		, triggerId(pAORData->triggerId)
+	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::LoadTrigger> const* const pORData)
+		: SObjectRequestDataBase(EObjectRequestType::LoadTrigger, pORData->pObject)
+		, triggerId(pORData->triggerId)
 	{}
 
 	virtual ~SObjectRequestData() override = default;
@@ -84,14 +87,14 @@ struct SObjectRequestData<EObjectRequestType::LoadTrigger> final : public SObjec
 template<>
 struct SObjectRequestData<EObjectRequestType::UnloadTrigger> final : public SObjectRequestDataBase
 {
-	explicit SObjectRequestData(ControlId const triggerId_)
-		: SObjectRequestDataBase(EObjectRequestType::UnloadTrigger)
+	explicit SObjectRequestData(CObject* const pObject_, ControlId const triggerId_)
+		: SObjectRequestDataBase(EObjectRequestType::UnloadTrigger, pObject_)
 		, triggerId(triggerId_)
 	{}
 
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::UnloadTrigger> const* const pAORData)
-		: SObjectRequestDataBase(EObjectRequestType::UnloadTrigger)
-		, triggerId(pAORData->triggerId)
+	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::UnloadTrigger> const* const pORData)
+		: SObjectRequestDataBase(EObjectRequestType::UnloadTrigger, pORData->pObject)
+		, triggerId(pORData->triggerId)
 	{}
 
 	virtual ~SObjectRequestData() override = default;
@@ -104,20 +107,21 @@ template<>
 struct SObjectRequestData<EObjectRequestType::PlayFile> final : public SObjectRequestDataBase
 {
 	explicit SObjectRequestData(
+		CObject* const pObject_,
 		CryFixedStringT<MaxFilePathLength> const& file_,
 		ControlId const usedTriggerId_,
 		bool const bLocalized_)
-		: SObjectRequestDataBase(EObjectRequestType::PlayFile)
+		: SObjectRequestDataBase(EObjectRequestType::PlayFile, pObject_)
 		, file(file_)
 		, usedTriggerId(usedTriggerId_)
 		, bLocalized(bLocalized_)
 	{}
 
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::PlayFile> const* const pAORData)
-		: SObjectRequestDataBase(EObjectRequestType::PlayFile)
-		, file(pAORData->file)
-		, usedTriggerId(pAORData->usedTriggerId)
-		, bLocalized(pAORData->bLocalized)
+	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::PlayFile> const* const pORData)
+		: SObjectRequestDataBase(EObjectRequestType::PlayFile, pORData->pObject)
+		, file(pORData->file)
+		, usedTriggerId(pORData->usedTriggerId)
+		, bLocalized(pORData->bLocalized)
 	{}
 
 	virtual ~SObjectRequestData() override = default;
@@ -131,14 +135,14 @@ struct SObjectRequestData<EObjectRequestType::PlayFile> final : public SObjectRe
 template<>
 struct SObjectRequestData<EObjectRequestType::StopFile> final : public SObjectRequestDataBase
 {
-	explicit SObjectRequestData(CryFixedStringT<MaxFilePathLength> const& file_)
-		: SObjectRequestDataBase(EObjectRequestType::StopFile)
+	explicit SObjectRequestData(CObject* const pObject_, CryFixedStringT<MaxFilePathLength> const& file_)
+		: SObjectRequestDataBase(EObjectRequestType::StopFile, pObject_)
 		, file(file_)
 	{}
 
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::StopFile> const* const pAORData)
-		: SObjectRequestDataBase(EObjectRequestType::StopFile)
-		, file(pAORData->file)
+	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::StopFile> const* const pORData)
+		: SObjectRequestDataBase(EObjectRequestType::StopFile, pORData->pObject)
+		, file(pORData->file)
 	{}
 
 	virtual ~SObjectRequestData() override = default;
@@ -150,14 +154,14 @@ struct SObjectRequestData<EObjectRequestType::StopFile> final : public SObjectRe
 template<>
 struct SObjectRequestData<EObjectRequestType::ExecuteTrigger> final : public SObjectRequestDataBase, public CPoolObject<SObjectRequestData<EObjectRequestType::ExecuteTrigger>, stl::PSyncMultiThread>
 {
-	explicit SObjectRequestData(ControlId const triggerId_)
-		: SObjectRequestDataBase(EObjectRequestType::ExecuteTrigger)
+	explicit SObjectRequestData(CObject* const pObject_, ControlId const triggerId_)
+		: SObjectRequestDataBase(EObjectRequestType::ExecuteTrigger, pObject_)
 		, triggerId(triggerId_)
 	{}
 
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::ExecuteTrigger> const* const pAORData)
-		: SObjectRequestDataBase(EObjectRequestType::ExecuteTrigger)
-		, triggerId(pAORData->triggerId)
+	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::ExecuteTrigger> const* const pORData)
+		: SObjectRequestDataBase(EObjectRequestType::ExecuteTrigger, pORData->pObject)
+		, triggerId(pORData->triggerId)
 	{}
 
 	virtual ~SObjectRequestData() override = default;
@@ -169,14 +173,14 @@ struct SObjectRequestData<EObjectRequestType::ExecuteTrigger> final : public SOb
 template<>
 struct SObjectRequestData<EObjectRequestType::StopTrigger> final : public SObjectRequestDataBase, public CPoolObject<SObjectRequestData<EObjectRequestType::StopTrigger>, stl::PSyncMultiThread>
 {
-	explicit SObjectRequestData(ControlId const triggerId_)
-		: SObjectRequestDataBase(EObjectRequestType::StopTrigger)
+	explicit SObjectRequestData(CObject* const pObject_, ControlId const triggerId_)
+		: SObjectRequestDataBase(EObjectRequestType::StopTrigger, pObject_)
 		, triggerId(triggerId_)
 	{}
 
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::StopTrigger> const* const pAORData)
-		: SObjectRequestDataBase(EObjectRequestType::StopTrigger)
-		, triggerId(pAORData->triggerId)
+	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::StopTrigger> const* const pORData)
+		: SObjectRequestDataBase(EObjectRequestType::StopTrigger, pORData->pObject)
+		, triggerId(pORData->triggerId)
 	{}
 
 	virtual ~SObjectRequestData() override = default;
@@ -188,14 +192,14 @@ struct SObjectRequestData<EObjectRequestType::StopTrigger> final : public SObjec
 template<>
 struct SObjectRequestData<EObjectRequestType::SetTransformation> final : public SObjectRequestDataBase, public CPoolObject<SObjectRequestData<EObjectRequestType::SetTransformation>, stl::PSyncMultiThread>
 {
-	explicit SObjectRequestData(CTransformation const& transformation_)
-		: SObjectRequestDataBase(EObjectRequestType::SetTransformation)
+	explicit SObjectRequestData(CObject* const pObject_, CTransformation const& transformation_)
+		: SObjectRequestDataBase(EObjectRequestType::SetTransformation, pObject_)
 		, transformation(transformation_)
 	{}
 
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::SetTransformation> const* const pAORData)
-		: SObjectRequestDataBase(EObjectRequestType::SetTransformation)
-		, transformation(pAORData->transformation)
+	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::SetTransformation> const* const pORData)
+		: SObjectRequestDataBase(EObjectRequestType::SetTransformation, pORData->pObject)
+		, transformation(pORData->transformation)
 	{}
 
 	virtual ~SObjectRequestData() override = default;
@@ -207,14 +211,14 @@ struct SObjectRequestData<EObjectRequestType::SetTransformation> final : public 
 template<>
 struct SObjectRequestData<EObjectRequestType::SetOcclusionType> final : public SObjectRequestDataBase
 {
-	explicit SObjectRequestData(EOcclusionType const occlusionType_)
-		: SObjectRequestDataBase(EObjectRequestType::SetOcclusionType)
+	explicit SObjectRequestData(CObject* const pObject_, EOcclusionType const occlusionType_)
+		: SObjectRequestDataBase(EObjectRequestType::SetOcclusionType, pObject_)
 		, occlusionType(occlusionType_)
 	{}
 
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::SetOcclusionType> const* const pAORData)
-		: SObjectRequestDataBase(EObjectRequestType::SetOcclusionType)
-		, occlusionType(pAORData->occlusionType)
+	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::SetOcclusionType> const* const pORData)
+		: SObjectRequestDataBase(EObjectRequestType::SetOcclusionType, pORData->pObject)
+		, occlusionType(pORData->occlusionType)
 	{}
 
 	virtual ~SObjectRequestData() override = default;
@@ -226,14 +230,14 @@ struct SObjectRequestData<EObjectRequestType::SetOcclusionType> final : public S
 template<>
 struct SObjectRequestData<EObjectRequestType::SetOcclusionRayOffset> final : public SObjectRequestDataBase
 {
-	explicit SObjectRequestData(float const occlusionRayOffset_)
-		: SObjectRequestDataBase(EObjectRequestType::SetOcclusionRayOffset)
+	explicit SObjectRequestData(CObject* const pObject_, float const occlusionRayOffset_)
+		: SObjectRequestDataBase(EObjectRequestType::SetOcclusionRayOffset, pObject_)
 		, occlusionRayOffset(occlusionRayOffset_)
 	{}
 
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::SetOcclusionRayOffset> const* const pAORData)
-		: SObjectRequestDataBase(EObjectRequestType::SetOcclusionRayOffset)
-		, occlusionRayOffset(pAORData->occlusionRayOffset)
+	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::SetOcclusionRayOffset> const* const pORData)
+		: SObjectRequestDataBase(EObjectRequestType::SetOcclusionRayOffset, pORData->pObject)
+		, occlusionRayOffset(pORData->occlusionRayOffset)
 	{}
 
 	virtual ~SObjectRequestData() override = default;
@@ -245,16 +249,16 @@ struct SObjectRequestData<EObjectRequestType::SetOcclusionRayOffset> final : pub
 template<>
 struct SObjectRequestData<EObjectRequestType::SetParameter> final : public SObjectRequestDataBase, public CPoolObject<SObjectRequestData<EObjectRequestType::SetParameter>, stl::PSyncMultiThread>
 {
-	explicit SObjectRequestData(ControlId const parameterId_, float const value_)
-		: SObjectRequestDataBase(EObjectRequestType::SetParameter)
+	explicit SObjectRequestData(CObject* const pObject_, ControlId const parameterId_, float const value_)
+		: SObjectRequestDataBase(EObjectRequestType::SetParameter, pObject_)
 		, parameterId(parameterId_)
 		, value(value_)
 	{}
 
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::SetParameter> const* const pAORData)
-		: SObjectRequestDataBase(EObjectRequestType::SetParameter)
-		, parameterId(pAORData->parameterId)
-		, value(pAORData->value)
+	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::SetParameter> const* const pORData)
+		: SObjectRequestDataBase(EObjectRequestType::SetParameter, pORData->pObject)
+		, parameterId(pORData->parameterId)
+		, value(pORData->value)
 	{}
 
 	virtual ~SObjectRequestData() override = default;
@@ -267,16 +271,16 @@ struct SObjectRequestData<EObjectRequestType::SetParameter> final : public SObje
 template<>
 struct SObjectRequestData<EObjectRequestType::SetSwitchState> final : public SObjectRequestDataBase, public CPoolObject<SObjectRequestData<EObjectRequestType::SetSwitchState>, stl::PSyncMultiThread>
 {
-	explicit SObjectRequestData(ControlId const switchId_, SwitchStateId const switchStateId_)
-		: SObjectRequestDataBase(EObjectRequestType::SetSwitchState)
+	explicit SObjectRequestData(CObject* const pObject_, ControlId const switchId_, SwitchStateId const switchStateId_)
+		: SObjectRequestDataBase(EObjectRequestType::SetSwitchState, pObject_)
 		, switchId(switchId_)
 		, switchStateId(switchStateId_)
 	{}
 
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::SetSwitchState> const* const pAORData)
-		: SObjectRequestDataBase(EObjectRequestType::SetSwitchState)
-		, switchId(pAORData->switchId)
-		, switchStateId(pAORData->switchStateId)
+	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::SetSwitchState> const* const pORData)
+		: SObjectRequestDataBase(EObjectRequestType::SetSwitchState, pORData->pObject)
+		, switchId(pORData->switchId)
+		, switchStateId(pORData->switchStateId)
 	{}
 
 	virtual ~SObjectRequestData() override = default;
@@ -289,14 +293,14 @@ struct SObjectRequestData<EObjectRequestType::SetSwitchState> final : public SOb
 template<>
 struct SObjectRequestData<EObjectRequestType::SetCurrentEnvironments> final : public SObjectRequestDataBase, public CPoolObject<SObjectRequestData<EObjectRequestType::SetCurrentEnvironments>, stl::PSyncMultiThread>
 {
-	explicit SObjectRequestData(EntityId const entityToIgnore_)
-		: SObjectRequestDataBase(EObjectRequestType::SetCurrentEnvironments)
+	explicit SObjectRequestData(CObject* const pObject_, EntityId const entityToIgnore_)
+		: SObjectRequestDataBase(EObjectRequestType::SetCurrentEnvironments, pObject_)
 		, entityToIgnore(entityToIgnore_)
 	{}
 
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::SetCurrentEnvironments> const* const pAORData)
-		: SObjectRequestDataBase(EObjectRequestType::SetCurrentEnvironments)
-		, entityToIgnore(pAORData->entityToIgnore)
+	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::SetCurrentEnvironments> const* const pORData)
+		: SObjectRequestDataBase(EObjectRequestType::SetCurrentEnvironments, pORData->pObject)
+		, entityToIgnore(pORData->entityToIgnore)
 	{}
 
 	virtual ~SObjectRequestData() override = default;
@@ -308,16 +312,16 @@ struct SObjectRequestData<EObjectRequestType::SetCurrentEnvironments> final : pu
 template<>
 struct SObjectRequestData<EObjectRequestType::SetEnvironment> final : public SObjectRequestDataBase, public CPoolObject<SObjectRequestData<EObjectRequestType::SetEnvironment>, stl::PSyncMultiThread>
 {
-	explicit SObjectRequestData(EnvironmentId const environmentId_, float const amount_)
-		: SObjectRequestDataBase(EObjectRequestType::SetEnvironment)
+	explicit SObjectRequestData(CObject* const pObject_, EnvironmentId const environmentId_, float const amount_)
+		: SObjectRequestDataBase(EObjectRequestType::SetEnvironment, pObject_)
 		, environmentId(environmentId_)
 		, amount(amount_)
 	{}
 
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::SetEnvironment> const* const pAORData)
-		: SObjectRequestDataBase(EObjectRequestType::SetEnvironment)
-		, environmentId(pAORData->environmentId)
-		, amount(pAORData->amount)
+	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::SetEnvironment> const* const pORData)
+		: SObjectRequestDataBase(EObjectRequestType::SetEnvironment, pORData->pObject)
+		, environmentId(pORData->environmentId)
+		, amount(pORData->amount)
 	{}
 
 	virtual ~SObjectRequestData() override = default;
@@ -330,14 +334,14 @@ struct SObjectRequestData<EObjectRequestType::SetEnvironment> final : public SOb
 template<>
 struct SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> final : public SObjectRequestDataBase, public CPoolObject<SObjectRequestData<EObjectRequestType::ProcessPhysicsRay>, stl::PSyncMultiThread>
 {
-	explicit SObjectRequestData(CRayInfo* const pRayInfo_)
-		: SObjectRequestDataBase(EObjectRequestType::ProcessPhysicsRay)
+	explicit SObjectRequestData(CObject* const pObject_, CRayInfo* const pRayInfo_)
+		: SObjectRequestDataBase(EObjectRequestType::ProcessPhysicsRay, pObject_)
 		, pRayInfo(pRayInfo_)
 	{}
 
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> const* const pAORData)
-		: SObjectRequestDataBase(EObjectRequestType::ProcessPhysicsRay)
-		, pRayInfo(pAORData->pRayInfo)
+	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> const* const pORData)
+		: SObjectRequestDataBase(EObjectRequestType::ProcessPhysicsRay, pORData->pObject)
+		, pRayInfo(pORData->pRayInfo)
 	{}
 
 	virtual ~SObjectRequestData() override = default;
@@ -349,14 +353,14 @@ struct SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> final : public 
 template<>
 struct SObjectRequestData<EObjectRequestType::SetName> final : public SObjectRequestDataBase
 {
-	explicit SObjectRequestData(char const* const szName)
-		: SObjectRequestDataBase(EObjectRequestType::SetName)
+	explicit SObjectRequestData(CObject* const pObject_, char const* const szName)
+		: SObjectRequestDataBase(EObjectRequestType::SetName, pObject_)
 		, name(szName)
 	{}
 
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::SetName> const* const pAORData)
-		: SObjectRequestDataBase(EObjectRequestType::SetName)
-		, name(pAORData->name)
+	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::SetName> const* const pORData)
+		: SObjectRequestDataBase(EObjectRequestType::SetName, pORData->pObject)
+		, name(pORData->name)
 	{}
 
 	virtual ~SObjectRequestData() override = default;
@@ -368,14 +372,14 @@ struct SObjectRequestData<EObjectRequestType::SetName> final : public SObjectReq
 template<>
 struct SObjectRequestData<EObjectRequestType::ToggleAbsoluteVelocityTracking> final : public SObjectRequestDataBase
 {
-	explicit SObjectRequestData(bool const isEnabled_)
-		: SObjectRequestDataBase(EObjectRequestType::ToggleAbsoluteVelocityTracking)
+	explicit SObjectRequestData(CObject* const pObject_, bool const isEnabled_)
+		: SObjectRequestDataBase(EObjectRequestType::ToggleAbsoluteVelocityTracking, pObject_)
 		, isEnabled(isEnabled_)
 	{}
 
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::ToggleAbsoluteVelocityTracking> const* const pAORData)
-		: SObjectRequestDataBase(EObjectRequestType::ToggleAbsoluteVelocityTracking)
-		, isEnabled(pAORData->isEnabled)
+	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::ToggleAbsoluteVelocityTracking> const* const pORData)
+		: SObjectRequestDataBase(EObjectRequestType::ToggleAbsoluteVelocityTracking, pORData->pObject)
+		, isEnabled(pORData->isEnabled)
 	{}
 
 	virtual ~SObjectRequestData() override = default;
@@ -387,14 +391,14 @@ struct SObjectRequestData<EObjectRequestType::ToggleAbsoluteVelocityTracking> fi
 template<>
 struct SObjectRequestData<EObjectRequestType::ToggleRelativeVelocityTracking> final : public SObjectRequestDataBase
 {
-	explicit SObjectRequestData(bool const isEnabled_)
-		: SObjectRequestDataBase(EObjectRequestType::ToggleRelativeVelocityTracking)
+	explicit SObjectRequestData(CObject* const pObject_, bool const isEnabled_)
+		: SObjectRequestDataBase(EObjectRequestType::ToggleRelativeVelocityTracking, pObject_)
 		, isEnabled(isEnabled_)
 	{}
 
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::ToggleRelativeVelocityTracking> const* const pAORData)
-		: SObjectRequestDataBase(EObjectRequestType::ToggleRelativeVelocityTracking)
-		, isEnabled(pAORData->isEnabled)
+	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::ToggleRelativeVelocityTracking> const* const pORData)
+		: SObjectRequestDataBase(EObjectRequestType::ToggleRelativeVelocityTracking, pORData->pObject)
+		, isEnabled(pORData->isEnabled)
 	{}
 
 	virtual ~SObjectRequestData() override = default;

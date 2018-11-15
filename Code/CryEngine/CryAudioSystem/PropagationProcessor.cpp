@@ -89,17 +89,17 @@ size_t CPropagationProcessor::s_totalAsyncPhysRays = 0;
 ///////////////////////////////////////////////////////////////////////////
 int CPropagationProcessor::OnObstructionTest(EventPhys const* pEvent)
 {
-	EventPhysRWIResult const* const pRWIResult = static_cast<EventPhysRWIResult const* const>(pEvent);
+	auto const pRWIResult = static_cast<EventPhysRWIResult const*>(pEvent);
 
 	if (pRWIResult->iForeignData == PHYS_FOREIGN_ID_SOUND_OBSTRUCTION)
 	{
-		CRayInfo* const pRayInfo = static_cast<CRayInfo* const>(pRWIResult->pForeignData);
+		auto const pRayInfo = static_cast<CRayInfo*>(pRWIResult->pForeignData);
 
 		if (pRayInfo != nullptr)
 		{
 			pRayInfo->numHits = std::min(static_cast<size_t>(pRWIResult->nHits) + 1, s_maxRayHits);
-			SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> requestData(pRayInfo);
-			CRequest const request(&requestData, pRayInfo->pObject);
+			SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> requestData(pRayInfo->pObject, pRayInfo);
+			CRequest const request(&requestData);
 			g_system.PushRequest(request);
 		}
 		else
