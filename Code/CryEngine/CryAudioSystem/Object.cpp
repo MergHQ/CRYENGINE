@@ -1156,6 +1156,22 @@ void CObject::SetOcclusionRayOffset(float const offset, SRequestUserData const& 
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CObject::LoadTrigger(ControlId const triggerId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
+{
+	SObjectRequestData<EObjectRequestType::LoadTrigger> const requestData(triggerId);
+	CRequest const request(&requestData, userData);
+	PushRequest(requestData, userData);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CObject::UnloadTrigger(ControlId const triggerId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
+{
+	SObjectRequestData<EObjectRequestType::UnloadTrigger> const requestData(triggerId);
+	CRequest const request(&requestData, userData);
+	PushRequest(requestData, userData);
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CObject::PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SObjectRequestData<EObjectRequestType::PlayFile> requestData(playFileInfo.szFile, playFileInfo.usedTriggerForPlayback, playFileInfo.bLocalized);
