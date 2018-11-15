@@ -1603,7 +1603,7 @@ void COPTrace::TriggerExactPositioning(CPipeUser* pPipeUser, bool* pbForceRegene
 
 			// Handle the exact positioning request
 			const PathPointDescriptor::OffMeshLinkData* pSmartObjectMNMData = pPipeUser->m_Path.GetLastPathPointMNNSOData();
-			const bool smartObject = (pSmartObjectMNMData && pSmartObjectMNMData->offMeshLinkID != MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID);
+			const bool smartObject = (pSmartObjectMNMData && pSmartObjectMNMData->offMeshLinkID.IsValid());
 
 			if (smartObject)
 			{

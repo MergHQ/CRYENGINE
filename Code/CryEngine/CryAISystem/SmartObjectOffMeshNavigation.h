@@ -53,7 +53,7 @@ private:
 		{
 			if (callbackData.operationSucceeded)
 			{
-				assert(callbackData.linkID != MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID);
+				assert(callbackData.linkID.IsValid());
 				offMeshLinkIDList.push_back(callbackData.linkID);
 			}
 		}

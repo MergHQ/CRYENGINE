@@ -1967,7 +1967,7 @@ void NavigationSystem::RemoveAllTrianglesByFlags(const MNM::AreaAnnotation::valu
 					MNM::SMarkupVolumeData::MeshTriangles& meshTriangles = *meshTrianglesIt;
 					if (meshTriangles.meshId == meshId)
 					{
-						const auto toRemoveIt = std::remove(meshTriangles.triangleIds.begin(), meshTriangles.triangleIds.end(), MNM::Constants::InvalidTriangleID);
+						const auto toRemoveIt = std::remove(meshTriangles.triangleIds.begin(), meshTriangles.triangleIds.end(), MNM::TriangleID());
 						meshTriangles.triangleIds.erase(toRemoveIt, meshTriangles.triangleIds.end());
 
 						if (meshTriangles.triangleIds.empty())
@@ -2219,7 +2219,7 @@ MNM::TriangleID NavigationSystem::GetClosestMeshLocation(const NavigationMeshID 
 			const MNM::aabb_t localAabb(MNM::vector3_t(-realHrange, -realHrange, -verticalRange), MNM::vector3_t(realHrange, realHrange, verticalRange));
 			const MNM::SClosestTriangle closestTriangle = navMesh.QueryClosestTriangle(mnmLocation, localAabb, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, MNM::real_t::max(), pFilter);
 
-			if (closestTriangle.id != MNM::Constants::InvalidTriangleID)
+			if (closestTriangle.id.IsValid())
 			{
 				if (meshLocation)
 					*meshLocation = navMesh.ToWorldSpace(closestTriangle.position).GetVec3();
@@ -2232,7 +2232,7 @@ MNM::TriangleID NavigationSystem::GetClosestMeshLocation(const NavigationMeshID 
 		}
 	}
 
-	return MNM::Constants::InvalidTriangleID;
+	return MNM::TriangleID();
 }
 
 bool NavigationSystem::AgentTypeSupportSmartObjectUserClass(const NavigationAgentTypeID agentTypeID, const char* smartObjectUserClass) const
@@ -2819,7 +2819,7 @@ bool NavigationSystem::GetClosestPointInNavigationMesh(const NavigationAgentType
 
 		//first check vertical range, because if we are over navmesh, we want that one
 		const MNM::TriangleID enclosingTriID = navMesh.QueryTriangleAt(mnmLocation, verticalRange, verticalRange, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, pFilter);
-		if (enclosingTriID != MNM::Constants::InvalidTriangleID)
+		if (enclosingTriID.IsValid())
 		{
 			MNM::vector3_t v0, v1, v2;
 			navMesh.GetVertices(enclosingTriID, v0, v1, v2);
@@ -2838,7 +2838,7 @@ bool NavigationSystem::GetClosestPointInNavigationMesh(const NavigationAgentType
 			const MNM::aabb_t localAabb(MNM::vector3_t(-realHrange, -realHrange, -verticalRange), MNM::vector3_t(realHrange, realHrange, verticalRange));
 			const MNM::SClosestTriangle closestTriangle = navMesh.QueryClosestTriangle(mnmLocation, localAabb, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, MNM::real_t::max(), pFilter);
 
-			if (closestTriangle.id != MNM::Constants::InvalidTriangleID)
+			if (closestTriangle.id.IsValid())
 			{
 				if (meshLocation)
 				{
@@ -3029,7 +3029,7 @@ MNM::TriangleID NavigationSystem::GetTriangleIDWhereLocationIsAtForMesh(const Na
 		return mesh.navMesh.QueryTriangleAt(mesh.navMesh.ToMeshSpace(location), verticalDownwardRange, verticalUpwardRange, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, pFilter);
 	}
 
-	return MNM::TriangleID(0);
+	return MNM::TriangleID();
 }
 
 bool NavigationSystem::SnapToNavMesh(
@@ -3144,7 +3144,7 @@ MNM::ERayCastResult NavigationSystem::NavMeshRayCast(const NavigationAgentTypeID
 		pOutHit->distance = t;
 		pOutHit->position = startPos + (toPos - startPos) * t;
 
-		if (request.hit.triangleID != MNM::Constants::InvalidTriangleID && request.hit.edge != MNM::Constants::InvalidEdgeIndex)
+		if (request.hit.triangleID.IsValid() && request.hit.edge != MNM::Constants::InvalidEdgeIndex)
 		{
 			MNM::vector3_t verts[3];
 			mesh.navMesh.GetVertices(request.hit.triangleID, verts);
@@ -3181,7 +3181,7 @@ MNM::ERayCastResult NavigationSystem::NavMeshRayCast(const NavigationMeshID mesh
 		pOutHit->distance = t;
 		pOutHit->position = startPos + (endPos - startPos) * t;
 
-		if (request.hit.triangleID != MNM::Constants::InvalidTriangleID && request.hit.edge != MNM::Constants::InvalidEdgeIndex)
+		if (request.hit.triangleID.IsValid() && request.hit.edge != MNM::Constants::InvalidEdgeIndex)
 		{
 			MNM::vector3_t verts[3];
 			mesh.navMesh.GetVertices(request.hit.triangleID, verts);
@@ -4483,7 +4483,7 @@ void NavigationSystemDebugDraw::DebugDraw(NavigationSystem& navigationSystem)
 
 		lastFrameID = frameID;
 
-		MNM::TileID excludeTileID(0);
+		MNM::TileID excludeTileID = MNM::TileID();
 		DebugDrawSettings settings = GetDebugDrawSettings(navigationSystem);
 
 		if (settings.Valid())
@@ -4522,7 +4522,7 @@ void NavigationSystemDebugDraw::UpdateWorkingProgress(const float frameTime, con
 
 MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem& navigationSystem, const DebugDrawSettings& settings)
 {
-	MNM::TileID debugTileID(0);
+	MNM::TileID debugTileID = MNM::TileID();
 
 	#if DEBUG_MNM_ENABLED && NAV_MESH_REGENERATION_ENABLED
 
@@ -4629,7 +4629,7 @@ MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem&
 
 	if (forceGeneration)
 	{
-		tileID = 0;
+		tileID = MNM::TileID();
 		debugGenerator = MNM::CTileGenerator();
 
 		MNM::STile tile;
@@ -4733,7 +4733,7 @@ MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem&
 		break;
 	}
 
-	dc->Draw2dLabel(10.0f, 5.0f, 1.6f, Col_White, false, "TileID %d - Drawing %s", tileID, drawModeName);
+	dc->Draw2dLabel(10.0f, 5.0f, 1.6f, Col_White, false, "MNM::TileID %d - Drawing %s", tileID, drawModeName);
 
 	const MNM::CTileGenerator::ProfilerType& profilerInfo = debugGenerator.GetProfiler();
 
@@ -4901,7 +4901,7 @@ void NavigationSystemDebugDraw::DebugDrawClosestPoint(NavigationSystem& navigati
 	const INavMeshQueryFilter* pDebugQueryFilter = GetDebugQueryFilter("MNMDebugQueryFilter");
 	const MNM::aabb_t localAabb(MNM::vector3_t(-range, -range, -range), MNM::vector3_t(range, range, range));
 	const MNM::SClosestTriangle closestTriangle = navMesh.QueryClosestTriangle(navMesh.ToMeshSpace(fixedPointStartLoc), localAabb, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, MNM::real_t::max(), pDebugQueryFilter);
-	if (closestTriangle.id != MNM::Constants::InvalidTriangleID)
+	if (closestTriangle.id.IsValid())
 	{
 		IRenderAuxGeom* renderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 		const Vec3 verticalOffset = Vec3(.0f, .0f, .1f);
@@ -5048,7 +5048,7 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 	fixedPointStartLoc = closestTriangleStart.position;
 	//fixedPointStartLoc += origin;
 
-	if (closestTriangleStart.id != MNM::Constants::InvalidTriangleID)
+	if (closestTriangleStart.id.IsValid())
 	{
 		MNM::vector3_t a, b, c;
 		navMesh.GetVertices(closestTriangleStart.id, a, b, c);
@@ -5061,7 +5061,7 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 	const MNM::SClosestTriangle closestTriangleEnd = navMesh.QueryClosestTriangle(MNM::vector3_t(endLoc) - origin, localAabb, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, MNM::real_t::max(), pDebugQueryFilter);
 	fixedPointEndLoc = closestTriangleEnd.position;
 
-	if (closestTriangleEnd.id != MNM::Constants::InvalidTriangleID)
+	if (closestTriangleEnd.id.IsValid())
 	{
 		MNM::vector3_t a, b, c;
 		navMesh.GetVertices(closestTriangleEnd.id, a, b, c);
@@ -5072,7 +5072,7 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 	CTimeValue timeTotal(0ll);
 	CTimeValue stringPullingTotalTime(0ll);
 	float totalPathLength = 0;
-	if (closestTriangleStart.id != MNM::Constants::InvalidTriangleID && closestTriangleEnd.id != MNM::Constants::InvalidTriangleID)
+	if (closestTriangleStart.id.IsValid() && closestTriangleEnd.id.IsValid())
 	{
 		const MNM::vector3_t startToEnd = (fixedPointStartLoc - fixedPointEndLoc);
 		const MNM::real_t startToEndDist = startToEnd.lenNoOverflow();

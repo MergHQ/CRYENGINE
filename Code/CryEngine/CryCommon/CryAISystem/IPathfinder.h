@@ -44,7 +44,7 @@ struct PathPointDescriptor
 		: vPos(_vPos)
 		, navType(_navType)
 		, navTypeCustomId(0)
-		, iTriId(0)
+		, iTriId()
 		, navSOMethod(nSOmNone)
 	{}
 
@@ -52,7 +52,7 @@ struct PathPointDescriptor
 		: vPos(_vPos)
 		, navType(IAISystem::NAV_UNSET)
 		, navTypeCustomId(0)
-		, iTriId(0)
+		, iTriId()
 		, navSOMethod(nSOmNone)
 	{}
 
@@ -73,7 +73,7 @@ struct PathPointDescriptor
 	IAISystem::ENavigationType navType;
 	uint16                     navTypeCustomId;
 
-	uint32                     iTriId;
+	MNM::TriangleID            iTriId;
 	OffMeshLinkData            offMeshLinkData;
 
 	ENavSOMethod               navSOMethod;

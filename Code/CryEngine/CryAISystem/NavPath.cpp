@@ -1097,12 +1097,12 @@ Vec3 GetSafePositionInMesh(const NavigationMesh& mesh, const Vec3& testPosition,
 
 	const MNM::TriangleID triangleId = mesh.navMesh.QueryTriangleAt(testLocationFixedPoint, vRange, vRange, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, pFilter);
 
-	if (triangleId != MNM::Constants::InvalidTriangleID)
+	if (triangleId.IsValid())
 	{
 		const MNM::aabb_t localAabb(MNM::vector3_t(-hRange, -hRange, -vRange), MNM::vector3_t(hRange, hRange, vRange));
 		const MNM::SClosestTriangle closestTriangle = mesh.navMesh.QueryClosestTriangle(testLocationFixedPoint, localAabb, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, MNM::real_t::max(), pFilter);
 
-		if (closestTriangle.id != MNM::Constants::InvalidTriangleID)
+		if (closestTriangle.id.IsValid())
 		{
 			safePosition = mesh.navMesh.ToWorldSpace(closestTriangle.position.GetVec3()).GetVec3();
 		}

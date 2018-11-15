@@ -24,7 +24,7 @@ typedef uint64 NavigationMeshGUID;
 typedef uint64 NavigationVolumeGUID;
 #endif
 
-typedef Functor3<NavigationAgentTypeID, NavigationMeshID, uint32> NavigationMeshChangeCallback;
+typedef Functor3<NavigationAgentTypeID, NavigationMeshID, MNM::TileID> NavigationMeshChangeCallback;
 typedef Functor2wRet<IPhysicalEntity&, uint32&, bool>             NavigationMeshEntityCallback;
 typedef uint32                                                    NavigationAgentTypesMask;
 

@@ -305,7 +305,7 @@ public:
 		m_params.origin += offset;
 	}
 
-	void Draw(size_t drawFlags, const ITriangleColorSelector& colorSelector, TileID excludeID = 0) const;
+	void Draw(size_t drawFlags, const ITriangleColorSelector& colorSelector, TileID excludeID = TileID()) const;
 
 	bool CalculateMidEdge(const TriangleID triangleID1, const TriangleID triangleID2, Vec3& result) const;
 
@@ -480,7 +480,7 @@ protected:
 
 	// replace with something more efficient will speed up path-finding, ray-casting and
 	// connectivity computation
-	typedef std::map<uint32, uint32> TileMap;
+	typedef std::map<uint32, TileID> TileMap;
 	TileMap             m_tileMap;
 
 	CIslands            m_islands;

@@ -17,9 +17,9 @@ namespace MNM
 
 		virtual size_t       Size() const override { return m_triangleIdArray.size(); }
 
-		virtual void         AddTriangle(const MNM::TriangleID triangleId) override { m_triangleIdArray.push_back(triangleId); }
+		virtual void         AddTriangle(const TriangleID triangleId) override { m_triangleIdArray.push_back(triangleId); }
 
-		virtual void         AddTriangleArray(const DynArray<MNM::TriangleID>& triangleIdArray) override { m_triangleIdArray.push_back(triangleIdArray); }
+		virtual void         AddTriangleArray(const DynArray<TriangleID>& triangleIdArray) override { m_triangleIdArray.push_back(triangleIdArray); }
 
 	protected:
 		CNavMeshQueryProcessingBase()
@@ -79,7 +79,7 @@ namespace MNM
 		CTriangleAtQueryProcessing(const NavigationMeshID meshId, const vector3_t& localPosition)
 			: CNavMeshQueryProcessing(meshId)
 			, m_location(localPosition)
-			, m_closestID(Constants::InvalidTriangleID)
+			, m_closestID()
 			, m_distMinSq(std::numeric_limits<real_t::unsigned_overflow_type>::max())
 		{
 			// Empty
@@ -104,7 +104,7 @@ namespace MNM
 			: CNavMeshQueryProcessing(meshId)
 			, m_localFromPosition(localFromPosition)
 			, m_distMinSq(maxDistance.sqr())
-			, m_closestID(Constants::InvalidTriangleID)
+			, m_closestID()
 			, m_closestPos(real_t::max())
 		{}
 

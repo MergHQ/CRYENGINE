@@ -75,7 +75,7 @@ public:
 				return WayTriangleData(pFirstLink[currentLink - 1].endTriangleID, pFirstLink[currentLink - 1].linkID);
 			}
 
-			return WayTriangleData(0, 0);
+			return WayTriangleData();
 		}
 
 	private:

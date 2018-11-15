@@ -47,7 +47,7 @@ struct OffMeshOperationRequestBase
 	OffMeshOperationRequestBase()
 		: requestOwner((EntityId)0)
 		, meshId(0)
-		, linkId(MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID)
+		, linkId()
 		, callback(NULL)
 		, operationType(eOffMeshOperationType_Undefined)
 		, bCloneLinkData(false)

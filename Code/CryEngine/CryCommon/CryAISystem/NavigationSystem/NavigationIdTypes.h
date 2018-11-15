@@ -10,6 +10,9 @@ enum ENavigationIDTag
 	AgentTypeIDTag,
 	VolumeIDTag,
 	TileGeneratorExtensionIDTag,
+	TileIDTag,
+	TileTriangleIDTag,
+	OffMeshLinkIDTag,
 	AreaTypeIDTag,
 	AreaFlagIDTag,
 };
@@ -25,18 +28,20 @@ struct TNavigationID
 	ILINE bool     operator!=(const TNavigationID& other) const { return id != other.id; }
 	ILINE bool     operator<(const TNavigationID& other) const  { return id < other.id; }
 	ILINE bool     IsValid() const { return id != valueInvalid; }
+	ILINE uint32   GetValue() const { return id; }
+
 private:
 	uint32 id;
 };
 
 //TODO: Don't change 'valueInvalid' for other types than NavigationAreaTypeID and NavigationAreaFlagID,
 // before all locations are checked in the code where the value is validated using operator uint32()
-typedef TNavigationID<MeshIDTag>                   NavigationMeshID;
-typedef TNavigationID<AgentTypeIDTag>              NavigationAgentTypeID;
-typedef TNavigationID<VolumeIDTag>                 NavigationVolumeID;
-typedef TNavigationID<TileGeneratorExtensionIDTag> TileGeneratorExtensionID;
-typedef TNavigationID<AreaTypeIDTag, std::numeric_limits<UINT>::max()>     NavigationAreaTypeID;
-typedef TNavigationID<AreaFlagIDTag, std::numeric_limits<UINT>::max()>     NavigationAreaFlagID;
+typedef TNavigationID<MeshIDTag>                                       NavigationMeshID;
+typedef TNavigationID<AgentTypeIDTag>                                  NavigationAgentTypeID;
+typedef TNavigationID<VolumeIDTag>                                     NavigationVolumeID;
+typedef TNavigationID<TileGeneratorExtensionIDTag>                     TileGeneratorExtensionID;
+typedef TNavigationID<AreaTypeIDTag, std::numeric_limits<UINT>::max()> NavigationAreaTypeID;
+typedef TNavigationID<AreaFlagIDTag, std::numeric_limits<UINT>::max()> NavigationAreaFlagID;
 
 namespace std
 {

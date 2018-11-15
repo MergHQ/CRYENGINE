@@ -151,8 +151,7 @@ private:
 				T& middlePoint = *(it + 1);
 				const T& endPoint = *(it + 2);
 				// Let's pull only the triplets that are fully not interacting with off-mesh links
-				if ((middlePoint.offMeshLinkData.offMeshLinkID == MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID) &&
-					(endPoint.offMeshLinkData.offMeshLinkID == MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID))
+				if (!middlePoint.offMeshLinkData.offMeshLinkID.IsValid() && !endPoint.offMeshLinkData.offMeshLinkID.IsValid())
 				{
 					const Vec3& from = startPoint.vPos;
 					const Vec3& to = endPoint.vPos;

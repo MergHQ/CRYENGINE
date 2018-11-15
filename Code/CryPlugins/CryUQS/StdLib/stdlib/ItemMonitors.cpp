@@ -54,7 +54,7 @@ namespace UQS
 			}
 		}
 
-		void CItemMonitor_NavMeshChangesInAABB::OnNavMeshChanged(NavigationAgentTypeID agentTypeID, NavigationMeshID meshID, uint32 tileID)
+		void CItemMonitor_NavMeshChangesInAABB::OnNavMeshChanged(NavigationAgentTypeID agentTypeID, NavigationMeshID meshID, MNM::TileID tileID)
 		{
 			AABB tileAABB;
 			gEnv->pAISystem->GetNavigationSystem()->GetTileBoundsForMesh(meshID, tileID, tileAABB);

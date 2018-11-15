@@ -12,7 +12,7 @@
 namespace MNM
 {
 
-void IslandConnections::SetOneWayOffmeshConnectionBetweenIslands(const MNM::GlobalIslandID fromIslandId, const MNM::AreaAnnotation fromIslandAnnotation, const MNM::GlobalIslandID toIslandId, const MNM::AreaAnnotation toIslandAnnotation, const MNM::OffMeshLinkID offMeshLinkId, const MNM::TriangleID toTriangleId, const uint32 connectionObjectOwnerId)
+void IslandConnections::SetOneWayOffmeshConnectionBetweenIslands(const MNM::GlobalIslandID fromIslandId, const MNM::AreaAnnotation fromIslandAnnotation, const MNM::GlobalIslandID toIslandId, const MNM::AreaAnnotation toIslandAnnotation, const OffMeshLinkID offMeshLinkId, const TriangleID toTriangleId, const uint32 connectionObjectOwnerId)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 	
@@ -44,7 +44,7 @@ void IslandConnections::SetTwoWayConnectionBetweenIslands(const MNM::GlobalIslan
 
 	SIslandNode& islandNode1 = m_islandConnections[islandId1];
 	islandNode1.annotation = islandAnnotation1;
-	ModifyConnectionToIsland(islandNode1, islandId2.GetStaticIslandID(), islandAnnotation2, MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID, connectionsChange, connectionsChange);
+	ModifyConnectionToIsland(islandNode1, islandId2.GetStaticIslandID(), islandAnnotation2, OffMeshLinkID(), connectionsChange, connectionsChange);
 	if (islandNode1.links.empty())
 	{
 		// if connectionsChange was negative, link could be removed in  SetConnectionToIsland
@@ -53,7 +53,7 @@ void IslandConnections::SetTwoWayConnectionBetweenIslands(const MNM::GlobalIslan
 
 	SIslandNode& islandNode2 = m_islandConnections[islandId2];
 	islandNode2.annotation = islandAnnotation2;
-	ModifyConnectionToIsland(islandNode2, islandId1.GetStaticIslandID(), islandAnnotation1, MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID, connectionsChange, connectionsChange);
+	ModifyConnectionToIsland(islandNode2, islandId1.GetStaticIslandID(), islandAnnotation1, OffMeshLinkID(), connectionsChange, connectionsChange);
 	if (islandNode2.links.empty())
 	{
 		// if connectionsChange was negative, link could be removed in SetConnectionToIsland
@@ -65,7 +65,7 @@ void IslandConnections::ModifyConnectionToIsland(
 	SIslandNode& fromIslandNode,
 	const MNM::StaticIslandID toIslandId,
 	const MNM::AreaAnnotation toIslandAnnotation,
-	const MNM::OffMeshLinkID offMeshLinkId,
+	const OffMeshLinkID offMeshLinkId,
 	const int outConnectionsCountChange,
 	const int inConnectionsCountChange)
 {
@@ -118,7 +118,7 @@ void IslandConnections::ModifyConnectionToIsland(
 	}
 }
 
-void IslandConnections::RemoveOffMeshLinkConnection(const MNM::OffMeshLinkID offMeshLinkId)
+void IslandConnections::RemoveOffMeshLinkConnection(const OffMeshLinkID offMeshLinkId)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 	
@@ -454,7 +454,7 @@ void IslandConnections::ResetForMesh(const NavigationMeshID meshId)
 		const SIslandNode& node = it->second;
 		for (const SIslandLink& link : node.links)
 		{
-			if (link.offMeshLinkID != MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID)
+			if (link.offMeshLinkID.IsValid())
 			{
 				m_offMeshLinksMap.erase(link.offMeshLinkID);
 			}

@@ -183,17 +183,17 @@ void FollowPath::UnregisterAsPlanMonitor()
 	}
 }
 
-void FollowPath::OnNavigationMeshChanged(NavigationAgentTypeID navigationAgentTypeID, NavigationMeshID meshID, uint32 tileID)
+void FollowPath::OnNavigationMeshChanged(NavigationAgentTypeID navigationAgentTypeID, NavigationMeshID meshID, MNM::TileID tileID)
 {
 	QueueNavigationChange(navigationAgentTypeID, meshID, tileID, SMeshTileChange::EChangeType::AfterGeneration);
 }
 
-void FollowPath::OnNavigationAnnotationChanged(NavigationAgentTypeID navigationAgentTypeID, NavigationMeshID meshID, uint32 tileID)
+void FollowPath::OnNavigationAnnotationChanged(NavigationAgentTypeID navigationAgentTypeID, NavigationMeshID meshID, MNM::TileID tileID)
 {
 	QueueNavigationChange(navigationAgentTypeID, meshID, tileID, SMeshTileChange::EChangeType::Annotation);
 }
 
-void FollowPath::QueueNavigationChange(NavigationAgentTypeID navigationAgentTypeID, NavigationMeshID meshID, uint32 tileID, const SMeshTileChange::ChangeFlags& changeFlag)
+void FollowPath::QueueNavigationChange(NavigationAgentTypeID navigationAgentTypeID, NavigationMeshID meshID, MNM::TileID tileID, const SMeshTileChange::ChangeFlags& changeFlag)
 {
 	if (gAIEnv.CVars.MovementSystemPathReplanningEnabled)
 	{
