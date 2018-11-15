@@ -22,11 +22,7 @@
 #endif
 #define CRY_PFX2_DBG	// obsolete
 
-#ifndef _RELEASE
-	#define CRY_PFX2_ASSERT(cond) CRY_ASSERT(cond)
-#else
-	#define CRY_PFX2_ASSERT(cond)
-#endif
+#define CRY_PFX2_ASSERT(cond) CRY_ASSERT(cond)
 
 #ifdef CRY_PFX2_DEBUG
 #	define CRY_PFX2_DEBUG_ASSERT(cond) CRY_PFX2_ASSERT(cond);
@@ -66,6 +62,7 @@ using TFloatArray                      = THeapArray<float>;
 template<typename T> using TDynArray   = FastDynArray<T, uint, NAlloc::ModuleAlloc>;
 template<typename T> using TSmartArray = TDynArray<_smart_ptr<T>>;
 
+///////////////////////////////////////////////////////////////////////////////
 #ifdef CRY_PFX2_USE_SSE
 
 #define CRY_PFX2_PARTICLESGROUP_STRIDE 4 // can be 8 for AVX or 64 forGPU
@@ -100,6 +97,7 @@ typedef TParticleId TParticleGroupId;
 #define CRY_PFX2_PARTICLESGROUP_ALIGN(id) Align(id, CRY_PFX2_PARTICLESGROUP_STRIDE)
 
 
+///////////////////////////////////////////////////////////////////////////////
 struct SRenderContext
 {
 	SRenderContext(const SRendParams& rParams, const SRenderingPassInfo& passInfo)
@@ -115,6 +113,7 @@ struct SRenderContext
 	uint16                    m_fogVolumeId;
 };
 
+///////////////////////////////////////////////////////////////////////////////
 template<typename TIndex, int nStride = 1>
 struct TIndexRange
 {
@@ -150,6 +149,7 @@ struct TIndexRange
 typedef TIndexRange<TParticleId> SUpdateRange;
 typedef TIndexRange<TParticleGroupId, CRY_PFX2_PARTICLESGROUP_STRIDE> SGroupRange;
 
+///////////////////////////////////////////////////////////////////////////////
 template<typename C>
 struct SkipEmptySerialize
 {
@@ -172,6 +172,37 @@ bool Serialize(Serialization::IArchive& ar, SkipEmptySerialize<C>& cont, cstr na
 	return Serialize(ar, cont.container, name, label);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+template<typename T>
+class TSaveRestore
+{
+public:
+	template<class... Vals>
+	TSaveRestore(T& save, Vals&&... vals)
+		: m_saved(save)
+		, m_object(std::forward<Vals>(vals)...)
+	{
+		swap();
+	}
+	~TSaveRestore()
+	{
+		swap();
+	}
+
+private:
+	T& m_saved;
+	T  m_object;
+
+	void swap()
+	{
+		char temp[sizeof(T)];
+		memcpy(temp, &m_object, sizeof(T));
+		memcpy(&m_object, &m_saved, sizeof(T));
+		memcpy(&m_saved, temp, sizeof(T));
+	}
+};
+
+///////////////////////////////////////////////////////////////////////////////
 inline int ThreadMode() { return Cry3DEngineBase::GetCVars()->e_ParticlesThread; }
 
 }

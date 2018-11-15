@@ -123,6 +123,7 @@ public:
 	bool                      IsIndependent() const        { return Unique(); }
 	bool                      HasParticles() const;
 	bool                      HasBounds() const            { return m_bounds.GetVolume() > 0.0f; }
+	void                      AddBounds(const AABB& bb);
 	bool                      NeedsUpdate() const          { return ThreadMode() < 3 || !IsStable() || WasRenderedLastFrame(); }
 
 	struct EmitterStats
@@ -136,7 +137,7 @@ public:
 	EmitterStats&             GetStats() { return m_stats; }
 
 private:
-	void     UpdateBoundingBox();
+	void     UpdateBounds();
 	void     UpdateRuntimes();
 	void     UpdateFromEntity();
 	IEntity* GetEmitGeometryEntity() const;

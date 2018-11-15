@@ -23,12 +23,6 @@ public:
 	{
 	}
 
-	virtual CParticleFeature* ResolveDependency(CParticleComponent* pComponent) override
-	{
-		pComponent->ComponentParams().m_maxParticleAlpha = m_opacity.GetValueRange().end;
-		return this;
-	}
-
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		m_opacity.AddToComponent(pComponent, this, EPDT_Alpha);

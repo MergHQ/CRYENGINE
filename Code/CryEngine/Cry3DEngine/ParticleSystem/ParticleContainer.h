@@ -23,6 +23,7 @@ class CParticleContainer
 {
 public:
 	CParticleContainer();
+	CParticleContainer(const PUseData& pUseData);
 	CParticleContainer(const CParticleContainer& copy) = delete;
 	~CParticleContainer();
 

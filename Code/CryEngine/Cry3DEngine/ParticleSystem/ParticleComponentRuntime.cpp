@@ -8,6 +8,8 @@
 namespace pfx2
 {
 
+MakeDataType(EPVF_PositionPrev, Vec3);
+
 extern TDataType<Vec3> EPVF_Acceleration, EPVF_VelocityField;
 
 
@@ -17,6 +19,7 @@ CParticleComponentRuntime::CParticleComponentRuntime(CParticleEmitter* pEmitter,
 	, m_bounds(AABB::RESET)
 	, m_alive(true)
 	, m_deltaTime(-1.0f)
+	, m_isPreRunning(false)
 	, m_chaos(0)
 	, m_chaosV(0)
 {
@@ -41,6 +44,12 @@ bool CParticleComponentRuntime::IsValidForComponent() const
 		return !m_pGpuRuntime;
 	else
 		return m_pGpuRuntime && m_pGpuRuntime->IsValidForParams(m_pComponent->GPUComponentParams());
+}
+
+void CParticleComponentRuntime::AddBounds(const AABB& bounds)
+{
+	m_bounds.Add(bounds);
+	m_pEmitter->AddBounds(bounds);
 }
 
 CParticleContainer& CParticleComponentRuntime::GetParentContainer()
@@ -75,8 +84,13 @@ void CParticleComponentRuntime::PreRun()
 	if (GetGpuRuntime())
 		return;
 
-	Clear();
+	// Save and reset all particle data
+	TSaveRestore<CParticleContainer> saveContainer(m_container, m_pComponent->GetUseData());
+	TSaveRestore<TDynArray<SInstance>> saveInstances(m_subInstances);
+	TSaveRestore<TDynArray<byte>> saveInstanceData(m_subInstanceData);
+
 	m_deltaTime = ComponentParams().m_stableTime;
+	m_isPreRunning = true;
 
 	AddInstances();
 
@@ -98,9 +112,11 @@ void CParticleComponentRuntime::PreRun()
 
 	UpdateParticles();
 	CalculateBounds();
+	m_isPreRunning = false;
 
 	m_pComponent->OnPreRun(*this, numParticles);
-	Clear();
+
+	m_deltaTime = -1.0f;
 }
 
 void CParticleComponentRuntime::UpdateAll()
@@ -156,6 +172,7 @@ void CParticleComponentRuntime::UpdateParticles()
 
 	m_container.FillData(EPVF_Acceleration, Vec3(0), FullRange());
 	m_container.FillData(EPVF_VelocityField, Vec3(0), FullRange());
+	m_container.CopyData(EPVF_PositionPrev, EPVF_Position, FullRange());
 
 	for (EParticleDataType type(0); type < EParticleDataType::size(); type = type + type.info().step())
 	{
@@ -210,7 +227,7 @@ void CParticleComponentRuntime::ReparentParticles(TConstArray<TParticleId> swapI
 
 	IOPidStream parentIds = m_container.GetIOPidStream(EPDT_ParentId);
 
-	for (TParticleId particleId = 0; particleId != m_container.GetNumParticles(); ++particleId)
+	for (auto particleId : FullRange())
 	{
 		const TParticleId parentId = parentIds.Load(particleId);
 		if (parentId != gInvalidId)
@@ -458,6 +475,13 @@ void CParticleComponentRuntime::UpdateNewBorns()
 
 	// feature post init particles
 	GetComponent()->PostInitParticles(*this);
+
+	if (!m_isPreRunning)
+		m_deltaTime = max(GetEmitter()->GetDeltaTime(), ComponentParams().m_maxParticleLife);
+	if (ComponentParams().m_isPreAged)
+		GetComponent()->PastUpdateParticles(*this);
+	if (!m_isPreRunning)
+		m_deltaTime = -1.0f;
 }
 
 void CParticleComponentRuntime::CalculateBounds()
@@ -467,7 +491,7 @@ void CParticleComponentRuntime::CalculateBounds()
 
 	IVec3Stream positions = m_container.GetIVec3Stream(EPVF_Position);
 	IFStream sizes = m_container.GetIFStream(EPDT_Size);
-	const Slope<float> slope = ComponentParams().m_physicalSizeSlope;
+	const float sizeScale = ComponentParams().m_scaleParticleSize;
 
 	SUpdateRange range = m_container.GetFullRange();
 
@@ -478,12 +502,12 @@ void CParticleComponentRuntime::CalculateBounds()
 	Vec3v bbMax = Vec3v(fMax, fMax, fMax);
 
 	// vector part
-	const Slope<floatv> slopev = slope;
+	const floatv scalev = convert<floatv>(sizeScale);
 	const TParticleId lastParticleId = m_container.GetNumParticles();
 	const TParticleGroupId lastParticleGroupId { lastParticleId & ~(CRY_PFX2_PARTICLESGROUP_STRIDE - 1) };
 	for (auto particleGroupId : SGroupRange(TParticleGroupId(0), lastParticleGroupId))
 	{
-		const floatv size = slopev(sizes.Load(particleGroupId));
+		const floatv size = sizes.Load(particleGroupId) * scalev;
 		const Vec3v position = positions.Load(particleGroupId);
 		bbMin = min(bbMin, Sub(position, size));
 		bbMax = max(bbMax, Add(position, size));
@@ -499,7 +523,7 @@ void CParticleComponentRuntime::CalculateBounds()
 	// linear part
 	for (auto particleId : range)
 	{
-		const float size = slope(sizes.Load(particleId));
+		const float size = sizes.Load(particleId) * sizeScale;
 		const Vec3 position = positions.Load(particleId);
 		m_bounds.Add(position, size);
 	}

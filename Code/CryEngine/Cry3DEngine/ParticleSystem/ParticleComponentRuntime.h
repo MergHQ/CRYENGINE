@@ -30,6 +30,7 @@ public:
 	CParticleComponent*           GetComponent() const   { return m_pComponent; }
 	bool                          IsValidForComponent() const;
 	const AABB&                   GetBounds() const      { return m_pGpuRuntime ? m_pGpuRuntime->GetBounds() : m_bounds; }
+	void                          AddBounds(const AABB& bounds);
 	bool                          IsChild() const        { return m_pComponent->GetParentComponent() != nullptr; }
 	void                          ReparentParticles(TConstArray<TParticleId> swapIds);
 	void                          RemoveAllSubInstances();
@@ -83,6 +84,7 @@ public:
 
 	static TParticleHeap&     MemHeap();
 	float                     DeltaTime() const;
+	bool                      IsPreRunning() const    { return m_isPreRunning; }
 
 private:
 	void PreRun();
@@ -102,6 +104,7 @@ private:
 	AABB                           m_bounds;
 	bool                           m_alive;
 	float                          m_deltaTime;
+	bool                           m_isPreRunning;
 	SChaosKey mutable              m_chaos;
 	SChaosKeyV mutable             m_chaosV;
 

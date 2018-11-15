@@ -39,6 +39,12 @@ CParticleContainer::CParticleContainer()
 	memContainer += sizeof(*this);
 }
 
+CParticleContainer::CParticleContainer(const PUseData& pUseData)
+{
+	SetUsedData(pUseData);
+	memContainer += sizeof(*this);
+}
+
 CParticleContainer::~CParticleContainer()
 {
 	ParticleFree(m_pData, m_capacity * m_useData.totalSize);

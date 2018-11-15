@@ -37,7 +37,7 @@ SERIALIZATION_ENUM_DECLARE(ECollisionLimitMode, ,
 	Ignore,
 	Stop,
 	Kill
-	)
+)
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureCollision
@@ -51,6 +51,7 @@ public:
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
 	virtual void Serialize(Serialization::IArchive& ar) override;
 	virtual void PostInitParticles(CParticleComponentRuntime& runtime) override;
+	virtual void PastUpdateParticles(CParticleComponentRuntime& runtime) override;
 	virtual void PostUpdateParticles(CParticleComponentRuntime& runtime) override;
 
 	bool  IsActive() const           { return m_terrain || m_staticObjects || m_dynamicObjects; }
@@ -58,7 +59,7 @@ public:
 	int   GetRayTraceFilter() const;
 
 private:
-	void DoCollisions(CParticleComponentRuntime& runtime) const;
+	void DoCollisions(CParticleComponentRuntime& runtime, SUpdateRange range) const;
 	bool DoCollision(SContactPredict& contactNext, SContactPoint& contact, float& collideSpeed, QuadPath& path) const;
 	bool PathWorldIntersection(SContactPoint& contact, const QuadPath& path, float t0, float t1, bool splitInflection) const;
 	bool RayWorldIntersection(SContactPoint& contact, const Vec3& startIn, const Vec3& rayIn) const;

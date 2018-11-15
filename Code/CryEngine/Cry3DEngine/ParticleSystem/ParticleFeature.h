@@ -86,6 +86,8 @@ public:
 
 	virtual void PostInitParticles(CParticleComponentRuntime& runtime) {}
 
+	virtual void PastUpdateParticles(CParticleComponentRuntime& runtime) {}
+
 	virtual void DestroyParticles(CParticleComponentRuntime& runtime) {}
 
 	// Particle update
@@ -131,6 +133,7 @@ struct SFeatureDispatchers
 	TFeatureDispatcher<CParticleComponentRuntime&> PreInitParticles { &CParticleFeature::PreInitParticles };
 	TFeatureDispatcher<CParticleComponentRuntime&> InitParticles { &CParticleFeature::InitParticles };
 	TFeatureDispatcher<CParticleComponentRuntime&> PostInitParticles { &CParticleFeature::PostInitParticles };
+	TFeatureDispatcher<CParticleComponentRuntime&> PastUpdateParticles { &CParticleFeature::PastUpdateParticles };
 	TFeatureDispatcher<CParticleComponentRuntime&> DestroyParticles { &CParticleFeature::DestroyParticles };
 
 	TFeatureDispatcher<CParticleComponentRuntime&> PreUpdateParticles { &CParticleFeature::PreUpdateParticles };

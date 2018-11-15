@@ -31,13 +31,6 @@ public:
 		pComponent->AddParticleData(EPVF_Position);
 		if (GetPSystem()->GetFlareMaterial() && !m_flare.empty())
 			m_hasFlareOptics = gEnv->pOpticsManager->Load(m_flare.c_str(), m_lensOpticsId);
-
-		// Compute max effective radius
-		SRenderLight light;
-		light.SetRadius(m_radiusClip, FLT_MIN);
-		light.SetLightColor(ColorF(m_intensity * pParams->m_maxParticleAlpha));
-		SetMax(pParams->m_physicalSizeSlope.start, light.m_fRadius);
-		SetMax(pParams->m_maxParticleSize, light.m_fRadius);
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -92,6 +85,7 @@ public:
 		const CCamera& camera = passInfo.GetCamera();
 		const Vec3 camPos = camera.GetPosition();
 		const float distRatio = GetFloatCVar(e_ParticlesLightsViewDistRatio);
+		AABB bounds { AABB::RESET };
 
 		for (auto particleId : container.GetFullRange())
 		{
@@ -109,8 +103,11 @@ public:
 				Get3DEngine()->SetupLightScissors(&light, passInfo);
 				light.m_n3DEngineUpdateFrameID = passInfo.GetMainFrameID();
 				Get3DEngine()->AddLightToRenderer(light, 1.0f, passInfo);
+				bounds.Add(position, light.m_fRadius);
 			}
 		}
+		runtime.GetEmitter()->AddBounds(bounds);
+		// runtime.AddBounds(bounds);
 	}
 
 private:

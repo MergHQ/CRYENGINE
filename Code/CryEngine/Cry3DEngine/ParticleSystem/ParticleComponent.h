@@ -113,32 +113,29 @@ struct STimingParams
 
 struct SComponentParams: STimingParams
 {
-	SComponentParams();
-
-	void  Serialize(Serialization::IArchive& ar);
-
-	bool                      m_usesGPU;
+	bool                      m_usesGPU              = false;
 	SParticleShaderData       m_shaderData;
 	_smart_ptr<IMaterial>     m_pMaterial;
-	_smart_ptr<IMeshObj>      m_pMesh;
-	bool                      m_meshCentered;
-	EShaderType               m_requiredShaderType;
-	string                    m_diffuseMap;
+	EShaderType               m_requiredShaderType   = eST_All;
+	string                    m_diffuseMap           = "%ENGINE%/EngineAssets/Textures/white.dds";
 	uint64                    m_renderObjectFlags;
-	size_t                    m_instanceDataStride;
+	int                       m_renderStateFlags     = OS_ALPHA_BLEND;
+	uint8                     m_particleObjFlags     = 0;
+	float                     m_renderObjectSortBias = 0;
+	_smart_ptr<IMeshObj>      m_pMesh;
+	bool                      m_meshCentered         = false;
+	bool                      m_isPreAged            = false;
+	size_t                    m_instanceDataStride   = 0;
 	STextureAnimation         m_textureAnimation;
-	uint32                    m_maxParticlesBurst;
-	uint32                    m_maxParticlesPerFrame;
-	float                     m_maxParticleRate;
-	float                     m_scaleParticleCount;
-	float                     m_maxParticleSize;
-	Slope<float>              m_physicalSizeSlope;
-	float                     m_renderObjectSortBias;
-	float                     m_maxParticleAlpha;
+	uint32                    m_maxParticlesBurst    = 0;
+	uint32                    m_maxParticlesPerFrame = 0;
+	float                     m_maxParticleRate      = 0;
+	float                     m_scaleParticleCount   = 1;
+	float                     m_maxParticleSize      = 0;
+	float                     m_scaleParticleSize    = 1;
 	SVisibilityParams         m_visibility;
-	int                       m_renderStateFlags;
-	uint8                     m_particleObjFlags;
 
+	void  Serialize(Serialization::IArchive& ar);
 	void GetMaxParticleCounts(int& total, int& perFrame, float minFPS = 4.0f, float maxFPS = 120.0f) const;
 };
 
