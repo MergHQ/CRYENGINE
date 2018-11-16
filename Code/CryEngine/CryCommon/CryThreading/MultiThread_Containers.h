@@ -317,52 +317,6 @@ private:
 	mutable CryCriticalSection m_cs;
 };
 
-//! Multi-thread safe lock-less FIFO queue container for passing pointers between threads.
-//! The queue only stores pointers to T, it does not copy the contents of T.
-template<class T, class Alloc = std::allocator<T>>
-class CLocklessPointerQueue
-{
-public:
-	explicit CLocklessPointerQueue(size_t reserve = 32) { m_lockFreeQueue.reserve(reserve); };
-	~CLocklessPointerQueue() {};
-
-	//! Checks if queue is empty.
-	bool empty() const;
-
-	//! Pushes item to the queue, only pointer is stored, T contents are not copied.
-	void push(T* ptr);
-
-	//! pop can return NULL, always check for it before use.
-	T* pop();
-
-private:
-	using Alloc_rebind = typename std::allocator_traits<Alloc>::template rebind_alloc<T*>;
-	queue<T*, Alloc_rebind> m_lockFreeQueue;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<class T, class Alloc>
-inline bool CLocklessPointerQueue<T, Alloc >::empty() const
-{
-	return m_lockFreeQueue.empty();
-}
-
-//////////////////////////////////////////////////////////////////////////
-template<class T, class Alloc>
-inline void CLocklessPointerQueue<T, Alloc >::push(T* ptr)
-{
-	m_lockFreeQueue.push(ptr);
-}
-
-//////////////////////////////////////////////////////////////////////////
-template<class T, class Alloc>
-inline T* CLocklessPointerQueue<T, Alloc >::pop()
-{
-	T* val = NULL;
-	m_lockFreeQueue.try_pop(val);
-	return val;
-}
-
 //! Producer/Consumer Queue for 1 to 1 thread communication.
 //! Realized with only volatile variables and memory barriers.
 //! \note This producer/consumer queue is only thread safe in a 1 to 1 situation

@@ -443,10 +443,9 @@ bool CRealtimeRemoteUpdateListener::IsSyncingWithEditor()
 //////////////////////////////////////////////////////////////////////////
 void CRealtimeRemoteUpdateListener::Update()
 {
-	while (!m_ProcessingQueue.empty())
+	TDBuffer* pCurrentBuffer;
+	while (m_ProcessingQueue.try_pop(pCurrentBuffer))
 	{
-		TDBuffer* pCurrentBuffer(m_ProcessingQueue.pop());
-
 		if (!pCurrentBuffer)
 		{
 			continue;
