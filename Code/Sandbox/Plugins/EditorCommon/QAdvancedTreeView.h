@@ -91,7 +91,6 @@ protected:
 	virtual void mousePressEvent(QMouseEvent* pEvent) override;
 	virtual bool viewportEvent(QEvent* event) override;
 
-	virtual void dragEnterEvent(QDragEnterEvent* pEvent) override;
 	virtual void dragLeaveEvent(QDragLeaveEvent* pEvent) override;
 	virtual void dragMoveEvent(QDragMoveEvent* pEvent) override;
 	virtual void dropEvent(QDropEvent* pEvent) override;
