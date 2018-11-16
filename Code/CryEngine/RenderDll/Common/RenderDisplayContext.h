@@ -151,16 +151,15 @@ private:
 	TexSmartPtr              m_pBackBufferProxy = nullptr;
 	bool                     m_bSwapProxy = true;
 	bool                     m_fullscreen = false;
+#if (CRY_RENDERER_VULKAN >= 10)
 	bool                     m_bVSync = false;
+#endif
 
 private:
 	void                 CreateSwapChain(CRY_HWND hWnd, bool isFullscreen, bool vsync);
 	void                 CreateOutput();
 	void                 ShutDown();
 	void                 ReleaseResources() override;
-#if CRY_PLATFORM_WINDOWS
-	void                 EnforceFullscreenPreemption();
-#endif
 	void                 ChangeOutputIfNecessary(bool isFullscreen, bool vsync = true);
 	void                 ChangeDisplayResolution(uint32_t displayWidth, uint32_t displayHeight, const SRenderViewport& vp) override;
 	void                 ChangeDisplayResolution(uint32_t displayWidth, uint32_t displayHeight)
@@ -202,14 +201,12 @@ public:
 
 	void                 SetFullscreenState(bool isFullscreen);
 	bool                 IsFullscreen() const { return m_fullscreen; }
-	bool                 GetVSyncState() const { return m_bVSync; }
 
+	uint32               ComputePresentInterval(uint32 presentInterval);
 	Vec2_tpl<uint32_t>   FindClosestMatchingScreenResolution(const Vec2_tpl<uint32_t> &resolution) const;
 
-#if defined(SUPPORT_DEVICE_INFO)
 	uint32               GetRefreshRateNumerator() const { return m_swapChain.GetRefreshRateNumerator(); }
-	uint32               GetRefreshRateDemoninator() const { return m_swapChain.GetRefreshRateDemoninator(); }
-#endif
+	uint32               GetRefreshRateDenominator() const { return m_swapChain.GetRefreshRateDenominator(); }
 
 private:
 	void ReleaseBackBuffers();

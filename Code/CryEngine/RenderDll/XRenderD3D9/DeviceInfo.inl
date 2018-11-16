@@ -14,7 +14,6 @@ DeviceInfo::DeviceInfo()
 	, m_featureLevel(D3D_FEATURE_LEVEL_9_1)
 	, m_autoDepthStencilFmt(DXGI_FORMAT_R24G8_TYPELESS)
 	, m_activated(true)
-	, m_activatedMT(true)
 #if defined(SUPPORT_DEVICE_INFO_MSG_PROCESSING)
 	, m_msgQueueLock()
 	, m_msgQueue()
@@ -139,14 +138,14 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 	m_autoDepthStencilFmt = zbpp == 32 ? DXGI_FORMAT_R32G8X24_TYPELESS : DXGI_FORMAT_R24G8_TYPELESS;
 #endif
 
-#if CRY_RENDERER_OPENGL || CRY_RENDERER_OPENGLES
-
 	CRY_HWND hWnd = pCreateWindowCallback ? pCreateWindowCallback() : 0;
 	if (!hWnd)
 	{
 		Release();
 		return false;
 	}
+
+#if CRY_RENDERER_OPENGL || CRY_RENDERER_OPENGLES
 
 	const int r_overrideDXGIAdapter = GetDXGIAdapterOverride();
 	const int r_multithreaded = GetMultithreaded();
@@ -158,6 +157,9 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 		Release();
 		return false;
 	}
+
+	// Disable automatic DXGI alt + enter behavior
+	m_pFactory->MakeWindowAssociation((HWND)hWnd, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);
 
 	while (m_pFactory->EnumAdapters1(nAdapterOrdinal, &m_pAdapter) != DXGI_ERROR_NOT_FOUND)
 	{
@@ -242,6 +244,9 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 		return false;
 	}
 
+	// Disable automatic DXGI alt + enter behavior
+	m_pFactory->MakeWindowAssociation((HWND)hWnd, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);
+
 	while (m_pFactory->EnumAdapters1(nAdapterOrdinal, &m_pAdapter) != DXGI_ERROR_NOT_FOUND)
 	{
 		if (m_pAdapter)
@@ -281,13 +286,6 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 		return false;
 	}
 
-	CRY_HWND hWnd = pCreateWindowCallback ? pCreateWindowCallback() : 0;
-	if (!hWnd)
-	{
-		Release();
-		return false;
-	}
-
 	{
 		if (pCreateDeviceCallback)
 			pCreateDeviceCallback(m_pDevice);
@@ -295,6 +293,7 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 
 	return IsOk();
 #elif CRY_PLATFORM_WINDOWS
+
 	typedef HRESULT (WINAPI * FP_CreateDXGIFactory1)(REFIID, void**);
 
 	FP_CreateDXGIFactory1 pCDXGIF =
@@ -321,6 +320,9 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 
 		if (pD3D11CD)
 		{
+			// Disable automatic DXGI alt + enter behavior
+			m_pFactory->MakeWindowAssociation((HWND)hWnd, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);
+
 			const int r_overrideDXGIAdapter = GetDXGIAdapterOverride();
 			unsigned int nAdapterOrdinal = r_overrideDXGIAdapter >= 0 ? r_overrideDXGIAdapter : 0;
 
@@ -441,7 +443,6 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 	SAFE_RELEASE(pDevice);
 	SAFE_RELEASE(pAdapter);
 
-#if CRY_PLATFORM_WINDOWS
 	// Change adapter memory maximum utilization to 7/8th -------------------------------------------------------------------------
 #if (CRY_RENDERER_DIRECT3D >= 110)
 	if (m_pAdapter)
@@ -474,14 +475,6 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 		SAFE_RELEASE(pDebugDevice);
 	}
 #endif
-#endif
-
-	CRY_HWND hWnd = pCreateWindowCallback ? pCreateWindowCallback() : 0;
-	if (!hWnd)
-	{
-		Release();
-		return false;
-	}
 
 	ProcessWindowMessages(hWnd);
 
@@ -518,23 +511,6 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 }
 
 #if defined(SUPPORT_DEVICE_INFO_MSG_PROCESSING)
-void DeviceInfo::OnActivate(UINT_PTR wParam, UINT_PTR lParam)
-{
-	const bool activate = LOWORD(wParam) != 0;
-	if (m_activatedMT != activate)
-	{
-		if (gcpRendD3D->IsFullscreen())
-		{
-			HWND hWnd = (HWND) gcpRendD3D->GetHWND();
-			ShowWindow(hWnd, activate ? SW_RESTORE : SW_MINIMIZE);
-		}
-
-		m_activatedMT = activate;
-	}
-
-	PushSystemEvent(ESYSTEM_EVENT_ACTIVATE, wParam, lParam);
-}
-
 void DeviceInfo::PushSystemEvent(ESystemEvent event, UINT_PTR wParam, UINT_PTR lParam)
 {
 	#if !defined(_RELEASE) && !defined(STRIP_RENDER_THREAD)

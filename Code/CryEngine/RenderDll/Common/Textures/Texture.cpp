@@ -846,9 +846,6 @@ void CTexture::Precache(const bool isBlocking)
 
 void CTexture::RT_Precache(const bool isFinalPrecache)
 {
-	if (gRenDev->CheckDeviceLost())
-		return;
-
 	CRY_PROFILE_REGION(PROFILE_RENDERER, "CTexture::RT_Precache");
 	LOADING_TIME_PROFILE_SECTION(iSystem);
 

@@ -31,7 +31,6 @@ struct DeviceInfo
 	bool CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCallback, CreateWindowCallback pCreateWindowCallback);
 	
 	#if defined(SUPPORT_DEVICE_INFO_MSG_PROCESSING)
-	void OnActivate(UINT_PTR wParam, UINT_PTR lParam);
 	void PushSystemEvent(ESystemEvent event, UINT_PTR wParam, UINT_PTR lParam);
 	void ProcessSystemEventQueue();
 	#endif
@@ -96,7 +95,6 @@ protected:
 #endif
 
 	bool                                m_activated;
-	bool                                m_activatedMT;
 
 #if defined(SUPPORT_DEVICE_INFO_MSG_PROCESSING)
 	CryCriticalSection           m_msgQueueLock;

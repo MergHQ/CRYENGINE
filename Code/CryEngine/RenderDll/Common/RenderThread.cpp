@@ -653,6 +653,10 @@ void SRenderThread::Process()
 			{
 				CTimeValue lastTime = gEnv->pTimer->GetAsyncTime();
 
+				// Enable v-sync for the loading screen to cap frame-rate
+				const int vSync = gcpRendD3D->m_VSync;
+				gcpRendD3D->m_VSync = true;
+
 				while (m_eVideoThreadMode != eVTM_ProcessingStop)
 				{
 #if CRY_PLATFORM_DURANGO
@@ -699,13 +703,12 @@ void SRenderThread::Process()
 						m_rdldLock.Unlock();
 					}
 
-					// Make sure we aren't running with thousands of FPS with VSync disabled
-					gRenDev->LimitFramerate(120, true);
-
 #if defined(SUPPORT_DEVICE_INFO_MSG_PROCESSING)
 					gcpRendD3D->DevInfo().ProcessSystemEventQueue();
 #endif
 				}
+
+				gcpRendD3D->m_VSync = vSync;
 			}
 			if (m_pThreadLoading)
 				QuitRenderLoadingThread();

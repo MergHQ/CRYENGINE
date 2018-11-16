@@ -496,9 +496,6 @@ void CD3D9Renderer::SF_DrawIndexedTriList(int baseVertexIndex, int minVertexInde
 {
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
-	if (IsDeviceLost())
-		return;
-
 	CRY_ASSERT(params.vtxData->VertexFormat != IScaleformPlayback::Vertex_Glyph && params.vtxData->VertexFormat != IScaleformPlayback::Vertex_None);
 
 	SSF_ResourcesD3D& sfRes(SF_GetResources());
@@ -555,9 +552,6 @@ void CD3D9Renderer::SF_DrawLineStrip(int baseVertexIndex, int lineCount, const S
 {
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
-	if (IsDeviceLost())
-		return;
-
 	CRY_ASSERT(params.vtxData->VertexFormat == IScaleformPlayback::Vertex_XY16i);
 
 	SSF_ResourcesD3D& sfRes(SF_GetResources());
@@ -609,9 +603,6 @@ void CD3D9Renderer::SF_DrawLineStrip(int baseVertexIndex, int lineCount, const S
 void CD3D9Renderer::SF_DrawGlyphClear(const IScaleformPlayback::DeviceData* vtxData, int baseVertexIndex, const SSF_GlobalDrawParams& __restrict params)
 {
 	FUNCTION_PROFILER_RENDER_FLAT
-
-	if (IsDeviceLost())
-		return;
 
 	CRY_ASSERT(vtxData->VertexFormat == IScaleformPlayback::Vertex_Glyph || vtxData->VertexFormat == IScaleformPlayback::Vertex_XY16i);
 

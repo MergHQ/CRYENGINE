@@ -225,9 +225,10 @@ public:
 	void                             GetDeviceGamma();
 	void                             SetDeviceGamma(SGammaRamp*);
 
-	HRESULT                          AdjustWindowForChange(const int displayWidth, const int displayHeight, EWindowState previousWindowState);
+	HRESULT                          ChangeWindowProperties(const int displayWidth, const int displayHeight);
 
-	bool                             IsFullscreen()           { return m_windowState == EWindowState::Fullscreen; }
+	bool                             IsFullscreen() const { return m_currWindowState == EWindowState::Fullscreen; }
+	bool                             IsVSynced() const { return m_VSync != 0; }
 
 #if defined(SUPPORT_DEVICE_INFO)
 	static CRY_HWND CreateWindowCallback();
@@ -243,6 +244,7 @@ private:
 	bool                    CreateDeviceMobile();
 	bool                    CreateDeviceDesktop();
 	bool                    CreateDevice();
+	void                    InitBaseDisplayContext();
 
 	bool                    SetWindow(int width, int height);
 	void                    UnSetRes();
@@ -330,10 +332,10 @@ public:
 	//! Changes resolution of the window/device (doesn't require to reload the level)
 	bool         ChangeRenderResolution(int nNewRenderWidth, int nNewRenderHeight, CRenderView* pRenderView);
 	bool         ChangeOutputResolution(int nNewOutputWidth, int nNewOutputHeight, CRenderOutput* pRenderOutput);
-	bool         ChangeDisplayResolution(int nNewDisplayWidth, int nNewHDisplayeight, int nNewColDepth, int nNewRefreshHZ, EWindowState previousWindowState, bool bForceReset, CRenderDisplayContext* displayContext);
-	bool         ChangeDisplayResolution(int nNewDisplayWidth, int nNewHDisplayeight, int nNewColDepth, int nNewRefreshHZ, EWindowState previousWindowState, bool bForceReset, const SDisplayContextKey& displayContextKey);
+	bool         ChangeDisplayResolution(int nNewDisplayWidth, int nNewHDisplayeight, int nNewColDepth, int nNewRefreshHZ, bool bForceReset, CRenderDisplayContext* displayContext);
+	bool         ChangeDisplayResolution(int nNewDisplayWidth, int nNewHDisplayeight, int nNewColDepth, int nNewRefreshHZ, bool bForceReset, const SDisplayContextKey& displayContextKey);
 
-	void         CalculateResolutions(int displayWidthRequested, int displayHeightRequested, bool bUseNativeRes, bool findClosestMatching, int* pRenderWidth, int* pRenderHeight, int* pOutputWidth, int* pOutputHeight, int* pDisplayWidth, int* pDisplayHeight);
+	void         CalculateResolutions(int displayWidthRequested, int displayHeightRequested, int* pRenderWidth, int* pRenderHeight, int* pOutputWidth, int* pOutputHeight, int* pDisplayWidth, int* pDisplayHeight);
 
 	bool         ChangeDisplay(CRenderDisplayContext* pDC, unsigned int width, unsigned int height, unsigned int cbpp);
 	void         ChangeViewport(CRenderDisplayContext* pDC, unsigned int viewPortOffsetX, unsigned int viewPortOffsetY, unsigned int viewportWidth, unsigned int viewportHeight);
@@ -369,7 +371,6 @@ public:
 	void                 RenderAux_RT();
 
 	virtual void         EndFrame() override;
-	virtual void         LimitFramerate(const int maxFPS, const bool bUseSleep) override;
 	virtual void         GetMemoryUsage(ICrySizer* Sizer) override;
 	virtual void         GetLogVBuffers() override;
 
@@ -595,7 +596,6 @@ public:
 	void         MemReplayWrapD3DDevice();
 
 	void         DrawTexelsPerMeterInfo();
-	virtual bool CheckDeviceLost() override;
 
 #if CRY_PLATFORM_DURANGO
 	virtual void RT_SuspendDevice() override;
@@ -634,7 +634,6 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 public:
-	bool IsDeviceLost() { return(m_bDeviceLost != 0); }
 	void InitNVAPI();
 	void InitAMDAPI();
 
@@ -811,7 +810,8 @@ public:
 	int                      m_MatDepth;
 
 	string                   m_Description;
-	EWindowState             m_windowState = EWindowState::Windowed;
+	EWindowState             m_currWindowState = EWindowState::Windowed;
+	EWindowState             m_lastWindowState = EWindowState::Windowed;
 	bool                     m_isChangingResolution = false;
 	bool					 m_bWindowRestored = false; // Dirty-flag set when the window was restored from minimized state
 
@@ -833,6 +833,7 @@ private:
 	char      m_WinTitle[80];
 	CRY_HWND  m_hWnd;                 // The main app window
 	CRY_HWND  m_hWndDesktop;          // The desktop window
+	CRY_HWND  m_hWndActive;           // The active window
 #if CRY_PLATFORM_WINDOWS
 	HICON     m_hIconBig;             // Icon currently being used on the taskbar
 	HICON     m_hIconSmall;           // Icon currently being used on the window
@@ -870,8 +871,16 @@ private:
 	int             m_SceneRecurseCount = 0;
 
 #if CRY_PLATFORM_WINDOWS
+	HMONITOR m_activeMonitor;   // Monitor the engine runs on
 	uint m_nConnectedMonitors;  // The number of monitors currently connected to the system
-	bool m_bDisplayChanged;     // Dirty-flag set when the number of monitors in the system changes
+	uint m_changedMonitor;      // Dirty-flag set when the number of monitors in the system changes
+	uint m_inspectedMonitor;    // Dirty-flag set when the number of monitors in the system changes
+
+	int m_lastDisplayWidthRequested;
+	int m_lastDisplayHeightRequested;
+
+	int m_lastDisplayWidth;
+	int m_lastDisplayHeight;
 #endif
 
 #if defined(ENABLE_PROFILING_CODE)

@@ -1338,6 +1338,7 @@ struct ISystem
 	virtual IFileChangeMonitor*                GetIFileChangeMonitor() = 0;
 
 	virtual CRY_HWND                           GetHWND() = 0;
+	virtual CRY_HWND                           GetActiveHWND() = 0;
 
 	virtual INetwork*                          GetINetwork() = 0;
 	virtual IRenderer*                         GetIRenderer() = 0;
