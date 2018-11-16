@@ -184,7 +184,7 @@ CLevelExplorer::CLevelExplorer(QWidget* pParent)
 	m_treeView->setTreePosition((int)eLayerColumns_Name);
 	m_treeView->setUniformRowHeights(true);
 	m_treeView->setDragEnabled(true);
-	m_treeView->setDragDropMode(QAbstractItemView::InternalMove);
+	m_treeView->setDragDropMode(QAbstractItemView::DragDrop);
 	m_treeView->header()->setMinimumSectionSize(10);
 
 	m_pAttributeFilterProxyModel->setFilterKeyColumn((int)eLayerColumns_Name);

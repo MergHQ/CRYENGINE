@@ -801,17 +801,6 @@ void QAdvancedTreeView::mousePressEvent(QMouseEvent* pEvent)
 	setAutoScroll(true);
 }
 
-void QAdvancedTreeView::dragEnterEvent(QDragEnterEvent* pEvent)
-{
-	QTreeView::dragEnterEvent(pEvent);
-
-	QDrag* const pDrag = pEvent->source()->findChild<QDrag*>();
-	CRY_ASSERT_MESSAGE(pDrag, "QDrag used without specifying a valid parent");
-
-	// Connect only once so this slot isn't called several times (Ex. if the user enters the widget several times)
-	connect(pDrag, &QObject::destroyed, this, &QAdvancedTreeView::ClearDragHandlerData, Qt::UniqueConnection);
-}
-
 void QAdvancedTreeView::dragLeaveEvent(QDragLeaveEvent* pEvent)
 {
 	ClearDragHandlerData();
