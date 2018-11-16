@@ -212,19 +212,6 @@ ERequestStatus CObject::HandleStopTrigger(CTrigger const* const pTrigger)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CObject::HandleSetEnvironment(CEnvironment const* const pEnvironment, float const value)
-{
-	for (auto const pEnvImpl : pEnvironment->m_connections)
-	{
-		m_pImplData->SetEnvironment(pEnvImpl, value);
-	}
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	StoreEnvironmentValue(pEnvironment->GetId(), value);
-#endif   // INCLUDE_AUDIO_PRODUCTION_CODE
-}
-
-///////////////////////////////////////////////////////////////////////////
 void CObject::StopAllTriggers()
 {
 	m_pImplData->StopAllTriggers();
@@ -713,24 +700,27 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 				{
 					for (auto const& environmentPair : m_environments)
 					{
-						CEnvironment const* const pEnvironment = stl::find_in_map(g_environments, environmentPair.first, nullptr);
-
-						if (pEnvironment != nullptr)
+						if (environmentPair.second > 0.0f)
 						{
-							char const* const szEnvironmentName = pEnvironment->GetName();
+							CEnvironment const* const pEnvironment = stl::find_in_map(g_environments, environmentPair.first, nullptr);
 
-							if (!isTextFilterDisabled)
+							if (pEnvironment != nullptr)
 							{
-								CryFixedStringT<MaxControlNameLength> lowerCaseEnvironmentName(szEnvironmentName);
-								lowerCaseEnvironmentName.MakeLower();
+								char const* const szEnvironmentName = pEnvironment->GetName();
 
-								if (lowerCaseEnvironmentName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
+								if (!isTextFilterDisabled)
 								{
-									doesEnvironmentMatchFilter = true;
-								}
-							}
+									CryFixedStringT<MaxControlNameLength> lowerCaseEnvironmentName(szEnvironmentName);
+									lowerCaseEnvironmentName.MakeLower();
 
-							environmentInfo.emplace(szEnvironmentName, environmentPair.second);
+									if (lowerCaseEnvironmentName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
+									{
+										doesEnvironmentMatchFilter = true;
+									}
+								}
+
+								environmentInfo.emplace(szEnvironmentName, environmentPair.second);
+							}
 						}
 					}
 				}
@@ -1014,7 +1004,7 @@ void CObject::ForceImplementationRefresh(bool const setTransformation)
 
 		if (pEnvironment != nullptr)
 		{
-			HandleSetEnvironment(pEnvironment, environmentPair.second);
+			pEnvironment->Set(*this, environmentPair.second);
 		}
 	}
 

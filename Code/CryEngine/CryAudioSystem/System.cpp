@@ -2633,7 +2633,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 
 				if (pEnvironment != nullptr)
 				{
-					pObject->HandleSetEnvironment(pEnvironment, pRequestData->amount);
+					pEnvironment->Set(*pObject, pRequestData->amount);
 					result = ERequestStatus::Success;
 				}
 				else
@@ -3101,7 +3101,7 @@ void CSystem::SetCurrentEnvironmentsOnObject(CObject* const pObject, EntityId co
 
 				if (pEnvironment != nullptr)
 				{
-					pObject->HandleSetEnvironment(pEnvironment, areaInfo.amount);
+					pEnvironment->Set(*pObject, areaInfo.amount);
 				}
 			}
 		}

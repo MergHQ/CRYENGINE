@@ -8,6 +8,7 @@
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	#include "Object.h"
+	#include "Common/Logger.h"
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 namespace CryAudio
@@ -32,6 +33,12 @@ void CSwitchState::Set(CObject const& object) const
 	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	// Log the "no-connections" case only on user generated controls.
+	if (m_connections.empty())
+	{
+		Cry::Audio::Log(ELogType::Warning, R"(SwitchState "%s" set on object "%s" without connections)", GetName(), object.m_name.c_str());
+	}
+
 	const_cast<CObject&>(object).StoreSwitchValue(m_switchId, m_switchStateId);
 #endif   // INCLUDE_AUDIO_PRODUCTION_CODE
 }
@@ -45,5 +52,13 @@ void CSwitchState::SetGlobal() const
 	{
 		g_pIImpl->SetGlobalSwitchState(pConnection);
 	}
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	// Log the "no-connections" case only on user generated controls.
+	if (m_connections.empty())
+	{
+		Cry::Audio::Log(ELogType::Warning, R"(SwitchState "%s" set globally without connections)", GetName());
+	}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 } // namespace CryAudio
