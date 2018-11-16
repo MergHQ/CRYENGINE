@@ -15,20 +15,6 @@
 #include "System.h"
 #include <CryNetwork/CrySocks.h>
 
-#if CRY_PLATFORM_ORBIS
-inline uint32 CryGetCurrentThreadId32()
-{
-	// A horrible hack that assumes that pthread_t has a first member that is a 32-bit ID.
-	// This is totally unsafe and undocumented, but we need a 32-bit ID for MemReplay.
-	return *reinterpret_cast<uint32*>(CryGetCurrentThreadId());
-}
-#else
-inline uint32 CryGetCurrentThreadId32()
-{
-	return static_cast<uint32>(CryGetCurrentThreadId());
-}
-#endif
-
 // FIXME DbgHelp broken on Durango currently
 #if CRY_PLATFORM_WINDOWS //|| CRY_PLATFORM_DURANGO
 	#include "DebugCallStack.h"
@@ -811,7 +797,7 @@ bool ReplayLogStream::Open(const char* openString)
 		m_bufferEnd = &m_buffer[0];
 
 		// Write stream header.
-		uint8 version = 3;
+		const uint8 version = 4;
 		uint32 platform = MemReplayPlatformIds::PI_Unknown;
 
 	#if CRY_PLATFORM_ORBIS
@@ -1605,7 +1591,7 @@ void CMemReplay::AddContext(int type, uint32 flags, const char* str)
 		if (m_stream.IsOpen())
 		{
 			new(m_stream.AllocateRawEvent<MemReplayPushContextEvent>(strlen(str)))
-			MemReplayPushContextEvent(CryGetCurrentThreadId32(), str, (EMemStatContextTypes::Type) type, flags);
+			MemReplayPushContextEvent(CryGetCurrentThreadId(), str, (EMemStatContextTypes::Type) type, flags);
 		}
 	}
 }
@@ -1620,7 +1606,7 @@ void CMemReplay::AddContextV(int type, uint32 flags, const char* format, va_list
 		if (m_stream.IsOpen())
 		{
 			MemReplayPushContextEvent* ev = m_stream.BeginAllocateRawEvent<MemReplayPushContextEvent>(511);
-			new(ev) MemReplayPushContextEvent(CryGetCurrentThreadId32(), "", (EMemStatContextTypes::Type) type, flags);
+			new(ev) MemReplayPushContextEvent(CryGetCurrentThreadId(), "", (EMemStatContextTypes::Type) type, flags);
 
 			cry_vsprintf(ev->name, 512, format, args);
 
@@ -1640,7 +1626,7 @@ void CMemReplay::RemoveContext()
 
 		if (m_stream.IsOpen())
 		{
-			m_stream.WriteEvent(MemReplayPopContextEvent(CryGetCurrentThreadId32()));
+			m_stream.WriteEvent(MemReplayPopContextEvent(CryGetCurrentThreadId()));
 		}
 	}
 }
@@ -1914,7 +1900,7 @@ void CMemReplay::RecordModuleLoad(void* pSelf, const CReplayModules::ModuleLoadD
 
 	pMR->m_stream.WriteEvent(MemReplayModuleRefEvent(mld.name, mld.path, mld.address, mld.size, mld.sig));
 
-	const uint32 threadId = CryGetCurrentThreadId32();
+	const uint32 threadId = CryGetCurrentThreadId();
 
 	MemReplayPushContextEvent* pEv = new(pMR->m_stream.BeginAllocateRawEvent<MemReplayPushContextEvent>(baseNameLen))MemReplayPushContextEvent(threadId, baseName, EMemStatContextTypes::MSC_Other, 0);
 	pMR->m_stream.EndAllocateRawEvent<MemReplayPushContextEvent>(baseNameLen);
@@ -1945,7 +1931,7 @@ void CMemReplay::RecordAlloc(EMemReplayAllocClass::Class cls, uint16 subCls, int
 	  k_maxCallStackDepth * sizeof(void*) - SIZEOF_MEMBER(MemReplayAllocEvent, callstack));
 
 	new(ev) MemReplayAllocEvent(
-	  CryGetCurrentThreadId32(),
+	  CryGetCurrentThreadId(),
 	  static_cast<uint16>(moduleId),
 	  static_cast<uint16>(cls),
 	  static_cast<uint16>(subCls),
@@ -1968,7 +1954,7 @@ void CMemReplay::RecordRealloc(EMemReplayAllocClass::Class cls, uint16 subCls, i
 	MemReplayReallocEvent* ev = new(m_stream.BeginAllocateRawEvent<MemReplayReallocEvent>(
 	                                  k_maxCallStackDepth * SIZEOF_MEMBER(MemReplayReallocEvent, callstack[0]) - SIZEOF_MEMBER(MemReplayReallocEvent, callstack)))
 	                            MemReplayReallocEvent(
-	  CryGetCurrentThreadId32(),
+	  CryGetCurrentThreadId(),
 	  static_cast<uint16>(moduleId),
 	  static_cast<uint16>(cls),
 	  static_cast<uint16>(subCls),
@@ -1991,7 +1977,7 @@ void CMemReplay::RecordFree(EMemReplayAllocClass::Class cls, uint16 subCls, int 
 	MemReplayFreeEvent* ev =
 	  new(m_stream.BeginAllocateRawEvent<MemReplayFreeEvent>(SIZEOF_MEMBER(MemReplayFreeEvent, callstack[0]) * k_maxCallStackDepth - SIZEOF_MEMBER(MemReplayFreeEvent, callstack)))
 	  MemReplayFreeEvent(
-	    CryGetCurrentThreadId32(),
+	    CryGetCurrentThreadId(),
 	    static_cast<uint16>(moduleId),
 	    static_cast<uint16>(cls),
 	    static_cast<uint16>(subCls),
