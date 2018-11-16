@@ -1110,6 +1110,7 @@ void QTimeOfDayWidget::UpdateVarPropTree()
 			}
 		}
 	}
+	m_propertyTreeVar->revert();
 }
 
 void QTimeOfDayWidget::UpdateCurrentTimeEdit()
