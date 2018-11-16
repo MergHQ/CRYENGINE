@@ -556,16 +556,11 @@ Token JSONTokenizer::operator()(const char* ptr) const
 
 JSONIArchive::JSONIArchive()
 : Archive(INPUT | TEXT)
-, buffer_(0)
 {
 }
 
 JSONIArchive::~JSONIArchive()
 {
-	if (buffer_) {
-		free(buffer_);
-		buffer_ = 0;
-	}
 	stack_.clear();
 	reader_.reset();
 }
@@ -577,8 +572,7 @@ bool JSONIArchive::open(const char* buffer, size_t length, bool free)
 
 	if(buffer)
 		reader_.reset(new MemoryReader(buffer, length, free));
-	buffer_ = 0;
-
+	
 	token_ = Token(reader_->begin(), reader_->begin());
 	stack_.clear();
 
@@ -614,13 +608,17 @@ bool JSONIArchive::load(const char* filename)
 		fclose(file);
 
 		filename_ = filename;
-		buffer_ = buffer;
 		if (fileSize > 0)
-			return open((char*)buffer, fileSize, true);
-		else
-			return false; 
+		{
+			if (open((char*)buffer, fileSize, true))
+				return true;
+		}
+		
+		free(buffer);
+		return false;
 	}
-	else{
+	else
+	{
 		return false;
 	}
 }
