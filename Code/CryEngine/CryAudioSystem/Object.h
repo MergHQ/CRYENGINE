@@ -108,7 +108,6 @@ public:
 
 	ERequestStatus HandleStopTrigger(CTrigger const* const pTrigger);
 	void           HandleSetTransformation(CTransformation const& transformation);
-	void           HandleSetEnvironment(CEnvironment const* const pEnvironment, float const value);
 	void           HandleSetOcclusionType(EOcclusionType const calcType);
 	void           HandleSetOcclusionRayOffset(float const offset);
 	void           HandleStopFile(char const* const szFile);
