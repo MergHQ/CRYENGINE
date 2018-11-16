@@ -1,0 +1,20 @@
+# Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):	
+
+	bld.CryEngineStaticModule( 
+		target    = 'Detours', 
+		vs_filter = 'Libs',
+		win_x64_file_list = 'detours_win_x64.waf_files',
+		exclude_from_static_code_analyzer = True,
+		
+		win_cxxflags = ['/W4', '/WX', '/Zi', '/MT', '/Gy', '/Gm-', '/Zl', '/Od'],
+		
+		win_defines = ['_AMD64_', 'WIN32_LEAN_AND_MEAN','_WIN32_WINNT=0x501'],
+		win_x64_defines = ['_AMD64_'],
+
+		module_provides = dict(		
+			win_x64_includes = [Path('Code/SDKs/Detours/4.0.1/src')],
+			win_x64_defines = ['_AMD64_'],
+		),
+	)

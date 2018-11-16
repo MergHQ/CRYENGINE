@@ -1,0 +1,13 @@
+{
+    "NoUberFile": {
+        "Root": [
+            "../../SDKs/Detours/4.0.1/src/creatwth.cpp",
+			"../../SDKs/Detours/4.0.1/src/detours.cpp",
+			"../../SDKs/Detours/4.0.1/src/detours.h",
+			"../../SDKs/Detours/4.0.1/src/detver.h",
+			"../../SDKs/Detours/4.0.1/src/disolx64.cpp",
+			"../../SDKs/Detours/4.0.1/src/image.cpp",
+			"../../SDKs/Detours/4.0.1/src/modules.cpp"
+        ]
+    }
+}
