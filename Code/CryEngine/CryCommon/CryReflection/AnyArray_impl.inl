@@ -743,7 +743,7 @@ inline void CAnyArray::DestructAll()
 {
 	CallDestructors(0, m_size);
 
-	CryModuleMemalignFree(m_pData);
+	CryModuleFree(m_pData);
 	m_pData = nullptr;
 	m_size = 0;
 	m_capacity = 0;

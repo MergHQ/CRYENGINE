@@ -81,7 +81,6 @@ private:
 	Token token_;
 	std::vector<char> unescapeBuffer_;
 	string filename_;
-	void* buffer_;
 };
 
 YASLI_INLINE double parseFloat(const char* s);
