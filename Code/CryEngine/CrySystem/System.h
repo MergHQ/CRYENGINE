@@ -378,6 +378,7 @@ public:
 	IZLibDecompressor*           GetIZLibDecompressor() override    { return m_pIZLibDecompressor; }
 	ILZ4Decompressor*            GetLZ4Decompressor() override      { return m_pILZ4Decompressor; }
 	CRY_HWND                     GetHWND() override                 { return m_hWnd; }
+	CRY_HWND                     GetActiveHWND() override           { return m_hWndActive; }
 	//////////////////////////////////////////////////////////////////////////
 	// retrieves the perlin noise singleton instance
 	CPNoise3*      GetNoiseGen() override;
@@ -535,8 +536,6 @@ private:
 
 	// Release all resources.
 	void ShutDown();
-
-	void SleepIfInactive();
 
 	//! @name Initialization routines
 	//@{
@@ -866,6 +865,8 @@ private: // ------------------------------------------------------
 #endif // defined(CVARS_WHITELIST)
 
 	CRY_HWND m_hWnd = nullptr;
+	CRY_HWND m_hWndActive = nullptr;
+	bool m_throttleFPS = false;
 
 	// this is the memory statistics that is retained in memory between frames
 	// in which it's not gathered

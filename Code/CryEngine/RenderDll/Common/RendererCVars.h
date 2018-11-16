@@ -76,9 +76,6 @@ public:
 	static float CV_r_overrideRefreshRate;
 	static int   CV_r_overrideScanlineOrder;
 #endif
-#if CRY_PLATFORM_WINDOWS
-	static int CV_r_FullscreenPreemption;
-#endif
 
 #if CRY_PLATFORM_ANDROID
 	#define GRAPHICS_PIPELINE_MOBILE_DEFAULT_VAL 1
@@ -637,7 +634,7 @@ public:
 
 #if defined(CRY_PLATFORM_WINDOWS)
 	static int CV_d3d11_preventDriverThreading;
-	ICVar*     CV_r_FullscreenNativeRes;
+	ICVar*     m_CVFullscreenNativeRes;
 #endif
 
 	static int CV_r_VolumetricClouds;
@@ -662,6 +659,7 @@ public:
 	ICVar* m_CVWidth;
 	ICVar* m_CVHeight;
 	ICVar* m_CVWindowType;
+	ICVar* CV_r_ResizableWindow;
 	ICVar* m_CVColorBits;
 	ICVar* m_CVDisplayInfo;
 	//////////////////////////////////////////////////////////////////////////

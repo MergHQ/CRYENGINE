@@ -167,9 +167,8 @@ CRemoteCommandClient::Connection::~Connection()
 	m_pCommands.clear();
 
 	// Release all of the raw messages that were not picked up
-	while (!m_pRawMessages.empty())
+	for (IServiceNetworkMessage* pMessage : m_pRawMessages.pop_all())
 	{
-		IServiceNetworkMessage* pMessage = m_pRawMessages.pop();
 		pMessage->Release();
 	}
 
@@ -546,7 +545,9 @@ bool CRemoteCommandClient::Connection::SendRawMessage(IServiceNetworkMessage* pM
 
 IServiceNetworkMessage* CRemoteCommandClient::Connection::ReceiveRawMessage()
 {
-	return m_pRawMessages.pop();
+	IServiceNetworkMessage* pMessage = nullptr;
+	m_pRawMessages.try_pop(pMessage);
+	return pMessage;
 }
 
 void CRemoteCommandClient::Connection::AddRef()

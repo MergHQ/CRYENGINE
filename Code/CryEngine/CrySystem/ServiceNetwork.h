@@ -176,14 +176,14 @@ private:
 	volatile uint32 m_statsNumDataReceived;
 
 	// Queue of messages to send (thread access possible)
-	typedef CryMT::CLocklessPointerQueue<CServiceNetworkMessage> TSendQueue;
+	typedef CryMT::queue<CServiceNetworkMessage*> TSendQueue;
 	CServiceNetworkMessage* m_pSendedMessages;
 	TSendQueue              m_pSendQueue;
 	uint32                  m_messageDataSentSoFar;
 	volatile int            m_sendQueueDataSize;
 
 	// Queue of received message
-	typedef CryMT::CLocklessPointerQueue<CServiceNetworkMessage> TReceiveQueue;
+	typedef CryMT::queue<CServiceNetworkMessage*> TReceiveQueue;
 	TReceiveQueue m_pReceiveQueue;
 	uint32        m_receiveQueueDataSize;
 	uint32        m_messageDataReceivedSoFar;

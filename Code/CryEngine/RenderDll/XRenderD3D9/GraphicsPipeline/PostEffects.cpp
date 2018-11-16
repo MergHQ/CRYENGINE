@@ -186,11 +186,6 @@ bool CPostEffectStage::Execute()
 		return false;
 	}
 
-	if (rd->m_bDeviceLost)
-	{
-		return false;
-	}
-
 	IF (!CShaderMan::s_shPostEffects, 0)
 	{
 		return false;

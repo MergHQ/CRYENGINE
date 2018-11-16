@@ -606,10 +606,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 
 	gcpRendD3D->SetCurDownscaleFactor(gcpRendD3D->m_CurViewportScale);
 
-	// Skip scene rendering when device is lost
-	if (m_bDeviceLost)
-		return;
-
 	{
 		PROFILE_FRAME(WaitForRenderView);
 		pRenderView->SwitchUsageMode(CRenderView::eUsageModeReading);

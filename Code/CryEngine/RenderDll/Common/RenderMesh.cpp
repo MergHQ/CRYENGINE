@@ -2932,8 +2932,6 @@ bool CRenderMesh::CreateVidVertices(int nVerts, InputLayoutHandle eVF, int nStre
 	SREC_AUTO_LOCK(m_sResLock);
 	CRenderer* pRend = gRenDev;
 
-	if (gRenDev->m_bDeviceLost)
-    return false;
   if (!nVerts && eVF==InputLayoutHandle::Unspecified)
   {
     nVerts = m_nVerts;

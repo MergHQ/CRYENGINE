@@ -1742,14 +1742,9 @@ int CHWShader_D3D::CheckActivation(CShader* pSH, SHWSInstance*& pInst, uint32 nF
 	{
 		if (pInst->m_Handle.m_pData)
 		{
-			if (gRenDev && !gRenDev->CheckDeviceLost())
-			{
-				mfUploadHW(pInst, pInst->m_Handle.m_pData, pInst->m_Handle.m_nData, pSH, nFlags);
-				SAFE_DELETE_ARRAY(pInst->m_Handle.m_pData);
-				pInst->m_Handle.m_nData = 0;
-			}
-			else
-				eError = ED3DShError_CompilingError;
+			mfUploadHW(pInst, pInst->m_Handle.m_pData, pInst->m_Handle.m_nData, pSH, nFlags);
+			SAFE_DELETE_ARRAY(pInst->m_Handle.m_pData);
+			pInst->m_Handle.m_nData = 0;
 		}
 	}
 	if (eError == ED3DShError_CompilingError)

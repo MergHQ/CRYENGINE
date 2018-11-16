@@ -42,9 +42,6 @@ int CRendererCVars::CV_r_vsync;
 float CRendererCVars::CV_r_overrideRefreshRate = 0;
 int CRendererCVars::CV_r_overrideScanlineOrder = 0;
 #endif
-#if CRY_PLATFORM_WINDOWS
-int CRendererCVars::CV_r_FullscreenPreemption = 1;
-#endif
 AllocateConstIntCVar(CRendererCVars, CV_r_SyncToFrameFence);
 AllocateConstIntCVar(CRendererCVars, CV_r_GraphicsPipelineMobile);
 AllocateConstIntCVar(CRendererCVars, CV_e_DebugTexelDensity);
@@ -2673,10 +2670,6 @@ void CRendererCVars::InitCVars()
 	               "3=interlaced (lower field first)\n"
 	               "Usage: r_overrideScanlineOrder [0/1/2/3]");
 #endif
-#if CRY_PLATFORM_WINDOWS
-	REGISTER_CVAR3("r_FullscreenPreemption", CV_r_FullscreenPreemption, 1, VF_NULL,
-	               "While in fullscreen activities like notification pop ups of other applications won't cause a mode switch back into windowed mode.");
-#endif
 	DefineConstIntCVar3("r_UseESRAM", CV_r_useESRAM, 1, VF_REQUIRE_APP_RESTART,
 	                    "Toggles using ESRAM for render targets (Durango only)\n"
 	                    "Usage: r_UseESRAM [0/1]");
@@ -3062,6 +3055,9 @@ void CRendererCVars::InitCVars()
 	               "Prevent internal threading optimizations for D3D Device.\n");
 #endif
 
+	CV_r_ResizableWindow = REGISTER_INT("r_resizableWindow", 1, VF_NULL,
+		"Turn on resizable window borders. Changes are only applied after changing the window style once.");
+
 	CV_capture_frames = 0;
 	CV_capture_folder = 0;
 	CV_capture_file_format = 0;
@@ -3087,6 +3083,10 @@ void CRendererCVars::InitExternalCVars()
 	m_CVWindowType = iConsole->GetCVar("r_WindowType");
 	m_CVDisplayInfo = iConsole->GetCVar("r_DisplayInfo");
 	m_CVColorBits = iConsole->GetCVar("r_ColorBits");
+
+#if CRY_PLATFORM_WINDOWS
+	m_CVFullscreenNativeRes = iConsole->GetCVar("r_FullscreenNativeRes");
+#endif
 }
 
 void CRendererCVars::CacheCaptureCVars()

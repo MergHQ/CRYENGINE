@@ -68,9 +68,8 @@ CRemoteCommandServer::Endpoint::~Endpoint()
 {
 	// release commands that were not yet executed
 	// this will release the command memory buffers (if they are not referenced elsewhere)
-	while (!m_pCommandsToExecute.empty())
+	for (WrappedCommand* pCommand : m_pCommandsToExecute.pop_all())
 	{
-		WrappedCommand* pCommand = m_pCommandsToExecute.pop();
 		pCommand->Release();
 	}
 
@@ -150,11 +149,9 @@ void CRemoteCommandServer::Endpoint::Execute()
 	uint32 idOfLastExecutedCommand = 0;
 
 	// Process the commands on the execution list
-	while (!m_pCommandsToExecute.empty())
+	WrappedCommand* pCommand;
+	while (m_pCommandsToExecute.try_pop(pCommand))
 	{
-		// Pop the command from the stack
-		WrappedCommand* pCommand = m_pCommandsToExecute.pop();
-
 		LOG_VERBOSE(3, "Executing command '%s', ID %d",
 		            pCommand->GetCommand()->GetClass()->GetName(),
 		            pCommand->GetId());
@@ -464,9 +461,9 @@ CRemoteCommandServer::~CRemoteCommandServer()
 	m_pEndpointToDelete.clear();
 
 	// Cleanup the raw messages
-	while (!m_pRawMessages.empty())
+	for (auto pMessage : m_pRawMessages.pop_all())
 	{
-		delete m_pRawMessages.pop();
+		delete pMessage;
 	}
 
 	// Properly close the listening socket
@@ -543,10 +540,9 @@ void CRemoteCommandServer::ProcessRawMessagesSync()
 	}
 
 	// process each message
-	while (!m_pRawMessages.empty())
+	RawMessage* pMsg;
+	while (m_pRawMessages.try_pop(pMsg))
 	{
-		RawMessage* pMsg = m_pRawMessages.pop();
-
 		// Process messages only from alive connection (they could die before we got a chance to process the message)
 		if (pMsg && pMsg->m_pConnection->IsAlive())
 		{

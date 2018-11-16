@@ -953,9 +953,6 @@ void CRenderAuxGeomD3D::RT_Flush(const SAuxGeomCBRawDataPackagedConst& data)
 	if (!CV_r_auxGeom)
 		return;
 
-	if (m_renderer.IsDeviceLost())
-		return;
-
 	PROFILE_LABEL_SCOPE("AuxGeom_Flush");
 
 	// should only be called from render thread

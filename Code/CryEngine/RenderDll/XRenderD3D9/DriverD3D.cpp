@@ -46,36 +46,6 @@
 	#include <D3Dcompiler.h>
 #endif
 
-void CD3D9Renderer::LimitFramerate(const int maxFPS, const bool bUseSleep)
-{
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "RT_FRAME_CAP");
-
-	if (maxFPS > 0)
-	{
-		CTimeValue timeFrameMax;
-		const float safeMarginFPS = 0.5f;//save margin to not drop below 30 fps
-		static CTimeValue sTimeLast = gEnv->pTimer->GetAsyncTime();
-
-		timeFrameMax.SetMilliSeconds((int64)(1000.f / ((float)maxFPS + safeMarginFPS)));
-		const CTimeValue timeLast = timeFrameMax + sTimeLast;
-		while (timeLast.GetValue() > gEnv->pTimer->GetAsyncTime().GetValue())
-		{
-			if (bUseSleep)
-			{
-				CrySleep(1);
-			}
-			else
-			{
-				volatile int i = 0;
-				while (i++ < 1000)
-					;
-			}
-		}
-
-		sTimeLast = gEnv->pTimer->GetAsyncTime();
-	}
-}
-
 CCryNameTSCRC CTexture::s_sClassName = CCryNameTSCRC("CTexture");
 CCryNameTSCRC CShader::s_sClassName = CCryNameTSCRC("CShader");
 
@@ -86,7 +56,7 @@ CD3D9Renderer::CD3D9Renderer()
 	: m_DeviceOwningthreadID(0),
 	  m_nAsyncDeviceState(0)
 #if CRY_PLATFORM_WINDOWS
-	, m_bDisplayChanged(false)
+	, m_changedMonitor(true)
 	, m_nConnectedMonitors(1)
 #endif // CRY_PLATFORM_WINDOWS
 {
@@ -245,18 +215,9 @@ void CD3D9Renderer::Reset(void)
 {
 	m_pRT->RC_ResetDevice();
 }
+
 void CD3D9Renderer::RT_Reset(void)
 {
-
-	if (CheckDeviceLost())
-		return;
-	m_bDeviceLost = 1;
-	//iLog->Log("...Reset");
-	RestoreGamma();
-	m_bDeviceLost = 0;
-
-	if (IsFullscreen())
-		SetGamma(CV_r_gamma + m_fDeltaGamma, CV_r_brightness, CV_r_contrast, false);
 }
 
 bool CD3D9Renderer::ChangeDisplay(CRenderDisplayContext* pDC, unsigned int width, unsigned int height, unsigned int cbpp)
@@ -266,9 +227,6 @@ bool CD3D9Renderer::ChangeDisplay(CRenderDisplayContext* pDC, unsigned int width
 
 void CD3D9Renderer::ChangeViewport(CRenderDisplayContext* pDC, unsigned int viewPortOffsetX, unsigned int viewPortOffsetY, unsigned int viewportWidth, unsigned int viewportHeight)
 {
-	if (m_bDeviceLost)
-		return;
-
 	gRenDev->ExecuteRenderThreadCommand([=]{
 			// This change will propagate to the other dimensions (output and render)
 			// when HandleDisplayPropertyChanges() is called just before rendering
@@ -467,8 +425,10 @@ void CD3D9Renderer::RT_ResumeDevice()
 }
 #endif
 
-void CD3D9Renderer::CalculateResolutions(int displayWidthRequested, int displayHeightRequested, bool bUseNativeRes, bool findClosestMatching, int* pRenderWidth, int* pRenderHeight, int* pOutputWidth, int* pOutputHeight, int* pDisplayWidth, int* pDisplayHeight)
+void CD3D9Renderer::CalculateResolutions(int displayWidthRequested, int displayHeightRequested, int* pRenderWidth, int* pRenderHeight, int* pOutputWidth, int* pOutputHeight, int* pDisplayWidth, int* pDisplayHeight)
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	CRenderDisplayContext* pDC = GetActiveDisplayContext();
 
 	displayWidthRequested  = max(displayWidthRequested , 32);
@@ -497,24 +457,86 @@ void CD3D9Renderer::CalculateResolutions(int displayWidthRequested, int displayH
 			*pDisplayHeight = 720;
 		}
 	#elif CRY_PLATFORM_WINDOWS
-		RectI monitorBounds = {};
-		if (pDC->IsSwapChainBacked())
-			monitorBounds = static_cast<const CSwapChainBackedRenderDisplayContext*>(pDC)->GetCurrentMonitorBounds();
-		else
+		bool recalculateMonitorProperties = false;
+
+		// Detect if there was a monitor change and we are affected by it
+		// m_changedMonitor is changed by the message-pump and immutable by us (render-thread)
+		if (m_changedMonitor != m_inspectedMonitor)
 		{
-			monitorBounds.w = pDC->GetDisplayResolution().x;
-			monitorBounds.h = pDC->GetDisplayResolution().y;
-		}
-		
-		if (findClosestMatching && pDC->IsSwapChainBacked())
-		{
-			const auto match = static_cast<const CSwapChainBackedRenderDisplayContext*>(pDC)->FindClosestMatchingScreenResolution(Vec2_tpl<uint32_t>{ static_cast<uint32_t>(displayWidthRequested), static_cast<uint32_t>(displayHeightRequested) });
-			displayWidthRequested  = match.x;
-			displayHeightRequested = match.y;
+			m_inspectedMonitor = m_changedMonitor;
+
+			HMONITOR migratedMonitor = MonitorFromWindow((HWND)m_hWnd, MONITOR_DEFAULTTONEAREST);
+			if (migratedMonitor != m_activeMonitor)
+			{
+				m_activeMonitor = migratedMonitor;
+
+				recalculateMonitorProperties = true;
+			}
 		}
 
-		*pDisplayWidth  = bUseNativeRes ? monitorBounds.w : displayWidthRequested;
-		*pDisplayHeight = bUseNativeRes ? monitorBounds.h : displayHeightRequested;
+		// Detect if we are asked for a resolution we didn't provide previously
+		if (displayWidthRequested  != m_lastDisplayWidthRequested ||
+			displayHeightRequested != m_lastDisplayHeightRequested)
+		{
+			m_lastDisplayWidthRequested  = displayWidthRequested;
+			m_lastDisplayHeightRequested = displayHeightRequested;
+
+			recalculateMonitorProperties = true;
+		}
+
+		// Detect if we went into a transition where resolution needs to auto-adapted
+		if (((m_currWindowState >= EWindowState::BorderlessFullscreen) && (m_lastWindowState != m_currWindowState)) ||
+			((m_lastWindowState >= EWindowState::BorderlessFullscreen) && (m_currWindowState != m_lastWindowState)))
+		{
+			recalculateMonitorProperties = true;
+		}
+
+		if (recalculateMonitorProperties)
+		{
+			if (m_currWindowState == EWindowState::BorderlessFullscreen)
+			{
+				MONITORINFO monitorInfo;
+				monitorInfo.cbSize = sizeof(monitorInfo);
+				GetMonitorInfo(m_activeMonitor, &monitorInfo);
+
+				// Match monitor resolution in borderless full screen mode
+				*pDisplayWidth  = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
+				*pDisplayHeight = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
+			}
+			else if (m_currWindowState == EWindowState::Fullscreen)
+			{
+				const bool bFullScreenNativeRes = m_CVFullscreenNativeRes && m_CVFullscreenNativeRes->GetIVal() != 0;
+
+				CRY_ASSERT(pDC->IsSwapChainBacked());
+				if (bFullScreenNativeRes)
+				{
+					const auto bounds = static_cast<const CSwapChainBackedRenderDisplayContext*>(pDC)->GetCurrentMonitorBounds();
+
+					*pDisplayWidth  = bounds.w;
+					*pDisplayHeight = bounds.h;
+				}
+				else
+				{
+					const auto match = static_cast<const CSwapChainBackedRenderDisplayContext*>(pDC)->FindClosestMatchingScreenResolution(Vec2_tpl<uint32_t>{ static_cast<uint32_t>(displayWidthRequested), static_cast<uint32_t>(displayHeightRequested) });
+
+					*pDisplayWidth  = match.x;
+					*pDisplayHeight = match.y;
+				}
+			}
+			else
+			{
+				*pDisplayWidth  = displayWidthRequested;
+				*pDisplayHeight = displayHeightRequested;
+			}
+
+			m_lastDisplayWidth  = *pDisplayWidth;
+			m_lastDisplayHeight = *pDisplayHeight;
+		}
+		else
+		{
+			*pDisplayWidth  = m_lastDisplayWidth;
+			*pDisplayHeight = m_lastDisplayHeight;
+		}
 	#endif
 	}
 
@@ -531,18 +553,18 @@ void CD3D9Renderer::CalculateResolutions(int displayWidthRequested, int displayH
 
 void CD3D9Renderer::HandleDisplayPropertyChanges()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	CRenderDisplayContext* pBC = GetBaseDisplayContext();
 	CRenderDisplayContext* pDC = GetActiveDisplayContext();
 	CRenderOutput* pRO = pDC->GetRenderOutput().get();
 
+	bool bChangeWindow = false;
 	bool bChangedRendering = false;
 	bool bChangedOutputting = false;
 	bool bResizeSwapchain = false;
 	bool bRecreateSwapchain = false;
-	bool bNativeRes = false;
 	bool wasFullscreen = IsFullscreen();
-
-	EWindowState previousWindowState = m_windowState;
 
 	if (!IsEditorMode())
 	{
@@ -550,25 +572,15 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 
 		// Detect changes in refresh property ///////////////////////////////////////////////////////////////////////////
 #if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
-		bChangedRendering |= m_overrideRefreshRate != CV_r_overrideRefreshRate || m_overrideScanlineOrder != CV_r_overrideScanlineOrder;
+		bResizeSwapchain  |= m_overrideRefreshRate != CV_r_overrideRefreshRate || m_overrideScanlineOrder != CV_r_overrideScanlineOrder;
 #endif
 
 		EWindowState windowState = CalculateWindowState();
-		m_windowState = windowState;
+		bChangeWindow = m_lastWindowState != windowState;
+		m_currWindowState = windowState;
 
-		bChangedRendering |= windowState != previousWindowState;
-		bResizeSwapchain  |= windowState != previousWindowState;
-
-#if CRY_PLATFORM_CONSOLE || CRY_PLATFORM_MOBILE
-		bNativeRes = true;
-#elif CRY_PLATFORM_WINDOWS
-		bResizeSwapchain |= (m_bWindowRestored || m_bDisplayChanged && IsFullscreen());
-		m_bDisplayChanged = false;
-
-		const bool bFullScreenNativeRes = CV_r_FullscreenNativeRes && CV_r_FullscreenNativeRes->GetIVal() != 0;
-		bNativeRes = bFullScreenNativeRes && (IsFullscreen() || m_windowState == EWindowState::BorderlessWindow);
-#else
-		bNativeRes = false;
+#if CRY_PLATFORM_WINDOWS
+		bResizeSwapchain |= (m_bWindowRestored);
 #endif
 	}
 
@@ -582,6 +594,7 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 //		const int depthBits = m_CVDepthBits ? m_CVDepthBits->GetIVal() : m_zbpp;
 //		const int stnclBits = m_CVStnclBits ? m_CVStnclBits->GetIVal() : m_sbpp;
 		const int vSync = !IsEditorMode() ? CV_r_vsync : 0;
+		const int reSizable = CV_r_ResizableWindow ? CV_r_ResizableWindow->GetIVal() : m_Resizable;
 
 		const int displayWidthBefore  = pDC->GetDisplayResolution()[0];
 		const int displayHeightBefore = pDC->GetDisplayResolution()[1];
@@ -599,26 +612,12 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 #else
 		int displayWidthRequested  = !IsEditorMode() && (pDC == pBC) && m_CVWidth  ? m_CVWidth ->GetIVal() : displayWidthBefore;
 		int displayHeightRequested = !IsEditorMode() && (pDC == pBC) && m_CVHeight ? m_CVHeight->GetIVal() : displayHeightBefore;
-
-#if CRY_PLATFORM_WINDOWS
-		// Match monitor resolution in borderless full screen mode
-		if (m_windowState == EWindowState::BorderlessFullscreen)
-		{
-			HMONITOR hMonitor = MonitorFromWindow((HWND)m_hWnd, MONITOR_DEFAULTTONEAREST);
-			MONITORINFO monitorInfo;
-			monitorInfo.cbSize = sizeof(monitorInfo);
-			GetMonitorInfo(hMonitor, &monitorInfo);
-
-			displayWidthRequested  = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
-			displayHeightRequested = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
-		}
-#endif
 #endif
 
 		// Tweak, adjust and fudge any of the requested changes
 		int renderWidth, renderHeight, outputWidth, outputHeight, displayWidth, displayHeight;
 
-		CalculateResolutions(displayWidthRequested, displayHeightRequested, bNativeRes, IsFullscreen(), &renderWidth, &renderHeight, &outputWidth, &outputHeight, &displayWidth, &displayHeight);
+		CalculateResolutions(displayWidthRequested, displayHeightRequested, &renderWidth, &renderHeight, &outputWidth, &outputHeight, &displayWidth, &displayHeight);
 
 		if (!IsEditorMode() && m_pStereoRenderer && m_pStereoRenderer->IsStereoEnabled())
 		{
@@ -652,16 +651,34 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 
 		// Swap-Chain recreate
 		if (m_cbpp != colorBits ||
+#if (CRY_RENDERER_VULKAN >= 10)
 			m_VSync != vSync ||
+#endif
 			wasFullscreen != IsFullscreen() ||
 			bufferCountBefore < (CRendererCVars::CV_r_MaxFrameLatency + 1))
 		{
 			bRecreateSwapchain = true;
 		}
 
+		// Window-flags adjustment (only if windowed)
+		if ((reSizable != m_Resizable) &&
+			(m_currWindowState == EWindowState::Windowed))
+		{
+			m_Resizable = reSizable;
+			bChangeWindow = true;
+		}
+
+		// Apply changes of rendering resolution ///////////////////////////////////////////////////////////////////////
+		m_VSync = vSync;
+
+		if (bResizeSwapchain | bChangeWindow)
+		{
+			ChangeWindowProperties(displayWidth, displayHeight);
+		}
+
 		if (bResizeSwapchain | bRecreateSwapchain)
 		{
-			ChangeDisplayResolution(displayWidth, displayHeight, colorBits, 75, previousWindowState, bResizeSwapchain | bRecreateSwapchain, pDC);
+			ChangeDisplayResolution(displayWidth, displayHeight, colorBits, 75, bResizeSwapchain | bRecreateSwapchain, pDC);
 
 			CRendererResources::OnDisplayResolutionChanged(displayWidth, displayHeight);
 		}
@@ -689,6 +706,7 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 		}
 
 		m_bWindowRestored = false;
+		m_lastWindowState = m_currWindowState;
 	}
 }
 
@@ -704,18 +722,19 @@ EWindowState CD3D9Renderer::CalculateWindowState() const
 
 const char* CD3D9Renderer::GetWindowStateName() const
 {
-	switch (m_windowState)
+	switch (m_currWindowState)
 	{
 		case EWindowState::Fullscreen:
 			return "Fullscreen";
-		case EWindowState::BorderlessWindow:
+		case EWindowState::BorderlessFullscreen:
 			return "Fullscreen Window";
-			break;
+		case EWindowState::BorderlessWindow:
+			return "Borderless Window";
 		case EWindowState::Windowed:
-		default:
 			return "Windowed";
-			break;
 	}
+
+	return "Unknown";
 }
 
 void CD3D9Renderer::BeginFrame(const SDisplayContextKey& displayContextKey)
@@ -728,8 +747,6 @@ void CD3D9Renderer::BeginFrame(const SDisplayContextKey& displayContextKey)
 	//////////////////////////////////////////////////////////////////////
 
 	CRY_ASSERT(static_cast<const CD3D9Renderer*>(this)->GetDevice().IsValid());
-
-	CheckDeviceLost();
 
 	FlushRTCommands(false, false, false);
 
@@ -1009,9 +1026,7 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 	CRendererCVars::CV_e_TerrainBlendingDebug = pCVTerrainBlendingDebug ? pCVTerrainBlendingDebug->GetIVal() : 0;
 #endif
 
-	CheckDeviceLost();
-
-	if (!m_bDeviceLost && m_bIsWindowActive)
+	if (m_hWndActive == m_hWnd)
 	{
 		if (CV_r_gamma + m_fDeltaGamma + GetS3DRend().GetGammaAdjustment() != m_fLastGamma || CV_r_brightness != m_fLastBrightness || CV_r_contrast != m_fLastContrast)
 			SetGamma(CV_r_gamma + m_fDeltaGamma, CV_r_brightness, CV_r_contrast, false);
@@ -1111,36 +1126,6 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 	{
 		m_SceneRecurseCount++;
 	}
-}
-
-bool CD3D9Renderer::CheckDeviceLost()
-{
-#if CRY_PLATFORM_WINDOWS
-	if (m_pRT && CV_r_multithreaded == 1 && m_pRT->IsRenderThread())
-		return false;
-
-	// DX10/11 should still handle gamma changes on window focus loss
-	if (!m_bStartLevelLoading)
-	{
-		const bool bWindowActive = (GetForegroundWindow() == m_hWnd);
-
-		// Adjust gamma to match focused window
-		if (bWindowActive != m_bIsWindowActive)
-		{
-			if (bWindowActive)
-			{
-				SetGamma(CV_r_gamma + m_fDeltaGamma, CV_r_brightness, CV_r_contrast, true);
-			}
-			else
-			{
-				RestoreGamma();
-			}
-
-			m_bIsWindowActive = bWindowActive;
-		}
-	}
-#endif
-	return false;
 }
 
 bool CD3D9Renderer::RT_StoreTextureToFile(const char* szFilePath, CTexture* pSrc)
@@ -2507,8 +2492,6 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 	if (gEnv->IsEditor() && !IsCurrentContextMainVP())
 		return;
 
-	if (m_bDeviceLost)
-		return;
 #if !defined(_RELEASE)
 	if (CV_r_showbufferusage)
 	{
@@ -3206,27 +3189,6 @@ void CD3D9Renderer::EndFrame()
 	m_pRT->RC_EndFrame(!m_bStartLevelLoading);
 }
 
-static uint32 ComputePresentInterval(bool vsync, uint32 refreshNumerator, uint32 refreshDenominator)
-{
-	uint32 presentInterval = vsync ? 1 : 0;
-	if (vsync && refreshNumerator != 0 && refreshDenominator != 0)
-	{
-		static ICVar* pSysMaxFPS = gEnv && gEnv->pConsole ? gEnv->pConsole->GetCVar("sys_MaxFPS") : 0;
-		if (pSysMaxFPS)
-		{
-			const int32 maxFPS = pSysMaxFPS->GetIVal();
-			if (maxFPS > 0)
-			{
-				const float refreshRate = refreshNumerator / refreshDenominator;
-				const float lockedFPS = maxFPS;
-
-				presentInterval = (uint32) clamp_tpl((int) floorf(refreshRate / lockedFPS + 0.1f), 1, 4);
-			}
-		}
-	}
-	return presentInterval;
-};
-
 void CD3D9Renderer::RT_EndFrame()
 {
 	FUNCTION_PROFILER_RENDERER();
@@ -3236,9 +3198,6 @@ void CD3D9Renderer::RT_EndFrame()
 		iLog->Log("EndScene without BeginScene\n");
 		return;
 	}
-
-	if (m_bDeviceLost)
-		return;
 
 	float fTime = 0; //iTimer->GetAsyncCurTimePrec();
 	HRESULT hReturn = E_FAIL;
@@ -3360,23 +3319,6 @@ void CD3D9Renderer::RT_EndFrame()
 			CRY_PROFILE_REGION(PROFILE_RENDERER, "Present");
 			pDC->PrePresent();
 
-#if !defined(SUPPORT_DEVICE_INFO)
-			if (gEnv && gEnv->pConsole)
-			{
-				static ICVar* pSysMaxFPS = gEnv->pConsole->GetCVar("sys_MaxFPS");
-				static ICVar* pVSync = gEnv->pConsole->GetCVar("r_Vsync");
-				if (pSysMaxFPS && pVSync)
-				{
-					int32 maxFPS = pSysMaxFPS->GetIVal();
-					uint32 vSync = pVSync->GetIVal();
-					if (vSync != 0)
-					{
-						LimitFramerate(maxFPS, false);
-					}
-				}
-			}
-#endif
-
 #if CRY_RENDERER_GNM
 			auto* const pCommandList = GnmCommandList(GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterfaceImpl());
 			const CGnmSwapChain::EFlipMode flipMode = m_VSync ? CGnmSwapChain::kFlipModeSequential : CGnmSwapChain::kFlipModeImmediate;
@@ -3392,10 +3334,7 @@ void CD3D9Renderer::RT_EndFrame()
 			WaitForAsynchronousDevice();
 	#endif
 #elif defined(SUPPORT_DEVICE_INFO)
-	#if CRY_PLATFORM_WINDOWS && !CRY_RENDERER_VULKAN
-			swapDC->EnforceFullscreenPreemption();
-	#endif
-			DWORD syncInterval = ComputePresentInterval(swapDC->GetVSyncState() != 0, swapDC->GetRefreshRateNumerator(), swapDC->GetRefreshRateDemoninator());
+			DWORD syncInterval = swapDC->ComputePresentInterval(m_VSync ? 1 : 0);
 			hReturn = swapDC->GetSwapChain().Present(syncInterval, 0);
 
 			if (IHmdRenderer* pHmdRenderer = GetS3DRend().GetIHmdRenderer())
@@ -3493,7 +3432,6 @@ void CD3D9Renderer::RT_EndFrame()
 #ifdef ENABLE_BENCHMARK_SENSOR
 	m_benchmarkRendererSensor->afterSwapBuffers(GetDevice(), GetDeviceContext());
 #endif
-	CheckDeviceLost();
 
 	GetS3DRend().NotifyFrameFinished();
 
@@ -3609,10 +3547,8 @@ void CD3D9Renderer::RT_PresentFast()
 
 	GetS3DRend().NotifyFrameFinished();
 
-	#if CRY_PLATFORM_WINDOWS
-	swapDC->EnforceFullscreenPreemption();
-	#endif
-	hReturn = swapDC->GetSwapChain().Present(swapDC->GetVSyncState() ? 1 : 0, 0);
+	DWORD syncInterval = swapDC->ComputePresentInterval(m_VSync ? 1 : 0);
+	hReturn = swapDC->GetSwapChain().Present(syncInterval, 0);
 #endif
 	assert(hReturn == S_OK);
 
@@ -4643,9 +4579,6 @@ void CD3D9Renderer::RemoveTexture(unsigned int TextureId)
 
 void CD3D9Renderer::UpdateTextureInVideoMemory(uint32 tnum, unsigned char* newdata, int posx, int posy, int w, int h, ETEX_Format eTFSrc, int posz, int sizez)
 {
-	if (m_bDeviceLost)
-		return;
-
 	CTexture* pTex = CTexture::GetByID(tnum);
 	pTex->UpdateTextureRegion(newdata, posx, posy, posz, w, h, sizez, eTFSrc);
 }
@@ -5321,7 +5254,7 @@ public:
 			break;
 		case ESYSTEM_EVENT_ACTIVATE:
 #if defined(SUPPORT_DEVICE_INFO_MSG_PROCESSING)
-			gcpRendD3D->DevInfo().OnActivate(wparam, lparam);
+			gcpRendD3D->DevInfo().PushSystemEvent(event, wparam, lparam);
 #endif
 			break;
 		case ESYSTEM_EVENT_CHANGE_FOCUS:

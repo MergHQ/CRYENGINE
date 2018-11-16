@@ -56,7 +56,7 @@ public:
 #endif
 
 	uint32                    GetRefreshRateNumerator() const { return m_refreshRateNumerator; }
-	uint32                    GetRefreshRateDemoninator() const { return m_refreshRateDenominator; }
+	uint32                    GetRefreshRateDenominator() const { return m_refreshRateDenominator; }
 
 public:
 #if CRY_PLATFORM_DURANGO

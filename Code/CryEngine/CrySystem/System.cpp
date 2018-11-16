@@ -1271,64 +1271,6 @@ int CSystem::SetThreadState(ESubsystem subsys, bool bActive)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::SleepIfInactive()
-{
-	LOADING_TIME_PROFILE_SECTION;
-#if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
-	// Disable throttling, when various Profilers are in use
-
-	#if defined(CRY_PROFILE_MARKERS_USE_GPA)
-	return;
-	#endif
-
-	#if ALLOW_BROFILER
-	if (::Profiler::IsActive())
-	{
-		return;
-	}
-	#endif
-
-	if (gEnv->pConsole->GetCVar("e_StatoscopeEnabled")->GetIVal())
-	{
-		return;
-	}
-#endif
-
-	// ProcessSleep()
-	if (m_env.IsDedicated() || m_env.IsEditor() || gEnv->bMultiplayer)
-		return;
-
-#if CRY_PLATFORM_WINDOWS
-	if (GetIRenderer())
-	{
-		CRY_HWND hRendWnd = GetIRenderer()->GetHWND();
-		if (!hRendWnd)
-			return;
-
-		// Loop here waiting for window to be activated.
-		for (int nLoops = 0; nLoops < 5; nLoops++)
-		{
-			CRY_HWND hActiveWnd = ::GetActiveWindow();
-			if (hActiveWnd == hRendWnd)
-				break;
-
-			if (m_hWnd)
-			{
-				PumpWindowMessage(true, m_hWnd);
-			}
-			if (gEnv->pGameFramework)
-			{
-				// During the time demo, do not sleep even in inactive window.
-				if (gEnv->pGameFramework->IsInTimeDemo())
-					break;
-			}
-			CrySleep(5);
-		}
-	}
-#endif
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CSystem::SleepIfNeeded()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM)
@@ -1359,7 +1301,7 @@ void CSystem::SleepIfNeeded()
 				if (maxFPS == 0)
 				{
 					const bool bInLoading = (ESYSTEM_GLOBAL_STATE_RUNNING != m_systemGlobalState);
-					if (bInLoading || IsPaused())
+					if (bInLoading || IsPaused() || m_throttleFPS)
 					{
 						maxFPS = 60;
 					}
@@ -1814,9 +1756,6 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 		gEnv->pRenderer->ScreenShot(m_sDelayedScreeenshot.c_str());
 		m_sDelayedScreeenshot.clear();
 	}
-
-	// Check if game needs to be sleeping when not active.
-	SleepIfInactive();
 
 	if (m_pUserCallback)
 		m_pUserCallback->OnUpdate();
@@ -3429,6 +3368,19 @@ int CSystem::PumpWindowMessage(bool bAll, CRY_HWND opaqueHWnd)
 		if (msg.message == WM_QUIT)
 		{
 			return -1;
+		}
+
+		if (msg.message == WM_ACTIVATE)
+		{
+			if (msg.wParam != WA_INACTIVE)
+				m_hWndActive = msg.hwnd;
+			else
+				m_hWndActive = (CRY_HWND)msg.lParam;
+
+			// During the time demo, do not sleep even in inactive window.
+			if (!gEnv->pGameFramework || !gEnv->pGameFramework->IsInTimeDemo())
+				// use sys_maxFPS to throttle the engine
+				m_throttleFPS = msg.wParam != WA_INACTIVE;
 		}
 
 		// Pre-process the message for IME

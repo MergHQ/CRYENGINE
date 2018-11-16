@@ -146,7 +146,6 @@ void CRenderer::InitRenderer()
 	m_bSystemResourcesInit = 0;
 
 	m_bSystemTargetsInit = 0;
-	m_bIsWindowActive    = true;
 
 	m_bShadowsEnabled      = true;
 	m_bCloudShadowsEnabled = true;
@@ -690,7 +689,7 @@ void CRenderer::InitSystemResources(int nFlags)
 	LOADING_TIME_PROFILE_SECTION;
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init System Resources");
 
-	if (!m_bSystemResourcesInit || m_bDeviceLost == 2)
+	if (!m_bSystemResourcesInit)
 	{
 		iLog->Log("*** Init system render resources ***");
 
@@ -724,9 +723,6 @@ void CRenderer::InitSystemResources(int nFlags)
 		   ForceFlushRTCommands();*/
 
 		CTexture::s_bPrecachePhase = bPrecache;
-
-		if (m_bDeviceLost == 2)
-			m_bDeviceLost = 0;
 
 		m_bSystemResourcesInit = 1;
 	}
@@ -797,9 +793,6 @@ void CRenderer::FreeSystemResources(int nFlags)
 			ExecuteRenderThreadCommand([=] {
 				gRenDev->RT_ReleaseRenderResources(nFlags);
 			}, ERenderCommandFlags::FlushAndWait);
-
-			if (!m_bDeviceLost)
-				m_bDeviceLost = 2;
 
 			m_bSystemResourcesInit = 0;
 		}
@@ -1785,7 +1778,7 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 
 	case EFQ_DeviceLost:
 	{
-		WriteQueryResult(pInOut0, nInOutSize0, static_cast<bool>(m_bDeviceLost != 0));
+		WriteQueryResult(pInOut0, nInOutSize0, static_cast<bool>(false));
 	}
 	break;
 
@@ -2369,7 +2362,7 @@ _smart_ptr<IRenderMesh> CRenderer::CreateRenderMeshInitialized(
 	pRenderMesh->m_nClientTextureBindID = nClientTextureBindID;
 
 	// Precache for static buffers
-	if (CV_r_meshprecache && pRenderMesh->_GetNumVerts() && bPrecache && !m_bDeviceLost && m_pRT->IsRenderThread())
+	if (CV_r_meshprecache && pRenderMesh->_GetNumVerts() && bPrecache && m_pRT->IsRenderThread())
 	{
 		//pRenderMesh->CheckUpdate(eVF, -1);
 	}
@@ -4580,6 +4573,8 @@ void CRenderer::ScheduleResourceForDelete(CBaseResource* pResource)
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::RT_DelayedDeleteResources(bool bAllResources)
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	m_currentResourceDeleteBuffer = (m_currentResourceDeleteBuffer + 1) % RT_COMMAND_BUF_COUNT;
 	int buffer = bAllResources ? 0 : m_currentResourceDeleteBuffer;
 	const int bufferEnd = bAllResources ? RT_COMMAND_BUF_COUNT : buffer + 1;

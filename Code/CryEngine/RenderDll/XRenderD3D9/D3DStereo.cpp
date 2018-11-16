@@ -788,8 +788,7 @@ void CD3DStereoRenderer::SubmitFrameToHMD()
 {
 	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
 
-	// When unloading level, m_bDeviceLost is set to 2
-	if (!m_pHmdRenderer || !m_framePrepared || gcpRendD3D->m_bDeviceLost) 
+	if (!m_pHmdRenderer || !m_framePrepared) 
 		return;
 
 	m_pHmdRenderer->SubmitFrame();
@@ -815,7 +814,7 @@ void CD3DStereoRenderer::DisplaySocialScreen()
 {
 	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
 
-	if (!IsStereoEnabled() || gcpRendD3D->m_bDeviceLost)  // When unloading level, m_bDeviceLost is set to 2
+	if (!IsStereoEnabled())
 		return;
 
 	CRenderDisplayContext* pDisplayContext = gcpRendD3D->GetActiveDisplayContext();

@@ -831,8 +831,6 @@ public:
 
 	virtual bool IsDebugRenderNode(IRenderNode* pRenderNode) const override;
 
-	virtual bool         CheckDeviceLost() { return false; };
-
 	EScreenAspectRatio   GetScreenAspect(int nWidth, int nHeight);
 
 	virtual Vec2         SetViewportDownscale(float xscale, float yscale) override;
@@ -845,7 +843,6 @@ public:
 	virtual void         FillFrame(ColorF clearColor) override = 0;
 	virtual void         RenderDebug(bool bRenderStats = true) override = 0;
 	virtual void         EndFrame() override = 0;
-	virtual void         LimitFramerate(const int maxFPS, const bool bUseSleep) = 0;
 
 	virtual void         TryFlush() override = 0;
 
@@ -1383,7 +1380,6 @@ public:
 public:
 	Matrix44A m_IdentityMatrix;
 
-	byte           m_bDeviceLost;
 	byte           m_bSystemResourcesInit;
 	byte           m_bSystemTargetsInit;
 	bool           m_bAquireDeviceThread;
@@ -1404,6 +1400,7 @@ public:
 
 	int                  m_nGPU;
 	int                  m_VSync;
+	int                  m_Resizable;
 	int                  m_Predicated;
 
 	int                  m_nGraphicsPipeline;
@@ -1434,7 +1431,6 @@ public:
 	uint32    m_bUseSilhouettePOM              : 1;
 	uint32    m_bAllowTerrainLayerBlending     : 1;
 	uint32    m_bWaterCaustics                 : 1;
-	uint32    m_bIsWindowActive                : 1;
 	uint32    m_bInShutdown                    : 1;
 	uint32    m_bDeferredDecals                : 1;
 	uint32    m_bShadowsEnabled                : 1;

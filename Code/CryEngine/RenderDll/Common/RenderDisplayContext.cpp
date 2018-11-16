@@ -122,6 +122,7 @@ void CRenderDisplayContext::ReleaseResources()
 void CSwapChainBackedRenderDisplayContext::CreateSwapChain(CRY_HWND hWnd, bool isFullscreen, bool vsync)
 {
 	CRY_ASSERT(hWnd);
+
 	m_hWnd = hWnd;
 	m_fullscreen = isFullscreen;
 
@@ -134,7 +135,10 @@ void CSwapChainBackedRenderDisplayContext::CreateSwapChain(CRY_HWND hWnd, bool i
 		IsFullscreen(),
 		IsMainContext(),
 		vsync);
+
+#if (CRY_RENDERER_VULKAN >= 10)
 	m_bVSync = vsync;
+#endif
 #endif
 
 	auto w = m_DisplayWidth,
@@ -195,6 +199,27 @@ void CSwapChainBackedRenderDisplayContext::ReleaseResources()
 
 	m_bSwapProxy = true;
 }
+
+uint32 CSwapChainBackedRenderDisplayContext::ComputePresentInterval(uint32 presentInterval)
+{
+	if (presentInterval && GetRefreshRateNumerator() != 0 && GetRefreshRateDenominator() != 0)
+	{
+		static ICVar* pSysMaxFPS = gEnv && gEnv->pConsole ? gEnv->pConsole->GetCVar("sys_MaxFPS") : 0;
+		if (pSysMaxFPS)
+		{
+			const int32 maxFPS = pSysMaxFPS->GetIVal();
+			if (maxFPS > 0)
+			{
+				const float refreshRate = float(GetRefreshRateNumerator()) / GetRefreshRateDenominator();
+				const float lockedFPS = float(maxFPS);
+
+				presentInterval = (uint32)clamp_tpl((int)floorf(refreshRate / lockedFPS + 0.1f), 1, 4);
+			}
+		}
+	}
+
+	return presentInterval;
+};
 
 ETEX_Format CSwapChainBackedRenderDisplayContext::GetBackBufferFormat() const
 {
@@ -409,12 +434,9 @@ void CSwapChainBackedRenderDisplayContext::ChangeOutputIfNecessary(bool isFullsc
 		}
 	}
 
+#if (CRY_RENDERER_VULKAN >= 10)
 	m_bVSync = vsync;
 #endif
-
-#ifdef SUPPORT_DEVICE_INFO
-	// Disable automatic DXGI alt + enter behavior
-	gcpRendD3D->DevInfo().Factory()->MakeWindowAssociation((HWND)m_hWnd, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);
 #endif
 
 	SetFullscreenState(isFullscreen);
@@ -495,23 +517,6 @@ Vec2_tpl<uint32_t> CSwapChainBackedRenderDisplayContext::FindClosestMatchingScre
 
 	return resolution;
 }
-
-#if CRY_PLATFORM_WINDOWS
-void CSwapChainBackedRenderDisplayContext::EnforceFullscreenPreemption()
-{
-	FUNCTION_PROFILER_RENDERER();
-
-	if (IsMainContext() && CRenderer::CV_r_FullscreenPreemption && gcpRendD3D->IsFullscreen())
-	{
-		HRESULT hr = m_swapChain.Present(0, DXGI_PRESENT_TEST);
-		if (hr == DXGI_STATUS_OCCLUDED)
-		{
-			if (::GetFocus() == (HWND)m_hWnd)
-				::BringWindowToTop((HWND)m_hWnd);
-		}
-	}
-}
-#endif // #if CRY_PLATFORM_WINDOWS
 
 RectI CSwapChainBackedRenderDisplayContext::GetCurrentMonitorBounds() const
 {

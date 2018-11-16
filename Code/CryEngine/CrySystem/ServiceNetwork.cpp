@@ -338,10 +338,9 @@ void CServiceNetworkConnection::Shutdown()
 	}
 
 	// Release all pending messages (they wont be sent anyway)
-	while (!m_pSendQueue.empty())
+	for (CServiceNetworkMessage* pMessage : m_pSendQueue.pop_all())
 	{
-		CServiceNetworkMessage* message = m_pSendQueue.pop();
-		message->Release();
+		pMessage->Release();
 	}
 
 	// release current in-flight message
@@ -657,8 +656,7 @@ void CServiceNetworkConnection::ProcessSendingQueue()
 	// Get the top message from the send queue
 	if (NULL == m_pSendedMessages)
 	{
-		m_pSendedMessages = m_pSendQueue.pop();
-		if (NULL == m_pSendedMessages)
+		if (!m_pSendQueue.try_pop(m_pSendedMessages))
 		{
 			return;
 		}
@@ -1099,12 +1097,9 @@ bool CServiceNetworkConnection::SendMsg(IServiceNetworkMessage* message)
 
 IServiceNetworkMessage* CServiceNetworkConnection::ReceiveMsg()
 {
-	// Anything on the queue ?
-	IServiceNetworkMessage* message = NULL;
-	if (!m_pReceiveQueue.empty())
+	CServiceNetworkMessage* message = NULL;
+	if (m_pReceiveQueue.try_pop(message))
 	{
-		message = m_pReceiveQueue.pop();
-
 		// Report connection problems
 		LOG_VERBOSE(3, "Connection local='%s', remote='%s', this=%p: message ID %d (size=%d) popped by receive end",
 		            m_localAddress.ToString().c_str(),

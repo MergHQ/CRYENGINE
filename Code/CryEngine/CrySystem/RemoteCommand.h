@@ -115,7 +115,7 @@ protected:
 		CryMutex  m_commandAccessMutex;
 
 		// A queue of raw messages
-		typedef CryMT::CLocklessPointerQueue<IServiceNetworkMessage> TRawMessageQueue;
+		typedef CryMT::queue<IServiceNetworkMessage*> TRawMessageQueue;
 		TRawMessageQueue m_pRawMessages;
 		CryMutex         m_rawMessagesMutex;
 
@@ -250,7 +250,7 @@ protected:
 		TLocalClassFactoryList m_pLocalClassFactories;
 
 		// Commands that were received and should be executed
-		typedef CryMT::CLocklessPointerQueue<WrappedCommand> TCommandQueue;
+		typedef CryMT::queue<WrappedCommand*> TCommandQueue;
 		TCommandQueue m_pCommandsToExecute;
 		CryMutex      m_commandListLock;
 
@@ -333,7 +333,7 @@ protected:
 	TEndpoints m_pEndpointToDelete;
 
 	// Received raw messages
-	typedef CryMT::CLocklessPointerQueue<RawMessage> TRawMessagesQueue;
+	typedef CryMT::queue<RawMessage*> TRawMessagesQueue;
 	TRawMessagesQueue m_pRawMessages;
 	CryMutex          m_rawMessagesLock;
 
