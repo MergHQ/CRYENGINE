@@ -1202,7 +1202,7 @@ void CRendererCVars::InitCVars()
 	               "HDR range adaption speed\n"
 	               "Usage: r_HDRRangeAdaptationSpeed [Value]");
 
-	REGISTER_CVAR3("r_HDRGrainAmount", CV_r_HDRGrainAmount, 0.0f, VF_NULL,
+	REGISTER_CVAR3("r_HDRGrainAmount", CV_r_HDRGrainAmount, 1.0f, VF_NULL,
 	               "HDR camera grain amount\n"
 	               "Usage: r_HDRGrainAmount [Value]\n"
 	               "Modulates the grain configured in FlowGraph or TimeOfDay.");
