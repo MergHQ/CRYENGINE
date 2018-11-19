@@ -862,7 +862,7 @@ void CObjectPhysicsManager::SerializeCollisionClasses(CXmlArchive& xmlAr)
 	if (!xmlAr.bLoading)
 	{
 		// Storing
-		CLogFile::WriteLine("Storing Collision Classes ...");
+		CryLog("Storing Collision Classes ...");
 
 		XmlNodeRef root = xmlAr.root->newChild("CollisionClasses");
 		int count = m_collisionClasses.size();

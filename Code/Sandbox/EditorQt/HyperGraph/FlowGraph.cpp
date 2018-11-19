@@ -11,6 +11,7 @@
 #include "FlowGraphNode.h"
 #include "FlowGraphManager.h"
 #include "FlowGraphMigrationHelper.h"
+#include "LogFile.h"
 #include "Nodes/CommentNode.h"
 #include "Nodes/CommentBoxNode.h"
 #include "Nodes/TrackEventNode.h"

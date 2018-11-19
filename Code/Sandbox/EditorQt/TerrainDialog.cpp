@@ -14,6 +14,7 @@
 #include "CryEditDoc.h"
 #include "GameEngine.h"
 #include "GameExporter.h"
+#include "LogFile.h"
 #include "TerrainLighting.h"
 #include "TerrainTextureExport.h"
 

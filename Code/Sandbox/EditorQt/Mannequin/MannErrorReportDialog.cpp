@@ -2,18 +2,19 @@
 
 #include "stdafx.h"
 #include "MannErrorReportDialog.h"
-#include "Util/Clipboard.h"
-#include "Util/CryMemFile.h"
-#include "Util/MFCUtil.h"
+#include "Mannequin/MannequinDialog.h"
 #include "Util/Mailer.h"
 #include "GameEngine.h"
+#include "LogFile.h"
 
-#include "MannequinDialog.h"
+//MFC
+#include <Util/Clipboard.h>
+#include <Util/MFCUtil.h>
+
+#include <Util/CryMemFile.h>
 
 #include <CryGame/IGameFramework.h>
-#include "ICryMannequinEditor.h"
-
-// CMannErrorReportDialog dialog
+#include <ICryMannequinEditor.h>
 
 static int __stdcall CompareItems(LPARAM p1, LPARAM p2, LPARAM sort)
 {

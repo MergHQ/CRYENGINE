@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "LogFile.h"
 #include "IEditorImpl.h"
 #include "SandboxAPI.h"
 #include <CryCore/Containers/CryListenerSet.h>
@@ -12,7 +11,6 @@ struct IEditorGame;
 struct IFlowSystem;
 struct IGameTokenSystem;
 struct IEquipmentSystemInterface;
-struct IInitializeUIInfo;
 
 class CNavigation;
 
@@ -181,7 +179,6 @@ private:
 	bool StartGameContext();
 	void NotifyGameModeChange(bool bGameMode);
 
-	CLogFile                      m_logFile;
 	string                        m_levelName;
 	string                        m_missionName;
 	string                        m_levelPath;
@@ -196,8 +193,6 @@ private:
 	bool                          m_bJustCreated;
 	bool                          m_bIgnoreUpdates;
 	ISystem*                      m_pISystem;
-	IAISystem*                    m_pIAISystem;
-	IEntitySystem*                m_pIEntitySystem;
 	CNavigation*                  m_pNavigation;
 	Matrix34                      m_playerViewTM;
 	struct SSystemUserCallback*   m_pSystemUserCallback;
@@ -213,5 +208,5 @@ private:
 	CListenerSet<IGameEngineListener*> m_listeners;
 
 	//! Keeps the editor active even if no focus is set
-	int keepEditorActive;
+	int m_keepEditorActive;
 };

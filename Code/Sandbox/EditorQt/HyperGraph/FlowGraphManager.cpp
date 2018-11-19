@@ -20,6 +20,7 @@
 
 #include "IconManager.h"
 #include "GameEngine.h"
+#include "LogFile.h"
 
 #include "Objects/EntityObject.h"
 #include "Objects/PrefabObject.h"

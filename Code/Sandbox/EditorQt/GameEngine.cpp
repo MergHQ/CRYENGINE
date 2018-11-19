@@ -30,6 +30,7 @@
 #include "CryEditDoc.h"
 #include "GameExporter.h"
 #include "IEditorImpl.h"
+#include "LogFile.h"
 #include "Mission.h"
 #include "SplashScreen.h"
 #include "ViewManager.h"
@@ -209,9 +210,11 @@ class CGameToEditorInterface : public IGameToEditorInterface
 
 CGameEngine::CGameEngine()
 	: m_bIgnoreUpdates(false)
-	, m_pEditorGame(0)
+	, m_pEditorGame(nullptr)
+	, m_pSystemUserCallback(nullptr)
 	, m_ePendingGameMode(ePGM_NotPending)
 	, m_listeners(0)
+	, m_keepEditorActive(0)
 {
 	m_pISystem = nullptr;
 	m_pNavigation = nullptr;
@@ -414,7 +417,7 @@ bool CGameEngine::Init(bool bPreviewMode, bool bTestMode, bool bShaderCacheGen, 
 	CLogFile::AboutSystem();
 	REGISTER_CVAR(ed_killmemory_size, -1, VF_DUMPTODISK, "Sets the testing allocation size. -1 for random");
 	REGISTER_CVAR(ed_indexfiles, 1, VF_DUMPTODISK, "Index game resource files, 0 - inactive, 1 - active");
-	REGISTER_CVAR2_CB("ed_keepEditorActive", &keepEditorActive, 0, VF_NULL, "Keep the editor active, even if no focus is set", KeepEditorActiveChanged);
+	REGISTER_CVAR2_CB("ed_keepEditorActive", &m_keepEditorActive, 0, VF_NULL, "Keep the editor active, even if no focus is set", KeepEditorActiveChanged);
 	REGISTER_INT("ed_useDevManager", 1, VF_INVISIBLE, "Use DevManager with sandbox editor");
 	REGISTER_INT("ed_exportLevelXmlBinary", 0, VF_NULL, "Select xml files format for the level.pak export. 0 - textual, 1 - binary");
 	REGISTER_COMMAND("ed_killmemory", KillMemory, VF_NULL, "");

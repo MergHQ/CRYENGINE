@@ -30,6 +30,7 @@
 #include "Util/CubemapUtils.h"
 #include "CryEdit.h"
 #include "GameEngine.h"
+#include "LogFile.h"
 
 // EditorCommon
 #include <Controls/QuestionDialog.h>
