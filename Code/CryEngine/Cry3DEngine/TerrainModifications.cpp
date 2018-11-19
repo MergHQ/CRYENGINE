@@ -1,9 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "TerrainModifications.h"         // CTerrainModifications
-#include "terrain.h"                      // CTerrain
-#include "terrain_sector.h"               // CTerrainNode
+#include "TerrainModifications.h"
+#include "terrain.h"
+#include "terrain_sector.h"
 
 CTerrainModifications::CTerrainModifications() : m_pModifiedTerrain(0)
 {

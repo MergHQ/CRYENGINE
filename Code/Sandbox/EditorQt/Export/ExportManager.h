@@ -2,7 +2,10 @@
 
 #pragma once
 
+#include "SandboxAPI.h"
 #include <IExportManager.h>
+#include <vector>
+#include <map>
 
 typedef std::vector<IExporter*>     TExporters;
 typedef std::map<CBaseObject*, int> TObjectMap;

@@ -6,6 +6,7 @@
 #include "EntityArchetype.h"
 #include "ScriptProperties.h"
 #include <CryString/CryPath.h>
+#include <Cry3DEngine/I3DEngine.h>
 #include "EntitySystem.h"
 
 #define ENTITY_ARCHETYPES_LIBS_PATH "/Libs/EntityArchetypes/"

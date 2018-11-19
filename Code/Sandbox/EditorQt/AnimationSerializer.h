@@ -4,6 +4,7 @@
 
 struct IAnimSequence;
 class CPakFile;
+class XmlNodeRef;
 
 /** Used by Editor to serialize animation data.
  */

@@ -7,6 +7,7 @@
 #include <CryAnimation/ICryAnimation.h>
 
 #include "PoseAligner.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #define UNKNOWN_GROUND_HEIGHT -1E10f
 

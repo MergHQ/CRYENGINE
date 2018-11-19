@@ -21,6 +21,7 @@
 #include "IndexedMesh.h"
 #include "Brush.h"
 #include "terrain.h"
+#include <Cry3DEngine/ISurfaceType.h>
 
 CBrush::CBrush()
 	: m_bVehicleOnlyPhysics(0)

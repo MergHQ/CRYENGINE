@@ -6,9 +6,11 @@
 #include "ModelViewport.h"
 #include "QMfcApp/qmfcviewporthost.h"
 #include "Resource.h"
-#include <CryAnimation/ICryAnimation.h>
 #include "Util/Variable.h"
 #include "IUndoObject.h"
+
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <CryAnimation/ICryAnimation.h>
 
 IMPLEMENT_DYNAMIC(CFacialPreviewDialog, CToolbarDialog)
 

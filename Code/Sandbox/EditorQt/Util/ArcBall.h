@@ -1,8 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#include <CryMath/Cry_Math.h>
+#include "SandboxAPI.h"
 #include <CryMath/Cry_Color.h>
+#include <CryMath/Cry_Geo.h>
 
 #define CrossDist (0.05f)
 #define AxisDist  (0.05f)

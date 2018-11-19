@@ -4,6 +4,7 @@
 #include "LipSync.h"
 
 #include <CryAnimation/ICryAnimation.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 #include "../CharacterInstance.h"
 #include "FaceAnimation.h"
 #include "FacialInstance.h"

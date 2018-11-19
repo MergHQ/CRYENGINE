@@ -5,6 +5,7 @@
 #include "ParticleSystem/ParticleEmitter.h"
 #include <CrySerialization/Math.h>
 #include <CrySystem/Testing/CryTest.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 namespace pfx2
 {

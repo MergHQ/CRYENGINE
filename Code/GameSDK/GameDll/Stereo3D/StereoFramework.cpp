@@ -11,6 +11,7 @@ History:
 #include "StdAfx.h"
 #include "Stereo3D/StereoFramework.h"
 #include "Player.h"
+#include "GameCVars.h"
 
 #include <CryRenderer/IStereoRenderer.h>
 

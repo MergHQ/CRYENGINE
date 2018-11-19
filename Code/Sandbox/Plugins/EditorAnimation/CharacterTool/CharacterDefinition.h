@@ -2,12 +2,13 @@
 
 #pragma once
 
-#include <CryMath/Cry_Math.h>
-#include <CryAnimation/ICryAnimation.h>
 #include <CryAnimation/IAttachment.h>
+#include <CryAnimation/ICryAnimation.h>
+#include <CryMath/Cry_Math.h>
+#include <CryPhysics/physinterface.h>
+#include <CrySerialization/Forward.h>
 #include <vector>
 #include <array>
-#include <CrySerialization/Forward.h>
 
 struct ICharacterInstance;
 

@@ -999,6 +999,7 @@ protected:
 	TLookup m_Lookup;
 };
 
+struct IDynTextureSource;
 struct IUIElement;
 struct IUIAction;
 struct SUIParameterDesc;

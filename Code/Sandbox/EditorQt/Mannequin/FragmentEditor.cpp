@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 #include "FragmentEditor.h"
-
+#include "IEditorImpl.h"
 #include "Dialogs/ToolbarDialog.h"
 
 #include <CryGame/IGameFramework.h>

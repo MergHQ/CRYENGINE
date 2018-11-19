@@ -11,6 +11,8 @@
 
 #include "PhysicsProxy.h"
 
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/ISurfaceType.h>
 #include <CryPhysics/IPhysics.h>
 #include <CryParticleSystem/IParticles.h>
 #include <CryParticleSystem/ParticleParams.h>

@@ -18,6 +18,7 @@
 #include <CrySystem/Profilers/IPerfHud.h>
 #include <CrySystem/Profilers/IStatoscope.h>
 #include <CrySystem/IStreamEngine.h>
+#include <CrySystem/IMiniLog.h>
 #include <CryGame/IGameStartup.h>
 #include <CryCore/CryCrc32.h>
 #include <zlib.h>

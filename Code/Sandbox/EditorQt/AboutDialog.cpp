@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "AboutDialog.h"
+#include "IEditorImpl.h"
 
 #include <QLayout>
 #include <QLabel>

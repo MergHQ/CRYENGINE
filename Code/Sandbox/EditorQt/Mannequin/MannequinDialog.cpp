@@ -14,8 +14,10 @@
 #include "Objects/ObjectLoader.h"
 #include "GameEngine.h"
 
-#include <QT/Widgets/QWaitProgress.h>
+#include <IObjectManager.h>
 #include <PathUtils.h>
+#include <QT/Widgets/QWaitProgress.h>
+#include <Util/FileUtil.h>
 
 #include <CryGame/IGameFramework.h>
 

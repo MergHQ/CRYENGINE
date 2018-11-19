@@ -2,12 +2,17 @@
 
 #pragma once
 
+#include "SandboxAPI.h"
 #include "Util/Image.h"
 #include "Util/PakFile.h"
 
 #include <QT/Widgets/QWaitProgress.h>
+#include <vector>
 
+struct IStatInstGroup;
 class CTerrainLightGen;
+class CObjectLayer;
+class CUsedResources;
 
 enum EGameExport
 {

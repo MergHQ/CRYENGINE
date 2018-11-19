@@ -14,9 +14,11 @@
 #include "Helper/MannequinFileChangeWriter.h"
 
 #include "Controls/InPlaceButton.h"
+#include <Controls/QuestionDialog.h>
 
 #include <ISourceControl.h>
 #include <PathUtils.h>
+#include <Util/FileUtil.h>
 
 //////////////////////////////////////////////////////////////////////////
 BEGIN_MESSAGE_MAP(CMannFileManager, CXTResizeDialog)

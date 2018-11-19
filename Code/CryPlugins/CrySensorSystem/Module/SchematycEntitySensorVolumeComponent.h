@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CrySerialization/Forward.h>
+#include <CryEntitySystem/IEntityComponent.h>
 
 #include "SensorMap.h"
 #include "SensorTagLibrary.h"

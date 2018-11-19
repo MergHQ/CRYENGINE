@@ -15,6 +15,7 @@
 #if ENABLE_NETDEBUG
 
 	#include <CrySystem/ITextModeConsole.h>
+	#include <CryRenderer/IRenderAuxGeom.h>
 
 CNetDebug::CNetDebug()
 {

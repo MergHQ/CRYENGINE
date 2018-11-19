@@ -7,6 +7,7 @@
 #include <CryAnimation/ICryAnimation.h>
 #include "WeaponFPAiming.h"
 #include "GameConstantCVars.h"
+#include "GameCVars.h"
 #include "Weapon.h"
 #include "Player.h"
 

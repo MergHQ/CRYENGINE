@@ -6,10 +6,12 @@
 %{
 #include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <CryRenderer/IMeshBaking.h>
 #include <CryRenderer/IColorGradingController.h>
 #include <CrySystem/Scaleform/IFlashPlayer.h>
 #include <CryRenderer/IStereoRenderer.h>
 #include <CryRenderer/IImage.h>
+#include <CryRenderer/RenderElements/CREMesh.h>
 %}
 %ignore IRendererEngineModule;
 %ignore operator==(const CInputLightMaterial &m1, const CInputLightMaterial &m2);

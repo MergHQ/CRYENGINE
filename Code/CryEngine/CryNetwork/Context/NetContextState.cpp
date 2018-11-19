@@ -10,7 +10,7 @@
 #include "AutoFreeHandle.h"
 #include "Config.h"
 
-#include <CryGame/IGameFramework.h>       // LOCAL_PLAYER_ENTITY_ID
+#include <CryGame/IGameFramework.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryString/StringUtils.h>
 

@@ -15,6 +15,7 @@
 #include "OCMExporter.h"
 #include "OBJExporter.h"
 
+#include <IObjectManager.h>
 #include <Controls/QuestionDialog.h>
 #include <FileDialogs/SystemFileDialog.h>
 #include <Objects/BaseObject.h>

@@ -4,6 +4,7 @@
 #include "AreaGrid.h"
 #include "Area.h"
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <Cry3DEngine/I3DEngine.h>
 
 static constexpr int GridCellSize = 4;
 static constexpr float GridCellSizeR = 1.0f / GridCellSize;

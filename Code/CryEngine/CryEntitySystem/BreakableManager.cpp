@@ -2,6 +2,9 @@
 
 #include "stdafx.h"
 #include <CryAnimation/ICryAnimation.h>
+#include <CryAnimation/IAttachment.h>
+#include <Cry3DEngine/ISurfaceType.h>
+#include <CryEntitySystem/IEntityComponent.h>
 #include "BreakableManager.h"
 #include "BreakablePlane.h"
 #include "Entity.h"
@@ -11,9 +14,11 @@
 #include <CryGame/IGameFramework.h>
 
 #include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/GeomRef.h>
 #include <CryParticleSystem/ParticleParams.h>
 #include <CryAction/IMaterialEffects.h>
 #include "RopeProxy.h"
+
 
 //////////////////////////////////////////////////////////////////////////
 float ExtractFloatKeyFromString(const char* key, const char* props)

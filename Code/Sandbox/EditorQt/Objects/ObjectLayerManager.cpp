@@ -5,9 +5,8 @@
 #include "Objects/ObjectLoader.h"
 #include "GameEngine.h"
 #include "Dialogs/CheckOutDialog.h"
+#include "ObjectManager.h"
 
-#include <CryGame/IGameFramework.h>
-#include <CrySystem/ICryLink.h>
 #include <ISourceControl.h>
 #include "EntityObject.h"
 #include "SplineObject.h"
@@ -21,7 +20,6 @@
 #include "Material/Material.h"
 #include "RoadObject.h"
 #include "Util/BoostPythonHelpers.h"
-#include <CryString/StringUtils.h>
 #include <FileUtils.h>
 #include <PathUtils.h>
 #include <QtUtil.h>
@@ -29,6 +27,14 @@
 #include <EditorFramework/Editor.h>
 #include <EditorFramework/Preferences.h>
 #include <Preferences/GeneralPreferences.h>
+#include <Util/FileUtil.h>
+
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/IRenderNode.h>
+#include <CryGame/IGameFramework.h>
+#include <CryString/StringUtils.h>
+#include <CrySystem/ICryLink.h>
+#include <CrySystem/ISystem.h>
 
 namespace Private_ObjectLayerManager
 {

@@ -8,6 +8,7 @@
 #include "Objects/ObjectLoader.h"
 #include "Objects/InspectorWidgetCreator.h"
 #include "Util/MFCUtil.h"
+#include "IEditorImpl.h"
 
 //////////////////////////////////////////////////////////////////////////
 // CRiverObject implementation.

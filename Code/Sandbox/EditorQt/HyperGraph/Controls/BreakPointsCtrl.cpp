@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "BreakPointsCtrl.h"
+#include "IEditorImpl.h"
 
 #include <CryFlowGraph/IFlowGraphModuleManager.h>
 

@@ -2,13 +2,16 @@
 
 #include "StdAfx.h"
 #include "PanelDisplayRender.h"
+#include "IEditorImpl.h"
 
+#include <IObjectManager.h>
 #include <Preferences/ViewportPreferences.h>
 #include <Serialization/Decorators/EditorActionButton.h>
 #include <Serialization/QPropertyTree/QPropertyTree.h>
 #include <Serialization.h>
 #include <Viewport.h>
 
+#include <Cry3DEngine/I3DEngine.h>
 #include <CryRenderer/IStereoRenderer.h>
 #include <CrySerialization/Enum.h>
 

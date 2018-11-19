@@ -3,6 +3,8 @@
 #include "StdAfx.h"
 #include "MatEditPreviewDlg.h"
 #include "Material/MaterialManager.h"
+#include "IEditorImpl.h"
+#include <Util/FileUtil.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // CMatEditPreviewDlg dialog

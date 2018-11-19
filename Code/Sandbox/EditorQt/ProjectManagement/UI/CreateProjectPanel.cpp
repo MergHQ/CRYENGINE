@@ -11,8 +11,13 @@
 #include <QSearchBox.h>
 #include <QThumbnailView.h>
 
+#include <QBoxLayout>
 #include <QButtonGroup>
 #include <QHeaderView>
+#include <QLabel>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QToolButton>
 
 CCreateProjectPanel::CCreateProjectPanel(CSelectProjectDialog* pParent, bool runOnSandboxInit)
 	: QWidget(pParent)
@@ -44,7 +49,7 @@ CCreateProjectPanel::CCreateProjectPanel(CSelectProjectDialog* pParent, bool run
 
 void CCreateProjectPanel::CreateSearchPanel()
 {
-	QSearchBox* pSearchBox = new QSearchBox(this);
+	QSearchBox* pSearchBox = new QSearchBox(this); 
 	pSearchBox->EnableContinuousSearch(true);
 	pSearchBox->SetModel(m_pSortedModel);
 

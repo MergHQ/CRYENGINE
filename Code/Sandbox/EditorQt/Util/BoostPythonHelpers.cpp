@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "BoostPythonHelpers.h"
 #include "Commands/PythonManager.h"
+#include "LogFile.h"
 #include "Objects/ObjectLayer.h"
 #include "Objects/BaseObject.h"
 #include "Objects/BrushObject.h"
@@ -17,13 +18,18 @@
 #include "Vegetation/VegetationMap.h"
 #include "Objects/GeomEntity.h"
 #include "CryEditDoc.h"
+#include "Util/Variable.h"
 
 #include <PathUtils.h>
 
+#include <Util/FileEnum.h>
+#include <Util/FileUtil.h>
 #include <Util/MFCUtil.h>
 
 #include <CryCore/ToolsHelpers/GuidUtil.h>
 #include <CryCore/Containers/CryListenerSet.h>
+#include <Cry3DEngine/IRenderNode.h>
+#include <Cry3DEngine/IStatObj.h>
 
 #include <boost/python.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>

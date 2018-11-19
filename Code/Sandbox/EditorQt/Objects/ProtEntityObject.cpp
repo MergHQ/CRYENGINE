@@ -3,6 +3,8 @@
 #include "StdAfx.h"
 #include "ProtEntityObject.h"
 
+#include "IEditorImpl.h"
+#include "LogFile.h"
 #include "EntityPrototype.h"
 #include "EntityPrototypeManager.h"
 #include "Material/MaterialManager.h"

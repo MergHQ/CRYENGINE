@@ -3,8 +3,10 @@
 #pragma once
 
 #include "Controls/ColorCheckBox.h"
+#include <CryCore/functor.h>
 
 class CEntityScript;
+struct IEntity;
 
 class CEntityScriptDialog : public CXTResizeDialog
 {

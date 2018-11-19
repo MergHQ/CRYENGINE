@@ -3,6 +3,7 @@
 
 #include "IEditorClassFactory.h"
 #include <CryCore/ToolsHelpers/GuidUtil.h>
+#include <map>
 
 //! Class factory is a common repository of all registered plugin classes,
 //! Classes here can found by their class ID or all classes of given system class retrieved

@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 #include "AuditionMapRayCastManager.h"
 #include "AuditionMap.h"
-
+#include <Cry3DEngine/ISurfaceType.h>
 #include <CryAISystem/IAISystem.h>
 
 namespace Perception

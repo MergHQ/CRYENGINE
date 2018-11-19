@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "EMPGrenade.h"
+#include "GameCVars.h"
 #include "Player.h"
 
 CEMPGrenade::CEMPGrenade() : m_bActive(false), m_pulsePos(ZERO)

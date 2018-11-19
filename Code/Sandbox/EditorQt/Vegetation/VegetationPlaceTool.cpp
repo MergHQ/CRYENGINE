@@ -2,10 +2,14 @@
 #include <StdAfx.h>
 #include "VegetationPlaceTool.h"
 
+#include "IEditorImpl.h"
 #include "VegetationObject.h"
 #include "VegetationMap.h"
 #include "VegetationDragDropData.h"
 #include "Viewport.h"
+#include <IEditorClassFactory.h>
+#include <IUndoManager.h>
+#include <Objects/BaseObject.h>
 
 IMPLEMENT_DYNCREATE(CVegetationPlaceTool, CBaseObjectCreateTool)
 

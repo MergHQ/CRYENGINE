@@ -20,6 +20,8 @@
 #include "HyperGraph/FlowGraphHelpers.h"
 
 #include "Util/CubemapUtils.h"
+#include <Util/FileUtil.h>
+#include <Cry3DEngine/I3DEngine.h>
 
 //////////////////////////////////////////////////////////////////////////
 namespace Private_EditorCommands

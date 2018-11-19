@@ -9,7 +9,7 @@
 #include <CryAISystem/IAIAction.h>
 
 #include <CryEntitySystem/IEntitySystem.h>
-#include <CryRenderer/IRenderer.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 // TODO: find a better place for them
 

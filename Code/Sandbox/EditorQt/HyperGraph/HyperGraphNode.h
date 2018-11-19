@@ -8,6 +8,7 @@
 #include <Util/Variable.h>
 
 #include <CryFlowGraph/IFlowSystem.h>
+#include <Objects/BaseObject.h>
 
 #include <stack>
 

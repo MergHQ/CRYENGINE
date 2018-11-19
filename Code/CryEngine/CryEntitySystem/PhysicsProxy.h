@@ -6,6 +6,22 @@
 struct SEntityEvent;
 struct IPhysicalEntity;
 struct IPhysicalWorld;
+struct EventPhysPostStep;
+struct IGeometry;
+struct bop_meshupdate;
+struct EventPhysJointBroken;
+struct pe_action_move_parts;
+struct pe_status_pos;
+struct phys_geometry;
+struct SEntityPhysicalizeParams;
+struct IStatObj;
+struct IFoliage;
+struct EventPhysCollision;
+struct IMaterial;
+struct IRenderMesh;
+class CEntity;
+
+#include <CryEntitySystem/IEntityBasicTypes.h>
 
 #if 0 // uncomment if more than 64 parts are needed and the mask can no longer fit into an int64
 	#include <CryCore/BitMask.h>

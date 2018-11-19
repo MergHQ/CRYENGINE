@@ -2,14 +2,13 @@
 
 #pragma once
 
+#include <CrySystem/IEngineModule.h>
 #include <CryPhysics/IntersectionTestQueue.h>
 #include <CryAISystem/AIRayCastQueue.h>
 
 #include <CryNetwork/SerializeFwd.h>
 #include <CryAISystem/IAIRecorder.h>  // <> required for Interfuscator
-#include <CryPhysics/IPhysics.h>
 #include <CryCore/Containers/CryFixedArray.h>
-#include <CryEntitySystem/IEntity.h>
 
 #if !defined(_RELEASE)
 #define AIRAYCAST_EXTENDED_STATS 1
@@ -30,6 +29,8 @@ struct ICommunicationManager;
 struct ICoverSystem;
 struct INavigationSystem;
 class INavPath;
+struct IPhysicalEntity;
+struct AIObjectParams;
 namespace BehaviorTree
 {
 struct IBehaviorTreeManager;

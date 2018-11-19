@@ -3,6 +3,10 @@
 #include "StdAfx.h"
 
 #include "Notifications/NotificationCenter.h"
+#include "QtUtil.h"
+#include "IEditorImpl.h"
+#include <BoostPythonMacros.h>
+#include <Util/FileUtil.h>
 
 #include <CrySystem/ICryLink.h>
 

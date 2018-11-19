@@ -9,6 +9,7 @@
 #include "IActorSystem.h"
 #include <CryMath/PNoise3.h>
 #include <CryAISystem/IAISystem.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #define VS_CALL_LISTENERS(func)                                                                               \
   {                                                                                                           \

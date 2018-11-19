@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "ClampedSplitterWnd.h"
+#include <Util/EditorUtils.h>
 
 IMPLEMENT_DYNAMIC(CClampedSplitterWnd, CXTSplitterWnd)
 

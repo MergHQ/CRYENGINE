@@ -1,5 +1,6 @@
 #include "StdAfx.h"
 #include "CharacterControllerComponent.h"
+#include <Cry3DEngine/ISurfaceType.h>
 
 namespace Cry
 {

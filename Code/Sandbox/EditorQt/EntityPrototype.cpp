@@ -3,9 +3,12 @@
 #include "StdAfx.h"
 #include "EntityPrototype.h"
 
+#include "IEditorImpl.h"
+#include "LogFile.h"
 #include "Objects/EntityObject.h"
 #include "Objects/EntityScript.h"
 
+#include <IObjectManager.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CrySerialization/IArchiveHost.h>
 

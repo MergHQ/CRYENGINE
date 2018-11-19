@@ -2,6 +2,8 @@
 
 #pragma once
 #include "MFCToolsDefines.h"
+#include <CryCore/StlUtils.h>
+#include <map>
 
 enum { eTreeItemPathOptimalLen = 128 };
 typedef CryStackStringT<char, eTreeItemPathOptimalLen> TreeItemPathString;

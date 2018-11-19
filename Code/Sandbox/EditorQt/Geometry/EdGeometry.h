@@ -1,9 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
+#include "SandboxAPI.h"
+#include <CryCore/smartptr.h>
+#include <CryMath/Cry_Math.h>
 
-struct IIndexedMesh;
-struct SDisplayContext;
+struct AABB;
 struct HitContext;
+struct IIndexedMesh;
+struct IStatObj;
+struct SDisplayContext;
 struct SSubObjSelectionModifyContext;
 class CObjectArchive;
 

@@ -2,7 +2,10 @@
 
 #include "StdAfx.h"
 #include "IconManager.h"
+#include "IEditorImpl.h"
 
+#include <Util/Image.h>
+#include <Util/ImageUtil.h>
 #include <Cry3DEngine/I3DEngine.h>
 
 #include <gdiplus.h>

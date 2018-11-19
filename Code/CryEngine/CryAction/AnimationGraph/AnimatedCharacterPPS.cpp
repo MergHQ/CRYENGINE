@@ -7,6 +7,8 @@
 #include "AnimationGraphCVars.h"
 #include "PersistantDebug.h"
 #include <CryAnimation/IFacialAnimation.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <CryPhysics/IPhysics.h>
 #include "AnimatedCharacterEventProxies.h"
 
 #include "CryActionCVars.h"

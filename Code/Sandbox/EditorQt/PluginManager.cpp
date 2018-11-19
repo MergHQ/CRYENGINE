@@ -3,7 +3,12 @@
 #include "StdAfx.h"
 #include "IPlugin.h"
 #include "PluginManager.h"
+#include "LogFile.h"
+#include "IEditorImpl.h"
 #include "Util/FileUtil.h"
+#include "Util/FileEnum.h"
+#include <CryCore/StlUtils.h>
+#include <CryString/CryPath.h>
 
 typedef IPlugin* (* TPfnCreatePluginInstance)(PLUGIN_INIT_PARAM* pInitParam);
 typedef void (*TPfnDeletePluginInstance)(IPlugin* pPlugin);

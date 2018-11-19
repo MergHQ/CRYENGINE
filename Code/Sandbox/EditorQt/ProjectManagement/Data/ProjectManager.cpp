@@ -11,6 +11,7 @@
 #include <CrySerialization/yasli/JSONIArchive.h>
 #include <CrySerialization/yasli/JSONOArchive.h>
 
+#include <QDateTime>
 #include <QDirIterator>
 
 namespace Private_ProjectManager

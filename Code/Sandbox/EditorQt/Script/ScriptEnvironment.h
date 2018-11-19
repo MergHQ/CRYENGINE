@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <IEditor.h>
 #include <CryScriptSystem/IScriptSystem.h>
 
 class EditorScriptEnvironment

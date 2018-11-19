@@ -13,6 +13,8 @@
 *************************************************************************/
 #include "StdAfx.h"
 #include "UIDraw.h"
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <CryFont/IFont.h>
 
 //-----------------------------------------------------------------------------------------------------
 
@@ -320,16 +322,16 @@ void CUIDraw::DrawImage(int iTextureID, float fX,
 	fSizeX -= fOffset;
 
 	IRenderAuxImage::Draw2dImage(fX,
-	                         fY + fSizeY,
-	                         fSizeX,
-	                         -fSizeY,
-	                         iTextureID,
-	                         fS0, fT0, fS1, fT1,
-	                         fAngleInDegrees,
-	                         fRed,
-	                         fGreen,
-	                         fBlue,
-	                         fAlpha);
+	                             fY + fSizeY,
+	                             fSizeX,
+	                             -fSizeY,
+	                             iTextureID,
+	                             fS0, fT0, fS1, fT1,
+	                             fAngleInDegrees,
+	                             fRed,
+	                             fGreen,
+	                             fBlue,
+	                             fAlpha);
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -515,7 +517,7 @@ void CUIDraw::InternalDrawText(IFFont* pFont,
 	ti.pFont = pFont;
 	ti.scale = Vec2(fSizeX, fSizeY) / UIDRAW_TEXTSIZEFACTOR;
 
- 	IRenderAuxText::DrawText(Vec3(fTextX, fTextY, 1.0f), ti, strText);
+	IRenderAuxText::DrawText(Vec3(fTextX, fTextY, 1.0f), ti, strText);
 }
 
 //-----------------------------------------------------------------------------------------------------

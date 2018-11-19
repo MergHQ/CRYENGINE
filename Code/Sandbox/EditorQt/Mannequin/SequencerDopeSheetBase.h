@@ -5,6 +5,7 @@
 #include "ISequencerSystem.h"
 #include "Controls/PropertyCtrl.h"
 #include "SequencerNode.h"
+#include "IEditor.h"
 
 class CSequencerTrackPropsDialog;
 class CSequencerKeyPropertiesDlg;

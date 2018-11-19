@@ -9,10 +9,11 @@
 #include "FaceEffectorLibrary.h"
 #include "FaceAnimSequence.h"
 #include "FaceJoystick.h"
+#include "../CharacterInstance.h"
 #include <CryCore/Containers/VectorMap.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/CGF/CryHeaders.h>
-#include "../CharacterInstance.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 //////////////////////////////////////////////////////////////////////////
 // CFacialAnimationContext

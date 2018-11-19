@@ -5,6 +5,7 @@
 #include "CryAction.h"
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <IUIDraw.h>
+#include <CryFont/IFont.h>
 
 const char* CPersistantDebug::entityTagsContext = "PersistantDebugEntities";
 const float CPersistantDebug::kUnlimitedTime = -1.0f;

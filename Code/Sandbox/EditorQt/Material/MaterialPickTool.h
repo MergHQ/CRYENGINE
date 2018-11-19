@@ -1,6 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <LevelEditor/Tools/EditTool.h>
+#include <Cry3DEngine/IStatObj.h>
 
 class CMaterialPickTool : public CEditTool
 {

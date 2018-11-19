@@ -14,11 +14,13 @@ struct IRenderAuxGeom;
 namespace CryAudio
 {
 class CSystem;
+class CEvent;
 class CEventManager;
 class CFileManager;
 class CEnvironment;
 class CTrigger;
 class CRequest;
+class CStandaloneFile;
 struct SRequestData;
 
 namespace Impl

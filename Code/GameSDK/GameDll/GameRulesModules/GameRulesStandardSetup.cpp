@@ -15,6 +15,7 @@
 #include "StdAfx.h"
 #include "GameRulesStandardSetup.h"
 #include <CrySystem/XML/IXml.h>
+#include "GameCVars.h"
 #include "GameRules.h"
 #include "Player.h"
 #include "UI/HUD/HUDEventDispatcher.h"

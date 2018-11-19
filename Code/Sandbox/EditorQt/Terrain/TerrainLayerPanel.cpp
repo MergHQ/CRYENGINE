@@ -15,6 +15,7 @@
 #include <Serialization/QPropertyTree/QPropertyTree.h>
 
 #include <QSplitter>
+#include <QBoxLayout>
 
 void STexturePainterSerializer::YASLI_SERIALIZE_METHOD(Serialization::IArchive& ar)
 {

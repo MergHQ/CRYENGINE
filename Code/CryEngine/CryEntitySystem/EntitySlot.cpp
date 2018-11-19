@@ -8,6 +8,8 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <Cry3DEngine/IGeomCache.h>
+#include <CryPhysics/physinterface.h>
+#include <CryParticleSystem/IParticles.h>
 
 #define MAX_CHARACTER_LOD 10
 
@@ -103,9 +105,9 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 	ComputeWorldTransform();
 
 	bool bSlotShouldRender =
-	  (GetFlags() & ENTITY_SLOT_RENDER) &&
-	  (!m_pEntity->IsHidden()) &&
-	  (!m_pEntity->IsInvisible());
+		(GetFlags() & ENTITY_SLOT_RENDER) &&
+		(!m_pEntity->IsHidden()) &&
+		(!m_pEntity->IsInvisible());
 
 	if (bForceRecreateNode || !bSlotShouldRender)
 	{
@@ -660,8 +662,8 @@ void CEntitySlot::GetSlotInfo(SEntitySlotInfo& slotInfo) const
 	slotInfo.pParticleEmitter = GetParticleEmitter();
 #if defined(USE_GEOM_CACHES)
 	slotInfo.pGeomCacheRenderNode =
-	  (m_pRenderNode && m_pRenderNode->GetRenderNodeType() == eERType_GeomCache)
-	  ? static_cast<IGeomCacheRenderNode*>(m_pRenderNode) : NULL;
+		(m_pRenderNode && m_pRenderNode->GetRenderNodeType() == eERType_GeomCache)
+		? static_cast<IGeomCacheRenderNode*>(m_pRenderNode) : NULL;
 #endif
 	slotInfo.nSubObjHideMask = m_nSubObjHideMask;
 }

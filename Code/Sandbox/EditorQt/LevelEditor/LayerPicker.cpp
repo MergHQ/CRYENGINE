@@ -17,6 +17,7 @@
 #include <QPushButton>
 
 #include "IResourceSelectorHost.h"
+#include "IEditorImpl.h"
 
 //////////////////////////////////////////////////////////////////////////
 // Register for yasli

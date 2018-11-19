@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "AiBehaviorLibrary.h"
 #include "AiBehavior.h"
+#include "IEditorImpl.h"
 
 #include <CryScriptSystem/IScriptSystem.h>
 

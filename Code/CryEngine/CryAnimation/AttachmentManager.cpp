@@ -4,6 +4,7 @@
 #include "AttachmentManager.h"
 
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <Cry3DEngine/ISurfaceType.h>
 #include "ModelMesh.h"
 #include "SocketSimulation.h"
 #include "AttachmentPRow.h"

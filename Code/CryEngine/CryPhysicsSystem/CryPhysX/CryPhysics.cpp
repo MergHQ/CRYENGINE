@@ -8,6 +8,7 @@
 #include "world.h"
 
 #ifndef STANDALONE_PHYSICS
+#include <CryPhysics/IPhysics.h>
 #include <CrySystem/IEngineModule.h>
 #include <CryExtension/ICryFactory.h>
 #include <CryExtension/ClassWeaver.h>

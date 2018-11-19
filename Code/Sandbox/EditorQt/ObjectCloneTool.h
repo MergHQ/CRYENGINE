@@ -1,7 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
+#include "LevelEditor/Tools/EditTool.h"
+
 class CBaseObject;
+class CSelectionGroup;
+class CViewport;
 
 /*!
  *	CObjectCloneTool, When created duplicate current selection, and manages cloned selection.

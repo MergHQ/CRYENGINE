@@ -5,6 +5,7 @@
 #include <CrySystem/IStreamEngine.h>
 #include <CryFlowGraph/IFlowBaseNode.h>
 #include <CryEntitySystem/IEntityLayer.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 class CFlowNode_PortalSwitch : public CFlowBaseNode<eNCT_Instanced>
 {

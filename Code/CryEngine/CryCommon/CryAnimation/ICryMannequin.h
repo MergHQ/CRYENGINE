@@ -19,7 +19,9 @@
 
 #include <CryCore/BitFiddling.h>
 #include <CryMath/MTPseudoRandom.h>
+#include <CryMath/LCGRandom.h>
 #include "ICryMannequinTagDefs.h"
+#include "IAttachment.h"
 
 struct IMannequinEditorManager;
 struct IMannequinGameListener;

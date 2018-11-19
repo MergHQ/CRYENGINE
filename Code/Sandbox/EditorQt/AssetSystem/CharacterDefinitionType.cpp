@@ -6,6 +6,7 @@
 #include "AssetSystem/Asset.h"
 #include "PathUtils.h"
 #include "QT/Widgets/QPreviewWidget.h"
+#include "IEditorImpl.h"
 #include <ThreadingUtils.h>
 
 REGISTER_ASSET_TYPE(CCharacterDefinitionType)

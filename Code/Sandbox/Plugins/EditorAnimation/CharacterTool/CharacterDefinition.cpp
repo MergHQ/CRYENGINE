@@ -15,6 +15,7 @@
 #include <CrySerialization/Math.h>
 #include <CryExtension/CryCreateClassInstance.h>
 #include <Cry3DEngine/IIndexedMesh.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 #include <IEditor.h>
 

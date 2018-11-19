@@ -1,8 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include <StdAfx.h>
 #include "SoundAssetType.h"
+#include "IEditorImpl.h"
 
 #include "AssetSystem/AssetResourceSelector.h"
+#include <Util/FileUtil.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
+#include <CryString/CryPath.h>
 
 REGISTER_ASSET_TYPE(CSoundType)
 

@@ -12,6 +12,7 @@
 ////////////////////////////////////////////////////////////////////////////
 #include "StdAfx.h"
 #include "MFXDecalEffect.h"
+#include <Cry3DEngine/CryEngineDecalInfo.h>
 
 CMFXDecalEffect::CMFXDecalEffect()
 	: CMFXEffectBase(eMFXPF_Decal)

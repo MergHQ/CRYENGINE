@@ -6,6 +6,7 @@
 #include "Memory/Pool.h"
 #include "Model.h"
 #include "Skeleton.h"
+#include <CryPhysics/IPhysics.h>
 
 struct CCGAJoint;
 class CSkeletonPose;

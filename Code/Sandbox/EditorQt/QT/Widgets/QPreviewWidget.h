@@ -2,6 +2,16 @@
 #pragma once
 
 #include <QWidget>
+#include "SandboxAPI.h"
+#include "IEditor.h"
+#include <CryRenderer/IRenderer.h>
+#include <CryMath/Cry_Camera.h>
+
+struct ICharacterInstance;
+struct IParticleEffect;
+struct IStatObj;
+struct SRenderingPassInfo;
+class CMaterial;
 
 class SANDBOX_API QPreviewWidget : public QWidget, public IEditorNotifyListener
 {

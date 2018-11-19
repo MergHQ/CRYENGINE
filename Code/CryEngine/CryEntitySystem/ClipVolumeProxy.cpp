@@ -4,6 +4,7 @@
 
 #include "ClipVolumeProxy.h"
 #include <Cry3DEngine/CGF/CGFContent.h>
+#include <Cry3DEngine/I3DEngine.h>
 
 CRYREGISTER_CLASS(CEntityComponentClipVolume);
 

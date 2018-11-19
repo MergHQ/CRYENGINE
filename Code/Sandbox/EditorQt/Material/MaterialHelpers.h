@@ -4,6 +4,7 @@
 
 #include "Material.h"
 #include "IEditorImpl.h"
+#include <Cry3DEngine/I3DEngine.h>
 
 namespace MaterialHelpers
 {

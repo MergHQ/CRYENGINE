@@ -4,6 +4,7 @@
 
 #include "BaseLibraryManager.h"
 #include "Objects/BaseObject.h"
+#include "IEditorImpl.h"
 
 class CPrefabItem;
 class CPrefabObject;

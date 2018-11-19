@@ -15,6 +15,7 @@ History:
 
 #include <CrySystem/Scaleform/IFlashPlayer.h>
 #include "Player.h"
+#include "GameCVars.h"
 #include "GameRules.h"
 #include "GameRulesModules/IGameRulesStateModule.h"
 #include "GameRulesModules/GameRulesModulesManager.h"

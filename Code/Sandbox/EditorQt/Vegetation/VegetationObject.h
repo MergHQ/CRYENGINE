@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Material/Material.h"
+#include "Objects/EntityScript.h"
 
 #define VEGETATION_ELEVATION_MIN "ElevationMin"
 #define VEGETATION_ELEVATION_MAX "ElevationMax"
@@ -13,6 +14,8 @@
 
 class CVegetationMap;
 class CVegetationObject;
+struct IDecalRenderNode;
+struct IRenderNode;
 
 // Description of single static vegetation object instance.
 struct SANDBOX_API CVegetationInstance
@@ -164,8 +167,11 @@ public:
 	//! Copy all parameters from specified vegetation object.
 	void CopyFrom(const CVegetationObject& o);
 
+#pragma push_macro("GetObject")
+#undef GetObject
 	//! Return pointer to static object.
 	IStatObj* GetObject() { return m_statObj; }
+#pragma pop_macro("GetObject")
 
 	//! Return true when the brush can paint on a location with the supplied parameters
 	bool IsPlaceValid(float height, float slope) const;

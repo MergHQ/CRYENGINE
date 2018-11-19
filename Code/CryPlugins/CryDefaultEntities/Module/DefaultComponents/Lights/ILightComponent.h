@@ -1,6 +1,7 @@
 #pragma once
 #include "DefaultComponents/Geometry/BaseMeshComponent.h"
 #include <CrySchematyc/Utils/SharedString.h>
+#include <CryEntitySystem/IEntityComponent.h>
 
 namespace Cry
 {

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CryRenderer/ITexture.h>
+#include <CryThreading/CryThread.h>
 
 class CFile;
 

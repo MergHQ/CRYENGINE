@@ -4,6 +4,8 @@
 #include "GameVolume_Water.h"
 
 #include <CryGame/IGameVolumes.h>
+#include <CryPhysics/IPhysics.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 //#pragma optimize("", off)
 //#pragma inline_depth(0)
@@ -279,12 +281,12 @@ void CGameVolume_Water::ProcessEvent(const SEntityEvent& event)
 
 Cry::Entity::EventFlags CGameVolume_Water::GetEventMask() const
 {
-	return 
-		ENTITY_EVENT_EDITOR_PROPERTY_CHANGED |
-		ENTITY_EVENT_RESET |
-		ENTITY_EVENT_XFORM |
-		ENTITY_EVENT_HIDE |
-		ENTITY_EVENT_UNHIDE;
+	return
+	  ENTITY_EVENT_EDITOR_PROPERTY_CHANGED |
+	  ENTITY_EVENT_RESET |
+	  ENTITY_EVENT_XFORM |
+	  ENTITY_EVENT_HIDE |
+	  ENTITY_EVENT_UNHIDE;
 }
 
 void CGameVolume_Water::GetMemoryUsage(ICrySizer* pSizer) const

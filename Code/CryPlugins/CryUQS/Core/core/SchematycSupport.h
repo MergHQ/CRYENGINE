@@ -6,6 +6,8 @@
 
 #if UQS_SCHEMATYC_SUPPORT
 
+#include <CryEntitySystem/IEntityComponent.h>
+
 namespace UQS
 {
 	namespace Core

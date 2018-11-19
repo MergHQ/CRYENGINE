@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Skeleton.h"
+#include <CryAnimation/IAttachment.h>
 
 class CAttachmentManager;
 class CModelMesh;

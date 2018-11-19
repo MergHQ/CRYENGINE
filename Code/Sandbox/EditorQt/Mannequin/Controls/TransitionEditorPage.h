@@ -13,6 +13,7 @@
 #include "../MannKeyPropertiesDlgFE.h"
 #include "../SequencerDopeSheetToolbar.h"
 #include "QMfcApp/qmfcviewporthost.h"
+#include "Objects/EntityScript.h"
 
 #include "MannDopeSheet.h"
 

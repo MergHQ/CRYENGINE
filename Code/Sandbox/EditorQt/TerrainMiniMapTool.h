@@ -3,6 +3,10 @@
 #pragma once
 
 #include "Mission.h"
+#include <LevelEditor/Tools/EditTool.h>
+#include <Cry3DEngine/I3DEngine.h>
+
+struct SDisplayContext;
 
 class CTerrainMiniMapTool : public CEditTool, public IEditorNotifyListener, public IScreenshotCallback
 {

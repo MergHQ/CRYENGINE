@@ -31,6 +31,7 @@
 #include <CrySchematyc/CoreAPI.h>
 #include <CrySchematyc/Utils/ClassProperties.h>
 #include <CryGame/IGameFramework.h>
+#include <CryPhysics/IPhysics.h>
 
 // enable this to check nan's on position updates... useful for debugging some weird crashes
 #if !defined(_RELEASE)

@@ -4,6 +4,8 @@
 
 #include "SandboxAPI.h"
 #include <Controls/SandboxWindowing.h>
+#include <Util/UserDataUtil.h>
+#include <QFileInfo>
 
 class CWnd;
 class QFocusEvent;

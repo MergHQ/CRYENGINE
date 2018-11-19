@@ -2,10 +2,16 @@
 
 #pragma once
 
+#include "SandboxAPI.h"
 #include "Terrain/Heightmap.h"
 #include "Terrain/Layer.h"
 #include "Terrain/SurfaceType.h"
 #include "DocMultiArchive.h"
+#include <CrySandbox/CrySignal.h>
+#include <CryCore/smartptr.h>
+#include <vector>
+
+class CSurfaceType;
 
 class SANDBOX_API CTerrainManager
 {

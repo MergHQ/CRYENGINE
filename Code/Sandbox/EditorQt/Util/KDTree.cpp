@@ -2,6 +2,9 @@
 
 #include "StdAfx.h"
 #include "KDTree.h"
+#include <Util/Math.h>
+#include <Cry3DEngine/IIndexedMesh.h>
+#include <Cry3DEngine/IStatObj.h>
 
 class KDTreeNode
 {

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "SandboxAPI.h"
 #include <QAction>
 
 class QWidget;

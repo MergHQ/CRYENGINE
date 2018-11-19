@@ -4,6 +4,7 @@
 
 #include "AnimEvent.h"
 
+#include <Cry3DEngine/ISurfaceType.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <CryAnimation/IAnimEventPlayer.h>
 #include <CryAudio/IAudioSystem.h>

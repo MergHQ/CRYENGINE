@@ -4,6 +4,7 @@
 #include "AIMoveSimulation.h"
 
 #include "Objects/EntityObject.h"
+#include "Objects/SelectionGroup.h"
 #include "GameEngine.h"
 
 #include <Viewport.h>

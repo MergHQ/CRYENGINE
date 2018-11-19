@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Include/IBackgroundScheduleManager.h"
+#include <IEditor.h>
 
 namespace BackgroundScheduleManager
 {

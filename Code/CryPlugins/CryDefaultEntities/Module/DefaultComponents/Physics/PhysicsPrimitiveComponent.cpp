@@ -5,6 +5,7 @@
 #include "StdAfx.h"
 #include "PhysicsPrimitiveComponent.h"
 #include <CrySerialization/Enum.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 namespace Cry
 {

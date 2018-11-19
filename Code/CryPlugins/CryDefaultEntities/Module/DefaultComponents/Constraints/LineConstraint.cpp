@@ -1,5 +1,6 @@
 #include "StdAfx.h"
 #include "LineConstraint.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 namespace Cry
 {

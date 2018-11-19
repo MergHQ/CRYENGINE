@@ -5,6 +5,7 @@
 #pragma once
 
 #include <CryEntitySystem/IBreakableGlassSystem.h>
+#include <CryRenderer/RenderElements/CREBreakableGlassHelpers.h>
 
 // Forward decls
 struct IBreakableGlassRenderNode;

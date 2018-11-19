@@ -3,9 +3,10 @@
 #pragma once
 
 #include <CryMath/Cry_Geo.h>
+#include <CryMath/LCGRandom.h>
+#include <CryPhysics/physinterface.h>
 
 struct IMeshObj;
-struct IPhysicalEntity;
 struct IGeometry;
 struct IArea;
 

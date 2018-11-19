@@ -6,6 +6,8 @@
 #include "Controls/DynamicPopupMenu.h"
 #include "PathUtils.h"
 #include "Util/MFCUtil.h"
+#include <Util/FileEnum.h>
+#include <Util/FileUtil.h>
 
 IMPLEMENT_DYNAMIC(CFolderTreeCtrl, CTreeCtrl)
 

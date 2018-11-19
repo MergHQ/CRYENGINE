@@ -2,12 +2,14 @@
 
 #include "stdafx.h"
 #include "TextureCompression.h"
+#include "IEditorImpl.h"
 
 #undef MAKEFOURCC
 #define MAKEFOURCC(ch0, ch1, ch2, ch3)              \
   ((DWORD)(BYTE)(ch0) | ((DWORD)(BYTE)(ch1) << 8) | \
    ((DWORD)(BYTE)(ch2) << 16) | ((DWORD)(BYTE)(ch3) << 24))
 #include <Cry3DEngine/ImageExtensionHelper.h>
+#include <CryRenderer/IRenderer.h>
 
 CFile* CTextureCompression::m_pFile = NULL;
 CryCriticalSection CTextureCompression::m_sFileLock;

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "SandboxAPI.h"
 #include "IEditor.h"
 #include "Util/XmlTemplate.h"
 #include "Version.h"
@@ -26,6 +27,7 @@ class CExportManager;
 class CFlowGraphDebuggerEditor;
 class CGameTokenManager;
 class CGizmoManager;
+class CHeightmap;
 class CIconManager;
 class CLensFlareManager;
 class CLevelIndependentFileMan;

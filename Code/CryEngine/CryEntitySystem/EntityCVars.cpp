@@ -8,6 +8,7 @@
 #include <CryAnimation/ICryAnimation.h>
 #include <CryEntitySystem/IEntityComponent.h>
 #include <CryAISystem/IAISystem.h>
+#include <CryAnimation/IAttachment.h>
 
 ICVar* CVar::pUpdateScript = nullptr;
 ICVar* CVar::pUpdateEntities = nullptr;

@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "SequencerDopeSheetBase.h"
 
+#include "IEditorImpl.h"
 #include "Mannequin/FragmentTrack.h"
 #include "Mannequin/MannequinDialog.h"
 #include "Mannequin/MannequinUtil.h"
@@ -16,6 +17,7 @@
 #include <Controls/QuestionDialog.h>
 #include <ISourceControl.h>
 #include <QtUtil.h>
+#include <Util/FileUtil.h>
 
 enum ETVMouseMode
 {

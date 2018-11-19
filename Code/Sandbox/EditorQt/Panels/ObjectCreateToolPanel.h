@@ -12,6 +12,7 @@ class QStackedLayout;
 class QGridLayout;
 class QPreviewWidget;
 class QToolButton;
+class CObjectClassDesc;
 
 class CCreateObjectButtons : public QWidget
 {

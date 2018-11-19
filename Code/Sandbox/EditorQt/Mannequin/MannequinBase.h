@@ -3,7 +3,9 @@
 #pragma once
 
 #include "ICryMannequin.h"
+#include <Objects/BaseObject.h>
 #include <CryInput/IInput.h>
+#include <Util/Variable.h>
 
 struct IActionController;
 struct IAnimationDatabase;
@@ -13,6 +15,7 @@ struct SEditorAnimationContext;
 class CSequencerTrack;
 class CSequencerNode;
 class CSequencerSequence;
+class CVarBlock;
 
 const uint32 HISTORY_ITEM_INVALID = 0xffffffff;
 const uint32 CONTEXT_DATA_NONE = 0xffffffff;

@@ -2,6 +2,9 @@
 
 #pragma once
 
+#include <CryIcon.h>
+#include <vector>
+
 struct STemplateDescription
 {
 	string  language;

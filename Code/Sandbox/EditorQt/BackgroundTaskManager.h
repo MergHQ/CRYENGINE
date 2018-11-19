@@ -3,10 +3,13 @@
 #pragma once
 
 #include "IBackgroundTaskManager.h"
+#include <IEditor.h>
 #include <CryCore/Containers/CryListenerSet.h>
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
 
 #include <CryThreading/IThreadManager.h>
+#include <CryThreading/CryThread.h>
+#include <CryRenderer/IRenderer.h>
 
 namespace BackgroundTaskManager
 {

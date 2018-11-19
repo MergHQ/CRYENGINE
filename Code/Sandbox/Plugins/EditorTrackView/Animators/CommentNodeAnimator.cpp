@@ -4,6 +4,7 @@
 #include "CommentNodeAnimator.h"
 #include "Nodes/TrackViewAnimNode.h"
 #include "Nodes/TrackViewTrack.h"
+#include <CryFont/IFont.h>
 
 CCommentNodeAnimator::CCommentNodeAnimator(CTrackViewAnimNode* pCommentNode)
 {

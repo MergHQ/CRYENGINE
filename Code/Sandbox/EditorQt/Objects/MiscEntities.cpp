@@ -4,6 +4,11 @@
 #include "MiscEntities.h"
 #include "GameEngine.h"
 #include "Objects/DisplayContext.h"
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/IStatObj.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <CryPhysics/IPhysics.h>
+#include <CryMath/Cry_Camera.h>
 
 REGISTER_CLASS_DESC(CWindAreaEntityClassDesc);
 REGISTER_CLASS_DESC(CConstraintEntityClassDesc);
@@ -333,6 +338,12 @@ void DrawCutTemplate(SDisplayContext& dc, IStatObj* pObj, const Matrix34& tmWorl
 	}
 }
 
+// Necessary to support forward declared smart pointers
+CJointGenEntity::CJointGenEntity()
+{
+
+}
+
 void CJointGenEntity::Display(CObjectRenderHelper& objRenderHelper)
 {
 	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
@@ -435,3 +446,28 @@ void CJointGenEntity::Display(CObjectRenderHelper& objRenderHelper)
 		}
 	}
 }
+
+//////////////////////////////////////////////////////////////////////////
+bool CGeomCacheEntity::HitTestEntity(HitContext& hc, bool& bHavePhysics)
+{
+	IGeomCacheRenderNode* pGeomCacheRenderNode = m_pEntity->GetGeomCacheRenderNode(0);
+	if (pGeomCacheRenderNode)
+	{
+		SRayHitInfo hitInfo;
+		ZeroStruct(hitInfo);
+		hitInfo.inReferencePoint = hc.raySrc;
+		hitInfo.inRay = Ray(hitInfo.inReferencePoint, hc.rayDir.GetNormalized());
+		hitInfo.bInFirstHit = false;
+		hitInfo.bUseCache = false;
+
+		if (pGeomCacheRenderNode->RayIntersection(hitInfo))
+		{
+			hc.object = this;
+			hc.dist = hitInfo.fDistance;
+			return true;
+		}
+	}
+
+	return false;
+}
+

@@ -1,6 +1,6 @@
 #include "StdAfx.h"
 #include "CameraComponent.h"
-
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <array>
 
 namespace Cry

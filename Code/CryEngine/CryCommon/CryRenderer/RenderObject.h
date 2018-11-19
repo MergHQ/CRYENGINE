@@ -4,13 +4,15 @@
 
 #pragma once
 
+#include <CryCore/BaseTypes.h>
 #include <CryRenderer/IShader.h>
-#include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IComputeSkinning.h>
+#include <CryMath/Cry_Quat.h>
 
 struct IRenderNode;
 class CCompiledRenderObject;
 struct SSectorTextureSet;
+namespace JobManager { struct SJobState; }
 
 //////////////////////////////////////////////////////////////////////////
 /// CRenderObject::m_ObjFlags: Flags used by shader pipeline

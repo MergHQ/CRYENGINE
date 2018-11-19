@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "RuntimeAreaObject.h"
+#include <Cry3DEngine/ISurfaceType.h>
 
 CRuntimeAreaObject::TAudioControlMap CRuntimeAreaObject::m_audioControls;
 

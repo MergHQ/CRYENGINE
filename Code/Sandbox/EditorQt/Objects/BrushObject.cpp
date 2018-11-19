@@ -2,18 +2,23 @@
 
 #include "StdAfx.h"
 #include "BrushObject.h"
+#include "IEditorImpl.h"
 
 #include "Geometry/EdMesh.h"
 #include "Material/Material.h"
 #include "Material/MaterialManager.h"
 #include "Objects/EntityObject.h"
 
+#include <IObjectManager.h>
 #include <LevelEditor/Tools/SubObjectSelectionReferenceFrameCalculator.h>
 #include <Objects/ObjectLoader.h>
 #include <Objects/InspectorWidgetCreator.h>
 #include <Preferences/ViewportPreferences.h>
 #include <Serialization/Decorators/EditorActionButton.h>
 #include <PathUtils.h>
+#include <UsedResources.h>
+#include <Util/Math.h>
+#include <Util/FileUtil.h>
 #include <Viewport.h>
 
 #include <Cry3DEngine/I3DEngine.h>

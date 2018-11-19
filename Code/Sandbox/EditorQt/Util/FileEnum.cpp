@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "FileEnum.h"
+#include <CrySystem/File/ICryPak.h>
 #include <io.h>
 
 CFileEnum::CFileEnum()

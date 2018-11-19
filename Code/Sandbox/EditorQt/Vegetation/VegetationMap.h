@@ -3,6 +3,7 @@
 #pragma once
 
 #include "VegetationObject.h"
+#include <Util/Image.h>
 #include <CrySandbox/CrySignal.h>
 #include <list>
 #include <unordered_map>
@@ -49,7 +50,10 @@ public:
 	//! Get number of use vegetation objects.
 	int                GetObjectCount() const { return m_objects.size(); }
 	//! Get vegetation object.
+#pragma push_macro("GetObject")
+#undef GetObject
 	CVegetationObject* GetObject(int i) const { return m_objects[i]; }
+#pragma pop_macro("GetObject")
 	//! Get vegetation object by id.
 	CVegetationObject* GetObjectById(int id) const;
 

@@ -12,6 +12,7 @@
 
 *************************************************************************/
 #include "StdAfx.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <CryScriptSystem/IScriptSystem.h>
 #include <CrySystem/File/ICryPak.h>
 #include "IGameObjectSystem.h"

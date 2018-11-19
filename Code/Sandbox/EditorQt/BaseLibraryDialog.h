@@ -4,6 +4,9 @@
 
 #include "DataBaseDialog.h"
 #include "Controls/HotTrackingTreeCtrl.h"
+#include "IEditorImpl.h"
+#include "IUndoManager.h"
+#include "Objects/EntityScript.h"
 
 class CBaseLibrary;
 class CBaseLibraryItem;

@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "HyperNodePainter_Default.h"
+#include "IEditorImpl.h"
 
 #include <CryFlowGraph/IFlowGraphDebugger.h>
 

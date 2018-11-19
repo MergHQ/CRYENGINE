@@ -14,6 +14,7 @@
 #include "Mannequin/SequencerDopeSheetToolbar.h"
 #include "Controls/ClampedSplitterWnd.h"
 #include "QMfcApp/qmfcviewporthost.h"
+#include "Objects/EntityScript.h"
 
 struct SMannequinContexts;
 class CMannequinModelViewport;

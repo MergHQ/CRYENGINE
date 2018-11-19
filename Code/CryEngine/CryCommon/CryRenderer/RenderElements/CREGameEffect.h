@@ -3,6 +3,7 @@
 //! \cond INTERNAL
 
 #pragma once
+#include "RendElement.h"
 
 //! Interface for game effect render elements.
 //! Designed to be instantiated in game code, and called from the CREGameEffect within the engine.

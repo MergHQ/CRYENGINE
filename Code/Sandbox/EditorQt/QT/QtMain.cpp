@@ -31,8 +31,10 @@
 
 #include "Controls/QuestionTimeoutDialog.h"
 #include "SessionData.h"
+#include "IEditorImpl.h"
 
 #include <CryCore/Platform/CryLibrary.h>
+#include <CryString/CryPath.h>
 
 static const char* styleSheetPath = "Editor/Styles/stylesheet.qss";
 

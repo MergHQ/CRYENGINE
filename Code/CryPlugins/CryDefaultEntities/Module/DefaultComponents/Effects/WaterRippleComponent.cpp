@@ -1,6 +1,7 @@
 #include "StdAfx.h"
 #include "WaterRippleComponent.h"
 #include <CryMath/Random.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 namespace Cry
 {

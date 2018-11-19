@@ -10,6 +10,7 @@
 #include "Nodes/MissingNode.h"
 #include "Controls/HyperGraphEditorWnd.h"
 #include "FlowGraphPreferences.h"
+#include <Objects/SelectionGroup.h>
 
 /*
    //////////////////////////////////////////////////////////////////////////

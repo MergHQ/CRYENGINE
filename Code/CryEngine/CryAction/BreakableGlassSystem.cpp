@@ -8,6 +8,7 @@
 #include "CryAction.h"
 #include "ActionGame.h"
 #include <Cry3DEngine/IIndexedMesh.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 // Defines
 #define PHYSEVENT_COLLIDER 0

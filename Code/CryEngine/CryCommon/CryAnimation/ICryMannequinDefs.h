@@ -17,6 +17,7 @@
 	#define STORE_PROCCLIP_STRINGS 1
 	#define STORE_SCOPE_STRINGS    1
 #endif
+#include <CryString/CryName.h>
 
 typedef int32 TagID; // should be uint32, but it's too scary because we regularly check (tagID >= 0) instead of (tagID != TAG_ID_INVALID)
 static const TagID TAG_ID_INVALID = ~TagID(0);

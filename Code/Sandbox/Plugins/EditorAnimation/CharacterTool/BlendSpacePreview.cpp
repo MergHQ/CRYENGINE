@@ -7,6 +7,7 @@
 #include "Expected.h"
 #include <IEditor.h>
 #include <CryAnimation/ICryAnimation.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <QDoubleSpinBox>
 #include <QBoxLayout>
 #include <QToolBar>

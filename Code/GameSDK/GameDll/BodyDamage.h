@@ -9,6 +9,7 @@
 #include "Utility/CryHash.h"
 
 struct HitInfo;
+struct ISurfaceType;
 
 class CBodyDamageProfile : public _reference_target_t
 {

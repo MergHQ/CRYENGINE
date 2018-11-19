@@ -10,6 +10,7 @@
 #include "DecalManager.h"
 #include "VisAreas.h"
 #include <CryAnimation/ICryAnimation.h>
+#include <CryAnimation/IAttachment.h>
 #include "LightEntity.h"
 #include "WaterVolumeRenderNode.h"
 #include "DistanceCloudRenderNode.h"

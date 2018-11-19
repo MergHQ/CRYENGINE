@@ -9,6 +9,7 @@
 #include <Objects/DisplayContext.h>
 #include <Viewport.h>
 
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <CryMovie/IMovieSystem.h>
 
 namespace

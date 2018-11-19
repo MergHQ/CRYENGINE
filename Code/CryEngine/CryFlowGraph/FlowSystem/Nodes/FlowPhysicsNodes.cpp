@@ -7,6 +7,7 @@
 #include <CryAISystem/IAgent.h>
 #include <CryAISystem/IAIObject.h>
 #include <CryFlowGraph/IFlowBaseNode.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 class CFlowNode_Dynamics : public CFlowBaseNode<eNCT_Singleton>
 {

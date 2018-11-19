@@ -7,9 +7,11 @@
 #include "EntitySystem.h"
 #include <CryNetwork/ISerialize.h>
 
-#include  <CrySchematyc/Env/IEnvRegistrar.h>
-#include  <CrySchematyc/Env/Elements/EnvComponent.h>
+#include <CrySchematyc/Env/IEnvRegistrar.h>
+#include <CrySchematyc/Env/Elements/EnvComponent.h>
 #include <CryCore/StaticInstanceList.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <CryPhysics/physinterface.h>
 
 CRYREGISTER_CLASS(CEntityComponentRope);
 

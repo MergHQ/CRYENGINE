@@ -3,6 +3,7 @@
 #pragma once
 
 #include "BaseLibraryManager.h"
+#include <CryRenderer/IFlares.h>
 
 class IOpticsElementBase;
 class CLensFlareEditor;

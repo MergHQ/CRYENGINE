@@ -4,6 +4,7 @@
 #include "AttachmentPRow.h"
 
 #include <CryString/StringUtils.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 #include "AttachmentManager.h"
 #include "CharacterInstance.h"
 

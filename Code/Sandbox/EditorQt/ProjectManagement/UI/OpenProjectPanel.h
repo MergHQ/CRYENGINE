@@ -1,13 +1,18 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <QWidget>
 
 class CProjectsModel;
 class CProjectSortProxyModel;
 class CSelectProjectDialog;
 class QAdvancedTreeView;
 class QButtonGroup;
+class QItemSelection;
+class QModelIndex;
+class QPushButton;
 class QThumbnailsView;
+class QVBoxLayout;
 
 class COpenProjectPanel : public QWidget
 {

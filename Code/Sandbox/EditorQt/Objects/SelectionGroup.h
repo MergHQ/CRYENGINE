@@ -1,14 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-class CBaseObject;
 class CBrushObject;
 class CGeomEntity;
 struct SDisplayContext;
+#include <Objects/BaseObject.h>
 
 #include "SandboxAPI.h"
 #include "ObjectEvent.h"
 #include "Objects/ISelectionGroup.h"
+#include <CryCore/smartptr.h>
+#include <vector>
 
 /*!
  *	CSelectionGroup is a selection group of objects.

@@ -97,7 +97,7 @@ CHemisphereSink_SH::CHemisphereSink_SH(const DWORD indwAngleSteps, const DWORD i
 				rWedgeCoeffs += wegdeSample;
 			else
 			{
-				wegdeSample.dirZ = cCartCoord.z;
+				wegdeSample.dirZ = (float)cCartCoord.z;
 				rWedgeSHVec.push_back(wegdeSample);
 #if defined(DO_MP)
 				if (m_DoMP)
@@ -156,7 +156,7 @@ void CHemisphereSink_SH::InitSample(SampleType& rInoutValue, const uint32 cX, co
 	rInoutValue.SetSampleLink();//set to no link if no argument is provided
 	rInoutValue.colCount = 0;
 
-	const Vec3 cPos(GridToWorldPos(Vec3(cX, cY, m_pHeightMap[cY * m_Width + cX] + scSampleHeightOffset /*offset a little bit above terrain*/)));
+	const Vec3 cPos(GridToWorldPos(Vec3((float)cX, (float)cY, m_pHeightMap[cY * m_Width + cX] + scSampleHeightOffset /*offset a little bit above terrain*/)));
 
 	/*offset z-pos a little bit over terrain surface*/
 	rInoutValue.posZ = cPos.z;

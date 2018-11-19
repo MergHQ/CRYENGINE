@@ -1,7 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#include "Objects/BaseObject.h"
+#include <Objects/BaseObject.h>
+#include <Util/Variable.h>
 
 class CMaterial;
 class CEdMesh;

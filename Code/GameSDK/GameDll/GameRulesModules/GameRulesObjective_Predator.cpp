@@ -16,6 +16,7 @@
 
 #include "GameRulesObjective_Predator.h"
 
+#include "GameCVars.h"
 #include "GameRules.h"
 #include "IGameRulesScoringModule.h"
 #include "IGameRulesStateModule.h"

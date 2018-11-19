@@ -26,13 +26,17 @@
 
 // MFC plugin
 #include <Dialogs/GenericSelectItemDialog.h>
+#include <Util/FileUtil.h>
 #include <Util/MFCUtil.h>
 
 // EditorCommon
+#include <AssetSystem/Asset.h>
+#include <AssetSystem/AssetType.h>
 #include <Controls/DictionaryWidget.h>
 #include <Controls/DynamicPopupMenu.h>
 #include <Dialogs/QStringDialog.h>
 #include <Gizmos/GizmoManager.h>
+#include <IIconManager.h>
 #include <LevelEditor/Tools/PickObjectTool.h>
 #include <Objects/DisplayContext.h>
 #include <Objects/EntityComponentCollapsibleFrame.h>
@@ -42,7 +46,8 @@
 #include <Preferences/GlobalHelperPreferences.h>
 #include <Preferences/ViewportPreferences.h>
 #include <Serialization/Decorators/EditToolButton.h>
-#include <IIconManager.h>
+#include <Util/AffineParts.h>
+#include <Util/Math.h>
 #include <Viewport.h>
 
 // CryEngine

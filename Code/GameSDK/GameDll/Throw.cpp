@@ -17,6 +17,7 @@ History:
 #include "Player.h"
 #include "PlayerStateEvents.h"
 #include "Game.h"
+#include "GameCVars.h"
 #include "Projectile.h"
 #include "WeaponSystem.h"
 #include "GameRules.h"

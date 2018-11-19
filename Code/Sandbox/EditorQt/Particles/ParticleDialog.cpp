@@ -9,10 +9,13 @@
 #include "ParticleManager.h"
 #include "ParticleLibrary.h"
 #include "ParticleItem.h"
+#include "LogFile.h"
 
 #include "Objects/BrushObject.h"
 #include "Objects/EntityObject.h"
+#include "Objects/EntityScript.h"
 #include "Objects/ParticleEffectObject.h"
+#include "Objects/SelectionGroup.h"
 #include "ViewManager.h"
 #include "CryEditDoc.h"
 #include "Util/Clipboard.h"

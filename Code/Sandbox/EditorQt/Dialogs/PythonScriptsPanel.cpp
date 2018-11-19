@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "Dialogs/PythonScriptsPanel.h"
+#include "IEditorImpl.h"
 
 #include <QSearchBox.h>
 

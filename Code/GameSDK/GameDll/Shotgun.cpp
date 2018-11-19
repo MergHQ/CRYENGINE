@@ -7,6 +7,7 @@
 #include "Actor.h"
 #include "Player.h"
 #include "Projectile.h"
+#include "GameCVars.h"
 #include "GameRules.h"
 
 #include "WeaponSharedParams.h"

@@ -2,6 +2,7 @@
 #include "VirtualRealityInteractionComponent.h"
 
 #include <Cry3DEngine/IIndexedMesh.h>
+#include <CryPhysics/IPhysics.h>
 
 namespace Cry
 {

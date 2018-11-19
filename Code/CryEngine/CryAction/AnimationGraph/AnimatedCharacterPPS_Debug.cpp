@@ -5,6 +5,7 @@
 #include "AnimationGraphCVars.h"
 #include "PersistantDebug.h"
 #include "DebugHistory.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 //--------------------------------------------------------------------------------
 

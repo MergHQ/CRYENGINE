@@ -1,17 +1,20 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "GameEngine.h"
 #include "AICoverSurface.h"
+
 #include "AI/AIManager.h"
 #include "AI/CoverSurfaceManager.h"
 #include "AI/NavDataGeneration/Navigation.h"
-#include "IIconManager.h"
+#include "GameEngine.h"
 #include "Gizmos/AxisHelper.h"
-#include "Viewport.h"
+#include "IIconManager.h"
 #include "Objects/InspectorWidgetCreator.h"
+#include "SelectionGroup.h"
+#include "Viewport.h"
 
 #include <CrySystem/ICryLink.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 IMPLEMENT_DYNCREATE(CAICoverSurface, CBaseObject);
 

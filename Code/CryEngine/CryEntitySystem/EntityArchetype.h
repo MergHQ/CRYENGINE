@@ -3,6 +3,8 @@
 #pragma once
 
 #include <CryScriptSystem/IScriptSystem.h>
+#include <CryEntitySystem/IEntitySystem.h>
+#include <CryCore/smartptr.h>
 
 class CEntityClass;
 

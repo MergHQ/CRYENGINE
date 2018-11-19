@@ -7,6 +7,7 @@
 #include <CryAnimation/ICryAnimation.h>
 
 #include <CrySerialization/Enum.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 class CGeomEntityRegistrator
 	: public IEntityRegistrator

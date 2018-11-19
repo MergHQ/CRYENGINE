@@ -9,6 +9,8 @@
 #include "KeyboardShortcut.h"
 #include "CustomCommand.h"
 #include "CryIcon.h"
+#include "LogFile.h"
+#include "IEditorImpl.h"
 
 CEditorCommandManager::CEditorCommandManager()
 	: m_bWarnDuplicate(true) {}

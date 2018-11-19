@@ -18,6 +18,7 @@
 #include "CryActionCVars.h"
 #include "IAnimatedCharacter.h"
 #include <CryGame/IGameFramework.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 const static char* COOP_ANIM_NAME = "CoopAnimation";
 const static int MY_ANIM = 54545;

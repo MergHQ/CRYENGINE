@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AssetSystem/AssetConverter.h"
+#include "SandboxAPI.h"
 
 //! Converts from a SelectionGroup of CBaseObject to a prefab asset
 class SANDBOX_API CObjectToPrefabAssetConverter : public CAssetConverter

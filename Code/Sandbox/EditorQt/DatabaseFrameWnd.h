@@ -3,6 +3,8 @@
 #pragma once
 
 #include "Dialogs/BaseFrameWnd.h"
+#include "IEditorImpl.h"
+#include <IUndoManager.h>
 class CBaseLibrary;
 class CBaseLibraryItem;
 class CBaseLibraryManager;

@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "HyperGraphEditorTree.h"
+#include "IEditorImpl.h"
 
 #include <CryGame/IGameFramework.h>
 #include <CrySystem/Scaleform/IFlashUI.h>

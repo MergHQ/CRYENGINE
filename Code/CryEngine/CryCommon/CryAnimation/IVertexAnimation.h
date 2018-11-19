@@ -6,6 +6,8 @@
 #ifndef IVertexAnimation_h
 #define IVertexAnimation_h
 
+struct ISkin;
+
 struct IVertexFrames
 {
 	virtual ~IVertexFrames() {}

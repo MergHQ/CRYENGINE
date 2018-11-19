@@ -4,11 +4,13 @@
 #include "VegetationObject.h"
 
 #include "Material/MaterialManager.h"
+#include "Objects/SelectionGroup.h"
 #include "Terrain/Heightmap.h"
 #include "Terrain/TerrainManager.h"
 #include "Util/BoostPythonHelpers.h"
 #include "Vegetation/VegetationMap.h"
 #include "Vegetation/VegetationSelectTool.h"
+#include "IEditorImpl.h"
 
 #include <Preferences/ViewportPreferences.h>
 

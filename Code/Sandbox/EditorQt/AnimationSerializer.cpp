@@ -7,7 +7,11 @@
 #include "Mission.h"
 
 #include <Util/CryMemFile.h>
+#include <Util/EditorUtils.h>
+#include <Util/FileUtil.h>
 #include <Util/PakFile.h>
+#include <CrySystem/XML/IXml.h>
+#include <CryMovie/IMovieSystem.h>
 
 void CAnimationSerializer::SaveSequence(IAnimSequence* seq, const char* szFilePath, bool bSaveEmpty)
 {

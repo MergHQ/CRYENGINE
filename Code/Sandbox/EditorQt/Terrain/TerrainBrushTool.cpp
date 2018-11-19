@@ -3,17 +3,24 @@
 #include "StdAfx.h"
 #include "Terrain/TerrainBrushTool.h"
 
+#include "IEditorImpl.h"
 #include "Terrain/Heightmap.h"
 #include "Vegetation/VegetationMap.h"
 
+#include <IObjectManager.h>
+#include <IUndoManager.h>
 #include <EditorFramework/PersonalizationManager.h>
 #include <EditorFramework/Preferences.h>
+#include <Objects/BaseObject.h>
 #include <Objects/DisplayContext.h>
 #include <Serialization/Decorators/EditorActionButton.h>
 #include <QtUtil.h>
 #include <Viewport.h>
+#include <Util/ImageUtil.h>
 
 #include <CrySerialization/Decorators/ActionButton.h>
+#include <CrySerialization/Decorators/Resources.h>
+#include <QBoxLayout>
 
 #define MAX_BRUSH_SIZE     500.0f
 #define MAX_BRUSH_HARDNESS 1.0f

@@ -9,12 +9,18 @@
 #include "MissionScript.h"
 #include "TerrainLighting.h"
 
+#include <IObjectManager.h>
 #include <Preferences/GeneralPreferences.h>
+#include <Util/FileUtil.h>
 #include <Util/TempFileHelper.h>
 
+#include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/ITimeOfDay.h>
 #include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
+#include <CryAISystem/IAISystem.h>
+#include <CryEntitySystem/IEntitySystem.h>
+#include <CryMovie/IMovieSystem.h>
 
 namespace Private_Mission
 {

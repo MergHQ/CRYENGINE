@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "ScriptProperties.h"
 #include <CryScriptSystem/IScriptSystem.h>
+#include <CrySystem/XML/IXml.h>
 
 //////////////////////////////////////////////////////////////////////////
 bool CScriptProperties::SetProperties(XmlNodeRef& entityNode, IScriptTable* pEntityTable)

@@ -5,7 +5,7 @@
 #include "Quadtree/Quadtree.h"
 #include "Raster.h"
 
-#include <CryMath/Cry_Math.h>
+#include <CryMath/Cry_Geo.h>
 #include <vector>
 
 class CTerrainObjectMan;
@@ -467,7 +467,7 @@ inline const bool CTerrainObjectMan::CalcRayIntersectionData
 }
 
 inline CTerrainObjectMan::CTerrainObjectMan(const uint32 cWidthUnits)
-	: m_QuadTree(cWidthUnits, TVec2(cWidthUnits >> 1, cWidthUnits >> 1), (logf((float)cWidthUnits) + 8), 16 * 1024 * 1024, 16 * 1024 * 1024),
+	: m_QuadTree(cWidthUnits, TVec2(cWidthUnits >> 1, cWidthUnits >> 1), uint16(logf((float)cWidthUnits) + 8), 16 * 1024 * 1024, 16 * 1024 * 1024),
 	m_cWidth(cWidthUnits)
 {
 	m_LastResults.reserve(scMaxRayCastObjectCount);

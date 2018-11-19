@@ -3,6 +3,8 @@
 #pragma once
 
 #include <CryExtension/ICryFactoryRegistry.h>
+#include <CryEntitySystem/IEntityBasicTypes.h>
+#include <CryEntitySystem/IEntityComponent.h>
 
 // Implemented in a similar way to CListenerSet
 
@@ -16,7 +18,7 @@ struct SEntityComponentRecord
 {
 	int                               proxyType;            //!< Proxy id associated with this component (Only when component correspond to know proxy, -1 overwise)
 	int                               eventPriority;        //!< Event dispatch priority
-	uint16                            creationOrder;        //!< Determines when an order was constructed, i.e. 0 = first component, 1 = second. Not necessarily sequential.	
+	uint16                            creationOrder;        //!< Determines when an order was constructed, i.e. 0 = first component, 1 = second. Not necessarily sequential.
 	Cry::Entity::EventFlags           registeredEventsMask; //!< Bitmask of the EEntityEvent values
 	CryInterfaceID                    typeId;               //!< Interface IDD for the registered component.
 	std::shared_ptr<IEntityComponent> pComponent;           //!< Pointer to the owned component, Only the entity owns the component life time
@@ -30,19 +32,19 @@ struct SEntityComponentRecord
 		, registeredEventsMask(other.registeredEventsMask)
 		, creationOrder(other.creationOrder)
 		, eventPriority(other.eventPriority)
-		, proxyType(other.proxyType) 
+		, proxyType(other.proxyType)
 	{
 		other.pComponent.reset();
 	}
 	SEntityComponentRecord& operator=(SEntityComponentRecord&&) = default;
 	~SEntityComponentRecord();
 
-	IEntityComponent* GetComponent() const { return pComponent.get(); }
+	IEntityComponent* GetComponent() const     { return pComponent.get(); }
 	//! Check whether the component has been removed
-	bool IsValid() const { return pComponent != nullptr; }
-	int GetProxyType() const { return proxyType; }
-	int GetEventPriority() const { return eventPriority; }
-	uint16 GetCreationOrder() const { return creationOrder; }
+	bool              IsValid() const          { return pComponent != nullptr; }
+	int               GetProxyType() const     { return proxyType; }
+	int               GetEventPriority() const { return eventPriority; }
+	uint16            GetCreationOrder() const { return creationOrder; }
 
 	// Mark the component was removed
 	// This is done since we are not always able to remove the record from storage immediately
@@ -72,14 +74,14 @@ struct SMinimalEntityComponentRecord
 
 	IEntityComponent* pComponent;
 
-	IEntityComponent* GetComponent() const { return pComponent; }
+	IEntityComponent* GetComponent() const     { return pComponent; }
 	// Check whether the component has been removed
-	bool IsValid() const { return pComponent != nullptr; }
-	int GetProxyType() const { return pComponent != nullptr ? pComponent->GetProxyType() : ENTITY_PROXY_LAST; }
-	int GetEventPriority() const { return pComponent != nullptr ? pComponent->GetEventPriority() : 0; }
-	uint16 GetCreationOrder() const { return GetEventPriority(); }
+	bool              IsValid() const          { return pComponent != nullptr; }
+	int               GetProxyType() const     { return pComponent != nullptr ? pComponent->GetProxyType() : ENTITY_PROXY_LAST; }
+	int               GetEventPriority() const { return pComponent != nullptr ? pComponent->GetEventPriority() : 0; }
+	uint16            GetCreationOrder() const { return GetEventPriority(); }
 
-	void Invalidate()
+	void              Invalidate()
 	{
 		pComponent = nullptr;
 	}
@@ -105,11 +107,11 @@ private:
 	//! This vector can only be changed on the main thread!
 	//! Access from any other thread requires use of the lock at all times.
 	TRecordStorage             m_vector;
-	uint16                     m_activeScopes : 14;     //!< Counts current iteration scopes (cleanup cannot occur unless this is 0).
+	uint16                     m_activeScopes    : 14;  //!< Counts current iteration scopes (cleanup cannot occur unless this is 0).
 	uint16                     m_cleanupRequired : 1;   //!< Indicates NULL elements in listener.
-	uint16                     m_sortingValid : 1;      //!< Indicates that sorting order of the elements maybe not be valid.
+	uint16                     m_sortingValid    : 1;   //!< Indicates that sorting order of the elements maybe not be valid.
 	mutable CryCriticalSection m_lock;
-	
+
 public:
 	//! \note No default constructor in favor of forcing users to provide an expected capacity.
 	CEntityComponentsVector() : m_activeScopes(0), m_cleanupRequired(false), m_sortingValid(true) {}
@@ -151,12 +153,12 @@ public:
 		return std::find_if(m_vector.begin(), m_vector.end(), [pExistingComponent](const TRecord& record) -> bool
 		{
 			return record.GetComponent() == pExistingComponent;
-		});;
+		});
 	}
 
 	const_iterator GetEnd() const { return m_vector.end(); }
 
-	void ReSortComponent(iterator it)
+	void           ReSortComponent(iterator it)
 	{
 		CRY_ASSERT_MESSAGE(gEnv->mMainThreadId == CryGetCurrentThreadId(), "Existing component can only be re-sorted by the main thread!");
 		CRY_ASSERT_MESSAGE(m_activeScopes == 0, "Re-sorting an existing component record while iteration is in progress is not supported!");
@@ -177,7 +179,7 @@ public:
 	void Remove(IEntityComponent* pComponent)
 	{
 		CRY_ASSERT_MESSAGE(gEnv->mMainThreadId == CryGetCurrentThreadId(), "Existing component can only be removed by the main thread!");
-		
+
 		iterator endIter = m_vector.end();
 		iterator it = std::find_if(m_vector.begin(), endIter, [pComponent](const TRecord& record) -> bool
 		{
@@ -235,7 +237,7 @@ public:
 		});
 
 		// Now destroy in reverse order of creation
-		for(typename TRecordStorage::reverse_iterator it = tempComponents.rbegin(), end = tempComponents.rend(); it != end; ++it)
+		for (typename TRecordStorage::reverse_iterator it = tempComponents.rbegin(), end = tempComponents.rend(); it != end; ++it)
 		{
 			it->Invalidate();
 		}
@@ -347,7 +349,7 @@ public:
 	{
 		CryOptionalAutoLock<CryCriticalSection> lock(m_lock, gEnv->mMainThreadId != CryGetCurrentThreadId());
 
-		for(TRecord& record : m_vector)
+		for (TRecord& record : m_vector)
 		{
 			if (record.GetComponent())
 			{

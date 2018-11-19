@@ -1,6 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include "SandboxAPI.h"
+#include <CryCore/smartptr.h>
 
 /** Defines axises of projection for detail texture.
  */

@@ -15,12 +15,9 @@
 #include "PersonalSignalTimer.h"
 #include "SignalTimers.h"
 #include "IUIDraw.h"
-
-#include <CryAISystem/IAIObject.h>
 #include <CryFont/IFont.h>
 #include <CryMath/Random.h>
 #include <CryRenderer/IRenderAuxGeom.h>
-
 // Description:
 //   Constructor
 // Arguments:
@@ -262,10 +259,10 @@ void CPersonalSignalTimer::SetEnabled(bool bEnabled)
 		if (m_pParent->GetDebug() == true)
 		{
 			gEnv->pLog->Log(
-			  "PersonalSignalTimer [%d]: Signal [%s] is %s",
-			  m_EntityId,
-			  m_sSignal.c_str(),
-			  (bEnabled) ? "enabled" : "disabled");
+				"PersonalSignalTimer [%d]: Signal [%s] is %s",
+				m_EntityId,
+				m_sSignal.c_str(),
+				(bEnabled) ? "enabled" : "disabled");
 		}
 	}
 }
@@ -301,7 +298,7 @@ void CPersonalSignalTimer::DebugDraw(uint32 uOrder) const
 		b = 0.0f;
 	}
 
-	IRenderAuxText::Draw2dLabel( x,y, 13.0f, ColorF(r,g,b), false, "%s", txt);
+	IRenderAuxText::Draw2dLabel(x, y, 13.0f, ColorF(r, g, b), false, "%s", txt);
 }
 
 // Description:

@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Objects/BaseObject.h"
+#include <Cry3DEngine/IRenderNode.h>
 
 struct IDistanceCloudRenderNode;
 

@@ -4,6 +4,7 @@
 #include "BaseLibraryItem.h"
 #include "BaseLibrary.h"
 #include "BaseLibraryManager.h"
+#include <CrySystem/ISystem.h>
 
 //////////////////////////////////////////////////////////////////////////
 // CBaseLibraryItem implementation.

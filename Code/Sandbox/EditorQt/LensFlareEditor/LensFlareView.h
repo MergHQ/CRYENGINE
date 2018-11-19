@@ -5,6 +5,8 @@
 #include "ILensFlareListener.h"
 #include "Controls/PreviewModelCtrl.h"
 
+struct IVariable;
+
 class CLensFlareView : public CPreviewModelCtrl, public ILensFlareChangeItemListener, public ILensFlareChangeElementListener
 {
 public:

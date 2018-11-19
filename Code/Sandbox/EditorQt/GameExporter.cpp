@@ -12,6 +12,7 @@
 #include "Material/MaterialManager.h"
 #include "Objects/EntityObject.h"
 #include "Objects/ObjectLayerManager.h"
+#include "Objects/ObjectManager.h"
 #include "Objects/ObjectPhysicsManager.h"
 #include "Particles/ParticleManager.h"
 #include "Terrain/TerrainManager.h"
@@ -31,7 +32,9 @@
 #include <Notifications/NotificationCenter.h>
 #include <PathUtils.h>
 #include <Preferences/GeneralPreferences.h>
+#include <UsedResources.h>
 #include <Util/CryMemFile.h>
+#include <Util/FileUtil.h>
 
 #include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>

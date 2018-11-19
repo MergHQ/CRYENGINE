@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CryAISystem/ICoverSystem.h>
+#include <set>
 
 class CAICoverSurface;
 

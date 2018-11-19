@@ -5,6 +5,7 @@
 #include "SandboxAPI.h"
 #include "IDataBaseLibrary.h"
 #include "BaseLibraryItem.h"
+#include <CryCore/smartptr.h>
 
 class CBaseLibraryManager;
 class CBaseLibraryItem;

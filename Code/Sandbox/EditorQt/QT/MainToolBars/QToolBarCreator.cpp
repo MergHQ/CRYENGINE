@@ -23,6 +23,7 @@
 #include "Controls/QEditableComboBox.h"
 #include "Controls/QResourceBrowserDialog.h"
 #include "QtUtil.h"
+#include "Commands/CommandManager.h"
 #include "Commands/QCommandAction.h"
 #include "Commands/CustomCommand.h"
 #include "Commands/CVarListDockable.h"

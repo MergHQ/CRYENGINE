@@ -6,7 +6,7 @@
 #include "StdAfx.h"
 
 // Included only once here
-#include <CryCore//Platform/platform_impl.inl>
+#include <CryCore/Platform/platform_impl.inl>
 
 #include "FlowSystem/FlowSystem.h"
 #include "FlowSystem/Modules/ModuleManager.h"

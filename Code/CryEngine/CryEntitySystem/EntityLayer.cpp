@@ -4,6 +4,8 @@
 #include "EntityLayer.h"
 #include "Entity.h"
 #include <CryNetwork/ISerialize.h>
+#include <CryPhysics/physinterface.h>
+#include <Cry3DEngine/I3DEngine.h>
 
 CEntityLayer::CEntityLayer(const char* name, uint16 id, bool havePhysics, int specs, bool defaultLoaded, TGarbageHeaps& garbageHeaps)
 	: m_name(name)

@@ -1,15 +1,22 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include <StdAfx.h>
 #include "VegetationSelectTool.h"
-#include "CryMath/Random.h"
+#include "IEditorImpl.h"
 #include "VegetationMap.h"
 #include "VegetationObject.h"
 #include "Viewport.h"
-#include <Preferences/ViewportPreferences.h>
-#include "Gizmos/IGizmoManager.h"
-#include <QtUtil.h>
-#include "IUndoManager.h"
 
+#include <Preferences/ViewportPreferences.h>
+#include <IObjectManager.h>
+#include <Gizmos/IGizmoManager.h>
+#include <Objects/DisplayContext.h>
+#include <IUndoManager.h>
+#include <IUndoObject.h>
+#include <QtUtil.h>
+
+#include <Cry3DEngine/I3DEngine.h>
+#include <CryPhysics/IPhysics.h>
+#include <CryMath/Random.h>
 #include <QVector>
 
 IMPLEMENT_DYNCREATE(CVegetationSelectTool, CEditTool)

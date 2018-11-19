@@ -30,6 +30,7 @@
 #include "Voting.h"
 #include "GameRulesModules/GameRulesModulesRegistration.h"
 #include "AutoEnum.h"
+#include <Cry3DEngine/IMaterial.h>
 #include <queue>
 
 #define MAX_CONCURRENT_EXPLOSIONS 64

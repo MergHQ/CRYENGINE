@@ -8,6 +8,8 @@
 #include <CrySystem/VR/IHMDDevice.h>
 #include <CrySystem/VR/IHMDManager.h>
 
+#include <CryEntitySystem/IEntityComponent.h>
+
 #include <array>
 
 namespace Cry

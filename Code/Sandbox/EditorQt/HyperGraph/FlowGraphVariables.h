@@ -4,6 +4,7 @@
 
 #include <Util/Variable.h>
 #include "FlowGraphNode.h"
+#include "Objects/EntityScript.h"
 
 #define FGVARIABLES_REAL_CLONE
 // #undef  FGVARIABLES_REAL_CLONE  // !!! Not working without real cloning currently !!!

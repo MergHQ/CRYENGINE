@@ -7,6 +7,8 @@
 #include "3dEngine.h"
 #include <CryParticleSystem/IParticles.h>
 #include <Cry3DEngine/CGF/CGFContent.h>
+#include <Cry3DEngine/ISurfaceType.h>
+#include <CryRenderer/RenderElements/RendElement.h>
 #include "ObjMan.h"
 #include <CryThreading/IJobManager.h>
 #include <CryThreading/IJobManager_JobDelegator.h>

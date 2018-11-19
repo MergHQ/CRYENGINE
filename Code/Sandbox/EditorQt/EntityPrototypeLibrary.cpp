@@ -4,6 +4,7 @@
 #include "EntityPrototypeLibrary.h"
 
 #include "EntityPrototype.h"
+#include <Util/EditorUtils.h>
 
 //////////////////////////////////////////////////////////////////////////
 // CEntityPrototypeLibrary implementation.

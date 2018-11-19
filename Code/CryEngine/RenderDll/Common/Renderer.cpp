@@ -10,6 +10,7 @@
 #include <Cry3DEngine/IIndexedMesh.h>
 #include <CryCore/BitFiddling.h>                              // IntegerLog2()
 #include <Cry3DEngine/ImageExtensionHelper.h>                     // CImageExtensionHelper
+#include <CryFont/IFont.h>
 #include "Textures/Image/CImage.h"
 #include "Textures/TextureManager.h"
 #include "Textures/TextureStreamPool.h"

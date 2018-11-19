@@ -4,6 +4,8 @@
 
 #include <CrySerialization/Forward.h>
 
+class CryIcon;
+
 // Engine version description, taken from "cryengine.cryengine"
 struct SCryEngineVersion
 {

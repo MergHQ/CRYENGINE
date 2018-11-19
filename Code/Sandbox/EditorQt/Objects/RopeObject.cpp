@@ -2,6 +2,8 @@
 
 #include "StdAfx.h"
 #include "RopeObject.h"
+#include "IEditorImpl.h"
+#include "SelectionGroup.h"
 
 #include "Material/Material.h"
 #include "Material/MaterialManager.h"

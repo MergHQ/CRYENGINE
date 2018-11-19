@@ -2,8 +2,11 @@
 
 #include "StdAfx.h"
 #include "EntityScript.h"
+#include "IEditorImpl.h"
+#include "LogFile.h"
 #include "EntityObject.h"
 #include "CryEdit.h"
+#include <Util/FileUtil.h>
 #include <CryScriptSystem/IScriptSystem.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include "LuaCommentParser.h"

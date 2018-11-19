@@ -9,11 +9,8 @@
    =============================================================================*/
 #pragma once
 
-#ifndef _ISHADER_H_
-#define _ISHADER_H_
-
 #include <CryCore/smartptr.h>
-#include <CryRenderer/IFlares.h> // <> required for Interfuscator
+#include <CryRenderer/IFlares.h>
 #include <CryRenderer/VertexFormats.h>
 
 #include <CryMath/Cry_XOptimise.h>
@@ -22,6 +19,7 @@
 #include <CryThreading/CryThreadSafeRendererContainer.h>
 
 #include <CryCore/BitMask.h>
+#include <CryCore/Containers/CryArray.h>
 
 struct IMaterial;
 class CRenderElement;
@@ -690,8 +688,6 @@ enum EResClassName
 	eRCN_Shader,
 };
 //! \endcond
-
-#include "IRenderer.h"
 
 //==============================================================================
 
@@ -2700,8 +2696,3 @@ struct SShaderGraphBlock
 
 typedef std::vector<SShaderGraphBlock*> FXShaderGraphBlocks;
 typedef FXShaderGraphBlocks::iterator   FXShaderGraphBlocksItor;
-
-#include <CryRenderer/RenderElements/RendElement.h>
-#include "RenderObject.h"
-
-#endif // _ISHADER

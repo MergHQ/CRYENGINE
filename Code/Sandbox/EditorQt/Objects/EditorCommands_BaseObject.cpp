@@ -4,6 +4,7 @@
 // EditorCommon
 #include <ICommandManager.h>
 #include <IUndoObject.h>
+#include <Controls/QuestionDialog.h>
 #include <FileDialogs/SystemFileDialog.h>
 #include <Objects/ObjectLoader.h>
 
@@ -23,6 +24,8 @@
 
 // CryCommon
 #include <CrySystem/ICryLink.h>
+#include <Cry3DEngine/IStatObj.h>
+#include <Cry3DEngine/IRenderNode.h>
 
 //////////////////////////////////////////////////////////////////////////
 namespace Private_ObjectCommands

@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <CryCore/smartptr.h>
 
 struct IAIAction;
 struct ICustomAction;
@@ -10,6 +11,7 @@ struct IVariable;
 
 class CHyperEdge;
 class CObjectArchive;
+class XmlNodeRef;
 
 enum EHyperGraphEvent
 {

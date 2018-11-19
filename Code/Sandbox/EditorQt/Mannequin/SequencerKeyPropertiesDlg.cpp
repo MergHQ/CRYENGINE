@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "SequencerKeyPropertiesDlg.h"
 #include "SequencerSequence.h"
+#include "IEditorImpl.h"
 
 IMPLEMENT_DYNAMIC(CSequencerKeyUIControls, CObject)
 

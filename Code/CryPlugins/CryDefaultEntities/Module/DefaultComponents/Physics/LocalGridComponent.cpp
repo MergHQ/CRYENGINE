@@ -1,6 +1,8 @@
 #include "StdAfx.h"
 
 #include "LocalGridComponent.h"
+#include <CryPhysics/IPhysics.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 template<int i> constexpr int const_ilog10() { return 1 + const_ilog10<i/10>(); }
 template<> constexpr int const_ilog10<0>() { return 0; }

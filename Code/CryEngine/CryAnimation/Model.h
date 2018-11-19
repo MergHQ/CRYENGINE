@@ -5,6 +5,7 @@
 #include "ModelAnimationSet.h" //embedded
 #include "ModelMesh.h"         //embedded
 #include "Skeleton.h"
+#include <CryPhysics/physinterface.h>
 
 class CFacialModel;
 

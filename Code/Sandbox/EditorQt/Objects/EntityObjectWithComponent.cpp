@@ -2,6 +2,8 @@
 
 #include "StdAfx.h"
 #include "EntityObjectWithComponent.h"
+#include "IEditorImpl.h"
+#include <IObjectManager.h>
 
 REGISTER_CLASS_DESC(CEntityWithComponentClassDesc);
 IMPLEMENT_DYNCREATE(CEntityObjectWithComponent, CEntityObject)

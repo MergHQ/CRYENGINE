@@ -20,6 +20,7 @@
 #include "VehicleCVars.h"
 #include "Vehicle.h"
 
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <CryMath/Cry_GeoIntersect.h>
 #include <CryMath/Cry_GeoDistance.h>
 

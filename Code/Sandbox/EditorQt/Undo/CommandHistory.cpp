@@ -5,6 +5,7 @@
 #include "CommandHistory.h"
 #include "RecursionLoopGuard.h"
 #include "IUndoManager.h"
+#include "IEditorImpl.h"
 #include <QMouseEvent>
 #include <QLayout>
 #include <QAdvancedTreeView.h>

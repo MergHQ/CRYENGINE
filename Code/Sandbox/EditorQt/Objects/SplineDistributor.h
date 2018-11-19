@@ -3,6 +3,11 @@
 #pragma once
 
 #include "SplineObject.h"
+#include <Util/Variable.h>
+#include <CryCore/smartptr.h>
+#include <vector>
+
+class CEdMesh;
 
 class CSplineDistributor : public CSplineObject
 {

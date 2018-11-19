@@ -6,6 +6,7 @@
 #include "AI/AIManager.h"
 
 #include "IEditorImpl.h"
+#include "IObjectManager.h"
 #include "GameExporter.h"
 #include "GameEngine.h"
 #include "Objects/EntityObject.h"

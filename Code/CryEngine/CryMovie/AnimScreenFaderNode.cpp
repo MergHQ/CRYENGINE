@@ -4,6 +4,7 @@
 #include "AnimScreenFaderNode.h"
 #include "ScreenFaderTrack.h"
 #include <CryRenderer/IRenderer.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 namespace
 {

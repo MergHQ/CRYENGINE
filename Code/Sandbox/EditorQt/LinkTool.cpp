@@ -3,14 +3,19 @@
 #include "StdAfx.h"
 #include "LinkTool.h"
 
+#include "IEditorImpl.h"
+#include "IObjectManager.h"
 #include "Objects/EntityObject.h"
 #include "Objects/MiscEntities.h"
+#include "Objects/SelectionGroup.h"
 
 #include <Controls/QuestionDialog.h>
 #include <Objects/IObjectLayer.h>
 #include <QtUtil.h>
 #include <Viewport.h>
 
+#include <Cry3DEngine/IRenderNode.h>
+#include <Cry3DEngine/I3DEngine.h>
 #include <QMenu>
 
 class CLinkToPicker : public IPickObjectCallback

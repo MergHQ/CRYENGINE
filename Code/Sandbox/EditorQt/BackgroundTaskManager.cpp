@@ -2,6 +2,8 @@
 
 #include "StdAfx.h"
 #include "BackgroundTaskManager.h"
+#include "IEditorImpl.h"
+#include <Util/EditorUtils.h>
 
 namespace BackgroundTaskManager
 {

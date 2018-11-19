@@ -29,6 +29,7 @@
 #include "BreezeGenerator.h"
 #include <CryAnimation/ICryAnimation.h>
 #include <CryAction/IMaterialEffects.h>
+#include <CryEntitySystem/IEntitySystem.h>
 #include "ClipVolumeManager.h"
 
 #if defined(FEATURE_SVO_GI)

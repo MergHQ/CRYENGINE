@@ -10,6 +10,8 @@
  */
 namespace CryAudio
 {
+	class CObjectTransformation;
+
 /**
  * @struct CryAudio::IListener
  * @brief A struct exposing public methods to interact with audio listeners.

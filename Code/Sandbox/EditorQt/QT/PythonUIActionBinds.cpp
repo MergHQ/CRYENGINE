@@ -4,11 +4,13 @@
 
 #include <StdAfx.h>
 
+#include "IEditorImpl.h"
 #include "CryEdit.h"
 #include "QtMainFrame.h"
 #include "Util/BoostPythonHelpers.h"
 
 #include <EditorFramework/Preferences.h>
+#include <CryAudio/IAudioSystem.h>
 
 #include <QApplication>
 #include <QtGui/QtEvents>

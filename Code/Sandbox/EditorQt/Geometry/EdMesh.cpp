@@ -2,18 +2,22 @@
 
 #include "StdAfx.h"
 #include "EdMesh.h"
+#include "IEditorImpl.h"
 
 #include <Gizmos/ITransformManipulator.h>
+#include <HitContext.h>
+#include <IUndoObject.h>
+#include <Objects/BaseObject.h>
 #include <Objects/DisplayContext.h>
 #include <Objects/ObjectLoader.h>
 #include <Preferences/SnappingPreferences.h>
 #include <Util/PakFile.h>
 #include <Viewport.h>
 
+#include <Cry3DEngine/IIndexedMesh.h>
 #include <Cry3DEngine/CGF/CGFContent.h>
 #include <Cry3DEngine/CGF/IChunkFile.h>
 #include <Cry3DEngine/I3DEngine.h>
-#include <Cry3DEngine/IIndexedMesh.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 
 IMPLEMENT_DYNAMIC(CEdMesh, CEdGeometry)

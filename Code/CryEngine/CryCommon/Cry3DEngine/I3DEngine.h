@@ -6,15 +6,12 @@
 #define MMRM_MAX_SURFACE_TYPES 16
 
 // Do not add any headers here!
-#include "CryEngineDecalInfo.h"
 #include <Cry3DEngine/IStatObj.h>
-#include <CryRenderer/IRenderer.h>
 #include <CrySystem/IProcess.h>
 #include <Cry3DEngine/IMaterial.h>
-#include <Cry3DEngine/ISurfaceType.h>
 #include <Cry3DEngine/IRenderNode.h>
 #include <CryCore/Containers/CryArray.h>
-#include <CryMemory/IMemory.h>
+#include <CryRenderer/RenderObject.h>
 //Do not add any headers here!
 
 struct ISystem;
@@ -28,7 +25,6 @@ struct ISplineInterpolator;
 class CContentCGF;
 struct SpawnParams;
 class ICrySizer;
-struct IRenderNode;
 struct SRenderNodeTempData;
 struct IParticleManager;
 class IOpticsManager;
@@ -38,6 +34,12 @@ struct ITimeOfDay;
 struct IBreezeGenerator;
 struct IRenderView;
 class CRenderView;
+struct ISurfaceType;
+struct CryEngineDecalInfo;
+struct IShadowCaster;
+struct IGeometry;
+struct bop_meshupdate;
+enum EERType;
 
 namespace ChunkFile
 {
@@ -1167,7 +1169,7 @@ struct CRY_ALIGN(16) SRainParams
 	bool bDisableOcclusion = false;
 
 	bool bApplySkyColor = false;
-	float fSkyColorWeight = 0.5f;
+	float fSkyColorWeight = 0.5f; 
 };
 
 struct SSnowParams
@@ -1308,9 +1310,8 @@ struct I3DEngine : public IProcess
 	{
 		InProgress,  //!< Loading in progress
 		Done,        //!< Loading done
-		Failed       //!< Loading failed 
+		Failed       //!< Loading failed
 	};
-
 
 	// <interfuscator:shuffle>
 	//! Initializes the 3D Engine.
@@ -1332,7 +1333,7 @@ struct I3DEngine : public IProcess
 	virtual bool LoadLevel(const char* szFolderName, XmlNodeRef missionXml) = 0;
 	virtual bool InitLevelForEditor(const char* szFolderName, const char* szMissionName) = 0;
 
-	//CRY_DEPRECATED("Use different function override to pass missionXml data directly") 
+	//CRY_DEPRECATED("Use different function override to pass missionXml data directly")
 	virtual bool LoadLevel(const char* szFolderName, const char* szMissionName) = 0;
 
 	//! Start time-sliced loading of a level.
@@ -2137,7 +2138,7 @@ struct I3DEngine : public IProcess
 
 	//! \return true if segmented world is performing an operation (load/save/move/etc).
 	//! Warning: deprecated Segmented World implementation is not supported by CryEngine anymore
-	virtual bool IsSegmentOperationInProgress()              { return false;  }
+	virtual bool IsSegmentOperationInProgress()              { return false; }
 	virtual void SetSegmentOperationInProgress(bool bActive) {}
 
 	//! Call function 2 times (first to get the size then to fill in the data)

@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "TerrainLayerUndoObject.h"
+#include "IEditorImpl.h"
 
 #include "Terrain/TerrainManager.h"
 

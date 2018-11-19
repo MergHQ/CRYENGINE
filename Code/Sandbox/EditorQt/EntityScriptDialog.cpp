@@ -2,9 +2,9 @@
 
 #include "stdafx.h"
 #include "EntityScriptDialog.h"
-
 #include "Objects/EntityScript.h"
 #include "Dialogs/QStringDialog.h"
+#include <Util/FileUtil.h>
 
 IMPLEMENT_DYNAMIC(CEntityScriptDialog, CXTResizeDialog)
 CEntityScriptDialog::CEntityScriptDialog(CWnd* pParent /*=NULL*/)

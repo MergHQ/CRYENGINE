@@ -2,9 +2,10 @@
 
 #pragma once
 
+#include "SandboxAPI.h"
 #include <IViewportManager.h>
+#include <QtViewPane.h>
 #include <Viewport.h>
-
 #include <CryMath/Cry_Geo.h>
 
 class QWidget;

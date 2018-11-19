@@ -9,9 +9,9 @@
 #endif
 
 #include <CryCore/Platform/platform.h>
-#include <CryString/CryName.h>
 
 #include <CrySystem/IEngineModule.h>
+#include <CryMath/Cry_Math.h>
 
 struct ISystem;
 
@@ -76,9 +76,8 @@ enum EInputPlatformFlags
 #define USE_CRY_NAME_FOR_KEY_NAMES 0
 
 #if USE_CRY_NAME_FOR_KEY_NAMES
-
+#include <CryString/CryName.h>
 typedef CCryName TKeyName;
-
 #else
 
 struct TKeyName

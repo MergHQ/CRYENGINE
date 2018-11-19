@@ -18,6 +18,7 @@
 
 #include "IGameObject.h"
 #include <CryParticleSystem/IParticles.h>
+#include <CryPhysics/physinterface.h>
 
 // Summary
 //   Types for the different kind of messages.

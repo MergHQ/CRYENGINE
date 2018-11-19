@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "GenerationParam.h"
 #include "Noise.h"
+#include "LogFile.h"
 
 CGenerationParam::CGenerationParam(CWnd* pParent /*=NULL*/)
 	: CDialog(CGenerationParam::IDD, pParent)

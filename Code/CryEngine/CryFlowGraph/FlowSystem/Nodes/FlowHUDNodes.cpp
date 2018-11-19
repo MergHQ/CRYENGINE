@@ -15,6 +15,7 @@
 #include "FlowFrameworkBaseNode.h"
 
 #include <CryString/StringUtils.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 #include "FlowSystem/FlowSystemCVars.h"
 
 // display a debug message in the HUD

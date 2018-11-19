@@ -2,12 +2,14 @@
 
 #include "StdAfx.h"
 #include "FlowGraphModuleManager.h"
+#include "IEditorImpl.h"
 
 #include "FlowGraphManager.h"
 #include "Controls/HyperGraphEditorWnd.h"
 
 #include <CryFlowGraph/IFlowGraphDebugger.h>
 #include "Controls/QuestionDialog.h"
+#include <Util/FileUtil.h>
 
 
 //////////////////////////////////////////////////////////////////////////

@@ -14,6 +14,7 @@
 #include <Preferences/ViewportPreferences.h>
 #include <Serialization/Decorators/EditorActionButton.h>
 #include <Util/MFCUtil.h>
+#include <Util/Math.h>
 #include <Viewport.h>
 
 #include <Cry3DEngine/I3DEngine.h>

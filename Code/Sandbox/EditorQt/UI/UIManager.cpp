@@ -2,12 +2,14 @@
 
 #include "StdAfx.h"
 #include "UIManager.h"
+#include "IEditorImpl.h"
 
 #include "HyperGraph/FlowGraph.h"
 #include "HyperGraph/FlowGraphManager.h"
 
 #include <Controls/QuestionDialog.h>
 #include <PathUtils.h>
+#include <Util/FileUtil.h>
 
 #define UI_ACTIONS_FOLDER "UIActions"
 #define GRAPH_FILE_FILTER "Graph XML Files (*.xml)|*.xml"

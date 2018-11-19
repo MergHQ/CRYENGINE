@@ -160,7 +160,7 @@ struct SShape
 			Vec3 pt, norm;
 
 			// test top
-			norm = Vec3(0, 0, (end.z > start.z) ? -1 : 1); // because plane test is one sided
+			norm = Vec3(0.f, 0.f, (end.z > start.z) ? -1.f : 1.f); // because plane test is one sided
 			if (Intersect::Line_Plane(Line(start, end), Plane::CreatePlane(norm, aabb.max), pt) &&
 			    IsPointInsideShape(pt, false) &&
 			    intersects < maxIntersections)

@@ -1,30 +1,20 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "IGameRulesSystem.h"
 #include "ActionGame.h"
-#include <CryGame/IGameFramework.h>
 #include "Network/GameClientNub.h"
 #include "Network/GameServerNub.h"
 #include "Network/GameClientChannel.h"
-#include "Network/GameServerChannel.h"
 #include "Network/GameContext.h"
 #include "Network/ServerTimer.h"
 #include "Network/DeformingBreak.h" // for debug function
-#include "CryAction.h"
-#include "CryActionCVars.h"
-#include "IActorSystem.h"
 #include "MaterialEffects/MaterialEffectsCVars.h"
-#include <CryParticleSystem/ParticleParams.h>
 #include "DelayedPlaneBreak.h"
-#include <CryPhysics/IPhysics.h>
-#include <CryFlowGraph/IFlowSystem.h>
-#include <CryAction/IMaterialEffects.h>
+#include <Cry3DEngine/ISurfaceType.h>
+#include <Cry3DEngine/CryEngineDecalInfo.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <CryEntitySystem/IBreakableGlassSystem.h>
 #include "IPlayerProfiles.h"
-#include <CryAISystem/IAISystem.h>
-#include <CryAISystem/IAgent.h>
-#include "IMovementController.h"
 #include "IGameSessionHandler.h"
 #include "DialogSystem/DialogSystem.h"
 #include <Cry3DEngine/ITimeOfDay.h>
@@ -32,16 +22,11 @@
 #include "PersistantDebug.h"
 #include "Network/GameStats.h"
 #include "Animation/PoseModifier/IKTorsoAim.h"
-#include <CryGame/IGameTokens.h>
-#include <CryMovie/IMovieSystem.h>
 #include "IForceFeedbackSystem.h"
 
-#include "CryAction.h"
 #include "Network/BreakReplicator.h"
 #include "Network/ObjectSelector.h"
 
-#include <CryLobby/CommonICryLobby.h>
-#include <CryLobby/CommonICryMatchMaking.h>
 #include <CrySystem/Scaleform/IFlashUI.h>
 
 CActionGame* CActionGame::s_this = 0;
@@ -832,9 +817,9 @@ void CActionGame::UpdateImmersiveness()
 	bool procMP = !m_pGameContext->HasContextFlag(eGSF_LocalOnly);
 	bool immMP = m_pGameContext->HasContextFlag(eGSF_ImmersiveMultiplayer);
 	m_proceduralBreakFlags =
-	  (int)/*(!procMP) **/ ePBF_ObeyCVar +
-	  (int)procMP * ePBF_AllowGlass +
-	  (int)(immMP || !procMP) * ePBF_DefaultAllow;
+		(int)/*(!procMP) **/ ePBF_ObeyCVar +
+		(int)procMP * ePBF_AllowGlass +
+		(int)(immMP || !procMP) * ePBF_DefaultAllow;
 	if (!m_pGameContext->HasContextFlag(eGSF_Server))
 		m_proceduralBreakFlags &= ~(ePBF_DefaultAllow | ePBF_AllowGlass);
 	bool isServer = m_pGameContext->HasContextFlag(eGSF_Server);
@@ -1633,7 +1618,7 @@ IHostMigrationEventListener::EHostMigrationReturn CActionGame::OnReset(SHostMigr
 }
 /////////////////////////////////////////////////////////////////////////////
 
-void CActionGame::AddGlobalPhysicsCallback(int event, void (* proc)(const EventPhys*, void*), void* userdata)
+void CActionGame::AddGlobalPhysicsCallback(int event, void (*proc)(const EventPhys*, void*), void* userdata)
 {
 	int idx = (event & (0xff << 8)) != 0;
 	if (event & eEPE_OnCollisionLogged || event & eEPE_OnCollisionImmediate)
@@ -1652,7 +1637,7 @@ void CActionGame::AddGlobalPhysicsCallback(int event, void (* proc)(const EventP
 		m_globalPhysicsCallbacks.updateMesh[idx].insert(TGlobalPhysicsCallbackSet::value_type(proc, userdata));
 }
 
-void CActionGame::RemoveGlobalPhysicsCallback(int event, void (* proc)(const EventPhys*, void*), void* userdata)
+void CActionGame::RemoveGlobalPhysicsCallback(int event, void (*proc)(const EventPhys*, void*), void* userdata)
 {
 	int idx = (event & (0xff << 8)) != 0;
 	if (event & eEPE_OnCollisionLogged || event & eEPE_OnCollisionImmediate)
@@ -2533,8 +2518,8 @@ ForceObjUpdate:
 				rec2.pStatObjOrg = 0;
 				s_this->m_brokenObjs.push_back(rec2);
 				const_cast<EventPhysCollision&>(epc).partid[1] =
-				  ((pStatObj = pEntityTrg->GetStatObj(ENTITY_SLOT_ACTUAL)) && (pStatObj->GetFlags() & STATIC_OBJECT_COMPOUND) ?
-				   pStatObj->GetSubObjectCount() : pEntityTrg->GetSlotCount()) - 1;
+					((pStatObj = pEntityTrg->GetStatObj(ENTITY_SLOT_ACTUAL)) && (pStatObj->GetFlags() & STATIC_OBJECT_COMPOUND) ?
+					 pStatObj->GetSubObjectCount() : pEntityTrg->GetSlotCount()) - 1;
 			}
 			else if (rec.itype == PHYS_FOREIGN_ID_STATIC)
 			{
@@ -2718,7 +2703,7 @@ void CActionGame::OnCollisionLogged_Breakable(const EventPhys* pEvent)
 						if (pCEvent->idmat[0] < 0 && params.hole_size_explosion > 0)
 							energy = params.hole_size_explosion;
 						else if (pCEvent->idmat[0] < 0 && sp.pGeom->GetVolume() * cube(sp.scale) < 0.5f || mass0 >= 1500.0f)
-							energy = max(energy, min(energy * 4, 1.5f));//, flags=2; // for explosions
+							energy = max(energy, min(energy * 4, 1.5f)); //, flags=2; // for explosions
 						if (mass0 >= 1500.0f)
 							flags |= (geom_colltype_vehicle | geom_colltype6) << 16;
 
@@ -3995,7 +3980,7 @@ void CActionGame::DrawBrokenMeshes()
 			continue;
 		Vec3 pos = (sp.BBox[0] + sp.BBox[1]) * 0.5f + sp.pos;
 		IRenderAuxText::DrawLabelExF(pos, 1.4f, clr, true, true, "%s (%d Kb) - %.1fm", GetGeomName(iter->second), iter->second.size, (pos - posCam).len());
-		for (i = 0; i<nTop&& sizes[i]> iter->second.size; i++)
+		for (i = 0; i<nTop && sizes[i]> iter->second.size; i++)
 			;
 		if (i < 16)
 		{

@@ -12,14 +12,25 @@
 #ifndef _IStatObj_H_
 #define _IStatObj_H_
 
-#include <CryCore/smartptr.h>     // TYPEDEF_AUTOPTR
+#include "IMeshObj.h"
+#include <CryCore/smartptr.h>
+#include <CryCore/stridedptr.h>
+#include <CryMemory/CrySizer.h>
+#include <CryMath/Cry_Math.h>
+#include <CryMath/Cry_Geo.h>
+#include <CryCore/BitMask.h>
 
-struct    IMaterial;
-struct    ShadowMapFrustum;
+struct IMaterial;
+struct ShadowMapFrustum;
 class CRenderObject;
-struct    IShader;
+struct IShader;
 class IReadStream;
-struct    SRenderingPassInfo;
+struct SRenderingPassInfo;
+struct ITetrLattice;
+struct pe_geomparams;
+namespace primitives {
+struct box;
+}
 TYPEDEF_AUTOPTR(IReadStream);
 
 // Interface to non animated object.
@@ -29,13 +40,6 @@ struct IChunkFile;
 // General forward declaration.
 class CRenderObject;
 struct SMeshLodInfo;
-
-#include <Cry3DEngine/CGF/CryHeaders.h>
-#include <CryMath/Cry_Math.h>
-#include <CryMath/Cry_Geo.h>
-#include "IMeshObj.h"
-#include <CryPhysics/IPhysics.h>
-#include <CryCore/BitMask.h>
 
 //! Type of static sub object.
 enum EStaticSubObjectType
@@ -200,7 +204,7 @@ struct IStreamable
 	uint32                m_nSelectedFrameId : 31;
 	uint32                m_nStatsInUse      : 1;
 
-	bool warnedWhenCGFPoolIsOutOfMemory = false;
+	bool                  warnedWhenCGFPoolIsOutOfMemory = false;
 };
 
 //! Represents a static object that can be rendered in the scene, represented by the .CGF format
@@ -565,7 +569,7 @@ struct IStatObj : IMeshObj, IStreamable
 	virtual void SetStreamingDependencyFilePath(const char* szFileName) = 0;
 
 	//! Expose the computelod function from the engine.
-	virtual int  ComputeLodFromScale(float fScale, float fLodRatioNormalized, float fEntDistance, bool bFoliage, bool bForPrecache) = 0;
+	virtual int          ComputeLodFromScale(float fScale, float fLodRatioNormalized, float fEntDistance, bool bFoliage, bool bForPrecache) = 0;
 
 	virtual SMeshLodInfo ComputeGeometricMean() const = 0;
 

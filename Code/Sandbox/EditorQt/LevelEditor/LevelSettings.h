@@ -5,6 +5,7 @@
 #include <QWidget>
 #include "EditorFramework/Editor.h"
 #include "QtViewPane.h"
+#include "Util/Variable.h"
 
 class QPropertyTree;
 

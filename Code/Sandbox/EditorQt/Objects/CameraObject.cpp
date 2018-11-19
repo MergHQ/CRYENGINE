@@ -2,11 +2,13 @@
 
 #include "StdAfx.h"
 #include "CameraObject.h"
+#include "IEditorImpl.h"
 #include "Viewport.h"
 #include "Controls/DynamicPopupMenu.h"
 #include "RenderViewport.h"
 #include "ViewManager.h"
 #include "Objects/InspectorWidgetCreator.h"
+#include <IObjectManager.h>
 
 REGISTER_CLASS_DESC(CCameraObjectClassDesc);
 REGISTER_CLASS_DESC(CCameraObjectTargetClassDesc);

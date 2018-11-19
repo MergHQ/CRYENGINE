@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include <CryFont/IFont.h>
 #include "RenderAuxGeom.h"
 #include "CommonRender.h"
 #include "Common/RenderDisplayContext.h"

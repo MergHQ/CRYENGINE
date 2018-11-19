@@ -10,16 +10,7 @@
 	#endif
 #endif
 
-#include <CryMath/Cry_Math.h>
-#include <CryMath/Cry_Geo.h>
-
-#include <CryRenderer/IRenderer.h>
-#include <CryPhysics/IPhysics.h>
-#include <Cry3DEngine/I3DEngine.h>
-#include <CryRenderer/IRenderAuxGeom.h>
-#include <CryEntitySystem/IEntitySystem.h>
-#include <CryExtension/ICryUnknown.h>
-
+#include <Cry3DEngine/IMeshObj.h>
 #include "CryCharAnimationParams.h"
 
 typedef int32 TJointId;
@@ -122,6 +113,13 @@ class ICrySizer;
 struct CryCharAnimationParams;
 
 struct IAnimationPoseModifier;
+struct SAnimMemoryTracker;
+struct SMotionParameterDetails;
+struct SRenderingPassInfo;
+struct phys_geometry;
+struct CryBonePhysics;
+struct IPhysicalEntity;
+struct SMeshLodInfo;
 typedef int (* CallBackFuncType)(ICharacterInstance*, void*);
 
 struct IAnimationStreamingListener;
@@ -979,8 +977,6 @@ struct IAnimationSetListener
 	virtual void OnAnimationSetAboutToBeReloaded()                                                {}
 	virtual void OnAnimationSetReloaded()                                                         {}
 };
-
-#include <CryAnimation/IAttachment.h>
 
 struct SAnimationStatistics
 {

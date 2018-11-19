@@ -11,6 +11,8 @@
 #include "MaterialFGManager.h"
 #include "MaterialEffectsDebug.h"
 #include <CryMemory/PoolAllocator.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 #define MATERIAL_EFFECTS_SPREADSHEET_FILE     "libs/materialeffects/materialeffects.xml"
 #define MATERIAL_EFFECTS_LIBRARIES_FOLDER     "libs/materialeffects/fxlibs"

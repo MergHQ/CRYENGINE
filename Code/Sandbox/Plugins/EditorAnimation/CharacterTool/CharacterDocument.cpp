@@ -9,6 +9,7 @@
 #include <CryAnimation/ICryAnimation.h>
 #include <IEditor.h>
 #include <CryInput/IInput.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <CryRenderer/IShaderParamCallback.h>
 #include <CryAnimation/IVertexAnimation.h>
 #include <CryPhysics/IPhysicsDebugRenderer.h>

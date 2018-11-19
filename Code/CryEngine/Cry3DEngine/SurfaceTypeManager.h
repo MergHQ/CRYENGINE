@@ -1,21 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   SurfaceManager.h
-//  Version:     v1.00
-//  Created:     29/9/2004 by Timur.
-//  Compilers:   Visual Studio.NET
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __SurfaceManager_h__
-#define __SurfaceManager_h__
 #pragma once
 
 #include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 #define MAX_SURFACE_ID 255
 
@@ -75,5 +63,3 @@ private:
 	typedef std::map<string, SSurfaceRecord*> NameToSurfaceMap;
 	NameToSurfaceMap m_nameToSurface;
 };
-
-#endif //__SurfaceManager_h__

@@ -1,6 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <CryString/CryPath.h>
+#include <CryMath/Cry_Color.h>
+#include <CryMath/Range.h>
 
 class CSequencerTrack;
 class CSequencerNode;

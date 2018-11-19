@@ -2,6 +2,8 @@
 
 #include "StdAfx.h"
 #include "missionscript.h"
+#include "IEditorImpl.h"
+#include <Util/FileUtil.h>
 #include <CryScriptSystem/IScriptSystem.h>
 
 #define EVENT_PREFIX "Event_"

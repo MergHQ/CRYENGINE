@@ -3,12 +3,15 @@
 #pragma once
 
 #include <CryScriptSystem/IScriptSystem.h>
-
-struct IEntity;
-struct ISystem;
-
 #include <CryPhysics/IPhysics.h>
 #include <CryParticleSystem/ParticleParams.h>
+#include <CryEntitySystem/IEntity.h>
+
+struct ISystem;
+struct IFunctionHandler;
+class CEntity;
+struct SFogVolumeProperties;
+struct SEntityPhysicalizeParams;
 
 #define ENTITYPROP_CASTSHADOWS   0x00000001
 #define ENTITYPROP_DONOTCHECKVIS 0x00000002

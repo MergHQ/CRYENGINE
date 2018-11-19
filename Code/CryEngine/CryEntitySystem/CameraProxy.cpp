@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "CameraProxy.h"
 #include <CryNetwork/ISerialize.h>
+#include <Cry3DEngine/IMaterial.h>
 
 CRYREGISTER_CLASS(CEntityComponentCamera);
 

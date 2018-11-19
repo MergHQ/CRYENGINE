@@ -13,6 +13,7 @@
 #include <CrySystem/VR/IHMDManager.h>
 #include <CryRenderer/IStereoRenderer.h>
 #include <CryRenderer/IScaleform.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <CrySystem/Scaleform/IScaleformHelper.h>
 
 #define FLASH_UIELEMENTS_FOLDER "UIElements"

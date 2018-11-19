@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "FeatureCollision.h"
+#include <Cry3DEngine/ISurfaceType.h>
 
 namespace pfx2
 {

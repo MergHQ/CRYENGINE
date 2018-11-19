@@ -2,7 +2,12 @@
 
 #pragma once
 
+#include <EditorFramework/Preferences.h>
+#include <Objects/BaseObject.h>
 #include <CrySerialization/yasli/decorators/Range.h>
+#include <CryMath/Cry_Geo.h>
+#include <vector>
+#include <map>
 
 // Preferences
 struct SVertexSnappingPreferences : public SPreferencePage

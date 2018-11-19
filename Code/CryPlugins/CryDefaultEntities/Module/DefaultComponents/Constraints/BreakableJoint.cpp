@@ -1,5 +1,6 @@
 #include "StdAfx.h"
 #include "BreakableJoint.h"
+#include <CryPhysics/physinterface.h>
 
 namespace Cry
 {

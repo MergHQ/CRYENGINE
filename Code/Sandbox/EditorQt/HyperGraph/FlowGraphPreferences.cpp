@@ -3,6 +3,7 @@
 #include <StdAfx.h>
 #include "FlowGraphPreferences.h"
 #include "FlowGraphManager.h"
+#include "IEditorImpl.h"
 
 #include <CrySerialization/yasli/decorators/Range.h>
 

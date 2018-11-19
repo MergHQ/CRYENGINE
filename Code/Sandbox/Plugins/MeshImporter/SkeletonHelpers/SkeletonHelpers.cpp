@@ -6,6 +6,8 @@
 #include <QViewport.h>
 
 #include <CryAnimation/ICryAnimation.h>
+#include <CryMath/Cry_Camera.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 const int32 kInvalidJointId = -1;
 

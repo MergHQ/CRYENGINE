@@ -5,6 +5,8 @@
 #include <CryMath/Cry_Math.h>
 #include "LightmapCompiler/SimpleTriangleRasterizer.h"
 
+struct AABB;
+
 struct SMatChunk
 {
 	Matrix34 localTM;

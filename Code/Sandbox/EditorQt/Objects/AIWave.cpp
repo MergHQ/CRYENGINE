@@ -4,6 +4,8 @@
 #include "AIWave.h"
 
 #include "AI/AIManager.h"
+#include "IEditorImpl.h"
+#include <IObjectManager.h>
 
 REGISTER_CLASS_DESC(CAIWaveObjectClassDesc);
 

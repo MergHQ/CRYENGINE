@@ -12,17 +12,23 @@
 #include "Vegetation/VegetationTreeView.h"
 #include "QT/Widgets/QEditToolButton.h"
 #include "QT/Widgets/QPreviewWidget.h"
+#include "IEditorImpl.h"
 
+#include <AssetSystem/Asset.h>
 #include <AssetSystem/Browser/AssetBrowserDialog.h>
 #include <FileDialogs/SystemFileDialog.h>
+#include <IUndoObject.h>
+#include <Controls/QuestionDialog.h>
 #include <Menu/AbstractMenu.h>
 #include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Util/FileUtil.h>
 
 #include <CrySandbox/CrySignal.h>
 
 #include <QFileInfo>
 #include <QInputDialog>
 #include <QLabel>
+#include <QLayout>
 #include <QSortFilterProxyModel>
 #include <QSplitter>
 #include <QStatusBar>

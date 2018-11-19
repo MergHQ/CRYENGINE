@@ -2,6 +2,8 @@
 
 #include "StdAfx.h"
 #include "MaterialImageListCtrl.h"
+
+#include "IEditorImpl.h"
 #include "MaterialManager.h"
 #include "PathUtils.h"
 
@@ -165,7 +167,7 @@ void CMaterialImageListCtrl::OnUpdateItem(CImageListCtrlItem* pItem)
 
 		if (!(pMtlItem->pMaterial->GetFlags() & MTL_FLAG_NOPREVIEW) || bTerrain)
 		{
-			if (!m_renderCtrl.GetObject())
+			if (!m_renderCtrl.GetObject_())
 				LoadModel();
 
 			m_renderCtrl.MoveWindow(pItem->rect);

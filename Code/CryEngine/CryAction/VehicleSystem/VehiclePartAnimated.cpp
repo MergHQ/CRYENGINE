@@ -5,6 +5,7 @@
 #include "StdAfx.h"
 
 #include <CryAnimation/ICryAnimation.h>
+#include <Cry3DEngine/ISurfaceType.h>
 #include "IVehicleSystem.h"
 
 #include "CryAction.h"

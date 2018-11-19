@@ -2,6 +2,7 @@
 #include <StdAfx.h>
 #include "CustomCommand.h"
 
+#include "IEditorImpl.h"
 #include "CommandManager.h"
 #include "CommandModuleDescription.h"
 

@@ -2,7 +2,11 @@
 
 #include "StdAfx.h"
 #include "CoverSurfaceManager.h"
+#include "LogFile.h"
 #include "Objects/AICoverSurface.h"
+#include <CryAISystem/IAISystem.h>
+#include <CryAISystem/ICoverSystem.h>
+#include <CrySystem/ISystem.h>
 
 const uint32 BAI_COVER_FILE_VERSION_WRITE = 2;
 

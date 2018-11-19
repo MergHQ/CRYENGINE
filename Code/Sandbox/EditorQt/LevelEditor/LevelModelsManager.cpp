@@ -7,6 +7,7 @@
 #include "ProxyModels/ItemModelAttribute.h"
 
 #include "Objects/ObjectLayerManager.h"
+#include "IEditorImpl.h"
 
 namespace Private_LevelModelsManager
 {

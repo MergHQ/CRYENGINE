@@ -14,6 +14,7 @@
 #endif
 
 #include <CryCore/Platform/CryWindows.h>
+#include <CryMemory/IDefragAllocator.h>
 #include "../XRenderD3D9/DeviceManager/DeviceResources.h"
 
 class CSubmissionQueue_DX11; // friend

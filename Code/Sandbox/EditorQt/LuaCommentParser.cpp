@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "LuaCommentParser.h"
+#include <CrySystem/File/ICryPak.h>
 
 LuaCommentParser::LuaCommentParser()
 	: m_pFile(nullptr)

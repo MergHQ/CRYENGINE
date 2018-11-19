@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <CryMath/Cry_Math.h>
 #include "AnimationTrigger.h"
 #include "AnimationGraphCVars.h"

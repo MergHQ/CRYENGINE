@@ -3,6 +3,8 @@
 #include "StdAfx.h"
 #include "VegetationMap.h"
 
+#include "IEditorImpl.h"
+#include "LogFile.h"
 #include "VegetationSelectTool.h"
 #include "Terrain/Heightmap.h"
 #include "Terrain/Layer.h"
@@ -12,6 +14,16 @@
 #include "QT/Widgets/QWaitProgress.h"
 #include "Util/ImageTIF.h"
 #include "IAIManager.h"
+
+#include <IUndoObject.h>
+#include <Controls/QuestionDialog.h>
+#include <Util/FileUtil.h>
+#include <Util/XmlArchive.h>
+
+#include <CryPhysics/IPhysics.h>
+
+#pragma push_macro("GetObject")
+#undef GetObject
 
 namespace Private_VegetationMap
 {
@@ -3038,3 +3050,5 @@ CVegetationInstance* CVegetationMap::CloneInstance(CVegetationInstance* pOrigina
 	si->push_front(pInst);
 	return pInst;
 }
+
+#pragma pop_macro("GetObject")

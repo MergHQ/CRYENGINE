@@ -6,6 +6,7 @@
 #include "Terrain/TerrainManager.h"
 #include "Terrain/TerrainTexGen.h"
 #include "CryEditDoc.h"
+#include "LogFile.h"
 
 // Sector flags
 enum

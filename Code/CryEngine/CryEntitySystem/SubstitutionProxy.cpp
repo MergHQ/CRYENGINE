@@ -3,6 +3,8 @@
 #include "stdafx.h"
 #include "SubstitutionProxy.h"
 #include "Entity.h"
+#include <Cry3DEngine/I3DEngine.h>
+#include <CryPhysics/IPhysics.h>
 #include <CryNetwork/ISerialize.h>
 
 CRYREGISTER_CLASS(CEntityComponentSubstitution);

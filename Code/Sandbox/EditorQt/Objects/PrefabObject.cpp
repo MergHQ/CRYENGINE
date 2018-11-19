@@ -16,7 +16,10 @@
 #include "Util/BoostPythonHelpers.h"
 #include "BaseLibraryManager.h"
 #include "CryEditDoc.h"
+#include "SelectionGroup.h"
 
+#include <AssetSystem/AssetManager.h>
+#include <AssetSystem/AssetType.h>
 #include <Controls/DynamicPopupMenu.h>
 #include <IDataBaseManager.h>
 #include <IUndoManager.h>
@@ -34,6 +37,8 @@
 
 #include <CryCore/ToolsHelpers/GuidUtil.h>
 #include <CryGame/IGameFramework.h>
+#include <CryMath/Cry_Camera.h>
+#include <CryPhysics/physinterface.h>
 #include <CrySystem/ICryLink.h>
 
 REGISTER_CLASS_DESC(CPrefabObjectClassDesc);

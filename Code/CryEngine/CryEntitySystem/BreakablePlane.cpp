@@ -15,6 +15,9 @@
 #include "BreakablePlane.h"
 #include <CryParticleSystem/ParticleParams.h>
 #include <CryParticleSystem/IParticles.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/IMaterial.h>
+#include <Cry3DEngine/ISurfaceType.h>
 #include <CrySystem/ITimer.h>
 #include "BreakableManager.h"
 #include "Entity.h"

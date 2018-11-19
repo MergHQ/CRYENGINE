@@ -5,6 +5,7 @@
 #include <CryThreading/CryThreadSafeRendererContainer.h>
 #include <CryCore/Containers/CryListenerSet.h>
 #include <CryThreading/IJobManager.h>
+#include <CryMemory/IMemory.h>
 #include "VisibleRenderNodeManager.h"
 #include "LightVolumeManager.h"
 
@@ -14,9 +15,12 @@
 
 // forward declaration
 struct SNodeInfo;
+struct SRNInfo;
+class C3DEngineLevelLoadTimeslicer;
+class CRESky;
+class CREHDRSky;
 class CStitchedImage;
 class CWaterRippleManager;
-class C3DEngineLevelLoadTimeslicer;
 
 struct SEntInFoliage
 {

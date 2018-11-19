@@ -4,6 +4,7 @@
 #include "AttachmentMerger.h"
 
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <CryRenderer/RenderElements/RendElement.h>
 #include "ModelMesh.h"
 #include "AttachmentMerged.h"
 #include "AttachmentManager.h"

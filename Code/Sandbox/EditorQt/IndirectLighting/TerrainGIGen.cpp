@@ -10,10 +10,15 @@
 #include "Terrain/Sky Accessibility/HeightmapAccessibility.h"
 #include "Terrain/Heightmap.h"
 #include "Vegetation/VegetationMap.h"
+#include "IEditorImpl.h"
+#include "LogFile.h"
 
+#include <IObjectManager.h>
 #include <Util/PakFile.h>
-
 #include <set>
+
+#pragma push_macro("GetObject")
+#undef GetObject
 
 //defines for debugging to enable features
 #define USE_BRUSHS
@@ -2594,3 +2599,5 @@ const bool CTerrainGIGen::Generate
 
 	return true;
 }
+
+#pragma pop_macro("GetObject")

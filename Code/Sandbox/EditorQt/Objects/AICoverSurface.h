@@ -3,6 +3,7 @@
 
 #include "Objects/BaseObject.h"
 #include "Objects/ObjectLoader.h"
+#include "Util/Variable.h"
 
 #include <CryAISystem/ICoverSystem.h>
 

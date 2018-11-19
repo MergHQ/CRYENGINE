@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CryCore/Containers/VectorMap.h>
+#include <CryEntitySystem/IEntitySystem.h>
 #include "AreaGrid.h"
 
 //#define DEBUG_AREAMANAGER

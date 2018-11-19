@@ -2,6 +2,9 @@
 
 #include "StdAfx.h"
 #include "FlowGraphMigrationHelper.h"
+#include "LogFile.h"
+#include <CrySystem/File/ICryPak.h>
+#include <Util/EditorUtils.h>
 
 #define DEPRECATIONS_FILE_PATH "Libs/FlowNodes/Substitutions.XML"
 

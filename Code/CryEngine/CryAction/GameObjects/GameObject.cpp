@@ -22,6 +22,7 @@
 #include "Serialization/SerializeScriptTableReader.h"
 #include "GameObjectSystem.h"
 #include <CrySystem/ITextModeConsole.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 #include "CryActionCVars.h"
 
 #include <CryAISystem/IAIObject.h>

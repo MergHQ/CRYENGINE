@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "GravityVolumeObject.h"
 
+#include "IEditorImpl.h"
 #include "Material/Material.h"
 #include "Util/Triangulate.h"
 
@@ -16,6 +17,7 @@
 #include <Objects/ObjectLoader.h>
 #include <Preferences/SnappingPreferences.h>
 #include <Serialization/Decorators/EditToolButton.h>
+#include <Util/Math.h>
 #include <Viewport.h>
 
 #include <Cry3DEngine/I3DEngine.h>

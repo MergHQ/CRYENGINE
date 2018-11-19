@@ -20,6 +20,7 @@
 #include <Gizmos/Gizmo.h>
 #include <LevelEditor/Tools/EditTool.h>
 #include <Objects/BaseObject.h>
+#include "Objects/ObjectManager.h"
 #include <Preferences/SnappingPreferences.h>
 #include <Preferences/ViewportPreferences.h>
 #include <DragDrop.h>
@@ -30,6 +31,7 @@
 #include <QtUtil.h>
 #include <RenderLock.h>
 #include <ViewportInteraction.h>
+#include <Util/AffineParts.h>
 
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryAISystem/IAISystem.h>

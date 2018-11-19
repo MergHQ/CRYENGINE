@@ -1,6 +1,7 @@
 #include "StdAfx.h"
 
 #include "SampleRigidbodyActorComponent.h"
+#include <CryPhysics/IPhysics.h>
 
 namespace Cry
 {

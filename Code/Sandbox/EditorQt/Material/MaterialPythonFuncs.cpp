@@ -5,6 +5,8 @@
 #include "Material/MaterialHelpers.h"
 #include "Util/BoostPythonHelpers.h"
 #include "Util/MFCUtil.h"
+#include <IUndoObject.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 namespace
 {

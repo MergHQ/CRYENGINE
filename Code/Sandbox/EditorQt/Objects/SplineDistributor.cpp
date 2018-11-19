@@ -1,13 +1,15 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "Geometry/EdMesh.h"
 #include "SplineDistributor.h"
+#include "IEditorImpl.h"
+#include "Geometry/EdMesh.h"
 #include "Viewport.h"
 #include <Preferences/ViewportPreferences.h>
 #include "Material/Material.h"
 #include "Util/MFCUtil.h"
 #include "Objects/InspectorWidgetCreator.h"
+#include <Cry3DEngine/I3DEngine.h>
 
 //////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CSplineDistributor, CSplineObject)

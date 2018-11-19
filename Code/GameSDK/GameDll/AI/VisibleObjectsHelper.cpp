@@ -15,6 +15,7 @@
 #include "StdAfx.h"
 #include "VisibleObjectsHelper.h"
 #include "Agent.h"
+#include <Cry3DEngine/IRenderNode.h>
 #include <CryAISystem/IAIObjectManager.h>
 #include <CryAISystem/ITargetTrackManager.h>
 

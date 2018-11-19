@@ -8,6 +8,7 @@
 #include "Qt/QMainFrameMenuBar.h"
 #include "Qt/QtMainFrame.h"
 #include "TopRendererWnd.h"
+#include "IEditorImpl.h"
 
 #include <Preferences/ViewportPreferences.h>
 #include <ModelViewport.h>

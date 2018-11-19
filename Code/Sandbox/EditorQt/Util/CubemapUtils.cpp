@@ -3,12 +3,19 @@
 #include "StdAfx.h"
 #include "CubemapUtils.h"
 
+#include "IEditorImpl.h"
+#include "LogFile.h"
 #include "Objects/EntityObject.h"
 #include "Objects/EnvironmentProbeObject.h"
+#include "Objects/SelectionGroup.h"
 #include "IBackgroundScheduleManager.h"
 
+#include <IObjectManager.h>
 #include <Preferences/GlobalHelperPreferences.h>
 #include <Util/ImageTIF.h>
+#include <Util/Image.h>
+
+#include <Cry3DEngine/IRenderNode.h>
 
 bool CubemapUtils::GenCubemapWithPathAndSize(string& filename, const int size, const bool dds)
 {

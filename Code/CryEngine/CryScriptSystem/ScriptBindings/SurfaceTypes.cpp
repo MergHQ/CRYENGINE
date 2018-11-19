@@ -15,6 +15,7 @@
 #include "SurfaceTypes.h"
 
 #include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/ISurfaceType.h>
 #include <CrySystem/File/ICryPak.h>
 #include <CryPhysics/IPhysics.h>
 

@@ -5,6 +5,7 @@
 #include <CryExtension/CryCreateClassInstance.h>
 #include <CryExtension/ClassWeaver.h>
 #include <CryAnimation/ICryAnimation.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #include "PoseAligner.h"
 

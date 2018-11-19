@@ -5,6 +5,7 @@
 #include "MannequinDialog.h"
 
 #include "Dialogs/QStringDialog.h"
+#include <Util/FileUtil.h>
 
 #include <ICryMannequin.h>
 #include <CryGame/IGameFramework.h>

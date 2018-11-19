@@ -1,13 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#ifndef _RenderMesh_H_
-#define _RenderMesh_H_
-
+#include "IShader.h"
 #include "VertexFormats.h"
-#include <Cry3DEngine/IMaterial.h>
-#include <CryRenderer/IShader.h>
-#include <CryRenderer/IRenderer.h>  // PublicRenderPrimitiveType
 #include <CryMath/Cry_Geo.h>
 #include <CryCore/Containers/CryArray.h>
 
@@ -26,6 +21,8 @@ struct TFace;
 struct SMeshSubset;
 struct SRenderingPassInfo;
 struct SRenderObjectModifier;
+struct CRenderChunk;
+typedef DynArray<CRenderChunk> TRenderChunkArray;
 
 //! Keep this in sync with BUFFER_USAGE hints DevBuffer.h.
 enum ERenderMeshType
@@ -249,4 +246,3 @@ struct IRenderMesh
 	// </interfuscator:shuffle>
 };
 
-#endif                                                                                                                          // _RenderMesh_H_

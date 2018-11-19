@@ -16,6 +16,7 @@
 #define AUTO_STRUCT_INFO_LOCAL
 #define AUTO_TYPE_INFO(T)
 #define BIT(x) (1u << (x))
+#define BIT32(x) (1u << (x))
 typedef UINT_PTR TRUNCATE_PTR,EXPAND_PTR;
 #define DLL_EXPORT __declspec(dllexport)
 #define DLL_IMPORT 
@@ -89,7 +90,8 @@ Init ## var g_init ## var;
 inline threadID CryGetCurrentThreadId() { return GetCurrentThreadId();}
 inline uint64 CryGetTicks() { return __rdtsc(); }
 
-struct IGeneralMemoryHeap {
+class IGeneralMemoryHeap {
+public:
 	static char* Malloc(size_t sz, const char*) { return new char[sz]; }
 	static void Free(void* ptr) { delete (char*)ptr; }
 };

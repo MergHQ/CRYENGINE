@@ -4,6 +4,9 @@
 #include "ObjectCreateTool.h"
 #include "Viewport.h"
 #include "ViewManager.h"
+#include "IEditorImpl.h"
+#include "IObjectManager.h"
+#include "IUndoManager.h"
 
 #include <LevelEditor/LevelEditorSharedState.h>
 #include "Objects/ObjectLayerManager.h"

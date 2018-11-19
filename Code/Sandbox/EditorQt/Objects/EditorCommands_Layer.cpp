@@ -8,7 +8,10 @@
 
 #include "Util/BoostPythonHelpers.h"
 #include "CryEdit.h"
+#include "IEditorImpl.h"
 
+#include <IObjectManager.h>
+#include <IUndoObject.h>
 #include <Dialogs/QNumericBoxDialog.h>
 
 namespace Private_EditorCommands

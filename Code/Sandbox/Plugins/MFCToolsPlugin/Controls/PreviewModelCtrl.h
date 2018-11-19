@@ -8,11 +8,13 @@ struct IEditorMaterial;
 struct IRenderNode;
 struct IStatObj;
 struct SRenderingPassInfo;
+class CImageEx;
 
 #include <CryMath/Cry_Camera.h>
 #include <CryRenderer/IRenderer.h>
 #include "Objects/DisplayContext.h"
 #include "MFCToolsDefines.h"
+#include "IEditor.h"
 
 class MFC_TOOLS_PLUGIN_API CPreviewModelCtrl : public CWnd, public IEditorNotifyListener
 {
@@ -29,7 +31,7 @@ public:
 
 	void             SetEntity(IRenderNode* entity);
 	void             SetObject(IStatObj* pObject);
-	IStatObj*        GetObject() { return m_pObj; }
+	IStatObj*        GetObject_() { return m_pObj; }
 	void             SetCameraLookAt(float fRadiusScale, const Vec3& dir = Vec3(0, 1, 0));
 	void             SetCameraRadius(float fRadius);
 	CCamera&         GetCamera();

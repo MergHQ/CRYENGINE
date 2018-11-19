@@ -10,6 +10,8 @@
 
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
 
+struct IAsyncTextureCompileListener;
+
 //////////////////////////////////////////////////////////////////////////
 // Provides settings and functions to make calls to RC to compile textures.
 class CTextureCompiler : public CResourceCompilerHelper, NoCopy

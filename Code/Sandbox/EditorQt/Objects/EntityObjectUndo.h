@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "ObjectManager.h"
+#include "IEditorImpl.h"
 #include <CrySchematyc/Utils/ClassProperties.h>
 
 // Helper to store changes done to entity components, such as property modifications etc

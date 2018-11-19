@@ -10,6 +10,8 @@
 #include "MaterialHelpers.h"
 #include "MaterialLibrary.h"
 #include "MatEditPreviewDlg.h"
+#include "Objects/SelectionGroup.h"
+#include "LogFile.h"
 
 #include "ViewManager.h"
 #include "Util/Clipboard.h"
@@ -21,9 +23,12 @@
 
 #include <Cry3DEngine/I3DEngine.h>
 #include <QtViewPane.h>
+#include <Objects/BaseObject.h>
+#include <IUndoObject.h>
 
 #include "Controls/QuestionDialog.h"
 #include <CrySystem/Scaleform/IFlashUI.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 #define IDW_MTL_BROWSER_PANE    AFX_IDW_CONTROLBAR_FIRST + 10
 #define IDW_MTL_PROPERTIES_PANE AFX_IDW_CONTROLBAR_FIRST + 11

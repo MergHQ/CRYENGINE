@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <CryPhysics/physinterface.h>
 #include "Area.h"
 
 // forward declarations.

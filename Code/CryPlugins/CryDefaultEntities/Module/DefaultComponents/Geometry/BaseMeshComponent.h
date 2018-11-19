@@ -5,6 +5,8 @@
 #include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IShader.h>
 
+#include <CryPhysics/physinterface.h>
+
 #include <CrySchematyc/ResourceTypes.h>
 #include <CrySchematyc/MathTypes.h>
 #include <CrySchematyc/Env/IEnvRegistrar.h>

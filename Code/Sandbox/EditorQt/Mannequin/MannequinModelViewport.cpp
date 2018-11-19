@@ -4,6 +4,7 @@
 
 #include "MannPreferences.h"
 #include "MannequinModelViewport.h"
+#include "IEditorImpl.h"
 #include "ICryMannequin.h"
 #include <CryGame/IGameFramework.h>
 
@@ -14,6 +15,9 @@
 
 #include "Dialogs/StringInputDialog.h"
 #include "Preferences/ViewportPreferences.h"
+
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <CryPhysics/IPhysics.h>
 
 const float CMannequinModelViewport::s_maxTweenTime = 0.5f;
 

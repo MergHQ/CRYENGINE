@@ -24,6 +24,7 @@
 #include <CryAnimation/ICryAnimation.h>
 #include <CryAISystem/ISignal.h>
 #include <CryAISystem/IAIObject.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <IVehicleSystem.h>
 #include "ItemParams.h"
 #include "EquipmentManager.h"

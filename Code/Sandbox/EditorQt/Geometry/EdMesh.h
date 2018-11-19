@@ -1,11 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
+#include "SandboxAPI.h"
 #include "Geometry/EdGeometry.h"
 #include "Geometry/TriMesh.h"
 #include "Objects/SubObjSelection.h"
 
 #include <Util/PakFile.h>
+
+struct IMaterial;
+struct SGeometryDebugDrawInfo;
+struct SRenderingPassInfo;
+struct SRendParams;
 
 //////////////////////////////////////////////////////////////////////////
 // Description:

@@ -11,7 +11,6 @@
 #include <CrySystem/ITimer.h>
 #include <CrySystem/IValidator.h>
 #include <CrySystem/IConsole.h>
-#include <CrySystem/Testing/CryTest.h>
 
 // these should all be in sync - so testing one for 0 should be the same for all
 ISystem* pSystem = 0;

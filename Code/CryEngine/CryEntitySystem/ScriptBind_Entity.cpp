@@ -20,6 +20,7 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/ITimeOfDay.h>
 #include <Cry3DEngine/IRenderNode.h>
+#include <Cry3DEngine/ISurfaceType.h>
 #include <CryEntitySystem/IBreakableManager.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryString/CryPath.h>

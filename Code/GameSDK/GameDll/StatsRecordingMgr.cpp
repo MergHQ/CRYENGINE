@@ -18,6 +18,7 @@
 #include "StatsRecordingMgr.h"
 #include <CryGame/IGameStatistics.h>
 #include "StatHelpers.h"
+#include "GameCVars.h"
 #include "GameRules.h"
 #include "Game.h"
 #include "Weapon.h"

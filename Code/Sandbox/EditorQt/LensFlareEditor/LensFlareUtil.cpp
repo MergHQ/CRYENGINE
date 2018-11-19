@@ -2,10 +2,13 @@
 
 #include "StdAfx.h"
 #include "Objects/EntityObject.h"
+#include "IEditorImpl.h"
 #include "LensFlareUtil.h"
 #include "Util/Clipboard.h"
 #include "Objects/EntityObject.h"
+#include "Objects/SelectionGroup.h"
 #include <../../CryPlugins/CryDefaultEntities/Module/DefaultComponents/Lights/ILightComponent.h>
+#include <IObjectManager.h>
 
 namespace LensFlareUtil
 {

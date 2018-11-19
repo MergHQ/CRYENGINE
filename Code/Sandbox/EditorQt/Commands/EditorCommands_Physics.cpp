@@ -1,8 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include <StdAfx.h>
 
-#include "IEditorImpl.h"
 #include "PhysTool.h"
+#include "IEditorImpl.h"
+#include <ICommandManager.h>
+#include <BoostPythonMacros.h>
+#include <LevelEditor/LevelEditorSharedState.h>
+#include <CrySystem/ISystem.h>
+#include <CryPhysics/IPhysics.h>
+#include <QAction>
 
 namespace Private_EditorCommands
 {

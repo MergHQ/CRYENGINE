@@ -10,6 +10,8 @@
 
 namespace CryAudio
 {
+class CEvent;
+
 namespace Impl
 {
 namespace Wwise

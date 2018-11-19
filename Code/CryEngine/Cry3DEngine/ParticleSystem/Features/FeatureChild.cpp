@@ -4,6 +4,7 @@
 #include "FeatureCommon.h"
 #include "FeatureCollision.h"
 #include "FeatureMotion.h"
+#include <Cry3DEngine/ISurfaceType.h>
 
 namespace pfx2
 {

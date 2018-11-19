@@ -7,6 +7,7 @@
 #include <CryString/CryPath.h>
 #include <Cry3DEngine/CGF/CGFContent.h>
 #include <CryString/StringUtils.h>
+#include <Cry3DEngine/I3DEngine.h>
 #include "ControllerPQ.h"
 
 //////////////////////////////////////////////////////////////////////////

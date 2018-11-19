@@ -2,10 +2,12 @@
 
 #include "StdAfx.h"
 #include "WaterShapeObject.h"
+#include "IEditorImpl.h"
 #include "Material/MaterialManager.h"
 
 #include <Objects/InspectorWidgetCreator.h>
 #include <Objects/ObjectLoader.h>
+#include <Cry3DEngine/I3DEngine.h>
 
 REGISTER_CLASS_DESC(CWaterShapeObjectClassDesc);
 

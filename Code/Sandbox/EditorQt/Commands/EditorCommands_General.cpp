@@ -2,6 +2,7 @@
 #include <StdAfx.h>
 
 #include "IEditorImpl.h"
+#include "IUndoManager.h"
 #include "Util/BoostPythonHelpers.h"
 
 #include "EditorFramework/Events.h"

@@ -2,7 +2,10 @@
 
 #pragma once
 
+#include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/CGF/CGFContent.h>
+#include <Cry3DEngine/IMaterial.h>
+#include <CryRenderer/IShader.h>
 #include "Vertex/VertexData.h"
 
 class CSkin;
