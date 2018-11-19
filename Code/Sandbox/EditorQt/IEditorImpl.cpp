@@ -46,6 +46,7 @@
 #include "GameEngine.h"
 #include "IconManager.h"
 #include "IDevManager.h"
+#include "LogFile.h"
 #include "MainThreadWorker.h"
 #include "Mission.h"
 #include "ObjectCreateTool.h"

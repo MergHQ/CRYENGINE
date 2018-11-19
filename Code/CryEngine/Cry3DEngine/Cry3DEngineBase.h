@@ -142,8 +142,6 @@ struct Cry3DEngineBase
 	static bool IsValidFile(const char* sFilename);
 	static bool IsResourceLocked(const char* sFilename);
 
-	static bool IsPreloadEnabled();
-
 	IMaterial*  MakeSystemMaterialFromShader(const char* sShaderName, SInputShaderResources* Res = NULL);
 	static void DrawBBoxLabeled(const AABB& aabb, const Matrix34& m34, const ColorB& col, const char* format, ...) PRINTF_PARAMS(4, 5);
 	static void DrawBBox(const Vec3& vMin, const Vec3& vMax, ColorB col = Col_White);

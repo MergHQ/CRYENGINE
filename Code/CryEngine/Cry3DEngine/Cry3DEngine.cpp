@@ -302,17 +302,6 @@ void Cry3DEngineBase::DrawQuad(const Vec3& v0, const Vec3& v1, const Vec3& v2, c
 	GetRenderer()->GetIRenderAuxGeom()->DrawTriangle(v0, color, v1, color, v2, color);
 }
 
-// Check if preloading is enabled.
-bool Cry3DEngineBase::IsPreloadEnabled()
-{
-	bool bPreload = false;
-	ICVar* pSysPreload = GetConsole()->GetCVar("sys_preload");
-	if (pSysPreload && pSysPreload->GetIVal() != 0)
-		bPreload = true;
-
-	return bPreload;
-}
-
 //////////////////////////////////////////////////////////////////////////
 bool Cry3DEngineBase::CheckMinSpec(uint32 nMinSpec)
 {

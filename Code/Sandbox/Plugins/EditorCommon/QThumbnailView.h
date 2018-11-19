@@ -2,9 +2,9 @@
 #pragma once
 
 class CAbstractMenu;
+class QButtonGroup;
 class QListView;
 class QPrecisionSlider;
-class QButtonGroup;
 
 #include "ProxyModels/ItemModelAttribute.h"
 #include <EditorFramework/StateSerializable.h>
@@ -91,7 +91,6 @@ public:
 
 private:
 
-	class ListView;
 	class Delegate;
 
 	bool eventFilter(QObject* pObject, QEvent* pEvent) override;

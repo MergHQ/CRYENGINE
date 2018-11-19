@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "IEditorImpl.h"
 #include "GameEngine.h"
+#include "LogFile.h"
 #include "ViewManager.h"
 #include "Commands/CommandManager.h"
 #include <IObjectManager.h>

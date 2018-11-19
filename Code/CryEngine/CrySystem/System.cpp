@@ -329,7 +329,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_sys_spec = nullptr;
 	m_sys_firstlaunch = nullptr;
 	m_sys_enable_budgetmonitoring = nullptr;
-	m_sys_preload = nullptr;
 	m_sys_use_Mono = nullptr;
 	m_sys_dll_ai = nullptr;
 	m_sys_dll_response_system = nullptr;

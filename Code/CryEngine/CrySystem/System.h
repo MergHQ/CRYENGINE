@@ -844,7 +844,6 @@ private: // ------------------------------------------------------
 	ICVar* m_sys_max_step;
 	ICVar* m_sys_enable_budgetmonitoring;
 	ICVar* m_sys_memory_debug;
-	ICVar* m_sys_preload;
 	ICVar* m_sys_use_Mono;
 
 	//	ICVar *m_sys_filecache;

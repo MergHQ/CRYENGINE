@@ -22,6 +22,7 @@
 #include "IDevManager.h"
 #include "IEditorImpl.h"
 #include "LevelIndependentFileMan.h"
+#include "LogFile.h"
 #include "MainThreadWorker.h"
 #include "Mission.h"
 #include "ObjectCloneTool.h"

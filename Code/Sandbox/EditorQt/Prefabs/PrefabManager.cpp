@@ -4,6 +4,7 @@
 #include "PrefabManager.h"
 
 #include "GameEngine.h"
+#include "LogFile.h"
 #include "Objects/PrefabObject.h"
 #include "Objects/SelectionGroup.h"
 #include "PrefabEvents.h"

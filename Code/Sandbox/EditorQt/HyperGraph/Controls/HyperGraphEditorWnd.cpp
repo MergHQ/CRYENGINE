@@ -19,6 +19,7 @@
 #include "Material/MaterialFXGraphMan.h"
 
 #include "GameEngine.h"
+#include "LogFile.h"
 
 #include "HyperGraph/HyperGraphManager.h"
 #include "HyperGraph/FlowGraphManager.h"

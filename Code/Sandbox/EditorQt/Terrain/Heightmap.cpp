@@ -11,6 +11,7 @@
 #include "Vegetation/VegetationMap.h"
 #include "CryEditDoc.h"
 #include "GameEngine.h"
+#include "LogFile.h"
 #include "TerrainFormulaDlg.h"
 
 #include <Controls/QuestionDialog.h>

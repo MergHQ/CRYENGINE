@@ -4,6 +4,7 @@
 #include "HyperGraph.h"
 
 #include "GameEngine.h"
+#include "LogFile.h"
 #include "PathUtils.h"
 
 #include "HyperGraphManager.h"

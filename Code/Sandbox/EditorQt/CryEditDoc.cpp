@@ -19,6 +19,7 @@
 #include "LevelEditor/LevelEditor.h"
 #include "LevelEditor/LevelFileUtils.h"
 #include "LevelIndependentFileMan.h"
+#include "LogFile.h"
 #include "Material/MaterialManager.h"
 #include "Mission.h"
 #include "MissionSelectDialog.h"

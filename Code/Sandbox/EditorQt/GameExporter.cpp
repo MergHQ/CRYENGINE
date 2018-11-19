@@ -23,6 +23,7 @@
 #include "CryEditDoc.h"
 #include "EntityPrototypeManager.h"
 #include "GameEngine.h"
+#include "LogFile.h"
 #include "Mission.h"
 #include "ParticleExporter.h"
 #include "ShaderCache.h"
