@@ -1108,32 +1108,19 @@ static const char* GetLastSystemErrorMessage()
 		      FORMAT_MESSAGE_FROM_SYSTEM |
 		      FORMAT_MESSAGE_IGNORE_INSERTS,
 		      NULL,
-		      GetLastError(),
+		      dwError,
 		      MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
 		      (LPTSTR) &lpMsgBuf,
 		      0,
 		      NULL))
 		{
-			cry_strcpy(szBuffer, (char*)lpMsgBuf);
+			cry_sprintf(szBuffer, "%d %s", dwError, (char*)lpMsgBuf);
 			LocalFree(lpMsgBuf);
+			return szBuffer;
 		}
-		else return 0;
-
-		//#else
-
-		//cry_sprintf(szBuffer, "Win32 ERROR: %i", dwError);
-		//OutputDebugString(szBuffer);
-
-		//#endif
-
-		return szBuffer;
 	}
-#else
-	return 0;
-
 #endif // CRY_PLATFORM_WINDOWS
-
-	return 0;
+	return nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
