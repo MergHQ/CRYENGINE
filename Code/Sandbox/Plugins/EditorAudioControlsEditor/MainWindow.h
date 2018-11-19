@@ -5,6 +5,7 @@
 #include "Common/SharedData.h"
 #include <EditorFramework/Editor.h>
 #include <IEditor.h>
+#include <CrySystem/ISystem.h>
 
 class QAction;
 class QLabel;

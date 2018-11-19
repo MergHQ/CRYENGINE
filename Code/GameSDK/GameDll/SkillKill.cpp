@@ -11,6 +11,7 @@ static skill kill checks
 #include "SkillKill.h"
 
 #include "Player.h"
+#include "GameCVars.h"
 #include "GameRules.h"
 #include "PersistantStats.h"
 

@@ -4,6 +4,9 @@
 #include "MFCToolsDefines.h"
 #include "ColorCtrl.h"
 
+// hide warnings about hides CXTPButton::SetIcon
+#pragma warning(push)
+#pragma warning(disable:4264)
 class MFC_TOOLS_PLUGIN_API CCustomButton : public CXTPButton
 {
 public:
@@ -13,4 +16,5 @@ public:
 	void SetIcon(LPCSTR lpszIconResource, int nIconAlign = BS_CENTER, bool bDrawText = false);
 	void SetToolTip(const char* tooltipText);
 };
+#pragma warning(pop)
 typedef CCustomButton CColoredPushButton;

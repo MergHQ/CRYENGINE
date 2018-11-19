@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "Utils.h"
 
+#include <CryIcon.h>
 #include <FileUtils.h>
 #include <PathUtils.h>
 

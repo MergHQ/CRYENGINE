@@ -3,6 +3,8 @@
 #include "StdAfx.h"
 #include "MaterialBrowser.h"
 
+#include "IEditorImpl.h"
+#include "LogFile.h"
 #include "LevelEditor/LevelFileUtils.h"
 #include "Material/MaterialImageListCtrl.h"
 #include "Material/MaterialManager.h"
@@ -12,19 +14,27 @@
 //MFC
 #include "Dialogs/SourceControlDescDlg.h"
 #include "Util/Clipboard.h"
+#include <Util/ImageUtil.h>
 #include "Util/MFCUtil.h"
 
 //EditorCommon
+#include <Controls/QuestionDialog.h>
 #include <Dialogs/QNumericBoxDialog.h>
 #include <Dialogs/QStringDialog.h>
 #include <FileDialogs/EngineFileDialog.h>
 #include <ISourceControl.h>
 #include <PathUtils.h>
+#include <IUndoObject.h>
+#include <LevelEditor/LevelEditorSharedState.h>
+#include <UsedResources.h>
 
 #include <CryThreading/IThreadManager.h>
+#include <Cry3DEngine/I3DEngine.h>
 
+#include <QDialogButtonBox>
 #include <QHBoxLayout>
 #include <QPainter>
+#include <QScrollArea>
 #include <QStyleOption>
 #include <QTimer>
 #include <QVBoxLayout>

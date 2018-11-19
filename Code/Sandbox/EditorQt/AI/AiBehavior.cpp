@@ -2,9 +2,9 @@
 
 #include "StdAfx.h"
 #include "aibehavior.h"
+#include "IEditorImpl.h"
 
 #include <Util/FileUtil.h>
-
 #include <CryScriptSystem/IScriptSystem.h>
 
 void CAIBehavior::ReloadScript()

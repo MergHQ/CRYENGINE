@@ -8,6 +8,7 @@
 #include "ParticleEnviron.h"
 #include "ParticleUtils.h"
 #include <CryRenderer/RenderElements/CREParticle.h>
+#include <Cry3DEngine/GeomRef.h>
 
 class CParticleContainer;
 class CParticleSubEmitter;

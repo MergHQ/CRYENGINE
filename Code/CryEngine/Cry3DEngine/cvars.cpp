@@ -15,7 +15,7 @@
 
 #include "3dEngine.h"
 #include <CryRenderer/IRenderer.h>
-#include <Cry3DEngine/IStatObj.h>  // MAX_STATOBJ_LODS_NUM
+#include <Cry3DEngine/IStatObj.h> 
 #include <Cry3DEngine/ITimeOfDay.h>
 #include <VisAreas.h>
 

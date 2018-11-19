@@ -1,11 +1,9 @@
 #include "StdAfx.h"
 #include "ProjectorLightComponent.h"
 
-#include <CrySystem/IProjectManager.h>
-#include <ILevelSystem.h>
-#include <Cry3DEngine/IRenderNode.h>
-
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <array>
+
 
 namespace Cry
 {

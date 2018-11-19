@@ -6,6 +6,7 @@
 #include "MeshType.h"
 #include "QT/Widgets/QPreviewWidget.h"
 #include "SkeletonType.h"
+#include "IEditorImpl.h"
 
 #include <AssetSystem/AssetEditor.h>
 #include <PathUtils.h>

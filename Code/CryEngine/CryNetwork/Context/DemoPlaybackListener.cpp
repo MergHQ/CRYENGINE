@@ -17,7 +17,7 @@
 	#include <CryEntitySystem/IEntitySystem.h>
 	#include <CryString/StringUtils.h>
 	#include <CryString/StringUtils.h>
-	#include <CryGame/IGameFramework.h>     // LOCAL_PLAYER_ENTITY_ID
+	#include <CryGame/IGameFramework.h>
 
 static const uint32 Events =
   eNOE_ChangeContext |

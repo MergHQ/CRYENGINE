@@ -18,7 +18,9 @@
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryEntitySystem/IBreakableManager.h>
 #include <CryEntitySystem/IEntityComponent.h>
+#include <CryPhysics/IPhysics.h>
 #include <Cry3DEngine/IStatObj.h>
+#include <Cry3DEngine/I3DEngine.h>
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 #include <CryExtension/CryCreateClassInstance.h>
 #include <CryExtension/CryGUID.h>

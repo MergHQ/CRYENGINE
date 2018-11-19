@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "VisAreaShapeObject.h"
+#include "IEditorImpl.h"
 #include "Objects/InspectorWidgetCreator.h"
 
 #include <Cry3DEngine/I3DEngine.h>

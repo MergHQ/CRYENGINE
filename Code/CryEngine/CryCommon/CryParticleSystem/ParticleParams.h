@@ -18,6 +18,7 @@
 #include <CryCore/CryCustomTypes.h>
 #include <CryMath/Cry_Math.h>
 #include <CryMath/Random.h>
+#include <CryRenderer/IRenderer.h>
 
 BASIC_TYPE_INFO(CCryName);
 

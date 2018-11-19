@@ -3,8 +3,11 @@
 #include "StdAfx.h"
 #include "Material/MaterialManager.h"
 
+#include "IEditorImpl.h"
+#include "LogFile.h"
 #include "Material/Material.h"
 #include "Material/MaterialLibrary.h"
+#include "Objects/SelectionGroup.h"
 #include "QT/QToolTabManager.h"
 #include "QT/QtMainFrame.h"
 #include "Terrain/Layer.h"
@@ -13,14 +16,19 @@
 #include "Util/BoostPythonHelpers.h"
 #include "MaterialSender.h"
 
+#include <AssetSystem/AssetManager.h>
 #include <AssetSystem/Browser/AssetBrowserDialog.h>
+#include <IObjectManager.h>
 #include <ISourceControl.h>
 #include <ModelViewport.h>
+#include <Objects/BaseObject.h>
 #include <PathUtils.h>
 #include <Preferences/GlobalHelperPreferences.h>
+#include <UsedResources.h>
+#include <Util/FileUtil.h>
 #include <Viewport.h>
 
-#include <CryAnimation/ICryAnimation.h>
+#include <Cry3DEngine/ISurfaceType.h>
 #include <CryString/CryPath.h>
 
 #include <QAbstractNativeEventFilter>

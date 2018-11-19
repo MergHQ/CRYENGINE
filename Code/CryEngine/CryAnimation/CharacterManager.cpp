@@ -8,6 +8,7 @@
 #include "LoaderCGA.h"
 #include "AnimationManager.h"
 #include "FacialAnimation/FaceAnimation.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <CryGame/IGameFramework.h>
 #include <CrySystem/File/IResourceManager.h>
 #include "ParametricSampler.h"

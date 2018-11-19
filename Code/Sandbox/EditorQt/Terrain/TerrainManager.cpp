@@ -8,9 +8,12 @@
 #include "Terrain/TerrainTexGen.h"
 #include "Util/AutoLogTime.h"
 #include "CryEditDoc.h"
+#include "LogFile.h"
 
 #include "QT/Widgets/QWaitProgress.h"
+#include <Controls/QuestionDialog.h>
 #include <Util/TempFileHelper.h>
+#include <Util/FileUtil.h>
 
 namespace {
 const char* kHeightmapFile = "Heightmap.dat";

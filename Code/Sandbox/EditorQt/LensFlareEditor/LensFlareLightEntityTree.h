@@ -3,6 +3,11 @@
 #pragma once
 
 #include "ILensFlareListener.h"
+#include <CryCore/smartptr.h>
+
+struct CObjectEvent;
+class CBaseObject;
+class CEntityObject;
 
 class CLensFlareLightEntityTree : public CXTTreeCtrl, public ILensFlareChangeItemListener
 {

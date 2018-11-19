@@ -9,6 +9,15 @@
 #include "Vegetation/VegetationObject.h"
 #include "Objects/EntityObject.h"
 #include "Viewport.h"
+#include "IEditorImpl.h"
+#include <Util/Math.h>
+#include <CryPhysics/IPhysics.h>
+#include <CryAnimation/ICryAnimation.h>
+#include <CryEntitySystem/IEntity.h>
+
+#if defined(GetObject)
+	#undef GetObject
+#endif
 
 static const float kEnoughFarDistance(5000.0f);
 

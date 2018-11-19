@@ -10,7 +10,6 @@
 #endif
 
 #include "ICommandManager.h"
-#include "Util/Variable.h"
 #include "CryMath/Cry_Geo.h"
 
 // boost/python.hpp and/or pyconfig.h will include <assert.h>
@@ -29,6 +28,7 @@ class CObjectLayer;
 class CMaterial;
 class CVegetationObject;
 struct SEfResTexture;
+struct IVariable;
 
 struct SPyWrappedProperty
 {

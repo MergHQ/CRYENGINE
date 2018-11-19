@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <Objects/BaseObject.h>
 
 const float kSplinePointSelectionRadius = 0.8f;
 

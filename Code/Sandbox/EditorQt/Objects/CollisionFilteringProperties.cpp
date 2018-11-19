@@ -5,6 +5,7 @@
 #include "ObjectPhysicsManager.h"
 #include "GameEngine.h"
 
+#include <IObjectManager.h>
 #include <CrySandbox/IEditorGame.h>
 #include <CryGame/IGameFramework.h>
 

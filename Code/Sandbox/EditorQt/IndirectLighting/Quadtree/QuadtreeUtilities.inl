@@ -29,7 +29,7 @@ inline const float GetMinSubdivDist(SType2Type<float> )
 //!< lerps between to colours represented as float vec's
 inline const uint32 LerpColour(const float cVal, const Vec3& crFrom, const Vec3& crTo)
 {
-	const Vec3 cCol = crTo * cVal + crFrom * (1.0 - cVal);
+	const Vec3 cCol = crTo * cVal + crFrom * (1.0f - cVal);
 	return ((uint32)cCol.z) | ((uint32)cCol.y << 8) | ((uint32)cCol.x << 16);
 }
 
@@ -120,7 +120,7 @@ inline const T Round(const double cInput, SType2Type<T> )
 template<>
 inline const float Round(const double cInput, SType2Type<float> )
 {
-	return cInput;
+	return (float)cInput;
 }
 
 //leave input the same for rounding to double

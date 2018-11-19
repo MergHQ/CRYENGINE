@@ -4,6 +4,8 @@
 
 struct ISkeletonAnim;
 class CCharInstance;
+struct IParticleEffect;
+struct IParticleEmitter;
 
 class CSkeletonEffectManager
 {

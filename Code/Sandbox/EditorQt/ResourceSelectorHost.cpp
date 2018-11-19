@@ -8,6 +8,9 @@
 #include "Util/FileUtil.h"
 #include "FileSystem/FileSystem_Snapshot.h"
 
+#include <CryCore/StlUtils.h>
+#include <CryString/CryPath.h>
+
 namespace Private_ResourceSelectorHost
 {
 class CResourceSelectorHost : public IResourceSelectorHost

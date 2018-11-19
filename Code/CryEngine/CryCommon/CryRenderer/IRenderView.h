@@ -5,6 +5,7 @@
 #pragma once
 
 #include "IShader.h"
+#include <CryCore/smartptr.h>
 
 namespace JobManager { struct SJobState; }
 typedef JobManager::SJobState CryJobState;

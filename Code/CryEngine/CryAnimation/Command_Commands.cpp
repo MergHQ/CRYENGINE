@@ -15,6 +15,7 @@
 #include "AttachmentBone.h"
 #include "AttachmentPRow.h"
 #include "PoseModifier/PoseModifierHelper.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 extern float g_YLine;
 

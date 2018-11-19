@@ -5,6 +5,7 @@
 
 #include "D3DPostProcess.h"
 #include "Common/ReverseDepth.h"
+#include <CryPhysics/physinterface.h>
 
 //////////////////////////////////////////////////////////////////////////
 

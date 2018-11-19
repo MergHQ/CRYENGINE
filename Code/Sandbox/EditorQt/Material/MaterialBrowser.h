@@ -7,7 +7,10 @@
 #include "Controls/TreeCtrlReport.h"
 #include "Controls/EditorDialog.h"
 #include "Material.h"
+#include <Util/FileUtil.h>
+#include <QLabel>
 
+class CImageEx;
 class CMaterialBrowserCtrl;
 class CMaterialImageListCtrl;
 

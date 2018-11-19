@@ -2,6 +2,10 @@
 
 #pragma once
 #include <QSplashScreen>
+#include <QPixmap>
+
+struct Version;
+class QPainter;
 
 class SplashScreen : public QSplashScreen
 {

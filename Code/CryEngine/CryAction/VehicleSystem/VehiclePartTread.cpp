@@ -24,6 +24,7 @@
 #include "VehicleUtils.h"
 #include <CryRenderer/IShader.h>
 #include <CryExtension/CryCreateClassInstance.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 //------------------------------------------------------------------------
 CVehiclePartTread::CVehiclePartTread()

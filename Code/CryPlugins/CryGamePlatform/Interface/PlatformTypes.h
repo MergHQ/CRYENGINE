@@ -3,6 +3,7 @@
 #pragma once
 
 #include "PlatformIdentifier.h"
+#include "CryExtension/CryTypeID.h"
 #include <CrySerialization/CryStringsImpl.h>
 
 class ITexture;

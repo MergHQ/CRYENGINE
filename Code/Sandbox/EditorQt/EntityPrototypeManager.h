@@ -7,6 +7,7 @@
 
 class CEntityPrototype;
 class CEntityPrototypeLibrary;
+class CPakFile;
 
 /** Manages all entity prototypes and prototype libraries.
  */

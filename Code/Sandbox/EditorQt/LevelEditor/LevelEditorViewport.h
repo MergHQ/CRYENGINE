@@ -3,7 +3,9 @@
 #pragma once
 
 #include "RenderViewport.h"
+#include <CryRenderer/IRenderer.h>
 
+class CObjectRenderHelper;
 class QViewportHeader;
 
 //! LevelEditorViewport is a specialization of RenderViewport for the Level editor

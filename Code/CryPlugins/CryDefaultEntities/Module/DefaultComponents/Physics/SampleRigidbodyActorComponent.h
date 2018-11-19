@@ -6,6 +6,9 @@
 #include <CrySchematyc/ResourceTypes.h>
 #include <CrySchematyc/MathTypes.h>
 #include <CrySchematyc/Env/IEnvRegistrar.h>
+#include <CryPhysics/physinterface.h>
+
+struct EventPhysPostStep;
 
 namespace Cry
 {

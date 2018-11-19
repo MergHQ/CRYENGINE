@@ -9,8 +9,11 @@
 #include <QSearchBox.h>
 #include <QThumbnailView.h>
 
+#include <QBoxLayout>
 #include <QButtonGroup>
 #include <QHeaderView>
+#include <QPushButton>
+#include <QToolButton>
 
 COpenProjectPanel::COpenProjectPanel(CSelectProjectDialog* pParent, bool runOnSandboxInit)
 	: QWidget(pParent)

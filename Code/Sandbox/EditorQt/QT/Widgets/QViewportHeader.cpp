@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "QViewportHeader.h"
 
+#include "Commands/CommandManager.h"
 #include "EditMode/VertexSnappingModeTool.h"
 #include "LevelEditor/LevelEditorViewport.h"
 #include "QT/QtMainFrame.h"
@@ -21,6 +22,7 @@
 #include <Preferences/ViewportPreferences.h>
 #include <Viewport/ViewportHelperWnd.h>
 #include <EditorStyleHelper.h>
+#include <Util/Math.h>
 
 #include <CryIcon.h>
 

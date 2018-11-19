@@ -6,6 +6,7 @@
 #include "ProjectManagement/Utils.h"
 
 #include <FileUtils.h>
+#include <QtUtil.h>
 
 #include <CrySerialization/yasli/JSONIArchive.h>
 #include <CrySystem/IProjectManager.h>

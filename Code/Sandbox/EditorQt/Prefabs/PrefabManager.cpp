@@ -5,15 +5,18 @@
 
 #include "GameEngine.h"
 #include "Objects/PrefabObject.h"
+#include "Objects/SelectionGroup.h"
 #include "PrefabEvents.h"
 #include "PrefabItem.h"
 #include "PrefabLibrary.h"
 
 #include <AssetSystem/AssetImportContext.h>
+#include <AssetSystem/AssetManager.h>
 #include <AssetSystem/Browser/AssetBrowserDialog.h>
 #include <Controls/QuestionDialog.h>
 #include <FileUtils.h>
 #include <PathUtils.h>
+#include <Util/FileUtil.h>
 
 namespace Private_PrefabManager
 {

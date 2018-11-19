@@ -3,10 +3,16 @@
 #include "StdAfx.h"
 #include "RefPicture.h"
 
+#include "IEditorImpl.h"
 #include "Geometry/EdMesh.h"
 #include "Material/MaterialManager.h"
 
 #include <Objects/InspectorWidgetCreator.h>
+#include <Util/Image.h>
+#include <Util/Math.h>
+
+#include <Util/ImageUtil.h>
+#include <Cry3DEngine/I3DEngine.h>
 
 REGISTER_CLASS_DESC(CRefPictureClassDesc);
 

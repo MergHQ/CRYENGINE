@@ -7,9 +7,11 @@
 #include "ObjectLayer.h"
 #include "Terrain/TerrainManager.h"
 #include "Terrain/RGBLayer.h"
-#include "CryString/CryPath.h"
 #include "Preferences/GeneralPreferences.h"
 #include "Util/TimeUtil.h"
+#include "IEditorImpl.h"
+#include <IObjectManager.h>
+#include <CryString/CryPath.h>
 
 //////////////////////////////////////////////////////////////////////////
 // class CUndoLayerStates

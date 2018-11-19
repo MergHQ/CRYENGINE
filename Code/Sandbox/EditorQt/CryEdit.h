@@ -1,10 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include "SandboxAPI.h"
 
 class CCryEditDoc;
 class CEditCommandLineInfo;
 class CEditorImpl;
+class CGameEngine;
 class CMannequinChangeMonitor;
 
 class SANDBOX_API CCryEditApp

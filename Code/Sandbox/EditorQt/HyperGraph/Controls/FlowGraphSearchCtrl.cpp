@@ -11,6 +11,7 @@
 #include "HyperGraph/FlowGraphNode.h"
 #include "HyperGraph/Nodes/CommentNode.h"
 #include "HyperGraphEditorWnd.h"
+#include "IEditorImpl.h"
 
 #include "Objects/EntityObject.h"
 

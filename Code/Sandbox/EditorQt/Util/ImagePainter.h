@@ -4,6 +4,8 @@
 
 #include "Terrain/Heightmap.h"
 
+class CHeightmap;
+
 // Brush structure used for painting.
 struct SEditorPaintBrush
 {

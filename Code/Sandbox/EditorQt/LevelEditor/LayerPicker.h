@@ -3,8 +3,10 @@
 
 #include "Controls/EditorDialog.h"
 
-class QAdvancedTreeView;
 class CObjectLayer;
+class QAdvancedTreeView;
+class QItemSelection;
+class QModelIndex;
 
 //TODO : does not allow to select folders.
 class CLayerPicker : public CEditorDialog

@@ -25,6 +25,7 @@
 #include "QtUtil.h"
 #include "ThreadingUtils.h"
 
+#include <Controls/QuestionDialog.h>
 #include <QDirIterator> 
 
 

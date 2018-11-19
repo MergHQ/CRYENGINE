@@ -2,6 +2,9 @@
 
 #pragma once
 
+class CObjectLayer;
+class CUsedResources;
+
 /*! Implements exporting of all loaded resources to specified directory.
  *
  */

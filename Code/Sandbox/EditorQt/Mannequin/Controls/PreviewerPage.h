@@ -15,6 +15,7 @@
 #include "QMfcApp/qmfcviewporthost.h"
 
 #include "MannDopeSheet.h"
+#include "Objects/EntityScript.h"
 
 struct SMannequinContexts;
 class CMannequinModelViewport;

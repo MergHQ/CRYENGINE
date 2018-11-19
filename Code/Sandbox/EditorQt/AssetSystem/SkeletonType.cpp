@@ -5,6 +5,7 @@
 
 #include "PathUtils.h"
 #include "QT/Widgets/QPreviewWidget.h"
+#include "IEditorImpl.h"
 
 #include <AssetSystem/AssetEditor.h>
 #include <ProxyModels/ItemModelAttribute.h>

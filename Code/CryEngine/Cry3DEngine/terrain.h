@@ -13,7 +13,7 @@
 
 #pragma once
 
-#include "TerrainModifications.h"           // CTerrainModifications
+#include "TerrainModifications.h"
 
 #define TERRAIN_BOTTOM_LEVEL     0
 #define TERRAIN_NODE_TREE_DEPTH  16

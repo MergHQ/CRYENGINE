@@ -10,6 +10,7 @@
 
 struct IActionController;
 class CMannequinDialog;
+struct EventPhys;
 
 //////////////////////////////////////////////////////////////////////////
 class CMannequinModelViewport : public CModelViewport, public IParticleEffectListener, public IMannequinGameListener, public CActionInputHandler

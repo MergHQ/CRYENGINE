@@ -8,6 +8,8 @@
 #include <CryThreading/Debug.h>
 
 #define TRACK_THREADED_ACCESS_TO_RENDERNODES
+#include "CGF/CryHeaders.h"
+#include <CryRenderer/IRenderer.h>
 
 #define SUPP_HMAP_OCCL
 
@@ -20,6 +22,9 @@ struct SFrameLodInfo;
 struct ICharacterInstance;
 struct IStatObj;
 struct IEntity;
+struct pe_articgeomparams;
+struct EventPhysCollision;
+struct pe_params_area;
 
 enum EERType
 {

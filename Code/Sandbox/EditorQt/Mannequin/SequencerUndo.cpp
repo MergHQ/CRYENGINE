@@ -4,6 +4,7 @@
 #include "SequencerUndo.h"
 #include "ISequencerSystem.h"
 #include "SequencerSequence.h"
+#include "IEditorImpl.h"
 
 //////////////////////////////////////////////////////////////////////////
 CUndoSequencerSequenceModifyObject::CUndoSequencerSequenceModifyObject(CSequencerTrack* track, CSequencerSequence* pSequence)

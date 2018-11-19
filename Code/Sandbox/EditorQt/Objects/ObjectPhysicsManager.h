@@ -1,6 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <Objects/BaseObject.h>
+#include <CryCore/smartptr.h>
+#include <CryPhysics/physinterface.h>
+#include <vector>
+
+class CWaitProgress;
+class CXmlArchive;
 
 class CObjectPhysicsManager
 {

@@ -8,6 +8,11 @@
 #include "Particles/ParticleManager.h"
 #include "GameEngine.h"
 
+#include <ICommandManager.h>
+#include <UsedResources.h>
+#include <Util/MemoryBlock.h>
+#include <Util/FileUtil.h>
+#include <IObjectManager.h>
 #include <QT/Widgets/QWaitProgress.h>
 
 CGameResourcesExporter::Files CGameResourcesExporter::m_files;

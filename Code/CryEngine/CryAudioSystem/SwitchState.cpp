@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
+#include "Object.h"
 #include "SwitchState.h"
 #include "Common/IImpl.h"
 #include "Common/IObject.h"

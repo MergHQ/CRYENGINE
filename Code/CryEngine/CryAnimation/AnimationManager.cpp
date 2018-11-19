@@ -15,6 +15,7 @@
 #include "Model.h"
 #include <CryString/StringUtils.h>
 #include <CryString/CryPath.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 int CAnimationManager::GetGlobalIDbyFilePath_CAF(const char* szAnimFileName) const
 {

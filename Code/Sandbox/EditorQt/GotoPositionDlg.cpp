@@ -5,6 +5,7 @@
 
 #include "ViewManager.h"
 #include "GameEngine.h"
+#include "Commands/CommandManager.h"
 
 #include <RenderViewport.h>
 

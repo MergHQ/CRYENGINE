@@ -11,6 +11,7 @@ class QLabel;
 class QLineEdit;
 class QToolButton;
 class QViewportHeader;
+struct IViewPaneClass;
 
 //////////////////////////////////////////////////////////////////////////
 class QTerrainSnappingMenu : public QMenu

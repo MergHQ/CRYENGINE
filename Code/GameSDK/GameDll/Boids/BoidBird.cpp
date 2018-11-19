@@ -14,11 +14,13 @@
 #include "StdAfx.h"
 #include "BoidBird.h"
 #include "BirdsFlock.h"
+#include <Cry3DEngine/I3DEngine.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <CryEntitySystem/IBreakableManager.h>
 #include <Cry3DEngine/ISurfaceType.h>
 #include <CryMath/Random.h>
 #include <CryGame/GameUtils.h>
+#include <CryParticleSystem/IParticles.h>
 
 #define MAX_BIRDS_DISTANCE 300
 

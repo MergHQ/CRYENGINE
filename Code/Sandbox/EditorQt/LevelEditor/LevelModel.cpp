@@ -14,6 +14,7 @@
 #include "ProxyModels/ItemModelAttribute.h"
 #include "LevelLayerModel.h"
 #include "DragDrop.h"
+#include "IEditorImpl.h"
 
 #include "VersionControl/VersionControl.h"
 #include "VersionControl/AssetsVCSStatusProvider.h"

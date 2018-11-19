@@ -2,6 +2,8 @@
 #include "ObjectToPrefabAssetConverter.h"
 #include "LevelModel.h"
 #include "AssetSystem/Browser/AssetBrowser.h"
+#include "Objects/SelectionGroup.h"
+#include <AssetSystem/AssetManager.h>
 
 REGISTER_ASSET_CONVERTER(CObjectToPrefabAssetConverter)
 

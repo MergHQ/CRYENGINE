@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "DecalObject.h"
 
+#include "IEditorImpl.h"
 #include "Geometry/EdMesh.h"
 #include "Material/MaterialManager.h"
 
@@ -11,9 +12,11 @@
 #include <Preferences/ViewportPreferences.h>
 #include <Serialization/Decorators/EditToolButton.h>
 #include <Serialization/Decorators/EditorActionButton.h>
+#include <Util/Math.h>
 #include <Viewport.h>
 
 #include <Cry3DEngine/I3DEngine.h>
+#include <CryPhysics/IPhysics.h>
 
 class CDecalObjectTool : public CEditTool
 {

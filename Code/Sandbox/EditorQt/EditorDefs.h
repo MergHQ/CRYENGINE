@@ -85,7 +85,6 @@
 #include <CryCore/StlUtils.h>
 
 #include <CryCore/smartptr.h>
-#define TSmartPtr _smart_ptr
 
 #ifndef ON_WM_INPUT
 // MFC does not define this one.
@@ -94,70 +93,70 @@
 #endif
 
 #define CRY_ENABLE_FBX_SDK
-
-/////////////////////////////////////////////////////////////////////////////
-// Interfaces.
-/////////////////////////////////////////////////////////////////////////////
-#include <CryRenderer/IRenderer.h>
-#include <CrySystem/File/CryFile.h>
-#include <CrySystem/ISystem.h>
-#include <CryScriptSystem/IScriptSystem.h>
-#include <CryEntitySystem/IEntitySystem.h>
-#include <Cry3DEngine/I3DEngine.h>
-#include <Cry3DEngine/IIndexedMesh.h>
-#include <CrySystem/ITimer.h>
-#include <CryPhysics/IPhysics.h>
-#include <CryAISystem/IAISystem.h>
-#include <CrySystem/XML/IXml.h>
-#include <CryMovie/IMovieSystem.h>
-#include <CryCore/functor.h>
-
-//////////////////////////////////////////////////////////////////////////
-// Commonly used Editor includes.
-//////////////////////////////////////////////////////////////////////////
-
-// Utility classes.
-#include <Util/EditorUtils.h>
-#include "Util/FileEnum.h"
-#include "Util/Math.h"
-#include "Util/AffineParts.h"
-
-// Xml support.
-#include "Util/XmlArchive.h"
-#include "Util/XmlTemplate.h"
-
-// Utility classes.
-#include "Util/BitArray.h"
-#include "Util/MemoryBlock.h"
-#include "Util/FileUtil.h"
-
-// Variable.
-#include "Util/Variable.h"
-
-//////////////////////////////////////////////////////////////////////////
-// Editor includes.
-//////////////////////////////////////////////////////////////////////////
-
-// Utility routines.
-#include "Util/Image.h"
-#include "Util/ImageUtil.h"
-#include <CryCore/ToolsHelpers/GuidUtil.h>
-
-// Main Editor interface definition.
-#include "IEditorImpl.h"
-#include "IEditorClassFactory.h"
-
-// Undo support.
-#include "IUndoObject.h"
-
-// Log file access
-#include "LogFile.h"
-
-// View panes.
-#include "QtViewPane.h"
-
-#include "UsedResources.h"
-
-// Command Manager.
-#include "Commands/CommandManager.h"
-#include "Objects/ObjectManager.h"
+//
+///////////////////////////////////////////////////////////////////////////////
+//// Interfaces.
+///////////////////////////////////////////////////////////////////////////////
+//#include <CryRenderer/IRenderer.h>
+//#include <CrySystem/File/CryFile.h>
+//#include <CrySystem/ISystem.h>
+//#include <CryScriptSystem/IScriptSystem.h>
+//#include <CryEntitySystem/IEntitySystem.h>
+//#include <Cry3DEngine/I3DEngine.h>
+//#include <Cry3DEngine/IIndexedMesh.h>
+//#include <CrySystem/ITimer.h>
+//#include <CryPhysics/IPhysics.h>
+//#include <CryAISystem/IAISystem.h>
+//#include <CrySystem/XML/IXml.h>
+//#include <CryMovie/IMovieSystem.h>
+//#include <CryCore/functor.h>
+//
+////////////////////////////////////////////////////////////////////////////
+//// Commonly used Editor includes.
+////////////////////////////////////////////////////////////////////////////
+//
+//// Utility classes.
+//#include <Util/EditorUtils.h>
+//#include "Util/FileEnum.h"
+//#include "Util/Math.h"
+//#include "Util/AffineParts.h"
+//
+//// Xml support.
+//#include "Util/XmlArchive.h"
+//#include "Util/XmlTemplate.h"
+//
+//// Utility classes.
+//#include "Util/BitArray.h"
+//#include "Util/MemoryBlock.h"
+//#include "Util/FileUtil.h"
+//
+//// Variable.
+//#include "Util/Variable.h"
+//
+////////////////////////////////////////////////////////////////////////////
+//// Editor includes.
+////////////////////////////////////////////////////////////////////////////
+//
+//// Utility routines.
+//#include "Util/Image.h"
+//#include "Util/ImageUtil.h"
+//#include <CryCore/ToolsHelpers/GuidUtil.h>
+//
+//// Main Editor interface definition.
+//#include "IEditorImpl.h"
+//#include "IEditorClassFactory.h"
+//
+//// Undo support.
+//#include "IUndoObject.h"
+//
+//// Log file access
+//#include "LogFile.h"
+//
+//// View panes.
+//#include "QtViewPane.h"
+//
+//#include "UsedResources.h"
+//
+//// Command Manager.
+//#include "Commands/CommandManager.h"
+//#include "Objects/ObjectManager.h"

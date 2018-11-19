@@ -10,6 +10,7 @@
 #include <CryPhysics/IDeferredCollisionEvent.h>
 #include <CrySystem/IProcess.h>
 #include <Cry3DEngine/IStatObj.h>
+#include <Cry3DEngine/ISurfaceType.h>
 #include <Cry3DEngine/IGeomCache.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryParticleSystem/IParticles.h>

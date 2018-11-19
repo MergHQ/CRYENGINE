@@ -10,6 +10,7 @@
 
 #include "AnimationDatabase.h"
 
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <CryExtension/CryCreateClassInstance.h>
 
 #include "MannequinUtils.h"

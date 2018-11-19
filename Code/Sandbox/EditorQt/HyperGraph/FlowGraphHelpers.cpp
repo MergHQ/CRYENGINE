@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 #include "FlowGraphHelpers.h"
-
+#include "IEditorImpl.h"
 
 #include <CryAISystem/IAIAction.h>
 

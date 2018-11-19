@@ -5,6 +5,7 @@
 #include "ActionController.h"
 
 #include <CryAISystem/IAIObject.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 //////////////////////////////////////////////////////////////////////////
 static void MN_ReloadAll(IConsoleCmdArgs* pArgs)

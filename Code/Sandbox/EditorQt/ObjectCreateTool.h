@@ -1,8 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include "LevelEditor/Tools/EditTool.h"
+#include <Objects/BaseObject.h>
 
 class CBaseObject;
+class CObjectClassDesc;
 class QMimeData;
 
 //TODO : Replacement for CObjectCreateTool, work in progress

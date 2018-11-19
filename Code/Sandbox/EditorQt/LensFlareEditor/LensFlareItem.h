@@ -3,8 +3,9 @@
 #pragma once
 
 #include "BaseLibraryItem.h"
+#include <CryRenderer/IFlares.h>
 
-class IOpticsElementBase;
+class CEntityObject;
 
 class CLensFlareItem : public CBaseLibraryItem
 {

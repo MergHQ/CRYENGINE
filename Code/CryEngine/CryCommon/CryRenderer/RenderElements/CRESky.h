@@ -1,9 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __CRESKY_H__
-#define __CRESKY_H__
-
+#pragma once
 #include <CryRenderer/VertexFormats.h>
+#include "RendElement.h"
 
 struct SSkyLightRenderParams;
 
@@ -94,5 +93,3 @@ private:
 	int           m_frameReset;
 	class CStars* m_pStars;
 };
-
-#endif  // __CRESKY_H__

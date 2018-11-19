@@ -2,7 +2,9 @@
 
 #include "StdAfx.h"
 #include "RulerPoint.h"
-
+#include "IEditorImpl.h"
+#include <IObjectManager.h>
+#include <Objects/BaseObject.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 
 CRulerPoint::CRulerPoint()

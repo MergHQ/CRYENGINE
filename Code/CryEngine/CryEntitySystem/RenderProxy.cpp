@@ -10,6 +10,9 @@
 
 #include <CryRenderer/IRenderer.h>
 #include <Cry3DEngine/IRenderNode.h>
+#include <Cry3DEngine/IStatObj.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <CryParticleSystem/IParticles.h>
 #include <CrySystem/ISystem.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <CryMemory/AddressHelpers.h>
@@ -103,7 +106,7 @@ void CEntityRender::AnimationEvent(ICharacterInstance* pCharacter, const AnimEve
 	// Spawn the event
 	if (!GetEntity()->IsInvisible() && !GetEntity()->IsHidden() && pSkeletonAnim && animEvent.m_EventName && animEvent.m_CustomParameter)
 	{
-		for (auto && pSlot : m_slots)
+		for (auto&& pSlot : m_slots)
 		{
 			if (pSlot && pSlot->GetCharacter() == pCharacter)
 			{

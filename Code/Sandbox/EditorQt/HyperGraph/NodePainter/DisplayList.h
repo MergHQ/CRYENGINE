@@ -3,6 +3,8 @@
 #pragma once
 
 #include <Gdiplus.h>
+#include <map>
+#include <vector>
 
 class CDisplayElem : public _reference_target_t
 {
@@ -236,8 +238,8 @@ public:
 
 	virtual void Draw(Gdiplus::Graphics* pGr) const
 	{
-		float l = m_size;
-		float h = m_size;
+		float l = (float)m_size;
+		float h = (float)m_size;
 		float h1 = m_size * 0.5f;
 		float x = m_rect.GetLeft();
 		float y = m_rect.GetTop() + m_rect.Height / 2 - h / 2;
@@ -417,7 +419,7 @@ public:
 
 	virtual Gdiplus::RectF DoGetBounds(Gdiplus::Graphics* pGr) const
 	{
-		return Gdiplus::RectF(m_position, Gdiplus::SizeF(m_pImage->GetWidth(), m_pImage->GetHeight()));
+		return Gdiplus::RectF(m_position, Gdiplus::SizeF((Gdiplus::REAL)m_pImage->GetWidth(), (Gdiplus::REAL)m_pImage->GetHeight()));
 	}
 
 private:

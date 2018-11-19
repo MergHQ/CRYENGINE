@@ -4,6 +4,7 @@
 #include "MeshType.h"
 
 #include "AssetSystem/AssetResourceSelector.h"
+#include "IEditorImpl.h"
 #include "PathUtils.h"
 #include "QT/Widgets/QPreviewWidget.h"
 

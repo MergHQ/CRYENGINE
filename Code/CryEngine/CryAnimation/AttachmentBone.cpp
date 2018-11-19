@@ -5,8 +5,9 @@
 
 #include "AttachmentManager.h"
 #include "CharacterInstance.h"
-#include <CryMath/QTangent.h>
 #include "CharacterManager.h"
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <CryMath/QTangent.h>
 
 uint32 CAttachmentBONE::SetJointName(const char* szJointName)
 {

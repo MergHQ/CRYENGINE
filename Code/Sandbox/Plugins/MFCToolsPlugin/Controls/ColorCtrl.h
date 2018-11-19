@@ -107,8 +107,7 @@ public:
 		return clr & ~CLR_DEFAULT;               // normal color
 	}
 
-	//protected:
-	UINT     m_nTimerID;
+	UINT_PTR m_nTimerID;
 	int      m_iBlinkPhase;
 	UINT     m_nDelay;
 	BOOL     m_fBlinkText;

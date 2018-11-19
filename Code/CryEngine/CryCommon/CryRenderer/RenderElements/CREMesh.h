@@ -2,6 +2,7 @@
 
 #ifndef __CREMESH_H__
 #define __CREMESH_H__
+#include "RendElement.h"
 
 class CREMesh : public CRenderElement
 {

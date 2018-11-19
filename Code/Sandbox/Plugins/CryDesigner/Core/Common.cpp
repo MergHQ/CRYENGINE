@@ -14,6 +14,7 @@
 #include <Viewport.h>
 
 #include <CrySerialization/Enum.h>
+#include <CryPhysics/physinterface.h>
 
 #include <QDir>
 

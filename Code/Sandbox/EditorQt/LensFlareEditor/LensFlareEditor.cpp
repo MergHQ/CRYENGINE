@@ -2,6 +2,8 @@
 
 #include "StdAfx.h"
 #include "LensFlareEditor.h"
+
+#include "IEditorImpl.h"
 #include "LensFlareView.h"
 #include "LensFlareAtomicList.h"
 #include "LensFlareElementTree.h"
@@ -11,10 +13,17 @@
 #include "LensFlareUndo.h"
 #include "LensFlareLightEntityTree.h"
 #include "LensFlareReferenceTree.h"
-#include "Controls/PropertyCtrl.h"
+#include "LogFile.h"
 #include "Objects/EntityObject.h"
-#include "Util/Clipboard.h"
-#include "Dialogs/QGroupDialog.h"
+
+#include <Controls/PropertyCtrl.h>
+#include <Controls/QuestionDialog.h>
+#include <Dialogs/QGroupDialog.h>
+#include <IObjectManager.h>
+#include <Util/Clipboard.h>
+#include <Util/FileUtil.h>
+
+#include <QDialogButtonBox>
 
 CLensFlareEditor* CLensFlareEditor::s_pLensFlareEditor = NULL;
 const char* CLensFlareEditor::s_pLensFlareEditorClassName = "Lens Flare Editor";

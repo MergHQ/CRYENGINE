@@ -10,6 +10,7 @@
 #include "IGameRulesSystem.h"
 #include <CryAction/IMaterialEffects.h>
 #include <CryGame/IGameFramework.h>
+#include <CryPhysics/IPhysics.h>
 
 struct SGameStartParams;
 struct SGameContextParams;

@@ -1,8 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <CryMath/Cry_Math.h>
+#include <CryMath/Cry_Geo.h>
+#include <CryCore/smartptr.h>
+#include <vector>
 
 class KDTreeNode;
+struct IStatObj;
 
 class CKDTree
 {

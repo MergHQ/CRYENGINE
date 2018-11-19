@@ -5,6 +5,8 @@
 #include "BrushObject.h"
 
 #include "Objects/InspectorWidgetCreator.h"
+#include <Cry3DEngine/IRenderNode.h>
+#include <Cry3DEngine/IStatObj.h>
 
 REGISTER_CLASS_DESC(CGeomEntityClassDesc);
 

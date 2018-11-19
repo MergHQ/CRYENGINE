@@ -1,6 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <CryEntitySystem/IEntityBasicTypes.h>
+#include <CryCore/BitMask.h>
+#include <Cry3DEngine/IRenderNode.h>
+#include <CryMemory/PoolAllocator.h>
 
 // forward declaration.
 class CEntity;
@@ -12,6 +16,9 @@ struct IMaterial;
 struct SEntityUpdateContext;
 struct IRenderNode;
 struct IGeomCacheRenderNode;
+struct SEntitySlotInfo;
+struct SRenderLight;
+struct SEntityPreviewContext;
 
 typedef Matrix34 CWorldTransform;
 typedef Vec3     CWorldPosition;

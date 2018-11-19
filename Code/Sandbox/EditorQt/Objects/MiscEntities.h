@@ -2,7 +2,11 @@
 
 #pragma once
 
+#include "SandboxAPI.h"
 #include "EntityObject.h"
+
+struct IGeometry;
+struct IStatObj;
 
 //////////////////////////////////////////////////////////////////////////
 // WindArea entity.
@@ -76,28 +80,7 @@ public:
 
 	CGeomCacheEntity() {}
 
-	virtual bool HitTestEntity(HitContext& hc, bool& bHavePhysics) override
-	{
-		IGeomCacheRenderNode* pGeomCacheRenderNode = m_pEntity->GetGeomCacheRenderNode(0);
-		if (pGeomCacheRenderNode)
-		{
-			SRayHitInfo hitInfo;
-			ZeroStruct(hitInfo);
-			hitInfo.inReferencePoint = hc.raySrc;
-			hitInfo.inRay = Ray(hitInfo.inReferencePoint, hc.rayDir.GetNormalized());
-			hitInfo.bInFirstHit = false;
-			hitInfo.bUseCache = false;
-
-			if (pGeomCacheRenderNode->RayIntersection(hitInfo))
-			{
-				hc.object = this;
-				hc.dist = hitInfo.fDistance;
-				return true;
-			}
-		}
-
-		return false;
-	}
+	virtual bool HitTestEntity(HitContext& hc, bool& bHavePhysics) override;
 };
 #endif
 
@@ -125,7 +108,7 @@ class CJointGenEntity : public CEntityObject
 {
 public:
 	DECLARE_DYNCREATE(CJointGenEntity)
-	CJointGenEntity() {}
+	CJointGenEntity();
 	virtual void Display(CObjectRenderHelper& objRenderHelper);
 private:
 	string                m_fname;

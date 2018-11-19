@@ -5,6 +5,9 @@
 
 #include "BaseLibrary.h"
 #include "BaseLibraryItem.h"
+#include "IEditorImpl.h"
+#include "LogFile.h"
+#include "Objects/EntityScript.h"
 
 //////////////////////////////////////////////////////////////////////////
 // CBaseLibraryManager implementation.

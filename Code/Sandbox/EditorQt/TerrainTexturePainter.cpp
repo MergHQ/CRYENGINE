@@ -7,8 +7,14 @@
 #include "Terrain/TerrainManager.h"
 #include "Util/ImagePainter.h"
 #include "CryEditDoc.h"
+#include "LogFile.h"
 
 #include <BoostPythonMacros.h>
+#include <IEditorClassFactory.h>
+#include <IObjectManager.h>
+#include <IUndoObject.h>
+#include <Objects/DisplayContext.h>
+#include <QtUtil.h>
 #include <Viewport.h>
 
 struct CUndoTPSector

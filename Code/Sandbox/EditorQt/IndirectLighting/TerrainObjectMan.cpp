@@ -2,6 +2,10 @@
 
 #include "StdAfx.h"
 #include "TerrainObjectMan.h"
+#include "IEditorImpl.h"
+#include "LogFile.h"
+#include <CrySystem/ISystem.h>
+#include <CrySystem/ILog.h>
 #include <limits>
 
 const uint8 CTerrainObjectMan::scObstructed = 1;
@@ -11,7 +15,7 @@ const float CTerrainObjectMan::scFullObstructionMargin = 0.5f;
 
 void CObstructionAccessManager::GetAccessIndices(uint32& rBasisIndex, uint32& rOffsetIndex, const uint32 cRes, const uint16 cX, const uint16 cY) const
 {
-	const float cConvFactor = m_ObstructionMapRes / cRes;
+	const float cConvFactor = m_ObstructionMapRes / (float)cRes;
 	const uint16 cConvertedX = (uint16)((float)cX * cConvFactor);
 	const uint16 cConvertedY = (uint16)((float)cY * cConvFactor);
 	const uint32 cIndexX = (cConvertedX >> scSectorSizeShift);
@@ -25,7 +29,7 @@ void CObstructionAccessManager::GetAccessIndices(uint32& rBasisIndex, uint32& rO
 
 void CObstructionAccessManager::GetAccessIndicesHeightLow(uint32& rBasisIndex, uint32& rOffsetIndex, const uint32 cRes, const uint16 cX, const uint16 cY) const
 {
-	const float cConvFactor = m_HeightObstrGridResolution / cRes;
+	const float cConvFactor = m_HeightObstrGridResolution / (float)cRes;
 	const uint16 cConvertedX = (uint16)((float)cX * cConvFactor);
 	const uint16 cConvertedY = (uint16)((float)cY * cConvFactor);
 	rBasisIndex = cConvertedY / m_YPartMappingHeightLow;
@@ -380,7 +384,7 @@ const bool CTerrainObjectMan::AddObject
 	{
 		const float cX = rObj.bboxCol[i].bbox.min.x - rObj.bboxCol[i].bbox.max.x;
 		const float cY = rObj.bboxCol[i].bbox.min.y - rObj.bboxCol[i].bbox.max.y;
-		float curRadius = sqrtf(cX * cX + cY * cY) * 0.5;
+		float curRadius = sqrtf(cX * cX + cY * cY) * 0.5f;
 		float centerX = (rObj.bboxCol[i].bbox.min.x + rObj.bboxCol[i].bbox.max.x) * 0.5f;
 		float centerY = (rObj.bboxCol[i].bbox.min.y + rObj.bboxCol[i].bbox.max.y) * 0.5f;
 		centerX -= (float)(uint32)centerX;
@@ -568,7 +572,7 @@ const bool CTerrainObjectMan::ConvertAndGenObstructionMap
 			//terrain acc map
 			{
 				//update rTerrainMapMarks
-				const uint32 cCenterRadius = rObj.radius + cUpdateRadius;
+				const uint32 cCenterRadius = uint32(rObj.radius + cUpdateRadius);
 				const float cCenterRadiusF = rObj.radius + (float)cUpdateRadius;
 				const float cCenterRadiusSq = cCenterRadiusF * cCenterRadiusF;
 				float cLerpMax = rObj.IsVeg() ? rObj.radius - 2.f : rObj.radius - 1.f;

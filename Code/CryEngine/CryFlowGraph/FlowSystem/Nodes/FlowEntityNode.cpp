@@ -13,6 +13,7 @@
 
 #include "StdAfx.h"
 #include "FlowEntityNode.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 //////////////////////////////////////////////////////////////////////////
 CFlowEntityClass::CFlowEntityClass(IEntityClass* pEntityClass)

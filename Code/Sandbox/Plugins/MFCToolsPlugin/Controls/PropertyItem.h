@@ -5,6 +5,7 @@
 #include "MFCToolsDefines.h"
 #include "Controls/ColorCtrl.h"
 #include "Util/Variable.h"
+#include <CrySystem/XML/IXml.h>
 
 //! All possible property types.
 enum PropertyType

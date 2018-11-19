@@ -19,6 +19,7 @@
 #include <QPropertyAnimation>
 #include <QToolButton>
 #include "EditorFramework/PersonalizationManager.h"
+#include <IObjectManager.h>
 
 REGISTER_VIEWPANE_FACTORY_AND_MENU(CObjectCreateToolPanel, "Create Object", "Level Editor", false, "Level Editor");
 

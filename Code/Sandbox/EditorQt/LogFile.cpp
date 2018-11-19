@@ -6,7 +6,9 @@
 #include "CryEdit.h"
 #include "ProcessInfo.h"
 
+#include <Controls/QuestionDialog.h>
 #include <Preferences/GeneralPreferences.h>
+#include <CrySystem/IConsole.h>
 
 #define EDITOR_LOG_FILE "Editor.log"
 

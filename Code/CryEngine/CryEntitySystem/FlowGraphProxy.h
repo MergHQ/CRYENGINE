@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CryNetwork/ISerialize.h>
+#include <CryEntitySystem/IEntityComponent.h>
 
 //////////////////////////////////////////////////////////////////////////
 // Description:

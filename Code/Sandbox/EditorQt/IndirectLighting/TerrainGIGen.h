@@ -8,16 +8,17 @@
 #include "IndirectLighting/TerrainObjectMan.h"
 
 #include <PRT/SHFramework.h>
+#include <Util/Image.h>
+#include <Terrain/Sky Accessibility/HeightmapAccessibility.h>
 
+struct IRenderMesh;
+struct IStatObj;
 struct SHeightmapTriangleValidator;
 struct SSHSampleOnDemand;
 struct SSHSample;
 struct STempBBoxData;
-
+class CPakFile;
 class CTerrainObjectMan;
-
-template<class THemisphereSink>
-class CHeightmapAccessibility;
 
 /** Class that generates indirect lighting information
  */

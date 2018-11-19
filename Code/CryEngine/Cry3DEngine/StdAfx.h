@@ -93,7 +93,7 @@ const int nThreadsNum = 3;
 #include "terrain.h"
 #include "ObjectsTree.h"
 
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>  // to be removed
+#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
 
 template<class T>
 void AddToPtr(byte*& pPtr, T& rObj, EEndian eEndian)

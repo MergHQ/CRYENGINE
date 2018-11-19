@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Objects/BaseObject.h"
+#include "SandboxAPI.h"
 
 class CGroupPanel;
 class CObjectManager;

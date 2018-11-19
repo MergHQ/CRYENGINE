@@ -3,6 +3,8 @@
 #pragma once
 #include "MFCToolsDefines.h"
 
+class CImageEx;
+
 class MFC_TOOLS_PLUGIN_API CImageTIF
 {
 public:

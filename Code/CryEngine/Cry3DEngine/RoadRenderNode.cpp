@@ -9,7 +9,8 @@
 #include "ObjMan.h"
 #include "MeshCompiler/MeshCompiler.h"
 
-#include "CryCore/TypeInfo_impl.h"
+#include <CryCore/TypeInfo_impl.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 const float fRoadAreaZRange = 2.5f;
 const float fRoadTerrainZOffset = 0.06f;

@@ -2,8 +2,10 @@
 
 #include "stdafx.h"
 #include "Noise.h"
+#include "LogFile.h"
 #include "Util/DynamicArray2D.h"
-
+#include "Util/EditorUtils.h"
+#include <CryMath/Cry_Math.h>
 #include <CryMath/Random.h>
 
 #pragma warning (push)

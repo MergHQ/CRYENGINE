@@ -15,7 +15,7 @@ class CParserBin;
 struct SParserFrame;
 class CRenderView;
 
-enum EDataType
+enum EDataType : int
 {
 	eDATA_Unknown = 0,
 	eDATA_Sky,

@@ -8,8 +8,14 @@
 #include "Util/KDTree.h"
 #include "Objects/Group.h"
 #include "Objects/DisplayContext.h"
+#include "IEditorImpl.h"
 
 #include <EditorFramework/Editor.h>
+#include <IUndoManager.h>
+#include <Util/Math.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/IIndexedMesh.h>
+#include <Cry3DEngine/IStatObj.h>
 
 IMPLEMENT_DYNCREATE(CVertexSnappingModeTool, CEditTool)
 

@@ -7,7 +7,14 @@
 #include "BaseLibraryManager.h"
 #include "Controls/QuestionDialog.h"
 #include "Dialogs/QGroupDialog.h"
+#include "IEditorImpl.h"
+#include "LogFile.h"
+#include "Objects/EntityScript.h"
 #include "Util/Clipboard.h"
+#include "Util/FileUtil.h"
+#include "Util/EditorUtils.h"
+
+#include <IUndoObject.h>
 #include <PathUtils.h>
 
 class CUndoSelectLibraryUndo : public IUndoObject

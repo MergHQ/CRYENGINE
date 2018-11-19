@@ -15,6 +15,7 @@
 
 #include <Commands/QCommandAction.h>
 #include <EditorFramework/Events.h>
+#include <LevelEditor/LevelEditorSharedState.h>
 
 extern CCryEditApp theApp;
 

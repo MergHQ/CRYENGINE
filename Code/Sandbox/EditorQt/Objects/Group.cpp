@@ -7,6 +7,7 @@
 #include "Objects/ObjectLayerManager.h"
 #include "Objects/PrefabObject.h"
 #include "CryEdit.h"
+#include "IEditorImpl.h"
 
 #include <Util/MFCUtil.h>
 
@@ -19,6 +20,10 @@
 #include <Serialization/Decorators/EditToolButton.h>
 #include <Viewport.h>
 
+#include <Controls/QuestionDialog.h>
+#include <Util/Math.h>
+
+#include <QDialogButtonBox>
 #include <algorithm>
 
 REGISTER_CLASS_DESC(CGroupClassDesc);

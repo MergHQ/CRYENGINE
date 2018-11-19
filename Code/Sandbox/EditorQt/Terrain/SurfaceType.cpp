@@ -3,10 +3,14 @@
 #include "StdAfx.h"
 #include "SurfaceType.h"
 
+#include "IEditorImpl.h"
 #include "Material/MaterialManager.h"
 #include "Terrain/TerrainManager.h"
 #include "Vegetation/VegetationMap.h"
 #include "Vegetation/VegetationObject.h"
+
+#pragma push_macro("GetObject")
+#undef GetObject
 
 const int CSurfaceType::ms_maxSurfaceTypeIdCount = static_cast<int>(LayerIdConstants::e_layerIdUndefined);
 
@@ -178,3 +182,5 @@ void CSurfaceType::AssignUnusedSurfaceTypeID()
 
 	m_surfaceTypeID = nID;
 }
+
+#pragma pop_macro("GetObject")

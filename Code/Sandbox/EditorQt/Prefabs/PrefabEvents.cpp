@@ -3,6 +3,8 @@
 #include "StdAfx.h"
 #include "PrefabEvents.h"
 
+#include "IEditorImpl.h"
+#include "LogFile.h"
 #include "PrefabItem.h"
 #include "Objects/PrefabObject.h"
 #include "HyperGraph/FlowGraphManager.h"

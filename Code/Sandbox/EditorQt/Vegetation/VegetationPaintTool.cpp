@@ -11,11 +11,12 @@
 #include "Dialogs/ToolbarDialog.h"
 #include "Material/Material.h"
 #include "Gizmos/ITransformManipulator.h"
+#include "IEditorImpl.h"
+#include "Util/BoostPythonHelpers.h"
 
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryPhysics/IPhysics.h>
-
-#include "Util/BoostPythonHelpers.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 //////////////////////////////////////////////////////////////////////////
 // Class description.

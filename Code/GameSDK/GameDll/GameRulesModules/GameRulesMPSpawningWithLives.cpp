@@ -15,6 +15,7 @@ History:
 #include "StdAfx.h"
 #include "GameRulesMPSpawningWithLives.h"
 
+#include "GameCVars.h"
 #include "GameRules.h"
 #include "IGameRulesStateModule.h"
 #include "IGameRulesPlayerStatsModule.h"

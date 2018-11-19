@@ -2,6 +2,8 @@
 
 #include "StdAfx.h"
 #include "SplineObject.h"
+#include "SelectionGroup.h"
+#include "IEditorImpl.h"
 
 #include <Controls/DynamicPopupMenu.h>
 #include <Objects/ObjectLoader.h>
@@ -11,7 +13,10 @@
 #include <Serialization/Decorators/EditToolButton.h>
 #include <Viewport.h>
 
+#include <IObjectManager.h>
 #include <Util/MFCUtil.h>
+#include <Util/Math.h>
+#include <Util/Variable.h>
 
 //////////////////////////////////////////////////////////////////////////
 // CEditSplineObjectTool

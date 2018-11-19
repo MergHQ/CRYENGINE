@@ -10,7 +10,10 @@
 #include "Terrain/TerrainTexGen.h"
 #include "Vegetation/VegetationMap.h"
 #include "CryEditDoc.h"
+#include "LogFile.h"
 #include "TerrainLighting.h"
+
+#include <Util/ImageUtil.h>
 
 // Sector flags.
 enum

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CryAnimation/IVertexAnimation.h>
+#include <CryCore/stridedptr.h>
 
 struct RChunk;
 

@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "LevelIndependentFileMan.h"
+#include <CryCore/StlUtils.h>
 
 CLevelIndependentFileMan::CLevelIndependentFileMan()
 {

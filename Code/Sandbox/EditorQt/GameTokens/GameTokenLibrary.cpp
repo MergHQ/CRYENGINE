@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "GameTokenLibrary.h"
 #include "GameTokenItem.h"
+#include <Util/EditorUtils.h>
 
 //////////////////////////////////////////////////////////////////////////
 // CGameTokenLibrary implementation.

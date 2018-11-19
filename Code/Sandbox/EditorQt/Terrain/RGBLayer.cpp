@@ -8,6 +8,7 @@
 #include "GameEngine.h"
 
 #include <Util/Clipboard.h>
+#include <Util/ImageUtil.h>
 
 #include <Controls/QuestionDialog.h>
 #include <QT/Widgets/QWaitProgress.h>

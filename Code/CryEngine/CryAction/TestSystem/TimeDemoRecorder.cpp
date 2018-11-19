@@ -21,10 +21,11 @@
 #include <CryMovie/IMovieSystem.h>
 #include "IMovementController.h"
 #include <CrySystem/Profilers/IStatoscope.h>
-#include <Cry3DEngine/ITimeOfDay.h>
 #include <CrySystem/VR/IHMDManager.h>
 #include <CrySystem/VR/IHMDDevice.h>
 #include <CryCore/Platform/CryWindows.h>
+#include <Cry3DEngine/ITimeOfDay.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #include <array>
 

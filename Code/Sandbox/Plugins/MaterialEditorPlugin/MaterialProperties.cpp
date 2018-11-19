@@ -3,6 +3,7 @@
 #include "MaterialProperties.h"
 #include "QAdvancedPropertyTree.h"
 
+#include <Cry3DEngine/ISurfaceType.h>
 #include <CrySerialization/Decorators/Range.h>
 #include <CrySerialization/Decorators/Resources.h>
 

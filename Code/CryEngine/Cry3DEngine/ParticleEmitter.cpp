@@ -18,6 +18,7 @@
 #include <CryAnimation/ICryAnimation.h>
 #include "Particle.h"
 #include "FogVolumeRenderNode.h"
+#include <CryEntitySystem/IEntitySystem.h>
 #include <CryMemory/STLGlobalAllocator.h>
 #include <CryString/StringUtils.h>
 

@@ -3,6 +3,8 @@
 #pragma once
 
 #include "BaseLibraryItem.h"
+#include "Objects/EntityScript.h"
+#include <Util/Variable.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryParticleSystem/IParticles.h>
 

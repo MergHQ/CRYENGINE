@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "MainThreadWorker.h"
+#include <CrySystem/ISystem.h>
 
 namespace Private_MainThreadWorker
 {

@@ -5,6 +5,8 @@
 #include <CrySchematyc/Utils/EnumFlags.h>
 #include <limits>
 #include <CryCore/CryEnumMacro.h>
+#include <CryExtension/CryGUID.h>
+#include <CryMath/Cry_Math.h>
 
 //! Unique identifier for each entity instance.
 //! Entity identifiers are unique for the session, but cannot be guaranteed over the network, separate instances of the application and serialization / save games.

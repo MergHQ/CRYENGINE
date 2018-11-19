@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "MannequinChangeMonitor.h"
 #include "helper/MannequinFileChangeWriter.h"
+#include "IEditorImpl.h"
 
 CMannequinChangeMonitor::CMannequinChangeMonitor()
 	:

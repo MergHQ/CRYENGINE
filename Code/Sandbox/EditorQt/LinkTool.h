@@ -3,6 +3,8 @@
 
 #include <LevelEditor/Tools/EditTool.h>
 
+struct IGeomCacheRenderNode;
+
 class CLinkTool : public CEditTool
 {
 public:

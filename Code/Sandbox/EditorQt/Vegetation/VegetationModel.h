@@ -12,6 +12,7 @@ class CVegetationDragDropData;
 class CVegetationMap;
 class CVegetationObject;
 struct CVegetationInstance;
+struct IVariable;
 
 class CVegetationModel : public QAbstractItemModel
 {

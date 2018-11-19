@@ -3,6 +3,9 @@
 #pragma once
 
 #include "AiBehavior.h"
+#include "Objects/EntityScript.h"
+#include <vector>
+#include <map>
 
 /*!
  * CAIBehaviorLibrary is collection of global AI behaviors.

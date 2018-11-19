@@ -10,6 +10,8 @@
 #include "Prefabs/PrefabManager.h"
 #include "Prefabs/PrefabEvents.h"
 
+#include <IObjectManager.h>
+
 #define FG_ALLOW_STRIPPED_PORTNAMES
 //#undef  FG_ALLOW_STRIPPED_PORTNAMES
 

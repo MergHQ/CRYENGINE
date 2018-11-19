@@ -3,8 +3,12 @@
 #pragma once
 
 #include "RadixSort.h"
+#include <CryEntitySystem/IEntityBasicTypes.h>
+#include <CryMath/Cry_Geo.h>
+#include <CryMemory/PoolAllocator.h>
 
 class CEntityComponentTriggerBounds;
+struct SProximityElement;
 
 //////////////////////////////////////////////////////////////////////////
 struct SProximityElement

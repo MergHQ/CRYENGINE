@@ -8,6 +8,7 @@
 #include <CryAudio/IObject.h>
 
 #include <CryEntitySystem/IEntity.h>
+#include <CryRenderer/RenderElements/RendElement.h>
 
 #pragma warning(push)
 #pragma warning(disable: 4244)

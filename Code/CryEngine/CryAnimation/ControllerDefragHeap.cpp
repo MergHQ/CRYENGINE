@@ -4,6 +4,7 @@
 #include "ControllerDefragHeap.h"
 
 #include "ControllerPQ.h"
+#include <CryMemory/IMemory.h>
 
 CControllerDefragHeap::CControllerDefragHeap()
 	: m_pAddressRange(NULL)

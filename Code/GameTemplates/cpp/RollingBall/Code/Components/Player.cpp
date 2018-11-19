@@ -4,7 +4,7 @@
 
 #include <CryCore/StaticInstanceList.h>
 #include <CryRenderer/IRenderAuxGeom.h>
-
+#include <CryPhysics/IPhysics.h>
 #include <CryNetwork/Rmi.h>
 
 namespace {

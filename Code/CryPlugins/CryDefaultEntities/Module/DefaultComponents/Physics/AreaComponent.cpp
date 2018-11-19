@@ -6,6 +6,7 @@
 #include "RigidBodyComponent.h"
 
 #include <Cry3DEngine/IRenderNode.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 namespace Cry
 {

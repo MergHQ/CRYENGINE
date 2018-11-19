@@ -2,6 +2,8 @@
 
 #include <StdAfx.h>
 #include "Commands/CommandListDockable.h"
+#include "CommandManager.h"
+#include "IEditorImpl.h"
 
 #include "ProxyModels/DeepFilterProxyModel.h"
 #include "QAdvancedTreeView.h"

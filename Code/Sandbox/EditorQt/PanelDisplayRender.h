@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <CrySystem/IConsole.h>
 #include <QScrollableBox.h>
 #include <QtViewPane.h>
 

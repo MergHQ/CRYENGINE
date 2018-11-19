@@ -15,8 +15,9 @@
 
 #if defined(USE_GEOM_CACHES)
 
-	#include "GeomCache.h"
-	#include "GeomCacheDecoder.h"
+#include "GeomCache.h"
+#include "GeomCacheDecoder.h"
+#include <Cry3DEngine/CREGeomCache.h>
 
 struct SGeomCacheRenderMeshUpdateContext
 {

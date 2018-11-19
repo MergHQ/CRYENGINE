@@ -5,8 +5,12 @@
 #include "FlowGraph.h"
 #include "Objects/EntityObject.h"
 #include "Util/Variable.h"
+#include "IEditorImpl.h"
+#include "LogFile.h"
 
 #include "UIEnumsDatabase.h"
+
+#include <IObjectManager.h>
 
 #include <CryMovie/IMovieSystem.h>
 #include <CryAnimation/ICryAnimation.h>

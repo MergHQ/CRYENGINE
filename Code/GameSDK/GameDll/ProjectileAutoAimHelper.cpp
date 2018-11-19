@@ -7,6 +7,7 @@
 #include "Player.h"
 #include "FireModePluginParams.h"
 #include "FireMode.h"
+#include "GameCVars.h"
 #include "Weapon.h"
 #include "Utility/CryWatch.h"
 

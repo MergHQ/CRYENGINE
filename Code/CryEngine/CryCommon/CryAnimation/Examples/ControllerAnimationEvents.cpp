@@ -1,8 +1,6 @@
 #include <CryAnimation/ICryMannequin.h>
 #include <CryEntitySystem/IEntitySystem.h>
 
-#include <CryEntitySystem/IEntitySystem.h>
-
 class CAnimationEventsComponent final : public IEntityComponent
 {
 public:

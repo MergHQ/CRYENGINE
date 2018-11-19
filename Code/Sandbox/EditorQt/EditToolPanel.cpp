@@ -5,6 +5,7 @@
 
 #include "EditToolPanel.h"
 #include "LevelEditor/Tools/EditTool.h"
+#include <LevelEditor/LevelEditorSharedState.h>
 #include <CrySerialization/IArchive.h>
 
 void SEditToolSerializer::YASLI_SERIALIZE_METHOD(Serialization::IArchive& ar)

@@ -2,9 +2,11 @@
 
 #include "StdAfx.h"
 #include "DistanceCloudObject.h"
+#include "IEditorImpl.h"
 
 #include "Material/MaterialManager.h"
 #include "Objects/ObjectLoader.h"
+#include <Cry3DEngine/I3DEngine.h>
 
 REGISTER_CLASS_DESC(CDistanceCloudObjectClassDesc);
 

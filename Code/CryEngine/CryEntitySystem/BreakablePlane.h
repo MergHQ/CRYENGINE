@@ -10,6 +10,9 @@ struct SProcessImpactIn;
 struct SProcessImpactOut;
 struct SExtractMeshIslandIn;
 struct SExtractMeshIslandOut;
+struct IStatObj;
+struct IMaterial;
+struct IParticleEffect;
 
 class CBreakablePlane : public IOwnedObject
 {

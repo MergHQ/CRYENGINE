@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "FlowGraphModuleDialogs.h"
+#include "IEditorImpl.h"
 
 #include <regex>
 

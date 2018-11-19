@@ -4,6 +4,7 @@
 #include "AreaProxy.h"
 #include "Entity.h"
 #include <CryNetwork/ISerialize.h>
+#include <Cry3DEngine/I3DEngine.h>
 
 CRYREGISTER_CLASS(CEntityComponentArea);
 

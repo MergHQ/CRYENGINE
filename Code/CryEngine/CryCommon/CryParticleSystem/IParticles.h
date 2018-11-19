@@ -13,18 +13,15 @@
 
 #pragma once
 
-#include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/IRenderNode.h>
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/Enum.h>
 #include <CrySerialization/Color.h>
-#include <CryMemory/IMemory.h>
-#include <CrySystem/TimeValue.h>
-#include <CryAudio/IAudioSystem.h>
-#include <Cry3DEngine/GeomRef.h>
 #include <CryCore/CryVariant.h>
-
+#include <CryCore/smartptr.h>
+#include <memory>
 class SmartScriptTable;
+struct GeomRef;
 
 //! Real-time params to control particle emitters.
 
@@ -769,6 +766,8 @@ struct SParticleLightProfileCounts
 };
 
 #if defined(ENABLE_LW_PROFILERS)
+#include <Cry3DEngine/I3DEngine.h>
+
 class CParticleLightProfileSection
 {
 public:

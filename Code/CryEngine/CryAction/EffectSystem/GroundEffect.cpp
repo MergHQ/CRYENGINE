@@ -2,6 +2,8 @@
 
 #include "StdAfx.h"
 #include "GroundEffect.h"
+#include <Cry3DEngine/ISurfaceType.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <CryAction/IMaterialEffects.h>
 #include "CryAction.h"
 

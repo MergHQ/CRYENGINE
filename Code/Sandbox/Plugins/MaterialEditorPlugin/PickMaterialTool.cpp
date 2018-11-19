@@ -3,6 +3,7 @@
 #include "PickMaterialTool.h"
 
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 #include "Material/MaterialManager.h"
 #include "SurfaceInfoPicker.h"

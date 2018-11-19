@@ -3,6 +3,7 @@
 #include <stdafx.h>
 #include "PropertyRowEntityLink.h"
 
+#include "IEditorImpl.h"
 #include <CrySerialization/ClassFactory.h>
 #include <IEditor.h>
 #include <IObjectManager.h>

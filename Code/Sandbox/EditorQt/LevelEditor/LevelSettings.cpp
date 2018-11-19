@@ -17,6 +17,7 @@
 #include "RecursionLoopGuard.h"
 #include "CryEditDoc.h"
 #include "Util/MFCUtil.h"
+#include <IUndoObject.h>
 
 namespace Private_LevelSettings
 {

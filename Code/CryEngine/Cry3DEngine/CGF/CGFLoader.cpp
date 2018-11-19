@@ -22,6 +22,7 @@
 #include <CryCore/CryCustomTypes.h>
 
 #include <Cry3DEngine/IStatObj.h>
+#include <CryPhysics/physinterface.h>
 
 // #define DEBUG_DUMP_RBATCHES
 #define VERTEX_SCALE 0.01f

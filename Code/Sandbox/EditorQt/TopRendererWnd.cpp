@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "TopRendererWnd.h"
 
+#include "IEditorImpl.h"
 #include "Terrain/Heightmap.h"
 #include "Terrain/TerrainTexGen.h"
 #include "Vegetation/VegetationMap.h"
@@ -10,6 +11,8 @@
 
 #include <Controls/DynamicPopupMenu.h>
 #include <Preferences/ViewportPreferences.h>
+
+#include <CryRenderer/IRenderAuxGeom.h>
 
 // Size of the surface texture
 #define SURFACE_TEXTURE_WIDTH 512

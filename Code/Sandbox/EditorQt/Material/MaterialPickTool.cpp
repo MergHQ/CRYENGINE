@@ -1,11 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "Viewport.h"
-#include "Material/MaterialManager.h"
 #include "MaterialPickTool.h"
+
+#include "IEditorImpl.h"
+#include "Material/MaterialManager.h"
 #include "SurfaceInfoPicker.h"
 #include "Objects/DisplayContext.h"
+#include "Viewport.h"
+
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <Cry3DEngine/ISurfaceType.h>
+#include <Cry3DEngine/I3DEngine.h>
 
 #define RENDER_MESH_TEST_DISTANCE 0.2f
 

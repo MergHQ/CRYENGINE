@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 
 #include "EntityContainerMgr.h"
-
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <CryFlowGraph/IFlowGraphModuleManager.h>
 
 

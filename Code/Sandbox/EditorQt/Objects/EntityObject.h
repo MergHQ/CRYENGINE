@@ -6,6 +6,7 @@
 #include "EntityScript.h"
 #include "EntityPrototype.h"
 
+#include <Util/Variable.h>
 #include <CryCore/Containers/CryListenerSet.h>
 
 class CHyperFlowGraph;

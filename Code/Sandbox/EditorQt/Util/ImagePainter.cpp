@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "ImagePainter.h"
+#include "IEditorImpl.h"
 #include "Util/Image.h"
 #include "Terrain/Heightmap.h"        // CHeightmap for mask computations
 #include "Terrain/Layer.h"            // CLayer for mask computations

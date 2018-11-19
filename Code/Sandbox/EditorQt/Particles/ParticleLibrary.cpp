@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "ParticleLibrary.h"
 #include "ParticleItem.h"
+#include "IEditorImpl.h"
 
 //////////////////////////////////////////////////////////////////////////
 // CParticleLibrary implementation.

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CryAnimation/IVertexAnimation.h>
+#include <CryRenderer/IShader.h>
 #include "VertexData.h"
 
 namespace Skeleton {

@@ -23,6 +23,7 @@
 #include "ParticleParams_info.h"
 #include <CryString/Name_TypeInfo.h>
 #include <CryCore/CryTypeInfo.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 ///////////////////////////////////////////////////////////////////////
 // Implementation of TCurve<> functions.

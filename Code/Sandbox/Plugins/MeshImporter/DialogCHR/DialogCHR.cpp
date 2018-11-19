@@ -30,6 +30,7 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <CryPhysics/IPhysicsDebugRenderer.h>
+#include <CryPhysics/physinterface.h>
 
 #include <PathUtils.h>
 #include <QtViewPane.h>

@@ -4,7 +4,14 @@
 
 #include "PhysTool.h"
 #include "Viewport.h"
-#include "Objects/DisplayContext.h"
+#include <Objects/DisplayContext.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/ISurfaceType.h>
+#include <CryAnimation/ICryAnimation.h>
+#include <CryEntitySystem/IEntity.h>
+#include <CryMath/Cry_Camera.h>
+#include <CryPhysics/IPhysics.h>
+#include <CrySystem/ISystem.h>
 
 IMPLEMENT_DYNAMIC(CPhysPullTool, CEditTool)
 

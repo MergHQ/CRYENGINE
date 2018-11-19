@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "GameTokenDialog.h"
+#include "LogFile.h"
 
 #include "Dialogs/QGroupDialog.h"
 #include "Dialogs/ToolbarDialog.h"

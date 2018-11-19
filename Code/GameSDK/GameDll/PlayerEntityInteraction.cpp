@@ -5,6 +5,7 @@
 #include "PlayerEntityInteraction.h"
 #include "IInteractor.h"
 #include "GameActions.h"
+#include "GameCVars.h"
 #include "UI/HUD/HUDEventWrapper.h"
 #include "UI/HUD/HUDEventDispatcher.h"
 #include "PlayerPlugin_Interaction.h"

@@ -11,6 +11,7 @@
 #include <CryString/NameCRCHelper.h>
 #include "AnimEventList.h"
 #include <CryMemory/PoolAllocator.h>
+#include <CryMemory/MemoryAccess.h>
 
 struct CInternalSkinningInfoDBA;
 class ILoaderCAFListener;

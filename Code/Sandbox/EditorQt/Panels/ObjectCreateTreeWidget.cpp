@@ -1,12 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include <StdAfx.h>
 #include "ObjectCreateTreeWidget.h"
+#include "IEditorImpl.h"
 
 #include "Material/MaterialManager.h"
 #include "QT/Widgets/QPreviewWidget.h"
 #include "EditorFramework/PersonalizationManager.h"
 
 #include "CryIcon.h"
+#include <Objects/ClassDesc.h>
 
 #include <QToolButton>
 #include <QSplitter>

@@ -7,6 +7,7 @@
 
 #include "ICryMannequin.h"
 #include <CryExtension/ClassWeaver.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #include "IActorSystem.h"
 #include "IAnimatedCharacter.h"

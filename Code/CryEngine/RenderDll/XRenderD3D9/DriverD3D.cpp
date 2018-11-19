@@ -8,6 +8,7 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryInput/IHardwareMouse.h>
 #include <CrySystem/Profilers/IStatoscope.h>
+#include <CryPhysics/IPhysics.h>
 
 #include <CrySystem/IEngineModule.h>
 #include <CryExtension/ClassWeaver.h>

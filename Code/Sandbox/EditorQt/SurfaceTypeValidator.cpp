@@ -2,12 +2,16 @@
 
 #include "stdafx.h"
 #include "SurfaceTypeValidator.h"
+#include "IEditorImpl.h"
+#include <IObjectManager.h>
+#include <Objects/BaseObject.h>
 #include <Cry3DEngine/IMaterial.h>
 #include <CryAction/IMaterialEffects.h>
 #include <CryGame/IGameFramework.h>
 #include "Material/Material.h"
 
 #include <CrySystem/ICryLink.h>
+#include <CryPhysics/IPhysics.h>
 
 void CSurfaceTypeValidator::Validate()
 {

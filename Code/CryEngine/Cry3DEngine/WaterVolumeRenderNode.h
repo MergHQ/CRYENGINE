@@ -6,6 +6,7 @@
 #pragma once
 
 #include <CryRenderer/VertexFormats.h>
+#include <CryRenderer/RenderElements/CREWaterVolume.h>
 
 struct SWaterVolumeSerialize
 {

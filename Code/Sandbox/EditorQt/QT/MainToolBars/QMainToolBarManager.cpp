@@ -3,12 +3,14 @@
 #include "StdAfx.h"
 #include "QMainToolBarManager.h"
 
+#include "IEditorImpl.h"
 #include "LevelEditor/LevelFileUtils.h"
 #include "QT/QtMainFrame.h"
 
 #include <CryIcon.h>
 
 #include <Commands/CustomCommand.h>
+#include "Commands/CommandManager.h"
 #include <Commands/QCommandAction.h>
 #include <FileUtils.h>
 #include <PathUtils.h>

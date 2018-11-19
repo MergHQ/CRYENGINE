@@ -1,5 +1,7 @@
 #include "StdAfx.h"
 #include "ThrusterComponent.h"
+#include <CryPhysics/physinterface.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 namespace Cry
 {
@@ -72,7 +74,7 @@ Cry::Entity::EventFlags CThrusterComponent::GetEventMask() const
 }
 
 #ifndef RELEASE
-void CThrusterComponent::Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext &context) const
+void CThrusterComponent::Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext& context) const
 {
 	if (context.bSelected)
 	{
@@ -85,7 +87,7 @@ void CThrusterComponent::Render(const IEntity& entity, const IEntityComponent& c
 
 void CThrusterComponent::EnableConstantThrust(bool bEnable)
 {
-	m_bConstantThrustActive = bEnable; 
+	m_bConstantThrustActive = bEnable;
 
 	m_pEntity->UpdateComponentEventMask(this);
 }

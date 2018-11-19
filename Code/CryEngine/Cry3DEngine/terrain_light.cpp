@@ -18,6 +18,7 @@
 #include "PolygonClipContext.h"
 #include "RoadRenderNode.h"
 #include <Cry3DEngine/IIndexedMesh.h>
+#include <CryRenderer/RenderElements/RendElement.h>
 
 _smart_ptr<IRenderMesh> CTerrain::MakeAreaRenderMesh(const Vec3& vPos, float fRadius,
                                                      IMaterial* pMat, const char* szLSourceName,

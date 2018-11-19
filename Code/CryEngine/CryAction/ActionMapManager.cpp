@@ -16,8 +16,10 @@
 #include "ActionMap.h"
 #include "ActionFilter.h"
 #include <CryCore/CryCrc32.h>
+#include <CryFont/IFont.h>
 #include "GameObjects/GameObject.h"
 #include <CryCore/Platform/IPlatformOS.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 CActionMapManager* CActionMapManager::s_pThis = nullptr;
 

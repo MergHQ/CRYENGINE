@@ -6,15 +6,19 @@
 #include "CryEditDoc.h"
 #include "GameEngine.h"
 
+#include <Util/Image.h>
 #include <Util/ImageTIF.h>
 
 #include <PathUtils.h>
+#include <IUndoManager.h>
+#include <IUndoObject.h>
 #include <Serialization/Decorators/EditorActionButton.h>
 #include <Viewport.h>
 
 #include <CryGame/IGameFramework.h>
 #include <CrySandbox/IEditorGame.h>
 #include <ILevelSystem.h>
+#include <Objects/DisplayContext.h>
 
 #define MAP_SCREENSHOT_SETTINGS "MapScreenshotSettings.xml"
 #define MAX_RESOLUTION_SHIFT    11

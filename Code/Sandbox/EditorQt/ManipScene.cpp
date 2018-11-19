@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "ManipScene.h"
 
+#include "IEditorImpl.h"
 #include "Serialization.h"
 #include "QViewportEvents.h"
 

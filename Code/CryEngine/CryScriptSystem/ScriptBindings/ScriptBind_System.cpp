@@ -15,6 +15,7 @@
 
 #include "StdAfx.h"
 #include "ScriptBind_System.h"
+#include <Cry3DEngine/ISurfaceType.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <CryFont/IFont.h>
 #include <CrySystem/ILog.h>

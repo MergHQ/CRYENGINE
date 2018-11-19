@@ -7,6 +7,8 @@
 #include "Dialogs/ResourceCompilerDialog.h"
 #include "FileUtils.h"
 #include "PathUtils.h"
+#include "Util/FileUtil.h"
+#include "Util/EditorUtils.h"
 
 namespace Private_AlembicCompiler
 {

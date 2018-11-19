@@ -4,6 +4,8 @@
 
 #include "LevelEditor/Tools/EditTool.h"
 
+struct IPhysicalEntity;
+
 class CPhysPullTool : public CEditTool
 {
 public:

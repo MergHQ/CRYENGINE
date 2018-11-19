@@ -7,6 +7,9 @@
 #include "MaterialEffectsCVars.h"
 #include "MFXContainer.h"
 
+#include <Cry3DEngine/ISurfaceType.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+
 namespace MaterialEffectsUtils
 {
 #ifdef MATERIAL_EFFECTS_DEBUG

@@ -2,9 +2,11 @@
 
 #include "StdAfx.h"
 #include "AIManager.h"
+#include "IEditorImpl.h"
 
 #include "GameExporter.h"
 #include "AiBehaviorLibrary.h"
+#include <IObjectManager.h>
 
 #include <CryAISystem/IAgent.h>
 #include <CryAISystem/IAISystem.h>
@@ -28,6 +30,7 @@
 #include "Notifications/NotificationCenter.h"
 
 #include <Preferences/ViewportPreferences.h>
+#include <Util/FileUtil.h>
 
 #define GRAPH_FILE_FILTER         "Graph XML Files (*.xml)|*.xml"
 

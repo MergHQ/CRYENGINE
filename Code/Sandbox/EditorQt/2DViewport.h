@@ -1,8 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 #include "Viewport.h"
+#include <CryMath/Cry_Math.h>
+#include <CryMath/Cry_Camera.h>
+#include <CryRenderer/IRenderer.h>
 
 class CPopupMenuItem;
+class CObjectRenderHelper;
 
 /** 2D Viewport used mostly for indoor editing, Front/Top/Left viewports.
  */

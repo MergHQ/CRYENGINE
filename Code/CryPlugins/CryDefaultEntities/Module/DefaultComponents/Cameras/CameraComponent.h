@@ -8,6 +8,7 @@
 #include <CrySystem/VR/IHMDManager.h>
 #include "../Audio/ListenerComponent.h"
 #include <CrySystem/ICryPluginManager.h>
+#include <CryMath/Cry_Camera.h>
 
 #include "../../IDefaultComponentsPlugin.h"
 #include "ICameraManager.h"

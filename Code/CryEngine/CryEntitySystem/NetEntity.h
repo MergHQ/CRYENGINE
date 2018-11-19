@@ -7,6 +7,7 @@
 class CEntity;
 
 struct SEntitySchedulingProfiles;
+struct SEntitySpawnParams;
 
 class CNetEntity final : public INetEntity
 {

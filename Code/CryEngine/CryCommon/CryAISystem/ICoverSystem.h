@@ -4,6 +4,13 @@
 #define __ICoverSystem_h__
 
 #pragma once
+#include <CrySchematyc/Utils/EnumFlags.h>
+#include <CryMath/Cry_Math.h>
+#include <CryCore/functor.h>
+#include <CryEntitySystem/IEntityBasicTypes.h>
+
+struct IEntity;
+struct AABB;
 
 struct CoverID
 {

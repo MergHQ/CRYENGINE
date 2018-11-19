@@ -20,7 +20,7 @@
 
 #include "StdAfx.h"
 #include "NetMsgDispatcher.h"
-#include <CryRenderer/IRenderer.h> // for debug render
+#include <CryRenderer/IRenderAuxGeom.h>
 #include "GameClientChannel.h"
 #include "GameClientNub.h"
 #include "GameServerChannel.h"

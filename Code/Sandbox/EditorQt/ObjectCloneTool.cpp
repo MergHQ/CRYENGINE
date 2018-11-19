@@ -2,7 +2,12 @@
 
 #include "StdAfx.h"
 #include "ObjectCloneTool.h"
+#include "IEditorImpl.h"
+#include "IUndoManager.h"
+#include "IObjectManager.h"
 
+#include <Objects/BaseObject.h>
+#include <Objects/SelectionGroup.h>
 #include <Preferences/SnappingPreferences.h>
 #include <Viewport.h>
 

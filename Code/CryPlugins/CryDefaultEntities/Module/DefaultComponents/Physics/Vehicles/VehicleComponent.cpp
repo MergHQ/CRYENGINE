@@ -2,6 +2,7 @@
 #include "VehicleComponent.h"
 
 #include <Cry3DEngine/IRenderNode.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 namespace Cry
 {

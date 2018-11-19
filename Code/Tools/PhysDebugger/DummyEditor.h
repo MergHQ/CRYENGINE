@@ -1,9 +1,13 @@
 #pragma once
 
 #pragma include_alias("StdAfx.h", "DummyEditor.h")
+#pragma include_alias("CryMath/Cry_Camera.h", "DummyEditor.h")
 #pragma include_alias("LevelEditor/Tools/EditTool.h", "DummyEditor.h")
 #pragma include_alias("Viewport.h", "DummyEditor.h")
 #pragma include_alias("Objects/DisplayContext.h", "DummyEditor.h")
+#pragma include_alias("Cry3DEngine/I3DEngine.h", "DummyEditor.h")
+#pragma include_alias("CryEntitySystem/IEntity.h", "DummyEditor.h")
+#pragma include_alias("CryAnimation/ICryAnimation.h", "DummyEditor.h")
 
 #include "CryCore\Platform\platform.h"
 #include "CryMath\Cry_Math.h"
@@ -15,6 +19,7 @@ struct IPhysicalWorld;
 #define DECLARE_DYNAMIC(X)
 #define IMPLEMENT_DYNAMIC(X,Y)
 #define REGISTER_CVAR2(A,B,C,D,E)
+#define _CRY_DEFAULT_MALLOC_ALIGNMENT 4
 
 inline struct {
 	static HCURSOR LoadCursor(int id) { return ::LoadCursor(GetModuleHandle(0), MAKEINTRESOURCE(id)); }
@@ -64,7 +69,4 @@ struct ICharacterInstance {
 };
 struct IEntity {
 	static ICharacterInstance *GetCharacter(int) { return nullptr; }
-};
-struct ISurfaceType {
-	static int GetId() { return 0; }
 };

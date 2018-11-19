@@ -38,19 +38,6 @@
 ////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////
 
-//#include "EntityDesc.h"
-//#include <IEntitySystem.h>
-
-#include <CrySystem/ISystem.h>
-#include <CrySystem/IConsole.h>
-#include <CryPhysics/IPhysics.h>
-#include <Cry3DEngine/I3DEngine.h>
-#include <CrySystem/TimeValue.h>
-#include <CryMemory/PoolAllocator.h>
-#include <CryEntitySystem/IEntitySystem.h>
-
-#include "EntityCVars.h"
-
 #if !defined(_RELEASE)
 	#define INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
 #endif // !_RELEASE

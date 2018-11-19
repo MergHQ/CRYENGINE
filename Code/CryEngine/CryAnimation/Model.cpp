@@ -6,6 +6,7 @@
 #include "FacialAnimation/FacialInstance.h"
 #include "CharacterManager.h"
 #include <CryString/StringUtils.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 uint CDefaultSkeleton::s_guidLast = 0;
 

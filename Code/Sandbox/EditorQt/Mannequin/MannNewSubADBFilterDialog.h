@@ -4,6 +4,7 @@
 
 #include "MannequinBase.h"
 #include "Controls/PropertiesPanel.h"
+#include "Objects/EntityScript.h"
 
 class CMannNewSubADBFilterDialog : public CXTResizeDialog
 {

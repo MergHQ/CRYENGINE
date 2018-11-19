@@ -2,7 +2,10 @@
 
 #pragma once
 
-#include "Objects/IObjectLayer.h"
+#include "SandboxAPI.h"
+#include "EntityScript.h"
+#include <Objects/IObjectLayer.h>
+#include <CryCore/smartptr.h>
 
 //////////////////////////////////////////////////////////////////////////
 /*!

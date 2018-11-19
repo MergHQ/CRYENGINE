@@ -2,9 +2,12 @@
 
 #include "StdAfx.h"
 #include "QEditToolButton.h"
+#include "IEditorImpl.h"
+#include "LogFile.h"
 
 #include <CryIcon.h>
 
+#include <IEditorClassFactory.h>
 #include <LevelEditor/LevelEditorSharedState.h>
 #include <RecursionLoopGuard.h>
 

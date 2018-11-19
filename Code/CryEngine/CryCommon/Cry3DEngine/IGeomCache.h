@@ -11,7 +11,10 @@
 #ifndef _IGeomCache_H_
 #define _IGeomCache_H_
 
-#include <CryCore/smartptr.h>     // TYPEDEF_AUTOPTR
+#include <CryCore/smartptr.h>
+#include "IStatObj.h"
+
+struct IMaterial;
 
 //! Interface to hold geom cache data.
 struct IGeomCache : public IStreamable

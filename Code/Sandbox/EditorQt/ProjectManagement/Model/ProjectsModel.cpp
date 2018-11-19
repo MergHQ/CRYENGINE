@@ -8,6 +8,8 @@
 #include <ProxyModels/ItemModelAttribute.h>
 #include <QThumbnailView.h>
 
+#include <QDateTime>
+
 namespace Private_ProjectsModel
 {
 

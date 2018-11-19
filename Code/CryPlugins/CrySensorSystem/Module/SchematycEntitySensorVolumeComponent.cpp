@@ -6,6 +6,7 @@
 #include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IShader.h>
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <CryPhysics/physinterface.h>
 #include <CrySerialization/DynArray.h>
 
 #include "SensorMap.h"

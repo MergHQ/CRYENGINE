@@ -8,6 +8,7 @@
 		#include "D3D11/DeviceResources_D3D11_NVAPI.h"
 	#endif
 #endif
+#include <CryRenderer/RenderElements/RendElement.h>
 
 typedef uintptr_t DeviceBufferHandle;
 typedef uint32    buffer_size_t;

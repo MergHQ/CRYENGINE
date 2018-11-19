@@ -5,11 +5,16 @@
 #include "VegetationMap.h"
 #include "VegetationObject.h"
 #include "VegetationDragDropData.h"
+#include "IEditorImpl.h"
 
 #include "Terrain/TerrainManager.h"
 
 #include <QFileInfo>
 #include <QSet>
+
+#if defined(GetObject)
+	#undef GetObject
+#endif
 
 namespace Private_VegetationModel
 {

@@ -3,6 +3,8 @@
 #include "StdAfx.h"
 #include "SimpleEntity.h"
 #include "BrushObject.h"
+#include <Cry3DEngine/IRenderNode.h>
+#include <Cry3DEngine/IStatObj.h>
 
 REGISTER_CLASS_DESC(CSimpleEntityClassDesc);
 

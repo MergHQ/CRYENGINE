@@ -6,6 +6,7 @@
 #include "Entity.h"
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryMath/GeomQuery.h>
+#include <Cry3DEngine/I3DEngine.h>
 
 namespace
 {

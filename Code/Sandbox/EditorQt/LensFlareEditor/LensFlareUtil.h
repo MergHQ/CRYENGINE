@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CryRenderer/IFlares.h>
+#include <Util/Variable.h>
 
 class CBaseLibraryItem;
 class CEntityObject;

@@ -1,9 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __CREPARTICLE_H__
-#define __CREPARTICLE_H__
-
+#pragma once
 #include <CryMemory/MemoryAccess.h>
+#include "RendElement.h"
 
 // forward declarations
 class CREParticle;
@@ -143,5 +142,3 @@ private:
 
 	Vec3                                 m_AABBmin, m_AABBmax;
 };
-
-#endif  // __CREPARTICLE_H__

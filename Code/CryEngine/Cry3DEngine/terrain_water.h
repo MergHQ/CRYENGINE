@@ -1,18 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   terrain_water.h
-//  Version:     v1.00
-//  Created:     28/5/2001 by Vladimir Kajalin
-//  Compilers:   Visual Studio.NET
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef _TERRAIN_WATER_H_
-#define _TERRAIN_WATER_H_
+#pragma once
+#include <CryRenderer/RenderElements/CREWaterVolume.h>
 
 #define CYCLE_BUFFERS_NUM 4
 
@@ -107,5 +96,3 @@ private:
 	static CREWaterOcean*        m_pOceanRE;
 
 };
-
-#endif

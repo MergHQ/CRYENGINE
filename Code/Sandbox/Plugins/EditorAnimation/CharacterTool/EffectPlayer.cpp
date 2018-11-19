@@ -7,6 +7,7 @@
 #include <CryAnimation/ICryAnimation.h>
 #include <CryInput/IInput.h>
 #include <CryEntitySystem/IEntitySystem.h>
+#include <CryParticleSystem/IParticles.h>
 
 namespace CharacterTool {
 

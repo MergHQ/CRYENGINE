@@ -5,8 +5,12 @@
 
 #include "CryEdit.h"
 #include "GameEngine.h"
-
+#include <IObjectManager.h>
+#include <Objects/BaseObject.h>
 #include <CrySystem/IProjectManager.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <CryAnimation/ICryAnimation.h>
+#include <QDir>
 
 CEditorFileMonitor::CEditorFileMonitor()
 {

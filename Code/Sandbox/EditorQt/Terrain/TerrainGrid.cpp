@@ -4,6 +4,7 @@
 #include "Heightmap.h"
 #include "TerrainGrid.h"
 #include "TerrainTexGen.h"
+#include "IEditorImpl.h"
 
 #include <Cry3DEngine/I3DEngine.h>
 

@@ -7,6 +7,7 @@
 #include "Controls/PropertyCtrlEx.h"
 #include "Controls/SplitterCtrl.h"
 #include "Controls/TreeCtrlEx.h"
+#include "Objects/EntityScript.h"
 
 class CParticleItem;
 class CParticleManager;

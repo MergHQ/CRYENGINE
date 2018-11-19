@@ -6,6 +6,7 @@ struct SEditorPaintBrush;
 
 class CImageEx;
 
+#include "SandboxAPI.h"
 #include <Util/MemoryBlock.h>
 
 // RGB terrain texture layer

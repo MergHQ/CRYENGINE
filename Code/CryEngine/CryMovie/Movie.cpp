@@ -34,6 +34,7 @@
 #include <CryGame/IGameFramework.h>
 #include <CryMovie/AnimKey_impl.h>
 #include <../CryAction/IViewSystem.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 int CMovieSystem::m_mov_NoCutscenes = 0;
 float CMovieSystem::m_mov_cameraPrecacheTime = 1.f;

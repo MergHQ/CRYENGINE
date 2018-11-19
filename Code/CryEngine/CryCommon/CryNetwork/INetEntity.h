@@ -7,6 +7,7 @@
 
 #include <CryEntitySystem/IEntityBasicTypes.h>
 #include <CrySchematyc/Utils/EnumFlags.h>
+#include <CryCore/smartptr.h>
 #include "ISerialize.h"
 
 struct IEntityComponent;

@@ -3,6 +3,8 @@
 #include "StdAfx.h"
 #include "PreviewerPage.h"
 
+#include <Util/FileUtil.h>
+
 #include <ICryMannequinEditor.h>
 #include <CryGame/IGameFramework.h>
 

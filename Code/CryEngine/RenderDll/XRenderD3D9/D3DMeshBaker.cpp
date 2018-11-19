@@ -5,6 +5,7 @@
 #include <CryAnimation/ICryAnimation.h>
 #include <Cry3DEngine/IIndexedMesh.h>
 #include <CryRenderer/IShader.h>
+#include <CryRenderer/IMeshBaking.h>
 
 //#define CREATE_RENDERDOC_CAPTURE
 

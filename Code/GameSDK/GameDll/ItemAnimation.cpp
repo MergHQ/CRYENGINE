@@ -13,6 +13,7 @@ History:
 #include "StdAfx.h"
 
 #include "ItemAnimation.h"
+#include "GameCVars.h"
 #include "Player.h"
 #include "Weapon.h"
 

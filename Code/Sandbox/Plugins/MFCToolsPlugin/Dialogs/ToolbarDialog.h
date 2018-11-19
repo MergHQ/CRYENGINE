@@ -43,6 +43,9 @@ protected:
 //////////////////////////////////////////////////////////////////////////
 // Custom frame window.
 //////////////////////////////////////////////////////////////////////////
+// disable virtual function override warnings, as MFC headers do not pass them.
+#pragma warning(push)
+#pragma warning(disable: 4264)
 class MFC_TOOLS_PLUGIN_API CCustomFrameWnd : public CXTPFrameWnd
 {
 public:
@@ -78,3 +81,4 @@ protected:
 	CXTPDockingPaneManager m_paneManager;
 	CString                m_profile;
 };
+#pragma warning(pop)

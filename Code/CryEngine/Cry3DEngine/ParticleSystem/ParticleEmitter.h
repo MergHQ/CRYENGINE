@@ -7,6 +7,7 @@
 #include "ParticleComponentRuntime.h"
 #include "ParticleAttributes.h"
 #include <CryRenderer/IGpuParticles.h>
+#include <Cry3DEngine/GeomRef.h>
 
 namespace pfx2
 {

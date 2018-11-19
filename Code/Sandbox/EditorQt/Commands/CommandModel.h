@@ -7,6 +7,7 @@
 
 class CUiCommand;
 class CCommandModuleDescription;
+class QCommandAction;
 
 Q_DECLARE_METATYPE(CCommand*);
 

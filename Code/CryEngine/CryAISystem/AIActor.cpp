@@ -11,7 +11,7 @@
 #include "Formation/FormationManager.h"
 #include <CryCore/CryCrc32.h>
 #include <CryEntitySystem/IEntity.h>
-
+#include <Cry3DEngine/ISurfaceType.h>
 #include <CryAISystem/BehaviorTree/BehaviorTreeDefines.h>
 #include <CryAISystem/BehaviorTree/IBehaviorTree.h>
 #include <CryAISystem/VisionMapTypes.h>

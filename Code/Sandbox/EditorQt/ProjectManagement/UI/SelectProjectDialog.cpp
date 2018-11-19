@@ -15,6 +15,9 @@
 #include <CrySerialization/yasli/JSONOArchive.h>
 #include <CrySystem/IProjectManager.h>
 
+#include <QDateTime>
+#include <QDir>
+
 namespace Private_SelectProjectDialog
 {
 

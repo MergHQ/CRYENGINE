@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "HyperGraphNode.h"
+#include "IEditorImpl.h"
 
 #include "HyperGraph.h"
 #include "NodePainter/HyperNodePainter_Default.h"
@@ -9,6 +10,7 @@
 #include "Nodes/MissingNode.h"
 #include "FlowGraphVariables.h"
 #include "Objects/ObjectLoader.h"
+#include <CryMovie/IMovieSystem.h>
 
 #define MIN_ZOOM_DRAW_ALL_ELEMS 0.1f
 

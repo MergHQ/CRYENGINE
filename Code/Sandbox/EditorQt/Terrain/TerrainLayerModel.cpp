@@ -1,9 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include "StdAfx.h"
 #include "TerrainLayerModel.h"
+#include "IEditorImpl.h"
 
 #include "Terrain/TerrainManager.h"
 #include "Terrain/TerrainLayerUndoObject.h"
+
+#include <DragDrop.h>
+#include <Util/ImageUtil.h>
+#include <ProxyModels/ItemModelAttribute.h>
 
 namespace Private_TerrainLayerModel
 {

@@ -3,6 +3,13 @@
 #pragma once
 
 #include "SplineObject.h"
+#include <ObjectEvent.h>
+#include <Util/Variable.h>
+
+struct SDisplayContext;
+class CObjectRenderHelper;
+class CInspectorWidgetCreator;
+class CObjectArchive;
 
 struct CRoadSector
 {

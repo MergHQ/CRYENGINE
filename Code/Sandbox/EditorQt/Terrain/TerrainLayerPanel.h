@@ -5,6 +5,7 @@
 #include "EditToolPanel.h"
 
 class CLayer;
+class CEditTool;
 
 struct STexturePainterSerializer
 {

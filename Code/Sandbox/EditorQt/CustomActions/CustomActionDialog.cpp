@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 
 #include "CustomActionDialog.h"
+#include "IEditorImpl.h"
 
 #include "HyperGraph/FlowGraphManager.h"
 #include "HyperGraph/FlowGraph.h"

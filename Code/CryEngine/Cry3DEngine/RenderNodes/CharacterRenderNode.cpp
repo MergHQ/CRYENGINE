@@ -6,6 +6,7 @@
 #include "ObjMan.h"
 #include "3dEngine.h"
 #include <CryAnimation/ICryAnimation.h>
+#include <CryAnimation/IAttachment.h>
 
 //////////////////////////////////////////////////////////////////////////
 static bool IsMatrixValid(const Matrix34& mat)

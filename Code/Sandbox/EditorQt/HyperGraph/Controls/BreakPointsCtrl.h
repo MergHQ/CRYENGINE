@@ -20,6 +20,8 @@ struct SBreakpointItem
 	EItemType     type;
 };
 
+#pragma warning (push)
+#pragma warning (disable:4264) // 'BOOL CWnd::Create(LPCTSTR,LPCTSTR,DWORD,const RECT &,CWnd *,UINT,CCreateContext *)': no override available for virtual member function from base 'CWnd'; function is hidden
 class CBreakpointsTreeCtrl : public CTreeCtrl, IFlowGraphDebugListener
 {
 	DECLARE_DYNAMIC(CBreakpointsTreeCtrl)
@@ -70,3 +72,4 @@ private:
 	IFlowGraphDebuggerPtr     m_pFlowGraphDebugger;
 	CFlowGraphDebuggerEditor* m_pFlowGraphDebuggerEditor{ nullptr };
 };
+#pragma warning (pop)

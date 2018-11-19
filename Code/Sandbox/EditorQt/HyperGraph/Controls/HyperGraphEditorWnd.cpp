@@ -48,9 +48,11 @@
 #include "Controls/PropertyCtrl.h"
 #include "Controls/SharedFonts.h"
 #include "Util/MFCUtil.h"
+#include "Util/FileUtil.h"
 
 #include "Objects/EntityObject.h"
 #include "Objects/PrefabObject.h"
+#include "Commands/CommandManager.h"
 
 namespace
 {

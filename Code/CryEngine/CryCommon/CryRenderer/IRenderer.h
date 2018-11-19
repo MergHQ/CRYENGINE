@@ -11,16 +11,14 @@
 
 #pragma once
 
+#include "ITexture.h"
 #include <CryMath/Cry_Geo.h>
-#include <CryRenderer/IFlares.h> // <> required for Interfuscator
 #include <CryExtension/ClassWeaver.h>
 #include <CrySystem/IEngineModule.h>
 #include <CrySystem/TimeValue.h>
 #include <CryCore/BaseTypes.h>
+#include <CryCore/Containers/CryArray.h>
 #include <CryCore/CryVariant.h>
-#include "IRenderView.h"
-
-#include <vector>
 
 // forward declarations
 struct SRenderingPassInfo;
@@ -29,6 +27,11 @@ struct SRenderLight;
 struct SWaterRippleInfo;
 
 class CRenderView;
+struct IFFont;
+struct IPhysicalEntity;
+struct SMeshBakingInputParams;
+struct SMeshBakingOutput;
+enum EDataType : int;
 
 //! Callback used for DXTCompress.
 typedef void (* MIPDXTcallback)(const void* buffer, size_t count, void* userData);
@@ -101,7 +104,6 @@ struct IRenderMesh;
 class IOpticsManager;
 struct SRendererCloakParams;
 struct ShadowFrustumMGPUCache;
-struct IAsyncTextureCompileListener;
 struct IClipVolume;
 struct SClipVolumeBlendInfo;
 class IImageFile;
@@ -126,8 +128,6 @@ typedef float         vec2_t[2];
 
 #include <CryMath/Cry_Color.h>
 #include "Tarray.h"
-
-#include <CryFont/IFont.h>
 
 #define MAX_NUM_VIEWPORTS 7
 
@@ -583,9 +583,6 @@ public:
 #endif
 
 //////////////////////////////////////////////////////////////////////
-#include <CryRenderer/IShader.h> // <> required for Interfuscator
-#include <CryRenderer/IRenderMesh.h>
-#include "IMeshBaking.h"
 
 //! Flags passed in function FreeResources.
 #define FRR_DELETED_MESHES           BIT(0)

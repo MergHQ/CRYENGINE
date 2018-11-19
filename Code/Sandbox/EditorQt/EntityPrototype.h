@@ -4,6 +4,7 @@
 
 #include "BaseLibraryItem.h"
 #include "Objects/EntityScript.h"
+#include "Util/Variable.h"
 
 class CEntityPrototypeLibrary;
 class CEntityScript;

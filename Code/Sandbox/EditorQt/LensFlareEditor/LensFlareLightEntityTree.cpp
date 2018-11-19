@@ -5,8 +5,11 @@
 #include "LensFlareUtil.h"
 #include "LensFlareItem.h"
 #include "Objects/EntityObject.h"
+#include "Objects/SelectionGroup.h"
 #include "LensFlareEditor.h"
 #include "Viewport.h"
+#include "IEditorImpl.h"
+#include <IObjectManager.h>
 
 BEGIN_MESSAGE_MAP(CLensFlareLightEntityTree, CXTTreeCtrl)
 ON_NOTIFY_REFLECT(NM_DBLCLK, OnTvnItemDoubleClicked)

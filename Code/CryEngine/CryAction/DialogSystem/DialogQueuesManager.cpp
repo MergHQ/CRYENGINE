@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "DialogQueuesManager.h"
 #include "CryActionCVars.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 ////////////////////////////////////////////////////////////////////////////
 CDialogQueuesManager::CDialogQueuesManager()

@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "SplashScreen.h"
+#include "Version.h"
 #include <QPainter>
 #include <QApplication>
 

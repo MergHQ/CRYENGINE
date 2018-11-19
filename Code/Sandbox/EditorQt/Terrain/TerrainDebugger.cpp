@@ -1,6 +1,13 @@
 #include "StdAfx.h"
 #include "Terrain/TerrainManager.h"
+
+#include "IEditorImpl.h"
+
 #include <PathUtils.h>
+#include <Util/ImageUtil.h>
+#include <QtUtil.h>
+#include <QFileInfo>
+#include <QDir>
 
 namespace Private_TerrainDumper
 {

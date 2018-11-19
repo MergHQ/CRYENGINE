@@ -11,6 +11,7 @@
 
 #include "StdAfx.h"
 #include "ChickenBoids.h"
+#include <Cry3DEngine/I3DEngine.h>
 #include <CrySystem/ITimer.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <CryMath/Random.h>

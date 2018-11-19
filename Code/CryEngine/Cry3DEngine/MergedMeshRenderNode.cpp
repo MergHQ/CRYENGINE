@@ -10,6 +10,7 @@
 #include <CryMath/Cry_GeoIntersect.h>
 #include <CryThreading/IJobManager_JobDelegator.h>
 #include <CrySystem/Profilers/IStatoscope.h>
+#include <CryEntitySystem/IEntity.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <Cry3DEngine/IIndexedMesh.h>
 #include <CryMath/QTangent.h>

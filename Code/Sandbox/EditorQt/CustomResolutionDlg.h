@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "SandboxAPI.h"
 #include "Controls/EditorDialog.h"
 
 class QMenuComboBox;

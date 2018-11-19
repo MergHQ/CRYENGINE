@@ -2,12 +2,16 @@
 
 #include "StdAfx.h"
 #include "LensFlareManager.h"
+
+#include "IEditorImpl.h"
 #include "LensFlareEditor.h"
 #include "LensFlareItem.h"
 #include "LensFlareLibrary.h"
 #include "LensFlareUtil.h"
+#include "LogFile.h"
 
 #include "Controls/PropertyItem.h"
+#include "Objects/EntityScript.h"
 
 //////////////////////////////////////////////////////////////////////////
 // CLensFlareManager implementation.

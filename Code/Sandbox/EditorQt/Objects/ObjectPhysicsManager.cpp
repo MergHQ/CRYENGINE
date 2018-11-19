@@ -10,8 +10,14 @@
 #include "Objects/BaseObject.h"
 #include "PathUtils.h"
 #include "QT/Widgets/QWaitProgress.h"
+#include "ObjectManager.h"
 #include "Util/BoostPythonHelpers.h"
+#include <Util/FileUtil.h>
+#include <Util/XmlArchive.h>
 #include <CryMath/Random.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/IRenderNode.h>
+#include <Cry3DEngine/IStatObj.h>
 
 #define MAX_OBJECTS_PHYS_SIMULATION_TIME (5)
 

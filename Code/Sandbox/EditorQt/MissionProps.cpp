@@ -5,9 +5,11 @@
 
 #include "Controls/PropertyItem.h"
 #include "CryEditDoc.h"
+#include "LogFile.h"
 #include "mission.h"
 #include "missionscript.h"
 #include <PathUtils.h>
+#include <Util/FileUtil.h>
 
 // CMissionProps dialog
 

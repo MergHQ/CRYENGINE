@@ -11,6 +11,7 @@
 #include "HyperGraphEditorTree.h"
 #include "HyperGraphEditorNodeList.h"
 #include "BreakPointsCtrl.h"
+#include <vector>
 
 
 class CEntityObject;
@@ -23,6 +24,8 @@ class CHGGraphPropsPanel;
 class CFlowGraphTokensCtrl;
 class CHyperGraphsTreeCtrl;
 class CHyperGraphComponentsReportCtrl;
+class CBaseObject;
+struct CObjectEvent;
 
 
 //////////////////////////////////////////////////////////////////////////

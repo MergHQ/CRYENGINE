@@ -4,8 +4,10 @@
 #include "FileChangeMonitor.h"
 
 #include "CryEdit.h"
+#include "LogFile.h"
 
 #include <Util/FileUtil.h>
+#include <Util/EditorUtils.h>
 
 #include <PathUtils.h>
 #include <QtUtil.h>
@@ -13,8 +15,10 @@
 #include <CrySystem/IConsole.h>
 #include <CrySystem/ISystem.h>
 #include <CryThreading/IThreadManager.h>
+#include <CryThreading/CryThread.h>
 
 #include <sys/stat.h>
+#include <QFileInfo>
 
 //! Message used to communicate with internally created window
 #define WM_FILEMONITORCHANGE (WM_APP + 10)

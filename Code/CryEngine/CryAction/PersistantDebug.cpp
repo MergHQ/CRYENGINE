@@ -5,6 +5,7 @@
 #include "CryAction.h"
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <IUIDraw.h>
+#include <CryFont/IFont.h>
 #include <CrySystem/ILocalizationManager.h>
 
 CPersistantDebug::CPersistantDebug()

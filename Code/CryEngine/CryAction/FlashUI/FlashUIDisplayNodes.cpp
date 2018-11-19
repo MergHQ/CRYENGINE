@@ -10,6 +10,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 #include "StdAfx.h"
+#include <CryPhysics/IPhysics.h>
 #include "FlashUIDisplayNodes.h"
 #include "FlashUI.h"
 

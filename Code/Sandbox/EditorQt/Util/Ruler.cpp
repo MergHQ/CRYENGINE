@@ -3,6 +3,9 @@
 #include "StdAfx.h"
 #include "Ruler.h"
 
+#include "IEditorImpl.h"
+#include <IObjectManager.h>
+#include <Objects/BaseObject.h>
 #include <QtUtil.h>
 #include <Viewport.h>
 

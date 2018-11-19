@@ -5,6 +5,7 @@
 #include "FlowSystem.h"
 
 #include <CryFlowGraph/IFlowBaseNode.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #include "FlowGraph.h"
 #include "Nodes/FlowLogNode.h"

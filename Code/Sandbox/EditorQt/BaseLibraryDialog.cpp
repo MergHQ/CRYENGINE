@@ -9,10 +9,14 @@
 #include "BaseLibrary.h"
 #include "BaseLibraryItem.h"
 #include "BaseLibraryManager.h"
-#include "PathUtils.h"
 #include "Controls/QuestionDialog.h"
 #include "Controls/SharedFonts.h"
+#include "IUndoObject.h"
+#include "LogFile.h"
+#include "PathUtils.h"
 #include "Util/Clipboard.h"
+#include "Util/EditorUtils.h"
+#include "Util/FileUtil.h"
 
 #define LIBRARY_CB_WIDTH 150
 

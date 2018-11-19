@@ -5,6 +5,7 @@
 #include <QAbstractItemModel>
 
 #include "ProxyModels/ItemModelAttribute.h"
+#include <IEditor.h>
 
 class CObjectLayer;
 struct CLayerChangeEvent;

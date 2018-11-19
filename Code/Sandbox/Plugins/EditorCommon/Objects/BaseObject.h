@@ -968,7 +968,10 @@ class CBaseObjectsCache
 {
 public:
 	int          GetObjectCount() const          { return m_objects.size(); }
+#pragma push_macro("GetObject")
+#undef GetObject
 	CBaseObject* GetObject(int nIndex) const     { return m_objects[nIndex]; }
+#pragma pop_macro("GetObject")
 	void         AddObject(CBaseObject* pObject) { m_objects.push_back(pObject); }
 	void         ClearObjects()                  { m_objects.clear(); }
 	void         Reserve(int nCount)             { m_objects.reserve(nCount); }

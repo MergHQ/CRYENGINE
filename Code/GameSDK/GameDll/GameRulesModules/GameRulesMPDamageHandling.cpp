@@ -16,6 +16,7 @@
 #include "StdAfx.h"
 #include "GameRulesMPDamageHandling.h"
 #include <CrySystem/XML/IXml.h>
+#include "GameCVars.h"
 #include "GameRules.h"
 #include "Actor.h"
 #include "Player.h"

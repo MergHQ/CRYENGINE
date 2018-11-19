@@ -6,6 +6,7 @@
 #include "Player.h"
 #include "EnvironmentalWeapon.h"
 #include "PlayerPluginEventDistributor.h"
+#include "GameCVars.h"
 #include "GameXmlParamReader.h"
 
 #ifndef _RELEASE

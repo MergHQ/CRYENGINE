@@ -5,9 +5,11 @@
 #include "Material/Material.h"
 #include "Viewport.h"
 #include "EntityObject.h"
+#include "IEditorImpl.h"
 #include "Objects/ObjectLoader.h"
 #include "Objects/InspectorWidgetCreator.h"
 #include "Util/MFCUtil.h"
+#include <Cry3DEngine/I3DEngine.h>
 
 //////////////////////////////////////////////////////////////////////////
 // CWaterWaveObject implementation.

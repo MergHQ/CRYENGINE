@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "HyperGraphEditorNodeList.h"
+#include "IEditorImpl.h"
 
 #include "HyperGraph/FlowGraphManager.h"
 #include "HyperGraph/FlowGraphNode.h"

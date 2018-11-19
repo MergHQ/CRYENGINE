@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "BackgroundScheduleManager.h"
+#include "IEditorImpl.h"
 
 namespace BackgroundScheduleManager
 {

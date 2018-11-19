@@ -5,6 +5,7 @@
 
 #include "ParticleLibrary.h"
 #include "BaseLibraryManager.h"
+#include <UsedResources.h>
 
 #include <CryParticleSystem/ParticleParams.h>
 

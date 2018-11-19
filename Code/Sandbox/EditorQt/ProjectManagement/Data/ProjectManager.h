@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <CryIcon.h>
 #include <CrySerialization/Forward.h>
 #include <vector>
 

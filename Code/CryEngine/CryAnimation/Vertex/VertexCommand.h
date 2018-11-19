@@ -3,6 +3,7 @@
 #pragma once
 
 #include "VertexData.h"
+#include <CryRenderer/IShader.h>
 
 struct VertexCommand;
 

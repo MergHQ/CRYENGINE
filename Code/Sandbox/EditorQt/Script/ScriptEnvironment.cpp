@@ -5,6 +5,8 @@
 
 #include "IEditorImpl.h"
 #include "Objects/EntityObject.h"
+#include "Objects/SelectionGroup.h"
+#include "Commands/CommandManager.h"
 
 EditorScriptEnvironment::EditorScriptEnvironment()
 {

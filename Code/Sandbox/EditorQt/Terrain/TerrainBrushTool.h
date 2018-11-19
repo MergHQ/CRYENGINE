@@ -2,6 +2,7 @@
 #pragma once
 
 #include "LevelEditor/Tools/EditTool.h"
+#include <Util/Image.h>
 
 struct CTerrainBrush
 {

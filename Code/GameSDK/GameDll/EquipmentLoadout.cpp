@@ -16,6 +16,7 @@ History:
 #include "EquipmentLoadout.h"
 #include "Actor.h"
 #include "Player.h"
+#include "GameCVars.h"
 #include "Item.h"
 #include "IItemSystem.h"
 #include <CryString/StringUtils.h>

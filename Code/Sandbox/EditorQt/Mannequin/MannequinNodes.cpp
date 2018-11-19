@@ -6,6 +6,7 @@
 #include "MannequinNodes.h"
 #include "MannequinDialog.h"
 #include "MannequinUtil.h"
+#include "IEditorImpl.h"
 
 #include "SequencerSequence.h"
 #include "SequencerDopeSheet.h"

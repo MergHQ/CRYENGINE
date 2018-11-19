@@ -1,5 +1,6 @@
 #include "StdAfx.h"
 #include "ChildEntityComponent.h"
+#include <CryPhysics/IPhysics.h>
 
 namespace Cry
 {

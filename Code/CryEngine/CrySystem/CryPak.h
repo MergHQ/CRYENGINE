@@ -17,18 +17,17 @@
 #define CRYPAK_H
 
 #include <CrySystem/File/ICryPak.h>
-#include <CrySystem/IMiniLog.h>
 #include "ZipDir.h"
 #include "MTSafeAllocator.h"
 #include <CryCore/StlUtils.h>
 #include "PakVars.h"
-#include "FileIOWrapper.h"
 #include <CryCore/Containers/VectorMap.h>
 #include <CrySystem/Profilers/IPerfHud.h>
 #include <CryMemory/STLGlobalAllocator.h>
 #include <atomic>
 
 class CCryPak;
+struct IMiniLog;
 
 #if CRY_PLATFORM_ANDROID && defined(ANDROID_OBB)
 struct AAsset;

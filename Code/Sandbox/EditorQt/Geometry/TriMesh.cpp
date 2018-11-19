@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "TriMesh.h"
 #include "Objects/SubObjSelection.h"
+#include <Util/EditorUtils.h>
 
 CTriMesh::CTriMesh()
 {

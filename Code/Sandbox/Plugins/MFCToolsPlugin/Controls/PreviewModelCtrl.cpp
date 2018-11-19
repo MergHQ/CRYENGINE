@@ -10,6 +10,7 @@
 #include <CryAnimation/ICryAnimation.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryParticleSystem/IParticles.h>
+#include <CryPhysics/physinterface.h>
 
 #include "IIconManager.h"
 #include "ViewportInteraction.h"

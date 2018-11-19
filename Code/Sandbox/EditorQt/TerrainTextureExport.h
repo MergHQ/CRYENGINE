@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Controls/ColorCheckBox.h"
+#include <Util/Image.h>
 
 class CTerrainTextureExport : public CDialog
 {

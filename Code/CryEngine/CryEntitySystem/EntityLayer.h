@@ -5,6 +5,7 @@
 #include <CryCore/Containers/CryListenerSet.h>
 #include <CryCore/StlUtils.h>
 #include <CryEntitySystem/IEntityLayer.h>
+#include <CryEntitySystem/IEntitySystem.h>
 
 struct SEntityLayerGarbage
 {

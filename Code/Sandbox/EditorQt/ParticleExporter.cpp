@@ -6,7 +6,9 @@
 #include "Particles/ParticleLibrary.h"
 #include "Particles/ParticleManager.h"
 
+#include "IEditorImpl.h"
 #include <Util/CryMemFile.h>
+#include <Util/EditorUtils.h>
 #include <Util/PakFile.h>
 
 #define PARTICLES_FILE           "LevelParticles.xml"

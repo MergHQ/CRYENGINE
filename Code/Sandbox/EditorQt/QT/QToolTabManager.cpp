@@ -3,12 +3,14 @@
 #include "StdAfx.h"
 #include "QToolTabManager.h"
 
+#include "IEditorImpl.h"
 #include "QT/QtMainFrame.h"
 
 #include <QMfcApp/qwinhost.h>
 
 #include <EditorFramework/PersonalizationManager.h>
 #include <FileDialogs/SystemFileDialog.h>
+#include <QtUtil.h>
 
 #include <CrySystem/IProjectManager.h>
 #include <CrySystem/UserAnalytics/IUserAnalytics.h>

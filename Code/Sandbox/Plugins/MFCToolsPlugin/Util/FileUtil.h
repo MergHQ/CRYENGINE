@@ -2,12 +2,15 @@
 
 #pragma once
 
-#include <CryString/StringUtils.h>
 #include "dll_string.h"
-#include <CryCore/functor.h>
 #include "FileSystem/FileSystem_FileFilter.h"
 #include "FileDialogs/ExtensionFilter.h"
 #include "MFCToolsDefines.h"
+#include <CryCore/functor.h>
+#include <CryCore/Containers/CryArray.h>
+#include <CryString/StringUtils.h>
+#include <set>
+#include <vector>
 
 class CWnd;
 class CDynamicPopupMenu;

@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "DebugHistory.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 std::set<CDebugHistoryManager*>* CDebugHistoryManager::m_allhistory;
 

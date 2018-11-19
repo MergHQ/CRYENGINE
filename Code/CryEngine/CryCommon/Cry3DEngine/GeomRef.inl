@@ -6,6 +6,10 @@
 
 	#include <CryAnimation/ICryAnimation.h>
 	#include <CryMath/GeomQuery.h>
+	#include <CryPhysics/physinterface.h>
+	#include <Cry3DEngine/IStatObj.h>
+	#include <CryEntitySystem/IEntitySystem.h>
+	#include "GeomRef.h"
 
 //////////////////////////////////////////////////////////////////////////
 // GeomRef implementation

@@ -6,6 +6,7 @@
 #include "IDataBaseLibrary.h"
 #include "IDataBaseManager.h"
 #include <CryCore/ToolsHelpers/GuidUtil.h>
+#include <CryCore/StlUtils.h>
 #include "BaseLibrary.h"
 #include <CryExtension/CryGUID.h>
 

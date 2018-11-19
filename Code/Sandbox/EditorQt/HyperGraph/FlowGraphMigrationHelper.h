@@ -4,6 +4,7 @@
 
 #include "IHyperGraph.h"
 
+#include <CryScriptSystem/IScriptSystem.h>
 #include <map>
 
 class CFlowGraphMigrationHelper

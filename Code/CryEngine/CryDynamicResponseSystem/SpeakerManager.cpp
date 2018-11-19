@@ -12,6 +12,7 @@
 #include <CryGame/IGameFramework.h>
 #include "DialogLineDatabase.h"
 #include <CryAudio/IAudioInterfacesCommonData.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 namespace
 {

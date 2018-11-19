@@ -3,7 +3,9 @@
 //! \cond INTERNAL
 
 #pragma once
+#include <CryCore/BaseTypes.h>
 #include "UnicodeBinding.h"
+#include "UnicodeEncoding.h"
 namespace Unicode
 {
 //! Results of analysis of an input range of code-units (in any encoding).
@@ -42,7 +44,7 @@ struct SAnalysisResult
 
 	//! Get the length of the input range when encoded with the given encoding, in code-units.
 	//! \note If the encoding is not supported for output, the function returns 0.
-	size_type LengthInEncodingUnits(EEncoding encoding) const
+	size_type LengthInEncodingUnits(Unicode::EEncoding encoding) const
 	{
 		switch (encoding)
 		{

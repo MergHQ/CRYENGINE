@@ -19,6 +19,7 @@
 
 	#include "BlockPacker.h"
 	#include <CryAnimation/ICryAnimation.h>
+	#include <CryEntitySystem/IEntitySystem.h>
 	#include "Brush.h"
 	#include "SceneTreeManager.h"
 	#include <CryRenderer/IRenderAuxGeom.h>

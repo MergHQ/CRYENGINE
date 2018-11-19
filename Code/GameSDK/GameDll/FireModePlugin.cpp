@@ -15,6 +15,7 @@ Description: Fire Mode Plugins
 #include "Weapon.h"
 #include "VehicleWeapon.h"
 #include "Actor.h"
+#include "GameCVars.h"
 #include "Player.h"
 #include <CryParticleSystem/ParticleParams.h>
 #include "EntityUtility/EntityEffects.h"

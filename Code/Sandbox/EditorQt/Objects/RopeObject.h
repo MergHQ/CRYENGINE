@@ -3,6 +3,7 @@
 #pragma once
 
 #include "ShapeObject.h"
+#include <Cry3DEngine/IRenderNode.h>
 
 //////////////////////////////////////////////////////////////////////////
 class CRopeObject : public CShapeObject

@@ -5,10 +5,14 @@
 #include "Terrain/TerrainLayerUndoObject.h"
 #include "Terrain/TerrainManager.h"
 #include "TerrainTexturePainter.h"
+#include "IEditorImpl.h"
 
+#include <BoostPythonMacros.h>
+#include <Controls/QuestionDialog.h>
 #include <EditorFramework/Events.h>
 #include <FileDialogs/SystemFileDialog.h>
-#include <BoostPythonMacros.h>
+#include <LevelEditor/LevelEditorSharedState.h>
+#include <QtUtil.h>
 
 namespace Private_TerrainLayerCommands
 {

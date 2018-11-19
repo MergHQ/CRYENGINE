@@ -3,11 +3,15 @@
 
 #include "Objects/ObjectLayer.h"
 #include "Objects/ObjectLayerManager.h"
+#include "Objects/SelectionGroup.h"
 #include "ICommandManager.h"
 #include "EditorFramework/Events.h"
 
-#include "Util/BoostPythonHelpers.h"
 #include "CryEdit.h"
+#include "IEditorImpl.h"
+#include "IUndoObject.h"
+#include "LevelEditor/LevelEditorSharedState.h"
+#include "Util/BoostPythonHelpers.h"
 
 #include <Dialogs/QNumericBoxDialog.h>
 

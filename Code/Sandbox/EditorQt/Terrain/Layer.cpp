@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include "LogFile.h"
 #include "Terrain/Layer.h"
 
 #include "Terrain/TerrainGrid.h"
@@ -10,8 +11,11 @@
 #include <CryEditDoc.h>
 #include <PathUtils.h>
 #include <Preferences/ViewportPreferences.h>
+#include <Util/FileUtil.h>
+#include <Util/ImageUtil.h>
 
 #include <CryMemory/CrySizer.h>
+#include <CrySerialization/Decorators/Resources.h>
 
 //! Size of the texture preview
 #define LAYER_TEX_PREVIEW_CX    128

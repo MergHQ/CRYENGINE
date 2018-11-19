@@ -4,7 +4,7 @@
 #include "NetEntity.h"
 #include "Entity.h"
 #include <CryGame/IGameFramework.h>
-
+#include <CryPhysics/physinterface.h>
 #include <set>
 
 class CNetEntity;

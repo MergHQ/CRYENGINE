@@ -2,11 +2,17 @@
 
 #pragma once
 
+#include <Util/UserDataUtil.h>
+#include <CrySandbox/CrySignal.h>
 #include <QObject>
 #include <QVariant>
-#include <CrySandbox/CrySignal.h>
+#include <QVector>
+#include <memory>
 
 class CEditorMainFrame;
+class QCommandAction;
+class QToolBar;
+struct ICVar;
 
 class QMainToolBarManager : public QObject, public CUserData
 {

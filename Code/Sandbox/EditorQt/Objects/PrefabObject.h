@@ -5,6 +5,7 @@
 #include "Group.h"
 #include "Prefabs/PrefabItem.h"
 #include "IUndoObject.h"
+#include <IObjectManager.h>
 
 class CPopupMenuItem;
 

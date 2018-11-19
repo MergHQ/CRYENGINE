@@ -1,10 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <CryRenderer/IRenderer.h>
+#include "EntityCVars.h"
 
 // forward declaration.
 class CEntitySystem;
 struct IPhysicalWorld;
+struct EventPhys;
+struct IPhysicalEntity;
+struct SEntityEvent;
+class CEntity;
 
 //////////////////////////////////////////////////////////////////////////
 class CPhysicsEventListener

@@ -3,9 +3,12 @@
 #ifndef IAttachment_h
 #define IAttachment_h
 
-#include <CryAnimation/ICryAnimation.h>
 #include <CryParticleSystem/IParticles.h>
 #include <CryString/CryName.h>
+#include <CryEntitySystem/IEntitySystem.h>
+#include <Cry3DEngine/IStatObj.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include "ICryAnimation.h"
 
 struct IStatObj;
 struct IMaterial;

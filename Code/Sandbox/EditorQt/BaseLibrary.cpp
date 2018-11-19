@@ -6,6 +6,9 @@
 #include "BaseLibraryManager.h"
 #include "ISourceControl.h"
 #include "Dialogs/SourceControlAddDlg.h"
+#include "IUndoObject.h"
+#include "IEditorImpl.h"
+#include <Util/EditorUtils.h>
 
 //////////////////////////////////////////////////////////////////////////
 // Undo functionality for libraries.

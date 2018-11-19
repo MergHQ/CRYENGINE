@@ -8,6 +8,8 @@
 #include "IIconManager.h"
 #include "Gizmos/AxisHelper.h"
 #include "Objects/DisplayContext.h"
+#include "IEditorImpl.h"
+#include "SelectionGroup.h"
 
 REGISTER_CLASS_DESC(CAIAnchorClassDesc);
 

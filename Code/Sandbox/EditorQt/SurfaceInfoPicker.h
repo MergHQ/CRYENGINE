@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "SandboxAPI.h"
 #include <Objects/BaseObject.h>
 #include <IObjectManager.h>
 

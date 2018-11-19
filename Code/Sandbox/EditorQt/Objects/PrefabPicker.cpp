@@ -6,6 +6,7 @@
 #include "PrefabPicker.h"
 #include "Prefabs/PrefabManager.h"
 
+#include <AssetSystem/AssetManager.h>
 #include <AssetSystem/AssetResourceSelector.h>
 #include <AssetSystem/Browser/AssetBrowserDialog.h>
 

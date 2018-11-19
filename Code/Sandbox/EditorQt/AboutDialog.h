@@ -2,6 +2,7 @@
 
 #pragma once
 #include "Controls/EditorDialog.h"
+#include "Version.h"
 
 #include <QLabel>
 

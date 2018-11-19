@@ -4,6 +4,8 @@
 #include "IEditorImpl.h"
 #include "GameEngine.h"
 #include "ViewManager.h"
+#include "Commands/CommandManager.h"
+#include <IObjectManager.h>
 #include <Preferences/ViewportPreferences.h>
 #include "Util/BoostPythonHelpers.h"
 #include "Dialogs/QStringDialog.h"
@@ -15,6 +17,10 @@
 #include "Controls/QuestionDialog.h"
 #include "PathUtils.h"
 #include "CryEditDoc.h"
+#include <IUndoObject.h>
+#include <Objects/BaseObject.h>
+#include <Util/FileUtil.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 namespace
 {

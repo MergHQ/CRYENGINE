@@ -10,6 +10,7 @@
 #include <CrySchematyc/Env/IEnvRegistrar.h>
 
 #include "DefaultComponents/ComponentHelpers/PhysicsParameters.h"
+#include <CryPhysics/physinterface.h>
 
 namespace Cry
 {

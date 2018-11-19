@@ -2,9 +2,10 @@
 #include <StdAfx.h>
 #include "QPreviewWidget.h"
 
-#include "Material/Material.h"
 #include "Material/MaterialManager.h"
 #include "IIconManager.h"
+#include "IEditorImpl.h"
+#include "LogFile.h"
 #include "ViewportInteraction.h"
 #include "Objects/ParticleEffectObject.h"
 
@@ -14,7 +15,6 @@
 
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryAnimation/ICryAnimation.h>
-#include <CryEntitySystem/IEntitySystem.h>
 #include <CryParticleSystem/IParticles.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 

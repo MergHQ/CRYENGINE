@@ -8,7 +8,10 @@
 #include "CryEditDoc.h"
 #include "Serialization/Decorators/EditorActionButton.h"
 #include "Gizmos/IGizmoManager.h"
-#include "IUndoManager.h"
+#include <IUndoManager.h>
+#include <IUndoObject.h>
+#include <IObjectManager.h>
+#include <Objects/DisplayContext.h>
 
 namespace
 {

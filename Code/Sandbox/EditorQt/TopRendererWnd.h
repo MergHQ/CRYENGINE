@@ -3,6 +3,7 @@
 #pragma once
 
 #include "2DViewport.h"
+#include <Util/Image.h>
 
 class CTopRendererWnd : public C2DViewport
 {

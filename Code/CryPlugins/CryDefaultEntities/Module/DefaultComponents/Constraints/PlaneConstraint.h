@@ -3,6 +3,7 @@
 #include <CrySchematyc/MathTypes.h>
 #include <CrySchematyc/Reflection/TypeDesc.h>
 #include <CrySchematyc/Env/IEnvRegistrar.h>
+#include <CryPhysics/physinterface.h>
 
 class CPlugin_CryDefaultEntities;
 

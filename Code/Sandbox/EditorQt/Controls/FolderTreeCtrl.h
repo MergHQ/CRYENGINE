@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Util/FileChangeMonitor.h"
+#include <CryCore/StlUtils.h>
 
 class CFolderTreeCtrl : public CTreeCtrl, public CFileChangeMonitorListener
 {

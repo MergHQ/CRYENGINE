@@ -11,6 +11,7 @@
 
 #include <Util/FileUtil.h>
 
+#include <Controls/QuestionDialog.h>
 #include <EditorFramework/PersonalizationManager.h>
 #include <FileDialogs/SystemFileDialog.h>
 #include <PathUtils.h>

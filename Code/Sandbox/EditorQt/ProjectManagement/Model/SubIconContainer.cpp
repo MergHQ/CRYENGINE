@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "SubIconContainer.h"
 
+#include <CryIcon.h>
 #include <QThumbnailView.h>
 
 CSubIconContainer::CSubIconContainer()

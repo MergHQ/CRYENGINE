@@ -9,6 +9,7 @@
 #include "PolygonClipContext.h"
 #include <CryAnimation/ICryAnimation.h>
 #include <CryRenderer/IShader.h>
+#include <CryEntitySystem/IEntity.h>
 #include "ClipVolume.h"
 #include "ClipVolumeManager.h"
 #include "ShadowCache.h"

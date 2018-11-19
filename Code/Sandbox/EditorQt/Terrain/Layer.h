@@ -1,7 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include "SandboxAPI.h"
+#include <Util/Image.h>
+#include <CrySandbox/CrySignal.h>
 
+class CRect;
 class CSurfaceType;
 
 //! Single texture layer

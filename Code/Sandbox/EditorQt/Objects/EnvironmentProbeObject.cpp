@@ -18,9 +18,12 @@
 #include <Serialization/Decorators/EditorActionButton.h>
 #include <Util/Variable.h>
 
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/IStatObj.h>
 #include <Cry3DEngine/ITimeOfDay.h>
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
 #include <CryRenderer/IShader.h>
+#include <CryRenderer/RenderObject.h>
 #include <CrySystem/File/ICryPak.h>
 #include <CrySystem/ISystem.h>
 

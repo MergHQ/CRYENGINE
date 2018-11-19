@@ -48,6 +48,7 @@
 #include "Serialization/XMLScriptLoader.h"
 #include "PersistantDebug.h"
 #include <CryAISystem/IAIObject.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #include "CryActionCVars.h"
 

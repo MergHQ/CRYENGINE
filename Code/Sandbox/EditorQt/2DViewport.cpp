@@ -4,13 +4,20 @@
 #include "2DViewport.h"
 
 #include "ViewManager.h"
+#include "IEditorImpl.h"
+#include "IObjectManager.h"
 
 #include <Util/MFCUtil.h>
 
+#include <Objects/BaseObject.h>
+#include <Objects/DisplayContext.h>
+#include <Objects/SelectionGroup.h>
 #include <Gizmos/IGizmoManager.h>
 #include <Preferences/SnappingPreferences.h>
 #include <Preferences/ViewportPreferences.h>
 #include <RenderLock.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <Cry3DEngine/I3DEngine.h>
 
 #define MARKER_SIZE          6.0f
 #define MARKER_DIR_SIZE      10.0f

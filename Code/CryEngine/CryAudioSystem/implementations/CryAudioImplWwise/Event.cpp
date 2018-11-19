@@ -5,6 +5,7 @@
 #include "Object.h"
 
 #include <AK/SoundEngine/Common/AkSoundEngine.h>
+#include <CryAudio/IAudioSystem.h>
 
 namespace CryAudio
 {

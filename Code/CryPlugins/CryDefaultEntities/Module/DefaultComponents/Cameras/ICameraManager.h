@@ -1,4 +1,5 @@
 #pragma once
+#include <CryEntitySystem/IEntityComponent.h>
 
 struct ICameraComponent : public IEntityComponent
 {

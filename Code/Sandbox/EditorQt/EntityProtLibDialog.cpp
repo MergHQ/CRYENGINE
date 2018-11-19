@@ -5,16 +5,22 @@
 
 #include "Material/MaterialManager.h"
 #include "Objects/ProtEntityObject.h"
+#include "Objects/SelectionGroup.h"
+#include "Objects/EntityScript.h"
 #include "EntityPrototypeManager.h"
 #include "SelectEntityClsDialog.h"
 #include "ViewManager.h"
+#include "IEditorImpl.h"
 
+#include <IObjectManager.h>
 #include <Controls/MFCPropertyTree.h>
 #include <Controls/PropertyItem.h>
+#include <Controls/QuestionDialog.h>
 #include <Util/Clipboard.h>
 #include <Util/MFCUtil.h>
 
 #include <Dialogs/QGroupDialog.h>
+#include <QDialogButtonBox>
 
 
 #define IDC_PROTOTYPES_TREE     AFX_IDW_PANE_FIRST

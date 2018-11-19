@@ -5,6 +5,7 @@
 #include "HeavyWeapon.h"
 #include "FireMode.h"
 #include "Actor.h"
+#include "GameCVars.h"
 #include "GameRules.h"
 #include "Player.h"
 #include "PersistantStats.h"

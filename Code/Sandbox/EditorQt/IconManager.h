@@ -6,6 +6,10 @@ struct IStatObj;
 struct IMaterial;
 
 #include "IIconManager.h"
+#include "IEditor.h"
+#include <CryCore/smartptr.h>
+#include <CryCore/StlUtils.h>
+#include <unordered_map>
 
 /*!
  *	CIconManager contains map of icon names to icon textures,

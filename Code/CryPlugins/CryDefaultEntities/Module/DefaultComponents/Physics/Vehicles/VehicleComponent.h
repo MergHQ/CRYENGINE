@@ -7,6 +7,7 @@
 #include <CrySchematyc/MathTypes.h>
 
 #include <CryMath/Angle.h>
+#include <CryPhysics/physinterface.h>
 
 namespace Cry
 {
