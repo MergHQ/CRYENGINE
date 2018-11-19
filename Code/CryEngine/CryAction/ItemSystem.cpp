@@ -111,12 +111,7 @@ void CItemSystem::OnLoadingStart(ILevelInfo* pLevelInfo)
 //------------------------------------------------------------------------
 void CItemSystem::OnLoadingComplete(ILevelInfo* pLevel)
 {
-	// marcio: precaching of items enabled by default for now
-	//	ICVar *sys_preload=gEnv->pConsole->GetCVar("sys_preload");
-	//	if ((!sys_preload || sys_preload->GetIVal()) && m_pPrecache->GetIVal())
-	{
-		PrecacheLevel();
-	}
+	PrecacheLevel();
 }
 
 //------------------------------------------------------------------------

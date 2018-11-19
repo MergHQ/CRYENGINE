@@ -5306,7 +5306,6 @@ void CSystem::CreateSystemVars()
 
 	REGISTER_CVAR2("sys_force_installtohdd_mode", &g_cvars.sys_force_installtohdd_mode, 0, VF_NULL, "Forces install to HDD mode even when doing DVD emulation");
 
-	m_sys_preload = REGISTER_INT("sys_preload", 0, 0, "Preload Game Resources");
 	m_sys_use_Mono = REGISTER_INT("sys_use_mono", 1, 0, 
 								  "Use Mono Framework\n"
 								  "0 = off\n"
