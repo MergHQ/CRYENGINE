@@ -269,8 +269,6 @@ void AIConsoleVars::Init()
 	                       "from the server to the client.");
 	DefineConstIntCVarName("ai_DebugDrawVegetationCollisionDist", DebugDrawVegetationCollisionDist, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Enables drawing vegetation collision closer than a distance projected onto the terrain.");
-	DefineConstIntCVarName("ai_DebugDrawDynamicHideObjectsRange", DebugDrawDynamicHideObjectsRange, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
-	                       "Sets the range for drawing dynamic hide objects around the player (needs ai_DebugDraw > 0).");
 	DefineConstIntCVarName("ai_DebugPathfinding", DebugPathFinding, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Toggles output of pathfinding information [default 0 is off]");
 	DefineConstIntCVarName("ai_DebugDrawBannedNavsos", DebugDrawBannedNavsos, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
@@ -523,8 +521,6 @@ void AIConsoleVars::Init()
 	                       "Path is displayed in aqua, and only a certain length will be displayed, after which\n"
 	                       "old path gradually disappears as new path is drawn.\n"
 	                       "0=do not record, 1=record.");
-	DefineConstIntCVarName("ai_DrawHidespots", DrawHideSpots, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
-	                       "Draws latest hide-spot positions for all agents within specified range.");
 	DefineConstIntCVarName("ai_DrawRadar", DrawRadar, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Draws AI radar: 0=no radar, >0 = size of the radar on screen");
 	DefineConstIntCVarName("ai_DrawRadarDist", DrawRadarDist, 20, VF_CHEAT | VF_CHEAT_NOCHECK,

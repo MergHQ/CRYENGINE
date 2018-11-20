@@ -32,7 +32,6 @@ struct AIConsoleVars
 	DeclareConstIntCVar(CoverSystem, 1);
 	DeclareConstIntCVar(CoverExactPositioning, 0);
 	DeclareConstIntCVar(NetworkDebug, 0);
-	DeclareConstIntCVar(DebugDrawDynamicHideObjectsRange, 0);
 	DeclareConstIntCVar(DebugPathFinding, 0);
 	DeclareConstIntCVar(DebugDrawBannedNavsos, 0);
 	DeclareConstIntCVar(DebugDrawGroups, 0);
@@ -63,7 +62,6 @@ struct AIConsoleVars
 	DeclareConstIntCVar(DebugDrawVegetationCollisionDist, 0);
 	DeclareConstIntCVar(RecordLog, 0);
 	DeclareConstIntCVar(DrawTrajectory, 0);
-	DeclareConstIntCVar(DrawHideSpots, 0);
 	DeclareConstIntCVar(DrawRadar, 0);
 	DeclareConstIntCVar(DrawRadarDist, 20);
 	DeclareConstIntCVar(DebugRecordAuto, 0);

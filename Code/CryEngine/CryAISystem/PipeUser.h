@@ -23,12 +23,12 @@
 #include "GoalPipe.h"
 #include "AIActor.h"
 #include <CryAISystem/IAISystem.h>
-#include "AIHideObject.h"
 #include "ObjectContainer.h"
 #include "Cover/CoverUser.h"
 #include "MNMPathfinder.h"
 #include <CryAISystem/IMovementSystem.h>
 #include "PipeUserMovementActorAdapter.h"
+#include "SmartObjects.h"
 
 enum EPathfinderResult
 {
@@ -239,8 +239,6 @@ public:
 	//
 	const SAIActorTargetRequest* GetActiveActorTargetRequest() const;
 
-	virtual void                 IgnoreCurrentHideObject(float timeOut) override;
-
 	virtual EntityId             GetLastUsedSmartObjectId() const override { return m_idLastUsedSmartObject; }
 	virtual bool                 IsUsingNavSO() const override             { return m_eNavSOMethod != nSOmNone; }
 	virtual void                 ClearPath(const char* dbgString) override;
@@ -251,9 +249,6 @@ public:
 	/// Called when it is detected that our current path is invalid - if we want
 	/// to continue (assuming we're using it) we should request a new one
 	void PathIsInvalid();
-
-	// Check if specified hideobject was recently unreachable.
-	bool WasHideObjectRecentlyUnreachable(const Vec3& pos) const;
 
 	/// Returns the last live target position.
 	const Vec3&        GetLastLiveTargetPosition() const  { return m_lastLiveTargetPos; }
@@ -352,8 +347,6 @@ public:
 
 	bool                m_bPriorityLookAtRequested;
 
-	CAIHideObject       m_CurrentHideObject;
-
 	Vec3                m_vLastMoveDir; // were was moving last - to be used while next path is generated
 	bool                m_bKeepMoving;
 	int                 m_nPathDecision;
@@ -404,7 +397,7 @@ public:
 
 	enum ESpecialAIObjects
 	{
-		AISPECIAL_LAST_HIDEOBJECT,
+		AISPECIAL_UNUSED,
 		AISPECIAL_PROBTARGET,
 		AISPECIAL_PROBTARGET_IN_TERRITORY,
 		AISPECIAL_PROBTARGET_IN_REFSHAPE,
@@ -483,10 +476,6 @@ protected:
 	Vec3                  m_vLastSOExitHelper;
 
 	CStrongRef<CAIObject> m_refSpecialObjects[COUNT_AISPECIAL];
-
-	typedef std::pair<float, Vec3>   FloatVecPair;
-	typedef std::deque<FloatVecPair> TimeOutVec3List;
-	TimeOutVec3List m_recentUnreachableHideObjects;
 
 	Vec3            m_lastLiveTargetPos;
 	float           m_timeSinceLastLiveTarget;

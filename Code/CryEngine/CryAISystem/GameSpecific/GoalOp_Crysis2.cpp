@@ -17,7 +17,6 @@
 #include "PipeUser.h"
 #include "Puppet.h"
 #include "DebugDrawContext.h"
-#include "HideSpot.h"
 #include "Cover/CoverSystem.h"
 #include "GenericAStarSolver.h"
 #include "ObjectContainer.h"
@@ -873,35 +872,8 @@ EGoalOpResult COPCrysis2Hide::Execute(CPipeUser* pPipeUser)
 		if (m_location == AI_REG_REFPOINT)
 		{
 			CCCPOINT(COPCrysis2Hide_Execute_RefPoint);
-
-			if (IAIObject* pRefPoint = pPipeUser->GetRefPoint())
-			{
-				// Setup the hide object.
-				Vec3 pos = pRefPoint->GetPos();
-				Vec3 dir = pRefPoint->GetEntityDir();
-
-				if (dir.IsZero())
-				{
-					Vec3 target(pPipeUser->GetAttentionTarget() ? pPipeUser->GetAttentionTarget()->GetPos() : pos);
-					dir = (target - pos).GetNormalizedSafe();
-				}
-
-				SHideSpot hideSpot(SHideSpotInfo::eHST_ANCHOR, pos, dir);
-				CAIHideObject& currentHideObject = pPipeUser->m_CurrentHideObject;
-				currentHideObject.Set(&hideSpot, hideSpot.info.pos, hideSpot.info.dir);
-
-				if (!currentHideObject.IsValid() ||
-				    !GetAISystem()->IsHideSpotOccupied(pPipeUser, hideSpot.info.pos))
-				{
-					Reset(pPipeUser);
-
-					pPipeUser->SetCoverState(ICoverUser::EStateFlags::None);
-
-					return eGOR_FAILED;
-				}
-
-				CreateHideTarget(pPipeUser, pos);
-			}
+			AIWarningID("COPCrysis2Hide", "Registering refpoint isn't supported anymore!");
+			return eGOR_FAILED;
 		}
 		else // AI_REG_COVER
 		{
@@ -936,12 +908,6 @@ EGoalOpResult COPCrysis2Hide::Execute(CPipeUser* pPipeUser)
 				if (gAIEnv.CVars.DebugDrawCover)
 					GetAISystem()->AddDebugCylinder(pos + CoverUp * 0.015f, CoverUp, pPipeUser->GetParameters().m_fPassRadius, 0.025f, Col_Red, 3.5f);
 #endif
-			}
-			else if (pPipeUser->m_CurrentHideObject.IsValid())
-			{
-				Vec3 pos = pPipeUser->m_CurrentHideObject.GetLastHidePos();
-
-				CreateHideTarget(pPipeUser, pos);
 			}
 			else
 			{
@@ -1041,8 +1007,8 @@ EGoalOpResult COPCrysis2Hide::Execute(CPipeUser* pPipeUser)
 					pPipeUser->SetCoverRegister(CoverID());
 					pPipeUser->SetCoverBlacklisted(coverID, true, 10.0f);
 				}
-				else
-					pPipeUser->IgnoreCurrentHideObject(10.0f);
+				/*else
+					pPipeUser->IgnoreCurrentHideObject(10.0f);*/
 
 				Reset(pPipeUser);
 
@@ -1211,21 +1177,16 @@ void COPCrysis2Hide::UpdateMovingToCoverAnimation(CPipeUser* pPipeUser) const
 	// Give hints to animation system for sliding into cover
 	if (pPipeUser->IsMovingToCover() && !pPipeUser->IsInCover()) // GoalOpHide is used both when moving into cover and *in* cover..
 	{
-		Vec3 hidePos, hideNormal;
+		CoverID coverID = pPipeUser->GetCoverID();
+		if (!coverID)
+			return;
+
+		Vec3 hideNormal;
 		float hideHeight;
-		if (CoverID coverID = pPipeUser->GetCoverID())
-		{
-			float radius = pPipeUser->GetParameters().distanceToCover;
-			hidePos = gAIEnv.pCoverSystem->GetCoverLocation(coverID, radius, &hideHeight, &hideNormal);
-			//hidePos = gAIEnv.pCoverSystem->GetCoverSurface(coverID)->GetCoverOcclusionAt(radius, &hideHeight, &hideNormal);
-			hideHeight = pPipeUser->GetCoverUser()->GetLocationEffectiveHeight();
-		}
-		else
-		{
-			hidePos = pPipeUser->m_CurrentHideObject.GetLastHidePos();
-			hideNormal = -pPipeUser->m_CurrentHideObject.GetObjectDir();
-			hideHeight = pPipeUser->m_CurrentHideObject.HasLowCover() ? 0 : HighCoverMaxHeight; // old system: assume low cover when low cover is available, otherwise assume high cover
-		}
+		const float radius = pPipeUser->GetParameters().distanceToCover;
+		const Vec3 hidePos = gAIEnv.pCoverSystem->GetCoverLocation(coverID, radius, &hideHeight, &hideNormal);
+		//hidePos = gAIEnv.pCoverSystem->GetCoverSurface(coverID)->GetCoverOcclusionAt(radius, &hideHeight, &hideNormal);
+		hideHeight = pPipeUser->GetCoverUser()->GetLocationEffectiveHeight();
 
 		if (hideHeight < LowCoverMaxHeight) // only slides into low cover are supported
 		{
@@ -1297,8 +1258,6 @@ EGoalOpResult COPCrysis2Communicate::Execute(CPipeUser* pPipeUser)
 	case AI_REG_COVER:
 		if (CoverID coverID = pPipeUser->GetCoverRegister())
 			request.target = gAIEnv.pCoverSystem->GetCoverLocation(coverID);
-		else
-			request.target = pPipeUser->m_CurrentHideObject.GetObjectPos();
 		break;
 	default:
 		break;

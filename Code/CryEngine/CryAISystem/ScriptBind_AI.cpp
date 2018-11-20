@@ -6859,13 +6859,7 @@ int CScriptBind_AI::GetDirectAnchorPos(IFunctionHandler* pH)
 //-----------------------------------------------------------------------------------------------------------
 int CScriptBind_AI::InvalidateHidespot(IFunctionHandler* pH)
 {
-	GET_ENTITY(1);
-
-	IAIObject* pAI = pEntity->GetAI();
-	CPipeUser* pPipeUser = CastToCPipeUserSafe(pAI);
-
-	if (pPipeUser)
-		pPipeUser->m_CurrentHideObject.Invalidate();
+	AIWarningID("<CScriptBind_AI>", "InvalidateHidespot: Hidespots aren't supported anymore!");
 
 	return pH->EndFunction();
 }
@@ -8213,20 +8207,7 @@ int CScriptBind_AI::GetDistanceAlongPath(IFunctionHandler* pH)
 //====================================================================
 int CScriptBind_AI::IgnoreCurrentHideObject(IFunctionHandler* pH)
 {
-	if (pH->GetParamCount() < 1)
-	{
-		AIWarningID("<IgnoreCurrentHideObject> ", "Too few parameters.");
-		return pH->EndFunction();
-	}
-	GET_ENTITY(1);
-
-	float timeOut = 10.0f;
-	if (pH->GetParamCount() > 1)
-		pH->GetParam(2, timeOut);
-
-	IPipeUser* pPipeUser = CastToIPipeUserSafe(pEntity->GetAI());
-	if (pPipeUser)
-		pPipeUser->IgnoreCurrentHideObject(timeOut);
+	AIWarningID("<CScriptBind_AI>", "IgnoreCurrentHideObject: Hidespots aren't supported anymore!");
 
 	return pH->EndFunction(0);
 }
@@ -8236,22 +8217,7 @@ int CScriptBind_AI::IgnoreCurrentHideObject(IFunctionHandler* pH)
 //====================================================================
 int CScriptBind_AI::GetCurrentHideAnchor(IFunctionHandler* pH)
 {
-	if (pH->GetParamCount() < 1)
-	{
-		AIWarningID("<GetCurrentHideAnchor> ", "Too few parameters.");
-		return pH->EndFunction();
-	}
-
-	GET_ENTITY(1);
-	CPipeUser* pPipeUser = CastToCPipeUserSafe(pEntity->GetAI());
-	if (pPipeUser && pPipeUser->m_CurrentHideObject.GetHideSpotType() == SHideSpotInfo::eHST_ANCHOR)
-	{
-		const char* szName = pPipeUser->m_CurrentHideObject.GetAnchorName();
-		if (szName && szName[0])
-		{
-			return pH->EndFunction(szName);
-		}
-	}
+	AIWarningID("<CScriptBind_AI>", "GetCurrentHideAnchor: Hidespots aren't supported anymore!");
 
 	return pH->EndFunction();
 }
@@ -10210,14 +10176,7 @@ int CScriptBind_AI::GetTacticalPoints(IFunctionHandler* pH)
 			bool bMarkAsHidespot = false;
 			if (pH->GetParamCount() > 3 && pH->GetParam(4, bMarkAsHidespot) && bMarkAsHidespot)
 			{
-				const SHideSpot* pHS = point.GetHidespot();
-				const SHideSpotInfo* pHSInfo = point.GetHidespotInfo();
-				if (pHS && pHSInfo)
-				{
-					CPipeUser* pPipeUser = CastToCPipeUserSafe(pAI);
-					if (pPipeUser)
-						pPipeUser->m_CurrentHideObject.Set(pHS, pHSInfo->pos, pHSInfo->dir);
-				}
+				AIWarningID("<CScriptBind_AI>", "GetTacticalPoints: marking as hide point isn't supported anymore!");
 			}
 		}
 

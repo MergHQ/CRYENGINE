@@ -24,7 +24,6 @@
 #include "AIPlayer.h"
 #include "ObjectContainer.h"
 #include <CryAISystem/IVisionMap.h>
-#include <CryAISystem/HidespotQueryContext.h>
 #include <CryAISystem/IAISystemComponent.h>
 #include "AuditionMap/AuditionMap.h"
 #include "SmartObjects.h"
@@ -67,7 +66,6 @@
 #endif
 
 #include "Sequence/SequenceFlowNodes.h"
-#include "FlyHelpers_TacticalPointLanguageExtender.h"
 
 #include "Navigation/NavigationSystemSchematyc.h"
 #include "Factions/FactionSystemSchematyc.h"
@@ -78,9 +76,6 @@
 
 #include <CryCore/StaticInstanceList.h>
 #include <algorithm>
-
-
-FlyHelpers::CTacticalPointLanguageExtender g_flyHelpersTacticalLanguageExtender;
 
 // Description:
 //	 Helper class for declaring fire command descriptors.
@@ -417,7 +412,6 @@ bool CAISystem::Init()
 		if (!gAIEnv.pTacticalPointSystem)
 		{
 			gAIEnv.pTacticalPointSystem = new CTacticalPointSystem();
-			g_flyHelpersTacticalLanguageExtender.Initialize();
 		}
 	}
 
@@ -588,7 +582,6 @@ void CAISystem::Reload()
 
 	gAIEnv.pFactionMap->Reload();
 	m_globalPerceptionScale.Reload();
-	g_flyHelpersTacticalLanguageExtender.Initialize();
 
 	// Reload the root of the AI system scripts, forcing reload of this and all dependencies
 	if (m_pScriptAI->RunStartupScript(true))
@@ -718,7 +711,6 @@ int CAISystem::GetAlertness(const IAIAlertnessPredicate& alertnessPredicate)
 void CAISystem::ClearForReload(void)
 {
 	m_PipeManager.ClearAllGoalPipes();
-	g_flyHelpersTacticalLanguageExtender.Deinitialize();
 	gAIEnv.pTacticalPointSystem->DestroyAllQueries();
 }
 
@@ -1506,7 +1498,6 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 		if (!gAIEnv.pTacticalPointSystem)
 		{
 			gAIEnv.pTacticalPointSystem = new CTacticalPointSystem();
-			g_flyHelpersTacticalLanguageExtender.Initialize();
 		}
 		if (!gAIEnv.pNavigation)
 		{
@@ -1808,8 +1799,6 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 		gAIEnv.pNavigationSystem->Reset();
 
 	CPathObstacles::ResetOfStaticData();
-
-	m_dynHideObjectManager.Reset();
 
 	m_mapBeacons.clear();
 
@@ -2294,8 +2283,6 @@ void CAISystem::FlushSystem(bool bDeleteAll)
 
 	if (m_pSmartObjectManager)
 		m_pSmartObjectManager->ResetBannedSOs();
-
-	m_dynHideObjectManager.Reset();
 
 	m_mapFaction.clear();
 	m_mapGroups.clear();
@@ -3518,62 +3505,6 @@ void CAISystem::OffsetAllAreas(const Vec3& additionalOffset)
 
 	if (m_pNavigation)
 		m_pNavigation->OffsetAllAreas(additionalOffset);
-}
-
-//====================================================================
-// GetOccupiedHideObjectPositions
-//====================================================================
-void CAISystem::GetOccupiedHideObjectPositions(const CPipeUser* pRequester, std::vector<Vec3>& hideObjectPositions)
-{
-	CCCPOINT(GetOccupiedHideObjectPositions);
-
-	// Iterate over the list of active puppets and collect positions of the valid hidespots in use.
-	hideObjectPositions.clear();
-
-	AIActorSet::const_iterator it = m_enabledAIActorsSet.begin();
-	AIActorSet::const_iterator end = m_enabledAIActorsSet.end();
-
-	for (; it != end; ++it)
-	{
-		CPipeUser* pOther = it->GetAIObject()->CastToCPipeUser();
-		if (!pOther || (pRequester && (pRequester == pOther)))
-			continue;
-
-		// Include the position of each enemy regardless of the validity of the hidepoint itself - seems to get better results
-		hideObjectPositions.push_back(pOther->GetPos());
-
-		if (!pOther->m_CurrentHideObject.IsValid())
-			continue;
-
-		// One reason why it can be important to also add the hidepoint itself is because the AI may not have reached it yet
-		hideObjectPositions.push_back(pOther->m_CurrentHideObject.GetObjectPos());
-	}
-}
-
-// Mrcio: Seriously, we need to get some kind of ID system for HideSpots.
-// God kills a kitten each time he looks at this code.
-bool CAISystem::IsHideSpotOccupied(CPipeUser* pRequester, const Vec3& pos) const
-{
-	AIActorSet::const_iterator it = m_enabledAIActorsSet.begin();
-	AIActorSet::const_iterator end = m_enabledAIActorsSet.end();
-
-	for (; it != end; ++it)
-	{
-		CPipeUser* pOther = it->GetAIObject()->CastToCPipeUser();
-		if (!pOther || (pRequester && (pRequester == pOther)))
-			continue;
-
-		if ((pOther->GetPos() - pos).len2() < 0.5 * 0.5f)
-			return true;
-
-		if (!pOther->m_CurrentHideObject.IsValid())
-			continue;
-
-		if ((pOther->m_CurrentHideObject.GetObjectPos() - pos).len2() < 0.5 * 0.5f)
-			return true;
-	}
-
-	return false;
 }
 
 //
@@ -5367,11 +5298,6 @@ const CAISystem::TDamageRegions& CAISystem::GetDamageRegions() const
 CAILightManager* CAISystem::GetLightManager()
 {
 	return &m_lightManager;
-}
-
-CAIDynHideObjectManager* CAISystem::GetDynHideObjectManager()
-{
-	return &m_dynHideObjectManager;
 }
 
 bool CAISystem::IsRecording(const IAIObject* pTarget, IAIRecordable::e_AIDbgEvent event) const

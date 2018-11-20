@@ -22,12 +22,10 @@ typedef std::vector<Vec3> ListPositions;
 #include <CryCore/Containers/MiniQueue.h>
 #include "AIRadialOcclusion.h"
 #include "AILightManager.h"
-#include "AIDynHideObjectManager.h"
 #include "Shape.h"
 #include "ShapeContainer.h"
 #include "Shape2.h"
 #include "Navigation.h"
-#include "HideSpot.h"
 #include "VisionMap.h"
 #include "Group/Group.h"
 #include "Factions/FactionSystem.h"
@@ -67,7 +65,6 @@ namespace AISignals
 
 class CAIActionManager;
 class ICentralInterestManager;
-class CAIHideObject;
 
 class CScriptBind_AI;
 
@@ -513,7 +510,6 @@ public:
 	//CAISystem/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	CAILightManager*         GetLightManager();
-	CAIDynHideObjectManager* GetDynHideObjectManager();
 
 	bool                     InitSmartObjects();
 
@@ -598,11 +594,6 @@ public:
 	float GetWaterOcclusionValue(const Vec3& targetPos) const;
 
 	bool  CheckVisibilityToBody(CAIActor* pObserver, CAIActor* pBody, float& closestDistSq, IPhysicalEntity* pSkipEnt = 0);
-
-	/// Returns positions of currently occupied hide point objects excluding the requesters hide spot.
-	void GetOccupiedHideObjectPositions(const CPipeUser* pRequester, std::vector<Vec3>& hideObjectPositions);
-
-	bool IsHideSpotOccupied(CPipeUser* pRequester, const Vec3& pos) const;
 
 	void AdjustOmniDirectionalCoverPosition(Vec3& pos, Vec3& dir, float hideRadius, float agentRadius, const Vec3& hideFrom, const bool hideBehind = true);
 
@@ -692,7 +683,6 @@ public:
 	////////////////////////////////////////////////////////////////////
 	//Subsystems
 	CAILightManager         m_lightManager;
-	CAIDynHideObjectManager m_dynHideObjectManager;
 	SAIRecorderDebugContext m_recorderDebugContext;
 	//Subsystems
 	////////////////////////////////////////////////////////////////////
@@ -918,9 +908,6 @@ public:
 	void DebugDrawGroups();
 	void DebugDrawOneGroup(float x, float& y, float& w, float fontSize, short groupID, const ColorB& textColor,
 	                       const ColorB& worldColor, bool drawWorld);
-	void DebugDrawDynamicHideObjects();
-	void DebugDrawMyHideSpot(CAIObject* pAIObj) const;
-	void DebugDrawSelectedHideSpots() const;
 	void DebugDrawCrowdControl();
 	void DebugDrawRadar();
 	void DebugDrawDistanceLUT();

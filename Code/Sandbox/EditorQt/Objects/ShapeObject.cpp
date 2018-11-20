@@ -862,7 +862,7 @@ IMPLEMENT_DYNCREATE(CNavigationAreaObject, CShapeObject)
 #define RAY_DISTANCE 100000.0f
 
 //////////////////////////////////////////////////////////////////////////
-const float CShapeObject::m_defaultZOffset = 0.1f;
+const float CShapeObject::m_defaultZOffset = 0.0f;
 
 //////////////////////////////////////////////////////////////////////////
 CShapeObject::CShapeObject()

@@ -7,7 +7,6 @@
 	#pragma once
 #endif
 
-#include "AIPIDController.h"
 #include <CryMath/Random.h>
 #include <CryAISystem/ITacticalPointSystem.h>
 #include <CrySystem/TimeValue.h>

@@ -6,6 +6,7 @@
 #include "MNMPathfinder.h"
 #include "../MNM/NavMeshQueryManager.h"
 #include "../MNM/NavMeshQueryProcessing.h"
+#include "SmartObjects.h"
 
 #include "Components/Navigation/NavigationComponent.h"
 

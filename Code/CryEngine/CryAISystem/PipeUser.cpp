@@ -94,9 +94,6 @@ CPipeUser::CPipeUser()
 
 	// (MATT) SetName could be called to ensure we're consistent, rather than the code above {2009/02/03}
 
-	m_CurrentHideObject.m_HideSmartObject.pChainedUserEvent = NULL;
-	m_CurrentHideObject.m_HideSmartObject.pChainedObjectEvent = NULL;
-
 	m_callbacksForPipeuser.queuePathRequestFunction = functor(*this, &CPipeUser::RequestPathTo);
 	m_callbacksForPipeuser.checkOnPathfinderStateFunction = functor(*this, &CPipeUser::GetPathfinderState);
 	m_callbacksForPipeuser.getPathFollowerFunction = functor(*this, &CPipeUser::GetPathFollower);
@@ -264,14 +261,11 @@ void CPipeUser::Reset(EObjectResetType type)
 	m_CurrentNodeNavType = IAISystem::NAV_UNSET;
 	m_idLastUsedSmartObject = 0;
 
-	m_CurrentHideObject.m_HideSmartObject.Clear();
 	m_bFirstUpdate = true;
 
 	m_lastLiveTargetPos.zero();
 	m_timeSinceLastLiveTarget = -1.0f;
 	m_spreadFireTime = 0.0f;
-
-	m_recentUnreachableHideObjects.clear();
 
 	m_bPathToFollowIsSpline = false;
 
@@ -406,26 +400,13 @@ bool CPipeUser::GetBranchCondition(QGoal& Goal)
 		}
 		break;
 	case IF_IS_HIDDEN:  // branch if already at hide spot
-		{
-			if (!m_CurrentHideObject.IsValid())
-				return false;
-			Vec3 diff(m_CurrentHideObject.GetLastHidePos() - GetPos());
-			diff.z = 0.f;
-			if (diff.len2() < Goal.params.fValue * Goal.params.fValue)
-				return true;
-		}
+		// Hide object not supported anymore
 		break;
 	case IF_CAN_HIDE: // branch if hide spot was found
-		{
-			if (m_CurrentHideObject.IsValid())
-				return true;
-		}
+		// Hide object not supported anymore
 		break;
 	case IF_CANNOT_HIDE:
-		{
-			if (!m_CurrentHideObject.IsValid())
-				return true;
-		}
+		// Hide object not supported anymore
 		break;
 	case IF_STANCE_IS:  // branch if stance is equal to params.fValue
 		{
@@ -654,16 +635,12 @@ bool CPipeUser::GetBranchCondition(QGoal& Goal)
 	case IF_COVER_NOT_COMPROMISED:  // jumps if the current cover cannot be used for hiding or if the hide spots does not exists.
 		{
 			CCCPOINT(CPipeUser_GetBranchCondition_IF_COVER_COMPROMISED);
-			bool bCompromised = true;
-			if (pAttentionTarget)
-				bCompromised = m_CurrentHideObject.IsCompromised(this, pAttentionTarget->GetPos());
-
-			bool bResult = bCompromised;
+			// Hide object not supported anymore
+			bool bResult = false;
 			if (Goal.params.nValue == IF_COVER_NOT_COMPROMISED)
 				bResult = !bResult;
 
-			if (bResult)
-				return true;
+			return bResult;
 		}
 		break;
 	case IF_COVER_FIRE_ENABLED: // branch if cover firemode is  enabled
@@ -674,20 +651,10 @@ bool CPipeUser::GetBranchCondition(QGoal& Goal)
 		}
 		break;
 	case IF_COVER_SOFT:
-		{
-			bool isEmptyCover = m_CurrentHideObject.IsCoverPathComplete() && m_CurrentHideObject.GetCoverWidth(true) < 0.1f;
-			bool soft = !m_CurrentHideObject.IsObjectCollidable() || isEmptyCover;
-			if (soft)
-				return true;
-		}
+		// Hide object not supported anymore
 		break;
 	case IF_COVER_NOT_SOFT:
-		{
-			bool isEmptyCover = m_CurrentHideObject.IsCoverPathComplete() && m_CurrentHideObject.GetCoverWidth(true) < 0.1f;
-			bool soft = !m_CurrentHideObject.IsObjectCollidable() || isEmptyCover;
-			if (soft)
-				return true;
-		}
+		// Hide object not supported anymore
 		break;
 
 	case IF_LASTOP_FAILED:
@@ -744,8 +711,7 @@ bool CPipeUser::GetBranchCondition(QGoal& Goal)
 		break;
 
 	case IF_ACTIVE_GOALS_HIDE:
-		if (!m_vActiveGoals.empty() || !m_CurrentHideObject.IsValid())
-			return true;
+		// Hide object not supported anymore
 		break;
 
 	default://IF_ACTIVE_GOALS
@@ -801,14 +767,6 @@ void CPipeUser::Update(EUpdateType type)
 
 	if (type == EUpdateType::Full)
 	{
-		if (m_CurrentHideObject.IsValid())
-		{
-			m_CurrentHideObject.Update(this);
-
-			if (pAttentionTarget && m_CurrentHideObject.IsCompromised(this, pAttentionTarget->GetPos()))
-				SetCoverCompromised();
-		}
-
 		// Update some special objects if they have been recently used.
 
 		Vec3 vProbTargetPos = ZERO;
@@ -1197,17 +1155,7 @@ bool CPipeUser::IsCoverCompromised() const
 	{
 		return m_pCoverUser ? m_pCoverUser->IsCompromised() : false;
 	}
-	else
-	{
-		CAIObject* pAttentionTarget = m_refAttentionTarget.GetAIObject();
-		if (!pAttentionTarget)
-			return false;
-
-		if (m_CurrentHideObject.IsValid())
-			return m_CurrentHideObject.IsCompromised(this, pAttentionTarget->GetPos());
-
-		return true;
-	}
+	return true;
 }
 
 //
@@ -2687,14 +2635,6 @@ CAIObject* CPipeUser::GetSpecialAIObject(const char* objName, float range)
 		CAIObject* pAttentionTarget = m_refAttentionTarget.GetAIObject();
 		pObject = pAttentionTarget;
 	}
-	else if (strcmp(objName, "last_hideobject") == 0)
-	{
-		if (m_CurrentHideObject.IsValid())
-		{
-			pObject = GetOrCreateSpecialAIObject(AISPECIAL_LAST_HIDEOBJECT);
-			pObject->SetPos(m_CurrentHideObject.GetObjectPos());
-		}
-	}
 	else if (strcmp(objName, "lookat_target") == 0)
 	{
 		if (m_bLooseAttention && m_refLooseAttentionTarget.IsValid())
@@ -2960,9 +2900,6 @@ CAIObject* CPipeUser::GetOrCreateSpecialAIObject(ESpecialAIObjects type)
 	string name = GetName();
 	switch (type)
 	{
-	case AISPECIAL_LAST_HIDEOBJECT:
-		name += "_*LastHideObj";
-		break;
 	case AISPECIAL_PROBTARGET:
 		name += "_*ProbTgt";
 		break;
@@ -3072,8 +3009,6 @@ void CPipeUser::Serialize(TSerialize ser)
 
 	ser.Value("m_looseAttentionId", m_looseAttentionId);
 
-	m_CurrentHideObject.Serialize(ser);
-
 	ser.Value("m_nPathDecision", m_nPathDecision);
 	ser.Value("m_adjustpath", m_adjustpath);
 	ser.Value("m_IsSteering", m_IsSteering);
@@ -3178,34 +3113,6 @@ void CPipeUser::Serialize(TSerialize ser)
 		}
 	}
 	ser.Value("m_posLookAtSmartObject", m_posLookAtSmartObject);
-
-	ser.BeginGroup("UnreachableHideObjectList");
-	{
-		int count = m_recentUnreachableHideObjects.size();
-		ser.Value("UnreachableHideObjectList_size", count);
-		if (ser.IsReading())
-			m_recentUnreachableHideObjects.clear();
-		TimeOutVec3List::iterator it = m_recentUnreachableHideObjects.begin();
-		float time(0);
-		Vec3 point(0);
-		for (int i = 0; i < count; i++)
-		{
-			char name[32];
-			if (ser.IsWriting())
-			{
-				time = it->first;
-				point = it->second;
-				++it;
-			}
-			cry_sprintf(name, "time_%d", i);
-			ser.Value(name, time);
-			cry_sprintf(name, "point_%d", i);
-			ser.Value(name, point);
-			if (ser.IsReading())
-				m_recentUnreachableHideObjects.push_back(std::make_pair(time, point));
-		}
-		ser.EndGroup();
-	}
 
 	ser.EnumValue("m_eNavSOMethod", m_eNavSOMethod, nSOmNone, nSOmLast);
 	ser.Value("m_idLastUsedSmartObject", m_idLastUsedSmartObject);
@@ -3907,40 +3814,6 @@ void CPipeUser::SetRefPointPos(const Vec3& pos, const Vec3& dir)
 		NotifyListeners(m_pCurrentGoalPipe->GetLastSubpipe(), ePN_RefPointMoved);
 		bSetRefPointPosDirLock = false;
 	}
-}
-
-//
-//---------------------------------------------------------------------------------------------------------------------------
-void CPipeUser::IgnoreCurrentHideObject(float timeOut)
-{
-	const Vec3& pos(m_CurrentHideObject.GetObjectPos());
-
-	// Check if the object is already in the list (should not).
-	TimeOutVec3List::const_iterator end(m_recentUnreachableHideObjects.end());
-	for (TimeOutVec3List::const_iterator it = m_recentUnreachableHideObjects.begin(); it != end; ++it)
-	{
-		if (Distance::Point_PointSq(it->second, pos) < sqr(0.1f))
-			return;
-	}
-
-	// Add the object pos to the list.
-	m_recentUnreachableHideObjects.push_back(FloatVecPair(timeOut, pos));
-
-	while (m_recentUnreachableHideObjects.size() > 5)
-		m_recentUnreachableHideObjects.pop_front();
-}
-
-//
-//---------------------------------------------------------------------------------------------------------------------------
-bool CPipeUser::WasHideObjectRecentlyUnreachable(const Vec3& pos) const
-{
-	TimeOutVec3List::const_iterator end(m_recentUnreachableHideObjects.end());
-	for (TimeOutVec3List::const_iterator it = m_recentUnreachableHideObjects.begin(); it != end; ++it)
-	{
-		if (Distance::Point_PointSq(it->second, pos) < sqr(0.1f))
-			return true;
-	}
-	return false;
 }
 
 //

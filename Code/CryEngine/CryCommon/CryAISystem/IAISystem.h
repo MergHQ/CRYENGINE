@@ -43,7 +43,6 @@ struct ITargetTrackManager;
 struct Sphere;
 struct IAIActionManager;
 struct ISmartObjectManager;
-struct HidespotQueryContext;
 struct IAuditionMap;
 class IVisionMap;
 struct IFactionMap;

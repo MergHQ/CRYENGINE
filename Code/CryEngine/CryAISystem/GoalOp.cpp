@@ -2749,7 +2749,7 @@ EGoalOpResult COPTacticalPos::Execute(CPipeUser* pPipeUser)
 			// Start an async TPS query
 
 			// Store our current hidepos
-			m_vLastHidePos = pPipeUser->m_CurrentHideObject.GetObjectPos();
+			m_vLastHidePos = ZERO; // pPipeUser->m_CurrentHideObject.GetObjectPos();
 
 			// Set up context
 			QueryContext context;
@@ -2808,7 +2808,6 @@ EGoalOpResult COPTacticalPos::Execute(CPipeUser* pPipeUser)
 					assert(point.IsValid());
 
 					// Wrapping old methods...
-					pPipeUser->m_CurrentHideObject.Invalidate();
 					switch (m_nReg)
 					{
 					case AI_REG_REFPOINT:
@@ -2845,44 +2844,22 @@ EGoalOpResult COPTacticalPos::Execute(CPipeUser* pPipeUser)
 						}
 						return eGOR_FAILED;
 					case AI_REG_COVER:
+						if (point.flags & eTPDF_CoverID)
 						{
-							if (point.flags & eTPDF_Hidespot)
-							{
-								assert(!GetAISystem()->IsHideSpotOccupied(pPipeUser, point.vObjPos));
+							assert(!gAIEnv.pCoverSystem->IsCoverOccupied(point.coverID) ||
+								(gAIEnv.pCoverSystem->GetCoverOccupant(point.coverID) == pPipeUser->GetEntityID()));
 
-								SHideSpot hs(SHideSpotInfo::eHST_ANCHOR, point.vObjPos, point.vObjDir);
-								hs.pAnchorObject = gAIEnv.pObjectContainer->GetAIObject(point.aiObjectId);
+							pPipeUser->SetCoverRegister(point.coverID);
 
-								pPipeUser->m_CurrentHideObject.Set(&hs, point.vObjPos, point.vObjDir);
-								Reset(pPipeUser);
-								return eGOR_SUCCEEDED;
-							}
-							else if (point.flags & eTPDF_CoverID)
-							{
-								assert(!gAIEnv.pCoverSystem->IsCoverOccupied(point.coverID) ||
-								       (gAIEnv.pCoverSystem->GetCoverOccupant(point.coverID) == pPipeUser->GetEntityID()));
-
-								pPipeUser->SetCoverRegister(point.coverID);
-
-								Reset(pPipeUser);
-								return eGOR_SUCCEEDED;
-							}
+							Reset(pPipeUser);
+							return eGOR_SUCCEEDED;
 						}
 						return eGOR_FAILED;
-					default:
-						if (point.flags & eTPDF_Mask_AbstractHidespot)
-						{
-							// Wrapping old methods...
-							// This doesn't make us go there, more provides debugging and setup when we arrive.
-
-							// (MATT) I'm having to disable this for now, which might be a mistake, until I can expose it cleanly {2009/07/31}
-							//pPipeUser->m_CurrentHideObject.Set(&(point.hidespot), point.vPos, point.vObjDir);
-						}
 					}
 
 					// Have we chosen the same hidespot again?
-					if (pPipeUser->m_CurrentHideObject.IsValid() && m_vLastHidePos.IsEquivalent(pPipeUser->m_CurrentHideObject.GetObjectPos()))
-						pPipeUser->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnSameHidespotAgain_DEPRECATED()));
+					//if (pPipeUser->m_CurrentHideObject.IsValid() && m_vLastHidePos.IsEquivalent(pPipeUser->m_CurrentHideObject.GetObjectPos()))
+					//	pPipeUser->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnSameHidespotAgain_DEPRECATED()));
 
 					// TODO : (MATT)  {2007/05/23:11:58:45} Hack - Switching urgency in the hide op isn't good.
 					// If it's a short distance to the hidepoint, running generally looks bad, so force to walk
@@ -2947,7 +2924,7 @@ EGoalOpResult COPTacticalPos::Execute(CPipeUser* pPipeUser)
 			else
 			{
 				// Could not reach the point, mark it ignored so that we do not try to pick it again.
-				pPipeUser->IgnoreCurrentHideObject(10.0f);
+				//pPipeUser->IgnoreCurrentHideObject(10.0f);
 
 				Reset(pPipeUser);
 				SendStateSignal(pPipeUser, eTPGOpState_DestinationReached);
@@ -2993,24 +2970,14 @@ void COPTacticalPos::QueryDryUpdate(CPipeUser* pPipeUser)
 			switch (m_nReg)
 			{
 			case AI_REG_COVER:
+				if (point.flags & eTPDF_CoverID)
 				{
-					if (point.flags & eTPDF_Hidespot)
-					{
-						assert(!GetAISystem()->IsHideSpotOccupied(pPipeUser, point.vObjPos));
+					assert(!gAIEnv.pCoverSystem->IsCoverOccupied(point.coverID) ||
+						(gAIEnv.pCoverSystem->GetCoverOccupant(point.coverID) == pPipeUser->GetEntityID()));
 
-						SHideSpot hs(SHideSpotInfo::eHST_ANCHOR, point.vObjPos, point.vObjDir);
-						hs.pAnchorObject = gAIEnv.pObjectContainer->GetAIObject(point.aiObjectId);
-
-						pPipeUser->m_CurrentHideObject.Set(&hs, point.vObjPos, point.vObjDir);
-					}
-					else if (point.flags & eTPDF_CoverID)
-					{
-						assert(!gAIEnv.pCoverSystem->IsCoverOccupied(point.coverID) ||
-						       (gAIEnv.pCoverSystem->GetCoverOccupant(point.coverID) == pPipeUser->GetEntityID()));
-
-						pPipeUser->SetCoverRegister(point.coverID);
-					}
+					pPipeUser->SetCoverRegister(point.coverID);
 				}
+				break;
 			default:
 				break;
 			}

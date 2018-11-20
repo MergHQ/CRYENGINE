@@ -4,6 +4,7 @@
 #include "CentralInterestManager.h"
 #include "PersonalInterestManager.h"
 #include "Puppet.h"
+#include "SmartObjects.h"
 
 // For persistent debugging
 #include <CryGame/IGameFramework.h>
@@ -800,6 +801,17 @@ bool SEntityInterest::Set(EntityId entityId, float fRadius, float fInterest, con
 	}
 
 	return bChanged;
+}
+
+void SEntityInterest::Invalidate()
+{
+	IEntity* pEntity = GetEntity();
+	if (pEntity && gAIEnv.pSmartObjectManager)
+	{
+		gAIEnv.pSmartObjectManager->RemoveSmartObjectState(pEntity, "Registered");
+	}
+	m_entityId = 0;
+	m_sActionName = string();
 }
 
 void SEntityInterest::SetAction(const char* szActionName)

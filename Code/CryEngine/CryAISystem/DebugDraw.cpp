@@ -1738,43 +1738,6 @@ void CAISystem::DebugDrawVegetationCollision()
 }
 
 //====================================================================
-// DebugDrawDynamicHideObjects
-//====================================================================
-void CAISystem::DebugDrawDynamicHideObjects()
-{
-	CRY_PROFILE_FUNCTION(PROFILE_AI);
-
-	float range = static_cast<float>(gAIEnv.CVars.DebugDrawDynamicHideObjectsRange);
-	if (range < 0.1f)
-		return;
-
-	Vec3 cameraPos = GetISystem()->GetViewCamera().GetPosition();
-	Vec3 cameraDir = GetISystem()->GetViewCamera().GetViewdir();
-
-	Vec3 pos = cameraPos + cameraDir * (range / 2);
-	Vec3 size(range / 2, range / 2, range / 2);
-
-	SEntityProximityQuery query;
-	query.box.min = pos - size;
-	query.box.max = pos + size;
-	query.nEntityFlags = (uint32)ENTITY_FLAG_AI_HIDEABLE; // Filter by entity flag.
-
-	CDebugDrawContext dc;
-	gEnv->pEntitySystem->QueryProximity(query);
-	for (int i = 0; i < query.nCount; ++i)
-	{
-		IEntity* pEntity = query.pEntities[i];
-		if (!pEntity) continue;
-
-		AABB bbox;
-		pEntity->GetLocalBounds(bbox);
-		dc->DrawAABB(bbox, pEntity->GetWorldTM(), true, ColorB(255, 0, 0, 128), eBBD_Faceted);
-	}
-
-	m_dynHideObjectManager.DebugDraw();
-}
-
-//====================================================================
 // CheckDistance
 //====================================================================
 static inline bool CheckDistance(const Vec3 pos1, const std::vector<Vec3>* focusPositions, float radius)
@@ -2623,12 +2586,6 @@ void CAISystem::DebugDrawAgent(CAIObject* pAgentObj) const
 		// Debug Draw goal ops.
 		if (gAIEnv.CVars.DrawGoals)
 			pPipeUser->DebugDrawGoals();
-
-		if (gAIEnv.CVars.DebugDrawCover)
-		{
-			if (pPipeUser->m_CurrentHideObject.IsValid())
-				pPipeUser->m_CurrentHideObject.DebugDraw();
-		}
 	}
 
 	// Desired view direction and movement direction are drawn in yellow, actual look and move directions are drawn in blue.
@@ -3240,13 +3197,6 @@ void CAISystem::DebugDrawStatsTarget(const char* pName)
 			pTargetPuppet->m_pFireCmdHandler->DebugDraw();
 		if (pTargetPuppet->m_pFireCmdGrenade)
 			pTargetPuppet->m_pFireCmdGrenade->DebugDraw();
-
-		// draw hide point
-		if (pTargetPipeUser->m_CurrentHideObject.IsValid())
-		{
-			dc->DrawCone(pTargetPipeUser->m_CurrentHideObject.GetObjectPos() + Vec3(0, 0, 5), Vec3(0, 0, -1), .2f, 5.f,
-			             pTargetPipeUser->AllowedToFire() ? fireColor : yellow);
-		}
 	}
 
 	// draw predicted info
@@ -3946,62 +3896,6 @@ void CAISystem::DebugDrawTargetUnit(CAIObject* pAIObj) const
 	dc->DrawLine(posSelf, colorSelf, posSelf + verOffset, colorSelf);
 	dc->DrawLine(posSelf + verOffset, colorSelf, middlePoint, colorMiddle);
 	dc->DrawLine(middlePoint, colorMiddle, posTarget, colorTarget);
-}
-
-//
-//-----------------------------------------------------------------------------------------------------------
-void CAISystem::DebugDrawSelectedHideSpots() const
-{
-	CRY_PROFILE_FUNCTION(PROFILE_AI);
-
-	const CAISystem::AIActorSet& enabledAIActorsSet = GetAISystem()->GetEnabledAIActorSet();
-	for (CAISystem::AIActorSet::const_iterator it = enabledAIActorsSet.begin(), itend = enabledAIActorsSet.end(); it != itend; ++it)
-	{
-		CAIActor* pAIActor = it->GetAIObject();
-		if (!pAIActor)
-			continue;
-
-		float drawDist2 = sqr(static_cast<float>(gAIEnv.CVars.DrawHideSpots));
-		CDebugDrawContext dc;
-
-		if ((dc->GetCameraPos() - pAIActor->GetPhysicsPos()).GetLengthSquared() <= drawDist2)
-		{
-			DebugDrawMyHideSpot(pAIActor);
-		}
-	}
-}
-
-//
-//-----------------------------------------------------------------------------------------------------------
-void CAISystem::DebugDrawMyHideSpot(CAIObject* pAIObj) const
-{
-	CRY_PROFILE_FUNCTION(PROFILE_AI);
-
-	CPipeUser* pPipeUser = pAIObj->CastToCPipeUser();
-	if (!pPipeUser)
-		return;
-
-	if (!pPipeUser->m_CurrentHideObject.IsValid())
-		return;
-
-	CDebugDrawContext dc;
-	dc->DrawCone(pPipeUser->m_CurrentHideObject.GetLastHidePos() + Vec3(0, 0, 5), Vec3(0, 0, -1), .2f, 5.f, ColorB(255, 26, 26));
-
-	Vec3 posSelf = pAIObj->GetPhysicsPos();
-	Vec3 posTarget = pPipeUser->m_CurrentHideObject.GetLastHidePos() + Vec3(0, 0, 5); // ObjectPos()+Vec3(0,0,5);
-	Vec3 verOffset(0, 0, 2);
-	Vec3 middlePoint((posSelf + posTarget) * .5f + Vec3(0, 0, 3));
-
-	ColorB colorSelf(250, 250, 25);
-	ColorB colorTarget(250, 50, 50);
-	ColorB colorMiddle(250, 100, 50);
-
-	pPipeUser->m_CurrentHideObject.DebugDraw();
-
-	dc->DrawLine(posSelf, colorSelf, posSelf + verOffset, colorSelf);
-	dc->DrawLine(posSelf + verOffset, colorSelf, middlePoint, colorMiddle);
-	dc->DrawLine(middlePoint, colorMiddle, posTarget + verOffset, colorMiddle);
-	dc->DrawLine(posTarget + verOffset, colorMiddle, posTarget, colorTarget);
 }
 
 //
@@ -4954,10 +4848,6 @@ void CAISystem::DebugDraw()
 
 	DebugDrawGroups();
 
-	if (gAIEnv.CVars.DrawHideSpots)
-		DebugDrawSelectedHideSpots();
-
-	DebugDrawDynamicHideObjects();
 	DebugDrawAgents();
 	DebugDrawShooting();
 

@@ -27,7 +27,6 @@
 #include <CryMath/Cry_Math.h>
 #include "TacticalPointQueryEnum.h"
 #include "PipeUser.h"
-#include "HideSpot.h"
 
 #include "../Cover/CoverSystem.h"
 #include "PostureManager.h"
@@ -127,10 +126,6 @@ public:
 			m_entityId = that.m_entityId;
 			break;
 
-		case eTPT_HideSpot:
-			m_Hidespot = that.m_Hidespot;
-			break;
-
 		case eTPT_AIObject:
 			m_refObject = that.m_refObject;
 			break;
@@ -154,15 +149,6 @@ public:
 		{
 		case eTPT_None:
 			return false;
-		case eTPT_HideSpot:
-			{
-				if (m_Hidespot.pAnchorObject && (m_Hidespot.pAnchorObject != that.m_Hidespot.pAnchorObject))
-					return false;
-				else if (m_Hidespot.info.type != that.m_Hidespot.info.type)
-					return false;
-				else
-					return ((m_Hidespot.info.pos - that.m_Hidespot.info.pos).len2() < 0.5f * 0.5f);
-			}
 		case eTPT_Point:
 			return ((vPos - that.vPos).len2() < 0.5f * 0.5f);
 		case eTPT_EntityPos:
@@ -180,15 +166,6 @@ public:
 	bool operator!=(const CTacticalPoint& that) const
 	{
 		return !operator==(that);
-	}
-
-	// cppcheck-suppress uninitMemberVar
-	explicit CTacticalPoint(const SHideSpot& hidespot)
-		: eTPType(eTPT_HideSpot)
-		, m_Hidespot(hidespot)
-		, m_entityId(0)
-		, vPos(hidespot.info.pos)
-	{
 	}
 
 	// cppcheck-suppress uninitMemberVar
@@ -226,7 +203,6 @@ public:
 		case eTPT_None:
 		case eTPT_Point:
 		case eTPT_EntityPos:
-		case eTPT_HideSpot:
 		case eTPT_AIObject:
 		case eTPT_CoverID:
 			break;
@@ -240,11 +216,8 @@ public:
 	virtual Vec3                               GetPos() const          { return vPos; }
 	virtual void                               SetPos(Vec3 pos)        { vPos = pos; }
 	virtual ITacticalPoint::ETacticalPointType GetType() const         { return eTPType; }
-	virtual const SHideSpot*                   GetHidespot() const     { return (eTPType == eTPT_HideSpot ? &m_Hidespot : NULL); }
 	virtual tAIObjectID                        GetAIObjectId() const   { return (eTPType == eTPT_AIObject ? m_refObject.GetObjectID() : INVALID_AIOBJECTID); }
 	virtual bool                               IsValid() const         { return eTPType != eTPT_None; }
-
-	const SHideSpotInfo*                       GetHidespotInfo() const { return (eTPType == eTPT_HideSpot ? &(m_Hidespot.info) : NULL); }
 
 	inline CoverID                             GetCoverID() const
 	{
@@ -261,7 +234,6 @@ private:
 	// Type specifying the relevant union member if any
 	ETacticalPointType  eTPType;
 
-	SHideSpot           m_Hidespot;
 	EntityId            m_entityId;
 	CWeakRef<CAIObject> m_refObject;
 
@@ -275,7 +247,6 @@ typedef std::vector<CTacticalPoint> TTacticalPoints;
 class CTacticalPointGenerateResult : public ITacticalPointGenerateResult
 {
 public:
-	virtual bool AddHideSpot(const SHideSpot& hidespot);
 	virtual bool AddPoint(const Vec3& point);
 	virtual bool AddEntity(IEntity* pEntity);
 	virtual bool AddEntityPoint(IEntity* pEntity, const Vec3& point);
