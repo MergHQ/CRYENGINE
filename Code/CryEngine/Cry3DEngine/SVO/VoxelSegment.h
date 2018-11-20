@@ -209,7 +209,7 @@ public:
 
 	CVoxelSegment(class CSvoNode* pNode, bool bDumpToDiskInUse = false, EFileStreamingStatus eStreamingStatus = ecss_Ready, bool bDroppedOnDisk = false);
 	~CVoxelSegment();
-	static int   GetSubSetsNum() { return GetCVars()->e_svoTI_IntegrationMode ? SVoxBrick::MAX_NUM : 1;  }
+	static int   GetSubSetsNum() { return GetCVars()->e_svoTI_IntegrationMode ? SVoxBrick::MAX_NUM : 1; }
 	bool         CheckUpdateBrickRenderData(bool bJustCheck);
 	bool         LoadVoxels(byte* pData, int size);
 	void         SaveVoxels(PodArray<byte>& arrData);
@@ -323,6 +323,9 @@ public:
 	Vec3i                                                m_vStatLightsCheckSumm;
 	CryReadModifyLock                                    m_superMeshLock;
 	std::map<ObjectLayerIdType, SVoxBrick>               m_objLayerMap;
+	std::unique_ptr<PodArray<SObjInfo>>                  m_areaObjects;
+	bool                                                 m_isAreaParent = false;
+	bool                                                 m_isLowLodNode = false;
 };
 
 inline uint GetCurrPassMainFrameID() { return CVoxelSegment::m_currPassMainFrameID; }
@@ -330,4 +333,3 @@ inline uint GetCurrPassMainFrameID() { return CVoxelSegment::m_currPassMainFrame
 	#pragma pack(pop)
 
 #endif
-

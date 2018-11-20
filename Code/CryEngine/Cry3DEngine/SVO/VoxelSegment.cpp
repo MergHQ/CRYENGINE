@@ -2027,7 +2027,8 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 
 							parrObjects->Add(info);
 						}
-						else if (eStreamingStatusParent != ecss_Ready && bUnloadable)
+
+						if (eStreamingStatusParent != ecss_Ready && bUnloadable)
 						{
 							// request streaming of missing meshes
 							if (Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizationPostpone == 2)
@@ -2059,11 +2060,6 @@ void CVoxelSegment::FindTrianglesForVoxelization(PodArray<int>*& rpNodeTrisXYZ)
 	cloudBoxWS.min = m_boxOS.min + m_vSegOrigin;
 	cloudBoxWS.max = m_boxOS.max + m_vSegOrigin;
 
-	PodArray<SObjInfo> arrObjects;
-	bool bThisIsAreaParent, bThisIsLowLodNode;
-
-	CVoxelSegment::CheckCollectObjectsForVoxelization(cloudBoxWS, &arrObjects, bThisIsAreaParent, bThisIsLowLodNode, false);
-
 	m_nodeTrisAllMerged.Reset();
 	m_boxTris.Reset();
 
@@ -2073,7 +2069,7 @@ void CVoxelSegment::FindTrianglesForVoxelization(PodArray<int>*& rpNodeTrisXYZ)
 	//    cloudBoxWS.max += (vCloudSize/kVoxTexMaxDim)/2;
 
 	//if(!m_pParentCloud)
-	if (bThisIsAreaParent || bThisIsLowLodNode)
+	if (m_isAreaParent || m_isLowLodNode)
 	{
 		// get tris from real level geometry
 
@@ -2097,7 +2093,7 @@ void CVoxelSegment::FindTrianglesForVoxelization(PodArray<int>*& rpNodeTrisXYZ)
 			CTerrain* pTerrain = GetTerrain();
 			int S = (int)max(1.f, pTerrain->GetHeightMapUnitSize());
 
-			if (bThisIsLowLodNode)
+			if (m_isLowLodNode)
 				S *= 4;
 
 			int halfStep = S / 2;
@@ -2227,19 +2223,19 @@ void CVoxelSegment::FindTrianglesForVoxelization(PodArray<int>*& rpNodeTrisXYZ)
 		PodArray<SRayHitTriangle> arrTris;
 
 		// sort objects by size
-		if (arrObjects.Count())
+		if (m_areaObjects->Count())
 		{
-			qsort(arrObjects.GetElements(), arrObjects.Count(), sizeof(arrObjects[0]), SObjInfo::Compare);
+			qsort(m_areaObjects->GetElements(), m_areaObjects->Count(), sizeof((*m_areaObjects)[0]), SObjInfo::Compare);
 		}
 
-		for (int d = 0; d < arrObjects.Count(); d++)
+		for (int d = 0; d < m_areaObjects->Count(); d++)
 		{
 			SRayHitInfo nodeHitInfo;
 			nodeHitInfo.bInFirstHit = true;
 			nodeHitInfo.bUseCache = false;
 			nodeHitInfo.bGetVertColorAndTC = true;
 
-			SObjInfo& info = arrObjects[d];
+			SObjInfo& info = (*m_areaObjects)[d];
 
 			nodeHitInfo.nHitTriID = HIT_UNKNOWN;
 			nodeHitInfo.nHitMatID = HIT_UNKNOWN;
@@ -2369,13 +2365,15 @@ void CVoxelSegment::FindTrianglesForVoxelization(PodArray<int>*& rpNodeTrisXYZ)
 			}
 		}
 
+		m_areaObjects = nullptr;
+
 		if (GetSubSetsNum() > 1)
 		{
 			AABB cloudBoxWS_VisAreaEx = cloudBoxWS;
 			cloudBoxWS_VisAreaEx.Expand(Vec3(SVO_OFFSET_VISAREA, SVO_OFFSET_VISAREA, SVO_OFFSET_VISAREA));
 
 			// add visarea shapes
-			for (int v = 0; !bThisIsLowLodNode; v++)
+			for (int v = 0; !m_isLowLodNode; v++)
 			{
 				superMesh.Clear(&arrVertHash[0][0][0]);
 

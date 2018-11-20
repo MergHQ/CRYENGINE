@@ -2784,17 +2784,25 @@ void CSvoNode::CheckAllocateChilds()
 
 		AABB childBox = GetChildBBox(childId);
 
-		if (!IsStreamingActive() && Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizationPostpone && (!m_ppChilds || !m_ppChilds[childId]) && (childBox.GetSize().z == Cry3DEngineBase::GetCVars()->e_svoMaxNodeSize))
-		{
-			bool bThisIsAreaParent, bThisIsLowLodNode;
-			if (!CVoxelSegment::CheckCollectObjectsForVoxelization(childBox, nullptr, bThisIsAreaParent, bThisIsLowLodNode, true))
-			{
-				assert(!CVoxelSegment::m_bExportMode || !"Some meshes are not streamed in, stream cgf must be off for now during EXPORT processs");
+		std::unique_ptr<PodArray<SObjInfo>> areaObjects;
+		bool isAreaParent = false;
+		bool isLowLodNode = false;
 
-				if (Cry3DEngineBase::GetCVars()->e_svoDebug == 7)
-					Cry3DEngineBase::Get3DEngine()->DrawBBox(childBox, Col_Lime);
-				CVoxelSegment::m_postponedCounter++;
-				continue;
+		if (!IsStreamingActive() && (!m_ppChilds || !m_ppChilds[childId]) && (childBox.GetSize().z == Cry3DEngineBase::GetCVars()->e_svoMaxNodeSize))
+		{
+			areaObjects = std::unique_ptr<PodArray<SObjInfo>>(new PodArray<SObjInfo>());
+
+			if (!CVoxelSegment::CheckCollectObjectsForVoxelization(childBox, areaObjects.get(), isAreaParent, isLowLodNode, true))
+			{
+				if (Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizationPostpone)
+				{
+					assert(!CVoxelSegment::m_bExportMode || !"Some meshes are not streamed in, stream cgf must be off for now during EXPORT processs");
+
+					if (Cry3DEngineBase::GetCVars()->e_svoDebug == 7)
+						Cry3DEngineBase::Get3DEngine()->DrawBBox(childBox, Col_Lime);
+					CVoxelSegment::m_postponedCounter++;
+					continue;
+				}
 			}
 		}
 
@@ -2823,6 +2831,10 @@ void CSvoNode::CheckAllocateChilds()
 				m_ppChilds[childId] = new CSvoNode(childBox, this);
 
 				m_ppChilds[childId]->AllocateSegment(CVoxelSegment::m_nextSegmentId++, 0, 0, ecss_NotLoaded, true);
+
+				m_ppChilds[childId]->m_pSeg->m_areaObjects = std::move(areaObjects);
+				m_ppChilds[childId]->m_pSeg->m_isAreaParent = isAreaParent;
+				m_ppChilds[childId]->m_pSeg->m_isLowLodNode = isLowLodNode;
 
 				if (IsStreamingActive() && m_nodeBox.GetSize().x <= SVO_ROOTLESS_PARENT_SIZE)
 				{
