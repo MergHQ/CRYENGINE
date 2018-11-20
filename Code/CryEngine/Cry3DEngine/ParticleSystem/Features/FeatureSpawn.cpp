@@ -1,8 +1,7 @@
 // Copyright 2015-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "ParticleSystem/ParticleSystem.h"
-#include "ParticleSystem/ParticleComponentRuntime.h"
+#include "FeatureCommon.h"
 #include "ParamMod.h"
 
 namespace pfx2

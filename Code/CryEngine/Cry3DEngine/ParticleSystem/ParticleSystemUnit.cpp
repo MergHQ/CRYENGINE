@@ -23,7 +23,7 @@ CRY_TEST_SUITE(CryParticleSystemTest)
   CRY_TEST_ASSERT(cond)
 
 
-#if CRY_PFX2_PARTICLESGROUP_STRIDE == 4
+#if CRY_PFX2_GROUP_STRIDE == 4
 
 	//These tests require the particle system to be running
 	CRY_TEST_FIXTURE(CParticleEffectTests)

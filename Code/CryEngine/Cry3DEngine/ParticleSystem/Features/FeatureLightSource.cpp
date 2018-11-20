@@ -1,7 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "ParticleSystem/ParticleSystem.h"
+#include "FeatureCommon.h"
 #include "ClipVolumeManager.h"
 #include "ParamMod.h"
 
@@ -107,7 +107,6 @@ public:
 			}
 		}
 		runtime.GetEmitter()->AddBounds(bounds);
-		// runtime.AddBounds(bounds);
 	}
 
 private:

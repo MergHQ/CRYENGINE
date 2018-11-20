@@ -4,14 +4,17 @@
 
 #include <CryExtension/ClassWeaver.h>
 #include "ParticleCommon.h"
-#include "ParticleDebug.h"
 #include "ParticleJobManager.h"
 #include "ParticleProfiler.h"
-#include "ParticleEmitter.h"
 #include "ParticleEffect.h"
 
 namespace pfx2
 {
+
+class CParticleEmitter;
+typedef TSmartArray<CParticleEmitter> TParticleEmitters;
+
+
 class CParticleSystem : public Cry3DEngineBase, public IParticleSystem, ISyncMainWithRenderListener
 {
 	CRYINTERFACE_SIMPLE(IParticleSystem)

@@ -55,11 +55,11 @@ void CParticleContainer::Resize(uint32 newSize)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
-	newSize = CRY_PFX2_PARTICLESGROUP_ALIGN(newSize);
+	newSize = CRY_PFX2_GROUP_ALIGN(newSize);
 	if (newSize <= m_capacity)
 		return;
 
-	const size_t newCapacity = CRY_PFX2_PARTICLESGROUP_ALIGN(newSize + min(newSize >> 1, m_capacity));
+	const size_t newCapacity = CRY_PFX2_GROUP_ALIGN(newSize + min(newSize >> 1, m_capacity));
 
 	byte* pNew = ParticleAlloc(newCapacity * m_useData.totalSize);
 	if (m_capacity)
@@ -180,7 +180,7 @@ void CParticleContainer::AddParticles(TConstArray<SSpawnEntry> spawnEntries)
 		return;
 	}
 
-	m_firstSpawnId = m_lastSpawnId = CRY_PFX2_PARTICLESGROUP_ALIGN(m_lastId);
+	m_firstSpawnId = m_lastSpawnId = CRY_PFX2_GROUP_ALIGN(m_lastId);
 
 	Resize(m_firstSpawnId + newCount);
 
@@ -188,7 +188,7 @@ void CParticleContainer::AddParticles(TConstArray<SSpawnEntry> spawnEntries)
 	for (const auto& spawnEntry : spawnEntries)
 	{
 		const uint32 toAddCount = spawnEntry.m_count;
-		const uint32 lastId = CRY_PFX2_PARTICLESGROUP_ALIGN(currentId + toAddCount);
+		const uint32 lastId = CRY_PFX2_GROUP_ALIGN(currentId + toAddCount);
 
 		if (HasData(EPDT_ParentId))
 		{
