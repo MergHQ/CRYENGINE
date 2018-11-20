@@ -3129,7 +3129,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 	CSvoManager::OnDisplayInfo(fTextPosX, fTextPosY, fTextStepY, DISPLAY_INFO_SCALE);
 	#endif
 
-	if (GetCVars()->e_ProcVegetation == 2 || m_supportOfflineProceduralVegetation)
+	if ((GetCVars()->e_ProcVegetation == 2 || m_supportOfflineProceduralVegetation) && GetTerrain())
 	{
 		int objectsNum = 0, maxNodesNum = 0;
 		int nodesNum = GetTerrain()->GetActiveProcObjNodesCount(objectsNum, maxNodesNum);

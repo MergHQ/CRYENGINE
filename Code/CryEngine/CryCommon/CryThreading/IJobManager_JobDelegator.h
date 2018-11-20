@@ -12,6 +12,9 @@
 namespace JobManager {
 namespace Detail {
 
+//This type def is necessary post VS 15.9 due to a bug that would otherwise report "error C2066: cast to function type is illegal"
+using DefaultLambdaFunctionSig = void();
+
 ///////////////////////////////////////////////////////////////////////////////
 // Utilities to extract tuple
 template<typename F, typename Tuple, size_t ... I>
@@ -101,7 +104,7 @@ struct CRY_ALIGN(128) SJobFunction<R (C::*)(T ...), Func>
 //! Job functor for lambdas
 //! Specifies lambda signature at compile time.
 //! On creation, binds all job data with the lambda so that it is callable without any parameter.
-template<typename Signature = void()>
+template<typename Signature = ::JobManager::Detail::DefaultLambdaFunctionSig>
 struct SJobLambdaFunction;
 
 template<typename R, typename ... T>

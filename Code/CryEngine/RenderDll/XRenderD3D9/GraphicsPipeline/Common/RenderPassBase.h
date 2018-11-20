@@ -56,7 +56,7 @@ public:
 		static_assert(ComputeRenderPassIsDirtyDetail::is_tuple_trivial<std::tuple_size<Tuple>::value, 0, Tuple>::value, "All input types must be trivial non-pointer types");
 
 		// Check if input tuple equals the serialized one
-		if (size == m_inputVars.size() * sizeof(decltype(m_inputVars)::value_type) &&
+		if (size == m_inputVars.size() * sizeof(typename decltype(m_inputVars)::value_type) &&
 			*reinterpret_cast<const Tuple*>(m_inputVars.data()) == tuple)
 		{
 			// Nothing changed
