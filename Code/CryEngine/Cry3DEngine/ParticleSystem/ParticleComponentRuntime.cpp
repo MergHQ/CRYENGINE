@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "ParticleComponentRuntime.h"
+#include "ParticleEmitter.h"
 #include "ParticleSystem.h"
 #include "ParticleProfiler.h"
 
@@ -504,7 +505,7 @@ void CParticleComponentRuntime::CalculateBounds()
 	// vector part
 	const floatv scalev = convert<floatv>(sizeScale);
 	const TParticleId lastParticleId = m_container.GetNumParticles();
-	const TParticleGroupId lastParticleGroupId { lastParticleId & ~(CRY_PFX2_PARTICLESGROUP_STRIDE - 1) };
+	const TParticleGroupId lastParticleGroupId { lastParticleId & ~(CRY_PFX2_GROUP_STRIDE - 1) };
 	for (auto particleGroupId : SGroupRange(TParticleGroupId(0), lastParticleGroupId))
 	{
 		const floatv size = sizes.Load(particleGroupId) * scalev;

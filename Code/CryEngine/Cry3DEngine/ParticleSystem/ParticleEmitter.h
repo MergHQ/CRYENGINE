@@ -185,7 +185,5 @@ private:
 	stl::PSyncMultiThread                  m_lock;
 };
 
-typedef TSmartArray<CParticleEmitter> TParticleEmitters;
-
 }
 

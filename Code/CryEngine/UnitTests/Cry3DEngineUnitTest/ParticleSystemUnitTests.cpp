@@ -5,6 +5,7 @@
 #include <../../Cry3DEngine/StdAfx.h>
 
 #include <ParticleSystem/ParticleSystem.h>
+#include <ParticleSystem/ParticleEmitter.h>
 
 
 using namespace pfx2;

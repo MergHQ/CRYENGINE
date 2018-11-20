@@ -5,6 +5,7 @@
 #include "../ParticleFeature.h"
 #include "../ParticleDataTypes.h"
 #include "../ParticleSystem.h"
+#include "../ParticleEmitter.h"
 #include "ParamMod.h"
 
 #include <CrySerialization/IArchive.h>

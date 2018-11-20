@@ -4,6 +4,7 @@
 #include "ParticleRender.h"
 #include "ParticleManager.h"
 #include "ParticleSystem.h"
+#include "ParticleEmitter.h"
 
 namespace pfx2
 {

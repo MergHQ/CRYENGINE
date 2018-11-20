@@ -65,12 +65,12 @@ template<typename T> using TSmartArray = TDynArray<_smart_ptr<T>>;
 ///////////////////////////////////////////////////////////////////////////////
 #ifdef CRY_PFX2_USE_SSE
 
-#define CRY_PFX2_PARTICLESGROUP_STRIDE 4 // can be 8 for AVX or 64 forGPU
+#define CRY_PFX2_GROUP_STRIDE 4 // can be 8 for AVX or 64 forGPU
 
 struct TParticleGroupId
 {
 	TParticleGroupId() {}
-	explicit TParticleGroupId(uint32 i) { id = i; CRY_PFX2_DEBUG_ASSERT(IsAligned(i, CRY_PFX2_PARTICLESGROUP_STRIDE)); }
+	explicit TParticleGroupId(uint32 i) { id = i; CRY_PFX2_DEBUG_ASSERT(IsAligned(i, CRY_PFX2_GROUP_STRIDE)); }
 	friend bool                       operator<(const TParticleGroupId a, const TParticleGroupId b)  { return a.id < b.id; }
 	friend bool                       operator>(const TParticleGroupId a, const TParticleGroupId b)  { return a.id > b.id; }
 	friend bool                       operator<=(const TParticleGroupId a, const TParticleGroupId b) { return a.id <= b.id; }
@@ -88,13 +88,13 @@ private:
 
 #else
 
-#define CRY_PFX2_PARTICLESGROUP_STRIDE 1
+#define CRY_PFX2_GROUP_STRIDE 1
 
 typedef TParticleId TParticleGroupId;
 
 #endif
 
-#define CRY_PFX2_PARTICLESGROUP_ALIGN(id) Align(id, CRY_PFX2_PARTICLESGROUP_STRIDE)
+#define CRY_PFX2_GROUP_ALIGN(id) Align(id, CRY_PFX2_GROUP_STRIDE)
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -147,7 +147,7 @@ struct TIndexRange
 };
 
 typedef TIndexRange<TParticleId> SUpdateRange;
-typedef TIndexRange<TParticleGroupId, CRY_PFX2_PARTICLESGROUP_STRIDE> SGroupRange;
+typedef TIndexRange<TParticleGroupId, CRY_PFX2_GROUP_STRIDE> SGroupRange;
 
 ///////////////////////////////////////////////////////////////////////////////
 template<typename C>

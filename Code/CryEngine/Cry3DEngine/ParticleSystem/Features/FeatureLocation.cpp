@@ -975,7 +975,7 @@ static CubeRootApprox cubeRootApprox(0.125f);
 ILINE void DoElements(int mask, const Vec3v& vv, std::function<void(const Vec3& v)> func)
 {
 #ifdef CRY_PFX2_USE_SSE
-	static_assert(CRY_PFX2_PARTICLESGROUP_STRIDE == 4, "Particle data vectorization != 4");
+	static_assert(CRY_PFX2_GROUP_STRIDE == 4, "Particle data vectorization != 4");
 	if (mask & 1)
 		func(Vec3(get_element<0>(vv.x), get_element<0>(vv.y), get_element<0>(vv.z)));
 	if (mask & 2)
@@ -1108,7 +1108,7 @@ public:
 		Matrix34v toWorld = m_camData.toWorld;
 
 		// Randomly generate positions in current sector; only those not in previous sector spawn as particles
-		for (uint i = CRY_PFX2_PARTICLESGROUP_ALIGN(m_averageData.numParticles); i > 0; i -= CRY_PFX2_PARTICLESGROUP_STRIDE)
+		for (uint i = CRY_PFX2_GROUP_ALIGN(m_averageData.numParticles); i > 0; i -= CRY_PFX2_GROUP_STRIDE)
 		{
 			Vec3v posCam = RandomSector<floatv>(runtime.ChaosV());
 			Vec3v posCamPrev = toPrev * posCam;
