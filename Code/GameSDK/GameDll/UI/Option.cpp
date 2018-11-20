@@ -536,7 +536,7 @@ void CSysSpecAllOption::InitializeFromProfile()
 			if(m_currentProfile)
 			{
 				m_currentProfile->GetAttribute(m_currentName, m_currentValue);
-				pCVar->Set(m_currentValue.c_str());
+				pCVar->SetFromString(m_currentValue.c_str());
 			}
 		}
 	}
