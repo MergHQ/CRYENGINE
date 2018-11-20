@@ -20,7 +20,6 @@
 #include "GoalOp.h"
 
 #include "AICollision.h"
-#include "HideSpot.h"
 #include "SmartObjects.h"
 #include "PathFollower.h"
 #include "FireCommand.h"
@@ -614,16 +613,6 @@ void CPuppet::Update(EUpdateType type)
 
 	if (m_Parameters.m_fAwarenessOfPlayer > 0)
 		CheckAwarenessPlayer();
-
-	// Time out unreachable hidepoints.
-	for (TimeOutVec3List::iterator it = m_recentUnreachableHideObjects.begin(); it != m_recentUnreachableHideObjects.end(); )
-	{
-		it->first -= GetAISystem()->GetFrameDeltaTime();
-		if (it->first < 0.0f)
-			it = m_recentUnreachableHideObjects.erase(it);
-		else
-			++it;
-	}
 
 	UpdateCloakScale();
 
@@ -1421,8 +1410,6 @@ void CPuppet::UpdateLookTarget(CAIObject* pTarget)
 	CCCPOINT(CPuppet_UpdateLookTarget);
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-#ifdef AI_STRIP_OUT_LEGACY_LOOK_TARGET_CODE
-
 	// Essence of this code: look towards the first non-zero look target
 
 	Vec3 positionToLookAt(ZERO);
@@ -1454,263 +1441,6 @@ void CPuppet::UpdateLookTarget(CAIObject* pTarget)
 
 	m_State.vLookTargetPos = positionToLookAt;
 	m_State.vShootTargetPos = positionToLookAt;
-
-	return;
-
-#else
-
-	if (pTarget == NULL)
-	{
-		CPersonalInterestManager* pPIM = GetPersonalInterestManager();
-		if (pPIM && pPIM->IsInterested())
-		{
-			CWeakRef<CAIObject> refInterest = pPIM->GetInterestDummyPoint();
-			CAIObject* pInterest = refInterest.GetAIObject();
-			if (pInterest)
-			{
-				ELookStyle eStyle = pPIM->GetLookingStyle();
-				if (eStyle == LOOKSTYLE_HARD || eStyle == LOOKSTYLE_SOFT)
-				{
-					SetAllowedStrafeDistances(999999.0f, 999999.0f, true);
-				}
-				SetLookStyle(eStyle);
-				pTarget = pInterest;
-			}
-		}
-	}
-
-	// Don't look at targets that aren't at least interesting
-	if (pTarget && m_refAttentionTarget.GetAIObject() == pTarget && GetAttentionTargetThreat() <= AITHREAT_SUSPECT)
-		pTarget = NULL;
-
-	// Update look direction and strafing
-	bool lookAtTarget = false;
-	// If not moving allow to look at target.
-	if (m_State.fDesiredSpeed < 0.01f || m_Path.Empty())
-		lookAtTarget = true;
-
-	// Check if strafing should be allowed.
-	UpdateStrafing();
-	if (m_State.allowStrafing)
-	{
-		lookAtTarget = true;
-	}
-	if (m_bLooseAttention)
-	{
-		CAIObject* pLooseAttentionTarget = m_refLooseAttentionTarget.GetAIObject();
-		if (pLooseAttentionTarget)
-			pTarget = pLooseAttentionTarget;
-	}
-	if (m_refFireTarget.IsValid() && m_fireMode != FIREMODE_OFF)
-		pTarget = GetFireTargetObject();
-
-	Vec3 lookTarget(ZERO);
-
-	if (m_fireMode == FIREMODE_MELEE || m_fireMode == FIREMODE_MELEE_FORCED)
-	{
-		if (pTarget)
-		{
-			lookTarget = pTarget->GetPos();
-			lookTarget.z = GetPos().z;
-			lookAtTarget = true;
-		}
-	}
-
-	bool use3DNav = IsUsing3DNavigation();
-	bool isMoving = m_State.fDesiredSpeed > 0.0f && m_State.curActorTargetPhase == eATP_None && !m_State.vMoveDir.IsZero();
-
-	float distToTarget = FLT_MAX;
-	if (pTarget)
-	{
-		Vec3 dirToTarget = pTarget->GetPos() - GetPos();
-		distToTarget = dirToTarget.GetLength();
-		if (distToTarget > 0.0001f)
-			dirToTarget /= distToTarget;
-
-		// Allow to look at the target when it is almost at the movement direction or very close.
-		if (isMoving)
-		{
-			Vec3 move(m_State.vMoveDir);
-			if (!use3DNav)
-				move.z = 0.0f;
-			move.NormalizeSafe(Vec3Constants<float>::fVec3_Zero);
-			if (distToTarget < 2.5f || move.Dot(dirToTarget) > cosf(DEG2RAD(60)))
-				lookAtTarget = true;
-		}
-	}
-
-	if (lookAtTarget && pTarget)
-	{
-		Vec3 vTargetPos = pTarget->GetPos();
-
-		const float maxDeviation = distToTarget * sinf(DEG2RAD(15));
-
-		if (distToTarget > GetParameters().m_fPassRadius)
-		{
-			lookTarget = vTargetPos;
-			Limit(lookTarget.z, GetPos().z - maxDeviation, GetPos().z + maxDeviation);
-		}
-
-		// Clamp the lookat height when the target is close.
-		int TargetType = pTarget->GetType();
-		if (distToTarget < 1.0f ||
-		    (TargetType == AIOBJECT_DUMMY || TargetType == AIOBJECT_HIDEPOINT || TargetType == AIOBJECT_WAYPOINT ||
-		     TargetType > AIOBJECT_PLAYER) && distToTarget < 5.0f) // anchors & dummy objects
-		{
-			if (!use3DNav)
-			{
-				lookTarget = vTargetPos;
-				Limit(lookTarget.z, GetPos().z - maxDeviation, GetPos().z + maxDeviation);
-			}
-		}
-	}
-	else if (isMoving && (gAIEnv.configuration.eCompatibilityMode != ECCM_CRYSIS2))
-	{
-		// Check if strafing should be allowed.
-
-		// Look forward or to the movement direction
-		Vec3 lookAheadPoint;
-		float lookAheadDist = 2.5f;
-
-		if (m_pPathFollower)
-		{
-			float junk;
-			lookAheadPoint = m_pPathFollower->GetPathPointAhead(lookAheadDist, junk);
-		}
-		else
-		{
-			if (!m_Path.GetPosAlongPath(lookAheadPoint, lookAheadDist, !m_movementAbility.b3DMove, true))
-				lookAheadPoint = GetPhysicsPos();
-		}
-
-		// Since the path height is not guaranteed to follow terrain, do not even try to look up or down.
-		lookTarget = lookAheadPoint;
-
-		// Make sure the lookahead position is far enough so that the catchup logic in the path following
-		// together with look-ik does not get flipped.
-		Vec3 delta = lookTarget - GetPhysicsPos();
-		delta.z = 0.0f;
-		float dist = delta.GetLengthSquared();
-		if (dist < sqr(1.0f))
-		{
-			float u = 1.0f - sqrtf(dist);
-			Vec3 safeDir = GetEntityDir();
-			safeDir.z = 0;
-			delta = delta + (safeDir - delta) * u;
-		}
-		delta.Normalize();
-
-		lookTarget = GetPhysicsPos() + delta * 40.0f;
-		lookTarget.z = GetPos().z;
-	}
-	else
-	{
-		// Disable look target.
-		lookTarget.zero();
-	}
-
-	if (!m_posLookAtSmartObject.IsZero())
-	{
-		// The SO lookat should override the lookat target in case not requesting to fire and not using lookat goalop.
-		if (!m_bLooseAttention && m_fireMode == FIREMODE_OFF)
-		{
-			lookTarget = m_posLookAtSmartObject;
-		}
-	}
-
-	if (!lookTarget.IsZero())
-	{
-		if (m_allowStrafeLookWhileMoving && m_fireMode != FIREMODE_OFF && GetFireTargetObject())
-		{
-			float distSqr = Distance::Point_Point2DSq(GetFireTargetObject()->GetPos(), GetPos());
-			if (!m_closeRangeStrafing)
-			{
-				// Outside the range
-				const float thr = GetParameters().m_PerceptionParams.sightRange * 0.12f;
-				if (distSqr < sqr(thr))
-					m_closeRangeStrafing = true;
-			}
-			if (m_closeRangeStrafing)
-			{
-				// Inside the range
-				m_State.allowStrafing = true;
-				const float thr = GetParameters().m_PerceptionParams.sightRange * 0.12f + 2.0f;
-				if (distSqr > sqr(thr))
-					m_closeRangeStrafing = false;
-			}
-		}
-
-		float distSqr = Distance::Point_Point2DSq(lookTarget, GetPos());
-		if (distSqr < sqr(2.0f))
-		{
-			Vec3 dirToLookTarget = lookTarget - GetPos();
-			dirToLookTarget.GetNormalizedSafe(GetEntityDir());
-			Vec3 fakePos = GetPos() + dirToLookTarget * 2.0f;
-			//Disable setting a look target if you're virtually on top of the point
-			if (distSqr < sqr(0.12f))
-			{
-				lookTarget.zero();
-			}
-			else if (distSqr < sqr(0.7f))
-			{
-				lookTarget = fakePos;
-			}
-			else
-			{
-				float speed = m_State.vMoveDir.GetLength();
-				speed = clamp_tpl(speed, 0.0f, 10.f);
-				float d = sqrtf(distSqr);
-				float u = 1.0f - (d - 0.7f) / (2.0f - 0.7f);
-				lookTarget += speed / 10 * u * (fakePos - lookTarget);
-			}
-		}
-	}
-
-	// for the invehicle gunners
-	if (GetProxy())
-	{
-		const SAIBodyInfo& bodyInfo = GetBodyInfo();
-
-		if (IEntity* pLinkedVehicleEntity = bodyInfo.GetLinkedVehicleEntity())
-		{
-			if (GetProxy()->GetActorIsFallen())
-			{
-				lookTarget.zero();
-			}
-			else
-			{
-				CAIObject* pUnit = (CAIObject*)pLinkedVehicleEntity->GetAI();
-				if (pUnit)
-				{
-					if (pUnit->CastToCAIVehicle())
-					{
-						lookTarget.zero();
-						CAIObject* pLooseAttentionTarget = m_refLooseAttentionTarget.GetAIObject();
-						if (m_bLooseAttention && pLooseAttentionTarget)
-							pTarget = pLooseAttentionTarget;
-						if (pTarget)
-						{
-							lookTarget = pTarget->GetPos();
-							m_State.allowStrafing = false;
-						}
-					}
-				}
-			}
-		}
-	}
-
-	if (GetSubType() != STP_HELICRYSIS2)
-	{
-		float lookTurnSpeed = GetAlertness() > 0 ? m_Parameters.m_lookCombatTurnSpeed : m_Parameters.m_lookIdleTurnSpeed;
-		//If entity is not moving, then do not use look target interpolation, smoothing will come from turn animations.
-		if (lookTurnSpeed <= 0.0f || !isMoving)
-			m_State.vLookTargetPos = lookTarget;
-		else
-			m_State.vLookTargetPos = InterpolateLookOrAimTargetPos(m_State.vLookTargetPos, lookTarget, lookTurnSpeed);
-	}
-
-#endif
-
 }
 
 //===================================================================
@@ -2600,7 +2330,6 @@ void CPuppet::Reset(EObjectResetType type)
 	if (m_pFireCmdGrenade)
 		m_pFireCmdGrenade->Reset();
 
-	m_CurrentHideObject.Set(0, Vec3Constants<float>::fVec3_Zero, Vec3Constants<float>::fVec3_Zero);
 	m_InitialPath.clear();
 
 	SetAvoidedVehicle(NILREF);
@@ -2658,31 +2387,6 @@ void CPuppet::Reset(EObjectResetType type)
 	m_fireDisabled = 0;
 
 	ResetAlertness();
-}
-
-//===================================================================
-// SDynamicHidePositionNotInNavType
-//===================================================================
-struct SDynamicHidePositionNotInNavType
-{
-	SDynamicHidePositionNotInNavType(IAISystem::tNavCapMask mask) : mask(mask) {}
-	bool operator()(const SHideSpot& hs)
-	{
-		if (hs.info.type != SHideSpotInfo::eHST_DYNAMIC)
-			return false;
-		int nBuildingID;
-		IAISystem::ENavigationType navType = gAIEnv.pNavigation->CheckNavigationType(hs.info.pos, nBuildingID, mask);
-		return (navType & mask) == 0;
-	}
-	IAISystem::tNavCapMask mask;
-};
-
-//===================================================================
-// IsSmartObjectHideSpot
-//===================================================================
-inline bool IsSmartObjectHideSpot(const std::pair<float, SHideSpot>& hsPair)
-{
-	return hsPair.second.info.type == SHideSpotInfo::eHST_SMARTOBJECT;
 }
 
 //===================================================================
@@ -4357,8 +4061,6 @@ void CPuppet::AdjustSpeed(CAIObject* pNavTarget, float distance)
 	m_State.fTargetSpeed = chaseSpeed;
 
 }
-
-// const float CSpeedControl::m_CMaxDist = 3.0f;
 
 //===================================================================
 // SAIPotentialTarget::Serialize

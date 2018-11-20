@@ -24,7 +24,6 @@
 #include "PipeUser.h"                                // Big one, but needed for GetProxy and SetBehavior
 #include "TacticalPointSystem/TacticalPointSystem.h" // Big one, but needed for InitQueryContextFromActor
 #include "TargetSelection/TargetTrackManager.h"
-#include "BehaviorTree/BehaviorTreeNodes_Helicopter.h"
 #include <CryString/CryName.h>
 #include <CryGame/IGameFramework.h>
 #include "BehaviorTreeManager.h"

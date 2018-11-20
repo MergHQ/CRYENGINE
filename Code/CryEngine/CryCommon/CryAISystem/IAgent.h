@@ -1035,9 +1035,6 @@ struct IPipeUser
 	virtual void        SetFireMode(EFireMode mode) = 0;
 	virtual EFireMode   GetFireMode() const = 0;
 
-	//! Adds the current hideobject position to ignore list (will be ignored for specified time).
-	virtual void IgnoreCurrentHideObject(float timeOut = 10.0f) = 0;
-
 	//! \returns most probable target position or the target if it is visible.
 	virtual Vec3 GetProbableTargetPosition() = 0;
 

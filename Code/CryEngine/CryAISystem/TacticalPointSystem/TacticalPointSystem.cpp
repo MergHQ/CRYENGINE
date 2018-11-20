@@ -1642,8 +1642,11 @@ bool CTacticalPointSystem::GenerateInternal(TTacticalPointQuery query, const Que
 		{
 			// This isn't quite right I think, because last hidespot doesn't imply you got there
 			CPipeUser* pObjectPipeUser = pObject ? pObject->CastToCPipeUser() : 0;
-			if (pObjectPipeUser)
-				accumulator.push_back(CTacticalPoint(pObjectPipeUser->m_CurrentHideObject.GetObjectPos()));
+			if (CoverID coverId = pObjectPipeUser->GetCoverID())
+			{
+				const float distanceToCover = pObjectPipeUser->GetParameters().distanceToCover;
+				accumulator.push_back(CTacticalPoint(gAIEnv.pCoverSystem->GetCoverLocation(coverId, distanceToCover)));
+			}
 		}
 		break;
 	case eTPQ_G_Objects:
@@ -1768,57 +1771,25 @@ bool CTacticalPointSystem::BoolPropertyInternal(TTacticalPointQuery query, const
 {
 	assert(query & eTPQ_FLAG_PROP_BOOL);
 
-	// Variables we may need
-	const SHideSpot* pHS;
-
 	switch (query)
 	{
 	case eTPQ_PB_CoverSoft:
-		{
-			pHS = point.GetHidespot();
-			result = pHS ? pHS->IsSecondary() : false;
-		}
+		AIWarningID("<CTacticalPointSystem::BoolPropertyInternal> ", "eTPQ_PB_CoverSoft: HideSpots aren't supported anymore");
+		result = false;
 		break;
 
 	case eTPQ_PB_CoverSuperior:
+		AIWarningID("<CTacticalPointSystem::BoolPropertyInternal> ", "eTPQ_PB_CoverSuperior: HideSpots aren't supported anymore");
+		result = false;
+		break;
 	case eTPQ_PB_CoverInferior:
-		{
-			pHS = point.GetHidespot();
-			if (pHS->info.type == SHideSpotInfo::eHST_TRIANGULAR && pHS->pObstacle && pHS->pObstacle->IsCollidable())
-			{
-				result = pHS->pObstacle->fApproxRadius > 0.25f;   // Qualifies as superior
-				if (query == eTPQ_PB_CoverInferior) result = !result;
-			}
-			else if (pHS->info.type == SHideSpotInfo::eHST_ANCHOR)
-			{
-				result = (query != eTPQ_PB_CoverInferior); // I.e. anchors are always superior
-			}
-		}
+		AIWarningID("<CTacticalPointSystem::BoolPropertyInternal> ", "eTPQ_PB_CoverInferior: HideSpots aren't supported anymore");
+		result = false;
 		break;
 
 	case eTPQ_PB_CurrentlyUsedObject:
-		{
-			result = false;
-
-			if (context.pAIActor)
-			{
-				CAIActor* pAIActor = static_cast<CAIActor*>(context.pAIActor);
-				CPipeUser* pPipeUser = pAIActor->CastToCPipeUser();
-				if ((pPipeUser != NULL) && pPipeUser->m_CurrentHideObject.IsValid())
-				{
-					// This isn't quite right I think, because last hidespot doesn't imply you got there
-					pHS = point.GetHidespot();
-					if (pHS)
-					{
-						const ObstacleData* pObst = pHS->pObstacle;
-						if (pObst && IsEquivalent(pPipeUser->m_CurrentHideObject.GetObjectPos(), pObst->vPos))
-						{
-							result = true;
-						}
-					}
-				}
-			}
-		}
+		AIWarningID("<CTacticalPointSystem::BoolPropertyInternal> ", "eTPQ_PB_CurrentlyUsedObject: HideSpots aren't supported anymore");
+		result = false;
 		break;
 
 	case eTPQ_PB_Reachable:
@@ -3602,14 +3573,6 @@ void CTacticalPointSystem::CallbackQuery(SQueryEvaluation& evaluation)
 			a.vPos = b.GetPos();
 			a.flags |= eTPDF_Pos;
 
-			if (const SHideSpotInfo* pInfo = b.GetHidespotInfo())
-			{
-				a.vObjDir = pInfo->dir;
-				a.vObjPos = pInfo->pos;
-				a.flags |= eTPDF_ObjectDir | eTPDF_ObjectPos | eTPDF_Hidespot;
-				a.aiObjectId = b.GetHidespot()->pAnchorObject ? b.GetHidespot()->pAnchorObject->GetAIObjectID() : 0;
-			}
-
 			if (b.GetType() == ITacticalPoint::eTPT_CoverID)
 			{
 				a.coverID = b.GetCoverID();
@@ -4121,14 +4084,6 @@ void CTacticalPointSystem::CanShootSecondRayComplete(const QueuedRayID& rayID, c
 	assert(eval.canShootSecondRayID);
 	eval.canShootSecondRayResult = result ? 0 : 1;
 	eval.canShootSecondRayID = 0;
-}
-
-//----------------------------------------------------------------------------------------------//
-
-bool CTacticalPointGenerateResult::AddHideSpot(const SHideSpot& hidespot)
-{
-	m_Points.push_back(CTacticalPoint(hidespot));
-	return true;
 }
 
 //----------------------------------------------------------------------------------------------//

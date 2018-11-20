@@ -31,7 +31,6 @@
 #include <CrySystem/IConsole.h>
 #include <CryNetwork/ISerialize.h>
 #include "AICollision.h"
-#include "HideSpot.h"
 
 const float CLeaderAction_Attack::m_CSearchDistance = 30.f;
 

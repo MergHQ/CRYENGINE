@@ -23,8 +23,6 @@ enum EJumpAnimType
 };
 
 struct IPipeUser;
-struct SHideSpot;
-struct SHideSpotInfo;
 struct ITacticalPointResultsReceiver;
 
 enum type_invalid_ticket { INVALID_TICKET = 0 };
@@ -138,7 +136,7 @@ struct ITacticalPoint
 	enum ETacticalPointType
 	{
 		eTPT_None = 0,
-		eTPT_HideSpot,
+		eTPT_Unused,
 		eTPT_Point,
 		eTPT_EntityPos,
 		eTPT_AIObject,
@@ -150,7 +148,6 @@ struct ITacticalPoint
 	virtual Vec3                               GetPos() const = 0;
 	virtual void                               SetPos(Vec3 pos) = 0;
 	virtual ITacticalPoint::ETacticalPointType GetType() const = 0;
-	virtual const SHideSpot*                   GetHidespot() const = 0;
 	virtual tAIObjectID                        GetAIObjectId() const = 0;
 	virtual bool                               IsValid() const = 0;
 	// </interfuscator:shuffle>
@@ -164,7 +161,6 @@ enum ETacticalPointDataFlags
 	eTPDF_EntityId  = 1 << 1,
 	eTPDF_ObjectPos = 1 << 2,
 	eTPDF_ObjectDir = 1 << 3,
-	eTPDF_Hidespot  = 1 << 4,
 	eTPDF_AIObject  = 1 << 5,
 	eTPDF_CoverID   = 1 << 6,
 };
@@ -173,14 +169,6 @@ enum ETacticalPointQueryFlags
 {
 	eTPQF_None        = 0,
 	eTPQF_LockResults = 1 << 0,                         //!< This can be expensive, so use with care.
-};
-
-//! Convenient masks defining commonly-used classes of point.
-enum
-{
-	eTPDF_Mask_AbstractPoint    = eTPDF_Pos,
-	eTPDF_Mask_AbstractHidespot = eTPDF_Pos | eTPDF_ObjectDir,
-	eTPDF_Mask_LegacyHidespot   = eTPDF_Pos | eTPDF_ObjectDir | eTPDF_Hidespot,
 };
 
 //! Left just as a struct.
@@ -205,10 +193,6 @@ struct STacticalPointResult
 	//! E.g.: Anchor direction, direction from hide point towards cover.
 	Vec3 vObjDir;
 
-	// This can't be exposed here {2009/07/31}.
-	// If eTPDF_Hidespot set:    Legacy hidespot structure.
-	// SHideSpot hidespot;
-
 	//! If eTPDF_AIObject set: ID of AI object from which the point is derived.
 	//! E.g.: Anchor direction, direction from hide point towards cover.
 	tAIObjectID aiObjectId;
@@ -225,7 +209,6 @@ struct ITacticalPointGenerateResult
 {
 	// <interfuscator:shuffle>
 	virtual ~ITacticalPointGenerateResult() {}
-	virtual bool AddHideSpot(const SHideSpot& hidespot) = 0;
 	virtual bool AddPoint(const Vec3& point) = 0;
 	virtual bool AddEntity(IEntity* pEntity) = 0;
 	virtual bool AddEntityPoint(IEntity* pEntity, const Vec3& point) = 0;
