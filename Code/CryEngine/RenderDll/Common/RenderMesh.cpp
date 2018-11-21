@@ -1413,12 +1413,16 @@ namespace
 
 void CRenderMesh::CreateExtraBoneMappingBuffers(struct SMeshBoneMapping_uint16 *pExtraBoneMapping, bool bDoRemapping)
 {
-	m_extraBonesBuffer.Release();
-	if (!bDoRemapping) m_arrRemapTable.clear();
+	CRY_ASSERT(!gRenDev->m_pRT->IsRenderThread());
+	const int threadId = gRenDev->GetMainThreadID();
+
+	if (!bDoRemapping)
+		m_arrRemapTable.clear();
 
 	std::vector<SVF_W4B_I4S> pExtraBones;
 
-	if (pExtraBoneMapping && m_extraBonesBuffer.IsNullBuffer() && m_nVerts)
+	// Update or remap, always changes the data
+	if (pExtraBoneMapping && m_nVerts)
 	{
 		if (m_nVerts == m_arrOriginalBoneIds.size())
 		{
@@ -1452,18 +1456,20 @@ void CRenderMesh::CreateExtraBoneMappingBuffers(struct SMeshBoneMapping_uint16 *
 		}
 
 		m_nFlags |= FRM_SKINNED_EIGHT_WEIGHTS;
-		m_extraBonesBuffer.Create(pExtraBones.size(), sizeof(SVF_W4B_I4S), DXGI_FORMAT_UNKNOWN, CDeviceObjectFactory::USAGE_STRUCTURED | CDeviceObjectFactory::BIND_SHADER_RESOURCE, &pExtraBones[0]);
 		m_arrRemapTable.clear(); // remap only once (i.e., in case remapping-table has changed)
+
+		m_pExtraBoneMappingRemapped[threadId] = pExtraBones;
 	}
-	else
+	// Othwerise a change is only triggered when adding or removing a mapping
+	else if (m_nFlags & FRM_SKINNED_EIGHT_WEIGHTS)
 	{
 		// dummy buffer with no contents: there is no shader permutation, so we need to set a the resource
 		// even if it's branched away (not all texture fetch instruction can be omitted and the fetch might
 		// happen anyway)
 		m_nFlags &= ~FRM_SKINNED_EIGHT_WEIGHTS;
-		m_extraBonesBuffer.Create(0, sizeof(SVF_W4B_I4S), DXGI_FORMAT_UNKNOWN, CDeviceObjectFactory::USAGE_STRUCTURED | CDeviceObjectFactory::BIND_SHADER_RESOURCE, nullptr);
-	}
 
+		m_pExtraBoneMappingRemapped[threadId] = pExtraBones;
+	}
 }
 
 void CRenderMesh::SetSkinningDataCharacter(CMesh& mesh, uint32 flags, struct SMeshBoneMapping_uint16 *pBoneMapping, struct SMeshBoneMapping_uint16 *pExtraBoneMapping)
@@ -1495,10 +1501,12 @@ void CRenderMesh::SetSkinningDataCharacter(CMesh& mesh, uint32 flags, struct SMe
 		}
 	}
 
-	UnlockVB(VSF_HWSKIN_INFO);
-
+	// Update bone-rmeapping inside the VSF_HWSKIN_INFO lock to prevent data-races
 	CreateExtraBoneMappingBuffers(pExtraBoneMapping);
 
+	UnlockVB(VSF_HWSKIN_INFO);
+
+	// Backup for next iteration referencing the old bone-mappings
 	if (pExtraBoneMapping)
 	{
 		m_pExtraBoneMapping = reinterpret_cast<SMeshBoneMapping_uint16*>(AllocateMeshDataUnpooled(sizeof(SMeshBoneMapping_uint16) * m_nVerts));
@@ -1507,7 +1515,6 @@ void CRenderMesh::SetSkinningDataCharacter(CMesh& mesh, uint32 flags, struct SMe
 	}
 
 	ComputeSkinningCreateBindPoseAndMorphBuffers(mesh);
-
 }
 
 
@@ -2587,6 +2594,9 @@ bool CRenderMesh::RT_CheckUpdate(CRenderMesh *pVContainer, InputLayoutHandle eVF
 		pVContainer->m_CreatedBoneIndices.erase(createdBoneIndicesIt, pVContainer->m_CreatedBoneIndices.end());
 	}
 
+	const bool bIndUpdateNeeded = (m_IBStream.m_pUpdateData != NULL) && (m_IBStream.m_nFrameRequest > m_IBStream.m_nFrameUpdate);
+	const bool bBoneUpdateNeeded = (pVContainer->m_VBStream[VSF_HWSKIN_INFO]->m_pUpdateData != NULL) && (pVContainer->m_VBStream[VSF_HWSKIN_INFO]->m_nFrameRequest > pVContainer->m_VBStream[VSF_HWSKIN_INFO]->m_nFrameUpdate);
+
 	PrefetchLine(pVContainer->m_VBStream, 0);
 	SMeshStream* pMS = pVContainer->GetVertexStream(VSF_GENERAL, 0);
 
@@ -2664,11 +2674,10 @@ bool CRenderMesh::RT_CheckUpdate(CRenderMesh *pVContainer, InputLayoutHandle eVF
 	}//if (m_pVertexContainer || m_nVerts > 2)
 
 	m_IBStream.m_nFrameAccess = nFrame;
-	const bool bIndUpdateNeeded = (m_IBStream.m_pUpdateData != NULL) && (m_IBStream.m_nFrameRequest > m_IBStream.m_nFrameUpdate);
 	if (bIndUpdateNeeded)
 	{
 		PROFILE_FRAME(Mesh_CheckUpdate_UpdateInds);
-		if (!(pVContainer->m_IBStream.m_nLockFlags & FSL_WRITE))
+		if (!(m_IBStream.m_nLockFlags & FSL_WRITE))
 		{
 			if (!UpdateVidIndices(m_IBStream))
 			{
@@ -2677,7 +2686,7 @@ bool CRenderMesh::RT_CheckUpdate(CRenderMesh *pVContainer, InputLayoutHandle eVF
 			}
 			m_IBStream.m_nFrameUpdate = nFrame;
 		}
-		else if (pVContainer->m_IBStream.m_nID == ~0u)
+		else if (m_IBStream.m_nID == ~0u)
 			return false;
 	}
 
@@ -2686,8 +2695,7 @@ bool CRenderMesh::RT_CheckUpdate(CRenderMesh *pVContainer, InputLayoutHandle eVF
 	if ((bTessellation && m_adjBuffer.GetElementCount() == 0)       // if needed and not built already
 		|| (bIndUpdateNeeded && m_adjBuffer.GetElementCount() > 0)) // if already built but needs update
 	{
-		if (!(pVContainer->m_IBStream.m_nLockFlags & FSL_WRITE)
-			&& (pVContainer->_HasVBStream(VSF_NORMALS)))
+		if (!(m_IBStream.m_nLockFlags & FSL_WRITE) && pVContainer->_HasVBStream(VSF_NORMALS))
 		{
 			if (m_eVF == EDefaultInputLayouts::P3S_C4B_T2S)
 			{
@@ -2700,6 +2708,19 @@ bool CRenderMesh::RT_CheckUpdate(CRenderMesh *pVContainer, InputLayoutHandle eVF
 		}
 	}
 #endif
+
+	if (bBoneUpdateNeeded)
+	{
+		if (pVContainer->_HasVBStream(VSF_HWSKIN_INFO) && !(pVContainer->m_VBStream[VSF_HWSKIN_INFO]->m_nLockFlags & FSL_WRITE))
+		{
+			std::vector<SVF_W4B_I4S>& pExtraBones = m_pExtraBoneMappingRemapped[gRenDev->GetRenderThreadID()];
+
+			if (size_t size = pExtraBones.size())
+				m_extraBonesBuffer.Create(size, sizeof(SVF_W4B_I4S), DXGI_FORMAT_UNKNOWN, CDeviceObjectFactory::USAGE_STRUCTURED | CDeviceObjectFactory::BIND_SHADER_RESOURCE, &pExtraBones[0]);
+			else
+				m_extraBonesBuffer.Create(size, sizeof(SVF_W4B_I4S), DXGI_FORMAT_UNKNOWN, CDeviceObjectFactory::USAGE_STRUCTURED | CDeviceObjectFactory::BIND_SHADER_RESOURCE, nullptr);
+		}
+	}
 
 	return true;
 }
