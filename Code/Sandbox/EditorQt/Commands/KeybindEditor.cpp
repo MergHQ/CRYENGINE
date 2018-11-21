@@ -707,8 +707,7 @@ CKeybindEditor::CKeybindEditor(QWidget* parent)
 	QDeepFilterProxyModel::BehaviorFlags behavior = QDeepFilterProxyModel::AcceptIfChildMatches | QDeepFilterProxyModel::AcceptIfParentMatches;
 	QDeepFilterProxyModel* proxy = new QDeepFilterProxyModel(behavior);
 	proxy->setSourceModel(m_model);
-	proxy->setFilterKeyColumn(1);
-	proxy->setFilterRole((int)CommandModel::Roles::SearchRole);
+	proxy->setFilterKeyColumn(-1);
 
 	QSearchBox* searchBox = new QSearchBox();
 	searchBox->SetModel(proxy);
