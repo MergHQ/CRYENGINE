@@ -150,22 +150,22 @@ REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::SetFastRotateAngle, t
 REGISTER_EDITOR_UI_COMMAND_DESC(tools, set_fast_rotate_angle, "Customize Fast Rotate Angle...", "", "", false)
 REGISTER_COMMAND_REMAPPING(ui_action, actionRotate_Angle, tools, set_fast_rotate_angle)
 
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::EnableXAxisConstraint, tools, enable_x_axis_contraint,
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::EnableXAxisConstraint, tools, enable_x_axis_constraint,
                                    CCommandDescription("Sets X axis transform constraint"));
-REGISTER_EDITOR_UI_COMMAND_DESC(tools, enable_x_axis_contraint, "X Axis Constraint", "", "icons:Navigation/Axis_X.ico", true)
-REGISTER_COMMAND_REMAPPING(ui_action, actionLock_X_Axis, tools, enable_x_axis_contraint)
+REGISTER_EDITOR_UI_COMMAND_DESC(tools, enable_x_axis_constraint, "X Axis Constraint", "", "icons:Navigation/Axis_X.ico", true)
+REGISTER_COMMAND_REMAPPING(ui_action, actionLock_X_Axis, tools, enable_x_axis_constraint)
 
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::EnableYAxisConstraint, tools, enable_y_axis_contraint,
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::EnableYAxisConstraint, tools, enable_y_axis_constraint,
                                    CCommandDescription("Sets Y axis transform constraint"));
-REGISTER_EDITOR_UI_COMMAND_DESC(tools, enable_y_axis_contraint, "Y Axis Constraint", "", "icons:Navigation/Axis_Y.ico", true)
-REGISTER_COMMAND_REMAPPING(ui_action, actionLock_Y_Axis, tools, enable_y_axis_contraint)
+REGISTER_EDITOR_UI_COMMAND_DESC(tools, enable_y_axis_constraint, "Y Axis Constraint", "", "icons:Navigation/Axis_Y.ico", true)
+REGISTER_COMMAND_REMAPPING(ui_action, actionLock_Y_Axis, tools, enable_y_axis_constraint)
 
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::EnableZAxisConstraint, tools, enable_z_axis_contraint,
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::EnableZAxisConstraint, tools, enable_z_axis_constraint,
                                    CCommandDescription("Sets Z axis transform constraint"));
-REGISTER_EDITOR_UI_COMMAND_DESC(tools, enable_z_axis_contraint, "Z Axis Constraint", "", "icons:Navigation/Axis_Z.ico", true)
-REGISTER_COMMAND_REMAPPING(ui_action, actionLock_Z_Axis, tools, enable_z_axis_contraint)
+REGISTER_EDITOR_UI_COMMAND_DESC(tools, enable_z_axis_constraint, "Z Axis Constraint", "", "icons:Navigation/Axis_Z.ico", true)
+REGISTER_COMMAND_REMAPPING(ui_action, actionLock_Z_Axis, tools, enable_z_axis_constraint)
 
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::EnableXYAxisConstraint, tools, enable_xy_axis_contraint,
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::EnableXYAxisConstraint, tools, enable_xy_axis_constraint,
                                    CCommandDescription("Sets XY axis transform constraint"));
-REGISTER_EDITOR_UI_COMMAND_DESC(tools, enable_xy_axis_contraint, "XY Axis Constraint", "", "icons:Navigation/Axis_XY.ico", true)
-REGISTER_COMMAND_REMAPPING(ui_action, actionLock_XY_Axis, tools, enable_xy_axis_contraint)
+REGISTER_EDITOR_UI_COMMAND_DESC(tools, enable_xy_axis_constraint, "XY Axis Constraint", "", "icons:Navigation/Axis_XY.ico", true)
+REGISTER_COMMAND_REMAPPING(ui_action, actionLock_XY_Axis, tools, enable_xy_axis_constraint)

@@ -86,10 +86,10 @@ void CLevelEditorSharedState::UpdateCoordSystemActions()
 void CLevelEditorSharedState::UpdateAxisConstraintActions()
 {
 	ICommandManager* pCommandManager = GetIEditor()->GetICommandManager();
-	pCommandManager->SetChecked("tools.enable_x_axis_contraint", GetAxisConstraint() == Axis::X);
-	pCommandManager->SetChecked("tools.enable_y_axis_contraint", GetAxisConstraint() == Axis::Y);
-	pCommandManager->SetChecked("tools.enable_z_axis_contraint", GetAxisConstraint() == Axis::Z);
-	pCommandManager->SetChecked("tools.enable_xy_axis_contraint", GetAxisConstraint() == Axis::XY);
+	pCommandManager->SetChecked("tools.enable_x_axis_constraint", GetAxisConstraint() == Axis::X);
+	pCommandManager->SetChecked("tools.enable_y_axis_constraint", GetAxisConstraint() == Axis::Y);
+	pCommandManager->SetChecked("tools.enable_z_axis_constraint", GetAxisConstraint() == Axis::Z);
+	pCommandManager->SetChecked("tools.enable_xy_axis_constraint", GetAxisConstraint() == Axis::XY);
 }
 
 void CLevelEditorSharedState::UpdateEditModeActions()
