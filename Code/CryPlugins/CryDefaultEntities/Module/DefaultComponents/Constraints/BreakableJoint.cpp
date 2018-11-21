@@ -50,7 +50,7 @@ namespace Cry
 			desc.AddMember(&CBreakableJointComponent::SDynConstraint::m_maxAngle, 'cmax', "ConstrMaxA", "Max Angle", nullptr, 0.0_degrees);
 			desc.AddMember(&CBreakableJointComponent::SDynConstraint::m_maxForce, 'clim', "ConstrLim", "Force Limit", "Bend torque limit for breaking the dynamic constraint", 0.0f);
 			desc.AddMember(&CBreakableJointComponent::SDynConstraint::m_noColl, 'ccol', "ConstrNoColl", "Ignore Collisions", "Ignore collisions between the connected parts", false);
-			desc.AddMember(&CBreakableJointComponent::SDynConstraint::m_damping, 'cdmp', "ConstrDamping", "Damping", "Contraint-specific damping", 0.0f);
+			desc.AddMember(&CBreakableJointComponent::SDynConstraint::m_damping, 'cdmp', "ConstrDamping", "Damping", "Constraint-specific damping", 0.0f);
 		}
 
 		static void ReflectType(Schematyc::CTypeDesc<CBreakableJointComponent::SBrokenSignal>& desc)
