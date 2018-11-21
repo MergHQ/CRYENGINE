@@ -572,14 +572,17 @@ public:
   CryCriticalSection m_getTrisForPositionLock;
 #endif
 
+	SMeshBoneMapping_uint16* m_pExtraBoneMapping; //!< 8 weight skinning - complementary data to 4 weight skinning: weights and boneIds for 4-7; i.e., cpu buffer
+	std::shared_ptr<compute_skinning::IPerMeshDataSupply> m_computeSkinningDataSupply;
+	uint32 m_nMorphs;
+
+	//
+	std::vector<SVF_W4B_I4S> m_pExtraBoneMappingRemapped[RT_COMMAND_BUF_COUNT];
+	CGpuBuffer m_extraBonesBuffer;                //!< 8 weight skinning - gpu buffer for vertex skinning
+
 #ifdef MESH_TESSELLATION_RENDERER
 	CGpuBuffer m_adjBuffer;                // buffer containing adjacency information to fix displacement seams
 #endif
-
-	SMeshBoneMapping_uint16* m_pExtraBoneMapping; //!< 8 weight skinning - complementary data to 4 weight skinning: weights and boneIds for 4-7; i.e., cpu buffer
-	CGpuBuffer m_extraBonesBuffer;                //!< 8 weight skinning - gpu buffer for vertex skinning
-	std::shared_ptr<compute_skinning::IPerMeshDataSupply> m_computeSkinningDataSupply;
-	uint32 m_nMorphs;
 
 	void ComputeSkinningCreateSkinningBuffers(uint32 guid, const SVF_W4B_I4S* pBoneMapping, const SMeshBoneMapping_uint16* pExtraBoneMapping);
 	void ComputeSkinningCreateBindPoseAndMorphBuffers(CMesh& mesh);
