@@ -206,7 +206,7 @@ bool CAssetType::Create(const char* szFilepath, const void* pTypeSpecificParamet
 		return false;
 	}
 
-	CAssetMetadata metadata(*this, adjustedFilepath, AssetLoader::GetAssetName(szFilepath));
+	CAssetMetadata metadata(*this, adjustedFilepath, AssetLoader::GetAssetName(adjustedFilepath));
 	if (!OnCreate(metadata, pTypeSpecificParameter))
 	{
 		return false;
