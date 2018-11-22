@@ -14,6 +14,7 @@ namespace Cry
 			virtual const INode& GetRootNode() const = 0;
 			virtual void         RegisterListener(ITreeListener* pListenerToRegister) = 0;
 			virtual void         UnregisterListener(ITreeListener* pListenerToUnregister) = 0;
+			virtual void         RemoveNode(const INode& nodeToRemove) = 0;
 
 		protected:
 

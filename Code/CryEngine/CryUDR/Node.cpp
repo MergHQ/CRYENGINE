@@ -196,6 +196,29 @@ namespace Cry
 			}
 		}
 
+		CNode* CNode::GetParentWritable() const
+		{
+			return m_pParent;
+		}
+
+		CNode* CNode::FindNodeByINode(const INode& nodeToSearchFor)
+		{
+			if (&nodeToSearchFor == this)
+			{
+				return this;
+			}
+
+			for (const std::unique_ptr<CNode>& pChild : m_children)
+			{
+				if (CNode* pNode = pChild->FindNodeByINode(nodeToSearchFor))
+				{
+					return pNode;
+				}
+			}
+
+			return nullptr;
+		}
+
 		void CNode::RemoveChildren()
 		{
 			for (const std::unique_ptr<CNode>& pChild : m_children)

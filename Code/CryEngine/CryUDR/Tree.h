@@ -19,6 +19,7 @@ namespace Cry
 			virtual const CNode&        GetRootNode() const override;
 			virtual void                RegisterListener(ITreeListener* pListenerToRegister) override;
 			virtual void                UnregisterListener(ITreeListener* pListenerToUnregister) override;
+			virtual void                RemoveNode(const INode& nodeToRemove) override;
 			// ~ITree
 
 			CNode&                      GetRootNodeWritable();

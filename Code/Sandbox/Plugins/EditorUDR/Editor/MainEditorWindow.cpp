@@ -18,6 +18,7 @@
 #include <QSplitter>
 #include <QMessageBox>
 #include <QFontMetrics>
+#include <QKeyEvent>
 
 #include <QtUtil.h>
 
@@ -217,8 +218,9 @@ class CUDRTreeView: public QAdvancedTreeView, public IEditorNotifyListener, publ
 {
 public:
 
-	explicit CUDRTreeView(QWidget* pParent)
+	explicit CUDRTreeView(QWidget* pParent, const QComboBox* pComboBoxWithSelectedTree)
 		: QAdvancedTreeView(QAdvancedTreeView::Behavior(QAdvancedTreeView::None), pParent)
+		, m_pComboBoxWithSelectedTree(pComboBoxWithSelectedTree)
 	{
 		setSelectionMode(QAbstractItemView::ExtendedSelection);
 
@@ -234,6 +236,37 @@ public:
 		GetIEditor()->UnregisterNotifyListener(this);
 		gEnv->pGameFramework->UnregisterListener(this);
 	}
+
+protected:
+
+	// QTreeView
+	virtual void keyPressEvent(QKeyEvent *event) override
+	{
+		if (event->key() == Qt::Key_Delete && event->type() == QEvent::KeyPress)
+		{
+			// delete all currently selected nodes
+			QModelIndexList indexList = selectedIndexes();
+			if (!indexList.empty())
+			{
+				std::set<const Cry::UDR::INode*> selectedNodes;	// using a set<>, since the indexList seems to hold duplicated entries (Qt bug?)
+				for (int i = 0; i < indexList.size(); i++)
+				{
+					selectedNodes.insert(static_cast<const Cry::UDR::INode*>(indexList.at(i).internalPointer()));
+				}
+
+				if (QMessageBox::warning(this, "Delete nodes", stack_string().Format("Delete %i nodes?", (int)selectedNodes.size()).c_str(), QMessageBox::StandardButtons(QMessageBox::Yes | QMessageBox::Cancel)) == QMessageBox::Yes)
+				{
+					for (const Cry::UDR::INode* pNodeToDelete : selectedNodes)
+					{
+						gEnv->pUDR->GetHub().GetTreeManager().GetTree((Cry::UDR::ITreeManager::ETreeIndex)m_pComboBoxWithSelectedTree->currentIndex()).RemoveNode(*pNodeToDelete);
+					}
+				}
+				return;
+			}
+		}
+		QTreeView::keyPressEvent(event);
+	}
+	// ~QTreeView
 
 private:
 
@@ -270,6 +303,10 @@ private:
 			pNode->DrawRenderPrimitives(true);
 		}
 	}
+
+private:
+
+	const QComboBox* m_pComboBoxWithSelectedTree;	// for figuring out which tree (live/deserialized) is currently selected
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -350,7 +387,7 @@ CMainEditorWindow::CMainEditorWindow()
 	m_pButtonClearCurrentTree = new QPushButton(this);
 	m_pButtonClearCurrentTree->setText("Clear tree");
 
-	m_pTreeView = new                 CUDRTreeView(this);
+	m_pTreeView = new                 CUDRTreeView(this, m_pComboBoxTreeToShow);
 	m_pTreeModel = new                CUDRTreeModel(this);
 
 	QSplitter* pDetailsSplitter = new QSplitter(this);
@@ -410,7 +447,9 @@ void CMainEditorWindow::OnTreeIndexComboBoxSelectionChanged(int index)
 
 void CMainEditorWindow::OnClearTreeButtonClicked(bool checked)
 {
-	// TODO: clear the currently selected tree (live/deseriazed)
+	const Cry::UDR::ITreeManager::ETreeIndex treeIndex = (Cry::UDR::ITreeManager::ETreeIndex)m_pComboBoxTreeToShow->currentIndex();
+	Cry::UDR::ITree& tree = gEnv->pUDR->GetHub().GetTreeManager().GetTree(treeIndex);
+	tree.RemoveNode(tree.GetRootNode());	// notice: this will not actually remove the root node (only its children), which is a special case - see implementation
 }
 
 void CMainEditorWindow::OnSaveLiveTreeToFile()
