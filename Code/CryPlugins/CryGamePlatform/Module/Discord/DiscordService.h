@@ -63,8 +63,6 @@ namespace Cry
 
 				virtual bool OpenDialog(EDialog dialog) const override;
 				virtual bool OpenDialogWithTargetUser(EUserTargetedDialog dialog, const AccountIdentifier& accountId) const override;
-				virtual bool OpenDialog(const char* szPage) const override;
-				virtual bool OpenDialogWithTargetUser(const char* szPage, const AccountIdentifier& accountId) const override;
 				virtual bool OpenBrowser(const char* szURL) const override;
 
 				virtual bool CanOpenPurchaseOverlay() const override;
@@ -90,6 +88,8 @@ namespace Cry
 
 			private:
 				static CService* s_pInstance;
+
+				const ApplicationIdentifierValue m_appId;
 
 				std::unique_ptr<CAccount> m_localAccount;
 				mutable DynArray<IAccount*> m_friends;

@@ -18,9 +18,17 @@ namespace Cry
 	{
 		namespace Discord
 		{
+			inline ApplicationIdentifierValue ReadAppIdFromCVar()
+			{
+				const char* discord_appId = "";
+				REGISTER_CVAR(discord_appId, "", VF_REQUIRE_APP_RESTART, "Discord application id. Requires application restart.");
+				return discord_appId;
+			}
+
 			CService* CService::s_pInstance = nullptr;
 
 			CService::CService()
+				: m_appId(ReadAppIdFromCVar())
 			{
 				s_pInstance = this;
 			}
@@ -37,9 +45,6 @@ namespace Cry
 					// Don't use Discord integration in Sandbox
 					return true;
 				}
-
-				const char* discord_appId = "";
-				REGISTER_CVAR(discord_appId, "", VF_REQUIRE_APP_RESTART, "Discord application id. Requires application restart.");
 
 				DiscordEventHandlers handlers;
 				memset(&handlers, 0, sizeof(handlers));
@@ -65,7 +70,7 @@ namespace Cry
 				}
 #endif
 
-				Discord_Initialize(discord_appId, &handlers, 1, steamAppId.c_str());
+				Discord_Initialize(m_appId.c_str(), &handlers, 1, steamAppId.c_str());
 
 				EnableUpdate(Cry::IEnginePlugin::EUpdateStep::MainUpdate, true);
 
@@ -122,7 +127,7 @@ namespace Cry
 
 			ApplicationIdentifier CService::GetApplicationIdentifier() const
 			{
-				return 0;
+				return CreateApplicationIdentifier(m_appId);
 			}
 
 			bool CService::OpenDialog(EDialog dialog) const
@@ -131,16 +136,6 @@ namespace Cry
 			}
 
 			bool CService::OpenDialogWithTargetUser(EUserTargetedDialog dialog, const AccountIdentifier& accountId) const
-			{
-				return false;
-			}
-
-			bool CService::OpenDialog(const char* szPage) const
-			{
-				return false;
-			}
-
-			bool CService::OpenDialogWithTargetUser(const char* szPage, const AccountIdentifier& accountId) const
 			{
 				return false;
 			}

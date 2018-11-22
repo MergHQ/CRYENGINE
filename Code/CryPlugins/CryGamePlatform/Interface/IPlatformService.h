@@ -86,13 +86,9 @@ namespace Cry
 			virtual EFriendRelationship GetFriendRelationship(const AccountIdentifier& otherAccountId) const = 0;
 			//! Opens a known dialog targeted at a specific user id via the platform's overlay
 			virtual bool OpenDialogWithTargetUser(EUserTargetedDialog dialog, const AccountIdentifier& otherAccountId) const = 0;
-			//! Opens a known dialog by platform-specific string and targeted at a specific user id via the platform's overlay
-			virtual bool OpenDialogWithTargetUser(const char* szPage, const AccountIdentifier& otherAccountId) const = 0;
 
 			//! Opens a known dialog via the platforms's overlay
 			virtual bool OpenDialog(EDialog dialog) const = 0;
-			//! Opens a known dialog by platform-specific string via the platform's overlay
-			virtual bool OpenDialog(const char* szPage) const = 0;
 			//! Opens a browser window via the platform's overlay
 			virtual bool OpenBrowser(const char* szURL) const = 0;
 			//! Checks whether we are able to open the overlay used for purchasing assets

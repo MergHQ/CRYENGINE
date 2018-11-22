@@ -12,7 +12,7 @@ namespace Cry
 		struct IUserLobby
 		{
 			//! Determines the visibility of the lobby to other users
-			enum class EVisbility
+			enum class EVisibility
 			{
 				//! Only visible to the creator / existing members
 				Private,

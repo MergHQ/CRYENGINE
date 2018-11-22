@@ -32,9 +32,9 @@ namespace Cry
 				virtual void AddListener(IListener& listener) override { m_listeners.push_back(&listener); }
 				virtual void RemoveListener(IListener& listener) override { stl::find_and_erase(m_listeners, &listener); }
 
-				virtual void Create(unsigned int appId, IUserGeneratedContent::EType type) override;
+				virtual void Create(ApplicationIdentifier appId, IUserGeneratedContent::EType type) override;
 
-				virtual void CreateDirect(unsigned int appId, IUserGeneratedContent::EType type,
+				virtual void CreateDirect(ApplicationIdentifier appId, IUserGeneratedContent::EType type,
 					const char* title, const char* desc, IUserGeneratedContent::EVisibility visibility,
 					const char* *pTags, int numTags, const char* contentFolderPath, const char* previewPath) override;
 				// ~IUserGeneratedContentManager
@@ -48,7 +48,7 @@ namespace Cry
 
 				std::unique_ptr<SItemParameters> m_pWaitingParameters;
 
-				ApplicationIdentifier m_lastUsedId = 0;
+				AppId_t m_lastUsedId = k_uAppIdInvalid;
 				std::vector<std::unique_ptr<IUserGeneratedContent>> m_content;
 			};
 		}

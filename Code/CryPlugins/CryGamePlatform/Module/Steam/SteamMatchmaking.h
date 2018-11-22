@@ -23,7 +23,7 @@ namespace Cry
 				virtual void AddListener(IMatchmaking::IListener& listener) override { m_listeners.push_back(&listener); }
 				virtual void RemoveListener(IMatchmaking::IListener& listener) override { stl::find_and_erase(m_listeners, &listener); }
 
-				virtual void CreateLobby(IUserLobby::EVisbility visibility, int maxMemberCount) override;
+				virtual void CreateLobby(IUserLobby::EVisibility visibility, int maxMemberCount) override;
 				virtual CUserLobby* GetUserLobby(const AccountIdentifier& user) const override;
 				virtual CUserLobby* GetUserLobby(const IUser& user) const override;
 				virtual CUserLobby* GetLobbyById(const LobbyIdentifier& id) override;

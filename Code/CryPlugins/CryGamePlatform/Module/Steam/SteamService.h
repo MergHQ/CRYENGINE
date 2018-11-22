@@ -72,8 +72,6 @@ namespace Cry
 
 				virtual bool OpenDialog(EDialog dialog) const override;
 				virtual bool OpenDialogWithTargetUser(EUserTargetedDialog dialog, const AccountIdentifier& accountId) const override;
-				virtual bool OpenDialog(const char* szPage) const override;
-				virtual bool OpenDialogWithTargetUser(const char* szPage, const AccountIdentifier& accountId) const override;
 				virtual bool OpenBrowser(const char* szURL) const override;
 
 				virtual bool CanOpenPurchaseOverlay() const override;
@@ -93,6 +91,9 @@ namespace Cry
 				STEAM_CALLBACK(CService, OnFriendStateChange, PersonaStateChange_t, m_onFriendStateChangeCallback);
 				STEAM_CALLBACK(CService, OnGetSteamAuthTicketResponse, GetAuthSessionTicketResponse_t, m_callbackGetSteamAuthTicketResponse);
 				STEAM_CALLBACK(CService, OnPersonaStateChange, PersonaStateChange_t, m_callbackOnPersonaChange);
+
+				bool OpenDialog(const char* szPage) const;
+				bool OpenDialogWithTargetUser(const char* szPage, const AccountIdentifier& accountId) const;
 
 				CAccount* TryGetAccount(CSteamID id) const;
 				CAccount* TryGetAccount(const AccountIdentifier& accountId) const;
