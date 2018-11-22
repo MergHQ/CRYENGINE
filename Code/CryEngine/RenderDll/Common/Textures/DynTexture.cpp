@@ -292,7 +292,7 @@ bool SDynTexture::RT_Update(int nNewWidth, int nNewHeight)
 
 	if (!m_pTexture)
 	{
-		size_t nNeedSpace = CTexture::TextureDataSize(m_nWidth, m_nHeight, 1, 1, m_eTT == eTT_Cube ? 6 : 1, m_eTF);
+		size_t nNeedSpace = CTexture::TextureDataSize(m_nWidth, m_nHeight, 1, 1, m_eTT == eTT_Cube ? 6 : 1, m_eTF, eTM_Optimal);
 		SDynTexture* pTX = SDynTexture::s_Root.m_Prev;
 		if (nNeedSpace + s_nMemoryOccupied > SDynTexture::s_CurDynTexMaxSize * 1024 * 1024)
 		{
@@ -1262,7 +1262,7 @@ void SDynTexture2::Init(ETexPool eTexPool)
 		while (true)
 		{
 			ETEX_Format eTF = GetPoolTexFormat(eTexPool);
-			size_t nNeedSpace = CTexture::TextureDataSize(nSize, nSize, 1, 1, 1, eTF);
+			size_t nNeedSpace = CTexture::TextureDataSize(nSize, nSize, 1, 1, 1, eTF, eTM_Optimal);
 			{
 				CryAutoReadLock<CryRWLock> scopeLock(s_memoryOccupiedLock);
 				if (nNeedSpace + s_nMemoryOccupied[eTexPool] > nMaxSize)
@@ -1314,7 +1314,7 @@ bool SDynTexture2::UpdateAtlasSize(int nNewWidth, int nNewHeight)
 		
 		{
 			CryAutoWriteLock<CryRWLock> scopeLock(s_memoryOccupiedLock);
-			s_nMemoryOccupied[m_eTexPool] -= CTexture::TextureDataSize(m_pTexture->GetWidth(), m_pTexture->GetHeight(), 1, 1, 1, m_pOwner->m_eTF);
+			s_nMemoryOccupied[m_eTexPool] -= CTexture::TextureDataSize(m_pTexture->GetWidth(), m_pTexture->GetHeight(), 1, 1, 1, m_pOwner->m_eTF, eTM_Optimal);
 		}
 		SAFE_RELEASE(m_pTexture);
 
@@ -1324,7 +1324,7 @@ bool SDynTexture2::UpdateAtlasSize(int nNewWidth, int nNewHeight)
 		
 		{
 			CryAutoWriteLock<CryRWLock>  scopeLock(s_memoryOccupiedLock);
-			s_nMemoryOccupied[m_eTexPool] += CTexture::TextureDataSize(nNewWidth, nNewHeight, 1, 1, 1, m_pOwner->m_eTF);
+			s_nMemoryOccupied[m_eTexPool] += CTexture::TextureDataSize(nNewWidth, nNewHeight, 1, 1, 1, m_pOwner->m_eTF, eTM_Optimal);
 		}
 		m_pTexture = m_pAllocator->m_pTexture;
 	}
@@ -1381,7 +1381,7 @@ bool SDynTexture2::Update(int nNewWidth, int nNewHeight)
 			nSize = 2048;
 		CRenderer::CV_r_texatlassize = nSize;
 		size_t nMaxSize = GetPoolMaxSize(m_eTexPool) * 1024 * 1024;
-		size_t nNeedSpace = CTexture::TextureDataSize(nSize, nSize, 1, 1, 1, m_pOwner->m_eTF);
+		size_t nNeedSpace = CTexture::TextureDataSize(nSize, nSize, 1, 1, 1, m_pOwner->m_eTF, eTM_Optimal);
 		if (nNeedSpace > nMaxSize)
 		{
 			SetPoolMaxSize(m_eTexPool, nNeedSpace / (1024 * 1024), true);
@@ -1674,7 +1674,7 @@ STextureSetFormat::~STextureSetFormat()
 		PREFAST_ASSUME(pP);
 		if (pP->m_pTexture)
 		{
-			uint32 nSize = CTexture::TextureDataSize(pP->m_pTexture->GetWidth(), pP->m_pTexture->GetHeight(), 1, 1, 1, pP->m_pTexture->GetTextureDstFormat());
+			uint32 nSize = CTexture::TextureDataSize(pP->m_pTexture->GetWidth(), pP->m_pTexture->GetHeight(), 1, 1, 1, pP->m_pTexture->GetTextureDstFormat(), eTM_Optimal);
 			{
 				CryAutoWriteLock<CryRWLock> scopeLock(SDynTexture2::s_memoryOccupiedLock);
 				SDynTexture2::s_nMemoryOccupied[m_eTexPool] = std::max<size_t>(0ULL, ptrdiff_t(SDynTexture2::s_nMemoryOccupied[m_eTexPool]) - nSize);

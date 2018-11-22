@@ -392,7 +392,8 @@ CLocalMemoryUsage::STextureInfo::~STextureInfo()
 
 void CLocalMemoryUsage::STextureInfo::CheckOnAllSectorsP2()
 {
-	int x, y, nMip, nStreamableMipNr, memoryUsage, xOldMemoryUsage, xOldPieces;
+	int x, y, memoryUsage, xOldMemoryUsage;
+	int8 nMip, nStreamableMipNr, xOldPieces;
 	bool nonZero;
 	ITexture* pTexture;
 
@@ -415,7 +416,7 @@ void CLocalMemoryUsage::STextureInfo::CheckOnAllSectorsP2()
 				if (nonZero)    // One more row
 				{
 					pTexture = m_pTexture;
-					nMip = max(0, pTexture->StreamCalculateMipsSigned(*pMipFactor));
+					nMip = pTexture->StreamCalculateMips(*pMipFactor);
 					memoryUsage = pTexture->GetStreamableMemoryUsage(nMip);
 					nStreamableMipNr = pTexture->GetStreamableMipNumber() - nMip;
 					sector->m_memoryUsage_Textures += memoryUsage;

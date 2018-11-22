@@ -42,7 +42,7 @@ static bool DecompressSubresourcePayload(const STextureLayout& pLayout, const ET
 	}
 
 	const int nSlices = pLayout.m_nArraySize;
-	const int nMips = pLayout.m_nMips;
+	const int8 nMips = pLayout.m_nMips;
 
 	SSubresourcePayload* InitData = new SSubresourcePayload[nMips * nSlices];
 
@@ -59,7 +59,7 @@ static bool DecompressSubresourcePayload(const STextureLayout& pLayout, const ET
 		int h = pLayout.m_nHeight;
 		int d = pLayout.m_nDepth;
 
-		for (int nMip = 0; (nMip < nMips) && (w | h | d); ++nMip, ++nSubresource)
+		for (int8 nMip = 0; (nMip < nMips) && (w | h | d); ++nMip, ++nSubresource)
 		{
 			if (!w) w = 1;
 			if (!h) h = 1;
@@ -131,7 +131,7 @@ const byte* CTexture::Convert(const byte* pSrc, int nWidth, int nHeight, int nMi
 				nOutMips = nMips;
 			int wdt = nWidth;
 			int hgt = nHeight;
-			nSizeDSTMips = CTexture::TextureDataSize(wdt, hgt, 1, nOutMips, 1, eTF_BC3);
+			nSizeDSTMips = CTexture::TextureDataSize(wdt, hgt, 1, nOutMips, 1, eTF_BC3, eTM_None);
 			pDst = new byte[nSizeDSTMips];
 			size_t nOffsDST = 0;
 			size_t nOffsSRC = 0;
@@ -145,8 +145,8 @@ const byte* CTexture::Convert(const byte* pSrc, int nWidth, int nHeight, int nMi
 					hgt = 1;
 				const byte* outSrc = &pSrc[nOffsSRC];
 
-				uint32 outSize = CTexture::TextureDataSize(wdt, hgt, 1, 1, 1, eTFDst);
-				nOffsSRC += CTexture::TextureDataSize(wdt, hgt, 1, 1, 1, eTFSrc);
+				uint32 outSize = CTexture::TextureDataSize(wdt, hgt, 1, 1, 1, eTFDst, eTM_None);
+				nOffsSRC += CTexture::TextureDataSize(wdt, hgt, 1, 1, 1, eTFSrc, eTM_None);
 
 				{
 					const byte* src = outSrc;
@@ -541,7 +541,7 @@ void CTexture::UpdateTextureRegion(const byte* pSrcData, int nX, int nY, int nZ,
 	}
 	else
 	{
-		uint32 nSize = TextureDataSize(USize, VSize, ZSize, GetNumMips(), 1, eSrcFormat);
+		uint32 nSize = TextureDataSize(USize, VSize, ZSize, GetNumMips(), 1, eSrcFormat, eTM_None);
 		std::shared_ptr<std::vector<uint8>> tempData = std::make_shared<std::vector<uint8>>(pSrcData, pSrcData + nSize);
 		_smart_ptr<CTexture> pSelf(this);
 
@@ -915,7 +915,7 @@ DynArray<std::uint16_t> CTexture::RenderEnvironmentCMHDR(std::size_t size, const
 			pDstDevTex->DownloadToStagingResource(0, [&](void* pData, uint32 rowPitch, uint32 slicePitch)
 			{
 				const auto* pTarg = reinterpret_cast<const std::uint16_t*>(pData);
-				const uint32 nLineStride = CTexture::TextureDataSize(size, 1, 1, 1, 1, eTF_R16G16B16A16F) / sizeof(*pTarg);
+				const uint32 nLineStride = CTexture::TextureDataSize(size, 1, 1, 1, 1, eTF_R16G16B16A16F, eTM_None) / sizeof(*pTarg);
 
 				// Copy vertically flipped image
 				for (uint32 nLine = 0; nLine < size; ++nLine)
@@ -1274,8 +1274,8 @@ bool CFlashTextureSourceSharedRT::Update()
 	return true;
 }
 
-void CTexture::CopySliceChain(CDeviceTexture* const pDstDevTex, int nDstNumMips, int nDstSliceOffset, int nDstMipOffset,
-                              CDeviceTexture* const pSrcDevTex, int nSrcNumMips, int nSrcSliceOffset, int nSrcMipOffset, int nNumSlices, int nNumMips)
+void CTexture::CopySliceChain(CDeviceTexture* const pDstDevTex, int8 nDstNumMips, int nDstSliceOffset, int8 nDstMipOffset,
+                              CDeviceTexture* const pSrcDevTex, int8 nSrcNumMips, int nSrcSliceOffset, int8 nSrcMipOffset, int nNumSlices, int8 nNumMips)
 {
 	HRESULT hr = S_OK;
 	assert(pSrcDevTex && pDstDevTex);
@@ -1304,7 +1304,7 @@ void CTexture::CopySliceChain(CDeviceTexture* const pDstDevTex, int nDstNumMips,
 		CryAutoLock<CryCriticalSection> dmaLock(GetDeviceObjectFactory().m_dma1Lock);
 		ID3D11DmaEngineContextX* pDMA = GetDeviceObjectFactory().m_pDMA1;
 
-		for (int nMip = 0; nMip < nNumMips; ++nMip)
+		for (int8 nMip = 0; nMip < nNumMips; ++nMip)
 		{
 			pDMA->CopySubresourceRegion(
 			  pDstResource,
@@ -1326,7 +1326,7 @@ void CTexture::CopySliceChain(CDeviceTexture* const pDstDevTex, int nDstNumMips,
 	{
 		assert(nSrcMipOffset >= 0 && nDstMipOffset >= 0);
 
-		for (int nMip = 0; nMip < nNumMips; ++nMip)
+		for (int8 nMip = 0; nMip < nNumMips; ++nMip)
 		{
 			SResourceRegionMapping mapping =
 			{
@@ -1353,9 +1353,10 @@ int16 CTexture::StreamCalculateMipsSignedFP(float fMipFactor) const
 
 	float currentMipFactor = fMipFactor * gRenDev->GetMipDistFactor(m_nWidth, m_nHeight);
 	float fMip = (0.5f * logf(max(currentMipFactor, 0.1f)) / gf_ln2 + (CRenderer::CV_r_TexturesStreamingMipBias + gRenDev->m_fTexturesStreamingGlobalMipFactor));
-	int nMip = static_cast<int>(floorf(fMip * 256.0f));
-	const int nNewMip = min(nMip, (m_nMips - m_CacheFileHeader.m_nMipsPersistent) << 8);
-	return (int16)nNewMip;
+	int16 nMip = crymath::clamp_to<int16, float>(floorf(fMip * 256.0f), -SStreamFormatCode::MaxMips * 256.0f, SStreamFormatCode::MaxMips * 256.0f);
+	const int16 nNewMip = std::min<int16>(nMip, (m_nMips - m_CacheFileHeader.m_nMipsPersistent) << 8);
+
+	return nNewMip;
 }
 
 float CTexture::StreamCalculateMipFactor(int16 nMipsSigned) const

@@ -73,12 +73,14 @@ DDSSplitted::DDSDesc CImageDDSFile::mfGet_DDSDesc() const
 	d.eFormat = m_eFormat;
 	d.eTileMode = m_eTileMode;
 	d.nBaseOffset = mfGet_StartSeek();
-	d.nFlags = (m_Flags & (FIM_ALPHA | FIM_SPLITTED | FIM_DX10IO));
-	d.nWidth = m_DDSHeader.dwWidth;
-	d.nHeight = m_DDSHeader.dwHeight;
-	d.nDepth = m_DDSHeader.dwDepth;
-	d.nMips = m_DDSHeader.dwMipMapCount;
-	d.nSides = m_Sides;
+
+	d.nFlags  = (m_Flags & (FIM_ALPHA | FIM_SPLITTED | FIM_DX10IO));
+	d.nWidth  = uint16(m_DDSHeader.dwWidth);
+	d.nHeight = uint16(m_DDSHeader.dwHeight);
+	d.nDepth  = uint16(m_DDSHeader.dwDepth);
+	d.nMips   = int8(m_DDSHeader.dwMipMapCount);
+	d.nSides  = m_Sides;
+
 	d.nMipsPersistent = m_NumPersistantMips;
 	return d;
 }
@@ -111,20 +113,21 @@ bool CImageDDSFile::Load(const string& filename, uint32 nFlags)
 	return true;
 }
 
-int CImageDDSFile::AdjustHeader()
+int8 CImageDDSFile::AdjustHeader()
 {
-	int nDeltaMips = 0;
+	int8 nDeltaMips = 0;
 
 	if (!(m_Flags & FIM_SUPPRESS_DOWNSCALING))
 	{
-		int nFinalMips = min(max(m_NumPersistantMips, max(CRenderer::CV_r_texturesstreamingMinUsableMips, m_NumMips - CRenderer::CV_r_texturesstreamingSkipMips)), m_NumMips);
+		int8 nUsableMips = std::max<int8>(CRenderer::CV_r_texturesstreamingMinUsableMips, m_NumMips - CRenderer::CV_r_texturesstreamingSkipMips);
+		int8 nFinalMips = crymath::clamp_to<int8, int8>(nUsableMips, m_NumPersistantMips, m_NumMips);
 
 		nDeltaMips = m_NumMips - nFinalMips;
 		if (nDeltaMips > 0)
 		{
-			m_Width = max(1, m_Width >> nDeltaMips);
+			m_Width  = max(1, m_Width  >> nDeltaMips);
 			m_Height = max(1, m_Height >> nDeltaMips);
-			m_Depth = max(1, m_Depth >> nDeltaMips);
+			m_Depth  = max(1, m_Depth  >> nDeltaMips);
 			m_NumMips = nFinalMips;
 		}
 	}
@@ -198,15 +201,15 @@ bool CImageDDSFile::LoadFromFile(DDSSplitted::FileWrapper& file, uint32 nFlags, 
 		desc.nBaseOffset = m_nStartSeek;
 		desc.nFlags = m_Flags;
 
-		int nDeltaMips = AdjustHeader();
+		int8 nDeltaMips = AdjustHeader();
 
 		// If stream prepare, only allocate room for the pers mips
 
-		int nMipsToLoad = (m_Flags & FIM_STREAM_PREPARE)
+		int8 nMipsToLoad = (m_Flags & FIM_STREAM_PREPARE)
 		                  ? m_NumPersistantMips
 		                  : m_NumMips;
-		int nImageIgnoreMips = m_NumMips - nMipsToLoad;
-		int nFirstPersistentMip = m_NumMips - m_NumPersistantMips;
+		int8 nImageIgnoreMips = m_NumMips - nMipsToLoad;
+		int8 nFirstPersistentMip = m_NumMips - m_NumPersistantMips;
 
 		size_t nImageSideSize = CTexture::TextureDataSize(
 			std::max(1, m_Width  >> nImageIgnoreMips),
@@ -242,7 +245,7 @@ bool CImageDDSFile::LoadFromFile(DDSSplitted::FileWrapper& file, uint32 nFlags, 
 
 			// Only copy persistent mips now. Create continuations for any others.
 
-			int nChunkMip = chunk.nMipLevel - nDeltaMips;
+			int8 nChunkMip = chunk.nMipLevel - nDeltaMips;
 			if (nChunkMip < nFirstPersistentMip)
 			{
 				string chunkFileName(chunk.fileName);
@@ -459,7 +462,7 @@ bool CImageDDSFile::SetHeaderFromMemory(byte* pFileStart, byte* pFileAfterHeader
 	else
 		m_NumPersistantMips = 0;
 
-	m_NumPersistantMips = min(m_NumMips, max((int)DDSSplitted::etexNumLastMips, m_NumPersistantMips));
+	m_NumPersistantMips = crymath::clamp_to<int8, int8>(m_NumPersistantMips, DDSSplitted::etexNumLastMips, m_NumMips);
 
 	m_fAvgBrightness = m_DDSHeader.fAvgBrightness;
 	m_cMinColor = m_DDSHeader.cMinColor;
@@ -472,7 +475,7 @@ bool CImageDDSFile::SetHeaderFromMemory(byte* pFileStart, byte* pFileAfterHeader
 
 	if (DDSFormats::IsNormalMap(m_eFormat))
 	{
-		const int nLastMipWidth = m_Width >> (m_NumMips - 1);
+		const int nLastMipWidth  = m_Width  >> (m_NumMips - 1);
 		const int nLastMipHeight = m_Height >> (m_NumMips - 1);
 		if (nLastMipWidth < 4 || nLastMipHeight < 4)
 			mfSet_error(eIFE_BadFormat, "Texture has wrong number of mips");
@@ -621,7 +624,7 @@ byte* WriteDDS(const byte* dat, int wdt, int hgt, int dpth, const char* name, ET
 	byte* pData = NULL;
 	CCryFile file;
 	size_t nOffs = 0;
-	uint32 nSize = CTexture::TextureDataSize(wdt, hgt, dpth, nMips, 1, eTF);
+	uint32 nSize = CTexture::TextureDataSize(wdt, hgt, dpth, nMips, 1, eTF, eTM_None);
 
 	fileDesc.dwMagic = MAKEFOURCC('D', 'D', 'S', ' ');
 
@@ -674,7 +677,7 @@ byte* WriteDDS(const byte* dat, int wdt, int hgt, int dpth, const char* name, ET
 		}
 	}
 	fileDesc.header.ddspf = DDSFormats::GetDescByFormat(eTF);
-	fileDesc.header.dwPitchOrLinearSize = CTexture::TextureDataSize(wdt, 1, 1, 1, 1, eTF);
+	fileDesc.header.dwPitchOrLinearSize = CTexture::TextureDataSize(wdt, 1, 1, 1, 1, eTF, eTM_None);
 	if (!bToMemory)
 	{
 		file.Write(&fileDesc.header, sizeof(fileDesc.header));
@@ -754,7 +757,7 @@ TPath& MakeName(TPath& sOut, const char* sOriginalName, const uint32 nChunk, con
 	return sOut;
 }
 
-size_t GetFilesToRead_Split(ChunkInfo* pFiles, size_t nFilesCapacity, const DDSDesc& desc, uint32 nStartMip, uint32 nEndMip)
+size_t GetFilesToRead_Split(ChunkInfo* pFiles, size_t nFilesCapacity, const DDSDesc& desc, int8 nStartMip, int8 nEndMip)
 {
 	FUNCTION_PROFILER_RENDERER();
 
@@ -764,8 +767,8 @@ size_t GetFilesToRead_Split(ChunkInfo* pFiles, size_t nFilesCapacity, const DDSD
 
 	size_t nNumFiles = 0;
 
-	uint32 nFirstPersistentMip = desc.nMips - desc.nMipsPersistent;
-	for (uint32 mip = nStartMip; mip <= nEndMip; ++mip)
+	int8 nFirstPersistentMip = desc.nMips - desc.nMipsPersistent;
+	for (int8 mip = nStartMip; mip <= nEndMip; ++mip)
 	{
 		uint32 chunkNumber = (nFirstPersistentMip <= mip ? 0 : nFirstPersistentMip - mip);
 
@@ -789,21 +792,21 @@ size_t GetFilesToRead_Split(ChunkInfo* pFiles, size_t nFilesCapacity, const DDSD
 			CRY_ASSERT(mip >= nFirstPersistentMip);
 
 			uint32 nSurfaceSize = CTexture::TextureDataSize(
-				std::max(1U, desc.nWidth  >> mip),
-				std::max(1U, desc.nHeight >> mip),
-				std::max(1U, desc.nDepth  >> mip),
+				std::max<uint16>(1U, desc.nWidth  >> mip),
+				std::max<uint16>(1U, desc.nHeight >> mip),
+				std::max<uint16>(1U, desc.nDepth  >> mip),
 				1, 1, desc.eFormat, desc.eTileMode);
 
 			uint32 nSidePitch = CTexture::TextureDataSize(
-				std::max(1U, desc.nWidth  >> nFirstPersistentMip),
-				std::max(1U, desc.nHeight >> nFirstPersistentMip),
-				std::max(1U, desc.nDepth  >> nFirstPersistentMip),
+				std::max<uint16>(1U, desc.nWidth  >> nFirstPersistentMip),
+				std::max<uint16>(1U, desc.nHeight >> nFirstPersistentMip),
+				std::max<uint16>(1U, desc.nDepth  >> nFirstPersistentMip),
 				desc.nMipsPersistent, 1, desc.eFormat, desc.eTileMode);
 
 			uint32 nStartOffset = CTexture::TextureDataSize(
-				std::max(1U, desc.nWidth  >> nFirstPersistentMip),
-				std::max(1U, desc.nHeight >> nFirstPersistentMip),
-				std::max(1U, desc.nDepth  >> nFirstPersistentMip),
+				std::max<uint16>(1U, desc.nWidth  >> nFirstPersistentMip),
+				std::max<uint16>(1U, desc.nHeight >> nFirstPersistentMip),
+				std::max<uint16>(1U, desc.nDepth  >> nFirstPersistentMip),
 				mip - nFirstPersistentMip, 1, desc.eFormat, desc.eTileMode);
 
 			newChunk.nOffsetInFile = desc.nBaseOffset + nStartOffset;
@@ -817,7 +820,7 @@ size_t GetFilesToRead_Split(ChunkInfo* pFiles, size_t nFilesCapacity, const DDSD
 	return nNumFiles;
 }
 
-size_t GetFilesToRead_UnSplit(ChunkInfo* pFiles, size_t nFilesCapacity, const DDSDesc& desc, uint32 nStartMip, uint32 nEndMip)
+size_t GetFilesToRead_UnSplit(ChunkInfo* pFiles, size_t nFilesCapacity, const DDSDesc& desc, int8 nStartMip, int8 nEndMip)
 {
 	FUNCTION_PROFILER_RENDERER();
 
@@ -830,13 +833,13 @@ size_t GetFilesToRead_UnSplit(ChunkInfo* pFiles, size_t nFilesCapacity, const DD
 	uint32 nSideStart = CTexture::TextureDataSize(desc.nWidth, desc.nHeight, desc.nDepth, nStartMip, 1, desc.eFormat, desc.eTileMode);
 	uint32 nSidePitch = CTexture::TextureDataSize(desc.nWidth, desc.nHeight, desc.nDepth, desc.nMips, 1, desc.eFormat, desc.eTileMode);
 
-	for (uint32 nMip = nStartMip; nMip <= nEndMip; ++nMip)
+	for (int8 nMip = nStartMip; nMip <= nEndMip; ++nMip)
 	{
 		uint32 nOffset = desc.nBaseOffset + nSideStart;
 		uint32 nSurfaceSize = CTexture::TextureDataSize(
-			max(1u, desc.nWidth  >> nMip),
-			max(1u, desc.nHeight >> nMip),
-			max(1u, desc.nDepth  >> nMip),
+			std::max<uint16>(1U, desc.nWidth  >> nMip),
+			std::max<uint16>(1U, desc.nHeight >> nMip),
+			std::max<uint16>(1U, desc.nDepth  >> nMip),
 			1, 1, desc.eFormat, desc.eTileMode);
 
 		if (nNumFiles < nFilesCapacity)
@@ -855,7 +858,7 @@ size_t GetFilesToRead_UnSplit(ChunkInfo* pFiles, size_t nFilesCapacity, const DD
 	return nNumFiles;
 }
 
-size_t GetFilesToRead(ChunkInfo* pFiles, size_t nFilesCapacity, const DDSDesc& desc, uint32 nStartMip, uint32 nEndMip)
+size_t GetFilesToRead(ChunkInfo* pFiles, size_t nFilesCapacity, const DDSDesc& desc, int8 nStartMip, int8 nEndMip)
 {
 	return (desc.nFlags & FIM_SPLITTED)
 	       ? GetFilesToRead_Split(pFiles, nFilesCapacity, desc, nStartMip, nEndMip)
@@ -908,7 +911,7 @@ bool SeekToAttachedImage(FileWrapper& file)
 		ddsFileDesc.header.dwWidth,
 		ddsFileDesc.header.dwHeight,
 		ddsFileDesc.header.dwDepth,
-		ddsFileDesc.header.dwMipMapCount,
+		int8(ddsFileDesc.header.dwMipMapCount),
 		numSlices, eTF, eTM);
 
 	size_t fileLength = file.GetLength();
@@ -931,7 +934,7 @@ bool SeekToAttachedImage(FileWrapper& file)
 	return false;
 }
 
-size_t LoadMipRequests(RequestInfo* pReqs, size_t nReqsCap, const DDSDesc& desc, byte* pBuffer, uint32 nStartMip, uint32 nEndMip)
+size_t LoadMipRequests(RequestInfo* pReqs, size_t nReqsCap, const DDSDesc& desc, byte* pBuffer, int8 nStartMip, int8 nEndMip)
 {
 	size_t nReqs = 0;
 
@@ -953,9 +956,9 @@ size_t LoadMipRequests(RequestInfo* pReqs, size_t nReqsCap, const DDSDesc& desc,
 				desc.nMips, 1, desc.eFormat, desc.eTileMode);
 
 			const uint32 nSideSizeToRead = CTexture::TextureDataSize(
-				std::max(1U, desc.nWidth  >> chunk.nMipLevel),
-				std::max(1U, desc.nHeight >> chunk.nMipLevel),
-				std::max(1U, desc.nDepth  >> chunk.nMipLevel),
+				std::max<uint16>(1U, desc.nWidth  >> chunk.nMipLevel),
+				std::max<uint16>(1U, desc.nHeight >> chunk.nMipLevel),
+				std::max<uint16>(1U, desc.nDepth  >> chunk.nMipLevel),
 				1, 1, desc.eFormat, desc.eTileMode);
 
 			string sFileName = string(it->fileName);
@@ -1015,7 +1018,7 @@ size_t LoadMipsFromRequests(const RequestInfo* pReqs, size_t nReqs)
 	return size;
 }
 
-size_t LoadMips(byte* pBuffer, const DDSDesc& desc, uint32 nStartMip, uint32 nEndMip)
+size_t LoadMips(byte* pBuffer, const DDSDesc& desc, int8 nStartMip, int8 nEndMip)
 {
 	size_t bytesRead = 0;
 
@@ -1030,8 +1033,8 @@ size_t LoadMips(byte* pBuffer, const DDSDesc& desc, uint32 nStartMip, uint32 nEn
 	return bytesRead;
 }
 
-int GetNumLastMips(const int nWidth, const int nHeight, const int nNumMips, const int nSides, ETEX_Format eTF, const uint32 nFlags)
+int8 GetNumLastMips(const uint16 nWidth, const uint16 nHeight, const int8 nNumMips, const uint16 nSides, ETEX_Format eTF, const uint32 nFlags)
 {
-	return (int)DDSSplitted::etexNumLastMips;
+	return DDSSplitted::etexNumLastMips;
 }
 }

@@ -551,7 +551,7 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 				D3D11_TEXTURE1D_DESC sDesc;
 				((ID3D11Texture1D*)pInputResource)->GetDesc(&sDesc);
 
-				uint32 size = CTexture::TextureDataSize(sDesc.Width, 1, 1, sDesc.MipLevels, sDesc.ArraySize, DeviceFormats::ConvertToTexFormat(sDesc.Format));
+				uint32 size = CTexture::TextureDataSize(sDesc.Width, 1, 1, sDesc.MipLevels, sDesc.ArraySize, DeviceFormats::ConvertToTexFormat(sDesc.Format), eTM_Optimal);
 				recycleSize += counter * size;
 				recycleNums += counter;
 
@@ -565,7 +565,7 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 				D3D11_TEXTURE2D_DESC sDesc;
 				((ID3D11Texture2D*)pInputResource)->GetDesc(&sDesc);
 
-				uint32 size = CTexture::TextureDataSize(sDesc.Width, sDesc.Height, 1, sDesc.MipLevels, sDesc.ArraySize, DeviceFormats::ConvertToTexFormat(sDesc.Format));
+				uint32 size = CTexture::TextureDataSize(sDesc.Width, sDesc.Height, 1, sDesc.MipLevels, sDesc.ArraySize, DeviceFormats::ConvertToTexFormat(sDesc.Format), eTM_Optimal);
 				recycleSize += counter * size;
 				recycleNums += counter;
 
@@ -579,7 +579,7 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 				D3D11_TEXTURE3D_DESC sDesc;
 				((ID3D11Texture3D*)pInputResource)->GetDesc(&sDesc);
 
-				uint32 size = CTexture::TextureDataSize(sDesc.Width, sDesc.Height, sDesc.Depth, sDesc.MipLevels, 1, DeviceFormats::ConvertToTexFormat(sDesc.Format));
+				uint32 size = CTexture::TextureDataSize(sDesc.Width, sDesc.Height, sDesc.Depth, sDesc.MipLevels, 1, DeviceFormats::ConvertToTexFormat(sDesc.Format), eTM_Optimal);
 				recycleSize += counter * size;
 				recycleNums += counter;
 

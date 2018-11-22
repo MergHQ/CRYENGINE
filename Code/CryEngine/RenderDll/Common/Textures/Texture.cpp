@@ -1214,8 +1214,8 @@ STexDataPtr CTexture::FormatFixup(STexDataPtr&& td)
 	if (td->m_eTileMode == eTM_None)
 	{
 		// Try and expand
-		uint32 nSourceSize = CTexture::TextureDataSize(td->m_nWidth, td->m_nHeight, td->m_nDepth, td->m_nMips, 1, eSrcFormat);
-		uint32 nTargetSize = CTexture::TextureDataSize(td->m_nWidth, td->m_nHeight, td->m_nDepth, td->m_nMips, 1, eDstFormat);
+		uint32 nSourceSize = CTexture::TextureDataSize(td->m_nWidth, td->m_nHeight, td->m_nDepth, td->m_nMips, 1, eSrcFormat, eTM_None);
+		uint32 nTargetSize = CTexture::TextureDataSize(td->m_nWidth, td->m_nHeight, td->m_nDepth, td->m_nMips, 1, eDstFormat, eTM_None);
 
 		for (int nImage = 0; nImage < sizeof(td->m_pData) / sizeof(td->m_pData[0]); ++nImage)
 		{
@@ -1297,9 +1297,9 @@ STexDataPtr CTexture::ImagePreprocessing(STexDataPtr&& td, ETEX_Format eDstForma
 	return td;
 }
 
-int CTexture::CalcNumMips(int nWidth, int nHeight)
+int8 CTexture::CalcNumMips(int nWidth, int nHeight)
 {
-	int nMips = 0;
+	int8 nMips = 0;
 	while (nWidth || nHeight)
 	{
 		if (!nWidth)   nWidth = 1;
@@ -1311,7 +1311,7 @@ int CTexture::CalcNumMips(int nWidth, int nHeight)
 	return nMips;
 }
 
-uint32 CTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM)
+uint32 CTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, int8 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM)
 {
 	FUNCTION_PROFILER_RENDERER();
 
@@ -1322,9 +1322,9 @@ uint32 CTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, u
 		return 0;
 
 	const bool bIsBlockCompressed = IsBlockCompressed(eTF);
-	nWidth = max(1U, nWidth);
+	nWidth  = max(1U, nWidth);
 	nHeight = max(1U, nHeight);
-	nDepth = max(1U, nDepth);
+	nDepth  = max(1U, nDepth);
 
 	if (eTM != eTM_None)
 	{
@@ -1336,7 +1336,7 @@ uint32 CTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, u
 #if CRY_PLATFORM_ORBIS
 		if (bIsBlockCompressed)
 		{
-			nWidth = ((nWidth + 3) & (-4));
+			nWidth  = ((nWidth  + 3) & (-4));
 			nHeight = ((nHeight + 3) & (-4));
 		}
 #endif
@@ -1344,20 +1344,17 @@ uint32 CTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, u
 #if CRY_PLATFORM_CONSOLE
 		return CDeviceTexture::TextureDataSize(nWidth, nHeight, nDepth, nMips, nSlices, eTF, eTM, CDeviceObjectFactory::BIND_SHADER_RESOURCE);
 #endif
-
-		__debugbreak();
-		return 0;
 	}
-	else
+
 	{
 		const uint32 nBytesPerElement = bIsBlockCompressed ? BytesPerBlock(eTF) : BytesPerPixel(eTF);
 
 		uint32 nSize = 0;
 		while ((nWidth || nHeight || nDepth) && nMips)
 		{
-			nWidth = max(1U, nWidth);
+			nWidth  = max(1U, nWidth);
 			nHeight = max(1U, nHeight);
-			nDepth = max(1U, nDepth);
+			nDepth  = max(1U, nDepth);
 
 			uint32 nU = nWidth;
 			uint32 nV = nHeight;
@@ -1366,15 +1363,15 @@ uint32 CTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, u
 			if (bIsBlockCompressed)
 			{
 				// depth is not 4x4x4 compressed, but 4x4x1
-				nU = ((nWidth + 3) / (4));
+				nU = ((nWidth  + 3) / (4));
 				nV = ((nHeight + 3) / (4));
 			}
 
 			nSize += nU * nV * nW * nBytesPerElement;
 
-			nWidth >>= 1;
+			nWidth  >>= 1;
 			nHeight >>= 1;
-			nDepth >>= 1;
+			nDepth  >>= 1;
 
 			--nMips;
 		}
@@ -3396,7 +3393,7 @@ void CRenderer::EF_AddRTStat(CTexture* pTex, int nFlags, int nW, int nH)
 			nW = CRendererResources::s_renderWidth;
 		if (nH < 0)
 			nH = CRendererResources::s_renderHeight;
-		nSize = CTexture::TextureDataSize(nW, nH, 1, 1, 1, eTF);
+		nSize = CTexture::TextureDataSize(nW, nH, 1, 1, 1, eTF, eTM_Optimal);
 		TS.m_Name = "Back buffer";
 	}
 	else
@@ -3406,7 +3403,7 @@ void CRenderer::EF_AddRTStat(CTexture* pTex, int nFlags, int nW, int nH)
 			nW = pTex->GetWidth();
 		if (nH < 0)
 			nH = pTex->GetHeight();
-		nSize = CTexture::TextureDataSize(nW, nH, 1, pTex->GetNumMips(), 1, eTF);
+		nSize = CTexture::TextureDataSize(nW, nH, 1, pTex->GetNumMips(), 1, eTF, eTM_Optimal);
 		const char* szName = pTex->GetName();
 		if (szName && szName[0] == '$')
 			TS.m_Name = string("@") + string(&szName[1]);
@@ -3581,14 +3578,14 @@ void CTexture::PrepareLowResSystemCopy(const byte* pTexData, bool bTexDataHasAll
 
 		while ((rSysCopy.m_nLowResCopyWidth > 16 || rSysCopy.m_nLowResCopyHeight > 16 || nMipId < 2) && (rSysCopy.m_nLowResCopyWidth >= 8 && rSysCopy.m_nLowResCopyHeight >= 8))
 		{
-			nSrcOffset += TextureDataSize(rSysCopy.m_nLowResCopyWidth, rSysCopy.m_nLowResCopyHeight, 1, 1, 1, m_eDstFormat);
+			nSrcOffset += TextureDataSize(rSysCopy.m_nLowResCopyWidth, rSysCopy.m_nLowResCopyHeight, 1, 1, 1, m_eDstFormat, eTM_None);
 			rSysCopy.m_nLowResCopyWidth /= 2;
 			rSysCopy.m_nLowResCopyHeight /= 2;
 			nMipId++;
 		}
 
-		uint32 nSizeDxtMip  = TextureDataSize(rSysCopy.m_nLowResCopyWidth, rSysCopy.m_nLowResCopyHeight, 1, 1, 1, m_eDstFormat);
-		uint32 nSizeRgbaMip = TextureDataSize(rSysCopy.m_nLowResCopyWidth, rSysCopy.m_nLowResCopyHeight, 1, 1, 1, eTF_R8G8B8A8);
+		uint32 nSizeDxtMip  = TextureDataSize(rSysCopy.m_nLowResCopyWidth, rSysCopy.m_nLowResCopyHeight, 1, 1, 1, m_eDstFormat, eTM_None);
+		uint32 nSizeRgbaMip = TextureDataSize(rSysCopy.m_nLowResCopyWidth, rSysCopy.m_nLowResCopyHeight, 1, 1, 1, eTF_R8G8B8A8, eTM_None);
 
 		rSysCopy.m_lowResSystemCopy.CheckAllocated(nSizeRgbaMip / sizeof(ColorB));
 

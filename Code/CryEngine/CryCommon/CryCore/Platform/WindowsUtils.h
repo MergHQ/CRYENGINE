@@ -53,7 +53,7 @@ static HICON CreateResourceFromTexture(IRenderer* pRenderer, const char* path, E
 	while (nMipWidth > nRequestedWidth)
 	{
 		++nMip;
-		offset += pRenderer->GetTextureFormatDataSize(nMipWidth, nMipHeight, 1, 1, texFormat);
+		offset += pRenderer->GetTextureFormatDataSize(nMipWidth, nMipHeight, 1, 1, texFormat, eTM_None);
 		nMipWidth = max(nMipWidth / 2, 1);
 		nMipHeight = max(nMipHeight / 2, 1);
 	}
@@ -64,7 +64,7 @@ static HICON CreateResourceFromTexture(IRenderer* pRenderer, const char* path, E
 		// Note: Consider creating a full mip-chain on the texture so this can't happen
 		return NULL;
 	}
-	const size_t nRawSize = pRenderer->GetTextureFormatDataSize(nMipWidth, nMipHeight, 1, 1, texFormat);
+	const size_t nRawSize = pRenderer->GetTextureFormatDataSize(nMipWidth, nMipHeight, 1, 1, texFormat, eTM_None);
 
 	#if 0
 	// Check that DDS indexing is correct here

@@ -460,8 +460,8 @@ public:
 	virtual const int       GetDepth() const = 0;
 	virtual const int       GetTextureID() const = 0;
 	virtual const uint32    GetFlags() const = 0;
-	virtual const int       GetNumMips() const = 0;
-	virtual const int       GetRequiredMip() const = 0;
+	virtual const int8      GetNumMips() const = 0;
+	virtual const int8      GetRequiredMip() const = 0;
 	virtual const uint32    GetDeviceDataSize() const = 0;
 	virtual const uint32    GetDataSize() const = 0;
 	virtual const ETEX_Type GetTextureType() const = 0;
@@ -475,10 +475,11 @@ public:
 	virtual bool            Clear() = 0;
 	virtual bool            Clear(const ColorF& color) = 0;
 
-	virtual int             StreamCalculateMipsSigned(float fMipFactor) const = 0;
-	virtual int             GetStreamableMipNumber() const = 0;
-	virtual uint32          GetStreamableMemoryUsage(int nStartMip) const = 0;
-	virtual int             GetMinLoadedMip() const = 0;
+	virtual int8            StreamCalculateMipsSigned(float fMipFactor) const = 0;
+	virtual int8            StreamCalculateMips(float fMipFactor) const = 0;
+	virtual int8            GetStreamableMipNumber() const = 0;
+	virtual uint32          GetStreamableMemoryUsage(int8 nStartMip) const = 0;
+	virtual int8            GetMinLoadedMip() const = 0;
 
 	//! Used for debugging/profiling.
 	virtual const char*       GetFormatName() const = 0;

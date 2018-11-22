@@ -88,8 +88,8 @@ protected:
 
 	int    m_ImgSize;
 
-	int    m_NumMips;
-	int    m_NumPersistantMips;
+	int8   m_NumMips;
+	int8   m_NumPersistantMips;
 	int    m_Flags;       // e.g. FIM_GREYSCALE|FIM_ALPHA
 	size_t m_nStartSeek;
 	float  m_fAvgBrightness;
@@ -159,11 +159,11 @@ public:
 	ETEX_Format                  mfGetFormat() const                            { return m_eFormat; }
 	ETEX_TileMode                mfGetTileMode() const                          { return m_eTileMode; }
 
-	void                         mfSet_numMips(const int num)                   { m_NumMips = num; }
-	int                          mfGet_numMips() const                          { return m_NumMips; }
+	void                         mfSet_numMips(const int8 num)                  { m_NumMips = num; }
+	int8                         mfGet_numMips() const                          { return m_NumMips; }
 
-	void                         mfSet_numPersistantMips(const int num)         { m_NumPersistantMips = num; }
-	int                          mfGet_numPersistantMips() const                { return m_NumPersistantMips; }
+	void                         mfSet_numPersistantMips(const int8 num)        { m_NumPersistantMips = num; }
+	int8                         mfGet_numPersistantMips() const                { return m_NumPersistantMips; }
 
 	void                         mfSet_avgBrightness(const float avgBrightness) { m_fAvgBrightness = avgBrightness; }
 	float                        mfGet_avgBrightness() const                    { return m_fAvgBrightness; }

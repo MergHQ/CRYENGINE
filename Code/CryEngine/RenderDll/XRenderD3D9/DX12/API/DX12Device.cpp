@@ -1143,7 +1143,7 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 			}
 			else if (sDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE1D)
 			{
-				uint32 size = CTexture::TextureDataSize(uint32(sDesc.Width), 1, 1, sDesc.MipLevels, sDesc.DepthOrArraySize, DeviceFormats::ConvertToTexFormat(sDesc.Format));
+				uint32 size = CTexture::TextureDataSize(uint32(sDesc.Width), 1, 1, int8(sDesc.MipLevels), sDesc.DepthOrArraySize, DeviceFormats::ConvertToTexFormat(sDesc.Format), eTM_Optimal);
 				recycleSize += counter * size;
 				recycleNums += counter;
 
@@ -1154,7 +1154,7 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 			}
 			else if (sDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D)
 			{
-				uint32 size = CTexture::TextureDataSize(uint32(sDesc.Width), sDesc.Height, 1, sDesc.MipLevels, sDesc.DepthOrArraySize, DeviceFormats::ConvertToTexFormat(sDesc.Format));
+				uint32 size = CTexture::TextureDataSize(uint32(sDesc.Width), sDesc.Height, 1, int8(sDesc.MipLevels), sDesc.DepthOrArraySize, DeviceFormats::ConvertToTexFormat(sDesc.Format), eTM_Optimal);
 				recycleSize += counter * size;
 				recycleNums += counter;
 
@@ -1165,7 +1165,7 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 			}
 			else if (sDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D)
 			{
-				uint32 size = CTexture::TextureDataSize(uint32(sDesc.Width), sDesc.Height, sDesc.DepthOrArraySize, sDesc.MipLevels, 1, DeviceFormats::ConvertToTexFormat(sDesc.Format));
+				uint32 size = CTexture::TextureDataSize(uint32(sDesc.Width), sDesc.Height, sDesc.DepthOrArraySize, int8(sDesc.MipLevels), 1, DeviceFormats::ConvertToTexFormat(sDesc.Format), eTM_Optimal);
 				recycleSize += counter * size;
 				recycleNums += counter;
 

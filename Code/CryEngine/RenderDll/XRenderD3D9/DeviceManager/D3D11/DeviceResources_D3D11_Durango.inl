@@ -20,7 +20,7 @@ bool CTexture::StreamPrepare_Platform()
 	{
 		// i/o and be done
 		STexStreamingInfo* pSI = m_pFileTexMips;
-		for (int nMip = 0; nMip < m_nMips; ++nMip)
+		for (int8 nMip = 0; nMip < m_nMips; ++nMip)
 		{
 			STexMipHeader& mh = pSI->m_pMipHeader[nMip];
 			mh.m_InPlaceStreamable = true;
@@ -48,7 +48,7 @@ bool CTexture::StreamPrepare_Platform()
 		XGComputeTexture2DLayout(&desc, &linLayout);
 
 		STexStreamingInfo* pSI = m_pFileTexMips;
-		for (int nMip = 0; nMip < m_nMips; ++nMip)
+		for (int8 nMip = 0; nMip < m_nMips; ++nMip)
 		{
 			STexMipHeader& mh = pSI->m_pMipHeader[nMip];
 			mh.m_InPlaceStreamable = linLayout.Plane[0].MipLayout[nMip].Slice2DSizeBytes >= 16384; // Tested in RC - all surfaces larger fit in their optimal counterparts
@@ -57,7 +57,7 @@ bool CTexture::StreamPrepare_Platform()
 	else if (srcTileMode == eTM_LinearPadded && isBlockCompressed)
 	{
 		STexStreamingInfo* pSI = m_pFileTexMips;
-		for (int nMip = 0; nMip < m_nMips; ++nMip)
+		for (int8 nMip = 0; nMip < m_nMips; ++nMip)
 		{
 			STexMipHeader& mh = pSI->m_pMipHeader[nMip];
 			mh.m_InPlaceStreamable = false;
@@ -66,7 +66,7 @@ bool CTexture::StreamPrepare_Platform()
 	else //if (srcTileMode == eTM_None)
 	{
 		STexStreamingInfo* pSI = m_pFileTexMips;
-		for (int nMip = 0; nMip < m_nMips; ++nMip)
+		for (int8 nMip = 0; nMip < m_nMips; ++nMip)
 		{
 			STexMipHeader& mh = pSI->m_pMipHeader[nMip];
 			mh.m_InPlaceStreamable = false;
@@ -117,7 +117,7 @@ bool CTexture::StreamOutCheckComplete_Durango(STexStreamOutState& state)
 	return true;
 }
 
-UINT64 CTexture::StreamCopyMipsTexToTex_MoveEngine(STexPoolItem* pSrcItem, int nMipSrc, STexPoolItem* pDstItem, int nMipDest, int nNumMips)
+UINT64 CTexture::StreamCopyMipsTexToTex_MoveEngine(STexPoolItem* pSrcItem, int8 nMipSrc, STexPoolItem* pDstItem, int8 nMipDest, int8 nNumMips)
 {
 	CDeviceTexture* pDstDevTexture = pDstItem->m_pDevTexture;
 	CDeviceTexture* pSrcDevTexture = pSrcItem->m_pDevTexture;
@@ -139,7 +139,7 @@ UINT64 CTexture::StreamCopyMipsTexToTex_MoveEngine(STexPoolItem* pSrcItem, int n
 
 	for (int32 iSide = 0; iSide < nSides; ++iSide)
 	{
-		for (int nMip = 0; nMip < nNumMips; ++nMip)
+		for (int8 nMip = 0; nMip < nNumMips; ++nMip)
 		{
 			pDMA->CopySubresourceRegion(
 				pDstResource,
@@ -160,7 +160,7 @@ UINT64 CTexture::StreamCopyMipsTexToTex_MoveEngine(STexPoolItem* pSrcItem, int n
 // Called if not streamable in-place (see STexStreamInState::StreamAsyncOnComplete)
 // In-place streaming can be turned off, which means all tiling-modes need to be supported.
 void CTexture::StreamUploadMip_Durango(const void* pSrcBaseAddress,
-	int nMip, int nBaseMip,
+	int8 nMip, int8 nBaseMip,
 	STexPoolItem* pNewPoolItem, STexStreamInMipState& mipState)
 {
 	FUNCTION_PROFILER_RENDERER();
@@ -183,9 +183,9 @@ void CTexture::StreamUploadMip_Durango(const void* pSrcBaseAddress,
 		// If any of the sub resources are in a linear general format, we'll need a computer to tile on the CPU.
 		bool bNeedsComputer = (srcTileMode == eTM_None) || (srcTileMode == eTM_LinearPadded && isBlockCompressed);
 
-		int numMips = pNewPoolItem->m_pOwner->m_nMips;
+		int8 numMips = pNewPoolItem->m_pOwner->m_nMips;
 		const int numSides = StreamGetNumSlices();
-		int nTexMip = nMip + nBaseMip;
+		int8 nTexMip = nMip + nBaseMip;
 
 		XGTextureAddressComputer* pComputerRaw = NULL;
 		if (bNeedsComputer)
@@ -301,9 +301,9 @@ void CTexture::StreamUploadMip_Durango(const void* pSrcBaseAddress,
 			char* pDstBaseAddress = (char*)pin.GetBaseAddress();
 
 			// Expecting that the data has been expanded, or that the src format is an inplace format (expansion is a nop)
-			const int nSubResourceSize = TextureDataSize(m_nWidth >> nTexMip, m_nHeight >> nTexMip, 1, 1, 1, m_eDstFormat);
+			const int nSubResourceSize = TextureDataSize(m_nWidth >> nTexMip, m_nHeight >> nTexMip, 1, 1, 1, m_eDstFormat, eTM_None);
 			const int nSrcSidePitch = nSubResourceSize + mipState.m_nSideDelta;
-			const int nSrcRowPitch = TextureDataSize(m_nWidth >> nTexMip, 1, 1, 1, 1, m_eDstFormat);
+			const int nSrcRowPitch = TextureDataSize(m_nWidth >> nTexMip, 1, 1, 1, 1, m_eDstFormat, eTM_None);
 
 			for (int nSlice = 0; nSlice < numSides; ++nSlice)
 			{
@@ -350,7 +350,7 @@ void CTexture::StreamUploadMip_Durango(const void* pSrcBaseAddress,
 
 // Called whenever streaming in is complete and not aborted, for expanded, in-place and not in-place streamable.
 // Only those cases neet to be supported which did not successfully finished their data in CTexture::StreamUploadMip_Durango
-void CTexture::StreamUploadMips_Durango(int nBaseMip, int nMipCount, STexPoolItem* pNewPoolItem, STexStreamInState& streamState)
+void CTexture::StreamUploadMips_Durango(int8 nBaseMip, int8 nMipCount, STexPoolItem* pNewPoolItem, STexStreamInState& streamState)
 {
 	FUNCTION_PROFILER_RENDERER();
 
@@ -414,10 +414,10 @@ void CTexture::StreamUploadMips_Durango(int nBaseMip, int nMipCount, STexPoolIte
 			CDeviceObjectFactory::STileRequest subRes[g_nD3D10MaxSupportedSubres];
 			size_t nSubRes = 0;
 
-			for (int nMip = nBaseMip; nMip < (nBaseMip + nMipCount); ++nMip)
+			for (int8 nMip = nBaseMip; nMip < (nBaseMip + nMipCount); ++nMip)
 			{
 				STexStreamInMipState& mipState = streamState.m_mips[nMip - nBaseMip];
-				int nDstMip = nMip - nBaseMip;
+				int8 nDstMip = nMip - nBaseMip;
 
 				if (!mipState.m_bUploaded)
 				{
@@ -462,7 +462,7 @@ void CTexture::StreamUploadMips_Durango(int nBaseMip, int nMipCount, STexPoolIte
 		{
 #ifndef _RELEASE
 			// Done
-			for (int nMip = nBaseMip; nMip < (nBaseMip + nMipCount); ++nMip)
+			for (int8 nMip = nBaseMip; nMip < (nBaseMip + nMipCount); ++nMip)
 			{
 				STexStreamInMipState& mipState = streamState.m_mips[nMip - nBaseMip];
 				
@@ -621,7 +621,7 @@ void CDeviceTexture::GPUFlush()
 	gcpRendD3D->GetPerformanceDeviceContext().FlushGpuCaches(GetBaseTexture());
 }
 
-uint32 CDeviceTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM, uint32 eFlags)
+uint32 CDeviceTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, int8 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM, uint32 eFlags)
 {
 	FUNCTION_PROFILER_RENDERER();
 

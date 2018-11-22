@@ -33,7 +33,7 @@ void CStatoscopeTextureStreamingIntervalGroup::Disable_Impl()
 	}
 }
 
-void CStatoscopeTextureStreamingIntervalGroup::OnCreatedStreamedTexture(void* pHandle, const char* name, int nMips, int nMinMipAvailable)
+void CStatoscopeTextureStreamingIntervalGroup::OnCreatedStreamedTexture(void* pHandle, const char* name, int8 nMips, int8 nMinMipAvailable)
 {
 	CStatoscopeEventWriter* pWriter = GetWriter();
 
@@ -69,12 +69,12 @@ void CStatoscopeTextureStreamingIntervalGroup::OnDestroyedStreamedTexture(void* 
 	GetWriter()->EndEvent();
 }
 
-void CStatoscopeTextureStreamingIntervalGroup::OnTextureWantsMip(void* pHandle, int nMinMip)
+void CStatoscopeTextureStreamingIntervalGroup::OnTextureWantsMip(void* pHandle, int8 nMinMip)
 {
 	OnChangedMip(pHandle, 1, nMinMip);
 }
 
-void CStatoscopeTextureStreamingIntervalGroup::OnTextureHasMip(void* pHandle, int nMinMip)
+void CStatoscopeTextureStreamingIntervalGroup::OnTextureHasMip(void* pHandle, int8 nMinMip)
 {
 	OnChangedMip(pHandle, 2, nMinMip);
 }
@@ -117,13 +117,13 @@ void CStatoscopeTextureStreamingIntervalGroup::OnChangedTextureUse(void** pHandl
 	}
 }
 
-void CStatoscopeTextureStreamingIntervalGroup::OnChangedMip(void* pHandle, int field, int nMinMip)
+void CStatoscopeTextureStreamingIntervalGroup::OnChangedMip(void* pHandle, int field, int8 nMinMip)
 {
 	CStatoscopeEventWriter* pWriter = GetWriter();
 
 	if (pWriter)
 	{
-		size_t payloadLen = GetValueLength(nMinMip);
+		size_t payloadLen = GetValueLength(int(nMinMip));
 		uint32 classId = GetId();
 
 		StatoscopeDataWriter::EventModifyInterval* pEv = pWriter->BeginEvent<StatoscopeDataWriter::EventModifyInterval>(payloadLen);

@@ -256,7 +256,7 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 	uint32 nWdt = pLayout.m_nWidth;
 	uint32 nHgt = pLayout.m_nHeight;
 	uint32 nDepth = pLayout.m_nDepth;
-	uint32 nMips = pLayout.m_nMips;
+	uint8  nMips = pLayout.m_nMips;
 	uint32 nArraySize = pLayout.m_nArraySize;
 	D3DFormat D3DFmt = pLayout.m_pPixelFormat->DeviceFormat;
 
@@ -306,7 +306,7 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 		{
 			eFlags |= CDeviceObjectFactory::USAGE_AUTOGENMIPS;
 			if (nMips <= 1)
-				nMips = max(1, CTexture::CalcNumMips(nWdt, nHgt) - 2);
+				nMips = std::max<int8>(1, CTexture::CalcNumMips(nWdt, nHgt) - 2);
 			CRY_ASSERT(!pPayload); // Not allowed as this is not what the outside expects
 		}
 
@@ -460,7 +460,7 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 	{
 		pDevTexture->m_pRenderTargetData = pRenderTargetData;
 		pDevTexture->m_eNativeFormat = D3DFmt;
-		pDevTexture->m_resourceElements = CTexture::TextureDataSize(nWdt, nHgt, nDepth, nMips, nArraySize, eTF_A8);
+		pDevTexture->m_resourceElements = CTexture::TextureDataSize(nWdt, nHgt, nDepth, nMips, nArraySize, eTF_A8, eTM_None);
 		pDevTexture->m_subResources[eSubResource_Mips] = nMips;
 		pDevTexture->m_subResources[eSubResource_Slices] = nArraySize;
 		pDevTexture->m_eTT = pLayout.m_eTT;
@@ -476,7 +476,7 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 	{
 		pRenderTargetData->m_pDeviceTextureMSAA->m_pRenderTargetData = nullptr;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_eNativeFormat = D3DFmt;
-		pRenderTargetData->m_pDeviceTextureMSAA->m_resourceElements = CTexture::TextureDataSize(nWdt, nHgt, nDepth, nMips, nArraySize, eTF_A8) * pRenderTargetData->m_nMSAASamples;
+		pRenderTargetData->m_pDeviceTextureMSAA->m_resourceElements = CTexture::TextureDataSize(nWdt, nHgt, nDepth, nMips, nArraySize, eTF_A8, eTM_None) * pRenderTargetData->m_nMSAASamples;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_subResources[eSubResource_Mips] = nMips;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_subResources[eSubResource_Slices] = nArraySize;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_eTT = pLayout.m_eTT;
@@ -511,7 +511,7 @@ CDeviceTexture* CDeviceTexture::Associate(const STextureLayout& pLayout, D3DReso
 	uint32 nWdt = pLayout.m_nWidth;
 	uint32 nHgt = pLayout.m_nHeight;
 	uint32 nDepth = pLayout.m_nDepth;
-	uint32 nMips = pLayout.m_nMips;
+	int8   nMips = pLayout.m_nMips;
 	uint32 nArraySize = pLayout.m_nArraySize;
 	D3DFormat D3DFmt = pLayout.m_pPixelFormat->DeviceFormat;
 
@@ -576,7 +576,7 @@ CDeviceTexture* CDeviceTexture::Associate(const STextureLayout& pLayout, D3DReso
 
 	pDevTexture->m_pRenderTargetData = pRenderTargetData;
 	pDevTexture->m_eNativeFormat = D3DFmt;
-	pDevTexture->m_resourceElements = CTexture::TextureDataSize(nWdt, nHgt, nDepth, nMips, nArraySize, eTF_A8);
+	pDevTexture->m_resourceElements = CTexture::TextureDataSize(nWdt, nHgt, nDepth, nMips, nArraySize, eTF_A8, eTM_None);
 	pDevTexture->m_subResources[eSubResource_Mips] = nMips;
 	pDevTexture->m_subResources[eSubResource_Slices] = nArraySize;
 	pDevTexture->m_eTT = pLayout.m_eTT;
@@ -752,7 +752,7 @@ uint32 CDeviceTexture::TextureDataSize(D3DBaseView* pView, const uint numRects, 
 }
 
 #if !CRY_PLATFORM_CONSOLE
-uint32 CDeviceTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM, uint32 eFlags)
+uint32 CDeviceTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, int8 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM, uint32 eFlags)
 {
 	return CTexture::TextureDataSize(nWidth, nHeight, nDepth, nMips, nSlices, eTF, eTM_None);
 }

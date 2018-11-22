@@ -167,8 +167,9 @@ using std::floor;
 using std::ceil;
 using std::trunc;
 
-template<typename T> ILINE T clamp(T val, T lo, T hi) { return min(max(val, lo), hi); }
-template<typename T> ILINE T saturate(T val)          { return clamp(val, convert<T>(0.0f), convert<T>(1.0f)); }
+template<typename T>             ILINE T clamp   (T val, T lo, T hi) { return min(max(val, lo), hi); }
+template<typename R, typename T> ILINE R clamp_to(T val, T lo, T hi) { return R(clamp(val, lo, hi)); }
+template<typename T>             ILINE T saturate(T val)             { return clamp(val, convert<T>(0.0f), convert<T>(1.0f)); }
 
 //
 // Mathematical functions

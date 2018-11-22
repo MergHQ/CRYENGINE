@@ -1258,7 +1258,7 @@ void CRenderer::EF_SubmitWind(const SWindGrid* pWind)
 		int nThreadID = m_pRT->m_nCurThreadProcess;
 		pDevTex->UploadFromStagingResource(0, [=](void* pData, uint32 rowPitch, uint32 slicePitch)
 		{
-			cryMemcpy(pData, pWind->m_pData, CTexture::TextureDataSize(pWind->m_nWidth, pWind->m_nHeight, 1, 1, 1, eTF_R16G16F));
+			cryMemcpy(pData, pWind->m_pData, CTexture::TextureDataSize(pWind->m_nWidth, pWind->m_nHeight, 1, 1, 1, eTF_R16G16F, eTM_None));
 			return true;
 		});
 	};
@@ -2105,12 +2105,12 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 						if (!pTSI)
 							continue;
 
-						int  nPersMip = tp->GetNumMips() - tp->GetNumPersistentMips();
+						int8 nPersMip = tp->GetNumMips() - tp->GetNumPersistentMips();
 						bool bStale   = CTexture::s_pTextureStreamer->StatsWouldUnload(tp);
-						int  nCurMip  = bStale ? nPersMip : tp->GetRequiredMip();
+						int8 nCurMip  = bStale ? nPersMip : tp->GetRequiredMip();
 						if (tp->IsForceStreamHighRes())
 							nCurMip = 0;
-						int nMips = tp->GetNumMips();
+						int8 nMips = tp->GetNumMips();
 						nCurMip = min(nCurMip, nPersMip);
 
 						uint32 nTexSize = tp->StreamComputeSysDataSize(nCurMip);
@@ -3166,9 +3166,9 @@ const char* CRenderer::GetTextureFormatName(ETEX_Format eTF)
 	return CTexture::NameForTextureFormat(eTF);
 }
 
-uint32 CRenderer::GetTextureFormatDataSize(int nWidth, int nHeight, int nDepth, int nMips, ETEX_Format eTF)
+uint32 CRenderer::GetTextureFormatDataSize(int nWidth, int nHeight, int nDepth, int nMips, ETEX_Format eTF, ETEX_TileMode mode)
 {
-	return CTexture::TextureDataSize(nWidth, nHeight, nDepth, nMips, 1, eTF);
+	return CTexture::TextureDataSize(nWidth, nHeight, nDepth, nMips, 1, eTF, mode);
 }
 
 //////////////////////////////////////////////////////////////////////////

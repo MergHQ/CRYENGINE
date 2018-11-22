@@ -38,7 +38,7 @@ struct STexPoolItem : STexPoolItemHdr
 	size_t const          m_nDevTextureSize;
 
 	uint32                m_nFreeTick;
-	uint8                 m_nActiveLod;
+	int8                  m_nActiveLod;
 
 	STexPoolItem(STexPool* pOwner, CDeviceTexture* pDevTexture, size_t devTextureSize);
 	~STexPoolItem();
@@ -69,7 +69,7 @@ struct STexPool
 	size_t          m_nDevTextureSize;
 	STexPoolItemHdr m_ItemsList;
 	ETEX_Type       m_eTT;
-	uint8           m_nMips;
+	int8            m_nMips;
 
 	int             m_nItems;
 	int             m_nItemsFree;
@@ -125,17 +125,18 @@ public:
 
 	struct SPoolStats
 	{
-		int       nWidth;
-		int       nHeight;
-		int       nMips;
-		uint32    nFormat;
-		ETEX_Type eTT;
+		uint16      nWidth;
+		uint16      nHeight;
+		int8        nMips;
 
-		int       nInUse;
-		int       nFree;
+		uint8       nFormat; // DXGI_FORMAT/D3DFormat
+		ETEX_Type   eTT;
 
-		int       nHardCreatesPerFrame;
-		int       nSoftCreatesPerFrame;
+		int         nInUse;
+		int         nFree;
+
+		int         nHardCreatesPerFrame;
+		int         nSoftCreatesPerFrame;
 	};
 
 public:
@@ -182,20 +183,21 @@ private:
 		};
 		struct
 		{
-			uint16 nWidth;
-			uint16 nHeight;
-			uint32 nFormat;
-			uint8  nTexType;
-			uint8  nMips;
-			uint16 nArraySize;
+			uint16      nWidth;
+			uint16      nHeight;
+			uint16      nArraySize;
+			int8        nMips;
+
+			uint8       nFormat; // DXGI_FORMAT/D3DFormat
+			ETEX_Type   nTexType;
 		};
 
-		TexturePoolKey(uint16 nWidth, uint16 nHeight, uint32 nFormat, uint8 nTexType, uint8 nMips, uint16 nArraySize)
+		TexturePoolKey(uint16 nWidth, uint16 nHeight, D3DFormat nFormat, ETEX_Type nTexType, int8 nMips, uint16 nArraySize)
 		{
 			memset(this, 0, sizeof(*this));
 			this->nWidth = nWidth;
 			this->nHeight = nHeight;
-			this->nFormat = nFormat;
+			this->nFormat = uint8(nFormat);
 			this->nTexType = nTexType;
 			this->nMips = nMips;
 			this->nArraySize = nArraySize;
@@ -219,7 +221,7 @@ private:
 	typedef VectorMap<TexturePoolKey, STexPool*> TexturePoolMap;
 
 private:
-	STexPool* GetOrCreatePool(int nWidth, int nHeight, int nMips, int nArraySize, D3DFormat eTF, ETEX_Type eTT);
+	STexPool* GetOrCreatePool(uint16 nWidth, uint16 nHeight, int8 nMips, uint16 nArraySize, D3DFormat eTF, ETEX_Type eTT);
 	void      FlushFree();
 
 private:
