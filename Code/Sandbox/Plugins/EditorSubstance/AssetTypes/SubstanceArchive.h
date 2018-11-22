@@ -52,6 +52,7 @@ public:
 	virtual const char*    GetUiTypeName() const override         { return QT_TR_NOOP("Substance Archive"); }
 	virtual bool           IsImported() const override            { return true; }
 	virtual bool           CanBeEdited() const override           { return true; }
+	virtual bool           CanBeCopied() const                    { return true; }
 	virtual bool           CanAutoRepairMetadata() const override { return false; } //! The metadata file has built-in import options that can not be restored.
 	virtual CryIcon        GetIcon() const override;
 	virtual bool           HasThumbnail() const override          { return false; }

@@ -32,7 +32,7 @@ CTempFileHelper::~CTempFileHelper()
 bool CTempFileHelper::UpdateFile(bool backup)
 {
 	// First, check if the files are actually different
-	if (!FileUtils::CompareFiles(m_tempFileName, m_fileName))
+	if (!FileUtils::Pak::CompareFiles(m_tempFileName, m_fileName))
 	{
 		// If the file changed, make sure the destination file is writable
 		if (FileUtils::FileExists(m_fileName) && !FileUtils::MakeFileWritable(m_fileName))

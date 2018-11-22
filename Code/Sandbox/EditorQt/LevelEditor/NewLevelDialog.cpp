@@ -95,12 +95,12 @@ CNewLevelDialog::CNewLevelDialog()
 CNewLevelDialog::~CNewLevelDialog()
 {}
 
-CLevelType::SCreateParams CNewLevelDialog::GetResult() const
+CLevelType::SLevelCreateParams CNewLevelDialog::GetResult() const
 {
 	auto heightmap = p->GetHeightmapResult();
 	auto texture = p->GetTextureResult();
 
-	CLevelType::SCreateParams params;
+	CLevelType::SLevelCreateParams params;
 	params.resolution = heightmap.resolution;
 	params.unitSize = heightmap.unitSize;
 	params.bUseTerrain = heightmap.isTerrain;

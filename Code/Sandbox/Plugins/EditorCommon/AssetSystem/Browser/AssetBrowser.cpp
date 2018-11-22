@@ -27,6 +27,7 @@
 #include "FileDialogs/SystemFileDialog.h"
 #include "Menu/MenuWidgetBuilders.h"
 #include "Notifications/NotificationCenter.h"
+#include "FileUtils.h"
 #include "PathUtils.h"
 #include "ProxyModels/AttributeFilterProxyModel.h"
 #include "QAdvancedItemDelegate.h"
@@ -724,9 +725,9 @@ public:
 		QObject::disconnect(m_connection);
 	}
 
-	virtual CAsset* QueryNewAsset(const CAssetType& type, const void* pTypeSpecificParameter) override
+	virtual CAsset* QueryNewAsset(const CAssetType& type, const CAssetType::SCreateParams* pCreateParams) override
 	{
-		return m_pBrowser ? m_pBrowser->QueryNewAsset(type, pTypeSpecificParameter) : nullptr;
+		return m_pBrowser ? m_pBrowser->QueryNewAsset(type, pCreateParams) : nullptr;
 	}
 private:
 	CAssetBrowser*          m_pBrowser;
@@ -766,6 +767,9 @@ QToolButton* CreateToolButtonForAction(QAction* pAction)
 	pButton->setAutoRaise(true);
 	return pButton;
 }
+
+// Copy/Paste implementation
+static std::vector<string> g_clipboard;
 
 }
 
@@ -1026,34 +1030,34 @@ void CAssetBrowser::InitMenus()
 
 	// Edit menu
 	AddToMenu(CEditor::MenuItems::EditMenu);
-	CAbstractMenu* const menuEdit = GetMenu(CEditor::MenuItems::EditMenu);
+	AddToMenu(CEditor::MenuItems::Copy);
+	AddToMenu(CEditor::MenuItems::Paste);
+	AddToMenu(CEditor::MenuItems::Duplicate);
 
-	menuEdit->signalAboutToShow.Connect([menuEdit, this]()
+	CAbstractMenu* const pMenuEdit = GetMenu(CEditor::MenuItems::EditMenu);
+	if (pMenuEdit)
 	{
-		menuEdit->Clear();
-
-		auto action = menuEdit->CreateAction(tr("Generate All Thumbnails"));
+		const int section = pMenuEdit->GetNextEmptySection();
+		auto action = pMenuEdit->CreateAction(tr("Generate All Thumbnails"), section);
 		connect(action, &QAction::triggered, [this]()
 		{
-				GenerateThumbnailsAsync("");
+			GenerateThumbnailsAsync("");
 		});
 
-		action = menuEdit->CreateAction(tr("Generate/Repair All Metadata"));
-		if (!CAssetManager::GetInstance()->IsScanning())
+		auto pGenerateMetadataAction = pMenuEdit->CreateAction(tr("Generate/Repair All Metadata"), section);
+		connect(pGenerateMetadataAction, &QAction::triggered, []()
 		{
-		  connect(action, &QAction::triggered, []()
+			std::shared_ptr<CProgressNotification> pNotification = std::make_shared<CProgressNotification>(tr("Generating/Repairing Metadata"), QString(), false);
+			CAssetManager::GetInstance()->GenerateCryassetsAsync([pNotification]()
 			{
-				std::shared_ptr<CProgressNotification> pNotification = std::make_shared<CProgressNotification>(tr("Generating/Repairing Metadata"), QString(), false);
-				CAssetManager::GetInstance()->GenerateCryassetsAsync([pNotification]()
-				{
-				});
 			});
-		}
-		else
+		});
+
+		pMenuEdit->signalAboutToShow.Connect([pGenerateMetadataAction]()
 		{
-		  action->setEnabled(false);
-		}
-	});
+			pGenerateMetadataAction->setEnabled(!CAssetManager::GetInstance()->IsScanning());
+		});
+	}
 
 	//View menu
 	AddToMenu(CEditor::MenuItems::ViewMenu);
@@ -1344,7 +1348,7 @@ void CAssetBrowser::EditNewAsset()
 	}
 }
 
-void CAssetBrowser::BeginCreateAsset(const CAssetType& type, const void* pTypeSpecificParameter)
+void CAssetBrowser::BeginCreateAsset(const CAssetType& type, const CAssetType::SCreateParams* pCreateParams)
 {
 	auto folderSelection = m_pFoldersView->GetSelectedFolders();
 	string folder = QtUtil::ToString(folderSelection.front());
@@ -1353,7 +1357,7 @@ void CAssetBrowser::BeginCreateAsset(const CAssetType& type, const void* pTypeSp
 		return; // More than one folder selected, so target folder is ambiguous.
 	}
 
-	CNewAssetModel::GetInstance()->BeginCreateAsset(folder, "Untitled", type, pTypeSpecificParameter);
+	CNewAssetModel::GetInstance()->BeginCreateAsset(folder, "Untitled", type, pCreateParams);
 
 	EditNewAsset();
 }
@@ -1369,9 +1373,9 @@ void CAssetBrowser::EndCreateAsset()
 	}
 }
 
-CAsset* CAssetBrowser::QueryNewAsset(const CAssetType& type, const void* pTypeSpecificParameter)
+CAsset* CAssetBrowser::QueryNewAsset(const CAssetType& type, const CAssetType::SCreateParams* pCreateParams)
 {
-	BeginCreateAsset(type, pTypeSpecificParameter);
+	BeginCreateAsset(type, pCreateParams);
 
 	CNewAssetModel* const pModel = CNewAssetModel::GetInstance();
 	while (CNewAssetModel::GetInstance()->IsEditing())
@@ -1740,6 +1744,8 @@ void CAssetBrowser::CreateContextMenu(bool isFolderView /*= false*/)
 
 void CAssetBrowser::BuildContextMenuForEmptiness(CAbstractMenu &abstractMenu)
 {
+	const bool isRecursiveView = m_recursiveSearch || IsRecursiveView();
+
 	std::vector<string> selectedFolders = GetSelectedFoldersInFolderView();
 	CAssetFoldersModel* pModel = CAssetFoldersModel::GetInstance();
 
@@ -1754,6 +1760,10 @@ void CAssetBrowser::BuildContextMenuForEmptiness(CAbstractMenu &abstractMenu)
 
 		CAbstractMenu* const pCreateAssetMenu = abstractMenu.CreateMenu(tr("New..."));
 		FillCreateAssetMenu(pCreateAssetMenu, folder);
+
+		action = abstractMenu.CreateAction(tr("Paste"), foldersSection);
+		connect(action, &QAction::triggered, [this]() { OnPaste(); });
+		action->setDisabled(Private_AssetBrowser::g_clipboard.empty() || isRecursiveView);
 
 		action = abstractMenu.CreateAction(tr("Import"), foldersSection);
 		connect(action, &QAction::triggered, [this]() { OnImport(); });
@@ -1832,7 +1842,8 @@ void CAssetBrowser::BuildContextMenuForFolders(const std::vector<string>& folder
 void CAssetBrowser::BuildContextMenuForAssets(const std::vector<CAsset*>& assets, const std::vector<string>& folders, CAbstractMenu &abstractMenu)
 {
 	bool canReimport = false;
-	bool isReadOnly = false;
+	bool canCopy = false;
+	bool isImmutable = false;
 	bool isModified = false;
 	QMap<const CAssetType*, std::vector<CAsset*>> assetsByType;
 
@@ -1843,10 +1854,12 @@ void CAssetBrowser::BuildContextMenuForAssets(const std::vector<CAsset*>& assets
 			canReimport = true;
 		}
 
-		if (asset->IsImmutable() || !GetISystem()->GetIPak()->IsFileExist(assets.front()->GetFile(0), ICryPak::eFileLocation_OnDisk))
+		if (asset->IsImmutable() || FileUtils::Pak::IsFileInPakOnly(assets.front()->GetFile(0)))
 		{
-			isReadOnly = true;
+			isImmutable = true;
 		}
+
+		canCopy = canCopy || asset->GetType()->CanBeCopied();
 
 		isModified = isModified || asset->IsModified();
 
@@ -1855,16 +1868,22 @@ void CAssetBrowser::BuildContextMenuForAssets(const std::vector<CAsset*>& assets
 
 	int section = abstractMenu.FindSectionByName("Assets");
 
-	if (canReimport)
 	{
-		auto action = abstractMenu.CreateAction(tr("Reimport"), section);
-		connect(action, &QAction::triggered, [this, assets]() { OnReimport(assets); });
-	}
+		auto action = abstractMenu.CreateAction(tr("Copy"), section);
+		connect(action, &QAction::triggered, [this, assets]() { OnCopy(); });
+		action->setDisabled(!canCopy);
 
-	if (!isReadOnly)
-	{
-		auto action = abstractMenu.CreateAction(tr("Delete"));
+		action = abstractMenu.CreateAction(tr("Duplicate"), section);
+		connect(action, &QAction::triggered, [this, assets]() { OnDuplicate(); });
+		action->setDisabled(!canCopy);
+
+		action = abstractMenu.CreateAction(tr("Reimport"), section);
+		connect(action, &QAction::triggered, [this, assets]() { OnReimport(assets); });
+		action->setDisabled(!canReimport);
+
+		action = abstractMenu.CreateAction(tr("Delete"));
 		connect(action, &QAction::triggered, [this, assets]() { OnDelete(assets); });
+		action->setDisabled(isImmutable);
 	}
 
 	if (isModified)
@@ -1911,15 +1930,14 @@ void CAssetBrowser::BuildContextMenuForAssets(const std::vector<CAsset*>& assets
 	if (assets.size() == 1)
 	{
 		CAsset* const pAsset = assets.front();
-		const bool isAssetOnDisk = GetISystem()->GetIPak()->IsFileExist(pAsset->GetFile(0), ICryPak::eFileLocation_OnDisk);
-		const bool canBeRenamed = isAssetOnDisk && !isReadOnly && pAsset->IsWritable(true);
+		const bool canBeRenamed = !isImmutable && pAsset->IsWritable(true);
 
 		auto action = abstractMenu.CreateAction(tr("Rename"));
 		action->setDisabled(!canBeRenamed);
 		connect(action, &QAction::triggered, [this, pAsset]() { OnRenameAsset(*pAsset); });
 
 		action = abstractMenu.CreateAction(tr("Show in File Explorer"));
-		action->setDisabled(!isAssetOnDisk);
+		action->setDisabled(isImmutable);
 		connect(action, &QAction::triggered, [this, pAsset]()
 		{
 			const string path = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), pAsset->GetFile(0));
@@ -2195,6 +2213,104 @@ bool CAssetBrowser::OnOpen()
 		OnActivated(pAsset);
 	}
 	return true;
+}
+
+bool CAssetBrowser::OnCopy()
+{
+	using namespace Private_AssetBrowser;
+
+	const std::vector<CAsset*> assets = GetSelectedAssets();
+	if (assets.empty())
+	{
+		return true;
+	}
+
+	g_clipboard.clear();
+	g_clipboard.reserve(assets.size());
+	std::unordered_set<const CAssetType*> excludedTypes(CAssetManager::GetInstance()->GetAssetTypes().size());
+	for (CAsset* pAsset : assets)
+	{
+		if (!pAsset->GetType()->CanBeCopied())
+		{
+			excludedTypes.insert(pAsset->GetType());
+			continue;
+		}
+		g_clipboard.push_back(pAsset->GetMetadataFile());
+	}
+
+	for (const CAssetType* pType : excludedTypes)
+	{
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "%s asset does not support Copy/Paste.", pType->GetUiTypeName());
+	}
+	return true;
+}
+
+bool CAssetBrowser::OnPaste()
+{
+	Paste(false);
+	return true;
+}
+
+bool CAssetBrowser::OnDuplicate()
+{
+	OnCopy();
+	Paste(true);
+	return true;
+}
+
+void CAssetBrowser::Paste(bool pasteNextToOriginal)
+{
+	using namespace Private_AssetBrowser;
+
+	if (g_clipboard.empty())
+	{
+		return;
+	}
+
+	string selectedFolder;
+	if (!pasteNextToOriginal)
+	{
+		if (m_recursiveSearch || IsRecursiveView())
+		{
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Target folder is ambiguous. Please turn off the recursive view/search");
+			return;
+		}
+
+		auto folderSelection = m_pFoldersView->GetSelectedFolders();
+		if (folderSelection.size() != 1)
+		{
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Target folder is ambiguous. Please select a single folder in the Asset Browser to paste");
+			return;
+		}
+		selectedFolder = PathUtil::AddSlash(QtUtil::ToString(folderSelection.front()));
+	}
+
+	CAssetManager* const pAssetManager = CAssetManager::GetInstance();
+	for (const string& asset : g_clipboard)
+	{
+		CAsset* const pAsset = pAssetManager->FindAssetForMetadata(asset);
+		if (!pAsset)
+		{
+			continue;
+		}
+
+		std::vector<string> exclusions;
+		exclusions.reserve(100);
+		const string& folder = pasteNextToOriginal ? pAsset->GetFolder() : selectedFolder;
+		pAssetManager->ForeachAssetOfType(pAsset->GetType(), [folder, &exclusions](const CAsset* pExistingAsset)
+		{
+			if (pExistingAsset->GetFolder().CompareNoCase(folder) == 0)
+			{
+				exclusions.push_back(pExistingAsset->GetName());
+			}
+		});
+		const string name = PathUtil::GetUniqueName(pAsset->GetName(), exclusions);
+
+		const auto filename = PathUtil::Make(folder, pAsset->GetType()->MakeMetadataFilename(name));
+		CAssetType::SCreateParams params;
+		params.pSourceAsset = pAsset;
+		pAsset->GetType()->Create(filename, &params);
+	}
 }
 
 void CAssetBrowser::OnRenameFolder(const QString& folder)

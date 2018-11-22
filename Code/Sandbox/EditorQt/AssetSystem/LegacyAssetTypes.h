@@ -65,6 +65,7 @@ public:
 	virtual const char* GetUiTypeName() const override     { return QT_TR_NOOP("Animated Mesh"); }
 	virtual const char* GetFileExtension() const override  { return "cga"; }
 	virtual bool        IsImported() const override        { return false; }
+	virtual bool        CanBeCopied() const override       { return true; }
 	virtual bool        CanBeEdited() const override       { return false; }
 	virtual QColor      GetThumbnailColor() const override { return QColor(210, 75, 64); }
 	virtual const char* GetObjectClassName() const         { return "EntityWithAnimatedMeshComponent"; }
@@ -87,6 +88,7 @@ public:
 	virtual const char* GetUiTypeName() const override     { return QT_TR_NOOP("Mesh Animation"); }
 	virtual const char* GetFileExtension() const override  { return "anm"; }
 	virtual bool        IsImported() const override        { return false; }
+	virtual bool        CanBeCopied() const override       { return true; }
 	virtual bool        CanBeEdited() const override       { return false; }
 	virtual QColor      GetThumbnailColor() const override { return QColor(210, 75, 64); }
 

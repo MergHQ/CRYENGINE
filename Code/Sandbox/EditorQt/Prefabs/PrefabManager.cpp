@@ -328,7 +328,11 @@ CPrefabItem* CPrefabManager::MakeFromSelection(CSelectionGroup* pSelectionGroup 
 	}
 
 	const string newAssetPath = string().Format("%s.%s.cryasset", assetBasePath.c_str(), pAssetType->GetFileExtension());
-	pAssetType->Create(newAssetPath, pSelectionGroup);
+
+	SPrefabCreateParams createParam;
+	createParam.pGroup = pSelectionGroup;
+
+	pAssetType->Create(newAssetPath, &createParam);
 	CAsset* const pAsset = GetIEditor()->GetAssetManager()->FindAssetForMetadata(newAssetPath);
 	if (!pAsset)
 	{

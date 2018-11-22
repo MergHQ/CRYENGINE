@@ -50,15 +50,15 @@ CAssetEditor* CSharpSourcefileAssetType::Edit(CAsset* pAsset) const
 	return nullptr;
 }
 
-bool CSharpSourcefileAssetType::OnCreate(INewAsset& editAsset, const void* pCreateParams) const
+bool CSharpSourcefileAssetType::OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const
 {
-	const string basePath = PathUtil::RemoveExtension(PathUtil::RemoveExtension(editAsset.GetMetadataFile()));
+	const string basePath = PathUtil::RemoveExtension(PathUtil::RemoveExtension(asset.GetMetadataFile()));
 	const string csFilePath = basePath + ".cs";
 
 	string projectName = gEnv->pSystem->GetIProjectManager()->GetCurrentProjectName();
 
 	string cleanProjectName = GetCleanName(projectName);
-	string cleanAssetName = GetCleanName(editAsset.GetName());
+	string cleanAssetName = GetCleanName(asset.GetName());
 	CryGUID guid = CryGUID::Create();
 
 	CCryFile assetFile(csFilePath.c_str(), "wb", ICryPak::FLAGS_NO_LOWCASE);
@@ -85,7 +85,7 @@ bool CSharpSourcefileAssetType::OnCreate(INewAsset& editAsset, const void* pCrea
 
 		if (assetFile.Write(assetContents.data(), assetContents.size()))
 		{
-			editAsset.SetFiles({ csFilePath });
+			asset.SetFiles({ csFilePath });
 		}
 	}
 

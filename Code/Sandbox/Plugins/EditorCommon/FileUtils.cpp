@@ -117,7 +117,7 @@ bool MakeFileWritable(const char* szFilePath)
 }
 
 // The pak should be opened.
-void Unpak(const char* szArchivePath, const char* szDestPath, std::function<void(float)> progress)
+void Pak::Unpak(const char* szArchivePath, const char* szDestPath, std::function<void(float)> progress)
 {
 	const string pakFolder = PathUtil::GetDirectory(szArchivePath);
 
@@ -202,12 +202,22 @@ std::vector<string> GetDirectorysContent(const QString& dirPath, int depthLevel 
 }
 
 
-bool IsFileInPakOnly(const string& path)
+bool Pak::IsFileInPakOnly(const string& path)
 {
-	return !FileExists(path) && GetISystem()->GetIPak()->IsFileExist(PathUtil::AbsolutePathToGamePath(path), ICryPak::eFileLocation_InPak);
+	ICryPak* const pPak  = GetISystem()->GetIPak();
+	if (pPak->IsAbsPath(path))
+	{
+		return !FileExists(path) && GetISystem()->GetIPak()->IsFileExist(PathUtil::AbsolutePathToGamePath(path), ICryPak::eFileLocation_InPak);
+	}
+
+	// Resolve aliases, e.g. %engine%
+	char szAdjustedPath[ICryPak::g_nMaxPath];
+	pPak->AdjustFileName(path.c_str(), szAdjustedPath, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
+
+	return !FileExists(szAdjustedPath) && GetISystem()->GetIPak()->IsFileExist(path, ICryPak::eFileLocation_InPak);
 }
 
-EDITOR_COMMON_API bool CompareFiles(const string& filePath1, const string& filePath2)
+EDITOR_COMMON_API bool Pak::CompareFiles(const string& filePath1, const string& filePath2)
 {
 	// Try to open both files for read.  If either fails we say they are different (most likely one doesn't exist).
 	CCryFile file1, file2;
@@ -266,6 +276,39 @@ EDITOR_COMMON_API void BackupFile(const char* szFilePath)
 	const CryPathString bakFilename2 = PathUtil::ReplaceExtension(adjusted, "bak2");
 	MoveFileAllowOverwrite(bakFilename, bakFilename2);
 	MoveFileAllowOverwrite(szFilePath, bakFilename);
+}
+
+EDITOR_COMMON_API bool Pak::CopyFileAllowOverwrite(const char* szSourceFilePath, const char* szDestinationFilePath)
+{
+	GetISystem()->GetIPak()->MakeDir(PathUtil::GetDirectory(szDestinationFilePath));
+
+	ICryPak* const pPak = GetISystem()->GetIPak();
+	FILE* pFile = pPak->FOpen(szSourceFilePath, "rbx");
+	if (!pFile)
+	{
+		return false;
+	}
+
+	std::vector<char> buffer(pPak->FGetSize(pFile));
+	const size_t numberOfBytesRead = pPak->FReadRawAll(buffer.data(), buffer.size(), pFile);
+	pPak->FClose(pFile);
+	if (numberOfBytesRead != buffer.size())
+	{ 
+		return false;
+	}
+
+	QFile destFile(QtUtil::ToQString(szDestinationFilePath));
+	if (!destFile.open(QIODevice::WriteOnly | QIODevice::Truncate))
+	{
+		return false;
+	}
+
+	if (!destFile.write(buffer.data(), numberOfBytesRead) == numberOfBytesRead)
+	{
+		destFile.remove();
+		return false;
+	}
+	return true;
 }
 
 }

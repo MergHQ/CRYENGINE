@@ -96,6 +96,10 @@ private:
 				pixmap.loadFromData((const uchar*)&thumbnailData[0], thumbnailData.size(), "PNG");
 				asset.SetThumbnail(QIcon(pixmap));
 			}
+			else
+			{
+				asset.SetThumbnail(asset.GetType()->GetIcon());
+			}
 
 			CAssetThumbnailsLoader::GetInstance().NotifyThumbnailLoaded(asset);
 

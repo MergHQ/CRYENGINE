@@ -38,6 +38,9 @@ public:
 	//! Make prefab from selection of objects.
 	void MakeFromSelection(const CSelectionGroup& selection);
 
+	//! Makes a copy of this instance with a new guid.
+	CPrefabItem* CreateCopy() const;
+
 	//! Called when something changed in a prefab the pPrefabObject is the changed object
 	void UpdateFromPrefabObject(CPrefabObject* pPrefabObject, const SObjectChangedContext& context);
 

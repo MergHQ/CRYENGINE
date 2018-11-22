@@ -28,7 +28,7 @@ bool CreateDataFile(const char* szFilePath)
 
 } // namespace Private_SampleAssetType
 
-bool CSampleAssetType::OnCreate(INewAsset& asset, const void* /* pCreateParams */) const
+bool CSampleAssetType::OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const
 {
 	using namespace Private_SampleAssetType;
 

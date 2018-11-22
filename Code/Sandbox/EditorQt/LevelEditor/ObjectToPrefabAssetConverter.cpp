@@ -1,9 +1,11 @@
 #include "StdAfx.h"
 #include "ObjectToPrefabAssetConverter.h"
 #include "LevelModel.h"
-#include "AssetSystem/Browser/AssetBrowser.h"
 #include "Objects/SelectionGroup.h"
+#include "Prefabs/PrefabManager.h"
+
 #include <AssetSystem/AssetManager.h>
+#include <AssetSystem/Browser/AssetBrowser.h>
 
 REGISTER_ASSET_CONVERTER(CObjectToPrefabAssetConverter)
 
@@ -45,7 +47,9 @@ void CObjectToPrefabAssetConverter::Convert(const QMimeData& data, const SAssetC
 			//we need to select the actual folder where the conversion is going to take place
 			info.pOwnerBrowser->SelectAsset(info.folderPath);
 
-			info.pOwnerBrowser->QueryNewAsset(*pAssetType, &group);
+			SPrefabCreateParams createParam;
+			createParam.pGroup = &group;
+			info.pOwnerBrowser->QueryNewAsset(*pAssetType, &createParam);
 		});
 	}
 }

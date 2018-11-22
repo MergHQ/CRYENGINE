@@ -15,6 +15,7 @@ public:
 	virtual const char*                       GetUiTypeName() const override     { return QT_TR_NOOP("Skinned Mesh"); }
 	virtual const char*                       GetFileExtension() const override  { return "skin"; }
 	virtual bool                              IsImported() const override        { return true; }
+	virtual bool                              CanBeCopied() const                { return true; }
 	virtual bool                              CanBeEdited() const override       { return true; }
 	virtual bool                              HasThumbnail() const override      { return false; }
 	virtual QColor                            GetThumbnailColor() const override { return QColor(210, 75, 64); }

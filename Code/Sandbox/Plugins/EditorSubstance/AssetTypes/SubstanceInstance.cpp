@@ -36,15 +36,15 @@ namespace EditorSubstance
 			}
 		}
 
-		bool CSubstanceInstanceType::OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const
+		bool CSubstanceInstanceType::OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const
 		{
 			const string dataFilePath = PathUtil::RemoveExtension(asset.GetMetadataFile());
 			asset.AddFile(dataFilePath);
 
-			CRY_ASSERT(pTypeSpecificParameter);
-			if (pTypeSpecificParameter)
+			CRY_ASSERT_MESSAGE(pCreateParams, __FUNCTION__" expects a valid pCreateParams");
+			if (pCreateParams)
 			{
-				string& archiveName = *(string*)(pTypeSpecificParameter);
+				const string& archiveName = static_cast<const SSubstanceCreateParams*>(pCreateParams)->archiveName;
 				asset.SetDependencies({ {archiveName, 1} });
 			}
 			return true;

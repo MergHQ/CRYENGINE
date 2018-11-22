@@ -124,7 +124,6 @@ private:
 	int  GetNewableAssetCount() const;
 
 	void InternalNewAsset(CAssetType* pAssetType);
-	bool InternalSaveAs(const string& newAssetPath);
 
 	void UpdateWindowTitle();
 	void SetAssetBeingEdited(CAsset* pAsset);

@@ -272,15 +272,15 @@ void CLevelType::UpdateFiles(IEditableAsset& editAsset)
 	editAsset.SetFiles({ filename });
 }
 
-bool CLevelType::OnCreate(INewAsset& editAsset, const void* pTypeSpecificParameter) const
+bool CLevelType::OnCreate(INewAsset& editAsset, const SCreateParams* pCreateParams) const
 {
 	using namespace Private_LevelAssetType;
 
-	SCreateParams params;
+	SLevelCreateParams params;
 
-	if (pTypeSpecificParameter)
+	if (pCreateParams)
 	{
-		params = *static_cast<const SCreateParams*>(pTypeSpecificParameter);
+		params = *static_cast<const SLevelCreateParams*>(pCreateParams);
 	}
 	else
 	{

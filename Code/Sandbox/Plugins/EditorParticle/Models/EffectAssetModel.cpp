@@ -7,6 +7,7 @@
 #include <AssetSystem/Asset.h>
 
 #include <CryParticleSystem/IParticlesPfx2.h>
+#include <CrySerialization/IArchiveHost.h>
 
 namespace CryParticleEditor 
 {
@@ -60,6 +61,19 @@ public:
 
 		const string pfxFilePath = PathUtil::RemoveExtension(asset.GetMetadataFile());
 		Serialization::LoadJsonFile(*m_pEffect, pfxFilePath.c_str());
+	}
+
+	virtual bool OnCopyAsset(INewAsset& asset) override
+	{
+		if (!m_pEffect)
+		{
+			return false;
+		}
+
+		_smart_ptr<pfx2::IParticleEffectPfx2> pEffect = DuplicateEffect(PathUtil::RemoveExtension(asset.GetMetadataFile()), m_pEffect);
+
+		CSession session(pEffect);
+		return session.OnSaveAsset(asset);
 	}
 
 	static CEffectAsset* CreateEffectAsset(CAsset* pAsset)
@@ -138,6 +152,17 @@ private:
 			{ "featuresCount",   string().Format("%d", totalFeaturesCount) },
 		};
 		asset.SetDetails(details);
+	}
+
+	static _smart_ptr<pfx2::IParticleEffectPfx2> DuplicateEffect(const char* szNewEffectName, pfx2::IParticleEffectPfx2* pOriginal)
+	{
+		pfx2::IParticleSystem* const pParticleSystem = GetParticleSystem();
+		_smart_ptr<pfx2::IParticleEffectPfx2> pEffect = pParticleSystem->CreateEffect();
+		pParticleSystem->RenameEffect(pEffect, szNewEffectName);
+		DynArray<char> buffer;
+		Serialization::SaveJsonBuffer(buffer, *pOriginal);
+		Serialization::LoadJsonBuffer(*pEffect, buffer.begin(), buffer.size());
+		return pEffect;
 	}
 
 private:

@@ -75,7 +75,7 @@ public:
 	}
 };
 
-bool CEntityAssetType::OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const
+bool CEntityAssetType::OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const
 {
 	const string dataFilePath = PathUtil::RemoveExtension(asset.GetMetadataFile());
 	const string assetName = asset.GetName();

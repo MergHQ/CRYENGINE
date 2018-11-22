@@ -39,7 +39,7 @@ void ReplaceFoldersWithContent(std::vector<string>& files, std::vector<string>& 
 
 void InsertAssetFilePaths(const CAsset& asset, std::vector<string>& outputFiles, EInclude include, bool shouldReplaceFoldersWithContent)
 {
-	if (FileUtils::IsFileInPakOnly(asset.GetMetadataFile()))
+	if (FileUtils::Pak::IsFileInPakOnly(asset.GetMetadataFile()))
 	{
 		return;
 	}
@@ -73,7 +73,7 @@ void InsertAssetFilePaths(const CAsset& asset, std::vector<string>& outputFiles,
 void InsertLayerFilePaths(const IObjectLayer& layer, std::vector<string>& outputFiles, EInclude include)
 {
 	const string mainFile = layer.GetLayerFilepath();
-	if (FileUtils::IsFileInPakOnly(mainFile))
+	if (FileUtils::Pak::IsFileInPakOnly(mainFile))
 	{
 		return;
 	}
@@ -97,7 +97,7 @@ void InsertLayerFilePaths(const IObjectLayer& layer, std::vector<string>& output
 
 void InsertFileGroupPaths(const IFilesGroupProvider& fileGroup, std::vector<string>& outputFiles, EInclude include)
 {
-	if (FileUtils::IsFileInPakOnly(fileGroup.GetMainFile()))
+	if (FileUtils::Pak::IsFileInPakOnly(fileGroup.GetMainFile()))
 	{
 		return;
 	}

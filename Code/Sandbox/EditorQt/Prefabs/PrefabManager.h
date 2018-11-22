@@ -5,6 +5,7 @@
 #include "BaseLibraryManager.h"
 #include "Objects/BaseObject.h"
 #include "IEditorImpl.h"
+#include <AssetSystem/AssetType.h>
 
 class CPrefabItem;
 class CPrefabObject;
@@ -38,6 +39,13 @@ private:
 	CPrefabObjectPtr m_pPrefabObject;
 	TObjectsLinks    m_addedObjects;
 };
+
+//! \sa CAssetType::Create 
+struct SPrefabCreateParams : CAssetType::SCreateParams
+{
+	ISelectionGroup* pGroup;
+};
+
 
 /** Manages Prefab libraries and systems.
  */

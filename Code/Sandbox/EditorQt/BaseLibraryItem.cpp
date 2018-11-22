@@ -62,14 +62,25 @@ string CBaseLibraryItem::GetShortName()
 //////////////////////////////////////////////////////////////////////////
 void CBaseLibraryItem::SetName(const string& name, bool bSkipUndo)
 {
-	assert(m_library);
 	if (name == m_name)
 		return;
+
 	if (!bSkipUndo)
-		m_library->StoreUndo("Rename item library");
+	{
+		CRY_ASSERT(m_library);
+		if (m_library)
+		{
+			m_library->StoreUndo("Rename item library");
+		}
+	}
+
 	string oldName = GetFullName();
 	m_name = name;
-	((CBaseLibraryManager*)m_library->GetManager())->OnRenameItem(this, oldName);
+
+	if (m_library)
+	{
+		((CBaseLibraryManager*)m_library->GetManager())->OnRenameItem(this, oldName);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

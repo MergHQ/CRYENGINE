@@ -19,6 +19,7 @@ public:
 	virtual const char*                       GetFileExtension() const override  { return "mtl"; }
 	virtual bool                              CanBeEdited() const override       { return true; }
 	virtual bool                              CanBeCreated() const override      { return true; }
+	virtual bool                              CanBeCopied() const                { return true; }
 	virtual bool                              HasThumbnail() const override      { return true; }
 	virtual QColor                            GetThumbnailColor() const override { return QColor(187, 191, 63); }
 	virtual std::vector<CItemModelAttribute*> GetDetails() const override;
@@ -27,7 +28,7 @@ public:
 
 	virtual void                              GenerateThumbnail(const CAsset* pAsset) const override;
 	virtual CAssetEditor*                     Edit(CAsset* pAsset) const override;
-	virtual bool                              OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const override;
+	virtual bool                              OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const override;
 	virtual bool                              RenameAsset(CAsset* pAsset, const char* szNewName) const override;
 private:
 	virtual CryIcon                           GetIconInternal() const override;

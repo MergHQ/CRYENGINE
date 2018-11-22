@@ -56,6 +56,11 @@ bool MakeFromSelection(INewAsset& asset, const ISelectionGroup& selectedItems)
 
 }
 
+CryIcon CPrefabAssetType::GetIconInternal() const
+{
+	return CryIcon("icons:common/assets_prefab.ico");
+}
+
 string CPrefabAssetType::GetObjectFilePath(const CAsset* pAsset) const
 {
 	return pAsset ? pAsset->GetGUID().ToString() : string();
@@ -70,6 +75,63 @@ void CPrefabAssetType::PreDeleteAssetFiles(const CAsset& asset) const
 		return;
 	}
 	pManager->DeleteItem(item);
+}
+
+bool CPrefabAssetType::OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const
+{
+	using namespace Private_PrefabAssetType;
+
+	const ISelectionGroup* const pSelectedItems = pCreateParams ? static_cast<const SPrefabCreateParams*>(pCreateParams)->pGroup : GetIEditor()->GetISelectionGroup();
+	if (!pSelectedItems || pSelectedItems->IsEmpty())
+	{
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Creating a New Prefab: No object is selected.\n"
+		                                                       "Place several objects in the level that you wish to change to a prefab. Select all the objects that you require.");
+		return false;
+	}
+
+	return MakeFromSelection(asset, *pSelectedItems);
+}
+
+bool CPrefabAssetType::OnCopy(INewAsset& asset, CAsset& assetToCopy) const
+{
+	CPrefabManager* const pManager = GetIEditor()->GetPrefabManager();
+
+	if (!pManager->FindLibrary(assetToCopy.GetFile(0)))
+	{
+		pManager->LoadLibrary(assetToCopy.GetFile(0));
+	}
+
+	IDataBaseItem* const pPrefab = pManager->FindItem(assetToCopy.GetGUID());
+	if (!pPrefab)
+	{
+		CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_ERROR,
+			"Unable to copy prefab with id \"%s\".\n"
+			"Please make sure that the file \"%s\" exists and has the corresponding id.",
+			assetToCopy.GetGUID().ToString().c_str(),
+			assetToCopy.GetFile(0).c_str());
+		return false;
+	}
+
+	std::unique_ptr<CPrefabItem> pNewPrefab(static_cast<CPrefabItem*>(pPrefab)->CreateCopy());
+	if (!pNewPrefab)
+	{
+		return false;
+	}
+	pNewPrefab->SetName(asset.GetName());
+
+	const auto dataFilePath = PathUtil::RemoveExtension(asset.GetMetadataFile());
+	const auto libraryName = PathUtil::RemoveExtension(dataFilePath);
+	IDataBaseLibrary* const pLibrary = pManager->AddLibrary(libraryName);
+	if (!pLibrary)
+	{
+		return false;
+	}
+
+	asset.SetGUID(pNewPrefab->GetGUID());
+	asset.AddFile(pLibrary->GetFilename());
+
+	pLibrary->AddItem(pNewPrefab.release());
+	return pLibrary->Save();
 }
 
 bool CPrefabAssetType::RenameAsset(CAsset* pAsset, const char* szNewName) const
@@ -104,22 +166,3 @@ bool CPrefabAssetType::RenameAsset(CAsset* pAsset, const char* szNewName) const
 	return pLibrary->Save();
 }
 
-bool CPrefabAssetType::OnCreate(INewAsset& asset, const void* pCreateParams) const
-{
-	using namespace Private_PrefabAssetType;
-
-	const ISelectionGroup* const pSelectedItems = pCreateParams ? static_cast<const ISelectionGroup*>(pCreateParams) : GetIEditor()->GetISelectionGroup();
-	if (!pSelectedItems || pSelectedItems->IsEmpty())
-	{
-		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Creating a New Prefab: No object is selected.\n"
-		                                                       "Place several objects in the level that you wish to change to a prefab. Select all the objects that you require.");
-		return false;
-	}
-
-	return MakeFromSelection(asset, *pSelectedItems);
-}
-
-CryIcon CPrefabAssetType::GetIconInternal() const
-{
-	return CryIcon("icons:common/assets_prefab.ico");
-}

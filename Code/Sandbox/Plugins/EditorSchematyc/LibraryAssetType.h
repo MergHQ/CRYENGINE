@@ -30,7 +30,7 @@ public:
 	virtual void          PreDeleteAssetFiles(const CAsset& asset) const override;
 
 protected:
-	virtual bool OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const override;
+	virtual bool OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const override;
 
 private:
 	virtual CryIcon GetIconInternal() const override;

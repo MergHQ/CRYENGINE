@@ -13,7 +13,7 @@ namespace CrySchematycEditor {
 
 REGISTER_ASSET_TYPE(CLibraryAssetType)
 
-bool CLibraryAssetType::OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const
+bool CLibraryAssetType::OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const
 {
 	const string dataFilePath = PathUtil::RemoveExtension(asset.GetMetadataFile());
 	const string assetName = asset.GetName();

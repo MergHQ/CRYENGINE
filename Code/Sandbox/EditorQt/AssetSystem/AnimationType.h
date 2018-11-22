@@ -15,6 +15,7 @@ public:
 	virtual const char*   GetUiTypeName() const override     { return QT_TR_NOOP("Animation"); }
 	virtual const char*   GetFileExtension() const override  { return "caf"; }
 	virtual bool          IsImported() const override        { return true; }
+	virtual bool          CanBeCopied() const                { return true; }
 	virtual bool          CanBeEdited() const override       { return true; }
 	virtual QColor        GetThumbnailColor() const override { return QColor(210, 75, 64); }
 

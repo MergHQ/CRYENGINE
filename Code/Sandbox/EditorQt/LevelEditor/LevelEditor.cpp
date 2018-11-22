@@ -116,7 +116,7 @@ bool UnpakCryFile(ICryPak* pCryPak, const string& cryFilename, const string& des
 		return false;
 	}
 
-	FileUtils::Unpak(cryPakPath, destinationFolder, std::move(progress));
+	FileUtils::Pak::Unpak(cryPakPath, destinationFolder, std::move(progress));
 	pCryPak->ClosePack(cryPakPath);
 	return true;
 }
