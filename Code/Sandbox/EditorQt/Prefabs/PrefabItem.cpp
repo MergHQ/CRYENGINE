@@ -123,6 +123,15 @@ void CPrefabItem::MakeFromSelection(const CSelectionGroup& selection)
 	CPrefabObject::CreateFrom(objects, selection.GetCenter(), this);
 }
 
+CPrefabItem* CPrefabItem::CreateCopy() const
+{
+	CPrefabItem* pCopy = new CPrefabItem();
+	const XmlString xml = m_objectsNode->getXML();
+	pCopy->m_objectsNode = XmlHelpers::LoadXmlFromBuffer(xml.c_str(), xml.length());
+	CRY_ASSERT(pCopy->m_objectsNode);
+	return pCopy;
+}
+
 void CPrefabItem::SaveLinkedObjects(CObjectArchive& ar, CBaseObject* pObj, bool bAllowOwnedByPrefab)
 {
 	for (auto i = 0; i < pObj->GetLinkedObjectCount(); ++i)

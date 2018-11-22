@@ -47,12 +47,12 @@ QString AppendPath(const QString& lhp, const QString& rhp)
 string MakeAlphaNum(const string& str)
 {
 	string res;
+	res.reserve(str.length());
+
 	for (int i = 0; i < str.length(); ++i)
 	{
-		res += isalnum(str[i]) ? str[i] : ' ';
+		res += isalnum(str[i]) ? str[i] : '_';
 	}
-
-	res.Trim();
 
 	return res;
 }

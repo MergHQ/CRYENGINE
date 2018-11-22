@@ -4,6 +4,7 @@
 #include "EditorSubstanceManager.h"
 
 #include "AssetTypes/SubstanceArchive.h"
+#include "AssetTypes/SubstanceInstance.h"
 #include "ISubstanceManager.h"
 #include "PresetCreator.h"
 #include "Renderers/Compressed.h"
@@ -512,7 +513,10 @@ void CManager::CreateInstance(const string& archiveName, const string& instanceN
 	ISubstanceManager::Instance()->CreateInstance(archiveName, instanceName, instanceGraph, outputs, resolution);
 	const auto absTargetFilePath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), instanceName);
 	CAssetType* at = CAssetManager::GetInstance()->FindAssetType("SubstanceInstance");
-	at->Create(instanceName + ".cryasset", &archiveName);
+
+	AssetTypes::CSubstanceInstanceType::SSubstanceCreateParams createParams;
+	createParams.archiveName = archiveName;
+	at->Create(instanceName + ".cryasset", &createParams);
 }
 
 void CManager::EnquePresetRender(ISubstancePreset* preset, ISubstanceInstanceRenderer* renderer)

@@ -18,5 +18,5 @@ public:
 	virtual bool CanBeEdited() const { return true; }
 	virtual CAssetEditor* Edit(CAsset* pAsset) const override;
 
-	virtual bool OnCreate(INewAsset& asset, const void* pCreateParams) const override;
+	virtual bool OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const override;
 };

@@ -20,7 +20,7 @@ struct IUIContext
 	//! \param type Reference to instance of the asset type to be created.
 	//! \param pTypeSpecificParameter Pointer to an extra parameter, can be nullptr.
 	//! \sa CAssetType::Create
-	virtual CAsset* QueryNewAsset(const CAssetType& type, const void* pTypeSpecificParameter) = 0;
+	virtual CAsset* QueryNewAsset(const CAssetType& type, const CAssetType::SCreateParams* pCreateParams) = 0;
 	virtual ~IUIContext() {}
 };
 

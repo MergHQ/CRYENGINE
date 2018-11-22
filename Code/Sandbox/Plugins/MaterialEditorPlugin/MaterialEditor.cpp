@@ -74,6 +74,13 @@ public:
 		m_pMaterial->Reload();
 	}
 
+	virtual bool OnCopyAsset(INewAsset& asset) override
+	{
+		CMaterial* pMaterial = GetIEditor()->GetMaterialManager()->DuplicateMaterial(PathUtil::Make(asset.GetFolder(), asset.GetName()), m_pMaterial);
+		CSession session(pMaterial);
+		return session.OnSaveAsset(asset);
+	}
+
 	static CMaterial* GetSessionMaterial(CAsset* pAsset)
 	{
 		IAssetEditingSession* pSession = pAsset->GetEditingSession();

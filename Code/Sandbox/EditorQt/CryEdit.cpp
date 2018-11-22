@@ -75,7 +75,7 @@ int PyCreateLevel(const char* levelName, int resolution, float unitSize, bool bU
 	CRY_ASSERT(pLevelType);
 	const string levelPath = string().Format("%s.level.cryasset", levelName);
 
-	CLevelType::SCreateParams params {};
+	CLevelType::SLevelCreateParams params {};
 	params.resolution = resolution;
 	params.unitSize = unitSize;
 	params.bUseTerrain = bUseTerrain;

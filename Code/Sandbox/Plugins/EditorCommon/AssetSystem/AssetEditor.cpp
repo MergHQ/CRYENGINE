@@ -373,7 +373,7 @@ void CAssetEditor::OnAssetChanged(CAsset& asset, int changeFlags)
 {
 	CRY_ASSERT(&asset == m_assetBeingEdited);
 
-	if (changeFlags & eAssetChangeFlags_Modified)
+	if (changeFlags & (eAssetChangeFlags_Modified | eAssetChangeFlags_Open))
 	{
 		UpdateWindowTitle();
 	}
@@ -721,6 +721,12 @@ bool CAssetEditor::OnSaveAs()
 		return true;
 	}
 
+	if (!m_assetBeingEdited->GetType()->CanBeCopied() || !m_assetBeingEdited->GetEditingSession())
+	{
+		CRY_ASSERT_MESSAGE(m_assetBeingEdited->GetType()->CanBeCopied() && m_assetBeingEdited->GetEditingSession(), "%s asset type does not handle \"Save as\"", m_assetBeingEdited->GetType()->GetUiTypeName());
+		return true;
+	}
+
 	CRY_ASSERT(!m_supportedAssetTypes.empty());
 	CAssetType* const pAssetType = m_supportedAssetTypes[0];
 	const string assetTypeName = pAssetType->GetTypeName();
@@ -733,7 +739,7 @@ bool CAssetEditor::OnSaveAs()
 	}
 	const string newAssetPath = PathUtil::AdjustCasing(pAssetType->MakeMetadataFilename(assetBasePath));
 
-	if (newAssetPath.Compare(m_assetBeingEdited->GetMetadataFile()) == 0)
+	if (newAssetPath.CompareNoCase(m_assetBeingEdited->GetMetadataFile()) == 0)
 	{
 		return OnSave();
 	}
@@ -751,15 +757,15 @@ bool CAssetEditor::OnSaveAs()
 		}
 	}
 
-	// Create new asset on disk.
-	if (!InternalSaveAs(newAssetPath))
+	// Create a copy.
+	CAssetType::SCreateParams createParams;
+	createParams.pSourceAsset = m_assetBeingEdited;
+	if (!m_assetBeingEdited->GetType()->Create(newAssetPath, &createParams))
 	{
 		return true;
 	}
 
-	pAsset = AssetLoader::CAssetFactory::LoadAssetFromXmlFile(newAssetPath);
-	pAssetManager->MergeAssets({ pAsset });
-
+	pAsset = pAssetManager->FindAssetForMetadata(newAssetPath);
 	if (pAsset)
 	{
 		// Close previous asset and unconditionally discard all changes.
@@ -772,37 +778,6 @@ bool CAssetEditor::OnSaveAs()
 		OpenAsset(pAsset);
 	}
 	return true;
-}
-
-bool CAssetEditor::InternalSaveAs(const string& newAssetPath)
-{
-	CRY_ASSERT(m_assetBeingEdited);
-
-	using namespace Private_AssetEditor;
-
-	// 1. Make a temp copy of asset files.
-	// 2. Save asset changes.
-	// 3. Move updated files under the new asset name.
-	// 4. Restore old files from the temp copy.
-	// TODO: consider a direct implementation of the SaveAs. e.g CAssetType::SaveAs(CAsset& asset, string newAssetPath)
-
-	CAutoAssetRecovery tempCopy(*m_assetBeingEdited);
-	if (!tempCopy.IsValid() || !OnSave())
-	{
-		CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_ERROR, "Unable to copy asset: %s", m_assetBeingEdited->GetName());
-		return false;
-	}
-
-	const bool result = m_assetBeingEdited->GetType()->CopyAsset(m_assetBeingEdited, newAssetPath);
-
-	ThreadingUtils::AsyncQueue([this]()
-	{
-		std::vector<std::unique_ptr<IFilesGroupProvider>> fileGroups;
-		fileGroups.emplace_back(new CAssetFilesGroupProvider(m_assetBeingEdited, false));
-		CFileOperationExecutor::GetDefaultExecutor()->Delete(std::move(fileGroups));
-	}).wait(); // we need to wait here it needs to be finished before tempCopy gets destroyed. Hopefully this method will die soon.
-	
-	return result;
 }
 
 bool CAssetEditor::SaveBackup(const string& backupFolder)

@@ -15,6 +15,7 @@ public:
 	virtual const char*                       GetUiTypeName() const override     { return QT_TR_NOOP("Mesh"); }
 	virtual const char*                       GetFileExtension() const override  { return "cgf"; }
 	virtual bool                              IsImported() const override        { return true; }
+	virtual bool                              CanBeCopied() const                { return true; }
 	virtual bool                              CanBeEdited() const override       { return true; }
 	virtual bool                              HasThumbnail() const override      { return true; }
 	virtual const char*                       GetObjectClassName() const         { return "Brush"; }

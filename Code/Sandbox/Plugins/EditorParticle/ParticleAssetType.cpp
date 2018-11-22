@@ -74,11 +74,6 @@ static string CreateAssetMetaData(const string& pfxFilePath)
 
 } // namespace Private_ParticleAssetType
 
-struct CParticlesType::SCreateParams
-{
-	bool bUseExistingEffect = false;
-};
-
 CryIcon CParticlesType::GetIconInternal() const
 {
 	return CryIcon("icons:common/assets_particles.ico");
@@ -113,12 +108,12 @@ CAssetEditor* CParticlesType::Edit(CAsset* asset) const
 
 bool CParticlesType::CreateForExistingEffect(const char* szFilePath) const
 {
-	SCreateParams params;
+	SParticlesCreateParams params;
 	params.bUseExistingEffect = true;
 	return Create(szFilePath, &params);
 }
 
-bool CParticlesType::OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const
+bool CParticlesType::OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const
 {
 	using namespace Private_ParticleAssetType;
 
@@ -131,7 +126,7 @@ bool CParticlesType::OnCreate(INewAsset& asset, const void* pTypeSpecificParamet
 		return false;
 	}
 
-	const bool bCreatePfxFile = !(pTypeSpecificParameter && ((SCreateParams*)pTypeSpecificParameter)->bUseExistingEffect);
+	const bool bCreatePfxFile = !(pCreateParams && ((SParticlesCreateParams*)pCreateParams)->bUseExistingEffect);
 
 	if (bCreatePfxFile)
 	{

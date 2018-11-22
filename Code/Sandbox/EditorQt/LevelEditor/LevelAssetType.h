@@ -10,7 +10,7 @@ class CLevelType : public CAssetType
 	friend class CLevelEditor;
 public:
 	//! \sa CLevelType::OnCreate
-	struct SCreateParams
+	struct SLevelCreateParams : SCreateParams
 	{
 		int   resolution;
 		float unitSize;   // size in Meters = resolution * unitSize
@@ -55,7 +55,7 @@ private:
 
 protected:
 	//! \sa CLevelType::SCreateParams
-	virtual bool OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const override;
+	virtual bool OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const override;
 
 	static void  UpdateFilesAndDependencies(IEditableAsset& editAsset);
 

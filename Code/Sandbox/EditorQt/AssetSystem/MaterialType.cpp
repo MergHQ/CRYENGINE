@@ -93,7 +93,7 @@ CAssetEditor* CMaterialType::Edit(CAsset* pAsset) const
 	return CAssetEditor::OpenAssetForEdit("Material Editor", pAsset);
 }
 
-bool CMaterialType::OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const
+bool CMaterialType::OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const
 {
 	string materialName;
 	materialName.Format("%s%s", asset.GetFolder(), asset.GetName());

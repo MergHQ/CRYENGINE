@@ -15,6 +15,7 @@ public:
 	virtual const char* GetFileExtension() const               { return "prefab"; }
 	virtual QColor      GetThumbnailColor() const override     { return QColor(179, 179, 179); }
 	virtual bool        CanBeCreated() const                   { return true; }
+	virtual bool        CanBeCopied() const                    { return true; }
 	virtual bool        CanBeEdited() const                    { return false; }
 	virtual bool        CanAutoRepairMetadata() const override { return false; } //! Prefab assets use unique guids that can not be automatically restored.
 	virtual const char* GetObjectClassName() const             { return "Prefab"; }
@@ -25,8 +26,9 @@ public:
 private:
 
 	//! Initializes the asset. Creates all the necessary asset files.
-	//! \param pCreateParams Points to an instance of ISelectionGroup or nullptr.
-	//! \sa ISelectionGroup
-	virtual bool    OnCreate(INewAsset& asset, const void* pCreateParams) const override;
+	//! \param pCreateParams Points to an instance of SPrefabCreateParams or nullptr.
+	//! \sa SPrefabCreateParams
+	virtual bool    OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const override;
+	virtual bool    OnCopy(INewAsset& asset, CAsset& assetToCopy) const override;
 	virtual CryIcon GetIconInternal() const override;
 };

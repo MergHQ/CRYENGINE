@@ -9,7 +9,10 @@ class CEditableAsset;
 class CParticlesType : public CAssetType
 {
 private:
-	struct SCreateParams;
+	struct SParticlesCreateParams : SCreateParams
+	{
+		bool bUseExistingEffect = false;
+	};
 
 public:
 	DECLARE_ASSET_TYPE_DESC(CParticlesType);
@@ -20,6 +23,7 @@ public:
 	virtual const char*                       GetUiTypeName() const override      { return QT_TR_NOOP("Particles"); }
 	virtual const char*                       GetFileExtension() const override   { return "pfx"; }
 	virtual bool                              CanBeCreated() const override       { return true; }
+	virtual bool                              CanBeCopied() const                 { return true; }
 	virtual bool                              IsImported() const override         { return false; }
 	virtual bool                              CanBeEdited() const override        { return true; }
 	virtual const char*                       GetEditorName() const               { return "Particle Editor"; }
@@ -34,7 +38,7 @@ public:
 	virtual bool IsUsingGenericPropertyTreePicker() const override { return false; }
 
 protected:
-	virtual bool OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const override;
+	virtual bool OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const override;
 
 private:
 	virtual CryIcon GetIconInternal() const override;

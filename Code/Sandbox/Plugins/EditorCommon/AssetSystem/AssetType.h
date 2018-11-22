@@ -47,6 +47,16 @@ struct EDITOR_COMMON_API INewAsset : public IEditableAsset
 class EDITOR_COMMON_API CAssetType : public IClassDesc
 {
 public:
+	// A base struct for providing type dependent parameters for CAssetType::Create method.
+	//! \sa CAssetType::Create
+	//! \sa CAssetType::OnCreate
+	struct SCreateParams
+	{
+		//! if not nullprt a copy of the provided asset should be created. The value is sgnored if CanBeCopied() returns false.
+		//! \sa CAssetType::CanBeCopied
+		CAsset* pSourceAsset = nullptr;
+	};
+
 	virtual ESystemClassID SystemClassID() override { return ESYSTEM_CLASS_ASSET_TYPE; }
 
 	void                   Init();
@@ -69,15 +79,24 @@ public:
 	//! Creating a new asset means default-initializing it.
 	//! Is it assumed an asset can either be imported or created.
 	//! \sa CAssetType::Create().
+	//! \sa CAssetType::SCreateParams().
 	virtual bool CanBeCreated() const { return false; }
 
-	//! Default-initializes an asset. Creates all the necessary asset files.
+	//! Returns true if the asset type supports creating a copy of an existing asset.
+	//! \sa CAssetType::OnCopy()
+	//! \sa CAssetType::SCreateParams().
+	//! \sa CAssetType::Create().
+	virtual bool CanBeCopied() const { return false; }
+
+	//! Default-initializes an asset. Creates all the necessary asset files and registers the new asset in the asset manager.
 	//! This will be used for creating new assets, e.g., in the asset browser or an asset editor.
 	//! \param szFilepath Path to the cryasset file that has to be created.
 	//! \param pTypeSpecificParameter Pointer to an extra parameter. The default value is nullptr. The actual type of the parameter is specific to the asset type. 
-	//! All the asset types should be able to create a default asset instance if the value of pTypeSpecificParameter is nullptr.
+	//! All the asset types should be able to create a default asset instance if the value of pCreateParams is nullptr.
+	//! Returns true if the asset was successfully created, false otherwise.
 	//! \sa CAssetType::OnCreate()
-	bool Create(const char* szFilepath, const void* pTypeSpecificParameter = nullptr) const;
+	//! \sa CAssetManager
+	bool Create(const char* szFilepath, const SCreateParams* pCreateParams = nullptr) const;
 
 	//! Can the asset be opened for edit
 	virtual bool CanBeEdited() const { return false; }
@@ -95,11 +114,6 @@ public:
 	//! \param szDestinationFolder The new destination folder the asset. Asset with such name must not already exist in the destination folder.
 	//! \param bMoveSourcefile If true the asset source file will be moved, otherwise it will be copied.
 	virtual bool MoveAsset(CAsset* pAsset, const char* szDestinationFolder, bool bMoveSourcefile) const;
-
-	//! Copies an existing asset to a new asset.
-	//! \param pAsset The asset to copy.
-	//! \param szNewName The new path and name for the asset. Asset with such name must not already exist in the destination folder.
-	virtual bool CopyAsset(CAsset* pAsset, const char* szNewPath) const;
 
 	//! This method is called just before asset's files get removed.
 	virtual void PreDeleteAssetFiles(const CAsset& asset) const {}
@@ -199,10 +213,21 @@ protected:
 private:
 	//! Fills in the files, details and dependencies fields of the editable asset.
 	//! Must be overridden if CanBeCreated() returns true.
-	//! \param editAsset An instance to be filled in.
+	//! \param asset An instance to be filled in.
 	//! \param pTypeSpecificParameter Pointer to an extra parameter, can be nullptr.
 	//! \sa CAssetType::Create
-	virtual bool OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const { CRY_ASSERT(0); /*not implemented*/ return false; }
+	virtual bool OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const { CRY_ASSERT_MESSAGE(false, "not implemented"); return false; }
+
+	//! Fills in the files, details and dependencies fields of the new copy of the asset.
+	//! if assetToCopy has an active editing session the default implementation calls IAssetEditingSession::OnCopyAsset, 
+	//! in the opposite case the default implementation creates a copy of the asset files with the new asset name.
+	//! The default implementation CAssetType::OnCopy() should to be overridden if an asset type needs a special handling. 
+	//! For example, if the asset files have a built-in unique identifier that must be re-generated for each copy.
+	//! \param asset An instance to be filled in.
+	//! \param pAssetToCopy Can not be nullptr.
+	//! \sa CAssetType::Create
+	//! \sa IAssetEditingSession
+	virtual bool OnCopy(INewAsset& asset, CAsset& assetToCopy) const;
 
 	//! Should returns true if the path points to a valid location. The default implementation always returns true.
 	//! Should be overridden if the asset type introduces restrictions on the allowable asset locations.

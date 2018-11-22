@@ -62,6 +62,7 @@ void CAssetFileMonitor::OnFileChange(const char* szFilename, EChangeType changeT
 			return true;
 		});
 		break;
+	case IFileChangeListener::eChangeType_Created:
 	case IFileChangeListener::eChangeType_Modified:
 	case IFileChangeListener::eChangeType_RenamedNewName:
 		m_fileQueue.ProcessItemAsync(assetPath, [](const string& assetPath)

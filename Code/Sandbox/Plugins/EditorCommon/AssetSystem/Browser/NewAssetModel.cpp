@@ -53,7 +53,7 @@ CAsset* CNewAssetModel::GetNewAsset() const
 	return m_pAsset;
 }
 
-void CNewAssetModel::BeginCreateAsset(const string& path, const string& name, const CAssetType& type, const void* pTypeSpecificParameter)
+void CNewAssetModel::BeginCreateAsset(const string& path, const string& name, const CAssetType& type, const CAssetType::SCreateParams* pCreateParams)
 {
 	if (m_pRow)
 	{
@@ -72,7 +72,7 @@ void CNewAssetModel::BeginCreateAsset(const string& path, const string& name, co
 	m_pRow->path = path;
 	m_pRow->name = name;
 	m_pRow->pAssetType = &type;
-	m_pRow->pTypeSpecificParameter = pTypeSpecificParameter;
+	m_pRow->pCreateParams = pCreateParams;
 
 	endResetModel();
 }
@@ -99,7 +99,7 @@ void CNewAssetModel::EndCreateAsset()
 		const string assetPath = string().Format("%s.%s.cryasset", PathUtil::Make(m_pRow->path, name), m_pRow->pAssetType->GetFileExtension());
 		const CAssetType* const pAssetType = m_pRow->pAssetType;
 
-		if (pAssetType->Create(assetPath, m_pRow->pTypeSpecificParameter))
+		if (pAssetType->Create(assetPath, m_pRow->pCreateParams))
 		{
 			m_pAsset = CAssetManager::GetInstance()->FindAssetForMetadata(assetPath);
 		}

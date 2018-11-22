@@ -12,6 +12,7 @@ public:
 	virtual const char*                       GetUiTypeName() const override     { return QT_TR_NOOP("Texture"); }
 	virtual const char*                       GetFileExtension() const override  { return "dds"; }
 	virtual bool                              IsImported() const override        { return true; }
+	virtual bool                              CanBeCopied() const                { return true; }
 	virtual bool                              CanBeEdited() const override       { return true; }
 	virtual bool                              HasThumbnail() const override      { return true; }
 	virtual QColor                            GetThumbnailColor() const override { return QColor(79, 187, 185); }

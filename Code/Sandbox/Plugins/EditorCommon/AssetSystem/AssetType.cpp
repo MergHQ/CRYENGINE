@@ -59,25 +59,18 @@ static bool RenameAssetFile(const string& oldFilename, const string& newFilename
 // Copy asset file. Expects paths relative to the assets root directory.
 static bool CopyAssetFile(const string& oldFilename, const string& newFilename)
 {
-	const string oldFilepath = PathUtil::ToUnixPath(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), oldFilename));
+	if (oldFilename.empty() || newFilename.empty() || oldFilename.CompareNoCase(newFilename) == 0)
+	{
+		return true;
+	}
+
 	const string newFilepath = PathUtil::ToUnixPath(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), newFilename));
-
-	if (oldFilepath.CompareNoCase(newFilepath) == 0)
+	if (FileUtils::Pak::CopyFileAllowOverwrite(oldFilename.c_str(), newFilepath.c_str()))
 	{
 		return true;
 	}
 
-	if (!QFileInfo(QtUtil::ToQString(oldFilepath)).exists())
-	{
-		return true;
-	}
-
-	if (QFile::copy(QtUtil::ToQString(oldFilepath.c_str()), QtUtil::ToQString(newFilepath.c_str())))
-	{
-		return true;
-	}
-
-	CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_ERROR, "Unable to copy asset file %s to %s", oldFilename.c_str(), newFilepath.c_str());
+	CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_ERROR, "Unable to copy asset file %s to %s", oldFilename.c_str(), newFilename.c_str());
 	return false;
 }
 
@@ -186,9 +179,16 @@ QVariant CAssetType::GetVariantFromDetail(const string& detailValue, const CItem
 	return pAttrib->GetType()->ToQVariant(detailValue);
 }
 
-bool CAssetType::Create(const char* szFilepath, const void* pTypeSpecificParameter) const
+bool CAssetType::Create(const char* szFilepath, const SCreateParams* pCreateParams) const
 {
 	using namespace Private_AssetType;
+
+	if (szFilepath && *szFilepath == '%')
+	{
+		const char* szMsg = QT_TR_NOOP("Can not create the asset. The destination folder is read only");
+		CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_ERROR, "%s: %s", szMsg, szFilepath);
+		return false;
+	}
 
 	string reasonToReject;
 	if (!CAssetType::IsValidAssetPath(szFilepath, reasonToReject))
@@ -207,19 +207,25 @@ bool CAssetType::Create(const char* szFilepath, const void* pTypeSpecificParamet
 	}
 
 	CAssetMetadata metadata(*this, adjustedFilepath, AssetLoader::GetAssetName(adjustedFilepath));
-	if (!OnCreate(metadata, pTypeSpecificParameter))
+
+	if (pCreateParams && pCreateParams->pSourceAsset)
+	{
+		if (!OnCopy(metadata, *pCreateParams->pSourceAsset))
+		{
+			return false;
+		}
+	}
+	else if (!OnCreate(metadata, pCreateParams))
 	{
 		return false;
 	}
 
 	CAssetPtr const pNewAsset = AssetLoader::CAssetFactory::CreateFromMetadata(adjustedFilepath, metadata.GetMetadata());
-
 	CEditableAsset editAsset(*pNewAsset);
 	if (!editAsset.WriteToFile())
 	{
 		return false;
 	}
-
 	CAssetManager::GetInstance()->MergeAssets({ pNewAsset });
 	return true;
 }
@@ -306,7 +312,7 @@ bool CAssetType::IsInPakOnly(const CAsset& asset) const
 	std::vector<string> filepaths(GetAssetFiles(asset, false, true));
 	for (string& path : filepaths)
 	{
-		if (FileUtils::IsFileInPakOnly(path))
+		if (FileUtils::Pak::IsFileInPakOnly(path))
 		{
 			return true;
 		}
@@ -368,6 +374,56 @@ bool CAssetType::IsValidAssetPath(const char* szFilepath, /*out*/string& reasonT
 	return true;
 }
 
+bool CAssetType::OnCopy(INewAsset& asset, CAsset& assetToCopy) const
+{
+	const string destinationFolder = asset.GetFolder();
+	const bool copyToAnotherFolder = destinationFolder.CompareNoCase(assetToCopy.GetFolder()) != 0;
+
+	// Copy source file.
+	if (assetToCopy.GetSourceFile() && *assetToCopy.GetSourceFile())
+	{
+		if (copyToAnotherFolder)
+		{
+			const string oldSourceFile = assetToCopy.GetSourceFile();
+			const string newSourceFile = PathUtil::AdjustCasing(PathUtil::Make(destinationFolder, PathUtil::GetFile(assetToCopy.GetSourceFile())));
+
+			if (!Private_AssetType::CopyAssetFile(oldSourceFile, newSourceFile))
+			{
+				return false;
+			}
+
+			asset.SetSourceFile(newSourceFile);
+		}
+		else
+		{
+			asset.SetSourceFile(assetToCopy.GetSourceFile());
+		}
+	}
+
+	// Active editing session is responsible to make a copy of the unsaved data.
+	if (assetToCopy.IsModified() && assetToCopy.GetEditingSession())
+	{
+		return assetToCopy.GetEditingSession()->OnCopyAsset(asset);
+	}
+
+	// just copy the asset data files.
+	std::vector<string> files = assetToCopy.GetFiles();
+	for (string& file : files)
+	{
+		string newFile;
+		if (Private_AssetType::TryReplaceFilename(assetToCopy.GetName(), asset.GetName(), file, newFile))
+		{
+			newFile = PathUtil::AdjustCasing(PathUtil::Make(destinationFolder, PathUtil::GetFile(newFile)));
+			Private_AssetType::CopyAssetFile(file, newFile);
+			file = newFile;
+		}
+	}
+	asset.SetFiles(files);
+	asset.SetDependencies(assetToCopy.GetDependencies());
+	asset.SetDetails(assetToCopy.GetDetails());
+	return true;
+}
+
 bool CAssetType::RenameAsset(CAsset* pAsset, const char* szNewName) const
 {
 	const string oldName(pAsset->GetName());
@@ -415,7 +471,7 @@ bool CAssetType::RenameAsset(CAsset* pAsset, const char* szNewName) const
 	if (!Private_AssetType::TryReplaceFilename(oldName, newName, oldMetadataFile, newMetadataFile))
 	{
 		// Should newer happen.
-		CRY_ASSERT_MESSAGE(0, "The asset name \"%s\" differs from the metadata filename \"%s\"", pAsset->GetName(), pAsset->GetMetadataFile());
+		CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_ERROR, "The asset name \"%s\" differs from the metadata filename \"%s\"", pAsset->GetName(), pAsset->GetMetadataFile());
 		return false;
 	}
 
@@ -537,71 +593,6 @@ bool CAssetType::MoveAsset(CAsset* pAsset, const char* szDestinationFolder, bool
 		}
 	}
 	editableAsset.SetFiles(files);
-	return editableAsset.WriteToFile();
-}
-
-bool CAssetType::CopyAsset(CAsset* pAsset, const char* szNewPath) const
-{
-	CRY_ASSERT(pAsset);
-
-	const string name(pAsset->GetName());
-	const string newName(AssetLoader::GetAssetName(szNewPath));
-	const string destinationFolder = PathUtil::GetDirectory(szNewPath);
-	const bool bCopyToAnotherFolder = destinationFolder.CompareNoCase(pAsset->GetFolder()) != 0;
-
-	if (bCopyToAnotherFolder && !QDir().mkpath(QtUtil::ToQString(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), destinationFolder))))
-	{
-		CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_ERROR, "Unable create target directory: \"%s\"", destinationFolder.c_str());
-		return false;
-	}
-
-	// Create a new instance of asset with a unique guid.
-	std::unique_ptr<CAsset> pNewAsset(new CAsset(GetTypeName(), CryGUID::Create(), newName));
-	CEditableAsset editableAsset(*pNewAsset);
-	editableAsset.SetMetadataFile(szNewPath);
-
-	// Copy source file.
-	if (pAsset->GetSourceFile() && *pAsset->GetSourceFile())
-	{
-		if (bCopyToAnotherFolder)
-		{
-			const string oldSourceFile = pAsset->GetSourceFile();
-			const string newSourceFile = PathUtil::Make(destinationFolder, PathUtil::GetFile(pAsset->GetSourceFile()));
-
-			if (!Private_AssetType::CopyAssetFile(oldSourceFile, newSourceFile))
-			{
-				return false;
-			}
-
-			editableAsset.SetSourceFile(newSourceFile);
-		}
-		else
-		{
-			editableAsset.SetSourceFile(pAsset->GetSourceFile());
-		}
-	}
-
-	// Try to copy thumbnail file.
-	Private_AssetType::CopyAssetFile(pAsset->GetThumbnailPath(), pNewAsset->GetThumbnailPath());
-
-	// Copy data files.
-	std::vector<string> files = pAsset->GetFiles();
-	for (string& file : files)
-	{
-		string newFile;
-		if (Private_AssetType::TryReplaceFilename(name, newName, file, newFile))
-		{
-			newFile = PathUtil::Make(destinationFolder, PathUtil::GetFile(newFile));
-			if (Private_AssetType::CopyAssetFile(file, newFile))
-			{
-				file = newFile;
-			}
-		}
-	}
-	editableAsset.SetFiles(files);
-	editableAsset.SetDependencies(pAsset->GetDependencies());
-	editableAsset.SetDetails(pAsset->GetDetails());
-	editableAsset.InvalidateThumbnail();
 	return editableAsset.WriteToFile();
 }
 
