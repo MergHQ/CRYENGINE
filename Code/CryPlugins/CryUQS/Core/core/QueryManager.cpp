@@ -494,7 +494,35 @@ namespace UQS
 
 			for (const SFinishedQueryInfo& entry : finishedQueries)
 			{
-				NotifyCallbacksOfFinishedQuery(entry);
+				/*
+					The extra check below via FindQueryByQueryID() before calling NotifyCallbacksOfFinishedQuery() is a tentative fix for a very rare crash:
+
+					Let's assume we have 2 hierarchical queries currently going on (notice the indentation of the query IDs to illustrate the hierarchy):
+
+					id = 3215       blueprint = specials/waterdevil/offnavmesh
+					id =    3216    blueprint = specials/waterdevil/offnavmesh::[childQuery_#0]
+
+					id = 3217       blueprint = specials/waterdevil/search
+					id =    3218    blueprint = specials/waterdevil/search::[childQuery_#0]
+
+					Let's assume that 2 of these total of 4 queries have finished in the current frame: finishedOnes = { 3215, 3218 }
+					What happens then is the following:
+
+					1.1 callback of 3215 gets called
+					1.2 calls into schematyc
+					1.3 schematyc, knowing what 3215 was meant to do, explicitly cancels the (unrelated) 3217 (this one was obviously another query, initiated by the same schematyc object, so it is perfectly allowed to cancel it)
+					1.4 3217 gets destroyed straight away via CQueryManager::CancelQuery() (remember: as this query is *not* part of the finishedOnes, the query instance's refcount dropped to 0, causing the deletion - perfectly valid)
+
+					2.1 callback of 3218 gets called (notice that the call target is actually the just destroyed 3217 (!))
+					2.2 calls into a CQuerySequentialBase::OnChildQueryFinished() on the destroyed 3217 => CRASH!!!
+
+					So, to prevent this crash, we'd have to check for whether query 3218 itself is still around before doing the callback.
+				*/
+
+				if (FindQueryByQueryID(entry.queryID))
+				{
+					NotifyCallbacksOfFinishedQuery(entry);
+				}
 
 				// add a new entry to the debug history for 2D on-screen rendering
 				if (SCvars::debugDraw)
