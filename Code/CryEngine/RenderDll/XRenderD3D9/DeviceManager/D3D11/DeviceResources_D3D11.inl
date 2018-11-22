@@ -735,10 +735,10 @@ SResourceMemoryAlignment CDeviceTexture::GetAlignment(uint8 mip /*= 0*/, uint8 s
 	if (!(Layout.m_nHeight = Layout.m_nHeight >> mip)) Layout.m_nHeight = 1;
 	if (!(Layout.m_nDepth  = Layout.m_nDepth  >> mip)) Layout.m_nDepth  = 1;
 
-	Alignment.typeStride   = CTexture::TextureDataSize(1              , 1               , 1              , 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat));
-	Alignment.rowStride    = CTexture::TextureDataSize(Layout.m_nWidth, 1               , 1              , 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat));
-	Alignment.planeStride  = CTexture::TextureDataSize(Layout.m_nWidth, Layout.m_nHeight, 1              , 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat));
-	Alignment.volumeStride = CTexture::TextureDataSize(Layout.m_nWidth, Layout.m_nHeight, Layout.m_nDepth, 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat));
+	Alignment.typeStride   = CTexture::TextureDataSize(1              , 1               , 1              , 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat), eTM_None);
+	Alignment.rowStride    = CTexture::TextureDataSize(Layout.m_nWidth, 1               , 1              , 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat), eTM_None);
+	Alignment.planeStride  = CTexture::TextureDataSize(Layout.m_nWidth, Layout.m_nHeight, 1              , 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat), eTM_None);
+	Alignment.volumeStride = CTexture::TextureDataSize(Layout.m_nWidth, Layout.m_nHeight, Layout.m_nDepth, 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat), eTM_None);
 
 	return Alignment;
 }

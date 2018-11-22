@@ -748,11 +748,11 @@ enum {CULL_SIZEY = 128};
 class ITextureStreamListener
 {
 public:
-	virtual void OnCreatedStreamedTexture(void* pHandle, const char* name, int nMips, int nMinMipAvailable) = 0;
+	virtual void OnCreatedStreamedTexture(void* pHandle, const char* name, int8 nMips, int8 nMinMipAvailable) = 0;
 	virtual void OnUploadedStreamedTexture(void* pHandle) = 0;
 	virtual void OnDestroyedStreamedTexture(void* pHandle) = 0;
-	virtual void OnTextureWantsMip(void* pHandle, int nMinMip) = 0;
-	virtual void OnTextureHasMip(void* pHandle, int nMinMip) = 0;
+	virtual void OnTextureWantsMip(void* pHandle, int8 nMinMip) = 0;
+	virtual void OnTextureHasMip(void* pHandle, int8 nMinMip) = 0;
 	virtual void OnBegunUsingTextures(void** pHandles, size_t numHandles) = 0;
 	virtual void OnEndedUsingTextures(void** pHandle, size_t numHandles) = 0;
 
@@ -1392,9 +1392,9 @@ struct IRenderer//: public IRendererCallbackServer
 	// NB: The following functions will be removed.
 	virtual void         EnableVSync(bool enable) = 0;
 
-	virtual unsigned int UploadToVideoMemory(unsigned char* data, int w, int h, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nummipmap, bool repeat = true, int filter = FILTER_BILINEAR, int Id = 0, const char* szCacheName = NULL, int flags = 0, EEndian eEndian = eLittleEndian, RectI* pRegion = NULL, bool bAsynDevTexCreation = false) = 0;
-	virtual unsigned int UploadToVideoMemory3D(unsigned char* data, int w, int h, int d, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nummipmap, bool repeat = true, int filter = FILTER_BILINEAR, int Id = 0, const char* szCacheName = NULL, int flags = 0, EEndian eEndian = eLittleEndian, RectI* pRegion = NULL, bool bAsynDevTexCreation = false) = 0;
-	virtual unsigned int UploadToVideoMemoryCube(unsigned char* data, int w, int h, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nummipmap, bool repeat = true, int filter = FILTER_BILINEAR, int Id = 0, const char* szCacheName = NULL, int flags = 0, EEndian eEndian = eLittleEndian, RectI* pRegion = NULL, bool bAsynDevTexCreation = false) = 0;
+	virtual unsigned int UploadToVideoMemory(unsigned char* data, int w, int h, ETEX_Format eTFSrc, ETEX_Format eTFDst, int8 nummipmap, bool repeat = true, int filter = FILTER_BILINEAR, int Id = 0, const char* szCacheName = NULL, int flags = 0, EEndian eEndian = eLittleEndian, RectI* pRegion = NULL, bool bAsynDevTexCreation = false) = 0;
+	virtual unsigned int UploadToVideoMemory3D(unsigned char* data, int w, int h, int d, ETEX_Format eTFSrc, ETEX_Format eTFDst, int8 nummipmap, bool repeat = true, int filter = FILTER_BILINEAR, int Id = 0, const char* szCacheName = NULL, int flags = 0, EEndian eEndian = eLittleEndian, RectI* pRegion = NULL, bool bAsynDevTexCreation = false) = 0;
+	virtual unsigned int UploadToVideoMemoryCube(unsigned char* data, int w, int h, ETEX_Format eTFSrc, ETEX_Format eTFDst, int8 nummipmap, bool repeat = true, int filter = FILTER_BILINEAR, int Id = 0, const char* szCacheName = NULL, int flags = 0, EEndian eEndian = eLittleEndian, RectI* pRegion = NULL, bool bAsynDevTexCreation = false) = 0;
 	virtual void         UpdateTextureInVideoMemory(uint32 tnum, unsigned char* newdata, int posx, int posy, int w, int h, ETEX_Format eTFSrc = eTF_B8G8R8, int posz = 0, int sizez = 1) = 0;
 
 	// NB: Without header.
@@ -1542,7 +1542,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual int                                         GetMaxTextureSize() = 0;
 
 	virtual const char*                                 GetTextureFormatName(ETEX_Format eTF) = 0;
-	virtual uint32                                      GetTextureFormatDataSize(int nWidth, int nHeight, int nDepth, int nMips, ETEX_Format eTF) = 0;
+	virtual uint32                                      GetTextureFormatDataSize(int nWidth, int nHeight, int nDepth, int nMips, ETEX_Format eTF, ETEX_TileMode mode) = 0;
 	virtual bool                                        IsTextureFormatSupported(ETEX_Format eTF) = 0;
 
 	virtual void                                        SetDefaultMaterials(IMaterial* pDefMat, IMaterial* pTerrainDefMat) = 0;

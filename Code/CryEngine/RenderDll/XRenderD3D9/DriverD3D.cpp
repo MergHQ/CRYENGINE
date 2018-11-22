@@ -4711,7 +4711,7 @@ bool CD3D9Renderer::EF_PrecacheResource(ITexture* pTP, float fMipFactor, float f
 	return true;
 }
 
-unsigned int CD3D9Renderer::UploadToVideoMemory(unsigned char* pSrcData, int w, int h, int d, ETEX_Format eSrcFormat, ETEX_Format eTFDst, int nummipmap, ETEX_Type eTT, bool repeat, int filter, int Id, const char* szCacheName, int flags, EEndian eEndian, RectI* pRegion, bool bAsyncDevTexCreation)
+unsigned int CD3D9Renderer::UploadToVideoMemory(unsigned char* pSrcData, int w, int h, int d, ETEX_Format eSrcFormat, ETEX_Format eTFDst, int8 nummipmap, ETEX_Type eTT, bool repeat, int filter, int Id, const char* szCacheName, int flags, EEndian eEndian, RectI* pRegion, bool bAsyncDevTexCreation)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
@@ -4750,7 +4750,7 @@ unsigned int CD3D9Renderer::UploadToVideoMemory(unsigned char* pSrcData, int w, 
 		if (bAsyncDevTexCreation && m_pRT->IsMultithreaded())
 		{
 			// make texture without device texture and request it async creation
-			uint32 nImgSize = CTexture::TextureDataSize(w, h, d, nummipmap, 1, eSrcFormat);
+			uint32 nImgSize = CTexture::TextureDataSize(w, h, d, nummipmap, 1, eSrcFormat, eTM_None);
 			std::shared_ptr<std::vector<uint8>> pImgData;
 			if (pSrcData)
 			{
@@ -4794,17 +4794,17 @@ unsigned int CD3D9Renderer::UploadToVideoMemory(unsigned char* pSrcData, int w, 
 	return (pTex) ? pTex->GetID() : 0;
 }
 
-unsigned int CD3D9Renderer::UploadToVideoMemory(unsigned char* data, int w, int h, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nummipmap, bool repeat, int filter, int Id, const char* szCacheName, int flags, EEndian eEndian, RectI* pRegion, bool bAsyncDevTexCreation)
+unsigned int CD3D9Renderer::UploadToVideoMemory(unsigned char* data, int w, int h, ETEX_Format eTFSrc, ETEX_Format eTFDst, int8 nummipmap, bool repeat, int filter, int Id, const char* szCacheName, int flags, EEndian eEndian, RectI* pRegion, bool bAsyncDevTexCreation)
 {
 	return UploadToVideoMemory(data, w, h, 1, eTFSrc, eTFDst, nummipmap, eTT_2D, repeat, filter, Id, szCacheName, flags, eEndian, pRegion, bAsyncDevTexCreation);
 }
 
-unsigned int CD3D9Renderer::UploadToVideoMemoryCube(unsigned char* data, int w, int h, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nummipmap, bool repeat, int filter, int Id, const char* szCacheName, int flags, EEndian eEndian, RectI* pRegion, bool bAsyncDevTexCreation)
+unsigned int CD3D9Renderer::UploadToVideoMemoryCube(unsigned char* data, int w, int h, ETEX_Format eTFSrc, ETEX_Format eTFDst, int8 nummipmap, bool repeat, int filter, int Id, const char* szCacheName, int flags, EEndian eEndian, RectI* pRegion, bool bAsyncDevTexCreation)
 {
 	return UploadToVideoMemory(data, w, h, 1, eTFSrc, eTFDst, nummipmap, eTT_Cube, repeat, filter, Id, szCacheName, flags, eEndian, pRegion, bAsyncDevTexCreation);
 }
 
-unsigned int CD3D9Renderer::UploadToVideoMemory3D(unsigned char* data, int w, int h, int d, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nummipmap, bool repeat, int filter, int Id, const char* szCacheName, int flags, EEndian eEndian, RectI* pRegion, bool bAsyncDevTexCreation)
+unsigned int CD3D9Renderer::UploadToVideoMemory3D(unsigned char* data, int w, int h, int d, ETEX_Format eTFSrc, ETEX_Format eTFDst, int8 nummipmap, bool repeat, int filter, int Id, const char* szCacheName, int flags, EEndian eEndian, RectI* pRegion, bool bAsyncDevTexCreation)
 {
 	return UploadToVideoMemory(data, w, h, d, eTFSrc, eTFDst, nummipmap, eTT_3D, repeat, filter, Id, szCacheName, flags, eEndian, pRegion, bAsyncDevTexCreation);
 }

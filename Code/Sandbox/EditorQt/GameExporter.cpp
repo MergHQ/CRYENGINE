@@ -854,12 +854,12 @@ bool CGameExporter::ExportSurfaceTexture(CPakFile& levelPakFile, const char* szF
 	// layer 0
 	layerHeader0.eTexFormat = eTerrainPrimaryTextureFormat[m_settings.bUpdateIndirectLighting][m_settings.bHiQualityCompression];
 	layerHeader0.nSectorSizePixels = lSectorDimensions[0];
-	layerHeader0.nSectorSizeBytes = pSystem->GetIRenderer()->GetTextureFormatDataSize(lSectorDimensions[0], lSectorDimensions[0], 1, 1, layerHeader0.eTexFormat);
+	layerHeader0.nSectorSizeBytes = pSystem->GetIRenderer()->GetTextureFormatDataSize(lSectorDimensions[0], lSectorDimensions[0], 1, 1, layerHeader0.eTexFormat, eTM_None);
 
 	// layer 1
 	layerHeader1.eTexFormat = eTerrainSecondaryTextureFormat[m_settings.bUpdateIndirectLighting][m_settings.bHiQualityCompression];
 	layerHeader1.nSectorSizePixels = lSectorDimensions[1];
-	layerHeader1.nSectorSizeBytes = pSystem->GetIRenderer()->GetTextureFormatDataSize(lSectorDimensions[1], lSectorDimensions[1], 1, 1, layerHeader1.eTexFormat);
+	layerHeader1.nSectorSizeBytes = pSystem->GetIRenderer()->GetTextureFormatDataSize(lSectorDimensions[1], lSectorDimensions[1], 1, 1, layerHeader1.eTexFormat, eTM_None);
 
 	ctcFile.Write(&layerHeader0, sizeof(STerrainTextureLayerFileHeader));
 	ctcFile.Write(&layerHeader1, sizeof(STerrainTextureLayerFileHeader));

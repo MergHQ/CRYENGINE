@@ -915,20 +915,23 @@ struct SStreamFormatCodeKey
 	{
 		struct
 		{
-			uint16      nWidth;
-			uint16      nHeight;
-			ETEX_Format fmt;
-			uint8       nTailMips;
+			uint16        nWidth;
+			uint16        nHeight;
+			ETEX_Format   fmt;
+			ETEX_TileMode mode;
+			uint8         nTailMips;
 		}      s;
 		uint64 u;
 	};
 
-	SStreamFormatCodeKey(int nWidth, int nHeight, ETEX_Format fmt, uint8 nTailMips)
+	SStreamFormatCodeKey(int nWidth, int nHeight, ETEX_Format fmt, ETEX_TileMode mode, uint8 nTailMips)
 	{
 		u = 0;
+
 		s.nWidth = (uint16)nWidth;
 		s.nHeight = (uint16)nHeight;
 		s.fmt = fmt;
+		s.mode = mode;
 		s.nTailMips = nTailMips;
 	}
 
@@ -946,7 +949,7 @@ struct SStreamFormatSize
 
 struct SStreamFormatCode
 {
-	enum { MaxMips = 14 };
+	enum { MaxMips = 14, MaxDim = 1 << (MaxMips - 1) };
 	SStreamFormatSize sizes[MaxMips];
 };
 
@@ -1154,9 +1157,9 @@ public:
 	virtual const int       GetTextureID() const final;
 	void                    SetFlags(uint32 nFlags)            { m_eFlags = nFlags; }
 	virtual const uint32    GetFlags() const             final { return m_eFlags; }
-	virtual const int       GetNumMips() const           final { return m_nMips; }
-	virtual const int       GetRequiredMip() const       final { return max(0, m_fpMinMipCur >> 8); }
-	ILINE const int         GetRequiredMipFP() const           { return m_fpMinMipCur; }
+	virtual const int8      GetNumMips() const           final { return m_nMips; }
+	virtual const int8      GetRequiredMip() const       final { return std::max<int8>(0, int8(m_fpMinMipCur >> 8)); }
+	ILINE const int16       GetRequiredMipFP() const           { return m_fpMinMipCur; }
 	virtual const ETEX_Type GetTextureType() const;
 	// TODO: deprecate global state based sampler state configuration
 	virtual void            SetClamp(bool bEnable)
@@ -1250,9 +1253,9 @@ public:
 	ILINE const STexStreamRoundInfo& GetStreamRoundInfo(int zone) const          { return m_streamRounds[zone]; }
 	void                             ResetNeedRestoring()                        { m_bNeedRestoring = false; }
 	const bool                       IsNeedRestoring() const                     { return m_bNeedRestoring; }
-	const int                        StreamGetLoadedMip() const                  { return m_nMinMipVidUploaded; }
+	const int8                       StreamGetLoadedMip() const                  { return m_nMinMipVidUploaded; }
 	const uint8                      StreamGetFormatCode() const                 { return m_nStreamFormatCode; }
-	const int                        StreamGetActiveMip() const                  { return m_nMinMipVidActive; }
+	const int8                       StreamGetActiveMip() const                  { return m_nMinMipVidActive; }
 	const int                        StreamGetPriority() const                   { return m_nStreamingPriority; }
 	const bool                       IsResolved() const                          { return m_bResolved; }
 	void                             SetUseMultisampledRTV(bool bSet)            { m_bUseMultisampledRTV = bSet; }
@@ -1281,7 +1284,7 @@ public:
 	const bool                       IsMSAA() const                              { return ((m_eFlags & FT_USAGE_MSAA) && m_bUseMultisampledRTV) != 0; }
 	const bool                       IsCustomFormat() const                      { return m_bCustomFormat; }
 	void                             SetCustomFormat()                           { m_bCustomFormat = true; }
-	void                             SetWidth(int16 width)                       { m_nWidth = std::max<int16>(width, 1); m_nMips = 1; }
+	void                             SetWidth(int16 width)                       { m_nWidth  = std::max<int16>(width , 1); m_nMips = 1; }
 	void                             SetHeight(int16 height)                     { m_nHeight = std::max<int16>(height, 1); m_nMips = 1; }
 	int                              GetUpdateFrameID() const                    { return m_nUpdateFrameID; }
 	ILINE const int32                GetActualSize() const                       { return m_nDevTextureSize; }
@@ -1439,13 +1442,13 @@ public:
 	static void  Precache(const bool isBlocking);
 	static void  RT_Precache(const bool isFinalPrecache);
 	static void  StreamValidateTexSize();
-	static uint8 StreamComputeFormatCode(uint32 nWidth, uint32 nHeight, uint32 nMips, ETEX_Format fmt);
+	static uint8 StreamComputeFormatCode(uint32 nWidth, uint32 nHeight, uint32 nMips, ETEX_Format fmt, ETEX_TileMode mode);
 
 #ifdef ENABLE_TEXTURE_STREAM_LISTENER
 	static void StreamUpdateStats();
 #endif
 
-	uint32 StreamComputeSysDataSize(int nFromMip) const
+	uint32 StreamComputeSysDataSize(int8 nFromMip) const
 	{
 #if defined(TEXSTRM_STORE_DEVSIZES)
 		if (m_pFileTexMips)
@@ -1465,65 +1468,67 @@ public:
 		);
 	}
 
-	void StreamUploadMip(IReadStream* pStream, int nMip, int nBaseMipOffset, STexPoolItem* pNewPoolItem, STexStreamInMipState& mipState);
+	void StreamUploadMip(IReadStream* pStream, int8 nMip, int8 nBaseMipOffset, STexPoolItem* pNewPoolItem, STexStreamInMipState& mipState);
 	void StreamUploadMipSide(
 	  int const iSide, int const Sides, const byte* const pRawData, int nSrcPitch,
 	  const STexMipHeader& mh, bool const bStreamInPlace,
-	  int const nCurMipWidth, int const nCurMipHeight, int const nMip,
+	  int const nCurMipWidth, int const nCurMipHeight, int8 const nMip,
 	  CDeviceTexture* pDeviceTexture, uint32 nBaseTexWidth, uint32 nBaseTexHeight, int nBaseMipOffset);
 
-	void          StreamExpandMip(const void* pRawData, int nMip, int nBaseMipOffset, uint32 nSideDelta);
+	void          StreamExpandMip(const void* pRawData, int8 nMip, int8 nBaseMipOffset, uint32 nSideDelta);
 	static void   RT_FlushAllStreamingTasks(const bool bAbort = false);
 	static bool   IsStreamingInProgress();
 	static void   AbortStreamingTasks(CTexture* pTex);
-	static bool   StartStreaming(CTexture* pTex, STexPoolItem* pNewPoolItem, const int nStartMip, const int nEndMip, const int nActivateMip, EStreamTaskPriority estp);
-	bool          CanStreamInPlace(int nMip, STexPoolItem* pNewPoolItem);
+	static bool   StartStreaming(CTexture* pTex, STexPoolItem* pNewPoolItem, const int8 nStartMip, const int8 nEndMip, const int8 nActivateMip, EStreamTaskPriority estp);
+	bool          CanStreamInPlace(int8 nMip, STexPoolItem* pNewPoolItem);
 #if defined(TEXSTRM_ASYNC_TEXCOPY)
 	bool          CanAsyncCopy();
 #endif
-	void          StreamCopyMipsTexToMem(int nStartMip, int nEndMip, bool bToDevice, STexPoolItem* pNewPoolItem);
+	void          StreamCopyMipsTexToMem(int8 nStartMip, int8 nEndMip, bool bToDevice, STexPoolItem* pNewPoolItem);
 	static void   StreamCopyMipsTexToTex(
-		STexPoolItem* const pSrcItem, int nSrcMipOffset,
-		STexPoolItem* const pDstItem, int nDstMipOffset, int nNumMips);
+		STexPoolItem* const pSrcItem, int8 nSrcMipOffset,
+		STexPoolItem* const pDstItem, int8 nDstMipOffset, int8 nNumMips);
 	static void   CopySliceChain(
-		CDeviceTexture* const pDstDevTex, int nDstNumMips, int nDstSliceOffset, int nDstMipOffset,
-		CDeviceTexture* const pSrcDevTex, int nSrcNumMips, int nSrcSliceOffset, int nSrcMipOffset, int nNumSlices, int nNumMips);
+		CDeviceTexture* const pDstDevTex, int8 nDstNumMips, int nDstSliceOffset, int8 nDstMipOffset,
+		CDeviceTexture* const pSrcDevTex, int8 nSrcNumMips, int nSrcSliceOffset, int8 nSrcMipOffset, int nNumSlices, int8 nNumMips);
 
 #if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-	void          StreamUploadMip_Durango(const void* pSurfaceData, int nMip, int nBaseMipOffset, STexPoolItem* pNewPoolItem, STexStreamInMipState& mipState);
-	void          StreamUploadMips_Durango(int nBaseMip, int nMipCount, STexPoolItem* pNewPoolItem, STexStreamInState& streamState);
+	void          StreamUploadMip_Durango(const void* pSurfaceData, int8 nMip, int8 nBaseMipOffset, STexPoolItem* pNewPoolItem, STexStreamInMipState& mipState);
+	void          StreamUploadMips_Durango(int8 nBaseMip, int8 nMipCount, STexPoolItem* pNewPoolItem, STexStreamInState& streamState);
 	bool          StreamInCheckTileComplete_Durango(STexStreamInState& state);
 	bool          StreamInCheckCopyComplete_Durango(STexStreamInState& state);
 	bool          StreamOutCheckComplete_Durango(STexStreamOutState& state);
 	static UINT64 StreamInsertFence();
-	static UINT64 StreamCopyMipsTexToTex_MoveEngine(STexPoolItem* pSrcItem, int nMipSrc, STexPoolItem* pDestItem, int nMipDest, int nNumMips);  // GPU-assisted platform-dependent
+	static UINT64 StreamCopyMipsTexToTex_MoveEngine(STexPoolItem* pSrcItem, int8 nMipSrc, STexPoolItem* pDestItem, int8 nMipDest, int8 nNumMips);  // GPU-assisted platform-dependent
 #endif
 
 #if defined(TEXSTRM_DEFERRED_UPLOAD)
-	ID3D11CommandList*         StreamCreateDeferred(int nStartMip, int nEndMip, STexPoolItem* pNewPoolItem, STexPoolItem* pSrcPoolItem);
+	ID3D11CommandList*         StreamCreateDeferred(int8 nStartMip, int8 nEndMip, STexPoolItem* pNewPoolItem, STexPoolItem* pSrcPoolItem);
 	void                       StreamApplyDeferred(ID3D11CommandList* pCmdList);
 #endif
-	void                       StreamReleaseMipsData(int nStartMip, int nEndMip);
+	void                       StreamReleaseMipsData(int8 nStartMip, int8 nEndMip);
 	int16                      StreamCalculateMipsSignedFP(float fMipFactor) const;
+	inline int16               StreamCalculateMipsFP(float fMipFactor) const { return std::max<int16>(0, StreamCalculateMipsSignedFP(fMipFactor)); }
 	float                      StreamCalculateMipFactor(int16 nMipsSigned) const;
-	virtual int                StreamCalculateMipsSigned(float fMipFactor) const;
-	virtual int                GetStreamableMipNumber()  const;
-	virtual uint32             GetStreamableMemoryUsage(int nStartMip) const;
-	virtual int                GetMinLoadedMip() const { return m_nMinMipVidUploaded; }
-	void                       SetMinLoadedMip(int nMinMip);
-	void                       StreamUploadMips(int nStartMip, int nEndMip, STexPoolItem* pNewPoolItem);
-	int                        StreamUnload();
-	uint32                     StreamTrim(int nToMip);
-	void                       StreamActivateLod(int nMinMip);
+	inline int8                StreamCalculateMipsSigned(float fMipFactor) const final { return StreamCalculateMipsSignedFP(fMipFactor) >> 8; }
+	inline int8                StreamCalculateMips(float fMipFactor) const final { return std::max<int8>(0, StreamCalculateMipsSigned(fMipFactor)); }
+	inline int8                GetStreamableMipNumber() const final { assert(IsStreamed()); return std::max<int8>(0, m_nMips - m_CacheFileHeader.m_nMipsPersistent); }
+	virtual uint32             GetStreamableMemoryUsage(int8 nStartMip) const final;
+	inline int8                GetMinLoadedMip() const final { return m_nMinMipVidUploaded; }
+	void                       SetMinLoadedMip(int8 nMinMip);
+	void                       StreamUploadMips(int8 nStartMip, int8 nEndMip, STexPoolItem* pNewPoolItem);
+	uint32                     StreamUnload();
+	uint32                     StreamTrim(int8 nToMip);
+	void                       StreamActivateLod(int8 nMinMip);
 	void                       StreamLoadFromCache(const int nFlags);
 	bool                       StreamPrepare(bool bFromLoad);
 	bool                       StreamPrepare(CImageFilePtr&& pImage);
 	bool                       StreamPrepare_Platform();
 	bool                       StreamPrepare_Finalise(bool bFromLoad);
-	STexPool*                  StreamGetPool(int nStartMip, int nMips);
-	STexPoolItem*              StreamGetPoolItem(int nStartMip, int nMips, bool bShouldBeCreated, bool bCreateFromMipData = false, bool bCanCreate = true, bool bForStreamOut = false);
+	STexPool*                  StreamGetPool(int8 nStartMip, int8 nMips);
+	STexPoolItem*              StreamGetPoolItem(int8 nStartMip, int8 nMips, bool bShouldBeCreated, bool bCreateFromMipData = false, bool bCanCreate = true, bool bForStreamOut = false);
 	void                       StreamRemoveFromPool();
-	void                       StreamAssignPoolItem(STexPoolItem* pItem, int nMinMip);
+	void                       StreamAssignPoolItem(STexPoolItem* pItem, int8 nMinMip);
 
 	static void                StreamState_Update();
 	static void                StreamState_UpdatePrep();
@@ -1612,11 +1617,11 @@ public:
 #if defined(TEXTURE_GET_SYSTEM_COPY_SUPPORT)
 	static const byte* Convert(const byte* pSrc, int nWidth, int nHeight, int nMips, ETEX_Format eSrcFormat, ETEX_Format eDstFormat, int nOutMips, uint32& nOutSize, bool bLinear);
 #endif
-	static int          CalcNumMips(int nWidth, int nHeight);
+	static int8         CalcNumMips(int nWidth, int nHeight);
 	// upload mip data from file regarding to platform specifics
 	static bool         IsInPlaceFormat(const ETEX_Format fmt);
 	static void         ExpandMipFromFile(byte* dst, const uint32 destSize, const byte* src, const uint32 srcSize, const ETEX_Format srcFmt, const ETEX_Format dstFmt);
-	static uint32       TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM = eTM_None);
+	static uint32       TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, int8 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM);
 
 	static const SPixFormat* GetPixFormat(ETEX_Format eTFDst);
 	static ETEX_Format  GetClosestFormatSupported(ETEX_Format eTFDst, const SPixFormat*& pPF);

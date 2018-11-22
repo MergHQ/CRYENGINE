@@ -582,7 +582,7 @@ SRenderLight& CRenderView::GetDynamicLight(RenderLightIndex nLightId)
 //////////////////////////////////////////////////////////////////////////
 RenderLightIndex CRenderView::AddLight(eDeferredLightType lightType, const SRenderLight& light)
 {
-	assert((light.m_Flags & DLF_LIGHTTYPE_MASK) != 0);
+	CRY_ASSERT((light.m_Flags & DLF_LIGHTTYPE_MASK) != 0);
 
 	RenderLightIndex nLightId = -1;
 	if (m_lights[lightType].size() < MAX_DEFERRED_LIGHT_SOURCES)
@@ -604,8 +604,7 @@ RenderLightIndex CRenderView::AddLight(eDeferredLightType lightType, const SRend
 //////////////////////////////////////////////////////////////////////////
 SRenderLight* CRenderView::AddLightAtIndex(eDeferredLightType lightType, const SRenderLight& light, RenderLightIndex nLightId /*=-1*/)
 {
-	assert(nLightId                   <  GetLightsCount(lightType));
-	assert(MAX_DEFERRED_LIGHT_SOURCES >= GetLightsCount(lightType));
+	CRY_ASSERT(nLightId == -1 || nLightId <  GetLightsCount(lightType));
 
 	SRenderLight* pLight = nullptr;
 	if (nLightId < 0)
@@ -630,6 +629,7 @@ SRenderLight* CRenderView::AddLightAtIndex(eDeferredLightType lightType, const S
 	}
 
 	pLight->m_Id = nLightId;
+	CRY_ASSERT(MAX_DEFERRED_LIGHT_SOURCES >= nLightId);
 
 	return pLight;
 }
@@ -641,7 +641,8 @@ RenderLightIndex CRenderView::GetLightsCount(eDeferredLightType lightType) const
 
 SRenderLight& CRenderView::GetLight(eDeferredLightType lightType, RenderLightIndex nLightId)
 {
-	assert(nLightId >= 0 && nLightId < m_lights[lightType].size());
+	CRY_ASSERT(nLightId >= 0 && nLightId < m_lights[lightType].size());
+
 	// find iterator at given index (assuming no [] operator)
 	auto itr = m_lights[lightType].begin();
 	while (--nLightId >= 0)

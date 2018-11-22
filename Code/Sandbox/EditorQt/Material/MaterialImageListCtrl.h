@@ -61,15 +61,15 @@ private:
 	virtual void OnCompilationQueueDepleted()              {}
 
 	// Stream listener
-	virtual void OnCreatedStreamedTexture(void* pHandle, const char* name, int nMips, int nMinMipAvailable) {}
+	virtual void OnCreatedStreamedTexture(void* pHandle, const char* name, int8 nMips, int8 nMinMipAvailable) {}
 	virtual void OnUploadedStreamedTexture(void* pHandle);
-	virtual void OnDestroyedStreamedTexture(void* pHandle)                                                  {}
+	virtual void OnDestroyedStreamedTexture(void* pHandle)                                                    {}
 
-	virtual void OnTextureWantsMip(void* pHandle, int nMinMip)                                              {}
-	virtual void OnTextureHasMip(void* pHandle, int nMinMip)                                                {}
+	virtual void OnTextureWantsMip(void* pHandle, int8 nMinMip)                                               {}
+	virtual void OnTextureHasMip(void* pHandle, int8 nMinMip)                                                 {}
 
-	virtual void OnBegunUsingTextures(void** pHandles, size_t numHandles)                                   {}
-	virtual void OnEndedUsingTextures(void** pHandle, size_t numHandles)                                    {}
+	virtual void OnBegunUsingTextures(void** pHandles, size_t numHandles)                                     {}
+	virtual void OnEndedUsingTextures(void** pHandle, size_t numHandles)                                      {}
 private:
 	_smart_ptr<CMaterial> m_pMatPreview;
 
