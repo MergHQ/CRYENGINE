@@ -148,7 +148,13 @@ CAsset* CAssetFactory::LoadAssetFromInMemoryXmlFile(const char* szAssetPath, uin
 		return nullptr;
 	}
 
-	return CreateFromMetadata(szAssetPath, metadata);
+	CAsset* const pAsset = CreateFromMetadata(szAssetPath, metadata);
+	if (pAsset)
+	{
+		CEditableAsset editableAsset(*pAsset);
+		editableAsset.SetLastModifiedTime(timestamp);
+	}
+	return pAsset;
 }
 
 std::vector<CAsset*> CAssetFactory::LoadAssetsFromPakFile(const char* szArchivePath, std::function<bool(const char* szAssetRelativePath, uint64 timestamp)> predicate)
