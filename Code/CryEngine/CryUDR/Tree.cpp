@@ -29,6 +29,31 @@ namespace Cry
 			stl::find_and_erase_all(m_listeners, pListenerToUnregister);
 		}
 
+		void CTree::RemoveNode(const INode& nodeToRemove)
+		{
+			CRecursiveSyncObjectAutoLock _lock;
+			CNode* pFoundNode = m_root.FindNodeByINode(nodeToRemove);
+			CRY_ASSERT_MESSAGE(pFoundNode, "CTree::RemoveNode: the passed-in node does *not* belong to the tree! (wrong use of the RemoveNode() method!)");
+
+			// trying to remove the tree node is a special case: just remove its children, but leave the root node around
+			if (pFoundNode == &m_root)
+			{
+				pFoundNode->RemoveChildren();
+			}
+			else
+			{
+				CNode* pParent = pFoundNode->GetParentWritable();
+				for (size_t childIndex = 0; ; ++childIndex)
+				{
+					if (&pParent->GetChild(childIndex) == pFoundNode)
+					{
+						pParent->RemoveChild(childIndex);
+						break;
+					}
+				}
+			}
+		}
+
 		CNode& CTree::GetRootNodeWritable()
 		{
 			return m_root;

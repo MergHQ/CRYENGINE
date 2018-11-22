@@ -42,6 +42,9 @@ namespace Cry
 			// ~INode
 
 			void                                     Serialize(Serialization::IArchive& ar);
+			CNode*                                   GetParentWritable() const;
+			CNode*                                   FindNodeByINode(const INode& nodeToSearchFor);
+			void                                     RemoveChild(size_t index);
 			void                                     RemoveChildren();
 			void                                     GatherStatisticsRecursively(SStatistics& outStats) const;
 			void                                     PrintHierarchyToConsoleRecursively(int indentLevel) const;
@@ -55,7 +58,6 @@ namespace Cry
 
 			CNode*                                   FindChildNode(const char* szChildNodeName) const;
 			CNode&                                   AddChildNode(const char* szChildNodeName);
-			void                                     RemoveChild(size_t index);
 			void                                     SetOwningTreeInChildrenRecursively();
 			void                                     SetParentInChildrenRecursively();
 			void                                     BuildFastLookupTable();
@@ -63,7 +65,7 @@ namespace Cry
 		private:
 
 			const CTree*                             m_pOwningTree;
-			const CNode*                             m_pParent;
+			CNode*                                   m_pParent;
 			string                                   m_name;
 			CRenderPrimitiveCollection               m_renderPrimitives;
 			std::vector <std::unique_ptr<CNode>>     m_children;
