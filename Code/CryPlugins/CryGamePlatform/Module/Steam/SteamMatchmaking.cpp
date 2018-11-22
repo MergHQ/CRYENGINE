@@ -22,7 +22,7 @@ namespace Cry
 			{
 			}
 
-			void CMatchmaking::CreateLobby(IUserLobby::EVisbility visibility, int maxMemberCount)
+			void CMatchmaking::CreateLobby(IUserLobby::EVisibility visibility, int maxMemberCount)
 			{
 				if (ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking())
 				{

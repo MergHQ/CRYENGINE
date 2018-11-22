@@ -15,7 +15,7 @@ namespace Cry
 				: public IUserGeneratedContent
 			{
 			public:
-				CUserGeneratedContent(CService& steamService, ApplicationIdentifier appId, IUserGeneratedContent::Identifier id);
+				CUserGeneratedContent(CService& steamService, AppId_t appId, IUserGeneratedContent::Identifier id);
 				virtual ~CUserGeneratedContent() = default;
 
 				// IUserGeneratedContent
@@ -35,7 +35,7 @@ namespace Cry
 
 			protected:
 				CService& m_service;
-				ApplicationIdentifier m_appId;
+				AppId_t m_appId = k_uAppIdInvalid;
 				IUserGeneratedContent::Identifier m_id;
 
 				UGCUpdateHandle_t m_updateHandle;

@@ -5,6 +5,7 @@
 #include "UserGeneratedContentManager.h"
 #include "UserGeneratedContent.h"
 #include "SteamService.h"
+#include "SteamUserIdentifier.h"
 
 namespace Cry
 {
@@ -17,19 +18,19 @@ namespace Cry
 			{
 			}
 
-			void CUserGeneratedContentManager::Create(unsigned int appId, IUserGeneratedContent::EType type)
+			void CUserGeneratedContentManager::Create(ApplicationIdentifier appId, IUserGeneratedContent::EType type)
 			{
-				m_lastUsedId = appId;
+				m_lastUsedId = ExtractSteamID(appId);
 
 				if (ISteamUGC* pSteamUGC = SteamUGC())
-					pSteamUGC->CreateItem(appId, (EWorkshopFileType)type);
+					pSteamUGC->CreateItem(m_lastUsedId, (EWorkshopFileType)type);
 			}
 
-			void CUserGeneratedContentManager::CreateDirect(unsigned int appId, IUserGeneratedContent::EType type,
+			void CUserGeneratedContentManager::CreateDirect(ApplicationIdentifier appId, IUserGeneratedContent::EType type,
 				const char* title, const char* desc, IUserGeneratedContent::EVisibility visibility,
 				const char* *pTags, int numTags, const char* contentFolderPath, const char* previewPath)
 			{
-				m_lastUsedId = appId;
+				m_lastUsedId = ExtractSteamID(appId);
 
 				m_pWaitingParameters = stl::make_unique<SItemParameters>();
 				m_pWaitingParameters->title = title;
@@ -44,7 +45,7 @@ namespace Cry
 
 				if (ISteamUGC* pSteamUGC = SteamUGC())
 				{
-					SteamAPICall_t result = pSteamUGC->CreateItem(appId, (EWorkshopFileType)type);
+					SteamAPICall_t result = pSteamUGC->CreateItem(m_lastUsedId, (EWorkshopFileType)type);
 					m_callResultContentCreated.Set(result, this, &CUserGeneratedContentManager::OnContentCreated);
 				}
 			}

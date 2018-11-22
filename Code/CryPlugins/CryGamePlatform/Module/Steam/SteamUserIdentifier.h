@@ -24,13 +24,29 @@ namespace Cry
 
 			inline CSteamID ExtractSteamID(const LobbyIdentifier& lobbyId)
 			{
-				AccountIdentifierValue tmpVal;
+				LobbyIdentifierValue tmpVal;
 				if (lobbyId.GetAsUint64(tmpVal))
 				{
 					return tmpVal;
 				}
 
 				return k_steamIDNil;
+			}
+
+			inline AppId_t ExtractSteamID(const ApplicationIdentifier& appId)
+			{
+				ApplicationIdentifierValue tmpVal;
+				if (appId.GetAsUint64(tmpVal))
+				{
+					if (tmpVal <= std::numeric_limits<AppId_t>::max())
+					{
+						return static_cast<AppId_t>(tmpVal);
+					}
+
+					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_COMMENT, "[GamePlatform] %s: Unable to convert '%s' to AppId_t.", __func__, appId.ToDebugString());
+				}
+
+				return k_uAppIdInvalid;
 			}
 		}
 	}

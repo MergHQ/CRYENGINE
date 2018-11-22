@@ -26,7 +26,7 @@ namespace Cry
 
 			AccountIdentifier CAccount::GetIdentifier() const
 			{
-				return AccountIdentifier(DiscordServiceID, m_id);
+				return CreateAccountIdentifier(m_id);
 			}
 
 			ServiceIdentifier CAccount::GetServiceIdentifier() const
@@ -37,7 +37,7 @@ namespace Cry
 			void CAccount::SetStatus(const char* szStatus)
 			{
 				SRichPresence presence;
-				presence.status = szStatus;
+				presence.headline = szStatus;
 
 				SetPresence(presence);
 			}
@@ -46,25 +46,37 @@ namespace Cry
 			{
 				m_presence = presence;
 
-				// Note: Should be zero-initialized. Keep that in mind in case 
-				// this struct somehow changes in future versions of the SDK
 				DiscordRichPresence discordPresence = {};
-				
-				discordPresence.state = m_presence.status.c_str();
-				discordPresence.details = m_presence.details.c_str();
+
+				// For some obscure reason they named 'details' for the first presence line
+				// and 'state' the second one...
+ 				discordPresence.details = m_presence.headline.c_str();
+ 				discordPresence.state = m_presence.activity.c_str();
 				discordPresence.partySize = m_presence.partySize;
 				discordPresence.partyMax = m_presence.partyMax;
 
-				if(m_presence.countdownTimer == SRichPresence::ETimer::Remaining)
+				if (m_presence.seconds > 0)
 				{
-					discordPresence.endTimestamp = time(0) + m_presence.seconds;
-				}
-				else if(m_presence.countdownTimer == SRichPresence::ETimer::Elapsed)
-				{
-					discordPresence.startTimestamp = time(0) + m_presence.seconds;
+					if (m_presence.countdownTimer == SRichPresence::ETimer::Remaining)
+					{
+						discordPresence.endTimestamp = time(0) + m_presence.seconds;
+					}
+					else if (m_presence.countdownTimer == SRichPresence::ETimer::Elapsed)
+					{
+						discordPresence.startTimestamp = time(0) + m_presence.seconds;
+					}
 				}
 
-				CryComment("[Discord] Setting rich presence:\n%s\n%s", m_presence.status.c_str(), m_presence.details.c_str());
+				CryComment("[Discord] Setting rich presence (first line): %s", m_presence.headline.c_str());
+				if (!m_presence.activity.empty())
+				{
+					CryComment("[Discord]\t\t\t\t\t\t(second line): %s (%d of %d)", m_presence.activity.c_str(), discordPresence.partySize, discordPresence.partyMax);
+				}
+
+				if (m_presence.seconds > 0)
+				{
+					CryComment("[Discord]\t\t\t\t\t\t(timer): %" PRIi64, m_presence.seconds);
+				}
 
 				Discord_UpdatePresence(&discordPresence);
 			}

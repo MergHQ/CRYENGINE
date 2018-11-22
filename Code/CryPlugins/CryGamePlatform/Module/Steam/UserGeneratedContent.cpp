@@ -11,7 +11,7 @@ namespace Cry
 	{
 		namespace Steam
 		{
-			CUserGeneratedContent::CUserGeneratedContent(CService& steamService, ApplicationIdentifier appId, IUserGeneratedContent::Identifier id)
+			CUserGeneratedContent::CUserGeneratedContent(CService& steamService, AppId_t appId, IUserGeneratedContent::Identifier id)
 				: m_service(steamService)
 				, m_appId(appId)
 				, m_id(id)

@@ -40,7 +40,7 @@ namespace Cry
 				return SteamServiceID;
 			}
 
-			void CAccount::SetStatus(const char* status)
+			void CAccount::SetStatus(const char* szStatus)
 			{
 				ISteamUser* pSteamUser = SteamUser();
 				ISteamFriends* pSteamFriends = SteamFriends();
@@ -49,16 +49,16 @@ namespace Cry
 					return;
 				}
 
-				CryComment("[Steam] Setting rich presence '%s'", status);
+				CryComment("[Steam] Setting rich presence '%s'", szStatus);
 
-				pSteamFriends->SetRichPresence("status", status);
+				pSteamFriends->SetRichPresence("status", szStatus);
 			}
 
 			void CAccount::SetPresence(const SRichPresence& presence)
 			{
 				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[Steam] No rich presence support. Setting only status!");
 
-				SetStatus(presence.status);
+				SetStatus(presence.headline);
 			}
 
 			void CAccount::GetPresence(SRichPresence& presence) const
@@ -67,7 +67,7 @@ namespace Cry
 
 				if (ISteamFriends* pSteamFriends = SteamFriends())
 				{
-					presence.status = pSteamFriends->GetFriendRichPresence(m_id, "status");
+					presence.headline = pSteamFriends->GetFriendRichPresence(m_id, "status");
 				}
 			}
 

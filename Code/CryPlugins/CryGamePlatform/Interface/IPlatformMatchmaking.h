@@ -33,7 +33,7 @@ namespace Cry
 			//! Creates a new lobby for the local user
 			//! \param visibility Determines who will be able to see the lobby
 			//! \param maxMemberCount Maximum amount of users that can join the lobby, including the local user
-			virtual void CreateLobby(IUserLobby::EVisbility visibility, int maxMemberCount) = 0;
+			virtual void CreateLobby(IUserLobby::EVisibility visibility, int maxMemberCount) = 0;
 			//! Retrieves the lobby that the specified user is in, if any
 			virtual IUserLobby* GetUserLobby(const AccountIdentifier& user) const = 0;
 			//! Retrieves the lobby that the specified user is in, if any

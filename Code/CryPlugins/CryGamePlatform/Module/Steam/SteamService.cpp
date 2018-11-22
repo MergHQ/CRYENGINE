@@ -325,7 +325,7 @@ namespace Cry
 			{
 				if (ISteamApps* pSteamApps = SteamApps())
 				{
-					return pSteamApps->BIsSubscribedApp(id);
+					return pSteamApps->BIsSubscribedApp(ExtractSteamID(id));
 				}
 
 				return false;
@@ -333,12 +333,14 @@ namespace Cry
 
 			ApplicationIdentifier CService::GetApplicationIdentifier() const
 			{
+				AppId_t rawValue = k_uAppIdInvalid;
+
 				if (ISteamUtils* pSteamUtils = SteamUtils())
 				{
-					return pSteamUtils->GetAppID();
+					rawValue = pSteamUtils->GetAppID();
 				}
 
-				return 0;
+				return CreateApplicationIdentifier(rawValue);
 			}
 
 			bool CService::OpenDialog(EDialog dialog) const
