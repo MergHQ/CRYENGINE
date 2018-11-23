@@ -446,7 +446,7 @@ void CJointGenEntity::Display(CObjectRenderHelper& objRenderHelper)
 		}
 	}
 }
-
+#if defined(USE_GEOM_CACHES)
 //////////////////////////////////////////////////////////////////////////
 bool CGeomCacheEntity::HitTestEntity(HitContext& hc, bool& bHavePhysics)
 {
@@ -470,4 +470,4 @@ bool CGeomCacheEntity::HitTestEntity(HitContext& hc, bool& bHavePhysics)
 
 	return false;
 }
-
+#endif

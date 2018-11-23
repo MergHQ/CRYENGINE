@@ -373,7 +373,7 @@ void CDecalRenderNode::SetDecalProperties(const SDecalProperties& properties)
 		const float thickness = 0.01f;
 		geom_world_data gwd[2];
 		gwd[0].offset = m_Matrix.GetTranslation();
-		gwd[0].v = m_Matrix.TransformVector(Vec3(0, 0, 1));
+		gwd[0].v = m_Matrix.TransformVector(Vec3(0, 0, 1)).GetNormalized();
 		primitives::cylinder cyl;
 
 		Vec2_tpl<uint16> sz;
