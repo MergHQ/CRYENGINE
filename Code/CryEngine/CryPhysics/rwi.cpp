@@ -310,12 +310,14 @@ gotcontacts:
 
 							check_cell_contact(j,pcontacts,phits,flags,pentFlags,nThroughHits,nThroughHitsAux, imat,ilastcell,aray,iSolidNode,pentLog,i,ihit);
 						}	else if (pent->m_parts[i].flags & geom_mat_substitutor) {
-							for(int ihit=!phits[0].pCollider; ihit<=nThroughHits+nThroughHitsAux; ihit++) 
+							for(int idxhit=!phits[0].pCollider; idxhit<=nThroughHits+nThroughHitsAux; idxhit++) {
+								int ihit = idxhit<=nThroughHits ? idxhit : nMaxHits-(idxhit-nThroughHits); // aux hits are stored from nMaxHits-1 downwards
 								if (pent->m_parts[i].flagsCollider & (2<<((CPhysicalPlaceholder*)phits[ihit].pCollider)->m_iSimClass) - (((CPhysicalPlaceholder*)phits[ihit].pCollider)->m_id>>31) &&
 									pent->m_parts[i].pPhysGeom->pGeom->PointInsideStatus(((phits[ihit].pt-pent->m_pos)*pent->m_qrot-pent->m_parts[i].pos)*pent->m_parts[i].q)) 
 								{	phits[ihit].surface_idx = pent->GetMatId(pent->m_parts[i].pPhysGeom->surface_idx, i);
 									phits[ihit].idmatOrg = -1;
 								}
+							}
 							bRecheckOtherParts = -1;
 						}
 					}
