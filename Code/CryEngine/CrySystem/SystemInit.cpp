@@ -127,6 +127,8 @@
 
 #if CRY_PLATFORM_WINDOWS
 	#include "DebugCallStack.h"
+#elif CRY_PLATFORM_DURANGO
+	#include "DurangoDebugCallstack.h"
 #endif
 
 #include "WindowsConsole.h"
@@ -5516,6 +5518,8 @@ void CSystem::CreateSystemVars()
 	g_cvars.sys_intromoviesduringinit = 0;
 #if CRY_PLATFORM_WINDOWS
 	((DebugCallStack*)IDebugCallStack::instance())->RegisterCVars();
+#elif CRY_PLATFORM_DURANGO
+	((DurangoDebugCallStack*)IDebugCallStack::instance())->RegisterCVars();
 #endif
 
 	m_pUserAnalyticsSystem->RegisterCVars();
