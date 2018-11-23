@@ -155,6 +155,14 @@ private:
 
 	void HitTest(HitContext& hitContext, CViewport* pView, const CPoint& point);
 	void CheckDeepSelection(HitContext& hitContext, CViewport* pWnd);
+	
+	//! Determine which object to add to selection on mouse button press
+	//! \param pView - the view we are raycasting to find an object
+	//! \param pHitObject - the object we found by raycasting on pView
+	//! \param bNoRemoveSelection - if we should clear the selection when we are clicking on an empty area (e.g !pHitObject)
+	//! \param bToggle - we switch pHitObject between selected and unselected based on current selection state
+	//! \param bToggle - we add pHitObject to selection
+	int ApplyMouseSelection(CViewport* pView, CBaseObject* pHitObject, bool bNoRemoveSelection, bool bToggle, bool bAdd);
 
 	CPoint       m_cMouseDownPos;
 	Vec3         m_mouseDownWorldPos;
@@ -183,6 +191,9 @@ private:
 	CObjectManipulatorOwner       m_objectManipulatorOwner;
 
 	bool                          m_bGizmoDrag;
+	//The minimum size the selection area rectangle needs to be
+	const int											m_areaRectMinSizeWidth = 5;
+	const int											m_areaRectMinSizeHeight = 5;
 };
 
 typedef CAutoRegister<CObjectMode::ISubTool> CAutoRegisterObjectModeSubToolHelper;
