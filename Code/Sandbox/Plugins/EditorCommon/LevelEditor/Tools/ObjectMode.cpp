@@ -271,7 +271,7 @@ void CObjectMode::DisplaySelectionPreview(SDisplayContext& dc)
 
 	if (GetCommandMode() == SelectMode)
 	{
-		if (rc.Width() > 1 && rc.Height() > 1)
+		if (rc.Width() > m_areaRectMinSizeWidth && rc.Height() > m_areaRectMinSizeHeight)
 		{
 			GetIEditor()->GetObjectManager()->FindObjectsInRect(pViewport, rc, m_PreviewGUIDs);
 
@@ -404,8 +404,6 @@ bool CObjectMode::OnLButtonDown(CViewport* view, int nFlags, CPoint point)
 
 	bool bLockSelection = GetIEditor()->IsSelectionLocked();
 
-	int numSelected = 0;
-
 	HitContext hitInfo(view);
 	HitTest(hitInfo, view, point);
 
@@ -510,61 +508,18 @@ bool CObjectMode::OnLButtonDown(CViewport* view, int nFlags, CPoint point)
 		bLockSelection = true;
 	}
 
+	int numSelected = 0;
+
 	if (!bLockSelection)
 	{
-		// If not selection locked.
-		view->BeginUndo();
+		numSelected = ApplyMouseSelection(view, hitObj, bNoRemoveSelection, bToggle, bShiftClick);
+	}
 
-		IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
-
-		if (hitObj)
-		{
-			numSelected = 1;
-
-			if (!bToggle)
-			{
-				if (bShiftClick)
-				{
-					pObjectManager->AddObjectToSelection(hitObj);
-				}
-				else
-				{
-					pObjectManager->SelectObject(hitObj);
-				}
-			}
-			else
-			{
-				if (hitObj->IsSelected())
-				{
-					pObjectManager->UnselectObject(hitObj);
-				}
-				else
-				{
-					pObjectManager->AddObjectToSelection(hitObj);
-				}
-			}
-		}
-		else
-		{
-			if (!bNoRemoveSelection)
-			{
-				// Current selection should be cleared
-				numSelected = GetIEditor()->GetISelectionGroup()->GetCount();
-				pObjectManager->ClearSelection();
-			}
-		}
-
-		if (view->IsUndoRecording())
-		{
-			view->AcceptUndo("Select Object(s)");
-		}
-
-		if (numSelected == 0 || editMode == CLevelEditorSharedState::EditMode::Select || editMode == CLevelEditorSharedState::EditMode::SelectArea)
-		{
-			// If object is not selected.
-			// Capture mouse input for this window.
-			SetCommandMode(SelectMode);
-		}
+	if (!bLockSelection && numSelected == 0 || editMode == CLevelEditorSharedState::EditMode::Select || editMode == CLevelEditorSharedState::EditMode::SelectArea)
+	{
+		// If object is not selected.
+		// Capture mouse input for this window.
+		SetCommandMode(SelectMode);
 	}
 
 	if (GetCommandMode() == MoveMode ||
@@ -586,6 +541,62 @@ bool CObjectMode::OnLButtonDown(CViewport* view, int nFlags, CPoint point)
 		return OnLButtonUp(view, nFlags, point);
 
 	return true;
+}
+
+int CObjectMode::ApplyMouseSelection(CViewport* pView, CBaseObject* pHitObject, bool bNoRemoveSelection, bool bToggle, bool bAdd)
+{
+	CLevelEditorSharedState::EditMode editMode = GetIEditor()->GetLevelEditorSharedState()->GetEditMode();
+
+	int numSelected = 0;
+
+		// If not selection locked.
+		pView->BeginUndo();
+
+		IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
+
+		if (pHitObject)
+		{
+			numSelected = 1;
+
+			if (!bToggle)
+			{
+				if (bAdd)
+				{
+					pObjectManager->AddObjectToSelection(pHitObject);
+				}
+				else
+				{
+					pObjectManager->SelectObject(pHitObject);
+				}
+			}
+			else
+			{
+				if (pHitObject->IsSelected())
+				{
+					pObjectManager->UnselectObject(pHitObject);
+				}
+				else
+				{
+					pObjectManager->AddObjectToSelection(pHitObject);
+				}
+			}
+		}
+		else
+		{
+			if (!bNoRemoveSelection)
+			{
+				// Current selection should be cleared
+				numSelected = GetIEditor()->GetISelectionGroup()->GetCount();
+				pObjectManager->ClearSelection();
+			}
+		}
+
+		if (pView->IsUndoRecording())
+		{
+			pView->AcceptUndo("Select Object(s)");
+		}
+
+	return numSelected;
 }
 
 bool CObjectMode::OnLButtonUp(CViewport* view, int nFlags, CPoint point)
@@ -641,11 +652,11 @@ bool CObjectMode::OnLButtonUp(CViewport* view, int nFlags, CPoint point)
 		const IObjectManager::ESelectOp selectOp = bUnselect ? IObjectManager::ESelectOp::eUnselect :
 		                                           (bToggle ? IObjectManager::ESelectOp::eToggle : IObjectManager::ESelectOp::eSelect);
 
+    //If a rectangle is too small we don't want to create a selection from it 
 		CRect selectRect = view->GetSelectionRectangle();
 		if (!selectRect.IsRectEmpty())
 		{
-			// Ignore too small rectangles.
-			if (selectRect.Width() > 5 && selectRect.Height() > 5)
+			if (selectRect.Width() > m_areaRectMinSizeWidth && selectRect.Height() > m_areaRectMinSizeHeight)
 			{
 				GetIEditor()->GetObjectManager()->SelectObjectsInRect(view, selectRect, selectOp);
 			}
@@ -734,6 +745,10 @@ bool CObjectMode::OnRButtonUp(CViewport* view, int nFlags, CPoint point)
 	{
 		m_openContext = false;
 
+		// Get control key status.
+		const bool bAddSelect = (nFlags & MK_SHIFT) || (nFlags & MK_CONTROL);
+		const bool bNoRemoveSelection = bAddSelect;
+
 		// check if we are close to the original mouse position
 		int halfLength = gViewportPreferences.dragSquareSize / 2;
 		CRect rcDrag(m_rMouseDownPos.x, m_rMouseDownPos.y, m_rMouseDownPos.x, m_rMouseDownPos.y);
@@ -748,6 +763,19 @@ bool CObjectMode::OnRButtonUp(CViewport* view, int nFlags, CPoint point)
 			return false;
 		if (!hitInfo.object)
 			return false;
+
+		//If we have an hit object and it's already selected we don't need to run selection query code as nothing changes
+		bool bSkipSelectionQuery = false;
+		if (hitInfo.object && hitInfo.object->IsSelected())
+		{
+			bSkipSelectionQuery = true;
+		}
+
+		if (!bSkipSelectionQuery)
+		{
+			//on right mouse button we ignore every modifier that can remove from selection (because we need to spawn the context button)
+			ApplyMouseSelection(view, hitInfo.object, bNoRemoveSelection, false, bAddSelect);
+		}
 
 		CDynamicPopupMenu menu;
 		hitInfo.object->OnContextMenu(&menu.GetRoot());
