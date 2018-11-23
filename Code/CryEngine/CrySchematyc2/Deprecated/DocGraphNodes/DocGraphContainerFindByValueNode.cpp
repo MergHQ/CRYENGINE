@@ -149,11 +149,11 @@ namespace Schematyc2
 
 			if (valueStackPos != INVALID_INDEX)
 			{
-				compiler.Copy(valueStackPos, INVALID_INDEX, *m_pValue);
+				compiler.Copy(valueStackPos, INVALID_INDEX, *m_pValue, CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Value));
 			}
 			else
 			{
-				compiler.Push(*m_pValue);
+				compiler.Push(*m_pValue, CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Value));
 			}
 
 			compiler.AddOutputToStack(*this, EOutput::Index, MakeAny<int32>());

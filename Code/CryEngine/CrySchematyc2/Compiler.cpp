@@ -320,10 +320,14 @@ namespace Schematyc2
 	void CDocGraphNodeCompiler::Branch(const IScriptGraphNode& node, size_t label)
 	{
 #if SCHEMATYC2_COMPILER_PREVIEW_OUTPUT
-		m_branches.push_back(SBranch(node.GetGUID(), label, m_libFunction.AddOp(SVMBranchOp(0)), m_previewLines.size()));
+		m_branches.push_back(SBranch(node.GetGUID(), label, m_libFunction.AddOp(SVMBranchOp(0, node.GetGUID())), m_previewLines.size()));
 		m_previewLines.push_back(string());
 #else
-		m_branches.push_back(SBranch(node.GetGUID(), label, m_libFunction.AddOp(SVMBranchOp(0))));
+		size_t pos = m_libFunction.AddOp(SVMBranchOp(0));
+		m_branches.push_back(SBranch(node.GetGUID(), label, pos));
+#ifdef SCHEMATYC2_DEBUGGING
+		m_libFunction.AddDebugOperationSymbolNode(pos, node.GetGUID());
+#endif
 #endif
 	}
 
@@ -334,7 +338,11 @@ namespace Schematyc2
 		m_branches.push_back(SBranch(node.GetGUID(), label, m_libFunction.AddOp(SVMBranchIfZeroOp(0)), m_previewLines.size()));
 		m_previewLines.push_back(string());
 #else
-		m_branches.push_back(SBranch(node.GetGUID(), label, m_libFunction.AddOp(SVMBranchIfZeroOp(0))));
+		size_t pos = m_libFunction.AddOp(SVMBranchIfZeroOp(0));
+		m_branches.push_back(SBranch(node.GetGUID(), label, pos));
+#ifdef SCHEMATYC2_DEBUGGING
+		m_libFunction.AddDebugOperationSymbolNode(pos, node.GetGUID());
+#endif
 #endif
 	}
 
@@ -345,7 +353,11 @@ namespace Schematyc2
 		m_branches.push_back(SBranch(node.GetGUID(), label, m_libFunction.AddOp(SVMBranchIfNotZeroOp(0)), m_previewLines.size()));
 		m_previewLines.push_back(string());
 #else
-		m_branches.push_back(SBranch(node.GetGUID(), label, m_libFunction.AddOp(SVMBranchIfNotZeroOp(0))));
+		size_t pos = m_libFunction.AddOp(SVMBranchIfNotZeroOp(0));
+		m_branches.push_back(SBranch(node.GetGUID(), label, pos));
+#ifdef SCHEMATYC2_DEBUGGING
+		m_libFunction.AddDebugOperationSymbolNode(pos, node.GetGUID());
+#endif
 #endif
 	}
 
@@ -360,15 +372,21 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void CDocGraphNodeCompiler::Push(const IAny& value)
+	void CDocGraphNodeCompiler::Push(const IAny& value, const SGUID& originGuid, const char* originInput)
 	{
 		TVariantVector							variants;
 		CVariantVectorOutputArchive	archive(variants);
 		archive(value, "", "");
+		
 		for(TVariantVector::const_iterator iVariant = variants.begin(), iEndVariant = variants.end(); iVariant != iEndVariant; ++ iVariant)
 		{
 			m_stack.push_back(SStackVariable());
-			m_libFunction.AddOp(SVMPushOp(m_libFunction.AddConstValue(*iVariant)));
+			size_t posOp = m_libFunction.AddOp(SVMPushOp(m_libFunction.AddConstValue(*iVariant)));
+
+#ifdef SCHEMATYC2_DEBUGGING
+			m_libFunction.AddDebugOperationSymbolInput(posOp, originGuid, originInput);
+#endif
+
 #if SCHEMATYC2_COMPILER_PREVIEW_OUTPUT
 			string			previewLine = "PUSH ";
 			char				stringBuffer[256] = "";
@@ -388,14 +406,17 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void CDocGraphNodeCompiler::Set(size_t pos, const IAny& value)
+	void CDocGraphNodeCompiler::Set(size_t pos, const IAny& value, const SGUID& originGuid, const char* originInput)
 	{
 		TVariantVector							variants;
 		CVariantVectorOutputArchive	archive(variants);
 		archive(value, "", "");
 		for(TVariantVector::const_iterator iVariant = variants.begin(), iEndVariant = variants.end(); iVariant != iEndVariant; ++ iVariant)
 		{
-			m_libFunction.AddOp(SVMSetOp(pos, m_libFunction.AddConstValue(*iVariant)));
+			size_t posOp = m_libFunction.AddOp(SVMSetOp(pos, m_libFunction.AddConstValue(*iVariant)));
+#ifdef SCHEMATYC2_DEBUGGING
+			m_libFunction.AddDebugOperationSymbolInput(posOp, originGuid, originInput);
+#endif
 #if SCHEMATYC2_COMPILER_PREVIEW_OUTPUT
 			string	previewLine = "SET ";
 			char		stringBuffer[256] = "";
@@ -409,7 +430,7 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void CDocGraphNodeCompiler::Copy(size_t srcPos, size_t dstPos, const IAny& value)
+	void CDocGraphNodeCompiler::Copy(size_t srcPos, size_t dstPos, const IAny& value, const SGUID& originGuid, const char* originInput)
 	{
 		TVariantVector							variants;
 		CVariantVectorOutputArchive	archive(variants);
@@ -459,14 +480,19 @@ namespace Schematyc2
 		}
 		m_previewLines.push_back(previewLine.c_str());
 #endif
+		size_t posOp = 0;
 		for(TVariantVector::const_iterator iVariant = variants.begin(), iEndVariant = variants.end(); iVariant != iEndVariant; ++ iVariant)
 		{
-			m_libFunction.AddOp(SVMCopyOp(srcPos, dstPos));
+			posOp = m_libFunction.AddOp(SVMCopyOp(srcPos, dstPos));
 			++ srcPos;
 			if(dstPos != INVALID_INDEX)
 			{
 				++ dstPos;
 			}
+
+#ifdef SCHEMATYC2_DEBUGGING
+			m_libFunction.AddDebugOperationSymbolInput(posOp, originGuid, originInput);
+#endif
 		}
 	}
 
@@ -510,7 +536,7 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	size_t CDocGraphNodeCompiler::Store(const SGUID& guid)
+	size_t CDocGraphNodeCompiler::Store(const SGUID& guid, const SGUID& originGuid)
 	{
 		const size_t	iVariable = LibUtils::FindVariableByGUID(m_libClass, guid);
 		SCHEMATYC2_COMPILER_ASSERT(iVariable != INVALID_INDEX);
@@ -525,6 +551,9 @@ namespace Schematyc2
 				CVariantVectorOutputArchive	archive(variants);
 				archive(*pLibVariableValue, "", "");
 				const size_t	pos = m_libFunction.AddOp(SVMStoreOp(libVariable.GetVariantPos(), variants.size()));
+#ifdef SCHEMATYC2_DEBUGGING
+				m_libFunction.AddDebugOperationSymbolNode(pos, originGuid);
+#endif
 #if SCHEMATYC2_COMPILER_PREVIEW_OUTPUT
 				m_previewLines.push_back("STORE ? ?");
 #endif
@@ -552,14 +581,18 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void CDocGraphNodeCompiler::ContainerRemoveByIndex(const SGUID& guid)
+	void CDocGraphNodeCompiler::ContainerRemoveByIndex(const SGUID& guid, const IAny& dummyValue)
 	{
 		const size_t	iContainer = LibUtils::FindContainerByGUID(m_libClass, guid);
 		SCHEMATYC2_COMPILER_ASSERT(iContainer != INVALID_INDEX);
 		if (iContainer != INVALID_INDEX)
 		{
+			TVariantVector variants;
+			CVariantVectorOutputArchive archive(variants);
+			archive(dummyValue, "", "");
+
 			m_stack.push_back(SStackVariable());
-			m_libFunction.AddOp(SVMContainerRemoveByIndexOp(iContainer));
+			m_libFunction.AddOp(SVMContainerRemoveByIndexOp(iContainer, variants.size()));
 #if SCHEMATYC2_COMPILER_PREVIEW_OUTPUT
 			m_previewLines.push_back("CONTAINER_REMOVE_BY_VALUE ?");
 #endif
@@ -710,58 +743,76 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void CDocGraphNodeCompiler::StartTimer(const SGUID& guid)
+	void CDocGraphNodeCompiler::StartTimer(const SGUID& guid, const SGUID& originGuid)
 	{
-		m_libFunction.AddOp(SVMStartTimerOp(guid));
+		size_t pos = m_libFunction.AddOp(SVMStartTimerOp(guid));
+#ifdef SCHEMATYC2_DEBUGGING
+		m_libFunction.AddDebugOperationSymbolNode(pos, originGuid);
+#endif
 #if SCHEMATYC2_COMPILER_PREVIEW_OUTPUT
 		m_previewLines.push_back("START_TIMER ?");
 #endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void CDocGraphNodeCompiler::StopTimer(const SGUID& guid)
+	void CDocGraphNodeCompiler::StopTimer(const SGUID& guid, const SGUID& originGuid)
 	{
-		m_libFunction.AddOp(SVMStopTimerOp(guid));
+		size_t pos = m_libFunction.AddOp(SVMStopTimerOp(guid));
+#ifdef SCHEMATYC2_DEBUGGING
+		m_libFunction.AddDebugOperationSymbolNode(pos, originGuid);
+#endif
 #if SCHEMATYC2_COMPILER_PREVIEW_OUTPUT
 		m_previewLines.push_back("STOP_TIMER ?");
 #endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void CDocGraphNodeCompiler::ResetTimer(const SGUID& guid)
+	void CDocGraphNodeCompiler::ResetTimer(const SGUID& guid, const SGUID& originGuid)
 	{
-		m_libFunction.AddOp(SVMResetTimerOp(guid));
+		size_t pos = m_libFunction.AddOp(SVMResetTimerOp(guid));
+#ifdef SCHEMATYC2_DEBUGGING
+		m_libFunction.AddDebugOperationSymbolNode(pos, originGuid);
+#endif
 #if SCHEMATYC2_COMPILER_PREVIEW_OUTPUT
 		m_previewLines.push_back("RESET_TIMER ?");
 #endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void CDocGraphNodeCompiler::SendSignal(const SGUID& guid)
+	void CDocGraphNodeCompiler::SendSignal(const SGUID& guid, const SGUID& originGuid)
 	{
-		m_libFunction.AddOp(SVMSendSignalOp(guid));
+		size_t pos = m_libFunction.AddOp(SVMSendSignalOp(guid));
+#ifdef SCHEMATYC2_DEBUGGING
+		m_libFunction.AddDebugOperationSymbolNode(pos, originGuid);
+#endif
 #if SCHEMATYC2_COMPILER_PREVIEW_OUTPUT
 		m_previewLines.push_back("SEND_SIGNAL ?");
 #endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void CDocGraphNodeCompiler::BroadcastSignal(const SGUID& guid)
+	void CDocGraphNodeCompiler::BroadcastSignal(const SGUID& guid, const SGUID& originGuid)
 	{
-		m_libFunction.AddOp(SVMBroadcastSignalOp(guid));
+		size_t pos = m_libFunction.AddOp(SVMBroadcastSignalOp(guid));
+#ifdef SCHEMATYC2_DEBUGGING
+		m_libFunction.AddDebugOperationSymbolNode(pos, originGuid);
+#endif
 #if SCHEMATYC2_COMPILER_PREVIEW_OUTPUT
 		m_previewLines.push_back("BROADCAST_SIGNAL ?");
 #endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void CDocGraphNodeCompiler::CallGlobalFunction(const SGUID& guid) // #SchematycTODO : Pass by pointer/reference instead?
+	void CDocGraphNodeCompiler::CallGlobalFunction(const SGUID& guid, const SGUID& originGuid) // #SchematycTODO : Pass by pointer/reference instead?
 	{
 		IGlobalFunctionConstPtr	pGlobalFunction = gEnv->pSchematyc2->GetEnvRegistry().GetGlobalFunction(guid);
 		SCHEMATYC2_COMPILER_ASSERT(pGlobalFunction);
 		if(pGlobalFunction)
 		{
-			m_libFunction.AddOp(SVMCallGlobalFunctionOp(m_libFunction.AddGlobalFunction(pGlobalFunction)));
+			size_t pos = m_libFunction.AddOp(SVMCallGlobalFunctionOp(m_libFunction.AddGlobalFunction(pGlobalFunction)));
+#ifdef SCHEMATYC2_DEBUGGING
+			m_libFunction.AddDebugOperationSymbolNode(pos, originGuid);
+#endif
 		}
 #if SCHEMATYC2_COMPILER_PREVIEW_OUTPUT
 		IGlobalFunctionConstPtr	pGlobalFunction = gEnv->pSchematyc2->GetEnvRegistry().GetGlobalFunction(guid);
@@ -772,18 +823,24 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void CDocGraphNodeCompiler::CallEnvAbstractInterfaceFunction(const SGUID& abstractInterfaceGUID, const SGUID& functionGUID)
+	void CDocGraphNodeCompiler::CallEnvAbstractInterfaceFunction(const SGUID& abstractInterfaceGUID, const SGUID& functionGUID, const SGUID& originGuid)
 	{
-		m_libFunction.AddOp(SVMCallEnvAbstractInterfaceFunctionOp(abstractInterfaceGUID, functionGUID));
+		size_t pos = m_libFunction.AddOp(SVMCallEnvAbstractInterfaceFunctionOp(abstractInterfaceGUID, functionGUID));
+#ifdef SCHEMATYC2_DEBUGGING
+		m_libFunction.AddDebugOperationSymbolNode(pos, originGuid);
+#endif
 #if SCHEMATYC2_COMPILER_PREVIEW_OUTPUT
 		m_previewLines.push_back("CALL_ENV_ABSTRACT_INTERFACE_FUNCTION ? ?");
 #endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void CDocGraphNodeCompiler::CallLibAbstractInterfaceFunction(const SGUID& abstractInterfaceGUID, const SGUID& functionGUID)
+	void CDocGraphNodeCompiler::CallLibAbstractInterfaceFunction(const SGUID& abstractInterfaceGUID, const SGUID& functionGUID, const SGUID& originGuid)
 	{
-		m_libFunction.AddOp(SVMCallLibAbstractInterfaceFunctionOp(abstractInterfaceGUID, functionGUID));
+		size_t pos = m_libFunction.AddOp(SVMCallLibAbstractInterfaceFunctionOp(abstractInterfaceGUID, functionGUID));
+#ifdef SCHEMATYC2_DEBUGGING
+		m_libFunction.AddDebugOperationSymbolNode(pos, originGuid);
+#endif
 #if SCHEMATYC2_COMPILER_PREVIEW_OUTPUT
 		ILibAbstractInterfaceConstPtr					pAbstractInterface = m_lib.GetAbstractInterface(abstractInterfaceGUID);
 		ILibAbstractInterfaceFunctionConstPtr	pFunction = m_lib.GetAbstractInterfaceFunction(functionGUID);
@@ -796,13 +853,16 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void CDocGraphNodeCompiler::CallComponentMemberFunction(const SGUID& guid) // #SchematycTODO : Pass by pointer/reference instead?
+	void CDocGraphNodeCompiler::CallComponentMemberFunction(const SGUID& guid, const SGUID& originGuid) // #SchematycTODO : Pass by pointer/reference instead?
 	{
 		IComponentMemberFunctionConstPtr	pComponentMemberFunction = gEnv->pSchematyc2->GetEnvRegistry().GetComponentMemberFunction(guid);
 		SCHEMATYC2_COMPILER_ASSERT(pComponentMemberFunction);
 		if(pComponentMemberFunction)
 		{
-			m_libFunction.AddOp(SVMCallComponentMemberFunctionOp(m_libFunction.AddComponentMemberFunction(pComponentMemberFunction)));
+			size_t pos = m_libFunction.AddOp(SVMCallComponentMemberFunctionOp(m_libFunction.AddComponentMemberFunction(pComponentMemberFunction)));
+#ifdef SCHEMATYC2_DEBUGGING
+			m_libFunction.AddDebugOperationSymbolNode(pos, originGuid);
+#endif
 		}
 #if SCHEMATYC2_COMPILER_PREVIEW_OUTPUT
 		m_previewLines.push_back("CALL_COMPONENT_MEMBER_FUNCTION ?");
@@ -810,13 +870,16 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void CDocGraphNodeCompiler::CallActionMemberFunction(const SGUID& guid) // #SchematycTODO : Pass by pointer/reference instead?
+	void CDocGraphNodeCompiler::CallActionMemberFunction(const SGUID& guid, const SGUID& originGuid) // #SchematycTODO : Pass by pointer/reference instead?
 	{
 		IActionMemberFunctionConstPtr	pActionMemberFunction = gEnv->pSchematyc2->GetEnvRegistry().GetActionMemberFunction(guid);
 		SCHEMATYC2_COMPILER_ASSERT(pActionMemberFunction);
 		if(pActionMemberFunction)
 		{
-			m_libFunction.AddOp(SVMCallActionMemberFunctionOp(m_libFunction.AddActionMemberFunction(pActionMemberFunction)));
+			size_t pos = m_libFunction.AddOp(SVMCallActionMemberFunctionOp(m_libFunction.AddActionMemberFunction(pActionMemberFunction)));
+#ifdef SCHEMATYC2_DEBUGGING
+			m_libFunction.AddDebugOperationSymbolNode(pos, originGuid);
+#endif
 		}
 #if SCHEMATYC2_COMPILER_PREVIEW_OUTPUT
 		m_previewLines.push_back("CALL_ACTION_MEMBER_FUNCTION ?");
@@ -824,25 +887,39 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void CDocGraphNodeCompiler::CallLibFunction(const LibFunctionId& libFunctionId)
+	void CDocGraphNodeCompiler::CallLibFunction(const LibFunctionId& libFunctionId, const SGUID& originGuid)
 	{
-		m_libFunction.AddOp(SVMCallLibFunctionOp(libFunctionId));
+		size_t pos = m_libFunction.AddOp(SVMCallLibFunctionOp(libFunctionId));
+#ifdef SCHEMATYC2_DEBUGGING
+		m_libFunction.AddDebugOperationSymbolNode(pos, originGuid);
+#endif
 #if SCHEMATYC2_COMPILER_PREVIEW_OUTPUT
 		m_previewLines.push_back("CALL_LIB_FUNCTION ?");
 #endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void CDocGraphNodeCompiler::Return()
+	void CDocGraphNodeCompiler::Return(const SGUID& originGuid)
 	{
 		const SVMOp*	pLastOp = m_libFunction.GetLastOp();
 		if(!pLastOp || (pLastOp->opCode != SVMOp::RETURN))
 		{
-			m_libFunction.AddOp(SVMReturnOp());
+			size_t pos = m_libFunction.AddOp(SVMReturnOp());
+#ifdef SCHEMATYC2_DEBUGGING
+			m_libFunction.AddDebugOperationSymbolNode(pos, originGuid);
+#endif
 #if SCHEMATYC2_COMPILER_PREVIEW_OUTPUT
 			m_previewLines.push_back("RETURN");
 #endif
 		}
+	}
+
+	void CDocGraphNodeCompiler::SetDebugInput(const SGUID& originGuid, const char* originInput)
+	{
+#ifdef SCHEMATYC2_DEBUGGING
+		const size_t currentPos = m_libFunction.GetSize();
+		m_libFunction.AddDebugOperationSymbolInput(currentPos, originGuid, originInput);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -935,7 +1012,7 @@ namespace Schematyc2
 	void CDocGraphNodeCompiler::EndSequence()
 	{
 		// End function.
-		Return();
+		Return(SGUID());
 		// Resolve branches.
 		// #SchematycTODO : Remove branches once they've been resolved?
 		for(TMarkerVector::const_iterator iMarker = m_markers.begin(), iEndMarker = m_markers.end(); iMarker != iEndMarker; ++ iMarker)

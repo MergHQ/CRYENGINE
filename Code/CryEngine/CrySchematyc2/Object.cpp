@@ -177,6 +177,7 @@ namespace Schematyc2
 		, m_clientAspect(params.clientAspect)
 		, m_flags(params.flags)
 		, m_simulationMode(ESimulationMode::NotSet)
+		, m_debuggingActive(false)
 	{
 		// Register network serializer?
 		if(m_pNetworkObject)
@@ -778,6 +779,30 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
+	const ObjectNodeHistory& CObject::GetNodeHistory() const
+	{
+		return m_nodeHistory;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	void CObject::ClearNodeHistory()
+	{
+		m_nodeHistory.clear();
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	void CObject::SetDebuggingActive(const bool active)
+	{
+		m_debuggingActive = active;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	bool CObject::IsDebuggingActive() const
+	{
+		return m_debuggingActive;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
 	CObject::SStateMachine::SStateMachine()
 		: iCurrentState(INVALID_INDEX)
 		, iRequestedState(INVALID_INDEX)
@@ -1201,7 +1226,8 @@ namespace Schematyc2
 	{
 		CRY_PROFILE_FUNCTION_ARG(PROFILE_GAME, m_pLibClass->GetName());
 		const ILibFunction*	pFunction = m_pLibClass->GetFunction(functionId);
-		CRY_ASSERT(pFunction);
+
+		CRY_ASSERT_MESSAGE(pFunction, "Function %s not found in class %s", pFunction->GetName(), m_pLibClass->GetName());
 		if(pFunction)
 		{
 			LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("ProcessFunction", pFunction->GetName());
@@ -1224,7 +1250,7 @@ namespace Schematyc2
 			const size_t inputCount = defaultInputs.size();
 			TVariantConstArray defaultOutputs = pFunction->GetVariantOutputs();
 			const size_t outputCount = defaultOutputs.size();
-			CRY_ASSERT((inputs.size() >= inputCount) && (outputs.size() >= outputCount));
+			CRY_ASSERT_MESSAGE((inputs.size() >= inputCount) && (outputs.size() >= outputCount), "Input or output mismatch. In function %s in class %s", pFunction->GetName(), m_pLibClass->GetName());
 			if((inputs.size() >= inputCount) && (outputs.size() >= outputCount))
 			{
 				// Initialize stack.
@@ -1244,21 +1270,93 @@ namespace Schematyc2
 				GlobalFunctionConstTable globalFunctionTable = pFunction->GetGlobalFunctionTable();
 				ComponentMemberFunctionConstTable componentMemberFunctionTable = pFunction->GetComponentMemberFunctionTable();
 				ActionMemberFunctionConstTable actionMemberFunctionTable = pFunction->GetActionMemberFunctionTable();
+
+#ifdef SCHEMATYC2_DEBUGGING
+				if (IsDebuggingActive())
+				{
+					// Check if we need to mark the beginning of a function
+					if (pFunction->GetDebugOperationsSize() != 0)
+					{
+						m_nodeHistory.push_back(SExecutionHistoryItem(pFunction->GetGUID(), "", "", SExecutionHistoryItem::EExecutionHistoryType::FunctionBegin));
+					}
+				}
+#endif
+
 				for(size_t pos = 0, size = pFunction->GetSize(); pos < size; )
 				{
+#ifdef SCHEMATYC2_DEBUGGING
+					if (IsDebuggingActive())
+					{
+						const ILibFunction::SDebugSymbol* pDebugSymbol = pFunction->GetDebugOperationSymbol(pos);
+
+						if (pDebugSymbol)
+						{
+							if (pDebugSymbol->type == ILibFunction::SDebugSymbol::EDebugSymbolType::Node || pDebugSymbol->type == ILibFunction::SDebugSymbol::EDebugSymbolType::NodeAndInput)
+							{
+								CRY_ASSERT_MESSAGE(!pDebugSymbol->originGuid.cryGUID.IsNull(), "[Schematyc Debugger] Null guid found in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
+								m_nodeHistory.push_back(SExecutionHistoryItem(pDebugSymbol->originGuid, "", "", SExecutionHistoryItem::EExecutionHistoryType::Node));
+
+								if (pDebugSymbol && pDebugSymbol->type == ILibFunction::SDebugSymbol::EDebugSymbolType::NodeAndInput)
+								{
+									string value;
+									StringUtils::VariantToString(stack.Peek(), value);
+
+									m_nodeHistory.push_back(SExecutionHistoryItem(pDebugSymbol->originGuid, value, pDebugSymbol->data, SExecutionHistoryItem::EExecutionHistoryType::Input));
+									
+								}
+							}
+						}
+					}
+#endif
 					const SVMOp* pOp = pFunction->GetOp(pos);
+
 					switch(pOp->opCode)
 					{
 					case SVMOp::PUSH:
 						{
 							const SVMPushOp* pPushOp = static_cast<const SVMPushOp*>(pOp);
+
+#ifdef SCHEMATYC2_DEBUGGING
+							if (IsDebuggingActive())
+							{
+								const ILibFunction::SDebugSymbol* pDebugSymbol = pFunction->GetDebugOperationSymbol(pos);
+
+								if (pDebugSymbol && pDebugSymbol->type == ILibFunction::SDebugSymbol::EDebugSymbolType::Input)
+								{
+									CRY_ASSERT_MESSAGE(!pDebugSymbol->originGuid.cryGUID.IsNull(), "[Schematyc Debugger] Null guid found in PUSH operation in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
+									string value;
+									StringUtils::VariantToString(pFunction->GetVariantConsts()[pPushOp->iConstValue], value);
+
+									m_nodeHistory.push_back(SExecutionHistoryItem(pDebugSymbol->originGuid, value, pDebugSymbol->data, SExecutionHistoryItem::EExecutionHistoryType::Input));
+								}
+							}
+#endif
+
 							stack.Push(pFunction->GetVariantConsts()[pPushOp->iConstValue]);
 							pos += pOp->size;
+
 							break;
 						}
 					case SVMOp::SET:
 						{
 							const SVMSetOp*	pSetOp = static_cast<const SVMSetOp*>(pOp);
+
+#ifdef SCHEMATYC2_DEBUGGING
+							if (IsDebuggingActive())
+							{
+								const ILibFunction::SDebugSymbol* pDebugSymbol = pFunction->GetDebugOperationSymbol(pos);
+
+								if (pDebugSymbol && pDebugSymbol->type == ILibFunction::SDebugSymbol::EDebugSymbolType::Input)
+								{
+									CRY_ASSERT_MESSAGE(!pDebugSymbol->originGuid.cryGUID.IsNull(), "[Schematyc Debugger] Null guid found in SET operation function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
+									string value;
+									StringUtils::VariantToString(pFunction->GetVariantConsts()[pSetOp->iConstValue], value);
+
+									m_nodeHistory.push_back(SExecutionHistoryItem(pDebugSymbol->originGuid, value, pDebugSymbol->data, SExecutionHistoryItem::EExecutionHistoryType::Input));
+								}
+							}
+#endif
+
 							stack[pSetOp->pos] = pFunction->GetVariantConsts()[pSetOp->iConstValue];
 							pos += pOp->size;
 							break;
@@ -1272,6 +1370,23 @@ namespace Schematyc2
 								SCHEMATYC2_SYSTEM_CRITICAL_ERROR("Invalid copy operation: class = %s, function = %s, pos = %d", m_pLibClass->GetName(), pFunction->GetName(), pos);
 							}
 #endif
+
+#ifdef SCHEMATYC2_DEBUGGING
+							if (IsDebuggingActive())
+							{
+								const ILibFunction::SDebugSymbol* pDebugSymbol = pFunction->GetDebugOperationSymbol(pos);
+
+								if (pDebugSymbol && pDebugSymbol->type == ILibFunction::SDebugSymbol::EDebugSymbolType::Input)
+								{
+									CRY_ASSERT_MESSAGE(!pDebugSymbol->originGuid.cryGUID.IsNull(), "[Schematyc Debugger] Null guid found in COPY operation function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
+									string value;
+									StringUtils::VariantToString(stack[pCopyOp->srcPos], value);
+
+									m_nodeHistory.push_back(SExecutionHistoryItem(pDebugSymbol->originGuid, value, pDebugSymbol->data, SExecutionHistoryItem::EExecutionHistoryType::Input));
+								}
+							}
+#endif
+
 							stack.Copy(pCopyOp->srcPos, pCopyOp->dstPos);
 							pos += pOp->size;
 							break;
@@ -1323,7 +1438,8 @@ namespace Schematyc2
 							const SVMContainerRemoveByIndexOp* pContainerRemoveByIndexOp = static_cast<const SVMContainerRemoveByIndexOp*>(pOp);
 							CVariantContainer& container = m_containers[pContainerRemoveByIndexOp->iContainer];
 							const size_t containerPos = stack.Peek().AsInt32();
-							const bool result = container.RemoveByIndex(containerPos);
+							const size_t stride = pContainerRemoveByIndexOp->count;
+							const bool result = container.RemoveByIndex(containerPos, stride);
 							stack.Push(CVariant(result));
 							pos += pOp->size;
 							break;
@@ -1355,8 +1471,9 @@ namespace Schematyc2
 						{
 							const SVMContainerGetOp* pContainerGetOp = static_cast<const SVMContainerGetOp*>(pOp);
 							CVariantContainer& container = m_containers[pContainerGetOp->iContainer];
-							const size_t containerPos = stack.Peek().AsInt32() * pContainerGetOp->count;
-							if((containerPos + pContainerGetOp->count) <= container.Size())
+							const int32 containerIndex = stack.Peek().AsInt32();
+							const size_t containerPos = containerIndex * pContainerGetOp->count;
+							if(containerIndex >= 0 && (containerPos + pContainerGetOp->count) <= container.Size())
 							{
 								for(size_t offset = 0; offset < pContainerGetOp->count; ++ offset)
 								{
@@ -1377,10 +1494,11 @@ namespace Schematyc2
 							CVariantContainer&				container = m_containers[pContainerSetOp->iContainer];
 
 							// stack: ..., index, value[count]
+							const int32 containerIndex = stack[stack.GetSize() - pContainerSetOp->count - 1].AsInt32();
 							const TVariantConstArray	valuesView(&stack[stack.GetSize() - pContainerSetOp->count], pContainerSetOp->count);
-							const size_t							containerPos = stack[stack.GetSize() - pContainerSetOp->count - 1].AsInt32();
+							const size_t							containerPos = containerIndex;
 
-							if ((containerPos + pContainerSetOp->count) <= container.Size())
+							if (containerIndex >= 0 && (containerPos + pContainerSetOp->count) <= container.Size())
 							{
 								for (size_t offset = 0; offset < pContainerSetOp->count; ++offset)
 								{
@@ -1520,7 +1638,7 @@ namespace Schematyc2
 							{
 								pSignal = libRegistry.GetSignal(pSendSignalOp->guid);
 							}
-							CRY_ASSERT(pSignal != NULL);
+							CRY_ASSERT_MESSAGE(pSignal != NULL, "Invalid signal found  in SEND_SIGNAL operation in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
 							if(pSignal != NULL)
 							{
 								const size_t	stackSize = stack.GetSize();
@@ -1551,7 +1669,7 @@ namespace Schematyc2
 							{
 								pSignal = libRegistry.GetSignal(pBroadcastSignalOp->guid);
 							}
-							CRY_ASSERT(pSignal != NULL);
+							CRY_ASSERT_MESSAGE(pSignal != NULL, "Invalid signal found  in BROADCAST_SIGNAL operation in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
 							if(pSignal != NULL)
 							{
 								const size_t	stackSize = stack.GetSize();
@@ -1590,7 +1708,7 @@ namespace Schematyc2
 						{
 							const SVMCallEnvAbstractInterfaceFunctionOp*	pCallEnvAbstractInterfaceFunctionOp = static_cast<const SVMCallEnvAbstractInterfaceFunctionOp*>(pOp);
 							IAbstractInterfaceFunctionConstPtr						pAbstractInterfaceFunction = gEnv->pSchematyc2->GetEnvRegistry().GetAbstractInterfaceFunction(pCallEnvAbstractInterfaceFunctionOp->functionGUID);
-							CRY_ASSERT(pAbstractInterfaceFunction);
+							CRY_ASSERT_MESSAGE(pAbstractInterfaceFunction, "Invalid abstract function found  in CALL_ENV_ABSTRACT_INTERFACE_FUNCTION operation in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
 							if(pAbstractInterfaceFunction)
 							{
 								size_t				prevStackSize = stack.GetSize();
@@ -1625,7 +1743,7 @@ namespace Schematyc2
 						{
 							const SVMCallLibAbstractInterfaceFunctionOp*	pCallLibAbstractInterfaceFunctionOp = static_cast<const SVMCallLibAbstractInterfaceFunctionOp*>(pOp);
 							ILibAbstractInterfaceFunctionConstPtr					pAbstractInterfaceFunction = gEnv->pSchematyc2->GetLibRegistry().GetAbstractInterfaceFunction(pCallLibAbstractInterfaceFunctionOp->functionGUID);
-							CRY_ASSERT(pAbstractInterfaceFunction);
+							CRY_ASSERT_MESSAGE(pAbstractInterfaceFunction, "Invalid abstract function found  in CALL_LIB_ABSTRACT_INTERFACE_FUNCTION operation in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
 							if(pAbstractInterfaceFunction)
 							{
 								size_t				prevStackSize = stack.GetSize();
@@ -1757,6 +1875,18 @@ namespace Schematyc2
 					SCHEMATYC2_SYSTEM_ERROR("Function took more than %f(s) to process: class = %s, function = %s, time = %f(s)", CVars::sc_FunctionTimeLimit, m_pLibClass->GetName(), pFunction->GetName(), time);
 				}
 			}
+
+#ifdef SCHEMATYC2_DEBUGGING
+			if (IsDebuggingActive())
+			{
+				// Check if we need to mark the end of a function
+				if (pFunction->GetDebugOperationsSize() != 0)
+				{
+					m_nodeHistory.push_back(SExecutionHistoryItem(pFunction->GetGUID(), "", "", SExecutionHistoryItem::EExecutionHistoryType::FunctionEnd));
+				}
+			}
+#endif
+
 			-- s_recursionDepth;
 		}
 	}

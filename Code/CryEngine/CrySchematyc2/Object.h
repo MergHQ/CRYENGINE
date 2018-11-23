@@ -59,6 +59,10 @@ namespace Schematyc2
 		virtual void VisitActiveTimers(const ObjectActiveTimerVisitor& visitor) const override;
 		virtual void VisitActiveActionInstances(const ObjectActiveActionInstanceVisitor& visitor) const override;
 		virtual const ObjectSignalHistory& GetSignalHistory() const override;
+		virtual const ObjectNodeHistory& GetNodeHistory() const override;
+		virtual void ClearNodeHistory() override;
+		virtual void SetDebuggingActive(const bool active) override;
+		virtual bool IsDebuggingActive() const override;
 
 		// ~IObject
 
@@ -230,8 +234,10 @@ namespace Schematyc2
 		ComponentInstances					m_componentInstances;
 		TActionInstanceVector				m_actionInstances;
 		ObjectSignalHistory					m_signalHistory;
+		ObjectNodeHistory                   m_nodeHistory;
 		TSignalObserverConnectionArray		m_signalObservers;
 		TemplateUtils::CConnectionScope		m_connectionScope;
 		CStateNetIdxMapper					m_stateNetIdxMapper;
+		bool                                m_debuggingActive;
 	};
 }

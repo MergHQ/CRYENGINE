@@ -358,12 +358,16 @@ namespace Schematyc2
 			{
 				if(stackPos != (compiler.GetStackSize() - typeSize))
 				{
-					compiler.Copy(stackPos, INVALID_INDEX, *m_pValue);
+					compiler.Copy(stackPos, INVALID_INDEX, *m_pValue, CDocGraphNodeBase::GetGUID(), GetInputName(EInputIdx::Value));
+				}
+				else
+				{
+					compiler.SetDebugInput(CDocGraphNodeBase::GetGUID(), GetInputName(EInputIdx::Value));
 				}
 			}
 			else
 			{
-				compiler.Push(*m_pValue);
+				compiler.Push(*m_pValue, CDocGraphNodeBase::GetGUID(), GetInputName(EInputIdx::Value));
 			}
 
 			const size_t rhsPos = compiler.GetStackSize();
@@ -375,12 +379,12 @@ namespace Schematyc2
 				IAnyConstPtr pCaseValue = m_cases[caseIdx].pValue;
 				if(pCaseValue)
 				{
-					compiler.Push(*pCaseValue);
+					compiler.Push(*pCaseValue, SGUID(), "");
 				}
 				else
 				{
 					SCHEMATYC2_COMPILER_ERROR("Missing case value!");
-					compiler.Push(*m_pValue);
+					compiler.Push(*m_pValue, SGUID(), "");
 				}
 
 				compiler.Compare(lhsPos, rhsPos, typeSize);

@@ -679,7 +679,7 @@ namespace Schematyc2
 		if(m_pValue)
 		{
 			const size_t stackPos = compiler.GetStackSize();
-			compiler.Push(*m_pValue);
+			compiler.Push(*m_pValue, SGUID(), "");
 			compiler.BindOutputToStack(*this, stackPos, EOutput::Value, *m_pValue);
 		}
 	}
@@ -796,23 +796,23 @@ namespace Schematyc2
 		{
 			if(endStackPos != (compiler.GetStackSize() - 1))
 			{
-				compiler.Copy(endStackPos, INVALID_INDEX, MakeAny(m_end));
+				compiler.Copy(endStackPos, INVALID_INDEX, MakeAny(m_end), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::End));
 			}
 		}
 		else
 		{
-			compiler.Push(MakeAny(m_end));
+			compiler.Push(MakeAny(m_end), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::End));
 		}
 		compiler.BindVariableToStack(*this, compiler.GetStackSize() - 1, EVariable::End);
 		compiler.CreateStackFrame(*this, EStackFrame::Body);
 		const size_t beginStackPos = compiler.FindInputOnStack(*this, EInput::Begin);
 		if(beginStackPos != INVALID_INDEX)
 		{
-			compiler.Copy(beginStackPos, INVALID_INDEX, MakeAny(m_begin));
+			compiler.Copy(beginStackPos, INVALID_INDEX, MakeAny(m_begin), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Begin));
 		}
 		else
 		{
-			compiler.Push(MakeAny(m_begin));
+			compiler.Push(MakeAny(m_begin), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Begin));
 		}
 		compiler.BindOutputToStack(*this, compiler.GetStackSize() - 1, EOutput::Index, MakeAny(int32()));
 	}
@@ -944,7 +944,7 @@ namespace Schematyc2
 	{
 		compiler.GetObject();
 		DocGraphNodeUtils::CopyInputsToStack(*this, EInput::FirstParam, m_inputValues, compiler);
-		compiler.SendSignal(CDocGraphNodeBase::GetRefGUID());
+		compiler.SendSignal(CDocGraphNodeBase::GetRefGUID(), CDocGraphNodeBase::GetGUID());
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1047,7 +1047,7 @@ namespace Schematyc2
 	void CDocGraphBroadcastSignalNode::CompileInputs(IDocGraphNodeCompiler& compiler) const
 	{
 		DocGraphNodeUtils::CopyInputsToStack(*this, EInput::FirstParam, m_inputValues, compiler);
-		compiler.BroadcastSignal(CDocGraphNodeBase::GetRefGUID());
+		compiler.BroadcastSignal(CDocGraphNodeBase::GetRefGUID(), CDocGraphNodeBase::GetGUID());
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1412,11 +1412,11 @@ namespace Schematyc2
 					const size_t stackPos = compiler.FindInputOnStack(*this, EInput::Index);
 					if(stackPos != INVALID_INDEX)
 					{
-						compiler.Copy(stackPos, INVALID_INDEX, MakeAny(m_index));
+						compiler.Copy(stackPos, INVALID_INDEX, MakeAny(m_index), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Index));
 					}
 					else
 					{
-						compiler.Push(MakeAny(m_index));
+						compiler.Push(MakeAny(m_index), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Index));
 					}
 					compiler.AddOutputToStack(*this, EOutput::Value, *pValue);
 					compiler.ContainerGet(CDocGraphNodeBase::GetRefGUID(), *pValue);
@@ -1449,7 +1449,7 @@ namespace Schematyc2
 					compiler.Branch(*this, EMarker::End);
 					compiler.CreateMarker(*this, EMarker::False);
 					compiler.Pop(1);
-					compiler.Push(*pValue);
+					compiler.Push(*pValue, SGUID(), "");
 					compiler.CreateStackFrame(*this, EStackFrame::False);
 				}
 			}
@@ -1538,7 +1538,7 @@ namespace Schematyc2
 		CRY_ASSERT(pTimer);
 		if(pTimer)
 		{
-			compiler.StartTimer(pTimer->GetGUID());
+			compiler.StartTimer(pTimer->GetGUID(), CDocGraphNodeBase::GetGUID());
 		}
 	}
 
@@ -1617,7 +1617,7 @@ namespace Schematyc2
 		CRY_ASSERT(pTimer);
 		if(pTimer)
 		{
-			compiler.StopTimer(pTimer->GetGUID());
+			compiler.StopTimer(pTimer->GetGUID(), CDocGraphNodeBase::GetGUID());
 		}
 	}
 
@@ -1696,7 +1696,7 @@ namespace Schematyc2
 		CRY_ASSERT(pTimer);
 		if(pTimer)
 		{
-			compiler.ResetTimer(pTimer->GetGUID());
+			compiler.ResetTimer(pTimer->GetGUID(), CDocGraphNodeBase::GetGUID());
 		}
 	}
 
@@ -1810,9 +1810,9 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphEndStateNode::End(IDocGraphNodeCompiler& compiler, bool bSuccess) const
 	{
-		compiler.Set(0, MakeAny(int32(bSuccess ? ELibTransitionResult::EndSuccess : ELibTransitionResult::EndFailure)));
-		compiler.Set(1, MakeAny(int32(~0)));
-		compiler.Return();
+		compiler.Set(0, MakeAny(int32(bSuccess ? ELibTransitionResult::EndSuccess : ELibTransitionResult::EndFailure)), SGUID(), "");
+		compiler.Set(1, MakeAny(int32(~0)), SGUID(), "");
+		compiler.Return(CDocGraphNodeBase::GetGUID());
 	}
 
 	//////////////////////////////////////////////////////////////////////////

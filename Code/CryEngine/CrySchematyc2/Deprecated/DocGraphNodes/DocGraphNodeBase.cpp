@@ -324,12 +324,13 @@ namespace Schematyc2
 				const size_t	stackPos = compiler.FindInputOnStack(node, iInput);
 				if(stackPos != INVALID_INDEX)
 				{
-					compiler.Copy(stackPos, INVALID_INDEX, *inputValues[iInput]);
+					compiler.Copy(stackPos, INVALID_INDEX, *inputValues[iInput], node.GetGUID(), node.GetInputName(iInput));
 				}
 				else
 				{
 					// Push default input value.
-					compiler.Push(*inputValues[iInput]);
+					compiler.Push(*inputValues[iInput], node.GetGUID(), node.GetInputName(iInput));
+					//CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "Copying input %s with value %zu", node.GetInputName(iInput), iInput);
 				}
 			}
 		}
@@ -350,12 +351,12 @@ namespace Schematyc2
 				const size_t	iInputValue = firstInputValueIdx + (iInput - firstInputIdx);
 				if(stackPos != INVALID_INDEX)
 				{
-					compiler.Copy(stackPos, INVALID_INDEX, *inputValues[iInputValue]);
+					compiler.Copy(stackPos, INVALID_INDEX, *inputValues[iInputValue], node.GetGUID(), node.GetInputName(iInput));
 				}
 				else
 				{
 					// Push default input value.
-					compiler.Push(*inputValues[iInputValue]);
+					compiler.Push(*inputValues[iInputValue], node.GetGUID(), node.GetInputName(iInput));
 				}
 			}
 		}

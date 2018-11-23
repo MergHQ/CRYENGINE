@@ -171,7 +171,7 @@ namespace Schematyc2
 			{
 				compiler.GetObject();
 				DocGraphNodeUtils::CopyInputsToStack(*this, GetFirstParamInput(), m_signalInputValues, 0, compiler);
-				compiler.SendSignal(CDocGraphNodeBase::GetRefGUID());
+				compiler.SendSignal(CDocGraphNodeBase::GetRefGUID(), CDocGraphNodeBase::GetGUID());
 				break;
 			}
 		case EDocGraphSendSignalNodeTarget::Object:
@@ -179,20 +179,20 @@ namespace Schematyc2
 				const size_t stackPos = compiler.FindInputOnStack(*this, EInput::Object);
 				if(stackPos != INVALID_INDEX)
 				{
-					compiler.Copy(stackPos, INVALID_INDEX, MakeAny(ObjectId()));
+					compiler.Copy(stackPos, INVALID_INDEX, MakeAny(ObjectId()), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Object));
 				}
 				else
 				{
-					compiler.Push(MakeAny(ObjectId()));	// #SchematycTODO : Can we perhaps grey out the node if this is not connected?
+					compiler.Push(MakeAny(ObjectId()), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Object));	// #SchematycTODO : Can we perhaps grey out the node if this is not connected?
 				}
 				DocGraphNodeUtils::CopyInputsToStack(*this, GetFirstParamInput(), m_signalInputValues, 0, compiler);
-				compiler.SendSignal(CDocGraphNodeBase::GetRefGUID());
+				compiler.SendSignal(CDocGraphNodeBase::GetRefGUID(), CDocGraphNodeBase::GetGUID());
 				break;
 			}
 		case EDocGraphSendSignalNodeTarget::Broadcast:
 			{
 				DocGraphNodeUtils::CopyInputsToStack(*this, GetFirstParamInput(), m_signalInputValues, 0, compiler);
-				compiler.BroadcastSignal(CDocGraphNodeBase::GetRefGUID());
+				compiler.BroadcastSignal(CDocGraphNodeBase::GetRefGUID(), CDocGraphNodeBase::GetGUID());
 				break;
 			}
 		}

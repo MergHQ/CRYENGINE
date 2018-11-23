@@ -148,12 +148,14 @@ namespace Schematyc2
 
 	struct SVMContainerRemoveByIndexOp : public SVMOp
 	{
-		inline SVMContainerRemoveByIndexOp(size_t _iContainer)
+		inline SVMContainerRemoveByIndexOp(size_t _iContainer, size_t _count)
 			: SVMOp(SVMOp::CONTAINER_REMOVE_BY_INDEX, sizeof(*this))
 			, iContainer(_iContainer)
+			, count(_count)
 		{}
 
 		size_t	iContainer;
+		size_t	count;
 	};
 
 	struct SVMContainerRemoveByValueOp : public SVMOp
