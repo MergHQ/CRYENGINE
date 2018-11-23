@@ -114,12 +114,16 @@ namespace Schematyc2
 		{
 			if(stackPos != (compiler.GetStackSize() - 1))
 			{
-				compiler.Copy(stackPos, INVALID_INDEX, MakeAny(m_bValue));
+				compiler.Copy(stackPos, INVALID_INDEX, MakeAny(m_bValue), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Value));
+			}
+			else
+			{
+				compiler.SetDebugInput(CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Value));
 			}
 		}
 		else
 		{
-			compiler.Push(MakeAny(m_bValue));
+			compiler.Push(MakeAny(m_bValue), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Value));
 		}
 	}
 

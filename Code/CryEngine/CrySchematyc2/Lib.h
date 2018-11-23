@@ -463,6 +463,14 @@ namespace Schematyc2
 		SVMOp* GetLastOp();
 		void SetGraphExecutionFilter(EGraphExecutionFilter filter);
 
+		// Debug
+		void                    AddDebugOperationSymbolNode(size_t pos, const SGUID& guid);
+		void                    AddDebugOperationSymbolInput(size_t pos, const SGUID& guid, const char* input);
+		void                    ClearDebugOperationSymbols();
+
+		virtual const SDebugSymbol*     GetDebugOperationSymbol(size_t pos) const override;
+		virtual size_t                  GetDebugOperationsSize() const override;
+
 	private:
 
 		struct SParam
@@ -477,6 +485,7 @@ namespace Schematyc2
 		typedef std::vector<IGlobalFunctionConstPtr>					GlobalFunctionTable;
 		typedef std::vector<IComponentMemberFunctionConstPtr>	ComponentMemberFunctionTable;
 		typedef std::vector<IActionMemberFunctionConstPtr>		ActionMemberFunctionTable;
+		typedef std::unordered_map<size_t, SDebugSymbol>                  DebugSymbolTable;
 
 		void Release();
 
@@ -502,7 +511,8 @@ namespace Schematyc2
 		size_t							m_size;
 		size_t							m_lastOpPos;
 		uint8*							m_pBegin;
-		EGraphExecutionFilter         m_executionFilter;
+		EGraphExecutionFilter           m_executionFilter;
+		DebugSymbolTable                m_debugSymbolTable;
 	};
 
 	// Library class properties.
@@ -605,6 +615,7 @@ namespace Schematyc2
 		virtual const ILibTransition* GetTransition(size_t iTransition) const override;
 		virtual LibFunctionId GetFunctionId(const SGUID& guid) const override;
 		virtual const ILibFunction* GetFunction(const LibFunctionId& functionId) const override;
+		virtual const SGUID GetFunctionGUID(const LibFunctionId& functionId) const override;
 		virtual const CRuntimeFunction* GetFunction_New(uint32 functionIdx) const override;
 		virtual void PreviewGraphFunctions(const SGUID& graphGUID, const StringStreamOutCallback& stringStreamOutCallback) const override;
 		virtual void AddPrecacheResource(IAnyConstPtr resource) override;

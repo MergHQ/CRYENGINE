@@ -151,11 +151,11 @@ namespace Schematyc2
 				const size_t stackPos = compiler.FindInputOnStack(*this, EInput::FirstParam + outputIdx);
 				if(stackPos != INVALID_INDEX)
 				{
-					compiler.Copy(stackPos, pos, *pOutputValue);
+					compiler.Copy(stackPos, pos, *pOutputValue, CDocGraphNodeBase::GetGUID(), GetInputName(EInput::FirstParam + outputIdx));
 				}
 				else
 				{
-					compiler.Set(pos, *pOutputValue);
+					compiler.Set(pos, *pOutputValue, CDocGraphNodeBase::GetGUID(), GetInputName(EInput::FirstParam + outputIdx));
 				}
 
 				TVariantVector              variants;
@@ -166,6 +166,6 @@ namespace Schematyc2
 			}
 		}
 
-		compiler.Return();
+		compiler.Return(CDocGraphNodeBase::GetGUID());
 	}
 }

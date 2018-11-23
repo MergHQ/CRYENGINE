@@ -303,9 +303,9 @@ namespace Schematyc2
 		const size_t libStateIdx = LibUtils::FindStateByGUID(compiler.GetLibClass(), CDocGraphNodeBase::GetRefGUID());
 		if(libStateIdx != INVALID_INDEX)
 		{
-			compiler.Set(0, MakeAny(int32(ELibTransitionResult::ChangeState)));
-			compiler.Set(1, MakeAny(int32(libStateIdx)));
-			compiler.Return();
+			compiler.Set(0, MakeAny(int32(ELibTransitionResult::ChangeState)), SGUID(), "");
+			compiler.Set(1, MakeAny(int32(libStateIdx)), SGUID(), "");
+			compiler.Return(CDocGraphNodeBase::GetGUID());
 		}
 	}
 }

@@ -1026,9 +1026,69 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void CLibFunction::SetGraphExecutionFilter(EGraphExecutionFilter filter)
+	void CLibFunction::SetGraphExecutionFilter(EGraphExecutionFilter filter) 
 	{
 		m_executionFilter = filter;
+	}
+
+	void CLibFunction::AddDebugOperationSymbolNode(size_t pos, const SGUID& guid)
+	{
+		if (!guid.cryGUID.IsNull())
+		{
+			DebugSymbolTable::iterator result = m_debugSymbolTable.find(pos);
+
+			if (result == m_debugSymbolTable.end())
+			{
+				m_debugSymbolTable.emplace(pos, SDebugSymbol(guid, "", ILibFunction::SDebugSymbol::EDebugSymbolType::Node));
+			}
+			else
+			{
+				if (result->second.type == ILibFunction::SDebugSymbol::EDebugSymbolType::Input)
+				{
+					result->second.type = ILibFunction::SDebugSymbol::EDebugSymbolType::NodeAndInput;
+				}
+				else
+				{
+					CRY_ASSERT_MESSAGE(result == m_debugSymbolTable.end(), "[Schematyc Debugger] Trying to add a debug symbol (Node) already registred.");
+				}
+			}
+		}
+	}
+
+	void CLibFunction::AddDebugOperationSymbolInput(size_t pos, const SGUID& guid, const char* input)
+	{
+		if (!guid.cryGUID.IsNull())
+		{
+			DebugSymbolTable::const_iterator result = m_debugSymbolTable.find(pos);
+
+			if (result == m_debugSymbolTable.end())
+			{
+				m_debugSymbolTable.emplace(pos, SDebugSymbol(guid, input, ILibFunction::SDebugSymbol::EDebugSymbolType::Input));
+			}
+
+			CRY_ASSERT_MESSAGE(result == m_debugSymbolTable.end(), "[Schematyc Debugger] Trying to add a debug symbol (Input) already registered.");
+		}
+	}
+
+	const Schematyc2::ILibFunction::SDebugSymbol* CLibFunction::GetDebugOperationSymbol(size_t pos) const
+	{
+		DebugSymbolTable::const_iterator result = m_debugSymbolTable.find(pos);
+		if (result != m_debugSymbolTable.end())
+		{
+			return &result->second;
+		}
+
+		return nullptr;
+	}
+
+	size_t CLibFunction::GetDebugOperationsSize() const
+	{
+		return m_debugSymbolTable.size();
+	}
+
+	void CLibFunction::ClearDebugOperationSymbols()
+	{
+		m_debugSymbolTable.clear();
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1089,6 +1149,8 @@ namespace Schematyc2
 		m_size			= 0;
 		m_lastOpPos	= INVALID_INDEX;
 		m_pBegin		= NULL;
+
+		ClearDebugOperationSymbols();
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1510,6 +1572,12 @@ namespace Schematyc2
 	{
 		TFunctionMap::const_iterator	iFunction = m_functions.find(functionId);
 		return iFunction != m_functions.end() ? &iFunction->second.function : NULL;
+	}
+
+	const SGUID CLibClass::GetFunctionGUID(const LibFunctionId& functionId) const
+	{
+		TFunctionMap::const_iterator	iFunction = m_functions.find(functionId);
+		return iFunction != m_functions.end() ? iFunction->second.graphGUID : SGUID();
 	}
 
 	//////////////////////////////////////////////////////////////////////////

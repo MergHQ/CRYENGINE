@@ -155,6 +155,7 @@ namespace SchematycBaseEnv
 			pEntityFoundation->SetProperties(Schematyc2::Properties::MakeShared<SEntityFoundationProperties>());
 			pEntityFoundation->UseNamespace("Base");
 			pEntityFoundation->UseNamespace("Utils");
+			pEntityFoundation->UseNamespace("Debug::UDR");
 			//pEntityFoundation->UseNamespace("Types");
 			// TODO: Workaround until recursion works.
 			pEntityFoundation->UseNamespace("Types::Bool");

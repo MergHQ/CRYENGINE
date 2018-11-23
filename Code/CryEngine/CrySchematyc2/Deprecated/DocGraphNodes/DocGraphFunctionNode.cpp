@@ -563,7 +563,7 @@ namespace Schematyc2
 						}
 					}
 					DocGraphNodeUtils::CopyInputsToStack(*this, EInput::FirstParam, m_inputValues, compiler);
-					compiler.CallGlobalFunction(refGUID);
+					compiler.CallGlobalFunction(refGUID, CDocGraphNodeBase::GetGUID());
 				}
 				break;
 			}
@@ -576,10 +576,16 @@ namespace Schematyc2
 					SCHEMATYC2_SYSTEM_ASSERT(componentInstanceIdx != INVALID_INDEX);
 					if(componentInstanceIdx != INVALID_INDEX)
 					{
+#ifdef SCHEMATYC2_ASSERTS_ENABLED
+						stack_string guidString;
+						StringUtils::SysGUIDToString(CDocGraphNodeBase::GetGUID().sysGUID, guidString);
+						SCHEMATYC2_SYSTEM_ASSERT_MESSAGE(pFunction->GetComponentGUID() == compiler.GetLibClass().GetComponentInstance(componentInstanceIdx)->GetComponentGUID(), "Function %s in %s from component has invalid component guid. GUID: %s", pFunction->GetName(), pFunction->GetFileName(), guidString.c_str());
+#endif // SCHEMATYC2_ASSERTS_ENABLED
+
 						const CAny<uint32> componentIdx = MakeAny(static_cast<uint32>(componentInstanceIdx));
-						compiler.Push(componentIdx);
+						compiler.Push(componentIdx, SGUID(), "");
 						DocGraphNodeUtils::CopyInputsToStack(*this, EInput::FirstParam, m_inputValues, compiler);
-						compiler.CallComponentMemberFunction(refGUID);
+						compiler.CallComponentMemberFunction(refGUID, CDocGraphNodeBase::GetGUID());
 					}
 				}
 				break;
@@ -593,10 +599,16 @@ namespace Schematyc2
 					SCHEMATYC2_SYSTEM_ASSERT(actionInstanceIdx != INVALID_INDEX);
 					if(actionInstanceIdx != INVALID_INDEX)
 					{
+#ifdef SCHEMATYC2_ASSERTS_ENABLED
+						stack_string guidString;
+						StringUtils::SysGUIDToString(CDocGraphNodeBase::GetGUID().sysGUID, guidString);
+						SCHEMATYC2_SYSTEM_ASSERT_MESSAGE(pFunction->GetActionGUID() == compiler.GetLibClass().GetActionInstance(actionInstanceIdx)->GetActionGUID(), "Function %s in %s from action has invalid action guid. GUID: %s", pFunction->GetName(), pFunction->GetFileName(), guidString.c_str());
+#endif // SCHEMATYC2_ASSERTS_ENABLED
+
 						const CAny<uint32> actionIdx = MakeAny(static_cast<uint32>(actionInstanceIdx));
-						compiler.Push(actionIdx);
+						compiler.Push(actionIdx, SGUID(), "");
 						DocGraphNodeUtils::CopyInputsToStack(*this, EInput::FirstParam, m_inputValues, compiler);
-						compiler.CallActionMemberFunction(refGUID);
+						compiler.CallActionMemberFunction(refGUID, CDocGraphNodeBase::GetGUID());
 					}
 				}
 				break;
@@ -607,7 +619,7 @@ namespace Schematyc2
 				if(libFunctionId != LibFunctionId::s_invalid)
 				{
 					DocGraphNodeUtils::CopyInputsToStack(*this, EInput::FirstParam, m_inputValues, compiler);
-					compiler.CallLibFunction(libFunctionId);
+					compiler.CallLibFunction(libFunctionId, CDocGraphNodeBase::GetGUID());
 				}
 				break;
 			}
