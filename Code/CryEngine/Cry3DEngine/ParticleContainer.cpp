@@ -725,7 +725,7 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 	else if (nRenderFlags & REN_SPRITE)
 	{
 		// Copy pre-computed render and state flags.
-		uint64 nObjFlags = pParams->nRenObjFlags & PRParams.m_nRenObjFlags;
+		ERenderObjectFlags nObjFlags = ERenderObjectFlags(pParams->nRenObjFlags & PRParams.m_nRenObjFlags);
 
 		IF (pParams->eFacing == pParams->eFacing.Water, 0)
 		{
@@ -785,7 +785,7 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 				nObjFlags &= ~FOB_OCTAGONAL;
 		}
 		
-		job.pRenderObject->m_ObjFlags = (nObjFlags & ~0xFF) | RenParams.dwFObjFlags;
+		job.pRenderObject->m_ObjFlags = ERenderObjectFlags(nObjFlags & ~0xFF) | RenParams.dwFObjFlags;
 		job.pRenderObject->SetInstanceDataDirty();
 
 		pOD->m_FogVolumeContribIdx = PRParams.m_nFogVolumeContribIdx;

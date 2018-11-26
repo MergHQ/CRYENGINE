@@ -47,7 +47,7 @@ void CParticleRenderBase::Render(CParticleComponentRuntime& runtime, const SRend
 	if ((isIndoors && !renderIndoor) || (!isIndoors && !renderOutdoors))
 		return;
 
-	uint64 objFlags = params.m_renderObjectFlags;
+	ERenderObjectFlags objFlags = params.m_renderObjectFlags;
 	if (!renderContext.m_lightVolumeId)
 		objFlags &= ~FOB_LIGHTVOLUME;
 
@@ -63,7 +63,7 @@ void CParticleRenderBase::Render(CParticleComponentRuntime& runtime, const SRend
 		AddRenderObject(runtime, renderContext, m_renderObjectAfterWaterId, threadId, objFlags | FOB_AFTER_WATER);
 }
 
-void CParticleRenderBase::PrepareRenderObject(const CParticleComponentRuntime& runtime, uint renderObjectId, uint threadId, uint64 objFlags)
+void CParticleRenderBase::PrepareRenderObject(const CParticleComponentRuntime& runtime, uint renderObjectId, uint threadId, ERenderObjectFlags objFlags)
 {
 	const SComponentParams& params = runtime.ComponentParams();
 	CRenderObject* pRenderObject = gEnv->pRenderer->EF_GetObject();
@@ -84,7 +84,7 @@ void CParticleRenderBase::PrepareRenderObject(const CParticleComponentRuntime& r
 	runtime.GetEmitter()->SetRenderObject(pRenderObject, std::move(particleMaterial), threadId, renderObjectId);
 }
 
-void CParticleRenderBase::AddRenderObject(CParticleComponentRuntime& runtime, const SRenderContext& renderContext, uint renderObjectId, uint threadId, uint64 objFlags)
+void CParticleRenderBase::AddRenderObject(CParticleComponentRuntime& runtime, const SRenderContext& renderContext, uint renderObjectId, uint threadId, ERenderObjectFlags objFlags)
 {
 	const SComponentParams& params = runtime.ComponentParams();
 	CParticleEmitter& emitter = *runtime.GetEmitter();

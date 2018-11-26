@@ -272,17 +272,17 @@ void CDeviceGraphicsPSODesc::FillDescs(D3D11_RASTERIZER_DESC& rasterizerDesc, D3
 	// *INDENT-ON*
 }
 
-uint32 CDeviceGraphicsPSODesc::CombineVertexStreamMasks(uint32 fromShader, uint32 fromObject) const
+EStreamMasks CDeviceGraphicsPSODesc::CombineVertexStreamMasks(EStreamMasks fromShader, EStreamMasks fromObject) const
 {
-	uint32 result = fromShader;
+	EStreamMasks result = fromShader;
 
 	if (fromObject & VSM_NORMALS)
 		result |= VSM_NORMALS;
 
-	if (fromObject & BIT(VSF_QTANGENTS))
+	if (fromObject & VSM_QTANGENTS)
 	{
 		result &= ~VSM_TANGENTS;
-		result |= BIT(VSF_QTANGENTS);
+		result |= VSM_QTANGENTS;
 	}
 
 	if (fromObject & VSM_INSTANCED)
@@ -293,7 +293,7 @@ uint32 CDeviceGraphicsPSODesc::CombineVertexStreamMasks(uint32 fromShader, uint3
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-CDeviceComputePSODesc::CDeviceComputePSODesc(CDeviceResourceLayoutPtr pResourceLayout, ::CShader* pShader, const CCryNameTSCRC& technique, uint64 rtFlags, uint32 mdFlags, uint32 mdvFlags)
+CDeviceComputePSODesc::CDeviceComputePSODesc(CDeviceResourceLayoutPtr pResourceLayout, ::CShader* pShader, const CCryNameTSCRC& technique, uint64 rtFlags, uint32 mdFlags)
 {
 	InitWithDefaults();
 
@@ -302,7 +302,6 @@ CDeviceComputePSODesc::CDeviceComputePSODesc(CDeviceResourceLayoutPtr pResourceL
 	m_technique = technique;
 	m_ShaderFlags_RT = rtFlags;
 	m_ShaderFlags_MD = mdFlags;
-	m_ShaderFlags_MDV = mdvFlags;
 }
 
 void CDeviceComputePSODesc::InitWithDefaults()

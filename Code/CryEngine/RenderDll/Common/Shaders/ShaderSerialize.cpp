@@ -739,9 +739,9 @@ bool CShaderSerialize::ImportShader(CShader* pSH, CShaderManBin& binShaderMgr)
 	//TODO |= on flags? will we lose flags at runtime
 	pSH->m_Flags = SC.SSR.m_Flags;
 	pSH->m_Flags2 = SC.SSR.m_Flags2;
-	pSH->m_nMDV = SC.SSR.m_nMDV;
+	pSH->m_nMDV = EVertexModifier(SC.SSR.m_nMDV);
 	pSH->m_eVertexFormat = SC.SSR.m_eVertexFormat;
-	pSH->m_eCull = SC.SSR.m_eCull;
+	pSH->m_eCull = ECull(SC.SSR.m_eCull);
 	pSH->m_eShaderType = SC.SSR.m_eShaderType;
 	pSH->m_nMaskGenFX = SC.SSR.m_nMaskGenFX;
 

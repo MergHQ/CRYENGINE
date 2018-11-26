@@ -309,7 +309,7 @@ struct CRY_ALIGN(128) SLocalRenderVertices
 		SetOctVertices(&vert);
 	}
 
-	ILINE void AddQuadIndices(int nVertAdvance = 4, int bStrip = 0)
+	ILINE void AddQuadIndices(int nVertAdvance = 4, bool bStrip = 0)
 	{
 		uint16* pIndices = aIndices.Array().append(bStrip ? 4 : 6, eNoInit);
 
@@ -353,7 +353,7 @@ struct CRY_ALIGN(128) SLocalRenderVertices
 		nBaseVertexIndex += 8;
 	}
 
-	void AddPolyIndices(int nVerts, int bStrip = 0)
+	void AddPolyIndices(int nVerts, bool bStrip = false)
 	{
 		nVerts >>= 1;
 		while (--nVerts > 0)
@@ -773,7 +773,7 @@ void FinishConnectedSequence(SLocalRenderVertices& alloc, SParticleVertexContext
 		AlignVert(Context.m_PrevVert, Context.m_Params, (Context.m_PrevVert.xyz - Context.m_vPrevPos));
 		Context.m_PrevVert.color.a = 0;
 		alloc.AddDualVertices(Context.m_PrevVert);
-		alloc.AddQuadIndices(4, Context.m_uVertexFlags & FOB_ALLOW_TESSELLATION);
+		alloc.AddQuadIndices(4, Context.m_uVertexFlags & FOB_ALLOW_TESSELLATION ? true : false);
 	}
 }
 
@@ -1006,7 +1006,7 @@ void CParticle::SetVertices(SLocalRenderVertices& alloc, SParticleVertexContext&
 			else
 			{
 				// Write subsequent vertex
-				alloc.AddQuadIndices(2, Context.m_uVertexFlags & FOB_ALLOW_TESSELLATION);
+				alloc.AddQuadIndices(2, Context.m_uVertexFlags & FOB_ALLOW_TESSELLATION ? true : false);
 				AlignVert(Context.m_PrevVert, params, (BaseVert.xyz - Context.m_vPrevPos) * 0.5f);
 			}
 			Context.m_PrevVert.color.a = BaseVert.color.a;
@@ -1078,7 +1078,7 @@ void CParticle::SetTailVertices(const SVF_Particle& BaseVert, SParticleRenderDat
 		TailVert.xyz += TailVert.yaxis;
 		TailVert.st.y = 255;
 		alloc.AddDualVertices(TailVert);
-		alloc.AddQuadIndices(4, Context.m_uVertexFlags & FOB_ALLOW_TESSELLATION);
+		alloc.AddQuadIndices(4, Context.m_uVertexFlags & FOB_ALLOW_TESSELLATION ? true : false);
 		return;
 	}
 
@@ -1134,7 +1134,7 @@ void CParticle::SetTailVertices(const SVF_Particle& BaseVert, SParticleRenderDat
 	nVerts += 2;
 
 	// Create indices for variable-length particles.
-	alloc.AddPolyIndices(nVerts, Context.m_uVertexFlags & FOB_ALLOW_TESSELLATION);
+	alloc.AddPolyIndices(nVerts, Context.m_uVertexFlags & FOB_ALLOW_TESSELLATION ? true : false);
 }
 
 // Determine which particles are visible, save computed alphas in array for reuse, return required particle, vertex, and index count, update stats.

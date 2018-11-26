@@ -593,9 +593,8 @@ bool CPreviewModelCtrl::RenderInternal(SDisplayContext& context)
 void CPreviewModelCtrl::RenderObject(IMaterial* pMaterial, const SRenderingPassInfo& passInfo)
 {
 	SRendParams rp;
-	rp.dwFObjFlags = 0;
 	rp.AmbientColor = m_ambientColor * m_ambientMultiplier;
-	rp.dwFObjFlags |= FOB_TRANS_MASK /*| FOB_GLOBAL_ILLUMINATION*/ | FOB_NO_FOG /*| FOB_ZPREPASS*/;
+	rp.dwFObjFlags = FOB_TRANS_MASK /*| FOB_GLOBAL_ILLUMINATION*/ | FOB_NO_FOG /*| FOB_ZPREPASS*/;
 	rp.pMaterial = pMaterial;
 
 	Matrix34 tm;

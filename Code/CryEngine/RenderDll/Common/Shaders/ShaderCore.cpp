@@ -237,7 +237,7 @@ void CShader::mfFree()
 
 	//SAFE_DELETE(m_ShaderGenParams);
 	m_Flags &= ~(EF_PARSE_MASK | EF_NODRAW);
-	m_nMDV = 0;
+	m_nMDV = MDV_NONE;
 }
 
 CShader::~CShader()

@@ -704,10 +704,11 @@ enum EStreamIDs
 };
 
 //! Stream Masks (Used during updating).
-enum EStreamMasks
+enum EStreamMasks : uint16
 {
 	VSM_GENERAL         = BIT(VSF_GENERAL),
-	VSM_TANGENTS        = BIT(VSF_TANGENTS) | BIT( VSF_QTANGENTS),
+	VSM_TANGENTS        = BIT(VSF_TANGENTS) | BIT(VSF_QTANGENTS), // either or
+	VSM_QTANGENTS       = BIT(VSF_QTANGENTS),
 	VSM_HWSKIN          = BIT(VSF_HWSKIN_INFO),
 	VSM_VERTEX_VELOCITY = BIT(VSF_VERTEX_VELOCITY),
 #if ENABLE_NORMALSTREAM_SUPPORT
@@ -718,7 +719,10 @@ enum EStreamMasks
 	VSM_INSTANCED       = BIT(VSF_INSTANCED),
 
 	VSM_MASK            = MASK(VSF_NUM),
+	VSM_NONE            = 0,
 };
+
+CRY_CREATE_ENUM_FLAG_OPERATORS(EStreamMasks);
 
 //==================================================================================================================
 

@@ -1093,7 +1093,7 @@ static inline uint32 CalculateRenderItemBatchFlags(SShaderItem& shaderItem, CRen
 
 	float fAlpha = pObj->m_fAlpha;
 	uint32 uTransparent = 0; //(bool)(fAlpha < 1.0f); Not supported in new rendering pipeline 
-	const uint64 ObjFlags = pObj->m_ObjFlags;
+	const ERenderObjectFlags ObjFlags = pObj->m_ObjFlags;
 
 	if (!passInfo.IsRecursivePass() && pTech)
 	{
@@ -1112,7 +1112,7 @@ static inline uint32 CalculateRenderItemBatchFlags(SShaderItem& shaderItem, CRen
 		if ((ObjFlags & FOB_DECAL) || (ObjFlags & FOB_TERRAIN_LAYER) || isDecalOrOverlay || CRenderer::CV_r_usezpass != 2 || pObj->m_fDistance > CRenderer::CV_r_ZPrepassMaxDist)
 			nBatchFlags &= ~FB_ZPREPASS;
 
-		pObj->m_ObjFlags |= (nBatchFlags & FB_ZPREPASS) ? FOB_ZPREPASS : 0;
+		pObj->m_ObjFlags |= (nBatchFlags & FB_ZPREPASS) ? FOB_ZPREPASS : FOB_NONE;
 
 		if (passInfo.IsShadowPass())
 			nBatchFlags &= ~FB_PREPROCESS;
@@ -1216,7 +1216,7 @@ static inline uint32 CalculateRenderItemBatchFlags(SShaderItem& shaderItem, CRen
 ///////////////////////////////////////////////////////////////////////////////
 static inline void AddEf_HandleOldRTMask(CRenderObject* obj) threadsafe
 {
-	uint64 objFlags = obj->m_ObjFlags;
+	ERenderObjectFlags objFlags = obj->m_ObjFlags;
 	uint32 ortFlags = 0;
 
 	objFlags |= FOB_UPDATED_RTMASK;
@@ -1351,7 +1351,7 @@ static inline ERenderListID CalculateRenderItemList(const SShaderItem& shaderIte
 
 	const EShaderDrawType shaderDrawType = pSH->m_eSHDType;
 	const uint32 nShaderFlags2 = pSH->m_Flags2;
-	const uint64 ObjDecalFlag = pObj->m_ObjFlags & FOB_DECAL;
+	const ERenderObjectFlags ObjDecalFlag = pObj->m_ObjFlags & FOB_DECAL;
 
 	// make sure decals go into proper render list
 	// also, set additional shadow flag (i.e. reuse the shadow mask generated for underlying geometry)
@@ -1378,7 +1378,7 @@ static inline ERenderListID CalculateRenderItemList(const SShaderItem& shaderIte
 	}
 
 	// Enable tessellation for water geometry
-	pObj->m_ObjFlags |= (pSH->m_Flags2 & EF2_HW_TESSELLATION && pSH->m_eShaderType == eST_Water) ? FOB_ALLOW_TESSELLATION : 0;
+	pObj->m_ObjFlags |= (pSH->m_Flags2 & EF2_HW_TESSELLATION && pSH->m_eShaderType == eST_Water) ? FOB_ALLOW_TESSELLATION : FOB_NONE;
 
 	const uint32 nForceFlags = (EF2_FORCE_DRAWLAST | EF2_FORCE_DRAWFIRST | EF2_FORCE_ZPASS | EF2_FORCE_TRANSPASS | EF2_FORCE_GENERALPASS | EF2_FORCE_DRAWAFTERWATER | EF2_FORCE_WATERPASS | EF2_AFTERHDRPOSTPROCESS | EF2_AFTERPOSTPROCESS);
 
@@ -1553,7 +1553,7 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 	const auto aabb = AABB{ aabb_min, aabb_max };
 	float objDistance;
 
-	uint64 objFlags = pObj->m_ObjFlags;    // last time we read flags from renderObject
+	ERenderObjectFlags objFlags = pObj->m_ObjFlags;    // last time we read flags from renderObject
 
 	{
 		// Use the (possibly) tighter AABB extracted from the render element and store distance squared.

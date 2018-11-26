@@ -194,8 +194,8 @@ struct SSShader
 	uint32          m_Flags2;
 	uint32          m_nMDV;
 
-	InputLayoutHandle   m_eVertexFormat;   // Base vertex format for the shader (see VertexFormats.h)
-	ECull           m_eCull;           // Global culling type
+	InputLayoutHandle m_eVertexFormat;   // Base vertex format for the shader (see VertexFormats.h)
+	uint32          m_eCull;           // Global culling type
 
 	EShaderType     m_eShaderType;
 
@@ -230,7 +230,7 @@ struct SSShader
 		sAddData(dst, (uint32)m_eSHDType);
 		sAddData(dst, m_Flags);
 		sAddData(dst, m_Flags2);
-		sAddData(dst, m_nMDV);
+		sAddData(dst, (uint32)m_nMDV);
 		sAddData(dst, (uint32)m_eVertexFormat);
 		sAddData(dst, (uint32)m_eCull);
 		sAddData(dst, (uint32)m_eShaderType);
@@ -272,7 +272,7 @@ struct SSShader
 			SwapEndian(m_Flags2, eBigEndian);
 			SwapEndian(m_nMDV, eBigEndian);
 			SwapEndianHandle(m_eVertexFormat, eBigEndian);
-			SwapEndianEnum(m_eCull, eBigEndian);
+			SwapEndian(m_eCull, eBigEndian);
 			SwapEndianEnum(m_eShaderType, eBigEndian);
 			SwapEndian(m_nTechniques, eBigEndian);
 			SwapEndian(m_nPasses, eBigEndian);

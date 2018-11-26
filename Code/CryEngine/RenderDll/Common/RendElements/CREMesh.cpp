@@ -38,7 +38,7 @@ CRenderChunk* CREMeshImpl::mfGetMatInfo()
 	return m_pChunk;
 }
 
-bool CREMeshImpl::mfUpdate(InputLayoutHandle eVertFormat, int Flags, bool bTessellation)
+bool CREMeshImpl::mfUpdate(InputLayoutHandle eVertFormat, EStreamMasks StreamMask, bool bTessellation)
 {
 	DETAILED_PROFILE_MARKER("CREMeshImpl::mfUpdate");
 	FUNCTION_PROFILER_RENDER_FLAT
@@ -57,7 +57,7 @@ bool CREMeshImpl::mfUpdate(InputLayoutHandle eVertFormat, int Flags, bool bTesse
 	{
 		m_pRenderMesh->SyncAsyncUpdate(gRenDev->GetRenderThreadID());
 
-		bPendingUpdatesSucceeded = m_pRenderMesh->RT_CheckUpdate(m_pRenderMesh->_GetVertexContainer(), eVertFormat, Flags | VSM_MASK, bTessellation);
+		bPendingUpdatesSucceeded = m_pRenderMesh->RT_CheckUpdate(m_pRenderMesh->_GetVertexContainer(), eVertFormat, StreamMask | VSM_MASK, bTessellation);
 		if (bPendingUpdatesSucceeded)
 		{
 			AUTO_LOCK(CRenderMesh::m_sLinkLock);
@@ -73,7 +73,7 @@ bool CREMeshImpl::mfUpdate(InputLayoutHandle eVertFormat, int Flags, bool bTesse
 	return true;
 }
 
-void* CREMeshImpl::mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, int Flags)
+void* CREMeshImpl::mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, EStreamMasks StreamMask)
 {
 	DETAILED_PROFILE_MARKER("CREMeshImpl::mfGetPointer");
 	CRenderMesh* pRM = m_pRenderMesh->_GetVertexContainer();
@@ -115,7 +115,7 @@ InputLayoutHandle CREMeshImpl::GetVertexFormat() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CREMeshImpl::Compile(CRenderObject* pObj, uint64 objFlags, uint16 elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly)
+bool CREMeshImpl::Compile(CRenderObject* pObj, uint64 objFlags, ERenderElementFlags elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly)
 {
 	if (!m_pRenderMesh)
 		return false;
@@ -140,7 +140,7 @@ bool CREMeshImpl::GetGeometryInfo(SGeometryInfo& geomInfo, bool bSupportTessella
 	geomInfo.primitiveType = pVContainer->_GetPrimitiveType();
 
 	// Test if any pending updates have to be processed (and process them)
-	if (!mfCheckUpdate(geomInfo.eVertFormat, VSM_MASK, (uint16)gRenDev->GetRenderFrameID(), bSupportTessellation))
+	if (!mfCheckUpdate(geomInfo.eVertFormat, VSM_MASK, gRenDev->GetRenderFrameID(), bSupportTessellation))
 		return false;
 
 	if (!m_pRenderMesh->FillGeometryInfo(geomInfo))

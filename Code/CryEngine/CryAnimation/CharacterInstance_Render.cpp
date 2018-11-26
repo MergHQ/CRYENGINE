@@ -100,7 +100,7 @@ void CCharInstance::Render(const struct SRendParams& RendParams, const SRenderin
 
 	SRendParams attachmentRendParams(RendParams);
 	{
-		uint64 uAdditionalObjFlags = 0;
+		ERenderObjectFlags uAdditionalObjFlags = FOB_NONE;
 		if (m_rpFlags & CS_FLAG_DRAW_NEAR)
 			uAdditionalObjFlags |= FOB_NEAREST;
 

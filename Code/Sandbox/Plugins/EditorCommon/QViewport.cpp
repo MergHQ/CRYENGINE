@@ -862,8 +862,7 @@ void QViewport::Render(SDisplayContext& context)
 	rp.pMatrix = &tm;
 	rp.pPrevMatrix = &tm;
 
-	rp.dwFObjFlags = 0;
-	rp.dwFObjFlags |= FOB_TRANS_MASK;
+	rp.dwFObjFlags = FOB_TRANS_MASK;
 
 	SRenderContext rc;
 	rc.camera = m_camera.get();

@@ -509,14 +509,15 @@ void CHWShader_D3D::mfUpdateFXVertexFormat(SHWSInstance* pInst, CShader* pSH)
 void CHWShader_D3D::mfPostVertexFormat(SHWSInstance* pInst, CHWShader_D3D* pHWSH, bool bCol, byte bNormal, bool bTC0, bool bTC1[2], bool bPSize, bool bTangent[2], bool bBitangent[2], bool bHWSkin, bool bSH[2], bool bVelocity, bool bMorph)
 {
 	if (bBitangent[0])
-		pInst->m_VStreamMask_Decl |= 1 << VSF_TANGENTS;
+		pInst->m_VStreamMask_Decl |= EStreamMasks(1 << VSF_TANGENTS);
 	else if (bTangent[0])
-		pInst->m_VStreamMask_Decl |= 1 << VSF_QTANGENTS;
+		pInst->m_VStreamMask_Decl |= EStreamMasks(1 << VSF_QTANGENTS);
 	if (bBitangent[1])
-		pInst->m_VStreamMask_Stream |= 1 << VSF_TANGENTS;
+		pInst->m_VStreamMask_Stream |= EStreamMasks(1 << VSF_TANGENTS);
 	else if (bTangent[1])
-		pInst->m_VStreamMask_Stream |= 1 << VSF_QTANGENTS;
-	if (pInst->m_VStreamMask_Decl & (1 << VSF_TANGENTS))
+		pInst->m_VStreamMask_Stream |= EStreamMasks(1 << VSF_QTANGENTS);
+
+	if (pInst->m_VStreamMask_Decl & EStreamMasks(1 << VSF_TANGENTS))
 		bNormal = false;
 
 	if (bHWSkin)
@@ -1104,13 +1105,13 @@ bool CHWShader_D3D::mfGenerateScript(CShader* pSH, SHWSInstance* pInst, std::vec
 	if ((nSFlags & HWSG_SUPPORTS_VMODIF) && pInst->m_Ident.m_MDVMask)
 	{
 		int nMDV = pInst->m_Ident.m_MDVMask & 0x0fffffff;
-		int nType = nMDV & 0xf;
+		int nType = nMDV & MDV_DEFORMTYPE_MASK;
 		if (nType)
 			CParserBin::AddDefineToken(eT__VT_TYPE, eT_0 + nType, NewTokens);
 		if ((nMDV & MDV_BENDING) || nType == eDT_Bending)
 		{
 			CParserBin::AddDefineToken(eT__VT_BEND, eT_1, NewTokens);
-			if (!(nMDV & 0xf))
+			if (!(nMDV & MDV_DEFORMTYPE_MASK))
 			{
 				nType = eDT_Bending;
 				CParserBin::AddDefineToken(eT__VT_TYPE, eT_0 + nType, NewTokens);
@@ -1124,7 +1125,7 @@ bool CHWShader_D3D::mfGenerateScript(CShader* pSH, SHWSInstance* pInst, std::vec
 			CParserBin::AddDefineToken(eT__VT_DET_BEND, eT_1, NewTokens);
 		if (nMDV & MDV_DET_BENDING_GRASS)
 			CParserBin::AddDefineToken(eT__VT_GRASS, eT_1, NewTokens);
-		if (nMDV & ~0xf)
+		if (nMDV & ~MDV_DEFORMTYPE_MASK)
 			CParserBin::AddDefineToken(eT__VT_TYPE_MODIF, eT_1, NewTokens);
 	}
 
@@ -2797,8 +2798,8 @@ bool CHWShader_D3D::mfActivateCacheItem(CShader* pSH, const SDeviceShaderEntry* 
 	pInst->m_eClass = (EHWShaderClass)cacheEntry->header.m_Class;
 	pInst->m_nVertexFormat = cacheEntry->header.m_nVertexFormat;
 	pInst->m_nInstructions = cacheEntry->header.m_nInstructions;
-	pInst->m_VStreamMask_Decl = cacheEntry->header.m_StreamMask_Decl;
-	pInst->m_VStreamMask_Stream = cacheEntry->header.m_StreamMask_Stream;
+	pInst->m_VStreamMask_Decl = EStreamMasks(cacheEntry->header.m_StreamMask_Decl);
+	pInst->m_VStreamMask_Stream = EStreamMasks(cacheEntry->header.m_StreamMask_Stream);
 #if CRY_RENDERER_VULKAN
 	pInst->m_VSInputStreams = cacheEntry->m_VSInputStreams;
 #endif

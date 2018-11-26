@@ -545,7 +545,7 @@ CDeviceGraphicsPSOPtr CRenderAuxGeomD3D::GetGraphicsPSO(const SAuxGeomRenderFlag
 	psoDesc.m_technique = techique;
 	psoDesc.m_ShaderFlags_RT = 0;
 	psoDesc.m_ShaderFlags_MD = 0;
-	psoDesc.m_ShaderFlags_MDV = 0;
+	psoDesc.m_ShaderFlags_MDV = MDV_NONE;
 	psoDesc.m_PrimitiveType = topology;
 	psoDesc.m_VertexFormat = format;
 	psoDesc.m_RenderState = 0;

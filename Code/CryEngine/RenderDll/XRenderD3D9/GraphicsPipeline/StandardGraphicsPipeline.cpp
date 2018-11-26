@@ -499,8 +499,9 @@ bool CStandardGraphicsPipeline::FillCommonScenePassStates(const SGraphicsPipelin
 	if (pRes->m_Textures[EFTT_DIFFUSE] && pRes->m_Textures[EFTT_DIFFUSE]->m_Ext.m_pTexModifier)
 		psoDesc.m_ShaderFlags_MD |= pRes->m_Textures[EFTT_DIFFUSE]->m_Ext.m_nUpdateFlags;
 
+	// Merge EDeformType into EVertexModifier to save space/parameters
 	if (pRes->m_pDeformInfo)
-		psoDesc.m_ShaderFlags_MDV |= pRes->m_pDeformInfo->m_eType;
+		psoDesc.m_ShaderFlags_MDV |= EVertexModifier(pRes->m_pDeformInfo->m_eType);
 
 	psoDesc.m_ShaderFlags_MDV |= psoDesc.m_pShader->m_nMDV;
 

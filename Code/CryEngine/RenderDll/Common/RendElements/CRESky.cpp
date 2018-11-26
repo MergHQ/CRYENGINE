@@ -95,7 +95,7 @@ bool CRESky::GetGeometryInfo(SGeometryInfo& streams, bool bSupportTessellation)
 	return true;
 }
 
-bool CRESky::Compile(CRenderObject* pObj, uint64 objFlags, uint16 elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly)
+bool CRESky::Compile(CRenderObject* pObj, uint64 objFlags, ERenderElementFlags elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly)
 {
 	return false;
 }
@@ -156,7 +156,7 @@ CREHDRSky::~CREHDRSky()
 	SAFE_RELEASE(m_pSkyDomeTextureRayleigh);
 }
 
-bool CREHDRSky::Compile(CRenderObject* pObj, uint64 objFlags, uint16 elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly)
+bool CREHDRSky::Compile(CRenderObject* pObj, uint64 objFlags, ERenderElementFlags elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly)
 {
 	return false;
 }

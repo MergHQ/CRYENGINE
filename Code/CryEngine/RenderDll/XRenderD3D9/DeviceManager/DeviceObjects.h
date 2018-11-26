@@ -49,14 +49,17 @@ typedef uintptr_t DeviceFenceHandle;
 struct SInputLayoutCompositionDescriptor
 {
 	const InputLayoutHandle VertexFormat;
-	const uint8_t StreamMask;
-	const bool bInstanced;
+	const uint8_t StreamMask; // EStreamMasks
 	const uint8_t ShaderMask;
+	const bool bInstanced;
 
 	static uint8_t GenerateShaderMask(const InputLayoutHandle VertexFormat, D3DShaderReflection* pShaderReflection);
 
-	SInputLayoutCompositionDescriptor(InputLayoutHandle VertexFormat, int Stream, D3DShaderReflection* pShaderReflection) noexcept
-		: VertexFormat(VertexFormat), StreamMask(static_cast<uint8_t>(Stream % MASK(VSF_NUM))), bInstanced((StreamMask & VSM_INSTANCED) != 0), ShaderMask(GenerateShaderMask(VertexFormat, pShaderReflection))
+	SInputLayoutCompositionDescriptor(InputLayoutHandle VertexFormat, EStreamMasks Stream, D3DShaderReflection* pShaderReflection) noexcept
+		: VertexFormat(VertexFormat)
+		, StreamMask(static_cast<uint8_t>(Stream & VSM_MASK))
+		, ShaderMask(GenerateShaderMask(VertexFormat, pShaderReflection))
+		, bInstanced((StreamMask & VSM_INSTANCED) != 0)
 	{}
 
 	SInputLayoutCompositionDescriptor(SInputLayoutCompositionDescriptor&&) = default;
@@ -159,8 +162,8 @@ public:
 	static const SInputLayout* GetInputLayoutDescriptor(const InputLayoutHandle VertexFormat);
 
 	// Higher level input-layout composition / / / / / / / / / / / / / / / / / /
-	static SInputLayout            CreateInputLayoutForPermutation(const SShaderBlob* m_pConsumingVertexShader, const SInputLayoutCompositionDescriptor &compositionDescription, int StreamMask, const InputLayoutHandle VertexFormat);
-	static const SInputLayoutPair* GetOrCreateInputLayout(const SShaderBlob* pVS, int StreamMask, const InputLayoutHandle VertexFormat);
+	static SInputLayout            CreateInputLayoutForPermutation(const SShaderBlob* m_pConsumingVertexShader, const SInputLayoutCompositionDescriptor &compositionDescription, EStreamMasks StreamMask, const InputLayoutHandle VertexFormat);
+	static const SInputLayoutPair* GetOrCreateInputLayout(const SShaderBlob* pVS, EStreamMasks StreamMask, const InputLayoutHandle VertexFormat);
 	static const SInputLayoutPair* GetOrCreateInputLayout(const SShaderBlob* pVS, const InputLayoutHandle VertexFormat);
 	static InputLayoutHandle       CreateCustomVertexFormat(size_t numDescs, const D3D11_INPUT_ELEMENT_DESC* inputLayout);
 

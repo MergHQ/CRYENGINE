@@ -521,7 +521,7 @@ void CAttachmentSKIN::DrawAttachment(SRendParams& RendParams, const SRenderingPa
 
 	pObj->m_pRenderNode = RendParams.pRenderNode;
 	pObj->m_editorSelectionID = RendParams.nEditorSelectionID;
-	uint64 uLocalObjFlags = pObj->m_ObjFlags;
+	ERenderObjectFlags uLocalObjFlags = pObj->m_ObjFlags;
 
 	//check if it should be drawn close to the player
 	CCharInstance* pMaster	=	m_pAttachmentManager->m_pSkelInstance;

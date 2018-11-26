@@ -116,8 +116,8 @@ CRenderElement::CRenderElement(bool bGlobal)
 		}
 	}
 
-	m_Flags = 0;
-	m_nFrameUpdated = 0xffff;
+	m_Flags = FCEF_NONE;
+	m_nFrameUpdated = -1;
 	m_CustomData = NULL;
 	m_nID = CRenderElement::s_nCounter++;
 	int i;
@@ -129,8 +129,8 @@ CRenderElement::CRenderElement()
 {
 	m_Type = eDATA_Unknown;
 
-	m_Flags = 0;
-	m_nFrameUpdated = 0xffff;
+	m_Flags = FCEF_NONE;
+	m_nFrameUpdated = -1;
 	m_CustomData = NULL;
 	m_NextGlobal = NULL;
 	m_PrevGlobal = NULL;
@@ -241,4 +241,4 @@ void CRenderElement::mfGetBBox(Vec3& vMins, Vec3& vMaxs) const
 	vMaxs = Vec3( 100000.f,  100000.f,  100000.f);
 }
 
-void* CRenderElement::mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, int Flags) { return NULL; }
+void* CRenderElement::mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, EStreamMasks StreamMask) { return NULL; }

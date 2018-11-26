@@ -509,7 +509,7 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 				pDetailObj->SetAmbientColor(Get3DEngine()->GetSkyColor(), passInfo);
 				pDetailObj->m_fDistance = m_arrfDistance[passInfo.GetRecursiveLevel()];
 
-				pDetailObj->m_ObjFlags |= passInfo.IsGeneralPass() ? FOB_NO_FOG : 0; // enable fog on recursive rendering (per-vertex)
+				pDetailObj->m_ObjFlags |= passInfo.IsGeneralPass() ? FOB_NO_FOG : FOB_NONE; // enable fog on recursive rendering (per-vertex)
 				pDetailObj->m_ObjFlags |= FOB_TRANS_TRANSLATE | FOB_TERRAIN_LAYER | FOB_ALLOW_TERRAIN_LAYER_BLEND | FOB_ALLOW_DECAL_BLEND;
 				if (passInfo.RenderShadows())
 					pDetailObj->m_ObjFlags |= FOB_INSHADOW;

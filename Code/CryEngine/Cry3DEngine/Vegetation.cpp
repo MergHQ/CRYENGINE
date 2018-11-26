@@ -320,7 +320,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 	pRenderObject->m_pRenderNode = const_cast<IRenderNode*>(static_cast<const IRenderNode*>(this));
 	pRenderObject->m_fAlpha = 1.f;
 	pRenderObject->m_ObjFlags |= FOB_INSHADOW | FOB_TRANS_MASK | FOB_DYNAMIC_OBJECT;
-	pRenderObject->m_ObjFlags |= (m_dwRndFlags & ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND) ? FOB_ALLOW_TERRAIN_LAYER_BLEND : 0;
+	pRenderObject->m_ObjFlags |= (m_dwRndFlags & ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND) ? FOB_ALLOW_TERRAIN_LAYER_BLEND : FOB_NONE;
 	pRenderObject->m_editorSelectionID = m_nEditorSelectionID;
 
 	if (!userData.objMat.m01 && !userData.objMat.m02 && !userData.objMat.m10 && !userData.objMat.m12 && !userData.objMat.m20 && !userData.objMat.m21)

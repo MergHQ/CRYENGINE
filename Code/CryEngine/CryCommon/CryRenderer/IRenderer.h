@@ -19,6 +19,7 @@
 #include <CryCore/BaseTypes.h>
 #include <CryCore/Containers/CryArray.h>
 #include <CryCore/CryVariant.h>
+#include <CryRenderer/RenderObject.h>
 
 // forward declarations
 struct SRenderingPassInfo;
@@ -1871,7 +1872,7 @@ struct SRendParams
 
 	float                     fDistance; //!< Distance from camera.
 
-	uint64                    dwFObjFlags; //!< Approximate information about the lights not included into nDLightMask.
+	ERenderObjectFlags        dwFObjFlags; //!< Approximate information about the lights not included into nDLightMask.
 
 	uint32                    nMaterialLayersBlend; //!< Material layers blending amount
 

@@ -1229,12 +1229,12 @@ class CShader : public IShader, public CBaseResource
 public:
 	string                    m_NameFile; // } FIXME: This fields order is very important
 	string                    m_NameShader;
+	uint32                    m_NameShaderICRC;
 	EShaderDrawType           m_eSHDType; // } Check CShader::operator = in ShaderCore.cpp for more info
 
 	uint32                    m_Flags;  // Different flags EF_  (see IShader.h)
 	uint32                    m_Flags2; // Different flags EF2_ (see IShader.h)
-	uint32                    m_nMDV;   // Vertex modificator flags
-	uint32                    m_NameShaderICRC;
+	EVertexModifier           m_nMDV;   // Vertex modificator flags
 
 	InputLayoutHandle         m_eVertexFormat; // Base vertex format for the shader (see VertexFormats.h)
 	ECull                     m_eCull;         // Global culling type
@@ -1264,11 +1264,11 @@ public:
 
 	void       mfFree();
 	CShader()
-		: m_eSHDType(eSHDT_General)
+		: m_NameShaderICRC(0)
+		, m_eSHDType(eSHDT_General)
 		, m_Flags(0)
 		, m_Flags2(0)
-		, m_nMDV(0)
-		, m_NameShaderICRC(0)
+		, m_nMDV(MDV_NONE)
 		, m_eVertexFormat(EDefaultInputLayouts::P3F_C4B_T2F)
 		, m_eCull((ECull) - 1)
 		, m_nMaskCB(0)
@@ -1377,7 +1377,7 @@ public:
 	virtual DynArrayRef<SShaderParam>& GetPublicParams();
 	virtual void                       CopyPublicParamsTo(SInputShaderResources& copyToResource);
 	virtual EShaderType                GetShaderType()        { return m_eShaderType; }
-	virtual uint32                     GetVertexModificator() { return m_nMDV; }
+	virtual EVertexModifier            GetVertexModificator() { return m_nMDV; }
 
 	SShaderTechnique* mfFindTechnique(const CCryNameTSCRC& name)
 	{

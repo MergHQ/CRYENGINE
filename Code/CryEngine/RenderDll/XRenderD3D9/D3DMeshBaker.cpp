@@ -33,11 +33,11 @@ public:
 	{}
 
 	virtual ~CREBaker() {}
-	inline uint32              mfGetFlags(void)                                                                        { return m_pSrc->mfGetFlags(); }
-	inline void                mfSetFlags(uint32 fl)                                                                   { m_pSrc->mfSetFlags(fl); }
-	inline void                mfUpdateFlags(uint32 fl)                                                                { m_pSrc->mfUpdateFlags(fl); }
-	inline void                mfClearFlags(uint32 fl)                                                                 { m_pSrc->mfClearFlags(fl); }
-	inline bool                mfCheckUpdate(InputLayoutHandle eVertFormat, int Flags, uint16 nFrame)                  { return m_pSrc->mfCheckUpdate(eVertFormat, Flags, nFrame); }
+	inline ERenderElementFlags mfGetFlags(void)                                                                        { return m_pSrc->mfGetFlags(); }
+	inline void                mfSetFlags(ERenderElementFlags fl)                                                      { m_pSrc->mfSetFlags(fl); }
+	inline void                mfUpdateFlags(ERenderElementFlags fl)                                                   { m_pSrc->mfUpdateFlags(fl); }
+	inline void                mfClearFlags(ERenderElementFlags fl)                                                    { m_pSrc->mfClearFlags(fl); }
+	inline bool                mfCheckUpdate(InputLayoutHandle eVertFormat, EStreamMasks StreamMask, int nFrame)       { return m_pSrc->mfCheckUpdate(eVertFormat, StreamMask, nFrame); }
 
 	virtual CRenderChunk*      mfGetMatInfo()                                                                          { return m_pSrc->mfGetMatInfo(); }
 	virtual TRenderChunkArray* mfGetMatInfoList()                                                                      { return m_pSrc->mfGetMatInfoList(); }
@@ -49,11 +49,11 @@ public:
 	virtual void               mfGetBBox(Vec3& vMins, Vec3& vMaxs) const                                               { m_pSrc->mfGetBBox(vMins, vMaxs); }
 	virtual void               mfGetPlane(Plane& pl)                                                                   { m_pSrc->mfGetPlane(pl); }
 
-	virtual void*              mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, int Flags) { return m_pSrc->mfGetPointer(ePT, Stride, Type, Dst, Flags); }
+	virtual void*              mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, EStreamMasks StreamMask) { return m_pSrc->mfGetPointer(ePT, Stride, Type, Dst, StreamMask); }
 
-	virtual bool               mfUpdate(InputLayoutHandle eVertFormat, int Flags, bool bTessellation = false)          
+	virtual bool               mfUpdate(InputLayoutHandle eVertFormat, EStreamMasks StreamMask, bool bTessellation = false)
 	{
-		bool bRet = m_pSrc->mfUpdate(eVertFormat, Flags, bTessellation); 
+		bool bRet = m_pSrc->mfUpdate(eVertFormat, StreamMask, bTessellation); 
 		return bRet;
 	}
 

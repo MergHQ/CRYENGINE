@@ -118,7 +118,7 @@ struct SComponentParams: STimingParams
 	_smart_ptr<IMaterial>     m_pMaterial;
 	EShaderType               m_requiredShaderType   = eST_All;
 	string                    m_diffuseMap           = "%ENGINE%/EngineAssets/Textures/white.dds";
-	uint64                    m_renderObjectFlags;
+	ERenderObjectFlags        m_renderObjectFlags;
 	int                       m_renderStateFlags     = OS_ALPHA_BLEND;
 	uint8                     m_particleObjFlags     = 0;
 	float                     m_renderObjectSortBias = 0;

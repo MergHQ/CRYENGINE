@@ -71,7 +71,11 @@ enum ERenderObjectFlags : uint64
 	// WARNING: FOB_MASK_AFFECTS_MERGING must start from 0x10000/bit 16 (important for instancing).
 	FOB_MASK_AFFECTS_MERGING_GEOM = (FOB_ZPREPASS | FOB_SKINNED | FOB_BENDED | FOB_DYNAMIC_OBJECT | FOB_ALLOW_TESSELLATION | FOB_NEAREST),
 	FOB_MASK_AFFECTS_MERGING      = (FOB_ZPREPASS | FOB_MOTION_BLUR | FOB_HAS_PREVMATRIX | FOB_SKINNED | FOB_BENDED | FOB_INSHADOW | FOB_AFTER_WATER | FOB_DISSOLVE | FOB_DISSOLVE_OUT | FOB_NEAREST | FOB_DYNAMIC_OBJECT | FOB_ALLOW_TESSELLATION),
+
+	FOB_NONE                      = 0
 };
+
+CRY_CREATE_ENUM_FLAG_OPERATORS(ERenderObjectFlags);
 
 //////////////////////////////////////////////////////////////////////
 // CRenderObject::m_customFlags
@@ -308,7 +312,7 @@ public:
 		return m_II[roThreadAccessThreadCfg.objAccessorThreadId].m_Bending;
 	}
 
-	uint64 m_ObjFlags;                 //!< Combination of FOB_ flags.
+	ERenderObjectFlags m_ObjFlags;     //!< Combination of FOB_ flags.
 	uint32 m_Id;
 
 	float m_fAlpha;                    //!< Object alpha.
@@ -322,7 +326,7 @@ public:
 	};
 
 	uint32 m_nRTMask;                  //!< Shader runtime modification flags
-	uint16 m_nMDV;                     //!< Vertex modifier flags for Shader.
+	EVertexModifier m_nMDV;            //!< Vertex modifier flags for Shader.
 	uint16 m_nRenderQuality;           //!< 65535 - full quality, 0 - lowest quality, used by CStatObj
 	int16 m_nTextureID;                //!< Custom texture id.
 
@@ -387,7 +391,7 @@ public:
 
 	inline void  Init()
 	{
-		m_ObjFlags = 0;
+		m_ObjFlags = FOB_NONE;
 		SetInstanceDataDirty(false);
 
 		m_bPermanent = false;
@@ -400,7 +404,7 @@ public:
 		m_nMaterialLayers = 0;
 		m_DissolveRef = 0;
 
-		m_nMDV = 0;
+		m_nMDV = MDV_NONE;
 		m_fSort = 0;
 
 		m_fAlpha = 1.0f;

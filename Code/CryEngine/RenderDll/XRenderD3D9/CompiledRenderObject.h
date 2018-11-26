@@ -106,8 +106,8 @@ public:
 		CCompiledRenderObject* m_pCompiledObject; //!< Compiled object with precompiled PSO
 		CRenderElement*        m_pRenderElement;  //!< Mesh subset, or a special rendering object
 
-		uint64                 m_ObjFlags;        //!< flags calculated at add-time
-		uint16                 m_ElmFlags;
+		ERenderObjectFlags     m_ObjFlags;        //!< flags calculated at add-time
+		ERenderElementFlags    m_ElmFlags;
 		float                  m_fDist;           //!< distance to render-view camera
 		AABB                   m_aabb;            //!< AABB in local space
 		ERenderListID          m_nRenderList;     //!< Defines in which render list this compiled object belongs to, see ERenderListID
@@ -314,7 +314,7 @@ public:
 
 	// Compile(): Returns true if the compilation is fully finished, false if compilation should be retriggered later
 
-	bool Compile(const EObjectCompilationOptions& compilationOptions, uint64 objFlags, uint16 elmFlags, const AABB &localAABB, CRenderView *pRenderView);
+	bool Compile(const EObjectCompilationOptions& compilationOptions, uint64 objFlags, ERenderElementFlags elmFlags, const AABB &localAABB, CRenderView *pRenderView);
 	void PrepareForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bInstanceOnly) const;
 
 	void DrawToCommandList(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, CDeviceCommandList* commandList, CConstantBuffer* pDynamicInstancingBuffer = nullptr, uint32 dynamicInstancingCount = 1) const;

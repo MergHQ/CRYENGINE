@@ -43,8 +43,8 @@ public:
 protected:
 	ILINE C3DEngine* Get3DEngine() const          { return static_cast<C3DEngine*>(gEnv->p3DEngine); }
 	virtual bool     SupportsWaterCulling() const { return false; }
-	void             PrepareRenderObject(const CParticleComponentRuntime& runtime, uint renderObjectId, uint threadId, uint64 objFlags);
-	void             AddRenderObject(CParticleComponentRuntime& runtime, const SRenderContext& renderContext, uint renderObjectId, uint threadId, uint64 objFlags);
+	void             PrepareRenderObject(const CParticleComponentRuntime& runtime, uint renderObjectId, uint threadId, ERenderObjectFlags objFlags);
+	void             AddRenderObject(CParticleComponentRuntime& runtime, const SRenderContext& renderContext, uint renderObjectId, uint threadId, ERenderObjectFlags objFlags);
 
 	static float CullArea(float area, float areaLimit, TParticleIdArray& ids, TVarArray<float> alphas, TConstArray<float> areas);
 

@@ -81,7 +81,7 @@ void CObjManager::RenderDecalAndRoad(IRenderNode* pEnt, PodArray<SRenderLight*>*
 
 	SRendParams DrawParams;
 	DrawParams.pTerrainTexInfo = NULL;
-	DrawParams.dwFObjFlags = 0;
+	DrawParams.dwFObjFlags = FOB_NONE;
 	DrawParams.fDistance = fEntDistance;
 	DrawParams.AmbientColor = vAmbColor;
 	DrawParams.pRenderNode = pEnt;
@@ -274,7 +274,7 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<SRenderLight*>* pAffe
 
 	SRendParams DrawParams;
 	DrawParams.pTerrainTexInfo = NULL;
-	DrawParams.dwFObjFlags = 0;
+	DrawParams.dwFObjFlags = FOB_NONE;
 	DrawParams.fDistance = fEntDistance;
 	DrawParams.AmbientColor = vAmbColor;
 	DrawParams.pRenderNode = pEnt;

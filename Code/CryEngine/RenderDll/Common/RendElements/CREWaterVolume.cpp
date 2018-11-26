@@ -141,7 +141,7 @@ void CREWaterVolume::mfGetBBox(Vec3& vMins, Vec3& vMaxs) const
 	vMaxs = m_pParams->m_WSBBox.max;
 }
 
-bool CREWaterVolume::Compile(CRenderObject* pObj, uint64 objFlags, uint16 elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly)
+bool CREWaterVolume::Compile(CRenderObject* pObj, uint64 objFlags, ERenderElementFlags elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly)
 {
 	if (!m_pCompiledObject)
 	{
@@ -188,7 +188,7 @@ bool CREWaterVolume::Compile(CRenderObject* pObj, uint64 objFlags, uint16 elmFla
 	  shaderItem,
 	  TTYPE_GENERAL, // set as default, this may be overwritten in CreatePipelineStates().
 	  vertexFormat,
-	  0 /*geomInfo.CalcStreamMask()*/,
+	  VSM_NONE /*geomInfo.CalcStreamMask()*/,
 	  eptTriangleList // tessellation is handled in CreatePipelineStates(). ept3ControlPointPatchList is used in that case.
 	  );
 

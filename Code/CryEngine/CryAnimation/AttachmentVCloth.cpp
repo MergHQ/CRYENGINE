@@ -601,7 +601,7 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 		return;
 
 	pObj->m_pRenderNode = RendParams.pRenderNode;
-	uint64 uLocalObjFlags = pObj->m_ObjFlags;
+	ERenderObjectFlags uLocalObjFlags = pObj->m_ObjFlags;
 
 	//check if it should be drawn close to the player
 	CCharInstance* pMaster = m_pAttachmentManager->m_pSkelInstance;
