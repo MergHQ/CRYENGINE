@@ -940,11 +940,10 @@ void QPreviewWidget::RenderObject(IMaterial* pMaterial, const SRenderingPassInfo
 	using namespace Private_PreviewWidget;
 
 	SRendParams renderParams;
-	renderParams.dwFObjFlags = 0;
 
 	auto scaledColor = m_ambientColor * m_ambientMultiplier;
 	renderParams.AmbientColor = ColorF(scaledColor.redF(), scaledColor.greenF(), scaledColor.blueF(), scaledColor.alphaF());
-	renderParams.dwFObjFlags |= FOB_TRANS_MASK /*| FOB_GLOBAL_ILLUMINATION*/ | FOB_NO_FOG /*| FOB_ZPREPASS*/;
+	renderParams.dwFObjFlags = FOB_TRANS_MASK /*| FOB_GLOBAL_ILLUMINATION*/ | FOB_NO_FOG /*| FOB_ZPREPASS*/;
 	renderParams.pMaterial = pMaterial;
 
 	Matrix34 matrix;

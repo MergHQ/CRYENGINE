@@ -234,7 +234,7 @@ CRenderPrimitive::EDirtyFlags CRenderPrimitive::Compile(const CPrimitiveRenderPa
 			psoDesc.m_technique = m_techniqueName;
 			psoDesc.m_ShaderFlags_RT = m_rtMask;
 			psoDesc.m_ShaderFlags_MD = 0;
-			psoDesc.m_ShaderFlags_MDV = 0;
+			psoDesc.m_ShaderFlags_MDV = MDV_NONE;
 			psoDesc.m_PrimitiveType = m_primitiveGeometry.primType;
 			psoDesc.m_VertexFormat = m_primitiveGeometry.vertexFormat;
 			psoDesc.m_RenderState = m_renderState;

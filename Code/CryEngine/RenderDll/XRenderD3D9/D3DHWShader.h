@@ -445,8 +445,8 @@ class CHWShader_D3D : public CHWShader
 		short                      m_nInstIndex;
 		short                      m_nInstructions;
 		short                      m_nTempRegs;
-		uint16                     m_VStreamMask_Stream;
-		uint16                     m_VStreamMask_Decl;
+		EStreamMasks               m_VStreamMask_Stream;
+		EStreamMasks               m_VStreamMask_Decl;
 		short                      m_nParent;
 		byte                       m_bDeleted         : 1;
 		byte                       m_bHasPMParams     : 1;
@@ -476,8 +476,8 @@ class CHWShader_D3D : public CHWShader
 			, m_nInstIndex(-1)
 			, m_nInstructions(0)
 			, m_nTempRegs(0)
-			, m_VStreamMask_Stream(0)
-			, m_VStreamMask_Decl(0)
+			, m_VStreamMask_Stream(VSM_NONE)
+			, m_VStreamMask_Decl(VSM_NONE)
 			, m_nParent(-1)
 			, m_bDeleted(false)
 			, m_bHasPMParams(false)
@@ -727,7 +727,7 @@ public:
 
 	virtual const char*   mfGetActivatedCombinations(bool bForLevel) override;
 
-	static uint16         GetDeclaredVertexStreamMask(void* pHwInstance)
+	static EStreamMasks GetDeclaredVertexStreamMask(void* pHwInstance)
 	{
 		CRY_ASSERT(pHwInstance && reinterpret_cast<SHWSInstance*>(pHwInstance)->m_eClass == eHWSC_Vertex);
 		return reinterpret_cast<SHWSInstance*>(pHwInstance)->m_VStreamMask_Decl;

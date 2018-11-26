@@ -37,6 +37,8 @@ add_sources("CryAudioImpl_uber_0.cpp"
 		"Impl.cpp"
 		"Listener.cpp"
 		"Object.cpp"
+		"Parameter.cpp"
+		"SwitchState.cpp"
 		"Trigger.cpp"
 )
 

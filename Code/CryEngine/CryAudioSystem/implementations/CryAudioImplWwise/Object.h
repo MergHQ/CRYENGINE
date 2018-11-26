@@ -41,15 +41,9 @@ public:
 	virtual void                   Update(float const deltaTime) override;
 	virtual void                   SetTransformation(CTransformation const& transformation) override;
 	virtual CTransformation const& GetTransformation() const override { return m_transformation; }
-	virtual void                   SetEnvironment(IEnvironmentConnection const* const pIEnvironmentConnection, float const amount) override;
-	virtual void                   SetParameter(IParameterConnection const* const pIParameterConnection, float const value) override;
-	virtual void                   SetSwitchState(ISwitchStateConnection const* const pISwitchStateConnection) override;
 	virtual void                   SetOcclusion(float const occlusion) override;
 	virtual void                   SetOcclusionType(EOcclusionType const occlusionType) override;
-	virtual ERequestStatus         ExecuteTrigger(ITriggerConnection const* const pITriggerConnection, IEvent* const pIEvent) override;
 	virtual void                   StopAllTriggers() override;
-	virtual ERequestStatus         PlayFile(IStandaloneFileConnection* const pIStandaloneFileConnection) override;
-	virtual ERequestStatus         StopFile(IStandaloneFileConnection* const pIStandaloneFileConnection) override;
 	virtual ERequestStatus         SetName(char const* const szName) override;
 	virtual void                   ToggleFunctionality(EObjectFunctionality const type, bool const enable) override;
 
@@ -57,27 +51,33 @@ public:
 	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter) override;
 	// ~CryAudio::Impl::IObject
 
-	void RemoveEvent(CEvent* const pEvent);
+	void           AddEvent(CEvent* const pEvent);
+	void           RemoveEvent(CEvent* const pEvent);
+	void           SetNeedsToUpdateEnvironments(bool const needsUpdate)  { m_needsToUpdateEnvironments = needsUpdate; }
+	void           SetNeedsToUpdateVirtualStates(bool const needsUpdate) { m_needsToUpdateVirtualStates = needsUpdate; }
+	void           PostEnvironmentAmounts();
+	void           SetDistanceToListener();
+	float          GetDistanceToListener() const { return m_distanceToListener; }
+	AkGameObjectID GetId() const                 { return m_id; }
+
+	using AuxSendValues = std::vector<AkAuxSendValue>;
+	AuxSendValues& GetAuxSendValues() { return m_auxSendValues; }
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	char const* GetName() const { return m_name.c_str(); }
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
-	AkGameObjectID const m_id;
-
 private:
 
-	void PostEnvironmentAmounts();
 	void UpdateVelocities(float const deltaTime);
 	void TryToSetRelativeVelocity(float const relativeVelocity);
-
-	using AuxSendValues = std::vector<AkAuxSendValue>;
 
 	std::vector<CEvent*> m_events;
 	bool                 m_needsToUpdateEnvironments;
 	bool                 m_needsToUpdateVirtualStates;
 	AuxSendValues        m_auxSendValues;
 
+	AkGameObjectID const m_id;
 	EObjectFlags         m_flags;
 	float                m_distanceToListener;
 	float                m_previousRelativeVelocity;

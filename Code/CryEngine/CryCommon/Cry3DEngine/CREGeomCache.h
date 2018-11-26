@@ -36,11 +36,11 @@ public:
 	CREGeomCache();
 	~CREGeomCache();
 
-	bool        Update(const int flags, const bool bTesselation);
+	bool        Update(const EStreamMasks StreamMask, const bool bTesselation);
 	static void UpdateModified();
 
 	// CRenderElement interface
-	virtual bool mfUpdate(InputLayoutHandle eVertFormat, int Flags, bool bTessellation) override;
+	virtual bool mfUpdate(InputLayoutHandle eVertFormat, EStreamMasks StreamMask, bool bTessellation) override;
 	
 	// CREGeomCache interface
 	virtual void                       InitializeRenderElement(const uint numMeshes, _smart_ptr<IRenderMesh>* pMeshes, uint16 materialId);

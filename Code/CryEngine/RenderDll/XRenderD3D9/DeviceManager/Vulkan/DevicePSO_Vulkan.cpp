@@ -133,7 +133,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 			vertexInputBindingDescriptions.reserve(min(limits.maxVertexInputBindings, 16u));
 			vertexInputAttributeDescriptions.reserve(min(limits.maxVertexInputAttributes, 32u));
 
-			uint32 streamMask = psoDesc.CombineVertexStreamMasks(uint8(pVsInstance->m_VStreamMask_Decl), psoDesc.m_ObjectStreamMask);
+			EStreamMasks streamMask = psoDesc.CombineVertexStreamMasks(pVsInstance->m_VStreamMask_Decl, psoDesc.m_ObjectStreamMask);
 
 			const auto& inputLayoutPair = CDeviceObjectFactory::GetOrCreateInputLayout(&pVsInstance->m_Shader, streamMask, psoDesc.m_VertexFormat);
 			const auto& inputLayout = inputLayoutPair->first;
@@ -522,7 +522,7 @@ bool CDeviceComputePSO_Vulkan::Init(const CDeviceComputePSODesc& psoDesc)
 
 	SDeviceObjectHelpers::THwShaderInfo hwShaders;
 	EShaderStage validShaderStages = SDeviceObjectHelpers::GetShaderInstanceInfo(hwShaders, psoDesc.m_pShader, psoDesc.m_technique,
-		psoDesc.m_ShaderFlags_RT, psoDesc.m_ShaderFlags_MD, psoDesc.m_ShaderFlags_MDV, customPipelineState, false);
+		psoDesc.m_ShaderFlags_RT, psoDesc.m_ShaderFlags_MD, MDV_NONE, customPipelineState, false);
 
 	if (validShaderStages != EShaderStage_Compute)
 		return false;

@@ -92,26 +92,6 @@ void CObject::SetTransformation(CTransformation const& transformation)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetEnvironment(IEnvironmentConnection const* const pIEnvironmentConnection, float const amount)
-{
-	auto const pEnvironment = static_cast<CEnvironment const*>(pIEnvironmentConnection);
-
-	if (pEnvironment != nullptr)
-	{
-		if (pEnvironment->GetType() == EEnvironmentType::Bus)
-		{
-			criAtomExPlayer_SetBusSendLevelByName(m_pPlayer, pEnvironment->GetName(), static_cast<CriFloat32>(amount));
-			criAtomExPlayer_UpdateAll(m_pPlayer);
-		}
-		else
-		{
-			criAtomExPlayer_SetAisacControlByName(m_pPlayer, pEnvironment->GetName(), static_cast<CriFloat32>(pEnvironment->GetMultiplier() * amount + pEnvironment->GetShift()));
-			criAtomExPlayer_UpdateAll(m_pPlayer);
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CObject::SetOcclusion(float const occlusion)
 {
 	criAtomExPlayer_SetAisacControlByName(m_pPlayer, s_szOcclusionAisacName, static_cast<CriFloat32>(occlusion));

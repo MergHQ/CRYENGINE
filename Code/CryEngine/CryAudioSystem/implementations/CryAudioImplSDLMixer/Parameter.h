@@ -36,6 +36,10 @@ public:
 
 	virtual ~CParameter() override = default;
 
+	// IParameterConnection
+	virtual void Set(IObject* const pIObject, float const value) override;
+	// ~IParameterConnection
+
 	SampleId                                     GetSampleId() const   { return m_sampleId; }
 	float                                        GetMultiplier() const { return m_multiplier; }
 	float                                        GetShift() const      { return m_shift; }

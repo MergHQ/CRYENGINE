@@ -80,7 +80,7 @@ CComputeRenderPass::EDirtyFlags CComputeRenderPass::Compile()
 		if (dirtyMask & (eDirty_Technique | eDirty_ResourceLayout))
 		{
 			// Pipeline state
-			CDeviceComputePSODesc psoDesc(m_pResourceLayout, m_pShader, m_techniqueName, m_rtMask, 0, 0);
+			CDeviceComputePSODesc psoDesc(m_pResourceLayout, m_pShader, m_techniqueName, m_rtMask, 0);
 			m_pPipelineState = GetDeviceObjectFactory().CreateComputePSO(psoDesc);
 
 			if (!m_pPipelineState || !m_pPipelineState->IsValid())

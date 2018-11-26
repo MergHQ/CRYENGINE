@@ -43,7 +43,7 @@ void CPreviewTrigger::Execute(Impl::ITriggerInfo const& triggerInfo)
 		triggerInstanceState.triggerId = GetId();
 
 		CEvent* const pEvent = g_eventManager.ConstructEvent();
-		ERequestStatus const activateResult = g_previewObject.GetImplDataPtr()->ExecuteTrigger(m_pConnection, pEvent->m_pImplData);
+		ERequestStatus const activateResult = m_pConnection->Execute(g_previewObject.GetImplDataPtr(), pEvent->m_pImplData);
 
 		if (activateResult == ERequestStatus::Success || activateResult == ERequestStatus::Pending)
 		{

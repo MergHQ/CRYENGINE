@@ -46,6 +46,10 @@ public:
 
 	virtual ~CSwitchState() override = default;
 
+	// ISwitchStateConnection
+	virtual void Set(IObject* const pIObject) override;
+	// ~ISwitchStateConnection
+
 	ESwitchType     GetType() const      { return m_type; }
 	CriChar8 const* GetName() const      { return static_cast<CriChar8 const*>(m_name); }
 	CriChar8 const* GetLabelName() const { return static_cast<CriChar8 const*>(m_labelName); }

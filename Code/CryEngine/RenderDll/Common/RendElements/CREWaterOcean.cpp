@@ -391,7 +391,7 @@ void CREWaterOcean::ReleaseOcean()
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CREWaterOcean::Compile(CRenderObject* pObj, uint64 objFlags, uint16 elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly)
+bool CREWaterOcean::Compile(CRenderObject* pObj, uint64 objFlags, ERenderElementFlags elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly)
 {
 	if (!m_pCompiledObject)
 	{
@@ -475,7 +475,7 @@ bool CREWaterOcean::Compile(CRenderObject* pObj, uint64 objFlags, uint16 elmFlag
 	  shaderItem,
 	  TTYPE_GENERAL, // set as default, this may be overwritten in CreatePipelineStates().
 	  vertexFormat,
-	  0 /*geomInfo.CalcStreamMask()*/,
+	  VSM_NONE /*geomInfo.CalcStreamMask()*/,
 	  primType // tessellation is handled in CreatePipelineStates(). ept3ControlPointPatchList is used in that case.
 	  );
 

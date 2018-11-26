@@ -23,8 +23,8 @@ public:
 	virtual ~CSetting() override = default;
 
 	// ISettingConnection
-	virtual void Load() const override   {}
-	virtual void Unload() const override {}
+	virtual void Load() override   {}
+	virtual void Unload() override {}
 	// ~ISettingConnection
 };
 } // namespace Fmod

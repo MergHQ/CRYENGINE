@@ -1041,8 +1041,7 @@ void CModelViewport::DrawModel(const SRenderingPassInfo& passInfo)
 	rp.AmbientColor.b = vAmbient.z * mv_lightMultiplier;
 	rp.AmbientColor.a = 1;
 
-	rp.dwFObjFlags = 0;
-	rp.dwFObjFlags |= FOB_TRANS_MASK;
+	rp.dwFObjFlags = FOB_TRANS_MASK;
 	if (m_pCurrentMaterial)
 		rp.pMaterial = m_pCurrentMaterial->GetMatInfo();
 

@@ -36,18 +36,22 @@ enum EDataType : int
 	eDATA_GeomCache,
 };
 
-enum ERenderElementFlags
+enum ERenderElementFlags : uint16
 {
-	FCEF_TRANSFORM             = BIT(0),
-	FCEF_DIRTY                 = BIT(1),
-	FCEF_NODEL                 = BIT(2),
-	FCEF_DELETED               = BIT(3),
+	FCEF_TRANSFORM     = BIT(0),
+	FCEF_DIRTY         = BIT(1),
+	FCEF_NODEL         = BIT(2),
+	FCEF_DELETED       = BIT(3),
 
-	FCEF_UPDATEALWAYS          = BIT(8),
+	FCEF_UPDATEALWAYS  = BIT(4),
 
-	FCEF_SKINNED               = BIT(11),
-	FCEF_PRE_DRAW_DONE         = BIT(12),
+	FCEF_SKINNED       = BIT(5),
+	FCEF_PRE_DRAW_DONE = BIT(6),
+
+	FCEF_NONE          = 0
 };
+
+CRY_CREATE_ENUM_FLAG_OPERATORS(ERenderElementFlags);
 
 typedef uintptr_t stream_handle_t;
 
@@ -74,7 +78,7 @@ public:
 	virtual void               mfCenter(Vec3& centr, CRenderObject* pObj, const SRenderingPassInfo& passInfo) = 0;
 	virtual void               mfGetBBox(Vec3& vMins, Vec3& vMaxs) const = 0;
 
-	virtual bool  mfUpdate(InputLayoutHandle eVertFormat, int Flags, bool bTessellation = false) = 0;
+	virtual bool  mfUpdate(InputLayoutHandle eVertFormat, EStreamMasks StreamMask, bool bTessellation = false) = 0;
 
 	virtual void  mfExport(struct SShaderSerializeContext& SC) = 0;
 	virtual void  mfImport(struct SShaderSerializeContext& SC, uint32& offset) = 0;
@@ -88,7 +92,7 @@ public:
 
 	//! Compile is called on a non mesh render elements, must be called only in rendering thread
 	//! Returns false if compile failed, and render element must not be rendered
-	virtual bool          Compile(CRenderObject* pObj, uint64 objFlags, uint16 elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly) = 0;
+	virtual bool          Compile(CRenderObject* pObj, uint64 objFlags, ERenderElementFlags elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly) = 0;
 
 	//! Custom Drawing for the non mesh render elements.
 	//! Must be thread safe for the parallel recording
@@ -113,11 +117,10 @@ public:
 	CRenderElement*       m_NextGlobal;
 	CRenderElement*       m_PrevGlobal;
 
+	uint32              m_nID;
+	int                 m_nFrameUpdated;
 	EDataType           m_Type;
-
-	uint32     m_nID;
-	uint16     m_Flags;
-	uint16     m_nFrameUpdated;
+	ERenderElementFlags m_Flags;
 
 	enum { MAX_CUSTOM_TEX_BINDS_NUM = 2 };
 	void* m_CustomData;
@@ -130,7 +133,7 @@ public:
 	{
 		uint32        bonesRemapGUID               = 0u; // Input parameter to fetch correct skinning stream.
 
-		int           primitiveType                = 0; //!< \see eRenderPrimitiveType
+		int16         primitiveType                = -1; //!< \see eRenderPrimitiveType
 		InputLayoutHandle eVertFormat              = EDefaultInputLayouts::Empty;
 
 		int32         nFirstIndex                  = 0;
@@ -147,11 +150,11 @@ public:
 		void*         pSkinningExtraBonesBuffer    = nullptr;
 		uint32        nTessellationPatchIDOffset   = 0u;
 
-		inline uint32 CalcStreamMask()
+		inline EStreamMasks CalcStreamMask()
 		{
-			uint32 streamMask = 0;
+			EStreamMasks streamMask = VSM_NONE;
 			for (uint32 s = 0; s < nNumVertexStreams; ++s)
-				streamMask |= 1U << vertexStreams[s].nSlot;
+				streamMask |= EStreamMasks(1U << vertexStreams[s].nSlot);
 
 			return streamMask;
 		}
@@ -193,16 +196,16 @@ public:
 	inline EDataType mfGetType() { return m_Type; }
 	void             mfSetType(EDataType t) { m_Type = t; }
 
-	inline uint32 mfGetFlags(void)         { return m_Flags; }
-	inline void   mfSetFlags(uint32 fl)    { m_Flags = fl; }
-	inline void   mfUpdateFlags(uint32 fl) { m_Flags |= fl; }
-	inline void   mfClearFlags(uint32 fl)  { m_Flags &= ~fl; }
-	inline bool   mfCheckUpdate(InputLayoutHandle eVertFormat, int Flags, uint16 nFrame, bool bTessellation = false)
+	inline ERenderElementFlags mfGetFlags(void)         { return m_Flags; }
+	inline void   mfSetFlags(ERenderElementFlags fl)    { m_Flags = fl; }
+	inline void   mfUpdateFlags(ERenderElementFlags fl) { m_Flags |= fl; }
+	inline void   mfClearFlags(ERenderElementFlags fl)  { m_Flags &= ~fl; }
+	inline bool   mfCheckUpdate(InputLayoutHandle eVertFormat, EStreamMasks StreamMask, int nFrame, bool bTessellation = false)
 	{
 		if (nFrame != m_nFrameUpdated || (m_Flags & (FCEF_DIRTY | FCEF_SKINNED | FCEF_UPDATEALWAYS)))
 		{
 			m_nFrameUpdated = nFrame;
-			return mfUpdate(eVertFormat, Flags, bTessellation);
+			return mfUpdate(eVertFormat, StreamMask, bTessellation);
 		}
 		return true;
 	}
@@ -218,9 +221,9 @@ public:
 	virtual void  mfGetPlane(Plane& pl);
 
 
-	virtual void* mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, int Flags);
+	virtual void* mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, EStreamMasks StreamMask);
 
-	virtual bool  mfUpdate(InputLayoutHandle eVertFormat, int Flags, bool bTessellation = false) { return true; }
+	virtual bool  mfUpdate(InputLayoutHandle eVertFormat, EStreamMasks StreamMask, bool bTessellation = false) { return true; }
 
 	virtual void  mfExport(struct SShaderSerializeContext& SC)                               { CryFatalError("mfExport has not been implemented for this render element type"); }
 	virtual void  mfImport(struct SShaderSerializeContext& SC, uint32& offset)               { CryFatalError("mfImport has not been implemented for this render element type"); }
@@ -230,12 +233,12 @@ public:
 	// ~Pipeline 2.0 methods.
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual InputLayoutHandle GetVertexFormat() const                                                    { return InputLayoutHandle::Unspecified; };
+	virtual InputLayoutHandle GetVertexFormat() const                                                { return InputLayoutHandle::Unspecified; };
 	virtual bool          GetGeometryInfo(SGeometryInfo& streams, bool bSupportTessellation = false) { return false; }
 
 	//! Compile is called on a non mesh render elements, must be called only in rendering thread
 	//! Returns false if compile failed, and render element must not be rendered
-	virtual bool          Compile(CRenderObject* pObj, uint64 objFlags, uint16 elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly)  { return false; };
+	virtual bool          Compile(CRenderObject* pObj, uint64 objFlags, ERenderElementFlags elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly)  { return false; };
 
 	//! Custom Drawing for the non mesh render elements.
 	//! Must be thread safe for the parallel recording

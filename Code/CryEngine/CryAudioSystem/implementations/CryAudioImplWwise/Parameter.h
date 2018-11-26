@@ -22,17 +22,27 @@ public:
 	CParameter& operator=(CParameter const&) = delete;
 	CParameter& operator=(CParameter&&) = delete;
 
-	explicit CParameter(AkRtpcID const id_, float const mult_, float const shift_)
-		: mult(mult_)
-		, shift(shift_)
-		, id(id_)
+	explicit CParameter(AkRtpcID const id, float const mult, float const shift)
+		: m_multiplier(mult)
+		, m_shift(shift)
+		, m_id(id)
 	{}
 
 	virtual ~CParameter() override = default;
 
-	float const    mult;
-	float const    shift;
-	AkRtpcID const id;
+	// IParameterConnection
+	virtual void Set(IObject* const pIObject, float const value) override;
+	// ~IParameterConnection
+
+	float    GetMultiplier() const { return m_multiplier; }
+	float    GetShift() const      { return m_shift; }
+	AkRtpcID GetId() const         { return m_id; }
+
+private:
+
+	float const    m_multiplier;
+	float const    m_shift;
+	AkRtpcID const m_id;
 };
 } // namespace Wwise
 } // namespace Impl

@@ -37,19 +37,13 @@ public:
 	CBaseObject& operator=(CBaseObject const&) = delete;
 	CBaseObject& operator=(CBaseObject&&) = delete;
 
-	CBaseObject();
 	virtual ~CBaseObject() override;
 
 	// CryAudio::Impl::IObject
 	virtual void                   Update(float const deltaTime) override                            {}
 	virtual void                   SetTransformation(CTransformation const& transformation) override {}
 	virtual CTransformation const& GetTransformation() const override                                { return CTransformation::GetEmptyObject(); }
-	virtual void                   SetParameter(IParameterConnection const* const pIParameterConnection, float const value) override;
-	virtual void                   SetSwitchState(ISwitchStateConnection const* const pISwitchStateConnection) override;
-	virtual ERequestStatus         ExecuteTrigger(ITriggerConnection const* const pITriggerConnection, IEvent* const pIEvent) override;
 	virtual void                   StopAllTriggers() override;
-	virtual ERequestStatus         PlayFile(IStandaloneFileConnection* const pIStandaloneFileConnection) override;
-	virtual ERequestStatus         StopFile(IStandaloneFileConnection* const pIStandaloneFileConnection) override;
 	virtual ERequestStatus         SetName(char const* const szName) override;
 	virtual void                   ToggleFunctionality(EObjectFunctionality const type, bool const enable) override {}
 
@@ -57,16 +51,20 @@ public:
 	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter) override {}
 	// ~CryAudio::Impl::IObject
 
-	void RemoveEvent(CEvent* const pEvent);
-	void MutePlayer(CriBool const shouldPause);
-	void PausePlayer(CriBool const shouldPause);
+	bool              StartEvent(CTrigger const* const pTrigger, CEvent* const pEvent);
+	void              StopEvent(uint32 const triggerId);
+	void              PauseEvent(uint32 const triggerId);
+	void              ResumeEvent(uint32 const triggerId);
+	void              RemoveEvent(CEvent* const pEvent);
+	void              MutePlayer(CriBool const shouldPause);
+	void              PausePlayer(CriBool const shouldPause);
+
+	CriAtomExPlayerHn GetPlayer() const { return m_pPlayer; }
 
 protected:
 
-	bool StartEvent(CTrigger const* const pTrigger, CEvent* const pEvent);
-	void StopEvent(uint32 const triggerId);
-	void PauseEvent(uint32 const triggerId);
-	void ResumeEvent(uint32 const triggerId);
+	CBaseObject();
+
 	void UpdateVelocityTracking();
 
 	using Events = std::vector<CEvent*>;

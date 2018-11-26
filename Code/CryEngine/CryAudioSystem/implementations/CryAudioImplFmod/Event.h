@@ -71,14 +71,13 @@ public:
 	FMOD::Studio::EventInstance* GetInstance() const                                       { return m_pInstance; }
 	void                         SetInstance(FMOD::Studio::EventInstance* const pInstance) { m_pInstance = pInstance; }
 
-	CBaseObject* const           GetObject()                                               { return m_pObject; }
 	void                         SetObject(CBaseObject* const pAudioObject)                { m_pObject = pAudioObject; }
 
 	CTrigger const*              GetTrigger() const                                        { return m_pTrigger; }
 	void                         SetTrigger(CTrigger const* const pTrigger)                { m_pTrigger = pTrigger; }
 
 	bool                         HasAbsoluteVelocityParameter() const                      { return m_pAbsoluteVelocityParameter != nullptr; }
-	void                         SetAbsoluteVelocityParameter();
+	void                         SetInternalParameters();
 
 	EEventState                  GetState() const { return m_state; }
 
@@ -104,8 +103,6 @@ private:
 	CBaseObject*                     m_pObject;
 	CTrigger const*                  m_pTrigger;
 };
-
-using Events = std::vector<CEvent*>;
 } // namespace Fmod
 } // namespace Impl
 } // namespace CryAudio

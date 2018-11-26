@@ -27,18 +27,22 @@ public:
 	virtual ~CStandaloneFile() override = default;
 
 	// CStandaloneFileBase
-	virtual void StartLoading() override;
 	virtual bool IsReady() override;
-	virtual void Play(FMOD_3D_ATTRIBUTES const& attributes) override;
+	virtual void PlayFile(FMOD_3D_ATTRIBUTES const& attributes) override;
 	virtual void Set3DAttributes(FMOD_3D_ATTRIBUTES const& attributes) override;
-	virtual void Stop() override;
 	// ~CStandaloneFileBase
 
-	FMOD::Sound*   m_pLowLevelSound = nullptr;
 	FMOD::Channel* m_pChannel = nullptr;
-};
 
-using StandaloneFiles = std::vector<CStandaloneFile*>;
+private:
+
+	// CStandaloneFileBase
+	virtual void StartLoading() override;
+	virtual void StopFile() override;
+	// ~CStandaloneFileBase
+
+	FMOD::Sound* m_pLowLevelSound = nullptr;
+};
 } // namespace Fmod
 } // namespace Impl
 } // namespace CryAudio

@@ -157,14 +157,14 @@ struct IImpl
 	 * @param value - Value to set
 	 * @return void
 	 */
-	virtual void SetGlobalParameter(IParameterConnection const* const pIParameterConnection, float const value) = 0;
+	virtual void SetGlobalParameter(IParameterConnection* const pIParameterConnection, float const value) = 0;
 
 	/**
 	 * Sets a switch state on all objects.
 	 * @param pISwitchStateConnection - Switch state to set
 	 * @return void
 	 */
-	virtual void SetGlobalSwitchState(ISwitchStateConnection const* const pISwitchStateConnection) = 0;
+	virtual void SetGlobalSwitchState(ISwitchStateConnection* const pISwitchStateConnection) = 0;
 
 	/**
 	 * Inform the audio middleware about the memory location of a preloaded audio-data file
@@ -218,7 +218,7 @@ struct IImpl
 	 * @return AudioImplementation code to use the corresponding ITriggerConnection; nullptr if the new AudioTriggerImplData instance was not created
 	 * @see DestructTrigger
 	 */
-	virtual ITriggerConnection const* ConstructTriggerConnection(XmlNodeRef const pRootNode, float& radius) = 0;
+	virtual ITriggerConnection* ConstructTriggerConnection(XmlNodeRef const pRootNode, float& radius) = 0;
 
 	/**
 	 * Construct a trigger with the given info struct, return a pointer to the data needed for identifying
@@ -228,7 +228,7 @@ struct IImpl
 	 * @return AudioImplementation code to use the corresponding ITriggerConnection; nullptr if the new ITriggerConnection instance was not created
 	 * @see DestructTrigger
 	 */
-	virtual ITriggerConnection const* ConstructTriggerConnection(ITriggerInfo const* const pITriggerInfo) = 0;
+	virtual ITriggerConnection* ConstructTriggerConnection(ITriggerInfo const* const pITriggerInfo) = 0;
 
 	/**
 	 * Free the memory and potentially other resources used by the supplied ITrigger instance
@@ -268,7 +268,7 @@ struct IImpl
 	 * @return AudioImplementation code to use the corresponding IParameterConnection; nullptr if the new IParameterConnection instance was not created
 	 * @see DestructParameter
 	 */
-	virtual IParameterConnection const* ConstructParameterConnection(XmlNodeRef const pRootNode) = 0;
+	virtual IParameterConnection* ConstructParameterConnection(XmlNodeRef const pRootNode) = 0;
 
 	/**
 	 * Free the memory and potentially other resources used by the supplied IParameterConnection instance
@@ -286,7 +286,7 @@ struct IImpl
 	 * @return AudioImplementation code to use the corresponding ISwitchStateConnection; nullptr if the new ISwitchStateConnection instance was not created
 	 * @see DestructSwitchState
 	 */
-	virtual ISwitchStateConnection const* ConstructSwitchStateConnection(XmlNodeRef const pRootNode) = 0;
+	virtual ISwitchStateConnection* ConstructSwitchStateConnection(XmlNodeRef const pRootNode) = 0;
 
 	/**
 	 * Free the memory and potentially other resources used by the supplied ISwitchStateConnection instance
@@ -304,7 +304,7 @@ struct IImpl
 	 * @return AudioImplementation code to use the corresponding IEnvironmentConnection; nullptr if the new IEnvironmentConnection instance was not created
 	 * @see DestructEnvironment
 	 */
-	virtual IEnvironmentConnection const* ConstructEnvironmentConnection(XmlNodeRef const pRootNode) = 0;
+	virtual IEnvironmentConnection* ConstructEnvironmentConnection(XmlNodeRef const pRootNode) = 0;
 
 	/**
 	 * Free the memory and potentially other resources used by the supplied IEnvironmentConnection instance
@@ -322,7 +322,7 @@ struct IImpl
 	 * @return AudioImplementation code to use the corresponding ISettingConnection; nullptr if the new ISettingConnection instance was not created
 	 * @see DestructSetting
 	 */
-	virtual ISettingConnection const* ConstructSettingConnection(XmlNodeRef const pRootNode) = 0;
+	virtual ISettingConnection* ConstructSettingConnection(XmlNodeRef const pRootNode) = 0;
 
 	/**
 	 * Free the memory and potentially other resources used by the supplied ISettingConnection instance

@@ -152,7 +152,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_DX12::Init(const CDeviceGraph
 
 		if (CHWShader_D3D::SHWSInstance* pVsInstance = reinterpret_cast<CHWShader_D3D::SHWSInstance*>(hwShaders[eHWSC_Vertex].pHwShaderInstance))
 		{
-			uint32 streamMask = psoDesc.CombineVertexStreamMasks(uint8(pVsInstance->m_VStreamMask_Decl), psoDesc.m_ObjectStreamMask);
+			EStreamMasks streamMask = psoDesc.CombineVertexStreamMasks(pVsInstance->m_VStreamMask_Decl, psoDesc.m_ObjectStreamMask);
 
 			const auto inputLayoutPair = CDeviceObjectFactory::GetOrCreateInputLayout(&pVsInstance->m_Shader, streamMask, psoDesc.m_VertexFormat);
 			m_pInputLayout = &inputLayoutPair->first;
@@ -183,7 +183,7 @@ bool CDeviceComputePSO_DX12::Init(const CDeviceComputePSODesc& psoDesc)
 
 	SDeviceObjectHelpers::THwShaderInfo hwShaders;
 	::EShaderStage validShaderStages = SDeviceObjectHelpers::GetShaderInstanceInfo(hwShaders, psoDesc.m_pShader, psoDesc.m_technique, 
-		psoDesc.m_ShaderFlags_RT, psoDesc.m_ShaderFlags_MD, psoDesc.m_ShaderFlags_MDV, nullptr, false);
+		psoDesc.m_ShaderFlags_RT, psoDesc.m_ShaderFlags_MD, MDV_NONE, nullptr, false);
 
 	if (validShaderStages != EShaderStage_Compute)
 		return false;

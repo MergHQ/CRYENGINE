@@ -345,7 +345,7 @@ const SInputLayout* CDeviceObjectFactory::GetInputLayoutDescriptor(const InputLa
 	return &m_vertexFormatToInputLayoutCache[static_cast<size_t>(idx)];
 }
 
-const CDeviceObjectFactory::SInputLayoutPair* CDeviceObjectFactory::GetOrCreateInputLayout(const SShaderBlob* pVertexShader, int StreamMask, const InputLayoutHandle VertexFormat)
+const CDeviceObjectFactory::SInputLayoutPair* CDeviceObjectFactory::GetOrCreateInputLayout(const SShaderBlob* pVertexShader, EStreamMasks StreamMask, const InputLayoutHandle VertexFormat)
 {
 	CRY_ASSERT(pVertexShader);
 	if (!pVertexShader)
@@ -386,10 +386,10 @@ const CDeviceObjectFactory::SInputLayoutPair* CDeviceObjectFactory::GetOrCreateI
 
 const CDeviceObjectFactory::SInputLayoutPair* CDeviceObjectFactory::GetOrCreateInputLayout(const SShaderBlob* pVS, const InputLayoutHandle VertexFormat)
 {
-	return GetOrCreateInputLayout(pVS, 0, VertexFormat);
+	return GetOrCreateInputLayout(pVS, VSM_NONE, VertexFormat);
 }
 
-SInputLayout CDeviceObjectFactory::CreateInputLayoutForPermutation(const SShaderBlob* m_pConsumingVertexShader, const SInputLayoutCompositionDescriptor &compositionDescription, int StreamMask, const InputLayoutHandle VertexFormat)
+SInputLayout CDeviceObjectFactory::CreateInputLayoutForPermutation(const SShaderBlob* m_pConsumingVertexShader, const SInputLayoutCompositionDescriptor &compositionDescription, EStreamMasks StreamMask, const InputLayoutHandle VertexFormat)
 {
 	bool bInstanced = (StreamMask & VSM_INSTANCED) != 0;
 

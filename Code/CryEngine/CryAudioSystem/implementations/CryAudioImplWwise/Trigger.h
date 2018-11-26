@@ -38,6 +38,7 @@ public:
 	virtual ~CTrigger() override = default;
 
 	// CryAudio::Impl::ITriggerConnection
+	virtual ERequestStatus Execute(IObject* const pIObject, IEvent* const pIEvent) override;
 	virtual ERequestStatus Load() const override;
 	virtual ERequestStatus Unload() const override;
 	virtual ERequestStatus LoadAsync(IEvent* const pIEvent) const override;
@@ -48,13 +49,13 @@ public:
 	char const* GetName() const { return m_name.c_str(); }
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
-	AkUniqueID const m_id;
-	float const      m_maxAttenuation;
-
 private:
 
 	ERequestStatus SetLoaded(bool const bLoad) const;
 	ERequestStatus SetLoadedAsync(IEvent* const pIEvent, bool const bLoad) const;
+
+	AkUniqueID const m_id;
+	float const      m_maxAttenuation;
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	CryFixedStringT<MaxControlNameLength> const m_name;

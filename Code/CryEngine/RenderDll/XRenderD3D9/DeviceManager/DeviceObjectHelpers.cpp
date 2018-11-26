@@ -10,7 +10,7 @@ extern CD3D9Renderer gcpRendD3D;
 #include "XRenderD3D9/D3DHWShader.h" // CHWShader_D3D
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-EShaderStage SDeviceObjectHelpers::GetShaderInstanceInfo(THwShaderInfo& result, ::CShader* pShader, const CCryNameTSCRC& technique, uint64 rtFlags, uint32 mdFlags, uint32 mdvFlags, const UPipelineState pipelineState[eHWSC_Num], bool bAllowTesselation)
+EShaderStage SDeviceObjectHelpers::GetShaderInstanceInfo(THwShaderInfo& result, ::CShader* pShader, const CCryNameTSCRC& technique, uint64 rtFlags, uint32 mdFlags, EVertexModifier mdvFlags, const UPipelineState pipelineState[eHWSC_Num], bool bAllowTesselation)
 {
 	if (SShaderTechnique* pShaderTechnique = pShader->mfFindTechnique(technique))
 	{

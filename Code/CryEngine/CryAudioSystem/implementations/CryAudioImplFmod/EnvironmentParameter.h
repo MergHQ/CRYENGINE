@@ -36,10 +36,9 @@ public:
 
 	virtual ~CEnvironmentParameter() override = default;
 
-	uint32                                       GetId() const              { return m_id; }
-	float                                        GetValueMultiplier() const { return m_multiplier; }
-	float                                        GetValueShift() const      { return m_shift; }
-	CryFixedStringT<MaxControlNameLength> const& GetName() const            { return m_name; }
+	uint32 GetId() const              { return m_id; }
+	float  GetValueMultiplier() const { return m_multiplier; }
+	float  GetValueShift() const      { return m_shift; }
 
 private:
 

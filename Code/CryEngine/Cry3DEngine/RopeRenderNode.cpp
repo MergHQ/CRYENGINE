@@ -899,7 +899,7 @@ void CRopeRenderNode::Render(const SRendParams& rParams, const SRenderingPassInf
 	pObj->m_pRenderNode = this;
 	pObj->m_DissolveRef = rParams.nDissolveRef;
 	pObj->m_ObjFlags |= FOB_TRANS_MASK | rParams.dwFObjFlags;
-	pObj->m_ObjFlags |= (m_dwRndFlags & ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND) ? FOB_ALLOW_TERRAIN_LAYER_BLEND : 0;
+	pObj->m_ObjFlags |= (m_dwRndFlags & ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND) ? FOB_ALLOW_TERRAIN_LAYER_BLEND : FOB_NONE;
 	pObj->m_fAlpha = rParams.fAlpha;
 	pObj->SetAmbientColor(rParams.AmbientColor, passInfo);
 	pObj->SetMatrix(m_worldTM, passInfo);

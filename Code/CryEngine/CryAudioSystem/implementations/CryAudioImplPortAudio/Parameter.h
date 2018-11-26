@@ -21,6 +21,10 @@ public:
 
 	CParameter() = default;
 	virtual ~CParameter() override = default;
+
+	// IParameterConnection
+	virtual void Set(IObject* const pIObject, float const value) override {}
+	// ~IParameterConnection
 };
 } // namespace PortAudio
 } // namespace Impl

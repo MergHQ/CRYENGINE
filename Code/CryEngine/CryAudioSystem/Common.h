@@ -58,11 +58,11 @@ using PreloadRequestLookup = std::map<PreloadRequestId, CPreloadRequest*>;
 using EnvironmentLookup = std::map<EnvironmentId, CEnvironment const*>;
 using SettingLookup = std::map<ControlId, CSetting const*>;
 
-using TriggerConnections = std::vector<Impl::ITriggerConnection const*>;
-using ParameterConnections = std::vector<Impl::IParameterConnection const*>;
-using SwitchStateConnections = std::vector<Impl::ISwitchStateConnection const*>;
-using EnvironmentConnections = std::vector<Impl::IEnvironmentConnection const*>;
-using SettingConnections = std::vector<Impl::ISettingConnection const*>;
+using TriggerConnections = std::vector<Impl::ITriggerConnection*>;
+using ParameterConnections = std::vector<Impl::IParameterConnection*>;
+using SwitchStateConnections = std::vector<Impl::ISwitchStateConnection*>;
+using EnvironmentConnections = std::vector<Impl::IEnvironmentConnection*>;
+using SettingConnections = std::vector<Impl::ISettingConnection*>;
 
 extern Impl::IImpl* g_pIImpl;
 extern CSystem g_system;

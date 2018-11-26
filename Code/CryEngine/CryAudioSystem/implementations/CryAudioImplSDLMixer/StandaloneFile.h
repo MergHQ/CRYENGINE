@@ -31,6 +31,11 @@ public:
 
 	virtual ~CStandaloneFile() override = default;
 
+	// IStandaloneFileConnection
+	virtual ERequestStatus Play(IObject* const pIObject) override;
+	virtual ERequestStatus Stop(IObject* const pIObject) override;
+	// ~IStandaloneFileConnection
+
 	CryAudio::CStandaloneFile&         m_file;
 	SampleId                           m_sampleId = 0; // ID unique to the file, only needed for the 'finished' request
 	CryFixedStringT<MaxFilePathLength> m_name;

@@ -8,11 +8,11 @@
 SGraphicsPipelineStateDescription::SGraphicsPipelineStateDescription(
   CRenderObject* pObj,
   uint64 objFlags,
-  uint16 elmFlags,
+  ERenderElementFlags elmFlags,
   const SShaderItem& _shaderItem,
   EShaderTechniqueID _technique,
   InputLayoutHandle _vertexFormat,
-  uint32 _streamMask,
+  EStreamMasks _streamMask,
   ERenderPrimitiveType _primitiveType)
 {
 	shaderItem = _shaderItem;
@@ -24,6 +24,7 @@ SGraphicsPipelineStateDescription::SGraphicsPipelineStateDescription(
 	streamMask = _streamMask;
 	primitiveType = _primitiveType;
 	renderState = pObj->m_RState;
+	padding = 0;
 
 	if ((objFlags & FOB_SKINNED) && (elmFlags & FCEF_SKINNED) && CRenderer::CV_r_usehwskinning && !CRenderer::CV_r_character_nodeform)
 	{

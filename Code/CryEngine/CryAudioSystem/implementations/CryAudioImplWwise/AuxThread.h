@@ -42,12 +42,14 @@ public:
 
 	void Init();
 	void SignalStopWork();
-	bool IsActive();
 
-	volatile bool        m_bQuit;
 	EAuxThreadState      m_threadState;
 	CryMutex             m_lock;
 	CryConditionVariable m_sem;
+
+private:
+
+	volatile bool m_bQuit;
 };
 } // namespace Wwise
 } // namespace Impl

@@ -21,6 +21,10 @@ public:
 
 	CEnvironment() = default;
 	virtual ~CEnvironment() override = default;
+
+	// IEnvironmentConnection
+	virtual void Set(IObject* const pIObject, float const amount) override {}
+	// ~IEnvironmentConnection
 };
 } // namespace SDL_mixer
 } // namespace Impl

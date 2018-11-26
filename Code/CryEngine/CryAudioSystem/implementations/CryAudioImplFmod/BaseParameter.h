@@ -30,10 +30,11 @@ public:
 
 	virtual ~CBaseParameter() override = default;
 
-	uint32         GetId() const              { return m_id; }
-	float          GetValueMultiplier() const { return m_multiplier; }
-	float          GetValueShift() const      { return m_shift; }
-	EParameterType GetType() const            { return m_type; }
+	// IParameterConnection
+	virtual void Set(IObject* const pIObject, float const value) override {}
+	// ~IParameterConnection
+
+	uint32 GetId() const { return m_id; }
 
 protected:
 

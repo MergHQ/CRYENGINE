@@ -27,6 +27,7 @@
 #include "Common/Logger.h"
 #include "Common/IImpl.h"
 #include "Common/IObject.h"
+#include "Common/IStandaloneFileConnection.h"
 #include <CryString/HashedString.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryMath/Cry_Camera.h>
@@ -356,7 +357,7 @@ void CObject::HandleStopFile(char const* const szFile)
 			}
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
-			ERequestStatus const status = m_pImplData->StopFile(pFile->m_pImplData);
+			ERequestStatus const status = pFile->m_pImplData->Stop(m_pImplData);
 
 			if (status != ERequestStatus::Pending)
 			{
@@ -726,19 +727,17 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 				}
 
 				// Check if object name matches text filter.
-				auto const pObject = const_cast<CObject*>(this);
-				char const* const szObjectName = pObject->m_name.c_str();
 				bool doesObjectNameMatchFilter = false;
 
 				if (!isTextFilterDisabled && (drawLabel || filterAllObjectInfo))
 				{
-					CryFixedStringT<MaxControlNameLength> lowerCaseObjectName(szObjectName);
+					CryFixedStringT<MaxControlNameLength> lowerCaseObjectName(m_name.c_str());
 					lowerCaseObjectName.MakeLower();
 					doesObjectNameMatchFilter = (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
 				}
 
-				bool const hasActiveData = pObject->IsActive();
-				bool const isVirtual = (pObject->GetFlags() & EObjectFlags::Virtual) != 0;
+				bool const hasActiveData = IsActive();
+				bool const isVirtual = (m_flags& EObjectFlags::Virtual) != 0;
 				bool const canDraw = (g_cvars.m_hideInactiveObjects == 0) || ((g_cvars.m_hideInactiveObjects != 0) && hasActiveData && !isVirtual);
 
 				if (canDraw)
@@ -759,7 +758,7 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 							Debug::g_objectFontSize,
 							isVirtual ? Debug::g_globalColorVirtual.data() : (hasActiveData ? Debug::g_objectColorActive.data() : Debug::g_globalColorInactive.data()),
 							false,
-							szObjectName);
+							m_name.c_str());
 
 						screenPos.y += Debug::g_objectLineHeight;
 					}
@@ -859,13 +858,11 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 
 					if (drawDistance)
 					{
-
 						CryFixedStringT<MaxMiscStringLength> debugText;
-						float const maxRadius = pObject->GetMaxRadius();
 
-						if (maxRadius > 0.0f)
+						if (m_maxRadius > 0.0f)
 						{
-							debugText.Format("Dist: %4.1fm / Max: %.1fm", distance, maxRadius);
+							debugText.Format("Dist: %4.1fm / Max: %.1fm", distance, m_maxRadius);
 						}
 						else
 						{
@@ -926,7 +923,7 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 
 					if (drawOcclusionRayOffset && !isVirtual)
 					{
-						float const occlusionRayOffset = pObject->GetOcclusionRayOffset();
+						float const occlusionRayOffset = m_propagationProcessor.GetOcclusionRayOffset();
 
 						if (occlusionRayOffset > 0.0f)
 						{

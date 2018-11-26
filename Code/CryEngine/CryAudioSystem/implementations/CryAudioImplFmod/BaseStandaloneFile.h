@@ -26,27 +26,37 @@ public:
 	CBaseStandaloneFile& operator=(CBaseStandaloneFile const&) = delete;
 	CBaseStandaloneFile& operator=(CBaseStandaloneFile&&) = delete;
 
+	virtual ~CBaseStandaloneFile() override;
+
+	// IStandaloneFileConnection
+	virtual ERequestStatus Play(IObject* const pIObject) override;
+	virtual ERequestStatus Stop(IObject* const pIObject) override;
+	// ~IStandaloneFileConnection
+
+	virtual bool IsReady() = 0;
+	virtual void PlayFile(FMOD_3D_ATTRIBUTES const& attributes) = 0;
+	virtual void Set3DAttributes(FMOD_3D_ATTRIBUTES const& attributes) = 0;
+
+	void         ReportFileStarted();
+	void         ReportFileFinished();
+
+	char const*  GetFileName() const { return m_fileName.c_str(); }
+
+	static FMOD::System* s_pLowLevelSystem;
+
+protected:
+
 	explicit CBaseStandaloneFile(char const* const szFile, CryAudio::CStandaloneFile& standaloneFile)
 		: m_standaloneFile(standaloneFile)
 		, m_fileName(szFile)
 	{}
 
-	virtual ~CBaseStandaloneFile() override;
-
 	virtual void StartLoading() = 0;
-	virtual bool IsReady() = 0;
-	virtual void Play(FMOD_3D_ATTRIBUTES const& attributes) = 0;
-	virtual void Set3DAttributes(FMOD_3D_ATTRIBUTES const& attributes) = 0;
-	virtual void Stop() = 0;
-
-	void         ReportFileStarted();
-	void         ReportFileFinished();
+	virtual void StopFile() = 0;
 
 	CryAudio::CStandaloneFile&         m_standaloneFile;
 	CryFixedStringT<MaxFilePathLength> m_fileName;
 	CBaseObject*                       m_pObject = nullptr;
-	static FMOD::System*               s_pLowLevelSystem;
-
 };
 } // namespace Fmod
 } // namespace Impl

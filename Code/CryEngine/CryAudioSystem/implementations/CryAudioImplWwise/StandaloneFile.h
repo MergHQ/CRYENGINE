@@ -21,6 +21,11 @@ public:
 
 	CStandaloneFile() = default;
 	virtual ~CStandaloneFile() override = default;
+
+	// IStandaloneFileConnection
+	virtual ERequestStatus Play(IObject* const pIObject) override { return ERequestStatus::Failure; }
+	virtual ERequestStatus Stop(IObject* const pIObject) override { return ERequestStatus::Failure; }
+	// ~IStandaloneFileConnection
 };
 } // namespace Wwise
 } // namespace Impl

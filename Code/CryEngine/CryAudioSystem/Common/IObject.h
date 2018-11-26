@@ -54,29 +54,6 @@ struct IObject
 	virtual CTransformation const& GetTransformation() const = 0;
 
 	/**
-	 * Set the provided value for the specified environment on the object.
-	 * @param pIEnvironmentConnection - implementation-specific environment to set
-	 * @param amount - the fade value for the provided IEnvironment, 0.0f means no effect at all, 1.0f corresponds to the full effect
-	 * @return void
-	 */
-	virtual void SetEnvironment(IEnvironmentConnection const* const pIEnvironmentConnection, float const amount) = 0;
-
-	/**
-	 * Set the provided parameter to the specified value on the object.
-	 * @param pIParameterConnection - implementation-specific parameter to set
-	 * @param value - the value to set the parameter to
-	 * @return void
-	 */
-	virtual void SetParameter(IParameterConnection const* const pIParameterConnection, float const value) = 0;
-
-	/**
-	 * Set the provided state (on a switch) on the object.
-	 * @param pISwitchState - implementation-specific state to set
-	 * @return void
-	 */
-	virtual void SetSwitchState(ISwitchStateConnection const* const pISwitchState) = 0;
-
-	/**
 	 * Set the provided occlusion value.
 	 * @param occlusion - the occlusion value to be set, it describes how much all sound paths (direct and indirect) are obstructed
 	 * @return void
@@ -91,34 +68,10 @@ struct IObject
 	virtual void SetOcclusionType(EOcclusionType const occlusionType) = 0;
 
 	/**
-	 * Activate a trigger on this object.
-	 * @param pITrigger - implementation-specific trigger to activate
-	 * @param pIEvent - implementation-specific event corresponding to this particular trigger activation
-	 * @return ERequestStatus - indicates the outcome of underlying process
-	 */
-	virtual ERequestStatus ExecuteTrigger(ITriggerConnection const* const pITrigger, IEvent* const pIEvent) = 0;
-
-	/**
 	 * Stop all triggers currently active on the object.
 	 * @return void
 	 */
 	virtual void StopAllTriggers() = 0;
-
-	/**
-	 * Play a stand alone file.
-	 * @param pIStandaloneFile - file to play
-	 * @return ERequestStatus - indicates the outcome of underlying process
-	 * @see StopFile
-	 */
-	virtual ERequestStatus PlayFile(IStandaloneFileConnection* const pIStandaloneFile) = 0;
-
-	/**
-	 * Stop a stand alone file.
-	 * @param pIStandaloneFile - file to stop
-	 * @return ERequestStatus - indicates the outcome of underlying process
-	 * @see PlayFile
-	 */
-	virtual ERequestStatus StopFile(IStandaloneFileConnection* const pIStandaloneFile) = 0;
 
 	/**
 	 * Sets this object's name.

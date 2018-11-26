@@ -288,15 +288,15 @@ ERequestStatus CImpl::StopAllSounds()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalParameter(IParameterConnection const* const pIParameterConnection, float const value)
+void CImpl::SetGlobalParameter(IParameterConnection* const pIParameterConnection, float const value)
 {
-	auto const pParameter = static_cast<CParameter const*>(pIParameterConnection);
-
-	if (pParameter != nullptr)
+	if (pIParameterConnection != nullptr)
 	{
+		auto const pParameter = static_cast<CParameter*>(pIParameterConnection);
+
 		for (auto const pObject : g_objects)
 		{
-			pObject->SetParameter(pParameter, value);
+			pParameter->Set(pObject, value);
 		}
 	}
 	else
@@ -306,15 +306,15 @@ void CImpl::SetGlobalParameter(IParameterConnection const* const pIParameterConn
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalSwitchState(ISwitchStateConnection const* const pISwitchStateConnection)
+void CImpl::SetGlobalSwitchState(ISwitchStateConnection* const pISwitchStateConnection)
 {
-	auto const pSwitchState = static_cast<CSwitchState const*>(pISwitchStateConnection);
-
-	if (pSwitchState != nullptr)
+	if (pISwitchStateConnection != nullptr)
 	{
+		auto const pSwitchState = static_cast<CSwitchState*>(pISwitchStateConnection);
+
 		for (auto const pObject : g_objects)
 		{
-			pObject->SetSwitchState(pSwitchState);
+			pSwitchState->Set(pObject);
 		}
 	}
 	else
@@ -441,7 +441,7 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ITriggerConnection const* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode, float& radius)
+ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode, float& radius)
 {
 	CTrigger* pTrigger = nullptr;
 
@@ -534,10 +534,10 @@ ITriggerConnection const* CImpl::ConstructTriggerConnection(XmlNodeRef const pRo
 }
 
 //////////////////////////////////////////////////////////////////////////
-ITriggerConnection const* CImpl::ConstructTriggerConnection(ITriggerInfo const* const pITriggerInfo)
+ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const pITriggerInfo)
 {
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
-	ITriggerConnection const* pITriggerConnection = nullptr;
+	ITriggerConnection* pITriggerConnection = nullptr;
 	auto const pTriggerInfo = static_cast<STriggerInfo const*>(pITriggerInfo);
 
 	if (pTriggerInfo != nullptr)
@@ -545,7 +545,7 @@ ITriggerConnection const* CImpl::ConstructTriggerConnection(ITriggerInfo const* 
 		string const fullFilePath = GetFullFilePath(pTriggerInfo->name.c_str(), pTriggerInfo->path.c_str());
 		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true, pTriggerInfo->isLocalized);
 
-		pITriggerConnection = static_cast<ITriggerConnection const*>(new CTrigger(EEventType::Start, sampleId, -1.0f, -1.0f, 128, 0, 0, 0, false));
+		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(EEventType::Start, sampleId, -1.0f, -1.0f, 128, 0, 0, 0, false));
 	}
 
 	return pITriggerConnection;
@@ -566,7 +566,7 @@ void CImpl::DestructTriggerConnection(ITriggerConnection const* const pITriggerC
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IParameterConnection const* CImpl::ConstructParameterConnection(XmlNodeRef const pRootNode)
+IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRootNode)
 {
 	CParameter* pParameter = nullptr;
 
@@ -600,7 +600,7 @@ void CImpl::DestructParameterConnection(IParameterConnection const* const pIPara
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ISwitchStateConnection const* CImpl::ConstructSwitchStateConnection(XmlNodeRef const pRootNode)
+ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const pRootNode)
 {
 	CSwitchState* pSwitchState = nullptr;
 
@@ -632,7 +632,7 @@ void CImpl::DestructSwitchStateConnection(ISwitchStateConnection const* const pI
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IEnvironmentConnection const* CImpl::ConstructEnvironmentConnection(XmlNodeRef const pRootNode)
+IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const pRootNode)
 {
 	return static_cast<IEnvironmentConnection*>(new CEnvironment);
 }
@@ -644,7 +644,7 @@ void CImpl::DestructEnvironmentConnection(IEnvironmentConnection const* const pI
 }
 
 //////////////////////////////////////////////////////////////////////////
-ISettingConnection const* CImpl::ConstructSettingConnection(XmlNodeRef const pRootNode)
+ISettingConnection* CImpl::ConstructSettingConnection(XmlNodeRef const pRootNode)
 {
 	return static_cast<ISettingConnection*>(new CSetting);
 }

@@ -27,8 +27,7 @@ public:
 	// CryAudio::Impl::IObject
 	virtual void                   Update(float const deltaTime) override;
 	virtual void                   SetTransformation(CTransformation const& transformation) override;
-	virtual CTransformation const& GetTransformation() const override { return m_transformation; }
-	virtual void                   SetEnvironment(IEnvironmentConnection const* const pIEnvironmentConnection, float const amount) override;
+	virtual CTransformation const& GetTransformation() const override                            { return m_transformation; }
 	virtual void                   SetOcclusion(float const occlusion) override;
 	virtual void                   SetOcclusionType(EOcclusionType const occlusionType) override {}
 

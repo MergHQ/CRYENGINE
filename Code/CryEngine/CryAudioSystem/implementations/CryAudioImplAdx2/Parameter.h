@@ -45,6 +45,10 @@ public:
 
 	virtual ~CParameter() override = default;
 
+	// IParameterConnection
+	virtual void Set(IObject* const pIObject, float const value) override;
+	// ~IParameterConnection
+
 	CriChar8 const* GetName() const       { return static_cast<CriChar8 const*>(m_name); }
 	EParameterType  GetType() const       { return m_type; }
 	float           GetMultiplier() const { return m_multiplier; }

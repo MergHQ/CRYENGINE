@@ -23,7 +23,6 @@ public:
 	virtual ~CGlobalObject() override;
 
 	// CryAudio::Impl::IObject
-	virtual void SetEnvironment(IEnvironmentConnection const* const pIEnvironmentConnection, float const amount) override;
 	virtual void SetOcclusion(float const occlusion) override;
 	virtual void SetOcclusionType(EOcclusionType const occlusionType) override;
 	virtual void ToggleFunctionality(EObjectFunctionality const type, bool const enable) override;

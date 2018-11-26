@@ -97,42 +97,6 @@ void CObject::SetTransformation(CTransformation const& transformation)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetEnvironment(IEnvironmentConnection const* const pIEnvironmentConnection, float const amount)
-{
-	auto const pEnvironment = static_cast<CEnvironment const*>(pIEnvironmentConnection);
-
-	if (pEnvironment != nullptr)
-	{
-		bool bSet = true;
-		auto const iter(m_environments.find(pEnvironment));
-
-		if (iter != m_environments.end())
-		{
-			if (bSet = (fabs(iter->second - amount) > 0.001f))
-			{
-				iter->second = amount;
-			}
-		}
-		else
-		{
-			m_environments.emplace(pEnvironment, amount);
-		}
-
-		if (bSet)
-		{
-			for (auto const pEvent : m_events)
-			{
-				pEvent->TrySetEnvironment(pEnvironment, amount);
-			}
-		}
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Invalid IEnvironmentConnection pointer passed to the Fmod implementation of %s", __FUNCTION__);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CObject::SetOcclusion(float const occlusion)
 {
 	for (auto const pEvent : m_events)

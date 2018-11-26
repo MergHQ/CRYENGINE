@@ -500,7 +500,7 @@ void CRenderer::EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, ERenderList
 			}
 		}
 
-		pRenderObject->m_ObjFlags |= (pRenderObjectData && pRenderObjectData->m_LightVolumeId) ? FOB_LIGHTVOLUME : 0;
+		pRenderObject->m_ObjFlags |= (pRenderObjectData && pRenderObjectData->m_LightVolumeId) ? FOB_LIGHTVOLUME : FOB_NONE;
 	}
 
 	if (bHalfRes)
@@ -514,7 +514,7 @@ void CRenderer::EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, ERenderList
 		nList = EFSLIST_GENERAL;
 }
 
-bool CREParticle::Compile(CRenderObject* pRenderObject, uint64 objFlags, uint16 elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly)
+bool CREParticle::Compile(CRenderObject* pRenderObject, uint64 objFlags, ERenderElementFlags elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly)
 {
 	if (updateInstanceDataOnly)
 	{

@@ -48,24 +48,22 @@ public:
 	virtual ~CTrigger() override = default;
 
 	// CryAudio::Impl::ITriggerConnection
+	virtual ERequestStatus Execute(IObject* const pIObject, IEvent* const pIEvent) override;
 	virtual ERequestStatus Load()  const override                            { return ERequestStatus::Success; }
 	virtual ERequestStatus Unload() const override                           { return ERequestStatus::Success; }
 	virtual ERequestStatus LoadAsync(IEvent* const pIEvent) const override   { return ERequestStatus::Success; }
 	virtual ERequestStatus UnloadAsync(IEvent* const pIEvent) const override { return ERequestStatus::Success; }
 	// ~CryAudio::Impl::ITriggerConnection
 
-	uint32                                       GetId() const               { return m_id; }
-	EEventType                                   GetEventType() const        { return m_eventType; }
-	FMOD::Studio::EventDescription*              GetEventDescription() const { return m_pEventDescription; }
-	FMOD_GUID                                    GetGuid() const             { return m_guid; }
-	bool                                         HasProgrammerSound() const  { return m_hasProgrammerSound; }
-	CryFixedStringT<MaxControlNameLength> const& GetKey() const              { return m_key; }
+	uint32                                       GetId() const   { return m_id; }
+	FMOD_GUID                                    GetGuid() const { return m_guid; }
+	CryFixedStringT<MaxControlNameLength> const& GetKey() const  { return m_key; }
 
 private:
 
 	uint32 const                                m_id;
 	EEventType const                            m_eventType;
-	FMOD::Studio::EventDescription* const       m_pEventDescription;
+	FMOD::Studio::EventDescription*             m_pEventDescription;
 	FMOD_GUID const                             m_guid;
 	bool const                                  m_hasProgrammerSound;
 	CryFixedStringT<MaxControlNameLength> const m_key;

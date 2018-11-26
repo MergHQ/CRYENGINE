@@ -6,6 +6,8 @@ namespace CryAudio
 {
 namespace Impl
 {
+struct IObject;
+
 /**
  * An implementation may use this interface to define a class for storing implementation-specific
  * data needed for identifying and using the corresponding ISwitchState
@@ -16,6 +18,13 @@ struct ISwitchStateConnection
 	/** @cond */
 	virtual ~ISwitchStateConnection() = default;
 	/** @endcond */
+
+	/**
+	 * Set the state (on a switch) on the provided object.
+	 * @param pIObject - implementation-specific object to set the state on
+	 * @return void
+	 */
+	virtual void Set(IObject* const pIObject) = 0;
 };
 } // namespace Impl
 } // namespace CryAudio

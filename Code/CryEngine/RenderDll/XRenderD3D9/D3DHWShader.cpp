@@ -690,8 +690,8 @@ SDeviceShaderEntry CHWShader_D3D::mfShaderEntryFromCache(CShader* pFX, const CDi
 	instance.m_eClass = this->m_eSHClass;
 	instance.m_nVertexFormat = cacheItemHeader.m_nVertexFormat;
 	instance.m_nInstructions = cacheItemHeader.m_nInstructions;
-	instance.m_VStreamMask_Decl = cacheItemHeader.m_StreamMask_Decl;
-	instance.m_VStreamMask_Stream = cacheItemHeader.m_StreamMask_Stream;
+	instance.m_VStreamMask_Decl = EStreamMasks(cacheItemHeader.m_StreamMask_Decl);
+	instance.m_VStreamMask_Stream = EStreamMasks(cacheItemHeader.m_StreamMask_Stream);
 
 	std::vector<SCGBind> bindsFromCache;
 	const byte* pShaderData = pData.get() + sizeof(SShaderCacheHeaderItem);

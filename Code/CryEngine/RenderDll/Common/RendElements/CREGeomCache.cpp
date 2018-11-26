@@ -80,7 +80,7 @@ void CREGeomCache::SetupMotionBlur(CRenderObject* pRenderObject, const SRenderin
 	}
 }
 
-bool CREGeomCache::Update(const int flags, const bool bTessellation)
+bool CREGeomCache::Update(const EStreamMasks StreamMask, const bool bTessellation)
 {
 	FUNCTION_PROFILER_RENDER_FLAT
 
@@ -112,7 +112,7 @@ bool CREGeomCache::Update(const int flags, const bool bTessellation)
 			pRenderMesh->SyncAsyncUpdate(threadId);
 
 			CRenderMesh* pVertexContainer = pRenderMesh->_GetVertexContainer();
-			bool bSucceed = pRenderMesh->RT_CheckUpdate(pVertexContainer, pRenderMesh->GetVertexFormat(), flags | VSM_MASK, bTessellation);
+			bool bSucceed = pRenderMesh->RT_CheckUpdate(pVertexContainer, pRenderMesh->GetVertexFormat(), StreamMask | VSM_MASK, bTessellation);
 			if (bSucceed)
 			{
 				AUTO_LOCK(CRenderMesh::m_sLinkLock);
@@ -140,13 +140,13 @@ void CREGeomCache::UpdateModified()
 	     iter != ms_updateList[threadId].end(); iter = ms_updateList[threadId].erase(iter))
 	{
 		CREGeomCache* pRenderElement = *iter;
-		pRenderElement->Update(0, false);
+		pRenderElement->Update(VSM_NONE, false);
 	}
 }
 
-bool CREGeomCache::mfUpdate(InputLayoutHandle eVertFormat, int Flags, bool bTessellation)
+bool CREGeomCache::mfUpdate(InputLayoutHandle eVertFormat, EStreamMasks StreamMask, bool bTessellation)
 {
-	const bool bRet = Update(Flags, bTessellation);
+	const bool bRet = Update(StreamMask, bTessellation);
 
 	const int threadId = gRenDev->GetRenderThreadID();
 	CryAutoLock<CryCriticalSection> lock(ms_updateListCS[threadId]);

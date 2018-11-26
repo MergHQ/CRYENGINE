@@ -49,7 +49,7 @@ struct SJobState;
 }
 
 //! Geometry Culling type.
-enum ECull
+enum ECull : uint8
 {
 	eCULL_Back = 0, //!< Back culling flag.
 	eCULL_Front,    //!< Front culling flag.
@@ -437,15 +437,23 @@ class CTexture;
 #include <CryRenderer/ITexture.h>
 
 //! Vertex modificators definitions (must be 16 bit flag).
-#define MDV_BENDING           0x100
-#define MDV_DET_BENDING       0x200
-#define MDV_DET_BENDING_GRASS 0x400
-#define MDV_WIND              0x800
-#define MDV_DEPTH_OFFSET      0x2000
+enum EVertexModifier : uint16
+{
+	MDV_BENDING           = 0x100,
+	MDV_DET_BENDING       = 0x200,
+	MDV_DET_BENDING_GRASS = 0x400,
+	MDV_WIND              = 0x800,
+	MDV_DEPTH_OFFSET      = 0x2000,
+
+	MDV_DEFORMTYPE_MASK   = 0xF,
+	MDV_NONE              = 0
+};
+
+CRY_CREATE_ENUM_FLAG_OPERATORS(EVertexModifier);
 
 //! \cond INTERNAL
 //! Deformations/Morphing types.
-enum EDeformType
+enum EDeformType : uint16
 {
 	eDT_Unknown              = 0,
 	eDT_SinWave              = 1,
@@ -1641,7 +1649,7 @@ enum EShaderType
 	eST_Max  //!< To define array size.
 };
 
-enum EShaderQuality
+enum EShaderQuality : uint8
 {
 	eSQ_Low      = 0,
 	eSQ_Medium   = 1,
@@ -1650,7 +1658,7 @@ enum EShaderQuality
 	eSQ_Max      = 4
 };
 
-enum ERenderQuality
+enum ERenderQuality : uint8
 {
 	eRQ_Low      = 0,
 	eRQ_Medium   = 1,
@@ -1874,7 +1882,7 @@ public:
 	virtual InputLayoutHandle          GetVertexFormat(void) = 0;
 
 	virtual EShaderType                GetShaderType() = 0;
-	virtual uint32                     GetVertexModificator() = 0;
+	virtual EVertexModifier            GetVertexModificator() = 0;
 
 	virtual void                       GetMemoryUsage(ICrySizer* pSizer) const = 0;
 	// </interfuscator:shuffle>

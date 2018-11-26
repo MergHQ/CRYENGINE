@@ -499,7 +499,7 @@ void CCompiledRenderObject::TrackStats(const SGraphicsPipelinePassContext& RESTR
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilationOptions, uint64 objFlags, uint16 elmFlags, const AABB &localAABB, CRenderView *pRenderView)
+bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilationOptions, uint64 objFlags, ERenderElementFlags elmFlags, const AABB &localAABB, CRenderView *pRenderView)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
@@ -649,7 +649,7 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 	// Create Pipeline States
 	if (compilationOptions & eObjCompilationOption_PipelineState)
 	{
-		SGraphicsPipelineStateDescription psoDescription(pRenderObject, objFlags, elmFlags, m_shaderItem, TTYPE_GENERAL, geomInfo.eVertFormat, 0 /*geomInfo.CalcStreamMask()*/, ERenderPrimitiveType(geomInfo.primitiveType));
+		SGraphicsPipelineStateDescription psoDescription(pRenderObject, objFlags, elmFlags, m_shaderItem, TTYPE_GENERAL, geomInfo.eVertFormat, VSM_NONE /*geomInfo.CalcStreamMask()*/, ERenderPrimitiveType(geomInfo.primitiveType));
 
 		const bool bEnabledInstancing = m_perDrawInstances > 1;
 		if (bEnabledInstancing && m_pInstancingConstBuffer)

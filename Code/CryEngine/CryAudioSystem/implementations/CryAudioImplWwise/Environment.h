@@ -30,32 +30,38 @@ public:
 	CEnvironment& operator=(CEnvironment const&) = delete;
 	CEnvironment& operator=(CEnvironment&&) = delete;
 
-	explicit CEnvironment(EEnvironmentType const type_, AkAuxBusID const busId_);
+	explicit CEnvironment(EEnvironmentType const type, AkAuxBusID const busId);
 
 	explicit CEnvironment(
-		EEnvironmentType const type_,
-		AkRtpcID const rtpcId_,
-		float const multiplier_,
-		float const shift_);
+		EEnvironmentType const type,
+		AkRtpcID const rtpcId,
+		float const multiplier,
+		float const shift);
 
 	virtual ~CEnvironment() override = default;
 
-	EEnvironmentType const type;
+	// IEnvironmentConnection
+	virtual void Set(IObject* const pIObject, float const amount) override;
+	// ~IEnvironmentConnection
+
+private:
+
+	EEnvironmentType const m_type;
 
 	union
 	{
 		// Aux Bus implementation
 		struct
 		{
-			AkAuxBusID const busId;
+			AkAuxBusID const m_busId;
 		};
 
 		// Rtpc implementation
 		struct
 		{
-			AkRtpcID const rtpcId;
-			float const    multiplier;
-			float const    shift;
+			AkRtpcID const m_rtpcId;
+			float const    m_multiplier;
+			float const    m_shift;
 		};
 	};
 };

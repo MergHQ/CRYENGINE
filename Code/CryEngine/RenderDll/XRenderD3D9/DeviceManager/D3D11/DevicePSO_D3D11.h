@@ -28,7 +28,7 @@ public:
 	// Do we still need these?
 	uint64           m_ShaderFlags_RT;
 	uint32           m_ShaderFlags_MD;
-	uint32           m_ShaderFlags_MDV;
+	EVertexModifier  m_ShaderFlags_MDV;
 
 	D3DPrimitiveType m_PrimitiveTopology;
 };

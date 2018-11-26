@@ -377,33 +377,33 @@ ERequestStatus CImpl::StopAllSounds()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalParameter(IParameterConnection const* const pIParameterConnection, float const value)
+void CImpl::SetGlobalParameter(IParameterConnection* const pIParameterConnection, float const value)
 {
-	auto const pParameter = static_cast<CBaseParameter const*>(pIParameterConnection);
-
-	if (pParameter != nullptr)
+	if (pIParameterConnection != nullptr)
 	{
+		auto const pParameter = static_cast<CBaseParameter*>(pIParameterConnection);
+
 		for (auto const pObject : g_constructedObjects)
 		{
-			pObject->SetParameter(pParameter, value);
+			pParameter->Set(pObject, value);
 		}
 	}
 	else
 	{
-		Cry::Audio::Log(ELogType::Error, "Invalid parameter pointer passed to the Fmod implementation of %s", __FUNCTION__);
+		Cry::Audio::Log(ELogType::Error, "Invalid object pointer passed to the Fmod implementation of %s", __FUNCTION__);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalSwitchState(ISwitchStateConnection const* const pISwitchStateConnection)
+void CImpl::SetGlobalSwitchState(ISwitchStateConnection* const pISwitchStateConnection)
 {
-	auto const pSwitchState = static_cast<CBaseSwitchState const*>(pISwitchStateConnection);
-
-	if (pSwitchState != nullptr)
+	if (pISwitchStateConnection != nullptr)
 	{
+		auto const pSwitchState = static_cast<CBaseSwitchState*>(pISwitchStateConnection);
+
 		for (auto const pObject : g_constructedObjects)
 		{
-			pObject->SetSwitchState(pISwitchStateConnection);
+			pSwitchState->Set(pObject);
 		}
 	}
 	else
@@ -638,7 +638,7 @@ IEvent* CImpl::ConstructEvent(CryAudio::CEvent& event)
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructEvent(IEvent const* const pIEvent)
 {
-	CRY_ASSERT(pIEvent != nullptr);
+	CRY_ASSERT_MESSAGE(pIEvent != nullptr, "pIEvent is nullptr during %s", __FUNCTION__);
 	delete pIEvent;
 }
 
@@ -673,7 +673,7 @@ IStandaloneFileConnection* CImpl::ConstructStandaloneFileConnection(CryAudio::CS
 //////////////////////////////////////////////////////////////////////////
 void CImpl::DestructStandaloneFileConnection(IStandaloneFileConnection const* const pIStandaloneFileConnection)
 {
-	CRY_ASSERT(pIStandaloneFileConnection != nullptr);
+	CRY_ASSERT_MESSAGE(pIStandaloneFileConnection != nullptr, "pIStandaloneFileConnection is nullptr during %s", __FUNCTION__);
 	delete pIStandaloneFileConnection;
 }
 
@@ -688,7 +688,7 @@ void CImpl::GamepadDisconnected(DeviceId const deviceUniqueID)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ITriggerConnection const* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode, float& radius)
+ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode, float& radius)
 {
 	CTrigger* pTrigger = nullptr;
 	char const* const szTag = pRootNode->getTag();
@@ -779,10 +779,10 @@ ITriggerConnection const* CImpl::ConstructTriggerConnection(XmlNodeRef const pRo
 }
 
 //////////////////////////////////////////////////////////////////////////
-ITriggerConnection const* CImpl::ConstructTriggerConnection(ITriggerInfo const* const pITriggerInfo)
+ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const pITriggerInfo)
 {
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-	ITriggerConnection const* pITriggerConnection = nullptr;
+	ITriggerConnection* pITriggerConnection = nullptr;
 	auto const pTriggerInfo = static_cast<STriggerInfo const*>(pITriggerInfo);
 
 	if (pTriggerInfo != nullptr)
@@ -793,7 +793,7 @@ ITriggerConnection const* CImpl::ConstructTriggerConnection(ITriggerInfo const* 
 
 		if (m_pSystem->lookupID(path.c_str(), &guid) == FMOD_OK)
 		{
-			pITriggerConnection = static_cast<ITriggerConnection const*>(new CTrigger(StringToId(path.c_str()), EEventType::Start, nullptr, guid));
+			pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(path.c_str()), EEventType::Start, nullptr, guid));
 		}
 		else
 		{
@@ -816,7 +816,7 @@ void CImpl::DestructTriggerConnection(ITriggerConnection const* const pITriggerC
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IParameterConnection const* CImpl::ConstructParameterConnection(XmlNodeRef const pRootNode)
+IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRootNode)
 {
 	IParameterConnection* pIParameterConnection = nullptr;
 	char const* const szTag = pRootNode->getTag();
@@ -878,7 +878,7 @@ void CImpl::DestructParameterConnection(IParameterConnection const* const pIPara
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ISwitchStateConnection const* CImpl::ConstructSwitchStateConnection(XmlNodeRef const pRootNode)
+ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const pRootNode)
 {
 	ISwitchStateConnection* pISwitchStateConnection = nullptr;
 	char const* const szTag = pRootNode->getTag();
@@ -935,7 +935,7 @@ void CImpl::DestructSwitchStateConnection(ISwitchStateConnection const* const pI
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IEnvironmentConnection const* CImpl::ConstructEnvironmentConnection(XmlNodeRef const pRootNode)
+IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const pRootNode)
 {
 	CEnvironment* pEnvironment = nullptr;
 	char const* const szTag = pRootNode->getTag();
@@ -991,7 +991,7 @@ void CImpl::DestructEnvironmentConnection(IEnvironmentConnection const* const pI
 }
 
 //////////////////////////////////////////////////////////////////////////
-ISettingConnection const* CImpl::ConstructSettingConnection(XmlNodeRef const pRootNode)
+ISettingConnection* CImpl::ConstructSettingConnection(XmlNodeRef const pRootNode)
 {
 	return static_cast<ISettingConnection*>(new CSetting);
 }
@@ -1192,9 +1192,9 @@ bool CImpl::LoadMasterBanks()
 	if (!m_masterBankPath.empty() && !m_masterStringsBankPath.empty())
 	{
 		size_t const masterBankFileSize = gEnv->pCryPak->FGetSize(m_masterBankPath.c_str());
-		CRY_ASSERT(masterBankFileSize > 0);
+		CRY_ASSERT_MESSAGE(masterBankFileSize > 0, "Master bank doesn't exist during %s", __FUNCTION__);
 		size_t const masterBankStringsFileSize = gEnv->pCryPak->FGetSize(m_masterStringsBankPath.c_str());
-		CRY_ASSERT(masterBankStringsFileSize > 0);
+		CRY_ASSERT_MESSAGE(masterBankStringsFileSize > 0, "Master strings bank doesn't exist during %s", __FUNCTION__);
 
 		if (masterBankFileSize > 0 && masterBankStringsFileSize > 0)
 		{

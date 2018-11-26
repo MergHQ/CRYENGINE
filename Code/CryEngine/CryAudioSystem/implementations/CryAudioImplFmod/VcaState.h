@@ -24,18 +24,20 @@ public:
 	explicit CVcaState(
 		uint32 const id,
 		float const value,
-		FMOD::Studio::VCA* const vca)
+		FMOD::Studio::VCA* const pVca)
 		: CBaseSwitchState(id, value, EStateType::VCA)
-		, m_vca(vca)
+		, m_pVca(pVca)
 	{}
 
 	virtual ~CVcaState() override = default;
 
-	FMOD::Studio::VCA* GetVca() const { return m_vca; }
+	// ISwitchStateConnection
+	virtual void Set(IObject* const pIObject) override;
+	// ~ISwitchStateConnection
 
 private:
 
-	FMOD::Studio::VCA* const m_vca;
+	FMOD::Studio::VCA* const m_pVca;
 };
 } // namespace Fmod
 } // namespace Impl

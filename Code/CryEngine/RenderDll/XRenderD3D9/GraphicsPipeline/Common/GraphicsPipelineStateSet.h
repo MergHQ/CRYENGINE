@@ -8,26 +8,29 @@ const uint32 MAX_PIPELINE_SCENE_STAGE_PASSES = 5;
 struct SGraphicsPipelineStateDescription
 {
 	SShaderItem          shaderItem;
-	EShaderTechniqueID   technique;
-	uint32               objectFlags_MDV;
-	uint64               objectFlags;
 	uint64               objectRuntimeMask;
-	uint32               streamMask;
+	uint64               objectFlags;
+	EShaderTechniqueID   technique;
+	EVertexModifier      objectFlags_MDV;
+	EStreamMasks         streamMask;
 	ERenderPrimitiveType primitiveType;
-	uint8                renderState;
 	InputLayoutHandle    vertexFormat;
+	uint8                renderState;
+
+	uint32               padding;
 
 	SGraphicsPipelineStateDescription()
-		: technique(TTYPE_Z)
-		, objectFlags_MDV(0)
+		: objectRuntimeMask(0)
 		, objectFlags(0)
-		, objectRuntimeMask(0)
-		, streamMask(0)
+		, technique(TTYPE_Z)
+		, objectFlags_MDV(MDV_NONE)
+		, streamMask(VSM_NONE)
 		, primitiveType(eptUnknown)
-		, renderState(0)
 		, vertexFormat(InputLayoutHandle::Unspecified)
+		, renderState(0)
+		, padding(0)
 	{}
-	SGraphicsPipelineStateDescription(CRenderObject* pObj, uint64 objFlags, uint16 elmFlags, const SShaderItem& shaderItem, EShaderTechniqueID technique, InputLayoutHandle vertexFormat, uint32 streamMask, ERenderPrimitiveType primitiveType);
+	SGraphicsPipelineStateDescription(CRenderObject* pObj, uint64 objFlags, ERenderElementFlags elmFlags, const SShaderItem& shaderItem, EShaderTechniqueID technique, InputLayoutHandle vertexFormat, EStreamMasks streamMask, ERenderPrimitiveType primitiveType);
 
 	bool operator==(const SGraphicsPipelineStateDescription& other) const
 	{
@@ -39,13 +42,14 @@ static_assert(
 	sizeof(SGraphicsPipelineStateDescription) ==
 	sizeof(SGraphicsPipelineStateDescription::shaderItem) +
 	sizeof(SGraphicsPipelineStateDescription::technique) + 
-	sizeof(SGraphicsPipelineStateDescription::objectFlags_MDV) +
-	sizeof(SGraphicsPipelineStateDescription::objectFlags) +
 	sizeof(SGraphicsPipelineStateDescription::objectRuntimeMask) +
+	sizeof(SGraphicsPipelineStateDescription::objectFlags) +
+	sizeof(SGraphicsPipelineStateDescription::objectFlags_MDV) +
 	sizeof(SGraphicsPipelineStateDescription::streamMask) +
 	sizeof(SGraphicsPipelineStateDescription::primitiveType) +
 	sizeof(SGraphicsPipelineStateDescription::renderState) +
-	sizeof(SGraphicsPipelineStateDescription::vertexFormat),
+	sizeof(SGraphicsPipelineStateDescription::vertexFormat) +
+	sizeof(SGraphicsPipelineStateDescription::padding),
 	"There may be no padding in SGraphicsPipelineStateDescription! memcpy/hash might not work.");
 
 // Array of pass id and PipelineState

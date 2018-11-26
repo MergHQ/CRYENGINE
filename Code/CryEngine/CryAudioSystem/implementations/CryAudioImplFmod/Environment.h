@@ -28,15 +28,19 @@ public:
 	CEnvironment& operator=(CEnvironment const&) = delete;
 	CEnvironment& operator=(CEnvironment&&) = delete;
 
-	explicit CEnvironment(EEnvironmentType const type)
-		: m_type(type)
-	{}
-
 	virtual ~CEnvironment() override = default;
+
+	// IEnvironmentConnection
+	virtual void Set(IObject* const pIObject, float const amount) override;
+	// ~IEnvironmentConnection
 
 	EEnvironmentType GetType() const { return m_type; }
 
-private:
+protected:
+
+	explicit CEnvironment(EEnvironmentType const type)
+		: m_type(type)
+	{}
 
 	EEnvironmentType const m_type;
 };
