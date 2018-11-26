@@ -32,6 +32,7 @@ add_sources("CryAudioImpl_uber_0.cpp"
 		"Impl.cpp"
 		"Listener.cpp"
 		"Object.cpp"
+		"Trigger.cpp"
 )
 
 add_sources("NoUberFile"

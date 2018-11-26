@@ -57,14 +57,6 @@ void CAuxThread::SignalStopWork()
 	m_sem.Notify();
 	gEnv->pThreadManager->JoinThread(this, eJM_Join);
 }
-
-//////////////////////////////////////////////////////////////////////////
-bool CAuxThread::IsActive()
-{
-	// JoinThread returns true if thread is not running.
-	// JoinThread returns false if thread is still running
-	return !gEnv->pThreadManager->JoinThread(this, eJM_TryJoin);
-}
 } // namespace Wwise
 } // namespace Impl
 } // namespace CryAudio

@@ -77,6 +77,7 @@ public:
 	virtual ~CTrigger() override = default;
 
 	// CryAudio::Impl::ITriggerConnection
+	virtual ERequestStatus Execute(IObject* const pIObject, IEvent* const pIEvent) override;
 	virtual ERequestStatus Load()  const override                            { return ERequestStatus::Success; }
 	virtual ERequestStatus Unload() const override                           { return ERequestStatus::Success; }
 	virtual ERequestStatus LoadAsync(IEvent* const pIEvent) const override   { return ERequestStatus::Success; }

@@ -29,12 +29,6 @@ CGlobalObject::~CGlobalObject()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CGlobalObject::SetEnvironment(IEnvironmentConnection const* const pIEnvironmentConnection, float const amount)
-{
-	Cry::Audio::Log(ELogType::Error, "Trying to set an environment on the global object!");
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CGlobalObject::SetOcclusion(float const occlusion)
 {
 	Cry::Audio::Log(ELogType::Error, "Trying to set occlusion and obstruction values on the global object!");

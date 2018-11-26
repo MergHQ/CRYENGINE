@@ -196,9 +196,7 @@ private:
 public:
 
 	void           DrawDebugInfo(IRenderAuxGeom& auxGeom);
-	void           ResetObstructionRays()        { m_propagationProcessor.ResetRayData(); }
-	float          GetMaxRadius() const          { return m_maxRadius; }
-	float          GetOcclusionRayOffset() const { return m_propagationProcessor.GetOcclusionRayOffset(); }
+	void           ResetObstructionRays() { m_propagationProcessor.ResetRayData(); }
 
 	void           ForceImplementationRefresh(bool const setTransformation);
 

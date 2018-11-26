@@ -44,12 +44,13 @@ public:
 
 	virtual ~CEnvironment() override = default;
 
-	CriChar8 const*  GetName() const       { return static_cast<CriChar8 const*>(m_name); }
-	EEnvironmentType GetType() const       { return m_type; }
-	float            GetMultiplier() const { return m_multiplier; }
-	float            GetShift() const      { return m_shift; }
+	// IEnvironmentConnection
+	virtual void Set(IObject* const pIObject, float const amount) override;
+	// ~IEnvironmentConnection
 
 private:
+
+	CriChar8 const* GetName() const { return static_cast<CriChar8 const*>(m_name); }
 
 	CryFixedStringT<MaxControlNameLength> const m_name;
 	EEnvironmentType const                      m_type;

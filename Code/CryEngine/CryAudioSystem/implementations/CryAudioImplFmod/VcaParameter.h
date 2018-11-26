@@ -25,18 +25,20 @@ public:
 		uint32 const id,
 		float const multiplier,
 		float const shift,
-		FMOD::Studio::VCA* const vca)
+		FMOD::Studio::VCA* const pVca)
 		: CBaseParameter(id, multiplier, shift, EParameterType::VCA)
-		, m_vca(vca)
+		, m_pVca(pVca)
 	{}
 
 	virtual ~CVcaParameter() override = default;
 
-	FMOD::Studio::VCA* GetVca() const { return m_vca; }
+	// IParameterConnection
+	virtual void Set(IObject* const pIObject, float const value) override;
+	// ~IParameterConnection
 
 private:
 
-	FMOD::Studio::VCA* const m_vca;
+	FMOD::Studio::VCA* const m_pVca;
 };
 } // namespace Fmod
 } // namespace Impl

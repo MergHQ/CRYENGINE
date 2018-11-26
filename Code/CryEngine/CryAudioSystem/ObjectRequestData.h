@@ -53,8 +53,8 @@ struct SObjectRequestDataBase : public SRequestData
 template<EObjectRequestType T>
 struct SObjectRequestData final : public SObjectRequestDataBase
 {
-	SObjectRequestData(CObject* const pObject_)
-		: SObjectRequestDataBase(T, pObject_)
+	explicit SObjectRequestData(CObject* const pObject)
+		: SObjectRequestDataBase(T, pObject)
 	{}
 
 	explicit SObjectRequestData(SObjectRequestData<T> const* const pORData)

@@ -32,8 +32,9 @@ CEvent::~CEvent()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEvent::SetAbsoluteVelocityParameter()
+void CEvent::SetInternalParameters()
 {
+	m_pInstance->getParameter("occlusion", &m_pOcclusionParameter);
 	m_pInstance->getParameter(s_szAbsoluteVelocityParameterName, &m_pAbsoluteVelocityParameter);
 }
 
@@ -44,44 +45,37 @@ bool CEvent::PrepareForOcclusion()
 	FMOD_RESULT fmodResult = m_pInstance->getChannelGroup(&m_pMasterTrack);
 	ASSERT_FMOD_OK_OR_NOT_LOADED;
 
-	if (m_pMasterTrack != nullptr)
+	if ((m_pMasterTrack != nullptr) && (m_pOcclusionParameter == nullptr))
 	{
-		m_pOcclusionParameter = nullptr;
-		fmodResult = m_pInstance->getParameter("occlusion", &m_pOcclusionParameter);
-		ASSERT_FMOD_OK_OR_EVENT_NOT_FOUND;
+		m_pLowpass = nullptr;
+		int numDSPs = 0;
+		fmodResult = m_pMasterTrack->getNumDSPs(&numDSPs);
+		ASSERT_FMOD_OK;
 
-		if (m_pOcclusionParameter == nullptr)
+		for (int i = 0; i < numDSPs; ++i)
 		{
-			m_pLowpass = nullptr;
-			int numDSPs = 0;
-			fmodResult = m_pMasterTrack->getNumDSPs(&numDSPs);
+			fmodResult = m_pMasterTrack->getDSP(i, &m_pLowpass);
 			ASSERT_FMOD_OK;
 
-			for (int i = 0; i < numDSPs; ++i)
+			if (m_pLowpass != nullptr)
 			{
-				fmodResult = m_pMasterTrack->getDSP(i, &m_pLowpass);
+				FMOD_DSP_TYPE dspType;
+				fmodResult = m_pLowpass->getType(&dspType);
 				ASSERT_FMOD_OK;
 
-				if (m_pLowpass != nullptr)
+				if (dspType == FMOD_DSP_TYPE_LOWPASS_SIMPLE || dspType == FMOD_DSP_TYPE_LOWPASS)
 				{
-					FMOD_DSP_TYPE dspType;
-					fmodResult = m_pLowpass->getType(&dspType);
+					FMOD_DSP_PARAMETER_DESC* pParameterDesc = nullptr;
+					fmodResult = m_pLowpass->getParameterInfo(FMOD_DSP_LOWPASS_CUTOFF, &pParameterDesc);
 					ASSERT_FMOD_OK;
 
-					if (dspType == FMOD_DSP_TYPE_LOWPASS_SIMPLE || dspType == FMOD_DSP_TYPE_LOWPASS)
-					{
-						FMOD_DSP_PARAMETER_DESC* pParameterDesc = nullptr;
-						fmodResult = m_pLowpass->getParameterInfo(FMOD_DSP_LOWPASS_CUTOFF, &pParameterDesc);
-						ASSERT_FMOD_OK;
-
-						m_lowpassFrequencyMin = pParameterDesc->floatdesc.min;
-						m_lowpassFrequencyMax = pParameterDesc->floatdesc.max;
-						break;
-					}
-					else
-					{
-						m_pLowpass = nullptr;
-					}
+					m_lowpassFrequencyMin = pParameterDesc->floatdesc.min;
+					m_lowpassFrequencyMax = pParameterDesc->floatdesc.max;
+					break;
+				}
+				else
+				{
+					m_pLowpass = nullptr;
 				}
 			}
 		}

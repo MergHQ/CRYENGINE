@@ -23,7 +23,7 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 	for (auto const pConnection : connections)
 	{
 		CEvent* const pEvent = g_eventManager.ConstructEvent();
-		ERequestStatus const activateResult = g_pObject->GetImplDataPtr()->ExecuteTrigger(pConnection, pEvent->m_pImplData);
+		ERequestStatus const activateResult = pConnection->Execute(g_pObject->GetImplDataPtr(), pEvent->m_pImplData);
 
 		if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual) || (activateResult == ERequestStatus::Pending))
 		{

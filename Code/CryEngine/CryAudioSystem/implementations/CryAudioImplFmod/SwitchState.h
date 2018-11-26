@@ -26,6 +26,10 @@ public:
 	{}
 
 	virtual ~CSwitchState() override = default;
+
+	// ISwitchStateConnection
+	virtual void Set(IObject* const pIObject) override;
+	// ~ISwitchStateConnection
 };
 } // namespace Fmod
 } // namespace Impl

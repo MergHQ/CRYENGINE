@@ -33,7 +33,7 @@ public:
 
 private:
 
-	Impl::ITriggerConnection const* m_pConnection;
+	Impl::ITriggerConnection* m_pConnection;
 };
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }      // namespace CryAudio

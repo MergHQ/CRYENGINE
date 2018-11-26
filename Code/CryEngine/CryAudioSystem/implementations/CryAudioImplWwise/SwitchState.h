@@ -32,22 +32,33 @@ public:
 	CSwitchState& operator=(CSwitchState&&) = delete;
 
 	explicit CSwitchState(
-		ESwitchType const type_,
-		AkUInt32 const stateOrSwitchGroupId_,
-		AkUInt32 const stateOrSwitchId_,
-		float const rtpcValue_ = s_defaultStateValue)
-		: type(type_)
-		, stateOrSwitchGroupId(stateOrSwitchGroupId_)
-		, stateOrSwitchId(stateOrSwitchId_)
-		, rtpcValue(rtpcValue_)
+		ESwitchType const type,
+		AkUInt32 const stateOrSwitchGroupId,
+		AkUInt32 const stateOrSwitchId,
+		float const rtpcValue = s_defaultStateValue)
+		: m_type(type)
+		, m_stateOrSwitchGroupId(stateOrSwitchGroupId)
+		, m_stateOrSwitchId(stateOrSwitchId)
+		, m_rtpcValue(rtpcValue)
 	{}
 
 	virtual ~CSwitchState() override = default;
 
-	ESwitchType const type;
-	AkUInt32 const    stateOrSwitchGroupId;
-	AkUInt32 const    stateOrSwitchId;
-	float const       rtpcValue;
+	// ISwitchStateConnection
+	virtual void Set(IObject* const pIObject) override;
+	// ~ISwitchStateConnection
+
+	ESwitchType GetType() const                 { return m_type; }
+	AkUInt32    GetStateOrSwitchGroupId() const { return m_stateOrSwitchGroupId; }
+	AkUInt32    GetStateOrSwitchId() const      { return m_stateOrSwitchId; }
+	float       GetRtpcValue() const            { return m_rtpcValue; }
+
+private:
+
+	ESwitchType const m_type;
+	AkUInt32 const    m_stateOrSwitchGroupId;
+	AkUInt32 const    m_stateOrSwitchId;
+	float const       m_rtpcValue;
 };
 } // namespace Wwise
 } // namespace Impl

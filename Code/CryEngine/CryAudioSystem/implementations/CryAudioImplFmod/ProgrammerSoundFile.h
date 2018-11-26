@@ -31,14 +31,17 @@ public:
 	virtual ~CProgrammerSoundFile() override = default;
 
 	// CStandaloneFileBase
-	virtual void StartLoading() override;
 	virtual bool IsReady() override;
-	virtual void Play(FMOD_3D_ATTRIBUTES const& attributes) override;
+	virtual void PlayFile(FMOD_3D_ATTRIBUTES const& attributes) override;
 	virtual void Set3DAttributes(FMOD_3D_ATTRIBUTES const& attributes) override;
-	virtual void Stop() override;
 	// ~CStandaloneFileBase
 
 private:
+
+	// CStandaloneFileBase
+	virtual void StartLoading() override;
+	virtual void StopFile() override;
+	// ~CStandaloneFileBase
 
 	FMOD_GUID const              m_eventGuid;
 	FMOD::Studio::EventInstance* m_pEventInstance = nullptr;

@@ -30,6 +30,10 @@ public:
 
 	virtual ~CBaseSwitchState() override = default;
 
+	// ISwitchStateConnection
+	virtual void Set(IObject* const pIObject) override {}
+	// ~ISwitchStateConnection
+
 	uint32     GetId() const    { return m_id; }
 	float      GetValue() const { return m_value; }
 	EStateType GetType() const  { return m_type; }

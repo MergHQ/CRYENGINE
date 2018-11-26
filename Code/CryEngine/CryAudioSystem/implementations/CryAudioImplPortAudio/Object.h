@@ -29,15 +29,9 @@ public:
 	virtual void                   Update(float const deltaTime) override;
 	virtual void                   SetTransformation(CTransformation const& transformation) override;
 	virtual CTransformation const& GetTransformation() const override { return CTransformation::GetEmptyObject(); }
-	virtual void                   SetEnvironment(IEnvironmentConnection const* const pIEnvironmentConnection, float const amount) override;
-	virtual void                   SetParameter(IParameterConnection const* const pIParameterConnection, float const value) override;
-	virtual void                   SetSwitchState(ISwitchStateConnection const* const pISwitchStateConnection) override;
 	virtual void                   SetOcclusion(float const occlusion) override;
 	virtual void                   SetOcclusionType(EOcclusionType const occlusionType) override;
-	virtual ERequestStatus         ExecuteTrigger(ITriggerConnection const* const pITriggerConnection, IEvent* const pIEvent) override;
 	virtual void                   StopAllTriggers() override;
-	virtual ERequestStatus         PlayFile(IStandaloneFileConnection* const pIStandaloneFileConnection) override;
-	virtual ERequestStatus         StopFile(IStandaloneFileConnection* const pIStandaloneFileConnection) override;
 	virtual ERequestStatus         SetName(char const* const szName) override;
 	virtual void                   ToggleFunctionality(EObjectFunctionality const type, bool const enable) override;
 

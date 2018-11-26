@@ -30,7 +30,7 @@ void CSwitchState::Set(CObject const& object) const
 {
 	for (auto const pConnection : m_connections)
 	{
-		object.GetImplDataPtr()->SetSwitchState(pConnection);
+		pConnection->Set(object.GetImplDataPtr());
 	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)

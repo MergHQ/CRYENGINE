@@ -268,7 +268,7 @@ void LoadEventsMaxAttenuations(const string& soundbanksPath)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-CSwitchState const* ParseWwiseRtpcSwitch(XmlNodeRef const pNode)
+CSwitchState* ParseWwiseRtpcSwitch(XmlNodeRef const pNode)
 {
 	CSwitchState* pSwitchStateImpl = nullptr;
 
@@ -293,6 +293,66 @@ CSwitchState const* ParseWwiseRtpcSwitch(XmlNodeRef const pNode)
 	}
 
 	return pSwitchStateImpl;
+}
+
+///////////////////////////////////////////////////////////////////////////
+void ParseRtpcImpl(XmlNodeRef const pNode, AkRtpcID& rtpcId, float& multiplier, float& shift)
+{
+	if (_stricmp(pNode->getTag(), s_szParameterTag) == 0)
+	{
+		char const* const szName = pNode->getAttr(s_szNameAttribute);
+		rtpcId = static_cast<AkRtpcID>(AK::SoundEngine::GetIDFromString(szName));
+
+		if (rtpcId != AK_INVALID_RTPC_ID)
+		{
+			//the Wwise name is supplied
+			pNode->getAttr(s_szMutiplierAttribute, multiplier);
+			pNode->getAttr(s_szShiftAttribute, shift);
+		}
+		else
+		{
+			// Invalid Wwise RTPC name!
+			Cry::Audio::Log(ELogType::Warning, "Invalid Wwise parameter name %s", szName);
+		}
+	}
+	else
+	{
+		// Unknown Wwise RTPC tag!
+		Cry::Audio::Log(ELogType::Warning, "Unknown Wwise tag %s", pNode->getTag());
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool ParseSwitchOrState(XmlNodeRef const pNode, AkUInt32& stateOrSwitchGroupId, AkUInt32& stateOrSwitchId)
+{
+	bool bSuccess = false;
+	char const* const szStateOrSwitchGroupName = pNode->getAttr(s_szNameAttribute);
+
+	if ((szStateOrSwitchGroupName != nullptr) && (szStateOrSwitchGroupName[0] != 0) && (pNode->getChildCount() == 1))
+	{
+		XmlNodeRef const pValueNode(pNode->getChild(0));
+
+		if (pValueNode && _stricmp(pValueNode->getTag(), s_szValueTag) == 0)
+		{
+			char const* const szStateOrSwitchName = pValueNode->getAttr(s_szNameAttribute);
+
+			if ((szStateOrSwitchName != nullptr) && (szStateOrSwitchName[0] != 0))
+			{
+				stateOrSwitchGroupId = AK::SoundEngine::GetIDFromString(szStateOrSwitchGroupName);
+				stateOrSwitchId = AK::SoundEngine::GetIDFromString(szStateOrSwitchName);
+				bSuccess = true;
+			}
+		}
+	}
+	else
+	{
+		Cry::Audio::Log(
+			ELogType::Warning,
+			"A Wwise SwitchGroup or StateGroup %s inside SwitchState needs to have exactly one WwiseValue.",
+			szStateOrSwitchGroupName);
+	}
+
+	return bSuccess;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -859,22 +919,21 @@ ERequestStatus CImpl::StopAllSounds()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalParameter(IParameterConnection const* const pIParameterConnection, float const value)
+void CImpl::SetGlobalParameter(IParameterConnection* const pIParameterConnection, float const value)
 {
-	auto const pParameter = static_cast<CParameter const*>(pIParameterConnection);
-
-	if (pParameter != nullptr)
+	if (pIParameterConnection != nullptr)
 	{
-		auto const rtpcValue = static_cast<AkRtpcValue>(pParameter->mult * value + pParameter->shift);
+		auto const pParameter = static_cast<CParameter const*>(pIParameterConnection);
+		auto const rtpcValue = static_cast<AkRtpcValue>(pParameter->GetMultiplier() * value + pParameter->GetShift());
 
-		AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(pParameter->id, rtpcValue, AK_INVALID_GAME_OBJECT);
+		AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(pParameter->GetId(), rtpcValue, AK_INVALID_GAME_OBJECT);
 
 		if (!IS_WWISE_OK(wwiseResult))
 		{
 			Cry::Audio::Log(
 				ELogType::Warning,
 				"Wwise - failed to set the Rtpc %" PRISIZE_T " globally to value %f",
-				pParameter->id,
+				pParameter->GetId(),
 				static_cast<AkRtpcValue>(value));
 		}
 	}
@@ -885,27 +944,27 @@ void CImpl::SetGlobalParameter(IParameterConnection const* const pIParameterConn
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalSwitchState(ISwitchStateConnection const* const pISwitchStateConnection)
+void CImpl::SetGlobalSwitchState(ISwitchStateConnection* const pISwitchStateConnection)
 {
-	auto const pSwitchState = static_cast<CSwitchState const*>(pISwitchStateConnection);
-
-	if (pSwitchState != nullptr)
+	if (pISwitchStateConnection != nullptr)
 	{
-		switch (pSwitchState->type)
+		auto const pSwitchState = static_cast<CSwitchState const*>(pISwitchStateConnection);
+
+		switch (pSwitchState->GetType())
 		{
 		case ESwitchType::StateGroup:
 			{
 				AKRESULT const wwiseResult = AK::SoundEngine::SetState(
-					pSwitchState->stateOrSwitchGroupId,
-					pSwitchState->stateOrSwitchId);
+					pSwitchState->GetStateOrSwitchGroupId(),
+					pSwitchState->GetStateOrSwitchId());
 
 				if (!IS_WWISE_OK(wwiseResult))
 				{
 					Cry::Audio::Log(
 						ELogType::Warning,
 						"Wwise failed to set the StateGroup %" PRISIZE_T "to state %" PRISIZE_T,
-						pSwitchState->stateOrSwitchGroupId,
-						pSwitchState->stateOrSwitchId);
+						pSwitchState->GetStateOrSwitchGroupId(),
+						pSwitchState->GetStateOrSwitchId());
 				}
 
 				break;
@@ -919,8 +978,8 @@ void CImpl::SetGlobalSwitchState(ISwitchStateConnection const* const pISwitchSta
 		case ESwitchType::Rtpc:
 			{
 				AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(
-					pSwitchState->stateOrSwitchGroupId,
-					static_cast<AkRtpcValue>(pSwitchState->rtpcValue),
+					pSwitchState->GetStateOrSwitchGroupId(),
+					static_cast<AkRtpcValue>(pSwitchState->GetRtpcValue()),
 					AK_INVALID_GAME_OBJECT);
 
 				if (!IS_WWISE_OK(wwiseResult))
@@ -928,9 +987,8 @@ void CImpl::SetGlobalSwitchState(ISwitchStateConnection const* const pISwitchSta
 					Cry::Audio::Log(
 						ELogType::Warning,
 						"Wwise - failed to set the Rtpc %" PRISIZE_T " globally to value %f",
-						pSwitchState->stateOrSwitchGroupId,
-						static_cast<AkRtpcValue>(pSwitchState->rtpcValue),
-						AK_INVALID_GAME_OBJECT);
+						pSwitchState->GetStateOrSwitchGroupId(),
+						static_cast<AkRtpcValue>(pSwitchState->GetRtpcValue()));
 				}
 
 				break;
@@ -941,7 +999,7 @@ void CImpl::SetGlobalSwitchState(ISwitchStateConnection const* const pISwitchSta
 			}
 		default:
 			{
-				Cry::Audio::Log(ELogType::Warning, "Wwise - Unknown ESwitchType: %" PRISIZE_T, pSwitchState->type);
+				Cry::Audio::Log(ELogType::Warning, "Wwise - Unknown ESwitchType: %" PRISIZE_T, pSwitchState->GetType());
 
 				break;
 			}
@@ -1143,7 +1201,7 @@ IObject* CImpl::ConstructObject(CTransformation const& transformation, char cons
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	{
 		CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
-		g_gameObjectIds[pObject->m_id] = pObject;
+		g_gameObjectIds[pObject->GetId()] = pObject;
 	}
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
@@ -1154,7 +1212,7 @@ IObject* CImpl::ConstructObject(CTransformation const& transformation, char cons
 void CImpl::DestructObject(IObject const* const pIObject)
 {
 	auto const pObject = static_cast<CObject const*>(pIObject);
-	AkGameObjectID const objectID = pObject->m_id == AK_INVALID_GAME_OBJECT ? g_globalObjectId : pObject->m_id;
+	AkGameObjectID const objectID = pObject->GetId() == AK_INVALID_GAME_OBJECT ? g_globalObjectId : pObject->GetId();
 	AKRESULT const wwiseResult = AK::SoundEngine::UnregisterGameObj(objectID);
 
 	if (!IS_WWISE_OK(wwiseResult))
@@ -1165,7 +1223,7 @@ void CImpl::DestructObject(IObject const* const pIObject)
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	{
 		CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
-		g_gameObjectIds.erase(pObject->m_id);
+		g_gameObjectIds.erase(pObject->GetId());
 	}
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
@@ -1314,7 +1372,7 @@ void CImpl::GamepadDisconnected(DeviceId const deviceUniqueID)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ITriggerConnection const* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode, float& radius)
+ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode, float& radius)
 {
 	CTrigger* pTrigger = nullptr;
 
@@ -1354,10 +1412,10 @@ ITriggerConnection const* CImpl::ConstructTriggerConnection(XmlNodeRef const pRo
 }
 
 //////////////////////////////////////////////////////////////////////////
-ITriggerConnection const* CImpl::ConstructTriggerConnection(ITriggerInfo const* const pITriggerInfo)
+ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const pITriggerInfo)
 {
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	ITriggerConnection const* pITriggerConnection = nullptr;
+	ITriggerConnection* pITriggerConnection = nullptr;
 	auto const pTriggerInfo = static_cast<STriggerInfo const*>(pITriggerInfo);
 
 	if (pTriggerInfo != nullptr)
@@ -1365,7 +1423,7 @@ ITriggerConnection const* CImpl::ConstructTriggerConnection(ITriggerInfo const* 
 		char const* const szName = pTriggerInfo->name.c_str();
 		AkUniqueID const uniqueId = AK::SoundEngine::GetIDFromString(szName);
 
-		pITriggerConnection = static_cast<ITriggerConnection const*>(new CTrigger(uniqueId, 0.0f, szName));
+		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(uniqueId, 0.0f, szName));
 	}
 
 	return pITriggerConnection;
@@ -1381,7 +1439,7 @@ void CImpl::DestructTriggerConnection(ITriggerConnection const* const pITriggerC
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IParameterConnection const* CImpl::ConstructParameterConnection(XmlNodeRef const pRootNode)
+IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRootNode)
 {
 	CParameter* pParameter = nullptr;
 
@@ -1406,10 +1464,10 @@ void CImpl::DestructParameterConnection(IParameterConnection const* const pIPara
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ISwitchStateConnection const* CImpl::ConstructSwitchStateConnection(XmlNodeRef const pRootNode)
+ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const pRootNode)
 {
 	char const* const szTag = pRootNode->getTag();
-	CSwitchState const* pSwitchState = nullptr;
+	CSwitchState* pSwitchState = nullptr;
 
 	if (_stricmp(szTag, s_szStateGroupTag) == 0)
 	{
@@ -1440,7 +1498,7 @@ ISwitchStateConnection const* CImpl::ConstructSwitchStateConnection(XmlNodeRef c
 		Cry::Audio::Log(ELogType::Warning, "Unknown Wwise tag: %s", szTag);
 	}
 
-	return static_cast<ISwitchStateConnection const*>(pSwitchState);
+	return static_cast<ISwitchStateConnection*>(pSwitchState);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1450,10 +1508,10 @@ void CImpl::DestructSwitchStateConnection(ISwitchStateConnection const* const pI
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IEnvironmentConnection const* CImpl::ConstructEnvironmentConnection(XmlNodeRef const pRootNode)
+IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const pRootNode)
 {
 	char const* const szTag = pRootNode->getTag();
-	CEnvironment const* pEnvironment = nullptr;
+	CEnvironment* pEnvironment = nullptr;
 
 	if (_stricmp(szTag, s_szAuxBusTag) == 0)
 	{
@@ -1491,7 +1549,7 @@ IEnvironmentConnection const* CImpl::ConstructEnvironmentConnection(XmlNodeRef c
 		Cry::Audio::Log(ELogType::Warning, "Unknown Wwise tag: %s", szTag);
 	}
 
-	return static_cast<IEnvironmentConnection const*>(pEnvironment);
+	return static_cast<IEnvironmentConnection*>(pEnvironment);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1501,7 +1559,7 @@ void CImpl::DestructEnvironmentConnection(IEnvironmentConnection const* const pI
 }
 
 //////////////////////////////////////////////////////////////////////////
-ISettingConnection const* CImpl::ConstructSettingConnection(XmlNodeRef const pRootNode)
+ISettingConnection* CImpl::ConstructSettingConnection(XmlNodeRef const pRootNode)
 {
 	return static_cast<ISettingConnection*>(new CSetting);
 }
@@ -1515,66 +1573,6 @@ void CImpl::DestructSettingConnection(ISettingConnection const* const pISettingC
 //////////////////////////////////////////////////////////////////////////
 void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
 {
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CImpl::ParseSwitchOrState(XmlNodeRef const pNode, AkUInt32& stateOrSwitchGroupId, AkUInt32& stateOrSwitchId)
-{
-	bool bSuccess = false;
-	char const* const szStateOrSwitchGroupName = pNode->getAttr(s_szNameAttribute);
-
-	if ((szStateOrSwitchGroupName != nullptr) && (szStateOrSwitchGroupName[0] != 0) && (pNode->getChildCount() == 1))
-	{
-		XmlNodeRef const pValueNode(pNode->getChild(0));
-
-		if (pValueNode && _stricmp(pValueNode->getTag(), s_szValueTag) == 0)
-		{
-			char const* const szStateOrSwitchName = pValueNode->getAttr(s_szNameAttribute);
-
-			if ((szStateOrSwitchName != nullptr) && (szStateOrSwitchName[0] != 0))
-			{
-				stateOrSwitchGroupId = AK::SoundEngine::GetIDFromString(szStateOrSwitchGroupName);
-				stateOrSwitchId = AK::SoundEngine::GetIDFromString(szStateOrSwitchName);
-				bSuccess = true;
-			}
-		}
-	}
-	else
-	{
-		Cry::Audio::Log(
-			ELogType::Warning,
-			"A Wwise SwitchGroup or StateGroup %s inside SwitchState needs to have exactly one WwiseValue.",
-			szStateOrSwitchGroupName);
-	}
-
-	return bSuccess;
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CImpl::ParseRtpcImpl(XmlNodeRef const pNode, AkRtpcID& rtpcId, float& multiplier, float& shift)
-{
-	if (_stricmp(pNode->getTag(), s_szParameterTag) == 0)
-	{
-		char const* const szName = pNode->getAttr(s_szNameAttribute);
-		rtpcId = static_cast<AkRtpcID>(AK::SoundEngine::GetIDFromString(szName));
-
-		if (rtpcId != AK_INVALID_RTPC_ID)
-		{
-			//the Wwise name is supplied
-			pNode->getAttr(s_szMutiplierAttribute, multiplier);
-			pNode->getAttr(s_szShiftAttribute, shift);
-		}
-		else
-		{
-			// Invalid Wwise RTPC name!
-			Cry::Audio::Log(ELogType::Warning, "Invalid Wwise parameter name %s", szName);
-		}
-	}
-	else
-	{
-		// Unknown Wwise RTPC tag!
-		Cry::Audio::Log(ELogType::Warning, "Unknown Wwise tag %s", pNode->getTag());
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////

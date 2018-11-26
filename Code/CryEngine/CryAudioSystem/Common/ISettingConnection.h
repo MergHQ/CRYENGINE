@@ -23,14 +23,14 @@ struct ISettingConnection
 	 * @return void
 	 * @see Unload
 	 */
-	virtual void Load() const = 0;
+	virtual void Load() = 0;
 
 	/**
 	 * Unload the setting
 	 * @return void
 	 * @see Load
 	 */
-	virtual void Unload() const = 0;
+	virtual void Unload() = 0;
 };
 } // namespace Impl
 } // namespace CryAudio

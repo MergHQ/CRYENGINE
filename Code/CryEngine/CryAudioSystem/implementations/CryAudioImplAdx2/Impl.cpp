@@ -407,12 +407,11 @@ ERequestStatus CImpl::StopAllSounds()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalParameter(IParameterConnection const* const pIParameterConnection, float const value)
+void CImpl::SetGlobalParameter(IParameterConnection* const pIParameterConnection, float const value)
 {
-	auto const pParameter = static_cast<CParameter const*>(pIParameterConnection);
-
-	if (pParameter != nullptr)
+	if (pIParameterConnection != nullptr)
 	{
+		auto const pParameter = static_cast<CParameter*>(pIParameterConnection);
 		EParameterType const type = pParameter->GetType();
 
 		switch (type)
@@ -421,8 +420,7 @@ void CImpl::SetGlobalParameter(IParameterConnection const* const pIParameterConn
 			{
 				for (auto const pObject : g_constructedObjects)
 				{
-
-					pObject->SetParameter(pParameter, value);
+					pParameter->Set(pObject, value);
 				}
 
 				break;
@@ -454,12 +452,11 @@ void CImpl::SetGlobalParameter(IParameterConnection const* const pIParameterConn
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalSwitchState(ISwitchStateConnection const* const pISwitchStateConnection)
+void CImpl::SetGlobalSwitchState(ISwitchStateConnection* const pISwitchStateConnection)
 {
-	auto const pSwitchState = static_cast<CSwitchState const*>(pISwitchStateConnection);
-
-	if (pSwitchState != nullptr)
+	if (pISwitchStateConnection != nullptr)
 	{
+		auto const pSwitchState = static_cast<CSwitchState*>(pISwitchStateConnection);
 		ESwitchType const type = pSwitchState->GetType();
 
 		switch (type)
@@ -469,7 +466,7 @@ void CImpl::SetGlobalSwitchState(ISwitchStateConnection const* const pISwitchSta
 			{
 				for (auto const pObject : g_constructedObjects)
 				{
-					pObject->SetSwitchState(pISwitchStateConnection);
+					pSwitchState->Set(pObject);
 				}
 
 				break;
@@ -712,7 +709,7 @@ IEvent* CImpl::ConstructEvent(CryAudio::CEvent& event)
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructEvent(IEvent const* const pIEvent)
 {
-	CRY_ASSERT(pIEvent != nullptr);
+	CRY_ASSERT_MESSAGE(pIEvent != nullptr, "pIEvent is nullptr during %s", __FUNCTION__);
 	delete pIEvent;
 }
 
@@ -725,7 +722,7 @@ IStandaloneFileConnection* CImpl::ConstructStandaloneFileConnection(CryAudio::CS
 //////////////////////////////////////////////////////////////////////////
 void CImpl::DestructStandaloneFileConnection(IStandaloneFileConnection const* const pIStandaloneFileConnection)
 {
-	CRY_ASSERT(pIStandaloneFileConnection != nullptr);
+	CRY_ASSERT_MESSAGE(pIStandaloneFileConnection != nullptr, "pIStandaloneFileConnection is nullptr during %s", __FUNCTION__);
 	delete pIStandaloneFileConnection;
 }
 
@@ -740,9 +737,9 @@ void CImpl::GamepadDisconnected(DeviceId const deviceUniqueID)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ITriggerConnection const* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode, float& radius)
+ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode, float& radius)
 {
-	ITriggerConnection const* pITriggerConnection = nullptr;
+	ITriggerConnection* pITriggerConnection = nullptr;
 
 	if (_stricmp(pRootNode->getTag(), s_szCueTag) == 0)
 	{
@@ -786,9 +783,9 @@ ITriggerConnection const* CImpl::ConstructTriggerConnection(XmlNodeRef const pRo
 			}
 		}
 
-		pITriggerConnection = static_cast<ITriggerConnection const*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, eventType, szCueSheetName));
+		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, eventType, szCueSheetName));
 #else
-		pITriggerConnection = static_cast<ITriggerConnection const*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, eventType));
+		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, eventType));
 #endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 	}
 	else if (_stricmp(pRootNode->getTag(), s_szSnapshotTag) == 0)
@@ -798,9 +795,9 @@ ITriggerConnection const* CImpl::ConstructTriggerConnection(XmlNodeRef const pRo
 		pRootNode->getAttr(s_szTimeAttribute, changeoverTime);
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-		pITriggerConnection = static_cast<ITriggerConnection const*>(new CTrigger(StringToId(szName), szName, 0, ETriggerType::Snapshot, EEventType::Start, "", static_cast<CriSint32>(changeoverTime)));
+		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(szName), szName, 0, ETriggerType::Snapshot, EEventType::Start, "", static_cast<CriSint32>(changeoverTime)));
 #else
-		pITriggerConnection = static_cast<ITriggerConnection const*>(new CTrigger(StringToId(szName), szName, 0, ETriggerType::Snapshot, EEventType::Start, static_cast<CriSint32>(changeoverTime)));
+		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(szName), szName, 0, ETriggerType::Snapshot, EEventType::Start, static_cast<CriSint32>(changeoverTime)));
 #endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 	}
 	else
@@ -812,10 +809,10 @@ ITriggerConnection const* CImpl::ConstructTriggerConnection(XmlNodeRef const pRo
 }
 
 //////////////////////////////////////////////////////////////////////////
-ITriggerConnection const* CImpl::ConstructTriggerConnection(ITriggerInfo const* const pITriggerInfo)
+ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const pITriggerInfo)
 {
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-	ITriggerConnection const* pITriggerConnection = nullptr;
+	ITriggerConnection* pITriggerConnection = nullptr;
 	auto const pTriggerInfo = static_cast<STriggerInfo const*>(pITriggerInfo);
 
 	if (pTriggerInfo != nullptr)
@@ -823,7 +820,7 @@ ITriggerConnection const* CImpl::ConstructTriggerConnection(ITriggerInfo const* 
 		char const* const szName = pTriggerInfo->name.c_str();
 		char const* const szCueSheetName = pTriggerInfo->cueSheet.c_str();
 
-		pITriggerConnection = static_cast<ITriggerConnection const*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, EEventType::Start, szCueSheetName));
+		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, EEventType::Start, szCueSheetName));
 	}
 
 	return pITriggerConnection;
@@ -839,9 +836,9 @@ void CImpl::DestructTriggerConnection(ITriggerConnection const* const pITriggerC
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IParameterConnection const* CImpl::ConstructParameterConnection(XmlNodeRef const pRootNode)
+IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRootNode)
 {
-	IParameterConnection const* pIParameterConnection = nullptr;
+	IParameterConnection* pIParameterConnection = nullptr;
 
 	char const* const szTag = pRootNode->getTag();
 	EParameterType type = EParameterType::None;
@@ -867,7 +864,7 @@ IParameterConnection const* CImpl::ConstructParameterConnection(XmlNodeRef const
 		pRootNode->getAttr(s_szMutiplierAttribute, multiplier);
 		pRootNode->getAttr(s_szShiftAttribute, shift);
 
-		pIParameterConnection = static_cast<IParameterConnection const*>(new CParameter(szName, type, multiplier, shift));
+		pIParameterConnection = static_cast<IParameterConnection*>(new CParameter(szName, type, multiplier, shift));
 	}
 	else
 	{
@@ -915,9 +912,9 @@ bool ParseSwitchOrState(XmlNodeRef const pNode, string& selectorName, string& se
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ISwitchStateConnection const* CImpl::ConstructSwitchStateConnection(XmlNodeRef const pRootNode)
+ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const pRootNode)
 {
-	ISwitchStateConnection const* pISwitchStateConnection = nullptr;
+	ISwitchStateConnection* pISwitchStateConnection = nullptr;
 
 	char const* const szTag = pRootNode->getTag();
 	ESwitchType type = ESwitchType::None;
@@ -946,7 +943,7 @@ ISwitchStateConnection const* CImpl::ConstructSwitchStateConnection(XmlNodeRef c
 
 		if (ParseSwitchOrState(pRootNode, szSelectorName, szSelectorLabelName))
 		{
-			pISwitchStateConnection = static_cast<ISwitchStateConnection const*>(new CSwitchState(type, szSelectorName, szSelectorLabelName));
+			pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CSwitchState(type, szSelectorName, szSelectorLabelName));
 		}
 	}
 	else if (type != ESwitchType::None)
@@ -956,7 +953,7 @@ ISwitchStateConnection const* CImpl::ConstructSwitchStateConnection(XmlNodeRef c
 
 		if (pRootNode->getAttr(s_szValueAttribute, value))
 		{
-			pISwitchStateConnection = static_cast<ISwitchStateConnection const*>(new CSwitchState(type, szName, "", static_cast<CriFloat32>(value)));
+			pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CSwitchState(type, szName, "", static_cast<CriFloat32>(value)));
 		}
 	}
 	else
@@ -974,9 +971,9 @@ void CImpl::DestructSwitchStateConnection(ISwitchStateConnection const* const pI
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IEnvironmentConnection const* CImpl::ConstructEnvironmentConnection(XmlNodeRef const pRootNode)
+IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const pRootNode)
 {
-	IEnvironmentConnection const* pEnvironmentConnection = nullptr;
+	IEnvironmentConnection* pEnvironmentConnection = nullptr;
 
 	char const* const szTag = pRootNode->getTag();
 
@@ -984,7 +981,7 @@ IEnvironmentConnection const* CImpl::ConstructEnvironmentConnection(XmlNodeRef c
 	{
 		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
 
-		pEnvironmentConnection = static_cast<IEnvironmentConnection const*>(new CEnvironment(szName, EEnvironmentType::Bus));
+		pEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CEnvironment(szName, EEnvironmentType::Bus));
 	}
 	else if (_stricmp(szTag, s_szAisacControlTag) == 0)
 	{
@@ -994,7 +991,7 @@ IEnvironmentConnection const* CImpl::ConstructEnvironmentConnection(XmlNodeRef c
 		pRootNode->getAttr(s_szMutiplierAttribute, multiplier);
 		pRootNode->getAttr(s_szShiftAttribute, shift);
 
-		pEnvironmentConnection = static_cast<IEnvironmentConnection const*>(new CEnvironment(szName, EEnvironmentType::AisacControl, multiplier, shift));
+		pEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CEnvironment(szName, EEnvironmentType::AisacControl, multiplier, shift));
 	}
 	else
 	{
@@ -1011,16 +1008,16 @@ void CImpl::DestructEnvironmentConnection(IEnvironmentConnection const* const pI
 }
 
 //////////////////////////////////////////////////////////////////////////
-ISettingConnection const* CImpl::ConstructSettingConnection(XmlNodeRef const pRootNode)
+ISettingConnection* CImpl::ConstructSettingConnection(XmlNodeRef const pRootNode)
 {
-	ISettingConnection const* pISettingConnection = nullptr;
+	ISettingConnection* pISettingConnection = nullptr;
 
 	char const* const szTag = pRootNode->getTag();
 
 	if (_stricmp(szTag, s_szDspBusSettingTag) == 0)
 	{
 		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
-		pISettingConnection = static_cast<ISettingConnection const*>(new CSetting(szName));
+		pISettingConnection = static_cast<ISettingConnection*>(new CSetting(szName));
 	}
 	else
 	{

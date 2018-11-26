@@ -31,8 +31,7 @@ public:
 
 	virtual ~CEnvironmentBus() override = default;
 
-	FMOD::Studio::EventDescription* GetEventDescription() const { return m_pEventDescription; }
-	FMOD::Studio::Bus*              GetBus() const              { return m_pBus; }
+	FMOD::Studio::Bus* GetBus() const { return m_pBus; }
 
 private:
 

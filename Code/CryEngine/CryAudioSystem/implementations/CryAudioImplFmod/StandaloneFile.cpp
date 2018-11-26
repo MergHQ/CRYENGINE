@@ -60,7 +60,7 @@ bool CStandaloneFile::IsReady()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CStandaloneFile::Play(FMOD_3D_ATTRIBUTES const& attributes)
+void CStandaloneFile::PlayFile(FMOD_3D_ATTRIBUTES const& attributes)
 {
 	FMOD_RESULT const fmodResult = s_pLowLevelSystem->playSound(m_pLowLevelSound, nullptr, true, &m_pChannel);
 	ASSERT_FMOD_OK;
@@ -83,7 +83,7 @@ void CStandaloneFile::Set3DAttributes(FMOD_3D_ATTRIBUTES const& attributes)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CStandaloneFile::Stop()
+void CStandaloneFile::StopFile()
 {
 	if (m_pChannel != nullptr)
 	{

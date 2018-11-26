@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Common.h"
 #include <IObject.h>
 #include <SharedData.h>
 #include <PoolObject.h>
@@ -37,54 +38,57 @@ public:
 	CBaseObject& operator=(CBaseObject const&) = delete;
 	CBaseObject& operator=(CBaseObject&&) = delete;
 
-	CBaseObject();
 	virtual ~CBaseObject() override;
-
-	void RemoveEvent(CEvent* const pEvent);
-	void RemoveParameter(CBaseParameter const* const pParameter);
-	void RemoveSwitch(CBaseSwitchState const* const pSwitch);
-	void RemoveEnvironment(CEnvironment const* const pEnvironment);
-	void RemoveFile(CBaseStandaloneFile const* const pStandaloneFile);
 
 	// CryAudio::Impl::IObject
 	virtual void                   Update(float const deltaTime) override;
 	virtual void                   SetTransformation(CTransformation const& transformation) override {}
 	virtual CTransformation const& GetTransformation() const override                                { return CTransformation::GetEmptyObject(); }
-	virtual void                   SetParameter(IParameterConnection const* const pIParameterConnection, float const value) override;
-	virtual void                   SetSwitchState(ISwitchStateConnection const* const pISwitchStateConnection) override;
-	virtual ERequestStatus         ExecuteTrigger(ITriggerConnection const* const pITriggerConnection, IEvent* const pIEvent) override;
 	virtual void                   StopAllTriggers() override;
-	virtual ERequestStatus         PlayFile(IStandaloneFileConnection* const pIStandaloneFileConnection) override;
-	virtual ERequestStatus         StopFile(IStandaloneFileConnection* const pIStandaloneFileConnection) override;
 	virtual ERequestStatus         SetName(char const* const szName) override;
 
 	// Below data is only used when INCLUDE_FMOD_IMPL_PRODUCTION_CODE is defined!
 	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter) override {}
 	// ~CryAudio::Impl::IObject
 
+	Events const&       GetEvents() const  { return m_events; }
+	Parameters&         GetParameters()    { return m_parameters; }
+	Switches&           GetSwitches()      { return m_switches; }
+	Environments&       GetEnvironments()  { return m_environments; }
+	Events&             GetPendingEvents() { return m_pendingEvents; }
+	StandaloneFiles&    GetPendingFiles()  { return m_pendingFiles; }
+	FMOD_3D_ATTRIBUTES& GetAttributes()    { return m_attributes; }
+
+	void                StopEvent(uint32 const id);
+	void                RemoveEvent(CEvent* const pEvent);
+	void                RemoveParameter(CBaseParameter const* const pParameter);
+	void                RemoveSwitch(CBaseSwitchState const* const pSwitch);
+	void                RemoveEnvironment(CEnvironment const* const pEnvironment);
+	void                RemoveFile(CBaseStandaloneFile const* const pStandaloneFile);
+
 	static FMOD::Studio::System* s_pSystem;
 
 protected:
 
-	void StopEvent(uint32 const id);
-	bool SetEvent(CEvent* const pEvent);
+	CBaseObject();
 
+	bool SetEvent(CEvent* const pEvent);
 	void UpdateVelocityTracking();
 
-	EObjectFlags                                    m_flags;
+	EObjectFlags       m_flags;
 
-	std::vector<CEvent*>                            m_events;
-	std::vector<CBaseStandaloneFile*>               m_files;
-	std::map<CBaseParameter const* const, float>    m_parameters;
-	std::map<uint32 const, CBaseSwitchState const*> m_switches;
-	std::map<CEnvironment const* const, float>      m_environments;
+	Events             m_events;
+	StandaloneFiles    m_files;
+	Parameters         m_parameters;
+	Switches           m_switches;
+	Environments       m_environments;
 
-	std::vector<CEvent*>                            m_pendingEvents;
-	std::vector<CBaseStandaloneFile*>               m_pendingFiles;
+	Events             m_pendingEvents;
+	StandaloneFiles    m_pendingFiles;
 
-	FMOD_3D_ATTRIBUTES                              m_attributes;
-	float m_occlusion = 0.0f;
-	float m_absoluteVelocity = 0.0f;
+	FMOD_3D_ATTRIBUTES m_attributes;
+	float              m_occlusion = 0.0f;
+	float              m_absoluteVelocity = 0.0f;
 };
 } // namespace Fmod
 } // namespace Impl

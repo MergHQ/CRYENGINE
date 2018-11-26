@@ -6,6 +6,8 @@ namespace CryAudio
 {
 namespace Impl
 {
+struct IObject;
+
 /**
  * An implementation may use this interface to define a class for storing implementation-specific
  * data needed for identifying and using the corresponding IEnvironmentConnection
@@ -16,6 +18,14 @@ struct IEnvironmentConnection
 	/** @cond */
 	virtual ~IEnvironmentConnection() = default;
 	/** @endcond */
+
+	/**
+	 * Set the provided value for the environment on the specified object.
+	 * @param pIObject - implementation-specific object to set the environment on
+	 * @param amount - the fade value for the environment, 0.0f means no effect at all, 1.0f corresponds to the full effect
+	 * @return void
+	 */
+	virtual void Set(IObject* const pIObject, float const amount) = 0;
 };
 } // namespace Impl
 } // namespace CryAudio

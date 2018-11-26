@@ -34,6 +34,10 @@ public:
 
 	virtual ~CSwitchState() override = default;
 
+	// ISwitchStateConnection
+	virtual void Set(IObject* const pIObject) override;
+	// ~ISwitchStateConnection
+
 	SampleId                                     GetSampleId() const { return m_sampleId; }
 	float                                        GetValue() const    { return m_value; }
 	CryFixedStringT<MaxControlNameLength> const& GetName() const     { return m_name; }

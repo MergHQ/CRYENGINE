@@ -740,7 +740,7 @@ void CXMLProcessor::ParseEnvironments(XmlNodeRef const pEnvironmentRoot, EDataSc
 
 					if (pEnvironmentImplNode != nullptr)
 					{
-						Impl::IEnvironmentConnection const* const pConnection = g_pIImpl->ConstructEnvironmentConnection(pEnvironmentImplNode);
+						Impl::IEnvironmentConnection* const pConnection = g_pIImpl->ConstructEnvironmentConnection(pEnvironmentImplNode);
 
 						if (pConnection != nullptr)
 						{
@@ -820,7 +820,7 @@ void CXMLProcessor::ParseSettings(XmlNodeRef const pRoot, EDataScope const dataS
 
 						if (pSettingImplNode != nullptr)
 						{
-							Impl::ISettingConnection const* const pConnection = g_pIImpl->ConstructSettingConnection(pSettingImplNode);
+							Impl::ISettingConnection* const pConnection = g_pIImpl->ConstructSettingConnection(pSettingImplNode);
 
 							if (pConnection != nullptr)
 							{
@@ -885,7 +885,7 @@ void CXMLProcessor::ParseTriggers(XmlNodeRef const pXMLTriggerRoot, EDataScope c
 					if (pTriggerImplNode)
 					{
 						float radius = 0.0f;
-						Impl::ITriggerConnection const* const pConnection = g_pIImpl->ConstructTriggerConnection(pTriggerImplNode, radius);
+						Impl::ITriggerConnection* const pConnection = g_pIImpl->ConstructTriggerConnection(pTriggerImplNode, radius);
 
 						if (pConnection != nullptr)
 						{
@@ -946,7 +946,7 @@ void CXMLProcessor::ParseDefaultTriggers(XmlNodeRef const pXMLTriggerRoot)
 				if (pConnectionNode != nullptr)
 				{
 					float radius = 0.0f;
-					Impl::ITriggerConnection const* const pConnection = g_pIImpl->ConstructTriggerConnection(pConnectionNode, radius);
+					Impl::ITriggerConnection* const pConnection = g_pIImpl->ConstructTriggerConnection(pConnectionNode, radius);
 
 					if (pConnection != nullptr)
 					{
@@ -1045,7 +1045,7 @@ void CXMLProcessor::ParseSwitches(XmlNodeRef const pXMLSwitchRoot, EDataScope co
 
 								if (pStateImplNode != nullptr)
 								{
-									Impl::ISwitchStateConnection const* const pConnection = g_pIImpl->ConstructSwitchStateConnection(pStateImplNode);
+									Impl::ISwitchStateConnection* const pConnection = g_pIImpl->ConstructSwitchStateConnection(pStateImplNode);
 
 									if (pConnection != nullptr)
 									{
@@ -1101,7 +1101,7 @@ void CXMLProcessor::ParseParameters(XmlNodeRef const pXMLParameterRoot, EDataSco
 
 					if (pParameterImplNode != nullptr)
 					{
-						Impl::IParameterConnection const* const pConnection = g_pIImpl->ConstructParameterConnection(pParameterImplNode);
+						Impl::IParameterConnection* const pConnection = g_pIImpl->ConstructParameterConnection(pParameterImplNode);
 
 						if (pConnection != nullptr)
 						{

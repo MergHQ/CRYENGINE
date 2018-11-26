@@ -59,7 +59,7 @@ void CTrigger::Execute(
 	for (auto const pConnection : m_connections)
 	{
 		CEvent* const pEvent = g_eventManager.ConstructEvent();
-		ERequestStatus const activateResult = object.GetImplDataPtr()->ExecuteTrigger(pConnection, pEvent->m_pImplData);
+		ERequestStatus const activateResult = pConnection->Execute(object.GetImplDataPtr(), pEvent->m_pImplData);
 
 		if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual) || (activateResult == ERequestStatus::Pending))
 		{
@@ -134,7 +134,7 @@ void CTrigger::Execute(
 	for (auto const pConnection : m_connections)
 	{
 		CEvent* const pEvent = g_eventManager.ConstructEvent();
-		ERequestStatus const activateResult = object.GetImplDataPtr()->ExecuteTrigger(pConnection, pEvent->m_pImplData);
+		ERequestStatus const activateResult = pConnection->Execute(object.GetImplDataPtr(), pEvent->m_pImplData);
 
 		if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual) || (activateResult == ERequestStatus::Pending))
 		{
@@ -253,7 +253,7 @@ void CTrigger::PlayFile(
 	{
 		Impl::ITriggerConnection const* const pITriggerConnection = m_connections[0];
 		CStandaloneFile* const pFile = g_fileManager.ConstructStandaloneFile(szName, isLocalized, pITriggerConnection);
-		ERequestStatus const status = object.GetImplDataPtr()->PlayFile(pFile->m_pImplData);
+		ERequestStatus const status = pFile->m_pImplData->Play(object.GetImplDataPtr());
 
 		if (status == ERequestStatus::Success || status == ERequestStatus::Pending)
 		{
@@ -295,7 +295,7 @@ void CTrigger::PlayFile(CObject& object, CStandaloneFile* const pFile) const
 	{
 		Impl::ITriggerConnection const* const pITriggerConnection = m_connections[0];
 		pFile->m_pImplData = g_pIImpl->ConstructStandaloneFileConnection(*pFile, pFile->m_hashedFilename.GetText().c_str(), pFile->m_isLocalized, pITriggerConnection);
-		ERequestStatus const status = object.GetImplDataPtr()->PlayFile(pFile->m_pImplData);
+		ERequestStatus const status = pFile->m_pImplData->Play(object.GetImplDataPtr());
 
 		if (status == ERequestStatus::Success || status == ERequestStatus::Pending)
 		{

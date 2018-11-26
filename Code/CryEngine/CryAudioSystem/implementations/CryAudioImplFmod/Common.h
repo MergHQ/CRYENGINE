@@ -27,6 +27,11 @@ namespace Impl
 {
 namespace Fmod
 {
+class CEvent;
+class CBaseParameter;
+class CBaseStandaloneFile;
+class CBaseSwitchState;
+class CEnvironment;
 class CListener;
 class CTrigger;
 class CGlobalObject;
@@ -36,6 +41,12 @@ extern CListener* g_pListener;
 extern uint32 g_numObjectsWithDoppler;
 
 static constexpr char const* s_szAbsoluteVelocityParameterName = "absolute_velocity";
+
+using Events = std::vector<CEvent*>;
+using Parameters = std::map<CBaseParameter const* const, float>;
+using Switches = std::map<uint32 const, CBaseSwitchState const*>;
+using Environments = std::map<CEnvironment const* const, float>;
+using StandaloneFiles = std::vector<CBaseStandaloneFile*>;
 
 using ParameterIdToIndex = std::map<uint32, int>;
 using TriggerToParameterIndexes = std::map<CTrigger const* const, ParameterIdToIndex>;

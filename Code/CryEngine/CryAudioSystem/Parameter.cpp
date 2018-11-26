@@ -30,7 +30,7 @@ void CParameter::Set(CObject const& object, float const value) const
 {
 	for (auto const pConnection : m_connections)
 	{
-		object.GetImplDataPtr()->SetParameter(pConnection, value);
+		pConnection->Set(object.GetImplDataPtr(), value);
 	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)

@@ -4,7 +4,6 @@
 #include "Object.h"
 #include "Common.h"
 #include "CVars.h"
-#include "Impl.h"
 #include "Environment.h"
 #include "Event.h"
 #include "Listener.h"
@@ -31,17 +30,6 @@ static AkRtpcID const s_absoluteVelocityParameterId = AK::SoundEngine::GetIDFrom
 
 static constexpr char const* s_szRelativeVelocityParameterName = "relative_velocity";
 static AkRtpcID const s_relativeVelocityParameterId = AK::SoundEngine::GetIDFromString(s_szRelativeVelocityParameterName);
-
-//////////////////////////////////////////////////////////////////////////
-void EndEventCallback(AkCallbackType callbackType, AkCallbackInfo* pCallbackInfo)
-{
-	if ((callbackType == AK_EndOfEvent) && !g_pImpl->IsToBeReleased() && (pCallbackInfo->pCookie != nullptr))
-	{
-		auto const pEvent = static_cast<CEvent* const>(pCallbackInfo->pCookie);
-		pEvent->m_toBeRemoved = true;
-		gEnv->pAudioSystem->ReportFinishedEvent(pEvent->m_event, true);
-	}
-}
 
 //////////////////////////////////////////////////////////////////////////
 void SetParameterById(AkRtpcID const rtpcId, AkRtpcValue const value, AkGameObjectID const objectId)
@@ -101,7 +89,7 @@ CObject::~CObject()
 //////////////////////////////////////////////////////////////////////////
 void CObject::Update(float const deltaTime)
 {
-	m_distanceToListener = m_position.GetDistance(g_pListener->GetPosition());
+	SetDistanceToListener();
 
 	if (m_needsToUpdateEnvironments)
 	{
@@ -163,190 +151,6 @@ void CObject::SetTransformation(CTransformation const& transformation)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetEnvironment(IEnvironmentConnection const* const pIEnvironmentConnection, float const amount)
-{
-	static float const envEpsilon = 0.0001f;
-	auto const pEnvironment = static_cast<CEnvironment const*>(pIEnvironmentConnection);
-
-	if (pEnvironment != nullptr)
-	{
-		switch (pEnvironment->type)
-		{
-		case EEnvironmentType::AuxBus:
-			{
-				if (m_id != g_globalObjectId)
-				{
-					bool addAuxSendValue = true;
-
-					for (auto& auxSendValue : m_auxSendValues)
-					{
-						if (auxSendValue.auxBusID == pEnvironment->busId)
-						{
-							addAuxSendValue = false;
-
-							if (fabs(auxSendValue.fControlValue - amount) > envEpsilon)
-							{
-								auxSendValue.fControlValue = amount;
-								m_needsToUpdateEnvironments = true;
-							}
-
-							break;
-						}
-					}
-
-					if (addAuxSendValue)
-					{
-						// This temporary copy is needed until AK equips AkAuxSendValue with a ctor.
-						m_auxSendValues.emplace_back(AkAuxSendValue{ g_listenerId, pEnvironment->busId, amount });
-						m_needsToUpdateEnvironments = true;
-					}
-				}
-				else
-				{
-					Cry::Audio::Log(ELogType::Error, "Trying to set an environment on the global object!");
-				}
-
-				break;
-			}
-		case EEnvironmentType::Rtpc:
-			{
-				AkRtpcValue const rtpcValue = static_cast<AkRtpcValue>(pEnvironment->multiplier * amount + pEnvironment->shift);
-				AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(pEnvironment->rtpcId, rtpcValue, m_id);
-
-				if (!IS_WWISE_OK(wwiseResult))
-				{
-					Cry::Audio::Log(
-						ELogType::Warning,
-						"Wwise - failed to set the Rtpc %u to value %f on object %u in SetEnvironement()",
-						pEnvironment->rtpcId,
-						rtpcValue,
-						m_id);
-				}
-
-				break;
-			}
-		default:
-			{
-				CRY_ASSERT(false); //Unknown AudioEnvironmentImplementation type
-			}
-		}
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Wwise - Invalid EnvironmentData passed to the Wwise implementation of SetEnvironment");
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObject::SetParameter(IParameterConnection const* const pIParameterConnection, float const value)
-{
-	auto const pParameter = static_cast<CParameter const*>(pIParameterConnection);
-
-	if (pParameter != nullptr)
-	{
-		auto const rtpcValue = static_cast<AkRtpcValue>(pParameter->mult * value + pParameter->shift);
-
-		AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(pParameter->id, rtpcValue, m_id);
-
-		if (!IS_WWISE_OK(wwiseResult))
-		{
-			Cry::Audio::Log(
-				ELogType::Warning,
-				"Wwise - failed to set the Rtpc %" PRISIZE_T " to value %f on object %" PRISIZE_T,
-				pParameter->id,
-				static_cast<AkRtpcValue>(value),
-				m_id);
-		}
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Wwise - Invalid RtpcData passed to the Wwise implementation of SetParameter");
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObject::SetSwitchState(ISwitchStateConnection const* const pISwitchStateConnection)
-{
-	auto const pSwitchState = static_cast<CSwitchState const*>(pISwitchStateConnection);
-
-	if (pSwitchState != nullptr)
-	{
-		switch (pSwitchState->type)
-		{
-		case ESwitchType::StateGroup:
-			{
-				AKRESULT const wwiseResult = AK::SoundEngine::SetState(
-					pSwitchState->stateOrSwitchGroupId,
-					pSwitchState->stateOrSwitchId);
-
-				if (!IS_WWISE_OK(wwiseResult))
-				{
-					Cry::Audio::Log(
-						ELogType::Warning,
-						"Wwise failed to set the StateGroup %" PRISIZE_T "to state %" PRISIZE_T,
-						pSwitchState->stateOrSwitchGroupId,
-						pSwitchState->stateOrSwitchId);
-				}
-
-				break;
-			}
-		case ESwitchType::SwitchGroup:
-			{
-				AKRESULT const wwiseResult = AK::SoundEngine::SetSwitch(
-					pSwitchState->stateOrSwitchGroupId,
-					pSwitchState->stateOrSwitchId,
-					m_id);
-
-				if (!IS_WWISE_OK(wwiseResult))
-				{
-					Cry::Audio::Log(
-						ELogType::Warning,
-						"Wwise - failed to set the SwitchGroup %" PRISIZE_T " to state %" PRISIZE_T " on object %" PRISIZE_T,
-						pSwitchState->stateOrSwitchGroupId,
-						pSwitchState->stateOrSwitchId,
-						m_id);
-				}
-
-				break;
-			}
-		case ESwitchType::Rtpc:
-			{
-				AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(
-					pSwitchState->stateOrSwitchGroupId,
-					static_cast<AkRtpcValue>(pSwitchState->rtpcValue),
-					m_id);
-
-				if (!IS_WWISE_OK(wwiseResult))
-				{
-					Cry::Audio::Log(
-						ELogType::Warning,
-						"Wwise - failed to set the Rtpc %" PRISIZE_T " to value %f on object %" PRISIZE_T,
-						pSwitchState->stateOrSwitchGroupId,
-						static_cast<AkRtpcValue>(pSwitchState->rtpcValue),
-						m_id);
-				}
-
-				break;
-			}
-		case ESwitchType::None:
-			{
-				break;
-			}
-		default:
-			{
-				Cry::Audio::Log(ELogType::Warning, "Wwise - Unknown ESwitchType: %" PRISIZE_T, pSwitchState->type);
-
-				break;
-			}
-		}
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Wwise - Invalid SwitchState passed to the Wwise implementation of SetSwitchState");
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CObject::SetOcclusion(float const occlusion)
 {
 	if (m_id != g_globalObjectId)
@@ -402,61 +206,9 @@ void CObject::SetOcclusionType(EOcclusionType const occlusionType)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::ExecuteTrigger(ITriggerConnection const* const pITriggerConnection, IEvent* const pIEvent)
+void CObject::AddEvent(CEvent* const pEvent)
 {
-	ERequestStatus result = ERequestStatus::Failure;
-
-	auto const pTrigger = static_cast<CTrigger const*>(pITriggerConnection);
-	auto const pEvent = static_cast<CEvent*>(pIEvent);
-
-	if ((pTrigger != nullptr) && (pEvent != nullptr))
-	{
-		// If the user executes a trigger on the global object we want to post events only to that particular object and not globally!
-		AkGameObjectID objectId = g_globalObjectId;
-
-		if (m_id != AK_INVALID_GAME_OBJECT)
-		{
-			objectId = m_id;
-			PostEnvironmentAmounts();
-		}
-
-		AkPlayingID const id = AK::SoundEngine::PostEvent(pTrigger->m_id, objectId, AK_EndOfEvent, &EndEventCallback, pEvent);
-
-		if (id != AK_INVALID_PLAYING_ID)
-		{
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-			pEvent->SetName(pTrigger->GetName());
-
-			{
-				CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
-				g_playingIds[id] = pEvent;
-			}
-#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
-
-			pEvent->m_id = id;
-			pEvent->m_pObject = this;
-			pEvent->m_maxAttenuation = pTrigger->m_maxAttenuation;
-
-			m_distanceToListener = m_position.GetDistance(g_pListener->GetPosition());
-			pEvent->SetInitialVirtualState(m_distanceToListener);
-
-			m_events.push_back(pEvent);
-			m_needsToUpdateVirtualStates = (m_id != g_globalObjectId);
-
-			result = (pEvent->m_state == EEventState::Virtual) ? ERequestStatus::SuccessVirtual : ERequestStatus::Success;
-		}
-		else
-		{
-			// if posting an Event failed, try to prepare it, if it isn't prepared already
-			Cry::Audio::Log(ELogType::Warning, "Failed to Post Wwise event %" PRISIZE_T, pEvent->m_id);
-		}
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Invalid AudioObjectData, TriggerData or EventData passed to the Wwise implementation of ExecuteTrigger.");
-	}
-
-	return result;
+	m_events.push_back(pEvent);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -476,18 +228,6 @@ void CObject::StopAllTriggers()
 	// If the user wants to stop all triggers on the global object we want to stop them only on that particular object and not globally!
 	AkGameObjectID const objectId = (m_id != AK_INVALID_GAME_OBJECT) ? m_id : g_globalObjectId;
 	AK::SoundEngine::StopAll(objectId);
-}
-
-//////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::PlayFile(IStandaloneFileConnection* const pIStandaloneFileConnection)
-{
-	return ERequestStatus::Failure;
-}
-
-//////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::StopFile(IStandaloneFileConnection* const pIStandaloneFileConnection)
-{
-	return ERequestStatus::Failure;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -535,6 +275,12 @@ void CObject::PostEnvironmentAmounts()
 	}
 
 	m_needsToUpdateEnvironments = false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CObject::SetDistanceToListener()
+{
+	m_distanceToListener = m_position.GetDistance(g_pListener->GetPosition());
 }
 
 ///////////////////////////////////////////////////////////////////////////

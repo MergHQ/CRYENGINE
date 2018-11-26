@@ -9,6 +9,7 @@ namespace CryAudio
 namespace Impl
 {
 struct IEvent;
+struct IObject;
 
 /**
  * An implementation may use this interface to define a class for storing implementation-specific
@@ -20,6 +21,14 @@ struct ITriggerConnection
 	/** @cond */
 	virtual ~ITriggerConnection() = default;
 	/** @endcond */
+
+	/**
+	 * Activate a trigger on this object.
+	 * @param pIObject - implementation-specific object to execute the trigger on
+	 * @param pIEvent - implementation-specific event corresponding to this particular trigger execution
+	 * @return ERequestStatus - indicates the outcome of underlying process
+	 */
+	virtual ERequestStatus Execute(IObject* const pIObject, IEvent* const pIEvent) = 0;
 
 	/**
 	 * Load the metadata and media needed by the audio middleware to execute this trigger
