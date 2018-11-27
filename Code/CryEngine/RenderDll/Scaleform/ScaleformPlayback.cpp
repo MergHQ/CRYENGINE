@@ -579,8 +579,8 @@ void CScaleformPlayback::ApplyTextureInfo(unsigned int texSlot, const FillTextur
 		const Matrix23& m(pFill->TextureMatrix);
 		assert(pTex->GetSrcFormat() != eTF_YUV && pTex->GetSrcFormat() != eTF_YUVA);
 
-		texInfo.pTex = pTex;
-		texInfo.texState  = (pFill->WrapMode   == Wrap_Clamp   ) ? SSF_GlobalDrawParams::TS_Clamp     : 0;
+		texInfo.pTex   = pTex;
+		texInfo.texState  = (pFill->WrapMode   == Wrap_Clamp   ) ? SSF_GlobalDrawParams::TS_Clamp        : 0;
 		texInfo.texState |= (pFill->SampleMode == Sample_Linear) ? SSF_GlobalDrawParams::TS_FilterTriLin : 0;
 
 		m_drawParams.m_bScaleformMeshAttributesDirty = m_drawParams.m_bScaleformMeshAttributesDirty ||
@@ -1363,6 +1363,7 @@ void CScaleformPlayback::DrawBitmaps(const DeviceData* pBitmaps, int startIndex,
 	SSF_GlobalDrawParams& __restrict params = m_drawParams;
 
 	CTexture* pTex(static_cast<CTexture*>(pTi)); pTi->AddRef();
+	Vec2 texGenStereo(1.0f, 0.0f);
 
 	params.texture[0].texState = SSF_GlobalDrawParams::TS_FilterLin | SSF_GlobalDrawParams::TS_Clamp;
 	params.texture[0].pTex = pTex;
@@ -1377,45 +1378,37 @@ void CScaleformPlayback::DrawBitmaps(const DeviceData* pBitmaps, int startIndex,
 	params.m_pScaleformMeshAttributes->cTexGenMat[0][0] = Vec4(1, 0, 0, 0);
 	params.m_pScaleformMeshAttributes->cTexGenMat[0][1] = Vec4(0, 1, 0, 0);
 
-	bool isYUV = pTex->GetSrcFormat() == eTF_YUV || pTex->GetSrcFormat() == eTF_YUVA;
-	if (!isYUV)
+	// Check for chain-linked YUV[A] set
+	if (pTex->GetCustomID() == -1)
 	{
-		params.fillType = pTex->GetSrcFormat() != eTF_A8 ? SSF_GlobalDrawParams::GlyphTexture : SSF_GlobalDrawParams::GlyphAlphaTexture;
-
 		params.texture[1].pTex = 
 		params.texture[2].pTex = 
 		params.texture[3].pTex = TextureHelpers::LookupTexDefault(EFTT_DIFFUSE);
 
-		params.m_bScaleformRenderParametersDirty = params.m_bScaleformRenderParametersDirty ||
-			(params.m_pScaleformMeshAttributes->cStereoVideoFrameSelect != Vec2(1.0f, 0.0f));
-
-		params.m_pScaleformMeshAttributes->cStereoVideoFrameSelect = Vec2(1.0f, 0.0f);
+		params.fillType = pTex->GetSrcFormat() != eTF_A8 ? SSF_GlobalDrawParams::GlyphTexture : SSF_GlobalDrawParams::GlyphAlphaTexture;
 	}
 	else
 	{
-		params.fillType = pTex->GetSrcFormat() == eTF_YUV ? SSF_GlobalDrawParams::GlyphTextureYUV : SSF_GlobalDrawParams::GlyphTextureYUVA;
-
 		// Fetch circularly link YUVA planes (Y->U->V->A-> Y...)
 		params.texture[1].pTex = static_cast<CTexture*>(m_pRenderer->EF_GetTextureByID(params.texture[0].pTex->GetCustomID()));
 		params.texture[2].pTex = static_cast<CTexture*>(m_pRenderer->EF_GetTextureByID(params.texture[1].pTex->GetCustomID()));
 		params.texture[3].pTex = static_cast<CTexture*>(m_pRenderer->EF_GetTextureByID(params.texture[2].pTex->GetCustomID()));
 
-		Vec2 texGenYUVAStereo(0.0f, 0.0f);
+		params.fillType = !params.texture[3].pTex ? SSF_GlobalDrawParams::GlyphTextureYUV : SSF_GlobalDrawParams::GlyphTextureYUVA;
+
 		if (false /*pTexYUV->IsStereoContent()*/)
 		{
 			if (m_isStereo)
-				texGenYUVAStereo = Vec2(m_isLeft ? 2.0f / 3.0f : 1.0f / 3.0f, m_isLeft ? 0.0f : 2.0f / 3.0f);
+				texGenStereo = Vec2(m_isLeft ? 2.0f / 3.0f : 1.0f / 3.0f, m_isLeft ? 0.0f : 2.0f / 3.0f);
 			else
-				texGenYUVAStereo = Vec2(2.0f / 3.0f, 0.0f);
+				texGenStereo = Vec2(2.0f / 3.0f, 0.0f);
 		}
-		else
-			texGenYUVAStereo = Vec2(1.0f, 0.0f);
-
-		params.m_bScaleformRenderParametersDirty = params.m_bScaleformRenderParametersDirty ||
-			(params.m_pScaleformMeshAttributes->cStereoVideoFrameSelect != texGenYUVAStereo);
-
-		params.m_pScaleformMeshAttributes->cStereoVideoFrameSelect = texGenYUVAStereo;
 	}
+
+	params.m_bScaleformRenderParametersDirty = params.m_bScaleformRenderParametersDirty ||
+		(params.m_pScaleformMeshAttributes->cStereoVideoFrameSelect != texGenStereo);
+
+	params.m_pScaleformMeshAttributes->cStereoVideoFrameSelect = texGenStereo;
 
 //	ApplyTextureInfo(0);
 //	ApplyTextureInfo(1);

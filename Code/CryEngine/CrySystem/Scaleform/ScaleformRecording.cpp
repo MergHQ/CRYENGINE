@@ -671,7 +671,11 @@ void CScaleformRecording::DrawBitmaps(BitmapDesc* pBitmapList, int listSize, int
 
 	// IScaleformPlayback::Matrix23 := GMatrix2D
 	const IScaleformPlayback::Matrix23& m = *((IScaleformPlayback::Matrix23*)&_m);
-	ITexture* pTi = gEnv->pRenderer->EF_GetTextureByID(static_cast<const GTextureXRenderBase*>(_pTi)->GetID());
+	const auto* pBase = static_cast<const GTextureXRenderBase*>(_pTi);
+	const auto* pYUV  = static_cast<const GTextureXRenderYUV*>(_pTi);
+	int nTexID = !pBase->IsYUV() ? pBase->GetID() : pYUV->GetIDs()[0];
+
+	ITexture* pTi = gEnv->pRenderer->EF_GetTextureByID(nTexID);
 
 	_RECORD_CMD_PREFIX
 		_RECORD_CMD(GRCBA_DrawBitmaps)

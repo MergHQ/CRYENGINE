@@ -44,10 +44,10 @@ Texture2D   texScaleformInput1 : register(t1);
 // Or video display
 SamplerState ssScaleformInputM : register(s0);
 
-Texture2D   texScaleformInputY : register(t0);
-Texture2D   texScaleformInputU : register(t1);
-Texture2D   texScaleformInputV : register(t2);
-Texture2D   texScaleformInputA : register(t3);
+Texture2D   texScaleformInputY : register(t0); // R8
+Texture2D   texScaleformInputU : register(t1); // R8
+Texture2D   texScaleformInputV : register(t2); // R8
+Texture2D   texScaleformInputA : register(t3); // A8
 
 //////////////////////////////////////////////////
 // input signatures
@@ -388,9 +388,9 @@ technique GlyphAlphaTexture
 
 half3 YUV2RGB( float2 tex )
 {
-	half Y = (half)GetTexture2D(texScaleformInputY, ssScaleformInputM, tex).a;
-	half U = (half)GetTexture2D(texScaleformInputU, ssScaleformInputM, tex).a - 128.0h / 255.0h;
-	half V = (half)GetTexture2D(texScaleformInputV, ssScaleformInputM, tex).a - 128.0h / 255.0h;
+	half Y = (half)GetTexture2D(texScaleformInputY, ssScaleformInputM, tex).r;
+	half U = (half)GetTexture2D(texScaleformInputU, ssScaleformInputM, tex).r - 128.0h / 255.0h;
+	half V = (half)GetTexture2D(texScaleformInputV, ssScaleformInputM, tex).r - 128.0h / 255.0h;
 
 	half3 rgb = (Y - 16.0h / 255.0h) * 1.164h;
 	rgb.r +=  V * 1.596h;
