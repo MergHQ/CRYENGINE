@@ -19,15 +19,15 @@ namespace EditorSubstance
 		, m_outputs(outputs)
 	{
 		setFocusPolicy(Qt::StrongFocus);
-		QVBoxLayout* layout = new QVBoxLayout(this);
+		QVBoxLayout* layout = new QVBoxLayout();
 
 		if (showGlobalResolution)
 		{
-			QHBoxLayout* resolutionLayout = new QHBoxLayout(this);
+			QHBoxLayout* resolutionLayout = new QHBoxLayout();
 
-			m_pComboXRes = new QMenuComboBox(this);
-			m_pComboYRes = new QMenuComboBox(this);
-			m_pResUnified = new QToolButton(this);
+			m_pComboXRes = new QMenuComboBox();
+			m_pComboYRes = new QMenuComboBox();
+			m_pResUnified = new QToolButton();
 			m_pResUnified->setSizePolicy(QSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum));
 			m_pResUnified->setIcon(CryIcon("icons:General/Uniform.ico"));
 			m_pResUnified->setIconSize(QSize(24, 24));
@@ -67,18 +67,13 @@ namespace EditorSubstance
 		m_pEditOutputs = new QPushButton("Edit Outputs");
 		layout->addWidget(m_pEditOutputs);
 
-		QCheckBox* showAll = new QCheckBox("Show All Presets", this);
+		QCheckBox* showAll = new QCheckBox("Show All Presets");
 		showAll->setChecked(false);
 		layout->addWidget(showAll);
 
 		connect(showAll, &QCheckBox::stateChanged, this, &OutputsWidget::ShowAllPresets);
-
-		updateOutputsWidgets();
 		setLayout(layout);
-
-
-
-
+		updateOutputsWidgets();
 	}
 
 	void OutputsWidget::SetResolution(const Vec2i& resolution)
@@ -113,7 +108,7 @@ namespace EditorSubstance
 			{
 				continue;
 			}
-			OutputWidget* outputWidget = new OutputWidget(&output, this);
+			OutputWidget* outputWidget = new OutputWidget(&output);
 			QObject::connect(outputWidget, &OutputWidget::outputChanged, [=]() { outputChanged(outputWidget->GetOutput()); });
 			QObject::connect(outputWidget, &OutputWidget::outputStateChanged, [=]() { outputStateChanged(outputWidget->GetOutput()); });
 			layout()->addWidget(outputWidget);

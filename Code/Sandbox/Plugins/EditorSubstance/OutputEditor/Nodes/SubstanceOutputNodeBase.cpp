@@ -34,8 +34,17 @@ namespace EditorSubstance
 
 		};
 
+		class CNodeEditorData : public CryGraphEditor::CNodeEditorData
+		{
+		public:
+			CNodeEditorData() : CryGraphEditor::CNodeEditorData()
+			{
+				m_pos.SetZero();
+			}
+		};
+
 		CSubstanceOutputNodeBase::CSubstanceOutputNodeBase(const SSubstanceOutput& output, CryGraphEditor::CNodeGraphViewModel& viewModel)
-			: CAbstractNodeItem(*(m_pData = new CryGraphEditor::CNodeEditorData()), viewModel)
+			: CAbstractNodeItem(*(m_pData = new CNodeEditorData()), viewModel)
 			, m_pOutput(output)
 			, m_pNodeContentWidget(nullptr)
 		{
@@ -94,9 +103,11 @@ namespace EditorSubstance
 		void CSubstanceOutputNodeBase::SetPreviewImage(std::shared_ptr<QImage> image)
 		{
 			m_originalImage = image;
-			QPixmap pixmap = QPixmap::fromImage(image->convertToFormat(QImage::Format_RGBX8888));
-
-			m_pNodeContentWidget->SetPreviewImage(pixmap.scaled(gPixmapSize, gPixmapSize));
+			if (m_pNodeContentWidget)
+			{
+				QPixmap pixmap = QPixmap::fromImage(image->convertToFormat(QImage::Format_RGBX8888));
+				m_pNodeContentWidget->SetPreviewImage(pixmap.scaled(gPixmapSize, gPixmapSize));
+			}
 		}
 
 		const QImage& CSubstanceOutputNodeBase::GetPreviewImage() const

@@ -72,10 +72,10 @@ CSubstancePresetEditor::CSubstancePresetEditor(QWidget* pParent /*= nullptr*/)
 	});
 
 	
-	QHBoxLayout* resolutionLayout = new QHBoxLayout(this);
-	m_pComboXRes = new QMenuComboBox(this);
-	m_pComboYRes = new QMenuComboBox(this);
-	m_pResUnified = new QToolButton(this);
+	QHBoxLayout* resolutionLayout = new QHBoxLayout();
+	m_pComboXRes = new QMenuComboBox();
+	m_pComboYRes = new QMenuComboBox();
+	m_pResUnified = new QToolButton();
 	m_pResUnified->setSizePolicy(QSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum));
 	m_pResUnified->setIcon(CryIcon("icons:General/Uniform.ico"));
 	m_pResUnified->setIconSize(QSize(24, 24));
@@ -105,7 +105,7 @@ CSubstancePresetEditor::CSubstancePresetEditor(QWidget* pParent /*= nullptr*/)
 	GetIEditor()->GetPersonalizationManager()->GetProperty(Personalization::Module, Personalization::YRes, yRes);
 	m_pComboXRes->SetText(xRes);
 	m_pComboYRes->SetText(yRes);
-	m_pResolutionWidget = new QWidget(m_pScrollBox);
+	m_pResolutionWidget = new QWidget();
 	m_pResolutionWidget->setLayout(resolutionLayout);
 	m_pScrollBox->addWidget(m_pResolutionWidget);
 
@@ -120,7 +120,7 @@ CSubstancePresetEditor::CSubstancePresetEditor(QWidget* pParent /*= nullptr*/)
 		ResolutionChanged(m_pComboXRes, index);
 	});
 
-	m_propertyTree = new QPropertyTree(m_pScrollBox);
+	m_propertyTree = new QPropertyTree();
 	m_pScrollBox->addWidget(m_propertyTree);
 	m_propertyTree->setSizeToContent(true);
 	SetContent(m_pScrollBox);
