@@ -40,18 +40,6 @@ private:
 	const value_type m_value;
 };
 
-template<class T>
-constexpr T GetCVarOverride(const typename CVarOverride<std::is_arithmetic<T>::value ? CVarOverrideType::Numeric : CVarOverrideType::String>::hash_type hashedName, T defaultValue)
-{
-	return defaultValue;
-}
-
-template<class T>
-inline constexpr T GetCVarOverride(const char* szName, const T defaultValue)
-{
-	return GetCVarOverride(CCrc32::ComputeLowercase_CompileTime(szName), defaultValue);
-}
-
 #ifndef USE_RUNTIME_CVAR_OVERRIDES
 
 struct CVarWhitelistEntry
@@ -125,22 +113,35 @@ namespace detail
 	}
 }
 
-constexpr float GetCVarOverride(const typename CVarOverride<CVarOverrideType::Numeric>::hash_type hashedName, const float defaultValue)
+constexpr float GetCVarOverride(const char* szName, const float defaultValue)
 {
-	return detail::GetCVarOverrideImpl(g_engineCvarNumericOverrides, CRY_ARRAY_COUNT(g_engineCvarNumericOverrides), hashedName, defaultValue, 0);
+	return detail::GetCVarOverrideImpl(g_engineCvarNumericOverrides, CRY_ARRAY_COUNT(g_engineCvarNumericOverrides), CCrc32::ComputeLowercase_CompileTime(szName), defaultValue, 0);
 }
 
-constexpr int GetCVarOverride(const typename CVarOverride<CVarOverrideType::Numeric>::hash_type hashedName, const int defaultValue)
+constexpr int GetCVarOverride(const char* szName, const int defaultValue)
 {
-	return detail::GetCVarOverrideImpl(g_engineCvarNumericOverrides, CRY_ARRAY_COUNT(g_engineCvarNumericOverrides), hashedName, defaultValue, 0);
+	return detail::GetCVarOverrideImpl(g_engineCvarNumericOverrides, CRY_ARRAY_COUNT(g_engineCvarNumericOverrides), CCrc32::ComputeLowercase_CompileTime(szName), defaultValue, 0);
 }
 
-constexpr const char* GetCVarOverride(const typename CVarOverride<CVarOverrideType::String>::hash_type hashedName, const char* defaultValue)
+constexpr int GetCVarOverride(const char* szName, const int64 defaultValue)
 {
-	return detail::GetCVarOverrideImpl(g_engineCvarStringOverrides, CRY_ARRAY_COUNT(g_engineCvarStringOverrides), hashedName, defaultValue, 0);
+	return detail::GetCVarOverrideImpl(g_engineCvarNumericOverrides, CRY_ARRAY_COUNT(g_engineCvarNumericOverrides), CCrc32::ComputeLowercase_CompileTime(szName), static_cast<int>(defaultValue), 0);
 }
 
-#endif // !USE_RUNTIME_CVAR_OVERRIDES
+constexpr const char* GetCVarOverride(const char* szName, const char* defaultValue)
+{
+	return detail::GetCVarOverrideImpl(g_engineCvarStringOverrides, CRY_ARRAY_COUNT(g_engineCvarStringOverrides), CCrc32::ComputeLowercase_CompileTime(szName), defaultValue, 0);
+}
+
+#else // USE_RUNTIME_CVAR_OVERRIDES
+
+template<class T>
+inline constexpr T GetCVarOverride(const char* szName, const T defaultValue)
+{
+	return defaultValue;
+}
+
+#endif // USE_RUNTIME_CVAR_OVERRIDES
 
 constexpr bool IsCVarWhitelisted(const char* szName)
 {
