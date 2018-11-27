@@ -3,6 +3,7 @@
 
 #include "EditorCommonAPI.h"
 #include "IResourceSelectorHost.h"
+#include "AssetSystem/Browser/AssetBrowserDialog.h"
 
 class CAssetType;
 
@@ -27,6 +28,32 @@ struct EDITOR_COMMON_API SStaticAssetSelectorEntry : public SStaticResourceSelec
 private:
 	std::vector<string> assetTypeNames;
 	std::vector<const CAssetType*> assetTypes;
+};
+
+//! Spawn an asset selection dialog and stores the results of the operation
+class EDITOR_COMMON_API CAssetSelector
+{
+public:
+	//! The asset types this context will show in the dialog
+	CAssetSelector(const std::vector<string>& assetTypeNames);
+
+	//! Spawns an asset selection dialog and returns if the selection was selected or not
+  //! \param onValueChangedCallback a lambda called every time the asset selection is changed
+	//! \param types used in the lookup process for previousValue
+	//! \param previousValue the asset that will be selected when the selection dialog opens
+	bool Execute(std::function<void(const char* newValue)> onValueChangedCallback, const std::vector<string>& types, const char* previousValue);
+
+	//! Spawns an asset selection dialog and returns if the selection was selected or not
+	//! \param context contains selection changed callbacks and other contextual info 
+	//! \param types used in the lookup process for previousValue
+	//! \param previousValue the asset that will be selected when the selection dialog opens
+	bool Execute(const SResourceSelectorContext& context, const std::vector<string>& types, const char* previousValue);
+
+	//! Returns the currently selected asset if we have one
+	CAsset* GetSelectedAsset() { return m_dialog.GetSelectedAsset(); }
+
+private:
+	CAssetBrowserDialog m_dialog;
 };
 
 //Register a picker type that accept several asset types

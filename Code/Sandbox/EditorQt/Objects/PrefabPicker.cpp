@@ -21,7 +21,7 @@ struct SPreviouslySetPrefabData
 class CUndoSwapPrefab : public IUndoObject
 {
 public:
-	CUndoSwapPrefab(CPrefabObject* obj, SPreviouslySetPrefabData& previousPrefab, const char* undoDescription);
+	CUndoSwapPrefab(const std::vector<CPrefabObject*>& objects, const std::vector<SPreviouslySetPrefabData> & previousPrefab, const char* undoDescription);
 
 protected:
 	virtual const char* GetDescription() override { return m_undoDescription; }
@@ -32,128 +32,174 @@ protected:
 
 private:
 
-	CryGUID                  m_guid;
+	std::vector<CryGUID>     m_guids;
 	string                   m_undoDescription;
-	SPreviouslySetPrefabData m_undoPreviousPrefabAsset;
-	SPreviouslySetPrefabData m_redoPreviousPrefabAsset;
+	std::vector<SPreviouslySetPrefabData> m_undoPreviousPrefabAssets;
+	std::vector<SPreviouslySetPrefabData> m_redoPreviousPrefabAssets;
 
 };
 
-CUndoSwapPrefab::CUndoSwapPrefab(CPrefabObject* obj, SPreviouslySetPrefabData& previousPrefabData, const char* undoDescription) :
-	m_undoDescription(undoDescription),
-	m_guid(obj->GetId()),
-	m_undoPreviousPrefabAsset(previousPrefabData)
+CUndoSwapPrefab::CUndoSwapPrefab(const std::vector<CPrefabObject*>& objects, const std::vector<SPreviouslySetPrefabData>& previousPrefabsData, const char* undoDescription) :
+	m_undoPreviousPrefabAssets(objects.size()),
+	m_redoPreviousPrefabAssets(objects.size()),
+	m_undoDescription(undoDescription)
 {
-	assert(obj != nullptr);
+	CRY_ASSERT(!objects.empty());
+	//store all prefab objects guids and change data
+	for (CPrefabObject* pObj : objects)
+	{
+		m_guids.push_back(pObj->GetId());
+	}
+
+	for (int i = 0; i < previousPrefabsData.size(); i++)
+	{
+		m_undoPreviousPrefabAssets[i] = previousPrefabsData[i];
+	}
 }
 
 const char* CUndoSwapPrefab::GetObjectName()
 {
-	CBaseObject* object = GetIEditor()->GetObjectManager()->FindObject(m_guid);
-	if (!object)
-		return "";
+	string result = "";
+	int guidsSize = m_guids.size();
 
-	return object->GetName();
+	if (guidsSize == 1) //If we only have one prefab object we can directly show the name
+	{
+		CBaseObject* pObject = GetIEditor()->GetObjectManager()->FindObject(m_guids[0]);
+		if (pObject)
+		{
+			result = pObject->GetName();
+		}
+	}
+	else if (guidsSize > 1) //if we have more than one prefab object we show how many we have
+	{
+		result.Format("%d prefabs", guidsSize);
+	}
+
+	return result.c_str();
 }
 
 void CUndoSwapPrefab::Undo(bool bUndo)
 {
-	CBaseObject* object = GetIEditor()->GetObjectManager()->FindObject(m_guid);
-	if (!object)
-		return;
-
-	CPrefabObject* pPrefabObject = static_cast<CPrefabObject*>(object);
-
-	if (bUndo)
+	for (int i = 0; i < m_guids.size(); i++)
 	{
-		m_redoPreviousPrefabAsset.assetFilename = pPrefabObject->GetAssetPath();
-		m_redoPreviousPrefabAsset.changed = true;
-	}
+		CBaseObject* object = GetIEditor()->GetObjectManager()->FindObject(m_guids[i]);
+		if (!object)
+			break;
 
-	if (m_undoPreviousPrefabAsset.changed)
-	{
-		CPrefabPicker::SetPrefabFromAssetFilename(pPrefabObject, m_undoPreviousPrefabAsset.assetFilename);
-		pPrefabObject->UpdatePrefab(eOCOT_Modify);
-		pPrefabObject->GetPrefabItem()->UpdateObjects();
+		CPrefabObject* pPrefabObject = static_cast<CPrefabObject*>(object);
+
+		if (bUndo)
+		{
+			m_redoPreviousPrefabAssets[i].assetFilename = pPrefabObject->GetAssetPath();
+			m_redoPreviousPrefabAssets[i].changed = true;
+		}
+
+		if (m_undoPreviousPrefabAssets[i].changed)
+		{
+			CPrefabPicker::SetPrefabFromAssetFilename(pPrefabObject, m_undoPreviousPrefabAssets[i].assetFilename);
+			pPrefabObject->UpdatePrefab(eOCOT_Modify);
+		}
 	}
 }
 
 void CUndoSwapPrefab::Redo()
 {
-	CBaseObject* object = GetIEditor()->GetObjectManager()->FindObject(m_guid);
-	if (!object)
-		return;
-
-	CPrefabObject* pPrefabObject = static_cast<CPrefabObject*>(object);
-	if (m_redoPreviousPrefabAsset.changed)
+	for (int i = 0; i < m_guids.size(); i++)
 	{
-		CPrefabPicker::SetPrefabFromAssetFilename(pPrefabObject, m_redoPreviousPrefabAsset.assetFilename);
-		pPrefabObject->UpdatePrefab(eOCOT_Modify);
-		pPrefabObject->GetPrefabItem()->UpdateObjects();
+		CBaseObject* object = GetIEditor()->GetObjectManager()->FindObject(m_guids[i]);
+		if (!object)
+			break;
+
+		CPrefabObject* pPrefabObject = static_cast<CPrefabObject*>(object);
+		if (m_redoPreviousPrefabAssets[i].changed)
+		{
+			CPrefabPicker::SetPrefabFromAssetFilename(pPrefabObject, m_redoPreviousPrefabAssets[i].assetFilename);
+			pPrefabObject->UpdatePrefab(eOCOT_Modify);
+		}
 	}
 }
 
-void CPrefabPicker::SwapPrefab(CPrefabObject* pPrefabObject)
+void CPrefabPicker::SwapPrefab(const std::vector<CPrefabObject*>& prefabObjects)
 {
-	SPreviouslySetPrefabData previousPrefabData;
-
-	CAssetManager* const pManager = CAssetManager::GetInstance();
-	CAsset* pAsset = pManager->FindAssetForFile(pPrefabObject->GetAssetPath());
-
-	if (!pAsset)
+	if (prefabObjects.empty())
 	{
 		return;
 	}
 
-	const char* pType = pAsset->GetType()->GetTypeName();
+	CAssetManager* const pManager = CAssetManager::GetInstance();
+	std::vector<SPreviouslySetPrefabData> previousPrefabsData(prefabObjects.size());
 
-	//This is only selection, not full update. The whole prefab chain update and undo/redo are applied only when the asset browser dialog Execute() is completed
-	dll_string assetFilename = SStaticAssetSelectorEntry::SelectFromAsset([pPrefabObject, &previousPrefabData](const char* newValue)
+	CAsset* pLastSelectedPrefabAsset = pManager->FindAssetForFile(prefabObjects[prefabObjects.size() - 1]->GetAssetPath());
+	if (!pLastSelectedPrefabAsset)
 	{
-		//We store the first time we change the asset for preview since it's the one we want to restore
-		if (!previousPrefabData.changed)
-		{
-		  previousPrefabData.assetFilename = pPrefabObject->GetAssetPath();
-		}
+		return;
+	}
 
-		if (SetPrefabFromAssetFilename(pPrefabObject, newValue))
-		{
-		  previousPrefabData.changed = true;
-		}
+	CAssetSelector selector({ pLastSelectedPrefabAsset->GetType()->GetTypeName() });
 
-		GetIEditor()->GetObjectManager()->AddObjectToSelection(pPrefabObject);
-	},
-	{ pType },
-	pPrefabObject->GetAssetPath());
-
-	//Start the Asset Browser dialog
-	if (!assetFilename.empty())
+	//Spawn the selection dialog and if the newly selected asset can be applied to all prefabs objects in the selection proceed with the change
+	//This is only selection, not full update. The whole prefab instances are updated and undo/redo is applied only when the asset browser dialog Execute() is completed
+	bool applyChanges = selector.Execute([&previousPrefabsData, &prefabObjects](const char* newValue)
 	{
 		CAssetManager* const pManager = CAssetManager::GetInstance();
-		CAsset* pPreviousAsset = pManager->FindAssetForFile(assetFilename.c_str());
-		//If the set is not valid we don't want to register an undo
-		if (IsValidAssetForPrefab(pPrefabObject, *pPreviousAsset))
-		{
-			SetPrefabFromAssetFilename(pPrefabObject, assetFilename.c_str());
+		CAsset* pNewAsset = pManager->FindAssetForFile(newValue);
 
+		//if this asset is not valid for all prefab objects just stop here
+		bool isValidForAllPrefabs = true;
+		for (int i = 0; i < prefabObjects.size(); i++)
+		{
+			if (!IsValidAssetForPrefab(prefabObjects[i], *pNewAsset))
+			{
+				isValidForAllPrefabs = false;
+				break;
+			}
+		}
+
+		if (!isValidForAllPrefabs)
+		{
+			return;
+		}
+
+		//apply to all prefab objects in the selection
+		//note that we are note sending a prefab modify event, we apply to all instances only if the change is confirmed
+		for (int i = 0; i < prefabObjects.size(); i++)
+		{
+			//We store the first time we change the asset for preview since it's the one we want to restore if the change operation is canceled
+			if (!previousPrefabsData[i].changed)
+			{
+				previousPrefabsData[i].assetFilename = prefabObjects[i]->GetAssetPath();
+				previousPrefabsData[i].changed = true;
+			}
+			else if(previousPrefabsData[i].assetFilename == newValue) // we are going back to the original asset, no change required after this
+			{
+				previousPrefabsData[i].changed = false;
+			}
+			//actually set the new asset
+			SetPrefabFromAssetFilename(prefabObjects[i], newValue);
+		}
+	},
+	{pLastSelectedPrefabAsset->GetType()->GetTypeName()},
+	prefabObjects[prefabObjects.size() - 1]->GetAssetPath());
+
+	for (int i = 0; i < prefabObjects.size(); i++)
+	{
+		//if we have accepted the operation apply to all instances and register an undo
+		if (applyChanges && previousPrefabsData[i].changed)
+		{
 			//This updates the CPrefabItem with the new prefab guids
-			pPrefabObject->UpdatePrefab(eOCOT_Modify);
-			//This updates the visuals of all the CPrefabObjects deriving from the CPrefabItem
-			pPrefabObject->GetPrefabItem()->UpdateObjects();
+			prefabObjects[i]->UpdatePrefab(eOCOT_Modify);
 
 			if (!CUndo::IsRecording())
 			{
 				CUndo undo("Prefab Swap");
-				CUndo::Record(new CUndoSwapPrefab(pPrefabObject, previousPrefabData, "Prefab Swap"));
+				CUndo::Record(new CUndoSwapPrefab(prefabObjects, previousPrefabsData, "Prefab Swap"));
 			}
-		}
-		GetIEditor()->GetObjectManager()->AddObjectToSelection(pPrefabObject);
-	}
-	else if (assetFilename.empty() && previousPrefabData.changed)
-	{
-		if (SetPrefabFromAssetFilename(pPrefabObject, previousPrefabData.assetFilename))
+			GetIEditor()->GetObjectManager()->AddObjectToSelection(prefabObjects[i]);
+		} 		//if we have not accepted the operation revert to original asset if necessary
+		else if (!applyChanges && previousPrefabsData[i].changed)
 		{
-			previousPrefabData.changed = false;
+			SetPrefabFromAssetFilename(prefabObjects[i], previousPrefabsData[i].assetFilename);
+			GetIEditor()->GetObjectManager()->AddObjectToSelection(prefabObjects[i]);
 		}
 	}
 }

@@ -6,8 +6,9 @@ class CPrefabObject;
 class CPrefabPicker
 {
 public:
-	//!Spawns a resource selector dialog to allow selection of another Prefab Asset to assign to this object
-	void SwapPrefab(CPrefabObject* pPrefabObject);
+	//!Spawns an asset selection dialog to allow selection of another Prefab Asset to assign to these objects
+	//! \param prefabObjects the objects we'll assign the new prefab asset to, in case of multiple assets the one of the last selected object is used
+	void SwapPrefab(const std::vector<CPrefabObject*>& prefabObjects);
 	//!Set the prefab pointed by this asset on the object
 	//! \return true if the new prefab is set
 	static bool SetPrefabFromAsset(CPrefabObject* pPrefabObject, const CAsset* pNewPrefabAsset);
