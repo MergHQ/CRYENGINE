@@ -475,16 +475,18 @@ bool GTextureXRenderYUV::InitTextureFromTexId(int /*texid*/)
 	return false;
 }
 
+// TODO eTF_R8S
+static const ETEX_Format planesYUV[4] = { eTF_R8, eTF_R8, eTF_R8, eTF_A8 };
+static const unsigned char clearYUV[][4] = { { 0,0,0,0 },{ 128,128,128,128 },{ 128,128,128,128 },{ 255,255,255,255 } };
+
 void GTextureXRenderYUV::Clear()
 {
-	static const unsigned char clearVal[][4] = { {0,0,0,0}, {128,128,128,128}, {128,128,128,128}, {255,255,255,255} };
-
 	const int level = 0; // currently don't have mips so only clear level 0
 
 	IRenderer* pRenderer(gEnv->pRenderer);
 	for (int32 i = 0; i < m_numIDs; ++i)
 	{
-		pRenderer->SF_ClearTexture(m_texIDs[i], level, 1, nullptr, clearVal[i]);
+		pRenderer->SF_ClearTexture(m_texIDs[i], level, 0, nullptr, clearYUV[i]);
 	}
 }
 
@@ -504,7 +506,7 @@ bool GTextureXRenderYUV::InitDynamicTexture(int width, int height, GImage::Image
 			assert(m_texIDs[i] == -1);
 			int w = Res(i, (uint32) width);
 			int h = Res(i, (uint32) height);
-			int32 texId = pRenderer->SF_CreateTexture(w, h, mipmaps + 1, 0, eTF_A8, FT_DONT_STREAM);
+			int32 texId = pRenderer->SF_CreateTexture(w, h, mipmaps + 1, 0, planesYUV[i], FT_DONT_STREAM);
 			ok = texId > 0;
 			if (ok)
 			{
@@ -634,7 +636,7 @@ bool GTextureXRenderYUV::Unmap(int level, int n, MapRect* maps, int /*flags*/)
 		{
 			SrcRect.Set(0, 0, 0, 0, maps[i].width, maps[i].height);
 
-			pRenderer->SF_UpdateTexture(m_texIDs[i], level, 1, &SrcRect, maps[i].pData, maps[i].pitch, maps[i].width * maps[i].height * sizeof(unsigned char), eTF_A8);
+			pRenderer->SF_UpdateTexture(m_texIDs[i], level, 1, &SrcRect, maps[i].pData, maps[i].pitch, maps[i].width * maps[i].height * sizeof(unsigned char), planesYUV[i]);
 
 			CryModuleMemalignFree(maps[i].pData);
 			maps[i].pData = nullptr;

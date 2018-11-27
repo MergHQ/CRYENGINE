@@ -730,13 +730,7 @@ bool CD3D9Renderer::SF_UpdateTexture(int texId, int mipLevel, int numRects, cons
 	assert(texId > 0 && numRects > 0 && pRects != 0 && pSrcData != 0 && rowPitch > 0);
 
 	CTexture* pTexture(CTexture::GetByID(texId));
-	assert(pTexture);
-
-	if (pTexture->GetTextureType() != eTT_2D || pTexture->GetDstFormat() != eSrcFormat)
-	{
-		assert(0);
-		return false;
-	}
+	CRY_ASSERT(pTexture && pTexture->GetTextureType() == eTT_2D && pTexture->GetDstFormat() == eSrcFormat);
 
 	CDeviceTexture* pDevTex = pTexture->GetDevTexture();
 	if (!pDevTex)
@@ -766,34 +760,28 @@ bool CD3D9Renderer::SF_UpdateTexture(int texId, int mipLevel, int numRects, cons
 bool CD3D9Renderer::SF_ClearTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
-	__debugbreak();
 
-	assert(texId > 0 && numRects > 0 && pRects != 0 && pData != 0);
+	assert(texId > 0 && pData != 0);
 
 	CTexture* pTexture(CTexture::GetByID(texId));
-	assert(pTexture);
-
-	if (pTexture->GetTextureType() != eTT_2D)
-	{
-		assert(0);
-		return false;
-	}
+	CRY_ASSERT(pTexture && pTexture->GetTextureType() == eTT_2D);
 
 	CDeviceTexture* pDevTex = pTexture->GetDevTexture();
 	if (!pDevTex)
 		return false;
 
-	// TODO: batch rect clears
+	GPUPIN_DEVICE_TEXTURE(GetPerformanceDeviceContext(), pDevTex);
 	const ColorF clearValue(pData[0], pData[1], pData[2], pData[3]);
-	for (int i(0); i < numRects; ++i)
+	if (!numRects || !pRects)
 	{
-		if (!pRects)
+		CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
+		commandList.GetGraphicsInterface()->ClearSurface(pTexture->GetSurface(0, mipLevel), clearValue);
+	}
+	else
+	{
+		for (int i(0); i < numRects; ++i)
 		{
-			CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
-			commandList.GetGraphicsInterface()->ClearSurface(pTexture->GetSurface(0, mipLevel), clearValue);
-		}
-		else
-		{
+			// TODO: batch rect clears
 			D3D11_RECT box = { static_cast<LONG>(pRects[i].dstX),
 							   static_cast<LONG>(pRects[i].dstY),
 							   static_cast<LONG>(pRects[i].dstX + pRects[i].width),

@@ -77,8 +77,6 @@ struct SSF_GlobalDrawParams
 	};
 	STextureInfo texture[4];
 
-	int texID_YUVA[4];
-
 	uint32 blendModeStates;
 	uint32 renderMaskedStates;
 
@@ -251,18 +249,14 @@ struct SSF_GlobalDrawParams
 
 		m_pScaleformMeshAttributes->cCompositeMat.SetZero();
 
-		texture[0].pTex = nullptr;
-		texture[0].texState = 0;
-		texture[1].pTex = nullptr;
-		texture[1].texState = 0;
+		texture[0].pTex = texture[1].pTex = texture[2].pTex = texture[3].pTex = nullptr;
+		texture[0].texState = texture[1].texState = texture[2].texState = texture[3].texState = 0;
 
 		m_pScaleformMeshAttributes->cTexGenMat[0][0] = Vec4(1, 0, 0, 0);
 		m_pScaleformMeshAttributes->cTexGenMat[0][1] = Vec4(0, 1, 0, 0);
 
 		m_pScaleformMeshAttributes->cTexGenMat[1][0] = Vec4(1, 0, 0, 0);
 		m_pScaleformMeshAttributes->cTexGenMat[1][1] = Vec4(0, 1, 0, 0);
-
-		texID_YUVA[0] = texID_YUVA[1] = texID_YUVA[2] = texID_YUVA[3] = -1;
 
 		m_pScaleformMeshAttributes->cStereoVideoFrameSelect = Vec2(1.0f, 0.0f);
 

@@ -1005,8 +1005,8 @@ private:
 	bool                m_bVertexTexture        : 1;
 	bool                m_bUseDecalBorderCol    : 1;
 	bool                m_bIsSRGB               : 1;
-
 	bool                m_bNoDevTexture         : 1;
+
 	bool                m_bInDistanceSortedList : 1;
 	bool                m_bCreatedInLevel       : 1;
 	bool                m_bUsedRecently         : 1;
@@ -1014,7 +1014,6 @@ private:
 	bool                m_bStreamHighPriority   : 1;
 
 	uint8               m_nStreamFormatCode;
-	int8                m_nCustomID;
 
 	uint16              m_nArraySize;
 	int8                m_nMips;
@@ -1033,6 +1032,7 @@ private:
 	uint32              m_nDevTextureSize;
 	uint32              m_nPersistentSize;
 
+	int                 m_nCustomID;
 	int                 m_nAccessFrameID; // last read access, compare with GetFrameID(false)
 	STexStreamRoundInfo m_streamRounds[MAX_STREAM_PREDICTION_ZONES];
 
