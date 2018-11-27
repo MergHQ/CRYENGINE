@@ -66,8 +66,8 @@ struct SCallbackRequestData<ECallbackRequestType::ReportStartedEvent> final : pu
 
 	virtual ~SCallbackRequestData() override = default;
 
-	CEvent& event;
-	bool    isVirtual;
+	CEvent&    event;
+	bool const isVirtual;
 };
 
 //////////////////////////////////////////////////////////////////////////
