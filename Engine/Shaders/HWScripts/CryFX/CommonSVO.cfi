@@ -22,7 +22,7 @@ float4 SvoParamsSkyColor: PB_SvoParams4;  // r, g, b, mult
 float4 SvoParamsSpecular: PB_SvoParams3;  // wid, caust mult, air brightness, mult
 float4 SvoParamsMisc3: PB_SvoParams7;     // AO len, AO soft
 float4 SvoParamsMisc4: PB_SvoParams8;     // VoxelOpacityMultiplier, SkyLightBottomMultiplier
-float4 SvoParamsMisc5: PB_SvoParams9;     //
+float4 SvoParamsRT: PB_SvoParams9;        // Mesh RT params: MaxDistRay, MaxDistCam, MinGloss, MinRefl
 
 float4x4 SVO_ViewProj;
 float4x4 SVO_ViewProjPrev;
@@ -101,7 +101,10 @@ float SampleLinearDepth(Texture2D depthTexture, float2 ScreenTC)
 #define VOX_BRICK_TEXRES                   (SvoTreeSettings0.z)
 #define VOX_MIN_VOX_SIZE                   (SvoTreeSettings0.y / SvoTreeSettings0.z)
 #define VOX_MAX_NODE_SIZE                  (SvoTreeSettings1.x)
-#define VOX_MAX_RT_DIST                    (SvoTreeSettings1.y)
+#define VOX_MAX_RT_DIST_RAY                (SvoParamsRT.x)
+#define VOX_MAX_RT_DIST_CAM                (SvoParamsRT.y)
+#define VOX_MAX_RT_MIN_GLOSS               (SvoParamsRT.z)
+#define VOX_MAX_RT_MIN_REFL                (SvoParamsRT.w)
 #define VOX_CONE_MAX_LEN                   (SvoParamsDiffuse.y)
 #define VOX_POST_AO_MAX_DIST               (SvoParamsMisc3.x)
 
@@ -154,20 +157,17 @@ float3 DecodeHDR(float4 Color)
 
 Texture2D sceneDepth: register (t4);
 
-Texture3D brickPool_TTex: register (t8);
-Texture3D brickPool_Tris: register (t9);
-Texture3D brickPool_TInd: register (t13);
+Texture3D geomPool_TTex: register (t18);
+Texture3D geomPool_Tris: register (t9);
+Texture3D geomPool_TInd: register (t13);
 
 Texture3D brickPool_Tree: register (t0);
 Texture3D brickPool_Rgbs: register (t1);
 Texture3D brickPool_Norm: register (t2);
 Texture3D brickPool_Opac: register (t3);
+Texture3D brickPool_RTri: register (t17);
 
-#ifdef MESH_TRACING
-Texture3D brickPool_NTri: register (t6);
-#else
 TextureCube globalSpecCM: register (t6);
-#endif
 
 Texture2D sceneTargetPrev: register (t12);
 
@@ -479,299 +479,97 @@ float2 ExtractTC(float fVal)
 	return tc;
 }
 
-float3 SnapPoolTC_Real(float3 vCurTC)
+void RayTraceMesh(const float4 arrGoodTC, inout Ray rOrig, inout float4 vRgbOut, inout float3 vHitNorm, inout float fNearestHitDist)
 {
-	return floor(vCurTC * VOX_TEX_POOL_DIM) / VOX_TEX_POOL_DIM + .5f / VOX_TEX_POOL_DIM;
-}
+	// find nearest hit triangle
 
-float ReadDecodeIso(float3 texTC)
-{
-	int4 vVal = tex3DlodLC(brickPool_Rgbs, float4(texTC, 0)) * 255;
+	// get first triangle id and tris count
+	const float4 vValII = tex3DlodPC(brickPool_RTri, float4(Tris_SnapPoolTC(arrGoodTC.xyz), 0));
+	const int nFirstTriII = int(vValII.r * 255) + int(vValII.g * 255) * 256 + int(vValII.b * 255) * 256 * 256;
+	const int nTriCount = int(vValII.a * 255);
 
-	int nRes = vVal.r + vVal.g * 256;
+	const int maxSizeXY = 512; // e_svoTI_RT_MaxTexRes
+	const int dwMaskXY = maxSizeXY - 1;
+	const int maxSizeZ = int(VOX_TEX_POOL_DIM.z);
+	const int dwMaskZ = maxSizeZ - 1;
+	const float4 vScaleTC = float4(maxSizeXY, maxSizeXY, maxSizeZ, 1);
 
-	return 1.f / (256 * 256) * nRes;
-}
+	int3 nTC_Best = 0;
+	float3 vBarTC_Best = 0;
+	float4 vCenterRGB_Best = 0;
 
-float ReadIsoValTrilinear(float3 texTC)
-{
-	return ReadDecodeIso(texTC);
-
-	//	return tex3DlodPC( brickPool_Rgbs,  float4(texTC.xyz, 0) ).r;
-
-	/*
-	   float2 MapParams = float2 (VOX_TEX_POOL_DIM.x, 1.f / VOX_TEX_POOL_DIM.y );
-
-	   float3 f = frac( texTC * MapParams.x );
-	   texTC = float3(int3(texTC*VOX_TEX_POOL_DIM))/VOX_TEX_POOL_DIM;
-
-	   float tz[2];
-	   for(int z=0; z<2; z++)
-	   {
-	   float t00 = ReadDecodeIso( float3(texTC.xy																	 , texTC.z + MapParams.y*z) );
-	   float t10 = ReadDecodeIso( float3(texTC.xy + MapParams.y * float2( 1.0, 0.0 ), texTC.z + MapParams.y*z) );
-	   float t01 = ReadDecodeIso( float3(texTC.xy + MapParams.y * float2( 0.0, 1.0 ), texTC.z + MapParams.y*z) );
-	   float t11 = ReadDecodeIso( float3(texTC.xy + MapParams.y * float2( 1.0, 1.0 ), texTC.z + MapParams.y*z) );
-	   float4 t = float4(t00, t10, t01, t11);
-	   float2 t2 = lerp( t.xz, t.yw, f.x );
-	   tz[z] = lerp( t2.x, t2.y, f.y );
-	   }
-
-	   return lerp(tz[0], tz[1], (f.z));	*/
-}
-
-bool ConeTraceBrick_Terrain(const float3 vRayStartPos, inout Ray r, const float fDistanceIn, inout float fDistance, const float fDistanceMax,
-                            inout float4 vPosOut, inout float4 vNormal, const float3 tcMin, inout float4 vRgbOut, const float fAlphaRef, const float fLodRatio,
-                            const float fAlphaRefMin, const float fAlphaRefMax, const int nPredictionMode, const float fMultTriRT, const bool bAirOnlyMode, const bool bApplyGlobalDensity, const bool bSpecular,
-                            inout float fIsoValPrev)
-{
-	bool bRes = true;
-
-	float4 voxAreaMin, voxAreaMax;
-	ReadNodeCropBox(tcMin, voxAreaMin, voxAreaMax);
-	const float ocNodeSize = voxAreaMin.w;
-
-	const float3 vHalfTexSizeWS = 0.5f / VOX_BRICK_TEXRES * ocNodeSize;
-	const float3 vBoxSize = voxAreaMax.xyz - voxAreaMin.xyz;
-
-	float tmin = 0, tmax = 0;
-	const float fSafetyBorder = 0.001f;
-	const bool bHit = IntersectRayAABB(r, voxAreaMin.xyz - fSafetyBorder, voxAreaMax.xyz + fSafetyBorder, tmin, tmax);
-
-	Texture3D sPoolRGBI = brickPool_Opac;
-	Texture3D sPoolNNNS = brickPool_Norm;
-	Texture3D sPoolSSSS = brickPool_Rgbs;
-
-	if (bHit && (tmax > 0))
+	for (int tii = 0; tii < nTriCount; tii++)
 	{
-		Ray rOrig = r;
+		// get triangle index data location TC
+		const int nTCII = nFirstTriII + tii;
+		const int3 vTCII = int3(nTCII & dwMaskXY, (nTCII / maxSizeXY) & dwMaskXY, (nTCII / maxSizeXY / maxSizeXY) & dwMaskZ);
 
-		const float3 vMulTC = 1.f / ocNodeSize * vBoxSize / VOX_ATLAS_SIZE * VOX_SUBBLOCK_SIZE_RATIO;
+		// get triangle id
+		const float4 vVal = tex3DlodPC(geomPool_TInd, float4(vTCII.x, vTCII.y, vTCII.z, 0) / vScaleTC);
+		const int triDataSize = 8; // number of Vec4 elements per triangle
+		const int triDataOffset = (int(vVal.r * 255) + int(vVal.g * 255) * 256 + int(vVal.b * 255) * 256 * 256 + int(vVal.a * 255) * 256 * 256 * 256) * triDataSize;
 
-		vPosOut.w = 1000000;
+		// convert triangle id into data location TC
+		const int3 nTC = int3(triDataOffset & dwMaskXY, (triDataOffset / maxSizeXY) & dwMaskXY, (triDataOffset / maxSizeXY / maxSizeXY) & dwMaskZ);
 
-		while (1)
+		// load triangle vertices
+		const float4 v0 = tex3DlodPC(geomPool_Tris, float4(nTC.x + 0, nTC.y, nTC.z, 0) / vScaleTC);
+		const float4 v1 = tex3DlodPC(geomPool_Tris, float4(nTC.x + 1, nTC.y, nTC.z, 0) / vScaleTC);
+		const float4 v2 = tex3DlodPC(geomPool_Tris, float4(nTC.x + 2, nTC.y, nTC.z, 0) / vScaleTC);
+
+		// intersect
+		float3 vHitPoint = 0;
+		if (Ray_Triangle(rOrig, v1, v0, v2, vHitPoint))
 		{
-			//			float fStepSize = .25f;
-			//			float fStepSize = lerp(.05, .25f, saturate(fDistance/32));
-			float fStepSize = lerp(.05f, .5f, saturate(-fIsoValPrev * 20));
+			const float fHitDist = length(vHitPoint.xyz - rOrig.startpoint);
 
-			r.startpoint += r.direction * (ocNodeSize / VOX_BRICK_TEXRES) * fStepSize;
-
-			float3 vPosWS = r.startpoint;
-
-			// seams compensation, safety border
-			vPosWS -= (vPosWS - (voxAreaMin + voxAreaMax) / 2) / VOX_BRICK_TEXRES;
-
-			float3 vCurTC = tcMin + ((clamp(vPosWS, voxAreaMin + vHalfTexSizeWS, voxAreaMax - vHalfTexSizeWS) - voxAreaMin.xyz) / (vBoxSize)) * vMulTC;
-			float4 vRGBI = tex3DlodLC(sPoolRGBI, float4(vCurTC.xyz, 0));
-			float4 vNNNS = 0;//tex3DlodLC( sPoolNNNS,  float4(vCurTC.xyz, 0) );
-			float4 vSSSS = 0;//tex3DlodLC( sPoolSSSS,  float4(vCurTC.xyz, 0) );
-
-			float fIsoVal = (vRGBI.a - .5);
-			float3 vDetStartPoint = r.startpoint;
-			if (fIsoVal >= 0)
+			// find closest intersection
+			if (fHitDist < fNearestHitDist)
 			{
-				float fLastStepSize = fIsoVal + abs(fIsoValPrev);
-				vDetStartPoint -= r.direction * (ocNodeSize / VOX_BRICK_TEXRES) * fStepSize * (fIsoVal / fLastStepSize);
-				vCurTC = tcMin + ((clamp(vDetStartPoint, voxAreaMin + vHalfTexSizeWS, voxAreaMax - vHalfTexSizeWS) - voxAreaMin.xyz) / (vBoxSize)) * vMulTC;
-				vNNNS = tex3DlodLC(sPoolNNNS, float4(vCurTC.xyz, 0));
+				// load vertices TC
+				const float4 vInf = tex3DlodPC(geomPool_Tris, float4(nTC.x + 3, nTC.y, nTC.z, 0) / vScaleTC);
 
-				// read surface types
+				// calculate barycentric TC
+				float3 vBarTC;
+				GetBarycentricTC(v0, v1, v2, vBarTC[0], vBarTC[1], vBarTC[2], vHitPoint);
+
+				// get texture coordinates
+				const float2 t0 = ExtractTC(v0.w);
+				const float2 t1 = ExtractTC(v1.w);
+				const float2 t2 = ExtractTC(v2.w);
+				const float2 vPosTC = t0 * vBarTC[0] + t1 * vBarTC[1] + t2 * vBarTC[2];
+
+				// texture id
+				const int textureId = (int)(vInf.x) - 1;
+
+				// read RGB texture
+				const float4 vCenterRGB = tex3DlodLC(geomPool_TTex, float4(frac(vPosTC.xy) * vInf.y, float(textureId) / float(maxSizeZ) + .5f / float(maxSizeZ), 0));
+
+				if (vCenterRGB.a)
 				{
-					//					int arrTypes[4] = { -1, -1, -1, -1 };
-					int arrTypes[4] = { 0, 1, 2, 3 };
-
-					float3 t = frac(vCurTC.xyz * VOX_TEX_POOL_DIM);
-
-					float4 arrValsXYZ[2][2][2];
-					for (int x = 0; x < 2; x++)
-						for (int y = 0; y < 2; y++)
-							for (int z = 0; z < 2; z++)
-							{
-								arrValsXYZ[x][y][z] = tex3DlodLC(sPoolSSSS, float4(Tris_SnapPoolTC(vCurTC.xyz) + float3(x, y, z) / VOX_TEX_POOL_DIM, 0));
-
-								/*int nType = int(arrValsXYZ[x][y][z].r * 255.f + .5f);
-
-								   for(int i=0; i<4; i++)
-								   {
-								   if(arrTypes[i] == nType)
-								   break;
-
-								   if(arrTypes[i] == -1)
-								   {
-								   arrTypes[i] = nType;
-								   break;
-								   }
-								   }*/
-							}
-
-					for (int x = 0; x < 2; x++)
-						for (int y = 0; y < 2; y++)
-							for (int z = 0; z < 2; z++)
-							{
-								arrValsXYZ[x][y][z] = tex3DlodLC(sPoolSSSS, float4(Tris_SnapPoolTC(vCurTC.xyz) + float3(x, y, z) / VOX_TEX_POOL_DIM, 0));
-
-								int nType = int(arrValsXYZ[x][y][z].r * 255.f + .5f);
-
-								arrValsXYZ[x][y][z][0] = (nType == arrTypes[0]);
-								arrValsXYZ[x][y][z][1] = (nType == arrTypes[1]);
-								arrValsXYZ[x][y][z][2] = (nType == arrTypes[2]);
-								arrValsXYZ[x][y][z][3] = (nType == arrTypes[3]);
-							}
-
-					float4 arrValsXY[2][2];
-					for (int x = 0; x < 2; x++)
-						for (int y = 0; y < 2; y++)
-							arrValsXY[x][y] = lerp(arrValsXYZ[x][y][0], arrValsXYZ[x][y][1], t.z);
-
-					float4 arrValsX[2];
-					for (int x = 0; x < 2; x++)
-						arrValsX[x] = lerp(arrValsXY[x][0], arrValsXY[x][1], t.y);
-
-					float4 arrVals = lerp(arrValsX[0], arrValsX[1], t.x);
-
-					vSSSS = arrVals;//tex3DlodLC( sPoolSSSS,  float4((vCurTC.xyz), 0) );
-				}
-			}
-
-			vRGBI.a = vRGBI.a >= .5f;
-
-			fDistance = fDistanceIn + length(r.startpoint - vRayStartPos);
-			float fOverDist = saturate((fDistanceMax - fDistance) / (ocNodeSize / VOX_BRICK_TEXRES));
-
-			if (fIsoVal >= 0)
-			{
-				vNNNS.a = 1;
-
-				float3 vNorm = vNNNS.xyz - 0.5f;
-
-				vNormal.xyz = normalize(vNorm);
-
-				vRgbOut.xyz = vRGBI.xyz;//vDet * saturate(dot(vNNNS.xyz, normalize(float3(0,2,1)))) * vAlbedo;
-				vRgbOut.a = 1;
-
-				// store hit info
-				vPosOut.xyz = vDetStartPoint;
-				vNormal.w = int(vSSSS.r * 255.f + .5f);//saturate(length(vNorm)*4 - 1);
-				vPosOut.w = length(vDetStartPoint.xyz - vRayStartPos);
-
-				vPosOut.xyz = vSSSS.xyz;
-				vNormal.w = vSSSS.w;
-
-				break;
-			}
-
-			fIsoValPrev = fIsoVal;
-
-			if (!IsPointInAABB(r.startpoint, voxAreaMin, voxAreaMax) ||
-			    (GetLodTransition(fDistanceIn, fDistance, ocNodeSize, fLodRatio) > 2.f && ocNodeSize < VOX_MAX_NODE_SIZE) ||
-			    fDistance >= fDistanceMax || vRgbOut.a >= fAlphaRef)
-			{
-				break;
-			}
-		}
-
-		bRes = fDistance >= fDistanceMax;
-	}
-
-	return bRes;
-}
-
-#ifdef MESH_TRACING
-void RayTraceMesh(const float fMultTriRT, const float ocNodeSize, inout float fDistance, inout float4 arrGoodTC, inout Ray rOrig, inout float4 vRgbOut)
-{
-	if (fMultTriRT > 0 && ocNodeSize == VOX_MIN_NODE_SIZE && fDistance < VOX_MAX_RT_DIST && arrGoodTC.w)
-	{
-		// find nearest hit triangle
-		int3 vNearestTC = -1;
-		float4 arrNearestTriVerts[3];
-		float fNearestHitDist = 10000;
-		float3 vNearestHitPoint = 0;
-		const float fTexelSize = 1.f / VOX_TEX_POOL_DIM;
-
-		{
-			// get first triangle id and tris count
-			float4 vValII = tex3DlodPC(brickPool_NTri, float4(Tris_SnapPoolTC(arrGoodTC.xyz), 0));
-			int nFirstTriII =
-			  +int(vValII.r * 255)
-			  + int(vValII.g * 255) * 256
-			  + int(vValII.b * 255) * 256 * 256;
-			int nTriCount = int(vValII.a * 255);
-
-			for (int tii = 0; tii < nTriCount; tii++)
-			{
-				int nTCII = nFirstTriII + tii;
-
-				int3 vTCII = int3(nTCII & 255, (nTCII / 256) & 255, (nTCII / 256 / 256) & 255);
-
-				float4 vVal = tex3DlodPC(brickPool_TInd, float4(vTCII.x, vTCII.y, vTCII.z, 0) / 256.f);
-
-				// get triangle id
-				int nTriId =
-				  +int(vVal.r * 255)
-				  + int(vVal.g * 255) * 256
-				  + int(vVal.b * 255) * 256 * 256
-				  + int(vVal.a * 255) * 256 * 256 * 256;
-
-				nTriId *= 4;
-				int3 nTC = int3(nTriId & 255, (nTriId / 256) & 255, (nTriId / 256 / 256) & 255);
-
-				// load triangle vertices
-				float4 v0 = tex3DlodPC(brickPool_Tris, float4(nTC.x + 0, nTC.y, nTC.z, 0) / 256.f);
-				float4 v1 = tex3DlodPC(brickPool_Tris, float4(nTC.x + 1, nTC.y, nTC.z, 0) / 256.f);
-				float4 v2 = tex3DlodPC(brickPool_Tris, float4(nTC.x + 2, nTC.y, nTC.z, 0) / 256.f);
-
-				// intersect
-				float3 vHitPoint = 0;
-				if (Ray_Triangle(rOrig, v1, v0, v2, vHitPoint))
-				{
-					float fHitDist = length(vHitPoint.xyz - rOrig.startpoint);
-
-					// find closest intersection
-					if (fHitDist < fNearestHitDist)
-					{
-						vNearestHitPoint = vHitPoint;
-						fNearestHitDist = fHitDist;
-						vNearestTC = nTC;
-						arrNearestTriVerts[0] = v0;
-						arrNearestTriVerts[1] = v1;
-						arrNearestTriVerts[2] = v2;
-					}
+					vCenterRGB_Best = vCenterRGB;
+					nTC_Best = nTC;
+					vBarTC_Best = vBarTC;
+					fNearestHitDist = fHitDist;
 				}
 			}
 		}
+	}
 
-		if (vNearestTC.x >= 0)
-		{
-			// load vertices TC
-			float4 vInf = tex3DlodPC(brickPool_Tris, float4(vNearestTC.x + 3, vNearestTC.y, vNearestTC.z, 0) / 256.f);
+	if (vCenterRGB_Best.a)
+	{
+		const float4 n0 = tex3DlodPC(geomPool_Tris, float4(nTC_Best.x + 4, nTC_Best.y, nTC_Best.z, 0) / vScaleTC);
+		const float4 n1 = tex3DlodPC(geomPool_Tris, float4(nTC_Best.x + 5, nTC_Best.y, nTC_Best.z, 0) / vScaleTC);
+		const float4 n2 = tex3DlodPC(geomPool_Tris, float4(nTC_Best.x + 6, nTC_Best.y, nTC_Best.z, 0) / vScaleTC);
+		vHitNorm = n0 * vBarTC_Best[0] + n1 * vBarTC_Best[1] + n2 * vBarTC_Best[2];
+		//	vHitNorm = cross(normalize(v2.xyz - v1.xyz), normalize(v0.xyz - v1.xyz));
 
-			float2 t0 = ExtractTC(arrNearestTriVerts[0].w);
-			float2 t1 = ExtractTC(arrNearestTriVerts[1].w);
-			float2 t2 = ExtractTC(arrNearestTriVerts[2].w);
+		//const float4 matColor = tex3DlodPC(geomPool_Tris, float4(nTC_Best.x + 7, nTC_Best.y, nTC_Best.z, 0) / vScaleTC);
 
-			float3 vBarTC;
-			GetBarycentricTC(arrNearestTriVerts[0], arrNearestTriVerts[1], arrNearestTriVerts[2], vBarTC[0], vBarTC[1], vBarTC[2], vNearestHitPoint);
-			float2 vPosTC = t0 * vBarTC[0] + t1 * vBarTC[1] + t2 * vBarTC[2];
-
-			int nTexId = (int)(vInf.x) - 1;
-
-			// add signed
-			float3 vCenterRGB = tex3DlodLC(brickPool_TTex, float4(frac(vPosTC.xy) * vInf.y, float(nTexId) / 256.f + .5f / 256.f, 0));
-			vRgbOut.xyz *= 1.f + (vCenterRGB - .5f) * 8.f * pow(saturate((1.f - fDistance / VOX_MAX_RT_DIST) * fMultTriRT), .5f) * saturate(VOX_MAX_ALPHA - (arrGoodTC.w - 1));
-
-			//        float fR = 7.9;
-			//        vRgbOut.x += t0.x>fR || t0.x<-fR;
-			//        vRgbOut.x += t1.x>fR || t1.x<-fR;
-			//        vRgbOut.x += t2.x>fR || t2.x<-fR;
-			//        vRgbOut.y += t0.y>fR || t0.y<-fR;
-			//        vRgbOut.y += t1.y>fR || t1.y<-fR;
-			//        vRgbOut.y += t2.y>fR || t2.y<-fR;
-		}
+		vRgbOut.xyz = vCenterRGB_Best;// *matColor;
+		vRgbOut.a = 1;
 	}
 }
-#endif
 
 bool GetLightTI(int nLightId, out float4 vPosR, out float4 vDirF, out float4 vCol)
 {
@@ -1031,9 +829,13 @@ bool ConeTraceBrick_SSR(const float3 vRayStartPos, Ray r, const float _fDistance
 
 bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistanceIn, inout float fDistance, const float fDistanceMax,
                     inout float4 vPosOut, inout float4 vNormal, const float3 tcMin, inout float4 vRgbOut, const float fAlphaRef, const float fLodRatio,
-                    const float fAlphaRefMin, const float fAlphaRefMax, const int nPredictionMode, const float fMultTriRT, const bool bAirOnlyMode, const bool bApplyGlobalDensity, const bool bSpecular, const bool bUseLighting,
-                    inout float4 vBestHitPosOpa[BEST_POINTS_NUM], const int nDebugMode, const float3 vSurfNormOffset, float fStepSize = 0.5f)
+                    const float fAlphaRefMin, const float fAlphaRefMax, const int nPredictionMode, inout float fMultTriRT, const bool bAirOnlyMode, const bool bApplyGlobalDensity, const bool bSpecular, const bool bUseLighting,
+                    inout float4 vBestHitPosOpa[BEST_POINTS_NUM], const int nDebugMode, const float3 vSurfNormOffset, float fStepSize, inout float fNearestHitDist)
 {
+#if !%_RT_QUALITY
+	fMultTriRT = 0;
+#endif
+
 	bool bRes = true;
 
 	float fDistanceIn = bAirOnlyMode ? 0 : _fDistanceIn;
@@ -1125,6 +927,12 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 			}
 
 			fDistance = fDistanceIn + length(r.startpoint - vRayStartPos);
+
+#if %_RT_QUALITY
+			if(fDistance > VOX_MAX_RT_DIST_RAY)
+				fMultTriRT = 0;
+#endif
+
 			const float fOverDist = 1;// saturate((fDistanceMax - fDistance) / fVoxSize);
 
 			vRGBD.a = saturate(vRGBD.a * SvoParamsMisc4.x);// *pow(saturate(1.f - fDistance / fDistanceMax), .5);
@@ -1134,6 +942,18 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 				if (bUseLighting)
 				{
 					float fDot = 1;//bAirOnlyMode ? 1 : pow(saturate(VOX_TI_BACK_LIGHT_SCALE + (1.f-VOX_TI_BACK_LIGHT_SCALE)*dot( (vNORA.xyz-0.5f)*2.f, -r.direction )), .7);
+
+#if %_RT_QUALITY && %_PS
+				if (fMultTriRT > 0 && vRGBD.w)
+				{
+					float4 vHitRgb = 0;
+					float3 vHitNorm = 0;
+					RayTraceMesh(float4(vCurTC.xyz, vRGBD.w), rOrig, vHitRgb, vHitNorm, fNearestHitDist);
+
+					if (vHitRgb.a)
+						vRGBD.xyz = vRGBD.xyz * (0.5 + (vHitRgb.xyz - 0.5) * 6.0) * 2.0;
+				}
+#endif
 
 					vRgbOut.xyz += vRGBD.xyz * vRGBD.a * saturate(1 - vRgbOut.a) * fOverDist * fDot * saturate(fDistance / fVoxSize);
 
@@ -1234,11 +1054,6 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 				}
 #endif
 
-#ifdef MESH_TRACING
-				if (fMultTriRT && vRGBD.w >= VOX_MAX_ALPHA * 0.5f && arrGoodTC.w == 0)
-					arrGoodTC = float4(vCurTC.xyz, vRgbOut.a + 1);
-#endif
-
 				vRgbOut.a += vRGBD.a * saturate(1 - vRgbOut.a) * fOverDist;
 
 				// store hit info
@@ -1264,111 +1079,19 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 		}
 
 		bRes = t >= tmax;
-
-#ifdef MESH_TRACING
-		RayTraceMesh(fMultTriRT, ocNodeSize, fDistance, arrGoodTC, rOrig, vRgbOut);
-#endif
-	}
-
-	return bRes;
-}
-
-bool ConeTraceBrick_MB(const float3 vRayStartPos, inout Ray r, const float fDistanceIn, inout float fDistance, const float fDistanceMax,
-                       inout float4 vPosOut, inout float4 vNormal, const float3 tcMin, inout float4 vRgbOut, const float fAlphaRef, const float fLodRatio,
-                       const float fAlphaRefMin, const float fAlphaRefMax, const int nPredictionMode, const float fMultTriRT, const bool bAirOnlyMode, const bool bApplyGlobalDensity, const bool bSpecular)
-{
-	bool bRes = true;
-
-	float4 voxAreaMin, voxAreaMax;
-	ReadNodeCropBox(tcMin, voxAreaMin, voxAreaMax);
-	const float ocNodeSize = voxAreaMin.w;
-
-	const float3 vHalfTexSizeWS = 0.5f / VOX_BRICK_TEXRES * ocNodeSize;
-	const float3 vBoxSize = voxAreaMax.xyz - voxAreaMin.xyz;
-
-	float tmin = 0, tmax = 0;
-	const float fSafetyBorder = 0.001f;
-	const bool bHit = IntersectRayAABB(r, voxAreaMin.xyz - fSafetyBorder, voxAreaMax.xyz + fSafetyBorder, tmin, tmax);
-
-	if (bHit && (tmax > 0))
-	{
-		Ray rOrig = r;
-
-		const float3 vMulTC = 1.f / ocNodeSize * vBoxSize / VOX_ATLAS_SIZE * VOX_SUBBLOCK_SIZE_RATIO;
-
-		r.startpoint += r.direction * max(0, tmin);
-		fDistance = fDistanceIn + length(r.startpoint - vRayStartPos);
-
-		while (1)
-		{
-			float fStepSize = 0.5f; // todo: pass from outside
-
-			r.startpoint += r.direction * (ocNodeSize / VOX_BRICK_TEXRES) * fStepSize;
-
-			float3 vCurTC = tcMin + ((clamp(r.startpoint, voxAreaMin + vHalfTexSizeWS, voxAreaMax - vHalfTexSizeWS) - voxAreaMin.xyz) / (vBoxSize)) * vMulTC;
-
-			float4 vRGBD = tex3DlodLC(brickPool_Rgbs, float4(vCurTC.xyz, 0));
-
-			float4 vNORA = tex3DlodLC(brickPool_Norm, float4(vCurTC.xyz, 0)).zyxw;
-
-			float4 vOPAC = tex3DlodLC(brickPool_Opac, float4(vCurTC.xyz, 0));
-
-			// bigger steps collect more opacity
-			float fAirDensityScale = ocNodeSize * fStepSize;
-
-			vRGBD.a = saturate(max(pow(vOPAC.a, 2) * fAirDensityScale, dot(vOPAC.zyx, normalize(abs(r.direction)))));
-
-			fDistance += (ocNodeSize / VOX_BRICK_TEXRES) * fStepSize;
-
-			float fOverDist = saturate((fDistanceMax - fDistance) / (ocNodeSize / VOX_BRICK_TEXRES));
-
-			vRGBD.a = saturate(vRGBD.a);
-
-			if (vRGBD.a > fAlphaRefMin && vRGBD.a > 0 && vRGBD.a <= fAlphaRefMax)
-			{
-				float fDot = 1;//pow(saturate(VOX_TI_BACK_LIGHT_SCALE + (1.f-VOX_TI_BACK_LIGHT_SCALE)*dot( (vNORA.xyz-0.5f)*2.f, -r.direction )), .7);
-
-				vRgbOut.xyz += vRGBD.xyz * vRGBD.a * saturate(1 - vRgbOut.a) * fOverDist * fDot;
-
-				vNormal.xyz = /*vNORA.a*/ (vNORA.xyz - 0.5f) * 2.f * saturate(1 - vRgbOut.a) + vNormal.xyz * vRgbOut.a;
-
-				if (fLodRatio == .101f)// && 0)
-				{
-					float3 vNor1 = (vNORA.xyz - 0.5f) * 2.f;
-					if ((fLodRatio == .101f) && length(vNor1) > 0.5 && vRGBD.a > 0.5 && dot(normalize(vNor1), r.direction) < -0.3)
-					{
-						// reflect
-						r.direction = reflect(r.direction, normalize(vNor1));
-						//vRgbOut.a = fAlphaRef;
-					}
-					else
-					{
-						vRGBD.a = pow(vRGBD.a, 1.5);
-						vRgbOut.a += vRGBD.a * saturate(1 - vRgbOut.a) * fOverDist;
-					}
-				}
-				else
-					vRgbOut.a += vRGBD.a * saturate(1 - vRgbOut.a) * fOverDist;
-			}
-
-			if (!IsPointInAABB(r.startpoint, voxAreaMin, voxAreaMax) ||
-			    (GetLodTransition(fDistanceIn, fDistance, ocNodeSize, fLodRatio) > 2.f && ocNodeSize < VOX_MAX_NODE_SIZE) ||
-			    fDistance >= fDistanceMax || vRgbOut.a >= fAlphaRef)
-			{
-				break;
-			}
-		}
-
-		bRes = !IsPointInAABB(r.startpoint, voxAreaMin, voxAreaMax);
 	}
 
 	return bRes;
 }
 
 float4 ConeTraceTree(Ray rayForTree, const float fLodRatio, out float4 vPos0, out float4 vNormal, float _fDistanceIn, float fDistanceMax,
-                     const float fAlphaRefMin = 0.f, float fAlphaRefMax = 1.f, const int nPredictionMode = 0, const float fMultTriRT = 0, const int nTraceMode = 0, const bool bApplyGlobalDensity = false, const bool bSpecular = false,
+                     const float fAlphaRefMin = 0.f, float fAlphaRefMax = 1.f, const int nPredictionMode = 0, float fMultTriRT = 0, const int nTraceMode = 0, const bool bApplyGlobalDensity = false, const bool bSpecular = false,
                      bool bUseLighting = false, float3 vSurfNorm = 0, const int nDebugMode = 0, float fStepSize = 0.5f)
 {
+#if !%_RT_QUALITY
+	fMultTriRT = 0;
+#endif
+
 #if %_RT_SAMPLE5
 	bUseLighting = true;
 #endif
@@ -1376,6 +1099,7 @@ float4 ConeTraceTree(Ray rayForTree, const float fLodRatio, out float4 vPos0, ou
 	// accumulate color here
 	float4 vRgbOut = 0;
 	float4 vRgbOutSS = 0;
+	float fNearestHitDist = 1000000;
 
 	vNormal = vPos0 = 0;
 
@@ -1567,7 +1291,7 @@ float4 ConeTraceTree(Ray rayForTree, const float fLodRatio, out float4 vPos0, ou
 			   else*/
 			bGoToNextNode = ConeTraceBrick(vRayStartPos, rayForTree, _fDistanceIn, fDistance, fDistanceMax,
 			                               vPos0, vNormal, curNode.vTC, vRgbOut, fMaxAlpha, fLodRatio, fAlphaRefMin, fAlphaRefMax, nPredictionMode, fMultTriRT, (nTraceMode == SVO_TRACE_MODE_AIR), bApplyGlobalDensity, bSpecular, bUseLighting,
-			                               vBestHitPosOpa, nDebugMode, vSurfNormOffset, fStepSize);
+			                               vBestHitPosOpa, nDebugMode, vSurfNormOffset, fStepSize, fNearestHitDist);
 
 			if (vRgbOut.a >= fMaxAlpha)
 			{

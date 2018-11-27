@@ -246,7 +246,13 @@ REGISTER_CVAR_AUTO(int, e_svoTI_RsmUseColors, 0, VF_NULL, "Render also albedo co
 REGISTER_CVAR_AUTO(int, e_svoTI_Reflect_Vox_Max, 100, VF_NULL, "Controls amount of voxels allowed to refresh every frame");
 REGISTER_CVAR_AUTO(int, e_svoTI_Reflect_Vox_MaxEdit, 10000, VF_NULL, "Controls amount of voxels allowed to refresh every frame during lights editing");
 REGISTER_CVAR_AUTO(int, e_svoTI_Reflect_Vox_Max_Overhead, 50, VF_NULL, "Controls amount of voxels allowed to refresh every frame");
-REGISTER_CVAR_AUTO(float, e_svoTI_RT_MaxDist, 0, VF_NULL, "Maximum distance for detailed mesh ray tracing prototype; applied only in case of maximum glossiness");
+REGISTER_CVAR_AUTO(int, e_svoTI_RT_Active, 0, VF_EXPERIMENTAL, "Activates mesh ray tracing for reflections\nIt is necessary to re-voxelize the scene after activation");
+REGISTER_CVAR_AUTO(float, e_svoTI_RT_MaxDistRay, 0, VF_EXPERIMENTAL, "Maximum ray distance for mesh tracing");
+REGISTER_CVAR_AUTO(float, e_svoTI_RT_MaxDistCam, 0, VF_EXPERIMENTAL, "Maximum camera distance for mesh tracing");
+REGISTER_CVAR_AUTO(float, e_svoTI_RT_MinGloss, 0, VF_EXPERIMENTAL, "Minimum surface glossiness for mesh tracing");
+REGISTER_CVAR_AUTO(float, e_svoTI_RT_MinRefl, 0, VF_EXPERIMENTAL, "Minimum surface reflectance for mesh tracing");
+REGISTER_CVAR_AUTO(int, e_svoTI_RT_MaxTrisPerVoxel, 100, VF_EXPERIMENTAL, "Maximum number of triangles registered per voxel");
+REGISTER_CVAR_AUTO(int, e_svoTI_RT_MaxTexRes, 512, VF_EXPERIMENTAL, "Maximum texture size for GPU tracing");
 REGISTER_CVAR_AUTO(float, e_svoTI_Specular_Sev, 1, VF_NULL, "Controls severity of specular cones; this value limits the material glossiness");
 REGISTER_CVAR_AUTO(float, e_svoVoxDistRatio, 14.f, VF_NULL, "Limits the distance where real-time GPU voxelization used");
 REGISTER_CVAR_AUTO(int, e_svoVoxGenRes, 512, VF_NULL, "GPU voxelization dummy render target resolution");

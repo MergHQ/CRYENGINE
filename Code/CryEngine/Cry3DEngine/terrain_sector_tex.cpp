@@ -73,6 +73,18 @@ int CTerrainNode::CreateSectorTexturesFromBuffer(float * pSectorHeightMap)
 
 		GetRenderer()->DXTDecompress(GetTerrain()->m_arrBaseTexInfos.m_ucpDiffTexTmpBuffer, nSizeDxtMip0,
 		                             (byte*)GetTerrain()->m_pTerrainRgbLowResSystemCopy->GetElements(), nDim, nDim, 1, texFormat, false, 4);
+
+		// srgb2rgb
+		ColorB* pRgba = (ColorB*)GetTerrain()->m_pTerrainRgbLowResSystemCopy->GetElements();
+		int numPixels = nSizeMip0 / sizeof(ColorB);
+		float rgbMult = GetTerrain()->GetTerrainTextureMultiplier();
+		for (int i = 0; i < numPixels; i++)
+		{
+			ColorF colF = pRgba[i];
+			colF.srgb2rgb();
+			colF *= rgbMult;
+			pRgba[i] = colF;
+	  }
 	}
 #endif
 

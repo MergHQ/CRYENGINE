@@ -499,7 +499,7 @@ public:
 	virtual const bool        IsParticularMipStreamed(float fMipFactor) const = 0;
 
 	//! Get low res system memory (used for CPU voxelization).
-	virtual const ColorB* GetLowResSystemCopy(uint16& nWidth, uint16& nHeight, int** ppLowResSystemCopyAtlasId) { return 0; }
+	virtual const ColorB* GetLowResSystemCopy(uint16& width, uint16& height, int** ppUserData = nullptr, const int maxTexSize = 32) { return 0; }
 
 	virtual void UpdateData(STexDataPtr&& td, int flags) = 0;
 	// </interfuscator:shuffle>

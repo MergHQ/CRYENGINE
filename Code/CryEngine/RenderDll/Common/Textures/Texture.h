@@ -63,6 +63,7 @@ enum EShadowBuffers_Pool
 #define SHADOWS_POOL_SIZE     1024//896 //768
 #define TEX_POOL_BLOCKLOGSIZE 5  // 32
 #define TEX_POOL_BLOCKSIZE    (1 << TEX_POOL_BLOCKLOGSIZE)
+#define TEX_SYS_COPY_MAX_SLOTS 8 // max number of texture resolutions cached in system RAM
 
 struct SDynTexture_Shadow;
 
@@ -1074,9 +1075,10 @@ private:
 		int              m_nLowResSystemCopyAtlasId;
 	};
 	typedef std::map<const CTexture*, SLowResSystemCopy> LowResSystemCopyType;
-	static LowResSystemCopyType s_LowResSystemCopy;
-	void          PrepareLowResSystemCopy(const byte* pTexData, bool bTexDataHasAllMips);
-	const ColorB* GetLowResSystemCopy(uint16& nWidth, uint16& nHeight, int** ppLowResSystemCopyAtlasId);
+	static LowResSystemCopyType s_LowResSystemCopy[TEX_SYS_COPY_MAX_SLOTS];
+	static CryReadModifyLock    s_LowResSystemCopyLock;
+	bool          PrepareLowResSystemCopy(const uint16 maxTexSize, PodArray<ColorB>& textureData, uint16& width, uint16& height);
+	const ColorB* GetLowResSystemCopy(uint16& width, uint16& height, int** ppUserData, const int maxTexSize);
 #endif
 
 	static CCryNameTSCRC GenName(const char* name, uint32 nFlags = 0);

@@ -938,9 +938,7 @@ CSvoEnv::CSvoEnv(const AABB& worldBox)
 	m_debugDrawVoxelsCounter = 0;
 	m_voxTexFormat = eTF_R8G8B8A8; // eTF_BC3
 
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
 	m_texTrisPoolId = 0;
-	#endif
 	m_texRgb0PoolId = 0;
 	m_texRgb1PoolId = 0;
 	m_texDynlPoolId = 0;
@@ -986,9 +984,7 @@ CSvoEnv::~CSvoEnv()
 
 	SAFE_DELETE(m_pSvoRoot);
 
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
 	GetRenderer()->RemoveTexture(m_texTrisPoolId);
-	#endif
 	GetRenderer()->RemoveTexture(m_texRgb0PoolId);
 	GetRenderer()->RemoveTexture(m_texRgb1PoolId);
 	GetRenderer()->RemoveTexture(m_texDynlPoolId);
@@ -1626,9 +1622,7 @@ bool CSvoEnv::GetSvoStaticTextures(I3DEngine::SSvoStaticTexInfo& svoInfo, PodArr
 	svoInfo.pTexTree = GetRenderer()->EF_GetTextureByID(m_texNodePoolId);
 	svoInfo.pTexOpac = GetRenderer()->EF_GetTextureByID(m_texOpasPoolId);
 
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
 	svoInfo.pTexTris = GetRenderer()->EF_GetTextureByID(m_texTrisPoolId);
-	#endif
 	svoInfo.pTexRgb0 = GetRenderer()->EF_GetTextureByID(m_texRgb0PoolId);
 	svoInfo.pTexRgb1 = GetRenderer()->EF_GetTextureByID(m_texRgb1PoolId);
 	svoInfo.pTexDynl = GetRenderer()->EF_GetTextureByID(m_texDynlPoolId);
@@ -1637,11 +1631,9 @@ bool CSvoEnv::GetSvoStaticTextures(I3DEngine::SSvoStaticTexInfo& svoInfo, PodArr
 	svoInfo.pTexRgb4 = GetRenderer()->EF_GetTextureByID(m_texRgb4PoolId);
 	svoInfo.pTexNorm = GetRenderer()->EF_GetTextureByID(m_texNormPoolId);
 	svoInfo.pTexAldi = GetRenderer()->EF_GetTextureByID(m_texAldiPoolId);
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
 	svoInfo.pTexTriA = GetRenderer()->EF_GetTextureByID(gSvoEnv->m_arrRTPoolTris.m_textureId);
 	svoInfo.pTexTexA = GetRenderer()->EF_GetTextureByID(gSvoEnv->m_arrRTPoolTexs.m_textureId);
 	svoInfo.pTexIndA = GetRenderer()->EF_GetTextureByID(gSvoEnv->m_arrRTPoolInds.m_textureId);
-	#endif
 
 	GetGlobalEnvProbeProperties(svoInfo.pGlobalSpecCM, svoInfo.fGlobalSpecCM_Mult);
 
@@ -2169,21 +2161,34 @@ int CSvoEnv::GetWorstPointInSubSet(const int start, const int end)
 
 void CSvoEnv::CheckUpdateMeshPools()
 {
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
+	if (!Get3DEngine()->IsSvoReady(false) && gSvoEnv->m_arrRTPoolInds.m_textureId)
+		return;
+
+	FUNCTION_PROFILER_3DENGINE;
+
 	{
 		PodArrayRT<Vec4>& rAr = gSvoEnv->m_arrRTPoolTris;
 
 		AUTO_READLOCK(rAr.m_Lock);
 
-		if (rAr.m_bModified)
+		if (rAr.m_writeOffsetReady != rAr.m_writeOffset)
 		{
-			gEnv->pRenderer->RemoveTexture(rAr.m_textureId);
-			rAr.m_textureId = 0;
+			ProcessIncrementalTextureUpdate(rAr, eTF_R32G32B32A32F, "PoolTris");
 
-			rAr.m_textureId = gEnv->pRenderer->UploadToVideoMemory3D((byte*)rAr.GetElements(),
-			                                                         CVoxelSegment::m_voxTexPoolDimXY, CVoxelSegment::m_voxTexPoolDimXY, CVoxelSegment::m_voxTexPoolDimZ, eTF_R32G32B32A32F, eTF_R32G32B32A32F, 1, false, FILTER_POINT, rAr.m_textureId, 0, FT_DONT_STREAM);
+			rAr.m_writeOffsetReady = rAr.m_writeOffset;
+		}
+	}
 
-			rAr.m_bModified = 0;
+  {
+		PodArrayRT<ColorB>& rAr = gSvoEnv->m_arrRTPoolInds;
+
+		AUTO_READLOCK(rAr.m_Lock);
+
+		if (rAr.m_writeOffsetReady != rAr.m_writeOffset)
+		{
+			ProcessIncrementalTextureUpdate(rAr, m_voxTexFormat, "PoolInds");
+
+			rAr.m_writeOffsetReady = rAr.m_writeOffset;
 		}
 	}
 
@@ -2192,35 +2197,58 @@ void CSvoEnv::CheckUpdateMeshPools()
 
 		AUTO_READLOCK(rAr.m_Lock);
 
-		if (rAr.m_bModified)
+		if (rAr.m_writeOffsetReady != rAr.m_writeOffset)
 		{
-			gEnv->pRenderer->RemoveTexture(rAr.m_textureId);
-			rAr.m_textureId = 0;
+			ProcessIncrementalTextureUpdate(rAr, m_voxTexFormat, "PoolTexs");
 
-			rAr.m_textureId = gEnv->pRenderer->UploadToVideoMemory3D((byte*)rAr.GetElements(),
-			                                                         CVoxelSegment::m_voxTexPoolDimXY, CVoxelSegment::m_voxTexPoolDimXY, CVoxelSegment::m_voxTexPoolDimZ, m_voxTexFormat, m_voxTexFormat, 1, false, FILTER_POINT, rAr.m_textureId, 0, FT_DONT_STREAM);
-
-			rAr.m_bModified = 0;
+			rAr.m_writeOffsetReady = rAr.m_writeOffset;
 		}
 	}
+}
 
+template<class T>
+void CSvoEnv::ProcessIncrementalTextureUpdate(PodArrayRT<T>& rAr, ETEX_Format texFormat, const char* szComment)
+{
+	const int maxTexSizeXY = GetCVars()->e_svoTI_RT_MaxTexRes;
+
+	if (!rAr.m_textureId)
 	{
-		PodArrayRT<ColorB>& rAr = gSvoEnv->m_arrRTPoolInds;
+		PrintMessage("%s: create new texture", szComment);
 
-		AUTO_READLOCK(rAr.m_Lock);
-
-		if (rAr.m_bModified)
-		{
-			gEnv->pRenderer->RemoveTexture(rAr.m_textureId);
-			rAr.m_textureId = 0;
-
+		// create new texture
 			rAr.m_textureId = gEnv->pRenderer->UploadToVideoMemory3D((byte*)rAr.GetElements(),
-			                                                         CVoxelSegment::m_voxTexPoolDimXY, CVoxelSegment::m_voxTexPoolDimXY, CVoxelSegment::m_voxTexPoolDimZ, m_voxTexFormat, m_voxTexFormat, 1, false, FILTER_POINT, rAr.m_textureId, 0, FT_DONT_STREAM);
-
-			rAr.m_bModified = 0;
-		}
+			maxTexSizeXY, maxTexSizeXY, CVoxelSegment::m_voxTexPoolDimZ,
+			texFormat, texFormat, 1, false, FILTER_POINT, rAr.m_textureId, 0, FT_DONT_STREAM);
 	}
-	#endif
+	else if (rAr.m_writeOffsetReady >= rAr.m_writeOffset)
+	{
+		PrintMessage("%s: update entire texture", szComment);
+
+		// update entire texture
+		gEnv->pRenderer->UpdateTextureInVideoMemory(
+			rAr.m_textureId,
+			(byte*)rAr.GetElements(),
+			0, 0,
+			maxTexSizeXY, maxTexSizeXY,
+			texFormat,
+			0,
+			CVoxelSegment::m_voxTexPoolDimZ);
+	}
+	else
+	{
+		int z0 = CLAMP(rAr.m_writeOffsetReady / (maxTexSizeXY * maxTexSizeXY), 0, CVoxelSegment::m_voxTexPoolDimZ - 1);
+		int z1 = CLAMP(rAr.m_writeOffset / (maxTexSizeXY * maxTexSizeXY) + 1, 0, CVoxelSegment::m_voxTexPoolDimZ);
+
+		PrintMessage("%s: update few slices %d: z0 = %d, z1 = %d, delta = %d", szComment, (int)GetCurrPassMainFrameID(), z0, z1, z1 - z0);
+
+		// update few slices of texture
+		gEnv->pRenderer->UpdateTextureInVideoMemory(
+			rAr.m_textureId,
+			(byte*)(rAr.GetElements() + z0 * maxTexSizeXY * maxTexSizeXY),
+			0, 0, maxTexSizeXY, maxTexSizeXY,
+			texFormat,
+			z0, z1 - z0);
+	}
 }
 
 bool C3DEngine::GetSvoStaticTextures(I3DEngine::SSvoStaticTexInfo& svoInfo, PodArray<I3DEngine::SLightTI>* pLightsTI_S, PodArray<I3DEngine::SLightTI>* pLightsTI_D)
@@ -2323,6 +2351,12 @@ void C3DEngine::UpdateTISettings()
 	#else
 	GetCVars()->e_svoTI_IntegrationMode = 0;
 	#endif
+
+	GetCVars()->e_svoTI_RT_Active = tiAdv.rtActive;
+	GetCVars()->e_svoTI_RT_MaxDistRay = tiAdv.rtMaxDistRay;
+	GetCVars()->e_svoTI_RT_MaxDistCam = tiAdv.rtMaxDistCam;
+	GetCVars()->e_svoTI_RT_MinGloss = tiAdv.rtMinGloss;
+	GetCVars()->e_svoTI_RT_MinRefl = tiAdv.rtMinRefl;
 
 	if (Cry3DEngineBase::GetCVars()->e_svoStreamVoxels != 2)
 		GetCVars()->e_svoStreamVoxels = tiAdv.streamVoxels ? 1 : 0;
@@ -2796,14 +2830,14 @@ void CSvoNode::CheckAllocateChilds()
 			{
 				if (Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizationPostpone)
 				{
-					assert(!CVoxelSegment::m_bExportMode || !"Some meshes are not streamed in, stream cgf must be off for now during EXPORT processs");
+				  assert(!CVoxelSegment::m_bExportMode || !"Some meshes are not streamed in, stream cgf must be off for now during EXPORT processs");
 
-					if (Cry3DEngineBase::GetCVars()->e_svoDebug == 7)
-						Cry3DEngineBase::Get3DEngine()->DrawBBox(childBox, Col_Lime);
-					CVoxelSegment::m_postponedCounter++;
-					continue;
-				}
-			}
+				  if (Cry3DEngineBase::GetCVars()->e_svoDebug == 7)
+					  Cry3DEngineBase::Get3DEngine()->DrawBBox(childBox, Col_Lime);
+				  CVoxelSegment::m_postponedCounter++;
+				  continue;
+			  }
+		  }
 		}
 
 		//					if((m_pCloud->m_dwChildTrisTest & (1<<childId)) ||

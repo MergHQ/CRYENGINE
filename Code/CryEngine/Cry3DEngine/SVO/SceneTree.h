@@ -140,6 +140,7 @@ public:
 	bool Render();
 	void ProcessSvoRootTeleport();
 	void CheckUpdateMeshPools();
+	template<class T> void ProcessIncrementalTextureUpdate(PodArrayRT<T>& rAr, ETEX_Format texFormat, const char* szComment);
 	int  GetWorstPointInSubSet(const int start, const int end);
 	void StartupStreamingTimeTest(bool bDone);
 	void OnLevelGeometryChanged();
@@ -191,20 +192,16 @@ public:
 	int                       m_texRgb4PoolId;
 	int                       m_texDynlPoolId;
 	int                       m_texAldiPoolId;
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
 	int                       m_texTrisPoolId;
-	#endif
 
 	ETEX_Format                                       m_voxTexFormat;
 	TDoublyLinkedList<CVoxelSegment>                  m_arrSegForUnload;
 	CCustomSVOPoolAllocator<struct SBrickSubSet, 128> m_brickSubSetAllocator;
 	CCustomSVOPoolAllocator<CSvoNode, 128>            m_nodeAllocator;
 
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
 	PodArrayRT<ColorB> m_arrRTPoolTexs;
 	PodArrayRT<Vec4>   m_arrRTPoolTris;
 	PodArrayRT<ColorB> m_arrRTPoolInds;
-	#endif
 };
 
 	#pragma pack(pop)
