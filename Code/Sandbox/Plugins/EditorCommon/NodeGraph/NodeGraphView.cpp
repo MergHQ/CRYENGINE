@@ -90,7 +90,7 @@ CNodeGraphView::CNodeGraphView()
 	: QGraphicsView(static_cast<QWidget*>(nullptr))
 	, m_pModel(nullptr)
 	, m_pStyle(nullptr)
-	, m_contentEditPopup("ContentEditPopup", nullptr)
+	, m_pContentEditPopup(nullptr)
 	, m_pNewConnectionLine(nullptr)
 	, m_pResizingBox(nullptr)
 	, m_pSelectionBox(nullptr)
@@ -1751,7 +1751,7 @@ bool CNodeGraphView::AbortAction()
 		break;
 	case eAction_ShowContentEditPopup:
 		{
-			m_contentEditPopup.hide();
+			m_pContentEditPopup->hide();
 		}
 		break;
 	case eAction_None:
@@ -2701,9 +2701,17 @@ void CNodeGraphView::ShowContentEditingPopup(const CTextWidget& textWidget, cons
 	pTextEdit->setText(text);
 	pTextEdit->SignalEditingFinished.Connect(this, &CNodeGraphView::OnEditingContentPopupFinish);
 
-	m_contentEditPopup.SetContent(pTextEdit);
-	m_contentEditPopup.setFixedSize(size);
-	m_contentEditPopup.ShowAt(pos);
+	if (!m_pContentEditPopup)
+	{
+		m_pContentEditPopup.reset(new QPopupWidget("ContentEditPopup", pTextEdit));
+	}
+	else
+	{
+		m_pContentEditPopup->SetContent(pTextEdit);
+	}
+
+	m_pContentEditPopup->setFixedSize(size);
+	m_pContentEditPopup->ShowAt(pos);
 }
 
 CPinWidget* CNodeGraphView::GetPossibleConnectionTarget(QPointF scenePos)

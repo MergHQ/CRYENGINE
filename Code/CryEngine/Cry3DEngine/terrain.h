@@ -573,6 +573,7 @@ protected:
 
 #if defined(FEATURE_SVO_GI)
 	PodArray<ColorB>* m_pTerrainRgbLowResSystemCopy;
+	int               m_terrainRgbLowResSystemCopyUserData = 0;
 #endif
 
 	_smart_ptr<IRenderMesh> m_pSharedRenderMesh;
@@ -589,6 +590,6 @@ public:
 	}
 
 #if defined(FEATURE_SVO_GI)
-	const PodArray<ColorB>* GetTerrainRgbLowResSystemCopy() { return m_pTerrainRgbLowResSystemCopy; }
+	const PodArray<ColorB>* GetTerrainRgbLowResSystemCopy(int** ppUserData = nullptr) { if (ppUserData) *ppUserData = &m_terrainRgbLowResSystemCopyUserData; return m_pTerrainRgbLowResSystemCopy; }
 #endif
 };

@@ -100,6 +100,7 @@ bool CRenderMeshUtils::RayIntersection(IRenderMesh* pRenderMesh, SRayHitInfo& hi
 	bool result = CRenderMeshUtils::RayIntersectionImpl(&data, &hitInfo, pMtl, false);
 
 	pRenderMesh->UnlockStream(VSF_GENERAL);
+	pRenderMesh->UnlockStream(VSF_TANGENTS);
 	pRenderMesh->UnlockIndexStream();
 	pRenderMesh->UnLockForThreadAccess();
 	return result;
@@ -462,6 +463,9 @@ bool CRenderMeshUtils::RayIntersectionFastImpl(SIntersectionData& rIntersectionR
 	int nColStride = rIntersectionRMData.nColStride;
 	uint8* pCol = rIntersectionRMData.pCol;
 
+	int nTangsStride = rIntersectionRMData.nTangsStride;
+	byte* pTangs = rIntersectionRMData.pTangs;
+
 	// get indices
 	vtx_idx* pInds = rIntersectionRMData.pInds;
 
@@ -517,7 +521,7 @@ bool CRenderMeshUtils::RayIntersectionFastImpl(SIntersectionData& rIntersectionR
 	{
 		if (inRay.direction.IsZero())
 		{
-			ProcessBoxIntersection(inRay, hitInfo, rIntersectionRMData, pMtl, pInds, nVerts, pPos, nPosStride, pUV, nUVStride, pCol, nColStride, nInds, bAnyHit, fBestDist, vHitPos, tri);
+			ProcessBoxIntersection(inRay, hitInfo, rIntersectionRMData, pMtl, pInds, nVerts, pPos, nPosStride, pUV, nUVStride, pCol, nColStride, pTangs, nTangsStride, nInds, bAnyHit, fBestDist, vHitPos, tri);
 		}
 		else
 		{
@@ -638,7 +642,7 @@ bool CRenderMeshUtils::RayIntersectionFastImpl(SIntersectionData& rIntersectionR
 }
 
 // used for CPU voxelization
-bool CRenderMeshUtils::ProcessBoxIntersection(Ray& inRay, SRayHitInfo& hitInfo, SIntersectionData& rIntersectionRMData, IMaterial* pMtl, vtx_idx* pInds, int nVerts, uint8* pPos, int nPosStride, uint8* pUV, int nUVStride, uint8* pCol, int nColStride, int nInds, bool& bAnyHit, float& fBestDist, Vec3& vHitPos, Vec3* tri)
+bool CRenderMeshUtils::ProcessBoxIntersection(Ray& inRay, SRayHitInfo& hitInfo, SIntersectionData& rIntersectionRMData, IMaterial* pMtl, vtx_idx* pInds, int nVerts, uint8* pPos, int nPosStride, uint8* pUV, int nUVStride, uint8* pCol, int nColStride, byte* pTangs, int nTangsStride, int nInds, bool& bAnyHit, float& fBestDist, Vec3& vHitPos, Vec3* tri)
 {
 	AABB voxBox;
 	voxBox.min = inRay.origin - Vec3(hitInfo.fMaxHitDistance);
@@ -719,6 +723,28 @@ bool CRenderMeshUtils::ProcessBoxIntersection(Ray& inRay, SRayHitInfo& hitInfo, 
 						ht.c[2] = (*(ColorB*)&pCol[nColStride * I2]);
 
 						ht.nOpacity = SATURATEB(int(fOpacity * 255.f));
+
+#if defined(FEATURE_SVO_GI)
+						if (GetCVars()->e_svoTI_RT_Active)
+						{
+							// store and validate vertex normals
+							bool bValid = true;
+
+							const int arrId[3] = { I0, I1, I2 };
+
+							for (int ii = 0; ii < 3; ii++)
+							{
+								ht.vn[ii] = ((SPipTangents*)&pTangs[nTangsStride * arrId[ii]])->GetN().GetNormalized();
+
+								if (ht.vn[ii].IsZero())
+									bValid = false;
+							}
+
+							if (!bValid)
+								continue;
+						}
+#endif
+						  
 						hitInfo.pHitTris->Add(ht);
 					}
 				}

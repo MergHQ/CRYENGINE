@@ -137,6 +137,7 @@ struct pixout_TraceSunShadows
 // _RT_PROJECTION_MULTI_RES     Compute simple specular using ALD results of diffuse tracing
 // _RT_QUALITY1                 Include terrain heightmap (whole level) into ray-traced sun shadows
 // _RT_NO_TESSELLATION          Use full sphere tracing for translucent geoemtry
+// _RT_QUALITY                  Enable mesh tracing
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Functions
@@ -1583,7 +1584,16 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 		fRayLen = VOX_CONE_MAX_LEN;
 	#endif
 
-		vC = ConeTraceTreeAndSky(fRayLen, r, SvoParamsDiffuse.x + power / 10000, SvoParamsInject.z, 0, false, false, normalize(vNor0));
+#if %_RT_QUALITY
+		const bool bUseRT = !IsDiffuseMode() 
+			&& fAverSmoothness > VOX_MAX_RT_MIN_GLOSS 
+			&& GetLuminance(vAverReflectance) > VOX_MAX_RT_MIN_REFL
+			&& fDistM < VOX_MAX_RT_DIST_CAM;
+#else
+		const bool bUseRT = false;
+#endif
+
+		vC = ConeTraceTreeAndSky(fRayLen, r, SvoParamsDiffuse.x + power / 10000, SvoParamsInject.z, bUseRT ? 1 : 0, false, false, bUseRT ? float3(0, 0, 0) : normalize(vNor0));
 
 #if %_RT_NO_TESSELLATION
 		vC *= lerp(1.f, SvoParamsInject.w, saturate(fAverTransmittanceY * 8));

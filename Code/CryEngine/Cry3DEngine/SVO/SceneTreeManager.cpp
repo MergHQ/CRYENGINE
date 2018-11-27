@@ -124,7 +124,6 @@ char* CSvoManager::GetStatusString(int lineId)
 		return szText;
 	}
 
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
 	if (lineId == (slotId++) && gSvoEnv->m_arrRTPoolInds.Count())
 	{
 		cry_sprintf(szText, "RT pools: tex %.2f, verts %.2f, inds %.2f",
@@ -133,7 +132,6 @@ char* CSvoManager::GetStatusString(int lineId)
 		            (float)gSvoEnv->m_arrRTPoolInds.Count() / max((float)gSvoEnv->m_arrRTPoolInds.capacity(), 1.f));
 		return szText;
 	}
-	#endif
 
 	return nullptr;
 }

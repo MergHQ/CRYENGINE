@@ -527,11 +527,11 @@ void CSvoRenderer::ConeTracePass(SSvoTargetsSet* pTS)
 	SetupGBufferTextures(rp);
 
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
-	if (m_pTexIndA)
+	if (m_texInfo.pTexIndA)
 	{
-		rp.SetTexture(8, m_pTexTexA);
-		rp.SetTexture(9, m_pTexTriA);
-		rp.SetTexture(13, m_pTexIndA);
+		rp.SetTexture(18, (CTexture*)m_texInfo.pTexTexA.get());
+		rp.SetTexture(9, (CTexture*)m_texInfo.pTexTriA.get());
+		rp.SetTexture(13, (CTexture*)m_texInfo.pTexIndA.get());
 	}
 	#endif
 
@@ -995,7 +995,8 @@ void CSvoRenderer::SetupSvoTexturesForRead(I3DEngine::SSvoStaticTexInfo& texInfo
 		rp.SetTexture(3, CTexture::GetByID(vp_RGB4.nTexId));
 
 	if (texInfo.pTexTris)
-		rp.SetTexture(6, static_cast<CTexture*>(texInfo.pTexTris.get()));
+		rp.SetTexture(17, static_cast<CTexture*>(texInfo.pTexTris.get()));
+
 	if (texInfo.pGlobalSpecCM)
 		rp.SetTexture(6, static_cast<CTexture*>(texInfo.pGlobalSpecCM.get()));
 
@@ -1245,7 +1246,7 @@ bool CSvoRenderer::SetShaderParameters(float*& pSrc, uint32 paramType, UFloat4* 
 	case ECGP_PB_SvoTreeSettings1:
 		{
 			sData[0].f[0] = pSR->e_svoMaxNodeSize;
-			sData[0].f[1] = pSR->e_svoTI_RT_MaxDist;
+			sData[0].f[1] = 0;
 			sData[0].f[2] = pSR->e_svoTI_Troposphere_CloudGen_FreqStep;
 			sData[0].f[3] = pSR->e_svoTI_Troposphere_Density;
 			break;
@@ -1404,10 +1405,10 @@ bool CSvoRenderer::SetShaderParameters(float*& pSrc, uint32 paramType, UFloat4* 
 
 	case ECGP_PB_SvoParams9:
 		{
-			sData[0].f[0] = 0;
-			sData[0].f[1] = 0;
-			sData[0].f[2] = 0;
-			sData[0].f[3] = 0;
+			sData[0].f[0] = pSR->e_svoTI_RT_MaxDistRay;
+			sData[0].f[1] = pSR->e_svoTI_RT_MaxDistCam;
+			sData[0].f[2] = pSR->e_svoTI_RT_MinGloss;
+			sData[0].f[3] = pSR->e_svoTI_RT_MinRefl;
 			break;
 		}
 
@@ -1521,6 +1522,9 @@ uint64 CSvoRenderer::GetRunTimeFlags(bool bDiffuseMode, bool bPixelShader)
 
 	if (e_svoTI_TranslucentBrightness && bPixelShader)
 		rtFlags |= g_HWSR_MaskBit[HWSR_NO_TESSELLATION];
+
+	if (e_svoTI_RT_Active && bPixelShader && !bDiffuseMode)
+		rtFlags |= g_HWSR_MaskBit[HWSR_QUALITY];
 
 	return rtFlags;
 }

@@ -90,6 +90,7 @@ struct SRayHitTriangle
 	Vec3       v[3];
 	Vec2       t[3];
 	ColorB     c[3];
+	Vec3       vn[3];
 	Vec3       n;
 	IMaterial* pMat;
 	uint8      nTriArea;

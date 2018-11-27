@@ -309,6 +309,11 @@ struct ITimeOfDay
 		float translucentBrightness;
 		float pointLightsBias;
 		float highGlossOcclusion;
+		bool  rtActive;
+		float rtMaxDistRay;
+		float rtMaxDistCam;
+		float rtMinGloss;
+		float rtMinRefl;
 	};
 
 	struct IListener

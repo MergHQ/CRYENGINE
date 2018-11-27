@@ -100,7 +100,7 @@ void CVoxStreamEngine::CVoxStreamEngineThread::ThreadEntry()
 		SVoxStreamItem pItem;
 		if (m_pStreamingEngine->m_arrForFileRead.dequeue(pItem))
 		{
-			if (Cry3DEngineBase::GetCVars()->e_svoMaxStreamRequests > 4)
+			if (Cry3DEngineBase::GetCVars()->e_svoMaxStreamRequests > 4 && !Cry3DEngineBase::GetCVars()->e_svoTI_RT_Active)
 			{
 				TDecompressVoxStreamItemJob job(pItem);
 				job.SetClassInstance(m_pStreamingEngine);
@@ -129,7 +129,8 @@ CVoxStreamEngine::CVoxStreamEngine() : m_arrForFileRead(512)
 	, m_arrForSyncCallBack(512)
 	, m_fileReadSemaphore(512)
 {
-	const int numThreads = gEnv->pConsole->GetCVar("e_svoTI_NumStreamingThreads")->GetIVal();
+	const int numThreads = Cry3DEngineBase::GetCVars()->e_svoTI_RT_Active ? 1 : gEnv->pConsole->GetCVar("e_svoTI_NumStreamingThreads")->GetIVal();
+
 	for (int i = 0; i < numThreads; ++i)
 	{
 		CVoxStreamEngineThread* pStreamingThread = new CVoxStreamEngineThread(this);
@@ -383,57 +384,60 @@ bool CVoxelSegment::LoadVoxels(byte* pDataRead, int dataSize)
 
 			assert(GetSubSetsNum() == pHeader->cropBoxMin.w); // number of subset in file must be compatible with current GI settings
 
+			CheckAllocateSubSets(voxData, dataSize / sizeof(ColorB));
+
 			// for every subset
-			for (int s = 0; s < GetSubSetsNum(); s++)
+			for (int s = 0; s < SVoxBrick::MAX_NUM; s++)
 			{
-				CheckAllocateBrick(voxData.pData[s], dataSize / sizeof(ColorB));
-
-				if (SVO_PACK_TO_16_BIT)
+				if (voxData.pData[s])
 				{
-					byte* pDataOut = (byte*)voxData.pData[s];
-
-					for (int i = 0; i < texDataSize; i++)
+					if (SVO_PACK_TO_16_BIT)
 					{
-						(*pDataOut) = (((*pData) >> 0) & 15) << 4;
-						(*pDataOut) = SATURATEB(int(powf(float((*pDataOut)) / 255.f, 2.f) * 255.f));
-						pDataOut++;
+						byte* pDataOut = (byte*)voxData.pData[s];
 
-						(*pDataOut) = (((*pData) >> 4) & 15) << 4;
-						(*pDataOut) = SATURATEB(int(powf(float((*pDataOut)) / 255.f, 2.f) * 255.f));
-						pDataOut++;
-
-						pData++;
-					}
-				}
-				else
-				{
-					memcpy(voxData.pData[s], pData, dataSize);
-
-					pData += dataSize;
-				}
-
-				if (gSvoEnv->m_voxTexFormat == eTF_R8G8B8A8)
-				{
-					uint8 nMaxAlphaInBrick = 0;
-
-					// swap r and b
-					int pixNum = m_vCropTexSize.x * m_vCropTexSize.y * m_vCropTexSize.z;
-
-					for (int p = 0; p < pixNum; p++)
-					{
-						if (voxData.pData[s])
+						for (int i = 0; i < texDataSize; i++)
 						{
-							ColorB& col = voxData.pData[s][p];
-							std::swap(col.r, col.b);
+							(*pDataOut) = (((*pData) >> 0) & 15) << 4;
+							(*pDataOut) = SATURATEB(int(powf(float((*pDataOut)) / 255.f, 2.f) * 255.f));
+							pDataOut++;
 
-							if (s == 0)
-							{
-								nMaxAlphaInBrick = max(nMaxAlphaInBrick, col.a);
-							}
+							(*pDataOut) = (((*pData) >> 4) & 15) << 4;
+							(*pDataOut) = SATURATEB(int(powf(float((*pDataOut)) / 255.f, 2.f) * 255.f));
+							pDataOut++;
+
+							pData++;
 						}
 					}
+					else
+					{
+						memcpy(voxData.pData[s], pData, dataSize);
 
-					m_maxAlphaInBrick = 1.f / 255.f * (float)nMaxAlphaInBrick;
+						pData += dataSize;
+					}
+
+					if (gSvoEnv->m_voxTexFormat == eTF_R8G8B8A8)
+					{
+						uint8 nMaxAlphaInBrick = 0;
+
+						// swap r and b
+						int pixNum = m_vCropTexSize.x * m_vCropTexSize.y * m_vCropTexSize.z;
+
+						for (int p = 0; p < pixNum; p++)
+						{
+							if (voxData.pData[s])
+							{
+								ColorB& col = voxData.pData[s][p];
+								std::swap(col.r, col.b);
+
+								if (s == 0)
+								{
+									nMaxAlphaInBrick = max(nMaxAlphaInBrick, col.a);
+								}
+							}
+						}
+
+						m_maxAlphaInBrick = 1.f / 255.f * (float)nMaxAlphaInBrick;
+					}
 				}
 			}
 
@@ -474,7 +478,7 @@ void CVoxelSegment::FreeAllBrickData()
 {
 	FreeBrickLayers();
 
-	for (int s = 0; s < GetSubSetsNum(); s++)
+	for (int s = 0; s < SVoxBrick::RTRIS; s++)
 	{
 		FreeBrick(m_voxData.pData[s]);
 	}
@@ -496,15 +500,18 @@ void CVoxelSegment::FreeBrickLayers()
 	{
 		SVoxBrick& voxData = it.second;
 
-		for (int s = 0; s < GetSubSetsNum(); s++)
+		for (int s = 0; s < SVoxBrick::MAX_NUM; s++)
 		{
-			if (voxData.pData[s] != m_voxData.pData[s])
+			if (voxData.pData[s])
 			{
-				FreeBrick(voxData.pData[s]);
-			}
-			else
-			{
-				voxData.pData[s] = nullptr;
+				if (voxData.pData[s] != m_voxData.pData[s])
+				{
+					FreeBrick(voxData.pData[s]);
+				}
+				else
+				{
+					voxData.pData[s] = nullptr;
+				}
 			}
 		}
 	}
@@ -736,7 +743,7 @@ void CVoxelSegment::CropVoxTexture(int threadId, bool bCompSurfDist)
 
 					ColorB& opaOut = voxData.pData[SVoxBrick::OPA3D][id];
 
-					if ((opaOut.r || opaOut.g || opaOut.b) || Cry3DEngineBase::GetCVars()->e_svoTI_Troposphere_Subdivide)
+					if ((opaOut.r || opaOut.g || opaOut.b || opaOut.a) || Cry3DEngineBase::GetCVars()->e_svoTI_Troposphere_Subdivide)
 					{
 						vMin.CheckMin(Vec3i(x, y, z));
 						vMax.CheckMax(Vec3i(x + 1, y + 1, z + 1));
@@ -769,15 +776,20 @@ void CVoxelSegment::CropVoxTexture(int threadId, bool bCompSurfDist)
 			SVoxBrick& voxDataIn = it.second;
 
 			SVoxBrick voxTemp;
-			for (int s = 0; s < GetSubSetsNum(); s++)
+			for (int s = 0; s < SVoxBrick::MAX_NUM; s++)
 			{
-				voxTemp.pData[s] = new ColorB[m_vCropTexSize.x * m_vCropTexSize.y * m_vCropTexSize.z];
-				memset(voxTemp.pData[s], 0, m_vCropTexSize.x * m_vCropTexSize.y * m_vCropTexSize.z * sizeof(ColorB));
+				if (voxDataIn.pData[s])
+				{
+					voxTemp.pData[s] = new ColorB[m_vCropTexSize.x * m_vCropTexSize.y * m_vCropTexSize.z];
+					memset(voxTemp.pData[s], 0, m_vCropTexSize.x * m_vCropTexSize.y * m_vCropTexSize.z * sizeof(ColorB));
+				}
 			}
 
 			// copy cropped data into temp
 			for (int x = 0; x < m_vCropTexSize.x; x++)
+			{
 				for (int y = 0; y < m_vCropTexSize.y; y++)
+				{
 					for (int z = 0; z < m_vCropTexSize.z; z++)
 					{
 						int x_in = x + vMin.x;
@@ -792,18 +804,26 @@ void CVoxelSegment::CropVoxTexture(int threadId, bool bCompSurfDist)
 						{
 							int id_out = z * m_vCropTexSize.x * m_vCropTexSize.y + y * m_vCropTexSize.x + x;
 
-							for (int s = 0; s < GetSubSetsNum(); s++)
+							for (int s = 0; s < SVoxBrick::MAX_NUM; s++)
 							{
-								voxTemp.pData[s][id_out] = voxDataIn.pData[s][id_in];
+								if (voxDataIn.pData[s])
+								{
+									voxTemp.pData[s][id_out] = voxDataIn.pData[s][id_in];
+								}
 							}
 						}
 					}
+				}
+			}
 
 			// copy back from temp
-			for (int s = 0; s < GetSubSetsNum(); s++)
+			for (int s = 0; s < SVoxBrick::MAX_NUM; s++)
 			{
-				memcpy(voxDataIn.pData[s], voxTemp.pData[s], sizeof(ColorB) * m_vCropTexSize.x * m_vCropTexSize.y * m_vCropTexSize.z);
-				SAFE_DELETE_ARRAY(voxTemp.pData[s]);
+				if (voxDataIn.pData[s])
+				{
+					memcpy(voxDataIn.pData[s], voxTemp.pData[s], sizeof(ColorB) * m_vCropTexSize.x * m_vCropTexSize.y * m_vCropTexSize.z);
+					SAFE_DELETE_ARRAY(voxTemp.pData[s]);
+				}
 			}
 		}
 
@@ -1091,15 +1111,6 @@ void CVoxelSegment::CheckAllocateTexturePool()
 				m_svoDataPoolsCounter++;
 			}
 
-			// mesh
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
-			if (!gSvoEnv->m_texTrisPoolId && Cry3DEngineBase::GetCVars()->e_svoTI_RT_MaxDist)
-			{
-				gSvoEnv->m_texTrisPoolId = gEnv->pRenderer->UploadToVideoMemory3D(NULL,
-				                                                                  m_voxTexPoolDimXY, m_voxTexPoolDimXY, m_voxTexPoolDimZ, gSvoEnv->m_voxTexFormat, gSvoEnv->m_voxTexFormat, 1, false, FILTER_LINEAR, 0, 0, flagsReadWrite);
-				m_svoDataPoolsCounter++;
-			}
-	#endif
 			// snow
 			if (!gSvoEnv->m_texRgb4PoolId && Cry3DEngineBase::GetCVars()->e_svoTI_Troposphere_Snow_Height)
 			{
@@ -1146,6 +1157,14 @@ void CVoxelSegment::CheckAllocateTexturePool()
 	#ifndef _RELEASE
 		delete[] pDataZero;
 	#endif
+	}
+
+	// mesh
+	if (!gSvoEnv->m_texTrisPoolId && Cry3DEngineBase::GetCVars()->e_svoTI_RT_Active)
+	{
+		gSvoEnv->m_texTrisPoolId = gEnv->pRenderer->UploadToVideoMemory3D(NULL,
+		                                                                  m_voxTexPoolDimXY, m_voxTexPoolDimXY, m_voxTexPoolDimZ, gSvoEnv->m_voxTexFormat, gSvoEnv->m_voxTexFormat, 1, false, FILTER_POINT, 0, 0, flagsReadOnly);
+		m_svoDataPoolsCounter++;
 	}
 }
 
@@ -1236,9 +1255,9 @@ void CVoxelSegment::UpdateVoxRenderData()
 		vSizeFin = GetDxtDim();
 	}
 
-	int arrTexId[SVoxBrick::MAX_NUM] = { gSvoEnv->m_texOpasPoolId, gSvoEnv->m_texRgb0PoolId, gSvoEnv->m_texNormPoolId };
+	int arrTexId[SVoxBrick::MAX_NUM] = { gSvoEnv->m_texOpasPoolId, gSvoEnv->m_texRgb0PoolId, gSvoEnv->m_texNormPoolId, gSvoEnv->m_texTrisPoolId };
 
-	for (int s = 0; s < GetSubSetsNum(); s++)
+	for (int s = 0; s < SVoxBrick::MAX_NUM; s++)
 	{
 		if (m_voxData.pData[s])
 		{
@@ -1379,10 +1398,7 @@ void CVoxelSegment::VoxelizeMeshes(int threadId, bool bUseMT)
 			gSvoEnv->m_arrVoxelizeMeshesCounter[1]++;
 	}
 
-	for (int s = 0; s < GetSubSetsNum(); s++)
-	{
-		CheckAllocateBrick(m_voxData.pData[s], m_vCropTexSize.x * m_vCropTexSize.y * m_vCropTexSize.z, true);
-	}
+	CheckAllocateSubSets(m_voxData, m_vCropTexSize.x * m_vCropTexSize.y * m_vCropTexSize.z, true);
 
 	// voxelize node tris
 	if ((m_nodeTrisAllMerged.Count() || Cry3DEngineBase::GetCVars()->e_svoTI_Troposphere_Subdivide) && m_voxData.pData[SVoxBrick::OPA3D] && m_pTrisInArea && pNodeTrisXYZ)
@@ -1486,10 +1502,7 @@ void CVoxelSegment::CombineLayers()
 {
 	if (m_objLayerMap.size() != 1 || m_objLayerMap.begin()->second.pData[SVoxBrick::OPA3D] != m_voxData.pData[SVoxBrick::OPA3D])
 	{
-		for (int s = 0; s < GetSubSetsNum(); s++)
-		{
-			CheckAllocateBrick(m_voxData.pData[s], m_vCropTexSize.x * m_vCropTexSize.y * m_vCropTexSize.z, true);
-		}
+		CheckAllocateSubSets(m_voxData, m_vCropTexSize.x * m_vCropTexSize.y * m_vCropTexSize.z, true);
 
 		for (auto& it : m_objLayerMap)
 		{
@@ -1504,13 +1517,16 @@ void CVoxelSegment::CombineLayers()
 
 			int pixNum = m_vCropTexSize.x * m_vCropTexSize.y * m_vCropTexSize.z;
 
-			for (int s = 0; s < GetSubSetsNum(); s++)
+			for (int s = 0; s < SVoxBrick::MAX_NUM; s++)
 			{
-				for (int p = 0; p < pixNum; p++)
+				if (m_voxData.pData[s])
 				{
-					for (int c = 0; c < 4; c++)
+					for (int p = 0; p < pixNum; p++)
 					{
-						m_voxData.pData[s][p][c] = max(m_voxData.pData[s][p][c], layerVoxData.pData[s][p][c]);
+						for (int c = 0; c < 4; c++)
+						{
+							m_voxData.pData[s][p][c] = max(m_voxData.pData[s][p][c], layerVoxData.pData[s][p][c]);
+						}
 					}
 				}
 			}
@@ -1555,6 +1571,9 @@ void CVoxelSegment::BuildVoxels(SBuildVoxelsParams params)
 				voxBox.min.Set(vMin.x, vMin.y, vMin.z);
 				voxBox.max.Set(vMax.x, vMax.y, vMax.z);
 
+				if (GetCVars()->e_svoTI_RT_Active)
+					voxBox.Expand(Vec3(vMax.z - vMin.z) * SVO_RT_SAFETY_BORDER);
+
 				if (Overlap::AABB_AABB(voxBox, m_boxTris))
 				{
 					// loop through found layers
@@ -1596,21 +1615,22 @@ void CVoxelSegment::BuildVoxels(SBuildVoxelsParams params)
 							}
 						}
 
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
-						if (GetCVars()->e_svoTI_RT_MaxDist && gSvoEnv->m_texTrisPoolId)
+						if (GetCVars()->e_svoTI_RT_Active)
 						{
-							int trisCount = 0;
-							int firstTriIndex = StoreIndicesIntoPool(trisIntRT, trisCount);
-							int id = firstTriIndex;
-							m_voxData.pVoxTris[id].r = id & 255;
-							id /= 256;
-							m_voxData.pVoxTris[id].g = id & 255;
-							id /= 256;
-							m_voxData.pVoxTris[id].b = id & 255;
-							id /= 256;
-							m_voxData.pVoxTris[id].a = trisCount;
+							ColorB& triOutFin = voxData.pData[SVoxBrick::RTRIS][id];
+
+							int triIndexCount = 0;
+							int firstTriIndexPos = StoreIndicesIntoPool(trisInt, triIndexCount);
+
+							triOutFin.r = firstTriIndexPos & 255;
+							firstTriIndexPos /= 256;
+							triOutFin.g = firstTriIndexPos & 255;
+							firstTriIndexPos /= 256;
+							triOutFin.b = firstTriIndexPos & 255;
+							assert(firstTriIndexPos <= 255);
+
+							triOutFin.a = triIndexCount;
 						}
-	#endif
 
 						// OPA
 						{
@@ -1893,6 +1913,11 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 	bThisIsAreaParent = (cloudBoxWS.GetSize().z == GetCVars()->e_svoMaxAreaSize);
 	bThisIsLowLodNode = (cloudBoxWS.GetSize().z > GetCVars()->e_svoMaxAreaSize);
 
+	AABB cloudBoxEX = cloudBoxWS;
+
+	if (GetCVars()->e_svoTI_RT_Active)
+		cloudBoxEX.Expand(Vec3(cloudBoxWS.GetSize().z / SVO_VOX_BRICK_MAX_SIZE * SVO_RT_SAFETY_BORDER));
+
 	if (bThisIsAreaParent || bThisIsLowLodNode)
 	{
 		if (bAllowStartStreaming && bThisIsAreaParent && gEnv->IsEditor())
@@ -1908,9 +1933,9 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 			{
 				PodArray<IRenderNode*> arrRenderNodes;
 
-				Get3DEngine()->GetObjectsByTypeGlobal(arrRenderNodes, (EERType)objType, &cloudBoxWS, bAllowStartStreaming ? &bSuccess : 0, ERF_GI_MODE_BIT0);
+				Get3DEngine()->GetObjectsByTypeGlobal(arrRenderNodes, (EERType)objType, &cloudBoxEX, bAllowStartStreaming ? &bSuccess : 0, ERF_GI_MODE_BIT0);
 				if (Get3DEngine()->GetVisAreaManager())
-					Get3DEngine()->GetVisAreaManager()->GetObjectsByType(arrRenderNodes, (EERType)objType, &cloudBoxWS, bAllowStartStreaming ? &bSuccess : 0, ERF_GI_MODE_BIT0);
+					Get3DEngine()->GetVisAreaManager()->GetObjectsByType(arrRenderNodes, (EERType)objType, &cloudBoxEX, bAllowStartStreaming ? &bSuccess : 0, ERF_GI_MODE_BIT0);
 
 				if (!arrRenderNodes.Count())
 					continue;
@@ -2068,13 +2093,15 @@ void CVoxelSegment::FindTrianglesForVoxelization(PodArray<int>*& rpNodeTrisXYZ)
 	//    cloudBoxWS.min -= (vCloudSize/kVoxTexMaxDim)/2;
 	//    cloudBoxWS.max += (vCloudSize/kVoxTexMaxDim)/2;
 
+	AABB cloudBoxEX = cloudBoxWS;
+
+	if (GetCVars()->e_svoTI_RT_Active)
+		cloudBoxEX.Expand(Vec3(cloudBoxWS.GetSize().z / SVO_VOX_BRICK_MAX_SIZE * SVO_RT_SAFETY_BORDER));
+
 	//if(!m_pParentCloud)
 	if (m_isAreaParent || m_isLowLodNode)
 	{
 		// get tris from real level geometry
-
-		//		PodArray<SRayHitTriangle> allTrisInArea;
-		//	allTrisInArea.PreAllocate(4000);
 
 		//float startTimeAll = GetCurAsyncTimeSec();
 		//		PrintMessage("VoxelizeMeshes: starting triangle search for node id %d (size=%d)", m_nId, (int)GetBoxSize());
@@ -2103,6 +2130,7 @@ void CVoxelSegment::FindTrianglesForVoxelization(PodArray<int>*& rpNodeTrisXYZ)
 			ht.c[0] = ht.c[1] = ht.c[2] = Col_White;
 			ht.nOpacity = 255;
 			ht.nHitObjType = HIT_OBJ_TYPE_TERRAIN;
+			ht.vn[0] = ht.vn[1] = ht.vn[2] = ht.n = Vec3(0, 0, 1);
 			Plane pl;
 
 			int I = 0, X = 0, Y = 0;
@@ -2305,8 +2333,14 @@ void CVoxelSegment::FindTrianglesForVoxelization(PodArray<int>*& rpNodeTrisXYZ)
 					if (ht.nOpacity < minVoxelOpacity)
 						continue;
 
+					// transform vertices into world space
 					for (int v = 0; v < 3; v++)
+					{
 						ht.v[v] = info.matObj.TransformPoint(ht.v[v]);
+
+						assert(ht.vn[v].GetLength() > 0.9f && ht.vn[v].GetLength() < 1.1f);
+						ht.vn[v] = info.matObj.TransformVector(ht.vn[v]).GetNormalized();
+					}
 
 					ht.nTriArea = SATURATEB(int(SVO_AREA_SCALE * 0.5f * (ht.v[1] - ht.v[0]).Cross(ht.v[2] - ht.v[0]).GetLength()));
 					Plane pl;
@@ -2314,7 +2348,7 @@ void CVoxelSegment::FindTrianglesForVoxelization(PodArray<int>*& rpNodeTrisXYZ)
 					ht.n = pl.n;
 
 					if (!ht.v[0].IsEquivalent(ht.v[1], epsilon) && !ht.v[1].IsEquivalent(ht.v[2], epsilon) && !ht.v[2].IsEquivalent(ht.v[0], epsilon))
-						if ((ht.nTriArea || !GetCVars()->e_svoTI_ObjectsMaxViewDistance) && Overlap::AABB_Triangle(cloudBoxWS, ht.v[0], ht.v[1], ht.v[2]))
+						if ((ht.nTriArea || !GetCVars()->e_svoTI_ObjectsMaxViewDistance) && Overlap::AABB_Triangle(cloudBoxEX, ht.v[0], ht.v[1], ht.v[2]))
 						{
 							bool bSkipUnderTerrain = Get3DEngine()->m_bShowTerrainSurface && !info.bIndoor && (!GetCVars()->e_svoTI_VoxelizeUnderTerrain || info.bVegetation);
 
@@ -2455,21 +2489,13 @@ void CVoxelSegment::FindTrianglesForVoxelization(PodArray<int>*& rpNodeTrisXYZ)
 			}
 		}
 
-		//		if(allTrisInArea.Count())
-		//		qsort(allTrisInArea.GetElements(), allTrisInArea.Count(), sizeof(allTrisInArea[0]), CompareTriArea);
-
 		m_voxTrisCounter += m_pTrisInArea ? m_pTrisInArea->Count() : 0;
 
 		//    if(m_nodeTrisAllMerged.Count())
 		//      PrintMessage("VoxelizeMeshes: %d tris found for node id %d (size=%d) in %.2f sec", m_nodeTrisAllMerged.Count(), m_nId, (int)GetBoxSize(), GetCurAsyncTimeSec() - fStartTimeAll);
 
-		//    if(allTrisInLevel.Count())
-		//      PrintMessage("VoxelizeMeshes: max triangle area: %.2f, min triangle area: %.2f", allTrisInLevel[0].triArea, allTrisInLevel.Last().triArea);
-
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
-		if (GetCVars()->e_svoTI_RT_MaxDist && gSvoEnv->m_texTrisPoolId)
-			StoreAreaTrisIntoTriPool(allTrisInArea);
-	#endif
+		if (GetCVars()->e_svoTI_RT_Active && gSvoEnv->m_texTrisPoolId)
+			StoreAreaTrisIntoTriPool();
 
 		{
 			AUTO_READLOCK(m_superMeshLock);
@@ -2504,7 +2530,7 @@ void CVoxelSegment::FindTrianglesForVoxelization(PodArray<int>*& rpNodeTrisXYZ)
 
 				Vec3 arrV[3] = { (*m_pVertInArea)[tr.arrVertId[0]].v, (*m_pVertInArea)[tr.arrVertId[1]].v, (*m_pVertInArea)[tr.arrVertId[2]].v };
 
-				if (Overlap::AABB_Triangle(cloudBoxWS, arrV[0], arrV[1], arrV[2])) // 20ms
+				if (Overlap::AABB_Triangle(cloudBoxEX, arrV[0], arrV[1], arrV[2])) // 20ms
 				{
 					AddTriangle(tr, trId, rpNodeTrisXYZ, m_pVertInArea);
 				}
@@ -2527,7 +2553,7 @@ void CVoxelSegment::FindTrianglesForVoxelization(PodArray<int>*& rpNodeTrisXYZ)
 
 				Vec3 arrV[3] = { (*m_pVertInArea)[tr.arrVertId[0]].v, (*m_pVertInArea)[tr.arrVertId[1]].v, (*m_pVertInArea)[tr.arrVertId[2]].v };
 
-				if (Overlap::AABB_Triangle(cloudBoxWS, arrV[0], arrV[1], arrV[2])) // 20ms
+				if (Overlap::AABB_Triangle(cloudBoxEX, arrV[0], arrV[1], arrV[2])) // 20ms
 				{
 					AddTriangle(tr, trId, rpNodeTrisXYZ, m_pVertInArea);
 				}
@@ -2607,11 +2633,7 @@ void CVoxelSegment::AddTriangle(const SRayHitTriangleIndexed& tr, int trId, PodA
 		//    }
 
 		SVoxBrick voxData;
-
-		for (int s = 0; s < GetSubSetsNum(); s++)
-		{
-			CheckAllocateBrick(voxData.pData[s], SVO_VOX_BRICK_MAX_SIZE * SVO_VOX_BRICK_MAX_SIZE * SVO_VOX_BRICK_MAX_SIZE);
-		}
+		CheckAllocateSubSets(voxData, SVO_VOX_BRICK_MAX_SIZE * SVO_VOX_BRICK_MAX_SIZE * SVO_VOX_BRICK_MAX_SIZE);
 
 		m_objLayerMap[tr.objectLayerId] = voxData;
 	}
@@ -2708,10 +2730,9 @@ ColorF CVoxelSegment::ProcessMaterial(const SRayHitTriangleIndexed& tr, const Ve
 			//      vTextureAtlasInfo.w = pResTexture->GetTiling(1);
 
 			colTex = GetBilinearAt(
-			  vHitTC.x * vTextureAtlasInfo.z + vTextureAtlasInfo.x,
-			  vHitTC.y * vTextureAtlasInfo.w + vTextureAtlasInfo.y,
-			  pTexRgb, texWidth, texHeight, 1.f / 255.f);
-			colTex.srgb2rgb();
+				vHitTC.x * vTextureAtlasInfo.z + vTextureAtlasInfo.x,
+				vHitTC.y * vTextureAtlasInfo.w + vTextureAtlasInfo.y,
+				pTexRgb, texWidth, texHeight, 1.f / 255.f);
 
 			// ignore alpha if material do not use it
 			if (pShItem && pShItem->m_pShaderResources && (pShItem->m_pShaderResources->GetAlphaRef() == 0.f) && (pShItem->m_pShaderResources->GetStrengthValue(EFTT_OPACITY) == 1.f))
@@ -2722,11 +2743,10 @@ ColorF CVoxelSegment::ProcessMaterial(const SRayHitTriangleIndexed& tr, const Ve
 			// terrain tex-gen
 			int worldSize = GetTerrain()->GetTerrainSize();
 			colTex = GetBilinearAt(
-			  vHitPos.y / worldSize,
-			  vHitPos.x / worldSize,
-			  pTexRgb, texWidth, texHeight, 1.f / 255.f);
+				vHitPos.y / worldSize,
+				vHitPos.x / worldSize,
+				pTexRgb, texWidth, texHeight, 1.f / 255.f);
 
-			colTex.srgb2rgb();
 			colTex *= GetTerrain()->GetTerrainTextureMultiplier();
 
 			colTex.r = max(colTex.r, .02f);
@@ -2759,184 +2779,238 @@ float CompressTC(Vec2 tc)
 	return 0.1f + (float)val;
 }
 
-void CVoxelSegment::StoreAreaTrisIntoTriPool(PodArray<SRayHitTriangle>& allTrisInLevel)
+void CVoxelSegment::StoreAreaTrisIntoTriPool()
 {
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
-	if (allTrisInLevel.Count())
+	if (m_pVertInArea && m_pVertInArea->Count())
 	{
-		AUTO_MODIFYLOCK(gSvoEnv->m_arrRTPoolTris.m_Lock);
+		PodArrayRT<Vec4>& rAr = gSvoEnv->m_arrRTPoolTris;
 
-		for (int t = 0; t < allTrisInLevel.Count(); t++)
+		AUTO_MODIFYLOCK(rAr.m_Lock);
+
+		for (int t = 0; t < m_pTrisInArea->Count(); t++)
 		{
-			SRayHitTriangle& tr = allTrisInLevel[t];
+			SRayHitTriangleIndexed& tr = (*m_pTrisInArea)[t];
+
+			Vec3 arrPos[3] = { (*m_pVertInArea)[tr.arrVertId[0]].v, (*m_pVertInArea)[tr.arrVertId[1]].v, (*m_pVertInArea)[tr.arrVertId[2]].v };
+			Vec2 arrTC[3] = { (*m_pVertInArea)[tr.arrVertId[0]].t, (*m_pVertInArea)[tr.arrVertId[1]].t, (*m_pVertInArea)[tr.arrVertId[2]].t };
+			Vec3 arrNor[3] = { (*m_pVertInArea)[tr.arrVertId[0]].n, (*m_pVertInArea)[tr.arrVertId[1]].n, (*m_pVertInArea)[tr.arrVertId[2]].n };
 
 			// normalize TC
-			Vec2 tcMin;
-			tcMin.x = min(tr.t[0].x, min(tr.t[1].x, tr.t[2].x));
-			tcMin.y = min(tr.t[0].y, min(tr.t[1].y, tr.t[2].y));
+			Vec2 tcMin(0, 0);
+			tcMin.x = min(arrTC[0].x, min(arrTC[1].x, arrTC[2].x));
+			tcMin.y = min(arrTC[0].y, min(arrTC[1].y, arrTC[2].y));
 
 			for (int v = 0; v < 3; v++)
 			{
-				tr.t[v].x -= floor(tcMin.x);
-				tr.t[v].y -= floor(tcMin.y);
+				arrTC[v].x -= floor(tcMin.x);
+				arrTC[v].y -= floor(tcMin.y);
 			}
 
 			uint16 nTexW = 0, nTexH = 0;
 			int* pLowResSystemCopyAtlasId = 0;
-			if (tr.pMat)
+
+			SSvoMatInfo& rMI = m_pMatsInArea->GetAt(tr.materialID);
+			SShaderItem* pShItem = nullptr;
+
+			if (rMI.pMat)
 			{
-				CheckStoreTextureInPool(&tr.pMat->GetShaderItem(tr.nSubMatID), nTexW, nTexH, &pLowResSystemCopyAtlasId);
+				pShItem = &rMI.pMat->GetShaderItem();
+				CheckStoreTextureInPool(pShItem, nTexW, nTexH, &pLowResSystemCopyAtlasId);
+			}
+			else
+			{
+				CheckStoreTextureInPool(nullptr, nTexW, nTexH, &pLowResSystemCopyAtlasId);
+			}
 
-				if (pLowResSystemCopyAtlasId)
-				{
-					gSvoEnv->m_arrRTPoolTris.PreAllocate(m_voxTexPoolDimXY * m_voxTexPoolDimXY * m_voxTexPoolDimZ);
+			if (pLowResSystemCopyAtlasId)
+			{
+				const int maxTexSizeXY = GetCVars()->e_svoTI_RT_MaxTexRes;
 
-					tr.nGLobalId = gSvoEnv->m_arrRTPoolTris.Count() / 4;
+				rAr.CheckAllocated(maxTexSizeXY * maxTexSizeXY * m_voxTexPoolDimZ);
 
-					// add triangle into pool
-					for (int i = 0; i < 3; i++)
-						gSvoEnv->m_arrRTPoolTris.Add(Vec4(tr.v[i] - tr.n * (tr.nMatID ? SVO_OFFSET_MESH : SVO_OFFSET_TERRAIN), CompressTC(tr.t[i])));
-					gSvoEnv->m_arrRTPoolTris.Add(Vec4(0.1f + (float)(*pLowResSystemCopyAtlasId), (float)nTexW / (float)m_voxTexPoolDimXY, 0, 0));
+				const int triDataSize = 8; // number of Vec4 elements per triangle
 
-					gSvoEnv->m_arrRTPoolTris.m_bModified = true;
-				}
+				// get triangle offset and globalId
+				if (rAr.m_writeOffset + triDataSize >= rAr.Count())
+					rAr.m_writeOffset = 0;
+
+				tr.globalId = rAr.m_writeOffset / triDataSize;
+
+				// store triangle into pool
+				for (int i = 0; i < 3; i++)
+					rAr[rAr.m_writeOffset++] = Vec4(arrPos[i], CompressTC(arrTC[i]));
+
+				rAr[rAr.m_writeOffset++] = Vec4(0.1f + (float)(pLowResSystemCopyAtlasId ? *pLowResSystemCopyAtlasId : 0), (float)nTexW / (float)GetCVars()->e_svoTI_RT_MaxTexRes, SATURATE(1.f / 255.f * (float)tr.opacity), 0);
+
+				for (int i = 0; i < 3; i++)
+					rAr[rAr.m_writeOffset++] = Vec4(arrNor[i], 0);
+
+				ColorF colMat = (pShItem && pShItem->m_pShaderResources) ? pShItem->m_pShaderResources->GetColorValue(EFTT_DIFFUSE) : Col_White;
+				rAr[rAr.m_writeOffset++] = colMat.toVec4();
 			}
 		}
 	}
-	#endif
 }
 
 void CVoxelSegment::CheckStoreTextureInPool(SShaderItem* pShItem, uint16& nTexW, uint16& nTexH, int** ppSysTexId)
 {
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
-	static int s_atlasSlotId = 0;
-	if (s_atlasSlotId >= m_voxTexPoolDimZ)
-		return;
+	const ColorB* pTexRgbOr = nullptr;
 
-	if (SEfResTexture* pResTexture = pShItem->m_pShaderResources->GetTexture(EFTT_DIFFUSE))
+	int maxTexSizeXY = GetCVars()->e_svoTI_RT_MaxTexRes;
+
+	if (pShItem)
 	{
-		if (ITexture* pITex = pResTexture->m_Sampler.m_pITex)
+		if (SEfResTexture* pResTexture = pShItem->m_pShaderResources->GetTexture(EFTT_DIFFUSE))
 		{
-			if (const ColorB* pTexRgbOr = pITex->GetLowResSystemCopy(nTexW, nTexH, ppSysTexId))
+			if (ITexture* pITex = pResTexture->m_Sampler.m_pITex)
 			{
-				AUTO_MODIFYLOCK(gSvoEnv->m_arrRTPoolTexs.m_Lock);
-
-				if ((**ppSysTexId) == 0)
-				{
-					// add new texture into RT pool
-
-					if (nTexW > m_voxTexPoolDimXY || nTexH > m_voxTexPoolDimXY)
-						CVoxelSegment::ErrorTerminate("CheckStoreTextureInPool");
-
-					gSvoEnv->m_arrRTPoolTexs.PreAllocate(m_voxTexPoolDimXY * m_voxTexPoolDimXY * m_voxTexPoolDimZ, s_atlasSlotId * m_voxTexPoolDimXY * m_voxTexPoolDimXY);
-
-					// apply high-pass filter
-					ColorB* pTexRgbHP = new ColorB[nTexW * nTexH];
-					ColorF* pBlurredF = new ColorF[nTexW * nTexH];
-
-					// make blurred copy
-					for (int x = 0; x < nTexW; x++)
-					{
-						for (int y = 0; y < nTexH; y++)
-						{
-							ColorF colAver(0, 0, 0, 0);
-
-							int samplingRange = 8;
-
-							for (int i = -samplingRange; i <= samplingRange; i += 2)
-							{
-								for (int j = -samplingRange; j <= samplingRange; j += 2)
-								{
-									int X = (x + i) & (nTexW - 1);
-									int Y = (y + j) & (nTexH - 1);
-
-									colAver.r += pTexRgbOr[X * nTexH + Y].r;
-									colAver.g += pTexRgbOr[X * nTexH + Y].g;
-									colAver.b += pTexRgbOr[X * nTexH + Y].b;
-									colAver.a++;
-								}
-							}
-
-							pBlurredF[x * nTexH + y] = colAver / colAver.a;
-						}
-					}
-
-					// get difference between blurred and original
-					for (int x = 0; x < nTexW; x++)
-					{
-						for (int y = 0; y < nTexH; y++)
-						{
-							ColorF colF;
-							colF.r = pTexRgbOr[x * nTexH + y].r;
-							colF.g = pTexRgbOr[x * nTexH + y].g;
-							colF.b = pTexRgbOr[x * nTexH + y].b;
-							colF.a = pTexRgbOr[x * nTexH + y].a;
-
-							colF = (colF - pBlurredF[x * nTexH + y] + 127.5f);
-
-							pTexRgbHP[x * nTexH + y].r = SATURATEB((int)colF.r);
-							pTexRgbHP[x * nTexH + y].g = SATURATEB((int)colF.g);
-							pTexRgbHP[x * nTexH + y].b = SATURATEB((int)colF.b);
-							pTexRgbHP[x * nTexH + y].a = 255;
-						}
-					}
-
-					for (int lineId = 0; lineId < nTexH; lineId++)
-						memcpy(gSvoEnv->m_arrRTPoolTexs.GetElements() + s_atlasSlotId * (m_voxTexPoolDimXY * m_voxTexPoolDimXY) + lineId * m_voxTexPoolDimXY, pTexRgbHP + lineId * nTexW, nTexW * sizeof(ColorB));
-
-					delete[] pBlurredF;
-					delete[] pTexRgbHP;
-
-					(**ppSysTexId) = s_atlasSlotId + 1;
-					s_atlasSlotId++;
-
-					gSvoEnv->m_arrRTPoolTexs.m_bModified = true;
-				}
+				pTexRgbOr = pITex->GetLowResSystemCopy(nTexW, nTexH, ppSysTexId, maxTexSizeXY);
 			}
 		}
 	}
-	#endif
+	else
+	{
+		if (const PodArray<ColorB>* pTerrLowResTex = GetTerrain()->GetTerrainRgbLowResSystemCopy(ppSysTexId))
+		{
+			nTexW = nTexH = (int)sqrt((float)pTerrLowResTex->Count());
+			pTexRgbOr = (ColorB*)pTerrLowResTex->GetElements();
+		}
+	}
+
+	assert(pTexRgbOr);
+
+	if (pTexRgbOr)
+	{
+		AUTO_MODIFYLOCK(gSvoEnv->m_arrRTPoolTexs.m_Lock);
+
+		if ((**ppSysTexId) == 0)
+		{
+			// add new texture into RT pool
+
+			ColorB* pTexRgbHP = nullptr;
+
+			pTexRgbHP = ApplyHighPass(nTexW, nTexH, pTexRgbOr);
+
+			assert(nTexW <= maxTexSizeXY && nTexH <= maxTexSizeXY);
+
+			gSvoEnv->m_arrRTPoolTexs.CheckAllocated(maxTexSizeXY * maxTexSizeXY * m_voxTexPoolDimZ);
+
+			for (int lineId = 0; lineId < nTexH; lineId++)
+				memcpy(gSvoEnv->m_arrRTPoolTexs.GetElements() + gSvoEnv->m_arrRTPoolTexs.m_writeOffset + lineId * maxTexSizeXY, (pTexRgbHP ? pTexRgbHP : pTexRgbOr) + lineId * nTexW, nTexW * sizeof(ColorB));
+
+			SAFE_DELETE_ARRAY(pTexRgbHP);
+
+			const int texDataSize = maxTexSizeXY * maxTexSizeXY;
+			(**ppSysTexId) = (gSvoEnv->m_arrRTPoolTexs.m_writeOffset / texDataSize) + 1;
+
+			gSvoEnv->m_arrRTPoolTexs.m_writeOffset += texDataSize;
+			if (gSvoEnv->m_arrRTPoolTexs.m_writeOffset >= texDataSize * m_voxTexPoolDimZ)
+				gSvoEnv->m_arrRTPoolTexs.m_writeOffset = 0;
+		}
+	}
+}
+
+ColorB* CVoxelSegment::ApplyHighPass(uint16& nTexW, uint16& nTexH, const ColorB* pTexRgbOr)
+{
+	ColorB* pTexRgbHP = new ColorB[nTexW * nTexH];
+	ColorF* pBlurredF = new ColorF[nTexW * nTexH];
+
+	// make blurred copy
+	for (int x = 0; x < nTexW; x++)
+	{
+		for (int y = 0; y < nTexH; y++)
+		{
+			ColorF colAver(0, 0, 0, 0);
+
+			int samplingRange = 16;
+
+			for (int i = -samplingRange; i <= samplingRange; i += 2)
+			{
+				for (int j = -samplingRange; j <= samplingRange; j += 2)
+				{
+					int X = (x + i) & (nTexW - 1);
+					int Y = (y + j) & (nTexH - 1);
+
+					colAver.r += pTexRgbOr[X * nTexH + Y].r;
+					colAver.g += pTexRgbOr[X * nTexH + Y].g;
+					colAver.b += pTexRgbOr[X * nTexH + Y].b;
+					colAver.a++;
+				}
+			}
+
+			pBlurredF[x * nTexH + y] = colAver / colAver.a;
+		}
+	}
+
+	// get difference between blurred and original
+	for (int x = 0; x < nTexW; x++)
+	{
+		for (int y = 0; y < nTexH; y++)
+		{
+			ColorF colF;
+			colF.r = pTexRgbOr[x * nTexH + y].r;
+			colF.g = pTexRgbOr[x * nTexH + y].g;
+			colF.b = pTexRgbOr[x * nTexH + y].b;
+			colF.a = pTexRgbOr[x * nTexH + y].a;
+
+			colF = (colF - pBlurredF[x * nTexH + y] + 127.5f);
+
+			pTexRgbHP[x * nTexH + y].r = SATURATEB((int)colF.r);
+			pTexRgbHP[x * nTexH + y].g = SATURATEB((int)colF.g);
+			pTexRgbHP[x * nTexH + y].b = SATURATEB((int)colF.b);
+			pTexRgbHP[x * nTexH + y].a = 255;
+		}
+	}
+
+	delete[] pBlurredF;
+
+	return pTexRgbHP;
 }
 
 int CVoxelSegment::StoreIndicesIntoPool(const PodArray<int>& nodeTInd, int& countStored)
 {
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
-	if (nodeTInd.Count() && GetBoxSize() == Cry3DEngineBase::GetCVars()->e_svoMinNodeSize)
+	if (nodeTInd.Count())
 	{
-		AUTO_MODIFYLOCK(gSvoEnv->m_arrRTPoolInds.m_Lock);
+		PodArrayRT<ColorB>& rAr = gSvoEnv->m_arrRTPoolInds;
 
-		int startId = gSvoEnv->m_arrRTPoolInds.Count();
+		AUTO_MODIFYLOCK(rAr.m_Lock);
 
-		gSvoEnv->m_arrRTPoolInds.PreAllocate(m_voxTexPoolDimXY * m_voxTexPoolDimXY * m_voxTexPoolDimZ);
+		const int maxTexSizeXY = GetCVars()->e_svoTI_RT_MaxTexRes;
 
-		for (int t = 0; t < nodeTInd.Count() && t < 255; t++)
+		rAr.CheckAllocated(maxTexSizeXY * maxTexSizeXY * m_voxTexPoolDimZ);
+
+		const int numTriIdsToStore = min(nodeTInd.Count(), Cry3DEngineBase::GetCVars()->e_svoTI_RT_MaxTrisPerVoxel);
+		assert(numTriIdsToStore < 255);
+
+		if (rAr.m_writeOffset + numTriIdsToStore > rAr.Count())
+			rAr.m_writeOffset = 0;
+
+		int startOffset = rAr.m_writeOffset;
+
+		for (int t = 0; t < numTriIdsToStore; t++)
 		{
-			int trId = nodeTInd[t];
-			SRayHitTriangle& tr = (*m_pTrisInArea)[trId];
-			int id = tr.nGLobalId;
+			SRayHitTriangleIndexed& tr = m_pTrisInArea->GetAt(nodeTInd[t]);
+
+			int globId = tr.globalId;
 
 			ColorB valOut;
-			valOut.r = id & 255;
-			id /= 256;
-			valOut.g = id & 255;
-			id /= 256;
-			valOut.b = id & 255;
-			id /= 256;
-			valOut.a = id & 255;
-			id /= 256;
-			gSvoEnv->m_arrRTPoolInds.Add(valOut);
+			valOut.r = globId & 255;
+			globId /= 256;
+			valOut.g = globId & 255;
+			globId /= 256;
+			valOut.b = globId & 255;
+			globId /= 256;
+			valOut.a = globId & 255;
+			assert(globId <= 255);
+
+			rAr[rAr.m_writeOffset++] = valOut;
 		}
 
-		gSvoEnv->m_arrRTPoolInds.m_bModified = true;
-
-		countStored = gSvoEnv->m_arrRTPoolInds.Count() - startId;
-
-		return startId;
+		countStored = rAr.m_writeOffset - startOffset;
+		return startOffset;
 	}
 
 	countStored = 0;
-	#endif
-
 	return 0;
 }
 
@@ -3030,7 +3104,7 @@ void CVoxelSegment::ErrorTerminate(const char* format, ...)
 
 const float kSvoSuperMeshHashScale = .1f;
 
-int SSuperMesh::FindVertex(const Vec3& rPos, const Vec2 rTC, PodArray<SMINDEX> arrVertHash[hashDim][hashDim][hashDim], PodArrayRT<SRayHitVertex>& vertsInArea)
+int SSuperMesh::FindVertex(const Vec3& rPos, const Vec2 rTC, const Vec3& rNor, PodArray<SMINDEX> arrVertHash[hashDim][hashDim][hashDim], PodArrayRT<SRayHitVertex>& vertsInArea)
 {
 	Vec3i vPosI0 = rPos / kSvoSuperMeshHashScale - Vec3(VEC_EPSILON, VEC_EPSILON, VEC_EPSILON);
 	Vec3i vPosI1 = rPos / kSvoSuperMeshHashScale + Vec3(VEC_EPSILON, VEC_EPSILON, VEC_EPSILON);
@@ -3047,7 +3121,8 @@ int SSuperMesh::FindVertex(const Vec3& rPos, const Vec2 rTC, PodArray<SMINDEX> a
 				{
 					if (vertsInArea[rSubIndices[ii]].v.IsEquivalent(rPos))
 						if (vertsInArea[rSubIndices[ii]].t.IsEquivalent(rTC))
-							return rSubIndices[ii];
+							if (vertsInArea[rSubIndices[ii]].n.IsEquivalent(rNor))
+							  return rSubIndices[ii];
 				}
 			}
 
@@ -3117,17 +3192,13 @@ void SSuperMesh::AddSuperTriangle(SRayHitTriangle& htIn, PodArray<SMINDEX> arrVe
 	}
 	htOut.materialID = matId;
 	htOut.objectLayerId = nObjLayerId;
-
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
-	htOut.globalId = htIn.nGLobalId;
-	#endif
 	htOut.triArea = htIn.nTriArea;
 	htOut.opacity = htIn.nOpacity;
 	htOut.hitObjectType = htIn.nHitObjType;
 
 	for (int v = 0; v < 3; v++)
 	{
-		int vertId = FindVertex(htIn.v[v], htIn.t[v], arrVertHash, *m_pVertInArea);
+		int vertId = FindVertex(htIn.v[v], htIn.t[v], htIn.vn[v], arrVertHash, *m_pVertInArea);
 
 		if (vertId < 0)
 		{
@@ -3135,6 +3206,8 @@ void SSuperMesh::AddSuperTriangle(SRayHitTriangle& htIn, PodArray<SMINDEX> arrVe
 			hv.v = htIn.v[v];
 			hv.t = htIn.t[v];
 			hv.c = htIn.c[v];
+			hv.n = htIn.vn[v];
+			assert(hv.n.GetLength() > 0.9f && hv.n.GetLength() < 1.1f);
 
 			vertId = AddVertex(hv, arrVertHash, *m_pVertInArea);
 		}
@@ -3326,39 +3399,40 @@ void CVoxelSegment::SaveVoxels(PodArray<byte>& arrData)
 		// store voxel data
 		if (texDataSize)
 		{
-			for (int s = 0; s < GetSubSetsNum(); s++)
+			for (int s = 0; s < SVoxBrick::MAX_NUM; s++)
 			{
-				byte* pDataIn = (byte*)it.second.pData[s];
-
-				if (gSvoEnv->m_voxTexFormat == eTF_BC3)
+				if (byte* pDataIn = (byte*)it.second.pData[s])
 				{
-					CompressToDxt((ColorB*)it.second.pData[s], pDataIn, 0);
-				}
-
-				if (SVO_PACK_TO_16_BIT)
-				{
-					for (int i = 0; i < texDataSize; i++)
+					if (gSvoEnv->m_voxTexFormat == eTF_BC3)
 					{
-						byte val0 = *(pDataIn + 0);
-						byte val1 = *(pDataIn + 1);
-
-						val0 = SATURATEB(int(powf(float(val0) / 255.f, 1.f / 2.f) * 255.f));
-						val1 = SATURATEB(int(powf(float(val1) / 255.f, 1.f / 2.f) * 255.f));
-
-						byte b0 = val0 >> 4;
-						byte b1 = val1 >> 4;
-
-						(*pDataPtr) = b0 | (b1 << 4);
-
-						pDataIn += 2;
-						pDataPtr++;
+						CompressToDxt((ColorB*)it.second.pData[s], pDataIn, 0);
 					}
-				}
-				else
-				{
-					memcpy(pDataPtr, pDataIn, texDataSize);
 
-					pDataPtr += texDataSize;
+					if (SVO_PACK_TO_16_BIT)
+					{
+						for (int i = 0; i < texDataSize; i++)
+						{
+							byte val0 = *(pDataIn + 0);
+							byte val1 = *(pDataIn + 1);
+
+							val0 = SATURATEB(int(powf(float(val0) / 255.f, 1.f / 2.f) * 255.f));
+							val1 = SATURATEB(int(powf(float(val1) / 255.f, 1.f / 2.f) * 255.f));
+
+							byte b0 = val0 >> 4;
+							byte b1 = val1 >> 4;
+
+							(*pDataPtr) = b0 | (b1 << 4);
+
+							pDataIn += 2;
+							pDataPtr++;
+						}
+					}
+					else
+					{
+						memcpy(pDataPtr, pDataIn, texDataSize);
+
+						pDataPtr += texDataSize;
+					}
 				}
 			}
 		}
@@ -3447,6 +3521,22 @@ int CVoxelSegment::CompressToDxt(ColorB* pImgSource, byte*& pDxtOut, int threadI
 	pDxtOut = (byte*)arrImgDxt.GetElements();
 
 	return 0;
+}
+
+void CVoxelSegment::CheckAllocateSubSets(SVoxBrick& voxData, int elemsNum, bool bClean)
+{
+	for (int s = 0; s < SVoxBrick::MAX_NUM; s++)
+	{
+		if (s < GetSubSetsNum() || (s == SVoxBrick::RTRIS && Cry3DEngineBase::GetCVars()->e_svoTI_RT_Active))
+		{
+			CheckAllocateBrick(voxData.pData[s], elemsNum, bClean);
+		}
+	}
+}
+
+int CVoxelSegment::GetSubSetsNum()
+{
+	return GetCVars()->e_svoTI_IntegrationMode ? (Cry3DEngineBase::GetCVars()->e_svoTI_RT_Active ? SVoxBrick::MAX_NUM : SVoxBrick::RTRIS) : 1;
 }
 
 #endif

@@ -37,7 +37,7 @@ private:
 	// functions implementing the logic for RayIntersection
 	static bool RayIntersectionImpl(SIntersectionData* pIntersectionRMData, SRayHitInfo* phitInfo, IMaterial* pCustomMtl, bool bAsync);
 	static bool RayIntersectionFastImpl(SIntersectionData& rIntersectionRMData, SRayHitInfo& hitInfo, IMaterial* pCustomMtl, bool bAsync);
-	static bool ProcessBoxIntersection(Ray& inRay, SRayHitInfo& hitInfo, SIntersectionData& rIntersectionRMData, IMaterial* pMtl, vtx_idx* pInds, int nVerts, uint8* pPos, int nPosStride, uint8* pUV, int nUVStride, uint8* pCol, int nColStride, int nInds, bool& bAnyHit, float& fBestDist, Vec3& vHitPos, Vec3* tri);
+	static bool ProcessBoxIntersection(Ray& inRay, SRayHitInfo& hitInfo, SIntersectionData& rIntersectionRMData, IMaterial* pMtl, vtx_idx* pInds, int nVerts, uint8* pPos, int nPosStride, uint8* pUV, int nUVStride, uint8* pCol, int nColStride, byte* pTangs, int nTangsStride, int nInds, bool& bAnyHit, float& fBestDist, Vec3& vHitPos, Vec3* tri);
 };
 
 // struct to collect parameters for the wrapped RayInterseciton functions

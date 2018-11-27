@@ -25,9 +25,9 @@ namespace EditorSubstance
 	{
 		AddToMenu(CEditor::MenuItems::SaveAs);
 
-		m_pScrollBox = new QScrollableBox(this);
+		m_pScrollBox = new QScrollableBox();
 
-		m_pOutputsWidgetHolder = new QWidget(this);
+		m_pOutputsWidgetHolder = new QWidget();
 		m_pOutputsWidgetHolder->setLayout(new QVBoxLayout());
 		m_pButtons = new QDialogButtonBox();
 		m_pButtons->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
@@ -35,8 +35,6 @@ namespace EditorSubstance
 		m_pModalGuard->resize(size());
 		m_pModalGuard->hide();
 
-
-		auto* const pMainLayout = new QVBoxLayout();
 		m_pScrollBox->addWidget(m_pOutputsWidgetHolder);
 
 		SetContent(m_pScrollBox);

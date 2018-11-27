@@ -267,7 +267,7 @@ private:
 	CNodeGraphViewBackground*        m_pBackground;
 	GraphViewWidgetSet               m_selectedWidgets;
 	GraphItemSet                     m_selectedItems;
-	QPopupWidget                     m_contentEditPopup;
+	std::unique_ptr<QPopupWidget>    m_pContentEditPopup;
 
 	QPoint                           m_lastMouseActionPressPos;
 	CConnectionPoint                 m_mouseConnectionPoint;

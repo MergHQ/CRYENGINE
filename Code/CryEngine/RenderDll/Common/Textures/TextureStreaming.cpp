@@ -922,7 +922,10 @@ bool CTexture::StreamPrepare(CImageFilePtr&& pIM)
 
 #if defined(TEXTURE_GET_SYSTEM_COPY_SUPPORT)
 	if (m_eFlags & FT_KEEP_LOWRES_SYSCOPY)
-		PrepareLowResSystemCopy(pIM->mfGet_image(0), false);
+	{
+		uint16 width, height;
+		ITexture::GetLowResSystemCopy(width, height);
+	}
 #endif
 
 	return true;
