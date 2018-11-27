@@ -503,6 +503,7 @@ void CPrefabItem::ModifyInstancedPrefab(CSelectionGroup& objectsInPrefabAsFlatSe
 
 				// Load the object
 				pObj->Serialize(loadAr);
+				pObj->PostLoad(loadAr);
 
 				// Set old flags
 				pObj->SetFlags(flags);

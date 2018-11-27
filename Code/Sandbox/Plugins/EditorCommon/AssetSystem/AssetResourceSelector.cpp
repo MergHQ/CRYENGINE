@@ -5,7 +5,6 @@
 #include "AssetSystem/Asset.h"
 #include "AssetSystem/AssetManager.h"
 #include "AssetSystem/AssetType.h"
-#include "AssetSystem/Browser/AssetBrowserDialog.h"
 #include "AssetSystem/Browser/AssetTooltip.h"
 #include "PreviewToolTip.h"
 #include "FileDialogs/EngineFileDialog.h"
@@ -90,32 +89,13 @@ namespace Private_AssetSelector
 
 		CRY_ASSERT(selectorContext.resourceSelectorEntry && selectorContext.resourceSelectorEntry->IsAssetSelector());
 		const SStaticAssetSelectorEntry* selector = static_cast<const SStaticAssetSelectorEntry*>(selectorContext.resourceSelectorEntry);
-		const auto& assetTypes = selector->GetAssetTypes();
+		const std::vector<string> & assetTypeNames = selector->GetAssetTypeNames();
 
-		CAssetBrowserDialog dialog(selector->GetAssetTypeNames(), CAssetBrowserDialog::Mode::OpenSingleAsset, selectorContext.parentWidget);
+		CAssetSelector assetSelector(assetTypeNames);
 
-		if (previousValue)
+		if (assetSelector.Execute(selectorContext, assetTypeNames, previousValue))
 		{
-			const CAsset* pAsset = FindAssetForFileAndContext(selectorContext, previousValue);
-
-			if (pAsset)
-			{
-				dialog.SelectAsset(*pAsset);
-			}
-		}
-
-		QObject::connect(&dialog, &CAssetBrowserDialog::SelectionChanged, [selectorContext](const std::vector<CAsset*>& assets)
-		{
-			CRY_ASSERT(assets.size() <= 1);
-			if (!assets.empty() && selectorContext.callback)
-			{
-				selectorContext.callback->SetValue(assets.front()->GetFile(0));
-			}
-		});
-
-		if (dialog.Execute())
-		{
-			if (CAsset* pSelectedAsset = dialog.GetSelectedAsset())
+			if (CAsset* pSelectedAsset = assetSelector.GetSelectedAsset())
 			{
 				return pSelectedAsset->GetFile(0).c_str();
 			}
@@ -260,8 +240,38 @@ const std::vector<const CAssetType*>& SStaticAssetSelectorEntry::GetAssetTypes()
 
 dll_string SStaticAssetSelectorEntry::SelectFromAsset(const SResourceSelectorContext& context, const std::vector<string>& types, const char* previousValue)
 {
-	CAssetBrowserDialog dialog(types, CAssetBrowserDialog::Mode::OpenSingleAsset);
+	CAssetSelector wrapper(types);
 
+	if (wrapper.Execute(context, types, previousValue))
+	{
+		if (CAsset* pSelectedAsset = wrapper.GetSelectedAsset())
+		{
+			return pSelectedAsset->GetFile(0).c_str();
+		}
+	}
+
+	return previousValue;
+}
+
+dll_string SStaticAssetSelectorEntry::SelectFromAsset(std::function<void(const char* newValue)> onValueChangedCallback, const std::vector<string>& types, const char* previousValue)
+{
+	Private_AssetSelector::SImmediateCallbackResourceSelectorContext callback;
+	callback.callback = onValueChangedCallback;
+
+	SResourceSelectorContext ctx;
+	ctx.callback = &callback;
+
+	return SStaticAssetSelectorEntry::SelectFromAsset(ctx, types, previousValue);
+}
+
+CAssetSelector::CAssetSelector(const std::vector<string>& assetTypeNames) :
+	m_dialog(assetTypeNames, CAssetBrowserDialog::Mode::OpenSingleAsset)
+{
+
+}
+
+bool CAssetSelector::Execute(const SResourceSelectorContext& context, const std::vector<string>& types, const char* previousValue)
+{
 	if (previousValue)
 	{
 		CAssetManager* const pManager = CAssetManager::GetInstance();
@@ -280,11 +290,11 @@ dll_string SStaticAssetSelectorEntry::SelectFromAsset(const SResourceSelectorCon
 
 		if (pAsset)
 		{
-			dialog.SelectAsset(*pAsset);
+			m_dialog.SelectAsset(*pAsset);
 		}
 	}
 
-	QObject::connect(&dialog, &CAssetBrowserDialog::SelectionChanged, [&context](const std::vector<CAsset*>& assets)
+	QObject::connect(&m_dialog, &CAssetBrowserDialog::SelectionChanged, [&context](const std::vector<CAsset*>& assets)
 	{
 		CRY_ASSERT(assets.size() <= 1);
 		if (!assets.empty() && context.callback)
@@ -293,18 +303,10 @@ dll_string SStaticAssetSelectorEntry::SelectFromAsset(const SResourceSelectorCon
 		}
 	});
 
-	if (dialog.Execute())
-	{
-		if (CAsset* pSelectedAsset = dialog.GetSelectedAsset())
-		{
-			return pSelectedAsset->GetFile(0).c_str();
-		}
-	}
-
-	return previousValue;
+	return m_dialog.Execute();
 }
 
-dll_string SStaticAssetSelectorEntry::SelectFromAsset(std::function<void(const char* newValue)> onValueChangedCallback, const std::vector<string>& types, const char* previousValue)
+bool CAssetSelector::Execute(std::function<void(const char* newValue)> onValueChangedCallback, const std::vector<string>& types, const char* previousValue)
 {
 	Private_AssetSelector::SImmediateCallbackResourceSelectorContext callback;
 	callback.callback = onValueChangedCallback;
@@ -312,5 +314,5 @@ dll_string SStaticAssetSelectorEntry::SelectFromAsset(std::function<void(const c
 	SResourceSelectorContext ctx;
 	ctx.callback = &callback;
 
-	return SStaticAssetSelectorEntry::SelectFromAsset(ctx, types, previousValue);
+	return Execute(ctx, types, previousValue);
 }

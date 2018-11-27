@@ -478,7 +478,18 @@ void CPrefabObject::OnContextMenu(CPopupMenuItem* menu)
 	menu->Add("Swap Prefab...", [this](void)
 	{
 		CPrefabPicker picker;
-		picker.SwapPrefab(this);
+		const CSelectionGroup* selection = GetIEditor()->GetObjectManager()->GetSelection();
+		std::vector<CPrefabObject*> prefabsInSelection;
+	
+		for (int i = 0; i < selection->GetCount(); i++)
+		{
+			if (selection->GetObject(i)->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
+			{
+				prefabsInSelection.push_back(static_cast<CPrefabObject*>(selection->GetObject(i)));
+			}
+		}
+
+		picker.SwapPrefab(prefabsInSelection);
 	});
 
 }
