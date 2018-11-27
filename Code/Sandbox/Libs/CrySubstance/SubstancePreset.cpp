@@ -202,10 +202,16 @@ void CSubstancePreset::SSerializer::SInputCategory::Serialize(Serialization::IAr
 				{
 					ar(Serialization::Range(value, 0.f, 1.f), desc.mIdentifier.c_str(), desc.mLabel.c_str());
 				}
-				else {
+				else if (tDesc.mGuiWidget == SubstanceAir::Input_Slider)
+				{
+					// mMinValue and mMaxValue are only relevant if widget is Input_Slider
 					ar(Serialization::Range(value, tDesc.mMinValue, tDesc.mMaxValue), desc.mIdentifier.c_str(), desc.mLabel.c_str());
-
 				}
+				else
+				{
+					ar(value, desc.mIdentifier.c_str(), desc.mLabel.c_str());
+				}
+
 				if (ar.isInput())
 				{
 					inst->setValue(value);

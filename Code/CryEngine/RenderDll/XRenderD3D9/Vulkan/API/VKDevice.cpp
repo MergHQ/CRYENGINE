@@ -331,7 +331,7 @@ VkResult CDevice::DuplicateCommittedResource(CResource* pInputResource, CResourc
 
 	VkResult result = CreateOrReuseCommittedResource<CResource, typename CResource::VkCreateInfo>(pInputResource->GetHeapType(), pInputResource->GetCreateInfo(), ppOutputResource);
 	if (result == VK_SUCCESS)
-		SetDebugName(pInputResource, GetDebugName(*ppOutputResource).c_str());
+		SetDebugName(*ppOutputResource, GetDebugName(pInputResource).c_str());
 	return result;
 }
 
