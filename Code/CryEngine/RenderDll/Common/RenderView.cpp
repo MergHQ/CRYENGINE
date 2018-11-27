@@ -585,18 +585,15 @@ RenderLightIndex CRenderView::AddLight(eDeferredLightType lightType, const SRend
 	CRY_ASSERT((light.m_Flags & DLF_LIGHTTYPE_MASK) != 0);
 
 	RenderLightIndex nLightId = -1;
-	if (m_lights[lightType].size() < MAX_DEFERRED_LIGHT_SOURCES)
+	if (!(light.m_Flags & DLF_FAKE))
 	{
-		if (!(light.m_Flags & DLF_FAKE))
-		{
-			nLightId = GetLightsCount(lightType);
-		}
-
-		m_lights[lightType].push_back(light);
-		SRenderLight* pLight = &m_lights[lightType].back();
-
-		pLight->m_Id = nLightId;
+		nLightId = GetLightsCount(lightType);
 	}
+
+	m_lights[lightType].push_back(light);
+	SRenderLight* pLight = &m_lights[lightType].back();
+
+	pLight->m_Id = nLightId;
 
 	return nLightId;
 }
@@ -629,7 +626,6 @@ SRenderLight* CRenderView::AddLightAtIndex(eDeferredLightType lightType, const S
 	}
 
 	pLight->m_Id = nLightId;
-	CRY_ASSERT(MAX_DEFERRED_LIGHT_SOURCES >= nLightId);
 
 	return pLight;
 }
