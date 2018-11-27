@@ -26,7 +26,6 @@ enum EDecalType
 	DTYP_NUM,
 };
 
-#define MAX_DEFERRED_LIGHT_SOURCES 32
 #define MAX_DEFERRED_CLIP_VOLUMES 64
 
 class CTexPoolAtlas;
