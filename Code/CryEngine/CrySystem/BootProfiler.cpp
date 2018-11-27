@@ -96,7 +96,6 @@ int CBootProfiler::CV_sys_bp_enabled = 0;
 int CBootProfiler::CV_sys_bp_level_load = 0;
 int CBootProfiler::CV_sys_bp_level_load_include_first_frame = 0;
 int CBootProfiler::CV_sys_bp_frames_worker_thread = 0;
-int CBootProfiler::CV_sys_bp_frames = 0;
 int CBootProfiler::CV_sys_bp_frames_sample_period = 0;
 int CBootProfiler::CV_sys_bp_frames_sample_period_rnd = 0;
 float CBootProfiler::CV_sys_bp_frames_threshold = 0.0f;
@@ -875,6 +874,7 @@ CBootProfiler::CBootProfiler()
 	: m_pCurrentSession(nullptr)
 	, m_quitSaveThread(false)
 	, m_pMainThreadFrameRecord(nullptr)
+	, m_numFramesToLog(0)
 	, m_levelLoadAdditionalFrames(0)
 	, m_countdownToNextSaveSesssion(0)
 {
@@ -951,46 +951,31 @@ void CBootProfiler::StopBlock(CBootProfilerRecord* record)
 	}
 }
 
-void CBootProfiler::StartFrame(const char* name)
+void CBootProfiler::StartFrameProfilingCmd(IConsoleCmdArgs* pArgs)
 {
-	static int prev_CV_sys_bp_frames = CV_sys_bp_frames;
-	if (CV_sys_bp_frames > 0)
+	if (pArgs->GetArgCount() > 1)
 	{
-		if (prev_CV_sys_bp_frames == 0)
+		const int argNumFramesToLog = atoi(pArgs->GetArg(1));
+		if (argNumFramesToLog > 0)
 		{
-			StartSession("frame");
-		}
-
-		m_pMainThreadFrameRecord = StartBlock(name, nullptr,EProfileDescription::REGION);
-
-		if (CV_sys_bp_frames_threshold != 0.0f) // we can't have 2 modes enabled at the same time
-			CV_sys_bp_frames_threshold = 0.0f;
-	}
-
-	prev_CV_sys_bp_frames = CV_sys_bp_frames;
-
-	static float prev_CV_sys_bp_frames_threshold = CV_sys_bp_frames_threshold;
-	if (prev_CV_sys_bp_frames_threshold == 0.0f && CV_sys_bp_frames_threshold != 0.0f)
-	{
-		gThreadsInterface.Reset();
-		gEnv->bBootProfilerEnabledFrames = true;
-	}
-	prev_CV_sys_bp_frames_threshold = CV_sys_bp_frames_threshold;
-
-	if (CV_sys_bp_frames_threshold != 0.0f)
-	{
-		if (m_pCurrentSession)
-		{
-			CryLogAlways("BootProfiler: failed to start session 'frame_threshold' as another one is active '%s'", m_pCurrentSession->GetName());
-		}
-		else
-		{
-			CBootProfilerSession* pSession = new CBootProfilerSession("frame_threshold");
-			pSession->Start();
-			m_pCurrentSession = pSession;
-			m_pMainThreadFrameRecord = StartBlock(name, nullptr,EProfileDescription::REGION);
+			CBootProfiler::GetInstance().m_numFramesToLog = argNumFramesToLog;
 		}
 	}
+}
+
+void CBootProfiler::StartFrame(const char* name)
+{	
+	if (m_numFramesToLog == 0 && CV_sys_bp_frames_threshold == 0.0f)
+	{
+		return;
+	}
+
+	if (!m_pCurrentSession)
+	{
+		StartSession("frames");
+	}
+
+	m_pMainThreadFrameRecord = StartBlock(name, nullptr, EProfileDescription::REGION);
 }
 
 void CBootProfiler::StopFrame()
@@ -1012,13 +997,17 @@ void CBootProfiler::StopFrame()
 		return;
 	}
 	
-	if (CV_sys_bp_frames)
+	if (m_numFramesToLog > 0)
 	{
-		m_pMainThreadFrameRecord->StopBlock();
-		m_pMainThreadFrameRecord = nullptr;
+		// m_numFramesToLog can be set mid-frame. A new block won't be started until the beginning of the next frame.
+		if(m_pMainThreadFrameRecord)
+		{
+			m_pMainThreadFrameRecord->StopBlock();
+			m_pMainThreadFrameRecord = nullptr;
+			--m_numFramesToLog;
+		}
 
-		--CV_sys_bp_frames;
-		if (0 == CV_sys_bp_frames)
+		if (m_numFramesToLog == 0)
 		{
 			StopSession();
 		}
@@ -1043,7 +1032,8 @@ void CBootProfiler::StopFrame()
 	static float prev_CV_sys_bp_frames_threshold = CV_sys_bp_frames_threshold;
 	const bool bDisablingThresholdMode = (prev_CV_sys_bp_frames_threshold > 0.0f && CV_sys_bp_frames_threshold == 0.0f);
 
-	if (CV_sys_bp_frames_threshold > 0.0f || bDisablingThresholdMode)
+	// there is a sessions that is not profiling frames and threshold profiling is/was active
+	if ((m_pCurrentSession && m_numFramesToLog <= 0) && (CV_sys_bp_frames_threshold > 0.0f || bDisablingThresholdMode))
 	{
 		m_pMainThreadFrameRecord->StopBlock();
 		m_pMainThreadFrameRecord = nullptr;
@@ -1147,9 +1137,9 @@ void CBootProfiler::RegisterCVars()
 	REGISTER_CVAR2("sys_bp_level_load", &CV_sys_bp_level_load, 0, VF_DEV_ONLY, "If this is set to true, a boot profiler session will be started to profile the level loading. Ignored if sys_bp_enabled is false.");
 	REGISTER_CVAR2("sys_bp_level_load_include_first_frame", &CV_sys_bp_level_load_include_first_frame, 0, VF_DEV_ONLY, "If this is set to true, the level profiler will include the first frame - in order to catch calls to Misc:Start from Flowgraph and other late initialization events that result in stalls.");
 	REGISTER_CVAR2("sys_bp_frames_worker_thread", &CV_sys_bp_frames_worker_thread, 0, VF_DEV_ONLY | VF_REQUIRE_APP_RESTART, "If this is set to true. The system will dump the profiled session from a different thread.");
-	REGISTER_CVAR2("sys_bp_frames", &CV_sys_bp_frames, 0, VF_DEV_ONLY, "Starts frame profiling for specified number of frames using BootProfiler");
-	REGISTER_CVAR2("sys_bp_frames_sample_period", &CV_sys_bp_frames_sample_period, 0, VF_DEV_ONLY, "When in threshold mode, the period at which we are going to dump a frame.");
-	REGISTER_CVAR2("sys_bp_frames_sample_period_rnd", &CV_sys_bp_frames_sample_period_rnd, 0, VF_DEV_ONLY, "When in threshold mode, the random offset at which we are going to dump a next frame.");
+	REGISTER_COMMAND("sys_bp_frames", &StartFrameProfilingCmd, VF_DEV_ONLY, "Starts frame profiling for specified number of frames using BootProfiler");
+	REGISTER_CVAR2("sys_bp_frames_sample_period", &CV_sys_bp_frames_sample_period, 0, VF_DEV_ONLY, "When in threshold mode, the period (in frames) at which we are going to dump a frame.");
+	REGISTER_CVAR2("sys_bp_frames_sample_period_rnd", &CV_sys_bp_frames_sample_period_rnd, 0, VF_DEV_ONLY, "When in threshold mode, the random offset (in frames) at which we are going to dump a next frame.");
 	REGISTER_CVAR2("sys_bp_frames_threshold", &CV_sys_bp_frames_threshold, 0, VF_DEV_ONLY, "Starts frame profiling but gathers the results for frames that frame time exceeded the threshold");
 	REGISTER_CVAR2("sys_bp_time_threshold", &CV_sys_bp_time_threshold, 0.1f, VF_DEV_ONLY, "If greater than 0 don't write blocks that took less time (default 0.1 ms)");
 	REGISTER_CVAR2("sys_bp_format", &CV_sys_bp_output_formats, EBootProfilerFormat::XML, VF_DEV_ONLY, "Determines the output format for the boot profiler.\n0 = XML\n1 = Chrome Trace JSON");
@@ -1193,7 +1183,6 @@ void CBootProfiler::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR 
 		}
 	case ESYSTEM_EVENT_LEVEL_LOAD_PREPARE:
 		{
-			CV_sys_bp_time_threshold = 0.1f;
 			if (CV_sys_bp_level_load)
 			{
 				StartSession("level");
@@ -1219,8 +1208,6 @@ void CBootProfiler::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR 
 					StopSession();
 				}
 			}
-
-			CV_sys_bp_time_threshold = 0.0f; //gather all blocks when in runtime
 			break;
 		}
 	case ESYSTEM_EVENT_FAST_SHUTDOWN:
