@@ -6,6 +6,7 @@
 
 #include <CryThreading/IThreadManager.h>
 #include <CrySystem/ISystem.h>
+#include <CrySystem/IConsole.h>
 #include <CryThreading/MultiThread_Containers.h>
 
 class CBootProfilerRecord;
@@ -71,6 +72,8 @@ protected:
 	// ~ISystemEventListener
 
 private:
+	static void                StartFrameProfilingCmd(IConsoleCmdArgs* pArgs);
+
 	CBootProfilerSession*      m_pCurrentSession;
 
 	bool                       m_quitSaveThread;
@@ -83,13 +86,13 @@ private:
 	static int                 CV_sys_bp_level_load;
 	static int                 CV_sys_bp_level_load_include_first_frame;
 	static int                 CV_sys_bp_frames_worker_thread;
-	static int                 CV_sys_bp_frames;
 	static int                 CV_sys_bp_frames_sample_period;
 	static int                 CV_sys_bp_frames_sample_period_rnd;
 	static float               CV_sys_bp_frames_threshold;
 	static float               CV_sys_bp_time_threshold;
 	CBootProfilerRecord*       m_pMainThreadFrameRecord;
 
+	int                        m_numFramesToLog;
 	int                        m_levelLoadAdditionalFrames;
 	int                        m_countdownToNextSaveSesssion;
 };
