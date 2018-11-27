@@ -37,7 +37,7 @@ namespace EditorSubstance
 		class CNodeEditorData : public CryGraphEditor::CNodeEditorData
 		{
 		public:
-			CNodeEditorData() : CryGraphEditor::CNodeEditorData()
+			CNodeEditorData() 
 			{
 				m_pos.SetZero();
 			}
