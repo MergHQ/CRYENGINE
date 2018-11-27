@@ -535,7 +535,9 @@ CharacterDocument::CharacterDocument(System* system)
 	, m_compressionMachine(new CompressionMachine())
 	, m_playbackState(PLAYBACK_UNAVAILABLE)
 	, m_playbackTime(0.0f)
-	, m_playbackDuration(1.0f)
+	, m_playbackDuration(1.0f/30.0f)
+	, m_layerIdxMaxPlaybackDurationOfAllEnabledLayers(0)
+	, m_maxPlaybackDurationOfAllEnabledLayers(1.0f/30.0f)
 	, m_bindPoseEnabled(false)
 	, m_displayOptions(new DisplayOptions())
 	, m_updateCameraTarget(false)
@@ -944,6 +946,8 @@ void CharacterDocument::OnScenePlaybackLayersChanged(bool continuousChange)
 		TriggerAnimationPreview(PREVIEW_ALLOW_REWIND);
 
 	SetBindPoseEnabled(m_system->scene->layers.bindPose);
+
+	DetermineLayerWithMaxPlaybackDurationOfAllEnabledLayers();
 }
 
 void CharacterDocument::OnSceneLayerActivated()
@@ -951,12 +955,16 @@ void CharacterDocument::OnSceneLayerActivated()
 	ExplorerEntry* activeAnimationEntry = GetActiveAnimationEntry();
 	if (activeAnimationEntry && !IsExplorerEntrySelected(activeAnimationEntry))
 		SetSelectedExplorerEntries(ExplorerEntries(1, activeAnimationEntry), 0);
+
+	DetermineLayerWithMaxPlaybackDurationOfAllEnabledLayers();
 }
 
 void CharacterDocument::OnSceneNewLayerActivated()
 {
 	// gives opportunity to select animation into newly added layer
 	SetSelectedExplorerEntries(ExplorerEntries(), 0);
+
+	DetermineLayerWithMaxPlaybackDurationOfAllEnabledLayers();
 }
 
 void CharacterDocument::Serialize(IArchive& ar)
@@ -1398,7 +1406,7 @@ void CharacterDocument::IdleUpdate()
 	if (m_compressedCharacter)
 	{
 		ISkeletonAnim& skeletonAnimation = *m_compressedCharacter->GetISkeletonAnim();
-		int layer = 0;
+		int layer = m_layerIdxMaxPlaybackDurationOfAllEnabledLayers;
 		if (CAnimation* animation = &skeletonAnimation.GetAnimFromFIFO(layer, 0))
 		{
 			if (skeletonAnimation.GetNumAnimsInFIFO(layer) > 0)
@@ -1442,6 +1450,36 @@ void CharacterDocument::IdleUpdate()
 					Pause();
 					SignalPlaybackStateChanged();
 					SignalPlaybackTimeChanged();
+				}
+			}
+		}
+	}
+}
+
+void CharacterDocument::DetermineLayerWithMaxPlaybackDurationOfAllEnabledLayers()
+{
+	uint32& layerIdxMaxDuration = m_layerIdxMaxPlaybackDurationOfAllEnabledLayers;
+	float& maxDuration = m_maxPlaybackDurationOfAllEnabledLayers;
+
+	maxDuration = 1.0f/30.0f;
+	layerIdxMaxDuration = 0;
+
+	const auto& layers = m_system->scene->layers.layers;
+	const uint32 noOfLayers = layers.size();
+	if (!m_compressedCharacter) return;
+	ISkeletonAnim& skeletonAnimation = *m_compressedCharacter->GetISkeletonAnim();
+
+	for (uint32 l = 0; l < noOfLayers; ++l)
+	{
+		if (layers[l].enabled)
+		{
+			if (CAnimation* animation = &skeletonAnimation.GetAnimFromFIFO(l, 0))
+			{
+				float layerDuration = skeletonAnimation.CalculateCompleteBlendSpaceDuration(*animation);
+				if (layerDuration > maxDuration)
+				{
+					layerIdxMaxDuration = l;
+					maxDuration = layerDuration;
 				}
 			}
 		}
@@ -1656,8 +1694,9 @@ void CharacterDocument::PreRender(const SRenderContext& context)
 		// get relative movement
 		QuatT relMove = skeletonAnim.GetRelMovement();
 
-		// Determine normalizedTime/relativeMovement by actual selected (active) layer
-		const int activeLayerId = m_system->scene->layers.activeLayer;
+		// Determine normalizedTime/relativeMovement by layer with maximum duration
+		const int activeLayerId = m_layerIdxMaxPlaybackDurationOfAllEnabledLayers;
+
 		const uint32 activeLayerAnimationCount = skeletonAnim.GetNumAnimsInFIFO(activeLayerId);
 		if (activeLayerAnimationCount == 1)
 		{

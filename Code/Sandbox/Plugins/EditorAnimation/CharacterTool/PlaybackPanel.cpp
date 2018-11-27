@@ -406,7 +406,7 @@ void PlaybackPanel::OnDocumentActiveAnimationSwitched()
 void PlaybackPanel::OnPlaybackTimeChanged()
 {
 	float time = m_system->document->PlaybackTime();
-	float duration = m_system->document->PlaybackDuration();
+	float duration = m_system->document->MaxPlaybackDurationOfAllEnabledLayers();
 	float normalizedTime = duration != 0.0f ? time / duration : time;
 
 	bool timeChanged = false;
