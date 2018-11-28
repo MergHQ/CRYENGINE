@@ -600,6 +600,12 @@ const CAssetFoldersModel::Folder* CAssetFoldersModel::GetFolder(const char* path
 
 QModelIndex CAssetFoldersModel::FindIndexForFolder(const QString& folder, Roles role) const
 {
+	// Empty name stands for the assets root folder
+	if (folder.isEmpty())
+	{
+		return GetProjectAssetsFolderIndex();
+	}
+
 	QModelIndexList matches;
 
 	QString adjustedFolder = folder; // Without leading and trailing slashes.
