@@ -9,24 +9,21 @@ class QPainter;
 
 class SplashScreen : public QSplashScreen
 {
-
 public:
 	SplashScreen(const QPixmap& pixmap = QPixmap(), Qt::WindowFlags f = 0);
-	SplashScreen(QWidget* parent, const QPixmap& pixmap = QPixmap(), Qt::WindowFlags f = 0);
 	~SplashScreen();
 
-	static void  SetVersion(const Version& v);
-	static void  SetText(const char* text);
+	static SplashScreen* GetSplashScreen() { return s_pLogoWindow; }
 
-protected:
-	virtual void drawContents(QPainter* painter) override;
+	static void          SetVersion(const Version& v);
+	static void          SetText(const char* szText);
 
 private:
+	virtual void drawContents(QPainter* painter) override;
 	void         SetInfo(const char* text);
-	void         init();
 
-	QString            version;
-	QString            m_text;
+	QString              version;
+	QString              m_text;
 
 	static SplashScreen* s_pLogoWindow;
 };

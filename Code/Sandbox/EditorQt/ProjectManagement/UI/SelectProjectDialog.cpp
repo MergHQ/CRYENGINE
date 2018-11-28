@@ -42,8 +42,8 @@ void CopyFolderRecursively(const QString& src, const QString& dest)
 
 } // namespace Private_SelectProjectDialog
 
-CSelectProjectDialog::CSelectProjectDialog(bool runOnSandboxInit)
-	: CEditorDialog("SelectProjectDialog", nullptr)
+CSelectProjectDialog::CSelectProjectDialog(QWidget* pParent, bool runOnSandboxInit)
+	: CEditorDialog("SelectProjectDialog", pParent)
 {
 	setWindowTitle("Project Browser");
 	setWindowIcon(QIcon("icons:editor_icon.ico"));
