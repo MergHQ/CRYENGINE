@@ -42,8 +42,11 @@ namespace DefaultQueryFilters
 	// Use this one for functions that expect a templated filter type
 	extern SQueryTrianglesFilterGlobal g_globalFilter;
 
-	// Use this one for functions that expect a INavMeshQueryFilter type
+	// Use this global filter for functions that expect a INavMeshQueryFilter type
 	extern SNavMeshQueryFilterDefault g_globalFilterVirtual;
+
+	// Use this 'accept all' for functions that expect a INavMeshQueryFilter type
+	extern SAcceptAllQueryTrianglesFilter g_acceptAllFilterVirtual;
 }
 
 SERIALIZATION_ENUM_BEGIN_NESTED2(INavMeshQuery, SNavMeshQueryConfig, EOverlappingMode, "EOverlappingMode")
