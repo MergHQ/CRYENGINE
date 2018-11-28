@@ -147,6 +147,8 @@ private:
 	void                BuildContextMenuForFolders(const std::vector<string>& folders, CAbstractMenu& abstractMenu);
 	void                BuildContextMenuForAssets(const std::vector<CAsset*>& assets, const std::vector<string>& folders, CAbstractMenu& abstractMenu);
 
+	void                AddWorkFilesMenu(CAbstractMenu& abstractMenu, CAsset* pAsset);
+
 	void                OnFolderSelectionChanged(const QStringList& selectedFolders);
 	void                OnActivated(const QModelIndex& index);
 	void                OnCurrentChanged(const QModelIndex& current, const QModelIndex& previous);

@@ -119,6 +119,21 @@ public:
 		}
 	}
 
+	virtual void AddWorkFile(const char* szFilepath) override
+	{
+		m_metadata.workFiles.push_back(PathUtil::ToGamePath(szFilepath));
+	}
+
+	virtual void SetWorkFiles(const std::vector<string>& filenames) override
+	{
+		m_metadata.workFiles.clear();
+		m_metadata.workFiles.reserve(filenames.size());
+		for (const string& filename : filenames)
+		{
+			AddWorkFile(filename);
+		}
+	}
+
 	virtual void SetDetails(const std::vector<std::pair<string, string>>& details) override
 	{
 		m_metadata.details = details;

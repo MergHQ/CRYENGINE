@@ -19,6 +19,7 @@ struct SAssetMetadata
 	CryGUID guid = CryGUID::Null();
 	string sourceFile;
 	std::vector<string> files;
+	std::vector<string> workFiles;
 	std::vector<std::pair<string, string>> details;
 	std::vector<std::pair<string, int32>> dependencies;
 };

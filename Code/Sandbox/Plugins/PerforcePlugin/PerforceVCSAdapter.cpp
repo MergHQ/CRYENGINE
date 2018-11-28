@@ -630,7 +630,7 @@ SVersionControlError CPerforceVCSAdapter::CheckSettings()
 	}
 	else if (info.currentDir.compareNoCase(0, info.root.size(), info.root) != 0)
 	{
-		error = { EVersionControlError::InvalidSettings, "Current assets' folder in not under client's root path." };
+		error = { EVersionControlError::InvalidSettings, "Current assets' folder is not under client's root path." };
 	}
 	UpdateOnlineState(&error);
 	return error;

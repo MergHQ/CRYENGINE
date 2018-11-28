@@ -43,6 +43,16 @@ bool ReadMetadata(const XmlNodeRef& container, SAssetMetadata& metadata)
 			metadata.files.emplace_back(pFile->getAttr("path"));
 		}
 	}
+	XmlNodeRef pWorkFiles = pMetadataNode->findChild("WorkFiles");
+	if (pWorkFiles)
+	{
+		metadata.workFiles.reserve(pWorkFiles->getChildCount());
+		for (int i = 0, n = pWorkFiles->getChildCount(); i < n; ++i)
+		{
+			XmlNodeRef pWorkFile = pWorkFiles->getChild(i);
+			metadata.workFiles.emplace_back(pWorkFile->getAttr("path"));
+		}
+	}
 	XmlNodeRef pDetails = pMetadataNode->findChild("Details");
 	if (pDetails)
 	{
@@ -104,6 +114,21 @@ void WriteMetaData(const XmlNodeRef& asset, const SAssetMetadata& metadata)
 	{
 		XmlNodeRef pFile = pFiles->newChild("File");
 		pFile->setAttr("path", file);
+	}
+
+	if (!metadata.workFiles.empty())
+	{
+		XmlNodeRef pWorkFiles = pMetadataNode->findChild("WorkFiles");
+		if (!pWorkFiles)
+		{
+			pWorkFiles = pMetadataNode->newChild("WorkFiles");
+		}
+
+		for (const string& workFile : metadata.workFiles)
+		{
+			XmlNodeRef pWorkFile = pWorkFiles->newChild("WorkFile");
+			pWorkFile->setAttr("path", workFile);
+		}
 	}
 
 	if (!metadata.details.empty())

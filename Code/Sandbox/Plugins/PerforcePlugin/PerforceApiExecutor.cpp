@@ -173,7 +173,7 @@ private:
 	private:
 		static char* s_args[STATIC_SIZE];
 
-		char** m_args;
+		char** m_args{ nullptr };
 		const std::vector<string>& m_originalArgs;
 
 		bool m_isDymanic{ false };

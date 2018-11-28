@@ -42,6 +42,8 @@ public:
 	virtual void SetSourceFile(const char* szFilepath) override;
 	virtual void AddFile(const char* szFilepath) override;
 	virtual void SetFiles(const std::vector<string>& filenames) override;
+	virtual void AddWorkFile(const char* szFilepath) override;
+	virtual void SetWorkFiles(const std::vector<string>& filenames) override;
 	virtual void SetDetails(const std::vector<std::pair<string, string>>& details) override;
 	virtual void SetDependencies(const std::vector<SAssetDependencyInfo>& dependencies) override;
 

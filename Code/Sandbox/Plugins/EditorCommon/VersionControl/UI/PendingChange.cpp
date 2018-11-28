@@ -189,8 +189,7 @@ private:
 			return;
 		}
 		m_areLayerFilesRemoved = true;
-		const string layersFolder = PathUtil::AddSlash(PathUtil::Make(m_levelFolder, "Layers"));
-		auto layersStartIt = std::partition(m_files.begin(), m_files.end(), [&layersFolder](const string& file)
+		auto layersStartIt = std::partition(m_files.begin(), m_files.end(), [](const string& file)
 		{
 			return strcmp(PathUtil::GetExt(file), "lyr") != 0;
 		});

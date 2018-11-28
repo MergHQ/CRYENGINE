@@ -264,6 +264,7 @@
         <file alias="General/Duplicate_Negative.ico">icons/general_Duplicate_Negative.ico</file>
         <file alias="General/Duplicate.ico">icons/general_file_duplicate.ico</file>
         <file alias="General/Delete.ico">icons/general_file_delete.ico</file>
+        <file alias="General/Row_Delete.ico">icons/general_row_delete.ico</file>
         <file alias="General/Paste_Asset.ico">icons/general_file_paste.ico</file>
         <file alias="General/Edit.ico">icons/general_edit_asset.ico</file>
         <file alias="General/Element_Add.ico">icons/general_Element_Add.ico</file>

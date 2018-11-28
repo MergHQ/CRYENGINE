@@ -30,6 +30,7 @@ static AssetLoader::SAssetMetadata GetMetadata(const CAsset& asset)
 	metadata.guid = asset.GetGUID();
 	metadata.sourceFile = PathUtil::GetFile(asset.GetSourceFile());
 	metadata.files = asset.GetFiles();
+	metadata.workFiles = asset.GetWorkFiles();
 	metadata.details = asset.GetDetails();
 
 	const std::vector<SAssetDependencyInfo>& dependencies = asset.GetDependencies();
@@ -77,6 +78,30 @@ static uint64 GetModificationTime(const string& filePath)
 		pPak->FClose(pFile);
 	}
 	return timestamp;
+}
+
+void AddUniqueFile(const string& file, std::vector<string>& files, const string& assetName, const string& fileType)
+{
+	// Ignore empty files.
+	if (file.empty())
+	{
+		CryWarning(VALIDATOR_MODULE_ASSETS, VALIDATOR_WARNING, string().Format("Ignoring addition of empty %s '%s' to asset '%s'", fileType, file.c_str(), assetName));
+		return;
+	}
+
+	// Ignore duplicate files.
+	const string unixFile = PathUtil::ToUnixPath(file);
+	const auto it = std::find_if(files.begin(), files.end(), [&unixFile](auto& other)
+	{
+		return !stricmp(PathUtil::ToUnixPath(other), unixFile);
+	});
+	if (it != files.end())
+	{
+		CryWarning(VALIDATOR_MODULE_ASSETS, VALIDATOR_WARNING, string().Format("Ignoring addition of duplicate %s '%s' to asset '%s'", fileType, file.c_str(), assetName));
+		return;
+	}
+
+	files.push_back(file);
 }
 
 } // namespace Private_Asset
@@ -398,28 +423,9 @@ void CAsset::SetSourceFile(const char* szFilepath)
 	}
 }
 
-void CAsset::AddFile(const string& file)
+void CAsset::AddFile(const string& filePath)
 {
-	// Ignore empty files.
-	if (file.empty())
-	{
-		CryWarning(VALIDATOR_MODULE_ASSETS, VALIDATOR_WARNING, string().Format("Ignoring addition of empty file '%s' to asset '%s'", file.c_str(), m_name.c_str()));
-		return;
-	}
-
-	// Ignore duplicate files.
-	const string unixFile = PathUtil::ToUnixPath(file);
-	const auto it = std::find_if(m_files.begin(), m_files.end(), [&unixFile](auto& other)
-	{
-		return !stricmp(PathUtil::ToUnixPath(other), unixFile);
-	});
-	if (it != m_files.end())
-	{
-		CryWarning(VALIDATOR_MODULE_ASSETS, VALIDATOR_WARNING, string().Format("Ignoring addition of duplicate file '%s' to asset '%s'", file.c_str(), m_name.c_str()));
-		return;
-	}
-
-	m_files.push_back(file);
+	Private_Asset::AddUniqueFile(filePath, m_files, "file", m_name);
 }
 
 void CAsset::SetFiles(const std::vector<string>& filenames)
@@ -429,6 +435,21 @@ void CAsset::SetFiles(const std::vector<string>& filenames)
 	for (const string& filename : filenames)
 	{
 		AddFile(filename);
+	}
+}
+
+void CAsset::AddWorkFile(const string& filePath)
+{
+	Private_Asset::AddUniqueFile(filePath, m_workFiles, "work file", m_name);
+}
+
+void CAsset::SetWorkFiles(const std::vector<string>& filenames)
+{
+	m_workFiles.clear();
+	m_workFiles.reserve(filenames.size());
+	for (const string& filename : filenames)
+	{
+		AddWorkFile(filename);
 	}
 }
 

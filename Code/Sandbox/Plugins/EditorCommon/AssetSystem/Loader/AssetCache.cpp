@@ -76,6 +76,7 @@ struct SAssetSerializer
 		string name = asset.GetName();
 		uint64 lastModifiedTime = asset.GetLastModifiedTime();
 		std::vector<string> files(asset.GetFiles());
+		std::vector<string> workFiles(asset.GetWorkFiles());
 		string sourceFile(asset.GetSourceFile());
 		string metadataFile(asset.GetMetadataFile());
 		std::vector<std::pair<string, string>> details(asset.GetDetails());
@@ -84,6 +85,7 @@ struct SAssetSerializer
 		ar(name, "name", "Name");
 		ar(lastModifiedTime, "timestamp", "Modification Time");
 		ar(files, "files", "Files");
+		ar(workFiles, "workFiles", "Work files");
 		ar(sourceFile, "source", "Source file"); // fbx, tiff, etc.
 		ar(metadataFile, "metadata", "Cryasset file"); 
 		ar(details, "details", "Details");
@@ -99,6 +101,10 @@ struct SAssetSerializer
 			for (auto& f : files)
 			{
 				editable.AddFile(f);
+			}
+			for (auto& f : workFiles)
+			{
+				editable.AddWorkFile(f);
 			}
 			editable.SetDetails(details);
 			editable.SetDependencies(dependencies);
