@@ -45,7 +45,11 @@ protected:
 		}
 		else
 		{
-			return QLineEdit::keyPressEvent(pEvent);
+			QLineEdit::keyPressEvent(pEvent);
+			if (pEvent->key() == Qt::Key_Enter || pEvent->key() == Qt::Key_Return)
+			{
+				pEvent->accept();
+			}
 		}
 	}
 
