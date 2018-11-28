@@ -17,6 +17,7 @@ namespace DefaultQueryFilters
 {
 	SQueryTrianglesFilterGlobal g_globalFilter;
 	SNavMeshQueryFilterDefault g_globalFilterVirtual;
+	SAcceptAllQueryTrianglesFilter g_acceptAllFilterVirtual;
 }
 
 //====================================================================

@@ -1760,7 +1760,7 @@ void NavigationSystem::ComputeMeshesAccessibility(const NavigationMeshID* pUpdat
 				connectedIslands.clear();
 
 				MNM::TriangleID triangleID;
-				if (!navMesh.SnapPosition(seedPointsAffectingMesh[seedIdx], snappingMetrics, nullptr, nullptr, &triangleID))
+				if (!navMesh.SnapPosition(seedPointsAffectingMesh[seedIdx], snappingMetrics, &MNM::DefaultQueryFilters::g_acceptAllFilterVirtual, nullptr, &triangleID))
 					continue;
 
 				MNM::Tile::STriangle triangle;
