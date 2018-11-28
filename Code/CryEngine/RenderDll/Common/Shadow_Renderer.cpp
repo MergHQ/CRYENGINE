@@ -6,6 +6,7 @@
 #include "D3D_SVO.h"
 
 #include "Common/RenderView.h"
+#include "GraphicsPipeline/TiledShading.h"
 
 void ShadowMapFrustum::SortRenderItemsForFrustumAsync(int side, SRendItem* pFirst, size_t nNumRendItems)
 {
@@ -190,7 +191,7 @@ void ShadowMapFrustum::PrepareForShadowPool(uint32 frameID, uint32& numShadowPoo
 		{
 
 #if defined(ENABLE_PROFILING_CODE)
-			if (CRenderer::CV_r_ShadowPoolMaxFrames != 0 || CRenderer::CV_r_DeferredShadingTiled > 1)
+			if (CRenderer::CV_r_ShadowPoolMaxFrames != 0 || CRenderer::CV_r_DeferredShadingTiled >= CTiledShadingStage::eDeferredMode_1Pass)
 				numShadowPoolAllocsThisFrame |= 0x80000000;
 #endif
 		}

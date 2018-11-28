@@ -9,7 +9,7 @@ float Script : STANDARDSGLOBAL
 				"Public;"           
 				"SupportsAttrInstancing;"
 			#if %VERTCOLORS
-        "VertexColors;"
+				"VertexColors;"
 			#endif
 			#if %EYE_AO_OVERLAY
 				"EyeOverlay;"
@@ -18,6 +18,9 @@ float Script : STANDARDSGLOBAL
 			#else
 				"ForceZpass;"
 				"SupportsDeferredShading;"
+			#if !%EYE_SPECULAR_OVERLAY && !%EYE_AO_OVERLAY  // No special passes for overlays
+				"SupportsFullDeferredShading;"
+			#endif
 			#endif
 				"ShaderDrawType = Light;"
 				"ShaderType = General;"
@@ -456,23 +459,23 @@ technique General
 {
 	pass p0
 	{
-	VertexShader = EyeVS() EyeVS;
-	PixelShader = EyePS() EyePS;  
+		VertexShader = EyeVS() EyeVS;
+		PixelShader = EyePS() EyePS;  
 
-	ZEnable = true;
+		ZEnable = true;
 #if %EYE_SPECULAR_OVERLAY || %EYE_AO_OVERLAY
-	ZWriteEnable = false;
+		ZWriteEnable = false;
 	#if %EYE_SPECULAR_OVERLAY
-		SrcBlend = ONE;
-		DestBlend = ONE;
-		AlphaBlendEnable = true;
+			SrcBlend = ONE;
+			DestBlend = ONE;
+			AlphaBlendEnable = true;
 	#endif
 #else	
-	ZWriteEnable = true; // this is explicit disabled when zpass enabled 
-	CullMode = Back;
-	ZFunc = LEqual;
+		ZWriteEnable = true; // this is explicit disabled when zpass enabled 
+		CullMode = Back;
+		ZFunc = LEqual;
 #endif
-	}    
+	}
 }
 
 

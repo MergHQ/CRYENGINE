@@ -346,9 +346,7 @@ technique General
 <
   string Script = 
         "TechniqueZ=ZPass;"
-#if !ENABLE_TESSELLATION
-				"TechniqueZPrepass=ZPrepass;"
-#endif
+        "TechniqueZPrepass=ZPrePass;"
         "TechniqueMotionBlur=MotionBlurPass;" 
         "TechniqueCustomRender=CustomRenderPass;"
         "TechniqueShadowGen=ShadowGen;"

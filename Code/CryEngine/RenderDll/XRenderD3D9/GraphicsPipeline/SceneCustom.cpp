@@ -491,7 +491,7 @@ void CSceneCustomStage::ExecuteSilhouettePass()
 
 	CRenderView* pRenderView = RenderView();
 
-	if (!(pRenderView->GetBatchFlags(EFSLIST_CUSTOM) & FB_CUSTOM_RENDER))
+	if (!pRenderView->HasRenderItems(EFSLIST_CUSTOM, FB_CUSTOM_RENDER))
 		return;
 
 	auto prevPipelineFlags = GetStdGraphicsPipeline().GetPipelineFlags();
@@ -528,7 +528,7 @@ void CSceneCustomStage::ExecuteHelpers()
 	auto& renderItemDrawer = pRenderView->GetDrawer();
 
 	// first check if we actually have anything worth drawing
-	if (!pRenderView->GetRenderItems(EFSLIST_DEBUG_HELPER).size())
+	if (!pRenderView->HasRenderItems(EFSLIST_DEBUG_HELPER, FB_GENERAL))
 		return;
 
 	{

@@ -222,7 +222,7 @@ void CRenderer::InitRenderer()
 	}
 #endif
 
-	m_nUseZpass = CV_r_usezpass;
+	m_nUseZpass = CV_r_UseZPass;
 
 	m_nShadowPoolHeight = m_nShadowPoolWidth = 0;
 
@@ -1426,6 +1426,11 @@ void CRenderer::EF_CheckLightMaterial(SRenderLight* pLight, uint16 nRenderLightI
 			const float fWaterLevel = gEnv->p3DEngine->GetWaterLevel();
 			const float fCamZ       = passInfo.GetCamera().GetPosition().z;
 			const int32 nAW         = ((fCamZ - fWaterLevel) * (pLight->m_Origin.z - fWaterLevel) > 0) ? 1 : 0;
+
+			// TODO: set bbox/center on light-render-element
+			// pRE->m_center     = pLight->m_Origin;
+			// pRE->m_WSBBox.min = pLight->m_Origin;
+			// pRE->m_WSBBox.max = pLight->m_Origin;
 
 			passInfo.GetRenderView()->AddRenderObject(pRE, pLight->m_Shader, pRO, passInfo, nList, nAW);
 		}
@@ -4739,13 +4744,12 @@ CRenderObject* CRenderer::EF_DuplicateRO(CRenderObject* pSrc, const SRenderingPa
 	if (pSrc->m_bPermanent)
 	{
 		// Clone object and attach to the end of linked list of the source object
+		CPermanentRenderObject* pObjSrc = reinterpret_cast<CPermanentRenderObject*>(pSrc);
 		CPermanentRenderObject* pObjNew = reinterpret_cast<CPermanentRenderObject*>(CRenderer::EF_GetObject());
 
 		uint32 nId = pObjNew->m_Id;
-		pObjNew->CloneObject(pSrc);
+		pObjNew->CloneObject(pObjSrc);
 		pObjNew->m_Id = nId;
-
-		CPermanentRenderObject* pObjSrc = reinterpret_cast<CPermanentRenderObject*>(pSrc);
 
 		// Link duplicated object to the source object
 		{

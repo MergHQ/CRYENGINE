@@ -11,6 +11,7 @@
 #include "GraphicsPipeline/VolumetricFog.h"
 #include "GraphicsPipeline/TiledLightVolumes.h"
 #include "GraphicsPipeline/ClipVolumes.h"
+#include "GraphicsPipeline/TiledShading.h"
 
 struct SPerPassConstantBuffer
 {
@@ -304,6 +305,7 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 	const bool bRecursive = (passId == ePass_ForwardRecursive);	
 	const bool bMobile    = (passId == ePass_ForwardMobile);
 
+	const uint64 objectFlags = desc.objectFlags;
 	CSceneRenderPass* pSceneRenderPass = 
 		 bRecursive ? &m_forwardTransparentRecursivePass : 
 		(bMobile    ? &m_forwardTransparentPassMobile    : 
@@ -330,10 +332,9 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 	{
 		const int32 shaderFlags = ((CShader*)desc.shaderItem.m_pShader)->GetFlags();
 		const int32 shaderFlags2 = ((CShader*)desc.shaderItem.m_pShader)->GetFlags2();
-		const bool bSupportsDeferred = (shaderFlags & EF_SUPPORTSDEFERREDSHADING_FULL) != 0;
 		const bool bAlphaBlended = desc.shaderItem.m_pShaderResources && desc.shaderItem.m_pShaderResources->IsTransparent();
-		const bool bOpaquePass = !bAlphaBlended && (bSupportsDeferred || (desc.shaderItem.m_nPreprocessFlags & FB_TILED_FORWARD));
-		const bool bOverlay = (desc.objectFlags & (FOB_TERRAIN_LAYER | FOB_DECAL)) || (shaderFlags & EF_DECAL);
+		const bool bOpaquePass = !bAlphaBlended && (desc.shaderItem.m_nPreprocessFlags & FB_TILED_FORWARD);
+		const bool bOverlay = (objectFlags & (FOB_TERRAIN_LAYER | FOB_DECAL)) || (shaderFlags & EF_DECAL);
 		const bool bHair = (shaderFlags2 & EF2_HAIR) != 0;
 		const bool bEyeOverlay = (shaderFlags2 & EF2_EYE_OVERLAY) != 0;
 		const bool bAfterHDRPostProcess = (shaderFlags2 & EF2_AFTERHDRPOSTPROCESS) != 0;
@@ -341,7 +342,6 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 		const bool bEmissive = (desc.shaderItem.m_pShaderResources && desc.shaderItem.m_pShaderResources->IsEmissive());
 
 #if !RENDERER_ENABLE_FULL_PIPELINE
-
 		// HACK: only opaque forward is supported on mobile currently
 		if (!(bOpaquePass && passId == ePass_ForwardMobile))
 			return true;
@@ -352,7 +352,7 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 
 		if (bRecursive)
 		{
-			if (!(desc.objectFlags & FOB_NO_FOG))
+			if (!(objectFlags & FOB_NO_FOG))
 				psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_FOG];
 
 			if (bOpaquePass)
@@ -360,13 +360,16 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 		}
 		else if (bOpaquePass)
 		{
-			psoDesc.m_RenderState &= ~(GS_DEPTHWRITE | GS_DEPTHFUNC_MASK | GS_ALPHATEST);
-			psoDesc.m_RenderState |= GS_DEPTHFUNC_EQUAL;
-			psoDesc.m_ShaderFlags_RT &= ~g_HWSR_MaskBit[HWSR_ALPHATEST];
-
-			if (passId == ePass_Forward)
+			// Disable alpha testing/depth writes if object renders using a z-prepass and requested technique is not z prepass
+			if (passId == ePass_ForwardPrepassed)
 			{
-				if (CRenderer::CV_r_DeferredShadingTiled)
+				psoDesc.m_RenderState &= ~(GS_STENCIL | GS_DEPTHWRITE | GS_DEPTHFUNC_MASK | GS_ALPHATEST);
+				psoDesc.m_RenderState |= GS_DEPTHFUNC_EQUAL;
+				psoDesc.m_ShaderFlags_RT &= ~(g_HWSR_MaskBit[HWSR_ALPHATEST] | g_HWSR_MaskBit[HWSR_DISSOLVE]);
+			}
+			else if (passId == ePass_Forward)
+			{
+				if (CRenderer::CV_r_DeferredShadingTiled > CTiledShadingStage::eDeferredMode_Off)
 					psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_TILED_SHADING];
 
 				pSceneRenderPass = &m_forwardOpaquePass;
@@ -378,7 +381,7 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 		}
 		else
 		{
-			if (!bOverlay && !(desc.objectFlags & FOB_NO_FOG))
+			if (!bOverlay && !(objectFlags & FOB_NO_FOG))
 			{
 				psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_FOG];
 
@@ -388,7 +391,8 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 					psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_VOLUMETRIC_FOG];
 				}
 			}
-			if (CRenderer::CV_r_DeferredShadingTiled)
+
+			if (CRenderer::CV_r_DeferredShadingTiled > CTiledShadingStage::eDeferredMode_Off)
 				psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_TILED_SHADING];
 		}
 
@@ -400,7 +404,8 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 		else if (bHair)
 		{
 			psoDesc.m_ShaderFlags_RT &= ~(g_HWSR_MaskBit[HWSR_TILED_SHADING] |g_HWSR_MaskBit[HWSR_QUALITY1]);
-			if (CRenderer::CV_r_DeferredShadingTiled && CRenderer::CV_r_DeferredShadingTiledHairQuality > 0)
+			if (CRenderer::CV_r_DeferredShadingTiled > CTiledShadingStage::eDeferredMode_Off &&
+				CRenderer::CV_r_DeferredShadingTiledHairQuality > 0)
 			{
 				psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_TILED_SHADING];
 
@@ -462,7 +467,16 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 			}
 
 			if (bOverlay)
-				pSceneRenderPass = bRecursive ? &m_forwardOverlayRecursivePass : &m_forwardOverlayPass;
+			{
+				if (passId == ePass_Forward)
+				{
+					pSceneRenderPass = bRecursive ? &m_forwardOverlayRecursivePass : &m_forwardOverlayPass;
+				}
+				else if (passId == ePass_ForwardMobile)
+				{
+					pSceneRenderPass = &m_forwardOverlayPassMobile;
+				}
+			}
 		}
 		else if (bEyeOverlay)
 		{
@@ -508,14 +522,13 @@ bool CSceneForwardStage::CreatePipelineStates(DevicePipelineStatesArray* pStateA
 
 	_stateDesc.technique = TTYPE_GENERAL;
 #if RENDERER_ENABLE_FULL_PIPELINE
-	bFullyCompiled &= CreatePipelineState(_stateDesc, stageStates[ePass_Forward], ePass_Forward);
-
-	_stateDesc.technique = TTYPE_GENERAL;
+	bFullyCompiled &= CreatePipelineState(_stateDesc, stageStates[ePass_Forward         ], ePass_Forward         );
+	bFullyCompiled &= CreatePipelineState(_stateDesc, stageStates[ePass_ForwardPrepassed], ePass_ForwardPrepassed);
 	bFullyCompiled &= CreatePipelineState(_stateDesc, stageStates[ePass_ForwardRecursive], ePass_ForwardRecursive);
 #endif
 
 #if RENDERER_ENABLE_MOBILE_PIPELINE
-	bFullyCompiled &= CreatePipelineState(_stateDesc, stageStates[ePass_ForwardMobile], ePass_ForwardMobile);
+	bFullyCompiled &= CreatePipelineState(_stateDesc, stageStates[ePass_ForwardMobile   ], ePass_ForwardMobile   );
 #endif
 
 	if (bFullyCompiled)
@@ -722,7 +735,7 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 				resources.SetTexture(21, CRendererResources::s_ptexBlackCM, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 				resources.SetTexture(22, CRendererResources::s_ptexBlack, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 
-				if (includeTransparentPassResources || (CRenderer::CV_r_DeferredShadingTiled < 3) || (CRendererCVars::CV_r_GraphicsPipelineMobile > 0))
+				if (includeTransparentPassResources || !pTiledLights->IsSeparateVolumeListGen() || (CRendererCVars::CV_r_GraphicsPipelineMobile > 0))
 				{
 					resources.SetBuffer(17, CDeviceBufferManager::GetNullBufferTyped(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 				}
@@ -736,7 +749,7 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 				resources.SetTexture(21, pTiledLights->GetDiffuseProbeAtlas(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 				resources.SetTexture(22, pTiledLights->GetProjectedLightAtlas(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 
-				if (includeTransparentPassResources || (CRenderer::CV_r_DeferredShadingTiled < 3) || (CRendererCVars::CV_r_GraphicsPipelineMobile > 0))
+				if (includeTransparentPassResources || !pTiledLights->IsSeparateVolumeListGen() || (CRendererCVars::CV_r_GraphicsPipelineMobile > 0))
 				{
 					resources.SetBuffer(17, pTiledLights->GetTiledTranspLightMaskBuffer(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 				}
@@ -857,7 +870,20 @@ void CSceneForwardStage::ExecuteOpaque()
 	m_forwardOpaquePass.PrepareRenderPassForUse(commandList);
 	m_forwardOverlayPass.PrepareRenderPassForUse(commandList);
 
-	const uint32 bForwardFilter = CRenderer::CV_r_DeferredShadingTiled != 4 ? FB_Z : 0;
+	const uint32 bForwardFilter = CRenderer::CV_r_DeferredShadingTiled != CTiledShadingStage::eDeferredMode_Disabled ? FB_Z : 0;
+
+	CZPrePassPredicate zpPredicate;
+	int nearestFNum    = pRenderView->GetRenderItems(EFSLIST_FORWARD_OPAQUE_NEAREST).size();
+	int nearestFNoZPre = pRenderView->FindRenderListSplit(zpPredicate, EFSLIST_FORWARD_OPAQUE_NEAREST, 0, nearestFNum);
+
+	int generalFNum    = pRenderView->GetRenderItems(EFSLIST_FORWARD_OPAQUE).size();
+	int generalFNoZPre = pRenderView->FindRenderListSplit(zpPredicate, EFSLIST_FORWARD_OPAQUE, 0, generalFNum);
+	
+	int nearestGNum    = pRenderView->GetRenderItems(EFSLIST_NEAREST_OBJECTS).size();
+	int nearestGNoZPre = pRenderView->FindRenderListSplit(zpPredicate, EFSLIST_NEAREST_OBJECTS, 0, nearestGNum);
+
+	int generalGNum    = pRenderView->GetRenderItems(EFSLIST_GENERAL).size();
+	int generalGNoZPre = pRenderView->FindRenderListSplit(zpPredicate, EFSLIST_GENERAL, 0, generalGNum);
 
 	{
 		renderItemDrawer.InitDrawSubmission();
@@ -868,17 +894,27 @@ void CSceneForwardStage::ExecuteOpaque()
 		m_forwardEyeOverlayPass.EndExecution();
 
 		m_forwardOpaquePass.BeginExecution();
-		m_forwardOpaquePass.SetupDrawContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL | FB_TILED_FORWARD | FB_ZPREPASS, bForwardFilter);
-		m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_FORWARD_OPAQUE_NEAREST);
-		if (CRenderer::CV_r_DeferredShadingTiled == 4)
-			m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS);
-		m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_FORWARD_OPAQUE);
-		if (CRenderer::CV_r_DeferredShadingTiled == 4)
-			m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_GENERAL);
+		m_forwardOpaquePass.SetupDrawContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL | FB_TILED_FORWARD, bForwardFilter | FB_ZPREPASS);
+		m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_FORWARD_OPAQUE_NEAREST, 0, nearestFNoZPre);
+		if (CRenderer::CV_r_DeferredShadingTiled == CTiledShadingStage::eDeferredMode_Disabled)
+			m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS, 0, nearestGNoZPre);
+		m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_FORWARD_OPAQUE, 0, generalFNoZPre);
+		if (CRenderer::CV_r_DeferredShadingTiled == CTiledShadingStage::eDeferredMode_Disabled)
+			m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_GENERAL, 0, generalGNoZPre);
+		m_forwardOpaquePass.EndExecution();
+
+		m_forwardOpaquePass.BeginExecution();
+		m_forwardOpaquePass.SetupDrawContext(m_stageID, ePass_ForwardPrepassed, TTYPE_GENERAL, FB_GENERAL | FB_TILED_FORWARD | FB_ZPREPASS, bForwardFilter);
+		m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_FORWARD_OPAQUE_NEAREST, nearestFNoZPre, nearestFNum);
+		if (CRenderer::CV_r_DeferredShadingTiled == CTiledShadingStage::eDeferredMode_Disabled)
+			m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS, nearestGNoZPre, nearestGNum);
+		m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_FORWARD_OPAQUE, generalFNoZPre, generalFNum);
+		if (CRenderer::CV_r_DeferredShadingTiled == CTiledShadingStage::eDeferredMode_Disabled)
+			m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_GENERAL, generalGNoZPre, generalGNum);
 		m_forwardOpaquePass.EndExecution();
 
 		m_forwardOverlayPass.BeginExecution();
-		m_forwardOverlayPass.SetupDrawContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL | FB_TILED_FORWARD, bForwardFilter);
+		m_forwardOverlayPass.SetupDrawContext(m_stageID, ePass_ForwardPrepassed, TTYPE_GENERAL, FB_GENERAL | FB_TILED_FORWARD, bForwardFilter);
 		m_forwardOverlayPass.DrawRenderItems(pRenderView, EFSLIST_TERRAINLAYER);
 		m_forwardOverlayPass.DrawRenderItems(pRenderView, EFSLIST_DECAL);
 		m_forwardOverlayPass.DrawRenderItems(pRenderView, EFSLIST_SKY);
@@ -1115,10 +1151,10 @@ void CSceneForwardStage::ExecuteMobile()
 		m_forwardOpaquePassMobile.BeginExecution();
 		m_forwardOpaquePassMobile.SetupDrawContext(m_stageID, ePass_ForwardMobile, TTYPE_GENERAL, FB_TILED_FORWARD);
 		m_forwardOpaquePassMobile.DrawRenderItems(pRenderView, EFSLIST_FORWARD_OPAQUE_NEAREST);
-		if (CRenderer::CV_r_DeferredShadingTiled == 4)
+		if (CRenderer::CV_r_DeferredShadingTiled == CTiledShadingStage::eDeferredMode_Disabled)
 			m_forwardOpaquePassMobile.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS);
 		m_forwardOpaquePassMobile.DrawRenderItems(pRenderView, EFSLIST_FORWARD_OPAQUE);
-		if (CRenderer::CV_r_DeferredShadingTiled == 4)
+		if (CRenderer::CV_r_DeferredShadingTiled == CTiledShadingStage::eDeferredMode_Disabled)
 			m_forwardOpaquePassMobile.DrawRenderItems(pRenderView, EFSLIST_GENERAL);
 		m_forwardOpaquePassMobile.EndExecution();
 

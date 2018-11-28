@@ -107,9 +107,16 @@ struct pixout_fp
   float4 Color  : SV_Target0;
 };
 
+struct pixout_zpre
+{
+#if (%_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1) && %_RT_ALPHATEST
+	uint uCoverageMask	: SV_Coverage;
+#endif
+};
+
 struct pixout_gbuffer
 {
-  half4 GBufferA : SV_Target0;
+	half4 GBufferA : SV_Target0;
 	
 #if !%_RT_SAMPLE0
 	half4 GBufferB : SV_Target1;

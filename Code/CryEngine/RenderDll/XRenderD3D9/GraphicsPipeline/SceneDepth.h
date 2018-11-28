@@ -6,15 +6,16 @@
 #include "Common/FullscreenPass.h"
 #include "Common/UtilityPasses.h"
 
-class CDepthReadbackStage : public CGraphicsPipelineStage
+class CSceneDepthStage : public CGraphicsPipelineStage
 {
 public:
-	~CDepthReadbackStage() override
+	~CSceneDepthStage() override
 	{
 		ReleaseResources();
 	}
 
 	void Init() override;
+	void Update() override;
 	void Execute();
 
 	// See IRenderer::PinOcclusionBuffer
@@ -54,6 +55,10 @@ public:
 	}
 
 private:
+	void ExecuteLinearization();
+	void ExecuteDelinearization();
+	void ExecuteReadback();
+
 	enum EConfigurationFlags : uint8
 	{
 		kNone         = 0,
@@ -117,4 +122,8 @@ private:
 	uint32              m_lastPinned = kMaxResults;
 	uint32              m_numPinned = 0;
 	SResult             m_result[kMaxResults];
+
+	CDepthDownsamplePass      m_DownSamplePasses[3];
+	CDepthDelinearizationPass m_CopyDepthPasses[3];
+	CDepthLinearizationPass   m_LinearizePass;
 };

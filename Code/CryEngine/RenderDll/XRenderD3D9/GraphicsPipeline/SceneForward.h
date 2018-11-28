@@ -36,9 +36,11 @@ public:
 public:
 	enum EPass
 	{
-		ePass_Forward = 0,
-		ePass_ForwardRecursive,
-		ePass_ForwardMobile
+		// limit: MAX_PIPELINE_SCENE_STAGE_PASSES
+		ePass_Forward          = 0,
+		ePass_ForwardPrepassed = 1,
+		ePass_ForwardRecursive = 2,
+		ePass_ForwardMobile    = 3
 	};
 
 public:

@@ -699,7 +699,11 @@ technique FlattenDepth
 Texture2D<float4> DownsampleDepth_DepthTex : register(t0);
 float4 DownsampleDepth_Params;
 
-pixout DownsampleDepthPS(vtxOut IN)
+pixout DownsampleDepthPS(vtxOut IN
+#if %_RT_SAMPLE2
+	, out float Depth : SV_Depth
+#endif
+	)
 {
 	pixout OUT = (pixout) 0;
 	
@@ -725,6 +729,11 @@ pixout DownsampleDepthPS(vtxOut IN)
 	OUT.Color.y = min(min(vMinDepths.x, vMinDepths.y), min(vMinDepths.z, vMinDepths.w));
 	OUT.Color.z = (vMinDepths.x + vMinDepths.y + vMinDepths.z + vMinDepths.w) * 0.25; // Average
 	OUT.Color.w = vPrvDepth; // Rotated Grid Subsample
+
+#if %_RT_SAMPLE2
+	float linearDepth = OUT.Color.x;
+	Depth = g_PS_ProjRatio.y / linearDepth + g_PS_ProjRatio.x;
+#endif
 
 	return OUT;
 }

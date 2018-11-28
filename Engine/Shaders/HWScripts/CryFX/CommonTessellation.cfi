@@ -177,6 +177,11 @@ struct HS_CONTROL_POINT_OUTPUT_ZPASS
 #endif
 };
 
+struct HS_CONTROL_POINT_OUTPUT_ZPREPASS
+{
+	hsControlPointShared controlPoint;
+};
+
 struct HS_CONTROL_POINT_OUTPUT_ILLUM
 {
 	hsControlPointShared controlPoint;

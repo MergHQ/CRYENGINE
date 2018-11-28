@@ -280,6 +280,7 @@ Property
   Precache = ParticleDS
   Precache = WaterSurfacePS
 	
+	Precache = DownsampleDepthPS
 	Precache = TiledShadingCS
 	Precache = VolumeLightInjectionCS
 	Precache = ResolvePS
@@ -333,6 +334,7 @@ Property
 	Precache = VolumetricCloudsPS
 	Precache = ReprojectCloudsPS
 	Precache = CloudShadowGenCS
+	Precache = DownsampleDepthPS
 
 	Precache = DebugPassVS
 	Precache = DebugPassPS
@@ -1080,7 +1082,8 @@ Property
   Precache = VolumeLightInjectionCS
   Precache = VolumetricCloudsPS
   Precache = ReprojectCloudsPS
-	
+	Precache = DownsampleDepthPS
+
 	Precache = SkyPassPS
 	Precache = LightingMobilePS
 }

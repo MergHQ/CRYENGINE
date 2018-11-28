@@ -159,20 +159,17 @@ uint32 SShaderItem::PostLoad()
 	// Update persistent batch flags
 	if (pTech)
 	{
-		if (pTech->m_nTechnique[TTYPE_Z] > 0)
-		{
+		// Supports DepthBuffer-pass (CommonZPrePass)
+		if (pTech->m_nTechnique[TTYPE_ZPREPASS] > 0)
+			nPreprocessFlags |= FB_ZPREPASS;
+
+		// Supports GBuffer-pass (CommonZPass)
+		if (pTech->m_nTechnique[TTYPE_Z] > 0 && pSH->m_Flags & EF_SUPPORTSDEFERREDSHADING_FULL)
 			nPreprocessFlags |= FB_Z;
 
-			// ZPrepass only for non-alpha tested/blended geometry (decals, terrain).
-			// We assume vegetation is special case due to potential massive overdraw
-			if (pTech->m_nTechnique[TTYPE_ZPREPASS] > 0)
-			{
-				const bool bAlphaTested = (pR && pR->IsAlphaTested());
-				const bool bVegetation = (pSH && pSH->GetShaderType() == eST_Vegetation);
-				if ((!bAlphaTested && !bVegetation) || (bAlphaTested && bVegetation))
-					nPreprocessFlags |= FB_ZPREPASS;
-			}
-		}
+		// Supports Forward+-pass (General)
+		if (pSH->m_Flags & EF_SUPPORTSDEFERREDSHADING_MIXED)
+			nPreprocessFlags |= FB_TILED_FORWARD;
 
 		if (!(pTech->m_Flags & FHF_POSITION_INVARIANT) && ((pTech->m_Flags & FHF_TRANSPARENT) || (pR && pR->IsTransparent())))
 			nPreprocessFlags |= FB_TRANSPARENT;
@@ -185,9 +182,6 @@ uint32 SShaderItem::PostLoad()
 
 		if (pSH->m_Flags2 & EF2_EYE_OVERLAY)
 			nPreprocessFlags |= FB_EYE_OVERLAY;
-
-		if ((pSH->m_Flags & EF_SUPPORTSDEFERREDSHADING_MIXED) && !(pSH->m_Flags & EF_SUPPORTSDEFERREDSHADING_FULL))
-			nPreprocessFlags |= FB_TILED_FORWARD;
 
 		if (CRenderer::CV_r_Refraction && (pSH->m_Flags & EF_REFRACTIVE))
 			nPreprocessFlags |= FB_TRANSPARENT;

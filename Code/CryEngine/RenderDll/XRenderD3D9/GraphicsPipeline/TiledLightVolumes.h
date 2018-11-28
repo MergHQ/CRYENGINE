@@ -239,7 +239,6 @@ private:
 
 	SVolumeGeometry       m_volumeMeshes[eVolumeType_Count];
 
-	CFullscreenPass       m_passCopyDepth;
 	CPrimitiveRenderPass  m_passLightVolumes;
 	CRenderPrimitive      m_volumePasses[eVolumeType_Count * 2];  // Inside and outside of volume for each type
 	uint32                m_numVolumesPerPass[eVolumeType_Count * 2];

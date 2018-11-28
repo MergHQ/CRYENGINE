@@ -165,7 +165,7 @@ public:
 
 	static int CV_r_nodrawnear;
 	static int CV_r_DrawNearShadows;
-	static int CV_r_usezpass;
+	static int CV_r_UseZPass;
 	static int CV_r_VegetationSpritesTexRes;
 	static int CV_r_ShowVideoMemoryStats;
 	static int CV_r_TexturesStreamingDebugMinSize;

@@ -20,6 +20,7 @@
 #include "D3DPostProcess.h"
 #include "StatoscopeRenderStats.h"
 #include "GraphicsPipeline/DebugRenderTargets.h"
+#include "GraphicsPipeline/TiledShading.h"
 #include "GraphicsPipeline/VolumetricFog.h"
 #include "GraphicsPipeline/Common/UtilityPasses.h"
 
@@ -905,7 +906,7 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 		bool bVolumetricFog = pCVarVolumetricFog && (pCVarVolumetricFog->GetIVal() != 0);
 		m_bVolumetricFogEnabled = bVolumetricFog
 		                          && CVolumetricFogStage::IsEnabledInFrame();
-		if (pCVarVolumetricFog && bVolumetricFog && (CRenderer::CV_r_DeferredShadingTiled == 0))
+		if (pCVarVolumetricFog && bVolumetricFog && (CRenderer::CV_r_DeferredShadingTiled == CTiledShadingStage::eDeferredMode_Off))
 		{
 #if !defined(_RELEASE)
 			gEnv->pLog->LogWarning("e_VolumetricFog is set to 0 when r_DeferredShadingTiled is 0.");
@@ -3449,7 +3450,7 @@ void CD3D9Renderer::RT_EndFrame()
 	if (m_wireframe_mode != m_wireframe_mode_prev)
 	{
 		//// disable zpass in wireframe mode?
-		CV_r_usezpass = m_nUseZpass;
+		CV_r_UseZPass = m_nUseZpass;
 	}
 #endif
 #if !defined(_RELEASE)

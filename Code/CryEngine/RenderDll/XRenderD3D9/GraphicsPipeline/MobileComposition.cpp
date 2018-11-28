@@ -41,9 +41,9 @@ void CMobileCompositionStage::ExecuteDeferredLighting()
 		}
 	}
 
-	m_passDepthDownsample2.Execute(pZTexture, CRendererResources::s_ptexLinearDepthScaled[0], true , true);
-	m_passDepthDownsample4.Execute(CRendererResources::s_ptexLinearDepthScaled[0], CRendererResources::s_ptexLinearDepthScaled[1], false, false);
-	m_passDepthDownsample8.Execute(CRendererResources::s_ptexLinearDepthScaled[1], CRendererResources::s_ptexLinearDepthScaled[2], false, false);
+	m_passDepthDownsample2.Execute(pZTexture, CRendererResources::s_ptexLinearDepthScaled[0], nullptr, true , true);
+	m_passDepthDownsample4.Execute(CRendererResources::s_ptexLinearDepthScaled[0], CRendererResources::s_ptexLinearDepthScaled[1], nullptr, false, false);
+	m_passDepthDownsample8.Execute(CRendererResources::s_ptexLinearDepthScaled[1], CRendererResources::s_ptexLinearDepthScaled[2], nullptr, false, false);
 
 	{
 		PROFILE_LABEL_SCOPE("MOBILE_LIGHTING");

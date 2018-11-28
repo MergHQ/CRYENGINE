@@ -7,6 +7,7 @@
 #include "D3D_SVO.h"
 
 #include "Common/ReverseDepth.h"
+#include "GraphicsPipeline/SceneGBuffer.h"
 #include "GraphicsPipeline/VolumetricFog.h"
 
 namespace
@@ -87,7 +88,7 @@ void CFogStage::Execute()
 
 	bool bFogEnabled = RenderView()->IsGlobalFogEnabled();
 
-	if (!(bFogEnabled && CRenderer::CV_r_usezpass != 0))
+	if (!(bFogEnabled && CRenderer::CV_r_UseZPass != CSceneGBufferStage::eZPassMode_Off))
 	{
 		return;
 	}

@@ -617,7 +617,7 @@ technique ZPass
 		ZEnable = true;
 		ZWriteEnable = true;
 		CullMode = Back;
-     
+
 #if %GRASS || %LEAVES || %HAIR_PASS
 		CullMode = None;
 #endif

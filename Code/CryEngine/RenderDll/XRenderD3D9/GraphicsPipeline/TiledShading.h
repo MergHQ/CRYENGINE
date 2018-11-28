@@ -9,12 +9,21 @@
 class CTiledShadingStage : public CGraphicsPipelineStage
 {
 public:
+	enum EExecutionMode
+	{
+		eDeferredMode_Off = 0,
+		eDeferredMode_Enabled = 2,
+		eDeferredMode_1Pass = 2,
+		eDeferredMode_2Pass = 3,
+		eDeferredMode_Disabled = 4
+	};
+
 	CTiledShadingStage();
 	~CTiledShadingStage();
 
 	bool IsStageActive(EShaderRenderingFlags flags) const final
 	{
-		return CRendererCVars::CV_r_DeferredShadingTiled > 1;
+		return CRendererCVars::CV_r_DeferredShadingTiled >= CTiledShadingStage::eDeferredMode_1Pass;
 	}
 
 	void Init() final;

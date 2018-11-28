@@ -22,7 +22,7 @@ float Script : STANDARDSGLOBAL
 	#endif
 	#if ENABLE_TESSELLATION
 		"HWTessellation;"
-#endif
+	#endif
 		"SupportsDeferredShading;"
 		"SupportsFullDeferredShading;"
 		"NoChunkMerging;"
@@ -502,8 +502,8 @@ technique General
 <
 	string Script =     
 		"TechniqueZ=ZPass;"
-	//#if (%LEAVES || %BLENDLAYER) && !ENABLE_TESSELLATION
-		"TechniqueZPrepass=ZPrepass;"
+	//#if (%LEAVES || %BLENDLAYER)
+		"TechniqueZPrepass=ZPrePass;"
 	//#endif
 	#if !%GRASS
 		"TechniqueMotionBlur=MotionBlurPass;"         
@@ -535,7 +535,7 @@ technique General
 
 //////////////////////////////// Common techniques ////////////////
 
-//#if (%LEAVES || %BLENDLAYER) && !ENABLE_TESSELLATION
+//#if (%LEAVES || %BLENDLAYER)
 	#include "CommonZPrePass.cfi"
 //#endif
 #include "CommonZPass.cfi"
@@ -546,9 +546,6 @@ technique General
 #include "CommonShadowGenPass.cfi"
 #include "CommonDebugPass.cfi"
 #include "CommonViewsPass.cfi"
-
-
-
 
 vert2fragCustomRender Vegetation_CustomRenderPassVS(app2vertCustomViews IN)
 {
@@ -592,7 +589,6 @@ vert2fragCustomRender Vegetation_CustomRenderPassVS(app2vertCustomViews IN)
 
 	return OUT;
 }
-
 
 pixout Vegetation_CustomRenderPassPS(vert2fragCustomRender IN)
 {

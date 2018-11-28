@@ -1444,6 +1444,7 @@ public:
 	uint32    m_bDeferredRainEnabled           : 1;
 	uint32    m_bDeferredRainOcclusionEnabled  : 1;
 	uint32    m_bDeferredSnowEnabled           : 1;
+	uint32    m_UseZPass                       : 2;
 
 	uint8     m_nDisableTemporalEffects;
 	uint32    m_nGPULimited;           // How many frames we are GPU limited

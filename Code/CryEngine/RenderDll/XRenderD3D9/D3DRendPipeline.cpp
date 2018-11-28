@@ -29,8 +29,8 @@
 #include "GraphicsPipeline/ComputeSkinning.h"
 #include "GraphicsPipeline/SceneGBuffer.h"
 #include "GraphicsPipeline/SceneCustom.h"
+#include "GraphicsPipeline/SceneDepth.h"
 #include "GraphicsPipeline/PostAA.h"
-#include "GraphicsPipeline/DepthReadback.h"
 #include "Common/RenderView.h"
 #include "CompiledRenderObject.h"
 
@@ -421,9 +421,9 @@ void CD3D9Renderer::EF_EndEf2D(const bool bSort)
 //==============================================================================================
 float* CD3D9Renderer::PinOcclusionBuffer(Matrix44A &camera)
 {
-	if (auto pDepthReadbackStage = m_pGraphicsPipeline->GetDepthReadbackStage())
+	if (auto pSceneDepthStage = m_pGraphicsPipeline->GetSceneDepthStage())
 	{
-		return pDepthReadbackStage->PinOcclusionBuffer(camera);
+		return pSceneDepthStage->PinOcclusionBuffer(camera);
 	}
 
 	return nullptr;
@@ -431,9 +431,9 @@ float* CD3D9Renderer::PinOcclusionBuffer(Matrix44A &camera)
 
 void CD3D9Renderer::UnpinOcclusionBuffer()
 {
-	if (auto pDepthReadbackStage = m_pGraphicsPipeline->GetDepthReadbackStage())
+	if (auto pSceneDepthStage = m_pGraphicsPipeline->GetSceneDepthStage())
 	{
-		pDepthReadbackStage->UnpinOcclusionBuffer();
+		pSceneDepthStage->UnpinOcclusionBuffer();
 	}
 }
 
@@ -602,6 +602,7 @@ void CD3D9Renderer::RT_PostRenderScene(CRenderView* pRenderView)
 // Render thread only scene rendering
 void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 {
+	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE(pRenderView->IsRecursive() ? "SCENE_REC" : "SCENE");
 
 	gcpRendD3D->SetCurDownscaleFactor(gcpRendD3D->m_CurViewportScale);

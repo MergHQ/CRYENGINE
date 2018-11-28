@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "TiledLightVolumes.h"
+#include "TiledShading.h"
 
 #include "D3DPostProcess.h"
 #include "D3D_SVO.h"
@@ -305,7 +306,7 @@ void CTiledLightVolumesStage::Update()
 {
 	// Tiled Light Volumes ===============================================================
 
-	if (CRenderer::CV_r_DeferredShadingTiled >= 3)
+	if (IsSeparateVolumeListGen())
 	{
 		const ColorI nulls = { 0, 0, 0, 0 };
 
@@ -1236,38 +1237,19 @@ void CTiledLightVolumesStage::GenerateLightList()
 
 bool CTiledLightVolumesStage::IsSeparateVolumeListGen()
 {
-	return !(CRenderer::CV_r_DeferredShadingTiled < 3 && !CRenderer::CV_r_GraphicsPipelineMobile);
+	return !(CRenderer::CV_r_DeferredShadingTiled == CTiledShadingStage::eDeferredMode_2Pass && !CRenderer::CV_r_GraphicsPipelineMobile);
 }
 
 
 void CTiledLightVolumesStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 dispatchSizeY)
 {
-	CD3D9Renderer* pRenderer = gcpRendD3D;
+	PROFILE_LABEL_SCOPE("TILED_VOLUMES");
+
+	GenerateLightVolumeInfo();
 
 	CTexture* pDepthRT = CRendererResources::s_ptexSceneDepthScaled[2];
 	assert(CRendererCVars::CV_r_VrProjectionType > 0 || (pDepthRT->GetWidth() == dispatchSizeX && pDepthRT->GetHeight() == dispatchSizeY));
 
-	{
-		PROFILE_LABEL_SCOPE("COPY_DEPTH_EIGHTH");
-
-		static CCryNameTSCRC techCopy("CopyToDeviceDepth");
-
-		m_passCopyDepth.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
-		m_passCopyDepth.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
-		m_passCopyDepth.SetTechnique(CShaderMan::s_shPostEffects, techCopy, 0);
-		m_passCopyDepth.SetRequirePerViewConstantBuffer(true);
-		m_passCopyDepth.SetDepthTarget(pDepthRT);
-		m_passCopyDepth.SetState(GS_DEPTHWRITE | GS_DEPTHFUNC_NOTEQUAL);
-		m_passCopyDepth.SetTexture(0, CRendererResources::s_ptexLinearDepthScaled[2]);
-		
-		m_passCopyDepth.BeginConstantUpdate();
-		m_passCopyDepth.Execute();
-	}
-
-	PROFILE_LABEL_SCOPE("TILED_VOLUMES");
-
-	GenerateLightVolumeInfo();
-	
 	SRenderViewInfo viewInfo[2];
 	size_t viewInfoCount = GetGraphicsPipeline().GenerateViewInfo(viewInfo);
 	

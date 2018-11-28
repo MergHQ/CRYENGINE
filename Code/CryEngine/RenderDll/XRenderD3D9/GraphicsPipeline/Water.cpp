@@ -8,6 +8,7 @@
 #include "GraphicsPipeline/WaterRipples.h"
 #include "GraphicsPipeline/VolumetricFog.h"
 #include "GraphicsPipeline/TiledLightVolumes.h"
+#include "GraphicsPipeline/TiledShading.h"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -431,10 +432,8 @@ void CWaterStage::ExecuteWaterVolumeCaustics()
 		}
 	}
 
-	const uint32 nBatchMask = pRenderView->GetBatchFlags(EFSLIST_WATER);
-
 	if (!isEmpty
-	    && (nBatchMask & FB_WATER_CAUSTIC)
+	    && pRenderView->HasRenderItems(EFSLIST_WATER, FB_WATER_CAUSTIC)
 	    && CTexture::IsTextureExist(CRendererResources::s_ptexWaterCaustics[0])
 	    && CTexture::IsTextureExist(CRendererResources::s_ptexWaterCaustics[1])
 	    && CRenderer::CV_r_watercaustics
@@ -456,7 +455,7 @@ void CWaterStage::ExecuteWaterVolumeCaustics()
 		if (causticInfo.m_pCausticQuadMesh)
 		{
 			// NOTE: this function is called instead in CDeferredShading::Render() when tiled deferred shading is disabled.
-			const bool bTiledDeferredShading = CRenderer::CV_r_DeferredShadingTiled >= 2;
+			const bool bTiledDeferredShading = CRenderer::CV_r_DeferredShadingTiled >= CTiledShadingStage::eDeferredMode_Enabled;
 			if (bTiledDeferredShading)
 			{
 				ExecuteDeferredWaterVolumeCaustics();
@@ -883,7 +882,7 @@ bool CWaterStage::CreatePipelineState(
 			psoDesc.m_RenderState = (psoDesc.m_RenderState & ~(GS_NODEPTHTEST | GS_DEPTHWRITE | GS_DEPTHFUNC_MASK));
 			psoDesc.m_RenderState = GS_DEPTHFUNC_LEQUAL;
 
-			if (CRenderer::CV_r_DeferredShadingTiled > 0)
+			if (CRenderer::CV_r_DeferredShadingTiled > CTiledShadingStage::eDeferredMode_Off)
 				psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_TILED_SHADING];
 
 			bWaterRipples = true;
@@ -900,7 +899,7 @@ bool CWaterStage::CreatePipelineState(
 			psoDesc.m_RenderState = (psoDesc.m_RenderState & ~(GS_NODEPTHTEST | GS_DEPTHWRITE | GS_DEPTHFUNC_MASK));
 			psoDesc.m_RenderState = GS_DEPTHFUNC_LEQUAL;
 
-			if (CRenderer::CV_r_DeferredShadingTiled > 0)
+			if (CRenderer::CV_r_DeferredShadingTiled > CTiledShadingStage::eDeferredMode_Off)
 				psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_TILED_SHADING];
 
 			bWaterRipples = true;
@@ -1375,32 +1374,6 @@ void CWaterStage::ExecuteOceanMaskGen()
 	ExecuteSceneRenderPass(m_passOceanMaskGen, ePass_OceanMaskGen, FB_GENERAL, 0, EFSLIST_WATER);
 }
 
-void CWaterStage::ExecuteDepthCopy()
-{
-	CRenderView* pRenderView = RenderView();
-
-	const int32 frameID = pRenderView->GetFrameId();
-	if (m_lastDepthCopyFrameID != frameID)
-	{
-		m_lastDepthCopyFrameID = frameID;
-
-		PROFILE_LABEL_SCOPE("COPY_DEPTH_HALF");
-
-		static CCryNameTSCRC techCopy("CopyToDeviceDepth");
-
-		m_passCopyDepth.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
-		m_passCopyDepth.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
-		m_passCopyDepth.SetTechnique(CShaderMan::s_shPostEffects, techCopy, 0);
-		m_passCopyDepth.SetRequirePerViewConstantBuffer(true);
-		m_passCopyDepth.SetDepthTarget(CRendererResources::s_ptexSceneDepthScaled[0]);
-		m_passCopyDepth.SetState(GS_DEPTHWRITE | GS_DEPTHFUNC_NOTEQUAL);
-		m_passCopyDepth.SetTexture(0, CRendererResources::s_ptexLinearDepthScaled[0]);
-
-		m_passCopyDepth.BeginConstantUpdate();
-		m_passCopyDepth.Execute();
-	}
-}
-
 void CWaterStage::ExecuteWaterVolumeCausticsGen(N3DEngineCommon::SCausticInfo& causticInfo)
 {
 	CRenderView* pRenderView = RenderView();
@@ -1454,8 +1427,6 @@ void CWaterStage::ExecuteWaterVolumeCausticsGen(N3DEngineCommon::SCausticInfo& c
 
 	// render water volumes to caustics gen texture.
 	{
-		ExecuteDepthCopy();
-
 		CTexture* pDepthRT = CRendererResources::s_ptexSceneDepthScaled[0];
 
 		auto& pass = m_passWaterCausticsSrcGen;
@@ -1577,14 +1548,8 @@ void CWaterStage::ExecuteReflection()
 {
 	CRenderView* pRenderView = RenderView();
 
-	const auto renderList = EFSLIST_WATER;
-	const uint32 batchMask = pRenderView->GetBatchFlags(renderList);
-
-	if ((batchMask & FB_WATER_REFL)
-		&& CTexture::IsTextureExist(CRendererResources::s_ptexWaterVolumeRefl[0]))
+	if (pRenderView->HasRenderItems(EFSLIST_WATER, FB_WATER_REFL))
 	{
-		ExecuteDepthCopy();
-
 		CTexture* pDepthRT = CRendererResources::s_ptexSceneDepthScaled[0];
 
 		PROFILE_LABEL_SCOPE("WATER_VOLUME_REFLECTION_GEN");
@@ -1627,7 +1592,7 @@ void CWaterStage::ExecuteSceneRenderPass(CSceneRenderPass& pass, uint32 stagePas
 {
 	CRenderView* pRenderView = RenderView();
 
-	if (pRenderView->GetRenderItems(renderList).size())
+	if (pRenderView->HasRenderItems(renderList, includeFilter))
 	{
 		auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 		pass.PrepareRenderPassForUse(commandList);

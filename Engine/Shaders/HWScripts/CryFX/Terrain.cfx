@@ -584,7 +584,7 @@ technique General
 	string Script =
 		"NoLights;"
 		"TechniqueZ=ZPass;"
-		"TechniqueZPrepass=ZPrepass;"
+		"TechniqueZPrepass=ZPrePass;"
 		"TechniqueShadowGen=ShadowGen;"
 		"TechniqueDebug=DebugPass;"
 >
