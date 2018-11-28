@@ -31,6 +31,8 @@ struct EDITOR_COMMON_API IEditableAsset
 	virtual void        SetSourceFile(const char* szFilepath) = 0;
 	virtual void        AddFile(const char* szFilepath) = 0;
 	virtual void        SetFiles(const std::vector<string>& filenames) = 0;
+	virtual void        AddWorkFile(const char* szFilepath) = 0;
+	virtual void        SetWorkFiles(const std::vector<string>& filenames) = 0;
 	virtual void        SetDetails(const std::vector<std::pair<string, string>>& details) = 0;
 	virtual void        SetDependencies(const std::vector<SAssetDependencyInfo>& dependencies) = 0;
 

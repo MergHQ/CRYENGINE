@@ -104,6 +104,9 @@ public:
 	//! The asset and the source file must be in the same folder. Therefore all the assets that use the same source file must be in one directory.
 	const string& GetSourceFile() const { return m_sourceFile; }
 
+	//! Returns paths to the work files (DCC files). The paths are relative to the assets root directory.
+	const std::vector<string>& GetWorkFiles() const { return m_workFiles; }
+
 	//! Opens the source file in a separate process
 	void OpenSourceFile() const;
 
@@ -205,6 +208,8 @@ private:
 	void SetSourceFile(const char* szFilepath);
 	void AddFile(const string& filePath);
 	void SetFiles(const std::vector<string>& filenames);
+	void AddWorkFile(const string& filePath);
+	void SetWorkFiles(const std::vector<string>& filenames);
 	void SetDetail(const string& name, const string& value);
 	void SetDependencies(const std::vector<SAssetDependencyInfo>& dependencies);
 
@@ -223,6 +228,7 @@ private:
 	const CryGUID       m_guid;
 	uint64              m_lastModifiedTime = 0;
 	std::vector<string> m_files;
+	std::vector<string> m_workFiles;
 	string				m_sourceFile;
 	string				m_metadataFile; //!< Unix path.
 	std::vector<std::pair<string, string>> m_details;

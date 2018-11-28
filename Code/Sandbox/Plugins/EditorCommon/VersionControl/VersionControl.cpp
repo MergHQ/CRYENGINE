@@ -43,8 +43,6 @@ struct EDITOR_COMMON_API SVersionControlPreferences : public SPreferencePage
 			vcs.UpdateAdapter();
 		}
 
-		CryLog("SVersionControlPreferences::Serialize VCS name: %s", vcsName);
-
 		if (!vcs.IsAvailable())
 		{
 			return true;

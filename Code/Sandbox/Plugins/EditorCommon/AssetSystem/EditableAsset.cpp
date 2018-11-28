@@ -56,6 +56,16 @@ void CEditableAsset::AddFile(const char* szFilepath)
 	m_asset.AddFile(szFilepath);
 }
 
+void CEditableAsset::SetWorkFiles(const std::vector<string>& filenames)
+{
+	m_asset.SetWorkFiles(filenames);
+}
+
+void CEditableAsset::AddWorkFile(const char* szFilepath)
+{
+	m_asset.AddWorkFile(szFilepath);
+}
+
 void CEditableAsset::SetDetails(const std::vector<std::pair<string, string>>& details)
 {
 	for (const std::pair<string, string>& detail : details)

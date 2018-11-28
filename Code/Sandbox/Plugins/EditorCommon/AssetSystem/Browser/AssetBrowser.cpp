@@ -20,6 +20,7 @@
 #include "AssetThumbnailsLoader.h"
 #include "AssetThumbnailsGenerator.h"
 #include "LineEditDelegate.h"
+#include "ManageWorkFilesDialog.h"
 
 #include "Controls/BreadcrumbsBar.h"
 #include "Controls/QuestionDialog.h"
@@ -54,6 +55,7 @@
 #include <QSplitter>
 #include <QToolButton>
 #include <QVariant>
+#include <QClipboard>
 
 REGISTER_VIEWPANE_FACTORY(CAssetBrowser, "Asset Browser", "Tools", false);
 
@@ -1929,7 +1931,10 @@ void CAssetBrowser::BuildContextMenuForAssets(const std::vector<CAsset*>& assets
 
 	if (assets.size() == 1)
 	{
-		CAsset* const pAsset = assets.front();
+		CAsset* pAsset = assets.front();
+
+		AddWorkFilesMenu(abstractMenu, pAsset);
+
 		const bool canBeRenamed = !isImmutable && pAsset->IsWritable(true);
 
 		auto action = abstractMenu.CreateAction(tr("Rename"));
@@ -1948,6 +1953,41 @@ void CAssetBrowser::BuildContextMenuForAssets(const std::vector<CAsset*>& assets
 	}
 
 	NotifyContextMenuCreation(abstractMenu, assets, folders);
+}
+
+void CAssetBrowser::AddWorkFilesMenu(CAbstractMenu& abstractMenu, CAsset* pAsset)
+{
+	auto pWorkFilesMenu = abstractMenu.CreateMenu(tr("Work Files"), abstractMenu.FindSectionByName("Assets"));
+	if (!pAsset->GetWorkFiles().empty())
+	{
+		int workFilesListSection = pWorkFilesMenu->GetNextEmptySection();
+		for (const string& workFile : pAsset->GetWorkFiles())
+		{
+			auto pWorkFileMenu = pWorkFilesMenu->CreateMenu(QtUtil::ToQString(PathUtil::GetFile(workFile)), workFilesListSection);
+			auto action = pWorkFileMenu->CreateAction(tr("Open..."));
+			connect(action, &QAction::triggered, [workFile]()
+			{
+				const string path = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), workFile);
+				QtUtil::OpenFileForEdit(path);
+			});
+
+			action = pWorkFileMenu->CreateAction(tr("Copy Path"));
+			connect(action, &QAction::triggered, [workFile]()
+			{
+				const string path = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), workFile);
+				QApplication::clipboard()->setText(QtUtil::ToQString(path));
+			});
+
+			action = pWorkFileMenu->CreateAction(tr("Show in File Explorer"));
+			connect(action, &QAction::triggered, [workFile]()
+			{
+				QtUtil::OpenInExplorer(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), workFile));
+			});
+		}
+	}
+	int workFilesManageSection = pWorkFilesMenu->GetNextEmptySection();
+	auto action = pWorkFilesMenu->CreateAction(tr("Manage Work Files..."), workFilesManageSection);
+	connect(action, &QAction::triggered, [this, pAsset]() { CManageWorkFilesDialog::ShowWindow(pAsset); });
 }
 
 void CAssetBrowser::NotifyContextMenuCreation(CAbstractMenu& menu, const std::vector<CAsset*>& assets, const std::vector<string>& folders) 

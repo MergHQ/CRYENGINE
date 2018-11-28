@@ -59,6 +59,8 @@ void AddAllAssets()
 		// filter out all files that are tracked leaving only not tracked.
 		metadataFiles.erase(std::remove_if(metadataFiles.begin(), metadataFiles.end(), [](const string& metadataFile)
 		{
+			if (metadataFile.empty())
+				return true;
 			const auto& fs = CVersionControl::GetInstance().GetFileStatus(metadataFile);
 			return fs && !fs->HasState(CVersionControlFileStatus::eState_NotTracked);
 		}), metadataFiles.end());

@@ -3,6 +3,12 @@
 #include "StdAfx.h"
 #include "QtUtil.h"
 
+// EditorCommon
+#include "EditorStyleHelper.h"
+#include "ProxyModels/MergingProxyModel.h"
+
+#include <CrySystem/ISystem.h>
+
 // Qt
 #include <QAbstractItemView>
 #include <QAbstractProxyModel>
@@ -17,12 +23,8 @@
 #include <QScrollArea>
 #include <QStandardPaths>
 #include <QWidget>
-
-// EditorCommon
-#include "EditorStyleHelper.h"
-#include "ProxyModels/MergingProxyModel.h"
-
-#include <CrySystem/ISystem.h>
+#include <QDesktopServices>
+#include <QUrl>
 
 namespace QtUtil
 {
@@ -190,15 +192,19 @@ EDITOR_COMMON_API void OpenInExplorer(const char* path)
 
 EDITOR_COMMON_API void OpenFileForEdit(const char* filePath)
 {
-#ifdef CRY_PLATFORM_WINDOWS
 	QFileInfo info(filePath);
-	if(info.exists())
-		QProcess::startDetached(filePath);
+	if (info.exists())
+	{
+		if (!QDesktopServices::openUrl(QUrl::fromLocalFile(filePath)))
+		{
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR,
+				"Could not open file %s. Might be some restrictions or other issues on your operating system", filePath);
+		}
+	}
 	else
+	{
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "File does not exist: %s", filePath);
-#else
-	#error //Need platform specific implementation
-#endif
+	}
 }
 
 EDITOR_COMMON_API void RecursiveInstallEventFilter(QWidget* pListener, QWidget* pWatched)

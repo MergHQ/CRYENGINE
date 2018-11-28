@@ -57,8 +57,11 @@ CAsset* CAssetFactory::CreateFromMetadata(const char* szAssetPath, const SAssetM
 	CEditableAsset editableAsset(*pAsset);
 	for (const string& filename : metadata.files)
 	{
-		const string filepath = PathUtil::Make(path, filename.c_str());
-		editableAsset.AddFile(filepath);
+		editableAsset.AddFile(PathUtil::Make(path, filename.c_str()));
+	}
+	for (const string& filename : metadata.workFiles)
+	{
+		editableAsset.AddWorkFile(filename.c_str());
 	}
 	editableAsset.SetMetadataFile(szAssetPath);
 	editableAsset.SetDetails(metadata.details);
