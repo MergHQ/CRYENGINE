@@ -12,11 +12,11 @@
 //   Instead, we should have one read-back texture with 4 staging resource for download.
 
 #include "StdAfx.h"
-#include "DepthReadback.h"
+#include "SceneDepth.h"
 #include "Common/ReverseDepth.h"
 #include "Common/PostProcess/PostProcessUtils.h"
 
-void CDepthReadbackStage::Init()
+void CSceneDepthStage::Init()
 {
 	if (!IsReadbackRequired())
 	{
@@ -34,10 +34,79 @@ void CDepthReadbackStage::Init()
 	ConfigurePasses(pSource, flags);
 }
 
-void CDepthReadbackStage::Execute()
+void CSceneDepthStage::Update()
+{
+	CTexture* pZTexture = RenderView()->GetDepthTarget();
+
+	// Clear depth (stencil initialized to STENCIL_VALUE_OUTDOORS)
+	if (CVrProjectionManager::Instance()->GetProjectionType() == CVrProjectionManager::eVrProjection_LensMatched)
+	{
+		// use inverse depth here
+		CClearSurfacePass::Execute(pZTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, 1.0f - Clr_FarPlane_Rev.r, STENCIL_VALUE_OUTDOORS);
+		CVrProjectionManager::Instance()->ExecuteLensMatchedOctagon(pZTexture);
+	}
+	else
+	{
+		CClearSurfacePass::Execute(pZTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, 0.0f + Clr_FarPlane_Rev.r, STENCIL_VALUE_OUTDOORS);
+	}
+}
+
+void CSceneDepthStage::Execute()
 {
 	FUNCTION_PROFILER_RENDERER();
 
+	ExecuteLinearization();
+	ExecuteReadback();
+}
+
+void CSceneDepthStage::ExecuteLinearization()
+{
+	PROFILE_LABEL_SCOPE("DEPTH REDUCTION");
+
+	CTexture* pZTexture = RenderView()->GetDepthTarget();
+	CTexture* pLTexture = CRendererResources::s_ptexLinearDepth;
+
+	// TODO: copy out pZTexture before binding to prevent decompression of the pZTexture in further use
+	m_LinearizePass.Execute(pZTexture, pLTexture);
+
+	// Depth downsampling
+	{
+#if CRY_PLATFORM_DURANGO
+		pLTexture = pZTexture;  // On Durango reading device depth is faster since it is in ESRAM
+#endif
+
+		m_DownSamplePasses[0].Execute(pLTexture,
+			CRendererResources::s_ptexLinearDepthScaled[0],
+			CRendererResources::s_ptexSceneDepthScaled [0], (pLTexture == pZTexture), true);
+
+		for (int res = 1; res < 3; ++res)
+			m_DownSamplePasses[res].Execute(
+				CRendererResources::s_ptexLinearDepthScaled[res - 1],
+				CRendererResources::s_ptexLinearDepthScaled[res],
+				CRendererResources::s_ptexSceneDepthScaled [res], false, false);
+	}
+
+	if (CVrProjectionManager::IsMultiResEnabledStatic())
+		CVrProjectionManager::Instance()->ExecuteFlattenDepth(pLTexture, CVrProjectionManager::Instance()->GetZTargetFlattened());
+
+	// Issue transition barriers for pZTexture
+	CTexture* pTextures[] = {
+		pZTexture,
+		pLTexture
+	};
+
+	CDeviceGraphicsCommandInterface* pCmdList = GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface();
+	pCmdList->BeginResourceTransitions(CRY_ARRAY_COUNT(pTextures), pTextures, eResTransition_TextureRead);
+}
+
+void CSceneDepthStage::ExecuteDelinearization()
+{
+	for (int res = 0; res < 3; ++res)
+		m_CopyDepthPasses[res].Execute(CRendererResources::s_ptexLinearDepthScaled[res], CRendererResources::s_ptexSceneDepthScaled[res]);
+}
+
+void CSceneDepthStage::ExecuteReadback()
+{
 	if (!IsReadbackRequired())
 	{
 		ReleaseResources();
@@ -76,7 +145,9 @@ void CDepthReadbackStage::Execute()
 	ExecutePasses((float)sourceWidth, (float)sourceHeight, sampledWidth, sampledHeight);
 }
 
-bool CDepthReadbackStage::IsReadbackRequired()
+// -------------------------------------------------------------------------------------------------
+
+bool CSceneDepthStage::IsReadbackRequired()
 {
 	// This function is not ideal, but for now we cannot get to e_* CVars on Initialize().
 	// So instead we keep retrying every frame instead until 3DEngine is alive.
@@ -99,7 +170,7 @@ bool CDepthReadbackStage::IsReadbackRequired()
 	return m_pCheckOcclusion->GetIVal() != 0 && m_pStatObjRenderTasks->GetIVal() != 0 && m_pCoverageBufferReproj->GetIVal() != 4;
 }
 
-CTexture* CDepthReadbackStage::GetInputTexture(EConfigurationFlags& flags)
+CTexture* CSceneDepthStage::GetInputTexture(EConfigurationFlags& flags)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
@@ -121,7 +192,7 @@ CTexture* CDepthReadbackStage::GetInputTexture(EConfigurationFlags& flags)
 	  : CRendererResources::s_ptexLinearDepth;
 }
 
-bool CDepthReadbackStage::CreateResources(uint32 sourceWidth, uint32 sourceHeight)
+bool CSceneDepthStage::CreateResources(uint32 sourceWidth, uint32 sourceHeight)
 {
 	CRY_ASSERT(sourceWidth != 0 && sourceHeight != 0 && "Bad input size requested");
 	bool bFailed = false;
@@ -220,7 +291,7 @@ bool CDepthReadbackStage::CreateResources(uint32 sourceWidth, uint32 sourceHeigh
 	return !bFailed;
 }
 
-void CDepthReadbackStage::ReleaseResources()
+void CSceneDepthStage::ReleaseResources()
 {
 	if (m_resourceWidth != 0 || m_resourceHeight != 0)
 	{
@@ -246,7 +317,7 @@ void CDepthReadbackStage::ReleaseResources()
 	}
 }
 
-void CDepthReadbackStage::ConfigurePasses(CTexture* pSource, EConfigurationFlags flags)
+void CSceneDepthStage::ConfigurePasses(CTexture* pSource, EConfigurationFlags flags)
 {
 	static const CCryNameTSCRC techniqueNameSimple("TextureToTextureResampled");
 	static const CCryNameTSCRC techniqueNameRegion("TextureToTextureResampledReg");
@@ -315,7 +386,7 @@ void CDepthReadbackStage::ConfigurePasses(CTexture* pSource, EConfigurationFlags
 	m_resourceFlags = flags;
 }
 
-void CDepthReadbackStage::ExecutePasses(float sourceWidth, float sourceHeight, float sampledWidth, float sampledHeight)
+void CSceneDepthStage::ExecutePasses(float sourceWidth, float sourceHeight, float sampledWidth, float sampledHeight)
 {
 	static const CCryNameR psParam0Name("texToTexParams0");
 	static const CCryNameR psParam1Name("texToTexParams1");
@@ -393,7 +464,7 @@ void CDepthReadbackStage::ExecutePasses(float sourceWidth, float sourceHeight, f
 	readback.zFar = viewInfo.farClipPlane;
 }
 
-void CDepthReadbackStage::ReadbackLatestData()
+void CSceneDepthStage::ReadbackLatestData()
 {
 	CRY_PROFILE_REGION(PROFILE_RENDERER, "CDepthReadbackStage::ReadbackLatestData");
 

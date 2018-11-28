@@ -1753,6 +1753,7 @@ enum ERenderListID : uint8
 	// Implicit lists which the renderer clones render-elements into conditionally
 	EFSLIST_PREPROCESS,              //!< Pre-process items.
 	EFSLIST_ZPREPASS,                //!< Items that are rendered into the z-prepass.
+	EFSLIST_ZPREPASS_NEAREST,        //!< Nearest z-prepass.
 	EFSLIST_CUSTOM,                  //!< Custom scene pass.
 	EFSLIST_HIGHLIGHT,               //!< Candidate for selection objects
 

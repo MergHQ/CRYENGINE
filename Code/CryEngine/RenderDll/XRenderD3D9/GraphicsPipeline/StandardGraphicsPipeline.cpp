@@ -5,6 +5,7 @@
 
 #include "ShadowMap.h"
 #include "SceneGBuffer.h"
+#include "SceneDepth.h"
 #include "SceneForward.h"
 #include "SceneCustom.h"
 #include "AutoExposure.h"
@@ -39,7 +40,6 @@
 #include "TiledLightVolumes.h"
 #include "DebugRenderTargets.h"
 
-#include "DepthReadback.h"
 #include "Common/TypedConstantBuffer.h"
 #include "Common/Textures/TextureHelpers.h"
 #include "Common/Include_HLSL_CPP_Shared.h"
@@ -131,7 +131,7 @@ void CStandardGraphicsPipeline::Init()
 	RegisterStage<CPostEffectStage            >(m_pPostEffectStage            , eStage_PostEffet);
 	RegisterStage<CRainStage                  >(m_pRainStage                  , eStage_Rain);
 	RegisterStage<CSnowStage                  >(m_pSnowStage                  , eStage_Snow);
-	RegisterStage<CDepthReadbackStage         >(m_pDepthReadbackStage         , eStage_DepthReadback);
+	RegisterStage<CSceneDepthStage            >(m_pSceneDepthStage            , eStage_SceneDepth);
 	RegisterStage<CMobileCompositionStage     >(m_pMobileCompositionStage     , eStage_MobileComposition);
 	RegisterStage<COmniCameraStage            >(m_pOmniCameraStage            , eStage_OmniCamera);
 	RegisterStage<CDebugRenderTargetsStage    >(m_pDebugRenderTargetsStage    , eStage_DebugRenderTargets);
@@ -153,9 +153,6 @@ void CStandardGraphicsPipeline::Init()
 	m_PostToFramePass .reset(new CStretchRectPass);
 	m_FrameToFramePass.reset(new CStretchRectPass);
 
-	m_LZSubResPass[0].reset(new CDepthDownsamplePass);
-	m_LZSubResPass[1].reset(new CDepthDownsamplePass);
-	m_LZSubResPass[2].reset(new CDepthDownsamplePass);
 	m_HQSubResPass[0].reset(new CStableDownsamplePass);
 	m_HQSubResPass[1].reset(new CStableDownsamplePass);
 	m_LQSubResPass[0].reset(new CStretchRectPass);
@@ -195,9 +192,6 @@ void CStandardGraphicsPipeline::ShutDown()
 	m_PostToFramePass.reset();
 	m_FrameToFramePass.reset();
 
-	m_LZSubResPass[0].reset();
-	m_LZSubResPass[1].reset();
-	m_LZSubResPass[2].reset();
 	m_HQSubResPass[0].reset();
 	m_HQSubResPass[1].reset();
 	m_LQSubResPass[0].reset();
@@ -871,25 +865,6 @@ void CStandardGraphicsPipeline::Execute()
 
 	// Wait for Shadow Map draw jobs to finish (also required for HeightMap AO and SVOGI)
 	renderItemDrawer.WaitForDrawSubmission();
-
-	if (CVrProjectionManager::IsMultiResEnabledStatic())
-		CVrProjectionManager::Instance()->ExecuteFlattenDepth(CRendererResources::s_ptexLinearDepth, CVrProjectionManager::Instance()->GetZTargetFlattened());
-
-	// Depth downsampling
-	{
-		CTexture* pSourceDepth = CRendererResources::s_ptexLinearDepth;
-
-#if CRY_PLATFORM_DURANGO
-		pSourceDepth = pZTexture;  // On Durango reading device depth is faster since it is in ESRAM
-#endif
-
-		m_LZSubResPass[0]->Execute(pSourceDepth, CRendererResources::s_ptexLinearDepthScaled[0], (pSourceDepth == pZTexture), true);
-		m_LZSubResPass[1]->Execute(CRendererResources::s_ptexLinearDepthScaled[0], CRendererResources::s_ptexLinearDepthScaled[1], false, false);
-		m_LZSubResPass[2]->Execute(CRendererResources::s_ptexLinearDepthScaled[1], CRendererResources::s_ptexLinearDepthScaled[2], false, false);
-	}
-
-	// Depth readback (for occlusion culling)
-	m_pDepthReadbackStage->Execute();
 
 	if (m_pDeferredDecalsStage->IsStageActive(m_renderingFlags))
 		m_pDeferredDecalsStage->Execute();

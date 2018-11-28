@@ -138,7 +138,7 @@ protected:
 	// Convert amounts to spawn counts for frame
 	virtual void GetSpawnCounts(CParticleComponentRuntime& runtime, TVarArray<float> amounts) const = 0;
 	
-	virtual void SpawnParticles(CParticleComponentRuntime& runtime, TDynArray<SSpawnEntry>& spawnEntries) override
+	virtual void SpawnParticles(CParticleComponentRuntime& runtime) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
@@ -193,6 +193,8 @@ protected:
 
 		GetSpawnCounts(runtime, amounts);
 
+		TDynArray<SSpawnEntry> spawnEntries;
+
 		for (uint i = 0; i < numInstances; ++i)
 		{
 			SSpawnData& spawnData = runtime.GetInstanceData(i, m_offsetSpawnData);
@@ -232,6 +234,8 @@ protected:
 
 			spawnData.m_timer += dT;
 		}
+
+		runtime.AddParticles(spawnEntries);
 	}
 
 	void StartInstances(CParticleComponentRuntime& runtime, SUpdateRange instanceRange, TConstArray<uint> instanceIndices)

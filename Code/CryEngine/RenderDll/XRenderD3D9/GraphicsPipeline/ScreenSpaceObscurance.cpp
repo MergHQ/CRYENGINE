@@ -2,9 +2,11 @@
 
 #include "StdAfx.h"
 #include "ScreenSpaceObscurance.h"
+
 #include "D3DPostProcess.h"
 #include "D3D_SVO.h"
-#include "HeightMapAO.h"
+#include "GraphicsPipeline/HeightMapAO.h"
+#include "GraphicsPipeline/TiledShading.h"
 
 struct ObscuranceConstants
 {
@@ -53,7 +55,7 @@ void CScreenSpaceObscuranceStage::Execute()
 		uint64 rtMask = 0;
 		rtMask |= CRenderer::CV_r_ssdoHalfRes ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
 		rtMask |= heightMapAO->GetHeightMapFrustum() ? g_HWSR_MaskBit[HWSR_SAMPLE1] : 0;
-		rtMask |= CRenderer::CV_r_DeferredShadingTiled == 4 ? g_HWSR_MaskBit[HWSR_SAMPLE2] : 0;
+		rtMask |= CRenderer::CV_r_DeferredShadingTiled == CTiledShadingStage::eDeferredMode_Disabled ? g_HWSR_MaskBit[HWSR_SAMPLE2] : 0;
 
 		// Extreme magnification as happening with small FOVs will cause banding issues with half-res depth
 		if (CRenderer::CV_r_ssdoHalfRes == 2 && RAD2DEG(RenderView()->GetCamera(CCamera::eEye_Left).GetFov()) < 30)

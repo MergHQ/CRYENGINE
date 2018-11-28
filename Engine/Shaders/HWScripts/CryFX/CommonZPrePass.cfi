@@ -1,26 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 
-// Lean zprepass for most expensive cases, skips tessellated geom
-
-struct vert2fragZPrepass
+vert2fragZPre Common_ZPrePassVS(app2vertZGeneral IN_common)
 {
-	OUT_HPOS_IN_WPOS
-#if %_RT_ALPHATEST
-	float4 baseTC     : TEXCOORDN;
-#endif
-};
-
-struct pixout_zprepass
-{
-#if (%_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1) && %_RT_ALPHATEST
-	uint uCoverageMask	: SV_Coverage;
-#endif
-};
-
-vert2fragZPrepass Common_ZPrepassVS(app2vertZGeneral IN_common)
-{
-	vert2fragZPrepass OUT = (vert2fragZPrepass)0;
+	vert2fragZPre OUT = (vert2fragZPre)0;
 
 	app2vertZGeneral IN = IN_common;
 #if %TEMP_TERRAIN
@@ -31,9 +14,19 @@ vert2fragZPrepass Common_ZPrepassVS(app2vertZGeneral IN_common)
 	streamPos_FromZ(IN, vertPassPos);
 	
 #if %TEMP_TERRAIN
-	OUT.HPosition = Pos_VS_Terrain(0.0005f, g_VS_ViewProjZeroMatr, vertPassPos);
+	float4 HPosition = Pos_VS_Terrain(0.0005f, g_VS_ViewProjZeroMatr, vertPassPos);
 #else  
-	OUT.HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);
+	float4 HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);
+#endif
+
+	float3 vPos = vertPassPos.WorldPos.xyz;
+
+#if ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION
+	//relative position
+	OUT.vView.xyz = vPos.xyz;
+	OUT.vNormal.xyz = normalize(mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.Normal.xyz));
+#else
+	OUT.HPosition = HPosition;
 #endif
 
 #if %_RT_ALPHATEST	
@@ -71,9 +64,9 @@ vert2fragZPrepass Common_ZPrepassVS(app2vertZGeneral IN_common)
 	return OUT;
 }
 
-pixout_zprepass Common_ZPrepassPS(vert2fragZPrepass IN)
+pixout_zpre Common_ZPrePassPS(vert2fragZPre IN)
 {
-	pixout_zprepass OUT = (pixout_zprepass) 0;
+	pixout_zpre OUT = (pixout_zpre) 0;
 
 #if %_RT_ALPHATEST
 	half diffuseMapAlpha = GetAlphaTex(diffuseTex, IN.baseTC.xy);
@@ -89,12 +82,21 @@ pixout_zprepass Common_ZPrepassPS(vert2fragZPrepass IN)
 	return OUT;
 }
 
-technique ZPrepass
+#include "CommonZPrePassTess.cfi"
+
+//////////////////////////////// technique ////////////////
+
+technique ZPrePass
 {
 	pass p0
 	{
-		VertexShader = Common_ZPrepassVS() ZVS;
-		PixelShader = Common_ZPrepassPS() ZPS;
+		VertexShader = Common_ZPrePassVS() ZVS;
+#if ENABLE_TESSELLATION
+		HullShader   = Common_ZPrePassHS() GeneralHS;
+		DomainShader = Common_ZPrePassDS() GeneralDS;
+#endif
+
+		PixelShader = Common_ZPrePassPS() ZPS;
 		GeometryShader = $AutoGS_MultiRes();
 
 		ZEnable = true;

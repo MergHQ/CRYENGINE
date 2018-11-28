@@ -56,7 +56,7 @@ void CTiledShadingStage::Execute()
 	
 	bool bSeparateCullingPass = tiledLights->IsSeparateVolumeListGen();
 	
-	if (CRenderer::CV_r_DeferredShadingTiled == 4 || CRenderer::CV_r_GraphicsPipelineMobile)
+	if (CRenderer::CV_r_DeferredShadingTiled == eDeferredMode_Disabled || CRenderer::CV_r_GraphicsPipelineMobile)
 		return;
 	
 	uint64 rtFlags = 0;

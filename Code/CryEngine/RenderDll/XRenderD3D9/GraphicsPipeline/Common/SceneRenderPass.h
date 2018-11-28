@@ -79,8 +79,8 @@ protected:
 	EShaderTechniqueID       m_technique;
 	uint32                   m_stageID : 16;
 	uint32                   m_passID  : 16;
-	uint32                   m_batchFilter;
-	uint32                   m_excludeFilter;
+	uint32                   m_batchIncludeFilter;
+	uint32                   m_batchExcludeFilter;
 	EPassFlags               m_passFlags;
 
 	uint32                   m_numRenderItemGroups;

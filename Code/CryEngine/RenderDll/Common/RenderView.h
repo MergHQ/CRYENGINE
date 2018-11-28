@@ -211,8 +211,19 @@ public:
 
 	CCamera::EEye  GetCurrentEye() const;
 
-	RenderItems& GetRenderItems(int nRenderList);
-	uint32       GetBatchFlags(int nRenderList) const;
+	RenderItems&  GetRenderItems(ERenderListID renderList)
+	{
+		CRY_ASSERT(m_usageMode != eUsageModeWriting || renderList == EFSLIST_PREPROCESS); // While writing we must not read back items.
+		return m_renderItems[renderList];
+	}
+
+	bool          HasRenderItems(ERenderListID renderList, uint32 includeFilter)
+	{
+		return SRendItem::TestCombinedBatchFlags(GetBatchFlags(renderList), includeFilter);
+	}
+
+	uint32        GetBatchFlags(ERenderListID renderList) const { return m_batchFlags[renderList]; }
+	ERenderListID GetRecordingRenderList(ERenderListID nRenderListOrSide) const { return IsShadowGenView() ? EFSLIST_SHADOW_GEN : nRenderListOrSide; }
 
 	void         AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem, ERenderListID renderList, uint32 nBatchFlags, const SRenderingPassInfo& passInfo,
 							   SRendItemSorter sorter) threadsafe;
@@ -221,14 +232,10 @@ public:
 	void       AddPermanentObjectImpl(CPermanentRenderObject* pObject, const SRenderingPassInfo& passInfo);
 
 	ItemsRange GetItemsRange(ERenderListID renderList);
-	ERenderListID GetRecordingRenderList(ERenderListID nRenderListOrSide) const { return IsShadowGenView() ? EFSLIST_SHADOW_GEN : nRenderListOrSide; }
-
-	// Find render item index in the sorted list, after when object flag changes.
-	int FindRenderListSplit(ERenderListID list, uint32 objFlag);
 
 	// Find render item index in the sorted list according to arbitrary criteria.
 	template<typename T>
-	int        FindRenderListSplit(T predicate, ERenderListID list, int first, int last);
+	int        FindRenderListSplit(T predicate, ERenderListID list, int first = 0, int end = 0x7FFFFFFF);
 
 	void       PrepareForRendering();
 	void       PrepareForWriting();
@@ -587,17 +594,18 @@ public:
 };
 
 template<typename T>
-inline int CRenderView::FindRenderListSplit(T predicate, ERenderListID list, int first, int last)
+inline int CRenderView::FindRenderListSplit(T predicate, ERenderListID renderList, int first, int end)
 {
 	FUNCTION_PROFILER_RENDERER();
 
-	// Binary search, assumes that the sub-region of the list is sorted by the predicate already
-	RenderItems& renderItems = GetRenderItems(list);
+	// Binary search, assumes that list is sorted by objFlag
+	auto& renderItems = GetRenderItems(renderList);
+	int size = renderItems.size();
 
-	assert(first >= 0 && (first < renderItems.size()));
-	assert(last >= 0 && (last <= renderItems.size()));
+	end   = std::min<int>(end,  size);
+	first = std::min<int>(first, end);
 
-	--last;
+	int last = end - 1;
 	while (first <= last)
 	{
 		int middle = (first + last) / 2;

@@ -6313,8 +6313,7 @@ bool C3DEngine::IsTessellationAllowed(const CRenderObject* pObj, const SRenderin
 	GetRenderer()->EF_Query(EFQ_MeshTessellation, rendererTessellation);
 	if (pObj->m_fDistance < GetCVars()->e_TessellationMaxDistance
 	    && GetCVars()->e_Tessellation
-	    && rendererTessellation
-	    && !(pObj->m_ObjFlags & FOB_DISSOLVE)) // dissolve is not working with tessellation for now
+	    && rendererTessellation)
 	{
 		bool bAllowTessellation = true;
 

@@ -23,7 +23,7 @@ struct v2f_sh
 
 	#if ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION
 		float4 vView     : TEXCOORDN;	// For shadow gen this is world position
-		half4 vNormal    : TEXCOORDN;
+		float4 vNormal   : TEXCOORDN;
 	#endif
 
 	#if (ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION) || %_RT_ALPHATEST || %_RT_ALPHABLEND || %_RT_SAMPLE4
@@ -35,7 +35,7 @@ struct v2f_sh
 	#endif
 
 	#if (!ENABLE_TESSELLATION || %_RT_NO_TESSELLATION) && %_RT_SAMPLE4
-		half3 Normal  : TEXCOORDN;
+		float3 Normal  : TEXCOORDN;
 		float2 Depth2  : TEXCOORDN;
 	#endif
 };
@@ -59,7 +59,7 @@ struct vert2FragGeneral
 #endif  
 
 #if ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION
-  half4 vNormal    : TEXCOORDN;
+  float4 vNormal    : TEXCOORDN;
 #endif
 
 #if %VERTCOLORS || %DIRTLAYER || %BLENDLAYER
@@ -94,14 +94,13 @@ struct vert2fragZ
 
 #if (!%GRASS && !%TEMP_TERRAIN) || %_RT_ALPHABLEND 
 	// Every mesh outputs tangent space. Grass and base terrain are particular cases, they just output normal
-	half4 vTangent   : TEXCOORDN;
-	half4 vBinormal  : TEXCOORDN;
+	float4 vTangent   : TEXCOORDN;
+	float4 vBinormal  : TEXCOORDN;
 #endif
-	half4 vNormalWS   : TEXCOORDN;
-
+	float4 vNormalWS   : TEXCOORDN;
 
 #if %VERTCOLORS || %DIRTLAYER || %BLENDLAYER 
-	half4 Color      : COLOR0;
+	float4 Color      : COLOR0;
 #endif
 
 #if %TEMP_TERRAIN || (%TEMP_VEGETATION && %_RT_BLEND_WITH_TERRAIN_COLOR)
@@ -109,13 +108,13 @@ struct vert2fragZ
 #endif
 
 #if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING || %PARALLAX_OCCLUSION_MAPPING || %OFFSET_BUMP_MAPPING || %_RT_ALPHABLEND || %TEMP_EYES || %LEAVES || %GRASS
-	half3 viewTS   : TEXCOORDN;
+	float3 viewTS   : TEXCOORDN;
 #endif
 
 	// deferred shading tdb: double check tessellation paths if all correct
 #if ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION
 	float4 vView     : TEXCOORDN;
-	float4 vNormal     : TEXCOORDN;
+	float4 vNormal   : TEXCOORDN;
 #endif
 
 #if %_RT_MOTION_BLUR && !%_RT_ALPHABLEND
@@ -124,6 +123,21 @@ struct vert2fragZ
 
 #if !%TEMP_TERRAIN && !%SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
 	FRONT_FACE_PS
+#endif
+};
+
+struct vert2fragZPre
+{
+	OUT_HPOS_IN_WPOS
+
+#if %_RT_ALPHATEST
+	float4 baseTC     : TEXCOORDN;
+#endif
+
+	// deferred shading tdb: double check tessellation paths if all correct
+#if ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION
+	float4 vView      : TEXCOORDN;
+	float4 vNormal    : TEXCOORDN;
 #endif
 };
 

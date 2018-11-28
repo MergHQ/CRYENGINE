@@ -292,7 +292,7 @@ int CRendererCVars::CV_r_meshinstancepoolsize;
 
 AllocateConstIntCVar(CRendererCVars, CV_r_ZPassDepthSorting);
 float CRendererCVars::CV_r_ZPrepassMaxDist;
-int CRendererCVars::CV_r_usezpass;
+int CRendererCVars::CV_r_UseZPass;
 
 AllocateConstIntCVar(CRendererCVars, CV_r_TransparentPasses);
 int CRendererCVars::CV_r_TranspDepthFixup;
@@ -1275,12 +1275,14 @@ void CRendererCVars::InitCVars()
 	               "Set ZPrepass max dist.\n"
 	               "Usage: r_ZPrepassMaxDist (16.0f default) [distance in meters]\n");
 
-	REGISTER_CVAR3("r_UseZPass", CV_r_usezpass, 2, VF_DUMPTODISK | VF_RENDERER_CVAR,
+	REGISTER_CVAR3("r_UseZPass", CV_r_UseZPass, 2, VF_DUMPTODISK | VF_RENDERER_CVAR,
 	               "Toggles g-buffer pass.\n"
-	               "Usage: r_UseZPass [0/1/2]\n"
+	               "Usage: r_UseZPass [0/1/2/3]\n"
 	               "0: Disable Z-pass (not recommended, this disables any g-buffer rendering)\n"
 	               "1: Enable Z-pass (g-buffer only)\n"
-	               "2: Enable Z-pass (g-buffer and additional Z-prepass)");
+	               "2: Enable Z-pass (g-buffer and additional Z-prepass)\n"
+	               "3: Enable Z-pass (g-buffer and additional Z-prepass with alpha-tested/dissolved objects)\n"
+	               "4: Enable Z-pass (g-buffer and additional Z-prepass containing all objects and producing an early depth-buffer)");
 
 	DefineConstIntCVar3("r_TransparentPasses", CV_r_TransparentPasses, 1, VF_NULL,
 	                    "Toggles rendering of transparent/alpha blended objects.\n");
@@ -1358,7 +1360,16 @@ void CRendererCVars::InitCVars()
 	               "Selects TAA sampling pattern.\n"
 	               "  0: no subsamples\n"
 	               "  1: optimal pattern for selected aa mode\n"
-	               "  2: 2x\n  3: 3x\n  4: regular 4x\n  5: rotated 4x\n  6: 8x\n  7: sparse grid 8x8\n  8: random\n  9: Halton 8x\n  10: Halton 16x\n  11: Halton random");
+	               "  2: 2x\n"
+	               "  3: 3x\n"
+	               "  4: regular 4x\n"
+	               "  5: rotated 4x\n"
+	               "  6: 8x\n"
+	               "  7: sparse grid 8x8\n"
+	               "  8: random\n"
+	               "  9: Halton 8x\n"
+	               "  10: Halton 16x\n"
+	               "  11: Halton random");
 
 	REGISTER_CVAR3("r_AntialiasingModeSCull", CV_r_AntialiasingModeSCull, 1, VF_NULL,
 	               "Enables post processed based aa modes stencil culling optimization\n");
@@ -2433,7 +2444,7 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_WaterReflectionsMinVisUpdateDistanceMul", CV_r_waterreflections_minvis_updatedistancemul, 10.0f, VF_DUMPTODISK,
 	               "Activates update distance multiplier when water mostly occluded.");
 
-	REGISTER_CVAR3("r_WaterCaustics", CV_r_watercaustics, 1, VF_RENDERER_CVAR,
+	REGISTER_CVAR3("r_WaterCaustics", CV_r_watercaustics, 1, VF_RENDERER_CVAR | VF_REQUIRE_APP_RESTART,
 	               "Toggles under water caustics.\n"
 	               "Usage: r_WaterCaustics [0/1]\n"
 	               "Default is 1 (enabled).");
@@ -2448,7 +2459,7 @@ void CRendererCVars::InitCVars()
 	               "Usage: r_WaterCausticsDeferred [0/1/2]\n"
 	               "Default is 0 (disabled). 1 - enables. 2 - enables with stencil pre-pass");
 
-	REGISTER_CVAR3("r_WaterVolumeCaustics", CV_r_watervolumecaustics, WATERVOLCAUSTICS_DEFAULT_VAL, VF_NULL,
+	REGISTER_CVAR3("r_WaterVolumeCaustics", CV_r_watervolumecaustics, WATERVOLCAUSTICS_DEFAULT_VAL, VF_RENDERER_CVAR | VF_REQUIRE_APP_RESTART,
 	               "Toggles advanced water caustics for watervolumes.\n"
 	               "Usage: r_WaterVolumeCaustics [0/1]\n"
 	               "Default is 0 (disabled). 1 - enables.");

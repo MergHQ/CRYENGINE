@@ -23,13 +23,13 @@ CSceneRenderPass::CSceneRenderPass()
 	SetLabel("SCENE_PASS");
 }
 
-void CSceneRenderPass::SetupDrawContext(uint32 stageID, uint32 stagePassID, EShaderTechniqueID technique, uint32 filter, uint32 excludeFilter)
+void CSceneRenderPass::SetupDrawContext(uint32 stageID, uint32 stagePassID, EShaderTechniqueID technique, uint32 includeFilter, uint32 excludeFilter)
 {
 	m_stageID = stageID;
 	m_passID = stagePassID;
 	m_technique = technique;
-	m_batchFilter = filter;
-	m_excludeFilter = excludeFilter;
+	m_batchIncludeFilter = includeFilter;
+	m_batchExcludeFilter = excludeFilter;
 }
 
 void CSceneRenderPass::SetPassResources(CDeviceResourceLayoutPtr pResourceLayout, CDeviceResourceSetPtr pPerPassResources)
@@ -347,6 +347,7 @@ const char* RenderListNames[] =
 
 	"PREPROCESS",
 	"NON-NEAREST",
+	"NEAREST",
 	"CUSTOM",
 	"HIGHLIGHT",
 };
@@ -361,13 +362,15 @@ void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID r
 
 	// Skip nearest objects lists
 	const bool bNearest =
+		(renderList == EFSLIST_ZPREPASS_NEAREST) ||
 		(renderList == EFSLIST_NEAREST_OBJECTS) ||
 		(renderList == EFSLIST_FORWARD_OPAQUE_NEAREST) ||
 		(renderList == EFSLIST_TRANSP_NEAREST);
 	if (bNearest && (CRenderer::CV_r_nodrawnear == 1) && (m_passFlags & CSceneRenderPass::ePassFlags_RenderNearest))
 		return;
 
-	if (m_batchFilter != FB_MASK && !(pRenderView->GetBatchFlags(renderList) & m_batchFilter))
+	// Skip processing if all elements are filtered away
+	if (!pRenderView->HasRenderItems(renderList, m_batchIncludeFilter | FB_COMPILED_OBJECT))
 		return;
 
 	// Produce valid range of renderable items and skip processing when there are none
@@ -377,8 +380,8 @@ void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID r
 	if (listStart >= listEnd)
 		return;
 
-	CryStackStringT<char, 80> label; label.Format("%s%s (%s)", m_batchFilter & FB_Z ? "Z " : "", GetLabel(), RenderListNames[pRenderView->GetRecordingRenderList(renderList)]);
-	SGraphicsPipelinePassContext passContext(pRenderView, this, m_technique, m_batchFilter, m_excludeFilter);
+	CryStackStringT<char, 80> label; label.Format("%s%s (%s)", m_batchIncludeFilter & FB_Z ? "Z " : "", GetLabel(), RenderListNames[pRenderView->GetRecordingRenderList(renderList)]);
+	SGraphicsPipelinePassContext passContext(pRenderView, this, m_technique, m_batchIncludeFilter, m_batchExcludeFilter);
 	passContext.stageID = m_stageID;
 	passContext.passID = m_passID;
 	passContext.renderNearest = bNearest && (m_passFlags & CSceneRenderPass::ePassFlags_RenderNearest);

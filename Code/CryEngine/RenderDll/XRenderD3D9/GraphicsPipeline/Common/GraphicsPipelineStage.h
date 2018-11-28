@@ -25,9 +25,9 @@ struct SGraphicsPipelinePassContext
 {
 	SGraphicsPipelinePassContext() = default;
 
-	SGraphicsPipelinePassContext(CRenderView* renderView, CSceneRenderPass* pSceneRenderPass, EShaderTechniqueID technique, uint32 filter, uint32 excludeFilter)
+	SGraphicsPipelinePassContext(CRenderView* renderView, CSceneRenderPass* pSceneRenderPass, EShaderTechniqueID technique, uint32 includeFilter, uint32 excludeFilter)
 		: pSceneRenderPass(pSceneRenderPass)
-		, batchFilter(filter)
+		, batchIncludeFilter(includeFilter)
 		, batchExcludeFilter(excludeFilter)
 		, pRenderView(renderView)
 		, techniqueID(technique)
@@ -44,7 +44,7 @@ struct SGraphicsPipelinePassContext
 
 	CSceneRenderPass*  pSceneRenderPass;
 
-	uint32             batchFilter;
+	uint32             batchIncludeFilter;
 	uint32             batchExcludeFilter;
 
 	ERenderListID      renderListId = EFSLIST_INVALID;

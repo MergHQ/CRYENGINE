@@ -27,7 +27,7 @@ public:
 public:
 	bool IsStageActive(EShaderRenderingFlags flags) const final
 	{
-		return RenderView()->IsGlobalFogEnabled() && CRenderer::CV_r_usezpass != 0;
+		return RenderView()->IsGlobalFogEnabled() && CRenderer::CV_r_UseZPass != 0;
 	}
 
 	void Init() final;

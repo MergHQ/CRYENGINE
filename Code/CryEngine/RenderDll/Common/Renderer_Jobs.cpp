@@ -416,10 +416,10 @@ void CRenderer::GetFogVolumeContribution(uint16 idx, ColorF& rColor) const
 //////////////////////////////////////////////////////////////////////////
 uint32 CRenderer::EF_BatchFlags(SShaderItem& SH, CRenderObject* pObj, CRenderElement* re, const SRenderingPassInfo& passInfo, int nAboveWater)
 {
-
 	uint32 nFlags = SH.m_nPreprocessFlags & FB_MASK;
 	if (SH.m_nPreprocessFlags & FSPR_GENSPRITES)
 		nFlags |= FB_PREPROCESS;
+
 	SShaderTechnique* const __restrict pTech = SH.GetTechnique();
 	CShaderResources* const __restrict pR = (CShaderResources*)SH.m_pShaderResources;
 	CShader* const __restrict pS = (CShader*)SH.m_pShader;
@@ -439,7 +439,7 @@ uint32 CRenderer::EF_BatchFlags(SShaderItem& SH, CRenderObject* pObj, CRenderEle
 		if (!((nFlags & FB_Z) && (!(pObj->m_RState & OS_NODEPTH_WRITE) || (pS->m_Flags2 & EF2_FORCE_ZPASS))))
 			nFlags &= ~FB_Z;
 
-		if ((ObjFlags & FOB_DISSOLVE) || (ObjFlags & FOB_DECAL) || CRenderer::CV_r_usezpass != 2 || pObj->m_fDistance > CRenderer::CV_r_ZPrepassMaxDist)
+		if (ObjFlags & FOB_DECAL)
 			nFlags &= ~FB_ZPREPASS;
 
 		pObj->m_ObjFlags |= (nFlags & FB_ZPREPASS) ? FOB_ZPREPASS : 0;
@@ -519,7 +519,8 @@ uint32 CRenderer::EF_BatchFlags(SShaderItem& SH, CRenderObject* pObj, CRenderEle
 	else if (passInfo.IsRecursivePass() && pTech && m_RP.m_TI[passInfo.ThreadID()].m_PersFlags & RBPF_MIRRORCAMERA)
 	{
 		nFlags &= (FB_TRANSPARENT | FB_GENERAL);
-		nFlags |= FB_TRANSPARENT * uTransparent;                                      // if (pObj->m_fAlpha < 1.0f)                   nFlags |= FB_TRANSPARENT;
+		nFlags |= FB_TRANSPARENT * uTransparent;
+		// if (pObj->m_fAlpha < 1.0f) nFlags |= FB_TRANSPARENT;
 	}
 
 	{

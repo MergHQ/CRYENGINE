@@ -94,7 +94,8 @@
             "HWScripts/CryFX/CommonViewsPassTess.cfi",
             "HWScripts/CryFX/CommonZPass.cfi",
             "HWScripts/CryFX/CommonZPassTess.cfi",
-            "HWScripts/CryFX/CommonZPrePass.cfi"
+            "HWScripts/CryFX/CommonZPrePass.cfi",
+            "HWScripts/CryFX/CommonZPrePassTess.cfi"
         ],
         "CryFX/Misc": [
             "HWScripts/CryFX/AuxGeom.cfx",

@@ -705,8 +705,8 @@ technique General
 <
   string Script =
         "TechniqueZ=ZPass;"
-#if !%DECAL && !%SILHOUETTE_PARALLAX_OCCLUSION_MAPPING && !ENABLE_TESSELLATION
-				"TechniqueZPrepass=ZPrepass;"
+#if !%DECAL && !%SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+        "TechniqueZPrepass=ZPrePass;"
 #endif
         "TechniqueMotionBlur=MotionBlurPass;"
         "TechniqueCustomRender=CustomRenderPass;"
@@ -748,7 +748,7 @@ technique General
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if !%DECAL && !%SILHOUETTE_PARALLAX_OCCLUSION_MAPPING && !ENABLE_TESSELLATION
+#if !%DECAL && !%SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
 	#include "CommonZPrePass.cfi"
 #endif
 

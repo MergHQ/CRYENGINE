@@ -1005,7 +1005,7 @@ void CShadowMapStage::Execute()
 
 			curPass.PreRender();
 			curPass.BeginExecution();
-			curPass.SetupDrawContext(m_stageID, curPass.m_eShadowPassID, TTYPE_SHADOWGEN, FB_MASK);
+			curPass.SetupDrawContext(m_stageID, curPass.m_eShadowPassID, TTYPE_SHADOWGEN, 0);
 			curPass.DrawRenderItems(pShadowsView, (ERenderListID)curPass.m_nShadowFrustumSide);
 			curPass.EndExecution();
 
@@ -1029,7 +1029,7 @@ void CShadowMapStage::Execute()
 
 				curPass.PreRender();
 				curPass.BeginExecution();
-				curPass.SetupDrawContext(m_stageID, curPass.m_eShadowPassID, TTYPE_SHADOWGEN, FB_MASK);
+				curPass.SetupDrawContext(m_stageID, curPass.m_eShadowPassID, TTYPE_SHADOWGEN, 0);
 				curPass.DrawRenderItems(pShadowsView, (ERenderListID)curPass.m_nShadowFrustumSide);
 				curPass.EndExecution();
 			}

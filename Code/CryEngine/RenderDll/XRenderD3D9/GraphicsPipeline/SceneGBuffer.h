@@ -12,6 +12,15 @@ struct SGraphicsPipelineStateDescription;
 class CSceneGBufferStage : public CGraphicsPipelineStage
 {
 public:
+	enum EExecutionMode
+	{
+		eZPassMode_Off                = 0,
+		eZPassMode_GBufferOnly        = 1,
+		eZPassMode_PartialZPrePass    = 2,
+		eZPassMode_DiscardingZPrePass = 3,
+		eZPassMode_FullZPrePass       = 4
+	};
+
 	enum EPerPassTexture
 	{
 		ePerPassTexture_PerlinNoiseMap = 25,
@@ -26,16 +35,17 @@ public:
 
 	enum EPass
 	{
-		ePass_GBufferFill  = 0,
-		ePass_DepthPrepass = 1,
-		ePass_MicroGBufferFill = 2,
+		// limit: MAX_PIPELINE_SCENE_STAGE_PASSES
+		ePass_FullGBufferFill  = 0,
+		ePass_DepthBufferFill  = 1,
+		ePass_AttrGBufferFill  = 2,
+		ePass_MicroGBufferFill = 3,
 	};
 
 	CSceneGBufferStage();
 
 	void Init() final;
 	void Update() final;
-	void Prepare(bool bPostLinearize);
 
 	bool IsStageActive(EShaderRenderingFlags flags) const final
 	{
@@ -49,7 +59,6 @@ public:
 	void Execute();
 	void ExecuteMinimumZpass();
 	void ExecuteMicroGBuffer();
-	void ExecuteLinearizeDepth();
 	void ExecuteGBufferVisualization();
 
 	bool CreatePipelineStates(DevicePipelineStatesArray* pStateArray, const SGraphicsPipelineStateDescription& stateDesc, CGraphicsPipelineStateLocalCache* pStateCache);
@@ -76,6 +85,5 @@ private:
 	CSceneRenderPass         m_overlayPass;
 	CSceneRenderPass         m_microGBufferPass;
 
-	CFullscreenPass          m_passDepthLinearization;
 	CFullscreenPass          m_passBufferVisualization;
 };

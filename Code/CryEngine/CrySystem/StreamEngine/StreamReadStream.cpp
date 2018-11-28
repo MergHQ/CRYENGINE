@@ -106,7 +106,7 @@ void CReadStream::AbortShutdown()
 		m_nIOError = ERROR_ABORTED_ON_SHUTDOWN;
 		m_bFileRequestComplete = true;
 
-		if (!m_pFileRequest)
+		if (m_pFileRequest)
 			CryFatalError("File request still exists");
 	}
 

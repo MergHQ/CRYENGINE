@@ -40,7 +40,7 @@ class CPostEffectStage;
 class CRainStage;
 class CSnowStage;
 class COmniCameraStage;
-class CDepthReadbackStage;
+class CSceneDepthStage;
 class CMobileCompositionStage;
 class CDebugRenderTargetsStage;
 class CCamera;
@@ -65,6 +65,7 @@ enum EStandardGraphicsPipelineStage
 	eStage_VolumetricClouds,
 
 	// Regular stages
+	eStage_SceneDepth, // TODO: pure compute
 	eStage_HeightMapAO,
 	eStage_ScreenSpaceObscurance,
 	eStage_ScreenSpaceReflections,
@@ -88,7 +89,6 @@ enum EStandardGraphicsPipelineStage
 	eStage_PostEffet,
 	eStage_Rain,
 	eStage_Snow,
-	eStage_DepthReadback,
 	eStage_MobileComposition,
 	eStage_OmniCamera,
 	eStage_DebugRenderTargets,
@@ -160,7 +160,7 @@ public:
 	CWaterRipplesStage*       GetWaterRipplesStage()             const { return m_pWaterRipplesStage; }
 	CWaterStage*              GetWaterStage()                    const { return m_pWaterStage; }
 	CLensOpticsStage*         GetLensOpticsStage()               const { return m_pLensOpticsStage; }
-	CDepthReadbackStage*      GetDepthReadbackStage()            const { return m_pDepthReadbackStage; }
+	CSceneDepthStage*         GetSceneDepthStage()               const { return m_pSceneDepthStage; }
 	COmniCameraStage*         GetOmniCameraStage()               const { return m_pOmniCameraStage; }
 	CDebugRenderTargetsStage* GetDebugRenderTargetsStage()       const { return m_pDebugRenderTargetsStage; }
 
@@ -203,7 +203,7 @@ private:
 	CPostEffectStage*             m_pPostEffectStage = nullptr;
 	CRainStage*                   m_pRainStage = nullptr;
 	CSnowStage*                   m_pSnowStage = nullptr;
-	CDepthReadbackStage*          m_pDepthReadbackStage = nullptr;
+	CSceneDepthStage*             m_pSceneDepthStage = nullptr;
 	CMobileCompositionStage*      m_pMobileCompositionStage = nullptr;
 	COmniCameraStage*             m_pOmniCameraStage = nullptr;
 	CDebugRenderTargetsStage*     m_pDebugRenderTargetsStage = nullptr;
@@ -229,7 +229,6 @@ private:
 	std::unique_ptr<CStretchRectPass       > m_PostToFramePass;
 	std::unique_ptr<CStretchRectPass       > m_FrameToFramePass;
 
-	std::unique_ptr<CDepthDownsamplePass   > m_LZSubResPass[3];
 	std::unique_ptr<CStableDownsamplePass  > m_HQSubResPass[2];
 	std::unique_ptr<CStretchRectPass       > m_LQSubResPass[2];
 

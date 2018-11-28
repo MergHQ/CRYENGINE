@@ -113,9 +113,21 @@ struct CRY_ALIGN(32) SRendItem
 
 	/////////////////////////////////////////////////////////////////////
 
+	static inline bool TestIndividualBatchFlags(uint32 batchFlags, uint32 batchIncludeFilter, uint32 batchExcludeFilter)
+	{
+		// The tested field must have all included, and must _not_ have any excluded flags
+		return (((batchFlags & batchIncludeFilter) | (batchFlags & batchExcludeFilter)) == batchIncludeFilter);
+	}
+
+	static inline bool TestCombinedBatchFlags(uint32 batchFlags, uint32 batchIncludeFilter)
+	{
+		// The tested field must have all included (the exclusion can't be tested on the combined bitfield)
+		return (((batchFlags & batchIncludeFilter)) == batchIncludeFilter);
+	}
+
 	static inline bool TestIndividualObjFlag(uint32 objFlag, uint32 objIncludeFilter)
 	{
-		return ((objFlag & objIncludeFilter) != 0);
+		return ((objFlag & objIncludeFilter) == objIncludeFilter);
 	}
 
 	/////////////////////////////////////////////////////////////////////
@@ -129,6 +141,24 @@ struct CRY_ALIGN(32) SRendItem
 	// Special sorting for ZPass (compromise between depth and batching)
 	static void mfSortForZPass(SRendItem* First, int Num, bool bZPre);
 	static void mfSortForDepthPass(SRendItem* First, int Num);
+};
+
+struct CMotionBlurPredicate
+{
+	bool operator() (SRendItem& item)
+	{
+		// Assumes not set flags in order before set flags
+		return SRendItem::TestIndividualObjFlag(item.ObjSort, FOB_HAS_PREVMATRIX) == 0;
+	}
+};
+
+struct CZPrePassPredicate
+{
+	bool operator() (SRendItem& item)
+	{
+		// Assumes not set flags in order before set flags
+		return SRendItem::TestIndividualObjFlag(item.ObjSort, FOB_ZPREPASS) == 0;
+	}
 };
 
 //==================================================================

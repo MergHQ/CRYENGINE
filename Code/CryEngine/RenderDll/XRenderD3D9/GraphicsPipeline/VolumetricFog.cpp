@@ -6,6 +6,8 @@
 #include "D3DPostProcess.h"
 #include "GraphicsPipeline/ClipVolumes.h"
 #include "GraphicsPipeline/TiledLightVolumes.h"
+#include "GraphicsPipeline/TiledShading.h"
+#include "GraphicsPipeline/SceneGBuffer.h"
 #include "Common/ReverseDepth.h"
 
 //////////////////////////////////////////////////////////////////////////
@@ -131,9 +133,9 @@ AABB vfRotateAABB(const AABB& aabb, const Matrix33& mat)
 
 bool CVolumetricFogStage::IsEnabledInFrame()
 {
-	bool v = CRenderer::CV_r_DeferredShadingTiled > 0
+	bool v = CRenderer::CV_r_DeferredShadingTiled > CTiledShadingStage::eDeferredMode_Off
 	         && CRenderer::CV_r_DeferredShadingTiledDebug != 2
-	         && CRenderer::CV_r_usezpass != 0
+	         && CRenderer::CV_r_UseZPass != CSceneGBufferStage::eZPassMode_Off
 	         && CRenderer::CV_r_measureoverdraw == 0;
 
 	return v;

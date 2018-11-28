@@ -1,0 +1,71 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
+#if ENABLE_TESSELLATION
+
+///////////////// hull shader //////////////////
+
+HS_CONSTANT_DATA_OUTPUT ZPrePassConstantsHS(InputPatch<vert2fragZPre, 3> p, uint PatchID : SV_PrimitiveID)
+{
+	const float3 vP0 = p[0].vView.xyz + g_VS_WorldViewPos.xyz;
+	const float3 vP1 = p[1].vView.xyz + g_VS_WorldViewPos.xyz;
+	const float3 vP2 = p[2].vView.xyz + g_VS_WorldViewPos.xyz;
+	HS_CONSTANT_DATA_OUTPUT output = CommonConstantsHS(vP0, vP1, vP2, g_VS_WorldViewPos.xyz, g_VS_WorldViewPos.xyz, PatchID);
+
+	return output;
+}
+
+[domain("tri")]
+[partitioning("fractional_odd")]
+[outputtopology("triangle_cw")]
+[outputcontrolpoints(3)]
+[patchconstantfunc("ZPrePassConstantsHS")]
+[maxtessfactor(MAX_TESS_FACTOR)]
+HS_CONTROL_POINT_OUTPUT_ZPREPASS Common_ZPrePassHS(InputPatch<vert2fragZPre, 3> inputPatch, uint uCPID : SV_OutputControlPointID)
+{
+	HS_CONTROL_POINT_OUTPUT_ZPREPASS	output = (HS_CONTROL_POINT_OUTPUT_ZPREPASS)0;
+
+	output.controlPoint.vView   = inputPatch[uCPID].vView;
+	output.controlPoint.vNormal = inputPatch[uCPID].vNormal;
+
+#if %_RT_ALPHATEST
+	output.controlPoint.vBaseTC = inputPatch[uCPID].baseTC;
+#endif
+
+	return output;
+}
+
+///////////////// domain shader //////////////////
+
+void FillEvalInput_ZPrePass(in const OutputPatch<HS_CONTROL_POINT_OUTPUT_ZPREPASS, 3> triPatch, in HS_CONSTANT_DATA_OUTPUT hsConstData, in float3 vBaryCoords, inout CommonEvaluationInputDS evalInput)
+{
+	evalInput.vBaryCoords = vBaryCoords;
+	FillEvalInputControlPoint(triPatch[0].controlPoint, triPatch[1].controlPoint, triPatch[2].controlPoint, hsConstData, evalInput);
+	evalInput.bRelativePos = true;
+	evalInput.vViewPos = g_VS_WorldViewPos.xyz;
+}
+
+void ProcessEvalOutput_ZPrePass(in CommonEvaluationOutputDS evalOutput, inout vert2fragZPre dsOutput)
+{
+#if %_RT_ALPHATEST
+	dsOutput.baseTC = evalOutput.vBaseTC;
+#endif
+
+	dsOutput.HPosition = mul(g_VS_ViewProjZeroMatr, float4(evalOutput.vPos.xyz, 1));
+}
+
+[domain("tri")]
+vert2fragZPre Common_ZPrePassDS( HS_CONSTANT_DATA_OUTPUT hsConstData, float3 vBaryCoords : SV_DomainLocation, const OutputPatch<HS_CONTROL_POINT_OUTPUT_ZPREPASS, 3> TrianglePatch )
+{
+	vert2fragZPre output = (vert2fragZPre)0;
+
+	CommonEvaluationInputDS evalInput = (CommonEvaluationInputDS)0;
+	FillEvalInput_ZPrePass(TrianglePatch, hsConstData, vBaryCoords, evalInput);
+
+	CommonEvaluationOutputDS evalOutput;
+	Evaluate(evalInput, evalOutput);
+	ProcessEvalOutput_ZPrePass(evalOutput, output);
+
+	return output;
+}
+
+#endif

@@ -26,8 +26,8 @@ void DrawCompiledRenderItemsToCommandList(
 	CRY_ASSERT(startRenderItem >= pInputPassContext->rendItems.start && endRenderItem <= pInputPassContext->rendItems.end);
 
 	const SGraphicsPipelinePassContext &passContext = *pInputPassContext;
-	const bool shouldIssueStartTimeStamp = startRenderItem == passContext.rendItems.start;
-	const bool shouldIssueEndTimeStamp = endRenderItem == passContext.rendItems.end;
+	const bool shouldIssueStartTimeStamp = startRenderItem == passContext.rendItems.start && (passContext.type != GraphicsPipelinePassType::resolve);
+	const bool shouldIssueEndTimeStamp   = endRenderItem   == passContext.rendItems.end   && (passContext.type != GraphicsPipelinePassType::resolve);
 	CTimeValue deltaTimestamp(0LL);
 
 	// Prepare command list
@@ -37,7 +37,9 @@ void DrawCompiledRenderItemsToCommandList(
 #if defined(ENABLE_PROFILING_CODE)
 	#if defined(ENABLE_SIMPLE_GPU_TIMERS)
 	{
-		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(passContext.profilerSectionIndex, true, 0, 0, shouldIssueStartTimeStamp, deltaTimestamp, commandList);
+		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(
+			passContext.profilerSectionIndex, true, 0,
+			0, shouldIssueStartTimeStamp, deltaTimestamp, commandList);
 		deltaTimestamp = gEnv->pTimer->GetAsyncTime();
 	}
 	#endif
@@ -60,8 +62,8 @@ void DrawCompiledRenderItemsToCommandList(
 		passContext.pSceneRenderPass->BeginRenderPass(*commandList, passContext.renderNearest); 
 
 		// Allow only compiled objects to actually draw
-		const uint32 alwaysRequiredFlags = FB_COMPILED_OBJECT;
-		const uint32 batchExcludeFilter = passContext.batchExcludeFilter | alwaysRequiredFlags;
+		const uint32 batchExcludeFilter = passContext.batchExcludeFilter;
+		const uint32 batchIncludeFilter = passContext.batchIncludeFilter | FB_COMPILED_OBJECT;
 
 		static const int cDynamicInstancingMaxCount = 128;
 		int dynamicInstancingCount = 0;
@@ -87,9 +89,9 @@ void DrawCompiledRenderItemsToCommandList(
 			}
 
 			const SRendItem& ri = (*renderItems)[i];
-			if ((ri.nBatchFlags & batchExcludeFilter) == alwaysRequiredFlags)
 			{
-				if (ri.nBatchFlags & passContext.batchFilter)
+				// If excludeFilter contains parts of includeFilter, it doesn't affect the result
+				if (SRendItem::TestIndividualBatchFlags(ri.nBatchFlags, batchIncludeFilter, batchExcludeFilter))
 				{
 					if (cvarInstancing && (i < e && dynamicInstancingCount < cDynamicInstancingMaxCount))
 					{
@@ -104,7 +106,8 @@ void DrawCompiledRenderItemsToCommandList(
 
 							// Look ahead to see if we can instance multiple sequential draw calls that have same draw parameters, with only difference in per instance constant buffer
 							const SRendItem& nextri = (*renderItems)[j];
-							if (nextri.nBatchFlags & (nextri.nBatchFlags & passContext.batchExcludeFilter ? 0 : passContext.batchFilter))
+							// If excludeFilter contains parts of includeFilter, it doesn't affect the result
+							if (SRendItem::TestIndividualBatchFlags(nextri.nBatchFlags, batchIncludeFilter, batchExcludeFilter))
 							{
 								if (ri.pCompiledObject->CheckDynamicInstancing(passContext, nextri.pCompiledObject))
 								{
@@ -157,7 +160,8 @@ void DrawCompiledRenderItemsToCommandList(
 	#if defined(ENABLE_SIMPLE_GPU_TIMERS)
 	{
 		deltaTimestamp = gEnv->pTimer->GetAsyncTime() - deltaTimestamp;
-		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(passContext.profilerSectionIndex, false, commandList->EndProfilingSection().numDIPs,
+		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(
+			passContext.profilerSectionIndex, false, commandList->EndProfilingSection().numDIPs,
 			commandList->EndProfilingSection().numPolygons, shouldIssueEndTimeStamp, deltaTimestamp, commandList);
 	}
 	#endif
@@ -214,12 +218,6 @@ DECLARE_JOB("ListDrawCommandRecorder", TListDrawCommandRecorder, ListDrawCommand
 void CRenderItemDrawer::DrawCompiledRenderItems(const SGraphicsPipelinePassContext& passContext) const
 {
 	if (passContext.type == GraphicsPipelinePassType::renderPass && passContext.rendItems.IsEmpty())
-		return;
-	if (CRenderer::CV_r_NoDraw == 2) // Completely skip filling of the command list.
-		return;
-
-	const bool bAllowRenderNearest = CRenderer::CV_r_nodrawnear == 0;
-	if (!bAllowRenderNearest && passContext.renderNearest)
 		return;
 
 	PROFILE_FRAME(DrawCompiledRenderItems);

@@ -94,19 +94,8 @@ void CParticleComponentRuntime::PreRun()
 	m_isPreRunning = true;
 
 	AddInstances();
-
-	static const uint MaxSamples = 16;
-	TDynArray<SSpawnEntry> spawnEntries;
-	GetComponent()->SpawnParticles(*this, spawnEntries);
-	uint numParticles = 0;
-	for (auto& spawn : spawnEntries)
-	{
-		numParticles += spawn.m_count;
-		spawn.m_count = min(spawn.m_count, MaxSamples);
-	}
-	m_container.AddParticles(spawnEntries);
-	UpdateNewBorns();
-	m_container.ResetSpawnedParticles();
+	GetComponent()->SpawnParticles(*this);
+	InitParticles();
 
 	CalculateBounds();
 	m_pEmitter->UpdatePhysEnv();
@@ -115,7 +104,7 @@ void CParticleComponentRuntime::PreRun()
 	CalculateBounds();
 	m_isPreRunning = false;
 
-	m_pComponent->OnPreRun(*this, numParticles);
+	m_pComponent->OnPreRun(*this);
 
 	m_deltaTime = -1.0f;
 }
@@ -157,13 +146,14 @@ void CParticleComponentRuntime::AddRemoveParticles()
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	CTimeProfiler profile(GetPSystem()->GetProfiler(), *this, EPS_NewBornTime);
 
+	m_container.BeginAddParticles();
 	RemoveParticles();
 	AgeUpdate();
 
 	AddInstances();
-	AddParticles();
-	UpdateNewBorns();
-	m_container.ResetSpawnedParticles();
+	if (GetNumInstances())
+		GetComponent()->SpawnParticles(*this);
+	InitParticles();
 }
 
 void CParticleComponentRuntime::UpdateParticles()
@@ -282,7 +272,7 @@ void CParticleComponentRuntime::GetEmitLocations(TVarArray<QuatTS> locations, ui
 void CParticleComponentRuntime::EmitParticle()
 {
 	SSpawnEntry spawn = {1, GetParentContainer().GetNumParticles()};
-	m_container.AddParticles({&spawn, 1});
+	AddParticles({&spawn, 1});
 	m_container.ResetSpawnedParticles();
 }
 
@@ -308,12 +298,91 @@ void CParticleComponentRuntime::AddInstances()
 	DebugStabilityCheck();
 }
 
-void CParticleComponentRuntime::AddParticles()
+void CParticleComponentRuntime::AddParticles(TConstArray<SSpawnEntry> spawnEntries)
 {
-	TDynArray<SSpawnEntry> spawnEntries;
-	if (GetNumInstances())
-		GetComponent()->SpawnParticles(*this, spawnEntries);
-	m_container.AddParticles(spawnEntries);
+	CRY_PFX2_PROFILE_DETAIL;
+
+	if (m_pGpuRuntime)
+	{
+		gpu_pfx2::SUpdateParams params;
+
+		params.emitterPosition    = m_pEmitter->GetLocation().t;
+		params.emitterOrientation = m_pEmitter->GetLocation().q;
+		params.physAccel          = m_pEmitter->GetPhysicsEnv().m_UniformForces.vAccel;
+		params.physWind           = m_pEmitter->GetPhysicsEnv().m_UniformForces.vWind;
+
+		GetComponent()->UpdateGPUParams(*this, params);
+
+		// Get data of parent particles
+		const auto& parentContainer = GetParentContainer();
+		IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
+		IVec3Stream parentVelocities = parentContainer.GetIVec3Stream(EPVF_Velocity);
+
+		THeapArray<SParentData> parentData(MemHeap(), parentContainer.GetNumParticles());
+
+		for (auto parentId : parentContainer.GetFullRange())
+		{
+			parentData[parentId].position = parentPositions.Load(parentId);
+			parentData[parentId].velocity = parentVelocities.Load(parentId);
+		}
+
+		m_pGpuRuntime->UpdateData(params, spawnEntries, parentData);
+		return;
+	}
+
+	const uint MaxSpawn = m_isPreRunning ? 16 : ~0;
+	uint newCount = 0;
+	for (const auto& spawnEntry : spawnEntries)
+		newCount += min(spawnEntry.m_count, MaxSpawn);
+	if (newCount == 0)
+		return;
+
+	uint32 spawnId = m_container.GetNextSpawnId();
+
+	m_container.AddParticles(newCount);
+
+	auto parentIds = m_container.IOStream(EPDT_ParentId);
+	auto spawnIds = m_container.IOStream(EPDT_SpawnId);
+	auto normAges = m_container.IOStream(EPDT_NormalAge);
+	auto fractions = m_container.IOStream(EPDT_SpawnFraction);
+
+	SUpdateRange range = m_container.GetSpawnedRange();
+	for (const auto& spawnEntry : spawnEntries)
+	{
+		uint entryCount = min(spawnEntry.m_count, MaxSpawn);
+		range.m_end = CRY_PFX2_GROUP_ALIGN(range.m_begin + entryCount);
+
+		if (parentIds.IsValid())
+		{
+			for (auto id : range)
+				parentIds[id] = spawnEntry.m_parentId;
+		}
+		if (spawnIds.IsValid())
+		{
+			for (auto id : range)
+				spawnIds[id] = spawnId++;
+		}
+		if (normAges.IsValid())
+		{
+			float age = spawnEntry.m_ageBegin;
+			for (auto id : range)
+			{
+				normAges[id] = max(age, 0.0f);
+				age += spawnEntry.m_ageIncrement;
+			}
+		}
+		if (fractions.IsValid())
+		{
+			float fraction = spawnEntry.m_fractionBegin;
+			for (auto id : range)
+			{
+				fractions[id] = min(fraction, 1.0f);
+				fraction += spawnEntry.m_fractionIncrement;
+			}
+		}
+
+		range.m_begin += entryCount;
+	}
 }
 
 void CParticleComponentRuntime::RemoveParticles()
@@ -358,81 +427,81 @@ void CParticleComponentRuntime::RemoveParticles()
 extern TDataType<Vec3> EPVF_ParentPosition;
 extern TDataType<Quat> EPQF_ParentOrientation;
 
-void CParticleComponentRuntime::UpdateNewBorns()
+void CParticleComponentRuntime::InitParticles()
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
 	if (!m_container.HasNewBorns())
 		return;
 
-	CParticleContainer& parentContainer = GetParentContainer();
-
-	// interpolate position and normAge over time and velocity
-	const IPidStream parentIds = m_container.GetIPidStream(EPDT_ParentId);
-	const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
-	const IVec3Stream parentVelocities = parentContainer.GetIVec3Stream(EPVF_Velocity);
-	const IQuatStream parentOrientations = parentContainer.GetIQuatStream(EPQF_Orientation, GetEmitter()->GetLocation().q);
-	const IVec3Stream parentAngularVelocities = parentContainer.GetIVec3Stream(EPVF_AngularVelocity);
-	const IFStream parentNormAges = parentContainer.GetIFStream(EPDT_NormalAge);
-	const IFStream parentLifeTimes = parentContainer.GetIFStream(EPDT_LifeTime);
-
-	IOVec3Stream parentPrevPositions = m_container.IOStream(EPVF_ParentPosition);
-	IOQuatStream parentPrevOrientations = m_container.IOStream(EPQF_ParentOrientation);
-
-	IOVec3Stream positions = m_container.GetIOVec3Stream(EPVF_Position);
-	IOQuatStream orientations = m_container.GetIOQuatStream(EPQF_Orientation);
-
-	IOFStream normAges = m_container.GetIOFStream(EPDT_NormalAge);
-	IFStream invLifeTimes = m_container.GetIFStream(EPDT_InvLifeTime);
-
-	const bool checkParentLife = IsChild();
-
 	GetComponent()->PreInitParticles(*this);
 
-	for (auto particleGroupId : SpawnedRangeV())
+	if (!ComponentParams().m_positionsPreInit)
 	{
-		// Convert absolute spawned particle age to normal age / life
-		floatv normAge = normAges.Load(particleGroupId);
-		floatv backTime = -normAge;
-		normAge *= invLifeTimes.Load(particleGroupId);
-		normAges.Store(particleGroupId, normAge);
+		CParticleContainer& parentContainer = GetParentContainer();
 
-		// Set initial position and orientation from parent
-		const uint32v parentGroupId = parentIds.Load(particleGroupId);
-		if (checkParentLife)
+		// interpolate position and normAge over time and velocity
+		const IPidStream parentIds = m_container.GetIPidStream(EPDT_ParentId);
+		const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
+		const IVec3Stream parentVelocities = parentContainer.GetIVec3Stream(EPVF_Velocity);
+		const IQuatStream parentOrientations = parentContainer.GetIQuatStream(EPQF_Orientation, GetEmitter()->GetLocation().q);
+		const IVec3Stream parentAngularVelocities = parentContainer.GetIVec3Stream(EPVF_AngularVelocity);
+		const IFStream parentNormAges = parentContainer.GetIFStream(EPDT_NormalAge);
+		const IFStream parentLifeTimes = parentContainer.GetIFStream(EPDT_LifeTime);
+
+		IOVec3Stream parentPrevPositions = m_container.IOStream(EPVF_ParentPosition);
+		IOQuatStream parentPrevOrientations = m_container.IOStream(EPQF_ParentOrientation);
+
+		IOVec3Stream positions = m_container.GetIOVec3Stream(EPVF_Position);
+		IOQuatStream orientations = m_container.GetIOQuatStream(EPQF_Orientation);
+
+		IOFStream normAges = m_container.GetIOFStream(EPDT_NormalAge);
+		IFStream lifeTimes = m_container.GetIFStream(EPDT_LifeTime);
+
+		const bool checkParentLife = IsChild();
+
+		for (auto particleGroupId : SpawnedRangeV())
 		{
-			const floatv parentNormAge = parentNormAges.SafeLoad(parentGroupId);
-			const floatv parentLifeTime = parentLifeTimes.SafeLoad(parentGroupId);
-			const floatv parentOverAge = max(parentNormAge * parentLifeTime - parentLifeTime, convert<floatv>());
-			backTime = min(backTime + parentOverAge, convert<floatv>());
-		}
+			// Convert absolute spawned particle age to normal age / life
+			floatv backTime = -normAges.Load(particleGroupId) * lifeTimes.Load(particleGroupId);
 
-		const Vec3v wParentPos = parentPositions.SafeLoad(parentGroupId);
-		const Vec3v wParentVel = parentVelocities.SafeLoad(parentGroupId);
-		const Vec3v wPosition = MAdd(wParentVel, backTime, wParentPos);
-		positions.Store(particleGroupId, wPosition);
-
-		if (m_container.HasData(EPVF_ParentPosition))
-			parentPrevPositions.Store(particleGroupId, wPosition);
-
-		if (m_container.HasData(EPQF_Orientation) || m_container.HasData(EPQF_ParentOrientation))
-		{
-			Quatv wParentQuat = parentOrientations.SafeLoad(parentGroupId);
-			if (m_container.HasData(EPVF_AngularVelocity))
+			// Set initial position and orientation from parent
+			const uint32v parentGroupId = parentIds.Load(particleGroupId);
+			if (checkParentLife)
 			{
-				const Vec3v parentAngularVelocity = parentAngularVelocities.SafeLoad(parentGroupId);
-				wParentQuat = AddAngularVelocity(wParentQuat, parentAngularVelocity, backTime);
+				const floatv parentNormAge = parentNormAges.SafeLoad(parentGroupId);
+				const floatv parentLifeTime = parentLifeTimes.SafeLoad(parentGroupId);
+				const floatv parentOverAge = max(parentNormAge * parentLifeTime - parentLifeTime, convert<floatv>());
+				backTime = min(backTime + parentOverAge, convert<floatv>());
 			}
-			if (m_container.HasData(EPQF_Orientation))
-				orientations.Store(particleGroupId, wParentQuat);
 
-			if (m_container.HasData(EPQF_ParentOrientation))
-				parentPrevOrientations.Store(particleGroupId, wParentQuat);
+			const Vec3v wParentPos = parentPositions.SafeLoad(parentGroupId);
+			const Vec3v wParentVel = parentVelocities.SafeLoad(parentGroupId);
+			const Vec3v wPosition = MAdd(wParentVel, backTime, wParentPos);
+			positions.Store(particleGroupId, wPosition);
+
+			if (m_container.HasData(EPVF_ParentPosition))
+				parentPrevPositions.Store(particleGroupId, wPosition);
+
+			if (m_container.HasData(EPQF_Orientation) || m_container.HasData(EPQF_ParentOrientation))
+			{
+				Quatv wParentQuat = parentOrientations.SafeLoad(parentGroupId);
+				if (m_container.HasData(EPVF_AngularVelocity))
+				{
+					const Vec3v parentAngularVelocity = parentAngularVelocities.SafeLoad(parentGroupId);
+					wParentQuat = AddAngularVelocity(wParentQuat, parentAngularVelocity, backTime);
+				}
+				if (m_container.HasData(EPQF_Orientation))
+					orientations.Store(particleGroupId, wParentQuat);
+
+				if (m_container.HasData(EPQF_ParentOrientation))
+					parentPrevOrientations.Store(particleGroupId, wParentQuat);
+			}
 		}
-	}
 
-	// neutral velocity
-	m_container.FillData(EPVF_Velocity, Vec3(0), SpawnedRange());
+		// neutral velocity
+		m_container.FillData(EPVF_Velocity, Vec3(0), SpawnedRange());
+	}
 
 	// initialize random
 	if (m_container.HasData(EPDT_Random))
@@ -483,6 +552,8 @@ void CParticleComponentRuntime::UpdateNewBorns()
 		GetComponent()->PastUpdateParticles(*this);
 	if (!m_isPreRunning)
 		m_deltaTime = -1.0f;
+
+	m_container.ResetSpawnedParticles();
 }
 
 void CParticleComponentRuntime::CalculateBounds()
@@ -554,34 +625,9 @@ void CParticleComponentRuntime::UpdateGPURuntime()
 	if (!m_pGpuRuntime)
 		return;
 
-	gpu_pfx2::SUpdateParams params;
-
-	params.emitterPosition    = m_pEmitter->GetLocation().t;
-	params.emitterOrientation = m_pEmitter->GetLocation().q;
-	params.physAccel          = m_pEmitter->GetPhysicsEnv().m_UniformForces.vAccel;
-	params.physWind           = m_pEmitter->GetPhysicsEnv().m_UniformForces.vWind;
-	
-	GetComponent()->UpdateGPUParams(*this, params);
-
 	AddInstances();
-	TDynArray<SSpawnEntry> spawnEntries;
 	if (GetNumInstances())
-		GetComponent()->SpawnParticles(*this, spawnEntries);
-
-	// Get data of parent particles
-	const auto& parentContainer = GetParentContainer();
-	IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
-	IVec3Stream parentVelocities = parentContainer.GetIVec3Stream(EPVF_Velocity);
-
-	THeapArray<SParentData> parentData(MemHeap(), parentContainer.GetNumParticles());
-
-	for (auto parentId : parentContainer.GetFullRange())
-	{
-		parentData[parentId].position = parentPositions.Load(parentId);
-		parentData[parentId].velocity = parentVelocities.Load(parentId);
-	}
-
-	m_pGpuRuntime->UpdateData(params, spawnEntries, parentData);
+		GetComponent()->SpawnParticles(*this);
 
 	// Accum stats
 	SParticleStats stats;
