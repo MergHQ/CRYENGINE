@@ -117,11 +117,6 @@ CVehicleCVars::~CVehicleCVars()
 
 	IConsole* pConsole = gEnv->pConsole;
 
-	pConsole->RemoveCommand("v_tpvDist");
-	pConsole->RemoveCommand("v_tpvHeight");
-	pConsole->RemoveCommand("v_reload_system");
-	pConsole->RemoveCommand("v_exit_player");
-
 #if ENABLE_VEHICLE_DEBUG
 	pConsole->UnregisterVariable("v_debugVehicle", true);
 	pConsole->UnregisterVariable("v_draw_components", true);
@@ -131,6 +126,15 @@ CVehicleCVars::~CVehicleCVars()
 	pConsole->UnregisterVariable("v_draw_passengers", true);
 	pConsole->UnregisterVariable("v_debugdraw", true);
 	pConsole->UnregisterVariable("v_debug_mem", true);
+
+	pConsole->UnregisterVariable("v_debugViewDetach", true);
+	pConsole->UnregisterVariable("v_debugViewAbove", true);
+	pConsole->UnregisterVariable("v_debugViewAboveH", true);
+	pConsole->UnregisterVariable("v_debugCollisionDamage", true);
+	pConsole->UnregisterVariable("v_debug_flip_over", true);
+	pConsole->UnregisterVariable("v_debug_reorient", true);
+
+	pConsole->RemoveCommand("v_dump_classes");
 #endif
 
 	pConsole->UnregisterVariable("v_lights", true);
@@ -139,17 +143,37 @@ CVehicleCVars::~CVehicleCVars()
 	pConsole->UnregisterVariable("v_set_passenger_tm", true);
 	pConsole->UnregisterVariable("v_disable_hull", true);
 	pConsole->UnregisterVariable("v_staticTreadDeform", true);
+	pConsole->UnregisterVariable("v_show_all", true);
 	pConsole->UnregisterVariable("v_transitionAnimations", true);
+	pConsole->UnregisterVariable("v_playerTransitions", true);
 	pConsole->UnregisterVariable("v_ragdollPassengers", true);
 	pConsole->UnregisterVariable("v_goliathMode", true);
+	pConsole->UnregisterVariable("v_enableMannequin", true);
+	pConsole->UnregisterVariable("v_serverControlled", true);
+	pConsole->UnregisterVariable("v_clientPredict", true);
+	pConsole->UnregisterVariable("v_clientPredictSmoothing", true);
+	pConsole->UnregisterVariable("v_testClientPredict", true);
+	pConsole->UnregisterVariable("v_clientPredictSmoothingConst", true);
+	pConsole->UnregisterVariable("v_clientPredictAdditionalTime", true);
+	pConsole->UnregisterVariable("v_clientPredictMaxTime", true);
 
 	pConsole->UnregisterVariable("v_slipSlopeFront", true);
 	pConsole->UnregisterVariable("v_slipSlopeRear", true);
 	pConsole->UnregisterVariable("v_slipFrictionModFront", true);
 	pConsole->UnregisterVariable("v_slipFrictionModRear", true);
 
+	pConsole->UnregisterVariable("v_FlippedExplosionTimeToExplode", true);
+	pConsole->UnregisterVariable("v_FlippedExplosionPlayerMinDistance", true);
+	pConsole->UnregisterVariable("v_FlippedExplosionRetryTimeMS", true);
+	
+	pConsole->RemoveCommand("v_reload_system");
+	pConsole->RemoveCommand("v_exit_player");
+
+	pConsole->UnregisterVariable("v_disableEntry", true);
+
 	pConsole->UnregisterVariable("v_vehicle_quality", true);
 	pConsole->UnregisterVariable("v_driverControlledMountedGuns", true);
+	pConsole->UnregisterVariable("v_independentMountedGuns", true);
 
 	pConsole->UnregisterVariable("v_debugSuspensionIK", true);
 }

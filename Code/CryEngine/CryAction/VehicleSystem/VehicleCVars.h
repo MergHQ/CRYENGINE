@@ -50,8 +50,6 @@ public:
 	int   v_goliathMode;
 	int   v_show_all;
 	int   v_staticTreadDeform;
-	float v_tpvDist;
-	float v_tpvHeight;
 	int   v_debugSuspensionIK;
 	int   v_serverControlled;
 	int   v_clientPredict;
