@@ -588,7 +588,7 @@ void CSystem::ShutDown()
 	KillPhysicsThread();
 
 	if (m_sys_firstlaunch)
-		m_sys_firstlaunch->Set("0");
+		m_sys_firstlaunch->Set(0);
 
 	if (m_env.IsEditor())
 	{

@@ -49,7 +49,7 @@ CCreateProjectPanel::CCreateProjectPanel(CSelectProjectDialog* pParent, bool run
 
 void CCreateProjectPanel::CreateSearchPanel()
 {
-	QSearchBox* pSearchBox = new QSearchBox(this); 
+	QSearchBox* pSearchBox = new QSearchBox(this);
 	pSearchBox->EnableContinuousSearch(true);
 	pSearchBox->SetModel(m_pSortedModel);
 
@@ -179,8 +179,8 @@ void CCreateProjectPanel::CreateDialogButtons(bool runOnSandboxInit)
 
 	QHBoxLayout* pButtonsLayout = new QHBoxLayout;
 	pButtonsLayout->setAlignment(Qt::AlignRight | Qt::AlignBottom);
-	pButtonsLayout->addWidget(pQuitBtn);
 	pButtonsLayout->addWidget(m_pCreateProjectBtn);
+	pButtonsLayout->addWidget(pQuitBtn);
 
 	m_pMainLayout->addLayout(pButtonsLayout);
 }

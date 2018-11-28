@@ -13,7 +13,7 @@ class CSelectProjectDialog : public CEditorDialog
 {
 	Q_OBJECT
 public:
-	explicit CSelectProjectDialog(bool runOnSandboxInit);
+	CSelectProjectDialog(QWidget* pParent, bool runOnSandboxInit);
 	~CSelectProjectDialog();
 
 	CProjectManager&  GetProjectManager();

@@ -47,9 +47,12 @@ public:
 	CProjectManager();
 
 	const std::vector<SProjectDescription>& GetProjects() const;
+	const std::vector<SProjectDescription>& GetHiddenProjects() const;
 
 	const SProjectDescription*              GetLastUsedProject() const;
-	void                                    AddProject(const SProjectDescription& projectDescr);
+	void                                    ImportProject(const string& fullPathToProject);
+	void                                    AddProject(const SProjectDescription& projectDescr); // Create from template
+	void                                    DeleteProject(const SProjectDescription& projectDescr, bool removeFromDisk);
 	bool                                    SetCurrentTime(const SProjectDescription& projectDescr);
 
 	CCrySignal<void()>                           signalBeforeProjectsUpdated;
@@ -57,12 +60,13 @@ public:
 	CCrySignal<void(const SProjectDescription*)> signalProjectDataChanged;
 
 private:
-	void SaveProjectDescriptions();
+	SProjectDescription ParseProjectData(const string& fullPathToProject) const;
+	void                SaveProjectDescriptions();
 
 	const string                     m_pathToProjectList;
 
-	std::vector<SProjectDescription> m_validProjects;
+	std::vector<SProjectDescription> m_projects;
 
-	// No one model will get data from here. Used as write-as-read data
-	std::vector<SProjectDescription> m_invalidProjects;
+	// No model will get data from here. Used as write-as-read data
+	std::vector<SProjectDescription> m_hiddenProjects;
 };

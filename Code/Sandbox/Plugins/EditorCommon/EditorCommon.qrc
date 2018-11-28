@@ -300,6 +300,7 @@
         <file alias="General/Folder_Open_Classic.ico">icons/general_file_open.ico</file>
         <file alias="General/Folder_Open_Tree.ico">icons/general_file_open.ico</file>
         <file alias="General/Folder_Tinted.ico">icons/general_Folder.ico</file>
+        <file alias="General/Folder_Remove.ico">icons/general_remove.ico</file>
         <file alias="General/Folder_Tree.ico">icons/general_folder.ico</file>
         <file alias="General/Folder_Tree_Active.ico">icons/general_folder_active.ico</file>
         <file alias="General/Folder_Tree_Tinted.ico">icons/general_folder.ico</file>

@@ -3,6 +3,8 @@
 #pragma once
 #include <QWidget>
 
+struct SProjectDescription;
+
 class CProjectsModel;
 class CProjectSortProxyModel;
 class CSelectProjectDialog;
@@ -27,7 +29,12 @@ private:
 	void CreateDialogButtons(bool runOnSandboxInit);
 
 	void SetViewMode(bool thumbnailMode);
+	void SelectProject(const SProjectDescription* pProject);
 
+	void OnContextMenu(const QPoint& pos);
+
+	void OnDeleteProject(const SProjectDescription* pDescription);
+	void OnAddProject();
 	void OpenProject(const QModelIndex& index);
 	void OnSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
 
@@ -41,5 +48,6 @@ private:
 	QVBoxLayout*            m_pMainLayout;
 	QAdvancedTreeView*      m_pTreeView;
 	QThumbnailsView*        m_pThumbnailView;
+	QPushButton*            m_pAddProjectBtn;
 	QPushButton*            m_pOpenProjectBtn;
 };

@@ -357,7 +357,7 @@ bool CGameEngine::Init(bool bPreviewMode, bool bTestMode, bool bShaderCacheGen, 
 
 	if (strstr(sInCmdLine, "-project") == 0)
 	{
-		CSelectProjectDialog dlg(true);
+		CSelectProjectDialog dlg(SplashScreen::GetSplashScreen(), true);
 		if (dlg.exec() != QDialog::Accepted)
 		{
 			return false;
