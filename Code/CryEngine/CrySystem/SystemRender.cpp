@@ -92,8 +92,8 @@ void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 	int iWidthDefault       = 1280;
 	int iHeightDefault      = 720;
 #if CRY_PLATFORM_DURANGO
-	iWidthDefault  = 1600;
-	iHeightDefault = 900;
+	iWidthDefault  = 1920;
+	iHeightDefault = 1080;
 #elif CRY_PLATFORM_ORBIS
 	iWidthDefault  = 1920;
 	iHeightDefault = 1080;
