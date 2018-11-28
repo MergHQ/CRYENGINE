@@ -61,7 +61,7 @@ public:
 	// Runtime and instance initialization
 	virtual void OnEdit(CParticleComponentRuntime& runtime) {}
 
-	virtual void OnPreRun(CParticleComponentRuntime& runtime, uint numParticles) {}
+	virtual void OnPreRun(CParticleComponentRuntime& runtime) {}
 
 	virtual void MainPreUpdate(CParticleComponentRuntime& runtime) {}
 
@@ -78,7 +78,7 @@ public:
 	// Particle initialization
 	virtual void KillParticles(CParticleComponentRuntime& runtime) {}
 
-	virtual void SpawnParticles(CParticleComponentRuntime& runtime, TDynArray<SSpawnEntry>& spawnEntries) {}
+	virtual void SpawnParticles(CParticleComponentRuntime& runtime) {}
 
 	virtual void PreInitParticles(CParticleComponentRuntime& runtime) {}
 
@@ -118,14 +118,14 @@ template<class... Args> using TFeatureDispatcher = Dispatcher<CParticleFeature, 
 struct SFeatureDispatchers
 {
 	TFeatureDispatcher<CParticleComponentRuntime&> OnEdit { &CParticleFeature::OnEdit };
-	TFeatureDispatcher<CParticleComponentRuntime&, uint> OnPreRun { &CParticleFeature::OnPreRun };
+	TFeatureDispatcher<CParticleComponentRuntime&> OnPreRun { &CParticleFeature::OnPreRun };
 	TFeatureDispatcher<CParticleComponentRuntime&> MainPreUpdate { &CParticleFeature::MainPreUpdate };
 
 	TFeatureDispatcher<CParticleComponentRuntime&, TDynArray<SInstance>&> AddSubInstances { &CParticleFeature::AddSubInstances };
 	TFeatureDispatcher<CParticleComponentRuntime&, TDynArray<SInstance>&> CullSubInstances { &CParticleFeature::CullSubInstances };
 	TFeatureDispatcher<CParticleComponentRuntime&, SUpdateRange> InitSubInstances { &CParticleFeature::InitSubInstances };
 	TFeatureDispatcher<CParticleComponentRuntime&> KillParticles { &CParticleFeature::KillParticles };
-	TFeatureDispatcher<CParticleComponentRuntime&, TDynArray<SSpawnEntry>&> SpawnParticles { &CParticleFeature::SpawnParticles };
+	TFeatureDispatcher<CParticleComponentRuntime&> SpawnParticles { &CParticleFeature::SpawnParticles };
 
 	TFeatureDispatcher<const CParticleComponentRuntime&, TConstArray<float>, TVarArray<float>> GetSpatialExtents { &CParticleFeature::GetSpatialExtents };
 	TFeatureDispatcher<const CParticleComponentRuntime&, TVarArray<Vec3>, uint> GetEmitOffsets { &CParticleFeature::GetEmitOffsets };

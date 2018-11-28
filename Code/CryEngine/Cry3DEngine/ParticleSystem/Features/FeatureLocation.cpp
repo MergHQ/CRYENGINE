@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "FeatureCommon.h"
-#include <CrySystem/Testing/CryTest.h>
 #include <CryMath/SNoise.h>
 #include "Target.h"
 
@@ -1004,9 +1003,14 @@ public:
 		pComponent->SpawnParticles.add(this);
 		pComponent->InitParticles.add(this);
 		m_visibilityRange.AddToComponent(pComponent, this);
+		pComponent->AddParticleData(EPVF_PositionPrev);
+		// pParams->m_positionsPreInit = true;
 
 		if (m_spawnOutsideView)
+		{
 			pParams->m_isPreAged = true;
+			pComponent->InitParticles.add(this);
+		}
 
 		if (!m_useEmitterLocation)
 		{
@@ -1030,14 +1034,13 @@ public:
 	#endif
 	}
 
-	virtual void OnPreRun(CParticleComponentRuntime& runtime, uint numParticles) override
+	virtual void OnPreRun(CParticleComponentRuntime& runtime) override
 	{
 		CParticleContainer& container = runtime.GetContainer();
 		auto positions = container.IStream(EPVF_Position);
 		auto positionsPrev = container.IStream(EPVF_PositionPrev, runtime.GetEmitter()->GetLocation().t);
 		auto velocities = container.IStream(EPVF_Velocity);
 
-		m_averageData.numParticles = numParticles;
 		m_averageData.velocityFinal.zero();
 		m_averageData.vectorTravel.zero();
 		for (auto particleId : runtime.FullRange())
@@ -1094,7 +1097,7 @@ public:
 		}
 	}
 
-	virtual void SpawnParticles(CParticleComponentRuntime& runtime, TDynArray<SSpawnEntry>& spawnEntries) override
+	virtual void SpawnParticles(CParticleComponentRuntime& runtime) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
@@ -1107,8 +1110,14 @@ public:
 		Matrix34v toPrev = m_camData.fromWorldPrev * Matrix34::CreateTranslationMat(-travelPrev) * m_camData.toWorld;
 		Matrix34v toWorld = m_camData.toWorld;
 
+		// Determine normal particle count from number previously spawned
+		CParticleContainer& container = runtime.GetContainer();
+		uint numSpawned = container.GetNumSpawnedParticles();
+		uint numParticles = uint(numSpawned * runtime.ComponentParams().m_maxParticleLife / runtime.DeltaTime());
+
 		// Randomly generate positions in current sector; only those not in previous sector spawn as particles
-		for (uint i = CRY_PFX2_GROUP_ALIGN(m_averageData.numParticles); i > 0; i -= CRY_PFX2_GROUP_STRIDE)
+		TDynArray<Vec3> newPositions;
+		for (uint i = CRY_PFX2_GROUP_ALIGN(numParticles); i > 0; i -= CRY_PFX2_GROUP_STRIDE)
 		{
 			Vec3v posCam = RandomSector<floatv>(runtime.ChaosV());
 			Vec3v posCamPrev = toPrev * posCam;
@@ -1116,20 +1125,36 @@ public:
 			if (mask)
 			{
 				Vec3v posv = toWorld * posCam;
-				DoElements(mask, posv, [this](const Vec3& v) { m_newPositions.push_back(v); });
+				DoElements(mask, posv, [&newPositions](const Vec3& v) { newPositions.push_back(v); });
 			}
 		}
 		
-		if (m_newPositions.size())
+		if (newPositions.size())
 		{
 			const float life = runtime.ComponentParams().m_maxParticleLife;
 			float fracNewSpawned = runtime.DeltaTime() / life;
 			SSpawnEntry spawn = {};
-			spawn.m_count = m_newPositions.size();
-			spawn.m_count = uint(spawn.m_count * (1.0f - fracNewSpawned));
+			spawn.m_count = uint(newPositions.size() * (1.0f - fracNewSpawned));
 			spawn.m_ageBegin = 0.0f;
 			spawn.m_ageIncrement = life / float(spawn.m_count);
-			spawnEntries.push_back(spawn);
+			runtime.AddParticles({&spawn, 1});
+		}
+
+		// Store generated positions in PositionPrev, for use in InitParticles
+		auto positionsPrev = container.IOStream(EPVF_PositionPrev);
+		uint iNew = 0;
+		for (auto particleId : runtime.SpawnedRange())
+		{
+			if (iNew < newPositions.size())
+			{
+				positionsPrev.Store(particleId, newPositions[iNew++]);
+			}
+			else
+			{
+				Vec3 posCam = RandomSector<float>(runtime.Chaos());
+				Vec3 pos = m_camData.toWorld * posCam;
+				positionsPrev.Store(particleId, pos);
+			}
 		}
 	}
 
@@ -1140,82 +1165,70 @@ public:
 		if (runtime.IsPreRunning())
 			return;
 
+		UpdateCameraData(runtime);
+
 		CParticleContainer& container = runtime.GetContainer();
+
+		container.CopyData(EPVF_Position, EPVF_PositionPrev, runtime.SpawnedRange());
+		if (!m_spawnOutsideView)
+			return;
+
 		auto positions = container.IOStream(EPVF_Position);
 		auto positionsPrev = container.IOStream(EPVF_PositionPrev);
 		auto velocities = container.IOStream(EPVF_Velocity);
 		auto normAges = container.IOStream(EPDT_NormalAge);
 
-		const bool hasPositionPrev = container.HasData(EPVF_PositionPrev);
+		Vec3v travel = ToVec3v(m_averageData.vectorTravel);
+		Vec3v velFinal = ToVec3v(m_averageData.velocityFinal);
 
-		UpdateCameraData(runtime);
+		for (auto particleId : runtime.SpawnedRangeV())
+		{
+			Vec3v pos = positions.Load(particleId);
+			positionsPrev.Store(particleId, pos - travel);
+
+			Vec3v vel = velocities.Load(particleId);
+			vel += velFinal;
+			velocities.Store(particleId, vel);
+		}
 
 		float lifeFraction = 1.5f * m_camData.maxDistance * m_averageData.vectorTravel.GetInvLengthSafe();
 		float curAge = max(1.0f - 2.0f * lifeFraction, 0.0f);
 		float ageInc = lifeFraction / runtime.SpawnedRange().size();
 
-		uint nNew = 0;
-
 		for (auto particleId : runtime.SpawnedRange())
 		{
-			Vec3 pos;
-			if (nNew < m_newPositions.size())
-			{
-				pos = m_newPositions[nNew++];
-			}
-			else
-			{
-				Vec3 posCam = RandomSector<float>(runtime.Chaos());
-				pos = m_camData.toWorld * posCam;
-			}
-			positions.Store(particleId, pos);
-			if (m_spawnOutsideView)
-			{
-				if (hasPositionPrev)
-					positionsPrev.Store(particleId, pos - m_averageData.vectorTravel);
-
-				Vec3 vel = velocities.Load(particleId);
-				vel += m_averageData.velocityFinal;
-				velocities.Store(particleId, vel);
-
-				normAges[particleId] = curAge;
-				curAge += ageInc;
-			}
+			normAges[particleId] = curAge;
+			curAge += ageInc;
 		}
-		m_newPositions.resize(0);
-
-		m_camData.deltaTimePrev = runtime.DeltaTime();
 	}
-
 
 private:
 
-	// Camera data is shared per-effect, based on the global render camera and effect params
+	// Camera data is shared per-feature definition, based on the global render camera and effect params
 	struct SCameraData
 	{
-		int32     nFrameId      {-1};
-		Vec2      scrWidth      {0};
-		float     maxDistance   {0};
-		Matrix34  toWorld       {IDENTITY};
-		Matrix34  fromWorld     {IDENTITY};
-		Matrix34  fromWorldPrev {IDENTITY};
-		float     deltaTimePrev {0};
+		std::atomic<uint32> nFrameId      {0};
+		Vec2                scrWidth      {0};
+		float               maxDistance   {0};
+		Matrix34            toWorld       {IDENTITY};
+		Matrix34            fromWorld     {IDENTITY};
+		Matrix34            fromWorldPrev {IDENTITY};
+		float               deltaTime     {0};
+		float               deltaTimePrev {0};
 	};
 	SCameraData m_camData;
 
+	// PFX2_TODO: This must be moved to per-instance data
 	struct SComponentData
 	{
-		uint numParticles;
 		Vec3 velocityFinal;
 		Vec3 vectorTravel;
 	};
 	SComponentData  m_averageData;
 
-	TDynArray<Vec3> m_newPositions;
-
 	void UpdateCameraData(const CParticleComponentRuntime& runtime)
 	{
-		if (gEnv->nMainFrameID == m_camData.nFrameId)
+		if (m_camData.nFrameId.exchange(gEnv->nMainFrameID) == gEnv->nMainFrameID)
 			return;
 		CCamera cam = GetEffectCamera(runtime);
 		m_camData.maxDistance = m_visibilityRange.GetValueRange(runtime).end;
@@ -1230,6 +1243,9 @@ private:
 			m_camData.maxDistance = maxDistance;
 
 		m_camData.fromWorldPrev = m_camData.fromWorld;
+		m_camData.deltaTimePrev = m_camData.deltaTime;
+		m_camData.deltaTime = runtime.DeltaTime();
+
 		m_camData.scrWidth = ScreenWidth(cam);
 
 		// Matrix rotates Z to Y, scales by range, and offsets backward by particle size
@@ -1241,10 +1257,12 @@ private:
 		// Concatenate with camera world location
 		m_camData.toWorld = cam.GetMatrix() * toCam;
 		m_camData.fromWorld = m_camData.toWorld.GetInverted();
-		if (m_camData.nFrameId == -1)
+
+		if (m_camData.nFrameId == 0)
+		{
 			m_camData.fromWorldPrev = m_camData.fromWorld;
-		m_camData.nFrameId = gEnv->nMainFrameID;
-		m_camData.deltaTimePrev = runtime.DeltaTime();
+			m_camData.deltaTimePrev = m_camData.deltaTime;
+		}
 	}
 
 	CCamera GetEffectCamera(const CParticleComponentRuntime& runtime) const
@@ -1281,15 +1299,6 @@ private:
 		return max(abs(pos.x), abs(pos.y)) <= pos.z
 			& pos.len2() <= convert<floatv>(1.0f);
 	}
-
-	template<int elem>
-	void AddElem(int mask, const Vec3v& v)
-	{
-		if (mask & (1<<elem))
-		{
-			m_newPositions.emplace_back(get_element<elem>(v.x), get_element<elem>(v.y), get_element<elem>(v.z));
-		}
-	}
 #endif
 
 	template<typename T, typename TChaos>
@@ -1305,11 +1314,11 @@ private:
 	}
 
 	// Parameters
-	CParamMod<EDD_InstanceUpdate, UFloat100> m_visibilityRange;
-	bool                                     m_spawnOutsideView = false;
+	CParamMod<EDD_None, UFloat100> m_visibilityRange;
+	bool                           m_spawnOutsideView = false;
 
 	// Debugging options
-	bool                                     m_useEmitterLocation = false;
+	bool                           m_useEmitterLocation = false;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationOmni, "Location", "Omni", colorLocation);

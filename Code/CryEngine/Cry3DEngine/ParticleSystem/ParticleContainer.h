@@ -65,8 +65,10 @@ public:
 	SUpdateRange                      GetFullRange() const            { CRY_PFX2_ASSERT(!HasNewBorns()); return SUpdateRange(0, m_lastId); }
 	SUpdateRange                      GetSpawnedRange() const         { return SUpdateRange(m_firstSpawnId, m_lastSpawnId); }
 	SUpdateRange                      GetNonSpawnedRange() const      { CRY_PFX2_ASSERT(!HasNewBorns()); return SUpdateRange(0, m_firstSpawnId); }
+	uint32                            GetNextSpawnId() const          { return m_nextSpawnId; }
 
-	void                              AddParticles(TConstArray<SSpawnEntry> spawnEntries);
+	void                              BeginAddParticles();
+	void                              AddParticles(uint count);
 	void                              ResetSpawnedParticles();
 	void                              RemoveParticles(TVarArray<TParticleId> toRemove, TVarArray<TParticleId> swapIds);
 

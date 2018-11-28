@@ -125,6 +125,7 @@ struct SComponentParams: STimingParams
 	_smart_ptr<IMeshObj>      m_pMesh;
 	bool                      m_meshCentered         = false;
 	bool                      m_isPreAged            = false;
+	bool                      m_positionsPreInit     = false;
 	size_t                    m_instanceDataStride   = 0;
 	STextureAnimation         m_textureAnimation;
 	uint32                    m_maxParticlesBurst    = 0;

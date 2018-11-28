@@ -159,74 +159,29 @@ void SwapToEndRemove(TParticleId lastParticleId, TConstArray<TParticleId> toRemo
 	SwapToEndRemove(lastParticleId, toRemove, pData, 1, copyFn);
 }
 
+void CParticleContainer::BeginAddParticles()
+{
+	m_firstSpawnId = m_lastSpawnId = m_lastId;
+}
+
 void CParticleContainer::AddParticle()
 {
-	SSpawnEntry entry = { 1 };
-	AddParticles({&entry, 1});
+	AddParticles(1);
 	ResetSpawnedParticles();
 }
 
-void CParticleContainer::AddParticles(TConstArray<SSpawnEntry> spawnEntries)
+void CParticleContainer::AddParticles(uint count)
 {
-	CRY_PFX2_PROFILE_DETAIL;
-
-	uint32 newCount = 0;
-	for (const auto& spawnEntry : spawnEntries)
-		newCount += spawnEntry.m_count;
-
-	if (newCount == 0)
-	{
-		m_firstSpawnId = m_lastSpawnId = m_lastId;
+	if (!count)
 		return;
-	}
 
-	m_firstSpawnId = m_lastSpawnId = CRY_PFX2_GROUP_ALIGN(m_lastId);
+	if (m_firstSpawnId <= m_lastId)
+		m_firstSpawnId = m_lastSpawnId = CRY_PFX2_GROUP_ALIGN(m_lastId);
 
-	Resize(m_firstSpawnId + newCount);
+	m_lastSpawnId += count;
+	m_nextSpawnId += count;
 
-	uint32 currentId = m_firstSpawnId;
-	for (const auto& spawnEntry : spawnEntries)
-	{
-		const uint32 toAddCount = spawnEntry.m_count;
-		const uint32 lastId = CRY_PFX2_GROUP_ALIGN(currentId + toAddCount);
-
-		if (HasData(EPDT_ParentId))
-		{
-			auto parentIds = IOStream(EPDT_ParentId);
-			for (uint32 i = currentId; i < lastId; ++i)
-				parentIds[i] = spawnEntry.m_parentId;
-		}
-
-		if (HasData(EPDT_SpawnId))
-		{
-			auto spawnIds = IOStream(EPDT_SpawnId);
-			for (uint32 i = currentId; i < lastId; ++i)
-				spawnIds[i] = m_nextSpawnId + i - currentId;
-		}
-		m_nextSpawnId += toAddCount;
-
-		if (HasData(EPDT_NormalAge))
-		{
-			// Store newborn ages
-			float age = spawnEntry.m_ageBegin;
-			auto ages = IOStream(EPDT_NormalAge);
-			uint32 i; for (i = currentId; i < lastId; ++i, age += spawnEntry.m_ageIncrement)
-				ages[i] = max(age, 0.0f);
-		}
-
-		if (HasData(EPDT_SpawnFraction))
-		{
-			float fraction = spawnEntry.m_fractionBegin;
-			auto spawnFractions = IOStream(EPDT_SpawnFraction);
-			for (uint32 i = currentId; i < lastId; ++i, fraction += spawnEntry.m_fractionIncrement)
-				spawnFractions[i] = min(fraction, 1.0f);
-		}
-
-		currentId += toAddCount;
-		m_lastSpawnId += toAddCount;
-		assert(m_firstSpawnId <= m_lastSpawnId);
-		assert(m_lastSpawnId <= m_capacity);
-	}
+	Resize(m_lastSpawnId);
 }
 
 void CParticleContainer::RemoveParticles(TVarArray<TParticleId> toRemove, TVarArray<TParticleId> swapIds)
@@ -292,13 +247,14 @@ void CParticleContainer::ResetSpawnedParticles()
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
-	CRY_PFX2_ASSERT(m_firstSpawnId >= m_lastId);
+	if (m_firstSpawnId < m_lastId)
+		return;
 
-	const uint numSpawn = GetNumSpawnedParticles();
 	const uint gapSize = m_firstSpawnId - m_lastId;
-	const uint movingId = m_lastSpawnId - min(gapSize, numSpawn);
 	if (gapSize != 0)
 	{
+		const uint numSpawn = GetNumSpawnedParticles();
+		const uint movingId = m_lastSpawnId - min(gapSize, numSpawn);
 		for (auto type : EParticleDataType::indices())
 		{
 			if (byte* pBytes = ByteData(type))

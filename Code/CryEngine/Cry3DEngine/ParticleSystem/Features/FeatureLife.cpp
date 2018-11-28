@@ -54,6 +54,7 @@ public:
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
+		// Init Lifetime and InvLifetime
 		CParticleContainer& container = runtime.GetContainer();
 		IOFStream lifeTimes = container.GetIOFStream(EPDT_LifeTime);
 		IOFStream invLifeTimes = container.GetIOFStream(EPDT_InvLifeTime);
@@ -79,6 +80,15 @@ public:
 		{
 			lifeTimes.Fill(runtime.SpawnedRange(), 0.0f);
 			invLifeTimes.Fill(runtime.SpawnedRange(), 0.0f);
+		}
+
+		// Convert ages from absolute to normalized
+		IOFStream normAges = container.GetIOFStream(EPDT_NormalAge);
+
+		for (auto particleGroupId : runtime.SpawnedRangeV())
+		{
+			// Convert absolute spawned particle age to normal age / life
+			normAges[particleGroupId] *= invLifeTimes[particleGroupId];
 		}
 	}
 

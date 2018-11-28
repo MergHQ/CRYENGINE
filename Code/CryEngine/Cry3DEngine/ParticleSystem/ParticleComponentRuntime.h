@@ -49,9 +49,7 @@ public:
 	const CParticleContainer& GetContainer() const      { return m_container; }
 
 	void                      UpdateAll();
-	void                      AddRemoveParticles();
-	void                      UpdateParticles();
-	void                      CalculateBounds();
+	void                      AddParticles(TConstArray<SSpawnEntry> spawnEntries);
 
 	bool                      IsAlive() const               { return m_alive; }
 	void                      SetAlive()                    { m_alive = true; }
@@ -89,12 +87,14 @@ public:
 private:
 	void PreRun();
 	void AddInstances();
-	void AddParticles();
+	void AddRemoveParticles();
 	void RemoveParticles();
-	void UpdateNewBorns();
-	void UpdateGPURuntime();
+	void InitParticles();
 	void AgeUpdate();
+	void UpdateParticles();
+	void CalculateBounds();
 	void DebugStabilityCheck();
+	void UpdateGPURuntime();
 
 	_smart_ptr<CParticleComponent> m_pComponent;
 	CParticleEmitter*              m_pEmitter;

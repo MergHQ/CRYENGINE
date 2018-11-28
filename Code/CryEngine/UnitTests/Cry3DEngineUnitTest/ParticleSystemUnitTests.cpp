@@ -20,10 +20,7 @@ void ParticleContainerRemoveTest(size_t containerSz, TParticleId* toRemove, size
 	PUseData useData = NewUseData();
 	useData->AddData(EPDT_SpawnId);
 	container.SetUsedData(useData);
-	pfx2::SSpawnEntry spawn;
-	spawn.m_count = containerSz;
-	spawn.m_parentId = 0;
-	container.AddParticles({ &spawn, 1 });
+	container.AddParticles(containerSz);
 	container.ResetSpawnedParticles();
 	IOPidStream spawnIds = container.GetIOPidStream(EPDT_SpawnId);
 	for (uint i = 0; i < containerSz; ++i)
@@ -114,14 +111,14 @@ TEST(CParticleContainerTest, Remove)
 	}
 }
 
-#if CRY_PFX2_PARTICLESGROUP_STRIDE == 4
+#if CRY_PFX2_GROUP_STRIDE == 4
 
 class CParticleContainerSpawnTest : public ::testing::Test
 {
 protected:
 	virtual void SetUp() override
 	{
-		static_assert(CRY_PFX2_PARTICLESGROUP_STRIDE == 4, "This unit test is assuming vectorization of 4 particles");
+		static_assert(CRY_PFX2_GROUP_STRIDE == 4, "This unit test is assuming vectorization of 4 particles");
 		pContainer = std::unique_ptr<pfx2::CParticleContainer>(new pfx2::CParticleContainer());
 		PUseData useData = NewUseData();
 		useData->AddData(EPDT_ParentId);
@@ -136,10 +133,7 @@ protected:
 	void AddParticles(uint32 count)
 	{
 		ResetSpawnedParticles();
-		pfx2::SSpawnEntry spawn;
-		spawn.m_count = count;
-		spawn.m_parentId = 0;
-		pContainer->AddParticles({ &spawn, 1 });
+		pContainer->AddParticles(count);
 	}
 
 	void ResetSpawnedParticles()
@@ -261,7 +255,7 @@ TEST_F(ParticleAttributesTest, All)
 	DO_FOR_ATTRIBUTE_TYPE(type, T, value = T());
 };
 
-#endif // #if CRY_PFX2_PARTICLESGROUP_STRIDE == 4
+#endif // #if CRY_PFX2_GROUP_STRIDE == 4
 
 #ifdef CRY_PFX2_USE_SSE
 
