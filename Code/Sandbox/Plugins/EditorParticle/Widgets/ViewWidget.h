@@ -2,8 +2,9 @@
 
 #pragma once
 
+#include "AsyncNodeGraphView.h"
+
 #include <NodeGraph/ICryGraphEditor.h>
-#include <NodeGraph/NodeGraphView.h>
 
 #include <QWidget>
 
@@ -66,7 +67,7 @@ private:
 };
 // ~TODO
 
-class CGraphView : public CryGraphEditor::CNodeGraphView
+class CGraphView : public CAsyncNodeGraphView
 {
 	enum ECustomAction : uint32
 	{
@@ -75,7 +76,6 @@ class CGraphView : public CryGraphEditor::CNodeGraphView
 
 public:
 	CGraphView();
-	~CGraphView();
 
 	void OnFeatureMouseEvent(QGraphicsItem* pSender, SFeatureMouseEventArgs& args);
 
