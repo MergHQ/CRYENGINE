@@ -179,15 +179,8 @@ void CItemProperties::OnItemsDeletion()
 }
 
 CGraphView::CGraphView()
-	: CNodeGraphView()
-	, m_pMovingFeatureWidget(nullptr)
+	: m_pMovingFeatureWidget(nullptr)
 {
-
-}
-
-CGraphView::~CGraphView()
-{
-
 }
 
 void CGraphView::OnFeatureMouseEvent(QGraphicsItem* pSender, SFeatureMouseEventArgs& args)

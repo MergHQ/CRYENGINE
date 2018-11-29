@@ -5195,6 +5195,28 @@ public:
 			}
 			break;
 
+#if CRY_PLATFORM_DURANGO
+		case ESYSTEM_EVENT_PLM_ON_CONSTRAINED:
+			{
+				ICVar* pWidth  = iConsole->GetCVar("r_CustomResWidth");
+				ICVar* pHeight = iConsole->GetCVar("r_CustomResHeight");
+
+				if (pWidth ) pWidth ->Set(pWidth ->GetIVal() * 9 / 10);
+				if (pHeight) pHeight->Set(pHeight->GetIVal() * 9 / 10);
+			}
+			break;
+
+		case ESYSTEM_EVENT_PLM_ON_FULL:
+			{
+				ICVar* pWidth  = iConsole->GetCVar("r_CustomResWidth");
+				ICVar* pHeight = iConsole->GetCVar("r_CustomResHeight");
+
+				if (pWidth ) pWidth ->Set(pWidth ->GetIVal() * 10 / 9);
+				if (pHeight) pHeight->Set(pHeight->GetIVal() * 10 / 9);
+			}
+			break;
+#endif
+
 		case ESYSTEM_EVENT_LEVEL_LOAD_START:
 			{
 				if (gRenDev)

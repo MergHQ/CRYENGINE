@@ -720,17 +720,7 @@ void CNodeGraphView::SetModel(CNodeGraphViewModel* pModel)
 	}
 	else
 	{
-		//m_pContextMenuContent->SetDictionary(nullptr);
-
-		m_pScene->removeItem(m_pBackground);
-		m_pScene->clear();
-
-		m_nodeWidgetByItemInstance.clear();
-		m_groupWidgetByItemInstance.clear();
-		m_commentWidgetByItemInstance.clear();
-		m_connectionWidgetByItemInstance.clear();
-
-		m_pScene->addItem(m_pBackground);
+		ClearItems();
 	}
 
 	update();
@@ -1529,6 +1519,7 @@ void CNodeGraphView::OnRemoveComment(CAbstractCommentItem& comment)
 		{
 			if (pCommentWidget->GetAbstractItem() == &comment)
 			{
+				m_commentWidgetByItemInstance.erase(&comment);
 				m_pScene->removeItem(pCommentWidget);
 				DeselectWidget(*pCommentWidget);
 				pCommentWidget->DeleteLater();
@@ -1800,15 +1791,7 @@ void CNodeGraphView::ReloadItems()
 	SetStyle(m_pModel->GetRuntimeContext().GetStyle());
 
 	DeselectAllItems();
-	m_pScene->removeItem(m_pBackground);
-	m_pScene->clear();
-
-	m_nodeWidgetByItemInstance.clear();
-	m_groupWidgetByItemInstance.clear();
-	m_commentWidgetByItemInstance.clear();
-	m_connectionWidgetByItemInstance.clear();
-
-	m_pScene->addItem(m_pBackground);
+	ClearItems();
 
 	for (int32 i = m_pModel->GetNodeItemCount(); i--; )
 	{
@@ -1838,6 +1821,19 @@ void CNodeGraphView::ReloadItems()
 	SignalItemsReloaded(*this);
 
 	update();
+}
+
+void CNodeGraphView::ClearItems()
+{
+	m_pScene->removeItem(m_pBackground);
+	m_pScene->clear();
+
+	m_nodeWidgetByItemInstance.clear();
+	m_groupWidgetByItemInstance.clear();
+	m_commentWidgetByItemInstance.clear();
+	m_connectionWidgetByItemInstance.clear();
+
+	m_pScene->addItem(m_pBackground);
 }
 
 void CNodeGraphView::AddNodeItem(CAbstractNodeItem& node)

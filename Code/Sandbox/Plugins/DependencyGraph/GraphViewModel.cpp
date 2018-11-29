@@ -502,8 +502,8 @@ CryGraphEditor::CAbstractConnectionItem* CGraphViewModel::GetConnectionItemById(
 
 void CGraphViewModel::OnBeginModelChange()
 {
-	m_nodes.clear();
 	m_connections.clear();
+	m_nodes.clear();
 	SignalInvalidated();
 }
 

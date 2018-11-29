@@ -197,16 +197,17 @@ public:
 	bool OnDeleteEvent();
 	bool OnUndoEvent();
 	bool OnRedoEvent();
-private:
-	// ~TODO
 
-	//
-	void ReloadItems();
+protected:
+	virtual void ReloadItems();
 
+	void ClearItems();
 	void AddNodeItem(CAbstractNodeItem& node);
 	void AddGroupItem(CAbstractGroupItem& group);
 	void AddCommentItem(CAbstractCommentItem& comment);
 	void AddConnectionItem(CAbstractConnectionItem& connection);
+
+private:
 
 	void BroadcastSelectionChange(bool forceClear = false);
 

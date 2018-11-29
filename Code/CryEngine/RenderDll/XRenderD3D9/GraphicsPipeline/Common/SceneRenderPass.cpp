@@ -380,7 +380,7 @@ void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID r
 	if (listStart >= listEnd)
 		return;
 
-	CryStackStringT<char, 80> label; label.Format("%s%s (%s)", m_batchIncludeFilter & FB_Z ? "Z " : "", GetLabel(), RenderListNames[pRenderView->GetRecordingRenderList(renderList)]);
+	CryStackStringT<char, 80> label; label.Format("%s%s (%s)", m_batchExcludeFilter & FB_ZPREPASS ? "Z " : "", GetLabel(), RenderListNames[pRenderView->GetRecordingRenderList(renderList)]);
 	SGraphicsPipelinePassContext passContext(pRenderView, this, m_technique, m_batchIncludeFilter, m_batchExcludeFilter);
 	passContext.stageID = m_stageID;
 	passContext.passID = m_passID;
