@@ -14,6 +14,7 @@ CRenderPipelineProfiler::CRenderPipelineProfiler()
 
 	m_avgFrameTime = 0;
 	m_enabled = false;
+	m_paused = false;
 	m_recordData = false;
 
 	m_stack.reserve(8);
