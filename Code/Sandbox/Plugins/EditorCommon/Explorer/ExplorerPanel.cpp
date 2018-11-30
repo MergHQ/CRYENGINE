@@ -770,6 +770,8 @@ void ExplorerPanel::UpdateRootMenu()
 
 void ExplorerPanel::OnFilterTextChanged(const QString& str)
 {
+	if (str.isEmpty()) ExpandToDepthDefault();
+
 	bool modelChanged = m_treeView->model() != m_filterModel || m_filterModel == 0;
 	if (modelChanged)
 	{
@@ -1164,7 +1166,7 @@ void ExplorerPanel::SetTreeViewModel(QAbstractItemModel* model)
 	}
 }
 
-void ExplorerPanel::OnExplorerEndReset()
+void ExplorerPanel::ExpandToDepthDefault()
 {
 	m_treeView->expandToDepth(1);
 }
