@@ -222,6 +222,26 @@ void CCVars::RegisterVariables()
 	               "Usage: s_WwiseNumRefillsInVoice [2/...]\n"
 	               "Default: 3\n");
 
+	REGISTER_CVAR2("s_WwiseChannelConfig", &m_channelConfig, m_channelConfig, VF_REQUIRE_APP_RESTART,
+	               "Specifies the channel configuration.\n"
+	               "Usage: s_WwiseChannelConfig [51/...]\n"
+	               "Default: 0\n"
+	               "0: Default speaker setup.\n"
+	               "10: 1.0 speaker setup.\n"
+	               "11: 1.1 speaker setup.\n"
+	               "20: 2.0 speaker setup.\n"
+	               "21: 2.1 speaker setup.\n"
+	               "30: 3.0 speaker setup.\n"
+	               "31: 3.1 speaker setup.\n"
+	               "40: 4.0 speaker setup.\n"
+	               "41: 4.1 speaker setup.\n"
+	               "50: 5.0 speaker setup.\n"
+	               "51: 5.1 speaker setup.\n"
+	               "60: 6.0 speaker setup.\n"
+	               "61: 6.1 speaker setup.\n"
+	               "70: 7.0 speaker setup.\n"
+	               "71: 7.1 speaker setup.\n");
+
 	REGISTER_CVAR2_CB("s_WwisePanningRule", &m_panningRule, m_panningRule, VF_NULL,
 	                  "Specifies the Wwise panning rule.\n"
 	                  "Usage: s_WwisePanningRule [0/1]\n"
@@ -275,6 +295,7 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_WwiseEnableSoundBankManagerThread");
 		pConsole->UnregisterVariable("s_WwiseNumSamplesPerFrame");
 		pConsole->UnregisterVariable("s_WwiseNumRefillsInVoice");
+		pConsole->UnregisterVariable("s_WwiseChannelConfig");
 		pConsole->UnregisterVariable("s_WwisePanningRule");
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)

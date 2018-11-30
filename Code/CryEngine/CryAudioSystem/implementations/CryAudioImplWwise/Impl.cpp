@@ -355,6 +355,92 @@ bool ParseSwitchOrState(XmlNodeRef const pNode, AkUInt32& stateOrSwitchGroupId, 
 	return bSuccess;
 }
 
+//////////////////////////////////////////////////////////////////////////
+AkUInt32 IntToAkSpeakerSetup(int const value)
+{
+	AkUInt32 speakerSetup = 0;
+
+	switch (value)
+	{
+	case 10:
+		{
+			speakerSetup = AK_SPEAKER_SETUP_MONO;
+			break;
+		}
+	case 11:
+		{
+			speakerSetup = AK_SPEAKER_SETUP_1POINT1;
+			break;
+		}
+	case 20:
+		{
+			speakerSetup = AK_SPEAKER_SETUP_STEREO;
+			break;
+		}
+	case 21:
+		{
+			speakerSetup = AK_SPEAKER_SETUP_2POINT1;
+			break;
+		}
+	case 30:
+		{
+			speakerSetup = AK_SPEAKER_SETUP_3STEREO;
+			break;
+		}
+	case 31:
+		{
+			speakerSetup = AK_SPEAKER_SETUP_3POINT1;
+			break;
+		}
+	case 40:
+		{
+			speakerSetup = AK_SPEAKER_SETUP_4;
+			break;
+		}
+	case 41:
+		{
+			speakerSetup = AK_SPEAKER_SETUP_4POINT1;
+			break;
+		}
+	case 50:
+		{
+			speakerSetup = AK_SPEAKER_SETUP_5;
+			break;
+		}
+	case 51:
+		{
+			speakerSetup = AK_SPEAKER_SETUP_5POINT1;
+			break;
+		}
+	case 60:
+		{
+			speakerSetup = AK_SPEAKER_SETUP_6;
+			break;
+		}
+	case 61:
+		{
+			speakerSetup = AK_SPEAKER_SETUP_6POINT1;
+			break;
+		}
+	case 70:
+		{
+			speakerSetup = AK_SPEAKER_SETUP_7;
+			break;
+		}
+	case 71:
+		{
+			speakerSetup = AK_SPEAKER_SETUP_7POINT1;
+			break;
+		}
+	default:
+		{
+			break;
+		}
+	}
+
+	return speakerSetup;
+}
+
 ///////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
 	: m_gameObjectId(2) // Start with id 2, because id 1 would get ignored when setting a parameter on all constructed objects.
@@ -516,6 +602,7 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize, uint16 const eventPoolSi
 	initSettings.bEnableGameSyncPreparation = false;//TODO: ???
 	g_cvars.m_panningRule = crymath::clamp(g_cvars.m_panningRule, 0, 1);
 	initSettings.settingsMainOutput.ePanningRule = static_cast<AkPanningRule>(g_cvars.m_panningRule);
+	initSettings.settingsMainOutput.channelConfig.SetStandard(IntToAkSpeakerSetup(g_cvars.m_channelConfig));
 
 	initSettings.bUseLEngineThread = g_cvars.m_enableEventManagerThread > 0;
 	initSettings.bUseSoundBankMgrThread = g_cvars.m_enableSoundBankManagerThread > 0;
