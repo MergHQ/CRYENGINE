@@ -2,6 +2,9 @@
 #include "StdAfx.h"
 #include "VegetationEditor.h"
 
+#include "QT/QToolTabManager.h"
+#include "QT/Widgets/QEditToolButton.h"
+#include "QT/Widgets/QPreviewWidget.h"
 #include "Vegetation/VegetationEraseTool.h"
 #include "Vegetation/VegetationMap.h"
 #include "Vegetation/VegetationModel.h"
@@ -10,12 +13,11 @@
 #include "Vegetation/VegetationPlaceTool.h"
 #include "Vegetation/VegetationSelectTool.h"
 #include "Vegetation/VegetationTreeView.h"
-#include "QT/Widgets/QEditToolButton.h"
-#include "QT/Widgets/QPreviewWidget.h"
 #include "IEditorImpl.h"
 
 #include <AssetSystem/Asset.h>
 #include <AssetSystem/Browser/AssetBrowserDialog.h>
+#include <EditorFramework/Events.h>
 #include <FileDialogs/SystemFileDialog.h>
 #include <IUndoObject.h>
 #include <Controls/QuestionDialog.h>
@@ -38,19 +40,31 @@ DECLARE_PYTHON_MODULE(vegetation);
 
 namespace Private_VegetationEditor
 {
+void EnsureVegetationEditorActive()
+{
+	CTabPaneManager* pPaneManager = CTabPaneManager::GetInstance();
+	if (pPaneManager)
+	{
+		pPaneManager->OpenOrCreatePane("Vegetation Editor");
+	}
+}
+
 void Paint()
 {
-	GetIEditor()->GetLevelEditorSharedState()->SetEditTool(new CVegetationPaintTool());
+	EnsureVegetationEditorActive();
+	CommandEvent("vegetation.paint").SendToKeyboardFocus();
 }
 
 void Erase()
 {
-	GetIEditor()->GetLevelEditorSharedState()->SetEditTool(new CVegetationEraseTool());
+	EnsureVegetationEditorActive();
+	CommandEvent("vegetation.erase").SendToKeyboardFocus();
 }
 
 void Select()
 {
-	GetIEditor()->GetLevelEditorSharedState()->SetEditTool(new CVegetationSelectTool());
+	EnsureVegetationEditorActive();
+	CommandEvent("vegetation.select").SendToKeyboardFocus();
 }
 
 void TryClearSelection()
@@ -272,7 +286,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			SetupEditMenu(pEditMenu);
 
 			CAbstractMenu* pToolsMenu = pParentEditor->GetRootMenu()->CreateMenu(tr("Tools"), 0);
-			SetupToolsMenu(pToolsMenu);
+			SetupToolsMenu(pToolsMenu, pParentEditor);
 
 			pParentEditor->AddToMenu(CEditor::MenuItems::ViewMenu);
 			auto pViewMenu = pParentEditor->GetMenu(CEditor::MenuItems::ViewMenu);
@@ -311,14 +325,20 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			toolBarActions.push_back(pCloneVegetationObjectAction);
 		}
 
-		void SetupToolsMenu(CAbstractMenu* pToolsMenu)
+		void SetupToolsMenu(CAbstractMenu* pToolsMenu, CVegetationEditor* pParentEditor)
 		{
-			pClearAction = pToolsMenu->CreateAction(tr("Clear selected Vegetation Objects"));
-			pScaleAction = pToolsMenu->CreateAction(tr("Scale selected Vegetation Objects"));
-			pRotateRndAction = pToolsMenu->CreateAction(tr("Randomly rotate all instances"));
-			pClearRotationAction = pToolsMenu->CreateAction(tr("Clear rotation"));
-			pMergeObjectsAction = pToolsMenu->CreateAction(tr("Merge Vegetation Objects"));
-			pRemoveDuplicatedVegetation = pToolsMenu->CreateAction(tr("Remove duplicated Vegetation"));
+			pToolsMenu->AddAction(pParentEditor->GetAction("vegetation.paint"));
+			pToolsMenu->AddAction(pParentEditor->GetAction("vegetation.erase"));
+			pToolsMenu->AddAction(pParentEditor->GetAction("vegetation.select"));
+
+			const int section = pToolsMenu->GetNextEmptySection();
+
+			pClearAction = pToolsMenu->CreateAction(tr("Clear selected Vegetation Objects"), section);
+			pScaleAction = pToolsMenu->CreateAction(tr("Scale selected Vegetation Objects"), section);
+			pRotateRndAction = pToolsMenu->CreateAction(tr("Randomly rotate all instances"), section);
+			pClearRotationAction = pToolsMenu->CreateAction(tr("Clear rotation"), section);
+			pMergeObjectsAction = pToolsMenu->CreateAction(tr("Merge Vegetation Objects"), section);
+			pRemoveDuplicatedVegetation = pToolsMenu->CreateAction(tr("Remove duplicated Vegetation"), section);
 		}
 
 		void SetupViewMenu(CAbstractMenu* pViewMenu, CVegetationEditor* pParentEditor)
@@ -565,13 +585,13 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			    for (int i = 0; i < pGroupItem->rowCount(); ++i)
 			    {
 			      pSelectionModel->select(m_pVegetationModel->index(i, 0, currentIndex), selectFlags);
-			    }
-			  }
+					}
+				}
 			  else if (pSelectionModel->isSelected(currentIndex.parent()))
 			  {
 			    // do not deselect vegetation objects when their groups are still selected
 			    pSelectionModel->select(currentIndex, selectFlags);
-			  }
+				}
 			}
 			bBlockSignal = false;
 
@@ -687,7 +707,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			  if (!exportFileName.isEmpty())
 			  {
 			    ExportObjectsToXml(exportFileName.toStdString().c_str());
-			  }
+				}
 			}
 			else
 			{
@@ -727,12 +747,12 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			  if (pVegetationTool->GetCountSelectedInstances() <= 0)
 			  {
 			    return;
-			  }
+				}
 			  auto newGroupName = QInputDialog::getText(nullptr, tr("Rename Group"), tr("Input group name:"));
 			  if (newGroupName.isNull())
 			  {
 			    return;
-			  }
+				}
 			  m_pVegetationModel->MoveInstancesToGroup(newGroupName, pVegetationTool->GetSelectedInstances());
 			}
 		});
@@ -984,16 +1004,16 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 	{
 		auto pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 		auto pPlaceTool = [pTool]() -> CVegetationPlaceTool*
-		{
-			if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationPlaceTool)))
-			{
-				return static_cast<CVegetationPlaceTool*>(pTool);
-			}
+											{
+												if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationPlaceTool)))
+												{
+													return static_cast<CVegetationPlaceTool*>(pTool);
+												}
 
-			auto pPlaceTool = new CVegetationPlaceTool();
-			GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(pPlaceTool);
-			return pPlaceTool;
-		} ();
+												auto pPlaceTool = new CVegetationPlaceTool();
+												GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(pPlaceTool);
+												return pPlaceTool;
+											} ();
 
 		pPlaceTool->SelectObjectToCreate(pVegetationObject);
 	}
@@ -1200,17 +1220,17 @@ const QString CVegetationEditor::SImplementation::s_previewSplitterStateProperty
 
 REGISTER_VIEWPANE_FACTORY(CVegetationEditor, "Vegetation Editor", "Tools", true)
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_VegetationEditor::Paint, vegetation, paint,
-                                     "Vegetation paint tool",
-                                     "vegetation.paint()");
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_VegetationEditor::Paint, vegetation, paint,
+                                   CCommandDescription("Vegetation paint tool"))
+REGISTER_EDITOR_UI_COMMAND_DESC(vegetation, paint, "Paint", "", "", false)
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_VegetationEditor::Erase, vegetation, erase,
-                                     "Vegetation erase tool",
-                                     "vegetation.erase()");
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_VegetationEditor::Erase, vegetation, erase,
+                                   CCommandDescription("Vegetation erase tool"))
+REGISTER_EDITOR_UI_COMMAND_DESC(vegetation, erase, "Erase", "", "", false)
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_VegetationEditor::Select, vegetation, select,
-                                     "Vegetation select tool",
-                                     "vegetation.select()");
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_VegetationEditor::Select, vegetation, select,
+                                   CCommandDescription("Vegetation select tool"))
+REGISTER_EDITOR_UI_COMMAND_DESC(vegetation, select, "Select", "", "", false)
 
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_VegetationEditor::ClearVegetationObjects, vegetation, clear,
                                      "Clear selected vegetation objects",
@@ -1283,4 +1303,28 @@ bool CVegetationEditor::OnSelectAll()
 {
 	p->SelectAll();
 	return true;
+}
+
+void CVegetationEditor::customEvent(QEvent* pEvent)
+{
+	CDockableEditor::customEvent(pEvent);
+
+	if (!pEvent->isAccepted() && pEvent->type() == SandboxEvent::Command)
+	{
+		CommandEvent* pCommandEvent = static_cast<CommandEvent*>(pEvent);
+		const string& command = pCommandEvent->GetCommand();
+
+		if (command == "vegetation.paint")
+		{
+			GetIEditor()->GetLevelEditorSharedState()->SetEditTool(new CVegetationPaintTool());
+		}
+		else if (command == "vegetation.erase")
+		{
+			GetIEditor()->GetLevelEditorSharedState()->SetEditTool(new CVegetationEraseTool());
+		}
+		else if (command == "vegetation.select")
+		{
+			GetIEditor()->GetLevelEditorSharedState()->SetEditTool(new CVegetationSelectTool());
+		}
+	}
 }

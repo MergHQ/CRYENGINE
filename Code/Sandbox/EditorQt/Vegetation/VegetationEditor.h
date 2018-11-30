@@ -19,6 +19,8 @@ public:
 	virtual const char*                       GetEditorName() const override       { return "Vegetation Editor"; }
 
 protected:
+	virtual void customEvent(QEvent* pEvent) override;
+
 	virtual bool OnNew() override;
 	virtual bool OnDelete() override;
 	virtual bool OnDuplicate() override;
