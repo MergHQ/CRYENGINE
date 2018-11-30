@@ -95,7 +95,6 @@ public slots:
 	void           OnEntryLoaded(ExplorerEntry* entry);
 	void           OnRootButtonPressed();
 	void           OnRootSelected(bool);
-	void           OnExplorerEndReset();
 	void           OnExplorerBeginBatchChange(int subtree);
 	void           OnExplorerEndBatchChange(int subtree);
 	void           OnExplorerEntryModified(ExplorerEntryModifyEvent& ev);
@@ -113,6 +112,7 @@ protected:
 private:
 	void           SetTreeViewModel(QAbstractItemModel* model);
 	void           UpdateRootMenu();
+	void           ExpandToDepthDefault();
 	void           SetExpanded(const QModelIndex& index, bool bExpand, uint depth = 0);
 	QModelIndex    FindIndexByEntry(ExplorerEntry* entry) const;
 	ExplorerEntry* GetEntryByIndex(const QModelIndex& index) const;
