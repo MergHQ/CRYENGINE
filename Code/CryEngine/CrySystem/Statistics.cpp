@@ -229,7 +229,7 @@ public:                                 // -------------------------------------
 			OutputDebugString("ERROR: file wasn't registered with AddResource(): '");
 			OutputDebugString(sOutputFileName.c_str());
 			OutputDebugString("'\n");
-			assert(0);                             // asset wasn't registered yet AddResource() missing - unpredictable result might happen
+			CRY_ASSERT_MESSAGE(0, "The asset wasn't registered yet. AddResource() missing - unpredictable result might happen.");
 			return;
 		}
 
@@ -262,7 +262,7 @@ public:                                 // -------------------------------------
 			OutputDebugString("ERROR: file wasn't registered with AddResource(): '");
 			OutputDebugString(sOutputFileName.c_str());
 			OutputDebugString("'\n");
-			//assert(0);		// asset wasn't registered yet AddResource() missing - unpredictable result might happen
+			CRY_ASSERT_MESSAGE(0, "The asset wasn't registered yet. AddResource() missing - unpredictable result might happen.");
 			return;
 		}
 
@@ -1106,8 +1106,8 @@ void CEngineStats::CollectGeometry()
 			PREFAST_ASSUME(numStatObjs == nObjCount);
 			for (int nCurObj = 0; nCurObj < nObjCount; nCurObj++)
 				AddResource_StatObjWithLODs(pObjects[nCurObj], statObjTextureSizer, 0);
-
-			delete[]pObjects;
+			
+			delete[] pObjects;
 		}
 	}
 
@@ -1129,6 +1129,10 @@ void CEngineStats::CollectGeometry()
 
 			if (IStatObj* pEntObject = pRenderNode->GetEntityStatObj())
 			{
+				// if the object is not backed by a file, ignore it
+				if(pEntObject->GetFilePath()[0] == 0)
+					continue;
+
 				AddResource_StatObjWithLODs(pEntObject, statObjTextureSizer, 0); // Ensure object is registered
 				m_ResourceCollector.AddInstance(pEntObject->GetFilePath(), pRenderNode);
 

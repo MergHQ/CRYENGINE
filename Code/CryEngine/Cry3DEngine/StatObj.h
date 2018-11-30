@@ -490,9 +490,9 @@ public:
 	virtual IRenderMesh* GetRenderMesh() const final { return m_pRenderMesh; };
 	void SetRenderMesh(IRenderMesh * pRM);
 
-	virtual const char* GetFilePath() final                       { return (m_szFileName); }
+	virtual const char* GetFilePath() final                       { return m_szFileName.c_str(); }
 	virtual void        SetFilePath(const char* szFileName) final { m_szFileName = szFileName; }
-	virtual const char* GetGeoName() final                        { return (m_szGeomName); }
+	virtual const char* GetGeoName() final                        { return m_szGeomName.c_str(); }
 	virtual void        SetGeoName(const char* szGeoName) final   { m_szGeomName = szGeoName; }
 	virtual bool IsSameObject(const char* szFileName, const char* szGeomName) final;
 
