@@ -449,8 +449,7 @@ CDurangoGPUMemoryManager::AllocateResult CDurangoGPUMemoryManager::AllocatePinne
 #endif
 
 		// Try and just allocate memory from D3D directly.
-		void* pBase = NULL;
-		HRESULT hr = D3DAllocateGraphicsMemory(Align(amount, MinD3DAlignment), max(align, (size_t)MinD3DAlignment), 0, m_memType, &pBase);
+		HRESULT hr = D3DAllocateGraphicsMemory(Align(amount, MinD3DAlignment), max(align, (size_t)MinD3DAlignment), 0, m_memType, &pBaseAddress);
 		if (!FAILED(hr))
 		{
 			ret.hdl = SGPUMemHdl(pBaseAddress);
