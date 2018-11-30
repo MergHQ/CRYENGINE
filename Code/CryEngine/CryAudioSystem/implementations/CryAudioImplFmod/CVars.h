@@ -32,13 +32,6 @@ public:
 	float m_distanceFactor = 1.0f;
 	float m_dopplerScale = 1.0f;
 	float m_rolloffScale = 1.0f;
-
-#if CRY_PLATFORM_DURANGO
-	int m_secondaryMemoryPoolSize = 0;
-#endif  // CRY_PLATFORM_DURANGO
-
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 };
 
 extern CCVars g_cvars;

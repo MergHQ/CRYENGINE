@@ -122,7 +122,7 @@ endif()
 
 # Audio
 function(try_to_enable_fmod)
-if (NOT ORBIS AND NOT DURANGO)
+if (NOT ORBIS)
 	if (DEFINED AUDIO_FMOD)
 		if (AUDIO_FMOD)
 			if (EXISTS "${SDK_DIR}/Audio/fmod")
