@@ -17,6 +17,7 @@
 #include <CryCore/Platform/platform_impl.inl>
 
 #ifndef STANDALONE_PHYSICS
+#include "cvars.h"
 #include <CrySystem/IEngineModule.h>
 #include <CryExtension/ICryFactory.h>
 #include <CryExtension/ClassWeaver.h>
@@ -233,6 +234,8 @@ class CEngineModule_CryPhysics : public IPhysicsEngineModule
 		}
 
 		env.pPhysicalWorld = new CPhysicalWorld(pSystem ? pSystem->GetILog():0);
+
+		PhysicsCVars::Register(env.pPhysicalWorld->GetPhysVars());
 
 		return true;
 	}

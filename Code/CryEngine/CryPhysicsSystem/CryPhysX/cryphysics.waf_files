@@ -24,7 +24,9 @@
             "../../CryPhysics/matrixnm.h",
             "../../CryPhysics/qhull.cpp",
             "../../CryPhysics/utils.h",
-            "../../CryPhysics/utils.cpp"
+            "../../CryPhysics/utils.cpp",
+            "../../CryPhysics/cvars.h",
+            "../../CryPhysics/cvars.cpp"
         ]
     }
 }

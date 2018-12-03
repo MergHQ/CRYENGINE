@@ -95,10 +95,12 @@ add_sources("NoUberFile"
 		"qhull.cpp"
 		"utils.cpp"
 		"worldump.cpp"
+		"cvars.cpp"
 		"matrixnm.h"
 		"quotient.h"
 		"utils.h"
 		"vectorn.h"
+		"cvars.h"
 )
 
 end_sources()
