@@ -11,6 +11,8 @@
 namespace AssetManager
 {
 
+// Collects metadata for Sandbox asset system (*.cryasset).
+
 bool CollectDDSImageDetails(XmlNodeRef& xmlnode, const char* szFilename, IResourceCompiler* pRc)
 {
 	using namespace AssetManager;
@@ -19,8 +21,7 @@ bool CollectDDSImageDetails(XmlNodeRef& xmlnode, const char* szFilename, IResour
 	std::unique_ptr<ImageObject> image(ImageDDS::LoadByUsingDDSLoader(szFilename, &props, string()));
 	if (!image)
 	{
-		RCLogWarning("Can't read the image file to collect details: '%s'", szFilename);
-		return false;
+		return true;
 	}
 
 	XmlNodeRef metadata = GetMetadataNode(xmlnode);
