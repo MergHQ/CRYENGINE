@@ -324,7 +324,10 @@ void CViewManager::IdleUpdate()
 	// Depending on user preferences, update active viewport solely
 	if (gViewportPreferences.toolsRenderUpdateMutualExclusive)
 	{
-		if (GetActiveViewport()) GetActiveViewport()->Update();
+		if (GetActiveViewport()) 
+		{
+			GetActiveViewport()->Update();
+		}
 		return;
 	}
 

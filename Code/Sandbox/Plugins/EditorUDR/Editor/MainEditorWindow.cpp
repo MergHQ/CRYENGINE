@@ -216,11 +216,48 @@ private:
 
 class CUDRTreeView: public QAdvancedTreeView, public IEditorNotifyListener, public IGameFrameworkListener
 {
+private:
+
+	// builds html text from the log messages that reside in UDR nodes
+	class CLogMessageTextBuilder : public Cry::UDR::INode::ILogMessageVisitor
+	{
+	public:
+		void AccumulateText(const Cry::UDR::INode& node)
+		{
+			node.VisitLogMessages(*this, true);
+		}
+
+		void EmitToTextBox(QTextEdit& textBox) const
+		{
+			textBox.clear();
+			textBox.insertHtml("<pre>");
+			for (const string& html : m_htmlLines)
+			{
+				textBox.insertHtml(QtUtil::ToQString(html));
+			}
+			textBox.insertHtml("</pre>");
+		}
+
+	private:
+		// Cry::UDR::INode::ILogMessageVisitor
+		virtual void OnLogMessageVisited(const char* szLogMessage, Cry::UDR::ELogMessageType messageType) override
+		{
+			string html;
+			html.Format("<font color='%s'>%s</font><br>", (messageType == Cry::UDR::ELogMessageType::Warning) ? "yellow" : "white", szLogMessage);
+			m_htmlLines.emplace_back(std::move(html));
+		}
+		// ~Cry::UDR::INode::ILogMessageVisitor
+
+	private:
+		std::vector<string> m_htmlLines;
+	};
+
 public:
 
-	explicit CUDRTreeView(QWidget* pParent, const QComboBox* pComboBoxWithSelectedTree)
+	explicit CUDRTreeView(QWidget* pParent, const QComboBox* pComboBoxWithSelectedTree, QTextEdit* pTextBoxOfMainWindow)
 		: QAdvancedTreeView(QAdvancedTreeView::Behavior(QAdvancedTreeView::None), pParent)
 		, m_pComboBoxWithSelectedTree(pComboBoxWithSelectedTree)
+		, m_pTexBoxOfMainWindow(pTextBoxOfMainWindow)
 	{
 		setSelectionMode(QAbstractItemView::ExtendedSelection);
 
@@ -235,6 +272,34 @@ public:
 	{
 		GetIEditor()->UnregisterNotifyListener(this);
 		gEnv->pGameFramework->UnregisterListener(this);
+	}
+
+	// Hack: I tried connecting to the selectionChanged signal from inside CMainEditorWindow like this:
+	//       QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &CMainEditorWindow::OnTreeViewSelectionChanged);
+	//       But this signal just won't fire, so we override selectionChanged() and fill the CMainEditorWindow's text box directly here.
+	virtual void selectionChanged(const QItemSelection &selected, const QItemSelection &deselected) override
+	{
+		QAdvancedTreeView::selectionChanged(selected, deselected);
+
+		CLogMessageTextBuilder textBuilder;
+		std::set<const Cry::UDR::INode*> alreadyVisitedNodes;	// the selected indexes in the treeview all seem to appear twice (bug in QTreeView?)
+
+		QModelIndexList indexList = selectedIndexes();
+		std::sort(indexList.begin(), indexList.end());	// sort (by row), so that the messages appear in the same order as the nodes appear in the tree
+
+		for (size_t i = 0, n = indexList.size(); i < n; i++)
+		{
+			const QModelIndex& index = indexList.at(i);
+			const Cry::UDR::INode* pNode = static_cast<const Cry::UDR::INode*>(index.internalPointer());
+
+			// not yet present? (prevent duplicates)
+			if (alreadyVisitedNodes.insert(pNode).second)
+			{
+				textBuilder.AccumulateText(*pNode);
+			}
+		}
+
+		textBuilder.EmitToTextBox(*m_pTexBoxOfMainWindow);
 	}
 
 protected:
@@ -307,6 +372,8 @@ private:
 private:
 
 	const QComboBox* m_pComboBoxWithSelectedTree;	// for figuring out which tree (live/deserialized) is currently selected
+	QTextEdit* m_pTexBoxOfMainWindow;
+
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -387,9 +454,13 @@ CMainEditorWindow::CMainEditorWindow()
 	m_pButtonClearCurrentTree = new QPushButton(this);
 	m_pButtonClearCurrentTree->setText("Clear tree");
 
-	m_pTreeView = new                 CUDRTreeView(this, m_pComboBoxTreeToShow);
+	m_pTextLogMessages = new QTextEdit(this);
+	m_pTextLogMessages->setReadOnly(true);
+
+	m_pTreeView = new                 CUDRTreeView(this, m_pComboBoxTreeToShow, m_pTextLogMessages);
 	m_pTreeModel = new                CUDRTreeModel(this);
 
+#if 0
 	QSplitter* pDetailsSplitter = new QSplitter(this);
 	pDetailsSplitter->setOrientation(Qt::Vertical);
 
@@ -412,12 +483,55 @@ CMainEditorWindow::CMainEditorWindow()
 	pMainSplitter->addWidget(pDetailsSplitter);
 
 	setCentralWidget(pMainSplitter);
+#else
+	QSplitter* pMainSplitter = new QSplitter(this);
+	{
+		QWidget* pLeftContainer = new QWidget(this);
+		{
+			QVBoxLayout* pVBoxLayout = new QVBoxLayout(this);
+			{
+				QWidget* pHorzContainer1 = new QWidget(this);
+				{
+					QHBoxLayout* pHBoxLayout1 = new QHBoxLayout(this);
+					pHBoxLayout1->addWidget(m_pComboBoxTreeToShow);
+					pHBoxLayout1->addWidget(m_pButtonClearCurrentTree);
+					pHorzContainer1->setLayout(pHBoxLayout1);
+				}
+
+				QWidget* pHorzContainer2 = new QWidget(this);
+				{
+					QHBoxLayout* pHBoxLayout2 = new QHBoxLayout(this);
+					pHBoxLayout2->addWidget(m_pTreeView);
+					pHorzContainer2->setLayout(pHBoxLayout2);
+				}
+
+				pVBoxLayout->addWidget(pHorzContainer1);
+				pVBoxLayout->addWidget(pHorzContainer2);
+			}
+
+			pLeftContainer->setLayout(pVBoxLayout);
+		}
+
+		QWidget* pRightContainer = new QWidget(this);
+		{
+			QVBoxLayout* pVBoxLayout = new QVBoxLayout(this);
+			pVBoxLayout->addWidget(m_pTextLogMessages);
+			pRightContainer->setLayout(pVBoxLayout);
+		}
+
+		pMainSplitter->addWidget(pLeftContainer);
+		pMainSplitter->addWidget(pRightContainer);
+	}
+	setCentralWidget(pMainSplitter);
+#endif
 
 	QObject::connect(m_pComboBoxTreeToShow, static_cast < void (QComboBox::*)(int) > (&QComboBox::currentIndexChanged), this, &CMainEditorWindow::OnTreeIndexComboBoxSelectionChanged); // the static_cast<> is only for disambiguation of the overloaded currentIndexChanged() method
 	QObject::connect(m_pButtonClearCurrentTree, &QPushButton::clicked, this, &CMainEditorWindow::OnClearTreeButtonClicked);
 
 	// start with the "live" tree
 	SetActiveTree(Cry::UDR::ITreeManager::ETreeIndex::Live);
+
+	m_pTextLogMessages->setText("(Log messages of selected nodes will appear here)");
 }
 
 const char* CMainEditorWindow::GetPaneTitle() const

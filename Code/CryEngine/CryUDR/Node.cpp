@@ -110,6 +110,11 @@ namespace Cry
 			return m_renderPrimitives;
 		}
 
+		ILogMessageCollection& CNode::GetLogMessageCollection()
+		{
+			return m_logMessageCollection;
+		}
+
 		const char* CNode::GetName() const
 		{
 			return m_name.c_str();
@@ -140,6 +145,19 @@ namespace Cry
 				for (const std::unique_ptr<CNode>& pChild : m_children)
 				{
 					pChild->DrawRenderPrimitives(true);
+				}
+			}
+		}
+
+		void CNode::VisitLogMessages(ILogMessageVisitor& visitor, bool bRecurseDownAllChildren) const
+		{
+			m_logMessageCollection.Visit(visitor);
+
+			if (bRecurseDownAllChildren)
+			{
+				for (const std::unique_ptr<CNode>& pChild : m_children)
+				{
+					pChild->VisitLogMessages(visitor, bRecurseDownAllChildren);
 				}
 			}
 		}
@@ -187,6 +205,7 @@ namespace Cry
 			m_renderPrimitives.Serialize(ar);	// calling this directly is for backwards compatibility of recordings (previously, the render-primitives were stored in this CNode class, now they're stored in a separate class thus adding another layer in the archive, which makes old recordings incompatible)
 			ar(m_children, "m_children");
 			ar(m_uniqueNamesCache, "m_uniqueNamesCache");
+			ar(m_logMessageCollection, "m_logMessageCollection");
 
 			if (ar.isInput())
 			{

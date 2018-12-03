@@ -87,5 +87,6 @@ private:
 	CUDRTreeModel*                   m_pTreeModel;
 	QComboBox*                       m_pComboBoxTreeToShow;
 	QPushButton*                     m_pButtonClearCurrentTree;
+	QTextEdit*                       m_pTextLogMessages;
 	CTreeListener                    m_treeListeners[static_cast<size_t>(Cry::UDR::ITreeManager::ETreeIndex::Count)];	// one listener per ETreeIndex
 };

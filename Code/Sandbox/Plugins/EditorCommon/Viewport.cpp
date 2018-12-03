@@ -146,11 +146,8 @@ void CViewport::RegisterRenderListener(IRenderListener* piListener)
 
 bool CViewport::UnregisterRenderListener(IRenderListener* piListener)
 {
-	size_t nCount(0);
-	size_t nTotal(0);
-
-	nTotal = m_cRenderListeners.size();
-	for (nCount = 0; nCount < nTotal; ++nCount)
+	const size_t nTotal = m_cRenderListeners.size();
+	for (size_t nCount = 0; nCount < nTotal; ++nCount)
 	{
 		if (m_cRenderListeners[nCount] == piListener)
 		{
@@ -163,11 +160,8 @@ bool CViewport::UnregisterRenderListener(IRenderListener* piListener)
 
 bool CViewport::IsRenderListenerRegistered(IRenderListener* piListener)
 {
-	size_t nCount(0);
-	size_t nTotal(0);
-
-	nTotal = m_cRenderListeners.size();
-	for (nCount = 0; nCount < nTotal; ++nCount)
+	const size_t nTotal = m_cRenderListeners.size();
+	for (size_t nCount = 0; nCount < nTotal; ++nCount)
 	{
 		if (m_cRenderListeners[nCount] == piListener)
 		{

@@ -163,6 +163,8 @@ protected:
 
 	virtual void EditShape();
 
+	virtual IEntityAreaComponent* GetAreaProxy() const;
+
 	//overridden from CBaseObject.
 	void         InvalidateTM(int nWhyFlags);
 	virtual bool ConvertFromObject(CBaseObject* pObject) override;
@@ -187,7 +189,6 @@ private:
 	void                  OnObjectEvent(CBaseObject* const pBaseObject, int const event);
 	void                  UpdateAttachedEntities();
 	void                  SetAreaProxy();
-	IEntityAreaComponent* GetAreaProxy() const;
 
 protected:
 
@@ -444,6 +445,7 @@ public:
 protected:
 
 	virtual void      UpdateGameArea() override;
+	virtual IEntityAreaComponent* GetAreaProxy() const override;
 	virtual void      PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx);
 
 	virtual int       GetMaxPoints() const;
@@ -477,6 +479,7 @@ protected:
 	bool GetIsClosedShape(bool& isClosed) const;
 	bool GetCanEditClosed(bool& canEditClosed) const;
 	bool NeedExportToGame() const;
+	bool NeedAreaProxy() const;
 
 	void NotifyPropertyChange();
 

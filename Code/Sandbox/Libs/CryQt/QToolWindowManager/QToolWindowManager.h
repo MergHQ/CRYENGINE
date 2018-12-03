@@ -1,16 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#include <QWidget>
-#include <QLabel>
-#include <QSplitter>
-#include <QList>
-#include <QRubberBand>
-#include <QTimer>
 
 #include "QToolWindowManagerCommon.h"
 #include "IToolWindowArea.h"
 #include "IToolWindowWrapper.h"
+
+#include <QLabel>
+#include <QList>
+#include <QRubberBand>
+#include <QSplitter>
+#include <QTimer>
+#include <QWidget>
 
 class IToolWindowDragHandler;
 class QToolWindowManager;

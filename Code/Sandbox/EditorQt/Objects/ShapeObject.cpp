@@ -3754,12 +3754,31 @@ bool CGameShapeObject::CreateGameObject()
 
 void CGameShapeObject::UpdateGameArea()
 {
+	if (m_pEntity)
+	{
+		if (IEntityAreaComponent* pAreaComponent = m_pEntity->GetComponent<IEntityAreaComponent>())
+		{
+			if (!NeedAreaProxy())
+			{
+				// Make sure, that area component doesn't exist after old level loading or volume class changes
+				m_pEntity->RemoveComponent(pAreaComponent);
+			}
+		}
+	}
+
 	__super::UpdateGameArea();
 
 	if (!m_bIgnoreGameUpdate)
 	{
 		UpdateGameShape();
 	}
+}
+
+IEntityAreaComponent* CGameShapeObject::GetAreaProxy() const
+{
+	return NeedAreaProxy()
+		? __super::GetAreaProxy()
+		: nullptr;
 }
 
 void CGameShapeObject::UpdateGameShape()
@@ -3843,6 +3862,13 @@ bool CGameShapeObject::NeedExportToGame() const
 	bool exportToGame = true;
 	GetParameterValue(exportToGame, "ExportToGame");
 	return exportToGame;
+}
+
+bool CGameShapeObject::NeedAreaProxy() const
+{
+	bool needAreaProxy = true;
+	GetParameterValue(needAreaProxy, "NeedAreaProxy");
+	return needAreaProxy;
 }
 
 void CGameShapeObject::RefreshVariables()

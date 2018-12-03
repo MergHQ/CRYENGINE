@@ -23,6 +23,7 @@
 #include "CVars.h"
 #include "RenderPrimitives.h"
 #include "RenderPrimitiveCollection.h"
+#include "LogMessageCollection.h"
 #include "Node.h"
 #include "NodeStack.h"
 #include "Tree.h"

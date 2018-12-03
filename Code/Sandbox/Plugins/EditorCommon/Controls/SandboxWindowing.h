@@ -86,7 +86,7 @@ public:
 	virtual void           ensureTitleBar();
 	virtual void           keyPressEvent(QKeyEvent* keyEvent) override;
 	virtual bool           eventFilter(QObject*, QEvent*) override;
-	static QSandboxWindow* QSandboxWindow::wrapWidget(QWidget* w, QToolWindowManager* manager);
+	static QSandboxWindow* wrapWidget(QWidget* w, QToolWindowManager* manager);
 private:
 	QToolWindowManager* m_manager;
 	QVariantMap         m_config;

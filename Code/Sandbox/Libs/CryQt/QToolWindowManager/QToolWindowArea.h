@@ -1,20 +1,20 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#include <QTabWidget>
-#include <QTabBar>
-#include <QFrame>
-#include <QLabel>
-#include <QPushButton>
-#include <QGridLayout>
-#include <QPointer>
 
+#include "IToolWindowArea.h"
 #include "QToolWindowManagerCommon.h"
 #include "QToolWindowTabBar.h"
-#include "IToolWindowArea.h"
+
+#include <QFrame>
+#include <QGridLayout>
+#include <QLabel>
+#include <QPointer>
+#include <QPushButton>
+#include <QTabBar>
+#include <QTabWidget>
 
 class QToolWindowManager;
-class QToolWindowTabBar;
 
 class QTOOLWINDOWMANAGER_EXPORT QToolWindowSingleTabAreaFrame : public QFrame
 {
