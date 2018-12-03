@@ -30,8 +30,35 @@ namespace Cry
 		{
 		public:
 
+			class CDebugElementsAdapter
+			{
+			public:
+
+				// these forward to the INode's IRenderPrimitiveCollection
+				void	                    AddSphere(const Vec3& pos, float radius, const ColorF& color) const;
+				void	                    AddLine(const Vec3& pos1, const Vec3& pos2, const ColorF& color) const;
+				void	                    AddTriangle(const Vec3& vtx1, const Vec3& vtx2, const Vec3& vtx3, const ColorF& color) const;
+				void	                    AddText(const Vec3& pos, float size, const ColorF& color, const char* szFormat, ...) const PRINTF_PARAMS(5, 6);
+				void	                    AddArrow(const Vec3& from, const Vec3& to, float coneRadius, float coneHeight, const ColorF& color) const;
+				void	                    AddAxes(const Vec3& pos, const Matrix33& axes) const;
+				void	                    AddAABB(const AABB& aabb, const ColorF& color) const;
+				void	                    AddOBB(const OBB& obb, const Vec3& pos, const ColorF& color) const;
+				void	                    AddCone(const Vec3& pos, const Vec3& dir, const float radius, const float height, const ColorF& color) const;
+				void	                    AddCylinder(const Vec3& pos, const Vec3& dir, const float radius, const float height, const ColorF& color) const;
+
+				// these forward to the INode's ILogMessageCollection
+				void                        LogInformation(const char* szFormat, ...) const PRINTF_PARAMS(2, 3);
+				void                        LogWarning(const char* szFormat, ...) const PRINTF_PARAMS(2, 3);
+
+			private:
+				friend class CScopeBase;
+				INode *                     m_pNode = nullptr;
+			};
+
+		public:
+
 			const char*                     GetName() const;
-			IRenderPrimitiveCollection*     operator->() const;
+			const CDebugElementsAdapter*    operator->() const;
 
 		protected:
 
@@ -62,8 +89,96 @@ namespace Cry
 		private:
 
 			INode*                          m_pNode;
+			CDebugElementsAdapter           m_adapter;
 			CRecursiveSyncObjectAutoLock    m_lock;
 		};
+
+		inline void CScopeBase::CDebugElementsAdapter::AddSphere(const Vec3& pos, float radius, const ColorF& color) const
+		{
+			CRY_ASSERT(m_pNode);
+			m_pNode->GetRenderPrimitiveCollection().AddSphere(pos, radius, color);
+		}
+
+		inline void CScopeBase::CDebugElementsAdapter::AddLine(const Vec3& pos1, const Vec3& pos2, const ColorF& color) const
+		{
+			CRY_ASSERT(m_pNode);
+			m_pNode->GetRenderPrimitiveCollection().AddLine(pos1, pos2, color);
+		}
+
+		inline void CScopeBase::CDebugElementsAdapter::AddTriangle(const Vec3& vtx1, const Vec3& vtx2, const Vec3& vtx3, const ColorF& color) const
+		{
+			CRY_ASSERT(m_pNode);
+			m_pNode->GetRenderPrimitiveCollection().AddTriangle(vtx1, vtx2, vtx3, color);
+		}
+
+		inline void CScopeBase::CDebugElementsAdapter::AddText(const Vec3& pos, float size, const ColorF& color, const char* szFormat, ...) const
+		{
+			CRY_ASSERT(m_pNode);
+			stack_string text;
+			va_list args;
+			va_start(args, szFormat);
+			text.FormatV(szFormat, args);
+			va_end(args);
+			m_pNode->GetRenderPrimitiveCollection().AddText(pos, size, color, "%s", text.c_str());
+		}
+
+		inline void CScopeBase::CDebugElementsAdapter::AddArrow(const Vec3& from, const Vec3& to, float coneRadius, float coneHeight, const ColorF& color) const
+		{
+			CRY_ASSERT(m_pNode);
+			m_pNode->GetRenderPrimitiveCollection().AddArrow(from, to, coneRadius, coneHeight, color);
+		}
+
+		inline void CScopeBase::CDebugElementsAdapter::AddAxes(const Vec3& pos, const Matrix33& axes) const
+		{
+			CRY_ASSERT(m_pNode);
+			m_pNode->GetRenderPrimitiveCollection().AddAxes(pos, axes);
+		}
+
+		inline void CScopeBase::CDebugElementsAdapter::AddAABB(const AABB& aabb, const ColorF& color) const
+		{
+			CRY_ASSERT(m_pNode);
+			m_pNode->GetRenderPrimitiveCollection().AddAABB(aabb, color);
+		}
+
+		inline void CScopeBase::CDebugElementsAdapter::AddOBB(const OBB& obb, const Vec3& pos, const ColorF& color) const
+		{
+			CRY_ASSERT(m_pNode);
+			m_pNode->GetRenderPrimitiveCollection().AddOBB(obb, pos, color);
+		}
+
+		inline void CScopeBase::CDebugElementsAdapter::AddCone(const Vec3& pos, const Vec3& dir, const float radius, const float height, const ColorF& color) const
+		{
+			CRY_ASSERT(m_pNode);
+			m_pNode->GetRenderPrimitiveCollection().AddCone(pos, dir, radius, height, color);
+		}
+
+		inline void CScopeBase::CDebugElementsAdapter::AddCylinder(const Vec3& pos, const Vec3& dir, const float radius, const float height, const ColorF& color) const
+		{
+			CRY_ASSERT(m_pNode);
+			m_pNode->GetRenderPrimitiveCollection().AddCylinder(pos, dir, radius, height, color);
+		}
+
+		inline void CScopeBase::CDebugElementsAdapter::LogInformation(const char* szFormat, ...) const
+		{
+			CRY_ASSERT(m_pNode);
+			stack_string text;
+			va_list args;
+			va_start(args, szFormat);
+			text.FormatV(szFormat, args);
+			va_end(args);
+			m_pNode->GetLogMessageCollection().LogInformation("%s", text.c_str());
+		}
+
+		inline void CScopeBase::CDebugElementsAdapter::LogWarning(const char* szFormat, ...) const
+		{
+			CRY_ASSERT(m_pNode);
+			stack_string text;
+			va_list args;
+			va_start(args, szFormat);
+			text.FormatV(szFormat, args);
+			va_end(args);
+			m_pNode->GetLogMessageCollection().LogWarning("%s", text.c_str());
+		}
 
 		inline CScopeBase::CScopeBase()
 			: m_pNode(nullptr)
@@ -78,7 +193,8 @@ namespace Cry
 		inline void CScopeBase::PushNode(INode& node)
 		{
 			CRY_ASSERT(!m_pNode);
-			m_pNode = &node;
+			CRY_ASSERT(!m_adapter.m_pNode);
+			m_pNode = m_adapter.m_pNode = &node;
 			gEnv->pUDR->GetHub().GetNodeStack().PushNode(node);
 		}
 
@@ -88,10 +204,11 @@ namespace Cry
 			return m_pNode->GetName();
 		}
 
-		inline IRenderPrimitiveCollection* CScopeBase::operator->() const
+		inline const CScopeBase::CDebugElementsAdapter* CScopeBase::operator->() const
 		{
 			CRY_ASSERT(m_pNode);
-			return &m_pNode->GetRenderPrimitiveCollection();
+			CRY_ASSERT(m_adapter.m_pNode);
+			return &m_adapter;
 		}
 
 		//===================================================================================

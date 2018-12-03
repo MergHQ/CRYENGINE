@@ -10,6 +10,7 @@
 #include "shared/String.h"
 
 #include "core/IRenderPrimitiveCollection.h"
+#include "core/ILogMessageCollection.h"
 #include "core/INode.h"
 #include "core/INodeStack.h"
 #include "core/ITreeListener.h"
