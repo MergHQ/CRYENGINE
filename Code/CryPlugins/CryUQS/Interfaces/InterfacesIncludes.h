@@ -9,6 +9,7 @@
 #endif
 
 #include <CrySchematyc/Utils/EnumFlags.h>
+#include <CryMath/Cry_Color.h>
 
 #include "shared/TypeInfo.h"
 #include "shared/DataTypeHelper.h"
