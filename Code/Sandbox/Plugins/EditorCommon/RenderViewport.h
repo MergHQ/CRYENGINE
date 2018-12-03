@@ -237,8 +237,6 @@ protected:
 
 	//-------------------------------------------
 	// Render options.
-	bool m_bDisplayLabels;
-	bool m_bShowSafeFrame;
 	bool m_bRenderStats;
 
 	// Index of camera objects.
