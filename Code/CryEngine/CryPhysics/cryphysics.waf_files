@@ -89,13 +89,15 @@
             "boolean2d.cpp",
             "boolean3d.cpp",
             "matrixnm.cpp",
+			"cvars.cpp",
             "qhull.cpp",
             "utils.cpp",
             "worldump.cpp",
             "matrixnm.h",
             "quotient.h",
             "utils.h",
-            "vectorn.h"
+            "vectorn.h",
+			"cvars.h"
         ]
     }
 }
