@@ -21,7 +21,7 @@ struct SPreviouslySetPrefabData
 class CUndoSwapPrefab : public IUndoObject
 {
 public:
-	CUndoSwapPrefab(const std::vector<CPrefabObject*>& objects, const std::vector<SPreviouslySetPrefabData> & previousPrefab, const char* undoDescription);
+	CUndoSwapPrefab(const std::vector<CPrefabObject*>& objects, const std::vector<SPreviouslySetPrefabData> & previousPrefab, const char* undoDescription, const string& swappingWithAsset);
 
 protected:
 	virtual const char* GetDescription() override { return m_undoDescription; }
@@ -34,15 +34,17 @@ private:
 
 	std::vector<CryGUID>     m_guids;
 	string                   m_undoDescription;
+	string                   m_swappingWithAsset;
 	std::vector<SPreviouslySetPrefabData> m_undoPreviousPrefabAssets;
 	std::vector<SPreviouslySetPrefabData> m_redoPreviousPrefabAssets;
 
 };
 
-CUndoSwapPrefab::CUndoSwapPrefab(const std::vector<CPrefabObject*>& objects, const std::vector<SPreviouslySetPrefabData>& previousPrefabsData, const char* undoDescription) :
+CUndoSwapPrefab::CUndoSwapPrefab(const std::vector<CPrefabObject*>& objects, const std::vector<SPreviouslySetPrefabData> & previousPrefab, const char* undoDescription, const string& swappingWithAsset) :
 	m_undoPreviousPrefabAssets(objects.size()),
 	m_redoPreviousPrefabAssets(objects.size()),
-	m_undoDescription(undoDescription)
+	m_undoDescription(undoDescription),
+	m_swappingWithAsset(swappingWithAsset)
 {
 	CRY_ASSERT(!objects.empty());
 	//store all prefab objects guids and change data
@@ -51,31 +53,17 @@ CUndoSwapPrefab::CUndoSwapPrefab(const std::vector<CPrefabObject*>& objects, con
 		m_guids.push_back(pObj->GetId());
 	}
 
-	for (int i = 0; i < previousPrefabsData.size(); i++)
+	for (int i = 0; i < previousPrefab.size(); i++)
 	{
-		m_undoPreviousPrefabAssets[i] = previousPrefabsData[i];
+		m_undoPreviousPrefabAssets[i] = previousPrefab[i];
 	}
 }
 
 const char* CUndoSwapPrefab::GetObjectName()
 {
-	string result = "";
-	int guidsSize = m_guids.size();
-
-	if (guidsSize == 1) //If we only have one prefab object we can directly show the name
-	{
-		CBaseObject* pObject = GetIEditor()->GetObjectManager()->FindObject(m_guids[0]);
-		if (pObject)
-		{
-			result = pObject->GetName();
-		}
-	}
-	else if (guidsSize > 1) //if we have more than one prefab object we show how many we have
-	{
-		result.Format("%d prefabs", guidsSize);
-	}
-
-	return result.c_str();
+	string result;
+	result.Format(" with prefab asset \"%s\"", m_swappingWithAsset.c_str());
+	return result;
 }
 
 void CUndoSwapPrefab::Undo(bool bUndo)
@@ -124,6 +112,16 @@ void CPrefabPicker::SwapPrefab(const std::vector<CPrefabObject*>& prefabObjects)
 	if (prefabObjects.empty())
 	{
 		return;
+	}
+
+	//We should never allow swap of nested selections (aka selections where some of the objects are parents of other objects)
+	for (CPrefabObject* pPrefabObject : prefabObjects)
+	{
+		if (CPrefabPicker::ArePrefabsInParentHierarchy(pPrefabObject, prefabObjects))
+		{
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Cannot Swap this selection as some of the objects in the selection are parents of %s", pPrefabObject->GetName().c_str());
+			return;
+		}
 	}
 
 	CAssetManager* const pManager = CAssetManager::GetInstance();
@@ -181,19 +179,69 @@ void CPrefabPicker::SwapPrefab(const std::vector<CPrefabObject*>& prefabObjects)
 	{pLastSelectedPrefabAsset->GetType()->GetTypeName()},
 	prefabObjects[prefabObjects.size() - 1]->GetAssetPath());
 
+	std::vector<CPrefabObject*> objectsToUndo;
+	std::vector<SPreviouslySetPrefabData> objectsToUndoPreviousData;
+
+	//We only need to update a specific prefab item only once, the modify will propagate the changes to every instance
+	//Create a map so that we can track which object has been modified in which item and avoid repeated changes
+	std::unordered_map<CPrefabItem*, std::vector<CryGUID>> updatedObjectItem;
+	
 	for (int i = 0; i < prefabObjects.size(); i++)
 	{
 		//if we have accepted the operation apply to all instances and register an undo
 		if (applyChanges && previousPrefabsData[i].changed)
 		{
-			//This updates the CPrefabItem with the new prefab guids
-			prefabObjects[i]->UpdatePrefab(eOCOT_Modify);
+			//we should only undo the objects we have actually changed and let modify update the rest
+			bool shouldUndo = false;
 
-			if (!CUndo::IsRecording())
+			//we need the parent of the prefab we are updating so that we can track its changes
+			CPrefabObject* pParentPrefab = static_cast<CPrefabObject*>(prefabObjects[i]->GetPrefab());
+			CPrefabItem* pParentItem = pParentPrefab ? static_cast<CPrefabItem*>(pParentPrefab->GetPrefabItem()) : nullptr;
+			
+			//this prefab has a parent to update, we can use the map to avoid multiple useless modify prefab calls
+			if (pParentItem)
 			{
-				CUndo undo("Prefab Swap");
-				CUndo::Record(new CUndoSwapPrefab(prefabObjects, previousPrefabsData, "Prefab Swap"));
+				//find if we have already modified something in pParentItem
+				std::unordered_map<CPrefabItem*, std::vector<CryGUID>>::iterator it = updatedObjectItem.find(pParentItem);
+				
+				//if we need to call a modify on this prefab item 
+				bool shouldUpdate = false;
+				
+				//we don't know this item, definitely needs modify
+				if (it == updatedObjectItem.end())
+				{
+					shouldUpdate = true;
+				}
+				else if(std::find(it->second.begin(), it->second.end(), prefabObjects[i]->GetIdInPrefab()) == it->second.end()) //we know this item and might know this object guid
+				{
+					shouldUpdate = true;
+				}
+
+				//no changes applied to this item yet, needs a call to modify
+				if (shouldUpdate)
+				{
+					//This updates the CPrefabItem with the new prefab guids
+					prefabObjects[i]->UpdatePrefab(eOCOT_Modify);
+					updatedObjectItem[pParentItem].push_back(prefabObjects[i]->GetIdInPrefab());
+
+					//we only undo the prefab items we actually called modify on
+					shouldUndo = true;
+				}
 			}
+			else
+			{
+				//This updates the CPrefabItem with the new prefab guids
+				prefabObjects[i]->UpdatePrefab(eOCOT_Modify);
+				shouldUndo = true;
+			}
+
+			if (shouldUndo)
+			{
+				//add this objects to the undo list
+				objectsToUndo.push_back(prefabObjects[i]);
+				objectsToUndoPreviousData.push_back(previousPrefabsData[i]);
+			}
+
 			GetIEditor()->GetObjectManager()->AddObjectToSelection(prefabObjects[i]);
 		} 		//if we have not accepted the operation revert to original asset if necessary
 		else if (!applyChanges && previousPrefabsData[i].changed)
@@ -202,19 +250,24 @@ void CPrefabPicker::SwapPrefab(const std::vector<CPrefabObject*>& prefabObjects)
 			GetIEditor()->GetObjectManager()->AddObjectToSelection(prefabObjects[i]);
 		}
 	}
+
+	if (objectsToUndo.size())
+	{
+		if (!CUndo::IsRecording())
+		{
+			//we do not undo the whole objects list, we only need one set per prefab item parent, the modify calls in Swap Undo will do the rest
+			CUndo undo("Prefab Swap");
+			CUndo::Record(new CUndoSwapPrefab(objectsToUndo, objectsToUndoPreviousData, "Prefab Swap", objectsToUndo[0]->GetPrefabItem()->GetName()));
+		}
+	}
 }
 
 bool CPrefabPicker::SetPrefabFromAsset(CPrefabObject* pPrefabObject, const CAsset* pNewPrefabAsset)
 {
-	string filename = pPrefabObject->GetAssetPath();
-	CAssetManager* const pManager = CAssetManager::GetInstance();
-	const CAsset* pAsset = pManager->FindAssetForFile(filename);
-
-	CBaseObject* pParent = pPrefabObject->GetParent();
-
 	if (pNewPrefabAsset && IsValidAssetForPrefab(pPrefabObject, *pNewPrefabAsset))
 	{
 		IDataBaseItem* pItem = GetIEditor()->GetPrefabManager()->LoadItem(pNewPrefabAsset->GetGUID());
+		
 		//This can happen if the asset is in the asset browser but the prefab object has been deleted
 		//(for example undo after creation)
 		if (!pItem)
@@ -302,4 +355,20 @@ void CPrefabPicker::GetAllPrefabObjectDescendants(const CBaseObject* pObject, st
 		}
 		GetAllPrefabObjectDescendants(pChild, outAllChildren);
 	}
+}
+
+bool CPrefabPicker::ArePrefabsInParentHierarchy(const CPrefabObject* pPrefab, const std::vector<CPrefabObject*>& possibleParents)
+{
+	CBaseObject* pParent = pPrefab->GetPrefab();
+	while (pParent)
+	{
+		if (std::find(possibleParents.begin(), possibleParents.end(), pParent) != possibleParents.end())
+		{
+			return true;
+		}
+
+		pParent = pParent->GetPrefab();
+	}
+
+	return false;
 }
