@@ -429,6 +429,7 @@ protected:
 	};
 	typedef std::map<CClassTemplateData*, CTemplateData> MapTemplates;
 	std::unique_ptr<MapTemplates> m_pMapTemplates;
+	bool m_updateTemplates;
 
 public:
 	explicit CSmartObject(EntityId entityId);
@@ -446,7 +447,10 @@ public:
 	bool operator==(const CSmartObject& other) const { return m_entityId == other.m_entityId; }
 
 	//Adds a class to the current set
-	void RegisterSmartObjectClass(CSmartObjectClass* pClass) { m_vClasses.push_back(pClass); }
+	void RegisterSmartObjectClass(CSmartObjectClass* pClass)
+	{ 
+		m_vClasses.push_back(pClass);
+	}
 
 	//Removes a class from the current set
 	void UnregisterSmartObjectClass(CSmartObjectClass* pClass)
@@ -466,6 +470,8 @@ public:
 
 	/// Measures the user size and applies value to all associated smart object classes
 	void ApplyUserSize();
+
+	void InvalidateTemplates() { m_updateTemplates = true; }
 
 	MapTemplates& GetMapTemplates();
 
