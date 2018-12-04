@@ -47,8 +47,7 @@ void CObjectToPrefabAssetConverter::Convert(const QMimeData& data, const SAssetC
 			//we need to select the actual folder where the conversion is going to take place
 			info.pOwnerBrowser->SelectAsset(info.folderPath);
 
-			SPrefabCreateParams createParam;
-			createParam.pGroup = &group;
+			SPrefabCreateParams createParam(&group);
 			info.pOwnerBrowser->QueryNewAsset(*pAssetType, &createParam);
 		});
 	}

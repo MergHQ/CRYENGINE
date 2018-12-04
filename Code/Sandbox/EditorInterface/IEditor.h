@@ -444,7 +444,6 @@ struct IEditor
 	virtual void             AddWaitProgress(CWaitProgress* pProgress) = 0;
 	virtual void             RemoveWaitProgress(CWaitProgress* pProgress) = 0;
 	virtual void             OnObjectContextMenuOpened(CPopupMenuItem* pMenu, const CBaseObject* pObject) = 0;
-	virtual void             OnPrefabMake() = 0;
 	virtual IEditorMaterial* LoadMaterial(const string& name) = 0;
 	virtual void             OnRequestMaterial(IMaterial* pMatInfo) = 0;
 	virtual bool             IsCGroup(CBaseObject* pObject) = 0;

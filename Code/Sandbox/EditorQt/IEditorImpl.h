@@ -309,7 +309,6 @@ public:
 	virtual void             UnRegisterEntityAsJob(IRenderNode* pRenderNode);
 	virtual void             SyncPrefabCPrefabObject(CBaseObject* pObject, const SObjectChangedContext& context);
 	virtual bool             IsModifyInProgressCPrefabObject(CBaseObject* oObject);
-	virtual void             OnPrefabMake();
 	virtual IEditorMaterial* LoadMaterial(const string& name);
 	virtual void             OnRequestMaterial(IMaterial* pMatInfo);
 	virtual bool             IsCGroup(CBaseObject* pObject);

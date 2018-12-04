@@ -1500,11 +1500,6 @@ void CEditorImpl::OnRequestMaterial(IMaterial* pMatInfo)
 		GetMaterialManager()->OnRequestMaterial(pMatInfo);
 }
 
-void CEditorImpl::OnPrefabMake()
-{
-	m_pPrefabManager->MakeFromSelection();
-}
-
 bool CEditorImpl::PickObject(const Vec3& vWorldRaySrc, const Vec3& vWorldRayDir, SRayHitInfo& outHitInfo, CBaseObject* pObject)
 {
 	CSurfaceInfoPicker picker;

@@ -43,7 +43,13 @@ private:
 //! \sa CAssetType::Create 
 struct SPrefabCreateParams : CAssetType::SCreateParams
 {
-	ISelectionGroup* pGroup;
+	SPrefabCreateParams(const ISelectionGroup* _pGroup)
+		: pGroup(_pGroup)
+	{
+
+	}
+
+	const ISelectionGroup* pGroup;
 };
 
 
@@ -83,7 +89,7 @@ public:
 	virtual void Serialize(XmlNodeRef& node, bool bLoading) override;
 
 	//! Make new prefab item from selection. Displays a pop-up dialog to save new prefab.
-	CPrefabItem* MakeFromSelection(CSelectionGroup* pSelectionGroup = nullptr);
+	CPrefabItem* MakeFromSelection(const CSelectionGroup* pSelectionGroup);
 
 	//! Add selected objects to prefab (which selected too)
 	void         AddSelectionToPrefab();
