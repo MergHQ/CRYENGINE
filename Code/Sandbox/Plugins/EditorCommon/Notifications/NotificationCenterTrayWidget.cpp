@@ -128,25 +128,10 @@ public:
 private:
 	void AnimateNotification(CNotificationWidget* pNotification, bool bIn)
 	{
-		QPropertyAnimation* pAlphaAnim = new QPropertyAnimation(pNotification, "windowOpacity");
-		pAlphaAnim->setDuration(animationDuration);
-		pAlphaAnim->setStartValue(bIn ? 0.0f : 1.0f);
-		pAlphaAnim->setEndValue(bIn ? 1.0 : 0.0f);
-
-		AnimateMove(pNotification, QPoint(animationDistance, 0));
-
-		pAlphaAnim->start(QAbstractAnimation::DeleteWhenStopped);
-
-		if (!bIn)
-		{
-			connect(pAlphaAnim, &QPropertyAnimation::finished, [this, pNotification]()
-			{
-				pNotification->deleteLater();
-			});
-		}
+		AnimateMove(pNotification, QPoint(animationDistance, 0), !bIn);
 	}
 
-	void AnimateMove(CNotificationWidget* pNotification, const QPoint& delta)
+	void AnimateMove(CNotificationWidget* pNotification, const QPoint& delta, bool removeOnEnd = false)
 	{
 		// Check if there's a move animation already for this notification
 		QPropertyAnimation* pMoveAnim = m_moveAnimations[pNotification];
@@ -178,11 +163,16 @@ private:
 
 		m_moveAnimations.insert(pNotification, pMoveAnim);
 
-		connect(pMoveAnim, &QPropertyAnimation::finished, [this, pNotification, pMoveAnim]()
+		connect(pMoveAnim, &QPropertyAnimation::finished, [this, pNotification, pMoveAnim, removeOnEnd]()
 		{
 			// Make sure we don't track this move anim after it's done playing
 			if (m_moveAnimations.contains(pNotification) && pMoveAnim == m_moveAnimations[pNotification])
 				m_moveAnimations.remove(pNotification);
+
+			if (removeOnEnd)
+			{
+				pNotification->deleteLater();
+			}
 		});
 	}
 
