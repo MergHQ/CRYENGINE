@@ -1616,6 +1616,7 @@ protected:
 		}
 	}
 
+private:
 	Event m_eventToSend;
 	bool m_eventWasSent;
 };
@@ -1625,11 +1626,15 @@ protected:
 
 // Same as SendEvent with the exception that this node never finishes.
 // Usually used for transitions in state machines etc.
-class SendTransitionEvent : public SendEvent
+class SendTransitionEvent : public Action
 {
-	typedef SendEvent BaseClass;
+	typedef Action BaseClass;
 
 public:
+	struct RuntimeData
+	{
+	};
+
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
 		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
@@ -1681,10 +1686,27 @@ public:
 	}
 #endif
 protected:
+	virtual void OnInitialize(const UpdateContext& context) override
+	{
+
+#ifdef STORE_EVENT_NAME
+		if (!context.variables.eventsDeclaration.IsDeclared(m_eventToSend.GetName()))
+		{
+			gEnv->pLog->LogError("Event '%s' was not sent. Did you forget to declare it?", m_eventToSend.GetName());
+			return;
+		}
+#endif // #ifdef STORE_EVENT_NAME
+
+		gAIEnv.pBehaviorTreeManager->HandleEvent(context.entityId, m_eventToSend);
+	}
+
 	virtual Status Update(const UpdateContext& context) override
 	{
 		return Running;
 	}
+
+private:
+	Event m_eventToSend;
 };
 
 //////////////////////////////////////////////////////////////////////////
