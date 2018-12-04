@@ -260,11 +260,11 @@ void CLevelEditorViewport::PopulateMenu(CPopupMenuItem& menu)
 	{
 		ICommandManager* pCommandManager = GetIEditor()->GetICommandManager();
 		CPopupMenuItem& itemZ = menu.AddCommand("Speed Height-Relative", "camera.toggle_speed_height_relative");
-		pCommandManager->GetAction("camera.toggle_speed_height_relative")->setChecked(s_cameraPreferences.speedHeightRelativeEnabled);
+		pCommandManager->GetAction("camera.toggle_speed_height_relative")->setChecked(s_cameraPreferences.IsSpeedHeightRelativeEnabled());
 		CPopupMenuItem& itemT = menu.AddCommand("Terrain Collision", "camera.toggle_terrain_collisions");
-		pCommandManager->GetAction("camera.toggle_terrain_collisions")->setChecked(s_cameraPreferences.terrainCollisionEnabled);
+		pCommandManager->GetAction("camera.toggle_terrain_collisions")->setChecked(s_cameraPreferences.IsTerrainCollisionEnabled());
 		CPopupMenuItem& itemO = menu.AddCommand("Object Collision", "camera.toggle_object_collisions");
-		pCommandManager->GetAction("camera.toggle_object_collisions")->setChecked(s_cameraPreferences.objectCollisionEnabled);
+		pCommandManager->GetAction("camera.toggle_object_collisions")->setChecked(s_cameraPreferences.IsObjectCollisionEnabled());
 		menu.AddSeparator();
 	}
 

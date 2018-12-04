@@ -1165,9 +1165,9 @@ void CEditorMainFrame::InitMenus()
 		connect(displayMenu, &QMenu::aboutToShow, [this]()
 		{
 			ICommandManager* pCommandManager = GetIEditorImpl()->GetICommandManager();
-			pCommandManager->GetAction("camera.toggle_speed_height_relative")->setChecked(CRenderViewport::s_cameraPreferences.speedHeightRelativeEnabled);
-			pCommandManager->GetAction("camera.toggle_terrain_collisions")->setChecked(CRenderViewport::s_cameraPreferences.terrainCollisionEnabled);
-			pCommandManager->GetAction("camera.toggle_object_collisions")->setChecked(CRenderViewport::s_cameraPreferences.objectCollisionEnabled);
+			pCommandManager->GetAction("camera.toggle_speed_height_relative")->setChecked(CRenderViewport::s_cameraPreferences.IsSpeedHeightRelativeEnabled());
+			pCommandManager->GetAction("camera.toggle_terrain_collisions")->setChecked(CRenderViewport::s_cameraPreferences.IsTerrainCollisionEnabled());
+			pCommandManager->GetAction("camera.toggle_object_collisions")->setChecked(CRenderViewport::s_cameraPreferences.IsObjectCollisionEnabled());
 		});
 	}
 
