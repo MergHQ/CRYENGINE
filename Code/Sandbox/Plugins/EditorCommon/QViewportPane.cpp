@@ -16,8 +16,6 @@
 
 #include <CryInput/IHardwareMouse.h>
 
-#include <QApplication>
-#include <QGuiApplication>
 #include <QKeyEvent>
 #include <QLayout>
 #include <QMouseEvent>
@@ -106,12 +104,6 @@ CPoint QPointToCPointLocal(const QWidget* widget, const QPoint& point)
 	return CPoint(QtUtil::PixelScale(widget, point.x()), QtUtil::PixelScale(widget, point.y()));
 }
 
-//! Converts a QPointF to a CPoint, using local space of the provided widget.
-CPoint QPointToCPointLocal(const QWidget* widget, const QPointF& point)
-{
-	return CPoint(QtUtil::PixelScale(widget, point.x()), QtUtil::PixelScale(widget, point.y()));
-}
-
 } // unnamed namespace
 
 QViewportWidget::QViewportWidget(CViewport* viewport)
@@ -171,7 +163,6 @@ void QViewportWidget::mousePressEvent(QMouseEvent* event)
 	}
 	else
 	{
-
 		if (GetIEditor()->GetViewportManager()->GetGameViewport() == m_viewport)
 		{
 			// if game mode is suspended, unsuspend now
@@ -538,118 +529,116 @@ void QAspectLayout::setGeometry(const QRect& rect)
 {
 	QLayout::setGeometry(rect);
 
-	if (m_child)
+	if (!m_child)
 	{
-		QViewportWidget* w = qobject_cast<QViewportWidget*>(m_child->widget());
-		if (w)
+		return;
+	}
+
+	QViewportWidget* w = qobject_cast<QViewportWidget*>(m_child->widget());
+	if (!w)
+	{
+		return;
+	}
+
+	CViewport* viewport = w->GetViewport();
+	CViewport::EResolutionMode mode = viewport->GetResolutionMode();
+
+	int width, height;
+	viewport->GetResolution(width, height);
+	width = width / w->devicePixelRatioF();
+	height = height / w->devicePixelRatioF();
+
+	QPoint upleft;
+	QPoint downRight;
+
+	switch (mode)
+	{
+	case CViewport::EResolutionMode::Window:
 		{
-			CViewport* viewport = w->GetViewport();
-			CViewport::EResolutionMode mode = viewport->GetResolutionMode();
+			upleft = rect.topLeft();
+			downRight = rect.bottomRight();
+			break;
+		}
+	case CViewport::EResolutionMode::Stretch:
+		{
+			// First get aspect ratio of current widget and aspect ratio of child widget
+			float viewportAspect = width / (float)height;
 
-			int width, height;
-			viewport->GetResolution(width, height);
+			width = rect.width();
+			height = rect.height();
+			float ownAspect = width / (float)height;
 
-			QPoint upleft;
-			QPoint downRight;
+			float startX, endX, startY, endY;
 
-			width = width / w->devicePixelRatioF();
-			height = height / w->devicePixelRatioF();
-
-			switch (mode)
+			if (ownAspect > viewportAspect)
 			{
-			case CViewport::EResolutionMode::Window:
-				{
-					upleft = rect.topLeft();
-					downRight = rect.bottomRight();
-					break;
-				}
-			case CViewport::EResolutionMode::Stretch:
-				{
-					// First get aspect ratio of current widget and aspect ratio of child widget
-					float viewportAspect = width / (float)height;
-
-					width = rect.width();
-					height = rect.height();
-					float ownAspect = width / (float)height;
-
-					float startX, endX, startY, endY;
-
-					if (ownAspect > viewportAspect)
-					{
-						startY = 0;
-						endY = height;
-						int screenWidth = viewportAspect * height;
-						startX = (width - screenWidth) / 2;
-						endX = (width + screenWidth) / 2;
-					}
-					else
-					{
-						startX = 0;
-						endX = width;
-						int screenHeight = width / viewportAspect;
-						startY = (height - screenHeight) / 2;
-						endY = (height + screenHeight) / 2;
-					}
-
-					upleft.setX(startX);
-					upleft.setY(startY);
-					downRight.setX(endX);
-					downRight.setY(endY);
-					break;
-				}
-			case CViewport::EResolutionMode::Center:
-				{
-					// Now find the difference between this resolution and the new geometry and split it into two
-					upleft.setX((rect.width() - width) / 2);
-					upleft.setY((rect.height() - height) / 2);
-					downRight.setX(upleft.x() + width);
-					downRight.setY(upleft.y() + height);
-					break;
-				}
-			case CViewport::EResolutionMode::TopRight:
-				{
-					upleft.setX(rect.width() - width);
-					upleft.setY(0);
-					downRight.setX(rect.width());
-					downRight.setY(height);
-					break;
-				}
-			case CViewport::EResolutionMode::TopLeft:
-				{
-					upleft.setX(0);
-					upleft.setY(0);
-					downRight.setX(width);
-					downRight.setY(height);
-					break;
-				}
-			case CViewport::EResolutionMode::BottomRight:
-				{
-					upleft.setX(rect.width() - width);
-					upleft.setY(rect.height() - height);
-					downRight.setX(rect.width());
-					downRight.setY(rect.height());
-					break;
-				}
-			case CViewport::EResolutionMode::BottomLeft:
-				{
-					upleft.setX(0);
-					upleft.setY(rect.height() - height);
-					downRight.setX(width);
-					downRight.setY(rect.height());
-
-					break;
-				}
+				startY = 0;
+				endY = height;
+				int screenWidth = viewportAspect * height;
+				startX = (width - screenWidth) / 2;
+				endX = (width + screenWidth) / 2;
+			}
+			else
+			{
+				startX = 0;
+				endX = width;
+				int screenHeight = width / viewportAspect;
+				startY = (height - screenHeight) / 2;
+				endY = (height + screenHeight) / 2;
 			}
 
-			QRect finalRect(upleft, downRight);
-
-			m_child->setGeometry(finalRect);
+			upleft.setX(startX);
+			upleft.setY(startY);
+			downRight.setX(endX);
+			downRight.setY(endY);
+			break;
+		}
+	case CViewport::EResolutionMode::Center:
+		{
+			// Now find the difference between this resolution and the new geometry and split it into two
+			upleft.setX((rect.width() - width) / 2);
+			upleft.setY((rect.height() - height) / 2);
+			downRight.setX(upleft.x() + width);
+			downRight.setY(upleft.y() + height);
+			break;
+		}
+	case CViewport::EResolutionMode::TopRight:
+		{
+			upleft.setX(rect.width() - width);
+			upleft.setY(0);
+			downRight.setX(rect.width());
+			downRight.setY(height);
+			break;
+		}
+	case CViewport::EResolutionMode::TopLeft:
+		{
+			upleft.setX(0);
+			upleft.setY(0);
+			downRight.setX(width);
+			downRight.setY(height);
+			break;
+		}
+	case CViewport::EResolutionMode::BottomRight:
+		{
+			upleft.setX(rect.width() - width);
+			upleft.setY(rect.height() - height);
+			downRight.setX(rect.width());
+			downRight.setY(rect.height());
+			break;
+		}
+	case CViewport::EResolutionMode::BottomLeft:
+		{
+			upleft.setX(0);
+			upleft.setY(rect.height() - height);
+			downRight.setX(width);
+			downRight.setY(rect.height());
+			break;
 		}
 	}
-	else
-	{
-		m_child->setGeometry(rect);
-	}
+
+	QRect source(upleft, downRight);
+	QRect limits(0, 0, rect.width() - 1, rect.height() - 1);
+	m_child->setGeometry(source.intersected(limits));
 }
 
 QViewportPane::QViewportPane(CViewport* viewport, QWidget* headerWidget)
