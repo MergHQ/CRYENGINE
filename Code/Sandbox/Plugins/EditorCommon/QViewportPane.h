@@ -5,9 +5,9 @@
 #include "EditorCommonAPI.h"
 #include "Viewport.h"
 
-#include <QWidget>
 #include <QEvent>
 #include <QLayout>
+#include <QWidget>
 
 class CLevelEditorViewport;
 class QViewportHeader;

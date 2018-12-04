@@ -237,6 +237,7 @@ CSmartObject::CSmartObject(EntityId entityId)
 	, m_vLookAtPos(ZERO)
 	, m_eValidationResult(eSOV_Unknown)
 	, m_bHidden(false)
+	, m_updateTemplates(false)
 {
 	m_fRandom = cry_random(0.0f, 0.5f);
 
@@ -3333,6 +3334,36 @@ void CSmartObjectManager::OnSpawn(IEntity* pEntity, SEntitySpawnParams& params)
 		// register each class in navigation
 		RegisterInNavigation(smartObject, pClass);
 	}
+
+	// Update user size and smart object classes that have this smart object as user class.
+	smartObject->ApplyUserSize();
+	for (uint32 i = 0; i < vClasses.size(); ++i)
+	{
+		CSmartObjectClass* pClass = vClasses[i];
+
+		MapConditions::iterator itConditions, itConditionsEnd = m_Conditions.end();
+		for (itConditions = m_Conditions.begin(); itConditions != itConditionsEnd; ++itConditions)
+		{
+			// ignore event rules
+			if (!itConditions->second.sEvent.empty())
+				continue;
+
+			CCondition* pCondition = &itConditions->second;
+			if (pCondition->pUserClass != pClass)
+				continue;
+
+			if (pCondition->bEnabled && pCondition->pObjectClass && pCondition->iRuleType == 1)
+			{
+				pCondition->pObjectClass->AddNavUserClass(pCondition->pUserClass);
+
+				pCondition->pObjectClass->FirstObject();
+				while (CSmartObject* pSmartObject = pCondition->pObjectClass->NextObject())
+				{
+					pSmartObject->InvalidateTemplates();
+				}
+			}
+		}
+	}
 }
 
 void CSmartObjectManager::RemoveEntity(IEntity* pEntity)
@@ -3634,8 +3665,13 @@ void CSmartObjectManager::GetTemplateIStatObj(IEntity* pEntity, std::vector<ISta
 
 CSmartObject::MapTemplates& CSmartObject::GetMapTemplates()
 {
-	if (m_pMapTemplates.get())
-		return *m_pMapTemplates.get();
+	if (!m_updateTemplates)
+	{
+		if (m_pMapTemplates.get())
+			return *m_pMapTemplates.get();
+	}
+
+	m_updateTemplates = false;
 
 	m_pMapTemplates.reset(new MapTemplates);
 
