@@ -12,6 +12,8 @@ namespace Cry
 {
 	namespace GamePlatform
 	{
+		struct IBase;
+		struct IPlugin;
 		struct IAccount;
 		struct IAchievement;
 		struct ILeaderboards;
@@ -25,7 +27,7 @@ namespace Cry
 		struct IUser;
 		struct IUserGeneratedContent;
 		class  UserIdentifier;
-		
+
 		struct SRichPresence
 		{
 			enum class ETimer
@@ -99,9 +101,9 @@ namespace Cry
 		//! Determines the size of a user's avatar, used when retrieving the avatar as a texture (see GetAvatar)
 		enum class EAvatarSize
 		{
-			Large,  // For Steam: 184x184
-			Medium, // For Steam: 64x64
-			Small   // For Steam: 32x32
+			Large,  //!< E.g. for Steam: 184x184
+			Medium, //!< E.g. for Steam: 64x64
+			Small   //!< E.g. for Steam: 32x32
 		};
 
 		//! Type of in-game overlay dialog with a target user, used together with IPlugin::OpenDialogWithTargetUser
@@ -118,7 +120,7 @@ namespace Cry
 			Achievements
 		};
 
-		//! Flags to be passed to platform service for querying/downloading 
+		//! Flags to be passed to platform service for querying/downloading
 		//! information about users.
 		enum EUserInformationFlags : uint8
 		{
@@ -148,16 +150,16 @@ namespace Cry
 
 		namespace Detail
 		{
-			using NumericIdentifierValue = uint64; // Steam, PSN
-			using StringIdentifierValue = CryFixedStringT<32>; // Discord
+			using NumericIdentifierValue = uint64;
+			using StringIdentifierValue = CryFixedStringT<32>;
 
 			struct STraitsBase
 			{
 				using ServiceType = ServiceIdentifier;
 				// Note: When adding types here make sure you update the code using stl::holds_alternative
 				// and stl::get
-				using ValueType = CryVariant<StringIdentifierValue, NumericIdentifierValue>; 
-				
+				using ValueType = CryVariant<StringIdentifierValue, NumericIdentifierValue>;
+
 				static const char* ToDebugString(const ServiceIdentifier& svcId, const char* szIdKind, const ValueType& value)
 				{
 					static stack_string debugStr;

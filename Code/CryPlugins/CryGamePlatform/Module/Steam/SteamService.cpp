@@ -148,7 +148,13 @@ namespace Cry
 					CryLogAlways("[Steam] Running Steam game beta %s", betaName);
 				}
 
-				CryLogAlways("[Steam] Successfully initialized Steam API, running build id %i", pSteamApps->GetAppBuildId());
+				ISteamUser* pSteamUser = SteamUser();
+				if (!pSteamUser)
+				{
+					return false;
+				}
+
+				CryLogAlways("[Steam] Successfully initialized Steam API, user_id=%" PRIu64 " build_id=%i", pSteamUser->GetSteamID().ConvertToUint64(), pSteamApps->GetAppBuildId());
 
 				if (Cry::GamePlatform::IPlugin* pPlugin = gEnv->pSystem->GetIPluginManager()->QueryPlugin<Cry::GamePlatform::IPlugin>())
 				{
@@ -267,7 +273,7 @@ namespace Cry
 
 				return nullptr;
 			}
-			
+
 			void CService::OnGameOverlayActivated(GameOverlayActivated_t* pData)
 			{
 				// Upload statistics added during gameplay
@@ -348,17 +354,19 @@ namespace Cry
 				switch (dialog)
 				{
 				case EDialog::Friends:
-					return OpenDialog("Friends");
+					return OpenDialog("friends");
 				case EDialog::Community:
-					return OpenDialog("Community");
+					return OpenDialog("community");
 				case EDialog::Players:
-					return OpenDialog("Players");
+					return OpenDialog("players");
 				case EDialog::Settings:
-					return OpenDialog("Settings");
+					return OpenDialog("settings");
 				case EDialog::Group:
-					return OpenDialog("OfficialGameGroup");
+					return OpenDialog("officialgamegroup");
 				case EDialog::Achievements:
-					return OpenDialog("Achievements");
+					return OpenDialog("achievements");
+				case EDialog::Stats:
+					return OpenDialog("stats");
 				}
 
 				return false;
@@ -459,7 +467,7 @@ namespace Cry
 			{
 				return TryGetAccount(accountId);
 			}
-			
+
 			bool CService::IsFriendWith(const AccountIdentifier& accountId) const
 			{
 				if (ISteamFriends* pSteamFriends = SteamFriends())
@@ -467,7 +475,7 @@ namespace Cry
 					const CSteamID steamId = ExtractSteamID(accountId);
 					return pSteamFriends->HasFriend(steamId, k_EFriendFlagImmediate);
 				}
-			
+
 				return false;
 			}
 
@@ -500,7 +508,7 @@ namespace Cry
 
 				return EFriendRelationship::None;
 			}
-			
+
 			CServer* CService::CreateServer(bool bLocal)
 			{
 				if (m_pServer == nullptr)
