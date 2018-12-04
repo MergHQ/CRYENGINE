@@ -21,7 +21,7 @@ struct ray_hit;
 
 typedef IPhysicalEntity* PIPhysicalEntity;
 
-struct SCameraPreferences : public SPreferencePage
+struct EDITOR_COMMON_API SCameraPreferences : public SPreferencePage
 {
 	enum EViewportBehavior
 	{
@@ -38,8 +38,19 @@ struct SCameraPreferences : public SPreferencePage
 	{
 	}
 
-	virtual bool Serialize(yasli::Archive& ar) override;
+	virtual bool      Serialize(yasli::Archive& ar) override;
 
+	bool              IsTerrainCollisionEnabled() const;
+	bool              IsObjectCollisionEnabled() const;
+	bool              IsSpeedHeightRelativeEnabled() const;
+	EViewportBehavior GetViewportPanningStyle() const;
+
+	void              SetTerrainCollision(bool enabled);
+	void              SetObjectCollision(bool enabled);
+	void              SetSpeedHeightRelative(bool enabled);
+	void              SetViewportPanningStyle(EViewportBehavior behavior);
+
+private:
 	bool              terrainCollisionEnabled;
 	bool              objectCollisionEnabled;
 	bool              speedHeightRelativeEnabled;
@@ -308,7 +319,7 @@ struct CRenderViewport::SScopedCurrentContext
 	SScopedCurrentContext(CRenderViewport* viewport)
 		: viewport(viewport)
 		, previousContext(viewport->SetCurrentContext())
-	{	
+	{
 	}
 
 	~SScopedCurrentContext()

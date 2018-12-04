@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "PlatformUserIdentifier.h"
 #include "DiscordTypes.h"
 
 namespace Cry
@@ -13,10 +12,16 @@ namespace Cry
 		{
 			inline AccountIdentifierValue ExtractDiscordID(const AccountIdentifier& accountId)
 			{
-				AccountIdentifierValue tmpStr;
-				accountId.GetAsString(tmpStr);
+				if (accountId.Service() == DiscordServiceID)
+				{
+					AccountIdentifierValue tmpStr;
+					accountId.GetAsString(tmpStr);
 
-				return AccountIdentifierValue(tmpStr.c_str());
+					return AccountIdentifierValue(tmpStr.c_str());
+				}
+
+				CRY_ASSERT_MESSAGE(false, "[Discord] AccountIdentifier '%s' does not seem to contain a valid Discord ID", accountId.ToDebugString());
+				return AccountIdentifierValue();
 			}
 		}
 	}

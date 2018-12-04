@@ -70,6 +70,7 @@ namespace Cry
 			virtual void OnAccountRemoved(IAccount& account) override;
 			virtual void OnPersonaStateChanged(const IAccount& account, CEnumFlags<EPersonaChangeFlags> changeFlags) override {}
 			virtual void OnGetSteamAuthTicketResponse(bool success, uint32 authTicket) override {}
+			virtual void OnAuthTokenReceived(bool success, const char* szToken) override {}
 			// ~IService::IListener
 
 			// ISystemEventListener
@@ -96,7 +97,7 @@ namespace Cry
 			void CollectConnectedAccounts(DynArray<IAccount*>& userAccounts) const;
 			void AddAccountConnections(const IAccount& account, DynArray<IAccount*>& userAccounts) const;
 			DynArray<IAccount*>::iterator FindMainAccount(DynArray<IAccount*>& userAccounts) const;
-			
+
 			// If there's no main service, userAccounts will not be touched
 			void EnsureMainAccountFirst(DynArray<IAccount*>& userAccounts) const;
 

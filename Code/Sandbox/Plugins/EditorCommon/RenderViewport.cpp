@@ -65,6 +65,49 @@ bool SCameraPreferences::Serialize(yasli::Archive& ar)
 	return true;
 }
 
+bool SCameraPreferences::IsTerrainCollisionEnabled() const
+{
+	return terrainCollisionEnabled;
+}
+
+bool SCameraPreferences::IsObjectCollisionEnabled() const
+{
+	return objectCollisionEnabled;
+}
+
+bool SCameraPreferences::IsSpeedHeightRelativeEnabled() const
+{
+	return speedHeightRelativeEnabled;
+}
+
+SCameraPreferences::EViewportBehavior SCameraPreferences::GetViewportPanningStyle() const
+{
+	return viewportPanningStyle;
+}
+
+void SCameraPreferences::SetTerrainCollision(bool enabled)
+{
+	terrainCollisionEnabled = enabled;
+	GetIEditor()->GetPreferences()->Save();
+}
+
+void SCameraPreferences::SetObjectCollision(bool enabled)
+{
+	objectCollisionEnabled = enabled;
+	GetIEditor()->GetPreferences()->Save();
+}
+
+void SCameraPreferences::SetSpeedHeightRelative(bool enabled)
+{
+	speedHeightRelativeEnabled = enabled;
+	GetIEditor()->GetPreferences()->Save();
+}
+
+void SCameraPreferences::SetViewportPanningStyle(EViewportBehavior behavior)
+{
+	viewportPanningStyle = behavior;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // CRenderViewport
 //////////////////////////////////////////////////////////////////////////
@@ -327,7 +370,7 @@ void CRenderViewport::ProcessMouse()
 		Vec3 xdir = m.GetColumn0().GetNormalized();
 		Vec3 zdir = m.GetColumn2().GetNormalized();
 
-		if (s_cameraPreferences.viewportPanningStyle == SCameraPreferences::eViewport_Drag)
+		if (s_cameraPreferences.GetViewportPanningStyle() == SCameraPreferences::eViewport_Drag)
 		{
 			xdir.Flip();
 			zdir.Flip();
@@ -978,13 +1021,13 @@ const char* CRenderViewport::GetCameraMenuName() const
 
 float CRenderViewport::GetCameraSpeedScale() const
 {
-	if (s_cameraPreferences.speedHeightRelativeEnabled)
+	if (s_cameraPreferences.IsSpeedHeightRelativeEnabled())
 	{
 		// Always check terrain height, regardless of terrain collision flag
 		Vec3 pos = GetViewTM().GetTranslation();
 		float h = pos.z - GetIEditor()->GetTerrainElevation(pos.x, pos.y);
 
-		if ((s_cameraPreferences.objectCollisionEnabled) && h > 1.0f)
+		if ((s_cameraPreferences.IsObjectCollisionEnabled()) && h > 1.0f)
 		{
 			// Check objects below camera tool
 			ray_hit hit;
@@ -1009,7 +1052,7 @@ void CRenderViewport::SetViewTM(const Matrix34& viewTM, bool bMoveOnly)
 		static const float object_offset = 1.0f;
 
 		Vec3 p = camMatrix.GetTranslation();
-		if (s_cameraPreferences.terrainCollisionEnabled)
+		if (s_cameraPreferences.IsTerrainCollisionEnabled())
 		{
 			float z = GetIEditor()->GetTerrainElevation(p.x, p.y);
 			if (p.z < z + terrain_offset)
@@ -1018,7 +1061,7 @@ void CRenderViewport::SetViewTM(const Matrix34& viewTM, bool bMoveOnly)
 				camMatrix.SetTranslation(p);
 			}
 		}
-		if (s_cameraPreferences.objectCollisionEnabled)
+		if (s_cameraPreferences.IsObjectCollisionEnabled())
 		{
 			ray_hit hit;
 			Vec3 p0 = GetViewTM().GetTranslation();
@@ -1856,17 +1899,17 @@ namespace
 {
 void PyToggleCameraTerrainCollisions()
 {
-	CRenderViewport::s_cameraPreferences.terrainCollisionEnabled = !CRenderViewport::s_cameraPreferences.terrainCollisionEnabled;
+	CRenderViewport::s_cameraPreferences.SetTerrainCollision(!CRenderViewport::s_cameraPreferences.IsTerrainCollisionEnabled());
 }
 
 void PyToggleCameraObjectCollisions()
 {
-	CRenderViewport::s_cameraPreferences.objectCollisionEnabled = !CRenderViewport::s_cameraPreferences.objectCollisionEnabled;
+	CRenderViewport::s_cameraPreferences.SetObjectCollision(!CRenderViewport::s_cameraPreferences.IsObjectCollisionEnabled());
 }
 
 void PyToggleCameraSpeedHeightRelative()
 {
-	CRenderViewport::s_cameraPreferences.speedHeightRelativeEnabled = !CRenderViewport::s_cameraPreferences.speedHeightRelativeEnabled;
+	CRenderViewport::s_cameraPreferences.SetSpeedHeightRelative(!CRenderViewport::s_cameraPreferences.IsSpeedHeightRelativeEnabled());
 }
 }
 

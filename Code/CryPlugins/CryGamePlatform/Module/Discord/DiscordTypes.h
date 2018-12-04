@@ -14,7 +14,7 @@ namespace Cry
 			using AccountIdentifierValue = Cry::GamePlatform::Detail::StringIdentifierValue;
 			using ApplicationIdentifierValue = Cry::GamePlatform::Detail::StringIdentifierValue;
 
-			inline AccountIdentifier CreateAccountIdentifier(const AccountIdentifierValue& discordId) { return AccountIdentifier(DiscordServiceID, discordId); }
+			inline AccountIdentifier     CreateAccountIdentifier(const AccountIdentifierValue& discordId)         { return AccountIdentifier(DiscordServiceID, discordId); }
 			inline ApplicationIdentifier CreateApplicationIdentifier(const ApplicationIdentifierValue& discordId) { return ApplicationIdentifier(DiscordServiceID, discordId); }
 		}
 	}
