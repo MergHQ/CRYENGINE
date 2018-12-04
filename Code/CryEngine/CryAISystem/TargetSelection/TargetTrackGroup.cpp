@@ -114,7 +114,7 @@ void CTargetTrackGroup::Serialize_Write(TSerialize ser)
 	{
 		tAIObjectID targetId = itTrack->first;
 		CTargetTrack* pTrack = itTrack->second;
-		assert(targetId > 0 && pTrack);
+		assert(pTrack);
 
 		ser.BeginGroup("Track");
 		{
@@ -145,7 +145,6 @@ void CTargetTrackGroup::Serialize_Read(TSerialize ser)
 		ser.BeginGroup("Track");
 		{
 			ser.Value("targetId", targetId);
-			assert(targetId != INVALID_AIOBJECTID);
 
 			CTargetTrack* pTrack = GetTargetTrack(targetId);
 			assert(pTrack);

@@ -605,8 +605,6 @@ bool CTargetTrackManager::SetTargetClassThreat(tAIObjectID aiObjectId, float fCl
 //////////////////////////////////////////////////////////////////////////
 float CTargetTrackManager::GetTargetClassThreat(tAIObjectID aiObjectId) const
 {
-	assert(aiObjectId > 0);
-
 	float fResult = 1.0f;
 
 	TClassThreatContainer::const_iterator itValue = m_ClassThreatValues.find(aiObjectId);
