@@ -313,7 +313,7 @@ void CPrefabManager::Serialize(XmlNodeRef& node, bool bLoading)
 	}
 }
 
-CPrefabItem* CPrefabManager::MakeFromSelection(CSelectionGroup* pSelectionGroup /*= nullptr*/)
+CPrefabItem* CPrefabManager::MakeFromSelection(const CSelectionGroup* pSelectionGroup)
 {
 	const CAssetType* const pAssetType = GetIEditor()->GetAssetManager()->FindAssetType("Prefab");
 	if (!pAssetType)
@@ -329,8 +329,7 @@ CPrefabItem* CPrefabManager::MakeFromSelection(CSelectionGroup* pSelectionGroup 
 
 	const string newAssetPath = string().Format("%s.%s.cryasset", assetBasePath.c_str(), pAssetType->GetFileExtension());
 
-	SPrefabCreateParams createParam;
-	createParam.pGroup = pSelectionGroup;
+	SPrefabCreateParams createParam(pSelectionGroup);
 
 	pAssetType->Create(newAssetPath, &createParam);
 	CAsset* const pAsset = GetIEditor()->GetAssetManager()->FindAssetForMetadata(newAssetPath);
@@ -924,7 +923,7 @@ namespace Private_PrefabCommands
 static void PyCreateFromSelection()
 {
 	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
-	GetIEditorImpl()->GetPrefabManager()->MakeFromSelection();
+	GetIEditorImpl()->GetPrefabManager()->MakeFromSelection(GetIEditorImpl()->GetSelection());
 }
 
 static void PyAddSelection()
