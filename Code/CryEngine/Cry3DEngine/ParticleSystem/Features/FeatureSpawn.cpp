@@ -143,8 +143,6 @@ protected:
 		CRY_PFX2_PROFILE_DETAIL;
 
 		const uint numInstances = runtime.GetNumInstances();
-		if (numInstances == 0)
-			return;
 
 		const bool isIndependent = runtime.GetEmitter()->IsIndependent() && !runtime.IsChild();
 		if (isIndependent)

@@ -56,8 +56,8 @@ public:
 	virtual void                   Activate(bool activate) override;
 	virtual void                   Kill() override;
 	virtual void                   Restart() override;
-	virtual void                   SetEffect(const IParticleEffect* pEffect) override {}
-	virtual const IParticleEffect* GetEffect() const override                         { return m_pEffectOriginal; }
+	virtual void                   SetEffect(const ::IParticleEffect* pEffect) override {}
+	virtual const ::IParticleEffect* GetEffect() const override                       { return m_pEffectOriginal; }
 	virtual void                   SetEmitGeom(const GeomRef& geom) override;
 	virtual void                   SetSpawnParams(const SpawnParams& spawnParams) override;
 	virtual void                   GetSpawnParams(SpawnParams& sp) const override;
@@ -127,18 +127,8 @@ public:
 	void                      AddBounds(const AABB& bb);
 	bool                      NeedsUpdate() const          { return ThreadMode() < 3 || !IsStable() || WasRenderedLastFrame(); }
 
-	struct EmitterStats
-	{
-		struct
-		{
-			uint alloc = 0, alive = 0;
-		}
-		components, particles;
-	};
-	EmitterStats&             GetStats() { return m_stats; }
-
 private:
-	void     UpdateBounds();
+	void     UpdateBounds(bool allowShrink);
 	void     UpdateRuntimes();
 	void     UpdateFromEntity();
 	IEntity* GetEmitGeometryEntity() const;
@@ -181,7 +171,6 @@ private:
 	bool                                   m_active;
 	bool                                   m_alive;
 	uint                                   m_unrendered;
-	EmitterStats                           m_stats;
 	stl::PSyncMultiThread                  m_lock;
 };
 

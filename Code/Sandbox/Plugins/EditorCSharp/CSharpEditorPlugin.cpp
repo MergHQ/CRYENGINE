@@ -290,7 +290,7 @@ void CCSharpEditorPlugin::OnEditorNotifyEvent(EEditorNotifyEvent aEventId)
 			UpdatePluginsAndSolution();
 		}
 
-		if (m_initialized & m_editorMainFrameInitialized & m_errorsUpdated)
+		if (gEnv->pMonoRuntime != nullptr && m_initialized && m_editorMainFrameInitialized && m_errorsUpdated && gEnv->pMonoRuntime->GetCompileErrorCount() > 0)
 		{
 			CTabPaneManager::GetInstance()->OpenOrCreatePane("C# Output");
 			m_errorsUpdated = false;

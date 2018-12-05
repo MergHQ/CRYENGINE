@@ -47,6 +47,20 @@ bool CParticleComponentRuntime::IsValidForComponent() const
 		return m_pGpuRuntime && m_pGpuRuntime->IsValidForParams(m_pComponent->GPUComponentParams());
 }
 
+uint CParticleComponentRuntime::GetNumParticles() const
+{
+	if (m_pGpuRuntime)
+	{
+		SParticleStats stats;
+		m_pGpuRuntime->AccumStats(stats);
+		return stats.particles.alive;
+	}
+	else
+	{
+		return m_container.GetRealNumParticles();
+	}
+}
+
 void CParticleComponentRuntime::AddBounds(const AABB& bounds)
 {
 	m_bounds.Add(bounds);
@@ -135,10 +149,6 @@ void CParticleComponentRuntime::UpdateAll()
 		m_bounds.Reset();
 	}
 	AccumStats();
-
-	auto& stats = GetPSystem()->GetThreadData().statsCPU;
-	stats.components.updated ++;
-	stats.particles.updated += m_container.GetNumParticles();
 }
 
 void CParticleComponentRuntime::AddRemoveParticles()
@@ -626,8 +636,7 @@ void CParticleComponentRuntime::UpdateGPURuntime()
 		return;
 
 	AddInstances();
-	if (GetNumInstances())
-		GetComponent()->SpawnParticles(*this);
+	GetComponent()->SpawnParticles(*this);
 
 	// Accum stats
 	SParticleStats stats;
@@ -637,11 +646,6 @@ void CParticleComponentRuntime::UpdateGPURuntime()
 
 	if (stats.particles.alive)
 		SetAlive();
-
-	auto& emitterStats = m_pEmitter->GetStats();
-	emitterStats.particles.alloc += stats.particles.alloc;
-	emitterStats.particles.alive += stats.particles.alive;
-	emitterStats.components.alive += IsAlive();
 }
 
 void CParticleComponentRuntime::DebugStabilityCheck()
@@ -680,14 +684,15 @@ bool CParticleComponentRuntime::HasParticles() const
 
 void CParticleComponentRuntime::AccumStats()
 {
-	auto& emitterStats = m_pEmitter->GetStats();
-
 	const uint allocParticles = m_container.GetMaxParticles();
 	const uint aliveParticles = m_container.GetNumParticles();
 
-	emitterStats.particles.alloc += allocParticles;
-	emitterStats.particles.alive += aliveParticles;
-	emitterStats.components.alive += IsAlive();
+	auto& stats = GetPSystem()->GetThreadData().statsCPU;
+	stats.components.alive += IsAlive();
+	stats.components.updated ++;
+	stats.particles.alloc += allocParticles;
+	stats.particles.alive += aliveParticles;
+	stats.particles.updated += aliveParticles;
 
 	CParticleProfiler& profiler = GetPSystem()->GetProfiler();
 	profiler.AddEntry(*this, EPS_ActiveParticles, aliveParticles);
