@@ -59,6 +59,7 @@ FileEntryId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, 
 		CryFixedStringT<MaxFilePathLength> fullPath(g_pIImpl->GetFileLocation(&fileInfo));
 		fullPath += "/";
 		fullPath += fileInfo.szFileName;
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CFileEntry");
 		auto pFileEntry = new CFileEntry(fullPath, fileInfo.pImplData);
 
 		if (pFileEntry != nullptr)
@@ -548,6 +549,7 @@ bool CFileCacheManager::AllocateMemoryBlockInternal(CFileEntry* const __restrict
 
 	if (m_pMemoryHeap != nullptr)
 	{
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CFileEntry::m_pMemoryBlock");
 		pFileEntry->m_pMemoryBlock = m_pMemoryHeap->AllocateBlock(pFileEntry->m_size, pFileEntry->m_path.c_str(), pFileEntry->m_memoryBlockAlignment);
 	}
 
@@ -559,6 +561,7 @@ bool CFileCacheManager::AllocateMemoryBlockInternal(CFileEntry* const __restrict
 		// And try again!
 		if (m_pMemoryHeap != nullptr)
 		{
+			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CFileEntry::m_pMemoryBlock");
 			pFileEntry->m_pMemoryBlock = m_pMemoryHeap->AllocateBlock(pFileEntry->m_size, pFileEntry->m_path.c_str(), pFileEntry->m_memoryBlockAlignment);
 		}
 	}

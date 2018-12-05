@@ -77,8 +77,6 @@ class CEngineModule_CryAudioSystem : public ISystemModule
 
 		bool bSuccess = false;
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "AudioSystem Memory Pool");
-
 		if (CreateAudioSystem(env))
 		{
 #if CRY_PLATFORM_DURANGO

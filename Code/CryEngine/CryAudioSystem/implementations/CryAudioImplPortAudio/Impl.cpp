@@ -55,13 +55,8 @@ void CountPoolSizes(XmlNodeRef const pNode, uint16& poolSizes)
 //////////////////////////////////////////////////////////////////////////
 void AllocateMemoryPools(uint16 const objectPoolSize, uint16 const eventPoolSize)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Port Audio Object Pool");
 	CObject::CreateAllocator(objectPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Port Audio Event Pool");
 	CEvent::CreateAllocator(eventPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Port Audio Trigger Pool");
 	CTrigger::CreateAllocator(g_triggerPoolSize);
 }
 
@@ -356,6 +351,7 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructGlobalObject()
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::PortAudio::CObject");
 	auto pObject = new CObject();
 	stl::push_back_unique(g_constructedObjects, pObject);
 
@@ -365,6 +361,7 @@ IObject* CImpl::ConstructGlobalObject()
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructObject(CTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::PortAudio::CObject");
 	auto pObject = new CObject();
 	stl::push_back_unique(g_constructedObjects, pObject);
 
@@ -382,6 +379,7 @@ void CImpl::DestructObject(IObject const* const pIObject)
 ///////////////////////////////////////////////////////////////////////////
 IListener* CImpl::ConstructListener(CTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::PortAudio::CListener");
 	g_pListener = new CListener(transformation);
 
 #if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
@@ -405,6 +403,7 @@ void CImpl::DestructListener(IListener* const pIListener)
 //////////////////////////////////////////////////////////////////////////
 IEvent* CImpl::ConstructEvent(CryAudio::CEvent& event)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::PortAudio::CEvent");
 	return static_cast<IEvent*>(new CEvent(event));
 }
 
@@ -417,6 +416,7 @@ void CImpl::DestructEvent(IEvent const* const pIEvent)
 //////////////////////////////////////////////////////////////////////////
 IStandaloneFileConnection* CImpl::ConstructStandaloneFileConnection(CryAudio::CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITriggerConnection const* pITriggerConnection /*= nullptr*/)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::PortAudio::CStandaloneFile");
 	return static_cast<IStandaloneFileConnection*>(new CStandaloneFile);
 }
 
@@ -475,6 +475,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 			// Max to -1 to stay backwards compatible.
 			numLoops = std::max(-1, numLoops);
 
+			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::PortAudio::CTrigger");
 			pTrigger = new CTrigger(
 				StringToId(path.c_str()),
 				numLoops,
@@ -524,6 +525,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 
 		if (GetSoundInfo(path.c_str(), sfInfo, streamParameters))
 		{
+			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::PortAudio::CTrigger");
 			pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(path.c_str()), 0, static_cast<double>(sfInfo.samplerate), EEventType::Start, path.c_str(), streamParameters, folderName.c_str(), name.c_str(), pTriggerInfo->isLocalized));
 		}
 	}
@@ -543,6 +545,7 @@ void CImpl::DestructTriggerConnection(ITriggerConnection const* const pITriggerC
 ///////////////////////////////////////////////////////////////////////////
 IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRootNode)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::PortAudio::CParameter");
 	return static_cast<IParameterConnection*>(new CParameter);
 }
 
@@ -555,6 +558,7 @@ void CImpl::DestructParameterConnection(IParameterConnection const* const pIPara
 ///////////////////////////////////////////////////////////////////////////
 ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const pRootNode)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::PortAudio::CSwitchState");
 	return static_cast<ISwitchStateConnection*>(new CSwitchState);
 }
 
@@ -567,6 +571,7 @@ void CImpl::DestructSwitchStateConnection(ISwitchStateConnection const* const pI
 ///////////////////////////////////////////////////////////////////////////
 IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const pRootNode)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::PortAudio::CEnvironment");
 	return static_cast<IEnvironmentConnection*>(new CEnvironment);
 }
 
@@ -579,6 +584,7 @@ void CImpl::DestructEnvironmentConnection(IEnvironmentConnection const* const pI
 //////////////////////////////////////////////////////////////////////////
 ISettingConnection* CImpl::ConstructSettingConnection(XmlNodeRef const pRootNode)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::PortAudio::CSetting");
 	return static_cast<ISettingConnection*>(new CSetting);
 }
 
