@@ -39,6 +39,8 @@ class CEngineModule_CryAudioImplFmod : public CryAudio::IImplModule
 	{
 		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplFmod::OnEvent, nullptr, ESystemEvents::ImplSet);
 		SRequestUserData const data(ERequestFlags::ExecuteBlocking | ERequestFlags::CallbackOnExternalOrCallingThread);
+
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CImpl");
 		gEnv->pAudioSystem->SetImpl(new CImpl, data);
 		gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplFmod::OnEvent, nullptr);
 

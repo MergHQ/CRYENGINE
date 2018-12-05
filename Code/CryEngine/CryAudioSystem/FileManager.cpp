@@ -49,6 +49,7 @@ void CFileManager::Release()
 //////////////////////////////////////////////////////////////////////////
 CStandaloneFile* CFileManager::ConstructStandaloneFile(char const* const szFile, bool const isLocalized, Impl::ITriggerConnection const* const pITriggerConnection)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CStandaloneFile");
 	auto const pStandaloneFile = new CStandaloneFile();
 	pStandaloneFile->m_pImplData = g_pIImpl->ConstructStandaloneFileConnection(*pStandaloneFile, szFile, isLocalized, pITriggerConnection);
 	pStandaloneFile->m_hashedFilename = CHashedString(szFile);

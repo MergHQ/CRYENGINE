@@ -62,19 +62,10 @@ void CountPoolSizes(XmlNodeRef const pNode, SPoolSizes& poolSizes)
 //////////////////////////////////////////////////////////////////////////
 void AllocateMemoryPools(uint16 const objectPoolSize, uint16 const eventPoolSize)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "SDL Mixer Object Pool");
 	CObject::CreateAllocator(objectPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "SDL Mixer Event Pool");
 	CEvent::CreateAllocator(eventPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "SDL Mixer Trigger Pool");
 	CTrigger::CreateAllocator(g_poolSizes.triggers);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "SDL Mixer Parameter Pool");
 	CParameter::CreateAllocator(g_poolSizes.parameters);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "SDL Mixer Switch State Pool");
 	CSwitchState::CreateAllocator(g_poolSizes.switchStates);
 }
 
@@ -396,6 +387,8 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const pRootNode, SFileInfo* const
 		{
 			pFileInfo->szFileName = fullFilePath.c_str();
 			pFileInfo->memoryBlockAlignment = m_memoryAlignment;
+
+			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::SDL_mixer::CFile");
 			pFileInfo->pImplData = new CFile;
 			result = ERequestStatus::Success;
 		}
@@ -518,10 +511,12 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 			pRootNode->getAttr(s_szFadeOutTimeAttribute, fadeOutTimeSec);
 			auto const fadeOutTimeMs = static_cast<int>(fadeOutTimeSec * 1000.0f);
 
+			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::SDL_mixer::CTrigger");
 			pTrigger = new CTrigger(type, sampleId, minDistance, maxDistance, normalizedVolume, numLoops, fadeInTimeMs, fadeOutTimeMs, isPanningEnabled);
 		}
 		else
 		{
+			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::SDL_mixer::CTrigger");
 			pTrigger = new CTrigger(type, sampleId);
 		}
 	}
@@ -545,6 +540,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 		string const fullFilePath = GetFullFilePath(pTriggerInfo->name.c_str(), pTriggerInfo->path.c_str());
 		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true, pTriggerInfo->isLocalized);
 
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::SDL_mixer::CTrigger");
 		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(EEventType::Start, sampleId, -1.0f, -1.0f, 128, 0, 0, 0, false));
 	}
 
@@ -587,6 +583,7 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRoot
 		multiplier = std::max(0.0f, multiplier);
 		pRootNode->getAttr(s_szShiftAttribute, shift);
 
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::SDL_mixer::CParameter");
 		pParameter = new CParameter(sampleId, multiplier, shift, szFileName);
 	}
 
@@ -619,6 +616,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 		pRootNode->getAttr(s_szValueAttribute, value);
 		value = crymath::clamp(value, 0.0f, 1.0f);
 
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::SDL_mixer::CSwitchState");
 		pSwitchState = new CSwitchState(sampleId, value, szFileName);
 	}
 
@@ -634,6 +632,7 @@ void CImpl::DestructSwitchStateConnection(ISwitchStateConnection const* const pI
 ///////////////////////////////////////////////////////////////////////////
 IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const pRootNode)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::SDL_mixer::CEnvironment");
 	return static_cast<IEnvironmentConnection*>(new CEnvironment);
 }
 
@@ -646,6 +645,7 @@ void CImpl::DestructEnvironmentConnection(IEnvironmentConnection const* const pI
 //////////////////////////////////////////////////////////////////////////
 ISettingConnection* CImpl::ConstructSettingConnection(XmlNodeRef const pRootNode)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::SDL_mixer::CSetting");
 	return static_cast<ISettingConnection*>(new CSetting);
 }
 
@@ -658,6 +658,7 @@ void CImpl::DestructSettingConnection(ISettingConnection const* const pISettingC
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructGlobalObject()
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::SDL_mixer::CObject");
 	g_pObject = new CObject(CTransformation::GetEmptyObject(), 0);
 	g_objects.push_back(g_pObject);
 	return static_cast<IObject*>(g_pObject);
@@ -667,6 +668,8 @@ IObject* CImpl::ConstructGlobalObject()
 IObject* CImpl::ConstructObject(CTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
 	static uint32 id = 1;
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::SDL_mixer::CObject");
 	auto const pObject = new CObject(transformation, id++);
 	g_objects.push_back(pObject);
 
@@ -697,6 +700,8 @@ void CImpl::DestructObject(IObject const* const pIObject)
 IListener* CImpl::ConstructListener(CTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
 	static ListenerId id = 0;
+
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::SDL_mixer::CListener");
 	g_pListener = new CListener(transformation, id++);
 
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
@@ -720,6 +725,7 @@ void CImpl::DestructListener(IListener* const pIListener)
 ///////////////////////////////////////////////////////////////////////////
 IEvent* CImpl::ConstructEvent(CryAudio::CEvent& event)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::SDL_mixer::CEvent");
 	return static_cast<IEvent*>(new CEvent(event));
 }
 
@@ -744,6 +750,7 @@ IStandaloneFileConnection* CImpl::ConstructStandaloneFileConnection(CryAudio::CS
 		filePath = string(szFile) + m_pCVarFileExtension->GetString();
 	}
 
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::SDL_mixer::CStandaloneFile");
 	return static_cast<IStandaloneFileConnection*>(new CStandaloneFile(filePath, standaloneFile));
 }
 

@@ -51,7 +51,6 @@ class CEngineModule_CryAudioImplWwise : public CryAudio::IImplModule
 		void* pSecondaryMemory = nullptr;
 
 	#if CRY_PLATFORM_DURANGO
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Wwise Implementation Audio Pool Secondary");
 		secondarySize = g_cvars.m_secondaryMemoryPoolSize << 10;
 
 		APU_ADDRESS temp;
@@ -64,6 +63,8 @@ class CEngineModule_CryAudioImplWwise : public CryAudio::IImplModule
 
 		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplWwise::OnAudioEvent, nullptr, ESystemEvents::ImplSet);
 		SRequestUserData const data(ERequestFlags::ExecuteBlocking | ERequestFlags::CallbackOnExternalOrCallingThread);
+
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CImpl");
 		gEnv->pAudioSystem->SetImpl(new CImpl, data);
 		gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplWwise::OnAudioEvent, nullptr);
 

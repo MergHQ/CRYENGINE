@@ -171,12 +171,14 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructGlobalObject()
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::Null::SObject");
 	return static_cast<IObject*>(new SObject());
 }
 
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructObject(CTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::Null::SObject");
 	return static_cast<IObject*>(new SObject());
 }
 
@@ -195,12 +197,14 @@ void CImpl::DestructListener(IListener* const pIListener)
 ///////////////////////////////////////////////////////////////////////////
 IListener* CImpl::ConstructListener(CTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::Null::SListener");
 	return static_cast<IListener*>(new SListener());
 }
 
 ///////////////////////////////////////////////////////////////////////////
 IEvent* CImpl::ConstructEvent(CEvent& event)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::Null::SEvent");
 	return static_cast<IEvent*>(new SEvent());
 }
 

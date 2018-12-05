@@ -56,6 +56,7 @@ CriFsIoError IoFileOpen(CriChar8 const* szPath, CriFsFileMode mode, CriFsFileAcc
 
 	if ((mode == CRIFS_FILE_MODE_OPEN) && (access == CRIFS_FILE_ACCESS_READ))
 	{
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::SFileObject");
 		auto const pFileObject = new SFileObject();
 
 		if (pFileObject != nullptr)
