@@ -449,7 +449,7 @@ protected:
 
 	SAuxGeomCBRawData*			   m_rawData = nullptr;
 	static const size_t            m_maxScratchBufferVertices = 16 * 1024;
-	std::array<SAuxVertex, m_maxScratchBufferVertices * sizeof(SAuxVertex)> m_scratchBuffer;
+	std::array<SAuxVertex, m_maxScratchBufferVertices> m_scratchBuffer;
 };
 DEFINE_ENUM_FLAG_OPERATORS(CAuxGeomCB::SActiveDrawBufferInfo::State);
 
