@@ -200,12 +200,6 @@ void CParticleEmitter::Update()
 
 	if (HasBounds())
 		UpdatePhysEnv();
-
-	// Apply stats from last update
-	auto& stats = GetPSystem()->GetThreadData().statsCPU;
-	stats.components.alive += m_stats.components.alive;
-	stats.particles.alloc += m_stats.particles.alloc;
-	stats.particles.alive += m_stats.particles.alive;
 }
 
 namespace Bounds
@@ -214,12 +208,11 @@ namespace Bounds
 	float ShrinkThreshold = 0.125f;
 }
 
-void CParticleEmitter::UpdateBounds()
+void CParticleEmitter::UpdateBounds(bool allowShrink)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
-	if (!m_registered
-	|| m_realBounds.GetVolume() <= m_bounds.GetVolume() * Bounds::ShrinkThreshold)
+	if (!m_registered || (allowShrink && m_realBounds.GetVolume() <= m_bounds.GetVolume() * Bounds::ShrinkThreshold))
 	{
 		m_boundsChanged = true;
 		m_nextBounds = m_realBounds;
@@ -267,17 +260,18 @@ bool CParticleEmitter::UpdateParticles()
 	stats.emitters.updated ++;
 
 	m_realBounds = AABB::RESET;
-	m_stats = {};
+	m_alive = false;
 	for (auto& pRuntime : m_componentRuntimes)
 	{
 		pRuntime->UpdateAll();
 		m_realBounds.Add(pRuntime->GetBounds());
+		m_alive |= pRuntime->IsAlive();
 	}
-	m_alive = m_stats.components.alive > 0;
 
 	PostUpdate();
-	if (!m_pEffect->RenderDeferred.size() || !m_registered)
-		UpdateBounds();
+
+	const bool allowShrink = !m_pEffect->RenderDeferred.size() || !WasRenderedLastFrame();
+	UpdateBounds(allowShrink);
 	m_timeUpdated = m_time;
 	return true;
 }
@@ -307,7 +301,7 @@ void CParticleEmitter::RenderDeferred(const SRenderContext& renderContext)
 		}
 	}
 
-	UpdateBounds();
+	UpdateBounds(true);
 }
 
 void CParticleEmitter::DebugRender(const SRenderingPassInfo& passInfo) const
@@ -332,19 +326,21 @@ void CParticleEmitter::DebugRender(const SRenderingPassInfo& passInfo) const
 	if (visible)
 	{
 		// Draw component boxes and labels
+		uint emitterParticles = 0;
 		for (auto& pRuntime : m_componentRuntimes)
 		{
 			if (!pRuntime->GetBounds().IsReset())
 			{
+				uint numParticles = pRuntime->GetNumParticles();
+				emitterParticles += numParticles;
 				const float volumeRatio = div_min(pRuntime->GetBounds().GetVolume(), m_realBounds.GetVolume(), 1.0f);
 				const ColorB componentColor = ColorF(1, 0.5, 0) * (alphaColor * sqrt(sqrt(volumeRatio)));
 				pRenderAux->DrawAABB(pRuntime->GetBounds(), false, componentColor, eBBD_Faceted);
-				string label = string().Format("%s #%d", pRuntime->GetComponent()->GetName(),
-					pRuntime->GetContainer().GetRealNumParticles());
+				string label = string().Format("%s #%d", pRuntime->GetComponent()->GetName(), numParticles);
 				IRenderAuxText::DrawLabelEx(pRuntime->GetBounds().GetCenter(), 1.5f, componentColor, true, true, label);
 			}
 		}
-		string label = string().Format("%s #%d Age %.3f", m_pEffect->GetShortName().c_str(), m_stats.particles.alive, GetAge());
+		string label = string().Format("%s #%d Age %.3f", m_pEffect->GetShortName().c_str(), emitterParticles, GetAge());
 		IRenderAuxText::DrawLabelEx(m_location.t, 1.5f, (float*)&alphaColor, true, true, label);
 	}
 	if (!m_bounds.IsReset())
