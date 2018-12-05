@@ -78,7 +78,6 @@ int CRendererCVars::CV_r_VkBatchResourceBarriers;
 int CRendererCVars::CV_r_VkHardwareComputeQueue;
 int CRendererCVars::CV_r_VkHardwareCopyQueue;
 int CRendererCVars::CV_r_ReprojectOnlyStaticObjects;
-int CRendererCVars::CV_r_ReadZBufferDirectlyFromVMEM;
 int CRendererCVars::CV_r_FlushToGPU;
 
 int CRendererCVars::CV_r_EnableDebugLayer;
@@ -2761,7 +2760,6 @@ void CRendererCVars::InitCVars()
 #endif
 
 	REGISTER_CVAR3("r_ReprojectOnlyStaticObjects", CV_r_ReprojectOnlyStaticObjects, 1, VF_NULL, "Forces a split in the zpass, to prevent moving object from beeing reprojected");
-	REGISTER_CVAR3("r_ReadZBufferDirectlyFromVMEM", CV_r_ReadZBufferDirectlyFromVMEM, 0, VF_NULL, "Uses direct VMEM reads instead of a staging buffer on durango for the reprojection ZBuffer");
 	REGISTER_CVAR3("r_FlushToGPU", CV_r_FlushToGPU, 1, VF_NULL,
 		"Configure gpu-work flushing behaviour"
 		"0: Flush at end-frame only"
