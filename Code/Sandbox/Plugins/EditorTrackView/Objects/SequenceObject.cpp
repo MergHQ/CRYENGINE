@@ -168,7 +168,7 @@ void CSequenceObject::PostLoad(CObjectArchive& ar)
 	if (m_pSequence != NULL && sequenceNode != NULL)
 	{
 		m_pSequence->Serialize(sequenceNode, true, true, m_sequenceId, ar.bUndo);
-		CTrackViewSequence* pTrackViewSequence = CTrackViewPlugin::GetSequenceManager()->GetSequenceByName(m_pSequence->GetName());
+		CTrackViewSequence* pTrackViewSequence = CTrackViewPlugin::GetSequenceManager()->GetSequenceByGUID(m_pSequence->GetGUID());
 
 		if (pTrackViewSequence)
 		{
