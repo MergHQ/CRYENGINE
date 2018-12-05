@@ -189,7 +189,6 @@ public:
 	static int CV_r_texturesstreampooldefragmentationmaxamount;
 
 	static int CV_r_ReprojectOnlyStaticObjects;
-	static int CV_r_ReadZBufferDirectlyFromVMEM;
 	static int CV_r_durango_async_dips;
 	static int CV_r_durango_async_dips_sync;
 	static int CV_r_D3D12SubmissionThread;
