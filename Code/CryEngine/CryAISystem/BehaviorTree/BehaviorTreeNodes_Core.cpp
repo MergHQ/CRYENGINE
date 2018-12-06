@@ -1178,8 +1178,6 @@ struct State
 		HandleXmlLineNumberSerialization(archive, xmlLine);
 	#endif
 
-		std::sort(transitions.begin(), transitions.end());
-
 		Serialization::SContext context(archive, this);
 
 		archive(name, "name", "^State Name");
@@ -1193,13 +1191,10 @@ struct State
 		archive(transitions, "transitions", "+[<>]Transitions");
 		archive.doc("List of transitions for this state. Each transition specifies a Destination State when a specific Event is triggered");
 
-		for (Transitions::const_iterator it = transitions.begin(), end = transitions.end(); it != end; ++it)
+		const std::vector<size_t> duplicatedIndices = Variables::GetIndicesOfDuplicatedEntries(transitions);
+		for (const size_t i : duplicatedIndices)
 		{
-			const Transitions::const_iterator itNext = std::next(it, 1);
-			if (itNext != transitions.end() && *it == *itNext)
-			{
-				archive.error(*itNext, SerializationUtils::Messages::ErrorDuplicatedValue("Transition event", itNext->triggerEventName));
-			}
+			archive.error(transitions[i].triggerEventName, SerializationUtils::Messages::ErrorDuplicatedValue("Transition event", transitions[i].triggerEventName));
 		}
 
 		archive(node, "node", "+<>" NODE_COMBOBOX_FIXED_WIDTH "> Root");
@@ -1231,10 +1226,16 @@ struct State
 		return NULL;
 	}
 
-#ifdef STORE_INFORMATION_FOR_STATE_MACHINE_NODE
+
+#if defined(USING_BEHAVIOR_TREE_SERIALIZATION) && defined(STORE_INFORMATION_FOR_STATE_MACHINE_NODE)
 	bool operator < (const State &rhs) const
 	{
 		return name < rhs.name;
+	}
+
+	bool operator ==(const State& rhs) const
+	{
+		return nameCRC32 == rhs.nameCRC32;
 	}
 #endif
 
@@ -1263,8 +1264,7 @@ void Transition::Serialize(Serialization::IArchive& archive)
 		return;
 	}
 
-	const Variables::Events events = eventsDeclaration->GetEventsWithFlags();
-	SerializeContainerAsStringList(archive, "triggerEventName", "^>" STATE_TRANSITION_EVENT_FIXED_WIDTH ">Trigger event", events, "Event", triggerEventName);
+	SerializeContainerAsSortedStringList(archive, "triggerEventName", "^>" STATE_TRANSITION_EVENT_FIXED_WIDTH ">Trigger event", eventsDeclaration->GetEventsWithFlags(), "Event", triggerEventName);
 	archive.doc("Event that triggers the transition to the Destination State");
 
 	const States* states = archive.context<States>();
@@ -1273,7 +1273,7 @@ void Transition::Serialize(Serialization::IArchive& archive)
 		return;
 	}
 
-	SerializeContainerAsStringList(archive, "destinationState", "^Destination state", *states, "State", destinationStateName);
+	SerializeContainerAsSortedStringList(archive, "destinationState", "^Destination state", *states, "State", destinationStateName);
 	archive.doc("Destination State of the State Machine after the given Event has been received");
 }
 #endif
@@ -1372,7 +1372,6 @@ public:
 #if defined(USING_BEHAVIOR_TREE_SERIALIZATION) && defined(STORE_INFORMATION_FOR_STATE_MACHINE_NODE)
 	virtual void Serialize(Serialization::IArchive& archive) override
 	{
-		std::stable_sort(m_states.begin(), m_states.end());
 		Serialization::SContext context(archive, &m_states);
 		archive(m_states, "states", "^[+<>]States");
 		archive.doc("List of states for the state machine");
@@ -1385,13 +1384,10 @@ public:
 		if (m_states.size() == 1)
 			archive.warning(m_states, "State machine with only one state is superfluous");
 
-		for (States::const_iterator it = m_states.begin(), end = m_states.end(); it != end; ++it)
+		const std::vector<size_t> duplicatedIndices = Variables::GetIndicesOfDuplicatedEntries(m_states);
+		for (const size_t i : duplicatedIndices)
 		{
-			const States::const_iterator itNext = std::next(it, 1);
-			if (itNext != m_states.end() && it->name == itNext->name)
-			{
-				archive.error(itNext->name, SerializationUtils::Messages::ErrorDuplicatedValue("State Name", itNext->name));
-			}
+			archive.error(m_states[i].name, SerializationUtils::Messages::ErrorDuplicatedValue("State name", m_states[i].name));
 		}
 
 		BaseClass::Serialize(archive);
@@ -1578,9 +1574,8 @@ public:
 			return;
 		}
 
-		const Variables::Events events = eventsDeclaration->GetEventsWithFlags();
 		string eventName = m_eventToSend.GetName();
-		SerializeContainerAsStringList(archive, "event", "^Event", events, "Event",  eventName);
+		SerializeContainerAsSortedStringList(archive, "event", "^Event", eventsDeclaration->GetEventsWithFlags(), "Event",  eventName);
 		m_eventToSend = Event(eventName);
 		archive.doc("Event to be sent");
 
@@ -1675,7 +1670,7 @@ public:
 		else
 		{
 			string eventName = m_eventToSend.GetName();
-			SerializeContainerAsStringList(archive, "event", "^Event", state->transitions, "Transition event", eventName);
+			SerializeContainerAsSortedStringList(archive, "event", "^Event", state->transitions, "Transition event", eventName);
 			m_eventToSend = Event(eventName);
 
 			archive.doc("Transition event to be sent. Must be previously defined in the Transitions section of the State");
@@ -2386,9 +2381,8 @@ public:
 			return;
 		}
 
-		const Variables::Events events = eventsDeclaration->GetEventsWithFlags();
 		string eventName = m_eventToWaitFor.GetName();
-		SerializeContainerAsStringList(archive, "event", "^Event", events, "Event", eventName);
+		SerializeContainerAsSortedStringList(archive, "event", "^Event", eventsDeclaration->GetEventsWithFlags(), "Event", eventName);
 		m_eventToWaitFor = Event(eventName);
 
 		archive.doc("Event to wait for");
@@ -2518,13 +2512,13 @@ public:
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	virtual void Serialize(Serialization::IArchive& archive) override
 	{	
-		const Timestamps* timestamps = archive.context<Timestamps>();
-		if (!timestamps)
+		const TimestampCollection* timestampCollection = archive.context<TimestampCollection>();
+		if (!timestampCollection)
 		{
 			return;
 		}
 		
-		SerializeContainerAsStringList(archive,  "name", "^Timestamp", *timestamps, "Timestamp", m_timeStampName);
+		SerializeContainerAsSortedStringList(archive,  "name", "^Timestamp", timestampCollection->GetTimestamps(), "Timestamp", m_timeStampName);
 		archive.doc("Timestamp to track");
 
 		archive(m_compareOp, "compareOp", "^Comparator");
@@ -2696,13 +2690,13 @@ public:
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	virtual void Serialize(Serialization::IArchive& archive) override
 	{
-		const Timestamps* timestamps = archive.context<Timestamps>();
-		if (!timestamps)
+		const TimestampCollection* timestampCollection = archive.context<TimestampCollection>();
+		if (!timestampCollection)
 		{
 			return;
 		}
 
-		SerializeContainerAsStringList(archive,  "name", "^Timestamp", *timestamps, "Timestamp", m_timeStampName);
+		SerializeContainerAsSortedStringList(archive,  "name", "^Timestamp", timestampCollection->GetTimestamps(), "Timestamp", m_timeStampName);
 		archive.doc("Timestamp to track");
 
 		archive(m_compareOp, "compareOp", "^Comparator");
@@ -2848,13 +2842,13 @@ public:
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	virtual void Serialize(Serialization::IArchive& archive) override
 	{
-		const Timestamps* timestamps = archive.context<Timestamps>();
-		if (!timestamps)
+		const TimestampCollection* timestampCollection = archive.context<TimestampCollection>();
+		if (!timestampCollection)
 		{
 			return;
 		}
 
-		SerializeContainerAsStringList(archive,  "name", "^Timestamp", *timestamps, "Timestamp", m_timeStampName);
+		SerializeContainerAsSortedStringList(archive,  "name", "^Timestamp", timestampCollection->GetTimestamps(), "Timestamp", m_timeStampName);
 		archive.doc("Timestamp to check");
 
 		archive(m_compareOp, "compareOp", "^Comparator");

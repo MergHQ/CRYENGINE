@@ -219,7 +219,7 @@ bool BehaviorTreeManager::LoadBehaviorTreeTemplate(const char* behaviorTreeName,
 		}
 	}
 
-	LoadContext context(GetNodeFactory(), behaviorTreeName, behaviorTreeTemplate.variableDeclarations, behaviorTreeTemplate.eventsDeclaration);
+	LoadContext context(GetNodeFactory(), behaviorTreeName, behaviorTreeTemplate.variableDeclarations, behaviorTreeTemplate.eventsDeclaration, behaviorTreeTemplate.defaultTimestampCollection);
 	behaviorTreeTemplate.rootNode = XmlLoader().CreateBehaviorTreeRootNodeFromBehaviorTreeXml(behaviorTreeXmlNode, context, isLoadingFromEditor);
 
 	if (!behaviorTreeTemplate.rootNode)
