@@ -16,12 +16,6 @@ struct ITransformManipulator;
 struct SDisplayContext;
 struct HitContext;
 
-enum EEditToolType
-{
-	EDIT_TOOL_TYPE_PRIMARY,
-	EDIT_TOOL_TYPE_SECONDARY,
-};
-
 /*!
  *	CEditTool is an abstract base class for All Editing	Tools supported by Editor.
  *	Edit tools handle specific editing modes in viewports.
@@ -39,7 +33,6 @@ public:
 	void                   AddRef()  { m_nRefCount++; }
 	void                   Release() { if (--m_nRefCount <= 0) DeleteThis(); }
 
-	virtual EEditToolType  GetType() { return EDIT_TOOL_TYPE_PRIMARY; }
 	virtual EOperationMode GetMode() { return eOperationModeNone; }
 	virtual string         GetDisplayName() const = 0;
 

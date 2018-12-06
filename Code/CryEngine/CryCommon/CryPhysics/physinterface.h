@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef physinterface_h
-#define physinterface_h
+#pragma once
 
 #include <CryNetwork/SerializeFwd.h>
 #include <CryMemory/CrySizer.h>
@@ -603,7 +602,7 @@ struct pe_params_buoyancy : pe_params
 		iMedium = 0;
 		MARK_UNUSED waterDensity, kwaterDensity, waterDamping,
 		            waterPlane.n, waterPlane.origin, waterEmin, waterResistance, kwaterResistance, waterFlow, flowVariance;
-	};
+	}
 	enum EMediumType
 	{
 		eWater = 0,
@@ -885,7 +884,7 @@ struct pe_params_articulated_body : pe_params
 	int              nRoots;             //!< only used in GetParams
 	int              nJointsAlloc;       //!< pre-allocates this amount of joints and parts
 
-	int              bRecalcJoints; //!< re-build geometry positions from joint agnles
+	int              bRecalcJoints; //!< re-build geometry positions from joint angles
 };
 
 ////////// living entity params
@@ -1038,7 +1037,7 @@ struct pe_params_car : pe_params
 	int    nGears;
 	float* gearRatios;              //!< assumes 0-backward gear, 1-neutral, 2 and above - forward
 	int    maxGear, minGear;        //!< additional gear index clamping
-	float  slipThreshold;           //!< lateral speed threshold for switchig a wheel to a 'slipping' mode
+	float  slipThreshold;           //!< lateral speed threshold for switching a wheel to a 'slipping' mode
 	float  gearDirSwitchRPM;        //!< RPM threshold for switching back and forward gears
 	float  kDynFriction;            //!< friction modifier for sliping wheels
 	float  steerTrackNeutralTurn;   //!< for tracked vehicles, steering angle that causes equal but opposite forces on tracks
@@ -1143,7 +1142,7 @@ struct pe_params_rope : pe_params
 	float                 unprojLimit;      //!< rotational unprojection limit per frame (no-subdivision mode)
 	float                 noCollDist;       //!< fraction of the segment near the attachment point that doesn't collide (no-subdivision mode)
 	int                   maxIters;         //!< tweak for the internal vertex solver
-	int                   nSegments;        //!< segment count, changin will reset vertex positions
+	int                   nSegments;        //!< segment count, changing will reset vertex positions
 	int                   flagsCollider;    //!< only collide with entity parts flagged this way
 	int                   collTypes;        //!< a selection of ent_xxx flags to collide against
 	int                   nMaxSubVtx;       //!< maximum internal vertices per segment in subdivision mode
@@ -1210,7 +1209,7 @@ struct params_wavesim
 	float resistance;    //!< rate of velocity transfer from floating objects
 	float dampingCenter; //!< damping in the central tile
 	float dampingRim;    //!< damping in the outer tiles
-	float minhSpread;    //!< minimum height perturbation that activates a neighbouring tile
+	float minhSpread;    //!< minimum height perturbation that activates a neighboring tile
 	float minVel;        //!< sleep speed threshold
 };
 
@@ -1799,7 +1798,7 @@ struct pe_status_living : pe_status
 	Vec3             velUnconstrained; //!< 'physical' movement velocity
 	Vec3             velRequested;     //!< velocity requested in the last action
 	Vec3             velGround;        //!< velocity of the object entity is standing on
-	float            groundHeight;     //!< position where the last contact with the ground occured
+	float            groundHeight;     //!< position where the last contact with the ground occurred
 	Vec3             groundSlope;
 	int              groundSurfaceIdx;
 	int              groundSurfaceIdxAux; //!< contact with the ground that also has default collision flags
@@ -1868,7 +1867,7 @@ struct pe_status_wheel : pe_status
 	float            suspLen0;    //!< initial suspension spring length
 	float            r;           //!< wheel radius
 	float            torque;      //!< driving torque
-	float            steer;       //!< current streeing angle
+	float            steer;       //!< current steering angle
 	IPhysicalEntity* pCollider;
 };
 
@@ -1918,7 +1917,7 @@ struct pe_status_rope : pe_status
 	Vec3*                             pPoints;             //!< expects the caller to provide an array of nSegments+1, if 0, no points are returned
 	Vec3*                             pVelocities;         //!< expects the caller to provide an array of nSegments+1, if 0, no velocities are returned
 	int                               nCollStat, nCollDyn; //!< number of rope contacts with static and dynamic objects
-	int                               bTargetPoseActive;   //!< current traget pose mode (0, 1, or 2)
+	int                               bTargetPoseActive;   //!< current target pose mode (0, 1, or 2)
 	float                             stiffnessAnim;       //!< current target pose stiffness
 	int                               bStrained;           //!< whether the rope is strained, either along a line or wrapped around objects
 	strided_pointer<IPhysicalEntity*> pContactEnts;        //!< returns a pointer to internal data, the caller doesn't need to provide it
@@ -2002,7 +2001,7 @@ enum geom_flags
 	geom_no_particle_impulse    = 0x8000000, //!< phys particles don't apply impulses to this part; should be used in flagsCollider
 	geom_destroyed_on_break     = 0x2000000, //!< should be used in flagsCollider
 	geom_allow_id_duplicates    = 0x1000000, //!< doesn't check if id is already used; should be set in flagsCollider
-	geom_ignore_BBox            = 0x20000000,//!< doon't include the part in entity world BBox computation
+	geom_ignore_BBox            = 0x20000000,//!< don't include the part in entity world BBox computation
 	//! mnemonic group names
 	geom_colltype_player        = geom_colltype1, geom_colltype_explosion = geom_colltype2,
 	geom_colltype_vehicle       = geom_colltype3, geom_colltype_foliage = geom_colltype4, geom_colltype_debris = geom_colltype5,
@@ -2142,7 +2141,7 @@ struct pe_tetrlattice_params : pe_params
 	int   nMaxCracks;                                //!< maximum cracks per update
 	float maxForcePush, maxForcePull, maxForceShift; //!< linear force limits
 	float maxTorqueTwist, maxTorqueBend;             //!< angular force limits
-	float crackWeaken;                               //!< weakens faces neighbouring a newly generated crack (0..1)
+	float crackWeaken;                               //!< weakens faces neighboring a newly generated crack (0..1)
 	float density;                                   //!< also affects all force limits
 };
 
@@ -2203,7 +2202,7 @@ struct intersection_params
 	Vec3          axisOfRotation;          //!< if left 0, will be set based on collision area normal
 	float         time_interval;           //!< used to set unprojection limits
 	float         vrel_min;                //!< if local relative velocity in contact area is above this, unprojects along its derection; otherwise along area normal
-	float         maxSurfaceGapAngle;      //!< theshold for generating area contacts
+	float         maxSurfaceGapAngle;      //!< threshold for generating area contacts
 	float         minAxisDist;             //!< disables rotational unprojection if contact point is closer than this to the axis
 	Vec3          unprojectionPlaneNormal; //!< restrict linear unprojection to this plane
 	Vec3          axisContactNormal;       //!< a mild hint about possible contact normal
@@ -2214,7 +2213,7 @@ struct intersection_params
 	bool          bStopAtFirstTri;         //!< stop after the first collision is detected
 	bool          bNoAreaContacts;         //!< don't try to detect contact areas
 	bool          bNoBorder;               //!< don't trace contact border
-	int           bExactBorder;            //!< always tries to return a consequtive border (useful for boolean ops)
+	int           bExactBorder;            //!< always tries to return a consecutive border (useful for boolean ops)
 	int           bNoIntersection;         //!< don't find all intersection points (only applies to primitive-primitive collisions)
 	int           bBothConvex;             //!< (output) both operands were convex
 	int           bThreadSafe;             //!< set if it's known that no other thread will contend for the internal intersection data (only used in PrimitiveWorldIntersection now)
@@ -2250,7 +2249,7 @@ struct bop_newtri
 	int   idxOrg;  //!< original (triangulated) triangle's foreign index
 	int   iVtx[3]; //!< for each vertex, existing vertex index if >=0, -(new vertex index+1) if <0
 	float areaOrg; //!< original triangle's area
-	Vec3  area[3]; //!< areas of compementary triangles for each vertex (divide by original tri area to get barycentric coords)
+	Vec3  area[3]; //!< areas of complementary triangles for each vertex (divide by original tri area to get barycentric coords)
 };
 
 struct bop_vtxweld
@@ -2329,11 +2328,11 @@ struct trinfo
 	index_t ibuddy[3];
 };
 
-//! Mesh island is a connected group of trinagles.
+//! Mesh island is a connected group of triangles.
 struct mesh_island
 {
 	int   itri;       //!< first triangle
-	int   nTris;      //!< trinagle count
+	int   nTris;      //!< triangle count
 	int   iParent;    //!< outer island is V<0
 	int   iChild;     //!< first islands inside it with V<0
 	int   iNext;      //!< maintains a linked list of iChild's inside iParent
@@ -2360,7 +2359,7 @@ struct mesh_data : primitives::primitive
 	strided_pointer<Vec3> pVertices;
 	Vec3*                 pNormals;
 	int*                  pVtxMap;   //!< original vertex index->merged vertex index
-	trinfo*               pTopology; //!< neighbours for each triangle's edge
+	trinfo*               pTopology; //!< neighbors for each triangle's edge
 	int                   nTris, nVertices;
 	mesh_island*          pIslands;
 	int                   nIslands;
@@ -2478,7 +2477,7 @@ struct IGeometry
 	virtual void GetBBox(primitives::box* pbox) = 0;               //!< possibly oriented bbox (depends on BV tree type)
 	virtual int  CalcPhysicalProperties(phys_geometry* pgeom) = 0; //!< O(num_triangles) for meshes, unless mesh_always_static is set
 	virtual int  PointInsideStatus(const Vec3& pt) = 0;            //!< for meshes, will create an auxiliary hashgrid for acceleration
-	//! IntersectLocked - the main function for geomtries. pdata1,pdata2,pparams can be 0 - defaults will be assumed.
+	//! IntersectLocked - the main function for geometries. pdata1,pdata2,pparams can be 0 - defaults will be assumed.
 	//! returns a pointer to an internal thread-specific contact buffer, locked with the lock argument
 	virtual int IntersectLocked(IGeometry* pCollider, geom_world_data* pdata1, geom_world_data* pdata2, intersection_params* pparams, geom_contact*& pcontacts, WriteLockCond& lock, int iCaller = MAX_PHYS_THREADS) = 0;
 	//! Intersect - same as Intersect, but doesn't lock pcontacts
@@ -2536,7 +2535,7 @@ struct IGeometry
 	virtual void  AppendVertices(Vec3* pVtx, int* pVtxMap, int nVtx) = 0;                   //!< used in rendermesh-physics sync after boolean ops
 	virtual float GetExtent(EGeomForm eForm) const = 0;
 	virtual void  GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomForm eForm) const = 0;
-	virtual void  CompactMemory() = 0; //!< used only by non-breakable meshes to compact non-shared vertices into same contingous block of memory
+	virtual void  CompactMemory() = 0; //!< used only by non-breakable meshes to compact non-shared vertices into same continuous block of memory
 	//! Boxify: attempts to build a set of boxes covering the geometry's volume (only supported by trimeshes)
 	virtual int   Boxify(primitives::box* pboxes, int nMaxBoxes, const SBoxificationParams& params) = 0;
 	//! Proxies: attempts to build a set of primitives and meshes to approximate the mesh
@@ -2585,7 +2584,7 @@ struct IBreakableGrid2d
 {
 	// <interfuscator:shuffle>
 	virtual ~IBreakableGrid2d(){}
-	//! BreakIntoChunks: emulates fracure in the grid around pt with dimensions r x ry
+	//! BreakIntoChunks: emulates fracture in the grid around pt with dimensions r x ry
 	//! ptout receives a pointer to a vertex array
 	//! return value is an allocated array of indices, 3 per triangle, -1 marks contour end, -2 array end
 	//! maxPatchTris tells to unite broken trianges into patches of up to this size; 0 means broken triangles are discarded
@@ -2664,7 +2663,7 @@ struct IPhysUtils
 {
 	// <interfuscator:shuffle>
 	virtual ~IPhysUtils(){}
-	//! CoverPolygonWithCircles - attempts to fits circles to roughly cover a polygon (can used to generate round spalshes over an area)
+	//! CoverPolygonWithCircles - attempts to fits circles to roughly cover a polygon (can used to generate round splashes over an area)
 	//! bConsecutive is false, uses convex hull of the points
 	//! center is a pre-calculated geometrical center of pt's
 	//! outputs data into centers and radii arrays, which use global buffers; returns the number of circles
@@ -2976,7 +2975,7 @@ struct PhysicsVars : SolverSettings
 
 	int   bEntGridUseOBB;
 	int   nStartupOverloadChecks;
-	float breakageMinAxisInertia; //!< For procedural breaking, each axis must have a minium inertia compared to the axis with the largest inertia (0.01-1.00)
+	float breakageMinAxisInertia; //!< For procedural breaking, each axis must have a minimum inertia compared to the axis with the largest inertia (0.01-1.00)
 
 	int   bForceSyncPhysics;
 	int   idEntBreakOnAwake;
@@ -3046,7 +3045,7 @@ struct pe_explosion
 //! during PumpLoggedEvents function. The latter are call client handlers immediately when they happen, which is likely
 //! to be inside the physics thread, so the handler must be thread-safe.
 //! In most cases, in order to generate events the entity must have the corresponding flag set
-//! Important Note: Please keep event ids contigous in respect to being stereo or mono events
+//! Important Note: Please keep event ids contiguous in respect to being stereo or mono events
 struct EventPhys
 {
 	EventPhys* next;
@@ -3108,7 +3107,7 @@ struct EventPhysStateChange : EventPhysMono
 	float timeIdle; //!< how long the entity stayed without external activation (such as impulses)
 };
 
-//! Called when something around the entityy breaks.
+//! Called when something around the entity breaks.
 struct EventPhysEnvChange : EventPhysMono
 {
 	enum entype { id = 3, flagsCall = pef_monitor_env_changes, flagsLog = pef_log_env_changes };
@@ -3296,7 +3295,7 @@ struct IPhysicalEntityIt
 	virtual bool             IsEnd() = 0;     //!< Check whether current iterator position is the end position.
 	virtual IPhysicalEntity* Next() = 0;      //!< returns the entity that the iterator points to before it goes to the next
 	virtual IPhysicalEntity* This() = 0;      //!< returns the entity that the iterator points to
-	virtual void             MoveFirst() = 0; //!< positions the iterator at the begining of the entity list
+	virtual void             MoveFirst() = 0; //!< positions the iterator at the beginning of the entity list
 	// </interfuscator:shuffle>
 };
 
@@ -3357,7 +3356,7 @@ struct IPhysicalWorld
 	};
 
 	//! PrimitiveWorldIntersection  - similar to RayWorldIntersection, but does a primitive sweep (or overlap) check
-	//! unlike RWI, it doesn't trace enitity cells along the path, but checks all of them in the swept volume's bounding box,
+	//! unlike RWI, it doesn't trace entity cells along the path, but checks all of them in the swept volume's bounding box,
 	//! so long PWIs are not recommended
 	//! ppcontact - pointer to the pointer to the resulting contacts array, since it uses shared data it gets locked with lockContacts
 	//! geomFlagsAll - flags that must all be present in an entity part
@@ -3424,7 +3423,7 @@ struct IPhysicalWorld
 	virtual void UnregisterBBoxInPODGrid(const Vec3* BBox) = 0;
 	virtual void DeactivateOnDemandGrid() = 0; //!< deactivates sector-based on-demand physicalization
 	//! AddRefEntInPODGrid: makes sure the entity gets an on-demand AddRef for each on-demand sector it touches
-	//! (needed when manually creating entities outside on-deman callback)
+	//! (needed when manually creating entities outside on-demand callback)
 	virtual int AddRefEntInPODGrid(IPhysicalEntity* pent, const Vec3* BBox = 0) = 0;
 
 	//! SetHeightfieldData - sets the global heightfield data. Uses callbacks to get height
@@ -3434,7 +3433,7 @@ struct IPhysicalWorld
 	virtual PhysicsVars*     GetPhysVars() = 0; //!< returns a writable structure
 
 	//! CreatePhysicalEntity - creates an entity with specified type, sets foreign data and optionally initializes if some pe_params
-	//! if id is left <0, the physics will assign one (note: internally there's a id->ptr array map, so keep ids wihin some sane range)
+	//! if id is left <0, the physics will assign one (note: internally there's a id->ptr array map, so keep ids within some sane range)
 	//! returns a valid entity pointer even if the physics thread is busy during the call
 	virtual IPhysicalEntity* CreatePhysicalEntity(pe_type type, pe_params* params = 0, void* pforeigndata = 0, int iforeigndata = 0, int id = -1, IGeneralMemoryHeap* pHeap = NULL) = 0;
 	//! CreatePhysicalEntity - this version is used when creating an a temporary entity (lifeTime) on demand for a placeholder
@@ -3476,7 +3475,7 @@ struct IPhysicalWorld
 	virtual void  SetSnapshotTime(float time_snapshot, int iType = 0) = 0; //!< time corresponding to the current snapshot
 	virtual void  SetiSnapshotTime(int itime_snapshot, int iType = 0) = 0;
 
-	//! GetEntitiesInBox - uses entity grid to query entites in bbox (objtypes - see enum entity_query_flags)
+	//! GetEntitiesInBox - uses entity grid to query entities in bbox (objtypes - see enum entity_query_flags)
 	//! unless ent_allocate_list is set, returns pre-alocated internal list for iCaller==MAX_PHYS_THREADS
 	//! otherwise, tries to use supplied pList up to szListPrealloc, allocates a new one if the size's not enough
 	//! returns the number of entities
@@ -3522,7 +3521,7 @@ struct IPhysicalWorld
 	//! IsAffectedByExplosion - returns fraction of pent (0..1) that was exposed to the last explosion
 	virtual float IsAffectedByExplosion(IPhysicalEntity* pent, Vec3* impulse = 0) = 0;
 
-	//! AddExplosionShape - registers a boolean carving shape for breakable meashes
+	//! AddExplosionShape - registers a boolean carving shape for breakable meshes
 	//! size is the shape's 'characteristic' size; during the actual carving the caller provides a desired size,
 	//! and the shape is scaled by desired_size/this_size.
 	//! idmat is the breakability index this shape gets assigned to. if there are several shapes for one index,
@@ -3552,7 +3551,7 @@ struct IPhysicalWorld
 	virtual int   GetGroupProfileInfo(phys_profile_info*& pList) = 0;
 	virtual int   GetJobProfileInfo(phys_job_info*& pList) = 0;
 
-	//! AddEventClient - adds a phyisics event listener
+	//! AddEventClient - adds a physics event listener
 	//! bLogged==1 for a logged event version, 0 for immediate
 	//! listeners are called in the order of decreasing priorities
 	//! if a listener returns 0, further event processing stops
@@ -3570,7 +3569,7 @@ struct IPhysicalWorld
 	//! pFlows is per-vertex (0..npt-1) water flow vectors
 	virtual IPhysicalEntity* AddArea(Vec3* pt, int npt, float zmin, float zmax, const Vec3& pos = Vec3(0, 0, 0), const quaternionf& q = quaternionf(IDENTITY), float scale = 1.0f, const Vec3& normal = Vec3(ZERO), int* pTessIdx = 0, int nTessTris = 0, Vec3* pFlows = 0) = 0;
 	//! AddArea - creates a general geometry area. Typically, primitives work best, but can be a mesh or a heightfield
-	//! In the latter case, it chages water plane in buoyancy params based on local height perturbation (used for waves)
+	//! In the latter case, it changes water plane in buoyancy params based on local height perturbation (used for waves)
 	virtual IPhysicalEntity* AddArea(IGeometry* pGeom, const Vec3& pos, const quaternionf& q, float scale) = 0;
 	//! AddArea - this adds a 3d-spline area
 	virtual IPhysicalEntity* AddArea(Vec3* pt, int npt, float r, const Vec3& pos = Vec3(0, 0, 0), const quaternionf& q = quaternionf(IDENTITY), float scale = 1) = 0;
@@ -3671,5 +3670,3 @@ struct IPhysicalWorld
 	}
 
 };
-
-#endif
