@@ -169,10 +169,6 @@ struct IObjectManager
 	virtual void FindObjectsInAABB(const AABB& aabb, std::vector<CBaseObject*>& result) const = 0;
 
 	//////////////////////////////////////////////////////////////////////////
-	// Find object from in game physical entity.
-	CBaseObject* FindPhysicalObjectOwner(struct IPhysicalEntity* pPhysicalEntity);
-
-	//////////////////////////////////////////////////////////////////////////
 	// Operations on objects.
 	//////////////////////////////////////////////////////////////////////////
 	//! Makes object visible or invisible.

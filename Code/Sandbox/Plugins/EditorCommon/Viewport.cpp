@@ -582,7 +582,6 @@ bool CViewport::HitTest(CPoint point, HitContext& hitInfo)
 	if (hitInfo.bSkipIfGizmoHighlighted && GetIEditor()->GetGizmoManager()->GetHighlightedGizmo())
 		return false;
 
-	Vec3 raySrc(0, 0, 0), rayDir(1, 0, 0);
 	ViewToWorldRay(point, hitInfo.raySrc, hitInfo.rayDir);
 	hitInfo.view = this;
 	hitInfo.point2d = point;
