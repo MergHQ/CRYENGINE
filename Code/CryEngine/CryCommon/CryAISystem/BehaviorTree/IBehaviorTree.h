@@ -139,12 +139,15 @@ struct LoadContext
 		INodeFactory&                       _nodeFactory,
 		const char*                         _treeName,
 		const Variables::Declarations&      _variableDeclarations,
-		Variables::EventsDeclaration&        _eventsDeclaration
+		Variables::EventsDeclaration&       _eventsDeclaration,
+		const TimestampCollection&          _timestampCollection
+
 	)
 		: nodeFactory(_nodeFactory)
 		, treeName(_treeName)
 		, variableDeclarations(_variableDeclarations)
 		, eventsDeclaration(_eventsDeclaration)
+		, timestampCollection(_timestampCollection)
 	{
 	}
 
@@ -153,6 +156,8 @@ struct LoadContext
 	const Variables::Declarations&       variableDeclarations;
 	// non-const in order to automatically declare events when loading the XML
 	Variables::EventsDeclaration&        eventsDeclaration;
+	const TimestampCollection&           timestampCollection;
+
 
 	// Warning! If you're thinking about adding the entity id to the
 	// LoadContext you need to keep one thing in mind:

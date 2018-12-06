@@ -114,8 +114,7 @@ struct Timestamp
 		IF_LIKELY (!eventsDeclaration)
 			return;
 
-		const Variables::Events events = eventsDeclaration->GetEventsWithFlags();
-		SerializeContainerAsStringList(archive, "setOnEventName", "^Set on event", events, "Event", setOnEventName);
+		SerializeContainerAsSortedStringList(archive, "setOnEventName", "^Set on event", eventsDeclaration->GetEventsWithFlags(), "Event", setOnEventName);
 		archive.doc("Event that triggers the start of the Timestamp");
 
 		const Timestamps* timestamps = archive.context<Timestamps>();
@@ -138,7 +137,7 @@ struct Timestamp
 			}
 		}
 
-		SerializeContainerAsStringList(archive,  "exclusiveTo", "^<Exclusive To", timestampsWithoutThis, "Exclusive To", exclusiveTo.timestampName, false, true);
+		SerializeContainerAsSortedStringList(archive,  "exclusiveTo", "^<Exclusive To", timestampsWithoutThis, "Exclusive To", exclusiveTo.timestampName, false, true);
 	}
 
 	const string& SerializeToString() const
@@ -149,6 +148,11 @@ struct Timestamp
 	bool operator<(const Timestamp& rhs) const
 	{
 		return (id.timestampName < rhs.id.timestampName);
+	}
+
+	bool operator ==(const Timestamp& rhs) const
+	{
+		return setOnEventNameCRC32 == rhs.setOnEventNameCRC32;
 	}
 #endif
 
@@ -311,18 +315,12 @@ public:
 #if defined (USING_BEHAVIOR_TREE_SERIALIZATION)
 	void Serialize(Serialization::IArchive& archive)
 	{
-		if (archive.isOutput())
-			std::sort(m_timestamps.begin(), m_timestamps.end());
-		
-		for (Timestamps::const_iterator it = m_timestamps.begin(), end = m_timestamps.end(); it != end; ++it)
+		const std::vector<size_t> duplicatedIndices = Variables::GetIndicesOfDuplicatedEntries(m_timestamps);
+		for (const size_t i : duplicatedIndices)
 		{
-			const Timestamps::const_iterator itNext = std::next(it, 1);
-			if (itNext != m_timestamps.end() && it->id.timestampName == itNext->id.timestampName)
-			{
-				archive.error(itNext->id.timestampName, SerializationUtils::Messages::ErrorDuplicatedValue("Timestamp", itNext->id.timestampName));
-			}
+			archive.error(m_timestamps[i].id.timestampName, SerializationUtils::Messages::ErrorDuplicatedValue("Timestamp", m_timestamps[i].id.timestampName));
 		}
-		
+
 		Serialization::SContext variableDeclarations(archive, &m_timestamps);
 		archive(m_timestamps, "timestamps", "^[<>]");
 	}

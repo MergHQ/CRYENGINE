@@ -79,9 +79,15 @@ static void HandleCommentSerialization(Serialization::IArchive& archive, string&
 	}
 }
 
-template<class T, typename F>
-static void SerializeContainerAsStringListWithGivenFunction(Serialization::IArchive& archive, const char* szKey, const char* szLabel, const T& container, F toString, const string& fieldName, /* OUT */ string& selectedElement, const bool showErrorEmptyMessage = true, const bool showErrorNonExistingValueMessage = true)
+// T::value_type should implement SerializeToString method
+template<class T>
+static void SerializeContainerAsStringList(Serialization::IArchive& archive, const char* szKey, const char* szLabel, const T& container, const string& fieldName, /* OUT */ string& selectedElement, const bool showErrorEmptyMessage = true, const bool showErrorNonExistingValueMessage = true)
 {
+	const auto toString = [](const T::value_type& t) -> string
+	{
+		return t.SerializeToString();
+	};
+
 	bool elementAddedToStringList;
 	Serialization::StringListValue stringListValue = SerializationUtils::ContainerToStringListValuesForceAdd(container, toString, selectedElement, elementAddedToStringList);
 
@@ -100,15 +106,13 @@ static void SerializeContainerAsStringListWithGivenFunction(Serialization::IArch
 }
 
 // T::value_type should implement SerializeToString method
+// T::value_type should implement operator <
 template<class T>
-static void SerializeContainerAsStringList(Serialization::IArchive& archive, const char* szKey, const char* szLabel, const T& container, const string& fieldName, /* OUT */ string& selectedElement, const bool showErrorEmptyMessage = true, const bool showErrorNonExistingValueMessage = true)
+static void SerializeContainerAsSortedStringList(Serialization::IArchive& archive, const char* szKey, const char* szLabel, T container, const string& fieldName, /* OUT */ string& selectedElement, const bool showErrorEmptyMessage = true, const bool showErrorNonExistingValueMessage = true)
 {
-	const auto toString = [](const T::value_type& t) -> string
-	{
-		return t.SerializeToString();
-	};
+	std::stable_sort(container.begin(), container.end());
 
-	SerializeContainerAsStringListWithGivenFunction(archive, szKey, szLabel, container, toString, fieldName, selectedElement, showErrorEmptyMessage, showErrorNonExistingValueMessage);
+	SerializeContainerAsStringList(archive, szKey, szLabel, container, fieldName, selectedElement, showErrorEmptyMessage, showErrorNonExistingValueMessage);
 }
 
 #endif // USING_BEHAVIOR_TREE_SERIALIZATION

@@ -28,9 +28,40 @@
 	#include <CrySerialization/StringList.h>
 #endif
 
+namespace
+{
+	template<typename T>
+	void ConvertMapToVectorOfValues(const T& map, std::vector<typename T::mapped_type>& vec)
+	{
+		std::transform(map.begin(), map.end(),
+			std::back_inserter(vec),
+			[](const std::pair<typename T::key_type, typename T::mapped_type> &p) {
+			return p.second;
+		});
+	}
+}
+
 namespace Variables
 {
 typedef uint32 VariableID;
+
+template <typename T>
+std::vector<size_t> GetIndicesOfDuplicatedEntries(const T& container)
+{
+	std::vector<size_t> duplicatesEntries;
+
+	for (size_t i = 0; i < container.size(); ++i)
+	{
+		for (size_t j = i + 1; j < container.size(); ++j)
+		{
+			if (container[i] == container[j])
+			{
+				duplicatesEntries.push_back(j);
+			}
+		}
+	}
+	return duplicatesEntries;
+}
 
 class Collection
 {
@@ -181,14 +212,23 @@ struct Description
 	{
 		return (name < rhs.name);
 	}
+
+	bool operator==(const Description& rhs) const
+	{
+		return (name == rhs.name);
+	}
+
+	const string& SerializeToString() const
+	{
+		return name;
+	}
 #endif
 
 	string name;
 };
 
-typedef std::map<VariableID, Description>                        VariableDescriptions;
-typedef std::pair<Variables::VariableID, Variables::Description> VariableIdDescriptionPair;
-typedef std::vector<VariableIdDescriptionPair>                   DescriptorVector;
+typedef std::map<VariableID, Description> VariableDescriptions;
+typedef std::vector<Description>          DescriptionVector;
 
 static VariableID GetVariableID(const char* name)
 {
@@ -265,8 +305,7 @@ public:
 		}
 
 #if defined(USING_VARIABLE_COLLECTION_SERIALIZATION)
-		m_descriptionVector.assign(m_descriptions.begin(), m_descriptions.end());
-		SortDescriptorVector();
+		ConvertMapToVectorOfValues(m_descriptions, m_descriptionVector);
 #endif//USING_VARIABLE_COLLECTION_SERIALIZATION
 
 		return true;
@@ -316,18 +355,12 @@ public:
 	}
 
 #if defined(USING_VARIABLE_COLLECTION_SERIALIZATION)
-
-	void SortDescriptorVector()
-	{
-		std::sort(m_descriptionVector.begin(), m_descriptionVector.end(), [](const VariableIdDescriptionPair& a, const VariableIdDescriptionPair& b) { return a.second < b.second; });
-	}
-
-	const DescriptorVector& GetSortedDescriptorVector() const
+	const DescriptionVector& GetVariableDescriptionVector() const
 	{
 		return m_descriptionVector;
 	}
-
 #endif
+
 	const Collection& GetDefaults() const
 	{
 		return m_defaults;
@@ -358,23 +391,21 @@ public:
 	void Serialize(Serialization::IArchive& archive)
 	{
 		archive(m_descriptionVector, "variableDescriptions", "^[<>]");
-		SortDescriptorVector();
 
-		bool existDuplicatedVariable = false;
-		for (DescriptorVector::const_iterator it = m_descriptionVector.begin(), end = m_descriptionVector.end(); it != end; ++it)
+		if (archive.isInput() || archive.isEdit())
 		{
-			const DescriptorVector::const_iterator itNext = std::next(it, 1);
-			if (itNext != m_descriptionVector.end() && it->first == itNext->first)
+			m_descriptions.clear();
+
+			for (const Description& desc : m_descriptionVector)
 			{
-				existDuplicatedVariable = true;
-				archive.error(itNext->second.name, SerializationUtils::Messages::ErrorDuplicatedValue("variable name", itNext->second.name));
+				m_descriptions.insert(VariableDescriptions::value_type(GetVariableID(desc.name), desc));
 			}
 		}
 
-		if (!existDuplicatedVariable)
+		const std::vector<size_t> duplicatedIndices = GetIndicesOfDuplicatedEntries(m_descriptionVector);
+		for (const size_t i : duplicatedIndices)
 		{
-			m_descriptions.clear();
-			m_descriptions.insert(m_descriptionVector.begin(), m_descriptionVector.end());
+			archive.error(m_descriptionVector[i].name, SerializationUtils::Messages::ErrorDuplicatedValue("Variable name", m_descriptionVector[i].name));
 		}
 	}
 
@@ -383,7 +414,7 @@ public:
 private:
 	VariableDescriptions m_descriptions;
 #if defined(USING_VARIABLE_COLLECTION_SERIALIZATION)
-	DescriptorVector     m_descriptionVector;
+	DescriptionVector    m_descriptionVector;
 #endif
 	Collection           m_defaults;
 };
@@ -771,7 +802,6 @@ struct Event
 	{
 		return name;
 	}
-#endif
 
 	bool operator<(const Event& rhs) const
 	{
@@ -782,6 +812,7 @@ struct Event
 	{
 		return (name == rhs.name);
 	}
+#endif
 
 	string name;
 };
@@ -1061,16 +1092,12 @@ private:
 	template <class T>
 	void SerializeEventsList(Serialization::IArchive& archive, const char* szKey, const char* szLabel, T& events)
 	{
-		std::sort(events.begin(), events.end());
 		archive(events, szKey, szLabel);
 
-		for (auto it = events.cbegin(); it != events.cend(); ++it)
+		const std::vector<size_t> duplicatedIndices = GetIndicesOfDuplicatedEntries(events);
+		for (const size_t i : duplicatedIndices)
 		{
-			auto itNext = std::next(it, 1);
-			if (itNext != events.end() && it->name == itNext->name)
-			{
-				archive.error(itNext->name, SerializationUtils::Messages::ErrorDuplicatedValue("Event name", itNext->name));
-			}
+			archive.error(events[i].name, SerializationUtils::Messages::ErrorDuplicatedValue("Event name", events[i].name));
 		}
 	}
 #endif
@@ -1104,29 +1131,20 @@ struct SignalHandle
 		IF_LIKELY (!eventsDeclaration)
 			return;
 
-		const Variables::Events events = eventsDeclaration->GetEventsWithFlags();
-		BehaviorTree::SerializeContainerAsStringList(archive, "signalName", "^On event", events, "Event", signalName);
+		BehaviorTree::SerializeContainerAsSortedStringList(archive, "signalName", "^On event", eventsDeclaration->GetEventsWithFlags(), "Event", signalName);
 		archive.doc("Event that triggers the change in the value of the Variable");
 
 		// Serialize Variables
 
-		const Declarations* declarations = archive.context<Declarations>();
-		if (!declarations)
+		const Declarations* pDeclarations = archive.context<Declarations>();
+		if (!pDeclarations)
 			return;
 
-		const DescriptorVector& descriptionsVector = declarations->GetSortedDescriptorVector();
-
-		const auto toString = [](const VariableIdDescriptionPair& idDescriptionPair) -> string
-		{
-			return idDescriptionPair.second.name;
-		};
-
-		BehaviorTree::SerializeContainerAsStringListWithGivenFunction(
+		BehaviorTree::SerializeContainerAsSortedStringList(
 			archive, 
 			"variableName", 
 			"^Switch variable", 
-			descriptionsVector, 
-			toString, 
+			pDeclarations->GetVariableDescriptionVector(),
 			"Switch variable", 
 			variableName
 		);
@@ -1139,7 +1157,7 @@ struct SignalHandle
 		if (archive.isInput())
 		{
 			variableID = GetVariableID(variableName);
-			valueExpr = Expression(value ? "true" : "false", *declarations);
+			valueExpr = Expression(value ? "true" : "false", *pDeclarations);
 		}
 	}
 
@@ -1162,8 +1180,7 @@ struct SignalHandle
 };
 
 typedef std::multimap<uint32, SignalHandle>        SignalHandles;
-typedef std::pair<uint32, Variables::SignalHandle> KeySignalHandlePair;
-typedef std::vector<KeySignalHandlePair>           SignalHandleVector;
+typedef std::vector<SignalHandle>                  SignalHandleVector;
 
 class SignalHandler
 {
@@ -1261,8 +1278,7 @@ public:
 		}
 
 #if defined(USING_VARIABLE_COLLECTION_SERIALIZATION)
-		m_signalHandleVector.assign(m_signalHandles.begin(), m_signalHandles.end());
-		SortSingnalHandleVector();
+		ConvertMapToVectorOfValues(m_signalHandles, m_signalHandleVector);
 #endif//USING_VARIABLE_COLLECTION_SERIALIZATION
 
 		return true;
@@ -1287,28 +1303,22 @@ public:
 #ifdef USING_VARIABLE_COLLECTION_SERIALIZATION
 	void Serialize(Serialization::IArchive& archive)
 	{
-		const Declarations* declarations = archive.context<Declarations>();
-		if (!declarations)
-			return;
-
 		archive(m_signalHandleVector, "signalHandles", "^[<>]");
-		SortSingnalHandleVector();
 
-		bool existDuplicate = false;
-		for (SignalHandleVector::const_iterator it = m_signalHandleVector.begin(), end = m_signalHandleVector.end(); it != end; ++it)
+		if (archive.isInput() || archive.isEdit())
 		{
-			const SignalHandleVector::const_iterator itNext = std::next(it, 1);
-			if (itNext != m_signalHandleVector.end() && it->second == itNext->second)
+			m_signalHandles.clear();
+
+			for (const SignalHandle& signalHandle : m_signalHandleVector)
 			{
-				existDuplicate = true;
-				archive.error(itNext->second, SerializationUtils::Messages::ErrorDuplicatedValue("Event handle", itNext->second.signalName));
+				m_signalHandles.insert(SignalHandles::value_type(CCrc32::Compute(signalHandle.signalName), signalHandle));
 			}
 		}
 
-		if (!existDuplicate)
+		const std::vector<size_t> duplicatedIndices = GetIndicesOfDuplicatedEntries(m_signalHandleVector);
+		for (const size_t i : duplicatedIndices)
 		{
-			m_signalHandles.clear();
-			m_signalHandles.insert(m_signalHandleVector.begin(), m_signalHandleVector.end());
+			archive.error(m_signalHandleVector[i].signalName, SerializationUtils::Messages::ErrorDuplicatedValue("Event handle", m_signalHandleVector[i].signalName));
 		}
 	}
 #endif
@@ -1334,19 +1344,13 @@ public:
 
 		return signalVariablesXml;
 	}
-#endif
 
-#ifdef USING_VARIABLE_COLLECTION_SERIALIZATION
-	void SortSingnalHandleVector()
-	{
-		std::sort(m_signalHandleVector.begin(), m_signalHandleVector.end(), [](const KeySignalHandlePair& a, const KeySignalHandlePair& b) { return a.second < b.second; });
-	}
-
-	const SignalHandleVector& GetSortedSignalHandleVector() const
+	const SignalHandleVector& GetSignalHandleVector() const
 	{
 		return m_signalHandleVector;
 	}
-#endif //USING_VARIABLE_COLLECTION_SERIALIZATION
+
+#endif
 
 	const SignalHandles& GetSignalHandles() const
 	{
@@ -1354,9 +1358,10 @@ public:
 	}
 
 private:
-	SignalHandles      m_signalHandles;
-	SignalHandleVector m_signalHandleVector;
-
+	SignalHandles       m_signalHandles;
+#if defined(USING_VARIABLE_COLLECTION_SERIALIZATION)
+	SignalHandleVector  m_signalHandleVector;
+#endif
 };
 
 #ifdef DEBUG_VARIABLE_COLLECTION

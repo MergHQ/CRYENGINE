@@ -62,6 +62,8 @@ void BehaviorTreeDocument::Serialize(Serialization::IArchive& archive)
 #endif
 
 	archive(m_behaviorTreeTemplate->defaultTimestampCollection, "TimestampCollection", "Timestamps");
+	Serialization::SContext timestampsContext(archive, &m_behaviorTreeTemplate->defaultTimestampCollection);
+
 	archive(m_behaviorTreeTemplate->rootNode, "root", "=<>" NODE_COMBOBOX_FIXED_WIDTH ">+Tree root");
 	if (!m_behaviorTreeTemplate->rootNode.get())
 		archive.error(m_behaviorTreeTemplate->rootNode, "Node must be specified");
@@ -134,7 +136,7 @@ bool BehaviorTreeDocument::OpenFile(const char* behaviorTreeName, const char* ab
 	}
 
 	BehaviorTree::INodeFactory& factory = gEnv->pAISystem->GetIBehaviorTreeManager()->GetNodeFactory();
-	BehaviorTree::LoadContext context(factory, behaviorTreeName, newBehaviorTreeTemplate.variableDeclarations, newBehaviorTreeTemplate.eventsDeclaration);
+	BehaviorTree::LoadContext context(factory, behaviorTreeName, newBehaviorTreeTemplate.variableDeclarations, newBehaviorTreeTemplate.eventsDeclaration, newBehaviorTreeTemplate.defaultTimestampCollection);
 	newBehaviorTreeTemplate.rootNode = BehaviorTree::XmlLoader().CreateBehaviorTreeRootNodeFromBehaviorTreeXml(behaviorTreeXmlFile, context, isLoadingFromEditor);
 
 	if (!newBehaviorTreeTemplate.rootNode.get())
