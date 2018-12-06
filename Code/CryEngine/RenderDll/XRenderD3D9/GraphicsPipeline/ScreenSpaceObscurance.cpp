@@ -25,6 +25,10 @@ void CScreenSpaceObscuranceStage::Init()
 
 void CScreenSpaceObscuranceStage::Execute()
 {
+#if defined(DURANGO_USE_ESRAM)
+	m_passCopyFromESRAM.Execute(CRendererResources::s_ptexSceneSpecularESRAM, CRendererResources::s_ptexSceneSpecular);
+#endif
+
 	if (!CRenderer::CV_r_ssdo)
 	{
 		CClearSurfacePass::Execute(CRendererResources::s_ptexSceneNormalsBent, Clr_Median);
@@ -32,10 +36,6 @@ void CScreenSpaceObscuranceStage::Execute()
 	}
 
 	PROFILE_LABEL_SCOPE("DIRECTIONAL_OCC");
-
-#if defined(DURANGO_USE_ESRAM)
-	m_passCopyFromESRAM.Execute(CRendererResources::s_ptexSceneSpecularESRAM, CRendererResources::s_ptexSceneSpecular);
-#endif
 
 	CTexture* CRendererResources__s_ptexSceneSpecular = CRendererResources::CRendererResources::s_ptexSceneSpecularTmp;
 #if defined(DURANGO_USE_ESRAM)

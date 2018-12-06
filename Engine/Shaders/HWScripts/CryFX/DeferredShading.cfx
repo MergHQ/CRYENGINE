@@ -849,14 +849,11 @@ float calcHMAO(float3 vReceiverPos, float2x2 mSampleRotMat, int sampleCount, Tex
 #endif
 }
 
-Texture2D<float4> HMAO_sceneDepth : register(t1);
-Texture2D<float4> HMAO_Norms      : register(t0);
-Texture2D<float4> HMAO_NrmBnt	  : register(t10);
-// This sampler is used by the preceding textures, this pattern is repeated
-SamplerState  HMAO_Sampler : register(s0); //pointClamp
+Texture2D<float4> HMAO_sceneDepth : register(t0);
+SamplerState      HMAO_Sampler    : register(s0); //pointClamp - This sampler is used by the preceding textures, this pattern is repeated
 
-Texture2D<float4> HMAO_AODepth    : register(t11);
-SamplerState  HMAO_AOZSampler : register(s1); //TrilinearBorder_White
+Texture2D<float4> HMAO_AODepth    : register(t1);
+SamplerState      HMAO_AOZSampler : register(s1); //TrilinearBorder_White
 
 pixout HeightMapAOPS( vtxOutWPOS IN )
 {
