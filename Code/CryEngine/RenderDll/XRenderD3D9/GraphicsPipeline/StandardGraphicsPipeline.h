@@ -232,6 +232,8 @@ private:
 	std::unique_ptr<CStableDownsamplePass  > m_HQSubResPass[2];
 	std::unique_ptr<CStretchRectPass       > m_LQSubResPass[2];
 
+	std::unique_ptr<CAnisotropicVerticalBlurPass> m_AnisoVBlurPass;
+
 public:
 	std::unique_ptr<CStretchRectPass       > m_ResolvePass;
 	std::unique_ptr<CDownsamplePass        > m_DownscalePass;

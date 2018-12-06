@@ -88,17 +88,6 @@ public:
 	void ClearState();
 	void ClearDeviceState();
 
-	template<class T> T* GetOrCreateUtilityPass()
-	{
-		IUtilityRenderPass::EPassId id = T::GetPassId();
-		auto& cache = m_utilityPassCaches[uint32(id)];
-		if (cache.numUsed >= cache.utilityPasses.size())
-		{
-			cache.utilityPasses.emplace_back(new T);
-		}
-		return static_cast<T*>(cache.utilityPasses[cache.numUsed++].get());
-	}
-
 protected:
 	template<class T> void RegisterStage(T*& pPipelineStage, uint32 stageID)
 	{
@@ -139,17 +128,6 @@ protected:
 		}
 	}
 
-	void ResetUtilityPassCache()
-	{
-		FUNCTION_PROFILER_RENDERER();
-
-		for (auto& it : m_utilityPassCaches)
-		{
-			it.numUsed = 0;
-			it.utilityPasses.clear();
-		}
-	}
-
 protected:
 	std::array<CGraphicsPipelineStage*, 48> m_pipelineStages;
 	CRenderPassScheduler                    m_renderPassScheduler;
@@ -160,8 +138,6 @@ protected:
 #endif
 
 private:
-	std::array<SUtilityPassCache, uint32(IUtilityRenderPass::EPassId::MaxPassCount)> m_utilityPassCaches;
-
 	CRenderView*   m_pCurrentRenderView = nullptr;
 
 	//! @see EPipelineFlags

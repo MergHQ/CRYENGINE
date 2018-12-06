@@ -587,7 +587,7 @@ void CStandardGraphicsPipeline::ExecutePostAA()
 
 void CStandardGraphicsPipeline::ExecuteAnisotropicVerticalBlur(CTexture* pTex, int nAmount, float fScale, float fDistribution, bool bAlphaOnly)
 {
-	GetOrCreateUtilityPass<CAnisotropicVerticalBlurPass>()->Execute(pTex, nAmount, fScale, fDistribution, bAlphaOnly);
+	m_AnisoVBlurPass->Execute(pTex, nAmount, fScale, fDistribution, bAlphaOnly);
 }
 
 void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
@@ -770,8 +770,6 @@ void CStandardGraphicsPipeline::ExecuteMinimumForwardShading()
 
 	m_renderPassScheduler.SetEnabled(false);
 	m_renderPassScheduler.Execute();
-
-	ResetUtilityPassCache();
 }
 
 void CStandardGraphicsPipeline::ExecuteMobilePipeline()
@@ -1043,6 +1041,4 @@ void CStandardGraphicsPipeline::Execute()
 
 	m_renderPassScheduler.SetEnabled(false);
 	m_renderPassScheduler.Execute();
-
-	ResetUtilityPassCache();
 }

@@ -159,8 +159,8 @@ void CManager::RenderThreadPostUpdate(CRenderView* pRenderView)
 			const UINT numRanges = 1;
 			const D3D11_RECT uavRange = { 0, 0, numRuntimes, 0 };
 
-			gcpRendD3D->GetGraphicsPipeline().GetOrCreateUtilityPass<CClearRegionPass>()->Execute(&m_counter.GetBuffer(), nulls, numRanges, &uavRange);
-			gcpRendD3D->GetGraphicsPipeline().GetOrCreateUtilityPass<CClearRegionPass>()->Execute(&m_scratch.GetBuffer(), nulls, numRanges, &uavRange);
+			m_clearRegionPass->Execute(&m_counter.GetBuffer(), nulls, numRanges, &uavRange);
+			m_clearRegionPass->Execute(&m_scratch.GetBuffer(), nulls, numRanges, &uavRange);
 #else
 			CClearSurfacePass::Execute(&m_counter.GetBuffer(), nulls);
 			CClearSurfacePass::Execute(&m_scratch.GetBuffer(), nulls);

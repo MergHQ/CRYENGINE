@@ -3096,9 +3096,8 @@ void CRenderer::CopyTextureRegion(ITexture* pSrc, RectI srcRegion, ITexture* pDs
 {
 	_smart_ptr<ITexture> pSource = pSrc;
 	_smart_ptr<ITexture> pDestination = pDst;
-	ExecuteRenderThreadCommand(
-		[=]
-	{
+
+	ExecuteRenderThreadCommand([=]{
 		RECT src;
 		src.left = srcRegion.x;
 		src.right = srcRegion.x + srcRegion.w;
@@ -3111,10 +3110,9 @@ void CRenderer::CopyTextureRegion(ITexture* pSrc, RectI srcRegion, ITexture* pDs
 		dst.bottom = dstRegion.y + dstRegion.h;
 		dst.top = dstRegion.y;
 
-		CStretchRegionPass::GetPass().Execute(static_cast<CTexture*>(pSource.get()), static_cast<CTexture*>(pDestination.get()), &src, &dst, false, color, renderStateFlags);
-	},
-		ERenderCommandFlags::None
-		);
+		CStretchRegionPass().Execute(static_cast<CTexture*>(pSource.get()), static_cast<CTexture*>(pDestination.get()), &src, &dst, false, color, renderStateFlags);
+	}
+	, ERenderCommandFlags::None );
 }
 
 //////////////////////////////////////////////////////////////////////////
