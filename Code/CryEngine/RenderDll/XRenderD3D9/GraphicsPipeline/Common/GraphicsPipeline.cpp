@@ -36,7 +36,6 @@ void CGraphicsPipeline::ShutDown()
 	}
 
 	m_pipelineStages.fill(nullptr);
-	ResetUtilityPassCache();
 }
 
 //////////////////////////////////////////////////////////////////////////

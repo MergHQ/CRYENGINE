@@ -164,8 +164,6 @@ void CD3D9Renderer::RT_GraphicsPipelineShutdown()
 {
 	CREParticle::ResetPool();
 
-	CStretchRegionPass::Shutdown();
-
 	if (m_pStereoRenderer)
 		m_pStereoRenderer->ReleaseBuffers();
 
@@ -920,10 +918,8 @@ bool CD3D9Renderer::StoreGBufferToAtlas(const RectI& rcDst, int nSrcWidth, int n
 	SrcBox.left = 0; SrcBox.top = 0; SrcBox.right = nSrcWidth; SrcBox.bottom = nSrcHeight;
 	DstBox.left = rcDst.x; DstBox.top = rcDst.y; DstBox.right = rcDst.x + nDstWidth; DstBox.bottom = rcDst.y + nDstHeight;
 
-	CStretchRegionPass::GetPass().Execute(pGBuffD, pDstD, &SrcBox, &DstBox);
-
-	CStretchRegionPass::GetPass().Execute(pGBuffN, pDstN, &SrcBox, &DstBox);
-
+	CStretchRegionPass().Execute(pGBuffD, pDstD, &SrcBox, &DstBox);
+	CStretchRegionPass().Execute(pGBuffN, pDstN, &SrcBox, &DstBox);
 
 	return bRes;
 }

@@ -97,21 +97,6 @@ void CStretchRectPass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
 // CStretchRegionPass
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-CStretchRegionPass *CStretchRegionPass::s_pPass = nullptr;
-
-CStretchRegionPass &CStretchRegionPass::GetPass()
-{
-	if (!s_pPass)
-		s_pPass = new CStretchRegionPass;
-	return *s_pPass;
-}
-void CStretchRegionPass::Shutdown()
-{
-	if (s_pPass)
-		delete s_pPass;
-	s_pPass = NULL;
-}
-
 void CStretchRegionPass::Execute(CTexture* pSrcRT, CTexture* pDestRT, const RECT *pSrcRect, const RECT *pDstRect, bool bBigDownsample, const ColorF& color, const int renderStateFlags)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;

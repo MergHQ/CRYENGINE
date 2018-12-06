@@ -77,6 +77,10 @@ private:
 	gpu::CStructuredResource<uint, gpu::BufferFlagsReadWriteReadback>          m_scratch;
 	gpu::CStructuredResource<SReadbackData, gpu::BufferFlagsReadWriteReadback> m_readback;
 
+#if (CRY_RENDERER_DIRECT3D >= 111)
+	std::unique_ptr<CClearRegionPass>  m_clearRegionPass;
+#endif
+
 	int m_numRuntimesReadback;
 
 	CryCriticalSection                 m_cs;
