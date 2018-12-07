@@ -34,7 +34,6 @@ struct AIObjectParams;
 namespace BehaviorTree
 {
 struct IBehaviorTreeManager;
-struct IGraftManager;
 }
 struct IFunctionHandler;
 class ICentralInterestManager;
@@ -713,7 +712,6 @@ struct IAISystem
 
 	virtual ITargetTrackManager*                GetTargetTrackManager() const = 0;
 	virtual BehaviorTree::IBehaviorTreeManager* GetIBehaviorTreeManager() const = 0;
-	virtual BehaviorTree::IGraftManager*        GetIGraftManager() const = 0;
 	virtual ICoverSystem*                       GetCoverSystem() const = 0;
 	virtual INavigationSystem*                  GetNavigationSystem() const = 0;
 	virtual IMNMPathfinder*                     GetMNMPathfinder() const = 0;

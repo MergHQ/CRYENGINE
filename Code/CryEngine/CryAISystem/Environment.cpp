@@ -20,7 +20,6 @@
 #include "TargetSelection/TargetTrackManager.h"
 #include "NullAIDebugRenderer.h"
 #include "Navigation/NavigationSystem/NavigationSystem.h"
-#include "BehaviorTree/BehaviorTreeGraft.h"
 #include "Formation/FormationManager.h"
 
 static CNullAIDebugRenderer nullAIRenderer;
@@ -39,7 +38,6 @@ SAIEnvironment::SAIEnvironment()
 	, pCoverSystem(NULL)
 	, pNavigationSystem(NULL)
 	, pBehaviorTreeManager(NULL)
-	, pGraftManager(NULL)
 	, pAuditionMap(NULL)
 	, pVisionMap(NULL)
 	, pFactionMap(NULL)

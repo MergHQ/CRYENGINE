@@ -49,7 +49,6 @@ class CCoverSystem;
 namespace BehaviorTree
 {
 class BehaviorTreeManager;
-class GraftManager;
 }
 namespace Perception
 {
@@ -98,7 +97,6 @@ struct SAIEnvironment
 	CCoverSystem*                        pCoverSystem;
 	NavigationSystem*                    pNavigationSystem;
 	BehaviorTree::BehaviorTreeManager*   pBehaviorTreeManager;
-	BehaviorTree::GraftManager*          pGraftManager;
 	Perception::CAuditionMap*            pAuditionMap;
 	CVisionMap*                          pVisionMap;
 	CFactionMap*                         pFactionMap;

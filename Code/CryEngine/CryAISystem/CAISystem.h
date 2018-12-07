@@ -33,7 +33,6 @@ typedef std::vector<Vec3> ListPositions;
 #include "GlobalPerceptionScaleHandler.h"
 #include "ClusterDetector.h"
 #include "ActorLookUp.h"
-#include <CryAISystem/BehaviorTree/IBehaviorTreeGraft.h>
 
 #ifdef CRYAISYSTEM_DEBUG
 	#include "AIDbgRecorder.h"
@@ -373,7 +372,6 @@ public:
 	virtual ICoverSystem*                       GetCoverSystem() const override;
 	virtual INavigationSystem*                  GetNavigationSystem() const override;
 	virtual BehaviorTree::IBehaviorTreeManager* GetIBehaviorTreeManager() const override;
-	virtual BehaviorTree::IGraftManager*        GetIGraftManager() const override;
 	virtual ITargetTrackManager*                GetTargetTrackManager() const override;
 	virtual struct IMovementSystem*             GetMovementSystem() const override;
 	virtual AIActionSequence::ISequenceManager* GetSequenceManager() const override;
