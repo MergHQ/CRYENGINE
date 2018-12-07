@@ -873,6 +873,11 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 {
 	PROFILE_FRAME(RT_BeginFrame);
 
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+	m_pPipelineProfiler->BeginFrame(gRenDev->GetRenderFrameID());
+	m_pPipelineProfiler->BeginSection("BEGIN");
+#endif
+
 #if defined(SUPPORT_DEVICE_INFO_MSG_PROCESSING)
 	m_devInfo.ProcessSystemEventQueue();
 #endif
@@ -974,10 +979,6 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 #endif
 
 		{
-#if defined(ENABLE_SIMPLE_GPU_TIMERS)
-			m_pPipelineProfiler->BeginFrame(gRenDev->GetRenderFrameID());
-#endif
-
 			// NOTE: takes un-smoothed last frame's times
 			const auto& lastTimings = m_frameRenderStats[m_nFillThreadID].m_Summary;
 			static float fWaitForGPU;
@@ -992,10 +993,6 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 				m_nGPULimited = 0;
 		}
 	}
-
-#if defined(ENABLE_SIMPLE_GPU_TIMERS)
-	m_pPipelineProfiler->BeginSection("BEGIN");
-#endif
 
 	//////////////////////////////////////////////////////////////////////
 	// Pre-Frame management
@@ -3195,6 +3192,10 @@ void CD3D9Renderer::RT_EndFrame()
 {
 	FUNCTION_PROFILER_RENDERER();
 
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+	m_pPipelineProfiler->BeginSection("END");
+#endif
+
 	if (!m_SceneRecurseCount)
 	{
 		iLog->Log("EndScene without BeginScene\n");
@@ -3233,28 +3234,8 @@ void CD3D9Renderer::RT_EndFrame()
 
 	EF_RemoveParticlesFromScene();
 
-	//////////////////////////////////////////////////////////////////////
-	// Profiling and statistics
-	//////////////////////////////////////////////////////////////////////
-
-	bool bProfilerOnSocialScreen = false;
-#if !CRY_PLATFORM_ORBIS  // PSVR currently does not use a custom social screen
-	if (const ICVar* pSocialScreenCVar = gEnv->pConsole->GetCVar("hmd_social_screen"))
-		bProfilerOnSocialScreen = pSocialScreenCVar->GetIVal() >= 0;
-#endif
-
-#if defined(ENABLE_SIMPLE_GPU_TIMERS)
-	if (!bProfilerOnSocialScreen)
-		m_pPipelineProfiler->EndFrame();
-#endif
-
 	CTimeValue timePresentBegin = iTimer->GetAsyncTime();
 	GetS3DRend().SubmitFrameToHMD();
-
-#if defined(ENABLE_SIMPLE_GPU_TIMERS)
-	if (bProfilerOnSocialScreen)
-		m_pPipelineProfiler->EndFrame();
-#endif
 
 #ifdef DO_RENDERLOG
 	if (CRenderer::CV_r_log)
@@ -3262,10 +3243,6 @@ void CD3D9Renderer::RT_EndFrame()
 #endif
 
 	m_SceneRecurseCount--;
-
-#if defined(ENABLE_SIMPLE_GPU_TIMERS)
-	m_pPipelineProfiler->BeginSection("END");
-#endif
 
 #if !defined(RELEASE)
 	int numInvalidDrawcalls =
@@ -3281,6 +3258,8 @@ void CD3D9Renderer::RT_EndFrame()
 #endif
 
 	gRenDev->m_DevMan.RT_Tick();
+
+	// NOTE: This flushes the start of the "BEGIN" label query
 	GetDeviceObjectFactory().OnEndFrame(gRenDev->GetRenderFrameID());
 
 	SRenderStatistics::Write().m_Summary.endTime = iTimer->GetAsyncTime().GetDifferenceInSeconds(TimeEndF);
@@ -3449,7 +3428,7 @@ void CD3D9Renderer::RT_EndFrame()
 #ifndef CONSOLE_CONST_CVAR_MODE
 	if (m_wireframe_mode != m_wireframe_mode_prev)
 	{
-		//// disable zpass in wireframe mode?
+		// disable zpass in wireframe mode?
 		CV_r_UseZPass = m_nUseZpass;
 	}
 #endif
@@ -3483,9 +3462,7 @@ void CD3D9Renderer::RT_EndFrame()
 
 #if defined(USE_GEOM_CACHES)
 	if (m_SceneRecurseCount == 1)
-	{
 		CREGeomCache::UpdateModified();
-	}
 #endif
 
 #if CRY_RENDERER_OPENGL
@@ -3514,6 +3491,11 @@ void CD3D9Renderer::RT_EndFrame()
 
 #if defined(ENABLE_SIMPLE_GPU_TIMERS)
 	m_pPipelineProfiler->EndSection("END");
+	m_pPipelineProfiler->EndFrame();
+
+	// NOTE: we need to flush the end of the "BEGIN" label query, or we'd see a huge bubble all the way until the next manual or automatic flush
+	if (m_pPipelineProfiler->IsEnabled())
+		GetDeviceObjectFactory().FlushToGPU(false, false);
 #endif
 }
 
