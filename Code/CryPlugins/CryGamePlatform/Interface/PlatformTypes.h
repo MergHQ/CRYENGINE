@@ -139,13 +139,15 @@ namespace Cry
 		constexpr ServiceIdentifier SteamServiceID = CryClassID("{4DFCDCE3-9985-42E5-A702-5A64D849DC8F}"_cry_guid);
 		constexpr ServiceIdentifier PSNServiceID = CryClassID("{F7729E26-464F-4BE9-A58E-06C72C03EAE1}"_cry_guid);
 		constexpr ServiceIdentifier DiscordServiceID = CryClassID("{D68238FE-AA88-4C0C-9E9C-56A848AE0F37}"_cry_guid);
+		constexpr ServiceIdentifier RailServiceID = CryClassID("{B536B2AE-E363-4765-8E15-7B021C356E9C}"_cry_guid);
 
 		inline const char* GetServiceDebugName(const ServiceIdentifier& svcId)
 		{
-			return (svcId == SteamServiceID) ? "Steam" : 
-					((svcId == PSNServiceID) ? "PSN" : 
+			return (svcId == SteamServiceID) ? "Steam" :
+					((svcId == PSNServiceID) ? "PSN" :
 					((svcId == DiscordServiceID) ? "Discord" :
-					((svcId == NullServiceID) ? "Null" : "Unknown")));
+					((svcId == RailServiceID) ? "Rail" :
+					((svcId == NullServiceID) ? "Null" : "Unknown"))));
 		}
 
 		namespace Detail
