@@ -2,21 +2,24 @@
 
 #include "StdAfx.h"
 #include "SplineObject.h"
-#include "SelectionGroup.h"
+
+#include "Objects/SelectionGroup.h"
 #include "IEditorImpl.h"
 
 #include <Controls/DynamicPopupMenu.h>
+#include <Gizmos/IGizmoManager.h>
 #include <Objects/ObjectLoader.h>
 #include <Objects/InspectorWidgetCreator.h>
-#include <Gizmos/IGizmoManager.h>
 #include <Preferences/SnappingPreferences.h>
 #include <Serialization/Decorators/EditToolButton.h>
-#include <Viewport.h>
-
-#include <IObjectManager.h>
-#include <Util/MFCUtil.h>
 #include <Util/Math.h>
 #include <Util/Variable.h>
+#include <IObjectManager.h>
+#include <Viewport.h>
+
+#include <Util/MFCUtil.h>
+
+#include <CryPhysics/physinterface.h>
 
 //////////////////////////////////////////////////////////////////////////
 // CEditSplineObjectTool
@@ -35,30 +38,28 @@ public:
 
 	// Overrides from CEditTool
 	virtual string GetDisplayName() const override { return "Edit Spline"; }
-	bool           MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
-	void           OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const Vec2i& point0, const Vec3& value, int flags);
-	void           OnManipulatorBegin(IDisplayViewport* view, ITransformManipulator* pManipulator, const Vec2i& point, int flags);
-	void           OnManipulatorEnd(IDisplayViewport* view, ITransformManipulator* pManipulator);
-
-	virtual void   SetUserData(const char* key, void* userData);
-
-	virtual void   Display(SDisplayContext& dc) {}
+	virtual bool   MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags) override;
+	virtual void   SetUserData(const char* key, void* userData) override;
+	virtual void   Display(SDisplayContext& dc) override {}
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
-
-	bool           IsNeedMoveTool() override { return true; }
-
-	void           OnSplineEvent(const CBaseObject* pObject, const CObjectEvent& event);
+	virtual bool   IsNeedMoveTool() override             { return true; }
 
 	// ITransformManipulatorOwner
 	virtual void GetManipulatorPosition(Vec3& position) override;
 	virtual bool IsManipulatorVisible() override;
 
-protected:
+	void         OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const Vec2i& point0, const Vec3& value, int flags);
+	void         OnManipulatorBegin(IDisplayViewport* view, ITransformManipulator* pManipulator, const Vec2i& point, int flags);
+	void         OnManipulatorEnd(IDisplayViewport* view, ITransformManipulator* pManipulator);
+	void         OnSplineEvent(const CBaseObject* pObject, const CObjectEvent& event);
+
+private:
 	virtual ~CEditSplineObjectTool();
 	void DeleteThis() { delete this; }
 
 	void SelectPoint(int index);
 	void SetCursor(EStdCursor cursor, bool bForce = false);
+	bool HandleSelectedPointMove(CViewport* pView, CPoint& point);
 
 private:
 	CSplineObject*         m_pSpline;
@@ -262,6 +263,11 @@ bool CEditSplineObjectTool::MouseCallback(CViewport* view, EMouseEvent event, CP
 	if (!m_pSpline)
 		return false;
 
+	if ((event == eMouseLDown) && (flags & MK_CONTROL ) && (flags & MK_SHIFT))
+	{
+		return HandleSelectedPointMove(view, point);
+	}
+
 	if (event == eMouseLDown)
 	{
 		m_mouseDownPos = point;
@@ -269,7 +275,6 @@ bool CEditSplineObjectTool::MouseCallback(CViewport* view, EMouseEvent event, CP
 
 	if (event == eMouseLDown || event == eMouseMove || event == eMouseLDblClick || event == eMouseLUp)
 	{
-
 		const Matrix34& splineTM = m_pSpline->GetWorldTM();
 
 		Vec3 raySrc, rayDir;
@@ -331,7 +336,7 @@ bool CEditSplineObjectTool::MouseCallback(CViewport* view, EMouseEvent event, CP
 				{
 					SelectPoint(index);
 
-					// Set construction plance for view.
+					// Set construction plane for view
 					m_pointPos = splineTM.TransformPoint(m_pSpline->GetPoint(index));
 					Matrix34 tm;
 					tm.SetIdentity();
@@ -371,6 +376,37 @@ void CEditSplineObjectTool::SetCursor(EStdCursor cursor, bool bForce)
 		m_curCursor = cursor;
 		pViewport->SetCurrentCursor(m_curCursor);
 	}
+}
+
+bool CEditSplineObjectTool::HandleSelectedPointMove(CViewport* pView, CPoint& point)
+{
+	CRY_ASSERT(m_pSpline);
+
+	const int pointIndex = m_pSpline->GetSelectedPoint();
+	if (pointIndex == -1)
+	{
+		return false;
+	}
+
+	Vec3 raySrc, rayDir;
+	pView->ViewToWorldRay(point, raySrc, rayDir);
+
+	IPhysicalWorld* pWorld = GetIEditor()->GetSystem()->GetIPhysicalWorld();
+	CRY_ASSERT(pWorld);
+
+	ray_hit hit{};
+	int col = pWorld->RayWorldIntersection(raySrc, rayDir * 1000.0f, ent_all, 0, &hit, 1);
+	if (col == 0)
+	{
+		return false;
+	}
+
+	CUndo undo("Spline Move Point");
+	m_pSpline->StoreUndo("Move Point");
+
+	m_pSpline->SetPoint(pointIndex, hit.pt - m_pSpline->GetWorldPos());
+
+	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
