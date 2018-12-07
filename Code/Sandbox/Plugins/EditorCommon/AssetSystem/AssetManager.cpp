@@ -172,7 +172,10 @@ void CAssetManager::Init()
 		std::vector<string> changedFiles;
 		for (CAsset* pAsset : m_assets)
 		{
-			if (pAsset->IsModified() && !pAsset->IsBeingEdited())
+			// Here we check only those assets that support the editing sessions. 
+			// Active asset editors are responsible for checking otherwise.
+			// See CAssetEditor::CanQuit
+			if (pAsset->IsModified() && pAsset->GetEditingSession())
 			{
 				changedFiles.push_back(pAsset->GetName());
 			}
