@@ -40,7 +40,6 @@
 #include "BehaviorTree/BehaviorTreeManager.h"
 #include "BehaviorTree/BehaviorTreeNodeRegistration.h"
 #include "CollisionAvoidance/CollisionAvoidanceSystem.h"
-#include "BehaviorTree/BehaviorTreeGraft.h"
 #include <CryAISystem/IMovementSystem.h>
 #include "Movement/MovementSystemCreator.h"
 #include "Group/GroupManager.h"
@@ -262,7 +261,6 @@ CAISystem::~CAISystem()
 	SAFE_DELETE(gAIEnv.pCoverSystem);
 	SAFE_DELETE(gAIEnv.pNavigationSystem);
 	SAFE_DELETE(gAIEnv.pBehaviorTreeManager);
-	SAFE_DELETE(gAIEnv.pGraftManager);
 	SAFE_DELETE(gAIEnv.pVisionMap);
 	SAFE_DELETE(gAIEnv.pAuditionMap);
 	SAFE_DELETE(gAIEnv.pFactionSystem);
@@ -512,7 +510,6 @@ void CAISystem::SetupAIEnvironment()
 
 	gAIEnv.pCommunicationManager = new CCommunicationManager("Scripts/AI/Communication/CommunicationSystemConfiguration.xml");
 	gAIEnv.pBehaviorTreeManager = new BehaviorTree::BehaviorTreeManager();
-	gAIEnv.pGraftManager = new BehaviorTree::GraftManager();
 
 	if (!gAIEnv.pFactionSystem)
 	{
@@ -604,7 +601,6 @@ void CAISystem::Reload()
 	gAIEnv.pCoverSystem->ReloadConfig();
 
 	gAIEnv.pBehaviorTreeManager->Reset();
-	gAIEnv.pGraftManager->Reset();
 }
 
 //====================================================================
@@ -1622,7 +1618,6 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 #endif //CRYAISYSTEM_DEBUG
 
 			gAIEnv.pBehaviorTreeManager->Reset();
-			gAIEnv.pGraftManager->Reset();
 			gAIEnv.pMovementSystem->Reset();
 
 			m_bInitialized = false;
@@ -1719,7 +1714,6 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 	if (editorToGameMode)
 	{
 		gAIEnv.pBehaviorTreeManager->Reset();
-		gAIEnv.pGraftManager->Reset();
 
 		CallReloadTPSQueriesScript();
 	}
@@ -1846,9 +1840,6 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 	{
 		if (gAIEnv.pBehaviorTreeManager)
 			gAIEnv.pBehaviorTreeManager->Reset();
-
-		if (gAIEnv.pGraftManager)
-			gAIEnv.pGraftManager->Reset();
 	}
 }
 
@@ -2346,7 +2337,6 @@ void CAISystem::FlushSystem(bool bDeleteAll)
 	stl::free_container(m_mapGenericShapes);
 
 	gAIEnv.pBehaviorTreeManager->Reset();
-	gAIEnv.pGraftManager->Reset();
 }
 
 void CAISystem::LayerEnabled(const char* layerName, bool enabled, bool serialized)
@@ -5152,11 +5142,6 @@ IAuditionMap* CAISystem::GetAuditionMap()
 BehaviorTree::IBehaviorTreeManager* CAISystem::GetIBehaviorTreeManager() const
 {
 	return gAIEnv.pBehaviorTreeManager;
-}
-
-BehaviorTree::IGraftManager* CAISystem::GetIGraftManager() const
-{
-	return gAIEnv.pGraftManager;
 }
 
 ITargetTrackManager* CAISystem::GetTargetTrackManager() const

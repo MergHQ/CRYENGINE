@@ -11,7 +11,6 @@
 #include <CrySystem/Timer.h>
 #include <CryCore/Containers/VariableCollection.h>
 #include "BehaviorTreeManager.h"
-#include "BehaviorTreeGraft.h"
 
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	#include <CrySerialization/Enum.h>
@@ -3086,133 +3085,6 @@ protected:
 };
 
 //////////////////////////////////////////////////////////////////////////
-
-class Graft : public Action
-{
-public:
-	typedef Action BaseClass;
-
-	struct RuntimeData final : public IGraftNode
-	{
-		virtual bool RunBehavior(EntityId entityId, const char* behaviorName, XmlNodeRef behaviorXmlNode) override
-		{
-			if (behaviorTreeInstance.get() != NULL)
-			{
-				BehaviorVariablesContext variables(
-					behaviorTreeInstance->variables,
-					behaviorTreeInstance->behaviorTreeTemplate->variableDeclarations,
-					behaviorTreeInstance->behaviorTreeTemplate->eventsDeclaration,
-					behaviorTreeInstance->variables.Changed());
-
-				IEntity* entity = gEnv->pEntitySystem->GetEntity(entityId);
-				assert(entity);
-
-				UpdateContext context(
-					entityId,
-					*entity,
-					variables,
-					behaviorTreeInstance->timestampCollection,
-					behaviorTreeInstance->blackboard
-#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
-					,
-					behaviorTreeInstance->behaviorLog
-#endif // DEBUG_MODULAR_BEHAVIOR_TREE
-				);
-
-				behaviorTreeInstance->behaviorTreeTemplate->rootNode->Terminate(context);
-			}
-
-			behaviorTreeInstance = gAIEnv.pBehaviorTreeManager->CreateBehaviorTreeInstanceFromXml(behaviorName, behaviorXmlNode);
-			if (behaviorTreeInstance.get() != NULL)
-			{
-#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
-				behaviorTreeName = behaviorName;
-#endif // DEBUG_MODULAR_BEHAVIOR_TREE
-				return true;
-			}
-			else
-			{
-				return false;
-			}
-		}
-
-		BehaviorTreeInstancePtr behaviorTreeInstance;
-
-#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
-		string behaviorTreeName;
-#endif // DEBUG_MODULAR_BEHAVIOR_TREE
-	};
-
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
-	{
-		if (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
-			return LoadFailure;
-
-		return LoadSuccess;
-	}
-
-	virtual void OnInitialize(const UpdateContext& context) override
-	{
-		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
-		gAIEnv.pGraftManager->GraftNodeReady(context.entityId, &runtimeData);
-	}
-
-	virtual Status Update(const UpdateContext& context) override
-	{
-		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
-
-		if (!runtimeData.behaviorTreeInstance.get())
-			return Running;
-
-		Status behaviorStatus = runtimeData.behaviorTreeInstance->behaviorTreeTemplate->rootNode->Tick(context);
-		if (behaviorStatus == Failure)
-		{
-			ErrorReporter(*this, context).LogError("Graft behavior failed to execute.");
-			return Failure;
-		}
-
-		if (behaviorStatus == Success)
-		{
-			gAIEnv.pGraftManager->GraftBehaviorComplete(context.entityId);
-			runtimeData.behaviorTreeInstance.reset();
-#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
-			runtimeData.behaviorTreeName.clear();
-#endif // DEBUG_MODULAR_BEHAVIOR_TREE
-		}
-
-		return Running;
-	}
-
-	virtual void OnTerminate(const UpdateContext& context) override
-	{
-		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
-		if (runtimeData.behaviorTreeInstance.get())
-			runtimeData.behaviorTreeInstance->behaviorTreeTemplate->rootNode->Terminate(context);
-
-		gAIEnv.pGraftManager->GraftNodeTerminated(context.entityId);
-	}
-
-	virtual void HandleEvent(const EventContext& context, const Event& event) override
-	{
-		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
-		if (runtimeData.behaviorTreeInstance.get())
-		{
-			runtimeData.behaviorTreeInstance->behaviorTreeTemplate->signalHandler.ProcessSignal(event.GetCRC(), runtimeData.behaviorTreeInstance->variables);
-			runtimeData.behaviorTreeInstance->timestampCollection.HandleEvent(event.GetCRC());
-			runtimeData.behaviorTreeInstance->behaviorTreeTemplate->rootNode->SendEvent(context, event);
-		}
-	}
-
-#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
-	virtual void GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const
-	{
-		const RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(updateContext);
-		debugText.Format("%s", runtimeData.behaviorTreeName.c_str());
-	}
-#endif // DEBUG_MODULAR_BEHAVIOR_TREE
-};
-
-//////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
 void RegisterBehaviorTreeNodes_Core()
@@ -3259,6 +3131,5 @@ void RegisterBehaviorTreeNodes_Core()
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Log, "Debug\\Log message", COLOR_DEBUG);
 
 	REGISTER_BEHAVIOR_TREE_NODE(manager, Breakpoint);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, Graft);
 }
 }
