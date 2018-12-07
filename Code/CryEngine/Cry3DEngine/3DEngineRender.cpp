@@ -3587,7 +3587,7 @@ bool C3DEngine::ScreenShotMap(CStitchedImage* pStitchedImage,
 	if (max(AngleX, AngleY) <= 0)
 		return false;
 	cam.SetFrustum(pStitchedImage->GetWidth(), pStitchedImage->GetHeight(), max(0.001f, max(AngleX, AngleY) * 2.f), Height - 8000.f, Height + 1000.f);
-	r_drawnearfov->Set(-1);
+	r_drawnearfov->Set(-1.0f);
 	ScreenShotHighRes(pStitchedImage, nRenderFlags, SRenderingPassInfo::CreateTempRenderingInfo(cam, passInfo), SliceCount, fTransitionSize);
 	r_drawnearfov->Set(drawnearfov_backup);
 
