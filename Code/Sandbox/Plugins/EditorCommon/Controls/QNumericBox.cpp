@@ -1,21 +1,20 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-#include <StdAfx.h>
-#include "QNumericBox.h"
 
-#include <BoostPythonMacros.h>
+#include "StdAfx.h"
+#include "Controls/QNumericBox.h"
+#include "BoostPythonMacros.h"
 
+#include <CryIcon.h>
 #include <IEditor.h>
 
-#include <QLineEdit>
-#include <QVBoxLayout>
+#include <QApplication>
+#include <QFocusEvent>
 #include <QHBoxLayout>
-#include <QPushButton>
+#include <QLineEdit>
 #include <QPainter>
 #include <QProxyStyle>
-#include <QFocusEvent>
-#include <QApplication>
 #include <QStyleOption>
-#include <CryIcon.h>
+#include <QVBoxLayout>
 
 class QNumericEditProxyStyle : public QProxyStyle
 {
@@ -553,8 +552,11 @@ void QNumericBox::setAccelerated(bool accelerated)
 
 double QNumericBox::value() const
 {
-	if (!GetIEditor() || !GetIEditor()->GetIPythonManager())
+	// PyThreadState_GET() can return nullptr for some internal reasons (initialization, long operations, ...)
+	if (!GetIEditor() || !GetIEditor()->GetIPythonManager() || !PyThreadState_GET())
+	{
 		return 0.0;
+	}
 
 	if (m_pEdit->text() == "")
 	{

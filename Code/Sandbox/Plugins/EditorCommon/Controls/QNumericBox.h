@@ -1,8 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
+#include <QIcon>
 #include <QWidget>
-#include <QPushButton>
 
 #include "EditorCommonAPI.h"
 
@@ -77,8 +77,6 @@ class QNumericButton : public QWidget
 
 public:
 	QNumericButton(QWidget* parent = nullptr);
-
-	virtual ~QNumericButton() override {}
 
 	void setIcon(const QIcon& icon)       { m_icon = icon; }
 	void setAccelerated(bool accelerated) { m_accelerated = accelerated; }
