@@ -166,6 +166,7 @@ Texture3D brickPool_Rgbs: register (t1);
 Texture3D brickPool_Norm: register (t2);
 Texture3D brickPool_Opac: register (t3);
 Texture3D brickPool_RTri: register (t17);
+Texture3D brickPool_Albe: register (t25);
 
 TextureCube globalSpecCM: register (t6);
 
@@ -374,8 +375,8 @@ void GetBarycentricTC(float3 a, float3 b, float3 c, out float u, out float v, ou
 
 float ReadNodeCropBox(float3 tcMin, out float4 voxAreaMin, out float4 voxAreaMax)
 {
-	static const float fTexelSizeXY = (1.f / (VOX_ATLAS_SIZE.x * 2));
-	static const float fTexelSizeZ = (1.f / (VOX_ATLAS_SIZE.z * 2));
+	static const float fTexelSizeXY = rcp(VOX_ATLAS_SIZE.x * 2);
+	static const float fTexelSizeZ = rcp(VOX_ATLAS_SIZE.z * 2);
 
 	voxAreaMin = tex3DlodPC(brickPool_Tree, float4(tcMin, 0));
 	voxAreaMax = tex3DlodPC(brickPool_Tree, float4(tcMin + float3(fTexelSizeXY, 0, 0), 0));
@@ -399,8 +400,8 @@ float3 ComputeDataTC(int nAtlasOffset)
 
 int ReadChildPtr(float3 tcMin, int nChildId)
 {
-	static const float fTexelSizeXY = (1.f / (VOX_ATLAS_SIZE.x * 2));
-	static const float fTexelSizeZ = (1.f / (VOX_ATLAS_SIZE.z * 2));
+	static const float fTexelSizeXY = rcp(VOX_ATLAS_SIZE.x * 2);
+	static const float fTexelSizeZ = rcp(VOX_ATLAS_SIZE.z * 2);
 
 	float4 childPtrT = tex3DlodPC(brickPool_Tree, float4(tcMin + float3(nChildId < 4 ? 0 : fTexelSizeXY, fTexelSizeXY, 0), 0));
 	return childPtrT[nChildId & 3];
@@ -442,7 +443,7 @@ void PrepareBrickInjection(
 		const float3 vBegTC = ((vBegPos - voxAreaMin.xyz) / (vBoxSize));
 		const float3 vEndTC = ((vEndPos - voxAreaMin.xyz) / (vBoxSize));
 
-		const float3 vMulTC = 1.f / ocNodeSize * vBoxSize / VOX_ATLAS_SIZE * VOX_SUBBLOCK_SIZE_RATIO;
+		const float3 vMulTC = rcp(ocNodeSize) * vBoxSize / VOX_ATLAS_SIZE * VOX_SUBBLOCK_SIZE_RATIO;
 
 		vTC0 = tcMin + saturate(vBegTC) * vMulTC;
 
@@ -492,7 +493,7 @@ void RayTraceMesh(const float4 arrGoodTC, inout Ray rOrig, inout float4 vRgbOut,
 	const int dwMaskXY = maxSizeXY - 1;
 	const int maxSizeZ = int(VOX_TEX_POOL_DIM.z);
 	const int dwMaskZ = maxSizeZ - 1;
-	const float4 vScaleTC = float4(maxSizeXY, maxSizeXY, maxSizeZ, 1);
+	const float4 vScaleTC = rcp(float4(maxSizeXY, maxSizeXY, maxSizeZ, 1));
 
 	int3 nTC_Best = 0;
 	float3 vBarTC_Best = 0;
@@ -505,7 +506,7 @@ void RayTraceMesh(const float4 arrGoodTC, inout Ray rOrig, inout float4 vRgbOut,
 		const int3 vTCII = int3(nTCII & dwMaskXY, (nTCII / maxSizeXY) & dwMaskXY, (nTCII / maxSizeXY / maxSizeXY) & dwMaskZ);
 
 		// get triangle id
-		const float4 vVal = tex3DlodPC(geomPool_TInd, float4(vTCII.x, vTCII.y, vTCII.z, 0) / vScaleTC);
+		const float4 vVal = tex3DlodPC(geomPool_TInd, float4(vTCII.x, vTCII.y, vTCII.z, 0) * vScaleTC);
 		const int triDataSize = 8; // number of Vec4 elements per triangle
 		const int triDataOffset = (int(vVal.r * 255) + int(vVal.g * 255) * 256 + int(vVal.b * 255) * 256 * 256 + int(vVal.a * 255) * 256 * 256 * 256) * triDataSize;
 
@@ -513,9 +514,9 @@ void RayTraceMesh(const float4 arrGoodTC, inout Ray rOrig, inout float4 vRgbOut,
 		const int3 nTC = int3(triDataOffset & dwMaskXY, (triDataOffset / maxSizeXY) & dwMaskXY, (triDataOffset / maxSizeXY / maxSizeXY) & dwMaskZ);
 
 		// load triangle vertices
-		const float4 v0 = tex3DlodPC(geomPool_Tris, float4(nTC.x + 0, nTC.y, nTC.z, 0) / vScaleTC);
-		const float4 v1 = tex3DlodPC(geomPool_Tris, float4(nTC.x + 1, nTC.y, nTC.z, 0) / vScaleTC);
-		const float4 v2 = tex3DlodPC(geomPool_Tris, float4(nTC.x + 2, nTC.y, nTC.z, 0) / vScaleTC);
+		const float4 v0 = tex3DlodPC(geomPool_Tris, float4(nTC.x + 0, nTC.y, nTC.z, 0) * vScaleTC);
+		const float4 v1 = tex3DlodPC(geomPool_Tris, float4(nTC.x + 1, nTC.y, nTC.z, 0) * vScaleTC);
+		const float4 v2 = tex3DlodPC(geomPool_Tris, float4(nTC.x + 2, nTC.y, nTC.z, 0) * vScaleTC);
 
 		// intersect
 		float3 vHitPoint = 0;
@@ -527,7 +528,7 @@ void RayTraceMesh(const float4 arrGoodTC, inout Ray rOrig, inout float4 vRgbOut,
 			if (fHitDist < fNearestHitDist)
 			{
 				// load vertices TC
-				const float4 vInf = tex3DlodPC(geomPool_Tris, float4(nTC.x + 3, nTC.y, nTC.z, 0) / vScaleTC);
+				const float4 vInf = tex3DlodPC(geomPool_Tris, float4(nTC.x + 3, nTC.y, nTC.z, 0) * vScaleTC);
 
 				// calculate barycentric TC
 				float3 vBarTC;
@@ -558,15 +559,13 @@ void RayTraceMesh(const float4 arrGoodTC, inout Ray rOrig, inout float4 vRgbOut,
 
 	if (vCenterRGB_Best.a)
 	{
-		const float4 n0 = tex3DlodPC(geomPool_Tris, float4(nTC_Best.x + 4, nTC_Best.y, nTC_Best.z, 0) / vScaleTC);
-		const float4 n1 = tex3DlodPC(geomPool_Tris, float4(nTC_Best.x + 5, nTC_Best.y, nTC_Best.z, 0) / vScaleTC);
-		const float4 n2 = tex3DlodPC(geomPool_Tris, float4(nTC_Best.x + 6, nTC_Best.y, nTC_Best.z, 0) / vScaleTC);
+		const float4 n0 = tex3DlodPC(geomPool_Tris, float4(nTC_Best.x + 4, nTC_Best.y, nTC_Best.z, 0) * vScaleTC);
+		const float4 n1 = tex3DlodPC(geomPool_Tris, float4(nTC_Best.x + 5, nTC_Best.y, nTC_Best.z, 0) * vScaleTC);
+		const float4 n2 = tex3DlodPC(geomPool_Tris, float4(nTC_Best.x + 6, nTC_Best.y, nTC_Best.z, 0) * vScaleTC);
 		vHitNorm = n0 * vBarTC_Best[0] + n1 * vBarTC_Best[1] + n2 * vBarTC_Best[2];
-		//	vHitNorm = cross(normalize(v2.xyz - v1.xyz), normalize(v0.xyz - v1.xyz));
 
-		//const float4 matColor = tex3DlodPC(geomPool_Tris, float4(nTC_Best.x + 7, nTC_Best.y, nTC_Best.z, 0) / vScaleTC);
-
-		vRgbOut.xyz = vCenterRGB_Best;// *matColor;
+		const float4 matColor = tex3DlodPC(geomPool_Tris, float4(nTC_Best.x + 7, nTC_Best.y, nTC_Best.z, 0) * vScaleTC);
+		vRgbOut.xyz = vCenterRGB_Best * matColor;
 		vRgbOut.a = 1;
 	}
 }
@@ -855,7 +854,7 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 	{
 		Ray rOrig = r;
 
-		const float3 vMulTC = 1.f / ocNodeSize * vBoxSize / VOX_ATLAS_SIZE * VOX_SUBBLOCK_SIZE_RATIO;
+		const float3 vMulTC = rcp(ocNodeSize) * vBoxSize / VOX_ATLAS_SIZE * VOX_SUBBLOCK_SIZE_RATIO;
 
 		float4 arrGoodTC = 0;
 
@@ -943,18 +942,6 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 				{
 					float fDot = 1;//bAirOnlyMode ? 1 : pow(saturate(VOX_TI_BACK_LIGHT_SCALE + (1.f-VOX_TI_BACK_LIGHT_SCALE)*dot( (vNORA.xyz-0.5f)*2.f, -r.direction )), .7);
 
-#if %_RT_QUALITY && %_PS
-				if (fMultTriRT > 0 && vRGBD.w)
-				{
-					float4 vHitRgb = 0;
-					float3 vHitNorm = 0;
-					RayTraceMesh(float4(vCurTC.xyz, vRGBD.w), rOrig, vHitRgb, vHitNorm, fNearestHitDist);
-
-					if (vHitRgb.a)
-						vRGBD.xyz = vRGBD.xyz * (0.5 + (vHitRgb.xyz - 0.5) * 6.0) * 2.0;
-				}
-#endif
-
 					vRgbOut.xyz += vRGBD.xyz * vRGBD.a * saturate(1 - vRgbOut.a) * fOverDist * fDot * saturate(fDistance / fVoxSize);
 
 					if (!bAirOnlyMode)
@@ -981,6 +968,37 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 						vBestHitPosOpa[1] = float4(r.startpoint, fNewW);
 					}
 				}
+#endif
+
+#if %_RT_QUALITY
+				if (fMultTriRT > 0 && vRGBD.w)
+				{
+					float3 vHitNorm = 0;
+					float4 vRgbOutRT = 0;
+					RayTraceMesh(float4(vCurTC.xyz, vRGBD.w), rOrig, vRgbOutRT, vHitNorm, fNearestHitDist);
+
+					if (vRgbOutRT.a)
+					{
+						// read RGB (complete lit voxel color)
+						float4 vRGBD = tex3DlodLC(brickPool_Rgbs, float4(vCurTC.xyz, 0));
+						vRGBD /= max(0.1f, vNORA.a);
+
+						if (nDebugMode != 2)
+							vRGBD.xyz = DecodeHDR(vRGBD);
+						vRGBD.w = 0;
+
+						// read voxel Albedo
+						float4 vAlbe = tex3DlodLC(brickPool_Albe, float4(vCurTC.xyz, 0));
+						vAlbe = pow(vAlbe, .75);
+						vAlbe /= max(0.1f, vNORA.a);
+
+						// replace voxel albedo by RT albedo
+						vRgbOut.xyz = vRGBD.xyz / vAlbe * vRgbOutRT.xyz;
+						vRgbOut.w = 1;
+						break;
+					}
+				}
+
 #endif
 
 #if %_RT_LIGHT_TEX_PROJ

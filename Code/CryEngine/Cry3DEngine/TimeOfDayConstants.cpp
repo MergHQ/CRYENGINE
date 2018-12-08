@@ -215,10 +215,10 @@ void TotalIllumAdvImpl::ResetVariables()
 	pointLightsBias = 0.2f;
 	highGlossOcclusion = 0;
 	rtActive = false;
-	rtMaxDistRay = 0.0f;
-	rtMaxDistCam = 0.0f;
-	rtMinGloss = 0.0f;
-	rtMinRefl = 0.0f;
+	rtMaxDistRay = 24.f;
+	rtMaxDistCam = 24.f;
+	rtMinGloss = 0.9f;
+	rtMinRefl = 0.9f;
 }
 
 void TotalIllumAdvImpl::Serialize(Serialization::IArchive& ar)
