@@ -826,9 +826,12 @@ float3 Reproject(in half2 vScreenPos, in float fDepth, in float3x4 matReproj)
 	pos.xy /= pos.z;
 	pos.z *= fDepth;
 
+	if (IsDiffuseMode())
+	{
 	float2 vMV = tex2DlodPC(sceneVelocity, vScreenPos);
 	if (vMV.x != 0)
 		pos.xy = vScreenPos + DecodeMotionVector(vMV);
+	}
 
 	return pos.xyz;
 }
@@ -1537,7 +1540,11 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 			//fAverSmoothness = lerp(fAverSmoothness, 1, pow(1 - dot(-normalize(IN.CamVec.xyz), vNor0), 2));
 
 			power = exp2(10.h * fAverSmoothness + 1.h);
+
+			if (fAverSmoothness < .95)
 			kern += vFocus * power / 25;
+			else
+				kern = vFocus;
 		}
 
 		r.direction = normalize(kern);

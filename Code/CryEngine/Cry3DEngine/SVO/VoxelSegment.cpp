@@ -2333,14 +2333,22 @@ void CVoxelSegment::FindTrianglesForVoxelization(PodArray<int>*& rpNodeTrisXYZ)
 					if (ht.nOpacity < minVoxelOpacity)
 						continue;
 
+					bool isFaceValid = true;
+
 					// transform vertices into world space
 					for (int v = 0; v < 3; v++)
 					{
 						ht.v[v] = info.matObj.TransformPoint(ht.v[v]);
 
-						assert(ht.vn[v].GetLength() > 0.9f && ht.vn[v].GetLength() < 1.1f);
+						const float length = ht.vn[v].GetLength();
+						if (length < 0.9f || length > 1.1f)
+							isFaceValid = false;
+
 						ht.vn[v] = info.matObj.TransformVector(ht.vn[v]).GetNormalized();
 					}
+
+					if (!isFaceValid)
+						continue;
 
 					ht.nTriArea = SATURATEB(int(SVO_AREA_SCALE * 0.5f * (ht.v[1] - ht.v[0]).Cross(ht.v[2] - ht.v[0]).GetLength()));
 					Plane pl;
@@ -2887,18 +2895,12 @@ void CVoxelSegment::CheckStoreTextureInPool(SShaderItem* pShItem, uint16& nTexW,
 		{
 			// add new texture into RT pool
 
-			ColorB* pTexRgbHP = nullptr;
-
-			pTexRgbHP = ApplyHighPass(nTexW, nTexH, pTexRgbOr);
-
 			assert(nTexW <= maxTexSizeXY && nTexH <= maxTexSizeXY);
 
 			gSvoEnv->m_arrRTPoolTexs.CheckAllocated(maxTexSizeXY * maxTexSizeXY * m_voxTexPoolDimZ);
 
 			for (int lineId = 0; lineId < nTexH; lineId++)
-				memcpy(gSvoEnv->m_arrRTPoolTexs.GetElements() + gSvoEnv->m_arrRTPoolTexs.m_writeOffset + lineId * maxTexSizeXY, (pTexRgbHP ? pTexRgbHP : pTexRgbOr) + lineId * nTexW, nTexW * sizeof(ColorB));
-
-			SAFE_DELETE_ARRAY(pTexRgbHP);
+				memcpy(gSvoEnv->m_arrRTPoolTexs.GetElements() + gSvoEnv->m_arrRTPoolTexs.m_writeOffset + lineId * maxTexSizeXY, pTexRgbOr + lineId * nTexW, nTexW * sizeof(ColorB));
 
 			const int texDataSize = maxTexSizeXY * maxTexSizeXY;
 			(**ppSysTexId) = (gSvoEnv->m_arrRTPoolTexs.m_writeOffset / texDataSize) + 1;

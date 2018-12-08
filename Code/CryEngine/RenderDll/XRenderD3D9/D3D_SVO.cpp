@@ -994,11 +994,15 @@ void CSvoRenderer::SetupSvoTexturesForRead(I3DEngine::SSvoStaticTexInfo& texInfo
 	else if (nStageOpa == 1)
 		rp.SetTexture(3, CTexture::GetByID(vp_RGB4.nTexId));
 
+	// set tris pool, each voxel contain start triangle id and tris num
 	if (texInfo.pTexTris)
 		rp.SetTexture(17, static_cast<CTexture*>(texInfo.pTexTris.get()));
 
 	if (texInfo.pGlobalSpecCM)
 		rp.SetTexture(6, static_cast<CTexture*>(texInfo.pGlobalSpecCM.get()));
+
+	if(texInfo.pTexRgb0.get())
+		rp.SetTexture(25, static_cast<CTexture*>(texInfo.pTexRgb0.get()));
 
 	#endif
 }
