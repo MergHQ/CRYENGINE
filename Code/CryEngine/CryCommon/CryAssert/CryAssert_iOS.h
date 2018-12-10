@@ -39,43 +39,6 @@ void CryAssertTrace(const char* szFormat, ...)
 		}
 	}
 }
-/*
-   bool CryAssert(const char* szCondition, const char* szFile,unsigned int line, bool *pIgnore)
-   {
-    if (!gEnv) return false;
-
-    gEnv->pSystem->OnAssert(szCondition, gs_szMessage, szFile, line);
-
-    if (!gEnv->bUnattendedMode && !gEnv->bIgnoreAllAsserts)
-    {
-        EDialogAction action = MacOSXHandleAssert(szCondition, szFile, line, gs_szMessage, gEnv->pRenderer != NULL);
-
-        switch (action) {
-            case eDAStop:
-                raise(SIGABRT);
-                exit(-1);
-            case eDABreak:
-                return true;
-            case eDAIgnoreAll:
-                gEnv->bIgnoreAllAsserts = true;
-                break;
-            case eDAIgnore:
- * pIgnore = true;
-                break;
-            case eDAReportAsBug:
-                if ( gEnv && gEnv->pSystem)
-                {
-                    gEnv->pSystem->ReportBug("Assert: %s - %s", szCondition,gs_szMessage);
-                }
-
-            case eDAContinue:
-            default:
-                break;
-        }
-    }
-
-    return false;
-   }*/
 
 bool CryAssert(const char* szCondition, const char* szFile, unsigned int line, bool* pIgnore)
 {
@@ -94,7 +57,7 @@ bool CryAssert(const char* szCondition, const char* szFile, unsigned int line, b
 	}
 
 #if defined(eCryModule)
-	const char* szModuleName = g_moduleNames[eCryModule];
+	const char* szModuleName = GetCryModuleName(eCryModule);
 #else
 	const char* szModuleName = "Undefined";
 #endif

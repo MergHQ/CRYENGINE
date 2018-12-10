@@ -502,9 +502,9 @@ static void CmdIgnoreAssertsFromModule(IConsoleCmdArgs* pArgs)
 	{
 		string requestedModule = pArgs->GetArg(1);
 
-		for (uint32 i = 0; i < eCryM_Num; ++i)
+		for (uint i = 0; i < eCryM_Num; ++i)
 		{
-			if (requestedModule == g_moduleNames[i])
+			if (requestedModule == GetCryModuleName(i))
 			{
 				gEnv->pSystem->DisableAssertionsForModule(i);
 				return;

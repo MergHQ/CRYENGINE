@@ -23,7 +23,8 @@
 
 #if defined(USE_CRY_ASSERT)
 
-extern const char* g_moduleNames[];		// defined in CryAssert_impl.h
+// defined in CryAssert_impl.h
+const char* GetCryModuleName(uint cryModuleId);
 
 enum class ECryAssertLevel
 {

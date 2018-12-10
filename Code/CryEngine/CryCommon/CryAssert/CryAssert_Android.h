@@ -49,7 +49,7 @@ bool CryAssert(const char* szCondition, const char* szFile, unsigned int line, b
 	gEnv->pSystem->OnAssert(szCondition, gs_szMessage, szFile, line);
 
 #if defined(eCryModule)
-	const char* szModuleName = g_moduleNames[eCryModule];
+	const char* szModuleName = GetCryModuleName(eCryModule);
 #else
 	const char* szModuleName = "Undefined";
 #endif
