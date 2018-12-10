@@ -2139,9 +2139,8 @@ void CScriptSystem::Update()
 {
 	CRY_PROFILE_REGION(PROFILE_SCRIPT, "ScriptSystem: Update");
 	CRYPROFILE_SCOPE_PROFILE_MARKER("ScriptSystem: Update");
-
-	//CryGetScr
-	//L->l_G->totalbytes =
+	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
+	
 	ITimer* pTimer = gEnv->pTimer;
 	CTimeValue nCurTime = pTimer->GetFrameStartTime();
 

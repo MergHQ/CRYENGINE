@@ -183,13 +183,13 @@ void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::RenderBegin(const SDisplayContextKey& displayContextKey)
 {
-	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
-
-	CRY_PROFILE_MARKER("CSystem::RenderBegin");
-
 	if (m_bIgnoreUpdates)
 		return;
 
+	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
+	CRY_PROFILE_MARKER("CSystem::RenderBegin");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CSystem::RenderBegin");
+	
 	bool rndAvail = m_env.pRenderer != 0;
 
 	//////////////////////////////////////////////////////////////////////
@@ -225,71 +225,69 @@ int   StrToPhysHelpers(const char* strHelpers);
 //////////////////////////////////////////////////////////////////////////
 void CSystem::RenderEnd(bool bRenderStats)
 {
+	if (m_bIgnoreUpdates)
+		return;
+
+	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
+	CRY_PROFILE_MARKER("CSystem::RenderEnd");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CSystem::RenderEnd");
+
+	if (!m_env.pRenderer)
 	{
-		CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
-		CRY_PROFILE_MARKER("CSystem::RenderEnd");
-
-		if (m_bIgnoreUpdates)
-			return;
-
-		if (!m_env.pRenderer)
-		{
-			if (bRenderStats)
-			{
-				RenderStatistics();
-			}
-			if (m_pNULLRenderAuxGeom)
-			{
-#if !defined (_RELEASE)
-				if (m_pPhysRenderer)
-				{
-					RenderPhysicsHelpers();
-				}
-#endif
-				m_pNULLRenderAuxGeom->EndFrame();
-			}
-			return;
-		}
-		/*
-		    if(m_env.pMovieSystem)
-		      m_env.pMovieSystem->Render();
-		 */
-
-		GetPlatformOS()->RenderEnd();
-
-#if !defined (_RELEASE)
-		// Flush render data and swap buffers.
-		m_env.pRenderer->RenderDebug(bRenderStats);
-#endif
-
-		RenderJobStats();
-
-#if defined(USE_PERFHUD)
-		if (m_pPerfHUD)
-			m_pPerfHUD->Draw();
-		if (m_pMiniGUI)
-			m_pMiniGUI->Draw();
-#endif
-
 		if (bRenderStats)
 		{
 			RenderStatistics();
 		}
-
-		if (IConsole* pConsole = GetIConsole())
-			pConsole->Draw();
-
-		m_env.pRenderer->ForceGC(); // XXX Rename this
-		m_env.pRenderer->EndFrame();
-
-		if (IConsole* pConsole = GetIConsole())
+		if (m_pNULLRenderAuxGeom)
 		{
-			// if we have pending cvar calculation, execute it here
-			// since we know cvars will be correct here after ->EndFrame().
-			if (!pConsole->IsHashCalculated())
-				pConsole->CalcCheatVarHash();
+#if !defined (_RELEASE)
+			if (m_pPhysRenderer)
+			{
+				RenderPhysicsHelpers();
+			}
+#endif
+			m_pNULLRenderAuxGeom->EndFrame();
 		}
+		return;
+	}
+	/*
+	if(m_env.pMovieSystem)
+		m_env.pMovieSystem->Render();
+	*/
 
+	GetPlatformOS()->RenderEnd();
+
+#if !defined (_RELEASE)
+	// Flush render data and swap buffers.
+	m_env.pRenderer->RenderDebug(bRenderStats);
+#endif
+
+	RenderJobStats();
+
+#if defined(USE_PERFHUD)
+	if (m_pPerfHUD)
+		m_pPerfHUD->Draw();
+	if (m_pMiniGUI)
+		m_pMiniGUI->Draw();
+#endif
+
+	if (bRenderStats)
+	{
+		RenderStatistics();
+	}
+
+	if (IConsole* pConsole = GetIConsole())
+		pConsole->Draw();
+
+	m_env.pRenderer->ForceGC(); // XXX Rename this
+	m_env.pRenderer->EndFrame();
+
+	if (IConsole* pConsole = GetIConsole())
+	{
+		// if we have pending cvar calculation, execute it here
+		// since we know cvars will be correct here after ->EndFrame().
+		if (!pConsole->IsHashCalculated())
+			pConsole->CalcCheatVarHash();
 	}
 }
 
@@ -684,6 +682,7 @@ void CSystem::Render()
 
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 	CRY_PROFILE_MARKER("CSystem::Render");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CSystem::Render");
 
 	//////////////////////////////////////////////////////////////////////
 	//draw
@@ -711,8 +710,6 @@ void CSystem::Render()
 #if !defined(_RELEASE)
 				if (m_pVisRegTest)
 					m_pVisRegTest->AfterRender();
-
-				//			m_pProcess->Draw();
 
 				if (m_env.pAISystem)
 					m_env.pAISystem->DebugDraw();
@@ -831,27 +828,7 @@ void CSystem::RenderStats()
 #if defined(ENABLE_LW_PROFILERS)
 		if (m_rDisplayInfo->GetIVal() == 2)
 		{
-			IRenderAuxText::TextToScreenF(nTextPosX, nTextPosY += nTextStepY, "SysMem %.1f mb",
-			  float(DumpMMStats(false)) / 1024.f);
-
-			//if (m_env.pAudioSystem)
-			//{
-			//	SSoundMemoryInfo SoundMemInfo;
-			//	m_env.pAudioSystem->GetInterfaceExtended()->GetMemoryInfo(&SoundMemInfo);
-			//	m_env.pRenderer->TextToScreen( nTextPosX-18, nTextPosY+=nTextStepY, "------------Sound %2.1f/%2.1f mb",
-			//		SoundMemInfo.fSoundBucketPoolUsedInMB + SoundMemInfo.fSoundPrimaryPoolUsedInMB + SoundMemInfo.fSoundSecondaryPoolUsedInMB,
-			//		/*SoundMemInfo.fSoundBucketPoolSizeInMB +*/ SoundMemInfo.fSoundPrimaryPoolSizeInMB + SoundMemInfo.fSoundSecondaryPoolSizeInMB);
-			//}
-		}
-#endif
-
-#if 0
-		for (int i = 0; i < NUM_POOLS; ++i)
-		{
-			int used     = (g_pPakHeap->m_iBigPoolUsed[i] ? (int)g_pPakHeap->m_iBigPoolSize[i] : 0);
-			int size     = (int)g_pPakHeap->m_iBigPoolSize[i];
-			float fC1[4] = {1, 1, 0, 1};
-			m_env.pRenderer->Draw2dLabel(10, 100.0f + i * 16, 2.1f, fC1, false, "BigPool %d: %d bytes of %d bytes used", i, used, size);
+			IRenderAuxText::TextToScreenF(nTextPosX, nTextPosY += nTextStepY, "SysMem %.1f mb", float(DumpMMStats(false)) / 1024.f);
 		}
 #endif
 	}

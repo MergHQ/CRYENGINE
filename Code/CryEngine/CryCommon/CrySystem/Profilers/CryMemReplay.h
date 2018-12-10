@@ -362,11 +362,13 @@ private:
 #if INCLUDE_MEMSTAT_CONTEXTS
 	#define MEMSTAT_CONTEXT(type, id, str)                        CMemStatContext MEMSTAT_CONCAT(_memctx, __LINE__) (type, id, str);
 	#define MEMSTAT_CONTEXT_FMT(type, id, format, ...)            CMemStatContextFormat MEMSTAT_CONCAT(_memctx, __LINE__) (type, id, format, __VA_ARGS__);
+	#define MEMSTAT_FUNCTION_CONTEXT(type)                        CMemStatContext MEMSTAT_CONCAT(_memctx, __LINE__) (type, 0, __FUNC__);
 	#define MEMSTAT_COND_CONTEXT(cond, type, id, str)             CCondMemStatContext MEMSTAT_CONCAT(_memctx, __LINE__) (cond, type, id, str);
 	#define MEMSTAT_COND_CONTEXT_FMT(cond, type, id, format, ...) CCondMemStatContextFormat MEMSTAT_CONCAT(_memctx, __LINE__) (cond, type, id, format, __VA_ARGS__);
 #else
 	#define MEMSTAT_CONTEXT(...)
 	#define MEMSTAT_CONTEXT_FMT(...)
+	#define MEMSTAT_FUNCTION_CONTEXT(...)
 	#define MEMSTAT_COND_CONTEXT(...)
 	#define MEMSTAT_COND_CONTEXT_FMT(...)
 #endif

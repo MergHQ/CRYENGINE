@@ -571,6 +571,7 @@ bool C3DEngine::IsCameraAnd3DEngineInvalid(const SRenderingPassInfo& passInfo, c
 void C3DEngine::OnFrameStart()
 {
 	FUNCTION_PROFILER_3DENGINE;
+	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
 
 	if (m_pPartManager)
 		m_pPartManager->OnFrameStart();
@@ -616,6 +617,7 @@ unsigned char GetOceanSurfTypeCallback(int ix, int iy)
 
 void C3DEngine::Update()
 {
+	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
 	m_bProfilerEnabled = gEnv->pFrameProfileSystem->IsProfiling();
 
 	FUNCTION_PROFILER_3DENGINE;
@@ -712,6 +714,7 @@ void C3DEngine::Update()
 
 void C3DEngine::Tick()
 {
+	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
 	threadID nThreadID = 0;
 
 	if (GetRenderer())

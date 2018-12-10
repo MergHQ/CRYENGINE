@@ -425,6 +425,7 @@ void SRenderThread::RC_StopVideoThread()
 void SRenderThread::ProcessCommands()
 {
 #ifndef STRIP_RENDER_THREAD
+	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
 	assert(IsRenderThread());
 	if (!CheckFlushCond())
 		return;
@@ -478,6 +479,7 @@ void SRenderThread::ProcessCommands()
 		case eRC_CreateDevice:
 		{
 			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_CreateDevice");
+			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_CreateDevice");
 			START_PROFILE_RT();
 			m_bSuccessful &= gcpRendD3D->RT_CreateDevice();
 			END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.miscTime);
@@ -486,6 +488,7 @@ void SRenderThread::ProcessCommands()
 		case eRC_ResetDevice:
 		{
 			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_ResetDevice");
+			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_ResetDevice");
 			START_PROFILE_RT();
 			if (m_eVideoThreadMode == eVTM_Disabled)
 				gcpRendD3D->RT_Reset();
@@ -496,6 +499,7 @@ void SRenderThread::ProcessCommands()
 		case eRC_SuspendDevice:
 		{
 			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_SuspendDevice");
+			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_SuspendDevice");
 			START_PROFILE_RT();
 			if (m_eVideoThreadMode == eVTM_Disabled)
 				gcpRendD3D->RT_SuspendDevice();
@@ -505,6 +509,7 @@ void SRenderThread::ProcessCommands()
 		case eRC_ResumeDevice:
 		{
 			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_ResumeDevice");
+			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_ResumeDevice");
 			START_PROFILE_RT();
 			if (m_eVideoThreadMode == eVTM_Disabled)
 			{
@@ -520,6 +525,7 @@ void SRenderThread::ProcessCommands()
 		case eRC_BeginFrame:
 		{
 			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_BeginFrame");
+			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_BeginFrame");
 			START_PROFILE_RT();
 			m_displayContextKey = ReadCommand<SDisplayContextKey>(n);
 			if (m_eVideoThreadMode == eVTM_Disabled)
@@ -537,6 +543,7 @@ void SRenderThread::ProcessCommands()
 		case eRC_EndFrame:
 		{
 			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_EndFrame");
+			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_EndFrame");
 			START_PROFILE_RT();
 			if (m_eVideoThreadMode == eVTM_Disabled)
 			{
@@ -559,6 +566,7 @@ void SRenderThread::ProcessCommands()
 
 		case eRC_FlashRender:
 			{
+				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_FlashRender");
 				START_PROFILE_RT();
 				std::shared_ptr<IFlashPlayer_RenderProxy> pPlayer = ReadCommand<std::shared_ptr<IFlashPlayer_RenderProxy>>(n);
 				gcpRendD3D->RT_FlashRenderInternal(std::move(pPlayer), m_eVideoThreadMode == eVTM_Disabled);
@@ -567,6 +575,7 @@ void SRenderThread::ProcessCommands()
 			break;
 		case eRC_FlashRenderLockless:
 			{
+				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_FlashRenderLockless");
 				START_PROFILE_RT();
 				std::shared_ptr<IFlashPlayer_RenderProxy> pPlayer = ReadCommand<std::shared_ptr<IFlashPlayer_RenderProxy>>(n);
 				int cbIdx = ReadCommand<int>(n);
@@ -579,6 +588,7 @@ void SRenderThread::ProcessCommands()
 		case eRC_LambdaCall:
 		{
 			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_LambdaCall");
+			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_LambdaCall");
 			START_PROFILE_RT();
 			SRenderThreadLambdaCallback* pRTCallback = ReadCommand<SRenderThreadLambdaCallback*>(n);
 			bool bSkipCommand = (m_eVideoThreadMode != eVTM_Disabled) && (uint32(pRTCallback->flags & ERenderCommandFlags::SkipDuringLoading) != 0);

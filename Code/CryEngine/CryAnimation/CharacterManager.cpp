@@ -1674,6 +1674,7 @@ void CharacterManager::Update(bool bPaused)
 	s_bPaused = bPaused;
 	CRY_PROFILE_REGION(PROFILE_ANIMATION, "CharacterManager::Update");
 	CRYPROFILE_SCOPE_PROFILE_MARKER("CharacterManager::Update");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CharacterManager::Update");
 	ANIMATION_LIGHT_PROFILER();
 
 	CAnimationContext::Instance().Update();
@@ -3385,6 +3386,7 @@ void CharacterManager::SyncAllAnimations()
 	CRY_PROFILE_REGION(PROFILE_ANIMATION, "CharacterManager::SyncAllAnimations");
 	CRYPROFILE_SCOPE_PROFILE_MARKER("CharacterManager::SyncAllAnimations");
 	ANIMATION_LIGHT_PROFILER();
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CharacterManager::SyncAllAnimations");
 
 	m_ContextSyncQueue.ExecuteForAll(
 	  [](CharacterInstanceProcessing::SContext& ctx)

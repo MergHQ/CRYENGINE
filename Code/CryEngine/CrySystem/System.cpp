@@ -221,8 +221,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	: m_gameLibrary(nullptr)
 #endif
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Main");
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CSystem::Construct");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CSystem Constructor");
 
 	m_pSystemEventDispatcher = new CSystemEventDispatcher(); // Must be first.
 	m_pSystemEventDispatcher->RegisterListener(this, "CSystem");
@@ -1466,6 +1465,8 @@ void CSystem::PrePhysicsUpdate()
 
 void CSystem::RunMainLoop()
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CSystem::MainLoop");
+
 	if (m_bShaderCacheGenMode)
 	{
 		return;
@@ -1506,8 +1507,6 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 	// The frame profile system already creates an "overhead" profile label
 	// in StartFrame(). Hence we have to set the FRAMESTART before.
 	CRY_PROFILE_FRAMESTART("Main");
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Main");
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CSystem: DoFrame");
 
 	if (m_pManualFrameStepController != nullptr && m_pManualFrameStepController->Update() == EManualFrameStepResult::Block)
 	{
@@ -1690,6 +1689,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 	CRY_PROFILE_REGION(PROFILE_SYSTEM, "System: Update");
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM)
 	CRYPROFILE_SCOPE_PROFILE_MARKER("CSystem::Update()");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CSystem::Update");
 
 #ifndef EXCLUDE_UPDATE_ON_CONSOLE
 	// do the dedicated sleep earlier than the frame profiler to avoid having it counted
@@ -1775,7 +1775,10 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 	CTimeValue updateStart = gEnv->pTimer->GetAsyncTime();
 
 	if (m_env.pLog)
+	{
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Log::Update");
 		m_env.pLog->Update();
+	}
 
 #if !defined(RELEASE) || defined(RELEASE_LOGGING)
 	GetIRemoteConsole()->Update();
@@ -1868,8 +1871,6 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 		}
 	}
 
-	//static bool sbPause = false;
-	//bool bPause = false;
 	bool bNoUpdate = false;
 #ifndef EXCLUDE_UPDATE_ON_CONSOLE
 	//check what is the current process
@@ -1883,8 +1884,6 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 		updateFlags = { ESYSUPDATE_IGNORE_AI, ESYSUPDATE_IGNORE_PHYSICS };
 	}
 
-	//if ((pProcess->GetFlags() & PROC_MENU) || (m_sysNoUpdate && m_sysNoUpdate->GetIVal()))
-	//		bPause = true;
 	m_bNoUpdate = bNoUpdate;
 #endif //EXCLUDE_UPDATE_ON_CONSOLE
 	//check if we are quitting from the game
@@ -2156,7 +2155,6 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 					pVars->threadLag = lag + m_Time.GetFrameTime();
 					//GetILog()->Log("Physics thread lags behind; accum time %.3f", pVars->threadLag);
 				}
-
 			}
 			else
 			{
@@ -2346,7 +2344,6 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 	UpdateUpdateTimes();
 
 	return !m_bQuit;
-
 }
 
 IManualFrameStepController* CSystem::GetManualFrameStepController() const

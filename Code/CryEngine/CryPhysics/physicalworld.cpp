@@ -2430,6 +2430,7 @@ int __curstep = 0; // debug
 void CPhysicalWorld::TimeStep(float time_interval, int flags)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CPhysicalWorld::TimeStep");
 
 	float m,/*m_groupTimeStep,*/time_interval_org = time_interval;
 	CPhysicalEntity *pent,*phead,*ptail,**pentlist,*pent_next,*pent1,*pentmax;
