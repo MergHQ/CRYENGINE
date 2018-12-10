@@ -204,7 +204,7 @@ protected:
   Rect2D taken     , used;    // actually taken sizes and its aligned counterpart
 
   int planes;
-  long int planesize, rowblocksize;
+  size_t planesize, rowblocksize;
   DataType *buffers;
   DataType ***rows;
 };
@@ -439,7 +439,7 @@ protected:
 /* ####################################################################################################################	\
  */
 #define	all4InitSwappablePlaneReferences(left, offs, top, row, rows, pp, swap, dtyp)					                          \
-  unsigned long int pp##x = left + offs;										                                                            \
+  size_t pp##x = left + offs;										                                                            \
   dtyp **pp##0;														                                                                              \
   dtyp **pp##1;														                                                                              \
   dtyp **pp##2;														                                                                              \
@@ -456,7 +456,7 @@ protected:
 /* ####################################################################################################################	\
  */
 #define	all4InitFixedPlaneReferences(left, row, rows, pp, ps, dtyp)							                                        \
-  unsigned long int pp##x = left;											                                                                  \
+  size_t pp##x = left;											                                                                  \
   dtyp **pp##0;														                                                                              \
   dtyp **pp##1;														                                                                              \
   dtyp **pp##2;														                                                                              \
