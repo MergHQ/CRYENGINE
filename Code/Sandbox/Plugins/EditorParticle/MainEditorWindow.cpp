@@ -4,10 +4,10 @@
 
 #include "MainEditorWindow.h"
 
-#include "Models/EffectAsset.h"
 #include "Models/EffectAssetModel.h"
 
 #include "Widgets/EffectViewWidget.h"
+#include "Widgets/EffectPanel.h"
 
 #include "Objects/SelectionGroup.h"
 #include "Objects/ParticleEffectObject.h"
@@ -62,10 +62,11 @@
 #define APPLICATION_USER_DIRECTORY      "/CryEngine"
 #define APPLICATION_USER_STATE_FILENAME "EditorState.json"
 
-namespace CryParticleEditor 
+namespace CryParticleEditor
 {
 
-static const char* const s_szEffectAssetName = "Effect";
+static const char* const s_szEffectGraphName = "Effect Graph";
+static const char* const s_szEffectTreeName = "Effect Tree";
 static const char* const s_szCurveEditorPanelName = "Curve Editor";
 static const char* const s_szInspectorName = "Inspector";
 
@@ -198,20 +199,15 @@ void CParticleEditor::RegisterDockingWidgets()
 {
 	EnableDockingSystem();
 
-	RegisterDockableWidget(s_szEffectAssetName, [&]() { return CreateEffectAssetWidget(); }, false, false);
-	RegisterDockableWidget(s_szCurveEditorPanelName, [&]() { return CreateCurveEditorPanel(this); }, false, false);
+	RegisterDockableWidget(s_szEffectGraphName, [=]() { return new CEffectAssetWidget(m_pEffectAssetModel.get(), this); }, false, false);
+	RegisterDockableWidget(s_szEffectTreeName, [=]() { return new CEffectPanel(m_pEffectAssetModel.get(), this); }, false, false);
+	RegisterDockableWidget(s_szCurveEditorPanelName, [=]() { return CreateCurveEditorPanel(this); }, false, false);
 
 	// #TODO: The inspector is a unique panel for practical reasons. Right now, there is not code
 	// to keep two instances of the inspector in sync when either one of them changes.
 	// Similar to the object properties, the property trees should be reverted when a feature item
 	// signals SignalInvalidated.
-	RegisterDockableWidget(s_szInspectorName, [&]() { return new CInspector(this); }, true, false);
-}
-
-CEffectAssetWidget* CParticleEditor::CreateEffectAssetWidget()
-{
-	CEffectAssetWidget* const pEffectAssetWidget = new CEffectAssetWidget(m_pEffectAssetModel.get(), this);
-	return pEffectAssetWidget;
+	RegisterDockableWidget(s_szInspectorName, [=]() { return new CInspector(this); }, true, false);
 }
 
 bool CParticleEditor::OnUndo()
@@ -306,13 +302,10 @@ bool LoadFile(std::vector<char>& content, const char* filename)
 
 bool CParticleEditor::OnAboutToCloseAsset(string& reason) const
 {
-	CEffectAsset* const pEffectAsset = m_pEffectAssetModel->GetEffectAsset();
-	if (!pEffectAsset)
-	{
+	pfx2::IParticleEffect* const pEffect = m_pEffectAssetModel->GetEffect();
+	if (!pEffect)
 		return true;
-	}
 
-	pfx2::IParticleEffectPfx2* const pEffect = pEffectAsset->GetEffect();
 	DynArray<char> newPfx;
 	Serialization::SaveJsonBuffer(newPfx, *pEffect);
 
@@ -334,7 +327,7 @@ void CParticleEditor::CreateDefaultLayout(CDockableContainer* pSender)
 {
 	CRY_ASSERT(pSender);
 	pSender->SpawnWidget(s_szCurveEditorPanelName);
-	pSender->SpawnWidget(s_szEffectAssetName, QToolWindowAreaReference::HSplitTop);
+	pSender->SpawnWidget(s_szEffectGraphName, QToolWindowAreaReference::HSplitTop);
 	pSender->SpawnWidget(s_szInspectorName, QToolWindowAreaReference::VSplitRight);
 }
 
@@ -502,67 +495,52 @@ void CParticleEditor::OnNewComponent()
 	if (templateFile.isEmpty())
 		return;
 
-	CEffectAsset* const pEffectAsset = m_pEffectAssetModel->GetEffectAsset();
-	if (!pEffectAsset)
-	{
-		return;
-	}
-
 	auto templateFileStd = templateFile.toStdString();
-	pEffectAsset->MakeNewComponent(templateFileStd.c_str());
+	m_pEffectAssetModel->MakeNewComponent(templateFileStd.c_str());
 }
 
 void CParticleEditor::OnShowEffectOptions()
 {
-	CEffectAsset* const pEffectAsset = m_pEffectAssetModel->GetEffectAsset();
-	if (!pEffectAsset)
-	{
+	pfx2::IParticleEffect* const pEffect = m_pEffectAssetModel->GetEffect();
+	if (!pEffect)
 		return;
-	}
 
-	pfx2::IParticleEffectPfx2* const pEffect = pEffectAsset->GetEffect();
+	PopulateInspectorEvent popEvent([this, pEffect](CInspector& inspector)
+	{
+		QAdvancedPropertyTree* pPropertyTree = new QAdvancedPropertyTree(pEffect->GetName());
+		// WORKAROUND: Serialization of features doesn't work with the default style.
+		//						 We either need to fix serialization or property tree. As soon as it's
+		//						 done use the commented out code below.
+		PropertyTreeStyle treeStyle(pPropertyTree->treeStyle());
+		treeStyle.propertySplitter = false;
+		pPropertyTree->setTreeStyle(treeStyle);
+		pPropertyTree->setSizeToContent(true);
+		// ~WORKAROUND
+		//pPropertyTree->setExpandLevels(2);
+		//pPropertyTree->setValueColumnWidth(0.6f);
+		//pPropertyTree->setAutoRevert(false);
+		//pPropertyTree->setAggregateMouseEvents(false);
+		//pPropertyTree->setFullRowContainers(true);
+		pPropertyTree->attach(pEffect->GetEffectOptionsSerializer());
+		QObject::connect(pPropertyTree, &QPropertyTree::signalChanged, this, &CParticleEditor::OnEffectOptionsChanged);
 
-		PopulateInspectorEvent popEvent([this, pEffect](CInspector& inspector)
-		{
-			QAdvancedPropertyTree* pPropertyTree = new QAdvancedPropertyTree(pEffect->GetName());
-			// WORKAROUND: Serialization of features doesn't work with the default style.
-			//						 We either need to fix serialization or property tree. As soon as it's
-			//						 done use the commented out code below.
-			PropertyTreeStyle treeStyle(pPropertyTree->treeStyle());
-			treeStyle.propertySplitter = false;
-			pPropertyTree->setTreeStyle(treeStyle);
-			pPropertyTree->setSizeToContent(true);
-			// ~WORKAROUND
-			//pPropertyTree->setExpandLevels(2);
-			//pPropertyTree->setValueColumnWidth(0.6f);
-			//pPropertyTree->setAutoRevert(false);
-			//pPropertyTree->setAggregateMouseEvents(false);
-			//pPropertyTree->setFullRowContainers(true);
-			pPropertyTree->attach(pEffect->GetEffectOptionsSerializer());
-			QObject::connect(pPropertyTree, &QPropertyTree::signalChanged, this, &CParticleEditor::OnEffectOptionsChanged);
+		QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Particle Effect");
+		pInspectorWidget->SetWidget(pPropertyTree);
+		inspector.AddWidget(pInspectorWidget);
+	});
 
-			QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Particle Effect");
-			pInspectorWidget->SetWidget(pPropertyTree);
-			inspector.AddWidget(pInspectorWidget);
-		});
-
-		GetBroadcastManager().Broadcast(popEvent);
-	}
+	GetBroadcastManager().Broadcast(popEvent);
+}
 
 void CParticleEditor::OnEffectOptionsChanged()
 {
 	if (!GetAssetBeingEdited())
-	{
 		return;
-	}
 
-	CEffectAsset* const pEffectAsset = m_pEffectAssetModel->GetEffectAsset();
-	if (!pEffectAsset)
-	{
+	pfx2::IParticleEffect* pEffect = m_pEffectAssetModel->GetEffect();
+	if (!pEffect)
 		return;
-	}
 
-	pfx2::IParticleEffectPfx2* pEffect = pEffectAsset->GetEffect();
 	pEffect->SetChanged();
 	GetAssetBeingEdited()->SetModified(true);
 }

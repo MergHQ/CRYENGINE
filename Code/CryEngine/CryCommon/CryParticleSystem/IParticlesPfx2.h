@@ -83,8 +83,9 @@ struct IParticleComponent : public _i_reference_target_t
 	virtual void                RemoveFeature(uint featureIdx) = 0;
 	virtual void                SwapFeatures(const uint* swapIds, uint numSwapIds) = 0;
 	virtual IParticleComponent* GetParent() const = 0;
-	virtual void                SetParent(IParticleComponent* parent) = 0;
+	virtual bool                SetParent(IParticleComponent* parent, int position = -1) = 0;
 	virtual bool                CanBeParent(IParticleComponent* child = nullptr) const = 0;
+	virtual uint                GetIndex(bool fromParent = false) = 0;
 	virtual Vec2                GetNodePosition() const = 0;
 	virtual void                SetNodePosition(Vec2 position) = 0;
 };
@@ -105,7 +106,7 @@ struct SParentData
 	Vec3 velocity;
 };
 
-struct IParticleEffectPfx2 : public IParticleEffect
+struct IParticleEffect : public ::IParticleEffect
 {
 	virtual void                   SetChanged() = 0;
 	virtual void                   Update() = 0;
@@ -119,7 +120,7 @@ struct IParticleEffectPfx2 : public IParticleEffect
 	virtual void                   SetSubstitutedPfx1(bool b) = 0;
 };
 
-using PParticleEffect     = _smart_ptr<IParticleEffectPfx2>;
+using PParticleEffect     = _smart_ptr<IParticleEffect>;
 using PParticleEmitter    = _smart_ptr<IParticleEmitter>;
 
 struct IParticleSystem : public ICryUnknown
@@ -127,7 +128,7 @@ struct IParticleSystem : public ICryUnknown
 	CRYINTERFACE_DECLARE_GUID(IParticleSystem, "cc3aa21d-44a2-4ded-9aa1-daded21d570a"_cry_guid);
 
 	virtual PParticleEffect         CreateEffect() = 0;
-	virtual PParticleEffect         ConvertEffect(const IParticleEffect* pOldEffect, bool bReplace = false) = 0;
+	virtual PParticleEffect         ConvertEffect(const ::IParticleEffect* pOldEffect, bool bReplace = false) = 0;
 	virtual void                    RenameEffect(PParticleEffect pEffect, cstr name) = 0;
 	virtual PParticleEffect         FindEffect(cstr name, bool bAllowLoad = true) = 0;
 	virtual PParticleEmitter        CreateEmitter(PParticleEffect pEffect) = 0;

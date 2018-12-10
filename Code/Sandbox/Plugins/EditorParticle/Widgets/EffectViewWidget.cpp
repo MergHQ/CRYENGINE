@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "EffectViewWidget.h"
 
-#include "Models/EffectAsset.h"
 #include "Models/EffectAssetModel.h"
 
 namespace CryParticleEditor 
@@ -12,7 +11,6 @@ namespace CryParticleEditor
 CEffectAssetWidget::CEffectAssetWidget(CEffectAssetModel* pEffectAssetModel, QWidget* pParent)
 	: QWidget(pParent)
 	, m_pEffectAssetModel(pEffectAssetModel)
-	, m_pEffectAsset(nullptr)
 {
 	QBoxLayout* pMainLayout = new QVBoxLayout();
 	pMainLayout->setSpacing(0.0f);
@@ -27,6 +25,7 @@ CEffectAssetWidget::CEffectAssetWidget(CEffectAssetModel* pEffectAssetModel, QWi
 	CRY_ASSERT(pEffectAssetModel);
 	m_pEffectAssetModel->signalBeginEffectAssetChange.Connect(this, &CEffectAssetWidget::OnBeginEffectAssetChange);
 	m_pEffectAssetModel->signalEndEffectAssetChange.Connect(this, &CEffectAssetWidget::OnEndEffectAssetChange);
+	m_pEffectAssetModel->signalEffectEdited.Connect(this, &CEffectAssetWidget::OnEffectEdited);
 	OnEndEffectAssetChange(); // Set current effect asset.
 
 	// One-time scene fitting in the view.
@@ -52,20 +51,19 @@ CEffectAssetWidget::~CEffectAssetWidget()
 	}
 }
 
-const pfx2::IParticleEffectPfx2* CEffectAssetWidget::GetEffect() const
+const pfx2::IParticleEffect* CEffectAssetWidget::GetEffect() const
 {
-	return m_pEffectAsset ? m_pEffectAsset->GetEffect() : nullptr;
+	return m_pEffectAssetModel ? m_pEffectAssetModel->GetEffect() : nullptr;
 }
 
-pfx2::IParticleEffectPfx2* CEffectAssetWidget::GetEffect()
+pfx2::IParticleEffect* CEffectAssetWidget::GetEffect()
 {
-	return m_pEffectAsset ? m_pEffectAsset->GetEffect() : nullptr;
+	return m_pEffectAssetModel ? m_pEffectAssetModel->GetEffect() : nullptr;
 }
 
 const char* CEffectAssetWidget::GetName() const
 {
-	CRY_ASSERT(m_pEffectAsset);
-	return m_pEffectAsset->GetName();
+	return m_pEffectAssetModel->GetName();
 }
 
 void CEffectAssetWidget::OnDeleteSelected()
@@ -94,8 +92,6 @@ void CEffectAssetWidget::OnPasteComponent()
 
 void CEffectAssetWidget::OnNewComponent()
 {
-	CRY_ASSERT(m_pEffectAsset);
-
 	QAction* pAction = qobject_cast<QAction*>(sender());
 	if (!pAction)
 		return;
@@ -104,13 +100,12 @@ void CEffectAssetWidget::OnNewComponent()
 	if (templateFile.isEmpty())
 		return;
 
-	m_pEffectAsset->MakeNewComponent(templateFile.toStdString().c_str());
+	m_pEffectAssetModel->MakeNewComponent(templateFile.toStdString().c_str());
 }
 
 bool CEffectAssetWidget::MakeNewComponent(const char* szTemplateName)
 {
-	CRY_ASSERT(m_pEffectAsset);
-	return m_pEffectAsset->MakeNewComponent(szTemplateName);
+	return m_pEffectAssetModel->MakeNewComponent(szTemplateName);
 }
 
 void CEffectAssetWidget::customEvent(QEvent* pEvent)
@@ -143,6 +138,19 @@ void CEffectAssetWidget::customEvent(QEvent* pEvent)
 	}
 }
 
+void CEffectAssetWidget::paintEvent(QPaintEvent* event)
+{
+	if (m_updated)
+	{
+		m_pGraphView->SetModel(nullptr);
+		m_pEffectAssetModel->GetModel()->Refresh();
+		m_pGraphView->SetModel(m_pEffectAssetModel->GetModel());
+		m_updated = false;
+	}
+
+	QWidget::paintEvent(event);
+}
+
 void CEffectAssetWidget::OnBeginEffectAssetChange()
 {
 	m_pGraphView->SetModel(nullptr);
@@ -150,15 +158,12 @@ void CEffectAssetWidget::OnBeginEffectAssetChange()
 
 void CEffectAssetWidget::OnEndEffectAssetChange()
 {
-	CRY_ASSERT(m_pEffectAssetModel);
-	CEffectAsset* const pEffectAsset = m_pEffectAssetModel->GetEffectAsset();
-	m_pEffectAsset = pEffectAsset;
-	if (m_pEffectAsset)
-	{
-		CParticleGraphModel* const pModel = m_pEffectAsset->GetModel();
-		CRY_ASSERT(pModel);
-		m_pGraphView->SetModel(pModel);
-	}
+	m_pGraphView->SetModel(m_pEffectAssetModel->GetModel());
+}
+
+void CEffectAssetWidget::OnEffectEdited(int nComp, int nFeature)
+{
+	m_updated = true;
 }
 
 }

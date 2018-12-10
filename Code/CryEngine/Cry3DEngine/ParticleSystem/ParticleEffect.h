@@ -18,7 +18,7 @@ struct SSerializationContext
 
 uint GetVersion(IArchive& ar);
 
-class CParticleEffect : public IParticleEffectPfx2
+class CParticleEffect : public IParticleEffect
 {
 public:
 	CParticleEffect();
@@ -51,9 +51,9 @@ public:
 	virtual int                   GetChildCount() const override                                     { return 0; }
 	virtual IParticleEffect*      GetChild(int index) const override                                 { return 0; }
 	virtual void                  ClearChilds() override                                             {}
-	virtual void                  InsertChild(int slot, IParticleEffect* pEffect) override           {}
-	virtual int                   FindChild(IParticleEffect* pEffect) const override                 { return -1; }
-	virtual void                  SetParent(IParticleEffect* pParent) override                       {}
+	virtual void                  InsertChild(int slot, ::IParticleEffect* pEffect) override         {}
+	virtual int                   FindChild(::IParticleEffect* pEffect) const override               { return -1; }
+	virtual void                  SetParent(::IParticleEffect* pParent) override                     {}
 	virtual IParticleEffect*      GetParent() const override                                         { return 0; }
 	virtual bool                  LoadResources() override                                           { return true; }
 	virtual void                  UnloadResources() override                                         {}
@@ -66,6 +66,9 @@ public:
 	void                      Compile();
 	TComponents&              GetComponents()                                               { return m_components; }
 	const TComponents&        GetComponents() const                                         { return m_components; }
+	TComponents&              GetTopComponents()                                            { return m_topComponents; }
+	const TComponents&        GetTopComponents() const                                      { return m_topComponents; }
+	void                      SortFromTop();
 	CParticleComponent*       FindComponentByName(const char* name) const;
 	TAttributeTablePtr        GetAttributeTable() const                                     { return m_pAttributes; }
 	string                    MakeUniqueName(const CParticleComponent* forComponent, const char* name);
@@ -81,6 +84,7 @@ private:
 	string             m_name;
 	TAttributeTablePtr m_pAttributes;
 	TComponents        m_components;
+	TComponents        m_topComponents;
 	STimingParams      m_timings;
 	uint               m_numRenderObjects;
 	uint               m_environFlags;

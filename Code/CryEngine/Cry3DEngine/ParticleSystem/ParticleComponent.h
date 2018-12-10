@@ -73,17 +73,17 @@ private:
 	void  Update();
 };
 
-SERIALIZATION_ENUM_DEFINE(EIndoorVisibility, ,
+SERIALIZATION_ENUM_DECLARE(EIndoorVisibility, ,
 	IndoorOnly,
 	OutdoorOnly,
 	Both
-	)
+)
 
-SERIALIZATION_ENUM_DEFINE(EWaterVisibility, ,
+SERIALIZATION_ENUM_DECLARE(EWaterVisibility, ,
 	AboveWaterOnly,
 	BelowWaterOnly,
 	Both
-	)
+)
 
 struct SVisibilityParams
 {
@@ -172,8 +172,9 @@ public:
 	virtual void                RemoveFeature(uint featureIdx) override;
 	virtual void                SwapFeatures(const uint* swapIds, uint numSwapIds) override;
 	virtual IParticleComponent* GetParent() const override                                { return m_parent; }
-	virtual void                SetParent(IParticleComponent* pParentComponent) override;
+	virtual bool                SetParent(IParticleComponent* pParent, int position = -1) override;
 	virtual bool                CanBeParent(IParticleComponent* child = nullptr) const override;
+	virtual uint                GetIndex(bool fromParent = false) override;
 	virtual Vec2                GetNodePosition() const override;
 	virtual void                SetNodePosition(Vec2 position) override;
 	// ~IParticleComponent
@@ -209,7 +210,6 @@ public:
 	void                    ClearChildren()                                     { m_children.resize(0); }
 
 	void                    GetMaxParticleCounts(int& total, int& perFrame, float minFPS = 4.0f, float maxFPS = 120.0f) const;
-	void                    UpdateTimings();
 
 	bool                    CanMakeRuntime(CParticleEmitter* pEmitter) const;
 
@@ -226,6 +226,7 @@ private:
 	Vec2                                     m_nodePosition;
 	SComponentParams                         m_params;
 	TSmartArray<CParticleFeature>            m_features;
+	TSmartArray<CParticleFeature>            m_defaultFeatures;
 	PUseData                                 m_pUseData;
 	SEnable                                  m_enabled;
 	SEnable                                  m_visible;
@@ -233,6 +234,11 @@ private:
 
 	gpu_pfx2::SComponentParams               m_GPUParams;
 	std::vector<gpu_pfx2::IParticleFeature*> m_gpuFeatures;
+
+	const TComponents& GetParentChildren() const;
+	TComponents& GetParentChildren();
+
+	void                    UpdateTimings();
 };
 
 typedef _smart_ptr<CParticleComponent> TComponentPtr;

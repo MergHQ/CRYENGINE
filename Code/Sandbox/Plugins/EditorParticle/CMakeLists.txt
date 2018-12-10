@@ -24,8 +24,6 @@ add_sources("Uber_ParticleLibrary.cpp"
 	SOURCE_GROUP "Models"
 		"Models/ClipboardItems.h"
 		"Models/ClipboardItems.cpp"
-		"Models/EffectAsset.h"
-		"Models/EffectAsset.cpp"
 		"Models/EffectAssetModel.h"
 		"Models/EffectAssetModel.cpp"
 		"Models/ParticleGraphItems.h"
@@ -41,6 +39,8 @@ add_sources("Uber_ParticleLibrary.cpp"
 		"Widgets/ViewWidget.cpp"
 		"Widgets/EffectViewWidget.h"
 		"Widgets/EffectViewWidget.cpp"
+		"Widgets/EffectPanel.h"
+		"Widgets/EffectPanel.cpp"
 	SOURCE_GROUP "Widgets\\\\View"
 		"Widgets/FeatureGridNodeContentWidget.h"
 		"Widgets/FeatureGridNodeContentWidget.cpp"
@@ -53,7 +53,7 @@ end_sources()
 
 CryEditorPlugin(EditorParticle PCH "StdAfx.cpp" SOLUTION_FOLDER "Sandbox/Plugins")
 
-target_include_directories(${THIS_PROJECT} PRIVATE ../../EditorQt)	
+target_include_directories(${THIS_PROJECT} PRIVATE ../../EditorQt)
 target_include_directories(${THIS_PROJECT} PRIVATE ../../EditorQt/Include)
 
 target_link_libraries(${THIS_PROJECT} PRIVATE Sandbox)

@@ -191,10 +191,12 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize, uint16 const eventPoolSi
 	int initFlags = FMOD_INIT_NORMAL | FMOD_INIT_VOL0_BECOMES_VIRTUAL;
 	int studioInitFlags = FMOD_STUDIO_INIT_NORMAL;
 
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	if (g_cvars.m_enableLiveUpdate > 0)
 	{
 		studioInitFlags |= FMOD_STUDIO_INIT_LIVEUPDATE;
 	}
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 	if (g_cvars.m_enableSynchronousUpdate > 0)
 	{

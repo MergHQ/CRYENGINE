@@ -320,7 +320,7 @@ bool CGraphView::MoveFeatureToIndex(CFeatureWidget& featureWidget, uint32 destIn
 
 void CGraphView::OnItemsChanged()
 {
-	static_cast<CParticleGraphModel*>(GetModel())->signalChanged();
+	static_cast<CParticleGraphModel*>(GetModel())->signalChanged(nullptr);
 }
 
 void CGraphView::ShowFeatureContextMenu(CFeatureWidget* pFeatureWidget, QPointF screenPos)

@@ -40,7 +40,7 @@ static string ShowSaveDialog()
 	return QtUtil::ToString(filePath);
 }
 
-static bool MakeNewComponent(pfx2::IParticleEffectPfx2* pEffect)
+static bool MakeNewComponent(pfx2::IParticleEffect* pEffect)
 {
 	pfx2::IParticleComponent* const pComp = pEffect->AddComponent();
 	if (!pComp)

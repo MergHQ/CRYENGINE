@@ -76,6 +76,8 @@ public:
 	void                    SetVisible(bool isVisible);
 	bool                    IsVisible();
 
+	void                    OnChanged();
+
 public:
 	CCrySignal<void(CFeatureItem&)>  SignalFeatureAdded;
 	CCrySignal<void(CFeatureItem&)>  SignalFeatureRemoved;

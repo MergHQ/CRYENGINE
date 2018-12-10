@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "EffectAssetModel.h"
-#include "EffectAsset.h"
 
 #include <AssetSystem/Asset.h>
 
@@ -15,7 +14,7 @@ namespace CryParticleEditor
 class CSession final : public IAssetEditingSession
 {
 public:
-	CSession(pfx2::IParticleEffectPfx2* pEffect)
+	CSession(pfx2::IParticleEffect* pEffect)
 		:m_pEffect(pEffect)
 	{
 	}
@@ -70,34 +69,13 @@ public:
 			return false;
 		}
 
-		_smart_ptr<pfx2::IParticleEffectPfx2> pEffect = DuplicateEffect(PathUtil::RemoveExtension(asset.GetMetadataFile()), m_pEffect);
+		_smart_ptr<pfx2::IParticleEffect> pEffect = DuplicateEffect(PathUtil::RemoveExtension(asset.GetMetadataFile()), m_pEffect);
 
 		CSession session(pEffect);
 		return session.OnSaveAsset(asset);
 	}
 
-	static CEffectAsset* CreateEffectAsset(CAsset* pAsset)
-	{
-		pfx2::PParticleEffect pEffect = GetEffectFromAsset(pAsset);
-		if (!pEffect)
-		{
-			const char* const szPfxFilePath = pAsset->GetFile(0);
-			pEffect = GetParticleSystem()->FindEffect(szPfxFilePath, true);
-			if (!pEffect)
-				return nullptr;
-		}
-
-		CEffectAsset* const pEffectAsset = new CEffectAsset();
-		pEffectAsset->SetEffect(pEffect);
-		pEffectAsset->GetModel()->signalChanged.Connect([pAsset]()
-		{
-			pAsset->SetModified(true);
-		});
-		return pEffectAsset;
-	}
-
-private:
-	static pfx2::IParticleEffectPfx2* GetEffectFromAsset(CAsset* pAsset)
+	static pfx2::IParticleEffect* GetEffectFromAsset(CAsset* pAsset)
 	{
 		IAssetEditingSession* const pSession = pAsset->GetEditingSession();
 		if (!pSession || strcmp(pSession->GetEditorName(), "Particle Editor") != 0)
@@ -107,7 +85,8 @@ private:
 		return static_cast<CSession*>(pSession)->GetEffect();
 	}
 
-	pfx2::IParticleEffectPfx2* GetEffect() 
+private:
+	pfx2::IParticleEffect* GetEffect() 
 	{
 		return m_pEffect.get();
 	}
@@ -154,10 +133,10 @@ private:
 		asset.SetDetails(details);
 	}
 
-	static _smart_ptr<pfx2::IParticleEffectPfx2> DuplicateEffect(const char* szNewEffectName, pfx2::IParticleEffectPfx2* pOriginal)
+	static _smart_ptr<pfx2::IParticleEffect> DuplicateEffect(const char* szNewEffectName, pfx2::IParticleEffect* pOriginal)
 	{
 		pfx2::IParticleSystem* const pParticleSystem = GetParticleSystem();
-		_smart_ptr<pfx2::IParticleEffectPfx2> pEffect = pParticleSystem->CreateEffect();
+		_smart_ptr<pfx2::IParticleEffect> pEffect = pParticleSystem->CreateEffect();
 		pParticleSystem->RenameEffect(pEffect, szNewEffectName);
 		DynArray<char> buffer;
 		Serialization::SaveJsonBuffer(buffer, *pOriginal);
@@ -166,7 +145,7 @@ private:
 	}
 
 private:
-	_smart_ptr<pfx2::IParticleEffectPfx2> m_pEffect;
+	_smart_ptr<pfx2::IParticleEffect> m_pEffect;
 };
 
 bool CEffectAssetModel::OpenAsset(CAsset* pAsset)
@@ -178,33 +157,60 @@ bool CEffectAssetModel::OpenAsset(CAsset* pAsset)
 		return false;
 	}
 
-	CEffectAsset* const pEffectAsset = CSession::CreateEffectAsset(pAsset);
-	if (!pEffectAsset)
+	pfx2::PParticleEffect pEffect = CSession::GetEffectFromAsset(pAsset);
+	if (!pEffect)
 	{
-		return false;
+		const char* const szPfxFilePath = pAsset->GetFile(0);
+		pEffect = GetParticleSystem()->FindEffect(szPfxFilePath, true);
+		if (!pEffect)
+			return false;
 	}
 
 	signalBeginEffectAssetChange();
-	m_pEffectAsset.reset(pEffectAsset);
+	m_pAsset = pAsset;
+	SetEffect(pEffect);
 	signalEndEffectAssetChange();
+
+	m_pModel->signalChanged.Connect([this]()
+	{
+		SetModified(true);
+	});
+
 	return true;
 }
 
 void CEffectAssetModel::ClearAsset()
 {
 	signalBeginEffectAssetChange();
-	m_pEffectAsset.reset();
+	m_pAsset = nullptr;
+	SetEffect(nullptr);
 	signalEndEffectAssetChange();
-}
-
-CEffectAsset* CEffectAssetModel::GetEffectAsset()
-{
-	return m_pEffectAsset.get();
 }
 
 std::unique_ptr<IAssetEditingSession> CEffectAssetModel::CreateEditingSession()
 {
-	return std::make_unique<CSession>(m_pEffectAsset->GetEffect());
+	return std::make_unique<CSession>(m_pEffect);
 }
+
+const char* CEffectAssetModel::GetName() const
+{
+	return m_pEffect ? m_pEffect->GetName() : "";
+}
+
+void CEffectAssetModel::SetEffect(pfx2::IParticleEffect* pEffect)
+{
+	m_pEffect = pEffect;
+	m_pModel = pEffect ? stl::make_unique<CParticleGraphModel>(*pEffect) : nullptr;
+}
+
+bool CEffectAssetModel::MakeNewComponent(const char* szTemplateName)
+{
+	if (m_pModel)
+	{
+		return m_pModel->CreateNode(szTemplateName, QPointF()) != nullptr;
+	}
+	return false;
+}
+
 
 }

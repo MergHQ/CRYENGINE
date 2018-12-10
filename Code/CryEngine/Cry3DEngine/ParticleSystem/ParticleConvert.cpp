@@ -378,7 +378,7 @@ void AddFeature(IParticleComponent& component, XmlNodeRef params, bool force)
 
 static const Vec2 NodePositionIncrement(256, 0);
 
-IParticleComponent* AddComponent(IParticleEffectPfx2& effect, cstr name)
+IParticleComponent* AddComponent(IParticleEffect& effect, cstr name)
 {
 	uint index = effect.GetNumComponents();
 	IParticleComponent* component = effect.AddComponent();
@@ -925,7 +925,7 @@ void ConvertLightSource(IParticleComponent& component, ParticleParams& params)
 	}
 }
 
-void ConvertAudioSource(IParticleComponent& component, ParticleParams& params, const ParticleParams& paramsOrig, IParticleEffectPfx2& newEffect, IParticleComponent* parent)
+void ConvertAudioSource(IParticleComponent& component, ParticleParams& params, const ParticleParams& paramsOrig, IParticleEffect& newEffect, IParticleComponent* parent)
 {
 	if (!params.sStartTrigger.empty() || !params.sStopTrigger.empty())
 	{
@@ -997,7 +997,7 @@ void ConvertConfigSpec(IParticleComponent& component, ParticleParams& params)
 	AddFeature(component, spec);
 }
  
-IParticleComponent* ConvertTail(IParticleComponent& component, ParticleParams& params, IParticleEffectPfx2& newEffect)
+IParticleComponent* ConvertTail(IParticleComponent& component, ParticleParams& params, IParticleEffect& newEffect)
 {
 	if (!params.GetTailSteps())
 		return nullptr;
@@ -1052,7 +1052,7 @@ IParticleComponent* ConvertTail(IParticleComponent& component, ParticleParams& p
 }
 
 // Convert all features
-void ConvertParamsToFeatures(IParticleComponent& component, const ParticleParams& paramsOrig, IParticleEffectPfx2& newEffect, IParticleComponent* parent = nullptr)
+void ConvertParamsToFeatures(IParticleComponent& component, const ParticleParams& paramsOrig, IParticleEffect& newEffect, IParticleComponent* parent = nullptr)
 {
 	ParticleParams params = paramsOrig;
 
@@ -1096,7 +1096,7 @@ void ConvertParamsToFeatures(IParticleComponent& component, const ParticleParams
 	}
 }
 
-void ConvertSubEffects(IParticleEffectPfx2& newEffect, const ::IParticleEffect& oldSubEffect, IParticleComponent* parent = nullptr)
+void ConvertSubEffects(IParticleEffect& newEffect, const ::IParticleEffect& oldSubEffect, IParticleComponent* parent = nullptr)
 {
 	IParticleComponent* component = nullptr;
 	if (oldSubEffect.IsEnabled(IParticleEffect::eCheckFeatures | IParticleEffect::eCheckChildren))

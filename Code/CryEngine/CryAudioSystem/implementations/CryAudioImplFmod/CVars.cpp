@@ -67,11 +67,6 @@ void CCVars::RegisterVariables()
 	               "Usage: s_FmodMaxChannels [0/...]\n"
 	               "Default PC: 512, XboxOne: 512, PS4: 512, Mac: 512, Linux: 512, iOS: 512, Android: 512\n");
 
-	REGISTER_CVAR2("s_FmodEnableLiveUpdate", &m_enableLiveUpdate, m_enableLiveUpdate, VF_REQUIRE_APP_RESTART,
-	               "Enables Fmod Studio to run with LiveUpdate enabled. Needs implementation restart.\n"
-	               "Usage: s_FmodEnableLiveUpdate [0/1]\n"
-	               "Default PC: 0, XboxOne: 0, PS4: 0, Mac: 0, Linux: 0, iOS: 0, Android: 0\n");
-
 	REGISTER_CVAR2("s_FmodEnableSynchronousUpdate", &m_enableSynchronousUpdate, m_enableSynchronousUpdate, VF_REQUIRE_APP_RESTART,
 	               "Enable synchronous processing and perform all processing on the calling thread instead.\n"
 	               "Usage: s_FmodEnableSynchronousUpdate [0/1]\n"
@@ -109,6 +104,13 @@ void CCVars::RegisterVariables()
 	               "For example a rolloff factor of 1 will simulate the real world, where as a value of 2 will make sounds attenuate 2 times quicker.\n"
 	               "Usage: s_FmodRolloffScale [0/...]\n"
 	               "Default PC: 1, XboxOne: 1, PS4: 1, Mac: 1, Linux: 1, iOS: 1, Android: 1\n");
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	REGISTER_CVAR2("s_FmodEnableLiveUpdate", &m_enableLiveUpdate, m_enableLiveUpdate, VF_REQUIRE_APP_RESTART,
+	               "Enables Fmod Studio to run with LiveUpdate enabled. Needs implementation restart.\n"
+	               "Usage: s_FmodEnableLiveUpdate [0/1]\n"
+	               "Default PC: 0, XboxOne: 0, PS4: 0, Mac: 0, Linux: 0, iOS: 0, Android: 0\n");
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -121,12 +123,15 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_FmodVelocityTrackingThreshold");
 		pConsole->UnregisterVariable("s_FmodPositionUpdateThresholdMultiplier");
 		pConsole->UnregisterVariable("s_FmodMaxChannels");
-		pConsole->UnregisterVariable("s_FmodEnableLiveUpdate");
 		pConsole->UnregisterVariable("s_FmodEnableSynchronousUpdate");
 		pConsole->UnregisterVariable("s_FmodLowpassMinCutoffFrequency");
 		pConsole->UnregisterVariable("s_FmodDistanceFactor");
 		pConsole->UnregisterVariable("s_FmodDopplerScale");
 		pConsole->UnregisterVariable("s_FmodRolloffScale");
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+		pConsole->UnregisterVariable("s_FmodEnableLiveUpdate");
+#endif    // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 	}
 }
 } // namespace Fmod
