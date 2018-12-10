@@ -173,14 +173,13 @@ namespace Cry
 
 				CryLogAlways("[Rail][Helper] Using SDK version '%s' : %s", railVersion.c_str(), railDescription.c_str());
 
-				// Hint: Pass `--rail_debug_mode` to enhance debugging
-				const char* argv[] =
-				{
 #if !defined(RELEASE)
-					"--rail_debug_mode"
-#endif
-				};
+				const char* argv[] = { "--rail_debug_mode" };
 				constexpr size_t argc = sizeof(argv) / sizeof(const char*);
+#else
+				const char** argv = nullptr;
+				constexpr size_t argc = 0;
+#endif
 
 				// Validate that the application was started through Rail. If this fails we should quit the application.
 				if (s_pNeedRestart(gameId, argc, argv))
