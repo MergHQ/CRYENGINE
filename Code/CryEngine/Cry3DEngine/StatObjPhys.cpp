@@ -1904,17 +1904,18 @@ int CStatObj::Physicalize(IPhysicalEntity* pent, pe_geomparams* pgp, int id, con
 				iNoColl = i, ++nNoColl;
 		int flags0 = pgp->flags;
 		ISurfaceTypeManager* pSurfaceMan = Get3DEngine()->GetMaterialManager()->GetSurfaceTypeManager();
-		if (phys_geometry* pSolid = m_arrPhysGeomInfo[PHYS_GEOM_TYPE_DEFAULT])
-			if (pSolid->surface_idx < pSolid->nMats)
-				if (ISurfaceType* pMat = pSurfaceMan->GetSurfaceType(pSolid->pMatMapping[pSolid->surface_idx]))
-					if (pMat->GetPhyscalParams().collType >= 0)
-						(pgp->flags &= ~(geom_collides | geom_floats)) |= pMat->GetPhyscalParams().collType;
 		if (pgp->mass > pgp->density && V > 0.0f) // mass is set instead of density and V is valid
 			pgp->density = pgp->mass / V, pgp->mass = -1.0f;
 		(pgp->flags &= ~geom_colltype_explosion) |= geom_colltype_explosion & ~-(int)m_bDontOccludeExplosions;
 		(pgp->flags &= ~geom_manually_breakable) |= geom_manually_breakable &  - (int)m_bBreakableByGame;
 		if (m_nFlags & STATIC_OBJECT_NO_PLAYER_COLLIDE)
 			pgp->flags &= ~geom_colltype_player;
+		int flags1 = pgp->flags;
+		if (phys_geometry* pSolid = m_arrPhysGeomInfo[PHYS_GEOM_TYPE_DEFAULT])
+			if (pSolid->surface_idx < pSolid->nMats)
+				if (ISurfaceType* pMat = pSurfaceMan->GetSurfaceType(pSolid->pMatMapping[pSolid->surface_idx]))
+					if (pMat->GetPhyscalParams().collType >= 0)
+						(pgp->flags &= ~(geom_collides | geom_floats)) |= pMat->GetPhyscalParams().collType;
 		pgp->flagsCollider |= geom_allow_id_duplicates;
 		if (m_nSpines && m_arrPhysGeomInfo.GetGeomCount() - nNoColl <= 1 &&
 		    (nNoColl == 1 || nNoColl == 2 && m_arrPhysGeomInfo[PHYS_GEOM_TYPE_NO_COLLIDE] && m_arrPhysGeomInfo[PHYS_GEOM_TYPE_OBSTRUCT]))
@@ -1976,13 +1977,12 @@ int CStatObj::Physicalize(IPhysicalEntity* pent, pe_geomparams* pgp, int id, con
 			for (i = 0; i < m_arrPhysGeomInfo.GetGeomCount(); i++)
 				if (m_arrPhysGeomInfo.GetGeomType(i) == PHYS_GEOM_TYPE_DEFAULT)
 				{
-					int flags1 = pgp->flags;
+					pgp->flags = flags1;
 					if (m_arrPhysGeomInfo[i]->surface_idx < m_arrPhysGeomInfo[i]->nMats)
 						if (ISurfaceType* pMat = pSurfaceMan->GetSurfaceType(m_arrPhysGeomInfo[i]->pMatMapping[m_arrPhysGeomInfo[i]->surface_idx]))
 							if (pMat->GetPhyscalParams().collType >= 0)
 								(pgp->flags &= ~(geom_collides | geom_floats)) |= pMat->GetPhyscalParams().collType;
 					res = pent->AddGeometry(m_arrPhysGeomInfo[i], pgp, id);
-					pgp->flags = flags1;
 				}
 			pgp->idmatBreakable = -1;
 			for (i = 0; i < m_arrPhysGeomInfo.GetGeomCount(); i++)
