@@ -42,7 +42,7 @@ CScriptBind_AIAction::CScriptBind_AIAction(CGameAISystem* pGameAISystem)
 
 	SCRIPT_REG_TEMPLFUNC(SetAimQueryMode, "entityId, mode");
 
-	SCRIPT_REG_FUNC(RegisterWithAI);
+	//SCRIPT_REG_FUNC(RegisterWithAI);
 }
 
 //-------------------------------------------------------------------------
@@ -184,7 +184,6 @@ int CScriptBind_AIAction::SetAimQueryMode(IFunctionHandler* pH, ScriptHandle ent
 
 //
 //-----------------------------------------------------------------------------------------------------------
-// (MATT) Moved here from Scriptbind_AI when that was moved to the AI system {2008/02/15:15:23:16}
 int CScriptBind_AIAction::RegisterWithAI(IFunctionHandler* pH)
 {
 	if (gEnv->bMultiplayer && !gEnv->bServer)
