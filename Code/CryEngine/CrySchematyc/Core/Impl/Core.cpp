@@ -283,6 +283,7 @@ void CCore::BroadcastSignal(const SObjectSignal& signal)
 
 void CCore::PrePhysicsUpdate()
 {
+	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
 	if (WantPrePhysicsUpdate())
 	{
 		m_pUpdateScheduler->BeginFrame(gEnv->pTimer->GetFrameTime());
@@ -292,6 +293,7 @@ void CCore::PrePhysicsUpdate()
 
 void CCore::Update()
 {
+	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
 	if (WantUpdate())
 	{
 		if (!m_pUpdateScheduler->InFrame())

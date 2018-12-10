@@ -2479,6 +2479,7 @@ void CAISystem::Update(const CTimeValue frameStartTime, const float frameDeltaTi
 	CRY_PROFILE_REGION(PROFILE_AI, "AI System: Update");
 	CRYPROFILE_SCOPE_PROFILE_MARKER("AI System: Update");
 	AISYSTEM_LIGHT_PROFILER();
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "AISystem::Update");
 
 	if (!InitUpdate(frameStartTime, frameDeltaTime))
 		return;

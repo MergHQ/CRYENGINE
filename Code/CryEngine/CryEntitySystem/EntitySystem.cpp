@@ -229,6 +229,7 @@ CEntitySystem::~CEntitySystem()
 //////////////////////////////////////////////////////////////////////
 bool CEntitySystem::Init(ISystem* pSystem)
 {
+	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
 	if (!pSystem)
 		return false;
 
@@ -297,6 +298,7 @@ void CEntitySystem::UnregisterPhysicCallbacks()
 //////////////////////////////////////////////////////////////////////
 void CEntitySystem::Unload()
 {
+	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
 	if (gEnv->p3DEngine)
 	{
 		IDeferredPhysicsEventManager* pDeferredPhysicsEventManager = gEnv->p3DEngine->GetDeferredPhysicsEventManager();
@@ -945,6 +947,7 @@ void CEntitySystem::PrePhysicsUpdate()
 {
 	CRY_PROFILE_REGION(PROFILE_ENTITY, "EntitySystem::PrePhysicsUpdate");
 	CRYPROFILE_SCOPE_PROFILE_MARKER("EntitySystem::PrePhysicsUpdate");
+	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
 
 	SEntityEvent event(ENTITY_EVENT_PREPHYSICSUPDATE);
 	event.fParam[0] = gEnv->pTimer->GetFrameTime();
@@ -998,6 +1001,7 @@ void CEntitySystem::Update()
 {
 	CRY_PROFILE_REGION(PROFILE_ENTITY, "EntitySystem::Update");
 	CRYPROFILE_SCOPE_PROFILE_MARKER("EntitySystem::Update");
+	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
 
 	const float fFrameTime = gEnv->pTimer->GetFrameTime();
 	if (fFrameTime > FLT_EPSILON)
@@ -1767,7 +1771,7 @@ bool CEntitySystem::OnLoadLevel(const char* szLevelPath)
 void CEntitySystem::LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFile)
 {
 	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "LoadEntities");
+	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
 
 	//Update loading screen and important tick functions
 	SYNCHRONOUS_LOADING_TICK();

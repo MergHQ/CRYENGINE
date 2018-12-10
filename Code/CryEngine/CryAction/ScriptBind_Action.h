@@ -241,6 +241,10 @@ public:
 	//! <description>Use this function to pre-cache ADB files.</description>
 	int PreLoadADB(IFunctionHandler* pH, const char* adbFileName);
 
+	//! <code>Action.RegisterWithAI()</code>
+	//! <description>Registers the entity to AI System, creating an AI object associated to it.</description>
+	int RegisterWithAI(IFunctionHandler* pH);
+
 private:
 	void RegisterGlobals();
 	void RegisterMethods();

@@ -174,47 +174,53 @@ extern "C"
 #if CAPTURE_REPLAY_LOG
 		CryGetIMemReplay()->StartOnCommandLine(startupParams.szSystemCmdLine);
 #endif
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Mainthread");
+
+		std::unique_ptr<CSystem> pSystem;
+		{
+			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "System: Engine Startup");
 
 #if CRY_PLATFORM_DURANGO && defined(ENABLE_PROFILING_CODE)
-		DurangoDebugCallStack::InstallExceptionHandler();
+			DurangoDebugCallStack::InstallExceptionHandler();
 #endif
 
-		std::unique_ptr<CSystem> pSystem = stl::make_unique<CSystem>(startupParams);
-		startupParams.pSystem = pSystem.get();
+			pSystem = stl::make_unique<CSystem>(startupParams);
+			startupParams.pSystem = pSystem.get();
 
-		LOADING_TIME_PROFILE_SECTION_NAMED("CreateSystemInterface");
-		ModuleInitISystem(pSystem.get(), "CrySystem");
+			LOADING_TIME_PROFILE_SECTION_NAMED("CreateSystemInterface");
+			ModuleInitISystem(pSystem.get(), "CrySystem");
 #if CRY_PLATFORM_DURANGO
-	#if !defined(_LIB)
-		gEnv = pSystem->GetGlobalEnvironment();
-	#endif
-		gEnv->pWindow = startupParams.hWnd;
+#if !defined(_LIB)
+			gEnv = pSystem->GetGlobalEnvironment();
+#endif
+			gEnv->pWindow = startupParams.hWnd;
 #endif
 
 #if CRY_PLATFORM_WINDOWS
-		// Install exception handler in Release modes.
-		((DebugCallStack*)IDebugCallStack::instance())->installErrorHandler(pSystem.get());
+			// Install exception handler in Release modes.
+			((DebugCallStack*)IDebugCallStack::instance())->installErrorHandler(pSystem.get());
 #endif
 
-		ICryFactoryRegistryImpl* pCryFactoryImpl = static_cast<ICryFactoryRegistryImpl*>(pSystem->GetCryFactoryRegistry());
-		pCryFactoryImpl->RegisterFactories(g_pHeadToRegFactories);
+			ICryFactoryRegistryImpl* pCryFactoryImpl = static_cast<ICryFactoryRegistryImpl*>(pSystem->GetCryFactoryRegistry());
+			pCryFactoryImpl->RegisterFactories(g_pHeadToRegFactories);
 
-		// the earliest point the system exists - w2e tell the callback
-		if (startupParams.pUserCallback)
-			startupParams.pUserCallback->OnSystemConnect(pSystem.get());
+			// the earliest point the system exists - w2e tell the callback
+			if (startupParams.pUserCallback)
+				startupParams.pUserCallback->OnSystemConnect(pSystem.get());
 
-		if (!pSystem->Initialize(startupParams))
-		{
-			CryMessageBox("CrySystem initialization failed!", "Engine initialization failed!");
-			pSystem.release();
-			startupParams.pSystem = nullptr;
-			gEnv->pSystem = nullptr;
+			if (!pSystem->Initialize(startupParams))
+			{
+				CryMessageBox("CrySystem initialization failed!", "Engine initialization failed!");
+				pSystem.release();
+				startupParams.pSystem = nullptr;
+				gEnv->pSystem = nullptr;
 
-			return nullptr;
+				return nullptr;
+			}
+
+			pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CRYSYSTEM_INIT_DONE, 0, 0);
+			pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_system, "CSystemEventListener_System");
 		}
-
-		pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CRYSYSTEM_INIT_DONE, 0, 0);
-		pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_system, "CSystemEventListener_System");
 
 		// run main loop
 		if (!bManualEngineLoop)

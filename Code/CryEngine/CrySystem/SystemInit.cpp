@@ -2405,7 +2405,6 @@ static bool CheckCPURequirements(CCpuFeatures* pCpu, CSystem* pSystem)
 /////////////////////////////////////////////////////////////////////////////////
 bool CSystem::Initialize(SSystemInitParams& startupParams)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Main");
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CSystem: Init");
 
 	// Fix to improve wait() time within third-party APIs
