@@ -2,10 +2,8 @@
 
 #include "StdAfx.h"
 #include "ParticleComponent.h"
+#include "ParticleEffect.h"
 #include "ParticleSystem.h"
-#include "ParticleComponentRuntime.h"
-#include "ParticleEmitter.h"
-#include "Features/FeatureMotion.h"
 #include <CrySerialization/STL.h>
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/SmartPtr.h>
@@ -27,7 +25,6 @@ MakeDataType(EPVF_Position,         Vec3);
 MakeDataType(EPVF_Velocity,         Vec3);
 MakeDataType(EPQF_Orientation,      Quat);
 MakeDataType(EPVF_AngularVelocity,  Vec3);
-
 
 void SVisibilityParams::Combine(const SVisibilityParams& o) // Combination from multiple features chooses most restrictive values
 {
@@ -191,18 +188,34 @@ void CParticleComponent::AddParticleData(EParticleDataType type)
 	m_pUseData->AddData(type);
 }
 
-void CParticleComponent::SetParent(IParticleComponent* pParentComponent)
+bool CParticleComponent::SetParent(IParticleComponent* pParent, int position)
 {
-	if (m_parent == pParentComponent)
-		return;
-	if (pParentComponent && !pParentComponent->CanBeParent(this))
-		return;
-	if (m_parent)
-		stl::find_and_erase(m_parent->m_children, this);
-	m_parent = static_cast<CParticleComponent*>(pParentComponent);
-	if (m_parent)
-		stl::push_back_unique(m_parent->m_children, this);
+	auto newParent = static_cast<CParticleComponent*>(pParent);
+	if (m_parent == newParent)
+	{
+		if (position < 0)
+			return true;
+		int index = GetIndex(true);
+		if (position == index)
+			return true;
+		if (position > index)
+			position--;
+	}
+
+	if (newParent && !newParent->CanBeParent(this))
+		return false;
+
+	stl::find_and_erase(GetParentChildren(), this);
+	m_parent = newParent;
+	auto& children = GetParentChildren();
+
+	position = min((uint)position, (uint)children.size());
+	children.insert(children.begin() + position, this);
+	if (!m_parent)
+		m_pEffect->SortFromTop();
 	SetChanged();
+	assert(GetIndex(true) == position);
+	return true;
 }
 
 bool CParticleComponent::CanBeParent(IParticleComponent* child) const
@@ -219,6 +232,18 @@ bool CParticleComponent::CanBeParent(IParticleComponent* child) const
 	return true;
 }
 
+uint CParticleComponent::GetIndex(bool fromParent /*= false*/)
+{
+	if (!fromParent)
+		return m_componentId;
+
+	const auto& children = GetParentChildren();
+	for (uint index = 0; index < children.size(); ++index)
+		if (children[index] == this)
+			return index;
+	return children.size();
+}
+
 void CParticleComponent::GetMaxParticleCounts(int& total, int& perFrame, float minFPS, float maxFPS) const
 {
  	m_params.GetMaxParticleCounts(total, perFrame, minFPS, maxFPS);
@@ -229,6 +254,16 @@ void CParticleComponent::GetMaxParticleCounts(int& total, int& perFrame, float m
 		total *= totalParent;
 		perFrame *= totalParent;
 	}
+}
+
+const pfx2::CParticleComponent::TComponents& CParticleComponent::GetParentChildren() const
+{
+	return m_parent ? m_parent->m_children : m_pEffect->GetTopComponents();
+}
+
+pfx2::CParticleComponent::TComponents& CParticleComponent::GetParentChildren()
+{
+	return m_parent ? m_parent->m_children : m_pEffect->GetTopComponents();
 }
 
 void CParticleComponent::UpdateTimings()
@@ -336,6 +371,7 @@ void CParticleComponent::Compile()
 	}
 
 	// add default features
+	m_defaultFeatures.clear();
 	for (uint b = 1; b < EFT_END; b <<= 1)
 	{
 		if (!(featureMask & b))
@@ -346,7 +382,7 @@ void CParticleComponent::Compile()
 				{
 					if (auto* feature = static_cast<CParticleFeature*>(params->m_pFactory()))
 					{
-						m_features.push_back(feature);
+						m_defaultFeatures.push_back(feature);
 						feature->AddToComponent(this, &m_params);
 					}
 				}

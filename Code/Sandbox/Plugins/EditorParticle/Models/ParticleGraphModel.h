@@ -40,7 +40,7 @@ class CParticleGraphModel : public CryGraphEditor::CNodeGraphViewModel
 	Q_OBJECT
 
 public:
-	CParticleGraphModel(pfx2::IParticleEffectPfx2& effect);
+	CParticleGraphModel(pfx2::IParticleEffect& effect);
 	virtual ~CParticleGraphModel();
 
 	// NodeGraph::CNodeGraphViewModel
@@ -66,16 +66,18 @@ public:
 	CNodeItem*                       CreateNode(const char* szTemplateName, const QPointF& position);
 	CConnectionItem*                 CreateConnection(CBasePinItem& sourcePin, CBasePinItem& targetPin);
 
-	const pfx2::IParticleEffectPfx2& GetEffectInterface() const { return m_effect; }
+	const pfx2::IParticleEffect& GetEffectInterface() const { return m_effect; }
 
 	CNodeItem*                       GetNodeItemById(string identifier) const;
 
 	void                             ToggleSoloNode(CNodeItem& node);
 	CNodeItem*                       GetSoloNode() const { return m_pSolorNode; }
 
-	void                             OnNodeItemChanged(CryGraphEditor::CAbstractNodeItem* pItem);
+	void                             OnNodeItemChanged(CNodeItem* pItem);
+	void                             Clear();
+	void                             Refresh();
 
-	CCrySignal<void()> signalChanged;
+	CCrySignal<void(pfx2::IParticleComponent*)> signalChanged;
 
 protected:
 	void       ExtractConnectionsFromNodes();
@@ -86,7 +88,7 @@ private:
 	std::vector<CNodeItem*>       m_nodes;
 	std::vector<CConnectionItem*> m_connections;
 
-	pfx2::IParticleEffectPfx2&    m_effect;
+	pfx2::IParticleEffect&    m_effect;
 
 	bool                          m_isValid;
 	CNodeItem*                    m_pSolorNode;

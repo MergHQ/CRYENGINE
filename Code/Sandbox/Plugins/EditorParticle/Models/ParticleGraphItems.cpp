@@ -125,6 +125,7 @@ void CNodeItem::SetName(const QString& name)
 	{
 		m_component.SetName(newName.c_str());
 		CAbstractNodeItem::SetName(GetName());
+		OnChanged();
 
 		// TODO: Move this into an CAbstractNodeItem method.
 		if (GetIEditor()->GetIUndoManager()->IsUndoRecording())
@@ -146,7 +147,7 @@ void CNodeItem::SetDeactivated(bool isDeactivated)
 	{
 		m_component.SetEnabled(!isDeactivated);
 		SignalDeactivatedChanged(isDeactivated);
-		static_cast<CParticleGraphModel*>(&GetViewModel())->OnNodeItemChanged(this);
+		OnChanged();
 	}
 }
 
@@ -230,7 +231,7 @@ CChildPinItem* CNodeItem::GetChildPinItem()
 uint32 CNodeItem::GetIndex() const
 {
 	CParticleGraphModel& model = static_cast<CParticleGraphModel&>(GetViewModel());
-	const pfx2::IParticleEffectPfx2& effect = model.GetEffectInterface();
+	const pfx2::IParticleEffect& effect = model.GetEffectInterface();
 
 	const uint32 numNodes = effect.GetNumComponents();
 	for (uint32 i = 0; i < numNodes; ++i)
@@ -256,6 +257,7 @@ CFeatureItem* CNodeItem::AddFeature(uint32 index, const pfx2::SParticleFeaturePa
 			m_pins.push_back(pFeatureItem->GetPinItem());
 		}
 		SignalFeatureAdded(*pFeatureItem);
+		OnChanged();
 
 		if (GetIEditor()->GetIUndoManager()->IsUndoRecording())
 		{
@@ -274,7 +276,6 @@ void CNodeItem::RemoveFeature(uint32 index)
 		CFeatureItem* pFeatureItem = m_features.at(index);
 
 		GetViewModel().SignalRemoveCustomItem(*pFeatureItem);
-		SignalFeatureRemoved(*pFeatureItem);
 
 		m_features.erase(m_features.begin() + index);
 
@@ -297,10 +298,12 @@ void CNodeItem::RemoveFeature(uint32 index)
 			CUndo::Record(new CUndoFeatureRemove(*pFeatureItem));
 
 		delete pFeatureItem;
+		SignalFeatureRemoved(*pFeatureItem);
 	}
 
 	if (index < m_component.GetNumFeatures())
 		m_component.RemoveFeature(index);
+	OnChanged();
 }
 
 bool CNodeItem::MoveFeatureAtIndex(uint32 featureIndex, uint32 destIndex)
@@ -329,6 +332,7 @@ bool CNodeItem::MoveFeatureAtIndex(uint32 featureIndex, uint32 destIndex)
 		if (m_component.GetFeature(destIndex) == &pFeatureItem->GetFeatureInterface())
 		{
 			SignalFeatureMoved(*pFeatureItem);
+			OnChanged();
 			if (GetIEditor()->GetIUndoManager()->IsUndoRecording())
 			{
 				CUndo::Record(new CUndoFeatureMove(*pFeatureItem, featureIndex));
@@ -345,13 +349,18 @@ void CNodeItem::SetVisible(bool isVisible)
 	{
 		m_component.SetVisible(isVisible);
 		SignalVisibleChanged(isVisible);
-		static_cast<CParticleGraphModel*>(&GetViewModel())->OnNodeItemChanged(this);
+		OnChanged();
 	}
 }
 
 bool CNodeItem::IsVisible()
 {
 	return m_component.IsVisible();
+}
+
+void CNodeItem::OnChanged()
+{
+	static_cast<CParticleGraphModel*>(&GetViewModel())->OnNodeItemChanged(this);
 }
 
 CFeaturePinItem::CFeaturePinItem(CFeatureItem& feature)
@@ -432,7 +441,7 @@ void CFeatureItem::SetDeactivated(bool isDeactivated)
 		// Note: Property tree listens only to node properties changed
 		//			 events. So at least for now we need to invalidate the whole node.
 		m_node.SignalInvalidated();
-		static_cast<CParticleGraphModel*>(&GetViewModel())->OnNodeItemChanged(&m_node);
+		m_node.OnChanged();
 	}
 }
 

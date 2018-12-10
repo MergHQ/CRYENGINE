@@ -29,11 +29,23 @@
 
 namespace CryParticleEditor {
 
-CParticleGraphModel::CParticleGraphModel(pfx2::IParticleEffectPfx2& effect)
+CParticleGraphModel::CParticleGraphModel(pfx2::IParticleEffect& effect)
 	: m_effect(effect)
 	, m_isValid(true)
 	, m_pSolorNode(nullptr)
 {
+	Refresh();
+}
+
+CParticleGraphModel::~CParticleGraphModel()
+{
+	Clear();
+}
+
+void CParticleGraphModel::Refresh()
+{
+	Clear();
+
 	uint32 numVisibleNodes = 0;
 	CNodeItem* pSoloNode = nullptr;
 
@@ -63,17 +75,19 @@ CParticleGraphModel::CParticleGraphModel(pfx2::IParticleEffectPfx2& effect)
 	ExtractConnectionsFromNodes();
 }
 
-CParticleGraphModel::~CParticleGraphModel()
+void CParticleGraphModel::Clear()
 {
 	for (CConnectionItem* pConnectionitem : m_connections)
 	{
 		delete pConnectionitem;
 	}
+	m_connections.clear();
 
 	for (CNodeItem* pNodeItem : m_nodes)
 	{
 		delete pNodeItem;
 	}
+	m_nodes.clear();
 }
 
 QString CParticleGraphModel::GetGraphName()
@@ -123,9 +137,9 @@ void CParticleGraphModel::ToggleSoloNode(CNodeItem& node)
 	}
 }
 
-void CParticleGraphModel::OnNodeItemChanged(CryGraphEditor::CAbstractNodeItem* pItem)
+void CParticleGraphModel::OnNodeItemChanged(CNodeItem* pItem)
 {
-	signalChanged();
+	signalChanged(&pItem->GetComponentInterface());
 }
 
 CryGraphEditor::CAbstractNodeItem* CParticleGraphModel::CreateNode(QVariant identifier, const QPointF& position)

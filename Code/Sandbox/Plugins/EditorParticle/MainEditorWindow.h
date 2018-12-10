@@ -28,7 +28,7 @@ class CCurveEditorPanel;
 
 namespace pfx2
 {
-struct IParticleEffectPfx2;
+struct IParticleEffect;
 }
 
 namespace CryParticleEditor
@@ -94,9 +94,6 @@ protected Q_SLOTS:
 	void OnEffectOptionsChanged();
 
 	void OnNewComponent();
-
-private:
-	CEffectAssetWidget* CreateEffectAssetWidget();
 
 private:
 	std::unique_ptr<CEffectAssetModel> m_pEffectAssetModel;
