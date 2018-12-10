@@ -104,7 +104,7 @@ bool CryAssert(const char* szCondition, const char* szFile, unsigned int line, b
 		fclose(assert_file);
 
 #if defined(eCryModule)
-		const char* szModuleName = g_moduleNames[eCryModule];
+		const char* szModuleName = GetCryModuleName(eCryModule);
 #else
 		const char* szModuleName = "Undefined";
 #endif
