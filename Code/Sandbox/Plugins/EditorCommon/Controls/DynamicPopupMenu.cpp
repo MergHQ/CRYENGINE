@@ -21,6 +21,18 @@ public:
 	CPopupMenuItemCommand(const char* text, const char* command)
 		: CPopupMenuItem(text)
 		, m_command(command)
+		, m_shouldUseText(true)
+	{
+		m_function = [&]()
+		{
+			GetIEditor()->GetICommandManager()->Execute(m_command);
+		};
+	}
+
+	CPopupMenuItemCommand(const char* command)
+		: CPopupMenuItem(command)
+		, m_command(command)
+		, m_shouldUseText(false)
 	{
 		m_function = [&]()
 		{
@@ -30,9 +42,11 @@ public:
 
 	virtual bool IsEditorCommand()  { return true; }
 	const char*  GetCommand() const { return m_command; }
-
+	//We are using the item text instead of editor command description for the generated qaction text
+	bool ShouldUseText() const { return m_shouldUseText; }
 private:
 	string m_command;
+	bool m_shouldUseText;
 };
 
 /////////////////////////////////////////////////////////////////////////
@@ -132,6 +146,13 @@ CPopupMenuItem& CPopupMenuItem::AddCommand(const char* text, string commandToExe
 	return *item;
 }
 
+CPopupMenuItem& CPopupMenuItem::AddCommand(string commandToExecute)
+{
+	CPopupMenuItemCommand* item = new CPopupMenuItemCommand(commandToExecute);
+	AddChildren(item);
+	return *item;
+}
+
 CPopupMenuItem* CPopupMenuItem::Find(const char* text)
 {
 	for (Children::iterator it = m_children.begin(); it != m_children.end(); ++it)
@@ -173,10 +194,24 @@ void CDynamicPopupMenu::PopulateQMenu(class QMenu* menu, CPopupMenuItem* parentI
 				menu->addSeparator();
 			else if (childItem->IsEditorCommand())
 			{
-				const char* cmd = static_cast<CPopupMenuItemCommand*>(childItem.get())->GetCommand();
-				QAction* action = GetIEditor()->GetICommandManager()->GetAction(cmd, text.c_str());
-				action->setEnabled(childItem->IsEnabled());
-				menu->addAction(action);
+
+				CPopupMenuItemCommand* pPopupMenuItem = static_cast<CPopupMenuItemCommand*>(childItem.get());
+				const char* cmd = pPopupMenuItem->GetCommand();
+				
+				//If we want to use all default ui data from this command or override with our own text
+				if (!pPopupMenuItem->ShouldUseText())
+				{
+					QAction* action = GetIEditor()->GetICommandManager()->GetAction(cmd);
+					action->setEnabled(childItem->IsEnabled());
+					menu->addAction(action);
+				}
+				else
+				{
+					QAction* action = GetIEditor()->GetICommandManager()->CreateNewAction(cmd);
+					action->setText(QString(text));
+					action->setEnabled(childItem->IsEnabled());
+					menu->addAction(action);
+				}
 			}
 			else
 			{

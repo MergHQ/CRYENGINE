@@ -42,11 +42,11 @@ public:
 
 	CPopupMenuItem& Add(const char* text, const char* icon, const std::function<void()>& function);
 
-	//! Useful if a menu item is tied to an editor command. The menu item will then use all the properties of the editor command and its ui action
+	//! Add an editor command
+	//! \param text message used on the added menu item instead of the default command description
 	CPopupMenuItem& AddCommand(const char* text, string commandToExecute);
-
-	//! Deprecated method
-	/*CPopupMenuItem& Add(const char* text, const Functor0& functor);*/
+	//! Add an editor command, uses all UI properties from that command (if the command has any)
+	CPopupMenuItem& AddCommand(string commandToExecute);
 
 	//! Deprecated method
 	template<class Arg1>
@@ -68,9 +68,6 @@ public:
 
 	//! sets mouse hover function
 	void SetHoverFunction(std::function<void()> hoverFunc) { m_hoverFunc = hoverFunc; }
-
-	//TODO : handle hotkeys here
-	//void SetHotkey(const CKeyboardShortcut& hotkey) { m_hotkey = hotkey; }
 
 protected:
 

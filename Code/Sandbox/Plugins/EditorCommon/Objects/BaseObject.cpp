@@ -3402,20 +3402,20 @@ void CBaseObject::OnContextMenu(CPopupMenuItem* menu)
 	}
 
 	// Group and prefab menu items
-	menu->AddCommand("Create Group", "group.create_from_selection");
-	menu->AddCommand("Create Prefab", "prefab.create_from_selection");
-	menu->AddCommand("Add to...", "group.attach_to");
+	menu->AddCommand("group.create_from_selection");
+	menu->AddCommand("prefab.create_from_selection");
+	menu->AddCommand("group.attach_to");
 
-	CPopupMenuItem& detachItem = menu->AddCommand("Detach", "group.detach");
-	CPopupMenuItem& detachToRootItem = menu->AddCommand("Detach from Hierarchy", "group.detach_from_hierarchy");
+	CPopupMenuItem& detachItem = menu->AddCommand("group.detach");
+	CPopupMenuItem& detachToRootItem = menu->AddCommand("group.detach_from_hierarchy");
 
 	// Linking menu items
 	menu->AddSeparator();
 
 	ICommandManager* pCommandManager = GetIEditor()->GetICommandManager();
 
-	menu->AddCommand("Link to...", "tools.link_to_pick");
-	CPopupMenuItem& unlinkItem = menu->AddCommand("Unlink", "tools.unlink");
+	menu->AddCommand("tools.link_to_pick");
+	CPopupMenuItem& unlinkItem = menu->AddCommand("tools.unlink");
 
 	CBaseObject* pGroup = GetGroup();
 	bool bEnableDetach = pGroup && GetIEditor()->IsGroupOpen(pGroup);
@@ -3426,7 +3426,7 @@ void CBaseObject::OnContextMenu(CPopupMenuItem* menu)
 	// Other object menu items
 	menu->AddSeparator();
 
-	menu->AddCommand("Delete", "general.delete");
+	menu->AddCommand("general.delete");
 
 	CPopupMenuItem& transformMenu = menu->Add("Transform");
 	transformMenu.Add("Clear Rotation", [=]
