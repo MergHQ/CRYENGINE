@@ -29,9 +29,11 @@ enum class EObjectRequestType : EnumFlagsType
 	SetCurrentEnvironments,
 	SetEnvironment,
 	ProcessPhysicsRay,
-	SetName,
 	ToggleAbsoluteVelocityTracking,
 	ToggleRelativeVelocityTracking,
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	SetName,
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -351,25 +353,6 @@ struct SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> final : public 
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SObjectRequestData<EObjectRequestType::SetName> final : public SObjectRequestDataBase
-{
-	explicit SObjectRequestData(CObject* const pObject_, char const* const szName)
-		: SObjectRequestDataBase(EObjectRequestType::SetName, pObject_)
-		, name(szName)
-	{}
-
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::SetName> const* const pORData)
-		: SObjectRequestDataBase(EObjectRequestType::SetName, pORData->pObject)
-		, name(pORData->name)
-	{}
-
-	virtual ~SObjectRequestData() override = default;
-
-	CryFixedStringT<MaxObjectNameLength> const name;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<>
 struct SObjectRequestData<EObjectRequestType::ToggleAbsoluteVelocityTracking> final : public SObjectRequestDataBase
 {
 	explicit SObjectRequestData(CObject* const pObject_, bool const isEnabled_)
@@ -405,4 +388,25 @@ struct SObjectRequestData<EObjectRequestType::ToggleRelativeVelocityTracking> fi
 
 	bool const isEnabled;
 };
-} // namespace CryAudio
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SObjectRequestData<EObjectRequestType::SetName> final : public SObjectRequestDataBase
+{
+	explicit SObjectRequestData(CObject* const pObject_, char const* const szName)
+		: SObjectRequestDataBase(EObjectRequestType::SetName, pObject_)
+		, name(szName)
+	{}
+
+	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::SetName> const* const pORData)
+		: SObjectRequestDataBase(EObjectRequestType::SetName, pORData->pObject)
+		, name(pORData->name)
+	{}
+
+	virtual ~SObjectRequestData() override = default;
+
+	CryFixedStringT<MaxObjectNameLength> const name;
+};
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+}      // namespace CryAudio

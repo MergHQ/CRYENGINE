@@ -9,5 +9,6 @@ namespace AssetManager
 {
 
 bool CollectDDSImageDetails(XmlNodeRef& xmlnode, const char* szFilename, IResourceCompiler* pRc);
+bool CollectTifImageDetails(XmlNodeRef& xmlnode, const char* szFilename, IResourceCompiler* pRc);
 
 }

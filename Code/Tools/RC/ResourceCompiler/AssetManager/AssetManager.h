@@ -16,7 +16,7 @@ public:
 	virtual bool SaveCryasset(const IConfig* const pConfig, const char* szSourceFilepath, size_t filesCount, const char** pFiles, const char* szOutputFolder) const override;
 
 private:
-	bool CollectMetadataDetails(XmlNodeRef& xml, const std::vector<string>& files) const;
+	bool CollectMetadataDetails(XmlNodeRef& xml, const string& file) const;
 private:
 	IResourceCompiler* m_pRc;
 

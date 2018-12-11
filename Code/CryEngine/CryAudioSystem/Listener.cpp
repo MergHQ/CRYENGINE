@@ -44,9 +44,11 @@ CTransformation const& CListener::GetTransformation() const
 //////////////////////////////////////////////////////////////////////////
 void CListener::SetName(char const* const szName, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	SListenerRequestData<EListenerRequestType::SetName> requestData(szName, this);
 	CRequest const request(&requestData, userData);
 	g_system.PushRequest(request);
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)

@@ -2020,12 +2020,13 @@ DWORD CImageUserDialog::ThreadStart()
 
 void CImageUserDialog::TriggerUpdatePreview(bool bFull)
 {
-	LOCK_MONITOR();
-
 	HWND hwnd = GetDlgItem(m_hWindow, IDC_PREVIEWON); 
 	assert(hwnd);
 
-	m_pImageCompiler->m_Props.m_bPreview = (Button_GetCheck(hwnd) != 0);
+	const bool updatePreview = (Button_GetCheck(hwnd) != 0);
+
+	LOCK_MONITOR();
+	m_pImageCompiler->m_Props.m_bPreview = updatePreview;
 	if (m_pImageCompiler->m_Props.m_bPreview)
 	{
 		m_eWorkerAction = (bFull ? WorkerActionUpdatePreview : WorkerActionUpdatePreviewOnly);

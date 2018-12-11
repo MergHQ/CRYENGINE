@@ -99,13 +99,13 @@ void CEventManager::DestructEvent(CEvent* const pEvent)
 	delete pEvent;
 }
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 size_t CEventManager::GetNumConstructed() const
 {
 	return m_constructedEvents.size();
 }
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 void CEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY) const
 {

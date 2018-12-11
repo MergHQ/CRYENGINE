@@ -206,10 +206,7 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize, uint16 const eventPoolSi
 	fmodResult = m_pSystem->initialize(g_cvars.m_maxChannels, studioInitFlags, initFlags, pExtraDriverData);
 	ASSERT_FMOD_OK;
 
-	if (!LoadMasterBanks())
-	{
-		return ERequestStatus::Failure;
-	}
+	LoadMasterBanks();
 
 	FMOD_3D_ATTRIBUTES attributes = {
 		{ 0 } };
@@ -347,16 +344,29 @@ void CImpl::ResumeAll()
 ERequestStatus CImpl::StopAllSounds()
 {
 	FMOD::Studio::Bus* pMasterBus = nullptr;
-	FMOD_RESULT fmodResult = m_pSystem->getBus(s_szBusPrefix, &pMasterBus);
-	ASSERT_FMOD_OK;
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	if (m_pSystem->getBus(s_szBusPrefix, &pMasterBus) != FMOD_OK)
+	{
+		Cry::Audio::Log(ELogType::Error, "Failed to get master bus during %s", __FUNCTION__);
+	}
+#else
+	m_pSystem->getBus(s_szBusPrefix, &pMasterBus);
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 	if (pMasterBus != nullptr)
 	{
-		fmodResult = pMasterBus->stopAllEvents(FMOD_STUDIO_STOP_IMMEDIATE);
-		ASSERT_FMOD_OK;
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+		if (pMasterBus->stopAllEvents(FMOD_STUDIO_STOP_IMMEDIATE) != FMOD_OK)
+		{
+			Cry::Audio::Log(ELogType::Error, "Failed to stop all events during %s", __FUNCTION__);
+		}
+#else
+		pMasterBus->stopAllEvents(FMOD_STUDIO_STOP_IMMEDIATE);
+#endif    // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 	}
 
-	return (fmodResult == FMOD_OK) ? ERequestStatus::Success : ERequestStatus::Failure;
+	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1094,7 +1104,7 @@ FMOD_RESULT F_CALLBACK FmodFileOpenCallback(const char* szName, unsigned int* pF
 FMOD_RESULT F_CALLBACK FmodFileCloseCallback(void* pHandle, void* pUserData)
 {
 	FMOD_RESULT fmodResult = FMOD_ERR_FILE_NOTFOUND;
-	FILE* const pFile = static_cast<FILE*>(pHandle);
+	auto const pFile = static_cast<FILE*>(pHandle);
 
 	if (gEnv->pCryPak->FClose(pFile) == 0)
 	{
@@ -1108,7 +1118,7 @@ FMOD_RESULT F_CALLBACK FmodFileCloseCallback(void* pHandle, void* pUserData)
 FMOD_RESULT F_CALLBACK FmodFileReadCallback(void* pHandle, void* pBuffer, unsigned int sizeBytes, unsigned int* pBytesRead, void* pUserData)
 {
 	FMOD_RESULT fmodResult = FMOD_ERR_FILE_NOTFOUND;
-	FILE* const pFile = static_cast<FILE*>(pHandle);
+	auto const pFile = static_cast<FILE*>(pHandle);
 	size_t const bytesRead = gEnv->pCryPak->FReadRaw(pBuffer, 1, static_cast<size_t>(sizeBytes), pFile);
 	*pBytesRead = bytesRead;
 
@@ -1128,7 +1138,7 @@ FMOD_RESULT F_CALLBACK FmodFileReadCallback(void* pHandle, void* pBuffer, unsign
 FMOD_RESULT F_CALLBACK FmodFileSeekCallback(void* pHandle, unsigned int pos, void* pUserData)
 {
 	FMOD_RESULT fmodResult = FMOD_ERR_FILE_COULDNOTSEEK;
-	FILE* const pFile = static_cast<FILE*>(pHandle);
+	auto const pFile = static_cast<FILE*>(pHandle);
 
 	if (gEnv->pCryPak->FSeek(pFile, static_cast<long>(pos), 0) == 0)
 	{
@@ -1154,7 +1164,7 @@ FMOD_RESULT CImpl::LoadBankCustom(char const* const szFileName, FMOD::Studio::Ba
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CImpl::LoadMasterBanks()
+void CImpl::LoadMasterBanks()
 {
 	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 	m_masterBankPath.clear();
@@ -1263,11 +1273,8 @@ bool CImpl::LoadMasterBanks()
 	{
 		// This does not qualify for a fallback to the NULL implementation!
 		// Still notify the user about this failure!
-		Cry::Audio::Log(ELogType::Error, "Fmod failed to load master banks");
-		return true;
+		Cry::Audio::Log(ELogType::Error, "Fmod failed to load master banks during %", __FUNCTION__);
 	}
-
-	return (fmodResult == FMOD_OK);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1314,13 +1321,27 @@ void CImpl::UnloadMasterBanks()
 void CImpl::MuteMasterBus(bool const shouldMute)
 {
 	FMOD::Studio::Bus* pMasterBus = nullptr;
-	FMOD_RESULT fmodResult = m_pSystem->getBus(s_szBusPrefix, &pMasterBus);
-	ASSERT_FMOD_OK;
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	if (m_pSystem->getBus(s_szBusPrefix, &pMasterBus) != FMOD_OK)
+	{
+		Cry::Audio::Log(ELogType::Error, "Failed to get master bus during %s", __FUNCTION__);
+	}
+#else
+	m_pSystem->getBus(s_szBusPrefix, &pMasterBus);
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 	if (pMasterBus != nullptr)
 	{
-		fmodResult = pMasterBus->setMute(shouldMute);
-		ASSERT_FMOD_OK;
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+		if (pMasterBus->setMute(shouldMute) != FMOD_OK)
+		{
+			char const* const szMuteUnmute = shouldMute ? "mute" : "unmute";
+			Cry::Audio::Log(ELogType::Error, "Failed to %s master bus during %s", szMuteUnmute, __FUNCTION__);
+		}
+#else
+		pMasterBus->setMute(shouldMute);
+#endif    // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 	}
 }
 
@@ -1328,13 +1349,27 @@ void CImpl::MuteMasterBus(bool const shouldMute)
 void CImpl::PauseMasterBus(bool const shouldPause)
 {
 	FMOD::Studio::Bus* pMasterBus = nullptr;
-	FMOD_RESULT fmodResult = m_pSystem->getBus(s_szBusPrefix, &pMasterBus);
-	ASSERT_FMOD_OK;
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	if (m_pSystem->getBus(s_szBusPrefix, &pMasterBus) != FMOD_OK)
+	{
+		Cry::Audio::Log(ELogType::Error, "Failed to get master bus during %s", __FUNCTION__);
+	}
+#else
+	m_pSystem->getBus(s_szBusPrefix, &pMasterBus);
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 	if (pMasterBus != nullptr)
 	{
-		fmodResult = pMasterBus->setPaused(shouldPause);
-		ASSERT_FMOD_OK;
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+		if (pMasterBus->setPaused(shouldPause) != FMOD_OK)
+		{
+			char const* const szPauseResume = shouldPause ? "pause" : "resume";
+			Cry::Audio::Log(ELogType::Error, "Failed to %s master bus during %s", szPauseResume, __FUNCTION__);
+		}
+#else
+		pMasterBus->setPaused(shouldPause);
+#endif    // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 	}
 }
 

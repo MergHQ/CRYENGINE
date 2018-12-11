@@ -82,7 +82,7 @@ private:
 	static char const* const s_szVcaPrefix;
 
 	void        CreateVersionString(CryFixedStringT<MaxInfoStringLength>& stringOut) const;
-	bool        LoadMasterBanks();
+	void        LoadMasterBanks();
 	void        UnloadMasterBanks();
 	void        MuteMasterBus(bool const shouldMute);
 	void        PauseMasterBus(bool const shouldPause);

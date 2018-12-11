@@ -28,16 +28,14 @@ public:
 	CEvent*        ConstructEvent();
 	void           DestructEvent(CEvent* const pEvent);
 
-	size_t         GetNumConstructed() const;
-
 private:
 
 	std::vector<CEvent*> m_constructedEvents;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:
-
-	void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY) const;
+	size_t GetNumConstructed() const;
+	void   DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY) const;
 
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };

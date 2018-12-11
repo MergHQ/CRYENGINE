@@ -14,7 +14,9 @@ enum class EListenerRequestType : EnumFlagsType
 {
 	None,
 	SetTransformation,
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	SetName,
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -69,6 +71,7 @@ struct SListenerRequestData<EListenerRequestType::SetTransformation> final : pub
 	CListener* const      pListener;
 };
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 template<>
 struct SListenerRequestData<EListenerRequestType::SetName> final : public SListenerRequestDataBase
@@ -90,4 +93,5 @@ struct SListenerRequestData<EListenerRequestType::SetName> final : public SListe
 	CListener* const                           pListener;
 	CryFixedStringT<MaxObjectNameLength> const name;
 };
-} // namespace CryAudio
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+}      // namespace CryAudio
