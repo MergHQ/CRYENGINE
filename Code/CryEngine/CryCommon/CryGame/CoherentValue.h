@@ -1,24 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description: a value which can tell whether it's changed
-
-   -------------------------------------------------------------------------
-   History:
-   - 06:05:2007  : Created by Marco Koegler
-
-*************************************************************************/
-#ifndef __COHERENTVALUE_H__
-#define __COHERENTVALUE_H__
-
 #pragma once
 
 #include <CryScriptSystem/IScriptSystem.h> // <> required for Interfuscator
 #include <CryNetwork/ISerialize.h>
 
+// A value which can tell whether it's changed
 template<typename T>
 class CCoherentValue
 {
@@ -105,5 +92,3 @@ private:
 	T    m_val;
 	bool m_dirty;
 };
-
-#endif//__COHERENTVALUE_H__

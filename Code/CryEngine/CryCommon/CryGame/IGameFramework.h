@@ -9,23 +9,64 @@
 #include <CryLobby/CommonICryMatchMaking.h>
 #include <CryNetwork/INetwork.h>
 
-struct pe_explosion;
-struct IPhysicalEntity;
 struct EventPhysRemoveEntityParts;
+struct IActionMapManager;
+struct IActor;
+struct IActorSystem;
+struct IAnimationGraphState;
+struct IAnimationStateNodeFactory;
+struct ICheckpointSystem;
 struct ICombatLog;
-struct ICooperativeAnimationManager;
-struct IGameSessionHandler;
-struct IRealtimeRemoteUpdate;
-struct IForceFeedbackSystem;
 struct ICommunicationVoiceLibrary;
+struct ICooperativeAnimationManager;
 struct ICustomActionManager;
 struct ICustomEventManager;
-struct ISerializeHelper;
-struct IGameVolumes;
+struct IDebrisMgr;
+struct IDebugHistoryManager;
+struct IDialogSystem;
+struct IEffectSystem;
+struct IFlowSystem;
+struct IForceFeedbackSystem;
 struct IGame;
-struct IGameServerNub;
+struct IGameChannel;
 struct IGameClientNub;
+struct IGameObject;
+struct IGameObjectExtension;
+struct IGameObjectSystem;
+struct IGameplayRecorder;
+struct IGameRules;
+struct IGameRulesSystem;
+struct IGameServerNub;
+struct IGameSessionHandler;
+struct IGameStatistics;
+struct IGameToEditorInterface;
+struct IGameTokenSystem;
+struct IGameVolumes;
+struct IItem;
+struct IItemSystem;
+struct ILanQueryListener;
+struct ILevelSystem;
+struct ILoadGame;
+struct IMannequin;
+struct IMaterialEffects;
+struct INetChannel;
+struct INetNub;
 struct INetworkedClientListener;
+struct IPhysicalEntity;
+struct IPlayerProfileManager;
+struct IRealtimeRemoteUpdate;
+struct ISaveGame;
+struct IScriptTable;
+struct ISerializeHelper;
+struct ISubtitleManager;
+struct ISystem;
+struct ITimeDemoRecorder;
+struct IUIDraw;
+struct IVehicle;
+struct IVehicleSystem;
+struct IViewSystem;
+struct IWeapon;
+struct pe_explosion;
 
 //! Define to control the logging of breakability code.
 #define BREAK_LOGGING 0
@@ -94,51 +135,6 @@ struct IGameObjectExtensionCreatorBase
     static C ## name ## Creator<T> creator;                                             \
     RegisterFactory(name, &creator, isAI);                                              \
   }
-
-struct ISystem;
-struct IUIDraw;
-struct ILanQueryListener;
-struct IActor;
-struct IActorSystem;
-struct IItem;
-struct IGameRules;
-struct IWeapon;
-struct IItemSystem;
-struct ILevelSystem;
-struct IActionMapManager;
-struct IGameChannel;
-struct IViewSystem;
-struct IVehicle;
-struct IVehicleSystem;
-struct IGameRulesSystem;
-struct IFlowSystem;
-struct IGameTokenSystem;
-struct IEffectSystem;
-struct IGameObject;
-struct IGameObjectExtension;
-struct IGameObjectSystem;
-struct IGameplayRecorder;
-struct IAnimationStateNodeFactory;
-struct ISaveGame;
-struct ILoadGame;
-struct IGameObject;
-struct IMaterialEffects;
-struct INetChannel;
-struct IPlayerProfileManager;
-struct IAnimationGraphState;
-struct INetNub;
-struct ISaveGame;
-struct ILoadGame;
-struct IDebugHistoryManager;
-struct IDebrisMgr;
-struct ISubtitleManager;
-struct IDialogSystem;
-struct IGameStatistics;
-struct ICheckpointSystem;
-struct IGameToEditorInterface;
-struct IMannequin;
-struct IScriptTable;
-struct ITimeDemoRecorder;
 
 struct SEntitySchedulingProfiles
 {

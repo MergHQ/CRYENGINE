@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _IGAME_VOLUMES_H_
-#define _IGAME_VOLUMES_H_
+#pragma once
 
 struct IGameVolumesEdit;
 
@@ -24,7 +23,7 @@ struct IGameVolumes
 	};
 
 	// <interfuscator:shuffle>
-	virtual ~IGameVolumes() {};
+	virtual ~IGameVolumes() {}
 
 	virtual IGameVolumesEdit* GetEditorInterface() = 0;
 
@@ -37,7 +36,7 @@ struct IGameVolumes
 struct IGameVolumesEdit
 {
 	// <interfuscator:shuffle>
-	virtual ~IGameVolumesEdit() {};
+	virtual ~IGameVolumesEdit() {}
 
 	virtual void        SetVolume(EntityId entityId, const IGameVolumes::VolumeInfo& volumeInfo) = 0;
 	virtual void        DestroyVolume(EntityId entityId) = 0;
@@ -49,5 +48,3 @@ struct IGameVolumesEdit
 	virtual void        Export(const char* fileName) const = 0;
 	// </interfuscator:shuffle>
 };
-
-#endif
