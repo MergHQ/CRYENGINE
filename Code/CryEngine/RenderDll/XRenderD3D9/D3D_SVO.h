@@ -206,6 +206,7 @@ protected:
 	  INIT_SVO_CVAR(int, e_svoRender);                              \
 	  INIT_SVO_CVAR(int, e_svoTI_ResScaleBase);                     \
 	  INIT_SVO_CVAR(int, e_svoTI_ResScaleAir);                      \
+	  INIT_SVO_CVAR(int, e_svoTI_ResScaleSpecular);                 \
 	  INIT_SVO_CVAR(int, e_svoTI_Active);                           \
 	  INIT_SVO_CVAR(int, e_svoTI_IntegrationMode);                  \
 	  INIT_SVO_CVAR(float, e_svoTI_InjectionMultiplier);            \
