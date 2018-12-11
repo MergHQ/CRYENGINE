@@ -5,6 +5,7 @@
 #include "Common/GraphicsPipelineStage.h"
 #include "Common/ComputeRenderPass.h"
 #include "Common/FullscreenPass.h"
+#include "TiledShading.h" // eDeferredMode
 
 constexpr uint32 MaxNumTileLights = 255;
 
@@ -55,7 +56,10 @@ public:
 	void GenerateLightList();
 	void Execute();
 
-	bool IsSeparateVolumeListGen();
+	static inline bool IsSeparateVolumeListGen()
+	{
+		return CRendererCVars::CV_r_DeferredShadingTiled == CTiledShadingStage::eDeferredMode_2Pass || CRendererCVars::CV_r_GraphicsPipelineMobile;
+	}
 
 	// Cubemap Array(s) ==================================================================
 
