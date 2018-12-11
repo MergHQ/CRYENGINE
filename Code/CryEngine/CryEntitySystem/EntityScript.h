@@ -85,7 +85,7 @@ enum EScriptStates
 };
 
 //! Structure that define current state of entity.
-//! Contains pointer to script functions that implement state behaivor.
+//! Contains pointer to script functions that implement state behavior.
 struct SScriptStateFunctions
 {
 	// Pointers to script state functions.
@@ -123,10 +123,10 @@ public:
 	CEntityScript();
 	~CEntityScript();
 
-	IScriptSystem* GetScriptSystem() const    { return m_pScriptSystem; };
-	IScriptTable*  GetScriptTable() const     { return m_pEntityTable; };
+	IScriptSystem* GetScriptSystem() const    { return m_pScriptSystem; }
+	IScriptTable*  GetScriptTable() const     { return m_pEntityTable; }
 
-	IScriptTable*  GetPropertiesTable() const { return m_pPropertiesTable; };
+	IScriptTable*  GetPropertiesTable() const { return m_pPropertiesTable; }
 
 	// Initialize entity script, return true if success.
 	// Init does not load the script. you must also call LoadScript before using it.
@@ -135,7 +135,7 @@ public:
 	// Initialise entity script from a (code-created) script table.
 	// Allows pure-C++ entities with no script file present.
 	virtual bool Init(const char* sTableName, IScriptTable* pScriptTable);
-	virtual void Release() { delete this; };
+	virtual void Release() { delete this; }
 
 	// Description:
 	//    Loads the script.
@@ -204,8 +204,8 @@ public:
 	void Call_OnTransformFromEditorDone(IScriptTable* pThis);
 
 	// Load events from the entity script.
-	int                       GetEventCount() const      { return m_events.size(); };
-	const SEntityScriptEvent& GetEvent(int nIndex) const { return m_events[nIndex]; };
+	int                       GetEventCount() const      { return m_events.size(); }
+	const SEntityScriptEvent& GetEvent(int nIndex) const { return m_events[nIndex]; }
 	const SEntityScriptEvent* FindEvent(const char* sEvent) const;
 
 	void                      CallEvent(IScriptTable* pThis, const char* sEvent, float fValue);

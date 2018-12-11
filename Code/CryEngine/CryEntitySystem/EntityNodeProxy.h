@@ -22,8 +22,8 @@ public:
 	virtual Cry::Entity::EventFlags GetEventMask() const final;
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual void         GetMemoryUsage(ICrySizer* pSizer) const final {};
-	virtual EEntityProxy GetProxyType() const final                    { return ENTITY_PROXY_ENTITYNODE; };
+	virtual void         GetMemoryUsage(ICrySizer* pSizer) const final {}
+	virtual EEntityProxy GetProxyType() const final                    { return ENTITY_PROXY_ENTITYNODE; }
 
 	virtual void         Release() final                               { delete this; }
 };

@@ -1,22 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-//
-//	File:Cry_Camera.h
-//	Description: Common Camera class implementation
-//
-//	History:
-//	-Mar 28,2001: created by Marco Corbetta
-//	-Feb 08,2003: taken over by Ivo Herzeg
-//	-Aug 02,2004: rewritten from scratch by Ivo Herzeg
-//
-//////////////////////////////////////////////////////////////////////
-
-#ifndef CAMERA_H
-#define CAMERA_H
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <CryMath/Cry_Math.h>
 #include <CryMath/Cry_Geo.h>
@@ -87,7 +71,6 @@ public:
 	};
 
 public:
-	// constructor/destructor
 	CCamera()
 	{
 		m_Matrix.SetIdentity();
@@ -114,14 +97,14 @@ public:
 	ILINE static Ang3     CreateAnglesYPR(const Matrix33& m);
 	ILINE static Ang3     CreateAnglesYPR(const Vec3& vdir, f32 r = 0);
 	ILINE static Vec3     CreateViewdir(const Ang3& ypr);
-	ILINE static Vec3     CreateViewdir(const Matrix33& m)       { return m.GetColumn1(); };
+	ILINE static Vec3     CreateViewdir(const Matrix33& m)       { return m.GetColumn1(); }
 
-	ILINE void            SetMatrix(const Matrix34& mat)         { CRY_MATH_ASSERT(mat.IsOrthonormal()); m_Matrix = mat; UpdateFrustum(); };
-	ILINE void            SetMatrixNoUpdate(const Matrix34& mat) { CRY_MATH_ASSERT(mat.IsOrthonormal()); m_Matrix = mat; };
-	ILINE const Matrix34& GetMatrix() const                      { return m_Matrix; };
-	ILINE Vec3            GetViewdir() const                     { return m_Matrix.GetColumn1(); };
+	ILINE void            SetMatrix(const Matrix34& mat)         { CRY_MATH_ASSERT(mat.IsOrthonormal()); m_Matrix = mat; UpdateFrustum(); }
+	ILINE void            SetMatrixNoUpdate(const Matrix34& mat) { CRY_MATH_ASSERT(mat.IsOrthonormal()); m_Matrix = mat; }
+	ILINE const Matrix34& GetMatrix() const                      { return m_Matrix; }
+	ILINE Vec3            GetViewdir() const                     { return m_Matrix.GetColumn1(); }
 
-	ILINE Matrix34        GetViewMatrix() const                  { return m_Matrix.GetInverted(); };
+	ILINE Matrix34        GetViewMatrix() const                  { return m_Matrix.GetInverted(); }
 	ILINE Vec3            GetPosition() const                    { return m_Matrix.GetTranslation(); }
 	ILINE void            SetPosition(const Vec3& p)             { m_Matrix.SetTranslation(p); UpdateFrustum(); }
 	ILINE void            SetPositionNoUpdate(const Vec3& p)     { m_Matrix.SetTranslation(p); }
@@ -131,8 +114,8 @@ public:
 	ILINE void            CalcScreenBounds(int* vOut, const AABB* pAABB, int nWidth, int nHeight) const;
 	ILINE Vec3            GetUp() const { return m_Matrix.GetColumn2(); }
 
-	ILINE const Matrix44& GetRenderViewMatrix() const            { return m_renderViewMatrix; };
-	ILINE const Matrix44& GetRenderProjectionMatrix() const      { return m_renderProjectionMatrix; };
+	ILINE const Matrix44& GetRenderViewMatrix() const            { return m_renderViewMatrix; }
+	ILINE const Matrix44& GetRenderProjectionMatrix() const      { return m_renderProjectionMatrix; }
 	
 	ILINE const Vec3      GetRenderVectorX() const               { return m_renderVecX; }
 	ILINE const Vec3      GetRenderVectorY() const               { return m_renderVecY; }
@@ -149,7 +132,7 @@ public:
 	ILINE float        GetHorizontalFov() const;
 	ILINE f32          GetNearPlane() const                             { return m_edge_nlt.y; }
 	ILINE f32          GetFarPlane() const                              { return m_edge_flt.y; }
-	ILINE f32          GetProjRatio() const                             { return(m_ProjectionRatio); }
+	ILINE f32          GetProjRatio() const                             { return m_ProjectionRatio; }
 	ILINE f32          GetAngularResolution() const                     { return m_Height / m_fov; }
 	ILINE f32          GetPixelAspectRatio() const                      { return m_PixelAspectRatio; }
 
@@ -180,7 +163,7 @@ public:
 		// Clamp to 0-1 range.
 		m_zrangeMin = min(1.0f, max(0.0f, zmin));
 		m_zrangeMax = min(1.0f, max(0.0f, zmax));
-	};
+	}
 	ILINE float GetZRangeMin() const { return m_zrangeMin; }
 	ILINE float GetZRangeMax() const { return m_zrangeMax; }
 
@@ -233,10 +216,10 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Oblique Clip Plane support
 	void         SetObliqueClipPlane( const Plane &plane ) { m_obliqueClipPlane = plane; }
-	const Plane& GetObliqueClipPlane() const               { return m_obliqueClipPlane; };
+	const Plane& GetObliqueClipPlane() const               { return m_obliqueClipPlane; }
 
-	void         SetObliqueClipPlaneEnabled( bool bEnabled ) { m_bObliqueClipPlaneEnabled = bEnabled; };
-	bool         IsObliqueClipPlaneEnabled() const           { return m_bObliqueClipPlaneEnabled; };
+	void         SetObliqueClipPlaneEnabled( bool bEnabled ) { m_bObliqueClipPlaneEnabled = bEnabled; }
+	bool         IsObliqueClipPlaneEnabled() const           { return m_bObliqueClipPlaneEnabled; }
 
 private:
 	bool AdditionalCheck(const AABB& aabb) const;
@@ -422,7 +405,7 @@ inline Ang3 CCamera::CreateAnglesYPR(const Matrix33& m)
 //! <PRE>
 //! x-YAW
 //! y-PITCH (negative=looking down / positive=looking up)
-//! z-ROLL (its not possile to extract a "roll" from a view-vector)
+//! z-ROLL (its not possible to extract a "roll" from a view-vector)
 //! </PRE>
 //! \note If we are looking along the z-axis, its not possible to specify the rotation about the z-axis.
 ILINE Ang3 CCamera::CreateAnglesYPR(const Vec3& vdir, f32 r)
@@ -667,7 +650,7 @@ inline void CCamera::UpdateFrustum()
 	m_clbf = m33 * Vec3(+m_edge_flt.x, +m_edge_flt.y, -m_edge_flt.z);
 	m_crbf = m33 * Vec3(-m_edge_flt.x, +m_edge_flt.y, -m_edge_flt.z);
 
-	//! Calculate the six frustum-planes using the fustum edges in world-space.
+	//! Calculate the six frustum-planes using the frustum edges in world-space.
 	m_fp[FR_PLANE_NEAR] = Plane::CreatePlane(m_crtn + GetPosition(), m_cltn + GetPosition(), m_crbn + GetPosition());
 	m_fp[FR_PLANE_RIGHT] = Plane::CreatePlane(m_crbf + GetPosition(), m_crtf + GetPosition(), GetPosition());
 	m_fp[FR_PLANE_LEFT] = Plane::CreatePlane(m_cltf + GetPosition(), m_clbf + GetPosition(), GetPosition());
@@ -1089,7 +1072,7 @@ inline uint8 CCamera::IsAABBVisible_EH(const AABB& aabb) const
 }
 
 //! Makes culling taking into account presence of m_pMultiCamera.
-//! If m_pMultiCamera exists - object is visible if at least one of cameras see's it
+//! If m_pMultiCamera exists - object is visible if at least one of cameras sees it
 //! \return true if aabb is visible, false otherwise.
 inline bool CCamera::IsAABBVisible_EHM(const AABB& aabb, bool* pAllInside) const
 {
@@ -1121,14 +1104,14 @@ inline bool CCamera::IsAABBVisible_EHM(const AABB& aabb, bool* pAllInside) const
 }
 
 //! Makes culling taking into account presence of m_pMultiCamera.
-//! If m_pMultiCamera exists - object is visible if at least one of cameras see's it
+//! If m_pMultiCamera exists - object is visible if at least one of cameras sees it
 //! \return true if aabb is visible, false otherwise.
 ILINE bool CCamera::IsAABBVisible_EM(const AABB& aabb) const
 {
 	if (!m_pMultiCamera) // use main camera
 		return IsAABBVisible_E(aabb) != CULL_EXCLUSION;
 
-	// check several parallel cameras - object is visible if at least one camera see's it
+	// check several parallel cameras - object is visible if at least one camera sees it
 
 	for (int i = 0; i < m_pMultiCamera->Count(); i++)
 		if (m_pMultiCamera->GetAt(i).IsAABBVisible_E(aabb))
@@ -1138,7 +1121,7 @@ ILINE bool CCamera::IsAABBVisible_EM(const AABB& aabb) const
 }
 
 //! Makes culling taking into account presence of m_pMultiCamera.
-//! If m_pMultiCamera exists - object is visible if at least one of cameras see's it
+//! If m_pMultiCamera exists - object is visible if at least one of cameras sees it
 //! \return true if aabb is visible, false otherwise.
 ILINE bool CCamera::IsAABBVisible_FM(const AABB& aabb) const
 {
@@ -1147,7 +1130,7 @@ ILINE bool CCamera::IsAABBVisible_FM(const AABB& aabb) const
 	if (!m_pMultiCamera) // use main camera
 		return IsAABBVisible_F(aabb) != CULL_EXCLUSION;
 
-	// check several parallel cameras - object is visible if at least one camera see's it
+	// check several parallel cameras - object is visible if at least one camera sees it
 
 	for (int i = 0; i < m_pMultiCamera->Count(); i++)
 		if (m_pMultiCamera->GetAt(i).IsAABBVisible_F(aabb))
@@ -1291,7 +1274,7 @@ inline uint8 CCamera::IsOBBVisible_EH(const Vec3& wpos, const OBB& obb, f32 usca
 extern CRY_ALIGN(64) uint32 BoxSides[];
 
 //! A box can easily straddle one of the view-frustum planes far outside the view-frustum and in this case the previous test would return CULL_OVERLAP.
-//! \note With this check, we make sure the AABB is really not visble.
+//! \note With this check, we make sure the AABB is really not visible.
 NO_INLINE_WEAK bool CCamera::AdditionalCheck(const AABB& aabb) const
 {
 	Vec3d m = (aabb.min + aabb.max) * 0.5;
@@ -1330,7 +1313,7 @@ NO_INLINE_WEAK bool CCamera::AdditionalCheck(const AABB& aabb) const
 	frontx8 |= (umaxz.intVal >> 0x3f) & 0x100;  //if (AABB.max.z<0.0f)  frontx8|=0x100;
 
 	//check if camera is inside the aabb
-	if (frontx8 == 0) return CULL_OVERLAP; //AABB is patially visible
+	if (frontx8 == 0) return CULL_OVERLAP; //AABB is partially visible
 
 	Vec3d v[8] = {
 		Vec3d(vmin.x, vmin.y, vmin.z),
@@ -1389,7 +1372,7 @@ NO_INLINE_WEAK bool CCamera::AdditionalCheck(const AABB& aabb) const
 		Vec3d s5 = v[p5] % v[p0];
 		if ((s5 | m_cltp) > 0 && (s5 | m_crtp) > 0 && (s5 | m_crbp) > 0 && (s5 | m_clbp) > 0) return CULL_EXCLUSION;
 	}
-	return CULL_OVERLAP; //AABB is patially visible
+	return CULL_OVERLAP; //AABB is partially visible
 }
 
 //------------------------------------------------------------------------------
@@ -1474,5 +1457,3 @@ NO_INLINE_WEAK bool CCamera::AdditionalCheck(const Vec3& wpos, const OBB& obb, f
 	//now we are 100% sure that the OBB is visible on the screen
 	return CULL_OVERLAP;
 }
-
-#endif

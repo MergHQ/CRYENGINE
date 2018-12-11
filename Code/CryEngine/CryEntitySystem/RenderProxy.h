@@ -7,13 +7,14 @@
 #include <Cry3DEngine/IRenderNode.h>
 
 // forward declarations.
-class CEntitySlot;
-class CEntity;
-struct SRendParams;
-struct IShaderPublicParams;
-class CEntityRender;
 struct AnimEventInstance;
 struct IRenderNode;
+struct IShaderPublicParams;
+struct SRendParams; 
+
+class CEntity;
+class CEntityRender;
+class CEntitySlot;
 
 //////////////////////////////////////////////////////////////////////////
 // Description:
@@ -50,7 +51,7 @@ public:
 	float        GetLastSeenTime() const { return m_fLastSeenTime; }
 	//////////////////////////////////////////////////////////////////////////
 
-	bool                IsSlotValid(int nIndex) const { return nIndex >= 0 && nIndex < (int)m_slots.size() && m_slots[nIndex] != NULL; };
+	bool                IsSlotValid(int nIndex) const { return nIndex >= 0 && nIndex < (int)m_slots.size() && m_slots[nIndex] != NULL; }
 	int                 GetSlotCount() const;
 	bool                SetParentSlot(int nParentIndex, int nChildIndex);
 	bool                GetSlotInfo(int nIndex, SEntitySlotInfo& slotInfo) const;
@@ -104,8 +105,8 @@ public:
 	hidemask                          GetSubObjHideMask(int nSlot) const;
 
 	void                              SetRenderNodeParams(const IEntity::SRenderNodeParams& params);
-	IEntity::SRenderNodeParams&       GetRenderNodeParams()       { return m_renderNodeParams; };
-	const IEntity::SRenderNodeParams& GetRenderNodeParams() const { return m_renderNodeParams; };
+	IEntity::SRenderNodeParams&       GetRenderNodeParams()       { return m_renderNodeParams; }
+	const IEntity::SRenderNodeParams& GetRenderNodeParams() const { return m_renderNodeParams; }
 	//////////////////////////////////////////////////////////////////////////
 
 	// Internal slot access function.

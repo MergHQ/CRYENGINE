@@ -23,26 +23,25 @@
 #include <CryEntitySystem/IEntityBasicTypes.h>
 
 // Forward declarations
-struct SEntitySpawnParams;
-struct SEntityEvent;
-struct SEntityUpdateContext;
-struct IShaderPublicParams;
-struct IFlowGraph;
-struct IEntityEventListener;
-struct IPhysicalEntity;
-struct SSGHandle;
-struct a2DPoint;
-struct IRenderMesh;
-struct IClipVolume;
-struct IBSPTree3D;
-struct IMaterial;
-struct IScriptTable;
 struct AABB;
-struct IRenderNode;
+struct IBSPTree3D;
+struct IClipVolume;
 struct IEntity;
-struct INetworkSpawnParams;
+struct IEntityEventListener;
 struct IEntityScript;
+struct IFlowGraph;
+struct IMaterial;
+struct INetworkSpawnParams;
+struct IPhysicalEntity;
+struct IRenderMesh;
+struct IRenderNode;
+struct IScriptTable;
+struct IShaderPublicParams;
+struct SEntityEvent;
 struct SEntityPreviewContext;
+struct SEntitySpawnParams;
+struct SEntityUpdateContext;
+struct SSGHandle;
 
 namespace Schematyc
 {
@@ -382,7 +381,7 @@ protected:
 	virtual void Initialize() {}
 
 	//! Called on all Entity components right before all of the Entity Components are destructed.
-	virtual void OnShutDown() {};
+	virtual void OnShutDown() {}
 
 	//! Called when the transformation of the component is changed
 	virtual void OnTransformChanged() {}
@@ -420,7 +419,7 @@ public:
 	//! \see ISerialize::Value()
 	//! \par Example
 	//! \include CryEntitySystem/Examples/ComponentNetSerialize.cpp
-	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) { return true; };
+	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) { return true; }
 
 	//! Used to match an entity's state when it is replicated onto a remote machine.
 	//! This is called once when spawning an entity, in order to serialize its data - and once again on the remote client to deserialize the state.
@@ -449,11 +448,11 @@ public:
 
 public:
 	//! Set flags for this component
-	void SetComponentFlags(ComponentFlags flags) { m_componentFlags = flags; };
+	void SetComponentFlags(ComponentFlags flags) { m_componentFlags = flags; }
 
 	//! Return flags for this component
-	const ComponentFlags& GetComponentFlags() const { return m_componentFlags; };
-	ComponentFlags&       GetComponentFlags()       { return m_componentFlags; };
+	const ComponentFlags& GetComponentFlags() const { return m_componentFlags; }
+	ComponentFlags&       GetComponentFlags()       { return m_componentFlags; }
 
 	//! Return GUID of this component.
 	//! This GUID is only guaranteed to be unique within the host entity, different entities can have components with equal GUIDs.
@@ -463,7 +462,7 @@ public:
 
 	//! Return Parent component, only used by Schematyc components
 	//! Initialized by the PreInit call
-	IEntityComponent* GetParent() const { return m_pParent; };
+	IEntityComponent* GetParent() const { return m_pParent; }
 
 	//! Return Transformation of the entity component relative to the owning entity or parent component
 	const CryTransform::CTransformPtr& GetTransform() const { return m_pTransform; }
@@ -498,11 +497,11 @@ public:
 	void KillAllTimers();
 
 	//! Get name of this individual component, usually only Schematyc components will have names
-	const char* GetName() const { return m_name.c_str(); };
+	const char* GetName() const { return m_name.c_str(); }
 
 	//! Set a new name for this component
 	//! Names of the components don't have to be unique
-	void SetName(const char* szName) { m_name = szName; };
+	void SetName(const char* szName) { m_name = szName; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// HELPER METHODS FOR WORKING WITH ENTITY SLOTS
@@ -545,14 +544,14 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// BEGIN Deprecated Methods
 	//////////////////////////////////////////////////////////////////////////
-	virtual void GetMemoryUsage(ICrySizer* pSizer) const {};
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const {}
 
 	//! SaveGame serialization. Override to specify what to serialize in a saved game.
 	//! \param ser Serializing stream. Use IsReading() to decide read/write phase. Use Value() to read/write a property.
 	virtual void GameSerialize(TSerialize ser) {}
 	//! SaveGame serialization. Override to enable serialization for the component.
 	//! \return true If component needs to be serialized to/from a saved game.
-	virtual bool NeedGameSerialize() { return false; };
+	virtual bool NeedGameSerialize() { return false; }
 
 	//! Optionally serialize component to/from XML.
 	//! For user-facing properties, see GetProperties.
@@ -566,7 +565,7 @@ public:
 	virtual struct IEntityPropertyGroup* GetPropertyGroup() { return nullptr; }
 
 	//! Legacy, used for old entity proxies
-	virtual EEntityProxy GetProxyType() const { return ENTITY_PROXY_LAST; };
+	virtual EEntityProxy GetProxyType() const { return ENTITY_PROXY_LAST; }
 	//////////////////////////////////////////////////////////////////////////
 	// ~END Deprecated Methods
 	//////////////////////////////////////////////////////////////////////////

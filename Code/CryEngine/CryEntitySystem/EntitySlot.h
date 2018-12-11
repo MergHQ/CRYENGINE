@@ -51,9 +51,9 @@ public:
 	bool GetLocalBounds(AABB& bounds);
 
 	// Get local transformation matrix of entity object.
-	const Matrix34& GetLocalTM() const { return m_localTM; };
+	const Matrix34& GetLocalTM() const { return m_localTM; }
 	// Get world transformation matrix of entity object.
-	const Matrix34& GetWorldTM() const { return m_worldTM; };
+	const Matrix34& GetWorldTM() const { return m_worldTM; }
 
 	// Clear all contents of the slot.
 	void Clear();
@@ -75,10 +75,10 @@ public:
 	void       SetRenderFlag(bool bEnable);
 
 	void       SetHidemask(hidemask& mask);
-	hidemask   GetHidemask() const { return m_nSubObjHideMask; };
+	hidemask   GetHidemask() const { return m_nSubObjHideMask; }
 
 	void       SetMaterial(IMaterial* pMtl);
-	IMaterial* GetMaterial() const { return m_pMaterial; };
+	IMaterial* GetMaterial() const { return m_pMaterial; }
 
 	//! Fill SEntitySlotInfo structure with contents of the Entity Slot
 	void GetSlotInfo(SEntitySlotInfo& slotInfo) const;
@@ -116,7 +116,7 @@ public:
 	}
 
 	//! Assign parent slot index
-	void SetParent(int parent) { m_parent = parent; };
+	void SetParent(int parent) { m_parent = parent; }
 	//! Get parent slot index
 	int  GetParent() const     { return m_parent; }
 
@@ -128,7 +128,7 @@ public:
 	//! Render this slot fo previewing in Editor.
 	void PreviewRender(SEntityPreviewContext& context);
 
-	void SetNeedSerialize(bool bNeedSerialize) { m_bNeedSerialize = bNeedSerialize; };
+	void SetNeedSerialize(bool bNeedSerialize) { m_bNeedSerialize = bNeedSerialize; }
 	bool NeedSerialize() const                 { return m_bNeedSerialize; }
 
 private:

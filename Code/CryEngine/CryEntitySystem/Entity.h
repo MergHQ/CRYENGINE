@@ -429,7 +429,7 @@ public:
 	}
 	bool HasInternalFlag(EInternalFlag flag) const { return m_internalFlags.Check(flag); }
 
-	void RemoveSchematycObject() { m_pLegacySchematycData.reset(); };
+	void RemoveSchematycObject() { m_pLegacySchematycData.reset(); }
 	void CreateSchematycObject(const SEntitySpawnParams& params);
 
 protected:

@@ -622,9 +622,6 @@ CRY_TEST_SUITE(EntityTestsSuit)
 	class CTestLinkComponent : public IEntityComponent
 	{
 	public:
-		CTestLinkComponent() {};
-		~CTestLinkComponent() {};
-
 		void ProcessEvent(const SEntityEvent& event) override
 		{
 			if (event.event == Cry::Entity::EEvent::LinkAdded)

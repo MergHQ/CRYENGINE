@@ -28,24 +28,25 @@ struct IReflectionRegistry;
 } // ~Entity namespace
 } // ~Cry namespace
 
-class CEntity;
 struct ICVar;
-struct IPhysicalEntity;
 struct IEntityComponent;
-class CEntityClassRegistry;
-class CScriptBind_Entity;
-class CPhysicsEventListener;
+struct IPhysicalEntity;
+struct SEntityLayerGarbage;
+
 class CAreaManager;
 class CBreakableManager;
+class CCharacterBoneAttachmentManager;
+class CEntity;
 class CEntityArchetypeManager;
-class CPartitionGrid;
-class CProximityTriggerSystem;
+class CEntityClassRegistry;
+class CEntityComponentsCache;
 class CEntityLayer;
 class CEntityLoadManager;
-struct SEntityLayerGarbage;
 class CGeomCacheAttachmentManager;
-class CCharacterBoneAttachmentManager;
-class CEntityComponentsCache;
+class CPartitionGrid;
+class CPhysicsEventListener;
+class CProximityTriggerSystem;
+class CScriptBind_Entity;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -131,7 +132,7 @@ public:
 		//! This is not the "true" end of the array, as we check the maximum possible used index
 		iterator end() { return begin() + GetMaxUsedEntityIndex(); }
 		//! Returns an iterator referring to the past-the-end element of active entities
-		//! This is not the "true" end of the array, as we check the maximum epossible used index
+		//! This is not the "true" end of the array, as we check the maximum possible used index
 		const_iterator end() const { return begin() + GetMaxUsedEntityIndex(); }
 
 		CEntity*& operator[](const SEntityIdentifier id) { return m_array[id.GetIndex()]; }
@@ -186,7 +187,7 @@ public:
 	virtual void                              PauseTimers(bool bPause, bool bResume = false) final;
 	virtual bool                              IsIDUsed(EntityId nID) const final;
 	virtual void                              GetMemoryStatistics(ICrySizer* pSizer) const final;
-	virtual ISystem*                          GetSystem() const final { return m_pISystem; };
+	virtual ISystem*                          GetSystem() const final { return m_pISystem; }
 	virtual void                              SetNextSpawnId(EntityId id) final;
 	virtual void                              ResetAreas() final;
 	virtual void                              UnloadAreas() final;
@@ -280,13 +281,13 @@ public:
 
 	// Access to class that binds script to entity functions.
 	// Used by Script proxy.
-	CScriptBind_Entity* GetScriptBindEntity() { return m_pEntityScriptBinding; };
+	CScriptBind_Entity* GetScriptBindEntity() { return m_pEntityScriptBinding; }
 
 	// Access to area manager.
 	IAreaManager* GetAreaManager() const final { return (IAreaManager*)(m_pAreaManager); }
 
 	// Access to breakable manager.
-	virtual IBreakableManager*       GetBreakableManager() const final         { return m_pBreakableManager; };
+	virtual IBreakableManager*       GetBreakableManager() const final         { return m_pBreakableManager; }
 
 	CEntityLoadManager*              GetEntityLoadManager() const              { return m_pEntityLoadManager; }
 
@@ -308,7 +309,7 @@ public:
 	void                             ChangeEntityName(CEntity* pEntity, const char* sNewName);
 
 	CEntity*                         GetEntityFromID(EntityId id) const;
-	ILINE bool                       HasEntity(EntityId id) const { return GetEntityFromID(id) != 0; };
+	ILINE bool                       HasEntity(EntityId id) const { return GetEntityFromID(id) != 0; }
 
 	virtual void                     PurgeDeferredCollisionEvents(bool bForce = false) final;
 
