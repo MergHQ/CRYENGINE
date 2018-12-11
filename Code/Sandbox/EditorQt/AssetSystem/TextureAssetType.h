@@ -22,6 +22,7 @@ public:
 	virtual void                              GenerateThumbnail(const CAsset* pAsset) const override;
 	virtual QWidget*                          CreateBigInfoWidget(const CAsset* pAsset) const override;
 	virtual CAssetEditor*                     Edit(CAsset* asset) const override;
+	virtual void                              AppendContextMenuActions(const std::vector<CAsset*>& assets, CAbstractMenu* pMenu) const;
 
 private:
 	virtual CryIcon GetIconInternal() const override;
@@ -31,4 +32,5 @@ public:
 	static CItemModelAttribute s_widthAttribute;
 	static CItemModelAttribute s_heightAttribute;
 	static CItemModelAttribute s_mipCountAttribute;
+	static CItemModelAttribute s_parentAssetAttribute;
 };

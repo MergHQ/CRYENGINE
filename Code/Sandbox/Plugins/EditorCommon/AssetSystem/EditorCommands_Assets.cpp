@@ -1,15 +1,15 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include <StdAfx.h>
 
+#include "AssetManager.h"
+#include "AssetSystem/Browser/AssetDropHandler.h"
 #include "BoostPythonMacros.h"
-
+#include "Browser/AssetBrowser.h"
 #include "EditorFramework/Events.h"
+#include "FileDialogs/SystemFileDialog.h"
+#include "QtUtil.h"
 
 #include <IEditor.h>
-
-#include "QtUtil.h"
-#include "AssetSystem/Browser/AssetDropHandler.h"
-#include "FileDialogs/SystemFileDialog.h"
 
 namespace Private_EditorCommands
 {
@@ -24,6 +24,24 @@ void ShowInAssetBrowser(const char* path)
 	string cmd("asset.show_in_asset_browser ");
 	cmd += path;
 	CommandEvent(cmd.c_str()).SendToKeyboardFocus();
+}
+
+void ShowInNewAssetBrowser(const char* path)
+{
+	CAssetBrowser* const pAssetBrowser = static_cast<CAssetBrowser*>(GetIEditor()->CreateDockable("Asset Browser"));
+	if (pAssetBrowser)
+	{
+		pAssetBrowser->SelectAsset(path);
+	}
+}
+
+void EditAsset(const char* path)
+{
+	CAsset* const pAsset = GetIEditor()->GetAssetManager()->FindAssetForFile(path);
+	if (pAsset)
+	{
+		pAsset->Edit();
+	}
 }
 
 void ShowNewAssetBrowser()
@@ -72,7 +90,14 @@ DECLARE_PYTHON_MODULE(asset);
 REGISTER_PYTHON_COMMAND(Private_EditorCommands::ToggleAssetBrowser, asset, toggle_browser, "Show/Hide the main Asset Browser");
 REGISTER_EDITOR_UI_COMMAND_DESC(asset, toggle_browser, "Quick Asset Browser", "F2; Alt+B", "icons:Tools/tools_asset-browser.ico", false);
 
-REGISTER_PYTHON_COMMAND(Private_EditorCommands::ShowInAssetBrowser, asset, show_in_browser, "Show asset in asset browser");
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::ShowInAssetBrowser, asset, show_in_browser, 
+	CCommandDescription("Show asset in asset browser").Param("path", "The path to the asset to be shown"));
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::ShowInNewAssetBrowser, asset, show_in_new_browser,
+	CCommandDescription("Show asset in a new instance of asset browser").Param("path", "The path to the asset to be shown"));
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::EditAsset, asset, edit,
+	CCommandDescription("Open asset for edititng").Param("path", "The path to the asset to be edited"));
 
 REGISTER_PYTHON_COMMAND(Private_EditorCommands::ShowNewAssetBrowser, asset, open_browser, "Opens a new Asset Browser");
 REGISTER_EDITOR_COMMAND_SHORTCUT(asset, open_browser, "Alt+F2; Ctrl+Alt+B");

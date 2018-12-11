@@ -91,6 +91,7 @@ CImageConverter::CImageConverter(IResourceCompiler* pRC)
 {
 	LoadPresetAliases(pRC->GetIniFile(), m_presetAliases);
 	pRC->GetAssetManager()->RegisterDetailProvider(AssetManager::CollectDDSImageDetails, "dds");
+	pRC->GetAssetManager()->RegisterDetailProvider(AssetManager::CollectTifImageDetails, "tif");
 }
 
 CImageConverter::~CImageConverter()

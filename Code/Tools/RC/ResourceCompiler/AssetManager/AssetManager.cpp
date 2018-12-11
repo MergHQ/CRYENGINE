@@ -157,9 +157,15 @@ bool CAssetManager::SaveCryasset(const IConfig* const pConfig, const char* szSou
 
 	UpdateFiles(pAsset.get(), m_pRc, pConfig, szSourceFilepath, files);
 
-	if (!CollectMetadataDetails(pAsset->GetMetadataRoot(), files))
+	RemoveDetails(pAsset->GetMetadataRoot());
+
+	// For the moment we get details only for the main data file (the first one).
+	CollectMetadataDetails(pAsset->GetMetadataRoot(), files.front());
+
+	// Substance compiler embeds metadata to the source tiff file. See CSubstanceRenderer::OnOutputAvailable and CollectTifImageDetails
+	if (szSourceFilepath && *szSourceFilepath)
 	{
-		return false;
+		CollectMetadataDetails(pAsset->GetMetadataRoot(), szSourceFilepath);
 	}
 
 	const string targetFile = szOutputFolder ? PathUtil::Make(szOutputFolder, PathUtil::GetFile(metadataFilename)) : metadataFilename;
@@ -172,24 +178,18 @@ bool CAssetManager::SaveCryasset(const IConfig* const pConfig, const char* szSou
 	return true;
 }
 
-bool CAssetManager::CollectMetadataDetails(XmlNodeRef& xml, const std::vector<string>& files) const
+bool CAssetManager::CollectMetadataDetails(XmlNodeRef& xml, const string& filename) const
 {
-	for (const string& filename : files)
+	const string ext = string(PathUtil::GetExt(filename)).MakeLower();
+	auto detailsProvider = m_providers.find(ext);
+	if (detailsProvider == m_providers.end())
 	{
-		const string ext = string(PathUtil::GetExt(filename)).MakeLower();
-		auto detailsProvider = m_providers.find(ext);
-		if (detailsProvider == m_providers.end())
-		{
-			continue;
-		}
+		return false;
+	}
 
-		if (!detailsProvider->second(xml, filename, m_pRc))
-		{
-			RCLogWarning("Can't collect detail information for the file '%s'", filename.c_str());
-		}
-
-		// For the moment we get details only for the main data file (the first one).
-		break;
+	if (!detailsProvider->second(xml, filename, m_pRc))
+	{
+		RCLogWarning("Can't collect detail information for the file '%s'", filename.c_str());
 	}
 	return true;
 }

@@ -204,7 +204,7 @@ public:
 		{
 			SGeneratedOutputData* data = (SGeneratedOutputData*)(outputInstance->mUserData);
 			string commandline;
-			commandline.Format("/autooptimizefile=0 /preset=%s /reduce=0 /cryasset=source,%s", data->texturePreset, data->source);
+			commandline.Format("/autooptimizefile=0 /preset=%s /reduce=0 /cryasset=parent,%s", data->texturePreset, data->source);
 			// TODO for now dissabling directds as nested calls have issues.
 			//if (m_coverter->GetConfig()->GetAsBool("directdds", false, true))
 			//{

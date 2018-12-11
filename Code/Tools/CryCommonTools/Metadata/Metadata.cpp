@@ -120,6 +120,15 @@ const XmlNodeRef GetMetadataNode(const XmlNodeRef& asset)
 	return asset->isTag(GetMetadataTag()) ? asset : asset->findChild(GetMetadataTag());
 }
 
+void RemoveDetails(XmlNodeRef& xml)
+{
+	XmlNodeRef pDetails = xml->findChild("Details");
+	if (pDetails)
+	{
+		pDetails->removeAllChilds();
+	}
+}
+
 void AddDetails(XmlNodeRef& xml, const std::vector<std::pair<string, string>>& details)
 {
 	if (details.empty())
@@ -128,11 +137,7 @@ void AddDetails(XmlNodeRef& xml, const std::vector<std::pair<string, string>>& d
 	}
 
 	XmlNodeRef pDetails = xml->findChild("Details");
-	if (pDetails)
-	{
-		pDetails->removeAllChilds();
-	}
-	else
+	if (!pDetails)
 	{
 		pDetails = xml->newChild("Details");
 	}
