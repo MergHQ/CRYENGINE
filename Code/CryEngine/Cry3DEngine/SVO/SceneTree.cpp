@@ -2218,7 +2218,7 @@ void CSvoEnv::ProcessIncrementalTextureUpdate(PodArrayRT<T>& rAr, ETEX_Format te
 		// create new texture
 			rAr.m_textureId = gEnv->pRenderer->UploadToVideoMemory3D((byte*)rAr.GetElements(),
 			maxTexSizeXY, maxTexSizeXY, CVoxelSegment::m_voxTexPoolDimZ,
-			texFormat, texFormat, 1, false, FILTER_POINT, rAr.m_textureId, 0, FT_DONT_STREAM);
+			texFormat, texFormat, 1, false, FILTER_POINT, rAr.m_textureId, 0, FT_DONT_STREAM, eLittleEndian, nullptr, true);
 	}
 	else if (rAr.m_writeOffsetReady >= rAr.m_writeOffset)
 	{

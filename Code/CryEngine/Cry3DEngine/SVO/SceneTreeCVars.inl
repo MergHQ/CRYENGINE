@@ -40,6 +40,7 @@ REGISTER_CVAR_AUTO(int, e_svoMaxAreaMeshSizeKB, 8000, VF_NULL, "Maximum number o
 REGISTER_CVAR_AUTO(int, e_svoRender, 1, VF_NULL, "Enables CPU side (every frame) SVO traversing and update");
 REGISTER_CVAR_AUTO(int, e_svoTI_ResScaleBase, 2, VF_NULL, "Defines resolution of GI cone-tracing targets; 2=half res");
 REGISTER_CVAR_AUTO(int, e_svoTI_ResScaleAir, 4, VF_NULL, "Defines resolution of GI cone-tracing targets; 2=half res");
+REGISTER_CVAR_AUTO(int, e_svoTI_ResScaleSpecular, 1, VF_NULL, "Defines resolution of specular targets; 2=half res");
 REGISTER_CVAR_AUTO(int, e_svoTI_DualTracing, 2, VF_NULL, "Double the number of rays per fragment\n1 = Always ON; 2 = Active only in multi-GPU mode");
 REGISTER_CVAR_AUTO(float, e_svoTI_PointLightsMultiplier, 1.f, VF_NULL, "Modulates point light injection (controls the intensity of bounce light)");
 REGISTER_CVAR_AUTO(float, e_svoTI_EmissiveMultiplier, 4.f, VF_NULL, "Modulates emissive materials light injection\nAllows controlling emission separately from post process glow");
@@ -253,6 +254,7 @@ REGISTER_CVAR_AUTO(float, e_svoTI_RT_MinGloss, 0, VF_EXPERIMENTAL, "Minimum surf
 REGISTER_CVAR_AUTO(float, e_svoTI_RT_MinRefl, 0, VF_EXPERIMENTAL, "Minimum surface reflectance for mesh tracing");
 REGISTER_CVAR_AUTO(int, e_svoTI_RT_MaxTrisPerVoxel, 100, VF_EXPERIMENTAL, "Maximum number of triangles registered per voxel");
 REGISTER_CVAR_AUTO(int, e_svoTI_RT_MaxTexRes, 512, VF_EXPERIMENTAL, "Maximum texture size for GPU tracing");
+REGISTER_CVAR_AUTO(float, e_svoTI_RT_SafetyBorder, 0.25f, VF_EXPERIMENTAL, "Extend the area of voxel to triangle intersection. This makes sure the ray finds all necessary triangles");
 REGISTER_CVAR_AUTO(float, e_svoTI_Specular_Sev, 1, VF_NULL, "Controls severity of specular cones; this value limits the material glossiness");
 REGISTER_CVAR_AUTO(float, e_svoVoxDistRatio, 14.f, VF_NULL, "Limits the distance where real-time GPU voxelization used");
 REGISTER_CVAR_AUTO(int, e_svoVoxGenRes, 512, VF_NULL, "GPU voxelization dummy render target resolution");

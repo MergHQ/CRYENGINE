@@ -1572,7 +1572,7 @@ void CVoxelSegment::BuildVoxels(SBuildVoxelsParams params)
 				voxBox.max.Set(vMax.x, vMax.y, vMax.z);
 
 				if (GetCVars()->e_svoTI_RT_Active)
-					voxBox.Expand(Vec3(vMax.z - vMin.z) * SVO_RT_SAFETY_BORDER);
+					voxBox.Expand(Vec3(vMax.z - vMin.z) * GetCVars()->e_svoTI_RT_SafetyBorder);
 
 				if (Overlap::AABB_AABB(voxBox, m_boxTris))
 				{
@@ -1916,7 +1916,7 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 	AABB cloudBoxEX = cloudBoxWS;
 
 	if (GetCVars()->e_svoTI_RT_Active)
-		cloudBoxEX.Expand(Vec3(cloudBoxWS.GetSize().z / SVO_VOX_BRICK_MAX_SIZE * SVO_RT_SAFETY_BORDER));
+		cloudBoxEX.Expand(Vec3(cloudBoxWS.GetSize().z / SVO_VOX_BRICK_MAX_SIZE * GetCVars()->e_svoTI_RT_SafetyBorder));
 
 	if (bThisIsAreaParent || bThisIsLowLodNode)
 	{
@@ -2096,7 +2096,7 @@ void CVoxelSegment::FindTrianglesForVoxelization(PodArray<int>*& rpNodeTrisXYZ)
 	AABB cloudBoxEX = cloudBoxWS;
 
 	if (GetCVars()->e_svoTI_RT_Active)
-		cloudBoxEX.Expand(Vec3(cloudBoxWS.GetSize().z / SVO_VOX_BRICK_MAX_SIZE * SVO_RT_SAFETY_BORDER));
+		cloudBoxEX.Expand(Vec3(cloudBoxWS.GetSize().z / SVO_VOX_BRICK_MAX_SIZE * GetCVars()->e_svoTI_RT_SafetyBorder));
 
 	//if(!m_pParentCloud)
 	if (m_isAreaParent || m_isLowLodNode)
@@ -2799,6 +2799,9 @@ void CVoxelSegment::StoreAreaTrisIntoTriPool()
 		{
 			SRayHitTriangleIndexed& tr = (*m_pTrisInArea)[t];
 
+			if (tr.hitObjectType == HIT_OBJ_TYPE_TERRAIN)
+				continue;
+
 			Vec3 arrPos[3] = { (*m_pVertInArea)[tr.arrVertId[0]].v, (*m_pVertInArea)[tr.arrVertId[1]].v, (*m_pVertInArea)[tr.arrVertId[2]].v };
 			Vec2 arrTC[3] = { (*m_pVertInArea)[tr.arrVertId[0]].t, (*m_pVertInArea)[tr.arrVertId[1]].t, (*m_pVertInArea)[tr.arrVertId[2]].t };
 			Vec3 arrNor[3] = { (*m_pVertInArea)[tr.arrVertId[0]].n, (*m_pVertInArea)[tr.arrVertId[1]].n, (*m_pVertInArea)[tr.arrVertId[2]].n };
@@ -2992,6 +2995,9 @@ int CVoxelSegment::StoreIndicesIntoPool(const PodArray<int>& nodeTInd, int& coun
 		for (int t = 0; t < numTriIdsToStore; t++)
 		{
 			SRayHitTriangleIndexed& tr = m_pTrisInArea->GetAt(nodeTInd[t]);
+
+			if (tr.hitObjectType == HIT_OBJ_TYPE_TERRAIN)
+				continue;
 
 			int globId = tr.globalId;
 

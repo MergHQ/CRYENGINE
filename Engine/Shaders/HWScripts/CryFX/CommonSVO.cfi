@@ -936,6 +936,9 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 
 			vRGBD.a = saturate(vRGBD.a * SvoParamsMisc4.x);// *pow(saturate(1.f - fDistance / fDistanceMax), .5);
 
+			if (fMultTriRT) // shrink the voxels a little if mesh tracing is in use
+				vRGBD.a = saturate(vRGBD.a - 0.25f) / (1.f - 0.25f);
+
 			//if(vRGBD.a > fAlphaRefMin && vRGBD.a > 0 && vRGBD.a <= fAlphaRefMax)
 			{
 				if (bUseLighting)
@@ -993,7 +996,7 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 						vAlbe /= max(0.1f, vNORA.a);
 
 						// replace voxel albedo by RT albedo
-						vRgbOut.xyz = vRGBD.xyz / vAlbe * vRgbOutRT.xyz;
+						vRgbOut.xyz = vRGBD.xyz / max(vAlbe, .01f) * vRgbOutRT.xyz;
 						vRgbOut.w = 1;
 						break;
 					}

@@ -1015,13 +1015,16 @@ void CSvoRenderer::CheckAllocateRT(bool bSpecPass)
 
 	int nVoxProxyViewportDim = e_svoVoxGenRes;
 
-	int nResScaleBase = SATURATEB(e_svoTI_ResScaleBase + e_svoTI_LowSpecMode);
-	int nDownscaleAir = SATURATEB(e_svoTI_ResScaleAir + e_svoTI_LowSpecMode);
+	int nResScaleBase = max(e_svoTI_ResScaleBase + e_svoTI_LowSpecMode, 1);
+	int nDownscaleAir = max(e_svoTI_ResScaleAir + e_svoTI_LowSpecMode, 1);
+	int resScaleSpec = max(e_svoTI_ResScaleSpecular + e_svoTI_LowSpecMode, 1);
 
 	int nInW = (nWidth / nResScaleBase);
 	int nInH = (nHeight / nResScaleBase);
 	int nAirW = (nWidth / nDownscaleAir);
 	int nAirH = (nHeight / nDownscaleAir);
+	int specW = (nWidth / resScaleSpec);
+	int specH = (nHeight / resScaleSpec);
 
 	if (!bSpecPass)
 	{
@@ -1030,10 +1033,10 @@ void CSvoRenderer::CheckAllocateRT(bool bSpecPass)
 		CheckCreateUpdateRT(m_tsDiff.pRT_RGB_0, nInW, nInH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_DIFF_RGB");
 		CheckCreateUpdateRT(m_tsDiff.pRT_RGB_1, nInW, nInH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SV1_DIFF_RGB");
 
-		CheckCreateUpdateRT(m_tsSpec.pRT_ALD_0, nInW, nInH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_SPEC_ALD");
-		CheckCreateUpdateRT(m_tsSpec.pRT_ALD_1, nInW, nInH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SV1_SPEC_ALD");
-		CheckCreateUpdateRT(m_tsSpec.pRT_RGB_0, nInW, nInH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_SPEC_RGB");
-		CheckCreateUpdateRT(m_tsSpec.pRT_RGB_1, nInW, nInH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SV1_SPEC_RGB");
+		CheckCreateUpdateRT(m_tsSpec.pRT_ALD_0, specW, specH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_SPEC_ALD");
+		CheckCreateUpdateRT(m_tsSpec.pRT_ALD_1, specW, specH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SV1_SPEC_ALD");
+		CheckCreateUpdateRT(m_tsSpec.pRT_RGB_0, specW, specH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_SPEC_RGB");
+		CheckCreateUpdateRT(m_tsSpec.pRT_RGB_1, specW, specH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SV1_SPEC_RGB");
 
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 		if (e_svoTI_Troposphere_Active)
@@ -1062,14 +1065,14 @@ void CSvoRenderer::CheckAllocateRT(bool bSpecPass)
 		CheckCreateUpdateRT(m_tsDiff.pRT_FIN_OUT_0, nWidth, nHeight, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_FIN_DIFF_OUT");
 		CheckCreateUpdateRT(m_tsDiff.pRT_FIN_OUT_1, nWidth, nHeight, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SV1_FIN_DIFF_OUT");
 
-		CheckCreateUpdateRT(m_tsSpec.pRT_RGB_DEM_MIN_0, nInW, nInH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_SPEC_FIN_RGB_MIN");
-		CheckCreateUpdateRT(m_tsSpec.pRT_ALD_DEM_MIN_0, nInW, nInH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_SPEC_FIN_ALD_MIN");
-		CheckCreateUpdateRT(m_tsSpec.pRT_RGB_DEM_MAX_0, nInW, nInH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_SPEC_FIN_RGB_MAX");
-		CheckCreateUpdateRT(m_tsSpec.pRT_ALD_DEM_MAX_0, nInW, nInH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_SPEC_FIN_ALD_MAX");
-		CheckCreateUpdateRT(m_tsSpec.pRT_RGB_DEM_MIN_1, nInW, nInH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SV1_SPEC_FIN_RGB_MIN");
-		CheckCreateUpdateRT(m_tsSpec.pRT_ALD_DEM_MIN_1, nInW, nInH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SV1_SPEC_FIN_ALD_MIN");
-		CheckCreateUpdateRT(m_tsSpec.pRT_RGB_DEM_MAX_1, nInW, nInH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SV1_SPEC_FIN_RGB_MAX");
-		CheckCreateUpdateRT(m_tsSpec.pRT_ALD_DEM_MAX_1, nInW, nInH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SV1_SPEC_FIN_ALD_MAX");
+		CheckCreateUpdateRT(m_tsSpec.pRT_RGB_DEM_MIN_0, specW, specH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_SPEC_FIN_RGB_MIN");
+		CheckCreateUpdateRT(m_tsSpec.pRT_ALD_DEM_MIN_0, specW, specH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_SPEC_FIN_ALD_MIN");
+		CheckCreateUpdateRT(m_tsSpec.pRT_RGB_DEM_MAX_0, specW, specH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_SPEC_FIN_RGB_MAX");
+		CheckCreateUpdateRT(m_tsSpec.pRT_ALD_DEM_MAX_0, specW, specH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_SPEC_FIN_ALD_MAX");
+		CheckCreateUpdateRT(m_tsSpec.pRT_RGB_DEM_MIN_1, specW, specH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SV1_SPEC_FIN_RGB_MIN");
+		CheckCreateUpdateRT(m_tsSpec.pRT_ALD_DEM_MIN_1, specW, specH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SV1_SPEC_FIN_ALD_MIN");
+		CheckCreateUpdateRT(m_tsSpec.pRT_RGB_DEM_MAX_1, specW, specH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SV1_SPEC_FIN_RGB_MAX");
+		CheckCreateUpdateRT(m_tsSpec.pRT_ALD_DEM_MAX_1, specW, specH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SV1_SPEC_FIN_ALD_MAX");
 
 		CheckCreateUpdateRT(m_tsSpec.pRT_FIN_OUT_0, nWidth, nHeight, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_FIN_SPEC_OUT");
 		CheckCreateUpdateRT(m_tsSpec.pRT_FIN_OUT_1, nWidth, nHeight, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SV1_FIN_SPEC_OUT");

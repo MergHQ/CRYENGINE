@@ -20,8 +20,7 @@
 	#define SVO_ATLAS_DIM_BRICKS_Z     (CVoxelSegment::m_voxTexPoolDimZ / SVO_VOX_BRICK_MAX_SIZE)
 	#define SVO_ROOTLESS_PARENT_SIZE   512.f
 	#define SVO_STREAM_QUEUE_MAX_SIZE  12
-	#define SVO_RT_SAFETY_BORDER       0.5f // size in voxels
-
+	
 typedef uint16 ObjectLayerIdType;
 const ObjectLayerIdType kInvalidObjectLayerId = 0;
 const ObjectLayerIdType kAllObjectLayersId = kInvalidObjectLayerId;
