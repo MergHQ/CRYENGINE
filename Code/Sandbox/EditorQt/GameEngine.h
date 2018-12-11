@@ -179,6 +179,8 @@ private:
 	bool StartGameContext();
 	void NotifyGameModeChange(bool bGameMode);
 
+	void UpdateAIManagerFromEditor();
+
 	string                        m_levelName;
 	string                        m_missionName;
 	string                        m_levelPath;

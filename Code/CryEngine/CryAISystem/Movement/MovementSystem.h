@@ -35,7 +35,7 @@ public:
 	virtual MovementRequestID QueueRequest(const MovementRequest& request) override;
 	virtual void              UnsuscribeFromRequestCallback(const MovementRequestID& id) override;
 	virtual void              GetRequestStatus(const MovementRequestID& id, MovementRequestStatus& status) const override;
-	virtual void              Update(float updateTime) override;
+	virtual void              Update(const CTimeValue frameStartTime, const float frameDeltaTime) override;
 	virtual void              Reset() override;
 	virtual void              RegisterFunctionToConstructMovementBlockForCustomNavigationType(Movement::CustomNavigationBlockCreatorFunction blockFactoryFunction) override;
 	virtual bool              AddActionAbilityCallbacks(const EntityId entityId, const SMovementActionAbilityCallbacks& ability) override;
@@ -63,8 +63,8 @@ private:
 	MovementActor&    GetExistingActorOrCreateNewOne(const EntityId entityId, IMovementActorAdapter& adapter, const MovementActorCallbacks& callbacks);
 	MovementActor*    GetExistingActor(const EntityId entityId);
 	bool              IsPlannerWorkingOnRequestID(const MovementActor& actor, const MovementRequestID& id) const;
-	void              UpdateActors(float updateTime);
-	ActorUpdateStatus UpdateActor(MovementActor& actor, float updateTime);
+	void              UpdateActors();
+	ActorUpdateStatus UpdateActor(MovementActor& actor);
 	void              UpdatePlannerAndDealWithResult(const MovementUpdateContext& context);
 	void              StartWorkingOnNewRequestIfPossible(const MovementUpdateContext& context);
 
@@ -85,7 +85,10 @@ private:
 	MovementRequestID                              m_nextUniqueRequestID;
 	Movement::CustomNavigationBlockCreatorFunction m_createMovementBlockToHandleCustomNavigationType;
 
-	StandardMovementBlocksFactory                   m_builtinMovementBlocksFactory;
+	StandardMovementBlocksFactory                  m_builtinMovementBlocksFactory;
+
+	CTimeValue                                     m_frameStartTime;
+	float                                          m_frameDeltaTime;
 };
 
 #endif // MovementSystem_h

@@ -57,15 +57,13 @@ void EntityCoverSampler::Cancel(EntityId entityID)
 	}
 }
 
-void EntityCoverSampler::Update()
+void EntityCoverSampler::Update(const CTimeValue frameStartTime, const float updateTime)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-	CTimeValue now = GetAISystem()->GetFrameStartTime();
-
 	while (!m_queue.empty())
 	{
-		if ((now - m_lastSort).GetMilliSecondsAsInt64() > 1250)
+		if ((frameStartTime - m_lastSort).GetMilliSecondsAsInt64() > 1250)
 		{
 			if (CAIObject* player = GetAISystem()->GetPlayer())
 			{
@@ -89,7 +87,7 @@ void EntityCoverSampler::Update()
 				else
 					std::sort(m_queue.begin(), m_queue.end(), QueuedEntitySorter());
 
-				m_lastSort = now;
+				m_lastSort = frameStartTime;
 			}
 		}
 

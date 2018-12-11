@@ -1466,7 +1466,7 @@ void CGameEngine::Update()
 			pRenderViewport->Update();
 		}
 
-		GetIEditorImpl()->GetAI()->Update(0);
+		UpdateAIManagerFromEditor();
 	}
 	else
 	{
@@ -1518,7 +1518,7 @@ void CGameEngine::Update()
 		pPluginManager->UpdateAfterRender();
 		pPluginManager->UpdateAfterRenderSubmit();
 
-		GetIEditorImpl()->GetAI()->Update(updateFlags.UnderlyingValue());
+		UpdateAIManagerFromEditor();
 
 		for (CListenerSet<IGameEngineListener*>::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
 		{
@@ -1748,6 +1748,27 @@ void CGameEngine::ToggleGameInputSuspended()
 bool CGameEngine::IsGameInputSuspended()
 {
 	return m_bGameModeSuspended;
+}
+
+// Updates the AI Manager using the global timer
+// Can be executed by the Sandbox Editor to force an Update on some AI subsystems
+// Even if the AI system is disabled (ie: NavMeshUpdates should still work in Sandbox)
+void CGameEngine::UpdateAIManagerFromEditor()
+{
+	CEditorImpl* pEditorImpl = GetIEditorImpl();
+	if (!pEditorImpl)
+	{
+		CRY_ASSERT(pEditorImpl);
+		return;
+	}
+	CAIManager* pAiManager = pEditorImpl->GetAI();
+	if (!pAiManager)
+	{
+		CRY_ASSERT(pAiManager);
+		return;
+	}
+
+	pAiManager->Update(gEnv->pTimer->GetFrameStartTime(), gEnv->pTimer->GetFrameTime(), 0);
 }
 
 namespace Private_EditorCommands

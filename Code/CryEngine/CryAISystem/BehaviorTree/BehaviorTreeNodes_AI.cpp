@@ -1821,7 +1821,7 @@ protected:
 
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
-		runtimeData.startTime = GetAISystem()->GetFrameStartTime();
+		runtimeData.startTime = context.frameStartTime;
 		runtimeData.commFinished = false;
 
 		ICommunicationManager& commManager = *gEnv->pAISystem->GetCommunicationManager();
@@ -1879,7 +1879,7 @@ protected:
 		}
 
 		// Time out if angle threshold isn't reached for some time (to avoid deadlocks)
-		float elapsedTime = (GetAISystem()->GetFrameStartTime() - runtimeData.startTime).GetSeconds();
+		float elapsedTime = context.frameStartTime.GetDifferenceInSeconds(runtimeData.startTime);
 		if (elapsedTime > m_timeout)
 		{
 			ErrorReporter(*this, context).LogWarning("Communication timed out.");
@@ -3208,7 +3208,7 @@ protected:
 		runtimeData.fireTarget->SetPos(fireTargetPosition);
 		pPipeUser->SetFireTarget(runtimeData.fireTarget);
 		pPipeUser->SetFireMode(FIREMODE_AIM);
-		runtimeData.startTime = GetAISystem()->GetFrameStartTime();
+		runtimeData.startTime = context.frameStartTime;
 		runtimeData.timeSpentWithCorrectDirection = 0.0f;
 	}
 
@@ -3262,14 +3262,13 @@ protected:
 		const float dotProduct = currentDirection.Dot(desiredDirection);
 		if (dotProduct > m_angleThresholdCosine)
 		{
-			const float timeSpentWithCorrectDirection = runtimeData.timeSpentWithCorrectDirection + gEnv->pTimer->GetFrameTime();
+			const float timeSpentWithCorrectDirection = runtimeData.timeSpentWithCorrectDirection + context.frameDeltaTime;
 			runtimeData.timeSpentWithCorrectDirection = timeSpentWithCorrectDirection;
 			if (timeSpentWithCorrectDirection > m_durationOnceWithinThreshold)
 				return Success;
 		}
 
-		const CTimeValue& now = GetAISystem()->GetFrameStartTime();
-		if (now > runtimeData.startTime + CTimeValue(8.0f))
+		if (context.frameStartTime > runtimeData.startTime + CTimeValue(8.0f))
 		{
 			gEnv->pLog->LogWarning("Agent '%s' failed to aim towards %f %f %f. Timed out...", pPipeUser->GetName(), fireTargetAIObject->GetPos().x, fireTargetAIObject->GetPos().y, fireTargetAIObject->GetPos().z);
 			return Success;
@@ -3369,7 +3368,7 @@ protected:
 		pPipeUser->SetFireMode(FIREMODE_AIM);
 
 		UpdateAimingPosition(runtimeData);
-		runtimeData.lastUpdateTime = GetAISystem()->GetFrameStartTime();
+		runtimeData.lastUpdateTime = context.frameStartTime;
 	}
 
 	virtual void OnTerminate(const UpdateContext& context) override
@@ -3399,12 +3398,11 @@ protected:
 		IF_UNLIKELY (!runtimeData.fireTarget)
 			return Success;
 
-		const CTimeValue now = GetAISystem()->GetFrameStartTime();
-		const float elapsedSecondsFromPreviousUpdate = now.GetDifferenceInSeconds(runtimeData.lastUpdateTime);
+		const float elapsedSecondsFromPreviousUpdate = context.frameStartTime.GetDifferenceInSeconds(runtimeData.lastUpdateTime);
 		if (elapsedSecondsFromPreviousUpdate > m_minSecondsBeweenUpdates)
 		{
 			UpdateAimingPosition(runtimeData);
-			runtimeData.lastUpdateTime = now;
+			runtimeData.lastUpdateTime = context.frameStartTime;;
 		}
 
 		return Running;
@@ -3656,11 +3654,11 @@ protected:
 		const Vec3 actualBodyDir = pPipeUser->GetBodyInfo().vAnimBodyDir;
 		const bool turnedTowardsDesiredDirection = (actualBodyDir.Dot(runtimeData.desiredBodyDirection) > m_stopWithinAngleCosined);
 		if (turnedTowardsDesiredDirection)
-			runtimeData.correctBodyDirectionTime += gEnv->pTimer->GetFrameTime();
+			runtimeData.correctBodyDirectionTime += context.frameDeltaTime;
 		else
 			runtimeData.correctBodyDirectionTime = 0.0f;
 
-		const float timeSpentAligning = runtimeData.timeSpentAligning + gEnv->pTimer->GetFrameTime();
+		const float timeSpentAligning = runtimeData.timeSpentAligning + context.frameDeltaTime;
 		runtimeData.timeSpentAligning = timeSpentAligning;
 
 		if (runtimeData.correctBodyDirectionTime > 0.2f)
@@ -4532,9 +4530,8 @@ protected:
 
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
-		const CTimeValue& now = GetAISystem()->GetFrameStartTime();
-		runtimeData.endTime = now + CTimeValue(m_duration);
-		runtimeData.nextPostureQueryTime = now;
+		runtimeData.endTime = context.frameStartTime + CTimeValue(m_duration);
+		runtimeData.nextPostureQueryTime = context.frameStartTime;
 
 		if (CPipeUser* pipeUser = GetPipeUser(*this, context))
 		{
@@ -4576,8 +4573,7 @@ protected:
 
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
-		const CTimeValue& now = GetAISystem()->GetFrameStartTime();
-		if (now > runtimeData.endTime)
+		if (context.frameStartTime > runtimeData.endTime)
 			return Success;
 
 		if (!pPipeUser->IsInCover())
@@ -4588,7 +4584,7 @@ protected:
 			const bool isAimObstructed = pPipeUser && (pPipeUser->GetState().aimObstructed || pPipeUser->GetAimState() == AI_AIM_OBSTRUCTED);
 			if (isAimObstructed)
 			{
-				runtimeData.timeObstructed += gEnv->pTimer->GetFrameTime();
+				runtimeData.timeObstructed += context.frameDeltaTime;
 				if (runtimeData.timeObstructed >= m_aimObstructedTimeout)
 				{
 					return Failure;
@@ -4600,7 +4596,7 @@ protected:
 			}
 		}
 
-		if (now < runtimeData.nextPostureQueryTime)
+		if (context.frameStartTime < runtimeData.nextPostureQueryTime)
 			return Running;
 
 		IF_UNLIKELY (!pPipeUser)
@@ -4661,7 +4657,7 @@ protected:
 
 				if (foundPosture)
 				{
-					runtimeData.nextPostureQueryTime = now + CTimeValue(2.0f);
+					runtimeData.nextPostureQueryTime = context.frameStartTime + CTimeValue(2.0f);
 
 					pPipeUser->m_State.bodystate = postureInfo->stance;
 					pPipeUser->m_State.lean = postureInfo->lean;
@@ -4672,7 +4668,7 @@ protected:
 				}
 				else
 				{
-					runtimeData.nextPostureQueryTime = now + CTimeValue(1.0f);
+					runtimeData.nextPostureQueryTime = context.frameStartTime + CTimeValue(1.0f);
 				}
 			}
 		}
@@ -4942,7 +4938,7 @@ protected:
 		movementRequest.type = MovementRequest::Stop;
 		gEnv->pAISystem->GetMovementSystem()->QueueRequest(movementRequest);
 
-		runtimeData.timeWhenShootingShouldEnd = GetAISystem()->GetFrameStartTime() + CTimeValue(m_duration);
+		runtimeData.timeWhenShootingShouldEnd = context.frameStartTime + CTimeValue(m_duration);
 		runtimeData.timeObstructed = 0.0f;
 	}
 
@@ -4977,9 +4973,7 @@ protected:
 		
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
-		const CTimeValue& now = GetAISystem()->GetFrameStartTime();
-
-		if (now >= runtimeData.timeWhenShootingShouldEnd)
+		if (context.frameStartTime >= runtimeData.timeWhenShootingShouldEnd)
 			return Success;
 
 		if (m_aimObstructedTimeout >= 0.0f)
@@ -4987,7 +4981,7 @@ protected:
 			const bool isAimObstructed = pPipeUser && (pPipeUser->GetState().aimObstructed || pPipeUser->GetAimState() == AI_AIM_OBSTRUCTED);
 			if (isAimObstructed)
 			{
-				runtimeData.timeObstructed += gEnv->pTimer->GetFrameTime();
+				runtimeData.timeObstructed += context.frameDeltaTime;
 				if (runtimeData.timeObstructed >= m_aimObstructedTimeout)
 				{
 					return Failure;
@@ -5125,7 +5119,7 @@ protected:
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
 		runtimeData.grenadeHasBeenThrown = false;
-		runtimeData.timeWhenWeShouldGiveUpThrowing = GetAISystem()->GetFrameStartTime() + CTimeValue(m_timeout);
+		runtimeData.timeWhenWeShouldGiveUpThrowing = context.frameStartTime + CTimeValue(m_timeout);
 
 		if (CPuppet* puppet = GetPuppet(*this, context))
 		{
@@ -5159,7 +5153,7 @@ protected:
 		{
 			return Success;
 		}
-		else if (GetAISystem()->GetFrameStartTime() >= runtimeData.timeWhenWeShouldGiveUpThrowing)
+		else if (context.frameStartTime >= runtimeData.timeWhenWeShouldGiveUpThrowing)
 		{
 			return Failure;
 		}

@@ -13,7 +13,8 @@ CMNMUpdatesManager::CMNMUpdatesManager(NavigationSystem* pNavSystem)
 	, m_bWasRegenerationRequestedThisUpdateCycle(false)
 	, m_bPostponeUpdatesForStabilization(false)
 	, m_bExplicitRegenerationToggle(false)
-	, m_lastUpdateTime(0.0f)
+	, m_frameStartTime(0.0f)
+	, m_frameDeltaTime(0.0f)
 {
 }
 
@@ -33,9 +34,12 @@ void CMNMUpdatesManager::Clear()
 }
 
 //------------------------------------------------------------------------
-void CMNMUpdatesManager::Update()
+void CMNMUpdatesManager::Update(const CTimeValue frameStartTime, const float frameDeltaTime)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
+
+	m_frameStartTime = frameStartTime;
+	m_frameDeltaTime = frameDeltaTime;
 	
 	UpdatePostponedChanges();
 }
@@ -46,7 +50,7 @@ void CMNMUpdatesManager::UpdatePostponedChanges()
 	if (m_bPostponeUpdatesForStabilization)
 	{
 		// Uses global timer instead of AI timer because this has to work in Editor mode as well (AI timer only runs in Game and Physics/AI Mode)
-		if (gEnv->pTimer->GetFrameStartTime().GetDifferenceInSeconds(m_lastUpdateTime) < gAIEnv.CVars.NavmeshStabilizationTimeToUpdate)
+		if (m_frameStartTime.GetDifferenceInSeconds(m_lastUpdateTime) < gAIEnv.CVars.NavmeshStabilizationTimeToUpdate)
 		{
 			return;
 		}

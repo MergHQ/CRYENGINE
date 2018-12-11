@@ -72,8 +72,10 @@ NodeFactory::BehaviorTreeBucketAllocator NodeFactory::s_bucketAllocator;
 #endif
 
 BehaviorTreeManager::BehaviorTreeManager()
+	: m_frameStartTime(0.0f)
+	, m_frameDeltaTime(0.0f)
 #if defined(DEBUG_MODULAR_BEHAVIOR_TREE_WEB)
-	: m_bRegisteredAsDebugChannel(false)
+	, m_bRegisteredAsDebugChannel(false)
 #endif
 {
 	m_metaExtensionFactory.reset(new BehaviorTree::MetaExtensionFactory);
@@ -325,6 +327,8 @@ void BehaviorTreeManager::StopAllBehaviorTreeInstances()
 		  , variables
 		  , instance.timestampCollection
 		  , instance.blackboard
+		  , m_frameStartTime
+		  , m_frameDeltaTime
 #ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 		  , instance.behaviorLog
 #endif // DEBUG_MODULAR_BEHAVIOR_TREE
@@ -426,6 +430,8 @@ void BehaviorTreeManager::StopModularBehaviorTree(const EntityId entityId)
 		  , variables
 		  , instance.timestampCollection
 		  , instance.blackboard
+		  , m_frameStartTime
+		  , m_frameDeltaTime
 #ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 		  , instance.behaviorLog
 #endif // DEBUG_MODULAR_BEHAVIOR_TREE
@@ -440,8 +446,11 @@ void BehaviorTreeManager::StopModularBehaviorTree(const EntityId entityId)
 #endif // DEBUG_MODULAR_BEHAVIOR_TREE
 }
 
-void BehaviorTreeManager::Update()
+void BehaviorTreeManager::Update(const CTimeValue frameStartTime, const float frameDeltaTime)
 {
+	m_frameStartTime = frameStartTime;
+	m_frameDeltaTime = frameDeltaTime;
+
 	EntityIdVector newErrorStatusTree;
 
 	Instances::iterator it = m_instances.begin();
@@ -481,6 +490,8 @@ void BehaviorTreeManager::Update()
 		  , variables
 		  , instance.timestampCollection
 		  , instance.blackboard
+		  , m_frameStartTime
+		  , m_frameDeltaTime
 #ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 		  , instance.behaviorLog
 #	ifdef DEBUG_MODULAR_BEHAVIOR_TREE_WEB

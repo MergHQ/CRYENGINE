@@ -214,7 +214,7 @@ struct INavigationSystem
 	// MNM regeneration tasks are queued up, but not executed
 	virtual void         PauseNavigationUpdate() = 0;
 	virtual void         RestartNavigationUpdate() = 0;
-	virtual WorkingState Update(bool blocking = false) = 0;
+	virtual WorkingState Update(const CTimeValue frameStartTime, const float frameTime, bool blocking = false) = 0;
 	virtual uint32       GetWorkingQueueSize() const = 0;
 
 	virtual void         ProcessQueuedMeshUpdates() = 0;

@@ -574,13 +574,13 @@ void CCoverSystem::DrawSurface(const CoverSurfaceID& surfaceID)
 	}
 }
 
-void CCoverSystem::Update(float updateTime)
+void CCoverSystem::Update(const CTimeValue frameStartTime, const float frameTime)
 {
 	for (auto& coverUser : m_coverUsers)
 	{
-		coverUser.second->Update(updateTime);
+		coverUser.second->Update(frameStartTime, frameTime);
 	}
-	m_dynamicCoverManager.Update(updateTime);
+	m_dynamicCoverManager.Update(frameStartTime, frameTime);
 }
 
 void CCoverSystem::DebugDraw()

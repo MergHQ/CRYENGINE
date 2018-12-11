@@ -139,7 +139,7 @@ void CoverUser::UpdateCoverEyes()
 	}
 }
 
-void CoverUser::Update(float timeDelta)
+void CoverUser::Update(const CTimeValue frameStartTime, const float timeDelta)
 {
 	CRY_PROFILE_REGION(PROFILE_AI, "CoverUser::Update");
 

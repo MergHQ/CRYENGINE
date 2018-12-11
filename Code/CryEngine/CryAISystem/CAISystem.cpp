@@ -2492,43 +2492,43 @@ void CAISystem::Update(const CTimeValue frameStartTime, const float frameDeltaTi
 		SubsystemUpdateActionManager();
 		SubsystemUpdateRadialOcclusionRaycast();
 		SubsystemUpdateLightManager();
-		SubsystemUpdateNavigation(frameStartTime, frameDeltaTime);
-		SubsystemUpdateBannedSOs(frameDeltaTime);
+		SubsystemUpdateNavigation();
+		SubsystemUpdateBannedSOs();
 	}
 
 	{
 		CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate 2")
-		SubsystemUpdateSystemComponents(frameDeltaTime);
+		SubsystemUpdateSystemComponents();
 		SubsystemUpdateAmbientFire();
 		SubsystemUpdateExpensiveAccessoryQuota();
-		SubsystemUpdateCommunicationManager(frameDeltaTime);
-		TrySubsystemUpdateVisionMap(frameDeltaTime, isAutomaticUpdate);
-		TrySubsystemUpdateAuditionMap(frameDeltaTime, isAutomaticUpdate);
-		SubsystemUpdateGroupManager(frameDeltaTime);
-		TrySubsystemUpdateCoverSystem(frameDeltaTime, isAutomaticUpdate);
-		TrySubsystemUpdateNavigationSystem(isAutomaticUpdate);
+		SubsystemUpdateCommunicationManager();
+		TrySubsystemUpdateVisionMap(frameStartTime, frameDeltaTime, isAutomaticUpdate);
+		TrySubsystemUpdateAuditionMap(frameStartTime, frameDeltaTime, isAutomaticUpdate);
+		SubsystemUpdateGroupManager();
+		TrySubsystemUpdateCoverSystem(frameStartTime, frameDeltaTime, isAutomaticUpdate);
+		TrySubsystemUpdateNavigationSystem(frameStartTime, frameDeltaTime, isAutomaticUpdate);
 	}
 
 	{
 		CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate 3")
 		SubsystemUpdatePlayers();
-		SubsystemUpdateGroups(frameStartTime);
+		SubsystemUpdateGroups();
 	}
 
-	TrySubsystemUpdateMovementSystem(frameDeltaTime, isAutomaticUpdate);
+	TrySubsystemUpdateMovementSystem(frameStartTime, frameDeltaTime, isAutomaticUpdate);
 
 	{
 		CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate 4");
-		SubsystemUpdateActorsAndTargetTrackAndORCA(frameDeltaTime);
-		SubsystemUpdateLeaders(frameDeltaTime);
+		SubsystemUpdateActorsAndTargetTrackAndORCA();
+		SubsystemUpdateLeaders();
 		SubsystemUpdateSmartObjectManager();	
-		SubsystemUpdateInterestManager(frameDeltaTime);
+		SubsystemUpdateInterestManager();
 	}
 
-	TrySubsystemUpdateBehaviorTreeManager(isAutomaticUpdate);
-	TrySubsystemUpdateGlobalRayCaster(frameDeltaTime, isAutomaticUpdate);
-	TrySubsystemUpdateGlobalIntersectionTester(frameDeltaTime, isAutomaticUpdate);
-	TrySubsystemUpdateClusterDetector(frameDeltaTime, isAutomaticUpdate);
+	TrySubsystemUpdateBehaviorTreeManager(frameStartTime, frameDeltaTime, isAutomaticUpdate);
+	TrySubsystemUpdateGlobalRayCaster(frameStartTime, frameDeltaTime, isAutomaticUpdate);
+	TrySubsystemUpdateGlobalIntersectionTester(frameStartTime, frameDeltaTime, isAutomaticUpdate);
+	TrySubsystemUpdateClusterDetector(frameStartTime, frameDeltaTime, isAutomaticUpdate);
 	SubsystemUpdateTacticalPointSystem();
 
 #ifdef CRYAISYSTEM_DEBUG
@@ -2551,31 +2551,31 @@ void CAISystem::UpdateSubsystem(const CTimeValue frameStartTime, const float fra
 	switch (subsystemUpdateFlag)
 	{
 	case IAISystem::ESubsystemUpdateFlag::AuditionMap:
-		TrySubsystemUpdateAuditionMap(frameDeltaTime, isAutomaticUpdate);
+		TrySubsystemUpdateAuditionMap(frameStartTime, frameDeltaTime, isAutomaticUpdate);
 		break;
 	case IAISystem::ESubsystemUpdateFlag::BehaviorTreeManager:
-		TrySubsystemUpdateBehaviorTreeManager(isAutomaticUpdate);
+		TrySubsystemUpdateBehaviorTreeManager(frameStartTime, frameDeltaTime,isAutomaticUpdate);
 		break;
 	case IAISystem::ESubsystemUpdateFlag::ClusterDetector:
-		TrySubsystemUpdateClusterDetector(frameDeltaTime, isAutomaticUpdate);
+		TrySubsystemUpdateClusterDetector(frameStartTime, frameDeltaTime, isAutomaticUpdate);
 		break;
 	case IAISystem::ESubsystemUpdateFlag::CoverSystem:
-		TrySubsystemUpdateCoverSystem(frameDeltaTime, isAutomaticUpdate);
+		TrySubsystemUpdateCoverSystem(frameStartTime, frameDeltaTime, isAutomaticUpdate);
 		break;
 	case IAISystem::ESubsystemUpdateFlag::MovementSystem:
-		TrySubsystemUpdateMovementSystem(frameDeltaTime, isAutomaticUpdate);
+		TrySubsystemUpdateMovementSystem(frameStartTime, frameDeltaTime, isAutomaticUpdate);
 		break;
 	case IAISystem::ESubsystemUpdateFlag::NavigationSystem:
-		TrySubsystemUpdateNavigationSystem(isAutomaticUpdate);
+		TrySubsystemUpdateNavigationSystem(frameStartTime, frameDeltaTime, isAutomaticUpdate);
 		break;
 	case IAISystem::ESubsystemUpdateFlag::VisionMap:
-		TrySubsystemUpdateVisionMap(frameDeltaTime, isAutomaticUpdate);
+		TrySubsystemUpdateVisionMap(frameStartTime, frameDeltaTime, isAutomaticUpdate);
 		break;
 	case IAISystem::ESubsystemUpdateFlag::GlobalIntersectionTester:
-		TrySubsystemUpdateGlobalIntersectionTester(frameDeltaTime, isAutomaticUpdate);
+		TrySubsystemUpdateGlobalIntersectionTester(frameStartTime, frameDeltaTime, isAutomaticUpdate);
 		break;
 	case IAISystem::ESubsystemUpdateFlag::GlobalRaycaster:
-		TrySubsystemUpdateGlobalRayCaster(frameDeltaTime, isAutomaticUpdate);
+		TrySubsystemUpdateGlobalRayCaster(frameStartTime, frameDeltaTime, isAutomaticUpdate);
 		break;
 	default:
 		CRY_ASSERT_MESSAGE(false, "Provided flag is not valid.");

@@ -24,6 +24,8 @@ static const float orientationEpsilon = 0.05f;
 
 CVisionMap::CVisionMap()
 	: m_visionIdCounter(0)
+	, m_frameStartTime(0.0f)
+	, m_frameDeltaTime(0.0f)
 {
 	Reset();
 }
@@ -531,15 +533,18 @@ const ObservableParams* CVisionMap::GetObservableParams(const ObservableID& obse
 	return &observableInfo.observableParams;
 }
 
-void CVisionMap::Update(float frameTime)
+void CVisionMap::Update(const CTimeValue frameStartTime, const float frameDeltaTime)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
+
+	m_frameStartTime = frameStartTime;
+	m_frameDeltaTime = frameDeltaTime;
 
 #if VISIONMAP_DEBUG
 	m_numberOfPVSUpdatesThisFrame = 0;
 	m_numberOfVisibilityUpdatesThisFrame = 0;
 	m_numberOfRayCastsSubmittedThisFrame = 0;
-	m_debugTimer += frameTime;
+	m_debugTimer += frameDeltaTime;
 #endif
 
 	UpdateObservers();
@@ -1039,8 +1044,6 @@ void CVisionMap::UpdateVisibilityStatus(ObserverInfo& observerInfo)
 
 void CVisionMap::UpdateObservers()
 {
-	CTimeValue now = GetAISystem()->GetFrameStartTime();
-
 	// Update PVS ////////////////////////////////////////////////////////////
 
 	for (Observers::iterator it = m_observers.begin(), end = m_observers.end(); it != end; ++it)
@@ -1049,13 +1052,13 @@ void CVisionMap::UpdateObservers()
 
 		assert(observerInfo.observerParams.eyePosition.IsValid());
 
-		if (observerInfo.needsPVSUpdate && !observerInfo.queuedForPVSUpdate && now > observerInfo.nextPVSUpdateTime)
+		if (observerInfo.needsPVSUpdate && !observerInfo.queuedForPVSUpdate && m_frameStartTime > observerInfo.nextPVSUpdateTime)
 		{
 			m_observerPVSUpdateQueue.push_back(observerInfo.observerID);
 			observerInfo.queuedForPVSUpdate = true;
 
 #if VISIONMAP_DEBUG
-			observerInfo.queuedForPVSUpdateTime = now;
+			observerInfo.queuedForPVSUpdateTime = m_frameStartTime;
 #endif
 		}
 	}
@@ -1075,7 +1078,7 @@ void CVisionMap::UpdateObservers()
 		numberOfPVSUpdatesLeft--;
 
 #if VISIONMAP_DEBUG
-		m_pvsUpdateQueueLatency = now - observerInfo.queuedForPVSUpdateTime;
+		m_pvsUpdateQueueLatency = m_frameStartTime - observerInfo.queuedForPVSUpdateTime;
 #endif
 	}
 
@@ -1084,13 +1087,13 @@ void CVisionMap::UpdateObservers()
 	{
 		ObserverInfo& observerInfo = it->second;
 
-		if (observerInfo.needsVisibilityUpdate && !observerInfo.queuedForVisibilityUpdate && now > observerInfo.nextVisibilityUpdateTime)
+		if (observerInfo.needsVisibilityUpdate && !observerInfo.queuedForVisibilityUpdate && m_frameStartTime > observerInfo.nextVisibilityUpdateTime)
 		{
 			m_observerVisibilityUpdateQueue.push_back(observerInfo.observerID);
 			observerInfo.queuedForVisibilityUpdate = true;
 
 #if VISIONMAP_DEBUG
-			observerInfo.queuedForVisibilityUpdateTime = now;
+			observerInfo.queuedForVisibilityUpdateTime = m_frameStartTime;
 #endif
 		}
 	}
@@ -1102,7 +1105,7 @@ void CVisionMap::UpdateObservers()
 		ObserverInfo& observerInfo = observerIt->second;
 
 		UpdateVisibilityStatus(observerInfo);
-		observerInfo.nextVisibilityUpdateTime = now + observerInfo.observerParams.updatePeriod;
+		observerInfo.nextVisibilityUpdateTime = m_frameStartTime + observerInfo.observerParams.updatePeriod;
 		observerInfo.needsVisibilityUpdate = false;
 
 		m_observerVisibilityUpdateQueue.pop_front();
@@ -1111,7 +1114,7 @@ void CVisionMap::UpdateObservers()
 		numberOfVisibilityUpdatesLeft--;
 
 #if VISIONMAP_DEBUG
-		m_visibilityUpdateQueueLatency = now - observerInfo.queuedForVisibilityUpdateTime;
+		m_visibilityUpdateQueueLatency = m_frameStartTime - observerInfo.queuedForVisibilityUpdateTime;
 #endif
 	}
 }

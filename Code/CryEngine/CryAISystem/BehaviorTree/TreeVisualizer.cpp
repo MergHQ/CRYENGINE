@@ -163,7 +163,6 @@ void TreeVisualizer::DrawTimestampCollection(const TimestampCollection& timestam
 	DrawLine("Timestamp Collection", Col_Yellow);
 	DrawLine("", Col_White);
 
-	CTimeValue timeNow = GetAISystem()->GetFrameStartTime();
 	Timestamps::const_iterator it = timestampCollection.GetTimestamps().begin();
 	Timestamps::const_iterator end = timestampCollection.GetTimestamps().end();
 	for (; it != end; ++it)
@@ -172,7 +171,7 @@ void TreeVisualizer::DrawTimestampCollection(const TimestampCollection& timestam
 		ColorB color;
 		if (it->IsValid())
 		{
-			s.Format("%s [%.2f]", it->id.timestampName, (timeNow - it->time).GetSeconds());
+			s.Format("%s [%.2f]", it->id.timestampName, m_updateContext.frameStartTime.GetDifferenceInSeconds(it->time));
 			color = Col_ForestGreen;
 		}
 		else
@@ -288,7 +287,7 @@ DebugTreeSerializer::DebugTreeSerializer(const BehaviorTreeInstance& treeInstanc
 			CollectTreeNodeInfo(*pFirstNode, updateContext, m_data.tree.rootNode);
 		}
 		CollectVariablesInfo(treeInstance);
-		CollectTimeStamps(treeInstance);
+		CollectTimeStamps(treeInstance, updateContext);
 		CollectEventsLog(treeInstance);
 	}
 }
@@ -346,7 +345,7 @@ void DebugTreeSerializer::CollectVariablesInfo(const BehaviorTreeInstance& insta
 	#endif
 }
 
-void DebugTreeSerializer::CollectTimeStamps(const BehaviorTreeInstance& instance)
+void DebugTreeSerializer::CollectTimeStamps(const BehaviorTreeInstance& instance, const UpdateContext& updateContext)
 {
 	CTimeValue timeNow = GetAISystem()->GetFrameStartTime();
 	Timestamps::const_iterator it = instance.timestampCollection.GetTimestamps().begin();
@@ -358,7 +357,7 @@ void DebugTreeSerializer::CollectTimeStamps(const BehaviorTreeInstance& instance
 		TimeStamp timeStamp;
 		timeStamp.name = it->id.timestampName;
 		timeStamp.bIsValid = it->IsValid();
-		timeStamp.value = it->IsValid() ? (timeNow - it->time).GetSeconds() : 0.0f;
+		timeStamp.value = it->IsValid() ? (updateContext.frameStartTime.GetDifferenceInSeconds(it->time)) : 0.0f;
 
 		m_data.timeStamps.push_back(timeStamp);
 	}

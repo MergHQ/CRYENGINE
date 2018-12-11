@@ -28,7 +28,7 @@ public:
 	virtual ~BehaviorTreeManager();
 
 	// IBehaviorTreeManager
-	virtual void                                Update() override;
+	virtual void                                Update(const CTimeValue frameStartTime, const float frameDeltaTime) override;
 	virtual IMetaExtensionFactory&              GetMetaExtensionFactory() override;
 	virtual INodeFactory&                       GetNodeFactory() override;
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
@@ -117,5 +117,8 @@ private:
 
 	typedef std::unordered_set<const AISignals::ISignalDescription*> SignalDescriptions;
 	SignalDescriptions m_gameSignalDescriptionsSet;
+
+	CTimeValue m_frameStartTime;
+	float      m_frameDeltaTime;
 };
 }
