@@ -26,8 +26,10 @@ public:
 	bool        IsOutdoorVisible() const { CRY_ASSERT(m_bClipVolumesValid); return m_bOutdoorVisible; }
 
 	void Init();
-	void Destroy();
+	void Resize(int renderWidth, int renderHeight) final;
+	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater) final;
 	void Update() final;
+
 	bool IsStageActive(EShaderRenderingFlags flags) const final
 	{
 		if (flags & EShaderRenderingFlags::SHDF_FORWARD_MINIMAL)
@@ -48,7 +50,9 @@ public:
 	void GenerateClipVolumeInfo();
 
 private:
-	void PrepareVolumetricFog();
+	void Rescale(int resolutionScale, int depthScale);
+	void ResizeResource(int volumeWidth, int volumeHeight, int volumeDepth);
+	void FillVolumetricFogDepth();
 	void ExecuteVolumetricFog();
 
 private:
@@ -86,11 +90,10 @@ private:
 #endif
 	std::vector<ResourceViewHandle> m_depthTargetArrayVolFog;
 
-	int32                           m_cleared;
-	float                           m_nearDepth;
+	int32                           m_filledVolumetricFogDepth;
 	float                           m_raymarchDistance;
 
 	bool                            m_bClipVolumesValid;
-	bool                            m_bBlendPassReady;
+	bool                            m_clearedBlendValuesRT;
 	bool                            m_bOutdoorVisible;
 };

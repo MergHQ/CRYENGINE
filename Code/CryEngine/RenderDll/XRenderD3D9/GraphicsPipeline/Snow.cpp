@@ -88,14 +88,11 @@ void CSnowStage::ResizeResource(int resourceWidth, int resourceHeight)
 
 void CSnowStage::Resize(int renderWidth, int renderHeight)
 {
-#if defined(VOLUMETRIC_FOG_SHADOWS)
 	ResizeResource(renderWidth, renderHeight);
-#endif
 }
 
 void CSnowStage::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
 {
-#if defined(VOLUMETRIC_FOG_SHADOWS)
 	auto pVar1 = cvarUpdater.GetCVar("r_snow");
 	auto pVar2 = cvarUpdater.GetCVar("r_snow_displacement");
 	if (pVar1 || pVar2)
@@ -106,7 +103,6 @@ void CSnowStage::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
 
 		ResizeResource(renderWidth, renderHeight);
 	}
-#endif
 }
 
 void CSnowStage::ExecuteDeferredSnowGBuffer()
