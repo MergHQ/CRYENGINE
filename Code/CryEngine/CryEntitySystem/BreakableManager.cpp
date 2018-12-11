@@ -1613,7 +1613,7 @@ public:
 	}
 	virtual void Release() final                     { delete this; }
 
-	virtual void GameSerialize(TSerialize ser) final {};
+	virtual void GameSerialize(TSerialize ser) final {}
 
 	void         SetTimeout(int timeoutMillis)
 	{

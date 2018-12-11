@@ -20,9 +20,9 @@
 #include <CryExtension/ICryFactory.h>
 #include <CryExtension/ClassWeaver.h>
 
-#include  <CrySchematyc/Env/IEnvRegistry.h>
-#include  <CrySchematyc/Env/Elements/EnvComponent.h>
-#include  <CrySchematyc/Env/EnvPackage.h>
+#include <CrySchematyc/Env/IEnvRegistry.h>
+#include <CrySchematyc/Env/Elements/EnvComponent.h>
+#include <CrySchematyc/Env/EnvPackage.h>
 #include <CryCore/StaticInstanceList.h>
 
 CEntitySystem* g_pIEntitySystem = nullptr;
@@ -181,8 +181,8 @@ class CEngineModule_EntitySystem : public IEntitySystemEngineModule
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual const char* GetName() const override     { return "CryEntitySystem"; };
-	virtual const char* GetCategory() const override { return "CryEngine"; };
+	virtual const char* GetName() const override     { return "CryEntitySystem"; }
+	virtual const char* GetCategory() const override { return "CryEngine"; }
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override

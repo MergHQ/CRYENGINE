@@ -38,7 +38,7 @@ public:
 
 	virtual IEntity* This() override { return !IsEnd() ? *m_it : nullptr; }
 	virtual IEntity* Next() override { return !IsEnd() ? *m_it++ : nullptr; }
-	virtual void     MoveFirst() override { m_it = m_array.begin(); };
+	virtual void     MoveFirst() override { m_it = m_array.begin(); }
 	virtual void     AddRef() override { m_referenceCount++; }
 	virtual void     Release() override { if (--m_referenceCount <= 0) { delete this; } }
 

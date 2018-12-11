@@ -2,23 +2,23 @@
 
 #pragma once
 
-// forward declarations.
-struct SEntityEvent;
+struct bop_meshupdate;
+struct EventPhysCollision;
+struct EventPhysJointBroken;
+struct EventPhysPostStep;
+struct IFoliage;
+struct IGeometry;
+struct IMaterial;
 struct IPhysicalEntity;
 struct IPhysicalWorld;
-struct EventPhysPostStep;
-struct IGeometry;
-struct bop_meshupdate;
-struct EventPhysJointBroken;
+struct IRenderMesh;
+struct IStatObj;
 struct pe_action_move_parts;
 struct pe_status_pos;
 struct phys_geometry;
+struct SEntityEvent;
 struct SEntityPhysicalizeParams;
-struct IStatObj;
-struct IFoliage;
-struct EventPhysCollision;
-struct IMaterial;
-struct IRenderMesh;
+
 class CEntity;
 
 #include <CryEntitySystem/IEntityBasicTypes.h>
@@ -121,8 +121,6 @@ private:
 	void             CreatePhysicalEntity(SEntityPhysicalizeParams& params);
 	phys_geometry*   GetSlotGeometry(int nSlot);
 	void             SyncCharacterWithPhysics();
-
-	void             MoveChildPhysicsParts(IPhysicalEntity* pSrcAdam, CEntity* pChild, pe_action_move_parts& amp, uint64 usedRanges);
 
 	IPhysicalEntity* QueryPhyscalEntity(IEntity* pEntity) const;
 	CEntity*         GetCEntity(IPhysicalEntity* pPhysEntity);

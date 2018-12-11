@@ -25,18 +25,19 @@
 #include <CrySystem/XML/IXml.h>
 
 // Forward declarations.
-struct ISystem;
-struct IEntitySystem;
+class CEntity;
 class ICrySizer;
-struct IEntity;
-struct SpawnParams;
-struct IPhysicalEntity;
-struct IBreakEventListener;
-struct SRenderNodeCloneLookup;
+
 struct EventPhysRemoveEntityParts;
 struct IBreakableManager;
+struct IBreakEventListener;
+struct IEntity;
+struct IEntitySystem;
+struct IPhysicalEntity;
+struct ISystem;
 struct SComponentRegisteredEvents;
-class CEntity;
+struct SpawnParams;
+struct SRenderNodeCloneLookup;
 
 namespace Cry {
 namespace Entity {
@@ -224,7 +225,7 @@ struct IEntitySystemSink
 
 	//! Collect memory informations
 	//! \param pSizer Sizer class used to collect the memory informations.
-	virtual void GetMemoryUsage(class ICrySizer* pSizer) const {};
+	virtual void GetMemoryUsage(class ICrySizer* pSizer) const {}
 	// </interfuscator:shuffle>
 };
 
@@ -385,6 +386,7 @@ struct IEntitySystem
 	//! \param params  Entity descriptor structure that describes what kind of entity needs to be spawned.
 	//! \return true if successfully initialized entity.
 	virtual bool InitEntity(IEntity* pEntity, SEntitySpawnParams& params) = 0;
+
 	//! Retrieves entity from its unique id.
 	//! \param id Unique ID of the entity required.
 	//! \return Entity if one with such an ID exists, and NULL if no entity could be matched with the id
@@ -409,7 +411,7 @@ struct IEntitySystem
 
 	//! Removes an entity by ID.
 	//! \param entity          Id of the entity to be removed.
-	//! \param bForceRemoveNow If true, forces immediately delete of entity, overwise will delete entity on next update.
+	//! \param bForceRemoveNow If true, forces immediately delete of entity, otherwise will delete entity on next update.
 	virtual void RemoveEntity(EntityId entity, bool bForceRemoveNow = false) = 0;
 
 	//! \return Number of stored in entity system.
