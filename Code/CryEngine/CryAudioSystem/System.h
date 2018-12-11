@@ -82,7 +82,7 @@ public:
 	void ParseControlsData(char const* const szFolderPath, EDataScope const dataScope, SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
 	void ParsePreloadsData(char const* const szFolderPath, EDataScope const dataScope, SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
 	void AutoLoadSetting(EDataScope const dataScope, SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
-	void RetriggerControls(SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
+
 	void InternalUpdate();
 
 private:
@@ -131,6 +131,7 @@ private:
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:
 
+	void RetriggerControls(SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
 	void ResetRequestCount();
 	void ScheduleIRenderAuxGeomForRendering(IRenderAuxGeom* pRenderAuxGeom);
 

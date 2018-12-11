@@ -36,13 +36,10 @@ enum class ESystemRequestType : EnumFlagsType
 	LoadSetting,
 	UnloadSetting,
 	UnloadAFCMDataByScope,
-	DrawDebugInfo,
 	AddRequestListener,
 	RemoveRequestListener,
 	ChangeLanguage,
-	RetriggerControls,
 	ReleasePendingRays,
-	ReloadControlsData,
 	GetFileData,
 	GetImplInfo,
 	RegisterListener,
@@ -52,12 +49,17 @@ enum class ESystemRequestType : EnumFlagsType
 	ExecuteTrigger,
 	ExecuteTriggerEx,
 	ExecuteDefaultTrigger,
-	ExecutePreviewTrigger,
-	ExecutePreviewTriggerEx,
 	StopTrigger,
 	StopAllTriggers,
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	ReloadControlsData,
+	RetriggerControls,
+	DrawDebugInfo,
+	ExecutePreviewTrigger,
+	ExecutePreviewTriggerEx,
 	StopPreviewTrigger,
 	ResetRequestCount,
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -550,28 +552,6 @@ struct SSystemRequestData<ESystemRequestType::RefreshSystem> final : public SSys
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SSystemRequestData<ESystemRequestType::ReloadControlsData> final : public SSystemRequestDataBase
-{
-	explicit SSystemRequestData(char const* const szFolderPath, char const* const szLevelName)
-		: SSystemRequestDataBase(ESystemRequestType::ReloadControlsData)
-		, folderPath(szFolderPath)
-		, levelName(szLevelName)
-	{}
-
-	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::ReloadControlsData> const* const pAMRData)
-		: SSystemRequestDataBase(ESystemRequestType::ReloadControlsData)
-		, folderPath(pAMRData->folderPath)
-		, levelName(pAMRData->levelName)
-	{}
-
-	virtual ~SSystemRequestData() override = default;
-
-	CryFixedStringT<MaxFilePathLength> const folderPath;
-	CryFixedStringT<MaxFilePathLength> const levelName;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<>
 struct SSystemRequestData<ESystemRequestType::GetFileData> final : public SSystemRequestDataBase
 {
 	explicit SSystemRequestData(char const* const szName, SFileData& fileData_)
@@ -799,6 +779,28 @@ struct SSystemRequestData<ESystemRequestType::StopTrigger> final : public SSyste
 };
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SSystemRequestData<ESystemRequestType::ReloadControlsData> final : public SSystemRequestDataBase
+{
+	explicit SSystemRequestData(char const* const szFolderPath, char const* const szLevelName)
+		: SSystemRequestDataBase(ESystemRequestType::ReloadControlsData)
+		, folderPath(szFolderPath)
+		, levelName(szLevelName)
+	{}
+
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::ReloadControlsData> const* const pAMRData)
+		: SSystemRequestDataBase(ESystemRequestType::ReloadControlsData)
+		, folderPath(pAMRData->folderPath)
+		, levelName(pAMRData->levelName)
+	{}
+
+	virtual ~SSystemRequestData() override = default;
+
+	CryFixedStringT<MaxFilePathLength> const folderPath;
+	CryFixedStringT<MaxFilePathLength> const levelName;
+};
+
 //////////////////////////////////////////////////////////////////////////
 template<>
 struct SSystemRequestData<ESystemRequestType::ExecutePreviewTrigger> final : public SSystemRequestDataBase

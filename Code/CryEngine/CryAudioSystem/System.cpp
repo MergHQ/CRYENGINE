@@ -1235,6 +1235,7 @@ void CSystem::UnloadSetting(ControlId const id, SRequestUserData const& userData
 	PushRequest(request);
 }
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::RetriggerControls(SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
@@ -1242,6 +1243,7 @@ void CSystem::RetriggerControls(SRequestUserData const& userData /* = SAudioRequ
 	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ReloadControlsData(
@@ -1249,9 +1251,11 @@ void CSystem::ReloadControlsData(
 	char const* const szLevelName,
 	SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	SSystemRequestData<ESystemRequestType::ReloadControlsData> const requestData(szFolderPath, szLevelName);
 	CRequest const request(&requestData, userData);
 	PushRequest(request);
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -2033,107 +2037,10 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			break;
 		}
-	case ESystemRequestType::ExecutePreviewTrigger:
-		{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ExecutePreviewTrigger> const*>(request.GetData());
-
-			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
-
-			if (pTrigger != nullptr)
-			{
-				pTrigger->Execute(g_previewObject, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
-				result = ERequestStatus::Success;
-			}
-			else
-			{
-				result = ERequestStatus::FailureInvalidControlId;
-			}
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-
-			break;
-		}
-	case ESystemRequestType::ExecutePreviewTriggerEx:
-		{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ExecutePreviewTriggerEx> const*>(request.GetData());
-
-			g_previewTrigger.Execute(pRequestData->triggerInfo);
-			result = ERequestStatus::Success;
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-
-			break;
-		}
-	case ESystemRequestType::StopPreviewTrigger:
-		{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			g_previewTrigger.Stop();
-			result = ERequestStatus::Success;
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-
-			break;
-		}
-	case ESystemRequestType::ResetRequestCount:
-		{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			ZeroStruct(g_requestsPerUpdate);
-			ZeroStruct(g_requestPeaks);
-			result = ERequestStatus::Success;
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-
-			break;
-		}
-	case ESystemRequestType::RetriggerControls:
-		{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			HandleRetriggerControls();
-			result = ERequestStatus::Success;
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-
-			break;
-		}
 	case ESystemRequestType::ReleasePendingRays:
 		{
 			g_objectManager.ReleasePendingRays();
 			result = ERequestStatus::Success;
-
-			break;
-		}
-	case ESystemRequestType::ReloadControlsData:
-		{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ReloadControlsData> const*>(request.GetData());
-
-			for (auto const pObject : g_objectManager.GetObjects())
-			{
-				for (auto const pEvent : pObject->GetActiveEvents())
-				{
-					CRY_ASSERT_MESSAGE((pEvent != nullptr) && pEvent->IsPlaying(), "Invalid event during %s", __FUNCTION__);
-					pEvent->Stop();
-				}
-			}
-
-			g_xmlProcessor.ClearControlsData(EDataScope::All);
-			g_xmlProcessor.ParseSystemData();
-			g_xmlProcessor.ParseControlsData(pRequestData->folderPath, EDataScope::Global);
-
-			if (strcmp(pRequestData->levelName, "") != 0)
-			{
-				g_xmlProcessor.ParseControlsData(pRequestData->folderPath + pRequestData->levelName, EDataScope::LevelSpecific);
-			}
-
-			HandleRetriggerControls();
-
-			result = ERequestStatus::Success;
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-			break;
-		}
-	case ESystemRequestType::DrawDebugInfo:
-		{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			HandleDrawDebug();
-			result = ERequestStatus::Success;
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			break;
 		}
@@ -2221,6 +2128,94 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			break;
 		}
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	case ESystemRequestType::ExecutePreviewTrigger:
+		{
+
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ExecutePreviewTrigger> const*>(request.GetData());
+
+			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
+
+			if (pTrigger != nullptr)
+			{
+				pTrigger->Execute(g_previewObject, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
+				result = ERequestStatus::Success;
+			}
+			else
+			{
+				result = ERequestStatus::FailureInvalidControlId;
+			}
+
+			break;
+		}
+	case ESystemRequestType::ExecutePreviewTriggerEx:
+		{
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ExecutePreviewTriggerEx> const*>(request.GetData());
+
+			g_previewTrigger.Execute(pRequestData->triggerInfo);
+			result = ERequestStatus::Success;
+
+			break;
+		}
+	case ESystemRequestType::StopPreviewTrigger:
+		{
+			g_previewTrigger.Stop();
+			result = ERequestStatus::Success;
+
+			break;
+		}
+	case ESystemRequestType::ResetRequestCount:
+		{
+			ZeroStruct(g_requestsPerUpdate);
+			ZeroStruct(g_requestPeaks);
+			result = ERequestStatus::Success;
+
+			break;
+		}
+	case ESystemRequestType::RetriggerControls:
+		{
+			HandleRetriggerControls();
+			result = ERequestStatus::Success;
+
+			break;
+		}
+	case ESystemRequestType::ReloadControlsData:
+		{
+
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ReloadControlsData> const*>(request.GetData());
+
+			for (auto const pObject : g_objectManager.GetObjects())
+			{
+				for (auto const pEvent : pObject->GetActiveEvents())
+				{
+					CRY_ASSERT_MESSAGE((pEvent != nullptr) && pEvent->IsPlaying(), "Invalid event during %s", __FUNCTION__);
+					pEvent->Stop();
+				}
+			}
+
+			g_xmlProcessor.ClearControlsData(EDataScope::All);
+			g_xmlProcessor.ParseSystemData();
+			g_xmlProcessor.ParseControlsData(pRequestData->folderPath, EDataScope::Global);
+
+			if (strcmp(pRequestData->levelName, "") != 0)
+			{
+				g_xmlProcessor.ParseControlsData(pRequestData->folderPath + pRequestData->levelName, EDataScope::LevelSpecific);
+			}
+
+			HandleRetriggerControls();
+
+			result = ERequestStatus::Success;
+
+			break;
+		}
+	case ESystemRequestType::DrawDebugInfo:
+		{
+			HandleDrawDebug();
+			result = ERequestStatus::Success;
+
+			break;
+		}
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 	default:
 		{
 			Cry::Audio::Log(ELogType::Warning, "Unknown manager request type: %u", pBase->systemRequestType);
@@ -2603,22 +2598,6 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 			result = ERequestStatus::Success;
 			break;
 		}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	case EObjectRequestType::SetName:
-		{
-			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::SetName> const*>(request.GetData());
-
-			result = pObject->HandleSetName(pRequestData->name.c_str());
-
-			if (result == ERequestStatus::SuccessNeedsRefresh)
-			{
-				pObject->ForceImplementationRefresh(true);
-				result = ERequestStatus::Success;
-			}
-
-			break;
-		}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	case EObjectRequestType::ToggleAbsoluteVelocityTracking:
 		{
 			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::ToggleAbsoluteVelocityTracking> const*>(request.GetData());
@@ -2672,6 +2651,22 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 			result = ERequestStatus::Success;
 			break;
 		}
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	case EObjectRequestType::SetName:
+		{
+			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::SetName> const*>(request.GetData());
+
+			result = pObject->HandleSetName(pRequestData->name.c_str());
+
+			if (result == ERequestStatus::SuccessNeedsRefresh)
+			{
+				pObject->ForceImplementationRefresh(true);
+				result = ERequestStatus::Success;
+			}
+
+			break;
+		}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	default:
 		{
 			Cry::Audio::Log(ELogType::Warning, "Unknown object request type: %u", pBase->objectRequestType);
@@ -2703,8 +2698,17 @@ ERequestStatus CSystem::ProcessListenerRequest(SRequestData const* const pPassed
 			}
 
 			result = ERequestStatus::Success;
+
+			break;
 		}
-		break;
+
+	case EListenerRequestType::None:
+		{
+			result = ERequestStatus::Success;
+
+			break;
+		}
+
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	case EListenerRequestType::SetName:
 		{
@@ -2712,16 +2716,17 @@ ERequestStatus CSystem::ProcessListenerRequest(SRequestData const* const pPassed
 
 			pRequestData->pListener->HandleSetName(pRequestData->name.c_str());
 			result = ERequestStatus::Success;
+
+			break;
 		}
-		break;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
-	case EListenerRequestType::None:
-		result = ERequestStatus::Success;
-		break;
 	default:
-		result = ERequestStatus::FailureInvalidRequest;
-		Cry::Audio::Log(ELogType::Warning, "Unknown listener request type: %u", pBase->listenerRequestType);
-		break;
+		{
+			result = ERequestStatus::FailureInvalidRequest;
+			Cry::Audio::Log(ELogType::Warning, "Unknown listener request type: %u", pBase->listenerRequestType);
+
+			break;
+		}
 	}
 
 	return result;
