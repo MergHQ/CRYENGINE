@@ -38,6 +38,7 @@ public:
 	void FillForwardParams(SForwardParams& forwardParams, bool enable = true) const;
 
 private:
+	void Rescale(int resolutionScale);
 	void ExecuteVolumetricFogShadow();
 	f32  GetFogCullDistance() const;
 	void ResizeResource(int resourceWidth, int resourceHeight);

@@ -29,9 +29,30 @@ public:
 	static const int32 ShadowCascadeNum = 3;
 
 	static bool  IsEnabledInFrame();
-	static int32 GetVolumeTextureDepthSize();
-	static int32 GetVolumeTextureSize(int32 size, int32 scale);
-	static float GetDepthTexcoordFromLinearDepthScaled(float linearDepthScaled, float raymarchStart, float invRaymarchDistance, float depthSlicesNum);
+
+	static inline int32 GetVolumeTextureDepthSize(int32 size)
+	{
+		int32 d = size;
+		d = (d < 4) ? 4 : d;
+		d = (d > 255) ? 255 : d; // this limitation due to the limitation of CTexture::CreateTextureArray.
+		int32 f = d % 4;
+		d = (f > 0) ? d - f : d; // depth should be the multiples of 4.
+		return d;
+	}
+
+	static inline int32 GetVolumeTextureSize(int32 size, int32 scale)
+	{
+		scale = max(scale, 2);
+		return (size / scale) + ((size % scale) > 0 ? 1 : 0);
+	}
+
+	static inline float GetDepthTexcoordFromLinearDepthScaled(float linearDepthScaled, float raymarchStart, float invRaymarchDistance, float depthSlicesNum)
+	{
+		linearDepthScaled = max(0.0f, linearDepthScaled - raymarchStart);
+		float d = powf((linearDepthScaled * invRaymarchDistance), (1.0f / 2.0f));
+		d = (0.5f - d) / depthSlicesNum + d;
+		return d;
+	}
 
 public:
 	CVolumetricFogStage();
@@ -43,6 +64,8 @@ public:
 	}
 
 	void Init() final;
+	void Resize(int renderWidth, int renderHeight) final;
+	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater) final;
 	void Update() final;
 
 	void Execute();
@@ -64,6 +87,8 @@ private:
 	static const int32 MaxFrameNum = 4;
 
 private:
+	void      Rescale(int resolutionScale, int depthScale);
+	void      ResizeResource(int volumeWidth, int volumeHeight, int volumeDepth);
 	bool      PreparePerPassResources(bool bOnInit);
 
 	void      ExecuteInjectParticipatingMedia(const SScopedComputeCommandList& commandList);
@@ -144,7 +169,6 @@ private:
 	uint32                   m_numFogVolumes = 0;
 	int64                    m_frameID = -1;
 	int32                    m_tick = 0;
-	int32                    m_resourceFrameID = -1;
 
 	bool                     m_seperateDensity = false;
 };

@@ -107,7 +107,7 @@ public:
 	void Init() final;
 	void Update() final;
 	void Prepare();
-	void Resize(int renderWidth, int renderHeight) override final;
+	void Resize(int renderWidth, int renderHeight) final;
 
 	void  ExecuteWaterVolumeCaustics();
 	void  ExecuteDeferredWaterVolumeCaustics();

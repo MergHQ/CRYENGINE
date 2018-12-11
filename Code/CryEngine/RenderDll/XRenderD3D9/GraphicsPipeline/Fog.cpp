@@ -49,11 +49,25 @@ void CFogStage::ResizeResource(int resourceWidth, int resourceHeight)
 #endif
 }
 
+void CFogStage::Rescale(int resolutionScale)
+{
+#if defined(VOLUMETRIC_FOG_SHADOWS)
+	const CRenderView* pRenderView = RenderView();
+	const int32 renderWidth  = pRenderView->GetRenderResolution()[0];
+	const int32 renderHeight = pRenderView->GetRenderResolution()[1];
+
+	const int32 width  = renderWidth  / resolutionScale;
+	const int32 height = renderHeight / resolutionScale;
+
+	ResizeResource(width, height);
+#endif
+}
+
 void CFogStage::Resize(int renderWidth, int renderHeight)
 {
 #if defined(VOLUMETRIC_FOG_SHADOWS)
 	// Recreate render targets if quality was changed
-	const int32 resolutionScale = (CRenderer::CV_r_FogShadows == 1) ? 2 : 4;
+	const int32 resolutionScale = (CRendererCVars::CV_r_FogShadows == 1) ? 2 : 4;
 
 	const int32 width  = renderWidth  / resolutionScale;
 	const int32 height = renderHeight / resolutionScale;
@@ -67,17 +81,10 @@ void CFogStage::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
 #if defined(VOLUMETRIC_FOG_SHADOWS)
 	if (auto pVar = cvarUpdater.GetCVar("r_FogShadows"))
 	{
-		const CRenderView* pRenderView = RenderView();
-		const int32 renderWidth  = pRenderView->GetRenderResolution()[0];
-		const int32 renderHeight = pRenderView->GetRenderResolution()[1];
-
 		// Recreate render targets if quality was changed
 		const int32 resolutionScale = (pVar->intValue == 1 ? 2 : 4);
 
-		const int32 width  = renderWidth  / resolutionScale;
-		const int32 height = renderHeight / resolutionScale;
-
-		ResizeResource(width, height);
+		Rescale(resolutionScale);
 	}
 #endif
 }
@@ -88,7 +95,7 @@ void CFogStage::Execute()
 
 	bool bFogEnabled = RenderView()->IsGlobalFogEnabled();
 
-	if (!(bFogEnabled && CRenderer::CV_r_UseZPass != CSceneGBufferStage::eZPassMode_Off))
+	if (!(bFogEnabled && CRendererCVars::CV_r_UseZPass != CSceneGBufferStage::eZPassMode_Off))
 	{
 		return;
 	}
@@ -127,7 +134,7 @@ void CFogStage::Execute()
 		const bool bSinglePassStereo = (viewInfoCount > 1) ? true : false;
 
 		// prevent fog depth clipping if volumetric fog, SVOGI, or single pass stereo rendering are activated.
-		bool bFogDepthTest = (CRenderer::CV_r_FogDepthTest != 0.0f)
+		bool bFogDepthTest = (CRendererCVars::CV_r_FogDepthTest != 0.0f)
 		                       && !bVolumtricFog
 		                       && !nSvoGiTexId
 		                       && !bSinglePassStereo;
@@ -336,7 +343,7 @@ void CFogStage::ExecuteVolumetricFogShadow()
 		inputFlag |= bVolCloudShadow ? BIT(1) : 0;
 		inputFlag |= bSunShadow ? BIT(2) : 0;
 
-		if (m_passVolFogShadowRaycast.IsDirty(inputFlag, CRenderer::CV_r_FogShadowsMode))
+		if (m_passVolFogShadowRaycast.IsDirty(inputFlag, CRendererCVars::CV_r_FogShadowsMode))
 		{
 			uint64 rtMask = 0;
 			rtMask |= bCloudShadow ? g_HWSR_MaskBit[HWSR_SAMPLE5] : 0;
@@ -344,7 +351,7 @@ void CFogStage::ExecuteVolumetricFogShadow()
 
 			static CCryNameTSCRC TechName0("FogPassVolShadowsInterleavePass");
 			static CCryNameTSCRC TechName1("MultiGSMShadowedFog");
-			auto& techName = (CRenderer::CV_r_FogShadowsMode == 1) ? TechName1 : TechName0;
+			auto& techName = (CRendererCVars::CV_r_FogShadowsMode == 1) ? TechName1 : TechName0;
 
 			m_passVolFogShadowRaycast.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 			m_passVolFogShadowRaycast.SetTechnique(pShader, techName, rtMask);
@@ -467,9 +474,9 @@ f32 CFogStage::GetFogCullDistance() const
 
 	float fogDepth = 0.0f;
 
-	if (CRenderer::CV_r_FogDepthTest != 0.0f)
+	if (CRendererCVars::CV_r_FogDepthTest != 0.0f)
 	{
-		if (CRenderer::CV_r_FogDepthTest < 0.0f)
+		if (CRendererCVars::CV_r_FogDepthTest < 0.0f)
 		{
 			Vec4 fogColGradColBase(0, 0, 0, 0);
 			Vec4 fogColGradColDelta(0, 0, 0, 0);
@@ -484,7 +491,7 @@ f32 CFogStage::GetFogCullDistance() const
 			const float fogColorIntensityRadial = MaxChannel(fogColGradRadial);
 			const float fogColorIntensity = max(fogColorIntensityBase, fogColorIntensityTop) + fogColorIntensityRadial;
 
-			const float threshold = -CRenderer::CV_r_FogDepthTest;
+			const float threshold = -CRendererCVars::CV_r_FogDepthTest;
 
 			const float atmosphereScale = volFogParams.x;
 			const float volFogHeightDensityAtViewer = volFogParams.y;
@@ -560,7 +567,7 @@ f32 CFogStage::GetFogCullDistance() const
 		}
 		else
 		{
-			fogDepth = CRenderer::CV_r_FogDepthTest;
+			fogDepth = CRendererCVars::CV_r_FogDepthTest;
 		}
 	}
 
