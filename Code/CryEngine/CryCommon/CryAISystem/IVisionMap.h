@@ -259,7 +259,7 @@ public:
 	virtual const ObserverParams*   GetObserverParams(const ObserverID& observerID) const = 0;
 	virtual const ObservableParams* GetObservableParams(const ObservableID& observableID) const = 0;
 
-	virtual void                    Update(float frameTime) = 0;
+	virtual void                    Update(const CTimeValue frameStartTime, const float frameTime) = 0;
 	// </interfuscator:shuffle>
 };
 

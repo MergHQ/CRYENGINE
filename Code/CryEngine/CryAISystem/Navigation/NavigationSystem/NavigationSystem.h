@@ -496,7 +496,7 @@ public:
 	virtual void                  SetMeshName(NavigationMeshID meshID, const char* name) override;
 
 	virtual WorkingState          GetState() const override;
-	virtual WorkingState          Update(bool blocking) override;
+	virtual WorkingState          Update(const CTimeValue frameStartTime, const float frameTime, bool blocking) override;
 	virtual void                  PauseNavigationUpdate() override;
 	virtual void                  RestartNavigationUpdate() override;
 
@@ -706,7 +706,8 @@ private:
 	};
 
 #if NAV_MESH_REGENERATION_ENABLED
-	void UpdateMeshes(const float frameTime, const bool blocking, const bool multiThreaded, const bool bBackground);
+	void UpdateMeshes(const CTimeValue frameStartTime, const float frameTime, const bool blocking, const bool multiThreaded, const bool bBackground);
+	void UpdateMeshesFromEditor(const bool blocking, const bool multiThreaded, const bool bBackground);
 	void SetupGenerator(const NavigationMeshID meshID, const MNM::CNavMesh::SGridParams& paramsGrid,
 	                    uint16 x, uint16 y, uint16 z, MNM::CTileGenerator::Params& params, const VolumeDefCopy& pDef, bool bMarkupUpdate);
 	bool SpawnJob(TileTaskResult& result, NavigationMeshID meshID, const MNM::CNavMesh::SGridParams& paramsGrid,
@@ -822,6 +823,9 @@ private:
 
 	MNM::STileGeneratorExtensionsContainer m_tileGeneratorExtensionsContainer;
 	MNM::CNavMeshQueryManager*             m_pNavMeshQueryManager;
+
+	CTimeValue                             m_frameStartTime;
+	float                                  m_frameDeltaTime;
 };
 
 namespace NavigationSystemUtils

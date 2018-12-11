@@ -157,6 +157,8 @@ NavigationSystem::NavigationSystem(const char* configName)
 	, m_isNavigationUpdatePaused(false)
 	, m_tileGeneratorExtensionsContainer()
 	, m_pNavMeshQueryManager(new MNM::CNavMeshQueryManager())
+	, m_frameStartTime(0.0f)
+	, m_frameDeltaTime(0.0f)
 {
 	SetupTasks();
 
@@ -1095,17 +1097,14 @@ void NavigationSystem::UpdateInternalNavigationSystemData(const bool blocking)
 	m_worldMonitor.FlushPendingAABBChanges();
 
 	// Prevent multiple updates per frame
-	static int lastUpdateFrameID = 0;
+	static CTimeValue lastFrameStartTime;
 
-	const int frameID = gEnv->nMainFrameID;
-	const bool doUpdate = (frameID != lastUpdateFrameID) && !(editorBackgroundThreadRunning);
+	const bool doUpdate = (lastFrameStartTime != m_frameStartTime) && !(editorBackgroundThreadRunning);
 	if (doUpdate)
 	{
-		lastUpdateFrameID = frameID;
+		lastFrameStartTime = m_frameStartTime;
 
-		const float frameTime = gEnv->pTimer->GetFrameTime();
-
-		UpdateMeshes(frameTime, blocking, gAIEnv.CVars.NavigationSystemMT != 0, false);
+		UpdateMeshes(m_frameStartTime, m_frameDeltaTime, blocking, gAIEnv.CVars.NavigationSystemMT != 0, false);
 	}
 #endif
 
@@ -1120,8 +1119,11 @@ void NavigationSystem::UpdateInternalSubsystems()
 	m_offMeshNavigationManager.ProcessQueuedRequests();
 }
 
-INavigationSystem::WorkingState NavigationSystem::Update(bool blocking)
+INavigationSystem::WorkingState NavigationSystem::Update(const CTimeValue frameStartTime, const float frameTime, bool blocking)
 {
+	m_frameStartTime = frameStartTime;
+	m_frameDeltaTime = frameTime;
+
 	// Pre update step. We need to request all our NavigationSystem users
 	// to complete all their reading jobs.
 	WaitForAllNavigationSystemUsersCompleteTheirReadingAsynchronousTasks();
@@ -1159,9 +1161,9 @@ uint32 NavigationSystem::GetWorkingQueueSize() const
 }
 
 #if NAV_MESH_REGENERATION_ENABLED
-void NavigationSystem::UpdateMeshes(const float frameTime, const bool blocking, const bool multiThreaded, const bool bBackground)
+void NavigationSystem::UpdateMeshes(const CTimeValue frameStartTime, const float frameTime, const bool blocking, const bool multiThreaded, const bool bBackground)
 {
-	m_updatesManager.Update();
+	m_updatesManager.Update(frameStartTime, frameTime);
 	
 	if (m_isNavigationUpdatePaused || frameTime == .0f)
 		return;
@@ -1330,6 +1332,17 @@ void NavigationSystem::UpdateMeshes(const float frameTime, const bool blocking, 
 		return;
 	}
 
+}
+
+// Updates Meshes using the global timer
+// Can be executed by the Sandbox Editor to regenerate the NavMesh
+// NavMesh regeneration should still work even if the AI system is disabled (edition mode)
+void NavigationSystem::UpdateMeshesFromEditor(const bool blocking, const bool multiThreaded, const bool bBackground)
+{
+	// Uses hard-coded frameDuration because this function gets executed by (ProcessQueuedMeshUpdates and NavigationSystemBackgroundUpdate)
+	// which are blocking operations. This effectively means the engine isn't updated and therefore we cannot tell what is the frame duration
+	const float frameDuration = 0.0333f;
+	UpdateMeshes(gEnv->pTimer->GetFrameStartTime(), frameDuration, blocking, multiThreaded, bBackground);
 }
 
 void NavigationSystem::SetupGenerator(
@@ -1631,7 +1644,7 @@ void NavigationSystem::ProcessQueuedMeshUpdates()
 #if NAV_MESH_REGENERATION_ENABLED
 	do
 	{
-		UpdateMeshes(0.0333f, false, gAIEnv.CVars.NavigationSystemMT != 0, false);
+		UpdateMeshesFromEditor(false, gAIEnv.CVars.NavigationSystemMT != 0, false);
 	}
 	while (m_state == INavigationSystem::Working);
 #endif
@@ -5794,7 +5807,7 @@ void NavigationSystemBackgroundUpdate::Thread::ThreadEntry()
 		{
 			const CTimeValue startedUpdate = gEnv->pTimer->GetAsyncTime();
 
-			m_navigationSystem.UpdateMeshes(0.0333f, false, true, true);
+			m_navigationSystem.UpdateMeshesFromEditor(false, true, true);
 
 			const CTimeValue lastUpdateTime = gEnv->pTimer->GetAsyncTime() - startedUpdate;
 

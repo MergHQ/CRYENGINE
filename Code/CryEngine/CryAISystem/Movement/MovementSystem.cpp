@@ -70,7 +70,7 @@ bool IsActorValidForMovementUpdateContextCreation(MovementActor& actor)
 }
 
 MovementUpdateContext CreateMovementUpdateContextFrom(
-  MovementActor& actor, MovementSystem& system, const float updateTime)
+  MovementActor& actor, MovementSystem& system, const CTimeValue frameStartTime, const float updateTime)
 {
 	IPathFollower* pathFollower = actor.callbacks.getPathFollowerFunction();
 
@@ -81,7 +81,8 @@ MovementUpdateContext CreateMovementUpdateContextFrom(
 	  system,
 	  *pathFollower,
 	  *actor.planner.get(),
-	  updateTime);
+	  updateTime,
+      frameStartTime);
 }
 
 class ActorMatchesIdPredicate
@@ -101,7 +102,10 @@ private:
 	EntityId m_entityID;
 };
 
-MovementSystem::MovementSystem() : m_nextUniqueRequestID(0)
+MovementSystem::MovementSystem()
+	: m_nextUniqueRequestID(0)
+	, m_frameStartTime(0.0f)
+	, m_frameDeltaTime(0.0f)
 {
 }
 
@@ -220,9 +224,12 @@ void MovementSystem::GetRequestStatus(const MovementRequestID& requestID, Moveme
 	}
 }
 
-void MovementSystem::Update(float updateTime)
+void MovementSystem::Update(const CTimeValue frameStartTime, const float frameDeltaTime)
 {
-	UpdateActors(updateTime);
+	m_frameStartTime = frameDeltaTime;
+	m_frameDeltaTime = frameDeltaTime;
+
+	UpdateActors();
 
 #if defined(COMPILE_WITH_MOVEMENT_SYSTEM_DEBUG)
 	if (gAIEnv.CVars.DebugMovementSystem)
@@ -426,7 +433,7 @@ bool MovementSystem::IsPlannerWorkingOnRequestID(const MovementActor& actor, con
 	return (actor.requestIdCurrentlyInPlanner == id) && (id != MovementRequestID::Invalid());
 }
 
-void MovementSystem::UpdateActors(float updateTime)
+void MovementSystem::UpdateActors()
 {
 	using namespace Movement;
 
@@ -436,13 +443,13 @@ void MovementSystem::UpdateActors(float updateTime)
 	{
 		MovementActor& actor = *actorIt;
 
-		UpdateActor(actor, updateTime);
+		UpdateActor(actor);
 
 		++actorIt;
 	}
 }
 
-MovementSystem::ActorUpdateStatus MovementSystem::UpdateActor(MovementActor& actor, float updateTime)
+MovementSystem::ActorUpdateStatus MovementSystem::UpdateActor(MovementActor& actor)
 {
 	// Construct a movement context which contains everything needed for
 	// updating the passed in actor. Everything is validated once, here,
@@ -453,7 +460,7 @@ MovementSystem::ActorUpdateStatus MovementSystem::UpdateActor(MovementActor& act
 		return ActorCanBeRemoved;
 	}
 
-	MovementUpdateContext context = CreateMovementUpdateContextFrom(actor, *this, updateTime);
+	MovementUpdateContext context = CreateMovementUpdateContextFrom(actor, *this, m_frameStartTime, m_frameDeltaTime);
 
 	StartWorkingOnNewRequestIfPossible(context);
 

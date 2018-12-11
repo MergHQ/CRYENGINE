@@ -6,7 +6,7 @@ struct INavigationUpdatesManager
 {
 	virtual ~INavigationUpdatesManager() {}
 
-	virtual void Update() = 0;
+	virtual void Update(const CTimeValue frameStartTime, const float frameDeltaTime) = 0;
 
 	virtual void EntityChanged(int physicalEntityId, const AABB& aabb) = 0;
 	virtual void WorldChanged(const AABB& aabb) = 0;

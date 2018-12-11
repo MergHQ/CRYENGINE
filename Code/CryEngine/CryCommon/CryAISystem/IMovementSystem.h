@@ -183,7 +183,7 @@ struct IMovementSystem
 	virtual void Reset() = 0;
 
 	//! This is where the movement system will do it's work.
-	virtual void Update(float updateTime) = 0;
+	virtual void Update(const CTimeValue frameStartTime, const float frameDeltaTime) = 0;
 
 	//! When a path constructed by the Navigation System contains a point belonging to the NAV_CUSTOM_NAVIGATION type this function will be invoked if it is registered.
 	//! This should instantiate a movement block able to handle the movement through that type of navigation type that is usually created in the game code.

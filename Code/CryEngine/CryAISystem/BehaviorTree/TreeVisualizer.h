@@ -104,7 +104,7 @@ public:
 private:
 	void CollectTreeNodeInfo(const DebugNode& debugNode, const UpdateContext& updateContext, TreeNode& outNode);
 	void CollectVariablesInfo(const BehaviorTreeInstance& instance);
-	void CollectTimeStamps(const BehaviorTreeInstance& instance);
+	void CollectTimeStamps(const BehaviorTreeInstance& instance, const UpdateContext& updateContext);
 	void CollectEventsLog(const BehaviorTreeInstance& instance);
 	void CollectExecutionErrorInfo(const DebugTree& debugTree);
 

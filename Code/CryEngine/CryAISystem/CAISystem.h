@@ -222,37 +222,37 @@ public:
 	void SubsystemUpdateActionManager();
 	void SubsystemUpdateRadialOcclusionRaycast();
 	void SubsystemUpdateLightManager();
-	void SubsystemUpdateNavigation(const CTimeValue frameStartTime, const float frameDeltaTime);
-	void SubsystemUpdateBannedSOs(const float frameDeltaTime);
-	void SubsystemUpdateSystemComponents(const float frameDeltaTime);
-	void SubsystemUpdateCommunicationManager(const float frameDeltaTime);
-	void SubsystemUpdateGroupManager(const float frameDeltaTime);
+	void SubsystemUpdateNavigation();
+	void SubsystemUpdateBannedSOs();
+	void SubsystemUpdateSystemComponents();
+	void SubsystemUpdateCommunicationManager();
+	void SubsystemUpdateGroupManager();
 	void SubsystemUpdatePlayers();
-	void SubsystemUpdateGroups(const CTimeValue frameStartTime);
-	void SubsystemUpdateLeaders(const float frameDeltaTime);
+	void SubsystemUpdateGroups();
+	void SubsystemUpdateLeaders();
 	void SubsystemUpdateSmartObjectManager();
-	void SubsystemUpdateInterestManager(const float frameDeltaTime);
+	void SubsystemUpdateInterestManager();
 	void SubsystemUpdateTacticalPointSystem();
 	void SubsystemUpdateAmbientFire();
 	void SubsystemUpdateExpensiveAccessoryQuota();
-	void SubsystemUpdateActorsAndTargetTrackAndORCA(const float frameDeltaTime);
+	void SubsystemUpdateActorsAndTargetTrackAndORCA();
 	void SubsystemUpdateTargetTrackManager();
-	void SubsystemUpdateCollisionAvoidanceSystem(const float frameDeltaTime);
+	void SubsystemUpdateCollisionAvoidanceSystem();
 
 	// These subsystems are updated in the Update(...) function if the respective subsystem flag is not set in m_overrideUpdateFlags
 	// If it's set the subsystem will not get updated when executing Update(...) function but
 	// may get updated via UpdateSubsystem with the specific flag from Game code
 
-	void TrySubsystemUpdateVisionMap(const float frameDeltaTime, const bool isAutomaticUpdate);
-	void TrySubsystemUpdateAuditionMap(const float frameDeltaTime, const bool isAutomaticUpdate);
-	void TrySubsystemUpdateCoverSystem(const float frameDeltaTime, const bool isAutomaticUpdate);
-	void TrySubsystemUpdateNavigationSystem(const bool isAutomaticUpdate);
+	void TrySubsystemUpdateVisionMap(const CTimeValue frameStartTime, const float frameDeltaTime, const bool isAutomaticUpdate);
+	void TrySubsystemUpdateAuditionMap(const CTimeValue frameStartTime,const float frameDeltaTime, const bool isAutomaticUpdate);
+	void TrySubsystemUpdateCoverSystem(const CTimeValue frameStartTime,const float frameDeltaTime, const bool isAutomaticUpdate);
+	void TrySubsystemUpdateNavigationSystem(const CTimeValue frameStartTime, const float frameDeltaTime,const bool isAutomaticUpdate);
 
-	void TrySubsystemUpdateMovementSystem(const float frameDeltaTime, const bool isAutomaticUpdate);
-	void TrySubsystemUpdateGlobalRayCaster(const float frameDeltaTime, const bool isAutomaticUpdate);
-	void TrySubsystemUpdateGlobalIntersectionTester(const float frameDeltaTime, const bool isAutomaticUpdate);
-	void TrySubsystemUpdateClusterDetector(const float frameDeltaTime, const bool isAutomaticUpdate);
-	void TrySubsystemUpdateBehaviorTreeManager(const bool isAutomaticUpdate);
+	void TrySubsystemUpdateMovementSystem(const CTimeValue frameStartTime, const float frameDeltaTime, const bool isAutomaticUpdate);
+	void TrySubsystemUpdateGlobalRayCaster(const CTimeValue frameStartTime, const float frameDeltaTime, const bool isAutomaticUpdate);
+	void TrySubsystemUpdateGlobalIntersectionTester(const CTimeValue frameStartTime, const float frameDeltaTime, const bool isAutomaticUpdate);
+	void TrySubsystemUpdateClusterDetector(const CTimeValue frameStartTime, const float frameDeltaTime, const bool isAutomaticUpdate);
+	void TrySubsystemUpdateBehaviorTreeManager(const CTimeValue frameStartTime, const float frameDeltaTime, const bool isAutomaticUpdate);
 	
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//Time/Updates/////////////////////////////////////////////////////////////////////////////////////////////////
