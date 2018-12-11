@@ -1235,12 +1235,6 @@ void CTiledLightVolumesStage::GenerateLightList()
 }
 
 
-bool CTiledLightVolumesStage::IsSeparateVolumeListGen()
-{
-	return !(CRenderer::CV_r_DeferredShadingTiled == CTiledShadingStage::eDeferredMode_2Pass && !CRenderer::CV_r_GraphicsPipelineMobile);
-}
-
-
 void CTiledLightVolumesStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 dispatchSizeY)
 {
 	PROFILE_LABEL_SCOPE("TILED_VOLUMES");
