@@ -540,7 +540,12 @@ bool CShadowUtils::GetSubfrustumMatrix(Matrix44A& result, const ShadowMapFrustum
 	cropMatrix.m31 = -(1.0f + cropMatrix.m11 * crop.y);
 
 	result = pFullFrustum->mLightViewMatrix * cropMatrix;
-	return !(crop.x < -1.0f || crop.z > 1.0f || crop.y < -1.0f || crop.w > 1.0f);
+
+	// Return false when the sub-frustum rectangle is completely outside
+	bool comletelyoutx = fabs(crop.x) > 1.0f && fabs(crop.x + crop.z) > 1.0f && copysignf(0.0f, crop.x) == copysignf(0.0f, crop.x + crop.z);
+	bool comletelyouty = fabs(crop.y) > 1.0f && fabs(crop.y + crop.w) > 1.0f && copysignf(0.0f, crop.y) == copysignf(0.0f, crop.y + crop.w);
+
+	return !comletelyoutx && !comletelyouty;
 }
 
 bool CShadowUtils::SetupShadowsForFog(SShadowCascades& shadowCascades, const CRenderView* pRenderView)
