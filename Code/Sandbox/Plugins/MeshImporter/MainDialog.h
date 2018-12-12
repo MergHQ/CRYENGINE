@@ -34,6 +34,7 @@ class CGlobalImportSettings;
 class CProxyData;
 class CProxyGenerator;
 class CPhysProxiesControlsWidget;
+class QTabWidget;
 
 namespace DialogMesh
 {
@@ -299,6 +300,8 @@ private:
 	SViewSettings   m_viewSettings;
 
 	CMaterialPanel* m_pMaterialPanel;
+	QTabWidget*     m_pSceneTab;
+	QTabWidget*     m_pPropertiesTab;
 
 	std::unique_ptr<CModelProperties> m_pModelProperties;
 
