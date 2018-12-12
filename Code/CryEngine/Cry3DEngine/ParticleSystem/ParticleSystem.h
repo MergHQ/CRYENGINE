@@ -68,7 +68,7 @@ public:
 	CParticleJobManager&     GetJobManager() { return m_jobManager; }
 	CParticleProfiler&       GetProfiler()   { return m_profiler; }
 
-	bool                     IsRuntime() const                { return m_numClears > 0 && m_numFrames > 1; }
+	bool                     IsRuntime() const;
 	void                     CheckFileAccess(cstr filename = 0) const;
 
 	static float             GetMaxAngularDensity(const CCamera& camera);
@@ -100,7 +100,6 @@ private:
 	_smart_ptr<IMaterial>    m_pFlareMaterial;
 	bool                     m_bResetEmitters = false;
 	QuatT                    m_lastCameraPose = IDENTITY;
-	uint                     m_numClears      = 0;
 	uint                     m_numFrames      = 0;
 	uint                     m_nextEmitterId  = 0;
 	ESystemConfigSpec        m_lastSysSpec    = END_CONFIG_SPEC_ENUM;

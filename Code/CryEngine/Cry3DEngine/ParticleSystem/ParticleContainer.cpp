@@ -59,7 +59,7 @@ void CParticleContainer::Resize(uint32 newSize)
 	if (newSize <= m_capacity)
 		return;
 
-	const size_t newCapacity = CRY_PFX2_GROUP_ALIGN(newSize + min(newSize >> 1, m_capacity));
+	const size_t newCapacity = newSize <= CRY_PFX2_GROUP_STRIDE * 2 ? newSize : CRY_PFX2_GROUP_ALIGN(newSize + (newSize >> 1));
 
 	byte* pNew = ParticleAlloc(newCapacity * m_useData.totalSize);
 	if (m_capacity)
