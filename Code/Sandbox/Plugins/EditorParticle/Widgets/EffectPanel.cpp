@@ -913,7 +913,7 @@ private:
 			m_description += pComp->GetName();
 			Serialization::SaveJsonBuffer(m_saveComponent, *pComp);
 			m_saveComponent.push_back(0);
-			m_parentIndex = pComp->GetParent()->GetIndex();
+			m_parentIndex = pComp->GetParent() ? pComp->GetParent()->GetIndex() : -1;
 			m_parentPos = pComp->GetIndex(true);
 		}
 

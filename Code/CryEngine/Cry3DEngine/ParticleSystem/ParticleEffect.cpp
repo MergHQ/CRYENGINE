@@ -51,9 +51,8 @@ void CParticleEffect::Compile()
 		component->m_pEffect = this;
 		component->SetChanged();
 		component->PreCompile();
-	}
-	for (auto& component : m_components)
 		component->ResolveDependencies();
+	}
 
 	Sort();
 
@@ -63,6 +62,8 @@ void CParticleEffect::Compile()
 	for (auto& component : m_components)
 	{
 		component->m_componentId = id++;
+		if (!component->IsEnabled())
+			continue;
 		component->Compile();
 		if (component->MainPreUpdate.size())
 			MainPreUpdate.push_back(component);
@@ -78,6 +79,8 @@ void CParticleEffect::Compile()
 		if (!component->GetParentComponent())
 		{
 			m_topComponents.push_back(component);
+			if (!component->IsEnabled())
+				continue;
 			component->UpdateTimings();
 			const STimingParams& timings = component->ComponentParams();
 			SetMax(m_timings.m_maxParticleLife, timings.m_maxParticleLife);

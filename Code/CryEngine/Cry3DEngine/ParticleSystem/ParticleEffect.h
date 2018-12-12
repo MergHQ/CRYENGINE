@@ -27,12 +27,12 @@ public:
 	virtual cstr                   GetName() const override;
 	virtual void                   Serialize(Serialization::IArchive& ar) override;
 	virtual IParticleEmitter*      Spawn(const ParticleLoc& loc, const SpawnParams* pSpawnParams = NULL) override;
-	virtual uint                   GetNumComponents() const override              { return m_components.size(); }
-	virtual IParticleComponent*    GetComponent(uint componentIdx) const override { return m_components[componentIdx]; }
+	virtual uint                   GetNumComponents() const override       { return m_components.size(); }
+	virtual IParticleComponent*    GetComponent(uint index) const override { return index < m_components.size() ? m_components[index] : nullptr; }
 	virtual IParticleComponent*    AddComponent() override;
 	virtual void                   RemoveComponent(uint componentIdx, bool all) override;
 	virtual void                   SetChanged() override;
-	virtual void                   Update() override                              { Compile(); }
+	virtual void                   Update() override                       { Compile(); }
 	virtual Serialization::SStruct GetEffectOptionsSerializer() const override;
 	virtual TParticleAttributesPtr CreateAttributesInstance() const override;
 	// ~pfx2 IParticleEffect

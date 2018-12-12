@@ -126,7 +126,7 @@ auto CParamMod<Domain, T>::GetValues(const CParticleComponentRuntime& runtime, T
 
 	for (auto& pMod : m_modifiers)
 	{
-		if (domain >= (max(pMod->GetDomain(), Domain) & ~EDD_HasUpdate))
+		if (domain >= (min(pMod->GetDomain(), Domain) & ~EDD_HasUpdate))
 			pMod->Modify(runtime, range, stream, domain);
 		else
 			minmax = minmax * pMod->GetMinMax();

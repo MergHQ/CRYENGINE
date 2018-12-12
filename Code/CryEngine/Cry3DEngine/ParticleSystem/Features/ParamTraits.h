@@ -44,8 +44,11 @@ struct TNumber
 
 	static T HardMin()        { return std::numeric_limits<T>::lowest(); }
 	static T HardMax()        { return std::numeric_limits<T>::max(); }
+	static T SoftMin()        { return std::numeric_limits<T>::is_signed ? max(T(-1000), HardMin()) : HardMin(); }
+	static T SoftMax()        { return min(T(+1000), HardMax()); }
+	static T MinStep()        { return std::numeric_limits<T>::is_integer ? T(1) : std::numeric_limits<T>::epsilon(); }
 	static T Default()        { return T(0); }
-	static T NonDefault()     { return std::numeric_limits<T>::min(); }
+	static T NonDefault()     { return MinStep(); }
 	static S To(T val)        { return RemoveNegZero(val); } // write to value
 	static T From(S val)      { return RemoveNegZero(val); } // read from value
 	static bool HideDefault() { return false; }
@@ -76,6 +79,10 @@ private:
 		return val.Serialize(ar, name, label);
 	}
 	bool Serialize(Serialization::IArchive& ar, cstr name, cstr label);
+	static Serialization::RangeDecorator<T> Range(T& value)
+	{
+		return Serialization::Range(value, TTraits::HardMin(), TTraits::HardMax(), TTraits::SoftMin(), TTraits::SoftMax());
+	};
 
 	S m_value;
 };
@@ -84,18 +91,21 @@ template<typename T, int iMin>
 struct THardMin: TNumber<T>
 {
 	static T HardMin() { return T(iMin); }
+	static T SoftMin() { return HardMin(); }
 };
 
 template<typename T>
 struct TPositive: TNumber<T>
 {
 	static T HardMin() { return std::numeric_limits<T>::min(); }
+	static T SoftMin() { return HardMin(); }
 };
 
 template<typename T, int iMin, int iMax>
 struct THardLimits: THardMin<T, iMin>
 {
 	static T HardMax() { return T(iMax); }
+	static T SoftMax() { return HardMax(); }
 };
 
 template<typename T>
@@ -107,13 +117,15 @@ struct THideDefault: TNumber<T>
 template<typename T>
 struct TDefaultMin: THideDefault<T>
 {
-	static T Default() { return TNumber<T>::HardMin(); }
+	static T Default()    { return TNumber<T>::HardMin(); }
+	static T NonDefault() { return max(Default() + TNumber<T>::MinStep(), T(0)); }
 };
 
 template<typename T>
 struct TDefaultMax: THideDefault<T>
 {
-	static T Default() { return TNumber<T>::HardMax(); }
+	static T Default()    { return TNumber<T>::HardMax(); }
+	static T NonDefault() { return min(Default() - TNumber<T>::MinStep(), T(0)); }
 };
 
 template<typename Base>
@@ -124,6 +136,14 @@ struct TDefaultInf: Base
 	static T Default()        { return HardMax(); }
 	static bool HideDefault() { return true; }
 	static cstr DefaultName() { return "Infinity"; }
+};
+
+template<typename Base, int iSoftMax>
+struct TSoftLimits: Base
+{
+	typedef typename Base::TType T;
+	static T SoftMin() { return std::numeric_limits<T>::is_signed ? max(T(-iSoftMax), Base::HardMin()) : Base::HardMin(); }
+	static T SoftMax() { return min(T(+iSoftMax), Base::HardMax()); }
 };
 
 typedef TValue<TNumber<float>>                  SFloat;
@@ -137,6 +157,11 @@ typedef TValue<THardLimits<float, 0, 1>>        UUnitFloat;
 
 typedef TValue<THardLimits<uint, 0, 255>>       UByte;
 typedef TValue<THardLimits<uint, 1, 256>>       UBytePos;
+
+typedef TValue<TSoftLimits<SFloat, 10>>         SFloat10;
+typedef TValue<TSoftLimits<UFloat, 10>>         UFloat10;
+typedef TValue<TSoftLimits<UFloat, 100>>        UFloat100;
+
 
 template<typename Base, int iTo, int iFrom>
 struct ConvertScale: Base
@@ -163,6 +188,8 @@ struct TColor: TNumber<Vec3, UCol>
 {
 	static Vec3 HardMin() { return Vec3(0); }
 	static Vec3 HardMax() { return Vec3(1); }
+	static Vec3 SoftMin() { return HardMin(); }
+	static Vec3 SoftMax() { return HardMax(); }
 
 	static UCol To(const Vec3& val)
 	{
@@ -185,12 +212,6 @@ struct TColor: TNumber<Vec3, UCol>
 };
 
 typedef TValue<TColor> UColor;
-
-
-// Legacy
-typedef SFloat SFloat10;
-typedef UFloat UFloat10;
-typedef UFloat UFloat100;
 
 }
 
