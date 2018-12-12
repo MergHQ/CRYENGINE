@@ -1300,6 +1300,8 @@ CMainDialog::CMainDialog(QWidget* pParent /*= nullptr*/)
 	, m_pUnmergedMeshStatObj(nullptr)
 	, m_ppSelectionMesh(nullptr)
 	, m_pCharacterInstance(nullptr)
+	, m_pSceneTab(nullptr)
+	, m_pPropertiesTab(nullptr)
 {
 	m_pMeshRcObject = CreateTempRcObject();
 
@@ -1481,35 +1483,22 @@ void CMainDialog::setupUi(CMainDialog* MainDialog)
 	m_pShowMeshesModeWidget = new Private_MainDialog::CShowMeshesModeWidget();
 	m_pViewportContainer->SetHeaderWidget(m_pShowMeshesModeWidget);
 
-	// Create tab widget.
 
-	QTabWidget* const pTabWidget = new QTabWidget();
-	pTabWidget->setObjectName("notificationTabs");
-
-	// Create geometry widget.
 	// The geometry widget consists of settings and scene view.
 	QSplitter* const pGeometryWidget = new QSplitter(Qt::Vertical);
-
 	pGeometryWidget->addWidget(m_pGlobalImportSettingsTree);
-	{
-		QTabWidget* const pSceneTabWidget = new QTabWidget();
-		pSceneTabWidget->setObjectName("notificationTabs");
-		if (m_pSceneTree)
-		{
-			pSceneTabWidget->addTab(m_pSceneViewContainer, "Source");
-		}
-		if (m_pTargetMeshView)
-		{
-			pSceneTabWidget->addTab(m_pTargetMeshView, "Target");
-		}
-		pGeometryWidget->addWidget(pSceneTabWidget);
-	}
-
 	// Give scene view maximal vertical screen estate.
 	pGeometryWidget->setStretchFactor(0, 0);
 	pGeometryWidget->setStretchFactor(1, 1);
 
-	// Create properties tab.
+	m_pSceneTab = new QTabWidget();
+	m_pSceneTab->setObjectName("notificationTabs");
+	m_pSceneTab->addTab(m_pSceneViewContainer, "Source");
+	m_pSceneTab->addTab(m_pTargetMeshView, "Target");
+	pGeometryWidget->addWidget(m_pSceneTab);
+
+	m_pPropertiesTab = new QTabWidget();
+	m_pPropertiesTab->setObjectName("notificationTabs");
 	m_pPhysProxiesControls = new CPhysProxiesControlsWidget();
 	QSplitter* const pPropsSplitter = new QSplitter(Qt::Vertical);
 	pPropsSplitter->addWidget(m_pPhysProxiesControls);
@@ -1518,10 +1507,10 @@ void CMainDialog::setupUi(CMainDialog* MainDialog)
 	sizesProps.push_back(110);
 	sizesProps.push_back(800);
 	pPropsSplitter->setSizes(sizesProps);
-	pTabWidget->addTab(pPropsSplitter, tr("Properties"));
+	m_pPropertiesTab->addTab(pPropsSplitter, tr("Properties"));
 
 	// Create material tab.
-	pTabWidget->addTab(m_pMaterialPanel, "Material");
+	m_pPropertiesTab->addTab(m_pMaterialPanel, "Material");
 
 	// Main Dialog layout
 	{
@@ -1533,7 +1522,7 @@ void CMainDialog::setupUi(CMainDialog* MainDialog)
 		{
 			pSplitter->addWidget(pGeometryWidget);
 			pSplitter->addWidget(m_pViewportContainer);
-			pSplitter->addWidget(pTabWidget);
+			pSplitter->addWidget(m_pPropertiesTab);
 
 			pSplitter->setStretchFactor(0, 0);
 			pSplitter->setStretchFactor(1, 1);
@@ -3118,82 +3107,83 @@ void CMainDialog::AddSourceNodeElementContextMenu(const QModelIndex& index, QMen
 
 	const FbxTool::SNode* const pNode = pSourceNodeElement->GetNode();
 
-		// Include/Exclude
+	// Include/Exclude
 
-		QAction* const pInclude = pMenu->addAction(tr("Include this node"));
-		connect(pInclude, &QAction::triggered, [=]()
+	QAction* const pInclude = pMenu->addAction(tr("Include this node"));
+	connect(pInclude, &QAction::triggered, [=]()
+	{
+		if (index.isValid())
 		{
-			if (index.isValid())
+		const FbxTool::ENodeExportSetting oldExportSetting = EvaluateExportSetting(pNode);
+		GetScene()->SetNodeExportSetting(pNode, FbxTool::eNodeExportSetting_Include);
+		m_bRefreshRcMesh = m_bRefreshRcMesh || oldExportSetting != EvaluateExportSetting(pNode);
+			if (m_bRefreshRcMesh)
 			{
+				m_pTargetMeshView->model()->Clear();
+			}
+		}
+	});
+
+	QAction* const pExclude = pMenu->addAction(tr("Exclude this node"));
+	connect(pExclude, &QAction::triggered, [=]()
+	{
+		if (index.isValid())
+		{
 			const FbxTool::ENodeExportSetting oldExportSetting = EvaluateExportSetting(pNode);
-			GetScene()->SetNodeExportSetting(pNode, FbxTool::eNodeExportSetting_Include);
+			m_pSceneModel->SetExportSetting(index, FbxTool::eNodeExportSetting_Exclude);
 			m_bRefreshRcMesh = m_bRefreshRcMesh || oldExportSetting != EvaluateExportSetting(pNode);
-			  if (m_bRefreshRcMesh)
-			  {
-			    m_pTargetMeshView->model()->Clear();
-			  }
+			//m_pTargetMeshView->model()->Rebuild();
+			if (m_bRefreshRcMesh)
+			{
+				m_pTargetMeshView->model()->Clear();
+			}
+		}
+	});
+
+	pMenu->addSeparator();
+
+	// Reset scene's export settings.
+
+	if (!pNode->pParent)
+	{
+		QAction* pAct = pMenu->addAction(tr("Reset selection"));
+		connect(pAct, &QAction::triggered, [=]()
+		{
+			const char* const szText =
+				"Do you really want to reset the selection? "
+				"All node export settings of this LOD will be discarded.";
+			if (QDialogButtonBox::Yes == CQuestionDialog::SQuestion(tr("Reset selection"), tr(szText)))
+			{
+				m_pSceneModel->ResetExportSettingsInSubtree(index);
+				m_bRefreshRcMesh = true;
+				m_pTargetMeshView->model()->Clear();
 			}
 		});
+		pMenu->addSeparator();
+	}
 
-		QAction* const pExclude = pMenu->addAction(tr("Exclude this node"));
-		connect(pExclude, &QAction::triggered, [=]()
+	// Material selection
+
+	if (pNode->numMeshes)
+	{
+		QAction* const pSelectMaterials = pMenu->addAction(tr("Select materials used by mesh"));
+		connect(pSelectMaterials, &QAction::triggered, [=]()
 		{
-			if (index.isValid())
+			CSceneElementCommon* const pElement = m_pSceneModel->GetSceneElementFromModelIndex(index);
+			if (pElement->GetType() == ESceneElementType::SourceNode)
 			{
-			const FbxTool::ENodeExportSetting oldExportSetting = EvaluateExportSetting(pNode);
-			  m_pSceneModel->SetExportSetting(index, FbxTool::eNodeExportSetting_Exclude);
-			m_bRefreshRcMesh = m_bRefreshRcMesh || oldExportSetting != EvaluateExportSetting(pNode);
-			  //m_pTargetMeshView->model()->Rebuild();
-			  if (m_bRefreshRcMesh)
-			  {
-			    m_pTargetMeshView->model()->Clear();
-			  }
+				CSceneElementSourceNode* const pSourceNodeElement = (CSceneElementSourceNode*)pElement;
+				const FbxTool::SMesh* const pMesh = pSourceNodeElement->GetNode()->ppMeshes[0];
+				if (pMesh)
+				{
+					SelectMaterialsOnMesh(pMesh);
+					m_pPropertiesTab->setCurrentWidget(m_pMaterialPanel);
+				}
 			}
 		});
 
 		pMenu->addSeparator();
-
-		// Reset scene's export settings.
-
-	if (!pNode->pParent)
-		{
-			QAction* pAct = pMenu->addAction(tr("Reset selection"));
-			connect(pAct, &QAction::triggered, [=]()
-			{
-				const char* const szText =
-				  "Do you really want to reset the selection? "
-				  "All node export settings of this LOD will be discarded.";
-				if (QDialogButtonBox::Yes == CQuestionDialog::SQuestion(tr("Reset selection"), tr(szText)))
-				{
-				  m_pSceneModel->ResetExportSettingsInSubtree(index);
-				  m_bRefreshRcMesh = true;
-				  m_pTargetMeshView->model()->Clear();
-				}
-			});
-			pMenu->addSeparator();
-		}
-
-		// Material selection
-
-	if (pNode->numMeshes)
-		{
-			QAction* const pSelectMaterials = pMenu->addAction(tr("Select materials used by mesh"));
-			connect(pSelectMaterials, &QAction::triggered, [=]()
-			{
-			CSceneElementCommon* const pElement = m_pSceneModel->GetSceneElementFromModelIndex(index);
-			if (pElement->GetType() == ESceneElementType::SourceNode)
-				{
-				CSceneElementSourceNode* const pSourceNodeElement = (CSceneElementSourceNode*)pElement;
-				const FbxTool::SMesh* const pMesh = pSourceNodeElement->GetNode()->ppMeshes[0];
-				  if (pMesh)
-				  {
-				    SelectMaterialsOnMesh(pMesh);
-				  }
-				}
-			});
-
-			pMenu->addSeparator();
-		}
+	}
 }
 
 void CMainDialog::CreateMaterialContextMenu(QMenu* pMenu, CMaterialElement* pElement)
@@ -3204,7 +3194,8 @@ void CMainDialog::CreateMaterialContextMenu(QMenu* pMenu, CMaterialElement* pEle
 	{
 		if (pElement)
 		{
-		  SelectMeshesUsingMaterial(pElement);
+			SelectMeshesUsingMaterial(pElement);
+			m_pSceneTab->setCurrentWidget(m_pSceneViewContainer);
 		}
 	});
 }
