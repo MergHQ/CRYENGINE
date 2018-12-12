@@ -662,6 +662,7 @@ void CShadowMapStage::PrepareShadowPassForFrustum(const SShadowFrustumToRender& 
 		Matrix44A viewProjOrig = viewProj;
 		if (targetPass.m_pClearDepthMapProvider)
 		{
+			// If the sub-frustum falls out of the full frustum entirely, then no depth-copy is needed or possible
 			if (!CShadowUtils::GetSubfrustumMatrix(viewProj, targetPass.m_pClearDepthMapProvider->m_pFrustumToRender->pFrustum, &frustum))
 				targetPass.m_clearMode = CShadowMapPass::eClearMode_Fill;
 		}
