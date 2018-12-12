@@ -857,6 +857,8 @@ void CClipVolumesStage::ExecuteVolumetricFog()
 	// Render clip volumes to single DSV for depth stencil texture array.
 	m_volumetricStencilPass.Execute();
 #else
+	auto maxDSVCount = m_depthTargetArrayVolFog.size();
+
 	// Render clip volumes.
 	for (int32 i = 0; i < maxDSVCount; ++i)
 	{
