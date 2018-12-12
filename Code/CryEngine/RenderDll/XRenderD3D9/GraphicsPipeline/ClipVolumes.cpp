@@ -376,6 +376,8 @@ void CClipVolumesStage::Update()
 		else
 			CClearSurfacePass::Execute(m_depthTargetVolFog, CLEAR_STENCIL, Clr_Unused.r, Val_Stencil);
 #else
+		auto maxDSVCount = m_depthTargetArrayVolFog.size();
+
 		if (m_filledVolumetricFogDepth > 0)
 		{
 			for (int32 i = 0; i < maxDSVCount; ++i)
