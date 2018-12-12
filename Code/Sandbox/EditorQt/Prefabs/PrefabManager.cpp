@@ -834,6 +834,53 @@ void CPrefabManager::UpdateAllPrefabsToLatestVersion()
 	});
 }
 
+std::vector<CPrefabItem*> CPrefabManager::GetAllPrefabItems(const std::vector<CBaseObject*>& objects)
+{
+	std::vector<CPrefabItem*> items;
+
+	for (const CBaseObject* pObject : objects)
+	{
+		if (pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
+		{
+			const CPrefabObject* pPrefabObject = static_cast<const CPrefabObject*>(pObject);
+			CPrefabItem* pItem = pPrefabObject->GetPrefabItem();
+
+			if (std::find(items.begin(), items.end(), pItem) == items.end())
+			{
+				items.push_back(pItem);
+			}
+		}
+	}
+
+	return items;
+}
+
+std::vector<CBaseObject*> CPrefabManager::FindAllInstancesOfItem(const CPrefabItem* pPrefabItem)
+{
+	CBaseObjectsArray objects;
+	GetIEditor()->GetObjectManager()->FindObjectsOfType(OBJTYPE_PREFAB, objects);
+
+	std::vector<CBaseObject*> instances;
+	for (CBaseObject* pObject : objects)
+	{
+		CPrefabObject* pPrefabObject = static_cast<CPrefabObject*>(pObject);
+
+		if (pPrefabObject->GetPrefabItem()->GetGUID() == pPrefabItem->GetGUID())
+		{
+			instances.push_back(pPrefabObject);
+		}
+	}
+
+	return instances;
+}
+
+void CPrefabManager::SelectAllInstancesOfItem(const CPrefabItem* pPrefabItem)
+{
+	std::vector<CBaseObject*> instances = FindAllInstancesOfItem(pPrefabItem);
+	GetIEditor()->GetObjectManager()->ClearSelection();
+	GetIEditor()->GetObjectManager()->AddObjectsToSelection(instances);
+}
+
 void CPrefabManager::DeleteItem(IDataBaseItem* pItem)
 {
 	assert(pItem);
@@ -982,6 +1029,18 @@ static void PyUpdateAllPrefabs()
 {
 	GetIEditor()->GetPrefabManager()->UpdateAllPrefabsToLatestVersion();
 }
+
+static void PySelectAllInstancesOfSelectedType()
+{
+	CBaseObjectsArray objects;
+	GetIEditorImpl()->GetSelection()->GetObjects(objects);
+	std::vector<CPrefabItem*> items = GetIEditor()->GetPrefabManager()->GetAllPrefabItems(objects);
+	//Select all instances only if we have one type of prefab in selection
+	if (items.size() == 1)
+	{
+		GetIEditor()->GetPrefabManager()->SelectAllInstancesOfItem(items[0]);
+	}
+}
 }
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyUpdateAllPrefabs, prefab, update_all_prefabs,
@@ -1014,3 +1073,6 @@ REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyCloseAll, prefab, c
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyReloadAll, prefab, reload_all,
                                    CCommandDescription("Reload all prefabs"));
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PySelectAllInstancesOfSelectedType, prefab, select_all_instances_of_type,
+	CCommandDescription("Select all prefabs instances of selected type"));
