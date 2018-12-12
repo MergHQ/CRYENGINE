@@ -492,6 +492,16 @@ void CPrefabObject::OnContextMenu(CPopupMenuItem* menu)
 		picker.SwapPrefab(prefabsInSelection);
 	});
 
+	CBaseObjectsArray objects;
+	GetIEditorImpl()->GetSelection()->GetObjects(objects);
+	CPrefabManager* pPrefabManager = GetIEditor()->GetPrefabManager();
+	std::vector<CPrefabItem*> items = pPrefabManager->GetAllPrefabItems(objects);
+	//Show the menu only if we have one type of prefab in selection
+	if (items.size() == 1)
+	{
+		CPrefabItem* pItem = items[0];
+		menu->AddCommand("Select all Prefabs of Type \"" + pItem->GetName() + "\"", "prefab.select_all_instances_of_type");
+	}
 }
 
 int CPrefabObject::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int flags)

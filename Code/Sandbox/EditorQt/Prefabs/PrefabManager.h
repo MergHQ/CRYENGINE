@@ -137,6 +137,13 @@ public:
 	//Updates all the assets to the latest version
 	void UpdateAllPrefabsToLatestVersion();
 
+	//Get all prefab items contained in the objects vector
+	std::vector<CPrefabItem*> GetAllPrefabItems(const std::vector<CBaseObject*>& objects);
+	//Find all instances of pPrefabItem in the current level
+	std::vector<CBaseObject*> FindAllInstancesOfItem(const CPrefabItem* pPrefabItem);
+	//Find all instances of pPrefabItem in the current level, clear the selection and add them
+	void SelectAllInstancesOfItem(const CPrefabItem* pPrefabItem);
+
 protected:
 
 	virtual CBaseLibraryItem* MakeNewItem() override;
