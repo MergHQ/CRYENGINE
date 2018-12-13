@@ -736,6 +736,21 @@ void CDeviceGraphicsCommandInterfaceImpl::ClearSurfaceImpl(D3DDepthSurface* pVie
 	GetDX12CommandList()->ClearDepthStencilView(View, D3D12_CLEAR_FLAGS(clearFlags), depth, stencil, numRects, pRects);
 }
 
+void CDeviceGraphicsCommandInterfaceImpl::DiscardContentsImpl(D3DResource* pResource, uint32 numRects, const D3D11_RECT* pRects)
+{
+	NCryDX12::CResource& Resource = reinterpret_cast<CCryDX12Resource<IEmptyResource>*>(pResource)->GetDX12Resource();
+	D3D12_DISCARD_REGION rRegion = { numRects, pRects, 0, Resource.GetDesc().MipLevels * Resource.GetDesc().DepthOrArraySize };
+	GetDX12CommandList()->DiscardResource(Resource, &rRegion);
+}
+
+void CDeviceGraphicsCommandInterfaceImpl::DiscardContentsImpl(D3DBaseView* pView, uint32 numRects, const D3D11_RECT* pRects)
+{
+	const NCryDX12::CView& View = reinterpret_cast<CCryDX12RenderTargetView*>(pView)->GetDX12View();
+	NCryDX12::CResource& Resource = View.GetDX12Resource();
+	D3D12_DISCARD_REGION rRegion = { numRects, pRects, 0, 0x7FFFFFFF }; // TODO: calculate sub-resources and loop according to the given view
+	GetDX12CommandList()->DiscardResource(Resource, &rRegion);
+}
+
 void CDeviceGraphicsCommandInterfaceImpl::BeginOcclusionQueryImpl(D3DOcclusionQuery* pQuery)
 {
 	CRY_ASSERT(GetDX12CommandList() == GetDeviceObjectFactory().GetCoreCommandList().GetDX12CommandList());
@@ -972,6 +987,25 @@ void CDeviceComputeCommandInterfaceImpl::ClearUAVImpl(D3DUAV* pView, const UINT 
 {
 	const NCryDX12::CView& View = reinterpret_cast<CCryDX12UnorderedAccessView*>(pView)->GetDX12View();
 	GetDX12CommandList()->ClearUnorderedAccessView(View, Values, NumRects, pRects);
+}
+
+void CDeviceComputeCommandInterfaceImpl::DiscardUAVContentsImpl(D3DResource* pResource, uint32 numRects, const D3D11_RECT* pRects)
+{
+	NCryDX12::CCommandList* pCommandListDX12 = GetDX12CommandList();
+	NCryDX12::CResource& Resource = reinterpret_cast<CCryDX12Resource<IEmptyResource>*>(pResource)->GetDX12Resource();
+	D3D12_DISCARD_REGION rRegion = { numRects, pRects, 0, 1 }; // NOTE: UAV-arrays are technically possible but not supported here
+	assert(!Resource.NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
+	pCommandListDX12->DiscardResource(Resource, &rRegion);
+}
+
+void CDeviceComputeCommandInterfaceImpl::DiscardUAVContentsImpl(D3DBaseView* pView, uint32 numRects, const D3D11_RECT* pRects)
+{
+	NCryDX12::CCommandList* pCommandListDX12 = GetDX12CommandList();
+	const NCryDX12::CView& View = reinterpret_cast<CCryDX12RenderTargetView*>(pView)->GetDX12View();
+	NCryDX12::CResource& Resource = View.GetDX12Resource();
+	D3D12_DISCARD_REGION rRegion = { numRects, pRects, 0, 0x7FFFFFFF }; // TODO: calculate sub-resources and loop according to the given view
+	assert(!Resource.NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
+	pCommandListDX12->DiscardResource(Resource, &rRegion);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -443,6 +443,16 @@ inline void CDeviceGraphicsCommandInterface::ClearSurface(D3DDepthSurface* pView
 	ClearSurfaceImpl(pView, clearFlags, depth, stencil, numRects, pRects);
 }
 
+inline void CDeviceGraphicsCommandInterface::DiscardContents(D3DResource* pResource, uint32 numRects, const D3D11_RECT* pRects)
+{
+	DiscardContentsImpl(pResource, numRects, pRects);
+}
+
+inline void CDeviceGraphicsCommandInterface::DiscardContents(D3DBaseView* pView, uint32 numRects, const D3D11_RECT* pRects)
+{
+	DiscardContentsImpl(pView, numRects, pRects);
+}
+
 inline void CDeviceGraphicsCommandInterface::BeginOcclusionQuery(D3DOcclusionQuery* pQuery)
 {
 	BeginOcclusionQueryImpl(pQuery);
@@ -577,6 +587,16 @@ inline void CDeviceComputeCommandInterface::ClearUAV(D3DUAV* pView, const ColorF
 inline void CDeviceComputeCommandInterface::ClearUAV(D3DUAV* pView, const ColorI& Values, UINT NumRects, const D3D11_RECT* pRects)
 {
 	ClearUAVImpl(pView, (UINT*)&Values, NumRects, pRects);
+}
+
+inline void CDeviceComputeCommandInterface::DiscardUAVContents(D3DResource* pResource, uint32 numRects, const D3D11_RECT* pRects)
+{
+	DiscardUAVContentsImpl(pResource, numRects, pRects);
+}
+
+inline void CDeviceComputeCommandInterface::DiscardUAVContents(D3DBaseView* pView, uint32 numRects, const D3D11_RECT* pRects)
+{
+	DiscardUAVContentsImpl(pView, numRects, pRects);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

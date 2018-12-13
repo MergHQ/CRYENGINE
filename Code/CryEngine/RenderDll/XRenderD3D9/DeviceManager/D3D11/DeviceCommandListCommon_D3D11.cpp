@@ -639,6 +639,24 @@ void CDeviceGraphicsCommandInterfaceImpl::ClearSurfaceImpl(D3DDepthSurface* pVie
 	gcpRendD3D->GetDeviceContext().ClearDepthStencilView(pView, D3D11_CLEAR_FLAG(clearFlags), depth, stencil);
 }
 
+void CDeviceGraphicsCommandInterfaceImpl::DiscardContentsImpl(D3DResource* pResource, uint32 numRects, const D3D11_RECT* pRects)
+{
+#if (CRY_RENDERER_DIRECT3D >= 111)
+	CRY_ASSERT(numRects == 0); // not supported on dx11.1
+	gcpRendD3D->GetDeviceContext().DiscardResource(pResource);
+#endif
+}
+
+void CDeviceGraphicsCommandInterfaceImpl::DiscardContentsImpl(D3DBaseView* pView, uint32 numRects, const D3D11_RECT* pRects)
+{
+#if (CRY_RENDERER_DIRECT3D >= 111)
+	if (numRects)
+		gcpRendD3D->GetDeviceContext().DiscardView1(pView, numRects, pRects);
+	else
+		gcpRendD3D->GetDeviceContext().DiscardView(pView);
+#endif
+}
+
 void CDeviceGraphicsCommandInterfaceImpl::BeginOcclusionQueryImpl(D3DOcclusionQuery* pQuery)
 {
 	gcpRendD3D->GetDeviceContext().Begin(pQuery);
@@ -787,6 +805,24 @@ void CDeviceComputeCommandInterfaceImpl::ClearUAVImpl(D3DUAV* pView, const UINT 
 #else
 	CRY_ASSERT(NumRects == 0); // not supported on dx11
 	gcpRendD3D->GetDeviceContext().ClearUnorderedAccessViewUint(pView, Values);
+#endif
+}
+
+void CDeviceComputeCommandInterfaceImpl::DiscardUAVContentsImpl(D3DResource* pResource, uint32 numRects, const D3D11_RECT* pRects)
+{
+#if (CRY_RENDERER_DIRECT3D >= 111)
+	CRY_ASSERT(numRects == 0); // not supported on dx11.1
+	gcpRendD3D->GetDeviceContext().DiscardResource(pResource);
+#endif
+}
+
+void CDeviceComputeCommandInterfaceImpl::DiscardUAVContentsImpl(D3DBaseView* pView, uint32 numRects, const D3D11_RECT* pRects)
+{
+#if (CRY_RENDERER_DIRECT3D >= 111)
+	if (numRects)
+		gcpRendD3D->GetDeviceContext().DiscardView1(pView, numRects, pRects);
+	else
+		gcpRendD3D->GetDeviceContext().DiscardView(pView);
 #endif
 }
 

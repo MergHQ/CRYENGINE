@@ -106,6 +106,9 @@ protected:
 	void ClearSurfaceImpl(D3DSurface* pView, const FLOAT Color[4], UINT NumRects, const D3D11_RECT* pRects);
 	void ClearSurfaceImpl(D3DDepthSurface* pView, int clearFlags, float depth, uint8 stencil, uint32 numRects, const D3D11_RECT* pRects);
 
+	void DiscardContentsImpl(D3DResource* pResource, uint32 numRects, const D3D11_RECT* pRects);
+	void DiscardContentsImpl(D3DBaseView* pView, uint32 numRects, const D3D11_RECT* pRects);
+
 	void BeginOcclusionQueryImpl(D3DOcclusionQuery* pQuery);
 	void EndOcclusionQueryImpl(D3DOcclusionQuery* pQuery);
 };
@@ -129,6 +132,9 @@ protected:
 
 	void ClearUAVImpl(D3DUAV* pView, const FLOAT Values[4], UINT NumRects, const D3D11_RECT* pRects);
 	void ClearUAVImpl(D3DUAV* pView, const UINT Values[4], UINT NumRects, const D3D11_RECT* pRects);
+
+	void DiscardUAVContentsImpl(D3DResource* pResource, uint32 numRects, const D3D11_RECT* pRects);
+	void DiscardUAVContentsImpl(D3DBaseView* pView, uint32 numRects, const D3D11_RECT* pRects);
 };
 
 class CDeviceCopyCommandInterfaceImpl : public CDeviceCommandListImpl

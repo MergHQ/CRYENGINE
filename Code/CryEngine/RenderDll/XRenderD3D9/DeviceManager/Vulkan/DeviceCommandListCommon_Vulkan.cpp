@@ -600,6 +600,14 @@ void CDeviceGraphicsCommandInterfaceImpl::ClearSurfaceImpl(D3DDepthSurface* pVie
 	GetVKCommandList()->m_nCommands += CLCOUNT_CLEAR;
 }
 
+void CDeviceGraphicsCommandInterfaceImpl::DiscardContentsImpl(D3DResource* pResource, uint32 numRects, const D3D11_RECT* pRects)
+{
+}
+
+void CDeviceGraphicsCommandInterfaceImpl::DiscardContentsImpl(D3DBaseView* pView, uint32 numRects, const D3D11_RECT* pRects)
+{
+}
+
 void CDeviceGraphicsCommandInterfaceImpl::BeginOcclusionQueryImpl(D3DOcclusionQuery* pQuery)
 {
 	pQuery->Begin(GetVKCommandList()->GetVkCommandList());
@@ -829,6 +837,14 @@ void CDeviceComputeCommandInterfaceImpl::ClearUAVImpl(D3DUAV* pView, const UINT 
 		vkCmdFillBuffer(GetVKCommandList()->GetVkCommandList(), info.buffer, info.offset, info.range, Values[0]);
 		GetVKCommandList()->m_nCommands += CLCOUNT_CLEAR;
 	}
+}
+
+void CDeviceComputeCommandInterfaceImpl::DiscardUAVContentsImpl(D3DResource* pResource, uint32 numRects, const D3D11_RECT* pRects)
+{
+}
+
+void CDeviceComputeCommandInterfaceImpl::DiscardUAVContentsImpl(D3DBaseView* pView, uint32 numRects, const D3D11_RECT* pRects)
+{
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

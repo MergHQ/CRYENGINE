@@ -152,6 +152,9 @@ public:
 	void ClearSurface(D3DSurface* pView, const ColorF& color, uint32 numRects = 0, const D3D11_RECT* pRects = nullptr);
 	void ClearSurface(D3DDepthSurface* pView, int clearFlags, float depth = 0, uint8 stencil = 0, uint32 numRects = 0, const D3D11_RECT* pRects = nullptr);
 
+	void DiscardContents(D3DResource* pResource, uint32 numRects = 0, const D3D11_RECT* pRects = nullptr);
+	void DiscardContents(D3DBaseView* pView, uint32 numRects = 0, const D3D11_RECT* pRects = nullptr);
+
 	void BeginOcclusionQuery(D3DOcclusionQuery* pQuery);
 	void EndOcclusionQuery(D3DOcclusionQuery* pQuery);
 };
@@ -177,6 +180,9 @@ public:
 
 	void ClearUAV(D3DUAV* pView, const ColorF& Values, UINT NumRects = 0, const D3D11_RECT* pRects = nullptr);
 	void ClearUAV(D3DUAV* pView, const ColorI& Values, UINT NumRects = 0, const D3D11_RECT* pRects = nullptr);
+
+	void DiscardUAVContents(D3DResource* pResource, uint32 numRects = 0, const D3D11_RECT* pRects = nullptr);
+	void DiscardUAVContents(D3DBaseView* pView, uint32 numRects = 0, const D3D11_RECT* pRects = nullptr);
 };
 
 static_assert(sizeof(CDeviceGraphicsCommandInterface) == sizeof(CDeviceCommandListImpl), "CDeviceComputeCommandInterface cannot contain data members");
