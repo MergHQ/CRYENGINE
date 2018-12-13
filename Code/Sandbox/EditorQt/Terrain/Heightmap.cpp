@@ -2592,6 +2592,7 @@ void CHeightmap::UpdateEngineTerrain(int x1, int y1, int areaSize, int _height, 
 	const float areaRadius = originalInputAreaSize * nHeightMapUnitSize / 2;
 
 	GetIEditorImpl()->GetGameEngine()->OnTerrainModified(worldModPosition, areaRadius, (originalInputAreaSize == m_iWidth), updateFlags & (ETerrainUpdateType::Elevation | ETerrainUpdateType::InfoBits));
+	GetIEditorImpl()->GetTerrainManager()->SetModified();
 }
 
 void CHeightmap::Serialize(CXmlArchive& xmlAr)
