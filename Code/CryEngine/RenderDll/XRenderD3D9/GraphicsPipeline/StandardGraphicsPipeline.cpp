@@ -158,6 +158,8 @@ void CStandardGraphicsPipeline::Init()
 	m_LQSubResPass[0].reset(new CStretchRectPass);
 	m_LQSubResPass[1].reset(new CStretchRectPass);
 
+	m_AnisoVBlurPass.reset(new CAnisotropicVerticalBlurPass);
+
 	m_ResolvePass  .reset(new CStretchRectPass);
 	m_DownscalePass.reset(new CDownsamplePass);
 	m_UpscalePass  .reset(new CSharpeningUpsamplePass);
