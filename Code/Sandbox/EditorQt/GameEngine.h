@@ -179,7 +179,7 @@ private:
 	bool StartGameContext();
 	void NotifyGameModeChange(bool bGameMode);
 
-	void UpdateAIManagerFromEditor();
+	void UpdateAIManagerFromEditor(const uint32 updateFlags);
 
 	string                        m_levelName;
 	string                        m_missionName;
