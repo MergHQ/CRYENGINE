@@ -21,6 +21,7 @@ void DynamicCoverManager::OnEntityEvent(IEntity* entity, const SEntityEvent& eve
 
 DynamicCoverManager::DynamicCoverManager()
 	: m_segmentsGrid(20.0f, 20.0f, 20.0f, segment_position(m_segments))
+	, m_frameDeltaTime(0.0f)
 {
 }
 
