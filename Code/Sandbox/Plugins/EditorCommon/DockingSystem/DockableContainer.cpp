@@ -253,7 +253,7 @@ void CDockableContainer::BuildWindowMenu()
 
 		if (!addMenu)
 		{
-			addMenu = m_pMenu->CreateMenu("&Add Pane");
+			addMenu = m_pMenu->CreateMenu("&Panels");
 		}
 
 		QString s = it.first;
@@ -263,14 +263,6 @@ void CDockableContainer::BuildWindowMenu()
 
 	QAction* action = m_pMenu->CreateAction("&Reset layout");
 	connect(action, &QAction::triggered, [=] { ResetLayout(); });
-
-	int sec = m_pMenu->GetNextEmptySection();
-
-	foreach(QWidget* q, m_toolManager->toolWindows())
-	{
-		QAction* action = m_pMenu->CreateAction(q->windowTitle(), sec);
-		connect(action, &QAction::triggered, [=] { m_toolManager->bringToFront(q); });
-	}
 }
 
 void CDockableContainer::ResetLayout()
