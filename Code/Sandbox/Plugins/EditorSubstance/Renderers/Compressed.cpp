@@ -238,7 +238,7 @@ namespace EditorSubstance
 				}
 			}
 
-			pTargetTexture->AssignData(td, targetFlags);
+			pTargetTexture->UpdateData(std::move(td), targetFlags);
 		}
 
 		uint32 CCompressedRenderer::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, const ETEX_Format eTF) const

@@ -107,13 +107,13 @@ CImageFilePtr CImageFile::mfLoad_file(const string& filename, const uint32 nFlag
 			_smart_ptr<CImageDDSFile> pImageDDSFile;
 			pImageDDSFile = new CImageDDSFile(sFileToLoad);
 
-			DDSCallback cb;
-			if (!pImageDDSFile->Stream(nFlags, &cb))
+			std::unique_ptr<DDSCallback> cb(new DDSCallback);
+			if (!pImageDDSFile->Stream(nFlags, &*cb))
 				return CImageFilePtr();
 
-			cb.waitEvent.Wait();
+			cb->waitEvent.Wait();
 
-			if (!cb.ok)
+			if (!cb->ok)
 				return CImageFilePtr();
 
 			pImageFile = pImageDDSFile;
