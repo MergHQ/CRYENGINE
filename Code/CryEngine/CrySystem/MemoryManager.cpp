@@ -250,6 +250,12 @@ IDefragAllocator* CCryMemoryManager::CreateDefragAllocator()
 
 void* CCryMemoryManager::AllocPages(size_t size)
 {
+	if (size >= 256 * 1024 * 1024)
+	{
+		CryLogAlways("Virtual allocation of size %" PRISIZE_T " requested!", size);
+		gEnv->pSystem->debug_LogCallStack();
+	}
+	
 	void* ret = NULL;
 	MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
 

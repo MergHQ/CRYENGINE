@@ -149,6 +149,12 @@ CRYMEMORYMANAGER_API void* CryMalloc(size_t size, size_t& allocated, size_t alig
 		return 0;
 	}
 
+	if (size >= 256 * 1024 * 1024)
+	{
+		CryLogAlways("Allocation of size %" PRISIZE_T " requested!", size);
+		gEnv->pSystem->debug_LogCallStack();
+	}
+
 	MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
 
 	uint8* p;
