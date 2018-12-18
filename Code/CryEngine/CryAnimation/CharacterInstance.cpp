@@ -72,7 +72,7 @@ void CCharInstance::RuntimeInit(CDefaultSkeleton* pExtDefaultSkeleton)
 	m_SkeletonAnim.FinishAnimationComputations();
 
 	//-----------------------------------------------
-	if (pExtDefaultSkeleton)
+	if (pExtDefaultSkeleton && pExtDefaultSkeleton != m_pDefaultSkeleton)
 	{
 		g_pCharacterManager->UnregisterInstanceSkel(m_pDefaultSkeleton, this);
 		g_pCharacterManager->RegisterInstanceSkel(pExtDefaultSkeleton, this);
