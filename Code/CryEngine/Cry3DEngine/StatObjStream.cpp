@@ -59,7 +59,8 @@ void CStatObj::StreamAsyncOnComplete(IReadStream* pStream, unsigned nError)
 		m_fStreamingStart = 0.0f;
 #endif
 
-		if (!LoadStreamRenderMeshes(0, pStream->GetBuffer(), pStream->GetBytesRead(), strstr(m_szFileName.c_str(), "_lod") != NULL))
+		bool isLod = (strstr(m_szFileName.c_str(), "_lod") != NULL);
+		if (!LoadStreamRenderMeshes(isLod, pStream->GetBuffer(), pStream->GetBytesRead()))
 		{
 			Error("CStatObj::StreamOnComplete_LoadCGF_FromMemBlock, filename=%s", m_szFileName.c_str());
 		}
@@ -172,9 +173,9 @@ void CStatObj::StartStreaming(bool bFinishNow, IReadStream_AutoPtr* ppStream)
 #endif //!defined (_RELEASE)
 	const char* path = m_szFileName.c_str();
 
-	stack_string streamPath;
 	if (m_bHasStreamOnlyCGF)
 	{
+		stack_string streamPath;
 		GetStreamFilePath(streamPath);
 		path = streamPath.c_str();
 	}
@@ -465,10 +466,8 @@ void CStatObj::DisableStreaming()
 			// force start streaming immediately, otherwise mesh may be loaded only when global streaming update reaches it in few frames
 			if (pParentObject->m_eStreamingStatus == ecss_NotLoaded)
 			{
-				IReadStream_AutoPtr readStream;
-				pParentObject->StartStreaming(true, &readStream);
-				if (!(GetSystem()->GetStreamEngine()->GetPauseMask() & 1 << eStreamTaskTypeGeometry))
-					readStream->Wait();
+				// don't wait for the stream to finish here; may cause deadlock!
+				pParentObject->StartStreaming(false, nullptr);
 			}
 		}
 	}

@@ -55,6 +55,7 @@
 #include "CloudBlockerRenderNode.h"
 #include "WaterRippleManager.h"
 #include "ShadowCache.h"
+#include "StatObjFoliage.h"
 
 #if defined(FEATURE_SVO_GI)
 	#include "SVO/SceneTreeManager.h"

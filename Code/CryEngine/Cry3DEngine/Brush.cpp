@@ -13,6 +13,7 @@
 
 #include "StdAfx.h"
 #include "StatObj.h"
+#include "StatObjFoliage.h"
 #include "ObjMan.h"
 #include "VisAreas.h"
 #include "terrain_sector.h"

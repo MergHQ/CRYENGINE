@@ -205,8 +205,10 @@ add_sources("Cry3DEngine_objects_uber.cpp"
 		"StatObjConstr.cpp"
 		"StatObjFar.cpp"
 		"StatObjLoad.cpp"
+		"StatObjFoliage.cpp"
 		"IndexedMesh.h"
 		"StatObj.h"
+		"StatObjFoliage.h"
 )
 
 add_sources("Cry3DEngine_particles_uber.cpp"

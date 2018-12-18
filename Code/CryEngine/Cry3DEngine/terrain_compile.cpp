@@ -466,7 +466,7 @@ void CTerrain::LoadVegetationData(PodArray<StatInstGroup>& rTable, PodArray<Stat
 	if (rTable[i].szFileName[0])
 	{
 		rTable[i].pStatObj.ReleaseOwnership();
-		rTable[i].pStatObj = GetObjManager()->LoadStatObj(rTable[i].szFileName, NULL, NULL, !rTable[i].bAutoMerged); //,NULL,NULL,false);
+		rTable[i].pStatObj = GetObjManager()->LoadStatObj(rTable[i].szFileName, NULL, NULL, !rTable[i].bAutoMerged);
 	}
 
 	rTable[i].Update(GetCVars(), Get3DEngine()->GetGeomDetailScreenRes());

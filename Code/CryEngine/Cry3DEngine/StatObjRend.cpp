@@ -14,6 +14,7 @@
 #include "StdAfx.h"
 
 #include "StatObj.h"
+#include "StatObjFoliage.h"
 #include "../RenderDll/Common/Shadow_Renderer.h"
 #include "IndexedMesh.h"
 #include "VisAreas.h"
