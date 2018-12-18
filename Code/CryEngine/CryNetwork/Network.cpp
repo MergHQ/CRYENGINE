@@ -36,7 +36,6 @@
 #include "RemoteControl/RemoteControl.h"
 #include "Http/SimpleHttpServer.h"
 
-#include <CrySystem/Profilers/ThreadProfilerSupport.h>
 #include <CrySystem/ITextModeConsole.h>
 #include "Http/AutoConfigDownloader.h"
 
@@ -986,9 +985,6 @@ void CNetwork::SyncWithGame(ENetworkGameSync type)
 	//	if (type == eNGS_FrameEnd && m_cpuCount < 2 && m_needSleeping)
 	//		Sleep(1);
 	//#endif
-
-	static CThreadProfilerEvent evt_start("net_startframe");
-	CThreadProfilerEvent::Instance show_evt_start(evt_start, type == eNGS_FrameStart);
 
 	CRY_PROFILE_FUNCTION(PROFILE_NETWORK);
 
