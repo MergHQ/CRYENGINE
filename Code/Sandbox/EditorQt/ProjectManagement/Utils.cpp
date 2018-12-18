@@ -3,13 +3,90 @@
 #include "StdAfx.h"
 #include "Utils.h"
 
+#include "ProjectManagement/UI/SelectProjectDialog.h"
+
 #include <CryIcon.h>
 #include <FileUtils.h>
 #include <PathUtils.h>
+#include <QtUtil.h>
 
 #include <CrySerialization/yasli/JSONIArchive.h>
 
+#include <QApplication>
+#include <QDirIterator>
+#include <QFileInfo>
 #include <QStandardPaths>
+#include <QTextStream>
+
+string FindCryEngineRootFolder()
+{
+	QDir dir(qApp->applicationDirPath());
+	while (dir.exists())
+	{
+
+		QDirIterator iterator(dir.absolutePath(), QStringList() << "cryengine.cryengine", QDir::Files);
+		if (iterator.hasNext())
+		{
+			return QtUtil::ToString(dir.absolutePath());
+		}
+
+		if (!dir.cdUp())
+		{
+			break;
+		}
+	}
+
+	return "";
+}
+
+bool IsProjectSpecifiedInSystemConfig(const string& engineFolder)
+{
+	const string fileName = PathUtil::Make(engineFolder, "system.cfg");
+
+	QFile configFile(fileName.c_str());
+	if (!configFile.open(QIODevice::ReadOnly))
+	{
+		return false;
+	}
+
+	QTextStream stream(&configFile);
+	while (!stream.atEnd())
+	{
+		QString line = stream.readLine();
+		
+		//Simplest check: the line should be started from it, and not commented
+		if (0 == line.indexOf("sys_project"))
+		{
+			return true;
+		}
+	}
+	
+	return false;
+}
+
+string FindProjectInFolder(const string& folder)
+{
+	QFileInfo fileInfo(PathUtil::AddSlash(folder).c_str());
+	QDirIterator iterator(fileInfo.absolutePath(), QStringList() << "*.cryproject", QDir::Files);
+	if (!iterator.hasNext())
+	{
+		return "";
+	}
+
+	iterator.next();
+	return QtUtil::ToString(iterator.fileInfo().absoluteFilePath());
+}
+
+string AskUserToSpecifyProject(QWidget* pParent, bool runOnSandboxInit)
+{
+	CSelectProjectDialog dlg(pParent, runOnSandboxInit);
+	if (dlg.exec() != QDialog::Accepted)
+	{
+		return "";
+	}
+
+	return dlg.GetPathToProject();
+}
 
 string GetCryEngineProgramDataFolder()
 {
@@ -107,11 +184,7 @@ bool SCryEngineVersion::IsValid() const
 
 SCryEngineVersion GetCurrentCryEngineVersion()
 {
-	constexpr unsigned int buffSize = 2048;
-	char buff[buffSize];
-	CryGetExecutableFolder(buffSize, buff);
-	string strPathToConfig = buff;
-	strPathToConfig += "../../cryengine.cryengine";
+	const string strPathToConfig = PathUtil::Make(FindCryEngineRootFolder(), "cryengine.cryengine");
 
 	yasli::JSONIArchive ia;
 	ia.load(strPathToConfig);
