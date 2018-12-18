@@ -1179,6 +1179,8 @@ public:
 private:
 	static void RecordModuleLoad(void* pSelf, const CReplayModules::ModuleLoadDesc& mld);
 	static void RecordModuleUnload(void* pSelf, const CReplayModules::ModuleUnloadDesc& mld);
+	void WriteCallstack(UINT_PTR* callstack, uint32& length);
+	void WriteCallstack(UINT_PTR* callstack, uint16& length);
 
 private:
 	CMemReplay(const CMemReplay&);
@@ -1187,7 +1189,7 @@ private:
 private:
 	void RecordAlloc(EMemReplayAllocClass::Class cls, uint16 subCls, int moduleId, UINT_PTR p, UINT_PTR alignment, UINT_PTR sizeRequested, UINT_PTR sizeConsumed, INT_PTR sizeGlobal);
 	void RecordRealloc(EMemReplayAllocClass::Class cls, uint16 subCls, int moduleId, UINT_PTR op, UINT_PTR p, UINT_PTR alignment, UINT_PTR sizeRequested, UINT_PTR sizeConsumed, INT_PTR sizeGlobal);
-	void RecordFree(EMemReplayAllocClass::Class cls, uint16 subCls, int moduleId, UINT_PTR p, INT_PTR sizeGlobal, bool captureCallstack);
+	void RecordFree(EMemReplayAllocClass::Class cls, uint16 subCls, int moduleId, UINT_PTR p, INT_PTR sizeGlobal);
 	void RecordModules();
 
 	int  GetCurrentExecutableSize();
