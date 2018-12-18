@@ -296,3 +296,42 @@ EQuestionResult CryMessageBoxImpl(const wchar_t* szText, const wchar_t* szCaptio
 	return eQR_No;
 #endif
 }
+
+//////////////////////////////////////////////////////////////////////////
+const char* CryGetSystemErrorMessage(DWORD error)
+{
+	static char szBuffer[2048]; // function will return pointer to this buffer
+
+	if (error)
+	{
+		LPVOID lpMsgBuf = 0;
+
+		if (FormatMessage(
+			FORMAT_MESSAGE_ALLOCATE_BUFFER |
+			FORMAT_MESSAGE_FROM_SYSTEM |
+			FORMAT_MESSAGE_IGNORE_INSERTS,
+			NULL,
+			error,
+			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+			(LPTSTR)&lpMsgBuf,
+			0,
+			NULL))
+		{
+			cry_strcpy(szBuffer, (char*)lpMsgBuf);
+			LocalFree(lpMsgBuf);
+			return szBuffer;
+		}
+	}
+
+	return nullptr;
+}
+
+const char* CryGetLastSystemErrorMessage()
+{
+	return CryGetSystemErrorMessage(GetLastError());
+}
+
+void CryClearSytemError()
+{
+	SetLastError(0);
+}

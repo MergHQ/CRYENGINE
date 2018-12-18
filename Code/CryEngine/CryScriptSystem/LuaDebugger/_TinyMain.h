@@ -70,19 +70,10 @@ __inline void _TinyCheckLastError(const char* pszFile, int iLine)
 	{
 		// Format an error message
 		char szMessageBuf[2048];
+		cry_strcpy(szMessageBuf, CryGetLastSystemErrorMessage());
+		
 		char szLineFileInfo[_MAX_PATH + 256];
-		FormatMessage(
-		  FORMAT_MESSAGE_ARGUMENT_ARRAY |
-		  FORMAT_MESSAGE_FROM_SYSTEM |
-		  FORMAT_MESSAGE_IGNORE_INSERTS,
-		  NULL,
-		  GetLastError(),
-		  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
-		  szMessageBuf,
-		  2048,
-		  NULL
-		  );
-		cry_sprintf(szLineFileInfo, "Error catched in file %s line %i", pszFile, iLine);
+		cry_sprintf(szLineFileInfo, "Error caught in file %s line %i", pszFile, iLine);
 		cry_strcat(szMessageBuf, szLineFileInfo);
 
 #ifdef _DEBUG

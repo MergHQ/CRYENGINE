@@ -427,6 +427,10 @@ int64 CryGetTicks()
 #include "platform_impl_mac.inl"
 #endif
 
+#if CRY_PLATFORM_POSIX
+#include "platform_impl_posix.inl"
+#endif
+
 // Functions that depend on the platform-specific includes below
 
 EQuestionResult CryMessageBox(const char* szText, const char* szCaption, EMessageBox type)

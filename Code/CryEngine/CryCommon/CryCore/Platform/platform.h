@@ -619,6 +619,16 @@ ILINE void SetFlags(T& dest, U flags, bool b)
 	#include <CryCore/Platform/Orbis_Win32Wrapper.h>
 #endif
 
+// Formatted error messages
+
+//! Returns a pointer to a string describing the error, or a nullptr.
+//! Subsequent calls to this function may overwrite/change previously returned strings.
+const char* CryGetSystemErrorMessage(DWORD errorId);
+//! GetErrorMessage(GetLastError())
+const char* CryGetLastSystemErrorMessage();
+//! Resets the info on the last system error.
+void CryClearSytemError();
+
 // Platform wrappers must be included before CryString.h
 #include <CryString/CryString.h>
 
