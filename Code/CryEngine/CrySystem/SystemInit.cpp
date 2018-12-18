@@ -4354,6 +4354,14 @@ static void ReplayResume(IConsoleCmdArgs* pParams)
 	CryGetIMemReplay()->Start(false);
 }
 
+static void MemReplayRecordCallstacksChanged(ICVar* pCvar)
+{
+	if (g_cvars.memReplayRecordCallstacks)
+		CryGetIMemReplay()->AddLabel("Start recording Callstacks");
+	else
+		CryGetIMemReplay()->AddLabel("Stop recording Callstacks");
+}
+
 static void ResetAllocs(IConsoleCmdArgs* pParams)
 {
 	CryResetStats();
@@ -5179,6 +5187,11 @@ void CSystem::CreateSystemVars()
 	REGISTER_COMMAND("memReplayStop", &ReplayStop, 0, "stop logging to mem replay");
 	REGISTER_COMMAND("memReplayPause", &ReplayPause, 0, "Pause collection of mem replay data");
 	REGISTER_COMMAND("memReplayResume", &ReplayResume, 0, "Resume collection of mem replay data (use with -memReplayPaused cmdline)");
+	REGISTER_CVAR2_CB("memReplayRecordCallstacks", &g_cvars.memReplayRecordCallstacks, 1, 0,
+		"Turn the logging of callstacks by memreplay on(1) or off(0).\n"
+		"Saves a lot of memory on the log, but it will obviously contain less information. "
+		"Can be toggled during recording sessions to only add detail to specific sections of the recording."
+		, MemReplayRecordCallstacksChanged);
 	REGISTER_COMMAND("memResetAllocs", &ResetAllocs, 0, "clears memHierarchy tree");
 	REGISTER_COMMAND("memReplayLabel", &AddReplayLabel, 0, "record a label in the mem replay log");
 	REGISTER_COMMAND("memReplayInfo", &ReplayInfo, 0, "output some info about the replay log");

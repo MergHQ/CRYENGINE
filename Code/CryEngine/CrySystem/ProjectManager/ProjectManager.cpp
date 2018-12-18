@@ -132,13 +132,16 @@ bool CProjectManager::ParseProjectFile()
 	file.Open(m_project.filePath.c_str(), "rb", flags);
 
 	std::vector<char> projectFileJson;
+	size_t fileSize = 0;
 	if (file.GetHandle() != nullptr)
 	{
-		projectFileJson.resize(file.GetLength());
+		fileSize = file.GetLength();
+		projectFileJson.resize(fileSize + 1);
+		projectFileJson[fileSize] = 0;
 	}
 
-	if (projectFileJson.size() > 0 &&
-		file.ReadRaw(projectFileJson.data(), projectFileJson.size()) == projectFileJson.size() &&
+	if (fileSize > 0 &&
+		file.ReadRaw(projectFileJson.data(), fileSize) == fileSize &&
 		gEnv->pSystem->GetArchiveHost()->LoadJsonBuffer(Serialization::SStruct(m_project), projectFileJson.data(), projectFileJson.size()))
 	{
 		if (m_project.version > LatestProjectFileVersion)
