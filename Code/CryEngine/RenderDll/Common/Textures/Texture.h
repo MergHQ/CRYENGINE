@@ -546,6 +546,17 @@ struct SDynTextureArray/* : public SDynTexture*/
 //==========================================================================
 // Texture
 
+struct PrecacheCallback : public IImageFileStreamCallback
+{
+	PrecacheCallback(bool isStreamed);
+
+	void OnImageFileStreamComplete(CImageFile* pImFile) override;
+
+	CImageFilePtr pImage;
+	CryEvent      waitEvent;
+	const bool    isStreamed;
+};
+
 struct STexCacheFileHeader
 {
 	int8 m_nSides;
@@ -1295,7 +1306,7 @@ public:
 	ILINE void                       PrefetchStreamingInfo() const               { PrefetchLine(m_pFileTexMips, 0); }
 	const STexStreamingInfo*         GetStreamingInfo() const                    { return m_pFileTexMips; }
 
-	virtual const bool               IsStreamable() const                  final { return !(m_eFlags & FT_DONT_STREAM) && ((CRendererCVars::CV_r_texturesstreaming >= 1 && m_eTT == eTT_2D) || (CRendererCVars::CV_r_texturesstreaming >= 2 && m_eTT == eTT_Cube)); }
+	virtual const bool               IsStreamable() const                  final { return IsStreamable(m_eFlags, m_eTT); }
 	static  const bool               IsStreamable(uint32 eFlags, ETEX_Type eTT)  { return !(  eFlags & FT_DONT_STREAM) && ((CRendererCVars::CV_r_texturesstreaming >= 1 &&   eTT == eTT_2D) || (CRendererCVars::CV_r_texturesstreaming >= 2 &&   eTT == eTT_Cube)); }
 
 	ILINE void                       DisableMgpuSync()
@@ -1443,6 +1454,9 @@ public:
 
 	static void  Precache(const bool isBlocking);
 	static void  RT_Precache(const bool isFinalPrecache);
+	PrecacheCallback* PrecacheRequestImage(ETEX_Format eFormat);
+	PrecacheCallback* PrecacheStreamPrepare();
+
 	static void  StreamValidateTexSize();
 	static uint8 StreamComputeFormatCode(uint32 nWidth, uint32 nHeight, uint32 nMips, ETEX_Format fmt, ETEX_TileMode mode);
 
@@ -1524,7 +1538,7 @@ public:
 	void                       StreamActivateLod(int8 nMinMip);
 	void                       StreamLoadFromCache(const int nFlags);
 	bool                       StreamPrepare(bool bFromLoad);
-	bool                       StreamPrepare(CImageFilePtr&& pImage);
+	bool                       StreamPrepare(CImageFilePtr& pImage);
 	bool                       StreamPrepare_Platform();
 	bool                       StreamPrepare_Finalise(bool bFromLoad);
 	STexPool*                  StreamGetPool(int8 nStartMip, int8 nMips);
@@ -1546,6 +1560,7 @@ public:
 
 	void                       Relink();
 	void                       Unlink();
+	void                       SafeReleaseStreamingInfo();
 
 	static const CCryNameTSCRC& mfGetClassName();
 	static CTexture*            GetByID(int nID);
@@ -1571,14 +1586,12 @@ public:
 	static void                 RLT_LoadingUpdate();
 
 	// Loading/creating functions
-	void  Load(ETEX_Format eFormat);
-	void  Load(CImageFilePtr&& pImage);
-	void  LoadFromImage(const char* name, ETEX_Format eFormat = eTF_Unknown);
+	void LoadImage(ETEX_Format eFormat);
+	void  AssignImage(CImageFilePtr& pImage);
+	virtual void AssignData(STexDataPtr td, int flags);
+
 	void  Reload();
 	void  ToggleStreaming(const bool bEnable);
-	virtual void UpdateData(STexDataPtr&& td, int flags);
-
-	byte* GetSubImageData32(int nX, int nY, int nW, int nH, int& nOutTexDim);
 
 	//=======================================================
 	// Lowest-level functions calling into the API-specific implementation

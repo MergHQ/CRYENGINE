@@ -486,7 +486,7 @@ bool STexStreamPrepState::Commit()
 		{
 			if (m_pTexture->IsStreamed())
 			{
-				if (m_pTexture->StreamPrepare(std::move(pImage)))
+				if (m_pTexture->StreamPrepare(pImage))
 				{
 					m_bNeedsFinalise = true;
 				}
@@ -502,7 +502,7 @@ bool STexStreamPrepState::Commit()
 			}
 			else
 			{
-				m_pTexture->Load(std::move(pImage));
+				m_pTexture->AssignImage(pImage);
 			}
 		}
 
@@ -660,14 +660,57 @@ bool CTexture::StreamPrepare(bool bFromLoad)
 		                     | ((m_eFlags & FT_STREAMED_PREPARE) ? FIM_READ_VIA_STREAMS : 0);
 
 		CImageFilePtr pIM(CImageFile::mfLoad_file(m_SrcName, nImageFlags));
-		if (!StreamPrepare(std::move(pIM)))
+		if (!StreamPrepare(pIM))
 			return false;
 	}
 
 	return StreamPrepare_Finalise(bFromLoad);
 }
 
-bool CTexture::StreamPrepare(CImageFilePtr&& pIM)
+PrecacheCallback* CTexture::PrecacheStreamPrepare()
+{
+	CHK_MAINORRENDTH;
+
+	if (!IsStreamable())
+		return nullptr;
+
+	PROFILE_FRAME(Texture_StreamPreparePrecaching);
+
+	CRY_DEFINE_ASSET_SCOPE("Texture", m_sAssetScopeName);
+	CRY_ASSERT(!m_pDevTexture);
+	
+	if (!m_pFileTexMips)
+	{
+		const char* szExt = PathUtil::GetExt(m_SrcName.c_str());
+		if (szExt != 0 && (!stricmp(szExt, "tif") || !stricmp(szExt, "hdr")) && !gEnv->pCryPak->IsFileExist(m_SrcName.c_str()))
+		{
+			m_SrcName = PathUtil::ReplaceExtension(m_SrcName, "dds");
+			if (!gEnv->pCryPak->IsFileExist(m_SrcName))
+				return nullptr;
+		}
+
+#if !defined(_RELEASE)
+		if ((m_eFlags & FT_TEX_NORMAL_MAP) && !TextureHelpers::VerifyTexSuffix(EFTT_NORMALS, m_SrcName))
+		{
+			FileWarning(m_SrcName.c_str(), "Normal map should have '%s' suffix in filename", TextureHelpers::LookupTexSuffix(EFTT_NORMALS));
+		}
+#endif
+		uint32 nImageFlags = FIM_STREAM_PREPARE
+			| ((m_eFlags & FT_ALPHA) ? FIM_ALPHA : 0)
+			| ((m_eFlags & FT_STREAMED_PREPARE) ? FIM_READ_VIA_STREAMS : 0);
+		
+		PrecacheCallback* pCallback = new PrecacheCallback(true);
+		pCallback->pImage = CImageFile::mfStream_File(m_SrcName, nImageFlags, pCallback);
+		if (!pCallback->pImage)
+			SAFE_DELETE(pCallback);
+		return pCallback;
+	}
+
+	StreamPrepare_Finalise(true);
+	return nullptr;
+}
+
+bool CTexture::StreamPrepare(CImageFilePtr& pIM)
 {
 	if (!pIM)
 		return false;
@@ -716,12 +759,7 @@ bool CTexture::StreamPrepare(CImageFilePtr&& pIM)
 
 	if (!bStreamable)
 	{
-		if (m_pFileTexMips)
-		{
-			Unlink();
-			StreamState_ReleaseInfo(this, m_pFileTexMips);
-			m_pFileTexMips = NULL;
-		}
+		SafeReleaseStreamingInfo();
 		m_eFlags |= FT_DONT_STREAM;
 		m_bStreamed = false;
 		m_bStreamPrepared = false;
@@ -1875,5 +1913,15 @@ void CTexture::Unlink()
 	if (IsInDistanceSortedList())
 	{
 		s_pTextureStreamer->Unlink(this);
+	}
+}
+
+void CTexture::SafeReleaseStreamingInfo()
+{
+	if (m_pFileTexMips)
+	{
+		Unlink();
+		StreamState_ReleaseInfo(this, m_pFileTexMips);
+		m_pFileTexMips = NULL;
 	}
 }

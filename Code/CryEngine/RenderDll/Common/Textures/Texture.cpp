@@ -262,13 +262,7 @@ CTexture::~CTexture()
 #endif
 
 	ReleaseDeviceTexture(false);
-
-	if (m_pFileTexMips)
-	{
-		Unlink();
-		StreamState_ReleaseInfo(this, m_pFileTexMips);
-		m_pFileTexMips = NULL;
-	}
+	SafeReleaseStreamingInfo();
 
 #ifdef ENABLE_TEXTURE_STREAM_LISTENER
 	if (s_pStreamListener)
@@ -760,7 +754,7 @@ void CTexture::Reload()
 	}
 	else
 	{
-		LoadFromImage(m_SrcName.c_str());
+		LoadImage(m_eDstFormat);
 	}
 
 	PostCreate();
@@ -818,7 +812,9 @@ CTexture* CTexture::ForName(const char* name, uint32 nFlags, ETEX_Format eFormat
 	}
 
 	if (!CTexture::s_bPrecachePhase)
-		pTex->Load(eFormat);
+	{
+		pTex->LoadImage(eFormat);
+	}
 
 	return pTex;
 }
@@ -831,14 +827,6 @@ _smart_ptr<CTexture> CTexture::ForNamePtr(const char* name, uint32 nFlags, ETEX_
 
 	return result;
 }
-
-struct CompareTextures
-{
-	bool operator()(const CTexture* a, const CTexture* b)
-	{
-		return (stricmp(a->GetSourceName(), b->GetSourceName()) < 0);
-	}
-};
 
 void CTexture::Precache(const bool isBlocking)
 {
@@ -858,6 +846,37 @@ void CTexture::Precache(const bool isBlocking)
 	{
 		gEnv->pLog->UpdateLoadingScreen("Textures precache done.");
 	}
+}
+
+PrecacheCallback::PrecacheCallback(bool isStreamed) 
+	: pImage(), waitEvent(), isStreamed(isStreamed)
+{}
+
+void PrecacheCallback::OnImageFileStreamComplete(CImageFile* pImFile)
+{
+	pImage = pImFile;
+	waitEvent.Set();
+};
+
+typedef std::vector< _smart_ptr<CTexture> > SmartTextureList;
+template<class Condition>
+SmartTextureList GetAllTextures(Condition condition)
+{
+	CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
+	SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
+	
+	std::vector< _smart_ptr<CTexture> > textures;
+	if (pRL)
+	{
+		textures.reserve(pRL->m_RList.size() - pRL->m_AvailableIDs.size());
+		for (CBaseResource* pResource : pRL->m_RList)
+		{
+			CTexture* pTexture = static_cast<CTexture*>(pResource);
+			if (pTexture != nullptr && condition(pTexture))
+				textures.emplace_back(pTexture);
+		}
+	}
+	return textures;
 }
 
 void CTexture::RT_Precache(const bool isFinalPrecache)
@@ -885,97 +904,95 @@ void CTexture::RT_Precache(const bool isFinalPrecache)
 	if (!gEnv->IsEditor())
 		CryLog("=============================== Loading textures ================================");
 
-	// Search texture(s) in a thread-safe manner, and protect the found texture(s) from deletion
-	// Loop should block the resource-library as briefly as possible (don't call heavy stuff in the loop)
-	std::forward_list<_smart_ptr<CTexture>> pFoundTextures;
-	size_t countableTextures = 0;
+	SmartTextureList precacheTextures = GetAllTextures([](CTexture* pTexture) { return pTexture->CTexture::IsPostponed(); });
 
+	// Preload all the postponed textures
 	{
-		CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
+		gEnv->pSystem->GetStreamEngine()->PauseStreaming(false, 1 << eStreamTaskTypeTexture);	
 
-		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
-		if (pRL)
+		// counts for logging
+		uint requested = 0;
+		uint returnedCallbacks = 0;
+		uint successfullCallbacks = 0;
+		uint texesStreamed = 0;
+		uint texesStreamedSuccessful = 0;
+		uint texesNonStreamedSuccessful = 0;
+		uint forcedHighRes = 0;
+
+		// queue the requests for the texture files into the stream engine
+		std::vector< std::pair<PrecacheCallback*, CTexture*> > callbackPairs;
+		callbackPairs.reserve(precacheTextures.size());
+		for (auto& pTexture : precacheTextures)
 		{
-			ResourcesMapItor itor;
-			for (itor = pRL->m_RMap.begin(); itor != pRL->m_RMap.end(); itor++)
+			if(!pTexture->m_bStreamPrepared || !pTexture->IsStreamable())
 			{
-				CTexture* pTexture = (CTexture*)itor->second;
-				if (!pTexture || !pTexture->CTexture::IsPostponed())
-					continue;
-
-				pFoundTextures.emplace_front(pTexture);
-				countableTextures++;
+				pTexture->m_bPostponed = false;
+				PrecacheCallback* cb = pTexture->PrecacheRequestImage(pTexture->m_eDstFormat);
+				++requested;
+				if(cb)
+				{
+					callbackPairs.emplace_back(cb, pTexture);
+					++returnedCallbacks;
+				}
 			}
 		}
-	}
 
-	// Preload all the post poned textures
-	{
-		pFoundTextures.sort(CompareTextures());
-
-		gEnv->pSystem->GetStreamEngine()->PauseStreaming(false, 1 << eStreamTaskTypeTexture);
-
-		// Trigger the texture(s)'s load without holding the resource-library lock to evade dead-locks
+		// wait for the loading to complete and initialize the textures from the data
+		for (auto& callbackPair : callbackPairs)
 		{
-			int countedTextures = 0;
-			int numTextures = countableTextures;
-			int prevProgress = 0;
+			auto pCallback = callbackPair.first;
+			auto pTexture = callbackPair.second;
+			pCallback->waitEvent.Wait();
 
-			// TODO: jobbable
-			pFoundTextures.remove_if([&, numTextures](_smart_ptr<CTexture>& pTexture)
+			if (pCallback->pImage)
 			{
-				if (!pTexture->m_bStreamPrepared || !pTexture->IsStreamable())
+				++successfullCallbacks;
+				if (pCallback->isStreamed)
 				{
-					pTexture->m_bPostponed = false;
-					pTexture->Load(pTexture->m_eDstFormat);
+					++texesStreamed;
+					if (!pTexture->StreamPrepare(pCallback->pImage) || !pTexture->StreamPrepare_Finalise(true))
+					{
+						// we failed to set up the streaming for some reason
+						pTexture->m_eFlags |= FT_DONT_STREAM;
+						pTexture->m_bStreamed = false;
+						pTexture->m_bForceStreamHighRes = false;
+						if (pTexture->m_bNoTexture)
+							pTexture->SafeReleaseStreamingInfo();
+						// .. but the data is still available for use
+						pTexture->AssignImage(pCallback->pImage);
+					}
+					else
+						++texesStreamedSuccessful;
 				}
-
-				int progress = (++countedTextures * 10) / numTextures;
-				if (progress != prevProgress)
+				else // non-streamed
 				{
-					prevProgress = progress;
-					gEnv->pLog->UpdateLoadingScreen("Precaching progress: %d0.0%% (%d of %d)", progress, countedTextures, countableTextures);
+					pTexture->AssignImage(pCallback->pImage);
+					++texesNonStreamedSuccessful;
 				}
-
-				// Only keep texture which really need Precache()
-				return !(pTexture->m_bStreamed && pTexture->m_bForceStreamHighRes);
-			});
-		}
-
-		{
-			CTimeValue time0 = iTimer->GetAsyncTime();
-
-			while (s_StreamPrepTasks.GetNumLive())
+			}
+			else // loading through stream engine failed, fall back to direct read
 			{
-				if (gRenDev->m_pRT->IsRenderThread() && !gRenDev->m_pRT->IsRenderLoadingThread() && !gRenDev->m_pRT->IsLevelLoadingThread())
-				{
-					StreamState_Update();
-					StreamState_UpdatePrep();
-				}
-				else if (gRenDev->m_pRT->IsRenderLoadingThread() || gRenDev->m_pRT->IsLevelLoadingThread())
-				{
-					StreamState_UpdatePrep();
-				}
-
-				CrySleep(1);
+				pTexture->LoadImage(pTexture->m_eDstFormat);
 			}
 
-			SRenderStatistics::Write().m_fTexUploadTime += (iTimer->GetAsyncTime() - time0).GetSeconds();
+			delete pCallback;
 		}
 
-		// Trigger the texture(s)'s load without holding the resource-library lock to evade dead-locks
+		// some streamed high resolution textures may require extra preparation
+		for (auto& pTexture : precacheTextures)
 		{
-			// TODO: jobbable
-			pFoundTextures.remove_if([](_smart_ptr<CTexture>& pTexture)
+			if (pTexture->m_bStreamed && pTexture->m_bForceStreamHighRes)
 			{
 				pTexture->m_bStreamHighPriority |= 1;
 				pTexture->m_fpMinMipCur = 0;
-
 				s_pTextureStreamer->Precache(pTexture);
-
-				return true;
-			});
+				++forcedHighRes;
+			}
 		}
+
+		if (!gEnv->IsEditor())
+			CryLog("Texture precaching stats: successfully requested %u/%u | loaded %u | successfully prepared streaming %u/%u | successfully prepared others %u | HighRes precached %u",
+				returnedCallbacks, requested, successfullCallbacks, texesStreamedSuccessful, texesStreamed, texesNonStreamedSuccessful, forcedHighRes);
 	}
 
 	if (!gEnv->IsEditor())
@@ -998,18 +1015,6 @@ void CTexture::RT_Precache(const bool isFinalPrecache)
 	}
 }
 
-void CTexture::Load(ETEX_Format eFormat)
-{
-	LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("CTexture::Load(ETEX_Format eTFDst)", m_SrcName);
-	m_bWasUnloaded = false;
-	m_bStreamed = false;
-
-	LoadFromImage(m_SrcName.c_str(), eFormat);   // false=not reloading
-
-	m_eFlags |= FT_FROMIMAGE;
-	PostCreate();
-}
-
 void CTexture::ToggleStreaming(const bool bEnable)
 {
 	if (!(m_eFlags & (FT_FROMIMAGE | FT_DONT_RELEASE)) || (m_eFlags & FT_DONT_STREAM))
@@ -1026,12 +1031,7 @@ void CTexture::ToggleStreaming(const bool bEnable)
 		if (StreamPrepare(true))
 			return;
 
-		if (m_pFileTexMips)
-		{
-			Unlink();
-			StreamState_ReleaseInfo(this, m_pFileTexMips);
-			m_pFileTexMips = NULL;
-		}
+		SafeReleaseStreamingInfo();
 		m_bStreamed = false;
 		if (m_bNoTexture)
 			return;
@@ -1041,16 +1041,80 @@ void CTexture::ToggleStreaming(const bool bEnable)
 	Reload();
 }
 
-void CTexture::LoadFromImage(const char* name, ETEX_Format eFormat)
+PrecacheCallback* CTexture::PrecacheRequestImage(ETEX_Format eFormat)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(name);
+	LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("CTexture::PrecacheRequestImage(ETEX_Format eTFDst)", m_SrcName);
+	m_bWasUnloaded = false;
+	m_bStreamed = false;
 
 	if (CRenderer::CV_r_texnoload && SetNoTexture())
-		return;
+	{
+		m_eFlags |= FT_FROMIMAGE;
+		PostCreate();
+		return nullptr;
+	}
 
-	string sFileName(name);
+	string sFileName(m_SrcName);
 	sFileName.MakeLower();
+	m_eDstFormat = eFormat;
 
+	// try to stream-in the texture
+	if (IsStreamable())
+	{
+		m_bStreamed = true;
+		PrecacheCallback* cb;
+		if ((cb = PrecacheStreamPrepare()) != nullptr)
+		{
+			assert(m_pDevTexture);
+			m_eFlags |= FT_FROMIMAGE;
+			PostCreate();
+			return cb;
+		}
+
+		m_eFlags |= FT_DONT_STREAM;
+		m_bStreamed = false;
+		m_bForceStreamHighRes = false;
+		if (m_bNoTexture)
+		{
+			SafeReleaseStreamingInfo();
+		}
+	}
+
+#ifndef _RELEASE
+	CRY_DEFINE_ASSET_SCOPE("Texture", m_sAssetScopeName);
+#endif
+	uint32 nImageFlags =
+		((m_eFlags & FT_ALPHA) ? FIM_ALPHA : 0)
+		| ((m_eFlags & FT_DONT_STREAM) ? FIM_IMMEDIATE_RC : 0);
+		
+	PrecacheCallback* cb = new PrecacheCallback(false);
+	cb->pImage = CImageFile::mfStream_File(sFileName, nImageFlags, cb);
+	
+	if (!cb->pImage)
+	{
+		SetNoTexture(m_eTT == eTT_Cube ? CRendererResources::s_ptexNoTextureCM : CRendererResources::s_ptexNoTexture);
+		SAFE_DELETE(cb);
+	}
+	m_eFlags |= FT_FROMIMAGE;
+	PostCreate();
+	return cb;
+}
+
+void CTexture::LoadImage(ETEX_Format eFormat)
+{
+	LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("CTexture::RequestImage(ETEX_Format eTFDst)", m_SrcName);
+	m_bWasUnloaded = false;
+	m_bStreamed = false;
+
+	if (CRenderer::CV_r_texnoload && SetNoTexture())
+	{
+		m_eFlags |= FT_FROMIMAGE;
+		PostCreate();
+		return;
+	}
+
+	string sFileName(m_SrcName);
+	sFileName.MakeLower();
 	m_eDstFormat = eFormat;
 
 	// try to stream-in the texture
@@ -1060,6 +1124,8 @@ void CTexture::LoadFromImage(const char* name, ETEX_Format eFormat)
 		if (StreamPrepare(true))
 		{
 			assert(m_pDevTexture);
+			m_eFlags |= FT_FROMIMAGE;
+			PostCreate();
 			return;
 		}
 
@@ -1068,13 +1134,7 @@ void CTexture::LoadFromImage(const char* name, ETEX_Format eFormat)
 		m_bForceStreamHighRes = false;
 		if (m_bNoTexture)
 		{
-			if (m_pFileTexMips)
-			{
-				Unlink();
-				StreamState_ReleaseInfo(this, m_pFileTexMips);
-				m_pFileTexMips = NULL;
-				m_bStreamed = false;
-			}
+			SafeReleaseStreamingInfo();
 		}
 	}
 
@@ -1085,18 +1145,32 @@ void CTexture::LoadFromImage(const char* name, ETEX_Format eFormat)
 	if (m_bPostponed)
 	{
 		if (s_pTextureStreamer->BeginPrepare(this, sFileName, (m_eFlags & FT_ALPHA) ? FIM_ALPHA : 0))
+		{
+			m_eFlags |= FT_FROMIMAGE;
+			PostCreate();
 			return;
+		}
 	}
 
 	uint32 nImageFlags =
-	  ((m_eFlags & FT_ALPHA) ? FIM_ALPHA : 0) |
-	  ((m_eFlags & FT_STREAMED_PREPARE) ? FIM_READ_VIA_STREAMS : 0) |
-	  ((m_eFlags & FT_DONT_STREAM) ? FIM_IMMEDIATE_RC : 0);
+		((m_eFlags & FT_ALPHA) ? FIM_ALPHA : 0) |
+		((m_eFlags & FT_STREAMED_PREPARE) ? FIM_READ_VIA_STREAMS : 0) |
+		((m_eFlags & FT_DONT_STREAM) ? FIM_IMMEDIATE_RC : 0);
 
-	Load(CImageFile::mfLoad_file(sFileName, nImageFlags));
+	CImageFilePtr loadedImage = CImageFile::mfLoad_file(sFileName, nImageFlags);
+	if (!loadedImage)
+	{
+		SetNoTexture(m_eTT == eTT_Cube ? CRendererResources::s_ptexNoTextureCM : CRendererResources::s_ptexNoTexture);
+	}
+	else
+	{
+		AssignImage(loadedImage);
+	}
+ 	m_eFlags |= FT_FROMIMAGE;
+	PostCreate();
 }
 
-void CTexture::Load(CImageFilePtr&& pImage)
+void CTexture::AssignImage(CImageFilePtr& pImage)
 {
 	if (!pImage || pImage->mfGetFormat() == eTF_Unknown)
 	{
@@ -1104,7 +1178,7 @@ void CTexture::Load(CImageFilePtr&& pImage)
 		return;
 	}
 
-	//LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("CTexture::Load(CImageFile* pImage)", pImage->mfGet_filename().c_str());
+	LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("CTexture::AssignImage(CImageFile* pImage)", pImage->mfGet_filename().c_str());
 
 	if ((m_eFlags & FT_ALPHA) && !pImage->mfIs_image(0))
 	{
@@ -1183,7 +1257,7 @@ void CTexture::Load(CImageFilePtr&& pImage)
 	CreateShaderResource(std::move(CTexture::FormatFixup(std::move(td))));
 }
 
-void CTexture::UpdateData(STexDataPtr&& td, int flags)
+void CTexture::AssignData(STexDataPtr td, int flags)
 {
 	m_eFlags = flags;
 	m_eDstFormat = td->m_eFormat;
@@ -1770,7 +1844,7 @@ void CTexture::PostInit()
 	LOADING_TIME_PROFILE_SECTION;
 }
 
-int __cdecl TexCallback(const VOID* arg1, const VOID* arg2)
+int __cdecl CompareTextureDeviceDataSize(const VOID* arg1, const VOID* arg2)
 {
 	CTexture** pi1 = (CTexture**)arg1;
 	CTexture** pi2 = (CTexture**)arg2;
@@ -1784,7 +1858,7 @@ int __cdecl TexCallback(const VOID* arg1, const VOID* arg2)
 	return stricmp(ti1->GetSourceName(), ti2->GetSourceName());
 }
 
-int __cdecl TexCallbackMips(const VOID* arg1, const VOID* arg2)
+int __cdecl CompareTextureActualSize(const VOID* arg1, const VOID* arg2)
 {
 	CTexture** pi1 = (CTexture**)arg1;
 	CTexture** pi2 = (CTexture**)arg2;
@@ -1882,7 +1956,7 @@ void CTexture::Update()
 				fprintf(fp, "*** All textures: ***\n");
 
 				if (Texs.Num())
-					qsort(&Texs[0], Texs.Num(), sizeof(CTexture*), TexCallbackMips);
+					qsort(&Texs[0], Texs.Num(), sizeof(CTexture*), CompareTextureActualSize);
 
 				for (i = 0; i < Texs.Num(); i++)
 				{
@@ -1925,7 +1999,7 @@ void CTexture::Update()
 			int nY = 17;
 
 			if (Texs.Num())
-				qsort(&Texs[0], Texs.Num(), sizeof(CTexture*), TexCallback);
+				qsort(&Texs[0], Texs.Num(), sizeof(CTexture*), CompareTextureDeviceDataSize);
 
 			Size = 0;
 			for (i = 0; i < Texs.Num(); i++)
@@ -1974,7 +2048,7 @@ void CTexture::Update()
 				IRenderAuxText::TextToScreenColor(4, 13, 1, 1, 0, 1, "*** Textures loaded: ***");
 
 			if (Texs.Num())
-				qsort(&Texs[0], Texs.Num(), sizeof(CTexture*), TexCallback);
+				qsort(&Texs[0], Texs.Num(), sizeof(CTexture*), CompareTextureDeviceDataSize);
 
 			Size = 0;
 			for (i = 0; i < Texs.Num(); i++)
@@ -2040,7 +2114,7 @@ void CTexture::Update()
 			}
 
 			if (Texs.Num())
-				qsort(&Texs[0], Texs.Num(), sizeof(CTexture*), TexCallback);
+				qsort(&Texs[0], Texs.Num(), sizeof(CTexture*), CompareTextureDeviceDataSize);
 
 			int64 AllSize = 0;
 			int64 Size = 0;
@@ -2125,7 +2199,7 @@ void CTexture::Update()
 			}
 
 			if (Texs.Num())
-				qsort(&Texs[0], Texs.Num(), sizeof(CTexture*), TexCallback);
+				qsort(&Texs[0], Texs.Num(), sizeof(CTexture*), CompareTextureDeviceDataSize);
 
 			Size = 0;
 			SizeDynAtl = 0;
@@ -2273,33 +2347,9 @@ void CTexture::ReloadTextures() threadsafe
 	// Flush any outstanding texture requests before reloading
 	gEnv->pRenderer->FlushPendingTextureTasks();
 
-	std::forward_list<_smart_ptr<CTexture>> pFoundTextures;
-
-	// Search texture(s) in a thread-safe manner, and protect the found texture(s) from deletion
-	// Loop should block the resource-library as briefly as possible (don't call heavy stuff in the loop)
-	{
-		CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
-
-		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
-		if (pRL)
-		{
-			ResourcesMapItor itor;
-			for (itor = pRL->m_RMap.begin(); itor != pRL->m_RMap.end(); itor++)
-			{
-				CTexture* pTexture = (CTexture*)itor->second;
-				if (!pTexture || !(pTexture->m_eFlags & FT_FROMIMAGE))
-					continue;
-
-				pFoundTextures.emplace_front(pTexture);
-			}
-		}
-	}
-
-	// Trigger the texture(s)'s reload without holding the resource-library lock to evade dead-locks
-	{
-		// TODO: jobbable
-		pFoundTextures.remove_if([](_smart_ptr<CTexture>& pTexture) { pTexture->Reload(); return true; });
-	}
+	SmartTextureList textures = GetAllTextures([](CTexture* pTexture) { return pTexture->m_eFlags & FT_FROMIMAGE; });
+	for (_smart_ptr<CTexture>& pTexture : textures)
+		pTexture->Reload();
 }
 
 void CTexture::ToggleTexturesStreaming() threadsafe
@@ -2309,66 +2359,21 @@ void CTexture::ToggleTexturesStreaming() threadsafe
 	// Flush any outstanding texture requests before reloading
 	gEnv->pRenderer->FlushPendingTextureTasks();
 
-	std::forward_list<_smart_ptr<CTexture>> pFoundTextures;
-
-	// Search texture(s) in a thread-safe manner, and protect the found texture(s) from deletion
-	// Loop should block the resource-library as briefly as possible (don't call heavy stuff in the loop)
-	{
-		CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
-
-		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
-		if (pRL)
-		{
-			ResourcesMapItor itor;
-			for (itor = pRL->m_RMap.begin(); itor != pRL->m_RMap.end(); itor++)
-			{
-				CTexture* pTexture = (CTexture*)itor->second;
-				if (!pTexture || !(pTexture->m_eFlags & FT_FROMIMAGE))
-					continue;
-
-				pFoundTextures.emplace_front(pTexture);
-			}
-		}
-	}
-
-	// Trigger the texture(s)'s reload without holding the resource-library lock to evade dead-locks
-	{
-		// TODO: jobbable
-		pFoundTextures.remove_if([](_smart_ptr<CTexture>& pTexture) { pTexture->ToggleStreaming(CRenderer::CV_r_texturesstreaming != 0); return true; });
-	}
+	SmartTextureList textures = GetAllTextures([](CTexture* pTexture) { return pTexture->m_eFlags & FT_FROMIMAGE; });
+	for (_smart_ptr<CTexture>& pTexture : textures)
+		pTexture->ToggleStreaming(CRenderer::CV_r_texturesstreaming != 0);
 }
 
 void CTexture::LogTextures(ILog* pLog) threadsafe
 {
-	std::forward_list<_smart_ptr<CTexture>> pFoundTextures;
-
-	// Search texture(s) in a thread-safe manner, and protect the found texture(s) from deletion
-	// Loop should block the resource-library as briefly as possible (don't call heavy stuff in the loop)
-	{
-		CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
-
-		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
-		if (pRL)
+	SmartTextureList textures = GetAllTextures([](CTexture* pTexture) 
 		{
-			ResourcesMapItor itor;
-			for (itor = pRL->m_RMap.begin(); itor != pRL->m_RMap.end(); itor++)
-			{
-				CTexture* pTexture = (CTexture*)itor->second;
-				if (!pTexture)
-					continue;
-				const char* pName = pTexture->GetName();
-				if (!pName || strchr(pName, '/'))
-					continue;
-
-				pFoundTextures.emplace_front(pTexture);
-			}
+			const char* pName = pTexture->GetName();
+			return pName && !strchr(pName, '/');
 		}
-	}
-
-	// Trigger the texture(s)'s reload without holding the resource-library lock to evade dead-locks
-	{
-		pFoundTextures.remove_if([](_smart_ptr<CTexture>& pTexture) { iLog->Log("\t%s -- fmt: %s, dim: %d x %d\n", pTexture->GetName(), pTexture->GetFormatName(), pTexture->GetWidth(), pTexture->GetHeight()); return true; });
-	}
+	);
+	for (_smart_ptr<CTexture>& pTexture : textures)
+		iLog->Log("\t%s -- fmt: %s, dim: %d x %d\n", pTexture->GetName(), pTexture->GetFormatName(), pTexture->GetWidth(), pTexture->GetHeight());
 }
 
 bool CTexture::SetNoTexture(CTexture* pDefaultTexture /* = s_ptexNoTexture*/)
@@ -2397,12 +2402,7 @@ bool CTexture::SetNoTexture(CTexture* pDefaultTexture /* = s_ptexNoTexture*/)
 #endif
 
 		m_bNoTexture = true;
-		if (m_pFileTexMips)
-		{
-			Unlink();
-			StreamState_ReleaseInfo(this, m_pFileTexMips);
-			m_pFileTexMips = NULL;
-		}
+		SafeReleaseStreamingInfo();
 		m_bStreamed = false;
 		m_bPostponed = false;
 		m_nDevTextureSize = 0;
