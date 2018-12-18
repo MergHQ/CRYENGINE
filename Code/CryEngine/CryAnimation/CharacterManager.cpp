@@ -3029,8 +3029,8 @@ void CharacterManager::SkelExtension(CCharInstance* pCharacter, const CharacterD
 			pCurrentSkeleton->SetKeepInMemory(true);
 			pCharacter->RuntimeInit(pExtendedSkeleton);
 		}
-		}
 	}
+}
 
 void CharacterManager::ExtendDefaultSkeletonWithSkinAttachments(ICharacterInstance* pICharacter, const char* /*unused*/, const char** szSkinAttachments, const uint32 skinsCount, const uint32 loadingFlags)
 {
