@@ -23,7 +23,6 @@
 #include <CryGame/IGameFramework.h>
 #include <CrySystem/Profilers/IStatoscope.h>
 
-#include "Sampler.h"
 #include <CryThreading/IThreadManager.h>
 #include "Timer.h"
 
@@ -121,8 +120,6 @@ CFrameProfileSystem::CFrameProfileSystem()
 	//m_pProfilers = &m_netTrafficProfilers;
 	m_pProfilers = &m_profilers;
 
-	m_pSampler = new CSampler;
-
 	//////////////////////////////////////////////////////////////////////////
 	// Initialize subsystems list.
 	m_subsystems[PROFILE_RENDERER].name = "Renderer";
@@ -169,8 +166,6 @@ CFrameProfileSystem::~CFrameProfileSystem()
 	SAFE_DELETE(m_BlockingFrameStats);
 	SAFE_DELETE(m_ThreadFrameStats);
 	#endif
-
-	delete m_pSampler;
 
 	// Delete graphs for all frame profilers.
 	#if CRY_PLATFORM_WINDOWS
@@ -285,12 +280,6 @@ void CFrameProfileSystem::Init()
 		"Starting row for profile display");
 	REGISTER_CVAR(profile_col, 60, 0,
 		"Starting column for profile display");
-
-	REGISTER_INT_CB("profile_sampler", 0, 0,
-		"Set to 1 to start sampling profiling",
-		[](ICVar* var) { if (var->GetIVal()) s_pFrameProfileSystem->StartSampling(); });
-	REGISTER_CVAR(profile_sampler_max_samples, 2000, 0,
-		"Number of samples to collect for sampling profiler");
 
 	REGISTER_CVAR(profile_callstack, 0, 0, "Logs all Call Stacks of the selected profiler function for one frame");
 	REGISTER_CVAR(profile_log, 0, 0, "Logs profiler output");
@@ -455,16 +444,6 @@ void CFrameProfileSystem::EnableHistograms(bool bEnableHistograms)
 {
 	m_bEnableHistograms = bEnableHistograms;
 	m_bDisplayedProfilersValid = false;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFrameProfileSystem::StartSampling()
-{
-	if (m_pSampler)
-	{
-		m_pSampler->SetMaxSamples(profile_sampler_max_samples);
-		m_pSampler->Start();
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -979,9 +958,6 @@ const float CFrameProfileSystem::GetOverBudgetRatio(int modulenumber) const
 //////////////////////////////////////////////////////////////////////////
 void CFrameProfileSystem::EndFrame()
 {
-	if (m_pSampler)
-		m_pSampler->Update();
-
 	if (!m_bEnabled)
 		m_totalProfileTime = 0;
 

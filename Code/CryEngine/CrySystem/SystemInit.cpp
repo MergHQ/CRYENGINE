@@ -64,7 +64,6 @@
 #include "SystemEventDispatcher.h"
 #include "Statistics.h"
 #include "Statistics/LocalMemoryUsage.h"
-#include "ThreadProfiler.h"
 #include "ThreadConfigManager.h"
 #include "HardwareMouse.h"
 #include "Validator.h"
@@ -3278,11 +3277,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		// REMOTE COMMAND SYTSTEM
 		//////////////////////////////////////////////////////////////////////////
 		m_env.pRemoteCommandManager = new CRemoteCommandManager();
-
-		//////////////////////////////////////////////////////////////////////////
-		// THREAD PROFILER
-		//////////////////////////////////////////////////////////////////////////
-		m_pThreadProfiler = new CThreadProfiler;
 
 		//////////////////////////////////////////////////////////////////////////
 		// DISK PROFILER

@@ -34,7 +34,6 @@
 #include "CrySizerStats.h"
 #include "CrySizerImpl.h"
 #include "VisRegTest.h"
-#include "ThreadProfiler.h"
 #include <CrySystem/Profilers/IDiskProfiler.h>
 #include <CrySystem/ITextModeConsole.h>
 #include "HardwareMouse.h"
@@ -640,8 +639,6 @@ void CSystem::RenderStatistics()
 #if defined(USE_FRAME_PROFILER)
 	// Render profile info.
 	m_FrameProfileSystem.Render();
-	if (m_pThreadProfiler)
-		m_pThreadProfiler->Render();
 
 #if defined(USE_DISK_PROFILER)
 	if (m_pDiskProfiler)

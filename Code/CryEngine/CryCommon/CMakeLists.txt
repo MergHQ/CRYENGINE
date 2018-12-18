@@ -27,6 +27,7 @@ add_sources("NoUberFile"
 		"CryCore/Platform/CryPlatform.Linux.h"
 		"CryCore/Platform/Linux_Win32Wrapper.h"
 		"CryCore/Platform/LinuxSpecific.h"
+		"CryCore/Platform/platform_impl_posix.inl"
 )
 
 # -- crycommon_orbis.waf_files --
@@ -41,6 +42,7 @@ add_sources("NoUberFile"
 		"CryCore/Platform/CryPlatform.Orbis.h"
 		"CryCore/Platform/OrbisSpecific.h"
 		"CryCore/Platform/Orbis_Win32Wrapper.h"
+		"CryCore/Platform/platform_impl_posix.inl"
 	SOURCE_GROUP "CrySystem"
 		
 	SOURCE_GROUP "CrySystem\\\\Profilers"
@@ -89,6 +91,7 @@ add_sources("NoUberFile"
 	SOURCE_GROUP "CryCore\\\\Platform"
 		"CryCore/Platform/AndroidSpecific.h"
 		"CryCore/Platform/platform_impl_android.inl"
+		"CryCore/Platform/platform_impl_posix.inl"
 		"CryCore/Platform/AndroidJNI.h"
 		"CryCore/Platform/AndroidJNI.inl"
 )
@@ -137,6 +140,7 @@ add_sources("NoUberFile"
 		"CryCore/Platform/MacSpecific.h"
 		"CryCore/Platform/CryPlatform.Darwin.h"
 		"CryCore/Platform/platform_impl_mac.inl"
+		"CryCore/Platform/platform_impl_posix.inl"
 )
 
 # -- crycommon_windows.waf_files --

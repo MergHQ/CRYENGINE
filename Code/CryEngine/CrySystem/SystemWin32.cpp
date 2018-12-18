@@ -1089,40 +1089,6 @@ void CSystem::DumpWinHeaps()
 #endif
 }
 
-// Make system error message string
-//////////////////////////////////////////////////////////////////////////
-//! \return pointer to the null terminated error string or 0
-static const char* GetLastSystemErrorMessage()
-{
-#if CRY_PLATFORM_WINDOWS
-	DWORD dwError = GetLastError();
-
-	static char szBuffer[512]; // function will return pointer to this buffer
-
-	if (dwError)
-	{
-		LPVOID lpMsgBuf = 0;
-
-		if (FormatMessage(
-		      FORMAT_MESSAGE_ALLOCATE_BUFFER |
-		      FORMAT_MESSAGE_FROM_SYSTEM |
-		      FORMAT_MESSAGE_IGNORE_INSERTS,
-		      NULL,
-		      dwError,
-		      MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
-		      (LPTSTR) &lpMsgBuf,
-		      0,
-		      NULL))
-		{
-			cry_sprintf(szBuffer, "%d %s", dwError, (char*)lpMsgBuf);
-			LocalFree(lpMsgBuf);
-			return szBuffer;
-		}
-	}
-#endif // CRY_PLATFORM_WINDOWS
-	return nullptr;
-}
-
 //////////////////////////////////////////////////////////////////////////
 void CSystem::FatalError(const char* format, ...)
 {
@@ -1136,7 +1102,7 @@ void CSystem::FatalError(const char* format, ...)
 	va_end(ArgList);
 
 	// get system error message before any attempt to write into log
-	const char* szSysErrorMessage = GetLastSystemErrorMessage();
+	const char* szSysErrorMessage = CryGetLastSystemErrorMessage();
 
 	CryLogAlways("=============================================================================");
 	CryLogAlways("*ERROR");

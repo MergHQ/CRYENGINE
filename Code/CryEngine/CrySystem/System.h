@@ -34,7 +34,6 @@ class CrySizerStats;
 class CServerThrottle;
 class CStreamEngine;
 class CThreadManager;
-class CThreadProfiler;
 class CUserAnalyticsSystem;
 class CXmlUtils;
 class ICrySizer;
@@ -108,7 +107,6 @@ class CLUADbg;
 struct SDefaultValidator;
 class CPhysRenderer;
 class CVisRegTest;
-class CThreadProfiler;
 class CImeManager;
 
 #define PHSYICS_OBJECT_ENTITY    0
@@ -351,7 +349,6 @@ public:
 	IPhysRenderer*               GetIPhysRenderer() override;
 	IFrameProfileSystem*         GetIProfileSystem() override         { return &m_FrameProfileSystem; }
 	virtual IDiskProfiler*       GetIDiskProfiler() override          { return m_pDiskProfiler; }
-	CThreadProfiler*             GetThreadProfiler()                  { return m_pThreadProfiler; }
 	INameTable*                  GetINameTable() override             { return m_env.pNameTable; }
 	IBudgetingSystem*            GetIBudgetingSystem() override       { return(m_pIBudgetingSystem); }
 	IFlowSystem*                 GetIFlowSystem() override            { return m_env.pFlowSystem; }
@@ -874,7 +871,6 @@ private: // ------------------------------------------------------
 
 	CFrameProfileSystem          m_FrameProfileSystem;
 
-	CThreadProfiler*             m_pThreadProfiler;
 	IDiskProfiler*               m_pDiskProfiler;
 
 	std::unique_ptr<IPlatformOS> m_pPlatformOS;

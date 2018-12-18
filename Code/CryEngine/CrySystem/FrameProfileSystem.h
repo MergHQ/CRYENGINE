@@ -63,20 +63,9 @@ public:
 	float profile_min_display_ms;
 	float profile_row, profile_col;
 	int   profile_meminfo;
-	int   profile_sampler_max_samples;
 	int   profile_callstack;
 	int   profile_log;
 
-	//struct SPeakRecord
-	//{
-	//	CFrameProfiler *pProfiler;
-	//	float peakValue;
-	//	float averageValue;
-	//	float variance;
-	//	int pageFaults; // Number of page faults at this frame.
-	//	int count;  // Number of times called for peak.
-	//	float when; // when it added.
-	//};
 	struct SProfilerDisplayInfo
 	{
 		float           x, y; // Position where this profiler rendered.
@@ -377,8 +366,6 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	std::vector<IFrameProfilePeakCallback*> m_peakCallbacks;
 
-	class CSampler*                         m_pSampler;
-
 public:
 	//////////////////////////////////////////////////////////////////////////
 	// Methods.
@@ -432,12 +419,7 @@ public:
 	{
 		return m_ProfilerThreads.GetMainThreadId();
 	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// Sampling related.
-	//////////////////////////////////////////////////////////////////////////
-	void StartSampling();
-
+	
 	//////////////////////////////////////////////////////////////////////////
 	// Adds a value to profiler.
 	virtual void StartCustomSection(CCustomProfilerSection* pSection);
@@ -560,8 +542,6 @@ struct CFrameProfileSystem : public IFrameProfileSystem
 
 	virtual void                         StartCustomSection(CCustomProfilerSection* pSection)                    {}
 	virtual void                         EndCustomSection(CCustomProfilerSection* pSection)                      {}
-
-	virtual void                         StartSampling(int)                                                      {}
 
 	virtual void                         AddPeaksListener(IFrameProfilePeakCallback* pPeakCallback);
 	virtual void                         RemovePeaksListener(IFrameProfilePeakCallback* pPeakCallback);

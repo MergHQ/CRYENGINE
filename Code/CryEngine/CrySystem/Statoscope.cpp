@@ -14,7 +14,6 @@
 #include <CryAnimation/ICryAnimation.h>
 #include "SimpleStringPool.h"
 #include "System.h"
-#include "ThreadProfiler.h"
 #include <CryThreading/IThreadManager.h>
 #include <CryThreading/IJobManager.h>
 #include <CrySystem/Scaleform/IScaleformHelper.h>
@@ -389,75 +388,6 @@ struct SThreadsDG : public IStatoscopeDataGroup
 		fr.AddValue(renderTimes.fTimeProcessedRT * 1000);
 		fr.AddValue(renderTimes.fTimeProcessedRTScene * 1000);
 		fr.AddValue(netPerformance.m_threadTime * 1000.f);
-	}
-};
-
-struct SSystemThreadsDG : public IStatoscopeDataGroup
-{
-	virtual SDescription GetDescription() const
-	{
-		return SDescription('T', "system threading", "['/SystemThreading/' "
-		                                             "(float MTLoadInMS) (float RTLoadInMS) (float otherLoadInMS) "
-		                                             "(float sysIdle0InMS) (float sysIdle1InMS) (float sysIdleTotalInMS) "
-		                                             "(float totalLoadInMS) (float timeFrameInMS)]");
-	}
-
-	virtual void Enable()
-	{
-		IStatoscopeDataGroup::Enable();
-
-		SSystemThreadsDG::StartThreadProf();
-	}
-
-	virtual void Disable()
-	{
-		IStatoscopeDataGroup::Disable();
-
-		SSystemThreadsDG::StopThreadProf();
-	}
-
-	virtual void Write(IStatoscopeFrameRecord& fr)
-	{
-	#if defined(THREAD_SAMPLER)
-		CSystem* pSystem = static_cast<CSystem*>(gEnv->pSystem);
-		CThreadProfiler* pThreadProf = pSystem->GetThreadProfiler();
-		IThreadSampler* pThreadSampler = pThreadProf ? pThreadProf->GetThreadSampler() : NULL;
-
-		if (pThreadSampler)
-		{
-			pThreadSampler->Tick();
-
-			fr.AddValue(pThreadSampler->GetExecutionTime(TT_MAIN));
-			fr.AddValue(pThreadSampler->GetExecutionTime(TT_RENDER));
-			fr.AddValue(pThreadSampler->GetExecutionTime(TT_OTHER));
-			fr.AddValue(pThreadSampler->GetExecutionTime(TT_SYSTEM_IDLE_0));
-			fr.AddValue(pThreadSampler->GetExecutionTime(TT_SYSTEM_IDLE_1));
-			fr.AddValue(pThreadSampler->GetExecutionTime(TT_SYSTEM_IDLE_0) + pThreadSampler->GetExecutionTime(TT_SYSTEM_IDLE_1));
-			fr.AddValue(pThreadSampler->GetExecutionTime(TT_TOTAL) / pThreadSampler->GetNumHWThreads());
-			fr.AddValue(pThreadSampler->GetExecutionTimeFrame());
-		}
-		else
-	#endif // defined(THREAD_SAMPLER)
-		{
-			for (uint32 i = 0; i < 8; i++)
-			{
-				fr.AddValue(0.0f);
-			}
-		}
-	}
-
-	static void StartThreadProf()
-	{
-		CSystem* pSystem = static_cast<CSystem*>(gEnv->pSystem);
-		CThreadProfiler* pThreadProf = pSystem->GetThreadProfiler();
-		pThreadProf->Start();
-	}
-
-	static void StopThreadProf()
-	{
-		CSystem* pSystem = static_cast<CSystem*>(gEnv->pSystem);
-		CThreadProfiler* pThreadProf = pSystem->GetThreadProfiler();
-		pThreadProf->Stop();
 	}
 };
 
@@ -2776,7 +2706,6 @@ void CStatoscope::RegisterBuiltInDataGroups()
 	RegisterDataGroup(new SStreamingAudioDG());
 	RegisterDataGroup(new SStreamingObjectsDG());
 	RegisterDataGroup(new SThreadsDG());
-	RegisterDataGroup(new SSystemThreadsDG());
 	#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
 	RegisterDataGroup(new CWorkerInfoIndividualDG());
 	RegisterDataGroup(new SWorkerInfoSummarizedDG());

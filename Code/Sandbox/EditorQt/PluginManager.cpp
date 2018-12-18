@@ -206,11 +206,7 @@ bool CPluginManager::LoadPlugins(const char* pPathWithMask)
 
 		if (!hPlugin)
 		{
-			const size_t kCharsInMessageBuffer = 32768;
-			char szMessageBuffer[kCharsInMessageBuffer] = "";
-			FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(), 0, szMessageBuffer, kCharsInMessageBuffer, NULL);
-
-			CryLog("Can't load plugin DLL '%s' message '%s' !", iter->m_path, szMessageBuffer);
+			CryLog("Can't load plugin DLL '%s' message '%s' !", iter->m_path, CryGetLastSystemErrorMessage());
 			continue;
 		}
 

@@ -65,7 +65,6 @@
 #include "LocalizedStringManager.h"
 #include "XML/XmlUtils.h"
 #include "Serialization/ArchiveHost.h"
-#include "ThreadProfiler.h"
 #include <CrySystem/Profilers/IDiskProfiler.h>
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
 #include "SystemEventDispatcher.h"
@@ -396,7 +395,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_pMemoryManager = CryGetIMemoryManager();
 	m_pResourceManager = new CResourceManager;
 	m_pTextModeConsole = nullptr;
-	m_pThreadProfiler = nullptr;
 	m_pDiskProfiler = nullptr;
 	m_ttMemStatSS = 0;
 
@@ -474,7 +472,6 @@ CSystem::~CSystem()
 	FreeLib(m_dll.hGame);
 	FreeLib(m_dll.hSound);
 	SAFE_DELETE(m_pVisRegTest);
-	SAFE_DELETE(m_pThreadProfiler);
 #if defined(USE_DISK_PROFILER)
 	SAFE_DELETE(m_pDiskProfiler);
 #endif
