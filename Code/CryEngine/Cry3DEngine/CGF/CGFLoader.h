@@ -42,9 +42,9 @@ public:
 	CLoaderCGF(AllocFncPtr pAlloc = operator new, DestructFncPtr pDestruct = operator delete, bool bAllowStreamSharing = true);
 	~CLoaderCGF();
 
-	CContentCGF* LoadCGF(const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, unsigned long nLoadingFlags = 0);
-	bool         LoadCGF(CContentCGF* pContentCGF, const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, unsigned long nLoadingFlags = 0);
-	bool         LoadCGFFromMem(CContentCGF* pContentCGF, const void* pData, size_t nDataLen, IChunkFile& chunkFile, ILoaderCGFListener* pListener, unsigned long nLoadingFlags = 0);
+	CContentCGF* LoadCGF(const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, uint32 loadingFlags = 0);
+	bool         LoadCGF(CContentCGF* pContentCGF, const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, uint32 loadingFlags = 0);
+	bool         LoadCGFFromMem(CContentCGF* pContentCGF, const void* pData, size_t nDataLen, IChunkFile& chunkFile, ILoaderCGFListener* pListener, uint32 loadingFlags = 0);
 
 	const char*  GetLastError()                                  { return m_LastError; }
 	CContentCGF* GetCContentCGF()                                { return m_pCompiledCGF; }
@@ -52,7 +52,7 @@ public:
 	void         SetMaxWeightsPerVertex(int maxWeightsPerVertex) { m_maxWeightsPerVertex = maxWeightsPerVertex; }
 
 private:
-	bool          LoadCGF_Int(CContentCGF* pContentCGF, const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, unsigned long nLoadingFlags);
+	bool          LoadCGF_Int(CContentCGF* pContentCGF, const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, uint32 loadingFlags);
 
 	bool          LoadChunks(bool bJustGeometry);
 	bool          LoadExportFlagsChunk(IChunkFile::ChunkDesc* pChunkDesc);

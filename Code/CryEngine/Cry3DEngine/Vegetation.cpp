@@ -14,8 +14,8 @@
 #include "StdAfx.h"
 
 #include "StatObj.h"
+#include "StatObjFoliage.h"
 #include "terrain.h"
-#include "StatObj.h"
 #include "ObjMan.h"
 #include "PolygonClipContext.h"
 #include "3dEngine.h"

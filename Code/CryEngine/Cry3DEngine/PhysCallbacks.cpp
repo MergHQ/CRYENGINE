@@ -15,6 +15,7 @@
 #include "Brush.h"
 #include "VisAreas.h"
 #include "MatMan.h"
+#include "StatObjFoliage.h"
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryParticleSystem/IParticles.h>
 #include <CryThreading/IJobManager_JobDelegator.h>

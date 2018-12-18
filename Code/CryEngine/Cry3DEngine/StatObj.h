@@ -1,18 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-// -------------------------------------------------------------------------
-//  File name:   statobj.h
-//  Version:     v1.00
-//  Created:     28/5/2001 by Vladimir Kajalin
-//  Compilers:   Visual Studio.NET
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef STAT_OBJ_H
-#define STAT_OBJ_H
+#pragma once
 
 #if CRY_PLATFORM_DESKTOP
 	#define TRACE_CGF_LEAKS
@@ -27,7 +14,7 @@ struct phys_geometry;
 struct IIndexedMesh;
 struct IParticleEffect;
 
-#include "../Cry3DEngine/Cry3DEngineBase.h"
+#include "Cry3DEngineBase.h"
 #include <CryCore/Containers/CryArray.h>
 
 #include <Cry3DEngine/IStatObj.h>
@@ -64,85 +51,6 @@ struct SSpine
 	int   idmat;
 	int   iAttachSpine;
 	int   iAttachSeg;
-};
-
-class CStatObjFoliage : public IFoliage, public Cry3DEngineBase
-{
-public:
-	CStatObjFoliage()
-	{
-		m_next = 0;
-		m_prev = 0;
-		m_lifeTime = 0;
-		m_ppThis = 0;
-		m_pStatObj = 0;
-		m_pRopes = 0;
-		m_pRopesActiveTime = 0;
-		m_nRopes = 0;
-		m_nRefCount = 1;
-		m_timeIdle = 0;
-		m_pVegInst = 0;
-		m_pTrunk = 0;
-		m_pSkinningTransformations[0] = 0;
-		m_pSkinningTransformations[1] = 0;
-		m_iActivationSource = 0;
-		m_flags = 0;
-		m_bGeomRemoved = 0;
-		m_bEnabled = 1;
-		m_timeInvisible = 0;
-		m_bDelete = 0;
-		m_pRenderObject = 0;
-		m_minEnergy = 0.0f;
-		m_stiffness = 0.0f;
-		arrSkinningRendererData[0].pSkinningData = NULL;
-		arrSkinningRendererData[0].nFrameID = 0;
-		arrSkinningRendererData[1].pSkinningData = NULL;
-		arrSkinningRendererData[1].nFrameID = 0;
-		arrSkinningRendererData[2].pSkinningData = NULL;
-		arrSkinningRendererData[2].nFrameID = 0;
-	}
-	~CStatObjFoliage();
-	virtual void             AddRef()  { m_nRefCount++; }
-	virtual void             Release() { if (--m_nRefCount <= 0) m_bDelete = 2; }
-
-	virtual int              Serialize(TSerialize ser);
-	virtual void             SetFlags(uint flags);
-	virtual uint             GetFlags()                    { return m_flags; }
-	virtual IRenderNode*     GetIRenderNode()              { return m_pVegInst; }
-	virtual int              GetBranchCount()              { return m_nRopes; }
-	virtual IPhysicalEntity* GetBranchPhysics(int iBranch) { return (unsigned int)iBranch < (unsigned int)m_nRopes ? m_pRopes[iBranch] : 0; }
-
-	virtual SSkinningData*   GetSkinningData(const Matrix34& RenderMat34, const SRenderingPassInfo& passInfo);
-
-	uint32                   ComputeSkinningTransformationsCount();
-	void                     ComputeSkinningTransformations(uint32 nList);
-
-	void                     OnHit(struct EventPhysCollision* pHit);
-	void                     Update(float dt, const CCamera& rCamera);
-	void                     BreakBranch(int idx);
-
-	CStatObjFoliage*  m_next, * m_prev;
-	int               m_nRefCount;
-	uint              m_flags;
-	CStatObj*         m_pStatObj;
-	IPhysicalEntity** m_pRopes;
-	float*            m_pRopesActiveTime;
-	IPhysicalEntity*  m_pTrunk;
-	int16             m_nRopes;
-	int16             m_bEnabled;
-	float             m_timeIdle, m_lifeTime;
-	IFoliage**        m_ppThis;
-	QuatTS*           m_pSkinningTransformations[2];
-	int               m_iActivationSource;
-	int               m_bGeomRemoved;
-	IRenderNode*      m_pVegInst;
-	CRenderObject*    m_pRenderObject;
-	float             m_timeInvisible;
-	float             m_minEnergy;
-	float             m_stiffness;
-	int               m_bDelete;
-	// history for skinning data, needed for motion blur
-	struct { SSkinningData* pSkinningData; int nFrameID; } arrSkinningRendererData[3]; // tripple buffered for motion blur
 };
 
 struct SClothTangentVtx
@@ -250,6 +158,14 @@ struct SSyncToRenderMeshContext
 		pNormals = _pNormals;
 		pObj = _pObj;
 	}
+};
+
+class IStatObjLoadedCallback
+{
+public:
+	virtual ~IStatObjLoadedCallback() = default;
+	//! Will be called directly from the thread invoking LoadCGFAsync / LoadLowLODsAsync or later from the main thread.
+	virtual void OnLoaded(bool succeeded, CStatObj* object) = 0;
 };
 
 struct CRY_ALIGN(8) CStatObj: public IStatObj, public IStreamCallback, public stl::intrusive_linked_list_node<CStatObj>, public Cry3DEngineBase
@@ -453,10 +369,27 @@ public:
 
 	virtual bool IsDeformable() final;
 
-	// Loader
-	bool LoadCGF(const char* filename, bool bLod, unsigned long nLoadingFlags, const void* pData, const int nDataSize);
-	bool LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadingFlags, const void* pData, const int nDataSize);
+	// Loading
+	bool LoadCGF(const char* szFilename, uint32 loadingFlags);
+	void LoadCGFAsync(const char* szFilename, uint32 loadingFlags, IStatObjLoadedCallback* pCallback = nullptr);
+	//! LOD objects should not be loaded directly, but only through LoadLowLODs[Async]
+	void LoadLowLODs(bool useStreaming, uint32 loadingFlags);
+	//! The callback will be invoked when all LODs are loaded, with the base object as parameter.
+	void LoadLowLODsAsync(bool useStreaming, uint32 loadingFlags, IStatObjLoadedCallback* pCallback = nullptr);
+private:
+	class CStatObjAsyncCGFLoader;
+	class AsyncLodLoader;
+	void LoadCGF_Prepare(const char* szFilename, bool isLod);
+	bool LoadCGF(IChunkFile* chunkFile, const char* szFilename, bool isLod, uint32 loadingFlags);
+	bool LoadLowLODS_Prepare(uint32 loadingFlags);
+	CStatObj* LoadLowLOD(int lodLevel, bool useStreaming, uint32 loadingFlags);
+	void LoadLowLODS_Finalize(int nLoadedLods, CStatObj* loadedLods[MAX_STATOBJ_LODS_NUM - 1]);
+	void MakeLodFileName(uint nLod, char (&buffer)[MAX_PATH]);
+	virtual void SetLodObject(int nLod, IStatObj* pLod) final;
+	// Free render resources for unused upper LODs.
+	void CleanUnusedLods();
 
+public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual void SetMaterial(IMaterial * pMaterial) final;
 	virtual IMaterial* GetMaterial() const final { return m_pMaterial; }
@@ -518,15 +451,6 @@ public:
 
 	int          GetLoadedTrisCount()         { return m_nLoadedTrisCount; }
 	int          GetRenderTrisCount()         { return m_nRenderTrisCount; }
-
-	// Load LODs
-	virtual void SetLodObject(int nLod, IStatObj * pLod) final;
-	bool LoadLowLODS_Prep(bool bUseStreaming, unsigned long nLoadingFlags);
-	CStatObj* LoadLowLODS_Load(int nLodLevel, bool bUseStreaming, unsigned long nLoadingFlags, const void* pData, int nDataLen);
-	void LoadLowLODS_Finalize(int nLoadedLods, CStatObj * loadedLods[MAX_STATOBJ_LODS_NUM]);
-	void LoadLowLODs(bool bUseStreaming, unsigned long nLoadingFlags);
-	// Free render resources for unused upper LODs.
-	void CleanUnusedLods();
 
 	virtual void FreeIndexedMesh() final;
 	bool RenderDebugInfo(CRenderObject * pObj, const SRenderingPassInfo &passInfo);
@@ -683,7 +607,7 @@ public:
 
 protected:
 	// Called by async stream callback.
-	bool LoadStreamRenderMeshes(const char* filename, const void* pData, const int nDataSize, bool bLod);
+	bool LoadStreamRenderMeshes(bool bLod, const void* pData = nullptr, const int nDataSize = 0);
 	// Called by sync stream complete callback.
 	void CommitStreamRenderMeshes();
 
@@ -692,7 +616,6 @@ protected:
 	bool CanMergeSubObjects();
 	bool IsMatIDReferencedByObj(uint16 matID);
 
-	//	bool LoadCGF_Info( const char *filename );
 	CStatObj* MakeStatObjFromCgfNode(CContentCGF* pCGF, CNodeCGF* pNode, bool bLod, int nLoadingFlags, AABB& commonBBox);
 	void ParseProperties();
 
@@ -726,23 +649,3 @@ protected:
 	void CheckCreateBillboardMaterial();
 	void CreateBillboardMesh(IMaterial* pMaterial);
 };
-
-//////////////////////////////////////////////////////////////////////////
-inline void InitializeSubObject(IStatObj::SSubObject& so)
-{
-	so.localTM.SetIdentity();
-	so.name = "";
-	so.properties = "";
-	so.nType = STATIC_SUB_OBJECT_MESH;
-	so.pWeights = 0;
-	so.pFoliage = 0;
-	so.nParent = -1;
-	so.tm.SetIdentity();
-	so.bIdentityMatrix = true;
-	so.bHidden = false;
-	so.helperSize = Vec3(0, 0, 0);
-	so.pStatObj = 0;
-	so.bShadowProxy = 0;
-}
-
-#endif // STAT_OBJ_H

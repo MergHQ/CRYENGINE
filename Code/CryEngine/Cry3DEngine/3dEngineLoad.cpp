@@ -31,6 +31,7 @@
 #include <CryAction/IMaterialEffects.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include "ClipVolumeManager.h"
+#include "StatObjFoliage.h"
 
 #if defined(FEATURE_SVO_GI)
 	#include "SVO/SceneTreeManager.h"

@@ -548,12 +548,15 @@ void CStreamEngine::UpdateAndWait(bool bAbortAll)
 
 	while (!m_finishedStreams.empty() || !m_streams.empty())
 	{
-		Update();
 		// In case we still have cancelled or aborted streams in the queue,
 		// we wake the io threads here to ensure they are removed correctly;
 		for (uint32 i = 0; i < (uint32)eIOThread_Last; ++i)
 			SignalToStartWork((EIOThread)i, true);
-		CrySleep(10);
+		Update();
+		// If a stream finishes while Update is running, it will not be finalized until the next Update call.
+		// It can therefore happen that there are finished streams already, in which case we don't need to wait.
+		if(m_finishedStreams.empty() && !m_streams.empty())
+			CrySleep(10);
 	}
 
 	if (bAbortAll)
@@ -1466,7 +1469,7 @@ void CStreamEngine::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR 
 #if defined(STREAMENGINE_ENABLE_STATS)
 		ClearStatistics();
 #endif
-
+		PauseStreaming(false, -1);
 		WriteToStreamingLog("*LEVEL_LOAD_PREPARE");
 		break;
 

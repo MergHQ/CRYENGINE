@@ -168,6 +168,18 @@ struct SObjManRenderDebugInfo
 	float        fEntDistance;
 };
 
+//! Callback for LoadStatObjAsync()
+class IStatObjFoundCallback
+{
+public:
+	virtual ~IStatObjFoundCallback() = default;
+	//! Gets called once loading is finished. 
+	//! Will be called directly from the thread invoking LoadStatObjAsync or later from the main thread.
+	//! \param pObject can be null in case of a loading error.
+	//! \param pSubObject may point to a named sub-object, if a geometryName was requested and found
+	virtual void OnFound(CStatObj* pObject, IStatObj::SSubObject* pSubObject) = 0;
+};
+
 //////////////////////////////////////////////////////////////////////////
 class CObjManager : public Cry3DEngineBase
 {
@@ -225,8 +237,12 @@ public:
 			return NULL;
 	}
 
-	CStatObj* LoadStatObj(const char* szFileName, const char* szGeomName = NULL, IStatObj::SSubObject** ppSubObject = NULL, bool bUseStreaming = true, unsigned long nLoadingFlags = 0,
-	                      const void* m_pData = 0, int m_nDataSize = 0, const char* szBlockName = NULL);
+	CStatObj* LoadStatObj(const char* szFileName, const char* szGeomName = NULL, IStatObj::SSubObject** ppSubObject = NULL, bool useStreaming = true, uint32 loadingFlags = 0);
+	//! Asynchronously loads / looks for a CStatObj.
+	void LoadStatObjAsync(const char* szFileName, const char* szGeomName, bool useStreaming, uint32 loadingFlags, IStatObjFoundCallback* pCallback = nullptr);
+	//! Shared for LoadStatObj and LoadStatObjAsync
+	struct SLoadPrepareState LoadStatObj_Prepare(const char* szFileName, const char* szGeomName, IStatObj::SSubObject** ppSubObject, uint32 loadingFlags);
+
 	void      GetLoadedStatObjArray(IStatObj** pObjectsArray, int& nCount);
 
 	// Deletes object.

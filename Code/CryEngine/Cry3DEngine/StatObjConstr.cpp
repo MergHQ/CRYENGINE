@@ -602,47 +602,33 @@ IStatObj* CStatObj::GetLodObject(int nLodLevel, bool bReturnNearest)
 
 	if (!m_pLODs)
 	{
-		if (bReturnNearest || nLodLevel == 0)
+		if (bReturnNearest)
 			return this;
 		else
 			return NULL;
 	}
 
-	if (bReturnNearest)
-		nLodLevel = CLAMP(nLodLevel, 0, MAX_STATOBJ_LODS_NUM - 1);
+	if(bReturnNearest)
+		nLodLevel = min(nLodLevel, MAX_STATOBJ_LODS_NUM - 1);
 
 	CStatObj* pLod = 0;
 	if (nLodLevel < MAX_STATOBJ_LODS_NUM)
 	{
 		pLod = m_pLODs[nLodLevel];
 
-		// Look up
 		if (bReturnNearest && !pLod)
 		{
-			// Find highest existing lod looking up.
-			int lod = nLodLevel;
-			while (lod > 0 && m_pLODs[lod] == 0)
-				lod--;
-			if (lod > 0)
+			for (int deltaLod = 1; deltaLod < MAX_STATOBJ_LODS_NUM; ++deltaLod)
 			{
-				pLod = m_pLODs[lod];
-			}
-			else
-			{
-				pLod = this;
-			}
-		}
-		// Look down
-		if (bReturnNearest && !pLod)
-		{
-			// Find highest existing lod looking down.
-			for (int lod = nLodLevel + 1; lod < MAX_STATOBJ_LODS_NUM; lod++)
-			{
-				if (m_pLODs[lod])
-				{
-					pLod = m_pLODs[lod];
-					break;
-				}
+				int lower = nLodLevel - deltaLod;
+				if (0 < lower && m_pLODs[lower])
+					return m_pLODs[lower];
+				if (lower == 0)
+					return this;
+
+				int upper = nLodLevel + deltaLod;
+				if (upper < MAX_STATOBJ_LODS_NUM && m_pLODs[upper])
+					return m_pLODs[upper];
 			}
 		}
 	}
@@ -1284,6 +1270,24 @@ CStatObj::SSubObject* CStatObj::FindSubObject_StrStr(const char* sNodeName)
 		}
 	}
 	return 0;
+}
+
+//////////////////////////////////////////////////////////////////////////
+inline void InitializeSubObject(IStatObj::SSubObject& so)
+{
+	so.localTM.SetIdentity();
+	so.name = "";
+	so.properties = "";
+	so.nType = STATIC_SUB_OBJECT_MESH;
+	so.pWeights = 0;
+	so.pFoliage = 0;
+	so.nParent = -1;
+	so.tm.SetIdentity();
+	so.bIdentityMatrix = true;
+	so.bHidden = false;
+	so.helperSize = Vec3(0, 0, 0);
+	so.pStatObj = 0;
+	so.bShadowProxy = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////

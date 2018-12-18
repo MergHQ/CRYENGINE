@@ -98,14 +98,14 @@ CLoaderCGF::~CLoaderCGF()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CContentCGF* CLoaderCGF::LoadCGF(const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, unsigned long nLoadingFlags)
+CContentCGF* CLoaderCGF::LoadCGF(const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, uint32 loadingFlags)
 {
 	CContentCGF* const pContentCGF = new CContentCGF(filename);
 	if (!pContentCGF)
 	{
 		return NULL;
 	}
-	if (!LoadCGF(pContentCGF, filename, chunkFile, pListener, nLoadingFlags))
+	if (!LoadCGF(pContentCGF, filename, chunkFile, pListener, loadingFlags))
 	{
 		delete pContentCGF;
 		return NULL;
@@ -114,7 +114,7 @@ CContentCGF* CLoaderCGF::LoadCGF(const char* filename, IChunkFile& chunkFile, IL
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CLoaderCGF::LoadCGF(CContentCGF* pContentCGF, const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, unsigned long nLoadingFlags)
+bool CLoaderCGF::LoadCGF(CContentCGF* pContentCGF, const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, uint32 loadingFlags)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -133,10 +133,10 @@ bool CLoaderCGF::LoadCGF(CContentCGF* pContentCGF, const char* filename, IChunkF
 		SYNCHRONOUS_LOADING_TICK();
 	}
 
-	return LoadCGF_Int(pContentCGF, filename, chunkFile, pListener, nLoadingFlags);
+	return LoadCGF_Int(pContentCGF, filename, chunkFile, pListener, loadingFlags);
 }
 
-bool CLoaderCGF::LoadCGFFromMem(CContentCGF* pContentCGF, const void* pData, size_t nDataLen, IChunkFile& chunkFile, ILoaderCGFListener* pListener, unsigned long nLoadingFlags)
+bool CLoaderCGF::LoadCGFFromMem(CContentCGF* pContentCGF, const void* pData, size_t nDataLen, IChunkFile& chunkFile, ILoaderCGFListener* pListener, uint32 loadingFlags)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -155,10 +155,10 @@ bool CLoaderCGF::LoadCGFFromMem(CContentCGF* pContentCGF, const void* pData, siz
 		SYNCHRONOUS_LOADING_TICK();
 	}
 
-	return LoadCGF_Int(pContentCGF, pContentCGF->GetFilename(), chunkFile, pListener, nLoadingFlags);
+	return LoadCGF_Int(pContentCGF, pContentCGF->GetFilename(), chunkFile, pListener, loadingFlags);
 }
 
-bool CLoaderCGF::LoadCGF_Int(CContentCGF* pContentCGF, const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, unsigned long nLoadingFlags)
+bool CLoaderCGF::LoadCGF_Int(CContentCGF* pContentCGF, const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, uint32 loadingFlags)
 {
 	m_pListener = pListener;
 	m_bUseReadOnlyMesh = chunkFile.IsReadOnly();
@@ -187,7 +187,7 @@ bool CLoaderCGF::LoadCGF_Int(CContentCGF* pContentCGF, const char* filename, ICh
 		  !stricmp(pExt, "skel");
 	}
 
-	const bool bJustGeometry = (nLoadingFlags& IStatObj::ELoadingFlagsJustGeometry) != 0;
+	const bool bJustGeometry = (loadingFlags& IStatObj::ELoadingFlagsJustGeometry) != 0;
 
 	if (!LoadChunks(bJustGeometry))
 	{
