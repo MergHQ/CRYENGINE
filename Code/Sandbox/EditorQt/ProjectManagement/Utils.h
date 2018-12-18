@@ -5,6 +5,20 @@
 #include <CrySerialization/Forward.h>
 
 class CryIcon;
+class QWidget;
+
+// Searches for cryengine.cryengine from this EXE-folder, and moving higher
+string FindCryEngineRootFolder();
+
+// In the engineFolder, find system.cfg;
+// Return true, if any line of this file starts with "sys_project"
+bool IsProjectSpecifiedInSystemConfig(const string& engineFolder);
+
+// Find first *.cryproject file in the folder (without search in subfolders)
+string FindProjectInFolder(const string& folder);
+
+// Ask user to select a project
+string AskUserToSpecifyProject(QWidget* pParent, bool runOnSandboxInit);
 
 // Engine version description, taken from "cryengine.cryengine"
 struct SCryEngineVersion

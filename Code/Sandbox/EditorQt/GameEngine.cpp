@@ -20,7 +20,7 @@
 #include "Particles/ParticleManager.h"
 #include "Prefabs/PrefabEvents.h"
 #include "Prefabs/PrefabManager.h"
-#include "ProjectManagement/UI/SelectProjectDialog.h"
+#include "ProjectManagement/Utils.h"
 #include "Terrain/Heightmap.h"
 #include "Terrain/SurfaceType.h"
 #include "Terrain/TerrainGrid.h"
@@ -357,21 +357,29 @@ bool CGameEngine::Init(bool bPreviewMode, bool bTestMode, bool bShaderCacheGen, 
 
 	if (strstr(sInCmdLine, "-project") == 0)
 	{
-		CSelectProjectDialog dlg(SplashScreen::GetSplashScreen(), true);
-		if (dlg.exec() != QDialog::Accepted)
+		const string engineFolder = FindCryEngineRootFolder();
+		if (IsProjectSpecifiedInSystemConfig(engineFolder))
 		{
-			return false;
+			//1. it is responsibility of a user to check correctness of system.cfg file
+			//2. It is engine responsibility to run itself with this information (it will parse and use system.cfg as game_launcher)
 		}
-
-		const string projPath = dlg.GetPathToProject();
-		if (projPath.empty())
+		else
 		{
-			CRY_ASSERT_MESSAGE(false, "Expected non-empty path to a project");
-			return false;
-		}
+			string projPath = FindProjectInFolder(engineFolder);
+			if (projPath.empty())
+			{
+				projPath = AskUserToSpecifyProject(SplashScreen::GetSplashScreen(), true);
+			}
 
-		cry_strcat(startupParams.szSystemCmdLine, " -project ");
-		cry_strcat(startupParams.szSystemCmdLine, projPath);
+			if (projPath.empty())
+			{
+				// Exit Sandbox
+				return false;
+			}
+
+			cry_strcat(startupParams.szSystemCmdLine, " -project ");
+			cry_strcat(startupParams.szSystemCmdLine, projPath);
+		}
 	}
 
 	if (!CryInitializeEngine(startupParams, true))
