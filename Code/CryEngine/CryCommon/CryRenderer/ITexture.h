@@ -501,7 +501,7 @@ public:
 	//! Get low res system memory (used for CPU voxelization).
 	virtual const ColorB* GetLowResSystemCopy(uint16& width, uint16& height, int** ppUserData = nullptr, const int maxTexSize = 32) { return 0; }
 
-	virtual void AssignData(STexDataPtr td, int flags) = 0;
+	virtual void UpdateData(STexDataPtr&& td, int flags) = 0;
 	// </interfuscator:shuffle>
 
 	void         GetMemoryUsage(ICrySizer* pSizer) const

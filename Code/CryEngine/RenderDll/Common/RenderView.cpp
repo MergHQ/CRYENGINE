@@ -244,6 +244,9 @@ CCompiledRenderObject* CRenderView::AllocCompiledObject(CRenderObject* pObj, CRe
 {
 	CCompiledRenderObject* pCompiledObject = CCompiledRenderObject::AllocateFromPool();
 	pCompiledObject->Init(shaderItem, pElem);
+
+	// Assign any compiled object to the RenderObject, just to be used as a root reference for constant buffer sharing
+	pObj->m_pCompiledObject = pCompiledObject;
 	pCompiledObject->m_pRO = pObj;
 
 	return pCompiledObject;
@@ -1614,7 +1617,6 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 		{
 			// Allocate new CompiledRenderObject.
 			ri.pCompiledObject = AllocCompiledObject(pObj, pElem, shaderItem);
-			pObj->m_pCompiledObject = ri.pCompiledObject;
 			ri.nBatchFlags |= (ri.pCompiledObject ? FB_COMPILED_OBJECT : 0);
 
 			// Add to temporary objects to compile
@@ -1809,27 +1811,24 @@ void CRenderView::ExpandPermanentRenderObjects()
 					SShaderItem shaderItem;
 					SRendItem::ExtractShaderItem(pri.m_sortValue, shaderItem);
 
-					if (!pri.m_pCompiledObject)
+					if (!(volatile CCompiledRenderObject*)pri.m_pCompiledObject)
 					{
+						bool bRequireCompiledRenderObject = false;
 						// This item will need a temporary compiled object
-						const bool bRequireCompiledRenderObject = pri.m_pRenderElement && 
-							(pri.m_pRenderElement->mfGetType() == eDATA_Mesh || pri.m_pRenderElement->mfGetType() == eDATA_Particle);
+						if (pri.m_pRenderElement && (pri.m_pRenderElement->mfGetType() == eDATA_Mesh || pri.m_pRenderElement->mfGetType() == eDATA_Particle))
+						{
+							bRequireCompiledRenderObject = true;
+						}
+
 						if (bRequireCompiledRenderObject)
 						{
-							auto allocatedCompiledObject = AllocCompiledObject(pRenderObject, pri.m_pRenderElement, shaderItem); // Allocate new CompiledRenderObject
-							if (CryInterlockedCompareExchangePointer((void* volatile*)&pri.m_pCompiledObject, allocatedCompiledObject, nullptr) != nullptr)
-							{
-								// Exchange failed, release the newly acquired compiled object.
-								CCompiledRenderObject::FreeToPool(allocatedCompiledObject);
-							}
-							else 
-							{
-								needsCompilation = true;
+							static CryCriticalSectionNonRecursive allocCS;
+							AUTO_LOCK_T(CryCriticalSectionNonRecursive, allocCS);
 
-								// We might need to update the root compiled object.
-								// We update it only once, first comes - wins.
-								if (i == 0)
-									CryInterlockedCompareExchangePointer((void* volatile*)&pRenderObject->m_pCompiledObject, pri.m_pCompiledObject, nullptr);
+							if (((volatile CCompiledRenderObject*)pri.m_pCompiledObject) == nullptr)
+							{
+								pri.m_pCompiledObject = AllocCompiledObject(pRenderObject, pri.m_pRenderElement, shaderItem); // Allocate new CompiledRenderObject.
+								needsCompilation = true;
 							}
 						}
 					}

@@ -42,6 +42,9 @@ protected:
 	void          SelectTagDefByFilename(const CString& filename);
 
 	afx_msg void  OnEditTagDefs();
+
+	void RefreshFragmentTagDefinitionsComboBox();
+
 	afx_msg void  OnCbnSelchangeFragfileCombo();
 	afx_msg void  OnBnClickedCreateAdbFile();
 
