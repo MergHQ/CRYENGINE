@@ -564,20 +564,13 @@ void C3DEngine::UnloadLevel()
 
 	if (!gEnv->IsDedicated())
 	{
-		SAFE_RELEASE_FORCE(m_ptexIconLowMemoryUsage);
-		SAFE_RELEASE_FORCE(m_ptexIconAverageMemoryUsage);
-		SAFE_RELEASE_FORCE(m_ptexIconHighMemoryUsage);
-		SAFE_RELEASE_FORCE(m_ptexIconEditorConnectedToConsole);
-
 		//////////////////////////////////////////////////////////////////////////
 		// Releases loaded default loaded textures.
 		//////////////////////////////////////////////////////////////////////////
-		{
-			SAFE_RELEASE(m_ptexIconAverageMemoryUsage);
-			SAFE_RELEASE(m_ptexIconLowMemoryUsage);
-			SAFE_RELEASE(m_ptexIconHighMemoryUsage);
-			SAFE_RELEASE(m_ptexIconEditorConnectedToConsole);
-		}
+		SAFE_RELEASE(m_ptexIconAverageMemoryUsage);
+		SAFE_RELEASE(m_ptexIconLowMemoryUsage);
+		SAFE_RELEASE(m_ptexIconHighMemoryUsage);
+		SAFE_RELEASE(m_ptexIconEditorConnectedToConsole);
 	}
 	else
 	{
