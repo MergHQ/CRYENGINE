@@ -86,7 +86,6 @@
 #include "ExtensionSystem/CryPluginManager.h"
 #include "ExtensionSystem/CryFactoryRegistryImpl.h"
 #include "ExtensionSystem/TestCases/TestExtensions.h"
-#include "ProfileLogSystem.h"
 #include "CodeCoverage/CodeCheckpointMgr.h"
 #include "ZLibCompressor.h"
 #include "ZLibDecompressor.h"
@@ -2786,8 +2785,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 			}
 		}
 		m_pResourceManager->Init();
-
-		m_env.pProfileLogSystem = new CProfileLogSystem();
 
 #ifdef CODECHECKPOINT_ENABLED
 		// Setup code checkpoint manager if checkpoints are enabled

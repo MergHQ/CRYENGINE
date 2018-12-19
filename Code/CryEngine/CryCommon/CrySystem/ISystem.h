@@ -83,7 +83,6 @@ struct IPhysicsDebugRenderer;
 struct IPhysRenderer;
 struct IPlatformOS;
 struct IProcess;
-struct IProfileLogSystem;
 struct IReadWriteXMLSink;
 struct IRemoteCommandManager;
 struct IRemoteConsole;
@@ -850,7 +849,6 @@ struct SSystemGlobalEnvironment
 	IStatoscope*                   pStatoscope;
 	ICryPak*                       pCryPak;
 	IFileChangeMonitor*            pFileChangeMonitor;
-	IProfileLogSystem*             pProfileLogSystem;
 	IParticleManager*              pParticleManager;
 	IOpticsManager*                pOpticsManager;
 	IFrameProfileSystem*           pFrameProfileSystem;

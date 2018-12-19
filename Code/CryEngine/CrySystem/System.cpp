@@ -53,7 +53,6 @@
 #include "CrySizerStats.h"
 #include "CrySizerImpl.h"
 #include "NotificationNetwork.h"
-#include <CrySystem/Profilers/ProfileLog.h>
 #include <CryString/CryPath.h>
 
 #include "XML/xml.h"
@@ -628,7 +627,6 @@ void CSystem::ShutDown()
 			SAFE_RELEASE(m_env.pAudioSystem);
 
 			// Log must be last thing released.
-			SAFE_RELEASE(m_env.pProfileLogSystem);
 			m_env.pLog->FlushAndClose();
 			SAFE_RELEASE(m_env.pLog); // creates log backup
 
@@ -844,7 +842,6 @@ void CSystem::ShutDown()
 	SAFE_RELEASE(m_env.pConsole);
 
 	// Log must be last thing released.
-	SAFE_RELEASE(m_env.pProfileLogSystem);
 	m_env.pLog->FlushAndClose();
 	SAFE_RELEASE(m_env.pLog);   // creates log backup
 

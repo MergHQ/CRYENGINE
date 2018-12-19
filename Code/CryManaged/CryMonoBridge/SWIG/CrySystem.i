@@ -22,7 +22,6 @@
 %{
 #include <CrySystem/File/IFileChangeMonitor.h>
 #include <CrySystem/Profilers/IStatoscope.h>
-#include <CrySystem/Profilers/ProfileLog.h>
 #include <CrySystem/Profilers/IPerfHud.h>
 #include <CryMemory/ILocalMemoryUsage.h>
 #include <CrySystem/ICodeCheckpointMgr.h>
@@ -96,7 +95,6 @@ using JobManager::SJobState;
 %include "../../../../CryEngine/CryCommon/CrySystem/ITimer.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/File/IFileChangeMonitor.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/Profilers/IStatoscope.h"
-%include "../../../../CryEngine/CryCommon/CrySystem/Profilers/ProfileLog.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/Profilers/IPerfHud.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/Profilers/FrameProfiler/FrameProfiler.h"
 %include "../../../../CryEngine/CryCommon/CryMemory/ILocalMemoryUsage.h"
