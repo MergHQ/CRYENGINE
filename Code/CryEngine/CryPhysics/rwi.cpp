@@ -487,6 +487,8 @@ int CPhysicalWorld::RayWorldIntersection(const IPhysicalWorld::SRWIParams &rp, c
 
 	IF (rp.dir.len2()<=0, 0)
 		return 0;
+	extern thread_local int tls_isMainThread;
+	m_vars.bMultithreaded |= 1^tls_isMainThread;
 
 	IF (rp.flags & rwi_queue, 0) {
 		WriteLock lockQ(m_lockRwiQueue);

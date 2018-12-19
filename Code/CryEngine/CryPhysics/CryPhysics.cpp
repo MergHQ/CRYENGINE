@@ -183,14 +183,15 @@ public:
 InitPhysicsGlobals Now;
 
 
+thread_local int tls_isMainThread = 0;
 CRYPHYSICS_API IPhysicalWorld *CreatePhysicalWorld(ISystem *pSystem)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Physics, 0, "Create Physical World");
 	g_bHasSSE = pSystem && (pSystem->GetCPUFlags() & CPUF_SSE)!=0;
 
-	if (pSystem)
-	{
+	if (pSystem) {
 		pSystem->GetISystemEventDispatcher()->RegisterListener( &g_system_event_listener_physics, "CSystemEventListener_Physics");
+		tls_isMainThread = 1;
 		return new CPhysicalWorld(pSystem->GetILog());
 	}
 
@@ -211,9 +212,7 @@ class CEngineModule_CryPhysics : public IPhysicsEngineModule
 	virtual ~CEngineModule_CryPhysics()
 	{
 		if (ISystem* pSystem = GetISystem())
-		{
 			pSystem->GetISystemEventDispatcher()->RemoveListener(&g_system_event_listener_physics);
-		}
 		SAFE_RELEASE(gEnv->pPhysicalWorld);
 	}
 
@@ -229,10 +228,9 @@ class CEngineModule_CryPhysics : public IPhysicsEngineModule
 		g_bHasSSE = pSystem && (pSystem->GetCPUFlags() & CPUF_SSE)!=0;
 
 		if (pSystem)
-		{
 			pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_physics,"CEngineModule_CryPhysics");
-		}
 
+		tls_isMainThread = 1;
 		env.pPhysicalWorld = new CPhysicalWorld(pSystem ? pSystem->GetILog():0);
 
 		PhysicsCVars::Register(env.pPhysicalWorld->GetPhysVars());
