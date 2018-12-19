@@ -18,6 +18,9 @@
 
 #include <CryThreading/IThreadManager.h>
 
+#include <atomic>
+#include <mutex>
+
 //====================================================================
 
 struct IFlashPlayer;
@@ -32,7 +35,7 @@ struct SDynTexture;
 struct STexStreamInState;
 class CDeviceResourceSet;
 
-#if CRY_PLATFORM_ORBIS || CRY_PLATFORM_DURANGO || CRY_PLATFORM_MOBILE
+#if CRY_PLATFORM_ORBIS || CRY_PLATFORM_DURANGO || CRY_PLATFORM_MOBILE || CRY_PLATFORM_WINDOWS
 	#define USE_LOCKS_FOR_FLUSH_SYNC
 #endif
 
@@ -102,7 +105,7 @@ struct CRY_ALIGN(128) SRenderThread
 	CRenderThreadLoading* m_pThreadLoading;
 	ILoadtimeCallback* m_pLoadtimeCallback;
 	CryMutex m_rdldLock;
-	bool m_bQuit;
+	std::atomic<bool> m_bQuit;
 	bool m_bQuitLoading;
 	bool m_bSuccessful;
 	SDisplayContextKey m_displayContextKey;
@@ -112,13 +115,10 @@ struct CRY_ALIGN(128) SRenderThread
 	int m_nCurThreadProcess;
 	int m_nCurThreadFill;
 #endif
-#ifdef USE_LOCKS_FOR_FLUSH_SYNC
-	int m_nFlush;
-	CryMutex m_LockFlushNotify;
-	CryConditionVariable m_FlushCondition;
-	CryConditionVariable m_FlushFinishedCondition;
-#else
-	volatile int m_nFlush;
+	std::atomic<bool> m_nFlush;
+#if defined(USE_LOCKS_FOR_FLUSH_SYNC)
+	std::mutex m_LockFlushStore;
+	std::condition_variable m_FlushCondition;
 #endif
 	threadID m_nRenderThread;
 	threadID m_nRenderThreadLoading;
@@ -167,42 +167,36 @@ struct CRY_ALIGN(128) SRenderThread
 	inline void SignalFlushFinishedCond()
 	{
 #ifdef USE_LOCKS_FOR_FLUSH_SYNC
-		m_LockFlushNotify.Lock();
+		std::lock_guard<std::mutex> lk(m_LockFlushStore);
 #endif
-		m_nFlush = 0;
+		m_nFlush.store(false);
+
 #ifdef USE_LOCKS_FOR_FLUSH_SYNC
-		m_LockFlushNotify.Unlock();
-		m_FlushFinishedCondition.Notify();
-#else
-		READ_WRITE_BARRIER
+		m_FlushCondition.notify_all();
 #endif
 	}
 
 	inline void SignalFlushCond()
 	{
 #ifdef USE_LOCKS_FOR_FLUSH_SYNC
-		m_LockFlushNotify.Lock();
+		std::lock_guard<std::mutex> lk(m_LockFlushStore);
 #endif
-		m_nFlush = 1;
+		m_nFlush.store(true);
+
 #ifdef USE_LOCKS_FOR_FLUSH_SYNC
-		m_LockFlushNotify.Unlock();
-		m_FlushCondition.Notify();
-#else
-		READ_WRITE_BARRIER
+		m_FlushCondition.notify_all();
 #endif
 	}
 
 	inline void SignalQuitCond()
 	{
 #ifdef USE_LOCKS_FOR_FLUSH_SYNC
-		m_LockFlushNotify.Lock();
+		std::lock_guard<std::mutex> lk(m_LockFlushStore);
 #endif
-		m_bQuit = 1;
+		m_bQuit.store(true);
+
 #ifdef USE_LOCKS_FOR_FLUSH_SYNC
-		m_FlushCondition.Notify();
-		m_LockFlushNotify.Unlock();
-#else
-		READ_WRITE_BARRIER
+		m_FlushCondition.notify_all();
 #endif
 	}
 
@@ -216,18 +210,12 @@ struct CRY_ALIGN(128) SRenderThread
 
 	inline void InitFlushCond()
 	{
-		m_nFlush = 0;
-#if !defined(USE_LOCKS_FOR_FLUSH_SYNC)
-		READ_WRITE_BARRIER
-#endif
+		m_nFlush.store(false);
 	}
 
 	inline bool CheckFlushCond()
 	{
-#if !defined(USE_LOCKS_FOR_FLUSH_SYNC)
-		READ_WRITE_BARRIER
-#endif
-		return *(int*)&m_nFlush != 0;
+		return m_nFlush.load() != false;
 	}
 
 	void StartRenderThread();
