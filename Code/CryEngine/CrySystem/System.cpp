@@ -72,7 +72,6 @@
 #include <CryMemory/ILocalMemoryUsage.h>
 #include "ResourceManager.h"
 #include "MemoryManager.h"
-#include "LoadingProfiler.h"
 #include <CryLiveCreate/ILiveCreateHost.h>
 #include <CryLiveCreate/ILiveCreateManager.h>
 #include "OverloadSceneManager/OverloadSceneManager.h"
@@ -556,10 +555,6 @@ void CSystem::ShutDown()
 	SAFE_DELETE(m_pManualFrameStepController);
 
 	m_FrameProfileSystem.Enable(false, false);
-
-#if defined(ENABLE_LOADING_PROFILER)
-	CLoadingProfilerSystem::ShutDown();
-#endif
 
 	if (m_pSystemEventDispatcher)
 	{

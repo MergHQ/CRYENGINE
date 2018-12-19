@@ -71,7 +71,6 @@
 #include "SystemCFG.h"
 #include "AutoDetectSpec.h"
 #include "ResourceManager.h"
-#include "LoadingProfiler.h"
 #include "BootProfiler.h"
 #include "DiskProfiler.h"
 #include "Watchdog.h"
@@ -2328,11 +2327,6 @@ void CSystem::OpenLanguageAudioPak(char const* const szLanguage)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void OnLevelLoadingDump(ICVar* pArgs)
-{
-	gEnv->pSystem->OutputLoadingTimeStats();
-}
-
 #if CRY_PLATFORM_WINDOWS
 static wstring GetErrorStringUnsupportedCPU()
 {
@@ -2678,10 +2672,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 		//////////////////////////////////////////////////////////////////////////
 		InlineInitializationProcessing("CSystem::Init InitFileSystem");
-
-#if defined(ENABLE_LOADING_PROFILER)
-		CLoadingProfilerSystem::Init();
-#endif
 
 		//here we should be good to ask Crypak to do something
 
@@ -3605,10 +3595,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		}
 		m_env.pThreadManager->EnableFloatExceptions((EFPE_Severity)g_cvars.sys_float_exceptions);
 	}
-
-#if defined(ENABLE_LOADING_PROFILER)
-	CLoadingProfilerSystem::SaveTimeContainersToFile("EngineStart.crylp", 0.0, true);
-#endif
 
 	InlineInitializationProcessing("CSystem::Init End");
 
@@ -5103,14 +5089,6 @@ void CSystem::CreateSystemVars()
 	                 "e.g. LoadConfig lowspec.cfg\n"
 	                 "Usage: LoadConfig <filename>");
 
-	REGISTER_CVAR(sys_ProfileLevelLoading, 0, VF_CHEAT,
-	              "Output level loading stats into log\n"
-	              "0 = Off\n"
-	              "1 = Output basic info about loading time per function\n"
-	              "2 = Output full statistics including loading time and memory allocations with call stack info");
-
-	REGISTER_CVAR_CB(sys_ProfileLevelLoadingDump, 0, VF_CHEAT, "Output level loading dump stats into log\n", OnLevelLoadingDump);
-
 #if defined(USE_SCHEMATYC) && defined(USE_SCHEMATYC_EXPERIMENTAL)
 	static const int default_sys_SchematycPlugin = 0;
 #elif defined(USE_SCHEMATYC_EXPERIMENTAL)
@@ -5328,40 +5306,6 @@ void CSystem::AddCVarGroupDirectory(const string& sPath)
 	while (gEnv->pCryPak->FindNext(handle, &fd) >= 0);
 
 	gEnv->pCryPak->FindClose(handle);
-}
-
-void CSystem::OutputLoadingTimeStats()
-{
-#if defined(ENABLE_LOADING_PROFILER)
-	if (GetIConsole())
-		if (ICVar* pVar = GetIConsole()->GetCVar("sys_ProfileLevelLoading"))
-			CLoadingProfilerSystem::OutputLoadingTimeStats(GetILog(), pVar->GetIVal());
-#endif
-}
-
-SLoadingTimeContainer* CSystem::StartLoadingSectionProfiling(CLoadingTimeProfiler* pProfiler, const char* szFuncName)
-{
-#if defined(ENABLE_LOADING_PROFILER)
-	return CLoadingProfilerSystem::StartLoadingSectionProfiling(pProfiler, szFuncName);
-#else
-	return 0;
-#endif
-}
-
-void CSystem::EndLoadingSectionProfiling(CLoadingTimeProfiler* pProfiler)
-{
-#if defined(ENABLE_LOADING_PROFILER)
-	CLoadingProfilerSystem::EndLoadingSectionProfiling(pProfiler);
-#endif
-}
-
-const char* CSystem::GetLoadingProfilerCallstack()
-{
-#if defined(ENABLE_LOADING_PROFILER)
-	return CLoadingProfilerSystem::GetLoadingProfilerCallstack();
-#else
-	return 0;
-#endif
 }
 
 CBootProfilerRecord* CSystem::StartBootSectionProfiler(const char* name, const char* args, EProfileDescription type)

@@ -716,28 +716,6 @@ struct DiskOperationInfo
 
 };
 
-struct CLoadingTimeProfiler
-{
-	CLoadingTimeProfiler(ISystem* pSystem, const char* szFuncName) : m_pSystem(pSystem)
-	{
-		m_pSystem = pSystem;
-		m_pTimeContainer = m_pSystem->StartLoadingSectionProfiling(this, szFuncName);
-	}
-
-	~CLoadingTimeProfiler()
-	{
-		m_pSystem->EndLoadingSectionProfiling(this);
-	}
-
-	struct SLoadingTimeContainer* m_pTimeContainer;
-	double                        m_fConstructorTime;
-	double                        m_fConstructorMemUsage;
-
-	DiskOperationInfo             m_constructorInfo;
-
-	ISystem*                      m_pSystem;
-};
-
 class CSYSBootProfileBlock
 {
 	ISystem*             m_pSystem;

@@ -113,10 +113,6 @@ CMatInfo::CMatInfo()
 
 	ZeroStruct(m_streamZoneInfo);
 
-#ifdef TRACE_MATERIAL_LEAKS
-	m_sLoadingCallstack = GetSystem()->GetLoadingProfilerCallstack();
-#endif
-
 #if defined(ENABLE_CONSOLE_MTL_VIZ)
 	m_pConsoleMtl = 0;
 #endif

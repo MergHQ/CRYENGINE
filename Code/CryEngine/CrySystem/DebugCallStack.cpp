@@ -1054,13 +1054,6 @@ int DebugCallStack::handleException(EXCEPTION_POINTERS* exception_pointer)
 		cry_sprintf(excCode, "0x%08X", exception_pointer->ExceptionRecord->ExceptionCode);
 		WriteLineToLog("Exception: %s, at Address: %s", excCode, excAddr);
 
-		if (CSystem* pSystem = (CSystem*)GetSystem())
-		{
-			if (const char* pLoadingProfilerCallstack = pSystem->GetLoadingProfilerCallstack())
-				if (pLoadingProfilerCallstack[0])
-					WriteLineToLog("<CrySystem> LoadingProfilerCallstack: %s", pLoadingProfilerCallstack);
-		}
-
 		{
 			IMemoryManager::SProcessMemInfo memInfo;
 			if (gEnv->pSystem->GetIMemoryManager()->GetProcessMemInfo(memInfo))

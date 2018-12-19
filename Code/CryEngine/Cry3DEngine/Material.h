@@ -18,7 +18,6 @@
 #include <Cry3DEngine/IMaterial.h>
 
 #if CRY_PLATFORM_DESKTOP
-	#define TRACE_MATERIAL_LEAKS
 	#define SUPPORT_MATERIAL_EDITING
 #endif
 
@@ -241,13 +240,6 @@ public:
 #endif
 
 	virtual CryCriticalSection& GetSubMaterialResizeLock();
-public:
-	//////////////////////////////////////////////////////////////////////////
-	// for debug purposes
-	//////////////////////////////////////////////////////////////////////////
-#ifdef TRACE_MATERIAL_LEAKS
-	string m_sLoadingCallstack;
-#endif
 
 private:
 
