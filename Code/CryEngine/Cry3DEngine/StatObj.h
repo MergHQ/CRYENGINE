@@ -1,10 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#if CRY_PLATFORM_DESKTOP
-	#define TRACE_CGF_LEAKS
-#endif
-
 class CIndexedMesh;
 class CRenderObject;
 class CContentCGF;
@@ -305,14 +301,7 @@ public:
 	struct SMeshBoneMapping_uint8* m_pBoneMapping;
 	std::vector<uint16> m_chunkBoneIds;
 	//////////////////////////////////////////////////////////////////////////
-
-	//////////////////////////////////////////////////////////////////////////
-	// for debug purposes
-	//////////////////////////////////////////////////////////////////////////
-#ifdef TRACE_CGF_LEAKS
-	string m_sLoadingCallstack;
-#endif
-
+	
 private:
 
 	// Returns a list of all CStatObj instances contained within this object (all sub-objects plus the parent object itself).

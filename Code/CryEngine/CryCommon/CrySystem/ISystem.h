@@ -29,7 +29,6 @@ class IOpticsManager;
 class IXMLBinarySerializer;
 class XmlNodeRef;
 
-struct CLoadingTimeProfiler;
 struct CryGUID;
 struct FrameProfiler;
 struct I3DEngine;
@@ -1423,13 +1422,7 @@ struct ISystem
 	virtual void SetFrameProfiler(bool on, bool display, char* prefix) = 0;
 
 	//////////////////////////////////////////////////////////////////////////
-	// Loading time/memory profiling
-	//! Starts function loading stats profiling.
-	virtual struct SLoadingTimeContainer* StartLoadingSectionProfiling(CLoadingTimeProfiler* pProfiler, const char* szFuncName) = 0;
-
-	//! Ends function loading stats profiling.
-	virtual void EndLoadingSectionProfiling(CLoadingTimeProfiler* pProfiler) = 0;
-
+	// Loading time profiling
 	//! Starts function profiling with bootprofiler (session must be started).
 	virtual CBootProfilerRecord* StartBootSectionProfiler(const char* name, const char* args, EProfileDescription type) = 0;
 
@@ -1449,12 +1442,6 @@ struct ISystem
 
 	//! game dll should call this on frame end
 	virtual void OnFrameEnd() = 0;
-
-	//! Prints loading stats into log.
-	virtual void OutputLoadingTimeStats() = 0;
-
-	//! Starts function loading stats profiling.
-	virtual const char* GetLoadingProfilerCallstack() = 0;
 
 	//////////////////////////////////////////////////////////////////////////
 	// File version.

@@ -137,6 +137,82 @@ struct SThreadTaskRequest {
 	int *pbAllGroupsFinished;
 };
 
+template<typename I,int offs,int size> struct bitfield { // signed int bitfield
+	I& data;
+	operator I() const { return (data << sizeof(I)*8-offs-size) >> sizeof(I)*8-size; } 
+	bitfield& operator=(I val) { (data &= ~(((I)1<<size)-1<<offs)) |= (val & ((I)1<<size)-1)<<offs; return *this; }
+};
+
+const int ISFREE = 1;
+const int IDBITS = 24;
+
+struct SEntityIdList {
+	CPhysicalPlaceholder **data = nullptr;
+	~SEntityIdList() { reset(); }
+	void reset() { delete[] data; size=0; maxid=-1; idx0=((INT_PTR)1<<IDBITS*2)-1<<ISFREE|1; }
+	struct SFreeIndex {
+		SFreeIndex(INT_PTR *pidx) : next({*pidx}), prev({*pidx}) {}
+		bitfield<INT_PTR,ISFREE,IDBITS> next; // next_free_id = this_id+1+next
+		bitfield<INT_PTR,IDBITS+ISFREE,IDBITS> prev;	// prev_free_id = this_id-1-prev
+		bool isFree() const { return next.data==0 || next.data & 1; }
+		SFreeIndex& setFree() { next.data|=1; return *this; }
+	};
+	INT_PTR idx0 = ((INT_PTR)1<<IDBITS*2)-1<<ISFREE|1; // next,prev = -1
+	int size = 0, maxid = -1;
+	
+	SFreeIndex freeIdx(int id) { return SFreeIndex((unsigned int)id<size ? (INT_PTR*)data+id : &idx0); }
+	int findFreeIdx() { if (freeIdx(-1).next<0) alloc(); return freeIdx(-1).next; }
+	int getMaxId() const { return min(size-1,maxid); }
+	void alloc(int id=0) {
+		int szold = size;
+		ReallocateList(data,szold,size=max(id+32767 & ~32767,size+32768),true);
+		freeIdx(size-1).next = freeIdx(-1).next-size;	// [last_new_id].next_free = prev_first_free
+		freeIdx(szold).prev = szold; // [first_new_id].prev_free = -1
+		if (freeIdx(-1).next<0)
+			freeIdx(-1).prev = -1-size;	// last_free = last_new_id
+		freeIdx(-1).next = szold;	// first_free = first_new_id
+	}
+	bool validate() {
+		int iprev=-1, i, loop=0;
+		for(i=0;i<maxid;i++) if (!freeIdx(i).isFree())
+			data[i]->GetType();	// makes sure the pointer is not stale
+		for(i=freeIdx(iprev).next; i!=-1 && i-1-freeIdx(i).prev==iprev && loop<size+10; loop++,iprev=i,i+=1+freeIdx(i).next);
+		return i==-1;
+	}
+
+	struct SEntityIdListItem {
+		SEntityIdList &list;
+		int id;
+		operator CPhysicalPlaceholder*() { return id>=list.size || list.freeIdx(id).isFree() ? nullptr : list.data[id]; }
+		CPhysicalPlaceholder* operator->() const { return list.data[id]; }
+		SEntityIdListItem& operator=(CPhysicalPlaceholder *ptr) {
+			if (ptr) {
+				if (id>=list.size)
+					list.alloc(id);
+				auto idx = list.freeIdx(id);
+				if (idx.isFree()) {	// remove id from the free id list
+					int delta = idx.next+idx.prev+1;
+					list.freeIdx(id+1+idx.next).setFree().prev = delta;
+					list.freeIdx(id-1-idx.prev).setFree().next = delta;
+				}
+				list.maxid = max(list.maxid, id);
+				list.data[id] = ptr;
+			} else if ((unsigned int)id<list.size) {
+				auto idx = list.freeIdx(id);
+				idx.setFree();
+				SFreeIndex idx0(&list.idx0);
+				int delta = idx0.next-id-1;
+				list.freeIdx(idx0.next).prev = delta;	// [first_free].prev = id
+				idx.next = delta; // [id].next_free = first_free
+				idx.prev = id; // [id].prev_free = -1
+				idx0.next = id;	// first_free = id
+			}
+			return *this;
+		}
+	};
+	SEntityIdListItem operator[](int id) { return {*this,id}; }
+};
+
 #ifdef ENTGRID_2LEVEL
 struct pe_entgrid {
 	pe_entgrid &operator=(const pe_entgrid &src) {
@@ -759,9 +835,7 @@ public:
 	volatile int m_lockOldThunks;
 	int m_nEnts,m_nEntsAlloc;
 	int m_nDynamicEntitiesDeleted;
-	CPhysicalPlaceholder **m_pEntsById;
-	int m_nIdsAlloc, m_iNextId;
-	int m_iNextIdDown,m_lastExtId,m_nExtIds;
+	SEntityIdList m_pEntsById;
 	int m_bGridThunksChanged;
 	int m_bUpdateOnlyFlagged;
 	int m_nTypeEnts[10];

@@ -1113,10 +1113,6 @@ void CSystem::FatalError(const char* format, ...)
 	if (szSysErrorMessage)
 		CryLogAlways("<CrySystem> Last System Error: %s", szSysErrorMessage);
 
-	if (const char* pLoadingProfilerCallstack = GetLoadingProfilerCallstack())
-		if (pLoadingProfilerCallstack[0])
-			CryLogAlways("<CrySystem> LoadingProfilerCallstack: %s", pLoadingProfilerCallstack);
-
 	assert(szBuffer[0] >= ' ');
 	//	strcpy(szBuffer,szBuffer+1);	// remove verbosity tag since it is not supported by ::MessageBox
 

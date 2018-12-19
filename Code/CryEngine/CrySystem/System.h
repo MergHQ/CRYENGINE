@@ -23,7 +23,6 @@ class CCpuFeatures;
 class CCryPluginManager;
 class CDownloadManager;
 class CJSONUtils;
-class CLoadingProfilerSystem;
 class CLocalizedStringsManager;
 class CManualFrameStepController;
 class CMTRand_int32;
@@ -908,8 +907,6 @@ private: // ------------------------------------------------------
 
 	uint64 m_nUpdateCounter;
 
-	int    sys_ProfileLevelLoading, sys_ProfileLevelLoadingDump;
-
 	// MT random generator
 	CryCriticalSection m_mtLock;
 	CMTRand_int32*     m_pMtState;
@@ -947,12 +944,6 @@ public:
 
 	void                        Deltree(const char* szFolder, bool bRecurse);
 	void                        UpdateMovieSystem(const int updateFlags, const float fFrameTime, const bool bPreUpdate);
-
-	// level loading profiling
-	virtual void                          OutputLoadingTimeStats() override;
-	virtual struct SLoadingTimeContainer* StartLoadingSectionProfiling(CLoadingTimeProfiler* pProfiler, const char* szFuncName) override;
-	virtual void                          EndLoadingSectionProfiling(CLoadingTimeProfiler* pProfiler) override;
-	virtual const char*                   GetLoadingProfilerCallstack() override;
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual CBootProfilerRecord* StartBootSectionProfiler(const char* name, const char* args, EProfileDescription type) override;

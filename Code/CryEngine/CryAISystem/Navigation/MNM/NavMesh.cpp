@@ -412,7 +412,7 @@ const AreaAnnotation* CNavMesh::GetTriangleAnnotation(TriangleID triangleID) con
 	return nullptr;
 }
 
-void CNavMesh::SetTrianglesAnnotation(const TriangleID* pTrianglesArray, const size_t trianglesCount, const MNM::AreaAnnotation areaAnnotation, std::vector<TileID>& affectedTiles)
+void CNavMesh::SetTrianglesAnnotation(const TriangleID* pTrianglesArray, const size_t trianglesCount, const MNM::AreaAnnotation areaAnnotation, std::vector<TriangleID>& changedTriangles)
 {
 	for (size_t i = 0; i < trianglesCount; ++i)
 	{
@@ -426,7 +426,7 @@ void CNavMesh::SetTrianglesAnnotation(const TriangleID* pTrianglesArray, const s
 
 			triangle.areaAnnotation = areaAnnotation;
 
-			stl::push_back_unique(affectedTiles, MNM::ComputeTileID(triangleId));
+			changedTriangles.push_back(triangleId);
 		}
 	}
 }

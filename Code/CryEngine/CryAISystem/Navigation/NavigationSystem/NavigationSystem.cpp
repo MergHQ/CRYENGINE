@@ -913,9 +913,13 @@ void NavigationSystem::SetAnnotationForMarkupTriangles(NavigationVolumeID markup
 
 void NavigationSystem::ApplyAnnotationChanges()
 {	
+	if (m_markupAnnotationChangesToApply.empty())
+		return;
+	
 	// We are assuming here that every triangle can be owned by at most one markup volume. 
 	// Otherwise we would need to use something else then std::vector to store changed triangles.
 	std::unordered_map<NavigationMeshID, std::vector<MNM::TriangleID>> changedTrianglesPerNavmeshMap;
+	std::vector<MNM::TriangleID> changedTriangles;
 	
 	for (const auto& markupAnnotationChange : m_markupAnnotationChangesToApply)
 	{
@@ -932,19 +936,13 @@ void NavigationSystem::ApplyAnnotationChanges()
 					"ApplyAnnotationChanges: Mesh with id %u wasn't found for annotation data id %u. Is the NavMesh really up to date?", meshTriangles.meshId, markupAnnotationChange.first);
 				continue;
 			}
-			
-			std::vector<MNM::TileID> affectedTiles;
+
+			changedTriangles.clear();
 			NavigationMesh& mesh = m_meshes[meshTriangles.meshId];
-			mesh.navMesh.SetTrianglesAnnotation(meshTriangles.triangleIds.data(), meshTriangles.triangleIds.size(), areaAnnotation, affectedTiles);
+			mesh.navMesh.SetTrianglesAnnotation(meshTriangles.triangleIds.data(), meshTriangles.triangleIds.size(), areaAnnotation, changedTriangles);
 
-			auto& changedTriangles = changedTrianglesPerNavmeshMap[meshTriangles.meshId];
-			changedTriangles.insert(changedTriangles.end(), meshTriangles.triangleIds.begin(), meshTriangles.triangleIds.end());
-
-			AgentType& agentType = m_agentTypes[mesh.agentTypeID - 1];
-			for (MNM::TileID tileId : affectedTiles)
-			{
-				agentType.annotationCallbacks.CallSafe(mesh.agentTypeID, meshTriangles.meshId, tileId);
-			}
+			auto& changedTrianglesInMesh = changedTrianglesPerNavmeshMap[meshTriangles.meshId];
+			changedTrianglesInMesh.insert(changedTrianglesInMesh.end(), changedTriangles.begin(), changedTriangles.end());
 		}
 	}
 	m_markupAnnotationChangesToApply.clear();
@@ -953,10 +951,23 @@ void NavigationSystem::ApplyAnnotationChanges()
 	MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();
 	for (auto it = changedTrianglesPerNavmeshMap.begin(); it != changedTrianglesPerNavmeshMap.end(); ++it)
 	{
+		const NavigationMeshID meshId = it->first;
 		const auto& changedTriangles = it->second;
-		NavigationMesh& mesh = m_meshes[it->first];
+		NavigationMesh& mesh = m_meshes[meshId];
 
 		mesh.navMesh.GetIslands().UpdateIslandsForTriangles(mesh.navMesh, NavigationMeshID(it->first), changedTriangles.data(), changedTriangles.size(), islandConnections);
+
+		std::vector<MNM::TileID> affectedTiles;
+		for (const MNM::TriangleID triangleId : changedTriangles)
+		{
+			stl::push_back_unique(affectedTiles, MNM::ComputeTileID(triangleId));
+		}
+
+		AgentType& agentType = m_agentTypes[mesh.agentTypeID - 1];
+		for (const MNM::TileID tileId : affectedTiles)
+		{
+			agentType.annotationCallbacks.CallSafe(mesh.agentTypeID, meshId, tileId);
+		}
 	}
 }
 

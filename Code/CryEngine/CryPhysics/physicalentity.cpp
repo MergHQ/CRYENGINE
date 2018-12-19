@@ -350,15 +350,16 @@ int CPhysicalEntity::SetParams(pe_params *_params, int bThreadSafe)
 			}
 		}
 
-		Vec3 scale;
-		if ((scale=get_xqs_from_matrices(params->pMtx3x4,params->pMtx3x3, params->pos,params->q,params->scale)).len2()>3.03f) {
+		Vec3 scale;	Matrix33 skewMtx;
+		if ((scale=get_xqs_from_matrices(params->pMtx3x4,params->pMtx3x3, params->pos,params->q,params->scale, 0,0, &skewMtx)).len2()>3.03f) {
 			WriteLock lock(m_lockUpdate);
 			for(i=0;i<m_nParts;i++) {
 				phys_geometry *pgeom;
+				Matrix33 skewMtxPart = Matrix33(!m_parts[i].q)*skewMtx*Matrix33(m_parts[i].q);
 				if (m_parts[i].pPhysGeom!=m_parts[i].pPhysGeomProxy) {
 					if (!(pgeom = (phys_geometry*)m_parts[i].pPhysGeomProxy->pGeom->GetForeignData(DATA_UNSCALED_GEOM)))
 						pgeom = m_parts[i].pPhysGeomProxy;
-					if (BakeScaleIntoGeometry(pgeom,m_pWorld->GetGeomManager(),scale)) {
+					if (BakeScaleIntoGeometry(pgeom,m_pWorld->GetGeomManager(),scale,0,&skewMtxPart)) {
 						m_pWorld->GetGeomManager()->UnregisterGeometry(m_parts[i].pPhysGeomProxy);
 						(m_parts[i].pPhysGeomProxy=pgeom)->nRefCount++;
 					}
@@ -366,7 +367,7 @@ int CPhysicalEntity::SetParams(pe_params *_params, int bThreadSafe)
 				bool doBake = true;
 				if (!(pgeom = (phys_geometry*)m_parts[i].pPhysGeom->pGeom->GetForeignData(DATA_UNSCALED_GEOM)))
 					doBake = (pgeom = m_parts[i].pPhysGeom)->nRefCount>1;	// can't store DATA_UNSCALED_GEOM ptr to a volatile geom
-				if (doBake && BakeScaleIntoGeometry(pgeom,m_pWorld->GetGeomManager(),scale)) {
+				if (doBake && BakeScaleIntoGeometry(pgeom,m_pWorld->GetGeomManager(),scale,0,&skewMtxPart)) {
 					if (m_parts[i].pPhysGeom==m_parts[i].pPhysGeomProxy) {
 						m_pWorld->GetGeomManager()->UnregisterGeometry(m_parts[i].pPhysGeomProxy);
 						(m_parts[i].pPhysGeomProxy = pgeom)->nRefCount++;
@@ -376,6 +377,7 @@ int CPhysicalEntity::SetParams(pe_params *_params, int bThreadSafe)
 					m_pWorld->GetGeomManager()->UnregisterGeometry(m_parts[i].pPhysGeom);
 					(m_parts[i].pPhysGeom=pgeom)->nRefCount++;
 				}
+				m_parts[i].pos = skewMtx*(m_parts[i].pos/params->scale);
 			}
 		}
 		ENTITY_VALIDATE("CPhysicalEntity:SetParams(pe_params_pos)",params);
@@ -450,6 +452,10 @@ int CPhysicalEntity::SetParams(pe_params *_params, int bThreadSafe)
 						bPosChanged = m_pWorld->RepositionEntity(this,5,BBox);
 					m_BBox[0] = BBox[0];
 					m_BBox[1] = BBox[1];
+					for(i=0;i<m_nParts;i++)	{
+						m_parts[i].BBox[0] = m_parts[i].pNewCoords->BBox[0];
+						m_parts[i].BBox[1] = m_parts[i].pNewCoords->BBox[1];
+					}
 					m_pWorld->UnlockGrid(this,-bPosChanged);
 				}
 			}
@@ -510,17 +516,17 @@ int CPhysicalEntity::SetParams(pe_params *_params, int bThreadSafe)
 			for(i=0;i<m_nParts && m_parts[i].id!=params->partid;i++);
 		if (i>=m_nParts)
 			return 0;
-		Vec3 scale;
-		if ((scale=get_xqs_from_matrices(params->pMtx3x4,params->pMtx3x3, params->pos,params->q,params->scale)).len2()>3.03f) {
+		Vec3 scale;	Matrix33 skewMtx;
+		if ((scale=get_xqs_from_matrices(params->pMtx3x4,params->pMtx3x3, params->pos,params->q,params->scale, 0,0, &skewMtx)).len2()>3.03f) {
 			if (is_unused(params->pPhysGeom))
 				m_pWorld->GetGeomManager()->AddRefGeometry(params->pPhysGeom=m_parts[i].pPhysGeom);
 			if (is_unused(params->pPhysGeomProxy))
 				m_pWorld->GetGeomManager()->AddRefGeometry(params->pPhysGeomProxy=m_parts[i].pPhysGeomProxy);
 			phys_geometry *pgeom0 = params->pPhysGeom;
-			if (BakeScaleIntoGeometry(params->pPhysGeom,m_pWorld->GetGeomManager(),scale,1))
+			if (BakeScaleIntoGeometry(params->pPhysGeom,m_pWorld->GetGeomManager(),scale,1,&skewMtx))
 				m_pWorld->GetGeomManager()->AddRefGeometry(params->pPhysGeom);
 			if (pgeom0!=params->pPhysGeomProxy)	{
-				if (BakeScaleIntoGeometry(params->pPhysGeomProxy,m_pWorld->GetGeomManager(),scale,1))
+				if (BakeScaleIntoGeometry(params->pPhysGeomProxy,m_pWorld->GetGeomManager(),scale,1,&skewMtx))
 					m_pWorld->GetGeomManager()->AddRefGeometry(params->pPhysGeomProxy);
 			} else
 				params->pPhysGeomProxy = params->pPhysGeom;
@@ -1349,7 +1355,7 @@ int CPhysicalEntity::Action(pe_action *_action, int bThreadSafe)
 					continue;
 				gp.mass = m_parts[i].mass*cube(action->mtxRel.GetColumn0().len()/m_parts[i].scale); 
 				gp.flags=m_parts[i].flags; gp.flagsCollider=m_parts[i].flagsCollider;
-				mtxPart = action->mtxRel*Matrix34(Vec3(1), m_parts[i].q, m_parts[i].pos);
+				mtxPart = action->mtxRel*Matrix34(Vec3(m_parts[i].scale), m_parts[i].q, m_parts[i].pos);
 				gp.pLattice=m_parts[i].pLattice; gp.idmatBreakable=m_parts[i].idmatBreakable;
 				gp.pMatMapping=m_parts[i].pMatMapping; gp.nMats=m_parts[i].nMats;
 				pTarget->AddGeometry(m_parts[i].pPhysGeom, &gp, idnew, 1);

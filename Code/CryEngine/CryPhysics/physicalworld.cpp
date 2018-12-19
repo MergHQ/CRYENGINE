@@ -368,7 +368,7 @@ void SEntityGrid::Init()
 {
 	m_next=m_prev = nullptr;
 	cells = 0; 
-	zGran = 1.0f/16; rzGran = 16;
+	zGran = 1.0f/16; rzGran = 16; iup = 2;
 	pPODcells = &(pDummyPODcell=&dummyPODcell); dummyPODcell.lifeTime = 1E10f;
 	dummyPODcell.zlim.set(1E10f,-1E10f);
 	log2PODscale = 0;
@@ -402,10 +402,7 @@ void CPhysicalWorld::Init()
 	}
 	memset(m_threadData, 0, sizeof(m_threadData));
 
-	m_iNextId = 1;
-	m_iNextIdDown=m_lastExtId=m_nExtIds = 0;
-	m_pEntsById = 0;
-	m_nIdsAlloc = 0;
+	m_pEntsById.reset();
 	m_nExplVictims = m_nExplVictimsAlloc = 0;
 	m_pPlaceholders = 0; m_pPlaceholderMap = 0;
 	m_nPlaceholders = m_nPlaceholderChunks = 0;
@@ -628,7 +625,7 @@ void CPhysicalWorld::Shutdown(int bDeleteGeometries)
 	if (m_pMassList) delete[] m_pMassList; m_pMassList = 0;
 	if (m_pGroupIds) delete[] m_pGroupIds; m_pGroupIds = 0;
 	if (m_pGroupNums) delete[] m_pGroupNums; m_pGroupNums = 0;
-	if (m_pEntsById) delete[] m_pEntsById; m_pEntsById = 0;	m_nIdsAlloc = 0;
+	m_pEntsById.reset();
 	m_cubeMapStatic.Free();
 	m_cubeMapDynamic.Free();
 	if (m_nExplVictimsAlloc) {
@@ -867,10 +864,10 @@ IPhysicalEntity* CPhysicalWorld::SetupEntityGrid(int axisz, Vec3 org, int nx,int
 	
 	if (pgrid->cells) {
 		int i;
-		if (m_pEntsById) for(i=0;i<m_iNextId;i++) if (m_pEntsById[i] && GetGrid(m_pEntsById[i])==pgrid) {
+		for(i=0;i<=m_pEntsById.getMaxId();i++) if (m_pEntsById[i] && GetGrid(m_pEntsById[i])==pgrid) {
 			DetachEntityGridThunks(m_pEntsById[i]);
 			if (!m_pEntsById[i]->m_pEntBuddy || m_pEntsById[i]->m_pEntBuddy==m_pEntsById[i]) {
-				CPhysicalEntity *pent = (CPhysicalEntity*)m_pEntsById[i];
+				CPhysicalEntity *pent = (CPhysicalEntity*)(CPhysicalPlaceholder*)m_pEntsById[i];
 				for(int j=0;j<pent->m_nParts;j++) if (pent->m_parts[j].pPlaceholder)
 					DetachEntityGridThunks(pent->m_parts[j].pPlaceholder);
 			}
@@ -1241,8 +1238,6 @@ IPhysicalEntity* CPhysicalWorld::CreatePhysicalEntity(pe_type type, float lifeTi
 		res->m_bPrevPermanent = res->m_bPermanent = 1;
 		res->m_pForeignData = pForeignData;
 		res->m_iForeignData = iForeignData;
-		m_lastExtId = max(m_lastExtId, id);
-		m_nExtIds += 1+(id>>31);
 		SetPhysicalEntityId(res, id>=0 ? id:GetFreeEntId());
 	}
 	res->m_flags |= 0x80000000u;
@@ -1512,14 +1507,13 @@ DEBUG_BREAK;
 			pent->m_next->m_prev=pent;
 		if (pent->m_pEntBuddy) {
 			pent->m_pEntBuddy->m_pEntBuddy = 0;
-			if (IsPortal(pent) && !pent->m_pEntBuddy->m_pForeignData)	{
-				DestroyPhysicalEntity(pent->m_pEntBuddy,0,1);
+			if (IsPortal(pent)) {
+				if (!pent->m_pEntBuddy->m_pForeignData)
+					DestroyPhysicalEntity(pent->m_pEntBuddy,0,1);
 				goto freeid;
 			}
 		} else {
 			freeid:
-			if (pent->m_id<=m_lastExtId)
-				--m_nExtIds;
 			SetPhysicalEntityId(pent,-1);	pent->m_id=-1;
 		}
 		pent->m_iSimClass = 7;
@@ -1625,18 +1619,7 @@ void CPhysicalWorld::PatchEventsQueue(IPhysicalEntity* pEntity, void* pForeignDa
 
 int CPhysicalWorld::GetFreeEntId()
 {
-	int nPhysEnts=m_nEnts-m_nExtIds, nPhysSlots=m_iNextId-m_lastExtId;
-	if (nPhysEnts*2 > nPhysSlots)
-		return m_iNextId++;
-	int nTries;
-	for(nTries=100; nTries>0 && m_iNextIdDown>m_lastExtId && m_pEntsById[m_iNextIdDown]; m_iNextIdDown--,nTries--);
-	if (nTries<=0)
-		return m_iNextId++;
-	if (m_iNextIdDown<=m_lastExtId)
-		for(m_iNextIdDown=m_iNextId-2,nTries=100; nTries>0 && m_iNextIdDown>m_lastExtId && m_pEntsById[m_iNextIdDown]; m_iNextIdDown--,nTries--);
-	if (nTries<=0 || m_iNextIdDown<=m_lastExtId)
-		return m_iNextId++;
-	return m_iNextIdDown--;
+	return m_pEntsById.findFreeIdx();
 }
 
 
@@ -1644,21 +1627,10 @@ int CPhysicalWorld::SetPhysicalEntityId(IPhysicalEntity *_pent, int id, int bRep
 {
 	WriteLockCond lock(m_lockEntIdList,bThreadSafe^1);
 	CPhysicalPlaceholder *pent = (CPhysicalPlaceholder*)_pent;
-	unsigned int previd = (unsigned int)pent->m_id;
-	if (previd<(unsigned int)m_nIdsAlloc) {
-		m_pEntsById[previd] = 0;
-		if (previd==m_iNextId-1)
-			for(;m_iNextId>0 && m_pEntsById[m_iNextId-1]==0;m_iNextId--);
-		if (previd==m_lastExtId)
-			for(--m_lastExtId; m_lastExtId>0 && !m_pEntsById[m_lastExtId]; m_lastExtId--);
-	}
-	m_iNextId = max(m_iNextId,id+1);
+	if (pent->m_id>=0)
+		m_pEntsById[pent->m_id] = 0;
 
 	if (id>=0) {
-		if (id>=m_nIdsAlloc) {
-			int nAllocPrev = m_nIdsAlloc;
-			ReallocateList(m_pEntsById, nAllocPrev,m_nIdsAlloc=(id&~32767)+32768, true);
-		}
 		if (m_pEntsById[id]) {
 			if (bReplace)
 				SetPhysicalEntityId(m_pEntsById[id],GetFreeEntId(),1,1);
@@ -1689,8 +1661,9 @@ IPhysicalEntity* CPhysicalWorld::GetPhysicalEntityById(int id)
 		return &g_StaticPhysicalEntity;
 	else {
 		int bNoExpand = id>>30; id &= ~(1<<30);
-		if ((unsigned int)id<(unsigned int)m_nIdsAlloc)
-			return m_pEntsById[id] ? (!bNoExpand ? m_pEntsById[id]->GetEntity():m_pEntsById[id]->GetEntityFast()) : 0;
+		if (CPhysicalPlaceholder *ppc = m_pEntsById[id])
+			return !bNoExpand ? ppc->GetEntity():ppc->GetEntityFast();
+		return nullptr;
 	}
 	return 0;
 }
@@ -3290,7 +3263,7 @@ int CPhysicalWorld::RepositionEntity(CPhysicalPlaceholder *pobj, int flags, Vec3
 					Vec3 com = pgrid1->m_transInHost.GetInverted()*pgrid1->m_com*pent->m_qrot;
 					pe_action_impulse ai;
 					ai.iSource = 5;
-					for(ithunk=m_gthunks[pgrid1->m_iGThunk0].inext; ithunk; ithunk=m_gthunks[ithunk].inext)
+					for(ithunk=m_gthunks[pgrid1->m_iGThunk0].inext; ithunk && m_gthunks[ithunk].pent; ithunk=m_gthunks[ithunk].inext)
 						if (IsPortal(m_gthunks[ithunk]))
 							SyncPortal(m_gthunks[ithunk].pent);
 						else if ((unsigned int)m_gthunks[ithunk].pent->m_iSimClass-1u < 2u) {
@@ -4644,7 +4617,7 @@ void CPhysicalWorld::GetMemoryStatistics(ICrySizer *pSizer)
 		pSizer->AddObject(m_pMassList, m_nEntsAlloc*sizeof(m_pMassList[0]));
 		pSizer->AddObject(m_pGroupIds, m_nEntsAlloc*sizeof(m_pGroupIds[0]));
 		pSizer->AddObject(m_pGroupNums, m_nEntsAlloc*sizeof(m_pGroupNums[0]));
-		pSizer->AddObject(m_pEntsById, m_nIdsAlloc*sizeof(m_pEntsById[0]));
+		pSizer->AddObject(m_pEntsById.data, m_pEntsById.size*sizeof(m_pEntsById.data[0]));
 		pSizer->AddObject(&m_entgrid.cells, GetGridSize(m_entgrid.cells, m_entgrid.size));
 		pSizer->AddObject(m_gthunks, m_thunkPoolSz*sizeof(m_gthunks[0]));
 

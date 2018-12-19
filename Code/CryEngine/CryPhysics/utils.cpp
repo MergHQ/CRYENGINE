@@ -385,7 +385,7 @@ real RotatePointToPlane(const Vec3r &pt, const Vec3r &axis,const Vec3r &center, 
 }
 
 
-int BakeScaleIntoGeometry(phys_geometry *&pgeom,IGeomManager *pGeoman, const Vec3& s, int bReleaseOld)
+int BakeScaleIntoGeometry(phys_geometry *&pgeom,IGeomManager *pGeoman, const Vec3& s, int bReleaseOld,  const Matrix33 *pskewMtx)
 {
 	IGeometry *pGeomScaled=0;
 	if (phys_geometry *pAdam = (phys_geometry*)pgeom->pGeom->GetForeignData(DATA_UNSCALED_GEOM)) {
@@ -396,6 +396,11 @@ int BakeScaleIntoGeometry(phys_geometry *&pgeom,IGeomManager *pGeoman, const Vec
 	switch (int itype=pgeom->pGeom->GetType()) {
 		case GEOM_BOX: { 
 			const primitives::box *pbox = (const primitives::box*)pgeom->pGeom->GetData();
+			Matrix33 R = pskewMtx ? *pskewMtx*pbox->Basis.T() : pbox->Basis.T();
+			if (fabs(R.GetColumn0()*R.GetColumn1()) + fabs(R.GetColumn0()*R.GetColumn2()) + fabs(R.GetColumn1()*R.GetColumn2()) > 0.01f) {
+				pGeomScaled = pgeom->pGeom->GetTriMesh();
+				goto use_mesh; 
+			}
 			primitives::box boxScaled;	
 			boxScaled = *pbox;
 			Diag33 smtx(s);
@@ -418,10 +423,11 @@ int BakeScaleIntoGeometry(phys_geometry *&pgeom,IGeomManager *pGeoman, const Vec
 		}	break;
 		case GEOM_TRIMESH: {
 			pGeomScaled = pGeoman->CloneGeometry(pgeom->pGeom);
+		use_mesh:
 			mesh_data *pmd = (mesh_data*)pGeomScaled->GetData();
-			Diag33 smtx(s);
+			Matrix33 mtx = pskewMtx ? *pskewMtx : Diag33(s);
 			for(int i=0; i<pmd->nVertices; i++)
-				pmd->pVertices[i] = smtx*pmd->pVertices[i];
+				pmd->pVertices[i] = mtx*pmd->pVertices[i];
 			pGeomScaled->SetData(pmd);
 		} break;
 	}
@@ -437,26 +443,33 @@ int BakeScaleIntoGeometry(phys_geometry *&pgeom,IGeomManager *pGeoman, const Vec
 }
 
 
-Vec3 get_xqs_from_matrices(Matrix34 *pMtx3x4,Matrix33 *pMtx3x3, Vec3 &pos,quaternionf &q,float &scale, phys_geometry **ppgeom,IGeomManager *pGeoman)
+Vec3 get_xqs_from_matrices(Matrix34 *pMtx3x4,Matrix33 *pMtx3x3, Vec3 &pos,quaternionf &q,float &scale, phys_geometry **ppgeom,IGeomManager *pGeoman, Matrix33 *pskewMtx)
 {
 	Vec3 s;
+	Matrix33 skewMtx;
 	if (pMtx3x4) {
 		s.Set(pMtx3x4->GetColumn(0).len(), pMtx3x4->GetColumn(1).len(), pMtx3x4->GetColumn(2).len());
-		q = quaternionf(Matrix33(pMtx3x4->GetColumn(0)/s.x, pMtx3x4->GetColumn(1)/s.y, pMtx3x4->GetColumn(2)/s.z));
+		q = quaternionf(Matrix33(pMtx3x4->GetColumn(0)/s.x, pMtx3x4->GetColumn(1)/s.y, pMtx3x4->GetColumn(2)/s.z)).GetNormalized();
 		pos = pMtx3x4->GetTranslation();
+		skewMtx = Matrix33(!q)*Matrix33(*pMtx3x4);
 	} else if (pMtx3x3) {
 		s.Set(pMtx3x3->GetColumn(0).len(), pMtx3x3->GetColumn(1).len(), pMtx3x3->GetColumn(2).len());
-		q = quaternionf(Matrix33(pMtx3x3->GetColumn(0)/s.x, pMtx3x3->GetColumn(1)/s.y, pMtx3x3->GetColumn(2)/s.z));
+		q = quaternionf(Matrix33(pMtx3x3->GetColumn(0)/s.x, pMtx3x3->GetColumn(1)/s.y, pMtx3x3->GetColumn(2)/s.z)).GetNormalized();
+		skewMtx = Matrix33(!q)**pMtx3x3;
 	} else
 		return Vec3(1);
 	scale = min(min(s.x,s.y),s.z);
 	if (fabs_tpl(scale-1.0f)<0.001f)
 		scale = 1.0f;
-	else
+	else {
 		s /= scale;
+		skewMtx /= scale;
+	}
 	if (s.len2()>3.03f && ppgeom && pGeoman)
-		if (!BakeScaleIntoGeometry(*ppgeom,pGeoman,s))
+		if (!BakeScaleIntoGeometry(*ppgeom,pGeoman,s,0,&skewMtx))
 			scale *= (s.x+s.y+s.z)*(1.0f/3);
+	if (pskewMtx)
+		*pskewMtx = skewMtx;
 	return s;
 }
 

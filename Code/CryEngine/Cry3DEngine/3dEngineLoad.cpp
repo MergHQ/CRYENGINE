@@ -872,9 +872,6 @@ I3DEngine::ELevelLoadStatus C3DEngineLevelLoadTimeslicer::DoStep()
 		// preload level cgfs
 		if (ShouldPreloadLevelObjects())
 		{
-			if (m_owner.GetCVars()->e_StatObjPreload == 2)
-				m_owner.GetSystem()->OutputLoadingTimeStats();
-
 			m_owner.m_pObjManager->StartPreloadLevelObjects();
 		}
 	}
@@ -895,11 +892,6 @@ I3DEngine::ELevelLoadStatus C3DEngineLevelLoadTimeslicer::DoStep()
 				// do nothing and continue with next step
 				break;
 			}
-
-			if (m_owner.GetCVars()->e_StatObjPreload == 2)
-			{
-				m_owner.GetSystem()->OutputLoadingTimeStats();
-			}
 		}
 	}
 
@@ -912,15 +904,7 @@ I3DEngine::ELevelLoadStatus C3DEngineLevelLoadTimeslicer::DoStep()
 		// preload level cgfs
 		if (m_owner.GetCVars()->e_StatObjPreload && !gEnv->IsEditor())
 		{
-			if (m_owner.GetCVars()->e_StatObjPreload == 2)
-				m_owner.GetSystem()->OutputLoadingTimeStats();
-
 			m_owner.m_pObjManager->PreloadLevelObjects();
-
-			if (m_owner.GetCVars()->e_StatObjPreload == 2)
-			{
-				m_owner.GetSystem()->OutputLoadingTimeStats();
-			}
 		}
 	}
 
