@@ -1539,6 +1539,8 @@ bool CSystem::InitPhysics(const SSystemInitParams& startupParams)
 		return false;
 	}
 	//m_env.pPhysicalWorld->Init();	// don't need a second Init, the world is created initialized
+	if (!m_env.IsDedicated())
+		m_env.pPhysicalWorld->GetPhysVars()->bMultithreaded = 1;
 
 	return true;
 }
