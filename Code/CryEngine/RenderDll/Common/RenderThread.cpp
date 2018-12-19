@@ -897,7 +897,9 @@ void SRenderThread::QuitRenderThread()
 		m_nCurThreadProcess = m_nCurThreadFill;
 #endif
 	}
-	m_bQuit = 1;
+
+	m_bQuit.store(true);
+
 	//SAFE_RELEASE(m_pFlashPlayer);
 }
 
@@ -975,15 +977,26 @@ void SRenderThread::WaitFlushFinishedCond()
 	START_PROFILE_RT_SCOPE();
 
 #ifdef USE_LOCKS_FOR_FLUSH_SYNC
-	m_LockFlushNotify.Lock();
-	while (*(volatile int*)&m_nFlush)
+	while (true)
 	{
-		m_FlushFinishedCondition.Wait(m_LockFlushNotify);
+		{
+			std::unique_lock<std::mutex> lk(m_LockFlushStore);
+			auto NotFlushed = [this]() { return m_nFlush.load() == false; };
+			if (m_FlushCondition.wait_for(lk, std::chrono::milliseconds(10), NotFlushed))
+				break;
+		}
+
+		// If the RenderThread issues messages (rare occasion, e.g. setting window-styles)
+#if CRY_PLATFORM_WINDOWS
+		const HWND hWnd = GetRenderWindowHandle();
+		if (hWnd)
+		{
+			gEnv->pSystem->PumpWindowMessage(true, hWnd);
+		}
+#endif
 	}
-	m_LockFlushNotify.Unlock();
 #else
-	READ_WRITE_BARRIER
-	while (*(volatile int*)&m_nFlush)
+	while (m_nFlush.load())
 	{
 	#if CRY_PLATFORM_WINDOWS
 		const HWND hWnd = GetRenderWindowHandle();
@@ -991,9 +1004,8 @@ void SRenderThread::WaitFlushFinishedCond()
 		{
 			gEnv->pSystem->PumpWindowMessage(true, hWnd);
 		}
-		CrySleep(0);
+		CryMT::CryYieldThread();
 	#endif
-		READ_WRITE_BARRIER
 	}
 #endif
 
@@ -1007,20 +1019,17 @@ void SRenderThread::WaitFlushCond()
 	START_PROFILE_RT_SCOPE();
 
 #ifdef USE_LOCKS_FOR_FLUSH_SYNC
-	m_LockFlushNotify.Lock();
-	while (!*(volatile int*)&m_nFlush)
 	{
-		m_FlushCondition.Wait(m_LockFlushNotify);
+		std::unique_lock<std::mutex> lk(m_LockFlushStore);
+		auto FlushedOrQuit = [this]() { return m_nFlush.load() == true || m_bQuit.load() == true; };
+		m_FlushCondition.wait(lk, FlushedOrQuit);
 	}
-	m_LockFlushNotify.Unlock();
 #else
-	READ_WRITE_BARRIER
-	while (!*(volatile int*)&m_nFlush)
+	while (!m_nFlush.load())
 	{
-		if (m_bQuit)
+		if (m_bQuit.load())
 			break;
-		CrySleep(0);
-		READ_WRITE_BARRIER
+		CryMT::CryYieldThread();
 	}
 #endif
 
