@@ -3188,8 +3188,10 @@ void SSuperMesh::AddSuperTriangle(SRayHitTriangle& htIn, PodArray<SMINDEX> arrVe
 					ITexture* pITex = pResTexture->m_Sampler.m_pITex;
 					if (pITex)
 					{
-						AUTO_MODIFYLOCK(CVoxelSegment::m_arrLockedTextures.m_Lock);
-						CVoxelSegment::m_arrLockedTextures[pITex] = pITex;
+						{
+							AUTO_MODIFYLOCK(CVoxelSegment::m_arrLockedTextures.m_Lock);
+							CVoxelSegment::m_arrLockedTextures[pITex] = pITex;
+						}
 						matInfo.pTexRgb = (ColorB*)pITex->GetLowResSystemCopy(matInfo.textureWidth, matInfo.textureHeight, &pLowResSystemCopyAtlasId);
 					}
 				}
@@ -3293,8 +3295,10 @@ void SSuperMesh::AddSuperMesh(SSuperMesh& smIn, float vertexOffset)
 						ITexture* pITex = pResTexture->m_Sampler.m_pITex;
 						if (pITex)
 						{
-							AUTO_MODIFYLOCK(CVoxelSegment::m_arrLockedTextures.m_Lock);
-							CVoxelSegment::m_arrLockedTextures[pITex] = pITex;
+							{
+								AUTO_MODIFYLOCK(CVoxelSegment::m_arrLockedTextures.m_Lock);
+								CVoxelSegment::m_arrLockedTextures[pITex] = pITex;
+							}
 							matInfo.pTexRgb = (ColorB*)pITex->GetLowResSystemCopy(matInfo.textureWidth, matInfo.textureHeight, &pLowResSystemCopyAtlasId);
 						}
 					}

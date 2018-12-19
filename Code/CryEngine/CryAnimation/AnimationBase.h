@@ -134,13 +134,5 @@ extern AnimStatisticsInfo g_AnimStatisticsInfo;
 
 #define ENABLE_GET_MEMORY_USAGE 1
 
-#ifndef AUTO_PROFILE_SECTION
-	#pragma message ("Warning: ITimer not included")
-#else
-	#undef AUTO_PROFILE_SECTION
-#endif
-
-#define AUTO_PROFILE_SECTION(g_fTimer) CITimerAutoProfiler<double> __section_auto_profiler(g_pITimer, g_fTimer)
-
 #define DEFINE_PROFILER_FUNCTION()     CRY_PROFILE_FUNCTION(PROFILE_ANIMATION)
 #define DEFINE_PROFILER_SECTION(NAME)  CRY_PROFILE_REGION(PROFILE_ANIMATION, NAME)

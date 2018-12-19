@@ -301,7 +301,10 @@ EQuestionResult CryMessageBoxImpl(const wchar_t* szText, const wchar_t* szCaptio
 const char* CryGetSystemErrorMessage(DWORD error)
 {
 	static char szBuffer[2048]; // function will return pointer to this buffer
-
+#if CRY_PLATFORM_DURANGO
+	cry_sprintf(szBuffer, "Last error code was %d.", error);
+	return szBuffer;
+#else
 	if (error)
 	{
 		LPVOID lpMsgBuf = 0;
@@ -322,8 +325,8 @@ const char* CryGetSystemErrorMessage(DWORD error)
 			return szBuffer;
 		}
 	}
-
 	return nullptr;
+#endif
 }
 
 const char* CryGetLastSystemErrorMessage()

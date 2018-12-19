@@ -2845,13 +2845,18 @@ bool CRenderer::DXTDecompress(const byte* sourceData, const size_t srcFileSize, 
 		{
 			data.row = y;
 #ifdef PROCESS_TEXTURES_IN_PARALLEL
-			TDXTDecompressRow compressJob(data);
-			compressJob.RegisterJobState(&jobState);
-			compressJob.SetPriorityLevel(JobManager::eStreamPriority);
-			compressJob.Run();
-#else
-			DXTDecompressRow(data);
+			// if this is already running from a worker, we must not block it waiting for other jobs or we get a deadlock
+			// (this did happen, coming from voxel streaming)
+			if(!JobManager::IsWorkerThread())
+			{
+				TDXTDecompressRow compressJob(data);
+				compressJob.RegisterJobState(&jobState);
+				compressJob.SetPriorityLevel(JobManager::eStreamPriority);
+				compressJob.Run();
+			}
+			else
 #endif
+				DXTDecompressRow(data);
 		}
 
 #ifdef PROCESS_TEXTURES_IN_PARALLEL
