@@ -247,8 +247,6 @@ void CViewport::Update()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
-	CEditTool* pEditTool = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
-
 	//TODO : this is deprecated
 	bool bSpaceClick = CryGetAsyncKeyState(VK_SPACE);
 
