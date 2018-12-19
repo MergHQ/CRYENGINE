@@ -137,7 +137,7 @@ enum ETextureFlags : uint32
 {
 	FT_NOMIPS                  = BIT32(0),  // TR: don't allocate or use any mip-maps (even if they exist)
 	FT_TEX_NORMAL_MAP          = BIT32(1),  // T: indicator that a texture contains normal vectors (used for tracking statistics, debug messages and the default texture)
-	FT______________________00 = BIT32(2),  // UNUSED
+	FT_TAKEOVER_DATA_POINTER   = BIT32(2),  // T: when creating textures or updating them, take over ownership of the passed data-pointer
 	FT_USAGE_DEPTHSTENCIL      = BIT32(3),  // R: use as depth-stencil render-target
 	FT_USAGE_ALLOWREADSRGB     = BIT32(4),  // TR: allows the renderer to cast the texture-format to a sRGB type if available
 	FT_FILESINGLE              = BIT32(5),  // T: suppress loading of additional files like _DDNDIF (faster, RC can tag the file for that)
