@@ -44,6 +44,7 @@ public:
 	virtual void SetData(const primitives::primitive*) {}
 	virtual float GetVolume();
 	virtual Vec3 GetCenter() { return Vec3(0); }
+	virtual IGeometry *GetTriMesh(int bClone=1) { return 0; }
 	virtual int Subtract(IGeometry* pGeom, geom_world_data* pdata1, geom_world_data* pdata2, int bLogUpdates = 1) { return 0; }
 	virtual int GetSubtractionsCount() { return 0; }
 	virtual void* GetForeignData(int iForeignData = 0) { return nullptr; }

@@ -2521,6 +2521,7 @@ struct IGeometry
 	virtual void                         SetData(const primitives::primitive*) = 0; //!< not supported by meshes
 	virtual float                        GetVolume() = 0;
 	virtual Vec3                         GetCenter() = 0;
+	virtual IGeometry*                   GetTriMesh(int bClone = 1) = 0; //!< returns mesh representation of the geometry (currently only supported by boxes and meshes)
 	//! Subtract: performs boolean subtraction; if bLogUpdates==1, will create bop_meshupdate inside the mesh
 	virtual int                          Subtract(IGeometry* pGeom, geom_world_data* pdata1, geom_world_data* pdata2, int bLogUpdates = 1) = 0;
 	virtual int                          GetSubtractionsCount() = 0; //!< number of Subtract()s the mesh has survived so far

@@ -403,9 +403,9 @@ template<class dtype> dtype* ReallocateList(dtype *&plist, int szold,int sznew, 
 	return plist;
 }
 
-Vec3 get_xqs_from_matrices(Matrix34 *pMtx3x4,Matrix33 *pMtx3x3, Vec3 &pos,quaternionf &q,float &scale, struct phys_geometry **ppgeom=0,struct IGeomManager *pGeoman=0);
+Vec3 get_xqs_from_matrices(Matrix34 *pMtx3x4,Matrix33 *pMtx3x3, Vec3 &pos,quaternionf &q,float &scale, struct phys_geometry **ppgeom=0,struct IGeomManager *pGeoman=0, Matrix33 *pskewMtx=0);
 const int DATA_UNSCALED_GEOM = -999;
-int BakeScaleIntoGeometry(struct phys_geometry *&pgeom,struct IGeomManager *pGeoman, const Vec3& s, int bReleaseOld=0);
+int BakeScaleIntoGeometry(struct phys_geometry *&pgeom,struct IGeomManager *pGeoman, const Vec3& s, int bReleaseOld=0, const Matrix33 *pskewMtx=0);
 
 //int BreakPolygon(Vec2 *ptSrc,int nPt, int nCellx,int nCelly, int maxPatchTris, Vec2 *&ptout,int *&nPtOut, 
 //								 float jointhresh=0.5f,int seed=-1);

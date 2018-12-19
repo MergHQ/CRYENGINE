@@ -1100,7 +1100,10 @@ int CEntityPhysics::AddSlotGeometry(int nSlot, SEntityPhysicalizeParams& params,
 	//if (pSlot->HaveLocalMatrix())
 	{
 		mtx = GetEntity()->GetSlotLocalTM(nSlot | ENTITY_SLOT_ACTUAL & - bNoSubslots, false);
-		mtx.SetTranslation(Diag33(scale) * mtx.GetTranslation());
+		if (max(max(fabs_tpl(scale.x - 1.0f), fabs_tpl(scale.y - 1.0f)), fabs_tpl(scale.z - 1.0f)) > 0.0001f)
+			mtx = Matrix34::CreateScale(scale) * mtx;
+		else 
+			mtx.SetTranslation(Diag33(scale) * mtx.GetTranslation());
 		//scale *= mtx.GetColumn(0).len();
 	}
 	partpos.pMtx3x4 = &mtx;
@@ -1111,8 +1114,6 @@ int CEntityPhysics::AddSlotGeometry(int nSlot, SEntityPhysicalizeParams& params,
 		pAdamProxy = this;
 	if (pAdamProxy != this)
 		mtx = GetEntity()->GetLocalTM() * mtx;
-	else if (max(max(fabs_tpl(scale.x - 1.0f), fabs_tpl(scale.y - 1.0f)), fabs_tpl(scale.z - 1.0f)) > 0.0001f)
-		mtx = mtx * Matrix33::CreateScale(scale);
 
 	partpos.flags = geom_collides | geom_floats;
 	partpos.flags &= params.nFlagsAND;
