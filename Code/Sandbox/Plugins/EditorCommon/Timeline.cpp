@@ -2124,11 +2124,11 @@ CTimeline::CTimeline(QWidget* parent)
 
 	m_highlightedTimer.setSingleShot(true);
 	m_highlightedConnection = QObject::connect(&m_highlightedTimer, &QTimer::timeout, [this]() { UpdateHightlightedInternal(); });
-	QObject::connect(this, &QObject::destroyed, [this]() { disconnect(m_highlightedConnection); });
 }
 
 CTimeline::~CTimeline()
 {
+	disconnect(m_highlightedConnection);
 }
 
 void CTimeline::customEvent(QEvent* pEvent)
