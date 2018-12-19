@@ -566,6 +566,8 @@ void CTexture::Create2DTexture(int nWidth, int nHeight, int nMips, int nFlags, c
 	td->m_nDepth = 1;
 	td->m_nMips = nMips;
 	td->m_pData[0] = pSrcData;
+	if (nFlags & FT_TAKEOVER_DATA_POINTER)
+		td->SetReallocated(0);
 
 	CreateShaderResource(std::move(td));
 	PostCreate();
@@ -588,6 +590,8 @@ void CTexture::Create3DTexture(int nWidth, int nHeight, int nDepth, int nMips, i
 	td->m_nDepth = nDepth;
 	td->m_nMips = nMips;
 	td->m_pData[0] = pSrcData;
+	if (nFlags & FT_TAKEOVER_DATA_POINTER)
+		td->SetReallocated(0);
 
 	CreateShaderResource(std::move(td));
 	PostCreate();
