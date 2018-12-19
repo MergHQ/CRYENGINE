@@ -43,7 +43,6 @@ inline bool IsIslandVisited(StaticIslandID id)
 CIslands::CIslands()
 {
 	m_islands.reserve(32);
-	m_islandsFreeIndices.reserve(4);
 }
 
 void CIslands::ComputeStaticIslandsAndConnections(CNavMesh& navMesh, const NavigationMeshID meshID, const OffMeshNavigationManager& offMeshNavigationManager, MNM::IslandConnections& islandConnections)
@@ -413,6 +412,11 @@ void CIslands::UpdateIslandsForTriangles(CNavMesh& navMesh, const NavigationMesh
 		});
 	}
 
+	// Apply pending connection requests before any new islands are created. 
+	// Since island id can be reused, it could cause troubles updating links between the islands, if they were resolved only in the end.
+	ResolvePendingConnectionRequests(navMesh, connectionRequests, meshID, nullptr, islandConnections);
+	connectionRequests.Reset();
+
 	//////////////////////////////////////////////////////////////////////////
 	// Splitting islands
 	//////////////////////////////////////////////////////////////////////////
@@ -553,8 +557,8 @@ CIslands::SIsland& CIslands::GetNewIsland(const AreaAnnotation annotation)
 
 	if (m_islandsFreeIndices.size())
 	{
-		const size_t freeIdx = m_islandsFreeIndices.back();
-		m_islandsFreeIndices.pop_back();
+		const size_t freeIdx = m_islandsFreeIndices.front();
+		m_islandsFreeIndices.pop_front();
 
 		CRY_ASSERT(freeIdx < m_islands.size());
 		CRY_ASSERT(m_islands[freeIdx].trianglesCount == 0);

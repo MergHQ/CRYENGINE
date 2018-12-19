@@ -83,6 +83,12 @@ private:
 			uint16         offMeshLinkIndex;
 		};
 
+		void Reset()
+		{
+			offmeshConnections.clear();
+			areaConnection.clear();
+		}
+
 		void AddAreaConnection(const StaticIslandID firstIslandId, const StaticIslandID secondIslandId);
 		void RemoveAreaConnection(const StaticIslandID firstIslandId, const StaticIslandID secondIslandId);
 
@@ -116,7 +122,7 @@ private:
 	}
 
 	std::vector<SIsland> m_islands;
-	std::vector<size_t> m_islandsFreeIndices;
+	std::deque<size_t> m_islandsFreeIndices;
 };
 
 } // MNM
