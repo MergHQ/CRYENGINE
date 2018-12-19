@@ -93,9 +93,8 @@ void CParticleJobManager::Job_ScheduleUpdates()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
-	// Schedule deferred emitters in individual high-priority jobs
-	for (auto pEmitter : m_emittersDeferred)
-		ScheduleUpdateEmitter(pEmitter);
+	// Schedule deferred emitters in high-priority jobs
+	ScheduleUpdateEmitters(m_emittersDeferred, JobManager::eHighPriority);
 	m_emittersDeferred.resize(0);
 
 	if (m_emittersVisible.size())

@@ -3543,7 +3543,7 @@ const int CTexture::GetTextureID() const
 
 const ColorB* CTexture::GetLowResSystemCopy(uint16& width, uint16& height, int** ppUserData, int maxTexSize)
 {
-	AUTO_MODIFYLOCK(s_LowResSystemCopyLock);
+	AUTO_READLOCK(s_LowResSystemCopyLock);
 
 	// find slot based on requested texture size, snap texture size to power of 2
 	int slot = CLAMP((int)log2(maxTexSize) - 4, 0, TEX_SYS_COPY_MAX_SLOTS - 1);
@@ -3557,9 +3557,18 @@ const ColorB* CTexture::GetLowResSystemCopy(uint16& width, uint16& height, int**
 		if (m_eTT != eTT_2D || (m_nMips <= 1 && (m_nWidth > maxTexSize || m_nHeight > maxTexSize)) || m_eDstFormat < eTF_BC1 || m_eDstFormat > eTF_BC7)
 			return nullptr;
 
-		SLowResSystemCopy& rSysCopy = s_LowResSystemCopy[slot][this];
-		PrepareLowResSystemCopy(maxTexSize, rSysCopy.m_lowResSystemCopy, rSysCopy.m_nLowResCopyWidth, rSysCopy.m_nLowResCopyHeight);
+		// to switch to modify we need to unlock first
+		s_LowResSystemCopyLock.UnlockRead();
+		{ // to reduce contention, we want to hold the modify lock as shortly as possible
+			AUTO_MODIFYLOCK(s_LowResSystemCopyLock);
+			s_LowResSystemCopy[slot][this]; // make a map entry for this
+		}
+		
+		// 'restore' AUTO_READLOCK
+		s_LowResSystemCopyLock.LockRead();
 		it = s_LowResSystemCopy[slot].find(this);
+		SLowResSystemCopy& rCopy = it->second;
+		PrepareLowResSystemCopy(maxTexSize, rCopy.m_lowResSystemCopy, rCopy.m_nLowResCopyWidth, rCopy.m_nLowResCopyHeight);
 	}
 
 	if (it != CTexture::s_LowResSystemCopy[slot].end())
