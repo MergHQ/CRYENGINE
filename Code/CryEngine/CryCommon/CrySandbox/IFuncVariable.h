@@ -21,7 +21,7 @@ class IFuncVariable : public _reference_target_t
 {
 public:
 	// <interfuscator:shuffle>
-	virtual ~IFuncVariable(){};
+	virtual ~IFuncVariable(){}
 
 	virtual float     GetMin() const = 0;
 	virtual float     GetMax() const = 0;

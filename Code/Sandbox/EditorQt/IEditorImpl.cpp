@@ -367,7 +367,8 @@ void CEditorImpl::Update()
 		IEditorGame* pEditorGame = m_pGameEngine->GetIEditorGame();
 		if (pEditorGame != nullptr)
 		{
-			pEditorGame->UpdateHelpers();
+			auto* pActiveViewport = GetActiveDisplayViewport();
+			pEditorGame->UpdateHelpers(pActiveViewport ? pActiveViewport->GetHelperSettings().enabled : false);
 		}
 	}
 

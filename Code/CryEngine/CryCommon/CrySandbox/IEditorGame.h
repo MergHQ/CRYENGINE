@@ -7,8 +7,6 @@
 #include <CryEntitySystem/IEntityBasicTypes.h>
 #include <CryGame/IGame.h>
 
-struct IFlowSystem;
-struct IGameTokenSystem;
 namespace Telemetry {
 struct ITelemetryRepository;
 }
@@ -17,7 +15,7 @@ struct ITelemetryRepository;
 struct IGameToEditorInterface
 {
 	// <interfuscator:shuffle>
-	virtual ~IGameToEditorInterface(){}
+	virtual ~IGameToEditorInterface() {}
 	virtual void SetUIEnums(const char* sEnumName, const char** sStringsArray, int nStringCount) = 0;
 	// </interfuscator:shuffle>
 };
@@ -81,7 +79,7 @@ struct IEditorGame
 
 	// <interfuscator:shuffle>
 	CRY_DEPRECATED_GAME_DLL IEditorGame() = default;
-	virtual ~IEditorGame(){}
+	virtual ~IEditorGame() {}
 	virtual bool                       Init(ISystem* pSystem, IGameToEditorInterface* pEditorInterface) = 0;
 	virtual void                       Update(bool haveFocus, unsigned int updateFlags) = 0;
 	virtual void                       Shutdown() = 0;
@@ -92,22 +90,23 @@ struct IEditorGame
 	virtual void                       OnAfterLevelLoad(const char* levelName, const char* levelFolder) = 0;
 	virtual void                       OnCloseLevel() = 0;
 	virtual void                       OnSaveLevel() = 0;
-	
+
 	virtual bool                       BuildEntitySerializationList(XmlNodeRef output) = 0;
 	virtual bool                       GetAdditionalMinimapData(XmlNodeRef output) = 0;
 
 	virtual IEquipmentSystemInterface* GetIEquipmentSystemInterface() = 0;
 
-	// telemetry functions: possibly should find a better place for these
+	// Telemetry functions: possibly should find a better place for these
 	virtual void RegisterTelemetryTimelineRenderers(Telemetry::ITelemetryRepository* pRepository) = 0;
 
 	//! Update all sorts of generic editor 'helpers'.
 	//! This could be used, for example, to update certain metrics, boundaries, invalid links, etc.
-	virtual void UpdateHelpers() {}
+	virtual void                  UpdateHelpers(bool helpersEnabledInActiveViewport) {}
 
-	virtual void OnEntitySelectionChanged(EntityId entityId, bool isSelected) = 0;
+	virtual void                  OnEntitySelectionChanged(EntityId entityId, bool isSelected) = 0;
 
 	virtual IGamePhysicsSettings* GetIGamePhysicsSettings() = 0;
+
 	// </interfuscator:shuffle>
 };
 //! \endcond

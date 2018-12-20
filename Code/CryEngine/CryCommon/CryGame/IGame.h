@@ -11,15 +11,12 @@
 #include <CryNetwork/INetwork.h>
 #include <CryCore/Assert/CryAssert.h>
 
-struct IAIActorProxy;
-struct IGameAudio;
 struct IGameFramework;
 struct IGameplayListener;
 struct IGameStateRecorder;
 struct IGameToEditorInterface;
 struct IGameWarningsListener;
 struct IGameWebDebugService;
-struct SGameStartParams;
 struct SRenderingPassInfo;
 
 // Declare legacy GameDLL as deprecated except for the legacy modules that expose functionality for it
