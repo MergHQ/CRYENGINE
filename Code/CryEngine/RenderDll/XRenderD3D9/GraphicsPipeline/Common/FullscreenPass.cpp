@@ -32,7 +32,12 @@ void CFullscreenPass::BeginConstantUpdate()
 	if (m_primitiveFlags & CRenderPrimitive::eFlags_ReflectShaderConstants)
 	{
 		UpdatePrimitive();
-		m_primitive.GetConstantManager().BeginNamedConstantUpdate();
+
+		// Shader reflection might not be initialized if a compile failed
+		if (!m_primitive.IsDirty())
+		{
+			m_primitive.GetConstantManager().BeginNamedConstantUpdate();
+		}
 
 		m_bPendingConstantUpdate = true;
 	}
@@ -206,8 +211,13 @@ bool CFullscreenPass::Execute()
 {
 	if (m_bPendingConstantUpdate)
 	{
-		// Unmap constant buffers
-		m_primitive.GetConstantManager().EndNamedConstantUpdate(&GetViewport());
+		// Shader reflection might not be initialized if a compile failed
+		if (!m_primitive.IsDirty())
+		{
+			// Unmap constant buffers
+			m_primitive.GetConstantManager().EndNamedConstantUpdate(&GetViewport());
+		}
+
 		m_bPendingConstantUpdate = false;
 	}
 	else
