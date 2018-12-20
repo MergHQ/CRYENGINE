@@ -2443,7 +2443,7 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_WaterReflectionsMinVisUpdateDistanceMul", CV_r_waterreflections_minvis_updatedistancemul, 10.0f, VF_DUMPTODISK,
 	               "Activates update distance multiplier when water mostly occluded.");
 
-	REGISTER_CVAR3("r_WaterCaustics", CV_r_watercaustics, 1, VF_RENDERER_CVAR | VF_REQUIRE_APP_RESTART,
+	REGISTER_CVAR3("r_WaterCaustics", CV_r_watercaustics, 1, VF_RENDERER_CVAR,
 	               "Toggles under water caustics.\n"
 	               "Usage: r_WaterCaustics [0/1]\n"
 	               "Default is 1 (enabled).");
@@ -2458,7 +2458,7 @@ void CRendererCVars::InitCVars()
 	               "Usage: r_WaterCausticsDeferred [0/1/2]\n"
 	               "Default is 0 (disabled). 1 - enables. 2 - enables with stencil pre-pass");
 
-	REGISTER_CVAR3("r_WaterVolumeCaustics", CV_r_watervolumecaustics, WATERVOLCAUSTICS_DEFAULT_VAL, VF_RENDERER_CVAR | VF_REQUIRE_APP_RESTART,
+	REGISTER_CVAR3("r_WaterVolumeCaustics", CV_r_watervolumecaustics, WATERVOLCAUSTICS_DEFAULT_VAL, VF_RENDERER_CVAR,
 	               "Toggles advanced water caustics for watervolumes.\n"
 	               "Usage: r_WaterVolumeCaustics [0/1]\n"
 	               "Default is 0 (disabled). 1 - enables.");

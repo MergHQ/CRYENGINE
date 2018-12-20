@@ -105,6 +105,7 @@ public:
 	}
 
 	void Init() final;
+	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater) final;
 	void Update() final;
 	void Prepare();
 	void Resize(int renderWidth, int renderHeight) final;
@@ -130,6 +131,7 @@ private:
 	bool  PrepareDefaultPerInstanceResources();
 	bool  SetAndBuildPerPassResources(bool bOnInit, EPass passId);
 	void  UpdatePerPassResources(EPass passId);
+	void  PrepareVolumeCausticsRenderTargets(bool hasCaustics, int renderWidth, int renderHeight);
 
 	void  ExecuteWaterNormalGen();
 	void  ExecuteOceanMaskGen();
@@ -148,6 +150,9 @@ private:
 	_smart_ptr<CTexture>                      m_pOceanWavesTex;
 	_smart_ptr<CTexture>                      m_pOceanCausticsTex;
 	_smart_ptr<CTexture>                      m_pOceanMaskTex = nullptr;
+
+	_smart_ptr<CTexture>                      m_pVolumeCausticsRT;
+	_smart_ptr<CTexture>                      m_pVolumeCausticsTempRT;
 
 	std::array<_smart_ptr<CTexture>, RainRippleTexCount> m_pRainRippleTex;
 	uint32                                               m_rainRippleTexIndex;
