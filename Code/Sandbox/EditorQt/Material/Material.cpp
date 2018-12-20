@@ -562,6 +562,8 @@ bool CMaterial::LoadShader()
 		UpdateMatInfo();
 	}
 
+	GetIEditorImpl()->GetRenderer()->FlushRTCommands(true, true, true);
+
 	GetIEditorImpl()->GetMaterialManager()->OnLoadShader(this);
 
 	return true;
