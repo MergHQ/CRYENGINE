@@ -97,6 +97,8 @@ QWidget* CLineEditDelegate::createEditor(QWidget* pParent, const QStyleOptionVie
 
 	CLineEdit* const pEditor = new CLineEdit(pParent);
 
+	pEditor->activateWindow();
+	
 	pEditor->signalEditingAborted.Connect(std::function<void()>([this, pEditor, modelIndex]()
 	{
 		FinishEditing(this, pEditor, [this, modelIndex]()
