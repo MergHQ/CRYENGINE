@@ -195,7 +195,6 @@ CTexture* CRendererResources::s_ptexWaterOcean;
 CTexture* CRendererResources::s_ptexWaterVolumeTemp[2];
 CTexture* CRendererResources::s_ptexWaterVolumeDDN;
 CTexture* CRendererResources::s_ptexWaterVolumeRefl[2] = { NULL };
-CTexture* CRendererResources::s_ptexWaterCaustics[2] = { NULL };
 CTexture* CRendererResources::s_ptexRainOcclusion;
 CTexture* CRendererResources::s_ptexRainSSOcclusion[2];
 
@@ -530,8 +529,6 @@ void CRendererResources::LoadDefaultSystemTextures()
 			s_ptexWaterVolumeDDN = CTexture::GetOrCreateTextureObject("$WaterVolumeDDN", 64, 64, 1, eTT_2D, /*FT_DONT_RELEASE |*/ FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_FORCE_MIPS, eTF_Unknown, TO_WATERVOLUMEMAP);
 			s_ptexWaterVolumeRefl[0] = CTexture::GetOrCreateTextureObject("$WaterVolumeRefl", 64, 64, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_FORCE_MIPS, eTF_Unknown, TO_WATERVOLUMEREFLMAP);
 			s_ptexWaterVolumeRefl[1] = CTexture::GetOrCreateTextureObject("$WaterVolumeReflPrev", 64, 64, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_FORCE_MIPS, eTF_Unknown, TO_WATERVOLUMEREFLMAPPREV);
-			s_ptexWaterCaustics[0] = CTexture::GetOrCreateTextureObject("$WaterVolumeCaustics", 0, 0, 1, eTT_2D, /*FT_DONT_RELEASE |*/ FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_WATERVOLUMECAUSTICSMAP);
-			s_ptexWaterCaustics[1] = CTexture::GetOrCreateTextureObject("$WaterVolumeCausticsTemp", 0, 0, 1, eTT_2D, /*FT_DONT_RELEASE |*/ FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_WATERVOLUMECAUSTICSMAPTEMP);
 
 			s_ptexSceneDepthScaled[0] = CTexture::GetOrCreateTextureObject("$SceneDepthScaled", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_DEPTHSTENCIL, eTF_Unknown);
 			s_ptexSceneDepthScaled[1] = CTexture::GetOrCreateTextureObject("$SceneDepthScaled2", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_DEPTHSTENCIL, eTF_Unknown);
@@ -1147,8 +1144,6 @@ void CRendererResources::DestroyHDRMaps()
 bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 {
 #if RENDERER_ENABLE_FULL_PIPELINE
-	const bool bCreateCaustics = (CRenderer::CV_r_watervolumecaustics && CRenderer::CV_r_watercaustics && CRenderer::CV_r_watercausticsdeferred) && !CTexture::IsTextureExist(s_ptexWaterCaustics[0]);
-
 	const int width  = resourceWidth , width_r2  = (width  + 1) / 2, width_r4  = (width_r2  + 1) / 2, width_r8  = (width_r4  + 1) / 2;
 	const int height = resourceHeight, height_r2 = (height + 1) / 2, height_r4 = (height_r2 + 1) / 2, height_r8 = (height_r4 + 1) / 2;
 	
@@ -1159,8 +1154,7 @@ bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 
 	if (!s_ptexDisplayTargetSrc ||
 		s_ptexDisplayTargetSrc->GetWidth() != width ||
-		s_ptexDisplayTargetSrc->GetHeight() != height ||
-		bCreateCaustics)
+		s_ptexDisplayTargetSrc->GetHeight() != height)
 	{
 		assert(gRenDev);
 
@@ -1189,18 +1183,7 @@ bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 
 		SPostEffectsUtils::GetOrCreateRenderTarget("$RainSSOcclusion0", s_ptexRainSSOcclusion[0], width_r8, height_r8, Clr_Unknown, 1, false, eTF_R8);
 		SPostEffectsUtils::GetOrCreateRenderTarget("$RainSSOcclusion1", s_ptexRainSSOcclusion[1], width_r8, height_r8, Clr_Unknown, 1, false, eTF_R8);
-
-		if (CRenderer::CV_r_watervolumecaustics && CRenderer::CV_r_watercaustics && CRenderer::CV_r_watercausticsdeferred)
-		{
-			SPostEffectsUtils::GetOrCreateRenderTarget("$WaterVolumeCaustics"     , s_ptexWaterCaustics[0], width_r2, height_r2, Clr_Unknown, 1, false, eTF_R8G8B8A8, TO_WATERVOLUMECAUSTICSMAP);
-			SPostEffectsUtils::GetOrCreateRenderTarget("$WaterVolumeCausticsTemp" , s_ptexWaterCaustics[1], width_r2, height_r2, Clr_Unknown, 1, false, eTF_R8G8B8A8, TO_WATERVOLUMECAUSTICSMAPTEMP);
-		}
-		else
-		{
-			SAFE_RELEASE(s_ptexWaterCaustics[0]);
-			SAFE_RELEASE(s_ptexWaterCaustics[1]);
-		}
-
+		
 #if defined(VOLUMETRIC_FOG_SHADOWS)
 		int fogShadowBufDiv = (CRenderer::CV_r_FogShadows == 2) ? 4 : 2;
 		SPostEffectsUtils::GetOrCreateRenderTarget("$VolFogShadowBuf0", s_ptexVolFogShadowBuf[0], width / fogShadowBufDiv, height / fogShadowBufDiv, Clr_Unknown, 1, 0, eTF_R8G8, TO_VOLFOGSHADOW_BUF);
@@ -1249,8 +1232,6 @@ void CRendererResources::DestroyPostFXMaps()
 	SAFE_RELEASE(s_ptexWaterVolumeDDN);
 	SAFE_RELEASE_FORCE(s_ptexWaterVolumeRefl[0]);
 	SAFE_RELEASE_FORCE(s_ptexWaterVolumeRefl[1]);
-	SAFE_RELEASE(s_ptexWaterCaustics[0]);
-	SAFE_RELEASE(s_ptexWaterCaustics[1]);
 
 	SAFE_RELEASE_FORCE(s_ptexCached3DHud);
 	SAFE_RELEASE_FORCE(s_ptexCached3DHudScaled);

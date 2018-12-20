@@ -342,10 +342,6 @@ CTexture* CShaderMan::mfCheckTemplateTexName(const char* mapname, ETEX_Type eTT)
 		TexPic = CRendererResources::s_ptexWaterVolumeRefl[1];
 	else if (!stricmp(mapname, "$WaterVolumeRefl"))
 		TexPic = CRendererResources::s_ptexWaterVolumeRefl[0];
-	else if (!stricmp(mapname, "$WaterVolumeCaustics"))
-		TexPic = CRendererResources::s_ptexWaterCaustics[0];
-	else if (!stricmp(mapname, "$WaterVolumeCausticsTemp"))
-		TexPic = CRendererResources::s_ptexWaterCaustics[1];
 	else if (!stricmp(mapname, "$SceneNormalsMap"))
 		TexPic = CRendererResources::s_ptexSceneNormalsMap;
 	else if (!stricmp(mapname, "$SceneDiffuse"))

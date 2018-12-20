@@ -1472,7 +1472,7 @@ void CSceneForwardStage::ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex)
 
 		if (auto pSkyTexInfo = pResources->m_Textures[EFTT_DIFFUSE])
 		{
-			pSkyDomeTex = CTexture::ForName(pSkyTexInfo->m_Name, 0, eTF_Unknown);
+			pSkyDomeTex = CTexture::ForName(pSkyTexInfo->m_Name, FT_DONT_STREAM, eTF_Unknown);
 			hasSkyDomeTexture = true;
 		}
 	}
