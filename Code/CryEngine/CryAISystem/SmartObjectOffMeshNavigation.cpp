@@ -150,19 +150,31 @@ private:
 
 CSmartObjectOffMeshNavigation::CSmartObjectOffMeshNavigation()
 {
-	gAIEnv.pNavigationSystem->GetIOffMeshNavigationManager().RegisterListener(this, "CSmartObjectOffMeshNavigation");
+	NavigationSystem* pNavigationSystem = gAIEnv.pNavigationSystem;
+	const int agentTypesAmount = pNavigationSystem->GetAgentTypeCount();
+	for (int agentTypeIndex = 0; agentTypeIndex < agentTypesAmount; agentTypeIndex++)
+	{
+		const NavigationAgentTypeID agentTypeId = pNavigationSystem->GetAgentTypeID(agentTypeIndex);
+		pNavigationSystem->AddMeshChangeCallback(agentTypeId, functor(*this, &CSmartObjectOffMeshNavigation::OnNavMeshChanged));
+	}
 }
 
 CSmartObjectOffMeshNavigation::~CSmartObjectOffMeshNavigation()
 {
-	gAIEnv.pNavigationSystem->GetIOffMeshNavigationManager().UnregisterListener(this);
+	NavigationSystem* pNavigationSystem = gAIEnv.pNavigationSystem;
+	const int agentTypesAmount = pNavigationSystem->GetAgentTypeCount();
+	for (int agentTypeIndex = 0; agentTypeIndex < agentTypesAmount; agentTypeIndex++)
+	{
+		const NavigationAgentTypeID agentTypeId = pNavigationSystem->GetAgentTypeID(agentTypeIndex);
+		pNavigationSystem->RemoveMeshChangeCallback(agentTypeId, functor(*this, &CSmartObjectOffMeshNavigation::OnNavMeshChanged));
+	}
 }
 
 void CSmartObjectOffMeshNavigation::RegisterSmartObject(CSmartObject* pSmartObject, CSmartObjectClass* pSmartObjectClass)
 {
 	assert(pSmartObject && pSmartObjectClass);
 
-	if (!gAIEnv.pNavigationSystem->GetIOffMeshNavigationManager().IsRegisteringEnabled() || pSmartObjectClass->IsSmartObjectUser())
+	if (!gAIEnv.pNavigationSystem->GetOffMeshNavigationManager()->IsLinkAdditionEnabled() || pSmartObjectClass->IsSmartObjectUser())
 		return;
 
 	// Filter out non-compatible smart-objects first...
@@ -222,7 +234,7 @@ void CSmartObjectOffMeshNavigation::RegisterSmartObject(CSmartObject* pSmartObje
 		}
 
 		//////////////////////////////////////////////////////////////////////////
-		/// Object belongs to a mesh; Create a new link
+		// Object belongs to a mesh; Create a new link
 		if (targetMeshID)
 		{
 			// Grab the begin and end links of the smart object class
@@ -274,14 +286,18 @@ void CSmartObjectOffMeshNavigation::RegisterSmartObject(CSmartObject* pSmartObje
 					{
 						const EntityId smartObjectEntityId = pSmartObject->GetEntityId();
 						// Create a smart object off-mesh link data
-						MNM::OffMeshLinkPtr linkData(new OffMeshLink_SmartObject(smartObjectEntityId, pSmartObject, pSmartObjectClass, validHelpers[fromIndex], validHelpers[toIndex]));
+						_smart_ptr<MNM::IOffMeshLink> pLinkData(new OffMeshLink_SmartObject(smartObjectEntityId, pSmartObject, pSmartObjectClass, validHelpers[fromIndex], validHelpers[toIndex]));
 
 						// Register the new link with the off-mesh navigation system
 						MNM::OffMeshLinkID linkID = MNM::OffMeshLinkID();
 
-						MNM::LinkAdditionRequest request(smartObjectEntityId, targetMeshID, linkData, linkID);
-						request.SetCallback(functor(linkIDList, &CSmartObjectOffMeshNavigation::OffMeshLinkIDList::OnLinkAdditionRequestForSmartObjectServiced));
-						gAIEnv.pNavigationSystem->GetIOffMeshNavigationManager().QueueCustomLinkAddition(request);
+						MNM::SOffMeshLinkCallbacks callbacks;
+						callbacks.acquireDataCallback = functor(*this, &CSmartObjectOffMeshNavigation::OnLinkDataRequested);
+						callbacks.additionCompletedCallback = functor(linkIDList, &CSmartObjectOffMeshNavigation::OffMeshLinkIDList::OnLinkAdditionObjectServiced);
+						callbacks.removedCallback = functor(*this, &CSmartObjectOffMeshNavigation::OnOffmeshLinkRemoved);
+					
+						linkID = gAIEnv.pNavigationSystem->GetIOffMeshNavigationManager().RequestLinkAddition(linkID, agentTypeID, pLinkData, callbacks);
+						linkIDList.AddRequestededLinkId(linkID);
 
 						// Prevent duplicate registration
 						registeredLinks.push_back(CRegisterSOHelper::SHelpersLink(fromIndex, toIndex));
@@ -290,6 +306,15 @@ void CSmartObjectOffMeshNavigation::RegisterSmartObject(CSmartObject* pSmartObje
 			}
 		}
 	}
+}
+
+MNM::EOffMeshLinkAdditionResult CSmartObjectOffMeshNavigation::OnLinkDataRequested(const NavigationAgentTypeID agentTypeId, MNM::IOffMeshLink* pLinkData, MNM::IOffMeshLink::SNavigationData& linkNavigationData) const
+{
+	OffMeshLink_SmartObject* pSmartObjectLinkData = pLinkData->CastTo<OffMeshLink_SmartObject>();
+	if (!pSmartObjectLinkData)
+		return MNM::EOffMeshLinkAdditionResult::AcquireDataFailed;
+
+	return pSmartObjectLinkData->GetNavigationLinkData(agentTypeId, linkNavigationData);
 }
 
 void CSmartObjectOffMeshNavigation::UnregisterSmartObjectForAllClasses(CSmartObject* pSmartObject)
@@ -321,8 +346,13 @@ void CSmartObjectOffMeshNavigation::UnregisterSmartObject(CSmartObject* pSmartOb
 			const OffMeshLinkIDList::TLinkIDList& linkList = classIt->second.GetLinkIDList();
 			for (int i = 0; i < linkList.size(); ++i)
 			{
-				MNM::LinkRemovalRequest request(objectId, linkList[i]);
-				gAIEnv.pNavigationSystem->GetIOffMeshNavigationManager().QueueCustomLinkRemoval(request);
+				gAIEnv.pNavigationSystem->GetIOffMeshNavigationManager().RequestLinkRemoval(linkList[i]);
+			}
+
+			const OffMeshLinkIDList::TLinkIDList& requestedLinkList = classIt->second.GetRequestedIDList();
+			for (int i = 0; i < requestedLinkList.size(); ++i)
+			{
+				gAIEnv.pNavigationSystem->GetIOffMeshNavigationManager().CancelLinkAddition(requestedLinkList[i]);
 			}
 
 			// Remove object from registration
@@ -332,33 +362,9 @@ void CSmartObjectOffMeshNavigation::UnregisterSmartObject(CSmartObject* pSmartOb
 		// If there aren't any classes remaining on this registered object, remove it.
 		if (objectIt->second.size() == 0)
 		{
-			gAIEnv.pNavigationSystem->GetIOffMeshNavigationManager().RemoveAllQueuedAdditionRequestForEntity(objectId);
 			m_registeredObjects.erase(objectIt);
 		}
 	}
-}
-
-CSmartObjectOffMeshNavigation::OffMeshLinkIDList* CSmartObjectOffMeshNavigation::GetClassInfoFromLinkInfo(const MNM::OffMeshLinkPtr& linkInfo)
-{
-	EntityId entityId = linkInfo->GetEntityIdForOffMeshLink();
-	TRegisteredObjects::iterator objectIt = m_registeredObjects.find(entityId);
-	if (objectIt != m_registeredObjects.end())
-	{
-		TSOClassInfo* classInfos = &objectIt->second;
-		for (TSOClassInfo::iterator classIt = classInfos->begin(); classIt != classInfos->end(); ++classIt)
-		{
-			const OffMeshLinkIDList::TLinkIDList& linkList = classIt->second.GetLinkIDList();
-			for (size_t i = 0; i < linkList.size(); ++i)
-			{
-				if (linkList[i] == linkInfo->GetLinkId())
-				{
-					return &classIt->second;
-				}
-			}
-		}
-	}
-	CRY_ASSERT_MESSAGE(linkInfo->GetLinkType() != MNM::OffMeshLink::eLinkType_SmartObject, "Offmesh Link for entity id %u doesn't have SmartObject assigned!", entityId);
-	return nullptr;
 }
 
 bool CSmartObjectOffMeshNavigation::ObjectRegistered(const EntityId objectId, const string& smartObjectClassName) const
@@ -423,30 +429,51 @@ void CSmartObjectOffMeshNavigation::UpdateEditorDebugHelpers()
 	pRenderAux->SetRenderFlags(oldFlags);
 }
 
-void CSmartObjectOffMeshNavigation::OnOffMeshLinkGoingToBeRemoved(const MNM::OffMeshLinkID& linkID)
+
+void CSmartObjectOffMeshNavigation::OnOffmeshLinkRemoved(const MNM::OffMeshLinkID linkId, const NavigationMeshID meshId, const MNM::EOffMeshLinkRemovalReason reason)
 {
-	// Remove smart object references to removed link IDs
-	for (TRegisteredObjects::iterator objectIt = m_registeredObjects.begin(); objectIt != m_registeredObjects.end(); ++objectIt)
+	_smart_ptr<MNM::IOffMeshLink> pOffmeshLinkData(gAIEnv.pNavigationSystem->GetIOffMeshNavigationManager().GetOffMeshLink(linkId)->CastTo<OffMeshLink_SmartObject>());
+	CRY_ASSERT(pOffmeshLinkData != nullptr);
+
+	const EntityId entityId = pOffmeshLinkData->GetEntityIdForOffMeshLink();
+	TRegisteredObjects::iterator objectIt = m_registeredObjects.find(entityId);
+	if (objectIt == m_registeredObjects.end())
+		return;
+
+	if (reason == MNM::EOffMeshLinkRemovalReason::MeshUpdated)
 	{
 		for (TSOClassInfo::iterator classInfoIt = objectIt->second.begin(); classInfoIt != objectIt->second.end(); ++classInfoIt)
 		{
 			OffMeshLinkIDList::TLinkIDList& linkList = classInfoIt->second.GetLinkIDList();
-			stl::find_and_erase(linkList, linkID);
+			if (stl::find(linkList, linkId))
+			{
+				// Refresh connection
+				const NavigationAgentTypeID agentTypeId = gAIEnv.pNavigationSystem->GetMesh(meshId).agentTypeID;
+
+				MNM::SOffMeshLinkCallbacks callbacks;
+				callbacks.acquireDataCallback = functor(*this, &CSmartObjectOffMeshNavigation::OnLinkDataRequested);
+				callbacks.additionCompletedCallback = functor(classInfoIt->second, &CSmartObjectOffMeshNavigation::OffMeshLinkIDList::OnLinkAdditionObjectServiced);
+				callbacks.removedCallback = functor(*this, &CSmartObjectOffMeshNavigation::OnOffmeshLinkRemoved);
+
+				gAIEnv.pNavigationSystem->GetIOffMeshNavigationManager().RequestLinkAddition(linkId, agentTypeId, pOffmeshLinkData, callbacks);
+				return;
+			}
+		}
+	}
+	else if (reason == MNM::EOffMeshLinkRemovalReason::MeshDestroyed)
+	{
+		for (TSOClassInfo::iterator classInfoIt = objectIt->second.begin(); classInfoIt != objectIt->second.end(); ++classInfoIt)
+		{
+			OffMeshLinkIDList::TLinkIDList& linkList = classInfoIt->second.GetLinkIDList();
+			
+			// Mesh doesn't exist anymore, remove the connection
+			if (stl::find_and_erase(linkList, linkId))
+				return;
 		}
 	}
 }
 
-void CSmartObjectOffMeshNavigation::OnOffMeshLinkGoingToBeRefreshed(MNM::LinkAdditionRequest& request)
-{
-	OffMeshLinkIDList* linkIDList = GetClassInfoFromLinkInfo(request.pLinkData);
-	if (linkIDList)
-	{
-		//stored linkID is removed from OffMeshLinkIDList in callback, when the link cannot be added again.
-		request.SetCallback(functor(*linkIDList, &CSmartObjectOffMeshNavigation::OffMeshLinkIDList::OnLinkRepairRequestForSmartObjectServiced));
-	}
-}
-
-void CSmartObjectOffMeshNavigation::OnRefreshConnections(const NavigationMeshID meshID, const MNM::TileID tileID)
+void CSmartObjectOffMeshNavigation::OnNavMeshChanged(NavigationAgentTypeID navAgentId, NavigationMeshID navMeshId, MNM::TileID tileId)
 {
 	std::vector<EntityId> tempObjectIds;
 	tempObjectIds.reserve(m_registeredObjects.size());
@@ -505,7 +532,55 @@ Vec3 OffMeshLink_SmartObject::GetEndPosition() const
 	return m_pSmartObject->GetHelperPos(m_pToHelper);
 }
 
-bool OffMeshLink_SmartObject::CanUse(const IEntity* pRequester, float* costMultiplier) const
+bool OffMeshLink_SmartObject::CanUse(const EntityId requesterEntityId, float* pCostMultiplier) const
 {
-	return gAIEnv.pSmartObjectManager->GetSmartObjectLinkCostFactorForMNM(this, pRequester, costMultiplier);
+	return gAIEnv.pSmartObjectManager->GetSmartObjectLinkCostFactorForMNM(this, requesterEntityId, pCostMultiplier);
+}
+
+MNM::EOffMeshLinkAdditionResult OffMeshLink_SmartObject::GetNavigationLinkData(const NavigationAgentTypeID agentTypeId, SNavigationData& navigationLinkData) const
+{
+	// Query the entry/exit positions
+	const Vec3 startPoint = GetStartPosition();
+	const Vec3 endPoint = GetEndPosition();
+	
+	// Grab the navigation mesh
+	const NavigationMeshID startMeshId = gAIEnv.pNavigationSystem->GetEnclosingMeshID(agentTypeId, startPoint);
+	const NavigationMeshID endMeshId = gAIEnv.pNavigationSystem->GetEnclosingMeshID(agentTypeId, endPoint);
+
+	if (startMeshId != endMeshId)
+	{
+		// Bail out, starting and ending points aren't on the same mesh
+		return MNM::EOffMeshLinkAdditionResult::NotSameMesh;
+	}
+	if (!startMeshId)
+	{
+		// Bail out, navigation mesh was not found
+		return MNM::EOffMeshLinkAdditionResult::InvalidMesh;
+	}
+
+	const NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(startMeshId);
+	
+	MNM::TriangleID startTriangleID;
+	MNM::TriangleID endTriangleID;
+
+	MNM::vector3_t fixedStartPoint(startPoint);
+	MNM::vector3_t fixedEndPoint(endPoint);
+
+	const MNM::real_t range = MNM::real_t(1.0f);
+
+	navigationLinkData.meshId = startMeshId;
+
+	MNM::DefaultQueryFilters::g_acceptAllFilterVirtual;
+
+	// Get entry triangle
+	navigationLinkData.startTriangleId = mesh.navMesh.QueryTriangleAt(fixedStartPoint, range, range, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, &MNM::DefaultQueryFilters::g_acceptAllFilterVirtual);
+	if (!navigationLinkData.startTriangleId)
+		return MNM::EOffMeshLinkAdditionResult::InvalidStartTriangle; // Bail out; Entry position not connected to a triangle
+
+	// Get end triangle
+	navigationLinkData.endTriangleId = mesh.navMesh.QueryTriangleAt(fixedEndPoint, range, range, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, &MNM::DefaultQueryFilters::g_acceptAllFilterVirtual);
+	if (!navigationLinkData.endTriangleId)
+		return MNM::EOffMeshLinkAdditionResult::InvalidEndTriangle; // Bail out; Exit position not connected to a triangle
+
+	return MNM::EOffMeshLinkAdditionResult::Success;
 }

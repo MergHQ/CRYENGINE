@@ -1607,7 +1607,7 @@ void COPTrace::TriggerExactPositioning(CPipeUser* pPipeUser, bool* pbForceRegene
 
 			if (smartObject)
 			{
-				MNM::OffMeshLink* pOffMeshLink = gAIEnv.pNavigationSystem->GetIOffMeshNavigationManager().GetOffMeshLink(pSmartObjectMNMData->offMeshLinkID);
+				MNM::IOffMeshLink* pOffMeshLink = gAIEnv.pNavigationSystem->GetIOffMeshNavigationManager().GetOffMeshLink(pSmartObjectMNMData->offMeshLinkID);
 				OffMeshLink_SmartObject* pSOLink = pOffMeshLink ? pOffMeshLink->CastTo<OffMeshLink_SmartObject>() : NULL;
 
 				assert(pSOLink);

@@ -33,7 +33,12 @@ namespace DefaultQueryFilters
 		{
 			return (triangle.areaAnnotation.GetFlags() & includeFlags) && !(triangle.areaAnnotation.GetFlags() & excludeFlags);
 		}
+		inline bool PassFilter(const MNM::AreaAnnotation annotation) const
+		{
+			return (annotation.GetFlags() & includeFlags) && !(annotation.GetFlags() & excludeFlags);
+		}
 		inline float GetCostMultiplier(const MNM::Tile::STriangle& triangle) const { return 1.0f; }
+		inline float GetCostMultiplier(const MNM::AreaAnnotation annotation) const { return 1.0f; }
 
 		MNM::AreaAnnotation::value_type includeFlags;
 		MNM::AreaAnnotation::value_type excludeFlags;

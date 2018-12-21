@@ -4322,8 +4322,9 @@ void CSmartObjectManager::DebugDrawValidateSmartObjectArea() const
 	}
 }
 
-bool CSmartObjectManager::GetSmartObjectLinkCostFactorForMNM(const OffMeshLink_SmartObject* pSmartObjectLink, const IEntity* pRequesterEntity, float* fCostMultiplier) const
+bool CSmartObjectManager::GetSmartObjectLinkCostFactorForMNM(const OffMeshLink_SmartObject* pSmartObjectLink, const EntityId requesterEntityId, float* fCostMultiplier) const
 {
+	const IEntity* pRequesterEntity = gEnv->pEntitySystem->GetEntity(requesterEntityId);	
 	const IAIObject* pRequesterIAIObject = pRequesterEntity ? pRequesterEntity->GetAI() : NULL;
 	if (pRequesterIAIObject == NULL)
 		return false;

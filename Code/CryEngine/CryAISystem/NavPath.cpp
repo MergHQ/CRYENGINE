@@ -927,7 +927,7 @@ void CNavPath::PrepareNavigationalSmartObjectsForMNM(IEntity* pEntity)
 			/// MNM Smart Objects glue code
 			PathPointDescriptor& pathPointDescriptor = *it;
 			++it;
-			MNM::OffMeshLink* pOffMeshLink = gAIEnv.pNavigationSystem->GetOffMeshNavigationManager()->GetOffMeshLink(pathPointDescriptor.offMeshLinkData.offMeshLinkID);
+			MNM::IOffMeshLink* pOffMeshLink = gAIEnv.pNavigationSystem->GetOffMeshNavigationManager()->GetOffMeshLink(pathPointDescriptor.offMeshLinkData.offMeshLinkID);
 			OffMeshLink_SmartObject* pSOLink = pOffMeshLink ? pOffMeshLink->CastTo<OffMeshLink_SmartObject>() : NULL;
 			if (pSOLink)
 			{

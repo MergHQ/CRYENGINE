@@ -9,6 +9,7 @@
 
 #include <CryAISystem/INavigationSystem.h>
 #include <CryAISystem/IOffMeshNavigationManager.h>
+#include <CryAISystem/NavigationSystem/Annotation.h>
 
 //////////////////////////////////////////////////////////////////////////
 /// OffMesh Navigation Manager
@@ -19,28 +20,6 @@
 //////////////////////////////////////////////////////////////////////////
 class OffMeshNavigationManager : public IOffMeshNavigationManager
 {
-private:
-	struct SLinkInfo
-	{
-		SLinkInfo() {}
-		SLinkInfo(NavigationMeshID _meshId, MNM::TriangleID _startTriangleID, MNM::TriangleID _endTriangleID, MNM::OffMeshLinkPtr _offMeshLink)
-			: meshID(_meshId)
-			, startTriangleID(_startTriangleID)
-			, endTriangleID(_endTriangleID)
-			, offMeshLink(_offMeshLink)
-		{}
-
-		bool operator==(const NavigationMeshID _meshID) const
-		{
-			return (meshID == _meshID);
-		}
-
-		NavigationMeshID    meshID;
-		MNM::TriangleID     startTriangleID;
-		MNM::TriangleID     endTriangleID;
-		MNM::OffMeshLinkPtr offMeshLink;
-	};
-
 public:
 #if DEBUG_MNM_ENABLED
 	struct ProfileMemoryStats
@@ -59,60 +38,121 @@ public:
 public:
 	OffMeshNavigationManager(const int offMeshMapSize);
 
-	const MNM::OffMeshNavigation& GetOffMeshNavigationForMesh(const NavigationMeshID& meshID) const;
+	const MNM::OffMeshNavigation& GetOffMeshNavigationForMesh(const NavigationMeshID& meshId) const;
 
-	void                    RefreshConnections(const NavigationMeshID meshID, const MNM::TileID tileID);
-	void                    Clear();
-	void                    Enable();
+	void                          RefreshConnections(const NavigationMeshID meshId, const MNM::TileID tileId);
+	void                          Clear();
+	void                          Enable();
+	bool                          IsLinkAdditionEnabled() const { return m_objectRegistrationEnabled; }
 
-	void                    OnNavigationMeshCreated(const NavigationMeshID& meshID);
-	void                    OnNavigationMeshDestroyed(const NavigationMeshID& meshID);
-	void                    OnNavigationLoadedComplete();
+	void                          OnNavigationMeshCreated(const NavigationMeshID& meshId);
+	void                          OnNavigationMeshDestroyed(const NavigationMeshID& meshId);
+	void                          OnNavigationLoadedComplete();
 
 	// IOffMeshNavigationManager
-	virtual void                    QueueCustomLinkAddition(const MNM::LinkAdditionRequest& request) override;
-	virtual void                    QueueCustomLinkRemoval(const MNM::LinkRemovalRequest& request) override;
-	virtual MNM::OffMeshLink*       GetOffMeshLink(const MNM::OffMeshLinkID& linkID) override;
-	virtual const MNM::OffMeshLink* GetOffMeshLink(const MNM::OffMeshLinkID& linkID) const override;
-	virtual void                    RegisterListener(IOffMeshNavigationListener* pListener, const char* listenerName) override;
-	virtual void                    UnregisterListener(IOffMeshNavigationListener* pListener) override;
-	virtual void                    RemoveAllQueuedAdditionRequestForEntity(const EntityId requestOwner) override;
-	virtual bool                    IsRegisteringEnabled() const override { return m_objectRegistrationEnabled; }
+	virtual MNM::OffMeshLinkID      RequestLinkAddition(const MNM::OffMeshLinkID linkId, const NavigationAgentTypeID agentTypeId, _smart_ptr<MNM::IOffMeshLink> pLinkData, const MNM::SOffMeshLinkCallbacks& callbacks) override;
+	virtual void                    RequestLinkRemoval(const MNM::OffMeshLinkID linkId) override;
+	virtual bool                    CancelLinkAddition(const MNM::OffMeshLinkID linkId) override;
+
+	virtual MNM::IOffMeshLink*       GetOffMeshLink(const MNM::OffMeshLinkID linkId) override;
+	virtual const MNM::IOffMeshLink* GetOffMeshLink(const MNM::OffMeshLinkID linkId) const override;
+
+	virtual void                    RequestLinkAnnotationChange(const MNM::OffMeshLinkID linkId, const MNM::AreaAnnotation annotation) override;
+	virtual const MNM::IOffMeshLink* GetLinkAndAnnotation(const MNM::OffMeshLinkID linkId, MNM::AreaAnnotation& annotation) const override;
 	// ~IOffMeshNavigationManager
 
 	void ProcessQueuedRequests();
 
 #if DEBUG_MNM_ENABLED
-	ProfileMemoryStats GetMemoryStats(ICrySizer* pSizer, const NavigationMeshID meshID) const;
+	ProfileMemoryStats GetMemoryStats(ICrySizer* pSizer, const NavigationMeshID meshId) const;
 #endif
 
 private:
-	bool       AddCustomLink(const NavigationMeshID& meshID, MNM::OffMeshLinkPtr& pLinkData, MNM::OffMeshLinkID& linkID, MNM::TriangleID* pOutStartTriangleID, MNM::TriangleID* pOutEndTriangleID, const bool bCloneLinkData);
-	void       RemoveCustomLink(const MNM::OffMeshLinkID& linkID);
+	struct SLinkAdditionRequest
+	{
+		SLinkAdditionRequest() {}
 
-	bool       IsLinkRemovalRequested(const MNM::OffMeshLinkID& linkID) const;
+		explicit SLinkAdditionRequest(const NavigationAgentTypeID agentTypeId, MNM::IOffMeshLink_AutoPtr pLinkDataPtr, const MNM::OffMeshLinkID linkId, const MNM::SOffMeshLinkCallbacks& callbacks)
+			: linkId(linkId)
+			, agentTypeId(agentTypeId)
+			, pLinkData(pLinkDataPtr)
+			, callbacks(callbacks)
+		{}
 
-	ILINE bool CanRegisterObject() const { return m_objectRegistrationEnabled; };
+		MNM::OffMeshLinkID         linkId;
+		NavigationAgentTypeID      agentTypeId;
+		MNM::IOffMeshLink_AutoPtr  pLinkData;
+		MNM::SOffMeshLinkCallbacks callbacks;
+	};
 
-	void       NotifyAllListenerAboutLinkDeletion(const MNM::OffMeshLinkID& linkID);
+	struct SAnnotationChangeRequest
+	{
+		explicit SAnnotationChangeRequest(const MNM::OffMeshLinkID linkId, const MNM::AreaAnnotation annotation)
+			: linkId(linkId)
+			, annotation(annotation)
+		{}
+		MNM::OffMeshLinkID linkId;
+		MNM::AreaAnnotation annotation;
+	};
+
+	struct SLinkControlInfo
+	{
+		explicit SLinkControlInfo(
+			const NavigationMeshID meshId, const MNM::TriangleID startTriangleId, const MNM::TriangleID endTriangleId, const MNM::AreaAnnotation annotation, 
+			MNM::IOffMeshLink_AutoPtr pOffmeshLink, 
+			const MNM::SOffMeshLinkCallbacks& callbacks)
+			: meshID(meshId)
+			, startTriangleID(startTriangleId)
+			, endTriangleID(endTriangleId)
+			, annotation(annotation)
+			, offMeshLink(pOffmeshLink)
+			, removedCallback(callbacks.removedCallback)
+		{}
+
+		bool operator==(const NavigationMeshID other) const
+		{
+			CRY_ASSERT(false);
+			return (meshID == other);
+		}
+
+		NavigationMeshID           meshID;
+		MNM::TriangleID            startTriangleID;
+		MNM::TriangleID            endTriangleID;
+		MNM::AreaAnnotation        annotation;
+		MNM::IOffMeshLink_AutoPtr  offMeshLink;
+		MNM::SOffMeshLinkCallbacks::RemovalCallback removedCallback;
+	};
 
 	// For every navigation mesh, there will be always an off-mesh navigation object
 	typedef id_map<uint32, MNM::OffMeshNavigation> TOffMeshMap;
-	TOffMeshMap            m_offMeshMap;
+	typedef std::unordered_map<MNM::OffMeshLinkID, SLinkControlInfo> TLinkInfoMap;
+	typedef std::vector<SLinkAdditionRequest> AdditionRequests;
+	typedef std::vector<MNM::OffMeshLinkID> RemovalRequests;
+	typedef std::vector<SAnnotationChangeRequest> AnnotationChangeRequests;
 
+	bool       ProcessLinkAdditionRequest(const SLinkAdditionRequest& request);
+	void       ProcessLinkRemovalRequest(const MNM::OffMeshLinkID linkId);
+	void       ProcessAnnotationChangeRequest(const SAnnotationChangeRequest& request);
+
+	MNM::EOffMeshLinkAdditionResult TryCreateLink(const SLinkAdditionRequest& request, MNM::IOffMeshLink::SNavigationData& navigationLinkData);
+	MNM::EOffMeshLinkAdditionResult GetNavigationLinkDataForAdditionRequest(const MNM::SOffMeshLinkCallbacks& callbacks, const NavigationAgentTypeID agentTypeId, MNM::IOffMeshLink* pLinkData, MNM::IOffMeshLink::SNavigationData& navigationLinkData) const;
+
+	bool       IsLinkAdditionRequested(const MNM::OffMeshLinkID linkId) const;
+	bool       IsLinkRemovalRequested(const MNM::OffMeshLinkID linkId) const;
+	
+	TOffMeshMap            m_offMeshMap;
 	MNM::OffMeshNavigation m_emptyOffMeshNavigation;
 
-	// List of registered links
-	typedef std::map<MNM::OffMeshLinkID, SLinkInfo> TLinkInfoMap;
+	// List of registered links	
 	TLinkInfoMap m_links;
+	bool         m_objectRegistrationEnabled;	
 
-	bool         m_objectRegistrationEnabled;
+	AdditionRequests m_additionRequests;	
+	RemovalRequests m_removalRequests;
+	AnnotationChangeRequests m_annotationChangeRequests;
 
-	typedef std::list<MNM::OffMeshOperationRequestBase> Operations; // it's a list to safely allow queuing further operations from their callbacks while the queue is being processed
-	Operations m_operations;
-
-	typedef CListenerSet<IOffMeshNavigationListener*> Listeners;
-	Listeners m_listeners;
+	size_t m_additionProcessingIdx;
+	size_t m_removalProcessingIdx;
 };
 
 #endif  //__OFFMESH_NAVIGATION_MANAGER_H__

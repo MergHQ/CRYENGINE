@@ -63,7 +63,7 @@ void UseSmartObject::OnTraverseStarted(const MovementUpdateContext& context)
 
 UseExactPositioningBase::TryRequestingExactPositioningResult UseSmartObject::TryRequestingExactPositioning(const MovementUpdateContext& context)
 {
-	MNM::OffMeshLink* pOffMeshLink = gAIEnv.pNavigationSystem->GetIOffMeshNavigationManager().GetOffMeshLink(m_smartObjectMNMData.offMeshLinkID);
+	MNM::IOffMeshLink* pOffMeshLink = gAIEnv.pNavigationSystem->GetIOffMeshNavigationManager().GetOffMeshLink(m_smartObjectMNMData.offMeshLinkID);
 	OffMeshLink_SmartObject* pSOLink = pOffMeshLink ? pOffMeshLink->CastTo<OffMeshLink_SmartObject>() : NULL;
 
 	if (pSOLink)
@@ -174,7 +174,7 @@ void UseSmartObject::HandleExactPositioningError(const MovementUpdateContext& co
 
 Vec3 UseSmartObject::GetSmartObjectEndPosition() const
 {
-	MNM::OffMeshLink* pOffMeshLink = gAIEnv.pNavigationSystem->GetIOffMeshNavigationManager().GetOffMeshLink(m_smartObjectMNMData.offMeshLinkID);
+	MNM::IOffMeshLink* pOffMeshLink = gAIEnv.pNavigationSystem->GetIOffMeshNavigationManager().GetOffMeshLink(m_smartObjectMNMData.offMeshLinkID);
 	OffMeshLink_SmartObject* pSOLink = pOffMeshLink ? pOffMeshLink->CastTo<OffMeshLink_SmartObject>() : NULL;
 
 	assert(pSOLink);

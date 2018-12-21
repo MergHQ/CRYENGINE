@@ -30,20 +30,26 @@
 namespace MNM
 {
 
-bool CNavMesh::SWayQueryRequest::CanUseOffMeshLink(const OffMeshLinkID linkID, float* costMultiplier) const
+//////////////////////////////////////////////////////////////////////////
+
+bool CNavMesh::SWayQueryRequest::CanUseOffMeshLink(const IOffMeshLink* pOffMeshLink, float* costMultiplier) const
 {
 	if (m_requesterEntityId)
 	{
-		if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_requesterEntityId))
+		if (pOffMeshLink)
 		{
-			if (const OffMeshLink* pOffMeshLink = m_offMeshNavigationManager.GetOffMeshLink(linkID))
-			{
-				return pOffMeshLink->CanUse(pEntity, costMultiplier);
-			}
+			return pOffMeshLink->CanUse(m_requesterEntityId, costMultiplier);
 		}
 	}
 	return true;    // Always allow by default
 }
+
+const IOffMeshLink* CNavMesh::SWayQueryRequest::GetOffMeshLinkAndAnnotation(const OffMeshLinkID linkId, MNM::AreaAnnotation& annotation) const
+{
+	return m_offMeshNavigationManager.GetLinkAndAnnotation(linkId, annotation);
+}
+
+//////////////////////////////////////////////////////////////////////////
 
 CNavMesh::TileContainerArray::TileContainerArray()
 	: m_tiles(NULL)
@@ -783,14 +789,21 @@ CNavMesh::EWayQueryResult CNavMesh::FindWayInternal(SWayQueryRequest& inputReque
 						}
 						else if (link.side == Tile::SLink::OffMesh)
 						{
-							//TODO: apply filter also to offmesh links
 							OffMeshNavigation::QueryLinksResult links = inputRequest.GetOffMeshNavigation().GetLinksForTriangle(bestNodeID.triangleID, link.triangle);
 							while (nextTri = links.GetNextTriangle())
 							{
-								if (inputRequest.CanUseOffMeshLink(nextTri.offMeshLinkID, &nextTri.costMultiplier))
+								AreaAnnotation linkAnnotation;
+								if (const IOffMeshLink* pLink = inputRequest.GetOffMeshLinkAndAnnotation(nextTri.offMeshLinkID, linkAnnotation))
 								{
-									workingSet.nextLinkedTriangles.push_back(nextTri);
-									nextTri.incidentEdge = (unsigned int)MNM::Constants::InvalidEdgeIndex;
+									if (filter.PassFilter(linkAnnotation))
+									{
+										nextTri.costMultiplier = filter.GetCostMultiplier(linkAnnotation);
+										if (inputRequest.CanUseOffMeshLink(pLink, &nextTri.costMultiplier))
+										{
+											workingSet.nextLinkedTriangles.push_back(nextTri);
+											nextTri.incidentEdge = (unsigned int)MNM::Constants::InvalidEdgeIndex;
+										}
+									}
 								}
 							}
 							continue;

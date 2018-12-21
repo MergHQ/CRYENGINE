@@ -29,6 +29,9 @@ struct INavMeshQueryFilter
 	//! Returns cost multiplier for traversing the triangle.
 	virtual float GetCostMultiplier(const MNM::Tile::STriangle& triangle) const = 0;
 
+	//! Returns cost multiplier for the given annotation.
+	virtual float GetCostMultiplier(const MNM::AreaAnnotation annotation) const = 0;
+
 	//! Currently not used but planned to be used in the future instead of GetCostMultiplier.
 	virtual MNM::real_t GetCost(const MNM::vector3_t& fromPos, const MNM::vector3_t& toPos,
 		const MNM::Tile::STriangle& currentTriangle, const MNM::Tile::STriangle& nextTriangle,
@@ -84,6 +87,11 @@ struct SNavMeshQueryFilterBase : public INavMeshQueryFilter
 	}
 
 	virtual float GetCostMultiplier(const MNM::Tile::STriangle& triangle) const override
+	{
+		return 1.0f;
+	}
+
+	virtual float GetCostMultiplier(const MNM::AreaAnnotation annotation) const override
 	{
 		return 1.0f;
 	}

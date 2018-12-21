@@ -1845,7 +1845,7 @@ void NavigationSystem::AddOffMeshLinkIslandConnectionsBetweenTriangles(
 								{
 									if (nextTri.offMeshLinkID == linkID)
 									{
-										if (const MNM::OffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(nextTri.offMeshLinkID))
+										if (const MNM::IOffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(nextTri.offMeshLinkID))
 										{
 											bLinkIsFound = true;
 											break;
@@ -1881,7 +1881,7 @@ void NavigationSystem::AddOffMeshLinkIslandConnectionsBetweenTriangles(
 				const MNM::GlobalIslandID startingIslandID(meshID, startingTriangle.islandID);
 				const MNM::GlobalIslandID endingIslandID(meshID, endingTriangle.islandID);
 
-				const MNM::OffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(linkID);
+				const MNM::IOffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(linkID);
 				if (pLink)
 				{
 					MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();

@@ -9,154 +9,113 @@
 namespace MNM
 {
 
-enum EOffMeshOperationResult
+enum class EOffMeshLinkRemovalReason
 {
-	eOffMeshOperationResult_SuccessToAddLink,
-	eOffMeshOperationResult_FailedToAddLink,
-	eOffMeshOperationResult_SuccessToRemoveLink,
-	eOffMeshOperationResult_FailedToRemoveLink
+	MeshDestroyed,
+	MeshUpdated,
+	Count,
 };
 
-//! Function parameter for link-addition callbacks.
-struct SOffMeshOperationCallbackData
+enum class EOffMeshLinkAdditionResult
 {
-	const MNM::OffMeshLinkID linkID;
-	const bool               operationSucceeded;
+	Success,
+	InvalidStartTriangle,
+	InvalidEndTriangle,
+	NotSameMesh,
+	InvalidMesh,
+	AlreadyExists,
+	AcquireCallbackNotSet,
+	AcquireDataFailed,
+	Count,
+};
+
+//! Function parameter for link addition callbacks.
+struct SOffMeshAdditionCallbackData
+{
 	const MNM::TriangleID    startTriangleID;
 	const MNM::TriangleID    endTriangleID;
+	const EOffMeshLinkAdditionResult result;
 
-	SOffMeshOperationCallbackData(const MNM::OffMeshLinkID _linkID, const MNM::TriangleID _startTriangleID, const MNM::TriangleID _endTriangleID, const bool _operationSucceeded)
-		: linkID(_linkID)
-		, startTriangleID(_startTriangleID)
-		, endTriangleID(_endTriangleID)
-		, operationSucceeded(_operationSucceeded)
+	explicit SOffMeshAdditionCallbackData(const MNM::TriangleID startTriangleId, const MNM::TriangleID endTriangleId, const EOffMeshLinkAdditionResult result)
+		: startTriangleID(startTriangleId)
+		, endTriangleID(endTriangleId)
+		, result(result)
 	{}
 };
 
-typedef Functor1<const SOffMeshOperationCallbackData&> OffMeshOperationCallback;
-
-enum EOffMeshOperationType
+struct SOffMeshLinkCallbacks
 {
-	eOffMeshOperationType_Undefined,
-	eOffMeshOperationType_Add,
-	eOffMeshOperationType_Remove,
+	typedef Functor3wRet<NavigationAgentTypeID, MNM::IOffMeshLink*, MNM::IOffMeshLink::SNavigationData&, EOffMeshLinkAdditionResult> AcquireDataCallback;
+	typedef Functor2<MNM::OffMeshLinkID, const MNM::SOffMeshAdditionCallbackData&> AdditionCallback;
+	typedef Functor3<MNM::OffMeshLinkID, NavigationMeshID, MNM::EOffMeshLinkRemovalReason> RemovalCallback;
+	
+	//! Called to the user code when the addition operation is being processed to retrieve navigation information of the link. When link annotation isn't set default one is used.
+	AcquireDataCallback acquireDataCallback;
+
+	//! Called after the addition operation is completed (either success or fail)
+	AdditionCallback additionCompletedCallback;
+	
+	//! Called just before the link is removed internally from the Off-Mesh Navigation due to NavMesh removal or tile update. User code should clean up all references to cached link data.
+	RemovalCallback removedCallback;
 };
 
-struct OffMeshOperationRequestBase
-{
-	OffMeshOperationRequestBase()
-		: requestOwner((EntityId)0)
-		, meshId(0)
-		, linkId()
-		, callback(NULL)
-		, operationType(eOffMeshOperationType_Undefined)
-		, bCloneLinkData(false)
-	{}
-
-	OffMeshOperationRequestBase(const EOffMeshOperationType _operationType, const EntityId _requestOwnerId, const NavigationMeshID& _meshID, MNM::OffMeshLinkPtr _pLinkData,
-	                            const MNM::OffMeshLinkID& _linkID, bool _bCloneLinkData)
-		: requestOwner(_requestOwnerId)
-		, meshId(_meshID)
-		, linkId(_linkID)
-		, operationType(_operationType)
-		, bCloneLinkData(_bCloneLinkData)
-	{
-		assert(operationType == eOffMeshOperationType_Add);
-		pLinkData = _pLinkData;
-	}
-
-	OffMeshOperationRequestBase(const EOffMeshOperationType _operationType, const EntityId _requestOwnerId, const MNM::OffMeshLinkID& _linkID)
-		: requestOwner(_requestOwnerId)
-		, meshId(0)
-		, linkId(_linkID)
-		, callback(NULL)
-		, operationType(_operationType)
-		, bCloneLinkData(false)
-	{
-		assert(operationType == eOffMeshOperationType_Remove);
-	}
-
-	EntityId                 requestOwner;
-	NavigationMeshID         meshId;
-	MNM::OffMeshLinkPtr      pLinkData;
-	MNM::OffMeshLinkID       linkId;
-	OffMeshOperationCallback callback;
-	EOffMeshOperationType    operationType;
-	bool                     bCloneLinkData;
-};
-
-struct IsOffMeshAdditionOperationRequestRelatedToEntity
-{
-
-	IsOffMeshAdditionOperationRequestRelatedToEntity(EntityId _requestOwnerId)
-		: requestOwnerId(_requestOwnerId)
-	{
-	}
-
-	bool operator()(OffMeshOperationRequestBase& other) { return (other.operationType == eOffMeshOperationType_Add) && (other.requestOwner == requestOwnerId); }
-
-	EntityId requestOwnerId;
-};
-
-struct LinkAdditionRequest : public OffMeshOperationRequestBase
-{
-	LinkAdditionRequest(const EntityId _requestOwnerId, const NavigationMeshID& _meshID, MNM::OffMeshLinkPtr _pLinkData, const MNM::OffMeshLinkID& _linkID)
-		: OffMeshOperationRequestBase(eOffMeshOperationType_Add, _requestOwnerId, _meshID, _pLinkData, _linkID, true)
-	{
-	}
-
-	LinkAdditionRequest(const LinkAdditionRequest& other)
-		: OffMeshOperationRequestBase(other.operationType, other.requestOwner, other.meshId, other.pLinkData, other.linkId, other.bCloneLinkData)
-	{
-		callback = other.callback;
-	}
-
-	LinkAdditionRequest& operator=(const LinkAdditionRequest& other)
-	{
-		meshId = other.meshId;
-		pLinkData = other.pLinkData;
-		linkId = other.linkId;
-		callback = other.callback;
-		operationType = other.operationType;
-		bCloneLinkData = other.bCloneLinkData;
-		return *this;
-	}
-
-	void SetCallback(OffMeshOperationCallback _callback) { callback = _callback; }
-};
-
-struct LinkRemovalRequest : OffMeshOperationRequestBase
-{
-	LinkRemovalRequest(const EntityId _requestOwnerId, const MNM::OffMeshLinkID& _linkID)
-		: OffMeshOperationRequestBase(eOffMeshOperationType_Remove, _requestOwnerId, _linkID)
-	{
-	}
-
-	LinkRemovalRequest(const LinkRemovalRequest& other)
-		: OffMeshOperationRequestBase(eOffMeshOperationType_Remove, other.requestOwner, other.linkId)
-	{
-	}
-};
 }
 
-struct IOffMeshNavigationListener
-{
-	virtual void OnOffMeshLinkGoingToBeRemoved(const MNM::OffMeshLinkID& linkID) = 0;
-	virtual void OnOffMeshLinkGoingToBeRefreshed(MNM::LinkAdditionRequest& request) {}
-	virtual void OnRefreshConnections(const NavigationMeshID meshID, const MNM::TileID tileID) {}
-};
-
+//! Interface class for OffMesh Navigation Manager
+//!
+//! OffMeshNavigationManager is used for registering and unregistering off-mesh links. 
+//! Since the class can alter NavMesh data, link additions, removals and annotation changes aren't executed instantly 
+//! but are queued instead and performed at the right time when it is safe to do so.
 struct IOffMeshNavigationManager
 {
 	virtual ~IOffMeshNavigationManager() {}
 
-	virtual void                    QueueCustomLinkAddition(const MNM::LinkAdditionRequest& request) = 0;
-	virtual void                    QueueCustomLinkRemoval(const MNM::LinkRemovalRequest& request) = 0;
-	virtual MNM::OffMeshLink*       GetOffMeshLink(const MNM::OffMeshLinkID& linkID) = 0;
-	virtual const MNM::OffMeshLink* GetOffMeshLink(const MNM::OffMeshLinkID& linkID) const = 0;
-	virtual void                    RegisterListener(IOffMeshNavigationListener* pListener, const char* listenerName) = 0;
-	virtual void                    UnregisterListener(IOffMeshNavigationListener* pListener) = 0;
-	virtual void                    RemoveAllQueuedAdditionRequestForEntity(const EntityId requestOwner) = 0;
-	virtual bool                    IsRegisteringEnabled() const = 0;
+	//! Queue link addition request
+	//! It is safe to queue link addition requests in link's callbacks.
+	//! \param linkId Identifier of the off-mesh link. If linkId is equal to MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID, new id is generated and returned by the funcion
+	//! \param agentTypeId Navigation agent type id for whom the link should be created.
+	//! \param pLinkDataPtr _smart_ptr pointer to the instance of IOffMeshLink data.
+	//! \param callbacks Structure of callbacks used for link creation and notifying about link removal.
+	//! \return OffMeshLink id, that can be used for referencing OffMesh link
+	virtual MNM::OffMeshLinkID      RequestLinkAddition(const MNM::OffMeshLinkID linkId, const NavigationAgentTypeID agentTypeId, _smart_ptr<MNM::IOffMeshLink> pLinkData, const MNM::SOffMeshLinkCallbacks& callbacks) = 0;
+	
+	//! Queue link removal request
+	//! It is safe to queue link removal requests in link's callbacks.
+	//! \param linkId Identifier of the off-mesh link to be removed.
+	virtual void                    RequestLinkRemoval(const MNM::OffMeshLinkID linkId) = 0;
+
+	//! Cancel link addition request
+	//! It is safe to cancel addition requests in link's callbacks.
+	//! \param linkId Identifier of the off-mesh link whose addition was requested.
+	//! \return True if the link addition was previously requested and now canceled.
+	virtual bool                    CancelLinkAddition(const MNM::OffMeshLinkID linkId) = 0;
+
+	//! Queue link annotation change request
+	//! Link's annotation is used in similar way as for NavMesh triangles for filtering during the path-finding and reachability queries.
+	//! \param linkId Identifier of the off-mesh link for which the annotation is to be changed
+	//! \param annotation Annotation to be applied (area type and flags)
+	virtual void                    RequestLinkAnnotationChange(const MNM::OffMeshLinkID linkId, const MNM::AreaAnnotation annotation) = 0;
+
+	//! Returns off-mesh link and it's annotation
+	//! \param linkId Identifier of the off-mesh link to be returned.
+	//! \param annotation Reference to annotation return parameter. It is set only when the link is found
+	//! \return Pointer to off-mesh link if it was found, null otherwise
+	virtual const MNM::IOffMeshLink* GetLinkAndAnnotation(const MNM::OffMeshLinkID linkId, MNM::AreaAnnotation& annotation) const = 0;
+
+	//! Returns off-mesh link
+	//! \param linkId Identifier of the off-mesh link to be returned.
+	//! \return Pointer to off-mesh link if it was found, null otherwise
+	virtual MNM::IOffMeshLink*       GetOffMeshLink(const MNM::OffMeshLinkID linkId) = 0;
+
+	//! Returns off-mesh link (const)
+	//! \param linkId Identifier of the off-mesh link to be returned.
+	//! \return Pointer to off-mesh link if it was found, null otherwise
+	virtual const MNM::IOffMeshLink* GetOffMeshLink(const MNM::OffMeshLinkID linkId) const = 0;
+
+protected:
+	void SetIdToOffMeshLink(MNM::IOffMeshLink& offmeshLink, const MNM::OffMeshLinkID linkId) const
+	{
+		offmeshLink.SetLinkId(linkId);
+	}
 };
 
