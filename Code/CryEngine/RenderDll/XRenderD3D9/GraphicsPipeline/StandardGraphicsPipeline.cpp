@@ -217,19 +217,18 @@ void CStandardGraphicsPipeline::Update(CRenderView* pRenderView, EShaderRenderin
 	m_numInvalidDrawcalls = 0;
 	GenerateMainViewConstantBuffer();
 
+	if (!m_changedCVars.GetCVars().empty())
+	{
+		CGraphicsPipeline::OnCVarsChanged(m_changedCVars);
+		m_changedCVars.Reset();
+	}
+
 	// Compile shadow renderitems (TODO: move into ShadowMap's Update())
 	if (m_pShadowMapStage->IsStageActive(renderingFlags))
 		pRenderView->PrepareShadowViews();
 
 	m_renderingFlags = renderingFlags;
 	CGraphicsPipeline::Update(pRenderView, renderingFlags);
-
-	if (!m_changedCVars.GetCVars().empty())
-	{
-		CGraphicsPipeline::OnCVarsChanged(m_changedCVars);
-
-		m_changedCVars.Reset();
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
