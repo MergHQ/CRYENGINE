@@ -667,14 +667,18 @@ CBaseObject* CEditorImpl::CloneObject(CBaseObject* obj)
 	return GetObjectManager()->CloneObject(obj);
 }
 
-void CEditorImpl::StartObjectCreation(const char* type, const char* file)
+bool CEditorImpl::StartObjectCreation(const char* type, const char* file /*= nullptr*/)
 {
 	if (!GetDocument()->IsDocumentReady())
-		return;
+	{
+		return false;
+	}
 
 	CObjectCreateTool* tool = new CObjectCreateTool();
 	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(tool);
 	tool->SelectObjectToCreate(type, file);
+
+	return true;
 }
 
 CBaseObject* CEditorImpl::GetSelectedObject()
