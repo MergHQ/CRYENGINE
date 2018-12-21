@@ -1,14 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __OFFMESH_LINKS_H__
-#define __OFFMESH_LINKS_H__
-
 #pragma once
 
-#include "../MNM/MNM.h"
+#include "MNM.h"
 
 struct NavigationMesh;
-struct IAIPathAgent;
 
 namespace MNM
 {
@@ -99,9 +95,11 @@ public:
 	};
 #endif
 
-	void             AddLink(NavigationMesh& navigationMesh, const TriangleID startTriangleID, const TriangleID endTriangleID, OffMeshLinkID& linkID);
+	void             AddLink(NavigationMesh& navigationMesh, const TriangleID startTriangleID, const TriangleID endTriangleID, const OffMeshLinkID linkID);
 	void             RemoveLink(NavigationMesh& navigationMesh, const TriangleID boundTriangleID, const OffMeshLinkID linkID);
-	void             InvalidateLinks(const TileID tileID);
+	void             InvalidateAllLinksForTile(const TileID tileID);
+
+	static OffMeshLinkID    GenerateLinkId();
 
 	QueryLinksResult GetLinksForTriangle(const TriangleID triangleID, const uint16 index) const;
 
@@ -116,6 +114,5 @@ private:
 
 	static OffMeshLinkID s_linkIDGenerator;
 };
-}
+} // namespace MNM
 
-#endif //__OFFMESH_LINKS_H__

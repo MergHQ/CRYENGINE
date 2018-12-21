@@ -9,9 +9,12 @@
 OffMeshNavigationManager::OffMeshNavigationManager(const int offMeshMapSize)
 	: m_offMeshMap(offMeshMapSize)
 	, m_objectRegistrationEnabled(false)
-	, m_operations(128)
-	, m_listeners(32)
+	, m_additionProcessingIdx(0)
+	, m_removalProcessingIdx(0)
 {
+	m_additionRequests.reserve(128);
+	m_removalRequests.reserve(128);
+	m_annotationChangeRequests.reserve(32);
 }
 
 const MNM::OffMeshNavigation& OffMeshNavigationManager::GetOffMeshNavigationForMesh(const NavigationMeshID& meshID) const
@@ -22,271 +25,295 @@ const MNM::OffMeshNavigation& OffMeshNavigationManager::GetOffMeshNavigationForM
 	}
 	else
 	{
-		assert(0);
+		CRY_ASSERT(0);
 		AIWarning("No off-mesh navigation available, returning empty one! Navigation might not be able to use external links when path-finding");
 		return m_emptyOffMeshNavigation;
 	}
 }
 
-void OffMeshNavigationManager::QueueCustomLinkAddition(const MNM::LinkAdditionRequest& request)
+MNM::OffMeshLinkID OffMeshNavigationManager::RequestLinkAddition(const MNM::OffMeshLinkID linkId, const NavigationAgentTypeID agentTypeId, _smart_ptr<MNM::IOffMeshLink> pLinkData, const MNM::SOffMeshLinkCallbacks& callbacks)
 {
+	CRY_ASSERT_MESSAGE(!IsLinkAdditionRequested(linkId), "Link with id %u is already requested!", linkId);
+	CRY_ASSERT_MESSAGE(m_links.find(linkId) == m_links.end(), "Link with id %u is aready added!", linkId);
+
+	const MNM::OffMeshLinkID requestLinkId = !linkId.IsValid() ? MNM::OffMeshNavigation::GenerateLinkId() : linkId;
+	SLinkAdditionRequest request(agentTypeId, pLinkData, requestLinkId, callbacks);
+	m_additionRequests.push_back(request);
+
 #if DEBUG_MNM_LOG_OFFMESH_LINK_OPERATIONS
-	AILogCommentID("<MNM:OffMeshLink>", "OffMeshNavigationManager::QueueCustomLinkAddition for entity %x", request.requestOwner);
+	AILogAlways("<OffMeshNavigationManager> Requested link addition. LinkId = %u. Requested id: %u", requestLinkId, linkId);
 #endif
-	m_operations.push_back(request);
+
+	return requestLinkId;
 }
 
-void OffMeshNavigationManager::QueueCustomLinkRemoval(const MNM::LinkRemovalRequest& request)
+bool OffMeshNavigationManager::CancelLinkAddition(const MNM::OffMeshLinkID linkId)
 {
-#if DEBUG_MNM_LOG_OFFMESH_LINK_OPERATIONS
-	AILogCommentID("<MNM:OffMeshLink>", "OffMeshNavigationManager::QueueCustomLinkRemoval linkId %u for entity %x", request.linkId, request.requestOwner);
-#endif
-	m_operations.push_back(request);
-}
-
-bool OffMeshNavigationManager::IsLinkRemovalRequested(const MNM::OffMeshLinkID& linkID) const
-{
-	for (const MNM::OffMeshOperationRequestBase& requestBase : m_operations)
+	for (size_t i = m_additionProcessingIdx; i < m_additionRequests.size(); ++i)
 	{
-		if ((requestBase.operationType == MNM::eOffMeshOperationType_Remove) && (requestBase.linkId == linkID))
+		if (m_additionRequests[i].linkId == linkId)
 		{
+#if DEBUG_MNM_LOG_OFFMESH_LINK_OPERATIONS
+			AILogAlways("<OffMeshNavigationManager> Link addition canceled. LinkId = %u.", linkId);
+#endif			
+			m_additionRequests.erase(m_additionRequests.begin() + i);
 			return true;
 		}
 	}
-
 	return false;
 }
 
-bool OffMeshNavigationManager::AddCustomLink(const NavigationMeshID& meshID, MNM::OffMeshLinkPtr& pLinkData, MNM::OffMeshLinkID& linkID, MNM::TriangleID* pOutStartTriangleID, MNM::TriangleID* pOutEndTriangleID, const bool bCloneLinkData)
+void OffMeshNavigationManager::RequestLinkRemoval(const MNM::OffMeshLinkID linkId)
 {
-	// Grab the navigation mesh
-	NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(meshID);
+#if DEBUG_MNM_LOG_OFFMESH_LINK_OPERATIONS
+	AILogAlways("<OffMeshNavigationManager> Requested link removal. LinkId = %u.", linkId);
+#endif
+	
+	CancelLinkAddition(linkId);
 
-	CRY_ASSERT(pLinkData.get() != nullptr);
+	TLinkInfoMap::iterator linkIt = m_links.find(linkId);
+	if (linkIt == m_links.end())
+		return;
 
-	MNM::OffMeshLink& linkData = *pLinkData;
+	linkIt->second.removedCallback = nullptr;
 
-	// Query the entry/exit positions
-	const Vec3 startPoint = linkData.GetStartPosition();
-	const Vec3 endPoint = linkData.GetEndPosition();
-
-	MNM::vector3_t fixedStartPoint(startPoint);
-	MNM::vector3_t fixedEndPoint(endPoint);
-
-	MNM::TriangleID startTriangleID, endTriangleID;
-
-	const MNM::real_t range = MNM::real_t(1.0f);
-
-	SAcceptAllQueryTrianglesFilter acceptAllFilter;
-
-	// Get entry triangle
-	startTriangleID = mesh.navMesh.QueryTriangleAt(fixedStartPoint, range, range, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, &acceptAllFilter);
-
-	if (!startTriangleID)
-	{
-		//Bail out; Entry position not connected to a triangle
-		return false;
-	}
-
-	// Get entry triangle
-	endTriangleID = mesh.navMesh.QueryTriangleAt(fixedEndPoint, range, range, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, &acceptAllFilter);
-
-	if (!endTriangleID)
-	{
-		//Bail out; Exit position not connected to a triangle
-		return false;
-	}
-
-	if (startTriangleID == endTriangleID)
-	{
-		// points are on the same triangle so don't bother
-		return false;
-	}
-
-	// Select the corresponding off-mesh navigation object
-	CRY_ASSERT_TRACE(m_offMeshMap.validate(meshID), ("Trying to add offmesh link to invalid mesh! (meshID = %u)", (uint32)meshID));
-	MNM::OffMeshNavigation& offMeshNavigation = m_offMeshMap[meshID];
-
-	// Important: if we already added this particular link before, we need to remove it prior to re-adding it, as the startTriangleID might be
-	//            a different one now and then the NavMesh would suddenly have 2 different triangle-links referring to the same offmesh-link.
-	//            This can happen if there are multiple add-link requests in m_operations dealing with the same linkID but with *different* start/end positions (!)
-	TLinkInfoMap::const_iterator it = m_links.find(linkID);
-	if (it != m_links.end())
-	{
-		// we added this link before already, now see if the starting triangle changed
-		if (it->second.startTriangleID != startTriangleID)
-		{
-			// gotcha! (notice that we end up here very rarely in practice)
-			offMeshNavigation.RemoveLink(mesh, it->second.startTriangleID, linkID);
-		}
-	}
-
-	// Register the new link with the off-mesh navigation system
-	offMeshNavigation.AddLink(mesh, startTriangleID, endTriangleID, *&linkID);
-	CRY_ASSERT_TRACE(linkID.IsValid(), ("Adding new offmesh link failed"));
-
-	MNM::OffMeshLinkPtr pOffMeshLink;
-	if (bCloneLinkData)
-	{
-		pOffMeshLink.reset(linkData.Clone());
-	}
-	else
-	{
-		pOffMeshLink = pLinkData;
-	}
-	pOffMeshLink->SetLinkID(linkID);
-
-	m_links[linkID] = SLinkInfo(meshID, startTriangleID, endTriangleID, std::move(pOffMeshLink));
-
-	gAIEnv.pNavigationSystem->AddOffMeshLinkIslandConnectionsBetweenTriangles(meshID, startTriangleID, endTriangleID, linkID);
-	gAIEnv.pNavigationSystem->RequestUpdateMeshAccessibility(meshID);
-
-	if (pOutStartTriangleID)
-	{
-		*pOutStartTriangleID = startTriangleID;
-	}
-
-	if (pOutEndTriangleID)
-	{
-		*pOutEndTriangleID = endTriangleID;
-	}
-
-	return true;
+	m_removalRequests.push_back(linkId);
 }
 
-void OffMeshNavigationManager::RemoveCustomLink(const MNM::OffMeshLinkID& linkID)
+bool OffMeshNavigationManager::IsLinkAdditionRequested(const MNM::OffMeshLinkID linkId) const
 {
-	TLinkInfoMap::iterator linkIt = m_links.find(linkID);
-	if (linkIt != m_links.end())
+	for (const SLinkAdditionRequest& additionRequest : m_additionRequests)
 	{
-		SLinkInfo& linkInfo = linkIt->second;
-
-		// Select the corresponding off-mesh navigation object
-		assert(m_offMeshMap.validate(linkInfo.meshID));
-		MNM::OffMeshNavigation& offMeshNavigation = m_offMeshMap[linkInfo.meshID];
-		NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(linkInfo.meshID);
-
-		// Remove link
-		// NOTE: There should only ever be one element in the link array
-		offMeshNavigation.RemoveLink(mesh, linkInfo.startTriangleID, linkID);
-
-		gAIEnv.pNavigationSystem->RemoveOffMeshLinkIslandConnection(linkID);
-		gAIEnv.pNavigationSystem->RequestUpdateMeshAccessibility(linkInfo.meshID);
-
-		// Remove cached data
-		m_links.erase(linkIt);
+		if (additionRequest.linkId == linkId)
+			return true;
 	}
+	return false;
+}
+
+bool OffMeshNavigationManager::IsLinkRemovalRequested(const MNM::OffMeshLinkID linkId) const
+{
+	for (const MNM::OffMeshLinkID removalLinkId : m_removalRequests)
+	{
+		if (removalLinkId == linkId)
+			return true;
+	}
+	return false;
 }
 
 void OffMeshNavigationManager::ProcessQueuedRequests()
 {
-	if (!m_operations.empty())
+	m_removalProcessingIdx = 0;
+	m_additionProcessingIdx = 0;
+
+	while (m_additionProcessingIdx < m_additionRequests.size() || m_removalProcessingIdx < m_removalRequests.size())
 	{
-		for (Operations::iterator it = m_operations.begin(); it != m_operations.end(); ++it)  // notice: the callbacks might add new operations, so we cannot simply cache end()
+		while (m_removalProcessingIdx < m_removalRequests.size())
 		{
-			switch (it->operationType)
-			{
-			case MNM::eOffMeshOperationType_Add:
-				{
-					MNM::TriangleID startTriangleID = MNM::TriangleID();
-					MNM::TriangleID endTriangleID = MNM::TriangleID();
-					const bool linkGotSuccessfullyAdded = AddCustomLink(it->meshId, it->pLinkData, it->linkId, &startTriangleID, &endTriangleID, it->bCloneLinkData);
-					if (it->callback)
-					{
-						it->callback(MNM::SOffMeshOperationCallbackData(it->linkId, startTriangleID, endTriangleID, linkGotSuccessfullyAdded));
-					}
-				}
-				break;
-			case MNM::eOffMeshOperationType_Remove:
-				NotifyAllListenerAboutLinkDeletion(it->linkId);
-				RemoveCustomLink(it->linkId);
-				break;
-			default:
-				assert(0);
-			}
-
+			ProcessLinkRemovalRequest(m_removalRequests[m_removalProcessingIdx++]);
 		}
-
-		stl::free_container(m_operations);
+		while (m_additionProcessingIdx < m_additionRequests.size())
+		{
+			ProcessLinkAdditionRequest(m_additionRequests[m_additionProcessingIdx++]);
+		}
 	}
-}
 
-void OffMeshNavigationManager::NotifyAllListenerAboutLinkDeletion(const MNM::OffMeshLinkID& linkID)
-{
-	for (Listeners::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
+	m_additionRequests.clear();
+	m_removalRequests.clear();
+
+	m_removalProcessingIdx = 0;
+	m_additionProcessingIdx = 0;
+
+	for (const SAnnotationChangeRequest& annotationChangeRequest : m_annotationChangeRequests)
 	{
-		notifier->OnOffMeshLinkGoingToBeRemoved(linkID);
+		ProcessAnnotationChangeRequest(annotationChangeRequest);
 	}
+	m_annotationChangeRequests.clear();
 }
 
-MNM::OffMeshLink* OffMeshNavigationManager::GetOffMeshLink(const MNM::OffMeshLinkID& linkID)
+MNM::EOffMeshLinkAdditionResult OffMeshNavigationManager::GetNavigationLinkDataForAdditionRequest(const MNM::SOffMeshLinkCallbacks& callbacks, const NavigationAgentTypeID agentTypeId, MNM::IOffMeshLink* pLinkData, MNM::IOffMeshLink::SNavigationData& navigationLinkData) const
 {
-	TLinkInfoMap::iterator linkIt = m_links.find(linkID);
-	if (linkIt != m_links.end())
+	if (!callbacks.acquireDataCallback)
+		return MNM::EOffMeshLinkAdditionResult::AcquireCallbackNotSet;
+
+	const MNM::EOffMeshLinkAdditionResult acquireDataResult = callbacks.acquireDataCallback(agentTypeId, pLinkData, navigationLinkData);
+	if (acquireDataResult != MNM::EOffMeshLinkAdditionResult::Success)
+		return acquireDataResult;
+
+	if (!navigationLinkData.startTriangleId.IsValid())
+		return MNM::EOffMeshLinkAdditionResult::InvalidStartTriangle; // Entry position not connected to a triangle
+
+	if (!navigationLinkData.endTriangleId.IsValid())
+		return MNM::EOffMeshLinkAdditionResult::InvalidEndTriangle; // Exit position not connected to a triangle
+
+	if (!navigationLinkData.meshId.IsValid())
+		return MNM::EOffMeshLinkAdditionResult::InvalidMesh;
+
+	return MNM::EOffMeshLinkAdditionResult::Success;
+}
+
+bool OffMeshNavigationManager::ProcessLinkAdditionRequest(const SLinkAdditionRequest& request)
+{
+	MNM::IOffMeshLink::SNavigationData navigationLinkData;
+	const MNM::EOffMeshLinkAdditionResult result = TryCreateLink(request, navigationLinkData);
+	if (request.callbacks.additionCompletedCallback)
 	{
-		SLinkInfo& linkInfo = linkIt->second;
-		return linkInfo.offMeshLink.get();
+		request.callbacks.additionCompletedCallback(request.linkId, MNM::SOffMeshAdditionCallbackData(navigationLinkData.startTriangleId, navigationLinkData.endTriangleId, result));
 	}
-
-	return NULL;
+	return result == MNM::EOffMeshLinkAdditionResult::Success;
 }
 
-const MNM::OffMeshLink* OffMeshNavigationManager::GetOffMeshLink(const MNM::OffMeshLinkID& linkID) const
+MNM::EOffMeshLinkAdditionResult OffMeshNavigationManager::TryCreateLink(const SLinkAdditionRequest& request, MNM::IOffMeshLink::SNavigationData& navigationLinkData)
 {
-	TLinkInfoMap::const_iterator linkIt = m_links.find(linkID);
-	if (linkIt != m_links.end())
+	CRY_ASSERT(request.pLinkData.get() != nullptr);
+
+	const MNM::OffMeshLinkID linkId = request.linkId;
+	TLinkInfoMap::const_iterator it = m_links.find(linkId);
+	if (it != m_links.end())
 	{
-		const SLinkInfo& linkInfo = linkIt->second;
-		return linkInfo.offMeshLink.get();
+		CRY_ASSERT_MESSAGE(it == m_links.end(), "OffMesh link with id %u already exists!", linkId);
+		return MNM::EOffMeshLinkAdditionResult::AlreadyExists;
 	}
 
-	return NULL;
+	SetIdToOffMeshLink(*request.pLinkData, request.linkId);
+
+	const MNM::EOffMeshLinkAdditionResult result = GetNavigationLinkDataForAdditionRequest(request.callbacks, request.agentTypeId, request.pLinkData.get(), navigationLinkData);
+	if (result != MNM::EOffMeshLinkAdditionResult::Success)
+		return result;
+
+	if (navigationLinkData.startTriangleId == navigationLinkData.endTriangleId)
+		return MNM::EOffMeshLinkAdditionResult::Success; // Points are on the same triangle, so don't bother
+	
+	const NavigationMeshID meshId = navigationLinkData.meshId;
+	if (!m_offMeshMap.validate(meshId))
+	{
+		CRY_ASSERT_TRACE(m_offMeshMap.validate(meshId), ("Trying to add offmesh link to invalid mesh! (meshID = %u)", (uint32)meshId));
+		return MNM::EOffMeshLinkAdditionResult::InvalidMesh;
+	}
+
+	if (navigationLinkData.annotation.GetRawValue() == 0)
+	{
+		const MNM::SAreaType& defaultArea = gAIEnv.pNavigationSystem->GetAnnotationLibrary().GetDefaultAreaType();
+		navigationLinkData.annotation.SetFlags(defaultArea.defaultFlags);
+		navigationLinkData.annotation.SetType(defaultArea.id);
+	}
+
+	// Select the corresponding off-mesh navigation object
+	NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(navigationLinkData.meshId);
+	MNM::OffMeshNavigation& offMeshNavigation = m_offMeshMap[meshId];
+
+	// Register the new link with the off-mesh navigation system
+	offMeshNavigation.AddLink(mesh, navigationLinkData.startTriangleId, navigationLinkData.endTriangleId, linkId);
+	CRY_ASSERT_TRACE(linkId.IsValid(), ("Adding new offmesh link failed"));
+
+	m_links.emplace(linkId, SLinkControlInfo(meshId, navigationLinkData.startTriangleId, navigationLinkData.endTriangleId, navigationLinkData.annotation, request.pLinkData, request.callbacks));
+
+	gAIEnv.pNavigationSystem->AddOffMeshLinkIslandConnectionsBetweenTriangles(meshId, navigationLinkData.startTriangleId, navigationLinkData.endTriangleId, linkId);
+	gAIEnv.pNavigationSystem->RequestUpdateMeshAccessibility(meshId);
+
+	return MNM::EOffMeshLinkAdditionResult::Success;
 }
 
-void OffMeshNavigationManager::RegisterListener(IOffMeshNavigationListener* pListener, const char* listenerName)
+
+void OffMeshNavigationManager::ProcessLinkRemovalRequest(const MNM::OffMeshLinkID linkId)
 {
-	m_listeners.Add(pListener, listenerName);
+	TLinkInfoMap::iterator linkIt = m_links.find(linkId);
+	if (linkIt == m_links.end())
+		return;
+	
+	SLinkControlInfo& linkInfo = linkIt->second;
+
+	// Select the corresponding off-mesh navigation object
+	CRY_ASSERT(m_offMeshMap.validate(linkInfo.meshID));
+	MNM::OffMeshNavigation& offMeshNavigation = m_offMeshMap[linkInfo.meshID];
+	NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(linkInfo.meshID);
+
+	// Remove link
+	// NOTE: There should only ever be one element in the link array
+	offMeshNavigation.RemoveLink(mesh, linkInfo.startTriangleID, linkId);
+
+	gAIEnv.pNavigationSystem->RemoveOffMeshLinkIslandConnection(linkId);
+	gAIEnv.pNavigationSystem->RequestUpdateMeshAccessibility(linkInfo.meshID);
+
+	// Remove cached data
+	m_links.erase(linkIt);
 }
 
-void OffMeshNavigationManager::UnregisterListener(IOffMeshNavigationListener* pListener)
+void OffMeshNavigationManager::ProcessAnnotationChangeRequest(const SAnnotationChangeRequest& request)
 {
-	m_listeners.Remove(pListener);
-}
-
-void OffMeshNavigationManager::RemoveAllQueuedAdditionRequestForEntity(const EntityId requestOwner)
-{
-	m_operations.erase(std::remove_if(m_operations.begin(), m_operations.end(), MNM::IsOffMeshAdditionOperationRequestRelatedToEntity(requestOwner)), m_operations.end());
-}
-
-void OffMeshNavigationManager::RefreshConnections(const NavigationMeshID meshID, const MNM::TileID tileID)
-{
-	if (!m_offMeshMap.validate(meshID))
+	TLinkInfoMap::iterator linkIt = m_links.find(request.linkId);
+	if (linkIt == m_links.end())
 		return;
 
-	MNM::OffMeshNavigation& offMeshNavigation = m_offMeshMap[meshID];
-	NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(meshID);
+	SLinkControlInfo& linkInfo = linkIt->second;
+	linkInfo.annotation = request.annotation;
+}
+
+MNM::IOffMeshLink* OffMeshNavigationManager::GetOffMeshLink(const MNM::OffMeshLinkID linkId)
+{
+	TLinkInfoMap::iterator linkIt = m_links.find(linkId);
+	if (linkIt != m_links.end())
+	{
+		SLinkControlInfo& linkInfo = linkIt->second;
+		return linkInfo.offMeshLink.get();
+	}
+	return nullptr;
+}
+
+const MNM::IOffMeshLink* OffMeshNavigationManager::GetOffMeshLink(const MNM::OffMeshLinkID linkId) const
+{
+	TLinkInfoMap::const_iterator linkIt = m_links.find(linkId);
+	if (linkIt != m_links.end())
+	{
+		const SLinkControlInfo& linkInfo = linkIt->second;
+		return linkInfo.offMeshLink.get();
+	}
+	return nullptr;
+}
+
+const MNM::IOffMeshLink* OffMeshNavigationManager::GetLinkAndAnnotation(const MNM::OffMeshLinkID linkId, MNM::AreaAnnotation& annotation) const
+{
+	TLinkInfoMap::const_iterator linkIt = m_links.find(linkId);
+	if (linkIt == m_links.end())
+		return nullptr;
+
+	const SLinkControlInfo& linkInfo = linkIt->second;
+	annotation = linkInfo.annotation;
+	return linkInfo.offMeshLink.get();
+}
+
+void OffMeshNavigationManager::RequestLinkAnnotationChange(const MNM::OffMeshLinkID linkId, const MNM::AreaAnnotation annotation)
+{
+	m_annotationChangeRequests.emplace_back(linkId, annotation);
+}
+
+void OffMeshNavigationManager::RefreshConnections(const NavigationMeshID meshId, const MNM::TileID tileId)
+{
+	if (!m_offMeshMap.validate(meshId))
+		return;
+
+	MNM::OffMeshNavigation& offMeshNavigation = m_offMeshMap[meshId];
+	NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(meshId);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Invalidate links for the tile.
 	// Because the tile has been regenerated, all outgoing off-mesh links are invalid now
-	offMeshNavigation.InvalidateLinks(tileID);
+	offMeshNavigation.InvalidateAllLinksForTile(tileId);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Refresh all links tied to this mesh and tile
 	// NOTE: This only re-adds them to the Tile with the cached data.
-	TLinkInfoMap::iterator iter;
-	for (iter = m_links.begin(); iter != m_links.end(); )
+	for (TLinkInfoMap::iterator iter = m_links.begin(); iter != m_links.end(); )
 	{
 		// Find out if object is bound to the modified mesh and tile
-		SLinkInfo& linkInfo = iter->second;
-		if (linkInfo.meshID != meshID)
+		SLinkControlInfo& linkInfo = iter->second;
+		if (linkInfo.meshID != meshId)
 		{
 			++iter;
-			continue;  // Mismatched mesh id
+			continue;
 		}
 
-		const bool isLinkOutgoingFromThisTile = (tileID == MNM::ComputeTileID(linkInfo.startTriangleID));
-		const bool isLinkIncomingToThisTile = (tileID == MNM::ComputeTileID(linkInfo.endTriangleID));
+		const bool isLinkOutgoingFromThisTile = (tileId == MNM::ComputeTileID(linkInfo.startTriangleID));
+		const bool isLinkIncomingToThisTile = (tileId == MNM::ComputeTileID(linkInfo.endTriangleID));
 
 		// is the link completely unrelated to given tile?
 		if (!isLinkOutgoingFromThisTile && !isLinkIncomingToThisTile)
@@ -295,7 +322,7 @@ void OffMeshNavigationManager::RefreshConnections(const NavigationMeshID meshID,
 			continue;
 		}
 
-		const MNM::OffMeshLinkID linkID = iter->first;
+		const MNM::OffMeshLinkID linkId = iter->first;
 
 		// is the link incoming from a different tile?
 		// -> need to remove it before it can potentially become a dangling link (i. e. the triangleID where it ends would no longer exist or would have morphed into a different one)
@@ -304,45 +331,32 @@ void OffMeshNavigationManager::RefreshConnections(const NavigationMeshID meshID,
 		//    to call RemoveLink() to get the NavMesh patched as well.
 		if (isLinkIncomingToThisTile && !isLinkOutgoingFromThisTile)
 		{
-			offMeshNavigation.RemoveLink(mesh, linkInfo.startTriangleID, linkID);
+			offMeshNavigation.RemoveLink(mesh, linkInfo.startTriangleID, linkId);
 		}
 
-		// disconnect whatever islands were connected by the offmesh-link
-		gAIEnv.pNavigationSystem->RemoveOffMeshLinkIslandConnection(linkID);
+		// disconnect whatever islands were connected by the off-mesh link
+		gAIEnv.pNavigationSystem->RemoveOffMeshLinkIslandConnection(linkId);
 
-		// Try to re-connect everything later on, but only if it was not explicitly requested to be deleted by an outside source.
-		// For example: if, at the exact same update the tile was refreshed but an outside source also requested the explicit
-		// removal of a link then we should basically not re-apply the link.
-		if (!IsLinkRemovalRequested(linkID))
+#if DEBUG_MNM_LOG_OFFMESH_LINK_OPERATIONS
+		AILogAlways("<OffMeshNavigationManager> Link Removed. LinkId = %u.", linkId);
+#endif
+
+		// Notify link owner about it is going to be removed so it can clean up cached data and request re-addition if needed
+		if (linkInfo.removedCallback)
 		{
-			MNM::LinkAdditionRequest request(linkInfo.offMeshLink->GetEntityIdForOffMeshLink(), meshID, linkInfo.offMeshLink, linkID);
-
-			// Link data was already cloned when it was added the first time. If we clone it again, the game-side of the link have no way
-			// to know, that link data was cloned (there is no event about refreshed connections). That means, if the game-side holds a
-			// pointer to the link, it will become dangling and will lead to crash.
-			request.bCloneLinkData = false;
-
-			for (Listeners::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
-			{
-				notifier->OnOffMeshLinkGoingToBeRefreshed(request);
-			}
-			QueueCustomLinkAddition(request);
+			linkInfo.removedCallback(linkId, meshId, MNM::EOffMeshLinkRemovalReason::MeshUpdated);
 		}
 
 		// But for the meantime, also remove the entry from m_links because the .triangleID member was referencing a triangle in the now regenerated tile (!)
 		//
 		// Carefully read this:
 		//
-		//    If we didn't do this, then remove-link requests and add-link requests in the m_operations queue could use that "dead" triangle reference
-		//    to try to remove offmesh-links in the NavMesh where there was none, OR try to add offmesh-links in the NavMesh where there was one already, OR
-		//    (even worse, as no assert will catch this scenario) it would manipulate *foreign* offmesh-links in the NavMesh.
+		//    If we didn't do this, then remove-link requests and add-link requests could use that "dead" triangle reference
+		//    to try to remove off-mesh links in the NavMesh where there was none, OR try to add off-mesh links in the NavMesh where there was one already, OR
+		//    (even worse, as no assert will catch this scenario) it would manipulate *foreign* off-mesh links in the NavMesh.
 		//
-		m_links.erase(iter++);
-	}
 
-	for (Listeners::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
-	{
-		notifier->OnRefreshConnections(meshID, tileID);
+		iter = m_links.erase(iter);
 	}
 }
 
@@ -352,7 +366,8 @@ void OffMeshNavigationManager::Clear()
 	m_links.clear();
 	m_objectRegistrationEnabled = false;
 
-	stl::free_container(m_operations);
+	stl::free_container(m_additionRequests);
+	stl::free_container(m_removalRequests);
 }
 
 void OffMeshNavigationManager::Enable()
@@ -360,33 +375,41 @@ void OffMeshNavigationManager::Enable()
 	m_objectRegistrationEnabled = true;
 }
 
-void OffMeshNavigationManager::OnNavigationMeshCreated(const NavigationMeshID& meshID)
+void OffMeshNavigationManager::OnNavigationMeshCreated(const NavigationMeshID& meshId)
 {
-	assert(!m_offMeshMap.validate(meshID));
+	CRY_ASSERT(!m_offMeshMap.validate(meshId));
 
-	m_offMeshMap.insert(meshID, MNM::OffMeshNavigation());
+	m_offMeshMap.insert(meshId, MNM::OffMeshNavigation());
 }
 
-void OffMeshNavigationManager::OnNavigationMeshDestroyed(const NavigationMeshID& meshID)
+void OffMeshNavigationManager::OnNavigationMeshDestroyed(const NavigationMeshID& meshId)
 {
-	assert(m_offMeshMap.validate(meshID));
+	CRY_ASSERT(m_offMeshMap.validate(meshId));
 
-	m_offMeshMap.erase(meshID);
+	m_offMeshMap.erase(meshId);
 
 	// Remove all existing links for this mesh
 	TLinkInfoMap::iterator iter;
 	for (iter = m_links.begin(); iter != m_links.end(); )
 	{
 		// Find out if object is bound to the modified mesh and tile
-		SLinkInfo& linkInfo = iter->second;
-		if (linkInfo.meshID != meshID)
+		SLinkControlInfo& linkInfo = iter->second;
+		if (linkInfo.meshID != meshId)
 		{
 			++iter;
-			continue;  // Mismatched mesh id
+			continue; 
 		}
 
-		const MNM::OffMeshLinkID& linkID = iter->first;
-		NotifyAllListenerAboutLinkDeletion(linkID);
+		const MNM::OffMeshLinkID linkId = iter->first;
+
+#if DEBUG_MNM_LOG_OFFMESH_LINK_OPERATIONS
+		AILogAlways("<OffMeshNavigationManager> Link Removed. LinkId = %u.", linkId);
+#endif
+
+		if (linkInfo.removedCallback)
+		{
+			linkInfo.removedCallback(linkId, meshId, MNM::EOffMeshLinkRemovalReason::MeshDestroyed);
+		}
 
 		m_links.erase(iter++);
 	}
@@ -405,7 +428,7 @@ void OffMeshNavigationManager::OnNavigationLoadedComplete()
 
 #if DEBUG_MNM_ENABLED
 
-OffMeshNavigationManager::ProfileMemoryStats OffMeshNavigationManager::GetMemoryStats(ICrySizer* pSizer, const NavigationMeshID meshID) const
+OffMeshNavigationManager::ProfileMemoryStats OffMeshNavigationManager::GetMemoryStats(ICrySizer* pSizer, const NavigationMeshID meshId) const
 {
 	const size_t initialSize = pSizer->GetTotalSize();
 	ProfileMemoryStats memStats;
@@ -413,9 +436,9 @@ OffMeshNavigationManager::ProfileMemoryStats OffMeshNavigationManager::GetMemory
 	// for all links: track memory of the ones with given mesh ID
 	for (TLinkInfoMap::const_iterator it = m_links.begin(); it != m_links.end(); ++it)
 	{
-		const SLinkInfo& linkInfo = it->second;
+		const SLinkControlInfo& linkInfo = it->second;
 
-		if (linkInfo.meshID == meshID)
+		if (linkInfo.meshID == meshId)
 		{
 			const size_t sizeBeforeLinkInfo = pSizer->GetTotalSize();
 			pSizer->AddObjectSize(&linkInfo);

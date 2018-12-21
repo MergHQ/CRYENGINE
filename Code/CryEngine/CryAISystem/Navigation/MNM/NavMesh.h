@@ -22,6 +22,7 @@ class OffMeshNavigationManager;
 namespace MNM
 {
 struct OffMeshNavigation;
+struct IOffMeshLink;
 class CTileConnectivityData;
 
 struct SWayQueryWorkingSet;
@@ -95,11 +96,12 @@ public:
 
 		virtual ~SWayQueryRequest() {}
 
-		virtual bool                    CanUseOffMeshLink(const OffMeshLinkID linkID, float* costMultiplier) const;
+		virtual bool                    CanUseOffMeshLink(const IOffMeshLink* pOffmeshLink, float* costMultiplier) const;
 		bool                            IsPointValidForAgent(const Vec3& pos, uint32 flags) const { return true; }
 
 		ILINE const TriangleID          From() const { return m_from; }
 		ILINE const TriangleID          To() const { return m_to; }
+		ILINE const IOffMeshLink*        GetOffMeshLinkAndAnnotation(const OffMeshLinkID linkId, MNM::AreaAnnotation& annotation) const;
 		ILINE const OffMeshNavigation&  GetOffMeshNavigation() const { return m_offMeshNavigation; }
 		ILINE const DangerousAreasList& GetDangersInfos() { return m_dangerousAreas; }
 		ILINE const vector3_t&          GetFromLocation() const { return m_fromLocation; };

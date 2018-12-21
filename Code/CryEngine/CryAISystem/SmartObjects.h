@@ -885,14 +885,14 @@ public:
 	// returns the id of the inserted goal pipe if a rule was found or 0 if no rule
 	int TriggerEvent(const char* sEventName, IEntity*& pUser, IEntity*& pObject, QueryEventMap* pQueryEvents = NULL, const Vec3* pExtraPoint = NULL, bool bHighPriority = false);
 
-	/// used by heuristic to check is this link passable by current pathfind requester
-	bool  GetSmartObjectLinkCostFactorForMNM(const OffMeshLink_SmartObject* pSmartObjectLink, const IEntity* pRequesterEntity, float* fCostMultiplier) const;
+	// used by heuristic to check is this link passable by current pathfind requester
+	bool  GetSmartObjectLinkCostFactorForMNM(const OffMeshLink_SmartObject* pSmartObjectLink, const EntityId requesterEntityId, float* fCostMultiplier) const;
 
 	// used by COPTrace to use smart objects in navigation
 	int                  GetNavigationalSmartObjectActionTypeForMNM(CPipeUser* pPipeUser, CSmartObject* pSmartObject, CSmartObjectClass* pSmartObjectClass, SmartObjectHelper* pFromHelper, SmartObjectHelper* pToHelper);
 	bool                 PrepareNavigateSmartObject(CPipeUser* pPipeUser, CSmartObject* pObject, CSmartObjectClass* pObjectClass, SmartObjectHelper* pFromHelper, SmartObjectHelper* pToHelper);
 	void                 UseSmartObject(CSmartObject* pSmartObjectUser, CSmartObject* pObject, CCondition* pCondition, int eventId = 0, bool bForceHighPriority = false);
-	/// Used by COPTrace to detect busy state of SO allowing agents to wait instead of simply failing the movement request.
+	// Used by COPTrace to detect busy state of SO allowing agents to wait instead of simply failing the movement request.
 	bool                 IsSmartObjectBusy(const CSmartObject* pSmartObject) const;
 
 	void                 MapPathTypeToSoUser(const string& soUser, const string& pathType);

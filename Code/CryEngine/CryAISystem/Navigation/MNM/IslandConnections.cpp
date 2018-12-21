@@ -249,6 +249,8 @@ bool IslandConnections::CanNavigateBetweenIslandsInternal(const IEntity* pEntity
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
+	const EntityId entityIdToTestOffMeshLinks = pEntityToTestOffGridLinks ? pEntityToTestOffGridLinks->GetId() : INVALID_ENTITYID;
+
 	IF_UNLIKELY(fromIsland == MNM::Constants::eGlobalIsland_InvalidIslandID || toIsland == MNM::Constants::eGlobalIsland_InvalidIslandID)
 		return false;
 
@@ -354,10 +356,12 @@ bool IslandConnections::CanNavigateBetweenIslandsInternal(const IEntity* pEntity
 
 				if (link.offMeshLinkID != 0)
 				{
-					const OffMeshLink* offmeshLink = offMeshNavigationManager->GetOffMeshLink(link.offMeshLinkID);
-					const bool canUseLink = pEntityToTestOffGridLinks ? (offmeshLink && offmeshLink->CanUse(pEntityToTestOffGridLinks, nullptr)) : true;
+					MNM::AreaAnnotation linkAnnotation;
+					const IOffMeshLink* pOffMeshLink = offMeshNavigationManager->GetLinkAndAnnotation(link.offMeshLinkID, linkAnnotation);
+					if(!pOffMeshLink || !filter.PassFilter(linkAnnotation))
+						continue;
 
-					if (!canUseLink)
+					if(entityIdToTestOffMeshLinks && !pOffMeshLink->CanUse(entityIdToTestOffMeshLinks, nullptr))
 						continue;
 				}
 
@@ -403,10 +407,12 @@ bool IslandConnections::CanNavigateBetweenIslandsInternal(const IEntity* pEntity
 
 				if (link.offMeshLinkID != 0)
 				{
-					const OffMeshLink* offmeshLink = offMeshNavigationManager->GetOffMeshLink(link.offMeshLinkID);
-					const bool canUseLink = pEntityToTestOffGridLinks ? (offmeshLink && offmeshLink->CanUse(pEntityToTestOffGridLinks, nullptr)) : true;
+					MNM::AreaAnnotation linkAnnotation;
+					const IOffMeshLink* pOffMeshLink = offMeshNavigationManager->GetLinkAndAnnotation(link.offMeshLinkID, linkAnnotation);
+					if (!pOffMeshLink || !filter.PassFilter(linkAnnotation))
+						continue;
 
-					if (!canUseLink)
+					if(entityIdToTestOffMeshLinks && !pOffMeshLink->CanUse(entityIdToTestOffMeshLinks, nullptr))
 						continue;
 				}
 

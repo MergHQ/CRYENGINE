@@ -602,7 +602,7 @@ void CIslands::ResolvePendingConnectionRequests(CNavMesh& navMesh, SConnectionRe
 				Tile::STriangle endTriangle;
 				if (navMesh.GetTriangle(nextTri.triangleID, endTriangle))
 				{
-					const OffMeshLink* pLink = pOffMeshNavigationManager->GetOffMeshLink(nextTri.offMeshLinkID);
+					const IOffMeshLink* pLink = pOffMeshNavigationManager->GetOffMeshLink(nextTri.offMeshLinkID);
 					CRY_ASSERT(pLink);
 					islandConnections.SetOneWayOffmeshConnectionBetweenIslands(
 						GlobalIslandID(meshID, request.startingIslandID),

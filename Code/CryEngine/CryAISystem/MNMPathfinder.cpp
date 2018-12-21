@@ -5,6 +5,7 @@
 #include "MNMPathfinder.h"
 #include "Navigation/MNM/NavMesh.h"
 #include "Navigation/NavigationSystem/NavigationSystem.h"
+#include "SmartObjectOffMeshNavigation.h"
 #include "DebugDrawContext.h"
 #include "AIBubblesSystem/AIBubblesSystem.h"
 #include <CryThreading/IJobManager_JobDelegator.h>
@@ -672,14 +673,14 @@ bool CMNMPathfinder::ConstructPathFromFoundWay(
 		if (pWayData[i].offMeshLinkID)
 		{
 			// Grab off-mesh link object
-			const MNM::OffMeshLink* pOffMeshLink = pOffMeshNavigationManager->GetOffMeshLink(pWayData[i].offMeshLinkID);
+			const MNM::IOffMeshLink* pOffMeshLink = pOffMeshNavigationManager->GetOffMeshLink(pWayData[i].offMeshLinkID);
 			if (pOffMeshLink == nullptr)
 			{
 				// Link can no longer be found; this path is now invalid
 				return false;
 			}
 
-			const bool isOffMeshLinkSmartObject = pOffMeshLink->GetLinkType() == MNM::OffMeshLink::eLinkType_SmartObject;
+			const bool isOffMeshLinkSmartObject = pOffMeshLink->IsTypeOf<OffMeshLink_SmartObject>();
 			IAISystem::ENavigationType type = isOffMeshLinkSmartObject ? IAISystem::NAV_SMARTOBJECT : IAISystem::NAV_CUSTOM_NAVIGATION;
 
 			// Add Entry/Exit points

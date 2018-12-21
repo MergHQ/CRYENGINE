@@ -9,9 +9,7 @@ class CSmartObject;
 class CSmartObjectClass;
 struct SmartObjectHelper;
 
-class CSmartObjectOffMeshNavigation 
-	: public IOffMeshNavigationListener
-	, public INavigationSystem::INavigationSystemListener
+class CSmartObjectOffMeshNavigation : public INavigationSystem::INavigationSystemListener
 {
 public:
 	CSmartObjectOffMeshNavigation();
@@ -26,11 +24,10 @@ public:
 
 private:
 
-	// IOffMeshNavigationListener
-	virtual void OnOffMeshLinkGoingToBeRemoved(const MNM::OffMeshLinkID& linkID) override;
-	virtual void OnOffMeshLinkGoingToBeRefreshed(MNM::LinkAdditionRequest& request) override;
-	virtual void OnRefreshConnections(const NavigationMeshID meshID, const MNM::TileID tileID) override;
-	// ~IOffMeshNavigationListener
+	void OnNavMeshChanged(NavigationAgentTypeID navAgentId, NavigationMeshID navMeshId, MNM::TileID tileId);
+
+	MNM::EOffMeshLinkAdditionResult OnLinkDataRequested(const NavigationAgentTypeID agentTypeId, MNM::IOffMeshLink* pLinkData, MNM::IOffMeshLink::SNavigationData& linkNavigationData) const;
+	void OnOffmeshLinkRemoved(const MNM::OffMeshLinkID linkId, const NavigationMeshID meshId, const MNM::EOffMeshLinkRemovalReason reason);
 
 	// INavigationSystem::INavigationSystemListener
 	virtual void OnNavigationEvent(const INavigationSystem::ENavigationEvent event) override;
@@ -42,43 +39,42 @@ private:
 	// Tracking of objects registered
 	// All registered objects are stored here, and some additional data
 	// like to witch mesh they belong (only one), or bound triangles/tiles
+protected:
+
 	struct OffMeshLinkIDList
 	{
 		typedef std::vector<MNM::OffMeshLinkID> TLinkIDList;
 
-		TLinkIDList&       GetLinkIDList() { return offMeshLinkIDList; }
+		TLinkIDList&       GetLinkIDList()       { return offMeshLinkIDList; }
 		const TLinkIDList& GetLinkIDList() const { return offMeshLinkIDList; }
 
-		void               OnLinkAdditionRequestForSmartObjectServiced(const MNM::SOffMeshOperationCallbackData& callbackData)
+		void AddRequestededLinkId(const MNM::OffMeshLinkID linkId) { requestedOffmeshLinkIDList.push_back(linkId); }
+		const TLinkIDList& GetRequestedIDList() const { return requestedOffmeshLinkIDList; }
+
+		void               OnLinkAdditionObjectServiced(MNM::OffMeshLinkID linkId, const MNM::SOffMeshAdditionCallbackData& callbackData)
 		{
-			if (callbackData.operationSucceeded)
+			CRY_ASSERT(linkId.IsValid());
+
+			stl::find_and_erase(requestedOffmeshLinkIDList, linkId);
+
+			if (callbackData.result == MNM::EOffMeshLinkAdditionResult::Success)
 			{
-				assert(callbackData.linkID.IsValid());
-				offMeshLinkIDList.push_back(callbackData.linkID);
+				offMeshLinkIDList.push_back(linkId);
 			}
-		}
-		void               OnLinkRepairRequestForSmartObjectServiced(const MNM::SOffMeshOperationCallbackData& callbackData)
-		{
-			if (!callbackData.operationSucceeded)
+			else
 			{
-				auto it = std::find(offMeshLinkIDList.begin(), offMeshLinkIDList.end(), callbackData.linkID);
-				assert(it != offMeshLinkIDList.end());
-				if (it != offMeshLinkIDList.end())
-				{
-					offMeshLinkIDList.erase(it);
-				}
+				stl::find_and_erase(offMeshLinkIDList, linkId);
 			}
 		}
 
 	private:
 		TLinkIDList offMeshLinkIDList;
+		TLinkIDList requestedOffmeshLinkIDList;
 	};
 
 	typedef stl::STLPoolAllocator<std::pair<const uint32, OffMeshLinkIDList>, stl::PoolAllocatorSynchronizationSinglethreaded> TSOClassInfoAllocator;
-	typedef std::map<uint32, OffMeshLinkIDList, std::less<uint32>, TSOClassInfoAllocator>             TSOClassInfo;
-	typedef std::map<EntityId, TSOClassInfo>                                                          TRegisteredObjects;
-
-	OffMeshLinkIDList* GetClassInfoFromLinkInfo(const MNM::OffMeshLinkPtr& linkInfo);
+	typedef std::map<uint32, OffMeshLinkIDList, std::less<uint32>, TSOClassInfoAllocator>                                      TSOClassInfo;
+	typedef std::map<EntityId, TSOClassInfo>                                                                                   TRegisteredObjects;
 
 	TRegisteredObjects m_registeredObjects;
 };
@@ -87,10 +83,10 @@ private:
 // OffMeshLink_SmartObject
 //////////////////////////////////////////////////////////////////////////
 
-struct OffMeshLink_SmartObject : public MNM::OffMeshLink
-{
+struct OffMeshLink_SmartObject : public MNM::IOffMeshLink
+{	
 	OffMeshLink_SmartObject()
-		: MNM::OffMeshLink(eLinkType_SmartObject, 0)
+		: MNM::IOffMeshLink(GetGuid(), 0)
 		, m_pSmartObject(nullptr)
 		, m_pSmartObjectClass(nullptr)
 		, m_pFromHelper(nullptr)
@@ -98,7 +94,7 @@ struct OffMeshLink_SmartObject : public MNM::OffMeshLink
 	{}
 
 	OffMeshLink_SmartObject(const EntityId objectId, CSmartObject* pSmartObject, CSmartObjectClass* pSmartObjectClass, SmartObjectHelper* pFromHelper, SmartObjectHelper* pToHelper)
-		: MNM::OffMeshLink(eLinkType_SmartObject, objectId)
+		: MNM::IOffMeshLink(GetGuid(), objectId)
 		, m_pSmartObject(pSmartObject)
 		, m_pSmartObjectClass(pSmartObjectClass)
 		, m_pFromHelper(pFromHelper)
@@ -107,16 +103,16 @@ struct OffMeshLink_SmartObject : public MNM::OffMeshLink
 
 	virtual ~OffMeshLink_SmartObject() override {}
 
-	virtual MNM::OffMeshLink* Clone() const override
+	static const CryGUID& GetGuid()
 	{
-		return new OffMeshLink_SmartObject(GetEntityIdForOffMeshLink(), m_pSmartObject, m_pSmartObjectClass, m_pFromHelper, m_pToHelper);
+		static CryGUID id = "1B9D4053-AC3A-43A9-B470-18914A5F132E"_cry_guid;
+		return id;
 	}
+	virtual Vec3    GetStartPosition() const override;
+	virtual Vec3    GetEndPosition() const override;
+	virtual bool    CanUse(const EntityId requesterEntityId, float* pCostMultiplier) const override;
 
-	virtual Vec3 GetStartPosition() const override;
-	virtual Vec3 GetEndPosition() const override;
-	virtual bool CanUse(const IEntity* pRequester, float* costMultiplier) const override;
-
-	static LinkType GetType() { return eLinkType_SmartObject; }
+	MNM::EOffMeshLinkAdditionResult GetNavigationLinkData(const NavigationAgentTypeID agentTypeId, SNavigationData& navigationLinkData) const;
 
 	CSmartObject*      m_pSmartObject;
 	CSmartObjectClass* m_pSmartObjectClass;
