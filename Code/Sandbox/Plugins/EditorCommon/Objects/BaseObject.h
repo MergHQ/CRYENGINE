@@ -240,7 +240,7 @@ public:
 	//! Check if both object are of same class.
 	virtual bool       IsSameClass(CBaseObject* obj);
 
-	virtual ObjectType GetType() const { return m_classDesc->GetObjectType(); }
+	virtual ObjectType GetType() const            { return m_classDesc->GetObjectType(); }
 	string             GetTypeName() const;
 	virtual string     GetTypeDescription() const { return m_classDesc->ClassName(); }
 
@@ -605,7 +605,7 @@ public:
 	//! Assigns the specified asset to the object, for example to apply material
 	//! \param pHitContext Specifies raycast context, if we are applying the asset via a drag action
 	virtual bool ApplyAsset(const CAsset& asset, HitContext* pHitContext = nullptr);
-	virtual bool CanApplyAsset(const CAsset& asset, string* pApplyTextOut = nullptr) const;
+	virtual bool CanApplyAsset(const CAsset& asset) const;
 
 	//////////////////////////////////////////////////////////////////////////
 	//! Analyze errors for this object.
@@ -857,9 +857,9 @@ private:
 	ERotationWarningLevel GetRotationWarningLevel() const;
 
 	// auto resolving
-	void OnMtlResolved(uint32 id, bool success, const char* orgName, const char* newName);
+	void         OnMtlResolved(uint32 id, bool success, const char* orgName, const char* newName);
 
-	bool IsInSelectionBox() const { return m_bInSelectionBox; }
+	bool         IsInSelectionBox() const { return m_bInSelectionBox; }
 
 	void         SetMaterialByName(const char* mtlName);
 
@@ -967,7 +967,7 @@ protected:
 class CBaseObjectsCache
 {
 public:
-	int          GetObjectCount() const          { return m_objects.size(); }
+	int GetObjectCount() const { return m_objects.size(); }
 #pragma push_macro("GetObject")
 #undef GetObject
 	CBaseObject* GetObject(int nIndex) const     { return m_objects[nIndex]; }
@@ -989,7 +989,7 @@ public:
 	CUndoBaseObject(CBaseObject* pObj, const char* undoDescription);
 
 protected:
-	virtual int         GetSize() { return sizeof(*this); }
+	virtual int         GetSize()                 { return sizeof(*this); }
 	virtual const char* GetDescription() override { return m_undoDescription; }
 	virtual const char* GetObjectName() override;
 

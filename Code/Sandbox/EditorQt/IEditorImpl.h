@@ -152,7 +152,7 @@ public:
 
 	void                            DeleteObject(CBaseObject* obj);
 	CBaseObject*                    CloneObject(CBaseObject* obj);
-	void                            StartObjectCreation(const char* type, const char* file = nullptr) override;
+	bool                            StartObjectCreation(const char* type, const char* file = nullptr) override;
 	IObjectManager*                 GetObjectManager();
 	IGizmoManager*                  GetGizmoManager();
 	const CSelectionGroup*          GetSelection() const;

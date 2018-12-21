@@ -4,6 +4,7 @@
 
 #include "RenderViewport.h"
 #include <CryRenderer/IRenderer.h>
+#include <DragDrop.h>
 
 class CObjectRenderHelper;
 class QViewportHeader;
@@ -52,8 +53,12 @@ private:
 	void RenderAll(CObjectRenderHelper& displayInfo);
 	void RenderSnappingGrid(SDisplayContext& context);
 	void AddCameraMenuItems(CPopupMenuItem& menu);
-
-	bool AssetDragEvent(EDragEvent eventId, QEvent* event, int flags);
+	//Get the drag event and use type to either create a new object or apply an asset
+	bool HandleDragEvent(EDragEvent eventId, QEvent* event, int flags);
+	//This CDragDropData contains an asset that can be used in the viewport
+	bool DropHasAsset(const CDragDropData& dragDropData);
+	//If possible applies the asset in dragDropData to an object
+	bool ApplyAsset(const CDragDropData& dragDropData, QDropEvent* pDropEvent, EDragEvent eventId);
 
 	float            m_camFOV;
 	QViewportHeader* m_headerWidget;
