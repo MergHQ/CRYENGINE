@@ -113,6 +113,7 @@ CStatObj* CStatObj::LoadLowLOD(int lodLevel, bool useStreaming, uint32 loadingFl
 		if (useStreaming && GetCVars()->e_StreamCgf)
 			pLodStatObj->m_bCanUnload = true;
 
+		pLodStatObj->LoadCGF_Prepare(szLodFileName, true);
 		CReadOnlyChunkFile chunkFile(false, false);
 		if(!pLodStatObj->LoadCGF(&chunkFile, szLodFileName, true, loadingFlags))
 		{

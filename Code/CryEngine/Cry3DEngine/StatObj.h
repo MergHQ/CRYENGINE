@@ -369,8 +369,10 @@ private:
 	class CStatObjAsyncCGFLoader;
 	class AsyncLodLoader;
 	void LoadCGF_Prepare(const char* szFilename, bool isLod);
+	// ensure LoadCGF_Prepare() has been called before
 	bool LoadCGF(IChunkFile* chunkFile, const char* szFilename, bool isLod, uint32 loadingFlags);
 	bool LoadLowLODS_Prepare(uint32 loadingFlags);
+	// ensure LoadLowLODS_Prepare() has been called before
 	CStatObj* LoadLowLOD(int lodLevel, bool useStreaming, uint32 loadingFlags);
 	void LoadLowLODS_Finalize(int nLoadedLods, CStatObj* loadedLods[MAX_STATOBJ_LODS_NUM - 1]);
 	void MakeLodFileName(uint nLod, char (&buffer)[MAX_PATH]);

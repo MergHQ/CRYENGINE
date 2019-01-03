@@ -2685,10 +2685,7 @@ void CharacterDefinition::ApplyToCharacter(bool* skinSetChanged, ICharacterInsta
 		nMaskForDynamicFlags |= FLAGS_ATTACH_HIDE_MAIN_PASS;
 		nMaskForDynamicFlags |= FLAGS_ATTACH_HIDE_SHADOW_PASS;
 		nMaskForDynamicFlags |= FLAGS_ATTACH_HIDE_RECURSION;
-		nMaskForDynamicFlags |= FLAGS_ATTACH_NEAREST_NOFOV;
 		nMaskForDynamicFlags |= FLAGS_ATTACH_NO_BBOX_INFLUENCE;
-		nMaskForDynamicFlags |= FLAGS_ATTACH_COMBINEATTACHMENT;
-		nMaskForDynamicFlags |= FLAGS_ATTACH_MERGED_FOR_SHADOWS;
 		uint32 flags = pIAttachment->GetFlags() & nMaskForDynamicFlags;
 		pIAttachment->SetFlags(attachment.m_nFlags | flags);
 		pIAttachment->HideAttachment((attachment.m_nFlags & FLAGS_ATTACH_HIDE_ATTACHMENT) != 0);

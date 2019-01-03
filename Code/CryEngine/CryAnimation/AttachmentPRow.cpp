@@ -96,8 +96,6 @@ void CAttachmentPROW::PostUpdateSimulationParams(bool bAttachmentSortingRequired
 
 void CAttachmentPROW::HideInRecursion(uint32 x)
 {
-	m_pAttachmentManager->OnHideAttachment(this, FLAGS_ATTACH_HIDE_RECURSION, x != 0);
-
 	if (x)
 		m_AttFlags |= FLAGS_ATTACH_HIDE_RECURSION;
 	else
@@ -106,8 +104,6 @@ void CAttachmentPROW::HideInRecursion(uint32 x)
 
 void CAttachmentPROW::HideInShadow(uint32 x)
 {
-	m_pAttachmentManager->OnHideAttachment(this, FLAGS_ATTACH_HIDE_SHADOW_PASS, x != 0);
-
 	if (x)
 		m_AttFlags |= FLAGS_ATTACH_HIDE_SHADOW_PASS;
 	else

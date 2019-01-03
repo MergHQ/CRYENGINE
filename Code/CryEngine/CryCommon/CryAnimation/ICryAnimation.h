@@ -84,6 +84,7 @@ struct  SRendParams;
 struct CryEngineDecalInfo;
 struct ParticleParams;
 struct CryCharMorphParams;
+struct ICharacterRenderNode;
 struct IMaterial;
 struct IStatObj;
 struct IRenderMesh;
@@ -107,7 +108,6 @@ struct IAnimEvents;
 struct TFace;
 struct IFacialInstance;
 struct IFacialAnimation;
-struct IAttachmentMerger;
 
 class ICrySizer;
 struct CryCharAnimationParams;
@@ -299,8 +299,6 @@ struct ICharacterManager
 
 	virtual void                     UpdateRendererFrame() = 0;
 	virtual void                     PostInit() = 0;
-
-	virtual const IAttachmentMerger& GetIAttachmentMerger() const = 0;
 	
 	//! Extends the default skeleton of a character instance with skin attachments
 	virtual void ExtendDefaultSkeletonWithSkinAttachments(ICharacterInstance* pCharInstance, const char* szFilepathSKEL, const char** szSkinAttachments, const uint32 skinCount, const uint32 nLoadingFlags) = 0;
@@ -580,6 +578,11 @@ struct ICharacterInstance : IMeshObj
 	//! Is called during GetISkeletonAnim and GetISkeletonPose if the bNeedSync flag is set to true(the default) to
 	//! ensure all computations have finished when necessary.
 	virtual void FinishAnimationComputations() = 0;
+
+	//! Sets up a non-owning reference to the parent IRenderNode instance.
+	//! Reference set through this method is used for propagating state to IRenderNodes controlled by this character instance (e.g. character attachments).
+	//! This method has been introduced as a temporary measure and should not be relied upon by any system apart from 3DEngine.
+	virtual void SetParentRenderNode(const ICharacterRenderNode* pRenderNode) = 0;
 
 	// This is a hack to keep entity attachments in synch.
 	virtual void SetAttachmentLocation_DEPRECATED(const QuatTS& newCharacterLocation) = 0;

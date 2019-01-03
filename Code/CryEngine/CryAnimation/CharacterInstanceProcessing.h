@@ -36,7 +36,7 @@ struct SContext
 {
 	SContext()
 		: pInstance(nullptr)
-		, pBone(nullptr)
+		, pAttachment(nullptr)
 		, pParent(nullptr)
 		, numChildren(0)
 		, slot(-1)
@@ -46,14 +46,14 @@ struct SContext
 	{
 	}
 
-	void Initialize(CCharInstance* pInst, const CAttachmentBONE* pBone, const CCharInstance* pParent, int numChildren);
+	void Initialize(CCharInstance* pInst, const IAttachment* pAttachment, const CCharInstance* pParent, int numChildren);
 
 	//! Checks if computation of this processing context is currently in progress.
 	//! \return True if computation is still in progress. False if computation did not yet start or already finished for the current frame.
 	bool IsInProgress() const;
 
 	_smart_ptr<CCharInstance> pInstance;
-	const CAttachmentBONE*    pBone;
+	const IAttachment*        pAttachment;
 	const CCharInstance*      pParent;
 
 	int                       numChildren;

@@ -66,7 +66,6 @@ struct CRY_ALIGN(128) Console
 	DeclareConstIntCVar(ca_DrawBinormals, 0);
 	DeclareConstIntCVar(ca_DrawNormals, 0);
 	DeclareConstIntCVar(ca_DrawAttachments, 1);
-	DeclareConstIntCVar(ca_DrawAttachmentsMergedForShadows, 1);
 	DeclareConstIntCVar(ca_DrawAttachmentOBB, 0);
 	DeclareConstIntCVar(ca_DrawAttachmentProjection, 0);
 	DeclareConstIntCVar(ca_DrawBaseMesh, 1);
@@ -193,7 +192,6 @@ struct CRY_ALIGN(128) Console
 
 	int32 ca_vaUpdateTangents;
 	int32 ca_vaSkipVertexAnimationLOD;
-	int32 ca_AttachmentMergingMemoryBudget;
 
 	DeclareConstIntCVar(ca_DrawCloth, 1);
 	DeclareConstIntCVar(ca_ClothBlending, 1);

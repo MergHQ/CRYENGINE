@@ -688,7 +688,7 @@ public:
 	virtual uint32             GetNameCRC() const override                            { return m_nSocketCRC32; }
 	virtual uint32             ReName(const char* strSocketName, uint32 crc) override { m_strSocketName.clear(); m_strSocketName = strSocketName; m_nSocketCRC32 = crc; return 1; };
 
-	virtual uint32             GetFlags() const override                              { return m_AttFlags | FLAGS_ATTACH_MERGED_FOR_SHADOWS; } // disable merging for vcloth shadows
+	virtual uint32             GetFlags() const override                              { return m_AttFlags; }
 	virtual void               SetFlags(uint32 flags) override                        { m_AttFlags = flags; }
 
 	void                       ReleaseRenderRemapTablePair();
@@ -731,7 +731,7 @@ public:
 	virtual void         GetMemoryUsage(ICrySizer* pSizer) const override;
 	virtual void         TriggerMeshStreaming(uint32 nDesiredRenderLOD, const SRenderingPassInfo& passInfo);
 
-	void                 DrawAttachment(SRendParams& rParams, const SRenderingPassInfo& passInfo, const Matrix34& rWorldMat34, f32 fZoomFactor = 1);
+	void                 RenderAttachment(SRendParams& rParams, const SRenderingPassInfo& passInfo);
 	void                 RecreateDefaultSkeleton(CCharInstance* pInstanceSkel, uint32 nLoadingFlags);
 	void                 UpdateRemapTable();
 	bool                 EnsureRemapTableIsValid();

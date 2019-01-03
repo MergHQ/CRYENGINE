@@ -83,17 +83,29 @@ void CCharacterRenderNode::Render(const SRendParams& inputRendParams, const SRen
 
 	rParms.nHUDSilhouettesParams = m_nHUDSilhouettesParam;
 	
+	if (!passInfo.IsShadowPass() && !passInfo.IsRecursivePass())
+	{
+		const uint64 camTest = (ERF_HIDDEN_FROM_CAMERA);
+		if ((m_dwRndFlags & camTest) != 0)
+			return;
+	}
+
+	if (passInfo.IsRecursivePass())
+	{
+		// Nearest objects are not rendered in the recursive passes.
+		const uint64 recTest = (ERF_HIDDEN_FROM_RECURSION | ERF_FOB_NEAREST);
+		if ((m_dwRndFlags & recTest) != 0)
+			return;
+	}
+
 	if (GetRndFlags() & ERF_FOB_NEAREST)
 	{
-		if (passInfo.IsRecursivePass()) // Nearest objects are not rendered in the recursive passes.
-			return;
-
 		rParms.dwFObjFlags |= FOB_NEAREST;
 
 		// Nearest objects recalculate instance matrix every frame
 		//m_bPermanentRenderObjectMatrixValid = false;
 		
-		auto nearestMatrix = m_matrix;	
+		auto nearestMatrix = m_matrix;
 		CalcNearestTransform(nearestMatrix, passInfo);
 		rParms.pNearestMatrix = &nearestMatrix;
 
@@ -124,10 +136,15 @@ void CCharacterRenderNode::SetMatrix(const Matrix34& transform)
 
 	m_matrix = transform;
 
+	InvalidatePermanentRenderObject();
+
 	m_cachedBoundsLocal = m_cachedBoundsWorld = AABB(0.0f);
 
-	Get3DEngine()->UnRegisterEntityAsJob(this);
-	Get3DEngine()->RegisterEntity(this);
+	if (!(m_dwRndFlags & ERF_NO_3DENGINE_REGISTRATION))
+	{
+		Get3DEngine()->UnRegisterEntityAsJob(this);
+		Get3DEngine()->RegisterEntity(this);
+	}
 
 	m_pCharacterInstance->SetAttachmentLocation_DEPRECATED(QuatTS(transform));
 }
@@ -273,6 +290,8 @@ void CCharacterRenderNode::SetCharacter(ICharacterInstance* pCharacter)
 	if (m_pCharacterInstance != pCharacter)
 	{
 		m_pCharacterInstance = pCharacter;
+		m_pCharacterInstance->SetParentRenderNode(this);
+
 		InvalidatePermanentRenderObject();
 	}
 }
@@ -541,4 +560,20 @@ void CCharacterRenderNode::UpdateStreamingPriority(const SUpdateStreamingPriorit
 	                                           : streamingContext.distance;
 	float fObjScale = 1.0f;
 	PrecacheCharacter(streamingContext.importance, m_pCharacterInstance, m_pMaterial, m_matrix, fApproximatePrecacheDistance, fObjScale, bDrawNear ? 4 : 2, streamingContext.bFullUpdate, bDrawNear, streamingContext.lod);
+}
+
+//////////////////////////////////////////////////////////////////////////
+IMaterial* CCharacterRenderNode::GetMaterial(Vec3* pHitPos) const
+{
+	if (m_pMaterial)
+	{
+		return m_pMaterial.get();
+	}
+
+	if (m_pCharacterInstance)
+	{
+		return m_pCharacterInstance->GetIMaterial();
+	}
+
+	return nullptr;
 }

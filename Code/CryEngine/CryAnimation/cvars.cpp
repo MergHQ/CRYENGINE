@@ -137,8 +137,6 @@ void Console::Init()
 	DefineConstIntCVar(ca_DrawBinormals, 0, VF_CHEAT, "draws the binormals of the rendered character");
 	DefineConstIntCVar(ca_DrawNormals, 0, VF_CHEAT, "draws the normals of the rendered character");
 	DefineConstIntCVar(ca_DrawAttachments, 1, VF_CHEAT, "if this is 0, will not draw the attachments objects");
-	DefineConstIntCVar(ca_DrawAttachmentsMergedForShadows, 1, VF_REQUIRE_APP_RESTART, "if this is 1 we merge attachments for shadow generation");
-	REGISTER_CVAR(ca_AttachmentMergingMemoryBudget, 25 * 1024 * 1024, VF_NULL, "amount of memory (in bytes) dedicated to merged character attachments");
 	DefineConstIntCVar(ca_DrawAttachmentOBB, 0, VF_CHEAT, "if this is 0, will not draw the attachments objects");
 	DefineConstIntCVar(ca_DrawAttachmentProjection, 0, VF_CHEAT, "if this is 0, will not draw the attachment projections");
 	DefineConstIntCVar(ca_DrawBaseMesh, 1, VF_CHEAT, "if this is 0, will not draw the characters");

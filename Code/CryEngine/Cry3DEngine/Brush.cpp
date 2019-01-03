@@ -161,11 +161,23 @@ void CBrush::Render(const struct SRendParams& _EntDrawParams, const SRenderingPa
 		rParms.dwFObjFlags |= FOB_DYNAMIC_OBJECT;
 	}
 
+	if (!passInfo.IsShadowPass() && !passInfo.IsRecursivePass())
+	{
+		const uint64 camTest = (ERF_HIDDEN_FROM_CAMERA);
+		if ((m_dwRndFlags & camTest) != 0)
+			return;
+	}
+
+	if (passInfo.IsRecursivePass())
+	{
+		// Nearest objects are not rendered in the recursive passes.
+		const uint64 recTest = (ERF_HIDDEN_FROM_RECURSION | ERF_FOB_NEAREST);
+		if ((m_dwRndFlags & recTest) != 0)
+			return;
+	}
+
 	if ((m_dwRndFlags & ERF_FOB_NEAREST) != 0)
 	{
-		if (passInfo.IsRecursivePass()) // Nearest objects are not rendered in the recursive passes.
-			return;
-
 		rParms.dwFObjFlags |= FOB_NEAREST;
 		if (rParms.dwFObjFlags & FOB_DYNAMIC_OBJECT)
 		{
@@ -214,8 +226,12 @@ void CBrush::SetMatrix(const Matrix34& mat)
 
 	CalcBBox();
 
-	Get3DEngine()->UnRegisterEntityAsJob(this);
-	Get3DEngine()->RegisterEntity(this);
+	// TODO: implement this on a lower level (3DEngine's registration interface) to uniformly support this across all IRenderNode implementations
+	if (!(m_dwRndFlags & ERF_NO_3DENGINE_REGISTRATION))
+	{
+		Get3DEngine()->UnRegisterEntityAsJob(this);
+		Get3DEngine()->RegisterEntity(this);
+	}
 
 	if (replacePhys)
 		Dephysicalize();
@@ -806,15 +822,27 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	   }
 	 */
 
+	if (!passInfo.IsShadowPass() && !passInfo.IsRecursivePass())
+	{
+		const uint64 camTest = (ERF_HIDDEN_FROM_CAMERA);
+		if ((m_dwRndFlags & camTest) != 0)
+			return;
+	}
+
+	if (passInfo.IsRecursivePass())
+	{
+		// Nearest objects are not rendered in the recursive passes.
+		const uint64 recTest = (ERF_HIDDEN_FROM_RECURSION | ERF_FOB_NEAREST);
+		if ((m_dwRndFlags & recTest) != 0)
+			return;
+	}
+
 	const uint8 nMaterialLayers = IRenderNode::GetMaterialLayers();
 	Matrix34 transformMatrix = m_Matrix;
 	const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 	bool isNearestObject = (GetRndFlags() & ERF_FOB_NEAREST) != 0;
 	if (isNearestObject)
 	{
-		if (passInfo.IsRecursivePass()) // Nearest objects are not rendered in the recursive passes.
-			return;
-
 		bool isNearestShadowPass = passInfo.IsShadowPass() && passInfo.GetIRenderView()->GetShadowFrustumOwner()->m_eFrustumType == ShadowMapFrustum::e_Nearest;
 		if (passInfo.IsGeneralPass() || isNearestShadowPass)
 		{

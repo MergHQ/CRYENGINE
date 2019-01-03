@@ -13,7 +13,6 @@
 #include <CrySystem/File/IResourceManager.h>
 #include "ParametricSampler.h"
 #include "AttachmentVCloth.h"
-#include "AttachmentMerger.h"
 #include "Serialization/SerializationCommon.h"
 
 float g_YLine = 0.0f;
@@ -1419,11 +1418,6 @@ IFacialAnimation* CharacterManager::GetIFacialAnimation()
 const IFacialAnimation* CharacterManager::GetIFacialAnimation() const
 {
 	return m_pFacialAnimation;
-}
-
-const IAttachmentMerger& CharacterManager::GetIAttachmentMerger() const
-{
-	return CAttachmentMerger::Instance();
 }
 
 // returns statistics about this instance of character animation manager
@@ -3425,13 +3419,32 @@ void CharacterManager::UpdateInstances(bool bPause)
 		return;
 
 	// Go through all registered character instances and check if they need to be updated.
-	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION)
+	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION);
+
+	// This acts as a filter for weeding out character instances which are attached on top of other characters. Such instances will
+	// be processed recursively by their parents through attachment hierarchy traversal to ensure correct transform propagation.
+	// By applying this filter, we make sure that only top-level characters have their updates dispatched here.
+	static std::unordered_set<CCharInstance*> dependentCharacterInstances;
+	dependentCharacterInstances.clear();
+	for (auto& modelRef : m_arrModelCacheSKEL)
+	{
+		for (CCharInstance* pCharacter : modelRef.m_RefByInstances)
+		{
+			for (CCharInstance* pDependentCharacter : pCharacter->m_AttachmentManager.GetAttachedCharacterInstances())
+			{
+				dependentCharacterInstances.insert(pDependentCharacter);
+			}
+		}
+	}
 
 	for (auto& modelRef : m_arrModelCacheSKEL)
 	{
-		for (CCharInstance* pCharInstance : modelRef.m_RefByInstances)
+		for (CCharInstance* pCharacter : modelRef.m_RefByInstances)
 		{
-			pCharInstance->PerFrameUpdate();
+			if (dependentCharacterInstances.find(pCharacter) == dependentCharacterInstances.end())
+			{
+				pCharacter->PerFrameUpdate();
+			}
 		}
 	}
 }

@@ -527,7 +527,7 @@ _smart_ptr<IRenderMesh> CAttachmentVCLOTH::CreateVertexAnimationRenderMesh(uint 
 	return m_pRenderMeshsSW[id];
 }
 
-void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRenderingPassInfo &passInfo, const Matrix34& rWorldMat34, f32 fZoomFactor)
+void CAttachmentVCLOTH::RenderAttachment(SRendParams& RendParams, const SRenderingPassInfo &passInfo)
 {
 	if (!m_clothPiece.GetSimulator().IsVisible() || Console::GetInst().ca_VClothMode == 0) return;
 
@@ -560,8 +560,6 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 	m_pRenderSkin->m_arrModelMeshes[nRenderLOD].m_stream.nFrameId = passInfo.GetMainFrameID();
 	m_pSimSkin->m_arrModelMeshes[nRenderLOD].m_stream.nFrameId = passInfo.GetMainFrameID();
 
-	Matrix34 FinalMat34 = rWorldMat34;
-	RendParams.pMatrix = &FinalMat34;
 	RendParams.pInstance = this;
 	RendParams.pMaterial = (IMaterial*)m_pIAttachmentObject->GetReplacementMaterial(nRenderLOD); //the Replacement-Material has priority
 	if (RendParams.pMaterial == 0)
@@ -579,7 +577,7 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 	{
 		bool visible = m_clothPiece.IsAlwaysVisible();
 		//  			|| g_pCharacterManager->GetClothManager()->QueryVisibility((uint64)m_pAttachmentManager, center, passInfo.IsGeneralPass());
-		if (m_clothPiece.PrepareCloth(m_pAttachmentManager->m_pSkelInstance->m_SkeletonPose, rWorldMat34, visible, nRenderLOD))
+		if (m_clothPiece.PrepareCloth(m_pAttachmentManager->m_pSkelInstance->m_SkeletonPose, *RendParams.pMatrix, visible, nRenderLOD))
 		{
 			m_AttFlags |= FLAGS_ATTACH_SW_SKINNING;
 			m_vertexAnimation.SetClothData(&m_clothPiece);
@@ -1002,8 +1000,6 @@ void CAttachmentVCLOTH::DrawWireframeStatic(const Matrix34& m34, int nLOD, uint3
 
 void CAttachmentVCLOTH::HideAttachment(uint32 x)
 {
-	m_pAttachmentManager->OnHideAttachment(this, FLAGS_ATTACH_HIDE_MAIN_PASS | FLAGS_ATTACH_HIDE_SHADOW_PASS | FLAGS_ATTACH_HIDE_RECURSION, x != 0);
-
 	if (x)
 		m_AttFlags |= (FLAGS_ATTACH_HIDE_MAIN_PASS | FLAGS_ATTACH_HIDE_SHADOW_PASS | FLAGS_ATTACH_HIDE_RECURSION);
 	else
@@ -1012,8 +1008,6 @@ void CAttachmentVCLOTH::HideAttachment(uint32 x)
 
 void CAttachmentVCLOTH::HideInRecursion(uint32 x)
 {
-	m_pAttachmentManager->OnHideAttachment(this, FLAGS_ATTACH_HIDE_RECURSION, x != 0);
-
 	if (x)
 		m_AttFlags |= FLAGS_ATTACH_HIDE_RECURSION;
 	else
@@ -1022,8 +1016,6 @@ void CAttachmentVCLOTH::HideInRecursion(uint32 x)
 
 void CAttachmentVCLOTH::HideInShadow(uint32 x)
 {
-	m_pAttachmentManager->OnHideAttachment(this, FLAGS_ATTACH_HIDE_SHADOW_PASS, x != 0);
-
 	if (x)
 		m_AttFlags |= FLAGS_ATTACH_HIDE_SHADOW_PASS;
 	else

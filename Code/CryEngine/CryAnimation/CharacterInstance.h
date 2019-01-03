@@ -81,10 +81,11 @@ public:
 	virtual void  SetViewdir(const Vec3& rViewdir) override                                     { m_Viewdir = rViewdir; }
 	virtual float GetUniformScale() const override                                              { return m_location.s; }
 	virtual void CopyPoseFrom(const ICharacterInstance &instance) override;
-	virtual void  FinishAnimationComputations() override                                        { m_SkeletonAnim.FinishAnimationComputations(); }
-	virtual void  SetAttachmentLocation_DEPRECATED(const QuatTS& newCharacterLocation) override { m_location = newCharacterLocation; } // TODO: Resolve this issue (has been described as "This is a hack to keep entity attachments in sync.").
+	virtual void FinishAnimationComputations() override { m_SkeletonAnim.FinishAnimationComputations(); }
+	virtual void SetParentRenderNode(const ICharacterRenderNode* pRenderNode) override         { m_pParentRenderNode = pRenderNode; }
+	virtual void SetAttachmentLocation_DEPRECATED(const QuatTS& newCharacterLocation) override { m_location = newCharacterLocation; } // TODO: Resolve this issue (has been described as "This is a hack to keep entity attachments in sync.").
 	virtual void OnDetach() override;
-	virtual void  HideMaster(uint32 h) override                                                 { m_bHideMaster = (h > 0); };
+	virtual void HideMaster(uint32 h) override                                                 { m_bHideMaster = (h > 0); };
 	virtual void GetMemoryUsage(ICrySizer * pSizer) const override;
 	virtual void Serialize(TSerialize ser) override;
 #ifdef EDITOR_PCDEBUGCODE
@@ -98,6 +99,7 @@ public:
 #endif
 	//////////////////////////////////////////////////////////
 
+	void                                   SetProcessingContext(CharacterInstanceProcessing::SContext& context);
 	CharacterInstanceProcessing::SContext* GetProcessingContext();
 	void                                   ClearProcessingContext() { m_processingContext = -1; };
 
@@ -118,6 +120,8 @@ public:
 	bool  GetWasVisible() const          { return m_bWasVisible; };
 
 	int32 GetAnimationLOD() const        { return m_nAnimationLOD; }
+
+	const ICharacterRenderNode* GetParentRenderNode() { return m_pParentRenderNode;  }
 
 	bool  FacialAnimationEnabled() const { return m_bFacialAnimationEnabled; }
 
@@ -194,6 +198,8 @@ public:
 	bool m_bEnableStartAnimation;
 
 private:
+
+	const ICharacterRenderNode* m_pParentRenderNode;
 
 	_smart_ptr<IMaterial> m_pInstanceMaterial;
 

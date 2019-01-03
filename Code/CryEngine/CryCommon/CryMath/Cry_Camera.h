@@ -8,7 +8,7 @@
 #include <CryMath/Cry_XOptimise.h>
 #include <Cry3DEngine/CryPodArray.h>
 
-#define DEFAULT_NEAR 0.25f
+#define DEFAULT_NEAR 0.1f
 #define DEFAULT_FAR  1024.0f
 #define DEFAULT_FOV  (75.0f * gf_PI / 180.0f)
 

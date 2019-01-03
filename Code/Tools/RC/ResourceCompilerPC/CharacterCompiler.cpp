@@ -999,13 +999,6 @@ CharacterCompiler::ECdfLoadResult CharacterCompiler::FindAllAttachmentModels(con
 		if (!attachmentNode)
 			continue;
 
-		int flags = 0;
-		if (!attachmentNode->getAttr("Flags", flags))
-			continue;
-
-		if (!(flags & FLAGS_ATTACH_COMBINEATTACHMENT))
-			continue;
-
 		//once we know were an attachment if anything else fails bail from the function and the job
 		const char * skinFilename = attachmentNode->getAttr("Binding");
 		if (!skinFilename)
