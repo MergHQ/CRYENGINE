@@ -514,14 +514,15 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 		{
 			string name = pNode->getAttr(CryAudio::s_szNameAttribute);
 			string const cueSheetName = pNode->getAttr(CryAudio::Impl::Adx2::s_szCueSheetAttribute);
-			string const localizedAttribute = pNode->getAttr(CryAudio::Impl::Adx2::s_szLocalizedAttribute);
-			bool const isLocalized = (localizedAttribute.compareNoCase(CryAudio::Impl::Adx2::s_szTrueValue) == 0);
 
 			CItem* pItem = SearchForItem(&m_rootItem, name, type, cueSheetName);
 
 			if ((pItem == nullptr) || (pItem->GetType() != type))
 			{
-				pItem = CreatePlaceholderItem(name, type, &m_rootItem);
+				string const localizedAttribute = pNode->getAttr(CryAudio::Impl::Adx2::s_szLocalizedAttribute);
+				bool const isLocalized = (localizedAttribute.compareNoCase(CryAudio::Impl::Adx2::s_szTrueValue) == 0);
+
+				pItem = CreatePlaceholderItem(name, type, isLocalized, &m_rootItem);
 			}
 
 			switch (type)
@@ -596,7 +597,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 
 							if (pSelectorLabelItem == nullptr)
 							{
-								pSelectorLabelItem = CreatePlaceholderItem(childName, EItemType::SelectorLabel, pItem);
+								pSelectorLabelItem = CreatePlaceholderItem(childName, EItemType::SelectorLabel, false, pItem);
 							}
 
 							pIConnection = static_cast<IConnection*>(new CGenericConnection(pSelectorLabelItem->GetId()));
@@ -945,14 +946,15 @@ void CImpl::SetLocalizedAssetsPath()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CItem* CImpl::CreatePlaceholderItem(string const& name, EItemType const type, CItem* const pParent)
+CItem* CImpl::CreatePlaceholderItem(string const& name, EItemType const type, bool const isLocalized, CItem* const pParent)
 {
 	ControlId const id = Utils::GetId(type, name, pParent, m_rootItem);
 	auto pItem = static_cast<CItem*>(GetItem(id));
 
 	if (pItem == nullptr)
 	{
-		pItem = new CItem(name, id, type, EItemFlags::IsPlaceHolder);
+		EItemFlags const flags = isLocalized ? (EItemFlags::IsPlaceHolder | EItemFlags::IsLocalized) : EItemFlags::IsPlaceHolder;
+		pItem = new CItem(name, id, type, flags);
 
 		if (pParent != nullptr)
 		{

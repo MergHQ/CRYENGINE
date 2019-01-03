@@ -61,7 +61,7 @@ private:
 	void   Clear();
 	void   SetImplInfo(SImplInfo& implInfo);
 	void   SetLocalizedAssetsPath();
-	CItem* CreatePlaceholderItem(string const& name, EItemType const type, CItem* const pParent);
+	CItem* CreatePlaceholderItem(string const& name, EItemType const type, bool const isLocalized, CItem* const pParent);
 
 	using ConnectionIds = std::map<ControlId, int>;
 
