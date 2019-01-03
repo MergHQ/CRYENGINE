@@ -165,8 +165,6 @@ void CryCHRLoader::EndStreamSkinSync(IReadStream* pStream)
 				{
 					pRenderMesh->CreateRemappedBoneIndicesPair(pAttachmentSkin->m_arrRemapTable, guid, pAttachmentSkin);
 				}
-
-				pAttachmentSkin->m_pAttachmentManager->RequestMergeCharacterAttachments();
 			}
 
 			for (int i = 0; i < nVClothInstances; i++)
@@ -193,8 +191,6 @@ void CryCHRLoader::EndStreamSkinSync(IReadStream* pStream)
 							pVCRenderMesh->CreateRemappedBoneIndicesPair(pAttachmentVCloth->m_arrRemapTable, guid, pAttachmentVCloth);
 						}
 					}
-
-					pAttachmentVCloth->m_pAttachmentManager->RequestMergeCharacterAttachments();
 				}
 			}
 		}

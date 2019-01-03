@@ -71,11 +71,9 @@ public:
 	virtual SimulationParams& GetSimulationParams() { return m_Simulation;  };
 	virtual void              PostUpdateSimulationParams(bool bAttachmentSortingRequired, const char* pJointName = 0);
 
-	uint32                    ProjectAttachment(const Skeleton::CPoseData* pPoseData = 0);
+	bool                      ProjectAttachment(const Skeleton::CPoseData* pPoseData = 0);
+	void                      Update(Skeleton::CPoseData& poseData);
 	void                      Update_Redirected(Skeleton::CPoseData& pPoseData); //only bones can have this feature
-	void                      Update_Empty(Skeleton::CPoseData& pPoseData);
-	void                      Update_Static(Skeleton::CPoseData& pPoseData);
-	void                      Update_Execute(Skeleton::CPoseData& pPoseData);
 
 	virtual void              Serialize(TSerialize ser);
 	virtual size_t            SizeOfThis() const;

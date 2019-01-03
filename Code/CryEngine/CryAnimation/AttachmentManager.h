@@ -10,7 +10,6 @@
 #include "AttachmentBone.h"
 #include "AttachmentSkin.h"
 #include "AttachmentProxy.h"
-#include "AttachmentMerged.h"
 #include <CryMath/GeomQuery.h>
 
 struct CharacterAttachment;
@@ -33,13 +32,16 @@ public:
 		m_fZoomDistanceSq = 0;
 		m_arrAttachments.reserve(0x20);
 		m_TypeSortingRequired = 0;
-		m_attachmentMergingRequired = 0;
 		m_nDrawProxies = 0;
 		memset(&m_sortedRanges, 0, sizeof(m_sortedRanges));
 		m_fTurbulenceGlobal = 0;
 		m_fTurbulenceLocal = 0;
 		m_physAttachIds = 1;
 	};
+
+	//! This has been introduced as a proxy for IAttachment::ProcessAttachment(), implementations of which reside in ICryAnimation.h header, to speed up iteration times.
+	//! TODO: Should be removed before shipping out to main.
+	void          ProcessAttachment(IAttachment* pSocket);
 
 	uint32        LoadAttachmentList(const char* pathname);
 	static uint32 ParseXMLAttachmentList(CharacterAttachment* parrAttachments, uint32 numAttachments, XmlNodeRef nodeAttachements);
@@ -48,15 +50,7 @@ public:
 	IAttachment*  CreateAttachment(const char* szName, uint32 type, const char* szJointName = 0, bool bCallProject = true);
 	IAttachment*  CreateVClothAttachment(const SVClothAttachmentParams& params);
 
-	void          MergeCharacterAttachments();
-	void          RequestMergeCharacterAttachments() { ++m_attachmentMergingRequired; }
-
 	int32         GetAttachmentCount() const         { return m_arrAttachments.size(); };
-	int32         GetExtraBonesCount() const         { return m_extraBones.size(); }
-
-	int32         AddExtraBone(IAttachment* pAttachment);
-	void          RemoveExtraBone(IAttachment* pAttachment);
-	int32         FindExtraBone(IAttachment* pAttachment);
 
 	void          UpdateBindings();
 
@@ -87,31 +81,21 @@ public:
 	}
 
 	bool NeedsHierarchicalUpdate();
-#ifdef EDITOR_PCDEBUGCODE
 	void Verification();
-#endif
 
 	void UpdateAllRemapTables();
 	void PrepareAllRedirectedTransformations(Skeleton::CPoseData& pPoseData);
 	void GenerateProxyModelRelativeTransformations(Skeleton::CPoseData& pPoseData);
 
-	// Updates all attachment objects except for those labeled "execute".
-	// They all are safe to update in the animation job.
-	// These updates get skipped if the character is not visible (as a performance optimization).
-	void UpdateLocationsExceptExecute(Skeleton::CPoseData& pPoseData);
+	//! Updates attachment sockets.
+	//! This part of attachment update is performed in an animation job thread and handles primarily socket transform updates (including simulation).
+	void           UpdateSockets(Skeleton::CPoseData& pPoseData);
 
-	// for attachment objects labeled "execute", we have to distinguish between attachment
-	// objects which are safe to update in the animation job and those who are not (e. g. entities)
-	// Updates only "execute" attachment objects which are safe to update in the animation job
-	// "execute" attachment objects are always updated (regardless of visibility)
-	void           UpdateLocationsExecute(Skeleton::CPoseData& pPoseData);
-	// Updates only "execute" attachments which are unsafe to update in the animation job
-	void           UpdateLocationsExecuteUnsafe(Skeleton::CPoseData& pPoseData);
-
-	void           ProcessAllAttachedObjectsFast();
+	//! Updates objects attached to sockets.
+	//! This part of attachment update is performed in the main thread and lets IAttachmentObject implementations consume results of UpdateAttachments().
+	void           UpdateAttachedObjects(Skeleton::CPoseData& pPoseData);
 
 	void           DrawAttachments(SRendParams& rRendParams, const Matrix34& m, const SRenderingPassInfo& passInfo, const f32 fZoomFactor, const f32 fZoomDistanceSq);
-	void           DrawMergedAttachments(SRendParams& rRendParams, const Matrix34& m, const SRenderingPassInfo& passInfo, const f32 fZoomFactor, const f32 fZoomDistanceSq);
 
 	virtual int32  RemoveAttachmentByInterface(const IAttachment* pAttachment, uint32 loadingFlags = 0);
 	virtual int32  RemoveAttachmentByName(const char* szName, uint32 loadingFlags = 0);
@@ -135,7 +119,6 @@ public:
 	virtual void                PhysicalizeAttachment(int idx, IPhysicalEntity* pent = 0, int nLod = 0);
 	virtual void                DephysicalizeAttachment(int idx, IPhysicalEntity* pent = 0);
 
-	void                        OnHideAttachment(const IAttachment* pAttachment, uint32 nHideType, bool bHide);
 	void                        Serialize(TSerialize ser);
 
 	virtual ICharacterInstance* GetSkelInstance() const;
@@ -180,23 +163,37 @@ public:
 	void         SortByType();
 	size_t       SizeOfAllAttachments() const;
 	void         GetMemoryUsage(ICrySizer* pSizer) const;
-	ILINE uint32 GetMinJointAttachments() const  { return m_sortedRanges[eRange_BoneStatic].begin; }
-	ILINE uint32 GetMaxJointAttachments() const  { return m_sortedRanges[eRange_BoneExecute].end; }
+	ILINE uint32 GetMinJointAttachments() const  { return m_sortedRanges[eRange_BoneAttached].begin; }
+	ILINE uint32 GetMaxJointAttachments() const  { return m_sortedRanges[eRange_BoneAttached].end; }
 	ILINE uint32 GetRedirectedJointCount() const { return m_sortedRanges[eRange_BoneRedirect].GetNumElements(); }
 
-	// Generates a context in the Character Manager for each attached instance
-	// and returns the number of instance contexts generated
-	int GenerateAttachedInstanceContexts();
+	//! Performs a full traversal of the attachment hierarchy and generates a processing context for each encountered character instance.
+	//! \return Total number of generated processing contexts.
+	int GenerateAttachedCharactersContexts();
 
 	CGeomExtents                            m_Extents;
 	CCharInstance*                          m_pSkelInstance;
 	DynArray<_smart_ptr<SAttachmentBase>>   m_arrAttachments;
-	DynArray<_smart_ptr<CAttachmentMerged>> m_mergedAttachments;
-	DynArray<IAttachment*>                  m_extraBones;
 	DynArray<CProxy>                        m_arrProxies;
 	uint32 m_nDrawProxies;
 	f32    m_fTurbulenceGlobal, m_fTurbulenceLocal;
+
+	//! Returns a list of all character instances attached directly to this attachment manager.
+	//! This method does not perform a full traversal of the attachment hierarchy - only the very first level will be inspected.
+	const std::vector<CCharInstance*>& GetAttachedCharacterInstances();
+
 private:
+
+	//! Performs rebuild of m_attachedCharactersCache, if necessary.
+	void RebuildAttachedCharactersCache();
+
+	struct
+	{
+		std::vector<CCharInstance*> characters; //!< List of character instances attached directly to this attachment manager.
+		std::vector<IAttachment*> attachments;  //!< List of attachments containing character instances stored in the characters vector above. These two vectors match by index.
+		uint32 frameId = 0xffffffff;            //!< Frame identifier of the last update, used to determine if a cache rebuild is needed.
+	} m_attachedCharactersCache;
+
 	class CModificationCommand
 	{
 	public:
@@ -232,7 +229,6 @@ private:
 	uint32 m_nHaveEntityAttachments;
 	uint32 m_numRedirectionWithAttachment;
 	uint32 m_physAttachIds; // bitmask for used physicalized attachment ids
-	uint32 m_attachmentMergingRequired;
 
 	struct SRange
 	{
@@ -241,21 +237,14 @@ private:
 		uint32 GetNumElements() const { return end - begin; };
 	};
 
-	// The eRange_BoneExecute and eRange_BoneExecuteUnsafe need to stay next
-	// to each other.
-	// Generally, the algorithms make some assumptions on the order of
-	// the ranges, so it is best not to touch them, currently.
+	// Take precautions when modifying, certain systems make assumptions on the relative order of these ranges.
 	enum ERange
 	{
 		eRange_BoneRedirect,
 		eRange_BoneEmpty,
-		eRange_BoneStatic,
-		eRange_BoneExecute,
-		eRange_BoneExecuteUnsafe,
+		eRange_BoneAttached,
 		eRange_FaceEmpty,
-		eRange_FaceStatic,
-		eRange_FaceExecute,
-		eRange_FaceExecuteUnsafe,
+		eRange_FaceAttached,
 		eRange_SkinMesh,
 		eRange_VertexClothOrPendulumRow,
 

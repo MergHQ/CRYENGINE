@@ -3,6 +3,8 @@
 #ifndef IAttachment_h
 #define IAttachment_h
 
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/IRenderNode.h>
 #include <CryParticleSystem/IParticles.h>
 #include <CryString/CryName.h>
 #include <CryEntitySystem/IEntitySystem.h>
@@ -48,7 +50,7 @@ enum AttachmentFlags : uint32
 	FLAGS_ATTACH_COMPUTE_SKINNING_PREMORPHS = BIT32(7),  //!< Already stored in CDF, so don't change this.
 	FLAGS_ATTACH_COMPUTE_SKINNING_TANGENTS  = BIT32(8),  //!< Already stored in CDF, so don't change this.
 
-	FLAGS_ATTACH_EXCLUDE_FROM_NEAREST       = BIT32(9), //!< Already stored in CDF, so don't change this.
+	FLAGS_ATTACH_EXCLUDE_FROM_NEAREST       = BIT32(9),  //!< Already stored in CDF, so don't change this.
 
 	// Dynamic Flags.
 	FLAGS_ATTACH_VISIBLE            = BIT32(13),    //!< We set this flag if we can render the object.
@@ -57,11 +59,8 @@ enum AttachmentFlags : uint32
 	FLAGS_ATTACH_HIDE_MAIN_PASS     = BIT32(16),
 	FLAGS_ATTACH_HIDE_SHADOW_PASS   = BIT32(17),
 	FLAGS_ATTACH_HIDE_RECURSION     = BIT32(18),
-	FLAGS_ATTACH_NEAREST_NOFOV      = BIT32(19),
 	FLAGS_ATTACH_NO_BBOX_INFLUENCE  = BIT32(21),
-	FLAGS_ATTACH_COMBINEATTACHMENT  = BIT32(24),
 	FLAGS_ATTACH_ID_MASK            = BIT32(25) | BIT32(26) | BIT32(27) | BIT32(28) | BIT32(29),
-	FLAGS_ATTACH_MERGED_FOR_SHADOWS = BIT32(30),    //!< The attachment has been merged with other attachments for shadow rendering.
 };
 
 struct SVClothParams
@@ -414,7 +413,6 @@ struct IAttachment
 	virtual uint32      ReName(const char* szSocketName, uint32 crc) = 0;
 
 	virtual uint32      GetType() const = 0;
-	bool                IsMerged() const { return (GetFlags() & FLAGS_ATTACH_MERGED_FOR_SHADOWS) != 0; }
 
 	virtual uint32      SetJointName(const char* szJointName) = 0;
 
@@ -541,12 +539,10 @@ struct IAttachmentObject
 		eAttachment_Effect,
 	};
 
-	// <interfuscator:shuffle>
-	virtual ~IAttachmentObject(){}
+	virtual ~IAttachmentObject() {}
 	virtual EType GetAttachmentType() = 0;
 
 	virtual void  ProcessAttachment(IAttachment* pIAttachment) = 0;
-	virtual void  RenderAttachment(SRendParams& rParams, const SRenderingPassInfo& passInfo) {};
 
 	//! \return Handled state.
 	virtual bool                PhysicalizeAttachment(IAttachmentManager* pManager, int idx, int nLod, IPhysicalEntity* pent, const Vec3& offset) { return false; }
@@ -557,7 +553,8 @@ struct IAttachmentObject
 
 	virtual IStatObj*           GetIStatObj() const;
 	virtual ICharacterInstance* GetICharacterInstance() const;
-	virtual IAttachmentSkin*    GetIAttachmentSkin() const { return 0; };
+	virtual IRenderNode*        GetIRenderNode() const;
+	virtual IAttachmentSkin*    GetIAttachmentSkin() const { return 0; }
 	virtual const char*         GetObjectFilePath() const
 	{
 		ICharacterInstance* pICharInstance = GetICharacterInstance();
@@ -581,7 +578,6 @@ struct IAttachmentObject
 
 	virtual void       OnRemoveAttachment(IAttachmentManager* pManager, int idx) {}
 	virtual void       Release() = 0;
-	// </interfuscator:shuffle>
 };
 
 inline ICharacterInstance* IAttachmentObject::GetICharacterInstance() const
@@ -594,48 +590,83 @@ inline IStatObj* IAttachmentObject::GetIStatObj() const
 	return 0;
 }
 
-struct IAttachmentMerger
+inline IRenderNode* IAttachmentObject::GetIRenderNode() const
 {
-	virtual ~IAttachmentMerger() {};
-	virtual uint GetAllocatedBytes() const = 0;
-	virtual bool IsOutOfMemory() const = 0;
-	virtual uint GetMergedAttachmentsCount() const = 0;
-};
+	return 0;
+}
 
 //
 
 //! Represents a static (IStatObj) object instance tied to a character
 struct CCGFAttachment : public IAttachmentObject
 {
-	virtual EType GetAttachmentType() override                          { return eAttachment_StatObj; };
-	virtual void  ProcessAttachment(IAttachment* pIAttachment) override {}
-	void          RenderAttachment(SRendParams& rParams, const SRenderingPassInfo& passInfo) override
-	{
-		rParams.pInstance = this;
-		IMaterial* pPrev = rParams.pMaterial;
-		rParams.pMaterial = pObj->GetMaterial();
-		if (m_pReplacementMaterial)
-			rParams.pMaterial = m_pReplacementMaterial;
-		pObj->Render(rParams, passInfo);
-		rParams.pMaterial = pPrev;
-	};
+	CCGFAttachment();
 
-	virtual AABB  GetAABB() const override      { return pObj->GetAABB(); };
-	virtual float GetRadiusSqr() const override { return sqr(pObj->GetRadius()); };
-	IStatObj*     GetIStatObj() const override;
-	void          Release()  override           { delete this; }
+	virtual ~CCGFAttachment();
 
-	IMaterial*    GetBaseMaterial(uint32 nLOD) const override;
-	void          SetReplacementMaterial(IMaterial* pMaterial, uint32 nLOD = 0) override { m_pReplacementMaterial = pMaterial; };
-	IMaterial*    GetReplacementMaterial(uint32 nLOD) const override                     { return m_pReplacementMaterial; }
+	CCGFAttachment(const CCGFAttachment&) = delete;
+	void operator=(const CCGFAttachment&) = delete;
+
+	CCGFAttachment(CCGFAttachment&&) = delete;
+	void operator=(CCGFAttachment&&) = delete;
+
+	virtual EType        GetAttachmentType() override                          { return eAttachment_StatObj; };
+	virtual void         ProcessAttachment(IAttachment* pIAttachment) override;
+
+	virtual AABB         GetAABB() const override      { return pObj->GetAABB(); };
+	virtual float        GetRadiusSqr() const override { return sqr(pObj->GetRadius()); };
+	virtual IStatObj*    GetIStatObj() const override;
+	virtual IRenderNode* GetIRenderNode() const override;
+	virtual void         Release()  override           { delete this; }
+
+	IMaterial*           GetBaseMaterial(uint32 nLOD) const override;
+	void                 SetReplacementMaterial(IMaterial* pMaterial, uint32 nLOD = 0) override { m_pReplacementMaterial = pMaterial; };
+	IMaterial*           GetReplacementMaterial(uint32 nLOD) const override                     { return m_pReplacementMaterial; }
 
 	_smart_ptr<IStatObj>  pObj;
 	_smart_ptr<IMaterial> m_pReplacementMaterial;
+
+private:
+
+	IBrush* pBrush;
 };
+
+inline CCGFAttachment::CCGFAttachment()
+	: pObj()
+	, m_pReplacementMaterial()
+	, pBrush(static_cast<IBrush*>(gEnv->p3DEngine->CreateRenderNode(eERType_MovableBrush)))
+{
+	pBrush->SetRndFlags(ERF_MOVES_EVERY_FRAME, true);
+	pBrush->SetMinSpec(CONFIG_LOW_SPEC);
+	pBrush->DisablePhysicalization(true); // Physicalization of attachments is handled by a dedicated subsystem.
+}
+
+inline CCGFAttachment::~CCGFAttachment()
+{
+	gEnv->p3DEngine->DeleteRenderNode(pBrush);
+}
+
+inline void CCGFAttachment::ProcessAttachment(IAttachment* pIAttachment)
+{
+	if (pBrush->GetEntityStatObj() != pObj)
+	{
+		pBrush->SetEntityStatObj(pObj, 0);
+	}
+
+	if (pBrush->GetMaterial() != GetBaseMaterial(0))
+	{
+		pBrush->SetMaterial(GetBaseMaterial(0));
+	}
+}
 
 inline IStatObj* CCGFAttachment::GetIStatObj() const
 {
 	return pObj;
+}
+
+inline IRenderNode* CCGFAttachment::GetIRenderNode() const
+{
+	return pBrush;
 }
 
 inline IMaterial* CCGFAttachment::GetBaseMaterial(uint32 nLOD) const
@@ -649,31 +680,23 @@ inline IMaterial* CCGFAttachment::GetBaseMaterial(uint32 nLOD) const
 //! Represents a skeleton (.skel, .chr) attached to a character
 struct CSKELAttachment : public IAttachmentObject
 {
-	CSKELAttachment()
-	{}
+	CSKELAttachment();
 
-	virtual EType GetAttachmentType() override { return eAttachment_Skeleton; };
-	void          RenderAttachment(SRendParams& rParams, const SRenderingPassInfo& passInfo) override
-	{
-		rParams.pInstance = this;
-		IMaterial* pPrev = rParams.pMaterial;
-		rParams.pMaterial = (IMaterial*)(m_pCharInstance ? m_pCharInstance->GetIMaterial() : 0);
-		if (m_pReplacementMaterial)
-			rParams.pMaterial = m_pReplacementMaterial;
-		m_pCharInstance->Render(rParams, passInfo);
-		rParams.pMaterial = pPrev;
-	};
-	virtual void        ProcessAttachment(IAttachment* pIAttachment)  override {}
-	virtual AABB        GetAABB() const override                               { return m_pCharInstance ? m_pCharInstance->GetAABB() : AABB(AABB::RESET);  };
-	virtual float       GetRadiusSqr() const override                          { return m_pCharInstance ? m_pCharInstance->GetRadiusSqr() : 0.0f;    }
-	ICharacterInstance* GetICharacterInstance() const override;
+	virtual ~CSKELAttachment();
 
-	void                Release() override
-	{
-		if (m_pCharInstance)
-			m_pCharInstance->OnDetach();
-		delete this;
-	}
+	CSKELAttachment(const CSKELAttachment&) = delete;
+	void operator=(const CSKELAttachment&) = delete;
+
+	CSKELAttachment(CSKELAttachment&&) = delete;
+	void operator=(CSKELAttachment&&) = delete;
+
+	virtual EType               GetAttachmentType() override { return eAttachment_Skeleton; };
+	virtual void                ProcessAttachment(IAttachment* pIAttachment)  override;
+	virtual AABB                GetAABB() const override                               { return m_pCharInstance ? m_pCharInstance->GetAABB() : AABB(AABB::RESET);  };
+	virtual float               GetRadiusSqr() const override                          { return m_pCharInstance ? m_pCharInstance->GetRadiusSqr() : 0.0f;    }
+	virtual ICharacterInstance* GetICharacterInstance() const override;
+	virtual IRenderNode*        GetIRenderNode() const override;
+	virtual void                Release() override { delete this; }
 
 	IMaterial* GetBaseMaterial(uint32 nLOD) const override;
 	void       SetReplacementMaterial(IMaterial* pMaterial, uint32 nLOD) override { m_pReplacementMaterial = pMaterial; }
@@ -681,11 +704,53 @@ struct CSKELAttachment : public IAttachmentObject
 
 	_smart_ptr<ICharacterInstance> m_pCharInstance;
 	_smart_ptr<IMaterial>          m_pReplacementMaterial;
+
+private:
+
+	ICharacterRenderNode* m_pRenderNode;
 };
+
+inline CSKELAttachment::CSKELAttachment()
+	: m_pCharInstance()
+	, m_pReplacementMaterial()
+	, m_pRenderNode(static_cast<ICharacterRenderNode*>(gEnv->p3DEngine->CreateRenderNode(eERType_Character)))
+{
+	assert(m_pRenderNode);
+	m_pRenderNode->SetRndFlags(ERF_MOVES_EVERY_FRAME, true);
+	m_pRenderNode->SetMinSpec(CONFIG_LOW_SPEC);
+}
+
+inline CSKELAttachment::~CSKELAttachment()
+{
+	if (m_pCharInstance)
+	{
+		m_pCharInstance->OnDetach();
+	}
+
+	gEnv->p3DEngine->DeleteRenderNode(m_pRenderNode);
+}
+
+inline void CSKELAttachment::ProcessAttachment(IAttachment* pIAttachment)
+{
+	if (m_pRenderNode->GetEntityCharacter() != m_pCharInstance)
+	{
+		m_pRenderNode->SetCharacter(m_pCharInstance);
+	}
+
+	if (m_pRenderNode->GetMaterial() != GetBaseMaterial(0))
+	{
+		m_pRenderNode->SetMaterial(GetBaseMaterial(0));
+	}
+}
 
 inline ICharacterInstance* CSKELAttachment::GetICharacterInstance() const
 {
 	return m_pCharInstance;
+}
+
+inline IRenderNode* CSKELAttachment::GetIRenderNode() const
+{
+	return m_pRenderNode;
 }
 
 inline IMaterial* CSKELAttachment::GetBaseMaterial(uint32 nLOD) const

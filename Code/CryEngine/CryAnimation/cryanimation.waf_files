@@ -32,11 +32,7 @@
             "AttachmentVCloth.cpp",
             "AttachmentVClothPreProcessDijkstra.h",
             "AttachmentVClothPreProcess.h",
-            "AttachmentVClothPreProcess.cpp",
-            "AttachmentMerger.h",
-            "AttachmentMerger.cpp",
-            "AttachmentMerged.h",
-            "AttachmentMerged.cpp"
+            "AttachmentVClothPreProcess.cpp"
         ],
         "CharacterInstance/SkeletonAnim": [
             "ParametricSampler.cpp",

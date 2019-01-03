@@ -472,7 +472,7 @@ void CAttachmentSKIN::CullVertexFrames(const SRenderingPassInfo& passInfo, float
 	}
 }
 
-void CAttachmentSKIN::DrawAttachment(SRendParams& RendParams, const SRenderingPassInfo &passInfo, const Matrix34& rWorldMat34, f32 fZoomFactor)
+void CAttachmentSKIN::RenderAttachment(SRendParams& RendParams, const SRenderingPassInfo &passInfo)
 {
 	//-----------------------------------------------------------------------------
 	//---              map logical LOD to render LOD                            ---
@@ -497,8 +497,6 @@ void CAttachmentSKIN::DrawAttachment(SRendParams& RendParams, const SRenderingPa
 //	extern f32 g_YLine;
 //	g_pAuxGeom->Draw2dLabel( 1,g_YLine, 1.3f, fColor, false,"CSkin:  numLODs: %d  nLodLevel: %d   nRenderLOD: %d   Model: %s",numLODs, RendParams.nLod, nRenderLOD, m_pModelSkin->GetModelFilePath() ); g_YLine+=0x10;
 
-	Matrix34 FinalMat34 = rWorldMat34;
-	RendParams.pMatrix = &FinalMat34;
 	RendParams.pInstance = this;
 	RendParams.pMaterial = (IMaterial*)m_pIAttachmentObject->GetReplacementMaterial(nRenderLOD); //the Replacement-Material has priority
 	if (RendParams.pMaterial==0)
@@ -993,8 +991,6 @@ SMeshLodInfo CAttachmentSKIN::ComputeGeometricMean() const
 
 void CAttachmentSKIN::HideAttachment( uint32 x ) 
 {
-	m_pAttachmentManager->OnHideAttachment(this, FLAGS_ATTACH_HIDE_MAIN_PASS | FLAGS_ATTACH_HIDE_SHADOW_PASS | FLAGS_ATTACH_HIDE_RECURSION, x!=0);
-
 	if(x)
 		m_AttFlags |=  (FLAGS_ATTACH_HIDE_MAIN_PASS | FLAGS_ATTACH_HIDE_SHADOW_PASS | FLAGS_ATTACH_HIDE_RECURSION);
 	else
@@ -1003,8 +999,6 @@ void CAttachmentSKIN::HideAttachment( uint32 x )
 
 void CAttachmentSKIN::HideInRecursion( uint32 x ) 
 {
-	m_pAttachmentManager->OnHideAttachment(this, FLAGS_ATTACH_HIDE_RECURSION, x!=0);
-
 	if(x)
 		m_AttFlags |= FLAGS_ATTACH_HIDE_RECURSION;
 	else
@@ -1013,8 +1007,6 @@ void CAttachmentSKIN::HideInRecursion( uint32 x )
 
 void CAttachmentSKIN::HideInShadow( uint32 x ) 
 {
-	m_pAttachmentManager->OnHideAttachment(this, FLAGS_ATTACH_HIDE_SHADOW_PASS, x!=0);
-
 	if(x)
 		m_AttFlags |= FLAGS_ATTACH_HIDE_SHADOW_PASS;
 	else

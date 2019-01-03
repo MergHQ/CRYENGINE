@@ -51,7 +51,7 @@ public:
 	virtual void SetMaterial(IMaterial* pMat) final { m_pMaterial = pMat; };
 
 	//! Queries override material of this instance.
-	virtual IMaterial* GetMaterial(Vec3* pHitPos = NULL) const final { return nullptr; };
+	virtual IMaterial* GetMaterial(Vec3* pHitPos = NULL) const final;
 	virtual IMaterial* GetMaterialOverride() final                   { return m_pMaterial; };
 
 	virtual float      GetMaxViewDist() final;

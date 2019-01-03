@@ -2571,26 +2571,6 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		}
 	}
 
-	if (gEnv->pCharacterManager)
-	{
-		static ICVar* pAttachmentMerging = GetConsole()->GetCVar("ca_DrawAttachmentsMergedForShadows");
-		static ICVar* pAttachmentMergingBudget = GetConsole()->GetCVar("ca_AttachmentMergingMemoryBudget");
-
-		if (pAttachmentMerging && pAttachmentMergingBudget && pAttachmentMerging->GetIVal() > 0)
-		{
-			const IAttachmentMerger& pAttachmentMerger = gEnv->pCharacterManager->GetIAttachmentMerger();
-			uint nAllocatedBytes = pAttachmentMerger.GetAllocatedBytes();
-			bool bOutOfMemory = pAttachmentMerger.IsOutOfMemory();
-
-			if (bOutOfMemory || pAttachmentMerging->GetIVal() > 1)
-			{
-				char buffer[64];
-				cry_sprintf(buffer, "Character Attachment Merging (Shadows): %0.2f of %0.2f MB", nAllocatedBytes / (1024.f * 1024.f), pAttachmentMergingBudget->GetIVal() / (1024.0f * 1024.0f));
-				DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, DISPLAY_INFO_SCALE, bOutOfMemory ? Col_Red : Col_White, "%s", buffer);
-			}
-		}
-	}
-
 	// print stats about textures' streaming
 	if (bTexStreaming)
 	{

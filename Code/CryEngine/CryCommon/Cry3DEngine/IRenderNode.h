@@ -198,13 +198,16 @@ enum ERenderNodeFlags : uint64
 	ERF_HUD_REQUIRE_DEPTHTEST         = BIT64(37), //!< If 3D HUD Object requires to be rendered at correct depth (i.e. behind weapon)
 
 	ERF_MOVES_EVERY_FRAME             = BIT64(38), //!< Set on Render Nodes that are highly dynamic, for optimization reasons
+	ERF_NO_3DENGINE_REGISTRATION      = BIT64(39), //!< Prevents render nodes from being registered in the 3DEngine octree (currently only supported by CBrush and CCharacterRenderNode)
 
 	// Special additional flags that are set on CRenderObject flags
-	ERF_FOB_RENDER_AFTER_POSTPROCESSING = BIT64(39), //!< Set FOB_RENDER_AFTER_POSTPROCESSING on the CRenderObject flags
-	ERF_FOB_NEAREST                     = BIT64(40), //!< Set FOB_NEAREST on the CRenderObject flags
-	ERF_PENDING_DELETE                  = BIT64(41),
-	ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND   = BIT64(42), //!< Set FOB_ALLOW_TERRAIN_LAYER_BLEND on the the CRenderObject flags
-	ERF_FOB_ALLOW_DECAL_BLEND           = BIT64(43), //!< Set FOB_ALLOW_DECAL_BLEND on the the CRenderObject flags
+	ERF_FOB_RENDER_AFTER_POSTPROCESSING = BIT64(40), //!< Set FOB_RENDER_AFTER_POSTPROCESSING on the CRenderObject flags
+	ERF_FOB_NEAREST                     = BIT64(41), //!< Set FOB_NEAREST on the CRenderObject flags
+	ERF_PENDING_DELETE                  = BIT64(42),
+	ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND   = BIT64(43), //!< Set FOB_ALLOW_TERRAIN_LAYER_BLEND on the the CRenderObject flags
+	ERF_FOB_ALLOW_DECAL_BLEND           = BIT64(44), //!< Set FOB_ALLOW_DECAL_BLEND on the the CRenderObject flags
+	ERF_HIDDEN_FROM_RECURSION           = BIT64(45), //!< Don't render object in recursive passes (currently only supported by CBrush and CCharacterRenderNode)
+	ERF_HIDDEN_FROM_CAMERA              = BIT64(46), //!< Don't render object in camera passes (currently only supported by CBrush and CCharacterRenderNode)
 };
 
 #define ERF_SPEC_BITS_MASK    (ERF_SPEC_BIT0 | ERF_SPEC_BIT1 | ERF_SPEC_BIT2)

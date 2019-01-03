@@ -47,6 +47,7 @@ CCharInstance::CCharInstance(const string& strFileName, CDefaultSkeleton* pDefau
 	m_LastUpdateFrameID_Post = 0;
 
 	m_fZoomDistanceSq = std::numeric_limits<float>::max();
+	m_pParentRenderNode = nullptr;
 
 	m_rpFlags = CS_FLAG_DRAW_MODEL;
 	memset(arrSkinningRendererData, 0, sizeof(arrSkinningRendererData));
@@ -144,8 +145,8 @@ void CCharInstance::StartAnimationProcessing(const SAnimationProcessParams& para
 
 	// generate contexts for me and all my attached instances
 	CharacterInstanceProcessing::SContext& ctx = queue.AppendContext();
-	m_processingContext = ctx.slot;
-	int numberOfChildren = m_AttachmentManager.GenerateAttachedInstanceContexts();
+	SetProcessingContext(ctx);
+	int numberOfChildren = m_AttachmentManager.GenerateAttachedCharactersContexts();
 	ctx.Initialize(this, nullptr, nullptr, numberOfChildren);
 	queue.ExecuteForContextAndAllChildrenRecursively(
 	  m_processingContext, CharacterInstanceProcessing::SStartAnimationProcessing(params));
@@ -694,24 +695,6 @@ void CCharInstance::SkinningTransformationsComputation(SSkinningData* pSkinningD
 		movement += 1.0f - (fQdot * fQdotSign);
 	}
 
-	CAttachmentManager* pAttachmentManager = static_cast<CAttachmentManager*>(GetIAttachmentManager());
-	const uint32 numJoints = pDefaultSkeleton->m_arrModelJoints.size();
-	const uint32 extraBonesCount = pAttachmentManager->GetExtraBonesCount();
-	for (uint32 i = 0; i < extraBonesCount; ++i)
-	{
-		if (IAttachment* pAttachment = pAttachmentManager->m_extraBones[i])
-		{
-			if (pAttachment->IsMerged())
-			{
-				if (pAttachment->GetType() == CA_FACE || (pAttachment->GetType() == CA_BONE && static_cast<CAttachmentBONE*>(pAttachment)->m_nJointID != -1))
-				{
-					DualQuat& dq = pSkinningTransformations[i + numJoints];
-					dq = pAttachment->GetAttModelRelative() * pAttachment->GetAdditionalTransformation();
-				}
-			}
-		}
-	}
-
 	assert(pSkinningData->pMasterSkinningDataList);
 
 	// set the list to NULL to indicate the mainthread that the skinning transformation job has finished
@@ -787,6 +770,12 @@ void CCharInstance::GetMemoryUsage(ICrySizer* pSizer) const
 	{
 		// TODO: The m_Extents member allocates dynamic data and should also be included in the computation.
 	}
+}
+
+void CCharInstance::SetProcessingContext(CharacterInstanceProcessing::SContext& context)
+{
+	assert(context.slot < g_pCharacterManager->GetContextSyncQueue().GetNumberOfContexts());
+	m_processingContext = context.slot;
 }
 
 CharacterInstanceProcessing::SContext* CCharInstance::GetProcessingContext()

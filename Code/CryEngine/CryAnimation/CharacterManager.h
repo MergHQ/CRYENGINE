@@ -14,7 +14,6 @@ class CDefaultSkeleton;   //default skeleton
 class CCharInstance;      //skel-instance
 class CAttachmentManager; //skel-instance
 class CClothManager;
-class CAttachmentMerger;
 class CFacialAnimation;
 struct IAnimationSet;
 class CPoseModifierSetup;
@@ -154,7 +153,6 @@ public:
 
 	friend class CAnimationManager;
 	friend class CAttachmentManager;
-	friend class CAttachmentMerger;
 	friend class CAttachmentSKIN;
 	friend class CAttachmentVCLOTH;
 	friend class CClothPiece;
@@ -210,8 +208,6 @@ public:
 
 	CFacialAnimation*        GetFacialAnimation()        { return m_pFacialAnimation; }
 	const CFacialAnimation*  GetFacialAnimation() const  { return m_pFacialAnimation; }
-
-	const IAttachmentMerger& GetIAttachmentMerger() const;
 
 	//a list with model-names that use "ForceSkeletonUpdates"
 	std::vector<string>          m_arrSkeletonUpdates;

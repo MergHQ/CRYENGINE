@@ -113,8 +113,6 @@ void CCharInstance::Render(const struct SRendParams& RendParams, const SRenderin
 	const f32 attachmentCullingRation = (gEnv->bMultiplayer) ? Console::GetInst().ca_AttachmentCullingRationMP : Console::GetInst().ca_AttachmentCullingRation;
 	m_fZoomDistanceSq = std::fminf(m_fZoomDistanceSq, sqr(RendParams.fDistance * fZoomFactor / attachmentCullingRation));
 	const auto& FinalMat = (attachmentRendParams.dwFObjFlags & FOB_NEAREST) != 0 ? *RendParams.pNearestMatrix : RenderMat34;
-
-	m_AttachmentManager.DrawMergedAttachments(attachmentRendParams, FinalMat, passInfo, fZoomFactor, m_fZoomDistanceSq);
 	
 	if (m_pDefaultSkeleton->m_ObjectType == CGA)
 		RenderCGA(RendParams, FinalMat, passInfo);
@@ -361,8 +359,7 @@ SSkinningData* CCharInstance::GetSkinningData(const SRenderingPassInfo& passInfo
 {
 	DEFINE_PROFILER_FUNCTION();
 
-	CAttachmentManager* pAttachmentManager = static_cast<CAttachmentManager*>(GetIAttachmentManager());
-	uint32 numSkinningBones = GetSkinningTransformationCount() + pAttachmentManager->GetExtraBonesCount();
+	uint32 numSkinningBones = GetSkinningTransformationCount();
 
 	bool bNeedJobSyncVar = true;
 
