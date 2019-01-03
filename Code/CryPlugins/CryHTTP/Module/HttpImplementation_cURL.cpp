@@ -68,6 +68,9 @@ namespace Cry
 					case ERequestType::PUT:
 						curl_easy_setopt(request.pHandle, CURLOPT_CUSTOMREQUEST, "PUT");
 						break;
+					case ERequestType::GET:
+						curl_easy_setopt(request.pHandle, CURLOPT_CUSTOMREQUEST, "GET");
+						break;
 					default:
 						curl_easy_setopt(request.pHandle, CURLOPT_CUSTOMREQUEST, nullptr);
 				}

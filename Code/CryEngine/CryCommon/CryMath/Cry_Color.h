@@ -295,7 +295,7 @@ template<class T> struct Color_tpl
 			}
 			else
 			{
-				c = 1.055f * pow(c, 1.0f / 2.4f) - 0.055f;
+				c = 1.055f * pow(c, 1.0f / 2.4f) - 0.05499995f;
 			}
 		}
 	}
