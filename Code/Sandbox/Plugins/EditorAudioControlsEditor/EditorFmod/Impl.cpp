@@ -562,19 +562,13 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 		if (type != EItemType::None)
 		{
 			string name = pNode->getAttr(CryAudio::s_szNameAttribute);
-			string localizedAttribute = pNode->getAttr(CryAudio::Impl::Fmod::s_szLocalizedAttribute);
+
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 			if (name.IsEmpty() && pNode->haveAttr("fmod_name"))
 			{
 				name = pNode->getAttr("fmod_name");
 			}
-
-			if (localizedAttribute.IsEmpty() && pNode->haveAttr("fmod_localized"))
-			{
-				localizedAttribute = pNode->getAttr("fmod_localized");
-			}
 #endif      // USE_BACKWARDS_COMPATIBILITY
-			bool const isLocalized = (localizedAttribute.compareNoCase(CryAudio::Impl::Fmod::s_szTrueValue) == 0);
 
 			CItem* pItem = nullptr;
 
@@ -593,6 +587,15 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 				// We want to keep that connection even if it's not in the middleware as the user could
 				// be using the engine without the fmod project
 
+				string localizedAttribute = pNode->getAttr(CryAudio::Impl::Fmod::s_szLocalizedAttribute);
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+				if (localizedAttribute.IsEmpty() && pNode->haveAttr("fmod_localized"))
+				{
+					localizedAttribute = pNode->getAttr("fmod_localized");
+				}
+#endif        // USE_BACKWARDS_COMPATIBILITY
+				bool const isLocalized = (localizedAttribute.compareNoCase(CryAudio::Impl::Fmod::s_szTrueValue) == 0);
+
 				string path = "";
 				int const pos = name.find_last_of("/");
 
@@ -602,7 +605,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 					name = name.substr(pos + 1, name.length() - pos);
 				}
 
-				pItem = CreatePlaceholderItem(name, type, CreatePlaceholderFolderPath(path));
+				pItem = CreatePlaceholderItem(name, type, isLocalized, CreatePlaceholderFolderPath(path));
 			}
 
 			switch (type)
@@ -1026,7 +1029,7 @@ void CImpl::SetLocalizedAssetsPath()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CItem* CImpl::CreatePlaceholderItem(string const& name, EItemType const type, CItem* const pParent)
+CItem* CImpl::CreatePlaceholderItem(string const& name, EItemType const type, bool const isLocalized, CItem* const pParent)
 {
 	ControlId const id = Utils::GetId(type, name, pParent, m_rootItem);
 
@@ -1034,7 +1037,8 @@ CItem* CImpl::CreatePlaceholderItem(string const& name, EItemType const type, CI
 
 	if (pItem == nullptr)
 	{
-		pItem = new CItem(name, id, type, EItemFlags::IsPlaceHolder);
+		EItemFlags const flags = isLocalized ? (EItemFlags::IsPlaceHolder | EItemFlags::IsLocalized) : EItemFlags::IsPlaceHolder;
+		pItem = new CItem(name, id, type, flags);
 
 		if (pParent != nullptr)
 		{
@@ -1117,7 +1121,7 @@ CItem* CImpl::CreatePlaceholderFolderPath(string const& path)
 
 		if (pFoundChild == nullptr)
 		{
-			pFoundChild = CreatePlaceholderItem(token, EItemType::Folder, pItem);
+			pFoundChild = CreatePlaceholderItem(token, EItemType::Folder, false, pItem);
 		}
 
 		pItem = pFoundChild;
