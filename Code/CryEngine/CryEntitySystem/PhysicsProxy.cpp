@@ -1115,6 +1115,10 @@ int CEntityPhysics::AddSlotGeometry(int nSlot, SEntityPhysicalizeParams& params,
 	if (pAdamProxy != this)
 		mtx = GetEntity()->GetLocalTM() * mtx;
 
+	// This means the entity was never physicalized and therefore the slot can not be physicalized.
+	if (pAdamProxy->m_pPhysicalEntity == nullptr)
+		return -1;
+
 	partpos.flags = geom_collides | geom_floats;
 	partpos.flags &= params.nFlagsAND;
 	partpos.flagsCollider &= params.nFlagsAND;
