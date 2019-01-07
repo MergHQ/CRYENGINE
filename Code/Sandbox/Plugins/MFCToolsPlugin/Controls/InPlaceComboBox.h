@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __inplacecombobox_h__
-#define __inplacecombobox_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 class CInPlaceCBEdit : public CXTPEdit
 {
@@ -54,7 +49,7 @@ public:
 	CInPlaceCBListBox();
 	virtual ~CInPlaceCBListBox();
 
-	void SetScrollBar(CScrollBar* sb) { m_pScrollBar = sb; };
+	void SetScrollBar(CScrollBar* sb) { m_pScrollBar = sb; }
 
 	int  GetBottomIndex();
 	void SetTopIdx(int nPos, BOOL bUpdateScrollbar = FALSE);
@@ -122,8 +117,8 @@ public:
 	CInPlaceComboBox();
 	virtual ~CInPlaceComboBox();
 
-	void SetUpdateCallback(UpdateCallback cb) { m_updateCallback = cb; };
-	void SetReadOnly(bool bEnable)            { m_bReadOnly = bEnable; };
+	void SetUpdateCallback(UpdateCallback cb) { m_updateCallback = cb; }
+	void SetReadOnly(bool bEnable)            { m_bReadOnly = bEnable; }
 
 	// Attributes
 public:
@@ -133,7 +128,7 @@ public:
 	// Operations
 public:
 	int     GetCount() const;
-	int     GetCurSel() const { return GetCurrentSelection(); };
+	int     GetCurSel() const { return GetCurrentSelection(); }
 	int     SetCurSel(int nSelect, bool bSendSetData = true);
 	void    SelectString(LPCTSTR pStrText);
 	void    SelectString(int nSelectAfter, LPCTSTR pStrText);
@@ -148,12 +143,6 @@ public:
 private:
 	void SetCurSelToEdit(int nSelect);
 
-	// Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(CInPlaceComboBox)
-	//}}AFX_VIRTUAL
-
-	// Generated message map functions
 protected:
 	//{{AFX_MSG(CInPlaceComboBox)
 	afx_msg int     OnCreate(LPCREATESTRUCT lpCreateStruct);
@@ -214,5 +203,3 @@ inline int CInPlaceComboBox::GetCurrentSelection() const
 {
 	return m_nCurrentSelection;
 }
-
-#endif // __inplacecombobox_h__#pragma once

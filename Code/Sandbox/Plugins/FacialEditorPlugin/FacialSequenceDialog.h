@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FacialSequenceDialog_h__
-#define __FacialSequenceDialog_h__
 #pragma once
 
 #include "Dialogs/ToolbarDialog.h"
@@ -77,11 +75,11 @@ public:
 	void         SelectAllKeys();
 
 protected:
-	virtual void OnOK()     {};
-	virtual void OnCancel() {};
+	virtual void OnOK()     {}
+	virtual void OnCancel() {}
 
 	virtual BOOL OnInitDialog();
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+	virtual void DoDataExchange(CDataExchange* pDX);
 
 	void         Update();
 
@@ -216,5 +214,3 @@ private:
 	float                  m_fNoiseThreshold;
 	float                  m_fKeyCleanupThreshold;
 };
-
-#endif // __FacialSequenceDialog_h__

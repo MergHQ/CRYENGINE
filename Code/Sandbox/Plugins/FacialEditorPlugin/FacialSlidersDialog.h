@@ -1,12 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FacialSlidersDialog_h__
-#define __FacialSlidersDialog_h__
 #pragma once
 
 #include "FacialSlidersCtrl.h"
 
-//////////////////////////////////////////////////////////////////////////
 class CFacialSlidersDialog : public CDialog
 {
 	DECLARE_DYNAMIC(CFacialSlidersDialog)
@@ -23,11 +20,11 @@ public:
 
 protected:
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
-	virtual void OnOK()     {};
-	virtual void OnCancel() {};
+	virtual void OnOK()     {}
+	virtual void OnCancel() {}
 
 	virtual BOOL OnInitDialog();
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+	virtual void DoDataExchange(CDataExchange* pDX);
 
 	DECLARE_MESSAGE_MAP()
 	afx_msg void OnSize(UINT nType, int cx, int cy);
@@ -46,5 +43,3 @@ private:
 	CFacialEdContext*  m_pContext;
 	HACCEL             m_hAccelerators;
 };
-
-#endif // __FacialSlidersDialog_h__

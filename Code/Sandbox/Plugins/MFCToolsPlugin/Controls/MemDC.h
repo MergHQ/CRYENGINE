@@ -1,7 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+#pragma once
+
 #if _MSC_VER > 1000
-	#pragma once
 	#pragma pack(push)
 	#pragma pack(1)
 #endif // _MSC_VER > 1000
@@ -10,7 +11,7 @@
 	#define MemDCh
 
 /*
-   This is a slightly optimised version of the popular CMemDC class.
+   This is a slightly optimized version of the popular CMemDC class.
    For the fastest redraw put a bitmap in your Dialog, Control or View header:
    CBitmap Bitmap;
    In the .cpp file:

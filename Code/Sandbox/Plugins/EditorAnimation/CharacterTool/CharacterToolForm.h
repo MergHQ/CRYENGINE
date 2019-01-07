@@ -3,22 +3,23 @@
 #pragma once
 
 #include <QMainWindow>
-#include <vector>
 #include "Pointers.h"
 #include <QtViewPane.h>
 
-class QViewport;
-class QMainWindow;
-class QSplitter;
-class QToolButton;
-class QPropertyTree;
+#include <vector>
+
+class BroadcastEvent;
 class QBoxLayout;
-class QToolBar;
 class QDockWidget;
+class QMainWindow;
+class QPropertyTree;
 class QResizeEvent;
+class QSplitter;
+class QToolBar;
+class QToolButton;
+class QViewport;
 struct SRenderContext;
 struct SViewportState;
-class BroadcastEvent;
 
 class DockWidgetManager;
 namespace Explorer
@@ -107,7 +108,7 @@ public slots:
 
 	IViewportMode*   ViewportMode() const { return m_mode; }
 	PlaybackPanel*   GetPlaybackPanel()   { return m_playbackPanel; }
-	int              ProxyMakingMode()    { return m_createProxyModeButton->isChecked() ? 1 : (m_createRagdollModeButton->isChecked() ? 2 : 0); }
+	int              ProxyMakingMode();
 	PropertiesPanel* GetPropertiesPanel() { return m_propertiesPanel; }
 protected:
 	bool             event(QEvent* ev) override;

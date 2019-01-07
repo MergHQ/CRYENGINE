@@ -35,28 +35,6 @@
 // as the actual shape has no practical meaning anymore (C1 and maybe C2 may have used the shape, but it was definitely no longer used for C3).
 #define USE_SIMPLIFIED_AI_TERRITORY_SHAPE
 
-//////////////////////////////////////////////////////////////////////////
-// C runtime lib includes
-//////////////////////////////////////////////////////////////////////////
-#include <stdlib.h>
-#include <memory.h>
-#include <string.h>
-#include <stdio.h>
-#include <math.h>
-#include <float.h>
-#include <limits.h>
-
-/////////////////////////////////////////////////////////////////////////////
-// STL
-/////////////////////////////////////////////////////////////////////////////
-#include <memory>
-#include <vector>
-#include <list>
-#include <map>
-#include <set>
-#include <algorithm>
-#include <functional>
-
 /////////////////////////////////////////////////////////////////////////////
 // VARIOUS MACROS AND DEFINES
 /////////////////////////////////////////////////////////////////////////////
@@ -64,99 +42,13 @@
 	#undef new
 #endif
 
-#ifndef SAFE_DELETE
-	#define SAFE_DELETE(p) { if (p) { delete (p);   (p) = nullptr; } }
-#endif
-
-#ifndef SAFE_DELETE_ARRAY
-	#define SAFE_DELETE_ARRAY(p) { if (p) { delete[] (p);   (p) = nullptr; } }
-#endif
-
-#ifndef SAFE_RELEASE
-	#define SAFE_RELEASE(p) { if (p) { (p)->Release(); (p) = nullptr; } }
-#endif
-
 /////////////////////////////////////////////////////////////////////////////
 // CRY Stuff.
 /////////////////////////////////////////////////////////////////////////////
 #include <CryCore/Platform/platform.h>
+#include <CryCore/smartptr.h>
+#include <CryCore/StlUtils.h>
 #include <CryMath/Cry_Geo.h>
 #include <CryMath/Range.h>
-#include <CryCore/StlUtils.h>
-
-#include <CryCore/smartptr.h>
-
-#ifndef ON_WM_INPUT
-// MFC does not define this one.
-	#define ON_WM_INPUT() \
-	{ WM_INPUT, 0, 0, 0, AfxSig_vwl, (AFX_PMSG)(AFX_PMSGW)(static_cast<void(AFX_MSG_CALL CWnd::*)(UINT, HRAWINPUT)>(&ThisClass::OnRawInput)) },
-#endif
 
 #define CRY_ENABLE_FBX_SDK
-//
-///////////////////////////////////////////////////////////////////////////////
-//// Interfaces.
-///////////////////////////////////////////////////////////////////////////////
-//#include <CryRenderer/IRenderer.h>
-//#include <CrySystem/File/CryFile.h>
-//#include <CrySystem/ISystem.h>
-//#include <CryScriptSystem/IScriptSystem.h>
-//#include <CryEntitySystem/IEntitySystem.h>
-//#include <Cry3DEngine/I3DEngine.h>
-//#include <Cry3DEngine/IIndexedMesh.h>
-//#include <CrySystem/ITimer.h>
-//#include <CryPhysics/IPhysics.h>
-//#include <CryAISystem/IAISystem.h>
-//#include <CrySystem/XML/IXml.h>
-//#include <CryMovie/IMovieSystem.h>
-//#include <CryCore/functor.h>
-//
-////////////////////////////////////////////////////////////////////////////
-//// Commonly used Editor includes.
-////////////////////////////////////////////////////////////////////////////
-//
-//// Utility classes.
-//#include <Util/EditorUtils.h>
-//#include "Util/FileEnum.h"
-//#include "Util/Math.h"
-//#include "Util/AffineParts.h"
-//
-//// Xml support.
-//#include "Util/XmlArchive.h"
-//#include "Util/XmlTemplate.h"
-//
-//// Utility classes.
-//#include "Util/BitArray.h"
-//#include "Util/MemoryBlock.h"
-//#include "Util/FileUtil.h"
-//
-//// Variable.
-//#include "Util/Variable.h"
-//
-////////////////////////////////////////////////////////////////////////////
-//// Editor includes.
-////////////////////////////////////////////////////////////////////////////
-//
-//// Utility routines.
-//#include "Util/Image.h"
-//#include "Util/ImageUtil.h"
-//#include <CryCore/ToolsHelpers/GuidUtil.h>
-//
-//// Main Editor interface definition.
-//#include "IEditorImpl.h"
-//#include "IEditorClassFactory.h"
-//
-//// Undo support.
-//#include "IUndoObject.h"
-//
-//// Log file access
-//#include "LogFile.h"
-//
-//// View panes.
-//#include "QtViewPane.h"
-//
-//#include "UsedResources.h"
-//
-//// Command Manager.
-//#include "Commands/CommandManager.h"
-//#include "Objects/ObjectManager.h"

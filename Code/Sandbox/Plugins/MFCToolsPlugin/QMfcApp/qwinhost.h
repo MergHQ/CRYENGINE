@@ -38,10 +38,7 @@
 **
 ****************************************************************************/
 
-// Declaration of the QWinHost classes
-
-#ifndef QWINHOST_H
-#define QWINHOST_H
+#pragma once
 
 #include "MFCToolsDefines.h"
 #include "Controls/SandboxWindowing.h"
@@ -65,11 +62,7 @@ protected:
 	void         focusInEvent(QFocusEvent*);
 	void         resizeEvent(QResizeEvent*);
 
-#if QT_VERSION >= 0x050000
 	bool nativeEvent(const QByteArray& eventType, void* message, long* result);
-#else
-	bool winEvent(MSG* msg, long* result);
-#endif
 
 protected:
 	void         fixParent();
@@ -79,5 +72,3 @@ protected:
 	bool  own_hwnd;
 	HWND  hwnd;
 };
-
-#endif // QWINHOST_H

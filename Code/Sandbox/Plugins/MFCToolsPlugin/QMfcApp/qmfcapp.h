@@ -38,10 +38,7 @@
 **
 ****************************************************************************/
 
-// Declaration of the QMfcApp classes
-
-#ifndef QMFCAPP_H
-#define QMFCAPP_H
+#pragma once
 
 #include "MFCToolsDefines.h"
 #include <QApplication>
@@ -51,8 +48,7 @@
 class CWinApp;
 #endif
 
-#if QT_VERSION >= 0x050000
-	#include <QAbstractNativeEventFilter>
+#include <QAbstractNativeEventFilter>
 
 class MFC_TOOLS_PLUGIN_API QMfcAppEventFilter : public QAbstractNativeEventFilter
 {
@@ -60,7 +56,6 @@ public:
 	QMfcAppEventFilter();
 	bool nativeEventFilter(const QByteArray& eventType, void* message, long* result);
 };
-#endif
 
 class MFC_TOOLS_PLUGIN_API QMfcApp : public QApplication
 {
@@ -82,13 +77,11 @@ public:
 
 public:
 #ifdef QTWINMIGRATE_WITHMFC
-	static char** mfc_argv;
+	static char**   mfc_argv;
 	static int      mfc_argc;
 	static CWinApp* mfc_app;
 #endif
 
-	int idleCount;
+	int  idleCount;
 	bool doIdle;
 };
-
-#endif // QMFCAPP_H

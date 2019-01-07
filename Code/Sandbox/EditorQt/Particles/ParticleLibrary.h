@@ -4,8 +4,6 @@
 
 #include "BaseLibrary.h"
 
-/** Library of prototypes.
- */
 class SANDBOX_API CParticleLibrary : public CBaseLibrary
 {
 public:

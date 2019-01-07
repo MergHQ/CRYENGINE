@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __DIALOGMANAGER_H__
-#define __DIALOGMANAGER_H__
-
 #pragma once
 
 #include <CryCore/StlUtils.h>
@@ -198,5 +195,3 @@ protected:
 protected:
 	TEditorDialogScriptMap m_scripts;
 };
-
-#endif

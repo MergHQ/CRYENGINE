@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __SCROLLABLEWINDOW_H__
-#define __SCROLLABLEWINDOW_H__
-
 #pragma once
 
 class CScrollableWindow : public CWnd
@@ -31,5 +28,3 @@ protected:
 
 	bool m_boAutoScrollWindow;
 };
-
-#endif // __SCROLLABLEWINDOW_H__

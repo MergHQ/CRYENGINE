@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FACIALEXPRESSIONUTILS_H__
-#define __FACIALEXPRESSIONUTILS_H__
+#pragma once
 
 #include <CryCore/Containers/VectorSet.h>
 
@@ -75,5 +74,3 @@ int                                                DeleteOrphans(IFacialEffector
 void                                               RemoveFromGarbage(IFacialEffectorsLibrary* pLibrary, IFacialEffector* pEffector);
 bool                                               IsExpressionInGarbage(IFacialEffectorsLibrary* pLibrary, IFacialEffector* pEffector);
 }
-
-#endif //__FACIALEXPRESSIONUTILS_H__

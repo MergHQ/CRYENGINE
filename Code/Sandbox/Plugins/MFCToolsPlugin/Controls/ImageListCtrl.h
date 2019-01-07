@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __CImageListCtrl_h__
-#define __CImageListCtrl_h__
 #pragma once
 
 #include "MFCToolsDefines.h"
@@ -120,5 +118,3 @@ protected:
 	CPoint                         m_scrollOffset;
 	CPen                           m_selectedPen;
 };
-
-#endif //__CImageListCtrl_h__

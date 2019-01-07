@@ -11,8 +11,10 @@
 #include "DragDrop.h"
 #include "PathUtils.h"
 
-#include <QToolBar>
 #include <QEvent.h>
+#include <QFileInfo>
+#include <QToolBar>
+#include <QVBoxLayout>
 
 CMaterialPreviewWidget::CMaterialPreviewWidget(CMaterialEditor* pMatEd)
 	: m_pMatEd(pMatEd)

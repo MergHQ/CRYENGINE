@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _C_COLORBUTTON_H__INCLUDED
-#define _C_COLORBUTTON_H__INCLUDED
-
 #pragma once
 
 // To use:
@@ -16,8 +13,6 @@
 class CColorButton : public CButton
 {
 public:
-
-public:
 	CColorButton();
 	CColorButton(COLORREF color, bool showText);
 	virtual ~CColorButton();
@@ -29,7 +24,7 @@ public:
 	COLORREF     GetColor() const;
 
 	void         SetTextColor(const COLORREF& col);
-	COLORREF     GetTexColor() const { return m_textColor; };
+	COLORREF     GetTexColor() const { return m_textColor; }
 
 	void         SetShowText(bool showText);
 	bool         GetShowText() const;
@@ -42,5 +37,3 @@ protected:
 	COLORREF m_textColor;
 	bool     m_showText;
 };
-
-#endif // #ifndef _C_COLOREDBUTTON_H__INCLUDED

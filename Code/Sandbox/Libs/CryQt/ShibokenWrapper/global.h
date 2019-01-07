@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef GLOBAL_H
-#define GLOBAL_H
+#pragma once
 
 #undef QT_NO_STL
 #undef QT_NO_STL_WCHAR
@@ -43,6 +42,3 @@
 #include "QToolWindowManager/QToolWindowManagerCommon.h"
 #include "QToolWindowManager/QToolWindowTabBar.h"
 #include "QToolWindowManager/QToolWindowWrapper.h"
-
-
-#endif // GLOBAL_H

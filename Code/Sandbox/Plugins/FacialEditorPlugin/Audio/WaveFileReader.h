@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __WAVEFILEREADER_H__
-#define __WAVEFILEREADER_H__
-
 #pragma once
 
 #include <CrySystem/IStreamEngine.h>
@@ -40,5 +37,3 @@ protected:
 	//SSoundBufferInfo	m_pSoundbufferInfo;
 	uint32       m_nVolume;
 };
-
-#endif

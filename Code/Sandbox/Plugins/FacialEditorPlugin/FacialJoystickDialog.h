@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FACIALJOYSTICKDIALOG_H__
-#define __FACIALJOYSTICKDIALOG_H__
+#pragma once
 
 #include "FacialEdContext.h"
 #include "Controls/JoystickCtrl.h"
@@ -20,10 +19,10 @@ public:
 
 protected:
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
-	virtual void OnOK()     {};
-	virtual void OnCancel() {};
+	virtual void OnOK()     {}
+	virtual void OnCancel() {}
 	virtual BOOL OnInitDialog();
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+	virtual void DoDataExchange(CDataExchange* pDX);
 	virtual void OnSize(UINT nType, int cx, int cy);
 	virtual void OnFacialEdEvent(EFacialEdEvent event, IFacialEffector* pEffector, int nChannelCount, IFacialAnimChannel** ppChannels);
 	void         RecalcLayout();
@@ -74,5 +73,3 @@ protected:
 	HACCEL          m_hAccelerators;
 	COleDropTarget* m_pDropTarget;
 };
-
-#endif //__FACIALJOYSTICKDIALOG_H__

@@ -6,6 +6,8 @@
 #include <ICommandManager.h>
 #include <PathUtils.h>
 
+#include <QDir>
+
 #include <fstream>
 #include <map>
 

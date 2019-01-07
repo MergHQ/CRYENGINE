@@ -996,6 +996,11 @@ void CharacterToolForm::OnAnimEventPresetPanelPutEvent()
 
 }
 
+int CharacterToolForm::ProxyMakingMode() 
+{ 
+	return m_createProxyModeButton->isChecked() ? 1 : (m_createRagdollModeButton->isChecked() ? 2 : 0); 
+}
+
 bool CharacterToolForm::event(QEvent* ev)
 {
 	switch (ev->type())

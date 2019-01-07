@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __inplaceedit_h__
-#define __inplaceedit_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 class CInPlaceEdit : public CXTPEdit
 {
@@ -15,7 +10,6 @@ public:
 	CInPlaceEdit(const CString& srtInitText, OnChange onchange);
 	virtual ~CInPlaceEdit();
 
-	// Attributes
 	void SetText(const CString& strText);
 
 	void EnableUpdateOnKillFocus(bool bEnable) { m_bUpdateOnKillFocus = bEnable; }
@@ -38,13 +32,9 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 
-	// Data
 protected:
-
 	bool     m_bUpdateOnKillFocus;
 	bool     m_bUpdateOnEnChange;
 	CString  m_strInitText;
 	OnChange m_onChange;
 };
-
-#endif // __inplaceedit_h__

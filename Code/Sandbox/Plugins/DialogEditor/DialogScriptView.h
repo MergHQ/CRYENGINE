@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __DIALOGSCRIPTVIEW_H__
-#define __DIALOGSCRIPTVIEW_H__
-
 #pragma once
 
 #include <CryAudio/IAudioSystem.h>
@@ -193,5 +190,3 @@ private:
 	BOOL Create(LPCTSTR lpszClassName, LPCTSTR lpszWindowName, DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID, CCreateContext* pContext = NULL);
 	BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID);
 };
-
-#endif //
