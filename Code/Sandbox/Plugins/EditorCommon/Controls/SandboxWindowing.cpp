@@ -8,6 +8,7 @@
 #include <IEditor.h>
 #include <CryIcon.h>
 
+#include <QHBoxLayout>
 #include <QKeyEvent>
 #include <QSizePolicy>
 #include <QToolButton>

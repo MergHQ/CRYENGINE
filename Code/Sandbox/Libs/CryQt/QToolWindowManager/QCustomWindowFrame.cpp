@@ -27,11 +27,7 @@ typedef HRESULT(WINAPI *dwmExtendFrameIntoClientArea_t)(HWND hwnd, const MARGINS
 #endif
 #include <tchar.h>
 
-#if QT_VERSION >= 0x050000
 Q_GUI_EXPORT QPixmap qt_pixmapFromWinHICON(HICON icon);
-#else
-#define qt_pixmapFromWinHICON(hIcon)QPixmap::fromWinHICON(hIcon)
-#endif
 #endif
 
 QCustomTitleBar::QCustomTitleBar(QWidget* parent)
@@ -80,18 +76,10 @@ QCustomTitleBar::QCustomTitleBar(QWidget* parent)
 	connect(m_closeButton, SIGNAL(clicked()), parent, SLOT(close()));
 	myLayout->addWidget(m_closeButton);
 
-#if QT_VERSION < 0x050000 // Qt 4 does not have signals for icon and title changes, so need to use the event filter.
-	parent->installEventFilter(this);
-#else
 	connect(parent, SIGNAL(windowTitleChanged(const QString &)), m_caption, SLOT(setText(const QString &)));
 	connect(parent, SIGNAL(windowIconChanged(const QIcon &)), this, SLOT(onIconChange()));
-#endif
 
 	onFrameContentsChanged(parent);
-}
-
-QCustomTitleBar::~QCustomTitleBar()
-{
 }
 
 void QCustomTitleBar::updateWindowStateButtons()
@@ -147,11 +135,7 @@ void QCustomTitleBar::showSystemMenu(QPoint p)
 	QWidget* screen = qApp->desktop()->screen(qApp->desktop()->screenNumber(p));
 	p = screen->mapFromGlobal(p);
 
-#if QT_VERSION < 0x050600
-	const float pixelRatio = 1;
-#else
 	const float pixelRatio = screen->devicePixelRatioF();
-#endif
 
 	p.setX(p.x() * pixelRatio);
 	p.setY(p.y() * pixelRatio);
@@ -228,36 +212,11 @@ void QCustomTitleBar::onIconChange()
 	m_sysMenuButton->setIcon(icon);
 }
 
-#if QT_VERSION < 0x050000 && (defined(WIN32) || defined(WIN64)) // Hack, because Qt4 doesn't seem to send the mouseReleaseEvent if release capture has been called.
-QCustomTitleBar* draggedTitleBar = nullptr;
-extern HHOOK hHook;
-
-LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
-{
-	if (wParam == WM_LBUTTONUP && draggedTitleBar)
-	{
-		QMouseEvent* releaseEvent = new QMouseEvent(QEvent::MouseButtonRelease, QPoint(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)), Qt::LeftButton, Qt::LeftButton, 0);
-		CALL_PROTECTED_VOID_METHOD_1ARG(QCustomTitleBar, draggedTitleBar, mouseReleaseEvent, QMouseEvent*, releaseEvent);
-		draggedTitleBar = nullptr;
-		UnhookWindowsHookEx(hHook);
-		return false;
-	}
-
-	return CallNextHookEx(hHook, nCode, wParam, lParam);
-}
-
-HHOOK hHook = nullptr;
-#endif
-
 void QCustomTitleBar::onBeginDrag()
 {
 	m_dragging = true;
 #if defined(WIN32) || defined(WIN64)
 	ReleaseCapture();
-#if QT_VERSION < 0x050000
-	draggedTitleBar = this;
-	hHook = SetWindowsHookEx(WH_MOUSE_LL, MouseProc, NULL, 0);
-#endif
 	SendMessage((HWND)parentWidget()->winId(), WM_NCLBUTTONDOWN, HTCAPTION, 0);
 #endif
 }
@@ -272,7 +231,7 @@ void QCustomTitleBar::onFrameContentsChanged(QWidget* newContents)
 	QString winTitle = parentWidget()->windowTitle();
 	if (!winTitle.size())
 	{
-#if (defined(WIN32) || defined(WIN64)) && QT_VERSION >= 0x050000
+#if (defined(WIN32) || defined(WIN64))
 		TCHAR buffer[1000];
 		GetWindowText((HWND)parentWidget()->winId(), buffer, 1000);
 #ifdef UNICODE
@@ -289,11 +248,7 @@ void QCustomTitleBar::mousePressEvent(QMouseEvent* event)
 {
 	if (event->button() == Qt::LeftButton && qApp->widgetAt(QCursor::pos()) == m_caption)
 	{
-#if QT_VERSION < 0x050000 // Qt 4 doesn't like having ReleaseCapture() called in the mouse press event, so use a single shot timer to call it after.
-		QTimer::singleShot(0, this, SLOT(onBeginDrag()));
-#else
 		onBeginDrag();
-#endif
 	}
 
 	QFrame::mousePressEvent(event);
@@ -321,20 +276,6 @@ void QCustomTitleBar::mouseReleaseEvent(QMouseEvent* event)
 
 bool QCustomTitleBar::eventFilter(QObject* o, QEvent* e)
 {
-#if QT_VERSION < 0x050000 // Qt 4 does not have signals for icon and title changes, so need to use the event filter.
-	if (o == parentWidget())
-	{
-		if (e->type() == QEvent::WindowIconChange || e->type() == QEvent::ApplicationWindowIconChange)
-		{
-			onIconChange();
-		}
-		else if (e->type() == QEvent::WindowTitleChange)
-		{
-			m_caption->setText(parentWidget()->windowTitle());
-		}
-	}
-#endif
-
 	if (o == m_sysMenuButton)
 	{
 		switch (e->type())
@@ -357,7 +298,6 @@ bool QCustomTitleBar::eventFilter(QObject* o, QEvent* e)
 	return QFrame::eventFilter(o, e);
 }
 
-#if QT_VERSION >= 0x050000
 bool QCustomTitleBar::nativeEvent(const QByteArray &eventType, void *message, long *result)
 {
 #if defined(WIN32) || defined(WIN64)
@@ -367,7 +307,6 @@ bool QCustomTitleBar::nativeEvent(const QByteArray &eventType, void *message, lo
 #endif
 	return QFrame::nativeEvent(eventType, message, result);
 }
-#endif
 
 #if defined(WIN32) || defined(WIN64)
 bool QCustomTitleBar::winEvent(MSG *msg, long *result)
@@ -393,20 +332,14 @@ bool QCustomTitleBar::winEvent(MSG *msg, long *result)
 			return true;
 		}
 		// Qt 5 does not send a MouseButtonDblClick event through the event filter for the system menu button, so send it manually
-#if QT_VERSION >= 0x050000
 		else if (m_sysMenuButton->geometry().contains(pos))
 		{
 			QMouseEvent me(QEvent::MouseButtonDblClick, pos, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
 			QApplication::sendEvent(m_sysMenuButton, &me);
 			return true;
 		}
-#endif
 	}
-#if QT_VERSION < 0x050000
-	return QFrame::winEvent(msg, result);
-#else
 	return false;
-#endif
 }
 #endif
 
@@ -446,11 +379,6 @@ QCustomWindowFrame::QCustomWindowFrame()
 
 	createWinId();
 #endif
-
-#if QT_VERSION < 0x050000
-	// HACK: Moving the window slightly seems to fix the frame on Qt4
-	QTimer::singleShot(0, this, SLOT(nudgeWindow()));
-#endif
 }
 
 QCustomWindowFrame::~QCustomWindowFrame()
@@ -474,10 +402,9 @@ void QCustomWindowFrame::internalSetContents(QWidget* widget, bool useContentsGe
 		m_grid->removeWidget(m_contents);
 		m_grid->removeWidget(m_titleBar);
 		m_contents->removeEventFilter(this);
-#if QT_VERSION >= 0x050000
+
 		disconnect(m_contents, SIGNAL(windowTitleChanged(const QString &)), this, SLOT(setWindowTitle(const QString &)));
 		disconnect(m_contents, SIGNAL(windowIconChanged(const QIcon &)), this, SLOT(onIconChange()));
-#endif
 	}
 
 	m_contents = widget;
@@ -499,10 +426,9 @@ void QCustomWindowFrame::internalSetContents(QWidget* widget, bool useContentsGe
 
 		m_contents->installEventFilter(this);
 
-#if QT_VERSION >= 0x050000 // Qt 4 does not have signals for icon and title changes, so need to use the event filter.
 		connect(m_contents, SIGNAL(windowTitleChanged(const QString &)), this, SLOT(setWindowTitle(const QString &)));
 		connect(m_contents, SIGNAL(windowIconChanged(const QIcon &)), this, SLOT(onIconChange()));
-#endif
+
 		if (useContentsGeometry)
 		{
 			m_contents->show();
@@ -533,7 +459,6 @@ void QCustomWindowFrame::ensureTitleBar()
 	}
 }
 
-#if QT_VERSION >= 0x050000
 bool QCustomWindowFrame::nativeEvent(const QByteArray &eventType, void *message, long *result)
 {
 	if (!m_titleBar)
@@ -546,7 +471,6 @@ bool QCustomWindowFrame::nativeEvent(const QByteArray &eventType, void *message,
 #endif
 	return QFrame::nativeEvent(eventType, message, result);
 }
-#endif
 
 #if defined(WIN32) || defined(WIN64)
 bool QCustomWindowFrame::winEvent(MSG *msg, long *result)
@@ -557,20 +481,14 @@ bool QCustomWindowFrame::winEvent(MSG *msg, long *result)
 	QRect r = rect();
 	static const int SIZE_MARGIN = 4;
 	QPoint newPos = QCursor::pos();
-#if QT_VERSION < 0x050000
-	RECT rcWind;
-	GetWindowRect((HWND)winId(), &rcWind);
-	r.moveTo(QPoint(rcWind.left, rcWind.top));
-#else
 	r.moveTo(pos());
-#endif
-	bool m_topEdge, m_leftEdge, m_rightEdge, m_bottomEdge;
-	m_topEdge = qAbs(newPos.y() - r.top()) <= SIZE_MARGIN;
-	m_leftEdge = qAbs(newPos.x() - r.left()) <= SIZE_MARGIN;
-	m_rightEdge = qAbs(newPos.x() - r.right()) <= SIZE_MARGIN;
-	m_bottomEdge = qAbs(newPos.y() - r.bottom()) <= SIZE_MARGIN;
-	bool hor = m_leftEdge || m_rightEdge;
-	bool ver = m_topEdge || m_bottomEdge;
+
+	bool topEdge = qAbs(newPos.y() - r.top()) <= SIZE_MARGIN;
+	bool leftEdge = qAbs(newPos.x() - r.left()) <= SIZE_MARGIN;
+	bool rightEdge = qAbs(newPos.x() - r.right()) <= SIZE_MARGIN;
+	bool bottomEdge = qAbs(newPos.y() - r.bottom()) <= SIZE_MARGIN;
+	bool hor = leftEdge || rightEdge;
+	bool ver = topEdge || bottomEdge;
 	switch (msg->message)
 	{
 	case WM_SIZE:
@@ -609,22 +527,22 @@ bool QCustomWindowFrame::winEvent(MSG *msg, long *result)
 		}
 		else if (hor && ver)
 		{
-			if (m_leftEdge == m_bottomEdge)
+			if (leftEdge == bottomEdge)
 			{
-				*result = m_leftEdge ? HTBOTTOMLEFT : HTTOPRIGHT;
+				*result = leftEdge ? HTBOTTOMLEFT : HTTOPRIGHT;
 			}
 			else
 			{
-				*result = m_leftEdge ? HTTOPLEFT : HTBOTTOMRIGHT;
+				*result = leftEdge ? HTTOPLEFT : HTBOTTOMRIGHT;
 			}
 		}
 		else if (hor)
 		{
-			*result = m_leftEdge ? HTLEFT : HTRIGHT;
+			*result = leftEdge ? HTLEFT : HTRIGHT;
 		}
 		else if (ver)
 		{
-			*result = m_topEdge ? HTTOP : HTBOTTOM;
+			*result = topEdge ? HTTOP : HTBOTTOM;
 		}
 		else
 		{
@@ -661,11 +579,7 @@ bool QCustomWindowFrame::winEvent(MSG *msg, long *result)
 			mmi->ptMaxSize.y = mi2Height;
 		}
 
-#if QT_VERSION < 0x050600
-		const float pixelRatio = 1;
-#else
 		const float pixelRatio = devicePixelRatioF();
-#endif
 
 		setMaximumSize(mi2Width / pixelRatio, mi2Height / pixelRatio); //Ensure window will not overlap taskbar
 		mmi->ptMaxTrackSize.x = min(this->maximumWidth() * pixelRatio, GetSystemMetrics(SM_CXMAXTRACK));
@@ -692,11 +606,7 @@ bool QCustomWindowFrame::winEvent(MSG *msg, long *result)
 	}
 	break;
 	}
-#if QT_VERSION < 0x050000
-	return QFrame::winEvent(msg, result);
-#else
 	return false;
-#endif
 }
 #endif
 
@@ -753,16 +663,6 @@ void QCustomWindowFrame::changeEvent(QEvent* e)
 		m_titleBar->updateWindowStateButtons();
 	}
 
-#if QT_VERSION < 0x050000 // Nudging window seems to keep some UI from becoming unresponsive after restore
-	if (e->type() == QEvent::WindowStateChange)
-	{
-		if (windowState() == Qt::WindowNoState || windowState() == Qt::WindowActive)
-		{
-			QTimer::singleShot(0, this, SLOT(nudgeWindow()));
-		}
-	}
-#endif
-
 	QFrame::changeEvent(e);
 }
 
@@ -770,16 +670,6 @@ bool QCustomWindowFrame::eventFilter(QObject* o, QEvent* e)
 {
 	if (o == m_contents)
 	{
-#if QT_VERSION < 0x050000 // Qt 4 does not have signals for icon and title changes, so need to use the event filter.
-		if (e->type() == QEvent::WindowIconChange || e->type() == QEvent::ApplicationWindowIconChange)
-		{
-			onIconChange();
-		}
-		else if (e->type() == QEvent::WindowTitleChange)
-		{
-			setWindowTitle(m_contents->windowTitle());
-		}
-#endif
 		if (m_contents->parentWidget() == this)
 		{
 

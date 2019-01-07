@@ -61,11 +61,7 @@ ListSelectionDialog::ListSelectionDialog(const QString& dialogNameId, QWidget* p
 	m_tree->setModel(m_filterModel);
 
 	m_tree->header()->setStretchLastSection(false);
-#if QT_VERSION >= 0x50000
 	m_tree->header()->setSectionResizeMode(0, QHeaderView::Stretch);
-#else
-	m_tree->header()->setResizeMode(0, QHeaderView::Stretch);
-#endif
 	//m_tree->header()->resizeSection(0, 80);
 	connect(m_tree, SIGNAL(activated(const QModelIndex &)), this, SLOT(onActivated(const QModelIndex &)));
 
@@ -128,11 +124,7 @@ void ListSelectionDialog::SetColumnText(int column, const char* text)
 		m_model->setColumnCount(column + 1);
 		for (int i = oldColumnCount; i <= column; ++i)
 		{
-#if QT_VERSION >= 0x50000
 			m_tree->header()->setSectionResizeMode(i, QHeaderView::Interactive);
-#else
-			m_tree->header()->setResizeMode(i, QHeaderView::Interactive);
-#endif
 			m_tree->header()->resizeSection(i, 40);
 		}
 	}

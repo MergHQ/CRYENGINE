@@ -31,11 +31,7 @@ protected:
 	bool focusNextPrevChild(bool next) override;
 
 	bool eventFilter(QObject* o, QEvent* e) override;
-#if QT_VERSION >= 0x50000
 	bool nativeEvent(const QByteArray&, void* message, long*);
-#else
-	bool winEvent(MSG* msg, long*);
-#endif
 
 private:
 	HWND m_parent;

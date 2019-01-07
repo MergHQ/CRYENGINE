@@ -51,9 +51,7 @@
 #include <qt_windows.h>
 #include <QApplication>
 
-#if QT_VERSION >= 0x050000
-	#define QT_WA(unicode, ansi) unicode
-#endif
+#define QT_WA(unicode, ansi) unicode
 
 /*!
     \class QWinHost qwinhost.h
@@ -355,15 +353,9 @@ void QWinHost::resizeEvent(QResizeEvent* e)
 /*!
     \reimp
  */
-#if QT_VERSION >= 0x050000
 bool QWinHost::nativeEvent(const QByteArray& eventType, void* message, long* result)
-#else
-bool QWinHost::winEvent(MSG* msg, long* result)
-#endif
 {
-#if QT_VERSION >= 0x050000
 	MSG* msg = (MSG*)message;
-#endif
 	switch (msg->message)
 	{
 	case WM_SETFOCUS:
@@ -375,9 +367,5 @@ bool QWinHost::winEvent(MSG* msg, long* result)
 	default:
 		break;
 	}
-#if QT_VERSION >= 0x050000
 	return QWidget::nativeEvent(eventType, message, result);
-#else
-	return QWidget::winEvent(msg, result);
-#endif
 }

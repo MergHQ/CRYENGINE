@@ -17,6 +17,7 @@
 
 #include <QDateTime>
 #include <QDir>
+#include <QVBoxLayout>
 
 namespace Private_SelectProjectDialog
 {

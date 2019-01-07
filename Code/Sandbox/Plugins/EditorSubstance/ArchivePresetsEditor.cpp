@@ -14,6 +14,8 @@
 #include <AssetSystem/AssetManager.h>
 
 #include <QDialogButtonBox>
+#include <QResizeEvent>
+#include <QVBoxLayout>
 
 namespace EditorSubstance
 {

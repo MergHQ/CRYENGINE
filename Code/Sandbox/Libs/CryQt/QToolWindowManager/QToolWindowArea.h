@@ -7,13 +7,13 @@
 #include "QToolWindowTabBar.h"
 
 #include <QFrame>
-#include <QGridLayout>
-#include <QLabel>
 #include <QPointer>
 #include <QPushButton>
 #include <QTabBar>
 #include <QTabWidget>
 
+class QGridLayout;
+class QLabel;
 class QToolWindowManager;
 
 class QTOOLWINDOWMANAGER_EXPORT QToolWindowSingleTabAreaFrame : public QFrame
@@ -36,7 +36,6 @@ private slots:
 	void         closeWidget();
 private:
 	virtual void closeEvent(QCloseEvent* e) Q_DECL_OVERRIDE;
-	virtual void changeEvent(QEvent* ev) Q_DECL_OVERRIDE;
 	QIcon        getCloseButtonIcon() const;
 	QToolWindowManager* m_manager;
 	QPushButton*        m_closeButton;

@@ -63,6 +63,9 @@
 #include <CrySchematyc/CoreAPI.h>
 #include <IGameObjectSystem.h>
 
+#include <QPushButton>
+#include <QToolButton>
+
 REGISTER_CLASS_DESC(CEntityClassDesc);
 
 const char* CEntityObject::s_LensFlarePropertyName("flare_Flare");

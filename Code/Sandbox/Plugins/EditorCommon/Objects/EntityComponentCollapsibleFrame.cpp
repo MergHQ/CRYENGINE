@@ -4,15 +4,18 @@
 #include "EntityComponentCollapsibleFrame.h"
 
 #include "Controls/DynamicPopupMenu.h"
-
-#include "IObjectManager.h"
 #include "Objects/EntityObject.h"
-#include "IUndoObject.h"
+#include "Objects/ISelectionGroup.h"
+#include "IObjectManager.h"
+
 #include <IEditor.h>
+#include <IUndoObject.h>
 
 #include <CryEntitySystem/IEntityComponent.h>
 #include <CryEntitySystem/IEntity.h>
-#include "ISelectionGroup.h"
+
+#include <QLayout>
+#include <QToolButton>
 
 class CUndoRemoveComponent : public IUndoObject
 {

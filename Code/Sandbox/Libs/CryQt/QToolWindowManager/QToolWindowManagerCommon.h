@@ -57,12 +57,6 @@
 #define QTWM_DROPTARGET_SPLIT_RIGHT "droptargetSplitRight"
 #define QTWM_DROPTARGET_COMBINE "droptargetCombine"
 
-#include <qglobal.h> // need to include here, so we know QT_VERSION
-#if QT_VERSION <= 0x050000
-#include <QVariant>
-#define Q_DECL_OVERRIDE
-#endif
-
 #ifndef QTWM_DLL
 #define QTWM_DLL
 #endif // ! QTWM_DLL

@@ -5,7 +5,10 @@
 #include "EditorFramework/PersonalizationManager.h"
 #include "IEditorClassFactory.h"
 #include "QtViewPane.h"
+
 #include <IEditor.h>
+
+#include <QVBoxLayout>
 
 CDockableDialog::CDockableDialog(const QString& dialogNameId, const char* paneClassId, bool saveSize /*= true*/)
 	: QSandboxWindow(CEditorDialog::s_config)

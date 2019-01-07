@@ -1,20 +1,21 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <StdAfx.h>
-#include <QVBoxLayout>
+#include "StdAfx.h"
+#include "QRollupBar.h"
+
 #include "QScrollableBox.h"
 #include "QCollapsibleFrame.h"
 
-#include "QRollupBar.h"
-#include <QSizePolicy>
+#include <QApplication>
 #include <QEvent>
 #include <QMouseEvent>
-#include <QApplication>
+#include <QSizePolicy>
 #include <QStylePainter>
+#include <QVBoxLayout>
 
-QRollupBar::QRollupBar(QWidget *parent)
+QRollupBar::QRollupBar(QWidget* parent)
 	: QWidget(parent)
-	, m_pDragWidget(0)
+	, m_pDragWidget(nullptr)
 	, m_canReorder(false)
 	, m_DragInProgress(false)
 	, m_rollupsClosable(false)
@@ -28,19 +29,15 @@ QRollupBar::QRollupBar(QWidget *parent)
 	m_pDelimeter->setStyleSheet("background-color:blue;");
 	m_pDelimeter->setVisible(false);
 	layout()->addWidget(m_pScrollBox);
-	
+
 }
 
-QRollupBar::~QRollupBar()
-{
-}
-
-int QRollupBar::addWidget(QWidget * widget)
+int QRollupBar::addWidget(QWidget* widget)
 {
 	return attachNewWidget(widget);
 }
 
-int QRollupBar::attachNewWidget(QWidget * widget, int index /*= -1*/)
+int QRollupBar::attachNewWidget(QWidget* widget, int index /*= -1*/)
 {
 	QCollapsibleFrame* newFrame = new QCollapsibleFrame(widget->windowTitle(), m_pScrollBox);
 	newFrame->SetWidget(widget);
@@ -65,8 +62,7 @@ int QRollupBar::attachNewWidget(QWidget * widget, int index /*= -1*/)
 	return newIndex;
 }
 
-
-void QRollupBar::insertWidget(QWidget * widget, int index)
+void QRollupBar::insertWidget(QWidget* widget, int index)
 {
 	attachNewWidget(widget, index);
 }
@@ -87,7 +83,6 @@ void QRollupBar::removeAt(int index)
 		m_subFrames.removeAt(index);
 
 	}
-		
 }
 
 QCollapsibleFrame* QRollupBar::rollupAt(int index) const
@@ -124,7 +119,6 @@ int QRollupBar::rollupIndexAt(QPoint pos) const
 	}
 	return -1;
 }
-
 
 void QRollupBar::OnRollupCloseRequested(QCollapsibleFrame* frame)
 {
@@ -199,10 +193,10 @@ QWidget* QRollupBar::getDropTarget() const
 	return m_pScrollBox;
 }
 
-bool QRollupBar::eventFilter(QObject * o, QEvent * e)
+bool QRollupBar::eventFilter(QObject* o, QEvent* e)
 {
 	if (e->type() == QEvent::MouseButtonPress)
-	{	
+	{
 		if (m_canReorder)
 		{
 			QMouseEvent* me = static_cast<QMouseEvent*>(e);
@@ -214,8 +208,7 @@ bool QRollupBar::eventFilter(QObject * o, QEvent * e)
 				}
 			}
 		}
-		
-		
+
 	}
 	else if (e->type() == QEvent::MouseMove)
 	{
@@ -269,7 +262,7 @@ bool QRollupBar::eventFilter(QObject * o, QEvent * e)
 					}
 				}
 			}
-			
+
 		}
 	}
 	else if (e->type() == QEvent::MouseButtonRelease)
@@ -289,7 +282,7 @@ bool QRollupBar::eventFilter(QObject * o, QEvent * e)
 				{
 					targetPos -= 1;
 				}
-		
+
 				QCollapsibleFrame* itemToMove = m_subFrames[m_draggedId];
 				m_subFrames.removeAt(m_draggedId);
 				m_subFrames.insert(targetPos, itemToMove);
@@ -300,7 +293,7 @@ bool QRollupBar::eventFilter(QObject * o, QEvent * e)
 			return true;
 
 		}
-		
+
 	}
 	return QWidget::eventFilter(o, e);
 }
