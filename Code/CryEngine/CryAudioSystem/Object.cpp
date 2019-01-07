@@ -395,6 +395,7 @@ bool CObject::CanBeReleased() const
 {
 	return (m_flags& EObjectFlags::InUse) == 0 &&
 	       m_activeEvents.empty() &&
+	       m_triggerStates.empty() &&
 	       m_activeStandaloneFiles.empty() &&
 	       !m_propagationProcessor.HasPendingRays() &&
 	       m_numPendingSyncCallbacks == 0;
