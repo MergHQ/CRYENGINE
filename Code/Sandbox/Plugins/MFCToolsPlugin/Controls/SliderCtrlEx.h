@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __SliderCtrlEx_h__
-#define __SliderCtrlEx_h__
 #pragma once
 
 #include "MFCToolsDefines.h"
@@ -18,7 +16,7 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual void    EnableUndo(const CString& undoText);
-	virtual void    SetUpdateCallback(const UpdateCallback& cb) { m_updateCallback = cb; };
+	virtual void    SetUpdateCallback(const UpdateCallback& cb) { m_updateCallback = cb; }
 
 	virtual void    SetRangeFloat(float min, float max, float step = 0.f);
 	virtual void    SetValue(float val);
@@ -29,7 +27,6 @@ protected:
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
-	afx_msg void OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult);
 
 	DECLARE_MESSAGE_MAP()
 
@@ -65,7 +62,7 @@ public:
 	DECLARE_DYNAMIC(CSliderCtrlCustomDraw)
 
 	CSliderCtrlCustomDraw() { m_tickFreq = 1; m_selMin = m_selMax = 0; }
-	void SetTicFreq(int nFreq) { m_tickFreq = nFreq; };
+	void SetTicFreq(int nFreq) { m_tickFreq = nFreq; }
 	void SetSelection(int nMin, int nMax);
 
 protected:
@@ -81,5 +78,3 @@ private:
 	int   m_tickFreq;
 	CRect m_channelRc;
 };
-
-#endif // __SliderCtrlEx_h__

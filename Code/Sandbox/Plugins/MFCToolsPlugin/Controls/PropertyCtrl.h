@@ -5,10 +5,9 @@
 #include "MFCToolsDefines.h"
 #include "Util/Variable.h"
 
-// forward declarations.
+class CBitmapToolTip;
 class CPropertyItem;
 class CVarBlock;
-class CBitmapToolTip;
 
 // This notification sent to parent after item in property control is selected.
 #define  PROPERTYCTRL_ONSELECT (0x0001)
@@ -100,9 +99,9 @@ public:
 
 	//! Set control flags.
 	//! @param flags @see Flags enum.
-	void SetFlags(int flags) { m_nFlags = flags; };
+	void SetFlags(int flags) { m_nFlags = flags; }
 	//! get control flags.
-	int  GetFlags() const    { return m_nFlags; };
+	int  GetFlags() const    { return m_nFlags; }
 
 	/** Create Property items from root Xml node
 	 */
@@ -196,7 +195,7 @@ public:
 
 	/** Get pointer to root item
 	 */
-	CPropertyItem* GetRootItem() const { return m_root; };
+	CPropertyItem* GetRootItem() const { return m_root; }
 
 	/**  Reload values back from xml nodes.
 	 */
@@ -204,11 +203,11 @@ public:
 
 	/** Change splitter value.
 	 */
-	void SetSplitter(int splitter) { m_splitter = splitter; };
+	void SetSplitter(int splitter) { m_splitter = splitter; }
 
 	/** Get current value of splitter.
 	 */
-	int GetSplitter() const { return m_splitter; };
+	int GetSplitter() const { return m_splitter; }
 
 	/** Enable/Disable the splitter repositioning itself when resizing the control.
 	 */
@@ -226,7 +225,7 @@ public:
 	BOOL EnableWindow(BOOL bEnable = TRUE);
 
 	//! When set to true will only display values of modified parameters.
-	void  SetDisplayOnlyModified(bool bEnable) { m_bDisplayOnlyModified = bEnable; };
+	void  SetDisplayOnlyModified(bool bEnable) { m_bDisplayOnlyModified = bEnable; }
 
 	CRect GetItemValueRect(const CRect& rect);
 	void  GetItemRect(CPropertyItem* item, CRect& rect);
@@ -265,7 +264,7 @@ public:
 
 	bool IsReadOnly();
 	bool IsGrayed();
-	bool IsExtenedUI() const { return (m_nFlags & F_EXTENDED) != 0; };
+	bool IsExtenedUI() const { return (m_nFlags & F_EXTENDED) != 0; }
 
 	void RemoveAllItems();
 

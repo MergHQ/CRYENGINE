@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+
 #include "MFCToolsDefines.h"
 #include <CryCore/StlUtils.h>
 #include <map>
@@ -33,7 +34,7 @@ public:
 	void             SetRect(const CRect& rc)           { m_clientRect = rc; }
 	CRect            GetRect() const                    { return m_clientRect; }
 
-	void             SetItemHeight(int nHeight)         { m_nHeight = nHeight; };
+	void             SetItemHeight(int nHeight)         { m_nHeight = nHeight; }
 	int              GetItemHeight() const              { return m_nHeight; }
 
 	void             SetDropTarget(bool bDropTarget)    { m_bDropTarget = bDropTarget; }
@@ -42,8 +43,8 @@ public:
 	void             SetUserData(void* ptr)             { m_pUserData = ptr; }
 	void*            GetUserData() const                { return m_pUserData; }
 
-	void             SetUserString(const char* userStr) { m_userString = userStr; };
-	const char*      GetUserString()                    { return m_userString.c_str(); };
+	void             SetUserString(const char* userStr) { m_userString = userStr; }
+	const char*      GetUserString()                    { return m_userString.c_str(); }
 
 	int              GetChildCount()                    { return GetChilds()->GetCount(); }
 	CTreeItemRecord* GetChild(int nIndex)               { return (CTreeItemRecord*)GetChilds()->GetAt(nIndex); }

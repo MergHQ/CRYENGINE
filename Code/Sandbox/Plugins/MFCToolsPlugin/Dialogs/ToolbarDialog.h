@@ -13,14 +13,7 @@ public:
 	virtual ~CToolbarDialog();
 
 	void RecalcLayout();
-	void RecalcBarLayout() { RecalcLayout(); };
-	// Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(CTerrainDialog)
-protected:
-	//}}AFX_VIRTUAL
-
-	// Implementation
+	void RecalcBarLayout() { RecalcLayout(); }
 protected:
 	void RepositionBarsInternal(UINT nIDFirst, UINT nIDLast, UINT nIDLeftOver,
 	                            UINT nFlags = reposDefault, LPRECT lpRectParam = NULL, LPCRECT lpRectClient = NULL, BOOL bStretch = TRUE);
@@ -54,7 +47,6 @@ public:
 	CCustomFrameWnd();
 
 	BOOL                    Create(DWORD dwStyle, const CRect& rect, CWnd* pParentWnd, UINT nID);
-	void                    SetView(CWnd* pViewWnd);
 
 	void                    LoadLayout(const CString& profile);
 	void                    InstallDockingPanes();
@@ -64,8 +56,8 @@ public:
 protected:
 	DECLARE_MESSAGE_MAP()
 
-	virtual BOOL    OnInitDialog()                                    { return TRUE; };
-	virtual LRESULT OnDockingPaneNotify(WPARAM wParam, LPARAM lParam) { return 0; };
+	virtual BOOL    OnInitDialog()                                    { return TRUE; }
+	virtual LRESULT OnDockingPaneNotify(WPARAM wParam, LPARAM lParam) { return 0; }
 
 	virtual BOOL    PreTranslateMessage(MSG* pMsg);
 	virtual BOOL    OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo);

@@ -1,22 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#if !defined(AFX_CUSTOMCOLORDIALOG_H__E1491910_A0B4_48B3_9556_CB079E1EAC7F__INCLUDED_)
-#define AFX_CUSTOMCOLORDIALOG_H__E1491910_A0B4_48B3_9556_CB079E1EAC7F__INCLUDED_
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif // _MSC_VER > 1000
-// CustomColorDialog.h : header file
-//
-// This class extents CMFCColorDialog for two reasons:
-//  1. Enables the 'ColorChangeCallback' registration
-//  2. Makes the color picking tool work across multiple monitors
+#pragma once
 
 #include "MFCToolsDefines.h"
 
-/////////////////////////////////////////////////////////////////////////////
-// CCustomColorDialog dialog
-
+// This class extents CMFCColorDialog for two reasons:
+//  1. Enables the 'ColorChangeCallback' registration
+//  2. Makes the color picking tool work across multiple monitors
 class MFC_TOOLS_PLUGIN_API CCustomColorDialog : public CMFCColorDialog
 {
 	DECLARE_DYNAMIC(CCustomColorDialog)
@@ -44,8 +34,3 @@ protected:
 	ColorChangeCallback m_callback;
 	COLORREF            m_colorPrev;
 };
-
-//{{AFX_INSERT_LOCATION}}
-// Microsoft Visual C++ will insert additional declarations immediately before the previous line.
-
-#endif // !defined(AFX_CUSTOMCOLORDIALOG_H__E1491910_A0B4_48B3_9556_CB079E1EAC7F__INCLUDED_)

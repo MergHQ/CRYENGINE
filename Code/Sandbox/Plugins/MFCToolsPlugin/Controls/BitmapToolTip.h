@@ -1,15 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __BitmapToolTip_h__
-#define __BitmapToolTip_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "Controls/ImageHistogramCtrl.h"
 
-//////////////////////////////////////////////////////////////////////////
 class CBitmapToolTip : public CWnd
 {
 	// Construction
@@ -29,10 +23,6 @@ public:
 
 	BOOL Create(const RECT& rect);
 
-	// Attributes
-public:
-
-	// Operations
 public:
 	void RefreshLayout();
 	void RefreshViewmode();
@@ -82,5 +72,3 @@ private:
 	HWND                m_hToolWnd;
 	CRect               m_toolRect;
 };
-
-#endif //__BitmapToolTip_h__

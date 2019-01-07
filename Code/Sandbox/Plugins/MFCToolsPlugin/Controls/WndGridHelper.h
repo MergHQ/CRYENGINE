@@ -1,10 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __WndGridHelper_h__
-#define __WndGridHelper_h__
 #pragma once
 
-//////////////////////////////////////////////////////////////////////////
 class CWndGridHelper
 {
 public:
@@ -16,11 +13,9 @@ public:
 	CRect  rect;
 	CPoint nMinPixelsPerGrid;
 	CPoint nMaxPixelsPerGrid;
-	//////////////////////////////////////////////////////////////////////////
 	CPoint firstGridLine;
 	CPoint numGridLines;
 
-	//////////////////////////////////////////////////////////////////////////
 	CWndGridHelper()
 	{
 		zoom = Vec2(1, 1);
@@ -34,7 +29,6 @@ public:
 		numGridLines = CPoint(0, 0);
 	}
 
-	//////////////////////////////////////////////////////////////////////////
 	Vec2 ClientToWorld(CPoint point)
 	{
 		Vec2 v;
@@ -42,7 +36,7 @@ public:
 		v.y = (point.y - rect.top) / zoom.y + origin.y;
 		return v;
 	}
-	//////////////////////////////////////////////////////////////////////////
+
 	CPoint WorldToClient(Vec2 v)
 	{
 		CPoint p;
@@ -59,7 +53,7 @@ public:
 	{
 		zoom = newzoom;
 	}
-	//////////////////////////////////////////////////////////////////////////
+
 	void SetZoom(Vec2 newzoom, CPoint center)
 	{
 		if (newzoom.x < 0.01f)
@@ -157,5 +151,3 @@ public:
 		return (nGridLineY * step.y);
 	}
 };
-
-#endif // __WndGridHelper_h__

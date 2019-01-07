@@ -3,9 +3,6 @@
 #pragma once
 #include "MFCToolsDefines.h"
 
-//////////////////////////////////////////////////////////////////////////
-// CCheckOutDialog dialog
-
 class MFC_TOOLS_PLUGIN_API CCheckOutDialog : public CDialog
 {
 	DECLARE_DYNAMIC(CCheckOutDialog)
@@ -20,11 +17,11 @@ class MFC_TOOLS_PLUGIN_API CCheckOutDialog : public CDialog
 	};
 
 public:
-	CCheckOutDialog(const CString& file, CWnd* pParent = NULL);   // standard constructor
+	CCheckOutDialog(const CString& file, CWnd* pParent = NULL);
 	virtual ~CCheckOutDialog();
 
 	virtual BOOL OnInitDialog();
-	EResult      GetResult() const { return m_result; };
+	EResult      GetResult() const { return m_result; }
 
 	// Enable functionality For All. In the end call with false to return it in init state.
 	// Returns previous enable state

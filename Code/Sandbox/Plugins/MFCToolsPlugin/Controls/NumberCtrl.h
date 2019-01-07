@@ -1,19 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#if !defined(AFX_NUMBERCTRL_H__F928C7EC_F2C9_4272_B538_C670C0B2EF9F__INCLUDED_)
-#define AFX_NUMBERCTRL_H__F928C7EC_F2C9_4272_B538_C670C0B2EF9F__INCLUDED_
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif // _MSC_VER > 1000
-// NumberCtrl.h : header file
-//
+#pragma once
 
 #include "MFCToolsDefines.h"
 #include "NumberCtrlEdit.h"
-
-/////////////////////////////////////////////////////////////////////////////
-// CNumberCtrl window
 
 // Sent to parent when user start to change control value.
 #define EN_BEGIN_DRAG EN_CHANGE + 0x1000
@@ -22,46 +12,30 @@
 
 class MFC_TOOLS_PLUGIN_API CNumberCtrl : public CWnd
 {
-	// Construction
 public:
 	typedef Functor1<CNumberCtrl*> UpdateCallback;
 	enum Flags
 	{
 		LEFTARROW    = 0x01, //!< Place arrows at left side of edit control.
-		NOBORDER     = 0x02, //!< Not draw border arroud edit control.
+		NOBORDER     = 0x02, //!< Not draw border around edit control.
 		LEFTALIGN    = 0x04, //!< Align text to left side.
 		CENTER_ALIGN = 0x08, //!< Align text to center.
 	};
 
 	CNumberCtrl();
+	virtual ~CNumberCtrl();
 
-	// Attributes
-public:
-
-	// Operations
-public:
 	void Create(CWnd* parentWnd, UINT ctrlID, int nFlags = 0);
 	void Create(CWnd* parentWnd, CRect& rc, UINT nID, int nFlags = 0);
 
 	//! If called will enable undo with given text when control is modified.
 	void EnableUndo(const CString& undoText);
 
-	void SetUpdateCallback(const UpdateCallback& cb) { m_updateCallback = cb; };
-	//void SetBeginUpdateCallback( const UpdateCallback &cb ) { m_beginUpdateCallback = cb; };
-	//void SetEndUpdateCallback( const UpdateCallback &cb ) { m_endUpdateCallback = cb; };
+	void SetUpdateCallback(const UpdateCallback& cb) { m_updateCallback = cb; }
 
 	void EnableNotifyWithoutValueChange(bool bFlag);
 
 	void SetMultiplier(double fMultiplier);
-
-	// Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(CNumberCtrl)
-	//}}AFX_VIRTUAL
-
-	// Implementation
-public:
-	virtual ~CNumberCtrl();
 
 	//! Set/get current value.
 	void    SetValue(double val);
@@ -77,13 +51,13 @@ public:
 
 	//! Value in control will be integer.
 	void SetInteger(bool enable);
-	//! If left is true align text in edit control to left, overwise to right.
+	//! If left is true align text in edit control to left, otherwise to right.
 	void SetLeftAlign(bool left);
 
 	//! set the internal precision for floats m.m. (default is 2)
 	void SetInternalPrecision(int iniDigits);
 
-	//! Ovveridable from MFC.
+	//! Overridden from MFC.
 	void SetFont(CFont* pFont, BOOL bRedraw = TRUE);
 
 	void SetFloatFormatPrecision(int significantDigits);
@@ -154,8 +128,6 @@ protected:
 	int            m_floatFormatPrecision;
 
 	UpdateCallback m_updateCallback;
-	//UpdateCallback m_beginUpdateCallback;
-	//UpdateCallback m_endUpdateCallback;
 
 	//! calculate the digits right from the comma
 	//! \param infNumber source double number
@@ -165,10 +137,3 @@ protected:
 public:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 };
-
-/////////////////////////////////////////////////////////////////////////////
-
-//{{AFX_INSERT_LOCATION}}
-// Microsoft Visual C++ will insert additional declarations immediately before the previous line.
-
-#endif // !defined(AFX_NUMBERCTRL_H__F928C7EC_F2C9_4272_B538_C670C0B2EF9F__INCLUDED_)

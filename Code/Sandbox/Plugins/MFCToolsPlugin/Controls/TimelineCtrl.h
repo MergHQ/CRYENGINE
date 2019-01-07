@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __TimelineCtrl_h__
-#define __TimelineCtrl_h__
 #pragma once
 
 #include "MFCToolsDefines.h"
@@ -103,7 +101,7 @@ protected:
 
 	CString TimeToString(float time);
 	// Convert time in seconds into the milliseconds.
-	int     ToMillis(float time)      { return pos_directed_rounding(time * 1000.0f); };
+	int     ToMillis(float time)      { return pos_directed_rounding(time * 1000.0f); }
 	float   MillisToTime(int nMillis) { return nMillis / 1000.0f; }
 	float   SnapTime(float time);
 
@@ -149,5 +147,3 @@ private:
 	bool                  m_bTrackingSnapToFrames;
 	std::function<void()> m_playCallback;
 };
-
-#endif // __TimelineCtrl_h__

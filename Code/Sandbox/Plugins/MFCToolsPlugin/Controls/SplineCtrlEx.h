@@ -70,13 +70,13 @@ public:
 
 	int                   InsertKey(ISplineInterpolator* pSpline, ISplineInterpolator* pDetailSpline, CPoint point);
 
-	void                  SetGrid(int numX, int numY)                          { m_gridX = numX; m_gridY = numY; };
+	void                  SetGrid(int numX, int numY)                          { m_gridX = numX; m_gridY = numY; }
 	void                  SetTimeRange(const Range& range)                     { m_timeRange = range; }
 	void                  SetValueRange(const Range& range)                    { m_valueRange = range; }
 	void                  SetDefaultValueRange(const Range& range)             { m_defaultValueRange = range; }
 	void                  SetDefaultKeyTangentType(ESplineKeyTangentType type) { m_defaultKeyTangentType = type; }
 	ESplineKeyTangentType GetDefaultKeyTangentType() const                     { return m_defaultKeyTangentType; }
-	void                  SetTooltipValueScale(float x, float y)               { m_fTooltipScaleX = x; m_fTooltipScaleY = y; };
+	void                  SetTooltipValueScale(float x, float y)               { m_fTooltipScaleX = x; m_fTooltipScaleY = y; }
 	void                  SetSplineSet(ISplineSet* pSplineSet);
 
 	void                  AddSpline(ISplineInterpolator* pSpline, ISplineInterpolator* pDetailSpline, COLORREF color);

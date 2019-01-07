@@ -1,8 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// These are helper classes for containing the data from the generic overwrite dialog.
-
 #pragma once
+
+// These are helper classes for containing the data from the generic overwrite dialog.
 
 // Small helper class.
 // Hint: have one for files and other for directories.

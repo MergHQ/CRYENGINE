@@ -1,10 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __SplineCtrl_h__
-#define __SplineCtrl_h__
 #pragma once
+
 #include "MFCToolsDefines.h"
 #include <CryMath/ISplines.h>
+
+class CTimelineCtrl;
 
 // Custom styles for this control.
 #define SPLINE_STYLE_NOGRID         0x0001
@@ -15,11 +16,6 @@
 // Notify event sent just before when spline is modified.
 #define SPLN_BEFORE_CHANGE (0x0002)
 
-class CTimelineCtrl;
-
-//////////////////////////////////////////////////////////////////////////
-// Spline control.
-//////////////////////////////////////////////////////////////////////////
 class MFC_TOOLS_PLUGIN_API CSplineCtrl : public CWnd
 {
 public:
@@ -31,15 +27,15 @@ public:
 	BOOL Create(DWORD dwStyle, const CRect& rc, CWnd* pParentWnd, UINT nID);
 
 	//Key functions
-	int                  GetActiveKey() { return m_nActiveKey; };
+	int                  GetActiveKey() { return m_nActiveKey; }
 	void                 SetActiveKey(int nIndex);
 	int                  InsertKey(CPoint point);
 	void                 ToggleKeySlope(int nIndex, int nDist);
 
-	void                 SetGrid(int numX, int numY)            { m_gridX = numX; m_gridY = numY; };
+	void                 SetGrid(int numX, int numY)            { m_gridX = numX; m_gridY = numY; }
 	void                 SetTimeRange(float tmin, float tmax)   { m_fMinTime = tmin; m_fMaxTime = tmax; }
 	void                 SetValueRange(float tmin, float tmax)  { m_fMinValue = tmin; m_fMaxValue = tmax; if (m_fMinValue == m_fMaxValue) m_fMaxValue = m_fMinValue + 0.001f; }
-	void                 SetTooltipValueScale(float x, float y) { m_fTooltipScaleX = x; m_fTooltipScaleY = y; };
+	void                 SetTooltipValueScale(float x, float y) { m_fTooltipScaleX = x; m_fTooltipScaleY = y; }
 	// Lock value of first and last key to be the same.
 	void                 LockFirstAndLastKeys(bool bLock)       { m_bLockFirstLastKey = bLock; }
 
@@ -51,7 +47,7 @@ public:
 	void                 UpdateToolTip();
 
 	typedef Functor1<CSplineCtrl*> UpdateCallback;
-	void SetUpdateCallback(const UpdateCallback& cb) { m_updateCallback = cb; };
+	void SetUpdateCallback(const UpdateCallback& cb) { m_updateCallback = cb; }
 
 protected:
 	enum EHitCode
@@ -138,5 +134,3 @@ private:
 
 	UpdateCallback       m_updateCallback;
 };
-
-#endif // __SplineCtrl_h__
