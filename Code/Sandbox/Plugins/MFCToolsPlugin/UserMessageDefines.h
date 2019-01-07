@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef USERMESSAGEDEFINES_H
-#define USERMESSAGEDEFINES_H
+#pragma once
 
 enum ESandboxUserMessages
 {
@@ -49,4 +48,3 @@ enum ESandboxUserMessages
 	// Viewport
 	WM_VIEWPORT_ON_TITLE_CHANGE,
 };
-#endif

@@ -1,7 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __TREECONTROLUTILS_H__
-#define __TREECONTROLUTILS_H__
+#pragma once
+
 #include <iterator>
 
 namespace TreeCtrlUtils
@@ -256,5 +256,3 @@ template<typename T> SelectedTreeItemDataIterator<T> EndSelectedTreeItemData(CXT
 	return SelectedTreeItemDataIterator<T>(EndSelectedTreeItems(pCtrl));
 }
 }
-
-#endif //__TREECONTROLUTILS_H__

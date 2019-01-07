@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef VICON_CLIENTCODES_H
-#define VICON_CLIENTCODES_H
+#pragma once
 
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_WINDOWS
 	#define DISABLE_VICON 1
@@ -307,5 +306,3 @@ private:
 	Plane       FitMarkers(bool bUseDefault);
 
 };
-
-#endif

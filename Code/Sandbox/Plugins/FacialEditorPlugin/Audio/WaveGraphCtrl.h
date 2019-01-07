@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __WAVEGRAPHCTRL_H__
-#define __WAVEGRAPHCTRL_H__
 #pragma once
 
 #include <CryAnimation/IFacialAnimation.h>
@@ -190,5 +188,3 @@ private:
 	bool                  m_bPlaying;
 	float                 m_fPlaybackSpeed;
 };
-
-#endif // __SplineCtrl_h__

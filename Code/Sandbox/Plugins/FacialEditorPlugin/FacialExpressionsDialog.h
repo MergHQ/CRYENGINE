@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FacialExpressionsDialog_h__
-#define __FacialExpressionsDialog_h__
 #pragma once
 
 #include "FacialEdContext.h"
@@ -83,8 +81,8 @@ public:
 protected:
 	virtual void OnFacialEdEvent(EFacialEdEvent event, IFacialEffector* pEffector, int nChannelCount, IFacialAnimChannel** ppChannels);
 
-	virtual void OnOK()     {};
-	virtual void OnCancel() {};
+	virtual void OnOK()     {}
+	virtual void OnCancel() {}
 
 	virtual BOOL OnInitDialog();
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
@@ -111,5 +109,3 @@ private:
 	HACCEL               m_hAccelerators;
 	COleDropTarget*      m_pDropTarget;
 };
-
-#endif // __FacialExpressionsDialog_h__
