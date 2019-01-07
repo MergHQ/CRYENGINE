@@ -49,6 +49,8 @@
 #include <CryString/CryWinStringUtils.h>
 #include <IGameRulesSystem.h>
 
+#include <QDir>
+
 namespace
 {
 
@@ -1063,7 +1065,14 @@ CCryEditApp::ECreateLevelResult CCryEditApp::CreateLevel(const string& levelName
 
 	if (pCryPak->IsFolder(levelPath.c_str()))
 	{
-		return ECLR_ALREADY_EXISTS;
+		// User already saw all confirmation dialogs. Deleting level folder without prompt
+		const QString absLevelDirectory = QtUtil::ToQString(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), levelName));
+
+		QDir dirToDelete(absLevelDirectory);
+		if (!dirToDelete.removeRecursively())
+		{
+			return ECLR_DIR_CREATION_FAILED;
+		}
 	}
 
 	CLogFile::WriteLine("Creating level directory");
