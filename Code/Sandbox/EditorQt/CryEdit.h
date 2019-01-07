@@ -15,7 +15,6 @@ public:
 	enum ECreateLevelResult
 	{
 		ECLR_OK = 0,
-		ECLR_ALREADY_EXISTS,
 		ECLR_DIR_CREATION_FAILED
 	};
 

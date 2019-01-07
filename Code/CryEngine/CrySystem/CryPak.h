@@ -1,29 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-//
-//	File:CryPak.h
-//
-//	History:
-//	-Feb 2,2001:Created by Honich Andrey
-//  -June 12, 2003: Taken over by Sergiy Migdalskiy.
-//     Got rid of unzip usage, now using ZipDir for much more effective
-//     memory usage (~3-6 times less memory, and no allocator overhead)
-//     to keep the directory of the zip file; better overall effectiveness and
-//     more readable and manageable code, made the connection to Streaming Engine
-//
-//////////////////////////////////////////////////////////////////////
+#pragma once
 
-#ifndef CRYPAK_H
-#define CRYPAK_H
-
-#include <CrySystem/File/ICryPak.h>
-#include "ZipDir.h"
 #include "MTSafeAllocator.h"
-#include <CryCore/StlUtils.h>
 #include "PakVars.h"
+#include "ZipDir.h"
+
 #include <CryCore/Containers/VectorMap.h>
-#include <CrySystem/Profilers/IPerfHud.h>
+#include <CryCore/StlUtils.h>
 #include <CryMemory/STLGlobalAllocator.h>
+#include <CrySystem/File/ICryPak.h>
+#include <CrySystem/Profilers/IPerfHud.h>
+
 #include <atomic>
 
 class CCryPak;
@@ -56,7 +44,7 @@ struct CCachedFileData : public _i_reference_target_t
 	   // the memory needs to be allocated out of a MT-safe heap here
 	   void * __cdecl operator new   (size_t size) { return g_pPakHeap->Alloc(size, "CCachedFileData::new"); }
 	   void * __cdecl operator new   (size_t size, const std::nothrow_t &nothrow) { return g_pPakHeap->Alloc(size, "CCachedFileData::new(std::nothrow)"); }
-	   void __cdecl operator delete  (void *p) { g_pPakHeap->Free(p); };
+	   void __cdecl operator delete  (void *p) { g_pPakHeap->Free(p); }
 	 */
 
 	unsigned GetFileDataOffset()
@@ -112,7 +100,7 @@ struct CCachedFileRawData : public CMultiThreadRefCount
 	~CCachedFileRawData();
 };
 
-// an (inside zip) emultated open file
+// an (inside zip) emulated open file
 struct CZipPseudoFile
 {
 	CZipPseudoFile()
@@ -626,7 +614,6 @@ public: // ---------------------------------------------------------------------
 	virtual uint32                       ComputeCRC(const char* szPath, uint32 nFileOpenFlags = 0) override;
 	virtual bool                         ComputeMD5(const char* szPath, unsigned char* md5, uint32 nFileOpenFlags = 0) override;
 
-	int                                  ComputeCachedPakCDR_CRC(ZipDir::CachePtr pInZip);
 	virtual int                          ComputeCachedPakCDR_CRC(const char* filename, bool useCryFile /*=true*/, IMemoryBlock* pData /*=NULL*/) override;
 
 	void                                 OnMissingFile(const char* szPath);
@@ -699,5 +686,3 @@ private:
 
 	virtual bool ForEachArchiveFolderEntry(const char* szArchivePath, const char* szFolderPath, const ArchiveEntrySinkFunction& callback) override;
 };
-
-#endif

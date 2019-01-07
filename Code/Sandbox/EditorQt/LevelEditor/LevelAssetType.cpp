@@ -308,16 +308,12 @@ bool CLevelType::OnCreate(INewAsset& editAsset, const SCreateParams* pCreatePara
 
 	const string levelFolder = GetLevelFolder(editAsset);
 	
-	auto createResult = CCryEditApp::GetInstance()->CreateLevel(levelFolder.c_str(), params.resolution, params.unitSize, params.bUseTerrain);
+	auto createResult = CCryEditApp::GetInstance()->CreateLevel(levelFolder, params.resolution, params.unitSize, params.bUseTerrain);
 
 	switch (createResult)
 	{
 	case CCryEditApp::ECLR_OK:
 		break;
-
-	case CCryEditApp::ECLR_ALREADY_EXISTS:
-		CQuestionDialog::SWarning(CLevelEditor::tr("New Level failed"), CLevelEditor::tr("Level with this name already exists, please choose another name."));
-		return false;
 
 	case CCryEditApp::ECLR_DIR_CREATION_FAILED:
 			{
