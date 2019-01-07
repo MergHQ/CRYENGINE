@@ -6,10 +6,6 @@
 #include <AssetSystem/EditableAsset.h>
 #include <PathUtils.h>
 
-#include <QHBoxLayout>
-#include <QLabel>
-#include <QLineEdit>
-
 #include <EditorFramework/Events.h>
 #include <EditorFramework/Inspector.h>
 #include <LevelEditor/LevelEditorSharedState.h>
@@ -24,6 +20,11 @@
 #include "IUndoObject.h"
 
 #include <CryCore/CryTypeInfo.h>
+
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
+#include <QToolButton>
 
 namespace Private_MaterialEditor
 {

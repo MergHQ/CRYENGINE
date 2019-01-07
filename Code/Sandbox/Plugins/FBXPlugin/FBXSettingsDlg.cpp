@@ -9,6 +9,8 @@
 #include <CrySerialization/yasli/Archive.h>
 #include <CrySerialization/yasli/Enum.h>
 
+#include <QVBoxLayout>
+
 namespace Private_FBXSettingsDlg
 {
 

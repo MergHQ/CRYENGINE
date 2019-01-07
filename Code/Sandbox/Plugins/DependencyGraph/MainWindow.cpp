@@ -12,6 +12,8 @@
 #include <AssetSystem/AssetManager.h>
 #include <CryString/CryPath.h>
 
+#include <QVBoxLayout>
+
 namespace Private_MainWindow
 {
 

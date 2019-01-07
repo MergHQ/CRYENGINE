@@ -19,6 +19,7 @@
 #include <CrySerialization/yasli/JSONOArchive.h>
 
 #include <QApplication>
+#include <QBoxLayout>
 #include <QClipboard>
 #include <QKeyEvent>
 #include <QLabel>

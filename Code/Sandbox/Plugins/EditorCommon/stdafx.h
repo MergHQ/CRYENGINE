@@ -10,10 +10,9 @@
 #include <CryCore/Platform/CryAtlMfc.h>
 
 #include <CryExtension/CryGUID.h>
+
 #include <QMetaType>
-
 Q_DECLARE_METATYPE(CryGUID);
-
 
 #ifdef USE_PCH
 	#include <QAbstractItemModel>

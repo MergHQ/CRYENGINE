@@ -10,7 +10,9 @@
 #include <EditorFramework/Events.h>
 
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler.h>
+
 #include <QToolBar>
+#include <QVBoxLayout>
 
 REGISTER_VIEWPANE_FACTORY(CEditorEnvironmentWindow, "Environment Editor", "Tools", true);
 

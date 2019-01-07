@@ -7,8 +7,11 @@
 #include <EditorFramework/Editor.h>
 #include <ProxyModels/DeepFilterProxyModel.h>
 #include <QAdvancedTreeView.h>
+
 #include <QHeaderView>
 #include <QTextEdit>
+#include <QToolButton>
+#include <QVBoxLayout>
 
 //! Abstract item model for CryTest treeview
 class CCryTestRunnerTreeViewModel : public QAbstractItemModel

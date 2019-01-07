@@ -2,26 +2,6 @@
 
 #pragma once
 
-//Including most commonly used Qt headers to improve compilation times
-#include <QObject>
-#include <QWidget>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QGridLayout>
-#include <QLabel>
-#include <QPushButton>
-#include <QToolButton>
-#include <QLineEdit>
-#include <QAction>
-#include <QMenu>
-#include <QString>
-#include <QTreeView>
-#include <QListView>
-#include <QAbstractItemModel>
-#include <QSortFilterProxyModel>
-#include <QDir>
-#include <QFileInfo>
-
 #include <CryMath/Cry_Math.h>
 #include "IEditor.h"
 
