@@ -30,10 +30,8 @@ protected:
 	virtual void closeEvent(QCloseEvent *) Q_DECL_OVERRIDE;
 	virtual void changeEvent(QEvent *) Q_DECL_OVERRIDE;
 	virtual bool eventFilter(QObject *, QEvent *) Q_DECL_OVERRIDE;
-
-#if QT_VERSION >= 0x050000
 	virtual bool nativeEvent(const QByteArray &eventType, void *message, long *result) Q_DECL_OVERRIDE;
-#endif
+
 #if (defined(_WIN32) || defined(_WIN64))
 	bool winEvent(MSG *msg, long *result);
 #endif

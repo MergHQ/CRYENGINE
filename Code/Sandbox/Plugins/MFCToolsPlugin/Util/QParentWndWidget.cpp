@@ -2,16 +2,13 @@
 
 #include "stdafx.h"
 #include "QParentWndWidget.h"
-#include <QEvent>
-#include <QGuiApplication>
+
 #include <QApplication>
+#include <QEvent>
 #include <QFocusEvent>
+#include <QGuiApplication>
+#include <QWindow>
 
-#include <qt_windows.h>
-
-#if QT_VERSION >= 0x050000
-	#include <QWindow>
-#endif
 static HWND FindTopmostWindow(HWND child, bool considerWsChild)
 {
 	if (child == GetDesktopWindow())
@@ -37,14 +34,11 @@ QParentWndWidget::QParentWndWidget(HWND parent)
 	{
 		SetWindowLongA((HWND)winId(), GWL_STYLE, WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
 
-#if QT_VERSION >= 0x50000
 		QWindow* window = windowHandle();
 		window->setProperty("_q_embedded_native_parent_handle", (WId)m_parent);
 		SetParent((HWND)winId(), m_parent);
 		window->setFlags(Qt::FramelessWindowHint);
-#else
-		SetParent((HWND)winId(), m_parent);
-#endif
+
 		QEvent e(QEvent::EmbeddingControl);
 		QApplication::sendEvent(this, &e);
 	}
@@ -82,6 +76,7 @@ void QParentWndWidget::show()
 
 	QWidget::show();
 }
+
 void QParentWndWidget::hide()
 {
 	QWidget::hide();
@@ -97,16 +92,9 @@ void QParentWndWidget::center()
 	            (rect.bottom - rect.top) / 2 + rect.top, 0, 0);
 }
 
-#if QT_VERSION >= 0x50000
 bool QParentWndWidget::nativeEvent(const QByteArray&, void* message, long*)
-#else
-bool QParentWndWidget::winEvent(MSG* msg, long*)
-#endif
 {
-
-#if QT_VERSION >= 0x50000
 	MSG* msg = (MSG*)message;
-#endif
 	if (msg->message == WM_SETFOCUS)
 	{
 		Qt::FocusReason reason;

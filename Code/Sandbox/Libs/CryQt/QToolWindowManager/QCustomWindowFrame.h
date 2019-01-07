@@ -16,7 +16,6 @@ class QTOOLWINDOWMANAGER_EXPORT QCustomTitleBar : public QFrame
 	Q_OBJECT;
 public:
 	QCustomTitleBar(QWidget* parent);
-	virtual ~QCustomTitleBar();
 
 public:
 	virtual void updateWindowStateButtons();
@@ -34,10 +33,8 @@ protected:
 	virtual void mousePressEvent(QMouseEvent*) Q_DECL_OVERRIDE;
 	virtual void mouseReleaseEvent(QMouseEvent*) Q_DECL_OVERRIDE;
 	virtual bool eventFilter(QObject *, QEvent *) Q_DECL_OVERRIDE;
-
-#if QT_VERSION >= 0x050000
 	virtual bool nativeEvent(const QByteArray &eventType, void *message, long *result) Q_DECL_OVERRIDE;
-#endif
+
 #if (defined(_WIN32) || defined(_WIN64))
 	bool winEvent(MSG *msg, long *result);
 #endif
@@ -68,10 +65,8 @@ public:
 
 protected:
 	virtual void internalSetContents(QWidget* widget, bool useContentsGeometry = true);
-
-#if QT_VERSION >= 0x050000
 	virtual bool nativeEvent(const QByteArray &eventType, void *message, long *result) Q_DECL_OVERRIDE;
-#endif
+
 #if (defined(_WIN32) || defined(_WIN64))
 	bool winEvent(MSG *msg, long *result);
 #endif

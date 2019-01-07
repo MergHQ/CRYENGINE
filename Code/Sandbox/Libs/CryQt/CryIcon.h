@@ -2,21 +2,15 @@
 
 #pragma once
 
-#include <QMap>
 #include <QIcon>
-#include <QString>
+#include <QMap>
 #include <QPainter>
+#include <QString>
 
-#if QT_VERSION < 0x050000
-#include <QIconEngineV2>
-typedef QIconEngineV2 CryQtIconEngine;
-#else
 #include <QIconEngine>
 typedef QIconEngine CryQtIconEngine;
-#endif
 
 #include "CryQtAPI.h"
-#include "CryQtCompatibility.h"
 
 struct CryPixmapIconEngineEntry
 {
@@ -38,11 +32,9 @@ inline CryPixmapIconEngineEntry::CryPixmapIconEngineEntry(const QString& file, c
 	: fileName(file), size(image.size()), mode(m), state(s)
 {
 	pixmap.convertFromImage(image);
-#if QT_VERSION >= 0x0500000
 	// Reset the devicePixelRatio. The pixmap may be loaded from a @2x file,
 	// but be used as a 1x pixmap by QIcon.
 	pixmap.setDevicePixelRatio(1.0);
-#endif
 }
 
 typedef QMap<QIcon::Mode, QBrush> CryIconColorMap;
@@ -52,7 +44,7 @@ class CRYQT_API CryPixmapIconEngine : public CryQtIconEngine
 public:
 	CryPixmapIconEngine(CryIconColorMap colorMap = CryIconColorMap());
 	CryPixmapIconEngine(const CryPixmapIconEngine&);
-	~CryPixmapIconEngine();
+
 	void                      paint(QPainter* painter, const QRect& rect, QIcon::Mode mode, QIcon::State state) Q_DECL_OVERRIDE;
 	QPixmap                   pixmap(const QSize& size, QIcon::Mode mode, QIcon::State state) Q_DECL_OVERRIDE;
 	CryPixmapIconEngineEntry* bestMatch(const QSize& size, QIcon::Mode mode, QIcon::State state, bool sizeOnly);

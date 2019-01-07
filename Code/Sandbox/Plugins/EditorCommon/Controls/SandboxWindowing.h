@@ -9,6 +9,7 @@
 #include "QToolWindowManager/QToolWindowArea.h"
 
 struct IPane;
+class QHBoxLayout;
 
 //Extra icon keys for the TWM.
 #define SANDBOX_WRAPPER_MINIMIZE_ICON "sandboxMinimizeIcon"

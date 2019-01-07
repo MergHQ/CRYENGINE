@@ -18,6 +18,7 @@
 #include <QCloseEvent>
 #include <QDesktopWidget>
 #include <QJsonDocument>
+#include <QLayout>
 
 #include <mutex>
 

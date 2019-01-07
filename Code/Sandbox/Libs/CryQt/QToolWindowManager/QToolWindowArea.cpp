@@ -6,16 +6,17 @@
 #include "QToolWindowManager.h"
 #include "QToolWindowWrapper.h"
 
-#include <QApplication>
-#include <QLabel>
-#include <QBoxLayout>
-#include <QPaintEngine>
-#include <QTabBar>
-#include <QStylePainter>
-#include <QStyleOptionToolBar>
-#include <QMouseEvent>
-#include <QMenu>
 #include <QAction>
+#include <QApplication>
+#include <QBoxLayout>
+#include <QGridLayout>
+#include <QLabel>
+#include <QMenu>
+#include <QMouseEvent>
+#include <QPaintEngine>
+#include <QStyleOptionToolBar>
+#include <QStylePainter>
+#include <QTabBar>
 
 QToolWindowArea::QToolWindowArea(QToolWindowManager* manager, QWidget* parent /*= 0*/)
 	: QTabWidget(parent),
@@ -138,7 +139,6 @@ void QToolWindowArea::addToolWindows(const QList<QWidget*>& toolWindows, int ind
 			tabBar()->setTabButton(newIndex, QTabBar::ButtonPosition::RightSide, createCloseButton());
 		}
 
-#if QT_VERSION >= 0x050000
 		connect(toolWindow, &QWidget::windowTitleChanged, this, [this, newIndex, toolWindow](const QString& title)
 		{
 			if (indexOf(toolWindow) >= 0)
@@ -161,7 +161,6 @@ void QToolWindowArea::addToolWindows(const QList<QWidget*>& toolWindows, int ind
 			  setWindowIcon(icon);
 			}
 		});
-#endif
 	}
 	setCurrentWidget(toolWindows.first());
 }
@@ -586,11 +585,7 @@ void QToolWindowArea::showContextMenu(const QPoint& point)
 	int tabIndex = tabBar()->tabAt(point);
 	if (tabIndex >= 0)
 	{
-#if QT_VERSION <= 0x050000
-		CALL_PROTECTED_VOID_METHOD_1ARG(QWidget, widget(tabIndex), customContextMenuRequested, QPoint, tabBar()->mapToGlobal(point));
-#else
 		widget(tabIndex)->customContextMenuRequested(tabBar()->mapToGlobal(point));
-#endif
 	}
 }
 
@@ -626,9 +621,7 @@ QToolWindowSingleTabAreaFrame::QToolWindowSingleTabAreaFrame(QToolWindowManager*
 	{
 		m_pLayout->addItem(new QSpacerItem(0, 23, QSizePolicy::Minimum, QSizePolicy::Expanding), 0, 1);
 	}
-#if QT_VERSION >= 0x050000 // Qt 4 does not have signals for icon and title changes, so need to use the events.
 	connect(this, SIGNAL(windowTitleChanged(const QString&)), m_pCaption, SLOT(setText(const QString&)));
-#endif
 	m_pLayout->setColumnStretch(0, 1);
 	m_pLayout->setRowStretch(1, 1);
 }
@@ -693,14 +686,4 @@ void QToolWindowSingleTabAreaFrame::closeEvent(QCloseEvent* e)
 			closeWidget();
 		}
 	}
-}
-
-void QToolWindowSingleTabAreaFrame::changeEvent(QEvent* ev)
-{
-#if QT_VERSION < 0x050000 // Qt 4 does not have signals for icon and title changes, so need to use the events.
-	if (ev->type() == QEvent::WindowTitleChange)
-	{
-		m_pCaption->setText(windowTitle());
-	}
-#endif
 }

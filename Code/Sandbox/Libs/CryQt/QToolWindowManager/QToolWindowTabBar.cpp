@@ -1,21 +1,19 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
 #include "QToolWindowTabBar.h"
-#include <QToolButton>
+
 #include <CryIcon.h>
+
 #include <QAction>
-#include <QStylePainter>
 #include <QMenu>
-#include <QSignalMapper>
 #include <QPaintEvent>
+#include <QSignalMapper>
+#include <QStylePainter>
+#include <QToolButton>
 
 QToolWindowTabBar::QToolWindowTabBar(QWidget* parent)
 	: QTabBar(parent)
-#if QT_VERSION <= 0x050000
-	, bAutoHide(false)
-#endif
 {
 	m_tabSelectionButton = new QToolButton(this);
 	m_tabSelectionMenu = new QTabSelectionMenu(m_tabSelectionButton, this);
@@ -73,13 +71,8 @@ void QToolWindowTabBar::onSelectionMenuClicked()
 	connect(signalMapper, SIGNAL(mapped(int)), this, SLOT(setCurrentIndex(int)));
 }
 
-QToolWindowTabBar::~QToolWindowTabBar()
-{
-
-}
-
 QTabSelectionMenu::QTabSelectionMenu(QToolButton* pToolButton, QToolWindowTabBar* pParentTabbar)
 	: QMenu(pToolButton)
 	, m_pParentTabbar(pParentTabbar)
 {
-};
+}

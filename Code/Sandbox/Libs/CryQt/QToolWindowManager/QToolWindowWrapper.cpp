@@ -98,7 +98,6 @@ bool QToolWindowWrapper::eventFilter(QObject* o, QEvent* e)
 	return QWidget::eventFilter(o, e);
 }
 
-#if QT_VERSION >= 0x050000
 bool QToolWindowWrapper::nativeEvent(const QByteArray &eventType, void *message, long *result)
 {
 #if defined(WIN32) || defined(WIN64)
@@ -108,7 +107,6 @@ bool QToolWindowWrapper::nativeEvent(const QByteArray &eventType, void *message,
 #endif
 	return QWidget::nativeEvent(eventType, message, result);
 }
-#endif
 
 #if defined(WIN32) || defined(WIN64)
 bool QToolWindowWrapper::winEvent(MSG *msg, long *result)
@@ -151,11 +149,7 @@ bool QToolWindowWrapper::winEvent(MSG *msg, long *result)
 		break;
 	}
 
-#if QT_VERSION < 0x050000
-	return QWidget::winEvent(msg, result);
-#else
 	return false;
-#endif
 }
 #endif
 

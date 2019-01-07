@@ -76,18 +76,10 @@ JointSelectionDialog::JointSelectionDialog(QWidget* parent)
 	m_tree->setModel(m_filterModel);
 
 	m_tree->header()->setStretchLastSection(false);
-#if QT_VERSION >= 0x50000
 	m_tree->header()->setSectionResizeMode(0, QHeaderView::Stretch);
 	m_tree->header()->setSectionResizeMode(1, QHeaderView::Interactive);
-	#if 0
+#if 0
 	m_tree->header()->setSectionResizeMode(2, QHeaderView::Interactive);
-	#endif
-#else
-	m_tree->header()->setResizeMode(0, QHeaderView::Stretch);
-	m_tree->header()->setResizeMode(1, QHeaderView::Interactive);
-	#if 0
-	m_tree->header()->setResizeMode(2, QHeaderView::Interactive);
-	#endif
 #endif
 	m_tree->header()->resizeSection(1, 40);
 	m_tree->header()->resizeSection(2, 80);
