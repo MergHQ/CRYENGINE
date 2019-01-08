@@ -149,7 +149,7 @@ const int IDBITS = 24;
 struct SEntityIdList {
 	CPhysicalPlaceholder **data = nullptr;
 	~SEntityIdList() { reset(); }
-	void reset() { delete[] data; size=0; maxid=-1; idx0=((INT_PTR)1<<IDBITS*2)-1<<ISFREE|1; }
+	void reset() { delete[] data; data=nullptr; size=0; maxid=-1; idx0=((INT_PTR)1<<IDBITS*2)-1<<ISFREE|1; }
 	struct SFreeIndex {
 		SFreeIndex(INT_PTR *pidx) : next({*pidx}), prev({*pidx}) {}
 		bitfield<INT_PTR,ISFREE,IDBITS> next; // next_free_id = this_id+1+next
