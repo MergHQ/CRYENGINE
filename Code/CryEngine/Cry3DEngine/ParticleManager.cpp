@@ -219,7 +219,7 @@ void CParticleManager::PrintParticleMemory()
 	m_Emitters.GetMemoryUsage(pSizer);
 
 #if !defined(EXCLUDE_NORMAL_LOG)
-	stl::SPoolMemoryUsage memParticle = ParticleObjectAllocator().GetTotalMemory();
+	stl::SPoolMemoryUsage memParticle = ParticleAllocator::GetTotalMemory();
 #endif
 
 	CryLogAlways("Particle heap: %d KB used, %d KB freed, %d KB unused",
@@ -300,7 +300,7 @@ void CParticleManager::ClearRenderResources(bool bForceClear)
 
 	stl::free_container(m_Effects);
 
-	ParticleObjectAllocator().ResetUsage();
+	ParticleAllocator::Heap().FreeMemory();
 
 	m_pPartLightShader = 0;
 }
@@ -1412,10 +1412,6 @@ void CParticleManager::CreatePerfHUDWidget()
 	}
 }
 
-#ifndef _RELEASE //Debugging code for specific issue CE-10725			
-extern volatile int g_allocCounter;
-#endif
-
 void CParticleManager::DumpAndResetVertexIndexPoolUsage()
 {
 #if defined(PARTICLE_COLLECT_VERT_IND_POOL_USAGE)
@@ -1423,18 +1419,8 @@ void CParticleManager::DumpAndResetVertexIndexPoolUsage()
 	if (GetCVars()->e_ParticlesProfile == 2)
 		return;
 
-#ifndef _RELEASE //Debugging code for specific issue CE-10725
-	// If you hit this debugbreak, please create a full dump of the process
-	if (g_allocCounter != 0) __debugbreak();
-#endif
-	// This line can occasionally cause an assert to be triggered. The surrounding debug code is intended to help us track down the issue.
-	// See http://jira.cryengine.com/browse/CE-10725 for details on the bug.
-	const stl::SPoolMemoryUsage memParticles = ParticleObjectAllocator().GetTotalMemory();
-#ifndef _RELEASE //Debugging code for specific issue CE-10725			
-	// If you hit this debugbreak, please create a full dump of the process
-	if (g_allocCounter != 0) __debugbreak();
-#endif
-	bool bOutOfMemory = m_bOutOfVertexIndexPoolMemory || ((GetCVars()->e_ParticlesPoolSize * 1024) - memParticles.nUsed) == 0;
+	const stl::SPoolMemoryUsage memParticles = ParticleAllocator::GetTotalMemory();
+	bool bOutOfMemory = m_bOutOfVertexIndexPoolMemory;
 	// dump information if we are out of memory or if dumping is enabled
 	if (bOutOfMemory || GetCVars()->e_ParticlesProfile == 1)
 	{
@@ -1457,10 +1443,6 @@ void CParticleManager::DumpAndResetVertexIndexPoolUsage()
 		gEnv->pRenderer->EF_Query(EFQ_GetMaxParticleContainer, nMaxParticleContainer);
 
 		IRenderAuxText::Draw2dLabel(fTextSideOffset, fTopOffset, fTextSize, pColor, false, "== Particle Profiler ==");
-		fTopOffset += 18.0f;
-
-		IRenderAuxText::Draw2dLabel(fTextSideOffset, fTopOffset, fTextSize, pColor, false, "- Particle Object Pool (Size %4d KB)",
-		                             GetCVars()->e_ParticlesPoolSize);
 		fTopOffset += 18.0f;
 
 		IRenderAuxText::Draw2dLabel(fTextSideOffset, fTopOffset, fTextSize, pColor, false, "\tUsed %4u Max Used %4u Free %4u (KB)",

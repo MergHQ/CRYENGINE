@@ -1,13 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// Created by: Michael Smith
-// Modified 2008-06, Scott Peter
-//	Refactored to utilise storage management of new HeapAllocator class
-//---------------------------------------------------------------------------
-
-#ifndef __POOLALLOCATOR_H__
-#define __POOLALLOCATOR_H__
-
 //---------------------------------------------------------------------------
 // Memory allocation class. Allocates, frees, and reuses fixed-size blocks of
 // memory, a scheme sometimes known as Simple Segregated Memory.
@@ -37,6 +29,8 @@
 //
 // The class is implemented using a HeapAllocator.
 //---------------------------------------------------------------------------
+
+#pragma once
 
 #include "HeapAllocator.h"
 
@@ -125,6 +119,25 @@ public:
 		Deallocate(Lock(*_pHeap), pObject);
 	}
 
+	void Deallocate(const Lock& lock, void* pObject)
+	{
+		if (pObject)
+		{
+		#ifdef _DEBUG
+			// This can be slow
+			assert(_pHeap->CheckPtr(lock, pObject, _nAllocSize));
+		#endif
+
+			ObjectNode* pNode = static_cast<ObjectNode*>(pObject);
+
+			// Add the object to the front of the free list.
+			pNode->pNext = _pFreeList;
+			_pFreeList = pNode;
+			_Counts.nUsed--;
+			Validate(lock);
+		}
+	}
+
 	SMemoryUsage GetCounts() const
 	{
 		Lock lock(*_pHeap);
@@ -136,25 +149,6 @@ public:
 	}
 
 protected:
-
-	void Deallocate(const Lock& lock, void* pObject)
-	{
-		if (pObject)
-		{
-#ifdef _DEBUG
-			// This can be slow
-			assert(_pHeap->CheckPtr(lock, pObject, _nAllocSize));
-#endif
-
-			ObjectNode* pNode = static_cast<ObjectNode*>(pObject);
-
-			// Add the object to the front of the free list.
-			pNode->pNext = _pFreeList;
-			_pFreeList = pNode;
-			_Counts.nUsed--;
-			Validate(lock);
-		}
-	}
 
 	void Validate(const Lock& lock) const
 	{
@@ -258,13 +252,6 @@ public:
 		}
 	}
 
-	void ResetMemory()
-	{
-		FreeMemLock lock(*this);
-		TPool::Reset(lock);
-		THeap::Reset(lock);
-	}
-
 	void FreeMemory()
 	{
 		FreeMemLock lock(*this);
@@ -347,7 +334,7 @@ typedef PSyncMultiThread PoolAllocatorSynchronizationMultithreaded;     //!< Leg
 
 //! Allocator maintaining multiple type-specific pools, sharing a common heap source.
 template<typename THeap>
-struct PoolCommonAllocator : protected THeap
+struct PoolCommonAllocator : THeap
 {
 	typedef SharedSizePoolAllocator<THeap> TPool;
 
@@ -358,11 +345,11 @@ struct PoolCommonAllocator : protected THeap
 	{
 		TPoolNode* pNext;
 
-		TPoolNode(THeap& heap, TPoolNode*& pList, size_t nSize, size_t nAlign)
+		TPoolNode(PoolCommonAllocator& heap, size_t nSize, size_t nAlign)
 			: SharedSizePoolAllocator<THeap>(heap, nSize, nAlign)
 		{
-			pNext = pList;
-			pList = this;
+			pNext = heap._pPoolList;
+			heap._pPoolList = this;
 		}
 	};
 
@@ -397,7 +384,7 @@ public:
 		return SPoolMemoryUsage(THeap::GetTotalMemory(lock).nAlloc, mem.nAlloc, mem.nUsed);
 	}
 
-	bool FreeMemory(bool bDeallocate = true)
+	bool FreeMemory()
 	{
 		FreeMemLock lock(*this);
 		for (TPoolNode* pPool = _pPoolList; pPool; pPool = pPool->pNext)
@@ -407,10 +394,7 @@ public:
 		for (TPoolNode* pPool = _pPoolList; pPool; pPool = pPool->pNext)
 			pPool->Reset(lock);
 
-		if (bDeallocate)
-			THeap::Clear(lock);
-		else
-			THeap::Reset(lock);
+		THeap::Clear(lock);
 		return true;
 	}
 
@@ -418,40 +402,52 @@ protected:
 	TPoolNode* _pPoolList;
 };
 
-//! The additional TInstancer type provides a way of instantiating multiple instances of this class, without static variables.
-template<typename THeap, typename TInstancer = int>
+//! Shared heap with automatic templated per-type pools.
+//! This type is a singleton; multiple allocators can be instantiated by creating new THeap subclasses.
+template<typename THeap>
 struct StaticPoolCommonAllocator
 {
-	ILINE static PoolCommonAllocator<THeap>& StaticAllocator()
+	ILINE static PoolCommonAllocator<THeap>& Heap()
 	{
 		static PoolCommonAllocator<THeap> s_Allocator;
 		return s_Allocator;
 	}
 
-	typedef SharedSizePoolAllocator<THeap> TPool;
+	typedef typename PoolCommonAllocator<THeap>::TPoolNode TPool;
 
 	template<class T>
 	ILINE static TPool& TypeAllocator()
 	{
-		static TPool* sp_Pool = CreatePoolOnGlobalHeap(sizeof(T), alignof(T));
-		return *sp_Pool;
+		static TPool s_Pool(Heap(), sizeof(T), alignof(T));
+		return s_Pool;
+	}
+
+	typedef typename THeap::Lock TLock;
+
+	ILINE static TLock Lock()
+	{
+		return TLock(Heap());
 	}
 
 	template<class T>
 	ILINE static void* Allocate(T*& p)
-	{ return p = (T*)TypeAllocator<T>().Allocate(); }
+		{ return p = (T*)TypeAllocator<T>().Allocate(); }
 
 	template<class T>
 	ILINE static void Deallocate(T* p)
-	{ return TypeAllocator<T>().Deallocate(p); }
+		{ return TypeAllocator<T>().Deallocate(p); }
+
+	template<class T>
+	ILINE static void Deallocate(const TLock& lock, T* p)
+		{ return TypeAllocator<T>().Deallocate(lock, p); }
 
 	template<class T>
 	static T* New()
-	{ return new(TypeAllocator<T>().Allocate())T(); }
+		{ return new(TypeAllocator<T>().Allocate())T(); }
 
 	template<class T, class I>
 	static T* New(const I& init)
-	{ return new(TypeAllocator<T>().Allocate())T(init); }
+		{ return new(TypeAllocator<T>().Allocate())T(init); }
 
 	template<class T>
 	static void Delete(T* ptr)
@@ -463,16 +459,17 @@ struct StaticPoolCommonAllocator
 		}
 	}
 
+	template<class T>
+	ILINE static void* Allocate(T*&p, size_t count)
+		{ return p = (T*)Heap().Allocate(Lock(), sizeof(T) * count, alignof(T)); };
+
+	template<class T>
+	ILINE static bool Deallocate(T* p, size_t count)
+		{ return !p || Heap().Deallocate(Lock(), p, sizeof(T) * count, alignof(T)); };
+
 	static SPoolMemoryUsage GetTotalMemory()
-	{ return StaticAllocator().GetTotalMemory(); }
-
-private:
-
-	ILINE static TPool* CreatePoolOnGlobalHeap(size_t nSize, size_t nAlign = 0)
-	{
-		return StaticAllocator().CreatePool(nSize, nAlign);
-	}
-};
+		{ return Heap().GetTotalMemory(); }
 };
 
-#endif //__POOLALLOCATOR_H__
+};
+

@@ -1,10 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// Created by: Scott Peter
-//---------------------------------------------------------------------------
-
-#ifndef _HEAP_ALLOCATOR_H
-#define _HEAP_ALLOCATOR_H
+#pragma once
 
 #include <CryThreading/Synchronization.h>
 #include <CryParticleSystem/Options.h>
@@ -459,34 +455,6 @@ public:
 		Clear(lock);
 	}
 
-	void Reset(const Lock& lock)
-	{
-		// Reset all pages, allowing memory re-use.
-		Validate(lock);
-		size_t nPrevSize = ~0;
-		for (PageNode** ppPage = &_pPageList; *ppPage; )
-		{
-			(*ppPage)->Reset();
-			if ((*ppPage)->GetMemoryAlloc() > nPrevSize)
-			{
-				// Move page to sorted location near beginning.
-				SortPage(lock, *ppPage);
-
-				// ppPage is now next page, so continue loop.
-				continue;
-			}
-			nPrevSize = (*ppPage)->GetMemoryAlloc();
-			ppPage = &(*ppPage)->pNext;
-		}
-		_TotalMem.nUsed = 0;
-		Validate(lock);
-	}
-
-	void Reset()
-	{
-		Reset(Lock(*this));
-	}
-
 	// Validation.
 
 	bool CheckPtr(const Lock&, void* ptr, size_t size) const
@@ -586,4 +554,3 @@ private:
 };
 }
 
-#endif //_HEAP_ALLOCATOR_H
