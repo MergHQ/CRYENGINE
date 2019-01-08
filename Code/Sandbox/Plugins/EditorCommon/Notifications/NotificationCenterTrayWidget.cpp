@@ -72,6 +72,10 @@ public:
 		}
 
 		CNotificationWidget* pNotification = new CNotificationWidget(pNotificationDesc->GetId(), pWindow);
+		// Make sure notifications have a fixed width when being spawned as pop-ups. This doesn't apply
+		// to notifications displayed in the notification center.
+		pNotification->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::MinimumExpanding);
+
 		Add(pNotification);
 
 		// Used for when the editor is loading up. Accumulate notifications to be displayed after
