@@ -35,7 +35,7 @@ CParticleComponentRuntime::CParticleComponentRuntime(CParticleEmitter* pEmitter,
 
 CParticleComponentRuntime::~CParticleComponentRuntime()
 {
-	if (GetComponent()->DestroyParticles.size() && m_container.GetNumParticles())
+	if (m_container.GetNumParticles())
 		GetComponent()->DestroyParticles(*this);
 }
 
@@ -131,8 +131,9 @@ void CParticleComponentRuntime::UpdateAll()
 
 	uint32 emitterSeed = m_pEmitter->GetCurrentSeed();
 	uint32 componentId = m_pComponent->GetComponentId() << 16;
-	m_chaos = SChaosKey(emitterSeed + componentId + m_container.GetNumParticles());
-	m_chaosV = SChaosKeyV(m_chaos);
+	uint32 key = emitterSeed + componentId + m_container.GetNumParticles();
+	m_chaos = SChaosKey(key);
+	m_chaosV = SChaosKeyV(key);
 
 	if (GetGpuRuntime())
 		return UpdateGPURuntime();

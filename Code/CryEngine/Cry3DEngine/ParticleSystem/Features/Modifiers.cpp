@@ -133,12 +133,12 @@ public:
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
-		SChaosKeyV::Range randRange(1.0f - m_amount, 1.0f);
+		auto randRange = SChaosKeyV::Range(1.0f - m_amount, 1.0f);
 
 		for (auto particleGroupId : SGroupRange(range))
 		{
 			const floatv inValue = stream.Load(particleGroupId);
-			const floatv value = runtime.ChaosV().Rand(randRange);
+			const floatv value = runtime.ChaosV()(randRange);
 			const floatv outvalue = Mul(inValue, value);
 			stream.Store(particleGroupId, outvalue);
 		}

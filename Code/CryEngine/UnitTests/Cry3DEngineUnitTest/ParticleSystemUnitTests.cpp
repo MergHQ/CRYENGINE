@@ -307,11 +307,11 @@ TEST(CryVectorTest, ChaosKeyTest)
 	{
 		uint32 key = randomGenerator.GetRandom(0U, 99999U);
 		SChaosKey ch(key);
-		SChaosKeyV chv(ToUint32v(key));
+		SChaosKeyV chv(convert<uint32v>(key));
 
 		uint32 r = ch.Rand();
 		uint32v rv = chv.Rand();
-		REQUIRE(All(ToUint32v(r) == rv));
+		REQUIRE(All(convert<uint32v>(r) == rv));
 
 		float ss = ch.RandSNorm();
 		floatv ssv = chv.RandSNorm();

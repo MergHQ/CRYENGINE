@@ -58,7 +58,10 @@ void CDomain::Serialize(Serialization::IArchive& ar)
 	{
 	case EDomain::Field:
 		ar(m_fieldSource, "Field", "Field");
-	// continue
+		// continue
+	case EDomain::SpawnId:
+		ar(m_idModulus, "IdModulus", "Id Modulus");
+		// continue;
 	case EDomain::Age:
 	case EDomain::SpawnFraction:
 	case EDomain::Speed:
@@ -120,7 +123,7 @@ void CDomain::Serialize(Serialization::IArchive& ar)
 
 	if (!(domain & EDD_HasUpdate))
 		m_spawnOnly = true;
-	else if (m_domain == EDomain::Random || m_domain == EDomain::SpawnFraction)
+	else if (m_domain == EDomain::Random || m_domain == EDomain::SpawnFraction || m_domain == EDomain::SpawnId)
 		m_spawnOnly = true;
 	else if (m_domain == EDomain::Age && m_sourceOwner == EDomainOwner::Self)
 		m_spawnOnly = false;
@@ -159,6 +162,8 @@ void CDomain::AddToParam(CParticleComponent* pComponent)
 	{
 		if (m_domain == EDomain::SpawnFraction)
 			pSourceComponent->AddParticleData(EPDT_SpawnFraction);
+		else if (m_domain == EDomain::SpawnId)
+			pSourceComponent->AddParticleData(EPDT_SpawnId);
 		else if (m_domain == EDomain::Speed)
 			pSourceComponent->AddParticleData(EPVF_Velocity);
 		else if (m_domain == EDomain::Field)

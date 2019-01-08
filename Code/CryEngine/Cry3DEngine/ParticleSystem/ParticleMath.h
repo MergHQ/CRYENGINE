@@ -3,11 +3,13 @@
 #pragma once
 
 #include "ParticleCommon.h"
+#include <CryMath/Range.h>
 
 namespace pfx2
 {
 
 using namespace crymath;
+
 // 4x vector types of standard types
 #ifdef CRY_PFX2_USE_SSE
 typedef f32v4    floatv;
@@ -36,15 +38,11 @@ typedef Plane_tpl<floatv> Planev;
 
 ///////////////////////////////////////////////////////////////////////////
 // Vector/scalar conversions
+template<typename T> ILINE floatv ToFloatv(T t)  { return convert<floatv>(+t); }
 
-floatv  ToFloatv(float v);
-uint32v ToUint32v(uint32 v);
-floatv  ToFloatv(int32v v);
-floatv  ToFloatv(uint32v v);
-uint32v ToUint32v(floatv v);
-Vec3v   ToVec3v(Vec3 v);
-Vec4v   ToVec4v(Vec4 v);
-Planev  ToPlanev(Plane v);
+ILINE Vec3v  ToVec3v(Vec3 const& v)   { return Vec3v(v); }
+ILINE Vec4v  ToVec4v(Vec4 const& v)   { return Vec4v((Vec4f const&)v); }
+ILINE Planev ToPlanev(Plane const& v) { return Planev(ToVec3v(v.n), ToFloatv(v.d)); }
 
 uint8  FloatToUFrac8Saturate(float v);
 
@@ -75,17 +73,12 @@ Vec3  HMax(const Vec3v& v0);
 template<typename T> Vec3_tpl<T> MAdd(const Vec3_tpl<T>& a, const Vec3_tpl<T>& b, const Vec3_tpl<T>& c);
 template<typename T> Vec3_tpl<T> MAdd(const Vec3_tpl<T>& a, T b, const Vec3_tpl<T>& c);
 
-// Quaternion functions
-
-Quatv AddAngularVelocity(Quatv initial, Vec3v angularVel, floatv deltaTime);
-
 // Color
 
 Vec3  ToVec3(UCol color);
 Vec3v ToVec3v(UColv color);
 UCol  ToUCol(const Vec3& color);
 UColv ToUColv(const Vec3v& color);
-UColv ToUColv(UCol color);
 
 // Return the correct update time for a particle
 template<typename T>
@@ -119,23 +112,17 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////
-// non vectorized
+// Polar math
 
 void RotateAxes(Vec3* v0, Vec3* v1, const float angle);
 Vec3 PolarCoordToVec3(float azimuth, float altitude);
 
-///////////////////////////////////////////////////////////////////////////
-template<typename F>
-struct Slope
-{
-	F scale;
-	F start;
+// Generate points on geometry from parameters
 
-	Slope(F scale = 1, F start = 0) : scale(scale), start(start) {}
-	template<typename F2> Slope(const Slope<F2>& o) : scale(convert<F>(o.scale)), start(convert<F>(o.start)) {}
-
-	F operator()(F val) const { return MAdd(val, scale, start); }
-};
+Vec2 CirclePoint(float a);
+Vec2 DiskPoint(float a, float r2);
+Vec3 SpherePoint(float a, float z);
+Vec3 BallPoint(float a, float z, float r3);
 
 }
 
