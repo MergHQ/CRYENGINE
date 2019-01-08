@@ -1586,29 +1586,40 @@ namespace Schematyc2
 
 				inputBlock.SortElementsByDependency();
 
-				// Copy elements to file.
-				for(DocSerializationUtils::CInputBlock::SElement& element : elements)
 				{
-					Serialization::LoadBlackBox(element, element.blackBox);
-					m_elements.insert(Elements::value_type(element.ptr->GetGUID(), element.ptr));
-				}
-				for(DocSerializationUtils::CInputBlock::SElement& element : elements)
-				{
-					Serialization::LoadBlackBox(element, element.blackBox);
-				}
-				// Validate elements.
-				CValidatorArchive     validatorArchive(EValidatorArchiveFlags::ForwardWarningsToLog | EValidatorArchiveFlags::ForwardErrorsToLog);
-				CSerializationContext serializationContext(SSerializationContextParams(validatorArchive, this, ESerializationPass::Validate));
-				for(DocSerializationUtils::CInputBlock::SElement& element : elements)
-				{
-					element.ptr->Serialize(validatorArchive);
-				}
+					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Load And Insert Elements");
 
-				if(origin == EElementOrigin::Clipboard)
-				{
-					// Refresh all elements and mark file as modified.
-					Refresh(SScriptRefreshParams(EScriptRefreshReason::EditorPaste));
-					SetFlags(GetFlags() | EScriptFileFlags::Modified);
+					// Copy elements to file.
+					for(DocSerializationUtils::CInputBlock::SElement& element : elements)
+					{
+						MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Insert Elements");
+						Serialization::LoadBlackBox(element, element.blackBox);
+						m_elements.insert(Elements::value_type(element.ptr->GetGUID(), element.ptr));
+					}
+					for(DocSerializationUtils::CInputBlock::SElement& element : elements)
+					{
+						MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Load Elements");
+						Serialization::LoadBlackBox(element, element.blackBox);
+					}
+					
+					{
+						MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Validate Elements");
+
+						// Validate elements.
+						CValidatorArchive     validatorArchive(EValidatorArchiveFlags::ForwardWarningsToLog | EValidatorArchiveFlags::ForwardErrorsToLog);
+						CSerializationContext serializationContext(SSerializationContextParams(validatorArchive, this, ESerializationPass::Validate));
+						for(DocSerializationUtils::CInputBlock::SElement& element : elements)
+						{
+							element.ptr->Serialize(validatorArchive);
+						}
+
+						if(origin == EElementOrigin::Clipboard)
+						{
+							// Refresh all elements and mark file as modified.
+							Refresh(SScriptRefreshParams(EScriptRefreshReason::EditorPaste));
+							SetFlags(GetFlags() | EScriptFileFlags::Modified);
+						}
+					}
 				}
 			}
 		}
