@@ -1153,74 +1153,91 @@ namespace Schematyc2
 			{
 				CompileSignal(scriptFile, *(*itScriptSignal), *pLib);
 			}
-			// Collect and compile abstract interfaces.
-			TScriptAbstractInterfaceConstVector scriptAbstractInterfaces;
-			scriptAbstractInterfaces.reserve(100);
-			DocUtils::CollectAbstractInterfaces(scriptFile, SGUID(), true, scriptAbstractInterfaces);
-			for(TScriptAbstractInterfaceConstVector::iterator itScriptAbstractInterface = scriptAbstractInterfaces.begin(), itEndScriptAbstractInterface = scriptAbstractInterfaces.end(); itScriptAbstractInterface != itEndScriptAbstractInterface; ++ itScriptAbstractInterface)
+
 			{
-				CompileAbstractInterface(scriptFile, *(*itScriptAbstractInterface), *pLib);
-			}
-			// Collect and compile abstract interface functions.
-			TScriptAbstractInterfaceFunctionConstVector scriptAbstractInterfaceFunctions;
-			scriptAbstractInterfaceFunctions.reserve(100);
-			DocUtils::CollectAbstractInterfaceFunctions(scriptFile, SGUID(), true, scriptAbstractInterfaceFunctions);
-			for(TScriptAbstractInterfaceFunctionConstVector::iterator itScriptAbstractInterfaceFunction = scriptAbstractInterfaceFunctions.begin(), itEndScriptAbstractInterfaceFunction = scriptAbstractInterfaceFunctions.end(); itScriptAbstractInterfaceFunction != itEndScriptAbstractInterfaceFunction; ++ itScriptAbstractInterfaceFunction)
-			{
-				CompileAbstractInterfaceFunction(scriptFile, *(*itScriptAbstractInterfaceFunction), *pLib);
-			}
-			// Collect and compile classes.
-			TScriptClassConstVector scriptClasses;
-			scriptClasses.reserve(100);
-			DocUtils::CollectClasses(scriptFile, scriptClasses);
-			TDocGraphSequenceVector	docGraphSequences;
-			for(TScriptClassConstVector::iterator itScriptClass = scriptClasses.begin(), itEndScriptClass = scriptClasses.end(); itScriptClass != itEndScriptClass; ++ itScriptClass)
-			{
-				CompileClass(scriptFile, *(*itScriptClass), *pLib, docGraphSequences);
-			}
-			// Pre-compile graph sequences.
-			for(TDocGraphSequenceVector::iterator iDocGraphSequence = docGraphSequences.begin(), iEndDocGraphSequence = docGraphSequences.end(); iDocGraphSequence != iEndDocGraphSequence; ++ iDocGraphSequence)
-			{
-				SDocGraphSequence&	docGraphSequence = *iDocGraphSequence;
-				docGraphSequence.libFunctionId	= docGraphSequence.pLibClass->AddFunction(docGraphSequence.pDocGraph->GetGUID());
-				docGraphSequence.pLibFunction		= docGraphSequence.pLibClass->GetFunction(docGraphSequence.libFunctionId);
-				SCHEMATYC2_COMPILER_ASSERT(docGraphSequence.pLibFunction);
-				if(docGraphSequence.pLibFunction)
+				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Collect And Compile Abstract Interfaces");
+
+				// Collect and compile abstract interfaces.
+				TScriptAbstractInterfaceConstVector scriptAbstractInterfaces;
+				scriptAbstractInterfaces.reserve(100);
+				DocUtils::CollectAbstractInterfaces(scriptFile, SGUID(), true, scriptAbstractInterfaces);
+				for(TScriptAbstractInterfaceConstVector::iterator itScriptAbstractInterface = scriptAbstractInterfaces.begin(), itEndScriptAbstractInterface = scriptAbstractInterfaces.end(); itScriptAbstractInterface != itEndScriptAbstractInterface; ++ itScriptAbstractInterface)
 				{
-					docGraphSequence.pLibFunction->SetClassGUID(docGraphSequence.pLibClass->GetGUID());
-					docGraphSequence.pLibFunction->SetName(docGraphSequence.pDocGraph->GetName());
-					docGraphSequence.pLibFunction->SetScope(docGraphSequence.pLibClass->GetName());
-					docGraphSequence.pLibFunction->SetFileName(scriptFile.GetFileName());
-					docGraphSequence.pLibFunction->SetGraphExecutionFilter(docGraphSequence.pDocGraph->GetExecutionFilter());
-					CDocGraphSequencePreCompiler sequencePreCompiler(*docGraphSequence.pLibClass, docGraphSequence.libFunctionId, *docGraphSequence.pLibFunction);
-					sequencePreCompiler.PrecompileSequence(*docGraphSequence.pScriptGraphNode, docGraphSequence.iDocGraphNodeOutput);
+					CompileAbstractInterface(scriptFile, *(*itScriptAbstractInterface), *pLib);
+				}
+				// Collect and compile abstract interface functions.
+				TScriptAbstractInterfaceFunctionConstVector scriptAbstractInterfaceFunctions;
+				scriptAbstractInterfaceFunctions.reserve(100);
+				DocUtils::CollectAbstractInterfaceFunctions(scriptFile, SGUID(), true, scriptAbstractInterfaceFunctions);
+				for(TScriptAbstractInterfaceFunctionConstVector::iterator itScriptAbstractInterfaceFunction = scriptAbstractInterfaceFunctions.begin(), itEndScriptAbstractInterfaceFunction = scriptAbstractInterfaceFunctions.end(); itScriptAbstractInterfaceFunction != itEndScriptAbstractInterfaceFunction; ++ itScriptAbstractInterfaceFunction)
+				{
+					CompileAbstractInterfaceFunction(scriptFile, *(*itScriptAbstractInterfaceFunction), *pLib);
+				}
+				// Collect and compile classes.
+				TScriptClassConstVector scriptClasses;
+				scriptClasses.reserve(100);
+				DocUtils::CollectClasses(scriptFile, scriptClasses);
+				TDocGraphSequenceVector	docGraphSequences;
+				for(TScriptClassConstVector::iterator itScriptClass = scriptClasses.begin(), itEndScriptClass = scriptClasses.end(); itScriptClass != itEndScriptClass; ++ itScriptClass)
+				{
+					CompileClass(scriptFile, *(*itScriptClass), *pLib, docGraphSequences);
+				}
+
+				{
+					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Pre-compile Graph Sequences");
+
+					// Pre-compile graph sequences.
+					for(TDocGraphSequenceVector::iterator iDocGraphSequence = docGraphSequences.begin(), iEndDocGraphSequence = docGraphSequences.end(); iDocGraphSequence != iEndDocGraphSequence; ++ iDocGraphSequence)
+					{
+						MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Precompile Sequence");
+
+						SDocGraphSequence&	docGraphSequence = *iDocGraphSequence;
+						docGraphSequence.libFunctionId	= docGraphSequence.pLibClass->AddFunction(docGraphSequence.pDocGraph->GetGUID());
+						docGraphSequence.pLibFunction		= docGraphSequence.pLibClass->GetFunction(docGraphSequence.libFunctionId);
+						SCHEMATYC2_COMPILER_ASSERT(docGraphSequence.pLibFunction);
+						if(docGraphSequence.pLibFunction)
+						{
+							docGraphSequence.pLibFunction->SetClassGUID(docGraphSequence.pLibClass->GetGUID());
+							docGraphSequence.pLibFunction->SetName(docGraphSequence.pDocGraph->GetName());
+							docGraphSequence.pLibFunction->SetScope(docGraphSequence.pLibClass->GetName());
+							docGraphSequence.pLibFunction->SetFileName(scriptFile.GetFileName());
+							docGraphSequence.pLibFunction->SetGraphExecutionFilter(docGraphSequence.pDocGraph->GetExecutionFilter());
+							CDocGraphSequencePreCompiler sequencePreCompiler(*docGraphSequence.pLibClass, docGraphSequence.libFunctionId, *docGraphSequence.pLibFunction);
+							sequencePreCompiler.PrecompileSequence(*docGraphSequence.pScriptGraphNode, docGraphSequence.iDocGraphNodeOutput);
+						}
+					}
+
+					{
+						MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Compile Graph Sequences And Link");
+
+						// Compile graph sequences.
+						for(TDocGraphSequenceVector::const_iterator iDocGraphSequence = docGraphSequences.begin(), iEndDocGraphSequence = docGraphSequences.end(); iDocGraphSequence != iEndDocGraphSequence; ++ iDocGraphSequence)
+						{
+							const SDocGraphSequence&	docGraphSequence = *iDocGraphSequence;
+							SCHEMATYC2_COMPILER_ASSERT(docGraphSequence.pLibFunction);
+							if(docGraphSequence.pLibFunction)
+							{
+								CDocGraphNodeCompiler	nodeCompiler(scriptFile, *docGraphSequence.pDocGraph, *pLib, *docGraphSequence.pLibClass, *docGraphSequence.pLibFunction);
+								nodeCompiler.CompileSequence(*docGraphSequence.pScriptGraphNode, docGraphSequence.iDocGraphNodeOutput);
+							}
+						}
+						// Link graph sequences.
+						for(TDocGraphSequenceVector::const_iterator iDocGraphSequence = docGraphSequences.begin(), iEndDocGraphSequence = docGraphSequences.end(); iDocGraphSequence != iEndDocGraphSequence; ++ iDocGraphSequence)
+						{
+							const SDocGraphSequence&	docGraphSequence = *iDocGraphSequence;
+							CDocGraphSequenceLinker		sequenceLinker(*docGraphSequence.pLibClass, docGraphSequence.pLibClass->GetStateMachine(docGraphSequence.iLibStateMachine), docGraphSequence.pLibClass->GetState(docGraphSequence.iLibState));
+							sequenceLinker.LinkSequence(*docGraphSequence.pScriptGraphNode, docGraphSequence.iDocGraphNodeOutput, docGraphSequence.libFunctionId);
+						}
+						// Link classes.
+						for(TScriptClassConstVector::iterator itScriptClass = scriptClasses.begin(), itEndScriptClass = scriptClasses.end(); itScriptClass != itEndScriptClass; ++ itScriptClass)
+						{
+							const IScriptClass&	scriptClass = *(*itScriptClass);
+							LinkClass(scriptFile, scriptClass, *pLib, *pLib->GetClass(scriptClass.GetGUID()));
+						}
+						return pLib;
+					}
 				}
 			}
-			// Compile graph sequences.
-			for(TDocGraphSequenceVector::const_iterator iDocGraphSequence = docGraphSequences.begin(), iEndDocGraphSequence = docGraphSequences.end(); iDocGraphSequence != iEndDocGraphSequence; ++ iDocGraphSequence)
-			{
-				const SDocGraphSequence&	docGraphSequence = *iDocGraphSequence;
-				SCHEMATYC2_COMPILER_ASSERT(docGraphSequence.pLibFunction);
-				if(docGraphSequence.pLibFunction)
-				{
-					CDocGraphNodeCompiler	nodeCompiler(scriptFile, *docGraphSequence.pDocGraph, *pLib, *docGraphSequence.pLibClass, *docGraphSequence.pLibFunction);
-					nodeCompiler.CompileSequence(*docGraphSequence.pScriptGraphNode, docGraphSequence.iDocGraphNodeOutput);
-				}
-			}
-			// Link graph sequences.
-			for(TDocGraphSequenceVector::const_iterator iDocGraphSequence = docGraphSequences.begin(), iEndDocGraphSequence = docGraphSequences.end(); iDocGraphSequence != iEndDocGraphSequence; ++ iDocGraphSequence)
-			{
-				const SDocGraphSequence&	docGraphSequence = *iDocGraphSequence;
-				CDocGraphSequenceLinker		sequenceLinker(*docGraphSequence.pLibClass, docGraphSequence.pLibClass->GetStateMachine(docGraphSequence.iLibStateMachine), docGraphSequence.pLibClass->GetState(docGraphSequence.iLibState));
-				sequenceLinker.LinkSequence(*docGraphSequence.pScriptGraphNode, docGraphSequence.iDocGraphNodeOutput, docGraphSequence.libFunctionId);
-			}
-			// Link classes.
-			for(TScriptClassConstVector::iterator itScriptClass = scriptClasses.begin(), itEndScriptClass = scriptClasses.end(); itScriptClass != itEndScriptClass; ++ itScriptClass)
-			{
-				const IScriptClass&	scriptClass = *(*itScriptClass);
-				LinkClass(scriptFile, scriptClass, *pLib, *pLib->GetClass(scriptClass.GetGUID()));
-			}
-			return pLib;
 		}
 		return ILibPtr();
 	}
@@ -1283,6 +1300,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CCompiler::CompileAbstractInterface(const IScriptFile& scriptFile, const IScriptAbstractInterface& scriptAbstractInterface, CLib& lib)
 	{
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Compile Abstract Interface");
 		// Add abstract interface to library.
 		lib.AddAbstractInterface(scriptAbstractInterface.GetGUID(), scriptAbstractInterface.GetName());
 	}
