@@ -91,10 +91,11 @@ class CSoftEntity : public CPhysicalEntity {
 	virtual void ApplyVolumetricPressure(const Vec3 &epicenter, float kr, float rmin);
 	virtual float GetMass(int ipart) { return m_parts[0].mass/m_nVtx; }
 	void StepInner(float time_interval, int bCollMode, check_part *checkParts,int nCheckParts, 
-		const plane &waterPlane,const Vec3 &waterFlow,float waterDensity, const Vec3 &lastposHost, const quaternionf &lastqHost, se_vertex *pvtx);
+		const plane &waterPlane,const Vec3 &waterFlow,float waterDensity, float airDensity, const Vec3 &lastposHost, const quaternionf &lastqHost, se_vertex *pvtx);
 
 	void BakeCurrentPose();
 	void AttachPoints(pe_action_attach_points *action, CPhysicalEntity *pent,int ipart, float rvtxmass,float vtxmass, int bAttached, const Vec3 &offs,const quaternionf &q);
+	void SyncMeshVtx(bool recalcNormal=false);
 
 	enum snapver { SNAPSHOT_VERSION = 10 };
 	virtual int GetStateSnapshot(CStream &stm, float time_back=0,int flags=0);
@@ -162,6 +163,12 @@ class CSoftEntity : public CPhysicalEntity {
 	Vec3 m_wind0,m_wind1;
 	float m_windTimer;
 	float m_windVariance;
+
+	float m_V0 = 0;
+	uchar *m_hbuf = nullptr;
+	int m_nhbufAlloc = 0;
+	float m_densityInside = -1;
+	float m_pressure = 0, m_dpressure = 0;
 
 	class CRigidEntity *m_pCore;
 	Vec3 m_pos0core;

@@ -94,7 +94,8 @@ public:
 
 	virtual void               SimulateExplosion(pe_explosion* pexpl, IPhysicalEntity** pSkipEnts = 0, int nSkipEnts = 0, int iTypes = ent_rigid | ent_sleeping_rigid | ent_living | ent_independent, int iCaller = MAX_PHYS_THREADS);
 
-	virtual void RasterizeEntities(const primitives::grid3d& grid, uchar* rbuf, int objtypes, float massThreshold, const Vec3& offsBBox, const Vec3& sizeBBox, int flags) { CRY_PHYSX_LOG_FUNCTION; }
+	virtual void RasterizeEntities(const primitives::grid3d& grid, uchar* rbuf, int objtypes, float massThreshold, const Vec3& offsBBox, const Vec3& sizeBBox, 
+		int flags, IPhysicalEntity* pentOnlyThis) { CRY_PHYSX_LOG_FUNCTION; }
 
 	virtual int   DeformPhysicalEntity(IPhysicalEntity* pent, const Vec3& ptHit, const Vec3& dirHit, float r, int flags = 0) { CRY_PHYSX_LOG_FUNCTION; _RETURN_INT_DUMMY_; }
 	virtual void  UpdateDeformingEntities(float time_interval = 0.01f) { CRY_PHYSX_LOG_FUNCTION; } //!< normally this happens during TimeStep
