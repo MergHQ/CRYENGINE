@@ -128,6 +128,7 @@ macro(setup_CryPhysics)
 			-Wno-shift-negative-value
 			-Wno-undefined-var-template
 			-Wno-empty-body
+			-Wno-stringop-overflow
 		)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		target_compile_options(${THIS_PROJECT} PRIVATE
@@ -155,6 +156,7 @@ macro(setup_CryPhysics)
 			-Wno-address
 			-Wno-format
 			-Wno-switch
+			-Wno-stringop-overflow
 		)
     endif()
 endmacro()

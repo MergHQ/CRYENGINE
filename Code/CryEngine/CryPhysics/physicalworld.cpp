@@ -5264,18 +5264,20 @@ linkedpt* crop_poly2d(linkedpt* p0, const Vec2* bounds, linkedpt* pbuf)
 				link_after(pstart.next[0], pnew); inside ^= 1;
 			}
 		} while((p=pnext)!=p0);
+		if (pstart.next[1]==&pstart)
+			return nullptr;
 		p0=pstart.next[1]; unlink(&pstart);
 	}
 	return p0;
 }
 
-void CPhysicalWorld::RasterizeEntities(const grid3d& grid, uchar *rbuf, int objtypes, float massThreshold, const Vec3& offsBBox, const Vec3& sizeBBox, int flags)
+void CPhysicalWorld::RasterizeEntities(const grid3d& grid, uchar *rbuf, int objtypes, float massThreshold, const Vec3& offsBBox, const Vec3& sizeBBox, int flags, IPhysicalEntity *pent)
 {
 	linkedpt pbuf[10];
-	Vec3 bounds = grid.size*Diag33(grid.step), wbounds=Matrix33(grid.Basis.T()).Fabs()*bounds, n,pt;
+	Vec3 bounds = (Vec3)grid.size*Diag33(grid.step), wbounds=Matrix33(grid.Basis.T()).Fabs()*bounds, n,pt;
 	CPhysicalEntity **pents;
 	Quat qBasis = Quat(grid.Basis);
-	int iCaller=get_iCaller(), flagsAll=0, flagsAny=-1, ystride=grid.size.x;
+	int iCaller=get_iCaller(), flagsAll=0, flagsAny=-1, ystride=grid.size.x, ient;
 	(flags & rwi_colltype_any ? flagsAny : flagsAll) = flags>>rwi_colltype_bit;
 
 	Vec2 center2d=Vec2(grid.Basis*offsBBox), size2d=Vec2(Matrix33(grid.Basis).Fabs()*sizeBBox), bounds2d[2]={ center2d-size2d,center2d+size2d };
@@ -5283,8 +5285,13 @@ void CPhysicalWorld::RasterizeEntities(const grid3d& grid, uchar *rbuf, int objt
 	for(i=0;i<2;i++) for(j=0;j<2;j++) ibbox[i][j] = max(0,min(grid.size[j]-1, float2int(bounds2d[i][j]*grid.stepr[j]-0.5f)));
 	for(i=0;i<2;i++) for(j=0;j<2;j++) bounds2d[i][j] = (ibbox[i][j]+i)*grid.step[j];
 	for(j=ibbox[0].y;j<=ibbox[1].y;j++) memset(rbuf+j*ystride+ibbox[0].x, 0, (ibbox[1].x-ibbox[0].x+1));
+	if (pent)	{
+		ient=0; pents=(CPhysicalEntity**)&pent;
+		AtomicAdd(&pents[0]->m_nUsedParts, -((int)pents[0]->m_nUsedParts & 15<<iCaller*4));	// make sure GetUsedParts goes over all parts
+	} else
+		ient = GetEntitiesAround(grid.origin+max(Vec3(ZERO),offsBBox-sizeBBox),grid.origin+min(wbounds,offsBBox+sizeBBox),pents,objtypes)-1;
 
-	for(int ient=GetEntitiesAround(grid.origin+max(Vec3(ZERO),offsBBox-sizeBBox),grid.origin+min(wbounds,offsBBox+sizeBBox),pents,objtypes)-1; ient>=0; ient--) 
+	for(; ient>=0; ient--) 
 		if (pents[ient]->GetMassInv()*massThreshold<=1.0f) for(int ipart=pents[ient]->GetUsedPartsCount(iCaller)-1; ipart>=0; ipart--) {
 			const geom& part = pents[ient]->m_parts[pents[ient]->GetUsedPart(iCaller,ipart)];
 			if (!(part.flags & flagsAny) || (part.flags & flagsAll)!=flagsAll)
@@ -5317,6 +5324,8 @@ void CPhysicalWorld::RasterizeEntities(const grid3d& grid, uchar *rbuf, int objt
 					pbuf[0].next[0] = pbuf+nvtx-1; pbuf[nvtx-1].next[1] = pbuf;
 					pbuf[nvtx].next[0] = pbuf+(nvtx+1)*2-1; pbuf[(nvtx+1)*2-1].next[1] = pbuf+nvtx;
 					linkedpt *p0 = crop_poly2d(pbuf,bounds2d,pbuf+nvtx), *p[2];
+					if (!p0)
+						continue;
 
 					p[0]=p[1]=p0; do { if (p[1]->pt.y<p[0]->pt.y)	p[0]=p[1]; } while ((p[1]=p[1]->next[1])!=p0);
 					int iy = float2int(p[0]->pt.y*grid.stepr.y);

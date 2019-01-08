@@ -3828,6 +3828,9 @@ int CScriptBind_Entity::SetEntityPhysicParams(IFunctionHandler* pH, IPhysicalEnt
 		pTable->GetValue("mass_decay", soft_params.massDecay);
 		pTable->GetValue("stiffness_norm", soft_params.shapeStiffnessNorm);
 		pTable->GetValue("stiffness_tang", soft_params.shapeStiffnessTang);
+		pTable->GetValue("pressure", soft_params.pressure);
+		pTable->GetValue("pressure_speed", soft_params.dpressure);
+		pTable->GetValue("density_inside", soft_params.densityInside);
 		if (pPhysicalEntity != nullptr)
 			pPhysicalEntity->SetParams(&soft_params);
 		break;

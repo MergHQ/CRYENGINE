@@ -495,7 +495,7 @@ public:
 	virtual int CollideEntityWithPrimitive(IPhysicalEntity *_pent, int itype, primitive *pprim, Vec3 dir, ray_hit *phit, intersection_params* pip=0);
 
 	virtual float PrimitiveWorldIntersection(const SPWIParams &pp, WriteLockCond *pLockContacts=0, const char *pNameTag="PrimitiveWorldIntersection");
-	virtual void RasterizeEntities(const grid3d& grid, uchar *rbuf, int objtypes, float massThreshold, const Vec3& offsBBox, const Vec3& sizeBBox, int flags);
+	virtual void RasterizeEntities(const grid3d& grid, uchar *rbuf, int objtypes, float massThreshold, const Vec3& offsBBox, const Vec3& sizeBBox, int flags, IPhysicalEntity *pentOnlyThis=nullptr);
 
 	virtual int GetEntitiesInBox(Vec3 ptmin,Vec3 ptmax, IPhysicalEntity **&pList, int objtypes, int szListPrealloc) {
 		int iCaller;
