@@ -493,7 +493,7 @@ void CParticle::Init(SParticleUpdateContext const& context, float fAge, CParticl
 	m_aPosHistory = 0;
 	if (int nSteps = rContainer.GetHistorySteps())
 	{
-		if ((m_aPosHistory = (SParticleHistory*) ParticleObjectAllocator().Allocate(sizeof(SParticleHistory) * nSteps)))
+		if (ParticleAllocator::Allocate(m_aPosHistory, nSteps))
 		{
 			for (int n = 0; n < nSteps; n++)
 				m_aPosHistory[n].SetUnused();
@@ -512,7 +512,7 @@ void CParticle::Init(SParticleUpdateContext const& context, float fAge, CParticl
 
 		if (bCollide)
 		{
-			if ((m_pCollisionInfo = (SCollisionInfo*) ParticleObjectAllocator().Allocate(sizeof(SCollisionInfo))))
+			if (ParticleAllocator::Allocate(m_pCollisionInfo))
 			{
 				new(m_pCollisionInfo) SCollisionInfo(params.nMaxCollisionEvents);
 			}
@@ -821,7 +821,7 @@ void CParticle::UpdateAllocations(int nPrevHistorySteps)
 	SParticleHistory* aPrevHist = m_aPosHistory;
 	if (int nNewSteps = GetContainer().GetHistorySteps())
 	{
-		if ((m_aPosHistory = (SParticleHistory*) ParticleObjectAllocator().Allocate(sizeof(SParticleHistory) * nNewSteps)))
+		if (ParticleAllocator::Allocate(m_aPosHistory, nNewSteps))
 		{
 			if (aPrevHist)
 				memcpy(m_aPosHistory, aPrevHist, min(nPrevHistorySteps, nNewSteps) * sizeof(*aPrevHist));
@@ -832,11 +832,11 @@ void CParticle::UpdateAllocations(int nPrevHistorySteps)
 	else
 		m_aPosHistory = 0;
 
-	ParticleObjectAllocator().Deallocate(aPrevHist, nPrevHistorySteps * sizeof(SParticleHistory));
+	ParticleAllocator::Deallocate(aPrevHist, nPrevHistorySteps);
 
 	if (GetContainer().NeedsCollisionInfo() && !m_pCollisionInfo)
 	{
-		if ((m_pCollisionInfo = (SCollisionInfo*) ParticleObjectAllocator().Allocate(sizeof(SCollisionInfo))))
+		if (ParticleAllocator::Allocate(m_pCollisionInfo))
 		{
 			new(m_pCollisionInfo) SCollisionInfo(GetParams().nMaxCollisionEvents);
 		}
@@ -1522,10 +1522,10 @@ CParticle::~CParticle()
 	IF (m_pCollisionInfo, 0)
 	{
 		m_pCollisionInfo->Clear();
-		ParticleObjectAllocator().Deallocate(m_pCollisionInfo, sizeof(SCollisionInfo));
+		ParticleAllocator::Deallocate(m_pCollisionInfo);
 	}
 
-	ParticleObjectAllocator().Deallocate(m_aPosHistory, sizeof(SParticleHistory) * m_pContainer->GetHistorySteps());
+	ParticleAllocator::Deallocate(m_aPosHistory, m_pContainer->GetHistorySteps());
 }
 
 char GetMinAxis(Vec3 const& vVec)

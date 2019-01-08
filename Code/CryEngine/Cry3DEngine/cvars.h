@@ -121,7 +121,6 @@ struct CVars : public Cry3DEngineBase
 
 	int    e_PermanentRenderObjects;
 	int    e_TerrainTextureStreamingPoolItemsNum;
-	int    e_ParticlesPoolSize;
 	int    e_ParticlesVertexPoolSize;
 	int    e_ParticlesIndexPoolSize;
 	int    e_ParticlesProfile;

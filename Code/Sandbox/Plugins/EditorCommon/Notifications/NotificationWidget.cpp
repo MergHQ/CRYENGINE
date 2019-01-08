@@ -140,7 +140,6 @@ CNotificationWidget::CNotificationWidget(int notificationId, QWidget* pParent /*
 	pInsetContainer->setLayout(pMainLayout);
 	setLayout(pInsetLayout);
 
-	setSizePolicy(QSizePolicy::Fixed, QSizePolicy::MinimumExpanding);
 	adjustSize();
 }
 

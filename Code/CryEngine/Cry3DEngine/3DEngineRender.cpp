@@ -3218,7 +3218,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 
 	if (GetCVars()->e_ParticlesDebug & AlphaBit('m'))
 	{
-		const stl::SPoolMemoryUsage memParticles = ParticleObjectAllocator().GetTotalMemory();
+		const stl::SPoolMemoryUsage memParticles = ParticleAllocator::GetTotalMemory();
 
 		ICrySizer* pSizerRE = GetSystem()->CreateSizer();
 		gEnv->pRenderer->GetMemoryUsageParticleREs(pSizerRE);
