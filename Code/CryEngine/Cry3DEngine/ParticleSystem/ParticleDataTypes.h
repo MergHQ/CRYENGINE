@@ -11,29 +11,41 @@
 namespace pfx2
 {
 
+///////////////////////////////////////////////////////////////////////////
+template<typename F>
+struct Slope
+{
+	F start;
+	F scale;
+
+	Slope(F lo = convert<F>(), F hi = convert<F>(1))
+		: start(lo), scale(hi - lo) {}
+	template<typename F2> Slope(const Slope<F2>& o)
+		: start(convert<F>(o.start)), scale(convert<F>(o.scale)) {}
+
+	F operator()(F val) const { return MAdd(val, scale, start); }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// Random number generator
+
 struct SChaosKey
 {
 public:
 	explicit SChaosKey(uint32 key) : m_key(key) {}
 	SChaosKey(const SChaosKey& key) : m_key(key.m_key) {}
-	SChaosKey(SChaosKey key1, SChaosKey key2);
-	SChaosKey(SChaosKey key1, SChaosKey key2, SChaosKey key3);
 
 	uint32 Rand();
 	uint32 Rand(uint32 range);
 	float  RandUNorm();
 	float  RandSNorm();
+	float operator()() { return RandUNorm(); }
 
-	struct Range
+	struct Range: Slope<float>
 	{
-		float scale, bias;
-		Range(float lo, float hi);
+		Range(float lo = 0, float hi = 1);
 	};
-	float Rand(Range range);
-
-	Vec2  RandCircle();
-	Vec2  RandDisc();
-	Vec3  RandSphere();
+	float operator()(Range range);
 
 private:
 	uint32 m_key;
@@ -43,7 +55,6 @@ private:
 
 struct SChaosKeyV
 {
-	explicit SChaosKeyV(SChaosKey key);
 	explicit SChaosKeyV(uint32 key);
 	explicit SChaosKeyV(uint32v keys) : m_keys(keys) {}
 	uint32v Rand();
@@ -51,12 +62,11 @@ struct SChaosKeyV
 	floatv  RandUNorm();
 	floatv  RandSNorm();
 
-	struct Range
+	struct Range: Slope<floatv>
 	{
-		floatv scale, bias;
-		Range(float lo, float hi);
+		Range(float lo = 0, float hi = 1);
 	};
-	floatv Rand(Range range);
+	floatv operator()(Range range);
 
 private:
 	uint32v m_keys;
@@ -67,6 +77,76 @@ private:
 typedef SChaosKey SChaosKeyV;
 
 #endif
+
+template<uint Dim, typename T = std::array<float, Dim>>
+struct SChaosKeyN
+{
+	SChaosKeyN(SChaosKey& chaos)
+		: m_chaos(chaos) {}
+
+	void SetRange(uint e, Range range, bool isOpen = false)
+	{
+		m_ranges[e] = SChaosKey::Range(range.start, range.end);
+	}
+
+	T operator()()
+	{
+		T result;
+		for (uint e = 0; e < Dim; ++e)
+			result[e] = m_chaos(m_ranges[e]);
+		return result;
+	}
+
+private:
+	SChaosKey&       m_chaos;
+	SChaosKey::Range m_ranges[Dim];
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// Sequential number generator
+
+template<uint Dim, typename T = std::array<float, Dim>>
+struct SOrderKeyN
+{
+	SOrderKeyN(uint key = 0)
+		: m_key(float(key))
+	{
+		for (uint e = 0; e < Dim; ++e)
+			m_modulusInv[e] = 1.0f;
+	}
+
+	void SetModulus(uint modulus, uint e = 0)
+	{
+		m_modulusInv[e] = 1.0f / float(modulus);
+	}
+
+	void SetRange(uint e, Range range, bool isOpen = false)
+	{
+		m_ranges[e] = Slope<float>(range.start, range.end);
+		if (!isOpen && m_modulusInv[e] < 1.0f)
+			m_ranges[e].scale /= (1.0f - m_modulusInv[e]);
+	}
+
+	T operator()()
+	{
+		T result;
+		float number = m_key;
+		m_key += 1.0f;
+		for (uint e = 0; e < Dim; ++e)
+		{
+			number *= m_modulusInv[e];
+			float fraction = frac(number);
+			result[e] = m_ranges[e](fraction);
+			number -= fraction;
+		}
+		return result;
+	}
+
+private:
+	float        m_key;
+	float        m_modulusInv[Dim];
+	Slope<float> m_ranges[Dim];
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implement EParticleDataTypes (size, position, etc) with DynamicEnum.

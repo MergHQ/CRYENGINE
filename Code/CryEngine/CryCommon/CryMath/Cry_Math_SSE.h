@@ -20,6 +20,15 @@ template<typename T> struct SIMD_traits
 template<typename F> using vector4_t = typename SIMD_traits<F>::vector4_t;
 template<typename V> using scalar_t  = typename SIMD_traits<V>::scalar_t;
 
+struct scalar_types
+{
+	template<typename T> using type = typename SIMD_traits<T>::scalar_t;
+};
+struct vector4_types
+{
+	template<typename T> using type = typename SIMD_traits<T>::vector4_t;
+};
+
 #if CRY_PLATFORM_SSE2
 
 	#define CRY_TYPE_SIMD4
@@ -119,7 +128,7 @@ template<> ILINE u32v4  convert<u32v4>()                { return _mm_setzero_si1
 template<> ILINE u32v4  convert<u32v4>(uint v)          { return _mm_set1_epi32(v); }
 template<> ILINE u32v4  convert<u32v4>(int v)           { CRY_MATH_ASSERT(v >= 0); return _mm_set1_epi32(v); }
 template<> ILINE u32v4  convert<u32v4>(f32v4 v)         { check_range(v, 0, INT_MAX); return _mm_cvttps_epi32(v); }
-template<> ILINE i32v4  convert<i32v4>(const uint32* p) { return _mm_loadu_si128((const __m128i*)p); }
+template<> ILINE u32v4  convert<u32v4>(const uint32* p) { return _mm_loadu_si128((const __m128i*)p); }
 
 template<> ILINE uint32 convert<uint32>(u32v4 v)        { return _mm_cvtsi128_si32(v); }
 
@@ -321,6 +330,9 @@ INTV4_SLOW_BINARY_OPS(u32v4, /)
 INTV4_SLOW_BINARY_OPS(i32v4, %)
 INTV4_SLOW_BINARY_OPS(u32v4, %)
 
+ILINE i32v4 operator+(i32v4 a) { return a; }
+ILINE u32v4 operator+(u32v4 a) { return a; }
+
 ILINE i32v4 operator-(i32v4 a) { return convert<i32v4>() - a; }
 
 ILINE u32v4 operator~(u32v4 a) { return a ^ one_mask(a); }
@@ -347,6 +359,7 @@ FV4_BINARY_OPS(-, _mm_sub_ps)
 FV4_BINARY_OPS(*, _mm_mul_ps)
 FV4_BINARY_OPS(/, _mm_div_ps)
 
+ILINE f32v4 operator+(f32v4 a) { return a; }
 ILINE f32v4 operator-(f32v4 a) { return convert<f32v4>() - a; }
 
 	#endif // CRY_COMPILER_MSVC
@@ -374,13 +387,13 @@ COMMPOUND_OPERATORS(u32v4, >>, Scalar)
 // Additional operators and functions for SSE intrinsics
 
 //! Convert comparison results to boolean value
+ILINE int Any(mask32v4 v)
+{
+	return _mm_movemask_ps(vcast<f32v4>(v));
+}
 ILINE bool All(mask32v4 v)
 {
-	return _mm_movemask_ps(vcast<f32v4>(v)) == 0xF;
-}
-ILINE bool Any(mask32v4 v)
-{
-	return _mm_movemask_ps(vcast<f32v4>(v)) != 0;
+	return Any(v) == 0xF;
 }
 
 template<typename T> ILINE T if_else(mask32v4 mask, T a, T b)

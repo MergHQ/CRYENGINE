@@ -59,6 +59,7 @@ public:
 	uint32                            GetRealNumParticles() const     { return m_lastId + HasNewBorns() * GetNumSpawnedParticles(); }
 	uint32                            GetMaxParticles() const         { return m_capacity; }
 	uint32                            GetNumSpawnedParticles() const  { return m_lastSpawnId - m_firstSpawnId; }
+	uint32                            GetTotalSpawnedParticles()      { return m_nextSpawnId; }
 	bool                              HasNewBorns() const             { return m_lastSpawnId > m_lastId; }
 	bool                              IsNewBorn(TParticleId id) const { return id >= m_firstSpawnId && id < m_lastSpawnId; }
 	TParticleId                       GetRealId(TParticleId pId) const;

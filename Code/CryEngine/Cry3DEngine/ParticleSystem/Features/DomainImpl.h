@@ -217,6 +217,29 @@ private:
 	SChaosKeyV& m_chaos;
 };
 
+struct SpawnId
+{
+	template<typename Source>
+	struct Sampler: Source
+	{
+		Sampler(const CParticleComponentRuntime& runtime, uint modulus)
+			: Source(runtime)
+			, m_spawnIds(Source::Container(runtime).IStream(EPDT_SpawnId))
+			, m_scale(convert<floatv>(rcp(float(modulus))))
+		{}
+		ILINE floatv Sample(TParticleGroupId particleId) const
+		{
+			const TParticleIdv index = m_spawnIds.SafeLoad(Source::Id(particleId));
+			const floatv number = convert<floatv>(index) * m_scale;
+			return frac(number);
+		}
+	private:
+		IPidStream m_spawnIds;
+		floatv     m_scale;
+	};
+};
+
+
 struct ViewAngle
 {
 	template<typename Source>
@@ -326,6 +349,9 @@ void TModFunction<Child, T, TFrom>::Modify(const CParticleComponentRuntime& runt
 		Child().DoModify(
 		  runtime, range, stream,
 		  detail::CChaosSampler(runtime));
+		break;
+	case EDomain::SpawnId:
+		ModifyFromSampler<detail::SpawnId>(runtime, range, stream, domain, m_idModulus);
 		break;
 	case EDomain::ViewAngle:
 		ModifyFromSampler<detail::ViewAngle>(runtime, range, stream, domain);

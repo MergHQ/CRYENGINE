@@ -15,6 +15,7 @@ namespace pfx2
 SERIALIZATION_ENUM_DECLARE(EDomain, ,
 	Age,
 	SpawnFraction,
+	SpawnId,
 	Speed,
 	Field,
 	Attribute,
@@ -64,6 +65,7 @@ protected:
 	EDomainField        m_fieldSource  = EDomainField(EPDT_LifeTime);
 	EDomainOwner        m_sourceOwner  = EDomainOwner::Self;
 	EDomainGlobal       m_sourceGlobal = EDomainGlobal::LevelTime;
+	PosInt              m_idModulus;
 	bool                m_spawnOnly    = true;
 	float               m_domainScale  = 1;
 	float               m_domainBias   = 0;

@@ -8,55 +8,6 @@ namespace detail
 
 }
 
-ILINE floatv ToFloatv(float v)
-{
-	return convert<floatv>(v);
-}
-
-ILINE uint32v ToUint32v(uint32 v)
-{
-	return convert<uint32v>(v);
-}
-
-ILINE floatv ToFloatv(int32v v)
-{
-	return convert<floatv>(v);
-}
-
-ILINE floatv ToFloatv(uint32v v)
-{
-	return convert<floatv>(v);
-}
-
-ILINE uint32v ToUint32v(floatv v)
-{
-	return convert<uint32v>(v);
-}
-
-ILINE Vec3v ToVec3v(Vec3 v)
-{
-	return Vec3v(
-		convert<floatv>(v.x),
-		convert<floatv>(v.y),
-		convert<floatv>(v.z));
-}
-
-ILINE Vec4v ToVec4v(Vec4 v)
-{
-	return Vec4v(
-		convert<floatv>(v.x),
-		convert<floatv>(v.y),
-		convert<floatv>(v.z),
-		convert<floatv>(v.w));
-}
-
-ILINE Planev ToPlanev(Plane v)
-{
-	return Planev(
-	  ToVec3v(v.n),
-	  ToFloatv(v.d));
-}
-
 ILINE Vec3v ToVec3v(UColv color)
 {
 	Vec3v result;
@@ -84,11 +35,6 @@ ILINE UColv ToUColv(const Vec3v& color)
 	result = _mm_or_si128(alphaMask, _mm_or_si128(red, _mm_or_si128(green, blue)));
 
 	return result;
-}
-
-ILINE UColv ToUColv(UCol color)
-{
-	return _mm_set1_epi32(color.dcolor);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -133,7 +79,7 @@ ILINE Quatv quat_exp_fast(Vec3v v)
 	return Quatv(c, v.x * s, v.y * s, v.z * s);
 }
 
-ILINE Quatv AddAngularVelocity(Quatv initial, Vec3v angularVel, floatv deltaTime)
+inline Quatv AddAngularVelocity(Quatv const& initial, Vec3v const& angularVel, floatv deltaTime)
 {
 	const floatv haldDt = deltaTime * ToFloatv(0.5f);
 	const Quatv rotated = quat_exp_fast(angularVel * haldDt) * initial;

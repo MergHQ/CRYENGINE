@@ -16,11 +16,6 @@ class CFeatureLocationOffset : public CParticleFeature
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	CFeatureLocationOffset()
-		: m_offset(ZERO)
-		, m_scale(1.0f)
-	{}
-
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		pComponent->GetSpatialExtents.add(this);
@@ -95,8 +90,8 @@ public:
 	}
 
 private:
-	Vec3                                 m_offset;
-	CParamMod<EDD_PerParticle, UFloat10> m_scale;
+	Vec3                                 m_offset {0};
+	CParamMod<EDD_PerParticle, UFloat10> m_scale = 1;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationOffset, "Location", "Offset", colorLocation);
@@ -122,6 +117,7 @@ public:
 		CParticleFeature::Serialize(ar);
 		ar(m_box, "Dimension", "Dimension");
 		ar(m_scale, "Scale", "Scale");
+		m_distribution.Serialize(ar);
 	}
 
 	virtual void GetSpatialExtents(const CParticleComponentRuntime& runtime, TConstArray<float> scales, TVarArray<float> extents) override
@@ -148,16 +144,18 @@ public:
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 		STempInitBuffer<float> scales(runtime, m_scale);
 
+		SDistributor<3, Vec3> distributor(m_distribution, runtime);
+		distributor.SetRange(0, {-m_box.x, +m_box.x});
+		distributor.SetRange(1, {-m_box.y, +m_box.y});
+		distributor.SetRange(2, {-m_box.z, +m_box.z});
+
 		for (auto particleId : runtime.SpawnedRange())
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
 			const float scale = scales.SafeLoad(particleId);
 			const Vec3 wPosition0 = positions.Load(particleId);
 			const Quat wQuat = parentQuats.SafeLoad(parentId);
-			const Vec3 oOffset = Vec3(
-			  runtime.Chaos().RandSNorm() * m_box.x,
-			  runtime.Chaos().RandSNorm() * m_box.y,
-			  runtime.Chaos().RandSNorm() * m_box.z);
+			const Vec3 oOffset = distributor();
 			const Vec3 wOffset = wQuat * oOffset;
 			const Vec3 wPosition1 = wPosition0 + wOffset * scale;
 			positions.Store(particleId, wPosition1);
@@ -174,6 +172,7 @@ public:
 private:
 	Vec3                                 m_box = ZERO;
 	CParamMod<EDD_PerParticle, UFloat10> m_scale;
+	SDistribution<3, Vec3>               m_distribution;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationBox, "Location", "Box", colorLocation);
@@ -185,12 +184,6 @@ class CFeatureLocationSphere : public CParticleFeature
 {
 public:
 	CRY_PFX2_DECLARE_FEATURE
-
-	CFeatureLocationSphere()
-		: m_radius(0.0f)
-		, m_velocity(0.0f)
-		, m_axisScale(1.0f, 1.0f, 1.0f)
-	{}
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
@@ -204,9 +197,11 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
 		CParticleFeature::Serialize(ar);
-		ar(m_radius, "Radius", "Radius");
-		ar(m_velocity, "Velocity", "Velocity");
-		ar(m_axisScale, "AxisScale", "Axis Scale");
+		SERIALIZE_VAR(ar, m_radius);
+		SERIALIZE_VAR(ar, m_innerFraction);
+		SERIALIZE_VAR(ar, m_velocity);
+		SERIALIZE_VAR(ar, m_axisScale);
+		m_distribution.Serialize(ar);
 	}
 
 	virtual void InitParticles(CParticleComponentRuntime& runtime) override
@@ -257,9 +252,12 @@ private:
 		STempInitBuffer<float> radii(runtime, m_radius);
 		STempInitBuffer<float> velocityMults(runtime, m_velocity);
 
+		SBallDistributor<DistributorTypes> distributor(m_distribution, runtime);
+		distributor.SetRadiusRange({m_innerFraction, 1.0f});
+
 		for (auto particleId : runtime.SpawnedRange())
 		{
-			const Vec3 sphere = runtime.Chaos().RandSphere();
+			const Vec3 sphere = distributor();
 			const Vec3 sphereDist = sphere.CompMul(m_axisScale);
 
 			if (UseRadius)
@@ -282,25 +280,20 @@ private:
 
 	CParamMod<EDD_PerParticle, UFloat10> m_radius;
 	CParamMod<EDD_PerParticle, SFloat10> m_velocity;
-	Vec3                                 m_axisScale;
+	UUnitFloat                           m_innerFraction = 1;
+	Vec3                                 m_axisScale {1};
+	SDistribution<3>                     m_distribution;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationSphere, "Location", "Sphere", colorLocation);
 
 //////////////////////////////////////////////////////////////////////////
-// CFeatureLocationDisc
+// CFeatureLocationCircle
 
 class CFeatureLocationCircle : public CParticleFeature
 {
 public:
 	CRY_PFX2_DECLARE_FEATURE
-
-	CFeatureLocationCircle()
-		: m_radius(0.0f)
-		, m_velocity(0.0f)
-		, m_axisScale(1.0f, 1.0f)
-		, m_axis(0.0f, 0.0f, 1.0f)
-	{}
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
@@ -314,10 +307,12 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
 		CParticleFeature::Serialize(ar);
-		ar(m_radius, "Radius", "Radius");
-		ar(m_velocity, "Velocity", "Velocity");
-		ar(m_axisScale, "AxisScale", "Axis Scale");
-		ar(m_axis, "Axis", "Axis");
+		SERIALIZE_VAR(ar, m_radius);
+		SERIALIZE_VAR(ar, m_velocity);
+		SERIALIZE_VAR(ar, m_innerFraction);
+		SERIALIZE_VAR(ar, m_axisScale);
+		SERIALIZE_VAR(ar, m_axis);
+		m_distribution.Serialize(ar);
 	}
 
 	virtual void InitParticles(CParticleComponentRuntime& runtime) override
@@ -372,13 +367,14 @@ private:
 
 		STempInitBuffer<float> radii(runtime, m_radius);
 		STempInitBuffer<float> velocityMults(runtime, m_velocity);
+		SDiskDistributor<DistributorTypes> distributor(m_distribution, runtime);
+		distributor.SetRadiusRange({m_innerFraction, 1.0f});
 
 		for (auto particleId : runtime.SpawnedRange())
 		{
 			TParticleId parentId = parentIds.Load(particleId);
 			const Quat wQuat = parentQuats.SafeLoad(parentId);
-
-			const Vec2 disc2 = runtime.Chaos().RandCircle();
+			const Vec2 disc2 = distributor();
 			const Vec3 disc3 = axisQuat * Vec3(disc2.x * m_axisScale.x, disc2.y * m_axisScale.y, 0.0f);
 
 			if (UseRadius)
@@ -403,8 +399,10 @@ private:
 private:
 	CParamMod<EDD_PerParticle, UFloat10> m_radius;
 	CParamMod<EDD_PerParticle, SFloat10> m_velocity;
-	Vec3                                 m_axis;
-	Vec2                                 m_axisScale;
+	UUnitFloat                           m_innerFraction = 1;
+	Vec3                                 m_axis {0, 0, 1};
+	Vec2                                 m_axisScale {1, 1};
+	SDistribution<2>                     m_distribution;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationCircle, "Location", "Circle", colorLocation);
@@ -803,15 +801,10 @@ class CFeatureLocationBeam : public CParticleFeature
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	CFeatureLocationBeam()
-		: m_source(ETargetSource::Parent)
-		, m_destination(ETargetSource::Target) {}
-
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		pComponent->InitParticles.add(this);
 		pComponent->GetSpatialExtents.add(this);
-		pComponent->AddParticleData(EPDT_SpawnFraction);
 		m_source.AddToComponent(pComponent);
 		m_destination.AddToComponent(pComponent);
 	}
@@ -819,10 +812,24 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
 		CParticleFeature::Serialize(ar);
-		ar(m_source, "Source", "Source");
+		SERIALIZE_VAR(ar, m_source);
 		if (ar.isInput() && GetVersion(ar) <= 5)
 			ar(m_destination, "Destiny", "Destination");
-		ar(m_destination, "Destination", "Destination");
+		SERIALIZE_VAR(ar, m_destination);
+		if (!ar(m_position, "Position", "Position") && ar.isInput())
+		{
+			// Compatibility with previous behavior: Add Linear:SpawnFraction modifier
+			static char modifierText[] =
+			"{ \
+				\"value\": 1.0, \
+				\"modifiers\": [ \
+					{ \"Linear\": { \
+						\"Domain\": \"SpawnFraction\", \
+					} } \
+				] \
+			}";
+			Serialization::LoadJsonBuffer(m_position, modifierText, strlen(modifierText));
+		}
 	}
 
 	virtual void InitParticles(CParticleComponentRuntime& runtime) override
@@ -830,14 +837,14 @@ public:
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 		CParticleContainer& container = runtime.GetContainer();
-		const IFStream fractions = container.GetIFStream(EPDT_SpawnFraction);
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
+		STempInitBuffer<float> fractions(runtime, m_position);
 
 		for (auto particleId : runtime.SpawnedRange())
 		{
 			const Vec3 wSource = m_source.GetTarget(runtime, particleId);
 			const Vec3 wDestination = m_destination.GetTarget(runtime, particleId);
-			const float fraction = fractions.SafeLoad(particleId);
+			const float fraction = fractions[particleId];
 			const Vec3 wPosition = wSource + (wDestination - wSource) * fraction;
 			positions.Store(particleId, wPosition);
 		}
@@ -856,8 +863,9 @@ public:
 	}
 
 private:
-	CTargetSource m_source;
-	CTargetSource m_destination;
+	CTargetSource                          m_source      = ETargetSource::Parent;
+	CTargetSource                          m_destination = ETargetSource::Target;
+	CParamMod<EDD_PerParticle, UUnitFloat> m_position    = 1;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationBeam, "Location", "Beam", colorLocation);
