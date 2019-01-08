@@ -155,6 +155,7 @@ SDeviceObjectHelpers::CShaderConstantManager::CShaderConstantManager(CShaderCons
 void SDeviceObjectHelpers::CShaderConstantManager::Reset()
 {
 	m_constantBuffers.clear();
+	m_pShaderReflection.reset();
 }
 
 bool SDeviceObjectHelpers::CShaderConstantManager::AllocateShaderReflection(::CShader* pShader, const CCryNameTSCRC& technique, uint64 rtFlags, EShaderStage shaderStages)
