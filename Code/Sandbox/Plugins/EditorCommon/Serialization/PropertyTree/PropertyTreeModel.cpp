@@ -2,7 +2,7 @@
  *  yasli - Serialization Library.
  *  Copyright (C) 2007-2013 Evgeny Andreeshchev <eugene.andreeshchev@gmail.com>
  *                          Alexander Kotliar <alexander.kotliar@gmail.com>
- * 
+ *
  *  This code is distributed under the MIT License:
  *                          http://www.opensource.org/licenses/MIT
  */
@@ -15,10 +15,10 @@
 #include <CrySerialization/yasli/Callback.h>
 
 PropertyTreeModel::PropertyTreeModel(PropertyTree* tree)
-: tree_(tree)
-, expandLevels_(0)
-, undoEnabled_(true)
-, fullUndo_(false)
+	: tree_(tree)
+	, expandLevels_(0)
+	, undoEnabled_(true)
+	, fullUndo_(false)
 {
 	clear();
 }
@@ -33,30 +33,33 @@ PropertyTreeModel::~PropertyTreeModel()
 TreePath PropertyTreeModel::pathFromRow(PropertyRow* row)
 {
 	TreePath result;
-	if(row)
-		while(row->parent()){
-            int childIndex = row->parent()->childIndex(row);
-            YASLI_ESCAPE(childIndex >= 0, return TreePath());
+	if (row)
+		while (row->parent())
+		{
+			int childIndex = row->parent()->childIndex(row);
+			YASLI_ESCAPE(childIndex >= 0, return TreePath());
 			result.insert(result.begin(), childIndex);
 			row = row->parent();
 		}
-		return result;
+	return result;
 }
 
 void PropertyTreeModel::selectRow(PropertyRow* row, bool select, bool exclusive)
 {
-	if(exclusive)
+	if (exclusive)
 		deselectAll();
 
 	row->setSelected(select);
 
 	Selection::iterator it = std::find(selection_.begin(), selection_.end(), pathFromRow(row));
-	if(select){
-		if(it == selection_.end())
+	if (select)
+	{
+		if (it == selection_.end())
 			selection_.push_back(pathFromRow(row));
 		setFocusedRow(row);
 	}
-	else if(it != selection_.end()){
+	else if (it != selection_.end())
+	{
 		PropertyRow* it_row = rowFromPath(*it);
 		YASLI_ASSERT(it_row->refCount() > 0 && it_row->refCount() < 0xFFFF);
 		selection_.erase(it);
@@ -66,7 +69,8 @@ void PropertyTreeModel::selectRow(PropertyRow* row, bool select, bool exclusive)
 void PropertyTreeModel::deselectAll()
 {
 	Selection::iterator it;
-	for(it = selection_.begin(); it != selection_.end(); ++it){
+	for (it = selection_.begin(); it != selection_.end(); ++it)
+	{
 		PropertyRow* row = rowFromPath(*it);
 		row->setSelected(false);
 	}
@@ -79,11 +83,13 @@ PropertyRow* PropertyTreeModel::rowFromPath(const TreePath& path)
 	if (!root())
 		return 0;
 	TreePath::const_iterator it;
-	for(it = path.begin(); it != path.end(); ++it){
+	for (it = path.begin(); it != path.end(); ++it)
+	{
 		int index = it->index;
-		if(index < int(row->count()) && index >= 0){
+		if (index < int(row->count()) && index >= 0)
+		{
 			PropertyRow* nextRow = row->childByIndex(index);
-			if(!nextRow)
+			if (!nextRow)
 				return row;
 			else
 				row = nextRow;
@@ -98,17 +104,18 @@ void PropertyTreeModel::setSelection(const Selection& selection)
 {
 	deselectAll();
 	Selection::const_iterator it;
-	for(it = selection.begin(); it != selection.end(); ++it){
+	for (it = selection.begin(); it != selection.end(); ++it)
+	{
 		const TreePath& path = *it;
 		PropertyRow* row = rowFromPath(path);
-		if(row)
+		if (row)
 			selectRow(row, true, false);
 	}
 }
 
 void PropertyTreeModel::clear()
 {
-	if(root_)
+	if (root_)
 		root_->clear();
 	root_ = 0;
 	setRoot(new PropertyRow());
@@ -118,34 +125,35 @@ void PropertyTreeModel::clear()
 
 void PropertyTreeModel::onUpdated(const PropertyRows& rows, bool needApply)
 {
-    signalUpdated(rows, needApply);
+	signalUpdated(rows, needApply);
 }
 
 void PropertyTreeModel::applyOperator(PropertyTreeOperator* op, bool createRedo)
 {
-    YASLI_ESCAPE(op, return);
-    PropertyRow *dest = rowFromPath(op->path_);
-    YASLI_ESCAPE(dest && "Unable to apply operator!", return);
-    if(op->type_ == PropertyTreeOperator::NONE)
-        return;
-    YASLI_ESCAPE(op->row_, return);
-    if(dest->parent())
-        dest->parent()->replaceAndPreserveState(dest, op->row_, this);
-    else{
-        op->row_->assignRowProperties(root_);
-        root_ = op->row_;
-    }
-    PropertyRow* newRow = op->row_;
-    op->row_ = 0;
-    rowChanged(newRow);
-    // TODO: redo
+	YASLI_ESCAPE(op, return );
+	PropertyRow* dest = rowFromPath(op->path_);
+	YASLI_ESCAPE(dest && "Unable to apply operator!", return );
+	if (op->type_ == PropertyTreeOperator::NONE)
+		return;
+	YASLI_ESCAPE(op->row_, return );
+	if (dest->parent())
+		dest->parent()->replaceAndPreserveState(dest, op->row_, this);
+	else
+	{
+		op->row_->assignRowProperties(root_);
+		root_ = op->row_;
+	}
+	PropertyRow* newRow = op->row_;
+	op->row_ = 0;
+	rowChanged(newRow);
+	// TODO: redo
 }
 
 void PropertyTreeModel::undo()
 {
-    YASLI_ESCAPE(!undoOperators_.empty(), return);
-    applyOperator(&undoOperators_.back(), true);
-    undoOperators_.pop_back();
+	YASLI_ESCAPE(!undoOperators_.empty(), return );
+	applyOperator(&undoOperators_.back(), true);
+	undoOperators_.pop_back();
 }
 
 void PropertyTreeModel::clearUndo()
@@ -153,12 +161,19 @@ void PropertyTreeModel::clearUndo()
 	undoOperators_.clear();
 }
 
+void PropertyTreeModel::endUndo(bool undoAccepted)
+{
+	tree_->onModelEndUndo(undoAccepted);
+}
+
 PropertyTreeModel::UpdateLock PropertyTreeModel::lockUpdate()
 {
-	if(updateLock_)
+	if (updateLock_)
 		return updateLock_;
-	else {
-		UpdateLock lock = new PropertyTreeModel::LockedUpdate(this);;
+	else
+	{
+		UpdateLock lock = new PropertyTreeModel::LockedUpdate(this);
+		;
 		updateLock_ = lock;
 		lock->release();
 		return lock;
@@ -167,19 +182,20 @@ PropertyTreeModel::UpdateLock PropertyTreeModel::lockUpdate()
 
 void PropertyTreeModel::dismissUpdate()
 {
-	if(updateLock_)
+	if (updateLock_)
 		updateLock_->dismissUpdate();
 }
 
 void PropertyTreeModel::requestUpdate(const PropertyRows& rows, bool apply)
 {
-	if(updateLock_)
+	if (updateLock_)
 		updateLock_->requestUpdate(rows, apply);
 	else
 		onUpdated(rows, apply);
 }
 
-struct RowObtainer {
+struct RowObtainer
+{
 	RowObtainer(std::vector<char>& states) : states_(states) {}
 	ScanResult operator()(PropertyRow* row)
 	{
@@ -190,41 +206,47 @@ protected:
 	std::vector<char>& states_;
 };
 
-struct RowExpander {
+struct RowExpander
+{
 	RowExpander(const std::vector<char>& states) : states_(states), index_(0) {}
 	ScanResult operator()(PropertyRow* row, PropertyTree* tree, int index)
 	{
-		if(size_t(index_) >= states_.size())
+		if (size_t(index_) >= states_.size())
 			return SCAN_FINISHED;
 
-		if(states_[index_++]){
-			if(row->canBeToggled(tree))
+		if (states_[index_++])
+		{
+			if (row->canBeToggled(tree))
 				row->_setExpanded(true);
 			return SCAN_CHILDREN_SIBLINGS;
 		}
-		else{
+		else
+		{
 			row->_setExpanded(false);
 			return SCAN_SIBLINGS;
 		}
 	}
 protected:
-	int index_;
+	int                      index_;
 	const std::vector<char>& states_;
 };
 
 void PropertyTreeModel::YASLI_SERIALIZE_METHOD(Archive& ar, PropertyTree* tree)
 {
-	ar(focusedRow_, "focusedRow", 0);		
+	ar(focusedRow_, "focusedRow", 0);
 	ar(selection_, "selection", 0);
 
-	if (root()) {
+	if (root())
+	{
 		std::vector<char> expanded;
-		if(ar.isOutput()) {
+		if (ar.isOutput())
+		{
 			RowObtainer op(expanded);
 			root()->scanChildren(op);
 		}
 		ar(expanded, "expanded", 0);
-		if(ar.isInput()){
+		if (ar.isInput())
+		{
 			Selection sel = selection_;
 			setSelection(sel);
 			RowExpander op(expanded);
@@ -235,49 +257,58 @@ void PropertyTreeModel::YASLI_SERIALIZE_METHOD(Archive& ar, PropertyTree* tree)
 	}
 }
 
-void PropertyTreeModel::pushUndo(const PropertyTreeOperator& op)
+void PropertyTreeModel::beginUndo(const PropertyTreeOperator& op)
 {
-    PropertyTreeOperator oper = op;
-    bool handled = false;
-    signalPushUndo(&oper, &handled);
-    if(!handled && oper.row_ != 0)
-        undoOperators_.push_back(oper);
+	PropertyTreeOperator oper = op;
+	bool handled = false;
+	tree_->onModelBeginUndo(&oper, &handled);
+	if (!handled && oper.row_ != 0)
+		undoOperators_.push_back(oper);
 }
 
 void PropertyTreeModel::rowAboutToBeChanged(PropertyRow* row)
 {
-    YASLI_ESCAPE(row, return);
-    if(fullUndo_){
-        if(undoEnabled_){
-            SharedPtr<PropertyRow> clonedRow = root()->clone(constStrings());
-            clonedRow->assignRowState(*root(), true);
-            pushUndo(PropertyTreeOperator(TreePath(), clonedRow));
-        }
-        else{
-            pushUndo(PropertyTreeOperator(TreePath(), 0));
-        }
-    }
-    else{
-        if(undoEnabled_){
+	YASLI_ESCAPE(row, return );
+	if (fullUndo_)
+	{
+		if (undoEnabled_)
+		{
+			SharedPtr<PropertyRow> clonedRow = root()->clone(constStrings());
+			clonedRow->assignRowState(*root(), true);
+			beginUndo(PropertyTreeOperator(TreePath(), clonedRow));
+		}
+		else
+		{
+			beginUndo(PropertyTreeOperator(TreePath(), 0));
+		}
+	}
+	else
+	{
+		if (undoEnabled_)
+		{
 			SharedPtr<PropertyRow> clonedRow = row->clone(constStrings());
-            clonedRow->assignRowState(*row, true);
-            pushUndo(PropertyTreeOperator(pathFromRow(row), clonedRow));
-        }
-        else{
-            pushUndo(PropertyTreeOperator(pathFromRow(row), 0));
-        }
-    }
+			clonedRow->assignRowState(*row, true);
+			beginUndo(PropertyTreeOperator(pathFromRow(row), clonedRow));
+		}
+		else
+		{
+			beginUndo(PropertyTreeOperator(pathFromRow(row), 0));
+		}
+	}
 }
 
 void PropertyTreeModel::callRowCallback(PropertyRow* row)
 {
 	PropertyRow* current = row;
-	while (true) {
+	while (true)
+	{
 		yasli::CallbackInterface* callback = current->callback();
-		if (callback) {
-			auto applyFunc = [=](void* arg, const TypeID& type) {
-				current->assignToByPointer(arg, callback->type());
-			};
+		if (callback)
+		{
+			auto applyFunc = [=](void* arg, const TypeID& type)
+											 {
+												 current->assignToByPointer(arg, callback->type());
+											 };
 			callback->call(applyFunc);
 			return;
 		}
@@ -289,11 +320,22 @@ void PropertyTreeModel::callRowCallback(PropertyRow* row)
 	}
 }
 
-void PropertyTreeModel::rowChanged(PropertyRow* row, bool apply)
+void PropertyTreeModel::rowChanged(PropertyRow* row, bool apply /*= true*/, bool shouldAcceptUndo /*= true*/)
+{
+	updateRow(row, apply);
+	endUndo(shouldAcceptUndo);
+}
+
+void PropertyTreeModel::rowContinuouslyChanged(PropertyRow* row, bool apply /*= true*/)
+{
+	updateRow(row, apply);
+}
+
+void PropertyTreeModel::updateRow(PropertyRow* row, bool apply /*= true*/)
 {
 	callRowCallback(row);
 
-	YASLI_ESCAPE(row, return);
+	YASLI_ESCAPE(row, return );
 	row->setLabelChanged();
 	row->setLayoutChanged();
 
@@ -315,7 +357,7 @@ bool PropertyTreeModel::defaultTypeRegistered(const char* typeName) const
 
 void PropertyTreeModel::addDefaultType(PropertyRow* row, const char* typeName)
 {
-	YASLI_ESCAPE(typeName != 0, return);
+	YASLI_ESCAPE(typeName != 0, return );
 	defaultTypes_[typeName] = row;
 }
 
@@ -331,8 +373,10 @@ void PropertyTreeModel::addDefaultType(const TypeID& type, const PropertyDefault
 	YASLI_ASSERT(type != TypeID());
 
 	BaseClass& base = defaultTypesPoly_[type];
-	for (DerivedTypes::iterator it = base.types.begin(); it != base.types.end(); ++it){
-		if (it->registeredName == value.registeredName) {
+	for (DerivedTypes::iterator it = base.types.begin(); it != base.types.end(); ++it)
+	{
+		if (it->registeredName == value.registeredName)
+		{
 			YASLI_ASSERT(it->root == 0);
 			*it = value;
 			return;
@@ -363,7 +407,8 @@ bool PropertyTreeModel::defaultTypeRegistered(const TypeID& baseType, const char
 
 	const BaseClass& base = it->second;
 	DerivedTypes::const_iterator dit;
-	for (dit = base.types.begin(); dit != base.types.end(); ++dit){
+	for (dit = base.types.begin(); dit != base.types.end(); ++dit)
+	{
 		if (dit->registeredName == derivedRegisteredName)
 			return true;
 	}
@@ -383,11 +428,6 @@ const yasli::StringList& PropertyTreeModel::typeStringList(const yasli::TypeID& 
 void PropertyTreeModel::signalUpdated(const PropertyRows& rows, bool needApply)
 {
 	tree_->onModelUpdated(rows, needApply);
-}
-
-void PropertyTreeModel::signalPushUndo(PropertyTreeOperator* op, bool* result)
-{
-	tree_->onModelPushUndo(op, result);
 }
 
 PropertyRow* PropertyTreeModel::getNextFocusableSibling(PropertyRow* row, bool pulled)
@@ -449,7 +489,7 @@ PropertyRow* PropertyTreeModel::getLastFocusableChild(PropertyRow* row, bool pul
 	if (!row)
 		row = root();
 
-	for (int i = row->count() -1; i >= 0; --i)
+	for (int i = row->count() - 1; i >= 0; --i)
 	{
 		PropertyRow* child = row->childByIndex(i);
 		if (child->visible(tree_))
@@ -470,7 +510,7 @@ PropertyRow* PropertyTreeModel::getNextFocusableRow()
 		row = getFirstFocusableChild(focused, false);
 		if (row)
 			return row;
-		
+
 		row = getNextFocusableSibling(focused, true);
 		if (row)
 			return row;
@@ -494,7 +534,6 @@ PropertyRow* PropertyTreeModel::getNextFocusableRow()
 	return nullptr;
 }
 
-
 PropertyRow* PropertyTreeModel::getPrevFocusableRow()
 {
 	PropertyRow* focused = focusedRow();
@@ -506,7 +545,7 @@ PropertyRow* PropertyTreeModel::getPrevFocusableRow()
 
 		if (!row)
 			return focused->parent();
-		
+
 		if (row)
 			row = getLastFocusableChild(row, true);
 

@@ -270,7 +270,8 @@ protected:
 	virtual void onChanged() = 0;
 	virtual void onContinuousChange() = 0;
 	virtual void onSelected() = 0;
-	virtual void onPushUndo() = 0;
+	virtual void onBeginUndo() = 0;
+	virtual void onEndUndo(bool undoAccepted) = 0;
 
 	virtual void copyRow(PropertyRow* row) = 0;
 	virtual void pasteRow(PropertyRow* row) = 0;
@@ -307,7 +308,8 @@ protected:
 	void         updateAttachedPropertyTree(bool revert);
 
 	void         onModelUpdated(const PropertyRows& rows, bool needApply);
-	void         onModelPushUndo(PropertyTreeOperator* op, bool* handled);
+	void         onModelBeginUndo(PropertyTreeOperator* op, bool* handled);
+	void         onModelEndUndo(bool undoAccepted);
 
 private:
 	PropertyTree(const PropertyTree&) = delete;

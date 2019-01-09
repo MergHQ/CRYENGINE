@@ -392,7 +392,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 
 	//! Return true if node have children.
-	bool   HaveChilds() const    { return !m_children.empty(); }
+	bool   HasChildren() const    { return !m_children.empty(); }
 	//! Return the number of attached children.
 	size_t GetChildCount() const { return m_children.size(); }
 

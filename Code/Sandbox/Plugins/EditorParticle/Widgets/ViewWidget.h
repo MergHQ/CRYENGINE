@@ -10,7 +10,7 @@
 
 class QAdvancedPropertyTree;
 
-namespace CryParticleEditor 
+namespace CryParticleEditor
 {
 
 class CFeatureItem;
@@ -53,7 +53,8 @@ public:
 protected:
 	virtual void showEvent(QShowEvent* pEvent) override;
 
-	void         OnPushUndo();
+	void         OnBeginUndo();
+	void         OnEndUndo(bool undoAccepted);
 	void         OnItemsChanged();
 	void         OnItemsDeletion();
 
@@ -64,6 +65,7 @@ private:
 	CNodeItem*                      m_pNodeItem;
 	std::vector<SFeatureSerializer> m_features;
 	bool                            m_isPushingUndo;
+	string                          m_latestUndoDescription;
 };
 // ~TODO
 

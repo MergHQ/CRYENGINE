@@ -47,20 +47,22 @@ protected:
 	void SetupTree();
 	void OnPropertiesChanged();
 	void OnPreviewChanged();
-	void OnPushUndo();
+	void OnBeginUndo();
+	void OnEndUndo(bool acceptUndo);
 
 protected:
 	QAdvancedPropertyTree*       m_pPropertyTree;
 	Serialization::SStructs      m_structs;
 	Serialization::CContextList* m_pContextList;
 
-	bool                         m_isPushingUndo;
-
 	// TEMP
 	CMainWindow*                 m_pEditor;
 	Schematyc::CPreviewWidget*   m_pPreview;
 	std::unique_ptr<IDetailItem> m_pDetailItem;
 	//~TEMP
+
+	//The description to use when accepting the latest undo action
+	string m_latestUndoActionDescription;
 };
 
 }

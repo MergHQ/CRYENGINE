@@ -76,15 +76,16 @@ QTerrainLayerPanel::QTerrainLayerPanel(QWidget* parent)
 		GetIEditorImpl()->GetTerrainManager()->signalSelectedLayerChanged.Connect(this, &QTerrainLayerPanel::SetLayer);
 
 	QWidget* pPainterContainer = new QWidget(this);
-	QVBoxLayout* paiterLayout = new QVBoxLayout(pPainterContainer);
-	paiterLayout->setContentsMargins(0, 0, 0, 0);
-	pPainterContainer->setLayout(paiterLayout);
+	QVBoxLayout* pPainterLayout = new QVBoxLayout(pPainterContainer);
+	pPainterLayout->setContentsMargins(0, 0, 0, 0);
+	pPainterContainer->setLayout(pPainterLayout);
 	pSplitter->addWidget(pPainterContainer);
-	paiterLayout->addWidget(new QTerrainLayerButtons());
+	pPainterLayout->addWidget(new QTerrainLayerButtons());
 
 	m_pPropertyTree = new QPropertyTree();
-	paiterLayout->addWidget(m_pPropertyTree);
-	QObject::connect(m_pPropertyTree, &QPropertyTree::signalPushUndo, this, &QTerrainLayerPanel::UndoPush);
+	pPainterLayout->addWidget(m_pPropertyTree);
+	QObject::connect(m_pPropertyTree, &QPropertyTree::signalBeginUndo, this, &QTerrainLayerPanel::OnBeginUndo);
+	QObject::connect(m_pPropertyTree, &QPropertyTree::signalEndUndo, this, &QTerrainLayerPanel::OnEndUndo);
 }
 
 QTerrainLayerPanel::~QTerrainLayerPanel()
@@ -168,8 +169,20 @@ void QTerrainLayerPanel::AttachProperties()
 	m_pPropertyTree->attach(structs);
 }
 
-void QTerrainLayerPanel::UndoPush()
+void QTerrainLayerPanel::OnBeginUndo()
 {
-	CUndo layerModified("Texture Layer Change");
-	GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CTerrainLayersPropsUndoObject);
+	GetIEditor()->GetIUndoManager()->Begin();
+	GetIEditor()->GetIUndoManager()->RecordUndo(new CTerrainLayersPropsUndoObject);
+}
+
+void QTerrainLayerPanel::OnEndUndo(bool acceptUndo)
+{
+	if (acceptUndo)
+	{
+		GetIEditor()->GetIUndoManager()->Accept("Terrain Layers Properties");
+	}
+	else
+	{
+		GetIEditor()->GetIUndoManager()->Cancel();
+	}
 }

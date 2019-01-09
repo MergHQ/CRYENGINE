@@ -115,15 +115,16 @@ private:
 	class CContentChangedUndoCommand;
 	class CUndoConstPropTreeCommand;
 
-	void UndoBegin();
-	void UndoEnd();
+	void OnBeginUndo();
+	void OnChanged();
+	void OnEndUndo(bool acceptUndo);
 	void CurrentTimeEdited(); // called when user enters new value in m_currentTimeEdit
 	void OnSplineEditing();
 	void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
 	void SetTODTime(const float fTime);
 
 	void UndoConstantProperties();
-
+	void OnEndActionUndoConstantProperties(bool acceptUndo);
 	void CreateUi();
 	void CreatePropertyTrees(QSplitter* pParent);
 	void CreateCurveEditor(QSplitter* pParent);

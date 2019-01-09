@@ -19,8 +19,8 @@ public:
 	~CMaterialPropertyTree();
 
 public slots:
-	void OnUndoPush();
-	void OnChanged();
+	void OnBeginUndo();
+	void OnEndUndo(bool acceptUndo);
 
 private:
 	virtual void OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseItemEvent event) override;
@@ -39,8 +39,8 @@ CMaterialSerializer::CMaterialPropertyTree::CMaterialPropertyTree(CMaterialSeria
 	setSizeToContent(true);
 	setUndoEnabled(false);
 
-	QObject::connect(this, &CMaterialPropertyTree::signalPushUndo, this, &CMaterialPropertyTree::OnUndoPush);
-	QObject::connect(this, &CMaterialPropertyTree::signalChanged, this, &CMaterialPropertyTree::OnChanged);
+	QObject::connect(this, &CMaterialPropertyTree::signalBeginUndo, this, &CMaterialPropertyTree::OnBeginUndo);
+	QObject::connect(this, &QAdvancedPropertyTree::signalEndUndo, this, &CMaterialPropertyTree::OnEndUndo);
 
 	attach(Serialization::SStruct(*m_serializer.get()));
 
@@ -54,15 +54,22 @@ CMaterialSerializer::CMaterialPropertyTree::~CMaterialPropertyTree()
 	GetIEditor()->GetMaterialManager()->RemoveListener(this);
 }
 
-void CMaterialSerializer::CMaterialPropertyTree::OnUndoPush()
+void CMaterialSerializer::CMaterialPropertyTree::OnBeginUndo()
 {
 	GetIEditor()->GetIUndoManager()->Begin();
-	m_serializer->m_pMaterial->RecordUndo("Material Edited");
+	m_serializer->m_pMaterial->RecordUndo("Material Edited", true);
 }
 
-void CMaterialSerializer::CMaterialPropertyTree::OnChanged()
+void CMaterialSerializer::CMaterialPropertyTree::OnEndUndo(bool acceptUndo)
 {
-	GetIEditor()->GetIUndoManager()->Accept("Material Edited");
+	if (acceptUndo)
+	{
+		GetIEditor()->GetIUndoManager()->Accept("Material Edited");
+	}
+	else
+	{
+		GetIEditor()->GetIUndoManager()->Cancel();
+	}
 }
 
 void CMaterialSerializer::CMaterialPropertyTree::OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseItemEvent event)
@@ -76,7 +83,7 @@ void CMaterialSerializer::CMaterialPropertyTree::OnDataBaseItemEvent(IDataBaseIt
 		{
 		case EDB_ITEM_EVENT_CHANGED:
 		case EDB_ITEM_EVENT_UPDATE_PROPERTIES:
-			if (!m_serializer->m_bIsBeingChanged)//TODO: there should be a better way to identify changes that come from this property tree
+			if (!m_serializer->m_bIsBeingChanged) //TODO: there should be a better way to identify changes that come from this property tree
 				revert();
 			break;
 		default:

@@ -39,7 +39,7 @@ struct CObjectPropertyWidget::SBaseObjectSerializer
 	const CBaseObjectPtr m_object;
 	const bool           m_bMultiEdit;
 
-	TSerializationFunc& m_serializationFunc;
+	TSerializationFunc&  m_serializationFunc;
 };
 
 CObjectPropertyWidget::CObjectPropertyWidget(TSerializationFunc serializationFunc)
@@ -88,7 +88,8 @@ void CObjectPropertyWidget::CreatePropertyTrees()
 	m_propertyTree->setFullRowContainers(true);
 	m_propertyTree->setSizeToContent(true);
 
-	QObject::connect(m_propertyTree.get(), SIGNAL(signalPushUndo()), this, SLOT(UndoPush()));
+	connect(m_propertyTree.get(), &QPropertyTree::signalBeginUndo, this, &CObjectPropertyWidget::OnBeginUndo);
+	connect(m_propertyTree.get(), &QPropertyTree::signalEndUndo, this, &CObjectPropertyWidget::OnUndoEnd);
 
 	bool bMultiEdit = false;
 
@@ -149,17 +150,28 @@ void CObjectPropertyWidget::UnregisterObjects()
 	}
 }
 
-void CObjectPropertyWidget::UndoPush()
+void CObjectPropertyWidget::OnBeginUndo()
 {
 	GetIEditor()->GetIUndoManager()->Begin();
 	if (m_propertyTree)
 	{
 		for (SBaseObjectSerializer& pSer : m_objectSerializers)
 		{
-			pSer.m_object->StoreUndo("Button Edit");
+			pSer.m_object->StoreUndo("Object Modify");
 		}
 	}
-	GetIEditor()->GetIUndoManager()->Accept("Button Edit");
+}
+
+void CObjectPropertyWidget::OnUndoEnd(bool undoAccepted)
+{
+	if (!undoAccepted)
+	{
+		GetIEditor()->GetIUndoManager()->Cancel();
+	}
+	else
+	{
+		GetIEditor()->GetIUndoManager()->Accept("Object Modify");
+	}
 }
 
 void CObjectPropertyWidget::OnEditorNotifyEvent(EEditorNotifyEvent event)

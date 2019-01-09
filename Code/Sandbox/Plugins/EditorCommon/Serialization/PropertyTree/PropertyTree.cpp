@@ -2,7 +2,7 @@
  *  yasli - Serialization Library.
  *  Copyright (C) 2007-2013 Evgeny Andreeshchev <eugene.andreeshchev@gmail.com>
  *                          Alexander Kotliar <alexander.kotliar@gmail.com>
- * 
+ *
  *  This code is distributed under the MIT License:
  *                          http://www.opensource.org/licenses/MIT
  */
@@ -13,7 +13,7 @@
 #include <CrySerialization/yasli/BinArchive.h>
 #include <CrySerialization/yasli/Pointers.h>
 #if YASLI_INCLUDE_PROPERTY_TREE_CONFIG_LOCAL
-#include <CrySerialization/yasli/ConfigLocal.h>
+	#include <CrySerialization/yasli/ConfigLocal.h>
 #endif
 #include "PropertyTree.h"
 #include "IDrawContext.h"
@@ -43,17 +43,17 @@ using std::vector;
 // ---------------------------------------------------------------------------
 
 TreeConfig::TreeConfig()
-: immediateUpdate(true)
-, valueColumnWidth(.5f)
-, filter(YASLI_DEFAULT_FILTER)
-, fullRowContainers(true)
-, showContainerIndices(true)
-, filterWhenType(true)
-, sliderUpdateDelay(25)
-, undoEnabled(false)
-, fullUndo(false)
-, multiSelection(false)
-, enableActions(true)
+	: immediateUpdate(true)
+	, valueColumnWidth(.5f)
+	, filter(YASLI_DEFAULT_FILTER)
+	, fullRowContainers(true)
+	, showContainerIndices(true)
+	, filterWhenType(true)
+	, sliderUpdateDelay(25)
+	, undoEnabled(false)
+	, fullUndo(false)
+	, multiSelection(false)
+	, enableActions(true)
 {
 	defaultRowHeight = 22;
 	tabSize = defaultRowHeight;
@@ -102,31 +102,31 @@ void PropertyTreeMenuHandler::onMenuPaste()
 PropertyTreeStyle PropertyTree::defaultTreeStyle_;
 
 PropertyTree::PropertyTree(IUIFacade* uiFacade)
-: attachedPropertyTree_(0)
-, ui_(uiFacade)
-, autoRevert_(true)
-, leftBorder_(0)
-, rightBorder_(0)
-, cursorX_(0)
-, filterMode_(false)
-, propertySplitterPos_(150)
-, splitterDragging_(false)
-, pressPoint_(-1, -1)
-, pressDelta_(0, 0)
-, pointerMovedSincePress_(false)
-, lastStillPosition_(-1, -1)
-, mouseOverRow_(0)
-, pressedRow_(0)
-, capturedRow_(0)
-, dragCheckMode_(false)
-, dragCheckValue_(false)
-, archiveContext_()
-, outlineMode_(false)
-, hideSelection_(false)
-, zoomLevel_(10)
-, validatorBlock_(new ValidatorBlock)
-, style_(new PropertyTreeStyle(defaultTreeStyle_))
-, defaultRowHeight_(22)
+	: attachedPropertyTree_(0)
+	, ui_(uiFacade)
+	, autoRevert_(true)
+	, leftBorder_(0)
+	, rightBorder_(0)
+	, cursorX_(0)
+	, filterMode_(false)
+	, propertySplitterPos_(150)
+	, splitterDragging_(false)
+	, pressPoint_(-1, -1)
+	, pressDelta_(0, 0)
+	, pointerMovedSincePress_(false)
+	, lastStillPosition_(-1, -1)
+	, mouseOverRow_(0)
+	, pressedRow_(0)
+	, capturedRow_(0)
+	, dragCheckMode_(false)
+	, dragCheckValue_(false)
+	, archiveContext_()
+	, outlineMode_(false)
+	, hideSelection_(false)
+	, zoomLevel_(10)
+	, validatorBlock_(new ValidatorBlock)
+	, style_(new PropertyTreeStyle(defaultTreeStyle_))
+	, defaultRowHeight_(22)
 {
 	model_.reset(new PropertyTreeModel(this));
 	model_->setExpandLevels(config_.expandLevels);
@@ -147,64 +147,71 @@ bool PropertyTree::onRowKeyDown(PropertyRow* row, const KeyEvent* ev)
 	handler.row = row;
 	handler.tree = this;
 
-	if(row->onKeyDown(this, ev))
+	if (row->onKeyDown(this, ev))
 		return true;
 
-	switch(ev->key()){
-	case KEY_C:
-	if (ev->modifiers() == MODIFIER_CONTROL)
-		handler.onMenuCopy();
-	return true;
-	case KEY_V:
-	if (ev->modifiers() == MODIFIER_CONTROL)
-		handler.onMenuPaste();
-	return true;
-	case KEY_Z:
-	if (ev->modifiers() == MODIFIER_CONTROL)
-		if(model()->canUndo()){
-			model()->undo();
-			return true;
-		}
-	break;
-	case KEY_F2:
-	if (ev->modifiers() == 0) {
-		if(selectedRow()) {
-			PropertyActivationEvent ev;
-			ev.tree = this;
-			ev.reason = ev.REASON_KEYBOARD;
-			ev.force = true;
-			selectedRow()->onActivate(ev);
-		}
-	}
-	break;
-	case KEY_MENU:
+	switch (ev->key())
 	{
-		if (ev->modifiers() == 0) {
-			std::unique_ptr<property_tree::IMenu> menu(ui()->createMenu());
-
-			if(onContextMenu(row, *menu)){
-				Rect rect(row->rect());
-				menu->exec(Point(rect.left() + rect.height(), rect.bottom()));
+	case KEY_C:
+		if (ev->modifiers() == MODIFIER_CONTROL)
+			handler.onMenuCopy();
+		return true;
+	case KEY_V:
+		if (ev->modifiers() == MODIFIER_CONTROL)
+			handler.onMenuPaste();
+		return true;
+	case KEY_Z:
+		if (ev->modifiers() == MODIFIER_CONTROL)
+			if (model()->canUndo())
+			{
+				model()->undo();
+				return true;
 			}
-			return true;
+		break;
+	case KEY_F2:
+		if (ev->modifiers() == 0)
+		{
+			if (selectedRow())
+			{
+				PropertyActivationEvent ev;
+				ev.tree = this;
+				ev.reason = ev.REASON_KEYBOARD;
+				ev.force = true;
+				selectedRow()->onActivate(ev);
+			}
 		}
 		break;
-	}
+	case KEY_MENU:
+		{
+			if (ev->modifiers() == 0)
+			{
+				std::unique_ptr<property_tree::IMenu> menu(ui()->createMenu());
+
+				if (onContextMenu(row, *menu))
+				{
+					Rect rect(row->rect());
+					menu->exec(Point(rect.left() + rect.height(), rect.bottom()));
+				}
+				return true;
+			}
+			break;
+		}
 	}
 
 	PropertyRow* focusedRow = model()->focusedRow();
-	if(!focusedRow)
+	if (!focusedRow)
 		return false;
 	PropertyRow* parentRow = focusedRow->nonPulledParent();
 	int x = parentRow->horizontalIndex(this, focusedRow);
 	int y = model()->root()->verticalIndex(this, parentRow);
 	PropertyRow* selectedRow = 0;
-	switch(ev->key()){
+	switch (ev->key())
+	{
 	case KEY_UP:
 		//if (filterMode_ && y == 0) {
 		//	startFilter("");
 		//}
-		//else 
+		//else
 		{
 			selectedRow = model()->root()->rowByVerticalIndex(this, --y);
 			if (selectedRow)
@@ -215,7 +222,7 @@ bool PropertyTree::onRowKeyDown(PropertyRow* row, const KeyEvent* ev)
 		//if (filterMode_) {
 		//	setFocus();
 		//}
-		//else 
+		//else
 		{
 			selectedRow = model()->root()->rowByVerticalIndex(this, ++y);
 			if (selectedRow)
@@ -224,33 +231,39 @@ bool PropertyTree::onRowKeyDown(PropertyRow* row, const KeyEvent* ev)
 		break;
 	case KEY_LEFT:
 		selectedRow = parentRow->rowByHorizontalIndex(this, cursorX_ = --x);
-		if(selectedRow == focusedRow && parentRow->canBeToggled(this) && parentRow->expanded()){
+		if (selectedRow == focusedRow && parentRow->canBeToggled(this) && parentRow->expanded())
+		{
 			expandRow(parentRow, false);
 			selectedRow = model()->focusedRow();
 		}
 		break;
 	case KEY_RIGHT:
 		selectedRow = parentRow->rowByHorizontalIndex(this, cursorX_ = ++x);
-		if(selectedRow == focusedRow && parentRow->canBeToggled(this) && !parentRow->expanded()){
+		if (selectedRow == focusedRow && parentRow->canBeToggled(this) && !parentRow->expanded())
+		{
 			expandRow(parentRow, true);
 			selectedRow = model()->focusedRow();
 		}
 		break;
 	case KEY_HOME:
-		if (ev->modifiers() == MODIFIER_CONTROL) {
+		if (ev->modifiers() == MODIFIER_CONTROL)
+		{
 			selectedRow = parentRow->rowByHorizontalIndex(this, cursorX_ = INT_MIN);
 		}
-		else {
+		else
+		{
 			selectedRow = model()->root()->rowByVerticalIndex(this, 0);
 			if (selectedRow)
 				selectedRow = selectedRow->rowByHorizontalIndex(this, cursorX_);
 		}
 		break;
 	case KEY_END:
-		if (ev->modifiers() == MODIFIER_CONTROL) {
+		if (ev->modifiers() == MODIFIER_CONTROL)
+		{
 			selectedRow = parentRow->rowByHorizontalIndex(this, cursorX_ = INT_MAX);
 		}
-		else {
+		else
+		{
 			selectedRow = model()->root()->rowByVerticalIndex(this, INT_MAX);
 			if (selectedRow)
 				selectedRow = selectedRow->rowByHorizontalIndex(this, cursorX_);
@@ -261,9 +274,10 @@ bool PropertyTree::onRowKeyDown(PropertyRow* row, const KeyEvent* ev)
 			break;
 	case KEY_ENTER:
 	case KEY_RETURN:
-		if(focusedRow->canBeToggled(this))
+		if (focusedRow->canBeToggled(this))
 			expandRow(focusedRow, !focusedRow->expanded());
-		else {
+		else
+		{
 			PropertyActivationEvent e;
 			e.tree = this;
 			e.reason = e.REASON_KEYBOARD;
@@ -272,8 +286,9 @@ bool PropertyTree::onRowKeyDown(PropertyRow* row, const KeyEvent* ev)
 		}
 		break;
 	}
-	if(selectedRow){
-		onRowSelected(std::vector<PropertyRow*>(1, selectedRow), false, false);	
+	if (selectedRow)
+	{
+		onRowSelected(std::vector<PropertyRow*>(1, selectedRow), false, false);
 		return true;
 	}
 	return false;
@@ -282,13 +297,13 @@ bool PropertyTree::onRowKeyDown(PropertyRow* row, const KeyEvent* ev)
 struct FirstIssueVisitor
 {
 	ValidatorEntryType entryType_;
-	PropertyRow* startRow_;
-	PropertyRow* result;
+	PropertyRow*       startRow_;
+	PropertyRow*       result;
 
 	FirstIssueVisitor(ValidatorEntryType type, PropertyRow* startRow)
-	: entryType_(type)
-	, startRow_(startRow)
-	, result()
+		: entryType_(type)
+		, startRow_(startRow)
+		, result()
 	{
 	}
 
@@ -296,11 +311,15 @@ struct FirstIssueVisitor
 	{
 		if ((row->pulledUp() || row->pulledBefore()) && row->nonPulledParent() == startRow_)
 			return SCAN_SIBLINGS;
-		if (row->validatorCount()) {
-			if (const ValidatorEntry* validatorEntries = tree->_validatorBlock()->getEntry(row->validatorIndex(), row->validatorCount())) {
-				for (int i = 0; i < row->validatorCount(); ++i) {
+		if (row->validatorCount())
+		{
+			if (const ValidatorEntry* validatorEntries = tree->_validatorBlock()->getEntry(row->validatorIndex(), row->validatorCount()))
+			{
+				for (int i = 0; i < row->validatorCount(); ++i)
+				{
 					const ValidatorEntry* validatorEntry = validatorEntries + i;
-					if (validatorEntry->type == entryType_) {
+					if (validatorEntry->type == entryType_)
+					{
 						result = row;
 						return SCAN_FINISHED;
 					}
@@ -319,11 +338,13 @@ void PropertyTree::jumpToNextHiddenValidatorIssue(bool isError, PropertyRow* sta
 	PropertyRow* row = op.result;
 
 	vector<PropertyRow*> parents;
-	while (row && row->parent())  {
+	while (row && row->parent())
+	{
 		parents.push_back(row);
 		row = row->parent();
 	}
-	for (int i = (int)parents.size()-1; i >= 0; --i) {
+	for (int i = (int)parents.size() - 1; i >= 0; --i)
+	{
 		if (!parents[i]->visible(this))
 			break;
 		row = parents[i];
@@ -343,14 +364,16 @@ static void rowsInBetween(vector<PropertyRow*>* rows, PropertyRow* a, PropertyRo
 		return;
 	vector<PropertyRow*> pathA;
 	PropertyRow* rootA = a;
-	while (rootA->parent()) {
+	while (rootA->parent())
+	{
 		pathA.push_back(rootA);
 		rootA = rootA->parent();
 	}
 
 	vector<PropertyRow*> pathB;
 	PropertyRow* rootB = b;
-	while (rootB->parent()) {
+	while (rootB->parent())
+	{
 		pathB.push_back(rootB);
 		rootB = rootB->parent();
 	}
@@ -360,10 +383,12 @@ static void rowsInBetween(vector<PropertyRow*>* rows, PropertyRow* a, PropertyRo
 
 	const PropertyRow* commonParent = rootA;
 	int maxDepth = min((int)pathA.size(), (int)pathB.size());
-	for (int i = 0; i < maxDepth; ++i) {
+	for (int i = 0; i < maxDepth; ++i)
+	{
 		PropertyRow* parentA = pathA[(int)pathA.size() - 1 - i];
 		PropertyRow* parentB = pathB[(int)pathB.size() - 1 - i];
-		if (parentA != parentB) {
+		if (parentA != parentB)
+		{
 			int indexA = commonParent->childIndex(parentA);
 			int indexB = commonParent->childIndex(parentB);
 			int minIndex = min(indexA, indexB);
@@ -382,15 +407,19 @@ bool PropertyTree::onRowLMBDown(PropertyRow* row, const Rect& rowRect, Point poi
 	pressDelta_ = Point(0, 0);
 	pointerMovedSincePress_ = false;
 	row = model()->root()->hit(this, point);
-	if(row){
-		if (!row->isRoot()) {
-			if(row->plusRect(this).contains(point) && toggleRow(row))
+	if (row)
+	{
+		if (!row->isRoot())
+		{
+			if (row->plusRect(this).contains(point) && toggleRow(row))
 				return true;
-			if (row->validatorWarningIconRect(this).contains(point)) {
+			if (row->validatorWarningIconRect(this).contains(point))
+			{
 				jumpToNextHiddenValidatorIssue(false, row);
 				return true;
 			}
-			if (row->validatorErrorIconRect(this).contains(point)) {
+			if (row->validatorErrorIconRect(this).contains(point))
+			{
 				jumpToNextHiddenValidatorIssue(true, row);
 				return true;
 			}
@@ -400,12 +429,15 @@ bool PropertyTree::onRowLMBDown(PropertyRow* row, const Rect& rowRect, Point poi
 		while (rowToSelect && !rowToSelect->isSelectable())
 			rowToSelect = rowToSelect->parent();
 
-		if (rowToSelect) {
-			if (!shiftPressed || !multiSelectable()) {
-				onRowSelected(std::vector<PropertyRow*>(1, rowToSelect), multiSelectable() && controlPressed, true);	
+		if (rowToSelect)
+		{
+			if (!shiftPressed || !multiSelectable())
+			{
+				onRowSelected(std::vector<PropertyRow*>(1, rowToSelect), multiSelectable() && controlPressed, true);
 				lastSelectedRow_ = rowToSelect;
 			}
-			else {
+			else
+			{
 				vector<PropertyRow*> rowsToSelect;
 
 				rowsInBetween(&rowsToSelect, lastSelectedRow_, rowToSelect);
@@ -416,24 +448,30 @@ bool PropertyTree::onRowLMBDown(PropertyRow* row, const Rect& rowRect, Point poi
 
 	PropertyTreeModel::UpdateLock lock = model()->lockUpdate();
 	row = model()->root()->hit(this, point);
-	if(row && !row->isRoot()){
+	if (row && !row->isRoot())
+	{
 		bool changed = false;
-		if (row->widgetRect(this).contains(point)) {
+		if (row->widgetRect(this).contains(point))
+		{
 			DragCheckBegin dragCheck = row->onMouseDragCheckBegin();
-			if (dragCheck != DRAG_CHECK_IGNORE) {
+			if (dragCheck != DRAG_CHECK_IGNORE)
+			{
 				dragCheckValue_ = dragCheck == DRAG_CHECK_SET;
 				dragCheckMode_ = true;
 				changed = row->onMouseDragCheck(this, dragCheckValue_);
 			}
 		}
-		
-		if (!dragCheckMode_) {
+
+		if (!dragCheckMode_)
+		{
 			bool capture = row->onMouseDown(this, point, changed);
-			if(!changed){
-				if(capture)
+			if (!changed)
+			{
+				if (capture)
 					return true;
-				else if(row->widgetRect(this).contains(point)){
-					if(row->widgetPlacement() != PropertyRow::WIDGET_ICON)
+				else if (row->widgetRect(this).contains(point))
+				{
+					if (row->widgetPlacement() != PropertyRow::WIDGET_ICON)
 						interruptDrag();
 					PropertyActivationEvent e;
 					e.force = false;
@@ -450,7 +488,8 @@ bool PropertyTree::onRowLMBDown(PropertyRow* row, const Rect& rowRect, Point poi
 
 void PropertyTree::onMouseStill()
 {
-	if (capturedRow_) {
+	if (capturedRow_)
+	{
 		PropertyDragEvent e;
 		e.tree = this;
 		e.pos = ui()->cursorPosition();
@@ -469,8 +508,10 @@ void PropertyTree::onRowLMBUp(PropertyRow* row, const Rect& rowRect, Point point
 	const yasli::SharedPtr<PropertyRow> sharedRow(row);
 	row->onMouseUp(this, point);
 
-	if (row->refCount() > 1) {
-		if (!pointerMovedSincePress_ && (pressPoint_ - point).manhattanLength() < 1 && row->widgetRect(this).contains(point)) {
+	if (row->refCount() > 1)
+	{
+		if (!pointerMovedSincePress_ && (pressPoint_ - point).manhattanLength() < 1 && row->widgetRect(this).contains(point))
+		{
 			PropertyActivationEvent e;
 			e.tree = this;
 			e.clickPoint = point;
@@ -485,19 +526,22 @@ void PropertyTree::onRowRMBDown(PropertyRow* row, const Rect& rowRect, Point poi
 	SharedPtr<PropertyRow> handle = row;
 	PropertyRow* menuRow = 0;
 
-	if (row->isSelectable()){
+	if (row->isSelectable())
+	{
 		menuRow = row;
 	}
-	else{
+	else
+	{
 		if (row->parent() && row->parent()->isSelectable())
 			menuRow = row->parent();
 	}
 
-	if (menuRow) {
-		onRowSelected(std::vector<PropertyRow*>(1, menuRow), false, true);	
+	if (menuRow)
+	{
+		onRowSelected(std::vector<PropertyRow*>(1, menuRow), false, true);
 		std::unique_ptr<property_tree::IMenu> menu(ui()->createMenu());
 		clearMenuHandlers();
-		if(onContextMenu(menuRow, *menu))
+		if (onContextMenu(menuRow, *menu))
 			menu->exec(point);
 	}
 }
@@ -508,19 +552,23 @@ void PropertyTree::expandParents(PropertyRow* row)
 	typedef std::vector<PropertyRow*> Parents;
 	Parents parents;
 	PropertyRow* p = row->nonPulledParent()->parent();
-	while(p){
+	while (p)
+	{
 		parents.push_back(p);
 		p = p->parent();
 	}
 	Parents::iterator it;
-	for(it = parents.begin(); it != parents.end(); ++it) {
+	for (it = parents.begin(); it != parents.end(); ++it)
+	{
 		PropertyRow* row = *it;
-		if (!row->expanded() || hasChanges) {
+		if (!row->expanded() || hasChanges)
+		{
 			row->_setExpanded(true);
 			hasChanges = true;
 		}
 	}
-	if (hasChanges) {
+	if (hasChanges)
+	{
 		updateValidatorIcons();
 		updateHeights();
 	}
@@ -531,13 +579,14 @@ void PropertyTree::expandAll()
 	expandChildren(0);
 }
 
-
 void PropertyTree::expandChildren(PropertyRow* root)
 {
-	if(!root){
+	if (!root)
+	{
 		root = model()->root();
 		PropertyRow::iterator it;
-		for (PropertyRows::iterator it = root->begin(); it != root->end(); ++it){
+		for (PropertyRows::iterator it = root->begin(); it != root->end(); ++it)
+		{
 			PropertyRow* row = *it;
 			row->setExpandedRecursive(this, true);
 		}
@@ -559,20 +608,25 @@ void PropertyTree::collapseAll()
 
 void PropertyTree::collapseChildren(PropertyRow* root)
 {
-	if(!root){
+	if (!root)
+	{
 		root = model()->root();
 
 		PropertyRow::iterator it;
-		for (PropertyRows::iterator it = root->begin(); it != root->end(); ++it){
+		for (PropertyRows::iterator it = root->begin(); it != root->end(); ++it)
+		{
 			PropertyRow* row = *it;
 			row->setExpandedRecursive(this, false);
 		}
 	}
-	else{
+	else
+	{
 		root->setExpandedRecursive(this, false);
 		PropertyRow* row = model()->focusedRow();
-		while(row){
-			if(root == row){
+		while (row)
+		{
+			if (root == row)
+			{
 				model()->selectRow(row, true);
 				break;
 			}
@@ -586,11 +640,11 @@ void PropertyTree::collapseChildren(PropertyRow* root)
 	updateHeights();
 }
 
-
 void PropertyTree::expandRow(PropertyRow* row, bool expanded, bool updateHeights)
 {
 	bool hasChanges = false;
-	if (row->expanded() != expanded) {
+	if (row->expanded() != expanded)
+	{
 		row->_setExpanded(expanded);
 		hasChanges = true;
 	}
@@ -598,10 +652,13 @@ void PropertyTree::expandRow(PropertyRow* row, bool expanded, bool updateHeights
 	for (PropertyRow* r = row; r != 0; r = r->parent())
 		r->setLayoutChanged();
 
-    if(!row->expanded()){
+	if (!row->expanded())
+	{
 		PropertyRow* f = model()->focusedRow();
-		while(f){
-			if(row == f){
+		while (f)
+		{
+			if (row == f)
+			{
 				model()->selectRow(row, true);
 				break;
 			}
@@ -617,14 +674,15 @@ void PropertyTree::expandRow(PropertyRow* row, bool expanded, bool updateHeights
 
 Point PropertyTree::treeSize() const
 {
-	return size_ + (compact() ? Point(0,0) : Point(8, 8));
+	return size_ + (compact() ? Point(0, 0) : Point(8, 8));
 }
 
 void PropertyTree::YASLI_SERIALIZE_METHOD(Archive& ar)
 {
 	model()->YASLI_SERIALIZE_METHOD(ar, this);
 
-	if(ar.isInput()){
+	if (ar.isInput())
+	{
 		updateHeights();
 		ensureVisible(model()->focusedRow());
 		updateAttachedPropertyTree(false);
@@ -637,36 +695,41 @@ void PropertyTree::ensureVisible(PropertyRow* row, bool update, bool considerChi
 {
 	if (row == 0)
 		return;
-	if(row->isRoot())
+	if (row->isRoot())
 		return;
 
 	expandParents(row);
 
 	Rect rect = row->rect();
-	if(rect.bottom() > area_.bottom() + offset_.y()){
+	if (rect.bottom() > area_.bottom() + offset_.y())
+	{
 		offset_.setY(max(0, rect.bottom() - area_.bottom()));
 	}
-	if(rect.top() < area_.top() + offset_.y()){
+	if (rect.top() < area_.top() + offset_.y())
+	{
 		offset_.setY(max(0, rect.top() - area_.top()));
 	}
 	updateScrollBar();
-	if(update)
+	if (update)
 		repaint();
 }
 
 void PropertyTree::onRowSelected(const std::vector<PropertyRow*>& rows, bool addSelection, bool adjustCursorPos)
 {
-	for (size_t i = 0; i < rows.size(); ++i) {
+	for (size_t i = 0; i < rows.size(); ++i)
+	{
 		PropertyRow* row = rows[i];
-		if(!row->isRoot()) {
+		if (!row->isRoot())
+		{
 			bool addRowToSelection = !(addSelection && row->selected() && model()->selection().size() > 1) || i > 0;
 			bool exclusiveSelection = !addSelection && i == 0;
 			model()->selectRow(row, addRowToSelection, exclusiveSelection);
 		}
 	}
-	if (!rows.empty()) {
+	if (!rows.empty())
+	{
 		ensureVisible(rows.back(), true, false);
-		if(adjustCursorPos)
+		if (adjustCursorPos)
 			cursorX_ = rows.back()->nonPulledParent()->horizontalIndex(this, rows.back());
 	}
 	updateAttachedPropertyTree(false);
@@ -678,9 +741,12 @@ bool PropertyTree::attach(const yasli::Serializers& serializers)
 	bool changed = false;
 	if (attached_.size() != serializers.size())
 		changed = true;
-	else {
-		for (size_t i = 0; i < serializers.size(); ++i) {
-			if (attached_[i].serializer() != serializers[i]) {
+	else
+	{
+		for (size_t i = 0; i < serializers.size(); ++i)
+		{
+			if (attached_[i].serializer() != serializers[i])
+			{
 				changed = true;
 				break;
 			}
@@ -691,7 +757,8 @@ bool PropertyTree::attach(const yasli::Serializers& serializers)
 	//   attached_ = serializers;
 	// ...as move forwarder calls copying constructor with non-const argument
 	// which invokes second templated constructor of Serializer, which is not what we need.
-	if (changed) {
+	if (changed)
+	{
 		attached_.assign(serializers.begin(), serializers.end());
 		model_->clearUndo();
 	}
@@ -703,7 +770,8 @@ bool PropertyTree::attach(const yasli::Serializers& serializers)
 
 void PropertyTree::attach(const yasli::Serializer& serializer)
 {
-	if (attached_.size() != 1 || attached_[0].serializer() != serializer) {
+	if (attached_.size() != 1 || attached_[0].serializer() != serializer)
+	{
 		attached_.clear();
 		attached_.push_back(yasli::Object(serializer));
 		model_->clearUndo();
@@ -742,7 +810,8 @@ void PropertyTree::_cancelWidget()
 int PropertyTree::revertObjects(vector<void*> objectAddresses)
 {
 	int result = 0;
-	for (size_t i = 0; i < objectAddresses.size(); ++i) {
+	for (size_t i = 0; i < objectAddresses.size(); ++i)
+	{
 		if (revertObject(objectAddresses[i]))
 			++result;
 	}
@@ -752,14 +821,14 @@ int PropertyTree::revertObjects(vector<void*> objectAddresses)
 bool PropertyTree::revertObject(void* objectAddress)
 {
 	PropertyRow* row = model()->root()->findByAddress(objectAddress);
-	if (row && row->isObject()) {
+	if (row && row->isObject())
+	{
 		// TODO:
 		// revertObjectRow(row);
 		return true;
 	}
 	return false;
 }
-
 
 void PropertyTree::revert()
 {
@@ -769,7 +838,8 @@ void PropertyTree::revert()
 	mouseOverRow_ = 0;
 	lastSelectedRow_.release();
 
-	if (!attached_.empty()) {
+	if (!attached_.empty())
+	{
 		validatorBlock_->clear();
 		PropertyOArchive oa(model_.get(), model_->root(), validatorBlock_.get());
 		oa.setOutlineMode(outlineMode_);
@@ -781,9 +851,10 @@ void PropertyTree::revert()
 		onAboutToSerialize(oa);
 		(*it)(oa);
 		onSerialized(oa);
-		
+
 		PropertyTreeModel model2(this);
-		while(++it != attached_.end()){
+		while (++it != attached_.end())
+		{
 			PropertyOArchive oa2(&model2, model2.root(), validatorBlock_.get());
 			oa2.setOutlineMode(outlineMode_);
 			oa2.setLastContext(archiveContext_);
@@ -803,12 +874,14 @@ void PropertyTree::revert()
 	else
 		model_->clear();
 
-	if (filterMode_) {
+	if (filterMode_)
+	{
 		if (model_->root())
 			model_->root()->updateLabel(this, 0, false);
 		resetFilter();
 	}
-	else {
+	else
+	{
 		updateHeights();
 	}
 
@@ -819,7 +892,7 @@ void PropertyTree::revert()
 struct ValidatorVisitor
 {
 	ValidatorVisitor(ValidatorBlock* validator)
-	: validator_(validator)
+		: validator_(validator)
 	{
 	}
 
@@ -880,13 +953,13 @@ void PropertyTree::apply(bool continuous)
 	{
 		Objects::iterator it;
 		PropertyIArchive ia(model_.get(), model_->root());
-		for(it = attached_.begin(); it != attached_.end(); ++it)
+		for (it = attached_.begin(); it != attached_.end(); ++it)
 		{
 			PropertyRow* row = selectedRow();
 			ia.setModifiedRowName(row ? row->name() : nullptr);
 			ia.setLastContext(archiveContext_);
- 			yasli::Context treeContext(ia, this);
- 			ia.setFilter(config_.filter);
+			yasli::Context treeContext(ia, this);
+			ia.setFilter(config_.filter);
 			onAboutToSerialize(ia);
 			(*it)(ia);
 			onSerialized(ia);
@@ -908,7 +981,8 @@ void PropertyTree::applyInplaceEditor()
 
 bool PropertyTree::spawnWidget(PropertyRow* row, bool ignoreReadOnly)
 {
-	if(!widget_.get() || widgetRow_ != row){
+	if (!widget_.get() || widgetRow_ != row)
+	{
 		interruptDrag();
 		setWidget(0, 0);
 		property_tree::InplaceWidget* newWidget = 0;
@@ -939,14 +1013,16 @@ static yasli::string quoteIfNeeded(const char* str)
 {
 	if (!str)
 		return yasli::string();
-	if (strchr(str, ' ') != 0) {
+	if (strchr(str, ' ') != 0)
+	{
 		yasli::string result;
 		result = "\"";
 		result += str;
 		result += "\"";
 		return result;
 	}
-	else {
+	else
+	{
 		return yasli::string(str);
 	}
 }
@@ -960,27 +1036,31 @@ bool PropertyTree::onContextMenu(PropertyRow* r, IMenu& menu)
 	handler->row = row;
 
 	PropertyRow::iterator it;
-	for(it = row->begin(); it != row->end(); ++it){
+	for (it = row->begin(); it != row->end(); ++it)
+	{
 		PropertyRow* child = *it;
-		if(child->isContainer() && child->pulledUp())
+		if (child->isContainer() && child->pulledUp())
 			child->onContextMenu(menu, this);
 	}
 	row->onContextMenu(menu, this);
-	if(config_.undoEnabled){
-		if(!menu.isEmpty())
+	if (config_.undoEnabled)
+	{
+		if (!menu.isEmpty())
 			menu.addSeparator();
 		menu.addAction("Undo", "Ctrl+Z", model()->canUndo() ? 0 : MENU_DISABLED, handler, &PropertyTreeMenuHandler::onMenuUndo);
 	}
-	if(!menu.isEmpty())
+	if (!menu.isEmpty())
 		menu.addSeparator();
 
 	menu.addAction("Copy", "Ctrl+C", 0, handler, &PropertyTreeMenuHandler::onMenuCopy);
 
-	if(!row->userReadOnly()){
+	if (!row->userReadOnly())
+	{
 		menu.addAction("Paste", "Ctrl+V", canBePasted(row) ? 0 : MENU_DISABLED, handler, &PropertyTreeMenuHandler::onMenuPaste);
 	}
 
-	if (model()->root() && !model()->root()->userReadOnly()) {
+	if (model()->root() && !model()->root()->userReadOnly())
+	{
 		PropertyTreeMenuHandler* rootHandler = new PropertyTreeMenuHandler();
 		rootHandler->tree = this;
 		rootHandler->row = model()->root();
@@ -1030,7 +1110,7 @@ void PropertyTree::onRowMouseMove(PropertyRow* row, const Rect& rowRect, Point p
 struct DecomposeProxy
 {
 	DecomposeProxy(SharedPtr<PropertyRow>& row) : row(row) {}
-	
+
 	void YASLI_SERIALIZE_METHOD(yasli::Archive& ar)
 	{
 		ar(row, "row", "Row");
@@ -1041,34 +1121,42 @@ struct DecomposeProxy
 
 void PropertyTree::onRowMenuDecompose(PropertyRow* row)
 {
-  // SharedPtr<PropertyRow> clonedRow = row->clone();
-  // DecomposeProxy proxy(clonedRow);
-  // edit(Serializer(proxy), 0, IMMEDIATE_UPDATE, this);
+	// SharedPtr<PropertyRow> clonedRow = row->clone();
+	// DecomposeProxy proxy(clonedRow);
+	// edit(Serializer(proxy), 0, IMMEDIATE_UPDATE, this);
 }
 
 void PropertyTree::onModelUpdated(const PropertyRows& rows, bool needApply)
 {
 	_cancelWidget();
 
-	if(config_.immediateUpdate){
+	if (config_.immediateUpdate)
+	{
 		if (needApply)
 			apply();
 
-		if(autoRevert_)
+		if (autoRevert_)
 			revert();
-		else {
+		else
+		{
 			updateHeights();
 			updateAttachedPropertyTree(true);
 		}
 	}
-	else {
+	else
+	{
 		repaint();
 	}
 }
 
-void PropertyTree::onModelPushUndo(PropertyTreeOperator* op, bool* handled)
+void PropertyTree::onModelBeginUndo(PropertyTreeOperator* op, bool* handled)
 {
-	onPushUndo();
+	onBeginUndo();
+}
+
+void PropertyTree::onModelEndUndo(bool undoAccepted)
+{
+	onEndUndo(undoAccepted);
 }
 
 void PropertyTree::setWidget(property_tree::InplaceWidget* widget, PropertyRow* widgetRow)
@@ -1077,11 +1165,12 @@ void PropertyTree::setWidget(property_tree::InplaceWidget* widget, PropertyRow* 
 	widget_.reset(widget);
 	widgetRow_ = widgetRow;
 	model()->dismissUpdate();
-	if(widget_.get()){
+	if (widget_.get())
+	{
 		YASLI_ASSERT(widget_->actualWidget());
 		_arrangeChildren();
 		YASLI_ASSERT(widget_.get());
-		if(widget_.get()) // Fix for intermittent crash when editing number fields. It is possible that widget will be destroyed by _arrangeChildren() but the root cause of this issue is not clear.
+		if (widget_.get()) // Fix for intermittent crash when editing number fields. It is possible that widget will be destroyed by _arrangeChildren() but the root cause of this issue is not clear.
 		{
 			widget_->showPopup();
 		}
@@ -1092,21 +1181,21 @@ void PropertyTree::setWidget(property_tree::InplaceWidget* widget, PropertyRow* 
 void PropertyTree::setExpandLevels(int levels)
 {
 	config_.expandLevels = levels;
-    model()->setExpandLevels(levels);
+	model()->setExpandLevels(levels);
 }
 
 PropertyRow* PropertyTree::selectedRow()
 {
-    const PropertyTreeModel::Selection &sel = model()->selection();
-    if(sel.empty())
-        return 0;
-    return model()->rowFromPath(sel.front());
+	const PropertyTreeModel::Selection& sel = model()->selection();
+	if (sel.empty())
+		return 0;
+	return model()->rowFromPath(sel.front());
 }
 
 bool PropertyTree::getSelectedObject(yasli::Object* object)
 {
-	const PropertyTreeModel::Selection &sel = model()->selection();
-	if(sel.empty())
+	const PropertyTreeModel::Selection& sel = model()->selection();
+	if (sel.empty())
 		return 0;
 	PropertyRow* row = model()->rowFromPath(sel.front());
 	while (row && !row->isObject())
@@ -1114,8 +1203,10 @@ bool PropertyTree::getSelectedObject(yasli::Object* object)
 	if (!row)
 		return false;
 
-	if (row->isObject()) {
-		if (PropertyRowObject* obj = static_cast<PropertyRowObject*>(row)) {
+	if (row->isObject())
+	{
+		if (PropertyRowObject* obj = static_cast<PropertyRowObject*>(row))
+		{
 			*object = obj->object();
 			return true;
 		}
@@ -1126,9 +1217,10 @@ bool PropertyTree::getSelectedObject(yasli::Object* object)
 bool PropertyTree::setSelectedRow(PropertyRow* row)
 {
 	TreeSelection sel;
-	if(row)
+	if (row)
 		sel.push_back(model()->pathFromRow(row));
-	if (model()->selection() != sel) {
+	if (model()->selection() != sel)
+	{
 		model()->setSelection(sel);
 		if (row)
 			ensureVisible(row);
@@ -1146,13 +1238,12 @@ int PropertyTree::selectedRowCount() const
 
 PropertyRow* PropertyTree::selectedRowByIndex(int index)
 {
-	const PropertyTreeModel::Selection &sel = model()->selection();
+	const PropertyTreeModel::Selection& sel = model()->selection();
 	if (size_t(index) >= sel.size())
 		return 0;
 
 	return model()->rowFromPath(sel[index]);
 }
-
 
 bool PropertyTree::selectByAddress(const void* addr, bool keepSelectionIfChildSelected)
 {
@@ -1164,26 +1255,29 @@ bool PropertyTree::selectByAddresses(const vector<const void*>& addresses, bool 
 	return selectByAddresses(&addresses.front(), addresses.size(), keepSelectionIfChildSelected);
 }
 
-
-
 bool PropertyTree::selectByAddresses(const void* const* addresses, size_t addressCount, bool keepSelectionIfChildSelected)
 {
 	bool result = false;
-	if (model()->root()) {
+	if (model()->root())
+	{
 		bool keepSelection = false;
 		vector<PropertyRow*> rows;
-		for (size_t i = 0; i < addressCount; ++i) {
+		for (size_t i = 0; i < addressCount; ++i)
+		{
 			const void* addr = addresses[i];
 			PropertyRow* row = model()->root()->findByAddress(addr);
 
-			if (keepSelectionIfChildSelected && row && !model()->selection().empty()) {
+			if (keepSelectionIfChildSelected && row && !model()->selection().empty())
+			{
 				keepSelection = true;
 				TreeSelection::const_iterator it;
-				for(it = model()->selection().begin(); it != model()->selection().end(); ++it){
+				for (it = model()->selection().begin(); it != model()->selection().end(); ++it)
+				{
 					PropertyRow* selectedRow = model()->rowFromPath(*it);
 					if (!selectedRow)
 						continue;
-					if (!selectedRow->isChildOf(row)){
+					if (!selectedRow->isChildOf(row))
+					{
 						keepSelection = false;
 						break;
 					}
@@ -1194,14 +1288,17 @@ bool PropertyTree::selectByAddresses(const void* const* addresses, size_t addres
 				rows.push_back(row);
 		}
 
-		if (!keepSelection) {
+		if (!keepSelection)
+		{
 			TreeSelection sel;
-			for (size_t j = 0; j < rows.size(); ++j) {
+			for (size_t j = 0; j < rows.size(); ++j)
+			{
 				PropertyRow* row = rows[j];
-				if(row)
+				if (row)
 					sel.push_back(model()->pathFromRow(row));
 			}
-			if (model()->selection() != sel) {
+			if (model()->selection() != sel)
+			{
 				model()->setSelection(sel);
 				if (!rows.empty())
 					ensureVisible(rows.back());
@@ -1219,19 +1316,19 @@ void PropertyTree::setUndoEnabled(bool enabled, bool full)
 {
 	config_.undoEnabled = enabled;
 	config_.fullUndo = full;
-    model()->setUndoEnabled(enabled);
-    model()->setFullUndo(full);
+	model()->setUndoEnabled(enabled);
+	model()->setFullUndo(full);
 }
 
-void PropertyTree::attachPropertyTree(PropertyTree* propertyTree) 
-{ 
+void PropertyTree::attachPropertyTree(PropertyTree* propertyTree)
+{
 	// TODO:
 	// if(attachedPropertyTree_)
-	// 	disconnect(attachedPropertyTree_, SIGNAL(signalChanged()), this, SLOT(onAttachedTreeChanged()));
-	attachedPropertyTree_ = propertyTree; 
+	//  disconnect(attachedPropertyTree_, SIGNAL(signalChanged()), this, SLOT(onAttachedTreeChanged()));
+	attachedPropertyTree_ = propertyTree;
 	//if (attachedPropertyTree_)
 	//	connect(attachedPropertyTree_, SIGNAL(signalChanged()), this, SLOT(onAttachedTreeChanged()));
-	updateAttachedPropertyTree(true); 
+	updateAttachedPropertyTree(true);
 }
 
 void PropertyTree::detachPropertyTree()
@@ -1247,19 +1344,22 @@ void PropertyTree::setAutoHideAttachedPropertyTree(bool autoHide)
 void PropertyTree::getSelectionSerializers(yasli::Serializers* serializers)
 {
 	TreeSelection::const_iterator i;
-	for(i = model()->selection().begin(); i != model()->selection().end(); ++i){
+	for (i = model()->selection().begin(); i != model()->selection().end(); ++i)
+	{
 		PropertyRow* row = model()->rowFromPath(*i);
 		if (!row)
 			continue;
 
-
-		while(row && ((row->pulledUp() || row->pulledBefore()) || row->isLeaf())) {
+		while (row && ((row->pulledUp() || row->pulledBefore()) || row->isLeaf()))
+		{
 			row = row->parent();
 		}
-		if (outlineMode_) {
+		if (outlineMode_)
+		{
 			PropertyRow* topmostContainerElement = 0;
 			PropertyRow* r = row;
-			while (r && r->parent()) {
+			while (r && r->parent())
+			{
 				if (r->parent()->isContainer())
 					topmostContainerElement = r;
 				r = r->parent();
@@ -1276,24 +1376,25 @@ void PropertyTree::getSelectionSerializers(yasli::Serializers* serializers)
 
 void PropertyTree::updateAttachedPropertyTree(bool revert)
 {
-	if(attachedPropertyTree_) {
- 		Serializers serializers;
- 		getSelectionSerializers(&serializers);
- 		if (!attachedPropertyTree_->attach(serializers) && revert)
+	if (attachedPropertyTree_)
+	{
+		Serializers serializers;
+		getSelectionSerializers(&serializers);
+		if (!attachedPropertyTree_->attach(serializers) && revert)
 			attachedPropertyTree_->revert();
- 	}
+	}
 }
-
 
 void PropertyTree::RowFilter::parse(const char* filter)
 {
-	for (int i = 0; i < NUM_TYPES; ++i) {
+	for (int i = 0; i < NUM_TYPES; ++i)
+	{
 		start[i].clear();
 		substrings[i].clear();
 		tillEnd[i] = false;
 	}
 
-	YASLI_ESCAPE(filter != 0, return);
+	YASLI_ESCAPE(filter != 0, return );
 
 	vector<char> filterBuf(filter, filter + strlen(filter) + 1);
 	for (size_t i = 0; i < filterBuf.size(); ++i)
@@ -1305,26 +1406,29 @@ void PropertyTree::RowFilter::parse(const char* filter)
 	while (true)
 	{
 		bool fromStart = false;
-		while (*str == '^') {
+		while (*str == '^')
+		{
 			fromStart = true;
 			++str;
 		}
 
 		const char* tokenStart = str;
-		
+
 		if (*str == '\"')
 		{
 			++str;
-			while(*str != '\0' && *str != '\"')
+			while (*str != '\0' && *str != '\"')
 				++str;
 		}
 		else
 		{
 			while (*str != '\0' && *str != ' ' && *str != '*' && *str != '=' && *str != ':' && *str != '#')
-					++str;
+				++str;
 		}
-		if (str != tokenStart) {
-			if (*tokenStart == '\"' && *str == '\"') {
+		if (str != tokenStart)
+		{
+			if (*tokenStart == '\"' && *str == '\"')
+			{
 				start[type].assign(tokenStart + 1, str);
 				tillEnd[type] = true;
 				++str;
@@ -1339,15 +1443,18 @@ void PropertyTree::RowFilter::parse(const char* filter)
 		}
 		while (*str == ' ')
 			++str;
-		if (*str == '#') {
+		if (*str == '#')
+		{
 			type = NAME;
 			++str;
 		}
-		else if (*str == '=') {
+		else if (*str == '=')
+		{
 			type = VALUE;
 			++str;
 		}
-		else if(*str == ':') {
+		else if (*str == ':')
+		{
 			type = TYPE;
 			++str;
 		}
@@ -1363,15 +1470,17 @@ bool PropertyTree::RowFilter::match(const char* textOriginal, Type type, size_t*
 	char* text;
 	{
 		size_t textLen = strlen(textOriginal);
-        text = (char*)alloca((textLen + 1));
+		text = (char*)alloca((textLen + 1));
 		memcpy(text, textOriginal, (textLen + 1));
 		for (char* p = text; *p; ++p)
 			*p = tolower(*p);
 	}
-	
-	const yasli::string &start = this->start[type];
-	if (tillEnd[type]){
-		if (start == text) {
+
+	const yasli::string& start = this->start[type];
+	if (tillEnd[type])
+	{
+		if (start == text)
+		{
 			if (matchStart)
 				*matchStart = 0;
 			if (matchEnd)
@@ -1382,7 +1491,7 @@ bool PropertyTree::RowFilter::match(const char* textOriginal, Type type, size_t*
 			return false;
 	}
 
-	const vector<yasli::string> &substrings = this->substrings[type];
+	const vector<yasli::string>& substrings = this->substrings[type];
 
 	const char* startPos = text;
 
@@ -1390,9 +1499,11 @@ bool PropertyTree::RowFilter::match(const char* textOriginal, Type type, size_t*
 		*matchStart = 0;
 	if (matchEnd)
 		*matchEnd = 0;
-	if (!start.empty()) {
-		if (strncmp(text, start.c_str(), start.size()) != 0){
-            //_freea(text);
+	if (!start.empty())
+	{
+		if (strncmp(text, start.c_str(), start.size()) != 0)
+		{
+			//_freea(text);
 			return false;
 		}
 		if (matchEnd)
@@ -1401,13 +1512,16 @@ bool PropertyTree::RowFilter::match(const char* textOriginal, Type type, size_t*
 	}
 
 	size_t numSubstrings = substrings.size();
-	for (size_t i = 0; i < numSubstrings; ++i) {
+	for (size_t i = 0; i < numSubstrings; ++i)
+	{
 		const char* substr = strstr(startPos, substrings[i].c_str());
-		if (!substr){
+		if (!substr)
+		{
 			return false;
 		}
 		startPos += substrings[i].size();
-		if (matchStart && i == 0 && start.empty()) {
+		if (matchStart && i == 0 && start.empty())
+		{
 			*matchStart = substr - text;
 		}
 		if (matchEnd)
@@ -1422,7 +1536,7 @@ PropertyRow* PropertyTree::rowByPoint(const Point& pt)
 		return 0;
 	if (!area_.contains(pt))
 		return 0;
-  return model_->root()->hit(this, pointToRootSpace(pt));
+	return model_->root()->hit(this, pointToRootSpace(pt));
 }
 
 Point PropertyTree::pointToRootSpace(const Point& point) const
@@ -1437,7 +1551,7 @@ Point PropertyTree::pointFromRootSpace(const Point& point) const
 
 bool PropertyTree::toggleRow(PropertyRow* row)
 {
-	if(!row->canBeToggled(this))
+	if (!row->canBeToggled(this))
 		return false;
 	expandRow(row, !row->expanded());
 	updateHeights();
@@ -1449,11 +1563,11 @@ bool PropertyTree::_isCapturedRow(const PropertyRow* row) const
 	return capturedRow_ == row;
 }
 
-void PropertyTree::setValueColumnWidth(float valueColumnWidth) 
+void PropertyTree::setValueColumnWidth(float valueColumnWidth)
 {
 	if (style_->valueColumnWidth != valueColumnWidth)
 	{
-		style_->valueColumnWidth = valueColumnWidth; 
+		style_->valueColumnWidth = valueColumnWidth;
 		updateHeights(false);
 		repaint();
 	}
@@ -1479,11 +1593,14 @@ struct ValidatorIconVisitor
 	ScanResult operator()(PropertyRow* row, PropertyTree* tree, int)
 	{
 		row->resetValidatorIcons();
-		if (row->validatorCount()) {
+		if (row->validatorCount())
+		{
 			bool hasErrors = false;
 			bool hasWarnings = false;
-			if (const ValidatorEntry* validatorEntries = tree->_validatorBlock()->getEntry(row->validatorIndex(), row->validatorCount())) {
-				for (int i = 0; i < row->validatorCount(); ++i) {
+			if (const ValidatorEntry* validatorEntries = tree->_validatorBlock()->getEntry(row->validatorIndex(), row->validatorCount()))
+			{
+				for (int i = 0; i < row->validatorCount(); ++i)
+				{
 					const ValidatorEntry* validatorEntry = validatorEntries + i;
 					if (validatorEntry->type == VALIDATOR_ENTRY_ERROR)
 						hasErrors = true;
@@ -1497,7 +1614,8 @@ struct ValidatorIconVisitor
 				PropertyRow* lastClosedParent = 0;
 				PropertyRow* current = row->parent();
 				bool lastWasPulled = row->pulledUp() || row->pulledBefore();
-				while (current && current->parent()) {
+				while (current && current->parent())
+				{
 					if (!current->expanded() && !lastWasPulled && current->visible(tree))
 						lastClosedParent = current;
 					lastWasPulled = current->pulledUp() || current->pulledBefore();

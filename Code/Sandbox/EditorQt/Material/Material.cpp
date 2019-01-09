@@ -1935,10 +1935,10 @@ protected:
 		}
 
 		CBaseLibraryItem::SerializeContext ctx(m_undo, true);
-		ctx.bUndo = bUndo;
+		ctx.bUndo = true;
 		pMaterial->Serialize(ctx);
 
-		if (m_bForceUpdate && bUndo)
+		if (m_bForceUpdate)
 		{
 			GetIEditorImpl()->GetMaterialManager()->OnUpdateProperties(pMaterial);
 		}

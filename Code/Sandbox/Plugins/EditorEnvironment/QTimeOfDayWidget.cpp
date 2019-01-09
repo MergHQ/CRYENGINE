@@ -284,6 +284,7 @@ class QTimeOfDayWidget::CContentChangedUndoCommand : public IUndoObject
 public:
 	explicit CContentChangedUndoCommand(QTimeOfDayWidget* pWidget)
 	{
+		m_pWidget = pWidget;
 		m_paramId = pWidget->m_selectedParamId;
 		SCurveEditorContent* pContent = pWidget->m_curveContent.get();
 		Serialization::SaveBinaryBuffer(m_oldState, *pContent);
@@ -302,6 +303,7 @@ private:
 
 	virtual void        Undo(bool bUndo) override
 	{
+		SaveNewState(m_pWidget);
 		Update(m_oldState);
 	}
 
@@ -331,6 +333,7 @@ private:
 	DynArray<char> m_oldState;
 	DynArray<char> m_newState;
 	int            m_paramId;
+	QTimeOfDayWidget* m_pWidget;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -524,48 +527,71 @@ void QTimeOfDayWidget::OnPropertySelected()
 	}
 }
 
-void QTimeOfDayWidget::UndoBegin()
+void QTimeOfDayWidget::OnBeginUndo()
 {
-	if (m_curveContent && !CUndo::IsRecording())
+	if (m_curveContent && !CUndo::IsRecording() && !m_pUndoCommand)
 	{
-		if (!m_pUndoCommand)//signalPushUndo might be called twice from QPropertyTree when editing the property
+		GetIEditor()->GetIUndoManager()->Begin();
+		m_pUndoCommand = new CContentChangedUndoCommand(this);
+		const int paramId = m_pUndoCommand->GetParamId();
+		if (paramId >= 0)
 		{
-			GetIEditor()->GetIUndoManager()->Begin();
-			m_pUndoCommand = new CContentChangedUndoCommand(this);
+			GetIEditor()->GetIUndoManager()->RecordUndo(m_pUndoCommand);
 		}
 	}
 }
 
-void QTimeOfDayWidget::UndoEnd()
+void QTimeOfDayWidget::OnChanged()
 {
 	SignalContentChanged();
-	if (m_pUndoCommand)
+}
+
+void QTimeOfDayWidget::OnEndUndo(bool acceptUndo)
+{
+	if (!m_pUndoCommand)
 	{
-		m_pUndoCommand->SaveNewState(this);
-		const int paramId = m_pUndoCommand->GetParamId();
-		if (paramId >= 0)
+		return;
+	}
+
+	const int paramId = m_pUndoCommand->GetParamId();
+	if (paramId >= 0)
+	{
+		if (acceptUndo)
 		{
 			const STODParameter* pParam = m_groups.m_params[paramId];
 			const char* paramName = pParam->GetName();
 
-			GetIEditor()->GetIUndoManager()->RecordUndo(m_pUndoCommand);
-			m_pUndoCommand = NULL;
-
 			string undoDesc;
-			undoDesc.Format("EnvironmentEditor: Curve content changed for '%s'", paramName);
+			undoDesc.Format("Environment Editor: Curve content changed for '%s'", paramName);
 			GetIEditor()->GetIUndoManager()->Accept(undoDesc);
 		}
 		else
 		{
 			GetIEditor()->GetIUndoManager()->Cancel();
 		}
+
+		SignalContentChanged();
+		m_pUndoCommand = nullptr;
 	}
 }
 
 void QTimeOfDayWidget::UndoConstantProperties()
 {
-	CUndo undo("Update Environment Constants");
-	CUndo::Record(new CUndoConstPropTreeCommand(this));
+	GetIEditor()->GetIUndoManager()->Begin();
+	GetIEditor()->GetIUndoManager()->RecordUndo(new CUndoConstPropTreeCommand(this));
+
+}
+
+void QTimeOfDayWidget::OnEndActionUndoConstantProperties(bool acceptUndo)
+{
+	if (acceptUndo)
+	{
+		GetIEditor()->GetIUndoManager()->Accept("Update Environment Constants");
+	}
+	else
+	{
+		GetIEditor()->GetIUndoManager()->Cancel();
+	}
 }
 
 void QTimeOfDayWidget::CheckParameterChanged(STODParameter& param, const Vec3& newValue)
@@ -737,12 +763,12 @@ void QTimeOfDayWidget::OnPasteCurveContent()
 		SCurveEditorContent* pContent = m_curveContent.get();
 		if (pContent)
 		{
-			UndoBegin();
+			OnBeginUndo();
 			DynArray<char> buffer;
 			buffer.resize(array.size());
 			memcpy(buffer.begin(), array.data(), array.size());
 			Serialization::LoadBinaryBuffer(*pContent, buffer.begin(), buffer.size());
-			UndoEnd();
+			OnChanged();
 			OnSplineEditing();
 		}
 	}
@@ -786,8 +812,9 @@ void QTimeOfDayWidget::CreatePropertyTrees(QSplitter* pParent)
 		m_propertyTreeVar->setHideSelection(false);
 		m_propertyTreeVar->setUndoEnabled(false, false);
 		connect(m_propertyTreeVar, &QPropertyTree::signalSelected, this, &QTimeOfDayWidget::OnPropertySelected);
-		connect(m_propertyTreeVar, &QPropertyTree::signalPushUndo, this, &QTimeOfDayWidget::UndoBegin);
-		connect(m_propertyTreeVar, &QPropertyTree::signalChanged, this, &QTimeOfDayWidget::UndoEnd);
+		connect(m_propertyTreeVar, &QPropertyTree::signalBeginUndo, this, &QTimeOfDayWidget::OnBeginUndo);
+		connect(m_propertyTreeVar, &QPropertyTree::signalChanged, this, &QTimeOfDayWidget::OnChanged);
+		connect(m_propertyTreeVar, &QPropertyTree::signalEndUndo, this, &QTimeOfDayWidget::OnEndUndo);
 
 		auto* layout = new QVBoxLayout;
 		layout->setContentsMargins(QMargins(0, 0, 0, 0));
@@ -805,7 +832,8 @@ void QTimeOfDayWidget::CreatePropertyTrees(QSplitter* pParent)
 		m_propertyTreeConst->setHideSelection(false);
 		m_propertyTreeConst->setUndoEnabled(false, false);
 		connect(m_propertyTreeConst, &QPropertyTree::signalChanged, this, []() { GetTimeOfDay()->ConstantsChanged(); });
-		connect(m_propertyTreeConst, &QPropertyTree::signalPushUndo, this, &QTimeOfDayWidget::UndoConstantProperties);
+		connect(m_propertyTreeConst, &QPropertyTree::signalBeginUndo, this, &QTimeOfDayWidget::UndoConstantProperties);
+		connect(m_propertyTreeConst, &QPropertyTree::signalEndUndo, this, &QTimeOfDayWidget::OnEndActionUndoConstantProperties);
 
 		auto* layout = new QVBoxLayout;
 		layout->setContentsMargins(QMargins(0, 0, 0, 0));
@@ -852,9 +880,9 @@ void QTimeOfDayWidget::CreateCurveEditor(QSplitter* pParent)
 	{
 		DrawGradient(GetTimeOfDay(), m_selectedParamId, painter, rulerRect, visibleRange);
 	});
-	connect(m_curveEdit, &CCurveEditor::SignalContentAboutToBeChanged, this, &QTimeOfDayWidget::UndoBegin);
+	connect(m_curveEdit, &CCurveEditor::SignalContentAboutToBeChanged, this, &QTimeOfDayWidget::OnBeginUndo);
 	connect(m_curveEdit, &CCurveEditor::SignalContentChanging, this, &QTimeOfDayWidget::OnSplineEditing);
-	connect(m_curveEdit, &CCurveEditor::SignalContentChanged, [this]() { OnSplineEditing(); UndoEnd(); });
+	connect(m_curveEdit, &CCurveEditor::SignalContentChanged, [this]() { OnSplineEditing(); OnChanged(); OnEndUndo(true); });
 
 	centralVerticalLayout->addWidget(m_curveEdit, Qt::AlignTop);
 

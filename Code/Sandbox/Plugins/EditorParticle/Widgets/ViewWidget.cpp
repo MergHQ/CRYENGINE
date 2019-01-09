@@ -20,7 +20,7 @@
 #include <QAdvancedPropertyTree.h>
 #include <QControls.h>
 
-namespace CryParticleEditor 
+namespace CryParticleEditor
 {
 
 void CItemProperties::SFeatureSerializer::Serialize(Serialization::IArchive& archive)
@@ -123,8 +123,9 @@ CItemProperties::CItemProperties(CryGraphEditor::GraphItemSet& selectedItems)
 
 		m_pNodeItem->SignalInvalidated.Connect(this, &CItemProperties::OnItemsChanged);
 		m_pNodeItem->SignalDeletion.Connect(this, &CItemProperties::OnItemsDeletion);
-		QObject::connect(m_pPropertyTree, &QPropertyTree::signalPushUndo, this, &CItemProperties::OnPushUndo);
+		QObject::connect(m_pPropertyTree, &QPropertyTree::signalBeginUndo, this, &CItemProperties::OnBeginUndo);
 		QObject::connect(m_pPropertyTree, &QPropertyTree::signalChanged, this, &CItemProperties::OnItemsChanged);
+		QObject::connect(m_pPropertyTree, &QPropertyTree::signalEndUndo, this, &CItemProperties::OnEndUndo);
 
 		QVBoxLayout* pMainLayout = new QVBoxLayout(this);
 		pMainLayout->addWidget(m_pPropertyTree);
@@ -156,12 +157,26 @@ void CItemProperties::showEvent(QShowEvent* pEvent)
 		m_pPropertyTree->setSizeToContent(true);
 }
 
-void CItemProperties::OnPushUndo()
+void CItemProperties::OnBeginUndo()
 {
 	m_isPushingUndo = true;
 	CryGraphEditor::CUndoNodePropertiesChange* pUndoObject = new CryGraphEditor::CUndoNodePropertiesChange(*m_pNodeItem);
-	CUndo undo(pUndoObject->GetDescription());
-	CUndo::Record(pUndoObject);
+	m_latestUndoDescription = pUndoObject->GetDescription();
+	GetIEditor()->GetIUndoManager()->Begin();
+	GetIEditor()->GetIUndoManager()->RecordUndo(pUndoObject);
+}
+
+void CItemProperties::OnEndUndo(bool undoAccepted)
+{
+	if (undoAccepted)
+	{
+		GetIEditor()->GetIUndoManager()->Accept(m_latestUndoDescription);
+	}
+	else
+	{
+		GetIEditor()->GetIUndoManager()->Cancel();
+	}
+
 	m_isPushingUndo = false;
 }
 
@@ -353,7 +368,7 @@ void CGraphView::ShowFeatureContextMenu(CFeatureWidget* pFeatureWidget, QPointF 
 		QObject::connect(pAction, &QAction::triggered, this, [pItem](bool isChecked)
 			{
 				pItem->SetDeactivated(!isChecked);
-		  });
+			});
 	}
 
 	const QPoint parent = mapFromGlobal(QPoint(screenPos.x(), screenPos.y()));
@@ -416,7 +431,7 @@ bool CGraphView::PopulateMenuWithFeatures(const char* szTitle, CryGraphEditor::C
 				else
 					GetIEditor()->GetIUndoManager()->Cancel();
 
-		  });
+			});
 
 		result->second.m_subActions[actionName] = pAction;
 	}
