@@ -3,6 +3,7 @@
 #pragma once
 
 #include "ParticleCommon.h"
+#include "ParticleDataTypes.h"
 #include "Features/ParamTraits.h"
 #include <CryRenderer/IGpuParticles.h>
 #include <CryCore/Dispatcher.h>
@@ -19,10 +20,10 @@ struct SInstance;
 enum EFeatureType
 {
 	EFT_Generic = 0,          // this feature does nothing in particular. Can have many of this per component.
-	EFT_Spawn   = BIT(0),     // this feature spawns particles. At least one is needed in a component.
-	EFT_Life    = BIT(1),     // this feature changes particles life time. At least one is required per component.
+	EFT_Life    = BIT(0),     // this feature changes particles life time. At least one is required per component.
+	EFT_Spawn   = BIT(1),     // this feature spawns particles. At least one is needed in a component.
 	EFT_Render  = BIT(2),     // this feature renders particles. Each component can only have either none or just one of this.
-	EFT_Effect  = BIT(3),     // this feature renders particles. Each component can only have either none or just one of this.
+	EFT_Effect  = BIT(3),     // this feature creates non-rendering effects.
 	EFT_Size    = BIT(4),     // this feature changes particles sizes. At least one is required per component.
 	EFT_Motion  = BIT(5),     // this feature moves particles around. Each component can only have either none or just one of this.
 	EFT_Child   = BIT(6),     // this feature spawns instances from parent particles. At least one is needed for child components
@@ -63,6 +64,8 @@ public:
 
 	virtual void OnPreRun(CParticleComponentRuntime& runtime) {}
 
+	virtual void GetDynamicData(const CParticleComponentRuntime& runtime, EParticleDataType type, void* data, EDataDomain domain, SUpdateRange range) {}
+
 	virtual void MainPreUpdate(CParticleComponentRuntime& runtime) {}
 
 	virtual void AddSubInstances(CParticleComponentRuntime& runtime, TDynArray<SInstance>& instances) {}
@@ -70,10 +73,6 @@ public:
 	virtual void CullSubInstances(CParticleComponentRuntime& runtime, TDynArray<SInstance>& instances) {}
 
 	virtual void InitSubInstances(CParticleComponentRuntime& runtime, SUpdateRange instanceRange) {}
-
-	virtual void GetSpatialExtents(const CParticleComponentRuntime& runtime, TConstArray<float> scales, TVarArray<float> extents) {}
-
-	virtual void GetEmitOffsets(const CParticleComponentRuntime& runtime, TVarArray<Vec3> offsets, uint firstInstance) {}
 
 	// Particle initialization
 	virtual void KillParticles(CParticleComponentRuntime& runtime) {}
@@ -120,15 +119,13 @@ struct SFeatureDispatchers
 	TFeatureDispatcher<CParticleComponentRuntime&> OnEdit { &CParticleFeature::OnEdit };
 	TFeatureDispatcher<CParticleComponentRuntime&> OnPreRun { &CParticleFeature::OnPreRun };
 	TFeatureDispatcher<CParticleComponentRuntime&> MainPreUpdate { &CParticleFeature::MainPreUpdate };
+	TFeatureDispatcher<const CParticleComponentRuntime&, EParticleDataType, void*, EDataDomain, SUpdateRange> GetDynamicData { &CParticleFeature::GetDynamicData };
 
 	TFeatureDispatcher<CParticleComponentRuntime&, TDynArray<SInstance>&> AddSubInstances { &CParticleFeature::AddSubInstances };
 	TFeatureDispatcher<CParticleComponentRuntime&, TDynArray<SInstance>&> CullSubInstances { &CParticleFeature::CullSubInstances };
 	TFeatureDispatcher<CParticleComponentRuntime&, SUpdateRange> InitSubInstances { &CParticleFeature::InitSubInstances };
 	TFeatureDispatcher<CParticleComponentRuntime&> KillParticles { &CParticleFeature::KillParticles };
 	TFeatureDispatcher<CParticleComponentRuntime&> SpawnParticles { &CParticleFeature::SpawnParticles };
-
-	TFeatureDispatcher<const CParticleComponentRuntime&, TConstArray<float>, TVarArray<float>> GetSpatialExtents { &CParticleFeature::GetSpatialExtents };
-	TFeatureDispatcher<const CParticleComponentRuntime&, TVarArray<Vec3>, uint> GetEmitOffsets { &CParticleFeature::GetEmitOffsets };
 
 	TFeatureDispatcher<CParticleComponentRuntime&> PreInitParticles { &CParticleFeature::PreInitParticles };
 	TFeatureDispatcher<CParticleComponentRuntime&> InitParticles { &CParticleFeature::InitParticles };

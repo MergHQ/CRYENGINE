@@ -103,7 +103,6 @@ public:
 				pComponent->AddParticleData(EPDT_MeshGeometry);
 				if (m_piecesMode == EPiecesMode::AllPieces)
 				{
-					pComponent->AddParticleData(EPDT_SpawnId);
 					pParams->m_scaleParticleCount *= m_aSubObjects.size();
 				}
 			}
@@ -136,11 +135,11 @@ public:
 
 		CParticleContainer& container = runtime.GetContainer();
 		TIOStream<IMeshObj*> meshes = container.IOStream(EPDT_MeshGeometry);
-		TIStream<uint> spawnIds = container.IStream(EPDT_SpawnId);
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 		IOQuatStream orientations = container.GetIOQuatStream(EPQF_Orientation);
 		IFStream sizes = container.GetIFStream(EPDT_Size, 1.0f);
-		uint pieceCount = m_aSubObjects.size();
+		const uint spawnIdOffset = container.GetSpawnIdOffset();
+		const uint pieceCount = m_aSubObjects.size();
 		Vec3 center = m_pStaticObject->GetAABB().GetCenter();
 
 		for (auto particleId : runtime.SpawnedRange())
@@ -152,7 +151,7 @@ public:
 			}
 			else if (m_piecesMode == EPiecesMode::AllPieces)
 			{
-				piece = spawnIds.Load(particleId);
+				piece = particleId + spawnIdOffset;
 			}
 			piece %= pieceCount;
 

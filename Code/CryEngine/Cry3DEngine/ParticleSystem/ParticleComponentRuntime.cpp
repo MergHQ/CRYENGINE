@@ -13,6 +13,7 @@ MakeDataType(EPVF_PositionPrev, Vec3);
 
 extern TDataType<Vec3> EPVF_Acceleration, EPVF_VelocityField;
 
+extern TDataType<SMaxParticleCounts> ESDT_ParticleCounts;
 
 CParticleComponentRuntime::CParticleComponentRuntime(CParticleEmitter* pEmitter, CParticleComponent* pComponent)
 	: m_pEmitter(pEmitter)
@@ -27,8 +28,12 @@ CParticleComponentRuntime::CParticleComponentRuntime(CParticleEmitter* pEmitter,
 	Initialize();
 	if (pComponent->UsesGPU())
 	{
+		auto GPUParams = pComponent->GPUComponentParams();
+		GetMaxParticleCounts(GPUParams.maxParticles, GPUParams.maxNewBorns);
+		GPUParams.maxParticles += GPUParams.maxParticles >> 3;
+		GPUParams.maxNewBorns  += GPUParams.maxNewBorns  >> 3;
 		m_pGpuRuntime = gEnv->pRenderer->GetGpuParticleManager()->CreateParticleContainer(
-			pComponent->GPUComponentParams(),
+			GPUParams,
 			pComponent->GetGpuFeatures());
 	}
 }
@@ -67,11 +72,15 @@ void CParticleComponentRuntime::AddBounds(const AABB& bounds)
 	m_pEmitter->AddBounds(bounds);
 }
 
+pfx2::CParticleComponentRuntime* CParticleComponentRuntime::ParentRuntime() const
+{
+	return m_pComponent->GetParentComponent() ? m_pEmitter->GetRuntimeFor(m_pComponent->GetParentComponent()) : nullptr;
+}
+
 CParticleContainer& CParticleComponentRuntime::GetParentContainer()
 {
-	if (CParticleComponent* pParent = m_pComponent->GetParentComponent())
-		if (CParticleComponentRuntime* pParentRuntime = GetEmitter()->GetRuntimeFor(pParent))
-			return pParentRuntime->GetContainer();
+	if (CParticleComponentRuntime* pParentRuntime = ParentRuntime())
+		return pParentRuntime->GetContainer();
 	return GetEmitter()->GetParentContainer();
 }
 
@@ -257,15 +266,15 @@ void CParticleComponentRuntime::ReparentParticles(TConstArray<TParticleId> swapI
 	DebugStabilityCheck();
 }
 
+extern TDataType<Vec3> ESDT_EmitOffset;
+
 void CParticleComponentRuntime::GetEmitLocations(TVarArray<QuatTS> locations, uint firstInstance) const
 {
 	auto const& parentContainer = GetParentContainer();
 	auto parentPositions = parentContainer.GetIVec3Stream(EPVF_Position, GetEmitter()->GetLocation().t);
 	auto parentRotations = parentContainer.GetIQuatStream(EPQF_Orientation, GetEmitter()->GetLocation().q);
 
-	THeapArray<Vec3> offsets(MemHeap(), locations.size());
-	offsets.fill(Vec3(0));
-	GetComponent()->GetEmitOffsets(*this, offsets, firstInstance);
+	SDynamicData<Vec3> offsets(*this, ESDT_EmitOffset, EDD_PerInstance, SUpdateRange(firstInstance, firstInstance + locations.size()));
 
 	for (uint idx = 0; idx < locations.size(); ++idx)
 	{
@@ -394,6 +403,16 @@ void CParticleComponentRuntime::AddParticles(TConstArray<SSpawnEntry> spawnEntri
 
 		range.m_begin += entryCount;
 	}
+}
+
+uint CParticleComponentRuntime::GetDomainSize(EDataDomain domain) const
+{
+	if (domain & EDD_PerParticle)
+		return m_container.GetNumParticles();
+	else if (domain & EDD_PerInstance)
+		return m_subInstances.size();
+	else
+		return 1;
 }
 
 void CParticleComponentRuntime::RemoveParticles()
@@ -628,6 +647,27 @@ void CParticleComponentRuntime::AgeUpdate()
 		const floatv normAge0 = normAges.Load(particleGroupId);
 		const floatv normAge1 = normAge0 + frameTime * invLifeTime;
 		normAges.Store(particleGroupId, normAge1);
+	}
+}
+
+void CParticleComponentRuntime::GetMaxParticleCounts(int& total, int& perFrame, float minFPS, float maxFPS) const
+{
+	SMaxParticleCounts counts;
+	m_pComponent->GetDynamicData(*this, ESDT_ParticleCounts, &counts, EDD_None, SUpdateRange(0,1));
+
+	total = counts.burst;
+	const float rate = counts.rate + counts.perFrame * maxFPS;
+	const float extendedLife = ComponentParams().m_maxParticleLife + rcp(minFPS); // Particles stay 1 frame after death
+	if (rate > 0.0f && std::isfinite(extendedLife))
+		total += int_ceil(rate * extendedLife);
+	perFrame = int(counts.burst + counts.perFrame) + int_ceil(counts.rate / minFPS);
+
+	if (auto parent = ParentRuntime())
+	{
+		int totalParent, perFrameParent;
+		parent->GetMaxParticleCounts(totalParent, perFrameParent, minFPS, maxFPS);
+		total *= totalParent;
+		perFrame *= totalParent;
 	}
 }
 

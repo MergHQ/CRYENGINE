@@ -167,23 +167,26 @@ template<typename T>
 struct SInstanceUpdateBuffer: STempBuffer<T>
 {
 	template<typename TParamMod>
-	SInstanceUpdateBuffer(const CParticleComponentRuntime& runtime, TParamMod& paramMod)
+	SInstanceUpdateBuffer(const CParticleComponentRuntime& runtime, TParamMod& paramMod, EDataDomain domain)
 		: STempBuffer<T>(runtime, paramMod), m_runtime(runtime), m_range(1, 1)
 	{
 		if (paramMod.HasModifiers())
 		{
-			this->Allocate(SUpdateRange(0, runtime.GetNumInstances()));
-			m_range = paramMod.GetValues(runtime, this->m_buffer, EDD_PerInstance);
+			this->Allocate(SUpdateRange(0, runtime.GetDomainSize(domain)));
+			m_range = paramMod.GetValues(runtime, this->m_buffer, domain);
 		}
 	}
 
-	ILINE T operator[](uint id) const
+	TRange<T> operator[](uint id) const
 	{
-		const TParticleId parentId = m_runtime.GetInstance(id).m_parentId;
-		return this->SafeLoad(parentId);
+		if (this->IsValid() && id < m_runtime.GetNumInstances())
+		{
+			const TParticleId parentId = m_runtime.GetInstance(id).m_parentId;
+			return m_range * this->Load(parentId);
+		}
+		else
+			return this->Load(0);
 	}
-
-	TRange<T> const& Range() const { return m_range; }
 
 private:
 	const CParticleComponentRuntime& m_runtime;
@@ -219,7 +222,7 @@ struct SDistributor
 	SDistributor(const SDistribution<Dim, T>& dist, CParticleComponentRuntime& runtime)
 		: m_distribution(dist.m_distribution)
 		, m_chaos(runtime.Chaos())
-		, m_order(runtime.GetContainer().GetTotalSpawnedParticles() - runtime.GetContainer().GetNumSpawnedParticles())
+		, m_order(runtime.GetContainer().GetSpawnIdOffset())
 	{
 		if (m_distribution == EDistribution::Ordered)
 		{

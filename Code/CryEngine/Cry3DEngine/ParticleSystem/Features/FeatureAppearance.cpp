@@ -33,8 +33,6 @@ public:
 		if (VariantCount() > 1)
 		{
 			pComponent->AddParticleData(EPDT_Tile);
-			if (m_variantMode == EDistribution::Ordered)
-				pComponent->AddParticleData(EPDT_SpawnId);
 			pComponent->InitParticles.add(this);
 		}
 
@@ -75,8 +73,8 @@ private:
 	{
 		CParticleContainer& container = runtime.GetContainer();
 		TIOStream<uint8> tiles = container.IOStream(EPDT_Tile);
-		TIStream<uint> spawnIds = container.IStream(EPDT_SpawnId);
-		uint variantCount = VariantCount();
+		const uint spawnIdOffset = container.GetSpawnIdOffset();
+		const uint variantCount = VariantCount();
 
 		for (auto particleId : runtime.SpawnedRange())
 		{
@@ -87,7 +85,7 @@ private:
 			}
 			else if (mode == EDistribution::Ordered)
 			{
-				tile = spawnIds.Load(particleId);
+				tile = particleId + spawnIdOffset;
 			}
 			tile %= variantCount;
 			tile *= m_anim.m_frameCount;

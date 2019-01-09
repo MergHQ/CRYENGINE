@@ -19,6 +19,13 @@ struct SInstance
 	float m_startDelay;
 };
 
+struct SMaxParticleCounts
+{
+	uint32 burst = 0;
+	uint32 perFrame = 0;
+	float  rate = 0;
+};
+
 class CParticleComponentRuntime : public _i_reference_target_t, public IParticleVertexCreator
 {
 public:
@@ -44,6 +51,7 @@ public:
 	CParticleEffect*          GetEffect() const          { return m_pComponent->GetEffect(); }
 	CParticleEmitter*         GetEmitter() const         { return m_pEmitter; }
 
+	CParticleComponentRuntime* ParentRuntime() const;
 	CParticleContainer&       GetParentContainer();
 	const CParticleContainer& GetParentContainer() const;
 	CParticleContainer&       GetContainer()            { return m_container; }
@@ -55,6 +63,7 @@ public:
 	bool                      IsAlive() const               { return m_alive; }
 	void                      SetAlive()                    { m_alive = true; }
 	uint                      GetNumInstances() const       { return m_subInstances.size(); }
+	uint                      GetDomainSize(EDataDomain domain) const;
 	const SInstance&          GetInstance(uint idx) const   { return m_subInstances[idx]; }
 	SInstance&                GetInstance(uint idx)         { return m_subInstances[idx]; }
 	TParticleId               GetParentId(uint idx) const   { return GetInstance(idx).m_parentId; }
@@ -66,6 +75,8 @@ public:
 		byte* addr = m_subInstanceData.data() + stride * idx + offset;
 		return *reinterpret_cast<T*>(addr);
 	}
+
+	void                      GetMaxParticleCounts(int& total, int& perFrame, float minFPS = 4.0f, float maxFPS = 120.0f) const;
 	void                      GetEmitLocations(TVarArray<QuatTS> locations, uint firstInstance) const;
 	void                      EmitParticle();
 
@@ -111,6 +122,19 @@ private:
 
 	_smart_ptr<gpu_pfx2::IParticleComponentRuntime> m_pGpuRuntime;
 };
+
+template<typename T>
+struct SDynamicData : THeapArray<T>
+{
+	SDynamicData(const CParticleComponentRuntime& runtime, EParticleDataType type, EDataDomain domain, SUpdateRange range)
+		: THeapArray<T>(runtime.MemHeap(), range.size())
+	{
+		memset(this->data(), 0, this->size_mem());
+		runtime.GetComponent()->GetDynamicData(runtime, type, this->data(), domain, range);
+	}
+};
+
+
 
 }
 

@@ -27,26 +27,20 @@ public:
 			m_killOnParentDeath = true;
 	}
 
-	virtual CParticleFeature* ResolveDependency(CParticleComponent* pComponent) override
-	{
-		float maxLifetime = m_lifeTime.GetValueRange().end;
-		if (m_killOnParentDeath)
-		{
-			if (CParticleComponent* pParent = pComponent->GetParentComponent())
-				SetMin(maxLifetime, pParent->ComponentParams().m_maxParticleLife);
-		}
-		pComponent->ComponentParams().m_maxParticleLife = maxLifetime;
-		return this;
-	}
-
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		m_lifeTime.AddToComponent(pComponent, this, EPDT_LifeTime);
 		pComponent->PreInitParticles.add(this);
-		pParams->m_maxParticleLife = m_lifeTime.GetValueRange().end;
 
+		float maxLifetime = m_lifeTime.GetValueRange().end;
 		if (m_killOnParentDeath)
+		{
 			pComponent->PostUpdateParticles.add(this);
+			if (CParticleComponent* pParent = pComponent->GetParentComponent())
+				SetMin(maxLifetime, pParent->ComponentParams().m_maxParticleLife);
+		}
+
+		pComponent->ComponentParams().m_maxParticleLife = maxLifetime;
 		pComponent->UpdateGPUParams.add(this);
 	}
 
