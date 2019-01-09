@@ -622,19 +622,6 @@ void CEntityComponentAudio::SetEnvironmentAmountInternal(CEntity const* const pI
 }
 
 //////////////////////////////////////////////////////////////////////////
-CryAudio::AuxObjectId CEntityComponentAudio::GetAuxObjectIdFromAudioObject(CryAudio::IObject* pObject)
-{
-	for (auto const& auxObjectPair : m_mapAuxObjects)
-	{
-		if (auxObjectPair.second.pIObject == pObject)
-		{
-			return auxObjectPair.first;
-		}
-	}
-	return CryAudio::InvalidAuxObjectId;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CEntityComponentAudio::ToggleAbsoluteVelocityTracking(bool const enable, CryAudio::AuxObjectId const audioAuxObjectId /* = CryAudio::DefaultAuxObjectId */, CryAudio::SRequestUserData const& userData /* = CryAudio::SRequestUserData::GetEmptyObject() */)
 {
 	if (audioAuxObjectId != CryAudio::InvalidAuxObjectId)

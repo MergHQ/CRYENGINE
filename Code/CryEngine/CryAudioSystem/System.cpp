@@ -2739,7 +2739,7 @@ void CSystem::NotifyListener(CRequest const& request)
 	CStandaloneFile* pStandaloneFile = nullptr;
 	ControlId controlID = InvalidControlId;
 	CEvent* pEvent = nullptr;
-	CObject* pObject = nullptr;
+	EntityId entityId = INVALID_ENTITYID;
 
 	switch (request.GetData()->requestType)
 	{
@@ -2777,6 +2777,7 @@ void CSystem::NotifyListener(CRequest const& request)
 				{
 					auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> const*>(pBase);
 					controlID = pRequestData->triggerId;
+					entityId = pRequestData->entityId;
 					systemEvent = ESystemEvents::TriggerFinished;
 
 					break;
@@ -2811,7 +2812,7 @@ void CSystem::NotifyListener(CRequest const& request)
 	case ERequestType::ObjectRequest:
 		{
 			auto const pBase = static_cast<SObjectRequestDataBase const*>(request.GetData());
-			pObject = pBase->pObject;
+			entityId = pBase->pObject->GetEntityId();
 
 			switch (pBase->objectRequestType)
 			{
@@ -2876,7 +2877,7 @@ void CSystem::NotifyListener(CRequest const& request)
 		request.pUserDataOwner,
 		systemEvent,
 		controlID,
-		static_cast<IObject*>(pObject),
+		entityId,
 		pStandaloneFile,
 		pEvent);
 
@@ -3111,13 +3112,13 @@ void CSystem::SetOcclusionType(CObject& object, EOcclusionType const occlusionTy
 //////////////////////////////////////////////////////////////////////////
 void CSystem::OnCallback(SRequestInfo const* const pRequestInfo)
 {
-	if (gEnv->mMainThreadId == CryGetCurrentThreadId() && pRequestInfo->pIObject != nullptr)
+	if ((gEnv->mMainThreadId == CryGetCurrentThreadId()) && (pRequestInfo->entityId != INVALID_ENTITYID))
 	{
-		IEntity* const pIEntity = gEnv->pEntitySystem->GetEntity(pRequestInfo->pIObject->GetEntityId());
+		IEntity* const pIEntity = gEnv->pEntitySystem->GetEntity(pRequestInfo->entityId);
 
 		if (pIEntity != nullptr)
 		{
-			SEntityEvent eventData;  //converting audio events to entityEvents
+			SEntityEvent eventData;
 			eventData.nParam[0] = reinterpret_cast<intptr_t>(pRequestInfo);
 
 			if (pRequestInfo->systemEvent == ESystemEvents::TriggerExecuted)
@@ -3126,9 +3127,8 @@ void CSystem::OnCallback(SRequestInfo const* const pRequestInfo)
 				pIEntity->SendEvent(eventData);
 			}
 
-			//if the trigger failed to start or has finished, we (also) send ENTITY_EVENT_AUDIO_TRIGGER_ENDED
-			if (pRequestInfo->systemEvent == ESystemEvents::TriggerFinished
-			    || (pRequestInfo->systemEvent == ESystemEvents::TriggerExecuted && pRequestInfo->requestResult != ERequestResult::Success))
+			if ((pRequestInfo->systemEvent == ESystemEvents::TriggerFinished) ||
+			    ((pRequestInfo->systemEvent == ESystemEvents::TriggerExecuted) && (pRequestInfo->requestResult != ERequestResult::Success)))
 			{
 				eventData.event = ENTITY_EVENT_AUDIO_TRIGGER_ENDED;
 				pIEntity->SendEvent(eventData);
