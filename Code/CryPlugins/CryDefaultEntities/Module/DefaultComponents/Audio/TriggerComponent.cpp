@@ -164,9 +164,10 @@ void CTriggerComponent::ProcessEvent(const SEntityEvent& event)
 
 			if (m_playTrigger.m_autoPlay && m_numActiveTriggerInstances == 0)
 			{
-				CryAudio::SRequestInfo const* const pRequestInfo = reinterpret_cast<CryAudio::SRequestInfo const* const>(event.nParam[0]);
+				auto const pRequestInfo = reinterpret_cast<CryAudio::SRequestInfo const*>(event.nParam[0]);
+				auto const auxObjectId = static_cast<CryAudio::AuxObjectId>(reinterpret_cast<uintptr_t>(pRequestInfo->pUserData));
 
-				if (m_pIEntityAudioComponent->GetAuxObjectIdFromAudioObject(pRequestInfo->pIObject) == m_auxObjectId)
+				if (auxObjectId == m_auxObjectId)
 				{
 					Schematyc::IObject* const pSchematycObject = GetEntity()->GetSchematycObject();
 
@@ -255,7 +256,8 @@ void CTriggerComponent::Play()
 {
 	if ((m_pIEntityAudioComponent != nullptr) && (m_playTrigger.m_id != CryAudio::InvalidControlId))
 	{
-		CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread, this);
+		auto const pAuxObjectId = reinterpret_cast<void*>(static_cast<uintptr_t>(m_auxObjectId));
+		CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread, this, pAuxObjectId);
 		m_pIEntityAudioComponent->ExecuteTrigger(m_playTrigger.m_id, m_auxObjectId, userData);
 	}
 }
@@ -267,7 +269,8 @@ void CTriggerComponent::Stop()
 	{
 		if (m_stopTrigger.m_id != CryAudio::InvalidControlId)
 		{
-			CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread, this);
+			auto const pAuxObjectId = reinterpret_cast<void*>(static_cast<uintptr_t>(m_auxObjectId));
+			CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread, this, pAuxObjectId);
 			m_pIEntityAudioComponent->ExecuteTrigger(m_stopTrigger.m_id, m_auxObjectId, userData);
 		}
 		else if (m_playTrigger.m_id != CryAudio::InvalidControlId)

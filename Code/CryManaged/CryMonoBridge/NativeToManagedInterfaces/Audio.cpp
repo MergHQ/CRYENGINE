@@ -192,9 +192,9 @@ static void ReleaseSPlayFileInfo(CryAudio::SPlayFileInfo* pPlayFileInfo)
 	delete pPlayFileInfo;
 }
 
-static CryAudio::SRequestInfo* CreateSRequestInfo(uint eRequestResult, uint audioSystemEvent, uint CtrlId, CryAudio::IObject* pAudioObject)
+static CryAudio::SRequestInfo* CreateSRequestInfo(uint eRequestResult, uint audioSystemEvent, uint CtrlId, EntityId entityId)
 {
-	CryAudio::SRequestInfo* pRequestInfo = new CryAudio::SRequestInfo(static_cast<CryAudio::ERequestResult>(eRequestResult), nullptr, nullptr, nullptr, static_cast<CryAudio::ESystemEvents>(audioSystemEvent), (CryAudio::ControlId)CtrlId, pAudioObject, nullptr, nullptr);
+	CryAudio::SRequestInfo* pRequestInfo = new CryAudio::SRequestInfo(static_cast<CryAudio::ERequestResult>(eRequestResult), nullptr, nullptr, nullptr, static_cast<CryAudio::ESystemEvents>(audioSystemEvent), (CryAudio::ControlId)CtrlId, entityId, nullptr, nullptr);
 	return pRequestInfo;
 }
 
@@ -218,9 +218,9 @@ static uint SRIGetControlId(CryAudio::SRequestInfo* pRequestInfo)
 	return static_cast<uint>(pRequestInfo->audioControlId);
 }
 
-static CryAudio::IObject* SRIGetAudioObject(CryAudio::SRequestInfo* pRequestInfo)
+static EntityId SRIGetEntityId(CryAudio::SRequestInfo* pRequestInfo)
 {
-	return pRequestInfo->pIObject;
+	return pRequestInfo->entityId;
 }
 
 static void AddAudioRequestListener(AudioRequestListener listener)
@@ -285,7 +285,7 @@ void CAudioInterface::RegisterFunctions(std::function<void(const void* pMethod, 
 	func(SRIGetRequestResult, "SRIGetRequestResult");
 	func(SRIGetSystemEvent, "SRIGetEnumFlagsType");
 	func(SRIGetControlId, "SRIGetControlId");
-	func(SRIGetAudioObject, "SRIGetAudioObject");
+	func(SRIGetEntityId, "SRIGetEntityId");
 
 	//IListener
 	func(SetAudioListenerTransformation, "SetAudioListenerTransformation");

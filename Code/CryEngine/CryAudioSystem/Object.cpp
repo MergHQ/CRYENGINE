@@ -86,21 +86,18 @@ void CObject::AddStandaloneFile(CStandaloneFile* const pStandaloneFile, SUserDat
 //////////////////////////////////////////////////////////////////////////
 void CObject::SendFinishedTriggerInstanceRequest(STriggerInstanceState const& triggerInstanceState)
 {
-	SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> const requestData(triggerInstanceState.triggerId);
-
-	ERequestFlags flags = ERequestFlags::None;
-
 	if ((triggerInstanceState.flags & ETriggerStatus::CallbackOnExternalThread) != 0)
 	{
-		flags = ERequestFlags::CallbackOnExternalOrCallingThread;
+		SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> const requestData(triggerInstanceState.triggerId, m_entityId);
+		CRequest const request(&requestData, ERequestFlags::CallbackOnExternalOrCallingThread, triggerInstanceState.pOwnerOverride, triggerInstanceState.pUserData, triggerInstanceState.pUserDataOwner);
+		g_system.PushRequest(request);
 	}
 	else if ((triggerInstanceState.flags & ETriggerStatus::CallbackOnAudioThread) != 0)
 	{
-		flags = ERequestFlags::CallbackOnAudioThread;
+		SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> const requestData(triggerInstanceState.triggerId, m_entityId);
+		CRequest const request(&requestData, ERequestFlags::CallbackOnAudioThread, triggerInstanceState.pOwnerOverride, triggerInstanceState.pUserData, triggerInstanceState.pUserDataOwner);
+		g_system.PushRequest(request);
 	}
-
-	CRequest const request(&requestData, flags, triggerInstanceState.pOwnerOverride, triggerInstanceState.pUserData, triggerInstanceState.pUserDataOwner);
-	g_system.PushRequest(request);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -395,7 +392,6 @@ bool CObject::CanBeReleased() const
 {
 	return (m_flags& EObjectFlags::InUse) == 0 &&
 	       m_activeEvents.empty() &&
-	       m_triggerStates.empty() &&
 	       m_activeStandaloneFiles.empty() &&
 	       !m_propagationProcessor.HasPendingRays() &&
 	       m_numPendingSyncCallbacks == 0;

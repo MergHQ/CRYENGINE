@@ -55,7 +55,6 @@ public:
 	virtual void                    AudioAuxObjectsMoveWithEntity(bool const bCanMoveWithEntity) override;
 	virtual void                    AddAsListenerToAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId, void (*func)(CryAudio::SRequestInfo const* const), CryAudio::ESystemEvents const eventMask) override;
 	virtual void                    RemoveAsListenerFromAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId, void (*func)(CryAudio::SRequestInfo const* const)) override;
-	virtual CryAudio::AuxObjectId   GetAuxObjectIdFromAudioObject(CryAudio::IObject* pObject) override;
 	void                            ToggleAbsoluteVelocityTracking(bool const enable, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) override;
 	void                            ToggleRelativeVelocityTracking(bool const enable, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) override;
 	// ~IEntityAudioComponent

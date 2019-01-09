@@ -129,7 +129,7 @@ struct SRequestInfo
 		void* const pUserDataOwner_,
 		ESystemEvents const systemEvent_,
 		ControlId const audioControlId_,
-		IObject* const pIObject_,
+		EntityId const entityId_,
 		CStandaloneFile* pStandaloneFile_,
 		CEvent* pEvent_)
 		: requestResult(requestResult_)
@@ -138,7 +138,7 @@ struct SRequestInfo
 		, pUserDataOwner(pUserDataOwner_)
 		, systemEvent(systemEvent_)
 		, audioControlId(audioControlId_)
-		, pIObject(pIObject_)
+		, entityId(entityId_)
 		, pStandaloneFile(pStandaloneFile_)
 		, pEvent(pEvent_)
 	{}
@@ -154,7 +154,7 @@ struct SRequestInfo
 	void* const          pUserDataOwner;
 	ESystemEvents const  systemEvent;
 	ControlId const      audioControlId;
-	IObject* const       pIObject;
+	EntityId const       entityId;
 	CStandaloneFile*     pStandaloneFile;
 	CEvent*              pEvent;
 };

@@ -134,19 +134,22 @@ struct SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedEvent> final
 template<>
 struct SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> final : public SCallbackRequestDataBase, public CPoolObject<SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance>, stl::PSyncNone> // Intentionally not PSyncMultiThread because this gets only called from the audio thread.
 {
-	explicit SCallbackRequestData(ControlId const triggerId_)
+	explicit SCallbackRequestData(ControlId const triggerId_, EntityId const entityId_)
 		: SCallbackRequestDataBase(ECallbackRequestType::ReportFinishedTriggerInstance)
 		, triggerId(triggerId_)
+		, entityId(entityId_)
 	{}
 
 	explicit SCallbackRequestData(SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> const* const pACMRData)
 		: SCallbackRequestDataBase(ECallbackRequestType::ReportFinishedTriggerInstance)
 		, triggerId(pACMRData->triggerId)
+		, entityId(pACMRData->entityId)
 	{}
 
 	virtual ~SCallbackRequestData() override = default;
 
 	ControlId const triggerId;
+	EntityId const  entityId;
 };
 
 //////////////////////////////////////////////////////////////////////////
