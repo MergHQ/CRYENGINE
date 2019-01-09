@@ -598,7 +598,7 @@ void CPrefabObject::Display(CObjectRenderHelper& objRenderHelper)
 
 	if (dc.showPrefabChildrenHelpers)
 	{
-		if (HaveChilds())
+		if (HasChildren())
 		{
 			int numObjects = GetChildCount();
 			for (int i = 0; i < numObjects; i++)

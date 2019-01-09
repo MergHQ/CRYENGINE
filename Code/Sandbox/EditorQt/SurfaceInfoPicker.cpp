@@ -212,10 +212,10 @@ bool CSurfaceInfoPicker::PickImpl(const Vec3& vWorldRaySrc, const Vec3& vWorldRa
 }
 
 void CSurfaceInfoPicker::FindNearestInfoFromBrushObjects(
-  const Vec3& vWorldRaySrc,
-  const Vec3& vWorldRayDir,
-  IMaterial** pOutLastMaterial,
-  SRayHitInfo& outHitInfo) const
+	const Vec3& vWorldRaySrc,
+	const Vec3& vWorldRayDir,
+	IMaterial** pOutLastMaterial,
+	SRayHitInfo& outHitInfo) const
 {
 	for (size_t i = 0; i < m_pObjects->size(); ++i)
 	{
@@ -239,30 +239,50 @@ void CSurfaceInfoPicker::FindNearestInfoFromBrushObjects(
 }
 
 void CSurfaceInfoPicker::FindNearestInfoFromPrefabs(
-  const Vec3& vWorldRaySrc,
-  const Vec3& vWorldRayDir,
-  IMaterial** pOutLastMaterial,
-  SRayHitInfo& outHitInfo) const
+	const Vec3& vWorldRaySrc,
+	const Vec3& vWorldRayDir,
+	IMaterial** pOutLastMaterial,
+	SRayHitInfo& outHitInfo) const
 {
 	for (size_t i = 0; i < m_pObjects->size(); ++i)
 	{
 		CBaseObject* object((*m_pObjects)[i]);
 		if (object == NULL)
+		{
 			continue;
-		ObjectType objType(object->GetType());
-		if (objType != OBJTYPE_PREFAB)
+		}
+
+		ObjectType objectType(object->GetType());
+		if (objectType != OBJTYPE_PREFAB)
+		{
 			continue;
-		if (object->IsHidden() || IsFrozen(object))
-			continue;
+		}
+
+		//let's check if this object should be excluded from the search
 		if (m_ExcludedObjects.Contains(object))
+		{
 			continue;
+		}
+
+		if (object->IsHidden() || IsFrozen(object))
+		{
+			continue;
+		}
+		
 		for (int k = 0, nChildCount(object->GetChildCount()); k < nChildCount; ++k)
 		{
 			CBaseObject* childObject(object->GetChild(k));
-			if (childObject == NULL)
+			//if a child is in the excluded list we need to skip it
+			if (childObject == NULL || m_ExcludedObjects.Contains(childObject))
+			{
 				continue;
+			}
+
 			if (childObject->IsHidden() || IsFrozen(childObject))
+			{
 				continue;
+			}
+
 			if (RayIntersection(vWorldRaySrc, vWorldRayDir, object->GetChild(k), pOutLastMaterial, outHitInfo))
 			{
 				if (pOutLastMaterial)
@@ -313,10 +333,10 @@ void CSurfaceInfoPicker::FindNearestInfoFromSolids(int nFlags,
 }
 
 void CSurfaceInfoPicker::FindNearestInfoFromDecals(
-  const Vec3& vWorldRaySrc,
-  const Vec3& vWorldRayDir,
-  IMaterial** pOutLastMaterial,
-  SRayHitInfo& outHitInfo) const
+	const Vec3& vWorldRaySrc,
+	const Vec3& vWorldRayDir,
+	IMaterial** pOutLastMaterial,
+	SRayHitInfo& outHitInfo) const
 {
 	for (size_t i = 0; i < m_pObjects->size(); ++i)
 	{
@@ -361,10 +381,10 @@ void CSurfaceInfoPicker::FindNearestInfoFromDecals(
 }
 
 void CSurfaceInfoPicker::FindNearestInfoFromEntities(
-  const Vec3& vWorldRaySrc,
-  const Vec3& vWorldRayDir,
-  IMaterial** pOutLastMaterial,
-  SRayHitInfo& outHitInfo) const
+	const Vec3& vWorldRaySrc,
+	const Vec3& vWorldRayDir,
+	IMaterial** pOutLastMaterial,
+	SRayHitInfo& outHitInfo) const
 {
 	for (size_t i = 0; i < m_pObjects->size(); ++i)
 	{
@@ -388,10 +408,10 @@ void CSurfaceInfoPicker::FindNearestInfoFromEntities(
 }
 
 void CSurfaceInfoPicker::FindNearestInfoFromVegetations(
-  const Vec3& vWorldRaySrc,
-  const Vec3& vWorldRayDir,
-  IMaterial** ppOutLastMaterial,
-  SRayHitInfo& outHitInfo) const
+	const Vec3& vWorldRaySrc,
+	const Vec3& vWorldRayDir,
+	IMaterial** ppOutLastMaterial,
+	SRayHitInfo& outHitInfo) const
 {
 	CVegetationMap* pVegetationMap = GetIEditorImpl()->GetVegetationMap();
 	if (!pVegetationMap)
@@ -433,10 +453,10 @@ void CSurfaceInfoPicker::FindNearestInfoFromVegetations(
 }
 
 void CSurfaceInfoPicker::FindNearestInfoFromTerrain(
-  const Vec3& vWorldRaySrc,
-  const Vec3& vWorldRayDir,
-  IMaterial** pOutLastMaterial,
-  SRayHitInfo& outHitInfo) const
+	const Vec3& vWorldRaySrc,
+	const Vec3& vWorldRayDir,
+	IMaterial** pOutLastMaterial,
+	SRayHitInfo& outHitInfo) const
 {
 	int objTypes = ent_terrain;
 	int flags = (geom_colltype_ray | geom_colltype14) << rwi_colltype_bit | rwi_colltype_any | rwi_ignore_terrain_holes | rwi_stop_at_pierceable;
@@ -465,11 +485,11 @@ void CSurfaceInfoPicker::FindNearestInfoFromTerrain(
 }
 
 bool CSurfaceInfoPicker::RayIntersection(
-  const Vec3& vWorldRaySrc,
-  const Vec3& vWorldRayDir,
-  CBaseObject* pBaseObject,
-  IMaterial** pOutLastMaterial,
-  SRayHitInfo& outHitInfo)
+	const Vec3& vWorldRaySrc,
+	const Vec3& vWorldRayDir,
+	CBaseObject* pBaseObject,
+	IMaterial** pOutLastMaterial,
+	SRayHitInfo& outHitInfo)
 {
 	if (pBaseObject == NULL)
 		return false;
@@ -483,14 +503,14 @@ bool CSurfaceInfoPicker::RayIntersection(
 }
 
 bool CSurfaceInfoPicker::RayIntersection(
-  const Vec3& vWorldRaySrc,
-  const Vec3& vWorldRayDir,
-  IRenderNode* pRenderNode,
-  IEntity* pEntity,
-  IStatObj* pStatObj,
-  const Matrix34A& WorldTM,
-  SRayHitInfo& outHitInfo,
-  IMaterial** ppOutLastMaterial)
+	const Vec3& vWorldRaySrc,
+	const Vec3& vWorldRayDir,
+	IRenderNode* pRenderNode,
+	IEntity* pEntity,
+	IStatObj* pStatObj,
+	const Matrix34A& WorldTM,
+	SRayHitInfo& outHitInfo,
+	IMaterial** ppOutLastMaterial)
 {
 	SRayHitInfo hitInfo;
 	IMaterial* pMaterial = nullptr;
@@ -519,12 +539,12 @@ bool CSurfaceInfoPicker::RayIntersection(
 }
 
 bool CSurfaceInfoPicker::RayIntersection(
-  const Vec3& vWorldRaySrc,
-  const Vec3& vWorldRayDir,
-  IStatObj* pStatObj,
-  IMaterial** ppOutLastMaterial,
-  const Matrix34A& worldTM,
-  SRayHitInfo& outHitInfo)
+	const Vec3& vWorldRaySrc,
+	const Vec3& vWorldRayDir,
+	IStatObj* pStatObj,
+	IMaterial** ppOutLastMaterial,
+	const Matrix34A& worldTM,
+	SRayHitInfo& outHitInfo)
 {
 	if (pStatObj == NULL)
 		return false;
@@ -574,12 +594,12 @@ bool CSurfaceInfoPicker::RayIntersection(
 
 #if defined(USE_GEOM_CACHES)
 bool CSurfaceInfoPicker::RayIntersection(
-  const Vec3& vWorldRaySrc,
-  const Vec3& vWorldRayDir,
-  IGeomCacheRenderNode* pGeomCacheRenderNode,
-  IMaterial** ppOutLastMaterial,
-  const Matrix34A& worldTM,
-  SRayHitInfo& outHitInfo)
+	const Vec3& vWorldRaySrc,
+	const Vec3& vWorldRayDir,
+	IGeomCacheRenderNode* pGeomCacheRenderNode,
+	IMaterial** ppOutLastMaterial,
+	const Matrix34A& worldTM,
+	SRayHitInfo& outHitInfo)
 {
 	if (!pGeomCacheRenderNode)
 		return false;
@@ -615,12 +635,12 @@ bool CSurfaceInfoPicker::RayIntersection(
 #endif
 
 bool CSurfaceInfoPicker::RayIntersection(
-  const Vec3& vWorldRaySrc,
-  const Vec3& vWorldRayDir,
-  IRenderNode* pRenderNode,
-  IMaterial** pOutLastMaterial,
-  const Matrix34A& WorldTM,
-  SRayHitInfo& outHitInfo)
+	const Vec3& vWorldRaySrc,
+	const Vec3& vWorldRayDir,
+	IRenderNode* pRenderNode,
+	IMaterial** pOutLastMaterial,
+	const Matrix34A& WorldTM,
+	SRayHitInfo& outHitInfo)
 {
 	if (pRenderNode == NULL)
 		return false;
@@ -661,12 +681,12 @@ bool CSurfaceInfoPicker::RayIntersection(
 }
 
 bool CSurfaceInfoPicker::RayIntersection(
-  const Vec3& vWorldRaySrc,
-  const Vec3& vWorldRayDir,
-  IEntity* pEntity,
-  IMaterial** pOutLastMaterial,
-  const Matrix34A& WorldTM,
-  SRayHitInfo& outHitInfo)
+	const Vec3& vWorldRaySrc,
+	const Vec3& vWorldRayDir,
+	IEntity* pEntity,
+	IMaterial** pOutLastMaterial,
+	const Matrix34A& WorldTM,
+	SRayHitInfo& outHitInfo)
 {
 	if (pEntity == NULL)
 		return false;
@@ -679,7 +699,7 @@ bool CSurfaceInfoPicker::RayIntersection(
 	int nSlotCount = pEntity->GetSlotCount();
 	int nCurSlot = 0;
 
-	for (int i = 0; i < 2; )
+	for (int i = 0; i < 2;)
 	{
 		if (i == 0)
 		{
@@ -761,11 +781,11 @@ bool CSurfaceInfoPicker::RayIntersection(
 }
 
 bool CSurfaceInfoPicker::RayWorldToLocal(
-  const Matrix34A& WorldTM,
-  const Vec3& vWorldRaySrc,
-  const Vec3& vWorldRayDir,
-  Vec3& outRaySrc,
-  Vec3& outRayDir)
+	const Matrix34A& WorldTM,
+	const Vec3& vWorldRaySrc,
+	const Vec3& vWorldRayDir,
+	Vec3& outRaySrc,
+	Vec3& outRayDir)
 {
 	if (!WorldTM.IsValid())
 		return false;

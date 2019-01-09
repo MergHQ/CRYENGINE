@@ -243,8 +243,25 @@ void CSelectionGroup::Move(const Vec3& offset, int moveFlags, const CPoint& poin
 
 	if ((moveFlags & eMS_FollowGeometry) && bValidFollowGeometryMode)
 	{
+		//If that object has children they need to be excluded from the search as we don't want the raycast to collide with them
 		for (int i = 0; i < GetFilteredCount(); ++i)
-			excludeObjects.Add(GetFilteredObject(i));
+		{
+			CBaseObject* object = GetFilteredObject(i);
+			//exclude the object itself
+			excludeObjects.Add(object);
+
+			//and then all the children
+			if (object->HasChildren())
+			{
+				TBaseObjects children;
+				object->GetAllChildren(children);
+
+				for (auto child : children)
+				{
+					excludeObjects.Add(child.get());
+				}
+			}
+		}
 	}
 
 	for (int i = 0; i < GetFilteredCount(); i++)
@@ -285,7 +302,6 @@ void CSelectionGroup::Move(const Vec3& offset, int moveFlags, const CPoint& poin
 
 			CSurfaceInfoPicker surfacePicker;
 			bValidFollowGeometryMode = surfacePicker.Pick(screenSpacePos, pickedInfo, &excludeObjects);
-
 			obj->SetWorldPos(pickedInfo.vHitPos);
 
 			if (moveFlags & eMS_SnapToNormal)
