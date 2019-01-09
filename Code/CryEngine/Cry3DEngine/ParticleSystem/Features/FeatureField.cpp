@@ -89,15 +89,10 @@ class CFeatureFieldSize : public CParticleFeature
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	virtual CParticleFeature* ResolveDependency(CParticleComponent* pComponent) override
-	{
-		pComponent->ComponentParams().m_maxParticleSize = m_size.GetValueRange().end;
-		return this;
-	}
-
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		m_size.AddToComponent(pComponent, this, EPDT_Size);
+		pParams->m_maxParticleSize = m_size.GetValueRange().end;
 
 		if (auto gpuInt = MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_FieldSize))
 		{

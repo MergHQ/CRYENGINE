@@ -8,6 +8,9 @@
 namespace pfx2
 {
 
+MakeDataType(ESDT_SpatialExtents, Vec4, EDD_PerInstance);
+MakeDataType(ESDT_EmitOffset, Vec3, EDD_PerInstance);
+
 //////////////////////////////////////////////////////////////////////////
 // CFeatureLocationOffset
 
@@ -18,8 +21,7 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->GetSpatialExtents.add(this);
-		pComponent->GetEmitOffsets.add(this);
+		pComponent->GetDynamicData.add(this);
 		pComponent->InitParticles.add(this);
 		pComponent->UpdateGPUParams.add(this);
 		m_scale.AddToComponent(pComponent, this);
@@ -32,28 +34,27 @@ public:
 		ar(m_scale, "Scale", "Scale");
 	}
 
-	virtual void GetSpatialExtents(const CParticleComponentRuntime& runtime, TConstArray<float> scales, TVarArray<float> extents) override
+	virtual void GetDynamicData(const CParticleComponentRuntime& runtime, EParticleDataType type, void* data, EDataDomain domain, SUpdateRange range) override
 	{
-		if (!m_scale.HasModifiers())
-			return;
-
-		SInstanceUpdateBuffer<float> sizes(runtime, m_scale);
-		for (uint i = 0; i < runtime.GetNumInstances(); ++i)
+		if (auto extents = ESDT_SpatialExtents.Cast(type, data, range))
 		{
-			float e = abs(sizes[i]) * sizes.Range().Length();
-			e = e * scales[i] + 1.0f;
-			extents[i] += e;
+			if (!m_scale.HasModifiers())
+				return;
+			SInstanceUpdateBuffer<float> sizes(runtime, m_scale, domain);
+			for (auto i : range)
+			{
+				float e = abs(sizes[i].Length());
+				extents[i] = Vec4(1, e, 0, 0);
+			}
 		}
-	}
-
-	virtual void GetEmitOffsets(const CParticleComponentRuntime& runtime, TVarArray<Vec3> offsets, uint firstInstance) override
-	{
-		SInstanceUpdateBuffer<float> sizes(runtime, m_scale);
-		for (uint i = 0; i < offsets.size(); ++i)
+		else if (auto offsets = ESDT_EmitOffset.Cast(type, data, range))
 		{
-			uint idx = firstInstance + i;
-			const float scale = sizes[idx] * (sizes.Range().start + sizes.Range().end) * 0.5f;
-			offsets[i] += m_offset * scale;
+			SInstanceUpdateBuffer<float> sizes(runtime, m_scale, domain);
+			for (auto i : range)
+			{
+				const float scale = (sizes[i].start + sizes[i].end) * 0.5f;
+				offsets[i] += m_offset * scale;
+			}
 		}
 	}
 
@@ -107,7 +108,7 @@ public:
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		pComponent->InitParticles.add(this);
-		pComponent->GetSpatialExtents.add(this);
+		pComponent->GetDynamicData.add(this);
 		pComponent->UpdateGPUParams.add(this);
 		m_scale.AddToComponent(pComponent, this);
 	}
@@ -120,15 +121,21 @@ public:
 		m_distribution.Serialize(ar);
 	}
 
-	virtual void GetSpatialExtents(const CParticleComponentRuntime& runtime, TConstArray<float> scales, TVarArray<float> extents) override
+	virtual void GetDynamicData(const CParticleComponentRuntime& runtime, EParticleDataType type, void* data, EDataDomain domain, SUpdateRange range) override
 	{
-		SInstanceUpdateBuffer<float> sizes(runtime, m_scale);
-		float avg = (sizes.Range().start + sizes.Range().end) * 0.5f;
-		for (uint i = 0; i < runtime.GetNumInstances(); ++i)
+		if (auto extents = ESDT_SpatialExtents.Cast(type, data, range))
 		{
-			// Increase each dimension by 1 to include boundaries; works properly for boxes, rects, and lines
-			const float s = abs(scales[i] * sizes[i] * avg);
-			extents[i] += (m_box.x * s + 1.0f) * (m_box.y * s + 1.0f) * (m_box.z * s + 1.0f);
+			SInstanceUpdateBuffer<float> sizes(runtime, m_scale, domain);
+			for (auto i : range)
+			{
+				float sizeAvg = (sizes[i].start + sizes[i].end) * 0.5f * 2.0f;
+				Vec3 box = m_box * sizeAvg;
+				extents[i] += Vec4(1, 
+					box.x + box.y + box.z, 
+					box.x * box.y + box.y * box.z + box.z * box.x,
+					box.x * box.y * box.z
+				);
+			}
 		}
 	}
 
@@ -184,11 +191,10 @@ class CFeatureLocationSphere : public CParticleFeature
 {
 public:
 	CRY_PFX2_DECLARE_FEATURE
-
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		pComponent->InitParticles.add(this);
-		pComponent->GetSpatialExtents.add(this);
+		pComponent->GetDynamicData.add(this);
 		pComponent->UpdateGPUParams.add(this);
 		m_radius.AddToComponent(pComponent, this);
 		m_velocity.AddToComponent(pComponent, this);
@@ -228,16 +234,21 @@ public:
 		params.initFlags |= gpu_pfx2::eFeatureInitializationFlags_LocationSphere;
 	}
 
-	virtual void GetSpatialExtents(const CParticleComponentRuntime& runtime, TConstArray<float> scales, TVarArray<float> extents) override
+	virtual void GetDynamicData(const CParticleComponentRuntime& runtime, EParticleDataType type, void* data, EDataDomain domain, SUpdateRange range) override
 	{
-		SInstanceUpdateBuffer<float> sizes(runtime, m_radius);
-		for (uint i = 0; i < runtime.GetNumInstances(); ++i)
+		if (auto extents = ESDT_SpatialExtents.Cast(type, data, range))
 		{
-			// Increase each dimension by 1 to include sphere bounds; works properly for spheres and circles
-			const Vec3 axisMax = m_axisScale * abs(scales[i] * sizes[i] * sizes.Range().end) + Vec3(1.0f),
-			           axisMin = m_axisScale * abs(scales[i] * sizes[i] * sizes.Range().start);
-			const float v = (axisMax.x * axisMax.y * axisMax.z - axisMin.x * axisMin.y * axisMin.z) * (gf_PI * 4.0f / 3.0f);
-			extents[i] += v;
+			SInstanceUpdateBuffer<float> sizes(runtime, m_radius, domain);
+			for (auto i : range)
+			{
+				const Vec3 axis1 = m_axisScale * abs(sizes[i].end),
+						   axis0 = m_axisScale * abs(sizes[i].start);
+				extents[i] += Vec4(1,
+					(axis1.x + axis1.y + axis1.z) * 0.5f,
+					axis1.x * axis1.y + axis1.y * axis1.z + axis1.z * axis1.x,
+					axis1.x * axis1.y * axis1.z - axis0.x * axis0.y * axis0.z
+				) * (gf_PI * 4.0f / 3.0f);
+			}
 		}
 	}
 
@@ -258,13 +269,13 @@ private:
 		for (auto particleId : runtime.SpawnedRange())
 		{
 			const Vec3 sphere = distributor();
-			const Vec3 sphereDist = sphere.CompMul(m_axisScale);
+			const Vec3 distributor = sphere.CompMul(m_axisScale);
 
 			if (UseRadius)
 			{
 				const float radius = radii.SafeLoad(particleId);
 				const Vec3 wPosition0 = positions.Load(particleId);
-				const Vec3 wPosition1 = wPosition0 + sphereDist * radius;
+				const Vec3 wPosition1 = wPosition0 + distributor * radius;
 				positions.Store(particleId, wPosition1);
 			}
 
@@ -272,7 +283,7 @@ private:
 			{
 				const float velocityMult = velocityMults.SafeLoad(particleId);
 				const Vec3 wVelocity0 = velocities.Load(particleId);
-				const Vec3 wVelocity1 = wVelocity0 + sphereDist * velocityMult;
+				const Vec3 wVelocity1 = wVelocity0 + distributor * velocityMult;
 				velocities.Store(particleId, wVelocity1);
 			}
 		}
@@ -294,11 +305,10 @@ class CFeatureLocationCircle : public CParticleFeature
 {
 public:
 	CRY_PFX2_DECLARE_FEATURE
-
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		pComponent->InitParticles.add(this);
-		pComponent->GetSpatialExtents.add(this);
+		pComponent->GetDynamicData.add(this);
 		pComponent->UpdateGPUParams.add(this);
 		m_radius.AddToComponent(pComponent, this);
 		m_velocity.AddToComponent(pComponent, this);
@@ -340,15 +350,21 @@ public:
 		params.initFlags |= gpu_pfx2::eFeatureInitializationFlags_LocationCircle;
 	}
 
-	virtual void GetSpatialExtents(const CParticleComponentRuntime& runtime, TConstArray<float> scales, TVarArray<float> extents) override
+	virtual void GetDynamicData(const CParticleComponentRuntime& runtime, EParticleDataType type, void* data, EDataDomain domain, SUpdateRange range) override
 	{
-		SInstanceUpdateBuffer<float> sizes(runtime, m_radius);
-		for (uint i = 0; i < runtime.GetNumInstances(); ++i)
+		if (auto extents = ESDT_SpatialExtents.Cast(type, data, range))
 		{
-			const Vec2 axisMax = m_axisScale * abs(scales[i] * sizes[i] * sizes.Range().end) + Vec2(1.0f),
-			           axisMin = m_axisScale * abs(scales[i] * sizes[i] * sizes.Range().start);
-			const float v = (axisMax.x * axisMax.y - axisMin.x * axisMin.y) * gf_PI;
-			extents[i] += v;
+			SInstanceUpdateBuffer<float> sizes(runtime, m_radius, domain);
+			for (auto i : range)
+			{
+				const Vec2 axis1 = m_axisScale * abs(sizes[i].end),
+				           axis0 = m_axisScale * abs(sizes[i].start);
+				extents[i] += Vec4(1,
+					axis1.x + axis1.y,
+					axis1.x * axis1.y - axis0.x * axis0.y,
+					0
+				) * gf_PI;
+			}
 		}
 	}
 
@@ -433,7 +449,7 @@ public:
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		pComponent->MainPreUpdate.add(this);
-		pComponent->GetSpatialExtents.add(this);
+		pComponent->GetDynamicData.add(this);
 		m_offset.AddToComponent(pComponent, this);
 		m_velocity.AddToComponent(pComponent, this);
 		if (m_orientToNormal)
@@ -470,39 +486,43 @@ public:
 		}
 	}
 
-	virtual void GetSpatialExtents(const CParticleComponentRuntime& runtime, TConstArray<float> scales, TVarArray<float> extents) override
+	virtual void GetDynamicData(const CParticleComponentRuntime& runtime, EParticleDataType type, void* data, EDataDomain domain, SUpdateRange range) override
 	{
-		if (!runtime.GetEmitter())
-			return;
-
-		GeomRef emitterGeometry = runtime.GetEmitter()->GetEmitterGeometry();
-		CParticleComponent* pParentComponent = runtime.GetComponent()->GetParentComponent();
-		if (pParentComponent)
+		if (auto extents = ESDT_SpatialExtents.Cast(type, data, range))
 		{
-			if (IMeshObj* pMesh = pParentComponent->GetComponentParams().m_pMesh)
-				emitterGeometry.Set(pMesh);
-		}
-		auto parentMeshes = runtime.GetParentContainer().IStream(EPDT_MeshGeometry, +emitterGeometry.m_pMeshObj);
-		auto parentPhysics = runtime.GetParentContainer().IStream(EPDT_PhysicalEntity);
+			if (!runtime.GetEmitter())
+				return;
 
-		uint numInstances = runtime.GetNumInstances();
-		for (uint i = 0; i < numInstances; ++i)
-		{
+			GeomRef emitterGeometry = runtime.GetEmitter()->GetEmitterGeometry();
+			CParticleComponent* pParentComponent = runtime.GetComponent()->GetParentComponent();
 			if (pParentComponent)
 			{
-				TParticleId parentId = runtime.GetInstance(i).m_parentId;
-				if (IMeshObj* mesh = parentMeshes.Load(parentId))
-					emitterGeometry.Set(mesh);
-				if (m_source == EGeometrySource::Physics)
-				{
-					if (IPhysicalEntity* pPhysics = parentPhysics.Load(parentId))
-						emitterGeometry.Set(pPhysics);
-				}
+				if (IMeshObj* pMesh = pParentComponent->GetComponentParams().m_pMesh)
+					emitterGeometry.Set(pMesh);
 			}
-			float extent = emitterGeometry.GetExtent((EGeomType)m_source, (EGeomForm)m_location);
-			for (int dim = (int)m_location; dim > 0; --dim)
-				extent *= scales[i];
-			extents[i] += extent;
+			auto parentMeshes = runtime.GetParentContainer().IStream(EPDT_MeshGeometry, +emitterGeometry.m_pMeshObj);
+			auto parentPhysics = runtime.GetParentContainer().IStream(EPDT_PhysicalEntity);
+
+			for (auto i : range)
+			{
+				if (pParentComponent)
+				{
+					if (i < runtime.GetNumInstances())
+					{
+						TParticleId parentId = runtime.GetInstance(i).m_parentId;
+						if (IMeshObj* mesh = parentMeshes.Load(parentId))
+							emitterGeometry.Set(mesh);
+						if (m_source == EGeometrySource::Physics)
+						{
+							if (IPhysicalEntity* pPhysics = parentPhysics.Load(parentId))
+								emitterGeometry.Set(pPhysics);
+						}
+					}
+				}
+				float extent = emitterGeometry.GetExtent((EGeomType)m_source, (EGeomForm)m_location);
+				int dim = (int)m_location;
+				extents[i][dim] += extent;
+			}
 		}
 	}
 
@@ -804,7 +824,7 @@ public:
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		pComponent->InitParticles.add(this);
-		pComponent->GetSpatialExtents.add(this);
+		pComponent->GetDynamicData.add(this);
 		m_source.AddToComponent(pComponent);
 		m_destination.AddToComponent(pComponent);
 	}
@@ -850,15 +870,22 @@ public:
 		}
 	}
 
-	virtual void GetSpatialExtents(const CParticleComponentRuntime& runtime, TConstArray<float> scales, TVarArray<float> extents) override
+	virtual void GetDynamicData(const CParticleComponentRuntime& runtime, EParticleDataType type, void* data, EDataDomain domain, SUpdateRange range) override
 	{
-		uint numInstances = runtime.GetNumInstances();
-		for (uint i = 0; i < numInstances; ++i)
+		if (auto extents = ESDT_SpatialExtents.Cast(type, data, range))
 		{
-			TParticleId parentId = runtime.GetInstance(i).m_parentId;
-			const Vec3 wSource = m_source.GetTarget(runtime, parentId, true);
-			const Vec3 wDestination = m_destination.GetTarget(runtime, parentId, true);
-			extents[i] += (wSource - wDestination).GetLengthFast() * scales[i];
+			if (domain == EDD_PerInstance)
+			{
+				for (auto i : range)
+				{
+					TParticleId parentId = runtime.GetInstance(i).m_parentId;
+					const Vec3 wSource = m_source.GetTarget(runtime, parentId, true);
+					const Vec3 wDestination = m_destination.GetTarget(runtime, parentId, true);
+					extents[i] += Vec4(1,
+						(wSource - wDestination).GetLengthFast(),
+						0, 0);
+				}
+			}
 		}
 	}
 
@@ -1006,7 +1033,7 @@ public:
 	{
 		pComponent->OnPreRun.add(this);
 		pComponent->CullSubInstances.add(this);
-		pComponent->GetSpatialExtents.add(this);
+		pComponent->GetDynamicData.add(this);
 		pComponent->KillParticles.add(this);
 		pComponent->SpawnParticles.add(this);
 		pComponent->InitParticles.add(this);
@@ -1068,18 +1095,24 @@ public:
 			instances.resize(numAllowed);
 	}
 
-	virtual void GetSpatialExtents(const CParticleComponentRuntime& runtime, TConstArray<float> scales, TVarArray<float> extents) override
+	virtual void GetDynamicData(const CParticleComponentRuntime& runtime, EParticleDataType type, void* data, EDataDomain domain, SUpdateRange range) override
 	{
-		UpdateCameraData(runtime);
-
-		const uint numInstances = runtime.GetNumInstances();
-		for (uint i = 0; i < numInstances; ++i)
+		if (auto extents = ESDT_SpatialExtents.Cast(type, data, range))
 		{
-			float scale = m_camData.maxDistance * scales[i];
-			const Vec3 boxUnit(m_camData.scrWidth.x, m_camData.scrWidth.y, 1.0f);
-			float capHeight = 1.0f - boxUnit.GetInvLength();
-			float extent = (capHeight * scale) * sqr(scale + 1.0f) * 4.0f / 3.0f;
-			extents[i] += extent;
+			UpdateCameraData(runtime);
+
+			for (auto i : range)
+			{
+				float scale = m_camData.maxDistance;
+				const Vec3 boxUnit(m_camData.scrWidth.x, m_camData.scrWidth.y, 1.0f);
+				float capHeight = 1.0f - boxUnit.GetInvLength();
+				float extent1 = capHeight * scale * 4.0f / 3.0f;
+				extents[i] += Vec4(1,
+					extent1,
+					extent1 * scale * 2.0f,
+					extent1 * scale * scale
+				);
+			}
 		}
 	}
 

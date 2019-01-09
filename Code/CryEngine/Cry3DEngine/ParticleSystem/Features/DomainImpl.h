@@ -224,18 +224,24 @@ struct SpawnId
 	{
 		Sampler(const CParticleComponentRuntime& runtime, uint modulus)
 			: Source(runtime)
-			, m_spawnIds(Source::Container(runtime).IStream(EPDT_SpawnId))
 			, m_scale(convert<floatv>(rcp(float(modulus))))
-		{}
+		{
+			uint32 idOffset = Source::Container(runtime).GetSpawnIdOffset();
+			#ifdef CRY_PFX2_USE_SSE
+				m_idOffsets = convert<uint32v>(idOffset) + convert<uint32v>(0, 1, 2, 3);
+			#else
+				m_idOffsets = idOffset;
+			#endif
+		}
 		ILINE floatv Sample(TParticleGroupId particleId) const
 		{
-			const TParticleIdv index = m_spawnIds.SafeLoad(Source::Id(particleId));
+			const TParticleIdv index = convert<uint32v>(+Source::Id(particleId)) + m_idOffsets;
 			const floatv number = convert<floatv>(index) * m_scale;
 			return frac(number);
 		}
 	private:
-		IPidStream m_spawnIds;
-		floatv     m_scale;
+		uint32v  m_idOffsets;
+		floatv m_scale;
 	};
 };
 

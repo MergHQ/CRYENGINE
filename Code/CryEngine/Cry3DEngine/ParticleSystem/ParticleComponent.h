@@ -128,16 +128,12 @@ struct SComponentParams: STimingParams
 	bool                      m_positionsPreInit     = false;
 	size_t                    m_instanceDataStride   = 0;
 	STextureAnimation         m_textureAnimation;
-	uint32                    m_maxParticlesBurst    = 0;
-	uint32                    m_maxParticlesPerFrame = 0;
-	float                     m_maxParticleRate      = 0;
 	float                     m_scaleParticleCount   = 1;
 	float                     m_maxParticleSize      = 0;
 	float                     m_scaleParticleSize    = 1;
 	SVisibilityParams         m_visibility;
 
 	void  Serialize(Serialization::IArchive& ar);
-	void GetMaxParticleCounts(int& total, int& perFrame, float minFPS = 4.0f, float maxFPS = 120.0f) const;
 };
 
 template<typename T> struct TDataOffset
@@ -208,8 +204,6 @@ public:
 	CParticleComponent*     GetParentComponent() const                          { return m_parent; }
 	const TComponents&      GetChildComponents() const                          { return m_children; }
 	void                    ClearChildren()                                     { m_children.resize(0); }
-
-	void                    GetMaxParticleCounts(int& total, int& perFrame, float minFPS = 4.0f, float maxFPS = 120.0f) const;
 
 	bool                    CanMakeRuntime(CParticleEmitter* pEmitter) const;
 

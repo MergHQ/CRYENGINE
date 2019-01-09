@@ -120,7 +120,7 @@ public:
 	uint                      GetParticleSpec() const;
 
 	void                      SetChanged();
-	bool                      IsStable() const             { return m_time > m_timeStable && !m_realBounds.IsReset(); }
+	bool                      IsStable() const             { return m_time > m_timeStable && !m_bounds.IsReset(); }
 	bool                      IsIndependent() const        { return Unique(); }
 	bool                      HasParticles() const;
 	bool                      HasBounds() const            { return m_bounds.GetVolume() > 0.0f; }
@@ -128,7 +128,7 @@ public:
 	bool                      NeedsUpdate() const          { return ThreadMode() < 3 || !IsStable() || WasRenderedLastFrame(); }
 
 private:
-	void     UpdateBounds(bool allowShrink);
+	void     UpdateBounds();
 	void     UpdateRuntimes();
 	void     UpdateFromEntity();
 	IEntity* GetEmitGeometryEntity() const;

@@ -92,16 +92,6 @@ void SComponentParams::Serialize(Serialization::IArchive& ar)
 	ar(string(buffer), "", "!Bytes per Particle:");
 }
 
-void SComponentParams::GetMaxParticleCounts(int& total, int& perFrame, float minFPS, float maxFPS) const
-{
-	total = m_maxParticlesBurst;
-	const float rate = m_maxParticleRate + m_maxParticlesPerFrame * maxFPS;
-	const float extendedLife = m_maxParticleLife + rcp(minFPS); // Particles stay 1 frame after death
-	if (rate > 0.0f && std::isfinite(extendedLife))
-		total += int_ceil(rate * extendedLife);
-	perFrame = int(m_maxParticlesBurst + m_maxParticlesPerFrame) + int_ceil(m_maxParticleRate / minFPS);
-}
-
 //////////////////////////////////////////////////////////////////////////
 // CParticleComponent
 
@@ -244,18 +234,6 @@ uint CParticleComponent::GetIndex(bool fromParent /*= false*/)
 	return children.size();
 }
 
-void CParticleComponent::GetMaxParticleCounts(int& total, int& perFrame, float minFPS, float maxFPS) const
-{
- 	m_params.GetMaxParticleCounts(total, perFrame, minFPS, maxFPS);
-	if (m_parent)
-	{
-		int totalParent, perFrameParent;
- 		m_parent->GetMaxParticleCounts(totalParent, perFrameParent, minFPS, maxFPS);
-		total *= totalParent;
-		perFrame *= totalParent;
-	}
-}
-
 const pfx2::CParticleComponent::TComponents& CParticleComponent::GetParentChildren() const
 {
 	return m_parent ? m_parent->m_children : m_pEffect->GetTopComponents();
@@ -268,6 +246,10 @@ pfx2::CParticleComponent::TComponents& CParticleComponent::GetParentChildren()
 
 void CParticleComponent::UpdateTimings()
 {
+	m_params.m_maxTotalLIfe += m_params.m_maxParticleLife;
+	m_params.m_equilibriumTime += FiniteOr(m_params.m_maxParticleLife, 0.0f);
+	m_params.m_stableTime += FiniteOr(m_params.m_maxParticleLife, 0.0f);
+
 	// Adjust parent lifetimes to include child lifetimes
 	if (m_children.size())
 	{
@@ -381,15 +363,21 @@ void CParticleComponent::Compile()
 	{
 		if (!(featureMask & b))
 		{
-			if (EFeatureType(b) != EFT_Child || m_parent)
+			if (EFeatureType(b) == EFT_Child && !m_parent)
+				continue;
+			if (EFeatureType(b) == EFT_Render)
 			{
-				if (auto* params = GetPSystem()->GetDefaultFeatureParam(EFeatureType(b)))
+				if (featureMask & EFT_Effect)
+					continue;
+				if (m_children.size())
+					continue;
+			}
+			if (auto* params = GetPSystem()->GetDefaultFeatureParam(EFeatureType(b)))
+			{
+				if (auto* feature = static_cast<CParticleFeature*>(params->m_pFactory()))
 				{
-					if (auto* feature = static_cast<CParticleFeature*>(params->m_pFactory()))
-					{
-						m_defaultFeatures.push_back(feature);
-						feature->AddToComponent(this, &m_params);
-					}
+					m_defaultFeatures.push_back(feature);
+					feature->AddToComponent(this, &m_params);
 				}
 			}
 		}
@@ -398,9 +386,6 @@ void CParticleComponent::Compile()
 
 void CParticleComponent::FinalizeCompile()
 {
-	GetMaxParticleCounts(m_GPUParams.maxParticles, m_GPUParams.maxNewBorns);
-	m_GPUParams.maxParticles += m_GPUParams.maxParticles >> 3;
-	m_GPUParams.maxNewBorns  += m_GPUParams.maxNewBorns  >> 3;
 	MakeMaterial();
 	m_dirty = false;
 }

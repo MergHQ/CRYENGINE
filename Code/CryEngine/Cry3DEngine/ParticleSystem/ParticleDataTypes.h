@@ -252,6 +252,27 @@ struct TDataType: EParticleDataType
 		CRY_ASSERT(this->info().domain & EDD_HasUpdate);
 		return TDataType(this->value() + Dim);
 	}
+
+	T* Cast(EParticleDataType typeIn, void* ptr) const
+	{
+		if (typeIn == *this)
+			return (T*)ptr;
+		else
+			return nullptr;
+	}
+
+	struct TVarCheckArray: TVarArray<T>
+	{
+		TVarCheckArray(TVarArray<T> in) : TVarArray<T>(in) {}
+		operator uint() const { return this->size(); }
+	};
+	TVarCheckArray Cast(EParticleDataType typeIn, void* ptr, SUpdateRange range) const
+	{
+		if (typeIn == *this)
+			return TVarArray<T>((T*)ptr - range.m_begin, range.size());
+		else
+			return TVarArray<T>();
+	}
 };
 
 

@@ -208,10 +208,11 @@ namespace Bounds
 	float ShrinkThreshold = 0.125f;
 }
 
-void CParticleEmitter::UpdateBounds(bool allowShrink)
+void CParticleEmitter::UpdateBounds()
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
+	const bool allowShrink = ThreadMode() < 3 || !IsStable();
 	if (!m_registered || (allowShrink && m_realBounds.GetVolume() <= m_bounds.GetVolume() * Bounds::ShrinkThreshold))
 	{
 		m_boundsChanged = true;
@@ -233,6 +234,7 @@ void CParticleEmitter::UpdateBounds(bool allowShrink)
 			m_nextBounds = AABB(center - extent, center + extent);
 		}
 	}
+	m_realBounds.Reset();
 }
 
 void CParticleEmitter::AddBounds(const AABB& bb)
@@ -259,7 +261,6 @@ bool CParticleEmitter::UpdateParticles()
 	auto& stats = GetPSystem()->GetThreadData().statsCPU;
 	stats.emitters.updated ++;
 
-	m_realBounds = AABB::RESET;
 	m_alive = false;
 	for (auto& pRuntime : m_componentRuntimes)
 	{
@@ -270,8 +271,7 @@ bool CParticleEmitter::UpdateParticles()
 
 	PostUpdate();
 
-	const bool allowShrink = !m_pEffect->RenderDeferred.size() || !WasRenderedLastFrame();
-	UpdateBounds(allowShrink);
+	UpdateBounds();
 	m_timeUpdated = m_time;
 	return true;
 }
@@ -300,8 +300,6 @@ void CParticleEmitter::RenderDeferred(const SRenderContext& renderContext)
 			pComponent->RenderDeferred(*pRuntime, renderContext);
 		}
 	}
-
-	UpdateBounds(true);
 }
 
 void CParticleEmitter::DebugRender(const SRenderingPassInfo& passInfo) const
@@ -473,7 +471,8 @@ void CParticleEmitter::SetChanged()
 	if (m_pEffect)
 	{
 		const auto& timings = m_pEffect->GetTimings();
-		m_timeStable = max(timings.m_equilibriumTime, m_time + timings.m_stableTime);
+		const float frameTime = gEnv->pTimer->GetFrameTime() * GetTimeScale();
+		m_timeStable = max(timings.m_equilibriumTime, m_time + timings.m_stableTime) + frameTime;
 	}
 }
 

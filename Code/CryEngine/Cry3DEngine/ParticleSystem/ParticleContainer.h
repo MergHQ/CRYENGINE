@@ -59,7 +59,6 @@ public:
 	uint32                            GetRealNumParticles() const     { return m_lastId + HasNewBorns() * GetNumSpawnedParticles(); }
 	uint32                            GetMaxParticles() const         { return m_capacity; }
 	uint32                            GetNumSpawnedParticles() const  { return m_lastSpawnId - m_firstSpawnId; }
-	uint32                            GetTotalSpawnedParticles()      { return m_nextSpawnId; }
 	bool                              HasNewBorns() const             { return m_lastSpawnId > m_lastId; }
 	bool                              IsNewBorn(TParticleId id) const { return id >= m_firstSpawnId && id < m_lastSpawnId; }
 	TParticleId                       GetRealId(TParticleId pId) const;
@@ -67,6 +66,7 @@ public:
 	SUpdateRange                      GetSpawnedRange() const         { return SUpdateRange(m_firstSpawnId, m_lastSpawnId); }
 	SUpdateRange                      GetNonSpawnedRange() const      { CRY_PFX2_ASSERT(!HasNewBorns()); return SUpdateRange(0, m_firstSpawnId); }
 	uint32                            GetNextSpawnId() const          { return m_nextSpawnId; }
+	uint32                            GetSpawnIdOffset() const        { return m_nextSpawnId - m_lastId; }
 
 	void                              BeginAddParticles();
 	void                              AddParticles(uint count);

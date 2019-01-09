@@ -162,8 +162,6 @@ void CDomain::AddToParam(CParticleComponent* pComponent)
 	{
 		if (m_domain == EDomain::SpawnFraction)
 			pSourceComponent->AddParticleData(EPDT_SpawnFraction);
-		else if (m_domain == EDomain::SpawnId)
-			pSourceComponent->AddParticleData(EPDT_SpawnId);
 		else if (m_domain == EDomain::Speed)
 			pSourceComponent->AddParticleData(EPVF_Velocity);
 		else if (m_domain == EDomain::Field)
