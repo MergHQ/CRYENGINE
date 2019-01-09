@@ -26,7 +26,8 @@ private:
 	void         ReloadFromTemplate();
 	void         BeforeSerialization(Serialization::IArchive& ar);
 	void         AfterSerialization(Serialization::IArchive& ar);
-	void         PushUndo();
+	void         OnBeginUndo();
+	void         OnEndUndo(bool acceptUndo);
 
 	QPropertyTree* m_pPropertyTree;
 	CVarBlockPtr   m_varBlock;

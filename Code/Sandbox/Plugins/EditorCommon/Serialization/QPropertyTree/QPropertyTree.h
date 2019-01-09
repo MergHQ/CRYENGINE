@@ -136,7 +136,11 @@ signals:
 
 	// Invoked before any change is going to occur and can be used to store current version
 	// of data for own undo stack.
-	void signalPushUndo();
+	void signalBeginUndo();
+
+	// Invoked when the current undo transaction is finished, this transaction can either be confirmed or canceled
+	void signalEndUndo(bool undoAccepted);
+
 	// Called when visual size of the tree changes, i.e. when things are deserialized and
 	// and when rows are expanded/collapsed.
 	void signalSizeChanged();
@@ -152,7 +156,8 @@ protected:
 	void onChanged() override                            { signalChanged(); }
 	void onContinuousChange() override                   { signalContinuousChange(); }
 	void onSelected() override                           { signalSelected(); }
-	void onPushUndo() override                           { signalPushUndo(); }
+	void onBeginUndo() override                          { signalBeginUndo(); }
+	void onEndUndo(bool undoAccepted) override           { signalEndUndo(undoAccepted); }
 
 	void copyRow(PropertyRow* row) override;
 	void pasteRow(PropertyRow* row) override;

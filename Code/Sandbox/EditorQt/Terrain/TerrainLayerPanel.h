@@ -48,7 +48,8 @@ protected:
 	void         AttachProperties();
 
 private:
-	void UndoPush();
+	void OnBeginUndo();
+	void OnEndUndo(bool acceptUndo);
 
 	STexturePainterSerializer m_layerSerializer;
 };

@@ -242,6 +242,9 @@ void PropertyRowCurve::editCurve(PropertyTree* tree)
 							pTree->setSelectedRow(pRow);
 						else if (pTree->selectedRow() == pRow)
 							pTree->setSelectedRow(nullptr);
+
+						//! This row is about to change, notify the model and record undo
+						pTree->model()->rowAboutToBeChanged(pRow);
 					}
 				}
 			}
@@ -265,9 +268,8 @@ void PropertyRowCurve::editCurve(PropertyTree* tree)
 					curve.ToSpline(pRow->curves()[rowCurve]);
 					if (auto* pTree = pRow->tree())
 					{
-						pTree->model()->rowAboutToBeChanged(pRow);
-						pTree->repaint();
-						pTree->apply(true);
+						//! This row has changed notify the model and accept undo
+						pTree->model()->rowChanged(pRow);
 					}
 				}
 			}

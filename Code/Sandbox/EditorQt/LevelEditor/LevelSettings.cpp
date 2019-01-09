@@ -260,7 +260,8 @@ CLevelSettingsEditor::CLevelSettingsEditor(QWidget* parent)
 
 	connect(m_pPropertyTree, &QPropertyTree::signalAboutToSerialize, this, &CLevelSettingsEditor::BeforeSerialization);
 	connect(m_pPropertyTree, &QPropertyTree::signalSerialized, this, &CLevelSettingsEditor::AfterSerialization);
-	connect(m_pPropertyTree, &QPropertyTree::signalPushUndo, this, &CLevelSettingsEditor::PushUndo);
+	connect(m_pPropertyTree, &QPropertyTree::signalBeginUndo, this, &CLevelSettingsEditor::OnBeginUndo);
+	connect(m_pPropertyTree, &QPropertyTree::signalEndUndo, this, &CLevelSettingsEditor::OnEndUndo);
 
 	m_pPropertyTree->setExpandLevels(2);
 	m_pPropertyTree->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
@@ -292,12 +293,24 @@ void CLevelSettingsEditor::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UI
 		ReloadFromTemplate();
 }
 
-void CLevelSettingsEditor::PushUndo()
+void CLevelSettingsEditor::OnBeginUndo()
+{
+	GetIEditor()->GetIUndoManager()->Begin();
+	GetIEditor()->GetIUndoManager()->RecordUndo(new Private_LevelSettings::CUndoLevelSettings());
+}
+
+void CLevelSettingsEditor::OnEndUndo(bool acceptUndo)
 {
 	QString name(m_pPropertyTree->selectedRow()->label());
 	name = "Modify " + name;
-	CUndo undo(name.toUtf8().constData());
-	CUndo::Record(new Private_LevelSettings::CUndoLevelSettings());
+	if (acceptUndo)
+	{
+		GetIEditor()->GetIUndoManager()->Accept(name.toStdString().c_str());
+	}
+	else
+	{
+		GetIEditor()->GetIUndoManager()->Cancel();
+	}
 }
 
 void CLevelSettingsEditor::BeforeSerialization(Serialization::IArchive& ar)
