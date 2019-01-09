@@ -601,6 +601,7 @@ void CPrefabManager::CloneAllFromPrefabs(std::vector<CPrefabObject*>& prefabs)
 	{
 		bool autoUpdatePrefab = pPrefab->GetAutoUpdatePrefab();
 		pPrefab->SetAutoUpdatePrefab(false);
+		pPrefab->StoreUndo("Set Auto Update");
 
 		auto childCount = pPrefab->GetChildCount();
 		std::vector<CBaseObject*> children;
@@ -615,10 +616,9 @@ void CPrefabManager::CloneAllFromPrefabs(std::vector<CPrefabObject*>& prefabs)
 
 		pObjectManager->CloneObjects(children, newChildren);
 
-		GetIEditor()->GetIUndoManager()->Suspend();
 		pPrefab->RemoveMembers(newChildren);
 		pPrefab->SetAutoUpdatePrefab(autoUpdatePrefab);
-		GetIEditor()->GetIUndoManager()->Resume();
+		pPrefab->StoreUndo("Set Auto Update");
 
 		objectsToSelect.insert(objectsToSelect.cend(), newChildren.begin(), newChildren.end());
 	}

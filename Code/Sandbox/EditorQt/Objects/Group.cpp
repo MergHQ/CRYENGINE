@@ -65,8 +65,6 @@ void ResetTransforms(CGroup* pParent, const std::vector<CBaseObject*>& children,
 void RestoreTransforms(std::vector<CBaseObject*>& children, bool shouldKeepPos, const std::vector<Matrix34>& worldTMs,
                        const std::vector<ITransformDelegate*>& transformDelegates)
 {
-	CScopedSuspendUndo suspendUndo;
-
 	if (shouldKeepPos)
 	{
 		// Keep old world space transformation.
@@ -203,6 +201,10 @@ protected:
 		CGroup::ForEachParentOf(objects, [pObjectManager, oldLayersGuids, shouldKeepTransform](CBaseObject* pParent, std::vector<CBaseObject*>& children)
 		{
 			CGroup* pGroup = static_cast<CGroup*>(pParent);
+
+			if (!pGroup)
+				return;
+
 			pGroup->RemoveMembers(children, shouldKeepTransform, true);
 
 			for (int i = 0; i < children.size(); ++i)
