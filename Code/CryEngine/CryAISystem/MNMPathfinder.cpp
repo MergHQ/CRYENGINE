@@ -739,7 +739,12 @@ void CMNMPathfinder::ConstructPathIfWayWasFound(MNM::PathfinderUtils::Processing
 	{
 		++processingContext.constructedPathsCount;
 
-		const CTimeValue timeBeforePathConstruction = gEnv->pTimer->GetAsyncCurTime();
+		CTimeValue timeBeforePathConstruction;
+		if (gAIEnv.CVars.MNMPathFinderDebug)
+		{
+			timeBeforePathConstruction = gEnv->pTimer->GetAsyncCurTime();
+		}
+
 		bPathConstructed = ConstructPathFromFoundWay(
 		  processingContext.queryResult,
 		  navMesh,
@@ -747,23 +752,34 @@ void CMNMPathfinder::ConstructPathIfWayWasFound(MNM::PathfinderUtils::Processing
 		  processingRequest.data.requestParams.startLocation,
 		  processingRequest.data.requestParams.endLocation,
 		  *&outputPath);
-		const CTimeValue timeAfterPathConstruction = gEnv->pTimer->GetAsyncCurTime();
-		
-		const float constructionPathTime = timeAfterPathConstruction.GetDifferenceInSeconds(timeBeforePathConstruction) * 1000.0f;
-		processingContext.totalTimeConstructPath += constructionPathTime;
-		processingContext.peakTimeConstructPath = max(processingContext.peakTimeConstructPath, constructionPathTime);
+
+		if (gAIEnv.CVars.MNMPathFinderDebug)
+		{
+			CTimeValue timeAfterPathConstruction = gEnv->pTimer->GetAsyncCurTime();
+			const float constructionPathTime = timeAfterPathConstruction.GetDifferenceInSeconds(timeBeforePathConstruction) * 1000.0f;
+			processingContext.totalTimeConstructPath += constructionPathTime;
+			processingContext.peakTimeConstructPath = max(processingContext.peakTimeConstructPath, constructionPathTime);
+		}
 
 		if (bPathConstructed)
 		{
 			if (processingRequest.data.requestParams.beautify && gAIEnv.CVars.BeautifyPath)
 			{
-				const CTimeValue timeBeforeBeautifyPath = gEnv->pTimer->GetAsyncCurTime();
+				CTimeValue timeBeforeBeautifyPath;
+				if (gAIEnv.CVars.MNMPathFinderDebug)
+				{
+					timeBeforeBeautifyPath = gEnv->pTimer->GetAsyncCurTime();
+				}
+
 				outputPath.PullPathOnNavigationMesh(navMesh, gAIEnv.CVars.PathStringPullingIterations, processingRequest.data.requestParams.pCustomPathCostComputer.get());
-				const CTimeValue timeAfterBeautifyPath = gEnv->pTimer->GetAsyncCurTime();
-				
-				const float beautifyPathTime = timeAfterBeautifyPath.GetDifferenceInSeconds(timeBeforeBeautifyPath) * 1000.0f;
-				processingContext.totalTimeBeautifyPath += beautifyPathTime;
-				processingContext.peakTimeBeautifyPath = max(processingContext.peakTimeBeautifyPath, beautifyPathTime);
+
+				if (gAIEnv.CVars.MNMPathFinderDebug)
+				{
+					CTimeValue timeAfterBeautifyPath = gEnv->pTimer->GetAsyncCurTime();
+					const float beautifyPathTime = timeAfterBeautifyPath.GetDifferenceInSeconds(timeBeforeBeautifyPath) * 1000.0f;
+					processingContext.totalTimeBeautifyPath += beautifyPathTime;
+					processingContext.peakTimeBeautifyPath = max(processingContext.peakTimeBeautifyPath, beautifyPathTime);
+				}
 			}
 		}
 	}
