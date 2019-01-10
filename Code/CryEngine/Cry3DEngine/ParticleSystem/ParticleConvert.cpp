@@ -993,6 +993,7 @@ void ConvertConfigSpec(IParticleComponent& component, ParticleParams& params)
 	ConvertValueString(spec, "Maximum", params.eConfigMax, ParticleParams::EConfigSpecBrief::VeryHigh);
 	ConvertValue(spec, "PC", params.Platforms.PCDX);
 	ConvertValue(spec, "XBoxOne", params.Platforms.XBoxOne);
+	ConvertValue(spec, "XBoxOneX", params.Platforms.XBoxOneX);
 	ConvertValue(spec, "PS4", params.Platforms.PS4);
 	AddFeature(component, spec);
 }

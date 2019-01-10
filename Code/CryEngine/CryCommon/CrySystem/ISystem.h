@@ -210,11 +210,12 @@ enum ESystemConfigSpec
 	CONFIG_HIGH_SPEC     = 3,
 	CONFIG_VERYHIGH_SPEC = 4,
 
-	CONFIG_DURANGO       = 5,
-	CONFIG_ORBIS         = 6,
+	CONFIG_DURANGO       = 5, //! Xbox One (Potato)
+	CONFIG_DURANGO_X     = 6, //! Xbox One X
+	CONFIG_ORBIS         = 7,
 
 	//! Specialized detail config setting.
-	CONFIG_DETAIL_SPEC = 7,
+	CONFIG_DETAIL_SPEC = 8,
 
 	END_CONFIG_SPEC_ENUM, //!< Must be the last value, used for error checking.
 };
