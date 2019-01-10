@@ -90,6 +90,7 @@ struct STreeRenderCache
 	std::vector<QRect>                descTrackBGRects;
 	std::vector<QRect>                compTrackBGRects;
 	std::vector<QRect>                seleTrackBGRects;
+	std::vector<QRect>                detaTrackBGRects;
 	std::vector<QRect>                disbTrackBGRects;
 
 	std::vector<QRenderText>          text;
@@ -110,6 +111,7 @@ struct STracksRenderCache
 	std::vector<QRect>                                   seleTrackBGRects;
 	std::vector<QRect>                                   disbTrackBGRects;
 	std::vector<QRect>                                   outsideTrackBGRects;
+	std::vector<QRect>                                   detachedTrackBGRects;
 
 	std::vector<QRect>                                   toggleRects;
 	std::vector<QLine>                                   bottomLines;
@@ -416,6 +418,7 @@ inline STreeRenderCache::STreeRenderCache()
 	descTrackBGRects.reserve(10);
 	compTrackBGRects.reserve(10);
 	seleTrackBGRects.reserve(10);
+	detaTrackBGRects.reserve(10);
 
 	text.reserve(10);
 	icons.reserve(10);
@@ -429,6 +432,7 @@ inline void STreeRenderCache::Clear()
 	descTrackBGRects.clear();
 	compTrackBGRects.clear();
 	seleTrackBGRects.clear();
+	detaTrackBGRects.clear();
 
 	text.clear();
 	icons.clear();
@@ -445,6 +449,7 @@ inline STracksRenderCache::STracksRenderCache()
 	seleTrackBGRects.reserve(10);
 	disbTrackBGRects.reserve(10);
 	outsideTrackBGRects.reserve(10);
+	detachedTrackBGRects.reserve(10);
 
 	toggleRects.reserve(10);
 	bottomLines.reserve(10);
@@ -466,6 +471,7 @@ inline void STracksRenderCache::Clear()
 	seleTrackBGRects.clear();
 	disbTrackBGRects.clear();
 	outsideTrackBGRects.clear();
+	detachedTrackBGRects.clear();
 
 	toggleRects.clear();
 	bottomLines.clear();

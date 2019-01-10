@@ -108,6 +108,7 @@ struct STimelineTrack : public _i_reference_target_t
 	bool              keySelectionChanged : 1;
 	bool              toggleDefaultState  : 1; // Default state for toggle tracks (on or off)
 	bool              disabled            : 1;
+	bool              detached            : 1;
 	int               height;
 	int               caps;
 	SAnimTime         startTime;
@@ -122,9 +123,10 @@ struct STimelineTrack : public _i_reference_target_t
 
 	STimelineTrack()
 		: expanded(true)
+		, deleted(false)
 		, modified(false)
 		, selected(false)
-		, deleted(false)
+		, detached(false)
 		, keySelectionChanged(false)
 		, toggleDefaultState(false)
 		, disabled(false)

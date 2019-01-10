@@ -200,8 +200,7 @@ private:
 	void AddNodeToDopeSheet(CTrackViewNode* pNode);
 	void RemoveNodeFromDopeSheet(CTrackViewNode* pNode);
 	void UpdateDopeSheetNode(CTrackViewNode* pNode);
-
-	void AssignDopeSheetName(STimelineTrack* pDopeSheetTrack, CTrackViewAnimNode* pAnimNode);
+	void NodeOwnerChanged(CTrackViewNode* pNode);
 
 	void OnSelectionChanged(bool bContinuous);
 	void OnCurveEditorSelectionChanged();
