@@ -288,6 +288,7 @@ STRUCT_INFO_BEGIN(ParticleParams::SPlatforms)
 	VAR_INFO(PCDX)
 	VAR_INFO(PS4)
 	VAR_INFO(XBoxOne)
+	VAR_INFO(XBoxOneX)
 STRUCT_INFO_END(ParticleParams::SPlatforms)
 
 // *INDENT-ON* - disable uncrustify's indenting, as it doesn't make sense here.

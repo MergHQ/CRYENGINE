@@ -2383,6 +2383,9 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 	case CONFIG_DURANGO:
 		AppendString(szFlagsEnd, "XboxOneSpec");
 		break;
+	case CONFIG_DURANGO_X:
+		AppendString(szFlagsEnd, "XboxOneXSpec");
+		break;
 	case CONFIG_ORBIS:
 		AppendString(szFlagsEnd, "PS4Spec");
 		break;

@@ -689,6 +689,7 @@ void ResourceParticleParams::ComputeEnvironmentFlags()
 	mConfigSpecMask |=
 	  Platforms.PS4 * BIT(CONFIG_ORBIS)
 	  + Platforms.XBoxOne * BIT(CONFIG_DURANGO)
+	  + Platforms.XBoxOneX * BIT(CONFIG_DURANGO_X)
 	;
 }
 
