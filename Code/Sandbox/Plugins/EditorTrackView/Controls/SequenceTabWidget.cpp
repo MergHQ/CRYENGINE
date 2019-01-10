@@ -1905,6 +1905,12 @@ void CTrackViewSequenceTabWidget::AddNodeToDopeSheet(CTrackViewNode* pNode)
 			pDopeSheetTrack->height = 22;
 			pDopeSheetTrack->caps |= STimelineTrack::CAP_DESCRIPTION_TRACK;
 
+			if (pAnimNode->GetType() == eAnimNodeType_Entity)
+			{
+				CTrackViewEntityNode* pEntityNode = static_cast<CTrackViewEntityNode*>(pAnimNode);
+				pDopeSheetTrack->detached = !pEntityNode->GetNodeEntity(false) ? true : false;
+			}
+
 			Serialization::SaveBinaryBuffer(pDopeSheetTrack->userSideLoad, userData);
 			InsertDopeSheetTrack(pParentTrack, pDopeSheetTrack, pNode);
 		}
@@ -2071,21 +2077,36 @@ void CTrackViewSequenceTabWidget::UpdateDopeSheetNode(CTrackViewNode* pNode)
 	}
 }
 
-void CTrackViewSequenceTabWidget::AssignDopeSheetName(STimelineTrack* pDopeSheetTrack, CTrackViewAnimNode* pAnimNode)
+void CTrackViewSequenceTabWidget::NodeOwnerChanged(CTrackViewNode* pNode)
 {
-	assert(pAnimNode);
-	assert(pDopeSheetTrack);
+	SSequenceData& sequenceData = m_idToSequenceDataMap[pNode->GetSequence()->GetGUID()];
+	auto it = sequenceData.m_uIdToTimelineTrackMap.find(pNode->GetGUID());
 
-	string namealias = pAnimNode->GetName();
+	if (it == sequenceData.m_uIdToTimelineTrackMap.end())
+	{
+		return;
+	}
 
-	CTrackViewEntityNode* pEntityNode = (pAnimNode->GetType() == eAnimNodeType_Entity) ? static_cast<CTrackViewEntityNode*>(pAnimNode) : nullptr;
+	STimelineTrack* pDopeSheetTrack = it->second;
+	if (pNode->GetNodeType() != eTVNT_AnimNode)
+	{
+		return;
+	}
+
+	CTrackViewAnimNode* pAnimNode = static_cast<CTrackViewAnimNode*>(pNode);
+	if (pAnimNode->GetType() != eAnimNodeType_Entity)
+	{
+		return;
+	}
+
+	CTrackViewEntityNode* pEntityNode = static_cast<CTrackViewEntityNode*>(pAnimNode);
 	if (!pEntityNode || pEntityNode->GetNodeEntity(false))
 	{
-		pDopeSheetTrack->name = namealias;
+		pDopeSheetTrack->detached = false;
 	}
 	else
 	{
-		pDopeSheetTrack->name = namealias + " (Detached)";		
+		pDopeSheetTrack->detached = true;
 	}
 }
 
@@ -2382,39 +2403,37 @@ void CTrackViewSequenceTabWidget::OnNodeChanged(CTrackViewNode* pNode, ENodeChan
 {
 	switch (type)
 	{
-	case ITrackViewSequenceListener::eNodeChangeType_Added:
-		AddNodeToDopeSheet(pNode);
-		break;
-	case ITrackViewSequenceListener::eNodeChangeType_Removed:
-		{
-			if (m_pCurrentSelectedNode == pNode)
+		case ITrackViewSequenceListener::eNodeChangeType_Added:
 			{
-				m_pCurrentSelectedNode = nullptr;
+				AddNodeToDopeSheet(pNode);
 			}
-			RemoveNodeFromDopeSheet(pNode);
-		}
-		break;
-	case ITrackViewSequenceListener::eNodeChangeType_Disabled:
-	case ITrackViewSequenceListener::eNodeChangeType_Enabled:
-	case ITrackViewSequenceListener::eNodeChangeType_KeysChanged:
-	// Fall through
-	case ITrackViewSequenceListener::eNodeChangeType_KeySelectionChanged:
-		{
-			const bool bOldDontUpdateDopeSheet = m_bDontUpdateDopeSheet;
-			m_bDontUpdateDopeSheet = false;
-			UpdateDopeSheetNode(pNode);
-			m_bDontUpdateDopeSheet = bOldDontUpdateDopeSheet;
-		}
-		break;
+			break;
+		case ITrackViewSequenceListener::eNodeChangeType_Removed:
+			{
+				if (m_pCurrentSelectedNode == pNode)
+				{
+					m_pCurrentSelectedNode = nullptr;
+				}
+				RemoveNodeFromDopeSheet(pNode);
+			}
+			break;
+		case ITrackViewSequenceListener::eNodeChangeType_Disabled:
+		case ITrackViewSequenceListener::eNodeChangeType_Enabled:
+		case ITrackViewSequenceListener::eNodeChangeType_KeysChanged:
+		// Fall through
+		case ITrackViewSequenceListener::eNodeChangeType_KeySelectionChanged:
+			{
+				const bool bOldDontUpdateDopeSheet = m_bDontUpdateDopeSheet;
+				m_bDontUpdateDopeSheet = false;
+				UpdateDopeSheetNode(pNode);
+				m_bDontUpdateDopeSheet = bOldDontUpdateDopeSheet;
+			}
+			break;
 		case ITrackViewSequenceListener::eNodeChangeType_NodeOwnerChanged:
-		{
-			SSequenceData& sequenceData = m_idToSequenceDataMap[pNode->GetSequence()->GetGUID()];
-			if (sequenceData.m_uIdToTimelineTrackMap.find(pNode->GetGUID()) != sequenceData.m_uIdToTimelineTrackMap.end())
 			{
-				AssignDopeSheetName(sequenceData.m_uIdToTimelineTrackMap[pNode->GetGUID()], static_cast<CTrackViewAnimNode*>(pNode));
+				NodeOwnerChanged(pNode);
 			}
-		}
-		break;
+			break;
 	}
 	const CryGUID sequenceGUID = pNode->GetSequence()->GetGUID();
 	CTimeline* pDopeSheet = GetDopeSheetFromSequenceGUID(sequenceGUID);

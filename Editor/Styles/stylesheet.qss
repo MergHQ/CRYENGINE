@@ -1421,6 +1421,7 @@ EditorStyleHelper {
 
 	/* Timeline colors */
 	qproperty-timelineTrackColor: rgb(68, 68, 68);
+	qproperty-timelineDetachedColor: rgb(105, 57, 57);
 	qproperty-timelineOutsideTrackColor: rgba(60, 60, 60,120);
 	qproperty-timelineDescriptionTrackColor: rgb(91, 91, 91);
 	qproperty-timelineCompositeTrackColor: rgb(81, 81, 81);

@@ -1077,12 +1077,10 @@ void UpdateTracksRenderCache(STracksRenderCache& renderCache, QPainter& painter,
 		std::vector<SElementLayout>& layouts = trackSortedElements[j];
 
 		std::copy(std::begin(track.elements), std::end(track.elements), std::back_inserter(layouts));
-		std::sort(std::begin(layouts), std::end(layouts),
-			[](const SElementLayout& a, const SElementLayout& b)
+		std::sort(std::begin(layouts), std::end(layouts), [](const SElementLayout& a, const SElementLayout& b)
 		{
 			return a.rect.left() < b.rect.left();
-		}
-		);
+		});
 	}
 
 	for (int32 i = PASS_BACKGROUND; i <= PASS_MAIN; ++i)
@@ -1109,12 +1107,17 @@ void UpdateTracksRenderCache(STracksRenderCache& renderCache, QPainter& painter,
 			case PASS_BACKGROUND:
 				{
 					QRect backgroundRect = track.rect;
+
 					backgroundRect.setLeft(-viewState.scrollPixels.x());
 					backgroundRect.setWidth(trackRect.width());
 
 					if (track.pTimelineTrack->selected)
 					{
 						renderCache.seleTrackBGRects.emplace_back(backgroundRect);
+					}
+					else if (track.pTimelineTrack->detached)
+					{
+						renderCache.detachedTrackBGRects.emplace_back(backgroundRect);
 					}
 					else if ((track.pTimelineTrack->caps & STimelineTrack::CAP_DESCRIPTION_TRACK) != 0)
 					{
@@ -1314,6 +1317,10 @@ void UpdateTreeRenderCache(STreeRenderCache& renderCache, const QRect& treeRect,
 		{
 			renderCache.seleTrackBGRects.emplace_back(backgroundRect);
 		}
+		else if (track.pTimelineTrack->detached)
+		{
+			renderCache.detaTrackBGRects.emplace_back(backgroundRect);
+		}
 		else if ((track.pTimelineTrack->caps & STimelineTrack::CAP_DESCRIPTION_TRACK) != 0)
 		{
 			renderCache.descTrackBGRects.emplace_back(backgroundRect);
@@ -1345,7 +1352,13 @@ void UpdateTreeRenderCache(STreeRenderCache& renderCache, const QRect& treeRect,
 		const int32 textWidth = std::max(treeRect.width() - textLeft - 4, 0);
 		const QRect textRect(textLeft, track.rect.top() + 1, textWidth, track.rect.height() - 2);
 
-		renderCache.text.emplace_back(QRenderText(textRect, QString(track.pTimelineTrack->name)));
+		QString alias = QString(track.pTimelineTrack->name);
+		if (track.pTimelineTrack->detached)
+		{
+			alias = alias + " (Detached)";
+		}
+
+		renderCache.text.emplace_back(QRenderText(textRect, alias));
 
 		if (track.pTimelineTrack->HasIcon())
 		{
@@ -2258,6 +2271,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 	}
 
 	const QColor trackColor = GetStyleHelper()->timelineTrackColor();
+	const QColor detachedTrackColor = GetStyleHelper()->timelineDetachedColor();
 	const QColor descriptionTrackColor = GetStyleHelper()->timelineDescriptionTrackColor();
 	const QColor compositeTrackColor = GetStyleHelper()->timelineCompositeTrackColor();
 	const QColor selectionColor = GetStyleHelper()->timelineSelectionColor();
@@ -2322,6 +2336,16 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 			painter.setPen(Qt::NoPen);
 			painter.setBrush(brush);
 			PaintRenderCacheRects(painter, m_tracksRenderCache.seleTrackBGRects);
+		}
+
+		if (m_tracksRenderCache.detachedTrackBGRects.size())
+		{
+			LOADING_TIME_PROFILE_SECTION_NAMED("Detached tracks")
+
+			const QBrush brush = QBrush(detachedTrackColor);
+			painter.setPen(Qt::NoPen);
+			painter.setBrush(brush);
+			PaintRenderCacheRects(painter, m_tracksRenderCache.detachedTrackBGRects);
 		}
 
 		{
@@ -2575,6 +2599,16 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 				painter.setPen(Qt::NoPen);
 				painter.setBrush(brush);
 				PaintRenderCacheRects(painter, m_treeRenderCache.seleTrackBGRects);
+			}
+
+			if (m_treeRenderCache.detaTrackBGRects.size())
+			{
+				LOADING_TIME_PROFILE_SECTION_NAMED("Detached tree tracks")
+
+				const QBrush brush = QBrush(detachedTrackColor);
+				painter.setPen(Qt::NoPen);
+				painter.setBrush(brush);
+				PaintRenderCacheRects(painter, m_treeRenderCache.detaTrackBGRects);
 			}
 
 			if (m_treeRenderCache.trackLines.size())

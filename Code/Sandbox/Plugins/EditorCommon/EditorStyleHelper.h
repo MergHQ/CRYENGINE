@@ -37,6 +37,7 @@ public:
 
 	// CTimeline colors
 	STYLE_PROP(QColor, timelineTrackColor, setTimelineTrackColor);
+	STYLE_PROP(QColor, timelineDetachedColor, setTimelineDetachedColor);
 	STYLE_PROP(QColor, timelineOutsideTrackColor, setTimelineOutsideTrackColor);
 	STYLE_PROP(QColor, timelineDescriptionTrackColor, setTimelineDescriptionTrackColor);
 	STYLE_PROP(QColor, timelineCompositeTrackColor, setTimelineCompositeTrackColor);
