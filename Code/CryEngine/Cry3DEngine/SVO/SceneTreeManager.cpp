@@ -173,6 +173,8 @@ void CSvoManager::Release()
 void CSvoManager::Render(bool bSyncUpdate)
 {
 	LOADING_TIME_PROFILE_SECTION;
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CSvoManager::Render");
+
 	if (GetCVars()->e_svoTI_Apply && (!m_bLevelLoadingInProgress || gEnv->IsEditor()) && !GetCVars()->e_svoTI_Active)
 	{
 		GetCVars()->e_svoTI_Active = 1;

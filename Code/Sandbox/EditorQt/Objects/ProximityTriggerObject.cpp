@@ -28,6 +28,7 @@ void CProximityTrigger::Display(CObjectRenderHelper& objRenderHelper)
 				properties->GetValue("DimZ", dimensions.z);
 
 				SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+				dc.SetColor(Col_White);
 				dc.DrawWireBox(pEntity->GetWorldPos() + dimensions * -0.5f, pEntity->GetWorldPos() + dimensions * 0.5f);
 			}
 		}

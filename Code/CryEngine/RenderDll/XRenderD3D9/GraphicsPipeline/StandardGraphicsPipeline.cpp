@@ -59,6 +59,8 @@ CStandardGraphicsPipeline::CStandardGraphicsPipeline()
 
 void CStandardGraphicsPipeline::Init()
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CStandardGraphicsPipeline::Init");
+
 	// default material bind points
 	{
 		m_defaultMaterialBindPoints.SetConstantBuffer(eConstantBufferShaderSlot_PerMaterial, CDeviceBufferManager::GetNullConstantBuffer(), EShaderStage_AllWithoutCompute);

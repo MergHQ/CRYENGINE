@@ -4825,6 +4825,8 @@ uint32 CPhysicalWorld::GetPumpLoggedEventsTicks()
 void CPhysicalWorld::PumpLoggedEvents()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Physics, 0, "CPhysicalWorld::PumpLoggedEvents");
+
 #ifdef ENABLE_LW_PROFILERS
 	//simple timer shown in r_DisplayInfo=3
 	LARGE_INTEGER pumpStart, pumpEnd;

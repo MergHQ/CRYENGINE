@@ -227,8 +227,15 @@ void CVisibleRenderNodesManager::UpdateVisibleNodes(int currentFrame, int maxNod
 
 				// Swap and erase
 				auto penultimate = std::prev(m_visibleNodes.end());
-				*b = *penultimate;
-				m_visibleNodes.erase(penultimate);
+				if (b == penultimate)
+				{
+					b = m_visibleNodes.erase(penultimate);
+				}
+				else
+				{
+					*b = *penultimate;
+					m_visibleNodes.erase(penultimate);
+				}
 			}
 			else
 				++b;

@@ -430,6 +430,8 @@ void CShaderResources::SetInvalid()
 
 void CShaderResources::UpdateConstants(IShader* pISH)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CShaderResources::UpdateConstants");
+
 	_smart_ptr<CShaderResources> pSelf(this);
 	_smart_ptr<IShader> pShader = pISH;
 

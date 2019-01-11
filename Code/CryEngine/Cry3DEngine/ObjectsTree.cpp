@@ -177,6 +177,7 @@ void COctreeNode::CheckManageVegetationSprites(float fNodeDistance, int nMaxFram
 void COctreeNode::Render_Object_Nodes(bool bNodeCompletelyInFrustum, int nRenderMask, const Vec3& vAmbColor, uint32 passCullMask, const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "COctreeNode::Render_Object_Nodes");
 
 	assert(nRenderMask & OCTREENODE_RENDER_FLAG_OBJECTS);
 

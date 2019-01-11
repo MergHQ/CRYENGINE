@@ -544,6 +544,8 @@ bool CFileCacheManager::FinishStreamInternal(IReadStreamPtr const pStream, int u
 //////////////////////////////////////////////////////////////////////////
 bool CFileCacheManager::AllocateMemoryBlockInternal(CFileEntry* const __restrict pFileEntry)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CFileCacheManager::AllocateMemoryBlockInternal");
+
 	// Must not have valid memory yet.
 	CRY_ASSERT(pFileEntry->m_pMemoryBlock == nullptr);
 

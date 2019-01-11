@@ -778,6 +778,8 @@ bool CTerrain::SetCompiledData(byte* pData, int nDataSize, std::vector<struct IS
 
 bool CTerrain::Load(FILE* f, int nDataSize, STerrainChunkHeader* pTerrainChunkHeader, std::vector<struct IStatObj*>** ppStatObjTable, std::vector<IMaterial*>** ppMatTable)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CTerrain::Load");
+
 	bool bRes;
 
 	// in case of small data amount (console game) load entire file into memory in single operation

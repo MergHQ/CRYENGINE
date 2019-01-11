@@ -6,9 +6,6 @@
 #include "SocketIOManagerNull.h"
 #include "SocketIOManagerSelect.h"
 #include "SocketIOManagerLobbyIDAddr.h"
-#if CRY_PLATFORM_DURANGO
-	#include "SocketIOManagerDurango.h"
-#endif
 
 IDatagramSocketPtr CSocketIOManager::CreateDatagramSocket(const TNetAddress& addr, uint32 flags)
 {

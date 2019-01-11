@@ -41,6 +41,8 @@ namespace Schematyc2
 	////////////////////////////////////////////////////////////////
 	void CRelevanceGrid::Construct()
 	{
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc2::CRelevanceGrid::Construct");
+
 		const float terrainSize = static_cast<float>(gEnv->p3DEngine->GetTerrainSize());
 
 		m_gridSize = int(terrainSize / CVars::sc_RelevanceGridCellSize);
@@ -734,6 +736,8 @@ namespace Schematyc2
 	bool CUpdateScheduler::Update(UpdatePriority beginPriority, UpdatePriority endPriority, CUpdateRelevanceContext* pRelevanceContext)
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_GAME);
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc2::CUpdateScheduler::Update");
+
 		if(m_bInFrame)
 		{
 			m_relevanceGrid.Update(pRelevanceContext);

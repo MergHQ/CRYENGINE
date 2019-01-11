@@ -4981,6 +4981,8 @@ IRenderAuxGeom* CD3D9Renderer::GetIRenderAuxGeom()
 
 IRenderAuxGeom* CD3D9Renderer::GetOrCreateIRenderAuxGeom(const CCamera* pCustomCamera)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CD3D9Renderer::GetOrCreateIRenderAuxGeom");
+
 #if defined(ENABLE_RENDER_AUX_GEOM)
 	auto auxGeom = m_auxGeomCBPool.GetOrCreateOneElement();
 

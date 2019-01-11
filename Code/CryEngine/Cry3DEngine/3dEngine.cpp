@@ -1277,6 +1277,8 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 
 void C3DEngine::PrepareOcclusion(const CCamera& rCamera)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "C3DEngine::PrepareOcclusion");
+
 	const bool bInEditor = gEnv->IsEditor();
 	const bool bStatObjBufferRenderTasks = IsStatObjBufferRenderTasksAllowed() != 0;
 	const bool bIsFMVPlaying = gEnv->IsFMVPlaying();

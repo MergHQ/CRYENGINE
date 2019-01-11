@@ -2185,6 +2185,8 @@ bool CContextView::HaveAuthorityOfObject(SNetObjectID id) const
 
 bool CContextView::UpdateAspect(NetworkAspectID i, TSerialize ser, uint32 nCurSeq, uint32 nOldSeq, uint32 timeFraction32)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CContextView::UpdateAspect");
+
 	if (IsLocal())
 	{
 		NetWarning("Update aspect called on a local connection");

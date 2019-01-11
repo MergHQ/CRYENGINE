@@ -1806,6 +1806,7 @@ void CharacterManager::Update(bool bPaused)
 void CharacterManager::UpdateStreaming(int nFullUpdateRoundId, int nFastUpdateRoundId)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION)
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CharacterManager::UpdateStreaming");
 
 	if (nFastUpdateRoundId >= 0)
 		m_nStreamUpdateRoundId[0] = static_cast<uint32>(nFastUpdateRoundId);
