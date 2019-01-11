@@ -401,6 +401,14 @@ int CSoftEntity::AddGeometry(phys_geometry *pgeom, pe_geomparams* params, int id
 	m_nAttachedVtx = 0;
 	m_maxAllowedDist = max(max(bbox.size.x,bbox.size.y),bbox.size.z)*params->scale*10.0f;
 
+	if (pMesh->m_flags & mesh_transient) {
+		pMesh->m_flags &= ~mesh_transient;
+		EventPhysPostStep epps; InitEvent(&epps,this,get_iCaller());
+		epps.pos = m_pos; epps.q = m_qrot;
+		epps.dt = 0; epps.idStep = m_pWorld->m_idStep;
+		m_pWorld->OnEvent(pef_log_poststep, &epps);
+	}
+
 	return res;
 }
 
@@ -953,6 +961,8 @@ int CSoftEntity::Action(pe_action *_action, int bThreadSafe)
 				BakeCurrentPose();
 				m_bMeshUpdated = 0;
 			}
+			if (!(m_flags & sef_skeleton))
+				pMesh->m_flags |= mesh_transient;	// mark the mesh as modified so that cloth will send a poststep on its reusage
 			m_windTimer = 0;
 		}
 		return 1;
