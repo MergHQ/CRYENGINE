@@ -136,6 +136,7 @@ void CCharInstance::StartAnimationProcessing(const SAnimationProcessParams& para
 {
 	DEFINE_PROFILER_FUNCTION();
 	ANIMATION_LIGHT_PROFILER();
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CCharInstance::StartAnimationProcessing");
 
 	// execute only if start animation processing has not been started for this character
 	if (GetProcessingContext())

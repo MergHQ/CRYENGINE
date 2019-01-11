@@ -816,6 +816,7 @@ void C3DEngine::RenderWorld(const int nRenderFlags, const SRenderingPassInfo& pa
 {
 	CRY_PROFILE_REGION(PROFILE_3DENGINE, "3DEngine: RenderWorld");
 	CRYPROFILE_SCOPE_PROFILE_MARKER("RenderWorld");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "C3DEngine::RenderWorld");
 
 	passInfo.GetIRenderView()->SetShaderRenderingFlags(nRenderFlags);
 
@@ -1997,6 +1998,7 @@ void C3DEngine::ProcessOcean(const SRenderingPassInfo& passInfo)
 void C3DEngine::RenderSkyBox(IMaterial* pMat, const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "C3DEngine::RenderSkyBox");
 
 	const float fForceDrawLastSortOffset = 100000.0f;
 

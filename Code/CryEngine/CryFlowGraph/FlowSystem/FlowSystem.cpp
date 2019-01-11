@@ -589,6 +589,8 @@ void CFlowSystem::Update()
 //////////////////////////////////////////////////////////////////////////
 void CFlowSystem::UpdateGraphs()
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CFlowSystem::UpdateGraphs");
+
 	// Determine if graphs should be updated (Debug control)
 	bool bUpdateGraphs = true;
 	PREFAST_SUPPRESS_WARNING(6237);

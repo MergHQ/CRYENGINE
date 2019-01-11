@@ -1737,6 +1737,7 @@ bool CNetContextState::AllocateObject(EntityId userID, SNetObjectID netID, Netwo
 	MMM_REGION(m_pMMM);
 
 	ASSERT_GLOBAL_LOCK;
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CNetContextState::AllocateObject");
 
 	ClearContextObjectCache();
 

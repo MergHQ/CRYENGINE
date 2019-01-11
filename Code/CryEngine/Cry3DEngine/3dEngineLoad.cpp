@@ -233,6 +233,7 @@ bool C3DEngine::InitLevelForEditor(const char* szFolderName, const char* szMissi
 bool C3DEngine::LoadTerrain(XmlNodeRef pDoc, std::vector<struct IStatObj*>** ppStatObjTable, std::vector<IMaterial*>** ppMatTable)
 {
 	LOADING_TIME_PROFILE_SECTION;
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "C3DEngine::LoadTerrain");
 
 	PrintMessage("===== Loading %s =====", COMPILED_HEIGHT_MAP_FILE_NAME);
 

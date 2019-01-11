@@ -50,6 +50,7 @@ CryCriticalSection g_cDynTexLock;
 void CD3D9Renderer::EF_PrepareShadowGenRenderList(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_RENDERER();
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CD3D9Renderer::EF_PrepareShadowGenRenderList");
 
 	CRenderView* pRenderView = passInfo.GetRenderView();
 

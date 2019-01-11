@@ -33,6 +33,8 @@ CRenderView::CRenderView(const char* name, EViewType type, CRenderView* pParentV
 	, m_viewInfoCount(1)
 	, m_bPostWriteExecuted(false)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_D3D, 0, "CRenderView::CRenderView");
+
 	for (int i = 0; i < EFSLIST_NUM; i++)
 	{
 		m_batchFlags[i] = 0;
@@ -1917,6 +1919,7 @@ void CRenderView::ExpandPermanentRenderObjects()
 void CRenderView::CompileModifiedRenderObjects()
 {
 	CRY_PROFILE_FUNCTION_ARG(PROFILE_RENDERER, m_name.c_str())
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CRenderView::CompileModifiedRenderObjects");
 
 	assert(gRenDev->m_pRT->IsRenderThread());
 
