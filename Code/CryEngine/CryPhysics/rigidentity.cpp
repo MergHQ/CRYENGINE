@@ -495,6 +495,7 @@ int CRigidEntity::SetParams(pe_params *_params, int bThreadSafe)
 		if (!is_unused(params->disablePreCG)) m_bDisablePreCG = params->disablePreCG;
 		if (!is_unused(params->maxFriction)) m_maxFriction = params->maxFriction;
 		if (!is_unused(params->collTypes)) m_collTypes = params->collTypes;
+		if (!is_unused(params->noMassDecay)) (m_body.flags &= ~rb_no_mass_decay) |=	rb_no_mass_decay*params->noMassDecay;
 		return 1;
 	}
 
@@ -535,6 +536,7 @@ int CRigidEntity::GetParams(pe_params *_params) const
 		params->disablePreCG = m_bDisablePreCG;
 		params->maxFriction = m_maxFriction;
 		params->collTypes = m_collTypes;
+		params->noMassDecay = 1^iszero(m_body.flags & rb_no_mass_decay);
 		return 1;
 	}
 
@@ -2745,7 +2747,7 @@ int CRigidEntity::Step(float time_interval)
 	m_pStableContact = 0;
 
 	m_dampingEx = 0;
-	if (m_timeStepPerformed>m_timeStepFull-0.001f || m_nParts==0)
+	if (/*m_timeStepPerformed>m_timeStepFull-0.001f ||*/ m_nParts==0)
 		return 1;
 	m_timeStepPerformed += time_interval;
 	m_lastTimeStep = time_interval;

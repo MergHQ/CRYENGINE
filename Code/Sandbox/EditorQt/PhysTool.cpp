@@ -87,6 +87,9 @@ bool CPhysPullTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& po
 				m_pEntAttach->AddGeometry(pGeom, &gp);
 				pGeom->pGeom->Release();
 				pGeoman->UnregisterGeometry(pGeom);
+				pe_simulation_params sp;
+				sp.noMassDecay = 1;
+				m_pEntAttach->SetParams(&sp);
 			}
 
 			pe_status_dynamics sd;

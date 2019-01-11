@@ -7,7 +7,7 @@
 struct entity_contact;
 const int MAX_CONTACTS = 9984;
 
-enum rbflags { rb_RK4=0x1, rb_articulated=0x10 };
+enum rbflags { rb_RK4=0x1, rb_articulated=0x10, rb_no_mass_decay=0x20 };
 
 class RigidBody {
 public:
