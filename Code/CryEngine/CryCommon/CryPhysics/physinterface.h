@@ -563,7 +563,7 @@ struct pe_simulation_params : pe_params
 	{
 		type = type_id;
 		MARK_UNUSED maxTimeStep, gravity, minEnergy, damping, iSimClass,
-		            dampingFreefall, gravityFreefall, mass, density, maxLoggedCollisions, maxRotVel, disablePreCG, maxFriction, collTypes;
+		            dampingFreefall, gravityFreefall, mass, density, maxLoggedCollisions, maxRotVel, disablePreCG, maxFriction, collTypes, noMassDecay;
 	}
 
 	int   iSimClass;
@@ -580,6 +580,7 @@ struct pe_simulation_params : pe_params
 	int   disablePreCG;        //!< Disables Pre-CG solver for the group this body is in (recommended for balls).
 	float maxFriction;         //!< Sets upper friction limit for this object and all objects it's currently in contact with.
 	int   collTypes;           //!< Collision types (a combination of ent_xxx flags).
+	int   noMassDecay;         //!< 1 disables mass decay propagation through the body (if solver mass decay is enabled)
 };
 
 struct pe_params_foreign_data : pe_params
@@ -2881,6 +2882,8 @@ struct SolverSettings
 	float maxMCMassRatio;
 	float maxMCVel;
 	int   maxLCPCGContacts;
+	int   massDecayPrepasses, massDecayMinLevel, massDecayMaxLevel;
+	float massDecay, massDecayHeavyThresh;
 };
 
 enum entity_out_of_bounds_flags

@@ -180,6 +180,16 @@ namespace PhysicsCVars
 			"Maximum object velocity in an island that MC solver is considered safe to handle");
 		REGISTER_CVAR2("p_max_LCPCG_contacts", &pVars->maxLCPCGContacts, pVars->maxLCPCGContacts, 0,
 			"Maximum number of contacts that LCPCG solver is allowed to handle");
+		REGISTER_CVAR2("p_mass_decay_prepasses", &pVars->massDecayPrepasses, pVars->massDecayPrepasses, 0,
+			"Number of solver passes over all contacts before mass decay is considered");
+		REGISTER_CVAR2("p_mass_decay_min_level", &pVars->massDecayMinLevel, pVars->massDecayMinLevel, 0,
+			"Minimum required group 'depth' to trigger mass decay");
+		REGISTER_CVAR2("p_mass_decay_max_level", &pVars->massDecayMaxLevel, pVars->massDecayMaxLevel, 0,
+			"Maximum group 'depth', after which mass decay is no longer applied");
+		REGISTER_CVAR2("p_mass_decay", &pVars->massDecay, pVars->massDecay, 0,
+			"Per depth level mass decay in rigidbody solver (improves tall stack stability). <0 - stabilizing decay, 1 = no decay, >1 - negative decay (mass increase)");
+		REGISTER_CVAR2("p_mass_decay_heavy_threshold", &pVars->massDecayHeavyThresh, pVars->massDecayHeavyThresh, 0,
+			"Mass difference for assigning objects 0 depth level for mass decay purposes");
 		REGISTER_CVAR2("p_approx_caps_len", &pVars->approxCapsLen, pVars->approxCapsLen, 0,
 			"Breakable trees are approximated with capsules of this length (0 disables approximation)");
 		REGISTER_CVAR2("p_max_approx_caps", &pVars->nMaxApproxCaps, pVars->nMaxApproxCaps, 0,

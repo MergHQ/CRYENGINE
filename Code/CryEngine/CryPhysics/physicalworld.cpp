@@ -175,6 +175,11 @@ CPhysicalWorld::CPhysicalWorld(ILog *pLog) : m_nWorkerThreads(0)
 	m_vars.maxMCMassRatio = 100.0f;
 	m_vars.maxMCVel = 15.0f;
 	m_vars.maxLCPCGContacts = 100;
+	m_vars.massDecayPrepasses = 5;
+	m_vars.massDecayMinLevel = 12;
+	m_vars.massDecayMaxLevel = 100;
+	m_vars.massDecay = 1;
+	m_vars.massDecayHeavyThresh = 20;
 	m_vars.bFlyMode = 0;
 	m_vars.iCollisionMode = 0;
 	m_vars.bSingleStepMode = 0;
