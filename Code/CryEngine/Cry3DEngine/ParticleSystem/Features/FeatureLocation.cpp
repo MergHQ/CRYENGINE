@@ -1262,8 +1262,8 @@ private:
 	// PFX2_TODO: This must be moved to per-instance data
 	struct SComponentData
 	{
-		Vec3 velocityFinal;
-		Vec3 vectorTravel;
+		Vec3 velocityFinal {ZERO};
+		Vec3 vectorTravel  {ZERO};
 	};
 	SComponentData  m_averageData;
 
