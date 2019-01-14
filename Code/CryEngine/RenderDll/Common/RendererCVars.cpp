@@ -3129,6 +3129,7 @@ CCVarUpdateRecorder::SUpdateRecord::SUpdateRecord(ICVar* pCVar)
 	switch (type)
 	{
 		case ECVarType::Int:    intValue = pCVar->GetIVal();                 break;
+		case ECVarType::Int64:  int64Value = pCVar->GetI64Val();             break;
 		case ECVarType::Float:  floatValue = pCVar->GetFVal();               break;
 		case ECVarType::String: cry_strcpy(stringValue, pCVar->GetString()); break;
 		default: assert(false);

@@ -675,6 +675,7 @@ public:
 		union
 		{
 			int   intValue;
+			int64 int64Value;
 			float floatValue;
 			char  stringValue[64];
 		};
