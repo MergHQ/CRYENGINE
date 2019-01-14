@@ -576,6 +576,9 @@ struct IEntitySystem
 	//! Enable entity layers specified in the layer set and hide all other known layers.
 	virtual void EnableLayerSet(const char* const* pLayers, size_t layerCount, bool isSerialized = true, IEntityLayerSetUpdateListener* pListener = nullptr) = 0;
 
+	//! Enable entity layers specified in the layer set and hide all other known layers from its accompanying scope.
+	virtual void EnableScopedLayerSet(const char* const* pLayers, size_t layerCount, const char* const* pScopeLayers, size_t scopeLayerCount, bool isSerialized = true, IEntityLayerSetUpdateListener* pListener = nullptr) = 0;
+
 	//! Find a layer with a given name.
 	virtual IEntityLayer* FindLayer(const char* szLayerName, const bool bCaseSensitive = true) const = 0;
 
