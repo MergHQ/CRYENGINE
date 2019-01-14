@@ -870,8 +870,6 @@ void CSceneForwardStage::ExecuteOpaque()
 	m_forwardOpaquePass.PrepareRenderPassForUse(commandList);
 	m_forwardOverlayPass.PrepareRenderPassForUse(commandList);
 
-	const uint32 bForwardFilter = CRenderer::CV_r_DeferredShadingTiled != CTiledShadingStage::eDeferredMode_Disabled ? FB_Z : 0;
-
 	CZPrePassPredicate zpPredicate;
 	int nearestFNum    = pRenderView->GetRenderItems(EFSLIST_FORWARD_OPAQUE_NEAREST).size();
 	int nearestFNoZPre = pRenderView->FindRenderListSplit(zpPredicate, EFSLIST_FORWARD_OPAQUE_NEAREST, 0, nearestFNum);
@@ -894,7 +892,7 @@ void CSceneForwardStage::ExecuteOpaque()
 		m_forwardEyeOverlayPass.EndExecution();
 
 		m_forwardOpaquePass.BeginExecution();
-		m_forwardOpaquePass.SetupDrawContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL | FB_TILED_FORWARD, bForwardFilter | FB_ZPREPASS);
+		m_forwardOpaquePass.SetupDrawContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL | FB_TILED_FORWARD, FB_ZPREPASS);
 		m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_FORWARD_OPAQUE_NEAREST, 0, nearestFNoZPre);
 		if (CRenderer::CV_r_DeferredShadingTiled == CTiledShadingStage::eDeferredMode_Disabled)
 			m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS, 0, nearestGNoZPre);
@@ -904,7 +902,7 @@ void CSceneForwardStage::ExecuteOpaque()
 		m_forwardOpaquePass.EndExecution();
 
 		m_forwardOpaquePass.BeginExecution();
-		m_forwardOpaquePass.SetupDrawContext(m_stageID, ePass_ForwardPrepassed, TTYPE_GENERAL, FB_GENERAL | FB_TILED_FORWARD | FB_ZPREPASS, bForwardFilter);
+		m_forwardOpaquePass.SetupDrawContext(m_stageID, ePass_ForwardPrepassed, TTYPE_GENERAL, FB_GENERAL | FB_TILED_FORWARD | FB_ZPREPASS);
 		m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_FORWARD_OPAQUE_NEAREST, nearestFNoZPre, nearestFNum);
 		if (CRenderer::CV_r_DeferredShadingTiled == CTiledShadingStage::eDeferredMode_Disabled)
 			m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS, nearestGNoZPre, nearestGNum);
@@ -914,7 +912,7 @@ void CSceneForwardStage::ExecuteOpaque()
 		m_forwardOpaquePass.EndExecution();
 
 		m_forwardOverlayPass.BeginExecution();
-		m_forwardOverlayPass.SetupDrawContext(m_stageID, ePass_ForwardPrepassed, TTYPE_GENERAL, FB_GENERAL | FB_TILED_FORWARD, bForwardFilter);
+		m_forwardOverlayPass.SetupDrawContext(m_stageID, ePass_ForwardPrepassed, TTYPE_GENERAL, FB_GENERAL | FB_TILED_FORWARD);
 		m_forwardOverlayPass.DrawRenderItems(pRenderView, EFSLIST_TERRAINLAYER);
 		m_forwardOverlayPass.DrawRenderItems(pRenderView, EFSLIST_DECAL);
 		m_forwardOverlayPass.DrawRenderItems(pRenderView, EFSLIST_SKY);

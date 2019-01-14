@@ -1719,7 +1719,7 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, uint64 
 		}
 
 		// Add forward objects that are supported in the Forward-pass to the FORWARD_OPAQUE list (in addition to the original list)
-		if ((hasForwardOpaqueFlags | isEmissive) && !(isForwardOpaque | isTransparent | hasDeferredOpaqueFlags))
+		if (isEmissive || (hasForwardOpaqueFlags && !(isForwardOpaque | isTransparent | hasDeferredOpaqueFlags)))
 		{
 			const ERenderListID targetRenderList = isNearest ? EFSLIST_FORWARD_OPAQUE_NEAREST : EFSLIST_FORWARD_OPAQUE;
 			m_renderItems[targetRenderList].push_back(PrepareRenderItemForRenderList(ri, nBatchFlags, objFlags, pObj, objDistance, targetRenderList));
