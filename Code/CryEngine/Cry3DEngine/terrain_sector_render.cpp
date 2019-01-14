@@ -925,7 +925,7 @@ int GetVecProjectId(const Vec3& vNorm)
 void CTerrainNode::GenerateIndicesForAllSurfaces(IRenderMesh* pRM, int arrpNonBorderIdxNum[SRangeInfo::e_max_surface_types][4], int nBorderStartIndex, SSurfaceTypeInfo* pSurfaceTypeInfos, CUpdateTerrainTempData* pUpdateTerrainTempData)
 {
 	FUNCTION_PROFILER_3DENGINE;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CTerrainNode::GenerateIndicesForAllSurfaces");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Terrain, 0, "CTerrainNode::GenerateIndicesForAllSurfaces");
 
 	byte arrMat3DFlag[SRangeInfo::e_max_surface_types];
 

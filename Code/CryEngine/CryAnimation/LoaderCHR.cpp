@@ -144,7 +144,7 @@ void CryCHRLoader::EndStreamSkel(IReadStream* pStream)
 
 void CryCHRLoader::StreamOnComplete(IReadStream* pStream, unsigned nError)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CryCHRLoader::StreamOnComplete");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_CHR, 0, "CryCHRLoader::StreamOnComplete");
 
 	if (m_pModelSkel)
 	{
