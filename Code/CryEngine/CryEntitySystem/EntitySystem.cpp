@@ -3463,6 +3463,44 @@ void CEntitySystem::EnableLayerSet(const char* const* pLayers, size_t layerCount
 	}
 }
 
+void CEntitySystem::EnableScopedLayerSet(const char* const* pLayers, size_t layerCount, const char* const* pScopeLayers, size_t scopeLayerCount, bool isSerialized, IEntityLayerSetUpdateListener* pListener)
+{
+	if (!gEnv->p3DEngine->IsAreaActivationInUse())
+		return;
+
+	const char* const* const pVisibleLayersBegin = pLayers;
+	const char* const* const pVisibleLayersEnd = pLayers + layerCount;
+
+	const char* const* const pScopeLayersBegin = pScopeLayers;
+	const char* const* const pScopeLayersEnd = pScopeLayers + scopeLayerCount;
+
+	const TLayers::iterator layersEndIt = m_layers.end();
+
+	for(const char* const* pScopeLayersIt = pScopeLayersBegin; pScopeLayersIt != pScopeLayersEnd; ++pScopeLayersIt)
+	{
+		const char* const scopeLayerName = *pScopeLayersIt;
+		const bool shouldBeEnabled = std::find_if(pVisibleLayersBegin, pVisibleLayersEnd, [scopeLayerName](const char* szLayerName)
+		{
+			return 0 == strcmp(scopeLayerName, szLayerName);;
+		}) != pVisibleLayersEnd;
+
+		TLayers::iterator it = m_layers.find(CONST_TEMP_STRING(scopeLayerName));
+		if(layersEndIt != it)
+		{
+			CEntityLayer* pLayer = it->second;
+			if(shouldBeEnabled != pLayer->IsEnabled())
+			{
+				EnableLayer(pLayer, shouldBeEnabled, isSerialized, false);
+			}
+
+			if(pListener)
+			{
+				pListener->LayerEnablingEvent(scopeLayerName, shouldBeEnabled, isSerialized);
+			}
+		}
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 bool CEntitySystem::IsLayerEnabled(const char* layer, bool bMustBeLoaded, bool bCaseSensitive) const
 {
