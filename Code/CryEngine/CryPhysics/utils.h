@@ -24,7 +24,7 @@ ILINE int min_fast(int op1,int op2) { return op2 + (op1-op2 & (op1-op2)>>31); }
 #ifdef min
  #undef min
 #endif
-#if !defined(CRY_COMPILER_GCC)
+#if !defined(CRY_COMPILER_GCC) && !defined(CRY_COMPILER_CLANG)
 	ILINE double min(double op1,double op2) { return (op1+op2-fabs(op1-op2))*0.5; }
 	ILINE double max(double op1,double op2) { return (op1+op2+fabs(op1-op2))*0.5; }
 	ILINE float min(float op1,float op2) { return (op1+op2-fabsf(op1-op2))*0.5f; }

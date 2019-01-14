@@ -354,7 +354,7 @@ uint64 shGetHex64(const char* buf)
 	if (!buf)
 		return 0;
 	uint64 i = 0;
-#if defined(CRY_COMPILER_GCC)
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 	int res = sscanf(buf, "%llx", &i);
 #else
 	int res = sscanf(buf, "%I64x", &i);
