@@ -128,26 +128,25 @@ template <class Impl> inline float CDeviceTimestampGroup_Base<Impl>::GetTimeMS(u
 inline void CDeviceObjectFactory::ExtractBasePointer(D3DBuffer* buffer, D3D11_MAP mode, uint8*& base_ptr)
 {
 #if BUFFER_ENABLE_DIRECT_ACCESS
-#if CRY_RENDERER_GNM
-	base_ptr = buffer->GnmGetBaseAddress();
-#elif CRY_PLATFORM_ORBIS
-	base_ptr = (uint8*)buffer->GetData();
-#endif
-#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-	// Note: temporary solution, this should be removed as soon as the device
-	// layer for Durango is available
-	void* data;
-	unsigned size = sizeof(data);
-	HRESULT hr = buffer->GetPrivateData(BufferPointerGuid, &size, &data);
-	assert(hr == S_OK);
-	base_ptr = reinterpret_cast<uint8*>(data);
-#elif (CRY_RENDERER_DIRECT3D >= 120)
-	base_ptr = CDeviceObjectFactory::Map(buffer, 0, 0, 0, mode /* MAP_DISCARD could affect the ptr */);
-#elif CRY_RENDERER_VULKAN
-	base_ptr = (uint8*)buffer->Map();
-#else
-	base_ptr = NULL;
-#endif
+	#if CRY_RENDERER_GNM
+		base_ptr = buffer->GnmGetBaseAddress();
+	#elif CRY_PLATFORM_ORBIS
+		base_ptr = (uint8*)buffer->GetData();
+	#elif CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
+		// Note: temporary solution, this should be removed as soon as the device
+		// layer for Durango is available
+		void* data;
+		unsigned size = sizeof(data);
+		HRESULT hr = buffer->GetPrivateData(BufferPointerGuid, &size, &data);
+		assert(hr == S_OK);
+		base_ptr = reinterpret_cast<uint8*>(data);
+	#elif (CRY_RENDERER_DIRECT3D >= 120)
+		base_ptr = CDeviceObjectFactory::Map(buffer, 0, 0, 0, mode /* MAP_DISCARD could affect the ptr */);
+	#elif CRY_RENDERER_VULKAN
+		base_ptr = (uint8*)buffer->Map();
+	#else
+		base_ptr = NULL;
+	#endif
 #else
 	base_ptr = NULL;
 #endif
@@ -156,11 +155,11 @@ inline void CDeviceObjectFactory::ExtractBasePointer(D3DBuffer* buffer, D3D11_MA
 inline void CDeviceObjectFactory::ReleaseBasePointer(D3DBuffer* buffer)
 {
 #if BUFFER_ENABLE_DIRECT_ACCESS
-#if (CRY_RENDERER_DIRECT3D >= 120)
-	CDeviceObjectFactory::Unmap(buffer, 0, 0, 0, D3D11_MAP(0));
-#elif defined(CRY_RENDERER_VULKAN)
-	buffer->Unmap();
-#endif
+	#if (CRY_RENDERER_DIRECT3D >= 120)
+		CDeviceObjectFactory::Unmap(buffer, 0, 0, 0, D3D11_MAP(0));
+	#elif defined(CRY_RENDERER_VULKAN)
+		buffer->Unmap();
+	#endif
 #endif
 }
 
