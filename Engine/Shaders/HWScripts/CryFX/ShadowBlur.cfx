@@ -158,7 +158,7 @@ float2 HMAO_Blur_PS(vtxOut IN) : SV_Target
 	);
 	
 	float avgIgnoreOutdoor = dot((nClipVolumeData & CLIPVOLUME_IGNORE_OUTDOOR_AO) ? 1.0 : 0.0, 0.25);
-	OUT.rg = 1-(1-OUT.Color.rg)*(1-avgIgnoreOutdoor);
+	OUT.rg = 1-(1-OUT.rg)*(1-avgIgnoreOutdoor);
 #endif
 	
 	return OUT;

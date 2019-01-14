@@ -338,7 +338,7 @@ void CEntityClassRegistry::LoadArchetypeDescription(const XmlNodeRef& root)
 			if (!pClass)
 			{
 				SEntityClassDesc cd;
-				cd.flags = ECLF_INVISIBLE | ECLF_ENTITY_ARCHETYPE;
+				cd.flags = ECLF_ENTITY_ARCHETYPE;
 				cd.sName = fullName.c_str();
 				RegisterStdClass(cd);
 			}

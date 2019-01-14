@@ -39,7 +39,7 @@
 #define MMX_FLAG    0x800000
 #define ISSE_FLAG   0x2000000
 
-#if defined(CRY_COMPILER_GCC)
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 	#define cpuid(op, eax, ebx, ecx, edx) __asm__("cpuid" : "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (op) : "cc");
 #endif
 
