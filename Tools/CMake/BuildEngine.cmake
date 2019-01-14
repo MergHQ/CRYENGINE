@@ -108,6 +108,7 @@ if(ORBIS)
 	if(NOT RENDERER_GNM)
 		set(RENDERER_DX11 ON)
 	endif()
+	option(GNM_VALIDATION "Enable GNM validation" ON)
 endif()
 
 if(WINDOWS OR LINUX OR ANDROID)
