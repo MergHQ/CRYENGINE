@@ -778,7 +778,7 @@ bool CTerrain::SetCompiledData(byte* pData, int nDataSize, std::vector<struct IS
 
 bool CTerrain::Load(FILE* f, int nDataSize, STerrainChunkHeader* pTerrainChunkHeader, std::vector<struct IStatObj*>** ppStatObjTable, std::vector<IMaterial*>** ppMatTable)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CTerrain::Load");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Terrain, 0, "CTerrain::Load");
 
 	bool bRes;
 

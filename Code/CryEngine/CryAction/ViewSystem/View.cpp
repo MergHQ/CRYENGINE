@@ -768,7 +768,7 @@ void CView::OnEntityEvent(IEntity* pEntity, const SEntityEvent& event)
 //////////////////////////////////////////////////////////////////////////
 void CView::CreateAudioListener()
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CView::CreateAudioListener");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Entity, 0, "CView::CreateAudioListener");
 
 	IEntity* const pIEntity = GetLinkedEntity();
 

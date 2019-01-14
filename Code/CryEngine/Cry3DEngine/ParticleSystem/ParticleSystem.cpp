@@ -96,7 +96,7 @@ void CParticleSystem::Update()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	PARTICLE_LIGHT_PROFILER();
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CParticleSystem::Update");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_ParticleLibrary, 0, "CParticleSystem::Update");
 
 	if (!GetCVars()->e_Particles)
 		return;
