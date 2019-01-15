@@ -82,7 +82,7 @@ namespace CryEngine.NativeInternals
 		extern public static IntPtr ReleaseSPlayFileInfo(IntPtr sPlayFileInfo);
 
 		[MethodImpl(MethodImplOptions.InternalCall)]
-		extern public static IntPtr CreateSRequestInfo(uint eRequestResult, uint audioSystemEvent, uint CtrlId, IntPtr audioObject);
+		extern public static IntPtr CreateSRequestInfo(uint eRequestResult, uint audioSystemEvent, uint CtrlId, uint entityId);
 
 		[MethodImpl(MethodImplOptions.InternalCall)]
 		extern public static void ReleaseSRequestInfo(IntPtr requestInfo);
@@ -97,7 +97,7 @@ namespace CryEngine.NativeInternals
 		extern public static uint SRIGetControlId(IntPtr requestInfo);
 
 		[MethodImpl(MethodImplOptions.InternalCall)]
-		extern public static IntPtr SRIGetAudioObject(IntPtr requestInfo);
+		extern public static uint SRIGetEntityId(IntPtr requestInfo);
 
 		[MethodImpl(MethodImplOptions.InternalCall)]
 		extern public static void AddAudioRequestListener(IntPtr audioRequestInfoFunctionPointer);

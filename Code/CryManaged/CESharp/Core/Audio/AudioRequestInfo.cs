@@ -77,7 +77,7 @@ namespace CryEngine
 		private uint _requestResult;
 		private uint _flagsType;
 		private uint _controlId;
-		private IntPtr _audioObject;
+		private uint _entityId;
 		private bool _isDisposed;
 
 		/// <summary>
@@ -86,8 +86,8 @@ namespace CryEngine
 		/// <param name="eRequestResult"></param>
 		/// <param name="audioSystemEvent"></param>
 		/// <param name="CtrlId"></param>
-		/// <param name="audioObject"></param>
-		public AudioRequestInfo(uint eRequestResult, uint audioSystemEvent, uint CtrlId, AudioObject audioObject) : this(NativeAudioSystem.CreateSRequestInfo(eRequestResult, audioSystemEvent, CtrlId, audioObject.NativePtr))
+		/// <param name="entityId"></param>
+		public AudioRequestInfo(uint eRequestResult, uint audioSystemEvent, uint CtrlId, uint entityId) : this(NativeAudioSystem.CreateSRequestInfo(eRequestResult, audioSystemEvent, CtrlId, entityId))
 		{
 		}
 
@@ -100,7 +100,7 @@ namespace CryEngine
 				_requestResult = NativeAudioSystem.SRIGetRequestResult(nativePtr);
 				_flagsType = NativeAudioSystem.SRIGetEnumFlagsType(nativePtr);
 				_controlId = NativeAudioSystem.SRIGetControlId(nativePtr);
-				_audioObject = NativeAudioSystem.SRIGetAudioObject(nativePtr);
+                _entityId = NativeAudioSystem.SRIGetEntityId(nativePtr);
 			}
 		}
 
@@ -176,11 +176,11 @@ namespace CryEngine
 			}
 		}
 
-		internal IntPtr AudioObject
+		internal uint EntityId
 		{
 			get
 			{
-				return _isCopy ? _audioObject : NativeAudioSystem.SRIGetAudioObject(_cPtr.Handle);
+				return _isCopy ? _entityId : NativeAudioSystem.SRIGetEntityId(_cPtr.Handle);
 			}
 		}
 	}
