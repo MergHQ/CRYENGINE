@@ -35,9 +35,12 @@ ERequestStatus CTrigger::Execute(IObject* const pIObject, TriggerInstanceId cons
 
 			if (requestResult == ERequestStatus::Success)
 			{
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+				pEvent->SetName(m_name.c_str());
+#endif        // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
+
 				pEvent->pObject = pObject;
 				pEvent->pathId = pathId;
-				pEvent->SetName(m_name.c_str());
 				pObject->RegisterEvent(pEvent);
 			}
 		}
