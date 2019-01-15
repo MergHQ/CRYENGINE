@@ -602,7 +602,7 @@ STrackLayout* HitTestTrack(STrackLayouts& tracks, const QPoint& point, bool bIgn
 			return y < track.rect.bottom();
 		});
 
-	if (findIter != tracks.end() && (!bIgnoreTrackRange || findIter->rect.contains(point)))
+	if (findIter != tracks.end() && (bIgnoreTrackRange || findIter->rect.contains(point)))
 	{
 		return &(*findIter);
 	}
