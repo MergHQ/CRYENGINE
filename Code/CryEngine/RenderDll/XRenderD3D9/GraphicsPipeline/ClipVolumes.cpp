@@ -232,7 +232,7 @@ void CClipVolumesStage::ResizeResource(int volumeWidth, int volumeHeight, int vo
 		const uint32 rtFlags = commonFlags | FT_USAGE_RENDERTARGET;
 		ETEX_Format format = eTF_R8;
 
-		CTexture* pTex = CTexture::GetOrCreateTextureArray("$VolFogClipVolumeStencil", w, h, d, 1, eTT_2D, rtFlags, format);
+		CTexture* pTex = CTexture::GetOrCreateTextureArray("$VolFogClipVolumeStencil", w, h, d, 1, eTT_2DArray, rtFlags, format);
 
 		if (pTex == nullptr
 			|| m_pClipVolumeStencilVolumeTex != pTex // texture name must exactly match the name when creating texture object.
