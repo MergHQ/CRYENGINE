@@ -1171,8 +1171,8 @@ void CSplineObject::SerializeProperties(Serialization::IArchive& ar, bool bMulti
 
 			if (!isDefault)
 			{
-				int pwidth = GetPointWidth();
-				int oldWidth = pwidth;
+				float pwidth = GetPointWidth();
+				float oldWidth = pwidth;
 
 				ar(pwidth, "pwidth", "Width:");
 
