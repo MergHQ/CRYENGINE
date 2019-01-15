@@ -31,7 +31,7 @@ class EDITOR_COMMON_API CAssetManager
 
 public:
 	CAssetManager();
-	virtual ~CAssetManager();
+	~CAssetManager();
 
 	static CAssetManager* GetInstance() { return s_instance; }
 
@@ -134,7 +134,7 @@ public:
 	//! Returns a list of assets that use the given asset.
 	//! \param asset The asset to enumerate reverse dependencies.
 	//! \return Returns a collection of pairs, where
-	//! the first element points to the dependant asset, and
+	//! the first element points to the dependent asset, and
 	//! the second element contains the instance count for the dependency or 0 if such information is not available.
 	//! \sa CAsset::GetDependencies to get a list of forward dependencies.
 	std::vector<std::pair<CAsset*, int32>> GetReverseDependencies(const CAsset& asset) const;

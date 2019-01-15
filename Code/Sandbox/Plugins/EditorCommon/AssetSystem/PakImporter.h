@@ -30,4 +30,4 @@ private:
 	std::deque<string> m_queue;
 };
 
-};
+}

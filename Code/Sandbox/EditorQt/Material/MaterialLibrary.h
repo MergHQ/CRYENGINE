@@ -4,12 +4,11 @@
 
 #include "BaseLibrary.h"
 
-/** Library of prototypes.
- */
 class SANDBOX_API CMaterialLibrary : public CBaseLibrary
 {
 public:
 	CMaterialLibrary(CBaseLibraryManager* pManager) : CBaseLibrary(pManager) {}
+
 	virtual bool Save();
 	virtual bool Load(const string& filename);
 	virtual void Serialize(XmlNodeRef& node, bool bLoading);
@@ -23,6 +22,7 @@ public:
 	void           RemoveItem(IDataBaseItem* item);
 	void           RemoveAllItems();
 	IDataBaseItem* FindItem(const string& name);
+
 private:
 	std::vector<CBaseLibraryItem*> m_items;
 };

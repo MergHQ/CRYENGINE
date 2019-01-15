@@ -49,6 +49,7 @@ CItemModelAttribute s_specAttribute("Spec", &Attributes::s_stringAttributeType, 
 CItemModelAttribute s_aiGroupIdAttribute("AI GroupID", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
 CItemModelAttributeEnumT<ObjectType> s_objectTypeAttribute("Object Type", CItemModelAttribute::StartHidden);
 CItemModelAttribute s_LayerColorAttribute("Layer Color", &Attributes::s_stringAttributeType, CItemModelAttribute::Visible, false);
+CItemModelAttribute s_linkedToAttribute("Linked to", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Temporary hot-fix to get ObjectType enum in Sandbox, since the enum registration works
@@ -116,6 +117,8 @@ CItemModelAttribute * CLevelLayerModel::GetAttributeForColumn(EObjectColumns col
 		return &LevelModelsAttributes::s_aiGroupIdAttribute;
 	case eObjectColumns_LayerColor:
 		return &LevelModelsAttributes::s_LayerColorAttribute;
+	case eObjectColumns_LinkedTo:
+		return &LevelModelsAttributes::s_linkedToAttribute;
 	default:
 		return nullptr;
 	}
@@ -146,8 +149,8 @@ QVariant CLevelLayerModel::GetHeaderData(int section, Qt::Orientation orientatio
 	if (role == Qt::DisplayRole)
 	{
 		//For Visible and Frozen we use Icons instead
-		if (section == eObjectColumns_Visible || section == eObjectColumns_Frozen || section == eObjectColumns_VCS 
-			|| section == eObjectColumns_LayerColor)
+		if (section == eObjectColumns_Visible || section == eObjectColumns_Frozen || section == eObjectColumns_VCS
+		    || section == eObjectColumns_LayerColor)
 		{
 			return "";
 		}
@@ -311,6 +314,10 @@ QVariant CLevelLayerModel::data(const QModelIndex& index, int role) const
 					{
 						int group = GetAIGroupID(pObject);
 						return (group > 0) ? group : QVariant();
+					}
+				case eObjectColumns_LinkedTo:
+					{
+						return pObject->GetLinkedToName();
 					}
 				}
 			}
@@ -574,10 +581,10 @@ bool CLevelLayerModel::canDropMimeData(const QMimeData* pData, Qt::DropAction ac
 
 			//find if we have a prefab or a group in the hierarchy, if we do run the safety checks
 			CBaseObject* pFound = pTargetObject;
-			
+
 			if (!pFound->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
 			{
-				pFound = pFound->GetPrefab();
+			  pFound = pFound->GetPrefab();
 			}
 
 			if (pFound)

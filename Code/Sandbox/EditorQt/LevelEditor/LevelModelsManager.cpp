@@ -39,6 +39,7 @@ enum EFullLevelColumns
 	eFullLevelColumns_LoadedByDefault,
 	eFullLevelColumns_HasPhysics,
 	eFullLevelColumns_Platform,
+	eFullLevelColumns_LinkedTo,
 	eFullLevelColumns_Size
 };
 
@@ -92,6 +93,8 @@ static CItemModelAttribute* FullLevel_GetColumnAttribute(int column)
 		return &LevelModelsAttributes::s_HasPhysicsAttribute;
 	case eFullLevelColumns_Platform:
 		return &LevelModelsAttributes::s_PlatformAttribute;
+	case eFullLevelColumns_LinkedTo:
+		return &LevelModelsAttributes::s_linkedToAttribute;
 	default:
 		return nullptr;
 	}
@@ -159,6 +162,7 @@ static QVariant FullLevel_GetHeaderData(int section, Qt::Orientation orientation
 		case eFullLevelColumns_LODCount:
 		case eFullLevelColumns_MinSpec:
 		case eFullLevelColumns_AI_GroupId:
+		case eFullLevelColumns_LinkedTo:
 			return "Objects";
 		default:
 			return "Layers";
