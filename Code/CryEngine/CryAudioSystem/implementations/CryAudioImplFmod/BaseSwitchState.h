@@ -38,6 +38,11 @@ public:
 	float      GetValue() const { return m_value; }
 	EStateType GetType() const  { return m_type; }
 
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	void        SetName(char const* const szName) { m_name = szName; }
+	char const* GetName() const                   { return m_name.c_str(); }
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
 protected:
 
 	explicit CBaseSwitchState(
@@ -52,6 +57,10 @@ protected:
 	uint32 const     m_id;
 	float const      m_value;
 	EStateType const m_type;
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	CryFixedStringT<MaxControlNameLength> m_name;
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 };
 } // namespace Fmod
 } // namespace Impl

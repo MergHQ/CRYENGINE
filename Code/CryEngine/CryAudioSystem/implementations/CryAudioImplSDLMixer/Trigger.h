@@ -33,6 +33,7 @@ public:
 	CTrigger& operator=(CTrigger&&) = delete;
 
 	explicit CTrigger(
+		uint32 const id,
 		EEventType const type,
 		SampleId const sampleId,
 		float const attenuationMinDistance = s_defaultMinAttenuationDist,
@@ -42,7 +43,8 @@ public:
 		int const fadeInTime = 0,
 		int const fadeOutTime = 0,
 		bool const isPanningEnabled = true)
-		: m_type(type)
+		: m_id(id)
+		, m_type(type)
 		, m_sampleId(sampleId)
 		, m_attenuationMinDistance(attenuationMinDistance)
 		, m_attenuationMaxDistance(attenuationMaxDistance)
@@ -56,26 +58,34 @@ public:
 	virtual ~CTrigger() override = default;
 
 	// CryAudio::Impl::ITriggerConnection
-	virtual ERequestStatus Execute(IObject* const pIObject, IEvent* const pIEvent) override;
-	virtual ERequestStatus Load() const override                             { return ERequestStatus::Success; }
-	virtual ERequestStatus Unload() const override                           { return ERequestStatus::Success; }
-	virtual ERequestStatus LoadAsync(IEvent* const pIEvent) const override   { return ERequestStatus::Success; }
-	virtual ERequestStatus UnloadAsync(IEvent* const pIEvent) const override { return ERequestStatus::Success; }
+	virtual ERequestStatus Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId) override;
+	virtual void           Stop(IObject* const pIObject) override;
+	virtual ERequestStatus Load() const override                                                 { return ERequestStatus::Success; }
+	virtual ERequestStatus Unload() const override                                               { return ERequestStatus::Success; }
+	virtual ERequestStatus LoadAsync(TriggerInstanceId const triggerInstanceId) const override   { return ERequestStatus::Success; }
+	virtual ERequestStatus UnloadAsync(TriggerInstanceId const triggerInstanceId) const override { return ERequestStatus::Success; }
 	// ~CryAudio::Impl::ITriggerConnection
 
-	EEventType GetType() const                   { return m_type; }
-	SampleId   GetSampleId() const               { return m_sampleId; }
+	uint32     GetId() const       { return m_id; }
+	EEventType GetType() const     { return m_type; }
+	SampleId   GetSampleId() const { return m_sampleId; }
 
-	float      GetAttenuationMinDistance() const { return m_attenuationMinDistance; }
-	float      GetAttenuationMaxDistance() const { return m_attenuationMaxDistance; }
-	int        GetVolume() const                 { return m_volume; }
-	int        GetNumLoops() const               { return m_numLoops; }
-	int        GetFadeInTime() const             { return m_fadeInTime; }
-	int        GetFadeOutTime() const            { return m_fadeOutTime; }
-	bool       IsPanningEnabled() const          { return m_isPanningEnabled; }
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+	void        SetName(char const* const szName) { m_name = szName; }
+	char const* GetName() const                   { return m_name.c_str(); }
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+
+	float GetAttenuationMinDistance() const { return m_attenuationMinDistance; }
+	float GetAttenuationMaxDistance() const { return m_attenuationMaxDistance; }
+	int   GetVolume() const                 { return m_volume; }
+	int   GetNumLoops() const               { return m_numLoops; }
+	int   GetFadeInTime() const             { return m_fadeInTime; }
+	int   GetFadeOutTime() const            { return m_fadeOutTime; }
+	bool  IsPanningEnabled() const          { return m_isPanningEnabled; }
 
 private:
 
+	uint32 const     m_id;
 	EEventType const m_type;
 	SampleId const   m_sampleId;
 	float const      m_attenuationMinDistance;
@@ -85,6 +95,10 @@ private:
 	int const        m_fadeInTime;
 	int const        m_fadeOutTime;
 	bool const       m_isPanningEnabled;
+
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+	CryFixedStringT<MaxControlNameLength> m_name;
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 };
 } // namespace SDL_mixer
 } // namespace Impl

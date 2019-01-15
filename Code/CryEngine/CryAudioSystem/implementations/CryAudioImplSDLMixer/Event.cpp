@@ -13,7 +13,7 @@ namespace Impl
 namespace SDL_mixer
 {
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CEvent::Stop()
+void CEvent::Stop()
 {
 	// need to make a copy because the callback
 	// registered with Mix_ChannelFinished can edit the list
@@ -31,8 +31,6 @@ ERequestStatus CEvent::Stop()
 			Mix_FadeOutChannel(channel, fadeOutTime);
 		}
 	}
-
-	return ERequestStatus::Pending;
 }
 
 //////////////////////////////////////////////////////////////////////////

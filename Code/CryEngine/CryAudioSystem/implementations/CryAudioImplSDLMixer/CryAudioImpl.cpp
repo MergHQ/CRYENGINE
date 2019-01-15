@@ -40,7 +40,7 @@ class CEngineModule_CryAudioImplSDLMixer : public IImplModule
 		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplSDLMixer::OnEvent, nullptr, ESystemEvents::ImplSet);
 		SRequestUserData const data(ERequestFlags::ExecuteBlocking | ERequestFlags::CallbackOnExternalOrCallingThread);
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::SDL_mixer::CImpl");
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CImpl");
 		gEnv->pAudioSystem->SetImpl(new CImpl, data);
 		gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplSDLMixer::OnEvent, nullptr);
 

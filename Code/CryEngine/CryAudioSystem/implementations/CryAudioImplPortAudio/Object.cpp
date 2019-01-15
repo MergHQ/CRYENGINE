@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "Object.h"
 #include "Event.h"
+#include "Impl.h"
 #include "Trigger.h"
 #include <Logger.h>
 
@@ -31,17 +32,34 @@ void CObject::RegisterEvent(CEvent* const pEvent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::UnregisterEvent(CEvent* const pEvent)
-{
-	m_activeEvents.erase(std::remove(m_activeEvents.begin(), m_activeEvents.end(), pEvent), m_activeEvents.end());
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CObject::Update(float const deltaTime)
 {
-	for (auto const pEvent : m_activeEvents)
+	auto iter(m_activeEvents.begin());
+	auto iterEnd(m_activeEvents.end());
+
+	while (iter != iterEnd)
 	{
-		pEvent->Update();
+		auto const pEvent = *iter;
+
+		if (pEvent->toBeRemoved)
+		{
+			gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pEvent->GetTriggerInstanceId());
+			g_pImpl->DestructEvent(pEvent);
+
+			if (iter != (iterEnd - 1))
+			{
+				(*iter) = m_activeEvents.back();
+			}
+
+			m_activeEvents.pop_back();
+			iter = m_activeEvents.begin();
+			iterEnd = m_activeEvents.end();
+		}
+		else
+		{
+			pEvent->Update();
+			++iter;
+		}
 	}
 }
 
@@ -72,8 +90,10 @@ void CObject::StopAllTriggers()
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CObject::SetName(char const* const szName)
 {
-	// PortAudio does not have the concept of audio objects and with that the debugging of such.
-	// Therefore the name is currently not needed here.
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+	m_name = szName;
+#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
+
 	return ERequestStatus::Success;
 }
 

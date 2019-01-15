@@ -4,10 +4,7 @@
 #include "PreviewTrigger.h"
 #include "Common.h"
 #include "Managers.h"
-#include "EventManager.h"
 #include "Object.h"
-#include "Event.h"
-#include "Common/IEvent.h"
 #include "Common/IImpl.h"
 #include "Common/IObject.h"
 #include "Common/ITriggerConnection.h"
@@ -42,60 +39,36 @@ void CPreviewTrigger::Execute(Impl::ITriggerInfo const& triggerInfo)
 		STriggerInstanceState triggerInstanceState;
 		triggerInstanceState.triggerId = GetId();
 
-		CEvent* const pEvent = g_eventManager.ConstructEvent();
-		ERequestStatus const activateResult = m_pConnection->Execute(g_previewObject.GetImplDataPtr(), pEvent->m_pImplData);
+		ERequestStatus const activateResult = m_pConnection->Execute(g_previewObject.GetImplDataPtr(), g_triggerInstanceIdCounter);
 
 		if (activateResult == ERequestStatus::Success || activateResult == ERequestStatus::Pending)
 		{
-			pEvent->SetTriggerName(GetName());
-			pEvent->m_pObject = &g_previewObject;
-			pEvent->SetTriggerId(GetId());
-			pEvent->m_triggerInstanceId = g_triggerInstanceIdCounter;
-
 			if (activateResult == ERequestStatus::Success)
 			{
-				pEvent->m_state = EEventState::Playing;
-				++(triggerInstanceState.numPlayingEvents);
+				++(triggerInstanceState.numPlayingInstances);
 			}
 			else if (activateResult == ERequestStatus::Pending)
 			{
-				pEvent->m_state = EEventState::Loading;
-				++(triggerInstanceState.numLoadingEvents);
+				++(triggerInstanceState.numLoadingInstances);
 			}
-
-			g_previewObject.AddEvent(pEvent);
 		}
-		else
+		else if (activateResult != ERequestStatus::SuccessDoNotTrack)
 		{
-			g_eventManager.DestructEvent(pEvent);
-
-			if (activateResult != ERequestStatus::SuccessDoNotTrack)
-			{
-				// No TriggerImpl generated an active event.
-				Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s")", GetName(), g_previewObject.m_name.c_str());
-			}
+			Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", GetName(), g_previewObject.m_name.c_str(), __FUNCTION__);
 		}
 
-		if (triggerInstanceState.numPlayingEvents > 0 || triggerInstanceState.numLoadingEvents > 0)
+		if (triggerInstanceState.numPlayingInstances > 0 || triggerInstanceState.numLoadingInstances > 0)
 		{
 			triggerInstanceState.flags |= ETriggerStatus::Playing;
-			g_previewObject.AddTriggerState(g_triggerInstanceIdCounter++, triggerInstanceState);
+			g_triggerInstanceIdToObject[g_triggerInstanceIdCounter] = &g_previewObject;
+			g_previewObject.AddTriggerState(g_triggerInstanceIdCounter, triggerInstanceState);
+			IncrementTriggerInstanceIdCounter();
 		}
 		else
 		{
 			// All of the events have either finished before we got here or never started, immediately inform the user that the trigger has finished.
 			g_previewObject.SendFinishedTriggerInstanceRequest(triggerInstanceState);
 		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CPreviewTrigger::Stop()
-{
-	for (auto const pEvent : g_previewObject.GetActiveEvents())
-	{
-		CRY_ASSERT_MESSAGE((pEvent != nullptr) && pEvent->IsPlaying(), "Invalid event during %s", __FUNCTION__);
-		pEvent->Stop();
 	}
 }
 

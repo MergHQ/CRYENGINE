@@ -1034,6 +1034,9 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 	size_t numAudioParameterTracks = 0;
 	const int trackCount = NumTracks();
 
+	const float PosEpsilon = 0.0001f;
+	const float RotEpsilon = DEG2RAD(0.0001f);
+
 	for (int paramIndex = 0; paramIndex < trackCount; paramIndex++)
 	{
 		CAnimParamType paramType = m_tracks[paramIndex]->GetParameterType();
@@ -1057,14 +1060,14 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 			{
 				pos = stl::get<Vec3>(pPosTrack->GetValue(animContext.time));
 
-				if (!IsEquivalent(pos, GetPos(), 0.0001f))
+				if (!IsEquivalent(pos, GetPos(), PosEpsilon) || !IsEquivalent(pos, pEntity->GetPos(), PosEpsilon))
 				{
 					entityUpdateFlags |= eUpdateEntity_Position;
 				}
 			}
 			else
 			{
-				if (!IsEquivalent(pos, GetPos(), 0.0001f))
+				if (!IsEquivalent(pos, GetPos(), PosEpsilon) || !IsEquivalent(pos, pEntity->GetPos(), PosEpsilon))
 				{
 					entityUpdateFlags |= eUpdateEntity_Position;
 					pos = m_vInterpPos;
@@ -1080,14 +1083,14 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 			{
 				rotate = stl::get<Quat>(pRotTrack->GetValue(animContext.time));
 
-				if (!CompareRotation(rotate, GetRotate(), DEG2RAD(0.0001f)))
+				if (!CompareRotation(rotate, GetRotate(), RotEpsilon) || !CompareRotation(rotate, pEntity->GetRotation(), RotEpsilon))
 				{
 					entityUpdateFlags |= eUpdateEntity_Rotation;
 				}
 			}
 			else
 			{
-				if (!CompareRotation(rotate, GetRotate(), DEG2RAD(0.0001f)))
+				if (!CompareRotation(rotate, GetRotate(), RotEpsilon) || !CompareRotation(rotate, pEntity->GetRotation(), RotEpsilon))
 				{
 					entityUpdateFlags |= eUpdateEntity_Rotation;
 					rotate = m_interpRot;

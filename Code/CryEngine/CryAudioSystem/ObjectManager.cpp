@@ -6,16 +6,15 @@
 #include "Managers.h"
 #include "ListenerManager.h"
 #include "Object.h"
-#include "Event.h"
 #include "StandaloneFile.h"
 #include "CVars.h"
 #include "IImpl.h"
-#include "Common/SharedData.h"
 #include "Common/IObject.h"
 #include "Common/Logger.h"
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	#include "Debug.h"
+	#include "Common/DebugStyle.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -141,6 +140,37 @@ void CObjectManager::ReleasePendingRays()
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
+void CObjectManager::SetObjectPhysical(Impl::IObject* const pIObject)
+{
+	for (auto const pObject : m_constructedObjects)
+	{
+		if (pObject->GetImplDataPtr() == pIObject)
+		{
+			pObject->RemoveFlag(EObjectFlags::Virtual);
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+			pObject->ResetObstructionRays();
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+
+			break;
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CObjectManager::SetObjectVirtual(Impl::IObject* const pIObject)
+{
+	for (auto const pObject : m_constructedObjects)
+	{
+		if (pObject->GetImplDataPtr() == pIObject)
+		{
+			pObject->SetFlag(EObjectFlags::Virtual);
+			break;
+		}
+	}
+}
+
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 size_t CObjectManager::GetNumAudioObjects() const
@@ -200,12 +230,12 @@ void DrawObjectDebugData(
 
 		if (draw)
 		{
-			auxGeom.Draw2dLabel(posX, posY, Debug::g_managerFontSize,
-			                    isVirtual ? Debug::g_globalColorVirtual.data() : (hasActiveData ? Debug::g_managerColorItemActive.data() : Debug::g_globalColorInactive.data()),
+			auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize,
+			                    !hasActiveData ? Debug::s_globalColorInactive : (isVirtual ? Debug::s_globalColorVirtual : Debug::s_listColorItemActive),
 			                    false,
 			                    szObjectName);
 
-			posY += Debug::g_managerLineHeight;
+			posY += Debug::s_listLineHeight;
 			++numObjects;
 		}
 	}
@@ -219,7 +249,7 @@ void CObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, fl
 	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
 	lowerCaseSearchString.MakeLower();
 
-	posY += Debug::g_managerHeaderLineHeight;
+	posY += Debug::s_listHeaderLineHeight;
 
 	DrawObjectDebugData(auxGeom, posX, posY, *g_pObject, lowerCaseSearchString, numObjects);
 	DrawObjectDebugData(auxGeom, posX, posY, g_previewObject, lowerCaseSearchString, numObjects);
@@ -229,7 +259,7 @@ void CObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, fl
 		DrawObjectDebugData(auxGeom, posX, posY, *pObject, lowerCaseSearchString, numObjects);
 	}
 
-	auxGeom.Draw2dLabel(posX, headerPosY, Debug::g_managerHeaderFontSize, Debug::g_globalColorHeader.data(), false, "Audio Objects [%" PRISIZE_T "]", numObjects);
+	auxGeom.Draw2dLabel(posX, headerPosY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "Audio Objects [%" PRISIZE_T "]", numObjects);
 }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }      // namespace CryAudio

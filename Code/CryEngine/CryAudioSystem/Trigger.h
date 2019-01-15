@@ -11,6 +11,11 @@ namespace CryAudio
 class CObject;
 struct STriggerInstanceState;
 
+namespace Impl
+{
+struct IObject;
+} // namespace Impl
+
 class CTrigger final : public Control, public CPoolObject<CTrigger, stl::PSyncNone>
 {
 public:
@@ -54,6 +59,7 @@ public:
 		CObject& object,
 		TriggerInstanceId const triggerInstanceId,
 		STriggerInstanceState& triggerInstanceState) const;
+	void Stop(Impl::IObject* const pIObject) const;
 	void LoadAsync(CObject& object, bool const doLoad) const;
 	void PlayFile(
 		CObject& object,

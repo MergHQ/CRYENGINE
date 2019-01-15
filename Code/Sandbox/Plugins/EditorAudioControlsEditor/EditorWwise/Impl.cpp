@@ -33,7 +33,7 @@ EItemType TagToType(char const* const szTag)
 {
 	EItemType type = EItemType::None;
 
-	if (_stricmp(szTag, CryAudio::s_szEventTag) == 0)
+	if (_stricmp(szTag, CryAudio::Impl::Wwise::s_szEventTag) == 0)
 	{
 		type = EItemType::Event;
 	}
@@ -102,7 +102,7 @@ char const* TypeToTag(EItemType const type)
 	switch (type)
 	{
 	case EItemType::Event:
-		szTag = CryAudio::s_szEventTag;
+		szTag = CryAudio::Impl::Wwise::s_szEventTag;
 		break;
 	case EItemType::Parameter:
 		szTag = CryAudio::Impl::Wwise::s_szParameterTag;

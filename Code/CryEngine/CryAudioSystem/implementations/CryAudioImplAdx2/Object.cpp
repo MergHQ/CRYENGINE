@@ -11,7 +11,7 @@
 #include <Logger.h>
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-	#include "Debug.h"
+	#include <DebugStyle.h>
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
@@ -55,6 +55,8 @@ void CObject::Update(float const deltaTime)
 	{
 		UpdateVelocities(deltaTime);
 	}
+
+	CBaseObject::Update(deltaTime);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -115,15 +117,15 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 			auxGeom.Draw2dLabel(
 				posX,
 				posY,
-				g_debugObjectFontSize,
-				isVirtual ? g_debugObjectColorVirtual.data() : g_debugObjectColorPhysical.data(),
+				Debug::s_objectFontSize,
+				isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorParameter,
 				false,
 				"[Adx2] %s: %2.2f m/s (%2.2f)\n",
 				static_cast<char const*>(s_szAbsoluteVelocityAisacName),
 				m_absoluteVelocity,
 				m_absoluteVelocityNormalized);
 
-			posY += g_debugObjectLineHeight;
+			posY += Debug::s_objectLineHeight;
 		}
 
 		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0)
@@ -131,8 +133,8 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 			auxGeom.Draw2dLabel(
 				posX,
 				posY,
-				g_debugObjectFontSize,
-				isVirtual ? g_debugObjectColorVirtual.data() : g_debugObjectColorPhysical.data(),
+				Debug::s_objectFontSize,
+				isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorActive,
 				false,
 				"[Adx2] Doppler calculation enabled\n");
 		}

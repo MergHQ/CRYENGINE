@@ -24,7 +24,7 @@
 #include <CryAudio/IAudioSystem.h>
 
 #if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
-	#include "Debug.h"
+	#include <DebugStyle.h>
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 
@@ -42,6 +42,9 @@ uint16 g_triggerPoolSizeLevelSpecific = 0;
 
 #if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
 uint16 g_debugTriggerPoolSize = 0;
+uint16 g_objectPoolSize = 0;
+uint16 g_eventPoolSize = 0;
+Events g_constructedEvents;
 #endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
@@ -114,15 +117,32 @@ bool GetSoundInfo(char const* const szPath, SF_INFO& sfInfo, PaStreamParameters&
 	return success;
 }
 
-///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::Init(uint16 const objectPoolSize, uint16 const eventPoolSize)
+//////////////////////////////////////////////////////////////////////////
+CImpl::CImpl()
 {
+	g_pImpl = this;
+}
+
+///////////////////////////////////////////////////////////////////////////
+ERequestStatus CImpl::Init(uint16 const objectPoolSize)
+{
+	if (g_cvars.m_eventPoolSize < 1)
+	{
+		g_cvars.m_eventPoolSize = 1;
+		Cry::Audio::Log(ELogType::Warning, R"(Event pool size must be at least 1. Forcing the cvar "s_PortAudioEventPoolSize" to 1!)");
+	}
+
 	g_constructedObjects.reserve(static_cast<size_t>(objectPoolSize));
-	AllocateMemoryPools(objectPoolSize, eventPoolSize);
+	AllocateMemoryPools(objectPoolSize, static_cast<uint16>(g_cvars.m_eventPoolSize));
 
 	char const* szAssetDirectory = gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryRelative();
 
 #if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+	g_objectPoolSize = objectPoolSize;
+	g_eventPoolSize = static_cast<uint16>(g_cvars.m_eventPoolSize);
+
+	g_constructedEvents.reserve(static_cast<size_t>(g_cvars.m_eventPoolSize));
+
 	if (strlen(szAssetDirectory) == 0)
 	{
 		Cry::Audio::Log(ELogType::Error, "<Audio - PortAudio>: No asset folder set!");
@@ -172,6 +192,7 @@ void CImpl::ShutDown()
 void CImpl::Release()
 {
 	delete this;
+	g_pImpl = nullptr;
 	g_cvars.UnregisterVariables();
 
 	FreeMemoryPools();
@@ -269,47 +290,31 @@ void CImpl::SetGlobalSwitchState(ISwitchStateConnection* const pISwitchStateConn
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
+void CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 {
-	ERequestStatus requestResult = ERequestStatus::Failure;
-
 	if (pFileInfo != nullptr)
 	{
-		CFile* const pFileData = static_cast<CFile*>(pFileInfo->pImplData);
+		auto const pFileData = static_cast<CFile*>(pFileInfo->pImplData);
 
-		if (pFileData != nullptr)
+		if (pFileData == nullptr)
 		{
-			requestResult = ERequestStatus::Success;
-		}
-		else
-		{
-			Cry::Audio::Log(ELogType::Error, "Invalid AudioFileEntryData passed to the PortAudio implementation of RegisterInMemoryFile");
+			Cry::Audio::Log(ELogType::Error, "Invalid AudioFileEntryData passed to the PortAudio implementation of %s", __FUNCTION__);
 		}
 	}
-
-	return requestResult;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
+void CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 {
-	ERequestStatus requestResult = ERequestStatus::Failure;
-
 	if (pFileInfo != nullptr)
 	{
-		CFile* const pFileData = static_cast<CFile*>(pFileInfo->pImplData);
+		auto const pFileData = static_cast<CFile*>(pFileInfo->pImplData);
 
-		if (pFileData != nullptr)
+		if (pFileData == nullptr)
 		{
-			requestResult = ERequestStatus::Success;
-		}
-		else
-		{
-			Cry::Audio::Log(ELogType::Error, "Invalid AudioFileEntryData passed to the PortAudio implementation of UnregisterInMemoryFile");
+			Cry::Audio::Log(ELogType::Error, "Invalid AudioFileEntryData passed to the PortAudio implementation of %s", __FUNCTION__);
 		}
 	}
-
-	return requestResult;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -353,6 +358,11 @@ IObject* CImpl::ConstructGlobalObject()
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::PortAudio::CObject");
 	auto pObject = new CObject();
+
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+	pObject->SetName("Global Object");
+#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
+
 	stl::push_back_unique(g_constructedObjects, pObject);
 
 	return static_cast<IObject*>(pObject);
@@ -363,6 +373,14 @@ IObject* CImpl::ConstructObject(CTransformation const& transformation, char cons
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::PortAudio::CObject");
 	auto pObject = new CObject();
+
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+	if (szName != nullptr)
+	{
+		pObject->SetName(szName);
+	}
+#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
+
 	stl::push_back_unique(g_constructedObjects, pObject);
 
 	return static_cast<IObject*>(pObject);
@@ -398,19 +416,6 @@ void CImpl::DestructListener(IListener* const pIListener)
 	CRY_ASSERT_MESSAGE(pIListener == g_pListener, "pIListener is not g_pListener during %s", __FUNCTION__);
 	delete g_pListener;
 	g_pListener = nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
-IEvent* CImpl::ConstructEvent(CryAudio::CEvent& event)
-{
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::PortAudio::CEvent");
-	return static_cast<IEvent*>(new CEvent(event));
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructEvent(IEvent const* const pIEvent)
-{
-	delete pIEvent;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -658,6 +663,47 @@ void CImpl::UpdateLocalizedTriggers()
 }
 
 //////////////////////////////////////////////////////////////////////////
+CEvent* CImpl::ConstructEvent(TriggerInstanceId const triggerInstanceId)
+{
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::PortAudio::CEvent");
+	auto const pEvent = new CEvent(triggerInstanceId);
+
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+	g_constructedEvents.push_back(pEvent);
+#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
+
+	return pEvent;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::DestructEvent(CEvent const* const pEvent)
+{
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+	CRY_ASSERT_MESSAGE(pEvent != nullptr, "pEvent is nullpter during %s", __FUNCTION__);
+
+	auto iter(g_constructedEvents.begin());
+	auto const iterEnd(g_constructedEvents.cend());
+
+	for (; iter != iterEnd; ++iter)
+	{
+		if ((*iter) == pEvent)
+		{
+			if (iter != (iterEnd - 1))
+			{
+				(*iter) = g_constructedEvents.back();
+			}
+
+			g_constructedEvents.pop_back();
+			break;
+		}
+	}
+
+#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
+
+	delete pEvent;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
 {
 }
@@ -670,7 +716,8 @@ void DrawMemoryPoolInfo(
 	float& posY,
 	stl::SPoolMemoryUsage const& mem,
 	stl::SMemoryUsage const& pool,
-	char const* const szType)
+	char const* const szType,
+	uint16 const poolSize)
 {
 	CryFixedStringT<MaxMiscStringLength> memUsedString;
 
@@ -694,15 +741,17 @@ void DrawMemoryPoolInfo(
 		memAllocString.Format("%" PRISIZE_T " KiB", mem.nAlloc >> 10);
 	}
 
-	posY += g_debugSystemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false,
-	                    "[%s] In Use: %" PRISIZE_T " | Constructed: %" PRISIZE_T " (%s) | Memory Pool: %s",
-	                    szType, pool.nUsed, pool.nAlloc, memUsedString.c_str(), memAllocString.c_str());
+	ColorF const color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
+
+	posY += Debug::s_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, color, false,
+	                    "[%s] Constructed: %" PRISIZE_T " (%s) | Allocated: %" PRISIZE_T " (%s) | Pool Size: %u",
+	                    szType, pool.nUsed, memUsedString.c_str(), pool.nAlloc, memAllocString.c_str(), poolSize);
 }
 #endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo)
+void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo)
 {
 #if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
 	CryModuleMemoryInfo memInfo;
@@ -721,33 +770,74 @@ void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY
 		memInfoString.Format("%s (Total Memory: %u KiB)", m_name.c_str(), memAlloc >> 10);
 	}
 
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemHeaderFontSize, g_debugSystemColorHeader.data(), false, memInfoString.c_str());
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemHeaderFontSize, Debug::s_globalColorHeader, false, memInfoString.c_str());
+	posY += Debug::s_systemHeaderLineSpacerHeight;
 
 	if (showDetailedInfo)
 	{
 		{
 			auto& allocator = CObject::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Objects");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Objects", g_objectPoolSize);
 		}
 
 		{
 			auto& allocator = CEvent::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Events");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Events", g_eventPoolSize);
 		}
 
 		if (g_debugTriggerPoolSize > 0)
 		{
 			auto& allocator = CTrigger::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Triggers");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Triggers", g_triggerPoolSize);
 		}
 	}
+
+	size_t const numEvents = g_constructedEvents.size();
+
+	posY += Debug::s_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextSecondary, false, "Events: %" PRISIZE_T, numEvents);
 
 	Vec3 const& listenerPosition = g_pListener->GetTransformation().GetPosition();
 	Vec3 const& listenerDirection = g_pListener->GetTransformation().GetForward();
 	char const* const szName = g_pListener->GetName();
 
-	posY += g_debugSystemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorListenerActive.data(), false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z);
+	posY += Debug::s_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorListenerActive, false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z);
+#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
+}
+
+/////////////////////////////////////////////////////////////////////////
+void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const
+{
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(szTextFilter);
+	lowerCaseSearchString.MakeLower();
+
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "Port Audio Events [%" PRISIZE_T "]", g_constructedEvents.size());
+	posY += Debug::s_listHeaderLineHeight;
+
+	for (auto const pEvent : g_constructedEvents)
+	{
+		Vec3 const& position = pEvent->pObject->GetTransformation().GetPosition();
+		float const distance = position.GetDistance(g_pListener->GetTransformation().GetPosition());
+
+		if ((debugDistance <= 0.0f) || ((debugDistance > 0.0f) && (distance < debugDistance)))
+		{
+			char const* const szTriggerName = pEvent->GetName();
+			CryFixedStringT<MaxControlNameLength> lowerCaseTriggerName(szTriggerName);
+			lowerCaseTriggerName.MakeLower();
+			bool const draw = ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseTriggerName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos));
+
+			if (draw)
+			{
+				auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize, Debug::s_listColorItemActive, false, "%s on %s", szTriggerName, pEvent->pObject->GetName());
+
+				posY += Debug::s_listLineHeight;
+			}
+		}
+	}
+
+	posX += 600.0f;
 #endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 }
 } // namespace PortAudio

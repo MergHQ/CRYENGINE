@@ -10,8 +10,12 @@ namespace CryAudio
 {
 class CObject;
 class CStandaloneFile;
-class CEvent;
 class CRequest;
+
+namespace Impl
+{
+struct IObject;
+} // namespace Impl
 
 class CObjectManager final
 {
@@ -34,6 +38,8 @@ public:
 	void            Update(float const deltaTime);
 	void            RegisterObject(CObject* const pObject);
 	void            ReleasePendingRays();
+	void            SetObjectPhysical(Impl::IObject* const pIObject);
+	void            SetObjectVirtual(Impl::IObject* const pIObject);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	size_t                    GetNumAudioObjects() const;

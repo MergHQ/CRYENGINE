@@ -13,6 +13,12 @@ namespace SDL_mixer
 //////////////////////////////////////////////////////////////////////////
 void CCVars::RegisterVariables()
 {
+	m_eventPoolSize = 256;
+
+	REGISTER_CVAR2("s_SDLMixerEventPoolSize", &m_eventPoolSize, m_eventPoolSize, VF_REQUIRE_APP_RESTART,
+	               "Sets the number of preallocated events.\n"
+	               "Usage: s_SDLMixerEventPoolSize [0/...]\n"
+	               "Default: 256\n");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -22,6 +28,7 @@ void CCVars::UnregisterVariables()
 
 	if (pConsole != nullptr)
 	{
+		pConsole->UnregisterVariable("s_SDLMixerEventPoolSize");
 	}
 }
 } // namespace SDL_mixer

@@ -44,6 +44,10 @@ public:
 	virtual void Set(IObject* const pIObject, float const amount) override;
 	// ~IEnvironmentConnection
 
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	void SetName(char const* const szName) { m_name = szName; }
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+
 private:
 
 	EEnvironmentType const m_type;
@@ -64,6 +68,10 @@ private:
 			float const    m_shift;
 		};
 	};
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	CryFixedStringT<MaxControlNameLength> m_name;
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 };
 } // namespace Wwise
 } // namespace Impl

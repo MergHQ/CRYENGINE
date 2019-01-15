@@ -4,12 +4,10 @@
 #include "Object.h"
 #include "CVars.h"
 #include "Managers.h"
-#include "EventManager.h"
 #include "System.h"
 #include "FileManager.h"
 #include "ListenerManager.h"
 #include "Request.h"
-#include "Event.h"
 #include "StandaloneFile.h"
 #include "Environment.h"
 #include "Parameter.h"
@@ -35,6 +33,7 @@
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	#include "PreviewTrigger.h"
 	#include "Debug.h"
+	#include "Common/DebugStyle.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -44,31 +43,15 @@ namespace CryAudio
 void CObject::Release()
 {
 	// Do not clear the object's name though!
-	m_activeEvents.clear();
 	m_activeStandaloneFiles.clear();
 
 	for (auto& triggerStatesPair : m_triggerStates)
 	{
-		triggerStatesPair.second.numLoadingEvents = 0;
-		triggerStatesPair.second.numPlayingEvents = 0;
+		triggerStatesPair.second.numLoadingInstances = 0;
+		triggerStatesPair.second.numPlayingInstances = 0;
 	}
 
 	m_pImplData = nullptr;
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	m_flags &= ~EObjectFlags::Virtual;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObject::AddEvent(CEvent* const pEvent)
-{
-	m_activeEvents.insert(pEvent);
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	// Set the max activity radius of all active events on this object.
-	m_maxRadius = std::max(pEvent->GetTriggerRadius(), m_maxRadius);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -101,76 +84,45 @@ void CObject::SendFinishedTriggerInstanceRequest(STriggerInstanceState const& tr
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CObject::ReportStartedEvent(CEvent* const pEvent)
+void CObject::ReportFinishedTriggerInstance(TriggerInstanceId const triggerInstanceId)
 {
-	CRY_ASSERT_MESSAGE(m_activeEvents.find(pEvent) == m_activeEvents.end(), "An event was found in active list during %s", __FUNCTION__);
-
-	AddEvent(pEvent);
-	ObjectTriggerStates::iterator const iter(m_triggerStates.find(pEvent->m_triggerInstanceId));
+	ObjectTriggerStates::iterator const iter(m_triggerStates.find(triggerInstanceId));
 
 	if (iter != m_triggerStates.end())
 	{
 		STriggerInstanceState& triggerInstanceState = iter->second;
+		CRY_ASSERT_MESSAGE(triggerInstanceState.numPlayingInstances > 0, "Number of playing trigger instances must be at least 1 during %s", __FUNCTION__);
 
-		CRY_ASSERT(triggerInstanceState.numLoadingEvents > 0);
-		--(triggerInstanceState.numLoadingEvents);
-		++(triggerInstanceState.numPlayingEvents);
-	}
-	else
-	{
-		// must exist!
-		CRY_ASSERT(false);
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CObject::ReportFinishedEvent(CEvent* const pEvent, bool const bSuccess)
-{
-	// If this assert fires we most likely have it ending before it was pushed into the active events list during trigger execution.
-	CRY_ASSERT_MESSAGE(m_activeEvents.find(pEvent) != m_activeEvents.end(), "An event was not found in active list during %s", __FUNCTION__);
-
-	m_activeEvents.erase(pEvent);
-
-	ObjectTriggerStates::iterator const iter(m_triggerStates.find(pEvent->m_triggerInstanceId));
-
-	if (iter != m_triggerStates.end())
-	{
-		switch (pEvent->m_state)
+		if (--(triggerInstanceState.numPlayingInstances) == 0 && triggerInstanceState.numLoadingInstances == 0)
 		{
-		case EEventState::Playing:
-		case EEventState::Virtual:
+			g_triggerInstanceIdToObject.erase(triggerInstanceId);
+
+			SendFinishedTriggerInstanceRequest(triggerInstanceState);
+
+			if ((triggerInstanceState.flags & ETriggerStatus::Loaded) != 0)
 			{
-				STriggerInstanceState& triggerInstanceState = iter->second;
-				CRY_ASSERT_MESSAGE(triggerInstanceState.numPlayingEvents > 0, "Number of playing events must be at least 1 during %s", __FUNCTION__);
-
-				if (--(triggerInstanceState.numPlayingEvents) == 0 && triggerInstanceState.numLoadingEvents == 0)
-				{
-					ReportFinishedTriggerInstance(iter);
-				}
-
-				break;
+				// If the trigger instance was manually loaded -- keep it
+				triggerInstanceState.flags &= ~ETriggerStatus::Playing;
 			}
-		default:
+			else
 			{
-				// unknown event state!
-				CRY_ASSERT(false);
-
-				break;
+				// If the trigger instance wasn't loaded -- kill it
+				m_triggerStates.erase(iter);
 			}
 		}
 	}
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	else
 	{
-		Cry::Audio::Log(ELogType::Warning, "Reported finished event on an inactive trigger %s", pEvent->GetTriggerName());
+		Cry::Audio::Log(ELogType::Warning, "Unknown trigger instance id %u during %s", triggerInstanceId, __FUNCTION__);
 	}
 
 	// Recalculate the max activity radius.
 	m_maxRadius = 0.0f;
 
-	for (auto const pActiveEvent : m_activeEvents)
+	for (auto const triggerState : m_triggerStates)
 	{
-		m_maxRadius = std::max(pActiveEvent->GetTriggerRadius(), m_maxRadius);
+		m_maxRadius = std::max(triggerState.second.radius, m_maxRadius);
 	}
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 }
@@ -198,13 +150,7 @@ void CObject::ReportFinishedStandaloneFile(CStandaloneFile* const pStandaloneFil
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CObject::HandleStopTrigger(CTrigger const* const pTrigger)
 {
-	for (auto const pEvent : m_activeEvents)
-	{
-		if ((pEvent != nullptr) && pEvent->IsPlaying() && (pEvent->GetTriggerId() == pTrigger->GetId()))
-		{
-			pEvent->Stop();
-		}
-	}
+	pTrigger->Stop(m_pImplData);
 
 	return ERequestStatus::Success;
 }
@@ -221,24 +167,6 @@ void CObject::SetOcclusion(float const occlusion)
 	m_pImplData->SetOcclusion(occlusion);
 }
 
-///////////////////////////////////////////////////////////////////////////
-void CObject::ReportFinishedTriggerInstance(ObjectTriggerStates::iterator const& iter)
-{
-	STriggerInstanceState& triggerInstanceState = iter->second;
-	SendFinishedTriggerInstanceRequest(triggerInstanceState);
-
-	if ((triggerInstanceState.flags & ETriggerStatus::Loaded) != 0)
-	{
-		// If the trigger instance was manually loaded -- keep it
-		triggerInstanceState.flags &= ~ETriggerStatus::Playing;
-	}
-	else
-	{
-		// If the trigger instance wasn't loaded -- kill it
-		m_triggerStates.erase(iter);
-	}
-}
-
 //////////////////////////////////////////////////////////////////////////
 void CObject::PushRequest(SRequestData const& requestData, SRequestUserData const& userData)
 {
@@ -249,12 +177,9 @@ void CObject::PushRequest(SRequestData const& requestData, SRequestUserData cons
 //////////////////////////////////////////////////////////////////////////
 bool CObject::IsActive() const
 {
-	for (auto const pEvent : m_activeEvents)
+	if (!m_triggerStates.empty())
 	{
-		if (pEvent->IsPlaying())
-		{
-			return true;
-		}
+		return true;
 	}
 
 	for (auto const& standaloneFilePair : m_activeStandaloneFiles)
@@ -391,7 +316,7 @@ void CObject::Init(char const* const szName, Impl::IObject* const pImplData, Ent
 bool CObject::CanBeReleased() const
 {
 	return (m_flags& EObjectFlags::InUse) == 0 &&
-	       m_activeEvents.empty() &&
+	       m_triggerStates.empty() &&
 	       m_activeStandaloneFiles.empty() &&
 	       !m_propagationProcessor.HasPendingRays() &&
 	       m_numPendingSyncCallbacks == 0;
@@ -410,11 +335,6 @@ void CObject::RemoveFlag(EObjectFlags const flag)
 }
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-float const CObject::CStateDebugDrawData::s_minSwitchColor = 0.3f;
-float const CObject::CStateDebugDrawData::s_maxSwitchColor = 1.0f;
-int const CObject::CStateDebugDrawData::s_maxToMinUpdates = 100;
-static char const* const s_szOcclusionTypes[] = { "None", "Ignore", "Adaptive", "Low", "Medium", "High" };
-
 //////////////////////////////////////////////////////////////////////////
 char const* GetDefaultTriggerName(ControlId const id)
 {
@@ -440,13 +360,10 @@ char const* GetDefaultTriggerName(ControlId const id)
 	case ResumeAllTriggerId:
 		szName = g_resumeAllTrigger.GetName();
 		break;
-	#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	case PreviewTriggerId:
 		szName = g_previewTrigger.GetName();
 		break;
-	#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	default:
-		CRY_ASSERT_MESSAGE(false, R"(The default trigger "%u" does not exist during %s)", id, __FUNCTION__);
 		break;
 	}
 
@@ -456,21 +373,21 @@ char const* GetDefaultTriggerName(ControlId const id)
 ///////////////////////////////////////////////////////////////////////////
 CObject::CStateDebugDrawData::CStateDebugDrawData(SwitchStateId const switchStateId)
 	: m_currentStateId(switchStateId)
-	, m_currentSwitchColor(s_maxSwitchColor)
+	, m_currentSwitchColor(Debug::s_objectColorSwitchGreenMax)
 {
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CObject::CStateDebugDrawData::Update(SwitchStateId const switchStateId)
 {
-	if ((switchStateId == m_currentStateId) && (m_currentSwitchColor > s_minSwitchColor))
+	if ((switchStateId == m_currentStateId) && (m_currentSwitchColor > Debug::s_objectColorSwitchGreenMin))
 	{
-		m_currentSwitchColor -= (s_maxSwitchColor - s_minSwitchColor) / s_maxToMinUpdates;
+		m_currentSwitchColor -= Debug::s_objectColorSwitchUpdateValue;
 	}
 	else if (switchStateId != m_currentStateId)
 	{
 		m_currentStateId = switchStateId;
-		m_currentSwitchColor = s_maxSwitchColor;
+		m_currentSwitchColor = Debug::s_objectColorSwitchGreenMax;
 	}
 }
 
@@ -535,7 +452,7 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 					for (auto const& triggerCountsPair : triggerCounts)
 					{
 						char const* szTriggerName = nullptr;
-						auto const* const pTrigger = stl::find_in_map(g_triggers, triggerCountsPair.first, nullptr);
+						CTrigger const* const pTrigger = stl::find_in_map(g_triggers, triggerCountsPair.first, nullptr);
 
 						if (pTrigger != nullptr)
 						{
@@ -546,7 +463,10 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 							szTriggerName = GetDefaultTriggerName(triggerCountsPair.first);
 						}
 
-						CRY_ASSERT_MESSAGE(szTriggerName != nullptr, "The trigger name mustn't be nullptr during %s", __FUNCTION__);
+						if (szTriggerName == nullptr)
+						{
+							Cry::Audio::Log(ELogType::Warning, "The trigger name mustn't be nullptr during %s", __FUNCTION__);
+						}
 
 						if (!isTextFilterDisabled)
 						{
@@ -666,14 +586,17 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 					for (auto const& parameterPair : m_parameters)
 					{
 						char const* szParameterName = nullptr;
-						auto const* const pParameter = stl::find_in_map(g_parameters, parameterPair.first, nullptr);
+						CParameter const* const pParameter = stl::find_in_map(g_parameters, parameterPair.first, nullptr);
 
 						if (pParameter != nullptr)
 						{
 							szParameterName = pParameter->GetName();
 						}
 
-						CRY_ASSERT_MESSAGE(szParameterName != nullptr, "The parameter name mustn't be nullptr during %s", __FUNCTION__);
+						if (szParameterName == nullptr)
+						{
+							Cry::Audio::Log(ELogType::Warning, "The parameter name mustn't be nullptr during %s", __FUNCTION__);
+						}
 
 						if (!isTextFilterDisabled)
 						{
@@ -743,8 +666,8 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 					{
 						auxGeom.DrawSphere(
 							position,
-							Debug::g_objectRadiusPositionSphere,
-							isVirtual ? ColorB(25, 200, 200, 255) : ColorB(255, 1, 1, 255));
+							Debug::s_objectRadiusPositionSphere,
+							isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorPositionSphere);
 					}
 
 					if (drawLabel && (isTextFilterDisabled || doesObjectNameMatchFilter))
@@ -752,12 +675,12 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 						auxGeom.Draw2dLabel(
 							screenPos.x,
 							screenPos.y,
-							Debug::g_objectFontSize,
-							isVirtual ? Debug::g_globalColorVirtual.data() : (hasActiveData ? Debug::g_objectColorActive.data() : Debug::g_globalColorInactive.data()),
+							Debug::s_objectFontSize,
+							isVirtual ? Debug::s_globalColorVirtual : (hasActiveData ? Debug::s_objectColorActive : Debug::s_globalColorInactive),
 							false,
 							m_name.c_str());
 
-						screenPos.y += Debug::g_objectLineHeight;
+						screenPos.y += Debug::s_objectLineHeight;
 					}
 
 					if (drawTriggers && (isTextFilterDisabled || doesTriggerMatchFilter))
@@ -767,12 +690,12 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 							auxGeom.Draw2dLabel(
 								screenPos.x,
 								screenPos.y,
-								Debug::g_objectFontSize,
-								isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorTrigger.data(),
+								Debug::s_objectFontSize,
+								isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorTrigger,
 								false,
 								debugText.c_str());
 
-							screenPos.y += Debug::g_objectLineHeight;
+							screenPos.y += Debug::s_objectLineHeight;
 						}
 					}
 
@@ -783,12 +706,12 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 							auxGeom.Draw2dLabel(
 								screenPos.x,
 								screenPos.y,
-								Debug::g_objectFontSize,
-								isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorStandaloneFile.data(),
+								Debug::s_objectFontSize,
+								isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorStandaloneFile,
 								false,
 								debugText.c_str());
 
-							screenPos.y += Debug::g_objectLineHeight;
+							screenPos.y += Debug::s_objectLineHeight;
 						}
 					}
 
@@ -801,19 +724,19 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 
 							CStateDebugDrawData& drawData = m_stateDrawInfoMap.emplace(std::piecewise_construct, std::forward_as_tuple(pSwitch->GetId()), std::forward_as_tuple(pSwitchState->GetId())).first->second;
 							drawData.Update(pSwitchState->GetId());
-							float const switchTextColor[4] = { 0.8f, drawData.m_currentSwitchColor, 0.6f, 1.0f };
+							ColorF const switchTextColor = { 0.8f, drawData.m_currentSwitchColor, 0.6f };
 
 							auxGeom.Draw2dLabel(
 								screenPos.x,
 								screenPos.y,
-								Debug::g_objectFontSize,
-								isVirtual ? Debug::g_globalColorVirtual.data() : switchTextColor,
+								Debug::s_objectFontSize,
+								isVirtual ? Debug::s_globalColorVirtual : switchTextColor,
 								false,
 								"%s: %s\n",
 								pSwitch->GetName(),
 								pSwitchState->GetName());
 
-							screenPos.y += Debug::g_objectLineHeight;
+							screenPos.y += Debug::s_objectLineHeight;
 						}
 					}
 
@@ -824,14 +747,14 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 							auxGeom.Draw2dLabel(
 								screenPos.x,
 								screenPos.y,
-								Debug::g_objectFontSize,
-								isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorParameter.data(),
+								Debug::s_objectFontSize,
+								isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorParameter,
 								false,
 								"%s: %2.2f\n",
 								parameterPair.first,
 								parameterPair.second);
 
-							screenPos.y += Debug::g_objectLineHeight;
+							screenPos.y += Debug::s_objectLineHeight;
 						}
 					}
 
@@ -842,14 +765,14 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 							auxGeom.Draw2dLabel(
 								screenPos.x,
 								screenPos.y,
-								Debug::g_objectFontSize,
-								isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorEnvironment.data(),
+								Debug::s_objectFontSize,
+								isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorEnvironment,
 								false,
 								"%s: %.2f\n",
 								environmentPair.first,
 								environmentPair.second);
 
-							screenPos.y += Debug::g_objectLineHeight;
+							screenPos.y += Debug::s_objectLineHeight;
 						}
 					}
 
@@ -869,12 +792,12 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 						auxGeom.Draw2dLabel(
 							screenPos.x,
 							screenPos.y,
-							Debug::g_objectFontSize,
-							isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorActive.data(),
+							Debug::s_objectFontSize,
+							isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorActive,
 							false,
 							debugText.c_str());
 
-						screenPos.y += Debug::g_objectLineHeight;
+						screenPos.y += Debug::s_objectLineHeight;
 					}
 
 					if (drawOcclusionRayLabel)
@@ -890,12 +813,12 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 							{
 								debugText.Format(
 									"%s(%s)",
-									s_szOcclusionTypes[IntegralValue(occlusionType)],
-									s_szOcclusionTypes[IntegralValue(m_propagationProcessor.GetOcclusionTypeWhenAdaptive())]);
+									Debug::s_szOcclusionTypes[IntegralValue(occlusionType)],
+									Debug::s_szOcclusionTypes[IntegralValue(m_propagationProcessor.GetOcclusionTypeWhenAdaptive())]);
 							}
 							else
 							{
-								debugText.Format("%s", s_szOcclusionTypes[IntegralValue(occlusionType)]);
+								debugText.Format("%s", Debug::s_szOcclusionTypes[IntegralValue(occlusionType)]);
 							}
 						}
 						else
@@ -903,19 +826,19 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 							debugText.Format("Ignore (exceeded activity range)");
 						}
 
-						float const activeRayLabelColor[4] = { occlusion, 1.0f - occlusion, 0.0f, 0.9f };
+						ColorF const activeRayLabelColor = { occlusion, 1.0f - occlusion, 0.0f };
 
 						auxGeom.Draw2dLabel(
 							screenPos.x,
 							screenPos.y,
-							Debug::g_objectFontSize,
-							((occlusionType != EOcclusionType::None) && (occlusionType != EOcclusionType::Ignore)) ? (isVirtual ? Debug::g_globalColorVirtual.data() : activeRayLabelColor) : Debug::g_globalColorInactive.data(),
+							Debug::s_objectFontSize,
+							isVirtual ? Debug::s_globalColorVirtual : (((occlusionType != EOcclusionType::None) && (occlusionType != EOcclusionType::Ignore)) ? activeRayLabelColor : Debug::s_globalColorInactive),
 							false,
-							"Occl: %3.2f | Type: %s", // Add obstruction once the engine supports it.
+							"Occl: %3.2f | Type: %s",
 							occlusion,
 							debugText.c_str());
 
-						screenPos.y += Debug::g_objectLineHeight;
+						screenPos.y += Debug::s_objectLineHeight;
 					}
 
 					if (drawOcclusionRayOffset && !isVirtual)
@@ -931,7 +854,7 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 							auxGeom.DrawSphere(
 								position,
 								occlusionRayOffset,
-								ColorB(1, 255, 1, 85));
+								Debug::s_objectColorOcclusionOffsetSphere);
 
 							auxGeom.SetRenderFlags(previousRenderFlags);
 						}
@@ -963,7 +886,7 @@ void CObject::ForceImplementationRefresh(bool const setTransformation)
 	// Parameters
 	for (auto const& parameterPair : m_parameters)
 	{
-		auto const* const pParameter = stl::find_in_map(g_parameters, parameterPair.first, nullptr);
+		CParameter const* const pParameter = stl::find_in_map(g_parameters, parameterPair.first, nullptr);
 
 		if (pParameter != nullptr)
 		{
@@ -1005,7 +928,7 @@ void CObject::ForceImplementationRefresh(bool const setTransformation)
 	// Last re-execute its active triggers and standalone files.
 	for (auto& triggerStatePair : m_triggerStates)
 	{
-		auto const* const pTrigger = stl::find_in_map(g_triggers, triggerStatePair.second.triggerId, nullptr);
+		CTrigger const* const pTrigger = stl::find_in_map(g_triggers, triggerStatePair.second.triggerId, nullptr);
 
 		if (pTrigger != nullptr)
 		{
@@ -1022,14 +945,17 @@ void CObject::ForceImplementationRefresh(bool const setTransformation)
 	for (auto const& standaloneFilePair : activeStandaloneFiles)
 	{
 		CStandaloneFile* const pFile = standaloneFilePair.first;
-		CRY_ASSERT_MESSAGE(pFile != nullptr, "Standalone file pointer is nullptr during %s", __FUNCTION__);
 
-		if (pFile != nullptr)
+		if (pFile == nullptr)
+		{
+			Cry::Audio::Log(ELogType::Warning, "Standalone file pointer is nullptr during %s", __FUNCTION__);
+		}
+		else
 		{
 			CRY_ASSERT_MESSAGE(pFile->m_state == EStandaloneFileState::Playing, "Standalone file must be in playing state during %s", __FUNCTION__);
 			CRY_ASSERT_MESSAGE(pFile->m_pObject == this, "Standalone file played on wrong object during %s", __FUNCTION__);
 
-			auto const* const pTrigger = stl::find_in_map(g_triggers, pFile->m_triggerId, nullptr);
+			auto const pTrigger = stl::find_in_map(g_triggers, pFile->m_triggerId, nullptr);
 
 			if (pTrigger != nullptr)
 			{
@@ -1062,6 +988,12 @@ void CObject::StoreSwitchValue(ControlId const switchId, SwitchStateId const swi
 void CObject::StoreEnvironmentValue(ControlId const id, float const value)
 {
 	m_environments[id] = value;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CObject::UpdateMaxRadius(float const radius)
+{
+	m_maxRadius = std::max(radius, m_maxRadius);
 }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 

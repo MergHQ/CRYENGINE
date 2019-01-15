@@ -153,13 +153,12 @@ std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pReq
 
 			switch (pBase->callbackRequestType)
 			{
-				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportStartedEvent)
-				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportFinishedEvent)
+				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportFinishedTriggerConnectionInstance)
 				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportFinishedTriggerInstance)
 				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportStartedFile)
 				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportStoppedFile)
-				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportVirtualizedEvent)
-				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportPhysicalizedEvent)
+				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportPhysicalizedObject)
+				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportVirtualizedObject)
 			default:
 				{
 					CRY_ASSERT_MESSAGE(false, "Unknown callback request type (%u) during %s", pBase->callbackRequestType, __FUNCTION__);

@@ -24,7 +24,7 @@ void CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
 
 	if (numArgs == 2)
 	{
-		ControlId const triggerId = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		ControlId const triggerId = StringToId(pCmdArgs->GetArg(1));
 		gEnv->pAudioSystem->ExecuteTrigger(triggerId);
 	}
 	else
@@ -44,7 +44,7 @@ void CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
 	}
 	else if (numArgs == 2)
 	{
-		ControlId const triggerId = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		ControlId const triggerId = StringToId(pCmdArgs->GetArg(1));
 		gEnv->pAudioSystem->StopTrigger(triggerId);
 	}
 	else
@@ -60,7 +60,7 @@ void CmdSetParameter(IConsoleCmdArgs* pCmdArgs)
 
 	if (numArgs == 3)
 	{
-		ControlId const parameterId = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		ControlId const parameterId = StringToId(pCmdArgs->GetArg(1));
 		double const value = atof(pCmdArgs->GetArg(2));
 		gEnv->pAudioSystem->SetParameter(parameterId, static_cast<float>(value));
 	}
@@ -77,7 +77,7 @@ void CmdSetGlobalParameter(IConsoleCmdArgs* pCmdArgs)
 
 	if (numArgs == 3)
 	{
-		ControlId const parameterId = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		ControlId const parameterId = StringToId(pCmdArgs->GetArg(1));
 		double const value = atof(pCmdArgs->GetArg(2));
 		gEnv->pAudioSystem->SetGlobalParameter(parameterId, static_cast<float>(value));
 	}
@@ -94,8 +94,8 @@ void CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
 
 	if (numArgs == 3)
 	{
-		ControlId const switchId = CryAudio::StringToId(pCmdArgs->GetArg(1));
-		SwitchStateId const switchStateId = CryAudio::StringToId(pCmdArgs->GetArg(2));
+		ControlId const switchId = StringToId(pCmdArgs->GetArg(1));
+		SwitchStateId const switchStateId = StringToId(pCmdArgs->GetArg(2));
 		gEnv->pAudioSystem->SetSwitchState(switchId, switchStateId);
 	}
 	else
@@ -111,8 +111,8 @@ void CmdSetGlobalSwitchState(IConsoleCmdArgs* pCmdArgs)
 
 	if (numArgs == 3)
 	{
-		ControlId const switchId = CryAudio::StringToId(pCmdArgs->GetArg(1));
-		SwitchStateId const switchStateId = CryAudio::StringToId(pCmdArgs->GetArg(2));
+		ControlId const switchId = StringToId(pCmdArgs->GetArg(1));
+		SwitchStateId const switchStateId = StringToId(pCmdArgs->GetArg(2));
 		gEnv->pAudioSystem->SetGlobalSwitchState(switchId, switchStateId);
 	}
 	else
@@ -128,7 +128,7 @@ void CmdLoadRequest(IConsoleCmdArgs* pCmdArgs)
 
 	if (numArgs == 2)
 	{
-		ControlId const id = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		ControlId const id = StringToId(pCmdArgs->GetArg(1));
 		gEnv->pAudioSystem->PreloadSingleRequest(id, false);
 	}
 	else
@@ -144,7 +144,7 @@ void CmdUnloadRequest(IConsoleCmdArgs* pCmdArgs)
 
 	if (numArgs == 2)
 	{
-		ControlId const id = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		ControlId const id = StringToId(pCmdArgs->GetArg(1));
 		gEnv->pAudioSystem->UnloadSingleRequest(id);
 	}
 	else
@@ -160,7 +160,7 @@ void CmdLoadSetting(IConsoleCmdArgs* pCmdArgs)
 
 	if (numArgs == 2)
 	{
-		ControlId const id = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		ControlId const id = StringToId(pCmdArgs->GetArg(1));
 		gEnv->pAudioSystem->LoadSetting(id);
 	}
 	else
@@ -176,7 +176,7 @@ void CmdUnloadSetting(IConsoleCmdArgs* pCmdArgs)
 
 	if (numArgs == 2)
 	{
-		ControlId const id = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		ControlId const id = StringToId(pCmdArgs->GetArg(1));
 		gEnv->pAudioSystem->UnloadSetting(id);
 	}
 	else
@@ -198,7 +198,6 @@ void CCVars::RegisterVariables()
 #if CRY_PLATFORM_WINDOWS
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on PC
 	m_objectPoolSize = 256;
-	m_eventPoolSize = 256;
 	m_standaloneFilePoolSize = 1;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
@@ -207,7 +206,6 @@ void CCVars::RegisterVariables()
 #elif CRY_PLATFORM_DURANGO
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on XboxOne
 	m_objectPoolSize = 256;
-	m_eventPoolSize = 256;
 	m_standaloneFilePoolSize = 1;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
@@ -216,7 +214,6 @@ void CCVars::RegisterVariables()
 #elif CRY_PLATFORM_ORBIS
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on PS4
 	m_objectPoolSize = 256;
-	m_eventPoolSize = 256;
 	m_standaloneFilePoolSize = 1;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
@@ -225,7 +222,6 @@ void CCVars::RegisterVariables()
 #elif CRY_PLATFORM_MAC
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on Mac
 	m_objectPoolSize = 256;
-	m_eventPoolSize = 256;
 	m_standaloneFilePoolSize = 1;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
@@ -234,7 +230,6 @@ void CCVars::RegisterVariables()
 #elif CRY_PLATFORM_LINUX
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on Linux
 	m_objectPoolSize = 256;
-	m_eventPoolSize = 256;
 	m_standaloneFilePoolSize = 1;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
@@ -243,7 +238,6 @@ void CCVars::RegisterVariables()
 #elif CRY_PLATFORM_IOS
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on iOS
 	m_objectPoolSize = 256;
-	m_eventPoolSize = 256;
 	m_standaloneFilePoolSize = 1;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
@@ -252,7 +246,6 @@ void CCVars::RegisterVariables()
 #elif CRY_PLATFORM_ANDROID
 	m_fileCacheManagerSize = 72 << 10;      // 72 MiB
 	m_objectPoolSize = 256;
-	m_eventPoolSize = 256;
 	m_standaloneFilePoolSize = 1;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
@@ -307,11 +300,6 @@ void CCVars::RegisterVariables()
 	               "Usage: s_AudioObjectPoolSize [0/...]\n"
 	               "Default PC: 256, XboxOne: 256, PS4: 256, Mac: 256, Linux: 256, iOS: 256, Android: 256\n");
 
-	REGISTER_CVAR2("s_AudioEventPoolSize", &m_eventPoolSize, m_eventPoolSize, VF_REQUIRE_APP_RESTART,
-	               "Sets the number of preallocated audio events.\n"
-	               "Usage: s_AudioEventPoolSize [0/...]\n"
-	               "Default PC: 256, XboxOne: 256, PS4: 256, Mac: 256, Linux: 256, iOS: 256, Android: 256\n");
-
 	REGISTER_CVAR2("s_AudioStandaloneFilePoolSize", &m_standaloneFilePoolSize, m_standaloneFilePoolSize, VF_REQUIRE_APP_RESTART,
 	               "Sets the number of preallocated audio standalone files.\n"
 	               "Usage: s_AudioStandaloneFilePoolSize [0/...]\n"
@@ -341,7 +329,7 @@ void CCVars::RegisterVariables()
 	REGISTER_CVAR2("s_SetFullOcclusionOnMaxHits", &m_setFullOcclusionOnMaxHits, m_setFullOcclusionOnMaxHits, VF_CHEAT | VF_CHEAT_NOCHECK,
 	               "If set to 1, the occlusion value will be set to 1 (max) when a ray cast reaches its max hit limit.\n"
 	               "Usage: s_SetFullOcclusionOnMaxHits [0/1] (off/on)\n"
-	               "Default: 0, (off)\n");
+	               "Default: 0 (off)\n");
 
 	REGISTER_STRING("s_DefaultStandaloneFilesAudioTrigger", "", 0,
 	                "The name of the AudioTrigger which is used for playing back standalone files, when you call 'PlayFile' without specifying\n"
@@ -377,7 +365,7 @@ void CCVars::RegisterVariables()
 	               "r: Apply filter also to inactive object debug info.\n"
 	               "s: Draw detailed memory pool debug info.\n"
 	               "u: List standalone files.\n"
-	               "v: List active Events.\n"
+	               "v: List implementation specific info.\n"
 	               "w: List active Audio Objects.\n"
 	               "x: Draw FileCache Manager debug info.\n"
 	               "y: Draw Request debug info.\n"
@@ -417,37 +405,37 @@ void CCVars::RegisterVariables()
 
 	REGISTER_COMMAND("s_ExecuteTrigger", CmdExecuteTrigger, VF_CHEAT,
 	                 "Execute an Audio Trigger.\n"
-	                 "The argument is the name of the AudioTrigger to be executed on the GlobalAudioObject.\n"
+	                 "The argument is the name of the trigger to be executed on the Global Object.\n"
 	                 "Usage: s_ExecuteTrigger MuteDialog\n");
 
 	REGISTER_COMMAND("s_StopTrigger", CmdStopTrigger, VF_CHEAT,
 	                 "Execute an Audio Trigger.\n"
-	                 "The argument is the name of the AudioTrigger to be stopped on the GlobalAudioObject.\n"
-	                 "If no argument ois provided, all playing triggers on the GlobalAudioObject get stopped.\n"
+	                 "The argument is the name of the trigger to be stopped on the Global Object.\n"
+	                 "If no argument ois provided, all playing triggers on the Global Object get stopped.\n"
 	                 "Usage: s_StopTrigger MuteDialog\n");
 
 	REGISTER_COMMAND("s_SetParameter", CmdSetParameter, VF_CHEAT,
 	                 "Set an Audio Parameter value.\n"
 	                 "The first argument is the name of the parameter to be set, the second argument is the float value to be set."
-	                 "The AudioParameter is set on the GlobalAudioObject.\n"
+	                 "The parameter is set on the Global Object.\n"
 	                 "Usage: s_SetParameter volume_music 1.0\n");
 
 	REGISTER_COMMAND("s_SetGlobalParameter", CmdSetGlobalParameter, VF_CHEAT,
 	                 "Set an Audio Parameter value.\n"
 	                 "The first argument is the name of the parameter to be set, the second argument is the float value to be set."
-	                 "The AudioParameter is set on all constructed AudioObjects.\n"
+	                 "The parameter is set on all constructed objects.\n"
 	                 "Usage: s_SetParameter volume_music 1.0\n");
 
 	REGISTER_COMMAND("s_SetSwitchState", CmdSetSwitchState, VF_CHEAT,
 	                 "Set an Audio Switch to a provided State.\n"
-	                 "The first argument is the name of the AudioSwitch to, the second argument is the name of the SwitchState to be set."
-	                 "The AudioSwitch is set on the GlobalAudioObject.\n"
+	                 "The first argument is the name of the switch to, the second argument is the name of the state to be set."
+	                 "The switch state is set on the Global Object.\n"
 	                 "Usage: s_SetSwitchState weather rain\n");
 
 	REGISTER_COMMAND("s_SetGlobalSwitchState", CmdSetGlobalSwitchState, VF_CHEAT,
 	                 "Set an Audio Switch to a provided State.\n"
-	                 "The first argument is the name of the AudioSwitch to, the second argument is the name of the SwitchState to be set."
-	                 "The AudioSwitch is set on all constructed AudioObjects.\n"
+	                 "The first argument is the name of the switch to, the second argument is the name of the state to be set."
+	                 "The switch state is set on all constructed objects.\n"
 	                 "Usage: s_SetSwitchState weather rain\n");
 
 	REGISTER_COMMAND("s_LoadRequest", CmdLoadRequest, VF_CHEAT,
@@ -492,7 +480,6 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_ListenerOcclusionPlaneSize");
 		pConsole->UnregisterVariable("s_FileCacheManagerSize");
 		pConsole->UnregisterVariable("s_AudioObjectPoolSize");
-		pConsole->UnregisterVariable("s_AudioEventPoolSize");
 		pConsole->UnregisterVariable("s_AudioStandaloneFilePoolSize");
 		pConsole->UnregisterVariable("s_AccumulateOcclusion");
 		pConsole->UnregisterVariable("s_IgnoreWindowFocus");

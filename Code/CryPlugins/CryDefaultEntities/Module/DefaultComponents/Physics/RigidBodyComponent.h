@@ -51,6 +51,24 @@ namespace Cry
 				Schematyc::PositiveFloat resistance = 1000.0f;
 			};
 
+			struct SSimulationParameters
+			{
+				inline bool operator==(const SSimulationParameters &rhs) const { return 0 == memcmp(this, &rhs, sizeof(rhs)); }
+
+				static void ReflectType(Schematyc::CTypeDesc<SSimulationParameters>& desc)
+				{
+					desc.SetGUID("{1A56128F-48CB-48A7-A674-FA9AEB5A7AFF}"_cry_guid);
+					desc.SetLabel("Simulation Parameters");
+					desc.AddMember(&CRigidBodyComponent::SSimulationParameters::maxTimeStep, 'maxt', "MaxTimeStep", "Maximum Time Step", "The largest time step the entity can make before splitting. Smaller time steps increase stability (can be required for long and thin objects, for instance), but are more expensive.", 0.02f);
+					desc.AddMember(&CRigidBodyComponent::SSimulationParameters::sleepSpeed, 'slps', "SleepSpeed", "Sleep Speed", "If the object's kinetic energy falls below some limit over several frames, the object is considered sleeping. This limit is proportional to the square of the sleep speed value.", 0.04f);
+					desc.AddMember(&CRigidBodyComponent::SSimulationParameters::damping, 'damp', "Damping", "Damping", "This sets the strength of damping on an object's movement. Most objects can work with 0 damping; if an object has trouble coming to rest, try values like 0.2-0.3.", 0.0f);
+				}
+
+				Schematyc::PositiveFloat maxTimeStep = 0.02f;
+				Schematyc::PositiveFloat sleepSpeed = 0.04f;
+				float                    damping = 0.0f;
+			};
+
 			static void ReflectType(Schematyc::CTypeDesc<CRigidBodyComponent>& desc)
 			{
 				desc.SetGUID("{912C6CE8-56F7-4FFA-9134-F98D4E307BD6}"_cry_guid);
@@ -75,6 +93,7 @@ namespace Cry
 				desc.AddMember(&CRigidBodyComponent::m_type, 'type', "Type", "Type", "Type of physicalized object to create", CRigidBodyComponent::EPhysicalType::Rigid);
 				desc.AddMember(&CRigidBodyComponent::m_bSendCollisionSignal, 'send', "SendCollisionSignal", "Send Collision Signal", "Whether or not this component should listen for collisions and report them", false);
 				desc.AddMember(&CRigidBodyComponent::m_buoyancyParameters, 'buoy', "Buoyancy", "Buoyancy Parameters", "Fluid behavior related to this entity", SBuoyancyParameters());
+				desc.AddMember(&CRigidBodyComponent::m_simulationParameters, 'simp', "Simulation", "Simulation Parameters", "Parameters related to the simulation of this entity", SSimulationParameters());
 			}
 
 			struct SCollisionSignal
@@ -195,6 +214,7 @@ namespace Cry
 			EPhysicalType m_type = EPhysicalType::Rigid;
 			bool m_bSendCollisionSignal = false;
 			SBuoyancyParameters m_buoyancyParameters;
+			SSimulationParameters m_simulationParameters;
 		};
 
 		static void ReflectType(Schematyc::CTypeDesc<CRigidBodyComponent::EPhysicalType>& desc)

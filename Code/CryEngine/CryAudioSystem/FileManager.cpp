@@ -13,6 +13,7 @@
 	#include "Managers.h"
 	#include "ListenerManager.h"
 	#include "Debug.h"
+	#include "Common/DebugStyle.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -77,8 +78,8 @@ void CFileManager::ReleaseStandaloneFile(CStandaloneFile* const pStandaloneFile)
 //////////////////////////////////////////////////////////////////////////
 void CFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float posY) const
 {
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_managerHeaderFontSize, Debug::g_globalColorHeader.data(), false, "Standalone Files [%" PRISIZE_T "]", m_constructedStandaloneFiles.size());
-	posY += Debug::g_managerHeaderLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "Standalone Files [%" PRISIZE_T "]", m_constructedStandaloneFiles.size());
+	posY += Debug::s_listHeaderLineHeight;
 
 	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
 	lowerCaseSearchString.MakeLower();
@@ -105,32 +106,40 @@ void CFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float posY
 
 			if (draw)
 			{
-				float const* pColor = Debug::g_globalColorInactive.data();
+				ColorF color = Debug::s_globalColorInactive;
 
 				switch (pStandaloneFile->m_state)
 				{
 				case EStandaloneFileState::Playing:
-					pColor = Debug::g_managerColorItemActive.data();
-					break;
+					{
+						color = Debug::s_listColorItemActive;
+						break;
+					}
 				case EStandaloneFileState::Loading:
-					pColor = Debug::g_managerColorItemLoading.data();
-					break;
+					{
+						color = Debug::s_listColorItemLoading;
+						break;
+					}
 				case EStandaloneFileState::Stopping:
-					pColor = Debug::g_managerColorItemStopping.data();
-					break;
+					{
+						color = Debug::s_listColorItemStopping;
+						break;
+					}
 				default:
-					CRY_ASSERT_MESSAGE(false, "Standalone file is in an unknown state during %s", __FUNCTION__);
-					break;
+					{
+						CRY_ASSERT_MESSAGE(false, "Standalone file is in an unknown state during %s", __FUNCTION__);
+						break;
+					}
 				}
 
-				auxGeom.Draw2dLabel(posX, posY, Debug::g_managerFontSize,
-				                    pColor,
+				auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize,
+				                    color,
 				                    false,
 				                    "%s on %s",
 				                    szStandaloneFileName,
 				                    szObjectName);
 
-				posY += Debug::g_managerLineHeight;
+				posY += Debug::s_listLineHeight;
 			}
 		}
 	}

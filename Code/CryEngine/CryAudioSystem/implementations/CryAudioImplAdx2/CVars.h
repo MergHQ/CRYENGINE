@@ -23,6 +23,7 @@ public:
 	void    RegisterVariables();
 	void    UnregisterVariables();
 
+	int   m_eventPoolSize = 0;
 	int   m_maxVirtualVoices = 0;
 	int   m_maxVoiceLimitGroups = 0;
 	int   m_maxCategories = 0;

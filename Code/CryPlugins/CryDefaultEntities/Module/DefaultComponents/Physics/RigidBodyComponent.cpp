@@ -115,6 +115,12 @@ void CRigidBodyComponent::Physicalize()
 	physParams.nSlot = std::numeric_limits<int>::max();
 	m_pEntity->Physicalize(physParams);
 
+	pe_simulation_params simParams;
+	simParams.maxTimeStep = m_simulationParameters.maxTimeStep;
+	simParams.minEnergy = sqr(m_simulationParameters.sleepSpeed);
+	simParams.damping = m_simulationParameters.damping;
+	m_pEntity->GetPhysicalEntity()->SetParams(&simParams);
+
 	pe_params_buoyancy buoyancyParams;
 	buoyancyParams.waterDensity = m_buoyancyParameters.density;
 	buoyancyParams.waterResistance = m_buoyancyParameters.resistance;

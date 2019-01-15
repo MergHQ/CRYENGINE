@@ -4,7 +4,6 @@
 
 #include "Common.h"
 #include <IObject.h>
-#include <SharedData.h>
 #include <PoolObject.h>
 
 namespace CryAudio
@@ -26,6 +25,7 @@ enum class EObjectFlags : EnumFlagsType
 	TrackAbsoluteVelocity   = BIT(1),
 	TrackVelocityForDoppler = BIT(2),
 	UpdateVirtualStates     = BIT(3),
+	IsVirtual               = BIT(4),
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EObjectFlags);
 
@@ -38,7 +38,7 @@ public:
 	CBaseObject& operator=(CBaseObject const&) = delete;
 	CBaseObject& operator=(CBaseObject&&) = delete;
 
-	virtual ~CBaseObject() override;
+	virtual ~CBaseObject() override = default;
 
 	// CryAudio::Impl::IObject
 	virtual void                   Update(float const deltaTime) override;
@@ -60,13 +60,16 @@ public:
 	FMOD_3D_ATTRIBUTES& GetAttributes()    { return m_attributes; }
 
 	void                StopEvent(uint32 const id);
-	void                RemoveEvent(CEvent* const pEvent);
 	void                RemoveParameter(CBaseParameter const* const pParameter);
 	void                RemoveSwitch(CBaseSwitchState const* const pSwitch);
 	void                RemoveEnvironment(CEnvironment const* const pEnvironment);
 	void                RemoveFile(CBaseStandaloneFile const* const pStandaloneFile);
 
 	static FMOD::Studio::System* s_pSystem;
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	char const* GetName() const { return m_name.c_str(); }
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 protected:
 
@@ -89,6 +92,10 @@ protected:
 	FMOD_3D_ATTRIBUTES m_attributes;
 	float              m_occlusion = 0.0f;
 	float              m_absoluteVelocity = 0.0f;
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	CryFixedStringT<MaxObjectNameLength> m_name;
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 };
 } // namespace Fmod
 } // namespace Impl

@@ -6,6 +6,7 @@ start_sources()
 sources_platform(ALL)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Root"
+		"DebugStyle.h"
 		"FileInfo.h"
 		"IEnvironmentConnection.h"
 		"IEvent.h"
@@ -22,7 +23,6 @@ add_sources("NoUberFile"
 		"Logger.h"
 		"PoolObject.h"
 		"PoolObject_impl.h"
-		"SharedData.h"
 )
 
 end_sources()

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Common.h"
 #include <IObject.h>
 #include <PoolObject.h>
 #include <AK/SoundEngine/Common/AkTypes.h>
@@ -21,6 +22,7 @@ enum class EObjectFlags : EnumFlagsType
 	TrackAbsoluteVelocity = BIT(1),
 	TrackRelativeVelocity = BIT(2),
 	UpdateVirtualStates   = BIT(3),
+	IsVirtual             = BIT(4),
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EObjectFlags);
 
@@ -52,13 +54,13 @@ public:
 	// ~CryAudio::Impl::IObject
 
 	void           AddEvent(CEvent* const pEvent);
-	void           RemoveEvent(CEvent* const pEvent);
-	void           SetNeedsToUpdateEnvironments(bool const needsUpdate)  { m_needsToUpdateEnvironments = needsUpdate; }
-	void           SetNeedsToUpdateVirtualStates(bool const needsUpdate) { m_needsToUpdateVirtualStates = needsUpdate; }
+	void           SetNeedsToUpdateEnvironments(bool const needsUpdate) { m_needsToUpdateEnvironments = needsUpdate; }
 	void           PostEnvironmentAmounts();
 	void           SetDistanceToListener();
 	float          GetDistanceToListener() const { return m_distanceToListener; }
 	AkGameObjectID GetId() const                 { return m_id; }
+
+	Events const&  GetEvents() const             { return m_events; }
 
 	using AuxSendValues = std::vector<AkAuxSendValue>;
 	AuxSendValues& GetAuxSendValues() { return m_auxSendValues; }
@@ -72,9 +74,8 @@ private:
 	void UpdateVelocities(float const deltaTime);
 	void TryToSetRelativeVelocity(float const relativeVelocity);
 
-	std::vector<CEvent*> m_events;
+	Events               m_events;
 	bool                 m_needsToUpdateEnvironments;
-	bool                 m_needsToUpdateVirtualStates;
 	AuxSendValues        m_auxSendValues;
 
 	AkGameObjectID const m_id;

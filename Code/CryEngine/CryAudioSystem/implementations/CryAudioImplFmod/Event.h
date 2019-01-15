@@ -3,8 +3,9 @@
 #pragma once
 
 #include "Common.h"
-#include <IEvent.h>
 #include <PoolObject.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
+#include <atomic>
 
 namespace FMOD
 {
@@ -20,8 +21,6 @@ class ParameterInstance;
 
 namespace CryAudio
 {
-class CEvent;
-
 namespace Impl
 {
 namespace Fmod
@@ -30,7 +29,14 @@ class CEnvironment;
 class CBaseObject;
 class CTrigger;
 
-class CEvent final : public IEvent, public CPoolObject<CEvent, stl::PSyncNone>
+enum class EEventState : EnumFlagsType
+{
+	None,
+	Playing,
+	Virtual,
+};
+
+class CEvent final : public CPoolObject<CEvent, stl::PSyncNone>
 {
 public:
 
@@ -40,8 +46,8 @@ public:
 	CEvent& operator=(CEvent const&) = delete;
 	CEvent& operator=(CEvent&&) = delete;
 
-	explicit CEvent(CryAudio::CEvent* const pEvent)
-		: m_pEvent(pEvent)
+	explicit CEvent(TriggerInstanceId const triggerInstanceId)
+		: m_triggerInstanceId(triggerInstanceId)
 		, m_id(InvalidCRC32)
 		, m_state(EEventState::None)
 		, m_lowpassFrequencyMax(0.0f)
@@ -53,17 +59,15 @@ public:
 		, m_pAbsoluteVelocityParameter(nullptr)
 		, m_pObject(nullptr)
 		, m_pTrigger(nullptr)
+		, m_toBeRemoved(false)
 	{}
 
-	virtual ~CEvent() override;
-
-	// CryAudio::Impl::IEvent
-	virtual ERequestStatus Stop() override;
-	// ~CryAudio::Impl::IEvent
+	~CEvent();
 
 	bool                         PrepareForOcclusion();
 	void                         SetOcclusion(float const occlusion);
-	CryAudio::CEvent&            GetEvent() const                                          { return *m_pEvent; }
+
+	TriggerInstanceId            GetTriggerInstanceId() const                              { return m_triggerInstanceId; }
 
 	uint32                       GetId() const                                             { return m_id; }
 	void                         SetId(uint32 const id)                                    { m_id = id; }
@@ -84,10 +88,21 @@ public:
 	void                         TrySetEnvironment(CEnvironment const* const pEnvironment, float const value);
 	void                         UpdateVirtualState();
 	void                         SetAbsoluteVelocity(float const value);
+	void                         StopAllowFadeOut();
+	void                         StopImmediate();
+
+	void                         SetToBeRemoved()      { m_toBeRemoved = true; }
+	bool                         IsToBeRemoved() const { return m_toBeRemoved; }
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	void         SetName(char const* const szName) { m_name = szName; }
+	char const*  GetName() const                   { return m_name.c_str(); }
+	CBaseObject* GetObject() const                 { return m_pObject; }
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 private:
 
-	CryAudio::CEvent*                m_pEvent;
+	TriggerInstanceId const          m_triggerInstanceId;
 	uint32                           m_id;
 
 	EEventState                      m_state;
@@ -102,6 +117,11 @@ private:
 	FMOD::Studio::ParameterInstance* m_pAbsoluteVelocityParameter;
 	CBaseObject*                     m_pObject;
 	CTrigger const*                  m_pTrigger;
+	std::atomic_bool                 m_toBeRemoved;
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	CryFixedStringT<MaxControlNameLength> m_name;
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 };
 } // namespace Fmod
 } // namespace Impl

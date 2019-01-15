@@ -12,6 +12,8 @@ namespace Impl
 {
 namespace Wwise
 {
+class CEvent;
+
 class CImpl final : public IImpl
 {
 public:
@@ -25,7 +27,7 @@ public:
 
 	// CryAudio::Impl::IImpl
 	virtual void                       Update() override;
-	virtual ERequestStatus             Init(uint16 const objectPoolSize, uint16 const eventPoolSize) override;
+	virtual ERequestStatus             Init(uint16 const objectPoolSize) override;
 	virtual void                       ShutDown() override;
 	virtual void                       OnBeforeRelease() override;
 	virtual void                       Release() override;
@@ -45,8 +47,8 @@ public:
 	virtual void                       GamepadDisconnected(DeviceId const deviceUniqueID) override;
 	virtual void                       OnRefresh() override;
 	virtual void                       SetLanguage(char const* const szLanguage) override;
-	virtual ERequestStatus             RegisterInMemoryFile(SFileInfo* const pFileInfo) override;
-	virtual ERequestStatus             UnregisterInMemoryFile(SFileInfo* const pFileInfo) override;
+	virtual void                       RegisterInMemoryFile(SFileInfo* const pFileInfo) override;
+	virtual void                       UnregisterInMemoryFile(SFileInfo* const pFileInfo) override;
 	virtual ERequestStatus             ConstructFile(XmlNodeRef const pRootNode, SFileInfo* const pFileInfo) override;
 	virtual void                       DestructFile(IFile* const pIFile) override;
 	virtual char const* const          GetFileLocation(SFileInfo* const pFileInfo) override;
@@ -67,18 +69,20 @@ public:
 	virtual void                       DestructObject(IObject const* const pIObject) override;
 	virtual IListener*                 ConstructListener(CTransformation const& transformation, char const* const szName = nullptr) override;
 	virtual void                       DestructListener(IListener* const pIListener) override;
-	virtual IEvent*                    ConstructEvent(CryAudio::CEvent& event) override;
-	virtual void                       DestructEvent(IEvent const* const pIEvent) override;
 	virtual IStandaloneFileConnection* ConstructStandaloneFileConnection(CryAudio::CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITriggerConnection const* pITriggerConnection = nullptr) override;
 	virtual void                       DestructStandaloneFileConnection(IStandaloneFileConnection const* const pIStandaloneFileConnection) override;
 
 	// Below data is only used when INCLUDE_WWISE_IMPL_PRODUCTION_CODE is defined!
 	virtual void GetFileData(char const* const szName, SFileData& fileData) const override;
-	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo) override;
+	virtual void DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo) override;
+	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const override;
 	// ~CryAudio::Impl::IImpl
 
-	void SetPanningRule(int const panningRule);
-	bool IsToBeReleased() const { return m_toBeReleased; }
+	CEvent* ConstructEvent(TriggerInstanceId const triggerInstanceId);
+	void    DestructEvent(CEvent const* const pEvent);
+
+	void    SetPanningRule(int const panningRule);
+	bool    IsToBeReleased() const { return m_toBeReleased; }
 
 private:
 

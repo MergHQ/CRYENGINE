@@ -2,7 +2,6 @@
 
 #include "stdafx.h"
 #include "Impl.h"
-#include "Common/IEvent.h"
 #include "Common/IListener.h"
 #include "Common/IObject.h"
 #include "Common/FileInfo.h"
@@ -13,11 +12,6 @@ namespace Impl
 {
 namespace Null
 {
-struct SEvent final : IEvent
-{
-	virtual ERequestStatus Stop() override { return ERequestStatus::Success; }
-};
-
 struct SListener final : IListener
 {
 	virtual void                   Update(float const deltaTime) override                            {}
@@ -45,7 +39,7 @@ void CImpl::Update()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::Init(uint16 const objectPoolSize, uint16 const eventPoolSize)
+ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 {
 	return ERequestStatus::Success;
 }
@@ -127,15 +121,13 @@ void CImpl::SetGlobalSwitchState(ISwitchStateConnection* const pISwitchStateConn
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
+void CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 {
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
+void CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 {
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -199,19 +191,6 @@ IListener* CImpl::ConstructListener(CTransformation const& transformation, char 
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::Null::SListener");
 	return static_cast<IListener*>(new SListener());
-}
-
-///////////////////////////////////////////////////////////////////////////
-IEvent* CImpl::ConstructEvent(CEvent& event)
-{
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::Null::SEvent");
-	return static_cast<IEvent*>(new SEvent());
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructEvent(IEvent const* const pIEvent)
-{
-	delete pIEvent;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -312,7 +291,12 @@ void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float& posY, bool const showDetailedInfo)
+void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float posX, float& posY, bool const showDetailedInfo)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const
 {
 }
 } // namespace Null

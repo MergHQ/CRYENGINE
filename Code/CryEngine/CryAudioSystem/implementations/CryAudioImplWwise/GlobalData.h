@@ -14,6 +14,7 @@ namespace Wwise
 static constexpr char const* s_szImplFolderName = "wwise";
 
 // XML tags
+static constexpr char const* s_szEventTag = "Event";
 static constexpr char const* s_szParameterTag = "Parameter";
 static constexpr char const* s_szSwitchGroupTag = "SwitchGroup";
 static constexpr char const* s_szStateGroupTag = "StateGroup";

@@ -14,6 +14,7 @@ namespace SDL_mixer
 static constexpr char const* s_szImplFolderName = "sdlmixer";
 
 // XML tags
+static constexpr char const* s_szEventTag = "Event";
 static constexpr char const* s_szFileTag = "Sample";
 
 // XML attributes

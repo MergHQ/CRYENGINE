@@ -19,12 +19,11 @@
 
 #include <FileInfo.h>
 #include <Logger.h>
-#include <SharedData.h>
 #include <CrySystem/File/ICryPak.h>
 #include <CrySystem/IProjectManager.h>
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	#include "Debug.h"
+	#include <DebugStyle.h>
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
@@ -156,6 +155,9 @@ SPoolSizes g_poolSizesLevelSpecific;
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 SPoolSizes g_debugPoolSizes;
+Events g_constructedEvents;
+uint16 g_objectPoolSize = 0;
+uint16 g_eventPoolSize = 0;
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
@@ -258,7 +260,7 @@ void LoadEventsMaxAttenuations(const string& soundbanksPath)
 ///////////////////////////////////////////////////////////////////////////
 CSwitchState* ParseWwiseRtpcSwitch(XmlNodeRef const pNode)
 {
-	CSwitchState* pSwitchStateImpl = nullptr;
+	CSwitchState* pSwitchState = nullptr;
 
 	char const* const szName = pNode->getAttr(s_szNameAttribute);
 
@@ -271,7 +273,11 @@ CSwitchState* ParseWwiseRtpcSwitch(XmlNodeRef const pNode)
 			AkUniqueID const rtpcId = AK::SoundEngine::GetIDFromString(szName);
 
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CSwitchState");
-			pSwitchStateImpl = new CSwitchState(ESwitchType::Rtpc, rtpcId, rtpcId, value);
+			pSwitchState = new CSwitchState(ESwitchType::Rtpc, rtpcId, rtpcId, value);
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+			pSwitchState->SetName(szName);
+#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 		}
 	}
 	else
@@ -282,7 +288,7 @@ CSwitchState* ParseWwiseRtpcSwitch(XmlNodeRef const pNode)
 			szName);
 	}
 
-	return pSwitchStateImpl;
+	return pSwitchState;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -487,12 +493,24 @@ void CImpl::Update()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::Init(uint16 const objectPoolSize, uint16 const eventPoolSize)
+ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 {
 	// If something fails so severely during initialization that we need to fall back to the NULL implementation
 	// we will need to shut down what has been initialized so far. Therefore make sure to call Shutdown() before returning eARS_FAILURE!
 
-	AllocateMemoryPools(objectPoolSize, eventPoolSize);
+	if (g_cvars.m_eventPoolSize < 1)
+	{
+		g_cvars.m_eventPoolSize = 1;
+		Cry::Audio::Log(ELogType::Warning, R"(Event pool size must be at least 1. Forcing the cvar "s_WwiseEventPoolSize" to 1!)");
+	}
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	g_constructedEvents.reserve(static_cast<size_t>(g_cvars.m_eventPoolSize));
+	g_objectPoolSize = objectPoolSize;
+	g_eventPoolSize = static_cast<uint16>(g_cvars.m_eventPoolSize);
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+
+	AllocateMemoryPools(objectPoolSize, static_cast<uint16>(g_cvars.m_eventPoolSize));
 
 	AkMemSettings memSettings;
 	memSettings.uMaxNumPools = 20;
@@ -1089,10 +1107,8 @@ void CImpl::SetGlobalSwitchState(ISwitchStateConnection* const pISwitchStateConn
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
+void CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 {
-	ERequestStatus result = ERequestStatus::Failure;
-
 	if (pFileInfo != nullptr)
 	{
 		auto const pFileData = static_cast<CFile*>(pFileInfo->pImplData);
@@ -1109,7 +1125,6 @@ ERequestStatus CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 			if (IS_WWISE_OK(wwiseResult))
 			{
 				pFileData->bankId = bankId;
-				result = ERequestStatus::Success;
 			}
 			else
 			{
@@ -1119,18 +1134,14 @@ ERequestStatus CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 		}
 		else
 		{
-			Cry::Audio::Log(ELogType::Error, "Invalid AudioFileEntryData passed to the Wwise implementation of RegisterInMemoryFile");
+			Cry::Audio::Log(ELogType::Error, "Invalid AudioFileEntryData passed to the Wwise implementation of %s", __FUNCTION__);
 		}
 	}
-
-	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
+void CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 {
-	ERequestStatus result = ERequestStatus::Failure;
-
 	if (pFileInfo != nullptr)
 	{
 		auto const pFileData = static_cast<CFile*>(pFileInfo->pImplData);
@@ -1151,22 +1162,16 @@ ERequestStatus CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 				WaitForAuxAudioThread();
 			}
 
-			if (IS_WWISE_OK(wwiseResult))
-			{
-				result = ERequestStatus::Success;
-			}
-			else
+			if (!IS_WWISE_OK(wwiseResult))
 			{
 				Cry::Audio::Log(ELogType::Error, "Wwise Failed to unregister in memory file %s\n", pFileInfo->szFileName);
 			}
 		}
 		else
 		{
-			Cry::Audio::Log(ELogType::Error, "Invalid AudioFileEntryData passed to the Wwise implementation of UnregisterInMemoryFile");
+			Cry::Audio::Log(ELogType::Error, "Invalid AudioFileEntryData passed to the Wwise implementation of %s", __FUNCTION__);
 		}
 	}
-
-	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1294,7 +1299,7 @@ IObject* CImpl::ConstructObject(CTransformation const& transformation, char cons
 void CImpl::DestructObject(IObject const* const pIObject)
 {
 	auto const pObject = static_cast<CObject const*>(pIObject);
-	AkGameObjectID const objectID = pObject->GetId() == AK_INVALID_GAME_OBJECT ? g_globalObjectId : pObject->GetId();
+	AkGameObjectID const objectID = pObject->GetId();
 	AKRESULT const wwiseResult = AK::SoundEngine::UnregisterGameObj(objectID);
 
 	if (!IS_WWISE_OK(wwiseResult))
@@ -1379,29 +1384,6 @@ void CImpl::DestructListener(IListener* const pIListener)
 
 	delete g_pListener;
 	g_pListener = nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
-IEvent* CImpl::ConstructEvent(CryAudio::CEvent& event)
-{
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CEvent");
-	return static_cast<IEvent*>(new CEvent(event));
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructEvent(IEvent const* const pIEvent)
-{
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	auto const pEvent = static_cast<CEvent const*>(pIEvent);
-
-	if (pEvent != nullptr)
-	{
-		CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
-		g_playingIds.erase(pEvent->m_id);
-	}
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
-
-	delete pIEvent;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1542,6 +1524,10 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRoot
 	{
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CParameter");
 		pParameter = new CParameter(rtpcId, multiplier, shift);
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+		pParameter->SetName(pRootNode->getAttr(s_szNameAttribute));
+#endif    // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 	}
 
 	return static_cast<IParameterConnection*>(pParameter);
@@ -1568,6 +1554,10 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 		{
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CSwitchState");
 			pSwitchState = new CSwitchState(ESwitchType::StateGroup, stateOrSwitchGroupId, stateOrSwitchId);
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+			pSwitchState->SetName(pRootNode->getAttr(s_szNameAttribute));
+#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 		}
 	}
 	else if (_stricmp(szTag, s_szSwitchGroupTag) == 0)
@@ -1579,6 +1569,10 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 		{
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CSwitchState");
 			pSwitchState = new CSwitchState(ESwitchType::SwitchGroup, stateOrSwitchGroupId, stateOrSwitchId);
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+			pSwitchState->SetName(pRootNode->getAttr(s_szNameAttribute));
+#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 		}
 	}
 	else if (_stricmp(szTag, s_szParameterTag) == 0)
@@ -1614,6 +1608,10 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const p
 		{
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CEnvironment");
 			pEnvironment = new CEnvironment(EEnvironmentType::AuxBus, static_cast<AkAuxBusID>(busId));
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+			pEnvironment->SetName(szName);
+#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 		}
 		else
 		{
@@ -1632,6 +1630,10 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const p
 		{
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CEnvironment");
 			pEnvironment = new CEnvironment(EEnvironmentType::Rtpc, rtpcId, multiplier, shift);
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+			pEnvironment->SetName(pRootNode->getAttr(s_szNameAttribute));
+#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 		}
 		else
 		{
@@ -1761,6 +1763,51 @@ void CImpl::SetLanguage(char const* const szLanguage)
 }
 
 //////////////////////////////////////////////////////////////////////////
+CEvent* CImpl::ConstructEvent(TriggerInstanceId const triggerInstanceId)
+{
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CEvent");
+	auto const pEvent = new CEvent(triggerInstanceId);
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	g_constructedEvents.push_back(pEvent);
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+
+	return pEvent;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::DestructEvent(CEvent const* const pEvent)
+{
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	CRY_ASSERT_MESSAGE(pEvent != nullptr, "pEvent is nullpter during %s", __FUNCTION__);
+
+	auto iter(g_constructedEvents.begin());
+	auto const iterEnd(g_constructedEvents.cend());
+
+	for (; iter != iterEnd; ++iter)
+	{
+		if ((*iter) == pEvent)
+		{
+			if (iter != (iterEnd - 1))
+			{
+				(*iter) = g_constructedEvents.back();
+			}
+
+			g_constructedEvents.pop_back();
+			break;
+		}
+	}
+
+	{
+		CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
+		g_playingIds.erase(pEvent->m_id);
+	}
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+
+	delete pEvent;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CImpl::SetPanningRule(int const panningRule)
 {
 	AK::SoundEngine::SetPanningRule(static_cast<AkPanningRule>(panningRule));
@@ -1774,7 +1821,8 @@ void DrawMemoryPoolInfo(
 	float& posY,
 	stl::SPoolMemoryUsage const& mem,
 	stl::SMemoryUsage const& pool,
-	char const* const szType)
+	char const* const szType,
+	uint16 const poolSize)
 {
 	CryFixedStringT<MaxMiscStringLength> memUsedString;
 
@@ -1798,10 +1846,12 @@ void DrawMemoryPoolInfo(
 		memAllocString.Format("%" PRISIZE_T " KiB", mem.nAlloc >> 10);
 	}
 
-	posY += g_debugSystemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false,
-	                    "[%s] In Use: %" PRISIZE_T " | Constructed: %" PRISIZE_T " (%s) | Memory Pool: %s",
-	                    szType, pool.nUsed, pool.nAlloc, memUsedString.c_str(), memAllocString.c_str());
+	ColorF const color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
+
+	posY += Debug::s_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, color, false,
+	                    "[%s] Constructed: %" PRISIZE_T " (%s) | Allocated: %" PRISIZE_T " (%s) | Pool Size: %u",
+	                    szType, pool.nUsed, memUsedString.c_str(), pool.nAlloc, memAllocString.c_str(), poolSize);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1813,7 +1863,7 @@ void CImpl::GetInitBankSize()
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo)
+void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo)
 {
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	CryModuleMemoryInfo memInfo;
@@ -1832,70 +1882,129 @@ void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY
 		memInfoString.Format("%s (Total Memory: %u KiB)", m_name.c_str(), memAlloc >> 10);
 	}
 
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemHeaderFontSize, g_debugSystemColorHeader.data(), false, memInfoString.c_str());
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemHeaderFontSize, Debug::s_globalColorHeader, false, memInfoString.c_str());
+	posY += Debug::s_systemHeaderLineSpacerHeight;
 
 	if (showDetailedInfo)
 	{
-		posY += g_debugSystemLineHeight;
-		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Init.bnk: %uKiB",
+		posY += Debug::s_systemLineHeight;
+		auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextPrimary, false, "Init.bnk: %uKiB",
 		                    static_cast<uint32>(m_initBankSize / 1024));
 
 		{
 			auto& allocator = CObject::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Objects");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Objects", g_objectPoolSize);
 		}
 
 		{
 			auto& allocator = CEvent::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Events");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Events", g_eventPoolSize);
 		}
 
 		if (g_debugPoolSizes.triggers > 0)
 		{
 			auto& allocator = CTrigger::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Triggers");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Triggers", g_poolSizes.triggers);
 		}
 
 		if (g_debugPoolSizes.parameters > 0)
 		{
 			auto& allocator = CParameter::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Parameters");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Parameters", g_poolSizes.parameters);
 		}
 
 		if (g_debugPoolSizes.switchStates > 0)
 		{
 			auto& allocator = CSwitchState::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "SwitchStates");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "SwitchStates", g_poolSizes.switchStates);
 		}
 
 		if (g_debugPoolSizes.environments > 0)
 		{
 			auto& allocator = CEnvironment::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Environments");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Environments", g_poolSizes.environments);
 		}
 
 		if (g_debugPoolSizes.files > 0)
 		{
 			auto& allocator = CFile::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Files");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Files", g_poolSizes.files);
 		}
 	}
 
-	if (g_numObjectsWithRelativeVelocity > 0)
-	{
-		posY += g_debugSystemLineHeight;
-		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Objects with relative velocity calculation: %u", g_numObjectsWithRelativeVelocity);
-	}
+	size_t const numEvents = g_constructedEvents.size();
+
+	posY += Debug::s_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextSecondary, false, "Events: %3" PRISIZE_T " | Objects with relative velocity calculation: %u",
+	                    numEvents, g_numObjectsWithRelativeVelocity);
 
 	Vec3 const& listenerPosition = g_pListener->GetPosition();
 	Vec3 const& listenerDirection = g_pListener->GetTransformation().GetForward();
 	float const listenerVelocity = g_pListener->GetVelocity().GetLength();
 	char const* const szName = g_pListener->GetName();
 
-	posY += g_debugSystemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorListenerActive.data(), false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s",
+	posY += Debug::s_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorListenerActive, false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s",
 	                    szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
 
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const
+{
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(szTextFilter);
+	lowerCaseSearchString.MakeLower();
+
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "Wwise Events [%" PRISIZE_T "]", g_constructedEvents.size());
+	posY += Debug::s_listHeaderLineHeight;
+
+	for (auto const pEvent : g_constructedEvents)
+	{
+		Vec3 const& position = pEvent->m_pObject->GetTransformation().GetPosition();
+		float const distance = position.GetDistance(g_pListener->GetPosition());
+
+		if ((debugDistance <= 0.0f) || ((debugDistance > 0.0f) && (distance < debugDistance)))
+		{
+			char const* const szTriggerName = pEvent->GetName();
+			CryFixedStringT<MaxControlNameLength> lowerCaseTriggerName(szTriggerName);
+			lowerCaseTriggerName.MakeLower();
+			bool const draw = ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseTriggerName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos));
+
+			if (draw)
+			{
+				ColorF color = Debug::s_globalColorInactive;
+
+				switch (pEvent->m_state)
+				{
+				case EEventState::Playing:
+					{
+						color = Debug::s_listColorItemActive;
+						break;
+					}
+				case EEventState::Virtual:
+					{
+						color = Debug::s_globalColorVirtual;
+						break;
+					}
+				case EEventState::Loading:
+					{
+						color = Debug::s_listColorItemLoading;
+						break;
+					}
+				default:
+					break;
+				}
+
+				auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize, color, false, "%s on %s", szTriggerName, pEvent->m_pObject->GetName());
+
+				posY += Debug::s_listLineHeight;
+			}
+		}
+	}
+
+	posX += 600.0f;
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 }
 } // namespace Wwise

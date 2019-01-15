@@ -14,6 +14,7 @@ namespace Fmod
 static constexpr char const* s_szImplFolderName = "fmod";
 
 // XML tags
+static constexpr char const* s_szEventTag = "Event";
 static constexpr char const* s_szKeyTag = "Key";
 static constexpr char const* s_szSnapshotTag = "Snapshot";
 static constexpr char const* s_szParameterTag = "Parameter";

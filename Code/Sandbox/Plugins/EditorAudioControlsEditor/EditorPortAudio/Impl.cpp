@@ -196,7 +196,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 	{
 		char const* const szTag = pNode->getTag();
 
-		if ((_stricmp(szTag, CryAudio::s_szEventTag) == 0) ||
+		if ((_stricmp(szTag, CryAudio::Impl::PortAudio::s_szEventTag) == 0) ||
 		    (_stricmp(szTag, CryAudio::Impl::PortAudio::s_szFileTag) == 0) ||
 		    (_stricmp(szTag, "PortAudioEvent") == 0) || // Backwards compatibility.
 		    (_stricmp(szTag, "PortAudioSample") == 0))  // Backwards compatibility.
@@ -268,7 +268,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 
 	if ((pItem != nullptr) && (pEventConnection != nullptr) && (assetType == EAssetType::Trigger))
 	{
-		pNode = GetISystem()->CreateXmlNode(CryAudio::s_szEventTag);
+		pNode = GetISystem()->CreateXmlNode(CryAudio::Impl::PortAudio::s_szEventTag);
 		pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
 
 		string const& path = pItem->GetPath();

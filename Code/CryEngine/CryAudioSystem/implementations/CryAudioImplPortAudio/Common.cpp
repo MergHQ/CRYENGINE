@@ -2,7 +2,6 @@
 
 #include "stdafx.h"
 #include "Common.h"
-#include "Listener.h"
 
 namespace CryAudio
 {
@@ -10,6 +9,7 @@ namespace Impl
 {
 namespace PortAudio
 {
+CImpl* g_pImpl = nullptr;
 CListener* g_pListener = nullptr;
 } // namespace PortAudio
 } // namespace Impl

@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <IEvent.h>
 #include <portaudio.h>
 #include <atomic>
 #include <PoolObject.h>
@@ -13,8 +12,6 @@ using SNDFILE = struct SNDFILE_tag;
 
 namespace CryAudio
 {
-class CEvent;
-
 namespace Impl
 {
 namespace PortAudio
@@ -30,7 +27,7 @@ enum class EEventState
 
 class CObject;
 
-class CEvent final : public IEvent, public CPoolObject<CEvent, stl::PSyncNone>
+class CEvent final : public CPoolObject<CEvent, stl::PSyncNone>
 {
 public:
 
@@ -40,19 +37,23 @@ public:
 	CEvent& operator=(CEvent const&) = delete;
 	CEvent& operator=(CEvent&&) = delete;
 
-	explicit CEvent(CryAudio::CEvent& event_);
-	virtual ~CEvent() override;
+	explicit CEvent(TriggerInstanceId const triggerInstanceId);
+	~CEvent();
 
 	bool Execute(
 		int const numLoops,
 		double const sampleRate,
 		CryFixedStringT<MaxFilePathLength> const& filePath,
 		PaStreamParameters const& streamParameters);
-	void Update();
+	void              Update();
+	void              Stop();
 
-	// CryAudio::Impl::IEvent
-	virtual ERequestStatus Stop() override;
-	// ~CryAudio::Impl::IEvent
+	TriggerInstanceId GetTriggerInstanceId() const { return m_triggerInstanceId; }
+
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+	void        SetName(char const* const szName) { m_name = szName; }
+	char const* GetName() const                   { return m_name.c_str(); }
+#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 
 	SNDFILE*                 pSndFile;
 	PaStream*                pStream;
@@ -60,14 +61,20 @@ public:
 	CObject*                 pObject;
 	int                      numChannels;
 	int                      remainingLoops;
-	CryAudio::CEvent&        event;
 	uint32                   pathId;
 	PaSampleFormat           sampleFormat;
 	std::atomic<EEventState> state;
+	bool                     toBeRemoved;
 
 private:
 
 	void Reset();
+
+	TriggerInstanceId const m_triggerInstanceId;
+
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+	CryFixedStringT<MaxControlNameLength> m_name;
+#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 };
 } // namespace PortAudio
 } // namespace Impl

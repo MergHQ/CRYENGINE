@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "BaseObject.h"
+#include "Impl.h"
 #include "BaseStandaloneFile.h"
 #include "Event.h"
 #include "Environment.h"
@@ -28,38 +29,6 @@ CBaseObject::CBaseObject()
 
 	// Reserve enough room for events to minimize/prevent runtime allocations.
 	m_events.reserve(2);
-}
-
-//////////////////////////////////////////////////////////////////////////
-CBaseObject::~CBaseObject()
-{
-	// If the object is deleted before its events get
-	// cleared we need to remove all references to it
-	for (auto const pEvent : m_events)
-	{
-		pEvent->SetObject(nullptr);
-	}
-
-	for (auto const pEvent : m_pendingEvents)
-	{
-		pEvent->SetObject(nullptr);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CBaseObject::RemoveEvent(CEvent* const pEvent)
-{
-	if (!stl::find_and_erase(m_events, pEvent))
-	{
-		if (!stl::find_and_erase(m_pendingEvents, pEvent))
-		{
-			Cry::Audio::Log(ELogType::Error, "Tried to remove an event from an object that does not own that event");
-		}
-	}
-	else
-	{
-		UpdateVelocityTracking();
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -176,8 +145,6 @@ bool CBaseObject::SetEvent(CEvent* const pEvent)
 		fmodResult = pEvent->GetInstance()->start();
 		ASSERT_FMOD_OK;
 
-		pEvent->UpdateVirtualState();
-
 		bSuccess = true;
 	}
 
@@ -262,38 +229,105 @@ void CBaseObject::Update(float const deltaTime)
 			++iter;
 		}
 	}
+
+	EObjectFlags const previousFlags = m_flags;
+	bool removedEvent = false;
+
+	if (!m_events.empty())
+	{
+		m_flags |= EObjectFlags::IsVirtual;
+	}
+
+	auto iter(m_events.begin());
+	auto iterEnd(m_events.end());
+
+	while (iter != iterEnd)
+	{
+		auto const pEvent = *iter;
+
+		if (pEvent->IsToBeRemoved())
+		{
+			gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pEvent->GetTriggerInstanceId());
+			g_pImpl->DestructEvent(pEvent);
+			removedEvent = true;
+
+			if (iter != (iterEnd - 1))
+			{
+				(*iter) = m_events.back();
+			}
+
+			m_events.pop_back();
+			iter = m_events.begin();
+			iterEnd = m_events.end();
+		}
+		else
+		{
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+			// Always update in production code for debug draw.
+			pEvent->UpdateVirtualState();
+
+			if (pEvent->GetState() != EEventState::Virtual)
+			{
+				m_flags &= ~EObjectFlags::IsVirtual;
+			}
+#else
+			if (((m_flags& EObjectFlags::IsVirtual) != 0) && ((m_flags& EObjectFlags::UpdateVirtualStates) != 0))
+			{
+				pEvent->UpdateVirtualState();
+
+				if (pEvent->GetState() != EEventState::Virtual)
+				{
+					m_flags &= ~EObjectFlags::IsVirtual;
+				}
+			}
+#endif      // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+			++iter;
+		}
+	}
+
+	if ((previousFlags != m_flags) && (!m_events.empty() || !m_pendingEvents.empty()))
+	{
+		if (((previousFlags& EObjectFlags::IsVirtual) != 0) && ((m_flags& EObjectFlags::IsVirtual) == 0))
+		{
+			gEnv->pAudioSystem->ReportPhysicalizedObject(this);
+		}
+		else if (((previousFlags& EObjectFlags::IsVirtual) == 0) && ((m_flags& EObjectFlags::IsVirtual) != 0))
+		{
+			gEnv->pAudioSystem->ReportVirtualizedObject(this);
+		}
+	}
+
+	if (removedEvent)
+	{
+		UpdateVelocityTracking();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CBaseObject::StopAllTriggers()
 {
-	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
-
 	for (auto const pEvent : m_events)
 	{
-		fmodResult = pEvent->GetInstance()->stop(FMOD_STUDIO_STOP_IMMEDIATE);
-		ASSERT_FMOD_OK;
+		pEvent->StopImmediate();
 	}
 }
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CBaseObject::SetName(char const* const szName)
 {
-	// Fmod does not have the concept of objects and with that the debugging of such.
-	// Therefore the name is currently not needed here.
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	m_name = szName;
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CBaseObject::StopEvent(uint32 const id)
 {
-	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
-
 	for (auto const pEvent : m_events)
 	{
 		if (pEvent->GetId() == id)
 		{
-			fmodResult = pEvent->GetInstance()->stop(FMOD_STUDIO_STOP_ALLOWFADEOUT);
-			ASSERT_FMOD_OK;
+			pEvent->StopAllowFadeOut();
 		}
 	}
 }

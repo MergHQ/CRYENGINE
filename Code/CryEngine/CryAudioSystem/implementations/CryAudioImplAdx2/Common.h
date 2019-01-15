@@ -12,9 +12,12 @@ namespace Impl
 {
 namespace Adx2
 {
+class CImpl;
 class CGlobalObject;
 class CListener;
+class CEvent;
 
+extern CImpl* g_pImpl;
 extern CGlobalObject* g_pObject;
 extern CListener* g_pListener;
 
@@ -27,6 +30,8 @@ extern CriAtomEx3dSourceConfig g_3dSourceConfig;
 extern uint32 g_numObjectsWithDoppler;
 
 static constexpr CriChar8 const* s_szAbsoluteVelocityAisacName = "absolute_velocity";
+
+using Events = std::vector<CEvent*>;
 
 struct S3DAttributes final
 {

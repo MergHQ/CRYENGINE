@@ -28,8 +28,8 @@ public:
 	~CPreviewTrigger();
 
 	void Execute(Impl::ITriggerInfo const& triggerInfo);
-	void Stop();
 	void Clear();
+	bool HasConnection() const { return m_pConnection != nullptr; }
 
 private:
 

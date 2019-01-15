@@ -57,6 +57,7 @@ using SwitchLookup = std::map<ControlId, CSwitch const*>;
 using PreloadRequestLookup = std::map<PreloadRequestId, CPreloadRequest*>;
 using EnvironmentLookup = std::map<EnvironmentId, CEnvironment const*>;
 using SettingLookup = std::map<ControlId, CSetting const*>;
+using TriggerInstanceIdLookup = std::map<TriggerInstanceId, CObject*>;
 
 using TriggerConnections = std::vector<Impl::ITriggerConnection*>;
 using ParameterConnections = std::vector<Impl::IParameterConnection*>;
@@ -73,6 +74,7 @@ extern SwitchLookup g_switches;
 extern PreloadRequestLookup g_preloadRequests;
 extern EnvironmentLookup g_environments;
 extern SettingLookup g_settings;
+extern TriggerInstanceIdLookup g_triggerInstanceIdToObject;
 extern CObject* g_pObject;
 extern CLoseFocusTrigger g_loseFocusTrigger;
 extern CGetFocusTrigger g_getFocusTrigger;
@@ -85,6 +87,7 @@ extern SImplInfo g_implInfo;
 extern CryFixedStringT<MaxFilePathLength> g_configPath;
 
 extern TriggerInstanceId g_triggerInstanceIdCounter;
+constexpr TriggerInstanceId g_maxTriggerInstanceId = std::numeric_limits<TriggerInstanceId>::max();
 
 struct SPoolSizes final
 {
@@ -99,6 +102,19 @@ struct SPoolSizes final
 };
 
 extern SPoolSizes g_poolSizes;
+
+static void IncrementTriggerInstanceIdCounter()
+{
+	if (g_triggerInstanceIdCounter == g_maxTriggerInstanceId)
+	{
+		// Set to 1 because 0 is an invalid id.
+		g_triggerInstanceIdCounter = 1;
+	}
+	else
+	{
+		++g_triggerInstanceIdCounter;
+	}
+}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 static constexpr char const* s_szPreviewTriggerName = "preview_trigger";

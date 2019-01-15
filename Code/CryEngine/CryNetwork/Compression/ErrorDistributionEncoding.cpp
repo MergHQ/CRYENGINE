@@ -311,7 +311,7 @@ void CErrorDistribution::GetAfterZeroProb(uint32& prob, uint32& total) const
 	}
 }
 
-bool CErrorDistribution::ReadAfterZero(bool& zero, CCommInputStream* pStream) const
+void CErrorDistribution::ReadAfterZero(bool& isZero, CCommInputStream* pStream) const
 {
 	uint32 prob = 0;
 	uint32 total = 0;
@@ -322,25 +322,23 @@ bool CErrorDistribution::ReadAfterZero(bool& zero, CCommInputStream* pStream) co
 	if (readed >= prob)
 	{//not zero
 		pStream->Update(total, prob, total - prob);
-		zero = false;
+		isZero = false;
 	}
 	else
 	{//zero
 		pStream->Update(total, 0, prob);
-		zero = true;
+		isZero = true;
 	}
-
-	return true;
 }
 
-bool CErrorDistribution::WriteAfterZero(bool bZero, CCommOutputStream* pStream) const
+void CErrorDistribution::WriteAfterZero(bool isZero, CCommOutputStream* pStream) const
 {
 	uint32 prob = 0;
 	uint32 total = 0;
 
 	GetAfterZeroProb(prob, total);
 
-	if (bZero)
+	if (isZero)
 	{
 		pStream->Encode(total, 0, prob);
 	}
@@ -348,8 +346,6 @@ bool CErrorDistribution::WriteAfterZero(bool bZero, CCommOutputStream* pStream) 
 	{
 		pStream->Encode(total, prob, total - prob);
 	}
-
-	return true;
 }
 
 bool CErrorDistribution::WriteValue(int32 value, CCommOutputStream* pStream, bool lastTimeZero) const
@@ -357,13 +353,10 @@ bool CErrorDistribution::WriteValue(int32 value, CCommOutputStream* pStream, boo
 	OnOpEnd(eOpType_Idle);
 	if (lastTimeZero)
 	{
-		if (!WriteAfterZero(value == 0, pStream))
-		{
-			OnOpEnd(eOpType_Write);
-			return false;
-		}
+		const bool isZero = (value == 0);
+		WriteAfterZero(isZero, pStream);
 
-		if (value == 0)
+		if (isZero)
 		{
 			OnOpEnd(eOpType_Write);
 			return true;
@@ -400,6 +393,22 @@ bool CErrorDistribution::WriteValue(int32 value, CCommOutputStream* pStream, boo
 
 	OnOpEnd(eOpType_Write);
 	return true;
+}
+
+bool CErrorDistribution::WriteValueOutOfRange(CCommOutputStream* pStream, bool bLastTimeZero) const
+{
+	OnOpEnd(eOpType_Idle);
+	if (bLastTimeZero)
+	{
+		const bool isZero = false;
+		WriteAfterZero(isZero, pStream);
+	}
+
+	WriteOutOfRange(pStream);
+	WriteBitOutOfRange(pStream);
+
+	OnOpEnd(eOpType_Write);
+	return false;
 }
 
 bool CErrorDistribution::ReadSymbol(uint32 symbol, CCommInputStream* pStream) const
@@ -440,11 +449,7 @@ bool CErrorDistribution::ReadValue(int32& value, CCommInputStream* pStream, bool
 	if (bLastTimeZero)
 	{
 		bool bZero = false;
-		if (!ReadAfterZero(bZero, pStream))
-		{
-			OnOpEnd(eOpType_Read);
-			return false;
-		}
+		ReadAfterZero(bZero, pStream);
 
 		if (bZero)
 		{

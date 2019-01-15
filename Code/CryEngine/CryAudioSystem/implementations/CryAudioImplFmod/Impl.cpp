@@ -2,10 +2,12 @@
 
 #include "stdafx.h"
 #include "Impl.h"
+#include "Common.h"
 #include "Event.h"
 #include "CVars.h"
 #include "EnvironmentBus.h"
 #include "EnvironmentParameter.h"
+#include "Event.h"
 #include "File.h"
 #include "Listener.h"
 #include "GlobalObject.h"
@@ -26,7 +28,7 @@
 #include <CryAudio/IAudioSystem.h>
 
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-	#include "Debug.h"
+	#include <DebugStyle.h>
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
@@ -41,6 +43,9 @@ SPoolSizes g_poolSizesLevelSpecific;
 
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 SPoolSizes g_debugPoolSizes;
+Events g_constructedEvents;
+uint16 g_objectPoolSize = 0;
+uint16 g_eventPoolSize = 0;
 #endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 char const* const CImpl::s_szEventPrefix = "event:/";
@@ -127,6 +132,7 @@ CImpl::CImpl()
 	, m_pMasterStreamsBank(nullptr)
 	, m_pMasterStringsBank(nullptr)
 {
+	g_pImpl = this;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -140,10 +146,16 @@ void CImpl::Update()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::Init(uint16 const objectPoolSize, uint16 const eventPoolSize)
+ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 {
+	if (g_cvars.m_eventPoolSize < 1)
+	{
+		g_cvars.m_eventPoolSize = 1;
+		Cry::Audio::Log(ELogType::Warning, R"(Event pool size must be at least 1. Forcing the cvar "s_FmodEventPoolSize" to 1!)");
+	}
+
 	g_constructedObjects.reserve(static_cast<size_t>(objectPoolSize));
-	AllocateMemoryPools(objectPoolSize, eventPoolSize);
+	AllocateMemoryPools(objectPoolSize, static_cast<uint16>(g_cvars.m_eventPoolSize));
 
 	m_regularSoundBankFolder = AUDIO_SYSTEM_DATA_ROOT;
 	m_regularSoundBankFolder += "/";
@@ -158,6 +170,11 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize, uint16 const eventPoolSi
 	ASSERT_FMOD_OK;
 
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	g_constructedEvents.reserve(static_cast<size_t>(g_cvars.m_eventPoolSize));
+
+	g_objectPoolSize = objectPoolSize;
+	g_eventPoolSize = static_cast<uint16>(g_cvars.m_eventPoolSize);
+
 	uint32 version = 0;
 	fmodResult = m_pLowLevelSystem->getVersion(&version);
 	ASSERT_FMOD_OK;
@@ -238,6 +255,7 @@ void CImpl::ShutDown()
 void CImpl::Release()
 {
 	delete this;
+	g_pImpl = nullptr;
 	g_cvars.UnregisterVariables();
 
 	FreeMemoryPools();
@@ -406,10 +424,8 @@ void CImpl::SetGlobalSwitchState(ISwitchStateConnection* const pISwitchStateConn
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
+void CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 {
-	ERequestStatus requestResult = ERequestStatus::Failure;
-
 	if (pFileInfo != nullptr)
 	{
 		auto const pFileData = static_cast<CFile*>(pFileInfo->pImplData);
@@ -439,23 +455,17 @@ ERequestStatus CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 				fmodResult = LoadBankCustom(pFileData->m_streamsBankPath.c_str(), &pFileData->pStreamsBank);
 				ASSERT_FMOD_OK;
 			}
-
-			requestResult = (fmodResult == FMOD_OK) ? ERequestStatus::Success : ERequestStatus::Failure;
 		}
 		else
 		{
-			Cry::Audio::Log(ELogType::Error, "Invalid FileData passed to the Fmod implementation of RegisterInMemoryFile");
+			Cry::Audio::Log(ELogType::Error, "Invalid FileData passed to the Fmod implementation of %s", __FUNCTION__);
 		}
 	}
-
-	return requestResult;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
+void CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 {
-	ERequestStatus requestResult = ERequestStatus::Failure;
-
 	if (pFileInfo != nullptr)
 	{
 		auto const pFileData = static_cast<CFile*>(pFileInfo->pImplData);
@@ -484,16 +494,12 @@ ERequestStatus CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 				ASSERT_FMOD_OK;
 				pFileData->pStreamsBank = nullptr;
 			}
-
-			requestResult = (fmodResult == FMOD_OK) ? ERequestStatus::Success : ERequestStatus::Failure;
 		}
 		else
 		{
-			Cry::Audio::Log(ELogType::Error, "Invalid FileData passed to the Fmod implementation of UnregisterInMemoryFile");
+			Cry::Audio::Log(ELogType::Error, "Invalid FileData passed to the Fmod implementation of %s", __FUNCTION__);
 		}
 	}
-
-	return requestResult;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -580,6 +586,13 @@ IObject* CImpl::ConstructObject(CTransformation const& transformation, char cons
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CObject");
 	CBaseObject* const pObject = new CObject(transformation);
 
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	if (szName != nullptr)
+	{
+		pObject->SetName(szName);
+	}
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
 	if (!stl::push_back_unique(g_constructedObjects, pObject))
 	{
 		Cry::Audio::Log(ELogType::Warning, "Trying to construct an already registered object.");
@@ -625,20 +638,6 @@ void CImpl::DestructListener(IListener* const pIListener)
 	CRY_ASSERT_MESSAGE(pIListener == g_pListener, "pIListener is not g_pListener during %s", __FUNCTION__);
 	delete g_pListener;
 	g_pListener = nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
-IEvent* CImpl::ConstructEvent(CryAudio::CEvent& event)
-{
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CEvent");
-	return static_cast<IEvent*>(new CEvent(&event));
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructEvent(IEvent const* const pIEvent)
-{
-	CRY_ASSERT_MESSAGE(pIEvent != nullptr, "pIEvent is nullptr during %s", __FUNCTION__);
-	delete pIEvent;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -702,27 +701,31 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 
 		if (m_pSystem->lookupID(path.c_str(), &guid) == FMOD_OK)
 		{
-			EEventType eventType = EEventType::Start;
+			EActionType actionType = EActionType::Start;
 			char const* const szEventType = pRootNode->getAttr(s_szTypeAttribute);
 
 			if ((szEventType != nullptr) && (szEventType[0] != '\0'))
 			{
 				if (_stricmp(szEventType, s_szStopValue) == 0)
 				{
-					eventType = EEventType::Stop;
+					actionType = EActionType::Stop;
 				}
 				else if (_stricmp(szEventType, s_szPauseValue) == 0)
 				{
-					eventType = EEventType::Pause;
+					actionType = EActionType::Pause;
 				}
 				else if (_stricmp(szEventType, s_szResumeValue) == 0)
 				{
-					eventType = EEventType::Resume;
+					actionType = EActionType::Resume;
 				}
 			}
 
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CTrigger");
-			pTrigger = new CTrigger(StringToId(path.c_str()), eventType, nullptr, guid);
+			pTrigger = new CTrigger(StringToId(path.c_str()), actionType, nullptr, guid);
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+			pTrigger->SetName(pRootNode->getAttr(s_szNameAttribute));
+#endif      // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 		}
 		else
 		{
@@ -740,7 +743,11 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 			char const* const szKey = pRootNode->getAttr(s_szNameAttribute);
 
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CTrigger");
-			pTrigger = new CTrigger(StringToId(path.c_str()), EEventType::Start, nullptr, guid, true, szKey);
+			pTrigger = new CTrigger(StringToId(path.c_str()), EActionType::Start, nullptr, guid, true, szKey);
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+			pTrigger->SetName(szKey);
+#endif      // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 		}
 		else
 		{
@@ -755,19 +762,23 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 
 		if (m_pSystem->lookupID(path.c_str(), &guid) == FMOD_OK)
 		{
-			EEventType eventType = EEventType::Start;
+			EActionType actionType = EActionType::Start;
 			char const* const szFmodEventType = pRootNode->getAttr(s_szTypeAttribute);
 
 			if ((szFmodEventType != nullptr) && (szFmodEventType[0] != '\0') && (_stricmp(szFmodEventType, s_szStopValue) == 0))
 			{
-				eventType = EEventType::Stop;
+				actionType = EActionType::Stop;
 			}
 
 			FMOD::Studio::EventDescription* pEventDescription = nullptr;
 			m_pSystem->getEventByID(&guid, &pEventDescription);
 
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CTrigger");
-			pTrigger = new CTrigger(StringToId(path.c_str()), eventType, pEventDescription, guid);
+			pTrigger = new CTrigger(StringToId(path.c_str()), actionType, pEventDescription, guid);
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+			pTrigger->SetName(pRootNode->getAttr(s_szNameAttribute));
+#endif      // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 		}
 		else
 		{
@@ -798,7 +809,13 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 		if (m_pSystem->lookupID(path.c_str(), &guid) == FMOD_OK)
 		{
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CTrigger");
-			pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(path.c_str()), EEventType::Start, nullptr, guid));
+			auto const pTrigger = new CTrigger(StringToId(path.c_str()), EActionType::Start, nullptr, guid);
+
+	#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+			pTrigger->SetName(pTriggerInfo->name.c_str());
+	#endif    // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
+			pITriggerConnection = static_cast<ITriggerConnection*>(pTrigger);
 		}
 		else
 		{
@@ -835,7 +852,14 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRoot
 		pRootNode->getAttr(s_szShiftAttribute, shift);
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CParameter");
-		pIParameterConnection = static_cast<IParameterConnection*>(new CParameter(StringToId(szName), multiplier, shift));
+
+		auto const pParameter = new CParameter(StringToId(szName), multiplier, shift);
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+		pParameter->SetName(szName);
+#endif    // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
+		pIParameterConnection = static_cast<IParameterConnection*>(pParameter);
 	}
 	else if (_stricmp(szTag, s_szVcaTag) == 0)
 	{
@@ -856,7 +880,13 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRoot
 			pRootNode->getAttr(s_szShiftAttribute, shift);
 
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CVcaParameter");
-			pIParameterConnection = static_cast<IParameterConnection*>(new CVcaParameter(StringToId(fullName.c_str()), multiplier, shift, pVca));
+			auto const pVcaParameter = new CVcaParameter(StringToId(fullName.c_str()), multiplier, shift, pVca);
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+			pVcaParameter->SetName(szName);
+#endif      // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
+			pIParameterConnection = static_cast<IParameterConnection*>(pVcaParameter);
 		}
 		else
 		{
@@ -894,10 +924,16 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 	{
 		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
 		char const* const szValue = pRootNode->getAttr(s_szValueAttribute);
-		float const value = static_cast<float>(atof(szValue));
+		auto const value = static_cast<float>(atof(szValue));
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CSwitchState");
-		pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CSwitchState(StringToId(szName), value));
+		auto const pSwitchState = new CSwitchState(StringToId(szName), value);
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+		pSwitchState->SetName(szName);
+#endif    // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
+		pISwitchStateConnection = static_cast<ISwitchStateConnection*>(pSwitchState);
 	}
 	else if (_stricmp(szTag, s_szVcaTag) == 0)
 	{
@@ -913,10 +949,16 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 			ASSERT_FMOD_OK;
 
 			char const* const szValue = pRootNode->getAttr(s_szValueAttribute);
-			float const value = static_cast<float>(atof(szValue));
+			auto const value = static_cast<float>(atof(szValue));
 
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CVcaState");
-			pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CVcaState(StringToId(fullName.c_str()), value, pVca));
+			auto const pVcaState = new CVcaState(StringToId(fullName.c_str()), value, pVca);
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+			pVcaState->SetName(szName);
+#endif      // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
+			pISwitchStateConnection = static_cast<ISwitchStateConnection*>(pVcaState);
 		}
 		else
 		{
@@ -964,6 +1006,10 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const p
 
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CEnvironmentBus");
 			pEnvironment = new CEnvironmentBus(nullptr, pBus);
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+			pEnvironment->SetName(pRootNode->getAttr(s_szNameAttribute));
+#endif      // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 		}
 		else
 		{
@@ -980,7 +1026,11 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const p
 		pRootNode->getAttr(s_szShiftAttribute, shift);
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CEnvironmentParameter");
-		pEnvironment = new CEnvironmentParameter(StringToId(szName), multiplier, shift, szName);
+		pEnvironment = new CEnvironmentParameter(StringToId(szName), multiplier, shift);
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+		pEnvironment->SetName(szName);
+#endif    // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 	}
 	else
 	{
@@ -1374,6 +1424,46 @@ void CImpl::PauseMasterBus(bool const shouldPause)
 }
 
 //////////////////////////////////////////////////////////////////////////
+CEvent* CImpl::ConstructEvent(TriggerInstanceId const triggerInstanceId)
+{
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CEvent");
+	auto const pEvent = new CEvent(triggerInstanceId);
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	g_constructedEvents.push_back(pEvent);
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
+	return pEvent;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::DestructEvent(CEvent const* const pEvent)
+{
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	CRY_ASSERT_MESSAGE(pEvent != nullptr, "pEvent is nullpter during %s", __FUNCTION__);
+
+	auto iter(g_constructedEvents.begin());
+	auto const iterEnd(g_constructedEvents.cend());
+
+	for (; iter != iterEnd; ++iter)
+	{
+		if ((*iter) == pEvent)
+		{
+			if (iter != (iterEnd - 1))
+			{
+				(*iter) = g_constructedEvents.back();
+			}
+
+			g_constructedEvents.pop_back();
+			break;
+		}
+	}
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
+	delete pEvent;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
 {
 	FMOD::Sound* pSound = nullptr;
@@ -1400,7 +1490,8 @@ void DrawMemoryPoolInfo(
 	float& posY,
 	stl::SPoolMemoryUsage const& mem,
 	stl::SMemoryUsage const& pool,
-	char const* const szType)
+	char const* const szType,
+	uint16 const poolSize)
 {
 	CryFixedStringT<MaxMiscStringLength> memUsedString;
 
@@ -1424,15 +1515,17 @@ void DrawMemoryPoolInfo(
 		memAllocString.Format("%" PRISIZE_T " KiB", mem.nAlloc >> 10);
 	}
 
-	posY += g_debugSystemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false,
-	                    "[%s] In Use: %" PRISIZE_T " | Constructed: %" PRISIZE_T " (%s) | Memory Pool: %s",
-	                    szType, pool.nUsed, pool.nAlloc, memUsedString.c_str(), memAllocString.c_str());
+	ColorF const color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
+
+	posY += Debug::s_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, color, false,
+	                    "[%s] Constructed: %" PRISIZE_T " (%s) | Allocated: %" PRISIZE_T " (%s) | Pool Size: %u",
+	                    szType, pool.nUsed, memUsedString.c_str(), pool.nAlloc, memAllocString.c_str(), poolSize);
 }
 #endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo)
+void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo)
 {
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	CryModuleMemoryInfo memInfo;
@@ -1451,99 +1544,153 @@ void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY
 		memInfoString.Format("%s (Total Memory: %u KiB)", m_name.c_str(), memAlloc >> 10);
 	}
 
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemHeaderFontSize, g_debugSystemColorHeader.data(), false, memInfoString.c_str());
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemHeaderFontSize, Debug::s_globalColorHeader, false, memInfoString.c_str());
+	posY += Debug::s_systemHeaderLineSpacerHeight;
 
 	if (showDetailedInfo)
 	{
-		posY += g_debugSystemLineHeight;
+		posY += Debug::s_systemLineHeight;
 
 		if (m_pMasterAssetsBank != nullptr)
 		{
-			auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Master Bank: %uKiB | Master Strings Bank: %uKiB | Master Assets Bank: %uKiB",
+			auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextPrimary, false, "Master Bank: %uKiB | Master Strings Bank: %uKiB | Master Assets Bank: %uKiB",
 			                    static_cast<uint32>(m_masterBankSize / 1024),
 			                    static_cast<uint32>(m_masterStringsBankSize / 1024),
 			                    static_cast<uint32>(m_masterAssetsBankSize / 1024));
 		}
 		else
 		{
-			auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Master Bank: %uKiB | Master Strings Bank: %uKiB",
+			auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextPrimary, false, "Master Bank: %uKiB | Master Strings Bank: %uKiB",
 			                    static_cast<uint32>(m_masterBankSize / 1024),
 			                    static_cast<uint32>(m_masterStringsBankSize / 1024));
 		}
 
 		{
 			auto& allocator = CObject::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Objects");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Objects", g_objectPoolSize);
 		}
 
 		{
 			auto& allocator = CEvent::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Events");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Events", g_eventPoolSize);
 		}
 
 		if (g_debugPoolSizes.triggers > 0)
 		{
 			auto& allocator = CTrigger::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Triggers");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Triggers", g_poolSizes.triggers);
 		}
 
 		if (g_debugPoolSizes.parameters > 0)
 		{
 			auto& allocator = CParameter::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Parameters");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Parameters", g_poolSizes.parameters);
 		}
 
 		if (g_debugPoolSizes.switchStates > 0)
 		{
 			auto& allocator = CSwitchState::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "SwitchStates");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "SwitchStates", g_poolSizes.switchStates);
 		}
 
 		if (g_debugPoolSizes.envBuses > 0)
 		{
 			auto& allocator = CEnvironmentBus::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "EnvironmentBuses");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "EnvironmentBuses", g_poolSizes.envBuses);
 		}
 
 		if (g_debugPoolSizes.envParameters > 0)
 		{
 			auto& allocator = CEnvironmentParameter::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "EnvironmentParameters");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "EnvironmentParameters", g_poolSizes.envParameters);
 		}
 
 		if (g_debugPoolSizes.vcaParameters > 0)
 		{
 			auto& allocator = CVcaParameter::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "VCAParameters");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "VCAParameters", g_poolSizes.vcaParameters);
 		}
 
 		if (g_debugPoolSizes.vcaStates > 0)
 		{
 			auto& allocator = CVcaState::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "VCAStates");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "VCAStates", g_poolSizes.vcaStates);
 		}
 
 		if (g_debugPoolSizes.files > 0)
 		{
 			auto& allocator = CFile::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Files");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Files", g_poolSizes.files);
 		}
 	}
 
-	if (g_numObjectsWithDoppler > 0)
-	{
-		posY += g_debugSystemLineHeight;
-		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Objects with Doppler: %u", g_numObjectsWithDoppler);
-	}
+	size_t const numEvents = g_constructedEvents.size();
+
+	posY += Debug::s_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextSecondary, false, "Events: %3" PRISIZE_T " | Objects with Doppler: %u",
+	                    numEvents, g_numObjectsWithDoppler);
 
 	Vec3 const& listenerPosition = g_pListener->GetPosition();
 	Vec3 const& listenerDirection = g_pListener->GetTransformation().GetForward();
 	float const listenerVelocity = g_pListener->GetVelocity().GetLength();
 	char const* const szName = g_pListener->GetName();
 
-	posY += g_debugSystemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorListenerActive.data(), false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s",
+	posY += Debug::s_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorListenerActive, false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s",
 	                    szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const
+{
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(szTextFilter);
+	lowerCaseSearchString.MakeLower();
+
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "Fmod Studio Events [%" PRISIZE_T "]", g_constructedEvents.size());
+	posY += Debug::s_listHeaderLineHeight;
+
+	for (auto const pEvent : g_constructedEvents)
+	{
+		Vec3 const& position = pEvent->GetObject()->GetTransformation().GetPosition();
+		float const distance = position.GetDistance(g_pListener->GetPosition());
+
+		if ((debugDistance <= 0.0f) || ((debugDistance > 0.0f) && (distance < debugDistance)))
+		{
+			char const* const szTriggerName = pEvent->GetName();
+			CryFixedStringT<MaxControlNameLength> lowerCaseTriggerName(szTriggerName);
+			lowerCaseTriggerName.MakeLower();
+			bool const draw = ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseTriggerName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos));
+
+			if (draw)
+			{
+				ColorF color = Debug::s_globalColorInactive;
+
+				switch (pEvent->GetState())
+				{
+				case EEventState::Playing:
+					{
+						color = Debug::s_listColorItemActive;
+						break;
+					}
+				case EEventState::Virtual:
+					{
+						color = Debug::s_globalColorVirtual;
+						break;
+					}
+				default:
+					break;
+				}
+
+				auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize, color, false, "%s on %s", szTriggerName, pEvent->GetObject()->GetName());
+
+				posY += Debug::s_listLineHeight;
+			}
+		}
+	}
+
+	posX += 600.0f;
 #endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 }
 } // namespace Fmod

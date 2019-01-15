@@ -19,38 +19,6 @@ namespace Impl
 {
 namespace Adx2
 {
-CryLockT<CRYLOCK_RECURSIVE> g_mutex;
-std::unordered_map<CriAtomExPlaybackId, CryAudio::CEvent*> g_activeEvents;
-
-//////////////////////////////////////////////////////////////////////////
-void VoiceEventCallback(
-	void* pObj,
-	CriAtomExVoiceEvent voiceEvent,
-	CriAtomExVoiceInfoDetail const* pRequest,
-	CriAtomExVoiceInfoDetail const* pRemoved,
-	CriAtomExVoiceInfoDetail const* pRemovedInGroup)
-{
-	if (voiceEvent == CRIATOMEX_VOICE_EVENT_REMOVE)
-	{
-		g_mutex.Lock();
-		CriAtomExPlaybackId const id = (pRemoved != nullptr) ? pRemoved->playback_id : pRequest->playback_id;
-		auto const iter = g_activeEvents.find(id);
-
-		if (iter != g_activeEvents.end())
-		{
-			auto const pEvent = iter->second;
-			g_activeEvents.erase(iter);
-			g_mutex.Unlock();
-
-			gEnv->pAudioSystem->ReportFinishedEvent(*pEvent, true);
-		}
-		else
-		{
-			g_mutex.Unlock();
-		}
-	}
-}
-
 //////////////////////////////////////////////////////////////////////////
 CBaseObject::CBaseObject()
 	: m_flags(EObjectFlags::None)
@@ -64,7 +32,6 @@ CBaseObject::CBaseObject()
 	m_pPlayer = criAtomExPlayer_Create(&g_playerConfig, nullptr, 0);
 	CRY_ASSERT_MESSAGE(m_pPlayer != nullptr, "m_pPlayer is null pointer during %s", __FUNCTION__);
 	m_events.reserve(2);
-	criAtomEx_SetVoiceEventCallback(VoiceEventCallback, nullptr);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -75,6 +42,84 @@ CBaseObject::~CBaseObject()
 	for (auto const pEvent : m_events)
 	{
 		pEvent->SetObject(nullptr);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CBaseObject::Update(float const deltaTime)
+{
+	EObjectFlags const previousFlags = m_flags;
+	bool removedEvent = false;
+
+	if (!m_events.empty())
+	{
+		m_flags |= EObjectFlags::IsVirtual;
+	}
+
+	auto iter(m_events.begin());
+	auto iterEnd(m_events.end());
+
+	while (iter != iterEnd)
+	{
+		auto const pEvent = *iter;
+
+		if ((pEvent->GetFlags() & EEventFlags::ToBeRemoved) != 0)
+		{
+			gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pEvent->GetTriggerInstanceId());
+			g_pImpl->DestructEvent(pEvent);
+			removedEvent = true;
+
+			if (iter != (iterEnd - 1))
+			{
+				(*iter) = m_events.back();
+			}
+
+			m_events.pop_back();
+			iter = m_events.begin();
+			iterEnd = m_events.end();
+		}
+		else
+		{
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+			// Always update in production code for debug draw.
+			pEvent->UpdateVirtualState();
+
+			if ((pEvent->GetFlags() & EEventFlags::IsVirtual) == 0)
+			{
+				m_flags &= ~EObjectFlags::IsVirtual;
+			}
+#else
+			if (((m_flags& EObjectFlags::IsVirtual) != 0) && ((m_flags& EObjectFlags::UpdateVirtualStates) != 0))
+			{
+				pEvent->UpdateVirtualState();
+
+				if ((pEvent->GetFlags() & EEventFlags::IsVirtual) == 0)
+				{
+					m_flags &= ~EObjectFlags::IsVirtual;
+				}
+			}
+#endif      // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+			pEvent->UpdatePlaybackState();
+
+			++iter;
+		}
+	}
+
+	if ((previousFlags != m_flags) && !m_events.empty())
+	{
+		if (((previousFlags& EObjectFlags::IsVirtual) != 0) && ((m_flags& EObjectFlags::IsVirtual) == 0))
+		{
+			gEnv->pAudioSystem->ReportPhysicalizedObject(this);
+		}
+		else if (((previousFlags& EObjectFlags::IsVirtual) == 0) && ((m_flags& EObjectFlags::IsVirtual) != 0))
+		{
+			gEnv->pAudioSystem->ReportVirtualizedObject(this);
+		}
+	}
+
+	if (removedEvent)
+	{
+		UpdateVelocityTracking();
 	}
 }
 
@@ -92,7 +137,34 @@ void CBaseObject::StopAllTriggers()
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CBaseObject::SetName(char const* const szName)
 {
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	m_name = szName;
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+
 	return ERequestStatus::Success;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CBaseObject::AddEvent(CEvent* const pEvent)
+{
+	pEvent->UpdateVirtualState();
+
+	if ((m_flags& EObjectFlags::IsVirtual) != 0)
+	{
+		if ((pEvent->GetFlags() & EEventFlags::IsVirtual) == 0)
+		{
+			m_flags &= ~EObjectFlags::IsVirtual;
+		}
+	}
+	else if (m_events.empty())
+	{
+		if ((pEvent->GetFlags() & EEventFlags::IsVirtual) != 0)
+		{
+			m_flags |= EObjectFlags::IsVirtual;
+		}
+	}
+
+	m_events.push_back(pEvent);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -123,7 +195,6 @@ bool CBaseObject::StartEvent(CTrigger const* const pTrigger, CEvent* const pEven
 				if (status == CRIATOMEXPLAYBACK_STATUS_PLAYING)
 				{
 					pEvent->SetPlaybackId(id);
-					pEvent->SetTriggerId(pTrigger->GetId());
 					pEvent->SetObject(this);
 
 					CriAtomExCueInfo cueInfo;
@@ -141,13 +212,8 @@ bool CBaseObject::StartEvent(CTrigger const* const pTrigger, CEvent* const pEven
 						pEvent->SetFlag(EEventFlags::HasAbsoluteVelocity);
 					}
 
-					m_events.push_back(pEvent);
-
+					AddEvent(pEvent);
 					UpdateVelocityTracking();
-
-					g_mutex.Lock();
-					g_activeEvents[id] = &pEvent->GetEvent();
-					g_mutex.Unlock();
 
 					eventStarted = true;
 				}
@@ -199,19 +265,6 @@ void CBaseObject::ResumeEvent(uint32 const triggerId)
 		{
 			pEvent->Resume();
 		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CBaseObject::RemoveEvent(CEvent* const pEvent)
-{
-	if (stl::find_and_erase(m_events, pEvent))
-	{
-		UpdateVelocityTracking();
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Tried to remove an event from an object that does not own that event");
 	}
 }
 

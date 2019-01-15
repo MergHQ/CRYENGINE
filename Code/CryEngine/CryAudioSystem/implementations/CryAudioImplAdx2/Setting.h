@@ -12,6 +12,11 @@ namespace Impl
 {
 namespace Adx2
 {
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+extern CryFixedStringT<MaxControlNameLength> const g_debugNoneDspBusSetting;
+extern CryFixedStringT<MaxControlNameLength> g_debugCurrentDspBusSettingName;
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+
 class CSetting final : public ISettingConnection, public CPoolObject<CSetting, stl::PSyncNone>
 {
 public:

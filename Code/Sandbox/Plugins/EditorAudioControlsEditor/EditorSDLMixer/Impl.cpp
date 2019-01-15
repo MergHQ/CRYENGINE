@@ -251,7 +251,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 	{
 		char const* const szTag = pNode->getTag();
 
-		if ((_stricmp(szTag, CryAudio::s_szEventTag) == 0) ||
+		if ((_stricmp(szTag, CryAudio::Impl::SDL_mixer::s_szEventTag) == 0) ||
 		    (_stricmp(szTag, CryAudio::Impl::SDL_mixer::s_szFileTag) == 0) ||
 		    (_stricmp(szTag, "SDLMixerEvent") == 0) || // Backwards compatibility.
 		    (_stricmp(szTag, "SDLMixerSample") == 0))  // Backwards compatibility.
@@ -403,7 +403,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 
 				if (pEventConnection != nullptr)
 				{
-					pNode = GetISystem()->CreateXmlNode(CryAudio::s_szEventTag);
+					pNode = GetISystem()->CreateXmlNode(CryAudio::Impl::SDL_mixer::s_szEventTag);
 					pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
 
 					string const& path = pItem->GetPath();
@@ -478,7 +478,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 
 				if (pParameterConnection != nullptr)
 				{
-					pNode = GetISystem()->CreateXmlNode(CryAudio::s_szEventTag);
+					pNode = GetISystem()->CreateXmlNode(CryAudio::Impl::SDL_mixer::s_szEventTag);
 					pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
 
 					string const& path = pItem->GetPath();
@@ -511,7 +511,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 
 				if (pStateConnection != nullptr)
 				{
-					pNode = GetISystem()->CreateXmlNode(CryAudio::s_szEventTag);
+					pNode = GetISystem()->CreateXmlNode(CryAudio::Impl::SDL_mixer::s_szEventTag);
 					pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
 
 					string const& path = pItem->GetPath();

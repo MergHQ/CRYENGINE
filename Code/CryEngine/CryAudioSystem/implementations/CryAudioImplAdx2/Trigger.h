@@ -21,7 +21,7 @@ enum class ETriggerType : EnumFlagsType
 	Snapshot,
 };
 
-enum class EEventType : EnumFlagsType
+enum class EActionType : EnumFlagsType
 {
 	None,
 	Start,
@@ -45,13 +45,13 @@ public:
 		char const* const szCueName,
 		uint32 const acbId,
 		ETriggerType const triggerType,
-		EEventType const eventType,
+		EActionType const actionType,
 		CriSint32 const changeoverTime = static_cast<CriSint32>(s_defaultChangeoverTime))
 		: m_id(id)
 		, m_cueName(szCueName)
 		, m_cueSheetId(acbId)
 		, m_triggerType(triggerType)
-		, m_eventType(eventType)
+		, m_actionType(actionType)
 		, m_changeoverTime(changeoverTime)
 	{}
 
@@ -61,14 +61,14 @@ public:
 		char const* const szCueName,
 		uint32 const acbId,
 		ETriggerType const triggerType,
-		EEventType const eventType,
+		EActionType const eventType,
 		char const* const szCueSheetName,
 		CriSint32 const changeoverTime = static_cast<CriSint32>(s_defaultChangeoverTime))
 		: m_id(id)
 		, m_cueName(szCueName)
 		, m_cueSheetId(acbId)
 		, m_triggerType(triggerType)
-		, m_eventType(eventType)
+		, m_actionType(eventType)
 		, m_cueSheetName(szCueSheetName)
 		, m_changeoverTime(changeoverTime)
 	{}
@@ -77,19 +77,16 @@ public:
 	virtual ~CTrigger() override = default;
 
 	// CryAudio::Impl::ITriggerConnection
-	virtual ERequestStatus Execute(IObject* const pIObject, IEvent* const pIEvent) override;
-	virtual ERequestStatus Load()  const override                            { return ERequestStatus::Success; }
-	virtual ERequestStatus Unload() const override                           { return ERequestStatus::Success; }
-	virtual ERequestStatus LoadAsync(IEvent* const pIEvent) const override   { return ERequestStatus::Success; }
-	virtual ERequestStatus UnloadAsync(IEvent* const pIEvent) const override { return ERequestStatus::Success; }
+	virtual ERequestStatus Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId) override;
+	virtual ERequestStatus Load()  const override                                                { return ERequestStatus::Success; }
+	virtual void           Stop(IObject* const pIObject) override;
+	virtual ERequestStatus Unload() const override                                               { return ERequestStatus::Success; }
+	virtual ERequestStatus LoadAsync(TriggerInstanceId const triggerInstanceId) const override   { return ERequestStatus::Success; }
+	virtual ERequestStatus UnloadAsync(TriggerInstanceId const triggerInstanceId) const override { return ERequestStatus::Success; }
 	// ~CryAudio::Impl::ITriggerConnection
 
-	uint32          GetId() const             { return m_id; }
-	CriChar8 const* GetCueName() const        { return static_cast<CriChar8 const*>(m_cueName); }
-	ETriggerType    GetTriggerType() const    { return m_triggerType; }
-	EEventType      GetEventType() const      { return m_eventType; }
-	uint32          GetAcbId() const          { return m_cueSheetId; }
-	CriSint32       GetChangeoverTime() const { return m_changeoverTime; }
+	CriChar8 const* GetCueName() const { return static_cast<CriChar8 const*>(m_cueName); }
+	uint32          GetAcbId() const   { return m_cueSheetId; }
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	char const* GetCueSheetName() const { return m_cueSheetName.c_str(); }
@@ -99,7 +96,7 @@ private:
 
 	uint32 const                                m_id;
 	ETriggerType const                          m_triggerType;
-	EEventType const                            m_eventType;
+	EActionType const                           m_actionType;
 	CryFixedStringT<MaxControlNameLength> const m_cueName;
 	uint32 const                                m_cueSheetId;
 	CriSint32 const                             m_changeoverTime;
