@@ -124,9 +124,7 @@ public:
 		{
 			if (errorToBig)
 			{
-				m_errorDistributionWrite.WriteOutOfRange(&out);
-				m_errorDistributionWrite.WriteBitOutOfRange(&out);
-				writeBits = false;
+				m_errorDistributionWrite.WriteValueOutOfRange(&out, m_lastTimeZero != 0);
 			}
 			else if (m_errorDistributionWrite.WriteValue((int32)error, &out, m_lastTimeZero != 0))
 				writeBits = false;
@@ -215,3 +213,80 @@ private:
 };
 
 REGISTER_COMPRESSION_POLICY_TIME(CInt64Policy, "Int64Policy");
+
+
+
+#if 0 // test code
+void TestInt64Pol()
+{
+	InitPrimaryThread();
+
+	CMementoMemoryManager mmm("TestInt64Pol");
+	MMM_REGION(&mmm);
+
+	CDefaultStreamAllocator allocator;
+	CByteOutputStream stm(&allocator, 64);
+	{
+		stm.PutTyped<int64>() = 0;
+		stm.PutTyped<int64>() = 0;
+		stm.PutTyped<uint32>() = 21261;
+		stm.PutTyped<uint8>() = 1;
+	}
+
+	std::array<uint8, 64> buf;
+
+	const int64 testVal = 4575657222516134028;
+	int64 resValue = 0;
+
+	CArithModel modelWrite;
+	CArithModel modelRead;
+
+	size_t finalSize = 0;
+
+	{
+		CInt64Policy writer;
+		static_cast<tBasePolicy&>(writer).Init("test", 0, "", "");
+
+		CByteInputStream memento(stm.GetBuffer(), stm.GetSize());
+		writer.ReadMemento(memento);
+
+		CCommOutputStream output(buf.data(), buf.size());
+
+		output.WriteBits(0x0a1b2c3d, 32);
+
+		writer.SetTimeValue(21549);
+		writer.WriteValue(output, testVal, &modelWrite, 2);
+
+		output.WriteBits(0xf0e1d2c3, 32);
+
+		finalSize = output.Flush();
+	}
+
+	{
+		CInt64Policy reader;
+		static_cast<tBasePolicy&>(reader).Init("test", 0, "", "");
+
+		CByteInputStream memento(stm.GetBuffer(), stm.GetSize());
+		reader.ReadMemento(memento);
+
+		CCommInputStream input(buf.data(), finalSize);
+
+		uint32 magic;
+		magic = input.ReadBits(32);
+		NET_ASSERT(magic == 0x0a1b2c3d);
+
+		reader.SetTimeValue(21549);
+		reader.ReadValue(input, resValue, &modelRead, 2);
+
+		magic = input.ReadBits(32);
+		NET_ASSERT(magic == 0xf0e1d2c3);
+	}
+	
+	if (testVal != resValue)
+	{
+		NetLog("values don't match");
+	}
+
+	static_cast<IStreamAllocator&>(allocator).Free(const_cast<uint8*>(stm.GetBuffer()));
+}
+#endif

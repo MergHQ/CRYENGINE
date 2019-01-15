@@ -26,6 +26,8 @@ class CErrorDistribution
 		eOpType_Num
 	};
 
+	friend class CErrorDistributionTest;
+
 	static int64 m_totalTime[eOpType_Num];
 
 	void OnOpEnd(EOpType type) const;
@@ -35,22 +37,30 @@ public:
 
 	void Init(const char* szName, uint32 channel, uint32 symbolBits, uint32 bitBucketSize, const char* szDir, EDistributionType type);
 
+	bool WriteValue(int32 value, CCommOutputStream* pStream, bool bLastTimeZero) const;
+	bool WriteValueOutOfRange(CCommOutputStream* pStream, bool bLastTimeZero) const;
+	bool ReadValue(int32& value, CCommInputStream* pStream, bool bLastTimeZero) const;
+
+	static void LogPerformance();
 	void GetDebug(uint32& symSize, uint32& totalSize) const;
 
-	void WriteMagic(CCommOutputStream* pStream) const;
-	bool ReadMagic(const char* szTag, CCommInputStream* pStream) const;
+	bool IsEmpty() const { return m_totalCount == 0 && m_afterZero == 0; }
+	void NotifyAfterZero(int error);
 
 	void AccumulateInit(CErrorDistribution& dist, const char* szPath) const;
 	void Accumulate(CErrorDistribution& dist);
 
 	bool LoadJson(const char* szPath);
 	void SaveJson(const char* szPath) const;
-
-	static void LogPerformance();
 	void Serialize(Serialization::IArchive& ar);
 
 	void Clear();
 	void CountError(int32 error);
+
+private:
+	void WriteMagic(CCommOutputStream* pStream) const;
+	bool ReadMagic(const char* szTag, CCommInputStream* pStream) const;
+
 	void CountBits(uint32 index);
 	uint32 GetNumBits(uint32 index) const;
 
@@ -64,14 +74,11 @@ public:
 	
 	void GetAfterZeroProb(uint32& prob, uint32& total) const;
 
-	bool ReadAfterZero(bool& bZero, CCommInputStream* pStream) const;
-	bool WriteAfterZero(bool bZero, CCommOutputStream* pStream) const;
+	void ReadAfterZero(bool& isZero, CCommInputStream* pStream) const;
+	void WriteAfterZero(bool isZero, CCommOutputStream* pStream) const;
 
 	bool WriteBitOutOfRange(CCommOutputStream* pStream) const;
 	bool WriteOutOfRange(CCommOutputStream* pStream) const;
-
-	bool WriteValue(int32 value, CCommOutputStream* pStream, bool bLastTimeZero) const;
-	bool ReadValue(int32& value, CCommInputStream* pStream, bool bLastTimeZero) const;
 
 	bool WriteBits(int32 value, CCommOutputStream* pStream) const;
 	bool ReadBits(int32& value, CCommInputStream* pStream) const;
@@ -84,11 +91,8 @@ public:
 	bool FindSymbol(uint32& symbol, uint32 prob) const;
 	bool GetSymbolDesc(uint32 symbol, uint32& symbolSize, uint32& symbolBase, uint32& total) const;
 
-	void NotifyAfterZero(int error);
-
 	void SmoothDistribution();
 
-	bool IsEmpty() const { return m_totalCount == 0 && m_afterZero == 0; }
 	unsigned GetTotalCount() const { return m_totalCount; }
 
 	void PrepareForUse();
@@ -97,7 +101,6 @@ public:
 
 	void AvoidEdgeProbabilities();
 
-private:
 	void TestMapping(int32 error) const;
 
 	void CountIndex(uint32 value);
