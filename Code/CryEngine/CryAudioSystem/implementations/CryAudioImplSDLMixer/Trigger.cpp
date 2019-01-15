@@ -1,6 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
+#include "Common.h"
+#include "Impl.h"
 #include "Trigger.h"
 #include "Object.h"
 #include "Event.h"
@@ -13,16 +15,27 @@ namespace Impl
 namespace SDL_mixer
 {
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CTrigger::Execute(IObject* const pIObject, IEvent* const pIEvent)
+ERequestStatus CTrigger::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
 {
-	if ((pIObject != nullptr) && (pIEvent != nullptr))
+	ERequestStatus status = ERequestStatus::Failure;
+
+	if (pIObject != nullptr)
 	{
 		auto const pObject = static_cast<CObject*>(pIObject);
-		auto const pEvent = static_cast<CEvent*>(pIEvent);
-		return SoundEngine::ExecuteEvent(pObject, this, pEvent);
+		status = SoundEngine::ExecuteTrigger(pObject, this, triggerInstanceId);
 	}
 
-	return ERequestStatus::Failure;
+	return status;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CTrigger::Stop(IObject* const pIObject)
+{
+	if (pIObject != nullptr)
+	{
+		auto const pObject = static_cast<CObject*>(pIObject);
+		pObject->StopEvent(m_id);
+	}
 }
 } // namespace SDL_mixer
 } // namespace Impl

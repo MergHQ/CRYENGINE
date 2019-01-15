@@ -3,20 +3,17 @@
 #pragma once
 
 #include "Common.h"
-#include <IEvent.h>
 #include <PoolObject.h>
 
 namespace CryAudio
 {
-class CEvent;
-
 namespace Impl
 {
 namespace SDL_mixer
 {
 class CTrigger;
 
-class CEvent final : public IEvent, public CPoolObject<CEvent, stl::PSyncNone>
+class CEvent final : public CPoolObject<CEvent, stl::PSyncNone>
 {
 public:
 
@@ -26,22 +23,37 @@ public:
 	CEvent& operator=(CEvent const&) = delete;
 	CEvent& operator=(CEvent&&) = delete;
 
-	explicit CEvent(CryAudio::CEvent& event)
-		: m_event(event)
+	explicit CEvent(TriggerInstanceId const triggerInstanceId)
+		: m_triggerInstanceId(triggerInstanceId)
+		, m_triggerId(InvalidCRC32)
+		, m_pObject(nullptr)
+		, m_pTrigger(nullptr)
+		, m_toBeRemoved(false)
 	{}
 
-	virtual ~CEvent() override = default;
+	~CEvent() = default;
 
-	// CryAudio::Impl::IEvent
-	virtual ERequestStatus Stop() override;
-	// ~CryAudio::Impl::IEvent
-
+	void Stop();
 	void Pause();
 	void Resume();
 
-	CryAudio::CEvent& m_event;
-	ChannelList       m_channels;
-	CTrigger const*   m_pTrigger = nullptr;
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+	void        SetName(char const* const szName) { m_name = szName; }
+	char const* GetName() const                   { return m_name.c_str(); }
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+
+	TriggerInstanceId const m_triggerInstanceId;
+	uint32                  m_triggerId;
+	ChannelList             m_channels;
+	CObject*                m_pObject;
+	CTrigger const*         m_pTrigger;
+	bool                    m_toBeRemoved;
+
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+private:
+
+	CryFixedStringT<MaxControlNameLength> m_name;
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 };
 } // namespace SDL_mixer
 } // namespace Impl

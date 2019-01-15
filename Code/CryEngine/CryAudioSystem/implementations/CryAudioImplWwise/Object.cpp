@@ -6,6 +6,7 @@
 #include "CVars.h"
 #include "Environment.h"
 #include "Event.h"
+#include "Impl.h"
 #include "Listener.h"
 #include "Parameter.h"
 #include "SwitchState.h"
@@ -15,7 +16,7 @@
 #include <AK/SoundEngine/Common/AkSoundEngine.h>
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	#include "Debug.h"
+	#include <DebugStyle.h>
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
@@ -51,7 +52,6 @@ void SetParameterById(AkRtpcID const rtpcId, AkRtpcValue const value, AkGameObje
 CObject::CObject(AkGameObjectID const id, CTransformation const& transformation, char const* const szName)
 	: m_id(id)
 	, m_needsToUpdateEnvironments(false)
-	, m_needsToUpdateVirtualStates(false)
 	, m_flags(EObjectFlags::None)
 	, m_distanceToListener(0.0f)
 	, m_previousRelativeVelocity(0.0f)
@@ -64,6 +64,7 @@ CObject::CObject(AkGameObjectID const id, CTransformation const& transformation,
 	, m_name(szName)
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 {
+	m_events.reserve(2);
 	m_auxSendValues.reserve(4);
 
 	AkSoundPosition soundPos;
@@ -96,20 +97,68 @@ void CObject::Update(float const deltaTime)
 		PostEnvironmentAmounts();
 	}
 
-#if !defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	// Always update in production code for debug draw.
-	if ((m_flags& EObjectFlags::UpdateVirtualStates) != 0)
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+	EObjectFlags const previousFlags = m_flags;
+
+	if (!m_events.empty())
 	{
-		if (m_needsToUpdateVirtualStates)
+		m_flags |= EObjectFlags::IsVirtual;
+	}
+
+	auto iter(m_events.begin());
+	auto iterEnd(m_events.end());
+
+	while (iter != iterEnd)
+	{
+		auto const pEvent = *iter;
+
+		if (pEvent->m_toBeRemoved)
 		{
-			for (auto const pEvent : m_events)
+			gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pEvent->m_triggerInstanceId);
+			g_pImpl->DestructEvent(pEvent);
+
+			if (iter != (iterEnd - 1))
 			{
-				if (!pEvent->m_toBeRemoved)
+				(*iter) = m_events.back();
+			}
+
+			m_events.pop_back();
+			iter = m_events.begin();
+			iterEnd = m_events.end();
+		}
+		else
+		{
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+			// Always update in production code for debug draw.
+			pEvent->UpdateVirtualState();
+
+			if (pEvent->m_state != EEventState::Virtual)
+			{
+				m_flags &= ~EObjectFlags::IsVirtual;
+			}
+#else
+			if (((m_flags& EObjectFlags::IsVirtual) != 0) && ((m_flags& EObjectFlags::UpdateVirtualStates) != 0))
+			{
+				pEvent->UpdateVirtualState();
+
+				if (pEvent->m_state != EEventState::Virtual)
 				{
-					pEvent->UpdateVirtualState(m_distanceToListener);
+					m_flags &= ~EObjectFlags::IsVirtual;
 				}
 			}
+#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+			++iter;
+		}
+	}
+
+	if ((previousFlags != m_flags) && !m_events.empty())
+	{
+		if (((previousFlags& EObjectFlags::IsVirtual) != 0) && ((m_flags& EObjectFlags::IsVirtual) == 0))
+		{
+			gEnv->pAudioSystem->ReportPhysicalizedObject(this);
+		}
+		else if (((previousFlags& EObjectFlags::IsVirtual) == 0) && ((m_flags& EObjectFlags::IsVirtual) != 0))
+		{
+			gEnv->pAudioSystem->ReportVirtualizedObject(this);
 		}
 	}
 
@@ -208,26 +257,30 @@ void CObject::SetOcclusionType(EOcclusionType const occlusionType)
 //////////////////////////////////////////////////////////////////////////
 void CObject::AddEvent(CEvent* const pEvent)
 {
-	m_events.push_back(pEvent);
-}
+	pEvent->UpdateVirtualState();
 
-//////////////////////////////////////////////////////////////////////////
-void CObject::RemoveEvent(CEvent* const pEvent)
-{
-	if (!stl::find_and_erase(m_events, pEvent))
+	if ((m_flags& EObjectFlags::IsVirtual) != 0)
 	{
-		Cry::Audio::Log(ELogType::Error, "Tried to remove an event from an object that does not own that event");
+		if (pEvent->m_state != EEventState::Virtual)
+		{
+			m_flags &= ~EObjectFlags::IsVirtual;
+		}
+	}
+	else if (m_events.empty())
+	{
+		if (pEvent->m_state == EEventState::Virtual)
+		{
+			m_flags |= EObjectFlags::IsVirtual;
+		}
 	}
 
-	m_needsToUpdateVirtualStates = ((m_id != g_globalObjectId) && !m_events.empty());
+	m_events.push_back(pEvent);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CObject::StopAllTriggers()
 {
-	// If the user wants to stop all triggers on the global object we want to stop them only on that particular object and not globally!
-	AkGameObjectID const objectId = (m_id != AK_INVALID_GAME_OBJECT) ? m_id : g_globalObjectId;
-	AK::SoundEngine::StopAll(objectId);
+	AK::SoundEngine::StopAll(m_id);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -508,14 +561,14 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 				auxGeom.Draw2dLabel(
 					posX,
 					posY,
-					g_debugObjectFontSize,
-					isVirtual ? g_debugObjectColorVirtual.data() : g_debugObjectColorPhysical.data(),
+					Debug::s_objectFontSize,
+					isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorParameter,
 					false,
 					"[Wwise] %s: %2.2f\n",
 					parameterPair.first,
 					parameterPair.second);
 
-				posY += g_debugObjectLineHeight;
+				posY += Debug::s_objectLineHeight;
 			}
 		}
 	}

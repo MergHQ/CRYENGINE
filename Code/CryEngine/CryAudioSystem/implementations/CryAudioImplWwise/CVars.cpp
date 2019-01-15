@@ -29,6 +29,7 @@ void CCVars::RegisterVariables()
 {
 #if CRY_PLATFORM_WINDOWS
 	m_velocityTrackingThreshold = 0.1f;
+	m_eventPoolSize = 256;
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -47,6 +48,7 @@ void CCVars::RegisterVariables()
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_DURANGO
 	m_velocityTrackingThreshold = 0.1f;
+	m_eventPoolSize = 256;
 	m_secondaryMemoryPoolSize = 32 << 10;          // 32 MiB
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -65,6 +67,7 @@ void CCVars::RegisterVariables()
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_ORBIS
 	m_velocityTrackingThreshold = 0.1f;
+	m_eventPoolSize = 256;
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -83,6 +86,7 @@ void CCVars::RegisterVariables()
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_MAC
 	m_velocityTrackingThreshold = 0.1f;
+	m_eventPoolSize = 256;
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -101,6 +105,7 @@ void CCVars::RegisterVariables()
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_LINUX
 	m_velocityTrackingThreshold = 0.1f;
+	m_eventPoolSize = 256;
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -119,6 +124,7 @@ void CCVars::RegisterVariables()
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif defined(CRY_PLATFORM_IOS)
 	m_velocityTrackingThreshold = 0.1f;
+	m_eventPoolSize = 256;
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -137,6 +143,7 @@ void CCVars::RegisterVariables()
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_ANDROID
 	m_velocityTrackingThreshold = 0.1f;
+	m_eventPoolSize = 256;
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -166,6 +173,11 @@ void CCVars::RegisterVariables()
 	               "An object's distance to the listener is multiplied by this value to determine the position update threshold.\n"
 	               "Usage: s_WwisePositionUpdateThresholdMultiplier [0/...]\n"
 	               "Default: 0.02\n");
+
+	REGISTER_CVAR2("s_WwiseEventPoolSize", &m_eventPoolSize, m_eventPoolSize, VF_REQUIRE_APP_RESTART,
+	               "Sets the number of preallocated events.\n"
+	               "Usage: s_WwiseEventPoolSize [0/...]\n"
+	               "Default PC: 256, XboxOne: 256, PS4: 256, Mac: 256, Linux: 256, iOS: 256, Android: 256\n");
 
 	REGISTER_CVAR2("s_WwiseSecondaryPoolSize", &m_secondaryMemoryPoolSize, m_secondaryMemoryPoolSize, VF_REQUIRE_APP_RESTART,
 	               "Specifies the size (in KiB) of the memory pool to be used by the Wwise audio system implementation.\n"
@@ -284,6 +296,7 @@ void CCVars::UnregisterVariables()
 	{
 		pConsole->UnregisterVariable("s_WwiseVelocityTrackingThreshold");
 		pConsole->UnregisterVariable("s_WwisePositionUpdateThresholdMultiplier");
+		pConsole->UnregisterVariable("s_WwiseEventPoolSize");
 		pConsole->UnregisterVariable("s_WwiseSecondaryPoolSize");
 		pConsole->UnregisterVariable("s_WwisePrepareEventMemoryPoolSize");
 		pConsole->UnregisterVariable("s_WwiseStreamManagerMemoryPoolSize");

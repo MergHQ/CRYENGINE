@@ -12,7 +12,7 @@
 #include <Logger.h>
 
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-	#include "Debug.h"
+	#include <DebugStyle.h>
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
@@ -53,17 +53,6 @@ void CObject::Update(float const deltaTime)
 	}
 
 	CBaseObject::Update(deltaTime);
-
-#if !defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-	// Always update in production code for debug draw.
-	if ((m_flags& EObjectFlags::UpdateVirtualStates) != 0)
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
-	{
-		for (auto const pEvent : m_events)
-		{
-			pEvent->UpdateVirtualState();
-		}
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -181,14 +170,14 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 			auxGeom.Draw2dLabel(
 				posX,
 				posY,
-				g_debugObjectFontSize,
-				isVirtual ? g_debugObjectColorVirtual.data() : g_debugObjectColorPhysical.data(),
+				Debug::s_objectFontSize,
+				isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorParameter,
 				false,
 				"[Fmod] %s: %2.2f m/s\n",
 				s_szAbsoluteVelocityParameterName,
 				m_absoluteVelocity);
 
-			posY += g_debugObjectLineHeight;
+			posY += Debug::s_objectLineHeight;
 		}
 
 		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0)
@@ -196,8 +185,8 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 			auxGeom.Draw2dLabel(
 				posX,
 				posY,
-				g_debugObjectFontSize,
-				isVirtual ? g_debugObjectColorVirtual.data() : g_debugObjectColorPhysical.data(),
+				Debug::s_objectFontSize,
+				isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorActive,
 				false,
 				"[Fmod] Doppler calculation enabled\n");
 		}

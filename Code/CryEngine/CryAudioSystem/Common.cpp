@@ -26,6 +26,7 @@ SwitchLookup g_switches;
 PreloadRequestLookup g_preloadRequests;
 EnvironmentLookup g_environments;
 SettingLookup g_settings;
+TriggerInstanceIdLookup g_triggerInstanceIdToObject;
 CObject* g_pObject = nullptr;
 CLoseFocusTrigger g_loseFocusTrigger;
 CGetFocusTrigger g_getFocusTrigger;
@@ -37,7 +38,7 @@ CResumeAllTrigger g_resumeAllTrigger;
 SImplInfo g_implInfo;
 CryFixedStringT<MaxFilePathLength> g_configPath = "";
 
-TriggerInstanceId g_triggerInstanceIdCounter = 0;
+TriggerInstanceId g_triggerInstanceIdCounter = 1;
 
 SPoolSizes g_poolSizes;
 

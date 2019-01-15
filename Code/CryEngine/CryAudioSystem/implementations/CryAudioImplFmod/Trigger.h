@@ -11,7 +11,7 @@ namespace Impl
 {
 namespace Fmod
 {
-enum class EEventType : EnumFlagsType
+enum class EActionType : EnumFlagsType
 {
 	None,
 	Start,
@@ -32,13 +32,13 @@ public:
 
 	explicit CTrigger(
 		uint32 const id,
-		EEventType const eventType,
+		EActionType const actionType,
 		FMOD::Studio::EventDescription* const pEventDescription,
 		FMOD_GUID const guid,
 		bool const hasProgrammerSound = false,
 		char const* const szKey = "")
 		: m_id(id)
-		, m_eventType(eventType)
+		, m_actionType(actionType)
 		, m_pEventDescription(pEventDescription)
 		, m_guid(guid)
 		, m_hasProgrammerSound(hasProgrammerSound)
@@ -48,25 +48,34 @@ public:
 	virtual ~CTrigger() override = default;
 
 	// CryAudio::Impl::ITriggerConnection
-	virtual ERequestStatus Execute(IObject* const pIObject, IEvent* const pIEvent) override;
-	virtual ERequestStatus Load()  const override                            { return ERequestStatus::Success; }
-	virtual ERequestStatus Unload() const override                           { return ERequestStatus::Success; }
-	virtual ERequestStatus LoadAsync(IEvent* const pIEvent) const override   { return ERequestStatus::Success; }
-	virtual ERequestStatus UnloadAsync(IEvent* const pIEvent) const override { return ERequestStatus::Success; }
+	virtual ERequestStatus Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId) override;
+	virtual void           Stop(IObject* const pIObject) override;
+	virtual ERequestStatus Load()  const override                                                { return ERequestStatus::Success; }
+	virtual ERequestStatus Unload() const override                                               { return ERequestStatus::Success; }
+	virtual ERequestStatus LoadAsync(TriggerInstanceId const triggerInstanceId) const override   { return ERequestStatus::Success; }
+	virtual ERequestStatus UnloadAsync(TriggerInstanceId const triggerInstanceId) const override { return ERequestStatus::Success; }
 	// ~CryAudio::Impl::ITriggerConnection
 
 	uint32                                       GetId() const   { return m_id; }
 	FMOD_GUID                                    GetGuid() const { return m_guid; }
 	CryFixedStringT<MaxControlNameLength> const& GetKey() const  { return m_key; }
 
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	void SetName(char const* const szName) { m_name = szName; }
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
 private:
 
 	uint32 const                                m_id;
-	EEventType const                            m_eventType;
+	EActionType const                           m_actionType;
 	FMOD::Studio::EventDescription*             m_pEventDescription;
 	FMOD_GUID const                             m_guid;
 	bool const                                  m_hasProgrammerSound;
 	CryFixedStringT<MaxControlNameLength> const m_key;
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	CryFixedStringT<MaxControlNameLength> m_name;
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 };
 } // namespace Fmod
 } // namespace Impl

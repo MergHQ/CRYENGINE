@@ -32,7 +32,7 @@ public:
 	virtual ~CObject() override = default;
 
 	// CryAudio::Impl::IObject
-	virtual void                   Update(float const deltaTime) override                                           {}
+	virtual void                   Update(float const deltaTime) override;
 	virtual void                   SetTransformation(CTransformation const& transformation) override                { m_transformation = transformation; }
 	virtual CTransformation const& GetTransformation() const override                                               { return m_transformation; }
 	virtual void                   SetOcclusion(float const occlusion) override                                     {}
@@ -45,13 +45,24 @@ public:
 	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter) override {}
 	// ~CryAudio::Impl::IObject
 
+	void StopEvent(uint32 const id);
 	void SetVolume(SampleId const sampleId, float const value);
+
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+	char const* GetName() const { return m_name.c_str(); }
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 
 	uint32 const               m_id;
 	CTransformation            m_transformation;
-	EventInstanceList          m_events;
+	EventInstances             m_events;
 	StandAloneFileInstanceList m_standaloneFiles;
 	VolumeMultipliers          m_volumeMultipliers;
+
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+private:
+
+	CryFixedStringT<MaxObjectNameLength> m_name;
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 };
 } // namespace SDL_mixer
 } // namespace Impl

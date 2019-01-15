@@ -38,11 +38,19 @@ public:
 	float    GetShift() const      { return m_shift; }
 	AkRtpcID GetId() const         { return m_id; }
 
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	void SetName(char const* const szName) { m_name = szName; }
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+
 private:
 
 	float const    m_multiplier;
 	float const    m_shift;
 	AkRtpcID const m_id;
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	CryFixedStringT<MaxControlNameLength> m_name;
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 };
 } // namespace Wwise
 } // namespace Impl

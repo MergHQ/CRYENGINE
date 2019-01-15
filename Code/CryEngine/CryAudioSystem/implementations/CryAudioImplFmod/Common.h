@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <SharedData.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
 #include <fmod_common.h>
 
 #define FMOD_IMPL_INFO_STRING "Fmod Studio - "
@@ -27,6 +27,7 @@ namespace Impl
 {
 namespace Fmod
 {
+class CImpl;
 class CEvent;
 class CBaseParameter;
 class CBaseStandaloneFile;
@@ -36,10 +37,12 @@ class CListener;
 class CTrigger;
 class CGlobalObject;
 
+extern CImpl* g_pImpl;
 extern CGlobalObject* g_pObject;
 extern CListener* g_pListener;
 extern uint32 g_numObjectsWithDoppler;
 
+static constexpr char const* s_szOcclusionParameterName = "occlusion";
 static constexpr char const* s_szAbsoluteVelocityParameterName = "absolute_velocity";
 
 using Events = std::vector<CEvent*>;

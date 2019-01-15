@@ -349,7 +349,10 @@ bool CPropagationProcessor::CanRunOcclusion()
 		}
 	}
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	canRun ? m_object.SetFlag(EObjectFlags::CanRunOcclusion) : m_object.RemoveFlag(EObjectFlags::CanRunOcclusion);
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
 	return canRun;
 }
 
@@ -480,7 +483,7 @@ void CPropagationProcessor::ProcessObstructionOcclusion()
 	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	if (((m_object.GetFlags() & EObjectFlags::CanRunOcclusion) != 0)) // only re-sample the rays about 10 times per second for a smoother debug drawing
+	if ((m_object.GetFlags() & EObjectFlags::CanRunOcclusion) != 0) // only re-sample the rays about 10 times per second for a smoother debug drawing
 	{
 		for (size_t i = 0; i < g_numConcurrentRaysHigh; ++i)
 		{
@@ -847,11 +850,8 @@ void CPropagationProcessor::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 //////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::DrawRay(IRenderAuxGeom& auxGeom, size_t const rayIndex) const
 {
-	static ColorB const obstructedRayColor(200, 20, 1, 255);
-	static ColorB const freeRayColor(20, 200, 1, 255);
-	static ColorB const collisionSphereColor(250, 200, 1, 240);
 	SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
-	SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags | e_AlphaBlended);
+	SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags);
 	newRenderFlags.SetCullMode(e_CullModeNone);
 
 	bool const isRayObstructed = (m_rayDebugInfos[rayIndex].numHits > 0);
@@ -859,14 +859,14 @@ void CPropagationProcessor::DrawRay(IRenderAuxGeom& auxGeom, size_t const rayInd
 	                    m_rayDebugInfos[rayIndex].begin + (m_rayDebugInfos[rayIndex].end - m_rayDebugInfos[rayIndex].begin).GetNormalized() * m_rayDebugInfos[rayIndex].distanceToNearestObstacle :
 	                    m_rayDebugInfos[rayIndex].end; // Only draw the ray to the first collision point.
 
-	ColorB const& rayColor = isRayObstructed ? obstructedRayColor : freeRayColor;
+	ColorF const& rayColor = isRayObstructed ? Debug::s_rayColorObstructed : Debug::s_rayColorFree;
 
 	auxGeom.SetRenderFlags(newRenderFlags);
 
 	if (isRayObstructed)
 	{
 		// Mark the nearest collision with a small sphere.
-		auxGeom.DrawSphere(rayEnd, Debug::g_rayRadiusCollisionSphere, collisionSphereColor);
+		auxGeom.DrawSphere(rayEnd, Debug::s_rayRadiusCollisionSphere, Debug::s_rayColorCollisionSphere);
 	}
 
 	auxGeom.DrawLine(m_rayDebugInfos[rayIndex].begin, rayColor, rayEnd, rayColor, 1.0f);

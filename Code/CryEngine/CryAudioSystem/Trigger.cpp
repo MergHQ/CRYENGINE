@@ -2,13 +2,10 @@
 
 #include "stdafx.h"
 #include "Managers.h"
-#include "EventManager.h"
 #include "FileManager.h"
 #include "Object.h"
-#include "Event.h"
 #include "Trigger.h"
 #include "StandaloneFile.h"
-#include "Common/IEvent.h"
 #include "Common/IImpl.h"
 #include "Common/IObject.h"
 #include "Common/IStandaloneFileConnection.h"
@@ -39,8 +36,6 @@ void CTrigger::Execute(
 	void* const pUserDataOwner /* = nullptr */,
 	ERequestFlags const flags /* = ERequestFlags::None */) const
 {
-	object.UpdateOcclusion();
-
 	STriggerInstanceState triggerInstanceState;
 	triggerInstanceState.triggerId = GetId();
 	triggerInstanceState.pOwnerOverride = pOwner;
@@ -56,58 +51,59 @@ void CTrigger::Execute(
 		triggerInstanceState.flags |= ETriggerStatus::CallbackOnExternalThread;
 	}
 
+	bool isPlaying = false;
+	bool isVirtual = false;
+
 	for (auto const pConnection : m_connections)
 	{
-		CEvent* const pEvent = g_eventManager.ConstructEvent();
-		ERequestStatus const activateResult = pConnection->Execute(object.GetImplDataPtr(), pEvent->m_pImplData);
+		ERequestStatus const activateResult = pConnection->Execute(object.GetImplDataPtr(), g_triggerInstanceIdCounter);
 
 		if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual) || (activateResult == ERequestStatus::Pending))
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			pEvent->SetTriggerName(GetName());
-			pEvent->SetTriggerRadius(m_radius);
+			triggerInstanceState.radius = m_radius;
+			object.UpdateMaxRadius(m_radius);
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-
-			pEvent->m_pObject = &object;
-			pEvent->SetTriggerId(GetId());
-			pEvent->m_triggerInstanceId = g_triggerInstanceIdCounter;
 
 			if (activateResult == ERequestStatus::Success)
 			{
-				pEvent->SetPlaying();
-				++(triggerInstanceState.numPlayingEvents);
+				++(triggerInstanceState.numPlayingInstances);
+				isPlaying = true;
 			}
 			else if (activateResult == ERequestStatus::SuccessVirtual)
 			{
-				pEvent->SetVirtual();
-				++(triggerInstanceState.numPlayingEvents);
+				++(triggerInstanceState.numPlayingInstances);
+				isVirtual = true;
 			}
 			else if (activateResult == ERequestStatus::Pending)
 			{
-				pEvent->m_state = EEventState::Loading;
-				++(triggerInstanceState.numLoadingEvents);
+				++(triggerInstanceState.numLoadingInstances);
 			}
-
-			object.AddEvent(pEvent);
 		}
-		else
-		{
-			g_eventManager.DestructEvent(pEvent);
-
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			if (activateResult != ERequestStatus::SuccessDoNotTrack)
-			{
-				// No TriggerImpl generated an active event.
-				Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s")", GetName(), object.m_name.c_str());
-			}
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+		else if (activateResult != ERequestStatus::SuccessDoNotTrack)
+		{
+			Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", GetName(), object.m_name.c_str(), __FUNCTION__);
 		}
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 	}
 
-	if (triggerInstanceState.numPlayingEvents > 0 || triggerInstanceState.numLoadingEvents > 0)
+	if ((triggerInstanceState.numPlayingInstances > 0) || (triggerInstanceState.numLoadingInstances > 0))
 	{
 		triggerInstanceState.flags |= ETriggerStatus::Playing;
-		object.AddTriggerState(g_triggerInstanceIdCounter++, triggerInstanceState);
+		g_triggerInstanceIdToObject[g_triggerInstanceIdCounter] = &object;
+		object.AddTriggerState(g_triggerInstanceIdCounter, triggerInstanceState);
+		IncrementTriggerInstanceIdCounter();
+
+		if (isPlaying)
+		{
+			object.RemoveFlag(EObjectFlags::Virtual);
+			object.UpdateOcclusion();
+		}
+		else if (isVirtual)
+		{
+			object.SetFlag(EObjectFlags::Virtual);
+		}
 	}
 	else
 	{
@@ -129,54 +125,51 @@ void CTrigger::Execute(
 	TriggerInstanceId const triggerInstanceId,
 	STriggerInstanceState& triggerInstanceState) const
 {
-	object.UpdateOcclusion();
+	bool isPlaying = false;
+	bool isVirtual = false;
 
 	for (auto const pConnection : m_connections)
 	{
-		CEvent* const pEvent = g_eventManager.ConstructEvent();
-		ERequestStatus const activateResult = pConnection->Execute(object.GetImplDataPtr(), pEvent->m_pImplData);
+		ERequestStatus const activateResult = pConnection->Execute(object.GetImplDataPtr(), triggerInstanceId);
 
 		if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual) || (activateResult == ERequestStatus::Pending))
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			pEvent->SetTriggerName(GetName());
-			pEvent->SetTriggerRadius(m_radius);
+			triggerInstanceState.radius = m_radius;
+			object.UpdateMaxRadius(m_radius);
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-
-			pEvent->m_pObject = &object;
-			pEvent->SetTriggerId(GetId());
-			pEvent->m_triggerInstanceId = triggerInstanceId;
 
 			if (activateResult == ERequestStatus::Success)
 			{
-				pEvent->SetPlaying();
-				++(triggerInstanceState.numPlayingEvents);
+				++(triggerInstanceState.numPlayingInstances);
+				isPlaying = true;
 			}
 			else if (activateResult == ERequestStatus::SuccessVirtual)
 			{
-				pEvent->SetVirtual();
-				++(triggerInstanceState.numPlayingEvents);
+				++(triggerInstanceState.numPlayingInstances);
+				isVirtual = true;
 			}
 			else if (activateResult == ERequestStatus::Pending)
 			{
-				pEvent->m_state = EEventState::Loading;
-				++(triggerInstanceState.numLoadingEvents);
+				++(triggerInstanceState.numLoadingInstances);
 			}
-
-			object.AddEvent(pEvent);
 		}
-		else
-		{
-			g_eventManager.DestructEvent(pEvent);
-
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			if (activateResult != ERequestStatus::SuccessDoNotTrack)
-			{
-				// No TriggerImpl generated an active event.
-				Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s")", GetName(), object.m_name.c_str());
-			}
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+		else if (activateResult != ERequestStatus::SuccessDoNotTrack)
+		{
+			Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", GetName(), object.m_name.c_str(), __FUNCTION__);
 		}
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+	}
+
+	if (isPlaying)
+	{
+		object.RemoveFlag(EObjectFlags::Virtual);
+		object.UpdateOcclusion();
+	}
+	else if (isVirtual)
+	{
+		object.SetFlag(EObjectFlags::Virtual);
 	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -188,6 +181,15 @@ void CTrigger::Execute(
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CTrigger::Stop(Impl::IObject* const pIObject) const
+{
+	for (auto const pConnection : m_connections)
+	{
+		pConnection->Stop(pIObject);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CTrigger::LoadAsync(CObject& object, bool const doLoad) const
 {
 	// TODO: This needs proper implementation!
@@ -196,48 +198,40 @@ void CTrigger::LoadAsync(CObject& object, bool const doLoad) const
 
 	for (auto const pConnection : m_connections)
 	{
-		CEvent* const pEvent = g_eventManager.ConstructEvent();
 		ERequestStatus prepUnprepResult = ERequestStatus::Failure;
 
 		if (doLoad)
 		{
 			if (((triggerInstanceState.flags & ETriggerStatus::Loaded) == 0) && ((triggerInstanceState.flags & ETriggerStatus::Loading) == 0))
 			{
-				prepUnprepResult = pConnection->LoadAsync(pEvent->m_pImplData);
+				prepUnprepResult = pConnection->LoadAsync(g_triggerInstanceIdCounter);
 			}
 		}
 		else
 		{
 			if (((triggerInstanceState.flags & ETriggerStatus::Loaded) != 0) && ((triggerInstanceState.flags & ETriggerStatus::Unloading) == 0))
 			{
-				prepUnprepResult = pConnection->UnloadAsync(pEvent->m_pImplData);
+				prepUnprepResult = pConnection->UnloadAsync(g_triggerInstanceIdCounter);
 			}
 		}
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 		if (prepUnprepResult == ERequestStatus::Success)
 		{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			pEvent->SetTriggerRadius(m_radius);
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
-			pEvent->m_pObject = &object;
-			pEvent->SetTriggerId(GetId());
-			pEvent->m_triggerInstanceId = g_triggerInstanceIdCounter;
-			pEvent->m_state = doLoad ? EEventState::Loading : EEventState::Unloading;
-
-			object.AddEvent(pEvent);
+			triggerInstanceState.radius = m_radius;
+			object.UpdateMaxRadius(m_radius);
 		}
 		else
 		{
-			g_eventManager.DestructEvent(pEvent);
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			Cry::Audio::Log(ELogType::Warning, R"(LoadAsync failed on trigger "%s" for object "%s")", GetName(), object.m_name.c_str());
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+			Cry::Audio::Log(ELogType::Warning, R"(LoadAsync failed on trigger "%s" for object "%s" during %s)", GetName(), object.m_name.c_str(), __FUNCTION__);
 		}
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 	}
 
-	object.AddTriggerState(g_triggerInstanceIdCounter++, triggerInstanceState);
+	g_triggerInstanceIdToObject[g_triggerInstanceIdCounter] = &object;
+	object.AddTriggerState(g_triggerInstanceIdCounter, triggerInstanceState);
+	IncrementTriggerInstanceIdCounter();
 }
 
 //////////////////////////////////////////////////////////////////////////

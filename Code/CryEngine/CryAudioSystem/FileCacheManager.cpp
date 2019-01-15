@@ -14,6 +14,7 @@
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	#include "Debug.h"
+	#include "Common/DebugStyle.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -315,27 +316,13 @@ void CFileCacheManager::StreamAsyncOnComplete(IReadStream* pStream, unsigned int
 //////////////////////////////////////////////////////////////////////////
 void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 {
-	CTimeValue const frameTime = gEnv->pTimer->GetAsyncTime();
-
-	CryFixedStringT<MaxMiscStringLength> tempString;
-	float time = 0.0f;
-	float ratio = 0.0f;
-	float originalAlpha = 0.7f;
-	float* pColor = nullptr;
-
-	float white[4] = { 1.0f, 1.0f, 1.0f, originalAlpha };
-	float cyan[4] = { 0.0f, 1.0f, 1.0f, originalAlpha };
-	float green[4] = { 0.0f, 1.0f, 0.0f, originalAlpha };
-	float red[4] = { 1.0f, 0.0f, 0.0f, originalAlpha };
-	float redish[4] = { 0.7f, 0.0f, 0.0f, originalAlpha };
-	float blue[4] = { 0.1f, 0.2f, 0.8f, originalAlpha };
-	float yellow[4] = { 1.0f, 1.0f, 0.0f, originalAlpha };
-
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_managerHeaderFontSize, Debug::g_globalColorHeader.data(), false, "FileCacheManager (%d of %d KiB) [Entries: %d]", static_cast<int>(m_currentByteTotal >> 10), static_cast<int>(m_maxByteTotal >> 10), static_cast<int>(m_fileEntries.size()));
-	posY += Debug::g_managerHeaderLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "FileCacheManager (%d of %d KiB) [Entries: %d]", static_cast<int>(m_currentByteTotal >> 10), static_cast<int>(m_maxByteTotal >> 10), static_cast<int>(m_fileEntries.size()));
+	posY += Debug::s_listHeaderLineHeight;
 
 	if (!m_fileEntries.empty())
 	{
+		CTimeValue const frameTime = gEnv->pTimer->GetAsyncTime();
+
 		CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
 		lowerCaseSearchString.MakeLower();
 
@@ -344,99 +331,103 @@ void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX,
 		bool const drawGlobals = (g_cvars.m_fileCacheManagerDebugFilter & EFileCacheManagerDebugFilter::Globals) != 0;
 		bool const drawLevelSpecifics = (g_cvars.m_fileCacheManagerDebugFilter & EFileCacheManagerDebugFilter::LevelSpecifics) != 0;
 
-		std::vector<CryFixedStringT<MaxFilePathLength>> soundBanksSorted; // Create list to sort soundbanks alphabetically.
-		soundBanksSorted.reserve(m_fileEntries.size());
+		std::vector<CryFixedStringT<MaxFilePathLength>> fileNamesSorted; // Create list to sort file names alphabetically.
+		fileNamesSorted.reserve(m_fileEntries.size());
 
-		for (auto const& soundBank : m_fileEntries)
+		for (auto const& file : m_fileEntries)
 		{
-			soundBanksSorted.emplace_back(soundBank.second->m_path.c_str());
+			fileNamesSorted.emplace_back(file.second->m_path.c_str());
 		}
 
-		std::sort(soundBanksSorted.begin(), soundBanksSorted.end());
+		std::sort(fileNamesSorted.begin(), fileNamesSorted.end());
 
-		for (auto const& soundBankName : soundBanksSorted)
+		for (auto const& fileName : fileNamesSorted)
 		{
 			for (auto const& audioFileEntryPair : m_fileEntries)
 			{
-				if (audioFileEntryPair.second->m_path == soundBankName)
+				if (audioFileEntryPair.second->m_path == fileName)
 				{
 					CFileEntry* const pFileEntry = audioFileEntryPair.second;
 
-					char const* const szSoundBankFileName = PathUtil::GetFileName(pFileEntry->m_path);
-					CryFixedStringT<MaxControlNameLength> lowerCaseSoundBankFileName(szSoundBankFileName);
-					lowerCaseSoundBankFileName.MakeLower();
+					char const* const szFileName = PathUtil::GetFileName(pFileEntry->m_path);
+					CryFixedStringT<MaxControlNameLength> lowerCaseFileName(szFileName);
+					lowerCaseFileName.MakeLower();
 
-					if ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseSoundBankFileName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos))
+					if ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseFileName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos))
 					{
 						bool draw = false;
+						ColorF color;
 
 						if (pFileEntry->m_dataScope == EDataScope::Global)
 						{
 							draw = (drawAll || drawGlobals) || (drawUseCounted && ((pFileEntry->m_flags & EFileFlags::UseCounted) != 0));
-							pColor = cyan;
+							color = Debug::s_afcmColorScopeGlobal;
 						}
 						else if (pFileEntry->m_dataScope == EDataScope::LevelSpecific)
 						{
 							draw = (drawAll || drawLevelSpecifics) || (drawUseCounted && (pFileEntry->m_flags & EFileFlags::UseCounted) != 0);
-							pColor = yellow;
+							color = Debug::s_afcmColorScopeLevelSpecific;
 						}
 
 						if (draw)
 						{
 							if ((pFileEntry->m_flags & EFileFlags::Loading) != 0)
 							{
-								pColor = red;
+								color = Debug::s_afcmColorFileLoading;
 							}
 							else if ((pFileEntry->m_flags & EFileFlags::MemAllocFail) != 0)
 							{
-								pColor = blue;
+								color = Debug::s_afcmColorFileMemAllocFail;
 							}
 							else if ((pFileEntry->m_flags & EFileFlags::Removable) != 0)
 							{
-								pColor = green;
+								color = Debug::s_afcmColorFileRemovable;
 							}
 							else if ((pFileEntry->m_flags & EFileFlags::NotCached) != 0)
 							{
-								pColor = white;
+								color = Debug::s_afcmColorFileNotCached;
 							}
 							else if ((pFileEntry->m_flags & EFileFlags::NotFound) != 0)
 							{
-								pColor = redish;
+								color = Debug::s_afcmColorFileNotFound;
 							}
 
-							time = (frameTime - pFileEntry->m_timeCached).GetSeconds();
-							ratio = time / 5.0f;
-							originalAlpha = pColor[3];
-							pColor[3] *= clamp_tpl(ratio, 0.2f, 1.0f);
+							float const ratio = (frameTime - pFileEntry->m_timeCached).GetSeconds() / 2.0f;
 
-							tempString.clear();
+							if (ratio <= 1.0f)
+							{
+								color[0] *= clamp_tpl(ratio, 0.0f, color[0]);
+								color[1] *= clamp_tpl(ratio, 0.0f, color[1]);
+								color[2] *= clamp_tpl(ratio, 0.0f, color[2]);
+							}
+
+							CryFixedStringT<MaxMiscStringLength> debugText;
 
 							if ((pFileEntry->m_flags & EFileFlags::UseCounted) != 0)
 							{
 								if (pFileEntry->m_size < 1024)
 								{
-									tempString.Format(tempString + "%s (%" PRISIZE_T " Byte) [%" PRISIZE_T "]", pFileEntry->m_path.c_str(), pFileEntry->m_size, pFileEntry->m_useCount);
+									debugText.Format(debugText + "%s (%" PRISIZE_T " Byte) [%" PRISIZE_T "]", pFileEntry->m_path.c_str(), pFileEntry->m_size, pFileEntry->m_useCount);
 								}
 								else
 								{
-									tempString.Format(tempString + "%s (%" PRISIZE_T " KiB) [%" PRISIZE_T "]", pFileEntry->m_path.c_str(), pFileEntry->m_size >> 10, pFileEntry->m_useCount);
+									debugText.Format(debugText + "%s (%" PRISIZE_T " KiB) [%" PRISIZE_T "]", pFileEntry->m_path.c_str(), pFileEntry->m_size >> 10, pFileEntry->m_useCount);
 								}
 							}
 							else
 							{
 								if (pFileEntry->m_size < 1024)
 								{
-									tempString.Format(tempString + "%s (%" PRISIZE_T " Byte)", pFileEntry->m_path.c_str(), pFileEntry->m_size);
+									debugText.Format(debugText + "%s (%" PRISIZE_T " Byte)", pFileEntry->m_path.c_str(), pFileEntry->m_size);
 								}
 								else
 								{
-									tempString.Format(tempString + "%s (%" PRISIZE_T " KiB)", pFileEntry->m_path.c_str(), pFileEntry->m_size >> 10);
+									debugText.Format(debugText + "%s (%" PRISIZE_T " KiB)", pFileEntry->m_path.c_str(), pFileEntry->m_size >> 10);
 								}
 							}
 
-							auxGeom.Draw2dLabel(posX, posY, Debug::g_managerFontSize, pColor, false, "%s", tempString.c_str());
-							pColor[3] = originalAlpha;
-							posY += Debug::g_managerLineHeight;
+							auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize, color, false, "%s", debugText.c_str());
+							posY += Debug::s_listLineHeight;
 						}
 					}
 				}

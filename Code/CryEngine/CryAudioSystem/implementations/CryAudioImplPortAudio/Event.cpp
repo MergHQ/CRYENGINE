@@ -90,15 +90,17 @@ static int StreamCallback(
 }
 
 //////////////////////////////////////////////////////////////////////////
-CEvent::CEvent(CryAudio::CEvent& event_)
-	: pSndFile(nullptr)
+CEvent::CEvent(TriggerInstanceId const triggerInstanceId)
+	: m_triggerInstanceId(triggerInstanceId)
+	, pSndFile(nullptr)
 	, pStream(nullptr)
 	, pData(nullptr)
 	, pObject(nullptr)
 	, numChannels(0)
 	, remainingLoops(0)
-	, event(event_)
+	, pathId(InvalidCRC32)
 	, state(EEventState::None)
+	, toBeRemoved(false)
 {
 }
 
@@ -108,12 +110,6 @@ CEvent::~CEvent()
 	CRY_ASSERT_MESSAGE(pStream == nullptr, "PortAudio pStream hasn't been closed  during %s", __FUNCTION__);
 	CRY_ASSERT_MESSAGE(pSndFile == nullptr, "PortAudio pSndFile hasn't been closed  during %s", __FUNCTION__);
 	CRY_ASSERT_MESSAGE(pData == nullptr, "PortAudio pData hasn't been freed  during %s", __FUNCTION__);
-
-	if (pObject != nullptr)
-	{
-		pObject->UnregisterEvent(this);
-		pObject = nullptr;
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -210,7 +206,7 @@ void CEvent::Update()
 			CRY_ASSERT_MESSAGE(pSndFile == nullptr, "PortAudio pSndFile still valid during %s", __FUNCTION__);
 			CRY_ASSERT_MESSAGE(pData == nullptr, "PortAudio pData still valid during %s", __FUNCTION__);
 			state = EEventState::WaitingForDestruction;
-			gEnv->pAudioSystem->ReportFinishedEvent(event, true);
+			toBeRemoved = true;
 		}
 		else if (state == EEventState::Done)
 		{
@@ -233,18 +229,17 @@ void CEvent::Update()
 			{
 				Reset();
 				state = EEventState::WaitingForDestruction;
-				gEnv->pAudioSystem->ReportFinishedEvent(event, true);
+				toBeRemoved = true;
 			}
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CEvent::Stop()
+void CEvent::Stop()
 {
 	Reset();
 	state = EEventState::Stopped;
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////

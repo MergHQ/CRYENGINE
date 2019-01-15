@@ -12,21 +12,10 @@ namespace Impl
 namespace Adx2
 {
 //////////////////////////////////////////////////////////////////////////
-CEvent::~CEvent()
-{
-	if (m_pObject != nullptr)
-	{
-		m_pObject->RemoveEvent(this);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-ERequestStatus CEvent::Stop()
+void CEvent::Stop()
 {
 	criAtomExPlayback_Stop(m_playbackId);
 	m_playbackId = CRIATOMEX_INVALID_PLAYBACK_ID;
-
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -39,6 +28,22 @@ void CEvent::Pause()
 void CEvent::Resume()
 {
 	criAtomExPlayback_Pause(m_playbackId, CRI_FALSE);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEvent::UpdateVirtualState()
+{
+	// TODO: Needs implementation when we can check the virtual state or audibility.
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEvent::UpdatePlaybackState()
+{
+	// Workaround for missing end callback.
+	if (criAtomExPlayback_GetStatus(m_playbackId) == CRIATOMEXPLAYBACK_STATUS_REMOVED)
+	{
+		m_flags |= EEventFlags::ToBeRemoved;
+	}
 }
 } // namespace Adx2
 } // namespace Impl

@@ -19,6 +19,10 @@ CGlobalObject::CGlobalObject()
 {
 	CRY_ASSERT_MESSAGE(g_pObject == nullptr, "g_pObject is not nullptr during %s", __FUNCTION__);
 	g_pObject = this;
+
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	m_name = "Global Object";
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////

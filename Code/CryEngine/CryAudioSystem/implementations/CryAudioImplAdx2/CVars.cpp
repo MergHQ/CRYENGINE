@@ -21,6 +21,7 @@ void SetVoiceAllocationMethod(ICVar* const pCvar)
 void CCVars::RegisterVariables()
 {
 	// To do: Add platform specific default values.
+	m_eventPoolSize = 256;
 	m_maxVirtualVoices = 16;
 	m_maxVoiceLimitGroups = 16;
 	m_maxCategories = 16;
@@ -39,6 +40,11 @@ void CCVars::RegisterVariables()
 	m_voiceAllocationMethod = 0;
 	m_maxPitch = 2400.0f;
 	m_velocityTrackingThreshold = 0.1f;
+
+	REGISTER_CVAR2("s_Adx2EventPoolSize", &m_eventPoolSize, m_eventPoolSize, VF_REQUIRE_APP_RESTART,
+	               "Sets the number of preallocated events.\n"
+	               "Usage: s_Adx2EventPoolSize [0/...]\n"
+	               "Default PC: 256, XboxOne: 256, PS4: 256, Mac: 256, Linux: 256, iOS: 256, Android: 256\n");
 
 	REGISTER_CVAR2("s_Adx2MaxVirtualVoices", &m_maxVirtualVoices, m_maxVirtualVoices, VF_REQUIRE_APP_RESTART,
 	               "Specifies the maximum number of voices for which voice control is performed simultaneously.\n"
@@ -152,6 +158,7 @@ void CCVars::UnregisterVariables()
 
 	if (pConsole != nullptr)
 	{
+		pConsole->UnregisterVariable("s_Adx2EventPoolSize");
 		pConsole->UnregisterVariable("s_Adx2MaxVirtualVoices");
 		pConsole->UnregisterVariable("s_AdxMaxVoiceLimitGroups");
 		pConsole->UnregisterVariable("s_Adx2MaxCategories");

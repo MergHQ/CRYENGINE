@@ -25,13 +25,11 @@ public:
 	explicit CEnvironmentParameter(
 		uint32 const id,
 		float const multiplier,
-		float const shift,
-		char const* const szName)
+		float const shift)
 		: CEnvironment(EEnvironmentType::Parameter)
 		, m_id(id)
 		, m_multiplier(multiplier)
 		, m_shift(shift)
-		, m_name(szName)
 	{}
 
 	virtual ~CEnvironmentParameter() override = default;
@@ -45,7 +43,6 @@ private:
 	uint32 const m_id;
 	float const  m_multiplier;
 	float const  m_shift;
-	CryFixedStringT<MaxControlNameLength> const m_name;
 };
 } // namespace Fmod
 } // namespace Impl

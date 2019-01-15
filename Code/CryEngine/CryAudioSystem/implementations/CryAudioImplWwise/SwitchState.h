@@ -53,12 +53,20 @@ public:
 	AkUInt32    GetStateOrSwitchId() const      { return m_stateOrSwitchId; }
 	float       GetRtpcValue() const            { return m_rtpcValue; }
 
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	void SetName(char const* const szName) { m_name = szName; }
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+
 private:
 
 	ESwitchType const m_type;
 	AkUInt32 const    m_stateOrSwitchGroupId;
 	AkUInt32 const    m_stateOrSwitchId;
 	float const       m_rtpcValue;
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	CryFixedStringT<MaxControlNameLength> m_name;
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 };
 } // namespace Wwise
 } // namespace Impl

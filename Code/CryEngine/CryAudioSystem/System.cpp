@@ -6,7 +6,6 @@
 #include "PoolObject_impl.h"
 #include "Managers.h"
 #include "ObjectManager.h"
-#include "EventManager.h"
 #include "FileCacheManager.h"
 #include "ListenerManager.h"
 #include "EventListenerManager.h"
@@ -20,7 +19,6 @@
 #include "FileEntry.h"
 #include "Listener.h"
 #include "Object.h"
-#include "Event.h"
 #include "StandaloneFile.h"
 #include "LoseFocusTrigger.h"
 #include "GetFocusTrigger.h"
@@ -45,6 +43,7 @@
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	#include "PreviewTrigger.h"
 	#include "Debug.h"
+	#include "Common/DebugStyle.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
 	#include <CryThreading/CryThread.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
@@ -79,11 +78,10 @@ static constexpr uint16 g_objectProcessPhysicsRayPoolSize = 128;
 
 static constexpr uint16 g_listenerSetTransformationPoolSize = 2;
 
-static constexpr uint16 g_callbackReportStartedEventPoolSize = 4;
-static constexpr uint16 g_callbackReportFinishedEventPoolSize = 128;
-static constexpr uint16 g_callbackReportVirtualizedEventPoolSize = 32;
-static constexpr uint16 g_callbackReportPhysicalizedEventPoolSize = 32;
+static constexpr uint16 g_callbackReportFinishedTriggerConnectionInstancePoolSize = 128;
 static constexpr uint16 g_callbackReportFinishedTriggerInstancePoolSize = 128;
+static constexpr uint16 g_callbackReportPhysicalizedObjectPoolSize = 64;
+static constexpr uint16 g_callbackReportVirtualizedObjectPoolSize = 64;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 
@@ -113,11 +111,10 @@ struct RequestCount final
 
 	uint16 listenerSetTransformation = 0;
 
-	uint16 callbackReportStartedEvent = 0;
-	uint16 callbackReportFinishedEvent = 0;
-	uint16 callbackReportVirtualizedEvent = 0;
-	uint16 callbackReportPhysicalizedEvent = 0;
+	uint16 callbackReportFinishedTriggerConnectionInstance = 0;
 	uint16 callbackReportFinishedTriggerInstance = 0;
+	uint16 callbackReportPhysicalizedObject = 0;
+	uint16 callbackReportVirtualizedObject = 0;
 };
 
 RequestCount g_requestsPerUpdate;
@@ -269,33 +266,27 @@ void CountRequestPerUpdate(CRequest const& request)
 
 				switch (pBase->callbackRequestType)
 				{
-				case ECallbackRequestType::ReportStartedEvent:
+				case ECallbackRequestType::ReportFinishedTriggerConnectionInstance:
 					{
-						g_requestsPerUpdate.callbackReportStartedEvent++;
-
-						break;
-					}
-				case ECallbackRequestType::ReportFinishedEvent:
-					{
-						g_requestsPerUpdate.callbackReportFinishedEvent++;
-
-						break;
-					}
-				case ECallbackRequestType::ReportVirtualizedEvent:
-					{
-						g_requestsPerUpdate.callbackReportVirtualizedEvent++;
-
-						break;
-					}
-				case ECallbackRequestType::ReportPhysicalizedEvent:
-					{
-						g_requestsPerUpdate.callbackReportPhysicalizedEvent++;
+						g_requestsPerUpdate.callbackReportFinishedTriggerConnectionInstance++;
 
 						break;
 					}
 				case ECallbackRequestType::ReportFinishedTriggerInstance:
 					{
 						g_requestsPerUpdate.callbackReportFinishedTriggerInstance++;
+
+						break;
+					}
+				case ECallbackRequestType::ReportPhysicalizedObject:
+					{
+						g_requestsPerUpdate.callbackReportPhysicalizedObject++;
+
+						break;
+					}
+				case ECallbackRequestType::ReportVirtualizedObject:
+					{
+						g_requestsPerUpdate.callbackReportVirtualizedObject++;
 
 						break;
 					}
@@ -339,11 +330,10 @@ void SetRequestCountPeak()
 
 	g_requestPeaks.listenerSetTransformation = std::max(g_requestPeaks.listenerSetTransformation, g_requestsPerUpdate.listenerSetTransformation);
 
-	g_requestPeaks.callbackReportStartedEvent = std::max(g_requestPeaks.callbackReportStartedEvent, g_requestsPerUpdate.callbackReportStartedEvent);
-	g_requestPeaks.callbackReportFinishedEvent = std::max(g_requestPeaks.callbackReportFinishedEvent, g_requestsPerUpdate.callbackReportFinishedEvent);
-	g_requestPeaks.callbackReportVirtualizedEvent = std::max(g_requestPeaks.callbackReportVirtualizedEvent, g_requestsPerUpdate.callbackReportVirtualizedEvent);
-	g_requestPeaks.callbackReportPhysicalizedEvent = std::max(g_requestPeaks.callbackReportPhysicalizedEvent, g_requestsPerUpdate.callbackReportPhysicalizedEvent);
+	g_requestPeaks.callbackReportFinishedTriggerConnectionInstance = std::max(g_requestPeaks.callbackReportFinishedTriggerConnectionInstance, g_requestsPerUpdate.callbackReportFinishedTriggerConnectionInstance);
 	g_requestPeaks.callbackReportFinishedTriggerInstance = std::max(g_requestPeaks.callbackReportFinishedTriggerInstance, g_requestsPerUpdate.callbackReportFinishedTriggerInstance);
+	g_requestPeaks.callbackReportPhysicalizedObject = std::max(g_requestPeaks.callbackReportPhysicalizedObject, g_requestsPerUpdate.callbackReportPhysicalizedObject);
+	g_requestPeaks.callbackReportVirtualizedObject = std::max(g_requestPeaks.callbackReportVirtualizedObject, g_requestsPerUpdate.callbackReportVirtualizedObject);
 
 	ZeroStruct(g_requestsPerUpdate);
 }
@@ -387,11 +377,10 @@ void AllocateMemoryPools()
 	SListenerRequestData<EListenerRequestType::SetTransformation>::CreateAllocator(g_listenerSetTransformationPoolSize);
 
 	// Callback requests
-	SCallbackRequestData<ECallbackRequestType::ReportStartedEvent>::CreateAllocator(g_callbackReportStartedEventPoolSize);
-	SCallbackRequestData<ECallbackRequestType::ReportFinishedEvent>::CreateAllocator(g_callbackReportFinishedEventPoolSize);
-	SCallbackRequestData<ECallbackRequestType::ReportVirtualizedEvent>::CreateAllocator(g_callbackReportVirtualizedEventPoolSize);
-	SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedEvent>::CreateAllocator(g_callbackReportPhysicalizedEventPoolSize);
+	SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerConnectionInstance>::CreateAllocator(g_callbackReportFinishedTriggerConnectionInstancePoolSize);
 	SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance>::CreateAllocator(g_callbackReportFinishedTriggerInstancePoolSize);
+	SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedObject>::CreateAllocator(g_callbackReportPhysicalizedObjectPoolSize);
+	SCallbackRequestData<ECallbackRequestType::ReportVirtualizedObject>::CreateAllocator(g_callbackReportVirtualizedObjectPoolSize);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -432,11 +421,10 @@ void FreeMemoryPools()
 	SListenerRequestData<EListenerRequestType::SetTransformation>::FreeMemoryPool();
 
 	// Callback requests
-	SCallbackRequestData<ECallbackRequestType::ReportStartedEvent>::FreeMemoryPool();
-	SCallbackRequestData<ECallbackRequestType::ReportFinishedEvent>::FreeMemoryPool();
-	SCallbackRequestData<ECallbackRequestType::ReportVirtualizedEvent>::FreeMemoryPool();
-	SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedEvent>::FreeMemoryPool();
+	SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerConnectionInstance>::FreeMemoryPool();
 	SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance>::FreeMemoryPool();
+	SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedObject>::FreeMemoryPool();
+	SCallbackRequestData<ECallbackRequestType::ReportVirtualizedObject>::FreeMemoryPool();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -478,6 +466,7 @@ void CSystem::ExternalUpdate()
 		{
 			auto const pBase = static_cast<SObjectRequestDataBase const*>(request.GetData());
 			pBase->pObject->DecrementSyncCallbackCounter();
+			// No sync callback counting for global object, because it gets released on unloading of the audio system dll.
 		}
 	}
 
@@ -717,10 +706,17 @@ void CSystem::InternalUpdate()
 		if (g_pIImpl != nullptr)
 		{
 			g_listenerManager.Update(m_accumulatedFrameTime);
-			g_pObject->GetImplDataPtr()->Update(m_accumulatedFrameTime);
+
+			if (g_pObject->IsActive())
+			{
+				g_pObject->GetImplDataPtr()->Update(m_accumulatedFrameTime);
+			}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			g_previewObject.GetImplDataPtr()->Update(m_accumulatedFrameTime);
+			if (g_previewObject.IsActive())
+			{
+				g_previewObject.GetImplDataPtr()->Update(m_accumulatedFrameTime);
+			}
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			g_objectManager.Update(m_accumulatedFrameTime);
@@ -739,10 +735,17 @@ void CSystem::InternalUpdate()
 		if (g_pIImpl != nullptr)
 		{
 			g_listenerManager.Update(0.0f);
-			g_pObject->GetImplDataPtr()->Update(0.0f);
+
+			if (g_pObject->IsActive())
+			{
+				g_pObject->GetImplDataPtr()->Update(0.0f);
+			}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			g_previewObject.GetImplDataPtr()->Update(0.0f);
+			if (g_previewObject.IsActive())
+			{
+				g_previewObject.GetImplDataPtr()->Update(0.0f);
+			}
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			g_objectManager.Update(0.0f);
@@ -793,15 +796,7 @@ bool CSystem::Initialize()
 			Cry::Audio::Log(ELogType::Warning, R"(Audio Object pool size must be at least 1. Forcing the cvar "s_AudioObjectPoolSize" to 1!)");
 		}
 
-		CObject::CreateAllocator(g_cvars.m_objectPoolSize);
-
-		if (g_cvars.m_eventPoolSize < 1)
-		{
-			g_cvars.m_eventPoolSize = 1;
-			Cry::Audio::Log(ELogType::Warning, R"(Audio Event pool size must be at least 1. Forcing the cvar "s_AudioEventPoolSize" to 1!)");
-		}
-
-		CEvent::CreateAllocator(g_cvars.m_eventPoolSize);
+		CObject::CreateAllocator(static_cast<uint16>(g_cvars.m_objectPoolSize));
 
 		if (g_cvars.m_standaloneFilePoolSize < 1)
 		{
@@ -809,7 +804,7 @@ bool CSystem::Initialize()
 			Cry::Audio::Log(ELogType::Warning, R"(Audio Standalone File pool size must be at least 1. Forcing the cvar "s_AudioStandaloneFilePoolSize" to 1!)");
 		}
 
-		CStandaloneFile::CreateAllocator(g_cvars.m_standaloneFilePoolSize);
+		CStandaloneFile::CreateAllocator(static_cast<uint16>(g_cvars.m_standaloneFilePoolSize));
 
 		// Add the callback for the obstruction calculation.
 		gEnv->pPhysicalWorld->AddEventClient(
@@ -818,10 +813,8 @@ bool CSystem::Initialize()
 			1);
 
 		m_objectPoolSize = static_cast<uint16>(g_cvars.m_objectPoolSize);
-		m_eventPoolSize = static_cast<uint16>(g_cvars.m_eventPoolSize);
 
 		g_objectManager.Initialize(m_objectPoolSize);
-		g_eventManager.Initialize(m_eventPoolSize);
 		g_fileCacheManager.Initialize();
 
 		CRY_ASSERT_MESSAGE(!m_mainThread.IsActive(), "AudioSystem thread active before initialization during %s", __FUNCTION__);
@@ -864,7 +857,6 @@ void CSystem::Release()
 		g_cvars.UnregisterVariables();
 
 		CObject::FreeMemoryPool();
-		CEvent::FreeMemoryPool();
 		CStandaloneFile::FreeMemoryPool();
 
 #if defined(ENABLE_AUDIO_LOGGING)
@@ -1118,41 +1110,25 @@ void CSystem::ReportStoppedFile(CStandaloneFile& standaloneFile, SRequestUserDat
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::ReportFinishedEvent(
-	CEvent& event,
-	bool const bSuccess,
-	SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+void CSystem::ReportFinishedTriggerConnectionInstance(TriggerInstanceId const triggerInstanceId, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	CRY_ASSERT_MESSAGE(!event.m_toBeRemoved, R"(Event "%s" is already to be removed during %s)", event.GetTriggerName(), __FUNCTION__);
-	event.m_toBeRemoved = true;
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-
-	SCallbackRequestData<ECallbackRequestType::ReportFinishedEvent> const requestData(event, bSuccess);
+	SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerConnectionInstance> const requestData(triggerInstanceId);
 	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::ReportVirtualizedEvent(CEvent& event, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+void CSystem::ReportPhysicalizedObject(Impl::IObject* const pIObject, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	CRY_ASSERT_MESSAGE(!event.m_toBeRemoved, R"(Event "%s" is already to be removed during %s)", event.GetTriggerName(), __FUNCTION__);
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-
-	SCallbackRequestData<ECallbackRequestType::ReportVirtualizedEvent> const requestData(event);
+	SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedObject> const requestData(pIObject);
 	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::ReportPhysicalizedEvent(CEvent& event, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+void CSystem::ReportVirtualizedObject(Impl::IObject* const pIObject, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	CRY_ASSERT_MESSAGE(!event.m_toBeRemoved, R"(Event "%s" is already to be removed during %s)", event.GetTriggerName(), __FUNCTION__);
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-
-	SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedEvent> const requestData(event);
+	SCallbackRequestData<ECallbackRequestType::ReportVirtualizedObject> const requestData(pIObject);
 	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
@@ -1358,7 +1334,6 @@ void CSystem::ReleaseImpl()
 	// Release middleware specific data before its shutdown.
 	g_fileManager.ReleaseImplData();
 	g_listenerManager.ReleaseImplData();
-	g_eventManager.ReleaseImplData();
 	g_objectManager.ReleaseImplData();
 
 	g_pIImpl->DestructObject(g_pObject->GetImplDataPtr());
@@ -1382,7 +1357,6 @@ void CSystem::ReleaseImpl()
 
 	// Release engine specific data after impl shut down to prevent dangling data accesses during shutdown.
 	// Note: The object and listener managers are an exception as we need their data to survive in case the middleware is swapped out.
-	g_eventManager.Release();
 	g_fileManager.Release();
 
 	FreeMemoryPools();
@@ -1501,6 +1475,7 @@ void CSystem::ProcessRequests(Requests& requestQueue)
 					{
 						auto const pBase = static_cast<SObjectRequestDataBase const*>(request.GetData());
 						pBase->pObject->IncrementSyncCallbackCounter();
+						// No sync callback counting for global object, because it gets released on unloading of the audio system dll.
 					}
 
 					m_syncCallbacks.enqueue(request);
@@ -2131,7 +2106,6 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	case ESystemRequestType::ExecutePreviewTrigger:
 		{
-
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ExecutePreviewTrigger> const*>(request.GetData());
 
 			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
@@ -2159,7 +2133,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::StopPreviewTrigger:
 		{
-			g_previewTrigger.Stop();
+			g_previewObject.StopAllTriggers();
 			result = ERequestStatus::Success;
 
 			break;
@@ -2186,10 +2160,9 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			for (auto const pObject : g_objectManager.GetObjects())
 			{
-				for (auto const pEvent : pObject->GetActiveEvents())
+				if (pObject->IsActive())
 				{
-					CRY_ASSERT_MESSAGE((pEvent != nullptr) && pEvent->IsPlaying(), "Invalid event during %s", __FUNCTION__);
-					pEvent->Stop();
+					pObject->StopAllTriggers();
 				}
 			}
 
@@ -2236,66 +2209,6 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 
 	switch (pBase->callbackRequestType)
 	{
-	case ECallbackRequestType::ReportStartedEvent:
-		{
-			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportStartedEvent> const*>(request.GetData());
-			CEvent& event = pRequestData->event;
-
-			event.m_state = pRequestData->isVirtual ? EEventState::Virtual : EEventState::Playing;
-
-			if (event.m_pObject != g_pObject)
-			{
-				event.m_pObject->ReportStartedEvent(&event);
-			}
-			else
-			{
-				g_pObject->ReportStartedEvent(&event);
-			}
-
-			result = ERequestStatus::Success;
-
-			break;
-		}
-	case ECallbackRequestType::ReportFinishedEvent:
-		{
-			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportFinishedEvent> const*>(request.GetData());
-			CEvent& event = pRequestData->event;
-
-			if (event.m_pObject != g_pObject)
-			{
-				event.m_pObject->ReportFinishedEvent(&event, pRequestData->bSuccess);
-			}
-			else
-			{
-				g_pObject->ReportFinishedEvent(&event, pRequestData->bSuccess);
-			}
-
-			g_eventManager.DestructEvent(&event);
-
-			result = ERequestStatus::Success;
-
-			break;
-		}
-	case ECallbackRequestType::ReportVirtualizedEvent:
-		{
-			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportVirtualizedEvent> const*>(request.GetData());
-
-			pRequestData->event.SetVirtual();
-
-			result = ERequestStatus::Success;
-
-			break;
-		}
-	case ECallbackRequestType::ReportPhysicalizedEvent:
-		{
-			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedEvent> const*>(request.GetData());
-
-			pRequestData->event.SetPlaying();
-
-			result = ERequestStatus::Success;
-
-			break;
-		}
 	case ECallbackRequestType::ReportStartedFile:
 		{
 			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportStartedFile> const*>(request.GetData());
@@ -2340,7 +2253,44 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 
 			break;
 		}
-	case ECallbackRequestType::ReportFinishedTriggerInstance:
+	case ECallbackRequestType::ReportFinishedTriggerConnectionInstance:
+		{
+			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerConnectionInstance> const*>(request.GetData());
+
+			CObject* const pObject = stl::find_in_map(g_triggerInstanceIdToObject, pRequestData->triggerInstanceId, nullptr);
+
+			if (pObject != nullptr)
+			{
+				pObject->ReportFinishedTriggerInstance(pRequestData->triggerInstanceId);
+			}
+			else
+			{
+				Cry::Audio::Log(ELogType::Error, "TriggerInstanceId %u is not mapped to an object during %s", pRequestData->triggerInstanceId, __FUNCTION__);
+			}
+
+			result = ERequestStatus::Success;
+
+			break;
+		}
+	case ECallbackRequestType::ReportPhysicalizedObject:
+		{
+			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedObject> const*>(request.GetData());
+
+			g_objectManager.SetObjectPhysical(pRequestData->pIObject);
+			result = ERequestStatus::Success;
+
+			break;
+		}
+	case ECallbackRequestType::ReportVirtualizedObject:
+		{
+			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportVirtualizedObject> const*>(request.GetData());
+
+			g_objectManager.SetObjectVirtual(pRequestData->pIObject);
+			result = ERequestStatus::Success;
+
+			break;
+		}
+	case ECallbackRequestType::ReportFinishedTriggerInstance: // Intentional fall-through.
 	case ECallbackRequestType::None:
 		{
 			result = ERequestStatus::Success;
@@ -2738,7 +2688,6 @@ void CSystem::NotifyListener(CRequest const& request)
 	ESystemEvents systemEvent = ESystemEvents::None;
 	CStandaloneFile* pStandaloneFile = nullptr;
 	ControlId controlID = InvalidControlId;
-	CEvent* pEvent = nullptr;
 	EntityId entityId = INVALID_ENTITYID;
 
 	switch (request.GetData()->requestType)
@@ -2779,13 +2728,6 @@ void CSystem::NotifyListener(CRequest const& request)
 					controlID = pRequestData->triggerId;
 					entityId = pRequestData->entityId;
 					systemEvent = ESystemEvents::TriggerFinished;
-
-					break;
-				}
-			case ECallbackRequestType::ReportStartedEvent:
-				{
-					auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportStartedEvent> const*>(pBase);
-					pEvent = &pRequestData->event;
 
 					break;
 				}
@@ -2878,8 +2820,7 @@ void CSystem::NotifyListener(CRequest const& request)
 		systemEvent,
 		controlID,
 		entityId,
-		pStandaloneFile,
-		pEvent);
+		pStandaloneFile);
 
 	g_eventListenerManager.NotifyListener(&requestInfo);
 }
@@ -2919,7 +2860,7 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 	AllocateMemoryPools();
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-	result = g_pIImpl->Init(m_objectPoolSize, m_eventPoolSize);
+	result = g_pIImpl->Init(m_objectPoolSize);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	// Get impl info again (was done in ParseSystemData) to set the impl name, because
@@ -2963,7 +2904,6 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	g_objectManager.OnAfterImplChanged();
-	g_eventManager.OnAfterImplChanged();
 	g_listenerManager.OnAfterImplChanged();
 
 	SetImplLanguage();
@@ -3202,7 +3142,8 @@ void DrawMemoryPoolInfo(
 	float& posY,
 	stl::SPoolMemoryUsage const& mem,
 	stl::SMemoryUsage const& pool,
-	char const* const szType)
+	char const* const szType,
+	uint16 const poolSize)
 {
 	CryFixedStringT<MaxMiscStringLength> memUsedString;
 
@@ -3226,24 +3167,25 @@ void DrawMemoryPoolInfo(
 		memAllocString.Format("%" PRISIZE_T " KiB", mem.nAlloc >> 10);
 	}
 
-	posY += Debug::g_systemLineHeight;
-	pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::g_systemColorTextPrimary.data(), false,
-	                      "[%s] In Use: %" PRISIZE_T " | Constructed: %" PRISIZE_T " (%s) | Memory Pool: %s",
-	                      szType, pool.nUsed, pool.nAlloc, memUsedString.c_str(), memAllocString.c_str());
+	ColorF const color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
+
+	posY += Debug::s_systemLineHeight;
+	pAuxGeom->Draw2dLabel(posX, posY, Debug::s_systemFontSize, color, false,
+	                      "[%s] Constructed: %" PRISIZE_T " (%s) | Allocated: %" PRISIZE_T " (%s) | Pool Size: %u",
+	                      szType, pool.nUsed, memUsedString.c_str(), pool.nAlloc, memAllocString.c_str(), poolSize);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void DrawRequestCategoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, char const* const szType)
 {
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::g_systemColorTextSecondary.data(), false, "%s Request Peak:", szType);
-	posY += Debug::g_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextSecondary, false, "%s Request Peak:", szType);
+	posY += Debug::s_systemLineHeight;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void DrawRequestPeakInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, char const* const szType, uint16 const peak, uint16 poolSize)
 {
 	bool const poolSizeExceeded = (peak > poolSize) && (poolSize != 0);
-	float const* pColor = poolSizeExceeded ? Debug::g_colorRed.data() : Debug::g_systemColorTextPrimary.data();
 	CryFixedStringT<MaxMiscStringLength> debugText;
 
 	if (poolSizeExceeded)
@@ -3255,15 +3197,21 @@ void DrawRequestPeakInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY,
 		debugText.Format("%s: %u", szType, peak);
 	}
 
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, pColor, false, debugText.c_str());
-	posY += Debug::g_systemLineHeight;
+	auxGeom.Draw2dLabel(
+		posX,
+		posY,
+		Debug::s_systemFontSize,
+		poolSizeExceeded ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary,
+		false,
+		debugText.c_str());
+	posY += Debug::s_systemLineHeight;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void DrawRequestDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 {
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_managerHeaderFontSize, Debug::g_globalColorHeader.data(), false, "Audio Requests");
-	posY += Debug::g_managerHeaderLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "Audio Requests");
+	posY += Debug::s_listHeaderLineHeight;
 
 	DrawRequestPeakInfo(auxGeom, posX, posY, "Total", g_requestPeaks.requests, 0);
 
@@ -3290,11 +3238,10 @@ void DrawRequestDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 	DrawRequestPeakInfo(auxGeom, posX, posY, "SetTransformation", g_requestPeaks.listenerSetTransformation, g_listenerSetTransformationPoolSize);
 
 	DrawRequestCategoryInfo(auxGeom, posX, posY, "Callback");
-	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportStartedEvent", g_requestPeaks.callbackReportStartedEvent, g_callbackReportStartedEventPoolSize);
-	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportFinishedEvent", g_requestPeaks.callbackReportFinishedEvent, g_callbackReportFinishedEventPoolSize);
-	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportVirtualizedEvent", g_requestPeaks.callbackReportVirtualizedEvent, g_callbackReportVirtualizedEventPoolSize);
-	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportPhysicalizedEvent", g_requestPeaks.callbackReportPhysicalizedEvent, g_callbackReportPhysicalizedEventPoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportFinishedTriggerConnectionInstance", g_requestPeaks.callbackReportFinishedTriggerConnectionInstance, g_callbackReportFinishedTriggerConnectionInstancePoolSize);
 	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportFinishedTriggerInstance", g_requestPeaks.callbackReportFinishedTriggerInstance, g_callbackReportFinishedTriggerInstancePoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportPhysicalizedObject", g_requestPeaks.callbackReportPhysicalizedObject, g_callbackReportPhysicalizedObjectPoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportVirtualizedObject", g_requestPeaks.callbackReportVirtualizedObject, g_callbackReportVirtualizedObjectPoolSize);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3336,72 +3283,68 @@ void CSystem::HandleDrawDebug()
 			char const* const szMuted = ((g_systemStates& ESystemStates::IsMuted) != 0) ? " - Muted" : "";
 			char const* const szPaused = ((g_systemStates& ESystemStates::IsPaused) != 0) ? " - Paused" : "";
 
-			pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemHeaderFontSize, Debug::g_globalColorHeader.data(), false,
+			pAuxGeom->Draw2dLabel(posX, posY, Debug::s_systemHeaderFontSize, Debug::s_globalColorHeader, false,
 			                      "Audio System (Total Memory: %s)%s%s", memInfoString.c_str(), szMuted, szPaused);
+
+			posY += Debug::s_systemHeaderLineSpacerHeight;
 
 			if ((g_cvars.m_drawDebug & Debug::EDrawFilter::DetailedMemoryInfo) != 0)
 			{
 				{
 					auto& allocator = CObject::GetAllocator();
-					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Objects");
-				}
-
-				{
-					auto& allocator = CEvent::GetAllocator();
-					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Events");
+					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Objects", m_objectPoolSize);
 				}
 
 				{
 					auto& allocator = CStandaloneFile::GetAllocator();
-					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Standalone Files");
+					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Standalone Files", static_cast<uint16>(g_cvars.m_standaloneFilePoolSize));
 				}
 
 				if (g_debugPoolSizes.triggers > 0)
 				{
 					auto& allocator = CTrigger::GetAllocator();
-					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Triggers");
+					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Triggers", g_poolSizes.triggers);
 				}
 
 				if (g_debugPoolSizes.parameters > 0)
 				{
 					auto& allocator = CParameter::GetAllocator();
-					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Parameters");
+					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Parameters", g_poolSizes.parameters);
 				}
 
 				if (g_debugPoolSizes.switches > 0)
 				{
 					auto& allocator = CSwitch::GetAllocator();
-					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Switches");
+					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Switches", g_poolSizes.switches);
 				}
 
 				if (g_debugPoolSizes.states > 0)
 				{
 					auto& allocator = CSwitchState::GetAllocator();
-					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "SwitchStates");
+					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "SwitchStates", g_poolSizes.states);
 				}
 
 				if (g_debugPoolSizes.environments > 0)
 				{
 					auto& allocator = CEnvironment::GetAllocator();
-					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Environments");
+					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Environments", g_poolSizes.environments);
 				}
 
 				if (g_debugPoolSizes.preloads > 0)
 				{
 					auto& allocator = CPreloadRequest::GetAllocator();
-					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Preloads");
+					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Preloads", g_poolSizes.preloads);
 				}
 
 				if (g_debugPoolSizes.settings > 0)
 				{
 					auto& allocator = CSetting::GetAllocator();
-					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Settings");
+					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Settings", g_poolSizes.settings);
 				}
 			}
 
 			size_t const numObjects = g_objectManager.GetNumAudioObjects();
 			size_t const numActiveObjects = g_objectManager.GetNumActiveAudioObjects();
-			size_t const numEvents = g_eventManager.GetNumConstructed();
 			size_t const numListeners = g_listenerManager.GetNumActiveListeners();
 			size_t const numEventListeners = g_eventListenerManager.GetNumEventListeners();
 			static float const SMOOTHING_ALPHA = 0.2f;
@@ -3410,18 +3353,18 @@ void CSystem::HandleDrawDebug()
 			syncRays += (CPropagationProcessor::s_totalSyncPhysRays - syncRays) * SMOOTHING_ALPHA;
 			asyncRays += (CPropagationProcessor::s_totalAsyncPhysRays - asyncRays) * SMOOTHING_ALPHA * 0.1f;
 
-			posY += Debug::g_systemLineHeight;
-			pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::g_systemColorTextSecondary.data(), false,
-			                      "Objects: %3" PRISIZE_T "/%3" PRISIZE_T " | Events: %3" PRISIZE_T " | EventListeners %3" PRISIZE_T " | Listeners: %" PRISIZE_T " | SyncRays: %3.1f AsyncRays: %3.1f",
-			                      numActiveObjects, numObjects, numEvents, numEventListeners, numListeners, syncRays, asyncRays);
+			posY += Debug::s_systemLineHeight;
+			pAuxGeom->Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextSecondary, false,
+			                      "Objects: %3" PRISIZE_T "/%3" PRISIZE_T " | EventListeners %3" PRISIZE_T " | Listeners: %" PRISIZE_T " | SyncRays: %3.1f AsyncRays: %3.1f",
+			                      numActiveObjects, numObjects, numEventListeners, numListeners, syncRays, asyncRays);
 
 			if (g_pIImpl != nullptr)
 			{
-				posY += Debug::g_systemHeaderLineHeight;
-				g_pIImpl->DrawDebugInfo(*pAuxGeom, posX, posY, (g_cvars.m_drawDebug & Debug::EDrawFilter::DetailedMemoryInfo) != 0);
+				posY += Debug::s_systemHeaderLineHeight;
+				g_pIImpl->DrawDebugMemoryInfo(*pAuxGeom, posX, posY, (g_cvars.m_drawDebug & Debug::EDrawFilter::DetailedMemoryInfo) != 0);
 			}
 
-			posY += Debug::g_systemHeaderLineHeight;
+			posY += Debug::s_systemHeaderLineHeight;
 		}
 
 		string debugFilter = g_cvars.m_pDebugFilter->GetString();
@@ -3510,9 +3453,9 @@ void CSystem::HandleDrawDebug()
 			debugDraw += "Standalone Files, ";
 		}
 
-		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ActiveEvents) != 0)
+		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ImplList) != 0)
 		{
-			debugDraw += "Active Events, ";
+			debugDraw += "Implementation List, ";
 		}
 
 		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ActiveObjects) != 0)
@@ -3533,11 +3476,11 @@ void CSystem::HandleDrawDebug()
 		if (!debugDraw.IsEmpty())
 		{
 			debugDraw.erase(debugDraw.length() - 2, 2);
-			pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::g_systemColorTextPrimary.data(), false, "Debug Draw: %s", debugDraw.c_str());
-			posY += Debug::g_systemLineHeight;
-			pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::g_systemColorTextPrimary.data(), false, "Debug Filter: %s | Debug Distance: %s", debugFilter.c_str(), debugDistance.c_str());
+			pAuxGeom->Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextPrimary, false, "Debug Draw: %s", debugDraw.c_str());
+			posY += Debug::s_systemLineHeight;
+			pAuxGeom->Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextPrimary, false, "Debug Filter: %s | Debug Distance: %s", debugFilter.c_str(), debugDistance.c_str());
 
-			posY += Debug::g_systemHeaderLineHeight;
+			posY += Debug::s_systemHeaderLineHeight;
 		}
 
 		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::FileCacheManagerInfo) != 0)
@@ -3552,10 +3495,13 @@ void CSystem::HandleDrawDebug()
 			posX += 300.0f;
 		}
 
-		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ActiveEvents) != 0)
+		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ImplList) != 0)
 		{
-			g_eventManager.DrawDebugInfo(*pAuxGeom, posX, posY);
-			posX += 600.0f;
+			if (g_pIImpl != nullptr)
+			{
+				g_pIImpl->DrawDebugInfoList(*pAuxGeom, posX, posY, g_cvars.m_debugDistance, g_cvars.m_pDebugFilter->GetString());
+				// The impl is responsible for increasing posX.
+			}
 		}
 
 		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::RequestInfo) != 0)

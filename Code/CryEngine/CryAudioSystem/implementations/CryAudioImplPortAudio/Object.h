@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Common.h"
 #include <IObject.h>
 #include <PoolObject.h>
 
@@ -41,11 +42,18 @@ public:
 
 	void StopEvent(uint32 const pathId);
 	void RegisterEvent(CEvent* const pEvent);
-	void UnregisterEvent(CEvent* const pEvent);
+
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+	char const* GetName() const { return m_name.c_str(); }
+#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 
 private:
 
-	std::vector<CEvent*> m_activeEvents;
+	Events m_activeEvents;
+
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+	CryFixedStringT<MaxObjectNameLength> m_name;
+#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 };
 } // namespace PortAudio
 } // namespace Impl

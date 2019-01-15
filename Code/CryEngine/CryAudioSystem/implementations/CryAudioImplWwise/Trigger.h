@@ -38,11 +38,12 @@ public:
 	virtual ~CTrigger() override = default;
 
 	// CryAudio::Impl::ITriggerConnection
-	virtual ERequestStatus Execute(IObject* const pIObject, IEvent* const pIEvent) override;
+	virtual ERequestStatus Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId) override;
+	virtual void           Stop(IObject* const pIObject) override;
 	virtual ERequestStatus Load() const override;
 	virtual ERequestStatus Unload() const override;
-	virtual ERequestStatus LoadAsync(IEvent* const pIEvent) const override;
-	virtual ERequestStatus UnloadAsync(IEvent* const pIEvent) const override;
+	virtual ERequestStatus LoadAsync(TriggerInstanceId const triggerInstanceId) const override;
+	virtual ERequestStatus UnloadAsync(TriggerInstanceId const triggerInstanceId) const override;
 	// ~CryAudio::Impl::ITriggerConnection
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
@@ -52,7 +53,7 @@ public:
 private:
 
 	ERequestStatus SetLoaded(bool const bLoad) const;
-	ERequestStatus SetLoadedAsync(IEvent* const pIEvent, bool const bLoad) const;
+	ERequestStatus SetLoadedAsync(TriggerInstanceId const triggerInstanceId, bool const bLoad) const;
 
 	AkUniqueID const m_id;
 	float const      m_maxAttenuation;

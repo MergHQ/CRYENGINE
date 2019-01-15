@@ -2,23 +2,29 @@
 
 #pragma once
 
-#include <IEvent.h>
-#include <SharedData.h>
 #include <PoolObject.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
 #include <AK/SoundEngine/Common/AkTypes.h>
 #include <atomic>
 
 namespace CryAudio
 {
-class CEvent;
-
 namespace Impl
 {
 namespace Wwise
 {
 class CObject;
 
-class CEvent final : public IEvent, public CPoolObject<CEvent, stl::PSyncNone>
+enum class EEventState : EnumFlagsType
+{
+	None,
+	Playing,
+	Loading,
+	Unloading,
+	Virtual,
+};
+
+class CEvent final : public CPoolObject<CEvent, stl::PSyncNone>
 {
 public:
 
@@ -28,35 +34,33 @@ public:
 	CEvent& operator=(CEvent const&) = delete;
 	CEvent& operator=(CEvent&&) = delete;
 
-	explicit CEvent(CryAudio::CEvent& event_)
-		: m_state(EEventState::None)
+	CEvent(TriggerInstanceId const triggerInstanceId)
+		: m_triggerInstanceId(triggerInstanceId)
+		, m_state(EEventState::None)
 		, m_id(AK_INVALID_UNIQUE_ID)
-		, m_event(event_)
+		, m_triggerId(AK_INVALID_UNIQUE_ID)
 		, m_pObject(nullptr)
 		, m_maxAttenuation(0.0f)
 		, m_toBeRemoved(false)
 	{}
 
-	virtual ~CEvent() override;
+	~CEvent() = default;
 
-	// CryAudio::Impl::IEvent
-	virtual ERequestStatus Stop() override;
-	// ~CryAudio::Impl::IEvent
-
-	void SetInitialVirtualState(float const distance);
-	void UpdateVirtualState(float const distance);
+	void Stop();
+	void UpdateVirtualState();
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	void        SetName(char const* const szName) { m_name = szName; }
 	char const* GetName() const                   { return m_name.c_str(); }
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
-	EEventState       m_state;
-	AkUniqueID        m_id;
-	CryAudio::CEvent& m_event;
-	CObject*          m_pObject;
-	float             m_maxAttenuation;
-	std::atomic_bool  m_toBeRemoved;
+	TriggerInstanceId const m_triggerInstanceId;
+	EEventState             m_state;
+	AkUniqueID              m_id;
+	AkUniqueID              m_triggerId;
+	CObject*                m_pObject;
+	float                   m_maxAttenuation;
+	std::atomic_bool        m_toBeRemoved;
 
 private:
 

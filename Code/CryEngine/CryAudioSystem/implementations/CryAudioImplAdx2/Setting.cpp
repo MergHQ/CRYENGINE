@@ -3,10 +3,6 @@
 #include "stdafx.h"
 #include "Setting.h"
 
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-	#include "Debug.h"
-#endif // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
-
 #include <cri_atom_ex.h>
 
 namespace CryAudio
@@ -15,6 +11,11 @@ namespace Impl
 {
 namespace Adx2
 {
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+CryFixedStringT<MaxControlNameLength> const g_debugNoneDspBusSetting = "<none>";
+CryFixedStringT<MaxControlNameLength> g_debugCurrentDspBusSettingName = g_debugNoneDspBusSetting;
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+
 //////////////////////////////////////////////////////////////////////////
 void CSetting::Load()
 {

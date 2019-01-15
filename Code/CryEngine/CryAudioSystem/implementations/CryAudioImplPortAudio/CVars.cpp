@@ -13,6 +13,13 @@ namespace PortAudio
 //////////////////////////////////////////////////////////////////////////
 void CCVars::RegisterVariables()
 {
+	m_eventPoolSize = 256;
+
+	REGISTER_CVAR2("s_PortAudioEventPoolSize", &m_eventPoolSize, m_eventPoolSize, VF_REQUIRE_APP_RESTART,
+	               "Sets the number of preallocated events.\n"
+	               "Usage: s_PortAudioEventPoolSize [0/...]\n"
+	               "Default: 256\n");
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -22,6 +29,7 @@ void CCVars::UnregisterVariables()
 
 	if (pConsole != nullptr)
 	{
+		pConsole->UnregisterVariable("s_PortAudioEventPoolSize");
 	}
 }
 } // namespace PortAudio

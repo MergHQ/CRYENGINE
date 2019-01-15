@@ -14,8 +14,6 @@ struct IRenderAuxGeom;
 namespace CryAudio
 {
 class CSystem;
-class CEvent;
-class CEventManager;
 class CFileManager;
 class CEnvironment;
 class CTrigger;
@@ -33,8 +31,8 @@ enum class EObjectFlags : EnumFlagsType
 	None                  = 0,
 	InUse                 = BIT(0),
 	Virtual               = BIT(1),
-	CanRunOcclusion       = BIT(2),
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	CanRunOcclusion       = BIT(2),
 	TrackAbsoluteVelocity = BIT(3),
 	TrackRelativeVelocity = BIT(4),
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
@@ -75,15 +73,17 @@ struct STriggerInstanceState final : public SUserDataBase
 {
 	ETriggerStatus flags = ETriggerStatus::None;
 	ControlId      triggerId = InvalidControlId;
-	size_t         numPlayingEvents = 0;
-	size_t         numLoadingEvents = 0;
+	size_t         numPlayingInstances = 0;
+	size_t         numLoadingInstances = 0;
 	float          expirationTimeMS = 0.0f;
 	float          remainingTimeMS = 0.0f;
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	float          radius = 0.0f;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 
 // CObject-related typedefs
 using ObjectStandaloneFileMap = std::map<CStandaloneFile*, SUserDataBase>;
-using ObjectEventSet = std::set<CEvent*>;
 using ObjectTriggerStates = std::map<TriggerInstanceId, STriggerInstanceState>;
 
 class CObject final : public IObject, public CPoolObject<CObject, stl::PSyncNone>
@@ -122,13 +122,10 @@ public:
 	void           Release();
 
 	// Callbacks
-	void                           ReportStartedEvent(CEvent* const pEvent);
-	void                           ReportFinishedEvent(CEvent* const pEvent, bool const bSuccess);
 	void                           ReportFinishedStandaloneFile(CStandaloneFile* const pStandaloneFile);
 	void                           GetStartedStandaloneFileRequestData(CStandaloneFile* const pStandaloneFile, CRequest& request);
 
 	void                           StopAllTriggers();
-	ObjectEventSet const&          GetActiveEvents() const { return m_activeEvents; }
 
 	void                           SetOcclusion(float const occlusion);
 	void                           ProcessPhysicsRay(CRayInfo* const pRayInfo);
@@ -155,9 +152,9 @@ public:
 	void         IncrementSyncCallbackCounter() { CryInterlockedIncrement(&m_numPendingSyncCallbacks); }
 	void         DecrementSyncCallbackCounter() { CRY_ASSERT(m_numPendingSyncCallbacks >= 1); CryInterlockedDecrement(&m_numPendingSyncCallbacks); }
 
-	void         AddEvent(CEvent* const pEvent);
 	void         AddTriggerState(TriggerInstanceId const id, STriggerInstanceState const& triggerInstanceState);
 	void         AddStandaloneFile(CStandaloneFile* const pStandaloneFile, SUserDataBase const& userDataBase);
+	void         ReportFinishedTriggerInstance(TriggerInstanceId const triggerInstanceId);
 	void         SendFinishedTriggerInstanceRequest(STriggerInstanceState const& triggerInstanceState);
 
 private:
@@ -181,12 +178,10 @@ private:
 	void         ToggleRelativeVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	// ~CryAudio::IObject
 
-	void ReportFinishedTriggerInstance(ObjectTriggerStates::iterator const& iter);
 	void PushRequest(SRequestData const& requestData, SRequestUserData const& userData);
 	bool ExecuteDefaultTrigger(ControlId const id);
 
 	ObjectStandaloneFileMap m_activeStandaloneFiles;
-	ObjectEventSet          m_activeEvents;
 	ObjectTriggerStates     m_triggerStates;
 	Impl::IObject*          m_pImplData;
 	EObjectFlags            m_flags;
@@ -200,13 +195,14 @@ public:
 
 	void           DrawDebugInfo(IRenderAuxGeom& auxGeom);
 	void           ResetObstructionRays() { m_propagationProcessor.ResetRayData(); }
-
 	void           ForceImplementationRefresh(bool const setTransformation);
 
 	ERequestStatus HandleSetName(char const* const szName);
 	void           StoreParameterValue(ControlId const id, float const value);
 	void           StoreSwitchValue(ControlId const switchId, SwitchStateId const switchStateId);
 	void           StoreEnvironmentValue(ControlId const id, float const value);
+
+	void           UpdateMaxRadius(float const radius);
 
 	CryFixedStringT<MaxObjectNameLength> m_name;
 
@@ -227,12 +223,6 @@ private:
 
 		SwitchStateId m_currentStateId;
 		float         m_currentSwitchColor;
-
-	private:
-
-		static float const s_maxSwitchColor;
-		static float const s_minSwitchColor;
-		static int const   s_maxToMinUpdates;
 	};
 
 	using StateDrawInfoMap = std::map<ControlId, CStateDebugDrawData>;

@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "Trigger.h"
+#include "Impl.h"
 #include "BaseObject.h"
 #include "BaseStandaloneFile.h"
 #include "Event.h"
@@ -32,7 +33,7 @@ FMOD_RESULT F_CALLBACK EventCallback(FMOD_STUDIO_EVENT_CALLBACK_TYPE type, FMOD_
 
 		if (pEvent != nullptr)
 		{
-			gEnv->pAudioSystem->ReportFinishedEvent(pEvent->GetEvent(), true);
+			pEvent->SetToBeRemoved();
 		}
 	}
 
@@ -82,7 +83,7 @@ FMOD_RESULT F_CALLBACK ProgrammerSoundCallback(FMOD_STUDIO_EVENT_CALLBACK_TYPE t
 			else if ((type == FMOD_STUDIO_EVENT_CALLBACK_START_FAILED) || (type == FMOD_STUDIO_EVENT_CALLBACK_STOPPED))
 			{
 				ASSERT_FMOD_OK;
-				gEnv->pAudioSystem->ReportFinishedEvent(pEvent->GetEvent(), true);
+				pEvent->SetToBeRemoved();
 			}
 		}
 	}
@@ -91,21 +92,22 @@ FMOD_RESULT F_CALLBACK ProgrammerSoundCallback(FMOD_STUDIO_EVENT_CALLBACK_TYPE t
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CTrigger::Execute(IObject* const pIObject, IEvent* const pIEvent)
+ERequestStatus CTrigger::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
 {
 	ERequestStatus requestResult = ERequestStatus::Failure;
 
-	if ((pIObject != nullptr) && (pIEvent != nullptr))
+	if (pIObject != nullptr)
 	{
 		auto const pObject = static_cast<CBaseObject*>(pIObject);
-		auto const pEvent = static_cast<CEvent*>(pIEvent);
-		pEvent->SetTrigger(this);
 
-		switch (m_eventType)
+		switch (m_actionType)
 		{
-		case EEventType::Start:
+		case EActionType::Start:
 			{
 				FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
+
+				CEvent* const pEvent = g_pImpl->ConstructEvent(triggerInstanceId);
+				pEvent->SetTrigger(this);
 
 				if (m_pEventDescription == nullptr)
 				{
@@ -142,63 +144,76 @@ ERequestStatus CTrigger::Execute(IObject* const pIObject, IEvent* const pIEvent)
 					pEvent->SetId(m_id);
 					pEvent->SetObject(pObject);
 
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+					pEvent->SetName(m_name.c_str());
+#endif          // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
 					Events& objectPendingEvents = pObject->GetPendingEvents();
 					CRY_ASSERT_MESSAGE(std::find(objectPendingEvents.begin(), objectPendingEvents.end(), pEvent) == objectPendingEvents.end(), "Event was already in the pending list during %s", __FUNCTION__);
 					objectPendingEvents.push_back(pEvent);
 					requestResult = ERequestStatus::Success;
 				}
+
+				break;
 			}
-			break;
-		case EEventType::Stop:
+		case EActionType::Stop:
 			{
 				pObject->StopEvent(m_id);
 				requestResult = ERequestStatus::SuccessDoNotTrack;
+
+				break;
 			}
-			break;
-		case EEventType::Pause:
-		case EEventType::Resume:
+		case EActionType::Pause: // Intentional fall-through.
+		case EActionType::Resume:
 			{
 				FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 
-				if (m_pEventDescription == nullptr)
+				bool const shouldPause = (m_actionType == EActionType::Pause);
+				int const capacity = 32;
+				Events const& events = pObject->GetEvents();
+
+				for (auto const pEvent : events)
 				{
-					fmodResult = CBaseObject::s_pSystem->getEventByID(&m_guid, &m_pEventDescription);
-					ASSERT_FMOD_OK;
-				}
-
-				if (m_pEventDescription != nullptr)
-				{
-					CRY_ASSERT(pEvent->GetInstance() == nullptr);
-
-					bool const shouldPause = (m_eventType == EEventType::Pause);
-					int const capacity = 32;
-					int count = 0;
-
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-					fmodResult = m_pEventDescription->getInstanceCount(&count);
-					ASSERT_FMOD_OK;
-					CRY_ASSERT_MESSAGE(count < capacity, "Instance count (%d) is higher or equal than array capacity (%d) during %s", count, capacity, __FUNCTION__);
-#endif          // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
-
-					FMOD::Studio::EventInstance* eventInstances[capacity];
-					fmodResult = m_pEventDescription->getInstanceList(eventInstances, capacity, &count);
-					ASSERT_FMOD_OK;
-
-					for (int i = 0; i < count; ++i)
+					if (pEvent->GetId() == m_id)
 					{
-						auto const pInstance = eventInstances[i];
-
-						if (pInstance != nullptr)
+						if (m_pEventDescription == nullptr)
 						{
-							fmodResult = pInstance->setPaused(shouldPause);
+							fmodResult = CBaseObject::s_pSystem->getEventByID(&m_guid, &m_pEventDescription);
 							ASSERT_FMOD_OK;
 						}
-					}
 
-					requestResult = ERequestStatus::SuccessDoNotTrack;
+						if (m_pEventDescription != nullptr)
+						{
+							int count = 0;
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+							fmodResult = m_pEventDescription->getInstanceCount(&count);
+							ASSERT_FMOD_OK;
+							CRY_ASSERT_MESSAGE(count < capacity, "Instance count (%d) is higher or equal than array capacity (%d) during %s", count, capacity, __FUNCTION__);
+#endif              // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
+							FMOD::Studio::EventInstance* eventInstances[capacity];
+							fmodResult = m_pEventDescription->getInstanceList(eventInstances, capacity, &count);
+							ASSERT_FMOD_OK;
+
+							for (int i = 0; i < count; ++i)
+							{
+								auto const pInstance = eventInstances[i];
+
+								if (pInstance != nullptr)
+								{
+									fmodResult = pInstance->setPaused(shouldPause);
+									ASSERT_FMOD_OK;
+								}
+							}
+
+							requestResult = ERequestStatus::SuccessDoNotTrack;
+						}
+					}
 				}
+
+				break;
 			}
-			break;
 		}
 	}
 	else
@@ -207,6 +222,16 @@ ERequestStatus CTrigger::Execute(IObject* const pIObject, IEvent* const pIEvent)
 	}
 
 	return requestResult;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CTrigger::Stop(IObject* const pIObject)
+{
+	if (pIObject != nullptr)
+	{
+		auto const pObject = static_cast<CBaseObject*>(pIObject);
+		pObject->StopEvent(m_id);
+	}
 }
 } // namespace Fmod
 } // namespace Impl

@@ -7,7 +7,6 @@
 
 namespace CryAudio
 {
-class CEvent;
 class CStandaloneFile;
 
 namespace Impl
@@ -23,7 +22,6 @@ class CTrigger;
 
 namespace SoundEngine
 {
-using FnEventCallback = void (*)(CryAudio::CEvent&);
 using FnStandaloneFileCallback = void (*)(CryAudio::CStandaloneFile&, char const*);
 
 // Global events
@@ -45,14 +43,10 @@ const SampleId LoadSampleFromMemory(void* pMemory, const size_t size, const stri
 void           UnloadSample(const SampleId id);
 
 // Events
-ERequestStatus ExecuteEvent(CObject* const pObject, CTrigger const* const pTrigger, CEvent* const pEvent);
+ERequestStatus ExecuteTrigger(CObject* const pObject, CTrigger const* const pTrigger, TriggerInstanceId const triggerInstanceId);
 ERequestStatus PlayFile(CObject* const pObject, CStandaloneFile* const pStandaloneFile);
 
-// stops all the events associated with this trigger
-bool StopTrigger(CTrigger const* const pTrigger);
-
 // Callbacks
-void RegisterEventFinishedCallback(FnEventCallback pCallbackFunction);
 void RegisterStandaloneFileFinishedCallback(FnStandaloneFileCallback pCallbackFunction);
 } // namespace SoundEngine
 } // namespace SDL_mixer

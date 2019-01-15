@@ -20,6 +20,8 @@ public:
 
 	void    RegisterVariables();
 	void    UnregisterVariables();
+
+	int m_eventPoolSize = 0;
 };
 
 extern CCVars g_cvars;

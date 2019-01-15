@@ -4,6 +4,7 @@
 #include "Trigger.h"
 #include "BaseObject.h"
 #include "Event.h"
+#include "Impl.h"
 
 #include <Logger.h>
 
@@ -14,44 +15,51 @@ namespace Impl
 namespace Adx2
 {
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CTrigger::Execute(IObject* const pIObject, IEvent* const pIEvent)
+ERequestStatus CTrigger::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
 {
 	ERequestStatus requestResult = ERequestStatus::Failure;
 
-	if ((pIObject != nullptr) && (pIEvent != nullptr))
+	if (pIObject != nullptr)
 	{
 		auto const pObject = static_cast<CBaseObject*>(pIObject);
-		auto const pEvent = static_cast<CEvent*>(pIEvent);
 
 		switch (m_triggerType)
 		{
 		case ETriggerType::Trigger:
 			{
-				switch (m_eventType)
+				switch (m_actionType)
 				{
-				case EEventType::Start:
+				case EActionType::Start:
 					{
+						auto const pEvent = g_pImpl->ConstructEvent(triggerInstanceId);
+
 						if (pObject->StartEvent(this, pEvent))
 						{
-							requestResult = ERequestStatus::Success;
+							pEvent->SetTriggerId(m_id);
+
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+							pEvent->SetName(m_cueName.c_str());
+#endif              // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+
+							requestResult = ((pEvent->GetFlags() & EEventFlags::IsVirtual) != 0) ? ERequestStatus::SuccessVirtual : ERequestStatus::Success;
 						}
 
 						break;
 					}
-				case EEventType::Stop:
+				case EActionType::Stop:
 					{
 						pObject->StopEvent(m_id);
 						requestResult = ERequestStatus::SuccessDoNotTrack;
 
 						break;
 					}
-				case EEventType::Pause:
+				case EActionType::Pause:
 					{
 						pObject->PauseEvent(m_id);
 						requestResult = ERequestStatus::SuccessDoNotTrack;
 						break;
 					}
-				case EEventType::Resume:
+				case EActionType::Resume:
 					{
 						pObject->ResumeEvent(m_id);
 						requestResult = ERequestStatus::SuccessDoNotTrack;
@@ -83,6 +91,16 @@ ERequestStatus CTrigger::Execute(IObject* const pIObject, IEvent* const pIEvent)
 	}
 
 	return requestResult;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CTrigger::Stop(IObject* const pIObject)
+{
+	if (pIObject != nullptr)
+	{
+		auto const pObject = static_cast<CBaseObject*>(pIObject);
+		pObject->StopEvent(m_id);
+	}
 }
 } // namespace Adx2
 } // namespace Impl

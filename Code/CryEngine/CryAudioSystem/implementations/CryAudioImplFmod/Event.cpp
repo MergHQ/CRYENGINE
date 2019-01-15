@@ -7,7 +7,6 @@
 #include "EnvironmentBus.h"
 #include "EnvironmentParameter.h"
 #include "Trigger.h"
-#include <SharedData.h>
 #include <CryAudio/IAudioSystem.h>
 
 namespace CryAudio
@@ -24,17 +23,12 @@ CEvent::~CEvent()
 		FMOD_RESULT const fmodResult = m_pInstance->release();
 		ASSERT_FMOD_OK_OR_INVALID_HANDLE;
 	}
-
-	if (m_pObject != nullptr)
-	{
-		m_pObject->RemoveEvent(this);
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEvent::SetInternalParameters()
 {
-	m_pInstance->getParameter("occlusion", &m_pOcclusionParameter);
+	m_pInstance->getParameter(s_szOcclusionParameterName, &m_pOcclusionParameter);
 	m_pInstance->getParameter(s_szAbsoluteVelocityParameterName, &m_pAbsoluteVelocityParameter);
 }
 
@@ -246,21 +240,7 @@ void CEvent::UpdateVirtualState()
 		float audibility = 0.0f;
 		m_pMasterTrack->getAudibility(&audibility);
 
-		EEventState const state = (audibility < 0.01f) ? EEventState::Virtual : EEventState::Playing;
-
-		if (m_state != state)
-		{
-			m_state = state;
-
-			if (m_state == EEventState::Virtual)
-			{
-				gEnv->pAudioSystem->ReportVirtualizedEvent(*m_pEvent);
-			}
-			else
-			{
-				gEnv->pAudioSystem->ReportPhysicalizedEvent(*m_pEvent);
-			}
-		}
+		m_state = (audibility < 0.01f) ? EEventState::Virtual : EEventState::Playing;
 	}
 	else
 	{
@@ -279,11 +259,17 @@ void CEvent::SetAbsoluteVelocity(float const velocity)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CEvent::Stop()
+void CEvent::StopAllowFadeOut()
+{
+	FMOD_RESULT const fmodResult = m_pInstance->stop(FMOD_STUDIO_STOP_ALLOWFADEOUT);
+	ASSERT_FMOD_OK;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEvent::StopImmediate()
 {
 	FMOD_RESULT const fmodResult = m_pInstance->stop(FMOD_STUDIO_STOP_IMMEDIATE);
 	ASSERT_FMOD_OK;
-	return ERequestStatus::Success;
 }
 } // namespace Fmod
 } // namespace Impl

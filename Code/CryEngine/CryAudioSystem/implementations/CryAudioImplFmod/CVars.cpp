@@ -14,36 +14,43 @@ namespace Fmod
 void CCVars::RegisterVariables()
 {
 #if CRY_PLATFORM_WINDOWS
+	m_eventPoolSize = 256;
 	m_maxChannels = 512;
 	m_velocityTrackingThreshold = 0.1f;
 	#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_DURANGO
+	m_eventPoolSize = 256;
 	m_maxChannels = 512;
 	m_velocityTrackingThreshold = 0.1f;
 	#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_ORBIS
+	m_eventPoolSize = 256;
 	m_maxChannels = 512;
 	m_velocityTrackingThreshold = 0.1f;
 	#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_MAC
+	m_eventPoolSize = 256;
 	m_maxChannels = 512;
 	m_velocityTrackingThreshold = 0.1f;
 	#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_LINUX
+	m_eventPoolSize = 256;
 	m_maxChannels = 512;
 	m_velocityTrackingThreshold = 0.1f;
 	#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 #elif defined(CRY_PLATFORM_IOS)
+	m_eventPoolSize = 256;
 	m_maxChannels = 512;
 	m_velocityTrackingThreshold = 0.1f;
 	#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_ANDROID
+	m_eventPoolSize = 256;
 	m_maxChannels = 512;
 	m_velocityTrackingThreshold = 0.1f;
 	#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
@@ -51,6 +58,11 @@ void CCVars::RegisterVariables()
 #else
 	#error "Undefined platform."
 #endif
+
+	REGISTER_CVAR2("s_FmodEventPoolSize", &m_eventPoolSize, m_eventPoolSize, VF_REQUIRE_APP_RESTART,
+	               "Sets the number of preallocated events.\n"
+	               "Usage: s_FmodEventPoolSize [0/...]\n"
+	               "Default PC: 256, XboxOne: 256, PS4: 256, Mac: 256, Linux: 256, iOS: 256, Android: 256\n");
 
 	REGISTER_CVAR2("s_FmodVelocityTrackingThreshold", &m_velocityTrackingThreshold, m_velocityTrackingThreshold, VF_CHEAT | VF_CHEAT_NOCHECK,
 	               "An object has to change its velocity by at least this amount to issue an \"absolute_velocity\" parameter update request to the audio system.\n"
@@ -120,6 +132,7 @@ void CCVars::UnregisterVariables()
 
 	if (pConsole != nullptr)
 	{
+		pConsole->UnregisterVariable("s_FmodEventPoolSize");
 		pConsole->UnregisterVariable("s_FmodVelocityTrackingThreshold");
 		pConsole->UnregisterVariable("s_FmodPositionUpdateThresholdMultiplier");
 		pConsole->UnregisterVariable("s_FmodMaxChannels");

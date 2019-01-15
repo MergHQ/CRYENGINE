@@ -25,7 +25,7 @@
 #include <CryAudio/IAudioSystem.h>
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-	#include "Debug.h"
+	#include <DebugStyle.h>
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
@@ -45,6 +45,9 @@ SPoolSizes g_poolSizesLevelSpecific;
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 SPoolSizes g_debugPoolSizes;
+Events g_constructedEvents;
+uint16 g_objectPoolSize = 0;
+uint16 g_eventPoolSize = 0;
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
@@ -219,15 +222,22 @@ CImpl::CImpl()
 	, m_name("Adx2 (" CRI_ATOM_VER_NUM ")")
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 {
+	g_pImpl = this;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::Init(uint16 const objectPoolSize, uint16 const eventPoolSize)
+ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 {
 	ERequestStatus result = ERequestStatus::Success;
 
+	if (g_cvars.m_eventPoolSize < 1)
+	{
+		g_cvars.m_eventPoolSize = 1;
+		Cry::Audio::Log(ELogType::Warning, R"(Event pool size must be at least 1. Forcing the cvar "s_Adx2EventPoolSize" to 1!)");
+	}
+
 	g_constructedObjects.reserve(static_cast<size_t>(objectPoolSize));
-	AllocateMemoryPools(objectPoolSize, eventPoolSize);
+	AllocateMemoryPools(objectPoolSize, static_cast<uint16>(g_cvars.m_eventPoolSize));
 
 	m_regularSoundBankFolder = AUDIO_SYSTEM_DATA_ROOT;
 	m_regularSoundBankFolder += "/";
@@ -237,6 +247,11 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize, uint16 const eventPoolSi
 	m_localizedSoundBankFolder = m_regularSoundBankFolder;
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	g_constructedEvents.reserve(static_cast<size_t>(g_cvars.m_eventPoolSize));
+
+	g_objectPoolSize = objectPoolSize;
+	g_eventPoolSize = static_cast<uint16>(g_cvars.m_eventPoolSize);
+
 	LoadAcbInfos(m_regularSoundBankFolder);
 
 	if (ICVar* pCVar = gEnv->pConsole->GetCVar("g_languageAudio"))
@@ -289,6 +304,7 @@ void CImpl::ShutDown()
 void CImpl::Release()
 {
 	delete this;
+	g_pImpl = nullptr;
 	g_cvars.UnregisterVariables();
 
 	FreeMemoryPools();
@@ -484,10 +500,8 @@ void CImpl::SetGlobalSwitchState(ISwitchStateConnection* const pISwitchStateConn
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
+void CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 {
-	ERequestStatus result = ERequestStatus::Failure;
-
 	if (pFileInfo != nullptr)
 	{
 		auto const pFileData = static_cast<CFile*>(pFileInfo->pImplData);
@@ -507,8 +521,6 @@ ERequestStatus CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 				string name = pFileInfo->szFileName;
 				PathUtil::RemoveExtension(name);
 				g_acbHandles[StringToId(name.c_str())] = pFileData->pAcb;
-
-				result = ERequestStatus::Success;
 			}
 			else
 			{
@@ -517,18 +529,14 @@ ERequestStatus CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 		}
 		else
 		{
-			Cry::Audio::Log(ELogType::Error, "Invalid FileData passed to the Adx2 implementation of RegisterInMemoryFile");
+			Cry::Audio::Log(ELogType::Error, "Invalid FileData passed to the Adx2 implementation of %s", __FUNCTION__);
 		}
 	}
-
-	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
+void CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 {
-	ERequestStatus result = ERequestStatus::Failure;
-
 	if (pFileInfo != nullptr)
 	{
 		auto const pFileData = static_cast<CFile*>(pFileInfo->pImplData);
@@ -536,15 +544,12 @@ ERequestStatus CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 		if ((pFileData != nullptr) && (pFileData->pAcb != nullptr))
 		{
 			criAtomExAcb_Release(pFileData->pAcb);
-			result = ERequestStatus::Success;
 		}
 		else
 		{
-			Cry::Audio::Log(ELogType::Error, "Invalid FileData passed to the Adx2 implementation of UnregisterInMemoryFile");
+			Cry::Audio::Log(ELogType::Error, "Invalid FileData passed to the Adx2 implementation of %s", __FUNCTION__);
 		}
 	}
-
-	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -578,8 +583,6 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const pRootNode, SFileInfo* const
 			pFileInfo->pImplData = nullptr;
 		}
 	}
-
-	// To do: Handle DSP bus settings.
 
 	return result;
 }
@@ -633,6 +636,13 @@ IObject* CImpl::ConstructObject(CTransformation const& transformation, char cons
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CObject");
 	auto const pObject = new CObject(transformation);
+
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	if (szName != nullptr)
+	{
+		pObject->SetName(szName);
+	}
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 	if (!stl::push_back_unique(g_constructedObjects, pObject))
 	{
@@ -691,20 +701,6 @@ void CImpl::DestructListener(IListener* const pIListener)
 }
 
 //////////////////////////////////////////////////////////////////////////
-IEvent* CImpl::ConstructEvent(CryAudio::CEvent& event)
-{
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CEvent");
-	return static_cast<IEvent*>(new CEvent(event));
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructEvent(IEvent const* const pIEvent)
-{
-	CRY_ASSERT_MESSAGE(pIEvent != nullptr, "pIEvent is nullptr during %s", __FUNCTION__);
-	delete pIEvent;
-}
-
-//////////////////////////////////////////////////////////////////////////
 IStandaloneFileConnection* CImpl::ConstructStandaloneFileConnection(CryAudio::CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITriggerConnection const* pITriggerConnection /*= nullptr*/)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CStandaloneFile");
@@ -738,27 +734,27 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
 		char const* const szCueSheetName = pRootNode->getAttr(s_szCueSheetAttribute);
 
-		EEventType eventType = EEventType::Start;
+		EActionType actionType = EActionType::Start;
 		char const* const szEventType = pRootNode->getAttr(s_szTypeAttribute);
 
 		if ((szEventType != nullptr) && (szEventType[0] != '\0'))
 		{
 			if (_stricmp(szEventType, s_szStopValue) == 0)
 			{
-				eventType = EEventType::Stop;
+				actionType = EActionType::Stop;
 			}
 			else if (_stricmp(szEventType, s_szPauseValue) == 0)
 			{
-				eventType = EEventType::Pause;
+				actionType = EActionType::Pause;
 			}
 			else if (_stricmp(szEventType, s_szResumeValue) == 0)
 			{
-				eventType = EEventType::Resume;
+				actionType = EActionType::Resume;
 			}
 		}
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-		if (eventType == EEventType::Start)
+		if (actionType == EActionType::Start)
 		{
 			auto const iter = g_cueRadiusInfo.find(szName);
 
@@ -776,10 +772,10 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 		}
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CTrigger");
-		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, eventType, szCueSheetName));
+		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, actionType, szCueSheetName));
 #else
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CTrigger");
-		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, eventType));
+		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, actionType));
 #endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 	}
 	else if (_stricmp(pRootNode->getTag(), s_szSnapshotTag) == 0)
@@ -790,9 +786,9 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CTrigger");
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(szName), szName, 0, ETriggerType::Snapshot, EEventType::Start, "", static_cast<CriSint32>(changeoverTime)));
+		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(szName), szName, 0, ETriggerType::Snapshot, EActionType::Start, "", static_cast<CriSint32>(changeoverTime)));
 #else
-		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(szName), szName, 0, ETriggerType::Snapshot, EEventType::Start, static_cast<CriSint32>(changeoverTime)));
+		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(szName), szName, 0, ETriggerType::Snapshot, EActionType::Start, static_cast<CriSint32>(changeoverTime)));
 #endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 	}
 	else
@@ -816,7 +812,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 		char const* const szCueSheetName = pTriggerInfo->cueSheet.c_str();
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CTrigger");
-		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, EEventType::Start, szCueSheetName));
+		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, EActionType::Start, szCueSheetName));
 	}
 
 	return pITriggerConnection;
@@ -1071,6 +1067,46 @@ void CImpl::SetLanguage(char const* const szLanguage)
 }
 
 //////////////////////////////////////////////////////////////////////////
+CEvent* CImpl::ConstructEvent(TriggerInstanceId const triggerInstanceId)
+{
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CEvent");
+	auto const pEvent = new CEvent(triggerInstanceId);
+
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	g_constructedEvents.push_back(pEvent);
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+
+	return pEvent;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::DestructEvent(CEvent const* const pEvent)
+{
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	CRY_ASSERT_MESSAGE(pEvent != nullptr, "pEvent is nullpter during %s", __FUNCTION__);
+
+	auto iter(g_constructedEvents.begin());
+	auto const iterEnd(g_constructedEvents.cend());
+
+	for (; iter != iterEnd; ++iter)
+	{
+		if ((*iter) == pEvent)
+		{
+			if (iter != (iterEnd - 1))
+			{
+				(*iter) = g_constructedEvents.back();
+			}
+
+			g_constructedEvents.pop_back();
+			break;
+		}
+	}
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+
+	delete pEvent;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
 {
 }
@@ -1277,7 +1313,8 @@ void DrawMemoryPoolInfo(
 	float& posY,
 	stl::SPoolMemoryUsage const& mem,
 	stl::SMemoryUsage const& pool,
-	char const* const szType)
+	char const* const szType,
+	uint16 const poolSize)
 {
 	CryFixedStringT<MaxMiscStringLength> memUsedString;
 
@@ -1301,15 +1338,17 @@ void DrawMemoryPoolInfo(
 		memAllocString.Format("%" PRISIZE_T " KiB", mem.nAlloc >> 10);
 	}
 
-	posY += g_debugSystemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false,
-	                    "[%s] In Use: %" PRISIZE_T " | Constructed: %" PRISIZE_T " (%s) | Memory Pool: %s",
-	                    szType, pool.nUsed, pool.nAlloc, memUsedString.c_str(), memAllocString.c_str());
+	ColorF const color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
+
+	posY += Debug::s_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, color, false,
+	                    "[%s] Constructed: %" PRISIZE_T " (%s) | Allocated: %" PRISIZE_T " (%s) | Pool Size: %u",
+	                    szType, pool.nUsed, memUsedString.c_str(), pool.nAlloc, memAllocString.c_str(), poolSize);
 }
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo)
+void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo)
 {
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	CryModuleMemoryInfo memInfo;
@@ -1328,74 +1367,108 @@ void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY
 		memInfoString.Format("%s (Total Memory: %u KiB)", m_name.c_str(), memAlloc >> 10);
 	}
 
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemHeaderFontSize, g_debugSystemColorHeader.data(), false, memInfoString.c_str());
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemHeaderFontSize, Debug::s_globalColorHeader, false, memInfoString.c_str());
+	posY += Debug::s_systemHeaderLineSpacerHeight;
 
 	if (showDetailedInfo)
 	{
 		{
 			auto& allocator = CObject::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Objects");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Objects", g_objectPoolSize);
 		}
 
 		{
 			auto& allocator = CEvent::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Events");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Cues", g_eventPoolSize);
 		}
 
 		if (g_debugPoolSizes.triggers > 0)
 		{
 			auto& allocator = CTrigger::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Triggers");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Triggers", g_poolSizes.triggers);
 		}
 
 		if (g_debugPoolSizes.parameters > 0)
 		{
 			auto& allocator = CParameter::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Parameters");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Parameters", g_poolSizes.parameters);
 		}
 
 		if (g_debugPoolSizes.switchStates > 0)
 		{
 			auto& allocator = CSwitchState::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "SwitchStates");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "SwitchStates", g_poolSizes.switchStates);
 		}
 
 		if (g_debugPoolSizes.environments > 0)
 		{
 			auto& allocator = CEnvironment::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Environments");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Environments", g_poolSizes.environments);
 		}
 
 		if (g_debugPoolSizes.settings > 0)
 		{
 			auto& allocator = CSetting::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Settings");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Settings", g_poolSizes.settings);
 		}
 
 		if (g_debugPoolSizes.files > 0)
 		{
 			auto& allocator = CFile::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Files");
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Files", g_poolSizes.files);
 		}
 	}
 
-	posY += g_debugSystemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "DSP Bus Setting: %s", g_debugCurrentDspBusSettingName.c_str());
+	size_t const numEvents = g_constructedEvents.size();
 
-	if (g_numObjectsWithDoppler > 0)
-	{
-		posY += g_debugSystemLineHeight;
-		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Objects with Doppler: %u", g_numObjectsWithDoppler);
-	}
+	posY += Debug::s_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextSecondary, false, "Cues: %3" PRISIZE_T " | Objects with Doppler: %u | DSP Bus Setting: %s",
+	                    numEvents, g_numObjectsWithDoppler, g_debugCurrentDspBusSettingName.c_str());
 
 	Vec3 const& listenerPosition = g_pListener->GetPosition();
 	Vec3 const& listenerDirection = g_pListener->GetTransformation().GetForward();
 	float const listenerVelocity = g_pListener->GetVelocity().GetLength();
 	char const* const szName = g_pListener->GetName();
 
-	posY += g_debugSystemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorListenerActive.data(), false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s",
+	posY += Debug::s_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorListenerActive, false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s",
 	                    szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const
+{
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(szTextFilter);
+	lowerCaseSearchString.MakeLower();
+
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "Adx2 Cues [%" PRISIZE_T "]", g_constructedEvents.size());
+	posY += Debug::s_listHeaderLineHeight;
+
+	for (auto const pEvent : g_constructedEvents)
+	{
+		Vec3 const& position = pEvent->GetObject()->GetTransformation().GetPosition();
+		float const distance = position.GetDistance(g_pListener->GetPosition());
+
+		if ((debugDistance <= 0.0f) || ((debugDistance > 0.0f) && (distance < debugDistance)))
+		{
+			char const* const szTriggerName = pEvent->GetName();
+			CryFixedStringT<MaxControlNameLength> lowerCaseTriggerName(szTriggerName);
+			lowerCaseTriggerName.MakeLower();
+			bool const draw = ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseTriggerName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos));
+
+			if (draw)
+			{
+				ColorF const color = ((pEvent->GetFlags() & EEventFlags::IsVirtual) != 0) ? Debug::s_globalColorVirtual : Debug::s_listColorItemActive;
+				auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize, color, false, "%s on %s", szTriggerName, pEvent->GetObject()->GetName());
+
+				posY += Debug::s_listLineHeight;
+			}
+		}
+	}
+
+	posX += 600.0f;
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 }
 } // namespace Adx2

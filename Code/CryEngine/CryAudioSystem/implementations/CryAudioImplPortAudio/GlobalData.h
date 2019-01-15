@@ -14,6 +14,7 @@ namespace PortAudio
 static constexpr char const* s_szImplFolderName = "portaudio";
 
 // XML tags
+static constexpr char const* s_szEventTag = "Event";
 static constexpr char const* s_szFileTag = "Sample";
 
 // XML attributes

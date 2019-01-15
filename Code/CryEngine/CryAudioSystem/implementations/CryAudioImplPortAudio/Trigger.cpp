@@ -4,6 +4,7 @@
 #include "Trigger.h"
 #include "Object.h"
 #include "Event.h"
+#include "Impl.h"
 
 #include <Logger.h>
 
@@ -14,17 +15,18 @@ namespace Impl
 namespace PortAudio
 {
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CTrigger::Execute(IObject* const pIObject, IEvent* const pIEvent)
+ERequestStatus CTrigger::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
 {
 	ERequestStatus requestResult = ERequestStatus::Failure;
 
-	if ((pIObject != nullptr) && (pIEvent != nullptr))
+	if (pIObject != nullptr)
 	{
 		auto const pObject = static_cast<CObject*>(pIObject);
-		auto const pEvent = static_cast<CEvent*>(pIEvent);
 
 		if (eventType == EEventType::Start)
 		{
+			CEvent* const pEvent = g_pImpl->ConstructEvent(triggerInstanceId);
+
 			requestResult = pEvent->Execute(
 				numLoops,
 				sampleRate,
@@ -35,6 +37,7 @@ ERequestStatus CTrigger::Execute(IObject* const pIObject, IEvent* const pIEvent)
 			{
 				pEvent->pObject = pObject;
 				pEvent->pathId = pathId;
+				pEvent->SetName(m_name.c_str());
 				pObject->RegisterEvent(pEvent);
 			}
 		}
@@ -43,7 +46,7 @@ ERequestStatus CTrigger::Execute(IObject* const pIObject, IEvent* const pIEvent)
 			pObject->StopEvent(pathId);
 
 			// Return failure here so the audio system does not keep track of this event.
-			requestResult = ERequestStatus::Failure;
+			requestResult = ERequestStatus::SuccessDoNotTrack;
 		}
 	}
 	else
@@ -52,6 +55,16 @@ ERequestStatus CTrigger::Execute(IObject* const pIObject, IEvent* const pIEvent)
 	}
 
 	return requestResult;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CTrigger::Stop(IObject* const pIObject)
+{
+	if (pIObject != nullptr)
+	{
+		auto const pObject = static_cast<CObject*>(pIObject);
+		pObject->StopEvent(pathId);
+	}
 }
 } // namespace PortAudio
 } // namespace Impl

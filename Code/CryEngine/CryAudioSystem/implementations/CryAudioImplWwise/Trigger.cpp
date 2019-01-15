@@ -21,9 +21,8 @@ void EndEventCallback(AkCallbackType callbackType, AkCallbackInfo* pCallbackInfo
 {
 	if ((callbackType == AK_EndOfEvent) && !g_pImpl->IsToBeReleased() && (pCallbackInfo->pCookie != nullptr))
 	{
-		auto const pEvent = static_cast<CEvent* const>(pCallbackInfo->pCookie);
+		auto const pEvent = static_cast<CEvent*>(pCallbackInfo->pCookie);
 		pEvent->m_toBeRemoved = true;
-		gEnv->pAudioSystem->ReportFinishedEvent(pEvent->m_event, true);
 	}
 }
 
@@ -40,26 +39,22 @@ void PrepareEventCallback(
 	if (pEvent != nullptr)
 	{
 		pEvent->m_id = eventId;
-		gEnv->pAudioSystem->ReportFinishedEvent(pEvent->m_event, wwiseResult == AK_Success);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CTrigger::Execute(IObject* const pIObject, IEvent* const pIEvent)
+ERequestStatus CTrigger::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
-	if ((pIObject != nullptr) && (pIEvent != nullptr))
+	if (pIObject != nullptr)
 	{
 		auto const pObject = static_cast<CObject*>(pIObject);
-		auto const pEvent = static_cast<CEvent*>(pIEvent);
+		CEvent* const pEvent = g_pImpl->ConstructEvent(triggerInstanceId);
+		AkGameObjectID const objectId = pObject->GetId();
 
-		// If the user executes a trigger on the global object we want to post events only to that particular object and not globally!
-		AkGameObjectID objectId = g_globalObjectId;
-
-		if (pObject->GetId() != AK_INVALID_GAME_OBJECT)
+		if (objectId != g_globalObjectId)
 		{
-			objectId = pObject->GetId();
 			pObject->PostEnvironmentAmounts();
 		}
 
@@ -77,14 +72,12 @@ ERequestStatus CTrigger::Execute(IObject* const pIObject, IEvent* const pIEvent)
 #endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 			pEvent->m_id = id;
+			pEvent->m_triggerId = m_id;
 			pEvent->m_pObject = pObject;
 			pEvent->m_maxAttenuation = m_maxAttenuation;
 
 			pObject->SetDistanceToListener();
-			pEvent->SetInitialVirtualState(pObject->GetDistanceToListener());
-
 			pObject->AddEvent(pEvent);
-			pObject->SetNeedsToUpdateVirtualStates(pObject->GetId() != g_globalObjectId);
 
 			result = (pEvent->m_state == EEventState::Virtual) ? ERequestStatus::SuccessVirtual : ERequestStatus::Success;
 		}
@@ -92,14 +85,33 @@ ERequestStatus CTrigger::Execute(IObject* const pIObject, IEvent* const pIEvent)
 		{
 			// if posting an Event failed, try to prepare it, if it isn't prepared already
 			Cry::Audio::Log(ELogType::Warning, "Failed to Post Wwise event %" PRISIZE_T, pEvent->m_id);
+			g_pImpl->DestructEvent(pEvent);
 		}
 	}
 	else
 	{
-		Cry::Audio::Log(ELogType::Error, "Invalid AudioObjectData, TriggerData or EventData passed to the Wwise implementation of ExecuteTrigger.");
+		Cry::Audio::Log(ELogType::Error, "Invalid object passed to the Wwise implementation of %s", __FUNCTION__);
 	}
 
 	return result;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CTrigger::Stop(IObject* const pIObject)
+{
+	if (pIObject != nullptr)
+	{
+		auto const pObject = static_cast<CObject*>(pIObject);
+		Events const& events = pObject->GetEvents();
+
+		for (auto const pEvent : events)
+		{
+			if (pEvent->m_triggerId == m_id)
+			{
+				pEvent->Stop();
+			}
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -115,15 +127,15 @@ ERequestStatus CTrigger::Unload() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CTrigger::LoadAsync(IEvent* const pIEvent) const
+ERequestStatus CTrigger::LoadAsync(TriggerInstanceId const triggerInstanceId) const
 {
-	return SetLoadedAsync(pIEvent, true);
+	return SetLoadedAsync(triggerInstanceId, true);
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CTrigger::UnloadAsync(IEvent* const pIEvent) const
+ERequestStatus CTrigger::UnloadAsync(TriggerInstanceId const triggerInstanceId) const
 {
-	return SetLoadedAsync(pIEvent, false);
+	return SetLoadedAsync(triggerInstanceId, false);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -151,43 +163,34 @@ ERequestStatus CTrigger::SetLoaded(bool const bLoad) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CTrigger::SetLoadedAsync(IEvent* const pIEvent, bool const bLoad) const
+ERequestStatus CTrigger::SetLoadedAsync(TriggerInstanceId const triggerInstanceId, bool const bLoad) const
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
-	CEvent* const pEvent = static_cast<CEvent*>(pIEvent);
+	CEvent* const pEvent = g_pImpl->ConstructEvent(triggerInstanceId);
+	AkUniqueID id = m_id;
 
-	if (pEvent != nullptr)
+	AKRESULT const wwiseResult = AK::SoundEngine::PrepareEvent(
+		bLoad ? AK::SoundEngine::Preparation_Load : AK::SoundEngine::Preparation_Unload,
+		&id,
+		1,
+		&PrepareEventCallback,
+		pEvent);
+
+	if (IS_WWISE_OK(wwiseResult))
 	{
-		AkUniqueID id = m_id;
-		AKRESULT const wwiseResult = AK::SoundEngine::PrepareEvent(
-			bLoad ? AK::SoundEngine::Preparation_Load : AK::SoundEngine::Preparation_Unload,
-			&id,
-			1,
-			&PrepareEventCallback,
-			pEvent);
-
-		if (IS_WWISE_OK(wwiseResult))
-		{
-			pEvent->m_id = m_id;
-			pEvent->m_state = EEventState::Unloading;
-			result = ERequestStatus::Success;
-		}
-		else
-		{
-			Cry::Audio::Log(
-				ELogType::Warning,
-				"Wwise - PrepareEvent with %s failed for Wwise event %" PRISIZE_T " with AKRESULT: %d",
-				bLoad ? "Preparation_Load" : "Preparation_Unload",
-				m_id,
-				wwiseResult);
-		}
+		pEvent->m_id = m_id; // TODO: Clarify why m_id and not id.
+		pEvent->m_state = EEventState::Unloading;
+		result = ERequestStatus::Success;
 	}
 	else
 	{
-		Cry::Audio::Log(ELogType::Error,
-		                "Wwise - Invalid IEvent passed to the Wwise implementation of %sTriggerAsync",
-		                bLoad ? "Load" : "Unprepare");
+		Cry::Audio::Log(
+			ELogType::Warning,
+			"Wwise - PrepareEvent with %s failed for Wwise event %" PRISIZE_T " with AKRESULT: %d",
+			bLoad ? "Preparation_Load" : "Preparation_Unload",
+			m_id,
+			wwiseResult);
 	}
 
 	return result;

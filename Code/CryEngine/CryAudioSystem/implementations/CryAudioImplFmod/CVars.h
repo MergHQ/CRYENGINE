@@ -22,6 +22,7 @@ public:
 	void RegisterVariables();
 	void UnregisterVariables();
 
+	int   m_eventPoolSize = 0;
 	int   m_maxChannels = 0;
 	int   m_enableSynchronousUpdate = 1;
 

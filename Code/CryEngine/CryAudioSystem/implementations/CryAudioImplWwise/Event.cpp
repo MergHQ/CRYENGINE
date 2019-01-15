@@ -5,7 +5,6 @@
 #include "Object.h"
 
 #include <AK/SoundEngine/Common/AkSoundEngine.h>
-#include <CryAudio/IAudioSystem.h>
 
 namespace CryAudio
 {
@@ -14,16 +13,7 @@ namespace Impl
 namespace Wwise
 {
 //////////////////////////////////////////////////////////////////////////
-CEvent::~CEvent()
-{
-	if (m_pObject != nullptr)
-	{
-		m_pObject->RemoveEvent(this);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-ERequestStatus CEvent::Stop()
+void CEvent::Stop()
 {
 	switch (m_state)
 	{
@@ -35,39 +25,16 @@ ERequestStatus CEvent::Stop()
 		}
 	default:
 		{
-			// Stopping an event of this type is not supported!
-			CRY_ASSERT(false);
+			CRY_ASSERT_MESSAGE(false, "Unsupported event state during %s", __FUNCTION__);
 			break;
 		}
 	}
-
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEvent::SetInitialVirtualState(float const distance)
+void CEvent::UpdateVirtualState()
 {
-	m_state = ((m_maxAttenuation > 0.0f) && (m_maxAttenuation < distance)) ? EEventState::Virtual : EEventState::Playing;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEvent::UpdateVirtualState(float const distance)
-{
-	EEventState const state = ((m_maxAttenuation > 0.0f) && (m_maxAttenuation < distance)) ? EEventState::Virtual : EEventState::Playing;
-
-	if (m_state != state)
-	{
-		m_state = state;
-
-		if (m_state == EEventState::Virtual)
-		{
-			gEnv->pAudioSystem->ReportVirtualizedEvent(m_event);
-		}
-		else
-		{
-			gEnv->pAudioSystem->ReportPhysicalizedEvent(m_event);
-		}
-	}
+	m_state = ((m_maxAttenuation > 0.0f) && (m_maxAttenuation < m_pObject->GetDistanceToListener())) ? EEventState::Virtual : EEventState::Playing;
 }
 } // namespace Wwise
 } // namespace Impl

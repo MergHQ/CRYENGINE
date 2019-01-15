@@ -4,6 +4,7 @@
 #include "SoundEngine.h"
 #include "Common.h"
 #include "Event.h"
+#include "Impl.h"
 #include "Listener.h"
 #include "Object.h"
 #include "StandaloneFile.h"
@@ -64,58 +65,12 @@ using ChannelFinishedRequests = std::deque<int>;
 ChannelFinishedRequests g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::Count)];
 CryCriticalSection g_channelFinishedCriticalSection;
 
-SoundEngine::FnEventCallback g_fnEventFinishedCallback;
 SoundEngine::FnStandaloneFileCallback g_fnStandaloneFileFinishedCallback;
-
-//////////////////////////////////////////////////////////////////////////
-inline const SampleId GetIDFromString(const string& name)
-{
-	return CCrc32::ComputeLowercase(name.c_str());
-}
-
-//////////////////////////////////////////////////////////////////////////
-inline const SampleId GetIDFromString(char const* const szName)
-{
-	return CCrc32::ComputeLowercase(szName);
-}
-
-//////////////////////////////////////////////////////////////////////////
-inline void GetDistanceAngleToObject(CTransformation const& listener, CTransformation const& object, float& distance, float& angle)
-{
-	const Vec3 listenerToObject = object.GetPosition() - listener.GetPosition();
-
-	// Distance
-	distance = listenerToObject.len();
-
-	// Angle
-	// Project point to plane formed by the listeners position/direction
-	Vec3 n = listener.GetUp().GetNormalized();
-	Vec3 objectDir = Vec3::CreateProjection(listenerToObject, n).normalized();
-
-	// Get angle between listener position and projected point
-	const Vec3 listenerDir = listener.GetForward().GetNormalizedFast();
-	angle = RAD2DEG(asin_tpl(objectDir.Cross(listenerDir).Dot(n)));
-}
-
-//////////////////////////////////////////////////////////////////////////
-void SoundEngine::RegisterEventFinishedCallback(FnEventCallback pCallbackFunction)
-{
-	g_fnEventFinishedCallback = pCallbackFunction;
-}
 
 //////////////////////////////////////////////////////////////////////////
 void SoundEngine::RegisterStandaloneFileFinishedCallback(FnStandaloneFileCallback pCallbackFunction)
 {
 	g_fnStandaloneFileFinishedCallback = pCallbackFunction;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void EventFinishedPlaying(CryAudio::CEvent& audioEvent)
-{
-	if (g_fnEventFinishedCallback)
-	{
-		g_fnEventFinishedCallback(audioEvent);
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -128,7 +83,7 @@ void StandaloneFileFinishedPlaying(CryAudio::CStandaloneFile& standaloneFile, ch
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SoundEngine::UnloadSample(const SampleId nID)
+void SoundEngine::UnloadSample(SampleId const nID)
 {
 	Mix_Chunk* pSample = stl::find_in_map(g_sampleData, nID, nullptr);
 	if (pSample != nullptr)
@@ -147,36 +102,35 @@ void ProcessChannelFinishedRequests(ChannelFinishedRequests& queue)
 {
 	if (!queue.empty())
 	{
-		for (const int finishedChannelId : queue)
+		for (int const finishedChannelId : queue)
 		{
-			CObject* pAudioObject = g_channels[finishedChannelId].pObject;
-			if (pAudioObject)
+			CObject* const pAudioObject = g_channels[finishedChannelId].pObject;
+
+			if (pAudioObject != nullptr)
 			{
-				EventInstanceList::iterator eventsEnd = pAudioObject->m_events.end();
-				for (EventInstanceList::iterator eventsIt = pAudioObject->m_events.begin(); eventsIt != eventsEnd;)
+				for (auto const pEventInstance : pAudioObject->m_events)
 				{
-					CEvent* pEventInstance = *eventsIt;
-					EventInstanceList::iterator eventsCurrent = eventsIt;
-					++eventsIt;
-					if (pEventInstance)
+					if (pEventInstance != nullptr)
 					{
-						const ChannelList::iterator channelsEnd = pEventInstance->m_channels.end();
+						ChannelList::iterator const channelsEnd = pEventInstance->m_channels.end();
+
 						for (ChannelList::iterator channelIt = pEventInstance->m_channels.begin(); channelIt != channelsEnd; ++channelIt)
 						{
 							if (*channelIt == finishedChannelId)
 							{
 								pEventInstance->m_channels.erase(channelIt);
+
 								if (pEventInstance->m_channels.empty())
 								{
-									eventsIt = pAudioObject->m_events.erase(eventsCurrent);
-									eventsEnd = pAudioObject->m_events.end();
-									EventFinishedPlaying(pEventInstance->m_event);
+									pEventInstance->m_toBeRemoved = true;
 								}
+
 								break;
 							}
 						}
 					}
 				}
+
 				StandAloneFileInstanceList::iterator standaloneFilesEnd = pAudioObject->m_standaloneFiles.end();
 				for (StandAloneFileInstanceList::iterator standaloneFilesIt = pAudioObject->m_standaloneFiles.begin(); standaloneFilesIt != standaloneFilesEnd;)
 				{
@@ -262,12 +216,12 @@ void LoadMetadata(string const& path, bool const isLocalized)
 						{
 							if (path.empty())
 							{
-								g_samplePaths[GetIDFromString(name)] = rootDir + name;
+								g_samplePaths[StringToId(name.c_str())] = rootDir + name;
 							}
 							else
 							{
 								string const pathName = path + name;
-								g_samplePaths[GetIDFromString(pathName)] = rootDir + pathName;
+								g_samplePaths[StringToId(pathName.c_str())] = rootDir + pathName;
 							}
 						}
 					}
@@ -289,7 +243,8 @@ bool SoundEngine::Init()
 		return false;
 	}
 
-	int loadedFormats = Mix_Init(s_supportedFormats);
+	int const loadedFormats = Mix_Init(s_supportedFormats);
+
 	if ((loadedFormats & s_supportedFormats) != s_supportedFormats)
 	{
 		Cry::Audio::Log(ELogType::Error, R"(SDLMixer::Mix_Init() failed to init support for format flags %d with error "%s")", s_supportedFormats, Mix_GetError());
@@ -306,6 +261,7 @@ bool SoundEngine::Init()
 
 	g_bMuted = false;
 	Mix_Volume(-1, SDL_MIX_MAXVOLUME);
+
 	for (int i = 0; i < s_numMixChannels; ++i)
 	{
 		g_freeChannels.push(i);
@@ -355,19 +311,23 @@ void SoundEngine::Refresh()
 }
 
 //////////////////////////////////////////////////////////////////////////
-const SampleId SoundEngine::LoadSampleFromMemory(void* pMemory, const size_t size, const string& samplePath, const SampleId overrideId)
+const SampleId SoundEngine::LoadSampleFromMemory(void* pMemory, size_t const size, string const& samplePath, SampleId const overrideId)
 {
-	const SampleId id = (overrideId != 0) ? overrideId : GetIDFromString(samplePath);
+	SampleId const id = (overrideId != 0) ? overrideId : StringToId(samplePath.c_str());
 	Mix_Chunk* pSample = stl::find_in_map(g_sampleData, id, nullptr);
+
 	if (pSample != nullptr)
 	{
 		Mix_FreeChunk(pSample);
 		Cry::Audio::Log(ELogType::Warning, "Loading sample %s which had already been loaded", samplePath.c_str());
 	}
+
 	SDL_RWops* pData = SDL_RWFromMem(pMemory, size);
+
 	if (pData)
 	{
 		pSample = Mix_LoadWAV_RW(pData, 0);
+
 		if (pSample != nullptr)
 		{
 			g_sampleData[id] = pSample;
@@ -383,6 +343,7 @@ const SampleId SoundEngine::LoadSampleFromMemory(void* pMemory, const size_t siz
 	{
 		Cry::Audio::Log(ELogType::Error, R"(SDL Mixer failed to transform the audio data. Error: "%s")", SDL_GetError());
 	}
+
 	return s_invalidSampleId;
 }
 
@@ -391,6 +352,7 @@ bool LoadSampleImpl(const SampleId id, const string& samplePath)
 {
 	bool bSuccess = true;
 	Mix_Chunk* pSample = Mix_LoadWAV(samplePath.c_str());
+
 	if (pSample != nullptr)
 	{
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
@@ -410,28 +372,33 @@ bool LoadSampleImpl(const SampleId id, const string& samplePath)
 	else
 	{
 		// Sample could be inside a pak file so we need to open it manually and load it from the raw file
-		const size_t fileSize = gEnv->pCryPak->FGetSize(samplePath);
+		size_t const fileSize = gEnv->pCryPak->FGetSize(samplePath);
 		FILE* const pFile = gEnv->pCryPak->FOpen(samplePath, "rbx", ICryPak::FOPEN_HINT_DIRECT_OPERATION);
+
 		if (pFile && fileSize > 0)
 		{
 			void* const pData = CryModuleMalloc(fileSize);
 			gEnv->pCryPak->FReadRawAll(pData, fileSize, pFile);
-			const SampleId newId = SoundEngine::LoadSampleFromMemory(pData, fileSize, samplePath, id);
+			SampleId const newId = SoundEngine::LoadSampleFromMemory(pData, fileSize, samplePath, id);
+
 			if (newId == s_invalidSampleId)
 			{
 				Cry::Audio::Log(ELogType::Error, R"(SDL Mixer failed to load sample %s. Error: "%s")", samplePath.c_str(), Mix_GetError());
 				bSuccess = false;
 			}
+
 			CryModuleFree(pData);
 		}
 	}
+
 	return bSuccess;
 }
 
 //////////////////////////////////////////////////////////////////////////
 const SampleId SoundEngine::LoadSample(string const& sampleFilePath, bool const onlyMetadata, bool const isLoacalized)
 {
-	const SampleId id = GetIDFromString(sampleFilePath);
+	SampleId const id = StringToId(sampleFilePath.c_str());
+
 	if (stl::find_in_map(g_sampleData, id, nullptr) == nullptr)
 	{
 		if (onlyMetadata)
@@ -444,6 +411,7 @@ const SampleId SoundEngine::LoadSample(string const& sampleFilePath, bool const 
 			return s_invalidSampleId;
 		}
 	}
+
 	return id;
 }
 
@@ -486,8 +454,8 @@ void SoundEngine::UnMute()
 
 		if (pAudioObject != nullptr)
 		{
-			EventInstanceList::const_iterator eventIt = pAudioObject->m_events.begin();
-			EventInstanceList::const_iterator const eventEnd = pAudioObject->m_events.end();
+			EventInstances::const_iterator eventIt = pAudioObject->m_events.begin();
+			EventInstances::const_iterator const eventEnd = pAudioObject->m_events.end();
 
 			for (; eventIt != eventEnd; ++eventIt)
 			{
@@ -519,64 +487,28 @@ void SoundEngine::UnMute()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SetChannelPosition(const CTrigger* pStaticData, const int channelID, const float distance, const float angle)
-{
-	static const uint8 sdlMaxDistance = 255;
-	const float min = pStaticData->GetAttenuationMinDistance();
-	const float max = pStaticData->GetAttenuationMaxDistance();
-
-	if (min <= max)
-	{
-		uint8 nDistance = 0;
-
-		if (max >= 0.0f && distance > min)
-		{
-			if (min != max)
-			{
-				const float finalDistance = distance - min;
-				const float range = max - min;
-				nDistance = static_cast<uint8>((std::min((finalDistance / range), 1.0f) * sdlMaxDistance) + 0.5f);
-			}
-			else
-			{
-				nDistance = sdlMaxDistance;
-			}
-		}
-		//Temp code, to be reviewed during the SetChannelPosition rewrite:
-		Mix_SetDistance(channelID, nDistance);
-
-		if (pStaticData->IsPanningEnabled())
-		{
-			//Temp code, to be reviewed during the SetChannelPosition rewrite:
-			float const absAngle = fabs(angle);
-			float const frontAngle = (angle > 0.0f ? 1.0f : -1.0f) * (absAngle > 90.0f ? 180.f - absAngle : absAngle);
-			float const rightVolume = (frontAngle + 90.0f) / 180.0f;
-			float const leftVolume = 1.0f - rightVolume;
-			Mix_SetPanning(channelID,
-			               static_cast<uint8>(255.0f * leftVolume),
-			               static_cast<uint8>(255.0f * rightVolume));
-		}
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "The minimum attenuation distance value is higher than the maximum");
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const* const pTrigger, CEvent* const pEvent)
+ERequestStatus SoundEngine::ExecuteTrigger(CObject* const pObject, CTrigger const* const pTrigger, TriggerInstanceId const triggerInstanceId)
 {
 	ERequestStatus requestStatus = ERequestStatus::Failure;
 
-	if ((pObject != nullptr) && (pTrigger != nullptr) && (pEvent != nullptr))
+	if ((pObject != nullptr) && (pTrigger != nullptr))
 	{
 		EEventType const type = pTrigger->GetType();
 		SampleId const sampleId = pTrigger->GetSampleId();
 
 		if (type == EEventType::Start)
 		{
+			CEvent* const pEvent = g_pImpl->ConstructEvent(triggerInstanceId);
+
 			// Start playing samples
 			pEvent->m_pTrigger = pTrigger;
+			pEvent->m_pObject = pObject;
+			pEvent->m_triggerId = pTrigger->GetId();
+
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+			pEvent->SetName(pTrigger->GetName());
+#endif      // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+
 			Mix_Chunk* pSample = stl::find_in_map(g_sampleData, sampleId, nullptr);
 
 			if (pSample == nullptr)
@@ -759,29 +691,6 @@ ERequestStatus SoundEngine::PlayFile(CObject* const pObject, CStandaloneFile* co
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool SoundEngine::StopTrigger(CTrigger const* const pTrigger)
-{
-	bool bResult = false;
-
-	for (auto const pObject : g_objects)
-	{
-		if (pObject != nullptr)
-		{
-			for (auto const pEvent : pObject->m_events)
-			{
-				if (pEvent != nullptr && pEvent->m_pTrigger == pTrigger)
-				{
-					pEvent->Stop();
-					bResult = true;
-				}
-			}
-		}
-	}
-
-	return bResult;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void SoundEngine::Update()
 {
 	{
@@ -790,28 +699,6 @@ void SoundEngine::Update()
 	}
 
 	ProcessChannelFinishedRequests(g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::Two)]);
-
-	for (auto const pObject : g_objects)
-	{
-		if (pObject != nullptr)
-		{
-			// Get distance and angle from the listener to the object
-			float distance = 0.0f;
-			float angle = 0.0f;
-			GetDistanceAngleToObject(g_pListener->GetTransformation(), pObject->m_transformation, distance, angle);
-
-			for (auto const pEvent : pObject->m_events)
-			{
-				if (pEvent != nullptr && pEvent->m_pTrigger != nullptr)
-				{
-					for (auto const channelIndex : pEvent->m_channels)
-					{
-						SetChannelPosition(pEvent->m_pTrigger, channelIndex, distance, angle);
-					}
-				}
-			}
-		}
-	}
 }
 } // namespace SDL_mixer
 } // namespace Impl
