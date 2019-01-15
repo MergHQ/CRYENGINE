@@ -155,6 +155,8 @@ public:
 		eAT_CharacterBone,
 	};
 
+	const char*     GetLinkedToName() const override { return GetAttachTarget(); }
+
 	void            SetAttachType(const EAttachmentType attachmentType) { m_attachmentType = attachmentType; }
 	void            SetAttachTarget(const char* target)                 { m_attachmentTarget = target; }
 	EAttachmentType GetAttachType() const                               { return m_attachmentType; }
@@ -372,7 +374,7 @@ protected:
 	//! Force IEntity to the local position/angles/scale.
 	void XFormGameEntity();
 
-	void         DrawAIInfo(SDisplayContext& dc, IAIObject* aiObj);
+	void DrawAIInfo(SDisplayContext& dc, IAIObject* aiObj);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Callbacks.
