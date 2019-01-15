@@ -12,6 +12,10 @@
 
 //////////////////////////////////////////////////////////////////////////
 
+#if !CRY_PLATFORM_ORBIS
+	#define FEATURE_RENDER_VOLUMETRIC_FOG_GEOMETRY_SHADER
+#endif
+
 namespace
 {
 static const float ThresholdLengthGlobalProbe = 1.732f * (1000.0f * 0.5f);
@@ -235,13 +239,25 @@ void CVolumetricFogStage::Init()
 	const ETEX_Format fmtEmissive = eTF_R11G11B10F;
 
 	CRY_ASSERT(m_pVolFogBufDensityColor == nullptr);
+#ifdef FEATURE_RENDER_VOLUMETRIC_FOG_GEOMETRY_SHADER
 	m_pVolFogBufDensityColor = CTexture::GetOrCreateTextureObjectPtr("$VolFogBufDensityColor", 0, 0, 0, eTT_3D, uavRtFlags, fmtDensityColor);
+#else
+	m_pVolFogBufDensityColor = CTexture::GetOrCreateTextureObjectPtr("$VolFogBufDensityColor", 0, 0, 0, eTT_3D, uavFlags, fmtDensityColor);
+#endif
 
 	CRY_ASSERT(m_pVolFogBufDensity == nullptr);
+#ifdef FEATURE_RENDER_VOLUMETRIC_FOG_GEOMETRY_SHADER
 	m_pVolFogBufDensity = CTexture::GetOrCreateTextureObjectPtr("$VolFogBufDensity", 0, 0, 0, eTT_3D, uavRtFlags, fmtDensity);
+#else
+	m_pVolFogBufDensity = CTexture::GetOrCreateTextureObjectPtr("$VolFogBufDensity", 0, 0, 0, eTT_3D, uavFlags, fmtDensity);
+#endif
 
 	CRY_ASSERT(m_pVolFogBufEmissive == nullptr);
+#ifdef FEATURE_RENDER_VOLUMETRIC_FOG_GEOMETRY_SHADER
 	m_pVolFogBufEmissive = CTexture::GetOrCreateTextureObjectPtr("$VolFogBufEmissive", 0, 0, 0, eTT_3D, uavRtFlags, fmtEmissive);
+#else
+	m_pVolFogBufEmissive = CTexture::GetOrCreateTextureObjectPtr("$VolFogBufEmissive", 0, 0, 0, eTT_3D, uavFlags, fmtEmissive);
+#endif
 
 	CRY_ASSERT(m_pInscatteringVolume == nullptr);
 	m_pInscatteringVolume = CTexture::GetOrCreateTextureObjectPtr("$VolFogBufInscattering", 0, 0, 0, eTT_3D, uavFlags, eTF_Unknown);
@@ -436,15 +452,27 @@ void CVolumetricFogStage::ResizeResource(int volumeWidth, int volumeHeight, int 
 
 	CRY_ASSERT(m_pVolFogBufDensityColor);
 	CRY_ASSERT(m_pVolFogBufDensityColor->GetDstFormat() == fmtDensityColor);
+#ifdef FEATURE_RENDER_VOLUMETRIC_FOG_GEOMETRY_SHADER
 	createTexture3D(m_pVolFogBufDensityColor, uavRtFlags, fmtDensityColor);
+#else
+	createTexture3D(m_pVolFogBufDensityColor, uavFlags, fmtDensityColor);
+#endif
 
 	CRY_ASSERT(m_pVolFogBufDensity);
 	CRY_ASSERT(m_pVolFogBufDensity->GetDstFormat() == fmtDensity);
+#ifdef FEATURE_RENDER_VOLUMETRIC_FOG_GEOMETRY_SHADER
 	createTexture3D(m_pVolFogBufDensity, uavRtFlags, fmtDensity);
+#else
+	createTexture3D(m_pVolFogBufDensity, uavFlags, fmtDensity);
+#endif
 
 	CRY_ASSERT(m_pVolFogBufEmissive);
 	CRY_ASSERT(m_pVolFogBufEmissive->GetDstFormat() == fmtEmissive);
+#ifdef FEATURE_RENDER_VOLUMETRIC_FOG_GEOMETRY_SHADER
 	createTexture3D(m_pVolFogBufEmissive, uavRtFlags, fmtEmissive);
+#else
+	createTexture3D(m_pVolFogBufEmissive, uavFlags, fmtEmissive);
+#endif
 
 	CRY_ASSERT(m_pInscatteringVolume);
 	createTexture3D(m_pInscatteringVolume, uavFlags, fmtInscattering);
@@ -598,6 +626,7 @@ void CVolumetricFogStage::Update()
 	const CRenderView* pRenderView = RenderView();
 	const SRenderViewport& viewport = pRenderView->GetViewport();
 
+#ifdef FEATURE_RENDER_VOLUMETRIC_FOG_GEOMETRY_SHADER
 	m_passInjectParticleDensity.SetViewport(viewport);
 	m_passInjectParticleDensity.SetRenderTargets(
 		// Depth
@@ -608,7 +637,7 @@ void CVolumetricFogStage::Update()
 		m_pVolFogBufDensity,
 		// Color 2
 		m_pVolFogBufEmissive);
-
+#endif
 }
 
 void CVolumetricFogStage::Execute()
@@ -771,6 +800,7 @@ void CVolumetricFogStage::ExecuteInjectParticipatingMedia(const SScopedComputeCo
 	GenerateFogVolumeList();
 	ExecuteInjectFogDensity(commandList);
 
+#ifdef FEATURE_RENDER_VOLUMETRIC_FOG_GEOMETRY_SHADER
 	// inject particle's density and albedo into volume texture.
 	auto& rendItems = pRenderView->GetRenderItems(EFSLIST_FOG_VOLUME);
 	if (!rendItems.empty())
@@ -811,6 +841,7 @@ void CVolumetricFogStage::ExecuteInjectParticipatingMedia(const SScopedComputeCo
 
 		ClearDeviceOutputState();
 	}
+#endif
 }
 
 void CVolumetricFogStage::ExecuteVolumetricFog(const SScopedComputeCommandList& commandList)
