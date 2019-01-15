@@ -40,7 +40,7 @@ private:
 	TObjectsLinks    m_addedObjects;
 };
 
-//! \sa CAssetType::Create 
+//! \sa CAssetType::Create
 struct SPrefabCreateParams : CAssetType::SCreateParams
 {
 	SPrefabCreateParams(const ISelectionGroup* _pGroup)
@@ -51,7 +51,6 @@ struct SPrefabCreateParams : CAssetType::SCreateParams
 
 	const ISelectionGroup* pGroup;
 };
-
 
 /** Manages Prefab libraries and systems.
  */
@@ -74,13 +73,13 @@ public:
 	~CPrefabManager();
 
 	// Clear all prototypes
-	void ClearAll();
+	void           ClearAll();
 
-	IDataBaseItem*  CreateItem(const string& filename);
+	IDataBaseItem* CreateItem(const string& filename);
 	//virtual IDataBaseItem* CreateItem(IDataBaseLibrary* pLibrary) override { return CBaseLibraryManager::CreateItem(pLibrary); }
 
 	//! Delete item from library and manager.
-	void           DeleteItem(IDataBaseItem* pItem);
+	void DeleteItem(IDataBaseItem* pItem);
 
 	//! Load item by its GUID.
 	IDataBaseItem* LoadItem(const CryGUID& guid);
@@ -106,7 +105,7 @@ public:
 	void         ExtractAllFromPrefabs(std::vector<CPrefabObject*>& pPrefabs);
 	void         ExtractAllFromSelection();
 
-	virtual bool AttachObjectToPrefab(CPrefabObject* prefab, CBaseObject* obj);
+	virtual bool AttachObjectToPrefab(CPrefabObject* pPrefab, CBaseObject* pObject);
 
 	bool         ClosePrefabs(std::vector<CPrefabObject*>& prefabObjects);
 	bool         OpenPrefabs(std::vector<CPrefabObject*>& prefabObjects);
@@ -118,7 +117,7 @@ public:
 	int GetPrefabInstanceCount(IDataBaseItem* pPrefabItem);
 
 	//! Get prefab events
-	ILINE CPrefabEvents*      GetPrefabEvents() const { return m_pPrefabEvents; }
+	ILINE CPrefabEvents*      GetPrefabEvents() const            { return m_pPrefabEvents; }
 
 	bool                      ShouldSkipPrefabUpdate() const     { return m_skipPrefabUpdate; }
 	void                      SetSkipPrefabUpdate(bool skip)     { m_skipPrefabUpdate = skip; }
@@ -126,10 +125,9 @@ public:
 	virtual void              BeginRestoreTransaction() override { SetSkipPrefabUpdate(true); }
 	virtual void              EndRestoreTransaction() override   { SetSkipPrefabUpdate(false); }
 
-
 	virtual IDataBaseLibrary* AddLibrary(const string& library, bool bSetFullFilename = false) override;
 	virtual IDataBaseLibrary* LoadLibrary(const string& filename, bool bReload = false) override;
-	virtual string MakeFilename(const string& library) override;
+	virtual string            MakeFilename(const string& library) override;
 
 	// Allows to generate prefab assets from level files of CE5.5
 	static void importAssetsFromLevel(XmlNodeRef& levelRoot);
@@ -142,7 +140,7 @@ public:
 	//Find all instances of pPrefabItem in the current level
 	std::vector<CBaseObject*> FindAllInstancesOfItem(const CPrefabItem* pPrefabItem);
 	//Find all instances of pPrefabItem in the current level, clear the selection and add them
-	void SelectAllInstancesOfItem(const CPrefabItem* pPrefabItem);
+	void                      SelectAllInstancesOfItem(const CPrefabItem* pPrefabItem);
 
 protected:
 

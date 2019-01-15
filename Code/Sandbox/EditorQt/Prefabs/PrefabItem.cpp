@@ -21,35 +21,34 @@
 #include <CryMath/Cry_Math.h>
 #include <queue>
 
-
 enum EPrefabVersions
 {
 	/*
-	Prefabs are saved in a flattened hierarchy, group members are too.For example
-	<Object Type = "Group" Layer = "Main" LayerGUID = "561c3d54-fd84-4a25-3fa2-2781f36492a8" Id = "a440327f-e262-3aa9-6520-619fe689071e" Name = "Group-2" Pos = "509.65161,501.59622,31.999756" Rotate = "1,0,0,0" Scale = "1,1,1" ColorRGB = "65280" UseCustomLevelLayerColor = "0" Opened = "0" / >
-	<Object Type = "Brush" Layer = "Main" LayerGUID = "561c3d54-fd84-4a25-3fa2-2781f36492a8" Id = "27120ffe-ab2b-6c95-c25d-171d8ec67aaf" Name = "primitive_sphere-1" Parent = "a440327f-e262-3aa9-6520-619fe689071e" Pos = "-508.02625,-501.48993,-31.999756" Rotate = "1,0,0,0" Scale = "1,1,1" ColorRGB = "16777215" UseCustomLevelLayerColor = "0" MatLayersMask = "0" Prefab = "objects/default/primitive_sphere.cgf" IgnoreVisareas = "0" CastShadowMaps = "1" GIMode = "1" RainOccluder = "1" SupportSecondVisarea = "0" DynamicDistanceShadows = "0" Hideable = "0" LodRatio = "100" ViewDistRatio = "100" NotTriangulate = "0" NoDynamicWater = "0" AIRadius = "-1" NoStaticDecals = "0" RecvWind = "0" Occluder = "0" DrawLast = "0" ShadowLodBias = "0" IgnoreTerrainLayerBlend = "1" IgnoreDecalBlend = "1" RndFlags = "60000608">
-	<CollisionFiltering>
-	<Type collision_class_terrain = "0" collision_class_wheeled = "0" collision_class_living = "0" collision_class_articulated = "0" collision_class_soft = "0" collision_class_particle = "0" gcc_player_capsule = "0" gcc_player_body = "0" gcc_vehicle = "0" gcc_large_kickable = "0" gcc_ragdoll = "0" gcc_rigid = "0" gcc_vtol = "0" gcc_ai = "0" / >
-	<Ignore collision_class_terrain = "0" collision_class_wheeled = "0" collision_class_living = "0" collision_class_articulated = "0" collision_class_soft = "0" collision_class_particle = "0" gcc_player_capsule = "0" gcc_player_body = "0" gcc_vehicle = "0" gcc_large_kickable = "0" gcc_ragdoll = "0" gcc_rigid = "0" gcc_vtol = "0" gcc_ai = "0" / >
-	< / CollisionFiltering>
-	< / Object>
-	"primitive_sphere-1" is a child of "Group-2", how do you know ? Because it has a parent attribute with the group guid, top level objects in prefab don't have a parent, it's implicitly given at load time
-	*/
+	   Prefabs are saved in a flattened hierarchy, group members are too.For example
+	   <Object Type = "Group" Layer = "Main" LayerGUID = "561c3d54-fd84-4a25-3fa2-2781f36492a8" Id = "a440327f-e262-3aa9-6520-619fe689071e" Name = "Group-2" Pos = "509.65161,501.59622,31.999756" Rotate = "1,0,0,0" Scale = "1,1,1" ColorRGB = "65280" UseCustomLevelLayerColor = "0" Opened = "0" / >
+	   <Object Type = "Brush" Layer = "Main" LayerGUID = "561c3d54-fd84-4a25-3fa2-2781f36492a8" Id = "27120ffe-ab2b-6c95-c25d-171d8ec67aaf" Name = "primitive_sphere-1" Parent = "a440327f-e262-3aa9-6520-619fe689071e" Pos = "-508.02625,-501.48993,-31.999756" Rotate = "1,0,0,0" Scale = "1,1,1" ColorRGB = "16777215" UseCustomLevelLayerColor = "0" MatLayersMask = "0" Prefab = "objects/default/primitive_sphere.cgf" IgnoreVisareas = "0" CastShadowMaps = "1" GIMode = "1" RainOccluder = "1" SupportSecondVisarea = "0" DynamicDistanceShadows = "0" Hideable = "0" LodRatio = "100" ViewDistRatio = "100" NotTriangulate = "0" NoDynamicWater = "0" AIRadius = "-1" NoStaticDecals = "0" RecvWind = "0" Occluder = "0" DrawLast = "0" ShadowLodBias = "0" IgnoreTerrainLayerBlend = "1" IgnoreDecalBlend = "1" RndFlags = "60000608">
+	   <CollisionFiltering>
+	   <Type collision_class_terrain = "0" collision_class_wheeled = "0" collision_class_living = "0" collision_class_articulated = "0" collision_class_soft = "0" collision_class_particle = "0" gcc_player_capsule = "0" gcc_player_body = "0" gcc_vehicle = "0" gcc_large_kickable = "0" gcc_ragdoll = "0" gcc_rigid = "0" gcc_vtol = "0" gcc_ai = "0" / >
+	   <Ignore collision_class_terrain = "0" collision_class_wheeled = "0" collision_class_living = "0" collision_class_articulated = "0" collision_class_soft = "0" collision_class_particle = "0" gcc_player_capsule = "0" gcc_player_body = "0" gcc_vehicle = "0" gcc_large_kickable = "0" gcc_ragdoll = "0" gcc_rigid = "0" gcc_vtol = "0" gcc_ai = "0" / >
+	   < / CollisionFiltering>
+	   < / Object>
+	   "primitive_sphere-1" is a child of "Group-2", how do you know ? Because it has a parent attribute with the group guid, top level objects in prefab don't have a parent, it's implicitly given at load time
+	 */
 	e_FlattenedHierarchy,
 	/*
-	1 : No more flattened hierarchy, groups are serialized exactly as they are in the level file (using CGroup::Serialize)
-	<Object Type="Group" Layer="Main" LayerGUID="5af8763b-0eb4-f6b2-c9cd-bf985e9fa3dd" Id="b5621401-679a-2850-f761-ae381c539261" Name="Group-4" Pos="-6.7286377,1.715271,0" Rotate="1,0,0,0" Scale="1,1,1" ColorRGB="65280" UseCustomLevelLayerColor="0" Opened="1">
-	<Objects>
-	<Object Type="Brush" Layer="Main" LayerGUID="5af8763b-0eb4-f6b2-c9cd-bf985e9fa3dd" Id="92354280-6ddb-a34b-ddf8-fb1d67141eb7" Name="primitive_pyramid-1" Parent="b5621401-679a-2850-f761-ae381c539261" Pos="5.1032715,0.83911133,0" Rotate="1,0,0,0" Scale="1,1,1" ColorRGB="16777215" UseCustomLevelLayerColor="0" MatLayersMask="0" Prefab="objects/default/primitive_pyramid.cgf" IgnoreVisareas="0" CastShadowMaps="1" GIMode="1" RainOccluder="1" SupportSecondVisarea="0" DynamicDistanceShadows="0" Hideable="0" LodRatio="100" ViewDistRatio="100" NotTriangulate="0" NoDynamicWater="0" AIRadius="-1" NoStaticDecals="0" RecvWind="0" Occluder="0" DrawLast="0" ShadowLodBias="0" IgnoreTerrainLayerBlend="1" IgnoreDecalBlend="1" RndFlags="60000408">
-	<CollisionFiltering>
-	<Type collision_class_terrain="0" collision_class_wheeled="0" collision_class_living="0" collision_class_articulated="0" collision_class_soft="0" collision_class_particle="0" gcc_player_capsule="0" gcc_player_body="0" gcc_vehicle="0" gcc_large_kickable="0" gcc_ragdoll="0" gcc_rigid="0" gcc_vtol="0" gcc_ai="0"/>
-	<Ignore collision_class_terrain="0" collision_class_wheeled="0" collision_class_living="0" collision_class_articulated="0" collision_class_soft="0" collision_class_particle="0" gcc_player_capsule="0" gcc_player_body="0" gcc_vehicle="0" gcc_large_kickable="0" gcc_ragdoll="0" gcc_rigid="0" gcc_vtol="0" gcc_ai="0"/>
-	</CollisionFiltering>
-	</Object>
-	</Objects>
-	</Object>
-	Group members are properly serialized via CGroup::SerializeMembers instead of flattening (note the <Objects> tag)
-	*/
+	   1 : No more flattened hierarchy, groups are serialized exactly as they are in the level file (using CGroup::Serialize)
+	   <Object Type="Group" Layer="Main" LayerGUID="5af8763b-0eb4-f6b2-c9cd-bf985e9fa3dd" Id="b5621401-679a-2850-f761-ae381c539261" Name="Group-4" Pos="-6.7286377,1.715271,0" Rotate="1,0,0,0" Scale="1,1,1" ColorRGB="65280" UseCustomLevelLayerColor="0" Opened="1">
+	   <Objects>
+	   <Object Type="Brush" Layer="Main" LayerGUID="5af8763b-0eb4-f6b2-c9cd-bf985e9fa3dd" Id="92354280-6ddb-a34b-ddf8-fb1d67141eb7" Name="primitive_pyramid-1" Parent="b5621401-679a-2850-f761-ae381c539261" Pos="5.1032715,0.83911133,0" Rotate="1,0,0,0" Scale="1,1,1" ColorRGB="16777215" UseCustomLevelLayerColor="0" MatLayersMask="0" Prefab="objects/default/primitive_pyramid.cgf" IgnoreVisareas="0" CastShadowMaps="1" GIMode="1" RainOccluder="1" SupportSecondVisarea="0" DynamicDistanceShadows="0" Hideable="0" LodRatio="100" ViewDistRatio="100" NotTriangulate="0" NoDynamicWater="0" AIRadius="-1" NoStaticDecals="0" RecvWind="0" Occluder="0" DrawLast="0" ShadowLodBias="0" IgnoreTerrainLayerBlend="1" IgnoreDecalBlend="1" RndFlags="60000408">
+	   <CollisionFiltering>
+	   <Type collision_class_terrain="0" collision_class_wheeled="0" collision_class_living="0" collision_class_articulated="0" collision_class_soft="0" collision_class_particle="0" gcc_player_capsule="0" gcc_player_body="0" gcc_vehicle="0" gcc_large_kickable="0" gcc_ragdoll="0" gcc_rigid="0" gcc_vtol="0" gcc_ai="0"/>
+	   <Ignore collision_class_terrain="0" collision_class_wheeled="0" collision_class_living="0" collision_class_articulated="0" collision_class_soft="0" collision_class_particle="0" gcc_player_capsule="0" gcc_player_body="0" gcc_vehicle="0" gcc_large_kickable="0" gcc_ragdoll="0" gcc_rigid="0" gcc_vtol="0" gcc_ai="0"/>
+	   </CollisionFiltering>
+	   </Object>
+	   </Objects>
+	   </Object>
+	   Group members are properly serialized via CGroup::SerializeMembers instead of flattening (note the <Objects> tag)
+	 */
 	e_FullHierarchy,
 };
 
@@ -222,11 +221,11 @@ void CPrefabItem::UpdateFromPrefabObject(CPrefabObject* pPrefabObject, const SOb
 	// Prevent recursive calls to this function when modifying other instances of this same prefab
 	CPrefabManager::SkipPrefabUpdate skipUpdates;
 
-	CSelectionGroup selection;
+	CSelectionGroup descendantsSelection;
 	CSelectionGroup flatSelection;
 
 	// Get all objects part of the prefab
-	pPrefabObject->GetAllPrefabFlagedChildren(selection);
+	pPrefabObject->GetAllPrefabFlagedDescendants(descendantsSelection);
 
 	// While modifying the instances we don't want the FG manager to send events since they can call into GUI components and cause a crash
 	// e.g. we are modifying one FG but in fact we are working on multiple instances of this FG the MFC code does not cope well with this
@@ -236,7 +235,7 @@ void CPrefabItem::UpdateFromPrefabObject(CPrefabObject* pPrefabObject, const SOb
 	{
 		//////////////////////////////////////////////////////////////////////////
 		// Save all objects in flat selection to XML.
-		selection.FlattenHierarchy(flatSelection);
+		descendantsSelection.FlattenHierarchy(flatSelection);
 
 		// Serialize in the prefab lib (the main XML representation of the prefab)
 		{
@@ -276,12 +275,12 @@ void CPrefabItem::UpdateFromPrefabObject(CPrefabObject* pPrefabObject, const SOb
 				CPrefabObject* const pInstancedPrefab = static_cast<CPrefabObject*>(allInstancedPrefabs[i]);
 				if (pPrefabObject != pInstancedPrefab && pInstancedPrefab->GetPrefabGuid() == pPrefabObject->GetPrefabGuid())
 				{
-					CSelectionGroup instanceSelection;
+					CSelectionGroup instanceDescendantsSelection;
 					CSelectionGroup instanceFlatSelection;
 
-					pInstancedPrefab->GetAllPrefabFlagedChildren(instanceSelection);
+					pInstancedPrefab->GetAllPrefabFlagedDescendants(instanceDescendantsSelection);
 
-					instanceSelection.FlattenHierarchy(instanceFlatSelection);
+					instanceDescendantsSelection.FlattenHierarchy(instanceFlatSelection);
 
 					TObjectIdMapping mapping;
 					ExtractObjectsPrefabIDtoGuidMapping(instanceFlatSelection, mapping);
@@ -431,9 +430,9 @@ void CPrefabItem::ModifyInstancedPrefab(CSelectionGroup& objectsInPrefabAsFlatSe
 			if (XmlNodeRef changedObject = FindObjectByGuid(pObj->GetIdInPrefab(), false))
 			{
 				// See if we already have this object as part of the instanced prefab
-				std::vector<CBaseObject*> childs;
-				pPrefabObject->GetAllPrefabFlagedChildren(childs);
-				CBaseObject* pModified = FindObjectByPrefabGuid(childs, pObj->GetIdInPrefab());
+				std::vector<CBaseObject*> descendants;
+				pPrefabObject->GetAllPrefabFlagedDescendants(descendants);
+				CBaseObject* pModified = FindObjectByPrefabGuid(descendants, pObj->GetIdInPrefab());
 				if (pModified)
 				{
 					SObjectChangedContext correctedContext = context;
@@ -450,10 +449,10 @@ void CPrefabItem::ModifyInstancedPrefab(CSelectionGroup& objectsInPrefabAsFlatSe
 				RemapIDsInNodeAndChildren(changedObject, guidMapping, true);
 
 				/*
-				Here we set the guid provider to null so that it will not attempt to regenerate GUIDS in LoadObject(specifically in the call to NewObject).
-				We need the serialized Id to stay the same as the prefab xml Id until AddMember is called
-				AddMember will "slide" the current Id to IdInPrefab (which we need for prefab instance and library update) and generate a new unique Id for the prefab instance
-				*/
+				   Here we set the guid provider to null so that it will not attempt to regenerate GUIDS in LoadObject(specifically in the call to NewObject).
+				   We need the serialized Id to stay the same as the prefab xml Id until AddMember is called
+				   AddMember will "slide" the current Id to IdInPrefab (which we need for prefab instance and library update) and generate a new unique Id for the prefab instance
+				 */
 				loadAr.SetGuidProvider(nullptr);
 				CBaseObject* pClone = loadAr.LoadObject(changedObject);
 				loadAr.ResolveObjects();
@@ -749,7 +748,7 @@ void CPrefabItem::RemapIDsInNode(XmlNodeRef objectNode, const TObjectIdMapping& 
 		objectNode->setAttr("TargetId", ResolveID(mapping, patchedId, prefabIdToGuidDirection));
 }
 
-void CPrefabItem::RemoveAllChildsOf(CryGUID guid)
+void CPrefabItem::RemoveAllChildrenOf(CryGUID guid)
 {
 	std::deque<XmlNodeRef> childrenToRemove;
 	std::deque<CryGUID> guidsToCheckAgainst;
@@ -780,7 +779,7 @@ void CPrefabItem::RemoveAllChildsOf(CryGUID guid)
 
 	for (int i = 0, count = guidsToCheckAgainst.size(); i < count; ++i)
 	{
-		RemoveAllChildsOf(guidsToCheckAgainst[i]);
+		RemoveAllChildrenOf(guidsToCheckAgainst[i]);
 	}
 }
 

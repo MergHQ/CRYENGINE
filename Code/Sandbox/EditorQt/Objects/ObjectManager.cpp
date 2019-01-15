@@ -224,12 +224,12 @@ private:
 // other UNDO operations depending on the guids won't work
 void ExtractRemapingInformation(CBaseObject* pPrefab, TGUIDRemap& remapInfo)
 {
-	std::vector<CBaseObject*> children;
-	pPrefab->GetAllPrefabFlagedChildren(children);
+	std::vector<CBaseObject*> descendants;
+	pPrefab->GetAllPrefabFlagedDescendants(descendants);
 
-	for (size_t i = 0, count = children.size(); i < count; ++i)
+	for (size_t i = 0, count = descendants.size(); i < count; ++i)
 	{
-		remapInfo.insert(std::make_pair(children[i]->GetIdInPrefab(), children[i]->GetId()));
+		remapInfo.insert(std::make_pair(descendants[i]->GetIdInPrefab(), descendants[i]->GetId()));
 	}
 }
 
@@ -237,15 +237,15 @@ void RemapObjectsInPrefab(CBaseObject* pPrefab, const TGUIDRemap& remapInfo)
 {
 	IObjectManager* pObjMan = GetIEditorImpl()->GetObjectManager();
 
-	std::vector<CBaseObject*> children;
-	pPrefab->GetAllPrefabFlagedChildren(children);
+	std::vector<CBaseObject*> descendants;
+	pPrefab->GetAllPrefabFlagedDescendants(descendants);
 
-	for (size_t i = 0, count = children.size(); i < count; ++i)
+	for (size_t i = 0, count = descendants.size(); i < count; ++i)
 	{
-		TGUIDRemap::const_iterator it = remapInfo.find(children[i]->GetIdInPrefab());
+		TGUIDRemap::const_iterator it = remapInfo.find(descendants[i]->GetIdInPrefab());
 		if (it != remapInfo.end())
 		{
-			pObjMan->ChangeObjectId(children[i]->GetId(), (*it).second);
+			pObjMan->ChangeObjectId(descendants[i]->GetId(), (*it).second);
 		}
 	}
 }
@@ -2069,10 +2069,7 @@ void CObjectManager::EmitPopulateInspectorEvent() const
 		}
 		else if (objectCount > 1)
 		{
-			char numString[30];
-			snprintf(numString, arraysize(numString), "%zu", objectCount);
-			szTitle = numString;
-			szTitle += " Selected Objects";
+			szTitle.sprintf("%zu Selected Objects", objectCount);
 		}
 
 		PopulateInspectorEvent popEvent([](CInspector& inspector)

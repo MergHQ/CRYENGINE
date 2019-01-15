@@ -1753,13 +1753,13 @@ void CHyperGraphDialog::OnObjectEvent(const std::vector<CBaseObject*>& objects, 
 				{
 					m_graphsTreeCtrl.SetRedraw(FALSE);
 					const CPrefabObject* pPrefabObject = static_cast<const CPrefabObject*>(pObject);
-					std::vector<CBaseObject*> prefabChildren;
-					pPrefabObject->GetAllPrefabFlagedChildren(prefabChildren);
-					for (size_t i = 0, numChildren = prefabChildren.size(); i < numChildren; ++i)
+					std::vector<CBaseObject*> prefabDescendants;
+					pPrefabObject->GetAllPrefabFlagedDescendants(prefabDescendants);
+					for (size_t i = 0, numChildren = prefabDescendants.size(); i < numChildren; ++i)
 					{
-						if (prefabChildren[i]->IsKindOf(RUNTIME_CLASS(CEntityObject)))
+						if (prefabDescendants[i]->IsKindOf(RUNTIME_CLASS(CEntityObject)))
 						{
-							CBaseObject* pEntityObject = prefabChildren[i];
+							CBaseObject* pEntityObject = prefabDescendants[i];
 							CHyperFlowGraph* pFlowGraph = static_cast<CEntityObject*>(pEntityObject)->GetFlowGraph();
 							if (pFlowGraph)
 							{
@@ -1778,13 +1778,13 @@ void CHyperGraphDialog::OnObjectEvent(const std::vector<CBaseObject*>& objects, 
 				// remove all graphs from the prefab entities that have containers
 				if (pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
 				{
-					std::vector<CBaseObject*> prefabChildren;
-					pObject->GetAllPrefabFlagedChildren(prefabChildren);
-					for (size_t i = 0, numChildren = prefabChildren.size(); i < numChildren; ++i)
+					std::vector<CBaseObject*> prefabDescendants;
+					pObject->GetAllPrefabFlagedDescendants(prefabDescendants);
+					for (size_t i = 0, numChildren = prefabDescendants.size(); i < numChildren; ++i)
 					{
-						if (prefabChildren[i]->IsKindOf(RUNTIME_CLASS(CEntityObject)))
+						if (prefabDescendants[i]->IsKindOf(RUNTIME_CLASS(CEntityObject)))
 						{
-							CBaseObject* pEntityObject = prefabChildren[i];
+							CBaseObject* pEntityObject = prefabDescendants[i];
 							CHyperFlowGraph* pFlowGraph = static_cast<const CEntityObject*>(pEntityObject)->GetFlowGraph();
 							if (pFlowGraph)
 							{
@@ -1808,13 +1808,13 @@ void CHyperGraphDialog::OnObjectEvent(const std::vector<CBaseObject*>& objects, 
 					const CPrefabObject* pPrefabObject = static_cast<const CPrefabObject*>(pObject);
 					if (pPrefabObject->IsOpen())
 					{
-						std::vector<CBaseObject*> prefabChildren;
-						pPrefabObject->GetAllPrefabFlagedChildren(prefabChildren);
-						for (size_t i = 0, numChildren = prefabChildren.size(); i < numChildren; ++i)
+						std::vector<CBaseObject*> prefabDescendants;
+						pPrefabObject->GetAllPrefabFlagedDescendants(prefabDescendants);
+						for (size_t i = 0, numChildren = prefabDescendants.size(); i < numChildren; ++i)
 						{
-							if (prefabChildren[i]->IsKindOf(RUNTIME_CLASS(CEntityObject)))
+							if (prefabDescendants[i]->IsKindOf(RUNTIME_CLASS(CEntityObject)))
 							{
-								CBaseObject* pEntityObject = prefabChildren[i];
+								CBaseObject* pEntityObject = prefabDescendants[i];
 								CHyperFlowGraph* pFlowGraph = static_cast<const CEntityObject*>(pEntityObject)->GetFlowGraph();
 								if (pFlowGraph)
 								{
@@ -1832,13 +1832,13 @@ void CHyperGraphDialog::OnObjectEvent(const std::vector<CBaseObject*>& objects, 
 				}
 				else if (pObject->IsKindOf(RUNTIME_CLASS(CGroup)))
 				{
-					TBaseObjects children;
-					pObject->GetAllChildren(children);
-					for (size_t i = 0, numChildren = children.size(); i < numChildren; ++i)
+					TBaseObjects descendants;
+					pObject->GetAllDescendants(descendants);
+					for (size_t i = 0, numChildren = descendants.size(); i < numChildren; ++i)
 					{
-						if (children[i]->IsKindOf(RUNTIME_CLASS(CEntityObject)))
+						if (descendants[i]->IsKindOf(RUNTIME_CLASS(CEntityObject)))
 						{
-							CBaseObject* pEntityObject = children[i];
+							CBaseObject* pEntityObject = descendants[i];
 							CHyperFlowGraph* pFlowGraph = static_cast<const CEntityObject*>(pEntityObject)->GetFlowGraph();
 
 							if (!pFlowGraph)

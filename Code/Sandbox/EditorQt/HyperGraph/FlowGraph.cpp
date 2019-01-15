@@ -817,11 +817,13 @@ void CHyperFlowGraph::ExtractObjectsPrefabIdToGlobalIdMappingFromPrefab(CObjectA
 	{
 		if (CPrefabObject* pPrefabObject = (CPrefabObject*)pEntity->GetPrefab())
 		{
-			std::vector<CBaseObject*> childs;
-			pPrefabObject->GetAllPrefabFlagedChildren(childs);
+			std::vector<CBaseObject*> descendants;
+			pPrefabObject->GetAllPrefabFlagedDescendants(descendants);
 
-			for (int i = 0, count = childs.size(); i < count; ++i)
-				archive.RemapID(childs[i]->GetIdInPrefab(), childs[i]->GetId());
+			for (int i = 0, count = descendants.size(); i < count; ++i)
+			{
+				archive.RemapID(descendants[i]->GetIdInPrefab(), descendants[i]->GetId());
+			}
 		}
 	}
 }

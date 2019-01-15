@@ -31,7 +31,7 @@ public:
 
 	virtual EDataBaseItemType GetType() const { return EDB_TYPE_PREFAB; }
 
-	virtual void SetName(const string& name) override;
+	virtual void              SetName(const string& name) override;
 
 	void                      Serialize(SerializeContext& ctx);
 
@@ -65,7 +65,7 @@ public:
 	//!@param toIgnore the list of children GUIDs to exclude from the search (with all their children)
 	std::set<CryGUID> FindAllPrefabsGUIDsInChildren(const std::set<CryGUID>& toIgnore);
 
-	void           CheckVersionAndUpgrade();
+	void              CheckVersionAndUpgrade();
 
 	//! Called when the item name changed.
 	//! \sa SetName
@@ -91,7 +91,7 @@ private:
 	//! Function changes the ids XML attributes of objectNode in the direction specified by the prefabIdToGuidDirection parameter
 	void           RemapIDsInNode(XmlNodeRef objectNode, const TObjectIdMapping& mapping, bool prefabIdToGuidDirection);
 	//! Removes all XML child nodes in m_objectsNode, which has a Parent with the specified GUID
-	void           RemoveAllChildsOf(CryGUID guid);
+	void           RemoveAllChildrenOf(CryGUID guid);
 
 	void           SaveLinkedObjects(CObjectArchive& ar, CBaseObject* pObj, bool bAllowOwnedByPrefab);
 	void           CollectLinkedObjects(CBaseObject* pObj, std::vector<CBaseObject*>& linkedObjects, CSelectionGroup& selection);

@@ -253,10 +253,10 @@ void CSelectionGroup::Move(const Vec3& offset, int moveFlags, const CPoint& poin
 			//and then all the children
 			if (object->HasChildren())
 			{
-				TBaseObjects children;
-				object->GetAllChildren(children);
+				TBaseObjects descendants;
+				object->GetAllDescendants(descendants);
 
-				for (auto child : children)
+				for (auto child : descendants)
 				{
 					excludeObjects.Add(child.get());
 				}

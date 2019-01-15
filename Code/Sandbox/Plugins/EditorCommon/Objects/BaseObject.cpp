@@ -2552,17 +2552,25 @@ bool CBaseObject::IsDescendantOf(const CBaseObject* pObject) const
 {
 	CBaseObject* pParentObject = m_parent;
 	if (!pParentObject)
+	{
 		pParentObject = m_pLinkedTo;
+	}
 
 	while (pParentObject)
 	{
 		if (pParentObject == pObject)
+		{
 			return true;
+		}
 
 		if (pParentObject->GetParent())
+		{
 			pParentObject = pParentObject->GetParent();
+		}
 		else
+		{
 			pParentObject = pParentObject->GetLinkedTo();
+		}
 	}
 
 	return false;
@@ -2570,23 +2578,27 @@ bool CBaseObject::IsDescendantOf(const CBaseObject* pObject) const
 
 CBaseObject* CBaseObject::FindOwner(bool onSameLayer) const
 {
-	CBaseObject* owner = m_parent ? m_parent : GetLinkedTo();
-	if (onSameLayer && owner && m_layer != owner->GetLayer())
+	CBaseObject* pOwner = m_parent ? m_parent : GetLinkedTo();
+	if (onSameLayer && pOwner && m_layer != pOwner->GetLayer())
 	{
-		owner = nullptr;
+		pOwner = nullptr;
 	}
-	return owner;
+	return pOwner;
 }
 
-bool CBaseObject::IsChildOf(const CBaseObject* node) const
+bool CBaseObject::IsChildOf(const CBaseObject* pObject) const
 {
-	CBaseObject* p = m_parent;
-	while (p && p != node)
+	CBaseObject* pParent = m_parent;
+	while (pParent && pParent != pObject)
 	{
-		p = p->m_parent;
+		pParent = pParent->m_parent;
 	}
-	if (p == node)
+
+	if (pParent == pObject)
+	{
 		return true;
+	}
+
 	return false;
 }
 
@@ -2604,94 +2616,115 @@ bool CBaseObject::IsLinkedDescendantOf(const CBaseObject* pObject) const
 	return false;
 }
 
-void CBaseObject::GetAllChildren(TBaseObjects& outAllChildren, CBaseObject* pObj) const
+void CBaseObject::GetAllDescendants(TBaseObjects& outAllDescendants, CBaseObject* pObject) const
 {
-	const CBaseObject* pBaseObj = pObj ? pObj : this;
+	const CBaseObject* pBaseObject = pObject ? pObject : this;
 
-	for (int i = 0, iChildCount(pBaseObj->GetChildCount()); i < iChildCount; ++i)
+	for (int i = 0, iChildCount(pBaseObject->GetChildCount()); i < iChildCount; ++i)
 	{
-		CBaseObject* pChild = pBaseObj->GetChild(i);
+		CBaseObject* pChild = pBaseObject->GetChild(i);
 		if (pChild == NULL)
+		{
 			continue;
-		outAllChildren.push_back(pChild);
-		GetAllChildren(outAllChildren, pChild);
+		}
+
+		outAllDescendants.push_back(pChild);
+		GetAllDescendants(outAllDescendants, pChild);
 	}
 }
 
-void CBaseObject::GetAllChildren(DynArray<_smart_ptr<CBaseObject>>& outAllChildren, CBaseObject* pObj) const
+void CBaseObject::GetAllDescendants(DynArray<_smart_ptr<CBaseObject>>& outAllDescendants, CBaseObject* pObject) const
 {
-	const CBaseObject* pBaseObj = pObj ? pObj : this;
+	const CBaseObject* pBaseObject = pObject ? pObject : this;
 
-	for (int i = 0, iChildCount(pBaseObj->GetChildCount()); i < iChildCount; ++i)
+	for (int i = 0, iChildCount(pBaseObject->GetChildCount()); i < iChildCount; ++i)
 	{
-		CBaseObject* pChild = pBaseObj->GetChild(i);
+		CBaseObject* pChild = pBaseObject->GetChild(i);
 		if (pChild == NULL)
+		{
 			continue;
-		outAllChildren.push_back(pChild);
-		GetAllChildren(outAllChildren, pChild);
+		}
+
+		outAllDescendants.push_back(pChild);
+		GetAllDescendants(outAllDescendants, pChild);
 	}
 }
 
-void CBaseObject::GetAllChildren(ISelectionGroup& outAllChildren, CBaseObject* pObj) const
+void CBaseObject::GetAllDescendants(ISelectionGroup& outAllDescendants, CBaseObject* pObject) const
 {
-	const CBaseObject* pBaseObj = pObj ? pObj : this;
+	const CBaseObject* pBaseObject = pObject ? pObject : this;
 
-	for (int i = 0, iChildCount(pBaseObj->GetChildCount()); i < iChildCount; ++i)
+	for (int i = 0, iChildCount(pBaseObject->GetChildCount()); i < iChildCount; ++i)
 	{
-		CBaseObject* pChild = pBaseObj->GetChild(i);
+		CBaseObject* pChild = pBaseObject->GetChild(i);
 		if (pChild == NULL)
+		{
 			continue;
-		outAllChildren.AddObject(pChild);
-		GetAllChildren(outAllChildren, pChild);
+		}
+
+		outAllDescendants.AddObject(pChild);
+		GetAllDescendants(outAllDescendants, pChild);
 	}
 }
 
-void CBaseObject::GetAllPrefabFlagedChildren(std::vector<CBaseObject*>& outAllChildren, CBaseObject* pObj) const
+void CBaseObject::GetAllPrefabFlagedDescendants(std::vector<CBaseObject*>& outAllDescendants, CBaseObject* pObject) const
 {
-	const CBaseObject* pBaseObj = pObj ? pObj : this;
+	const CBaseObject* pBaseObject = pObject ? pObject : this;
 
-	for (int i = 0, iChildCount(pBaseObj->GetChildCount()); i < iChildCount; ++i)
+	for (int i = 0, iChildCount(pBaseObject->GetChildCount()); i < iChildCount; ++i)
 	{
-		CBaseObject* pChild = pBaseObj->GetChild(i);
+		CBaseObject* pChild = pBaseObject->GetChild(i);
 		if (pChild == NULL || !pChild->CheckFlags(OBJFLAG_PREFAB))
+		{
 			continue;
-		outAllChildren.push_back(pChild);
+		}
 
+		outAllDescendants.push_back(pChild);
 		if (GetIEditor()->IsCPrefabObject(pChild))
+		{
 			continue;
+		}
 
-		GetAllPrefabFlagedChildren(outAllChildren, pChild);
+		GetAllPrefabFlagedDescendants(outAllDescendants, pChild);
 	}
 
-	for (int i = 0, iLinkedCount(pBaseObj->GetLinkedObjectCount()); i < iLinkedCount; ++i)
+	for (int i = 0, iLinkedCount(pBaseObject->GetLinkedObjectCount()); i < iLinkedCount; ++i)
 	{
-		CBaseObject* pLinkedObject = pBaseObj->GetLinkedObject(i);
+		CBaseObject* pLinkedObject = pBaseObject->GetLinkedObject(i);
 		if (pLinkedObject == NULL || !pLinkedObject->CheckFlags(OBJFLAG_PREFAB))
+		{
 			continue;
-		outAllChildren.push_back(pLinkedObject);
+		}
+		outAllDescendants.push_back(pLinkedObject);
 
 		if (GetIEditor()->IsCPrefabObject(pLinkedObject))
+		{
 			continue;
+		}
 
-		GetAllPrefabFlagedChildren(outAllChildren, pLinkedObject);
+		GetAllPrefabFlagedDescendants(outAllDescendants, pLinkedObject);
 	}
 }
 
-void CBaseObject::GetAllPrefabFlagedChildren(ISelectionGroup& outAllChildren, CBaseObject* pObj) const
+void CBaseObject::GetAllPrefabFlagedDescendants(ISelectionGroup& outAllDescendants, CBaseObject* pObject) const
 {
-	const CBaseObject* pBaseObj = pObj ? pObj : this;
+	const CBaseObject* pBaseObj = pObject ? pObject : this;
 
 	for (int i = 0, iChildCount(pBaseObj->GetChildCount()); i < iChildCount; ++i)
 	{
 		CBaseObject* pChild = pBaseObj->GetChild(i);
 		if (pChild == NULL || !pChild->CheckFlags(OBJFLAG_PREFAB))
+		{
 			continue;
-		outAllChildren.AddObject(pChild);
+		}
 
+		outAllDescendants.AddObject(pChild);
 		if (GetIEditor()->IsCPrefabObject(pChild))
+		{
 			continue;
+		}
 
-		GetAllPrefabFlagedChildren(outAllChildren, pChild);
+		GetAllPrefabFlagedDescendants(outAllDescendants, pChild);
 	}
 
 	for (int i = 0, iLinkedCount(pBaseObj->GetLinkedObjectCount()); i < iLinkedCount; ++i)
@@ -2699,12 +2732,14 @@ void CBaseObject::GetAllPrefabFlagedChildren(ISelectionGroup& outAllChildren, CB
 		CBaseObject* pLinkedObject = pBaseObj->GetLinkedObject(i);
 		if (pLinkedObject == NULL || !pLinkedObject->CheckFlags(OBJFLAG_PREFAB)) // check howw to set this flag, or is it needed
 			continue;
-		outAllChildren.AddObject(pLinkedObject);
+		outAllDescendants.AddObject(pLinkedObject);
 
 		if (GetIEditor()->IsCPrefabObject(pLinkedObject))
+		{
 			continue;
+		}
 
-		GetAllPrefabFlagedChildren(outAllChildren, pLinkedObject);
+		GetAllPrefabFlagedDescendants(outAllDescendants, pLinkedObject);
 	}
 }
 

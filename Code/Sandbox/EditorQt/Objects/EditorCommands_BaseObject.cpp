@@ -416,15 +416,15 @@ std::vector<std::string> PyGetObjectChildren(const char* pName)
 	{
 		throw std::runtime_error(string("\"") + pName + "\" is an invalid object.");
 	}
-	std::vector<_smart_ptr<CBaseObject>> objectVector;
+	std::vector<_smart_ptr<CBaseObject>> descendants;
 	std::vector<std::string> result;
-	pObject->GetAllChildren(objectVector);
-	if (objectVector.empty())
+	pObject->GetAllDescendants(descendants);
+	if (descendants.empty())
 	{
 		return result;
 	}
 
-	for (std::vector<_smart_ptr<CBaseObject>>::iterator it = objectVector.begin(); it != objectVector.end(); ++it)
+	for (std::vector<_smart_ptr<CBaseObject>>::iterator it = descendants.begin(); it != descendants.end(); ++it)
 	{
 		result.push_back(static_cast<std::string>(it->get()->GetName()));
 	}

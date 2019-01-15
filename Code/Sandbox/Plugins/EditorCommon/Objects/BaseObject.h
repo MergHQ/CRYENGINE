@@ -412,19 +412,19 @@ public:
 	//! Find the link or the parent that owns this object, return null if none exist
 	virtual CBaseObject* FindOwner(bool onSameLayer) const;
 	//! Scans hierarchy up to determine if we child of specified node.
-	virtual bool         IsChildOf(const CBaseObject* node) const;
+	virtual bool         IsChildOf(const CBaseObject* pObject) const;
 	//! Scans hierarchy up to determine if we are linked to the specified object.
 	virtual bool         IsLinkedDescendantOf(const CBaseObject* pObject) const;
 	//! Get all child objects
-	void                 GetAllChildren(TBaseObjects& outAllChildren, CBaseObject* pObj = NULL) const;
-	void                 GetAllChildren(DynArray<_smart_ptr<CBaseObject>>& outAllChildren, CBaseObject* pObj = NULL) const;
-	void                 GetAllChildren(ISelectionGroup& outAllChildren, CBaseObject* pObj = NULL) const;
-	void                 GetAllPrefabFlagedChildren(std::vector<CBaseObject*>& outAllChildren, CBaseObject* pObj = NULL) const;
-	void                 GetAllPrefabFlagedChildren(ISelectionGroup& outAllChildren, CBaseObject* pObj = NULL) const;
+	void                 GetAllDescendants(TBaseObjects& outAllDescendants, CBaseObject* pObject = NULL) const;
+	void                 GetAllDescendants(DynArray<_smart_ptr<CBaseObject>>& outAllDescendants, CBaseObject* pObject = NULL) const;
+	void                 GetAllDescendants(ISelectionGroup& outAllDescendants, CBaseObject* pObject = NULL) const;
+	void                 GetAllPrefabFlagedDescendants(std::vector<CBaseObject*>& outAllDescendants, CBaseObject* pObject = NULL) const;
+	void                 GetAllPrefabFlagedDescendants(ISelectionGroup& outAllDescendants, CBaseObject* pObject = NULL) const;
 	//! Attach new child node.
 	//! @param bKeepPos if true Child node will keep its world space position.
 	//! @param bInvalidateTM if true, trigger InvalidateTM() on parent and child nodes.
-	void AttachChild(CBaseObject* child, bool bKeepPos = true, bool bInvalidateTM = true);
+	void AttachChild(CBaseObject* pChild, bool bKeepPos = true, bool bInvalidateTM = true);
 	//! Attach new child node when the object is not a sort of a group object like AttachChild()
 	//! but if the object is a group object, the group object should be set to all children objects recursively.
 	//! and if the object is a prefab object, the prefab object should be loaded from the prefab item.
