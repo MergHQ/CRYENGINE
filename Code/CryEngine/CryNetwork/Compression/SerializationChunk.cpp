@@ -544,12 +544,13 @@ void CSerializationChunk::EncodeToStream(CByteInputStream& input, CNetOutputSeri
 	// TODO: this probably isn't necessary under the current implementation... maybe it could be removed and save a few cycles on serialization
 	MiniQueue<TOps::const_iterator, 128> endGroupOps;
 
-#if defined(USE_CRY_ASSERT)
+	// NOTE: disable unused variable warnings and never skip input.GetTyped() calls
+	CRY_DISABLE_WARN_UNUSED_VARIABLES();
 	ChunkID savedChunkID = input.GetTyped<ChunkID>();
 	uint8 savedProfile = input.GetTyped<uint8>();
-#endif
 	NET_ASSERT(savedChunkID == chunkID);
 	NET_ASSERT(savedProfile == nProfile);
+	CRY_RESTORE_WARN_UNUSED_VARIABLES();
 
 #if CRC8_ASPECT_FORMAT
 	output.GetOutput().WriteBits(m_crc, 8);
