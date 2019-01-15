@@ -5,7 +5,6 @@
 #include <CrySandbox/CrySignal.h>
 
 struct IUndoObject;
-class ICrySizer;
 class CUndoStep;
 
 struct IUndoManagerListener
