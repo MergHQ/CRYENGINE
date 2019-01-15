@@ -110,10 +110,10 @@ void DesignerExclusiveMode::EnableExclusiveMode(bool bEnable)
 		}
 
 		pCameraObj->SetFlags(OBJFLAG_HIDE_HELPERS);
-		DynArray<_smart_ptr<CBaseObject>> allLightsUnderCamera;
-		pCameraObj->GetAllChildren(allLightsUnderCamera);
-		for (int i = 0, iCount(allLightsUnderCamera.size()); i < iCount; ++i)
-			allLightsUnderCamera[i]->SetFlags(OBJFLAG_HIDE_HELPERS);
+		DynArray<_smart_ptr<CBaseObject>> allLightsDescendantsOfCamera;
+		pCameraObj->GetAllDescendants(allLightsDescendantsOfCamera);
+		for (int i = 0, iCount(allLightsDescendantsOfCamera.size()); i < iCount; ++i)
+			allLightsDescendantsOfCamera[i]->SetFlags(OBJFLAG_HIDE_HELPERS);
 
 		m_bOldLockCameraMovement = pView->IsCameraMovementLocked();
 		pView->LockCameraMovement(false);
@@ -140,10 +140,10 @@ void DesignerExclusiveMode::EnableExclusiveMode(bool bEnable)
 		_smart_ptr<CBaseObject> pCameraObj = GetIEditor()->GetObjectManager()->FindObject(ExcludeModeCameraID);
 		if (pCameraObj)
 		{
-			DynArray<_smart_ptr<CBaseObject>> allLightsUnderCamera;
-			pCameraObj->GetAllChildren(allLightsUnderCamera);
-			for (int i = 0, iCount(allLightsUnderCamera.size()); i < iCount; ++i)
-				GetIEditor()->GetObjectManager()->DeleteObject(allLightsUnderCamera[i]);
+			DynArray<_smart_ptr<CBaseObject>> allLightsDescendantsOfCamera;
+			pCameraObj->GetAllDescendants(allLightsDescendantsOfCamera);
+			for (int i = 0, iCount(allLightsDescendantsOfCamera.size()); i < iCount; ++i)
+				GetIEditor()->GetObjectManager()->DeleteObject(allLightsDescendantsOfCamera[i]);
 			GetIEditor()->GetObjectManager()->DeleteObject(pCameraObj);
 			pView->SetViewTM(m_OldCameraTM);
 		}

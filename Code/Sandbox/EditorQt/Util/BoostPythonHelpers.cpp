@@ -801,12 +801,12 @@ std::vector<pPyGameObject> PyGamePrefab::GetChildren()
 
 	if (pPrefab != NULL)
 	{
-		// Return all of the Prefabs Children.
+		// Return all of the Prefabs descendants.
 		std::vector<_smart_ptr<CBaseObject>>::iterator iter;
-		std::vector<_smart_ptr<CBaseObject>> children;
-		pPrefab->GetAllChildren(children);
+		std::vector<_smart_ptr<CBaseObject>> descendants;
+		pPrefab->GetAllDescendants(descendants);
 
-		for (iter = children.begin(); iter != children.end(); ++iter)
+		for (iter = descendants.begin(); iter != descendants.end(); ++iter)
 		{
 			m_prefabChildren.push_back(PyScript::CreatePyGameObject(*iter));
 		}
@@ -890,12 +890,12 @@ std::vector<pPyGameObject> PyGameGroup::GetChildren()
 {
 	CGroup* pGroup = static_cast<CGroup*>(m_groupPtr);
 
-	// Return all of the Prefabs Children.
+	// Return all of the Prefabs descendants.
 	std::vector<_smart_ptr<CBaseObject>>::iterator iter;
-	std::vector<_smart_ptr<CBaseObject>> children;
-	pGroup->GetAllChildren(children);
+	std::vector<_smart_ptr<CBaseObject>> descendants;
+	pGroup->GetAllDescendants(descendants);
 
-	for (iter = children.begin(); iter != children.end(); ++iter)
+	for (iter = descendants.begin(); iter != descendants.end(); ++iter)
 	{
 		m_groupChildren.push_back(PyScript::CreatePyGameObject(*iter));
 	}

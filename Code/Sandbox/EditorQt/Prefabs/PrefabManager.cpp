@@ -510,13 +510,13 @@ void CPrefabManager::ExtractAllFromSelection()
 	}
 }
 
-bool CPrefabManager::AttachObjectToPrefab(CPrefabObject* prefab, CBaseObject* obj)
+bool CPrefabManager::AttachObjectToPrefab(CPrefabObject* pPrefab, CBaseObject* pObject)
 {
-	if (prefab && obj)
+	if (pPrefab && pObject)
 	{
-		if (!prefab->CanAddMember(obj))
+		if (!pPrefab->CanAddMember(pObject))
 		{
-			Warning("Object %s is already part of a prefab (%s)", obj->GetName(), obj->GetPrefab()->GetName());
+			Warning("Object %s is already part of a prefab (%s)", pObject->GetName(), pObject->GetPrefab()->GetName());
 			return false;
 		}
 
@@ -527,29 +527,29 @@ bool CPrefabManager::AttachObjectToPrefab(CPrefabObject* prefab, CBaseObject* ob
 		{
 			// If this is not a group add all the attached children to the prefab,
 			// otherwise the group children adding is handled by the AddMember in CPrefabObject
-			if (!obj->IsKindOf(RUNTIME_CLASS(CGroup)))
+			if (!pObject->IsKindOf(RUNTIME_CLASS(CGroup)))
 			{
-				objects.reserve(obj->GetChildCount() + 1);
-				objects.push_back(obj);
-				TBaseObjects children;
-				children.reserve(obj->GetChildCount() + 1);
-				obj->GetAllChildren(children);
-				for (const auto& child : children)
+				objects.reserve(pObject->GetChildCount() + 1);
+				objects.push_back(pObject);
+				TBaseObjects descendants;
+				descendants.reserve(pObject->GetChildCount() + 1);
+				pObject->GetAllDescendants(descendants);
+				for (const auto& child : descendants)
 				{
 					objects.push_back(child);
 				}
 			}
 			else
 			{
-				objects.push_back(obj);
+				objects.push_back(pObject);
 			}
 
-			CUndo::Record(new CUndoAddObjectsToPrefab(prefab, objects));
+			CUndo::Record(new CUndoAddObjectsToPrefab(pPrefab, objects));
 		}
 
 		for (int i = 0; i < objects.size(); i++)
 		{
-			prefab->AddMember(objects[i]);
+			pPrefab->AddMember(objects[i]);
 		}
 		return true;
 	}
@@ -912,7 +912,7 @@ void CPrefabManager::DeleteItem(IDataBaseItem* pItem)
 			pObjMan->DeleteObject(pObj);
 	}
 
-	IDataBaseLibrary * pLibrary = pItem->GetLibrary();
+	IDataBaseLibrary* pLibrary = pItem->GetLibrary();
 
 	CBaseLibraryManager::DeleteItem(pItem);
 
@@ -1044,7 +1044,7 @@ static void PySelectAllInstancesOfSelectedType()
 }
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyUpdateAllPrefabs, prefab, update_all_prefabs,
-	CCommandDescription("Update all prefabs to latest version"));
+                                   CCommandDescription("Update all prefabs to latest version"));
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyCreateFromSelection, prefab, create_from_selection,
                                    CCommandDescription("Create prefab"));
@@ -1075,4 +1075,4 @@ REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyReloadAll, prefab, 
                                    CCommandDescription("Reload all prefabs"));
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PySelectAllInstancesOfSelectedType, prefab, select_all_instances_of_type,
-	CCommandDescription("Select all prefabs instances of selected type"));
+                                   CCommandDescription("Select all prefabs instances of selected type"));

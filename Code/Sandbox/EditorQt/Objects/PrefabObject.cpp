@@ -510,30 +510,30 @@ int CPrefabObject::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event
 
 	if (creationState == MOUSECREATE_CONTINUE)
 	{
-		CSelectionGroup children;
-		GetAllChildren(children);
-		for (int i = 0; i < children.GetCount(); i++)
+		CSelectionGroup descendants;
+		GetAllDescendants(descendants);
+		for (int i = 0; i < descendants.GetCount(); i++)
 		{
-			if (children.GetObject(i)->GetCollisionEntity())
+			if (descendants.GetObject(i)->GetCollisionEntity())
 			{
-				IPhysicalEntity* collisionEntity = children.GetObject(i)->GetCollisionEntity();
+				IPhysicalEntity* pCollisionEntity = descendants.GetObject(i)->GetCollisionEntity();
 				pe_params_part collision;
-				collisionEntity->GetParams(&collision);
+				pCollisionEntity->GetParams(&collision);
 				collision.flagsAND &= ~(geom_colltype_ray);
-				collisionEntity->SetParams(&collision);
+				pCollisionEntity->SetParams(&collision);
 			}
 		}
 	}
 
 	if (creationState == MOUSECREATE_OK)
 	{
-		CSelectionGroup children;
-		GetAllChildren(children);
-		for (int i = 0; i < children.GetCount(); i++)
+		CSelectionGroup descendants;
+		GetAllDescendants(descendants);
+		for (int i = 0; i < descendants.GetCount(); i++)
 		{
-			if (children.GetObject(i)->GetCollisionEntity())
+			if (descendants.GetObject(i)->GetCollisionEntity())
 			{
-				IPhysicalEntity* collisionEntity = children.GetObject(i)->GetCollisionEntity();
+				IPhysicalEntity* collisionEntity = descendants.GetObject(i)->GetCollisionEntity();
 				pe_params_part collision;
 				collisionEntity->GetParams(&collision);
 				collision.flagsOR |= (geom_colltype_ray);
@@ -745,10 +745,10 @@ void CPrefabObject::OnEvent(ObjectEvent event)
 void CPrefabObject::DeleteAllPrefabObjects()
 {
 	LOADING_TIME_PROFILE_SECTION
-	std::vector<CBaseObject*> children;
-	GetAllPrefabFlagedChildren(children);
+	std::vector<CBaseObject*> descendants;
+	GetAllPrefabFlagedDescendants(descendants);
 	DetachAll(false, true);
-	GetObjectManager()->DeleteObjects(children);
+	GetObjectManager()->DeleteObjects(descendants);
 }
 
 void CPrefabObject::SetPrefab(CryGUID guid, bool bForceReload)
@@ -1184,9 +1184,6 @@ void CPrefabObject::CloneSelected(CSelectionGroup* pSelectedGroup, std::vector<C
 
 		objectsNode->addChild(cloneObject);
 	}
-
-	CSelectionGroup allPrefabChilds;
-	GetAllPrefabFlagedChildren(allPrefabChilds);
 
 	std::vector<Matrix34> clonedObjectsPivotLocalTM;
 
