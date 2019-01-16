@@ -179,11 +179,11 @@ void CPlanningTextureStreamer::ApplySchedule(EApplyScheduleFlags asf)
 		m_nStreamAllocFails = 0;
 
 		int nMaxItemsToFree = bOverflow ? 1000 : 2;
+
+		// Garbage collect memory until we reach the allocation limit
 		size_t nGCLimit = schedule.memState.nMemLimit;
-#if CRY_PLATFORM_DESKTOP
-		nGCLimit = static_cast<size_t>(static_cast<int64>(nGCLimit) * 120 / 100);
-#endif
 		size_t nPoolSize = CTexture::s_pPoolMgr->GetReservedSize();
+
 		CTexture::s_pPoolMgr->GarbageCollect(&nPoolSize, nGCLimit, nMaxItemsToFree);
 	}
 
@@ -571,21 +571,13 @@ SPlanningMemoryState CPlanningTextureStreamer::GetMemoryState()
 	ms.nMemTemp          = ms.nMemStreamed - ms.nMemBoundStreamed; // Sum of allocated temporary/overhang memory
 
 #if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-	ms.nPoolLimit = GetDeviceObjectFactory().m_texturePool.GetPoolSize();
-	ms.nTargetPhysicalLimit = (ptrdiff_t)(static_cast<int64>(ms.nPoolLimit - 30 * 1024 * 1024) * 96 / 100);
-	ms.nTargetPhysicalLimit = max((ptrdiff_t)0, ms.nTargetPhysicalLimit);
+	// Keep 30MB free to preserve the ability to conduct defragmentation
+	ms.nPoolLimit    = std::max(0, GetDeviceObjectFactory().m_texturePool.GetPoolSize() - 30 * 1024 * 1024);
 
-	ms.nStaticTexUsage = 0;//CTexture::s_nStatsCurManagedNonStreamedTexMem;
-	ms.nUnknownPoolUsage = GetDeviceObjectFactory().m_texturePool.GetPoolAllocated() - (CTexture::s_pPoolMgr->GetReservedSize() /*ms.nMemStreamed*/ + ms.nStaticTexUsage);
-
-	ms.nMemLimit     = ms.nTargetPhysicalLimit - (ms.nStaticTexUsage + ms.nUnknownPoolUsage);
-	ms.nMemFreeSlack = ms.nPoolLimit * 4 / 100;
+	ms.nMemLimit     = ms.nPoolLimit * 96 / 100;
+	ms.nMemFreeSlack = ms.nPoolLimit *  4 / 100;
 #else
-	ms.nPoolLimit = CRenderer::GetTexturesStreamPoolSize() * 1024 * 1024;
-	ms.nTargetPhysicalLimit = 0;
-
-	ms.nStaticTexUsage = 0;
-	ms.nUnknownPoolUsage = 0;
+	ms.nPoolLimit    = CRenderer::GetTexturesStreamPoolSize() * 1024 * 1024;
 
 	ms.nMemLimit     = ms.nPoolLimit * 95 / 100;
 	ms.nMemFreeSlack = ms.nPoolLimit *  5 / 100;
