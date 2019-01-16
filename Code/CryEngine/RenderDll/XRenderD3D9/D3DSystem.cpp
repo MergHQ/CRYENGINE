@@ -2104,10 +2104,10 @@ void CD3D9Renderer::GetVideoMemoryUsageStats(size_t& vidMemUsedThisFrame, size_t
 	#if CRY_RENDERER_GNM
 		gGnmDevice->GetMemoryUsageStats(videoMemoryInfoA.CurrentUsage, videoMemoryInfoB.CurrentUsage);
 	#endif
+#endif
 
 		vidMemUsedThisFrame = size_t(videoMemoryInfoA.CurrentUsage);
 		vidMemUsedRecently = 0;
-#endif
 	}
 }
 
