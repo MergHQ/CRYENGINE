@@ -10,12 +10,9 @@
 struct SPlanningMemoryState
 {
 	ptrdiff_t nMemStreamed;
-	ptrdiff_t nStaticTexUsage;
 	ptrdiff_t nPoolLimit;
-	ptrdiff_t nTargetPhysicalLimit;
 	ptrdiff_t nMemLimit;
 	ptrdiff_t nMemFreeSlack;
-	ptrdiff_t nUnknownPoolUsage;
 	ptrdiff_t nMemBoundStreamed;
 	ptrdiff_t nMemBoundStreamedPers;
 	ptrdiff_t nMemTemp;
