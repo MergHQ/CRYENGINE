@@ -51,7 +51,7 @@ void CSwitchState::SetGlobal() const
 
 	for (auto const pConnection : m_connections)
 	{
-		g_pIImpl->SetGlobalSwitchState(pConnection);
+		pConnection->SetGlobally();
 	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)

@@ -13,6 +13,7 @@ CImpl* g_pImpl = nullptr;
 CGlobalObject* g_pObject = nullptr;
 CListener* g_pListener = nullptr;
 uint32 g_numObjectsWithDoppler = 0;
+Objects g_constructedObjects;
 TriggerToParameterIndexes g_triggerToParameterIndexes;
 } // namespace Fmod
 } // namespace Impl

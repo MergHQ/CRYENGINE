@@ -17,6 +17,7 @@ namespace Impl
 {
 namespace Wwise
 {
+//////////////////////////////////////////////////////////////////////////
 void CParameter::Set(IObject* const pIObject, float const value)
 {
 	if (pIObject != nullptr)
@@ -40,6 +41,27 @@ void CParameter::Set(IObject* const pIObject, float const value)
 		AK::SoundEngine::SetRTPCValue(m_id, rtpcValue, pObject->GetId());
 #endif    // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CParameter::SetGlobally(float const value)
+{
+	auto const rtpcValue = static_cast<AkRtpcValue>(m_multiplier * value + m_shift);
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(m_id, rtpcValue, AK_INVALID_GAME_OBJECT);
+
+	if (!IS_WWISE_OK(wwiseResult))
+	{
+		Cry::Audio::Log(
+			ELogType::Warning,
+			"Wwise - failed to set the Rtpc %" PRISIZE_T " globally to value %f",
+			m_id,
+			static_cast<AkRtpcValue>(value));
+	}
+#else
+	AK::SoundEngine::SetRTPCValue(m_id, rtpcValue, AK_INVALID_GAME_OBJECT);
+#endif    // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 }
 } // namespace Wwise
 } // namespace Impl

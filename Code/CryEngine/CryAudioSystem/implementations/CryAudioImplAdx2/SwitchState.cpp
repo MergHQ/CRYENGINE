@@ -62,6 +62,42 @@ void CSwitchState::Set(IObject* const pIObject)
 		Cry::Audio::Log(ELogType::Error, "Adx2 - Invalid SwitchState Data passed to the Adx2 implementation of %s", __FUNCTION__);
 	}
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CSwitchState::SetGlobally()
+{
+	switch (m_type)
+	{
+	case ESwitchType::Selector: // Intentional fall-through.
+	case ESwitchType::AisacControl:
+		{
+			for (auto const pObject : g_constructedObjects)
+			{
+				Set(pObject);
+			}
+
+			break;
+		}
+	case ESwitchType::Category:
+		{
+			criAtomExCategory_SetVolumeByName(GetName(), m_value);
+
+			break;
+		}
+	case ESwitchType::GameVariable:
+		{
+			criAtomEx_SetGameVariableByName(GetName(), m_value);
+
+			break;
+		}
+	default:
+		{
+			Cry::Audio::Log(ELogType::Warning, "Adx2 - Unknown ESwitchType: %" PRISIZE_T " of %s", m_type, m_name.c_str());
+
+			break;
+		}
+	}
+}
 } // namespace Adx2
 } // namespace Impl
 } // namespace CryAudio

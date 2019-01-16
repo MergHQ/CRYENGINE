@@ -101,6 +101,67 @@ void CSwitchState::Set(IObject* const pIObject)
 		Cry::Audio::Log(ELogType::Error, "Wwise - Invalid SwitchState passed to the Wwise implementation of SetSwitchState");
 	}
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CSwitchState::SetGlobally()
+{
+	switch (m_type)
+	{
+	case ESwitchType::StateGroup:
+		{
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+			AKRESULT const wwiseResult = AK::SoundEngine::SetState(m_stateOrSwitchGroupId, m_stateOrSwitchId);
+
+			if (!IS_WWISE_OK(wwiseResult))
+			{
+				Cry::Audio::Log(
+					ELogType::Warning,
+					"Wwise failed to set the StateGroup %" PRISIZE_T "to state %" PRISIZE_T,
+					m_stateOrSwitchGroupId,
+					m_stateOrSwitchId);
+			}
+#else
+			AK::SoundEngine::SetState(m_stateOrSwitchGroupId, m_stateOrSwitchId);
+#endif        // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+			break;
+		}
+	case ESwitchType::SwitchGroup:
+		{
+			Cry::Audio::Log(ELogType::Warning, "Wwise - SwitchGroups cannot get set globally!");
+
+			break;
+		}
+	case ESwitchType::Rtpc:
+		{
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+			AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(m_stateOrSwitchGroupId, static_cast<AkRtpcValue>(m_rtpcValue), AK_INVALID_GAME_OBJECT);
+
+			if (!IS_WWISE_OK(wwiseResult))
+			{
+				Cry::Audio::Log(
+					ELogType::Warning,
+					"Wwise - failed to set the Rtpc %" PRISIZE_T " globally to value %f",
+					m_stateOrSwitchGroupId,
+					static_cast<AkRtpcValue>(m_rtpcValue));
+			}
+#else
+			AK::SoundEngine::SetRTPCValue(m_stateOrSwitchGroupId, static_cast<AkRtpcValue>(m_rtpcValue), AK_INVALID_GAME_OBJECT);
+#endif        // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+
+			break;
+		}
+	case ESwitchType::None:
+		{
+			break;
+		}
+	default:
+		{
+			Cry::Audio::Log(ELogType::Warning, "Wwise - Unknown ESwitchType: %" PRISIZE_T, m_type);
+
+			break;
+		}
+	}
+}
 } // namespace Wwise
 } // namespace Impl
 } // namespace CryAudio

@@ -16,6 +16,12 @@ void CVcaState::Set(IObject* const pIObject)
 	FMOD_RESULT const fmodResult = m_pVca->setVolume(m_value);
 	ASSERT_FMOD_OK;
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CVcaState::SetGlobally()
+{
+	Set(nullptr);
+}
 } // namespace Fmod
 } // namespace Impl
 } // namespace CryAudio

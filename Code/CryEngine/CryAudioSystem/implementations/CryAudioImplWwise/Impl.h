@@ -41,8 +41,6 @@ public:
 	virtual void                       PauseAll() override;
 	virtual void                       ResumeAll() override;
 	virtual ERequestStatus             StopAllSounds() override;
-	virtual void                       SetGlobalParameter(IParameterConnection* const pIParameterConnection, float const value) override;
-	virtual void                       SetGlobalSwitchState(ISwitchStateConnection* const pISwitchStateConnection) override;
 	virtual void                       GamepadConnected(DeviceId const deviceUniqueID) override;
 	virtual void                       GamepadDisconnected(DeviceId const deviceUniqueID) override;
 	virtual void                       OnRefresh() override;

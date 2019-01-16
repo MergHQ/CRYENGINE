@@ -111,6 +111,15 @@ void CParameter::Set(IObject* const pIObject, float const value)
 	}
 #endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CParameter::SetGlobally(float const value)
+{
+	for (auto const pObject : g_constructedObjects)
+	{
+		Set(pObject, value);
+	}
+}
 } // namespace Fmod
 } // namespace Impl
 } // namespace CryAudio

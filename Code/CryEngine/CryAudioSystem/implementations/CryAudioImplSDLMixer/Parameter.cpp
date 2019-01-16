@@ -21,6 +21,15 @@ void CParameter::Set(IObject* const pIObject, float const value)
 		pObject->SetVolume(m_sampleId, parameterValue);
 	}
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CParameter::SetGlobally(float const value)
+{
+	for (auto const pObject : g_objects)
+	{
+		Set(pObject, value);
+	}
+}
 } // namespace SDL_mixer
 } // namespace Impl
 } // namespace CryAudio

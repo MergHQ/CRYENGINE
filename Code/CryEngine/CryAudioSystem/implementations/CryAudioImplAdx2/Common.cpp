@@ -13,6 +13,7 @@ CImpl* g_pImpl = nullptr;
 CGlobalObject* g_pObject = nullptr;
 CListener* g_pListener = nullptr;
 
+Objects g_constructedObjects;
 AcbHandles g_acbHandles;
 CriAtomExPlayerConfig g_playerConfig;
 CriAtomEx3dSourceConfig g_3dSourceConfig;

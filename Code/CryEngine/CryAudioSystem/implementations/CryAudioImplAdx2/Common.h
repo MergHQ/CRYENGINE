@@ -13,6 +13,7 @@ namespace Impl
 namespace Adx2
 {
 class CImpl;
+class CBaseObject;
 class CGlobalObject;
 class CListener;
 class CEvent;
@@ -20,6 +21,9 @@ class CEvent;
 extern CImpl* g_pImpl;
 extern CGlobalObject* g_pObject;
 extern CListener* g_pListener;
+
+using Objects = std::vector<CBaseObject*>;
+extern Objects g_constructedObjects;
 
 using AcbHandles = std::map<uint32, CriAtomExAcbHn>;
 extern AcbHandles g_acbHandles;

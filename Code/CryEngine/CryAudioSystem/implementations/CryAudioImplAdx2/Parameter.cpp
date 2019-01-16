@@ -54,6 +54,41 @@ void CParameter::Set(IObject* const pIObject, float const value)
 		Cry::Audio::Log(ELogType::Error, "Adx2 - Invalid Object passed to the Adx2 implementation of %s", __FUNCTION__);
 	}
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CParameter::SetGlobally(float const value)
+{
+	switch (m_type)
+	{
+	case EParameterType::AisacControl:
+		{
+			for (auto const pObject : g_constructedObjects)
+			{
+				Set(pObject, value);
+			}
+
+			break;
+		}
+	case EParameterType::Category:
+		{
+			criAtomExCategory_SetVolumeByName(GetName(), static_cast<CriFloat32>(m_multiplier * value + m_shift));
+
+			break;
+		}
+	case EParameterType::GameVariable:
+		{
+			criAtomEx_SetGameVariableByName(GetName(), static_cast<CriFloat32>(m_multiplier * value + m_shift));
+
+			break;
+		}
+	default:
+		{
+			Cry::Audio::Log(ELogType::Warning, "Adx2 - Unknown EParameterType: %" PRISIZE_T " of %s", m_type, m_name.c_str());
+
+			break;
+		}
+	}
+}
 } // namespace Adx2
 } // namespace Impl
 } // namespace CryAudio

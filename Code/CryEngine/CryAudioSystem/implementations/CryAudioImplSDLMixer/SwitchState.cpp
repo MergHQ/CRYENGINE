@@ -19,6 +19,15 @@ void CSwitchState::Set(IObject* const pIObject)
 		pObject->SetVolume(m_sampleId, m_value);
 	}
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CSwitchState::SetGlobally()
+{
+	for (auto const pObject : g_objects)
+	{
+		Set(pObject);
+	}
+}
 } // namespace SDL_mixer
 } // namespace Impl
 } // namespace CryAudio

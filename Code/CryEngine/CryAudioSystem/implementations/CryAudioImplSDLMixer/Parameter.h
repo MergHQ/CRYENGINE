@@ -38,6 +38,7 @@ public:
 
 	// IParameterConnection
 	virtual void Set(IObject* const pIObject, float const value) override;
+	virtual void SetGlobally(float const value) override;
 	// ~IParameterConnection
 
 	SampleId                                     GetSampleId() const   { return m_sampleId; }

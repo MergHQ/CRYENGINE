@@ -46,6 +46,7 @@ public:
 
 	// ISwitchStateConnection
 	virtual void Set(IObject* const pIObject) override;
+	virtual void SetGlobally() override;
 	// ~ISwitchStateConnection
 
 	ESwitchType GetType() const                 { return m_type; }

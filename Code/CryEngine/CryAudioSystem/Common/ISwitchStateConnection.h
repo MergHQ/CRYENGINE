@@ -25,6 +25,12 @@ struct ISwitchStateConnection
 	 * @return void
 	 */
 	virtual void Set(IObject* const pIObject) = 0;
+
+	/**
+	 * Set the state (on a switch) globally.
+	 * @return void
+	 */
+	virtual void SetGlobally() = 0;
 };
 } // namespace Impl
 } // namespace CryAudio

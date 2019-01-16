@@ -26,6 +26,13 @@ struct IParameterConnection
 	 * @return void
 	 */
 	virtual void Set(IObject* const pIObject, float const value) = 0;
+
+	/**
+	 * Set the parameter to the specified value globally.
+	 * @param value - the value to set the parameter to
+	 * @return void
+	 */
+	virtual void SetGlobally(float const value) = 0;
 };
 } // namespace Impl
 } // namespace CryAudio

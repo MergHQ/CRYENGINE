@@ -110,6 +110,15 @@ void CSwitchState::Set(IObject* const pIObject)
 	}
 #endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CSwitchState::SetGlobally()
+{
+	for (auto const pObject : g_constructedObjects)
+	{
+		Set(pObject);
+	}
+}
 } // namespace Fmod
 } // namespace Impl
 } // namespace CryAudio

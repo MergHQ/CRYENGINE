@@ -53,8 +53,6 @@ char const* const CImpl::s_szSnapshotPrefix = "snapshot:/";
 char const* const CImpl::s_szBusPrefix = "bus:/";
 char const* const CImpl::s_szVcaPrefix = "vca:/";
 
-std::vector<CBaseObject*> g_constructedObjects;
-
 static constexpr size_t s_maxFileSize = size_t(1) << size_t(31);
 
 //////////////////////////////////////////////////////////////////////////
@@ -385,42 +383,6 @@ ERequestStatus CImpl::StopAllSounds()
 	}
 
 	return ERequestStatus::Success;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalParameter(IParameterConnection* const pIParameterConnection, float const value)
-{
-	if (pIParameterConnection != nullptr)
-	{
-		auto const pParameter = static_cast<CBaseParameter*>(pIParameterConnection);
-
-		for (auto const pObject : g_constructedObjects)
-		{
-			pParameter->Set(pObject, value);
-		}
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Invalid object pointer passed to the Fmod implementation of %s", __FUNCTION__);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalSwitchState(ISwitchStateConnection* const pISwitchStateConnection)
-{
-	if (pISwitchStateConnection != nullptr)
-	{
-		auto const pSwitchState = static_cast<CBaseSwitchState*>(pISwitchStateConnection);
-
-		for (auto const pObject : g_constructedObjects)
-		{
-			pSwitchState->Set(pObject);
-		}
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Invalid switch state pointer passed to the Fmod implementation of %s", __FUNCTION__);
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
