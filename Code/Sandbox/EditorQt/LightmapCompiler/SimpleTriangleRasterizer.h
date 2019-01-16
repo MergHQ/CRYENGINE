@@ -11,9 +11,8 @@ class CSimpleTriangleRasterizer
 {
 public:
 
-	class IRasterizeSink
+	struct IRasterizeSink
 	{
-	public:
 		virtual ~IRasterizeSink() {}
 		//! is called once per triangle for the first possible visible line
 		//! /param iniStartY
@@ -119,7 +118,7 @@ public:
 	void CallbackFillRectConservative(float x[3], float y[3], IRasterizeSink* inpSink);
 
 	//! subpixel correct triangle filler (conservative or not conservative)
-	//! \param pBuffer pointe to the DWORD
+	//! \param pBuffer points to the DWORD
 	//! \param indwWidth width of the buffer pBuffer points to
 	//! \param indwHeight height of the buffer pBuffer points to
 	//! \param x array of the x coordinates of the three vertices
@@ -128,7 +127,7 @@ public:
 	void CallbackFillConservative(float x[3], float y[3], IRasterizeSink* inpSink);
 
 	//! subpixel correct triangle filler (conservative or not conservative)
-	//! \param pBuffer pointe to the DWORD
+	//! \param pBuffer points to the DWORD
 	//! \param indwWidth width of the buffer pBuffer points to
 	//! \param indwHeight height of the buffer pBuffer points to
 	//! \param x array of the x coordinates of the three vertices

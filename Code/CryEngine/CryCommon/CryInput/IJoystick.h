@@ -1,24 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   IJoystick.h
-//  Version:     v1.00
-//  Created:     7/8/2006 by MichaelS.
-//  Compilers:   Visual Studio.NET 2005
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __IJOYSTICK_H__
-#define __IJOYSTICK_H__
+#pragma once
 
 struct ISplineInterpolator;
 
-class IJoystickChannel
+struct IJoystickChannel
 {
-public:
 	// <interfuscator:shuffle>
 	virtual ~IJoystickChannel(){}
 	virtual void        AddRef() = 0;
@@ -44,9 +31,8 @@ public:
 	// </interfuscator:shuffle>
 };
 
-class IJoystick
+struct IJoystick
 {
-public:
 	typedef Vec3_tpl<unsigned char> Color;
 
 	enum ChannelType
@@ -80,9 +66,8 @@ public:
 	// </interfuscator:shuffle>
 };
 
-class IJoystickSet
+struct IJoystickSet
 {
-public:
 	// <interfuscator:shuffle>
 	virtual ~IJoystickSet(){}
 	virtual void        AddRef() = 0;
@@ -100,9 +85,8 @@ public:
 	// </interfuscator:shuffle>
 };
 
-class IJoystickContext
+struct IJoystickContext
 {
-public:
 	// <interfuscator:shuffle>
 	virtual ~IJoystickContext(){}
 
@@ -113,5 +97,3 @@ public:
 	virtual IJoystickSet* LoadJoystickSet(const char* filename, bool bNoWarnings = false) = 0;
 	// </interfuscator:shuffle>
 };
-
-#endif //__IJOYSTICK_H__

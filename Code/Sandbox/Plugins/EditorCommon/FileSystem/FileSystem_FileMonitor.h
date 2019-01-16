@@ -15,7 +15,7 @@ namespace Internal
 class CWorkerApi;
 } // namespace Internal
 
-class IFileMonitor;
+struct IFileMonitor;
 typedef std::shared_ptr<IFileMonitor> FileMonitorPtr;
 
 struct SFileChange
@@ -41,10 +41,13 @@ struct SFileMonitorUpdate
  *
  * note: be aware that you class has to be created for a shared_ptr
  */
-class IFileMonitor
+struct IFileMonitor
 {
 	friend class Internal::CWorkerApi;
+
 protected:
+	virtual ~IFileMonitor() {}
+
 	/// \brief called when the monitor is established
 	/// \param the initial snapshot where updates are applied to
 	virtual void Activated(const SnapshotPtr& initialSnapshot) = 0;

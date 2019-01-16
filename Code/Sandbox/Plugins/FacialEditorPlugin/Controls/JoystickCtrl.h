@@ -2,8 +2,11 @@
 
 #pragma once
 
-#include <CryInput/IJoystick.h>
 #include "ScrollableWindow.h"
+#include <CryInput/IJoystick.h>
+
+struct IJoystickActionMode;
+class JoystickMiddleMouseButtonHandler;
 
 struct IJoystickCtrlContainer
 {
@@ -26,8 +29,6 @@ struct IJoystickCtrlContainer
 	virtual bool              GetPlaying() const = 0;
 	virtual void              SetPlaying(bool playing) = 0;
 };
-
-class IJoystickActionMode;
 
 struct IJoystickActionContext
 {
@@ -58,8 +59,6 @@ struct IJoystickMiddleMouseButtonHandlerContext
 	virtual Vec2 GetPosition() const = 0;
 	virtual void SetPosition(const Vec2& position) = 0;
 };
-
-class JoystickMiddleMouseButtonHandler;
 
 class CJoystickCtrl : public CScrollableWindow, public IJoystickActionContext, public IJoystickUndoContext, public IJoystickMiddleMouseButtonHandlerContext
 {
