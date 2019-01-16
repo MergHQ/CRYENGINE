@@ -128,8 +128,10 @@ if (AUDIO_WWISE)
 		AkRecorderFX
 		AkReflectFX
 		AkRoomVerbFX
+		AkRouterMixerFX
 		AkSilenceSource
 		AkSineSource
+		AkSoundSeedGrainSource
 		AkSoundSeedImpactFX
 		AkSoundSeedWindSource
 		AkSoundSeedWooshSource
@@ -140,6 +142,7 @@ if (AUDIO_WWISE)
 		AkToneSource
 		AkTremoloFX
 		AkVorbisDecoder
+		ASIOSourceSink
 		McDSPFutzBoxFX
 		McDSPLimiterFX
 		)
