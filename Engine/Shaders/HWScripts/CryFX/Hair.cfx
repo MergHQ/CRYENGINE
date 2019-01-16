@@ -534,7 +534,7 @@ vert2fragZPre_C ZPrePassVS(app2vertZGeneral IN)
 	vert2fragZPre_C OUT = (vert2fragZPre_C)0;
 
 	streamPos vertPassPos = (streamPos)0;
-	streamPos_FromGBuffer(IN, vertPassPos);
+	streamPos_FromZ(IN, vertPassPos);
 
 	streamPos vertPassPosPrev = (streamPos) vertPassPos;
 
