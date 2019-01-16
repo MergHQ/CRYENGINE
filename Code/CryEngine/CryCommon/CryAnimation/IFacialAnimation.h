@@ -9,10 +9,12 @@
 #include <CryCore/functor.h>
 
 struct ICharacterInstance;
+struct IFacialAnimChannel;
 struct IFacialAnimSequence;
 struct IFacialEffCtrl;
-
-class IJoystickSet;
+struct IJoystickChannel;
+struct IJoystickContext;
+struct IJoystickSet;
 
 #define FACE_STORE_ASSET_VALUES (1)
 
@@ -203,6 +205,7 @@ struct IFacialEffectorsLibraryEffectorVisitor
 	virtual void VisitEffector(IFacialEffector* pEffector) = 0;
 	// </interfuscator:shuffle>
 };
+
 struct IFacialEffectorsLibrary
 {
 	// <interfuscator:shuffle>
@@ -224,7 +227,7 @@ struct IFacialEffectorsLibrary
 	//! \note Do not use this at runtime - only in the editor.
 	virtual IFacialEffector* Find(const char* identStr) = 0;
 
-	//! Retrieve the root effector, all effectors contained in the library are direct or inderect siblings of this root.
+	//! Retrieve the root effector, all effectors contained in the library are direct or indirect siblings of this root.
 	virtual IFacialEffector* GetRoot() = 0;
 
 	//! Direct access to effectors.
@@ -333,9 +336,6 @@ struct IPhonemeLibrary
 };
 
 //! Main interface to the facial animation system.
-class IJoystickContext;
-class IJoystickChannel;
-struct IFacialAnimChannel;
 struct IFacialAnimation
 {
 	// <interfuscator:shuffle>

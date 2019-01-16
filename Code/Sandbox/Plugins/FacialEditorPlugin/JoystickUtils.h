@@ -2,8 +2,7 @@
 
 #pragma once
 
-class IJoystick;
-class IJoystickChannel;
+struct IJoystickChannel;
 
 namespace JoystickUtils
 {

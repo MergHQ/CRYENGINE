@@ -174,9 +174,8 @@ private:
 	IJoystickSet*         m_pJoystickSet;
 };
 
-class IJoystickActionMode : public _reference_target_t
+struct IJoystickActionMode : public _reference_target_t
 {
-public:
 	virtual void OnClick(const Vec2& vPosition, bool controlHeld, IJoystickActionContext* pContext) {}
 	virtual void OnStartDragging(const Vec2& vPosition, IJoystickActionContext* pContext)           {}
 	virtual void OnDragging(const Vec2& vPosition, IJoystickActionContext* pContext)                {}

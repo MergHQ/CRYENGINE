@@ -13,10 +13,9 @@ class CSimpleTriangleRasterizer
 {
 public:
 
-	class IRasterizeSink
+	struct IRasterizeSink
 	{
-	public:
-
+		virtual ~IRasterizeSink() {}
 		//! is called once per triangle for the first possible visible line
 		//! /param iniStartY 
 		virtual void Triangle( const int)
@@ -24,8 +23,8 @@ public:
 		}
 
 		//! callback function
-		//! /param infXLeft included - not clipped against left and reight border
-		//! /param infXRight excluded - not clipped against left and reight border
+		//! /param infXLeft included - not clipped against left and right border
+		//! /param infXRight excluded - not clipped against left and right border
 		//! /param iniXLeft included
 		//! /param iniXRight excluded
 		//! /param iniY 
@@ -102,8 +101,8 @@ public:
 	//! /param pBuffer pointer o the color buffer
 	//! /param indwWidth width of the color buffer
 	//! /param indwHeight height of the color buffer
-	//! /param x array of the x coordiantes of the three vertices
-	//! /param y array of the x coordiantes of the three vertices
+	//! /param x array of the x coordinates of the three vertices
+	//! /param y array of the x coordinates of the three vertices
 	//! /param indwValue value of the triangle
 	void DWORDFlatFill( uint32 *inpBuffer, const uint32 indwPitchInPixels, float x[3], float y[3], uint32 indwValue, bool inbConservative )
 	{
@@ -120,20 +119,20 @@ public:
 
 
 	//! subpixel correct triangle filler (conservative or not conservative)
-	//! \param pBuffer pointe to the uint32
-	//! \param indwWidth width of the buffer pBuffer pointes to
-	//! \param indwHeight height of the buffer pBuffer pointes to
-	//! \param x array of the x coordiantes of the three vertices
-	//! \param y array of the x coordiantes of the three vertices
+	//! \param pBuffer points to the uint32
+	//! \param indwWidth width of the buffer pBuffer points to
+	//! \param indwHeight height of the buffer pBuffer points to
+	//! \param x array of the x coordinates of the three vertices
+	//! \param y array of the x coordinates of the three vertices
 	//! \param inpSink pointer to the sink interface (is called per triangle and per triangle line)
 	void CallbackFillConservative( float x[3], float y[3], IRasterizeSink *inpSink );
 
 	//! subpixel correct triangle filler (conservative or not conservative)
-	//! \param pBuffer pointe to the uint32
-	//! \param indwWidth width of the buffer pBuffer pointes to
-	//! \param indwHeight height of the buffer pBuffer pointes to
-	//! \param x array of the x coordiantes of the three vertices
-	//! \param y array of the x coordiantes of the three vertices
+	//! \param pBuffer points to the uint32
+	//! \param indwWidth width of the buffer pBuffer points to
+	//! \param indwHeight height of the buffer pBuffer points to
+	//! \param x array of the x coordinates of the three vertices
+	//! \param y array of the x coordinates of the three vertices
 	//! \param inpSink pointer to the sink interface (is called per triangle and per triangle line)
 	void CallbackFillSubpixelCorrect( float x[3], float y[3], IRasterizeSink *inpSink );
 
@@ -160,7 +159,7 @@ private:
 
 // extension ideas:
 // * callback with coverage mask (possible non ordered sampling)
-// * z-buffer behaviour
+// * z-buffer behavior
 // * gouraud shading
 // * texture mapping with nearest/bicubic/bilinear filter
 // * further primitives: thick line, ellipse
