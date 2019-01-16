@@ -498,7 +498,7 @@ void CRainStage::ExecuteRainOcclusionGen()
 	SRainParams& rainVolParams = m_RainVolParams;
 
 	// Get temp depth buffer
-	CTexture* pTmpDepthSurface = rd->CreateDepthTarget(RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, Clr_FarPlane, eTF_Unknown);
+	CTexture* pTmpDepthSurface = CRendererResources::CreateDepthTarget(RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, Clr_FarPlane, eTF_Unknown);
 
 	// clear buffers
 	CClearSurfacePass::Execute(CRendererResources::s_ptexRainOcclusion, Clr_Neutral);

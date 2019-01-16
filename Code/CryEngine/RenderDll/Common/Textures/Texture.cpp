@@ -710,6 +710,15 @@ CTexture* CTexture::GetOrCreateRenderTarget(const char* name, uint32 nWidth, uin
 	return pTex;
 }
 
+_smart_ptr<CTexture> CTexture::GetOrCreateRenderTargetPtr(const char* name, uint32 nWidth, uint32 nHeight, const ColorF& cClear, ETEX_Type eTT, uint32 nFlags, ETEX_Format eFormat, int nCustomID)
+{
+	CTexture* pTex = GetOrCreateRenderTarget(name, nWidth, nHeight, cClear, eTT, nFlags, eFormat, nCustomID);
+	_smart_ptr<CTexture> result;
+	result.Assign_NoAddRef(pTex);
+
+	return result;
+}
+
 CTexture* CTexture::GetOrCreateDepthStencil(const char* name, uint32 nWidth, uint32 nHeight, const ColorF& cClear, ETEX_Type eTT, uint32 nFlags, ETEX_Format eFormat, int nCustomID)
 {
 	CTexture* pTex = GetOrCreateTextureObject(name, nWidth, nHeight, 1, eTT, nFlags | FT_USAGE_DEPTHSTENCIL, eFormat, nCustomID);
@@ -722,6 +731,15 @@ CTexture* CTexture::GetOrCreateDepthStencil(const char* name, uint32 nWidth, uin
 	pTex->PostCreate();
 
 	return pTex;
+}
+
+_smart_ptr<CTexture> CTexture::GetOrCreateDepthStencilPtr(const char* name, uint32 nWidth, uint32 nHeight, const ColorF& cClear, ETEX_Type eTT, uint32 nFlags, ETEX_Format eFormat, int nCustomID)
+{
+	CTexture* pTex = GetOrCreateDepthStencil(name, nWidth, nHeight, cClear, eTT, nFlags, eFormat, nCustomID);
+	_smart_ptr<CTexture> result;
+	result.Assign_NoAddRef(pTex);
+
+	return result;
 }
 
 CTexture* CTexture::GetOrCreate2DTexture(const char* szName, int nWidth, int nHeight, int nMips, int nFlags, const byte* pSrcData, ETEX_Format eSrcFormat, bool bAsyncDevTexCreation)
@@ -1736,9 +1754,9 @@ byte* CTexture::GetData32(int nSide, int nLevel, byte* pDstData, ETEX_Format eDs
 #endif
 }
 
-const size_t CTexture::GetAllocatedSystemMemory(bool bIncludePool) const
+const size_t CTexture::GetAllocatedSystemMemory(bool bIncludePool, bool bIncludeCache) const
 {
-	size_t nSize = sizeof(CTexture);
+	size_t nSize = sizeof(*this);
 	nSize += m_SrcName.capacity();
 
 	// TODO: neccessary?
@@ -1750,7 +1768,8 @@ const size_t CTexture::GetAllocatedSystemMemory(bool bIncludePool) const
 
 	if (m_pFileTexMips)
 	{
-		nSize += m_pFileTexMips->GetAllocatedSystemMemory(m_nMips, m_CacheFileHeader.m_nSides);
+		if (bIncludeCache)
+			nSize += m_pFileTexMips->GetAllocatedSystemMemory(m_nMips, m_CacheFileHeader.m_nSides);
 		if (bIncludePool && m_pFileTexMips->m_pPoolItem)
 			nSize += m_pFileTexMips->m_pPoolItem->GetAllocatedSystemMemory();
 	}
@@ -1762,11 +1781,6 @@ void CTexture::Init()
 {
 	SDynTexture::Init();
 	InitStreaming();
-
-	SDynTexture2::Init(eTP_Clouds);
-	SDynTexture2::Init(eTP_Sprites);
-	SDynTexture2::Init(eTP_VoxTerrain);
-	SDynTexture2::Init(eTP_DynTexSources);
 }
 
 void CTexture::PostInit()
@@ -2428,85 +2442,6 @@ const char* CTexture::GetFormatName() const
 const char* CTexture::GetTypeName() const
 {
 	return NameForTextureType(GetTextureType());
-}
-
-//////////////////////////////////////////////////////////////////////////
-CDynTextureSource::CDynTextureSource()
-	: m_refCount(1)
-	, m_width(0)
-	, m_height(0)
-	, m_lastUpdateTime(0)
-	, m_lastUpdateFrameID(0)
-	, m_pDynTexture(0)
-{
-}
-
-CDynTextureSource::~CDynTextureSource()
-{
-	SAFE_DELETE(m_pDynTexture);
-}
-
-void CDynTextureSource::AddRef()
-{
-	CryInterlockedIncrement(&m_refCount);
-}
-
-void CDynTextureSource::Release()
-{
-	long refCnt = CryInterlockedDecrement(&m_refCount);
-	if (refCnt <= 0)
-		delete this;
-}
-
-void CDynTextureSource::CalcSize(uint16& width, uint16& height) const
-{
-	uint16 size;
-	uint16 logSize;
-	switch (CRenderer::CV_r_envtexresolution)
-	{
-	case 0:
-	case 1:
-		size = 256;
-		logSize = 8;
-		break;
-	case 2:
-	case 3:
-	default:
-		size = 512;
-		logSize = 9;
-		break;
-	}
-
-	width  = size;
-	height = size;
-}
-
-void CDynTextureSource::GetTexGenInfo(float& offsX, float& offsY, float& scaleX, float& scaleY) const
-{
-	assert(m_pDynTexture);
-	if (!m_pDynTexture || !m_pDynTexture->IsValid())
-	{
-		offsX = 0;
-		offsY = 0;
-		scaleX = 1;
-		scaleY = 1;
-		return;
-	}
-
-	ITexture* pSrcTex(m_pDynTexture->GetTexture());
-	float invSrcWidth(1.0f / (float) pSrcTex->GetWidth());
-	float invSrcHeight(1.0f / (float) pSrcTex->GetHeight());
-	offsX = m_pDynTexture->m_nX * invSrcWidth;
-	offsY = m_pDynTexture->m_nY * invSrcHeight;
-	assert(m_width <= m_pDynTexture->m_nWidth && m_height <= m_pDynTexture->m_nHeight);
-	scaleX = m_width * invSrcWidth;
-	scaleY = m_height * invSrcHeight;
-}
-
-void CDynTextureSource::InitDynTexture(ETexPool eTexPool)
-{
-	CalcSize(m_width, m_height);
-	m_pDynTexture = new SDynTexture2(m_width, m_height, FT_USAGE_RENDERTARGET | FT_STATE_CLAMP | FT_NOMIPS, "DynTextureSource", eTexPool);
 }
 
 struct FlashTextureSourceSharedRT_AutoUpdate

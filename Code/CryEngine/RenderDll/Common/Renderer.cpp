@@ -15,6 +15,7 @@
 #include "Textures/TextureManager.h"
 #include "Textures/TextureStreamPool.h"
 #include "Textures/TextureCompiler.h"                 // CTextureCompiler
+#include "GraphicsPipeline/ShadowMap.h"
 
 #include "PostProcess/PostEffects.h"
 #include "RendElements/CRELensOptics.h"
@@ -489,8 +490,9 @@ int CRenderer::GetFrameID(bool bIncludeRecursiveCalls /*=true*/)
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::OnEntityDeleted(IRenderNode* pRenderNode)
 {
-	//@TODO: Only used for Lights, Investigate potentially very expensive!
-	ExecuteRenderThreadCommand( [=]{ SDynTexture_Shadow::RT_EntityDelete(pRenderNode); },ERenderCommandFlags::LevelLoadingThread_defer );
+	ExecuteRenderThreadCommand( [=]{
+		GetGraphicsPipeline().GetShadowStage()->OnEntityDeleted(pRenderNode);
+	}, ERenderCommandFlags::LevelLoadingThread_defer );
 }
 
 #pragma pack (push)

@@ -734,7 +734,7 @@ bool CD3D9Renderer::BakeMesh(const SMeshBakingInputParams* pInputParams, SMeshBa
 			pBakeMaterial.push_back(PatchMaterial(*it)); // Replace current shader with MeshBake
 		}
 
-		CTexture* pTmpDepthSurface = CreateDepthTarget(outputWidth, outputHeight, Clr_Empty, eTF_Unknown);
+		CTexture* pTmpDepthSurface = CRendererResources::CreateDepthTarget(outputWidth, outputHeight, Clr_Empty, eTF_Unknown);
 		if (!pTmpDepthSurface)
 		{
 			CryLog("BakeMesh: Failed as temporary depth surface could not be created of size %dx%d\n", outputWidth, outputHeight);
