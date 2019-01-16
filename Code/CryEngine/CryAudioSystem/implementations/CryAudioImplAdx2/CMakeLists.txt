@@ -57,11 +57,9 @@ if(AUDIO_ADX2)
 		set( ADX2_LIB_FOLDER x64 )
 		set( ADX2_LIBS
 			cri_base_pcx64
-			cri_framework_pcx64
 			cri_file_system_pcx64
 			cri_atom_pcx64
 			cri_atom_monitor_pcx64
-			cri_mana_pcx64
 		)
 	endif()
 
