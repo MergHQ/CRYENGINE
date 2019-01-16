@@ -142,7 +142,6 @@ if (AUDIO_WWISE)
 		AkToneSource
 		AkTremoloFX
 		AkVorbisDecoder
-		ASIOSourceSink
 		McDSPFutzBoxFX
 		McDSPLimiterFX
 		)
@@ -167,7 +166,7 @@ if (AUDIO_WWISE)
 
 	# TODO: ws2_32 is not needed in release builds (Wwise profiling)
 	set( WIN_LIBS Ole32 Msacm32 dinput8 Winmm dsound dxguid ws2_32 xinput )
-	set( WIN_WWISE_LIBS ${WWISE_EXTRA_PLUGIN_LIBS} AkMotionGeneratorSource AkMotionSink )
+	set( WIN_WWISE_LIBS ${WWISE_EXTRA_PLUGIN_LIBS} AkMotionGeneratorSource AkMotionSink ASIOSourceSink )
 	make_library(WIN_WWISE_LIBS "${WWISE_LIB_PATH}")
 	set( WIN_RELEASE_LIBS ${COMMON_WWISE_LIBS} ${WIN_WWISE_LIBS} ${WIN_LIBS} )
 	set( WIN_NONRELEASE_LIBS ${COMM_CENTRAL_LIBS} ${WIN_RELEASE_LIBS} "${WWISE_LIB_PATH}SFLib.lib" )
