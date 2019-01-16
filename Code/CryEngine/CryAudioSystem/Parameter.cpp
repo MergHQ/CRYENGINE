@@ -51,7 +51,7 @@ void CParameter::SetGlobal(float const value) const
 
 	for (auto const pConnection : m_connections)
 	{
-		g_pIImpl->SetGlobalParameter(pConnection, value);
+		pConnection->SetGlobally(value);
 	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)

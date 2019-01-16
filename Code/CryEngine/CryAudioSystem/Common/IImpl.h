@@ -150,21 +150,6 @@ struct IImpl
 	virtual ERequestStatus StopAllSounds() = 0;
 
 	/**
-	 * Sets a parameter on all objects.
-	 * @param pIParameter - Parameter to set
-	 * @param value - Value to set
-	 * @return void
-	 */
-	virtual void SetGlobalParameter(IParameterConnection* const pIParameterConnection, float const value) = 0;
-
-	/**
-	 * Sets a switch state on all objects.
-	 * @param pISwitchStateConnection - Switch state to set
-	 * @return void
-	 */
-	virtual void SetGlobalSwitchState(ISwitchStateConnection* const pISwitchStateConnection) = 0;
-
-	/**
 	 * Inform the audio middleware about the memory location of a preloaded audio-data file
 	 * @param pFileInfo - audio system-specific information describing the resources used by the preloaded file being reported
 	 * @return void

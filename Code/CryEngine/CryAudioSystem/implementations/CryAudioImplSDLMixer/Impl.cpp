@@ -290,42 +290,6 @@ ERequestStatus CImpl::StopAllSounds()
 	return ERequestStatus::Success;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalParameter(IParameterConnection* const pIParameterConnection, float const value)
-{
-	if (pIParameterConnection != nullptr)
-	{
-		auto const pParameter = static_cast<CParameter*>(pIParameterConnection);
-
-		for (auto const pObject : g_objects)
-		{
-			pParameter->Set(pObject, value);
-		}
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Invalid parameter pointer passed to the SDL Mixer implementation of %s", __FUNCTION__);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalSwitchState(ISwitchStateConnection* const pISwitchStateConnection)
-{
-	if (pISwitchStateConnection != nullptr)
-	{
-		auto const pSwitchState = static_cast<CSwitchState*>(pISwitchStateConnection);
-
-		for (auto const pObject : g_objects)
-		{
-			pSwitchState->Set(pObject);
-		}
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Invalid switch state pointer passed to the SDL Mixer implementation of %s", __FUNCTION__);
-	}
-}
-
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 {

@@ -28,6 +28,7 @@ namespace Impl
 namespace Fmod
 {
 class CImpl;
+class CBaseObject;
 class CEvent;
 class CBaseParameter;
 class CBaseStandaloneFile;
@@ -45,6 +46,7 @@ extern uint32 g_numObjectsWithDoppler;
 static constexpr char const* s_szOcclusionParameterName = "occlusion";
 static constexpr char const* s_szAbsoluteVelocityParameterName = "absolute_velocity";
 
+using Objects = std::vector<CBaseObject*>;
 using Events = std::vector<CEvent*>;
 using Parameters = std::map<CBaseParameter const* const, float>;
 using Switches = std::map<uint32 const, CBaseSwitchState const*>;
@@ -54,6 +56,7 @@ using StandaloneFiles = std::vector<CBaseStandaloneFile*>;
 using ParameterIdToIndex = std::map<uint32, int>;
 using TriggerToParameterIndexes = std::map<CTrigger const* const, ParameterIdToIndex>;
 
+extern Objects g_constructedObjects;
 extern TriggerToParameterIndexes g_triggerToParameterIndexes;
 
 ///////////////////////////////////////////////////////////////////////////

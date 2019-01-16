@@ -39,7 +39,6 @@ namespace Impl
 {
 namespace Adx2
 {
-std::vector<CBaseObject*> g_constructedObjects;
 SPoolSizes g_poolSizes;
 SPoolSizes g_poolSizesLevelSpecific;
 
@@ -406,97 +405,6 @@ ERequestStatus CImpl::StopAllSounds()
 {
 	criAtomExPlayer_StopAllPlayers();
 	return ERequestStatus::Success;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalParameter(IParameterConnection* const pIParameterConnection, float const value)
-{
-	if (pIParameterConnection != nullptr)
-	{
-		auto const pParameter = static_cast<CParameter*>(pIParameterConnection);
-		EParameterType const type = pParameter->GetType();
-
-		switch (type)
-		{
-		case EParameterType::AisacControl:
-			{
-				for (auto const pObject : g_constructedObjects)
-				{
-					pParameter->Set(pObject, value);
-				}
-
-				break;
-			}
-		case EParameterType::Category:
-			{
-				criAtomExCategory_SetVolumeByName(pParameter->GetName(), static_cast<CriFloat32>(pParameter->GetMultiplier() * value + pParameter->GetValueShift()));
-
-				break;
-			}
-		case EParameterType::GameVariable:
-			{
-				criAtomEx_SetGameVariableByName(pParameter->GetName(), static_cast<CriFloat32>(pParameter->GetMultiplier() * value + pParameter->GetValueShift()));
-
-				break;
-			}
-		default:
-			{
-				Cry::Audio::Log(ELogType::Warning, "Adx2 - Unknown EParameterType: %" PRISIZE_T, type);
-
-				break;
-			}
-		}
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Adx2 - Invalid Parameter pointer passed to the Adx2 implementation of %s", __FUNCTION__);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalSwitchState(ISwitchStateConnection* const pISwitchStateConnection)
-{
-	if (pISwitchStateConnection != nullptr)
-	{
-		auto const pSwitchState = static_cast<CSwitchState*>(pISwitchStateConnection);
-		ESwitchType const type = pSwitchState->GetType();
-
-		switch (type)
-		{
-		case ESwitchType::Selector:
-		case ESwitchType::AisacControl:
-			{
-				for (auto const pObject : g_constructedObjects)
-				{
-					pSwitchState->Set(pObject);
-				}
-
-				break;
-			}
-		case ESwitchType::Category:
-			{
-				criAtomExCategory_SetVolumeByName(pSwitchState->GetName(), pSwitchState->GetValue());
-
-				break;
-			}
-		case ESwitchType::GameVariable:
-			{
-				criAtomEx_SetGameVariableByName(pSwitchState->GetName(), pSwitchState->GetValue());
-
-				break;
-			}
-		default:
-			{
-				Cry::Audio::Log(ELogType::Warning, "Adx2 - Unknown ESwitchType: %" PRISIZE_T, type);
-
-				break;
-			}
-		}
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Invalid switch pointer passed to the Adx2 implementation of %s", __FUNCTION__);
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////

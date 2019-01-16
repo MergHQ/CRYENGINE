@@ -280,16 +280,6 @@ ERequestStatus CImpl::StopAllSounds()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalParameter(IParameterConnection* const pIParameterConnection, float const value)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CImpl::SetGlobalSwitchState(ISwitchStateConnection* const pISwitchStateConnection)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 {
 	if (pFileInfo != nullptr)

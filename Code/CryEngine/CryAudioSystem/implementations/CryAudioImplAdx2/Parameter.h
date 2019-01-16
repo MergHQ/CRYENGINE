@@ -47,6 +47,7 @@ public:
 
 	// IParameterConnection
 	virtual void Set(IObject* const pIObject, float const value) override;
+	virtual void SetGlobally(float const value) override;
 	// ~IParameterConnection
 
 	CriChar8 const* GetName() const       { return static_cast<CriChar8 const*>(m_name); }

@@ -42,8 +42,6 @@ public:
 	virtual void                       PauseAll() override;
 	virtual void                       ResumeAll() override;
 	virtual ERequestStatus             StopAllSounds() override;
-	virtual void                       SetGlobalParameter(IParameterConnection* const pIParameterConnection, float const value) override;
-	virtual void                       SetGlobalSwitchState(ISwitchStateConnection* const pISwitchStateConnection) override;
 	virtual void                       RegisterInMemoryFile(SFileInfo* const pFileInfo) override;
 	virtual void                       UnregisterInMemoryFile(SFileInfo* const pFileInfo) override;
 	virtual ERequestStatus             ConstructFile(XmlNodeRef const pRootNode, SFileInfo* const pFileInfo) override;

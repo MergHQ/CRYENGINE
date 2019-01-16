@@ -32,6 +32,7 @@ public:
 
 	// ISwitchStateConnection
 	virtual void Set(IObject* const pIObject) override {}
+	virtual void SetGlobally() override                {}
 	// ~ISwitchStateConnection
 
 	uint32     GetId() const    { return m_id; }
