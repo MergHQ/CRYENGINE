@@ -400,16 +400,6 @@ void CD3D9Renderer::SF_PrecacheShaders()
 	SDeviceObjectHelpers::THwShaderInfo shaderInfoXY16iCF32;
 	SDeviceObjectHelpers::THwShaderInfo shaderInfoGlyph;
 
-	SDeviceObjectHelpers::GetShaderInstanceInfo(shaderInfoXY16i,     pShader, Res.m_shTech_SolidColor             , 0, 0, MDV_NONE, nullptr, false);
-	SDeviceObjectHelpers::GetShaderInstanceInfo(shaderInfoXY16iC32,  pShader, Res.m_shTech_CxformGouraudNoAddAlpha, 0, 0, MDV_NONE, nullptr, false);
-	SDeviceObjectHelpers::GetShaderInstanceInfo(shaderInfoXY16iCF32, pShader, Res.m_shTech_CxformGouraud          , 0, 0, MDV_NONE, nullptr, false);
-	SDeviceObjectHelpers::GetShaderInstanceInfo(shaderInfoGlyph,     pShader, Res.m_shTech_GlyphTexture           , 0, 0, MDV_NONE, nullptr, false);
-
-	auto* pInstanceXY16i     = reinterpret_cast<CHWShader_D3D::SHWSInstance*>(shaderInfoXY16i    [eHWSC_Vertex].pHwShaderInstance);
-	auto* pInstanceXY16iC32  = reinterpret_cast<CHWShader_D3D::SHWSInstance*>(shaderInfoXY16iC32 [eHWSC_Vertex].pHwShaderInstance);
-	auto* pInstanceXY16iCF32 = reinterpret_cast<CHWShader_D3D::SHWSInstance*>(shaderInfoXY16iCF32[eHWSC_Vertex].pHwShaderInstance);
-	auto* pInstanceGlyph     = reinterpret_cast<CHWShader_D3D::SHWSInstance*>(shaderInfoGlyph    [eHWSC_Vertex].pHwShaderInstance);
-
 	Res.m_vertexDecls[IScaleformPlayback::Vertex_XY16i]     = CDeviceObjectFactory::CreateCustomVertexFormat(1, VertexDeclXY16i);
 	Res.m_vertexDecls[IScaleformPlayback::Vertex_XY16iC32]  = CDeviceObjectFactory::CreateCustomVertexFormat(2, VertexDeclXY16iC32);
 	Res.m_vertexDecls[IScaleformPlayback::Vertex_XY16iCF32] = CDeviceObjectFactory::CreateCustomVertexFormat(3, VertexDeclXY16iCF32);
