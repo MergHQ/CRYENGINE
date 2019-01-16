@@ -197,7 +197,7 @@ half GetSpotAttenuation(half fPdotL, half fCosAngle, half fRadius)
 float3 MapCubeToSphere(float3 pos)
 {
 	float3 pos2 = pos.xyz * pos.xyz;
-	return pos * sqrt(1 - 0.5 * pos2.yzx - 0.5 * pos2.zxy + 0.333 * pos2.yzx * pos2.zxy);
+	return pos * sqrt(1 - rcp(2) * (pos2.yzx + pos2.zxy) + rcp(3) * (pos2.yzx * pos2.zxy));
 }
 
 half3 ShiftVector(half3 V, half3 N, half shiftAmount)
@@ -485,7 +485,7 @@ half3 AreaLightGGX(half3 N, half3 V, half3 L, half Gloss, half3 SpecCol, half4x4
 
 // Diffuse BRDFs
 
-half3 ComputeNearestLightOnRectangle(half3 vPosition, half3 vLightPoint, float4x4 mAreaLightMatr)
+half3 ComputeNearestLightOnRectangle(half3 vLightPoint, float4x4 mAreaLightMatr)
 {
 	// Calculate light space plane.
 	half3 vLightDir = dot(mAreaLightMatr[0].xyz, vLightPoint.xyz) * mAreaLightMatr[0].xyz - vLightPoint.xyz;
@@ -981,23 +981,23 @@ half4 GetEnvironmentCMap(TextureCube envCubeTex, SamplerState envCubeSampler, in
 	return envColor;
 }
 
-void CubemapBoxParallaxCorrection(inout half3 vReflVec, in half3 vPosition, in half3 vLightPos, in half3 vBoxExtentsMin, in half3 vBoxExtentsMax, inout half fGloss)
+void CubemapBoxParallaxCorrection(inout half3 vReflVec, in half3 vPosLightDist, in half3 vBoxExtentsMin, in half3 vBoxExtentsMax, inout half fGloss)
 {
 	// Parallax correction for local cubemaps using a box as geometry proxy
 
 	half3 vReflVecN = normalize(vReflVec.xyz);
 		
 	// Min/max intersection
-	half3 vBoxIntersectionMax = ((vLightPos + vBoxExtentsMax) - vPosition) / vReflVecN;
-	half3 vBoxIntersectionMin = ((vLightPos + vBoxExtentsMin) - vPosition) / vReflVecN;
+	half3 vBoxIntersectionMax = (vPosLightDist + vBoxExtentsMax) / vReflVecN;
+	half3 vBoxIntersectionMin = (vPosLightDist + vBoxExtentsMin) / vReflVecN;
 	
 	// Intersection test
 	half3 vFurthestPlane = vReflVecN > 0.0f ? vBoxIntersectionMax : vBoxIntersectionMin;
 	half fDistance = min(min(vFurthestPlane.x, vFurthestPlane.y), vFurthestPlane.z);
 
 	// Apply new reflection position
-	half3 vInterectionPos = vPosition + vReflVecN * fDistance;
-	vReflVec = vInterectionPos - vLightPos;
+	half3 vInterectionPos = -vPosLightDist;
+	vReflVec = vInterectionPos + (vReflVecN * fDistance);
 
 	// Modulate glossiness based on reflection vector length.
 	//half3 vDist = vBoxPos - vPosition;

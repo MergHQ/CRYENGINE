@@ -1518,7 +1518,7 @@ void AccumulateInscatteringRegularLights(inout float3 inscatter, in float depth,
 
 				if (lightType == TILEDLIGHT_TYPE_AMBIENT_AREA)
 				{
-					lightVec = ComputeNearestLightOnRectangle(position.xyz, lightVec, light.projectorMatrix);
+					lightVec = ComputeNearestLightOnRectangle(lightVec, light.projectorMatrix);
 
 					attenuation = GetAttenuation( lightVec, 1.0 / light.posRad.w );
 
@@ -1722,7 +1722,7 @@ void AccumulateInscatteringRegularLights(inout float3 inscatter, in float depth,
 #if %_RT_SAMPLE2
 				if (lightType == TILEDLIGHT_TYPE_REGULAR_AREA)
 				{
-					lightVec = ComputeNearestLightOnRectangle(position.xyz, lightVec, VolumeLightsShadeInfo[lightIndex].projectorMatrix);
+					lightVec = ComputeNearestLightOnRectangle(lightVec, VolumeLightsShadeInfo[lightIndex].projectorMatrix);
 				}
 #endif
 				float lightDist = length( lightVec );
