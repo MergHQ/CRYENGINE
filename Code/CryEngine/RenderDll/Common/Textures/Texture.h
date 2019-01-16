@@ -65,8 +65,6 @@ enum EShadowBuffers_Pool
 #define TEX_POOL_BLOCKSIZE    (1 << TEX_POOL_BLOCKLOGSIZE)
 #define TEX_SYS_COPY_MAX_SLOTS 8 // max number of texture resolutions cached in system RAM
 
-struct SDynTexture_Shadow;
-
 //======================================================================
 // Dynamic textures
 struct SDynTexture : public IDynTexture
@@ -96,9 +94,6 @@ struct SDynTexture : public IDynTexture
 	// Shadow specific vars.
 	//////////////////////////////////////////////////////////////////////////
 	int                 m_nUniqueID;
-
-	SDynTexture_Shadow* m_NextShadow;           //!<
-	SDynTexture_Shadow* m_PrevShadow;           //!<
 
 	ShadowMapFrustum*   m_pFrustumOwner;
 	IRenderNode*        pLightOwner;
@@ -281,267 +276,6 @@ inline void SDynTexture::operator delete(void* ptr)
 	if (ptr)
 		g_pSDynTexture_PoolAlloc->Deallocate(ptr);
 }
-
-//==============================================================================
-
-enum ETexPool
-{
-	eTP_Clouds,
-	eTP_Sprites,
-	eTP_VoxTerrain,
-	eTP_DynTexSources,
-
-	eTP_Max
-};
-
-struct SDynTexture2;
-
-struct STextureSetFormat
-{
-	SDynTexture2*                      m_pRoot = nullptr;
-	CryCriticalSection                 m_rootLock;
-
-
-	ETEX_Format                        m_eTF = eTF_Unknown;
-	ETexPool                           m_eTexPool = eTP_Clouds;
-	ETEX_Type                          m_eTT = eTT_2D;
-	int                                m_nTexFlags = 0;
-	
-	std::vector<CPowerOf2BlockPacker*> m_TexPools;
-	CryCriticalSection                 m_TexPoolsLock;
-
-	STextureSetFormat(ETEX_Format eTF, ETexPool eTexPool, uint32 nTexFlags)
-	{
-		m_eTF = eTF;
-		m_eTexPool = eTexPool;
-		m_nTexFlags = nTexFlags;
-	}
-	~STextureSetFormat();
-};
-
-struct SDynTexture2 : public IDynTexture
-{
-#ifndef _DEBUG
-	char*                 m_sSource;          //!< pointer to the given name in the constructor call
-#else
-	char                  m_sSource[128];         //!< pointer to the given name in the constructor call
-#endif
-	STextureSetFormat*    m_pOwner;
-	CPowerOf2BlockPacker* m_pAllocator;
-	CTexture*             m_pTexture;
-	uint32                m_nBlockID;
-	ETexPool              m_eTexPool;
-
-	SDynTexture2*         m_Next;             //!<
-	SDynTexture2**        m_PrevLink;         //!<
-
-	typedef std::map<uint32, STextureSetFormat*> TextureSet;
-
-	static CryCriticalSection s_texturePoolLock;    // Locks any access to the static s_TexturePool member
-	static CryRWLock          s_memoryOccupiedLock; // Locks any access to the static s_nMemoryOccupied member
-
-	static TextureSet  s_TexturePool[eTP_Max];
-	static size_t      s_nMemoryOccupied[eTP_Max];
-
-private:
-	//////////////////////////////////////////////////////////////////////////
-	void UnlinkGlobal()
-	{
-		if (m_Next)
-			m_Next->m_PrevLink = m_PrevLink;
-		if (m_PrevLink)
-			*m_PrevLink = m_Next;
-	}
-	void LinkGlobal(SDynTexture2*& Before)
-	{
-		if (Before)
-			Before->m_PrevLink = &m_Next;
-		m_Next = Before;
-		m_PrevLink = &Before;
-		Before = this;
-	}
-public:
-	void Link()
-	{
-		CryAutoCriticalSection lock(m_pOwner->m_rootLock);
-		LinkGlobal(m_pOwner->m_pRoot);
-	}
-	void Unlink()
-	{
-		CryAutoCriticalSection lock(m_pOwner->m_rootLock);
-		UnlinkGlobal();
-		m_Next = NULL;
-		m_PrevLink = NULL;
-	}
-	bool Remove();
-
-	uint16 m_nX;
-	uint16 m_nY;
-	uint16 m_nWidth;
-	uint16 m_nHeight;
-
-	bool   m_bLocked;
-	byte   m_nFlags;
-	byte   m_nUpdateMask;                   // Crossfire odd/even frames
-	uint32 m_nFrameReset;
-	uint32 m_nAccessFrame;
-	virtual bool IsValid();
-	inline bool  _IsValid()
-	{
-		return IsValid();
-	}
-
-	SDynTexture2(int nWidth, int nHeight, uint32 nTexFlags, const char* szSource, ETexPool eTexPool);
-	SDynTexture2(const char* szSource, ETexPool eTexPool);
-	~SDynTexture2();
-
-	bool              UpdateAtlasSize(int nNewWidth, int nNewHeight);
-	void              ReleaseForce();
-
-	virtual bool      Update(int nNewWidth, int nNewHeight);
-
-	virtual bool      SetRectStates();
-	virtual ITexture* GetTexture() { return (ITexture*)m_pTexture; }
-	ETEX_Format       GetFormat()  { return m_pOwner->m_eTF; }
-	virtual void      SetUpdateMask();
-	virtual void      ResetUpdateMask();
-	virtual bool      IsSecondFrame()      { return m_nUpdateMask == 3; }
-	virtual byte      GetFlags() const     { return m_nFlags; }
-	virtual void      SetFlags(byte flags) { m_nFlags = flags; }
-
-	// IDynTexture implementation
-	virtual void Release() { delete this; }
-	virtual void GetSubImageRect(int& nX, int& nY, int& nWidth, int& nHeight)
-	{
-		nX = m_nX;
-		nY = m_nY;
-		nWidth = m_nWidth;
-		nHeight = m_nHeight;
-	}
-	virtual void GetImageRect(int& nX, int& nY, int& nWidth, int& nHeight);
-	virtual int  GetTextureID();
-	virtual void Lock()      { m_bLocked = true; }
-	virtual void UnLock()    { m_bLocked = false; }
-	virtual int  GetWidth()  { return m_nWidth; }
-	virtual int  GetHeight() { return m_nHeight; }
-
-	static void        ShutDown();
-	static void        Init(ETexPool eTexPool);
-	static uint32      GetPoolMaxSize(ETexPool eTexPool);
-	static void        SetPoolMaxSize(ETexPool eTexPool, uint32 nSize, bool bWarn);
-	static const char* GetPoolName(ETexPool eTexPool);
-	static ETEX_Format GetPoolTexFormat(ETexPool eTexPool);
-};
-
-//////////////////////////////////////////////////////////////////////////
-// Dynamic texture for the shadow.
-// This class must not contain any non static member variables,
-//  because SDynTexture allocated used constant size pool.
-//////////////////////////////////////////////////////////////////////////
-struct SDynTexture_Shadow : public SDynTexture
-{
-	static SDynTexture_Shadow s_RootShadow;
-
-	//////////////////////////////////////////////////////////////////////////
-	SDynTexture_Shadow(int nWidth, int nHeight, ColorF clearValue, ETEX_Format eTF, ETEX_Type eTT, int nTexFlags, const char* szSource);
-	SDynTexture_Shadow(const char* szSource);
-	~SDynTexture_Shadow();
-
-	inline void UnlinkShadow()
-	{
-		if (!m_NextShadow || !m_PrevShadow)
-			return;
-		m_NextShadow->m_PrevShadow = m_PrevShadow;
-		m_PrevShadow->m_NextShadow = m_NextShadow;
-		m_NextShadow = m_PrevShadow = NULL;
-	}
-	inline void LinkShadow(SDynTexture_Shadow* Before)
-	{
-		if (m_NextShadow || m_PrevShadow)
-			return;
-		m_NextShadow = Before->m_NextShadow;
-		Before->m_NextShadow->m_PrevShadow = this;
-		Before->m_NextShadow = this;
-		m_PrevShadow = Before;
-	}
-
-	SDynTexture_Shadow* GetByID(int nID)
-	{
-		SDynTexture_Shadow* pTX = SDynTexture_Shadow::s_RootShadow.m_NextShadow;
-		for (pTX = SDynTexture_Shadow::s_RootShadow.m_NextShadow; pTX != &SDynTexture_Shadow::s_RootShadow; pTX = pTX->m_NextShadow)
-		{
-			if (pTX->m_nUniqueID == nID)
-				return pTX;
-		}
-		return NULL;
-	}
-	static void  RT_EntityDelete(IRenderNode* pRenderNode);
-
-	virtual void Unlink()
-	{
-		UnlinkGlobal();
-		UnlinkShadow();
-	}
-	virtual void Link()
-	{
-		LinkGlobal(&s_Root);
-		LinkShadow(&s_RootShadow);
-	}
-	virtual void AdjustRealSize();
-
-	void         GetMemoryUsage(ICrySizer* pSizer) const
-	{
-		SDynTexture::GetMemoryUsage(pSizer);
-	}
-
-	static SDynTexture_Shadow* GetForFrustum(const ShadowMapFrustum* pFrustum);
-
-	static void                ShutDown();
-};
-
-struct SDynTextureArray/* : public SDynTexture*/
-{
-
-	//SDynTexture members
-
-	//////////////////////////////////////////////////////////////////////////
-	char        m_sSource[128];               //!< pointer to the given name in the constructor call
-
-	CTexture*   m_pTexture;
-	ETEX_Format m_eTF;
-	ETEX_Type   m_eTT;
-	uint16      m_nWidth;
-	uint16      m_nHeight;
-	uint16      m_nReqWidth;
-	uint16      m_nReqHeight;
-	int         m_nTexFlags;
-	int         m_nPool;
-	uint32      m_nFrameReset;
-
-	bool        m_bLocked;
-	byte        m_nUpdateMask;
-
-	//////////////////////////////////////////////////////////////////////////
-	// Shadow specific vars.
-	//////////////////////////////////////////////////////////////////////////
-	IRenderNode* pLightOwner;
-	int          nObjectsRenderedCount;
-
-	int          m_nUniqueID;
-	//////////////////////////////////////////////////////////////////////////
-
-	uint32 m_nArraySize;
-
-	SDynTextureArray(int nWidth, int nHeight, int nArraySize, ETEX_Format eTF, int nTexFlags, const char* szSource);
-	~SDynTextureArray();
-
-	bool Update(int nNewWidth, int nNewHeight);
-
-	void GetMemoryUsage(ICrySizer* pSizer) const
-	{
-		pSizer->AddObject(this, sizeof(*this));
-	}
-};
 
 //==========================================================================
 // Texture
@@ -1336,7 +1070,7 @@ public:
 
 	bool               Invalidate(int nNewWidth, int nNewHeight, ETEX_Format eTF);
 	const char*        GetSourceName() const  { return m_SrcName.c_str(); }
-	const size_t       GetAllocatedSystemMemory(bool bIncludePool) const;
+	const size_t       GetAllocatedSystemMemory(bool bIncludePool, bool bIncludeCache = true) const;
 	void               PostCreate();
 
 #if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
@@ -1599,7 +1333,6 @@ public:
 
 	// High-level functions calling Create...()
 	static CTexture*              GetOrCreateTextureObject(const char* name, uint32 nWidth, uint32 nHeight, int nDepth, ETEX_Type eTT, uint32 nFlags, ETEX_Format eFormat, int nCustomID = -1);
-	static _smart_ptr<CTexture>   GetOrCreateTextureObjectPtr(const char* name, uint32 nWidth, uint32 nHeight, int nDepth, ETEX_Type eTT, uint32 nFlags, ETEX_Format eFormat, int nCustomID = -1);
 	static CTexture*              GetOrCreateTextureArray(const char* name, uint32 nWidth, uint32 nHeight, uint32 nArraySize, int nMips, ETEX_Type eType, uint32 nFlags, ETEX_Format eFormat, int nCustomID = -1);
 
 	// High-level functions calling GetOrCreate...() and Create...()
@@ -1607,6 +1340,11 @@ public:
 	static CTexture*   GetOrCreateDepthStencil(const char* name, uint32 nWidth, uint32 nHeight, const ColorF& cClear, ETEX_Type eTT, uint32 nFlags, ETEX_Format eSrcFormat, int nCustomID = -1);
 	static CTexture*   GetOrCreate2DTexture(const char* szName, int nWidth, int nHeight, int nMips, int nFlags, const byte* pData, ETEX_Format eSrcFormat, bool bAsyncDevTexCreation = false);
 	static CTexture*   GetOrCreate3DTexture(const char* szName, int nWidth, int nHeight, int nDepth, int nMips, int nFlags, const byte* pData, ETEX_Format eSrcFormat);
+
+	static _smart_ptr<CTexture> GetOrCreateTextureObjectPtr(const char* name, uint32 nWidth, uint32 nHeight, int nDepth, ETEX_Type eTT, uint32 nFlags, ETEX_Format eFormat, int nCustomID = -1);
+
+	static _smart_ptr<CTexture> GetOrCreateDepthStencilPtr(const char* name, uint32 nWidth, uint32 nHeight, const ColorF& cClear, ETEX_Type eTT, uint32 nFlags, ETEX_Format eFormat, int nCustomID = -1);
+	static _smart_ptr<CTexture> GetOrCreateRenderTargetPtr(const char* name, uint32 nWidth, uint32 nHeight, const ColorF& cClear, ETEX_Type eTT, uint32 nFlags, ETEX_Format eFormat, int nCustomID = -1);
 	//=======================================================
 
 	// API depended functions
@@ -1665,41 +1403,6 @@ struct IDynTextureSourceImpl : public IDynTextureSource
 
 	virtual void GetTexGenInfo(float& offsX, float& offsY, float& scaleX, float& scaleY) const = 0;
 	virtual void SetSize(int width, int height) = 0;
-};
-
-class CDynTextureSource : public IDynTextureSourceImpl
-{
-public:
-	virtual void   AddRef();
-	virtual void   Release();
-
-	virtual void   EnablePerFrameRendering(bool enable) {}
-	virtual void   Activate(bool activate)              {}
-#if defined(ENABLE_DYNTEXSRC_PROFILING)
-	virtual string GetProfileInfo() const               { return string(); }
-#endif
-
-	virtual void      GetTexGenInfo(float& offsX, float& offsY, float& scaleX, float& scaleY) const;
-
-	virtual ITexture* GetTexture() const             { return m_pDynTexture->GetTexture(); }
-	virtual void      SetSize(int width, int height) { m_width = width; m_height = height; }
-
-public:
-	CDynTextureSource();
-
-protected:
-	virtual ~CDynTextureSource();
-
-	void         CalcSize(uint16& width, uint16& height) const;
-	void         InitDynTexture(ETexPool eTexPool);
-
-protected:
-	volatile int  m_refCount;
-	uint16        m_width;
-	uint16        m_height;
-	float         m_lastUpdateTime;
-	int           m_lastUpdateFrameID;
-	SDynTexture2* m_pDynTexture;
 };
 
 class CFlashTextureSourceBase : public IDynTextureSourceImpl, IUIModule

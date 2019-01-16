@@ -44,15 +44,30 @@ public:
 	void Init()   final;
 	void Update() final;
 
-	void ReAllocateResources();
 	void Execute();
 
 	bool CreatePipelineStates(DevicePipelineStatesArray* pStateArray, const SGraphicsPipelineStateDescription& stateDesc, CGraphicsPipelineStateLocalCache* pStateCache);
 	bool CanRenderCachedShadows(const CCompiledRenderObject *obj) const;
 
 	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater) final;
+	void OnEntityDeleted(IRenderNode* pRenderNode);
+
+	size_t GetAllocatedMemory();
 
 private:
+	struct SShadowConfig
+	{
+		int nTexFormat;
+		int nPoolSize;
+		int nCacheFormat;
+		int nCacheLODs;
+		int nCacheCascades;
+
+		StaticArray<int, MAX_GSM_LODS_NUM> nCacheResolutions;
+	};
+
+	void ReAllocateResources(const SShadowConfig shadowConfig);
+
 	typedef char ProfileLabel[32];
 
 	class CShadowMapPass : public CSceneRenderPass
@@ -77,6 +92,7 @@ private:
 		SShadowFrustumToRender*      GetFrustum()         { return m_pFrustumToRender; }
 		const CDeviceRenderPassDesc& GetPassDesc()  const { return m_renderPassDesc; }
 
+		_smart_ptr<CTexture>     m_pDepthTarget;
 		SShadowFrustumToRender*  m_pFrustumToRender;
 		int                      m_nShadowFrustumSide;
 		EPass                    m_eShadowPassID;
@@ -133,13 +149,15 @@ private:
 	void PreparePassIDForFrustum(const SShadowFrustumToRender& frustumToRender, CRenderView::eShadowFrustumRenderType frustumRenderType, EPass& passID, ProfileLabel& profileLabel) const;
 	void PrepareShadowPassForFrustum(const SShadowFrustumToRender& frustumToRender, int nSide, CShadowMapPass& targetPass) const;
 	bool PrepareOutputsForPass(const SShadowFrustumToRender& frustumToRender, int nSide, CShadowMapPass& targetPass) const;
-	void PrepareOutputsForFrustumWithCaching(const ShadowMapFrustum& frustum, CTexture*& pDepthTarget, const CShadowMapPass*& pClearDepthMapProvider, CShadowMapPass::eClearMode& clearMode) const;
+	_smart_ptr<CTexture> PrepareOutputsForFrustumWithCaching(const char* pName, const ShadowMapFrustum& frustum, const CShadowMapPass*& pClearDepthMapProvider, CShadowMapPass::eClearMode& clearMode) const;
 
 	void UpdateShadowFrustumFromPass(const CShadowMapPass& sourcePass, ShadowMapFrustum& targetFrustum) const;
 	void CopyShadowMap(const CShadowMapPass& sourcePass, CShadowMapPass& targetPass);
 	void ClearShadowMaps(PassGroupList& shadowMapPasses);
 
-	ETEX_Format GetShadowTexFormat(EPass passID) const;
+	ETEX_Format GetShadowTexFormat(const SShadowConfig& shadowConfig, EPass passID) const;
+
+	_smart_ptr<CTexture>     m_ShadowMapCache[MAX_GSM_LODS_NUM];
 
 	_smart_ptr<CTexture>     m_pRsmColorTex;
 	_smart_ptr<CTexture>     m_pRsmNormalTex;

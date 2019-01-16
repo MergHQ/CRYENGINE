@@ -30,7 +30,6 @@ struct SGraphicsPipelinePassContext;
 #include "D3DColorGradingController.h"
 #include "D3DStereo.h"
 #include "D3DMultiResRendering.h"
-#include "ShadowTextureGroupManager.h"    // CShadowTextureGroupManager
 
 #include "D3DDeferredShading.h"
 #include "PipelineProfiler.h"
@@ -923,8 +922,6 @@ private:
 	CRenderAuxGeomD3D*         m_pRenderAuxGeomD3D;
 #endif
 	CAuxGeomCB_Null            m_renderAuxGeomNull;
-
-	CShadowTextureGroupManager m_ShadowTextureGroupManager;           // to combine multiple shadowmaps into one texture
 
 	uint32                     m_nTimeSlicedShadowsUpdatedThisFrame;
 

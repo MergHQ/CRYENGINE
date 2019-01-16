@@ -977,21 +977,6 @@ bool CTexture::GenerateMipMaps(bool bSetOrthoProj, bool bUseHW, bool bNormalMap)
 	return true;
 }
 
-bool SDynTexture2::SetRectStates()
-{
-	assert(m_pTexture);
-	//gcpRendD3D->RT_SetViewport(m_nX, m_nY, m_nWidth, m_nHeight);
-	//gcpRendD3D->EF_Scissor(true, m_nX, m_nY, m_nWidth, m_nHeight);
-	RECT rc;
-	rc.left = m_nX;
-	rc.right = m_nX + m_nWidth;
-	rc.top = m_nY;
-	rc.bottom = m_nY + m_nHeight;
-	if (m_pTexture)
-		m_pTexture->GetDevTexture()->AddDirtRect(rc, rc.left, rc.top);
-	return true;
-}
-
 static int __cdecl RTCallback(const VOID* arg1, const VOID* arg2)
 {
 	CTexture* p1 = *(CTexture**)arg1;
@@ -1253,7 +1238,7 @@ bool CFlashTextureSource::Update()
 
 void CFlashTextureSourceSharedRT::ProbeDepthStencilSurfaceCreation(int width, int height)
 {
-	CTexture* pTex = gcpRendD3D->CreateDepthTarget(width, height, Clr_Empty, eTF_Unknown);
+	CTexture* pTex = CRendererResources::CreateDepthTarget(width, height, Clr_Empty, eTF_Unknown);
 	SAFE_RELEASE(pTex);
 }
 

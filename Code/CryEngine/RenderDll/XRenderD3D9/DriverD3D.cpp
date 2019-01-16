@@ -21,6 +21,7 @@
 #include "StatoscopeRenderStats.h"
 #include "GraphicsPipeline/DebugRenderTargets.h"
 #include "GraphicsPipeline/TiledShading.h"
+#include "GraphicsPipeline/ShadowMap.h"
 #include "GraphicsPipeline/VolumetricFog.h"
 #include "GraphicsPipeline/Common/UtilityPasses.h"
 
@@ -1761,16 +1762,17 @@ void CD3D9Renderer::DebugDrawStats1(const SRenderStatistics& RStats)
 	nY += nYstep;
 	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Render elements: %d (size: %.3f Mb)", n, BYTES_TO_MB(nSize));
 
-	size_t nSAll = 0;
-	size_t nSOneMip = 0;
-	size_t nSNM = 0;
-	size_t nSysAll = 0;
-	size_t nSysOneMip = 0;
-	size_t nSysNM = 0;
-	size_t nSRT = 0;
+	size_t nSDevAll = 0;
+	size_t nSDevOneMip = 0;
+	size_t nSDevNM = 0;
+	size_t nSDskAll = 0;
+	size_t nSDskOneMip = 0;
+	size_t nSDskNM = 0;
+	size_t nSDevTrg = 0;
 	size_t nObjSize = 0;
-	size_t nStreamed = 0;
-	size_t nStreamedSys = 0;
+	size_t nCchSize = 0;
+	size_t nStreamedDev = 0;
+	size_t nStreamedDsk = 0;
 	size_t nStreamedUnload = 0;
 	n = 0;
 	pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
@@ -1783,48 +1785,59 @@ void CD3D9Renderer::DebugDrawStats1(const SRenderStatistics& RStats)
 			if (!tp || tp->IsNoTexture())
 				continue;
 			n++;
-			nObjSize += tp->GetAllocatedSystemMemory(true);
-			uint32 nS = tp->GetDeviceDataSize();
-			uint32 nSys = tp->GetDataSize();
+			uint32 nSDev = tp->GetDeviceDataSize();
+			uint32 nSDsk = tp->GetDataSize();
+			uint32 nSObj = tp->GetAllocatedSystemMemory(true, false);
+			uint32 nSCch = tp->GetAllocatedSystemMemory(true, true);
+
+			nObjSize += nSObj;
+			nCchSize += nSCch;
+
 			if (tp->IsStreamed())
 			{
 				if (tp->IsUnloaded())
 				{
-					assert(nS == 0);
-					nStreamedUnload += nSys;
+					assert(nSDev == 0);
+					nStreamedUnload += nSDsk;
 				}
 				else if (tp->GetDevTexture())
-					nStreamedSys += nSys;
-				nStreamed += nS;
+				{
+					nStreamedDsk += nSDsk;
+				}
+
+				nStreamedDev += nSDev;
 			}
+
 			if (tp->GetDevTexture())
 			{
 				if (!(tp->GetFlags() & (FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL | FT_USAGE_UNORDERED_ACCESS)))
 				{
 					if (tp->GetName()[0] != '$' && tp->GetNumMips() <= 1)
-						nSysOneMip += nSys;
+						nSDskOneMip += nSDsk;
 					if (tp->GetFlags() & FT_TEX_NORMAL_MAP)
-						nSysNM += nSys;
+						nSDskNM += nSDsk;
 					else
-						nSysAll += nSys;
+						nSDskAll += nSDsk;
 				}
 			}
-			if (!nS)
+
+			if (!nSDev)
 				continue;
+
 			if (tp->GetFlags() & (FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL | FT_USAGE_UNORDERED_ACCESS))
-				nSRT += nS;
+				nSDevTrg += nSDev;
 			else
 			{
 				if (tp->GetName()[0] != '$' && tp->GetNumMips() <= 1)
-					nSOneMip += nS;
+					nSDevOneMip += nSDev;
 				if (tp->GetFlags() & FT_TEX_NORMAL_MAP)
-					nSNM += nS;
+					nSDevNM += nSDev;
 				else
-					nSAll += nS;
+					nSDevAll += nSDev;
 			}
 			
-			nSAll += (tp->GetFlags() & FT_STAGE_UPLOAD)   ? nS : 0;
-			nSAll += (tp->GetFlags() & FT_STAGE_READBACK) ? nS : 0;
+			nSDevAll += (tp->GetFlags() & FT_STAGE_UPLOAD)   ? nSDev : 0;
+			nSDevAll += (tp->GetFlags() & FT_STAGE_READBACK) ? nSDev : 0;
 		}
 	}
 
@@ -1832,28 +1845,23 @@ void CD3D9Renderer::DebugDrawStats1(const SRenderStatistics& RStats)
 	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "CryName: %d, Size: %.3f Mb...", CCryNameR::GetNumberOfEntries(), BYTES_TO_MB(CCryNameR::GetMemoryUsage()));
 	nY += nYstep;
 
-	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Textures: %d, ObjSize: %.3f Mb...", n, BYTES_TO_MB(nObjSize));
-	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, " All Managed Video Size: %.3f Mb (Normals: %.3f Mb + Other: %.3f Mb), One mip: %.3f", BYTES_TO_MB(nSNM + nSAll), BYTES_TO_MB(nSNM), BYTES_TO_MB(nSAll), BYTES_TO_MB(nSOneMip));
-	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, " All Managed System Size: %.3f Mb (Normals: %.3f Mb + Other: %.3f Mb), One mip: %.3f", BYTES_TO_MB(nSysNM + nSysAll), BYTES_TO_MB(nSysNM), BYTES_TO_MB(nSysAll), BYTES_TO_MB(nSysOneMip));
-	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, " Streamed Size: Video: %.3f, System: %.3f, Unloaded: %.3f", BYTES_TO_MB(nStreamed), BYTES_TO_MB(nStreamedSys), BYTES_TO_MB(nStreamedUnload));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Textures: %d, ObjSize: %.3f Mb (+ %.3f Mb cached mips)...", n, BYTES_TO_MB(nObjSize), BYTES_TO_MB(nCchSize));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, " All Managed Video Size: %.3f Mb (Normals: %.3f Mb + Other: %.3f Mb), One mip: %.3f", BYTES_TO_MB(nSDevNM + nSDevAll), BYTES_TO_MB(nSDevNM), BYTES_TO_MB(nSDevAll), BYTES_TO_MB(nSDevOneMip));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, " All Referenced Disk Size: %.3f Mb (Normals: %.3f Mb + Other: %.3f Mb), One mip: %.3f", BYTES_TO_MB(nSDskNM + nSDskAll), BYTES_TO_MB(nSDskNM), BYTES_TO_MB(nSDskAll), BYTES_TO_MB(nSDskOneMip));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, " Streamed Size: Video: %.3f, Disk: %.3f, Unloaded: %.3f", BYTES_TO_MB(nStreamedDev), BYTES_TO_MB(nStreamedDsk), BYTES_TO_MB(nStreamedUnload));
 
-	SDynTexture_Shadow* pTXSH = SDynTexture_Shadow::s_RootShadow.m_NextShadow;
-	size_t nSizeSH = 0;
-	while (pTXSH != &SDynTexture_Shadow::s_RootShadow)
-	{
-		if (pTXSH->m_pTexture)
-			nSizeSH += pTXSH->m_pTexture->GetDeviceDataSize();
-		pTXSH = pTXSH->m_NextShadow;
-	}
-
-	size_t nSizeAtlasClouds = SDynTexture2::s_nMemoryOccupied[eTP_Clouds];
-	size_t nSizeAtlasSprites = SDynTexture2::s_nMemoryOccupied[eTP_Sprites];
-	size_t nSizeAtlasVoxTerrain = SDynTexture2::s_nMemoryOccupied[eTP_VoxTerrain];
-	size_t nSizeAtlasDynTexSources = SDynTexture2::s_nMemoryOccupied[eTP_DynTexSources];
+	size_t nSizeShadows = GetGraphicsPipeline().GetShadowStage()->GetAllocatedMemory();
+	size_t nSizeSVOGI = 0;
+#if defined(FEATURE_SVO_GI)
+	nSizeSVOGI = CSvoRenderer::GetInstance()->GetAllocatedMemory();
+#endif
+	size_t nSizeAtlasClouds = 0;
+	size_t nSizeAtlasSprites = 0;
+	size_t nSizeAtlasVoxTerrain = 0;
+	size_t nSizeAtlasDynTexSources = 0;
 	size_t nSizeAtlas = nSizeAtlasClouds + nSizeAtlasSprites + nSizeAtlasVoxTerrain + nSizeAtlasDynTexSources;
-	size_t nSizeManagedDyn = SDynTexture::s_nMemoryOccupied;
 
-	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, " Dynamic DataSize: %.3f Mb (Atlases: %.3f Mb, Managed: %.3f Mb (Shadows: %.3f Mb), Other: %.3f Mb)", BYTES_TO_MB(nSRT), BYTES_TO_MB(nSizeAtlas), BYTES_TO_MB(nSizeManagedDyn), BYTES_TO_MB(nSizeSH), BYTES_TO_MB(nSRT - nSizeManagedDyn - nSizeAtlas));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, " Runtime Size: %.3f Mb (Atlases: %.3f Mb, SVOGI: %.3f Mb, Shadows: %.3f Mb, Other: %.3f Mb)", BYTES_TO_MB(nSDevTrg), BYTES_TO_MB(nSizeAtlas), BYTES_TO_MB(nSizeSVOGI), BYTES_TO_MB(nSizeShadows), BYTES_TO_MB(nSDevTrg - nSizeSVOGI - nSizeAtlas - nSizeShadows));
 
 	size_t nSizeZRT = 0;
 	size_t nSizeCRT = 0;
@@ -1891,14 +1899,8 @@ void CD3D9Renderer::DebugVidResourcesBars(int nX, int nY)
 	AuxDrawQuad(nX + fOffs, nY + 1, nX + fOffs + fMaxBar, nY + 12, Col_Cyan, 1.0f);
 	nY += nYst;
 
-	SDynTexture_Shadow* pTXSH = SDynTexture_Shadow::s_RootShadow.m_NextShadow;
-	size_t nSizeSH = 0;
-	while (pTXSH != &SDynTexture_Shadow::s_RootShadow)
-	{
-		if (pTXSH->m_pTexture)
-			nSizeSH += pTXSH->m_pTexture->GetDeviceDataSize();
-		pTXSH = pTXSH->m_NextShadow;
-	}
+	size_t nSizeSH = GetGraphicsPipeline().GetShadowStage()->GetAllocatedMemory();
+
 	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &col.r, false, "Shadow textures: %.1f Mb", BYTES_TO_MB(nSizeSH));
 
 	AuxDrawQuad(nX + fOffs, nY + 1, nX + fOffs + (float)nSizeSH / fMaxTextureMemory * fMaxBar, nY + 12, Col_Green, 1.0f);
@@ -1919,11 +1921,7 @@ void CD3D9Renderer::DebugVidResourcesBars(int nX, int nY)
 	nY += nYst;
 
 	size_t nSizeD2 = 0;
-	for (i = 0; i < eTP_Max; i++)
-	{
-		CryAutoReadLock<CryRWLock> scopeLock(SDynTexture2::s_memoryOccupiedLock);
-		nSizeD2 += SDynTexture2::s_nMemoryOccupied[i];
-	}
+
 	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &col.r, false, "Dyn. atlas text.: %.1f Mb", BYTES_TO_MB(nSizeD2));
 
 	AuxDrawQuad(nX + fOffs, nY + 1, nX + fOffs + (float)nSizeD2 / fMaxTextureMemory * fMaxBar, nY + 12, Col_Green, 1.0f);

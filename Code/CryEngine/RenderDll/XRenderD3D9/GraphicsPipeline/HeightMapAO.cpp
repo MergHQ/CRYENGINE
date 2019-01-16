@@ -5,6 +5,143 @@
 #include "D3DPostProcess.h"
 #include "GraphicsPipeline/ClipVolumes.h"
 
+void CHeightMapAOStage::Init()
+{
+	const bool shouldApplyHMAO = CRendererCVars::CV_r_HeightMapAO > 0 ? true : false;
+	const int scaleHMAO = clamp_tpl(3 - CRenderer::CV_r_HeightMapAO, 0, 2);
+	const int resourceSize = (int)clamp_tpl(CRendererCVars::CV_r_HeightMapAOResolution, 0.f, 16384.f);
+	const ETEX_Format texFormat = CRendererCVars::CV_r_ShadowsCacheFormat == 0 ? eTF_D32F : eTF_D16;
+
+	ResizeDepthResources(shouldApplyHMAO, resourceSize, resourceSize, texFormat);
+
+	m_nHeightMapAOConfig = CRendererCVars::CV_r_HeightMapAO;
+	m_nHeightMapAOAmount = CRendererCVars::CV_r_HeightMapAOAmount;
+}
+
+void CHeightMapAOStage::ResizeScreenResources(bool shouldApplyHMAO, int resourceWidth, int resourceHeight)
+{
+	ETEX_Format texFormat = eTF_R8G8;
+
+	if (!m_pHeightMapAOMask[0])
+	{
+		m_pHeightMapAOMask[0] = CTexture::GetOrCreateRenderTarget("$HeightMapAO_0", resourceWidth, resourceHeight, Clr_Neutral, eTT_2D, FT_DONT_STREAM, eTF_Unknown);
+		m_pHeightMapAOMask[1] = CTexture::GetOrCreateRenderTarget("$HeightMapAO_1", resourceWidth, resourceHeight, Clr_Neutral, eTT_2D, FT_DONT_STREAM, eTF_Unknown);
+	}
+
+	if (!shouldApplyHMAO)
+	{
+		if (CTexture::IsTextureExist(m_pHeightMapAOMask[0]))
+			m_pHeightMapAOMask[0]->ReleaseDeviceTexture(false);
+		if (CTexture::IsTextureExist(m_pHeightMapAOMask[1]))
+			m_pHeightMapAOMask[1]->ReleaseDeviceTexture(false);
+	}
+	else
+	{
+		if (m_pHeightMapAOMask[0]->Invalidate(resourceWidth, resourceHeight, texFormat) || !CTexture::IsTextureExist(m_pHeightMapAOMask[0]))
+			m_pHeightMapAOMask[0]->CreateRenderTarget(texFormat, Clr_Neutral);
+		if (m_pHeightMapAOMask[1]->Invalidate(resourceWidth, resourceHeight, texFormat) || !CTexture::IsTextureExist(m_pHeightMapAOMask[1]))
+			m_pHeightMapAOMask[1]->CreateRenderTarget(texFormat, Clr_Neutral);
+	}
+}
+
+void CHeightMapAOStage::ResizeDepthResources(bool shouldApplyHMAO, int resourceWidth, int resourceHeight, ETEX_Format texFormatDepth)
+{
+	ETEX_Format texFormatMips = CRendererResources::s_hwTexFormatSupport.GetLessPreciseFormatSupported(texFormatDepth == eTF_D32F ? eTF_R32F : eTF_R16);
+
+	if (!m_pHeightMapAODepth[0])
+	{
+		m_pHeightMapAODepth[0] = CTexture::GetOrCreateDepthStencil("$HeightMapAO_Depth", resourceWidth, resourceHeight, Clr_FarPlane, eTT_2D, FT_DONT_STREAM, eTF_Unknown);
+		m_pHeightMapAODepth[1] = CTexture::GetOrCreateRenderTarget("$HeightMapAO_Pyramid", resourceWidth, resourceHeight, Clr_FarPlane, eTT_2D, FT_DONT_STREAM | FT_FORCE_MIPS, eTF_Unknown);
+	}
+
+	if (!shouldApplyHMAO)
+	{
+		if (CTexture::IsTextureExist(m_pHeightMapAODepth[0]))
+			m_pHeightMapAODepth[0]->ReleaseDeviceTexture(false);
+		if (CTexture::IsTextureExist(m_pHeightMapAODepth[1]))
+			m_pHeightMapAODepth[1]->ReleaseDeviceTexture(false);
+	}
+	else
+	{
+		if (m_pHeightMapAODepth[0]->Invalidate(resourceWidth, resourceHeight, texFormatDepth) || !CTexture::IsTextureExist(m_pHeightMapAODepth[0]))
+			m_pHeightMapAODepth[0]->CreateDepthStencil(texFormatDepth, Clr_FarPlane);
+		if (m_pHeightMapAODepth[1]->Invalidate(resourceWidth, resourceHeight, texFormatMips ) || !CTexture::IsTextureExist(m_pHeightMapAODepth[1]))
+			m_pHeightMapAODepth[1]->CreateRenderTarget(texFormatMips, Clr_FarPlane);
+	}
+}
+
+void CHeightMapAOStage::Rescale(int resolutionScale)
+{
+	const bool shouldApplyHMAO = m_nHeightMapAOConfig > 0 ? true : false;
+	const CRenderView* pRenderView = RenderView();
+
+	int hmaoWidth  = pRenderView->GetRenderResolution()[0];
+	int hmaoHeight = pRenderView->GetRenderResolution()[1];
+	for (int i = 0; i < resolutionScale; i++)
+	{
+		hmaoWidth  = (hmaoWidth  + 1) / 2;
+		hmaoHeight = (hmaoHeight + 1) / 2;
+	}
+
+	ResizeScreenResources(shouldApplyHMAO, hmaoWidth, hmaoHeight);
+}
+
+void CHeightMapAOStage::Resize(int renderWidth, int renderHeight)
+{
+	const bool shouldApplyHMAO = m_nHeightMapAOConfig > 0 ? true : false;
+	const int scaleHMAO = clamp_tpl(3 - m_nHeightMapAOConfig, 0, 2);
+
+	int hmaoWidth  = renderWidth;
+	int hmaoHeight = renderHeight;
+	for (int i = 0; i < scaleHMAO; i++)
+	{
+		hmaoWidth  = (hmaoWidth  + 1) / 2;
+		hmaoHeight = (hmaoHeight + 1) / 2;
+	}
+
+	ResizeScreenResources(shouldApplyHMAO, hmaoWidth, hmaoHeight);
+}
+
+void CHeightMapAOStage::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
+{
+	if (auto pVar = cvarUpdater.GetCVar("r_HeightMapAO"))
+	{
+		m_nHeightMapAOConfig = pVar->intValue;
+
+		bool shouldApplyHMAO = m_nHeightMapAOConfig > 0 ? true : false;
+		const int scaleHMAO = clamp_tpl(3 - m_nHeightMapAOConfig, 0, 2);
+
+		if (shouldApplyHMAO)
+			Rescale(scaleHMAO);
+		else
+			ResizeScreenResources(false, 0, 0);
+	}
+
+	if (auto pVar = cvarUpdater.GetCVar("r_HeightMapAOAmount"))
+	{
+		m_nHeightMapAOAmount = pVar->floatValue;
+	}
+
+	if (cvarUpdater.GetCVar("r_HeightMapAO") ||
+		cvarUpdater.GetCVar("r_HeightMapAOResolution") ||
+		cvarUpdater.GetCVar("r_ShadowsCacheFormat"))
+	{
+		bool shouldApplyHMAO = m_nHeightMapAOConfig > 0 ? true : false;
+		if (auto pVar = cvarUpdater.GetCVar("r_HeightMapAO"))
+			shouldApplyHMAO = pVar->intValue > 0 ? true : false;
+
+		int resourceSize = (int)clamp_tpl(CRendererCVars::CV_r_HeightMapAOResolution, 0.f, 16384.f);
+		if (auto pVar = cvarUpdater.GetCVar("r_HeightMapAOResolution"))
+			resourceSize = (int)clamp_tpl(pVar->floatValue, 0.f, 16384.f);
+
+		ETEX_Format texFormat = CRendererCVars::CV_r_ShadowsCacheFormat == 0 ? eTF_D32F : eTF_D16;
+		if (auto pVar = cvarUpdater.GetCVar("r_ShadowsCacheFormat"))
+			texFormat = pVar->intValue ? eTF_D32F : eTF_D16;
+
+		ResizeDepthResources(shouldApplyHMAO, resourceSize, resourceSize, texFormat);
+	}
+}
+
 void CHeightMapAOStage::Update()
 {
 	m_bHeightMapAOExecuted = false;
@@ -47,12 +184,15 @@ void CHeightMapAOStage::Execute()
 	{
 		PROFILE_LABEL_SCOPE("HEIGHTMAP_OCC");
 
-		const int resolutionIndex = clamp_tpl(CRenderer::CV_r_HeightMapAO - 1, 0, 2);
-		CTexture* pDepthTextures[] = { CRendererResources::s_ptexLinearDepthScaled[1], CRendererResources::s_ptexLinearDepthScaled[0], CRendererResources::s_ptexLinearDepth };
-		CTexture* pDestRT = CRendererResources::s_ptexHeightMapAO[0];
+		const int resolutionIndex = clamp_tpl(m_nHeightMapAOConfig - 1, 0, 2);
+		CTexture* pDepthTextures[] = {
+			CRendererResources::s_ptexLinearDepthScaled[1],
+			CRendererResources::s_ptexLinearDepthScaled[0],
+			CRendererResources::s_ptexLinearDepth };
+		CTexture* pDestRT = m_pHeightMapAOMask[0];
 
 		m_pHeightMapAOScreenDepthTex = pDepthTextures[resolutionIndex];
-		m_pHeightMapAOTex = CRendererResources::s_ptexHeightMapAO[1];
+		m_pHeightMapAOTex = m_pHeightMapAOMask[1];
 
 		// Q: What is the 0-list?
 		if (pHeightmapRenderView->GetRenderItems(ERenderListID(0)).size() > 0)
@@ -63,15 +203,15 @@ void CHeightMapAOStage::Execute()
 			{
 				{ 0, 0, 0, 0 }, // src position
 				{ 0, 0, 0, 0 }, // dst position
-				CRendererResources::s_ptexHeightMapAODepth[0]->GetDevTexture()->GetDimension()
+				m_pHeightMapAODepth[0]->GetDevTexture()->GetDimension()
 			};
 
 			GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(
-				CRendererResources::s_ptexHeightMapAODepth[0]->GetDevTexture(), // DSV
-				CRendererResources::s_ptexHeightMapAODepth[1]->GetDevTexture(), // SRV
+				m_pHeightMapAODepth[0]->GetDevTexture(), // DSV
+				m_pHeightMapAODepth[1]->GetDevTexture(), // SRV
 				mapping);
 
-			m_passMipmapGen.Execute(CRendererResources::s_ptexHeightMapAODepth[1], 3);
+			m_passMipmapGen.Execute(m_pHeightMapAODepth[1], 3);
 		}
 
 		// Generate occlusion
@@ -89,7 +229,7 @@ void CHeightMapAOStage::Execute()
 				m_passSampling.SetState(GS_NODEPTHTEST);
 
 				m_passSampling.SetTexture(0, m_pHeightMapAOScreenDepthTex);
-				m_passSampling.SetTexture(1, CRendererResources::s_ptexHeightMapAODepth[1]);
+				m_passSampling.SetTexture(1, m_pHeightMapAODepth[1]);
 
 				m_passSampling.SetSampler(0, EDefaultSamplerStates::PointClamp);
 				m_passSampling.SetSampler(1, EDefaultSamplerStates::TrilinearBorder_White);
@@ -109,8 +249,8 @@ void CHeightMapAOStage::Execute()
 			Matrix44A texToWorld = matHMAOTransform.GetInverted();
 
 			const float texelsPerMeter = CRenderer::CV_r_HeightMapAOResolution / CRenderer::CV_r_HeightMapAORange;
-			const bool enableMinMaxSampling = CRenderer::CV_r_HeightMapAO < 3;
-			Vec4 paramHMAO(CRenderer::CV_r_HeightMapAOAmount, texelsPerMeter / CRendererResources::s_ptexHeightMapAODepth[1]->GetWidth(), enableMinMaxSampling ? 1.0f : 0.0f, 0.0f);
+			const bool enableMinMaxSampling = m_nHeightMapAOConfig < 3;
+			Vec4 paramHMAO(m_nHeightMapAOAmount, texelsPerMeter / m_pHeightMapAODepth[1]->GetWidth(), enableMinMaxSampling ? 1.0f : 0.0f, 0.0f);
 			m_passSampling.SetConstant(nameParams, paramHMAO, eHWSC_Pixel);
 
 			Vec4 translation = Vec4(texToWorld.m03, texToWorld.m13, texToWorld.m23, 0);

@@ -60,7 +60,6 @@ class CD3DStereoRenderer;
 class CTextureManager;
 class CIntroMovieRenderer;
 class IOpticsManager;
-struct SDynTexture2;
 class CDeviceResourceSet;
 class CVertexBuffer;
 class CIndexBuffer;
@@ -146,36 +145,6 @@ const float TANGENT30_2 = 0.57735026918962576450914878050196f * 2;   // 2*tan(30
 
 #include "RendererResources.h"
 #include "RendererCVars.h"                    // Can only be included after the default values are defined.
-
-struct SSpriteInfo
-{
-	SDynTexture2*             m_pTex;
-	struct SSectorTextureSet* m_pTerrainTexInfo;
-	Vec3                      m_vPos;
-	float                     m_fDX;
-	float                     m_fDY;
-	float                     m_fScaleV;
-	UCol                      m_Color;
-	int                       m_nVI;
-	uint8                     m_ucTexCoordMinX; // 0..128 used for the full range (0..1) in the texture (to fit in byte)
-	uint8                     m_ucTexCoordMinY; // 0..128 used for the full range (0..1) in the texture (to fit in byte)
-	uint8                     m_ucTexCoordMaxX; // 0..128 used for the full range (0..1) in the texture (to fit in byte)
-	uint8                     m_ucTexCoordMaxY; // 0..128 used for the full range (0..1) in the texture (to fit in byte)
-};
-
-struct SSpriteGenInfo
-{
-	float          fAngle;                      // horizontal rotation in degree
-	float          fGenDist;
-	float          fBrightness;
-	int            nMaterialLayers;
-	IMaterial*     pMaterial;
-	float*         pMipFactor;
-	uint8*         pTexturesAreStreamedIn;
-	SDynTexture2** ppTexture;
-	IStatObj*      pStatObj;
-	int            nSP;
-};
 
 class CMatrixStack
 {

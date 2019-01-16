@@ -1100,6 +1100,57 @@ void CSvoRenderer::CheckAllocateRT(bool bSpecPass)
 	}
 }
 
+size_t CSvoRenderer::GetAllocatedMemory()
+{
+	size_t sizeSum = 0;
+
+	if (m_tsDiff.pRT_ALD_0.get()) sizeSum += m_tsDiff.pRT_ALD_0->GetActualSize();
+	if (m_tsDiff.pRT_ALD_1.get()) sizeSum += m_tsDiff.pRT_ALD_1->GetActualSize();
+	if (m_tsDiff.pRT_RGB_0.get()) sizeSum += m_tsDiff.pRT_RGB_0->GetActualSize();
+	if (m_tsDiff.pRT_RGB_1.get()) sizeSum += m_tsDiff.pRT_RGB_1->GetActualSize();
+
+	if (m_tsSpec.pRT_ALD_0.get()) sizeSum += m_tsSpec.pRT_ALD_0->GetActualSize();
+	if (m_tsSpec.pRT_ALD_1.get()) sizeSum += m_tsSpec.pRT_ALD_1->GetActualSize();
+	if (m_tsSpec.pRT_RGB_0.get()) sizeSum += m_tsSpec.pRT_RGB_0->GetActualSize();
+	if (m_tsSpec.pRT_RGB_1.get()) sizeSum += m_tsSpec.pRT_RGB_1->GetActualSize();
+
+#ifdef FEATURE_SVO_GI_ALLOW_HQ
+	if (m_pRT_NID_0  .get()) sizeSum += m_pRT_NID_0  ->GetActualSize();
+	if (m_pRT_AIR_MIN.get()) sizeSum += m_pRT_AIR_MIN->GetActualSize();
+	if (m_pRT_AIR_MAX.get()) sizeSum += m_pRT_AIR_MAX->GetActualSize();
+
+	if (m_pRT_SHAD_MIN_MAX.get()) sizeSum += m_pRT_SHAD_MIN_MAX->GetActualSize();
+	if (m_pRT_SHAD_FIN_0  .get()) sizeSum += m_pRT_SHAD_FIN_0  ->GetActualSize();
+	if (m_pRT_SHAD_FIN_1  .get()) sizeSum += m_pRT_SHAD_FIN_1  ->GetActualSize();
+#endif
+
+	if (m_tsDiff.pRT_RGB_DEM_MIN_0.get()) sizeSum += m_tsDiff.pRT_RGB_DEM_MIN_0->GetActualSize();
+	if (m_tsDiff.pRT_ALD_DEM_MIN_0.get()) sizeSum += m_tsDiff.pRT_ALD_DEM_MIN_0->GetActualSize();
+	if (m_tsDiff.pRT_RGB_DEM_MAX_0.get()) sizeSum += m_tsDiff.pRT_RGB_DEM_MAX_0->GetActualSize();
+	if (m_tsDiff.pRT_ALD_DEM_MAX_0.get()) sizeSum += m_tsDiff.pRT_ALD_DEM_MAX_0->GetActualSize();
+	if (m_tsDiff.pRT_RGB_DEM_MIN_1.get()) sizeSum += m_tsDiff.pRT_RGB_DEM_MIN_1->GetActualSize();
+	if (m_tsDiff.pRT_ALD_DEM_MIN_1.get()) sizeSum += m_tsDiff.pRT_ALD_DEM_MIN_1->GetActualSize();
+	if (m_tsDiff.pRT_RGB_DEM_MAX_1.get()) sizeSum += m_tsDiff.pRT_RGB_DEM_MAX_1->GetActualSize();
+	if (m_tsDiff.pRT_ALD_DEM_MAX_1.get()) sizeSum += m_tsDiff.pRT_ALD_DEM_MAX_1->GetActualSize();
+
+	if (m_tsDiff.pRT_FIN_OUT_0.get()) sizeSum += m_tsDiff.pRT_FIN_OUT_0->GetActualSize();
+	if (m_tsDiff.pRT_FIN_OUT_1.get()) sizeSum += m_tsDiff.pRT_FIN_OUT_1->GetActualSize();
+
+	if (m_tsSpec.pRT_RGB_DEM_MIN_0.get()) sizeSum += m_tsSpec.pRT_RGB_DEM_MIN_0->GetActualSize();
+	if (m_tsSpec.pRT_ALD_DEM_MIN_0.get()) sizeSum += m_tsSpec.pRT_ALD_DEM_MIN_0->GetActualSize();
+	if (m_tsSpec.pRT_RGB_DEM_MAX_0.get()) sizeSum += m_tsSpec.pRT_RGB_DEM_MAX_0->GetActualSize();
+	if (m_tsSpec.pRT_ALD_DEM_MAX_0.get()) sizeSum += m_tsSpec.pRT_ALD_DEM_MAX_0->GetActualSize();
+	if (m_tsSpec.pRT_RGB_DEM_MIN_1.get()) sizeSum += m_tsSpec.pRT_RGB_DEM_MIN_1->GetActualSize();
+	if (m_tsSpec.pRT_ALD_DEM_MIN_1.get()) sizeSum += m_tsSpec.pRT_ALD_DEM_MIN_1->GetActualSize();
+	if (m_tsSpec.pRT_RGB_DEM_MAX_1.get()) sizeSum += m_tsSpec.pRT_RGB_DEM_MAX_1->GetActualSize();
+	if (m_tsSpec.pRT_ALD_DEM_MAX_1.get()) sizeSum += m_tsSpec.pRT_ALD_DEM_MAX_1->GetActualSize();
+
+	if (m_tsSpec.pRT_FIN_OUT_0.get()) sizeSum += m_tsSpec.pRT_FIN_OUT_0->GetActualSize();
+	if (m_tsSpec.pRT_FIN_OUT_1.get()) sizeSum += m_tsSpec.pRT_FIN_OUT_1->GetActualSize();
+
+	return sizeSum;
+}
+
 bool CSvoRenderer::IsShaderItemUsedForVoxelization(SShaderItem& rShaderItem, IRenderNode* pRN)
 {
 	CShader* pS = (CShader*)rShaderItem.m_pShader;

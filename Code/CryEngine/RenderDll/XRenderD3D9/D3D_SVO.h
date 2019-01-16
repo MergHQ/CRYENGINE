@@ -71,6 +71,7 @@ public:
 	int                  GetIntegratioMode(bool& bSpecTracingInUse) const;
 	bool                 GetUseLightProbes() const { return e_svoTI_SkyColorMultiplier >= 0; }
 	void                 DebugDrawStats(const RPProfilerStats* pBasicStats, float& ypos, const float ystep, float xposms);
+	size_t               GetAllocatedMemory();
 
 	static bool          SetShaderParameters(float*& pSrc, uint32 paramType, UFloat4* sData);
 	static CTexture*     GetRsmColorMap(const ShadowMapFrustum& rFr, bool bCheckUpdate = false);
