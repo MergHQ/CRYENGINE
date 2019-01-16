@@ -279,7 +279,7 @@ void CD3D9Renderer::SetRendererCVar(ICVar* pCVar, const char* pArgText, const bo
 	ExecuteRenderThreadCommand(
 		[=]
 		{
-			pCVar->Set(argText.c_str());
+			pCVar->SetFromString(argText.c_str());
 
 			if (!bSilentMode)
 			{
