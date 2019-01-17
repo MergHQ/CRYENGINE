@@ -619,7 +619,7 @@ void SRenderThread::ProcessCommands()
 
 void SRenderThread::Process()
 {
-	while (true)
+	do
 	{
 		CRY_PROFILE_REGION(PROFILE_RENDERER, "Loop: RenderThread");
 
@@ -628,6 +628,7 @@ void SRenderThread::Process()
 		WaitFlushCond();
 		const uint64 start = CryGetTicks();
 
+		// Quick early out, throw all pending commands away
 		if (m_bQuit)
 		{
 			SignalFlushFinishedCond();
@@ -745,6 +746,8 @@ void SRenderThread::Process()
 		const uint64 elapsed = CryGetTicks() - start;
 		gEnv->pSystem->GetCurrentUpdateTimeStats().RenderTime = elapsed;
 	}
+	// Late out, don't wait for MT/RT toggle (it won't happen when quitting)
+	while (!m_bQuit.load());
 #if CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
 	#if OGL_SINGLE_CONTEXT
 	m_kDXGLDeviceContextHandle.Set(NULL);
@@ -757,11 +760,13 @@ void SRenderThread::Process()
 
 void SRenderThread::ProcessLoading()
 {
-	while (true)
+	do
 	{
 		float fTime = iTimer->GetAsyncCurTime();
 
 		WaitFlushCond();
+
+		// Quick early out, throw all pending commands away
 		if (m_bQuitLoading)
 		{
 			SignalFlushFinishedCond();
@@ -788,6 +793,8 @@ void SRenderThread::ProcessLoading()
 			SwitchMode(false);
 		}
 	}
+	// Late out, don't wait for MT/RLT toggle (it won't happen when quitting)
+	while (!m_bQuitLoading);
 #if CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
 	#if OGL_SINGLE_CONTEXT
 	m_kDXGLDeviceContextHandle.Set(NULL);
@@ -882,14 +889,7 @@ void SRenderThread::QuitRenderThread()
 	{
 		SignalQuitCond();
 
-#if defined(USE_LOCKS_FOR_FLUSH_SYNC)
-		while (!gEnv->pThreadManager->JoinThread(m_pThread, eJM_TryJoin))
-		{
-			FlushAndWait();
-		}
-#else
 		gEnv->pThreadManager->JoinThread(m_pThread, eJM_Join);
-#endif
 
 		SAFE_DELETE(m_pThread);
 
