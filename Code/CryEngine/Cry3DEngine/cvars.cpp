@@ -616,8 +616,8 @@ void CVars::Init()
 
 	DefineConstIntCVar(e_Portals, 1, VF_CHEAT,
 	                   "Activates drawing of visareas content (indoors), values 2,3,4 used for debugging");
-	DefineConstIntCVar(e_PortalsBigEntitiesFix, 1, VF_CHEAT,
-	                   "Enables special processing of big entities like vehicles intersecting portals");
+	DefineConstIntCVar(e_PortalsBigEntitiesFix, 0, VF_CHEAT,
+	                   "Enables special processing of big entities like 1p vehicles intersecting portals");
 	DefineConstIntCVar(e_PortalsBlend, 1, VF_CHEAT,
 	                   "Blend lights and cubemaps of vis areas connected to portals 0=off, 1=on");
 	REGISTER_CVAR(e_PortalsMaxRecursion, 8, VF_NULL,
