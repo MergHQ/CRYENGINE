@@ -572,7 +572,7 @@ SPlanningMemoryState CPlanningTextureStreamer::GetMemoryState()
 
 #if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 	// Keep 30MB free to preserve the ability to conduct defragmentation
-	ms.nPoolLimit    = std::max(0, GetDeviceObjectFactory().m_texturePool.GetPoolSize() - 30 * 1024 * 1024);
+	ms.nPoolLimit    = std::max(0ULL, GetDeviceObjectFactory().m_texturePool.GetPoolSize() - 30 * 1024 * 1024);
 
 	ms.nMemLimit     = ms.nPoolLimit * 96 / 100;
 	ms.nMemFreeSlack = ms.nPoolLimit *  4 / 100;
