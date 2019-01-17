@@ -604,18 +604,18 @@ void CRenderPipelineProfiler::UpdateStats(uint32 frameDataIndex)
 		}
 		else if (strcmp(section.name, "WATER") == 0)
 		{
-			AddToStats(pBasicStats[eRPPSTATS_SceneOverall], section);
+			// Water is a child of "FORWARD T"
 			AddToStats(pBasicStats[eRPPSTATS_SceneWater], section);
 		}
 		else if (
-			strcmp(section.name, "FORWARD_OPAQUE") == 0)
+			strcmp(section.name, "FORWARD Z") == 0)
 		{
 			AddToStats(pBasicStats[eRPPSTATS_SceneOverall], section);
 			AddToStats(pBasicStats[eRPPSTATS_SceneForward], section);
 		}
 		else if (
-			strcmp(section.name, "FORWARD_TRANSPARENT_AW") == 0 ||
-			strcmp(section.name, "FORWARD_TRANSPARENT_BW") == 0)
+			strcmp(section.name, "FORWARD T") == 0 ||
+			strcmp(section.name, "GPU_PARTICLES") == 0)
 		{
 			AddToStats(pBasicStats[eRPPSTATS_SceneOverall], section);
 			AddToStats(pBasicStats[eRPPSTATS_SceneTransparent], section);
@@ -629,14 +629,17 @@ void CRenderPipelineProfiler::UpdateStats(uint32 frameDataIndex)
 		}
 		else if (strstr(section.name, "SUN PER OBJECT ") == section.name)
 		{
+			// Sun is a child of "SHADOWMAPS"
 			AddToStats(pBasicStats[eRPPSTATS_ShadowsSunCustom], section);
 		}
 		else if (strstr(section.name, "SUN ") == section.name)
 		{
+			// Sun is a child of "SHADOWMAPS"
 			AddToStats(pBasicStats[eRPPSTATS_ShadowsSun], section);
 		}
 		else if (strstr(section.name, "LOCAL LIGHT ") == section.name)
 		{
+			// Light is a child of "SHADOWMAPS"
 			AddToStats(pBasicStats[eRPPSTATS_ShadowsLocal], section);
 		}
 		// Lighting
@@ -664,15 +667,12 @@ void CRenderPipelineProfiler::UpdateStats(uint32 frameDataIndex)
 		}
 		else if (strcmp(section.name, "LENS_OPTICS") == 0)
 		{
-			AddToStats(pBasicStats[eRPPSTATS_VfxOverall], section);
+			// Optics is a child of "POST_EFFECTS_HDR"
 			AddToStats(pBasicStats[eRPPSTATS_VfxFlares], section);
 		}
 		else if (
-			strcmp(section.name, "DEFERRED_RAIN") == 0 ||
-			strcmp(section.name, "RAIN") == 0 ||
-			strcmp(section.name, "OCEAN CAUSTICS") == 0 ||
-			strcmp(section.name, "WATERVOLUME_CAUSTICS") == 0 ||
-			strcmp(section.name, "GPU_PARTICLES") == 0)
+			strcmp(section.name, "POST_EFFECTS_HDR") == 0 ||
+			strcmp(section.name, "POST_EFFECTS_LDR") == 0)
 		{
 			AddToStats(pBasicStats[eRPPSTATS_VfxOverall], section);
 		}
@@ -955,9 +955,9 @@ void CRenderPipelineProfiler::DisplayOverviewStats(uint32 frameDataIndex) const
 		{ "  Ocean Reflections", eRPPSTATS_Recursion       , true  },
 		{ "  Scene",             eRPPSTATS_SceneOverall    , true  },
 		{ "    Decals",          eRPPSTATS_SceneDecals     , false },
-		{ "    Forward",         eRPPSTATS_SceneForward    , false },
+		{ "    Forward Solids",  eRPPSTATS_SceneForward    , false },
 		{ "    Water",           eRPPSTATS_SceneWater      , false },
-		{ "    Particles/Glass", eRPPSTATS_SceneTransparent, false },
+		{ "    Forward Transp",  eRPPSTATS_SceneTransparent, false },
 		{ "  Shadows",           eRPPSTATS_ShadowsOverall  , true  },
 		{ "    Sun",             eRPPSTATS_ShadowsSun      , false },
 		{ "    Per-Object",      eRPPSTATS_ShadowsSunCustom, false },

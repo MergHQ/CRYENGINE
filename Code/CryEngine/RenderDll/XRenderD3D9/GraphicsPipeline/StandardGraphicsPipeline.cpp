@@ -938,7 +938,7 @@ void CStandardGraphicsPipeline::Execute()
 	}
 
 	{
-		PROFILE_LABEL_SCOPE("FORWARD");
+		PROFILE_LABEL_SCOPE("FORWARD Z");
 
 		// Opaque forward passes
 		m_pSceneForwardStage->ExecuteSky(CRendererResources::s_ptexHDRTarget, pZTexture);
@@ -949,24 +949,26 @@ void CStandardGraphicsPipeline::Execute()
 	if (m_pWaterStage->IsDeferredOceanCausticsEnabled())
 		m_pWaterStage->ExecuteDeferredOceanCaustics();
 
-	// Fog
-	if (m_pVolumetricFogStage->IsStageActive(m_renderingFlags))
-		m_pVolumetricFogStage->Execute();
+	{
+		// Fog
+		if (m_pVolumetricFogStage->IsStageActive(m_renderingFlags))
+			m_pVolumetricFogStage->Execute();
 
-	if (m_pFogStage->IsStageActive(m_renderingFlags))
-		m_pFogStage->Execute();
+		if (m_pFogStage->IsStageActive(m_renderingFlags))
+			m_pFogStage->Execute();
 
-	SetPipelineFlags(GetPipelineFlags() & ~EPipelineFlags::NO_SHADER_FOG);
+		SetPipelineFlags(GetPipelineFlags() & ~EPipelineFlags::NO_SHADER_FOG);
 
-	// Clouds
-	if (m_pVolumetricCloudsStage->IsStageActive(m_renderingFlags))
-		m_pVolumetricCloudsStage->Execute();
+		// Clouds
+		if (m_pVolumetricCloudsStage->IsStageActive(m_renderingFlags))
+			m_pVolumetricCloudsStage->Execute();
 
-	// Water fog volumes
-	m_pWaterStage->ExecuteWaterFogVolumeBeforeTransparent();
+		// Water fog volumes
+		m_pWaterStage->ExecuteWaterFogVolumeBeforeTransparent();
+	}
 
 	{
-		PROFILE_LABEL_SCOPE("FORWARD");
+		PROFILE_LABEL_SCOPE("FORWARD T");
 
 		// Transparent (below water)
 		m_pSceneForwardStage->ExecuteTransparentBelowWater();
