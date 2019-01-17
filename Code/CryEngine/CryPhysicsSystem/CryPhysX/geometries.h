@@ -103,7 +103,8 @@ template<typename Func> auto PhysXGeom::CreateAndUse(QuatT& trans, const Diag33&
 		PxDefaultMemoryOutputStream buf;
 		PxConvexMeshCookingResult::Enum result;
 		cpx::g_cryPhysX.Cooking()->cookConvexMesh(cmd, buf, &result);
-		g_cylMesh = cpx::g_cryPhysX.Physics()->createConvexMesh(PxDefaultMemoryInputData(buf.getData(), buf.getSize()));
+		PxDefaultMemoryInputData mid(buf.getData(), buf.getSize());
+		g_cylMesh = cpx::g_cryPhysX.Physics()->createConvexMesh(mid);
 	}
 
 	switch (m_type) {
@@ -128,8 +129,8 @@ template<typename Func> auto PhysXGeom::CreateAndUse(QuatT& trans, const Diag33&
 			return func(PxHeightFieldGeometry(m_geom.hf.pHF,PxMeshGeometryFlags(),m_geom.hf.hscale,m_geom.hf.step.x,m_geom.hf.step.y));
 		case GEOM_TRIMESH:
 			return m_geom.mesh.pMesh ? 
-				func(PxTriangleMeshGeometry(m_geom.mesh.pMesh, PxMeshScale(V(scale),PxQuat0))) : 
-				func(PxConvexMeshGeometry(m_geom.mesh.pMeshConvex, PxMeshScale(V(scale),PxQuat0)));
+				func(PxTriangleMeshGeometry(m_geom.mesh.pMesh, PxMeshScale(cpx::Helper::V(scale),PxQuat0))) : 
+				func(PxConvexMeshGeometry(m_geom.mesh.pMeshConvex, PxMeshScale(cpx::Helper::V(scale),PxQuat0)));
 	}
 	return func(PxSphereGeometry(1));
 }

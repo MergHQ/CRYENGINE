@@ -437,7 +437,7 @@ int PhysXEnt::GetStatus(pe_status* _status) const
 template<class Taction> void ExtractConstrFrames(PhysXEnt *ent0,PhysXEnt *ent1, int ipart0,int ipart1, Taction *action, QuatT* frame)
 {
 	for(int i=0; i<2; i++)
-		if (PhysXEnt *pent = ((PhysXEnt*[2]){ent0,ent1})[i]) {
+		if (PhysXEnt *pent = i ? ent1:ent0) {
 			if (!is_unused(action->pt[i])) {
 				frame[i].t = action->pt[i];
 				if (!(action->flags & (local_frames|local_frames_part)) && is_unused(action->pt[i^1]))

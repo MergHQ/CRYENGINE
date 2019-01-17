@@ -23,6 +23,8 @@
 
 // C6246: Local declaration of <variable> hides declaration of same name in outer scope.
 #define LOCAL_NAME_OVERRIDE_OK PREFAST_SUPPRESS_WARNING(6246)
+#define INDEX_NOT_OUT_OF_RANGE PREFAST_SUPPRESS_WARNING(6201)
+#define NO_BUFFER_OVERRUN			 PREFAST_SUPPRESS_WARNING(6385 6386)
 
 #include <vector>
 #include <map>
@@ -86,7 +88,7 @@ public:
 #define  _RETURN_INT_DUMMY_ {return 0;}
 
 // TODO: reference additional headers your program requires here
-#include <CryMemory/CrySizer.h>
+//#include <CryMemory/CrySizer.h>
 #include <CryPhysics/primitives.h>
 #include "../../CryPhysics/utils.h"
 #include <CryPhysics/physinterface.h>

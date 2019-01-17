@@ -1295,8 +1295,8 @@ int CArticulatedEntity::Step(float time_interval)
 		if (m_body.v.len2()*sqr(time_interval) > szmax)
 			szmax = m_body.v.len()*time_interval;
 		sz.Set(szmax,szmax,szmax);
-		m_nCollEnts = m_pWorld->GetEntitiesAround(m_BBox[0]-sz,m_BBox[1]+sz, m_pCollEntList, m_collTypes|ent_sort_by_mass|ent_triggers, this, 0,iCaller);
 		masktype constrMask = MaskIgnoredColliders(iCaller,1);
+		m_nCollEnts = m_pWorld->GetEntitiesAround(m_BBox[0]-sz,m_BBox[1]+sz, m_pCollEntList, m_collTypes|ent_sort_by_mass|ent_triggers, this, 0,iCaller);
 
 		for(i=0;i<m_nCollEnts;i++) if (m_pCollEntList[i]->m_iSimClass>2 && !IgnoreCollision(m_pCollEntList[i]->m_collisionClass,m_collisionClass))
 			if (m_pCollEntList[i]->GetType()!=PE_ARTICULATED) {
@@ -1354,11 +1354,9 @@ int CArticulatedEntity::Step(float time_interval)
 	m_bPartPosForced = 0;
 	m_prev_pos = m_pos;
 	m_prev_vel = m_body.v;
-	if (!m_bGrounded)
-		if (m_iSimTypeCur==0)
-			m_posPivot += m_body.v*time_interval;
-		else
-			m_posPivot = m_joints[0].body.pos;
+	if (!m_bGrounded && m_iSimTypeCur)
+		m_posPivot = m_joints[0].body.pos;
+	// m_posPivot += m_body.v*time_interval;
 	m_body.pos = m_posPivot;
 	m_posNew = m_posPivot - m_offsPivot;
 	m_body.offsfb = (m_body.pos-m_posNew)*m_qrot;
