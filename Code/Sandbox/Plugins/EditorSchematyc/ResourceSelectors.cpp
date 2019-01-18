@@ -202,10 +202,12 @@ namespace Schematyc
 {
 namespace SerializationUtils
 {
-dll_string StringListStaticQuickSearchSelector(const SResourceSelectorContext& context, const char*)
+SResourceSelectionResult StringListStaticQuickSearchSelector(const SResourceSelectorContext& context, const char*)
 {
 	const Private::CStringListStaticQuickSearchOptions* pOptions = static_cast<const Private::CStringListStaticQuickSearchOptions*>(context.pCustomParams.get());
 	SCHEMATYC_EDITOR_ASSERT(pOptions);
+	SResourceSelectionResult result{ false, "" };
+
 	if (pOptions)
 	{
 		static CStringListDictionary dictionary;
@@ -219,16 +221,20 @@ dll_string StringListStaticQuickSearchSelector(const SResourceSelectorContext& c
 		CStringListDictionaryEntry* pEntry = static_cast<CStringListDictionaryEntry*>(popup.GetResult());
 		if (pEntry)
 		{
-			return QtUtil::ToString(pEntry->GetName()).c_str();
+			result.selectedResource = QtUtil::ToString(pEntry->GetName()).c_str();
+			result.selectionAccepted = true;
 		}
 	}
-	return "";
+
+	return result;
 }
 
-dll_string StringListQuickSearchSelector(const SResourceSelectorContext& context, const char*)
+SResourceSelectionResult StringListQuickSearchSelector(const SResourceSelectorContext& context, const char*)
 {
 	const Private::CStringListQuickSearchOptions* pOptions = static_cast<const Private::CStringListQuickSearchOptions*>(context.pCustomParams.get());
 	SCHEMATYC_EDITOR_ASSERT(pOptions);
+	SResourceSelectionResult result{ false, "" };
+
 	if (pOptions)
 	{
 		static CStringListDictionary dictionary;
@@ -242,10 +248,12 @@ dll_string StringListQuickSearchSelector(const SResourceSelectorContext& context
 		CStringListDictionaryEntry* pEntry = static_cast<CStringListDictionaryEntry*>(popup.GetResult());
 		if (pEntry)
 		{
-			return QtUtil::ToString(pEntry->GetName()).c_str();
+			result.selectedResource = QtUtil::ToString(pEntry->GetName()).c_str();
+			result.selectionAccepted = true;
 		}
 	}
-	return "";
+
+	return result;
 }
 
 REGISTER_RESOURCE_SELECTOR("StringListStaticSearch", StringListStaticQuickSearchSelector, "icons:General/Search.ico")

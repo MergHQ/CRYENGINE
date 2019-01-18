@@ -102,7 +102,7 @@ protected:
 	}
 
 private:
-	CString              m_undoDescription;
+	CString               m_undoDescription;
 	_smart_ptr<IVariable> m_undo;
 	_smart_ptr<IVariable> m_redo;
 	_smart_ptr<IVariable> m_var;
@@ -142,9 +142,13 @@ struct
 	{ IVariable::DT_AI_BEHAVIOR,                   "AIBehavior",                       ePropertyAiBehavior,            8  },
 	{ IVariable::DT_AI_ANCHOR,                     "AIAnchor",                         ePropertyAiAnchor,              8  },
 #ifdef USE_DEPRECATED_AI_CHARACTER_SYSTEM
-	{ IVariable::DT_AI_CHARACTER,                  "AICharacter",                      ePropertyAiCharacter,           8  },
+	{
+		IVariable::DT_AI_CHARACTER, "AICharacter", ePropertyAiCharacter, 8
+	},
 #endif
-	{ IVariable::DT_AI_PFPROPERTIESLIST,           "AgentTypeList",                    ePropertyAiPFPropertiesList,    8  },
+	{
+		IVariable::DT_AI_PFPROPERTIESLIST, "AgentTypeList", ePropertyAiPFPropertiesList, 8
+	},
 	{ IVariable::DT_AIENTITYCLASSES,               "AI Entity Classes",                ePropertyAiEntityClasses,       8  },
 	{ IVariable::DT_EQUIP,                         "Equip",                            ePropertyEquip,                 11 },
 	{ IVariable::DT_REVERBPRESET,                  "ReverbPreset",                     ePropertyReverbPreset,          11 },
@@ -181,8 +185,7 @@ struct
 	{ IVariable::DT_AUDIO_ENVIRONMENT,             "Audio Environment",                ePropertyAudioEnvironment,      6  },
 	{ IVariable::DT_AUDIO_PRELOAD_REQUEST,         "Audio Preload Request",            ePropertyAudioPreloadRequest,   6  },
 	{ IVariable::DT_AUDIO_SETTING,                 "Audio Setting",                    ePropertyAudioSetting,          6  },
-	{ IVariable::DT_DYNAMIC_RESPONSE_SIGNAL,       "Dynamic Response Signal",          ePropertyDynamicResponseSignal, 6  },
-};
+	{ IVariable::DT_DYNAMIC_RESPONSE_SIGNAL,       "Dynamic Response Signal",          ePropertyDynamicResponseSignal, 6  }, };
 static int NumPropertyTypes = sizeof(s_propertyTypeNames) / sizeof(s_propertyTypeNames[0]);
 
 const char* DISPLAY_NAME_ATTR = "DisplayName";
@@ -234,12 +237,12 @@ HDWP CPropertyItem::s_HDWP = 0;
 
 namespace PropertyItem_Private
 {
-	inline void FormatFloatForUICString(CString& outstr, int significantDigits, double value)
-	{
-		string crystr = outstr.GetString();
-		FormatFloatForUI(crystr, significantDigits, value);
-		outstr = crystr.GetString();
-	}
+inline void FormatFloatForUICString(CString& outstr, int significantDigits, double value)
+{
+	string crystr = outstr.GetString();
+	FormatFloatForUI(crystr, significantDigits, value);
+	outstr = crystr.GetString();
+}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2797,13 +2800,13 @@ void CPropertyItem::OnFileBrowseButton()
 
 	if (m_type == ePropertyTexture)
 	{
-		dll_string newValue = GetIEditor()->GetResourceSelectorHost()->SelectResource("Texture", tempValue);
-		SetValue(newValue.c_str(), true, false);
+		SResourceSelectionResult result = GetIEditor()->GetResourceSelectorHost()->SelectResource("Texture", tempValue);
+		SetValue(result.selectedResource.c_str(), true, false);
 	}
 	else if (m_type == ePropertyGeomCache)
 	{
-		dll_string newValue = GetIEditor()->GetResourceSelectorHost()->SelectResource("GeometryCache", tempValue);
-		SetValue(newValue.c_str(), true, true);
+		SResourceSelectionResult result = GetIEditor()->GetResourceSelectorHost()->SelectResource("GeometryCache", tempValue);
+		SetValue(result.selectedResource.c_str(), true, true);
 	}
 	else
 	{
@@ -2820,10 +2823,10 @@ void CPropertyItem::OnResourceSelectorButton()
 {
 	m_propertyCtrl->HideBitmapTooltip();
 
-	dll_string newValue = GetIEditor()->GetResourceSelectorHost()->SelectResource(PropertyTypeToResourceType(m_type), GetValue(), nullptr, m_pVariable->GetUserData());
-	if (strcmp(GetValue(), newValue.c_str()) != 0)
+	SResourceSelectionResult result = GetIEditor()->GetResourceSelectorHost()->SelectResource(PropertyTypeToResourceType(m_type), GetValue(), nullptr, m_pVariable->GetUserData());
+	if (strcmp(GetValue(), result.selectedResource.c_str()) != 0)
 	{
-		SetValue(newValue.c_str());
+		SetValue(result.selectedResource.c_str());
 	}
 }
 
@@ -3217,69 +3220,69 @@ static inline bool AlphabeticalBaseObjectLess(const CBaseObject* p1, const CBase
 
 //////////////////////////////////////////////////////////////////////////
 /*
-void CPropertyItem::PopulateAITerritoriesList()
-{
-	CVariableEnum<string>* pVariable = static_cast<CVariableEnum<string>*>(&*m_pVariable);
+   void CPropertyItem::PopulateAITerritoriesList()
+   {
+   CVariableEnum<string>* pVariable = static_cast<CVariableEnum<string>*>(&*m_pVariable);
 
-	pVariable->SetEnumList(0);
-#ifndef USE_SIMPLIFIED_AI_TERRITORY_SHAPE
-	pVariable->AddEnumItem("<Auto>", "<Auto>");
-#endif
-	pVariable->AddEnumItem("<None>", "<None>");
+   pVariable->SetEnumList(0);
+ #ifndef USE_SIMPLIFIED_AI_TERRITORY_SHAPE
+   pVariable->AddEnumItem("<Auto>", "<Auto>");
+ #endif
+   pVariable->AddEnumItem("<None>", "<None>");
 
-	std::vector<CBaseObject*> vTerritories;
-	GetIEditor()->GetObjectManager()->FindObjectsOfType(RUNTIME_CLASS(CAITerritoryObject), vTerritories);
-	std::sort(vTerritories.begin(), vTerritories.end(), AlphabeticalBaseObjectLess);
+   std::vector<CBaseObject*> vTerritories;
+   GetIEditor()->GetObjectManager()->FindObjectsOfType(RUNTIME_CLASS(CAITerritoryObject), vTerritories);
+   std::sort(vTerritories.begin(), vTerritories.end(), AlphabeticalBaseObjectLess);
 
-	for (std::vector<CBaseObject*>::iterator it = vTerritories.begin(); it != vTerritories.end(); ++it)
-	{
-		const string& name = (*it)->GetName();
-		pVariable->AddEnumItem(name, name);
-	}
+   for (std::vector<CBaseObject*>::iterator it = vTerritories.begin(); it != vTerritories.end(); ++it)
+   {
+    const string& name = (*it)->GetName();
+    pVariable->AddEnumItem(name, name);
+   }
 
-	m_enumList = pVariable->GetEnumList();
-}*/
+   m_enumList = pVariable->GetEnumList();
+   }*/
 
 //////////////////////////////////////////////////////////////////////////
 /*
-void CPropertyItem::PopulateAIWavesList()
-{
-	CVariableEnum<string>* pVariable = static_cast<CVariableEnum<string>*>(&*m_pVariable);
+   void CPropertyItem::PopulateAIWavesList()
+   {
+   CVariableEnum<string>* pVariable = static_cast<CVariableEnum<string>*>(&*m_pVariable);
 
-	pVariable->SetEnumList(0);
-	pVariable->AddEnumItem("<None>", "<None>");
+   pVariable->SetEnumList(0);
+   pVariable->AddEnumItem("<None>", "<None>");
 
-	CPropertyItem* pPropertyItem = GetParent()->FindItemByFullName("::AITerritoryAndWave::Territory");
-	if (pPropertyItem)
-	{
-		CString sTerritoryName = pPropertyItem->GetValue();
-#ifdef USE_SIMPLIFIED_AI_TERRITORY_SHAPE
-		if (sTerritoryName != "<None>")
-#else
-		if ((sTerritoryName != "<Auto>") && (sTerritoryName != "<None>"))
-#endif
-		{
-			std::vector<CAIWaveObject*> vLinkedAIWaves;
+   CPropertyItem* pPropertyItem = GetParent()->FindItemByFullName("::AITerritoryAndWave::Territory");
+   if (pPropertyItem)
+   {
+    CString sTerritoryName = pPropertyItem->GetValue();
+ #ifdef USE_SIMPLIFIED_AI_TERRITORY_SHAPE
+    if (sTerritoryName != "<None>")
+ #else
+    if ((sTerritoryName != "<Auto>") && (sTerritoryName != "<None>"))
+ #endif
+    {
+      std::vector<CAIWaveObject*> vLinkedAIWaves;
 
-			CBaseObject* pBaseObject = GetIEditor()->GetObjectManager()->FindObject(sTerritoryName);
-			if (pBaseObject && pBaseObject->IsKindOf(RUNTIME_CLASS(CAITerritoryObject)))
-			{
-				CAITerritoryObject* pTerritory = static_cast<CAITerritoryObject*>(pBaseObject);
-				pTerritory->GetLinkedWaves(vLinkedAIWaves);
-			}
+      CBaseObject* pBaseObject = GetIEditor()->GetObjectManager()->FindObject(sTerritoryName);
+      if (pBaseObject && pBaseObject->IsKindOf(RUNTIME_CLASS(CAITerritoryObject)))
+      {
+        CAITerritoryObject* pTerritory = static_cast<CAITerritoryObject*>(pBaseObject);
+        pTerritory->GetLinkedWaves(vLinkedAIWaves);
+      }
 
-			std::sort(vLinkedAIWaves.begin(), vLinkedAIWaves.end(), AlphabeticalBaseObjectLess);
+      std::sort(vLinkedAIWaves.begin(), vLinkedAIWaves.end(), AlphabeticalBaseObjectLess);
 
-			for (std::vector<CAIWaveObject*>::iterator it = vLinkedAIWaves.begin(); it != vLinkedAIWaves.end(); ++it)
-			{
-				const string& name = (*it)->GetName();
-				pVariable->AddEnumItem(name, name);
-			}
-		}
-	}
+      for (std::vector<CAIWaveObject*>::iterator it = vLinkedAIWaves.begin(); it != vLinkedAIWaves.end(); ++it)
+      {
+        const string& name = (*it)->GetName();
+        pVariable->AddEnumItem(name, name);
+      }
+    }
+   }
 
-	m_enumList = pVariable->GetEnumList();
-}*/
+   m_enumList = pVariable->GetEnumList();
+   }*/
 
 //////////////////////////////////////////////////////////////////////////
 void CPropertyItem::RepositionWindow(CWnd* pWnd, CRect rc)

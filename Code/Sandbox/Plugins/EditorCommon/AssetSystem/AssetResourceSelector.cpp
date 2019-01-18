@@ -15,162 +15,169 @@
 namespace Private_AssetSelector
 {
 
-	struct SImmediateCallbackResourceSelectorContext : public IResourceSelectionCallback
-	{
-		void SetValue(const char* newValue) override;
-		std::function<void(const char* newValue)> callback;
-	};
+struct SImmediateCallbackResourceSelectorContext : public IResourceSelectionCallback
+{
+	void SetValue(const char* newValue) override;
+	std::function<void(const char* newValue)> callback;
+};
 
-	void SImmediateCallbackResourceSelectorContext::SetValue(const char* newValue)
+void SImmediateCallbackResourceSelectorContext::SetValue(const char* newValue)
+{
+	if (callback)
 	{
-		if (callback)
-		{
-			callback(newValue);
-		}
+		callback(newValue);
 	}
+}
 
-	CAsset* FindAssetForFileAndContext(const SResourceSelectorContext& selectorContext, const char* value)
+CAsset* FindAssetForFileAndContext(const SResourceSelectorContext& selectorContext, const char* value)
+{
+	const CryPathString assetFile(PathUtil::ToUnixPath<CryPathString>(value));
+	CAssetManager* const pManager = CAssetManager::GetInstance();
+	CAsset* pAsset = pManager->FindAssetForFile(assetFile.c_str());
+
+	if (!pAsset)
 	{
-		const CryPathString assetFile(PathUtil::ToUnixPath<CryPathString>(value));
-		CAssetManager* const pManager = CAssetManager::GetInstance();
-		CAsset* pAsset = pManager->FindAssetForFile(assetFile.c_str());
-
-		if (!pAsset)
-		{
-			CRY_ASSERT(selectorContext.resourceSelectorEntry && selectorContext.resourceSelectorEntry->IsAssetSelector());
-			const SStaticAssetSelectorEntry* selector = static_cast<const SStaticAssetSelectorEntry*>(selectorContext.resourceSelectorEntry);
-			const auto& assetTypes = selector->GetAssetTypes();
-
-			if (assetTypes.size() != 1)
-				return nullptr;
-
-			const CAssetType* const pType = assetTypes.front();
-			if (!pType)
-				return nullptr;
-
-			// value may points to source file (e.g. tif), try to find asset based on the asset type.
-			pAsset = pManager->FindAssetForFile(PathUtil::ReplaceExtension(assetFile.c_str(), pType->GetFileExtension()));
-		}
-
-		return pAsset;
-	}
-
-	dll_string SelectAssetLegacy(const SResourceSelectorContext& selectorContext, const char* previousValue)
-	{
-		CRY_ASSERT(selectorContext.resourceSelectorEntry->IsAssetSelector());
+		CRY_ASSERT(selectorContext.resourceSelectorEntry && selectorContext.resourceSelectorEntry->IsAssetSelector());
 		const SStaticAssetSelectorEntry* selector = static_cast<const SStaticAssetSelectorEntry*>(selectorContext.resourceSelectorEntry);
+		const auto& assetTypes = selector->GetAssetTypes();
 
-		CEngineFileDialog::RunParams runParams;
-		runParams.initialFile = previousValue;
+		if (assetTypes.size() != 1)
+			return nullptr;
 
-		for (auto type : selector->GetAssetTypes())
-		{
-			QString description = QString("%1 (*.%2)").arg(type->GetTypeName()).arg(type->GetFileExtension());
-			runParams.extensionFilters << CExtensionFilter(description, type->GetFileExtension());
-		}
+		const CAssetType* const pType = assetTypes.front();
+		if (!pType)
+			return nullptr;
 
-		runParams.extensionFilters << CExtensionFilter("All Files (*.*)", "*");
-
-		QString filename = CEngineFileDialog::RunGameOpen(runParams, nullptr);
-
-		if (!filename.isEmpty())
-			return filename.toStdString().c_str();
-		else
-			return previousValue;
+		// value may points to source file (e.g. tif), try to find asset based on the asset type.
+		pAsset = pManager->FindAssetForFile(PathUtil::ReplaceExtension(assetFile.c_str(), pType->GetFileExtension()));
 	}
 
-	dll_string SelectAsset(const SResourceSelectorContext& selectorContext, const char* previousValue)
+	return pAsset;
+}
+
+dll_string SelectAssetLegacy(const SResourceSelectorContext& selectorContext, const char* previousValue)
+{
+	CRY_ASSERT(selectorContext.resourceSelectorEntry->IsAssetSelector());
+	const SStaticAssetSelectorEntry* selector = static_cast<const SStaticAssetSelectorEntry*>(selectorContext.resourceSelectorEntry);
+
+	CEngineFileDialog::RunParams runParams;
+	runParams.initialFile = previousValue;
+
+	for (auto type : selector->GetAssetTypes())
+	{
+		QString description = QString("%1 (*.%2)").arg(type->GetTypeName()).arg(type->GetFileExtension());
+		runParams.extensionFilters << CExtensionFilter(description, type->GetFileExtension());
+	}
+
+	runParams.extensionFilters << CExtensionFilter("All Files (*.*)", "*");
+
+	QString filename = CEngineFileDialog::RunGameOpen(runParams, nullptr);
+
+	if (!filename.isEmpty())
+		return filename.toStdString().c_str();
+	else
+		return previousValue;
+}
+
+SResourceSelectionResult SelectAsset(const SResourceSelectorContext& selectorContext, const char* previousValue)
+{
+	SResourceSelectionResult selectionResult;
+	const auto pickerState = (EAssetResourcePickerState)GetIEditor()->GetSystem()->GetIConsole()->GetCVar("ed_enableAssetPickers")->GetIVal();
+	if (pickerState == EAssetResourcePickerState::Disable)
+	{
+		selectionResult.selectedResource = SelectAssetLegacy(selectorContext, previousValue);
+		selectionResult.selectionAccepted = strcmp(selectionResult.selectedResource.c_str(), previousValue) != 0;
+		return selectionResult;
+	}
+
+	CRY_ASSERT(selectorContext.resourceSelectorEntry && selectorContext.resourceSelectorEntry->IsAssetSelector());
+	const SStaticAssetSelectorEntry* selector = static_cast<const SStaticAssetSelectorEntry*>(selectorContext.resourceSelectorEntry);
+	const std::vector<string>& assetTypeNames = selector->GetAssetTypeNames();
+
+	CAssetSelector assetSelector(assetTypeNames);
+	bool selectionConfirmed = assetSelector.Execute(selectorContext, assetTypeNames, previousValue);
+	selectionResult.selectionAccepted = selectionConfirmed;
+
+	if (selectionConfirmed)
+	{
+		if (CAsset* pSelectedAsset = assetSelector.GetSelectedAsset())
+		{
+			selectionResult.selectedResource = pSelectedAsset->GetFile(0).c_str();
+			return selectionResult;
+		}
+	}
+
+	selectionResult.selectedResource = previousValue;
+	return selectionResult;
+}
+
+void EditAsset(const SResourceSelectorContext& selectorContext, const char* value)
+{
+	if (value && *value)
+	{
+		CAsset* pAsset = FindAssetForFileAndContext(selectorContext, value);
+
+		if (pAsset)
+			return pAsset->Edit();
+	}
+}
+
+dll_string ValidateAsset(const SResourceSelectorContext& selectorContext, const char* newValue, const char* previousValue)
+{
+	if (!newValue || !*newValue)
+		return dll_string();
+
+	CRY_ASSERT(selectorContext.resourceSelectorEntry->IsAssetSelector());
+	const SStaticAssetSelectorEntry* selector = static_cast<const SStaticAssetSelectorEntry*>(selectorContext.resourceSelectorEntry);
+
+	QFileInfo fileInfo(newValue);
+	QString assetPath(newValue);
+
+	if (fileInfo.suffix().isEmpty())
+	{
+		//Try to auto complete it
+		if (selector->GetAssetTypes().size() == 1)
+		{
+			assetPath += ".";
+			assetPath += selector->GetAssetTypes()[0]->GetFileExtension();
+		}
+		else
+		{
+			//cannot auto complete, invalid
+			return previousValue;
+		}
+	}
+
+	//If suffix is not empty, does it match allowed types?
+	bool bMatch = false;
+	const QString suffix = fileInfo.suffix();
+	for (auto type : selector->GetAssetTypes())
+	{
+		if (suffix == type->GetFileExtension())
+		{
+			bMatch = true;
+			break;
+		}
+	}
+
+	if (bMatch)
 	{
 		const auto pickerState = (EAssetResourcePickerState)GetIEditor()->GetSystem()->GetIConsole()->GetCVar("ed_enableAssetPickers")->GetIVal();
 		if (pickerState == EAssetResourcePickerState::Disable)
 		{
-			return SelectAssetLegacy(selectorContext, previousValue);
+			return assetPath.toStdString().c_str();
 		}
-
-		CRY_ASSERT(selectorContext.resourceSelectorEntry && selectorContext.resourceSelectorEntry->IsAssetSelector());
-		const SStaticAssetSelectorEntry* selector = static_cast<const SStaticAssetSelectorEntry*>(selectorContext.resourceSelectorEntry);
-		const std::vector<string> & assetTypeNames = selector->GetAssetTypeNames();
-
-		CAssetSelector assetSelector(assetTypeNames);
-
-		if (assetSelector.Execute(selectorContext, assetTypeNames, previousValue))
+		else
 		{
-			if (CAsset* pSelectedAsset = assetSelector.GetSelectedAsset())
-			{
-				return pSelectedAsset->GetFile(0).c_str();
-			}
-		}
-
-		return previousValue;
-	}
-
-	void EditAsset(const SResourceSelectorContext& selectorContext, const char* value)
-	{
-		if (value && *value)
-		{
-			CAsset* pAsset = FindAssetForFileAndContext(selectorContext, value);
-
-			if (pAsset)
-				return pAsset->Edit();
-		}
-	}
-
-	dll_string ValidateAsset(const SResourceSelectorContext& selectorContext, const char* newValue, const char* previousValue)
-	{
-		if (!newValue || !*newValue)
-			return dll_string();
-
-		CRY_ASSERT(selectorContext.resourceSelectorEntry->IsAssetSelector());
-		const SStaticAssetSelectorEntry* selector = static_cast<const SStaticAssetSelectorEntry*>(selectorContext.resourceSelectorEntry);
-
-		QFileInfo fileInfo(newValue);
-		QString assetPath(newValue);
-
-		if (fileInfo.suffix().isEmpty())
-		{
-			//Try to auto complete it
-			if (selector->GetAssetTypes().size() == 1)
-			{
-				assetPath += ".";
-				assetPath += selector->GetAssetTypes()[0]->GetFileExtension();
-			}
-			else
-			{
-				//cannot auto complete, invalid
-				return previousValue;
-			}
-		}
-
-		//If suffix is not empty, does it match allowed types?
-		bool bMatch = false;
-		const QString suffix = fileInfo.suffix();
-		for (auto type : selector->GetAssetTypes())
-		{
-			if (suffix == type->GetFileExtension())
-			{
-				bMatch = true;
-				break;
-			}
-		}
-
-		if (bMatch)
-		{
-			const auto pickerState = (EAssetResourcePickerState)GetIEditor()->GetSystem()->GetIConsole()->GetCVar("ed_enableAssetPickers")->GetIVal();
-			if (pickerState == EAssetResourcePickerState::Disable)
-			{
+			//Finally check if there is a valid asset for this path
+			CAsset* asset = CAssetManager::GetInstance()->FindAssetForFile(assetPath.toStdString().c_str());
+			if (asset)
 				return assetPath.toStdString().c_str();
-			}
-			else
-			{
-				//Finally check if there is a valid asset for this path
-				CAsset* asset = CAssetManager::GetInstance()->FindAssetForFile(assetPath.toStdString().c_str());
-				if (asset)
-					return assetPath.toStdString().c_str();
-			}
 		}
-
-		return previousValue;
 	}
+
+	return previousValue;
+}
 }
 
 SStaticAssetSelectorEntry::SStaticAssetSelectorEntry(const char* typeName)
@@ -238,30 +245,22 @@ const std::vector<const CAssetType*>& SStaticAssetSelectorEntry::GetAssetTypes()
 
 //////////////////////////////////////////////////////////////////////////
 
-dll_string SStaticAssetSelectorEntry::SelectFromAsset(const SResourceSelectorContext& context, const std::vector<string>& types, const char* previousValue)
+SResourceSelectionResult SStaticAssetSelectorEntry::SelectFromAsset(const SResourceSelectorContext& context, const std::vector<string>& types, const char* previousValue)
 {
 	CAssetSelector wrapper(types);
 
-	if (wrapper.Execute(context, types, previousValue))
+	bool accepted = wrapper.Execute(context, types, previousValue);
+	SResourceSelectionResult result{ accepted, previousValue };
+
+	if (accepted)
 	{
 		if (CAsset* pSelectedAsset = wrapper.GetSelectedAsset())
 		{
-			return pSelectedAsset->GetFile(0).c_str();
+			result.selectedResource = pSelectedAsset->GetFile(0).c_str();
 		}
 	}
 
-	return previousValue;
-}
-
-dll_string SStaticAssetSelectorEntry::SelectFromAsset(std::function<void(const char* newValue)> onValueChangedCallback, const std::vector<string>& types, const char* previousValue)
-{
-	Private_AssetSelector::SImmediateCallbackResourceSelectorContext callback;
-	callback.callback = onValueChangedCallback;
-
-	SResourceSelectorContext ctx;
-	ctx.callback = &callback;
-
-	return SStaticAssetSelectorEntry::SelectFromAsset(ctx, types, previousValue);
+	return result;
 }
 
 CAssetSelector::CAssetSelector(const std::vector<string>& assetTypeNames) :
@@ -299,7 +298,7 @@ bool CAssetSelector::Execute(const SResourceSelectorContext& context, const std:
 		CRY_ASSERT(assets.size() <= 1);
 		if (!assets.empty() && context.callback)
 		{
-			context.callback->SetValue(assets.front()->GetFile(0));
+		  context.callback->SetValue(assets.front()->GetFile(0));
 		}
 	});
 

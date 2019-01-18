@@ -53,8 +53,7 @@ struct KeyWord
 
 KeyWord keyWords[] =
 {
-	{ "#RESET#", RGB(0xA0, 0x20, 0x20), eKW_COL | eKW_BOLD },
-};
+	{ "#RESET#", RGB(0xA0, 0x20, 0x20), eKW_COL | eKW_BOLD }, };
 
 static const int numKeyWords = sizeof(keyWords) / sizeof(*keyWords);
 
@@ -119,8 +118,8 @@ class CLineNo : public CXTPReportRecordItemText
 		}
 	}
 	virtual void OnDblClick(
-	  XTP_REPORTRECORDITEM_CLICKARGS* pClickArgs
-	  )
+		XTP_REPORTRECORDITEM_CLICKARGS* pClickArgs
+		)
 	{
 		CDialogScriptView* pView = static_cast<CDialogScriptView*>(pClickArgs->pControl);
 		pView->PlayLine(GetRecord()->GetIndex());
@@ -461,7 +460,7 @@ static const COLORREF COL_REST = RGB(120, 120, 200);
 
 CDialogScriptRecord::CDialogScriptRecord()
 	: m_pScript(nullptr)
-{	
+{
 }
 
 CDialogScriptRecord::CDialogScriptRecord(CEditorDialogScript* pScript, const CEditorDialogScript::SScriptLine* pLine)
@@ -558,8 +557,9 @@ struct MsgHelper
 
 void CDialogScriptRecord::OnBrowseAudioTrigger(string& value, CDialogScriptRecord* pRecord)
 {
-	dll_string newValue = GetIEditor()->GetResourceSelectorHost()->GetSelector("AudioTrigger")->SelectResource(SResourceSelectorContext(), value);
-	value = newValue.c_str();
+	SResourceSelectorContext context;
+	SResourceSelectionResult result = GetIEditor()->GetResourceSelectorHost()->GetSelector("AudioTrigger")->SelectResource(context, value);
+	value = result.selectedResource.c_str();
 }
 
 void CDialogScriptRecord::OnBrowseFacial(string& value, CDialogScriptRecord* pRecord)

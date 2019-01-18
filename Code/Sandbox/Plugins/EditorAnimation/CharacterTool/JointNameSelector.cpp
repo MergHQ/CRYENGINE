@@ -41,7 +41,7 @@ JointSelectionDialog::JointSelectionDialog(QWidget* parent)
 	{
 		filterBox->addWidget(new QLabel("Filter:", this), 0);
 		filterBox->addWidget(m_filterEdit = new QLineEdit(this), 1);
-		connect(m_filterEdit, SIGNAL(textChanged(const QString &)), this, SLOT(onFilterChanged(const QString &)));
+		connect(m_filterEdit, &QLineEdit::textChanged, this, &JointSelectionDialog::onFilterChanged);
 		m_filterEdit->installEventFilter(this);
 	}
 
@@ -50,9 +50,6 @@ JointSelectionDialog::JointSelectionDialog(QWidget* parent)
 	{
 		infoBox->addWidget(new QLabel("Skeleton:"));
 		infoBox->addWidget(m_skeletonLabel = new QLabel(""), 1);
-		//QFont font = m_skeletonLabel->font();
-		//font.setBold(true);
-		//m_skeletonLabel->setFont(font);
 	}
 
 	m_model = new QStandardItemModel();
@@ -71,7 +68,7 @@ JointSelectionDialog::JointSelectionDialog(QWidget* parent)
 	m_filterModel->setSourceModel(m_model);
 	m_filterModel->setDynamicSortFilter(true);
 
-	m_tree = new QAdvancedTreeView(QAdvancedTreeView::Behavior(QAdvancedTreeView::PreserveExpandedAfterReset| QAdvancedTreeView::PreserveSelectionAfterReset),this);
+	m_tree = new QAdvancedTreeView(QAdvancedTreeView::Behavior(QAdvancedTreeView::PreserveExpandedAfterReset | QAdvancedTreeView::PreserveSelectionAfterReset), this);
 	//m_tree->setColumnCount(3);
 	m_tree->setModel(m_filterModel);
 
@@ -83,14 +80,14 @@ JointSelectionDialog::JointSelectionDialog(QWidget* parent)
 #endif
 	m_tree->header()->resizeSection(1, 40);
 	m_tree->header()->resizeSection(2, 80);
-	connect(m_tree, SIGNAL(activated(const QModelIndex &)), this, SLOT(onActivated(const QModelIndex &)));
+	connect(m_tree, &QAdvancedTreeView::activated, this, &JointSelectionDialog::onActivated);
 
 	layout->addWidget(m_tree, 1);
 
 	QDialogButtonBox* buttons = new QDialogButtonBox(this);
 	buttons->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-	connect(buttons, SIGNAL(accepted()), this, SLOT(accept()));
-	connect(buttons, SIGNAL(rejected()), this, SLOT(reject()));
+	connect(buttons, &QDialogButtonBox::accepted, this, &JointSelectionDialog::accept);
+	connect(buttons, &QDialogButtonBox::rejected, this, &JointSelectionDialog::reject);
 	layout->addWidget(buttons, 0);
 }
 
@@ -213,17 +210,25 @@ bool JointSelectionDialog::chooseJoint(string* name, IDefaultSkeleton* skeleton)
 }
 
 // ---------------------------------------------------------------------------
-dll_string JointNameSelector(const SResourceSelectorContext& x, const char* previousValue, ICharacterInstance* characterInstance)
+SResourceSelectionResult JointNameSelector(const SResourceSelectorContext& context, const char* previousValue, ICharacterInstance* characterInstance)
 {
-	JointSelectionDialog dialog(x.parentWidget);
+	JointSelectionDialog dialog(context.parentWidget);
 	dialog.setModal(true);
 
 	IDefaultSkeleton* skeleton = 0;
 	if (characterInstance)
+	{
 		skeleton = &characterInstance->GetIDefaultSkeleton();
+	}
 
 	string jointName = previousValue;
-	dialog.chooseJoint(&jointName, skeleton);
-	return jointName.c_str();
+	SResourceSelectionResult result{ dialog.chooseJoint(&jointName, skeleton), previousValue };
+
+	if (result.selectionAccepted)
+	{
+		result.selectedResource = jointName.c_str();
+	}
+
+	return result;
 }
 REGISTER_RESOURCE_SELECTOR("Joint", JointNameSelector, "icons:common/animation_bone.ico")

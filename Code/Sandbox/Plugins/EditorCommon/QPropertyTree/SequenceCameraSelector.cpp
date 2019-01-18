@@ -10,18 +10,22 @@
 
 #include <CryAnimation/ICryAnimation.h>
 
-dll_string SequenceCameraSelector(const SResourceSelectorContext& x, const char* previousValue, IAnimSequence* pSequence)
+SResourceSelectionResult SequenceCameraSelector(const SResourceSelectorContext& context, const char* previousValue, IAnimSequence* pSequence)
 {
+	SResourceSelectionResult result{ false, previousValue };
+
 	if (!pSequence)
-		return previousValue;
+	{
+		return result;
+	}
 
 	CSequenceCamerasModel* pModel = new CSequenceCamerasModel(*pSequence);
-	CTreeViewDialog dialog(x.parentWidget);
+	CTreeViewDialog dialog(context.parentWidget);
 	QString selectedValue(previousValue);
 
 	dialog.Initialize(pModel, 0);
 
-	for (int32 row = pModel->rowCount(); row--; )
+	for (int32 row = pModel->rowCount(); row--;)
 	{
 		const QModelIndex index = pModel->index(row, 0);
 		if (pModel->data(index, Qt::DisplayRole).value<QString>() == selectedValue)
@@ -30,16 +34,17 @@ dll_string SequenceCameraSelector(const SResourceSelectorContext& x, const char*
 		}
 	}
 
-	if (dialog.exec())
+	result.selectionAccepted = dialog.exec();
+	if (result.selectionAccepted)
 	{
 		QModelIndex index = dialog.GetSelected();
 		if (index.isValid())
 		{
-			return index.data().value<QString>().toLocal8Bit().data();
+			result.selectedResource = index.data().value<QString>().toLocal8Bit().data();
 		}
 	}
 
-	return previousValue;
+	return result;
 }
 
 dll_string ValidateSequenceCamera(const SResourceSelectorContext& x, const char* newValue, const char* previousValue, IAnimSequence* pSequence)

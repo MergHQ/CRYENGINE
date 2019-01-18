@@ -24,6 +24,11 @@ class CResourceSelectorDialog final : public CEditorDialog
 	Q_OBJECT
 
 public:
+	struct SResourceSelectionDialogResult
+	{
+		string selectedItem;
+		bool   selectionAccepted;
+	};
 
 	CResourceSelectorDialog() = delete;
 	CResourceSelectorDialog(CResourceSelectorDialog const&) = delete;
@@ -34,11 +39,10 @@ public:
 	explicit CResourceSelectorDialog(EAssetType const type, Scope const scope, QWidget* const pParent);
 	virtual ~CResourceSelectorDialog() override;
 
-	char const* ChooseItem(char const* currentValue);
+	//! Returns if the operation was accepted or not. If the operation was accepted the newly selected item is in selectedItem. If the operation was canceled selectedItem will be set to szCurrentValue
+	SResourceSelectionDialogResult ChooseItem(char const* szCurrentValue);
 
-	// QDialog
-	virtual QSize sizeHint() const override;
-	// ~QDialog
+	virtual QSize                  sizeHint() const override;
 
 private slots:
 

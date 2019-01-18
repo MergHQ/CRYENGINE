@@ -12,33 +12,39 @@ REGISTER_ASSET_TYPE(CSoundType)
 
 // ---------------------------------------------------------------------------
 
-dll_string SoundFileSelector(const SResourceSelectorContext& x, const char* previousValue)
+SResourceSelectionResult SoundFileSelector(const SResourceSelectorContext& context, const char* previousValue)
 {
+	SResourceSelectionResult result{ false, previousValue };
+
 	// start in Sounds folder if no sound is selected
 	string startPath = PathUtil::GetPathWithoutFilename(previousValue);
 	if (previousValue[0] == '\0')
 		startPath = AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR;
 
 	string relativeFilename = previousValue;
-	if (CFileUtil::SelectSingleFile(x.parentWidget, EFILE_TYPE_SOUND, relativeFilename, "", startPath))
-		return relativeFilename.GetBuffer();
-	else
-		return previousValue;
+	if (CFileUtil::SelectSingleFile(context.parentWidget, EFILE_TYPE_SOUND, relativeFilename, "", startPath))
+	{
+		result.selectedResource = relativeFilename.GetBuffer();
+		result.selectionAccepted = true;
+	}
+
+	return result;
+
 }
-dll_string SoundAssetSelector(const SResourceSelectorContext& x, const char* previousValue)
+SResourceSelectionResult SoundAssetSelector(const SResourceSelectorContext& context, const char* previousValue)
 {
-	return SStaticAssetSelectorEntry::SelectFromAsset(x, { "Sound" }, previousValue);
+	return SStaticAssetSelectorEntry::SelectFromAsset(context, { "Sound" }, previousValue);
 }
-dll_string SoundSelector(const SResourceSelectorContext& x, const char* previousValue)
+SResourceSelectionResult SoundSelector(const SResourceSelectorContext& context, const char* previousValue)
 {
 	EAssetResourcePickerState state = (EAssetResourcePickerState)GetIEditorImpl()->GetSystem()->GetIConsole()->GetCVar("ed_enableAssetPickers")->GetIVal();
 	if (state == EAssetResourcePickerState::EnableAll)
 	{
-		return SoundAssetSelector(x, previousValue);
+		return SoundAssetSelector(context, previousValue);
 	}
 	else
 	{
-		return SoundFileSelector(x, previousValue);
+		return SoundFileSelector(context, previousValue);
 	}
 }
 REGISTER_RESOURCE_SELECTOR("Sound", SoundSelector, "")

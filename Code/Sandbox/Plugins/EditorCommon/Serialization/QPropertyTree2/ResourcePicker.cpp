@@ -37,7 +37,7 @@ public:
 
 private:
 	CResourcePicker* m_pResourcePicker;
-	void             (CResourcePicker::* m_pCallback)(const char*);
+	void (CResourcePicker::* m_pCallback)(const char*);
 };
 }
 
@@ -91,7 +91,7 @@ void CResourcePicker::OnValueChanged(bool isContinuous /*= false*/)
 		}
 		return;
 	}
-	
+
 	if (isContinuous)
 	{
 		OnContinuousChanged();
@@ -124,11 +124,11 @@ void CResourcePicker::OnPick()
 	m_context.callback = &callback;
 
 	const QString value = m_pLineEdit->text();
-	dll_string filename = m_pSelector->SelectResource(m_context, m_previousValue.toStdString().c_str());
+	SResourceSelectionResult result = m_pSelector->SelectResource(m_context, m_previousValue.toStdString().c_str());
 
-	if (value != filename.c_str())
+	if (result.selectionAccepted && value != result.selectedResource.c_str())
 	{
-		m_pLineEdit->setText(filename.c_str());
+		m_pLineEdit->setText(result.selectedResource.c_str());
 		OnValueChanged();
 	}
 }
@@ -223,7 +223,7 @@ void CResourcePicker::Serialize(Serialization::IArchive& ar)
 	string str = m_pLineEdit->text().toStdString().c_str();
 	ar(str, "text", "Text");
 	QString newValue = str;
-	
+
 	if (newValue != m_previousValue && ar.isInput())
 	{
 		m_pLineEdit->setText(QString(str));

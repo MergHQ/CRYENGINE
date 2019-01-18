@@ -84,7 +84,7 @@ struct IResourceSelectionCallback
 
 struct SResourceSelectorContext
 {
-	const char* typeName;
+	const char*                         typeName;
 	const SStaticResourceSelectorEntry* resourceSelectorEntry;
 
 	// when null the main window is used as parent.
@@ -97,7 +97,7 @@ struct SResourceSelectorContext
 	//! The callback can be used to set intermediate values. This variable might be nullptr.
 	//! Typically the callback is used for live-updating a resource when a user changes a selection.
 	//! This does not overwrite the value returned by the TResourceSelectionFunction, which is always the resource's final value.
-	IResourceSelectionCallback* callback;
+	IResourceSelectionCallback*             callback;
 
 	Serialization::ICustomResourceParamsPtr pCustomParams;
 
@@ -114,16 +114,23 @@ struct SResourceSelectorContext
 	}
 };
 
+//The result of a resource relection operation
+struct SResourceSelectionResult
+{
+	//!If the selection is accepted
+	bool       selectionAccepted;
+	//!The result that was selected
+	dll_string selectedResource;
+};
+
 // TResourceSelecitonFunction is used to declare handlers for specific types.
 //
 // For canceled dialogs previousValue should be returned.
-typedef dll_string (* TResourceSelectionFunction)(const SResourceSelectorContext& selectorContext, const char* previousValue);
-typedef void (*       TResourceEditFunction)(const SResourceSelectorContext& selectorContext, const char* previousValue);
-typedef dll_string (* TResourceSelectionFunctionWithContext)(const SResourceSelectorContext& selectorContext, const char* previousValue, void* contextObject);
-typedef dll_string (* TResourceValidationFunction)(const SResourceSelectorContext& selectorContext, const char* newValue, const char* previousValue);
-typedef dll_string (* TResourceValidationFunctionWithContext)(const SResourceSelectorContext& selectorContext, const char* newValue, const char* previousValue, void* contextObject);
-
-
+typedef SResourceSelectionResult (* TResourceSelectionFunction)(const SResourceSelectorContext& selectorContext, const char* previousValue);
+typedef void (*                     TResourceEditFunction)(const SResourceSelectorContext& selectorContext, const char* previousValue);
+typedef SResourceSelectionResult (* TResourceSelectionFunctionWithContext)(const SResourceSelectorContext& selectorContext, const char* previousValue, void* contextObject);
+typedef dll_string (*               TResourceValidationFunction)(const SResourceSelectorContext& selectorContext, const char* newValue, const char* previousValue);
+typedef dll_string (*               TResourceValidationFunctionWithContext)(const SResourceSelectorContext& selectorContext, const char* newValue, const char* previousValue, void* contextObject);
 
 // See note at the beginning of the file.
 struct IResourceSelectorHost
@@ -132,9 +139,9 @@ struct IResourceSelectorHost
 	virtual const SStaticResourceSelectorEntry* GetSelector(const char* typeName) const = 0;
 
 	//Select a resource without having to build a context
-	virtual dll_string SelectResource(const char* typeName, const char* previousValue, QWidget* parentWidget = nullptr, void* contextObject = nullptr) const = 0;
-	
-	virtual void RegisterResourceSelector(const SStaticResourceSelectorEntry* entry) = 0;
+	virtual SResourceSelectionResult SelectResource(const char* typeName, const char* previousValue, QWidget* parentWidget = nullptr, void* contextObject = nullptr) const = 0;
+
+	virtual void                     RegisterResourceSelector(const SStaticResourceSelectorEntry* entry) = 0;
 
 	// secondary responsibility of this class is to store global selections
 	// for example this is used to transfer animations from Character Tool to Mannequin
@@ -149,26 +156,24 @@ struct IResourceSelectorHost
 #define INTERNAL_RSH_COMBINE(A, B)      INTERNAL_RSH_COMBINE_UTIL(A, B)
 
 #define INTERNAL_REGISTER_RESOURCE_SELECTOR(name) \
-  CAutoRegisterResourceSelector INTERNAL_RSH_COMBINE(g_AutoRegHelper, name)([](){ GetIEditor()->GetResourceSelectorHost()->RegisterResourceSelector(& name); });
+	CAutoRegisterResourceSelector INTERNAL_RSH_COMBINE(g_AutoRegHelper, name)([](){ GetIEditor()->GetResourceSelectorHost()->RegisterResourceSelector(&name); });
 
-#define REGISTER_RESOURCE_SELECTOR(name, function, icon) \
- namespace Private_ResourceSelector { SStaticResourceSelectorEntry INTERNAL_RSH_COMBINE(selector_ ## function, __LINE__)((name), (function), (icon)); \
-  INTERNAL_REGISTER_RESOURCE_SELECTOR(INTERNAL_RSH_COMBINE(selector_ ## function, __LINE__)) }
+#define REGISTER_RESOURCE_SELECTOR(name, function, icon)                                                                                               \
+	namespace Private_ResourceSelector { SStaticResourceSelectorEntry INTERNAL_RSH_COMBINE(selector_ ## function, __LINE__)((name), (function), (icon)); \
+	                                     INTERNAL_REGISTER_RESOURCE_SELECTOR(INTERNAL_RSH_COMBINE(selector_ ## function, __LINE__)) }
 
-#define REGISTER_RESOURCE_VALIDATING_SELECTOR(name, function, validation, icon) \
- namespace Private_ResourceSelector { SStaticResourceSelectorEntry INTERNAL_RSH_COMBINE(selector_ ## function, __LINE__)((name), (function), (validation), (icon)); \
-INTERNAL_REGISTER_RESOURCE_SELECTOR(INTERNAL_RSH_COMBINE(selector_ ## function, __LINE__)) }
+#define REGISTER_RESOURCE_VALIDATING_SELECTOR(name, function, validation, icon)                                                                                      \
+	namespace Private_ResourceSelector { SStaticResourceSelectorEntry INTERNAL_RSH_COMBINE(selector_ ## function, __LINE__)((name), (function), (validation), (icon)); \
+	                                     INTERNAL_REGISTER_RESOURCE_SELECTOR(INTERNAL_RSH_COMBINE(selector_ ## function, __LINE__)) }
 
-#define REGISTER_RESOURCE_EDITING_SELECTOR(name, function, validation, editing, icon) \
- namespace Private_ResourceSelector { SStaticResourceSelectorEntry INTERNAL_RSH_COMBINE(selector_ ## function, __LINE__)((name), (function), (validation), (editing), (icon)); \
-INTERNAL_REGISTER_RESOURCE_SELECTOR(INTERNAL_RSH_COMBINE(selector_ ## function, __LINE__)) }
+#define REGISTER_RESOURCE_EDITING_SELECTOR(name, function, validation, editing, icon)                                                                                           \
+	namespace Private_ResourceSelector { SStaticResourceSelectorEntry INTERNAL_RSH_COMBINE(selector_ ## function, __LINE__)((name), (function), (validation), (editing), (icon)); \
+	                                     INTERNAL_REGISTER_RESOURCE_SELECTOR(INTERNAL_RSH_COMBINE(selector_ ## function, __LINE__)) }
 
 //Note that this is used only once and this is for an asset type
-#define REGISTER_RESOURCE_EDITING_SELECTOR_WITH_LEGACY_SUPPORT(name, function, validation, editing, icon) \
- namespace Private_ResourceSelector { SStaticResourceSelectorEntry INTERNAL_RSH_COMBINE(selector_ ## function, __LINE__)((name), (function), (validation), (editing), (icon), true); \
-INTERNAL_REGISTER_RESOURCE_SELECTOR(INTERNAL_RSH_COMBINE(selector_ ## function, __LINE__)) }
-
-
+#define REGISTER_RESOURCE_EDITING_SELECTOR_WITH_LEGACY_SUPPORT(name, function, validation, editing, icon)                                                                             \
+	namespace Private_ResourceSelector { SStaticResourceSelectorEntry INTERNAL_RSH_COMBINE(selector_ ## function, __LINE__)((name), (function), (validation), (editing), (icon), true); \
+	                                     INTERNAL_REGISTER_RESOURCE_SELECTOR(INTERNAL_RSH_COMBINE(selector_ ## function, __LINE__)) }
 
 //! Describes how a particular resource type should be handled by generic UI such as pickers in a property tree
 struct EDITOR_COMMON_API SStaticResourceSelectorEntry
@@ -182,33 +187,31 @@ protected:
 	TResourceValidationFunctionWithContext validateWithContext;
 	const char*                            iconPath;
 	Serialization::TypeID                  contextType;
-	bool                                   addLegacyPicker;
-	bool								   isAsset;
-	
+	bool addLegacyPicker;
+	bool isAsset;
 
-//Public API part
+	//Public API part
 public:
 
-	const char*				GetTypeName() const { return typeName; }
-	const char*				GetIconPath() const { return iconPath; }
-	Serialization::TypeID	GetContextType() const { return contextType; }
+	const char*           GetTypeName() const    { return typeName; }
+	const char*           GetIconPath() const    { return iconPath; }
+	Serialization::TypeID GetContextType() const { return contextType; }
 
 	//! The field can only have free-form input if validators were specified, otherwise only the picker allows to choose a new value
-	bool					UsesInputField() const; 
+	bool                     UsesInputField() const;
 
-	bool					HasLegacyPicker() const { return addLegacyPicker; }
-	bool					CanEdit() const { return edit != nullptr; }
-	void					EditResource(const SResourceSelectorContext& context, const char* value) const;
-	dll_string				ValidateValue(const SResourceSelectorContext& context, const char* newValue, const char* previousValue) const;
-	dll_string				SelectResource(const SResourceSelectorContext& context, const char* previousValue) const;
+	bool                     HasLegacyPicker() const { return addLegacyPicker; }
+	bool                     CanEdit() const         { return edit != nullptr; }
+	void                     EditResource(const SResourceSelectorContext& context, const char* value) const;
+	dll_string               ValidateValue(const SResourceSelectorContext& context, const char* newValue, const char* previousValue) const;
+	SResourceSelectionResult SelectResource(const SResourceSelectorContext& context, const char* previousValue) const;
 
-	virtual                 ~SStaticResourceSelectorEntry() {}
-	virtual bool			ShowTooltip(const SResourceSelectorContext& context, const char* value) const;
-	virtual void			HideTooltip(const SResourceSelectorContext& context, const char* value) const;
-	bool					IsAssetSelector() const { return isAsset; }
+	virtual ~SStaticResourceSelectorEntry() {}
+	virtual bool ShowTooltip(const SResourceSelectorContext& context, const char* value) const;
+	virtual void HideTooltip(const SResourceSelectorContext& context, const char* value) const;
+	bool         IsAssetSelector() const { return isAsset; }
 
-
-//Constructors are only meant to be used through declarative macros
+	//Constructors are only meant to be used through declarative macros
 public:
 	SStaticResourceSelectorEntry(const char* typeName, TResourceSelectionFunction function, const char* icon, const bool addLegacyPicker = false)
 		: typeName(typeName)
@@ -251,7 +254,7 @@ public:
 
 	template<class T>
 	SStaticResourceSelectorEntry(const char* typeName
-	                             , dll_string(*function)(const SResourceSelectorContext &, const char* previousValue, T * context)
+	                             , SResourceSelectionResult (*function)(const SResourceSelectorContext&, const char* previousValue, T * context)
 	                             , const char* icon
 	                             , const bool addLegacyPicker = false)
 		: typeName(typeName)
@@ -269,8 +272,8 @@ public:
 
 	template<class T>
 	SStaticResourceSelectorEntry(const char* typeName
-	                             , dll_string(*function)(const SResourceSelectorContext &, const char* previousValue, T * context)
-	                             , dll_string(*validation)(const SResourceSelectorContext &, const char* newValue, const char* previousValue, T * context)
+	                             , SResourceSelectionResult (*function)(const SResourceSelectorContext&, const char* previousValue, T * context)
+	                             , dll_string (*validation)(const SResourceSelectorContext&, const char* newValue, const char* previousValue, T * context)
 	                             , const char* icon
 	                             , const bool addLegacyPicker = false)
 		: typeName(typeName)

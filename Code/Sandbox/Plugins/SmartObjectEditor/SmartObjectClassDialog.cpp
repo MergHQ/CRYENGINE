@@ -417,16 +417,21 @@ void CSmartObjectClassDialog::OnNewBtn()
 }
 namespace
 {
-dll_string ShowDialog(const SResourceSelectorContext& context, const char* szPreviousValue)
+SResourceSelectionResult ShowDialog(const SResourceSelectorContext& context, const char* szPreviousValue)
 {
 	CSmartObjectClassDialog soDlg(nullptr, true);
 	soDlg.SetSOClass(szPreviousValue);
-	if (soDlg.DoModal() == IDOK)
+
+	bool accepted = soDlg.DoModal() == IDOK;
+	SResourceSelectionResult result{ accepted, szPreviousValue };
+
+	if (accepted)
 	{
-		CString result = soDlg.GetSOClass();
-		return (LPCSTR)result;
+		CString dialogResult = soDlg.GetSOClass();
+		result.selectedResource = (LPCSTR)dialogResult;
 	}
-	return szPreviousValue;
+
+	return result;
 }
 
 REGISTER_RESOURCE_SELECTOR("SmartObjectClasses", ShowDialog, "")

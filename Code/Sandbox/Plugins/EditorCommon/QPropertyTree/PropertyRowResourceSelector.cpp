@@ -365,21 +365,19 @@ bool PropertyRowResourceSelector::pickResource(PropertyTree* tree)
 	context_.callback = &callback;
 
 	context_.typeName = type_.c_str();
-	QPropertyTree* qtree = static_cast<QPropertyTree*>(tree);
-	context_.parentWidget = qtree;
+	QPropertyTree* pPropertyTree = static_cast<QPropertyTree*>(tree);
+	context_.parentWidget = pPropertyTree;
 
 	const string previousValue = value_;
 	//Notify model (and subsequently the tree) that this row is about to change, this usually triggers an undo begin and record on the items being changed
 	tree->model()->rowAboutToBeChanged(this);
-	dll_string filename = selector_->SelectResource(context_, previousValue.c_str());
+	SResourceSelectionResult result = selector_->SelectResource(context_, previousValue.c_str());
 
-	bool confirmed = previousValue != filename.c_str();
-	if (confirmed)
+	if (result.selectionAccepted && previousValue != result.selectedResource.c_str())
 	{
-		setValue(filename.c_str());
+		setValue(result.selectedResource.c_str());
 		//!Confirm that the row changed and accept the undo (aka place it in the undo history)
 		tree->model()->rowChanged(this, true, true);
-
 	}
 	else
 	{
