@@ -147,7 +147,7 @@ public:
 	enum { nMarkerEntries = 1024 };
 	struct SMarker
 	{
-		typedef CryFixedStringT<64> TMarkerString;
+		typedef CryFixedStringT<128> TMarkerString;
 		enum MarkerType { PUSH_MARKER, POP_MARKER };
 
 		SMarker() {}
