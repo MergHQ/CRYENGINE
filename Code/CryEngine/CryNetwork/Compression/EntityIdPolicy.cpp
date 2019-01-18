@@ -116,7 +116,7 @@ public:
 		}
 		m_lastValue = value;
 
-#if !defined(EXCLUDE_NORMAL_LOG)
+#if ENABLE_CORRUPT_PACKET_DUMP
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(pModel->GetNetContextState()->GetEntityID(value));
 		NetLogPacketDebug("CEntityIdPolicy::ReadValue %d:%d %s (%f)", value.id, value.salt, pEntity ? pEntity->GetName() : "<no name>", in.GetBitSize());
 #endif
