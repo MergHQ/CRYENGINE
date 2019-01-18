@@ -102,7 +102,7 @@ int CWalkingRigidEntity::SetParams(pe_params *_params, int bThreadSafe)
 		if (!m_nLegs)
 			m_legs = new Vec3[3];
 		m_nLegs = 1;
-		m_legs[1] = -(m_legs[0] = Vec3(0,0,gp.pos.z-caps.hh-caps.r));
+		m_legs[1] = -(m_legs[0] = Vec3(0,0,gp.pos.z));
 		m_legs[2] = -ortz;
 		return 1;
 	}
