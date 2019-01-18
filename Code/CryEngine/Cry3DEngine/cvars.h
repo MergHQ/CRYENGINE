@@ -288,7 +288,7 @@ struct CVars : public Cry3DEngineBase
 	DeclareConstFloatCVar(e_CameraRotationSpeed);
 	float  e_ScreenShotMapSizeY;
 	int    e_GI;
-	DeclareConstIntCVar(e_PortalsBigEntitiesFix, 1);
+	DeclareConstIntCVar(e_PortalsBigEntitiesFix, 0);
 	int    e_SQTestBegin;
 	int    e_VegetationSprites;
 	ICVar* e_CameraGoto;

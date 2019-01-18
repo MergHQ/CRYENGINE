@@ -514,14 +514,13 @@ void CCryLobby::Tick(bool flush)
 
 	#if !defined(_RELEASE) || defined(RELEASE_LOGGING)
 					CCrySharedLobbyPacket packetInfo;
-					SCryLobbyPacketHeader* pPacketHeader = packetInfo.GetLobbyPacketHeader();
 
 					packetInfo.SetReadBuffer((const uint8*)MemGetPtr(data.data), data.dataSize);
 
 					packetInfo.ReadPacketHeader();
 
 					SECURE_NET_LOG("[lobby] Send reliable connection " PRFORMAT_LCINFO " from " PRFORMAT_UID " counter %d size %d",
-					               PRARG_LCINFO(CryLobbyConnectionID(i), pConnection->addr), PRARG_UID(pPacketHeader->fromUID), data.counter, data.dataSize);
+					               PRARG_LCINFO(CryLobbyConnectionID(i), pConnection->addr), PRARG_UID(packetInfo.GetLobbyPacketHeader()->fromUID), data.counter, data.dataSize);
 
 					LogPacketsInBuffer((uint8*)MemGetPtr(data.data), data.dataSize);
 	#endif  // #if !defined(_RELEASE) || defined(RELEASE_LOGGING)

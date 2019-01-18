@@ -230,6 +230,10 @@ endforeach()
 if (OPTION_RELEASE_PROFILING)
 	list(APPEND global_defines  "$<$<CONFIG:Release>:PERFORMANCE_BUILD>")
 endif()
+if (OPTION_RELEASE_LOGGING)
+	list(APPEND global_defines  "$<$<CONFIG:Release>:RELEASE_LOGGING>")
+endif()
+
 
 if (WINDOWS AND OPTION_ENABLE_BROFILER AND OPTION_ENGINE)
 	list(APPEND global_defines USE_BROFILER)

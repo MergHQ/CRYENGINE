@@ -57,7 +57,6 @@ typedef uint32 vtx_idx;
 #define LOG_CONST_CVAR_ACCESS 0
 
 #if CRY_PLATFORM_WINDOWS || LOG_CONST_CVAR_ACCESS
-	#define RELEASE_LOGGING
 	#if defined(_RELEASE)
 		#define CVARS_WHITELIST
 	#endif // defined(_RELEASE)

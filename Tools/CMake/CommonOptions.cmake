@@ -59,3 +59,4 @@ endif()
 
 
 option(OPTION_RELEASE_PROFILING "Enable basic profiling in Release builds" OFF)
+option(OPTION_RELEASE_LOGGING "Enable logging in Release builds" ON)
