@@ -15,8 +15,6 @@
 #include <QApplication>
 #include <QPixmap>
 
-
-
 enum class EColumns
 {
 	ID = 0,
@@ -699,8 +697,8 @@ bool QDialogLineDelegate::editorEvent(QEvent* pEvent, QAbstractItemModel* pModel
 				if (pEvent->type() == QEvent::MouseButtonDblClick)
 				{
 					QString previous = index.data(Qt::DisplayRole).toString();
-					dll_string control = GetIEditor()->GetResourceSelectorHost()->SelectResource("AudioTrigger", QtUtil::ToString(previous), m_pParent);
-					pModel->setData(index, QtUtil::ToQStringSafe(control.c_str()));
+					SResourceSelectionResult result = GetIEditor()->GetResourceSelectorHost()->SelectResource("AudioTrigger", QtUtil::ToString(previous), m_pParent);
+					pModel->setData(index, QtUtil::ToQStringSafe(result.selectedResource.c_str()));
 					return true;
 				}
 				return false;

@@ -13,22 +13,27 @@
 #include <CryEntitySystem/IEntityClass.h>
 #include <CryEntitySystem/IEntity.h>
 
-dll_string EntityEventSelector(const SResourceSelectorContext& x, const char* previousValue, IEntity* pEntity)
+SResourceSelectionResult EntityEventSelector(const SResourceSelectorContext& context, const char* previousValue, IEntity* pEntity)
 {
+	SResourceSelectionResult result{ false, previousValue };
 	if (!pEntity)
-		return previousValue;
+	{
+		return result;
+	}
 
 	IEntityClass* pClass = pEntity->GetClass();
 	if (!pClass)
-		return previousValue;
+	{
+		return result;
+	}
 
 	CEntityEventsModel* pModel = new CEntityEventsModel(*pClass);
-	CTreeViewDialog dialog(x.parentWidget);
+	CTreeViewDialog dialog(context.parentWidget);
 	QString selectedValue(previousValue);
 
 	dialog.Initialize(pModel, 0);
 
-	for (int32 row = pModel->rowCount(); row--; )
+	for (int32 row = pModel->rowCount(); row--;)
 	{
 		const QModelIndex index = pModel->index(row, 0);
 		if (pModel->data(index, Qt::DisplayRole).value<QString>() == selectedValue)
@@ -37,16 +42,19 @@ dll_string EntityEventSelector(const SResourceSelectorContext& x, const char* pr
 		}
 	}
 
-	if (dialog.exec())
+	result.selectionAccepted = dialog.exec();
+
+	if (result.selectionAccepted)
 	{
 		QModelIndex index = dialog.GetSelected();
 		if (index.isValid())
 		{
-			return index.data().value<QString>().toLocal8Bit().data();
+			result.selectedResource = index.data().value<QString>().toLocal8Bit().data();
+			return result;
 		}
 	}
 
-	return previousValue;
+	return result;
 }
 
 dll_string ValidateEntityEvent(const SResourceSelectorContext& x, const char* newValue, const char* previousValue, IEntity* pEntity)

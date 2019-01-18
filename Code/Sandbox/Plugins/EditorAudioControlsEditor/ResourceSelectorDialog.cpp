@@ -78,7 +78,7 @@ CResourceSelectorDialog::CResourceSelectorDialog(EAssetType const type, Scope co
 	m_pSearchBox->signalOnFiltered.Connect([&]()
 		{
 			m_pTreeView->scrollTo(m_pTreeView->currentIndex());
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	if (s_previousControlType != type)
 	{
@@ -131,9 +131,9 @@ QAbstractItemModel* CResourceSelectorDialog::CreateLibraryModelFromIndex(QModelI
 }
 
 //////////////////////////////////////////////////////////////////////////
-char const* CResourceSelectorDialog::ChooseItem(char const* szCurrentValue)
+CResourceSelectorDialog::SResourceSelectionDialogResult CResourceSelectorDialog::ChooseItem(char const* szCurrentValue)
 {
-	char const* szControlName = szCurrentValue;
+	SResourceSelectionDialogResult result{ false, szCurrentValue };
 
 	if (std::strcmp(szCurrentValue, "") != 0)
 	{
@@ -151,12 +151,15 @@ char const* CResourceSelectorDialog::ChooseItem(char const* szCurrentValue)
 		}
 	}
 
-	if (exec() == QDialog::Accepted)
+	bool accepted = exec() == QDialog::Accepted;
+	result.selectionAccepted = accepted;
+
+	if (accepted)
 	{
-		szControlName = s_previousControlName.c_str();
+		result.selectedItem = s_previousControlName.c_str();
 	}
 
-	return szControlName;
+	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -278,7 +281,7 @@ void CResourceSelectorDialog::OnContextMenu(QPoint const& pos)
 			pContextMenu->addAction(tr("Execute Trigger"), [=]()
 				{
 					CAudioControlsEditorPlugin::ExecuteTrigger(pAsset->GetName());
-			  });
+				});
 
 			pContextMenu->addSeparator();
 

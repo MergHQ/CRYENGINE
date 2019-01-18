@@ -88,9 +88,9 @@ public:
 	{
 		return strcmp(type, "Character") == 0 ? "Character Definition (cdf)|*.cdf" :
 		       strcmp(type, "Animation") == 0 ? "Animation, BlendSpace (caf, i_caf, bspace, comb)|*.caf;*.i_caf;*.bspace;*.comb" :
-			   strcmp(type, "AnimationOrBSpace") == 0 ? "Animation, BlendSpace (caf, i_caf, bspace, comb)|*.caf;*.i_caf;*.bspace;*.comb" :
+		       strcmp(type, "AnimationOrBSpace") == 0 ? "Animation, BlendSpace (caf, i_caf, bspace, comb)|*.caf;*.i_caf;*.bspace;*.comb" :
 		       strcmp(type, "Skeleton") == 0 ? "Skeleton (skel, chr, cga)|*.skel;*.chr;*.cga" :
-			   strcmp(type, "SkeletonOrCga") == 0 ? "Skeleton (skel, chr, cga)|*.skel;*.chr;*.cga" :
+		       strcmp(type, "SkeletonOrCga") == 0 ? "Skeleton (skel, chr, cga)|*.skel;*.chr;*.cga" :
 		       strcmp(type, "SkeletonParams") == 0 ? "Skeleton Parameters (chrparams)|*.chrparams" :
 		       strcmp(type, "CharacterPhysics") == 0 ? "Character Physics (phys)|*.phys" :
 		       strcmp(type, "CharacterRig") == 0 ? "Character Rig (rig)|*.rig" :
@@ -100,10 +100,10 @@ public:
 	static CExtensionFilter GetExtensionFilterForType(const char* type)
 	{
 		return strcmp(type, "Character") == 0 ? CExtensionFilter("Character Definition (cdf)", "cdf") :
-			   strcmp(type, "Animation") == 0 ? CExtensionFilter("Animation, BlendSpace (caf, i_caf, bspace, comb)", QStringList() << "caf" << "i_caf" << "bspace" << "comb") :
+		       strcmp(type, "Animation") == 0 ? CExtensionFilter("Animation, BlendSpace (caf, i_caf, bspace, comb)", QStringList() << "caf" << "i_caf" << "bspace" << "comb") :
 		       strcmp(type, "AnimationOrBSpace") == 0 ? CExtensionFilter("Animation, BlendSpace (caf, i_caf, bspace, comb)", QStringList() << "caf" << "i_caf" << "bspace" << "comb") :
 		       strcmp(type, "Skeleton") == 0 ? CExtensionFilter("Skeleton (skel, chr, cga)", "skel", "chr", "cga") :
-			   strcmp(type, "SkeletonOrCga") == 0 ? CExtensionFilter("Skeleton (skel, chr, cga)", "skel", "chr", "cga") :
+		       strcmp(type, "SkeletonOrCga") == 0 ? CExtensionFilter("Skeleton (skel, chr, cga)", "skel", "chr", "cga") :
 		       strcmp(type, "SkeletonParams") == 0 ? CExtensionFilter("Skeleton Parameters (chrparams)", "chrparams") :
 		       strcmp(type, "CharacterPhysics") == 0 ? CExtensionFilter("Character Physics (phys)", "phys") :
 		       strcmp(type, "CharacterRig") == 0 ? CExtensionFilter("Character Rig (rig)", "rig") :
@@ -114,16 +114,16 @@ public:
 	{
 		typedef std::vector<string> v;
 		return strcmp(type, "Character") == 0 ? v{ "Character" } :
-			strcmp(type, "AnimationOrBSpace") == 0 ? v{ "Animation" } :
-			strcmp(type, "Animation") == 0 ? v{ "Animation" } :
-			strcmp(type, "Skeleton") == 0 ? v{ "Skeleton" } :
-			strcmp(type, "SkeletonOrCga") == 0 ? v{ "Skeleton", "AnimatedMesh" } :
-			v();
+		       strcmp(type, "AnimationOrBSpace") == 0 ? v{ "Animation" } :
+		       strcmp(type, "Animation") == 0 ? v{ "Animation" } :
+		       strcmp(type, "Skeleton") == 0 ? v{ "Skeleton" } :
+		       strcmp(type, "SkeletonOrCga") == 0 ? v{ "Skeleton", "AnimatedMesh" } :
+		       v();
 	}
 
 	const char* GetFileSelectorMaskForType(const char* type) const override { return GetMaskForType(type); }
 
-	bool IsActive(const char* type, const char* path, int index) const override
+	bool        IsActive(const char* type, const char* path, int index) const override
 	{
 		if ((strcmp(type, "Animation") == 0 || strcmp(type, "AnimationOrBSpace") == 0) && index != -1)
 			return m_system->scene->layers.activeLayer == index;
@@ -211,31 +211,35 @@ Serialization::INavigationProvider* CreateExplorerNavigationProvider(System* sys
 	return new ExplorerNavigationProvider(system);
 }
 
-dll_string FileSelector(const SResourceSelectorContext& x, const char* previousValue)
+SResourceSelectionResult FileSelector(const SResourceSelectorContext& context, const char* previousValue)
 {
 	CEngineFileDialog::RunParams runParams;
 	runParams.initialFile = previousValue;
-	runParams.extensionFilters << ExplorerNavigationProvider::GetExtensionFilterForType(x.typeName);
+	runParams.extensionFilters << ExplorerNavigationProvider::GetExtensionFilterForType(context.typeName);
 	auto qFilename = CEngineFileDialog::RunGameOpen(runParams, nullptr);
 	string filename = qFilename.toLocal8Bit().data();
+	SResourceSelectionResult result{ false, previousValue };
 
 	if (!filename.empty())
-		return filename.c_str();
-	else
-		return previousValue;
+	{
+		result.selectedResource = filename.c_str();
+		result.selectionAccepted = true;
+	}
+
+	return result;
 }
 
-static dll_string AnimationResourceSelector(const SResourceSelectorContext& x, const char* previousValue)
+static SResourceSelectionResult AnimationResourceSelector(const SResourceSelectorContext& context, const char* previousValue)
 {
-	const auto assetTypes = ExplorerNavigationProvider::GetAssetTypesForType(x.typeName);
+	const auto assetTypes = ExplorerNavigationProvider::GetAssetTypesForType(context.typeName);
 	auto assetPickersEnabled = (EAssetResourcePickerState)GetIEditor()->GetSystem()->GetIConsole()->GetCVar("ed_enableAssetPickers")->GetIVal();
 	if (assetPickersEnabled != EAssetResourcePickerState::Disable && !assetTypes.empty())
 	{
-		return SStaticAssetSelectorEntry::SelectFromAsset(x, assetTypes, previousValue);
+		return SStaticAssetSelectorEntry::SelectFromAsset(context, assetTypes, previousValue);
 	}
 	else
 	{
-		return FileSelector(x, previousValue);
+		return FileSelector(context, previousValue);
 	}
 }
 

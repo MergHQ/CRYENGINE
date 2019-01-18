@@ -24,17 +24,21 @@
 
 namespace
 {
-dll_string ShowDialog(const SResourceSelectorContext& context, const char* szPreviousValue)
+SResourceSelectionResult ShowDialog(const SResourceSelectorContext& context, const char* szPreviousValue)
 {
 	CLayerPicker layerPicker;
 	CObjectLayer* previousValue = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->FindLayerByFullName(szPreviousValue);
 	layerPicker.SetSelectedLayer(previousValue);
-	if (layerPicker.exec() == QDialog::Accepted)
+
+	bool accepted = layerPicker.exec() == QDialog::Accepted;
+	SResourceSelectionResult result{ accepted, szPreviousValue };
+
+	if (accepted)
 	{
-		return layerPicker.GetSelectedLayer()->GetFullName().GetBuffer();
+		result.selectedResource = layerPicker.GetSelectedLayer()->GetFullName().GetBuffer();
 	}
 
-	return szPreviousValue;
+	return result;
 }
 
 void SwitchLayer()

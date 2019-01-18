@@ -365,9 +365,8 @@ void AnimationList::SetExplorerData(ExplorerData* explorerData, int subtree)
 	m_explorerColumnFrames = explorerData->AddColumn("Frames", ExplorerColumn::INTEGER, false);
 
 	const ExplorerColumnValue audioValues[] = {
-		{ "No audio",  ""                                },
-		{ "Has audio", "icons:common/animation_audio_event.ico" },
-	};
+		{ "No audio",  ""                                       },
+		{ "Has audio", "icons:common/animation_audio_event.ico" }, };
 	int audioValueCount = sizeof(audioValues) / sizeof(audioValues[0]);
 	m_explorerColumnAudio = explorerData->AddColumn("Audio", ExplorerColumn::ICON, false, audioValues, audioValueCount);
 	m_explorerColumnPak = explorerData->FindColumn("Pak");
@@ -1511,19 +1510,25 @@ void AnimationList::ActionExportHTR(ActionContext& x)
 
 // ---------------------------------------------------------------------------
 
-dll_string AnimationAliasSelector(const SResourceSelectorContext& x, const char* previousValue, ICharacterInstance* character)
+SResourceSelectionResult AnimationAliasSelector(const SResourceSelectorContext& context, const char* previousValue, ICharacterInstance* character)
 {
+	SResourceSelectionResult result{ false, previousValue };
 	if (!character)
-		return previousValue;
+	{
+		return result;
+	}
 
-	ListSelectionDialog dialog("CTAnimationAliasSelection", x.parentWidget);
+	ListSelectionDialog dialog("CTAnimationAliasSelection", context.parentWidget);
 	dialog.setWindowTitle("Animation Alias Selection");
-	dialog.setWindowIcon(CryIcon(GetIEditor()->GetResourceSelectorHost()->GetSelector(x.typeName)->GetIconPath()));
+	dialog.setWindowIcon(CryIcon(GetIEditor()->GetResourceSelectorHost()->GetSelector(context.typeName)->GetIconPath()));
 	dialog.setModal(true);
 
 	IAnimationSet* animationSet = character->GetIAnimationSet();
 	if (!animationSet)
-		return previousValue;
+	{
+		return result;
+	}
+
 	IDefaultSkeleton& skeleton = character->GetIDefaultSkeleton();
 
 	dialog.SetColumnText(0, "Animation Alias");
@@ -1536,7 +1541,9 @@ dll_string AnimationAliasSelector(const SResourceSelectorContext& x, const char*
 		const char* name = animationSet->GetNameByAnimID(i);
 		const char* animationPath = animationSet->GetFilePathByID(i);
 		if (IsInternalAnimationName(name, animationPath))
+		{
 			continue;
+		}
 
 		AnimationContent::Type type = AnimationContent::ANIMATION;
 
@@ -1544,16 +1551,24 @@ dll_string AnimationAliasSelector(const SResourceSelectorContext& x, const char*
 		if (flags & CA_ASSET_LMG)
 		{
 			if (animationSet->IsCombinedBlendSpace(i))
+			{
 				type = AnimationContent::COMBINED_BLEND_SPACE;
+			}
 			else
+			{
 				type = AnimationContent::BLEND_SPACE;
+			}
 		}
 		else if (flags & CA_AIMPOSE)
 		{
 			if (animationSet->IsAimPose(i, skeleton))
+			{
 				type = AnimationContent::AIMPOSE;
+			}
 			else if (animationSet->IsLookPose(i, skeleton))
+			{
 				type = AnimationContent::LOOKPOSE;
+			}
 		}
 		bool isAdditive = (flags & CA_ASSET_ADDITIVE) != 0;
 		const char* icon = EntryIconByContentType(type, isAdditive);
@@ -1563,7 +1578,12 @@ dll_string AnimationAliasSelector(const SResourceSelectorContext& x, const char*
 		dialog.AddRowColumn(typeName);
 	}
 
-	return dialog.ChooseItem(previousValue);
+	ListSelectionDialog::SSelectionResult selectionResult = dialog.ChooseItem(previousValue);
+
+	result.selectedResource = selectionResult.selectedItem.c_str();
+	result.selectionAccepted = selectionResult.selectionAccepted;
+
+	return result;
 }
 REGISTER_RESOURCE_SELECTOR("AnimationAlias", AnimationAliasSelector, "icons:common/assets_animation.ico")
 

@@ -144,16 +144,20 @@ CSelectMissionObjectiveDialog::GetItemsInternal(std::vector<SItem>& outItems, co
 
 namespace
 {
-dll_string ShowDialog(const SResourceSelectorContext& context, const char* szPreviousValue)
+SResourceSelectionResult ShowDialog(const SResourceSelectorContext& context, const char* szPreviousValue)
 {
 	CSelectMissionObjectiveDialog gtDlg(nullptr);
 	gtDlg.PreSelectItem(szPreviousValue);
-	if (gtDlg.DoModal() == IDOK)
+
+	bool accepted = gtDlg.DoModal() == IDOK;
+	SResourceSelectionResult result{ accepted, szPreviousValue };
+
+	if (accepted)
 	{
-		CString result = gtDlg.GetSelectedItem();
-		return (LPCSTR)result;
+		CString selectedItem = gtDlg.GetSelectedItem();
+		result.selectedResource = (LPCSTR)selectedItem;
 	}
-	return szPreviousValue;
+	return result;
 }
 
 REGISTER_RESOURCE_SELECTOR("Missions", ShowDialog, "icons:General/Folder_Tinted.ico")

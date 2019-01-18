@@ -27,13 +27,18 @@ dll_string SStaticResourceSelectorEntry::ValidateValue(const SResourceSelectorCo
 	return result;
 }
 
-dll_string SStaticResourceSelectorEntry::SelectResource(const SResourceSelectorContext& context, const char* previousValue) const
+SResourceSelectionResult SStaticResourceSelectorEntry::SelectResource(const SResourceSelectorContext& context, const char* previousValue) const
 {
-	dll_string result = previousValue;
+	SResourceSelectionResult result;
+
 	if (function)
+	{
 		result = function(context, previousValue);
+	}
 	else if (functionWithContext)
+	{
 		result = functionWithContext(context, previousValue, context.contextObject);
+	}
 
 	return result;
 }
