@@ -2665,12 +2665,12 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 	InlineInitializationProcessing("CSystem::Init PlatformOS");
 
 	{
+		m_FrameProfileSystem.Init();
+
 		//////////////////////////////////////////////////////////////////////////
 		// File system, must be very early
 		//////////////////////////////////////////////////////////////////////////
-		InitFileSystem(startupParams);
-
-		m_FrameProfileSystem.Init();
+		InitFileSystem(startupParams);		
 
 		//////////////////////////////////////////////////////////////////////////
 		InlineInitializationProcessing("CSystem::Init InitFileSystem");
