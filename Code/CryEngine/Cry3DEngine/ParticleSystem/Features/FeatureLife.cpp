@@ -52,8 +52,23 @@ public:
 		CParticleContainer& container = runtime.GetContainer();
 		IOFStream lifeTimes = container.GetIOFStream(EPDT_LifeTime);
 		IOFStream invLifeTimes = container.GetIOFStream(EPDT_InvLifeTime);
+		IOFStream normAges = container.GetIOFStream(EPDT_NormalAge);
 
-		if (m_lifeTime.IsEnabled() && m_lifeTime.GetBaseValue())
+		if (!m_lifeTime.IsEnabled())
+		{
+			// Infinite lifetime. Store huge lifetime instead, so absolute age can be computed when needed
+			static const float maxLifeTime = 1e9f;
+			lifeTimes.Fill(runtime.SpawnedRange(), maxLifeTime);
+			invLifeTimes.Fill(runtime.SpawnedRange(), rcp(maxLifeTime));
+			normAges.Fill(runtime.SpawnedRange(), 0.0f);
+		}
+		else if (m_lifeTime.GetBaseValue() == 0.0f)
+		{
+			lifeTimes.Fill(runtime.SpawnedRange(), 0.0f);
+			invLifeTimes.Fill(runtime.SpawnedRange(), 0.0f);
+			normAges.Fill(runtime.SpawnedRange(), 0.0f);
+		}
+		else
 		{
 			m_lifeTime.Init(runtime, EPDT_LifeTime);
 			if (m_lifeTime.HasModifiers())
@@ -69,20 +84,12 @@ public:
 			{
 				invLifeTimes.Fill(runtime.SpawnedRange(), rcp(m_lifeTime.GetBaseValue()));
 			}
-		}
-		else
-		{
-			lifeTimes.Fill(runtime.SpawnedRange(), 0.0f);
-			invLifeTimes.Fill(runtime.SpawnedRange(), 0.0f);
-		}
 
-		// Convert ages from absolute to normalized
-		IOFStream normAges = container.GetIOFStream(EPDT_NormalAge);
-
-		for (auto particleGroupId : runtime.SpawnedRangeV())
-		{
-			// Convert absolute spawned particle age to normal age / life
-			normAges[particleGroupId] *= invLifeTimes[particleGroupId];
+			// Convert ages from absolute to normalized
+			for (auto particleGroupId : runtime.SpawnedRangeV())
+			{
+				normAges[particleGroupId] *= invLifeTimes[particleGroupId];
+			}
 		}
 	}
 
