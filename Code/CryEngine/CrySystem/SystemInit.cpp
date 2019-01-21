@@ -616,22 +616,27 @@ static void OnSysSpecChange(ICVar* pVar)
 	switch (spec)
 	{
 	case CONFIG_LOW_SPEC:
-		GetISystem()->LoadConfiguration("%engine%/config/LowSpec.cfg", &sysSpecOverrideSink, eLoadConfigSystemSpec);
+		GetISystem()->LoadConfiguration("config/LowSpec.cfg", &sysSpecOverrideSink, eLoadConfigSystemSpec);
 		break;
 	case CONFIG_MEDIUM_SPEC:
-		GetISystem()->LoadConfiguration("%engine%/config/MedSpec.cfg", &sysSpecOverrideSink, eLoadConfigSystemSpec);
+		GetISystem()->LoadConfiguration("config/MedSpec.cfg", &sysSpecOverrideSink, eLoadConfigSystemSpec);
 		break;
 	case CONFIG_HIGH_SPEC:
-		GetISystem()->LoadConfiguration("%engine%/config/HighSpec.cfg", &sysSpecOverrideSink, eLoadConfigSystemSpec);
+		GetISystem()->LoadConfiguration("config/HighSpec.cfg", &sysSpecOverrideSink, eLoadConfigSystemSpec);
 		break;
 	case CONFIG_VERYHIGH_SPEC:
-		GetISystem()->LoadConfiguration("%engine%/config/VeryHighSpec.cfg", &sysSpecOverrideSink, eLoadConfigSystemSpec);
+		GetISystem()->LoadConfiguration("config/VeryHighSpec.cfg", &sysSpecOverrideSink, eLoadConfigSystemSpec);
 		break;
 	case CONFIG_DURANGO:
-		GetISystem()->LoadConfiguration("%engine%/config/durango.cfg", pSysSpecOverrideSinkConsole, eLoadConfigSystemSpec);
+		GetISystem()->LoadConfiguration("config/durango.cfg", pSysSpecOverrideSinkConsole, eLoadConfigSystemSpec);
+		GetISystem()->LoadConfiguration("config/durango_non_x.cfg", pSysSpecOverrideSinkConsole, eLoadConfigSystemSpec);
+		break;
+	case CONFIG_DURANGO_X:
+		GetISystem()->LoadConfiguration("config/durango.cfg", pSysSpecOverrideSinkConsole, eLoadConfigSystemSpec);
+		GetISystem()->LoadConfiguration("config/durango_x.cfg", pSysSpecOverrideSinkConsole, eLoadConfigSystemSpec);
 		break;
 	case CONFIG_ORBIS:
-		GetISystem()->LoadConfiguration("%engine%/config/orbis.cfg", pSysSpecOverrideSinkConsole, eLoadConfigSystemSpec);
+		GetISystem()->LoadConfiguration("config/orbis.cfg", pSysSpecOverrideSinkConsole, eLoadConfigSystemSpec);
 		break;
 
 	default:
@@ -2871,7 +2876,8 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		}
 
 #if CRY_PLATFORM_DURANGO
-		LoadConfiguration("durango.cfg", 0, eLoadConfigInit);
+		// OnSysSpecChange Triggers loading of durango.cfg
+		OnSysSpecChange(m_sys_spec); 
 #elif CRY_PLATFORM_ORBIS
 		LoadConfiguration("orbis.cfg", 0, eLoadConfigSystemSpec);
 #elif CRY_PLATFORM_MOBILE
