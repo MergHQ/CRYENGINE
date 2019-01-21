@@ -168,6 +168,7 @@ struct SEntityIdList {
 		ReallocateList(data,szold,size=max(id+32767 & ~32767,size+32768),true);
 		freeIdx(size-1).next = freeIdx(-1).next-size;	// [last_new_id].next_free = prev_first_free
 		freeIdx(szold).prev = szold; // [first_new_id].prev_free = -1
+		freeIdx(size-1).setFree(); freeIdx(szold).setFree();
 		if (freeIdx(-1).next<0)
 			freeIdx(-1).prev = -1-size;	// last_free = last_new_id
 		freeIdx(-1).next = szold;	// first_free = first_new_id
