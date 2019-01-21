@@ -463,6 +463,8 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 		sTileWithinProjection = 0;
 	}
 
+	GroupMemoryBarrierWithGroupSync();
+	
 	// Find out if any threads in the tile are within the projection
 	{
 		bool bWithinProjection = all(linearUV.xy > 0) && all(linearUV.xy < 1);
@@ -493,6 +495,8 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 	float maxZSample = linearZ + 0.0001;
 
 	// Find tile z bounds
+	GroupMemoryBarrierWithGroupSync();
+	
 	InterlockedMin( sTileMinZ, asuint( minZSample ) );
 	InterlockedMax( sTileMaxZ, asuint( maxZSample ) );
 	
@@ -638,9 +642,9 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 	GroupMemoryBarrierWithGroupSync();
 	
 #if !DURANGO && !ORBIS
-	// Apply bitonic sort to the first 64 lights; not required on AMD/Durango when no more than 64 threads are used
+	// Apply bitonic sort to the first TILED_THREAD_GROUP_SIZE lights; not required on AMD/Durango when no more than 64 threads are used
 	[unroll]
-	for (uint k = 2; k <= 64; k = 2 * k)
+	for (uint k = 2; k <= TILED_THREAD_GROUP_SIZE; k = 2 * k)
 	{
 		[unroll]
 		for (uint j = k / 2; j > 0 ; j /= 2)
@@ -667,6 +671,7 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 		InterlockedAdd(sTileLightCount, sTileLightMaskCounts[groupThreadIdx]);
 	}
 
+	// Sync for wave(front)s smaller than 8 (e.g. WARP, which is 4 wide with SSE)
 	GroupMemoryBarrierWithGroupSync();
 	
 	if (groupThreadIdx < 8)
@@ -684,6 +689,8 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 		}
 	}
 	
+	GroupMemoryBarrierWithGroupSync();
+
 	bool emptyTile = sTileLightCount == 0;
 	float linearZ = DepthRT[pixelCoord];
 #endif
