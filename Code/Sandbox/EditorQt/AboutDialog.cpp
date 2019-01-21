@@ -20,7 +20,7 @@ CAboutDialog::CAboutDialog()
 	SetVersion(m_version);
 
 	m_miscInfoLabel = new QLabel();
-	m_miscInfoLabel->setText(tr("CRYENGINE(R) Sandbox(TM) Editor\nCopyright(c) 2018, Crytek GmbH\n\nCrytek, Crytek logo, CRYENGINE, Sandbox are trademarks of Crytek.\n"));
+	m_miscInfoLabel->setText(tr("CRYENGINE(R) Sandbox(TM) Editor\nCopyright(c) 2019, Crytek GmbH\n\nCrytek, Crytek logo, CRYENGINE, Sandbox are trademarks of Crytek.\n"));
 
 	QPixmap* logo = new QPixmap(":/about.png");
 	QLabel* logoImg = new QLabel();
