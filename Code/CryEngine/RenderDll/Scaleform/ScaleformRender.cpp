@@ -760,12 +760,16 @@ bool CD3D9Renderer::SF_ClearTexture(int texId, int mipLevel, int numRects, const
 	if (!pDevTex)
 		return false;
 
+	D3DSurface* pSurface = pTexture->GetSurface(0, mipLevel);
+	if (!pSurface)
+		return false;
+
 	GPUPIN_DEVICE_TEXTURE(GetPerformanceDeviceContext(), pDevTex);
 	const ColorF clearValue(pData[0], pData[1], pData[2], pData[3]);
 	if (!numRects || !pRects)
 	{
 		CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
-		commandList.GetGraphicsInterface()->ClearSurface(pTexture->GetSurface(0, mipLevel), clearValue);
+		commandList.GetGraphicsInterface()->ClearSurface(pSurface, clearValue);
 	}
 	else
 	{
@@ -777,7 +781,7 @@ bool CD3D9Renderer::SF_ClearTexture(int texId, int mipLevel, int numRects, const
 							   static_cast<LONG>(pRects[i].dstX + pRects[i].width),
 							   static_cast<LONG>(pRects[i].dstY + pRects[i].height) };
 			CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
-			commandList.GetGraphicsInterface()->ClearSurface(pTexture->GetSurface(0, mipLevel), clearValue, 1, &box);
+			commandList.GetGraphicsInterface()->ClearSurface(pSurface, clearValue, 1, &box);
 		}
 	}
 	return true;
