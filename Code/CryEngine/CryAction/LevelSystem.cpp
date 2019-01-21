@@ -2125,7 +2125,7 @@ bool CLevelInfo::OpenLevelPak()
 	if (bOk)
 	{
 		string levelmmpak = m_levelPath + string("/levelmm.pak");
-		if (gEnv->pCryPak->IsFileExist(levelmmpak))
+		if (gEnv->pCryPak->IsFileExist(levelmmpak, ICryPak::eFileLocation_OnDisk))
 		{
 			gEnv->pCryPak->OpenPack(levelmmpak, (unsigned)0, NULL, &fullLevelPakPath);
 			m_levelMMPakFullPath.assign(fullLevelPakPath.c_str());
@@ -2133,7 +2133,7 @@ bool CLevelInfo::OpenLevelPak()
 
 #if defined(FEATURE_SVO_GI)
 		string levelSvoPak = m_levelPath + string("/svogi.pak");
-		if (gEnv->pCryPak->IsFileExist(levelSvoPak))
+		if (gEnv->pCryPak->IsFileExist(levelSvoPak, ICryPak::eFileLocation_OnDisk))
 		{
 			gEnv->pCryPak->OpenPack(levelSvoPak, (unsigned)0, NULL, &fullLevelPakPath);
 			m_levelSvoPakFullPath.assign(fullLevelPakPath.c_str());
