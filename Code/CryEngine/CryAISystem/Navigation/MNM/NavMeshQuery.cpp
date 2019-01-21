@@ -341,7 +341,7 @@ CNavMeshQuery::CTriangleIterator::STriangleInfo CNavMeshQuery::CTriangleIterator
 	}
 
 	const STile& tile = m_pNavMesh->GetTile(m_tileId);
-	IF_UNLIKELY(tile.GetTrianglesCount() < m_triangleIdxTile)
+	IF_UNLIKELY(m_triangleIdxTile >= tile.GetTrianglesCount())
 	{
 		return CTriangleIterator::STriangleInfo();
 	}
