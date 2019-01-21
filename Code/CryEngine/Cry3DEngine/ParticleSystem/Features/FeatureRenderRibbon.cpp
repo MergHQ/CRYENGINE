@@ -349,7 +349,7 @@ void CFeatureRenderRibbon::WriteToGPUMem(const CParticleComponentRuntime& runtim
 
 	const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
 	const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
-	const IFStream alphas = container.GetIFStream(EPDT_Alpha);
+	const IFStream alphas = container.GetIFStream(EPDT_Alpha, 1.0f);
 	const IPidStream parentIds = container.IStream(EPDT_ParentId);
 	const IFStream parentAges = parentContainer.GetIFStream(EPDT_NormalAge);
 	const uint extraVertices = m_connectToOrigin ? 2 : 1;
@@ -403,7 +403,7 @@ void CFeatureRenderRibbon::WriteToGPUMem(const CParticleComponentRuntime& runtim
 
 			position = movingPositions[1];
 
-			const float alpha = alphas.Load(particleId) * ribbonAlphas[ribbonId];
+			const float alpha = alphas.SafeLoad(particleId) * ribbonAlphas[ribbonId];
 			axes = axesSampler.Sample(particleId, movingPositions);
 			colorST = colorSTsSampler.Sample(particleId, frameId, animPos, alpha);
 
