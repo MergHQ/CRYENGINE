@@ -853,32 +853,35 @@ static void OnChangeShadowJitteringCVar(ICVar* pCVar)
 
 void CRendererCVars::OnChange_CachedShadows(ICVar* pCVar)
 {
-	const char* pName = pCVar->GetName();
-	if (pName && !strcmp(pName, "r_ShadowsCacheResolutions"))
+	if (pCVar)
 	{
-		StaticArray<int, MAX_GSM_LODS_NUM> nResolutions = gRenDev->GetCachedShadowsResolution();
-
-		// parse shadow resolutions from cvar
+		const char* pName = pCVar->GetName();
+		if (pName && !strcmp(pName, "r_ShadowsCacheResolutions"))
 		{
-			int nCurPos = 0;
-			int nCurRes = 0;
+			StaticArray<int, MAX_GSM_LODS_NUM> nResolutions = gRenDev->GetCachedShadowsResolution();
 
-			string strResolutions = pCVar->GetString();
-			string strCurRes = strResolutions.Tokenize(" ,;-\t", nCurPos);
-			if (!strCurRes.empty())
+			// parse shadow resolutions from cvar
 			{
-				nResolutions.fill(0);
+				int nCurPos = 0;
+				int nCurRes = 0;
 
-				while (!strCurRes.empty())
+				string strResolutions = pCVar->GetString();
+				string strCurRes = strResolutions.Tokenize(" ,;-\t", nCurPos);
+				if (!strCurRes.empty())
 				{
-					int nRes = atoi(strCurRes.c_str());
-					nResolutions[nCurRes] = clamp_tpl(nRes, 0, 16384);
+					nResolutions.fill(0);
 
-					strCurRes = strResolutions.Tokenize(" ,;-\t", nCurPos);
-					++nCurRes;
+					while (!strCurRes.empty())
+					{
+						int nRes = atoi(strCurRes.c_str());
+						nResolutions[nCurRes] = clamp_tpl(nRes, 0, 16384);
+
+						strCurRes = strResolutions.Tokenize(" ,;-\t", nCurPos);
+						++nCurRes;
+					}
+
+					gRenDev->SetCachedShadowsResolution(nResolutions);
 				}
-
-				gRenDev->SetCachedShadowsResolution(nResolutions);
 			}
 		}
 	}
