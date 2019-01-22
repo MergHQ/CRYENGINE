@@ -26,6 +26,7 @@ public:
 	const ShadowMapFrustum* GetHeightMapFrustum   () const { CRY_ASSERT(m_bHeightMapAOExecuted); return m_pHeightMapFrustum; }
 	CTexture*         GetHeightMapAOScreenDepthTex() const { CRY_ASSERT(m_bHeightMapAOExecuted); return m_pHeightMapAOScreenDepthTex; }
 	CTexture*         GetHeightMapAOTex           () const { CRY_ASSERT(m_bHeightMapAOExecuted); return  m_pHeightMapAOTex; }
+	_smart_ptr<CTexture> GetHeightMapAODepthTex   (int index) const { return  m_pHeightMapAODepth[index]; }
 
 private:
 	void Rescale(int resolutionScale);
