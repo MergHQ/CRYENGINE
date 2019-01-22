@@ -866,6 +866,7 @@ function(CryUnitTestSuite target)
 		prepare_project(${ARGN})
 		add_library(${THIS_PROJECT} STATIC ${${THIS_PROJECT}_SOURCES})
 		set(MODULE_FORCE_STATIC TRUE)
+		target_compile_options(${THIS_PROJECT} PRIVATE -Wno-inconsistent-missing-override) #For gmock
 		target_compile_definitions(${THIS_PROJECT} PRIVATE -D_LIB)
 		if (OPTION_STATIC_LINKING)
 			target_compile_definitions(${THIS_PROJECT} PRIVATE -DCRY_IS_MONOLITHIC_BUILD)

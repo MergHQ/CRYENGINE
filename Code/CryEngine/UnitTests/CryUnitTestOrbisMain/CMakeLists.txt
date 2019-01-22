@@ -1,4 +1,6 @@
 start_sources()
+
+# -- orbisunittestmain.waf_files --
 sources_platform(ALL)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Source Files"
@@ -25,6 +27,7 @@ set_property(TARGET ${THIS_PROJECT} PROPERTY OUTPUT_NAME "UnitTests.elf")
 include_directories("${CRYENGINE_DIR}/Code/Libs/gtest/googletest/include")
 #include_directories("../Common")
 target_link_libraries(${THIS_PROJECT} PUBLIC gtest gmock)
+target_compile_options(${THIS_PROJECT} PRIVATE -Wno-inconsistent-missing-override) #For gmock
 
 target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}")
 target_link_libraries(${THIS_PROJECT} PRIVATE
