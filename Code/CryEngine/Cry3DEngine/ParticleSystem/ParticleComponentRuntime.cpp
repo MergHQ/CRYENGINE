@@ -326,6 +326,7 @@ void CParticleComponentRuntime::AddParticles(TConstArray<SSpawnEntry> spawnEntri
 	{
 		gpu_pfx2::SUpdateParams params;
 
+		params.deltaTime          = DeltaTime();
 		params.emitterPosition    = m_pEmitter->GetLocation().t;
 		params.emitterOrientation = m_pEmitter->GetLocation().q;
 		params.physAccel          = m_pEmitter->GetPhysicsEnv().m_UniformForces.vAccel;

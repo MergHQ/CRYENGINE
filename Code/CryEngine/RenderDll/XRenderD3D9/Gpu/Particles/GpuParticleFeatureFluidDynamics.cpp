@@ -51,7 +51,7 @@ void CFeatureMotionFluidDynamics::Update(const gpu_pfx2::SUpdateContext& context
 	params.gridSizeX = p.gridSizeX;
 	params.gridSizeY = p.gridSizeY;
 	params.gridSizeZ = p.gridSizeZ;
-	params.deltaTime = context.deltaTime;
+	params.deltaTime = pRuntime->GetDeltaTime();
 	params.worldOffsetX = emitterPos[0] - 0.5f * params.gridSizeX * params.h;
 	params.worldOffsetY = emitterPos[1] - 0.5f * params.gridSizeY * params.h;
 	params.worldOffsetZ = emitterPos[2] - 0.5f * params.gridSizeZ * params.h;

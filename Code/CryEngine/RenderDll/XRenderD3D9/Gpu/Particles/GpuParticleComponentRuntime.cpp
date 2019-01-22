@@ -35,8 +35,6 @@ void CParticleComponentRuntime::UpdateParticles(SUpdateContext& context, CDevice
 	if (!m_parameters->numParticles)
 		return;
 
-	m_parameters->deltaTime = context.deltaTime;
-	m_parameters->currentTime += context.deltaTime;
 	m_parameters->viewProjection = context.pRenderView->GetViewInfo(CCamera::eEye_Left).cameraProjMatrix;
 	m_parameters->sortMode = m_params.sortMode;
 
@@ -145,6 +143,8 @@ void CParticleComponentRuntime::AddParticles(SUpdateContext& context)
 	m_particleInitializationParameters = updateData;
 	m_initializationShaderFlags        = updateData.initFlags;
 
+	m_parameters->deltaTime            = updateData.deltaTime;
+	m_parameters->currentTime         += updateData.deltaTime;
 	m_parameters->lifeTime             = updateData.lifeTime;
 	m_parameters->emitterPosition      = updateData.emitterPosition;
 	m_parameters->emitterOrientation   = updateData.emitterOrientation;

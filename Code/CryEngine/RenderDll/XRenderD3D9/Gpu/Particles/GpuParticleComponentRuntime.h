@@ -81,7 +81,8 @@ public:
 
 	void                SetLifeTime(float lifeTime) { m_parameters->lifeTime = lifeTime; }
 
-	int                 GetNumParticles()           { return m_parameters->numParticles; };
+	int                 GetNumParticles() const { return m_parameters->numParticles; };
+	float               GetDeltaTime() const { return m_parameters->deltaTime; }
 
 	// this is from the render thread
 	void AddRemoveParticles(SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList);
@@ -123,7 +124,7 @@ private:
 	// update passes with varying material flags
 	void UpdatePasses();
 
-	CParticleContainer                                  m_container;
+	CParticleContainer                                       m_container;
 
 	gpu::CStructuredResource<int, gpu::BufferFlagsReadWrite> m_blockSums;
 	gpu::CStructuredResource<int, gpu::BufferFlagsReadWrite> m_killList;
@@ -140,9 +141,9 @@ private:
 	};
 	SUpdateData m_updateData[RT_COMMAND_BUF_COUNT];
 	
-	gpu::CStructuredResource<SParentData, gpu::BufferFlagsDynamic>    m_parentDataRenderThread;
-	gpu::CTypedConstantBuffer<SParticleInitializationParameters> m_particleInitializationParameters;
-	gpu::CTypedConstantBuffer<SParticleParameters>               m_parameters;
+	gpu::CStructuredResource<SParentData, gpu::BufferFlagsDynamic> m_parentDataRenderThread;
+	gpu::CTypedConstantBuffer<SParticleInitializationParameters>   m_particleInitializationParameters;
+	gpu::CTypedConstantBuffer<SParticleParameters>                 m_parameters;
 
 	SComponentParams          m_params;
 

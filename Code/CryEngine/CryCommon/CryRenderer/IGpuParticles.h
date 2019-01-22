@@ -128,6 +128,7 @@ enum EFeatureUpdateFlags
 // Includes InitializationParams, a subset of ParticleParams, and UpdateFlags
 struct SUpdateParams : SParticleInitializationParameters
 {
+	float  deltaTime;
 	float  lifeTime;
 	Quat   emitterOrientation;
 	Vec3   emitterPosition;
