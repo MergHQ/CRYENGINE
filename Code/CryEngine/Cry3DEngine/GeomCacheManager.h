@@ -1,17 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+#pragma once
+
 // ------------------------------------------------------------------------
-//  File name:   GeomCacheManager.h
-//  Created:     20/7/2012 by Axel Gneiting
 //  Description: Manages geometry cache instances and streaming
 // -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef _GEOMCACHE_MANAGER_
-#define _GEOMCACHE_MANAGER_
-
-#pragma once
 
 #if defined(USE_GEOM_CACHES)
 
@@ -260,5 +253,4 @@ private:
 	CGeomCacheMeshManager m_meshManager;
 };
 
-#endif
 #endif

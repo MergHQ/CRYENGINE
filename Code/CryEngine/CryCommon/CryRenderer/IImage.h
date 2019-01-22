@@ -2,9 +2,6 @@
 
 #pragma once
 
-#ifndef IIMAGE_H
-#define IIMAGE_H
-
 //! Possible errors for IImageFile::mfGet_error.
 enum EImFileError { eIFE_OK = 0, eIFE_IOerror, eIFE_OutOfMemory, eIFE_BadFormat, eIFE_ChunkNotFound };
 
@@ -15,7 +12,7 @@ enum EImFileError { eIFE_OK = 0, eIFE_IOerror, eIFE_OutOfMemory, eIFE_BadFormat,
 #define FIM_DECAL                0x00010 //!< Use bordercolor instead of tiling for this image.
 #define FIM_GREYSCALE            0x00020 //!< Hint this texture is greyscale (could be DXT1 with colored artifacts).
 //efine FIM_____________________ 0x00040
-#define FIM_STREAM_PREPARE       0x00080 //!< Image is streamable, load only persistant mips.
+#define FIM_STREAM_PREPARE       0x00080 //!< Image is streamable, load only persistent mips.
 #define FIM_FILESINGLE           0x00100 //!< Info from rc: no need to search for other files (e.g. DDNDIF).
 //efine FIM_____________________ 0x00200
 //efine FIM_____________________ 0x00400
@@ -28,9 +25,8 @@ enum EImFileError { eIFE_OK = 0, eIFE_IOerror, eIFE_OutOfMemory, eIFE_BadFormat,
 #define FIM_SUPPRESS_DOWNSCALING 0x20000 //!< Don't allow to drop mips when texture is non-streamable.
 #define FIM_DX10IO               0x40000 //!< The DDS containing the texture has an extended DX10+ header.
 
-class IImageFile
+struct IImageFile
 {
-public:
 	virtual int           AddRef() = 0;
 	virtual int           Release() = 0;
 
@@ -58,5 +54,3 @@ public:
 protected:
 	virtual ~IImageFile() {}
 };
-
-#endif

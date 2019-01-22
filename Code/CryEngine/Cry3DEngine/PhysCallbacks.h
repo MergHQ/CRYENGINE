@@ -1,16 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   PhysCallbacks.h
-//  Created:     14/11/2006 by Anton.
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __PhysCallbacks_h__
-#define __PhysCallbacks_h__
 #pragma once
 
 #include <CryPhysics/IDeferredCollisionEvent.h>
@@ -96,7 +85,7 @@ private:
 	_smart_ptr<IRenderMesh> m_pRenderMesh;                  // Rendermesh to use for RayIntersection
 	bool                    m_bDecalPlacementTestRequested; // check if decal can be placed here
 	_smart_ptr<IMaterial>   m_pMaterial;                    // Material for IMaterial
-	bool                    m_bNeedMeshThreadUnLock;        // remeber if we need to unlock a rendermesh
+	bool                    m_bNeedMeshThreadUnLock;        // remember if we need to unlock a rendermesh
 
 	// == members to store values over functions == //
 	Matrix34 m_worldTM;
@@ -108,5 +97,3 @@ private:
 	SIntersectionData m_RayIntersectionData;
 
 };
-
-#endif // __PhysCallbacks_h__

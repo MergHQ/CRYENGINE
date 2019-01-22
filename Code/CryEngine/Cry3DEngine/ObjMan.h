@@ -1,18 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   statobjman.h
-//  Version:     v1.00
-//  Created:     28/5/2001 by Vladimir Kajalin
-//  Compilers:   Visual Studio.NET
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef CObjManager_H
-#define CObjManager_H
+#pragma once
 
 #include "StatObj.h"
 #include "../RenderDll/Common/Shadow_Renderer.h"
@@ -33,17 +21,16 @@
 #define DEFAULT_CGF_NAME        ("%ENGINE%\\EngineAssets\\Objects\\primitive_sphere.cgf")
 
 struct CStatObj;
+struct IDecalRenderNode;
 struct IIndoorBase;
+struct IMaterial;
 struct IRenderNode;
 struct ISystem;
-struct IDecalRenderNode;
 struct SCheckOcclusionJobData;
 struct SCheckOcclusionOutput;
 
-class CVegetation;
-
 class C3DEngine;
-struct IMaterial;
+class CVegetation;
 
 #define SMC_EXTEND_FRUSTUM              8
 #define SMC_SHADOW_FRUSTUM_TEST         16
@@ -348,8 +335,6 @@ public:
 	IStatObj* GetStaticObjectByTypeID(int nTypeID);
 	IStatObj* FindStaticObjectByFilename(const char* filename);
 
-	float     GetBendingRandomFactor();
-
 	bool      IsBoxOccluded(const AABB& objBox,
 	                        float fDistance,
 	                        OcclusionTestClient* const __restrict pOcclTestVars,
@@ -372,10 +357,6 @@ public:
 	void GetMemoryUsage(class ICrySizer* pSizer) const;
 	void GetBandwidthStats(float* fBandwidthRequested);
 
-	//  PodArray<class CBrush*> m_lstBrushContainer;
-	//  PodArray<class CVegetation*> m_lstVegetContainer;
-	void       LoadBrushes();
-	//  void MergeBrushes();
 	void       ReregisterEntitiesInArea(AABB* pBox, bool bCleanUpTree = false);
 	//	void ProcessEntityParticles(IRenderNode * pEnt, float fEntDistance);
 	void       UpdateObjectsStreamingPriority(bool bSyncLoad, const SRenderingPassInfo& passInfo);
@@ -554,5 +535,3 @@ private:
 	class CPreloadTimeslicer;
 	std::unique_ptr<CPreloadTimeslicer> m_pPreloadTimeSlicer;
 };
-
-#endif // CObjManager_H

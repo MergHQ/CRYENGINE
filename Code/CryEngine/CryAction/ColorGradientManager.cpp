@@ -1,13 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-
--------------------------------------------------------------------------
-History:
-- 15:05:2009   Created by Federico Rebora
-
-*************************************************************************/
-
 #include "StdAfx.h"
 
 #include "ColorGradientManager.h"

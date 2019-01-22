@@ -111,7 +111,7 @@ struct Cry3DEngineBase
 	inline static CTemporaryPool*    GetTemporaryPool()          { return CTemporaryPool::Get(); }
 
 #if defined(USE_GEOM_CACHES)
-	inline static CGeomCacheManager* GetGeomCacheManager() { return m_pGeomCacheManager; };
+	inline static CGeomCacheManager* GetGeomCacheManager() { return m_pGeomCacheManager; }
 #endif
 
 	inline static int GetMergedMeshesPoolSize()                               { return m_mergedMeshesPoolSize; }

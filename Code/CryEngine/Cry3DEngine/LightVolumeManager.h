@@ -48,11 +48,11 @@ private:
 	{
 		SLightVolInfo() : vVolume(ZERO, 0.0f), nNextVolume(0), nClipVolumeID(0)
 		{
-		};
+		}
 		SLightVolInfo(const Vec3& pPos, float fRad, uint8 clipVolumeID)
 			: vVolume(pPos, fRad), nNextVolume(0), nClipVolumeID(clipVolumeID)
 		{
-		};
+		}
 
 		Vec4   vVolume;       // xyz: position, w: radius
 		uint16 nNextVolume;   // index of next light volume for this hash bucket (0 if none)
@@ -63,7 +63,7 @@ private:
 	{
 		SLightCell() : nLightCount(0)
 		{
-		};
+		}
 
 		uint16 nLightID[LV_CELL_MAX_LIGHTS];
 		uint8  nLightCount;
@@ -73,7 +73,7 @@ private:
 	{
 		static const uint32 nHashBits = 9;
 		static const uint32 nGoldenRatio32bits = 2654435761u; // (2^32) / (golden ratio)
-		return (k * nGoldenRatio32bits) >> (32 - nHashBits);  // ref: knuths integer multiplicative hash function
+		return (k * nGoldenRatio32bits) >> (32 - nHashBits);  // ref: Knuth's integer multiplicative hash function
 	}
 
 	inline uint16 GetWorldHashBucketKey(const int32 x, const int32 y, const int32 z, const int32 nBucketSize = LV_WORLD_BUCKET_SIZE) const

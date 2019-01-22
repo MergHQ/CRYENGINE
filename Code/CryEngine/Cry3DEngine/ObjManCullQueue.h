@@ -1,18 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+#pragma once
+
 // -------------------------------------------------------------------------
-//  File name:   objmancullqueue.h
-//  Version:     v1.00
-//  Created:     2/12/2009 by Michael Glueck
-//  Compilers:   Visual Studio.NET
 //  Description: Declaration and entry point for asynchronous obj-culling queue
 // -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef CObjManCullQueue_H
-#define CObjManCullQueue_H
 
 #include <CryCore/Platform/platform.h>
 #include <CryMath/Cry_Camera.h>
@@ -126,6 +118,4 @@ public:
 	void Wait();
 };
 
-};
-
-#endif // CObjManCullQueue_H
+}

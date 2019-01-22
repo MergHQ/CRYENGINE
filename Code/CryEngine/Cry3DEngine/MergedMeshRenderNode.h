@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _PROCEDURALVEGETATION_RENDERNODE_
-#define _PROCEDURALVEGETATION_RENDERNODE_
+#pragma once
 
 // Global define to enable and disable some debugging features (defined &
 // described below) to help finding issues in merged meshes at runtime.
@@ -34,7 +33,7 @@
 // The number of wind force samples along each principle axis.
 #define MMRM_WIND_DIM 4
 
-// The dimensions of the density grid on each patch (16x16x16 means one sample every metre)
+// The dimensions of the density grid on each patch (16x16x16 means one sample every meter)
 #define MMRM_DENSITY_DIM 16
 
 // Enable code that checks for boundaries when accessing and writing back the
@@ -57,7 +56,7 @@
 #define MMRM_SPINE_SLERP_BENDING 1
 
 // Enforce bending - ensure that the height of the current spine vertex
-// relative to the line segment defined by it's immediate neighbour vertices
+// relative to the line segment defined by it's immediate neighbor vertices
 // matches the initial height recorded in it's rest-pose
 #define MMRM_SPINE_HEIGHT_BENDING 0
 
@@ -289,7 +288,7 @@ class CMergedMeshRenderNode
 	// The render state
 	enum RenderMode
 	{
-		DYNAMIC = 0, // dynamic - prebaked & optionally simualted unique meshes
+		DYNAMIC = 0, // dynamic - prebaked & optionally simulated unique meshes
 		INSTANCED,   // instanced - preprocessed
 		NOT_VISIBLE, // simply not visible
 	};
@@ -504,16 +503,16 @@ public:
 	// Inherited from IRenderNode
 	//////////////////////////////////////////////////////////////////////
 	const char*             GetName() const             { return "Runtime MergedMesh";  }
-	const char*             GetEntityClassName() const  { return "Runtime MergedMesh"; };
+	const char*             GetEntityClassName() const  { return "Runtime MergedMesh"; }
 	Vec3                    GetPos(bool bWorldOnly = true) const;
-	const AABB              GetBBox() const             { return m_visibleAABB; };
-	void                    SetBBox(const AABB& WSBBox) {};
+	const AABB              GetBBox() const             { return m_visibleAABB; }
+	void                    SetBBox(const AABB& WSBBox) {}
 	void                    FillBBox(AABB& aabb);
 	void                    OffsetPosition(const Vec3& delta);
 	void                    Render(const struct SRendParams& EntDrawParams, const SRenderingPassInfo& passInfo);
 
-	struct IPhysicalEntity* GetPhysics() const                 { return NULL; };
-	void                    SetPhysics(IPhysicalEntity* pPhys) {};
+	struct IPhysicalEntity* GetPhysics() const                 { return NULL; }
+	void                    SetPhysics(IPhysicalEntity* pPhys) {}
 	void                    SetMaterial(IMaterial* pMat)       {}
 	IMaterial*              GetMaterial(Vec3* pHitPos = NULL) const;
 	IMaterial*              GetMaterialOverride()              { return NULL; }
@@ -559,15 +558,15 @@ public:
 	// Inherited from IRenderNode
 	//////////////////////////////////////////////////////////////////////
 	const char*             GetName() const                                                                     { return "Runtime MergedMesh Proxy Instance";  }
-	const char*             GetEntityClassName() const                                                          { return "Runtime MergedMesh Proxy Instance"; };
-	Vec3                    GetPos(bool bWorldOnly = true) const                                                { return m_host->GetSamplePos(m_headerIndex, m_sampleIndex); };
-	const AABB              GetBBox() const                                                                     { return m_host->GetSampleAABB(m_headerIndex, m_sampleIndex); };
-	void                    SetBBox(const AABB& WSBBox)                                                         { __debugbreak(); };
+	const char*             GetEntityClassName() const                                                          { return "Runtime MergedMesh Proxy Instance"; }
+	Vec3                    GetPos(bool bWorldOnly = true) const                                                { return m_host->GetSamplePos(m_headerIndex, m_sampleIndex); }
+	const AABB              GetBBox() const                                                                     { return m_host->GetSampleAABB(m_headerIndex, m_sampleIndex); }
+	void                    SetBBox(const AABB& WSBBox)                                                         { __debugbreak(); }
 	void                    OffsetPosition(const Vec3& delta)                                                   {}
 	void                    Render(const struct SRendParams& EntDrawParams, const SRenderingPassInfo& passInfo) { __debugbreak(); }
 
-	struct IPhysicalEntity* GetPhysics() const                                                                  { __debugbreak(); return NULL; };
-	void                    SetPhysics(IPhysicalEntity* pPhys)                                                  { __debugbreak(); };
+	struct IPhysicalEntity* GetPhysics() const                                                                  { __debugbreak(); return NULL; }
+	void                    SetPhysics(IPhysicalEntity* pPhys)                                                  { __debugbreak(); }
 	void                    SetMaterial(IMaterial* pMat)                                                        { __debugbreak(); }
 	IMaterial*              GetMaterial(Vec3* pHitPos = NULL) const                                             { __debugbreak(); return NULL; }
 	IMaterial*              GetMaterialOverride()                                                               { __debugbreak(); return NULL; }
@@ -718,5 +717,3 @@ public:
 	size_t StreamedOutNodes() const           { return m_nStreamedOutNodes; }
 	bool   PoolOverFlow() const               { return m_PoolOverFlow; }
 };
-
-#endif

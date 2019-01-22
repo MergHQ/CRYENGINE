@@ -1,16 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-
-   -------------------------------------------------------------------------
-   History:
-   - 09:05:2005   14:32 : Created by Carsten Wenzel
-
-*************************************************************************/
-
 #include "StdAfx.h"
 #include "SkyLightManager.h"
 #include "SkyLightNishita.h"
@@ -77,7 +66,7 @@ inline static void Sync()
 
 void CSkyLightManager::PushUpdateParams()
 {
-	//pushes the update parameters, explicite call since engine requests asynchronously
+	//pushes the update parameters, explicit call since engine requests asynchronously
 	memcpy(&m_reqSkyDomeCondition[0], &m_reqSkyDomeCondition[1], sizeof(SSkyDomeCondition));
 	m_updateRequested[0] = m_updateRequested[1];
 	m_updateRequested[1] = 0;
@@ -410,7 +399,7 @@ int CSkyLightManager::GetBackBuffer() const
 void CSkyLightManager::ToggleBuffer()
 {
 	assert(m_curBackBuffer >= 0 && m_curBackBuffer <= 1);
-	//better enforce cache flushing then making PPU wait til job has been finished
+	//better enforce cache flushing then making PPU wait till job has been finished
 	m_curBackBuffer = (m_curBackBuffer + 1) & 1;
 	m_needRenderParamUpdate = 1;
 }

@@ -13,7 +13,6 @@
 	#undef DrawText
 #endif //DrawText
 
-// forward declaration
 struct SNodeInfo;
 struct SRNInfo;
 class C3DEngineLevelLoadTimeslicer;
@@ -342,7 +341,7 @@ public:
 	virtual void      PreWorldStreamUpdate(const CCamera& cam);
 	virtual void      WorldStreamUpdate();
 	virtual void      ShutDown();
-	virtual void      Release() { CryAlignedDelete(this); };
+	virtual void      Release() { CryAlignedDelete(this); }
 	virtual void      SetLevelPath(const char* szFolderName);
 	virtual bool      LoadLevel(const char* szFolderName, XmlNodeRef missionXml);
 	virtual bool      StartLoadLevel(const char* szFolderName, XmlNodeRef missionXml);
@@ -1191,7 +1190,7 @@ private:
 	int   m_nZoomMode;                                  // the zoom level of the camera (0-4) 0: no zoom, 4: full zoom
 
 	// cameras used by 3DEngine
-	CCamera                m_RenderingCamera;           // Camera used for Rendering on 3DEngine Side, normaly equal to the viewcamera, except if frozen with e_camerafreeze
+	CCamera                m_RenderingCamera;           // Camera used for Rendering on 3DEngine Side, normally equal to the viewcamera, except if frozen with e_camerafreeze
 
 	PodArray<IRenderNode*> m_deferredRenderProxyStreamingPriorityUpdates;     // deferred streaming priority updates for newly seen CRenderProxies
 

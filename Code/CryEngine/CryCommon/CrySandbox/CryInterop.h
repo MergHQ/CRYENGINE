@@ -11,6 +11,7 @@
 //! Register yoursef with the editor GetIEditor()->RegisterUriListener().
 struct IUriEventListener
 {
+	virtual ~IUriEventListener() {}
 	virtual void OnUriReceived(const char* szUri) = 0;
 };
 

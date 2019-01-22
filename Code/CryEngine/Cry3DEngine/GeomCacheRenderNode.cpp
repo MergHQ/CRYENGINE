@@ -1,13 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// ------------------------------------------------------------------------
-//  File name:   GeomCacheRenderNode.cpp
-//  Created:     19/7/2012 by Axel Gneiting
-//  Description: Draws geometry caches
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "xxhash.h"
 

@@ -20,26 +20,26 @@ public:
 		return CRenderer::CV_r_colorgrading > 0 && CRenderer::CV_r_colorgrading_charts && gcpRendD3D->m_pColorGradingControllerD3D;
 	}
 
-	void Init() final;
-	void Execute();
+	void      Init() final;
+	void      Execute();
 
-	void SetStaticColorChart(_smart_ptr<CTexture> pStaticColorChart) { AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_lock); std::swap(m_pChartStatic, pStaticColorChart); }
-	CTexture* GetStaticColorChart()   const { AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_lock); return m_pChartStatic; }
+	void      SetStaticColorChart(_smart_ptr<CTexture> pStaticColorChart) { AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_lock); std::swap(m_pChartStatic, pStaticColorChart); }
+	CTexture* GetStaticColorChart()   const                               { AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_lock); return m_pChartStatic; }
 
-	CTexture* GetColorChart()         const { return m_pChartToUse; }
-	CTexture* GetIdentityColorChart() const { return m_pChartIdentity; }
+	CTexture* GetColorChart()         const                               { return m_pChartToUse; }
+	CTexture* GetIdentityColorChart() const                               { return m_pChartIdentity; }
 
 	// TODO: remove once graphicspipeline=0 mode is not required anymore in D3DColorGradingController
-	const std::array<_smart_ptr<CTexture>, 2>& GetMergeLayers() const { return m_pMergeLayers;  }
+	const std::array<_smart_ptr<CTexture>, 2>& GetMergeLayers() const { return m_pMergeLayers; }
 	CVertexBuffer                              GetSlicesVB()    const;
 
-	bool IsRenderPassesDirty() ;
+	bool                                       IsRenderPassesDirty();
 
 private:
 	void PreparePrimitives(CColorGradingController& controller, const SColorGradingMergeParams& mergeParams);
 
 	CryCriticalSectionNonRecursive      m_lock;
-	
+
 	_smart_ptr<CTexture>                m_pChartIdentity;
 	_smart_ptr<CTexture>                m_pChartStatic;
 	_smart_ptr<CTexture>                m_pChartToUse;
@@ -53,5 +53,5 @@ private:
 	CPrimitiveRenderPass                m_colorGradingPass;
 
 	// TODO: remove once r_graphicspipeline=0 is gone
-	VertexArray                         m_vecSlicesData;
+	VertexArray m_vecSlicesData;
 };
