@@ -159,7 +159,7 @@ protected:
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
-		const uint numInstances = runtime.GetNumInstances();
+		uint numInstances = runtime.GetNumInstances();
 
 		const bool isIndependent = runtime.GetEmitter()->IsIndependent() && !runtime.IsChild();
 		if (isIndependent)
@@ -167,7 +167,7 @@ protected:
 			// Skip spawning immortal independent effects
 			float maxLifetime = m_delay.GetValueRange().end + m_duration.GetValueRange().end + runtime.ComponentParams().m_maxParticleLife;
 			if (!std::isfinite(maxLifetime))
-				return;
+				numInstances = 0;
 		}
 		else if (m_restart.IsEnabled())
 		{
