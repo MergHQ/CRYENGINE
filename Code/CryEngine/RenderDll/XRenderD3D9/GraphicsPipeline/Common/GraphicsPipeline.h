@@ -49,8 +49,8 @@ public:
 
 	virtual void ShutDown();
 
-	virtual size_t GetViewInfoCount() const                      { return 0; };
-	virtual size_t GenerateViewInfo(SRenderViewInfo viewInfo[2]) { return 0; };
+	virtual size_t GetViewInfoCount() const                      { return 0; }
+	virtual size_t GenerateViewInfo(SRenderViewInfo viewInfo[2]) { return 0; }
 
 public:
 	// Helper methods

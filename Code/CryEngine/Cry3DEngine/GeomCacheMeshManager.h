@@ -1,17 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+#pragma once
+
 // ------------------------------------------------------------------------
-//  File name:   GeomCacheMeshManager.h
-//  Created:     18/1/2013 by Axel Gneiting
 //  Description: Manages static meshes for geometry caches
 // -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef _GEOMCACHE_MESHMANAGER_
-#define _GEOMCACHE_MESHMANAGER_
-
-#pragma once
 
 #if defined(USE_GEOM_CACHES)
 
@@ -49,5 +42,4 @@ private:
 	TMeshMap m_meshMap;
 };
 
-#endif
 #endif

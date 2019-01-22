@@ -1,16 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// ------------------------------------------------------------------------
-//  File name:   GeomCacheRenderNode.h
-//  Created:     19/7/2012 by Axel Gneiting
-//  Description: Draws geometry caches
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef _GEOMCACHE_RENDERNODE_
-#define _GEOMCACHE_RENDERNODE_
-
 #pragma once
 
 #if defined(USE_GEOM_CACHES)
@@ -273,5 +262,4 @@ private:
 	IEntity*      m_pOwnerEntity = 0;
 };
 
-#endif
 #endif

@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _I_COLOR_GRADING_CONTROLLER_H_
-#define _I_COLOR_GRADING_CONTROLLER_H_
-
 #pragma once
 
 struct SColorChartLayer
@@ -31,7 +28,6 @@ struct SColorChartLayer
 
 struct IColorGradingController
 {
-public:
 	// <interfuscator:shuffle>
 	virtual ~IColorGradingController(){}
 	virtual int  LoadColorChart(const char* pChartFilePath) const = 0;
@@ -40,5 +36,3 @@ public:
 	virtual void SetLayers(const SColorChartLayer* pLayers, uint32 numLayers) = 0;
 	// </interfuscator:shuffle>
 };
-
-#endif //#ifndef _I_COLOR_GRADING_CONTROLLER_H_

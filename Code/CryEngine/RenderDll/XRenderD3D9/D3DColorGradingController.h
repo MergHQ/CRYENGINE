@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef D3D_COLOR_GRADING_CONTROLLER_H
-#define D3D_COLOR_GRADING_CONTROLLER_H
-
 #pragma once
 
 #include "../Common/IColorGradingControllerInt.h"
@@ -44,7 +41,7 @@ public:
 
 	int             GetColorChartSize() const;
 
-	CryCriticalSectionNonRecursive& GetLayersLock() { return m_layersLock; };
+	CryCriticalSectionNonRecursive& GetLayersLock() { return m_layersLock; }
 
 private:
 	typedef std::vector<SColorChartLayer> Layers;
@@ -65,5 +62,3 @@ private:
 	CTexture*                    m_pChartToUse;
 	CTexture*                    m_pMergeLayers[2];
 };
-
-#endif // #ifndef D3D_COLOR_GRADING_CONTROLLER_H

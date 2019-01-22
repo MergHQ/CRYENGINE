@@ -1,21 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// ------------------------------------------------------------------------
-//  File name:   GeomCacheDecoder.h
-//  Created:     23/8/2012 by Axel Gneiting
-//  Description: Decodes geom cache data
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef _GEOMCACHE_DECODER_
-#define _GEOMCACHE_DECODER_
-
 #pragma once
 
 #if defined(USE_GEOM_CACHES)
 
-	#include <Cry3DEngine/GeomCacheFileFormat.h>
+#include <Cry3DEngine/GeomCacheFileFormat.h>
 
 class CGeomCache;
 struct SGeomCacheRenderMeshUpdateContext;
@@ -66,7 +55,6 @@ Quat DecodeQTangent(const GeomCacheFile::QTangent& inQTangent);
 
 void TransformAndConvertToTangentAndBitangent(const Quat& rotation, const Quat& inQTangent, SPipTangents& outTangents);
 void ConvertToTangentAndBitangent(const Quat& inQTangent, SPipTangents& outTangents);
-};
+}
 
-#endif
 #endif

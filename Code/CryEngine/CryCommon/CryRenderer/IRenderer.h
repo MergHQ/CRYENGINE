@@ -1,14 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-//
-//  File:Renderer.h - API Independent
-//
-//  History:
-//  -Jan 31,2001:Originally created by Marco Corbetta
-//  -: Taken over by Andrey Khonich
-//
-//////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include "ITexture.h"
@@ -21,17 +12,61 @@
 #include <CryCore/CryVariant.h>
 #include <CryRenderer/RenderObject.h>
 
-// forward declarations
-struct SRenderingPassInfo;
-struct IFoliage;
-struct SRenderLight;
-struct SWaterRippleInfo;
-
+class CCamera;
+class CMesh;
+class CObjManager;
+class CREMesh;
+class CRenderElement;
+class CRenderObject;
 class CRenderView;
+class CShadowVolEdge;
+class CTexMan;
+class CVegetation;
+class CVrProjectionManager;
+class ICrySizer;
+class IOpticsManager;
+
+struct CStatObj;
+struct GRendererCommandBufferReadOnly;
+struct ICharacterInstance;
+struct IClipVolume;
+struct IColorGradingController;
+struct IConsole;
+struct ICVar;
 struct IFFont;
+struct IFlashLoadMovieImage;
+struct IFlashPlayer_RenderProxy;
+struct IFoliage;
+struct IImageFile;
+struct ILog;
 struct IPhysicalEntity;
+struct IRenderAuxGeom;
+struct IRenderMesh;
+struct IScaleformPlayback;
+struct IStatObj;
+struct IStereoRenderer;
+struct ISystem;
+struct ITimer;
+struct RenderLMData;
+struct SClipVolumeBlendInfo;
+struct SDeferredLightVolume;
+struct ShadowFrustumMGPUCache;
+struct ShadowMapFrustum;
 struct SMeshBakingInputParams;
 struct SMeshBakingOutput;
+struct SParticleAddJobCompare;
+struct SParticleRenderInfo;
+struct SPointSpriteVertex;
+struct SPrimitiveGroup;
+struct SRendererCloakParams;
+struct SRenderingPassInfo;
+struct SRenderLight;
+struct SREPointSpriteCreateParams;
+struct SShaderParam;
+struct SSkyLightRenderParams;
+struct STextDrawContext;
+struct SWaterRippleInfo;
+
 enum EDataType : int;
 
 //! Callback used for DXTCompress.
@@ -66,54 +101,6 @@ typedef void* WIN_HINSTANCE;
 typedef void* WIN_HDC;
 typedef void* WIN_HGLRC;
 
-class CREMesh;
-class CMesh;
-//class   CImage;
-struct  CStatObj;
-class CVegetation;
-struct  ShadowMapFrustum;
-struct  IStatObj;
-class CObjManager;
-struct  SPrimitiveGroup;
-struct  ICharacterInstance;
-class CRenderElement;
-class CRenderObject;
-class CTexMan;
-//class   ColorF;
-class CShadowVolEdge;
-class CCamera;
-struct SDeferredLightVolume;
-struct  ILog;
-struct  IConsole;
-struct  ICVar;
-struct  ITimer;
-struct  ISystem;
-class ICrySizer;
-struct IRenderAuxGeom;
-struct SREPointSpriteCreateParams;
-struct SPointSpriteVertex;
-struct RenderLMData;
-struct SShaderParam;
-struct SSkyLightRenderParams;
-struct SParticleRenderInfo;
-struct SParticleAddJobCompare;
-struct IFlashPlayer_RenderProxy;
-struct IColorGradingController;
-struct IStereoRenderer;
-struct STextDrawContext;
-struct IRenderMesh;
-class IOpticsManager;
-struct SRendererCloakParams;
-struct ShadowFrustumMGPUCache;
-struct IClipVolume;
-struct SClipVolumeBlendInfo;
-class IImageFile;
-class CVrProjectionManager;
-
-//////////////////////////////////////////////////////////////////////
-struct IScaleformPlayback;
-struct GRendererCommandBufferReadOnly;
-struct IFlashLoadMovieImage;
 
 //////////////////////////////////////////////////////////////////////
 namespace CryOVR
@@ -643,7 +630,7 @@ enum EDrawTextFlags : uint32
 	eDrawText_Default,
 	eDrawText_Center         = BIT32(0),  //!< Centered alignment, otherwise right or left.
 	eDrawText_Right          = BIT32(1),  //!< Right alignment, otherwise center or left.
-	eDrawText_CenterV        = BIT32(2),  //!< Center vertically, oterhwise top.
+	eDrawText_CenterV        = BIT32(2),  //!< Center vertically, otherwise top.
 	eDrawText_Bottom         = BIT32(3),  //!< Bottom alignment.
 
 	eDrawText_2D             = BIT32(4),  //!< 3-component vector is used for xy screen position, otherwise it's 3d world space position.
@@ -859,6 +846,7 @@ struct RPProfilerDetailedStats
 
 struct ISvoRenderer
 {
+	virtual ~ISvoRenderer() {}
 	virtual bool IsShaderItemUsedForVoxelization(SShaderItem& rShaderItem, IRenderNode* pRN) { return false; }
 	virtual void SetEditingHelper(const Sphere& sp)                                          {}
 	virtual void Release()                                                                   {}
@@ -1031,7 +1019,7 @@ struct IRenderer//: public IRendererCallbackServer
 	//! Should be called at the end of every frame.
 	virtual void EndFrame() = 0;
 
-	//! Try to flush the render thread commands to keep the render thread active during level loading, but simpy return if the render thread is still busy
+	//! Try to flush the render thread commands to keep the render thread active during level loading, but simply return if the render thread is still busy
 	virtual void               TryFlush() = 0;
 
 	virtual Vec2               SetViewportDownscale(float xscale, float yscale) = 0;
@@ -1688,7 +1676,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual IGraphicsDeviceConstantBufferPtr CreateGraphiceDeviceConstantBuffer() = 0;
 
 private:
-	//! Use private for EF_Query to prevent client code to submit arbitary combinations of output data/size.
+	//! Use private for EF_Query to prevent client code to submit arbitrary combinations of output data/size.
 	virtual void EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nInOutSize0, void* pInOut1, uint32 nInOutSize1) = 0;
 };
 

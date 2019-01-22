@@ -1,15 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// ------------------------------------------------------------------------
-//  File name:   GeomCache.h
-//  Created:     19/7/2012 by Axel Gneiting
-//  Description: Manages geometry cache data
-// -------------------------------------------------------------------------
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef _GEOMCACHE_
-#define _GEOMCACHE_
-
 #pragma once
 
 #if defined(USE_GEOM_CACHES)
@@ -95,7 +85,6 @@ private:
 
 struct IGeomCacheListener
 {
-public:
 	virtual ~IGeomCacheListener() {}
 
 	virtual void OnGeomCacheStaticDataLoaded() = 0;
@@ -288,5 +277,4 @@ private:
 	std::vector<char> m_animationData;
 };
 
-#endif
 #endif

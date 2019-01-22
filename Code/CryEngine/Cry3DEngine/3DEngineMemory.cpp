@@ -1,13 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   3DEngineMemory.h
-//  Version:     v1.00
-//  Created:     23/04/2010 by Chris Raine.
-//  Compilers:   Visual Studio.NET
-// -------------------------------------------------------------------------
-//  History:
-////////////////////////////////////////////////////////////////////////////
 #include "StdAfx.h"
 #include "3DEngineMemory.h"
 

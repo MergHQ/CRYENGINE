@@ -1,13 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// ------------------------------------------------------------------------
-//  File name:   GeomCacheDecoder.cpp
-//  Created:     23/8/2012 by Axel Gneiting
-//  Description: Decodes geom cache data
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 
 #if defined(USE_GEOM_CACHES)

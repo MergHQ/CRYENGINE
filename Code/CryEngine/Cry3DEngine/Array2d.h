@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _ARRAY2D_H_
-#define _ARRAY2D_H_
+#pragma once
 
 // Dynamic replacement for static 2d array
 template<class T> struct Array2d
@@ -70,5 +69,3 @@ template<class T> struct Array2d
 		return *this;
 	}
 };
-
-#endif // _ARRAY2D_H_

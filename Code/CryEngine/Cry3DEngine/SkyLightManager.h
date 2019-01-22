@@ -1,19 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-
-   -------------------------------------------------------------------------
-   History:
-   - 09:05:2005   14:32 : Created by Carsten Wenzel
-
-*************************************************************************/
-
-#ifndef _SKY_LIGHT_MANAGER_H_
-#define _SKY_LIGHT_MANAGER_H_
-
 #pragma once
 
 #include <memory>
@@ -114,5 +100,3 @@ private:
 
 	CRY_ALIGN(16) SSkyLightRenderParams m_renderParams;
 };
-
-#endif // #ifndef _SKY_LIGHT_MANAGER_H_

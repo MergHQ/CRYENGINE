@@ -1,16 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   3DEngineMemory.h
-//  Version:     v1.00
-//  Created:     23/04/2010 by Chris Raine.
-//  Compilers:   Visual Studio.NET
-// -------------------------------------------------------------------------
-//  History:
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef Engine3DMemory_H
-#define Engine3DMemory_H
+#pragma once
 
 // The type of pool responsible for temporary allocations within the 3dengine
 //
@@ -26,7 +16,7 @@ using NCryPoolAlloc::CInPlace;         //
 using NCryPoolAlloc::CMemoryDynamic;   // the pool itself will be dynamically allocated
 using NCryPoolAlloc::CListItemInPlace; // use inplace items
 
-// Tempororary Pool Holder
+// Temporary Pool Holder
 class CTemporaryPool
 {
 private:
@@ -65,7 +55,7 @@ private:
 		uint8* tempPool = reinterpret_cast<uint8*>(CryModuleMemalign(poolSize, 16));
 		if (!tempPool)
 		{
-			CryFatalError("CTemporaryPool::Init(): could not allocate %" PRISIZE_T " bytes for temportary pool", poolSize);
+			CryFatalError("CTemporaryPool::Init(): could not allocate %" PRISIZE_T " bytes for temporary pool", poolSize);
 			return false;
 		}
 
@@ -120,8 +110,8 @@ private:
 	// Empty private constructor/destructors to prevent clients from creating and
 	// destroying instances of CTemporaryPool (there should only be one instance
 	// in the 3DEngine).
-	CTemporaryPool() {};
-	~CTemporaryPool() {};
+	CTemporaryPool() {}
+	~CTemporaryPool() {}
 
 public:
 
@@ -135,7 +125,7 @@ public:
 			CryFatalError("**** could not allocate %" PRISIZE_T " bytes from temporary pool", size);
 		}
 		return Pool.Resolve<void*>(pData);
-	};
+	}
 
 	// Allocates memory and constructs object of type 'T'
 	//
@@ -151,7 +141,7 @@ public:
 			              (int)sizeof(T));
 		}
 		return Construct<T>(expr, pObjStorage);
-	};
+	}
 
 	// Allocates memory and constructs object of type 'T'
 	//
@@ -167,7 +157,7 @@ public:
 			              (int)sizeof(T));
 		}
 		return Construct<T>(InplaceFactory(), pObjStorage);
-	};
+	}
 
 	// Frees a block of memory from the temporary pool
 	//
@@ -186,7 +176,7 @@ public:
 	}
 
 	// Static function to retrieve the static instance of CTemporaryPool
-	static CTemporaryPool* Get() { return s_Instance; };
+	static CTemporaryPool* Get() { return s_Instance; }
 
 	void                   GetMemoryUsage(ICrySizer* pSizer) const
 	{
@@ -269,5 +259,3 @@ namespace util
 extern void* pool_allocate(size_t nSize);
 extern void  pool_free(void* ptr);
 }
-
-#endif

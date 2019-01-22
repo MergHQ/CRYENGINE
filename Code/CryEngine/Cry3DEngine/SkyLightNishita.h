@@ -1,19 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-
-   -------------------------------------------------------------------------
-   History:
-   - 09:05:2005   11:08 : Created by Carsten Wenzel
-
-*************************************************************************/
-
-#ifndef _SKY_LIGHT_NISHITA_H_
-#define _SKY_LIGHT_NISHITA_H_
-
 #pragma once
 
 #include <vector>
@@ -72,7 +58,7 @@ private:
 		PhaseLUT() : m_Size(0) {}
 		SPhaseLUTEntry&       operator[](size_t index)         { return m_LUT[index]; }
 		const SPhaseLUTEntry& operator[](size_t index) const   { return m_LUT[index]; }
-		void                  resize(size_t size)              { m_Size = size; };
+		void                  resize(size_t size)              { m_Size = size; }
 		void                  reserve(size_t)                  {}
 		void                  push_back(SPhaseLUTEntry& entry) { m_LUT[m_Size++] = entry; }
 		size_t                size() const                     { return m_Size; }
@@ -128,7 +114,7 @@ private:
 
 	bool ComputeOpticalDepth(const Vec3d& cameraLookDir, const f64& cameraHeight, const f64& avgDensityHeightInv, float& depth) const;
 
-	// does a bilinearily filtered lookup into the optical depth LUT
+	// does a bilinear filtered lookup into the optical depth LUT
 	// SOpticalDepthLUTEntry* is passed to save address resolve operations
 	ILINE SOpticalDepthLUTEntry LookupBilerpedOpticalDepthLUTEntry(const SOpticalDepthLUTEntry* const __restrict cpOptDepthLUT,
 	                                                               uint32 heightIndex, const f32 cosVertAngle) const;
@@ -219,5 +205,3 @@ ILINE const CSkyLightNishita::OpticalScaleLUT& CSkyLightNishita::GetOpticalScale
 {
 	return m_opticalScaleLUT;
 }
-
-#endif // #ifndef _SKY_LIGHT_NISHITA_H_

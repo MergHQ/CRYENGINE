@@ -1,15 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-
--------------------------------------------------------------------------
-History:
-- 15:05:2009   Created by Federico Rebora
-
-*************************************************************************/
-
-#ifndef COLOR_GRADIENT_MANAGER_H_INCLUDED
-#define COLOR_GRADIENT_MANAGER_H_INCLUDED
+#pragma once
 
 #include <CryRenderer/IColorGradingController.h>
 
@@ -68,7 +59,5 @@ private:
 private:
 
 	std::vector<LoadingColorGradient> m_colorGradientsToLoad;
-	std::vector<LoadedColorGradient> m_currentGradients;
+	std::vector<LoadedColorGradient>  m_currentGradients;
 };
-
-#endif //COLOR_GRADIENT_MANAGER_H_INCLUDED
