@@ -756,7 +756,7 @@ _smart_ptr<CTexture> CShadowMapStage::PrepareOutputsForFrustumWithCaching(const 
 			auto* heightMapAO = GetStdGraphicsPipeline().GetHeightMapAOStage();
 			CRY_ASSERT(heightMapAO->IsStageActive(EShaderRenderingFlags(0)));
 
-			pDepthTarget = heightMapAO->GetHeightMapAOScreenDepthTex();
+			pDepthTarget = heightMapAO->GetHeightMapAODepthTex(0);
 		}
 
 		clearMode = frustum.bIncrementalUpdate ? CShadowMapPass::eClearMode_None : CShadowMapPass::eClearMode_Fill;
