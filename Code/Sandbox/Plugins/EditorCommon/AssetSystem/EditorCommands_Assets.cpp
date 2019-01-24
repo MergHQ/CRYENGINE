@@ -55,7 +55,7 @@ void ImportFiles(const std::vector<string>& filePaths)
 	if (dropHandler.CanImportAny(filePaths))
 	{
 		CAssetDropHandler::SImportParams importParams;
-		(void)dropHandler.Import(filePaths, importParams);
+		dropHandler.Import(filePaths, importParams);
 	}
 }
 

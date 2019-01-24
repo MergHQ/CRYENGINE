@@ -33,7 +33,7 @@ class SANDBOX_API CGameEngine : public IEditorNotifyListener
 {
 public:
 	CGameEngine();
-	~CGameEngine(void);
+	~CGameEngine();
 	//! Initialize System.
 	//! @return true if initialization succeeded, false otherwise
 	bool Init(

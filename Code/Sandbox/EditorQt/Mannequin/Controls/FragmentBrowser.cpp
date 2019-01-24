@@ -213,7 +213,7 @@ void CFragmentBrowser::LoadLayout(const XmlNodeRef& xmlLayout)
 	OnToggleShowEmpty();
 }
 
-void CFragmentBrowser::Update(void)
+void CFragmentBrowser::Update()
 {
 	static CTimeValue timeLast = gEnv->pTimer->GetAsyncTime();
 

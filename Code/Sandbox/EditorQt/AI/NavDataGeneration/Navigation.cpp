@@ -56,7 +56,7 @@ void CNavigation::Serialize(TSerialize ser)
 
 //
 //-----------------------------------------------------------------------------------------------------------
-void CNavigation::FlushSystemNavigation(void)
+void CNavigation::FlushSystemNavigation()
 {
 }
 

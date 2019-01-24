@@ -4,16 +4,12 @@
 
 #include "SceneModelCommon.h"
 
-namespace FbxTool {
-struct SNode;
-}
-
 //! Scene model that allows selection of a single node.
 class CSceneModelSingleSelection : public CSceneModelCommon
 {
 public:
 	typedef std::function<void (const FbxTool::SNode*)> SetNode;
-	typedef std::function<const FbxTool::SNode*(void)>  GetNode;
+	typedef std::function<const FbxTool::SNode*()>      GetNode;
 
 	void SetNodeAccessors(const SetNode& setNode, const GetNode& getNode)
 	{

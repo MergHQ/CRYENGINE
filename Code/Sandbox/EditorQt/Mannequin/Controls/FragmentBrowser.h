@@ -56,7 +56,7 @@ public:
 	void SaveLayout(const XmlNodeRef& xmlLayout);
 	void LoadLayout(const XmlNodeRef& xmlLayout);
 
-	void Update(void);
+	void Update();
 
 	void SetContext(SMannequinContexts& context);
 

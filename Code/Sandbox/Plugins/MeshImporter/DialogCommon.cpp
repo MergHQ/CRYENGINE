@@ -26,8 +26,6 @@
 #include <AssetSystem/AssetManager.h>
 #include <AssetSystem/Browser/AssetBrowserDialog.h>
 
-// EditorQt
-
 // Qt
 #include <QFile>
 #include <QFileInfo>
@@ -489,7 +487,7 @@ void CBaseDialog::OnOpen()
 		return;
 	}
 
-	(void)Open(assetFilePath);
+	Open(assetFilePath);
 }
 
 bool CBaseDialog::Open(const string& filePath)

@@ -22,10 +22,6 @@ QTrackingTooltip::QTrackingTooltip(QWidget* parent)
 	setAttribute(Qt::WA_TransparentForMouseEvents);
 }
 
-QTrackingTooltip::~QTrackingTooltip(void)
-{
-}
-
 void QTrackingTooltip::Show()
 {
 	raise();

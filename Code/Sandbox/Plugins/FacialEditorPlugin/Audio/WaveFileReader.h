@@ -10,7 +10,7 @@ class CWaveFileReader
 public:
 
 	CWaveFileReader();
-	~CWaveFileReader(void);
+	~CWaveFileReader();
 
 	bool  LoadFile(const char* sFileName);
 	int32 GetSample(uint32 nPos);
