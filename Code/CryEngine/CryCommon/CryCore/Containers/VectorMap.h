@@ -1,17 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+#pragma once
+
 // -------------------------------------------------------------------------
-//  File name:   VectorMap.h
-//  Version:     v1.00
-//  Created:     20/7/2006 by MichaelS.
-//  Compilers:   Visual Studio.NET 2005
 //  Description: std::map replacement implemented using sorted vector.
 // -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-#ifndef __SORTEDVECTOR_H__
-#define __SORTEDVECTOR_H__
 
 //! --------------------------------------------------------------------------
 //! VectorMap
@@ -477,5 +470,3 @@ typename VectorMap<K, V, T, A>::mapped_type& VectorMap<K, V, T, A >::operator[](
 		it = insert(value_type(key, mapped_type())).first;
 	return (*it).second;
 }
-
-#endif //__SORTEDVECTOR_H__

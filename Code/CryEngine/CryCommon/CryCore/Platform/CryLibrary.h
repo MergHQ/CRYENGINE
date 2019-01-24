@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef CRYLIBRARY_H__
-#define CRYLIBRARY_H__
+#pragma once
 
 /*!
    CryLibrary
@@ -248,5 +247,3 @@ public:
 
 	HMODULE m_hModule;
 };
-
-#endif //CRYLIBRARY_H__

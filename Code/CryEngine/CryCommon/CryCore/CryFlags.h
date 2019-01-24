@@ -1,17 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   CryFlags.h
-//  Created:     24/01/2012 by Stephen M. North.
-// -------------------------------------------------------------------------
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
-#ifndef __CryFlags_h__
-	#define __CryFlags_h__
-
-	#include <limits> // std::numeric_limits
+#include <limits> // std::numeric_limits
 
 template<typename STORAGE>
 class CCryFlags
@@ -35,5 +26,3 @@ public:
 private:
 	STORAGE m_bitStorage;
 };
-
-#endif // __CryFlags_h__

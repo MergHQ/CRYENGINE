@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef COMMON_TYPEINFO_H
-#define COMMON_TYPEINFO_H
+#pragma once
 
 #include "TypeInfo_impl.h"
 #include <Cry3DEngine/CGF/CryHeaders_info.h>
@@ -136,5 +135,3 @@ template struct Plane_tpl<float>;
 template struct Matrix33_tpl<float>;
 template struct Color_tpl<float>;
 #endif
-
-#endif //math

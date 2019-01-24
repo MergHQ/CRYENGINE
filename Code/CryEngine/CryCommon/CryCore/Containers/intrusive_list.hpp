@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _INTRUSIVE_LIST_HPP
-#define _INTRUSIVE_LIST_HPP
+#pragma once
 
 #include <stdint.h>
 
@@ -159,4 +158,3 @@ struct list_value_type
        pos = n, n = ((n->*(member)).next->item<member>()))
 
 }      // end namespace util
-#endif // ifndef _INTRUSIVE_LIST_HPP

@@ -1,18 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+#pragma once
+
 // -------------------------------------------------------------------------
-//  File name:   CryPlatform.h
-//  Version:     v1.00
-//  Created:     31/01/2013 by Christopher Bolte.
-//  Compilers:   Visual Studio.NET
 //  Description: Interface for the platform specific function libraries
 //               Include this file instead of windows.h and similar platform specific header files
 // -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-#ifndef _CRY_PLATFORM_H_
-#define _CRY_PLATFORM_H_
 
 ////////////////////////////////////////////////////////////////////////////
 //! This define allows including the detail headers which are setting platform specific settings.
@@ -65,5 +58,3 @@
 ////////////////////////////////////////////////////////////////////////////
 //! Disallow including of detail header.
 #undef CRYPLATFROM_ALLOW_DETAIL_INCLUDES
-
-#endif // _CRY_PLATFORM_H_

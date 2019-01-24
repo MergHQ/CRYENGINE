@@ -1,23 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+#pragma once
+
 // -------------------------------------------------------------------------
-//  File name:   TypeInfo.h
-//  Version:     v1.00
-//  Created:     03/05/2005 by Scott.
 //  Description: Declaration of CTypeInfo, and other things to access meta-type info.
 // -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef TYPE_INFO_IMPL_H
-#define TYPE_INFO_IMPL_H
 
 #include "CryCustomTypes.h"
 
 // DECLARATION MACROS
 // Used to construct meta TypeInfo objects in AutoTypeInfo files.
 // Two possible levels of TypeInfo: default, with size and offset info only, allowing Endian conversion;
-// and full, with string, attr, and enum info, allowing UI and serialisation.
+// and full, with string, attr, and enum info, allowing UI and serialization.
 // The full version is selected by the ENABLE_TYPE_INFO_NAMES macro.
 
 #ifdef ENABLE_TYPE_INFO
@@ -200,5 +194,3 @@ Array<CTypeInfo const*> TypeInfoArray1(T const* pt)
 	#endif // ENABLE_TYPE_INFO_NAMES
 
 #endif // ENABLE_TYPE_INFO
-
-#endif // TYPE_INFO_IMPL_H

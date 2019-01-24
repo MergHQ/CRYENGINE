@@ -1,18 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   CryEndian.h
-//  Version:     v1.00
-//  Created:     16/2/2006 by Scott,Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:		 19/3/2007: Separated Endian support from basic TypeInfo declarations.
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __CryEndian_h__
-#define __CryEndian_h__
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////
@@ -239,5 +226,3 @@ inline void StepDataWrite(D*& pDest, const T& Src, bool bSwapEndian)
 {
 	StepDataWrite(pDest, &Src, 1, bSwapEndian);
 }
-
-#endif // __CryEndian_h__

@@ -1,12 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _CRY_PTR_ARRAY_H_
-#define _CRY_PTR_ARRAY_H_
 #pragma once
 
 #include "CryArray.h"
 
-//---------------------------------------------------------------------------
 template<class T, class P = T*>
 struct PtrArray : DynArray<P>
 {
@@ -68,10 +65,7 @@ struct PtrArray : DynArray<P>
 	}
 };
 
-//---------------------------------------------------------------------------
 template<class T>
 struct SmartPtrArray : PtrArray<T, _smart_ptr<T>>
 {
 };
-
-#endif

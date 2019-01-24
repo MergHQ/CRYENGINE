@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __TYPELIST_H__
-#define __TYPELIST_H__
-
 #pragma once
 
 namespace NTypelist
@@ -210,5 +207,3 @@ public:
 #define __INCLUDING_FROM_TYPELIST_H__
 #include "TypelistUtils.h"
 #undef __INCLUDING_FROM_TYPELIST_H__
-
-#endif // __TYPELIST_H__

@@ -1,18 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+#pragma once
+
 /*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
    Description:  A wrapper that counts the number of times the wrapped object
                has been set. This is useful for netserializing an object
                that might be given a "new value" that's the same as the old value.
-   -------------------------------------------------------------------------
-   History:
-   - 16/06/2009 : Created by Alex McCarthy
 *************************************************************************/
-#ifndef __COUNTED_VALUE_H__
-#define __COUNTED_VALUE_H__
 
 template<typename T>
 struct CountedValue
@@ -64,5 +58,3 @@ private:
 	TCountedID m_lastConsumedId;
 	T          m_value;
 };
-
-#endif //__COUNTED_VALUE_H__

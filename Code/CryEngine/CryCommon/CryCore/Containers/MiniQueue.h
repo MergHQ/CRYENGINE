@@ -1,19 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+#pragma once
+
 /*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
    Description:  a small memory overhead, fixed size, efficient, iterable
                queue class (used for CContextView::SObjectClone)
-   -------------------------------------------------------------------------
-   History:
-   - 02/09/2004   12:34 : Created by Craig Tiller
 *************************************************************************/
-#ifndef __MINIQUEUE_H__
-#define __MINIQUEUE_H__
-
-#pragma once
 
 //! This class implements a very small queue of plain-old-data.
 template<typename T, uint8 N>
@@ -281,5 +273,3 @@ private:
 	uint8 m_nOffset;
 	T     m_vValues[N];
 };
-
-#endif

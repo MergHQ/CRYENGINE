@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _CRY_PLATFORM_WIN64_H_
-#define _CRY_PLATFORM_WIN64_H_
+#pragma once
 
 ////////////////////////////////////////////////////////////////////////////
 // check that we are allowed to be included
@@ -24,5 +23,3 @@
 #define __DETAIL__LINK_SYSTEM_PARTY_LIBRARY(name)                                                  \
   __pragma(message(__FILE__ "(" CRY_CREATE_STRING(__LINE__) "): Including System Library: " name)) \
   __pragma(comment(lib, name))
-
-#endif // _CRY_PLATFORM_WIN64_H_
