@@ -1,17 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+#pragma once
+
 // -------------------------------------------------------------------------
-//  File name:   MSVCSpecific.h
-//  Version:     v1.00
-//  Created:     5/4/2005 by Scott
-//  Compilers:   Visual Studio.NET 2003
 //  Description: Settings for all builds under MS Visual C++ compiler
 // -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#pragma once
 
 #ifndef _MSC_VER
 	#error This file should only be included on MSVC compiler
@@ -41,7 +34,7 @@
 #define __FUNC__               __FUNCTION__
 #define CRY_FUNC_HAS_SIGNATURE 0
 
-//! PREfast heleprs
+//! PREfast helpers
 #define PREFAST_SUPPRESS_WARNING(W) __pragma(warning(suppress: W))
 #ifdef _PREFAST_
 	#define PREFAST_ASSUME(cond)      __analysis_assume(cond)

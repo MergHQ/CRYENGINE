@@ -1,11 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+#pragma once
+
 /*************************************************************************
-   -------------------------------------------------------------------------
-
-   $Id$
-   $DateTime$
-
    Description: A simple, intelligent and efficient container for listeners.
 
    This is designed to provide a simple & consistent interface and behavior
@@ -13,14 +10,7 @@
    common pitfalls such as duplicated elements, invalid iterators and
    dangling pointers.
 
-   -------------------------------------------------------------------------
-   History:
-   - 07:12:2009: Created by Will Wilson
-
 *************************************************************************/
-
-#ifndef __CRY_LISTENERSET_H__
-#define __CRY_LISTENERSET_H__
 
 #include <CryMemory/CrySizer.h>
 /************************************************************************
@@ -646,5 +636,3 @@ inline const char* CListenerNotifier<T >::Name() const
 	return NULL;
 #endif
 }
-
-#endif  // END guard

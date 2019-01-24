@@ -1,17 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// Created by: Scott Peter
+#pragma once
+
+//---------------------------------------------------------------------------
 // Containers that use their own heap for allocation.
 //---------------------------------------------------------------------------
 
-#pragma once
+#include <CryMemory/PoolAllocator.h>
 
-#ifndef HEAP_CONTAINER_H
-	#define HEAP_CONTAINER_H
-
-	#include <CryMemory/PoolAllocator.h>
-
-//---------------------------------------------------------------------------
 template<class T, typename L = stl::PSyncMultiThread>
 struct HeapQueue : public L
 {
@@ -230,5 +226,3 @@ public:
 		HeapQueue<T, L>::GetMemoryUsage(pSizer);
 	}
 };
-
-#endif

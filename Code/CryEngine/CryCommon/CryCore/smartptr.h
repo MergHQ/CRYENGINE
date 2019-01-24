@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _SMART_PTR_H_
-#define _SMART_PTR_H_
+#pragma once
 
 #include <CryThreading/CryAtomics.h>
 
@@ -497,5 +496,3 @@ typedef _i_multithread_reference_target<int> _i_multithread_reference_target_t;
 #else
 #define TYPEDEF_AUTOPTR(T) typedef _smart_ptr<T> T ##                                                   _AutoPtr; typedef std::vector<T ## _AutoPtr> T ##_AutoArray;
 #endif
-
-#endif //_SMART_PTR_H_

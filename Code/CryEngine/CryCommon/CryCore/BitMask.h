@@ -1,15 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+#pragma once
+
 // -------------------------------------------------------------------------
-//  File name:   BitMask.h
-//  Created:     2015-7-31 by Anton.
 //  Description: BitMask with templatized max length and either fixed or allocatable storage
 // -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef _BITMASK_H
-#define _BITMASK_H
 
 #include <CryCore/BaseTypes.h>
 
@@ -301,6 +296,4 @@ typedef bitmask_t<bitmaskPtr, 8>    hidemask;
 typedef bitmask_t<bitmaskBuf<8>, 8> hidemaskLoc;
 typedef bitmask_t<bitmaskOneBit, 8> hidemaskOneBit;
 	#define hidemask1 hidemaskOneBit(1)
-#endif
-
 #endif

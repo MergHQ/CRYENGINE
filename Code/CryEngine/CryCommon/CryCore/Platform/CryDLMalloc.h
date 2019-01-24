@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef CRY_DLMALLOC_H
-#define CRY_DLMALLOC_H
 #pragma once
 
 typedef void* dlmspace;
@@ -37,6 +35,4 @@ int      dlmspace_mallopt(int, int);
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

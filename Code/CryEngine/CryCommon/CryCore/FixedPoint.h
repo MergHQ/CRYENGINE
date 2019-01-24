@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FIXED_POINT_H
-#define __FIXED_POINT_H
-
 #pragma once
 
 #include <CryCore/BitFiddling.h>
@@ -72,7 +69,7 @@ enum ERoundingModes
 template<ERoundingModes roundingMode>
 struct SelectorRoundingMode
 {
-	SelectorRoundingMode(){};
+	SelectorRoundingMode(){}
 };
 
 template<typename Ty>
@@ -963,5 +960,3 @@ inline fixed_t<BaseType, IntegerBitCount> powf(const fixed_t<BaseType, IntegerBi
 	else
 		return expf(y * logf(x));
 }
-
-#endif  // #ifndef __FIXED_POINT_H

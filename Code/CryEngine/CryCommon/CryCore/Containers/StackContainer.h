@@ -1,14 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-//
-// Helper to enable inplace construction and destruction of objects
-//
-// History:
-// Thu Apr 22 11:10:12 2010: Created by Chris Raine
-//
-/////////////////////////////////////////////////////////////////////////////
-#ifndef STACKCONTAINER_H
-#define STACKCONTAINER_H
+#pragma once
+
+// -------------------------------------------------------------------------
+// Description: Helper to enable inplace construction and destruction of objects
+// -------------------------------------------------------------------------
 #include <CrySystem/InplaceFactory.h>
 
 //! Class that contains a non-pod data type allocated on the stack via placement new.
@@ -51,5 +47,3 @@ public:
 	const T* get() const { return reinterpret_cast<const T*>(m_Storage); }
 
 };
-
-#endif

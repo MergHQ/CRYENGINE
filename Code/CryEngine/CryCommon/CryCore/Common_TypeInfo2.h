@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef COMMON_TYPEINFO2_H
-#define COMMON_TYPEINFO2_H
+#pragma once
 
 #include <CryMath/Cry_Vector3.h>
 
@@ -21,5 +20,3 @@ VAR_INFO(y)
 VAR_INFO(z)
 VAR_INFO(w)
 STRUCT_INFO_T_END(Vec4_tpl, typename, F)
-
-#endif
