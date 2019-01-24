@@ -86,7 +86,7 @@ public:
 		m_undo = m_var->Clone(false);
 	}
 protected:
-	virtual const char* GetDescription() { return m_undoDescription; };
+	virtual const char* GetDescription() { return m_undoDescription; }
 	virtual void        Undo(bool bUndo)
 	{
 		if (bUndo)

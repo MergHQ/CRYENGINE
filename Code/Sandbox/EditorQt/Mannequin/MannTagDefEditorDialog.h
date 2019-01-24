@@ -82,7 +82,7 @@ private:
 	void OnFilterTagsButton();
 
 	void PopulateTagDefListRec(const CString& baseDir);
-	void RemoveUnmodifiedTagDefs(void);
+	void RemoveUnmodifiedTagDefs();
 
 	std::unique_ptr<CTagDefTreeCtrl> m_tagsTree;
 

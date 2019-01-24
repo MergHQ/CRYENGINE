@@ -160,13 +160,13 @@ public:
 	// Summary:
 	//     This method is called to cancel user selection.
 	//-------------------------------------------------------------------------
-	void Cancel(void);
+	void Cancel();
 
 	//-------------------------------------------------------------------------
 	// Summary:
 	//     This method is called to save selected value of list box.
 	//-------------------------------------------------------------------------
-	void Apply(void);
+	void Apply();
 
 protected:
 	//{{AFX_CODEJOCK_PRIVATE

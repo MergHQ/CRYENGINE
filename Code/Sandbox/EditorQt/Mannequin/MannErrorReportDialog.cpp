@@ -123,22 +123,22 @@ IMPLEMENT_DYNAMIC(CMannErrorMessageRecord, CXTPReportRecord)
 //	//////////////////////////////////////////////////////////////////////////
 //	// IClassDesc
 //	//////////////////////////////////////////////////////////////////////////
-//	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_VIEWPANE; };
+//	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_VIEWPANE; }
 //	virtual REFGUID ClassID()
 //	{
 //		static const GUID guid =
 //			{ 0xea523b7e, 0x3f63, 0x821b, { 0x48, 0x23, 0xa1, 0x31, 0xfc, 0x5b, 0x46, 0xa3 } };
 //		return guid;
 //	}
-//	virtual const char* ClassName() { return "Error Report"; };
-//	virtual const char* Category() { return "Editor"; };
+//	virtual const char* ClassName() { return "Error Report"; }
+//	virtual const char* Category() { return "Editor"; }
 //	//////////////////////////////////////////////////////////////////////////
-//	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CMannErrorReportDialog); };
-//	virtual const char* GetPaneTitle() { return _T("Error Report"); };
-//	virtual QRect GetPaneRect() { return QRect(0,0,600,200); };
+//	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CMannErrorReportDialog); }
+//	virtual const char* GetPaneTitle() { return _T("Error Report"); }
+//	virtual QRect GetPaneRect() { return QRect(0,0,600,200); }
 //	virtual QSize GetMinSize() { return QSize(200,100); }
-//	virtual bool SinglePane() { return true; };
-//	virtual bool WantIdleUpdate() { return true; };
+//	virtual bool SinglePane() { return true; }
+//	virtual bool WantIdleUpdate() { return true; }
 //};
 
 //IMPLEMENT_DYNCREATE(CMannErrorReportDialog,CXTResizeDialog)

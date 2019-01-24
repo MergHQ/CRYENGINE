@@ -16,7 +16,6 @@ class EDITOR_COMMON_API QTrackingTooltip : public QFrame
 public:
 	QTrackingTooltip(QWidget* parent = nullptr);
 
-	virtual ~QTrackingTooltip(void);
 	void Show();
 	bool SetText(const QString& str);
 	bool SetPixmap(const QPixmap& pixmap);

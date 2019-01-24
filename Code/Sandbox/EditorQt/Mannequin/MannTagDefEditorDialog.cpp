@@ -534,7 +534,7 @@ void CMannTagDefEditorDialog::PopulateTagDefListRec(const CString& baseDir)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CMannTagDefEditorDialog::RemoveUnmodifiedTagDefs(void)
+void CMannTagDefEditorDialog::RemoveUnmodifiedTagDefs()
 {
 	for (int index = m_tagDefList.GetItemCount() - 1; index >= 0; --index)
 	{

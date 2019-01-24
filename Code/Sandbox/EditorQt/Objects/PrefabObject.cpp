@@ -473,9 +473,9 @@ void CPrefabObject::OnContextMenu(CPopupMenuItem* menu)
 		menu->AddSeparator();
 	}
 
-	menu->Add("Find in FlowGraph", [=](void) { OnShowInFG(); });
-	menu->Add("Convert to Procedural Object", [=](void) { ConvertToProceduralObject(); });
-	menu->Add("Swap Prefab...", [this](void)
+	menu->Add("Find in FlowGraph", [=]() { OnShowInFG(); });
+	menu->Add("Convert to Procedural Object", [=]() { ConvertToProceduralObject(); });
+	menu->Add("Swap Prefab...", [this]()
 	{
 		CPrefabPicker picker;
 		const CSelectionGroup* selection = GetIEditor()->GetObjectManager()->GetSelection();

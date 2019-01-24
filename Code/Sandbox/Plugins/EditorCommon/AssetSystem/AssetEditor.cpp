@@ -115,7 +115,7 @@ public:
 	}
 };
 
-};
+}
 
 CAssetEditor* CAssetEditor::OpenAssetForEdit(const char* szEditorClassName, CAsset* pAsset)
 {
@@ -469,7 +469,7 @@ bool CAssetEditor::OnOpen()
 	CAsset* const asset = CAssetBrowserDialog::OpenSingleAssetForTypes(supportedAssetTypeNames);
 	if (asset)
 	{
-		(void)OpenAsset(asset);
+		OpenAsset(asset);
 	}
 	return true;
 }
@@ -479,7 +479,7 @@ bool CAssetEditor::OnOpenFile(const QString& path)
 	auto asset = CAssetManager::GetInstance()->FindAssetForFile(path.toStdString().c_str());
 	if (asset)
 	{
-		(void)OpenAsset(asset);
+		OpenAsset(asset);
 	}
 	return true;
 }
@@ -497,7 +497,7 @@ bool CAssetEditor::Close()
 bool CAssetEditor::OnClose()
 {
 	//Note: this is only the callback for menu action, every other place should call close()
-	(void)Close();
+	Close();
 	return true;//returns true because the menu action is handled
 }
 

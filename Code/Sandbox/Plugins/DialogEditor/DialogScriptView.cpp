@@ -138,12 +138,12 @@ void MyCXTPReportInplaceList::OnLButtonUp(UINT, CPoint point)
 		Cancel();
 }
 
-void MyCXTPReportInplaceList::Cancel(void)
+void MyCXTPReportInplaceList::Cancel()
 {
 	GetOwner()->SetFocus();
 }
 
-void MyCXTPReportInplaceList::Apply(void)
+void MyCXTPReportInplaceList::Apply()
 {
 	if (!pControl)
 		return;

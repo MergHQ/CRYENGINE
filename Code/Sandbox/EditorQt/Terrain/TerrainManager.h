@@ -93,8 +93,8 @@ public:
 	int         GetDataFilesCount() const;
 	const char* GetDataFilename(int i) const;
 
-	CCrySignal<void(void)>    signalLayersChanged;
-	CCrySignal<void(void)>    signalTerrainChanged;
+	CCrySignal<void()>        signalLayersChanged;
+	CCrySignal<void()>        signalTerrainChanged;
 	CCrySignal<void(CLayer*)> signalSelectedLayerChanged;
 
 	static const int s_invalidLayerIndex = -1;
