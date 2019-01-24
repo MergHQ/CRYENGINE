@@ -89,15 +89,15 @@ void AnimationContent::UpdateBlendSpaceMotionParameters(IAnimationSet* animation
 	for (size_t i = 0; i < blendSpace.m_examples.size(); ++i)
 	{
 		BlendSpaceExample& example = blendSpace.m_examples[i];
-		Vec4 v;
-		if (animationSet->GetMotionParameters(animationId, i, skeleton, v))
+		Vec4 motionParams;
+		if (animationSet->GetMotionParameters(animationId, i, skeleton, motionParams))
 		{
 			for (size_t k = 0; k < blendSpace.m_dimensions.size(); ++k)
 			{
 				const auto paramId = blendSpace.m_dimensions[k].parameterId;
 				if (!example.parameters[paramId].userDefined)
 				{
-					example.parameters[paramId].value = v[k];
+					example.parameters[paramId].value = motionParams[k];
 				}
 			}
 		}
