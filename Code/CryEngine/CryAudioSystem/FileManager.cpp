@@ -96,7 +96,7 @@ void CFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float posY
 			char const* const szStandaloneFileName = pStandaloneFile->m_hashedFilename.GetText().c_str();
 			CryFixedStringT<MaxControlNameLength> lowerCaseStandaloneFileName(szStandaloneFileName);
 			lowerCaseStandaloneFileName.MakeLower();
-			char const* const szObjectName = pStandaloneFile->m_pObject->m_name.c_str();
+			char const* const szObjectName = pStandaloneFile->m_pObject->GetName();
 			CryFixedStringT<MaxControlNameLength> lowerCaseObjectName(szObjectName);
 			lowerCaseObjectName.MakeLower();
 

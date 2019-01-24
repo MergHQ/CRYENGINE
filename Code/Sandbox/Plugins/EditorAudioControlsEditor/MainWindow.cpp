@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "MainWindow.h"
 
-#include "Common.h"
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
 #include "PreferencesDialog.h"
@@ -421,7 +420,7 @@ void CMainWindow::Save()
 //////////////////////////////////////////////////////////////////////////
 void CMainWindow::UpdateAudioSystemData()
 {
-	string levelPath = CryAudio::s_szLevelsFolderName;
+	string levelPath = CryAudio::g_szLevelsFolderName;
 	levelPath += "/";
 	levelPath += GetIEditor()->GetLevelName();
 	gEnv->pAudioSystem->ReloadControlsData(gEnv->pAudioSystem->GetConfigPath(), levelPath.c_str());

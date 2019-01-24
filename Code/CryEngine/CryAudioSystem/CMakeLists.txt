@@ -142,7 +142,7 @@ MACRO(setup_cryaudio)
 		)
     endif()
 
-		target_compile_definitions(${THIS_PROJECT} PRIVATE $<$<NOT:$<CONFIG:Release>>:INCLUDE_AUDIO_PRODUCTION_CODE> $<$<NOT:$<CONFIG:Release>>:ENABLE_AUDIO_LOGGING>)
+		target_compile_definitions(${THIS_PROJECT} PRIVATE $<$<NOT:$<CONFIG:Release>>:INCLUDE_AUDIO_PRODUCTION_CODE>)
 ENDMACRO()
 
 CryEngineModule(CryAudioSystem PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio")

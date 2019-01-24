@@ -6,13 +6,13 @@
 #include "FileEntry.h"
 #include "PreloadRequest.h"
 #include "CVars.h"
-#include "Common/Logger.h"
 #include "Common/FileInfo.h"
 #include "Common/IImpl.h"
 #include <CryRenderer/IRenderer.h>
 #include <CryString/CryPath.h>
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#include "Common/Logger.h"
 	#include "Debug.h"
 	#include "Common/DebugStyle.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
@@ -93,10 +93,12 @@ FileEntryId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, 
 					pFileEntry->m_flags = (pFileEntry->m_flags | EFileFlags::NotCached) & ~EFileFlags::NotFound;
 					pFileEntry->m_streamTaskType = eStreamTaskTypeSound;
 				}
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 				else
 				{
 					Cry::Audio::Log(ELogType::Warning, "Couldn't find audio file %s for pre-loading.", pFileEntry->m_path.c_str());
 				}
+#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
 
 				m_fileEntries[fileEntryId] = pFileEntry;
 			}
@@ -106,7 +108,10 @@ FileEntryId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, 
 				{
 					// This file entry is upgraded from "manual loading" to "auto loading" but needs a reset to "manual loading" again!
 					pExisitingFileEntry->m_flags = (pExisitingFileEntry->m_flags | EFileFlags::NeedsResetToManualLoading) & ~EFileFlags::UseCounted;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 					Cry::Audio::Log(ELogType::Always, R"(Upgraded file entry from "manual loading" to "auto loading": %s)", pExisitingFileEntry->m_path.c_str());
+#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
 				}
 
 				// Entry already exists, free the memory!
@@ -139,7 +144,10 @@ bool CFileCacheManager::TryRemoveFileCacheEntry(FileEntryId const id, EDataScope
 		else if ((dataScope == EDataScope::LevelSpecific) && ((pFileEntry->m_flags & EFileFlags::NeedsResetToManualLoading) != 0))
 		{
 			pFileEntry->m_flags = (pFileEntry->m_flags | EFileFlags::UseCounted) & ~EFileFlags::NeedsResetToManualLoading;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			Cry::Audio::Log(ELogType::Always, R"(Downgraded file entry from "auto loading" to "manual loading": %s)", pFileEntry->m_path.c_str());
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 		}
 	}
 
@@ -284,15 +292,20 @@ bool CFileCacheManager::UncacheFileCacheEntryInternal(CFileEntry* const pFileEnt
 		}
 		else if ((pFileEntry->m_flags & EFileFlags::Loading) != 0)
 		{
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			Cry::Audio::Log(ELogType::Always, "Trying to remove a loading file cache entry %s", pFileEntry->m_path.c_str());
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			// Abort loading and reset the entry.
 			UncacheFile(pFileEntry);
 		}
 		else if ((pFileEntry->m_flags & EFileFlags::MemAllocFail) != 0)
 		{
-			// Only reset the entry.
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			Cry::Audio::Log(ELogType::Always, "Resetting a memalloc-failed file cache entry %s", pFileEntry->m_path.c_str());
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+
+			// Only reset the entry.
 			pFileEntry->m_flags = (pFileEntry->m_flags | EFileFlags::NotCached) & ~EFileFlags::MemAllocFail;
 		}
 
@@ -520,12 +533,18 @@ bool CFileCacheManager::FinishStreamInternal(IReadStreamPtr const pStream, int u
 		{
 			// We abort this stream only during entry Uncache().
 			// Therefore there's no need to call Uncache() during stream abort with error code ERROR_USER_ABORT.
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			Cry::Audio::Log(ELogType::Always, "AFCM: user aborted stream for file %s (error: %u)", pFileEntry->m_path.c_str(), error);
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 		}
 		else
 		{
 			UncacheFileCacheEntryInternal(pFileEntry, true, true);
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			Cry::Audio::Log(ELogType::Error, "AFCM: failed to stream in file %s (error: %u)", pFileEntry->m_path.c_str(), error);
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 		}
 	}
 
@@ -679,8 +698,10 @@ bool CFileCacheManager::TryCacheFileCacheEntryInternal(
 			// This unfortunately is a total memory allocation fail.
 			pFileEntry->m_flags |= EFileFlags::MemAllocFail;
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			// The user should be made aware of it.
 			Cry::Audio::Log(ELogType::Error, R"(AFCM: could not cache "%s" as we are out of memory!)", pFileEntry->m_path.c_str());
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 		}
 	}
 	else if ((pFileEntry->m_flags & (EFileFlags::Cached | EFileFlags::Loading)) != 0)
@@ -695,11 +716,13 @@ bool CFileCacheManager::TryCacheFileCacheEntryInternal(
 
 		bSuccess = true;
 	}
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	else if ((pFileEntry->m_flags & EFileFlags::NotFound) != 0)
 	{
 		// The user should be made aware of it.
 		Cry::Audio::Log(ELogType::Error, R"(AFCM: could not cache "%s" as it was not found at the target location!)", pFileEntry->m_path.c_str());
 	}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	// Increment the used count on GameHints.
 	if (((pFileEntry->m_flags & EFileFlags::UseCounted) != 0) && ((pFileEntry->m_flags & (EFileFlags::Cached | EFileFlags::Loading)) != 0))

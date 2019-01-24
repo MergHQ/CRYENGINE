@@ -65,7 +65,7 @@ private:
 
 	using ConnectionIds = std::map<ControlId, int>;
 
-	CItem             m_rootItem { "", s_aceInvalidId, EItemType::None };
+	CItem             m_rootItem { "", g_invalidControlId, EItemType::None };
 	ItemCache         m_itemCache;   // cache of the items stored by id for faster access
 	ConnectionIds     m_connectionsByID;
 	CDataPanel*       m_pDataPanel;

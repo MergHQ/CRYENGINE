@@ -17,15 +17,15 @@ namespace ACE
 {
 ControlId CAssetsManager::m_nextId = 1;
 
-static constexpr uint32 g_controlPoolSize = 8192;
-static constexpr uint32 g_folderPoolSize = 1024;
-static constexpr uint32 g_libraryPoolSize = 256;
+constexpr uint32 g_controlPoolSize = 8192;
+constexpr uint32 g_folderPoolSize = 1024;
+constexpr uint32 g_libraryPoolSize = 256;
 
 //////////////////////////////////////////////////////////////////////////
 CAssetsManager::CAssetsManager()
 {
 	ClearDirtyFlags();
-	m_scopes[GlobalScopeId] = SScopeInfo(s_szGlobalScopeName, false);
+	m_scopes[g_globalScopeId] = SScopeInfo(g_szGlobalScopeName, false);
 	m_controls.reserve(8192);
 }
 
@@ -170,7 +170,7 @@ CControl* CAssetsManager::CreateDefaultControl(string const& name, EAssetType co
 
 	if (pControl != nullptr)
 	{
-		pControl->SetScope(GlobalScopeId);
+		pControl->SetScope(g_globalScopeId);
 		pControl->SetDescription(description);
 		pControl->SetFlags(pControl->GetFlags() | flags);
 	}
@@ -184,7 +184,7 @@ void CAssetsManager::ClearScopes()
 	m_scopes.clear();
 
 	// The global scope must always exist
-	m_scopes[GlobalScopeId] = SScopeInfo(s_szGlobalScopeName, false);
+	m_scopes[g_globalScopeId] = SScopeInfo(g_szGlobalScopeName, false);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -350,7 +350,7 @@ void CAssetsManager::UpdateConfigFolderPath()
 {
 	if (g_pIImpl != nullptr)
 	{
-		m_configFolderPath = AUDIO_SYSTEM_DATA_ROOT "/" + string(g_implInfo.folderName) + "/" + CryAudio::s_szConfigFolderName + "/";
+		m_configFolderPath = AUDIO_SYSTEM_DATA_ROOT "/" + string(g_implInfo.folderName) + "/" + CryAudio::g_szConfigFolderName + "/";
 	}
 	else
 	{

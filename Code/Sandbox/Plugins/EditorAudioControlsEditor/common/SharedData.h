@@ -38,36 +38,12 @@ enum class EItemFlags : CryAudio::EnumFlagsType
 	IsContainer = BIT(3), };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EItemFlags);
 
-enum class EErrorCode : CryAudio::EnumFlagsType
-{
-	None = 0,
-	UnkownPlatform = BIT(0), };
-CRY_CREATE_ENUM_FLAG_OPERATORS(EErrorCode);
+using ControlId = CryAudio::ControlId;
+constexpr ControlId g_invalidControlId = 0;
 
-using ControlId = CryAudio::IdType;
-static constexpr ControlId s_aceInvalidId = 0;
 using ControlIds = std::vector<ControlId>;
 
-class CAsset;
-using Assets = std::vector<CAsset*>;
-
-class CControl;
-using Controls = std::vector<CControl*>;
-
-class CLibrary;
-using Libraries = std::vector<CLibrary*>;
-
-class CFolder;
-using Folders = std::vector<CFolder*>;
-
 using Platforms = std::vector<char const*>;
-using FileNames = std::set<string>;
-using AssetNames = std::vector<string>;
-
-using Scope = uint32;
-static constexpr char const* s_szGlobalScopeName = "global";
-static constexpr Scope GlobalScopeId = CryAudio::StringToId(s_szGlobalScopeName);
-
 using PlatformIndexType = uint16;
 
 enum class EImplInfoFlags : CryAudio::EnumFlagsType

@@ -9,14 +9,17 @@
 #include "Common/IObject.h"
 #include "Common/ITriggerConnection.h"
 #include "Common/ITriggerInfo.h"
-#include "Common/Logger.h"
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#include "Common/Logger.h"
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 namespace CryAudio
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 CPreviewTrigger::CPreviewTrigger()
-	: Control(PreviewTriggerId, EDataScope::Global, s_szPreviewTriggerName)
+	: Control(g_previewTriggerId, EDataScope::Global, g_szPreviewTriggerName)
 	, m_pConnection(nullptr)
 {
 }
@@ -54,7 +57,7 @@ void CPreviewTrigger::Execute(Impl::ITriggerInfo const& triggerInfo)
 		}
 		else if (activateResult != ERequestStatus::SuccessDoNotTrack)
 		{
-			Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", GetName(), g_previewObject.m_name.c_str(), __FUNCTION__);
+			Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", GetName(), g_previewObject.GetName(), __FUNCTION__);
 		}
 
 		if (triggerInstanceState.numPlayingInstances > 0 || triggerInstanceState.numLoadingInstances > 0)

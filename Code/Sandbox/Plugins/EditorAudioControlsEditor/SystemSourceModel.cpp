@@ -103,7 +103,7 @@ bool ProcessImplDragDropData(QMimeData const* const pData, std::vector<Impl::IIt
 			ControlId id;
 			stream >> id;
 
-			if (id != s_aceInvalidId)
+			if (id != g_invalidControlId)
 			{
 				Impl::IItem* const pIItem = g_pIImpl->GetItem(id);
 

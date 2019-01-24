@@ -155,7 +155,7 @@ class CEngineModule_CryAudioSystem : public ISystemModule
 			if (!levelName.empty() && levelName.compareNoCase("Untitled") != 0)
 			{
 				string levelPath(gEnv->pAudioSystem->GetConfigPath());
-				levelPath += s_szLevelsFolderName;
+				levelPath += g_szLevelsFolderName;
 				levelPath += "/";
 				levelPath += levelName;
 

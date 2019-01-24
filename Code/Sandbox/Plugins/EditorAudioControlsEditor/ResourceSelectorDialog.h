@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Common/SharedData.h"
+#include "Common.h"
 #include <Controls/EditorDialog.h>
 
 class QSearchBox;

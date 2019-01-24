@@ -27,7 +27,7 @@ PreloadRequestLookup g_preloadRequests;
 EnvironmentLookup g_environments;
 SettingLookup g_settings;
 TriggerInstanceIdLookup g_triggerInstanceIdToObject;
-CObject* g_pObject = nullptr;
+
 CLoseFocusTrigger g_loseFocusTrigger;
 CGetFocusTrigger g_getFocusTrigger;
 CMuteAllTrigger g_muteAllTrigger;
@@ -43,8 +43,11 @@ TriggerInstanceId g_triggerInstanceIdCounter = 1;
 SPoolSizes g_poolSizes;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+CObject g_object(CTransformation::GetEmptyObject(), "Global Object");
+CObject g_previewObject(CTransformation::GetEmptyObject(), "Preview Object");
 CPreviewTrigger g_previewTrigger;
-CObject g_previewObject(CTransformation::GetEmptyObject());
 SPoolSizes g_debugPoolSizes;
+#else
+CObject g_object(CTransformation::GetEmptyObject());
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }      // namespace CryAudio

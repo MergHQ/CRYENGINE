@@ -123,10 +123,6 @@ private:
 	CryEvent              m_mainEvent;
 	CryEvent              m_audioThreadWakeupEvent;
 
-#if defined(ENABLE_AUDIO_LOGGING)
-	int m_loggingOptions;
-#endif // ENABLE_AUDIO_LOGGING
-
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:
 

@@ -7,7 +7,10 @@
 #include "Common/IImpl.h"
 #include "Common/IObject.h"
 #include "Common/ITriggerConnection.h"
-#include "Common/Logger.h"
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#include "Common/Logger.h"
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -19,7 +22,7 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 
 	for (auto const pConnection : connections)
 	{
-		ERequestStatus const activateResult = pConnection->Execute(g_pObject->GetImplDataPtr(), g_triggerInstanceIdCounter);
+		ERequestStatus const activateResult = pConnection->Execute(g_object.GetImplDataPtr(), g_triggerInstanceIdCounter);
 
 		if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual) || (activateResult == ERequestStatus::Pending))
 		{
@@ -39,7 +42,7 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 		else if (activateResult != ERequestStatus::SuccessDoNotTrack)
 		{
-			Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", pControl->GetName(), g_pObject->m_name.c_str(), __FUNCTION__);
+			Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", pControl->GetName(), g_object.GetName(), __FUNCTION__);
 		}
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 	}
@@ -47,14 +50,14 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 	if (triggerInstanceState.numPlayingInstances > 0 || triggerInstanceState.numLoadingInstances > 0)
 	{
 		triggerInstanceState.flags |= ETriggerStatus::Playing;
-		g_triggerInstanceIdToObject[g_triggerInstanceIdCounter] = g_pObject;
-		g_pObject->AddTriggerState(g_triggerInstanceIdCounter, triggerInstanceState);
+		g_triggerInstanceIdToObject[g_triggerInstanceIdCounter] = &g_object;
+		g_object.AddTriggerState(g_triggerInstanceIdCounter, triggerInstanceState);
 		IncrementTriggerInstanceIdCounter();
 	}
 	else
 	{
 		// All of the events have either finished before we got here or never started, immediately inform the user that the trigger has finished.
-		g_pObject->SendFinishedTriggerInstanceRequest(triggerInstanceState);
+		g_object.SendFinishedTriggerInstanceRequest(triggerInstanceState);
 	}
 }
 } // namespace CryAudio

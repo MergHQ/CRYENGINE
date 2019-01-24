@@ -83,7 +83,7 @@ void CTrigger::Execute(
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 		else if (activateResult != ERequestStatus::SuccessDoNotTrack)
 		{
-			Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", GetName(), object.m_name.c_str(), __FUNCTION__);
+			Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", GetName(), object.GetName(), __FUNCTION__);
 		}
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 	}
@@ -114,7 +114,7 @@ void CTrigger::Execute(
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	if (m_connections.empty())
 	{
-		Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" executed on object "%s" without connections)", GetName(), object.m_name.c_str());
+		Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" executed on object "%s" without connections)", GetName(), object.GetName());
 	}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
@@ -157,7 +157,7 @@ void CTrigger::Execute(
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 		else if (activateResult != ERequestStatus::SuccessDoNotTrack)
 		{
-			Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", GetName(), object.m_name.c_str(), __FUNCTION__);
+			Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", GetName(), object.GetName(), __FUNCTION__);
 		}
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 	}
@@ -175,7 +175,7 @@ void CTrigger::Execute(
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	if (m_connections.empty())
 	{
-		Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" executed on object "%s" without connections)", GetName(), object.m_name.c_str());
+		Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" executed on object "%s" without connections)", GetName(), object.GetName());
 	}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
@@ -224,7 +224,7 @@ void CTrigger::LoadAsync(CObject& object, bool const doLoad) const
 		}
 		else
 		{
-			Cry::Audio::Log(ELogType::Warning, R"(LoadAsync failed on trigger "%s" for object "%s" during %s)", GetName(), object.m_name.c_str(), __FUNCTION__);
+			Cry::Audio::Log(ELogType::Warning, R"(LoadAsync failed on trigger "%s" for object "%s" during %s)", GetName(), object.GetName(), __FUNCTION__);
 		}
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 	}
@@ -271,7 +271,7 @@ void CTrigger::PlayFile(
 		else
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			Cry::Audio::Log(ELogType::Warning, R"(PlayFile failed with "%s" on object "%s")", pFile->m_hashedFilename.GetText().c_str(), object.m_name.c_str());
+			Cry::Audio::Log(ELogType::Warning, R"(PlayFile failed with "%s" on object "%s")", pFile->m_hashedFilename.GetText().c_str(), object.GetName());
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			g_fileManager.ReleaseStandaloneFile(pFile);
@@ -304,7 +304,9 @@ void CTrigger::PlayFile(CObject& object, CStandaloneFile* const pFile) const
 		}
 		else
 		{
-			Cry::Audio::Log(ELogType::Error, R"(PlayFile failed with "%s" on object "%s")", pFile->m_hashedFilename.GetText().c_str(), object.m_name.c_str());
+	#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+			Cry::Audio::Log(ELogType::Error, R"(PlayFile failed with "%s" on object "%s")", pFile->m_hashedFilename.GetText().c_str(), object.GetName());
+	#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			g_pIImpl->DestructStandaloneFileConnection(pFile->m_pImplData);
 			pFile->m_pImplData = nullptr;

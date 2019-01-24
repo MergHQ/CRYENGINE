@@ -90,6 +90,18 @@ class CObject final : public IObject, public CPoolObject<CObject, stl::PSyncNone
 {
 public:
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	explicit CObject(CTransformation const& transformation, char const* const szName)
+		: m_pImplData(nullptr)
+		, m_transformation(transformation)
+		, m_flags(EObjectFlags::InUse)
+		, m_propagationProcessor(*this)
+		, m_entityId(INVALID_ENTITYID)
+		, m_numPendingSyncCallbacks(0)
+		, m_maxRadius(0.0f)
+		, m_name(szName)
+	{}
+#else
 	explicit CObject(CTransformation const& transformation)
 		: m_pImplData(nullptr)
 		, m_transformation(transformation)
@@ -97,10 +109,8 @@ public:
 		, m_propagationProcessor(*this)
 		, m_entityId(INVALID_ENTITYID)
 		, m_numPendingSyncCallbacks(0)
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		, m_maxRadius(0.0f)
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	{}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	CObject() = delete;
 	CObject(CObject const&) = delete;
@@ -118,7 +128,7 @@ public:
 	void           HandleSetOcclusionRayOffset(float const offset);
 	void           HandleStopFile(char const* const szFile);
 
-	void           Init(char const* const szName, Impl::IObject* const pImplData, EntityId const entityId);
+	void           Init(Impl::IObject* const pImplData, EntityId const entityId);
 	void           Release();
 
 	// Callbacks
@@ -197,14 +207,13 @@ public:
 	void           ResetObstructionRays() { m_propagationProcessor.ResetRayData(); }
 	void           ForceImplementationRefresh(bool const setTransformation);
 
+	char const*    GetName() const { return m_name.c_str(); }
 	ERequestStatus HandleSetName(char const* const szName);
 	void           StoreParameterValue(ControlId const id, float const value);
 	void           StoreSwitchValue(ControlId const switchId, SwitchStateId const switchStateId);
 	void           StoreEnvironmentValue(ControlId const id, float const value);
 
 	void           UpdateMaxRadius(float const radius);
-
-	CryFixedStringT<MaxObjectNameLength> m_name;
 
 private:
 
@@ -232,10 +241,11 @@ private:
 	using Parameters = std::map<ControlId, float>;
 	using Environments = std::map<EnvironmentId, float>;
 
-	Parameters   m_parameters;
-	SwitchStates m_switchStates;
-	Environments m_environments;
-	float        m_maxRadius;
+	Parameters                           m_parameters;
+	SwitchStates                         m_switchStates;
+	Environments                         m_environments;
+	float                                m_maxRadius;
+	CryFixedStringT<MaxObjectNameLength> m_name;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 } // namespace CryAudio

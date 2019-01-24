@@ -19,11 +19,11 @@ public:
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	CLoseFocusTrigger()
-		: Control(LoseFocusTriggerId, EDataScope::Global, s_szLoseFocusTriggerName)
+		: Control(g_loseFocusTriggerId, EDataScope::Global, g_szLoseFocusTriggerName)
 	{}
 #else
 	CLoseFocusTrigger()
-		: Control(LoseFocusTriggerId, EDataScope::Global)
+		: Control(g_loseFocusTriggerId, EDataScope::Global)
 	{}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 

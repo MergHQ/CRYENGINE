@@ -36,7 +36,7 @@ void CEnvironment::Set(CObject const& object, float const value) const
 	// Log the "no-connections" case only on user generated controls.
 	if (m_connections.empty())
 	{
-		Cry::Audio::Log(ELogType::Warning, R"(Environment "%s" set on object "%s" without connections)", GetName(), object.m_name.c_str());
+		Cry::Audio::Log(ELogType::Warning, R"(Environment "%s" set on object "%s" without connections)", GetName(), object.GetName());
 	}
 
 	const_cast<CObject&>(object).StoreEnvironmentValue(GetId(), value);

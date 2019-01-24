@@ -4,9 +4,13 @@
 #include "CVars.h"
 #include "Common.h"
 #include "System.h"
-#include "Common/Logger.h"
 #include "PropagationProcessor.h"
 #include <CrySystem/IConsole.h>
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#include "Common/Logger.h"
+	#include <CryGame/IGameFramework.h>
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -190,6 +194,13 @@ void CmdResetRequestCount(IConsoleCmdArgs* pCmdArgs)
 {
 	g_system.ResetRequestCount();
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CmdRefresh(IConsoleCmdArgs* pCmdArgs)
+{
+	SRequestUserData const data(CryAudio::ERequestFlags::ExecuteBlocking);
+	g_system.Refresh(gEnv->pGameFramework->GetLevelName(), data);
+}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
@@ -344,6 +355,15 @@ void CCVars::RegisterVariables()
 	               "Usage: s_DebugDistance [0/...]\n"
 	               "Default: 0 m (infinite)\n");
 
+	REGISTER_CVAR2("s_LoggingOptions", &m_loggingOptions, AlphaBits64("abc"), VF_CHEAT | VF_CHEAT_NOCHECK | VF_BITFIELD,
+	               "Toggles the logging of audio related messages.\n"
+	               "Usage: s_LoggingOptions [0ab...] (flags can be combined)\n"
+	               "Default: abc\n"
+	               "0: Logging disabled\n"
+	               "a: Errors\n"
+	               "b: Warnings\n"
+	               "c: Comments\n");
+
 	REGISTER_CVAR2("s_DrawAudioDebug", &m_drawDebug, 0, VF_CHEAT | VF_CHEAT_NOCHECK | VF_BITFIELD,
 	               "Draws AudioTranslationLayer related debug data to the screen.\n"
 	               "Usage: s_DrawAudioDebug [0ab...] (flags can be combined)\n"
@@ -461,6 +481,10 @@ void CCVars::RegisterVariables()
 	REGISTER_COMMAND("s_ResetRequestCount", CmdResetRequestCount, VF_CHEAT,
 	                 "Resets the request counts shown in s_DrawAudioDebug y.\n"
 	                 "Usage: s_resetRequestCount\n");
+
+	REGISTER_COMMAND("s_Refresh", CmdRefresh, VF_CHEAT,
+	                 "Refreshes the audio system.\n"
+	                 "Usage: s_Refresh\n");
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
@@ -489,6 +513,7 @@ void CCVars::UnregisterVariables()
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 		pConsole->UnregisterVariable("s_DebugDistance");
+		pConsole->UnregisterVariable("s_LoggingOptions");
 		pConsole->UnregisterVariable("s_DrawAudioDebug");
 		pConsole->UnregisterVariable("s_FileCacheManagerDebugFilter");
 		pConsole->UnregisterVariable("s_HideInactiveAudioObjects");
@@ -503,6 +528,7 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_LoadSetting");
 		pConsole->UnregisterVariable("s_UnloadSetting");
 		pConsole->UnregisterVariable("s_ResetRequestCount");
+		pConsole->UnregisterVariable("s_Refresh");
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	}
 }

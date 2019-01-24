@@ -34,7 +34,7 @@ bool ProcessDragDropData(QMimeData const* const pData, ControlIds& ids)
 			ControlId id;
 			stream >> id;
 
-			if (id != s_aceInvalidId)
+			if (id != g_invalidControlId)
 			{
 				ids.push_back(id);
 			}
@@ -418,7 +418,7 @@ bool CConnectionsModel::dropMimeData(QMimeData const* pData, Qt::DropAction acti
 
 		if (ProcessDragDropData(pData, ids))
 		{
-			ControlId lastConnectedId = s_aceInvalidId;
+			ControlId lastConnectedId = g_invalidControlId;
 
 			for (auto const id : ids)
 			{

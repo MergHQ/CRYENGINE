@@ -23,7 +23,7 @@ string const g_eventsFolderName = "Events";
 string const g_environmentsFolderName = "Master-Mixer Hierarchy";
 string const g_soundBanksFolderName = "SoundBanks";
 string const g_soundBanksInfoFileName = "SoundbanksInfo.xml";
-ControlId g_soundBanksFolderId = s_aceInvalidId;
+ControlId g_soundBanksFolderId = g_invalidControlId;
 
 //////////////////////////////////////////////////////////////////////////
 EItemType TagToItemType(char const* const szTag)

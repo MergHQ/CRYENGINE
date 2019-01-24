@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "FileLoader.h"
 
-#include "Common.h"
 #include "AudioControlsEditorPlugin.h"
 #include "Control.h"
 
@@ -21,31 +20,31 @@ EAssetType TagToType(char const* const szTag)
 {
 	EAssetType type = EAssetType::None;
 
-	if (_stricmp(szTag, CryAudio::s_szSwitchTag) == 0)
+	if (_stricmp(szTag, CryAudio::g_szSwitchTag) == 0)
 	{
 		type = EAssetType::Switch;
 	}
-	else if (_stricmp(szTag, CryAudio::s_szStateTag) == 0)
+	else if (_stricmp(szTag, CryAudio::g_szStateTag) == 0)
 	{
 		type = EAssetType::State;
 	}
-	else if (_stricmp(szTag, CryAudio::s_szEnvironmentTag) == 0)
+	else if (_stricmp(szTag, CryAudio::g_szEnvironmentTag) == 0)
 	{
 		type = EAssetType::Environment;
 	}
-	else if (_stricmp(szTag, CryAudio::s_szParameterTag) == 0)
+	else if (_stricmp(szTag, CryAudio::g_szParameterTag) == 0)
 	{
 		type = EAssetType::Parameter;
 	}
-	else if (_stricmp(szTag, CryAudio::s_szTriggerTag) == 0)
+	else if (_stricmp(szTag, CryAudio::g_szTriggerTag) == 0)
 	{
 		type = EAssetType::Trigger;
 	}
-	else if (_stricmp(szTag, CryAudio::s_szPreloadRequestTag) == 0)
+	else if (_stricmp(szTag, CryAudio::g_szPreloadRequestTag) == 0)
 	{
 		type = EAssetType::Preload;
 	}
-	else if (_stricmp(szTag, CryAudio::s_szSettingTag) == 0)
+	else if (_stricmp(szTag, CryAudio::g_szSettingTag) == 0)
 	{
 		type = EAssetType::Setting;
 	}
@@ -85,18 +84,18 @@ void CreateDefaultControls()
 {
 	// Create default controls if they don't exist.
 	// These controls need to always exist in your project!
-	CAsset* const pLibrary = static_cast<CAsset*>(g_assetsManager.CreateLibrary(CryAudio::s_szDefaultLibraryName));
+	CAsset* const pLibrary = static_cast<CAsset*>(g_assetsManager.CreateLibrary(CryAudio::g_szDefaultLibraryName));
 
 	if (pLibrary != nullptr)
 	{
 		EAssetFlags const flags = (EAssetFlags::IsDefaultControl | EAssetFlags::IsHiddenInResourceSelector);
 
-		g_assetsManager.CreateDefaultControl(CryAudio::s_szGetFocusTriggerName, EAssetType::Trigger, pLibrary, flags, "Unmutes all audio. Gets triggered when the editor window gets focus.");
-		g_assetsManager.CreateDefaultControl(CryAudio::s_szLoseFocusTriggerName, EAssetType::Trigger, pLibrary, flags, "Mutes all audio. Gets triggered when the editor window loses focus.");
-		g_assetsManager.CreateDefaultControl(CryAudio::s_szMuteAllTriggerName, EAssetType::Trigger, pLibrary, flags, "Mutes all audio. Gets triggered when the editor mute action is used.");
-		g_assetsManager.CreateDefaultControl(CryAudio::s_szUnmuteAllTriggerName, EAssetType::Trigger, pLibrary, flags, "Unmutes all audio. Gets triggered when the editor unmute action is used.");
-		g_assetsManager.CreateDefaultControl(CryAudio::s_szPauseAllTriggerName, EAssetType::Trigger, pLibrary, flags, "Pauses playback of all audio.");
-		g_assetsManager.CreateDefaultControl(CryAudio::s_szResumeAllTriggerName, EAssetType::Trigger, pLibrary, flags, "Resumes playback of all audio.");
+		g_assetsManager.CreateDefaultControl(CryAudio::g_szGetFocusTriggerName, EAssetType::Trigger, pLibrary, flags, "Unmutes all audio. Gets triggered when the editor window gets focus.");
+		g_assetsManager.CreateDefaultControl(CryAudio::g_szLoseFocusTriggerName, EAssetType::Trigger, pLibrary, flags, "Mutes all audio. Gets triggered when the editor window loses focus.");
+		g_assetsManager.CreateDefaultControl(CryAudio::g_szMuteAllTriggerName, EAssetType::Trigger, pLibrary, flags, "Mutes all audio. Gets triggered when the editor mute action is used.");
+		g_assetsManager.CreateDefaultControl(CryAudio::g_szUnmuteAllTriggerName, EAssetType::Trigger, pLibrary, flags, "Unmutes all audio. Gets triggered when the editor unmute action is used.");
+		g_assetsManager.CreateDefaultControl(CryAudio::g_szPauseAllTriggerName, EAssetType::Trigger, pLibrary, flags, "Pauses playback of all audio.");
+		g_assetsManager.CreateDefaultControl(CryAudio::g_szResumeAllTriggerName, EAssetType::Trigger, pLibrary, flags, "Resumes playback of all audio.");
 	}
 }
 
@@ -116,7 +115,7 @@ void LoadConnections(XmlNodeRef const pRoot, CControl* const pControl)
 void LoadLibraryEditorData(XmlNodeRef const pLibraryNode, CAsset& library)
 {
 	string description = "";
-	pLibraryNode->getAttr(s_szDescriptionAttribute, description);
+	pLibraryNode->getAttr(g_szDescriptionAttribute, description);
 
 	if (!description.IsEmpty())
 	{
@@ -132,7 +131,7 @@ void LoadFolderData(XmlNodeRef const pFolderNode, CAsset& parentAsset)
 	if (pAsset != nullptr)
 	{
 		string description = "";
-		pFolderNode->getAttr(s_szDescriptionAttribute, description);
+		pFolderNode->getAttr(g_szDescriptionAttribute, description);
 
 		if (!description.IsEmpty())
 		{
@@ -169,7 +168,7 @@ void LoadControlsEditorData(XmlNodeRef const pParentNode)
 	{
 		EAssetType const controlType = TagToType(pParentNode->getTag());
 		string description = "";
-		pParentNode->getAttr(s_szDescriptionAttribute, description);
+		pParentNode->getAttr(g_szDescriptionAttribute, description);
 
 		if ((controlType != EAssetType::None) && !description.IsEmpty())
 		{
@@ -205,15 +204,15 @@ void LoadEditorData(XmlNodeRef const pEditorDataNode, CAsset& library)
 	{
 		XmlNodeRef const pChild = pEditorDataNode->getChild(i);
 
-		if (pChild->isTag(s_szLibraryNodeTag))
+		if (pChild->isTag(g_szLibraryNodeTag))
 		{
 			LoadLibraryEditorData(pChild, library);
 		}
-		else if (pChild->isTag(s_szFoldersNodeTag))
+		else if (pChild->isTag(g_szFoldersNodeTag))
 		{
 			LoadAllFolders(pChild, library);
 		}
-		else if (pChild->isTag(s_szControlsNodeTag))
+		else if (pChild->isTag(g_szControlsNodeTag))
 		{
 			LoadAllControlsEditorData(pChild);
 		}
@@ -236,7 +235,7 @@ void CFileLoader::LoadControls()
 	// load the level specific controls
 	_finddata_t fd;
 	ICryPak* pCryPak = gEnv->pCryPak;
-	intptr_t handle = pCryPak->FindFirst(g_assetsManager.GetConfigFolderPath() + CryAudio::s_szLevelsFolderName + "/*.*", &fd);
+	intptr_t handle = pCryPak->FindFirst(g_assetsManager.GetConfigFolderPath() + CryAudio::g_szLevelsFolderName + "/*.*", &fd);
 
 	if (handle != -1)
 	{
@@ -275,7 +274,7 @@ void CFileLoader::LoadAllLibrariesInFolder(string const& folderPath, string cons
 
 	if (!level.empty())
 	{
-		path = path + CryAudio::s_szLevelsFolderName + "/" + level + "/";
+		path = path + CryAudio::g_szLevelsFolderName + "/" + level + "/";
 	}
 
 	string const searchPath = path + "*.xml";
@@ -295,7 +294,7 @@ void CFileLoader::LoadAllLibrariesInFolder(string const& folderPath, string cons
 
 				if (root != nullptr)
 				{
-					if (_stricmp(root->getTag(), CryAudio::s_szRootNodeTag) == 0)
+					if (_stricmp(root->getTag(), CryAudio::g_szRootNodeTag) == 0)
 					{
 						m_loadedFilenames.insert(fileName.MakeLower());
 						string file = fd.name;
@@ -306,7 +305,7 @@ void CFileLoader::LoadAllLibrariesInFolder(string const& folderPath, string cons
 						}
 
 						int version = 1;
-						root->getAttr(CryAudio::s_szVersionAttribute, version);
+						root->getAttr(CryAudio::g_szVersionAttribute, version);
 						PathUtil::RemoveExtension(file);
 						LoadControlsLibrary(root, fileName, level, file, version);
 					}
@@ -342,13 +341,13 @@ void CFileLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string const& file
 
 			if (pNode != nullptr)
 			{
-				if (pNode->isTag(CryAudio::s_szEditorDataTag))
+				if (pNode->isTag(CryAudio::g_szEditorDataTag))
 				{
 					LoadEditorData(pNode, *pLibrary);
 				}
 				else
 				{
-					Scope const scope = level.empty() ? GlobalScopeId : g_assetsManager.GetScope(level);
+					Scope const scope = level.empty() ? g_globalScopeId : g_assetsManager.GetScope(level);
 					int const numControls = pNode->getChildCount();
 
 					for (int j = 0; j < numControls; ++j)
@@ -368,7 +367,7 @@ CControl* CFileLoader::LoadControl(XmlNodeRef const pNode, Scope const scope, ui
 
 	if (pNode != nullptr)
 	{
-		CAsset* const pFolderItem = AddUniqueFolderPath(pParentItem, QtUtil::ToQString(pNode->getAttr(s_szPathAttribute)));
+		CAsset* const pFolderItem = AddUniqueFolderPath(pParentItem, QtUtil::ToQString(pNode->getAttr(g_szPathAttribute)));
 
 		if (pFolderItem != nullptr)
 		{
@@ -438,7 +437,7 @@ void CFileLoader::CreateInternalControls()
 {
 	// Create internal default controls.
 	// These controls are hidden in the ACE and don't get written to XML!
-	CAsset* const pLibrary = static_cast<CAsset*>(g_assetsManager.CreateLibrary(CryAudio::s_szDefaultLibraryName));
+	CAsset* const pLibrary = static_cast<CAsset*>(g_assetsManager.CreateLibrary(CryAudio::g_szDefaultLibraryName));
 
 	CRY_ASSERT_MESSAGE(pLibrary != nullptr, "Default library could not get created during %s", __FUNCTION__);
 
@@ -455,7 +454,7 @@ void CFileLoader::CreateInternalControls()
 //////////////////////////////////////////////////////////////////////////
 void CFileLoader::LoadPlatformSpecificConnections(XmlNodeRef const pNode, CControl* const pControl, uint32 const version)
 {
-	if (_stricmp(pNode->getAttr(CryAudio::s_szTypeAttribute), CryAudio::s_szDataLoadType) == 0)
+	if (_stricmp(pNode->getAttr(CryAudio::s_szTypeAttribute), CryAudio::g_szDataLoadType) == 0)
 	{
 		pControl->SetAutoLoad(true);
 	}
@@ -471,7 +470,7 @@ void CFileLoader::LoadPlatformSpecificConnections(XmlNodeRef const pNode, CContr
 		// Skip unused data from previous format
 		XmlNodeRef const pPlatformNode = pNode->getChild(i);
 
-		if (_stricmp(pPlatformNode->getTag(), CryAudio::s_szPlatformTag) == 0)
+		if (_stricmp(pPlatformNode->getTag(), CryAudio::g_szPlatformTag) == 0)
 		{
 			// Get the index for that platform name
 			int platformIndex = -1;

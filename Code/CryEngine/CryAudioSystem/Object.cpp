@@ -22,7 +22,6 @@
 #include "ResumeAllTrigger.h"
 #include "ObjectRequestData.h"
 #include "CallbackRequestData.h"
-#include "Common/Logger.h"
 #include "Common/IImpl.h"
 #include "Common/IObject.h"
 #include "Common/IStandaloneFileConnection.h"
@@ -33,6 +32,7 @@
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	#include "PreviewTrigger.h"
 	#include "Debug.h"
+	#include "Common/Logger.h"
 	#include "Common/DebugStyle.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
@@ -301,12 +301,8 @@ void CObject::HandleStopFile(char const* const szFile)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::Init(char const* const szName, Impl::IObject* const pImplData, EntityId const entityId)
+void CObject::Init(Impl::IObject* const pImplData, EntityId const entityId)
 {
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	m_name = szName;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
 	m_entityId = entityId;
 	m_pImplData = pImplData;
 	m_propagationProcessor.Init();
@@ -342,25 +338,25 @@ char const* GetDefaultTriggerName(ControlId const id)
 
 	switch (id)
 	{
-	case LoseFocusTriggerId:
+	case g_loseFocusTriggerId:
 		szName = g_loseFocusTrigger.GetName();
 		break;
-	case GetFocusTriggerId:
+	case g_getFocusTriggerId:
 		szName = g_getFocusTrigger.GetName();
 		break;
-	case MuteAllTriggerId:
+	case g_muteAllTriggerId:
 		szName = g_muteAllTrigger.GetName();
 		break;
-	case UnmuteAllTriggerId:
+	case g_unmuteAllTriggerId:
 		szName = g_unmuteAllTrigger.GetName();
 		break;
-	case PauseAllTriggerId:
+	case g_pauseAllTriggerId:
 		szName = g_pauseAllTrigger.GetName();
 		break;
-	case ResumeAllTriggerId:
+	case g_resumeAllTriggerId:
 		szName = g_resumeAllTrigger.GetName();
 		break;
-	case PreviewTriggerId:
+	case g_previewTriggerId:
 		szName = g_previewTrigger.GetName();
 		break;
 	default:
@@ -373,21 +369,21 @@ char const* GetDefaultTriggerName(ControlId const id)
 ///////////////////////////////////////////////////////////////////////////
 CObject::CStateDebugDrawData::CStateDebugDrawData(SwitchStateId const switchStateId)
 	: m_currentStateId(switchStateId)
-	, m_currentSwitchColor(Debug::s_objectColorSwitchGreenMax)
+	, m_currentSwitchColor(Debug::g_objectColorSwitchGreenMax)
 {
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CObject::CStateDebugDrawData::Update(SwitchStateId const switchStateId)
 {
-	if ((switchStateId == m_currentStateId) && (m_currentSwitchColor > Debug::s_objectColorSwitchGreenMin))
+	if ((switchStateId == m_currentStateId) && (m_currentSwitchColor > Debug::g_objectColorSwitchGreenMin))
 	{
-		m_currentSwitchColor -= Debug::s_objectColorSwitchUpdateValue;
+		m_currentSwitchColor -= Debug::g_objectColorSwitchUpdateValue;
 	}
 	else if (switchStateId != m_currentStateId)
 	{
 		m_currentStateId = switchStateId;
-		m_currentSwitchColor = Debug::s_objectColorSwitchGreenMax;
+		m_currentSwitchColor = Debug::g_objectColorSwitchGreenMax;
 	}
 }
 
@@ -666,7 +662,7 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 					{
 						auxGeom.DrawSphere(
 							position,
-							Debug::s_objectRadiusPositionSphere,
+							Debug::g_objectRadiusPositionSphere,
 							isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorPositionSphere);
 					}
 
@@ -813,12 +809,12 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 							{
 								debugText.Format(
 									"%s(%s)",
-									Debug::s_szOcclusionTypes[IntegralValue(occlusionType)],
-									Debug::s_szOcclusionTypes[IntegralValue(m_propagationProcessor.GetOcclusionTypeWhenAdaptive())]);
+									Debug::g_szOcclusionTypes[IntegralValue(occlusionType)],
+									Debug::g_szOcclusionTypes[IntegralValue(m_propagationProcessor.GetOcclusionTypeWhenAdaptive())]);
 							}
 							else
 							{
-								debugText.Format("%s", Debug::s_szOcclusionTypes[IntegralValue(occlusionType)]);
+								debugText.Format("%s", Debug::g_szOcclusionTypes[IntegralValue(occlusionType)]);
 							}
 						}
 						else
@@ -1131,22 +1127,22 @@ bool CObject::ExecuteDefaultTrigger(ControlId const id)
 
 	switch (id)
 	{
-	case LoseFocusTriggerId:
+	case g_loseFocusTriggerId:
 		g_loseFocusTrigger.Execute();
 		break;
-	case GetFocusTriggerId:
+	case g_getFocusTriggerId:
 		g_getFocusTrigger.Execute();
 		break;
-	case MuteAllTriggerId:
+	case g_muteAllTriggerId:
 		g_muteAllTrigger.Execute();
 		break;
-	case UnmuteAllTriggerId:
+	case g_unmuteAllTriggerId:
 		g_unmuteAllTrigger.Execute();
 		break;
-	case PauseAllTriggerId:
+	case g_pauseAllTriggerId:
 		g_pauseAllTrigger.Execute();
 		break;
-	case ResumeAllTriggerId:
+	case g_resumeAllTriggerId:
 		g_resumeAllTrigger.Execute();
 		break;
 	default:

@@ -13,12 +13,12 @@ struct SLibraryScope final
 {
 	SLibraryScope()
 	{
-		pNodes[0] = GetISystem()->CreateXmlNode(CryAudio::s_szTriggersNodeTag);
-		pNodes[1] = GetISystem()->CreateXmlNode(CryAudio::s_szParametersNodeTag);
-		pNodes[2] = GetISystem()->CreateXmlNode(CryAudio::s_szSwitchesNodeTag);
-		pNodes[3] = GetISystem()->CreateXmlNode(CryAudio::s_szEnvironmentsNodeTag);
-		pNodes[4] = GetISystem()->CreateXmlNode(CryAudio::s_szPreloadsNodeTag);
-		pNodes[5] = GetISystem()->CreateXmlNode(CryAudio::s_szSettingsNodeTag);
+		pNodes[0] = GetISystem()->CreateXmlNode(CryAudio::g_szTriggersNodeTag);
+		pNodes[1] = GetISystem()->CreateXmlNode(CryAudio::g_szParametersNodeTag);
+		pNodes[2] = GetISystem()->CreateXmlNode(CryAudio::g_szSwitchesNodeTag);
+		pNodes[3] = GetISystem()->CreateXmlNode(CryAudio::g_szEnvironmentsNodeTag);
+		pNodes[4] = GetISystem()->CreateXmlNode(CryAudio::g_szPreloadsNodeTag);
+		pNodes[5] = GetISystem()->CreateXmlNode(CryAudio::g_szSettingsNodeTag);
 	}
 
 	XmlNodeRef GetXmlNode(EAssetType const type) const

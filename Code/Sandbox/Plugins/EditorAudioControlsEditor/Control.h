@@ -29,7 +29,7 @@ public:
 	explicit CControl(string const& name, ControlId const id, EAssetType const type)
 		: CAsset(name, type)
 		, m_id(id)
-		, m_scope(GlobalScopeId)
+		, m_scope(g_globalScopeId)
 		, m_isAutoLoad(true)
 	{}
 

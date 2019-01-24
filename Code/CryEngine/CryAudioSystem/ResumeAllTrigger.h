@@ -19,11 +19,11 @@ public:
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	CResumeAllTrigger()
-		: Control(ResumeAllTriggerId, EDataScope::Global, s_szResumeAllTriggerName)
+		: Control(g_resumeAllTriggerId, EDataScope::Global, g_szResumeAllTriggerName)
 	{}
 #else
 	CResumeAllTrigger()
-		: Control(ResumeAllTriggerId, EDataScope::Global)
+		: Control(g_resumeAllTriggerId, EDataScope::Global)
 	{}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
