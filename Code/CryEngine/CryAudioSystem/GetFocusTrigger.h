@@ -19,11 +19,11 @@ public:
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	CGetFocusTrigger()
-		: Control(GetFocusTriggerId, EDataScope::Global, s_szGetFocusTriggerName)
+		: Control(g_getFocusTriggerId, EDataScope::Global, g_szGetFocusTriggerName)
 	{}
 #else
 	CGetFocusTrigger()
-		: Control(GetFocusTriggerId, EDataScope::Global)
+		: Control(g_getFocusTriggerId, EDataScope::Global)
 	{}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 

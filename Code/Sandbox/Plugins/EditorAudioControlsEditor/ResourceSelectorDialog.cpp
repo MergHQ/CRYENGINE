@@ -200,7 +200,7 @@ QModelIndex CResourceSelectorDialog::FindItem(string const& sControlName)
 			{
 				Scope const scope = pControl->GetScope();
 
-				if (scope == GlobalScopeId || scope == m_scope)
+				if (scope == g_globalScopeId || scope == m_scope)
 				{
 					modelIndex = matches[0];
 				}

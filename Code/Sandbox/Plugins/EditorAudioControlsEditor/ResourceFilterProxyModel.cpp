@@ -25,7 +25,7 @@ bool CResourceFilterProxyModel::rowMatchesFilter(int sourceRow, QModelIndex cons
 			if ((pControl != nullptr) && ((pControl->GetFlags() & EAssetFlags::IsHiddenInResourceSelector) == 0))
 			{
 				Scope const scope = pControl->GetScope();
-				matchesFilter = (pControl->GetType() == m_type) && ((scope == GlobalScopeId) || (scope == m_scope));
+				matchesFilter = (pControl->GetType() == m_type) && ((scope == g_globalScopeId) || (scope == m_scope));
 			}
 		}
 	}

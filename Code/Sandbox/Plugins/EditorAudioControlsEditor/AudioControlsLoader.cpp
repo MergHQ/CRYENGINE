@@ -203,7 +203,7 @@ void CAudioControlsLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string co
 				}
 				else
 				{
-					Scope const scope = level.empty() ? GlobalScopeId : g_assetsManager.GetScope(level);
+					Scope const scope = level.empty() ? g_globalScopeId : g_assetsManager.GetScope(level);
 					int const numControls = pNode->getChildCount();
 
 					for (int j = 0; j < numControls; ++j)
@@ -230,7 +230,7 @@ CControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope const 
 
 	if (pNode != nullptr)
 	{
-		bool const isInDefaultLibrary = (pParentItem->GetName().compareNoCase(CryAudio::s_szDefaultLibraryName) == 0);
+		bool const isInDefaultLibrary = (pParentItem->GetName().compareNoCase(CryAudio::g_szDefaultLibraryName) == 0);
 		QString pathName = "";
 
 		if (!isInDefaultLibrary)
@@ -494,7 +494,7 @@ void CAudioControlsLoader::LoadLibraryEditorData(XmlNodeRef const pLibraryNode, 
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsLoader::LoadAllFolders(XmlNodeRef const pFoldersNode, CAsset& library)
 {
-	if ((pFoldersNode != nullptr) && (library.GetName().compareNoCase(CryAudio::s_szDefaultLibraryName) != 0))
+	if ((pFoldersNode != nullptr) && (library.GetName().compareNoCase(CryAudio::g_szDefaultLibraryName) != 0))
 	{
 		int const numChildren = pFoldersNode->getChildCount();
 

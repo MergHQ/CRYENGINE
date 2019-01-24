@@ -20,20 +20,20 @@
 
 namespace CryAudio
 {
-size_t constexpr g_numberLow = 7;
-size_t constexpr g_numberMedium = 9;
-size_t constexpr g_numberHigh = 11;
-size_t constexpr g_numRaySamplePositionsLow = g_numberLow * g_numberLow;
-size_t constexpr g_numRaySamplePositionsMedium = g_numberMedium * g_numberMedium;
-size_t constexpr g_numRaySamplePositionsHigh = g_numberHigh * g_numberHigh;
-size_t constexpr g_numConcurrentRaysLow = 1;
-size_t constexpr g_numConcurrentRaysMedium = 2;
-size_t constexpr g_numConcurrentRaysHigh = 4;
+constexpr size_t g_numberLow = 7;
+constexpr size_t g_numberMedium = 9;
+constexpr size_t g_numberHigh = 11;
+constexpr size_t g_numRaySamplePositionsLow = g_numberLow * g_numberLow;
+constexpr size_t g_numRaySamplePositionsMedium = g_numberMedium * g_numberMedium;
+constexpr size_t g_numRaySamplePositionsHigh = g_numberHigh * g_numberHigh;
+constexpr size_t g_numConcurrentRaysLow = 1;
+constexpr size_t g_numConcurrentRaysMedium = 2;
+constexpr size_t g_numConcurrentRaysHigh = 4;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-uint32 constexpr g_numIndices = 6;
-vtx_idx constexpr g_auxIndices[g_numIndices] = { 2, 1, 0, 2, 3, 1 };
-uint32 constexpr g_numPoints = 4;
+constexpr uint32 g_numIndices = 6;
+constexpr vtx_idx g_auxIndices[g_numIndices] = { 2, 1, 0, 2, 3, 1 };
+constexpr uint32 g_numPoints = 4;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 float g_listenerHeadSize = 0.0f;
@@ -866,7 +866,7 @@ void CPropagationProcessor::DrawRay(IRenderAuxGeom& auxGeom, size_t const rayInd
 	if (isRayObstructed)
 	{
 		// Mark the nearest collision with a small sphere.
-		auxGeom.DrawSphere(rayEnd, Debug::s_rayRadiusCollisionSphere, Debug::s_rayColorCollisionSphere);
+		auxGeom.DrawSphere(rayEnd, Debug::g_rayRadiusCollisionSphere, Debug::s_rayColorCollisionSphere);
 	}
 
 	auxGeom.DrawLine(m_rayDebugInfos[rayIndex].begin, rayColor, rayEnd, rayColor, 1.0f);

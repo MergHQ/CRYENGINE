@@ -17,12 +17,12 @@
 #include "Switch.h"
 #include "SwitchState.h"
 #include "Trigger.h"
-#include "Common/Logger.h"
 #include <IImpl.h>
 #include <CryString/CryPath.h>
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	#include "PreviewTrigger.h"
+	#include "Common/Logger.h"
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 namespace CryAudio
@@ -73,42 +73,42 @@ void ParseSystemDataFile(char const* const szFolderPath, SPoolSizes& poolSizes, 
 
 			if (pRootNode != nullptr)
 			{
-				if (_stricmp(pRootNode->getTag(), s_szRootNodeTag) == 0)
+				if (_stricmp(pRootNode->getTag(), g_szRootNodeTag) == 0)
 				{
 					uint16 numTriggers = 0;
-					pRootNode->getAttr(s_szNumTriggersAttribute, numTriggers);
+					pRootNode->getAttr(g_szNumTriggersAttribute, numTriggers);
 					poolSizes.triggers += numTriggers;
 
 					uint16 numParameters = 0;
-					pRootNode->getAttr(s_szNumParametersAttribute, numParameters);
+					pRootNode->getAttr(g_szNumParametersAttribute, numParameters);
 					poolSizes.parameters += numParameters;
 
 					uint16 numSwitches = 0;
-					pRootNode->getAttr(s_szNumSwitchesAttribute, numSwitches);
+					pRootNode->getAttr(g_szNumSwitchesAttribute, numSwitches);
 					poolSizes.switches += numSwitches;
 
 					uint16 numStates = 0;
-					pRootNode->getAttr(s_szNumStatesAttribute, numStates);
+					pRootNode->getAttr(g_szNumStatesAttribute, numStates);
 					poolSizes.states += numStates;
 
 					uint16 numEnvironments = 0;
-					pRootNode->getAttr(s_szNumEnvironmentsAttribute, numEnvironments);
+					pRootNode->getAttr(g_szNumEnvironmentsAttribute, numEnvironments);
 					poolSizes.environments += numEnvironments;
 
 					uint16 numPreloads = 0;
-					pRootNode->getAttr(s_szNumPreloadsAttribute, numPreloads);
+					pRootNode->getAttr(g_szNumPreloadsAttribute, numPreloads);
 					poolSizes.preloads += numPreloads;
 
 					uint16 numSettings = 0;
-					pRootNode->getAttr(s_szNumSettingsAttribute, numSettings);
+					pRootNode->getAttr(g_szNumSettingsAttribute, numSettings);
 					poolSizes.settings += numSettings;
 
 					uint16 numFiles = 0;
-					pRootNode->getAttr(s_szNumFilesAttribute, numFiles);
+					pRootNode->getAttr(g_szNumFilesAttribute, numFiles);
 					poolSizes.files += numFiles;
 				}
 
-				XmlNodeRef const pImplDataNode = pRootNode->findChild(s_szImplDataNodeTag);
+				XmlNodeRef const pImplDataNode = pRootNode->findChild(g_szImplDataNodeTag);
 
 				if (pImplDataNode != nullptr)
 				{
@@ -172,7 +172,7 @@ void CXMLProcessor::ParseSystemData()
 	g_pIImpl->OnBeforeLibraryDataChanged();
 	g_pIImpl->GetInfo(g_implInfo);
 	g_configPath = AUDIO_SYSTEM_DATA_ROOT "/";
-	g_configPath += (g_implInfo.folderName + "/" + s_szConfigFolderName + "/").c_str();
+	g_configPath += (g_implInfo.folderName + "/" + g_szConfigFolderName + "/").c_str();
 
 	ParseSystemDataFile(g_configPath.c_str(), g_poolSizes, false);
 
@@ -239,7 +239,7 @@ void CXMLProcessor::ParseControlsData(char const* const szFolderPath, EDataScope
 
 				if (pRootNode)
 				{
-					if (_stricmp(pRootNode->getTag(), s_szRootNodeTag) == 0)
+					if (_stricmp(pRootNode->getTag(), g_szRootNodeTag) == 0)
 					{
 						LibraryId const libraryId = StringToId(pRootNode->getAttr(s_szNameAttribute));
 
@@ -297,37 +297,38 @@ void CXMLProcessor::ParseControlsFile(XmlNodeRef const pRootNode, EDataScope con
 		{
 			char const* const szChildNodeTag = pChildNode->getTag();
 
-			if (_stricmp(szChildNodeTag, s_szTriggersNodeTag) == 0)
+			if (_stricmp(szChildNodeTag, g_szTriggersNodeTag) == 0)
 			{
 				ParseTriggers(pChildNode, dataScope);
 			}
-			else if (_stricmp(szChildNodeTag, s_szParametersNodeTag) == 0)
+			else if (_stricmp(szChildNodeTag, g_szParametersNodeTag) == 0)
 			{
 				ParseParameters(pChildNode, dataScope);
 			}
-			else if (_stricmp(szChildNodeTag, s_szSwitchesNodeTag) == 0)
+			else if (_stricmp(szChildNodeTag, g_szSwitchesNodeTag) == 0)
 			{
 				ParseSwitches(pChildNode, dataScope);
 			}
-			else if (_stricmp(szChildNodeTag, s_szEnvironmentsNodeTag) == 0)
+			else if (_stricmp(szChildNodeTag, g_szEnvironmentsNodeTag) == 0)
 			{
 				ParseEnvironments(pChildNode, dataScope);
 			}
-			else if (_stricmp(szChildNodeTag, s_szSettingsNodeTag) == 0)
+			else if (_stricmp(szChildNodeTag, g_szSettingsNodeTag) == 0)
 			{
 				ParseSettings(pChildNode, dataScope);
 			}
-			else if ((_stricmp(szChildNodeTag, s_szImplDataNodeTag) == 0) ||
-			         (_stricmp(szChildNodeTag, s_szPreloadsNodeTag) == 0) ||
-			         (_stricmp(szChildNodeTag, s_szEditorDataTag) == 0))
+			else if ((_stricmp(szChildNodeTag, g_szImplDataNodeTag) == 0) ||
+			         (_stricmp(szChildNodeTag, g_szPreloadsNodeTag) == 0) ||
+			         (_stricmp(szChildNodeTag, g_szEditorDataTag) == 0))
 			{
 				// These tags are valid but ignored here.
 			}
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Warning, "Unknown AudioSystemData node: %s", szChildNodeTag);
-				CRY_ASSERT(false);
 			}
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 		}
 	}
 }
@@ -345,25 +346,26 @@ void CXMLProcessor::ParseDefaultControlsFile(XmlNodeRef const pRootNode)
 		{
 			char const* const childNodeTag = pChildNode->getTag();
 
-			if (_stricmp(childNodeTag, s_szTriggersNodeTag) == 0)
+			if (_stricmp(childNodeTag, g_szTriggersNodeTag) == 0)
 			{
 				ParseDefaultTriggers(pChildNode);
 			}
-			else if ((_stricmp(childNodeTag, s_szImplDataNodeTag) == 0) ||
-			         (_stricmp(childNodeTag, s_szParametersNodeTag) == 0) ||
-			         (_stricmp(childNodeTag, s_szSwitchesNodeTag) == 0) ||
-			         (_stricmp(childNodeTag, s_szEnvironmentsNodeTag) == 0) ||
-			         (_stricmp(childNodeTag, s_szPreloadsNodeTag) == 0) ||
-			         (_stricmp(childNodeTag, s_szSettingsNodeTag) == 0) ||
-			         (_stricmp(childNodeTag, s_szEditorDataTag) == 0))
+			else if ((_stricmp(childNodeTag, g_szImplDataNodeTag) == 0) ||
+			         (_stricmp(childNodeTag, g_szParametersNodeTag) == 0) ||
+			         (_stricmp(childNodeTag, g_szSwitchesNodeTag) == 0) ||
+			         (_stricmp(childNodeTag, g_szEnvironmentsNodeTag) == 0) ||
+			         (_stricmp(childNodeTag, g_szPreloadsNodeTag) == 0) ||
+			         (_stricmp(childNodeTag, g_szSettingsNodeTag) == 0) ||
+			         (_stricmp(childNodeTag, g_szEditorDataTag) == 0))
 			{
 				// These tags are valid but ignored here, because no default controls of these type currently exist.
 			}
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Warning, "Unknown AudioSystemData node: %s", childNodeTag);
-				CRY_ASSERT(false);
 			}
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 		}
 	}
 }
@@ -398,11 +400,11 @@ void CXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EDataScope
 
 				if (pRootNode != nullptr)
 				{
-					if (_stricmp(pRootNode->getTag(), s_szRootNodeTag) == 0)
+					if (_stricmp(pRootNode->getTag(), g_szRootNodeTag) == 0)
 					{
 
 						uint versionNumber = 1;
-						pRootNode->getAttr(s_szVersionAttribute, versionNumber);
+						pRootNode->getAttr(g_szVersionAttribute, versionNumber);
 						int const numChildren = pRootNode->getChildCount();
 
 						for (int i = 0; i < numChildren; ++i)
@@ -413,7 +415,7 @@ void CXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EDataScope
 							{
 								char const* const szChildNodeTag = pChildNode->getTag();
 
-								if (_stricmp(szChildNodeTag, s_szPreloadsNodeTag) == 0)
+								if (_stricmp(szChildNodeTag, g_szPreloadsNodeTag) == 0)
 								{
 									size_t const lastSlashIndex = rootFolderPath.rfind("/"[0]);
 
@@ -427,20 +429,22 @@ void CXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EDataScope
 										ParsePreloads(pChildNode, dataScope, nullptr, versionNumber);
 									}
 								}
-								else if (_stricmp(szChildNodeTag, s_szImplDataNodeTag) == 0 ||
-								         _stricmp(szChildNodeTag, s_szTriggersNodeTag) == 0 ||
-								         _stricmp(szChildNodeTag, s_szParametersNodeTag) == 0 ||
-								         _stricmp(szChildNodeTag, s_szSwitchesNodeTag) == 0 ||
-								         _stricmp(szChildNodeTag, s_szEnvironmentsNodeTag) == 0 ||
-								         _stricmp(szChildNodeTag, s_szSettingsNodeTag) == 0 ||
-								         _stricmp(szChildNodeTag, s_szEditorDataTag) == 0)
+								else if (_stricmp(szChildNodeTag, g_szImplDataNodeTag) == 0 ||
+								         _stricmp(szChildNodeTag, g_szTriggersNodeTag) == 0 ||
+								         _stricmp(szChildNodeTag, g_szParametersNodeTag) == 0 ||
+								         _stricmp(szChildNodeTag, g_szSwitchesNodeTag) == 0 ||
+								         _stricmp(szChildNodeTag, g_szEnvironmentsNodeTag) == 0 ||
+								         _stricmp(szChildNodeTag, g_szSettingsNodeTag) == 0 ||
+								         _stricmp(szChildNodeTag, g_szEditorDataTag) == 0)
 								{
 									// These tags are valid but ignored here.
 								}
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 								else
 								{
 									Cry::Audio::Log(ELogType::Warning, "Unknown AudioSystemData node: %s", szChildNodeTag);
 								}
+#endif            // INCLUDE_AUDIO_PRODUCTION_CODE
 							}
 						}
 					}
@@ -598,11 +602,11 @@ void CXMLProcessor::ParsePreloads(XmlNodeRef const pPreloadDataRoot, EDataScope 
 	{
 		XmlNodeRef const pPreloadRequestNode(pPreloadDataRoot->getChild(i));
 
-		if (pPreloadRequestNode && _stricmp(pPreloadRequestNode->getTag(), s_szPreloadRequestTag) == 0)
+		if (pPreloadRequestNode && _stricmp(pPreloadRequestNode->getTag(), g_szPreloadRequestTag) == 0)
 		{
 			PreloadRequestId preloadRequestId = GlobalPreloadRequestId;
-			char const* szPreloadRequestName = s_szGlobalPreloadRequestName;
-			bool const isAutoLoad = (_stricmp(pPreloadRequestNode->getAttr(s_szTypeAttribute), s_szDataLoadType) == 0);
+			char const* szPreloadRequestName = g_szGlobalPreloadRequestName;
+			bool const isAutoLoad = (_stricmp(pPreloadRequestNode->getAttr(s_szTypeAttribute), g_szDataLoadType) == 0);
 
 			if (!isAutoLoad)
 			{
@@ -647,10 +651,12 @@ void CXMLProcessor::ParsePreloads(XmlNodeRef const pPreloadDataRoot, EDataScope 
 						{
 							cFileEntryIDs.push_back(id);
 						}
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 						else
 						{
 							Cry::Audio::Log(ELogType::Warning, R"(Preload request "%s" could not create file entry from tag "%s"!)", szPreloadRequestName, pFileListParentNode->getChild(k)->getTag());
 						}
+#endif        // INCLUDE_AUDIO_PRODUCTION_CODE
 					}
 
 					CPreloadRequest* pPreloadRequest = stl::find_in_map(g_preloadRequests, preloadRequestId, nullptr);
@@ -680,10 +686,12 @@ void CXMLProcessor::ParsePreloads(XmlNodeRef const pPreloadDataRoot, EDataScope 
 					}
 				}
 			}
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Error, R"(Preload request "%s" already exists! Skipping this entry!)", szPreloadRequestName);
 			}
+#endif        // INCLUDE_AUDIO_PRODUCTION_CODE
 		}
 	}
 }
@@ -722,7 +730,7 @@ void CXMLProcessor::ParseEnvironments(XmlNodeRef const pEnvironmentRoot, EDataSc
 	{
 		XmlNodeRef const pEnvironmentNode(pEnvironmentRoot->getChild(i));
 
-		if ((pEnvironmentNode != nullptr) && (_stricmp(pEnvironmentNode->getTag(), s_szEnvironmentTag) == 0))
+		if ((pEnvironmentNode != nullptr) && (_stricmp(pEnvironmentNode->getTag(), g_szEnvironmentTag) == 0))
 		{
 			char const* const szEnvironmentName = pEnvironmentNode->getAttr(s_szNameAttribute);
 			auto const environmentId = static_cast<EnvironmentId const>(StringToId(szEnvironmentName));
@@ -770,10 +778,12 @@ void CXMLProcessor::ParseEnvironments(XmlNodeRef const pEnvironmentRoot, EDataSc
 					}
 				}
 			}
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Error, R"(Environment "%s" already exists!)", szEnvironmentName);
 			}
+#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
 		}
 	}
 }
@@ -787,7 +797,7 @@ void CXMLProcessor::ParseSettings(XmlNodeRef const pRoot, EDataScope const dataS
 	{
 		XmlNodeRef const pSettingNode(pRoot->getChild(i));
 
-		if (pSettingNode && _stricmp(pSettingNode->getTag(), s_szSettingTag) == 0)
+		if (pSettingNode && _stricmp(pSettingNode->getTag(), g_szSettingTag) == 0)
 		{
 			char const* const szSettingName = pSettingNode->getAttr(s_szNameAttribute);
 			auto const settingId = static_cast<ControlId>(StringToId(szSettingName));
@@ -810,7 +820,7 @@ void CXMLProcessor::ParseSettings(XmlNodeRef const pRoot, EDataScope const dataS
 
 				if (pSettingImplParentNode != nullptr)
 				{
-					bool const isAutoLoad = (_stricmp(pSettingNode->getAttr(s_szTypeAttribute), s_szDataLoadType) == 0);
+					bool const isAutoLoad = (_stricmp(pSettingNode->getAttr(s_szTypeAttribute), g_szDataLoadType) == 0);
 
 					int const numConnections = pSettingImplParentNode->getChildCount();
 					SettingConnections connections;
@@ -849,10 +859,12 @@ void CXMLProcessor::ParseSettings(XmlNodeRef const pRoot, EDataScope const dataS
 					}
 				}
 			}
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Error, R"(Setting "%s" already exists!)", szSettingName);
 			}
+#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
 		}
 	}
 }
@@ -866,7 +878,7 @@ void CXMLProcessor::ParseTriggers(XmlNodeRef const pXMLTriggerRoot, EDataScope c
 	{
 		XmlNodeRef const pTriggerNode(pXMLTriggerRoot->getChild(i));
 
-		if (pTriggerNode && _stricmp(pTriggerNode->getTag(), s_szTriggerTag) == 0)
+		if (pTriggerNode && _stricmp(pTriggerNode->getTag(), g_szTriggerTag) == 0)
 		{
 			char const* const szTriggerName = pTriggerNode->getAttr(s_szNameAttribute);
 			auto const triggerId = static_cast<ControlId const>(StringToId(szTriggerName));
@@ -918,10 +930,12 @@ void CXMLProcessor::ParseTriggers(XmlNodeRef const pXMLTriggerRoot, EDataScope c
 					g_triggers[triggerId] = pNewTrigger;
 				}
 			}
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Error, R"(Trigger "%s" already exists!)", szTriggerName);
 			}
+#endif        // INCLUDE_AUDIO_PRODUCTION_CODE
 		}
 	}
 }
@@ -935,7 +949,7 @@ void CXMLProcessor::ParseDefaultTriggers(XmlNodeRef const pXMLTriggerRoot)
 	{
 		XmlNodeRef const pTriggerNode(pXMLTriggerRoot->getChild(i));
 
-		if (pTriggerNode && _stricmp(pTriggerNode->getTag(), s_szTriggerTag) == 0)
+		if (pTriggerNode && _stricmp(pTriggerNode->getTag(), g_szTriggerTag) == 0)
 		{
 			char const* const szTriggerName = pTriggerNode->getAttr(s_szNameAttribute);
 			auto const triggerId = static_cast<ControlId const>(StringToId(szTriggerName));
@@ -966,32 +980,32 @@ void CXMLProcessor::ParseDefaultTriggers(XmlNodeRef const pXMLTriggerRoot)
 
 			switch (triggerId)
 			{
-			case LoseFocusTriggerId:
+			case g_loseFocusTriggerId:
 				{
 					g_loseFocusTrigger.AddConnections(connections);
 					break;
 				}
-			case GetFocusTriggerId:
+			case g_getFocusTriggerId:
 				{
 					g_getFocusTrigger.AddConnections(connections);
 					break;
 				}
-			case MuteAllTriggerId:
+			case g_muteAllTriggerId:
 				{
 					g_muteAllTrigger.AddConnections(connections);
 					break;
 				}
-			case UnmuteAllTriggerId:
+			case g_unmuteAllTriggerId:
 				{
 					g_unmuteAllTrigger.AddConnections(connections);
 					break;
 				}
-			case PauseAllTriggerId:
+			case g_pauseAllTriggerId:
 				{
 					g_pauseAllTrigger.AddConnections(connections);
 					break;
 				}
-			case ResumeAllTriggerId:
+			case g_resumeAllTriggerId:
 				{
 					g_resumeAllTrigger.AddConnections(connections);
 					break;
@@ -1013,7 +1027,7 @@ void CXMLProcessor::ParseSwitches(XmlNodeRef const pXMLSwitchRoot, EDataScope co
 	{
 		XmlNodeRef const pSwitchNode(pXMLSwitchRoot->getChild(i));
 
-		if (pSwitchNode && _stricmp(pSwitchNode->getTag(), s_szSwitchTag) == 0)
+		if (pSwitchNode && _stricmp(pSwitchNode->getTag(), g_szSwitchTag) == 0)
 		{
 			char const* const szSwitchName = pSwitchNode->getAttr(s_szNameAttribute);
 			auto const switchId = static_cast<ControlId const>(StringToId(szSwitchName));
@@ -1033,7 +1047,7 @@ void CXMLProcessor::ParseSwitches(XmlNodeRef const pXMLSwitchRoot, EDataScope co
 				{
 					XmlNodeRef const pSwitchStateNode(pSwitchNode->getChild(j));
 
-					if (pSwitchStateNode && _stricmp(pSwitchStateNode->getTag(), s_szStateTag) == 0)
+					if (pSwitchStateNode && _stricmp(pSwitchStateNode->getTag(), g_szStateTag) == 0)
 					{
 						char const* const szSwitchStateName = pSwitchStateNode->getAttr(s_szNameAttribute);
 						auto const switchStateId = static_cast<SwitchStateId const>(StringToId(szSwitchStateName));
@@ -1073,10 +1087,12 @@ void CXMLProcessor::ParseSwitches(XmlNodeRef const pXMLSwitchRoot, EDataScope co
 
 				g_switches[switchId] = pNewSwitch;
 			}
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Error, R"(Switch "%s" already exists!)", szSwitchName);
 			}
+#endif        // INCLUDE_AUDIO_PRODUCTION_CODE
 		}
 	}
 }
@@ -1090,7 +1106,7 @@ void CXMLProcessor::ParseParameters(XmlNodeRef const pXMLParameterRoot, EDataSco
 	{
 		XmlNodeRef const pParameterNode(pXMLParameterRoot->getChild(i));
 
-		if (pParameterNode && _stricmp(pParameterNode->getTag(), s_szParameterTag) == 0)
+		if (pParameterNode && _stricmp(pParameterNode->getTag(), g_szParameterTag) == 0)
 		{
 			char const* const szParameterName = pParameterNode->getAttr(s_szNameAttribute);
 			auto const parameterId = static_cast<ControlId const>(StringToId(szParameterName));
@@ -1133,10 +1149,12 @@ void CXMLProcessor::ParseParameters(XmlNodeRef const pXMLParameterRoot, EDataSco
 					g_parameters[parameterId] = pParameter;
 				}
 			}
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Error, R"(Parameter "%s" already exists!)", szParameterName);
 			}
+#endif        // INCLUDE_AUDIO_PRODUCTION_CODE
 		}
 	}
 }

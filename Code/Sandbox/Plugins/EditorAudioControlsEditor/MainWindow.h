@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Common/SharedData.h"
+#include "Common.h"
 #include <EditorFramework/Editor.h>
 #include <IEditor.h>
 #include <CrySystem/ISystem.h>

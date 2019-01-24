@@ -51,7 +51,7 @@ private:
 	EErrorCode          m_errorCodeMask = EErrorCode::None;
 	bool                m_loadOnlyDefaultControls = false;
 
-	FileNames           m_defaultTriggerNames { CryAudio::s_szGetFocusTriggerName, CryAudio::s_szLoseFocusTriggerName, CryAudio::s_szMuteAllTriggerName, CryAudio::s_szUnmuteAllTriggerName };
+	FileNames           m_defaultTriggerNames { CryAudio::g_szGetFocusTriggerName, CryAudio::g_szLoseFocusTriggerName, CryAudio::g_szMuteAllTriggerName, CryAudio::g_szUnmuteAllTriggerName };
 	FileNames           m_defaultParameterNames { "absolute_velocity", "object_speed", "relative_velocity", "object_doppler" };
 };
 } // namespace ACE

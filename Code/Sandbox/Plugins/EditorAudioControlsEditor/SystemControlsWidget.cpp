@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "SystemControlsWidget.h"
 
-#include "Common.h"
 #include "SystemSourceModel.h"
 #include "SystemLibraryModel.h"
 #include "SystemFilterProxyModel.h"
@@ -505,7 +504,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 					}
 					else if (controlType == EAssetType::Preload)
 					{
-						if (pControl->GetScope() == GlobalScopeId && !pControl->IsAutoLoad())
+						if (pControl->GetScope() == g_globalScopeId && !pControl->IsAutoLoad())
 						{
 							QAction* const pLoadAction = new QAction(tr("Load Global Preload Request"), pContextMenu);
 							QAction* const pUnloadAction = new QAction(tr("Unload Global Preload Request"), pContextMenu);
@@ -534,7 +533,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 
 				for (auto const pControl : controls)
 				{
-					if ((pControl->GetType() == EAssetType::Preload) && (pControl->GetScope() == GlobalScopeId) && !pControl->IsAutoLoad())
+					if ((pControl->GetType() == EAssetType::Preload) && (pControl->GetScope() == g_globalScopeId) && !pControl->IsAutoLoad())
 					{
 						hasOnlyGlobalPreloads = true;
 					}

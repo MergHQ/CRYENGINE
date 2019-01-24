@@ -10,7 +10,6 @@
 #include "CVars.h"
 #include "IImpl.h"
 #include "Common/IObject.h"
-#include "Common/Logger.h"
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	#include "Debug.h"
@@ -51,7 +50,7 @@ void CObjectManager::OnAfterImplChanged()
 	{
 		CRY_ASSERT(pObject->GetImplDataPtr() == nullptr);
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		pObject->SetImplDataPtr(g_pIImpl->ConstructObject(pObject->GetTransformation(), pObject->m_name.c_str()));
+		pObject->SetImplDataPtr(g_pIImpl->ConstructObject(pObject->GetTransformation(), pObject->GetName()));
 #else
 		pObject->SetImplDataPtr(g_pIImpl->ConstructObject(pObject->GetTransformation()));
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
@@ -220,7 +219,7 @@ void DrawObjectDebugData(
 
 	if (g_cvars.m_debugDistance <= 0.0f || (g_cvars.m_debugDistance > 0.0f && distance < g_cvars.m_debugDistance))
 	{
-		char const* const szObjectName = object.m_name.c_str();
+		char const* const szObjectName = object.GetName();
 		CryFixedStringT<MaxControlNameLength> lowerCaseObjectName(szObjectName);
 		lowerCaseObjectName.MakeLower();
 		bool const hasActiveData = object.IsActive();
@@ -251,7 +250,7 @@ void CObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, fl
 
 	posY += Debug::s_listHeaderLineHeight;
 
-	DrawObjectDebugData(auxGeom, posX, posY, *g_pObject, lowerCaseSearchString, numObjects);
+	DrawObjectDebugData(auxGeom, posX, posY, g_object, lowerCaseSearchString, numObjects);
 	DrawObjectDebugData(auxGeom, posX, posY, g_previewObject, lowerCaseSearchString, numObjects);
 
 	for (auto const pObject : m_constructedObjects)

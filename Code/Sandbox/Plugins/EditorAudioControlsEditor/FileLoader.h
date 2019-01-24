@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Common/SharedData.h"
+#include "Common.h"
 
 class XmlNodeRef;
 

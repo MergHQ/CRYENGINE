@@ -19,11 +19,11 @@ public:
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	CMuteAllTrigger()
-		: Control(MuteAllTriggerId, EDataScope::Global, s_szMuteAllTriggerName)
+		: Control(g_muteAllTriggerId, EDataScope::Global, g_szMuteAllTriggerName)
 	{}
 #else
 	CMuteAllTrigger()
-		: Control(MuteAllTriggerId, EDataScope::Global)
+		: Control(g_muteAllTriggerId, EDataScope::Global)
 	{}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 

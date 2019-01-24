@@ -37,7 +37,7 @@ void CParameter::Set(CObject const& object, float const value) const
 	// Log the "no-connections" case only on user generated controls.
 	if (m_connections.empty())
 	{
-		Cry::Audio::Log(ELogType::Warning, R"(Parameter "%s" set on object "%s" without connections)", GetName(), object.m_name.c_str());
+		Cry::Audio::Log(ELogType::Warning, R"(Parameter "%s" set on object "%s" without connections)", GetName(), object.GetName());
 	}
 
 	const_cast<CObject&>(object).StoreParameterValue(GetId(), value);
@@ -47,8 +47,6 @@ void CParameter::Set(CObject const& object, float const value) const
 //////////////////////////////////////////////////////////////////////////
 void CParameter::SetGlobal(float const value) const
 {
-	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during %s", __FUNCTION__);
-
 	for (auto const pConnection : m_connections)
 	{
 		pConnection->SetGlobally(value);

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Common/SharedData.h"
+#include "Common.h"
 
 #include <CryString/CryString.h>
 #include <CrySerialization/Forward.h>

@@ -2,9 +2,12 @@
 
 #include "stdafx.h"
 #include "EventListenerManager.h"
-#include "Common/Logger.h"
 #include <CryCore/StlUtils.h>
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler.h>
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#include "Common/Logger.h"
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 namespace CryAudio
 {

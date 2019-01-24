@@ -7,12 +7,12 @@
 
 namespace CryAudio
 {
-static constexpr ControlId LoseFocusTriggerId = StringToId(s_szLoseFocusTriggerName);
-static constexpr ControlId GetFocusTriggerId = StringToId(s_szGetFocusTriggerName);
-static constexpr ControlId MuteAllTriggerId = StringToId(s_szMuteAllTriggerName);
-static constexpr ControlId UnmuteAllTriggerId = StringToId(s_szUnmuteAllTriggerName);
-static constexpr ControlId PauseAllTriggerId = StringToId(s_szPauseAllTriggerName);
-static constexpr ControlId ResumeAllTriggerId = StringToId(s_szResumeAllTriggerName);
+constexpr ControlId g_loseFocusTriggerId = StringToId(g_szLoseFocusTriggerName);
+constexpr ControlId g_getFocusTriggerId = StringToId(g_szGetFocusTriggerName);
+constexpr ControlId g_muteAllTriggerId = StringToId(g_szMuteAllTriggerName);
+constexpr ControlId g_unmuteAllTriggerId = StringToId(g_szUnmuteAllTriggerName);
+constexpr ControlId g_pauseAllTriggerId = StringToId(g_szPauseAllTriggerName);
+constexpr ControlId g_resumeAllTriggerId = StringToId(g_szResumeAllTriggerName);
 
 namespace Impl
 {
@@ -75,7 +75,7 @@ extern PreloadRequestLookup g_preloadRequests;
 extern EnvironmentLookup g_environments;
 extern SettingLookup g_settings;
 extern TriggerInstanceIdLookup g_triggerInstanceIdToObject;
-extern CObject* g_pObject;
+extern CObject g_object;
 extern CLoseFocusTrigger g_loseFocusTrigger;
 extern CGetFocusTrigger g_getFocusTrigger;
 extern CMuteAllTrigger g_muteAllTrigger;
@@ -117,8 +117,8 @@ static void IncrementTriggerInstanceIdCounter()
 }
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-static constexpr char const* s_szPreviewTriggerName = "preview_trigger";
-static constexpr ControlId PreviewTriggerId = StringToId(s_szPreviewTriggerName);
+constexpr char const* g_szPreviewTriggerName = "preview_trigger";
+constexpr ControlId g_previewTriggerId = StringToId(g_szPreviewTriggerName);
 
 class CPreviewTrigger;
 extern CPreviewTrigger g_previewTrigger;

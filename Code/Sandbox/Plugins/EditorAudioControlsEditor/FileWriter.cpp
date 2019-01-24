@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "FileWriter.h"
 
-#include "Common.h"
 #include "AudioControlsEditorPlugin.h"
 #include "Control.h"
 #include "LibraryScope.h"
@@ -16,7 +15,7 @@
 
 namespace ACE
 {
-static constexpr uint32 g_currentFileVersion = 3;
+constexpr uint32 g_currentFileVersion = 3;
 
 using LibraryStorage = std::map<Scope, SLibraryScope>;
 
@@ -28,25 +27,25 @@ char const* TypeToTag(EAssetType const assetType)
 	switch (assetType)
 	{
 	case EAssetType::Parameter:
-		szTag = CryAudio::s_szParameterTag;
+		szTag = CryAudio::g_szParameterTag;
 		break;
 	case EAssetType::Trigger:
-		szTag = CryAudio::s_szTriggerTag;
+		szTag = CryAudio::g_szTriggerTag;
 		break;
 	case EAssetType::Switch:
-		szTag = CryAudio::s_szSwitchTag;
+		szTag = CryAudio::g_szSwitchTag;
 		break;
 	case EAssetType::State:
-		szTag = CryAudio::s_szStateTag;
+		szTag = CryAudio::g_szStateTag;
 		break;
 	case EAssetType::Preload:
-		szTag = CryAudio::s_szPreloadRequestTag;
+		szTag = CryAudio::g_szPreloadRequestTag;
 		break;
 	case EAssetType::Environment:
-		szTag = CryAudio::s_szEnvironmentTag;
+		szTag = CryAudio::g_szEnvironmentTag;
 		break;
 	case EAssetType::Setting:
-		szTag = CryAudio::s_szSettingTag;
+		szTag = CryAudio::g_szSettingTag;
 		break;
 	default:
 		szTag = nullptr;
@@ -185,7 +184,7 @@ void WriteControlToXML(XmlNodeRef const pNode, CControl* const pControl, string 
 
 	if (!path.empty())
 	{
-		pChildNode->setAttr(s_szPathAttribute, path);
+		pChildNode->setAttr(g_szPathAttribute, path);
 	}
 
 	if (type == EAssetType::Switch)
@@ -206,14 +205,14 @@ void WriteControlToXML(XmlNodeRef const pNode, CControl* const pControl, string 
 	{
 		if (pControl->IsAutoLoad())
 		{
-			pChildNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::s_szDataLoadType);
+			pChildNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::g_szDataLoadType);
 		}
 
 		size_t const numPlatforms = g_platforms.size();
 
 		for (size_t i = 0; i < numPlatforms; ++i)
 		{
-			XmlNodeRef const pFileNode = pChildNode->createNode(CryAudio::s_szPlatformTag);
+			XmlNodeRef const pFileNode = pChildNode->createNode(CryAudio::g_szPlatformTag);
 			pFileNode->setAttr(CryAudio::s_szNameAttribute, g_platforms[i]);
 			WriteConnectionsToXML(pFileNode, pControl, libScope, i);
 
@@ -272,7 +271,7 @@ void WriteLibraryEditorData(CAsset const& library, XmlNodeRef const pParentNode)
 
 	if (!description.IsEmpty() && (library.GetFlags() & EAssetFlags::IsDefaultControl) == 0)
 	{
-		pParentNode->setAttr(s_szDescriptionAttribute, description);
+		pParentNode->setAttr(g_szDescriptionAttribute, description);
 	}
 }
 
@@ -287,7 +286,7 @@ void WriteFolderEditorData(CAsset const& library, XmlNodeRef const pParentNode)
 
 		if (pAsset->GetType() == EAssetType::Folder)
 		{
-			XmlNodeRef const pFolderNode = pParentNode->createNode(s_szFolderTag);
+			XmlNodeRef const pFolderNode = pParentNode->createNode(g_szFolderTag);
 
 			if (pFolderNode != nullptr)
 			{
@@ -296,7 +295,7 @@ void WriteFolderEditorData(CAsset const& library, XmlNodeRef const pParentNode)
 
 				if (!description.IsEmpty() && ((pAsset->GetFlags() & EAssetFlags::IsDefaultControl) == 0))
 				{
-					pFolderNode->setAttr(s_szDescriptionAttribute, description);
+					pFolderNode->setAttr(g_szDescriptionAttribute, description);
 				}
 
 				WriteFolderEditorData(*pAsset, pFolderNode);
@@ -328,7 +327,7 @@ void WriteControlsEditorData(CAsset const& parentAsset, XmlNodeRef const pParent
 				if (!description.IsEmpty() && ((asset.GetFlags() & EAssetFlags::IsDefaultControl) == 0))
 				{
 					pControlNode->setAttr(CryAudio::s_szNameAttribute, asset.GetName());
-					pControlNode->setAttr(s_szDescriptionAttribute, description);
+					pControlNode->setAttr(g_szDescriptionAttribute, description);
 					pParentNode->addChild(pControlNode);
 				}
 			}
@@ -439,7 +438,7 @@ void CFileWriter::WriteLibrary(CLibrary& library)
 		// If empty, force it to write an empty library at the root
 		if (libraryXmlNodes.empty())
 		{
-			libraryXmlNodes[GlobalScopeId].isDirty = true;
+			libraryXmlNodes[g_globalScopeId].isDirty = true;
 		}
 
 		for (auto const& libraryPair : libraryXmlNodes)
@@ -447,7 +446,7 @@ void CFileWriter::WriteLibrary(CLibrary& library)
 			string libraryPath = g_assetsManager.GetConfigFolderPath();
 			Scope const scope = libraryPair.first;
 
-			if (scope == GlobalScopeId)
+			if (scope == g_globalScopeId)
 			{
 				// no scope, file at the root level
 				libraryPath += library.GetName();
@@ -455,7 +454,7 @@ void CFileWriter::WriteLibrary(CLibrary& library)
 			else
 			{
 				// with scope, inside level folder
-				libraryPath += CryAudio::s_szLevelsFolderName;
+				libraryPath += CryAudio::g_szLevelsFolderName;
 				libraryPath += "/" + g_assetsManager.GetScopeInfo(scope).name + "/" + library.GetName();
 			}
 
@@ -465,9 +464,9 @@ void CFileWriter::WriteLibrary(CLibrary& library)
 
 			if (libScope.isDirty)
 			{
-				XmlNodeRef pFileNode = GetISystem()->CreateXmlNode(CryAudio::s_szRootNodeTag);
+				XmlNodeRef pFileNode = GetISystem()->CreateXmlNode(CryAudio::g_szRootNodeTag);
 				pFileNode->setAttr(CryAudio::s_szNameAttribute, library.GetName());
-				pFileNode->setAttr(CryAudio::s_szVersionAttribute, g_currentFileVersion);
+				pFileNode->setAttr(CryAudio::g_szVersionAttribute, g_currentFileVersion);
 
 				// Don't write control counts for default library, because default controls are not pooled.
 				// But connections of default controls need to get written.
@@ -475,46 +474,46 @@ void CFileWriter::WriteLibrary(CLibrary& library)
 				{
 					if (libScope.numTriggers > 0)
 					{
-						pFileNode->setAttr(CryAudio::s_szNumTriggersAttribute, libScope.numTriggers);
+						pFileNode->setAttr(CryAudio::g_szNumTriggersAttribute, libScope.numTriggers);
 					}
 
 					if (libScope.numParameters > 0)
 					{
-						pFileNode->setAttr(CryAudio::s_szNumParametersAttribute, libScope.numParameters);
+						pFileNode->setAttr(CryAudio::g_szNumParametersAttribute, libScope.numParameters);
 					}
 
 					if (libScope.numSwitches > 0)
 					{
-						pFileNode->setAttr(CryAudio::s_szNumSwitchesAttribute, libScope.numSwitches);
+						pFileNode->setAttr(CryAudio::g_szNumSwitchesAttribute, libScope.numSwitches);
 					}
 
 					if (libScope.numStates > 0)
 					{
-						pFileNode->setAttr(CryAudio::s_szNumStatesAttribute, libScope.numStates);
+						pFileNode->setAttr(CryAudio::g_szNumStatesAttribute, libScope.numStates);
 					}
 
 					if (libScope.numEnvironments > 0)
 					{
-						pFileNode->setAttr(CryAudio::s_szNumEnvironmentsAttribute, libScope.numEnvironments);
+						pFileNode->setAttr(CryAudio::g_szNumEnvironmentsAttribute, libScope.numEnvironments);
 					}
 
 					if (libScope.numPreloads > 0)
 					{
-						pFileNode->setAttr(CryAudio::s_szNumPreloadsAttribute, libScope.numPreloads);
+						pFileNode->setAttr(CryAudio::g_szNumPreloadsAttribute, libScope.numPreloads);
 					}
 
 					if (libScope.numSettings > 0)
 					{
-						pFileNode->setAttr(CryAudio::s_szNumSettingsAttribute, libScope.numSettings);
+						pFileNode->setAttr(CryAudio::g_szNumSettingsAttribute, libScope.numSettings);
 					}
 				}
 
 				if (libScope.numFiles > 0)
 				{
-					pFileNode->setAttr(CryAudio::s_szNumFilesAttribute, libScope.numFiles);
+					pFileNode->setAttr(CryAudio::g_szNumFilesAttribute, libScope.numFiles);
 				}
 
-				XmlNodeRef const pImplDataNode = g_pIImpl->SetDataNode(CryAudio::s_szImplDataNodeTag);
+				XmlNodeRef const pImplDataNode = g_pIImpl->SetDataNode(CryAudio::g_szImplDataNodeTag);
 
 				if (pImplDataNode != nullptr)
 				{
@@ -537,11 +536,11 @@ void CFileWriter::WriteLibrary(CLibrary& library)
 				}
 
 				// Editor data
-				XmlNodeRef const pEditorData = pFileNode->createNode(CryAudio::s_szEditorDataTag);
+				XmlNodeRef const pEditorData = pFileNode->createNode(CryAudio::g_szEditorDataTag);
 
 				if (pEditorData != nullptr)
 				{
-					XmlNodeRef const pLibraryNode = pEditorData->createNode(s_szLibraryNodeTag);
+					XmlNodeRef const pLibraryNode = pEditorData->createNode(g_szLibraryNodeTag);
 
 					if (pLibraryNode != nullptr)
 					{
@@ -549,7 +548,7 @@ void CFileWriter::WriteLibrary(CLibrary& library)
 						pEditorData->addChild(pLibraryNode);
 					}
 
-					XmlNodeRef const pFoldersNode = pEditorData->createNode(s_szFoldersNodeTag);
+					XmlNodeRef const pFoldersNode = pEditorData->createNode(g_szFoldersNodeTag);
 
 					if (pFoldersNode != nullptr)
 					{
@@ -557,7 +556,7 @@ void CFileWriter::WriteLibrary(CLibrary& library)
 						pEditorData->addChild(pFoldersNode);
 					}
 
-					XmlNodeRef const pControlsNode = pEditorData->createNode(s_szControlsNodeTag);
+					XmlNodeRef const pControlsNode = pEditorData->createNode(g_szControlsNodeTag);
 
 					if (pControlsNode != nullptr)
 					{
@@ -600,7 +599,7 @@ void CFileWriter::WriteLibrary(CLibrary& library)
 		{
 			string libraryPath = g_assetsManager.GetConfigFolderPath();
 
-			if (scope == GlobalScopeId)
+			if (scope == g_globalScopeId)
 			{
 				// no scope, file at the root level
 				libraryPath += library.GetName();
@@ -608,7 +607,7 @@ void CFileWriter::WriteLibrary(CLibrary& library)
 			else
 			{
 				// with scope, inside level folder
-				libraryPath += CryAudio::s_szLevelsFolderName;
+				libraryPath += CryAudio::g_szLevelsFolderName;
 				libraryPath += "/" + g_assetsManager.GetScopeInfo(scope).name + "/" + library.GetName();
 			}
 

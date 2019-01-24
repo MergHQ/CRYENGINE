@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "PropertiesWidget.h"
 
-#include "Common.h"
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
 #include "ConnectionsWidget.h"

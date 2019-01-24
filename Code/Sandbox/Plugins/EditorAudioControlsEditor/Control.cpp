@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "Control.h"
 
-#include "Common.h"
 #include "AudioControlsEditorPlugin.h"
 #include "AssetUtils.h"
 #include "Common/IConnection.h"

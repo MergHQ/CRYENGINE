@@ -40,7 +40,7 @@ enum class EDrawFilter : EnumFlagsType
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EDrawFilter);
 
-static constexpr EDrawFilter objectMask =
+constexpr EDrawFilter objectMask =
 	EDrawFilter::Spheres |
 	EDrawFilter::ObjectLabel |
 	EDrawFilter::ObjectTriggers |
@@ -56,16 +56,16 @@ static constexpr EDrawFilter objectMask =
 	EDrawFilter::ObjectImplInfo;
 
 // Debug draw style for objects.
-static constexpr float s_objectRadiusPositionSphere = 0.15f;
-static constexpr float s_objectColorSwitchGreenMin = 0.3f;
-static constexpr float s_objectColorSwitchGreenMax = 1.0f;
-static constexpr float s_objectColorSwitchUpdateValue = (s_objectColorSwitchGreenMax - s_objectColorSwitchGreenMin) / 100.0f;
+constexpr float g_objectRadiusPositionSphere = 0.15f;
+constexpr float g_objectColorSwitchGreenMin = 0.3f;
+constexpr float g_objectColorSwitchGreenMax = 1.0f;
+constexpr float g_objectColorSwitchUpdateValue = (g_objectColorSwitchGreenMax - g_objectColorSwitchGreenMin) / 100.0f;
 static ColorF const s_objectColorPositionSphere = Col_Red;
 static ColorF const s_objectColorOcclusionOffsetSphere = { Col_LimeGreen, 0.4f };
-static constexpr char const* s_szOcclusionTypes[] = { "None", "Ignore", "Adaptive", "Low", "Medium", "High" };
+constexpr char const* g_szOcclusionTypes[] = { "None", "Ignore", "Adaptive", "Low", "Medium", "High" };
 
 // Debug draw style for rays.
-static constexpr float s_rayRadiusCollisionSphere = 0.01f;
+constexpr float g_rayRadiusCollisionSphere = 0.01f;
 static ColorF const s_rayColorObstructed = Col_Red;
 static ColorF const s_rayColorFree = Col_LimeGreen;
 static ColorF const s_rayColorCollisionSphere = Col_Orange;

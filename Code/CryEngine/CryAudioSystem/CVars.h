@@ -39,6 +39,7 @@ public:
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	float  m_debugDistance = 0.0f;
+	int    m_loggingOptions = 0;
 	int    m_drawDebug = 0;
 	int    m_fileCacheManagerDebugFilter = 0;
 	int    m_hideInactiveObjects = 0;

@@ -29,8 +29,10 @@ string const g_returnsPath = "/metadata/return/";
 string const g_vcasPath = "/metadata/vca/";
 string const g_bankPath = "/metadata/bank/";
 
+using ItemNames = std::vector<string>;
+
 //////////////////////////////////////////////////////////////////////////
-void AddNonStreamsBank(AssetNames& banks, string const& fileName)
+void AddNonStreamsBank(ItemNames& banks, string const& fileName)
 {
 	size_t const pos = fileName.rfind(".streams.bank");
 
@@ -105,7 +107,7 @@ void CProjectLoader::LoadBanks(string const& folderPath, bool const isLocalized,
 		// We have to exclude the Master Bank, for this we look
 		// for the file that ends with "strings.bank" as it is guaranteed
 		// to have the same name as the Master Bank and there should be unique
-		AssetNames banks;
+		ItemNames banks;
 		string masterBankName = "";
 
 		do
@@ -356,7 +358,7 @@ void CProjectLoader::LoadContainer(XmlNodeRef const pNode, EItemType const type,
 void CProjectLoader::LoadSnapshotGroup(XmlNodeRef const pNode, CItem& parent, EPakStatus const pakStatus)
 {
 	string name = "";
-	AssetNames snapshotsItems;
+	ItemNames snapshotsItems;
 	int const numChildren = pNode->getChildCount();
 
 	for (int i = 0; i < numChildren; ++i)
