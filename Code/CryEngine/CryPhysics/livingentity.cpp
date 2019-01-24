@@ -330,8 +330,9 @@ int CLivingEntity::SetParams(pe_params *_params, int bThreadSafe)
 				m_timeRotChanged = m_pWorld->m_timePhysics;
 			}
 
-			//if ((m_qrot.v^prevq.v).len2() > m_qrot.v.len2()*prevq.v.len2()*sqr(0.001f)) {
-			if (fabs_tpl(m_qrot.v.x)+fabs_tpl(m_qrot.v.y)+fabs_tpl(prevq.v.x)+fabs_tpl(prevq.v.y)>0) {
+			int auxFlags=0;
+			for(int i=1;i<m_nParts;auxFlags|=m_parts[i++].flagsCollider);
+			if (fabs_tpl(m_qrot.v.x)+fabs_tpl(m_qrot.v.y)+fabs_tpl(prevq.v.x)+fabs_tpl(prevq.v.y)+auxFlags>0) {
 				Vec3 dirUnproj(0,0,1);
 				if (((pe_params_pos*)_params)->bRecalcBounds && m_bActive && UnprojectionNeeded(m_pos,m_qrot,m_hCyl,m_hPivot,m_size,m_bUseCapsule,dirUnproj)>0) {
 					pe_params_pos pp; pp.q = prevq;
