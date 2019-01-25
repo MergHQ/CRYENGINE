@@ -10,7 +10,9 @@
 #pragma warning (disable : 4390 4996)
 #define ILINE inline
 #define assert(X)
-#define CRY_ASSERT_MESSAGE(X,M)
+#define CRY_ASSERT_TRACE(condition, parenthese_message) ((void)0)
+#define CRY_ASSERT_MESSAGE(condition, ...)              ((void)0)
+#define CRY_ASSERT(condition)                           ((void)0)
 #define CRY_ASSERT_H_INCLUDED
 #define AUTO_STRUCT_INFO
 #define AUTO_STRUCT_INFO_LOCAL
