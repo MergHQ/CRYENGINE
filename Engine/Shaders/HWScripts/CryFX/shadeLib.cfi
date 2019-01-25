@@ -922,7 +922,6 @@ void GetMicroDetailParams(out int mdQuality, out half mdDisplacement, out half m
 #if %OFFSET_BUMP_MAPPING || %PARALLAX_OCCLUSION_MAPPING || %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
 	int shQuality = GetShaderQuality();
 	#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
-		//if (shQuality > QUALITY_HIGH) // explicity ensured through ALLOW_SILHOUETTE_POM flag
 		{
 			mdQuality = MICRO_DETAIL_QUALITY_SPM;
 			mdDisplacement = SilPomDisplacement;

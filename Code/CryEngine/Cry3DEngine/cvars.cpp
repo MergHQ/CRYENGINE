@@ -777,7 +777,7 @@ void CVars::Init()
 	              "Controls objects tree balancing");
 	REGISTER_CVAR(e_ObjectsTreeNodeSizeRatio, 1.f / 16.f, VF_CHEAT,
 	              "Controls objects tree balancing");
-	REGISTER_CVAR(e_ExecuteRenderAsJobMask, BIT(eERType_Brush) | BIT(eERType_Vegetation) | BIT(eERType_Road) | BIT(eERType_WaterVolume), VF_NULL,
+	REGISTER_CVAR(e_ExecuteRenderAsJobMask, BIT(eERType_Brush) | BIT(eERType_MovableBrush) | BIT(eERType_Vegetation) | BIT(eERType_Road) | BIT(eERType_Decal) | BIT(eERType_WaterVolume), VF_NULL,
 	              "Each bit specifies object type to render it in jobs");
 	REGISTER_CVAR(e_ObjectsTreeLevelsDebug, 0, VF_CHEAT,
 	              "If non 0 - render only octree nodes of specified size");

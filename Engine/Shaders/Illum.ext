@@ -158,15 +158,6 @@ Property
 
 Property
 {
-  Name = %ALLOW_SILHOUETTE_POM
-  Mask = 0x40000
-  DependencySet = $HW_SilhouettePom
-  DependencyReset = $HW_SilhouettePom
-  Hidden
-}
-
-Property
-{
   Name = %SUBSURFACE_SCATTERING
   Mask = 0x80000
   DependencySet = $UserEnabled

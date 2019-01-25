@@ -169,8 +169,6 @@ SShaderGenBit* CShaderMan::mfCompileShaderGenProperty(char* scr)
 
 				if (!stricmp(data, "$HW_WaterTessellation"))
 					shgm->m_nDependencySet |= SHGD_HW_WATER_TESSELLATION;
-				else if (!stricmp(data, "$HW_SilhouettePom"))
-					shgm->m_nDependencySet |= SHGD_HW_SILHOUETTE_POM;
 				else if (!stricmp(data, "$UserEnabled"))
 					shgm->m_nDependencySet |= SHGD_USER_ENABLED;
 				else if (!stricmp(data, "$HW_DURANGO"))
@@ -255,8 +253,6 @@ SShaderGenBit* CShaderMan::mfCompileShaderGenProperty(char* scr)
 
 				if (!stricmp(data, "$HW_WaterTessellation"))
 					shgm->m_nDependencyReset |= SHGD_HW_WATER_TESSELLATION;
-				else if (!stricmp(data, "$HW_SilhouettePom"))
-					shgm->m_nDependencyReset |= SHGD_HW_SILHOUETTE_POM;
 				else if (!stricmp(data, "$UserEnabled"))
 					shgm->m_nDependencyReset |= SHGD_USER_ENABLED;
 				else if (!stricmp(data, "$HW_DX11"))

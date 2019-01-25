@@ -30,11 +30,12 @@ enum class EObjectFlags : EnumFlagsType
 {
 	None                  = 0,
 	InUse                 = BIT(0),
-	Virtual               = BIT(1),
+	Active                = BIT(1),
+	Virtual               = BIT(2),
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	CanRunOcclusion       = BIT(2),
-	TrackAbsoluteVelocity = BIT(3),
-	TrackRelativeVelocity = BIT(4),
+	CanRunOcclusion       = BIT(3),
+	TrackAbsoluteVelocity = BIT(4),
+	TrackRelativeVelocity = BIT(5),
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EObjectFlags);
@@ -130,6 +131,7 @@ public:
 
 	void           Init(Impl::IObject* const pImplData, EntityId const entityId);
 	void           Release();
+	void           Destruct();
 
 	// Callbacks
 	void                           ReportFinishedStandaloneFile(CStandaloneFile* const pStandaloneFile);
@@ -149,7 +151,8 @@ public:
 
 	CTransformation const&         GetTransformation() const                      { return m_transformation; }
 
-	bool                           IsActive() const;
+	bool                           IsPlaying() const;
+	bool                           HasPendingCallbacks() const;
 
 	// Flags / Properties
 	EObjectFlags GetFlags() const { return m_flags; }
@@ -157,7 +160,6 @@ public:
 	void         RemoveFlag(EObjectFlags const flag);
 
 	void         Update(float const deltaTime);
-	bool         CanBeReleased() const;
 
 	void         IncrementSyncCallbackCounter() { CryInterlockedIncrement(&m_numPendingSyncCallbacks); }
 	void         DecrementSyncCallbackCounter() { CRY_ASSERT(m_numPendingSyncCallbacks >= 1); CryInterlockedDecrement(&m_numPendingSyncCallbacks); }

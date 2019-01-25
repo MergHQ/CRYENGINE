@@ -277,36 +277,32 @@ void C3DEngine::AddDynamicLightSource(const SRenderLight& LSource, ILightSource*
 
 	for (int i = 0; i < m_lstDynLights.Count(); i++)
 	{
-		if (m_lstDynLights[i]->m_pOwner == pEnt)
+		SRenderLight* pRenderLight = m_lstDynLights[i];
+		if (pRenderLight->m_pOwner == pEnt)
 		{
-			// copy lsource (keep old CRenderObject)
-			CRenderObject* pObj[MAX_RECURSION_LEVELS];
-			memcpy(&pObj[0], &(m_lstDynLights[i]->m_pObject[0]), sizeof(pObj));
-			*m_lstDynLights[i] = LSource;
+			// Keep the referenced objects
+			pRenderLight->CopyFrom(LSource, false);
 
 			//reset DLF_CASTSHADOW_MAPS
 			if (!passInfo.RenderShadows())
-				m_lstDynLights[i]->m_Flags &= ~DLF_CASTSHADOW_MAPS;
-
-			memcpy(&m_lstDynLights[i]->m_pObject[0], &pObj[0], sizeof(pObj));
+				pRenderLight->m_Flags &= ~DLF_CASTSHADOW_MAPS;
 
 			// !HACK: Needs to decrement reference counter of shader because m_lstDynLights never release light sources
-			if (LSource.m_Shader.m_pShader)
-				LSource.m_Shader.m_pShader->Release();
-
-			m_lstDynLights[i]->m_pOwner = pEnt;
+			if (pRenderLight->m_Shader.m_pShader)
+				pRenderLight->m_Shader.m_pShader->Release();
 
 			// set base params
-			//m_lstDynLights[i]->m_BaseOrigin = m_lstDynLights[i]->m_Origin;
+			//pRenderLight->m_BaseOrigin = pRenderLight->m_Origin;
 
 			ColorF cNewColor;
-			IF_LIKELY ((m_lstDynLights[i]->m_Flags & DLF_DEFERRED_CUBEMAPS) == 0)
-				cNewColor = ColorF(LSource.m_Color.r * fFadeout, LSource.m_Color.g * fFadeout, LSource.m_Color.b * fFadeout, LSource.m_Color.a);
+			IF_LIKELY ((pRenderLight->m_Flags & DLF_DEFERRED_CUBEMAPS) == 0)
+				cNewColor = ColorF(pRenderLight->m_Color.r * fFadeout, pRenderLight->m_Color.g * fFadeout, pRenderLight->m_Color.b * fFadeout, pRenderLight->m_Color.a);
 			else
-				cNewColor = ColorF(LSource.m_Color.r, LSource.m_Color.g, LSource.m_Color.b, clamp_tpl(fFadeout, 0.f, 1.f)); // use separate
-			m_lstDynLights[i]->SetLightColor(cNewColor);
+				cNewColor = ColorF(pRenderLight->m_Color.r, pRenderLight->m_Color.g, pRenderLight->m_Color.b, clamp_tpl(fFadeout, 0.f, 1.f)); // use separate
 
-			m_lstDynLights[i]->m_n3DEngineUpdateFrameID = passInfo.GetMainFrameID();
+			pRenderLight->m_pOwner = pEnt;
+			pRenderLight->SetLightColor(cNewColor);
+			pRenderLight->m_n3DEngineUpdateFrameID = passInfo.GetMainFrameID();
 
 			return;
 		}
@@ -316,18 +312,17 @@ void C3DEngine::AddDynamicLightSource(const SRenderLight& LSource, ILightSource*
 	// Add new lsource into list and set some parameters
 	////////////////////////////////////////////////////////////////////////////////////////////////
 
-	m_lstDynLights.Add(new SRenderLight);
-	*m_lstDynLights.Last() = LSource;
+	SRenderLight* pRenderLight = new SRenderLight(LSource);
 
 	// add ref to avoid shader deleting
-	if (m_lstDynLights.Last()->m_Shader.m_pShader)
-		m_lstDynLights.Last()->m_Shader.m_pShader->AddRef();
+	if (pRenderLight->m_Shader.m_pShader)
+		pRenderLight->m_Shader.m_pShader->AddRef();
 
-	m_lstDynLights.Last()->m_pOwner = pEnt;
+	pRenderLight->m_pOwner = pEnt;
+	pRenderLight->SetLightColor(ColorF(pRenderLight->m_Color.r * fFadeout, pRenderLight->m_Color.g * fFadeout, pRenderLight->m_Color.b * fFadeout, pRenderLight->m_Color.a));
+	pRenderLight->m_n3DEngineUpdateFrameID = passInfo.GetMainFrameID();
 
-	m_lstDynLights.Last()->SetLightColor(ColorF(LSource.m_Color.r * fFadeout, LSource.m_Color.g * fFadeout, LSource.m_Color.b * fFadeout, LSource.m_Color.a));
-
-	m_lstDynLights.Last()->m_n3DEngineUpdateFrameID = passInfo.GetMainFrameID();
+	m_lstDynLights.Add(pRenderLight);
 }
 
 void C3DEngine::PrepareLightSourcesForRendering_0(const SRenderingPassInfo& passInfo)

@@ -65,6 +65,7 @@ enum ERNListType
 	eRNListType_Brush,
 	eRNListType_Vegetation,
 	eRNListType_DecalsAndRoads,
+	eRNListType_Light,
 	eRNListType_ListsNum,
 
 	//! This should be the last member.
@@ -558,6 +559,8 @@ public:
 		case eERType_Decal:
 		case eERType_Road:
 			return eRNListType_DecalsAndRoads;
+		case eERType_Light:
+			return eRNListType_Light;
 		default:
 			return eRNListType_Unknown;
 		}
