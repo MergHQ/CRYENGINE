@@ -4,12 +4,9 @@
 #include "Object.h"
 #include "BaseStandaloneFile.h"
 #include "CVars.h"
-#include "Environment.h"
 #include "Event.h"
+#include "EventInstance.h"
 #include "Listener.h"
-#include "Trigger.h"
-
-#include <Logger.h>
 
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	#include <DebugStyle.h>
@@ -88,9 +85,9 @@ void CObject::SetTransformation(CTransformation const& transformation)
 //////////////////////////////////////////////////////////////////////////
 void CObject::SetOcclusion(float const occlusion)
 {
-	for (auto const pEvent : m_events)
+	for (auto const pEventInstance : m_eventInstances)
 	{
-		pEvent->SetOcclusion(occlusion);
+		pEventInstance->SetOcclusion(occlusion);
 	}
 
 	m_occlusion = occlusion;
@@ -156,9 +153,9 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 	{
 		bool isVirtual = true;
 
-		for (auto const pEvent : m_events)
+		for (auto const pEventInstance : m_eventInstances)
 		{
-			if (pEvent->GetState() != EEventState::Virtual)
+			if (pEventInstance->GetState() != EEventState::Virtual)
 			{
 				isVirtual = false;
 				break;
@@ -174,7 +171,7 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 				isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorParameter,
 				false,
 				"[Fmod] %s: %2.2f m/s\n",
-				s_szAbsoluteVelocityParameterName,
+				g_szAbsoluteVelocityParameterName,
 				m_absoluteVelocity);
 
 			posY += Debug::s_objectLineHeight;
@@ -198,9 +195,9 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 //////////////////////////////////////////////////////////////////////////
 void CObject::Set3DAttributes()
 {
-	for (auto const pEvent : m_events)
+	for (auto const pEventInstance : m_eventInstances)
 	{
-		FMOD_RESULT const fmodResult = pEvent->GetInstance()->set3DAttributes(&m_attributes);
+		FMOD_RESULT const fmodResult = pEventInstance->GetFmodEventInstance()->set3DAttributes(&m_attributes);
 		ASSERT_FMOD_OK;
 	}
 
@@ -254,9 +251,9 @@ void CObject::UpdateVelocities(float const deltaTime)
 //////////////////////////////////////////////////////////////////////////
 void CObject::SetAbsoluteVelocity(float const velocity)
 {
-	for (auto const pEvent : m_events)
+	for (auto const pEventInstance : m_eventInstances)
 	{
-		pEvent->SetAbsoluteVelocity(velocity);
+		pEventInstance->SetAbsoluteVelocity(velocity);
 	}
 
 	m_absoluteVelocity = velocity;

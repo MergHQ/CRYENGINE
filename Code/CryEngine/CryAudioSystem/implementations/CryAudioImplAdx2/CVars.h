@@ -23,7 +23,7 @@ public:
 	void    RegisterVariables();
 	void    UnregisterVariables();
 
-	int   m_eventPoolSize = 0;
+	int   m_cuePoolSize = 0;
 	int   m_maxVirtualVoices = 0;
 	int   m_maxVoiceLimitGroups = 0;
 	int   m_maxCategories = 0;
@@ -46,6 +46,10 @@ public:
 	float m_velocityTrackingThreshold = 0.0f;
 	float m_positionUpdateThresholdMultiplier = 0.02f;
 	float m_maxVelocity = 100.0f;
+
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	int m_debugListFilter = 0;
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 };
 
 extern CCVars g_cvars;

@@ -284,6 +284,15 @@ void CCVars::RegisterVariables()
 	               "Specifies the size (in KiB) of the Wwise monitor queue memory pool.\n"
 	               "Usage: s_WwiseMonitorQueueMemoryPoolSize [0/...]\n"
 	               "Default PC: 64, XboxOne: 64, PS4: 64, Mac: 64, Linux: 64, iOS: 64, Android: 64\n");
+
+	REGISTER_CVAR2("s_WwiseDebugListFilter", &m_debugListFilter, 192, VF_CHEAT | VF_CHEAT_NOCHECK | VF_BITFIELD,
+	               "Defines which lists to show when list filtering is enabled in the debug draw of the audio system.\n"
+	               "Usage: s_WwiseDebugListFilter [0ab...] (flags can be combined)\n"
+	               "Default: ab\n"
+	               "0: Draw nothing.\n"
+	               "a: Draw event instances.\n"
+	               "b: Draw states values.\n"
+	               );
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 }
 
@@ -316,6 +325,7 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_WwiseEnableOutputCapture");
 		pConsole->UnregisterVariable("s_WwiseMonitorMemoryPoolSize");
 		pConsole->UnregisterVariable("s_WwiseMonitorQueueMemoryPoolSize");
+		pConsole->UnregisterVariable("s_WwiseDebugListFilter");
 #endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 	}
 }

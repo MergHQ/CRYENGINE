@@ -35,6 +35,9 @@ public:
 	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter) override;
 	// ~CryAudio::Impl::IObject
 
+	// CBaseObject
+	virtual void UpdateVelocityTracking() override;
+	// ~CBaseObject
 private:
 
 	void UpdateVelocities(float const deltaTime);
@@ -45,6 +48,11 @@ private:
 	Vec3            m_position;
 	Vec3            m_previousPosition;
 	Vec3            m_velocity;
+
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	float m_absoluteVelocity;
+	float m_absoluteVelocityNormalized;
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 };
 } // namespace Adx2
 } // namespace Impl

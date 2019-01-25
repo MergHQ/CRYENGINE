@@ -3,9 +3,12 @@
 #include "stdafx.h"
 #include "Common.h"
 #include "Object.h"
-#include "Trigger.h"
+#include "Event.h"
 #include <CryAudio/IAudioInterfacesCommonData.h>
-#include <Logger.h>
+
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+	#include <Logger.h>
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 
 #include <SDL_mixer.h>
 
@@ -22,9 +25,9 @@ CObject* g_pObject = nullptr;
 Objects g_objects;
 
 //////////////////////////////////////////////////////////////////////////
-int GetAbsoluteVolume(int const triggerVolume, float const multiplier)
+int GetAbsoluteVolume(int const eventVolume, float const multiplier)
 {
-	int absoluteVolume = static_cast<int>(static_cast<float>(triggerVolume) * multiplier);
+	int absoluteVolume = static_cast<int>(static_cast<float>(eventVolume) * multiplier);
 	absoluteVolume = crymath::clamp(absoluteVolume, 0, 128);
 	return absoluteVolume;
 }
@@ -66,22 +69,22 @@ void GetDistanceAngleToObject(
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SetChannelPosition(CTrigger const* const pTrigger, int const channelID, float const distance, float const angle)
+void SetChannelPosition(CEvent const* const pEvent, int const channelID, float const distance, float const angle)
 {
 	static const uint8 sdlMaxDistance = 255;
-	const float min = pTrigger->GetAttenuationMinDistance();
-	const float max = pTrigger->GetAttenuationMaxDistance();
+	float const min = pEvent->GetAttenuationMinDistance();
+	float const max = pEvent->GetAttenuationMaxDistance();
 
 	if (min <= max)
 	{
 		uint8 nDistance = 0;
 
-		if (max >= 0.0f && distance > min)
+		if ((max >= 0.0f) && (distance > min))
 		{
 			if (min != max)
 			{
-				const float finalDistance = distance - min;
-				const float range = max - min;
+				float const finalDistance = distance - min;
+				float const range = max - min;
 				nDistance = static_cast<uint8>((std::min((finalDistance / range), 1.0f) * sdlMaxDistance) + 0.5f);
 			}
 			else
@@ -92,7 +95,7 @@ void SetChannelPosition(CTrigger const* const pTrigger, int const channelID, flo
 		//Temp code, to be reviewed during the SetChannelPosition rewrite:
 		Mix_SetDistance(channelID, nDistance);
 
-		if (pTrigger->IsPanningEnabled())
+		if (pEvent->IsPanningEnabled())
 		{
 			//Temp code, to be reviewed during the SetChannelPosition rewrite:
 			float const absAngle = fabs(angle);
@@ -104,10 +107,12 @@ void SetChannelPosition(CTrigger const* const pTrigger, int const channelID, flo
 			               static_cast<uint8>(255.0f * rightVolume));
 		}
 	}
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
 	else
 	{
-		Cry::Audio::Log(ELogType::Error, "The minimum attenuation distance value is higher than the maximum");
+		Cry::Audio::Log(ELogType::Error, "The minimum attenuation distance (%f) is higher than the maximum (%f) of %s", min, max, pEvent->GetName());
 	}
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 }
 } // namespace SDL_mixer
 } // namespace Impl

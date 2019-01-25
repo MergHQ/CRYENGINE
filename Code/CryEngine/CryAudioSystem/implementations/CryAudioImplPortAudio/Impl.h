@@ -11,6 +11,8 @@ namespace Impl
 namespace PortAudio
 {
 class CEvent;
+class CEventInstance;
+class CObject;
 
 class CImpl final : public IImpl
 {
@@ -75,12 +77,16 @@ public:
 	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const override;
 	// ~CryAudio::Impl::IImpl
 
-	CEvent* ConstructEvent(TriggerInstanceId const triggerInstanceId);
-	void    DestructEvent(CEvent const* const pEvent);
+	CEventInstance* ConstructEventInstance(
+		TriggerInstanceId const triggerInstanceId,
+		uint32 const pathId,
+		CObject const* const pObject = nullptr,
+		CEvent const* const pEvent = nullptr);
+	void DestructEventInstance(CEventInstance const* const pEventInstance);
 
 private:
 
-	void UpdateLocalizedTriggers();
+	void UpdateLocalizedEvents();
 
 	string                             m_language;
 	CryFixedStringT<MaxFilePathLength> m_regularSoundBankFolder;

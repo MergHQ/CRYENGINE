@@ -76,8 +76,12 @@ public:
 	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const override;
 	// ~CryAudio::Impl::IImpl
 
-	CEvent* ConstructEvent(TriggerInstanceId const triggerInstanceId);
-	void    DestructEvent(CEvent const* const pEvent);
+	CEventInstance* ConstructEventInstance(
+		TriggerInstanceId const triggerInstanceId,
+		uint32 const eventId,
+		CEvent const* const pEvent,
+		CObject const* const pObject = nullptr);
+	void DestructEventInstance(CEventInstance const* const pEventInstance);
 
 private:
 

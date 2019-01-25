@@ -2,9 +2,11 @@
 
 #include "stdafx.h"
 #include "Event.h"
-#include "Trigger.h"
-
-#include <SDL_mixer.h>
+#include "Common.h"
+#include "Impl.h"
+#include "Object.h"
+#include "EventInstance.h"
+#include "SoundEngine.h"
 
 namespace CryAudio
 {
@@ -13,49 +15,26 @@ namespace Impl
 namespace SDL_mixer
 {
 //////////////////////////////////////////////////////////////////////////
-void CEvent::Stop()
+ERequestStatus CEvent::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
 {
-	// need to make a copy because the callback
-	// registered with Mix_ChannelFinished can edit the list
-	ChannelList const channels = m_channels;
-	int const fadeOutTime = m_pTrigger->GetFadeOutTime();
+	ERequestStatus status = ERequestStatus::Failure;
 
-	for (int const channel : channels)
+	if (pIObject != nullptr)
 	{
-		if (fadeOutTime == 0)
-		{
-			Mix_HaltChannel(channel);
-		}
-		else
-		{
-			Mix_FadeOutChannel(channel, fadeOutTime);
-		}
+		auto const pObject = static_cast<CObject*>(pIObject);
+		status = SoundEngine::ExecuteEvent(pObject, this, triggerInstanceId);
 	}
+
+	return status;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEvent::Pause()
+void CEvent::Stop(IObject* const pIObject)
 {
-	// need to make a copy because the callback
-	// registered with Mix_ChannelFinished can edit the list
-	ChannelList const channels = m_channels;
-
-	for (int const channel : channels)
+	if (pIObject != nullptr)
 	{
-		Mix_Pause(channel);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEvent::Resume()
-{
-	// need to make a copy because the callback
-	// registered with Mix_ChannelFinished can edit the list
-	ChannelList channels = m_channels;
-
-	for (int const channel : channels)
-	{
-		Mix_Resume(channel);
+		auto const pObject = static_cast<CObject*>(pIObject);
+		pObject->StopEvent(m_id);
 	}
 }
 } // namespace SDL_mixer

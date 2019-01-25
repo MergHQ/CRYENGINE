@@ -12,7 +12,9 @@ namespace Impl
 {
 namespace Wwise
 {
+class CBaseObject;
 class CEvent;
+class CEventInstance;
 
 class CImpl final : public IImpl
 {
@@ -76,11 +78,16 @@ public:
 	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const override;
 	// ~CryAudio::Impl::IImpl
 
-	CEvent* ConstructEvent(TriggerInstanceId const triggerInstanceId);
-	void    DestructEvent(CEvent const* const pEvent);
+	CEventInstance* ConstructEventInstance(
+		TriggerInstanceId const triggerInstanceId,
+		AkUniqueID const eventId,
+		float const maxAttenuation,
+		CBaseObject const* const pBaseObject = nullptr,
+		CEvent const* const pEvent = nullptr);
+	void DestructEventInstance(CEventInstance const* const pEventInstance);
 
-	void    SetPanningRule(int const panningRule);
-	bool    IsToBeReleased() const { return m_toBeReleased; }
+	void SetPanningRule(int const panningRule);
+	bool IsToBeReleased() const { return m_toBeReleased; }
 
 private:
 

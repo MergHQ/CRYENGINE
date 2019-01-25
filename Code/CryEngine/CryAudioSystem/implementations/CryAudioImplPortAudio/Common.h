@@ -10,12 +10,12 @@ namespace PortAudio
 {
 class CImpl;
 class CListener;
-class CEvent;
+class CEventInstance;
 
 extern CImpl* g_pImpl;
 extern CListener* g_pListener;
 
-using Events = std::vector<CEvent*>;
+using EventInstances = std::vector<CEventInstance*>;
 } // namespace PortAudio
 } // namespace Impl
 } // namespace CryAudio

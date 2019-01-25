@@ -4,7 +4,6 @@
 #include "Listener.h"
 #include "Common.h"
 
-#include <Logger.h>
 #include <AK/SoundEngine/Common/AkSoundEngine.h>
 
 namespace CryAudio
@@ -25,12 +24,7 @@ CListener::CListener(CTransformation const& transformation, AkGameObjectID const
 {
 	AkListenerPosition listenerPos;
 	FillAKListenerPosition(transformation, listenerPos);
-	AKRESULT const wwiseResult = AK::SoundEngine::SetPosition(id, listenerPos);
-
-	if (!IS_WWISE_OK(wwiseResult))
-	{
-		Cry::Audio::Log(ELogType::Warning, "Wwise - CListener constructor failed with AKRESULT: %d", wwiseResult);
-	}
+	AK::SoundEngine::SetPosition(id, listenerPos);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -96,12 +90,7 @@ void CListener::SetTransformation(CTransformation const& transformation)
 	}
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
-	AKRESULT const wwiseResult = AK::SoundEngine::SetPosition(m_id, listenerPos);
-
-	if (!IS_WWISE_OK(wwiseResult))
-	{
-		Cry::Audio::Log(ELogType::Warning, "Wwise - CListener::SetTransformation failed with AKRESULT: %d", wwiseResult);
-	}
+	AK::SoundEngine::SetPosition(m_id, listenerPos);
 }
 } // namespace Wwise
 } // namespace Impl

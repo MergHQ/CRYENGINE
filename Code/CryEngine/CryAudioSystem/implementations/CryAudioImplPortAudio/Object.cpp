@@ -3,9 +3,8 @@
 #include "stdafx.h"
 #include "Object.h"
 #include "Event.h"
+#include "EventInstance.h"
 #include "Impl.h"
-#include "Trigger.h"
-#include <Logger.h>
 
 namespace CryAudio
 {
@@ -16,48 +15,48 @@ namespace PortAudio
 //////////////////////////////////////////////////////////////////////////
 void CObject::StopEvent(uint32 const pathId)
 {
-	for (auto const pEvent : m_activeEvents)
+	for (auto const pEventInstance : m_eventInstances)
 	{
-		if (pEvent->pathId == pathId)
+		if (pEventInstance->GetPathId() == pathId)
 		{
-			pEvent->Stop();
+			pEventInstance->Stop();
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::RegisterEvent(CEvent* const pEvent)
+void CObject::RegisterEventInstance(CEventInstance* const pEventInstance)
 {
-	m_activeEvents.push_back(pEvent);
+	m_eventInstances.push_back(pEventInstance);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CObject::Update(float const deltaTime)
 {
-	auto iter(m_activeEvents.begin());
-	auto iterEnd(m_activeEvents.end());
+	auto iter(m_eventInstances.begin());
+	auto iterEnd(m_eventInstances.end());
 
 	while (iter != iterEnd)
 	{
-		auto const pEvent = *iter;
+		auto const pEventInstance = *iter;
 
-		if (pEvent->toBeRemoved)
+		if (pEventInstance->IsToBeRemoved())
 		{
-			gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pEvent->GetTriggerInstanceId());
-			g_pImpl->DestructEvent(pEvent);
+			gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pEventInstance->GetTriggerInstanceId());
+			g_pImpl->DestructEventInstance(pEventInstance);
 
 			if (iter != (iterEnd - 1))
 			{
-				(*iter) = m_activeEvents.back();
+				(*iter) = m_eventInstances.back();
 			}
 
-			m_activeEvents.pop_back();
-			iter = m_activeEvents.begin();
-			iterEnd = m_activeEvents.end();
+			m_eventInstances.pop_back();
+			iter = m_eventInstances.begin();
+			iterEnd = m_eventInstances.end();
 		}
 		else
 		{
-			pEvent->Update();
+			pEventInstance->Update();
 			++iter;
 		}
 	}
@@ -81,9 +80,9 @@ void CObject::SetOcclusionType(EOcclusionType const occlusionType)
 //////////////////////////////////////////////////////////////////////////
 void CObject::StopAllTriggers()
 {
-	for (auto const pEvent : m_activeEvents)
+	for (auto const pEventInstance : m_eventInstances)
 	{
-		pEvent->Stop();
+		pEventInstance->Stop();
 	}
 }
 

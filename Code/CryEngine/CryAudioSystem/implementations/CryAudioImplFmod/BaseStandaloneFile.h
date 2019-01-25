@@ -56,7 +56,7 @@ protected:
 
 	CryAudio::CStandaloneFile&         m_standaloneFile;
 	CryFixedStringT<MaxFilePathLength> m_fileName;
-	CBaseObject*                       m_pObject = nullptr;
+	CBaseObject*                       m_pBaseObject = nullptr;
 };
 } // namespace Fmod
 } // namespace Impl

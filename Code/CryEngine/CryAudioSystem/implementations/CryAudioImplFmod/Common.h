@@ -29,13 +29,13 @@ namespace Fmod
 {
 class CImpl;
 class CBaseObject;
-class CEvent;
-class CBaseParameter;
+class CEventInstance;
+class CParameter;
 class CBaseStandaloneFile;
-class CBaseSwitchState;
-class CEnvironment;
+class CParameterState;
+class CReturn;
 class CListener;
-class CTrigger;
+class CEvent;
 class CGlobalObject;
 
 extern CImpl* g_pImpl;
@@ -43,21 +43,22 @@ extern CGlobalObject* g_pObject;
 extern CListener* g_pListener;
 extern uint32 g_numObjectsWithDoppler;
 
-static constexpr char const* s_szOcclusionParameterName = "occlusion";
-static constexpr char const* s_szAbsoluteVelocityParameterName = "absolute_velocity";
+constexpr char const* g_szOcclusionParameterName = "occlusion";
+constexpr char const* g_szAbsoluteVelocityParameterName = "absolute_velocity";
 
 using Objects = std::vector<CBaseObject*>;
-using Events = std::vector<CEvent*>;
-using Parameters = std::map<CBaseParameter const* const, float>;
-using Switches = std::map<uint32 const, CBaseSwitchState const*>;
-using Environments = std::map<CEnvironment const* const, float>;
+using EventInstances = std::vector<CEventInstance*>;
+using Parameters = std::map<uint32, float>;
+using Returns = std::map<CReturn const*, float>;
 using StandaloneFiles = std::vector<CBaseStandaloneFile*>;
+using SnapshotEventInstances = std::map<uint32, FMOD::Studio::EventInstance*>;
 
 using ParameterIdToIndex = std::map<uint32, int>;
-using TriggerToParameterIndexes = std::map<CTrigger const* const, ParameterIdToIndex>;
+using EventToParameterIndexes = std::map<CEvent const* const, ParameterIdToIndex>;
 
 extern Objects g_constructedObjects;
-extern TriggerToParameterIndexes g_triggerToParameterIndexes;
+extern EventToParameterIndexes g_eventToParameterIndexes;
+extern SnapshotEventInstances g_activeSnapshots;
 
 ///////////////////////////////////////////////////////////////////////////
 inline void Fill3DAttributeTransformation(CTransformation const& transformation, FMOD_3D_ATTRIBUTES& attributes)
@@ -86,6 +87,30 @@ inline void Fill3DAttributeVelocity(Vec3 const& velocity, FMOD_3D_ATTRIBUTES& at
 	attributes.velocity.z = velocity.y;
 	attributes.velocity.y = velocity.z;
 }
-} // namespace Fmod
-} // namespace Impl
-} // namespace CryAudio
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+class CVca;
+
+using ActiveSnapshots = std::vector<CryFixedStringT<MaxControlNameLength>>;
+extern ActiveSnapshots g_activeSnapshotNames;
+
+using VcaValues = std::map<CryFixedStringT<MaxControlNameLength>, float>;
+extern VcaValues g_vcaValues;
+
+enum class EDebugListFilter : EnumFlagsType
+{
+	None           = 0,
+	EventInstances = BIT(6),  // a
+	Snapshots      = BIT(7),  // b
+	Vcas           = BIT(8),  // c
+};
+CRY_CREATE_ENUM_FLAG_OPERATORS(EDebugListFilter);
+
+constexpr EDebugListFilter g_debugListMask =
+	EDebugListFilter::EventInstances |
+	EDebugListFilter::Snapshots |
+	EDebugListFilter::Vcas;
+#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+}      // namespace Fmod
+}      // namespace Impl
+}      // namespace CryAudio

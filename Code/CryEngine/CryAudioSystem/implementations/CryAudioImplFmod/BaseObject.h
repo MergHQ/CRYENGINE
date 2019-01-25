@@ -12,12 +12,6 @@ namespace Impl
 {
 namespace Fmod
 {
-class CEvent;
-class CBaseParameter;
-class CBaseSwitchState;
-class CEnvironment;
-class CBaseStandaloneFile;
-
 enum class EObjectFlags : EnumFlagsType
 {
 	None                    = 0,
@@ -51,19 +45,20 @@ public:
 	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter) override {}
 	// ~CryAudio::Impl::IObject
 
-	Events const&       GetEvents() const  { return m_events; }
-	Parameters&         GetParameters()    { return m_parameters; }
-	Switches&           GetSwitches()      { return m_switches; }
-	Environments&       GetEnvironments()  { return m_environments; }
-	Events&             GetPendingEvents() { return m_pendingEvents; }
-	StandaloneFiles&    GetPendingFiles()  { return m_pendingFiles; }
-	FMOD_3D_ATTRIBUTES& GetAttributes()    { return m_attributes; }
+	EventInstances const& GetEventInstances() const  { return m_eventInstances; }
+	EventInstances&       GetPendingEventInstances() { return m_pendingEventInstances; }
+	StandaloneFiles&      GetPendingFiles()          { return m_pendingFiles; }
+	FMOD_3D_ATTRIBUTES&   GetAttributes()            { return m_attributes; }
 
-	void                StopEvent(uint32 const id);
-	void                RemoveParameter(CBaseParameter const* const pParameter);
-	void                RemoveSwitch(CBaseSwitchState const* const pSwitch);
-	void                RemoveEnvironment(CEnvironment const* const pEnvironment);
-	void                RemoveFile(CBaseStandaloneFile const* const pStandaloneFile);
+	void                  StopEventInstance(uint32 const id);
+
+	void                  SetParameter(uint32 const id, float const value);
+	void                  RemoveParameter(uint32 const id);
+
+	void                  SetReturn(CReturn const* const pReturn, float const amount);
+	void                  RemoveReturn(CReturn const* const pReturn);
+
+	void                  RemoveFile(CBaseStandaloneFile const* const pStandaloneFile);
 
 	static FMOD::Studio::System* s_pSystem;
 
@@ -75,19 +70,17 @@ protected:
 
 	CBaseObject();
 
-	bool SetEvent(CEvent* const pEvent);
+	bool SetEventInstance(CEventInstance* const pEventInstance);
 	void UpdateVelocityTracking();
 
 	EObjectFlags       m_flags;
 
-	Events             m_events;
+	EventInstances     m_eventInstances;
+	EventInstances     m_pendingEventInstances;
 	StandaloneFiles    m_files;
-	Parameters         m_parameters;
-	Switches           m_switches;
-	Environments       m_environments;
-
-	Events             m_pendingEvents;
 	StandaloneFiles    m_pendingFiles;
+	Parameters         m_parameters;
+	Returns            m_returns;
 
 	FMOD_3D_ATTRIBUTES m_attributes;
 	float              m_occlusion = 0.0f;

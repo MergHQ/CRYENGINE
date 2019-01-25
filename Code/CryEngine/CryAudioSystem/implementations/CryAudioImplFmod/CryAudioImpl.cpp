@@ -3,11 +3,14 @@
 #include "stdafx.h"
 #include "Impl.h"
 #include "CVars.h"
-#include <Logger.h>
 #include <CryAudio/IAudioSystem.h>
 #include <CryCore/Platform/platform_impl.inl>
 #include <CrySystem/IEngineModule.h>
 #include <CryExtension/ClassWeaver.h>
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	#include <Logger.h>
+#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -44,6 +47,7 @@ class CEngineModule_CryAudioImplFmod : public CryAudio::IImplModule
 		gEnv->pAudioSystem->SetImpl(new CImpl, data);
 		gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplFmod::OnEvent, nullptr);
 
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 		if (m_bSuccess)
 		{
 			Cry::Audio::Log(ELogType::Always, "CryAudioImplFmod loaded");
@@ -52,6 +56,7 @@ class CEngineModule_CryAudioImplFmod : public CryAudio::IImplModule
 		{
 			Cry::Audio::Log(ELogType::Error, "CryAudioImplFmod failed to load");
 		}
+#endif    // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 		return m_bSuccess;
 	}

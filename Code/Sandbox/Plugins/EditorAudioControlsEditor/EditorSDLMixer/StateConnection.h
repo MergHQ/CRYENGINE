@@ -25,7 +25,7 @@ public:
 
 	explicit CStateConnection(
 		ControlId const id,
-		float const value = CryAudio::Impl::SDL_mixer::s_defaultStateValue)
+		float const value = CryAudio::Impl::SDL_mixer::g_defaultStateValue)
 		: CBaseConnection(id)
 		, m_value(value)
 	{}

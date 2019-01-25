@@ -4,9 +4,12 @@
 #include "BaseStandaloneFile.h"
 #include "BaseObject.h"
 
-#include <Logger.h>
 #include <CryAudio/IAudioSystem.h>
 #include <CrySystem/ISystem.h> // needed for gEnv in Release builds
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	#include <Logger.h>
+#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -17,9 +20,9 @@ namespace Fmod
 //////////////////////////////////////////////////////////////////////////
 CBaseStandaloneFile::~CBaseStandaloneFile()
 {
-	if (m_pObject != nullptr)
+	if (m_pBaseObject != nullptr)
 	{
-		m_pObject->RemoveFile(this);
+		m_pBaseObject->RemoveFile(this);
 	}
 }
 
@@ -28,20 +31,22 @@ ERequestStatus CBaseStandaloneFile::Play(IObject* const pIObject)
 {
 	if (pIObject != nullptr)
 	{
-		auto const pObject = static_cast<CBaseObject*>(pIObject);
+		auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
 
-		m_pObject = pObject;
+		m_pBaseObject = pBaseObject;
 		StartLoading();
 
-		StandaloneFiles& objectPendingFiles = pObject->GetPendingFiles();
+		StandaloneFiles& objectPendingFiles = pBaseObject->GetPendingFiles();
 		CRY_ASSERT_MESSAGE(std::find(objectPendingFiles.begin(), objectPendingFiles.end(), this) == objectPendingFiles.end(), "Standalone file was already in the pending standalone files list during %s", __FUNCTION__);
 		objectPendingFiles.push_back(this);
 		return ERequestStatus::Success;
 	}
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Error, "Invalid standalone file pointer passed to the Fmod implementation of %s.", __FUNCTION__);
 	}
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 	return ERequestStatus::Failure;
 }

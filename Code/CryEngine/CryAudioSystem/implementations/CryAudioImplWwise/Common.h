@@ -28,16 +28,17 @@ namespace Wwise
 {
 class CImpl;
 class CListener;
-class CObject;
-class CEvent;
+class CBaseObject;
+class CGlobalObject;
+class CEventInstance;
 
 extern CImpl* g_pImpl;
 extern CListener* g_pListener;
-extern CObject* g_pObject;
+extern CGlobalObject* g_pObject;
 
 extern uint32 g_numObjectsWithRelativeVelocity;
 
-using Events = std::vector<CEvent*>;
+using EventInstances = std::vector<CEventInstance*>;
 
 //////////////////////////////////////////////////////////////////////////
 inline void FillAKVector(Vec3 const& vCryVector, AkVector& vAKVector)
@@ -73,11 +74,27 @@ extern AkGameObjectID g_listenerId; // To be removed once multi-listener support
 extern AkGameObjectID g_globalObjectId;
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-class CEvent;
-class CObject;
+constexpr char const* g_globalObjectName = "Global Object";
+
+class CEventInstance;
+class CBaseObject;
+
 extern CryCriticalSection g_cs;
-extern std::unordered_map<AkPlayingID, CEvent*> g_playingIds;
-extern std::unordered_map<AkGameObjectID, CObject*> g_gameObjectIds;
+extern std::unordered_map<AkPlayingID, CEventInstance*> g_playingIds;
+extern std::unordered_map<AkGameObjectID, CBaseObject*> g_gameObjectIds;
+
+using States = std::map<CryFixedStringT<MaxControlNameLength>, CryFixedStringT<MaxControlNameLength>>;
+extern States g_debugStates;
+
+enum class EDebugListFilter : EnumFlagsType
+{
+	None           = 0,
+	EventInstances = BIT(6), // a
+	States         = BIT(7), // b
+};
+CRY_CREATE_ENUM_FLAG_OPERATORS(EDebugListFilter);
+
+constexpr EDebugListFilter g_debugListMask = EDebugListFilter::EventInstances | EDebugListFilter::States;
 #endif // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 }      // namespace Wwise
 }      // namespace Impl

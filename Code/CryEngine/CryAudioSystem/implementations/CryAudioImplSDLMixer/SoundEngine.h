@@ -15,10 +15,10 @@ namespace SDL_mixer
 {
 static string s_localizedAssetsPath = "";
 
-class CEvent;
+class CEventInstance;
 class CObject;
 class CStandaloneFile;
-class CTrigger;
+class CEvent;
 
 namespace SoundEngine
 {
@@ -43,7 +43,7 @@ const SampleId LoadSampleFromMemory(void* pMemory, const size_t size, const stri
 void           UnloadSample(const SampleId id);
 
 // Events
-ERequestStatus ExecuteTrigger(CObject* const pObject, CTrigger const* const pTrigger, TriggerInstanceId const triggerInstanceId);
+ERequestStatus ExecuteEvent(CObject* const pObject, CEvent const* const pEvent, TriggerInstanceId const triggerInstanceId);
 ERequestStatus PlayFile(CObject* const pObject, CStandaloneFile* const pStandaloneFile);
 
 // Callbacks

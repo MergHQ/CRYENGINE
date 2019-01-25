@@ -33,11 +33,11 @@ public:
 
 	// CryAudio::Impl::IObject
 	virtual void                   Update(float const deltaTime) override;
-	virtual void                   SetTransformation(CTransformation const& transformation) override                { m_transformation = transformation; }
-	virtual CTransformation const& GetTransformation() const override                                               { return m_transformation; }
-	virtual void                   SetOcclusion(float const occlusion) override                                     {}
-	virtual void                   SetOcclusionType(EOcclusionType const occlusionType) override                    {}
-	virtual void                   StopAllTriggers() override                                                       {}
+	virtual void                   SetTransformation(CTransformation const& transformation) override { m_transformation = transformation; }
+	virtual CTransformation const& GetTransformation() const override                                { return m_transformation; }
+	virtual void                   SetOcclusion(float const occlusion) override                      {}
+	virtual void                   SetOcclusionType(EOcclusionType const occlusionType) override     {}
+	virtual void                   StopAllTriggers() override;
 	virtual ERequestStatus         SetName(char const* const szName) override;
 	virtual void                   ToggleFunctionality(EObjectFunctionality const type, bool const enable) override {}
 
@@ -52,15 +52,16 @@ public:
 	char const* GetName() const { return m_name.c_str(); }
 #endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 
-	uint32 const               m_id;
-	CTransformation            m_transformation;
-	EventInstances             m_events;
+	EventInstances             m_eventInstances;
 	StandAloneFileInstanceList m_standaloneFiles;
 	VolumeMultipliers          m_volumeMultipliers;
 
-#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
 private:
 
+	uint32 const    m_id;
+	CTransformation m_transformation;
+
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
 	CryFixedStringT<MaxObjectNameLength> m_name;
 #endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 };

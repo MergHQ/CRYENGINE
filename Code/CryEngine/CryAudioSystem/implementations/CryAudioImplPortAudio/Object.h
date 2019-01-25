@@ -12,7 +12,7 @@ namespace Impl
 {
 namespace PortAudio
 {
-class CEvent;
+class CEventInstance;
 
 class CObject final : public IObject, public CPoolObject<CObject, stl::PSyncNone>
 {
@@ -41,7 +41,7 @@ public:
 	// ~CryAudio::Impl::IObject
 
 	void StopEvent(uint32 const pathId);
-	void RegisterEvent(CEvent* const pEvent);
+	void RegisterEventInstance(CEventInstance* const pEventInstance);
 
 #if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
 	char const* GetName() const { return m_name.c_str(); }
@@ -49,7 +49,7 @@ public:
 
 private:
 
-	Events m_activeEvents;
+	EventInstances m_eventInstances;
 
 #if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
 	CryFixedStringT<MaxObjectNameLength> m_name;

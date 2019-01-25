@@ -2,7 +2,10 @@
 
 #include "stdafx.h"
 #include "VcaState.h"
-#include "Common.h"
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	#include "Common.h"
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -13,8 +16,11 @@ namespace Fmod
 //////////////////////////////////////////////////////////////////////////
 void CVcaState::Set(IObject* const pIObject)
 {
-	FMOD_RESULT const fmodResult = m_pVca->setVolume(m_value);
-	ASSERT_FMOD_OK;
+	m_pVca->setVolume(m_value);
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	g_vcaValues[m_name] = m_value;
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////

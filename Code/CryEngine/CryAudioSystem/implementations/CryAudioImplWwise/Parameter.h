@@ -4,6 +4,7 @@
 
 #include <IParameterConnection.h>
 #include <PoolObject.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
 #include <AK/SoundEngine/Common/AkTypes.h>
 
 namespace CryAudio
@@ -22,11 +23,27 @@ public:
 	CParameter& operator=(CParameter const&) = delete;
 	CParameter& operator=(CParameter&&) = delete;
 
-	explicit CParameter(AkRtpcID const id, float const mult, float const shift)
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	explicit CParameter(
+		AkRtpcID const id,
+		float const mult,
+		float const shift,
+		char const* const szName)
+		: m_multiplier(mult)
+		, m_shift(shift)
+		, m_id(id)
+		, m_name(szName)
+	{}
+#else
+	explicit CParameter(
+		AkRtpcID const id,
+		float const mult,
+		float const shift)
 		: m_multiplier(mult)
 		, m_shift(shift)
 		, m_id(id)
 	{}
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 	virtual ~CParameter() override = default;
 
@@ -35,14 +52,6 @@ public:
 	virtual void SetGlobally(float const value) override;
 	// ~IParameterConnection
 
-	float    GetMultiplier() const { return m_multiplier; }
-	float    GetShift() const      { return m_shift; }
-	AkRtpcID GetId() const         { return m_id; }
-
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	void SetName(char const* const szName) { m_name = szName; }
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
-
 private:
 
 	float const    m_multiplier;
@@ -50,7 +59,7 @@ private:
 	AkRtpcID const m_id;
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	CryFixedStringT<MaxControlNameLength> m_name;
+	CryFixedStringT<MaxControlNameLength> const m_name;
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 };
 } // namespace Wwise

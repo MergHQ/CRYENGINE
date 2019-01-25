@@ -23,7 +23,7 @@ public:
 	CParameterToStateConnection& operator=(CParameterToStateConnection const&) = delete;
 	CParameterToStateConnection& operator=(CParameterToStateConnection&&) = delete;
 
-	explicit CParameterToStateConnection(ControlId const id, float const value = CryAudio::Impl::Wwise::s_defaultStateValue)
+	explicit CParameterToStateConnection(ControlId const id, float const value = CryAudio::Impl::Wwise::g_defaultStateValue)
 		: CBaseConnection(id)
 		, m_value(value)
 	{}

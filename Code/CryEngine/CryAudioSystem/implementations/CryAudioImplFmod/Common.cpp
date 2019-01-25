@@ -14,7 +14,13 @@ CGlobalObject* g_pObject = nullptr;
 CListener* g_pListener = nullptr;
 uint32 g_numObjectsWithDoppler = 0;
 Objects g_constructedObjects;
-TriggerToParameterIndexes g_triggerToParameterIndexes;
-} // namespace Fmod
-} // namespace Impl
-} // namespace CryAudio
+EventToParameterIndexes g_eventToParameterIndexes;
+SnapshotEventInstances g_activeSnapshots;
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+ActiveSnapshots g_activeSnapshotNames;
+VcaValues g_vcaValues;
+#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+}      // namespace Fmod
+}      // namespace Impl
+}      // namespace CryAudio
