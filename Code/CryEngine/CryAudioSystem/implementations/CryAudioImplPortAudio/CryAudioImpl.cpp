@@ -3,11 +3,14 @@
 #include "stdafx.h"
 #include "Impl.h"
 #include "CVars.h"
-#include <Logger.h>
 #include <CryAudio/IAudioSystem.h>
 #include <CryCore/Platform/platform_impl.inl>
 #include <CrySystem/IEngineModule.h>
 #include <CryExtension/ClassWeaver.h>
+
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+	#include <Logger.h>
+#endif        // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -44,6 +47,7 @@ class CEngineModule_CryAudioImplPortAudio : public IImplModule
 		gEnv->pAudioSystem->SetImpl(new CImpl, data);
 		gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplPortAudio::OnEvent, nullptr);
 
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
 		if (m_bSuccess)
 		{
 			Cry::Audio::Log(ELogType::Always, "CryAudioImplPortAudio loaded");
@@ -52,6 +56,7 @@ class CEngineModule_CryAudioImplPortAudio : public IImplModule
 		{
 			Cry::Audio::Log(ELogType::Error, "CryAudioImplPortAudio failed to load");
 		}
+#endif        // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 
 		return m_bSuccess;
 	}

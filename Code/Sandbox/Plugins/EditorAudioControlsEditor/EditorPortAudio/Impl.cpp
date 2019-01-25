@@ -27,7 +27,7 @@ constexpr uint32 g_eventConnectionPoolSize = 2048;
 CImpl::CImpl()
 	: m_pDataPanel(nullptr)
 	, m_assetAndProjectPath(AUDIO_SYSTEM_DATA_ROOT "/" +
-	                        string(CryAudio::Impl::PortAudio::s_szImplFolderName) +
+	                        string(CryAudio::Impl::PortAudio::g_szImplFolderName) +
 	                        "/" +
 	                        string(CryAudio::s_szAssetsFolderName))
 	, m_localizedAssetsPath(m_assetAndProjectPath)
@@ -196,13 +196,13 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 	{
 		char const* const szTag = pNode->getTag();
 
-		if ((_stricmp(szTag, CryAudio::Impl::PortAudio::s_szEventTag) == 0) ||
-		    (_stricmp(szTag, CryAudio::Impl::PortAudio::s_szFileTag) == 0) ||
+		if ((_stricmp(szTag, CryAudio::Impl::PortAudio::g_szEventTag) == 0) ||
+		    (_stricmp(szTag, CryAudio::Impl::PortAudio::g_szSampleTag) == 0) ||
 		    (_stricmp(szTag, "PortAudioEvent") == 0) || // Backwards compatibility.
 		    (_stricmp(szTag, "PortAudioSample") == 0))  // Backwards compatibility.
 		{
 			string name = pNode->getAttr(CryAudio::s_szNameAttribute);
-			string path = pNode->getAttr(CryAudio::Impl::PortAudio::s_szPathAttribute);
+			string path = pNode->getAttr(CryAudio::Impl::PortAudio::g_szPathAttribute);
 			// Backwards compatibility will be removed before March 2019.
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 			if (name.IsEmpty() && pNode->haveAttr("portaudio_name"))
@@ -215,8 +215,8 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 				path = pNode->getAttr("portaudio_path");
 			}
 #endif      // USE_BACKWARDS_COMPATIBILITY
-			string const localizedAttribute = pNode->getAttr(CryAudio::Impl::PortAudio::s_szLocalizedAttribute);
-			bool const isLocalized = (localizedAttribute.compareNoCase(CryAudio::Impl::PortAudio::s_szTrueValue) == 0);
+			string const localizedAttribute = pNode->getAttr(CryAudio::Impl::PortAudio::g_szLocalizedAttribute);
+			bool const isLocalized = (localizedAttribute.compareNoCase(CryAudio::Impl::PortAudio::g_szTrueValue) == 0);
 			ControlId const id = Utils::GetId(EItemType::Event, name, path, isLocalized);
 
 			auto pItem = static_cast<CItem*>(GetItem(id));
@@ -238,10 +238,10 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 					actionType = pNode->getAttr("event_type");
 				}
 #endif        // USE_BACKWARDS_COMPATIBILITY
-				pEventConnection->SetActionType(actionType.compareNoCase(CryAudio::Impl::PortAudio::s_szStopValue) == 0 ? CEventConnection::EActionType::Stop : CEventConnection::EActionType::Start);
+				pEventConnection->SetActionType(actionType.compareNoCase(CryAudio::Impl::PortAudio::g_szStopValue) == 0 ? CEventConnection::EActionType::Stop : CEventConnection::EActionType::Start);
 
 				int loopCount = 0;
-				pNode->getAttr(CryAudio::Impl::PortAudio::s_szLoopCountAttribute, loopCount);
+				pNode->getAttr(CryAudio::Impl::PortAudio::g_szLoopCountAttribute, loopCount);
 				loopCount = std::max(0, loopCount);
 				pEventConnection->SetLoopCount(static_cast<uint32>(loopCount));
 
@@ -268,37 +268,37 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 
 	if ((pItem != nullptr) && (pEventConnection != nullptr) && (assetType == EAssetType::Trigger))
 	{
-		pNode = GetISystem()->CreateXmlNode(CryAudio::Impl::PortAudio::s_szEventTag);
+		pNode = GetISystem()->CreateXmlNode(CryAudio::Impl::PortAudio::g_szEventTag);
 		pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
 
 		string const& path = pItem->GetPath();
 
 		if (!path.IsEmpty())
 		{
-			pNode->setAttr(CryAudio::Impl::PortAudio::s_szPathAttribute, path.c_str());
+			pNode->setAttr(CryAudio::Impl::PortAudio::g_szPathAttribute, path.c_str());
 		}
 
 		if (pEventConnection->GetActionType() == CEventConnection::EActionType::Start)
 		{
-			pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::PortAudio::s_szStartValue);
+			pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::PortAudio::g_szStartValue);
 
 			if (pEventConnection->IsInfiniteLoop())
 			{
-				pNode->setAttr(CryAudio::Impl::PortAudio::s_szLoopCountAttribute, 0);
+				pNode->setAttr(CryAudio::Impl::PortAudio::g_szLoopCountAttribute, 0);
 			}
 			else
 			{
-				pNode->setAttr(CryAudio::Impl::PortAudio::s_szLoopCountAttribute, pEventConnection->GetLoopCount());
+				pNode->setAttr(CryAudio::Impl::PortAudio::g_szLoopCountAttribute, pEventConnection->GetLoopCount());
 			}
 		}
 		else
 		{
-			pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::PortAudio::s_szStopValue);
+			pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::PortAudio::g_szStopValue);
 		}
 
 		if ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0)
 		{
-			pNode->setAttr(CryAudio::Impl::PortAudio::s_szLocalizedAttribute, CryAudio::Impl::PortAudio::s_szTrueValue);
+			pNode->setAttr(CryAudio::Impl::PortAudio::g_szLocalizedAttribute, CryAudio::Impl::PortAudio::g_szTrueValue);
 		}
 
 		++g_triggerConnections;
@@ -315,7 +315,7 @@ XmlNodeRef CImpl::SetDataNode(char const* const szTag)
 	if (g_triggerConnections > 0)
 	{
 		pNode = GetISystem()->CreateXmlNode(szTag);
-		pNode->setAttr(CryAudio::Impl::PortAudio::s_szTriggersAttribute, g_triggerConnections);
+		pNode->setAttr(CryAudio::Impl::PortAudio::g_szEventsAttribute, g_triggerConnections);
 
 		// Reset connection count for next library.
 		g_triggerConnections = 0;
@@ -425,7 +425,7 @@ void CImpl::SetImplInfo(SImplInfo& implInfo)
 	SetLocalizedAssetsPath();
 
 	implInfo.name = m_implName.c_str();
-	implInfo.folderName = CryAudio::Impl::PortAudio::s_szImplFolderName;
+	implInfo.folderName = CryAudio::Impl::PortAudio::g_szImplFolderName;
 	implInfo.projectPath = m_assetAndProjectPath.c_str();
 	implInfo.assetsPath = m_assetAndProjectPath.c_str();
 	implInfo.localizedAssetsPath = m_localizedAssetsPath.c_str();
@@ -448,7 +448,7 @@ void CImpl::SetLocalizedAssetsPath()
 			m_localizedAssetsPath += "/";
 			m_localizedAssetsPath += AUDIO_SYSTEM_DATA_ROOT;
 			m_localizedAssetsPath += "/";
-			m_localizedAssetsPath += CryAudio::Impl::PortAudio::s_szImplFolderName;
+			m_localizedAssetsPath += CryAudio::Impl::PortAudio::g_szImplFolderName;
 			m_localizedAssetsPath += "/";
 			m_localizedAssetsPath += CryAudio::s_szAssetsFolderName;
 		}

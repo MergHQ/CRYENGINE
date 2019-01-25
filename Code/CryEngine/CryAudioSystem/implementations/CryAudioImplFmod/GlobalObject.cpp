@@ -3,11 +3,10 @@
 #include "stdafx.h"
 #include "GlobalObject.h"
 #include "Common.h"
-#include "Environment.h"
-#include "Parameter.h"
-#include "SwitchState.h"
 
-#include <Logger.h>
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	#include <Logger.h>
+#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -35,18 +34,23 @@ CGlobalObject::~CGlobalObject()
 //////////////////////////////////////////////////////////////////////////
 void CGlobalObject::SetOcclusion(float const occlusion)
 {
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	Cry::Audio::Log(ELogType::Error, "Trying to set occlusion and obstruction values on the global object!");
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CGlobalObject::SetOcclusionType(EOcclusionType const occlusionType)
 {
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	Cry::Audio::Log(ELogType::Error, "Trying to set occlusion type on the global object!");
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CGlobalObject::ToggleFunctionality(EObjectFunctionality const type, bool const enable)
 {
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	if (enable)
 	{
 		char const* szType = nullptr;
@@ -75,7 +79,8 @@ void CGlobalObject::ToggleFunctionality(EObjectFunctionality const type, bool co
 
 		Cry::Audio::Log(ELogType::Error, "Trying to enable %s on the global object!", szType);
 	}
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 }
-} // namespace Fmod
-} // namespace Impl
-} // namespace CryAudio
+}      // namespace Fmod
+}      // namespace Impl
+}      // namespace CryAudio

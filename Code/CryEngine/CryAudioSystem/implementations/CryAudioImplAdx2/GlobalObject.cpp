@@ -2,11 +2,11 @@
 
 #include "stdafx.h"
 #include "GlobalObject.h"
-
 #include "Common.h"
-#include "Environment.h"
 
-#include <Logger.h>
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	#include <Logger.h>
+#endif // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -34,20 +34,26 @@ CGlobalObject::~CGlobalObject()
 //////////////////////////////////////////////////////////////////////////
 void CGlobalObject::SetTransformation(CTransformation const& transformation)
 {
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	Cry::Audio::Log(ELogType::Error, "Trying to set transformation on the global object!");
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CGlobalObject::SetOcclusion(float const occlusion)
 {
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	Cry::Audio::Log(ELogType::Error, "Trying to set occlusion and obstruction values on the global object!");
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CGlobalObject::SetOcclusionType(EOcclusionType const occlusionType)
 {
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	Cry::Audio::Log(ELogType::Error, "Trying to set occlusion type on the global object!");
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 }
-} // namespace Adx2
-} // namespace Impl
-} // namespace CryAudio
+}      // namespace Adx2
+}      // namespace Impl
+}      // namespace CryAudio

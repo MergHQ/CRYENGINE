@@ -3,14 +3,12 @@
 #include "stdafx.h"
 #include "Object.h"
 
-#include "Event.h"
-#include "Environment.h"
+#include "CueInstance.h"
 #include "Listener.h"
 #include "Cvars.h"
 
-#include <Logger.h>
-
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	#include <Logger.h>
 	#include <DebugStyle.h>
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
@@ -21,7 +19,7 @@ namespace Impl
 {
 namespace Adx2
 {
-static constexpr CriChar8 const* s_szOcclusionAisacName = "occlusion";
+constexpr CriChar8 const* g_szOcclusionAisacName = "occlusion";
 
 //////////////////////////////////////////////////////////////////////////
 CObject::CObject(CTransformation const& transformation)
@@ -31,6 +29,10 @@ CObject::CObject(CTransformation const& transformation)
 	, m_position(transformation.GetPosition())
 	, m_previousPosition(transformation.GetPosition())
 	, m_velocity(ZERO)
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	, m_absoluteVelocity(0.0f)
+	, m_absoluteVelocityNormalized(0.0f)
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 {
 	Fill3DAttributeTransformation(transformation, m_3dAttributes);
 	criAtomEx3dSource_SetPosition(m_p3dSource, &m_3dAttributes.pos);
@@ -96,7 +98,7 @@ void CObject::SetTransformation(CTransformation const& transformation)
 //////////////////////////////////////////////////////////////////////////
 void CObject::SetOcclusion(float const occlusion)
 {
-	criAtomExPlayer_SetAisacControlByName(m_pPlayer, s_szOcclusionAisacName, static_cast<CriFloat32>(occlusion));
+	criAtomExPlayer_SetAisacControlByName(m_pPlayer, g_szOcclusionAisacName, static_cast<CriFloat32>(occlusion));
 	criAtomExPlayer_UpdateAll(m_pPlayer);
 
 	m_occlusion = occlusion;
@@ -121,7 +123,7 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 				isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorParameter,
 				false,
 				"[Adx2] %s: %2.2f m/s (%2.2f)\n",
-				static_cast<char const*>(s_szAbsoluteVelocityAisacName),
+				static_cast<char const*>(g_szAbsoluteVelocityAisacName),
 				m_absoluteVelocity,
 				m_absoluteVelocityNormalized);
 
@@ -141,6 +143,73 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 	}
 
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+}
+
+/////////////////////////////////////////////////////////////////////////
+void CObject::UpdateVelocityTracking()
+{
+	bool trackAbsoluteVelocity = false;
+	bool trackDoppler = false;
+
+	CueInstances::iterator iter = m_cueInstances.begin();
+	CueInstances::const_iterator iterEnd = m_cueInstances.end();
+
+	while ((iter != iterEnd) && !(trackAbsoluteVelocity && trackDoppler))
+	{
+		auto const pCueInstance = *iter;
+		trackAbsoluteVelocity |= ((pCueInstance->GetFlags() & ECueInstanceFlags::HasAbsoluteVelocity) != 0);
+		trackDoppler |= ((pCueInstance->GetFlags() & ECueInstanceFlags::HasDoppler) != 0);
+		++iter;
+	}
+
+	if (trackAbsoluteVelocity)
+	{
+		if (g_cvars.m_maxVelocity > 0.0f)
+		{
+			m_flags |= EObjectFlags::TrackAbsoluteVelocity;
+		}
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+		else
+		{
+			Cry::Audio::Log(ELogType::Error, "Adx2 - Cannot enable absolute velocity tracking, because s_Adx2MaxVelocity is not greater than 0.");
+		}
+#endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+	}
+	else
+	{
+		m_flags &= ~EObjectFlags::TrackAbsoluteVelocity;
+
+		criAtomExPlayer_SetAisacControlByName(m_pPlayer, g_szAbsoluteVelocityAisacName, 0.0f);
+		criAtomExPlayer_UpdateAll(m_pPlayer);
+
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+		m_absoluteVelocity = 0.0f;
+		m_absoluteVelocityNormalized = 0.0f;
+#endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+	}
+
+	if (trackDoppler)
+	{
+		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) == 0)
+		{
+			m_flags |= EObjectFlags::TrackVelocityForDoppler;
+			g_numObjectsWithDoppler++;
+		}
+	}
+	else
+	{
+		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0)
+		{
+			m_flags &= ~EObjectFlags::TrackVelocityForDoppler;
+
+			CriAtomExVector const zeroVelocity{ 0.0f, 0.0f, 0.0f };
+			criAtomEx3dSource_SetVelocity(m_p3dSource, &zeroVelocity);
+			criAtomEx3dSource_Update(m_p3dSource);
+
+			CRY_ASSERT_MESSAGE(g_numObjectsWithDoppler > 0, "g_numObjectsWithDoppler is 0 but an object with doppler tracking still exists during %s", __FUNCTION__);
+			g_numObjectsWithDoppler--;
+		}
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -182,7 +251,7 @@ void CObject::UpdateVelocities(float const deltaTime)
 			m_previousAbsoluteVelocity = absoluteVelocity;
 			float const absoluteVelocityNormalized = (std::min(absoluteVelocity, g_cvars.m_maxVelocity) / g_cvars.m_maxVelocity);
 
-			criAtomExPlayer_SetAisacControlByName(m_pPlayer, s_szAbsoluteVelocityAisacName, static_cast<CriFloat32>(absoluteVelocityNormalized));
+			criAtomExPlayer_SetAisacControlByName(m_pPlayer, g_szAbsoluteVelocityAisacName, static_cast<CriFloat32>(absoluteVelocityNormalized));
 			criAtomExPlayer_UpdateAll(m_pPlayer);
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)

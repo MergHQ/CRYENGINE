@@ -1,0 +1,84 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
+#include "stdafx.h"
+#include "Snapshot.h"
+#include "Common.h"
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	#include <Logger.h>
+#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
+namespace CryAudio
+{
+namespace Impl
+{
+namespace Fmod
+{
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus CSnapshot::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
+{
+	ERequestStatus requestResult = ERequestStatus::Failure;
+
+	switch (m_actionType)
+	{
+	case EActionType::Start:
+		{
+			if (g_activeSnapshots.find(m_id) == g_activeSnapshots.end())
+			{
+				FMOD::Studio::EventInstance* pFmodEventInstance = nullptr;
+				FMOD_RESULT fmodResult = m_pEventDescription->createInstance(&pFmodEventInstance);
+				ASSERT_FMOD_OK;
+				fmodResult = pFmodEventInstance->start();
+				ASSERT_FMOD_OK;
+
+				g_activeSnapshots[m_id] = pFmodEventInstance;
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+				g_activeSnapshotNames.push_back(m_name);
+#endif        // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+			}
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+			else
+			{
+				Cry::Audio::Log(ELogType::Warning, "Snapshot %s is already active during %s", m_name.c_str(), __FUNCTION__);
+			}
+#endif        // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
+			requestResult = ERequestStatus::SuccessDoNotTrack;
+
+			break;
+		}
+	case EActionType::Stop:
+		{
+			Stop(nullptr);
+			requestResult = ERequestStatus::SuccessDoNotTrack;
+
+			break;
+		}
+	}
+
+	return requestResult;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSnapshot::Stop(IObject* const pIObject)
+{
+	for (auto const& snapshotPair : g_activeSnapshots)
+	{
+		if (snapshotPair.first == m_id)
+		{
+			snapshotPair.second->stop(FMOD_STUDIO_STOP_ALLOWFADEOUT);
+			// snaphotInstancePair.second->stop(FMOD_STUDIO_STOP_IMMEDIATE);
+			g_activeSnapshots.erase(m_id);
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+			g_activeSnapshotNames.erase(std::remove(g_activeSnapshotNames.begin(), g_activeSnapshotNames.end(), m_name), g_activeSnapshotNames.end());
+#endif      // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
+			break;
+		}
+	}
+}
+} // namespace Fmod
+} // namespace Impl
+} // namespace CryAudio

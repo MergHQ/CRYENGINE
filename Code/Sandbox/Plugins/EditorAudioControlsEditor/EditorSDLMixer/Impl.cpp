@@ -34,7 +34,7 @@ void CountConnections(EAssetType const assetType)
 	{
 	case EAssetType::Trigger:
 		{
-			++g_connections.triggers;
+			++g_connections.events;
 			break;
 		}
 	case EAssetType::Parameter:
@@ -56,7 +56,7 @@ void CountConnections(EAssetType const assetType)
 CImpl::CImpl()
 	: m_pDataPanel(nullptr)
 	, m_assetAndProjectPath(AUDIO_SYSTEM_DATA_ROOT "/" +
-	                        string(CryAudio::Impl::SDL_mixer::s_szImplFolderName) +
+	                        string(CryAudio::Impl::SDL_mixer::g_szImplFolderName) +
 	                        "/"
 	                        + string(CryAudio::s_szAssetsFolderName))
 	, m_localizedAssetsPath(m_assetAndProjectPath)
@@ -251,13 +251,13 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 	{
 		char const* const szTag = pNode->getTag();
 
-		if ((_stricmp(szTag, CryAudio::Impl::SDL_mixer::s_szEventTag) == 0) ||
-		    (_stricmp(szTag, CryAudio::Impl::SDL_mixer::s_szFileTag) == 0) ||
+		if ((_stricmp(szTag, CryAudio::Impl::SDL_mixer::g_szEventTag) == 0) ||
+		    (_stricmp(szTag, CryAudio::Impl::SDL_mixer::g_szSampleTag) == 0) ||
 		    (_stricmp(szTag, "SDLMixerEvent") == 0) || // Backwards compatibility.
 		    (_stricmp(szTag, "SDLMixerSample") == 0))  // Backwards compatibility.
 		{
 			string name = pNode->getAttr(CryAudio::s_szNameAttribute);
-			string path = pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szPathAttribute);
+			string path = pNode->getAttr(CryAudio::Impl::SDL_mixer::g_szPathAttribute);
 			// Backwards compatibility will be removed before March 2019.
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 			if (name.IsEmpty() && pNode->haveAttr("sdl_name"))
@@ -270,8 +270,8 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 				path = pNode->getAttr("sdl_path");
 			}
 #endif      // USE_BACKWARDS_COMPATIBILITY
-			string const localizedAttribute = pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szLocalizedAttribute);
-			bool const isLocalized = (localizedAttribute.compareNoCase(CryAudio::Impl::SDL_mixer::s_szTrueValue) == 0);
+			string const localizedAttribute = pNode->getAttr(CryAudio::Impl::SDL_mixer::g_szLocalizedAttribute);
+			bool const isLocalized = (localizedAttribute.compareNoCase(CryAudio::Impl::SDL_mixer::g_szTrueValue) == 0);
 			ControlId const id = Utils::GetId(EItemType::Event, name, path, isLocalized);
 
 			auto pItem = static_cast<CItem*>(GetItem(id));
@@ -297,15 +297,15 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 							actionType = pNode->getAttr("event_type");
 						}
 #endif            // USE_BACKWARDS_COMPATIBILITY
-						if (actionType.compareNoCase(CryAudio::Impl::SDL_mixer::s_szStopValue) == 0)
+						if (actionType.compareNoCase(CryAudio::Impl::SDL_mixer::g_szStopValue) == 0)
 						{
 							pEventConnection->SetActionType(CEventConnection::EActionType::Stop);
 						}
-						else if (actionType.compareNoCase(CryAudio::Impl::SDL_mixer::s_szPauseValue) == 0)
+						else if (actionType.compareNoCase(CryAudio::Impl::SDL_mixer::g_szPauseValue) == 0)
 						{
 							pEventConnection->SetActionType(CEventConnection::EActionType::Pause);
 						}
-						else if (actionType.compareNoCase(CryAudio::Impl::SDL_mixer::s_szResumeValue) == 0)
+						else if (actionType.compareNoCase(CryAudio::Impl::SDL_mixer::g_szResumeValue) == 0)
 						{
 							pEventConnection->SetActionType(CEventConnection::EActionType::Resume);
 						}
@@ -313,41 +313,41 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 						{
 							pEventConnection->SetActionType(CEventConnection::EActionType::Start);
 
-							float fadeInTime = CryAudio::Impl::SDL_mixer::s_defaultFadeInTime;
-							pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szFadeInTimeAttribute, fadeInTime);
+							float fadeInTime = CryAudio::Impl::SDL_mixer::g_defaultFadeInTime;
+							pNode->getAttr(CryAudio::Impl::SDL_mixer::g_szFadeInTimeAttribute, fadeInTime);
 							pEventConnection->SetFadeInTime(fadeInTime);
 
-							float fadeOutTime = CryAudio::Impl::SDL_mixer::s_defaultFadeOutTime;
-							pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szFadeOutTimeAttribute, fadeOutTime);
+							float fadeOutTime = CryAudio::Impl::SDL_mixer::g_defaultFadeOutTime;
+							pNode->getAttr(CryAudio::Impl::SDL_mixer::g_szFadeOutTimeAttribute, fadeOutTime);
 							pEventConnection->SetFadeOutTime(fadeOutTime);
 						}
 
-						string const enablePanning = pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szPanningEnabledAttribute);
-						pEventConnection->SetPanningEnabled(enablePanning.compareNoCase(CryAudio::Impl::SDL_mixer::s_szTrueValue) == 0);
+						string const enablePanning = pNode->getAttr(CryAudio::Impl::SDL_mixer::g_szPanningEnabledAttribute);
+						pEventConnection->SetPanningEnabled(enablePanning.compareNoCase(CryAudio::Impl::SDL_mixer::g_szTrueValue) == 0);
 
-						string enableDistAttenuation = pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationEnabledAttribute);
+						string enableDistAttenuation = pNode->getAttr(CryAudio::Impl::SDL_mixer::g_szAttenuationEnabledAttribute);
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 						if (enableDistAttenuation.IsEmpty() && pNode->haveAttr("enable_distance_attenuation"))
 						{
 							enableDistAttenuation = pNode->getAttr("enable_distance_attenuation");
 						}
 #endif            // USE_BACKWARDS_COMPATIBILITY
-						pEventConnection->SetAttenuationEnabled(enableDistAttenuation.compareNoCase(CryAudio::Impl::SDL_mixer::s_szTrueValue) == 0);
+						pEventConnection->SetAttenuationEnabled(enableDistAttenuation.compareNoCase(CryAudio::Impl::SDL_mixer::g_szTrueValue) == 0);
 
-						float minAttenuation = CryAudio::Impl::SDL_mixer::s_defaultMinAttenuationDist;
-						pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationMinDistanceAttribute, minAttenuation);
+						float minAttenuation = CryAudio::Impl::SDL_mixer::g_defaultMinAttenuationDist;
+						pNode->getAttr(CryAudio::Impl::SDL_mixer::g_szAttenuationMinDistanceAttribute, minAttenuation);
 						pEventConnection->SetMinAttenuation(minAttenuation);
 
-						float maxAttenuation = CryAudio::Impl::SDL_mixer::s_defaultMaxAttenuationDist;
-						pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationMaxDistanceAttribute, maxAttenuation);
+						float maxAttenuation = CryAudio::Impl::SDL_mixer::g_defaultMaxAttenuationDist;
+						pNode->getAttr(CryAudio::Impl::SDL_mixer::g_szAttenuationMaxDistanceAttribute, maxAttenuation);
 						pEventConnection->SetMaxAttenuation(maxAttenuation);
 
 						float volume = pEventConnection->GetVolume();
-						pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szVolumeAttribute, volume);
+						pNode->getAttr(CryAudio::Impl::SDL_mixer::g_szVolumeAttribute, volume);
 						pEventConnection->SetVolume(volume);
 
 						int loopCount = pEventConnection->GetLoopCount();
-						pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szLoopCountAttribute, loopCount);
+						pNode->getAttr(CryAudio::Impl::SDL_mixer::g_szLoopCountAttribute, loopCount);
 						loopCount = std::max(0, loopCount); // Delete this when backwards compatibility gets removed and use uint32 directly.
 						pEventConnection->SetLoopCount(static_cast<uint32>(loopCount));
 
@@ -361,19 +361,19 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 					break;
 				case EAssetType::Parameter:
 					{
-						float mult = CryAudio::Impl::SDL_mixer::s_defaultParamMultiplier;
-						pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szMutiplierAttribute, mult);
+						float mult = CryAudio::Impl::SDL_mixer::g_defaultParamMultiplier;
+						pNode->getAttr(CryAudio::Impl::SDL_mixer::g_szMutiplierAttribute, mult);
 
-						float shift = CryAudio::Impl::SDL_mixer::s_defaultParamShift;
-						pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szShiftAttribute, shift);
+						float shift = CryAudio::Impl::SDL_mixer::g_defaultParamShift;
+						pNode->getAttr(CryAudio::Impl::SDL_mixer::g_szShiftAttribute, shift);
 
 						pIConnection = static_cast<IConnection*>(new CParameterConnection(pItem->GetId(), mult, shift));
 					}
 					break;
 				case EAssetType::State:
 					{
-						float value = CryAudio::Impl::SDL_mixer::s_defaultStateValue;
-						pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szValueAttribute, value);
+						float value = CryAudio::Impl::SDL_mixer::g_defaultStateValue;
+						pNode->getAttr(CryAudio::Impl::SDL_mixer::g_szValueAttribute, value);
 
 						pIConnection = static_cast<IConnection*>(new CStateConnection(pItem->GetId(), value));
 					}
@@ -403,14 +403,14 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 
 				if (pEventConnection != nullptr)
 				{
-					pNode = GetISystem()->CreateXmlNode(CryAudio::Impl::SDL_mixer::s_szEventTag);
+					pNode = GetISystem()->CreateXmlNode(CryAudio::Impl::SDL_mixer::g_szEventTag);
 					pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
 
 					string const& path = pItem->GetPath();
 
 					if (!path.IsEmpty())
 					{
-						pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPathAttribute, pItem->GetPath());
+						pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szPathAttribute, pItem->GetPath());
 					}
 
 					CEventConnection::EActionType const actionType = pEventConnection->GetActionType();
@@ -419,55 +419,55 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 					{
 					case CEventConnection::EActionType::Start:
 						{
-							pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::SDL_mixer::s_szStartValue);
-							pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szVolumeAttribute, pEventConnection->GetVolume());
+							pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::SDL_mixer::g_szStartValue);
+							pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szVolumeAttribute, pEventConnection->GetVolume());
 
 							if (pEventConnection->IsPanningEnabled())
 							{
-								pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPanningEnabledAttribute, CryAudio::Impl::SDL_mixer::s_szTrueValue);
+								pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szPanningEnabledAttribute, CryAudio::Impl::SDL_mixer::g_szTrueValue);
 							}
 
 							if (pEventConnection->IsAttenuationEnabled())
 							{
-								pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationEnabledAttribute, CryAudio::Impl::SDL_mixer::s_szTrueValue);
-								pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationMinDistanceAttribute, pEventConnection->GetMinAttenuation());
-								pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationMaxDistanceAttribute, pEventConnection->GetMaxAttenuation());
+								pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szAttenuationEnabledAttribute, CryAudio::Impl::SDL_mixer::g_szTrueValue);
+								pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szAttenuationMinDistanceAttribute, pEventConnection->GetMinAttenuation());
+								pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szAttenuationMaxDistanceAttribute, pEventConnection->GetMaxAttenuation());
 							}
 
-							if (pEventConnection->GetFadeInTime() != CryAudio::Impl::SDL_mixer::s_defaultFadeInTime)
+							if (pEventConnection->GetFadeInTime() != CryAudio::Impl::SDL_mixer::g_defaultFadeInTime)
 							{
-								pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szFadeInTimeAttribute, pEventConnection->GetFadeInTime());
+								pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szFadeInTimeAttribute, pEventConnection->GetFadeInTime());
 							}
 
-							if (pEventConnection->GetFadeOutTime() != CryAudio::Impl::SDL_mixer::s_defaultFadeOutTime)
+							if (pEventConnection->GetFadeOutTime() != CryAudio::Impl::SDL_mixer::g_defaultFadeOutTime)
 							{
-								pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szFadeOutTimeAttribute, pEventConnection->GetFadeOutTime());
+								pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szFadeOutTimeAttribute, pEventConnection->GetFadeOutTime());
 							}
 
 							if (pEventConnection->IsInfiniteLoop())
 							{
-								pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szLoopCountAttribute, 0);
+								pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szLoopCountAttribute, 0);
 							}
 							else
 							{
-								pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szLoopCountAttribute, pEventConnection->GetLoopCount());
+								pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szLoopCountAttribute, pEventConnection->GetLoopCount());
 							}
 						}
 						break;
 					case CEventConnection::EActionType::Stop:
-						pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::SDL_mixer::s_szStopValue);
+						pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::SDL_mixer::g_szStopValue);
 						break;
 					case CEventConnection::EActionType::Pause:
-						pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::SDL_mixer::s_szPauseValue);
+						pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::SDL_mixer::g_szPauseValue);
 						break;
 					case CEventConnection::EActionType::Resume:
-						pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::SDL_mixer::s_szResumeValue);
+						pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::SDL_mixer::g_szResumeValue);
 						break;
 					}
 
 					if ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0)
 					{
-						pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szLocalizedAttribute, CryAudio::Impl::SDL_mixer::s_szTrueValue);
+						pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szLocalizedAttribute, CryAudio::Impl::SDL_mixer::g_szTrueValue);
 					}
 				}
 			}
@@ -478,29 +478,29 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 
 				if (pParameterConnection != nullptr)
 				{
-					pNode = GetISystem()->CreateXmlNode(CryAudio::Impl::SDL_mixer::s_szEventTag);
+					pNode = GetISystem()->CreateXmlNode(CryAudio::Impl::SDL_mixer::g_szEventTag);
 					pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
 
 					string const& path = pItem->GetPath();
 
 					if (!path.IsEmpty())
 					{
-						pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPathAttribute, pItem->GetPath());
+						pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szPathAttribute, pItem->GetPath());
 					}
 
-					if (pParameterConnection->GetMultiplier() != CryAudio::Impl::SDL_mixer::s_defaultParamMultiplier)
+					if (pParameterConnection->GetMultiplier() != CryAudio::Impl::SDL_mixer::g_defaultParamMultiplier)
 					{
-						pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szMutiplierAttribute, pParameterConnection->GetMultiplier());
+						pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szMutiplierAttribute, pParameterConnection->GetMultiplier());
 					}
 
-					if (pParameterConnection->GetShift() != CryAudio::Impl::SDL_mixer::s_defaultParamShift)
+					if (pParameterConnection->GetShift() != CryAudio::Impl::SDL_mixer::g_defaultParamShift)
 					{
-						pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szShiftAttribute, pParameterConnection->GetShift());
+						pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szShiftAttribute, pParameterConnection->GetShift());
 					}
 
 					if ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0)
 					{
-						pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szLocalizedAttribute, CryAudio::Impl::SDL_mixer::s_szTrueValue);
+						pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szLocalizedAttribute, CryAudio::Impl::SDL_mixer::g_szTrueValue);
 					}
 				}
 			}
@@ -511,21 +511,21 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 
 				if (pStateConnection != nullptr)
 				{
-					pNode = GetISystem()->CreateXmlNode(CryAudio::Impl::SDL_mixer::s_szEventTag);
+					pNode = GetISystem()->CreateXmlNode(CryAudio::Impl::SDL_mixer::g_szEventTag);
 					pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
 
 					string const& path = pItem->GetPath();
 
 					if (!path.IsEmpty())
 					{
-						pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPathAttribute, pItem->GetPath());
+						pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szPathAttribute, pItem->GetPath());
 					}
 
-					pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szValueAttribute, pStateConnection->GetValue());
+					pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szValueAttribute, pStateConnection->GetValue());
 
 					if ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0)
 					{
-						pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szLocalizedAttribute, CryAudio::Impl::SDL_mixer::s_szTrueValue);
+						pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szLocalizedAttribute, CryAudio::Impl::SDL_mixer::g_szTrueValue);
 					}
 				}
 			}
@@ -543,32 +543,32 @@ XmlNodeRef CImpl::SetDataNode(char const* const szTag)
 	XmlNodeRef pNode = GetISystem()->CreateXmlNode(szTag);
 	bool hasConnections = false;
 
-	if (g_connections.triggers > 0)
+	if (g_connections.events > 0)
 	{
-		pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szTriggersAttribute, g_connections.triggers);
+		pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szEventsAttribute, g_connections.events);
 		hasConnections = true;
 	}
 
 	if (g_connections.parameters > 0)
 	{
-		pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szParametersAttribute, g_connections.parameters);
+		pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szParametersAttribute, g_connections.parameters);
 		hasConnections = true;
 	}
 
 	if (g_connections.switchStates > 0)
 	{
-		pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szSwitchStatesAttribute, g_connections.switchStates);
+		pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szSwitchStatesAttribute, g_connections.switchStates);
 		hasConnections = true;
 	}
 
-	if (!hasConnections)
-	{
-		pNode = nullptr;
-	}
-	else
+	if (hasConnections)
 	{
 		// Reset connection count for next library.
 		ZeroStruct(g_connections);
+	}
+	else
+	{
+		pNode = nullptr;
 	}
 
 	return pNode;
@@ -675,7 +675,7 @@ void CImpl::SetImplInfo(SImplInfo& implInfo)
 	SetLocalizedAssetsPath();
 
 	implInfo.name = m_implName.c_str();
-	implInfo.folderName = CryAudio::Impl::SDL_mixer::s_szImplFolderName;
+	implInfo.folderName = CryAudio::Impl::SDL_mixer::g_szImplFolderName;
 	implInfo.projectPath = m_assetAndProjectPath.c_str();
 	implInfo.assetsPath = m_assetAndProjectPath.c_str();
 	implInfo.localizedAssetsPath = m_localizedAssetsPath.c_str();
@@ -701,7 +701,7 @@ void CImpl::SetLocalizedAssetsPath()
 			m_localizedAssetsPath += "/";
 			m_localizedAssetsPath += AUDIO_SYSTEM_DATA_ROOT;
 			m_localizedAssetsPath += "/";
-			m_localizedAssetsPath += CryAudio::Impl::SDL_mixer::s_szImplFolderName;
+			m_localizedAssetsPath += CryAudio::Impl::SDL_mixer::g_szImplFolderName;
 			m_localizedAssetsPath += "/";
 			m_localizedAssetsPath += CryAudio::s_szAssetsFolderName;
 		}

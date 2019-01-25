@@ -10,6 +10,16 @@ namespace CryAudio
 {
 class CObject;
 
+constexpr size_t g_numberLow = 7;
+constexpr size_t g_numberMedium = 9;
+constexpr size_t g_numberHigh = 11;
+constexpr size_t g_numRaySamplePositionsLow = g_numberLow * g_numberLow;
+constexpr size_t g_numRaySamplePositionsMedium = g_numberMedium * g_numberMedium;
+constexpr size_t g_numRaySamplePositionsHigh = g_numberHigh * g_numberHigh;
+constexpr size_t g_numConcurrentRaysLow = 1;
+constexpr size_t g_numConcurrentRaysMedium = 2;
+constexpr size_t g_numConcurrentRaysHigh = 4;
+
 class CPropagationProcessor
 {
 public:
@@ -21,9 +31,6 @@ public:
 	CPropagationProcessor& operator=(CPropagationProcessor&&) = delete;
 
 	static bool s_bCanIssueRWIs;
-
-	using RayInfoVec = std::vector<CRayInfo>;
-	using RayOcclusionVec = std::vector<float>;
 
 	CPropagationProcessor(CObject& object);
 	~CPropagationProcessor();
@@ -61,23 +68,23 @@ private:
 	void   UpdateOcclusionPlanes();
 	bool   CanRunOcclusion();
 
-	float           m_lastQuerriedOcclusion;
-	float           m_occlusion;
-	float           m_currentListenerDistance;
-	float           m_occlusionRayOffset;
-	RayOcclusionVec m_raysOcclusion;
+	float          m_lastQuerriedOcclusion;
+	float          m_occlusion;
+	float          m_currentListenerDistance;
+	float          m_occlusionRayOffset;
+	float          m_raysOcclusion[g_numRaySamplePositionsHigh] = { 0.0f };
 
-	size_t          m_remainingRays;
-	size_t          m_rayIndex;
+	size_t         m_remainingRays;
+	size_t         m_rayIndex;
 
-	CObject&        m_object;
+	CObject&       m_object;
 
-	RayInfoVec      m_raysInfo;
-	EOcclusionType  m_occlusionType;
-	EOcclusionType  m_originalOcclusionType;
-	EOcclusionType  m_occlusionTypeWhenAdaptive;
+	CRayInfo       m_raysInfo[g_numConcurrentRaysHigh];
+	EOcclusionType m_occlusionType;
+	EOcclusionType m_originalOcclusionType;
+	EOcclusionType m_occlusionTypeWhenAdaptive;
 
-	static int      s_occlusionRayFlags;
+	static int     s_occlusionRayFlags;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:
@@ -107,10 +114,8 @@ private:
 		int   numHits = 0;
 	};
 
-	using RayDebugInfoVec = std::vector<SRayDebugInfo>;
-
-	RayDebugInfoVec m_rayDebugInfos;
-	ColorB          m_listenerOcclusionPlaneColor;
+	SRayDebugInfo m_rayDebugInfos[g_numConcurrentRaysHigh];
+	ColorB        m_listenerOcclusionPlaneColor;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 } // namespace CryAudio

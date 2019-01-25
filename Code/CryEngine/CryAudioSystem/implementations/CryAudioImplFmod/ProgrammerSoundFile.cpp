@@ -14,13 +14,13 @@ namespace Impl
 namespace Fmod
 {
 //////////////////////////////////////////////////////////////////////////
-FMOD_RESULT F_CALLBACK ProgrammerSoundFileCallback(FMOD_STUDIO_EVENT_CALLBACK_TYPE type, FMOD_STUDIO_EVENTINSTANCE* pEvent, void* pInOutParameters)
+FMOD_RESULT F_CALLBACK ProgrammerSoundFileCallback(FMOD_STUDIO_EVENT_CALLBACK_TYPE type, FMOD_STUDIO_EVENTINSTANCE* pEventInstance, void* pInOutParameters)
 {
-	if (pEvent != nullptr)
+	if (pEventInstance != nullptr)
 	{
-		FMOD::Studio::EventInstance* const pEventInstance = reinterpret_cast<FMOD::Studio::EventInstance*>(pEvent);
+		auto const pFmodEventInstance = reinterpret_cast<FMOD::Studio::EventInstance*>(pEventInstance);
 		CProgrammerSoundFile* pFile = nullptr;
-		FMOD_RESULT fmodResult = pEventInstance->getUserData(reinterpret_cast<void**>(&pFile));
+		FMOD_RESULT fmodResult = pFmodEventInstance->getUserData(reinterpret_cast<void**>(&pFile));
 		ASSERT_FMOD_OK;
 
 		if (pFile != nullptr)

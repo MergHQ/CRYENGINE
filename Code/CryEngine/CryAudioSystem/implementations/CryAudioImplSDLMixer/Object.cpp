@@ -3,12 +3,12 @@
 #include "stdafx.h"
 #include "Object.h"
 #include "Event.h"
+#include "EventInstance.h"
 #include "Impl.h"
 #include "Listener.h"
-#include "Parameter.h"
+#include "VolumeParameter.h"
 #include "StandaloneFile.h"
-#include "SwitchState.h"
-#include "Trigger.h"
+#include "VolumeState.h"
 #include "SoundEngine.h"
 
 #include <SDL_mixer.h>
@@ -22,46 +22,52 @@ namespace SDL_mixer
 //////////////////////////////////////////////////////////////////////////
 void CObject::Update(float const deltaTime)
 {
-	if (!m_events.empty())
+	if (!m_eventInstances.empty())
 	{
 		float distance = 0.0f;
 		float angle = 0.0f;
 		GetDistanceAngleToObject(g_pListener->GetTransformation(), m_transformation, distance, angle);
 
-		auto iter(m_events.begin());
-		auto iterEnd(m_events.end());
+		auto iter(m_eventInstances.begin());
+		auto iterEnd(m_eventInstances.end());
 
 		while (iter != iterEnd)
 		{
-			auto const pEvent = *iter;
+			auto const pEventInstance = *iter;
 
-			if (pEvent->m_toBeRemoved)
+			if (pEventInstance->IsToBeRemoved())
 			{
-				gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pEvent->m_triggerInstanceId);
-				g_pImpl->DestructEvent(pEvent);
+				gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pEventInstance->GetTriggerInstanceId());
+				g_pImpl->DestructEventInstance(pEventInstance);
 
 				if (iter != (iterEnd - 1))
 				{
-					(*iter) = m_events.back();
+					(*iter) = m_eventInstances.back();
 				}
 
-				m_events.pop_back();
-				iter = m_events.begin();
-				iterEnd = m_events.end();
+				m_eventInstances.pop_back();
+				iter = m_eventInstances.begin();
+				iterEnd = m_eventInstances.end();
 			}
 			else
 			{
-				if (pEvent->m_pTrigger != nullptr)
+				for (auto const channelIndex : pEventInstance->m_channels)
 				{
-					for (auto const channelIndex : pEvent->m_channels)
-					{
-						SetChannelPosition(pEvent->m_pTrigger, channelIndex, distance, angle);
-					}
+					SetChannelPosition(pEventInstance->GetEvent(), channelIndex, distance, angle);
 				}
 
 				++iter;
 			}
 		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CObject::StopAllTriggers()
+{
+	for (auto const pEventInstance : m_eventInstances)
+	{
+		pEventInstance->Stop();
 	}
 }
 
@@ -78,11 +84,11 @@ ERequestStatus CObject::SetName(char const* const szName)
 //////////////////////////////////////////////////////////////////////////
 void CObject::StopEvent(uint32 const id)
 {
-	for (auto const pEvent : m_events)
+	for (auto const pEventInstance : m_eventInstances)
 	{
-		if (pEvent->m_triggerId == id)
+		if (pEventInstance->GetEventId() == id)
 		{
-			pEvent->Stop();
+			pEventInstance->Stop();
 		}
 	}
 }
@@ -96,15 +102,15 @@ void CObject::SetVolume(SampleId const sampleId, float const value)
 	{
 		float const volumeMultiplier = GetVolumeMultiplier(this, sampleId);
 
-		for (auto const pEvent : m_events)
+		for (auto const pEventInstance : m_eventInstances)
 		{
-			auto const pTrigger = pEvent->m_pTrigger;
+			auto const pEvent = pEventInstance->GetEvent();
 
-			if ((pTrigger != nullptr) && (pTrigger->GetSampleId() == sampleId))
+			if (pEvent->GetSampleId() == sampleId)
 			{
-				int const mixVolume = GetAbsoluteVolume(pTrigger->GetVolume(), volumeMultiplier);
+				int const mixVolume = GetAbsoluteVolume(pEvent->GetVolume(), volumeMultiplier);
 
-				for (auto const channel : pEvent->m_channels)
+				for (auto const channel : pEventInstance->m_channels)
 				{
 					Mix_Volume(channel, mixVolume);
 				}

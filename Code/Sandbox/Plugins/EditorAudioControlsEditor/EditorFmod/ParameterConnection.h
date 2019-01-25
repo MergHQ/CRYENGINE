@@ -25,8 +25,8 @@ public:
 
 	explicit CParameterConnection(
 		ControlId const id,
-		float const mult = CryAudio::Impl::Fmod::s_defaultParamMultiplier,
-		float const shift = CryAudio::Impl::Fmod::s_defaultParamShift)
+		float const mult = CryAudio::Impl::Fmod::g_defaultParamMultiplier,
+		float const shift = CryAudio::Impl::Fmod::g_defaultParamShift)
 		: CBaseConnection(id)
 		, m_mult(mult)
 		, m_shift(shift)

@@ -2,12 +2,16 @@
 
 #include "stdafx.h"
 #include "Event.h"
+#include "Common.h"
+#include "Impl.h"
 #include "BaseObject.h"
-#include "CVars.h"
-#include "EnvironmentBus.h"
-#include "EnvironmentParameter.h"
-#include "Trigger.h"
-#include <CryAudio/IAudioSystem.h>
+#include "BaseStandaloneFile.h"
+#include "EventInstance.h"
+#include "Listener.h"
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	#include <Logger.h>
+#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -15,261 +19,225 @@ namespace Impl
 {
 namespace Fmod
 {
+FMOD::Studio::System* CBaseObject::s_pSystem = nullptr;
+FMOD::Studio::System* CListener::s_pSystem = nullptr;
+FMOD::System* CBaseStandaloneFile::s_pLowLevelSystem = nullptr;
+
+//////////////////////////////////////////////////////////////////////////
+FMOD_RESULT F_CALLBACK EventCallback(FMOD_STUDIO_EVENT_CALLBACK_TYPE type, FMOD_STUDIO_EVENTINSTANCE* event, void* parameters)
+{
+	auto* const pFmodEventInstance = reinterpret_cast<FMOD::Studio::EventInstance*>(event);
+
+	if (pFmodEventInstance != nullptr)
+	{
+		CEventInstance* pEventInstance = nullptr;
+		FMOD_RESULT const fmodResult = pFmodEventInstance->getUserData(reinterpret_cast<void**>(&pEventInstance));
+		ASSERT_FMOD_OK;
+
+		if (pEventInstance != nullptr)
+		{
+			pEventInstance->SetToBeRemoved();
+		}
+	}
+
+	return FMOD_OK;
+}
+
+//////////////////////////////////////////////////////////////////////////
+FMOD_RESULT F_CALLBACK ProgrammerSoundCallback(FMOD_STUDIO_EVENT_CALLBACK_TYPE type, FMOD_STUDIO_EVENTINSTANCE* pEventInst, void* pInOutParameters)
+{
+	if (pEventInst != nullptr)
+	{
+		auto const pFmodEventInstance = reinterpret_cast<FMOD::Studio::EventInstance*>(pEventInst);
+		CEventInstance* pEventInstance = nullptr;
+		FMOD_RESULT fmodResult = pFmodEventInstance->getUserData(reinterpret_cast<void**>(&pEventInstance));
+		ASSERT_FMOD_OK;
+
+		if ((pEventInstance != nullptr) && (pEventInstance->GetEvent() != nullptr))
+		{
+			if (type == FMOD_STUDIO_EVENT_CALLBACK_CREATE_PROGRAMMER_SOUND)
+			{
+				CRY_ASSERT_MESSAGE(pInOutParameters != nullptr, "pInOutParameters is null pointer during %s", __FUNCTION__);
+				auto const pInOutProperties = reinterpret_cast<FMOD_STUDIO_PROGRAMMER_SOUND_PROPERTIES*>(pInOutParameters);
+				char const* const szKey = pEventInstance->GetEvent()->GetKey().c_str();
+
+				FMOD_STUDIO_SOUND_INFO soundInfo;
+				fmodResult = CBaseObject::s_pSystem->getSoundInfo(szKey, &soundInfo);
+				ASSERT_FMOD_OK;
+
+				FMOD::Sound* pSound = nullptr;
+				FMOD_MODE const mode = FMOD_CREATECOMPRESSEDSAMPLE | FMOD_NONBLOCKING | FMOD_3D | soundInfo.mode;
+				fmodResult = CBaseStandaloneFile::s_pLowLevelSystem->createSound(soundInfo.name_or_data, mode, &soundInfo.exinfo, &pSound);
+				ASSERT_FMOD_OK;
+
+				pInOutProperties->sound = reinterpret_cast<FMOD_SOUND*>(pSound);
+				pInOutProperties->subsoundIndex = soundInfo.subsoundindex;
+			}
+			else if (type == FMOD_STUDIO_EVENT_CALLBACK_DESTROY_PROGRAMMER_SOUND)
+			{
+				CRY_ASSERT_MESSAGE(pInOutParameters != nullptr, "pInOutParameters is null pointer during %s", __FUNCTION__);
+				auto const pInOutProperties = reinterpret_cast<FMOD_STUDIO_PROGRAMMER_SOUND_PROPERTIES*>(pInOutParameters);
+
+				auto* pSound = reinterpret_cast<FMOD::Sound*>(pInOutProperties->sound);
+
+				fmodResult = pSound->release();
+				ASSERT_FMOD_OK;
+			}
+			else if ((type == FMOD_STUDIO_EVENT_CALLBACK_START_FAILED) || (type == FMOD_STUDIO_EVENT_CALLBACK_STOPPED))
+			{
+				ASSERT_FMOD_OK;
+				pEventInstance->SetToBeRemoved();
+			}
+		}
+	}
+
+	return FMOD_OK;
+}
+
 //////////////////////////////////////////////////////////////////////////
 CEvent::~CEvent()
 {
-	if (m_pInstance != nullptr)
-	{
-		FMOD_RESULT const fmodResult = m_pInstance->release();
-		ASSERT_FMOD_OK_OR_INVALID_HANDLE;
-	}
+	g_eventToParameterIndexes.erase(this);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEvent::SetInternalParameters()
+ERequestStatus CEvent::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
 {
-	m_pInstance->getParameter(s_szOcclusionParameterName, &m_pOcclusionParameter);
-	m_pInstance->getParameter(s_szAbsoluteVelocityParameterName, &m_pAbsoluteVelocityParameter);
-}
+	ERequestStatus requestResult = ERequestStatus::Failure;
 
-//////////////////////////////////////////////////////////////////////////
-bool CEvent::PrepareForOcclusion()
-{
-	m_pMasterTrack = nullptr;
-	FMOD_RESULT fmodResult = m_pInstance->getChannelGroup(&m_pMasterTrack);
-	ASSERT_FMOD_OK_OR_NOT_LOADED;
-
-	if ((m_pMasterTrack != nullptr) && (m_pOcclusionParameter == nullptr))
+	if (pIObject != nullptr)
 	{
-		m_pLowpass = nullptr;
-		int numDSPs = 0;
-		fmodResult = m_pMasterTrack->getNumDSPs(&numDSPs);
-		ASSERT_FMOD_OK;
+		auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
 
-		for (int i = 0; i < numDSPs; ++i)
+		switch (m_actionType)
 		{
-			fmodResult = m_pMasterTrack->getDSP(i, &m_pLowpass);
-			ASSERT_FMOD_OK;
-
-			if (m_pLowpass != nullptr)
+		case EActionType::Start:
 			{
-				FMOD_DSP_TYPE dspType;
-				fmodResult = m_pLowpass->getType(&dspType);
-				ASSERT_FMOD_OK;
+				FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 
-				if (dspType == FMOD_DSP_TYPE_LOWPASS_SIMPLE || dspType == FMOD_DSP_TYPE_LOWPASS)
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+				CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(triggerInstanceId, m_id, this, pBaseObject);
+#else
+				CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(triggerInstanceId, m_id, this);
+#endif        // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
+				if (m_pEventDescription == nullptr)
 				{
-					FMOD_DSP_PARAMETER_DESC* pParameterDesc = nullptr;
-					fmodResult = m_pLowpass->getParameterInfo(FMOD_DSP_LOWPASS_CUTOFF, &pParameterDesc);
+					fmodResult = CBaseObject::s_pSystem->getEventByID(&m_guid, &m_pEventDescription);
 					ASSERT_FMOD_OK;
-
-					m_lowpassFrequencyMin = pParameterDesc->floatdesc.min;
-					m_lowpassFrequencyMax = pParameterDesc->floatdesc.max;
-					break;
 				}
-				else
+
+				if (m_pEventDescription != nullptr)
 				{
-					m_pLowpass = nullptr;
-				}
-			}
-		}
-	}
+					CRY_ASSERT(pEventInstance->GetFmodEventInstance() == nullptr);
 
-	return m_pMasterTrack != nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEvent::SetOcclusion(float const occlusion)
-{
-	if (m_pOcclusionParameter != nullptr)
-	{
-		FMOD_RESULT const fmodResult = m_pOcclusionParameter->setValue(occlusion);
-		ASSERT_FMOD_OK;
-	}
-	else if (m_pLowpass != nullptr)
-	{
-		float const range = m_lowpassFrequencyMax - std::max(m_lowpassFrequencyMin, g_cvars.m_lowpassMinCutoffFrequency);
-		float const value = m_lowpassFrequencyMax - (occlusion * range);
-		FMOD_RESULT const fmodResult = m_pLowpass->setParameterFloat(FMOD_DSP_LOWPASS_CUTOFF, value);
-		ASSERT_FMOD_OK;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEvent::TrySetEnvironment(CEnvironment const* const pEnvironment, float const value)
-{
-	if (m_pInstance != nullptr && m_pMasterTrack != nullptr)
-	{
-		auto const type = pEnvironment->GetType();
-
-		if (type == EEnvironmentType::Bus)
-		{
-			CEnvironmentBus const* const pEnvBus = static_cast<CEnvironmentBus const* const>(pEnvironment);
-
-			FMOD::ChannelGroup* pChannelGroup = nullptr;
-			FMOD_RESULT fmodResult = pEnvBus->GetBus()->getChannelGroup(&pChannelGroup);
-			ASSERT_FMOD_OK;
-
-			if (pChannelGroup != nullptr)
-			{
-				FMOD::DSP* pReturn = nullptr;
-				fmodResult = pChannelGroup->getDSP(FMOD_CHANNELCONTROL_DSP_TAIL, &pReturn);
-				ASSERT_FMOD_OK;
-
-				if (pReturn != nullptr)
-				{
-					int returnId1 = FMOD_IMPL_INVALID_INDEX;
-					fmodResult = pReturn->getParameterInt(FMOD_DSP_RETURN_ID, &returnId1, nullptr, 0);
+					FMOD::Studio::EventInstance* pFmodEventInstance = nullptr;
+					fmodResult = m_pEventDescription->createInstance(&pFmodEventInstance);
 					ASSERT_FMOD_OK;
+					pEventInstance->SetFmodEventInstance(pFmodEventInstance);
+					pEventInstance->SetInternalParameters();
 
-					int numDSPs = 0;
-					fmodResult = m_pMasterTrack->getNumDSPs(&numDSPs);
-					ASSERT_FMOD_OK;
-
-					for (int i = 0; i < numDSPs; ++i)
+					if (m_hasProgrammerSound)
 					{
-						FMOD::DSP* pSend = nullptr;
-						fmodResult = m_pMasterTrack->getDSP(i, &pSend);
-						ASSERT_FMOD_OK;
+						fmodResult = pEventInstance->GetFmodEventInstance()->setCallback(ProgrammerSoundCallback);
+					}
+					else
+					{
+						fmodResult = pEventInstance->GetFmodEventInstance()->setCallback(EventCallback, FMOD_STUDIO_EVENT_CALLBACK_START_FAILED | FMOD_STUDIO_EVENT_CALLBACK_STOPPED);
+					}
 
-						if (pSend != nullptr)
+					ASSERT_FMOD_OK;
+					fmodResult = pEventInstance->GetFmodEventInstance()->setUserData(pEventInstance);
+					ASSERT_FMOD_OK;
+					fmodResult = pEventInstance->GetFmodEventInstance()->set3DAttributes(&pBaseObject->GetAttributes());
+					ASSERT_FMOD_OK;
+
+					EventInstances& objectPendingEvents = pBaseObject->GetPendingEventInstances();
+					CRY_ASSERT_MESSAGE(std::find(objectPendingEvents.begin(), objectPendingEvents.end(), pEventInstance) == objectPendingEvents.end(), "Event was already in the pending list during %s", __FUNCTION__);
+					objectPendingEvents.push_back(pEventInstance);
+					requestResult = ERequestStatus::Success;
+				}
+
+				break;
+			}
+		case EActionType::Stop:
+			{
+				pBaseObject->StopEventInstance(m_id);
+				requestResult = ERequestStatus::SuccessDoNotTrack;
+
+				break;
+			}
+		case EActionType::Pause: // Intentional fall-through.
+		case EActionType::Resume:
+			{
+				FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
+
+				bool const shouldPause = (m_actionType == EActionType::Pause);
+				int const capacity = 32;
+				EventInstances const& eventInstances = pBaseObject->GetEventInstances();
+
+				for (auto const pEventInstance : eventInstances)
+				{
+					if (pEventInstance->GetId() == m_id)
+					{
+						if (m_pEventDescription == nullptr)
 						{
-							FMOD_DSP_TYPE dspType;
-							fmodResult = pSend->getType(&dspType);
+							fmodResult = CBaseObject::s_pSystem->getEventByID(&m_guid, &m_pEventDescription);
+							ASSERT_FMOD_OK;
+						}
+
+						if (m_pEventDescription != nullptr)
+						{
+							int count = 0;
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+							fmodResult = m_pEventDescription->getInstanceCount(&count);
+							ASSERT_FMOD_OK;
+							CRY_ASSERT_MESSAGE(count < capacity, "Instance count (%d) is higher or equal than array capacity (%d) during %s", count, capacity, __FUNCTION__);
+#endif              // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
+							FMOD::Studio::EventInstance* eventInstances[capacity];
+							fmodResult = m_pEventDescription->getInstanceList(eventInstances, capacity, &count);
 							ASSERT_FMOD_OK;
 
-							if (dspType == FMOD_DSP_TYPE_SEND)
+							for (int i = 0; i < count; ++i)
 							{
-								int returnId2 = FMOD_IMPL_INVALID_INDEX;
-								fmodResult = pSend->getParameterInt(FMOD_DSP_RETURN_ID, &returnId2, nullptr, 0);
-								ASSERT_FMOD_OK;
+								auto const pFmodEventInstance = eventInstances[i];
 
-								if (returnId1 == returnId2)
+								if (pFmodEventInstance != nullptr)
 								{
-									fmodResult = pSend->setParameterFloat(FMOD_DSP_SEND_LEVEL, value);
+									fmodResult = pFmodEventInstance->setPaused(shouldPause);
 									ASSERT_FMOD_OK;
-									break;
 								}
 							}
+
+							requestResult = ERequestStatus::SuccessDoNotTrack;
 						}
 					}
 				}
-			}
-		}
-		else if (type == EEnvironmentType::Parameter)
-		{
-			CEnvironmentParameter const* const pEnvParam = static_cast<CEnvironmentParameter const* const>(pEnvironment);
-			uint32 const parameterId = pEnvParam->GetId();
 
-			FMOD::Studio::EventInstance* const pEventInstance = GetInstance();
-			CRY_ASSERT_MESSAGE(pEventInstance != nullptr, "Event instance doesn't exist during %s", __FUNCTION__);
-			CTrigger const* const pTrigger = GetTrigger();
-			CRY_ASSERT_MESSAGE(pTrigger != nullptr, "Trigger doesn't exist during %s", __FUNCTION__);
-
-			FMOD::Studio::EventDescription* pEventDescription = nullptr;
-			FMOD_RESULT fmodResult = pEventInstance->getDescription(&pEventDescription);
-			ASSERT_FMOD_OK;
-
-			if (g_triggerToParameterIndexes.find(pTrigger) != g_triggerToParameterIndexes.end())
-			{
-				ParameterIdToIndex& parameters = g_triggerToParameterIndexes[pTrigger];
-
-				if (parameters.find(parameterId) != parameters.end())
-				{
-					fmodResult = pEventInstance->setParameterValueByIndex(parameters[parameterId], pEnvParam->GetValueMultiplier() * value + pEnvParam->GetValueShift());
-					ASSERT_FMOD_OK;
-				}
-				else
-				{
-					int parameterCount = 0;
-					fmodResult = pEventInstance->getParameterCount(&parameterCount);
-					ASSERT_FMOD_OK;
-
-					for (int index = 0; index < parameterCount; ++index)
-					{
-						FMOD_STUDIO_PARAMETER_DESCRIPTION parameterDescription;
-						fmodResult = pEventDescription->getParameterByIndex(index, &parameterDescription);
-						ASSERT_FMOD_OK;
-
-						if (parameterId == StringToId(parameterDescription.name))
-						{
-							parameters.emplace(parameterId, index);
-							fmodResult = pEventInstance->setParameterValueByIndex(index, pEnvParam->GetValueMultiplier() * value + pEnvParam->GetValueShift());
-							ASSERT_FMOD_OK;
-							break;
-						}
-					}
-				}
-			}
-			else
-			{
-				int parameterCount = 0;
-				fmodResult = pEventInstance->getParameterCount(&parameterCount);
-				ASSERT_FMOD_OK;
-
-				for (int index = 0; index < parameterCount; ++index)
-				{
-					FMOD_STUDIO_PARAMETER_DESCRIPTION parameterDescription;
-					fmodResult = pEventDescription->getParameterByIndex(index, &parameterDescription);
-					ASSERT_FMOD_OK;
-
-					if (parameterId == StringToId(parameterDescription.name))
-					{
-						g_triggerToParameterIndexes[pTrigger].emplace(std::make_pair(parameterId, index));
-						fmodResult = pEventInstance->setParameterValueByIndex(index, pEnvParam->GetValueMultiplier() * value + pEnvParam->GetValueShift());
-						ASSERT_FMOD_OK;
-						break;
-					}
-				}
+				break;
 			}
 		}
 	}
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	else
 	{
-		// Must exist at this point.
-		CRY_ASSERT(false);
+		Cry::Audio::Log(ELogType::Error, "Invalid object or event pointer passed to the Fmod implementation of %s.", __FUNCTION__);
 	}
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
+	return requestResult;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEvent::UpdateVirtualState()
+void CEvent::Stop(IObject* const pIObject)
 {
-	// Workaround until Fmod has callbacks for virtual/physical states.
-	if (m_pMasterTrack != nullptr)
+	if (pIObject != nullptr)
 	{
-		float audibility = 0.0f;
-		m_pMasterTrack->getAudibility(&audibility);
-
-		m_state = (audibility < 0.01f) ? EEventState::Virtual : EEventState::Playing;
+		auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
+		pBaseObject->StopEventInstance(m_id);
 	}
-	else
-	{
-		m_state = EEventState::None;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEvent::SetAbsoluteVelocity(float const velocity)
-{
-	if (m_pAbsoluteVelocityParameter != nullptr)
-	{
-		FMOD_RESULT const fmodResult = m_pAbsoluteVelocityParameter->setValue(velocity);
-		ASSERT_FMOD_OK;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEvent::StopAllowFadeOut()
-{
-	FMOD_RESULT const fmodResult = m_pInstance->stop(FMOD_STUDIO_STOP_ALLOWFADEOUT);
-	ASSERT_FMOD_OK;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEvent::StopImmediate()
-{
-	FMOD_RESULT const fmodResult = m_pInstance->stop(FMOD_STUDIO_STOP_IMMEDIATE);
-	ASSERT_FMOD_OK;
 }
 } // namespace Fmod
 } // namespace Impl

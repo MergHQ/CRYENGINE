@@ -17,14 +17,23 @@ class CSnapshotConnection final : public CBaseConnection, public CryAudio::CPool
 {
 public:
 
+	enum class EActionType : CryAudio::EnumFlagsType
+	{
+		Start,
+		Stop, };
+
 	CSnapshotConnection() = delete;
 	CSnapshotConnection(CSnapshotConnection const&) = delete;
 	CSnapshotConnection(CSnapshotConnection&&) = delete;
 	CSnapshotConnection& operator=(CSnapshotConnection const&) = delete;
 	CSnapshotConnection& operator=(CSnapshotConnection&&) = delete;
 
-	explicit CSnapshotConnection(ControlId const id, int const fadeTime = CryAudio::Impl::Adx2::s_defaultChangeoverTime)
+	explicit CSnapshotConnection(
+		ControlId const id,
+		EActionType const actionType = EActionType::Start,
+		int const fadeTime = CryAudio::Impl::Adx2::g_defaultChangeoverTime)
 		: CBaseConnection(id)
+		, m_actionType(actionType)
 		, m_changeoverTime(fadeTime)
 	{}
 
@@ -35,11 +44,13 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar) override;
 	// ~CBaseConnection
 
-	int GetChangeoverTime() const { return m_changeoverTime; }
+	EActionType GetActionType() const     { return m_actionType; }
+	int         GetChangeoverTime() const { return m_changeoverTime; }
 
 private:
 
-	int m_changeoverTime;
+	EActionType m_actionType;
+	int         m_changeoverTime;
 };
 } // namespace Adx2
 } // namespace Impl

@@ -25,8 +25,8 @@ public:
 
 	explicit CParameterConnection(
 		ControlId const id,
-		float const mult = CryAudio::Impl::SDL_mixer::s_defaultParamMultiplier,
-		float const shift = CryAudio::Impl::SDL_mixer::s_defaultParamShift)
+		float const mult = CryAudio::Impl::SDL_mixer::g_defaultParamMultiplier,
+		float const shift = CryAudio::Impl::SDL_mixer::g_defaultParamShift)
 		: CBaseConnection(id)
 		, m_mult(mult)
 		, m_shift(shift)

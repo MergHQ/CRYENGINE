@@ -11,48 +11,55 @@ namespace Impl
 {
 namespace Adx2
 {
-static constexpr char const* s_szImplFolderName = "adx2";
+constexpr char const* g_szImplFolderName = "adx2";
 
 // XML tags
-static constexpr char const* s_szCueTag = "Cue";
-static constexpr char const* s_szFileTag = "File";
-static constexpr char const* s_szAisacControlTag = "AisacControl";
-static constexpr char const* s_szGameVariableTag = "GameVariable";
-static constexpr char const* s_szSelectorTag = "Selector";
-static constexpr char const* s_szSelectorLabelTag = "SelectorLabel";
-static constexpr char const* s_szSCategoryTag = "Category";
-static constexpr char const* s_szDspBusSettingTag = "DspBusSetting";
-static constexpr char const* s_szBusTag = "Bus";
-static constexpr char const* s_szSnapshotTag = "Snapshot";
+constexpr char const* g_szCueTag = "Cue";
+constexpr char const* g_szBinaryTag = "Binary";
+constexpr char const* g_szAisacControlTag = "AisacControl";
+constexpr char const* g_szGameVariableTag = "GameVariable";
+constexpr char const* g_szSelectorTag = "Selector";
+constexpr char const* g_szSelectorLabelTag = "SelectorLabel";
+constexpr char const* g_szSCategoryTag = "Category";
+constexpr char const* g_szDspBusSettingTag = "DspBusSetting";
+constexpr char const* g_szDspBusTag = "DspBus";
+constexpr char const* g_szSnapshotTag = "Snapshot";
 
 // XML attributes
-static constexpr char const* s_szCueSheetAttribute = "cuesheet";
-static constexpr char const* s_szValueAttribute = "value";
-static constexpr char const* s_szMutiplierAttribute = "value_multiplier";
-static constexpr char const* s_szShiftAttribute = "value_shift";
-static constexpr char const* s_szLocalizedAttribute = "localized";
-static constexpr char const* s_szTimeAttribute = "time";
+constexpr char const* g_szCueSheetAttribute = "cuesheet";
+constexpr char const* g_szValueAttribute = "value";
+constexpr char const* g_szMutiplierAttribute = "value_multiplier";
+constexpr char const* g_szShiftAttribute = "value_shift";
+constexpr char const* g_szLocalizedAttribute = "localized";
+constexpr char const* g_szTimeAttribute = "time";
 
 // XML attributes for impl data node
-static constexpr char const* s_szTriggersAttribute = "triggers";
-static constexpr char const* s_szParametersAttribute = "parameters";
-static constexpr char const* s_szSwitchStatesAttribute = "switchstates";
-static constexpr char const* s_szEnvironmentsAttribute = "environments";
-static constexpr char const* s_szSettingsAttribute = "settings";
-static constexpr char const* s_szFilesAttribute = "files";
+constexpr char const* g_szCuesAttribute = "cues";
+constexpr char const* g_szAisacControlsAttribute = "aisaccontrols";
+constexpr char const* g_szAisacEnvironmentsAttribute = "aisacenvironments";
+constexpr char const* g_szAisacStatesAttribute = "aisacstates";
+constexpr char const* g_szCategoriesAttribute = "categories";
+constexpr char const* g_szCategoryStatesAttribute = "categorystates";
+constexpr char const* g_szGameVariablesAttribute = "gamevariables";
+constexpr char const* g_szGameVariableStatesAttribute = "gamevariablestates";
+constexpr char const* g_szSelectorLabelsAttribute = "selectorlabels";
+constexpr char const* g_szDspBusesAttribute = "dspbuses";
+constexpr char const* g_szSnapshotsAttribute = "snapshots";
+constexpr char const* g_szDspBusSettingsAttribute = "dspbussettings";
+constexpr char const* g_szBinariesAttribute = "binaries";
 
 // XML values
-static constexpr char const* s_szTrueValue = "true";
-static constexpr char const* s_szStopValue = "stop";
-static constexpr char const* s_szPauseValue = "pause";
-static constexpr char const* s_szResumeValue = "resume";
+constexpr char const* g_szTrueValue = "true";
+constexpr char const* g_szStopValue = "stop";
+constexpr char const* g_szPauseValue = "pause";
+constexpr char const* g_szResumeValue = "resume";
 
 // Default values
-static constexpr float const s_defaultParamMultiplier = 1.0f;
-static constexpr float const s_defaultParamShift = 0.0f;
-static constexpr float const s_defaultStateValue = 0.0f;
-static constexpr float const s_defaultCategoryVolume = 1.0f;
-static constexpr int const s_defaultChangeoverTime = 0;
+constexpr float g_defaultParamMultiplier = 1.0f;
+constexpr float g_defaultParamShift = 0.0f;
+constexpr float g_defaultStateValue = 0.0f;
+constexpr float g_defaultCategoryVolume = 1.0f;
+constexpr int g_defaultChangeoverTime = 0;
 
 // Required to create a preview trigger in editor.
 struct STriggerInfo final : public ITriggerInfo
@@ -63,12 +70,19 @@ struct STriggerInfo final : public ITriggerInfo
 
 struct SPoolSizes final
 {
-	uint16 triggers = 0;
-	uint16 parameters = 0;
-	uint16 switchStates = 0;
-	uint16 environments = 0;
-	uint16 settings = 0;
-	uint16 files = 0;
+	uint16 cues = 0;
+	uint16 aisacControls = 0;
+	uint16 aisacEnvironments = 0;
+	uint16 aisacStates = 0;
+	uint16 categories = 0;
+	uint16 categoryStates = 0;
+	uint16 gameVariables = 0;
+	uint16 gameVariableStates = 0;
+	uint16 selectorLabels = 0;
+	uint16 dspBuses = 0;
+	uint16 snapshots = 0;
+	uint16 dspBusSettings = 0;
+	uint16 binaries = 0;
 };
 } // namespace Adx2
 } // namespace Impl

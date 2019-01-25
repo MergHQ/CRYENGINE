@@ -10,7 +10,9 @@ namespace Impl
 {
 namespace Fmod
 {
+class CEventInstance;
 class CEvent;
+class CBaseObject;
 
 class CImpl final : public IImpl
 {
@@ -73,15 +75,14 @@ public:
 	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const override;
 	// ~CryAudio::Impl::IImpl
 
-	CEvent* ConstructEvent(TriggerInstanceId const triggerInstanceId);
-	void    DestructEvent(CEvent const* const pEvent);
+	CEventInstance* ConstructEventInstance(
+		TriggerInstanceId const triggerInstanceId,
+		uint32 const eventId,
+		CEvent const* const pEvent,
+		CBaseObject const* const pBaseObject = nullptr);
+	void DestructEventInstance(CEventInstance const* const pEventInstance);
 
 private:
-
-	static char const* const s_szEventPrefix;
-	static char const* const s_szSnapshotPrefix;
-	static char const* const s_szBusPrefix;
-	static char const* const s_szVcaPrefix;
 
 	void        CreateVersionString(CryFixedStringT<MaxInfoStringLength>& stringOut) const;
 	void        LoadMasterBanks();

@@ -33,27 +33,27 @@ EItemType TagToType(char const* const szTag)
 {
 	EItemType type = EItemType::None;
 
-	if (_stricmp(szTag, CryAudio::Impl::Wwise::s_szEventTag) == 0)
+	if (_stricmp(szTag, CryAudio::Impl::Wwise::g_szEventTag) == 0)
 	{
 		type = EItemType::Event;
 	}
-	else if (_stricmp(szTag, CryAudio::Impl::Wwise::s_szFileTag) == 0)
+	else if (_stricmp(szTag, CryAudio::Impl::Wwise::g_szFileTag) == 0)
 	{
 		type = EItemType::SoundBank;
 	}
-	else if (_stricmp(szTag, CryAudio::Impl::Wwise::s_szParameterTag) == 0)
+	else if (_stricmp(szTag, CryAudio::Impl::Wwise::g_szParameterTag) == 0)
 	{
 		type = EItemType::Parameter;
 	}
-	else if (_stricmp(szTag, CryAudio::Impl::Wwise::s_szSwitchGroupTag) == 0)
+	else if (_stricmp(szTag, CryAudio::Impl::Wwise::g_szSwitchGroupTag) == 0)
 	{
 		type = EItemType::SwitchGroup;
 	}
-	else if (_stricmp(szTag, CryAudio::Impl::Wwise::s_szStateGroupTag) == 0)
+	else if (_stricmp(szTag, CryAudio::Impl::Wwise::g_szStateGroupTag) == 0)
 	{
 		type = EItemType::StateGroup;
 	}
-	else if (_stricmp(szTag, CryAudio::Impl::Wwise::s_szAuxBusTag) == 0)
+	else if (_stricmp(szTag, CryAudio::Impl::Wwise::g_szAuxBusTag) == 0)
 	{
 		type = EItemType::AuxBus;
 	}
@@ -102,28 +102,28 @@ char const* TypeToTag(EItemType const type)
 	switch (type)
 	{
 	case EItemType::Event:
-		szTag = CryAudio::Impl::Wwise::s_szEventTag;
+		szTag = CryAudio::Impl::Wwise::g_szEventTag;
 		break;
 	case EItemType::Parameter:
-		szTag = CryAudio::Impl::Wwise::s_szParameterTag;
+		szTag = CryAudio::Impl::Wwise::g_szParameterTag;
 		break;
 	case EItemType::Switch:
-		szTag = CryAudio::Impl::Wwise::s_szValueTag;
+		szTag = CryAudio::Impl::Wwise::g_szValueTag;
 		break;
 	case EItemType::AuxBus:
-		szTag = CryAudio::Impl::Wwise::s_szAuxBusTag;
+		szTag = CryAudio::Impl::Wwise::g_szAuxBusTag;
 		break;
 	case EItemType::SoundBank:
-		szTag = CryAudio::Impl::Wwise::s_szFileTag;
+		szTag = CryAudio::Impl::Wwise::g_szFileTag;
 		break;
 	case EItemType::State:
-		szTag = CryAudio::Impl::Wwise::s_szValueTag;
+		szTag = CryAudio::Impl::Wwise::g_szValueTag;
 		break;
 	case EItemType::SwitchGroup:
-		szTag = CryAudio::Impl::Wwise::s_szSwitchGroupTag;
+		szTag = CryAudio::Impl::Wwise::g_szSwitchGroupTag;
 		break;
 	case EItemType::StateGroup:
-		szTag = CryAudio::Impl::Wwise::s_szStateGroupTag;
+		szTag = CryAudio::Impl::Wwise::g_szStateGroupTag;
 		break;
 	default:
 		szTag = nullptr;
@@ -140,7 +140,7 @@ void CountConnections(EAssetType const assetType, EItemType const itemType)
 	{
 	case EItemType::Event:
 		{
-			++g_connections.triggers;
+			++g_connections.events;
 			break;
 		}
 	case EItemType::Parameter:
@@ -154,12 +154,12 @@ void CountConnections(EAssetType const assetType, EItemType const itemType)
 				}
 			case EAssetType::State:
 				{
-					++g_connections.switchStates;
+					++g_connections.parameterStates;
 					break;
 				}
 			case EAssetType::Environment:
 				{
-					++g_connections.environments;
+					++g_connections.parameterEnvironments;
 					break;
 				}
 			default:
@@ -168,20 +168,24 @@ void CountConnections(EAssetType const assetType, EItemType const itemType)
 
 			break;
 		}
-	case EItemType::Switch:
 	case EItemType::State:
 		{
-			++g_connections.switchStates;
+			++g_connections.states;
+			break;
+		}
+	case EItemType::Switch:
+		{
+			++g_connections.switches;
 			break;
 		}
 	case EItemType::AuxBus:
 		{
-			++g_connections.environments;
+			++g_connections.auxBuses;
 			break;
 		}
 	case EItemType::SoundBank:
 		{
-			++g_connections.files;
+			++g_connections.soundBanks;
 			break;
 		}
 	default:
@@ -221,7 +225,7 @@ CItem* SearchForItem(CItem* const pItem, string const& name, EItemType const typ
 CImpl::CImpl()
 	: m_pDataPanel(nullptr)
 	, m_projectPath(AUDIO_SYSTEM_DATA_ROOT "/wwise_project")
-	, m_assetsPath(AUDIO_SYSTEM_DATA_ROOT "/" + string(CryAudio::Impl::Wwise::s_szImplFolderName) + "/" + string(CryAudio::s_szAssetsFolderName))
+	, m_assetsPath(AUDIO_SYSTEM_DATA_ROOT "/" + string(CryAudio::Impl::Wwise::g_szImplFolderName) + "/" + string(CryAudio::s_szAssetsFolderName))
 	, m_localizedAssetsPath(m_assetsPath)
 	, m_szUserSettingsFile("%USER%/audiocontrolseditor_wwise.user")
 {
@@ -480,7 +484,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 		if (type != EItemType::None)
 		{
 			string name = pNode->getAttr(CryAudio::s_szNameAttribute);
-			string localizedAttribute = pNode->getAttr(CryAudio::Impl::Wwise::s_szLocalizedAttribute);
+			string localizedAttribute = pNode->getAttr(CryAudio::Impl::Wwise::g_szLocalizedAttribute);
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 			if (name.IsEmpty() && pNode->haveAttr("wwise_name"))
 			{
@@ -492,7 +496,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 				localizedAttribute = pNode->getAttr("wwise_localised");
 			}
 #endif      // USE_BACKWARDS_COMPATIBILITY
-			bool const isLocalized = (localizedAttribute.compareNoCase(CryAudio::Impl::Wwise::s_szTrueValue) == 0);
+			bool const isLocalized = (localizedAttribute.compareNoCase(CryAudio::Impl::Wwise::g_szTrueValue) == 0);
 
 			CItem* pItem = SearchForItem(&m_rootItem, name, type);
 
@@ -568,11 +572,11 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 					case EAssetType::Environment:
 						{
 
-							float mult = CryAudio::Impl::Wwise::s_defaultParamMultiplier;
-							float shift = CryAudio::Impl::Wwise::s_defaultParamShift;
+							float mult = CryAudio::Impl::Wwise::g_defaultParamMultiplier;
+							float shift = CryAudio::Impl::Wwise::g_defaultParamShift;
 
-							pNode->getAttr(CryAudio::Impl::Wwise::s_szMutiplierAttribute, mult);
-							pNode->getAttr(CryAudio::Impl::Wwise::s_szShiftAttribute, shift);
+							pNode->getAttr(CryAudio::Impl::Wwise::g_szMutiplierAttribute, mult);
+							pNode->getAttr(CryAudio::Impl::Wwise::g_szShiftAttribute, shift);
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 							if (pNode->haveAttr("wwise_value_multiplier"))
 							{
@@ -589,9 +593,9 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 						break;
 					case EAssetType::State:
 						{
-							float value = CryAudio::Impl::Wwise::s_defaultStateValue;
+							float value = CryAudio::Impl::Wwise::g_defaultStateValue;
 
-							pNode->getAttr(CryAudio::Impl::Wwise::s_szValueAttribute, value);
+							pNode->getAttr(CryAudio::Impl::Wwise::g_szValueAttribute, value);
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 							if (pNode->haveAttr("wwise_value"))
 							{
@@ -647,7 +651,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 					XmlNodeRef const pSwitchNode = GetISystem()->CreateXmlNode(TypeToTag(pParent->GetType()));
 					pSwitchNode->setAttr(CryAudio::s_szNameAttribute, pParent->GetName());
 
-					XmlNodeRef const pStateNode = pSwitchNode->createNode(CryAudio::Impl::Wwise::s_szValueTag);
+					XmlNodeRef const pStateNode = pSwitchNode->createNode(CryAudio::Impl::Wwise::g_szValueTag);
 					pStateNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
 					pSwitchNode->addChild(pStateNode);
 
@@ -667,23 +671,23 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 
 					float const mult = pParameterConnection->GetMultiplier();
 
-					if (mult != CryAudio::Impl::Wwise::s_defaultParamMultiplier)
+					if (mult != CryAudio::Impl::Wwise::g_defaultParamMultiplier)
 					{
-						pConnectionNode->setAttr(CryAudio::Impl::Wwise::s_szMutiplierAttribute, mult);
+						pConnectionNode->setAttr(CryAudio::Impl::Wwise::g_szMutiplierAttribute, mult);
 					}
 
 					float const shift = pParameterConnection->GetShift();
 
-					if (shift != CryAudio::Impl::Wwise::s_defaultParamShift)
+					if (shift != CryAudio::Impl::Wwise::g_defaultParamShift)
 					{
-						pConnectionNode->setAttr(CryAudio::Impl::Wwise::s_szShiftAttribute, shift);
+						pConnectionNode->setAttr(CryAudio::Impl::Wwise::g_szShiftAttribute, shift);
 					}
 
 				}
 				else if (assetType == EAssetType::State)
 				{
 					auto const pStateConnection = static_cast<CParameterToStateConnection const*>(pIConnection);
-					pConnectionNode->setAttr(CryAudio::Impl::Wwise::s_szValueAttribute, pStateConnection->GetValue());
+					pConnectionNode->setAttr(CryAudio::Impl::Wwise::g_szValueAttribute, pStateConnection->GetValue());
 				}
 
 				pNode = pConnectionNode;
@@ -705,7 +709,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 
 				if ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0)
 				{
-					pConnectionNode->setAttr(CryAudio::Impl::Wwise::s_szLocalizedAttribute, CryAudio::Impl::Wwise::s_szTrueValue);
+					pConnectionNode->setAttr(CryAudio::Impl::Wwise::g_szLocalizedAttribute, CryAudio::Impl::Wwise::g_szTrueValue);
 				}
 
 				pNode = pConnectionNode;
@@ -725,44 +729,62 @@ XmlNodeRef CImpl::SetDataNode(char const* const szTag)
 	XmlNodeRef pNode = GetISystem()->CreateXmlNode(szTag);
 	bool hasConnections = false;
 
-	if (g_connections.triggers > 0)
+	if (g_connections.events > 0)
 	{
-		pNode->setAttr(CryAudio::Impl::Wwise::s_szTriggersAttribute, g_connections.triggers);
+		pNode->setAttr(CryAudio::Impl::Wwise::g_szEventsAttribute, g_connections.events);
 		hasConnections = true;
 	}
 
 	if (g_connections.parameters > 0)
 	{
-		pNode->setAttr(CryAudio::Impl::Wwise::s_szParametersAttribute, g_connections.parameters);
+		pNode->setAttr(CryAudio::Impl::Wwise::g_szParametersAttribute, g_connections.parameters);
 		hasConnections = true;
 	}
 
-	if (g_connections.switchStates > 0)
+	if (g_connections.parameterEnvironments > 0)
 	{
-		pNode->setAttr(CryAudio::Impl::Wwise::s_szSwitchStatesAttribute, g_connections.switchStates);
+		pNode->setAttr(CryAudio::Impl::Wwise::g_szParameterEnvironmentsAttribute, g_connections.parameterEnvironments);
 		hasConnections = true;
 	}
 
-	if (g_connections.environments > 0)
+	if (g_connections.parameterStates > 0)
 	{
-		pNode->setAttr(CryAudio::Impl::Wwise::s_szEnvironmentsAttribute, g_connections.environments);
+		pNode->setAttr(CryAudio::Impl::Wwise::g_szParameterEnvironmentsAttribute, g_connections.parameterStates);
 		hasConnections = true;
 	}
 
-	if (g_connections.files > 0)
+	if (g_connections.states > 0)
 	{
-		pNode->setAttr(CryAudio::Impl::Wwise::s_szFilesAttribute, g_connections.files);
+		pNode->setAttr(CryAudio::Impl::Wwise::g_szStatesAttribute, g_connections.states);
 		hasConnections = true;
 	}
 
-	if (!hasConnections)
+	if (g_connections.switches > 0)
 	{
-		pNode = nullptr;
+		pNode->setAttr(CryAudio::Impl::Wwise::g_szSwitchesAttribute, g_connections.switches);
+		hasConnections = true;
 	}
-	else
+
+	if (g_connections.auxBuses > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::Wwise::g_szAuxBusesAttribute, g_connections.auxBuses);
+		hasConnections = true;
+	}
+
+	if (g_connections.soundBanks > 0)
+	{
+		pNode->setAttr(CryAudio::Impl::Wwise::g_szSoundBanksAttribute, g_connections.soundBanks);
+		hasConnections = true;
+	}
+
+	if (hasConnections)
 	{
 		// Reset connection count for next library.
 		ZeroStruct(g_connections);
+	}
+	else
+	{
+		pNode = nullptr;
 	}
 
 	return pNode;
@@ -851,7 +873,7 @@ void CImpl::SetImplInfo(SImplInfo& implInfo)
 	SetLocalizedAssetsPath();
 
 	implInfo.name = m_implName.c_str();
-	implInfo.folderName = CryAudio::Impl::Wwise::s_szImplFolderName;
+	implInfo.folderName = CryAudio::Impl::Wwise::g_szImplFolderName;
 	implInfo.projectPath = m_projectPath.c_str();
 	implInfo.assetsPath = m_assetsPath.c_str();
 	implInfo.localizedAssetsPath = m_localizedAssetsPath.c_str();
@@ -880,7 +902,7 @@ void CImpl::SetLocalizedAssetsPath()
 			m_localizedAssetsPath += "/";
 			m_localizedAssetsPath += AUDIO_SYSTEM_DATA_ROOT;
 			m_localizedAssetsPath += "/";
-			m_localizedAssetsPath += CryAudio::Impl::Wwise::s_szImplFolderName;
+			m_localizedAssetsPath += CryAudio::Impl::Wwise::g_szImplFolderName;
 			m_localizedAssetsPath += "/";
 			m_localizedAssetsPath += CryAudio::s_szAssetsFolderName;
 		}

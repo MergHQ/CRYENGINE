@@ -44,6 +44,7 @@ public:
 	int m_enableOutputCapture = 0;
 	int m_monitorMemoryPoolSize = 0;
 	int m_monitorQueueMemoryPoolSize = 0;
+	int m_debugListFilter = 0;
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 };
 

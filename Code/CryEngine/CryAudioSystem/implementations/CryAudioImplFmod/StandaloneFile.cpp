@@ -3,7 +3,10 @@
 #include "stdafx.h"
 #include "StandaloneFile.h"
 
-#include <Logger.h>
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	#include <Logger.h>
+#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
 #include <fmod_common.h>
 #include <fmod.hpp>
 
@@ -46,14 +49,17 @@ void CStandaloneFile::StartLoading()
 bool CStandaloneFile::IsReady()
 {
 	FMOD_OPENSTATE state = FMOD_OPENSTATE_ERROR;
+
 	if (m_pLowLevelSound)
 	{
 		m_pLowLevelSound->getOpenState(&state, nullptr, nullptr, nullptr);
 
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 		if (state == FMOD_OPENSTATE_ERROR)
 		{
 			Cry::Audio::Log(ELogType::Error, "Failed to load audio file %s", m_fileName.c_str());
 		}
+#endif    // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 	}
 
 	return state != FMOD_OPENSTATE_LOADING;

@@ -35,6 +35,7 @@ public:
 
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	int m_enableLiveUpdate = 0;
+	int m_debugListFilter = 0;
 #endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 };
 

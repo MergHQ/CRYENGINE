@@ -2,13 +2,9 @@
 
 #pragma once
 
-#include <portaudio.h>
-#include <atomic>
+#include <ITriggerConnection.h>
 #include <PoolObject.h>
-
-// Forward declare C struct
-struct SNDFILE_tag;
-using SNDFILE = struct SNDFILE_tag;
+#include <portaudio.h>
 
 namespace CryAudio
 {
@@ -16,20 +12,16 @@ namespace Impl
 {
 namespace PortAudio
 {
-enum class EEventState
-{
-	None                  = 0,
-	Playing               = BIT(0),
-	Stopped               = BIT(1),
-	Done                  = BIT(2),
-	WaitingForDestruction = BIT(3),
-};
-
-class CObject;
-
-class CEvent final : public CPoolObject<CEvent, stl::PSyncNone>
+class CEvent final : public ITriggerConnection, public CPoolObject<CEvent, stl::PSyncNone>
 {
 public:
+
+	enum class EActionType : EnumFlagsType
+	{
+		None,
+		Start,
+		Stop,
+	};
 
 	CEvent() = delete;
 	CEvent(CEvent const&) = delete;
@@ -37,44 +29,47 @@ public:
 	CEvent& operator=(CEvent const&) = delete;
 	CEvent& operator=(CEvent&&) = delete;
 
-	explicit CEvent(TriggerInstanceId const triggerInstanceId);
-	~CEvent();
+	explicit CEvent(
+		uint32 const pathId_,
+		int const numLoops_,
+		double const sampleRate_,
+		EActionType const actionType_,
+		char const* const szFilePath,
+		PaStreamParameters const& streamParameters_,
+		char const* const szFolder,
+		char const* const szName,
+		bool const isLocalized)
+		: pathId(pathId_)
+		, numLoops(numLoops_)
+		, sampleRate(sampleRate_)
+		, actionType(actionType_)
+		, filePath(szFilePath)
+		, streamParameters(streamParameters_)
+		, m_folder(szFolder)
+		, m_name(szName)
+		, m_isLocalized(isLocalized)
+	{}
 
-	bool Execute(
-		int const numLoops,
-		double const sampleRate,
-		CryFixedStringT<MaxFilePathLength> const& filePath,
-		PaStreamParameters const& streamParameters);
-	void              Update();
-	void              Stop();
+	virtual ~CEvent() override = default;
 
-	TriggerInstanceId GetTriggerInstanceId() const { return m_triggerInstanceId; }
+	// CryAudio::Impl::ITriggerConnection
+	virtual ERequestStatus Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId) override;
+	virtual void           Stop(IObject* const pIObject) override;
+	virtual ERequestStatus Load() const override                                                 { return ERequestStatus::Success; }
+	virtual ERequestStatus Unload() const override                                               { return ERequestStatus::Success; }
+	virtual ERequestStatus LoadAsync(TriggerInstanceId const triggerInstanceId) const override   { return ERequestStatus::Success; }
+	virtual ERequestStatus UnloadAsync(TriggerInstanceId const triggerInstanceId) const override { return ERequestStatus::Success; }
+	// ~CryAudio::Impl::ITriggerConnection
 
-#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
-	void        SetName(char const* const szName) { m_name = szName; }
-	char const* GetName() const                   { return m_name.c_str(); }
-#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
-
-	SNDFILE*                 pSndFile;
-	PaStream*                pStream;
-	void*                    pData;
-	CObject*                 pObject;
-	int                      numChannels;
-	int                      remainingLoops;
-	uint32                   pathId;
-	PaSampleFormat           sampleFormat;
-	std::atomic<EEventState> state;
-	bool                     toBeRemoved;
-
-private:
-
-	void Reset();
-
-	TriggerInstanceId const m_triggerInstanceId;
-
-#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
-	CryFixedStringT<MaxControlNameLength> m_name;
-#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
+	uint32 const                                pathId;
+	int const                                   numLoops;
+	double                                      sampleRate;
+	EActionType const                           actionType;
+	CryFixedStringT<MaxFilePathLength>          filePath;
+	PaStreamParameters                          streamParameters;
+	CryFixedStringT<MaxFilePathLength> const    m_folder;
+	CryFixedStringT<MaxControlNameLength> const m_name;
+	bool const                                  m_isLocalized;
 };
 } // namespace PortAudio
 } // namespace Impl

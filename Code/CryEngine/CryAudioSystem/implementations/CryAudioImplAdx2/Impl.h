@@ -13,6 +13,8 @@ namespace Impl
 {
 namespace Adx2
 {
+class CCue;
+
 class CImpl final : public IImpl
 {
 public:
@@ -76,8 +78,13 @@ public:
 	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const override;
 	// ~CryAudio::Impl::IImpl
 
-	CEvent* ConstructEvent(TriggerInstanceId const triggerInstanceId);
-	void    DestructEvent(CEvent const* const pEvent);
+	CCueInstance* ConstructCueInstance(
+		TriggerInstanceId const triggerInstanceId,
+		uint32 const cueId,
+		CriAtomExPlaybackId const playbackId,
+		CBaseObject const* const pBaseObject = nullptr,
+		CCue const* const pCue = nullptr);
+	void DestructCueInstance(CCueInstance const* const pCueInstance);
 
 private:
 

@@ -2,22 +2,8 @@
 
 #pragma once
 
-#include "Common.h"
+#include <ITriggerConnection.h>
 #include <PoolObject.h>
-#include <CryAudio/IAudioInterfacesCommonData.h>
-#include <atomic>
-
-namespace FMOD
-{
-class ChannelGroup;
-class DSP;
-
-namespace Studio
-{
-class EventInstance;
-class ParameterInstance;
-} // namespace Studio
-} // namespace FMOD
 
 namespace CryAudio
 {
@@ -25,20 +11,18 @@ namespace Impl
 {
 namespace Fmod
 {
-class CEnvironment;
-class CBaseObject;
-class CTrigger;
-
-enum class EEventState : EnumFlagsType
-{
-	None,
-	Playing,
-	Virtual,
-};
-
-class CEvent final : public CPoolObject<CEvent, stl::PSyncNone>
+class CEvent final : public ITriggerConnection, public CPoolObject<CEvent, stl::PSyncNone>
 {
 public:
+
+	enum class EActionType : EnumFlagsType
+	{
+		None,
+		Start,
+		Stop,
+		Pause,
+		Resume,
+	};
 
 	CEvent() = delete;
 	CEvent(CEvent const&) = delete;
@@ -46,81 +30,94 @@ public:
 	CEvent& operator=(CEvent const&) = delete;
 	CEvent& operator=(CEvent&&) = delete;
 
-	explicit CEvent(TriggerInstanceId const triggerInstanceId)
-		: m_triggerInstanceId(triggerInstanceId)
-		, m_id(InvalidCRC32)
-		, m_state(EEventState::None)
-		, m_lowpassFrequencyMax(0.0f)
-		, m_lowpassFrequencyMin(0.0f)
-		, m_pInstance(nullptr)
-		, m_pMasterTrack(nullptr)
-		, m_pLowpass(nullptr)
-		, m_pOcclusionParameter(nullptr)
-		, m_pAbsoluteVelocityParameter(nullptr)
-		, m_pObject(nullptr)
-		, m_pTrigger(nullptr)
-		, m_toBeRemoved(false)
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	// For pure events.
+	explicit CEvent(
+		uint32 const id,
+		EActionType const actionType,
+		FMOD_GUID const guid,
+		char const* const szName)
+		: m_id(id)
+		, m_actionType(actionType)
+		, m_guid(guid)
+		, m_hasProgrammerSound(false)
+		, m_key("")
+		, m_pEventDescription(nullptr)
+		, m_name(szName)
 	{}
 
-	~CEvent();
+	// For keys/programmer sounds.
+	explicit CEvent(
+		uint32 const id,
+		FMOD_GUID const guid,
+		char const* const szKey,
+		char const* const szName)
+		: m_id(id)
+		, m_actionType(EActionType::Start)
+		, m_guid(guid)
+		, m_hasProgrammerSound(true)
+		, m_key(szKey)
+		, m_pEventDescription(nullptr)
+		, m_name(szName)
+	{}
+#else
+	// For pure events.
+	explicit CEvent(
+		uint32 const id,
+		EActionType const actionType,
+		FMOD_GUID const guid)
+		: m_id(id)
+		, m_actionType(actionType)
+		, m_guid(guid)
+		, m_hasProgrammerSound(false)
+		, m_key("")
+		, m_pEventDescription(nullptr)
+	{}
 
-	bool                         PrepareForOcclusion();
-	void                         SetOcclusion(float const occlusion);
+	// For keys/programmer sounds.
+	explicit CEvent(
+		uint32 const id,
+		FMOD_GUID const guid,
+		char const* const szKey)
+		: m_id(id)
+		, m_actionType(EActionType::Start)
+		, m_guid(guid)
+		, m_hasProgrammerSound(true)
+		, m_key(szKey)
+		, m_pEventDescription(nullptr)
+	{}
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
-	TriggerInstanceId            GetTriggerInstanceId() const                              { return m_triggerInstanceId; }
+	virtual ~CEvent() override;
 
-	uint32                       GetId() const                                             { return m_id; }
-	void                         SetId(uint32 const id)                                    { m_id = id; }
+	// CryAudio::Impl::ITriggerConnection
+	virtual ERequestStatus Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId) override;
+	virtual void           Stop(IObject* const pIObject) override;
+	virtual ERequestStatus Load()  const override                                                { return ERequestStatus::Success; }
+	virtual ERequestStatus Unload() const override                                               { return ERequestStatus::Success; }
+	virtual ERequestStatus LoadAsync(TriggerInstanceId const triggerInstanceId) const override   { return ERequestStatus::Success; }
+	virtual ERequestStatus UnloadAsync(TriggerInstanceId const triggerInstanceId) const override { return ERequestStatus::Success; }
+	// ~CryAudio::Impl::ITriggerConnection
 
-	FMOD::Studio::EventInstance* GetInstance() const                                       { return m_pInstance; }
-	void                         SetInstance(FMOD::Studio::EventInstance* const pInstance) { m_pInstance = pInstance; }
-
-	void                         SetObject(CBaseObject* const pAudioObject)                { m_pObject = pAudioObject; }
-
-	CTrigger const*              GetTrigger() const                                        { return m_pTrigger; }
-	void                         SetTrigger(CTrigger const* const pTrigger)                { m_pTrigger = pTrigger; }
-
-	bool                         HasAbsoluteVelocityParameter() const                      { return m_pAbsoluteVelocityParameter != nullptr; }
-	void                         SetInternalParameters();
-
-	EEventState                  GetState() const { return m_state; }
-
-	void                         TrySetEnvironment(CEnvironment const* const pEnvironment, float const value);
-	void                         UpdateVirtualState();
-	void                         SetAbsoluteVelocity(float const value);
-	void                         StopAllowFadeOut();
-	void                         StopImmediate();
-
-	void                         SetToBeRemoved()      { m_toBeRemoved = true; }
-	bool                         IsToBeRemoved() const { return m_toBeRemoved; }
+	uint32                                       GetId() const   { return m_id; }
+	FMOD_GUID                                    GetGuid() const { return m_guid; }
+	CryFixedStringT<MaxControlNameLength> const& GetKey() const  { return m_key; }
 
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-	void         SetName(char const* const szName) { m_name = szName; }
-	char const*  GetName() const                   { return m_name.c_str(); }
-	CBaseObject* GetObject() const                 { return m_pObject; }
+	char const* GetName() const { return m_name.c_str(); }
 #endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 private:
 
-	TriggerInstanceId const          m_triggerInstanceId;
-	uint32                           m_id;
-
-	EEventState                      m_state;
-
-	float                            m_lowpassFrequencyMax;
-	float                            m_lowpassFrequencyMin;
-
-	FMOD::Studio::EventInstance*     m_pInstance;
-	FMOD::ChannelGroup*              m_pMasterTrack;
-	FMOD::DSP*                       m_pLowpass;
-	FMOD::Studio::ParameterInstance* m_pOcclusionParameter;
-	FMOD::Studio::ParameterInstance* m_pAbsoluteVelocityParameter;
-	CBaseObject*                     m_pObject;
-	CTrigger const*                  m_pTrigger;
-	std::atomic_bool                 m_toBeRemoved;
+	uint32 const                                m_id;
+	EActionType const                           m_actionType;
+	FMOD_GUID const                             m_guid;
+	bool const                                  m_hasProgrammerSound;
+	CryFixedStringT<MaxControlNameLength> const m_key;
+	FMOD::Studio::EventDescription*             m_pEventDescription;
 
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-	CryFixedStringT<MaxControlNameLength> m_name;
+	CryFixedStringT<MaxControlNameLength> const m_name;
 #endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 };
 } // namespace Fmod

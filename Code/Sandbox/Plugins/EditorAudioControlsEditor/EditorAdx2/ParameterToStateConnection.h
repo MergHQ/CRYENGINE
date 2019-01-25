@@ -27,7 +27,7 @@ public:
 	explicit CParameterToStateConnection(
 		ControlId const id,
 		EItemType const itemType,
-		float const value = CryAudio::Impl::Adx2::s_defaultStateValue)
+		float const value = CryAudio::Impl::Adx2::g_defaultStateValue)
 		: CBaseConnection(id)
 		, m_itemType(itemType)
 		, m_value(value)

@@ -7,24 +7,31 @@
 #include "Listener.h"
 #include "Object.h"
 #include "GlobalObject.h"
-#include "File.h"
-#include "Event.h"
-#include "Trigger.h"
-#include "Parameter.h"
-#include "SwitchState.h"
-#include "Environment.h"
-#include "Setting.h"
-#include "StandaloneFile.h"
+#include "AisacControl.h"
+#include "AisacEnvironment.h"
+#include "AisacState.h"
+#include "Binary.h"
+#include "Category.h"
+#include "CategoryState.h"
+#include "Cue.h"
+#include "CueInstance.h"
+#include "DspBus.h"
+#include "GameVariable.h"
+#include "GameVariableState.h"
+#include "SelectorLabel.h"
+#include "Snapshot.h"
+#include "DspBusSetting.h"
 #include "IoInterface.h"
 
+#include <IStandaloneFileConnection.h>
 #include <FileInfo.h>
-#include <Logger.h>
 #include <CrySystem/IStreamEngine.h>
 #include <CrySystem/File/ICryPak.h>
 #include <CrySystem/IProjectManager.h>
 #include <CryAudio/IAudioSystem.h>
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	#include <Logger.h>
 	#include <DebugStyle.h>
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
@@ -44,63 +51,105 @@ SPoolSizes g_poolSizesLevelSpecific;
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 SPoolSizes g_debugPoolSizes;
-Events g_constructedEvents;
+CueInstances g_constructedCueInstances;
 uint16 g_objectPoolSize = 0;
-uint16 g_eventPoolSize = 0;
+uint16 g_cueInstancePoolSize = 0;
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
 void CountPoolSizes(XmlNodeRef const pNode, SPoolSizes& poolSizes)
 {
-	uint16 numTriggers = 0;
-	pNode->getAttr(s_szTriggersAttribute, numTriggers);
-	poolSizes.triggers += numTriggers;
+	uint16 numCues = 0;
+	pNode->getAttr(g_szCuesAttribute, numCues);
+	poolSizes.cues += numCues;
 
-	uint16 numParameters = 0;
-	pNode->getAttr(s_szParametersAttribute, numParameters);
-	poolSizes.parameters += numParameters;
+	uint16 numAisacControls = 0;
+	pNode->getAttr(g_szAisacControlsAttribute, numAisacControls);
+	poolSizes.aisacControls += numAisacControls;
 
-	uint16 numSwitchStates = 0;
-	pNode->getAttr(s_szSwitchStatesAttribute, numSwitchStates);
-	poolSizes.switchStates += numSwitchStates;
+	uint16 numAisacEnvironments = 0;
+	pNode->getAttr(g_szAisacEnvironmentsAttribute, numAisacEnvironments);
+	poolSizes.aisacEnvironments += numAisacEnvironments;
 
-	uint16 numEnvironments = 0;
-	pNode->getAttr(s_szEnvironmentsAttribute, numEnvironments);
-	poolSizes.environments += numEnvironments;
+	uint16 numAisacStates = 0;
+	pNode->getAttr(g_szAisacStatesAttribute, numAisacStates);
+	poolSizes.aisacStates += numAisacStates;
 
-	uint16 numSettings = 0;
-	pNode->getAttr(s_szSettingsAttribute, numSettings);
-	poolSizes.settings += numSettings;
+	uint16 numCategories = 0;
+	pNode->getAttr(g_szCategoriesAttribute, numCategories);
+	poolSizes.categories += numCategories;
+
+	uint16 numCategoryStates = 0;
+	pNode->getAttr(g_szCategoryStatesAttribute, numCategoryStates);
+	poolSizes.categoryStates += numCategoryStates;
+
+	uint16 numGameVariables = 0;
+	pNode->getAttr(g_szGameVariablesAttribute, numGameVariables);
+	poolSizes.gameVariables += numGameVariables;
+
+	uint16 numGameVariableStates = 0;
+	pNode->getAttr(g_szGameVariableStatesAttribute, numGameVariableStates);
+	poolSizes.gameVariableStates += numGameVariableStates;
+
+	uint16 numSelectorLabels = 0;
+	pNode->getAttr(g_szSelectorLabelsAttribute, numSelectorLabels);
+	poolSizes.selectorLabels += numSelectorLabels;
+
+	uint16 numBuses = 0;
+	pNode->getAttr(g_szDspBusesAttribute, numBuses);
+	poolSizes.dspBuses += numBuses;
+
+	uint16 numSnapshots = 0;
+	pNode->getAttr(g_szSnapshotsAttribute, numSnapshots);
+	poolSizes.snapshots += numSnapshots;
+
+	uint16 numDspBusSettings = 0;
+	pNode->getAttr(g_szDspBusSettingsAttribute, numDspBusSettings);
+	poolSizes.dspBusSettings += numDspBusSettings;
 
 	uint16 numFiles = 0;
-	pNode->getAttr(s_szFilesAttribute, numFiles);
-	poolSizes.files += numFiles;
+	pNode->getAttr(g_szBinariesAttribute, numFiles);
+	poolSizes.binaries += numFiles;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void AllocateMemoryPools(uint16 const objectPoolSize, uint16 const eventPoolSize)
+void AllocateMemoryPools(uint16 const objectPoolSize, uint16 const cueInstancePoolSize)
 {
 	CObject::CreateAllocator(objectPoolSize);
-	CEvent::CreateAllocator(eventPoolSize);
-	CTrigger::CreateAllocator(g_poolSizes.triggers);
-	CParameter::CreateAllocator(g_poolSizes.parameters);
-	CSwitchState::CreateAllocator(g_poolSizes.switchStates);
-	CEnvironment::CreateAllocator(g_poolSizes.environments);
-	CSetting::CreateAllocator(g_poolSizes.settings);
-	CFile::CreateAllocator(g_poolSizes.files);
+	CCueInstance::CreateAllocator(cueInstancePoolSize);
+	CCue::CreateAllocator(g_poolSizes.cues);
+	CAisacControl::CreateAllocator(g_poolSizes.aisacControls);
+	CAisacEnvironment::CreateAllocator(g_poolSizes.aisacEnvironments);
+	CAisacState::CreateAllocator(g_poolSizes.aisacStates);
+	CCategory::CreateAllocator(g_poolSizes.categories);
+	CCategoryState::CreateAllocator(g_poolSizes.categoryStates);
+	CGameVariable::CreateAllocator(g_poolSizes.gameVariables);
+	CGameVariableState::CreateAllocator(g_poolSizes.gameVariableStates);
+	CSelectorLabel::CreateAllocator(g_poolSizes.selectorLabels);
+	CDspBus::CreateAllocator(g_poolSizes.dspBuses);
+	CSnapshot::CreateAllocator(g_poolSizes.snapshots);
+	CDspBusSetting::CreateAllocator(g_poolSizes.dspBusSettings);
+	CBinary::CreateAllocator(g_poolSizes.binaries);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void FreeMemoryPools()
 {
 	CObject::FreeMemoryPool();
-	CEvent::FreeMemoryPool();
-	CTrigger::FreeMemoryPool();
-	CParameter::FreeMemoryPool();
-	CSwitchState::FreeMemoryPool();
-	CEnvironment::FreeMemoryPool();
-	CSetting::FreeMemoryPool();
-	CFile::FreeMemoryPool();
+	CCueInstance::FreeMemoryPool();
+	CCue::FreeMemoryPool();
+	CAisacControl::FreeMemoryPool();
+	CAisacEnvironment::FreeMemoryPool();
+	CAisacState::FreeMemoryPool();
+	CCategory::FreeMemoryPool();
+	CCategoryState::FreeMemoryPool();
+	CGameVariable::FreeMemoryPool();
+	CGameVariableState::FreeMemoryPool();
+	CSelectorLabel::FreeMemoryPool();
+	CDspBus::FreeMemoryPool();
+	CSnapshot::FreeMemoryPool();
+	CDspBusSetting::FreeMemoryPool();
+	CBinary::FreeMemoryPool();
 }
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
@@ -229,27 +278,30 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 {
 	ERequestStatus result = ERequestStatus::Success;
 
-	if (g_cvars.m_eventPoolSize < 1)
+	if (g_cvars.m_cuePoolSize < 1)
 	{
-		g_cvars.m_eventPoolSize = 1;
-		Cry::Audio::Log(ELogType::Warning, R"(Event pool size must be at least 1. Forcing the cvar "s_Adx2EventPoolSize" to 1!)");
+		g_cvars.m_cuePoolSize = 1;
+
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+		Cry::Audio::Log(ELogType::Warning, R"(Cue pool size must be at least 1. Forcing the cvar "s_Adx2CuePoolSize" to 1!)");
+#endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 	}
 
 	g_constructedObjects.reserve(static_cast<size_t>(objectPoolSize));
-	AllocateMemoryPools(objectPoolSize, static_cast<uint16>(g_cvars.m_eventPoolSize));
+	AllocateMemoryPools(objectPoolSize, static_cast<uint16>(g_cvars.m_cuePoolSize));
 
 	m_regularSoundBankFolder = AUDIO_SYSTEM_DATA_ROOT;
 	m_regularSoundBankFolder += "/";
-	m_regularSoundBankFolder += s_szImplFolderName;
+	m_regularSoundBankFolder += g_szImplFolderName;
 	m_regularSoundBankFolder += "/";
 	m_regularSoundBankFolder += s_szAssetsFolderName;
 	m_localizedSoundBankFolder = m_regularSoundBankFolder;
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-	g_constructedEvents.reserve(static_cast<size_t>(g_cvars.m_eventPoolSize));
+	g_constructedCueInstances.reserve(static_cast<size_t>(g_cvars.m_cuePoolSize));
 
 	g_objectPoolSize = objectPoolSize;
-	g_eventPoolSize = static_cast<uint16>(g_cvars.m_eventPoolSize);
+	g_cueInstancePoolSize = static_cast<uint16>(g_cvars.m_cuePoolSize);
 
 	LoadAcbInfos(m_regularSoundBankFolder);
 
@@ -317,12 +369,19 @@ void CImpl::SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific)
 		SPoolSizes levelPoolSizes;
 		CountPoolSizes(pNode, levelPoolSizes);
 
-		g_poolSizesLevelSpecific.triggers = std::max(g_poolSizesLevelSpecific.triggers, levelPoolSizes.triggers);
-		g_poolSizesLevelSpecific.parameters = std::max(g_poolSizesLevelSpecific.parameters, levelPoolSizes.parameters);
-		g_poolSizesLevelSpecific.switchStates = std::max(g_poolSizesLevelSpecific.switchStates, levelPoolSizes.switchStates);
-		g_poolSizesLevelSpecific.environments = std::max(g_poolSizesLevelSpecific.environments, levelPoolSizes.environments);
-		g_poolSizesLevelSpecific.settings = std::max(g_poolSizesLevelSpecific.settings, levelPoolSizes.settings);
-		g_poolSizesLevelSpecific.files = std::max(g_poolSizesLevelSpecific.files, levelPoolSizes.files);
+		g_poolSizesLevelSpecific.cues = std::max(g_poolSizesLevelSpecific.cues, levelPoolSizes.cues);
+		g_poolSizesLevelSpecific.aisacControls = std::max(g_poolSizesLevelSpecific.aisacControls, levelPoolSizes.aisacControls);
+		g_poolSizesLevelSpecific.aisacEnvironments = std::max(g_poolSizesLevelSpecific.aisacEnvironments, levelPoolSizes.aisacEnvironments);
+		g_poolSizesLevelSpecific.aisacStates = std::max(g_poolSizesLevelSpecific.aisacStates, levelPoolSizes.aisacStates);
+		g_poolSizesLevelSpecific.categories = std::max(g_poolSizesLevelSpecific.categories, levelPoolSizes.categories);
+		g_poolSizesLevelSpecific.categoryStates = std::max(g_poolSizesLevelSpecific.categoryStates, levelPoolSizes.categoryStates);
+		g_poolSizesLevelSpecific.gameVariables = std::max(g_poolSizesLevelSpecific.gameVariables, levelPoolSizes.gameVariables);
+		g_poolSizesLevelSpecific.gameVariableStates = std::max(g_poolSizesLevelSpecific.gameVariableStates, levelPoolSizes.gameVariableStates);
+		g_poolSizesLevelSpecific.selectorLabels = std::max(g_poolSizesLevelSpecific.selectorLabels, levelPoolSizes.selectorLabels);
+		g_poolSizesLevelSpecific.dspBuses = std::max(g_poolSizesLevelSpecific.dspBuses, levelPoolSizes.dspBuses);
+		g_poolSizesLevelSpecific.snapshots = std::max(g_poolSizesLevelSpecific.snapshots, levelPoolSizes.snapshots);
+		g_poolSizesLevelSpecific.dspBusSettings = std::max(g_poolSizesLevelSpecific.dspBusSettings, levelPoolSizes.dspBusSettings);
+		g_poolSizesLevelSpecific.binaries = std::max(g_poolSizesLevelSpecific.binaries, levelPoolSizes.binaries);
 	}
 	else
 	{
@@ -344,24 +403,38 @@ void CImpl::OnBeforeLibraryDataChanged()
 //////////////////////////////////////////////////////////////////////////
 void CImpl::OnAfterLibraryDataChanged()
 {
-	g_poolSizes.triggers += g_poolSizesLevelSpecific.triggers;
-	g_poolSizes.parameters += g_poolSizesLevelSpecific.parameters;
-	g_poolSizes.switchStates += g_poolSizesLevelSpecific.switchStates;
-	g_poolSizes.environments += g_poolSizesLevelSpecific.environments;
-	g_poolSizes.settings += g_poolSizesLevelSpecific.settings;
-	g_poolSizes.files += g_poolSizesLevelSpecific.files;
+	g_poolSizes.cues += g_poolSizesLevelSpecific.cues;
+	g_poolSizes.aisacControls += g_poolSizesLevelSpecific.aisacControls;
+	g_poolSizes.aisacEnvironments += g_poolSizesLevelSpecific.aisacEnvironments;
+	g_poolSizes.aisacStates += g_poolSizesLevelSpecific.aisacStates;
+	g_poolSizes.categories += g_poolSizesLevelSpecific.categories;
+	g_poolSizes.categoryStates += g_poolSizesLevelSpecific.categoryStates;
+	g_poolSizes.gameVariables += g_poolSizesLevelSpecific.gameVariables;
+	g_poolSizes.gameVariableStates += g_poolSizesLevelSpecific.gameVariableStates;
+	g_poolSizes.selectorLabels += g_poolSizesLevelSpecific.selectorLabels;
+	g_poolSizes.dspBuses += g_poolSizesLevelSpecific.dspBuses;
+	g_poolSizes.snapshots += g_poolSizesLevelSpecific.snapshots;
+	g_poolSizes.dspBusSettings += g_poolSizesLevelSpecific.dspBusSettings;
+	g_poolSizes.binaries += g_poolSizesLevelSpecific.binaries;
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	// Used to hide pools without allocations in debug draw.
 	g_debugPoolSizes = g_poolSizes;
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
-	g_poolSizes.triggers = std::max<uint16>(1, g_poolSizes.triggers);
-	g_poolSizes.parameters = std::max<uint16>(1, g_poolSizes.parameters);
-	g_poolSizes.switchStates = std::max<uint16>(1, g_poolSizes.switchStates);
-	g_poolSizes.environments = std::max<uint16>(1, g_poolSizes.environments);
-	g_poolSizes.settings = std::max<uint16>(1, g_poolSizes.settings);
-	g_poolSizes.files = std::max<uint16>(1, g_poolSizes.files);
+	g_poolSizes.cues = std::max<uint16>(1, g_poolSizes.cues);
+	g_poolSizes.aisacControls = std::max<uint16>(1, g_poolSizes.aisacControls);
+	g_poolSizes.aisacEnvironments = std::max<uint16>(1, g_poolSizes.aisacEnvironments);
+	g_poolSizes.aisacStates = std::max<uint16>(1, g_poolSizes.aisacStates);
+	g_poolSizes.categories = std::max<uint16>(1, g_poolSizes.categories);
+	g_poolSizes.categoryStates = std::max<uint16>(1, g_poolSizes.categoryStates);
+	g_poolSizes.gameVariables = std::max<uint16>(1, g_poolSizes.gameVariables);
+	g_poolSizes.gameVariableStates = std::max<uint16>(1, g_poolSizes.gameVariableStates);
+	g_poolSizes.selectorLabels = std::max<uint16>(1, g_poolSizes.selectorLabels);
+	g_poolSizes.dspBuses = std::max<uint16>(1, g_poolSizes.dspBuses);
+	g_poolSizes.snapshots = std::max<uint16>(1, g_poolSizes.snapshots);
+	g_poolSizes.dspBusSettings = std::max<uint16>(1, g_poolSizes.dspBusSettings);
+	g_poolSizes.binaries = std::max<uint16>(1, g_poolSizes.binaries);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -412,7 +485,7 @@ void CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 {
 	if (pFileInfo != nullptr)
 	{
-		auto const pFileData = static_cast<CFile*>(pFileInfo->pImplData);
+		auto const pFileData = static_cast<CBinary*>(pFileInfo->pImplData);
 
 		if (pFileData != nullptr)
 		{
@@ -430,15 +503,19 @@ void CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 				PathUtil::RemoveExtension(name);
 				g_acbHandles[StringToId(name.c_str())] = pFileData->pAcb;
 			}
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Error, "Failed to load ACB %s\n", pFileInfo->szFileName);
 			}
+#endif      // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 		}
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 		else
 		{
 			Cry::Audio::Log(ELogType::Error, "Invalid FileData passed to the Adx2 implementation of %s", __FUNCTION__);
 		}
+#endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 	}
 }
 
@@ -447,16 +524,18 @@ void CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 {
 	if (pFileInfo != nullptr)
 	{
-		auto const pFileData = static_cast<CFile*>(pFileInfo->pImplData);
+		auto const pFileData = static_cast<CBinary*>(pFileInfo->pImplData);
 
 		if ((pFileData != nullptr) && (pFileData->pAcb != nullptr))
 		{
 			criAtomExAcb_Release(pFileData->pAcb);
 		}
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 		else
 		{
 			Cry::Audio::Log(ELogType::Error, "Invalid FileData passed to the Adx2 implementation of %s", __FUNCTION__);
 		}
+#endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 	}
 }
 
@@ -465,22 +544,22 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const pRootNode, SFileInfo* const
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
-	if ((_stricmp(pRootNode->getTag(), s_szFileTag) == 0) && (pFileInfo != nullptr))
+	if ((_stricmp(pRootNode->getTag(), g_szBinaryTag) == 0) && (pFileInfo != nullptr))
 	{
 		char const* const szFileName = pRootNode->getAttr(s_szNameAttribute);
 
 		if (szFileName != nullptr && szFileName[0] != '\0')
 		{
-			char const* const szLocalized = pRootNode->getAttr(s_szLocalizedAttribute);
-			pFileInfo->bLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, s_szTrueValue) == 0);
+			char const* const szLocalized = pRootNode->getAttr(g_szLocalizedAttribute);
+			pFileInfo->bLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
 			pFileInfo->szFileName = szFileName;
 
 			// The Atom library accesses on-memory data with a 32-bit width.
 			// The first address of the data must be aligned at a 4-byte boundary.
 			pFileInfo->memoryBlockAlignment = 32;
 
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CFile");
-			pFileInfo->pImplData = new CFile();
+			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CBinary");
+			pFileInfo->pImplData = new CBinary();
 
 			result = ERequestStatus::Success;
 		}
@@ -522,7 +601,7 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 #else
 	implInfo.name = "name-not-present-in-release-mode";
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
-	implInfo.folderName = s_szImplFolderName;
+	implInfo.folderName = g_szImplFolderName;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -533,7 +612,9 @@ IObject* CImpl::ConstructGlobalObject()
 
 	if (!stl::push_back_unique(g_constructedObjects, static_cast<CBaseObject*>(g_pObject)))
 	{
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 		Cry::Audio::Log(ELogType::Warning, "Trying to construct an already registered object.");
+#endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 	}
 
 	return static_cast<IObject*>(g_pObject);
@@ -546,16 +627,15 @@ IObject* CImpl::ConstructObject(CTransformation const& transformation, char cons
 	auto const pObject = new CObject(transformation);
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-	if (szName != nullptr)
-	{
-		pObject->SetName(szName);
-	}
-#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+	pObject->SetName(szName);
 
 	if (!stl::push_back_unique(g_constructedObjects, pObject))
 	{
 		Cry::Audio::Log(ELogType::Warning, "Trying to construct an already registered object.");
 	}
+#else
+	stl::push_back_unique(g_constructedObjects, pObject);
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 	return static_cast<IObject*>(pObject);
 }
@@ -563,14 +643,16 @@ IObject* CImpl::ConstructObject(CTransformation const& transformation, char cons
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructObject(IObject const* const pIObject)
 {
-	auto const pObject = static_cast<CBaseObject const*>(pIObject);
+	auto const pBaseObject = static_cast<CBaseObject const*>(pIObject);
 
-	if (!stl::find_and_erase(g_constructedObjects, pObject))
+	if (!stl::find_and_erase(g_constructedObjects, pBaseObject))
 	{
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 		Cry::Audio::Log(ELogType::Warning, "Trying to delete a non-existing object.");
+#endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 	}
 
-	delete pObject;
+	delete pBaseObject;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -587,10 +669,7 @@ IListener* CImpl::ConstructListener(CTransformation const& transformation, char 
 		g_pListener = new CListener(transformation, id++, pHandle);
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-		if (szName != nullptr)
-		{
-			g_pListener->SetName(szName);
-		}
+		g_pListener->SetName(szName);
 #endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 		pIListener = static_cast<IListener*>(g_pListener);
@@ -611,14 +690,12 @@ void CImpl::DestructListener(IListener* const pIListener)
 //////////////////////////////////////////////////////////////////////////
 IStandaloneFileConnection* CImpl::ConstructStandaloneFileConnection(CryAudio::CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITriggerConnection const* pITriggerConnection /*= nullptr*/)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CStandaloneFile");
-	return static_cast<IStandaloneFileConnection*>(new CStandaloneFile);
+	return nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::DestructStandaloneFileConnection(IStandaloneFileConnection const* const pIStandaloneFileConnection)
 {
-	CRY_ASSERT_MESSAGE(pIStandaloneFileConnection != nullptr, "pIStandaloneFileConnection is nullptr during %s", __FUNCTION__);
 	delete pIStandaloneFileConnection;
 }
 
@@ -637,32 +714,32 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 {
 	ITriggerConnection* pITriggerConnection = nullptr;
 
-	if (_stricmp(pRootNode->getTag(), s_szCueTag) == 0)
+	if (_stricmp(pRootNode->getTag(), g_szCueTag) == 0)
 	{
 		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
-		char const* const szCueSheetName = pRootNode->getAttr(s_szCueSheetAttribute);
+		char const* const szCueSheetName = pRootNode->getAttr(g_szCueSheetAttribute);
 
-		EActionType actionType = EActionType::Start;
-		char const* const szEventType = pRootNode->getAttr(s_szTypeAttribute);
+		CCue::EActionType type = CCue::EActionType::Start;
+		char const* const szType = pRootNode->getAttr(s_szTypeAttribute);
 
-		if ((szEventType != nullptr) && (szEventType[0] != '\0'))
+		if ((szType != nullptr) && (szType[0] != '\0'))
 		{
-			if (_stricmp(szEventType, s_szStopValue) == 0)
+			if (_stricmp(szType, g_szStopValue) == 0)
 			{
-				actionType = EActionType::Stop;
+				type = CCue::EActionType::Stop;
 			}
-			else if (_stricmp(szEventType, s_szPauseValue) == 0)
+			else if (_stricmp(szType, g_szPauseValue) == 0)
 			{
-				actionType = EActionType::Pause;
+				type = CCue::EActionType::Pause;
 			}
-			else if (_stricmp(szEventType, s_szResumeValue) == 0)
+			else if (_stricmp(szType, g_szResumeValue) == 0)
 			{
-				actionType = EActionType::Resume;
+				type = CCue::EActionType::Resume;
 			}
 		}
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-		if (actionType == EActionType::Start)
+		if (type == CCue::EActionType::Start)
 		{
 			auto const iter = g_cueRadiusInfo.find(szName);
 
@@ -679,30 +756,33 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 			}
 		}
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CTrigger");
-		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, actionType, szCueSheetName));
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCue");
+		pITriggerConnection = static_cast<ITriggerConnection*>(new CCue(StringToId(szName), szName, StringToId(szCueSheetName), type, szCueSheetName));
 #else
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CTrigger");
-		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, actionType));
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCue");
+		pITriggerConnection = static_cast<ITriggerConnection*>(new CCue(StringToId(szName), szName, StringToId(szCueSheetName), type));
 #endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 	}
-	else if (_stricmp(pRootNode->getTag(), s_szSnapshotTag) == 0)
+	else if (_stricmp(pRootNode->getTag(), g_szSnapshotTag) == 0)
 	{
 		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
-		int changeoverTime = s_defaultChangeoverTime;
-		pRootNode->getAttr(s_szTimeAttribute, changeoverTime);
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CTrigger");
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(szName), szName, 0, ETriggerType::Snapshot, EActionType::Start, "", static_cast<CriSint32>(changeoverTime)));
-#else
-		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(szName), szName, 0, ETriggerType::Snapshot, EActionType::Start, static_cast<CriSint32>(changeoverTime)));
-#endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+		char const* const szType = pRootNode->getAttr(s_szTypeAttribute);
+		CSnapshot::EActionType const type =
+			((szType != nullptr) && (szType[0] != '\0') && (_stricmp(szType, g_szStopValue) == 0)) ? CSnapshot::EActionType::Stop : CSnapshot::EActionType::Start;
+
+		int changeoverTime = g_defaultChangeoverTime;
+		pRootNode->getAttr(g_szTimeAttribute, changeoverTime);
+
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CSnapshot");
+		pITriggerConnection = static_cast<ITriggerConnection*>(new CSnapshot(szName, type, static_cast<CriSint32>(changeoverTime)));
 	}
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "Unknown Adx2 tag: %s", pRootNode->getTag());
 	}
+#endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 	return pITriggerConnection;
 }
@@ -719,8 +799,8 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 		char const* const szName = pTriggerInfo->name.c_str();
 		char const* const szCueSheetName = pTriggerInfo->cueSheet.c_str();
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CTrigger");
-		pITriggerConnection = static_cast<ITriggerConnection*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, EActionType::Start, szCueSheetName));
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCue");
+		pITriggerConnection = static_cast<ITriggerConnection*>(new CCue(StringToId(szName), szName, StringToId(szCueSheetName), CCue::EActionType::Start, szCueSheetName));
 	}
 
 	return pITriggerConnection;
@@ -741,36 +821,46 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRoot
 	IParameterConnection* pIParameterConnection = nullptr;
 
 	char const* const szTag = pRootNode->getTag();
-	EParameterType type = EParameterType::None;
 
-	if (_stricmp(szTag, s_szAisacControlTag) == 0)
-	{
-		type = EParameterType::AisacControl;
-	}
-	else if (_stricmp(szTag, s_szSCategoryTag) == 0)
-	{
-		type = EParameterType::Category;
-	}
-	else if (_stricmp(szTag, s_szGameVariableTag) == 0)
-	{
-		type = EParameterType::GameVariable;
-	}
-
-	if (type != EParameterType::None)
+	if (_stricmp(szTag, g_szAisacControlTag) == 0)
 	{
 		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
-		float multiplier = s_defaultParamMultiplier;
-		float shift = s_defaultParamShift;
-		pRootNode->getAttr(s_szMutiplierAttribute, multiplier);
-		pRootNode->getAttr(s_szShiftAttribute, shift);
+		float multiplier = g_defaultParamMultiplier;
+		float shift = g_defaultParamShift;
+		pRootNode->getAttr(g_szMutiplierAttribute, multiplier);
+		pRootNode->getAttr(g_szShiftAttribute, shift);
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CParameter");
-		pIParameterConnection = static_cast<IParameterConnection*>(new CParameter(szName, type, multiplier, shift));
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CAisacControl");
+		pIParameterConnection = static_cast<IParameterConnection*>(new CAisacControl(szName, multiplier, shift));
 	}
+	else if (_stricmp(szTag, g_szSCategoryTag) == 0)
+	{
+		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		float multiplier = g_defaultParamMultiplier;
+		float shift = g_defaultParamShift;
+		pRootNode->getAttr(g_szMutiplierAttribute, multiplier);
+		pRootNode->getAttr(g_szShiftAttribute, shift);
+
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCategory");
+		pIParameterConnection = static_cast<IParameterConnection*>(new CCategory(szName, multiplier, shift));
+	}
+	else if (_stricmp(szTag, g_szGameVariableTag) == 0)
+	{
+		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		float multiplier = g_defaultParamMultiplier;
+		float shift = g_defaultParamShift;
+		pRootNode->getAttr(g_szMutiplierAttribute, multiplier);
+		pRootNode->getAttr(g_szShiftAttribute, shift);
+
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CGameVariable");
+		pIParameterConnection = static_cast<IParameterConnection*>(new CGameVariable(szName, multiplier, shift));
+	}
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "Unknown Adx2 tag: %s", szTag);
 	}
+#endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 	return pIParameterConnection;
 }
@@ -782,7 +872,7 @@ void CImpl::DestructParameterConnection(IParameterConnection const* const pIPara
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool ParseSwitchOrState(XmlNodeRef const pNode, string& selectorName, string& selectorLabelName)
+bool ParseSelectorNode(XmlNodeRef const pNode, string& selectorName, string& selectorLabelName)
 {
 	bool foundAttributes = false;
 
@@ -792,22 +882,24 @@ bool ParseSwitchOrState(XmlNodeRef const pNode, string& selectorName, string& se
 	{
 		XmlNodeRef const pLabelNode(pNode->getChild(0));
 
-		if (pLabelNode && _stricmp(pLabelNode->getTag(), s_szSelectorLabelTag) == 0)
+		if (pLabelNode && _stricmp(pLabelNode->getTag(), g_szSelectorLabelTag) == 0)
 		{
-			char const* const szSelctorLabelName = pLabelNode->getAttr(s_szNameAttribute);
+			char const* const szSelectorLabelName = pLabelNode->getAttr(s_szNameAttribute);
 
-			if ((szSelctorLabelName != nullptr) && (szSelctorLabelName[0] != 0))
+			if ((szSelectorLabelName != nullptr) && (szSelectorLabelName[0] != 0))
 			{
 				selectorName = szSelectorName;
-				selectorLabelName = szSelctorLabelName;
+				selectorLabelName = szSelectorLabelName;
 				foundAttributes = true;
 			}
 		}
 	}
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "An Adx2 Selector %s inside SwitchState needs to have exactly one Selector Label.", szSelectorName);
 	}
+#endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 	return foundAttributes;
 }
@@ -818,51 +910,52 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 	ISwitchStateConnection* pISwitchStateConnection = nullptr;
 
 	char const* const szTag = pRootNode->getTag();
-	ESwitchType type = ESwitchType::None;
 
-	if (_stricmp(szTag, s_szSelectorTag) == 0)
-	{
-		type = ESwitchType::Selector;
-	}
-	else if (_stricmp(szTag, s_szAisacControlTag) == 0)
-	{
-		type = ESwitchType::AisacControl;
-	}
-	else if (_stricmp(szTag, s_szGameVariableTag) == 0)
-	{
-		type = ESwitchType::GameVariable;
-	}
-	else if (_stricmp(szTag, s_szSCategoryTag) == 0)
-	{
-		type = ESwitchType::Category;
-	}
-
-	if (type == ESwitchType::Selector)
+	if (_stricmp(szTag, g_szSelectorTag) == 0)
 	{
 		string szSelectorName;
 		string szSelectorLabelName;
 
-		if (ParseSwitchOrState(pRootNode, szSelectorName, szSelectorLabelName))
+		if (ParseSelectorNode(pRootNode, szSelectorName, szSelectorLabelName))
 		{
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CSwitchState");
-			pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CSwitchState(type, szSelectorName, szSelectorLabelName));
+			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CSelectorLabel");
+			pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CSelectorLabel(szSelectorName, szSelectorLabelName));
 		}
 	}
-	else if (type != ESwitchType::None)
+	else if (_stricmp(szTag, g_szAisacControlTag) == 0)
 	{
 		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
-		float value = (type == ESwitchType::Category) ? s_defaultCategoryVolume : s_defaultStateValue;
+		float value = g_defaultStateValue;
+		pRootNode->getAttr(g_szValueAttribute, value);
 
-		if (pRootNode->getAttr(s_szValueAttribute, value))
-		{
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CSwitchState");
-			pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CSwitchState(type, szName, "", static_cast<CriFloat32>(value)));
-		}
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CAisacState");
+		pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CAisacState(szName, static_cast<CriFloat32>(value)));
+
 	}
+	else if (_stricmp(szTag, g_szGameVariableTag) == 0)
+	{
+		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		float value = g_defaultStateValue;
+		pRootNode->getAttr(g_szValueAttribute, value);
+
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CGameVariableState");
+		pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CGameVariableState(szName, static_cast<CriFloat32>(value)));
+	}
+	else if (_stricmp(szTag, g_szSCategoryTag) == 0)
+	{
+		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		float value = g_defaultStateValue;
+		pRootNode->getAttr(g_szValueAttribute, value);
+
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCategoryState");
+		pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CCategoryState(szName, static_cast<CriFloat32>(value)));
+	}
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "Unknown Adx2 tag: %s", szTag);
 	}
+#endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 	return pISwitchStateConnection;
 }
@@ -880,28 +973,30 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const p
 
 	char const* const szTag = pRootNode->getTag();
 
-	if (_stricmp(szTag, s_szBusTag) == 0)
+	if (_stricmp(szTag, g_szDspBusTag) == 0)
 	{
 		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CEnvironment");
-		pEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CEnvironment(szName, EEnvironmentType::Bus));
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CDspBus");
+		pEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CDspBus(szName));
 	}
-	else if (_stricmp(szTag, s_szAisacControlTag) == 0)
+	else if (_stricmp(szTag, g_szAisacControlTag) == 0)
 	{
 		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
-		float multiplier = s_defaultParamMultiplier;
-		float shift = s_defaultParamShift;
-		pRootNode->getAttr(s_szMutiplierAttribute, multiplier);
-		pRootNode->getAttr(s_szShiftAttribute, shift);
+		float multiplier = g_defaultParamMultiplier;
+		float shift = g_defaultParamShift;
+		pRootNode->getAttr(g_szMutiplierAttribute, multiplier);
+		pRootNode->getAttr(g_szShiftAttribute, shift);
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CEnvironment");
-		pEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CEnvironment(szName, EEnvironmentType::AisacControl, multiplier, shift));
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CAisacEnvironment");
+		pEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CAisacEnvironment(szName, multiplier, shift));
 	}
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "Unknown Adx2 tag: %s", szTag);
 	}
+#endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 	return pEnvironmentConnection;
 }
@@ -919,17 +1014,19 @@ ISettingConnection* CImpl::ConstructSettingConnection(XmlNodeRef const pRootNode
 
 	char const* const szTag = pRootNode->getTag();
 
-	if (_stricmp(szTag, s_szDspBusSettingTag) == 0)
+	if (_stricmp(szTag, g_szDspBusSettingTag) == 0)
 	{
 		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CSetting");
-		pISettingConnection = static_cast<ISettingConnection*>(new CSetting(szName));
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CDspBusSetting");
+		pISettingConnection = static_cast<ISettingConnection*>(new CDspBusSetting(szName));
 	}
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "Unknown Adx2 tag: %s", szTag);
 	}
+#endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 	return pISettingConnection;
 }
@@ -968,50 +1065,57 @@ void CImpl::SetLanguage(char const* const szLanguage)
 		m_localizedSoundBankFolder += "/";
 		m_localizedSoundBankFolder += AUDIO_SYSTEM_DATA_ROOT;
 		m_localizedSoundBankFolder += "/";
-		m_localizedSoundBankFolder += s_szImplFolderName;
+		m_localizedSoundBankFolder += g_szImplFolderName;
 		m_localizedSoundBankFolder += "/";
 		m_localizedSoundBankFolder += s_szAssetsFolderName;
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-CEvent* CImpl::ConstructEvent(TriggerInstanceId const triggerInstanceId)
+CCueInstance* CImpl::ConstructCueInstance(
+	TriggerInstanceId const triggerInstanceId,
+	uint32 const cueId,
+	CriAtomExPlaybackId const playbackId,
+	CBaseObject const* const pBaseObject /*= nullptr*/,
+	CCue const* const pCue /*= nullptr*/)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CEvent");
-	auto const pEvent = new CEvent(triggerInstanceId);
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCueInstance");
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-	g_constructedEvents.push_back(pEvent);
+	auto const pCueInstance = new CCueInstance(triggerInstanceId, cueId, playbackId, pBaseObject, pCue);
+	g_constructedCueInstances.push_back(pCueInstance);
+#else
+	auto const pCueInstance = new CCueInstance(triggerInstanceId, cueId, playbackId);
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
-	return pEvent;
+	return pCueInstance;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DestructEvent(CEvent const* const pEvent)
+void CImpl::DestructCueInstance(CCueInstance const* const pCueInstance)
 {
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-	CRY_ASSERT_MESSAGE(pEvent != nullptr, "pEvent is nullpter during %s", __FUNCTION__);
+	CRY_ASSERT_MESSAGE(pCueInstance != nullptr, "pCueInstance is nullpter during %s", __FUNCTION__);
 
-	auto iter(g_constructedEvents.begin());
-	auto const iterEnd(g_constructedEvents.cend());
+	auto iter(g_constructedCueInstances.begin());
+	auto const iterEnd(g_constructedCueInstances.cend());
 
 	for (; iter != iterEnd; ++iter)
 	{
-		if ((*iter) == pEvent)
+		if ((*iter) == pCueInstance)
 		{
 			if (iter != (iterEnd - 1))
 			{
-				(*iter) = g_constructedEvents.back();
+				(*iter) = g_constructedCueInstances.back();
 			}
 
-			g_constructedEvents.pop_back();
+			g_constructedCueInstances.pop_back();
 			break;
 		}
 	}
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
-	delete pEvent;
+	delete pCueInstance;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1050,10 +1154,12 @@ bool CImpl::InitializeLibrary()
 
 	bool const isInitialized = (criAtomEx_IsInitialized() == CRI_TRUE);
 
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	if (!isInitialized)
 	{
 		Cry::Audio::Log(ELogType::Error, "Failed to initialize CriAtomEx");
 	}
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 	return isInitialized;
 }
@@ -1070,10 +1176,12 @@ bool CImpl::AllocateVoicePool()
 
 	bool const isAllocated = (criAtomExVoicePool_AllocateStandardVoicePool(&voicePoolConfig, nullptr, 0) != nullptr);
 
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	if (!isAllocated)
 	{
 		Cry::Audio::Log(ELogType::Error, "Failed to allocate voice pool");
 	}
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 	return isAllocated;
 }
@@ -1088,10 +1196,12 @@ bool CImpl::CreateDbas()
 
 	bool const isCreated = (m_dbasId != CRIATOMEXDBAS_ILLEGAL_ID);
 
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	if (!isCreated)
 	{
 		Cry::Audio::Log(ELogType::Error, "Failed to create D-BAS");
 	}
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 	return isCreated;
 }
@@ -1149,15 +1259,19 @@ bool CImpl::RegisterAcf()
 			m_acfFileSize = acfFileSize;
 #endif      // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 		}
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 		else
 		{
 			Cry::Audio::Log(ELogType::Error, "Failed to register ACF");
 		}
+#endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 	}
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Error, "ACF not found.");
 	}
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 	return acfRegistered;
 }
@@ -1198,18 +1312,18 @@ void CImpl::Set3dSourceConfig()
 //////////////////////////////////////////////////////////////////////////
 void CImpl::MuteAllObjects(CriBool const shouldMute)
 {
-	for (auto const pObject : g_constructedObjects)
+	for (auto const pBaseObject : g_constructedObjects)
 	{
-		pObject->MutePlayer(shouldMute);
+		pBaseObject->MutePlayer(shouldMute);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::PauseAllObjects(CriBool const shouldPause)
 {
-	for (auto const pObject : g_constructedObjects)
+	for (auto const pBaseObject : g_constructedObjects)
 	{
-		pObject->PausePlayer(shouldPause);
+		pBaseObject->PausePlayer(shouldPause);
 	}
 }
 
@@ -1286,52 +1400,95 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 		}
 
 		{
-			auto& allocator = CEvent::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Cues", g_eventPoolSize);
+			auto& allocator = CCueInstance::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Cue Instances", g_cueInstancePoolSize);
 		}
 
-		if (g_debugPoolSizes.triggers > 0)
+		if (g_debugPoolSizes.cues > 0)
 		{
-			auto& allocator = CTrigger::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Triggers", g_poolSizes.triggers);
+			auto& allocator = CCue::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Cues", g_poolSizes.cues);
 		}
 
-		if (g_debugPoolSizes.parameters > 0)
+		if (g_debugPoolSizes.aisacControls > 0)
 		{
-			auto& allocator = CParameter::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Parameters", g_poolSizes.parameters);
+			auto& allocator = CAisacControl::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Aisac-Controls", g_poolSizes.aisacControls);
 		}
 
-		if (g_debugPoolSizes.switchStates > 0)
+		if (g_debugPoolSizes.aisacEnvironments > 0)
 		{
-			auto& allocator = CSwitchState::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "SwitchStates", g_poolSizes.switchStates);
+			auto& allocator = CAisacEnvironment::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Aisac-Controls on Environments", g_poolSizes.aisacEnvironments);
 		}
 
-		if (g_debugPoolSizes.environments > 0)
+		if (g_debugPoolSizes.aisacStates > 0)
 		{
-			auto& allocator = CEnvironment::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Environments", g_poolSizes.environments);
+			auto& allocator = CAisacState::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Aisac-Controls on States", g_poolSizes.aisacStates);
 		}
 
-		if (g_debugPoolSizes.settings > 0)
+		if (g_debugPoolSizes.categories > 0)
 		{
-			auto& allocator = CSetting::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Settings", g_poolSizes.settings);
+			auto& allocator = CCategory::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Categories", g_poolSizes.categories);
 		}
 
-		if (g_debugPoolSizes.files > 0)
+		if (g_debugPoolSizes.categoryStates > 0)
 		{
-			auto& allocator = CFile::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Files", g_poolSizes.files);
+			auto& allocator = CCategoryState::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Categories on States", g_poolSizes.categoryStates);
+		}
+
+		if (g_debugPoolSizes.gameVariables > 0)
+		{
+			auto& allocator = CGameVariable::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "GameVariables", g_poolSizes.gameVariables);
+		}
+
+		if (g_debugPoolSizes.gameVariableStates > 0)
+		{
+			auto& allocator = CGameVariableState::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "GameVariables on States", g_poolSizes.gameVariableStates);
+		}
+
+		if (g_debugPoolSizes.selectorLabels > 0)
+		{
+			auto& allocator = CSelectorLabel::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Selector Labels", g_poolSizes.selectorLabels);
+		}
+
+		if (g_debugPoolSizes.dspBuses > 0)
+		{
+			auto& allocator = CDspBus::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "DSP Buses", g_poolSizes.dspBuses);
+		}
+
+		if (g_debugPoolSizes.snapshots > 0)
+		{
+			auto& allocator = CSnapshot::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Snapshots", g_poolSizes.snapshots);
+		}
+
+		if (g_debugPoolSizes.dspBusSettings > 0)
+		{
+			auto& allocator = CDspBusSetting::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "DSP Bus Settings", g_poolSizes.dspBusSettings);
+		}
+
+		if (g_debugPoolSizes.binaries > 0)
+		{
+			auto& allocator = CBinary::GetAllocator();
+			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Binaries", g_poolSizes.binaries);
 		}
 	}
 
-	size_t const numEvents = g_constructedEvents.size();
+	size_t const numCueInstances = g_constructedCueInstances.size();
 
 	posY += Debug::s_systemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextSecondary, false, "Cues: %3" PRISIZE_T " | Objects with Doppler: %u | DSP Bus Setting: %s",
-	                    numEvents, g_numObjectsWithDoppler, g_debugCurrentDspBusSettingName.c_str());
+	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextSecondary, false,
+	                    "Active Cues: %3" PRISIZE_T " | Objects with Doppler: %u | DSP Bus Setting: %s | Active Snapshot: %s",
+	                    numCueInstances, g_numObjectsWithDoppler, g_debugCurrentDspBusSettingName.c_str(), g_debugActiveSnapShotName.c_str());
 
 	Vec3 const& listenerPosition = g_pListener->GetPosition();
 	Vec3 const& listenerDirection = g_pListener->GetTransformation().GetForward();
@@ -1348,35 +1505,93 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const
 {
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(szTextFilter);
-	lowerCaseSearchString.MakeLower();
-
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "Adx2 Cues [%" PRISIZE_T "]", g_constructedEvents.size());
-	posY += Debug::s_listHeaderLineHeight;
-
-	for (auto const pEvent : g_constructedEvents)
+	if ((g_cvars.m_debugListFilter & g_debugListMask) != 0)
 	{
-		Vec3 const& position = pEvent->GetObject()->GetTransformation().GetPosition();
-		float const distance = position.GetDistance(g_pListener->GetPosition());
+		CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(szTextFilter);
+		lowerCaseSearchString.MakeLower();
 
-		if ((debugDistance <= 0.0f) || ((debugDistance > 0.0f) && (distance < debugDistance)))
+		float const initialPosY = posY;
+
+		if ((g_cvars.m_debugListFilter & EDebugListFilter::CueInstances) != 0)
 		{
-			char const* const szTriggerName = pEvent->GetName();
-			CryFixedStringT<MaxControlNameLength> lowerCaseTriggerName(szTriggerName);
-			lowerCaseTriggerName.MakeLower();
-			bool const draw = ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseTriggerName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos));
+			auxGeom.Draw2dLabel(posX, posY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "Adx2 Cues [%" PRISIZE_T "]", g_constructedCueInstances.size());
+			posY += Debug::s_listHeaderLineHeight;
 
-			if (draw)
+			for (auto const pCueInstance : g_constructedCueInstances)
 			{
-				ColorF const color = ((pEvent->GetFlags() & EEventFlags::IsVirtual) != 0) ? Debug::s_globalColorVirtual : Debug::s_listColorItemActive;
-				auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize, color, false, "%s on %s", szTriggerName, pEvent->GetObject()->GetName());
+				Vec3 const& position = pCueInstance->GetObject()->GetTransformation().GetPosition();
+				float const distance = position.GetDistance(g_pListener->GetPosition());
 
-				posY += Debug::s_listLineHeight;
+				if ((debugDistance <= 0.0f) || ((debugDistance > 0.0f) && (distance < debugDistance)))
+				{
+					char const* const szCueName = pCueInstance->GetCue()->GetName();
+					CryFixedStringT<MaxControlNameLength> lowerCaseCueName(szCueName);
+					lowerCaseCueName.MakeLower();
+					bool const draw = ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseCueName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos));
+
+					if (draw)
+					{
+						ColorF const color = ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) != 0) ? Debug::s_globalColorVirtual : Debug::s_listColorItemActive;
+						auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize, color, false, "%s on %s", szCueName, pCueInstance->GetObject()->GetName());
+
+						posY += Debug::s_listLineHeight;
+					}
+				}
 			}
+
+			posX += 600.0f;
+		}
+
+		if ((g_cvars.m_debugListFilter & EDebugListFilter::GameVariables) != 0)
+		{
+			posY = initialPosY;
+
+			auxGeom.Draw2dLabel(posX, posY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "Adx2 GameVariables [%" PRISIZE_T "]", g_gameVariableValues.size());
+			posY += Debug::s_listHeaderLineHeight;
+
+			for (auto const& gameVariablePair : g_gameVariableValues)
+			{
+				char const* const szGameVariableName = gameVariablePair.first.c_str();
+				CryFixedStringT<MaxControlNameLength> lowerCaseGameVariableName(szGameVariableName);
+				lowerCaseGameVariableName.MakeLower();
+				bool const draw = ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseGameVariableName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos));
+
+				if (draw)
+				{
+					auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize, Debug::s_listColorItemActive, false, "%s : %3.2f", szGameVariableName, gameVariablePair.second);
+
+					posY += Debug::s_listLineHeight;
+				}
+			}
+
+			posX += 300.0f;
+		}
+
+		if ((g_cvars.m_debugListFilter & EDebugListFilter::Categories) != 0)
+		{
+			posY = initialPosY;
+
+			auxGeom.Draw2dLabel(posX, posY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "Adx2 Categories [%" PRISIZE_T "]", g_categoryValues.size());
+			posY += Debug::s_listHeaderLineHeight;
+
+			for (auto const& categoryPair : g_categoryValues)
+			{
+				char const* const szCategoryName = categoryPair.first.c_str();
+				CryFixedStringT<MaxControlNameLength> lowerCaseCategoryName(szCategoryName);
+				lowerCaseCategoryName.MakeLower();
+				bool const draw = ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseCategoryName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos));
+
+				if (draw)
+				{
+					auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize, Debug::s_listColorItemActive, false, "%s : %3.2f", szCategoryName, categoryPair.second);
+
+					posY += Debug::s_listLineHeight;
+				}
+			}
+
+			posX += 300.0f;
 		}
 	}
-
-	posX += 600.0f;
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 }
 } // namespace Adx2

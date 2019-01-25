@@ -2,10 +2,9 @@
 
 #pragma once
 
+#include <ITriggerConnection.h>
 #include <PoolObject.h>
-#include <CryAudio/IAudioInterfacesCommonData.h>
 #include <AK/SoundEngine/Common/AkTypes.h>
-#include <atomic>
 
 namespace CryAudio
 {
@@ -13,18 +12,7 @@ namespace Impl
 {
 namespace Wwise
 {
-class CObject;
-
-enum class EEventState : EnumFlagsType
-{
-	None,
-	Playing,
-	Loading,
-	Unloading,
-	Virtual,
-};
-
-class CEvent final : public CPoolObject<CEvent, stl::PSyncNone>
+class CEvent final : public ITriggerConnection, public CPoolObject<CEvent, stl::PSyncNone>
 {
 public:
 
@@ -34,38 +22,44 @@ public:
 	CEvent& operator=(CEvent const&) = delete;
 	CEvent& operator=(CEvent&&) = delete;
 
-	CEvent(TriggerInstanceId const triggerInstanceId)
-		: m_triggerInstanceId(triggerInstanceId)
-		, m_state(EEventState::None)
-		, m_id(AK_INVALID_UNIQUE_ID)
-		, m_triggerId(AK_INVALID_UNIQUE_ID)
-		, m_pObject(nullptr)
-		, m_maxAttenuation(0.0f)
-		, m_toBeRemoved(false)
-	{}
-
-	~CEvent() = default;
-
-	void Stop();
-	void UpdateVirtualState();
-
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	void        SetName(char const* const szName) { m_name = szName; }
-	char const* GetName() const                   { return m_name.c_str(); }
+	explicit CEvent(AkUniqueID const id, float const maxAttenuation, char const* const szName)
+		: m_id(id)
+		, m_maxAttenuation(maxAttenuation)
+		, m_name(szName)
+	{}
+#else
+	explicit CEvent(AkUniqueID const id, float const maxAttenuation)
+		: m_id(id)
+		, m_maxAttenuation(maxAttenuation)
+	{}
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
-	TriggerInstanceId const m_triggerInstanceId;
-	EEventState             m_state;
-	AkUniqueID              m_id;
-	AkUniqueID              m_triggerId;
-	CObject*                m_pObject;
-	float                   m_maxAttenuation;
-	std::atomic_bool        m_toBeRemoved;
+	virtual ~CEvent() override = default;
+
+	// CryAudio::Impl::ITriggerConnection
+	virtual ERequestStatus Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId) override;
+	virtual void           Stop(IObject* const pIObject) override;
+	virtual ERequestStatus Load() const override;
+	virtual ERequestStatus Unload() const override;
+	virtual ERequestStatus LoadAsync(TriggerInstanceId const triggerInstanceId) const override;
+	virtual ERequestStatus UnloadAsync(TriggerInstanceId const triggerInstanceId) const override;
+	// ~CryAudio::Impl::ITriggerConnection
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	char const* GetName() const { return m_name.c_str(); }
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 private:
 
+	ERequestStatus SetLoaded(bool const bLoad) const;
+	ERequestStatus SetLoadedAsync(TriggerInstanceId const triggerInstanceId, bool const bLoad) const;
+
+	AkUniqueID const m_id;
+	float const      m_maxAttenuation;
+
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	CryFixedStringT<MaxControlNameLength> m_name;
+	CryFixedStringT<MaxControlNameLength> const m_name;
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 };
 } // namespace Wwise

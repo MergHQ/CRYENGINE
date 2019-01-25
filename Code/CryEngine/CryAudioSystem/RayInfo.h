@@ -8,7 +8,7 @@ namespace CryAudio
 {
 class CObject;
 
-static const size_t s_maxRayHits = 10;
+constexpr size_t g_maxRayHits = 10;
 
 class CRayInfo
 {
@@ -22,7 +22,7 @@ public:
 	size_t   samplePosIndex = 0;
 	size_t   numHits = 0;
 	float    totalSoundOcclusion = 0.0f;
-	ray_hit  hits[s_maxRayHits];
+	ray_hit  hits[g_maxRayHits];
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	Vec3  startPosition = ZERO;
