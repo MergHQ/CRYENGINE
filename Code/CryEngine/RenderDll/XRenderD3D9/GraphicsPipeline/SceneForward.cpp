@@ -1426,6 +1426,9 @@ void CSceneForwardStage::ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex)
 	if (!m_pHDRSkyRE && !m_pSkyRE)
 		return;
 
+	if (m_pHDRSkyRE && !m_pHDRSkyRE->m_pRenderParams)
+		return;
+
 	PROFILE_LABEL_SCOPE("SKY_PASS");
 
 	PreparePerPassResources(false);
