@@ -37,6 +37,9 @@ QTerrainLayerView::QTerrainLayerView(QWidget* pParent, CTerrainManager* pTerrain
 
 	setModel(m_pModel);
 	setItemDelegate(new QAdvancedItemDelegate(this));
+
+	setContextMenuPolicy(Qt::CustomContextMenu);
+	connect(this, &QTerrainLayerView::customContextMenuRequested, this, &QTerrainLayerView::OnContextMenu);
 }
 
 QTerrainLayerView::~QTerrainLayerView()
@@ -140,39 +143,34 @@ void QTerrainLayerView::LayersChanged()
 	}
 }
 
-void QTerrainLayerView::mousePressEvent(QMouseEvent* event)
+void QTerrainLayerView::OnContextMenu(const QPoint& pos)
 {
-	__super::mousePressEvent(event);
+	ICommandManager* pManager = GetIEditorImpl()->GetICommandManager();
+	QMenu menu;
 
-	if (Qt::RightButton == event->button())
+	const QModelIndex indexUnderMousePress = indexAt(pos);
+	if (indexUnderMousePress.isValid())
 	{
-		ICommandManager* pManager = GetIEditorImpl()->GetICommandManager();
-		QMenu* pMenu = new QMenu;
+		QString name = "Create Layer (below)";
+		QString cmd = QString("terrain.create_layer_at '%1'").arg(indexUnderMousePress.row() + 1);
+		menu.addAction(new QCommandAction(name, (const char*)cmd.toLocal8Bit(), &menu));
 
-		const QModelIndex indexUnderMousePress = indexAt(event->pos());
-		if (indexUnderMousePress.isValid())
-		{
-			QString name = "Create Layer (below)";
-			QString cmd = QString("terrain.create_layer_at '%1'").arg(indexUnderMousePress.row() + 1);
-			pMenu->addAction(new QCommandAction(name, (const char*)cmd.toLocal8Bit(), pMenu));
+		menu.addAction(pManager->GetAction("terrain.delete_layer"));
+		menu.addAction(pManager->GetAction("terrain.duplicate_layer"));
+		menu.addSeparator();
 
-			pMenu->addAction(pManager->GetAction("terrain.delete_layer"));
-			pMenu->addAction(pManager->GetAction("terrain.duplicate_layer"));
-			pMenu->addSeparator();
+		menu.addAction(pManager->GetAction("terrain.move_layer_to_top"));
+		menu.addAction(pManager->GetAction("terrain.move_layer_up"));
+		menu.addAction(pManager->GetAction("terrain.move_layer_down"));
+		menu.addAction(pManager->GetAction("terrain.move_layer_to_bottom"));
+		menu.addSeparator();
 
-			pMenu->addAction(pManager->GetAction("terrain.move_layer_to_top"));
-			pMenu->addAction(pManager->GetAction("terrain.move_layer_up"));
-			pMenu->addAction(pManager->GetAction("terrain.move_layer_down"));
-			pMenu->addAction(pManager->GetAction("terrain.move_layer_to_bottom"));
-			pMenu->addSeparator();
-
-			pMenu->addAction(pManager->GetAction("terrain.flood_layer"));
-		}
-		else
-		{
-			pMenu->addAction(pManager->GetAction("terrain.create_layer"));
-		}
-
-		pMenu->popup(QCursor::pos());
+		menu.addAction(pManager->GetAction("terrain.flood_layer"));
 	}
+	else
+	{
+		menu.addAction(pManager->GetAction("terrain.create_layer"));
+	}
+
+	menu.exec(QCursor::pos());
 }
