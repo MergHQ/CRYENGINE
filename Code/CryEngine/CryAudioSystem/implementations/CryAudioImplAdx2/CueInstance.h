@@ -3,6 +3,7 @@
 #pragma once
 
 #include <PoolObject.h>
+#include <atomic>
 #include <cri_atom_ex.h>
 
 namespace CryAudio
@@ -64,19 +65,18 @@ public:
 
 	~CCueInstance() = default;
 
-	TriggerInstanceId GetTriggerInstanceId() const          { return m_triggerInstanceId; }
+	TriggerInstanceId   GetTriggerInstanceId() const             { return m_triggerInstanceId; }
 
-	uint32            GetCueId() const                      { return m_cueId; }
+	uint32              GetCueId() const                         { return m_cueId; }
+	CriAtomExPlaybackId GetPlaybackId() const                    { return m_playbackId; }
 
-	ECueInstanceFlags GetFlags() const                      { return m_flags; }
-	void              SetFlag(ECueInstanceFlags const flag) { m_flags |= flag; }
+	ECueInstanceFlags   GetFlags() const                         { return m_flags; }
+	void                SetFlag(ECueInstanceFlags const flag)    { m_flags = m_flags | flag; }
+	void                RemoveFlag(ECueInstanceFlags const flag) { m_flags = m_flags & ~flag; }
 
-	void              Stop();
-	void              Pause();
-	void              Resume();
-
-	void              UpdateVirtualState();
-	void              UpdatePlaybackState();
+	void                Stop();
+	void                Pause();
+	void                Resume();
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	CBaseObject const* GetObject() const { return m_pBaseObject; }
@@ -85,10 +85,10 @@ public:
 
 private:
 
-	TriggerInstanceId const   m_triggerInstanceId;
-	uint32 const              m_cueId;
-	CriAtomExPlaybackId const m_playbackId;
-	ECueInstanceFlags         m_flags;
+	TriggerInstanceId const        m_triggerInstanceId;
+	uint32 const                   m_cueId;
+	CriAtomExPlaybackId const      m_playbackId;
+	std::atomic<ECueInstanceFlags> m_flags;
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	CBaseObject const* const m_pBaseObject;

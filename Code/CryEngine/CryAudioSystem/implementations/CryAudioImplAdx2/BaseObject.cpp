@@ -16,12 +16,57 @@ namespace Impl
 namespace Adx2
 {
 //////////////////////////////////////////////////////////////////////////
+static void PlaybackEventCallback(void* pObject, CriAtomExPlaybackEvent playbackEvent, const CriAtomExPlaybackInfoDetail* pInfo)
+{
+	if ((playbackEvent != CriAtomExPlaybackEvent::CRIATOMEX_PLAYBACK_EVENT_ALLOCATE) && (pObject != nullptr))
+	{
+		auto const pBaseObject = static_cast<CBaseObject*>(pObject);
+		CueInstances const& cueInstances = pBaseObject->GetCueInstances();
+
+		for (auto const pCueInstance : cueInstances)
+		{
+			if (pCueInstance->GetPlaybackId() == pInfo->id)
+			{
+				switch (playbackEvent)
+				{
+				case CriAtomExPlaybackEvent::CRIATOMEX_PLAYBACK_EVENT_FROM_NORMAL_TO_VIRTUAL:
+					{
+						pCueInstance->SetFlag(ECueInstanceFlags::IsVirtual);
+
+						break;
+					}
+				case CriAtomExPlaybackEvent::CRIATOMEX_PLAYBACK_EVENT_FROM_VIRTUAL_TO_NORMAL:
+					{
+						pCueInstance->RemoveFlag(ECueInstanceFlags::IsVirtual);
+
+						break;
+					}
+				case CriAtomExPlaybackEvent::CRIATOMEX_PLAYBACK_EVENT_REMOVE:
+					{
+						pCueInstance->SetFlag(ECueInstanceFlags::ToBeRemoved);
+
+						break;
+					}
+				default:
+					{
+						break;
+					}
+				}
+
+				break;
+			}
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 CBaseObject::CBaseObject()
 	: m_flags(EObjectFlags::None)
 {
 	ZeroStruct(m_3dAttributes);
 	m_p3dSource = criAtomEx3dSource_Create(&g_3dSourceConfig, nullptr, 0);
 	m_pPlayer = criAtomExPlayer_Create(&g_playerConfig, nullptr, 0);
+	criAtomExPlayer_SetPlaybackEventCallback(m_pPlayer, PlaybackEventCallback, this);
 	CRY_ASSERT_MESSAGE(m_pPlayer != nullptr, "m_pPlayer is null pointer during %s", __FUNCTION__);
 	m_cueInstances.reserve(2);
 }
@@ -69,8 +114,6 @@ void CBaseObject::Update(float const deltaTime)
 		{
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 			// Always update in production code for debug draw.
-			pCueInstance->UpdateVirtualState();
-
 			if ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) == 0)
 			{
 				m_flags &= ~EObjectFlags::IsVirtual;
@@ -78,15 +121,12 @@ void CBaseObject::Update(float const deltaTime)
 #else
 			if (((m_flags& EObjectFlags::IsVirtual) != 0) && ((m_flags& EObjectFlags::UpdateVirtualStates) != 0))
 			{
-				pCueInstance->UpdateVirtualState();
-
 				if ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) == 0)
 				{
 					m_flags &= ~EObjectFlags::IsVirtual;
 				}
 			}
 #endif      // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
-			pCueInstance->UpdatePlaybackState();
 
 			++iter;
 		}
@@ -134,8 +174,6 @@ ERequestStatus CBaseObject::SetName(char const* const szName)
 //////////////////////////////////////////////////////////////////////////
 void CBaseObject::AddCueInstance(CCueInstance* const pCueInstance)
 {
-	pCueInstance->UpdateVirtualState();
-
 	if ((m_flags& EObjectFlags::IsVirtual) != 0)
 	{
 		if ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) == 0)

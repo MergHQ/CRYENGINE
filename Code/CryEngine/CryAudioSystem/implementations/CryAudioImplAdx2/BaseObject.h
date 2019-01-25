@@ -60,8 +60,10 @@ public:
 	void                MutePlayer(CriBool const shouldPause);
 	void                PausePlayer(CriBool const shouldPause);
 
-	CriAtomExPlayerHn   GetPlayer() const   { return m_pPlayer; }
-	CriAtomEx3dSourceHn Get3dSource() const { return m_p3dSource; }
+	CriAtomExPlayerHn   GetPlayer() const       { return m_pPlayer; }
+	CriAtomEx3dSourceHn Get3dSource() const     { return m_p3dSource; }
+
+	CueInstances const& GetCueInstances() const { return m_cueInstances; }
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	char const* GetName() const { return m_name.c_str(); }
