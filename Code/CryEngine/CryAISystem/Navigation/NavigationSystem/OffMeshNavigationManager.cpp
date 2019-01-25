@@ -34,7 +34,7 @@ const MNM::OffMeshNavigation& OffMeshNavigationManager::GetOffMeshNavigationForM
 MNM::OffMeshLinkID OffMeshNavigationManager::RequestLinkAddition(const MNM::OffMeshLinkID linkId, const NavigationAgentTypeID agentTypeId, _smart_ptr<MNM::IOffMeshLink> pLinkData, const MNM::SOffMeshLinkCallbacks& callbacks)
 {
 	CRY_ASSERT_MESSAGE(!IsLinkAdditionRequested(linkId), "Link with id %u is already requested!", linkId);
-	CRY_ASSERT_MESSAGE(m_links.find(linkId) == m_links.end(), "Link with id %u is aready added!", linkId);
+	CRY_ASSERT_MESSAGE(m_debugRemovingLinkId == linkId || m_links.find(linkId) == m_links.end(), "Link with id %u is aready added!", linkId);
 
 	const MNM::OffMeshLinkID requestLinkId = !linkId.IsValid() ? MNM::OffMeshNavigation::GenerateLinkId() : linkId;
 	SLinkAdditionRequest request(agentTypeId, pLinkData, requestLinkId, callbacks);
@@ -344,7 +344,13 @@ void OffMeshNavigationManager::RefreshConnections(const NavigationMeshID meshId,
 		// Notify link owner about it is going to be removed so it can clean up cached data and request re-addition if needed
 		if (linkInfo.removedCallback)
 		{
+#ifdef USE_CRY_ASSERT
+			m_debugRemovingLinkId = linkId;
+#endif // USE_CRY_ASSERT
 			linkInfo.removedCallback(linkId, meshId, MNM::EOffMeshLinkRemovalReason::MeshUpdated);
+#ifdef USE_CRY_ASSERT
+			m_debugRemovingLinkId.Invalidate();
+#endif // USE_CRY_ASSERT
 		}
 
 		// But for the meantime, also remove the entry from m_links because the .triangleID member was referencing a triangle in the now regenerated tile (!)
@@ -408,7 +414,13 @@ void OffMeshNavigationManager::OnNavigationMeshDestroyed(const NavigationMeshID&
 
 		if (linkInfo.removedCallback)
 		{
+#ifdef USE_CRY_ASSERT
+			m_debugRemovingLinkId = linkId;
+#endif // USE_CRY_ASSERT
 			linkInfo.removedCallback(linkId, meshId, MNM::EOffMeshLinkRemovalReason::MeshDestroyed);
+#ifdef USE_CRY_ASSERT
+			m_debugRemovingLinkId.Invalidate();
+#endif // USE_CRY_ASSERT
 		}
 
 		m_links.erase(iter++);

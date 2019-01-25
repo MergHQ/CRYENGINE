@@ -143,16 +143,21 @@ private:
 	TOffMeshMap            m_offMeshMap;
 	MNM::OffMeshNavigation m_emptyOffMeshNavigation;
 
-	// List of registered links	
+	// List of registered links
 	TLinkInfoMap m_links;
-	bool         m_objectRegistrationEnabled;	
+	bool         m_objectRegistrationEnabled;
 
-	AdditionRequests m_additionRequests;	
+	AdditionRequests m_additionRequests;
 	RemovalRequests m_removalRequests;
 	AnnotationChangeRequests m_annotationChangeRequests;
 
 	size_t m_additionProcessingIdx;
 	size_t m_removalProcessingIdx;
+
+#ifdef USE_CRY_ASSERT
+	MNM::OffMeshLinkID m_debugRemovingLinkId;
+#endif // USE_CRY_ASSERT
+
 };
 
 #endif  //__OFFMESH_NAVIGATION_MANAGER_H__

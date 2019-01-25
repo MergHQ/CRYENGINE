@@ -28,6 +28,7 @@ struct TNavigationID
 	ILINE bool     operator!=(const TNavigationID& other) const { return id != other.id; }
 	ILINE bool     operator<(const TNavigationID& other) const  { return id < other.id; }
 	ILINE bool     IsValid() const { return id != valueInvalid; }
+	ILINE void     Invalidate() { id = valueInvalid; }
 	ILINE uint32   GetValue() const { return id; }
 
 private:
