@@ -55,9 +55,27 @@ void CObject::Release()
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CObject::Destruct()
+{
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	stl::find_and_erase(g_constructedObjects, this);
+#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
+
+	g_pIImpl->DestructObject(m_pImplData);
+	m_pImplData = nullptr;
+	delete this;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CObject::AddTriggerState(TriggerInstanceId const id, STriggerInstanceState const& triggerInstanceState)
 {
 	m_triggerStates.emplace(id, triggerInstanceState);
+
+	if (std::find(g_activeObjects.begin(), g_activeObjects.end(), this) == g_activeObjects.end())
+	{
+		g_activeObjects.push_back(this);
+		m_flags |= EObjectFlags::Active;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -175,24 +193,15 @@ void CObject::PushRequest(SRequestData const& requestData, SRequestUserData cons
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CObject::IsActive() const
+bool CObject::IsPlaying() const
 {
-	if (!m_triggerStates.empty())
-	{
-		return true;
-	}
+	return !m_triggerStates.empty() || !m_activeStandaloneFiles.empty();
+}
 
-	for (auto const& standaloneFilePair : m_activeStandaloneFiles)
-	{
-		CStandaloneFile const* const pStandaloneFile = standaloneFilePair.first;
-
-		if (pStandaloneFile->IsPlaying())
-		{
-			return true;
-		}
-	}
-
-	return false;
+//////////////////////////////////////////////////////////////////////////
+bool CObject::HasPendingCallbacks() const
+{
+	return m_propagationProcessor.HasPendingRays() || (m_numPendingSyncCallbacks > 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -306,16 +315,6 @@ void CObject::Init(Impl::IObject* const pImplData, EntityId const entityId)
 	m_entityId = entityId;
 	m_pImplData = pImplData;
 	m_propagationProcessor.Init();
-}
-
-///////////////////////////////////////////////////////////////////////////
-bool CObject::CanBeReleased() const
-{
-	return (m_flags& EObjectFlags::InUse) == 0 &&
-	       m_triggerStates.empty() &&
-	       m_activeStandaloneFiles.empty() &&
-	       !m_propagationProcessor.HasPendingRays() &&
-	       m_numPendingSyncCallbacks == 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -652,7 +651,7 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 					doesObjectNameMatchFilter = (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
 				}
 
-				bool const hasActiveData = IsActive();
+				bool const hasActiveData = (m_flags& EObjectFlags::Active) != 0;
 				bool const isVirtual = (m_flags& EObjectFlags::Virtual) != 0;
 				bool const canDraw = (g_cvars.m_hideInactiveObjects == 0) || ((g_cvars.m_hideInactiveObjects != 0) && hasActiveData && !isVirtual);
 

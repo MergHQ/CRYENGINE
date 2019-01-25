@@ -34,6 +34,7 @@ CMuteAllTrigger g_muteAllTrigger;
 CUnmuteAllTrigger g_unmuteAllTrigger;
 CPauseAllTrigger g_pauseAllTrigger;
 CResumeAllTrigger g_resumeAllTrigger;
+Objects g_activeObjects;
 
 SImplInfo g_implInfo;
 CryFixedStringT<MaxFilePathLength> g_configPath = "";
@@ -43,6 +44,7 @@ TriggerInstanceId g_triggerInstanceIdCounter = 1;
 SPoolSizes g_poolSizes;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+Objects g_constructedObjects;
 CObject g_object(CTransformation::GetEmptyObject(), "Global Object");
 CObject g_previewObject(CTransformation::GetEmptyObject(), "Preview Object");
 CPreviewTrigger g_previewTrigger;

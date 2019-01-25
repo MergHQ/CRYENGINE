@@ -5,7 +5,6 @@
 #include "Impl.h"
 #include "PoolObject_impl.h"
 #include "Managers.h"
-#include "ObjectManager.h"
 #include "FileCacheManager.h"
 #include "ListenerManager.h"
 #include "EventListenerManager.h"
@@ -45,7 +44,6 @@
 	#include "Common/Logger.h"
 	#include "Common/DebugStyle.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
-	#include <CryThreading/CryThread.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 namespace CryAudio
@@ -84,11 +82,7 @@ constexpr uint16 g_callbackReportPhysicalizedObjectPoolSize = 64;
 constexpr uint16 g_callbackReportVirtualizedObjectPoolSize = 64;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-
-CryCriticalSection g_cs;
-std::vector<CryAudio::IObject*> g_registeredObjects;
-
-struct RequestCount final
+struct SRequestCount final
 {
 	uint16 requests = 0;
 
@@ -117,8 +111,8 @@ struct RequestCount final
 	uint16 callbackReportVirtualizedObject = 0;
 };
 
-RequestCount g_requestsPerUpdate;
-RequestCount g_requestPeaks;
+SRequestCount g_requestsPerUpdate;
+SRequestCount g_requestPeaks;
 
 //////////////////////////////////////////////////////////////////////////
 void CountRequestPerUpdate(CRequest const& request)
@@ -428,9 +422,67 @@ void FreeMemoryPools()
 }
 
 //////////////////////////////////////////////////////////////////////////
+void UpdateActiveObjects(float const deltaTime)
+{
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	CPropagationProcessor::s_totalAsyncPhysRays = 0;
+	CPropagationProcessor::s_totalSyncPhysRays = 0;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
+	if (deltaTime > 0.0f)
+	{
+		auto iter = g_activeObjects.begin();
+		auto iterEnd = g_activeObjects.end();
+
+		while (iter != iterEnd)
+		{
+			CObject* const pObject = *iter;
+
+			if (pObject->IsPlaying())
+			{
+				pObject->Update(deltaTime);
+			}
+			else if (!pObject->HasPendingCallbacks())
+			{
+				pObject->RemoveFlag(EObjectFlags::Active);
+
+				if ((pObject->GetFlags() & EObjectFlags::InUse) == 0)
+				{
+					pObject->Destruct();
+				}
+
+				if (iter != (iterEnd - 1))
+				{
+					(*iter) = g_activeObjects.back();
+				}
+
+				g_activeObjects.pop_back();
+				iter = g_activeObjects.begin();
+				iterEnd = g_activeObjects.end();
+				continue;
+			}
+
+			++iter;
+		}
+	}
+	else
+	{
+		for (auto const pObject : g_activeObjects)
+		{
+			pObject->GetImplDataPtr()->Update(deltaTime);
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 CSystem::~CSystem()
 {
 	CRY_ASSERT_MESSAGE(g_pIImpl == nullptr, "<Audio> The implementation must get destroyed before the audio system is destructed during %s", __FUNCTION__);
+	CRY_ASSERT_MESSAGE(g_activeObjects.empty(), "There are still active objects during %s", __FUNCTION__);
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	CRY_ASSERT_MESSAGE(g_constructedObjects.empty(), "There are still objects during %s", __FUNCTION__);
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -705,20 +757,7 @@ void CSystem::InternalUpdate()
 		if (g_pIImpl != nullptr)
 		{
 			g_listenerManager.Update(m_accumulatedFrameTime);
-
-			if (g_object.IsActive())
-			{
-				g_object.GetImplDataPtr()->Update(m_accumulatedFrameTime);
-			}
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			if (g_previewObject.IsActive())
-			{
-				g_previewObject.GetImplDataPtr()->Update(m_accumulatedFrameTime);
-			}
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-
-			g_objectManager.Update(m_accumulatedFrameTime);
+			UpdateActiveObjects(m_accumulatedFrameTime);
 			g_pIImpl->Update();
 		}
 
@@ -734,20 +773,7 @@ void CSystem::InternalUpdate()
 		if (g_pIImpl != nullptr)
 		{
 			g_listenerManager.Update(0.0f);
-
-			if (g_object.IsActive())
-			{
-				g_object.GetImplDataPtr()->Update(0.0f);
-			}
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			if (g_previewObject.IsActive())
-			{
-				g_previewObject.GetImplDataPtr()->Update(0.0f);
-			}
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-
-			g_objectManager.Update(0.0f);
+			UpdateActiveObjects(0.0f);
 			g_pIImpl->Update();
 		}
 
@@ -808,7 +834,12 @@ bool CSystem::Initialize()
 
 		m_objectPoolSize = static_cast<uint16>(g_cvars.m_objectPoolSize);
 
-		g_objectManager.Initialize(m_objectPoolSize);
+		g_activeObjects.reserve(static_cast<size_t>(m_objectPoolSize));
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+		g_constructedObjects.reserve(static_cast<size_t>(m_objectPoolSize));
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
 		g_fileCacheManager.Initialize();
 
 		CRY_ASSERT_MESSAGE(!m_mainThread.IsActive(), "AudioSystem thread active before initialization during %s", __FUNCTION__);
@@ -846,7 +877,16 @@ void CSystem::Release()
 				1);
 		}
 
-		g_objectManager.Terminate();
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+		for (auto const pObject : g_constructedObjects)
+		{
+			CRY_ASSERT_MESSAGE(pObject->GetImplDataPtr() == nullptr, "An object cannot have valid impl data during %s", __FUNCTION__);
+			delete pObject;
+		}
+
+		g_constructedObjects.clear();
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
 		g_listenerManager.Terminate();
 		g_cvars.UnregisterVariables();
 
@@ -1252,34 +1292,12 @@ CryAudio::IObject* CSystem::CreateObject(SCreateObjectData const& objectData /*=
 	CRequest const request(&requestData, ERequestFlags::ExecuteBlocking);
 	PushRequest(request);
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	{
-		CryAutoLock<CryCriticalSection> const lock(g_cs);
-		g_registeredObjects.push_back(static_cast<CryAudio::IObject*>(pObject));
-	}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
 	return static_cast<CryAudio::IObject*>(pObject);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ReleaseObject(CryAudio::IObject* const pIObject)
 {
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	{
-		CryAutoLock<CryCriticalSection> const lock(g_cs);
-
-		if (std::find(g_registeredObjects.begin(), g_registeredObjects.end(), pIObject) != g_registeredObjects.end())
-		{
-			stl::find_and_erase(g_registeredObjects, pIObject);
-		}
-		else
-		{
-			CRY_ASSERT_MESSAGE(false, "Unregistered object passed during %s", __FUNCTION__);
-		}
-	}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
 	SSystemRequestData<ESystemRequestType::ReleaseObject> const requestData(static_cast<CObject*>(pIObject));
 	CRequest const request(&requestData);
 	PushRequest(request);
@@ -1319,7 +1337,15 @@ void CSystem::ReleaseImpl()
 	// Release middleware specific data before its shutdown.
 	g_fileManager.ReleaseImplData();
 	g_listenerManager.ReleaseImplData();
-	g_objectManager.ReleaseImplData();
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	// Don't delete objects here as we need them to survive a middleware switch!
+	for (auto const pObject : g_constructedObjects)
+	{
+		g_pIImpl->DestructObject(pObject->GetImplDataPtr());
+		pObject->Release();
+	}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	g_pIImpl->DestructObject(g_object.GetImplDataPtr());
 	g_object.SetImplDataPtr(nullptr);
@@ -1617,12 +1643,11 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 				auto const pNewObject = new CObject(pRequestData->transformation, pRequestData->name.c_str());
 				pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation, pNewObject->GetName()), pRequestData->entityId);
+				g_constructedObjects.push_back(pNewObject);
 #else
 				auto const pNewObject = new CObject(pRequestData->transformation);
 				pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation), pRequestData->entityId);
 #endif      // INCLUDE_AUDIO_PRODUCTION_CODE
-
-				g_objectManager.RegisterObject(pNewObject);
 
 				if (pRequestData->setCurrentEnvironments)
 				{
@@ -1632,6 +1657,12 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 				SetOcclusionType(*pNewObject, pRequestData->occlusionType);
 				pTrigger->Execute(*pNewObject, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
 				pNewObject->RemoveFlag(EObjectFlags::InUse);
+
+				if ((pNewObject->GetFlags() & EObjectFlags::Active) == 0)
+				{
+					pNewObject->Destruct();
+				}
+
 				result = ERequestStatus::Success;
 			}
 			else
@@ -2000,7 +2031,11 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::ReleasePendingRays:
 		{
-			g_objectManager.ReleasePendingRays();
+			for (auto const pObject : g_activeObjects)
+			{
+				pObject->ReleasePendingRays();
+			}
+
 			result = ERequestStatus::Success;
 
 			break;
@@ -2046,12 +2081,11 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			auto const pNewObject = new CObject(pRequestData->transformation, pRequestData->name.c_str());
 			pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation, pNewObject->GetName()), pRequestData->entityId);
+			g_constructedObjects.push_back(pNewObject);
 #else
 			auto const pNewObject = new CObject(pRequestData->transformation);
 			pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation), pRequestData->entityId);
 #endif    // INCLUDE_AUDIO_PRODUCTION_CODE
-
-			g_objectManager.RegisterObject(pNewObject);
 
 			if (pRequestData->setCurrentEnvironments)
 			{
@@ -2075,6 +2109,11 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 				if (pRequestData->pObject != &g_object)
 				{
 					pRequestData->pObject->RemoveFlag(EObjectFlags::InUse);
+
+					if ((pRequestData->pObject->GetFlags() & EObjectFlags::Active) == 0)
+					{
+						pRequestData->pObject->Destruct();
+					}
 					result = ERequestStatus::Success;
 				}
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -2148,12 +2187,9 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ReloadControlsData> const*>(request.GetData());
 
-			for (auto const pObject : g_objectManager.GetObjects())
+			for (auto const pObject : g_activeObjects)
 			{
-				if (pObject->IsActive())
-				{
-					pObject->StopAllTriggers();
-				}
+				pObject->StopAllTriggers();
 			}
 
 			g_xmlProcessor.ClearControlsData(EDataScope::All);
@@ -2271,7 +2307,20 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 		{
 			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedObject> const*>(request.GetData());
 
-			g_objectManager.SetObjectPhysical(pRequestData->pIObject);
+			for (auto const pObject : g_activeObjects)
+			{
+				if (pObject->GetImplDataPtr() == pRequestData->pIObject)
+				{
+					pObject->RemoveFlag(EObjectFlags::Virtual);
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+					pObject->ResetObstructionRays();
+#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
+
+					break;
+				}
+			}
+
 			result = ERequestStatus::Success;
 
 			break;
@@ -2280,7 +2329,15 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 		{
 			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportVirtualizedObject> const*>(request.GetData());
 
-			g_objectManager.SetObjectVirtual(pRequestData->pIObject);
+			for (auto const pObject : g_activeObjects)
+			{
+				if (pObject->GetImplDataPtr() == pRequestData->pIObject)
+				{
+					pObject->SetFlag(EObjectFlags::Virtual);
+					break;
+				}
+			}
+
 			result = ERequestStatus::Success;
 
 			break;
@@ -2895,9 +2952,15 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	CRY_ASSERT_MESSAGE(g_previewObject.GetImplDataPtr() == nullptr, "<Audio> The preview object's impl-data must be nullptr during %s", __FUNCTION__);
 	g_previewObject.SetImplDataPtr(g_pIImpl->ConstructObject(g_previewObject.GetTransformation(), g_previewObject.GetName()));
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-	g_objectManager.OnAfterImplChanged();
+	for (auto const pObject : g_constructedObjects)
+	{
+		CRY_ASSERT_MESSAGE(pObject->GetImplDataPtr() == nullptr, "<Audio> The object's impl-data must be nullptr during %s", __FUNCTION__);
+
+		pObject->SetImplDataPtr(g_pIImpl->ConstructObject(pObject->GetTransformation(), pObject->GetName()));
+	}
+
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	g_listenerManager.OnAfterImplChanged();
 
 	SetImplLanguage();
@@ -3247,6 +3310,71 @@ void DrawRequestDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void DrawObjectInfo(
+	IRenderAuxGeom& auxGeom,
+	float const posX,
+	float& posY,
+	CObject const& object,
+	CryFixedStringT<MaxControlNameLength> const& lowerCaseSearchString,
+	size_t& numObjects)
+{
+	Vec3 const& position = object.GetTransformation().GetPosition();
+	float const distance = position.GetDistance(g_listenerManager.GetActiveListenerTransformation().GetPosition());
+
+	if (g_cvars.m_debugDistance <= 0.0f || (g_cvars.m_debugDistance > 0.0f && distance < g_cvars.m_debugDistance))
+	{
+		char const* const szObjectName = object.GetName();
+		CryFixedStringT<MaxControlNameLength> lowerCaseObjectName(szObjectName);
+		lowerCaseObjectName.MakeLower();
+		bool const hasActiveData = (object.GetFlags() & EObjectFlags::Active) != 0;
+		bool const isVirtual = (object.GetFlags() & EObjectFlags::Virtual) != 0;
+		bool const stringFound = (lowerCaseSearchString.empty() || (lowerCaseSearchString.compareNoCase("0") == 0)) || (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
+		bool const draw = stringFound && ((g_cvars.m_hideInactiveObjects == 0) || ((g_cvars.m_hideInactiveObjects != 0) && hasActiveData && !isVirtual));
+
+		if (draw)
+		{
+			auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize,
+			                    !hasActiveData ? Debug::s_globalColorInactive : (isVirtual ? Debug::s_globalColorVirtual : Debug::s_listColorItemActive),
+			                    false,
+			                    szObjectName);
+
+			posY += Debug::s_listLineHeight;
+			++numObjects;
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void DrawObjectDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
+{
+	size_t numObjects = 0;
+	float const headerPosY = posY;
+	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
+	lowerCaseSearchString.MakeLower();
+
+	posY += Debug::s_listHeaderLineHeight;
+
+	DrawObjectInfo(auxGeom, posX, posY, g_object, lowerCaseSearchString, numObjects);
+	DrawObjectInfo(auxGeom, posX, posY, g_previewObject, lowerCaseSearchString, numObjects);
+
+	for (auto const pObject : g_constructedObjects)
+	{
+		DrawObjectInfo(auxGeom, posX, posY, *pObject, lowerCaseSearchString, numObjects);
+	}
+
+	auxGeom.Draw2dLabel(posX, headerPosY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "Audio Objects [%" PRISIZE_T "]", numObjects);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void DrawPerActiveObjectDebugInfo(IRenderAuxGeom& auxGeom)
+{
+	for (auto const pObject : g_activeObjects)
+	{
+		pObject->DrawDebugInfo(auxGeom);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CSystem::HandleDrawDebug()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AUDIO);
@@ -3258,7 +3386,7 @@ void CSystem::HandleDrawDebug()
 		{
 			// Needs to be called first so that the rest of the labels are printed on top.
 			// (Draw2dLabel doesn't provide a way to set which labels are printed on top)
-			g_objectManager.DrawPerObjectDebugInfo(*pAuxGeom);
+			DrawPerActiveObjectDebugInfo(*pAuxGeom);
 		}
 
 		float posX = 8.0f;
@@ -3345,8 +3473,8 @@ void CSystem::HandleDrawDebug()
 				}
 			}
 
-			size_t const numObjects = g_objectManager.GetNumAudioObjects();
-			size_t const numActiveObjects = g_objectManager.GetNumActiveAudioObjects();
+			size_t const numObjects = g_constructedObjects.size();
+			size_t const numActiveObjects = g_activeObjects.size();
 			size_t const numListeners = g_listenerManager.GetNumActiveListeners();
 			size_t const numEventListeners = g_eventListenerManager.GetNumEventListeners();
 			static float const SMOOTHING_ALPHA = 0.2f;
@@ -3493,7 +3621,7 @@ void CSystem::HandleDrawDebug()
 
 		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ActiveObjects) != 0)
 		{
-			g_objectManager.DrawDebugInfo(*pAuxGeom, posX, posY);
+			DrawObjectDebugInfo(*pAuxGeom, posX, posY);
 			posX += 300.0f;
 		}
 
@@ -3524,7 +3652,7 @@ void CSystem::HandleDrawDebug()
 //////////////////////////////////////////////////////////////////////////
 void CSystem::HandleRetriggerControls()
 {
-	for (auto const pObject : g_objectManager.GetObjects())
+	for (auto const pObject : g_constructedObjects)
 	{
 		pObject->ForceImplementationRefresh(true);
 	}

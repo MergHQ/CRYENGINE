@@ -64,6 +64,7 @@ using ParameterConnections = std::vector<Impl::IParameterConnection*>;
 using SwitchStateConnections = std::vector<Impl::ISwitchStateConnection*>;
 using EnvironmentConnections = std::vector<Impl::IEnvironmentConnection*>;
 using SettingConnections = std::vector<Impl::ISettingConnection*>;
+using Objects = std::vector<CObject*>;
 
 extern Impl::IImpl* g_pIImpl;
 extern CSystem g_system;
@@ -82,6 +83,7 @@ extern CMuteAllTrigger g_muteAllTrigger;
 extern CUnmuteAllTrigger g_unmuteAllTrigger;
 extern CPauseAllTrigger g_pauseAllTrigger;
 extern CResumeAllTrigger g_resumeAllTrigger;
+extern Objects g_activeObjects;
 
 extern SImplInfo g_implInfo;
 extern CryFixedStringT<MaxFilePathLength> g_configPath;
@@ -117,6 +119,8 @@ static void IncrementTriggerInstanceIdCounter()
 }
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+extern Objects g_constructedObjects;
+
 constexpr char const* g_szPreviewTriggerName = "preview_trigger";
 constexpr ControlId g_previewTriggerId = StringToId(g_szPreviewTriggerName);
 
