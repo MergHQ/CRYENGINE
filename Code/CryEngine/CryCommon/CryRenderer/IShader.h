@@ -2333,7 +2333,7 @@ struct SRenderLight
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void CopyFrom( const SRenderLight &dl )
+	void CopyFrom(const SRenderLight &dl, bool includingObjects = true)
 	{
 		if (this == &dl)
 			return;
@@ -2341,7 +2341,10 @@ struct SRenderLight
 		DropResources();
 
 		m_pOwner = dl.m_pOwner;
-		memcpy(m_pObject, dl.m_pObject, sizeof(m_pObject));
+
+		if (includingObjects)
+			memcpy(m_pObject, dl.m_pObject, sizeof(m_pObject));
+
 		m_Shader = dl.m_Shader;
 		m_pShadowMapFrustums = dl.m_pShadowMapFrustums;
 		m_pDiffuseCubemap = dl.m_pDiffuseCubemap;
