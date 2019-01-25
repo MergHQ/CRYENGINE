@@ -127,6 +127,7 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 		jobManager.ScheduleUpdateEmitter(this);
 	}
 
+	// TODO: make it threadsafe and add it to e_ExecuteRenderAsJobMask
 	CLightVolumesMgr& lightVolumeManager = m_p3DEngine->GetLightVolumeManager();
 	SRenderContext renderContext(rParam, passInfo);
 	renderContext.m_lightVolumeId = lightVolumeManager.RegisterVolume(GetPos(), GetBBox().GetRadius() * 0.5f, rParam.nClipVolumeStencilRef, passInfo);

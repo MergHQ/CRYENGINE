@@ -455,6 +455,7 @@ void CFogVolumeRenderNode::Render(const SRendParams& rParam, const SRenderingPas
 	IRenderView* pRenderView = passInfo.GetIRenderView();
 	if (bVolFog)
 	{
+		// TODO: make it threadsafe and add it to e_ExecuteRenderAsJobMask
 		pRenderView->AddFogVolume(m_pFogVolumeRenderElement[fillThreadID]);
 	}
 	else

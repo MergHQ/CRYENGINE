@@ -1986,6 +1986,7 @@ void CLightEntity::Render(const SRendParams& rParams, const SRenderingPassInfo& 
 
 	bool bAdded = false;
 
+	// TODO: make it threadsafe and add it to e_ExecuteRenderAsJobMask
 	//3dengine side - lightID assigning
 	m_light.m_Id = int16(Get3DEngine()->GetDynamicLightSources()->Count() + passInfo.GetIRenderView()->GetLightsCount(eDLT_DeferredLight));
 
