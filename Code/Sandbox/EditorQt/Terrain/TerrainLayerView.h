@@ -16,7 +16,8 @@ public:
 private:
 	virtual void selectionChanged(const QItemSelection& selected, const QItemSelection& deselected) override;
 	virtual void customEvent(QEvent* event) override;
-	virtual void mousePressEvent(QMouseEvent* event) override;
+
+	void         OnContextMenu(const QPoint& pos);
 
 	void         SelectRow(int row);
 	void         SelectedLayerChanged(CLayer* pLayer);
