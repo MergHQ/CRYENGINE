@@ -30,16 +30,7 @@ if (OPTION_SANDBOX AND OPTION_STATIC_LINKING)
 endif()
 
 if (OPTION_SANDBOX AND WINDOWS)
-	# Find Qt before including any plugin subdirectories
-	if (MSVC_VERSION GREATER 1900) # Visual Studio > 2015
-		set(QT_DIR "${SDK_DIR}/Qt/5.6/msvc2015_64/Qt")
-	elseif (MSVC_VERSION EQUAL 1900) # Visual Studio 2015
-		set(QT_DIR "${SDK_DIR}/Qt/5.6/msvc2015_64/Qt")
-	elseif (MSVC_VERSION EQUAL 1800) # Visual Studio 2013
-		set(QT_DIR "${SDK_DIR}/Qt/5.6/msvc2013_64")
-	elseif (MSVC_VERSION EQUAL 1700) # Visual Studio 2012
-		set(QT_DIR "${SDK_DIR}/Qt/5.6/msvc2012_64")
-	endif()
+	set(QT_DIR "${SDK_DIR}/Qt/5.12.0/msvc2017_64/Qt")
 	set(Qt5_DIR "${QT_DIR}")
 
 	find_package(Qt5 COMPONENTS Core Gui OpenGL Widgets REQUIRED PATHS "${QT_DIR}" NO_DEFAULT_PATH)

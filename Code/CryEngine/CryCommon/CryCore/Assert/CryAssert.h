@@ -107,8 +107,21 @@ bool CryAssertHandler(SAssertData const& data, SAssertCond& cond, char const* co
 		#ifdef IS_EDITOR_BUILD
 			#undef  Q_ASSERT
 			#undef  Q_ASSERT_X
-			#define Q_ASSERT(cond)                CRY_ASSERT_MESSAGE(cond, "Q_ASSERT")
-			#define Q_ASSERT_X(cond, where, what) CRY_ASSERT_MESSAGE(cond, "Q_ASSERT_X" where what)
+			// Q_ASSERT handler
+			// Qt uses expression with chained asserts separated by ',' like: { return Q_ASSERT(n >= 0), Q_ASSERT(n < size()), QChar(m_data[n]); }
+			#define  CRY_ASSERT_HANDLER_QT(cond, ...)                                              \
+			([&] {                                                                                 \
+				const ::Detail::SAssertData assertData = { # cond, __func__, __FILE__, __LINE__ }; \
+				static ::Detail::SAssertCond assertCond = { false, true };                         \
+				if (::Detail::CryAssertHandler(assertData, assertCond, __VA_ARGS__))               \
+				{                                                                                  \
+					CryDebugBreak();                                                               \
+				}                                                                                  \
+				return static_cast<void>(0);                                                       \
+				} ())
+
+			#define Q_ASSERT(cond, ...)           ((cond) ? static_cast<void>(0) : CRY_ASSERT_HANDLER_QT(cond, "Q_ASSERT"))
+			#define Q_ASSERT_X(cond, where, what) ((cond) ? static_cast<void>(0) : CRY_ASSERT_HANDLER_QT(cond, "Q_ASSERT_X" where what))
 		#endif
 
 template<typename T>

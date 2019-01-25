@@ -2,15 +2,7 @@
 
 #pragma once
 
-#ifdef USE_PYTHON_SCRIPTING
-// Include BoostHelpers before other boost headers, so BOOST_ASSERT works correctly.
-	#include <CryCore/BoostHelpers.h>
-	#include <boost/python.hpp>
-	#include "BoostPythonMacros.h"
-#endif
-
-#include "ICommandManager.h"
-#include "CryMath/Cry_Geo.h"
+#include <BoostPythonMacros.h>
 
 // boost/python.hpp and/or pyconfig.h will include <assert.h>
 // Here we go back to CRY_ASSERT instead
@@ -19,16 +11,13 @@
 
 #include <CryExtension/CryGUID.h>
 
-// NOTE: Do not use std::shared_ptr in this file - Boost.Python is unable to perform conversion if not using boost::shared_ptr
-// https://github.com/boostorg/python/issues/29
-
-// Forward Declarations
-class CBaseObject;
-class CObjectLayer;
-class CMaterial;
-class CVegetationObject;
-struct SEfResTexture;
 struct IVariable;
+struct SEfResTexture;
+
+class CBaseObject;
+class CMaterial;
+class CObjectLayer;
+class CVegetationObject;
 
 struct SPyWrappedProperty
 {
@@ -76,7 +65,7 @@ struct SPyWrappedProperty
 	string    stringValue;
 };
 
-typedef boost::shared_ptr<SPyWrappedProperty> pSPyWrappedProperty;
+typedef std::shared_ptr<SPyWrappedProperty> pSPyWrappedProperty;
 
 // Dynamic Class types to emulate key engine objects.
 struct SPyWrappedClass
@@ -93,11 +82,11 @@ struct SPyWrappedClass
 		eType_Prefab,
 		eType_Group,
 		eType_None,
-	}                       type;
+	}                     type;
 
-	boost::shared_ptr<void> ptr;
+	std::shared_ptr<void> ptr;
 };
-typedef boost::shared_ptr<SPyWrappedClass> pSPyWrappedClass;
+typedef std::shared_ptr<SPyWrappedClass> pSPyWrappedClass;
 
 // Engine Classes Wrapped for easy get \ set \ update functionality to Python.
 //
@@ -121,20 +110,17 @@ class PyGameLayer
 public:
 	PyGameLayer(void* layerPtr);
 	~PyGameLayer();
-	void*                                       GetPtr() const           { return m_layerPtr; }
-	string                                      GetName() const          { return m_layerName; }
-	string                                      GetPath() const          { return m_layerPath; }
-	CryGUID                                     GetGUID() const          { return m_layerGUID; }
-	bool                                        IsVisible() const        { return m_layerVisible; }
-	bool                                        IsFrozen() const         { return m_layerFrozen; }
-	bool                                        IsExportable() const     { return m_layerExportable; }
-	bool                                        IsExportLayerPak() const { return m_layerExportLayerPak; }
-	bool                                        IsDefaultLoaded() const  { return m_layerDefaultLoaded; }
-	bool                                        IsPhysics() const        { return m_layerPhysics; }
-	std::vector<boost::shared_ptr<PyGameLayer>> GetChildren() const
-	{
-		return m_layerChildren;
-	}
+	void*                                     GetPtr() const           { return m_layerPtr; }
+	string                                    GetName() const          { return m_layerName; }
+	string                                    GetPath() const          { return m_layerPath; }
+	CryGUID                                   GetGUID() const          { return m_layerGUID; }
+	bool                                      IsVisible() const        { return m_layerVisible; }
+	bool                                      IsFrozen() const         { return m_layerFrozen; }
+	bool                                      IsExportable() const     { return m_layerExportable; }
+	bool                                      IsExportLayerPak() const { return m_layerExportLayerPak; }
+	bool                                      IsDefaultLoaded() const  { return m_layerDefaultLoaded; }
+	bool                                      IsPhysics() const        { return m_layerPhysics; }
+	std::vector<std::shared_ptr<PyGameLayer>> GetChildren() const 	   { return m_layerChildren; }
 
 	// Many setters ignored here as they can better be handled in other areas.
 	void SetName(string name)                   { m_layerName = name; }
@@ -152,7 +138,7 @@ private:
 	string  m_layerName;
 	string  m_layerPath;
 	CryGUID m_layerGUID;
-	std::vector<boost::shared_ptr<PyGameLayer>> m_layerChildren;
+	std::vector<std::shared_ptr<PyGameLayer>> m_layerChildren;
 	bool    m_layerVisible;
 	bool    m_layerFrozen;
 	bool    m_layerExportable;
@@ -160,7 +146,7 @@ private:
 	bool    m_layerDefaultLoaded;
 	bool    m_layerPhysics;
 };
-typedef boost::shared_ptr<PyGameLayer> pPyGameLayer;
+typedef std::shared_ptr<PyGameLayer> pPyGameLayer;
 
 class PyGameTexture
 {
@@ -178,7 +164,7 @@ private:
 	void*  m_texPtr;
 	string m_texName;
 };
-typedef boost::shared_ptr<PyGameTexture> pPyGameTexture;
+typedef std::shared_ptr<PyGameTexture> pPyGameTexture;
 
 class PyGameSubMaterial
 {
@@ -217,7 +203,7 @@ private:
 	std::map<string, pSPyWrappedProperty> m_matParams;
 
 };
-typedef boost::shared_ptr<PyGameSubMaterial> pPyGameSubMaterial;
+typedef std::shared_ptr<PyGameSubMaterial> pPyGameSubMaterial;
 
 class PyGameMaterial
 {
@@ -245,7 +231,7 @@ private:
 	string                          m_matPath;
 	std::vector<pPyGameSubMaterial> m_matSubMaterials;
 };
-typedef boost::shared_ptr<PyGameMaterial> pPyGameMaterial;
+typedef std::shared_ptr<PyGameMaterial> pPyGameMaterial;
 
 class PyGameObject
 {
@@ -253,7 +239,7 @@ public:
 	PyGameObject(void* objPtr);
 	//~PyGameObject();
 
-	typedef boost::shared_ptr<PyGameObject> pPyGameObject;
+	typedef std::shared_ptr<PyGameObject> pPyGameObject;
 
 	pSPyWrappedClass GetClassObject()                  { return m_objClass; }
 	void*            GetPtr() const                    { return m_objPtr; }
@@ -303,7 +289,7 @@ private:
 	pPyGameMaterial  m_objMaterial;
 	pPyGameObject    m_objParent;
 };
-typedef boost::shared_ptr<PyGameObject> pPyGameObject;
+typedef std::shared_ptr<PyGameObject> pPyGameObject;
 
 class PyGameBrush
 {
@@ -446,7 +432,7 @@ private:
 	float m_vegScale;
 	float m_vegBrightness;
 };
-typedef boost::shared_ptr<PyGameVegetationInstance> pPyGameVegetationInstance;
+typedef std::shared_ptr<PyGameVegetationInstance> pPyGameVegetationInstance;
 
 class PyGameVegetation
 {
@@ -500,7 +486,7 @@ private:
 	std::vector<pPyGameVegetationInstance> m_vegInstances;
 
 };
-typedef boost::shared_ptr<PyGameVegetation> pPyGameVegetation;
+typedef std::shared_ptr<PyGameVegetation> pPyGameVegetation;
 
 // Python Engine Objects Cache Template.
 template<class SHAREDPTR, class PTR>
@@ -600,42 +586,42 @@ struct map_item
 };
 
 #define STL_MAP_WRAPPING_PTR(KEY_TYPE, VALUE_TYPE, PYTHON_TYPE_NAME)                                                          \
-  boost::python::class_<std::pair<const KEY_TYPE, VALUE_TYPE>>((std::string(PYTHON_TYPE_NAME) + std::string("DATA")).c_str()) \
-  .def_readonly("key", &std::pair<const KEY_TYPE, VALUE_TYPE>::first)                                                         \
-  .def_readwrite("value", &std::pair<const KEY_TYPE, VALUE_TYPE>::second)                                                     \
-  ;                                                                                                                           \
-  boost::python::class_<std::map<KEY_TYPE, VALUE_TYPE>>(PYTHON_TYPE_NAME)                                                     \
-  .def("__len__", &std::map<KEY_TYPE, VALUE_TYPE>::size)                                                                      \
-  .def("__iter__", boost::python::iterator<std::map<KEY_TYPE, VALUE_TYPE>, boost::python::return_internal_reference<>>())     \
-  .def("__getitem__", &map_item<KEY_TYPE, VALUE_TYPE>().get, boost::python::return_internal_reference<>())                    \
-  .def("__setitem__", &map_item<KEY_TYPE, VALUE_TYPE>().set)                                                                  \
-  .def("__delitem__", &map_item<KEY_TYPE, VALUE_TYPE>().del)                                                                  \
-  .def("__contains__", &map_item<KEY_TYPE, VALUE_TYPE>().in)                                                                  \
-  .def("clear", &std::map<KEY_TYPE, VALUE_TYPE>::clear)                                                                       \
-  .def("has_key", &map_item<KEY_TYPE, VALUE_TYPE>().in)                                                                       \
-  .def("keys", &map_item<KEY_TYPE, VALUE_TYPE>().keys)                                                                        \
-  .def("values", &map_item<KEY_TYPE, VALUE_TYPE>().values)                                                                    \
-  .def("items", &map_item<KEY_TYPE, VALUE_TYPE>().items)                                                                      \
-  ;
+	boost::python::class_<std::pair<const KEY_TYPE, VALUE_TYPE>>((std::string(PYTHON_TYPE_NAME) + std::string("DATA")).c_str()) \
+	.def_readonly("key", &std::pair<const KEY_TYPE, VALUE_TYPE>::first)                                                         \
+	.def_readwrite("value", &std::pair<const KEY_TYPE, VALUE_TYPE>::second)                                                     \
+	;                                                                                                                           \
+	boost::python::class_<std::map<KEY_TYPE, VALUE_TYPE>>(PYTHON_TYPE_NAME)                                                     \
+	.def("__len__", &std::map<KEY_TYPE, VALUE_TYPE>::size)                                                                      \
+	.def("__iter__", boost::python::iterator<std::map<KEY_TYPE, VALUE_TYPE>, boost::python::return_internal_reference<>>())     \
+	.def("__getitem__", &map_item<KEY_TYPE, VALUE_TYPE>().get, boost::python::return_internal_reference<>())                    \
+	.def("__setitem__", &map_item<KEY_TYPE, VALUE_TYPE>().set)                                                                  \
+	.def("__delitem__", &map_item<KEY_TYPE, VALUE_TYPE>().del)                                                                  \
+	.def("__contains__", &map_item<KEY_TYPE, VALUE_TYPE>().in)                                                                  \
+	.def("clear", &std::map<KEY_TYPE, VALUE_TYPE>::clear)                                                                       \
+	.def("has_key", &map_item<KEY_TYPE, VALUE_TYPE>().in)                                                                       \
+	.def("keys", &map_item<KEY_TYPE, VALUE_TYPE>().keys)                                                                        \
+	.def("values", &map_item<KEY_TYPE, VALUE_TYPE>().values)                                                                    \
+	.def("items", &map_item<KEY_TYPE, VALUE_TYPE>().items)                                                                      \
+	;
 
 #define STL_MAP_WRAPPING(KEY_TYPE, VALUE_TYPE, PYTHON_TYPE_NAME)                                                              \
-  boost::python::class_<std::pair<const KEY_TYPE, VALUE_TYPE>>((std::string(PYTHON_TYPE_NAME) + std::string("DATA")).c_str()) \
-  .def_readonly("key", &std::pair<const KEY_TYPE, VALUE_TYPE>::first)                                                         \
-  .def_readwrite("value", &std::pair<const KEY_TYPE, VALUE_TYPE>::second)                                                     \
-  ;                                                                                                                           \
-  boost::python::class_<std::map<KEY_TYPE, VALUE_TYPE>>(PYTHON_TYPE_NAME)                                                     \
-  .def("__len__", &std::map<KEY_TYPE, VALUE_TYPE>::size)                                                                      \
-  .def("__iter__", boost::python::iterator<std::map<KEY_TYPE, VALUE_TYPE>, boost::python::return_internal_reference<>>())     \
-  .def("__getitem__", &map_item<KEY_TYPE, VALUE_TYPE>().get)                                                                  \
-  .def("__setitem__", &map_item<KEY_TYPE, VALUE_TYPE>().set)                                                                  \
-  .def("__delitem__", &map_item<KEY_TYPE, VALUE_TYPE>().del)                                                                  \
-  .def("__contains__", &map_item<KEY_TYPE, VALUE_TYPE>().in)                                                                  \
-  .def("clear", &std::map<KEY_TYPE, VALUE_TYPE>::clear)                                                                       \
-  .def("has_key", &map_item<KEY_TYPE, VALUE_TYPE>().in)                                                                       \
-  .def("keys", &map_item<KEY_TYPE, VALUE_TYPE>().keys)                                                                        \
-  .def("values", &map_item<KEY_TYPE, VALUE_TYPE>().values)                                                                    \
-  .def("items", &map_item<KEY_TYPE, VALUE_TYPE>().items)                                                                      \
-  ;
+	boost::python::class_<std::pair<const KEY_TYPE, VALUE_TYPE>>((std::string(PYTHON_TYPE_NAME) + std::string("DATA")).c_str()) \
+	.def_readonly("key", &std::pair<const KEY_TYPE, VALUE_TYPE>::first)                                                         \
+	.def_readwrite("value", &std::pair<const KEY_TYPE, VALUE_TYPE>::second)                                                     \
+	;                                                                                                                           \
+	boost::python::class_<std::map<KEY_TYPE, VALUE_TYPE>>(PYTHON_TYPE_NAME)                                                     \
+	.def("__len__", &std::map<KEY_TYPE, VALUE_TYPE>::size)                                                                      \
+	.def("__iter__", boost::python::iterator<std::map<KEY_TYPE, VALUE_TYPE>, boost::python::return_internal_reference<>>())     \
+	.def("__getitem__", &map_item<KEY_TYPE, VALUE_TYPE>().get)                                                                  \
+	.def("__setitem__", &map_item<KEY_TYPE, VALUE_TYPE>().set)                                                                  \
+	.def("__delitem__", &map_item<KEY_TYPE, VALUE_TYPE>().del)                                                                  \
+	.def("__contains__", &map_item<KEY_TYPE, VALUE_TYPE>().in)                                                                  \
+	.def("clear", &std::map<KEY_TYPE, VALUE_TYPE>::clear)                                                                       \
+	.def("has_key", &map_item<KEY_TYPE, VALUE_TYPE>().in)                                                                       \
+	.def("keys", &map_item<KEY_TYPE, VALUE_TYPE>().keys)                                                                        \
+	.def("values", &map_item<KEY_TYPE, VALUE_TYPE>().values)                                                                    \
+	.def("items", &map_item<KEY_TYPE, VALUE_TYPE>().items)                                                                      \
+	;
 
 // Key Functions for use in Editor <-> Python Interface.
 namespace PyScript

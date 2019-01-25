@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include <CryCore/BoostHelpers.h>
-
 #include <CrySchematyc2/ILib.h>
 
 #include "Signal.h"

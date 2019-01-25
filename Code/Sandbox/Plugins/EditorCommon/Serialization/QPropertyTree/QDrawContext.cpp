@@ -2,33 +2,34 @@
 
 #include "StdAfx.h"
 #include "QDrawContext.h"
-#include "Serialization/PropertyTree/IDrawContext.h"
-#include "Serialization/PropertyTree/Rect.h"
-#include "Serialization/PropertyTree/PropertyTreeStyle.h"
-#include "Serialization/PropertyTree/Unicode.h"
-#include "Serialization/PropertyTree/Color.h"
-#include "Serialization/PropertyTree/ValidatorBlock.h"
-#include "Serialization/PropertyTree/MathUtils.h"
-#include "QPropertyTree.h"
-#include "PropertyGroupBox.h"
-#include "PropertySplitter.h"
-#include <QPainter>
-#include <QStyle>
-#include <QStyleOption>
-#include <QIcon>
-#include <QPushButton>
-#include <QLineEdit>
-#include <QComboBox>
-#include <QCheckBox>
 
 #include "Controls/QNumericBox.h"
+#include "Serialization/PropertyTree/Color.h"
+#include "Serialization/PropertyTree/IDrawContext.h"
+#include "Serialization/PropertyTree/MathUtils.h"
+#include "Serialization/PropertyTree/PropertyTreeStyle.h"
+#include "Serialization/PropertyTree/Rect.h"
+#include "Serialization/PropertyTree/Unicode.h"
+#include "Serialization/PropertyTree/ValidatorBlock.h"
+#include "Serialization/QPropertyTree/PropertyGroupBox.h"
+#include "Serialization/QPropertyTree/PropertySplitter.h"
+#include "Serialization/QPropertyTree/QPropertyTree.h"
+
+#include <QCheckBox>
+#include <QComboBox>
+#include <QIcon>
+#include <QLineEdit>
+#include <QPainter>
+#include <QPushButton>
+#include <QStyle>
+#include <QStyleOption>
 
 namespace property_tree {
 
-void drawRoundRectangle(QPainter& p, const QRect &_r, unsigned int color, int radius, int width)
+void drawRoundRectangle(QPainter& p, const QRect& _r, unsigned int color, int radius, int width)
 {
 	QRect r = _r;
-	int dia = 2*radius;
+	int dia = 2 * radius;
 
 	p.setPen(QColor(color));
 	p.drawRoundedRect(r, dia, dia);
@@ -58,17 +59,16 @@ static const QFont* translateFont(QPropertyTree* tree, Font font)
 static QColor interpolateColor(const QColor& a, const QColor& b, float k)
 {
 	float mk = 1.0f - k;
-	return QColor(a.red() * mk  + b.red() * k,
-				  a.green() * mk + b.green() * k,
-				  a.blue() * mk + b.blue() * k,
-				  a.alpha() * mk + b.alpha() * k);
+	return QColor(a.red() * mk + b.red() * k,
+	              a.green() * mk + b.green() * k,
+	              a.blue() * mk + b.blue() * k,
+	              a.alpha() * mk + b.alpha() * k);
 }
 
 static QColor toQColor(const Color& color)
 {
 	return QColor(color.r, color.g, color.b, color.a);
 }
-
 
 QRect toQRect(const Rect& r)
 {
@@ -92,12 +92,11 @@ Point fromQPoint(const QPoint& p)
 
 void QDrawContext::drawColor(const Rect& rect, const Color& treeColor)
 {
-	
 	static QImage checkboardPattern;
 	if (checkboardPattern.isNull())
 	{
-		int size = 12;		
-		static vector<int> pixels(size * size);
+		int size = 12;
+		static vector<int> pixels(size* size);
 		for (int i = 0; i < pixels.size(); ++i)
 			pixels[i] = ((i / size) / (size / 2) + (i % size) / (size / 2)) % 2 ? 0xffffffff : 0x000000ff;
 		checkboardPattern = QImage((unsigned char*)pixels.data(), size, size, size * 4, QImage::Format_RGBA8888);
@@ -111,12 +110,12 @@ void QDrawContext::drawColor(const Rect& rect, const Color& treeColor)
 	painter_->setBrush(tree_->palette().color(QPalette::Dark));
 	painter_->setPen(Qt::NoPen);
 	painter_->drawRoundedRect(r, 2, 2);
-	r = r.adjusted(1,1,-1,-1);
+	r = r.adjusted(1, 1, -1, -1);
 	QRect cr = r.adjusted(0, 0, -r.width() / 2, 0);
-	painter_->setBrushOrigin(cr.topRight() + QPoint(1,0));
+	painter_->setBrushOrigin(cr.topRight() + QPoint(1, 0));
 	painter_->setBrush(QBrush(checkboardPattern));
 
-	painter_->setRenderHint(QPainter::Antialiasing, false);	
+	painter_->setRenderHint(QPainter::Antialiasing, false);
 	painter_->drawRoundedRect(r, 2, 2);
 
 	QColor color(treeColor.r, treeColor.g, treeColor.b, treeColor.a);
@@ -164,13 +163,15 @@ void QDrawContext::drawSelection(const Rect& rect, bool inlinedRow)
 {
 	if (tree->treeStyle().selectionRectangle)
 	{
-		if (inlinedRow) {
+		if (inlinedRow)
+		{
 			QColor color1(tree_->palette().button().color());
 			QColor color2(tree_->palette().highlight().color());
 			QColor brushColor = tree_->hasFocusOrInplaceHasFocus() ? interpolateColor(color1, color2, 0.33f) : tree_->palette().shadow().color();
 			fillRoundRectangle(*painter_, QBrush(brushColor), toQRect(rect), brushColor, 3);
 		}
-		else {
+		else
+		{
 			QBrush brush(tree_->hasFocusOrInplaceHasFocus() ? tree_->palette().highlight() : tree_->palette().shadow());
 			QColor brushColor = brush.color();
 			QColor borderColor(brushColor.red(), brushColor.green(), brushColor.blue(), brushColor.alpha() / 4);
@@ -196,7 +197,7 @@ void QDrawContext::drawHorizontalLine(const Rect& rect)
 }
 
 void QDrawContext::drawPlus(const Rect& rect, bool expanded, bool selected, bool grayed)
-{	
+{
 	QStyleOption option;
 	option.rect = toQRect(rect);
 	option.state = QStyle::State_Enabled | QStyle::State_Children;
@@ -227,7 +228,7 @@ void QDrawContext::drawSplitter(const Rect& rect)
 
 	QStyleOption option;
 	option.state |= QStyle::State_Enabled;
-	
+
 	option.rect = QRect(0, 0, tree_->rightBorder() - rect.left(), rect.height());
 	// we have to translate painter here to work around bug in some themes
 	painter_->translate(rect.left(), rect.top());
@@ -259,7 +260,7 @@ void QDrawContext::drawLabel(const char* text, Font font, const Rect& rect, bool
 	{
 		textColor = tree_->palette().dark().color();
 	}
-	else if(selected)
+	else if (selected)
 	{
 		textColor = tree_->treeStyle().selectionRectangle ? tree_->palette().highlightedText().color() : tree_->palette().highlight().color();
 	}
@@ -301,7 +302,7 @@ void QDrawContext::drawIcon(const Rect& rect, const Icon& icon, IconEffect effec
 	// TODO effect
 	if (effect == ICON_DISABLED)
 	{
-		painter_->drawImage(x, y, *image,0,0,-1,-1,Qt::MonoOnly);
+		painter_->drawImage(x, y, *image, 0, 0, -1, -1, Qt::MonoOnly);
 	}
 	else
 	{
@@ -347,11 +348,13 @@ void QDrawContext::drawButton(const Rect& rect, const char* text, int buttonFlag
 	QStyleOptionButton option;
 	if (enabled)
 		option.state |= QStyle::State_Enabled;
-	else {
+	else
+	{
 		option.state |= QStyle::State_ReadOnly;
 		option.palette.setCurrentColorGroup(QPalette::Disabled);
 	}
-	if (pressed) {
+	if (pressed)
+	{
 		option.state |= QStyle::State_On;
 		option.state |= QStyle::State_Sunken;
 	}
@@ -362,7 +365,8 @@ void QDrawContext::drawButton(const Rect& rect, const char* text, int buttonFlag
 		option.state |= QStyle::State_HasFocus;
 	option.rect = toQRect(rect.adjusted(0, 0, -1, -1));
 
-	if (colorOverride) {
+	if (colorOverride)
+	{
 		QPalette& palette = option.palette;
 		palette.setCurrentColorGroup(QPalette::Normal);
 		QColor tintTarget(colorOverride->r, colorOverride->g, colorOverride->b, colorOverride->a);
@@ -395,8 +399,8 @@ void QDrawContext::drawButton(const Rect& rect, const char* text, int buttonFlag
 
 	QColor textColor;
 	if (colorOverride && enabled)
-		textColor = interpolateColor(s_defaultButton.palette().color(QPalette::Normal, QPalette::ButtonText), 
-									 QColor(colorOverride->r, colorOverride->g, colorOverride->b, colorOverride->a), 0.4f);
+		textColor = interpolateColor(s_defaultButton.palette().color(QPalette::Normal, QPalette::ButtonText),
+		                             QColor(colorOverride->r, colorOverride->g, colorOverride->b, colorOverride->a), 0.4f);
 	else
 		textColor = s_defaultButton.palette().color(enabled ? QPalette::Normal : QPalette::Disabled, QPalette::ButtonText);
 	tree_->_drawRowValue(*painter_, text, font, textRect, textColor, false, center);
@@ -416,7 +420,8 @@ void QDrawContext::drawButtonWithIcon(const Icon& icon, const Rect& rect, const 
 		option.state |= QStyle::State_Enabled;
 	else
 		option.state |= QStyle::State_ReadOnly;
-	if (pressed) {
+	if (pressed)
+	{
 		option.state |= QStyle::State_On;
 		option.state |= QStyle::State_Sunken;
 	}
@@ -450,7 +455,7 @@ void QDrawContext::drawButtonWithIcon(const Icon& icon, const Rect& rect, const 
 	}
 	drawIcon(fromQRect(iconRect), icon, ICON_NORMAL);
 
-	QColor textColor = tree_->palette().color(enabled ? QPalette::Active : QPalette::Disabled, pressed && !showButtonFrame ? QPalette::HighlightedText :		QPalette::ButtonText);
+	QColor textColor = tree_->palette().color(enabled ? QPalette::Active : QPalette::Disabled, pressed && !showButtonFrame ? QPalette::HighlightedText : QPalette::ButtonText);
 	static_cast<const QPropertyTree*>(tree)->_drawRowValue(*painter_, text, translateFont(tree_, font), textRect, textColor, false, false);
 }
 
@@ -465,6 +470,9 @@ void QDrawContext::drawValueText(bool highlighted, const char* text)
 	tree_->_drawRowValue(*painter_, text, &tree_->font(), textRect, textColor, false, false);
 }
 
+// QStyleOptionFrameV2 is deprecated, but if replace it with QStyleOption, widget's background will not be dark or sliderOverlayRect will be hidden
+#pragma warning(disable : 4996)
+
 void QDrawContext::drawEntry(const Rect& rect, const char* text, bool pathEllipsis, bool grayBackground, int trailingOffset)
 {
 	QLineEdit s_lineEdit;
@@ -478,20 +486,24 @@ void QDrawContext::drawEntry(const Rect& rect, const char* text, bool pathEllips
 	if (!grayBackground)
 		option.state |= QStyle::State_Enabled;
 	if (captured)
-	  option.state |= QStyle::State_HasFocus;
+		option.state |= QStyle::State_HasFocus;
 	option.rect = rt; // option.rect is the rectangle to be drawn on.
 	QRect textRect = tree_->style()->subElementRect(QStyle::SE_LineEditContents, &option, tree_);
-	if (!textRect.isValid()) {
+	if (!textRect.isValid())
+	{
 		textRect = rt;
 		textRect.adjust(3, 1, -3, -2);
 	}
-	else {
+	else
+	{
 		textRect.adjust(2, 1, -2, -1);
 	}
 
 	s_lineEdit.style()->drawPrimitive(QStyle::PE_PanelLineEdit, &option, painter_, &s_lineEdit);
-	tree_->_drawRowValue(*painter_, text, &s_lineEdit.font(),  textRect,  s_lineEdit.palette().foreground().color(), pathEllipsis, false);
+	tree_->_drawRowValue(*painter_, text, &s_lineEdit.font(), textRect, s_lineEdit.palette().foreground().color(), pathEllipsis, false);
 }
+
+#pragma warning(default : 4996)
 
 static const QIcon& GetValidatorErrorIcon()
 {
@@ -511,48 +523,52 @@ void QDrawContext::drawValidators(PropertyRow* row, const Rect& totalRect)
 	QPropertyTree* tree = tree_;
 	const int padding = tree->_defaultRowHeight() * 0.1f;
 	int offset = padding;
-	auto drawFunc = [&](PropertyRow* row) {
-		QFontMetrics fm(tree->font());
-		if (const ValidatorEntry* validatorEntries = tree->_validatorBlock()->getEntry(row->validatorIndex(), row->validatorCount())) {
-			for (int i = 0; i < row->validatorCount(); ++i) {
-				const ValidatorEntry* validatorEntry = validatorEntries + i;
-				bool isError = validatorEntry->type == VALIDATOR_ENTRY_ERROR;
+	auto drawFunc =
+		[&](PropertyRow* row)
+		{
+			QFontMetrics fm(tree->font());
+			if (const ValidatorEntry* validatorEntries = tree->_validatorBlock()->getEntry(row->validatorIndex(), row->validatorCount()))
+			{
+				for (int i = 0; i < row->validatorCount(); ++i)
+				{
+					const ValidatorEntry* validatorEntry = validatorEntries + i;
+					bool isError = validatorEntry->type == VALIDATOR_ENTRY_ERROR;
 
-				const char* text = validatorEntry->message.c_str();
-				const QIcon& icon = isError ? GetValidatorErrorIcon() : GetValidatorWarningIcon();
-				QColor brushColor = isError ? QColor(255, 64, 64, 192) : QPalette().color(QPalette::ToolTipBase);
-				QColor penColor = isError ? QColor(64, 0, 0, 255) : QPalette().color(QPalette::ToolTipText);
+					const char* text = validatorEntry->message.c_str();
+					const QIcon& icon = isError ? GetValidatorErrorIcon() : GetValidatorWarningIcon();
+					QColor brushColor = isError ? QColor(255, 64, 64, 192) : QPalette().color(QPalette::ToolTipBase);
+					QColor penColor = isError ? QColor(64, 0, 0, 255) : QPalette().color(QPalette::ToolTipText);
 
-				QRect rect(totalRect.left(), totalRect.top() + offset,
-						  totalRect.width(), totalRect.height() - offset);
+					QRect rect(totalRect.left(), totalRect.top() + offset,
+					           totalRect.width(), totalRect.height() - offset);
 
-				QRect textRect = rect.adjusted(tree->_defaultRowHeight() + padding, padding, -padding, -padding);
-				int textHeight = max(tree->_defaultRowHeight(),
-					fm.boundingRect(textRect, Qt::TextWordWrap, QString::fromUtf8(text), 0, 0).height() + padding * 2);
-				rect.setHeight(textHeight + padding * 2);
-				textRect.setHeight(textHeight);
+					QRect textRect = rect.adjusted(tree->_defaultRowHeight() + padding, padding, -padding, -padding);
+					int textHeight = max(tree->_defaultRowHeight(),
+					                     fm.boundingRect(textRect, Qt::TextWordWrap, QString::fromUtf8(text), 0, 0).height() + padding * 2);
+					rect.setHeight(textHeight + padding * 2);
+					textRect.setHeight(textHeight);
 
-				QPen pen(penColor);
-				pen.setWidth(1);
-				painter_->setPen(QPen(penColor));
-				painter_->setRenderHint(QPainter::Antialiasing);
-				painter_->setBrush(brushColor);
-				painter_->translate(-0.5f, -0.5f);
-				painter_->drawRoundedRect(rect, 2, 2, Qt::AbsoluteSize);
-				painter_->translate(0.5f, 0.5f);
-				painter_->setPen(penColor);
-				painter_->setBrush(QBrush());
-				QTextOption opt;
-				opt.setWrapMode(QTextOption::WordWrap);
-				opt.setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-				painter_->drawText(textRect, text, opt);
-				textRect.setHeight(0xffff);
-				QRect iconRect(rect.left(), rect.top(), tree->_defaultRowHeight(), rect.height());
-				icon.paint(&*painter_, iconRect, Qt::AlignCenter);
-				offset += rect.height() + padding;
+					QPen pen(penColor);
+					pen.setWidth(1);
+					painter_->setPen(QPen(penColor));
+					painter_->setRenderHint(QPainter::Antialiasing);
+					painter_->setBrush(brushColor);
+					painter_->translate(-0.5f, -0.5f);
+					painter_->drawRoundedRect(rect, 2, 2, Qt::AbsoluteSize);
+					painter_->translate(0.5f, 0.5f);
+					painter_->setPen(penColor);
+					painter_->setBrush(QBrush());
+					QTextOption opt;
+					opt.setWrapMode(QTextOption::WordWrap);
+					opt.setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+					painter_->drawText(textRect, text, opt);
+					textRect.setHeight(0xffff);
+					QRect iconRect(rect.left(), rect.top(), tree->_defaultRowHeight(), rect.height());
+					icon.paint(&*painter_, iconRect, Qt::AlignCenter);
+					offset += rect.height() + padding;
+				}
 			}
-		}
-	};
+		};
 	drawFunc(row);
 	visitPulledRows(row, drawFunc);
 }
@@ -564,15 +580,14 @@ static void DrawValidatorIcon(const Rect& rect, const bool isError, QPainter& pa
 	icon.paint(&painter, iconRect, Qt::AlignCenter);
 }
 
-void QDrawContext::drawValidatorErrorIcon(const Rect& rect) 
+void QDrawContext::drawValidatorErrorIcon(const Rect& rect)
 {
 	DrawValidatorIcon(rect, true, *painter_);
 }
 
-void QDrawContext::drawValidatorWarningIcon(const Rect& rect) 
+void QDrawContext::drawValidatorWarningIcon(const Rect& rect)
 {
 	DrawValidatorIcon(rect, false, *painter_);
 }
-
 
 }

@@ -13,7 +13,7 @@
 
 // build like Qt foreach macro but iterates backwards
 #define reverse_foreach(variable, container)                                       \
-  for (QForeachContainer<QT_FOREACH_DECLTYPE(container)> _container_((container)); \
+  for (auto _container_ = QtPrivate::qMakeForeachContainer(container);             \
        _container_.control && _container_.i != _container_.e--;                    \
        _container_.control ^= 1)                                                   \
     for (variable = *_container_.e; _container_.control; _container_.control = 0)
