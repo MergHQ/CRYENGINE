@@ -162,11 +162,9 @@ void QPopupWidget::RecursiveEnableMouseTracking(QWidget* pWidget)
 
 void QPopupWidget::mouseMoveEvent(QMouseEvent* pEvent)
 {
-	QRect contentBounds = m_pContent->contentsRect();
-	QPoint mousePos = pEvent->pos();
-
 	// This should ideally be based off the content's rect rather than a predefined offset
 	// but there were issues with content widgets not following the stylesheet's rules
+	QRect contentBounds = m_pContent->contentsRect();
 	if (contentBounds.topLeft().isNull())
 		contentBounds.adjust(m_borderOffset, m_borderOffset, -m_borderOffset, -m_borderOffset);
 
@@ -174,16 +172,13 @@ void QPopupWidget::mouseMoveEvent(QMouseEvent* pEvent)
 	if (pEvent->buttons() & Qt::LeftButton && !m_mousePressPos.isNull())
 	{
 		QRect currGeometry = m_initialGeometry;
-		QPoint delta = m_mousePressPos - mapToGlobal(mousePos);
 
 		// Use the desktop widget to get screen size and position
-		QDesktopWidget* pDesktopWidget = QApplication::desktop();
-		QRect screenRes = pDesktopWidget->screenGeometry(mapToGlobal(pos()));
+		const QRect screenRes = QApplication::desktop()->screenGeometry(mapToGlobal(pos()));
 
-		// Get the screen widget so we can determine the screen's global position and move the screen rect to match
-		QWidget* pScreen = pDesktopWidget->screen(pDesktopWidget->screenNumber(pos()));
-		screenRes.moveTopLeft(pScreen->pos());
-
+		// pEvent->pos() cannot be used here, because sometimes while mouse move, it can have invalid values.
+		// Take them from cursor position
+		const QPoint delta = m_mousePressPos - QCursor::pos();
 		if (m_resizeFlags & Origin::Left)
 		{
 			int newLeft = currGeometry.left() - delta.x() * m_resizeConstraint.x();
@@ -230,6 +225,8 @@ void QPopupWidget::mouseMoveEvent(QMouseEvent* pEvent)
 	}
 	else
 	{
+		QPoint mousePos = pEvent->pos();
+
 		// Change cursor to show that it's a resizable frame
 		if (m_resizeFlags & Origin::Bottom && mousePos.y() > contentBounds.bottom())
 		{

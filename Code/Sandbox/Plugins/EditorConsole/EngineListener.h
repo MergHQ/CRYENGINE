@@ -11,7 +11,6 @@
 
 #include <boost/circular_buffer.hpp>
 
-#include <functional>
 #include <set>
 
 struct ISystem;

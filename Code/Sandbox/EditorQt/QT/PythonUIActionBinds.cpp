@@ -13,7 +13,7 @@
 #include <CryAudio/IAudioSystem.h>
 
 #include <QApplication>
-#include <QtGui/QtEvents>
+#include <QtEvents>
 
 class QAction;
 

@@ -63,30 +63,6 @@ macro(add_optional_runtime_files)
 		set (BinaryFileList_Win64 ${BinaryFileList_Win64} "${SDK_DIR}/OSVR/dll/*.dll")
 	endif()
 
-	if (OPTION_SANDBOX)
-		if (CMAKE_BUILD_TYPE)
-			set (BinaryFileList_Win64 ${BinaryFileList_Win64}
-				"${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/icudt*.dll"
-			)
-			set (BinaryFileList_Win64_Profile ${BinaryFileList_Win64_Profile}
-				"${SDK_DIR}/XT_13_4/bin_vc14/*[^Dd].dll"
-				"${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/icu[^Dd][^Tt]*[^Dd].dll"
-				"${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/[^Ii]*[^Dd].dll"
-			)
-			set (BinaryFileList_Win64_Debug ${BinaryFileList_Win64_Debug}
-				"${SDK_DIR}/XT_13_4/bin_vc14/*[Dd].dll"
-				"${SDK_DIR}/XT_13_4/bin_vc14/*[Dd].pdb"
-				"${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[Dd].dll"
-				"${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[Dd].pdb"
-			)
-		else()
-			set (BinaryFileList_Win64 ${BinaryFileList_Win64}
-				"${SDK_DIR}/XT_13_4/bin_vc14/*.dll"
-				"${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*.dll"
-				"${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*d.pdb"
-			)
-		endif()
-	endif()
 endmacro()
 
 macro(deploy_runtime_file source)
@@ -198,16 +174,9 @@ macro(deploy_pyside_files)
 endmacro()
 
 macro(deploy_pyside)
-	set(PYSIDE_SDK_SOURCE "${SDK_DIR}/Qt/5.6/msvc2015_64/PySide/")
+	set(PYSIDE_SDK_SOURCE "${SDK_DIR}/Qt/5.12.0/msvc2017_64/PySide/")
 	set(PYSIDE_SOURCE "${PYSIDE_SDK_SOURCE}PySide2/")
 
-	# Only copy debug DLLs and .pyd's if we are building in debug mode, otherwise take only the release versions.
-	if(CMAKE_BUILD_TYPE)
-		set(USE_CONFIG Debug)
-	endif()
-	set(PYSIDE_DLLS "pyside2-python2.7-dbg.dll" "shiboken2-python2.7-dbg.dll")
-	file(GLOB FILES_TO_COPY RELATIVE "${PYSIDE_SOURCE}" "${PYSIDE_SOURCE}*_d.pyd")
-	deploy_pyside_files()
 	if(CMAKE_BUILD_TYPE)
 		set(USE_CONFIG Profile)
 	endif()
@@ -262,8 +231,14 @@ macro(copy_binary_files_to_target)
 			endif()	
 		endif()
 		if (OPTION_SANDBOX)
-			deploy_runtime_files("${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/plugins/platforms/*.dll" "platforms")
-			deploy_runtime_files("${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/plugins/imageformats/*.dll" "imageformats")
+			# Qt: Debug && Profile will use the same win_x64 folder, for Release Qt will not be deployed. Empty second arg do the job
+			deploy_runtime_files("${SDK_DIR}/Qt/5.12.0/msvc2017_64/Qt/bin/*.dll" "")
+			deploy_runtime_files("${SDK_DIR}/Qt/5.12.0/msvc2017_64/Qt/bin/*.pdb" "")
+			deploy_runtime_files("${SDK_DIR}/Qt/5.12.0/msvc2017_64/Qt/plugins/imageformats/*.dll" "imageformats")
+			deploy_runtime_files("${SDK_DIR}/Qt/5.12.0/msvc2017_64/Qt/plugins/platforms/*.dll" "platforms")
+
+			deploy_runtime_files("${SDK_DIR}/XT_13_4/bin_vc14/*.dll" "")
+			deploy_runtime_files("${SDK_DIR}/XT_13_4/bin_vc14/*.pdb" "")
 			if (CMAKE_BUILD_TYPE)
 				set(USE_CONFIG Debug)
 				deploy_runtime_files("${SDK_DIR}/Python27/*_d.zip")

@@ -55,8 +55,6 @@ public:
 	HWND window() const;
 
 protected:
-	virtual HWND createWindow(HWND parent, HINSTANCE instance);
-
 	bool         event(QEvent* e);
 	void         showEvent(QShowEvent*);
 	void         focusInEvent(QFocusEvent*);

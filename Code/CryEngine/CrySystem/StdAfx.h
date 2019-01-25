@@ -1,22 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   stdafx.h
-//  Version:     v1.00
-//  Created:     30/9/2002 by Timur.
-//  Compilers:   Visual Studio.NET
-//  Description: Precompiled Header.
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __stdafx_h__
-#define __stdafx_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 //#define DEFINE_MODULE_NAME "CrySystem"
 
@@ -33,79 +17,78 @@
 // Ensure included first to prevent windows.h from being included by certain standard library headers, e.g. <future> on Durango
 #include <CryCore/Platform/CryWindows.h>
 
-#include <cstdlib>
-#include <csignal>
-#include <csetjmp>
-#include <cstdarg>
-#include <typeinfo>
-#include <typeindex>
-#include <type_traits>
-#include <bitset>
-#include <functional>
-#include <utility>
-#include <ctime>
-#include <chrono>
-#include <cstddef>
-#include <initializer_list>
-#include <tuple>
-#include <new>
-#include <memory>
-#include <scoped_allocator>
-#include <climits>
-#include <cfloat>
-#include <cstdint>
-#include <cinttypes>
-#include <limits>
-#include <exception>
-#include <stdexcept>
-#include <cassert>
-#include <system_error>
-#include <cerrno>
-#include <cctype>
-#include <cwctype>
-#include <cstring>
-#include <cwchar>
-#include <string>
-#include <array>
-#include <vector>
-#include <deque>
-#include <list>
-#include <forward_list>
-#include <set>
-#include <map>
-#include <unordered_set>
-#include <unordered_map>
-#include <stack>
-#include <queue>
 #include <algorithm>
-#include <iterator>
-#include <cmath>
-#include <complex>
-#include <valarray>
-#include <random>
-#include <numeric>
-#include <ratio>
-#include <cfenv>
-#include <iosfwd>
-#include <ios>
-#include <istream>
-#include <ostream>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <iomanip>
-#include <streambuf>
-#include <cstdio>
-#include <locale>
-#include <clocale>
-#include <codecvt>
-#include <regex>
+#include <array>
 #include <atomic>
-#include <thread>
-#include <mutex>
-#include <future>
+#include <bitset>
+#include <cassert>
+#include <cctype>
+#include <cerrno>
+#include <cfenv>
+#include <cfloat>
+#include <chrono>
+#include <cinttypes>
+#include <climits>
+#include <clocale>
+#include <cmath>
+#include <codecvt>
+#include <complex>
 #include <condition_variable>
-#include <ciso646>
+#include <csetjmp>
+#include <csignal>
+#include <cstdarg>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#include <cwchar>
+#include <cwctype>
+#include <deque>
+#include <exception>
+#include <forward_list>
+#include <fstream>
+#include <functional>
+#include <future>
+#include <initializer_list>
+#include <iomanip>
+#include <ios>
+#include <iosfwd>
+#include <iostream>
+#include <istream>
+#include <iterator>
+#include <limits>
+#include <list>
+#include <locale>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <new>
+#include <numeric>
+#include <ostream>
+#include <queue>
+#include <random>
+#include <ratio>
+#include <regex>
+#include <scoped_allocator>
+#include <set>
+#include <sstream>
+#include <stack>
+#include <stdexcept>
+#include <streambuf>
+#include <string>
+#include <system_error>
+#include <thread>
+#include <tuple>
+#include <type_traits>
+#include <typeindex>
+#include <typeinfo>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <valarray>
+#include <vector>
 
 //////////////////////////////////////////////////////////////////////////
 // CRT
@@ -224,5 +207,3 @@
 #endif
 
 #endif // USE_PCH
-
-#endif // __stdafx_h__

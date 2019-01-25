@@ -12,7 +12,6 @@
 #include <pyside.h>
 
 #include <pyside2_qtwidgets_python.h>
-#include <typeresolver.h>
 
 PyTypeObject** SbkPySide2_QtWidgetsTypes;
 SbkConverter** SbkPySide2_QtWidgetsTypeConverters;
@@ -176,7 +175,7 @@ static PyMethodDef BridgeMethods[] =
 	{ NULL,              NULL,           0,            NULL} // Sentinel
 };
 
-PyMODINIT_FUNC initSandboxPythonBridge(void)
+PyMODINIT_FUNC initSandboxPythonBridge()
 {
 	// Import QtWidgets PySide module so we can convert python objects to QWidget.
 	{

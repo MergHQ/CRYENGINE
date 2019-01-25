@@ -293,7 +293,7 @@ public:
 
 			//Lets the keypress go to parents, i.e. the parent dialog may close on Enter/ESC
 			//Note that this behavior can be observed on QLineEdit
-			e->ignore(); 
+			e->ignore();
 			return;
 		}
 
@@ -652,6 +652,9 @@ bool QNumericBox::hasMinMax() const
 	return -DBL_MAX != m_min && DBL_MAX != m_max;
 }
 
+// QStyleOptionFrameV2 is deprecated, but if replace it with QStyleOption, widget's background will not be dark or sliderOverlayRect will be hidden
+#pragma warning(disable : 4996)
+
 void QNumericBox::paintEvent(QPaintEvent* e)
 {
 	QPainter painter(this);
@@ -689,6 +692,8 @@ void QNumericBox::paintEvent(QPaintEvent* e)
 	m_pDownButton->update();
 	m_pUpButton->update();
 }
+
+#pragma warning(default : 4996)
 
 void QNumericBox::setEditMode(bool edit)
 {

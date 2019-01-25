@@ -2,12 +2,9 @@
 
 #pragma once
 
-#include <CryCore/Platform/platform.h>
-#include <CryString/CryString.h>
-#include <vector>
 #include <CrySerialization/IArchive.h>
-#include <CrySerialization/STL.h>
 #include <CrySerialization/Enum.h>
+#include <CrySerialization/STL.h>
 
 //this is the address that the engine-side will be listening on
 #define CONSOLE_ENGINE_CHANNEL "Console/Engine"
