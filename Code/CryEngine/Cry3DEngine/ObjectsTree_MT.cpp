@@ -11,10 +11,6 @@
 #include <CryAnimation/ICryAnimation.h>
 #include "LightEntity.h"
 
-#ifndef PI
-	#define PI 3.14159f
-#endif
-
 //////////////////////////////////////////////////////////////////////////
 void CObjManager::PrepareCullbufferAsync(const CCamera& rCamera)
 {
@@ -57,7 +53,7 @@ void CObjManager::RenderNonJobObjects(const SRenderingPassInfo& passInfo)
 		// Once there is no more output in the queue, we wait on the occlusion jobs to finish which will spawn an extra worker.
 		// Lastly we work off all remaining occlusion job outputs
 		SCheckOcclusionOutput outputData;
-		if (!GetObjManager()->TryPopFromCullOutputQueue(&outputData))
+		if (!GetObjManager()->PopFromCullOutputQueue(outputData))
 		{
 			if (!hasWaited)
 			{
@@ -65,7 +61,7 @@ void CObjManager::RenderNonJobObjects(const SRenderingPassInfo& passInfo)
 				hasWaited = true;
 				continue;
 			}
-			else if (!GetObjManager()->PopFromCullOutputQueue(&outputData))
+			else if (!GetObjManager()->PopFromCullOutputQueue(outputData))
 			{
 				break;
 			}
@@ -176,10 +172,4 @@ bool IsValidOccluder(IMaterial* pMat)
 			return false;
 	}
 	return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObjManager::BeginCulling()
-{
-	m_CheckOcclusionOutputQueue.SetRunningState();
 }

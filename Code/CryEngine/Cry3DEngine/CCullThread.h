@@ -5,13 +5,13 @@
 
 #include <CryThreading/IJobManager.h>
 
+struct SCheckOcclusionJobData;
+
 namespace NAsyncCull
 {
-
-class CRY_ALIGN(128) CCullThread: public Cry3DEngineBase
+class  CCullThread: public Cry3DEngineBase
 {
 	bool m_Enabled;
-
 	bool m_Active;                                      // used to verify that the cull job is running and no new jobs are added after the job has finished
 
 public:
@@ -23,7 +23,6 @@ public:
 	uint32 m_nRunningReprojJobsAfterMerge;
 	int m_bCheckOcclusionRequested;
 private:
-	void* m_pCheckOcclusionJob;
 	JobManager::SJobState m_JobStatePrepareOcclusionBuffer;
 	JobManager::SJobState m_PrepareBufferSync;
 	JobManager::SJobState m_checkOcclusion;
@@ -71,7 +70,8 @@ private:
 
 public:
 
-	void CheckOcclusion();
+	void CreateOcclusionJob(const SCheckOcclusionJobData& rCheckOcclusionData);
+	void CheckOcclusion_JobEntry(const SCheckOcclusionJobData checkOcclusionData);
 	void PrepareOcclusion();
 
 	void PrepareOcclusion_RasterizeZBuffer();
@@ -99,8 +99,7 @@ public:
 	void CullStart(const SRenderingPassInfo &passInfo);
 	void CullEnd();
 
-	bool IsActive() const        { return m_Active; }
-	void SetActive(bool bActive) { m_Active = bActive; }
+	void SetActive(bool bActive);
 
 	Vec3 GetViewDir()            { return m_ViewDir; };
 

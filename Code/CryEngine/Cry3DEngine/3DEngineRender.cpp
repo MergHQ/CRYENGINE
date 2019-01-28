@@ -1612,7 +1612,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	////////////////////////////////////////////////////////////////////////////////////////
 	// Add render elements for indoor
 	////////////////////////////////////////////////////////////////////////////////////////
-	if (passInfo.IsGeneralPass() && IsStatObjBufferRenderTasksAllowed() && JobManager::InvokeAsJob("CheckOcclusion"))
+	if (passInfo.IsGeneralPass() && IsStatObjBufferRenderTasksAllowed())
 		m_pObjManager->BeginOcclusionCulling(passInfo);
 
 
@@ -1787,9 +1787,9 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	}
 
 	// tell the occlusion culler that no new work will be submitted
-	if (IsStatObjBufferRenderTasksAllowed() && passInfo.IsGeneralPass() && JobManager::InvokeAsJob("CheckOcclusion"))
+	if (passInfo.IsGeneralPass())
 	{
-		GetObjManager()->PushIntoCullQueue(SCheckOcclusionJobData::CreateQuitJobData());
+		GetObjManager()->m_CullThread.SetActive(false);
 	}
 
 	if (passInfo.IsGeneralPass())
@@ -1806,7 +1806,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 
 	// submit non-job render nodes into render views
 	// we wait for all render jobs to finish here
-	if (passInfo.IsGeneralPass() && IsStatObjBufferRenderTasksAllowed() && JobManager::InvokeAsJob("CheckOcclusion"))
+	if (passInfo.IsGeneralPass() && IsStatObjBufferRenderTasksAllowed())
 	{
 		m_pObjManager->RenderNonJobObjects(passInfo);
 	}
@@ -1903,7 +1903,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		m_bIsInRenderScene = false;
 	}
 
-	if (passInfo.IsGeneralPass() && IsStatObjBufferRenderTasksAllowed() && JobManager::InvokeAsJob("CheckOcclusion"))
+	if (passInfo.IsGeneralPass() && IsStatObjBufferRenderTasksAllowed())
 		m_pObjManager->EndOcclusionCulling();
 
 	// release shadow views (from now only renderer owns it)

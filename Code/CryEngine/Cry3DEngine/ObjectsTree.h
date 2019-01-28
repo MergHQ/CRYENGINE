@@ -22,18 +22,19 @@ class COctreeNode;
 template<class T, size_t overAllocBytes> class PodArray;
 struct ILightSource;
 struct IParticleEmitter;
+struct SPlaneObject;
+struct SObjManPrecacheCamera;
 
 ///////////////////////////////////////////////////////////////////////////////
 // data to be pushed to occlusion culler
-struct CRY_ALIGN(16) SCheckOcclusionJobData
+struct SCheckOcclusionJobData
 {
-	enum JobTypeT { QUIT, OCTREE_NODE, TERRAIN_NODE };
+	enum JobTypeT { OCTREE_NODE, TERRAIN_NODE };
 
 	SCheckOcclusionJobData()
 	{
 	}
 
-	static SCheckOcclusionJobData CreateQuitJobData();
 	static SCheckOcclusionJobData CreateOctreeJobData(COctreeNode * pOctTreeNode, int nRenderMask, const Vec3 &rAmbColor, uint32 passCullMask, const SRenderingPassInfo &passInfo);
 	static SCheckOcclusionJobData CreateTerrainJobData(CTerrainNode * pTerrainNode, const AABB &rAABB, float fDistance, uint32 passCullMask);
 
@@ -63,14 +64,6 @@ struct CRY_ALIGN(16) SCheckOcclusionJobData
 	std::vector<SRenderingPassInfo>* pShadowPasses = nullptr;
 	uint32 passCullMask;
 };
-
-///////////////////////////////////////////////////////////////////////////////
-inline SCheckOcclusionJobData SCheckOcclusionJobData::CreateQuitJobData()
-{
-	SCheckOcclusionJobData jobData;
-	jobData.type = QUIT;
-	return jobData;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 inline SCheckOcclusionJobData SCheckOcclusionJobData::CreateOctreeJobData(COctreeNode* pOctTreeNode, int nRenderMask, const Vec3& rAmbColor, uint32 passCullMask, const SRenderingPassInfo& passInfo)
