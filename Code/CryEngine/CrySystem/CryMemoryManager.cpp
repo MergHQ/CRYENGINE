@@ -15,8 +15,6 @@
 #include "MemReplay.h"
 #include "MemoryManager.h"
 
-volatile bool g_replayCleanedUp = false;
-
 #ifdef DANGLING_POINTER_DETECTOR
 	#if CRY_PLATFORM_ORBIS
 		#include "CryMemoryManager_sce.h"
