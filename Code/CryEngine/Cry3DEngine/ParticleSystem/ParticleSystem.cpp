@@ -79,6 +79,7 @@ void CParticleSystem::OnFrameStart()
 
 void CParticleSystem::TrimEmitters(bool finished_only)
 {
+	CRY_PFX2_PROFILE_DETAIL;
 	stl::find_and_erase_all_if(m_emitters, [=](const _smart_ptr<CParticleEmitter>& emitter) -> bool
 	{
 		if (!emitter->IsIndependent())
@@ -132,31 +133,35 @@ void CParticleSystem::Update()
 	m_emitters.append(m_newEmitters);
 	m_newEmitters.clear();
 
-	// Detect changed sys spec
-	const ESystemConfigSpec sysSpec = gEnv->pSystem->GetConfigSpec();
-	const bool sys_spec_changed = m_lastSysSpec != END_CONFIG_SPEC_ENUM && m_lastSysSpec != sysSpec;
-	m_lastSysSpec = sysSpec;
-
 	// Init stats for current frame
 	auto& mainData = GetMainData();
 	mainData.statsCPU.emitters.alloc = m_emitters.size();
 
+	// Detect changed sys spec
+	const ESystemConfigSpec sysSpec = gEnv->pSystem->GetConfigSpec();
+	if (m_lastSysSpec != END_CONFIG_SPEC_ENUM && m_lastSysSpec != sysSpec)
+	{
+		m_lastSysSpec = sysSpec;
+		for (auto& pEmitter : m_emitters)
+		{
+			pEmitter->ResetRenderObjects();
+		}
+	}
+
+	// Check for edited effects
+	if (gEnv->IsEditing())
+	{
+		for (auto& pEmitter : m_emitters)
+			pEmitter->CheckUpdated();
+	}
+
 	for (auto& pEmitter : m_emitters)
 	{
-		if (sys_spec_changed)
-			pEmitter->ResetRenderObjects();
-		pEmitter->CheckUpdated();
-
 		mainData.statsCPU.components.alloc += pEmitter->GetRuntimes().size();
-		if (pEmitter->IsAlive())
+		if (pEmitter->UpdateState())
 		{
 			mainData.statsCPU.emitters.alive++;
-			pEmitter->Update();
 			m_jobManager.AddUpdateEmitter(pEmitter);
-		}
-		else
-		{
-			pEmitter->Clear();
 		}
 	}
 

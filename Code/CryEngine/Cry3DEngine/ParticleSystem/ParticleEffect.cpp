@@ -184,13 +184,14 @@ string CParticleEffect::GetShortName() const
 
 int CParticleEffect::GetEditVersion() const
 {
-	int version = m_editVersion + m_components.size();
-	for (const auto& pComponent : m_components)
+	uint32 version = m_editVersion;
+	uint32 shift = 1;
+	for (const CParticleComponent* pComponent : m_components)
 	{
 		const SComponentParams& params = pComponent->GetComponentParams();
-		const CMatInfo* pMatInfo = (CMatInfo*)params.m_pMaterial.get();
-		if (pMatInfo)
-			version += pMatInfo->GetModificationId();
+		if (const CMatInfo* pMatInfo = (CMatInfo*)params.m_pMaterial.get())
+			version += pMatInfo->GetModificationId() << shift;
+		shift = (shift + 1) & 31;
 	}
 	return version;
 }
@@ -268,7 +269,7 @@ IParticleComponent* CParticleEffect::AddComponent()
 
 void CParticleEffect::RemoveComponent(uint componentIdx, bool all)
 {
-	auto pComp = m_components[componentIdx];
+	CParticleComponent* pComp = m_components[componentIdx];
 	stl::find_and_erase(pComp->GetParentChildren(), pComp);
 	while (all && pComp->m_children.size())
 		pComp = pComp->m_children.back();
