@@ -1588,10 +1588,6 @@ struct ISystem
 	//! \return zeros if no updates happened yet.
 	virtual void GetUpdateStats(SSystemUpdateStats& stats) = 0;
 
-	//! Useful to investigate memory fragmentation.
-	//! Every time you call this from the console: #System.DumpMemoryCoverage()
-	//! it adds a line to "MemoryCoverage.bmp" (generated the first time, there is a max line count).
-	virtual void               DumpMemoryCoverage() = 0;
 	virtual ESystemGlobalState GetSystemGlobalState(void) = 0;
 	virtual void               SetSystemGlobalState(const ESystemGlobalState systemGlobalState) = 0;
 
