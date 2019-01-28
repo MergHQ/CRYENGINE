@@ -411,7 +411,7 @@ void FreeMemoryPools()
 	SObjectRequestData<EObjectRequestType::SetEnvironment>::FreeMemoryPool();
 	SObjectRequestData<EObjectRequestType::ProcessPhysicsRay>::FreeMemoryPool();
 
-	// Listener reqeusts
+	// Listener requests
 	SListenerRequestData<EListenerRequestType::SetTransformation>::FreeMemoryPool();
 
 	// Callback requests
@@ -1654,7 +1654,9 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 					SetCurrentEnvironmentsOnObject(pNewObject, INVALID_ENTITYID);
 				}
 
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 				SetOcclusionType(*pNewObject, pRequestData->occlusionType);
+#endif    // CRY_AUDIO_USE_OCCLUSION
 				pTrigger->Execute(*pNewObject, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
 				pNewObject->RemoveFlag(EObjectFlags::InUse);
 
@@ -2029,6 +2031,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			break;
 		}
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 	case ESystemRequestType::ReleasePendingRays:
 		{
 			for (auto const pObject : g_activeObjects)
@@ -2040,6 +2043,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			break;
 		}
+#endif // CRY_AUDIO_USE_OCCLUSION
 	case ESystemRequestType::GetFileData:
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::GetFileData> const*>(request.GetData());
@@ -2092,7 +2096,9 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 				SetCurrentEnvironmentsOnObject(pNewObject, INVALID_ENTITYID);
 			}
 
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 			SetOcclusionType(*pNewObject, pRequestData->occlusionType);
+#endif  // CRY_AUDIO_USE_OCCLUSION
 			*pRequestData->ppObject = pNewObject;
 			result = ERequestStatus::Success;
 
@@ -2313,9 +2319,9 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 				{
 					pObject->RemoveFlag(EObjectFlags::Virtual);
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE) && defined(CRY_AUDIO_USE_OCCLUSION)
 					pObject->ResetObstructionRays();
-#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif      // INCLUDE_AUDIO_PRODUCTION_CODE && CRY_AUDIO_USE_OCCLUSION
 
 					break;
 				}
@@ -2538,6 +2544,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 
 			break;
 		}
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 	case EObjectRequestType::SetOcclusionType:
 		{
 			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::SetOcclusionType> const*>(request.GetData());
@@ -2556,6 +2563,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 
 			break;
 		}
+#endif // CRY_AUDIO_USE_OCCLUSION
 	case EObjectRequestType::SetCurrentEnvironments:
 		{
 			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::SetCurrentEnvironments> const*>(request.GetData());
@@ -2591,14 +2599,17 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 
 			break;
 		}
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 	case EObjectRequestType::ProcessPhysicsRay:
 		{
 			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> const*>(request.GetData());
 
 			pObject->ProcessPhysicsRay(pRequestData->pRayInfo);
 			result = ERequestStatus::Success;
+
 			break;
 		}
+#endif // CRY_AUDIO_USE_OCCLUSION
 	case EObjectRequestType::ToggleAbsoluteVelocityTracking:
 		{
 			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::ToggleAbsoluteVelocityTracking> const*>(request.GetData());
@@ -3067,6 +3078,7 @@ void CSystem::SetCurrentEnvironmentsOnObject(CObject* const pObject, EntityId co
 	}
 }
 
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::SetOcclusionType(CObject& object, EOcclusionType const occlusionType) const
 {
@@ -3105,14 +3117,15 @@ void CSystem::SetOcclusionType(CObject& object, EOcclusionType const occlusionTy
 		}
 	default:
 		{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			Cry::Audio::Log(ELogType::Warning, "Unknown occlusion type during %s: %u", __FUNCTION__, occlusionType);
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+	#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			break;
 		}
 	}
 }
+#endif // CRY_AUDIO_USE_OCCLUSION
 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::OnCallback(SRequestInfo const* const pRequestInfo)

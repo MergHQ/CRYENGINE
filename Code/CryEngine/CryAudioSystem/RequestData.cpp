@@ -106,8 +106,10 @@ std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pReq
 				CRY_AUDIO_OBJECT_REQUEST_BLOCK(EObjectRequestType::StopTrigger)
 				CRY_AUDIO_OBJECT_REQUEST_BLOCK(EObjectRequestType::StopAllTriggers)
 				CRY_AUDIO_OBJECT_REQUEST_BLOCK(EObjectRequestType::SetTransformation)
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 				CRY_AUDIO_OBJECT_REQUEST_BLOCK(EObjectRequestType::SetOcclusionType)
 				CRY_AUDIO_OBJECT_REQUEST_BLOCK(EObjectRequestType::SetOcclusionRayOffset)
+#endif    // CRY_AUDIO_USE_OCCLUSION
 				CRY_AUDIO_OBJECT_REQUEST_BLOCK(EObjectRequestType::SetParameter)
 				CRY_AUDIO_OBJECT_REQUEST_BLOCK(EObjectRequestType::SetSwitchState)
 				CRY_AUDIO_OBJECT_REQUEST_BLOCK(EObjectRequestType::SetCurrentEnvironments)

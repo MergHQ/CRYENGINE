@@ -179,12 +179,6 @@ void CObject::StopAllTriggers()
 	m_pImplData->StopAllTriggers();
 }
 
-///////////////////////////////////////////////////////////////////////////
-void CObject::SetOcclusion(float const occlusion)
-{
-	m_pImplData->SetOcclusion(occlusion);
-}
-
 //////////////////////////////////////////////////////////////////////////
 void CObject::PushRequest(SRequestData const& requestData, SRequestUserData const& userData)
 {
@@ -201,26 +195,26 @@ bool CObject::IsPlaying() const
 //////////////////////////////////////////////////////////////////////////
 bool CObject::HasPendingCallbacks() const
 {
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 	return m_propagationProcessor.HasPendingRays() || (m_numPendingSyncCallbacks > 0);
+#else
+	return (m_numPendingSyncCallbacks > 0);
+#endif // CRY_AUDIO_USE_OCCLUSION
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CObject::Update(float const deltaTime)
 {
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 	m_propagationProcessor.Update();
 
 	if (m_propagationProcessor.HasNewOcclusionValues())
 	{
 		m_pImplData->SetOcclusion(m_propagationProcessor.GetOcclusion());
 	}
+#endif // CRY_AUDIO_USE_OCCLUSION
 
 	m_pImplData->Update(deltaTime);
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CObject::ProcessPhysicsRay(CRayInfo* const pRayInfo)
-{
-	m_propagationProcessor.ProcessPhysicsRay(pRayInfo);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -230,12 +224,25 @@ void CObject::HandleSetTransformation(CTransformation const& transformation)
 	m_pImplData->SetTransformation(transformation);
 }
 
+#if defined(CRY_AUDIO_USE_OCCLUSION)
+///////////////////////////////////////////////////////////////////////////
+void CObject::SetOcclusion(float const occlusion)
+{
+	m_pImplData->SetOcclusion(occlusion);
+}
+
 ///////////////////////////////////////////////////////////////////////////
 void CObject::HandleSetOcclusionType(EOcclusionType const calcType)
 {
-	CRY_ASSERT(calcType != EOcclusionType::None);
+	CRY_ASSERT_MESSAGE(calcType != EOcclusionType::None, "No valid occlusion type set during %s", __FUNCTION__);
 	m_propagationProcessor.SetOcclusionType(calcType);
 	m_pImplData->SetOcclusionType(calcType);
+}
+
+///////////////////////////////////////////////////////////////////////////
+void CObject::ProcessPhysicsRay(CRayInfo* const pRayInfo)
+{
+	m_propagationProcessor.ProcessPhysicsRay(pRayInfo);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -245,10 +252,17 @@ void CObject::HandleSetOcclusionRayOffset(float const offset)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CObject::UpdateOcclusion()
+{
+	m_propagationProcessor.UpdateOcclusion();
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CObject::ReleasePendingRays()
 {
 	m_propagationProcessor.ReleasePendingRays();
 }
+#endif // CRY_AUDIO_USE_OCCLUSION
 
 //////////////////////////////////////////////////////////////////////////
 void CObject::HandleStopFile(char const* const szFile)
@@ -314,7 +328,10 @@ void CObject::Init(Impl::IObject* const pImplData, EntityId const entityId)
 {
 	m_entityId = entityId;
 	m_pImplData = pImplData;
+
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 	m_propagationProcessor.Init();
+#endif // CRY_AUDIO_USE_OCCLUSION
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -427,8 +444,10 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 				bool const drawParameters = (g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectParameters) != 0;
 				bool const drawEnvironments = (g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectEnvironments) != 0;
 				bool const drawDistance = (g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectDistance) != 0;
+	#if defined(CRY_AUDIO_USE_OCCLUSION)
 				bool const drawOcclusionRayLabel = (g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionRayLabels) != 0;
 				bool const drawOcclusionRayOffset = (g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionRayOffset) != 0;
+	#endif  // CRY_AUDIO_USE_OCCLUSION
 				bool const filterAllObjectInfo = (g_cvars.m_drawDebug & Debug::EDrawFilter::FilterAllObjectInfo) != 0;
 
 				// Check if any trigger matches text filter.
@@ -795,6 +814,7 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 						screenPos.y += Debug::s_objectLineHeight;
 					}
 
+	#if defined(CRY_AUDIO_USE_OCCLUSION)
 					if (drawOcclusionRayLabel)
 					{
 						EOcclusionType const occlusionType = m_propagationProcessor.GetOcclusionType();
@@ -854,13 +874,16 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 							auxGeom.SetRenderFlags(previousRenderFlags);
 						}
 					}
+	#endif    // CRY_AUDIO_USE_OCCLUSION
 
 					if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectImplInfo) != 0)
 					{
 						m_pImplData->DrawDebugInfo(auxGeom, screenPos.x, screenPos.y, (isTextFilterDisabled ? nullptr : lowerCaseSearchString.c_str()));
 					}
 
+	#if defined(CRY_AUDIO_USE_OCCLUSION)
 					m_propagationProcessor.DrawDebugInfo(auxGeom);
+	#endif    // CRY_AUDIO_USE_OCCLUSION
 				}
 			}
 		}
@@ -1052,18 +1075,22 @@ void CObject::SetCurrentEnvironments(EntityId const entityToIgnore, SRequestUser
 //////////////////////////////////////////////////////////////////////////
 void CObject::SetOcclusionType(EOcclusionType const occlusionType, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 	if (occlusionType < EOcclusionType::Count)
 	{
 		SObjectRequestData<EObjectRequestType::SetOcclusionType> requestData(this, occlusionType);
 		PushRequest(requestData, userData);
 	}
+#endif // CRY_AUDIO_USE_OCCLUSION
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CObject::SetOcclusionRayOffset(float const offset, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 	SObjectRequestData<EObjectRequestType::SetOcclusionRayOffset> requestData(this, offset);
 	PushRequest(requestData, userData);
+#endif // CRY_AUDIO_USE_OCCLUSION
 }
 
 //////////////////////////////////////////////////////////////////////////

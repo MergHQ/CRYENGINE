@@ -22,8 +22,10 @@ enum class EObjectRequestType : EnumFlagsType
 	StopTrigger,
 	StopAllTriggers,
 	SetTransformation,
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 	SetOcclusionType,
 	SetOcclusionRayOffset,
+#endif // CRY_AUDIO_USE_OCCLUSION
 	SetParameter,
 	SetSwitchState,
 	SetCurrentEnvironments,
@@ -209,6 +211,7 @@ struct SObjectRequestData<EObjectRequestType::SetTransformation> final : public 
 	CTransformation const transformation;
 };
 
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 //////////////////////////////////////////////////////////////////////////
 template<>
 struct SObjectRequestData<EObjectRequestType::SetOcclusionType> final : public SObjectRequestDataBase
@@ -246,6 +249,7 @@ struct SObjectRequestData<EObjectRequestType::SetOcclusionRayOffset> final : pub
 
 	float const occlusionRayOffset;
 };
+#endif // CRY_AUDIO_USE_OCCLUSION
 
 //////////////////////////////////////////////////////////////////////////
 template<>
