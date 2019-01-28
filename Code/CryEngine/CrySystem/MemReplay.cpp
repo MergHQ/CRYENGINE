@@ -261,38 +261,45 @@ static MemFastMutex& GetLogMutex()
 	static MemFastMutex logmutex;
 	return logmutex;
 }
-static volatile threadID s_ignoreThreadId = (threadID) - 1;
-
 static uint32 g_memReplayFrameCount;
 const int k_maxCallStackDepth = 256;
-extern volatile bool g_replayCleanedUp;
 
 static volatile UINT_PTR s_replayLastGlobal = 0;
 static volatile int s_replayStartingFree = 0;
 
-inline void CryMemStatIgnoreThread(threadID threadId)
+static volatile threadID s_recordThreadId = threadID(-1);
+
+inline bool ThreadIsNotFlushing()
 {
-	s_ignoreThreadId = threadId;
+	return s_recordThreadId != CryGetCurrentThreadId();
 }
 
-	#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
-
-void* ReplayAllocatorBase::ReserveAddressSpace(size_t sz)
+// No write thread: While writing out data we need to avoid recording new entries, as we are under lock
+// With write Thread: Just ignore allocations from the recording thread
+struct RecordingThreadScope
 {
-	return VirtualAlloc(NULL, sz, MEM_RESERVE, PAGE_READWRITE);
-}
+	RecordingThreadScope() { assert(s_recordThreadId == threadID(-1)); s_recordThreadId = CryGetCurrentThreadId(); }
+	~RecordingThreadScope() { assert(s_recordThreadId != threadID(-1)); s_recordThreadId = threadID(-1); }
+};
 
-void ReplayAllocatorBase::UnreserveAddressSpace(void* base, void* committedEnd)
-{
-	VirtualFree(base, 0, MEM_RELEASE);
-}
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
 
-void* ReplayAllocatorBase::MapAddressSpace(void* addr, size_t sz)
-{
-	return VirtualAlloc(addr, sz, MEM_COMMIT, PAGE_READWRITE);
-}
+	void* ReplayAllocatorBase::ReserveAddressSpace(size_t sz)
+	{
+		return VirtualAlloc(NULL, sz, MEM_RESERVE, PAGE_READWRITE);
+	}
 
-	#elif CRY_PLATFORM_ORBIS
+	void ReplayAllocatorBase::UnreserveAddressSpace(void* base, void* committedEnd)
+	{
+		VirtualFree(base, 0, MEM_RELEASE);
+	}
+
+	void* ReplayAllocatorBase::MapAddressSpace(void* addr, size_t sz)
+	{
+		return VirtualAlloc(addr, sz, MEM_COMMIT, PAGE_READWRITE);
+	}
+
+#elif CRY_PLATFORM_ORBIS
 
 void* ReplayAllocatorBase::ReserveAddressSpace(size_t sz)
 {
@@ -320,71 +327,71 @@ void* ReplayAllocatorBase::MapAddressSpace(void* addr, size_t sz)
 	return addr;
 }
 
-	#elif CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
-void* ReplayAllocatorBase::ReserveAddressSpace(size_t sz)
-{
-	return mmap(NULL, sz, PROT_NONE, MAP_PRIVATE | MAP_ANON, -1, 0);
-}
-
-void ReplayAllocatorBase::UnreserveAddressSpace(void* base, void* committedEnd)
-{
-	int res = munmap(base, reinterpret_cast<char*>(committedEnd) - reinterpret_cast<char*>(base));
-	(void) res;
-	assert(res == 0);
-}
-
-void* ReplayAllocatorBase::MapAddressSpace(void* addr, size_t sz)
-{
-	int res = mprotect(addr, sz, PROT_READ | PROT_WRITE);
-	return addr;
-}
-	#elif CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
-
-void* ReplayAllocatorBase::ReserveAddressSpace(size_t sz)
-{
-	return mmap(NULL, sz, PROT_NONE, MAP_PRIVATE | MAP_ANON, -1, 0);
-}
-
-void ReplayAllocatorBase::UnreserveAddressSpace(void* base, void* committedEnd)
-{
-	int res = munmap(base, reinterpret_cast<char*>(committedEnd) - reinterpret_cast<char*>(base));
-}
-
-void* ReplayAllocatorBase::MapAddressSpace(void* addr, size_t sz)
-{
-	int res = mprotect(addr, sz, PROT_READ | PROT_WRITE);
-	return addr;
-}
-
-	#elif CRY_PLATFORM_ORBIS
-
-void* ReplayAllocatorBase::ReserveAddressSpace(size_t sz)
-{
-	return VirtualAllocator::AllocateVirtualAddressSpace(sz);
-}
-
-void ReplayAllocatorBase::UnreserveAddressSpace(void* base, void* committedEnd)
-{
-	VirtualAllocator::FreeVirtualAddressSpace(base);
-}
-
-void* ReplayAllocatorBase::MapAddressSpace(void* addr, size_t sz)
-{
-	for (size_t i = 0; i < sz; i += PAGE_SIZE)
+#elif CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
+	void* ReplayAllocatorBase::ReserveAddressSpace(size_t sz)
 	{
-		if (!VirtualAllocator::MapPage((char*)addr + i))
-		{
-			for (size_t k = 0; k < i; k += PAGE_SIZE)
-			{
-				VirtualAllocator::UnmapPage((char*)addr + k);
-			}
-			return NULL;
-		}
+		return mmap(NULL, sz, PROT_NONE, MAP_PRIVATE | MAP_ANON, -1, 0);
 	}
+
+	void ReplayAllocatorBase::UnreserveAddressSpace(void* base, void* committedEnd)
+	{
+		int res = munmap(base, reinterpret_cast<char*>(committedEnd) - reinterpret_cast<char*>(base));
+		(void) res;
+		assert(res == 0);
+	}
+
+	void* ReplayAllocatorBase::MapAddressSpace(void* addr, size_t sz)
+	{
+		int res = mprotect(addr, sz, PROT_READ | PROT_WRITE);
+		return addr;
+	}
+#elif CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
+
+void* ReplayAllocatorBase::ReserveAddressSpace(size_t sz)
+{
+	return mmap(NULL, sz, PROT_NONE, MAP_PRIVATE | MAP_ANON, -1, 0);
+}
+
+void ReplayAllocatorBase::UnreserveAddressSpace(void* base, void* committedEnd)
+{
+	int res = munmap(base, reinterpret_cast<char*>(committedEnd) - reinterpret_cast<char*>(base));
+}
+
+void* ReplayAllocatorBase::MapAddressSpace(void* addr, size_t sz)
+{
+	int res = mprotect(addr, sz, PROT_READ | PROT_WRITE);
 	return addr;
 }
 
-	#endif
+#elif CRY_PLATFORM_ORBIS
+
+	void* ReplayAllocatorBase::ReserveAddressSpace(size_t sz)
+	{
+		return VirtualAllocator::AllocateVirtualAddressSpace(sz);
+	}
+
+	void ReplayAllocatorBase::UnreserveAddressSpace(void* base, void* committedEnd)
+	{
+		VirtualAllocator::FreeVirtualAddressSpace(base);
+	}
+
+	void* ReplayAllocatorBase::MapAddressSpace(void* addr, size_t sz)
+	{
+		for (size_t i = 0; i < sz; i += PAGE_SIZE)
+		{
+			if (!VirtualAllocator::MapPage((char*)addr + i))
+			{
+				for (size_t k = 0; k < i; k += PAGE_SIZE)
+				{
+					VirtualAllocator::UnmapPage((char*)addr + k);
+				}
+				return NULL;
+			}
+		}
+		return addr;
+	}
+
+#endif
 
 namespace
 {
@@ -588,7 +595,7 @@ void ReplayCompressor::zFree(voidpf opaque, voidpf address)
 	// Doesn't seem to be called, except when shutting down and then we'll just free it all anyway
 }
 
-	#if REPLAY_RECORD_THREADED
+#if REPLAY_RECORD_THREADED
 
 ReplayRecordThread::ReplayRecordThread(ReplayCompressor* compressor)
 	: m_compressor(compressor)
@@ -634,7 +641,7 @@ void ReplayRecordThread::Write(const uint8* data, size_t len)
 
 void ReplayRecordThread::ThreadEntry()
 {
-	CryMemStatIgnoreThread(CryGetCurrentThreadId());
+	RecordingThreadScope recordScope;
 
 	while (true)
 	{
@@ -697,7 +704,7 @@ void ReplayRecordThread::SignalStopWork()
 	m_mtx.Unlock();
 }
 
-	#endif
+#endif
 
 ReplayLogStream::ReplayLogStream()
 	: m_isOpen(0)
@@ -893,23 +900,18 @@ void ReplayLogStream::Flush()
 	{
 		m_uncompressedLen += m_bufferEnd - &m_buffer[0];
 
-	#if REPLAY_RECORD_THREADED
+#if REPLAY_RECORD_THREADED
 		if (m_recordThread)
 		{
 			m_recordThread->Write(&m_buffer[0], m_bufferEnd - &m_buffer[0]);
 			m_buffer = (m_buffer == m_bufferA) ? m_bufferB : m_bufferA;
 		}
 		else
+#endif
 		{
-			CryMemStatIgnoreThread(CryGetCurrentThreadId());
+			RecordingThreadScope writeScope;
 			m_compressor->Write(&m_buffer[0], m_bufferEnd - &m_buffer[0]);
-			CryMemStatIgnoreThread((DWORD)-1);
 		}
-	#else
-		CryMemStatIgnoreThread(CryGetCurrentThreadId());
-		m_compressor->Write(&m_buffer[0], m_bufferEnd - &m_buffer[0]);
-		CryMemStatIgnoreThread((DWORD)-1);
-	#endif
 	}
 
 	m_bufferEnd = &m_buffer[0];
@@ -917,22 +919,17 @@ void ReplayLogStream::Flush()
 
 void ReplayLogStream::FullFlush()
 {
-	#if REPLAY_RECORD_THREADED
+#if REPLAY_RECORD_THREADED
 	if (m_recordThread)
 	{
 		m_recordThread->Flush();
 	}
 	else
+#endif
 	{
-		CryMemStatIgnoreThread(CryGetCurrentThreadId());
+		RecordingThreadScope writeScope;
 		m_compressor->Flush();
-		CryMemStatIgnoreThread((DWORD)-1);
 	}
-	#else
-	CryMemStatIgnoreThread(CryGetCurrentThreadId());
-	m_compressor->Flush();
-	CryMemStatIgnoreThread((DWORD)-1);
-	#endif
 }
 
 size_t ReplayLogStream::GetSize() const
@@ -950,7 +947,7 @@ uint64 ReplayLogStream::GetUncompressedLength() const
 	return m_uncompressedLen;
 }
 
-	#define SIZEOF_MEMBER(cls, mbr) (sizeof(reinterpret_cast<cls*>(0)->mbr))
+#define SIZEOF_MEMBER(cls, mbr) (sizeof(reinterpret_cast<cls*>(0)->mbr))
 
 static bool g_memReplayPaused = false;
 
@@ -1249,9 +1246,9 @@ void CMemReplay::StartOnCommandLine(const char* cmdLine)
 	CryStackStringT<char, 2048> lwrCmdLine = cmdLine;
 	lwrCmdLine.MakeLower();
 
-	if ((mrCmd = strstr(lwrCmdLine.c_str(), "-memreplay")) != 0)
+	if ((mrCmd = strstr(lwrCmdLine.c_str(), "-memreplay")) != nullptr)
 	{
-		bool bPaused = strstr(lwrCmdLine.c_str(), "-memreplaypaused") != 0;
+		bool bPaused = strstr(lwrCmdLine.c_str(), "-memreplaypaused") != nullptr;
 
 		//Retrieve file suffix if present
 		const int bufferLength = 64;
@@ -1285,6 +1282,18 @@ void CMemReplay::Start(bool bPaused, const char* openString)
 		openString = "disk";
 	}
 
+	if(m_stream.IsOpen())
+	{
+		const char* label = nullptr;
+		if (bPaused && !g_memReplayPaused)
+			label = "Pausing MemReplay";
+		else if (!bPaused && g_memReplayPaused)
+			label = "Resuming MemReplay";
+
+		if(label)
+			new(m_stream.AllocateRawEvent<MemReplayLabelEvent>(strlen(label)))MemReplayLabelEvent(label);
+	}
+
 	CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 	g_memReplayPaused = bPaused;
 
@@ -1314,9 +1323,6 @@ void CMemReplay::Start(bool bPaused, const char* openString)
 	#endif
 
 			uint32 id = 0;
-			//#define MEMREPLAY_DEFINE_CONTEXT(name) RecordContextDefinition(id ++, #name);
-			//#include "CryMemReplayContexts.h"
-			//#undef MEMREPLAY_DEFINE_CONTEXT
 		}
 	}
 }
@@ -1327,6 +1333,7 @@ void CMemReplay::Stop()
 	CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 	if (m_stream.IsOpen())
 	{
+		g_memReplayPaused = false; // unpause or modules might not be recorded
 		RecordModules();
 
 		m_stream.Close();
@@ -1361,7 +1368,7 @@ void CMemReplay::ExitScope_Alloc(UINT_PTR id, UINT_PTR sz, UINT_PTR alignment)
 
 	if (m_scopeDepth == 0)
 	{
-		if (id && m_stream.IsOpen() && CryGetCurrentThreadId() != s_ignoreThreadId)
+		if (id && m_stream.IsOpen() && ThreadIsNotFlushing() && !g_memReplayPaused)
 		{
 			CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1397,7 +1404,7 @@ void CMemReplay::ExitScope_Realloc(UINT_PTR originalId, UINT_PTR newId, UINT_PTR
 
 	if (m_scopeDepth == 0)
 	{
-		if (m_stream.IsOpen() && CryGetCurrentThreadId() != s_ignoreThreadId)
+		if (m_stream.IsOpen() && ThreadIsNotFlushing() && !g_memReplayPaused)
 		{
 			CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1421,7 +1428,7 @@ void CMemReplay::ExitScope_Free(UINT_PTR id)
 
 	if (m_scopeDepth == 0)
 	{
-		if (id && m_stream.IsOpen() && CryGetCurrentThreadId() != s_ignoreThreadId)
+		if (id && m_stream.IsOpen() && ThreadIsNotFlushing() && !g_memReplayPaused)
 		{
 			CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1465,7 +1472,7 @@ void CMemReplay::LeaveLockScope()
 //////////////////////////////////////////////////////////////////////////
 void CMemReplay::AddLabel(const char* label)
 {
-	if (m_stream.IsOpen())
+	if (m_stream.IsOpen() && ThreadIsNotFlushing() && !g_memReplayPaused)
 	{
 		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1504,11 +1511,6 @@ void CMemReplay::AddFrameStart()
 			bSymbolsDumped = true;
 		}
 
-		if (!g_replayCleanedUp)
-		{
-			g_replayCleanedUp = true;
-		}
-
 		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
 		if (m_stream.IsOpen())
@@ -1530,6 +1532,10 @@ void CMemReplay::GetInfo(CryReplayInfo& infoOut)
 		infoOut.trackingSize = m_stream.GetSize();
 		infoOut.filename = m_stream.GetFilename();
 	}
+	else
+	{
+		ZeroStruct(infoOut);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1539,7 +1545,7 @@ void CMemReplay::AllocUsage(EMemReplayAllocClass::Class allocClass, UINT_PTR id,
 	if (!ptr)
 		return;
 
-	if (m_stream.IsOpen())
+	if (m_stream.IsOpen() && ThreadIsNotFlushing() && !g_memReplayPaused)
 	{
 		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 		if (m_stream.IsOpen())
@@ -1550,7 +1556,7 @@ void CMemReplay::AllocUsage(EMemReplayAllocClass::Class allocClass, UINT_PTR id,
 
 void CMemReplay::AddAllocReference(void* ptr, void* ref)
 {
-	if (ptr && m_stream.IsOpen())
+	if (ptr && m_stream.IsOpen() && ThreadIsNotFlushing() && !g_memReplayPaused)
 	{
 		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1570,7 +1576,7 @@ void CMemReplay::AddAllocReference(void* ptr, void* ref)
 
 void CMemReplay::RemoveAllocReference(void* ref)
 {
-	if (ref && m_stream.IsOpen())
+	if (ref && m_stream.IsOpen() && ThreadIsNotFlushing() && !g_memReplayPaused)
 	{
 		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1581,8 +1587,7 @@ void CMemReplay::RemoveAllocReference(void* ref)
 
 void CMemReplay::AddContext(int type, uint32 flags, const char* str)
 {
-	const threadID threadId = CryGetCurrentThreadId();
-	if (m_stream.IsOpen() && threadId != s_ignoreThreadId && !g_memReplayPaused)
+	if (m_stream.IsOpen() && ThreadIsNotFlushing())
 	{
 		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1596,8 +1601,7 @@ void CMemReplay::AddContext(int type, uint32 flags, const char* str)
 
 void CMemReplay::AddContextV(int type, uint32 flags, const char* format, va_list args)
 {
-	const threadID threadId = CryGetCurrentThreadId();
-	if (m_stream.IsOpen() && threadId != s_ignoreThreadId && !g_memReplayPaused)
+	if (m_stream.IsOpen() && ThreadIsNotFlushing())
 	{
 		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1616,9 +1620,7 @@ void CMemReplay::AddContextV(int type, uint32 flags, const char* format, va_list
 //////////////////////////////////////////////////////////////////////////
 void CMemReplay::RemoveContext()
 {
-	const threadID threadId = CryGetCurrentThreadId();
-
-	if (m_stream.IsOpen() && threadId != s_ignoreThreadId && !g_memReplayPaused)
+	if (m_stream.IsOpen() && ThreadIsNotFlushing())
 	{
 		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1649,7 +1651,7 @@ bool CMemReplay::EnableAsynchMode()
 
 void CMemReplay::MapPage(void* base, size_t size)
 {
-	if (m_stream.IsOpen() && base && size)
+	if (m_stream.IsOpen() && base && size && !g_memReplayPaused)
 	{
 		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1667,7 +1669,7 @@ void CMemReplay::MapPage(void* base, size_t size)
 
 void CMemReplay::UnMapPage(void* base, size_t size)
 {
-	if (m_stream.IsOpen() && base && size)
+	if (m_stream.IsOpen() && base && size && !g_memReplayPaused)
 	{
 		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1680,7 +1682,7 @@ void CMemReplay::UnMapPage(void* base, size_t size)
 
 void CMemReplay::RegisterFixedAddressRange(void* base, size_t size, const char* name)
 {
-	if (m_stream.IsOpen() && base && size && name)
+	if (m_stream.IsOpen() && base && size && name && !g_memReplayPaused)
 	{
 		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1694,7 +1696,7 @@ void CMemReplay::RegisterFixedAddressRange(void* base, size_t size, const char* 
 
 void CMemReplay::MarkBucket(int bucket, size_t alignment, void* base, size_t length)
 {
-	if (m_stream.IsOpen() && base && length)
+	if (m_stream.IsOpen() && base && length && !g_memReplayPaused)
 	{
 		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1705,7 +1707,7 @@ void CMemReplay::MarkBucket(int bucket, size_t alignment, void* base, size_t len
 
 void CMemReplay::UnMarkBucket(int bucket, void* base)
 {
-	if (m_stream.IsOpen() && base)
+	if (m_stream.IsOpen() && base && !g_memReplayPaused)
 	{
 		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1716,7 +1718,7 @@ void CMemReplay::UnMarkBucket(int bucket, void* base)
 
 void CMemReplay::BucketEnableCleanups(void* allocatorBase, bool enabled)
 {
-	if (m_stream.IsOpen() && allocatorBase)
+	if (m_stream.IsOpen() && allocatorBase && !g_memReplayPaused)
 	{
 		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1727,7 +1729,7 @@ void CMemReplay::BucketEnableCleanups(void* allocatorBase, bool enabled)
 
 void CMemReplay::MarkPool(int pool, size_t alignment, void* base, size_t length, const char* name)
 {
-	if (m_stream.IsOpen() && base && length)
+	if (m_stream.IsOpen() && base && length && !g_memReplayPaused)
 	{
 		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1741,7 +1743,7 @@ void CMemReplay::MarkPool(int pool, size_t alignment, void* base, size_t length,
 
 void CMemReplay::UnMarkPool(int pool, void* base)
 {
-	if (m_stream.IsOpen() && base)
+	if (m_stream.IsOpen() && base && !g_memReplayPaused)
 	{
 		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1752,7 +1754,7 @@ void CMemReplay::UnMarkPool(int pool, void* base)
 
 void CMemReplay::AddTexturePoolContext(void* ptr, int mip, int width, int height, const char* name, uint32 flags)
 {
-	if (m_stream.IsOpen() && ptr)
+	if (m_stream.IsOpen() && ptr && !g_memReplayPaused)
 	{
 		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1773,7 +1775,7 @@ void CMemReplay::AddSizerTree(const char* name)
 void CMemReplay::AddScreenshot()
 {
 	#if 0
-	if (m_stream.IsOpen())
+	if (m_stream.IsOpen() && !g_memReplayPaused)
 	{
 		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1793,7 +1795,7 @@ void CMemReplay::RegisterContainer(const void* key, int type)
 	#if REPLAY_RECORD_CONTAINERS
 	if (key)
 	{
-		if (m_stream.IsOpen())
+		if (m_stream.IsOpen() && !g_memReplayPaused)
 		{
 			CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1817,7 +1819,7 @@ void CMemReplay::UnregisterContainer(const void* key)
 	#if REPLAY_RECORD_CONTAINERS
 	if (key)
 	{
-		if (m_stream.IsOpen())
+		if (m_stream.IsOpen() && !g_memReplayPaused)
 		{
 			CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1835,7 +1837,7 @@ void CMemReplay::BindToContainer(const void* key, const void* alloc)
 	#if REPLAY_RECORD_CONTAINERS
 	if (key && alloc)
 	{
-		if (m_stream.IsOpen())
+		if (m_stream.IsOpen() && !g_memReplayPaused)
 		{
 			CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1853,7 +1855,7 @@ void CMemReplay::UnbindFromContainer(const void* key, const void* alloc)
 	#if REPLAY_RECORD_CONTAINERS
 	if (key && alloc)
 	{
-		if (m_stream.IsOpen())
+		if (m_stream.IsOpen() && !g_memReplayPaused)
 		{
 			CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
@@ -1869,7 +1871,7 @@ void CMemReplay::UnbindFromContainer(const void* key, const void* alloc)
 void CMemReplay::SwapContainers(const void* keyA, const void* keyB)
 {
 	#if REPLAY_RECORD_CONTAINERS
-	if (keyA && keyB && (keyA != keyB) && m_stream.IsOpen())
+	if (keyA && keyB && (keyA != keyB) && m_stream.IsOpen() && !g_memReplayPaused)
 	{
 		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 

@@ -3333,10 +3333,21 @@ void DrawObjectInfo(
 
 		if (draw)
 		{
+			CryFixedStringT<MaxMiscStringLength> debugText;
+
+			if ((object.GetFlags() & EObjectFlags::InUse) != 0)
+			{
+				debugText.Format(szObjectName);
+			}
+			else
+			{
+				debugText.Format("%s [To Be Released]", szObjectName);
+			}
+
 			auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize,
 			                    !hasActiveData ? Debug::s_globalColorInactive : (isVirtual ? Debug::s_globalColorVirtual : Debug::s_listColorItemActive),
 			                    false,
-			                    szObjectName);
+			                    debugText.c_str());
 
 			posY += Debug::s_listLineHeight;
 			++numObjects;

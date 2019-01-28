@@ -902,7 +902,8 @@ void DrawBox(float x, float y, float width, float height, ColorF color)
 	float sy = /*VIRTUAL_SCREEN_HEIGHT*/ float(pDC->GetDisplayResolution()[1]);
 //	const Vec2 overscanOffset = Vec2(rd->s_overscanBorders.x * VIRTUAL_SCREEN_WIDTH, rd->s_overscanBorders.y * VIRTUAL_SCREEN_HEIGHT);
 	const Vec2 overscanOffset = Vec2(rd->s_overscanBorders.x * pDC->GetDisplayResolution()[0], rd->s_overscanBorders.y * pDC->GetDisplayResolution()[1]);
-	IRenderAuxImage::Draw2dImage(x * sx + overscanOffset.x, y * sy + overscanOffset.y, width * sx, height * sy, CRendererResources::s_ptexWhite->GetID(), 0, 0, 1, 1, 0, color);
+	if(CRendererResources::s_ptexWhite)
+		IRenderAuxImage::Draw2dImage(x * sx + overscanOffset.x, y * sy + overscanOffset.y, width * sx, height * sy, CRendererResources::s_ptexWhite->GetID(), 0, 0, 1, 1, 0, color);
 }
 
 void DrawTable(float x, float y, float width, int numColumns, const char* title)

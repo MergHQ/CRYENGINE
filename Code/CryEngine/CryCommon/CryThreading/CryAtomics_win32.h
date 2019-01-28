@@ -89,6 +89,12 @@ ILINE LONG CryInterlockedExchangeAdd(volatile LONG* pDst, LONG value)
 }
 
 // Returns initial value prior exchange
+ILINE int64 CryInterlockedExchange64(volatile int64* pDst, int64 value)
+{
+	return _InterlockedExchange64(pDst, value);
+}
+
+// Returns initial value prior exchange
 ILINE size_t CryInterlockedExchangeAdd(volatile size_t* pDst, size_t add)
 {
 #if CRY_PLATFORM_X64
