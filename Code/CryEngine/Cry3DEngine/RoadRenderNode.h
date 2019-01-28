@@ -2,7 +2,7 @@
 
 #pragma once
 
-class CRoadRenderNode : public IRoadRenderNode, public Cry3DEngineBase
+class CRoadRenderNode final : public IRoadRenderNode, public Cry3DEngineBase
 {
 public:
 	// SDynamicData and SData are helpers for serialization

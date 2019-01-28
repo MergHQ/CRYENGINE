@@ -18,7 +18,7 @@ struct IParticleEffect;
 // Desc: Breakable glass sim render node
 // Author: Chris Bunner
 //==================================================================================================
-class CBreakableGlassRenderNode : public IBreakableGlassRenderNode, Cry3DEngineBase
+class CBreakableGlassRenderNode final : public IBreakableGlassRenderNode, Cry3DEngineBase
 {
 public:
 	CBreakableGlassRenderNode();

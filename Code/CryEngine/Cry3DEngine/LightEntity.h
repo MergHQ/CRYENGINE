@@ -15,7 +15,7 @@ struct ShadowMapInfo
 	int                 cachedLodCount = 0;
 };
 
-class CLightEntity : public ILightSource, public Cry3DEngineBase
+class CLightEntity final : public ILightSource, public Cry3DEngineBase
 {
 public:
 	CLightEntity();
@@ -26,7 +26,7 @@ public:
 	virtual const char*                  GetName(void) const;
 	virtual void                         GetLocalBounds(AABB& bbox);
 	virtual Vec3                         GetPos(bool) const;
-	virtual void                         Render(const SRendParams&, const SRenderingPassInfo& passInfo);
+	virtual void                         Render(const SRendParams&, const SRenderingPassInfo& passInfo) final;
 	virtual void                         Hide(bool bHide);
 	virtual IPhysicalEntity*             GetPhysics(void) const                  { return 0; }
 	virtual void                         SetPhysics(IPhysicalEntity*)            {}

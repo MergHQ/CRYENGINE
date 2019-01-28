@@ -5,7 +5,7 @@
 
 #pragma once
 
-class CCloudBlockerRenderNode : public ICloudBlockerRenderNode, public Cry3DEngineBase
+class CCloudBlockerRenderNode final : public ICloudBlockerRenderNode, public Cry3DEngineBase
 {
 public:
 	CCloudBlockerRenderNode();

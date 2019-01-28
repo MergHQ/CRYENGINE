@@ -21,7 +21,7 @@ public:
 	}
 
 	// Derived type with intrusive links after T, to preserve alignment
-	struct Node : T
+	struct Node final : T
 	{
 		Node* pNext;
 		Node* pPrev;

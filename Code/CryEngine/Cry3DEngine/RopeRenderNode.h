@@ -6,7 +6,7 @@
 #include <CryPhysics/IDeferredCollisionEvent.h>
 #include <Cry3DEngine/IIndexedMesh.h>
 
-class CRopeRenderNode : public IRopeRenderNode, public Cry3DEngineBase
+class CRopeRenderNode final : public IRopeRenderNode, public Cry3DEngineBase
 {
 public:
 	static void StaticReset();
