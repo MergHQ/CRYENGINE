@@ -75,7 +75,7 @@ inline void Fill3DAttributeVelocity(Vec3 const& velocity, S3DAttributes& attribu
 	attributes.vel.z = static_cast<CriFloat32>(velocity.y);
 }
 
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 using GameVariableValues = std::map<CryFixedStringT<MaxControlNameLength>, float>;
 extern GameVariableValues g_gameVariableValues;
 
@@ -95,7 +95,7 @@ constexpr EDebugListFilter g_debugListMask =
 	EDebugListFilter::CueInstances |
 	EDebugListFilter::GameVariables |
 	EDebugListFilter::Categories;
-#endif // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 }      // namespace Adx2
 }      // namespace Impl
 }      // namespace CryAudio

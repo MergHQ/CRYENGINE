@@ -30,7 +30,7 @@ public:
 	CEvent& operator=(CEvent const&) = delete;
 	CEvent& operator=(CEvent&&) = delete;
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	// For pure events.
 	explicit CEvent(
 		uint32 const id,
@@ -86,7 +86,7 @@ public:
 		, m_key(szKey)
 		, m_pEventDescription(nullptr)
 	{}
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
 	virtual ~CEvent() override;
 
@@ -103,9 +103,9 @@ public:
 	FMOD_GUID                                    GetGuid() const { return m_guid; }
 	CryFixedStringT<MaxControlNameLength> const& GetKey() const  { return m_key; }
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	char const* GetName() const { return m_name.c_str(); }
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
 private:
 
@@ -116,9 +116,9 @@ private:
 	CryFixedStringT<MaxControlNameLength> const m_key;
 	FMOD::Studio::EventDescription*             m_pEventDescription;
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	CryFixedStringT<MaxControlNameLength> const m_name;
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 };
 } // namespace Fmod
 } // namespace Impl

@@ -6,11 +6,11 @@
 #include <CrySystem/File/ICryPak.h>
 #include <AK/Tools/Common/AkPlatformFuncs.h>
 
-#define MAX_NUMBER_STRING_SIZE   (10)       // 4G
-#define ID_TO_STRING_FORMAT_BANK AKTEXT("%u.bnk")
-#define ID_TO_STRING_FORMAT_WEM  AKTEXT("%u.wem")
-#define MAX_EXTENSION_SIZE       (4)                                               // .xxx
-#define MAX_FILETITLE_SIZE       (MAX_NUMBER_STRING_SIZE + MAX_EXTENSION_SIZE + 1) // null-terminated
+#define CRY_AUDIO_IMPL_WWISE_MAX_NUMBER_STRING_SIZE   (10)       // 4G
+#define CRY_AUDIO_IMPL_WWISE_ID_TO_STRING_FORMAT_BANK AKTEXT("%u.bnk")
+#define CRY_AUDIO_IMPL_WWISE_ID_TO_STRING_FORMAT_WEM  AKTEXT("%u.wem")
+#define CRY_AUDIO_IMPL_WWISE_MAX_EXTENSION_SIZE       (4)                                                                                         // .xxx
+#define CRY_AUDIO_IMPL_WWISE_MAX_FILETITLE_SIZE       (CRY_AUDIO_IMPL_WWISE_MAX_NUMBER_STRING_SIZE + CRY_AUDIO_IMPL_WWISE_MAX_EXTENSION_SIZE + 1) // null-terminated
 
 namespace CryAudio
 {
@@ -183,11 +183,11 @@ AKRESULT CFileIOHandler::Open(AkFileID nFileID, AkOpenMode eOpenMode, AkFileSyst
 			}
 		}
 
-		AkOSChar fileName[MAX_FILETITLE_SIZE] = { '\0' };
+		AkOSChar fileName[CRY_AUDIO_IMPL_WWISE_MAX_FILETITLE_SIZE] = { '\0' };
 
-		AkOSChar const* const pFilenameFormat = pFlags->uCodecID == AKCODECID_BANK ? ID_TO_STRING_FORMAT_BANK : ID_TO_STRING_FORMAT_WEM;
+		AkOSChar const* const pFilenameFormat = pFlags->uCodecID == AKCODECID_BANK ? CRY_AUDIO_IMPL_WWISE_ID_TO_STRING_FORMAT_BANK : CRY_AUDIO_IMPL_WWISE_ID_TO_STRING_FORMAT_WEM;
 
-		AK_OSPRINTF(fileName, MAX_FILETITLE_SIZE, pFilenameFormat, static_cast<int unsigned>(nFileID));
+		AK_OSPRINTF(fileName, CRY_AUDIO_IMPL_WWISE_MAX_FILETITLE_SIZE, pFilenameFormat, static_cast<int unsigned>(nFileID));
 
 		AKPLATFORM::SafeStrCat(finalFilePath, fileName, AK_MAX_PATH);
 

@@ -9,13 +9,13 @@
 #include <IImpl.h>
 #include <CryString/HashedString.h>
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	#include "Managers.h"
 	#include "ListenerManager.h"
 	#include "Debug.h"
 	#include "Common/DebugStyle.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -55,9 +55,9 @@ CStandaloneFile* CFileManager::ConstructStandaloneFile(char const* const szFile,
 	pStandaloneFile->m_pImplData = g_pIImpl->ConstructStandaloneFileConnection(*pStandaloneFile, szFile, isLocalized, pITriggerConnection);
 	pStandaloneFile->m_hashedFilename = CHashedString(szFile);
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	pStandaloneFile->m_isLocalized = isLocalized;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	m_constructedStandaloneFiles.push_back(pStandaloneFile);
 	return pStandaloneFile;
@@ -74,7 +74,7 @@ void CFileManager::ReleaseStandaloneFile(CStandaloneFile* const pStandaloneFile)
 	}
 }
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 void CFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float posY) const
 {
@@ -144,5 +144,5 @@ void CFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float posY
 		}
 	}
 }
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }      // namespace CryAudio

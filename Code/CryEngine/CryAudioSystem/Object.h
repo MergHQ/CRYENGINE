@@ -7,9 +7,9 @@
 #include <CryAudio/IObject.h>
 #include <CrySystem/TimeValue.h>
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 struct IRenderAuxGeom;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -32,11 +32,11 @@ enum class EObjectFlags : EnumFlagsType
 	InUse                 = BIT(0),
 	Active                = BIT(1),
 	Virtual               = BIT(2),
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	CanRunOcclusion       = BIT(3),
 	TrackAbsoluteVelocity = BIT(4),
 	TrackRelativeVelocity = BIT(5),
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EObjectFlags);
 
@@ -78,9 +78,9 @@ struct STriggerInstanceState final : public SUserDataBase
 	size_t         numLoadingInstances = 0;
 	float          expirationTimeMS = 0.0f;
 	float          remainingTimeMS = 0.0f;
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	float          radius = 0.0f;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 };
 
 // CObject-related typedefs
@@ -91,7 +91,7 @@ class CObject final : public IObject, public CPoolObject<CObject, stl::PSyncNone
 {
 public:
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	explicit CObject(CTransformation const& transformation, char const* const szName)
 		: m_pImplData(nullptr)
 		, m_transformation(transformation)
@@ -115,7 +115,7 @@ public:
 		, m_entityId(INVALID_ENTITYID)
 		, m_numPendingSyncCallbacks(0)
 	{}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	CObject() = delete;
 	CObject(CObject const&) = delete;
@@ -211,7 +211,7 @@ private:
 	CPropagationProcessor m_propagationProcessor;
 #endif // CRY_AUDIO_USE_OCCLUSION
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 public:
 
 	void           DrawDebugInfo(IRenderAuxGeom& auxGeom);
@@ -259,6 +259,6 @@ private:
 	Environments                         m_environments;
 	float                                m_maxRadius;
 	CryFixedStringT<MaxObjectNameLength> m_name;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 };
 } // namespace CryAudio

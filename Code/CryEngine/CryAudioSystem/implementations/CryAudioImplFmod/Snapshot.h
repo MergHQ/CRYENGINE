@@ -29,7 +29,7 @@ public:
 	CSnapshot& operator=(CSnapshot const&) = delete;
 	CSnapshot& operator=(CSnapshot&&) = delete;
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	explicit CSnapshot(
 		uint32 const id,
 		EActionType const actionType,
@@ -50,7 +50,7 @@ public:
 		, m_actionType(actionType)
 		, m_pEventDescription(pEventDescription)
 	{}
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
 	virtual ~CSnapshot() override = default;
 
@@ -69,9 +69,9 @@ private:
 	EActionType const                     m_actionType;
 	FMOD::Studio::EventDescription* const m_pEventDescription;
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	CryFixedStringT<MaxControlNameLength> const m_name;
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 };
 } // namespace Fmod
 } // namespace Impl

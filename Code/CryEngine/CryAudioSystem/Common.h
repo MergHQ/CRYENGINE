@@ -44,10 +44,10 @@ enum class ESystemStates : EnumFlagsType
 	None             = 0,
 	ImplShuttingDown = BIT(0),
 	IsMuted          = BIT(1),
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	IsPaused         = BIT(2),
 	PoolsAllocated   = BIT(3),
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ESystemStates);
 
@@ -118,7 +118,7 @@ static void IncrementTriggerInstanceIdCounter()
 	}
 }
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 extern Objects g_constructedObjects;
 
 constexpr char const* g_szPreviewTriggerName = "preview_trigger";
@@ -128,5 +128,5 @@ class CPreviewTrigger;
 extern CPreviewTrigger g_previewTrigger;
 extern CObject g_previewObject;
 extern SPoolSizes g_debugPoolSizes;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }      // namespace CryAudio

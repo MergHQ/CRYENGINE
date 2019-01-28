@@ -51,7 +51,7 @@ enum class ESystemRequestType : EnumFlagsType
 	ExecuteDefaultTrigger,
 	StopTrigger,
 	StopAllTriggers,
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	ReloadControlsData,
 	RetriggerControls,
 	DrawDebugInfo,
@@ -59,7 +59,7 @@ enum class ESystemRequestType : EnumFlagsType
 	ExecutePreviewTriggerEx,
 	StopPreviewTrigger,
 	ResetRequestCount,
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -778,7 +778,7 @@ struct SSystemRequestData<ESystemRequestType::StopTrigger> final : public SSyste
 	ControlId const triggerId;
 };
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 template<>
 struct SSystemRequestData<ESystemRequestType::ReloadControlsData> final : public SSystemRequestDataBase
@@ -838,5 +838,5 @@ struct SSystemRequestData<ESystemRequestType::ExecutePreviewTriggerEx> final : p
 
 	Impl::ITriggerInfo const& triggerInfo;
 };
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }      // namespace CryAudio

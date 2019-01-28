@@ -33,9 +33,9 @@ enum class EObjectRequestType : EnumFlagsType
 	ProcessPhysicsRay,
 	ToggleAbsoluteVelocityTracking,
 	ToggleRelativeVelocityTracking,
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	SetName,
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -393,7 +393,7 @@ struct SObjectRequestData<EObjectRequestType::ToggleRelativeVelocityTracking> fi
 	bool const isEnabled;
 };
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 template<>
 struct SObjectRequestData<EObjectRequestType::SetName> final : public SObjectRequestDataBase
@@ -412,5 +412,5 @@ struct SObjectRequestData<EObjectRequestType::SetName> final : public SObjectReq
 
 	CryFixedStringT<MaxObjectNameLength> const name;
 };
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }      // namespace CryAudio

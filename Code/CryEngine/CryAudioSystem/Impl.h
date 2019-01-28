@@ -66,7 +66,7 @@ public:
 	virtual void                       GamepadDisconnected(DeviceId const deviceUniqueID) override;
 	virtual void                       SetLanguage(char const* const szLanguage) override;
 
-	// Below data is only used when INCLUDE_AUDIO_PRODUCTION_CODE is defined!
+	// Below data is only used when CRY_AUDIO_USE_PRODUCTION_CODE is defined!
 	virtual void GetFileData(char const* const szName, SFileData& fileData) const override;
 	virtual void DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo) override;
 	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const override;

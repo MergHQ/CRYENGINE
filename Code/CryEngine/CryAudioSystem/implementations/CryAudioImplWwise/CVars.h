@@ -39,13 +39,13 @@ public:
 	int   m_channelConfig = 0;
 	int   m_panningRule = 0;
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	int m_enableCommSystem = 0;
 	int m_enableOutputCapture = 0;
 	int m_monitorMemoryPoolSize = 0;
 	int m_monitorQueueMemoryPoolSize = 0;
 	int m_debugListFilter = 0;
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 };
 
 extern CCVars g_cvars;

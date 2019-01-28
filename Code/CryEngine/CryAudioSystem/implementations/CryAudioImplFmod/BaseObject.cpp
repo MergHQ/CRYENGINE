@@ -12,9 +12,9 @@
 
 #include <CryAudio/IAudioSystem.h>
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	#include <Logger.h>
-#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -109,7 +109,7 @@ void CBaseObject::Update(float const deltaTime)
 		}
 		else
 		{
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 			// Always update in production code for debug draw.
 			pEventInstance->UpdateVirtualState();
 
@@ -127,7 +127,7 @@ void CBaseObject::Update(float const deltaTime)
 					m_flags &= ~EObjectFlags::IsVirtual;
 				}
 			}
-#endif      // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 			++iter;
 		}
 	}
@@ -161,9 +161,9 @@ void CBaseObject::StopAllTriggers()
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CBaseObject::SetName(char const* const szName)
 {
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	m_name = szName;
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 	return ERequestStatus::Success;
 }
 
@@ -193,7 +193,7 @@ void CBaseObject::SetParameter(uint32 const id, float const value)
 
 		FMOD::Studio::EventDescription* pEventDescription = nullptr;
 		fmodResult = pFmodEventInstance->getDescription(&pEventDescription);
-		ASSERT_FMOD_OK;
+		CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 		if (g_eventToParameterIndexes.find(pEvent) != g_eventToParameterIndexes.end())
 		{
@@ -202,25 +202,25 @@ void CBaseObject::SetParameter(uint32 const id, float const value)
 			if (parameters.find(id) != parameters.end())
 			{
 				fmodResult = pFmodEventInstance->setParameterValueByIndex(parameters[id], value);
-				ASSERT_FMOD_OK;
+				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 			}
 			else
 			{
 				int parameterCount = 0;
 				fmodResult = pFmodEventInstance->getParameterCount(&parameterCount);
-				ASSERT_FMOD_OK;
+				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 				for (int index = 0; index < parameterCount; ++index)
 				{
 					FMOD_STUDIO_PARAMETER_DESCRIPTION parameterDescription;
 					fmodResult = pEventDescription->getParameterByIndex(index, &parameterDescription);
-					ASSERT_FMOD_OK;
+					CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 					if (id == StringToId(parameterDescription.name))
 					{
 						parameters.emplace(id, index);
 						fmodResult = pFmodEventInstance->setParameterValueByIndex(index, value);
-						ASSERT_FMOD_OK;
+						CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 						break;
 					}
 				}
@@ -230,19 +230,19 @@ void CBaseObject::SetParameter(uint32 const id, float const value)
 		{
 			int parameterCount = 0;
 			fmodResult = pFmodEventInstance->getParameterCount(&parameterCount);
-			ASSERT_FMOD_OK;
+			CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 			for (int index = 0; index < parameterCount; ++index)
 			{
 				FMOD_STUDIO_PARAMETER_DESCRIPTION parameterDescription;
 				fmodResult = pEventDescription->getParameterByIndex(index, &parameterDescription);
-				ASSERT_FMOD_OK;
+				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 				if (id == StringToId(parameterDescription.name))
 				{
 					g_eventToParameterIndexes[pEvent].emplace(std::make_pair(id, index));
 					fmodResult = pFmodEventInstance->setParameterValueByIndex(index, value);
-					ASSERT_FMOD_OK;
+					CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 					break;
 				}
 			}
@@ -298,9 +298,9 @@ void CBaseObject::RemoveFile(CBaseStandaloneFile const* const pFile)
 	{
 		if (!stl::find_and_erase(m_pendingFiles, pFile))
 		{
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 			Cry::Audio::Log(ELogType::Error, "Tried to remove an audio file from an object that is not playing that file");
-#endif      // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 		}
 	}
 }
@@ -323,7 +323,7 @@ bool CBaseObject::SetEventInstance(CEventInstance* const pEventInstance)
 
 		FMOD::Studio::EventDescription* pEventDescription = nullptr;
 		FMOD_RESULT fmodResult = pFModEventInstance->getDescription(&pEventDescription);
-		ASSERT_FMOD_OK;
+		CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 		if (g_eventToParameterIndexes.find(pEvent) != g_eventToParameterIndexes.end())
 		{
@@ -336,25 +336,25 @@ bool CBaseObject::SetEventInstance(CEventInstance* const pEventInstance)
 				if (parameters.find(parameterId) != parameters.end())
 				{
 					fmodResult = pFModEventInstance->setParameterValueByIndex(parameters[parameterId], parameterPair.second);
-					ASSERT_FMOD_OK;
+					CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 				}
 				else
 				{
 					int parameterCount = 0;
 					fmodResult = pFModEventInstance->getParameterCount(&parameterCount);
-					ASSERT_FMOD_OK;
+					CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 					for (int index = 0; index < parameterCount; ++index)
 					{
 						FMOD_STUDIO_PARAMETER_DESCRIPTION parameterDescription;
 						fmodResult = pEventDescription->getParameterByIndex(index, &parameterDescription);
-						ASSERT_FMOD_OK;
+						CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 						if (parameterId == StringToId(parameterDescription.name))
 						{
 							parameters.emplace(parameterId, index);
 							fmodResult = pFModEventInstance->setParameterValueByIndex(index, parameterPair.second);
-							ASSERT_FMOD_OK;
+							CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 							break;
 						}
 					}
@@ -372,7 +372,7 @@ bool CBaseObject::SetEventInstance(CEventInstance* const pEventInstance)
 		pEventInstance->SetAbsoluteVelocity(m_absoluteVelocity);
 
 		fmodResult = pEventInstance->GetFmodEventInstance()->start();
-		ASSERT_FMOD_OK;
+		CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 		bSuccess = true;
 	}

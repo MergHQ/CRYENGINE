@@ -112,7 +112,7 @@ void CBaseObject::Update(float const deltaTime)
 		}
 		else
 		{
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 			// Always update in production code for debug draw.
 			if ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) == 0)
 			{
@@ -126,7 +126,7 @@ void CBaseObject::Update(float const deltaTime)
 					m_flags &= ~EObjectFlags::IsVirtual;
 				}
 			}
-#endif      // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 			++iter;
 		}
@@ -164,9 +164,9 @@ void CBaseObject::StopAllTriggers()
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CBaseObject::SetName(char const* const szName)
 {
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	m_name = szName;
-#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 	return ERequestStatus::Success;
 }

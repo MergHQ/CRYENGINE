@@ -7,10 +7,10 @@
 #include "PropagationProcessor.h"
 #include <CrySystem/IConsole.h>
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	#include "Common/Logger.h"
 	#include <CryGame/IGameFramework.h>
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -20,7 +20,7 @@ void OnOcclusionRayTypesChanged(ICVar* const pCvar)
 	CPropagationProcessor::UpdateOcclusionRayFlags();
 }
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 void CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
 {
@@ -201,7 +201,7 @@ void CmdRefresh(IConsoleCmdArgs* pCmdArgs)
 	SRequestUserData const data(CryAudio::ERequestFlags::ExecuteBlocking);
 	g_system.Refresh(gEnv->pGameFramework->GetLevelName(), data);
 }
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
 void CCVars::RegisterVariables()
@@ -349,7 +349,7 @@ void CCVars::RegisterVariables()
 	                "If you change this CVar to be empty, the control will not be created automatically.\n"
 	                "Default: \"do_nothing\" \n");
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	REGISTER_CVAR2("s_DebugDistance", &m_debugDistance, m_debugDistance, VF_CHEAT | VF_CHEAT_NOCHECK,
 	               "Limits drawing of audio object debug info to the specified distance around the active listeners. Setting this cvar to 0 disables the limiting.\n"
 	               "Usage: s_DebugDistance [0/...]\n"
@@ -485,7 +485,7 @@ void CCVars::RegisterVariables()
 	REGISTER_COMMAND("s_Refresh", CmdRefresh, VF_CHEAT,
 	                 "Refreshes the audio system.\n"
 	                 "Usage: s_Refresh\n");
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -511,7 +511,7 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_SetFullOcclusionOnMaxHits");
 		pConsole->UnregisterVariable("s_DefaultStandaloneFilesAudioTrigger");
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 		pConsole->UnregisterVariable("s_DebugDistance");
 		pConsole->UnregisterVariable("s_LoggingOptions");
 		pConsole->UnregisterVariable("s_DrawAudioDebug");
@@ -529,7 +529,7 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_UnloadSetting");
 		pConsole->UnregisterVariable("s_ResetRequestCount");
 		pConsole->UnregisterVariable("s_Refresh");
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 	}
 }
 }      // namespace CryAudio

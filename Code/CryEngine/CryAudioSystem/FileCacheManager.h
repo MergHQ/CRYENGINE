@@ -6,9 +6,9 @@
 #include <CrySystem/IStreamEngine.h>
 #include <CryMemory/IMemory.h>
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 struct IRenderAuxGeom;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -51,9 +51,9 @@ public:
 	ERequestStatus TryUnloadRequest(PreloadRequestId const preloadRequestId);
 	ERequestStatus UnloadDataByScope(EDataScope const dataScope);
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 private:
 

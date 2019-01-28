@@ -17,10 +17,10 @@ Objects g_constructedObjects;
 EventToParameterIndexes g_eventToParameterIndexes;
 SnapshotEventInstances g_activeSnapshots;
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 ActiveSnapshots g_activeSnapshotNames;
 VcaValues g_vcaValues;
-#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 }      // namespace Fmod
 }      // namespace Impl
 }      // namespace CryAudio

@@ -7,10 +7,10 @@
 #include "Common/IObject.h"
 #include "Common/ISwitchStateConnection.h"
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	#include "Object.h"
 	#include "Common/Logger.h"
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -37,7 +37,7 @@ void CSwitchState::Set(CObject const& object) const
 			pConnection->Set(pIObject);
 		}
 	}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Error, "Invalid impl object during %s", __FUNCTION__);
@@ -50,7 +50,7 @@ void CSwitchState::Set(CObject const& object) const
 	}
 
 	const_cast<CObject&>(object).StoreSwitchValue(m_switchId, m_switchStateId);
-#endif   // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif   // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -61,12 +61,12 @@ void CSwitchState::SetGlobally() const
 		pConnection->SetGlobally();
 	}
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	// Log the "no-connections" case only on user generated controls.
 	if (m_connections.empty())
 	{
 		Cry::Audio::Log(ELogType::Warning, R"(SwitchState "%s" set globally without connections)", GetName());
 	}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 } // namespace CryAudio

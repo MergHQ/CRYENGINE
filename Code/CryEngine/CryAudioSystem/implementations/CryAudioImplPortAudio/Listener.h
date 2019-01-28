@@ -33,17 +33,17 @@ public:
 	virtual CTransformation const& GetTransformation() const override                                { return m_transformation; }
 	// ~CryAudio::Impl::IListener
 
-#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE)
 	char const* GetName() const { return m_name.c_str(); }
-#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE
 
 private:
 
 	CTransformation m_transformation;
 
-#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE)
 	CryFixedStringT<MaxObjectNameLength> m_name;
-#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE
 };
 } // namespace PortAudio
 } // namespace Impl

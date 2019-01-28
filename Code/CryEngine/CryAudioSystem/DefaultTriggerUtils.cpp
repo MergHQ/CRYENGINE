@@ -7,9 +7,9 @@
 #include "Common/IObject.h"
 #include "Common/ITriggerConnection.h"
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	#include "Common/Logger.h"
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -29,9 +29,9 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 
 			if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual) || (activateResult == ERequestStatus::Pending))
 			{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				CRY_ASSERT_MESSAGE(pControl->GetDataScope() == EDataScope::Global, "Default controls must always have global data scope! (%s) during %s", pControl->GetName(), __FUNCTION__);
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 
 				if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual))
 				{
@@ -42,20 +42,20 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 					++(triggerInstanceState.numLoadingInstances);
 				}
 			}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			else if (activateResult != ERequestStatus::SuccessDoNotTrack)
 			{
 				Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", pControl->GetName(), g_object.GetName(), __FUNCTION__);
 			}
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 		}
 	}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Error, "Invalid impl object during %s", __FUNCTION__);
 	}
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	if (triggerInstanceState.numPlayingInstances > 0 || triggerInstanceState.numLoadingInstances > 0)
 	{

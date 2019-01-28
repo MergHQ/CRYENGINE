@@ -26,14 +26,14 @@
 #include <CrySystem/File/ICryPak.h>
 #include <CrySystem/IProjectManager.h>
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	#include <Logger.h>
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	#include <DebugStyle.h>
 	#include <CryRenderer/IRenderAuxGeom.h>
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 #include <AK/SoundEngine/Common/AkSoundEngine.h>     // Sound engine
 #include <AK/MusicEngine/Common/AkMusicEngine.h>     // Music Engine
@@ -49,14 +49,14 @@
 #if defined(WWISE_USE_OCULUS)
 	#include <OculusSpatializer.h>
 	#include <CryCore/Platform/CryLibrary.h>
-	#define OCULUS_SPATIALIZER_DLL "OculusSpatializerWwise.dll"
+	#define CRY_AUDIO_IMPL_WWISE_OCULUS_SPATIALIZER_DLL "OculusSpatializerWwise.dll"
 #endif // WWISE_USE_OCULUS
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	#include <AK/Comm/AkCommunication.h> // Communication between Wwise and the game (excluded in release build)
 	#include <AK/Tools/Common/AkMonitorError.h>
 	#include <AK/Tools/Common/AkPlatformFuncs.h>
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 /////////////////////////////////////////////////////////////////////////////////
 //                              MEMORY HOOKS SETUP
@@ -95,7 +95,7 @@ void* APUAllocHook(size_t in_size, unsigned int in_alignment)
 {
 	void* pAlloc = nullptr;
 
-	#if defined(PROVIDE_WWISE_IMPL_SECONDARY_POOL)
+	#if defined(CRY_AUDIO_IMPL_WWISE_PROVIDE_SECONDARY_POOL)
 	size_t const nSecondSize = CryAudio::Impl::Wwise::g_audioImplMemoryPoolSecondary.MemSize();
 
 	if (nSecondSize > 0)
@@ -116,7 +116,7 @@ void* APUAllocHook(size_t in_size, unsigned int in_alignment)
 
 void APUFreeHook(void* in_pMemAddress)
 {
-	#if defined(PROVIDE_WWISE_IMPL_SECONDARY_POOL)
+	#if defined(CRY_AUDIO_IMPL_WWISE_PROVIDE_SECONDARY_POOL)
 	size_t const nAllocHandle = CryAudio::Impl::Wwise::g_audioImplMemoryPoolSecondary.AddressToHandle(in_pMemAddress);
 	CryAudio::Impl::Wwise::g_audioImplMemoryPoolSecondary.Free(nAllocHandle);
 	#else
@@ -126,7 +126,7 @@ void APUFreeHook(void* in_pMemAddress)
 #endif  // CRY_PLATFORM_DURANGO
 }
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 static void ErrorMonitorCallback(
 	AK::Monitor::ErrorCode in_eErrorCode,   ///< Error code number value
 	const AkOSChar* in_pszError,            ///< Message or error string to be displayed
@@ -147,7 +147,7 @@ static void ErrorMonitorCallback(
 		((in_eErrorLevel& AK::Monitor::ErrorLevel_Error) != 0) ? CryAudio::ELogType::Error : CryAudio::ELogType::Comment,
 		"<Wwise> %s | ErrorCode: %d | PlayingID: %u (%s) | GameObjID: %" PRISIZE_T " (%s)", szTemp, in_eErrorCode, in_playingID, szEventName, in_gameObjID, szObjectName);
 }
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -161,12 +161,12 @@ std::map<AkUniqueID, float> g_maxAttenuations;
 SPoolSizes g_poolSizes;
 SPoolSizes g_poolSizesLevelSpecific;
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 SPoolSizes g_debugPoolSizes;
 EventInstances g_constructedEventInstances;
 uint16 g_objectPoolSize = 0;
 uint16 g_eventPoolSize = 0;
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
 void CountPoolSizes(XmlNodeRef const pNode, SPoolSizes& poolSizes)
@@ -374,9 +374,9 @@ CImpl::CImpl()
 	: m_gameObjectId(2) // Start with id 2, because id 1 would get ignored when setting a parameter on all constructed objects.
 	, m_initBankId(AK_INVALID_BANK_ID)
 	, m_toBeReleased(false)
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	, m_bCommSystemInitialized(false)
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 #if defined(WWISE_USE_OCULUS)
 	, m_pOculusSpatializerLibrary(nullptr)
 #endif // WWISE_USE_OCULUS
@@ -387,12 +387,12 @@ CImpl::CImpl()
 	m_regularSoundBankFolder += "/";
 	m_regularSoundBankFolder += s_szAssetsFolderName;
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	m_name.Format(
 		"%s (Build: %d)",
-		WWISE_IMPL_INFO_STRING,
+		CRY_AUDIO_IMPL_WWISE_INFO_STRING,
 		AK_WWISESDK_VERSION_BUILD);
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -400,7 +400,7 @@ void CImpl::Update()
 {
 	if (AK::SoundEngine::IsInitialized())
 	{
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 		AKRESULT wwiseResult = AK_Fail;
 		static int enableOutputCapture = 0;
 
@@ -418,7 +418,7 @@ void CImpl::Update()
 			AKASSERT((wwiseResult == AK_Success) || !"StopOutputCapture failed!");
 			enableOutputCapture = g_cvars.m_enableOutputCapture;
 		}
-#endif    // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 		AK::SoundEngine::RenderAudio();
 	}
@@ -434,16 +434,16 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 	{
 		g_cvars.m_eventPoolSize = 1;
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 		Cry::Audio::Log(ELogType::Warning, R"(Event pool size must be at least 1. Forcing the cvar "s_WwiseEventPoolSize" to 1!)");
-#endif    // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 	}
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	g_constructedEventInstances.reserve(static_cast<size_t>(g_cvars.m_eventPoolSize));
 	g_objectPoolSize = objectPoolSize;
 	g_eventPoolSize = static_cast<uint16>(g_cvars.m_eventPoolSize);
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 	AllocateMemoryPools(objectPoolSize, static_cast<uint16>(g_cvars.m_eventPoolSize));
 
@@ -515,9 +515,9 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 
 	if (wwiseResult != AK_Success)
 	{
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 		Cry::Audio::Log(ELogType::Error, "m_fileIOHandler.Init() returned AKRESULT %d", wwiseResult);
-#endif    // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 		ShutDown();
 
@@ -537,10 +537,10 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 	AK::SoundEngine::GetDefaultInitSettings(initSettings);
 	initSettings.uDefaultPoolSize = g_cvars.m_soundEngineDefaultMemoryPoolSize << 10;
 	initSettings.uCommandQueueSize = g_cvars.m_commandQueueMemoryPoolSize << 10;
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	initSettings.uMonitorPoolSize = g_cvars.m_monitorMemoryPoolSize << 10;
 	initSettings.uMonitorQueuePoolSize = g_cvars.m_monitorQueueMemoryPoolSize << 10;
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 	initSettings.uPrepareEventMemoryPoolID = prepareMemPoolId;
 	initSettings.bEnableGameSyncPreparation = false;//TODO: ???
 	g_cvars.m_panningRule = crymath::clamp(g_cvars.m_panningRule, 0, 1);
@@ -628,7 +628,7 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 		return ERequestStatus::Failure;
 	}
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	if (g_cvars.m_enableCommSystem == 1)
 	{
 		m_bCommSystemInitialized = true;
@@ -650,10 +650,10 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 			m_bCommSystemInitialized = false;
 		}
 	}
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 #if defined(WWISE_USE_OCULUS)
-	m_pOculusSpatializerLibrary = CryLoadLibrary(OCULUS_SPATIALIZER_DLL);
+	m_pOculusSpatializerLibrary = CryLoadLibrary(CRY_AUDIO_IMPL_WWISE_OCULUS_SPATIALIZER_DLL);
 
 	if (m_pOculusSpatializerLibrary != nullptr)
 	{
@@ -676,38 +676,38 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 			{
 				AK::SoundEngine::RegisterPlugin(AkPluginTypeMixer, AKEFFECTID_OCULUS, AKEFFECTID_OCULUS_SPATIALIZER, CreateOculusFX, CreateOculusFXParams);
 			}
-	#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 			else
 			{
-				Cry::Audio::Log(ELogType::Error, "Failed call to AkGetSoundEngineCallbacks in " OCULUS_SPATIALIZER_DLL);
+				Cry::Audio::Log(ELogType::Error, "Failed call to AkGetSoundEngineCallbacks in " CRY_AUDIO_IMPL_WWISE_OCULUS_SPATIALIZER_DLL);
 			}
-	#endif    // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+	#endif    // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 			// Register plugin attachment (for data attachment on individual sounds, like frequency hints etc.)
 			if (AkGetSoundEngineCallbacks(AKEFFECTID_OCULUS, AKEFFECTID_OCULUS_SPATIALIZER_ATTACHMENT, CreateOculusFX, CreateOculusFXParams))
 			{
 				AK::SoundEngine::RegisterPlugin(AkPluginTypeEffect, AKEFFECTID_OCULUS, AKEFFECTID_OCULUS_SPATIALIZER_ATTACHMENT, nullptr, CreateOculusFXParams);
 			}
-	#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 			else
 			{
-				Cry::Audio::Log(ELogType::Error, "Failed call to AkGetSoundEngineCallbacks in " OCULUS_SPATIALIZER_DLL);
+				Cry::Audio::Log(ELogType::Error, "Failed call to AkGetSoundEngineCallbacks in " CRY_AUDIO_IMPL_WWISE_OCULUS_SPATIALIZER_DLL);
 			}
-	#endif    // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+	#endif    // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 		}
-	#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 		else
 		{
-			Cry::Audio::Log(ELogType::Error, "Failed to load functions AkGetSoundEngineCallbacks in " OCULUS_SPATIALIZER_DLL);
+			Cry::Audio::Log(ELogType::Error, "Failed to load functions AkGetSoundEngineCallbacks in " CRY_AUDIO_IMPL_WWISE_OCULUS_SPATIALIZER_DLL);
 		}
-	#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+	#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 	}
-	#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	else
 	{
-		Cry::Audio::Log(ELogType::Error, "Failed to load " OCULUS_SPATIALIZER_DLL);
+		Cry::Audio::Log(ELogType::Error, "Failed to load " CRY_AUDIO_IMPL_WWISE_OCULUS_SPATIALIZER_DLL);
 	}
-	#endif // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+	#endif // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 #endif   // WWISE_USE_OCULUS
 
 	REINST("Register Global Callback")
@@ -725,9 +725,9 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 		m_initBankId = AK_INVALID_BANK_ID;
 	}
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	GetInitBankSize();
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 	LoadEventsMaxAttenuations(m_regularSoundBankFolder);
 
@@ -737,7 +737,7 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::ShutDown()
 {
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	if (m_bCommSystemInitialized)
 	{
 		AK::Comm::Term();
@@ -745,7 +745,7 @@ void CImpl::ShutDown()
 		AK::Monitor::SetLocalOutput(0, nullptr);
 		m_bCommSystemInitialized = false;
 	}
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 	AK::MusicEngine::Term();
 
@@ -849,9 +849,9 @@ void CImpl::OnBeforeLibraryDataChanged()
 	ZeroStruct(g_poolSizes);
 	ZeroStruct(g_poolSizesLevelSpecific);
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	ZeroStruct(g_debugPoolSizes);
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -866,10 +866,10 @@ void CImpl::OnAfterLibraryDataChanged()
 	g_poolSizes.auxBuses += g_poolSizesLevelSpecific.auxBuses;
 	g_poolSizes.soundBanks += g_poolSizesLevelSpecific.soundBanks;
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	// Used to hide pools without allocations in debug draw.
 	g_debugPoolSizes = g_poolSizes;
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 	g_poolSizes.events = std::max<uint16>(1, g_poolSizes.events);
 	g_poolSizes.parameters = std::max<uint16>(1, g_poolSizes.parameters);
@@ -941,7 +941,7 @@ void CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 				static_cast<AkUInt32>(pFileInfo->size),
 				bankId);
 
-			if (IS_WWISE_OK(wwiseResult))
+			if (CRY_AUDIO_IMPL_WWISE_IS_OK(wwiseResult))
 			{
 				pFileData->bankId = bankId;
 			}
@@ -950,12 +950,12 @@ void CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 				pFileData->bankId = AK_INVALID_BANK_ID;
 			}
 		}
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 		else
 		{
 			Cry::Audio::Log(ELogType::Error, "Invalid AudioFileEntryData passed to the Wwise implementation of %s", __FUNCTION__);
 		}
-#endif    // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 	}
 }
 
@@ -980,12 +980,12 @@ void CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 				WaitForAuxAudioThread();
 			}
 		}
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 		else
 		{
 			Cry::Audio::Log(ELogType::Error, "Invalid AudioFileEntryData passed to the Wwise implementation of %s", __FUNCTION__);
 		}
-#endif    // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 	}
 }
 
@@ -1042,11 +1042,11 @@ char const* const CImpl::GetFileLocation(SFileInfo* const pFileInfo)
 //////////////////////////////////////////////////////////////////////////
 void CImpl::GetInfo(SImplInfo& implInfo) const
 {
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	implInfo.name = m_name.c_str();
 #else
 	implInfo.name = "name-not-present-in-release-mode";
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 	implInfo.folderName = g_szImplFolderName;
 }
 
@@ -1055,7 +1055,7 @@ IObject* CImpl::ConstructGlobalObject()
 {
 	g_globalObjectId = m_gameObjectId++;
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	char const* const szName = "GlobalObject";
 	AK::SoundEngine::RegisterGameObj(g_globalObjectId, szName);
 
@@ -1071,7 +1071,7 @@ IObject* CImpl::ConstructGlobalObject()
 
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CGlobalObject");
 	g_pObject = new CGlobalObject(g_globalObjectId);
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 	return static_cast<IObject*>(g_pObject);
 }
@@ -1079,21 +1079,21 @@ IObject* CImpl::ConstructGlobalObject()
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructObject(CTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	AK::SoundEngine::RegisterGameObj(m_gameObjectId, szName);
 #else
 	AK::SoundEngine::RegisterGameObj(m_gameObjectId);
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CObject");
 	auto const pObject = new CObject(m_gameObjectId++, transformation, szName);
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	{
 		CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
 		g_gameObjectIds[pObject->GetId()] = pObject;
 	}
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 	return static_cast<IObject*>(pObject);
 }
@@ -1105,12 +1105,12 @@ void CImpl::DestructObject(IObject const* const pIObject)
 	AkGameObjectID const objectID = pBaseObject->GetId();
 	AK::SoundEngine::UnregisterGameObj(objectID);
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	{
 		CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
 		g_gameObjectIds.erase(pBaseObject->GetId());
 	}
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 	delete pBaseObject;
 
@@ -1131,9 +1131,9 @@ IListener* CImpl::ConstructListener(CTransformation const& transformation, char 
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CListener");
 	g_pListener = new CListener(transformation, m_gameObjectId);
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	g_pListener->SetName(szName);
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 	pIListener = static_cast<IListener*>(g_pListener);
 	g_listenerId = m_gameObjectId++;
@@ -1172,7 +1172,7 @@ void CImpl::GamepadConnected(DeviceId const deviceUniqueID)
 	AkOutputDeviceID deviceID = AK_INVALID_OUTPUT_DEVICE_ID;
 	AKRESULT const wwiseResult = AK::SoundEngine::AddOutput(settings, &deviceID, &g_listenerId, 1);
 
-	if (IS_WWISE_OK(wwiseResult))
+	if (CRY_AUDIO_IMPL_WWISE_IS_OK(wwiseResult))
 	{
 		m_mapInputDevices[deviceUniqueID] = { true, deviceID };
 	}
@@ -1220,26 +1220,26 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 			}
 
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CEvent");
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 			pITriggerConnection = static_cast<ITriggerConnection*>(new CEvent(uniqueId, maxAttenuation, szName));
 			radius = maxAttenuation;
 #else
 			pITriggerConnection = static_cast<ITriggerConnection*>(new CEvent(uniqueId, maxAttenuation));
-#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 		}
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 		else
 		{
 			Cry::Audio::Log(ELogType::Warning, "Invalid Wwise event name %s", szName);
 		}
-#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 	}
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "Unknown Wwise tag: %s", pRootNode->getTag());
 	}
-#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 	return pITriggerConnection;
 }
@@ -1247,7 +1247,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 //////////////////////////////////////////////////////////////////////////
 ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const pITriggerInfo)
 {
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	ITriggerConnection* pITriggerConnection = nullptr;
 	auto const pTriggerInfo = static_cast<STriggerInfo const*>(pITriggerInfo);
 
@@ -1263,7 +1263,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 	return pITriggerConnection;
 #else
 	return nullptr;
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1292,25 +1292,25 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRoot
 
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CParameter");
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 			pIParameterConnection = static_cast<IParameterConnection*>(new CParameter(rtpcId, multiplier, shift, szName));
 #else
 			pIParameterConnection = static_cast<IParameterConnection*>(new CParameter(rtpcId, multiplier, shift));
-#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 		}
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 		else
 		{
 			Cry::Audio::Log(ELogType::Warning, "Invalid Wwise parameter name %s", szName);
 		}
-#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 	}
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "Unknown Wwise tag %s", pRootNode->getTag());
 	}
-#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 	return pIParameterConnection;
 }
@@ -1347,15 +1347,15 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 
 					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CState");
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 					pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CState(stateGroupId, stateId, szStateGroupName, szStateName));
 #else
 					pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CState(stateGroupId, stateId));
-#endif          // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif          // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 				}
 			}
 		}
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 		else
 		{
 			Cry::Audio::Log(
@@ -1363,7 +1363,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 				"A Wwise StateGroup %s inside SwitchState needs to have exactly one WwiseValue.",
 				szStateGroupName);
 		}
-#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 	}
 	else if (_stricmp(szTag, g_szSwitchGroupTag) == 0)
 	{
@@ -1384,15 +1384,15 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 
 					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CSwitch");
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 					pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CSwitch(switchGroupId, switchId, szSwitchGroupName, szSwitchName));
 #else
 					pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CSwitch(switchGroupId, switchId));
-#endif          // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif          // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 				}
 			}
 		}
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 		else
 		{
 			Cry::Audio::Log(
@@ -1400,7 +1400,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 				"A Wwise SwitchGroup %s inside SwitchState needs to have exactly one WwiseValue.",
 				szSwitchGroupName);
 		}
-#endif          // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif          // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 	}
 	else if (_stricmp(szTag, g_szParameterTag) == 0)
 	{
@@ -1414,25 +1414,25 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CParameterState");
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 			pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CParameterState(rtpcId, value, szName));
 #else
 			pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CParameterState(rtpcId, value));
-#endif        // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif        // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 		}
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 		else
 		{
 			Cry::Audio::Log(ELogType::Warning, "Invalid Wwise parameter name %s", szName);
 		}
-#endif          // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif          // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 	}
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "Unknown Wwise tag: %s", szTag);
 	}
-#endif          // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif          // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 	return pISwitchStateConnection;
 }
@@ -1459,11 +1459,11 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const p
 		{
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CAuxBus");
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 			pIEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CAuxBus(static_cast<AkAuxBusID>(busId), szName));
 #else
 			pIEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CAuxBus(static_cast<AkAuxBusID>(busId)));
-#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 		}
 		else
 		{
@@ -1485,25 +1485,25 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const p
 
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CParameterEnvironment");
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 			pIEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CParameterEnvironment(rtpcId, multiplier, shift, szName));
 #else
 			pIEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CParameterEnvironment(rtpcId, multiplier, shift));
-#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 		}
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 		else
 		{
 			Cry::Audio::Log(ELogType::Warning, "Invalid Wwise parameter name %s", szName);
 		}
-#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 	}
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "Unknown Wwise tag: %s", szTag);
 	}
-#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 	return pIEnvironmentConnection;
 }
@@ -1583,10 +1583,10 @@ void CImpl::OnRefresh()
 		m_initBankId = AK_INVALID_BANK_ID;
 	}
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	GetInitBankSize();
 	g_debugStates.clear();
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 	LoadEventsMaxAttenuations(m_regularSoundBankFolder);
 }
@@ -1624,12 +1624,12 @@ CEventInstance* CImpl::ConstructEventInstance(
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CEventInstance");
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	auto const pEventInstance = new CEventInstance(triggerInstanceId, eventId, maxAttenuation, pBaseObject, pEvent);
 	g_constructedEventInstances.push_back(pEventInstance);
 #else
 	auto const pEventInstance = new CEventInstance(triggerInstanceId, eventId, maxAttenuation);
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 	return pEventInstance;
 }
@@ -1637,7 +1637,7 @@ CEventInstance* CImpl::ConstructEventInstance(
 //////////////////////////////////////////////////////////////////////////
 void CImpl::DestructEventInstance(CEventInstance const* const pEventInstance)
 {
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	CRY_ASSERT_MESSAGE(pEventInstance != nullptr, "pEventInstance is nullpter during %s", __FUNCTION__);
 
 	auto iter(g_constructedEventInstances.begin());
@@ -1661,7 +1661,7 @@ void CImpl::DestructEventInstance(CEventInstance const* const pEventInstance)
 		CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
 		g_playingIds.erase(pEventInstance->GetPlayingId());
 	}
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 	delete pEventInstance;
 }
@@ -1672,7 +1672,7 @@ void CImpl::SetPanningRule(int const panningRule)
 	AK::SoundEngine::SetPanningRule(static_cast<AkPanningRule>(panningRule));
 }
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 void DrawMemoryPoolInfo(
 	IRenderAuxGeom& auxGeom,
@@ -1719,12 +1719,12 @@ void CImpl::GetInitBankSize()
 	string const initBankPath = m_regularSoundBankFolder + "/Init.bnk";
 	m_initBankSize = gEnv->pCryPak->FGetSize(initBankPath.c_str());
 }
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo)
 {
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	CryModuleMemoryInfo memInfo;
 	ZeroStruct(memInfo);
 	CryGetMemoryInfoForModule(&memInfo);
@@ -1824,13 +1824,13 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorListenerActive, false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s",
 	                    szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
 
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const
 {
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	if ((g_cvars.m_debugListFilter & g_debugListMask) != 0)
 	{
 		CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(szTextFilter);
@@ -1922,7 +1922,7 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 			posX += 300.0f;
 		}
 	}
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 }
 } // namespace Wwise
 } // namespace Impl

@@ -3,9 +3,9 @@
 #include "stdafx.h"
 #include "Snapshot.h"
 
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	#include "Common.h"
-#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -13,9 +13,9 @@ namespace Impl
 {
 namespace Adx2
 {
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 CryFixedStringT<MaxControlNameLength> g_debugActiveSnapShotName = g_debugNoneSnapshot;
-#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CSnapshot::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
@@ -26,9 +26,9 @@ ERequestStatus CSnapshot::Execute(IObject* const pIObject, TriggerInstanceId con
 		{
 			criAtomEx_ApplyDspBusSnapshot(static_cast<CriChar8 const*>(m_name.c_str()), m_changeoverTime);
 
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 			g_debugActiveSnapShotName = m_name;
-#endif      // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 			break;
 		}
@@ -52,9 +52,9 @@ void CSnapshot::Stop(IObject* const pIObject)
 {
 	criAtomEx_ApplyDspBusSnapshot(nullptr, m_changeoverTime);
 
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	g_debugActiveSnapShotName = g_debugNoneSnapshot;
-#endif        // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif        // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 }
 } // namespace Adx2
 } // namespace Impl

@@ -26,7 +26,7 @@ public:
 	CTrigger& operator=(CTrigger const&) = delete;
 	CTrigger& operator=(CTrigger&&) = delete;
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	explicit CTrigger(
 		ControlId const id,
 		EDataScope const dataScope,
@@ -45,7 +45,7 @@ public:
 		: Control(id, dataScope)
 		, m_connections(connections)
 	{}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	~CTrigger();
 
@@ -69,17 +69,17 @@ public:
 		void* const pUserData = nullptr,
 		void* const pUserDataOwner = nullptr) const;
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	float GetRadius() const { return m_radius; }
 	void  PlayFile(CObject& object, CStandaloneFile* const pFile) const;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 private:
 
 	TriggerConnections const m_connections;
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	float const m_radius;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 };
 } // namespace CryAudio

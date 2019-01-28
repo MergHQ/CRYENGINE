@@ -63,9 +63,9 @@ void CListener::Update(float const deltaTime)
 //////////////////////////////////////////////////////////////////////////
 void CListener::SetName(char const* const szName)
 {
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	m_name = szName;
-#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -76,7 +76,7 @@ void CListener::SetTransformation(CTransformation const& transformation)
 
 	Fill3DAttributeTransformation(transformation, m_3dAttributes);
 
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	// Always update velocity in non-release builds for debug draw.
 	m_isMovingOrDecaying = true;
 	Fill3DAttributeVelocity(m_velocity, m_3dAttributes);
@@ -90,7 +90,7 @@ void CListener::SetTransformation(CTransformation const& transformation)
 	{
 		m_previousPosition = m_position;
 	}
-#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 	criAtomEx3dListener_SetPosition(m_pHandle, &m_3dAttributes.pos);
 	criAtomEx3dListener_SetOrientation(m_pHandle, &m_3dAttributes.fwd, &m_3dAttributes.up);

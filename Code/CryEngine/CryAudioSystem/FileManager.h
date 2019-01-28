@@ -2,9 +2,9 @@
 
 #pragma once
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 struct IRenderAuxGeom;
-#endif //INCLUDE_AUDIO_PRODUCTION_CODE
+#endif //CRY_AUDIO_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -36,11 +36,11 @@ private:
 
 	std::vector<CStandaloneFile*> m_constructedStandaloneFiles;
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 public:
 
 	void DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float posY) const;
 
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 };
 } // namespace CryAudio

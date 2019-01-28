@@ -150,7 +150,7 @@ void CCVars::RegisterVariables()
 	               "Usage: s_Adx2MaxVelocity [0/...]\n"
 	               "Default: 100\n");
 
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	REGISTER_CVAR2("s_Adx2DebugListFilter", &m_debugListFilter, 448, VF_CHEAT | VF_CHEAT_NOCHECK | VF_BITFIELD,
 	               "Defines which lists to show when list filtering is enabled in the debug draw of the audio system.\n"
 	               "Usage: s_Adx2DebugListFilter [0ab...] (flags can be combined)\n"
@@ -160,7 +160,7 @@ void CCVars::RegisterVariables()
 	               "b: Draw GameVariable values.\n"
 	               "c: Draw Category values.\n"
 	               );
-#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -192,9 +192,9 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_Adx2PositionUpdateThresholdMultiplier");
 		pConsole->UnregisterVariable("s_Adx2MaxVelocity");
 
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 		pConsole->UnregisterVariable("s_Adx2DebugListFilter");
-#endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 	}
 }
 } // namespace Adx2

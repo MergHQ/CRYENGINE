@@ -153,19 +153,33 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 
 void CParticleEmitter::CheckUpdated()
 {
-	if (m_effectEditVersion < 0 || (gEnv->IsEditing() && m_effectEditVersion != m_pEffectOriginal->GetEditVersion() + m_emitterEditVersion))
+	CRY_PFX2_PROFILE_DETAIL;
+	if (m_effectEditVersion != m_pEffectOriginal->GetEditVersion() + m_emitterEditVersion)
 	{
 		m_attributeInstance.Reset(m_pEffectOriginal->GetAttributeTable());
 		UpdateRuntimes();
 	}
-	if (m_time > m_timeDeath)
-		if (m_timeUpdated < m_time)
-			m_alive = false;
 }
 
-void CParticleEmitter::Update()
+bool CParticleEmitter::UpdateState()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+
+	if (m_time > m_timeDeath && m_timeUpdated < m_time)
+		m_alive = false;
+	if (!m_alive)
+	{
+		if (!m_componentRuntimesFor.empty())
+			Clear();
+		return false;
+	}
+
+	if (m_componentRuntimesFor.empty())
+	{
+		if (!m_active)
+			return false;
+		UpdateRuntimes();
+	}
 
 	if (m_attributeInstance.WasChanged())
 		SetChanged();
@@ -201,6 +215,8 @@ void CParticleEmitter::Update()
 
 	if (HasBounds())
 		UpdatePhysEnv();
+
+	return true;
 }
 
 namespace Bounds
@@ -451,18 +467,24 @@ void CParticleEmitter::Activate(bool activate)
 	}
 	else
 	{
+		int hasParticles = 0;
 		for (auto& pRuntime : m_componentRuntimes)
 		{
 			if (!pRuntime->IsChild())
 				pRuntime->RemoveAllSubInstances();
+			hasParticles += pRuntime->HasParticles();
 		}
-		m_timeStable = m_timeDeath = m_time + timings.m_stableTime;
+		m_timeDeath = m_time;
+		if (hasParticles)
+			m_timeDeath += timings.m_stableTime;
+		m_timeStable = m_timeDeath;
 	}
 }
 
 void CParticleEmitter::Restart()
 {
-	Activate(false);
+	if (m_time != m_timeCreated)
+		Activate(false);
 	Activate(true);
 }
 
@@ -736,6 +758,7 @@ ILINE void CParticleEmitter::UpdateFromEntity()
 
 IEntity* CParticleEmitter::GetEmitGeometryEntity() const
 {
+	CRY_PFX2_PROFILE_DETAIL;
 	IEntity* pEntity = m_entityOwner;
 	if (pEntity)
 	{
@@ -748,12 +771,14 @@ IEntity* CParticleEmitter::GetEmitGeometryEntity() const
 
 void CParticleEmitter::UpdateEmitGeomFromEntity()
 {
+	CRY_PFX2_PROFILE_DETAIL;
 	IEntity* pEntity = GetEmitGeometryEntity();
 	m_emitterGeometrySlot = m_emitterGeometry.Set(pEntity);
 }
 
 QuatTS CParticleEmitter::GetEmitterGeometryLocation() const
 {
+	CRY_PFX2_PROFILE_DETAIL;
 	if (IEntity* pEntity = GetEmitGeometryEntity())
 	{
 		SEntitySlotInfo slotInfo;
@@ -822,6 +847,7 @@ void CParticleEmitter::Unregister()
 
 void CParticleEmitter::Clear()
 {
+	CRY_PFX2_PROFILE_DETAIL;
 	m_alive = m_active = false;
 	Unregister();
 	m_componentRuntimes.clear();

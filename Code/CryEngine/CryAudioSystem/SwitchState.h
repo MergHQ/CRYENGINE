@@ -19,7 +19,7 @@ public:
 	CSwitchState& operator=(CSwitchState const&) = delete;
 	CSwitchState& operator=(CSwitchState&&) = delete;
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	explicit CSwitchState(
 		ControlId const switchId,
 		SwitchStateId const switchStateId,
@@ -39,7 +39,7 @@ public:
 		, m_switchId(switchId)
 		, m_connections(connections)
 	{}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	~CSwitchState();
 
@@ -47,9 +47,9 @@ public:
 	void          SetGlobally() const;
 	SwitchStateId GetId() const { return m_switchStateId; }
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	char const* GetName() const { return m_name.c_str(); }
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 private:
 
@@ -57,8 +57,8 @@ private:
 	SwitchStateId const          m_switchStateId;
 	SwitchStateConnections const m_connections;
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	CryFixedStringT<MaxControlNameLength> const m_name;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 };
 } // namespace CryAudio

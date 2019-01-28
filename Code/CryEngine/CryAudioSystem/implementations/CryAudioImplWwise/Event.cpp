@@ -48,11 +48,11 @@ ERequestStatus CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 
 	auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(triggerInstanceId, m_id, m_maxAttenuation, pBaseObject, this);
 #else
 	CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(triggerInstanceId, m_id, m_maxAttenuation);
-#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 	pBaseObject->SetAuxSendValues();
 
@@ -60,12 +60,12 @@ ERequestStatus CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 
 	if (playingId != AK_INVALID_PLAYING_ID)
 	{
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 		{
 			CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
 			g_playingIds[playingId] = pEventInstance;
 		}
-#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 		pEventInstance->SetPlayingId(playingId);
 		pBaseObject->AddEventInstance(pEventInstance);
@@ -118,7 +118,7 @@ ERequestStatus CEvent::SetLoaded(bool const bLoad) const
 	AkUniqueID id = m_id;
 	AKRESULT const wwiseResult = AK::SoundEngine::PrepareEvent(bLoad ? AK::SoundEngine::Preparation_Load : AK::SoundEngine::Preparation_Unload, &id, 1);
 
-	if (IS_WWISE_OK(wwiseResult))
+	if (CRY_AUDIO_IMPL_WWISE_IS_OK(wwiseResult))
 	{
 		result = ERequestStatus::Success;
 	}
@@ -141,7 +141,7 @@ ERequestStatus CEvent::SetLoadedAsync(TriggerInstanceId const triggerInstanceId,
 		&PrepareEventCallback,
 		pEventInstance);
 
-	if (IS_WWISE_OK(wwiseResult))
+	if (CRY_AUDIO_IMPL_WWISE_IS_OK(wwiseResult))
 	{
 		pEventInstance->SetPlayingId(m_id);
 		pEventInstance->SetState(EEventInstanceState::Unloading);

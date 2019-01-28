@@ -35,7 +35,7 @@ public:
 	CEventInstance& operator=(CEventInstance const&) = delete;
 	CEventInstance& operator=(CEventInstance&&) = delete;
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	CEventInstance(
 		TriggerInstanceId const triggerInstanceId,
 		AkUniqueID const eventId,
@@ -63,7 +63,7 @@ public:
 		, m_playingId(AK_INVALID_UNIQUE_ID)
 		, m_toBeRemoved(false)
 	{}
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 	~CEventInstance() = default;
 
@@ -85,10 +85,10 @@ public:
 	void                Stop();
 	void                UpdateVirtualState(float const distance);
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	CBaseObject const* GetObject() const { return m_pBaseObject; }
 	CEvent const*      GetEvent() const  { return m_pEvent; }
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 private:
 
@@ -99,10 +99,10 @@ private:
 	AkUniqueID              m_playingId;
 	std::atomic_bool        m_toBeRemoved;
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	CBaseObject const* const m_pBaseObject;
 	CEvent const* const      m_pEvent;
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 };
 } // namespace Wwise
 } // namespace Impl

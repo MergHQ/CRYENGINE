@@ -34,9 +34,9 @@ public:
 	CHashedString                    m_hashedFilename;
 
 	// Needed only during middleware switch.
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	ControlId m_triggerId = InvalidControlId;
 	bool      m_isLocalized = true;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 };
 } // namespace CryAudio

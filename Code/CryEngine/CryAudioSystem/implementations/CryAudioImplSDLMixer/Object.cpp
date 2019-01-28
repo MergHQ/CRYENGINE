@@ -74,9 +74,9 @@ void CObject::StopAllTriggers()
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CObject::SetName(char const* const szName)
 {
-#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
 	m_name = szName;
-#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 
 	return ERequestStatus::Success;
 }

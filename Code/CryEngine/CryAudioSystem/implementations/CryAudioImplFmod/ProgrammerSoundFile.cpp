@@ -21,7 +21,7 @@ FMOD_RESULT F_CALLBACK ProgrammerSoundFileCallback(FMOD_STUDIO_EVENT_CALLBACK_TY
 		auto const pFmodEventInstance = reinterpret_cast<FMOD::Studio::EventInstance*>(pEventInstance);
 		CProgrammerSoundFile* pFile = nullptr;
 		FMOD_RESULT fmodResult = pFmodEventInstance->getUserData(reinterpret_cast<void**>(&pFile));
-		ASSERT_FMOD_OK;
+		CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 		if (pFile != nullptr)
 		{
@@ -33,7 +33,7 @@ FMOD_RESULT F_CALLBACK ProgrammerSoundFileCallback(FMOD_STUDIO_EVENT_CALLBACK_TY
 				// Create the sound
 				FMOD::Sound* pSound = nullptr;
 				fmodResult = pFile->s_pLowLevelSystem->createSound(pFile->GetFileName(), FMOD_CREATESTREAM | FMOD_NONBLOCKING | FMOD_3D, nullptr, &pSound);
-				ASSERT_FMOD_OK;
+				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 				// Pass the sound to FMOD
 				pInOutProperties->sound = reinterpret_cast<FMOD_SOUND*>(pSound);
@@ -48,7 +48,7 @@ FMOD_RESULT F_CALLBACK ProgrammerSoundFileCallback(FMOD_STUDIO_EVENT_CALLBACK_TY
 
 				// Release the sound
 				fmodResult = pSound->release();
-				ASSERT_FMOD_OK;
+				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 			}
 			else if (type == FMOD_STUDIO_EVENT_CALLBACK_STOPPED)
 			{
@@ -65,16 +65,16 @@ void CProgrammerSoundFile::StartLoading()
 {
 	FMOD::Studio::EventDescription* pEventDescription = nullptr;
 	FMOD_RESULT fmodResult = CBaseObject::s_pSystem->getEventByID(&m_eventGuid, &pEventDescription);
-	ASSERT_FMOD_OK;
+	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 	fmodResult = pEventDescription->createInstance(&m_pEventInstance);
-	ASSERT_FMOD_OK;
+	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 	fmodResult = m_pEventInstance->setUserData(this);
-	ASSERT_FMOD_OK;
+	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 	fmodResult = m_pEventInstance->setCallback(ProgrammerSoundFileCallback);
-	ASSERT_FMOD_OK;
+	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -87,10 +87,10 @@ bool CProgrammerSoundFile::IsReady()
 void CProgrammerSoundFile::PlayFile(FMOD_3D_ATTRIBUTES const& attributes)
 {
 	FMOD_RESULT fmodResult = m_pEventInstance->start();
-	ASSERT_FMOD_OK;
+	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 	fmodResult = m_pEventInstance->set3DAttributes(&attributes);
-	ASSERT_FMOD_OK;
+	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 }
 
@@ -98,14 +98,14 @@ void CProgrammerSoundFile::PlayFile(FMOD_3D_ATTRIBUTES const& attributes)
 void CProgrammerSoundFile::Set3DAttributes(FMOD_3D_ATTRIBUTES const& attributes)
 {
 	FMOD_RESULT fmodResult = m_pEventInstance->set3DAttributes(&attributes);
-	ASSERT_FMOD_OK;
+	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CProgrammerSoundFile::StopFile()
 {
 	FMOD_RESULT fmodResult = m_pEventInstance->stop(FMOD_STUDIO_STOP_IMMEDIATE);
-	ASSERT_FMOD_OK;
+	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 }
 } // namespace Fmod
 } // namespace Impl

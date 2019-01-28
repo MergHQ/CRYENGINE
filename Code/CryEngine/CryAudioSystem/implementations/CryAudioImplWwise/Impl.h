@@ -72,7 +72,7 @@ public:
 	virtual IStandaloneFileConnection* ConstructStandaloneFileConnection(CryAudio::CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITriggerConnection const* pITriggerConnection = nullptr) override;
 	virtual void                       DestructStandaloneFileConnection(IStandaloneFileConnection const* const pIStandaloneFileConnection) override;
 
-	// Below data is only used when INCLUDE_WWISE_IMPL_PRODUCTION_CODE is defined!
+	// Below data is only used when CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE is defined!
 	virtual void GetFileData(char const* const szName, SFileData& fileData) const override;
 	virtual void DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo) override;
 	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const override;
@@ -113,13 +113,13 @@ private:
 	using AudioInputDevices = std::map<DeviceId, SInputDeviceInfo>;
 	AudioInputDevices m_mapInputDevices;
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	void GetInitBankSize();
 
 	bool   m_bCommSystemInitialized;
 	CryFixedStringT<MaxInfoStringLength> m_name;
 	size_t m_initBankSize = 0;
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 #if defined(WWISE_USE_OCULUS)
 	void* m_pOculusSpatializerLibrary;

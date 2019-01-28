@@ -38,13 +38,13 @@
 #include <CryString/CryPath.h>
 #include <CryEntitySystem/IEntitySystem.h>
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	#include "PreviewTrigger.h"
 	#include "Debug.h"
 	#include "Common/Logger.h"
 	#include "Common/DebugStyle.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -81,7 +81,7 @@ constexpr uint16 g_callbackReportFinishedTriggerInstancePoolSize = 128;
 constexpr uint16 g_callbackReportPhysicalizedObjectPoolSize = 64;
 constexpr uint16 g_callbackReportVirtualizedObjectPoolSize = 64;
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 struct SRequestCount final
 {
 	uint16 requests = 0;
@@ -331,7 +331,7 @@ void SetRequestCountPeak()
 
 	ZeroStruct(g_requestsPerUpdate);
 }
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
 void AllocateMemoryPools()
@@ -424,10 +424,10 @@ void FreeMemoryPools()
 //////////////////////////////////////////////////////////////////////////
 void UpdateActiveObjects(float const deltaTime)
 {
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	CPropagationProcessor::s_totalAsyncPhysRays = 0;
 	CPropagationProcessor::s_totalSyncPhysRays = 0;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	if (deltaTime > 0.0f)
 	{
@@ -480,9 +480,9 @@ CSystem::~CSystem()
 	CRY_ASSERT_MESSAGE(g_pIImpl == nullptr, "<Audio> The implementation must get destroyed before the audio system is destructed during %s", __FUNCTION__);
 	CRY_ASSERT_MESSAGE(g_activeObjects.empty(), "There are still active objects during %s", __FUNCTION__);
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	CRY_ASSERT_MESSAGE(g_constructedObjects.empty(), "There are still objects during %s", __FUNCTION__);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -521,9 +521,9 @@ void CSystem::ExternalUpdate()
 		}
 	}
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	DrawDebug();
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	m_accumulatedFrameTime += gEnv->pTimer->GetFrameTime();
 	++m_externalThreadFrameId;
@@ -595,9 +595,9 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 				CRequest const request4(&requestData4);
 				PushRequest(request4);
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				ResetRequestCount();
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 			}
 
 			break;
@@ -808,9 +808,9 @@ bool CSystem::Initialize()
 		{
 			g_cvars.m_objectPoolSize = 1;
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			Cry::Audio::Log(ELogType::Warning, R"(Audio Object pool size must be at least 1. Forcing the cvar "s_AudioObjectPoolSize" to 1!)");
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 		}
 
 		CObject::CreateAllocator(static_cast<uint16>(g_cvars.m_objectPoolSize));
@@ -819,9 +819,9 @@ bool CSystem::Initialize()
 		{
 			g_cvars.m_standaloneFilePoolSize = 1;
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			Cry::Audio::Log(ELogType::Warning, R"(Audio Standalone File pool size must be at least 1. Forcing the cvar "s_AudioStandaloneFilePoolSize" to 1!)");
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 		}
 
 		CStandaloneFile::CreateAllocator(static_cast<uint16>(g_cvars.m_standaloneFilePoolSize));
@@ -836,9 +836,9 @@ bool CSystem::Initialize()
 
 		g_activeObjects.reserve(static_cast<size_t>(m_objectPoolSize));
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 		g_constructedObjects.reserve(static_cast<size_t>(m_objectPoolSize));
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 		g_fileCacheManager.Initialize();
 
@@ -877,7 +877,7 @@ void CSystem::Release()
 				1);
 		}
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 		for (auto const pObject : g_constructedObjects)
 		{
 			CRY_ASSERT_MESSAGE(pObject->GetImplDataPtr() == nullptr, "An object cannot have valid impl data during %s", __FUNCTION__);
@@ -885,7 +885,7 @@ void CSystem::Release()
 		}
 
 		g_constructedObjects.clear();
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 		g_listenerManager.Terminate();
 		g_cvars.UnregisterVariables();
@@ -1001,7 +1001,7 @@ void CSystem::StopTrigger(ControlId const triggerId /* = CryAudio::InvalidContro
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ExecutePreviewTrigger(ControlId const triggerId)
 {
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	switch (triggerId)
 	{
 	case g_loseFocusTriggerId:
@@ -1061,30 +1061,30 @@ void CSystem::ExecutePreviewTrigger(ControlId const triggerId)
 			break;
 		}
 	}
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ExecutePreviewTriggerEx(Impl::ITriggerInfo const& triggerInfo)
 {
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	SSystemRequestData<ESystemRequestType::ExecutePreviewTriggerEx> const requestData(triggerInfo);
 	CRequest const request(&requestData);
 	PushRequest(request);
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::StopPreviewTrigger()
 {
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	SSystemRequestData<ESystemRequestType::StopPreviewTrigger> const requestData;
 	CRequest const request(&requestData);
 	PushRequest(request);
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ResetRequestCount()
 {
@@ -1092,7 +1092,7 @@ void CSystem::ResetRequestCount()
 	CRequest const request(&requestData);
 	PushRequest(request);
 }
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
@@ -1236,7 +1236,7 @@ void CSystem::UnloadSetting(ControlId const id, SRequestUserData const& userData
 	PushRequest(request);
 }
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::RetriggerControls(SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
@@ -1244,7 +1244,7 @@ void CSystem::RetriggerControls(SRequestUserData const& userData /* = SAudioRequ
 	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ReloadControlsData(
@@ -1252,11 +1252,11 @@ void CSystem::ReloadControlsData(
 	char const* const szLevelName,
 	SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	SSystemRequestData<ESystemRequestType::ReloadControlsData> const requestData(szFolderPath, szLevelName);
 	CRequest const request(&requestData, userData);
 	PushRequest(request);
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1306,24 +1306,24 @@ void CSystem::ReleaseObject(CryAudio::IObject* const pIObject)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::GetFileData(char const* const szName, SFileData& fileData)
 {
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	SSystemRequestData<ESystemRequestType::GetFileData> const requestData(szName, fileData);
 	CRequest const request(&requestData, ERequestFlags::ExecuteBlocking);
 	PushRequest(request);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::GetTriggerData(ControlId const triggerId, STriggerData& triggerData)
 {
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	CTrigger const* const pTrigger = stl::find_in_map(g_triggers, triggerId, nullptr);
 
 	if (pTrigger != nullptr)
 	{
 		triggerData.radius = pTrigger->GetRadius();
 	}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1338,25 +1338,25 @@ void CSystem::ReleaseImpl()
 	g_fileManager.ReleaseImplData();
 	g_listenerManager.ReleaseImplData();
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	// Don't delete objects here as we need them to survive a middleware switch!
 	for (auto const pObject : g_constructedObjects)
 	{
 		g_pIImpl->DestructObject(pObject->GetImplDataPtr());
 		pObject->Release();
 	}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	g_pIImpl->DestructObject(g_object.GetImplDataPtr());
 	g_object.SetImplDataPtr(nullptr);
 	g_object.Release();
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	g_pIImpl->DestructObject(g_previewObject.GetImplDataPtr());
 	g_previewObject.SetImplDataPtr(nullptr);
 	g_previewObject.Release();
 	ResetRequestCount();
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	g_xmlProcessor.ClearPreloadsData(EDataScope::All);
 	g_xmlProcessor.ClearControlsData(EDataScope::All);
@@ -1385,7 +1385,7 @@ void CSystem::OnLanguageChanged()
 //////////////////////////////////////////////////////////////////////////
 void CSystem::Log(ELogType const type, char const* const szFormat, ...)
 {
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	if (szFormat != nullptr && szFormat[0] != '\0' && gEnv->pLog->GetVerbosityLevel() != -1)
 	{
 		CRY_PROFILE_REGION(PROFILE_AUDIO, "CSystem::Log");
@@ -1441,7 +1441,7 @@ void CSystem::Log(ELogType const type, char const* const szFormat, ...)
 			}
 		}
 	}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1498,17 +1498,17 @@ void CSystem::ProcessRequests(Requests& requestQueue)
 		}
 	}
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	SetRequestCountPeak();
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ProcessRequest(CRequest& request)
 {
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	CountRequestPerUpdate(request);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	ERequestStatus result = ERequestStatus::None;
 
@@ -1640,14 +1640,14 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 			{
 				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CObject");
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				auto const pNewObject = new CObject(pRequestData->transformation, pRequestData->name.c_str());
 				pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation, pNewObject->GetName()), pRequestData->entityId);
 				g_constructedObjects.push_back(pNewObject);
 #else
 				auto const pNewObject = new CObject(pRequestData->transformation);
 				pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation), pRequestData->entityId);
-#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif      // CRY_AUDIO_USE_PRODUCTION_CODE
 
 				if (pRequestData->setCurrentEnvironments)
 				{
@@ -1723,9 +1723,9 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 					g_pauseAllTrigger.Execute();
 					result = ERequestStatus::Success;
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 					g_systemStates |= ESystemStates::IsPaused;
-#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif      // CRY_AUDIO_USE_PRODUCTION_CODE
 
 					break;
 				}
@@ -1734,9 +1734,9 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 					g_resumeAllTrigger.Execute();
 					result = ERequestStatus::Success;
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 					g_systemStates &= ~ESystemStates::IsPaused;
-#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif      // CRY_AUDIO_USE_PRODUCTION_CODE
 
 					break;
 				}
@@ -2082,14 +2082,14 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CObject");
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			auto const pNewObject = new CObject(pRequestData->transformation, pRequestData->name.c_str());
 			pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation, pNewObject->GetName()), pRequestData->entityId);
 			g_constructedObjects.push_back(pNewObject);
 #else
 			auto const pNewObject = new CObject(pRequestData->transformation);
 			pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation), pRequestData->entityId);
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 
 			if (pRequestData->setCurrentEnvironments)
 			{
@@ -2122,12 +2122,12 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 					}
 					result = ERequestStatus::Success;
 				}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				else
 				{
 					Cry::Audio::Log(ELogType::Warning, "Audio System received a request to release the global object");
 				}
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 			}
 
 			break;
@@ -2138,7 +2138,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			break;
 		}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	case ESystemRequestType::ExecutePreviewTrigger:
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ExecutePreviewTrigger> const*>(request.GetData());
@@ -2220,12 +2220,12 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			break;
 		}
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 	default:
 		{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			Cry::Audio::Log(ELogType::Warning, "Unknown manager request type: %u", pBase->systemRequestType);
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 
 			result = ERequestStatus::FailureInvalidRequest;
 
@@ -2298,12 +2298,12 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 			{
 				pObject->ReportFinishedTriggerInstance(pRequestData->triggerInstanceId);
 			}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Error, "TriggerInstanceId %u is not mapped to an object during %s", pRequestData->triggerInstanceId, __FUNCTION__);
 			}
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 
 			result = ERequestStatus::Success;
 
@@ -2319,9 +2319,9 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 				{
 					pObject->RemoveFlag(EObjectFlags::Virtual);
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE) && defined(CRY_AUDIO_USE_OCCLUSION)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE) && defined(CRY_AUDIO_USE_OCCLUSION)
 					pObject->ResetObstructionRays();
-#endif      // INCLUDE_AUDIO_PRODUCTION_CODE && CRY_AUDIO_USE_OCCLUSION
+#endif      // CRY_AUDIO_USE_PRODUCTION_CODE && CRY_AUDIO_USE_OCCLUSION
 
 					break;
 				}
@@ -2357,9 +2357,9 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 		}
 	default:
 		{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			Cry::Audio::Log(ELogType::Warning, "Unknown callback manager request type: %u", pBase->callbackRequestType);
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 
 			result = ERequestStatus::FailureInvalidRequest;
 
@@ -2590,12 +2590,12 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 					result = ERequestStatus::FailureInvalidControlId;
 				}
 			}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Warning, "Audio System received a request to set an environment on the global object");
 			}
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 
 			break;
 		}
@@ -2618,17 +2618,17 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 			{
 				pObject->GetImplDataPtr()->ToggleFunctionality(Impl::EObjectFunctionality::TrackAbsoluteVelocity, true);
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				pObject->SetFlag(EObjectFlags::TrackAbsoluteVelocity);
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 			}
 			else
 			{
 				pObject->GetImplDataPtr()->ToggleFunctionality(Impl::EObjectFunctionality::TrackAbsoluteVelocity, false);
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				pObject->RemoveFlag(EObjectFlags::TrackAbsoluteVelocity);
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 			}
 
 			result = ERequestStatus::Success;
@@ -2642,17 +2642,17 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 			{
 				pObject->GetImplDataPtr()->ToggleFunctionality(Impl::EObjectFunctionality::TrackRelativeVelocity, true);
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				pObject->SetFlag(EObjectFlags::TrackRelativeVelocity);
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 			}
 			else
 			{
 				pObject->GetImplDataPtr()->ToggleFunctionality(Impl::EObjectFunctionality::TrackRelativeVelocity, false);
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				pObject->RemoveFlag(EObjectFlags::TrackRelativeVelocity);
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 			}
 
 			result = ERequestStatus::Success;
@@ -2663,7 +2663,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 			result = ERequestStatus::Success;
 			break;
 		}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	case EObjectRequestType::SetName:
 		{
 			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::SetName> const*>(request.GetData());
@@ -2678,12 +2678,12 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 
 			break;
 		}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 	default:
 		{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			Cry::Audio::Log(ELogType::Warning, "Unknown object request type: %u", pBase->objectRequestType);
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 
 			result = ERequestStatus::FailureInvalidRequest;
 			break;
@@ -2724,7 +2724,7 @@ ERequestStatus CSystem::ProcessListenerRequest(SRequestData const* const pPassed
 			break;
 		}
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	case EListenerRequestType::SetName:
 		{
 			auto const pRequestData = static_cast<SListenerRequestData<EListenerRequestType::SetName> const*>(pPassedRequestData);
@@ -2734,12 +2734,12 @@ ERequestStatus CSystem::ProcessListenerRequest(SRequestData const* const pPassed
 
 			break;
 		}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 	default:
 		{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			Cry::Audio::Log(ELogType::Warning, "Unknown listener request type: %u", pBase->listenerRequestType);
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 
 			result = ERequestStatus::FailureInvalidRequest;
 
@@ -2907,9 +2907,9 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 
 	if (g_pIImpl == nullptr)
 	{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 		Cry::Audio::Log(ELogType::Warning, "nullptr passed to SetImpl, will run with the null implementation");
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::Null::CImpl");
 		auto const pImpl = new Impl::Null::CImpl();
@@ -2919,7 +2919,7 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 
 	g_xmlProcessor.ParseSystemData();
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	if ((g_systemStates& ESystemStates::PoolsAllocated) == 0)
 	{
 		// Don't allocate again after impl switch.
@@ -2928,23 +2928,23 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 	}
 #else
 	AllocateMemoryPools();
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	result = g_pIImpl->Init(m_objectPoolSize);
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	// Get impl info again (was done in ParseSystemData) to set the impl name, because
 	// it's not guaranteed that it already existed in the impl constructor.
 	g_pIImpl->GetInfo(g_implInfo);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	if (result != ERequestStatus::Success)
 	{
 		// The impl failed to initialize, allow it to shut down and release then fall back to the null impl.
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 		Cry::Audio::Log(ELogType::Error, "Failed to set the AudioImpl %s. Will run with the null implementation.", m_implInfo.name.c_str());
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 		// There's no need to call Shutdown when the initialization failed as
 		// we expect the implementation to clean-up itself if it couldn't be initialized
@@ -2960,7 +2960,7 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 	CRY_ASSERT_MESSAGE(g_object.GetImplDataPtr() == nullptr, "<Audio> The global object's impl-data must be nullptr during %s", __FUNCTION__);
 	g_object.SetImplDataPtr(g_pIImpl->ConstructGlobalObject());
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	CRY_ASSERT_MESSAGE(g_previewObject.GetImplDataPtr() == nullptr, "<Audio> The preview object's impl-data must be nullptr during %s", __FUNCTION__);
 	g_previewObject.SetImplDataPtr(g_pIImpl->ConstructObject(g_previewObject.GetTransformation(), g_previewObject.GetName()));
 
@@ -2971,7 +2971,7 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 		pObject->SetImplDataPtr(g_pIImpl->ConstructObject(pObject->GetTransformation(), pObject->GetName()));
 	}
 
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 	g_listenerManager.OnAfterImplChanged();
 
 	SetImplLanguage();
@@ -2982,9 +2982,9 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CSystem::HandleRefresh(char const* const szLevelName)
 {
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	Cry::Audio::Log(ELogType::Warning, "Beginning to refresh the AudioSystem!");
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	ERequestStatus result = g_pIImpl->StopAllSounds();
 	CRY_ASSERT(result == ERequestStatus::Success);
@@ -2998,9 +2998,9 @@ ERequestStatus CSystem::HandleRefresh(char const* const szLevelName)
 	g_xmlProcessor.ClearPreloadsData(EDataScope::All);
 	g_xmlProcessor.ClearControlsData(EDataScope::All);
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	ResetRequestCount();
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	g_pIImpl->OnRefresh();
 
@@ -3025,19 +3025,19 @@ ERequestStatus CSystem::HandleRefresh(char const* const szLevelName)
 		PreloadRequestId const preloadRequestId = StringToId(szLevelName);
 		result = g_fileCacheManager.TryLoadRequest(preloadRequestId, true, true);
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 		if (result != ERequestStatus::Success)
 		{
 			Cry::Audio::Log(ELogType::Warning, R"(No preload request found for level - "%s"!)", szLevelName);
 		}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 		AutoLoadSetting(EDataScope::LevelSpecific);
 	}
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	Cry::Audio::Log(ELogType::Warning, "Done refreshing the AudioSystem!");
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	return ERequestStatus::Success;
 }
@@ -3117,9 +3117,9 @@ void CSystem::SetOcclusionType(CObject& object, EOcclusionType const occlusionTy
 		}
 	default:
 		{
-	#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			Cry::Audio::Log(ELogType::Warning, "Unknown occlusion type during %s: %u", __FUNCTION__, occlusionType);
-	#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 			break;
 		}
@@ -3163,7 +3163,7 @@ void CSystem::GetImplInfo(SImplInfo& implInfo)
 	PushRequest(request);
 }
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ScheduleIRenderAuxGeomForRendering(IRenderAuxGeom* pRenderAuxGeom)
 {
@@ -3695,5 +3695,5 @@ void CSystem::HandleRetriggerControls()
 		ExecuteDefaultTrigger(EDefaultTriggerType::PauseAll);
 	}
 }
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }      // namespace CryAudio

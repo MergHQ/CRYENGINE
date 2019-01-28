@@ -29,13 +29,13 @@
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryMath/Cry_Camera.h>
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	#include "PreviewTrigger.h"
 	#include "Debug.h"
 	#include "Common/Logger.h"
 	#include "Common/DebugStyle.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -57,9 +57,9 @@ void CObject::Release()
 //////////////////////////////////////////////////////////////////////////
 void CObject::Destruct()
 {
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	stl::find_and_erase(g_constructedObjects, this);
-#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif      // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	g_pIImpl->DestructObject(m_pImplData);
 	m_pImplData = nullptr;
@@ -129,7 +129,7 @@ void CObject::ReportFinishedTriggerInstance(TriggerInstanceId const triggerInsta
 			}
 		}
 	}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "Unknown trigger instance id %u during %s", triggerInstanceId, __FUNCTION__);
@@ -142,7 +142,7 @@ void CObject::ReportFinishedTriggerInstance(TriggerInstanceId const triggerInsta
 	{
 		m_maxRadius = std::max(triggerState.second.radius, m_maxRadius);
 	}
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -279,7 +279,7 @@ void CObject::HandleStopFile(char const* const szFile)
 
 			if (pFile != nullptr && pFile->m_hashedFilename == hashedFilename)
 			{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				if (pFile->m_state != EStandaloneFileState::Playing)
 				{
 					char const* szState = "unknown";
@@ -302,7 +302,7 @@ void CObject::HandleStopFile(char const* const szFile)
 
 					Cry::Audio::Log(ELogType::Warning, R"(Request to stop a standalone audio file that is not playing! State: "%s")", szState);
 				}
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 
 				ERequestStatus const status = pFile->m_pImplData->Stop(m_pImplData);
 
@@ -349,7 +349,7 @@ void CObject::RemoveFlag(EObjectFlags const flag)
 	m_flags &= ~flag;
 }
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 char const* GetDefaultTriggerName(ControlId const id)
 {
@@ -1016,7 +1016,7 @@ void CObject::UpdateMaxRadius(float const radius)
 {
 	m_maxRadius = std::max(radius, m_maxRadius);
 }
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
 void CObject::ExecuteTrigger(ControlId const triggerId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
@@ -1129,10 +1129,10 @@ void CObject::StopFile(char const* const szFile, SRequestUserData const& userDat
 //////////////////////////////////////////////////////////////////////////
 void CObject::SetName(char const* const szName, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	SObjectRequestData<EObjectRequestType::SetName> requestData(this, szName);
 	PushRequest(requestData, userData);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////

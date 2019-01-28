@@ -11,9 +11,9 @@
 #include "PauseAllTrigger.h"
 #include "ResumeAllTrigger.h"
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	#include "PreviewTrigger.h"
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -43,7 +43,7 @@ TriggerInstanceId g_triggerInstanceIdCounter = 1;
 
 SPoolSizes g_poolSizes;
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 Objects g_constructedObjects;
 CObject g_object(CTransformation::GetEmptyObject(), "Global Object");
 CObject g_previewObject(CTransformation::GetEmptyObject(), "Preview Object");
@@ -51,5 +51,5 @@ CPreviewTrigger g_previewTrigger;
 SPoolSizes g_debugPoolSizes;
 #else
 CObject g_object(CTransformation::GetEmptyObject());
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }      // namespace CryAudio

@@ -37,9 +37,9 @@ public:
 	Vec3 const& GetPosition() const { return m_position; }
 	Vec3 const& GetVelocity() const { return m_velocity; }
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	char const* GetName() const { return m_name.c_str(); }
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
 	static FMOD::Studio::System* s_pSystem;
 
@@ -55,9 +55,9 @@ private:
 	CTransformation    m_transformation;
 	FMOD_3D_ATTRIBUTES m_attributes;
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	CryFixedStringT<MaxObjectNameLength> m_name;
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 };
 } // namespace Fmod
 } // namespace Impl
