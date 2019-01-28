@@ -5,7 +5,6 @@
 #include <CrySystem/ISystem.h>
 #include <CryCore/Platform/CryLibrary.h>
 
-#include "MemoryFragmentationProfiler.h"
 #include "PakVars.h"
 #include "Timer.h"
 #include "FrameProfileSystem.h"
@@ -297,7 +296,6 @@ public:
 	uint32       GetUsedMemory() override;
 
 	virtual void DumpMemoryUsageStatistics(bool bUseKB) override;
-	virtual void DumpMemoryCoverage() override;
 	void         CollectMemInfo(SCryEngineStatsGlobalMemInfo&);
 
 #ifndef _RELEASE
@@ -1018,8 +1016,6 @@ protected: // -------------------------------------------------------------
 	string m_currentLanguageAudio;
 
 	std::vector<std::pair<CTimeValue, float>> m_updateTimes;
-
-	CMemoryFragmentationProfiler              m_MemoryFragmentationProfiler;
 
 #if !defined(CRY_IS_MONOLITHIC_BUILD)
 	CCryLibrary m_gameLibrary;

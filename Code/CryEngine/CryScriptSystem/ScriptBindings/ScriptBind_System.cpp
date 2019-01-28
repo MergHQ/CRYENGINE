@@ -244,7 +244,6 @@ CScriptBind_System::CScriptBind_System(IScriptSystem* pScriptSystem, ISystem* pS
 	SCRIPT_REG_FUNC(EnableHeatVision);
 	SCRIPT_REG_FUNC(ShowDebugger);
 	SCRIPT_REG_FUNC(DumpMemStats);
-	SCRIPT_REG_FUNC(DumpMemoryCoverage);
 	SCRIPT_REG_FUNC(DumpWinHeaps);
 	SCRIPT_REG_FUNC(Break);
 	SCRIPT_REG_TEMPLFUNC(SetViewCameraFov, "fov");
@@ -291,16 +290,6 @@ int CScriptBind_System::DumpMemStats(IFunctionHandler* pH)
 		pH->GetParam(1, bUseKB);
 
 	m_pSystem->DumpMemoryUsageStatistics(bUseKB);
-	return pH->EndFunction();
-}
-
-/////////////////////////////////////////////////////////////////////////////////
-int CScriptBind_System::DumpMemoryCoverage(IFunctionHandler* pH)
-{
-	// useful to investigate memory fragmentation
-	// every time you call this from the console: #System.DumpMemoryCoverage()
-	// it adds a line to "MemoryCoverage.bmp" (generated the first time, there is a max line count)
-	m_pSystem->DumpMemoryCoverage();
 	return pH->EndFunction();
 }
 

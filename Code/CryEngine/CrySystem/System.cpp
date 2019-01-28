@@ -2935,11 +2935,6 @@ void CSystem::ExecuteCommandLine()
 	//gEnv->pConsole->ExecuteString("sys_RestoreSpec test*"); // to get useful debugging information about current spec settings to the log file
 }
 
-void CSystem::DumpMemoryCoverage()
-{
-	m_MemoryFragmentationProfiler.DumpMemoryCoverage();
-}
-
 ITextModeConsole* CSystem::GetITextModeConsole()
 {
 	if (m_env.IsDedicated())

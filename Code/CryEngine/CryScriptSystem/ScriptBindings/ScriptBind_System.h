@@ -540,11 +540,7 @@ public:
 	//!		<param name="bUseKB">True to use KB, false otherwise.</param>
 	//! <description>Dumps memory statistics.</description>
 	int DumpMemStats(IFunctionHandler* pH);
-
-	//! <code>System.DumpMemoryCoverage( bUseKB )</code>
-	//! <description>Dumps memory coverage.</description>
-	int DumpMemoryCoverage(IFunctionHandler* pH);
-
+	
 	//! <code>System.DumpWinHeaps()</code>
 	//! <description>Dumps windows heaps.</description>
 	int DumpWinHeaps(IFunctionHandler* pH);
