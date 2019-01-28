@@ -5,7 +5,7 @@
 
 #define CYCLE_BUFFERS_NUM 4
 
-class COcean : public IRenderNode, public Cry3DEngineBase
+class COcean final : public IRenderNode, public Cry3DEngineBase
 {
 public:
 	COcean(IMaterial* pMat);

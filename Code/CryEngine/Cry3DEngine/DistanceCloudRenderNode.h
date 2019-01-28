@@ -5,7 +5,7 @@
 
 #pragma once
 
-class CDistanceCloudRenderNode : public IDistanceCloudRenderNode, public Cry3DEngineBase
+class CDistanceCloudRenderNode final : public IDistanceCloudRenderNode, public Cry3DEngineBase
 {
 public:
 	// implements IDistanceCloudRenderNode

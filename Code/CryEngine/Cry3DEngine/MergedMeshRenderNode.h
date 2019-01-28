@@ -184,7 +184,7 @@ struct SMergedMeshInstanceCompressed;
 //
 //  - The cgf is preprocessed at runtime, this can be moved to level export time
 //
-class CMergedMeshRenderNode
+class CMergedMeshRenderNode final
 	: public IRenderNode
 	  , public IStreamCallback
 	  , public Cry3DEngineBase

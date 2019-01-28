@@ -84,6 +84,22 @@ struct SResourceLayout
 #endif
 };
 
+namespace DeviceResources_Internal
+{
+ILINE void EscapeStringForCStyleFormatting(string& stringToEscape)
+{
+	size_t offset = 0;
+	while (true)
+	{
+		offset = stringToEscape.find('%', offset);
+		if (offset == string::npos)
+			break;
+		stringToEscape.replace(offset, 1, "%%");
+		offset += strlen("%%");
+	}
+}
+}
+
 class CDeviceResource
 {
 
@@ -98,7 +114,10 @@ public:
 
 	inline void SetDebugName(const char* name) const
 	{
-		::SetDebugName(m_pNativeResource, name);
+		using namespace DeviceResources_Internal;
+		string escapedStr = name;
+		EscapeStringForCStyleFormatting(escapedStr);
+		::SetDebugName(m_pNativeResource, escapedStr.c_str());
 	}
 
 	inline D3DResource* GetNativeResource() const

@@ -39,7 +39,7 @@ struct SWaterWaveSerialize
 	}
 };
 
-class CWaterWaveRenderNode : public IWaterWaveRenderNode, public Cry3DEngineBase
+class CWaterWaveRenderNode final : public IWaterWaveRenderNode, public Cry3DEngineBase
 {
 
 public:

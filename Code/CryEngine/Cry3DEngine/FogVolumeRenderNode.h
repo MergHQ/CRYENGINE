@@ -7,7 +7,7 @@
 
 class CREFogVolume;
 
-class CFogVolumeRenderNode : public IFogVolumeRenderNode, public Cry3DEngineBase
+class CFogVolumeRenderNode final : public IFogVolumeRenderNode, public Cry3DEngineBase
 {
 public:
 	static void StaticReset();

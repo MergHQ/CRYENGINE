@@ -72,7 +72,7 @@ struct SWaterVolumePhysAreaInput
 	}
 };
 
-class CWaterVolumeRenderNode : public IWaterVolumeRenderNode, public Cry3DEngineBase
+class CWaterVolumeRenderNode final : public IWaterVolumeRenderNode, public Cry3DEngineBase
 {
 public:
 	// implements IWaterVolumeRenderNode

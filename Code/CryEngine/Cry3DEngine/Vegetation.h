@@ -15,9 +15,7 @@ public:
 };
 
 // Warning: Average outdoor level has about 200.000 objects of this class allocated - so keep it small
-class CVegetation
-	: public IVegetation
-	  , public Cry3DEngineBase
+class CVegetation final : public IVegetation, public Cry3DEngineBase
 {
 public:
 

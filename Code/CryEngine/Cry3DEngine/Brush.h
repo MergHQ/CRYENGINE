@@ -10,9 +10,7 @@
 	#include <CryCore/Platform/platform.h>
 #endif
 
-class CBrush
-	: public IBrush
-	  , public Cry3DEngineBase
+class CBrush : public IBrush, public Cry3DEngineBase
 {
 	friend class COctreeNode;
 
@@ -22,7 +20,7 @@ public:
 
 	virtual const char*         GetEntityClassName() const final;
 	virtual Vec3                GetPos(bool bWorldOnly = true) const final;
-	virtual float               GetScale() const;
+	virtual float               GetScale() const final;
 	virtual const char*         GetName() const final;
 	virtual bool                HasChanged();
 	virtual void                Render(const struct SRendParams& EntDrawParams, const SRenderingPassInfo& passInfo) final;
@@ -140,7 +138,7 @@ inline const AABB CBrush::GetBBox() const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-class CMovableBrush : public CBrush
+class CMovableBrush final : public CBrush
 {
 	virtual void     SetOwnerEntity(struct IEntity* pEntity) final { m_pOwnerEntity = pEntity; }
 	virtual IEntity* GetOwnerEntity() const final                  { return m_pOwnerEntity; }

@@ -42,7 +42,7 @@ struct SGeomCacheRenderElementData
 	DynArray<CREGeomCache::SMeshRenderData>* m_pCurrentFillData;
 };
 
-class CGeomCacheRenderNode : public IGeomCacheRenderNode, public IGeomCacheListener, public Cry3DEngineBase
+class CGeomCacheRenderNode final : public IGeomCacheRenderNode, public IGeomCacheListener, public Cry3DEngineBase
 {
 public:
 	CGeomCacheRenderNode();
