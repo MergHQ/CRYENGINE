@@ -299,7 +299,7 @@ protected:
 	// points here are specified in root-row space
 	bool         onRowLMBDown(PropertyRow* row, const Rect& rowRect, Point point, bool controlPressed, bool shiftPressed);
 	void         onRowLMBUp(PropertyRow* row, const Rect& rowRect, Point point);
-	void         onRowRMBDown(PropertyRow* row, const Rect& rowRect, Point point);
+	void         ShowContexMenu(PropertyRow* row, const Rect& rowRect, Point point);
 	void         onRowMouseMove(PropertyRow* row, const Rect& rowRect, Point point, property_tree::Modifier modifiers);
 	void         onMouseStill();
 
