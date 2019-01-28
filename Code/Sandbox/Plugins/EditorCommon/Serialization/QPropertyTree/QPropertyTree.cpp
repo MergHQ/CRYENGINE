@@ -1238,12 +1238,6 @@ void QPropertyTree::mousePressEvent(QMouseEvent* ev)
 		if(row){
 			model()->setFocusedRow(row);
 			update();
-
-			onRowRMBDown(row, row->rect(), fromQPoint(pointToRootSpace(ev->pos())));
-		}
-		else{
-			Rect rect = fromQRect(this->rect());
-			onRowRMBDown(model()->root(), rect, fromQPoint(pointToRootSpace(ev->pos())));
 		}
 	}
 }
@@ -1283,7 +1277,20 @@ void QPropertyTree::mouseReleaseEvent(QMouseEvent* ev)
 	}
 	else if (ev->button() == Qt::RightButton)
 	{
+		Point point = fromQPoint(ev->pos());
+		PropertyRow* row = rowByPoint(point);
+		if (row)
+		{
+			model()->setFocusedRow(row);
+			update();
 
+			ShowContexMenu(row, row->rect(), fromQPoint(pointToRootSpace(ev->pos())));
+		}
+		else
+		{
+			Rect rect = fromQRect(this->rect());
+			ShowContexMenu(model()->root(), rect, fromQPoint(pointToRootSpace(ev->pos())));
+		}
 	}
 
 	unsetCursor();

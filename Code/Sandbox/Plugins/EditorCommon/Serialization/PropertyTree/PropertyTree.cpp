@@ -521,7 +521,7 @@ void PropertyTree::onRowLMBUp(PropertyRow* row, const Rect& rowRect, Point point
 	}
 }
 
-void PropertyTree::onRowRMBDown(PropertyRow* row, const Rect& rowRect, Point point)
+void PropertyTree::ShowContexMenu(PropertyRow* row, const Rect& rowRect, Point point)
 {
 	SharedPtr<PropertyRow> handle = row;
 	PropertyRow* menuRow = 0;
@@ -536,13 +536,17 @@ void PropertyTree::onRowRMBDown(PropertyRow* row, const Rect& rowRect, Point poi
 			menuRow = row->parent();
 	}
 
-	if (menuRow)
+	if (!menuRow)
 	{
-		onRowSelected(std::vector<PropertyRow*>(1, menuRow), false, true);
-		std::unique_ptr<property_tree::IMenu> menu(ui()->createMenu());
-		clearMenuHandlers();
-		if (onContextMenu(menuRow, *menu))
-			menu->exec(point);
+		return;
+	}
+
+	onRowSelected(std::vector<PropertyRow*>(1, menuRow), false, true);
+	std::unique_ptr<property_tree::IMenu> menu(ui()->createMenu());
+	clearMenuHandlers();
+	if (onContextMenu(menuRow, *menu))
+	{
+		menu->exec(point);
 	}
 }
 
