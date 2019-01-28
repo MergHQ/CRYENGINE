@@ -18,7 +18,7 @@ CryFixedStringT<MaxControlNameLength> g_debugCurrentDspBusSettingName = g_debugN
 //////////////////////////////////////////////////////////////////////////
 void CDspBusSetting::Load()
 {
-	criAtomEx_AttachDspBusSetting(static_cast<CriChar8 const*>(m_name), nullptr, 0);
+	criAtomEx_AttachDspBusSetting(static_cast<CriChar8 const*>(m_name.c_str()), nullptr, 0);
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	g_debugCurrentDspBusSettingName = m_name;

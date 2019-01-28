@@ -21,7 +21,7 @@ struct IEnvironmentConnection
 
 	/**
 	 * Set the provided value for the environment on the specified object.
-	 * @param pIObject - implementation-specific object to set the environment on
+	 * @param pIObject - implementation-specific object to set the environment on. The audio system guarantees that this is never a null pointer.
 	 * @param amount - the fade value for the environment, 0.0f means no effect at all, 1.0f corresponds to the full effect
 	 * @return void
 	 */

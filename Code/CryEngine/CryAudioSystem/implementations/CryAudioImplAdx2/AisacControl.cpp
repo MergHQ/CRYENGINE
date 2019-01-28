@@ -4,10 +4,6 @@
 #include "AisacControl.h"
 #include "BaseObject.h"
 
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-	#include <Logger.h>
-#endif // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
-
 #include <cri_atom_ex.h>
 
 namespace CryAudio
@@ -19,28 +15,24 @@ namespace Adx2
 //////////////////////////////////////////////////////////////////////////
 void CAisacControl::Set(IObject* const pIObject, float const value)
 {
-	if (pIObject != nullptr)
-	{
-		auto const pBaseObject = static_cast<CBaseObject const*>(pIObject);
+	auto const pBaseObject = static_cast<CBaseObject const*>(pIObject);
 
-		CriAtomExPlayerHn const pPlayer = pBaseObject->GetPlayer();
-		criAtomExPlayer_SetAisacControlByName(pPlayer, static_cast<CriChar8 const*>(m_name), static_cast<CriFloat32>(m_multiplier * value + m_shift));
-		criAtomExPlayer_UpdateAll(pPlayer);
-	}
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Adx2 - Invalid Object passed to the Adx2 implementation of %s", __FUNCTION__);
-	}
-#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+	CriAtomExPlayerHn const pPlayer = pBaseObject->GetPlayer();
+	criAtomExPlayer_SetAisacControlByName(pPlayer, static_cast<CriChar8 const*>(m_name.c_str()), static_cast<CriFloat32>(m_multiplier * value + m_shift));
+	criAtomExPlayer_UpdateAll(pPlayer);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CAisacControl::SetGlobally(float const value)
 {
+	auto const finalValue = static_cast<CriFloat32>(m_multiplier * value + m_shift);
+	auto const szName = static_cast<CriChar8 const*>(m_name.c_str());
+
 	for (auto const pBaseObject : g_constructedObjects)
 	{
-		Set(pBaseObject, value);
+		CriAtomExPlayerHn const pPlayer = pBaseObject->GetPlayer();
+		criAtomExPlayer_SetAisacControlByName(pPlayer, szName, finalValue);
+		criAtomExPlayer_UpdateAll(pPlayer);
 	}
 }
 } // namespace Adx2

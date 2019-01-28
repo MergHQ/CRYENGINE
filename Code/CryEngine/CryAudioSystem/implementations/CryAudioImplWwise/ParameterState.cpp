@@ -19,18 +19,9 @@ namespace Wwise
 //////////////////////////////////////////////////////////////////////////
 void CParameterState::Set(IObject* const pIObject)
 {
-	if (pIObject != nullptr)
-	{
-		auto const pBaseObject = static_cast<CBaseObject const*>(pIObject);
+	auto const pBaseObject = static_cast<CBaseObject const*>(pIObject);
 
-		AK::SoundEngine::SetRTPCValue(m_id, m_rtpcValue, pBaseObject->GetId());
-	}
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Wwise - Invalid object passed to the Wwise implementation of %s", __FUNCTION__);
-	}
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+	AK::SoundEngine::SetRTPCValue(m_id, m_rtpcValue, pBaseObject->GetId());
 }
 
 //////////////////////////////////////////////////////////////////////////

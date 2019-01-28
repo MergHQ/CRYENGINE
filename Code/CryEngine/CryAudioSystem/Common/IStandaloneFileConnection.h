@@ -23,7 +23,7 @@ struct IStandaloneFileConnection
 
 	/**
 	 * Play a stand alone file.
-	 * @param pIObject - object to play file on
+	 * @param pIObject - object to play file on. The audio system guarantees that this is never a null pointer.
 	 * @return ERequestStatus - indicates the outcome of underlying process
 	 * @see StopFile
 	 */
@@ -31,7 +31,7 @@ struct IStandaloneFileConnection
 
 	/**
 	 * Stop a stand alone file.
-	 * @param pIObject - object to stop file on
+	 * @param pIObject - object to stop file on. The audio system guarantees that this is never a null pointer.
 	 * @return ERequestStatus - indicates the outcome of underlying process
 	 * @see PlayFile
 	 */

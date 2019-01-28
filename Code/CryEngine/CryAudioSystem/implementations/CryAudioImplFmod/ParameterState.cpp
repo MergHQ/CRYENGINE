@@ -5,10 +5,6 @@
 #include "Common.h"
 #include "BaseObject.h"
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-	#include <Logger.h>
-#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
-
 namespace CryAudio
 {
 namespace Impl
@@ -27,17 +23,8 @@ CParameterState::~CParameterState()
 //////////////////////////////////////////////////////////////////////////
 void CParameterState::Set(IObject* const pIObject)
 {
-	if (pIObject != nullptr)
-	{
-		auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
-		pBaseObject->SetParameter(m_id, m_value);
-	}
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Invalid object pointer passed to the Fmod implementation of %s", __FUNCTION__);
-	}
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+	auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
+	pBaseObject->SetParameter(m_id, m_value);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -45,7 +32,7 @@ void CParameterState::SetGlobally()
 {
 	for (auto const pBaseObject : g_constructedObjects)
 	{
-		Set(pBaseObject);
+		pBaseObject->SetParameter(m_id, m_value);
 	}
 }
 } // namespace Fmod

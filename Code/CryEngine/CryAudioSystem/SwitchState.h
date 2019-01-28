@@ -44,7 +44,7 @@ public:
 	~CSwitchState();
 
 	void          Set(CObject const& object) const;
-	void          SetGlobal() const;
+	void          SetGlobally() const;
 	SwitchStateId GetId() const { return m_switchStateId; }
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)

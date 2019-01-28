@@ -4,7 +4,8 @@
 #include "Vca.h"
 
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-	#include "Common.h"
+	#include "BaseObject.h"
+	#include <Logger.h>
 #endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 namespace CryAudio
@@ -16,6 +17,18 @@ namespace Fmod
 //////////////////////////////////////////////////////////////////////////
 void CVca::Set(IObject* const pIObject, float const value)
 {
+	SetGlobally(value);
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	auto const pBaseObject = static_cast<CBaseObject const*>(pIObject);
+	float const finalValue = m_multiplier * value + m_shift;
+	Cry::Audio::Log(ELogType::Warning, R"(Fmod - VCA "%s" was set to %f on object "%s". Consider setting it globally.)", m_name.c_str(), finalValue, pBaseObject->GetName());
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CVca::SetGlobally(float const value)
+{
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	float const finalValue = m_multiplier * value + m_shift;
 	m_pVca->setVolume(finalValue);
@@ -23,12 +36,6 @@ void CVca::Set(IObject* const pIObject, float const value)
 #else
 	m_pVca->setVolume(m_multiplier * value + m_shift);
 #endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CVca::SetGlobally(float const value)
-{
-	Set(nullptr, value);
 }
 } // namespace Fmod
 } // namespace Impl

@@ -21,7 +21,7 @@ struct ISwitchStateConnection
 
 	/**
 	 * Set the state (on a switch) on the provided object.
-	 * @param pIObject - implementation-specific object to set the state on
+	 * @param pIObject - implementation-specific object to set the state on. The audio system guarantees that this is never a null pointer.
 	 * @return void
 	 */
 	virtual void Set(IObject* const pIObject) = 0;

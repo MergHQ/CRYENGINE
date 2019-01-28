@@ -7,10 +7,6 @@
 #include "Impl.h"
 #include "BaseObject.h"
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	#include <Logger.h>
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
-
 #include <AK/SoundEngine/Common/AkSoundEngine.h>
 
 namespace CryAudio
@@ -50,45 +46,36 @@ ERequestStatus CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
-	if (pIObject != nullptr)
-	{
-		auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
+	auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-		CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(triggerInstanceId, m_id, m_maxAttenuation, pBaseObject, this);
+	CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(triggerInstanceId, m_id, m_maxAttenuation, pBaseObject, this);
 #else
-		CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(triggerInstanceId, m_id, m_maxAttenuation);
+	CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(triggerInstanceId, m_id, m_maxAttenuation);
 #endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
-		pBaseObject->SetAuxSendValues();
+	pBaseObject->SetAuxSendValues();
 
-		AkPlayingID const playingId = AK::SoundEngine::PostEvent(m_id, pBaseObject->GetId(), AK_EndOfEvent, &EndEventCallback, pEventInstance);
+	AkPlayingID const playingId = AK::SoundEngine::PostEvent(m_id, pBaseObject->GetId(), AK_EndOfEvent, &EndEventCallback, pEventInstance);
 
-		if (playingId != AK_INVALID_PLAYING_ID)
-		{
+	if (playingId != AK_INVALID_PLAYING_ID)
+	{
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-			{
-				CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
-				g_playingIds[playingId] = pEventInstance;
-			}
+		{
+			CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
+			g_playingIds[playingId] = pEventInstance;
+		}
 #endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
-			pEventInstance->SetPlayingId(playingId);
-			pBaseObject->AddEventInstance(pEventInstance);
+		pEventInstance->SetPlayingId(playingId);
+		pBaseObject->AddEventInstance(pEventInstance);
 
-			result = (pEventInstance->GetState() == EEventInstanceState::Virtual) ? ERequestStatus::SuccessVirtual : ERequestStatus::Success;
-		}
-		else
-		{
-			g_pImpl->DestructEventInstance(pEventInstance);
-		}
+		result = (pEventInstance->GetState() == EEventInstanceState::Virtual) ? ERequestStatus::SuccessVirtual : ERequestStatus::Success;
 	}
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	else
 	{
-		Cry::Audio::Log(ELogType::Error, "Invalid object passed to the Wwise implementation of %s", __FUNCTION__);
+		g_pImpl->DestructEventInstance(pEventInstance);
 	}
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 	return result;
 }
@@ -96,11 +83,8 @@ ERequestStatus CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 //////////////////////////////////////////////////////////////////////////
 void CEvent::Stop(IObject* const pIObject)
 {
-	if (pIObject != nullptr)
-	{
-		auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
-		pBaseObject->StopEvent(m_id);
-	}
+	auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
+	pBaseObject->StopEvent(m_id);
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -1828,7 +1828,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			if (pParameter != nullptr)
 			{
-				pParameter->SetGlobal(pRequestData->value);
+				pParameter->SetGlobally(pRequestData->value);
 				result = ERequestStatus::Success;
 			}
 			else
@@ -1871,7 +1871,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 				if (pState != nullptr)
 				{
-					pState->SetGlobal();
+					pState->SetGlobally();
 					result = ERequestStatus::Success;
 				}
 			}

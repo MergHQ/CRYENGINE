@@ -267,59 +267,62 @@ void CObject::ReleasePendingRays()
 //////////////////////////////////////////////////////////////////////////
 void CObject::HandleStopFile(char const* const szFile)
 {
-	CHashedString const hashedFilename(szFile);
-	auto iter = m_activeStandaloneFiles.cbegin();
-	auto iterEnd = m_activeStandaloneFiles.cend();
-
-	while (iter != iterEnd)
+	if (m_pImplData != nullptr)
 	{
-		CStandaloneFile* const pFile = iter->first;
+		CHashedString const hashedFilename(szFile);
+		auto iter = m_activeStandaloneFiles.cbegin();
+		auto iterEnd = m_activeStandaloneFiles.cend();
 
-		if (pFile != nullptr && pFile->m_hashedFilename == hashedFilename)
+		while (iter != iterEnd)
 		{
+			CStandaloneFile* const pFile = iter->first;
+
+			if (pFile != nullptr && pFile->m_hashedFilename == hashedFilename)
+			{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			if (pFile->m_state != EStandaloneFileState::Playing)
-			{
-				char const* szState = "unknown";
-
-				switch (pFile->m_state)
+				if (pFile->m_state != EStandaloneFileState::Playing)
 				{
-				case EStandaloneFileState::Playing:
-					szState = "playing";
-					break;
-				case EStandaloneFileState::Loading:
-					szState = "loading";
-					break;
-				case EStandaloneFileState::Stopping:
-					szState = "stopping";
-					break;
-				default:
-					szState = "unknown";
-					break;
+					char const* szState = "unknown";
+
+					switch (pFile->m_state)
+					{
+					case EStandaloneFileState::Playing:
+						szState = "playing";
+						break;
+					case EStandaloneFileState::Loading:
+						szState = "loading";
+						break;
+					case EStandaloneFileState::Stopping:
+						szState = "stopping";
+						break;
+					default:
+						szState = "unknown";
+						break;
+					}
+
+					Cry::Audio::Log(ELogType::Warning, R"(Request to stop a standalone audio file that is not playing! State: "%s")", szState);
 				}
+#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
 
-				Cry::Audio::Log(ELogType::Warning, R"(Request to stop a standalone audio file that is not playing! State: "%s")", szState);
+				ERequestStatus const status = pFile->m_pImplData->Stop(m_pImplData);
+
+				if (status != ERequestStatus::Pending)
+				{
+					ReportFinishedStandaloneFile(pFile);
+					g_fileManager.ReleaseStandaloneFile(pFile);
+
+					iter = m_activeStandaloneFiles.begin();
+					iterEnd = m_activeStandaloneFiles.end();
+					continue;
+				}
+				else
+				{
+					pFile->m_state = EStandaloneFileState::Stopping;
+				}
 			}
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
-			ERequestStatus const status = pFile->m_pImplData->Stop(m_pImplData);
-
-			if (status != ERequestStatus::Pending)
-			{
-				ReportFinishedStandaloneFile(pFile);
-				g_fileManager.ReleaseStandaloneFile(pFile);
-
-				iter = m_activeStandaloneFiles.begin();
-				iterEnd = m_activeStandaloneFiles.end();
-				continue;
-			}
-			else
-			{
-				pFile->m_state = EStandaloneFileState::Stopping;
-			}
+			++iter;
 		}
-
-		++iter;
 	}
 }
 

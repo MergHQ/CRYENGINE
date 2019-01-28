@@ -19,11 +19,8 @@ ERequestStatus CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 {
 	ERequestStatus status = ERequestStatus::Failure;
 
-	if (pIObject != nullptr)
-	{
-		auto const pObject = static_cast<CObject*>(pIObject);
-		status = SoundEngine::ExecuteEvent(pObject, this, triggerInstanceId);
-	}
+	auto const pObject = static_cast<CObject*>(pIObject);
+	status = SoundEngine::ExecuteEvent(pObject, this, triggerInstanceId);
 
 	return status;
 }
@@ -31,11 +28,8 @@ ERequestStatus CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 //////////////////////////////////////////////////////////////////////////
 void CEvent::Stop(IObject* const pIObject)
 {
-	if (pIObject != nullptr)
-	{
-		auto const pObject = static_cast<CObject*>(pIObject);
-		pObject->StopEvent(m_id);
-	}
+	auto const pObject = static_cast<CObject*>(pIObject);
+	pObject->StopEvent(m_id);
 }
 } // namespace SDL_mixer
 } // namespace Impl

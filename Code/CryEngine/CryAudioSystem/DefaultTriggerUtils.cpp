@@ -2,7 +2,6 @@
 
 #include "stdafx.h"
 #include "DefaultTriggerUtils.h"
-#include "Managers.h"
 #include "Object.h"
 #include "Common/IImpl.h"
 #include "Common/IObject.h"
@@ -20,32 +19,43 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 	STriggerInstanceState triggerInstanceState;
 	triggerInstanceState.triggerId = pControl->GetId();
 
-	for (auto const pConnection : connections)
+	Impl::IObject* const pIObject = g_object.GetImplDataPtr();
+
+	if (pIObject != nullptr)
 	{
-		ERequestStatus const activateResult = pConnection->Execute(g_object.GetImplDataPtr(), g_triggerInstanceIdCounter);
-
-		if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual) || (activateResult == ERequestStatus::Pending))
+		for (auto const pConnection : connections)
 		{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			CRY_ASSERT_MESSAGE(pControl->GetDataScope() == EDataScope::Global, "Default controls must always have global data scope! (%s) during %s", pControl->GetName(), __FUNCTION__);
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+			ERequestStatus const activateResult = pConnection->Execute(pIObject, g_triggerInstanceIdCounter);
 
-			if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual))
+			if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual) || (activateResult == ERequestStatus::Pending))
 			{
-				++(triggerInstanceState.numPlayingInstances);
-			}
-			else if (activateResult == ERequestStatus::Pending)
-			{
-				++(triggerInstanceState.numLoadingInstances);
-			}
-		}
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		else if (activateResult != ERequestStatus::SuccessDoNotTrack)
-		{
-			Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", pControl->GetName(), g_object.GetName(), __FUNCTION__);
-		}
+				CRY_ASSERT_MESSAGE(pControl->GetDataScope() == EDataScope::Global, "Default controls must always have global data scope! (%s) during %s", pControl->GetName(), __FUNCTION__);
+#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+
+				if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual))
+				{
+					++(triggerInstanceState.numPlayingInstances);
+				}
+				else if (activateResult == ERequestStatus::Pending)
+				{
+					++(triggerInstanceState.numLoadingInstances);
+				}
+			}
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+			else if (activateResult != ERequestStatus::SuccessDoNotTrack)
+			{
+				Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", pControl->GetName(), g_object.GetName(), __FUNCTION__);
+			}
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+		}
 	}
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Invalid impl object during %s", __FUNCTION__);
+	}
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	if (triggerInstanceState.numPlayingInstances > 0 || triggerInstanceState.numLoadingInstances > 0)
 	{

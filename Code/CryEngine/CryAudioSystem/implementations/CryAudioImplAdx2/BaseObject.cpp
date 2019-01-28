@@ -16,7 +16,7 @@ namespace Impl
 namespace Adx2
 {
 //////////////////////////////////////////////////////////////////////////
-static void PlaybackEventCallback(void* pObject, CriAtomExPlaybackEvent playbackEvent, const CriAtomExPlaybackInfoDetail* pInfo)
+static void PlaybackEventCallback(void* pObject, CriAtomExPlaybackEvent playbackEvent, CriAtomExPlaybackInfoDetail const* pInfo)
 {
 	if ((playbackEvent != CriAtomExPlaybackEvent::CRIATOMEX_PLAYBACK_EVENT_ALLOCATE) && (pObject != nullptr))
 	{

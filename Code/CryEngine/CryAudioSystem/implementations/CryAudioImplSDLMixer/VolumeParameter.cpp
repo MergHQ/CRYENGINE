@@ -13,21 +13,21 @@ namespace SDL_mixer
 //////////////////////////////////////////////////////////////////////////
 void CVolumeParameter::Set(IObject* const pIObject, float const value)
 {
-	if (pIObject != nullptr)
-	{
-		auto const pObject = static_cast<CObject*>(pIObject);
-		float parameterValue = m_multiplier * crymath::clamp(value, 0.0f, 1.0f) + m_shift;
-		parameterValue = crymath::clamp(parameterValue, 0.0f, 1.0f);
-		pObject->SetVolume(m_sampleId, parameterValue);
-	}
+	auto const pObject = static_cast<CObject*>(pIObject);
+	float parameterValue = m_multiplier * crymath::clamp(value, 0.0f, 1.0f) + m_shift;
+	parameterValue = crymath::clamp(parameterValue, 0.0f, 1.0f);
+	pObject->SetVolume(m_sampleId, parameterValue);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CVolumeParameter::SetGlobally(float const value)
 {
+	float parameterValue = m_multiplier * crymath::clamp(value, 0.0f, 1.0f) + m_shift;
+	parameterValue = crymath::clamp(parameterValue, 0.0f, 1.0f);
+
 	for (auto const pObject : g_objects)
 	{
-		Set(pObject, value);
+		pObject->SetVolume(m_sampleId, parameterValue);
 	}
 }
 } // namespace SDL_mixer
