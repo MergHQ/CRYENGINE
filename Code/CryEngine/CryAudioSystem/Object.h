@@ -96,7 +96,9 @@ public:
 		: m_pImplData(nullptr)
 		, m_transformation(transformation)
 		, m_flags(EObjectFlags::InUse)
+	#if defined(CRY_AUDIO_USE_OCCLUSION)
 		, m_propagationProcessor(*this)
+	#endif // CRY_AUDIO_USE_OCCLUSION
 		, m_entityId(INVALID_ENTITYID)
 		, m_numPendingSyncCallbacks(0)
 		, m_maxRadius(0.0f)
@@ -107,7 +109,9 @@ public:
 		: m_pImplData(nullptr)
 		, m_transformation(transformation)
 		, m_flags(EObjectFlags::InUse)
+	#if defined(CRY_AUDIO_USE_OCCLUSION)
 		, m_propagationProcessor(*this)
+	#endif // CRY_AUDIO_USE_OCCLUSION
 		, m_entityId(INVALID_ENTITYID)
 		, m_numPendingSyncCallbacks(0)
 	{}
@@ -125,8 +129,6 @@ public:
 
 	ERequestStatus HandleStopTrigger(CTrigger const* const pTrigger);
 	void           HandleSetTransformation(CTransformation const& transformation);
-	void           HandleSetOcclusionType(EOcclusionType const calcType);
-	void           HandleSetOcclusionRayOffset(float const offset);
 	void           HandleStopFile(char const* const szFile);
 
 	void           Init(Impl::IObject* const pImplData, EntityId const entityId);
@@ -134,15 +136,19 @@ public:
 	void           Destruct();
 
 	// Callbacks
-	void                           ReportFinishedStandaloneFile(CStandaloneFile* const pStandaloneFile);
-	void                           GetStartedStandaloneFileRequestData(CStandaloneFile* const pStandaloneFile, CRequest& request);
+	void ReportFinishedStandaloneFile(CStandaloneFile* const pStandaloneFile);
+	void GetStartedStandaloneFileRequestData(CStandaloneFile* const pStandaloneFile, CRequest& request);
 
-	void                           StopAllTriggers();
+	void StopAllTriggers();
 
-	void                           SetOcclusion(float const occlusion);
-	void                           ProcessPhysicsRay(CRayInfo* const pRayInfo);
-	void                           UpdateOcclusion() { m_propagationProcessor.UpdateOcclusion(); }
-	void                           ReleasePendingRays();
+#if defined(CRY_AUDIO_USE_OCCLUSION)
+	void SetOcclusion(float const occlusion);
+	void HandleSetOcclusionType(EOcclusionType const calcType);
+	void ProcessPhysicsRay(CRayInfo* const pRayInfo);
+	void HandleSetOcclusionRayOffset(float const offset);
+	void UpdateOcclusion();
+	void ReleasePendingRays();
+#endif // CRY_AUDIO_USE_OCCLUSION
 
 	ObjectStandaloneFileMap const& GetActiveStandaloneFiles() const               { return m_activeStandaloneFiles; }
 
@@ -198,15 +204,20 @@ private:
 	Impl::IObject*          m_pImplData;
 	EObjectFlags            m_flags;
 	CTransformation         m_transformation;
-	CPropagationProcessor   m_propagationProcessor;
 	EntityId                m_entityId;
 	volatile int            m_numPendingSyncCallbacks;
+
+#if defined(CRY_AUDIO_USE_OCCLUSION)
+	CPropagationProcessor m_propagationProcessor;
+#endif // CRY_AUDIO_USE_OCCLUSION
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:
 
 	void           DrawDebugInfo(IRenderAuxGeom& auxGeom);
+	#if defined(CRY_AUDIO_USE_OCCLUSION)
 	void           ResetObstructionRays() { m_propagationProcessor.ResetRayData(); }
+	#endif // CRY_AUDIO_USE_OCCLUSION
 	void           ForceImplementationRefresh(bool const setTransformation);
 
 	char const*    GetName() const { return m_name.c_str(); }

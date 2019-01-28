@@ -122,6 +122,9 @@ if(WINDOWS OR LINUX OR ANDROID)
 endif()
 
 # Audio
+# Occlusion is enabled by default
+option(AUDIO_USE_OCCLUSION "Enable" ON)
+
 function(try_to_enable_fmod)
 if (NOT ORBIS)
 	if (DEFINED AUDIO_FMOD)

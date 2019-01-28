@@ -98,7 +98,10 @@ void CTrigger::Execute(
 		if (isPlaying)
 		{
 			object.RemoveFlag(EObjectFlags::Virtual);
+
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 			object.UpdateOcclusion();
+#endif    // CRY_AUDIO_USE_OCCLUSION
 		}
 		else if (isVirtual)
 		{
@@ -165,7 +168,10 @@ void CTrigger::Execute(
 	if (isPlaying)
 	{
 		object.RemoveFlag(EObjectFlags::Virtual);
+
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 		object.UpdateOcclusion();
+#endif    // CRY_AUDIO_USE_OCCLUSION
 	}
 	else if (isVirtual)
 	{

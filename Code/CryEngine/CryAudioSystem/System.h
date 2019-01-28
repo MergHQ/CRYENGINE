@@ -103,7 +103,9 @@ private:
 	ERequestStatus HandleRefresh(char const* const szLevelName);
 	void           SetImplLanguage();
 	void           SetCurrentEnvironmentsOnObject(CObject* const pObject, EntityId const entityToIgnore);
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 	void           SetOcclusionType(CObject& object, EOcclusionType const occlusionType) const;
+#endif // CRY_AUDIO_USE_OCCLUSION
 	void           ExecuteDefaultTrigger(EDefaultTriggerType const type, SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
 
 	static void    OnCallback(SRequestInfo const* const pRequestInfo);
