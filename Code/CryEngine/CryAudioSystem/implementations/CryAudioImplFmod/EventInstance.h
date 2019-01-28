@@ -46,7 +46,7 @@ public:
 	CEventInstance& operator=(CEventInstance const&) = delete;
 	CEventInstance& operator=(CEventInstance&&) = delete;
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	explicit CEventInstance(
 		TriggerInstanceId const triggerInstanceId,
 		uint32 const eventId,
@@ -84,7 +84,7 @@ public:
 		, m_pEvent(pEvent)
 		, m_toBeRemoved(false)
 	{}
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
 	~CEventInstance();
 
@@ -110,9 +110,9 @@ public:
 	void                         SetToBeRemoved()      { m_toBeRemoved = true; }
 	bool                         IsToBeRemoved() const { return m_toBeRemoved; }
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	CBaseObject const* GetObject() const { return m_pBaseObject; }
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
 private:
 
@@ -134,9 +134,9 @@ private:
 
 	std::atomic_bool                 m_toBeRemoved;
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	CBaseObject const* const m_pBaseObject;
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 };
 } // namespace Fmod
 } // namespace Impl

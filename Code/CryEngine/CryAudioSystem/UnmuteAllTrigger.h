@@ -17,7 +17,7 @@ public:
 	CUnmuteAllTrigger& operator=(CUnmuteAllTrigger const&) = delete;
 	CUnmuteAllTrigger& operator=(CUnmuteAllTrigger&&) = delete;
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	CUnmuteAllTrigger()
 		: Control(g_unmuteAllTriggerId, EDataScope::Global, g_szUnmuteAllTriggerName)
 	{}
@@ -25,7 +25,7 @@ public:
 	CUnmuteAllTrigger()
 		: Control(g_unmuteAllTriggerId, EDataScope::Global)
 	{}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	~CUnmuteAllTrigger();
 

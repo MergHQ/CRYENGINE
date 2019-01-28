@@ -5,21 +5,21 @@
 #include <CryAudio/IAudioInterfacesCommonData.h>
 #include <fmod_common.h>
 
-#define FMOD_IMPL_INFO_STRING "Fmod Studio - "
+#define CRY_AUDIO_IMPL_FMOD_INFO_STRING "Fmod Studio - "
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-	#define ASSERT_FMOD_OK                    CRY_ASSERT(fmodResult == FMOD_OK)
-	#define ASSERT_FMOD_OK_OR_INVALID_HANDLE  CRY_ASSERT(fmodResult == FMOD_OK || fmodResult == FMOD_ERR_INVALID_HANDLE)
-	#define ASSERT_FMOD_OK_OR_NOT_LOADED      CRY_ASSERT(fmodResult == FMOD_OK || fmodResult == FMOD_ERR_STUDIO_NOT_LOADED)
-	#define ASSERT_FMOD_OK_OR_EVENT_NOT_FOUND CRY_ASSERT(fmodResult == FMOD_OK || fmodResult == FMOD_ERR_EVENT_NOTFOUND)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+	#define CRY_AUDIO_IMPL_FMOD_ASSERT_OK                    CRY_ASSERT(fmodResult == FMOD_OK)
+	#define CRY_AUDIO_IMPL_FMOD_ASSERT_OK_OR_INVALID_HANDLE  CRY_ASSERT(fmodResult == FMOD_OK || fmodResult == FMOD_ERR_INVALID_HANDLE)
+	#define CRY_AUDIO_IMPL_FMOD_ASSERT_OK_OR_NOT_LOADED      CRY_ASSERT(fmodResult == FMOD_OK || fmodResult == FMOD_ERR_STUDIO_NOT_LOADED)
+	#define CRY_AUDIO_IMPL_FMOD_ASSERT_OK_OR_EVENT_NOT_FOUND CRY_ASSERT(fmodResult == FMOD_OK || fmodResult == FMOD_ERR_EVENT_NOTFOUND)
 #else
-	#define ASSERT_FMOD_OK                    (void)fmodResult
-	#define ASSERT_FMOD_OK_OR_INVALID_HANDLE  (void)fmodResult
-	#define ASSERT_FMOD_OK_OR_NOT_LOADED      (void)fmodResult
-	#define ASSERT_FMOD_OK_OR_EVENT_NOT_FOUND (void)fmodResult
-#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+	#define CRY_AUDIO_IMPL_FMOD_ASSERT_OK                    (void)fmodResult
+	#define CRY_AUDIO_IMPL_FMOD_ASSERT_OK_OR_INVALID_HANDLE  (void)fmodResult
+	#define CRY_AUDIO_IMPL_FMOD_ASSERT_OK_OR_NOT_LOADED      (void)fmodResult
+	#define CRY_AUDIO_IMPL_FMOD_ASSERT_OK_OR_EVENT_NOT_FOUND (void)fmodResult
+#endif // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
-#define FMOD_IMPL_INVALID_INDEX (-1)
+#define CRY_AUDIO_IMPL_FMOD_INVALID_INDEX (-1)
 
 namespace CryAudio
 {
@@ -88,7 +88,7 @@ inline void Fill3DAttributeVelocity(Vec3 const& velocity, FMOD_3D_ATTRIBUTES& at
 	attributes.velocity.y = velocity.z;
 }
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 class CVca;
 
 using ActiveSnapshots = std::vector<CryFixedStringT<MaxControlNameLength>>;
@@ -110,7 +110,7 @@ constexpr EDebugListFilter g_debugListMask =
 	EDebugListFilter::EventInstances |
 	EDebugListFilter::Snapshots |
 	EDebugListFilter::Vcas;
-#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 }      // namespace Fmod
 }      // namespace Impl
 }      // namespace CryAudio

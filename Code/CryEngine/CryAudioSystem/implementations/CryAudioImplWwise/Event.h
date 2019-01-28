@@ -22,7 +22,7 @@ public:
 	CEvent& operator=(CEvent const&) = delete;
 	CEvent& operator=(CEvent&&) = delete;
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	explicit CEvent(AkUniqueID const id, float const maxAttenuation, char const* const szName)
 		: m_id(id)
 		, m_maxAttenuation(maxAttenuation)
@@ -33,7 +33,7 @@ public:
 		: m_id(id)
 		, m_maxAttenuation(maxAttenuation)
 	{}
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 	virtual ~CEvent() override = default;
 
@@ -46,9 +46,9 @@ public:
 	virtual ERequestStatus UnloadAsync(TriggerInstanceId const triggerInstanceId) const override;
 	// ~CryAudio::Impl::ITriggerConnection
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	char const* GetName() const { return m_name.c_str(); }
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 private:
 
@@ -58,9 +58,9 @@ private:
 	AkUniqueID const m_id;
 	float const      m_maxAttenuation;
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	CryFixedStringT<MaxControlNameLength> const m_name;
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 };
 } // namespace Wwise
 } // namespace Impl

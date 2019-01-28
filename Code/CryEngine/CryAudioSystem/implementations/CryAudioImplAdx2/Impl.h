@@ -72,7 +72,7 @@ public:
 	virtual void                       OnRefresh() override;
 	virtual void                       SetLanguage(char const* const szLanguage) override;
 
-	// Below data is only used when INCLUDE_ADX2_IMPL_PRODUCTION_CODE is defined!
+	// Below data is only used when CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE is defined!
 	virtual void GetFileData(char const* const szName, SFileData& fileData) const override;
 	virtual void DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo) override;
 	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const override;
@@ -110,10 +110,10 @@ private:
 	CriAtomDbasId                         m_dbasId;
 	CriAtomEx3dListenerConfig             m_listenerConfig;
 
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	CryFixedStringT<MaxInfoStringLength> const m_name;
 	size_t m_acfFileSize = 0;
-#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 };
 } // namespace Adx2
 } // namespace Impl

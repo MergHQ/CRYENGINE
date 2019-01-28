@@ -20,7 +20,7 @@ public:
 	CSwitch& operator=(CSwitch const&) = delete;
 	CSwitch& operator=(CSwitch&&) = delete;
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	explicit CSwitch(ControlId const id, EDataScope const dataScope, char const* const szName)
 		: Control(id, dataScope, szName)
 	{}
@@ -28,7 +28,7 @@ public:
 	explicit CSwitch(ControlId const id, EDataScope const dataScope)
 		: Control(id, dataScope)
 	{}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	~CSwitch();
 

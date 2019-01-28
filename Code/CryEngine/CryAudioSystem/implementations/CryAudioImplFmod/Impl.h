@@ -69,7 +69,7 @@ public:
 	virtual void                       OnRefresh() override;
 	virtual void                       SetLanguage(char const* const szLanguage) override;
 
-	// Below data is only used when INCLUDE_FMOD_IMPL_PRODUCTION_CODE is defined!
+	// Below data is only used when CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE is defined!
 	virtual void GetFileData(char const* const szName, SFileData& fileData) const override;
 	virtual void DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo) override;
 	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const override;
@@ -108,12 +108,12 @@ private:
 	FMOD::Studio::Bank*                   m_pMasterStringsBank;
 	CryFixedStringT<MaxControlNameLength> m_language;
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	CryFixedStringT<MaxInfoStringLength> m_name;
 	size_t                               m_masterBankSize = 0;
 	size_t                               m_masterAssetsBankSize = 0;
 	size_t                               m_masterStringsBankSize = 0;
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 };
 } // namespace Fmod
 } // namespace Impl

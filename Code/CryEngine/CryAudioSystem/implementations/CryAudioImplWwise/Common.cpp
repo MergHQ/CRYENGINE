@@ -5,10 +5,10 @@
 
 #include "Impl.h"
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	#include "EventInstance.h"
 	#include "Object.h"
-#endif // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -25,12 +25,12 @@ AkGameObjectID g_globalObjectId = AK_INVALID_GAME_OBJECT;
 
 uint32 g_numObjectsWithRelativeVelocity = 0;
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 CryCriticalSection g_cs;
 std::unordered_map<AkPlayingID, CEventInstance*> g_playingIds;
 std::unordered_map<AkGameObjectID, CBaseObject*> g_gameObjectIds;
 States g_debugStates;
-#endif // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 }      // namespace Wwise
 }      // namespace Impl
 }      // namespace CryAudio

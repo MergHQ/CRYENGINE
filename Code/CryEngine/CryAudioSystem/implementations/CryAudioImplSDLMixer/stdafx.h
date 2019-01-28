@@ -10,5 +10,5 @@
 #include <CrySystem/ISystem.h>
 
 #if !defined(_RELEASE)
-	#define INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+	#define CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 #endif // _RELEASE

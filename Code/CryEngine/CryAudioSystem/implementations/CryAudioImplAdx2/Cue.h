@@ -33,7 +33,7 @@ public:
 	CCue& operator=(CCue const&) = delete;
 	CCue& operator=(CCue&&) = delete;
 
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	explicit CCue(
 		uint32 const id,
 		char const* const szCueName,
@@ -57,7 +57,7 @@ public:
 		, m_cueSheetId(acbId)
 		, m_actionType(type)
 	{}
-#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 	virtual ~CCue() override = default;
 
@@ -70,9 +70,9 @@ public:
 	virtual ERequestStatus UnloadAsync(TriggerInstanceId const triggerInstanceId) const override { return ERequestStatus::Success; }
 	// ~CryAudio::Impl::ITriggerConnection
 
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	char const* GetName() const { return m_name.c_str(); }
-#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 private:
 
@@ -81,9 +81,9 @@ private:
 	CryFixedStringT<MaxControlNameLength> const m_name;
 	uint32 const                                m_cueSheetId;
 
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	CryFixedStringT<MaxControlNameLength> const m_cueSheetName;
-#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 };
 } // namespace Adx2
 } // namespace Impl

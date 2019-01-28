@@ -47,7 +47,7 @@ public:
 	virtual ERequestStatus         SetName(char const* const szName) override;
 	virtual void                   ToggleFunctionality(EObjectFunctionality const type, bool const enable) override {}
 
-	// Below data is only used when INCLUDE_ADX2_IMPL_PRODUCTION_CODE is defined!
+	// Below data is only used when CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE is defined!
 	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter) override {}
 	// ~CryAudio::Impl::IObject
 
@@ -65,9 +65,9 @@ public:
 
 	CueInstances const& GetCueInstances() const { return m_cueInstances; }
 
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	char const* GetName() const { return m_name.c_str(); }
-#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 protected:
 
@@ -79,9 +79,9 @@ protected:
 	CriAtomExPlayerHn   m_pPlayer;
 	CueInstances        m_cueInstances;
 
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	CryFixedStringT<MaxObjectNameLength> m_name;
-#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 };
 } // namespace Adx2
 } // namespace Impl

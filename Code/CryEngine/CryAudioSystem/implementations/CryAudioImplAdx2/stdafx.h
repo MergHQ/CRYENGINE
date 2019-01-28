@@ -11,5 +11,5 @@
 #include <CrySystem/File/ICryPak.h>
 
 #if !defined(_RELEASE)
-	#define INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+	#define CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 #endif // _RELEASE

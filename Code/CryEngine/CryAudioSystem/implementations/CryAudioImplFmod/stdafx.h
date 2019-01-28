@@ -11,5 +11,5 @@
 #include <fmod_studio.hpp>
 
 #if !defined(_RELEASE)
-	#define INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+	#define CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 #endif // _RELEASE

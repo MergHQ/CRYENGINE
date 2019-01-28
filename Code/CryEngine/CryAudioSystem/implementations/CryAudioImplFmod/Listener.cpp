@@ -20,7 +20,7 @@ CListener::CListener(CTransformation const& transformation, int const id)
 {
 	Fill3DAttributeTransformation(transformation, m_attributes);
 	FMOD_RESULT const fmodResult = s_pSystem->setListenerAttributes(id, &m_attributes);
-	ASSERT_FMOD_OK;
+	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -60,9 +60,9 @@ void CListener::Update(float const deltaTime)
 //////////////////////////////////////////////////////////////////////////
 void CListener::SetName(char const* const szName)
 {
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	m_name = szName;
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -73,7 +73,7 @@ void CListener::SetTransformation(CTransformation const& transformation)
 
 	Fill3DAttributeTransformation(m_transformation, m_attributes);
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	// Always update velocity in non-release builds for debug draw.
 	m_isMovingOrDecaying = true;
 	Fill3DAttributeVelocity(m_velocity, m_attributes);
@@ -87,10 +87,10 @@ void CListener::SetTransformation(CTransformation const& transformation)
 	{
 		m_previousPosition = m_position;
 	}
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
 	FMOD_RESULT const fmodResult = s_pSystem->setListenerAttributes(m_id, &m_attributes);
-	ASSERT_FMOD_OK;
+	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -98,7 +98,7 @@ void CListener::SetVelocity()
 {
 	Fill3DAttributeVelocity(m_velocity, m_attributes);
 	FMOD_RESULT const fmodResult = s_pSystem->setListenerAttributes(m_id, &m_attributes);
-	ASSERT_FMOD_OK;
+	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 }
 } // namespace Fmod
 } // namespace Impl

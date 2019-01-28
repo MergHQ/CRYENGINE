@@ -3,9 +3,9 @@
 #include "stdafx.h"
 #include "StandaloneFile.h"
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	#include <Logger.h>
-#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
 #include <fmod_common.h>
 #include <fmod.hpp>
@@ -25,7 +25,7 @@ FMOD_RESULT F_CALLBACK FileCallback(FMOD_CHANNELCONTROL* pChannelControl, FMOD_C
 		FMOD::Channel* pChannel = (FMOD::Channel*)pChannelControl;
 		CStandaloneFile* pStandaloneFile = nullptr;
 		FMOD_RESULT const fmodResult = pChannel->getUserData(reinterpret_cast<void**>(&pStandaloneFile));
-		ASSERT_FMOD_OK;
+		CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 		if (pStandaloneFile != nullptr)
 		{
@@ -42,7 +42,7 @@ void CStandaloneFile::StartLoading()
 {
 	FMOD_RESULT fmodResult = s_pLowLevelSystem->createSound(m_fileName, FMOD_CREATESTREAM | FMOD_NONBLOCKING | FMOD_3D, nullptr, &m_pLowLevelSound);
 
-	ASSERT_FMOD_OK;
+	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -54,12 +54,12 @@ bool CStandaloneFile::IsReady()
 	{
 		m_pLowLevelSound->getOpenState(&state, nullptr, nullptr, nullptr);
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 		if (state == FMOD_OPENSTATE_ERROR)
 		{
 			Cry::Audio::Log(ELogType::Error, "Failed to load audio file %s", m_fileName.c_str());
 		}
-#endif    // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 	}
 
 	return state != FMOD_OPENSTATE_LOADING;
@@ -69,7 +69,7 @@ bool CStandaloneFile::IsReady()
 void CStandaloneFile::PlayFile(FMOD_3D_ATTRIBUTES const& attributes)
 {
 	FMOD_RESULT const fmodResult = s_pLowLevelSystem->playSound(m_pLowLevelSound, nullptr, true, &m_pChannel);
-	ASSERT_FMOD_OK;
+	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 	if (m_pChannel != nullptr)
 	{
@@ -94,7 +94,7 @@ void CStandaloneFile::StopFile()
 	if (m_pChannel != nullptr)
 	{
 		FMOD_RESULT const fmodResult = m_pChannel->stop();
-		ASSERT_FMOD_OK;
+		CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 	}
 }
 } // namespace Fmod

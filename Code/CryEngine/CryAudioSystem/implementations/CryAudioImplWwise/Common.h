@@ -11,14 +11,14 @@
 #include "AK/SoundEngine/Common/AkTypes.h"
 #include <CryAudio/IAudioSystem.h>
 
-#define WWISE_IMPL_INFO_STRING "Wwise " AK_WWISESDK_VERSIONNAME
+#define CRY_AUDIO_IMPL_WWISE_INFO_STRING "Wwise " AK_WWISESDK_VERSIONNAME
 
-#define ASSERT_WWISE_OK(x) (CRY_ASSERT(x == AK_Success))
-#define IS_WWISE_OK(x)     (x == AK_Success)
+#define CRY_AUDIO_IMPL_WWISE_ASSERT_OK(x) (CRY_ASSERT(x == AK_Success))
+#define CRY_AUDIO_IMPL_WWISE_IS_OK(x)     (x == AK_Success)
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	#include <CryThreading/CryThread.h>
-#endif // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -73,7 +73,7 @@ inline void FillAKListenerPosition(CTransformation const& transformation, AkList
 extern AkGameObjectID g_listenerId; // To be removed once multi-listener support is implemented.
 extern AkGameObjectID g_globalObjectId;
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 constexpr char const* g_globalObjectName = "Global Object";
 
 class CEventInstance;
@@ -95,7 +95,7 @@ enum class EDebugListFilter : EnumFlagsType
 CRY_CREATE_ENUM_FLAG_OPERATORS(EDebugListFilter);
 
 constexpr EDebugListFilter g_debugListMask = EDebugListFilter::EventInstances | EDebugListFilter::States;
-#endif // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 }      // namespace Wwise
 }      // namespace Impl
 }      // namespace CryAudio

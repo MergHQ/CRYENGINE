@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	#include "PreviewTrigger.h"
 
 	#include "Common.h"
@@ -89,4 +89,4 @@ void CPreviewTrigger::Clear()
 	m_pConnection = nullptr;
 }
 }      // namespace CryAudio
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE

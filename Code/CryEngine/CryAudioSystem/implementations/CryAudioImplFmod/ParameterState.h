@@ -22,7 +22,7 @@ public:
 	CParameterState& operator=(CParameterState const&) = delete;
 	CParameterState& operator=(CParameterState&&) = delete;
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	explicit CParameterState(
 		uint32 const id,
 		float const value,
@@ -38,7 +38,7 @@ public:
 		: m_id(id)
 		, m_value(value)
 	{}
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
 	virtual ~CParameterState() override;
 
@@ -52,9 +52,9 @@ private:
 	uint32 const m_id;
 	float const  m_value;
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	CryFixedStringT<MaxControlNameLength> const m_name;
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 };
 } // namespace Fmod
 } // namespace Impl

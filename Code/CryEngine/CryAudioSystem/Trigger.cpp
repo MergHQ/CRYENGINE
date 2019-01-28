@@ -11,9 +11,9 @@
 #include "Common/IStandaloneFileConnection.h"
 #include "Common/ITriggerConnection.h"
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	#include "Common/Logger.h"
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -64,10 +64,10 @@ void CTrigger::Execute(
 
 			if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual) || (activateResult == ERequestStatus::Pending))
 			{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				triggerInstanceState.radius = m_radius;
 				object.UpdateMaxRadius(m_radius);
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 
 				if (activateResult == ERequestStatus::Success)
 				{
@@ -84,20 +84,20 @@ void CTrigger::Execute(
 					++(triggerInstanceState.numLoadingInstances);
 				}
 			}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			else if (activateResult != ERequestStatus::SuccessDoNotTrack)
 			{
 				Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", GetName(), object.GetName(), __FUNCTION__);
 			}
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 		}
 	}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Error, "Invalid impl object during %s", __FUNCTION__);
 	}
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	if ((triggerInstanceState.numPlayingInstances > 0) || (triggerInstanceState.numLoadingInstances > 0))
 	{
@@ -125,12 +125,12 @@ void CTrigger::Execute(
 		object.SendFinishedTriggerInstanceRequest(triggerInstanceState);
 	}
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	if (m_connections.empty())
 	{
 		Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" executed on object "%s" without connections)", GetName(), object.GetName());
 	}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -152,10 +152,10 @@ void CTrigger::Execute(
 
 			if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual) || (activateResult == ERequestStatus::Pending))
 			{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				triggerInstanceState.radius = m_radius;
 				object.UpdateMaxRadius(m_radius);
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 
 				if (activateResult == ERequestStatus::Success)
 				{
@@ -172,20 +172,20 @@ void CTrigger::Execute(
 					++(triggerInstanceState.numLoadingInstances);
 				}
 			}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			else if (activateResult != ERequestStatus::SuccessDoNotTrack)
 			{
 				Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", GetName(), object.GetName(), __FUNCTION__);
 			}
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 		}
 	}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Error, "Invalid impl object during %s", __FUNCTION__);
 	}
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	if (isPlaying)
 	{
@@ -200,12 +200,12 @@ void CTrigger::Execute(
 		object.SetFlag(EObjectFlags::Virtual);
 	}
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	if (m_connections.empty())
 	{
 		Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" executed on object "%s" without connections)", GetName(), object.GetName());
 	}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -218,12 +218,12 @@ void CTrigger::Stop(Impl::IObject* const pIObject) const
 			pConnection->Stop(pIObject);
 		}
 	}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Error, "Invalid impl object during %s", __FUNCTION__);
 	}
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -252,7 +252,7 @@ void CTrigger::LoadAsync(CObject& object, bool const doLoad) const
 			}
 		}
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 		if (prepUnprepResult == ERequestStatus::Success)
 		{
 
@@ -263,7 +263,7 @@ void CTrigger::LoadAsync(CObject& object, bool const doLoad) const
 		{
 			Cry::Audio::Log(ELogType::Warning, R"(LoadAsync failed on trigger "%s" for object "%s" during %s)", GetName(), object.GetName(), __FUNCTION__);
 		}
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 	}
 
 	g_triggerInstanceIdToObject[g_triggerInstanceIdCounter] = &object;
@@ -303,31 +303,31 @@ void CTrigger::PlayFile(
 
 				pFile->m_pObject = &object;
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				pFile->m_triggerId = GetId();
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 
 				object.AddStandaloneFile(pFile, SUserDataBase(pOwner, pUserData, pUserDataOwner));
 			}
 			else
 			{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				Cry::Audio::Log(ELogType::Warning, R"(PlayFile failed with "%s" on object "%s")", pFile->m_hashedFilename.GetText().c_str(), object.GetName());
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 
 				g_fileManager.ReleaseStandaloneFile(pFile);
 			}
 		}
 	}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Error, "Invalid impl object during %s", __FUNCTION__);
 	}
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 void CTrigger::PlayFile(CObject& object, CStandaloneFile* const pFile) const
 {
@@ -356,22 +356,22 @@ void CTrigger::PlayFile(CObject& object, CStandaloneFile* const pFile) const
 			}
 			else
 			{
-	#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				Cry::Audio::Log(ELogType::Error, R"(PlayFile failed with "%s" on object "%s")", pFile->m_hashedFilename.GetText().c_str(), object.GetName());
-	#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+	#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 
 				g_pIImpl->DestructStandaloneFileConnection(pFile->m_pImplData);
 				pFile->m_pImplData = nullptr;
 			}
 		}
 	}
-	#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Error, "Invalid impl object during %s", __FUNCTION__);
 	}
-	#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 }
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }      // namespace CryAudio

@@ -22,7 +22,7 @@ public:
 	CVcaState& operator=(CVcaState const&) = delete;
 	CVcaState& operator=(CVcaState&&) = delete;
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	explicit CVcaState(
 		FMOD::Studio::VCA* const pVca,
 		float const value,
@@ -38,7 +38,7 @@ public:
 		: m_pVca(pVca)
 		, m_value(value)
 	{}
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
 	virtual ~CVcaState() override = default;
 
@@ -52,9 +52,9 @@ private:
 	FMOD::Studio::VCA* const m_pVca;
 	float const              m_value;
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	CryFixedStringT<MaxControlNameLength> const m_name;
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 };
 } // namespace Fmod
 } // namespace Impl

@@ -12,10 +12,10 @@ namespace Impl
 {
 namespace Adx2
 {
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 class CBaseObject;
 class CCue;
-#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 enum class ECueInstanceFlags : EnumFlagsType
 {
@@ -37,7 +37,7 @@ public:
 	CCueInstance& operator=(CCueInstance const&) = delete;
 	CCueInstance& operator=(CCueInstance&&) = delete;
 
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	explicit CCueInstance(
 		TriggerInstanceId const triggerInstanceId,
 		uint32 const cueId,
@@ -61,7 +61,7 @@ public:
 		, m_playbackId(playbackId)
 		, m_flags(ECueInstanceFlags::None)
 	{}
-#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 	~CCueInstance() = default;
 
@@ -78,10 +78,10 @@ public:
 	void                Pause();
 	void                Resume();
 
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	CBaseObject const* GetObject() const { return m_pBaseObject; }
 	CCue const*        GetCue() const    { return m_pCue; }
-#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 private:
 
@@ -90,10 +90,10 @@ private:
 	CriAtomExPlaybackId const      m_playbackId;
 	std::atomic<ECueInstanceFlags> m_flags;
 
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	CBaseObject const* const m_pBaseObject;
 	CCue const* const        m_pCue;
-#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 };
 } // namespace Adx2
 } // namespace Impl

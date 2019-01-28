@@ -23,7 +23,7 @@ public:
 	CParameter& operator=(CParameter const&) = delete;
 	CParameter& operator=(CParameter&&) = delete;
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	explicit CParameter(
 		AkRtpcID const id,
 		float const mult,
@@ -43,7 +43,7 @@ public:
 		, m_shift(shift)
 		, m_id(id)
 	{}
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 	virtual ~CParameter() override = default;
 
@@ -58,9 +58,9 @@ private:
 	float const    m_shift;
 	AkRtpcID const m_id;
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	CryFixedStringT<MaxControlNameLength> const m_name;
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 };
 } // namespace Wwise
 } // namespace Impl

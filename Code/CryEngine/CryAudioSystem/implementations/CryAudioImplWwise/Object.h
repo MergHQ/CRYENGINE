@@ -32,7 +32,7 @@ public:
 	virtual void                   SetOcclusionType(EOcclusionType const occlusionType) override;
 	virtual void                   ToggleFunctionality(EObjectFunctionality const type, bool const enable) override;
 
-	// Below data is only used when INCLUDE_WWISE_IMPL_PRODUCTION_CODE is defined!
+	// Below data is only used when CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE is defined!
 	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter) override;
 	// ~CryAudio::Impl::IObject
 
@@ -57,9 +57,9 @@ private:
 	using AuxSendValues = std::vector<AkAuxSendValue>;
 	AuxSendValues m_auxSendValues;
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	std::map<char const* const, float> m_parameterInfo;
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 };
 } // namespace Wwise
 } // namespace Impl

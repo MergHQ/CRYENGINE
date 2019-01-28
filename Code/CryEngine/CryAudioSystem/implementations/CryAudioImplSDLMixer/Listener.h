@@ -36,18 +36,18 @@ public:
 	virtual CTransformation const& GetTransformation() const override                                { return m_transformation; }
 	// ~CryAudio::Impl::IListener
 
-#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
 	char const* GetName() const { return m_name.c_str(); }
-#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 
 private:
 
 	ListenerId const m_id;
 	CTransformation  m_transformation;
 
-#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
 	CryFixedStringT<MaxObjectNameLength> m_name;
-#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 };
 } // namespace SDL_mixer
 } // namespace Impl

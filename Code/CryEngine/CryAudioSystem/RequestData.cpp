@@ -73,7 +73,7 @@ std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pReq
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::ExecuteDefaultTrigger)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::StopTrigger)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::StopAllTriggers)
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::ReloadControlsData)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::RetriggerControls)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::DrawDebugInfo)
@@ -81,7 +81,7 @@ std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pReq
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::ExecutePreviewTriggerEx)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::StopPreviewTrigger)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::ResetRequestCount)
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 			default:
 				{
 					CRY_ASSERT_MESSAGE(false, "Unknown audio system request type (%u) during %s", pBase->systemRequestType, __FUNCTION__);
@@ -117,9 +117,9 @@ std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pReq
 				CRY_AUDIO_OBJECT_REQUEST_BLOCK(EObjectRequestType::ProcessPhysicsRay)
 				CRY_AUDIO_OBJECT_REQUEST_BLOCK(EObjectRequestType::ToggleAbsoluteVelocityTracking)
 				CRY_AUDIO_OBJECT_REQUEST_BLOCK(EObjectRequestType::ToggleRelativeVelocityTracking)
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				CRY_AUDIO_OBJECT_REQUEST_BLOCK(EObjectRequestType::SetName)
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 			default:
 				{
 					CRY_ASSERT_MESSAGE(false, "Unknown object request type (%u) during %s", pBase->objectRequestType, __FUNCTION__);
@@ -136,9 +136,9 @@ std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pReq
 			switch (pBase->listenerRequestType)
 			{
 				CRY_AUDIO_LISTENER_REQUEST_BLOCK(EListenerRequestType::SetTransformation)
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				CRY_AUDIO_LISTENER_REQUEST_BLOCK(EListenerRequestType::SetName)
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 			default:
 				{
 					CRY_ASSERT_MESSAGE(false, "Unknown listener request type (%u) during %s", pBase->listenerRequestType, __FUNCTION__);

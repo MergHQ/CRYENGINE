@@ -6,10 +6,10 @@
 #include "Common/IObject.h"
 #include "Common/IEnvironmentConnection.h"
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	#include "Object.h"
 	#include "Common/Logger.h"
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -36,7 +36,7 @@ void CEnvironment::Set(CObject const& object, float const value) const
 			pConnection->Set(pIObject, value);
 		}
 	}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Error, "Invalid impl object during %s", __FUNCTION__);
@@ -49,6 +49,6 @@ void CEnvironment::Set(CObject const& object, float const value) const
 	}
 
 	const_cast<CObject&>(object).StoreEnvironmentValue(GetId(), value);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 } // namespace CryAudio

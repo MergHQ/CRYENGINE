@@ -12,19 +12,19 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/ISurfaceType.h>
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	#include "Debug.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
 	#include <CryMath/Random.h>
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 constexpr uint32 g_numIndices = 6;
 constexpr vtx_idx g_auxIndices[g_numIndices] = { 2, 1, 0, 2, 3, 1 };
 constexpr uint32 g_numPoints = 4;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 float g_listenerHeadSize = 0.0f;
 float g_listenerHeadSizeHalf = 0.0f;
@@ -62,19 +62,19 @@ void CRayInfo::Reset()
 {
 	totalSoundOcclusion = 0.0f;
 	numHits = 0;
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	startPosition.zero();
 	direction.zero();
 	distanceToFirstObstacle = FLT_MAX;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 bool CPropagationProcessor::s_bCanIssueRWIs = false;
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 size_t CPropagationProcessor::s_totalSyncPhysRays = 0;
 size_t CPropagationProcessor::s_totalAsyncPhysRays = 0;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 ///////////////////////////////////////////////////////////////////////////
 int CPropagationProcessor::OnObstructionTest(EventPhys const* pEvent)
@@ -137,9 +137,9 @@ void CPropagationProcessor::Init()
 
 	m_currentListenerDistance = g_listenerManager.GetActiveListenerTransformation().GetPosition().GetDistance(m_object.GetTransformation().GetPosition());
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	m_listenerOcclusionPlaneColor.set(cry_random<uint8>(0, 255), cry_random<uint8>(0, 255), cry_random<uint8>(0, 255), uint8(64));
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -185,7 +185,7 @@ void CPropagationProcessor::UpdateOcclusionRayFlags()
 ///////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::Update()
 {
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	if (g_cvars.m_objectsRayType > 0)
 	{
 		m_occlusionType = clamp_tpl<EOcclusionType>(static_cast<EOcclusionType>(g_cvars.m_objectsRayType), EOcclusionType::Ignore, EOcclusionType::High);
@@ -194,7 +194,7 @@ void CPropagationProcessor::Update()
 	{
 		m_occlusionType = m_originalOcclusionType;
 	}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	if (CanRunOcclusion())
 	{
@@ -211,9 +211,9 @@ void CPropagationProcessor::Update()
 			m_occlusionTypeWhenAdaptive = EOcclusionType::Low;
 		}
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 		UpdateOcclusionPlanes();
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 		RunObstructionQuery();
 	}
@@ -333,9 +333,9 @@ bool CPropagationProcessor::CanRunOcclusion()
 		}
 	}
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	canRun ? m_object.SetFlag(EObjectFlags::CanRunOcclusion) : m_object.RemoveFlag(EObjectFlags::CanRunOcclusion);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	return canRun;
 }
@@ -348,9 +348,9 @@ void CPropagationProcessor::ProcessPhysicsRay(CRayInfo* const pRayInfo)
 	float finalOcclusion = 0.0f;
 	std::size_t numRealHits = 0;
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	float minDistance = FLT_MAX;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	if ((g_cvars.m_setFullOcclusionOnMaxHits > 0) && (pRayInfo->numHits == g_maxRayHits))
 	{
@@ -386,9 +386,9 @@ void CPropagationProcessor::ProcessPhysicsRay(CRayInfo* const pRayInfo)
 
 					++numRealHits;
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 					minDistance = std::min(minDistance, distance);
-#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif      // CRY_AUDIO_USE_PRODUCTION_CODE
 
 					if (finalOcclusion >= 1.0f)
 					{
@@ -402,14 +402,14 @@ void CPropagationProcessor::ProcessPhysicsRay(CRayInfo* const pRayInfo)
 	pRayInfo->numHits = numRealHits;
 	pRayInfo->totalSoundOcclusion = clamp_tpl(finalOcclusion, 0.0f, 1.0f);
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	pRayInfo->distanceToFirstObstacle = minDistance;
 
 	if (m_remainingRays == 0)
 	{
 		CryFatalError("Negative ref or ray count on audio object");
 	}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	if (--m_remainingRays == 0)
 	{
@@ -463,7 +463,7 @@ void CPropagationProcessor::ProcessObstructionOcclusion()
 		m_occlusion = (m_occlusion / numSamplePositions);
 	}
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	if ((m_object.GetFlags() & EObjectFlags::CanRunOcclusion) != 0) // only re-sample the rays about 10 times per second for a smoother debug drawing
 	{
 		for (size_t i = 0; i < g_numConcurrentRaysHigh; ++i)
@@ -489,7 +489,7 @@ void CPropagationProcessor::ProcessObstructionOcclusion()
 			rayDebugInfo.occlusionValue = rayInfo.totalSoundOcclusion;
 		}
 	}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -528,7 +528,7 @@ void CPropagationProcessor::CastObstructionRay(
 		ProcessPhysicsRay(&rayInfo);
 	}
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	rayInfo.startPosition = origin;
 	rayInfo.direction = finalDirection;
 
@@ -540,7 +540,7 @@ void CPropagationProcessor::CastObstructionRay(
 	{
 		++s_totalAsyncPhysRays;
 	}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -788,7 +788,7 @@ void CPropagationProcessor::UpdateOcclusionPlanes()
 	}
 }
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 {
@@ -870,5 +870,5 @@ void CPropagationProcessor::ResetRayData()
 		}
 	}
 }
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }      // namespace CryAudio

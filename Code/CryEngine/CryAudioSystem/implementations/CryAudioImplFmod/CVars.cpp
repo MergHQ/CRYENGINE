@@ -45,9 +45,9 @@ void CCVars::RegisterVariables()
 	#error "Undefined platform."
 #endif
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	// m_debugListFilter = 64; // Event instances only.
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
 	REGISTER_CVAR2("s_FmodEventPoolSize", &m_eventPoolSize, m_eventPoolSize, VF_REQUIRE_APP_RESTART,
 	               "Sets the number of preallocated events.\n"
@@ -107,7 +107,7 @@ void CCVars::RegisterVariables()
 	               "Usage: s_FmodRolloffScale [0/...]\n"
 	               "Default PC: 1, XboxOne: 1, PS4: 1, Mac: 1, Linux: 1, iOS: 1, Android: 1\n");
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	REGISTER_CVAR2("s_FmodEnableLiveUpdate", &m_enableLiveUpdate, m_enableLiveUpdate, VF_REQUIRE_APP_RESTART,
 	               "Enables Fmod Studio to run with LiveUpdate enabled. Needs implementation restart.\n"
 	               "Usage: s_FmodEnableLiveUpdate [0/1]\n"
@@ -122,7 +122,7 @@ void CCVars::RegisterVariables()
 	               "b: Draw active snapshots.\n"
 	               "c: Draw VCA values.\n"
 	               );
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -142,10 +142,10 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_FmodDopplerScale");
 		pConsole->UnregisterVariable("s_FmodRolloffScale");
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 		pConsole->UnregisterVariable("s_FmodEnableLiveUpdate");
 		pConsole->UnregisterVariable("s_FmodDebugListFilter");
-#endif    // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 	}
 }
 } // namespace Fmod

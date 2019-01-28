@@ -7,9 +7,9 @@
 #include "Impl.h"
 #include "Listener.h"
 
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	#include <Logger.h>
-#endif // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -52,11 +52,11 @@ ERequestStatus CCue::Execute(IObject* const pIObject, TriggerInstanceId const tr
 					{
 						if (status == CRIATOMEXPLAYBACK_STATUS_PLAYING)
 						{
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 							auto const pCueInstance = g_pImpl->ConstructCueInstance(triggerInstanceId, m_id, playbackId, pBaseObject, this);
 #else
 							auto const pCueInstance = g_pImpl->ConstructCueInstance(triggerInstanceId, m_id, playbackId);
-#endif                // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif                // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 							CriAtomExCueInfo cueInfo;
 
@@ -83,13 +83,13 @@ ERequestStatus CCue::Execute(IObject* const pIObject, TriggerInstanceId const tr
 					}
 				}
 			}
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Warning, R"(Cue "%s" failed to play because ACB file "%s" was not loaded)",
 				                static_cast<char const*>(m_name), static_cast<char const*>(m_cueSheetName));
 			}
-#endif        // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+#endif        // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 			break;
 		}

@@ -7,9 +7,9 @@
 #include <CrySystem/IStreamEngine.h>
 #include <CryMemory/IMemory.h>
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	#include <CrySystem/TimeValue.h>
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -55,9 +55,9 @@ public:
 		, m_pReadStream(nullptr)
 		, m_pImplData(pImplData)
 	{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 		m_timeCached.SetValue(0);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 	}
 
 	CryFixedStringT<MaxFilePathLength> m_path;
@@ -71,8 +71,8 @@ public:
 	IReadStreamPtr                     m_pReadStream;
 	Impl::IFile*                       m_pImplData;
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	CTimeValue m_timeCached;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 };
 } // namespace CryAudio

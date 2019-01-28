@@ -20,7 +20,7 @@ public:
 	CParameter& operator=(CParameter const&) = delete;
 	CParameter& operator=(CParameter&&) = delete;
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	explicit CParameter(
 		ControlId const id,
 		EDataScope const dataScope,
@@ -37,7 +37,7 @@ public:
 		: Control(id, dataScope)
 		, m_connections(connections)
 	{}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	~CParameter();
 

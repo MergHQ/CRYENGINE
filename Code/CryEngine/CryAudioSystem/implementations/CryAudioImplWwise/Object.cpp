@@ -9,11 +9,11 @@
 
 #include <AK/SoundEngine/Common/AkSoundEngine.h>
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	#include <Logger.h>
 	#include <DebugStyle.h>
 	#include <CryRenderer/IRenderAuxGeom.h>
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -107,12 +107,12 @@ void CObject::SetOcclusion(float const occlusion)
 			static_cast<AkReal32>(occlusion), // The occlusion value is currently used on obstruction as well until a correct obstruction value is calculated.
 			static_cast<AkReal32>(occlusion));
 	}
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "Wwise - invalid listener Id during %s!", __FUNCTION__);
 	}
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -213,16 +213,16 @@ void CObject::UpdateVelocities(float const deltaTime)
 			{
 				m_previousAbsoluteVelocity = absoluteVelocity;
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 				AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(s_absoluteVelocityParameterId, static_cast<AkRtpcValue>(absoluteVelocity), m_id);
 
-				if (IS_WWISE_OK(wwiseResult))
+				if (CRY_AUDIO_IMPL_WWISE_IS_OK(wwiseResult))
 				{
 					m_parameterInfo[g_szAbsoluteVelocityParameterName] = absoluteVelocity;
 				}
 #else
 				AK::SoundEngine::SetRTPCValue(s_absoluteVelocityParameterId, static_cast<AkRtpcValue>(absoluteVelocity), m_id);
-#endif        // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif        // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 			}
 		}
 
@@ -266,16 +266,16 @@ void CObject::TryToSetRelativeVelocity(float const relativeVelocity)
 	{
 		m_previousRelativeVelocity = relativeVelocity;
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 		AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(s_relativeVelocityParameterId, static_cast<AkRtpcValue>(relativeVelocity), m_id);
 
-		if (IS_WWISE_OK(wwiseResult))
+		if (CRY_AUDIO_IMPL_WWISE_IS_OK(wwiseResult))
 		{
 			m_parameterInfo[g_szRelativeVelocityParameterName] = relativeVelocity;
 		}
 #else
 		AK::SoundEngine::SetRTPCValue(s_relativeVelocityParameterId, static_cast<AkRtpcValue>(relativeVelocity), m_id);
-#endif    // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 	}
 }
 
@@ -297,7 +297,7 @@ void CObject::ToggleFunctionality(EObjectFunctionality const type, bool const en
 				AK::SoundEngine::SetRTPCValue(s_absoluteVelocityParameterId, 0.0f, m_id);
 			}
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 			if (enable)
 			{
 				m_parameterInfo[g_szAbsoluteVelocityParameterName] = 0.0f;
@@ -306,7 +306,7 @@ void CObject::ToggleFunctionality(EObjectFunctionality const type, bool const en
 			{
 				m_parameterInfo.erase(g_szAbsoluteVelocityParameterName);
 			}
-#endif          // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif          // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 			break;
 		}
@@ -333,7 +333,7 @@ void CObject::ToggleFunctionality(EObjectFunctionality const type, bool const en
 				}
 			}
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 			if (enable)
 			{
 				m_parameterInfo[g_szRelativeVelocityParameterName] = 0.0f;
@@ -342,7 +342,7 @@ void CObject::ToggleFunctionality(EObjectFunctionality const type, bool const en
 			{
 				m_parameterInfo.erase(g_szRelativeVelocityParameterName);
 			}
-#endif          // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif          // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 			break;
 		}
@@ -354,7 +354,7 @@ void CObject::ToggleFunctionality(EObjectFunctionality const type, bool const en
 //////////////////////////////////////////////////////////////////////////
 void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter)
 {
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 
 	if (!m_parameterInfo.empty())
 	{
@@ -401,7 +401,7 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 		}
 	}
 
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 }
 } // namespace Wwise
 } // namespace Impl

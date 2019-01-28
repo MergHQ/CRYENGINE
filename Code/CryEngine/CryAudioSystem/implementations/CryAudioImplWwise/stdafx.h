@@ -10,17 +10,17 @@
 #include <CryCore/Platform/CryWindows.h> // need to include before AK includes windows.h
 
 #if CRY_PLATFORM_DURANGO
-	#define PROVIDE_WWISE_IMPL_SECONDARY_POOL
+	#define CRY_AUDIO_IMPL_WWISE_PROVIDE_SECONDARY_POOL
 // Memory Allocation
 	#include <CryMemory/CryPool/PoolAlloc.h>
 #endif
 
 #if !defined(_RELEASE)
-	#define INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+	#define CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 #endif // _RELEASE
 
 #if CRY_PLATFORM_DURANGO
-	#define PROVIDE_WWISE_IMPL_SECONDARY_POOL
+	#define CRY_AUDIO_IMPL_WWISE_PROVIDE_SECONDARY_POOL
 #endif
 
 namespace CryAudio
@@ -30,7 +30,7 @@ namespace Impl
 namespace Wwise
 {
 // Memory Allocation
-#if defined(PROVIDE_WWISE_IMPL_SECONDARY_POOL)
+#if defined(CRY_AUDIO_IMPL_WWISE_PROVIDE_SECONDARY_POOL)
 typedef NCryPoolAlloc::CThreadSafe<NCryPoolAlloc::CBestFit<NCryPoolAlloc::CReferenced<NCryPoolAlloc::CMemoryDynamic, 4 * 1024, true>, NCryPoolAlloc::CListItemReference>> MemoryPoolReferenced;
 
 extern MemoryPoolReferenced g_audioImplMemoryPoolSecondary;

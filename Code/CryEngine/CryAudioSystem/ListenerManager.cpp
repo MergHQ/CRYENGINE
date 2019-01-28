@@ -29,7 +29,7 @@ void CListenerManager::Terminate()
 //////////////////////////////////////////////////////////////////////////
 void CListenerManager::OnAfterImplChanged()
 {
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	if (!m_constructedListeners.empty())
 	{
 		for (auto const pListener : m_constructedListeners)
@@ -43,7 +43,7 @@ void CListenerManager::OnAfterImplChanged()
 	}
 #else
 	CreateListener(CTransformation::GetEmptyObject(), "DefaultListener");
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -76,9 +76,9 @@ CListener* CListenerManager::CreateListener(CTransformation const& transformatio
 		// Currently only one listener supported!
 		CListener* const pListener = m_constructedListeners.front();
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 		pListener->SetName(szName);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 		return pListener;
 	}
@@ -86,9 +86,9 @@ CListener* CListenerManager::CreateListener(CTransformation const& transformatio
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CListener");
 	auto const pListener = new CListener(g_pIImpl->ConstructListener(transformation, szName));
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	pListener->SetName(szName);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	m_constructedListeners.push_back(pListener);
 	return pListener;
@@ -126,11 +126,11 @@ CTransformation const& CListenerManager::GetActiveListenerTransformation() const
 	return CTransformation::GetEmptyObject();
 }
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 size_t CListenerManager::GetNumActiveListeners() const
 {
 	return m_constructedListeners.size();
 }
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }      // namespace CryAudio

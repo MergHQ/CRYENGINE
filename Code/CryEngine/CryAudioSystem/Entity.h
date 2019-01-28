@@ -11,7 +11,7 @@ class CEntity
 {
 public:
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	explicit CEntity(IDType const id, EDataScope const dataScope, char const* const szName)
 		: m_id(id)
 		, m_dataScope(dataScope)
@@ -22,7 +22,7 @@ public:
 		: m_id(id)
 		, m_dataScope(dataScope)
 	{}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	CEntity() = delete;
 	CEntity(CEntity const&) = delete;
@@ -33,9 +33,9 @@ public:
 	IDType     GetId() const        { return m_id; }
 	EDataScope GetDataScope() const { return m_dataScope; }
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	char const* GetName() const { return m_name.c_str(); }
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 protected:
 
@@ -46,9 +46,9 @@ private:
 	IDType const     m_id;
 	EDataScope const m_dataScope;
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	CryFixedStringT<MaxControlNameLength> const m_name;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 };
 
 using Control = CEntity<ControlId>;

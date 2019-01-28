@@ -32,7 +32,7 @@ public:
 	CEvent& operator=(CEvent const&) = delete;
 	CEvent& operator=(CEvent&&) = delete;
 
-#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
 	explicit CEvent(
 		char const* const szName,
 		uint32 const id,
@@ -80,7 +80,7 @@ public:
 		, m_fadeOutTime(fadeOutTime)
 		, m_isPanningEnabled(isPanningEnabled)
 	{}
-#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 
 	virtual ~CEvent() override = default;
 
@@ -97,9 +97,9 @@ public:
 	EActionType GetType() const     { return m_type; }
 	SampleId    GetSampleId() const { return m_sampleId; }
 
-#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
 	char const* GetName() const { return m_name.c_str(); }
-#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 
 	float GetAttenuationMinDistance() const { return m_attenuationMinDistance; }
 	float GetAttenuationMaxDistance() const { return m_attenuationMaxDistance; }
@@ -111,9 +111,9 @@ public:
 
 private:
 
-#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
 	CryFixedStringT<MaxControlNameLength> const m_name;
-#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 
 	uint32 const m_id;
 	EActionType const m_type;

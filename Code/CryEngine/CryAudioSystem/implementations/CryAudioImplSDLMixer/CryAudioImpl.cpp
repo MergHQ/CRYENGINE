@@ -8,9 +8,9 @@
 #include <CrySystem/IEngineModule.h>
 #include <CryExtension/ClassWeaver.h>
 
-#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
 	#include <Logger.h>
-#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -47,7 +47,7 @@ class CEngineModule_CryAudioImplSDLMixer : public IImplModule
 		gEnv->pAudioSystem->SetImpl(new CImpl, data);
 		gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplSDLMixer::OnEvent, nullptr);
 
-#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
 		if (m_bSuccess)
 		{
 			Cry::Audio::Log(ELogType::Always, "CryAudioImplSDLMixer loaded");
@@ -56,7 +56,7 @@ class CEngineModule_CryAudioImplSDLMixer : public IImplModule
 		{
 			Cry::Audio::Log(ELogType::Error, "CryAudioImplSDLMixer failed to load");
 		}
-#endif    // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 
 		return m_bSuccess;
 	}

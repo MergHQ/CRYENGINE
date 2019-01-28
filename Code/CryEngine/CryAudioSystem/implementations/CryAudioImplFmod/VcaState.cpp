@@ -3,10 +3,10 @@
 #include "stdafx.h"
 #include "VcaState.h"
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	#include "BaseObject.h"
 	#include <Logger.h>
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -19,10 +19,10 @@ void CVcaState::Set(IObject* const pIObject)
 {
 	SetGlobally();
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	auto const pBaseObject = static_cast<CBaseObject const*>(pIObject);
 	Cry::Audio::Log(ELogType::Warning, R"(Fmod - VCA "%s" was set to %f on object "%s". Consider setting it globally.)", m_name.c_str(), m_value, pBaseObject->GetName());
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -30,9 +30,9 @@ void CVcaState::SetGlobally()
 {
 	m_pVca->setVolume(m_value);
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	g_vcaValues[m_name] = m_value;
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 }
 } // namespace Fmod
 } // namespace Impl

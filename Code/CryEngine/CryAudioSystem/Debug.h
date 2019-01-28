@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	#include <CryAudio/IAudioInterfacesCommonData.h>
 	#include <CryMath/Cry_Color.h>
 
@@ -80,4 +80,4 @@ static ColorF const s_afcmColorFileNotCached = Col_Grey;
 static ColorF const s_afcmColorFileNotFound = Col_Red;
 }      // namespace Debug
 }      // namespace CryAudio
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE

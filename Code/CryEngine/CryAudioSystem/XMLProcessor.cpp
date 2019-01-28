@@ -20,14 +20,14 @@
 #include <IImpl.h>
 #include <CryString/CryPath.h>
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	#include "PreviewTrigger.h"
 	#include "Common/Logger.h"
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
-struct SXMLTags
+struct SXMLTags final
 {
 	static char const* const szPlatform;
 };
@@ -190,10 +190,10 @@ void CXMLProcessor::ParseSystemData()
 	g_poolSizes.settings += maxLevelPoolSizes.settings;
 	g_poolSizes.files += maxLevelPoolSizes.files;
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	// Used to hide pools without allocations in debug draw.
 	g_debugPoolSizes = g_poolSizes;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	// Need to set pool sizes to at least 1, because there could be files that don't contain the
 	// counts yet, which could result in asserts of the pool object.
@@ -214,9 +214,9 @@ void CXMLProcessor::ParseControlsData(char const* const szFolderPath, EDataScope
 {
 	CryFixedStringT<MaxFilePathLength> sRootFolderPath(szFolderPath);
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	CTimeValue const startTime(gEnv->pTimer->GetAsyncTime());
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	if (g_pIImpl != nullptr)
 	{
@@ -260,7 +260,7 @@ void CXMLProcessor::ParseControlsData(char const* const szFolderPath, EDataScope
 		}
 	}
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	char const* szDataScope = "unknown";
 
 	switch (dataScope)
@@ -281,7 +281,7 @@ void CXMLProcessor::ParseControlsData(char const* const szFolderPath, EDataScope
 
 	float const duration = (gEnv->pTimer->GetAsyncTime() - startTime).GetMilliSeconds();
 	Cry::Audio::Log(ELogType::Comment, R"(Parsed controls data in "%s" for data scope "%s" in %.3f ms!)", szFolderPath, szDataScope, duration);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -323,12 +323,12 @@ void CXMLProcessor::ParseControlsFile(XmlNodeRef const pRootNode, EDataScope con
 			{
 				// These tags are valid but ignored here.
 			}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Warning, "Unknown AudioSystemData node: %s", szChildNodeTag);
 			}
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 		}
 	}
 }
@@ -360,12 +360,12 @@ void CXMLProcessor::ParseDefaultControlsFile(XmlNodeRef const pRootNode)
 			{
 				// These tags are valid but ignored here, because no default controls of these type currently exist.
 			}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Warning, "Unknown AudioSystemData node: %s", childNodeTag);
 			}
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 		}
 	}
 }
@@ -375,9 +375,9 @@ void CXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EDataScope
 {
 	CryFixedStringT<MaxFilePathLength> rootFolderPath(szFolderPath);
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	CTimeValue const startTime(gEnv->pTimer->GetAsyncTime());
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	if (g_pIImpl != nullptr)
 	{
@@ -439,12 +439,12 @@ void CXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EDataScope
 								{
 									// These tags are valid but ignored here.
 								}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 								else
 								{
 									Cry::Audio::Log(ELogType::Warning, "Unknown AudioSystemData node: %s", szChildNodeTag);
 								}
-#endif            // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif            // CRY_AUDIO_USE_PRODUCTION_CODE
 							}
 						}
 					}
@@ -456,7 +456,7 @@ void CXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EDataScope
 		}
 	}
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	char const* szDataScope = "unknown";
 
 	switch (dataScope)
@@ -477,7 +477,7 @@ void CXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EDataScope
 
 	float const duration = (gEnv->pTimer->GetAsyncTime() - startTime).GetMilliSeconds();
 	Cry::Audio::Log(ELogType::Comment, R"(Parsed preloads data in "%s" for data scope "%s" in %.3f ms!)", szFolderPath, szDataScope, duration);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -494,9 +494,9 @@ void CXMLProcessor::ClearControlsData(EDataScope const dataScope)
 			g_pauseAllTrigger.Clear();
 			g_resumeAllTrigger.Clear();
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			g_previewTrigger.Clear();
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 		}
 
 		TriggerLookup::iterator iterTriggers(g_triggers.begin());
@@ -651,12 +651,12 @@ void CXMLProcessor::ParsePreloads(XmlNodeRef const pPreloadDataRoot, EDataScope 
 						{
 							cFileEntryIDs.push_back(id);
 						}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 						else
 						{
 							Cry::Audio::Log(ELogType::Warning, R"(Preload request "%s" could not create file entry from tag "%s"!)", szPreloadRequestName, pFileListParentNode->getChild(k)->getTag());
 						}
-#endif        // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif        // CRY_AUDIO_USE_PRODUCTION_CODE
 					}
 
 					CPreloadRequest* pPreloadRequest = stl::find_in_map(g_preloadRequests, preloadRequestId, nullptr);
@@ -664,11 +664,11 @@ void CXMLProcessor::ParsePreloads(XmlNodeRef const pPreloadDataRoot, EDataScope 
 					if (pPreloadRequest == nullptr)
 					{
 						MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CPreloadRequest");
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 						pPreloadRequest = new CPreloadRequest(preloadRequestId, dataScope, isAutoLoad, cFileEntryIDs, szPreloadRequestName);
 #else
 						pPreloadRequest = new CPreloadRequest(preloadRequestId, dataScope, isAutoLoad, cFileEntryIDs);
-#endif        // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif        // CRY_AUDIO_USE_PRODUCTION_CODE
 
 						if (pPreloadRequest != nullptr)
 						{
@@ -686,12 +686,12 @@ void CXMLProcessor::ParsePreloads(XmlNodeRef const pPreloadDataRoot, EDataScope 
 					}
 				}
 			}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Error, R"(Preload request "%s" already exists! Skipping this entry!)", szPreloadRequestName);
 			}
-#endif        // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif        // CRY_AUDIO_USE_PRODUCTION_CODE
 		}
 	}
 }
@@ -766,11 +766,11 @@ void CXMLProcessor::ParseEnvironments(XmlNodeRef const pEnvironmentRoot, EDataSc
 				if (!connections.empty())
 				{
 					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CEnvironment");
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 					auto const pNewEnvironment = new CEnvironment(environmentId, dataScope, connections, szEnvironmentName);
 #else
 					auto const pNewEnvironment = new CEnvironment(environmentId, dataScope, connections);
-#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif      // CRY_AUDIO_USE_PRODUCTION_CODE
 
 					if (pNewEnvironment != nullptr)
 					{
@@ -778,12 +778,12 @@ void CXMLProcessor::ParseEnvironments(XmlNodeRef const pEnvironmentRoot, EDataSc
 					}
 				}
 			}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Error, R"(Environment "%s" already exists!)", szEnvironmentName);
 			}
-#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif      // CRY_AUDIO_USE_PRODUCTION_CODE
 		}
 	}
 }
@@ -847,11 +847,11 @@ void CXMLProcessor::ParseSettings(XmlNodeRef const pRoot, EDataScope const dataS
 					}
 
 					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CSetting");
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 					auto const pNewSetting = new CSetting(settingId, dataScope, isAutoLoad, connections, szSettingName);
 #else
 					auto const pNewSetting = new CSetting(settingId, dataScope, isAutoLoad, connections);
-#endif        // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif        // CRY_AUDIO_USE_PRODUCTION_CODE
 
 					if (pNewSetting != nullptr)
 					{
@@ -859,12 +859,12 @@ void CXMLProcessor::ParseSettings(XmlNodeRef const pRoot, EDataScope const dataS
 					}
 				}
 			}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Error, R"(Setting "%s" already exists!)", szSettingName);
 			}
-#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif      // CRY_AUDIO_USE_PRODUCTION_CODE
 		}
 	}
 }
@@ -889,9 +889,9 @@ void CXMLProcessor::ParseTriggers(XmlNodeRef const pXMLTriggerRoot, EDataScope c
 				TriggerConnections connections;
 				connections.reserve(numConnections);
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				float maxRadius = 0.0f;
-#endif        // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif        // CRY_AUDIO_USE_PRODUCTION_CODE
 
 				for (int m = 0; m < numConnections; ++m)
 				{
@@ -906,9 +906,9 @@ void CXMLProcessor::ParseTriggers(XmlNodeRef const pXMLTriggerRoot, EDataScope c
 						{
 							connections.push_back(pConnection);
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 							maxRadius = std::max(radius, maxRadius);
-#endif          // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif          // CRY_AUDIO_USE_PRODUCTION_CODE
 						}
 					}
 				}
@@ -919,23 +919,23 @@ void CXMLProcessor::ParseTriggers(XmlNodeRef const pXMLTriggerRoot, EDataScope c
 				}
 
 				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CTrigger");
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				CTrigger* const pNewTrigger = new CTrigger(triggerId, dataScope, connections, maxRadius, szTriggerName);
 #else
 				CTrigger* const pNewTrigger = new CTrigger(triggerId, dataScope, connections);
-#endif        // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif        // CRY_AUDIO_USE_PRODUCTION_CODE
 
 				if (pNewTrigger != nullptr)
 				{
 					g_triggers[triggerId] = pNewTrigger;
 				}
 			}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Error, R"(Trigger "%s" already exists!)", szTriggerName);
 			}
-#endif        // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif        // CRY_AUDIO_USE_PRODUCTION_CODE
 		}
 	}
 }
@@ -1035,11 +1035,11 @@ void CXMLProcessor::ParseSwitches(XmlNodeRef const pXMLSwitchRoot, EDataScope co
 			if ((switchId != InvalidControlId) && (stl::find_in_map(g_switches, switchId, nullptr) == nullptr))
 			{
 				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CSwitch");
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				auto const pNewSwitch = new CSwitch(switchId, dataScope, szSwitchName);
 #else
 				auto const pNewSwitch = new CSwitch(switchId, dataScope);
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 
 				int const numStates = pSwitchNode->getChildCount();
 
@@ -1074,11 +1074,11 @@ void CXMLProcessor::ParseSwitches(XmlNodeRef const pXMLSwitchRoot, EDataScope co
 							}
 
 							MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CSwitchState");
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 							auto const pNewState = new CSwitchState(switchId, switchStateId, connections, szSwitchStateName);
 #else
 							auto const pNewState = new CSwitchState(switchId, switchStateId, connections);
-#endif          // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif          // CRY_AUDIO_USE_PRODUCTION_CODE
 
 							pNewSwitch->AddState(switchStateId, pNewState);
 						}
@@ -1087,12 +1087,12 @@ void CXMLProcessor::ParseSwitches(XmlNodeRef const pXMLSwitchRoot, EDataScope co
 
 				g_switches[switchId] = pNewSwitch;
 			}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Error, R"(Switch "%s" already exists!)", szSwitchName);
 			}
-#endif        // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif        // CRY_AUDIO_USE_PRODUCTION_CODE
 		}
 	}
 }
@@ -1138,23 +1138,23 @@ void CXMLProcessor::ParseParameters(XmlNodeRef const pXMLParameterRoot, EDataSco
 				}
 
 				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CParameter");
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				auto const pParameter = new CParameter(parameterId, dataScope, connections, szParameterName);
 #else
 				auto const pParameter = new CParameter(parameterId, dataScope, connections);
-#endif        // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif        // CRY_AUDIO_USE_PRODUCTION_CODE
 
 				if (pParameter != nullptr)
 				{
 					g_parameters[parameterId] = pParameter;
 				}
 			}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Error, R"(Parameter "%s" already exists!)", szParameterName);
 			}
-#endif        // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif        // CRY_AUDIO_USE_PRODUCTION_CODE
 		}
 	}
 }

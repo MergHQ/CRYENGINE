@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	#include "Entity.h"
 
 namespace CryAudio
@@ -36,4 +36,4 @@ private:
 	Impl::ITriggerConnection* m_pConnection;
 };
 }      // namespace CryAudio
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE

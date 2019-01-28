@@ -22,7 +22,7 @@ public:
 	CEventInstance& operator=(CEventInstance const&) = delete;
 	CEventInstance& operator=(CEventInstance&&) = delete;
 
-#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
 	explicit CEventInstance(
 		TriggerInstanceId const triggerInstanceId,
 		uint32 const eventId,
@@ -44,7 +44,7 @@ public:
 		, m_pEvent(pEvent)
 		, m_toBeRemoved(false)
 	{}
-#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 
 	~CEventInstance() = default;
 
@@ -59,9 +59,9 @@ public:
 	bool              IsToBeRemoved() const { return m_toBeRemoved; }
 	void              SetToBeRemoved()      { m_toBeRemoved = true; }
 
-#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
 	CObject const* GetObject() const { return m_pObject; }
-#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 
 	ChannelList m_channels;
 
@@ -72,9 +72,9 @@ private:
 	CEvent const* const     m_pEvent;
 	bool                    m_toBeRemoved;
 
-#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
 	CObject const* const m_pObject;
-#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 };
 } // namespace SDL_mixer
 } // namespace Impl

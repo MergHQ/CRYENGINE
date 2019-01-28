@@ -8,9 +8,9 @@
 #include "Event.h"
 #include <CryAudio/IAudioSystem.h>
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	#include <Logger.h>
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
@@ -24,7 +24,7 @@ CEventInstance::~CEventInstance()
 	if (m_pInstance != nullptr)
 	{
 		FMOD_RESULT const fmodResult = m_pInstance->release();
-		ASSERT_FMOD_OK_OR_INVALID_HANDLE;
+		CRY_AUDIO_IMPL_FMOD_ASSERT_OK_OR_INVALID_HANDLE;
 	}
 }
 
@@ -40,31 +40,31 @@ bool CEventInstance::PrepareForOcclusion()
 {
 	m_pMasterTrack = nullptr;
 	FMOD_RESULT fmodResult = m_pInstance->getChannelGroup(&m_pMasterTrack);
-	ASSERT_FMOD_OK_OR_NOT_LOADED;
+	CRY_AUDIO_IMPL_FMOD_ASSERT_OK_OR_NOT_LOADED;
 
 	if ((m_pMasterTrack != nullptr) && (m_pOcclusionParameter == nullptr))
 	{
 		m_pLowpass = nullptr;
 		int numDSPs = 0;
 		fmodResult = m_pMasterTrack->getNumDSPs(&numDSPs);
-		ASSERT_FMOD_OK;
+		CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 		for (int i = 0; i < numDSPs; ++i)
 		{
 			fmodResult = m_pMasterTrack->getDSP(i, &m_pLowpass);
-			ASSERT_FMOD_OK;
+			CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 			if (m_pLowpass != nullptr)
 			{
 				FMOD_DSP_TYPE dspType;
 				fmodResult = m_pLowpass->getType(&dspType);
-				ASSERT_FMOD_OK;
+				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 				if (dspType == FMOD_DSP_TYPE_LOWPASS_SIMPLE || dspType == FMOD_DSP_TYPE_LOWPASS)
 				{
 					FMOD_DSP_PARAMETER_DESC* pParameterDesc = nullptr;
 					fmodResult = m_pLowpass->getParameterInfo(FMOD_DSP_LOWPASS_CUTOFF, &pParameterDesc);
-					ASSERT_FMOD_OK;
+					CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 					m_lowpassFrequencyMin = pParameterDesc->floatdesc.min;
 					m_lowpassFrequencyMax = pParameterDesc->floatdesc.max;
@@ -87,14 +87,14 @@ void CEventInstance::SetOcclusion(float const occlusion)
 	if (m_pOcclusionParameter != nullptr)
 	{
 		FMOD_RESULT const fmodResult = m_pOcclusionParameter->setValue(occlusion);
-		ASSERT_FMOD_OK;
+		CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 	}
 	else if (m_pLowpass != nullptr)
 	{
 		float const range = m_lowpassFrequencyMax - std::max(m_lowpassFrequencyMin, g_cvars.m_lowpassMinCutoffFrequency);
 		float const value = m_lowpassFrequencyMax - (occlusion * range);
 		FMOD_RESULT const fmodResult = m_pLowpass->setParameterFloat(FMOD_DSP_LOWPASS_CUTOFF, value);
-		ASSERT_FMOD_OK;
+		CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 	}
 }
 
@@ -105,46 +105,46 @@ void CEventInstance::SetReturnSend(CReturn const* const pReturn, float const val
 	{
 		FMOD::ChannelGroup* pChannelGroup = nullptr;
 		FMOD_RESULT fmodResult = pReturn->GetBus()->getChannelGroup(&pChannelGroup);
-		ASSERT_FMOD_OK;
+		CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 		if (pChannelGroup != nullptr)
 		{
 			FMOD::DSP* pDsp = nullptr;
 			fmodResult = pChannelGroup->getDSP(FMOD_CHANNELCONTROL_DSP_TAIL, &pDsp);
-			ASSERT_FMOD_OK;
+			CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 			if (pDsp != nullptr)
 			{
-				int returnId1 = FMOD_IMPL_INVALID_INDEX;
+				int returnId1 = CRY_AUDIO_IMPL_FMOD_INVALID_INDEX;
 				fmodResult = pDsp->getParameterInt(FMOD_DSP_RETURN_ID, &returnId1, nullptr, 0);
-				ASSERT_FMOD_OK;
+				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 				int numDSPs = 0;
 				fmodResult = m_pMasterTrack->getNumDSPs(&numDSPs);
-				ASSERT_FMOD_OK;
+				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 				for (int i = 0; i < numDSPs; ++i)
 				{
 					FMOD::DSP* pSend = nullptr;
 					fmodResult = m_pMasterTrack->getDSP(i, &pSend);
-					ASSERT_FMOD_OK;
+					CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 					if (pSend != nullptr)
 					{
 						FMOD_DSP_TYPE dspType;
 						fmodResult = pSend->getType(&dspType);
-						ASSERT_FMOD_OK;
+						CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 						if (dspType == FMOD_DSP_TYPE_SEND)
 						{
-							int returnId2 = FMOD_IMPL_INVALID_INDEX;
+							int returnId2 = CRY_AUDIO_IMPL_FMOD_INVALID_INDEX;
 							fmodResult = pSend->getParameterInt(FMOD_DSP_RETURN_ID, &returnId2, nullptr, 0);
-							ASSERT_FMOD_OK;
+							CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 							if (returnId1 == returnId2)
 							{
 								fmodResult = pSend->setParameterFloat(FMOD_DSP_SEND_LEVEL, value);
-								ASSERT_FMOD_OK;
+								CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 								break;
 							}
 						}
@@ -153,12 +153,12 @@ void CEventInstance::SetReturnSend(CReturn const* const pReturn, float const val
 			}
 		}
 	}
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Error, "Event instance or master track of %s does not exist during %s", m_pEvent->GetName(), __FUNCTION__);
 	}
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -184,7 +184,7 @@ void CEventInstance::SetAbsoluteVelocity(float const velocity)
 	if (m_pAbsoluteVelocityParameter != nullptr)
 	{
 		FMOD_RESULT const fmodResult = m_pAbsoluteVelocityParameter->setValue(velocity);
-		ASSERT_FMOD_OK;
+		CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 	}
 }
 
@@ -192,14 +192,14 @@ void CEventInstance::SetAbsoluteVelocity(float const velocity)
 void CEventInstance::StopAllowFadeOut()
 {
 	FMOD_RESULT const fmodResult = m_pInstance->stop(FMOD_STUDIO_STOP_ALLOWFADEOUT);
-	ASSERT_FMOD_OK;
+	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEventInstance::StopImmediate()
 {
 	FMOD_RESULT const fmodResult = m_pInstance->stop(FMOD_STUDIO_STOP_IMMEDIATE);
-	ASSERT_FMOD_OK;
+	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 }
 } // namespace Fmod
 } // namespace Impl
