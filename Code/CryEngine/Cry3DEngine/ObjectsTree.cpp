@@ -185,7 +185,7 @@ void COctreeNode::Render_Object_Nodes(bool bNodeCompletelyInFrustum, int nRender
 
 	float nodeDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, m_objectsBox) * sqr(passInfo.GetZoomFactor()));
 
-	const bool bPushIntoOcclusionCuller = Get3DEngine()->IsStatObjBufferRenderTasksAllowed() && passInfo.IsGeneralPass() && JobManager::InvokeAsJob("CheckOcclusion");
+	const bool bPushIntoOcclusionCuller = Get3DEngine()->IsStatObjBufferRenderTasksAllowed() && passInfo.IsGeneralPass();
 
 	// check culling of all passes
 	passCullMask = UpdateCullMask(m_onePassTraversalFrameId, ~0, m_renderFlags, passInfo, m_objectsBox, nodeDistance, m_fObjectsMaxViewDist, !bPushIntoOcclusionCuller, bNodeCompletelyInFrustum, &m_occlusionTestClient, passCullMask);
@@ -2483,9 +2483,6 @@ bool COctreeNode::HasObjects()
 //////////////////////////////////////////////////////////////////////////
 void COctreeNode::RenderContent(int nRenderMask, const Vec3& vAmbColor, uint32 passCullMask, const SRenderingPassInfo& passInfo)
 {
-	if (Get3DEngine()->IsStatObjBufferRenderTasksAllowed() && passInfo.IsGeneralPass() && JobManager::InvokeAsJob("CheckOcclusion"))
-		GetObjManager()->AddCullJobProducer();
-
 	TRenderContentJob renderContentJob(nRenderMask, vAmbColor, passCullMask, passInfo);
 	renderContentJob.SetClassInstance(this);
 	renderContentJob.SetPriorityLevel(JobManager::eHighPriority);
@@ -2561,11 +2558,6 @@ void COctreeNode::RenderContentJobEntry(int nRenderMask, Vec3 vAmbColor, uint32 
 	if (m_arrObjects[eRNListType_Unknown].m_pFirstNode)
 		this->RenderCommonObjects(&m_arrObjects[eRNListType_Unknown], passCullMask, nRenderMask, vAmbColor, m_bNodeCompletelyInFrustum != 0, pAffectingLights, pTerrainTexInfo, passInfo);
 
-	if (Get3DEngine()->IsStatObjBufferRenderTasksAllowed() && passInfo.IsGeneralPass() && JobManager::InvokeAsJob("CheckOcclusion"))
-	{
-		GetObjManager()->RemoveCullJobProducer();
-	}
-
 	m_renderLock.Unlock();
 }
 
@@ -2591,7 +2583,7 @@ void COctreeNode::RenderVegetations(TDoublyLinkedList<IRenderNode>* lstObjects, 
 	const bool bRenderSprites = pCVars->e_VegetationSpritesBatching && !(nRenderMask & OCTREENODE_RENDER_FLAG_OBJECTS_ONLY_ENTITIES) && pCVars->e_VegetationSprites;
 	CThreadSafeRendererContainer<SVegetationSpriteInfo>& arrSpriteInfo = GetObjManager()->m_arrVegetationSprites[passInfo.GetRecursiveLevel()][passInfo.ThreadID()];
 
-	const bool bOcclusionCullerInUse = Get3DEngine()->IsStatObjBufferRenderTasksAllowed() && passInfo.IsGeneralPass() && JobManager::InvokeAsJob("CheckOcclusion");
+	const bool bOcclusionCullerInUse = Get3DEngine()->IsStatObjBufferRenderTasksAllowed() && passInfo.IsGeneralPass();
 
 	for (CVegetation* pObj = (CVegetation*)m_arrObjects[eRNListType_Vegetation].m_pFirstNode, * pNext; pObj; pObj = pNext)
 	{
@@ -2665,7 +2657,7 @@ void COctreeNode::RenderBrushes(TDoublyLinkedList<IRenderNode>* lstObjects, cons
 	float cullMaxNodeSize = static_cast<float>(pCVars->e_CoverageBufferCullIndividualBrushesMaxNodeSize);
 	bool bCheckPerObjectOcclusion = GetNodeRadius2() > cullMaxNodeSize * cullMaxNodeSize;
 
-	const bool bOcclusionCullerInUse = Get3DEngine()->IsStatObjBufferRenderTasksAllowed() && passInfo.IsGeneralPass() && JobManager::InvokeAsJob("CheckOcclusion");
+	const bool bOcclusionCullerInUse = Get3DEngine()->IsStatObjBufferRenderTasksAllowed() && passInfo.IsGeneralPass();
 
 	for (CBrush* pObj = (CBrush*)lstObjects->m_pFirstNode, * pNext; pObj; pObj = pNext)
 	{
@@ -2783,7 +2775,7 @@ void COctreeNode::RenderDecalsAndRoads(TDoublyLinkedList<IRenderNode>* lstObject
 
 	bool bCheckPerObjectOcclusion = m_vNodeAxisRadius.len2() > pCVars->e_CoverageBufferCullIndividualBrushesMaxNodeSize * pCVars->e_CoverageBufferCullIndividualBrushesMaxNodeSize;
 
-	const bool bOcclusionCullerInUse = Get3DEngine()->IsStatObjBufferRenderTasksAllowed() && passInfo.IsGeneralPass() && JobManager::InvokeAsJob("CheckOcclusion");
+	const bool bOcclusionCullerInUse = Get3DEngine()->IsStatObjBufferRenderTasksAllowed() && passInfo.IsGeneralPass();
 
 	for (IRenderNode* pObj = lstObjects->m_pFirstNode, * pNext; pObj; pObj = pNext)
 	{
@@ -2877,7 +2869,7 @@ void COctreeNode::RenderCommonObjects(TDoublyLinkedList<IRenderNode>* lstObjects
 	AABB objBox;
 	const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 
-	const bool bOcclusionCullerInUse = Get3DEngine()->IsStatObjBufferRenderTasksAllowed() && passInfo.IsGeneralPass() && JobManager::InvokeAsJob("CheckOcclusion");
+	const bool bOcclusionCullerInUse = Get3DEngine()->IsStatObjBufferRenderTasksAllowed() && passInfo.IsGeneralPass();
 
 	for (IRenderNode* pObj = lstObjects->m_pFirstNode, * pNext; pObj; pObj = pNext)
 	{
@@ -3474,18 +3466,6 @@ void CObjManager::RenderBrush(CBrush* pEnt, PodArray<SRenderLight*>* pAffectingL
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObjManager::RemoveCullJobProducer()
-{
-	m_CheckOcclusionOutputQueue.RemoveProducer();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObjManager::AddCullJobProducer()
-{
-	m_CheckOcclusionOutputQueue.AddProducer();
-}
-
-//////////////////////////////////////////////////////////////////////////
 bool CObjManager::CheckOcclusion_TestAABB(const AABB& rAABB, float fEntDistance)
 {
 	return m_CullThread.TestAABB(rAABB, fEntDistance);
@@ -3514,41 +3494,21 @@ bool CObjManager::LoadOcclusionMesh(const char* pFileName)
 //////////////////////////////////////////////////////////////////////////
 void CObjManager::PushIntoCullQueue(const SCheckOcclusionJobData& rCheckOcclusionData)
 {
-#if !defined(_RELEASE)
-	IF (!m_CullThread.IsActive(), 0)
-	{
-		__debugbreak();
-	}
-	IF (rCheckOcclusionData.type == SCheckOcclusionJobData::QUIT, 0)
-		m_CullThread.SetActive(false);
-#endif
-	m_CheckOcclusionQueue.Push(rCheckOcclusionData);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObjManager::PopFromCullQueue(SCheckOcclusionJobData* pCheckOcclusionData)
-{
-	m_CheckOcclusionQueue.Pop(pCheckOcclusionData);
+	m_CullThread.CreateOcclusionJob(rCheckOcclusionData);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CObjManager::PushIntoCullOutputQueue(const SCheckOcclusionOutput& rCheckOcclusionOutput)
 {
-	m_CheckOcclusionOutputQueue.Push(rCheckOcclusionOutput);
+	m_CheckOcclusionOutputQueue.enqueue(rCheckOcclusionOutput);
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CObjManager::PopFromCullOutputQueue(SCheckOcclusionOutput* pCheckOcclusionOutput)
+bool CObjManager::PopFromCullOutputQueue(SCheckOcclusionOutput& pCheckOcclusionOutput)
 {
 	CRY_PROFILE_REGION(PROFILE_3DENGINE, "3DEngine: WaitCullOutputQueue");
 
-	return m_CheckOcclusionOutputQueue.Pop(pCheckOcclusionOutput);
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CObjManager::TryPopFromCullOutputQueue(SCheckOcclusionOutput* pCheckOcclusionOutput)
-{
-	return m_CheckOcclusionOutputQueue.TryPop(pCheckOcclusionOutput);
+	return m_CheckOcclusionOutputQueue.dequeue(pCheckOcclusionOutput);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

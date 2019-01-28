@@ -1235,7 +1235,7 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 
 	// now we have a valid camera, we can start generation of the occlusion buffer
 	// only needed for editor here, ingame we spawn the job more early
-	if (passInfo.IsGeneralPass() && IsStatObjBufferRenderTasksAllowed() && JobManager::InvokeAsJob("CheckOcclusion"))
+	if (passInfo.IsGeneralPass() && IsStatObjBufferRenderTasksAllowed())
 	{
 		if (gEnv->IsEditor())
 			GetObjManager()->PrepareCullbufferAsync(passInfo.GetCamera());

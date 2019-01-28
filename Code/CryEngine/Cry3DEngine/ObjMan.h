@@ -11,10 +11,12 @@
 
 #include <map>
 #include <vector>
+#include <concqueue/concqueue.hpp>
 
 #include "ObjManCullQueue.h"
 
 #include <Cry3DEngine/I3DEngine.h>
+#include "ObjectsTree.h"
 
 #define ENTITY_MAX_DIST_FACTOR  100
 #define MAX_VALID_OBJECT_VOLUME (10000000000.f)
@@ -413,15 +415,9 @@ public:
 	bool CheckOcclusion_TestQuad(const Vec3& vCenter, const Vec3& vAxisX, const Vec3& vAxisY);
 
 	void PushIntoCullQueue(const SCheckOcclusionJobData& rCheckOcclusionData);
-	void PopFromCullQueue(SCheckOcclusionJobData* pCheckOcclusionData);
 
 	void PushIntoCullOutputQueue(const SCheckOcclusionOutput& rCheckOcclusionOutput);
-	bool PopFromCullOutputQueue(SCheckOcclusionOutput* pCheckOcclusionOutput);
-	bool TryPopFromCullOutputQueue(SCheckOcclusionOutput* pCheckOcclusionOutput);
-
-	void BeginCulling();
-	void RemoveCullJobProducer();
-	void AddCullJobProducer();
+	bool PopFromCullOutputQueue(SCheckOcclusionOutput& pCheckOcclusionOutput);
 
 	JobManager::SJobState& GetRenderContentJobState()
 	{
@@ -527,8 +523,7 @@ private:
 
 	CThreadSafeRendererContainer<SObjManRenderDebugInfo>             m_arrRenderDebugInfo;
 
-	CryMT::SingleProducerSingleConsumerQueue<SCheckOcclusionJobData> m_CheckOcclusionQueue;
-	CryMT::N_ProducerSingleConsumerQueue<SCheckOcclusionOutput>      m_CheckOcclusionOutputQueue;
+	BoundMPMC<SCheckOcclusionOutput>  m_CheckOcclusionOutputQueue;
 	
 	JobManager::SJobState                                            m_renderContentJobState;
 

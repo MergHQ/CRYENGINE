@@ -4834,11 +4834,6 @@ void CSystem::CreateSystemVars()
 	g_cvars.sys_splashscreen = nullptr;
 #endif
 
-	REGISTER_CVAR2("sys_deferAudioUpdateOptim", &g_cvars.sys_deferAudioUpdateOptim, 1, VF_NULL,
-	               "0 - disable optimisation\n"
-	               "1 - enable optimisation\n"
-	               "Default is 1");
-
 	REGISTER_CVAR2("sys_filesystemCaseSensitivity", &g_cvars.sys_filesystemCaseSensitivity, 0, VF_NULL, "0 = Ignore letter casing mismatches, 1 = Show warning on mismatch, 2 = Show error on mismatch");
 
 	m_sysNoUpdate = REGISTER_INT("sys_noupdate", 0, VF_CHEAT,

@@ -793,8 +793,6 @@ void CVars::Init()
 	#define DEFAULT_CHECK_OCCLUSION_OUTPUT_QUEUE_SIZE 4096
 #endif
 
-	REGISTER_CVAR(e_CheckOcclusionQueueSize, DEFAULT_CHECK_OCCLUSION_QUEUE_SIZE, VF_NULL,
-	              "Size of queue for data send to check occlusion job");
 	REGISTER_CVAR(e_CheckOcclusionOutputQueueSize, DEFAULT_CHECK_OCCLUSION_OUTPUT_QUEUE_SIZE, VF_NULL,
 	              "Size of queue for data send from check occlusion job");
 	REGISTER_CVAR(e_StatObjTessellationMode, 1, VF_CHEAT,
