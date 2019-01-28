@@ -1205,9 +1205,6 @@ struct ISystem
 	//! Updates the engine's systems without creating a rendered frame
 	virtual bool Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode = 0) = 0;
 
-	virtual void DoWorkDuringOcclusionChecks() = 0;
-	virtual bool NeedDoWorkDuringOcclusionChecks() = 0;
-
 	virtual void RenderPhysicsHelpers() = 0;
 
 	//! Get the manual frame step controller, allows for completely blocking per-frame update

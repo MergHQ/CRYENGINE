@@ -164,7 +164,6 @@ struct SSystemCVars
 	int     sys_intromoviesduringinit;
 	ICVar*  sys_splashscreen;
 
-	int     sys_deferAudioUpdateOptim;
 	int     sys_filesystemCaseSensitivity;
 
 	int     sys_reflection_natvis;
@@ -275,9 +274,6 @@ public:
 	virtual void RenderEnd(bool bRenderStats = true) override;
 
 	virtual bool Update(CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>(), int nPauseMode = 0) override;
-
-	virtual void DoWorkDuringOcclusionChecks() override;
-	virtual bool NeedDoWorkDuringOcclusionChecks() override { return m_bNeedDoWorkDuringOcclusionChecks; }
 
 	virtual void RenderPhysicsHelpers() override;
 
@@ -1031,7 +1027,6 @@ protected: // -------------------------------------------------------------
 	typedef std::list<SErrorMessage> TErrorMessages;
 	TErrorMessages                   m_ErrorMessages;
 	bool                             m_bHasRenderedErrorMessage;
-	bool                             m_bNeedDoWorkDuringOcclusionChecks;
 
 	std::unordered_map<uint32, bool> m_mapWarningOnceAlreadyPrinted;
 	CryMutex                         m_mapWarningOnceMutex;

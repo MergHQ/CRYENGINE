@@ -1792,11 +1792,6 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		GetObjManager()->m_CullThread.SetActive(false);
 	}
 
-	if (passInfo.IsGeneralPass())
-	{
-		gEnv->pSystem->DoWorkDuringOcclusionChecks();
-	}
-
 #if defined(FEATURE_SVO_GI)
 	if (passInfo.IsGeneralPass() && (nRenderFlags & SHDF_ALLOW_AO))
 	{
