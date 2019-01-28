@@ -516,133 +516,130 @@ ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CEvent const* c
 {
 	ERequestStatus requestStatus = ERequestStatus::Failure;
 
-	if ((pObject != nullptr) && (pEvent != nullptr))
-	{
-		CEvent::EActionType const type = pEvent->GetType();
-		SampleId const sampleId = pEvent->GetSampleId();
+	CEvent::EActionType const type = pEvent->GetType();
+	SampleId const sampleId = pEvent->GetSampleId();
 
-		if (type == CEvent::EActionType::Start)
-		{
+	if (type == CEvent::EActionType::Start)
+	{
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
-			CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(
-				triggerInstanceId,
-				pEvent->GetId(),
-				pEvent,
-				pObject);
+		CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(
+			triggerInstanceId,
+			pEvent->GetId(),
+			pEvent,
+			pObject);
 #else
-			CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(
-				triggerInstanceId,
-				pEvent->GetId(),
-				pEvent);
+		CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(
+			triggerInstanceId,
+			pEvent->GetId(),
+			pEvent);
 #endif      // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 
-			// Start playing samples
-			Mix_Chunk* pSample = stl::find_in_map(g_sampleData, sampleId, nullptr);
+		// Start playing samples
+		Mix_Chunk* pSample = stl::find_in_map(g_sampleData, sampleId, nullptr);
+
+		if (pSample == nullptr)
+		{
+			// Trying to play sample that hasn't been loaded yet, load it in place
+			// NOTE: This should be avoided as it can cause lag in audio playback
+			string const& samplePath = g_samplePaths[sampleId];
+
+			if (LoadSampleImpl(sampleId, samplePath))
+			{
+				pSample = stl::find_in_map(g_sampleData, sampleId, nullptr);
+			}
 
 			if (pSample == nullptr)
 			{
-				// Trying to play sample that hasn't been loaded yet, load it in place
-				// NOTE: This should be avoided as it can cause lag in audio playback
-				string const& samplePath = g_samplePaths[sampleId];
-
-				if (LoadSampleImpl(sampleId, samplePath))
-				{
-					pSample = stl::find_in_map(g_sampleData, sampleId, nullptr);
-				}
-
-				if (pSample == nullptr)
-				{
-					return ERequestStatus::Failure;
-				}
+				return ERequestStatus::Failure;
 			}
+		}
 
-			if (!g_freeChannels.empty())
+		if (!g_freeChannels.empty())
+		{
+			int const channelID = g_freeChannels.front();
+
+			if (channelID >= 0)
 			{
-				int const channelID = g_freeChannels.front();
+				g_freeChannels.pop();
 
-				if (channelID >= 0)
+				float const volumeMultiplier = GetVolumeMultiplier(pObject, sampleId);
+				int const mixVolume = GetAbsoluteVolume(pEvent->GetVolume(), volumeMultiplier);
+				Mix_Volume(channelID, g_bMuted ? 0 : mixVolume);
+
+				int const fadeInTime = pEvent->GetFadeInTime();
+				int const loopCount = pEvent->GetNumLoops();
+				int channel = -1;
+
+				if (fadeInTime > 0)
 				{
-					g_freeChannels.pop();
+					channel = Mix_FadeInChannel(channelID, pSample, loopCount, fadeInTime);
+				}
+				else
+				{
+					channel = Mix_PlayChannel(channelID, pSample, loopCount);
+				}
 
-					float const volumeMultiplier = GetVolumeMultiplier(pObject, sampleId);
-					int const mixVolume = GetAbsoluteVolume(pEvent->GetVolume(), volumeMultiplier);
-					Mix_Volume(channelID, g_bMuted ? 0 : mixVolume);
+				if (channel != -1)
+				{
+					// Get distance and angle from the listener to the object
+					float distance = 0.0f;
+					float angle = 0.0f;
+					GetDistanceAngleToObject(g_pListener->GetTransformation(), pObject->GetTransformation(), distance, angle);
+					SetChannelPosition(pEventInstance->GetEvent(), channelID, distance, angle);
 
-					int const fadeInTime = pEvent->GetFadeInTime();
-					int const loopCount = pEvent->GetNumLoops();
-					int channel = -1;
-
-					if (fadeInTime > 0)
-					{
-						channel = Mix_FadeInChannel(channelID, pSample, loopCount, fadeInTime);
-					}
-					else
-					{
-						channel = Mix_PlayChannel(channelID, pSample, loopCount);
-					}
-
-					if (channel != -1)
-					{
-						// Get distance and angle from the listener to the object
-						float distance = 0.0f;
-						float angle = 0.0f;
-						GetDistanceAngleToObject(g_pListener->GetTransformation(), pObject->GetTransformation(), distance, angle);
-						SetChannelPosition(pEventInstance->GetEvent(), channelID, distance, angle);
-
-						g_channels[channelID].pObject = pObject;
-						pEventInstance->m_channels.push_back(channelID);
-					}
-#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
-					else
-					{
-						Cry::Audio::Log(ELogType::Error, "Could not play sample. Error: %s", Mix_GetError());
-					}
-#endif          // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+					g_channels[channelID].pObject = pObject;
+					pEventInstance->m_channels.push_back(channelID);
 				}
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
 				else
 				{
 					Cry::Audio::Log(ELogType::Error, "Could not play sample. Error: %s", Mix_GetError());
 				}
-#endif        // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+#endif          // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 			}
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
 			else
 			{
-				Cry::Audio::Log(ELogType::Error, "Ran out of free audio channels. Are you trying to play more than %d samples?", g_numMixChannels);
+				Cry::Audio::Log(ELogType::Error, "Could not play sample. Error: %s", Mix_GetError());
 			}
-#endif      // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
-
-			if (!pEventInstance->m_channels.empty())
-			{
-				// If any sample was added then add the event to the object
-				pObject->m_eventInstances.push_back(pEventInstance);
-				requestStatus = ERequestStatus::Success;
-			}
+#endif        // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 		}
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
 		else
 		{
-			for (auto const pEventInstance : pObject->m_eventInstances)
+			Cry::Audio::Log(ELogType::Error, "Ran out of free audio channels. Are you trying to play more than %d samples?", g_numMixChannels);
+		}
+#endif      // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+
+		if (!pEventInstance->m_channels.empty())
+		{
+			// If any sample was added then add the event to the object
+			pObject->m_eventInstances.push_back(pEventInstance);
+			requestStatus = ERequestStatus::Success;
+		}
+	}
+	else
+	{
+		for (auto const pEventInstance : pObject->m_eventInstances)
+		{
+			if (pEventInstance->GetEvent()->GetSampleId() == sampleId)
 			{
-				if (pEventInstance->GetEvent()->GetSampleId() == sampleId)
+				switch (type)
 				{
-					switch (type)
-					{
-					case CEvent::EActionType::Stop:
-						pEventInstance->Stop();
-						break;
-					case CEvent::EActionType::Pause:
-						pEventInstance->Pause();
-						break;
-					case CEvent::EActionType::Resume:
-						pEventInstance->Resume();
-						break;
-					}
+				case CEvent::EActionType::Stop:
+					pEventInstance->Stop();
+					break;
+				case CEvent::EActionType::Pause:
+					pEventInstance->Pause();
+					break;
+				case CEvent::EActionType::Resume:
+					pEventInstance->Resume();
+					break;
 				}
 			}
-
-			requestStatus = ERequestStatus::SuccessDoNotTrack;
 		}
+
+		requestStatus = ERequestStatus::SuccessDoNotTrack;
 	}
 
 	return requestStatus;

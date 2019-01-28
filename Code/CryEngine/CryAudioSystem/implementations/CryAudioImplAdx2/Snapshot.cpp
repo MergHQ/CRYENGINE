@@ -24,7 +24,7 @@ ERequestStatus CSnapshot::Execute(IObject* const pIObject, TriggerInstanceId con
 	{
 	case EActionType::Start:
 		{
-			criAtomEx_ApplyDspBusSnapshot(static_cast<CriChar8 const*>(m_name), m_changeoverTime);
+			criAtomEx_ApplyDspBusSnapshot(static_cast<CriChar8 const*>(m_name.c_str()), m_changeoverTime);
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 			g_debugActiveSnapShotName = m_name;

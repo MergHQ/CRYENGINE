@@ -1,22 +1,20 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "PreviewTrigger.h"
-#include "Common.h"
-#include "Managers.h"
-#include "Object.h"
-#include "Common/IImpl.h"
-#include "Common/IObject.h"
-#include "Common/ITriggerConnection.h"
-#include "Common/ITriggerInfo.h"
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#include "PreviewTrigger.h"
+
+	#include "Common.h"
+	#include "Object.h"
+	#include "Common/IImpl.h"
+	#include "Common/IObject.h"
+	#include "Common/ITriggerConnection.h"
+	#include "Common/ITriggerInfo.h"
 	#include "Common/Logger.h"
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 namespace CryAudio
 {
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 CPreviewTrigger::CPreviewTrigger()
 	: Control(g_previewTriggerId, EDataScope::Global, g_szPreviewTriggerName)
@@ -42,22 +40,31 @@ void CPreviewTrigger::Execute(Impl::ITriggerInfo const& triggerInfo)
 		STriggerInstanceState triggerInstanceState;
 		triggerInstanceState.triggerId = GetId();
 
-		ERequestStatus const activateResult = m_pConnection->Execute(g_previewObject.GetImplDataPtr(), g_triggerInstanceIdCounter);
+		Impl::IObject* const pIObject = g_previewObject.GetImplDataPtr();
 
-		if (activateResult == ERequestStatus::Success || activateResult == ERequestStatus::Pending)
+		if (pIObject != nullptr)
 		{
-			if (activateResult == ERequestStatus::Success)
+			ERequestStatus const activateResult = m_pConnection->Execute(pIObject, g_triggerInstanceIdCounter);
+
+			if (activateResult == ERequestStatus::Success || activateResult == ERequestStatus::Pending)
 			{
-				++(triggerInstanceState.numPlayingInstances);
+				if (activateResult == ERequestStatus::Success)
+				{
+					++(triggerInstanceState.numPlayingInstances);
+				}
+				else if (activateResult == ERequestStatus::Pending)
+				{
+					++(triggerInstanceState.numLoadingInstances);
+				}
 			}
-			else if (activateResult == ERequestStatus::Pending)
+			else if (activateResult != ERequestStatus::SuccessDoNotTrack)
 			{
-				++(triggerInstanceState.numLoadingInstances);
+				Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", GetName(), g_previewObject.GetName(), __FUNCTION__);
 			}
 		}
-		else if (activateResult != ERequestStatus::SuccessDoNotTrack)
+		else
 		{
-			Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", GetName(), g_previewObject.GetName(), __FUNCTION__);
+			Cry::Audio::Log(ELogType::Error, "Invalid impl object during %s", __FUNCTION__);
 		}
 
 		if (triggerInstanceState.numPlayingInstances > 0 || triggerInstanceState.numLoadingInstances > 0)
@@ -81,5 +88,5 @@ void CPreviewTrigger::Clear()
 	g_pIImpl->DestructTriggerConnection(m_pConnection);
 	m_pConnection = nullptr;
 }
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }      // namespace CryAudio
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE

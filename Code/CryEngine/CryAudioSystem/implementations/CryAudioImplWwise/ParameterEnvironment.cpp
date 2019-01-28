@@ -4,10 +4,6 @@
 #include "ParameterEnvironment.h"
 #include "BaseObject.h"
 
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	#include <Logger.h>
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
-
 #include <AK/SoundEngine/Common/AkSoundEngine.h>
 
 namespace CryAudio
@@ -19,19 +15,10 @@ namespace Wwise
 //////////////////////////////////////////////////////////////////////////
 void CParameterEnvironment::Set(IObject* const pIObject, float const amount)
 {
-	if (pIObject != nullptr)
-	{
-		auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
-		auto const rtpcValue = static_cast<AkRtpcValue>(m_multiplier * amount + m_shift);
+	auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
+	auto const rtpcValue = static_cast<AkRtpcValue>(m_multiplier * amount + m_shift);
 
-		AK::SoundEngine::SetRTPCValue(m_rtpcId, rtpcValue, pBaseObject->GetId());
-	}
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Wwise - Invalid object passed to the Wwise implementation of %s", __FUNCTION__);
-	}
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+	AK::SoundEngine::SetRTPCValue(m_rtpcId, rtpcValue, pBaseObject->GetId());
 }
 } // namespace Wwise
 } // namespace Impl

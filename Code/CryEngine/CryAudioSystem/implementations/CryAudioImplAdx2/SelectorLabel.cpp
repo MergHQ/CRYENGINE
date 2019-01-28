@@ -4,10 +4,6 @@
 #include "SelectorLabel.h"
 #include "BaseObject.h"
 
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-	#include <Logger.h>
-#endif // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
-
 #include <cri_atom_ex.h>
 
 namespace CryAudio
@@ -19,28 +15,24 @@ namespace Adx2
 //////////////////////////////////////////////////////////////////////////
 void CSelectorLabel::Set(IObject* const pIObject)
 {
-	if (pIObject != nullptr)
-	{
-		auto const pBaseObject = static_cast<CBaseObject const*>(pIObject);
+	auto const pBaseObject = static_cast<CBaseObject const*>(pIObject);
 
-		CriAtomExPlayerHn const pPlayer = pBaseObject->GetPlayer();
-		criAtomExPlayer_SetSelectorLabel(pPlayer, static_cast<CriChar8 const*>(m_selectorName), static_cast<CriChar8 const*>(m_selectorLabelName));
-		criAtomExPlayer_UpdateAll(pPlayer);
-	}
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Adx2 - Invalid Object passed to the Adx2 implementation of %s", __FUNCTION__);
-	}
-#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+	CriAtomExPlayerHn const pPlayer = pBaseObject->GetPlayer();
+	criAtomExPlayer_SetSelectorLabel(pPlayer, static_cast<CriChar8 const*>(m_selectorName), static_cast<CriChar8 const*>(m_selectorLabelName));
+	criAtomExPlayer_UpdateAll(pPlayer);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CSelectorLabel::SetGlobally()
 {
+	auto const szSelectorName = static_cast<CriChar8 const*>(m_selectorName);
+	auto const szSelectorLabelName = static_cast<CriChar8 const*>(m_selectorLabelName);
+
 	for (auto const pBaseObject : g_constructedObjects)
 	{
-		Set(pBaseObject);
+		CriAtomExPlayerHn const pPlayer = pBaseObject->GetPlayer();
+		criAtomExPlayer_SetSelectorLabel(pPlayer, szSelectorName, szSelectorLabelName);
+		criAtomExPlayer_UpdateAll(pPlayer);
 	}
 }
 } // namespace Adx2

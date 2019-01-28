@@ -24,7 +24,7 @@ struct ITriggerConnection
 
 	/**
 	 * Activate a trigger on this object.
-	 * @param pIObject - implementation-specific object to execute the trigger on
+	 * @param pIObject - implementation-specific object to execute the trigger on.The audio system guarantees that this is never a null pointer.
 	 * @param triggerInstanceId - instance id of the executed trigger.
 	 * @return ERequestStatus - indicates the outcome of underlying process
 	 * @see Stop
@@ -33,7 +33,7 @@ struct ITriggerConnection
 
 	/**
 	 * Stops a trigger on this object.
-	 * @param pIObject - implementation-specific object to stop the trigger on
+	 * @param pIObject - implementation-specific object to stop the trigger on. The audio system guarantees that this is never a null pointer.
 	 * @return void
 	 * @see Execute
 	 */

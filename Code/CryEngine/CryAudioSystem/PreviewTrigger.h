@@ -2,11 +2,11 @@
 
 #pragma once
 
-#include "Entity.h"
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#include "Entity.h"
 
 namespace CryAudio
 {
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 class CTriggerConnection;
 
 namespace Impl
@@ -35,5 +35,5 @@ private:
 
 	Impl::ITriggerConnection* m_pConnection;
 };
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }      // namespace CryAudio
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE

@@ -13,11 +13,8 @@ namespace SDL_mixer
 //////////////////////////////////////////////////////////////////////////
 void CVolumeState::Set(IObject* const pIObject)
 {
-	if (pIObject != nullptr)
-	{
-		auto const pObject = static_cast<CObject*>(pIObject);
-		pObject->SetVolume(m_sampleId, m_value);
-	}
+	auto const pObject = static_cast<CObject*>(pIObject);
+	pObject->SetVolume(m_sampleId, m_value);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -25,7 +22,7 @@ void CVolumeState::SetGlobally()
 {
 	for (auto const pObject : g_objects)
 	{
-		Set(pObject);
+		pObject->SetVolume(m_sampleId, m_value);
 	}
 }
 } // namespace SDL_mixer

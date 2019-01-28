@@ -42,7 +42,7 @@ public:
 	~CParameter();
 
 	void Set(CObject const& object, float const value) const;
-	void SetGlobal(float const value) const;
+	void SetGlobally(float const value) const;
 
 private:
 
