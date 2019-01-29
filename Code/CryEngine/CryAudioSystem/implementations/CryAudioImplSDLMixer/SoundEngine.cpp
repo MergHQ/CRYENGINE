@@ -512,9 +512,9 @@ void SoundEngine::UnMute()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CEvent const* const pEvent, TriggerInstanceId const triggerInstanceId)
+ETriggerResult SoundEngine::ExecuteEvent(CObject* const pObject, CEvent const* const pEvent, TriggerInstanceId const triggerInstanceId)
 {
-	ERequestStatus requestStatus = ERequestStatus::Failure;
+	ETriggerResult result = ETriggerResult::Failure;
 
 	CEvent::EActionType const type = pEvent->GetType();
 	SampleId const sampleId = pEvent->GetSampleId();
@@ -550,7 +550,7 @@ ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CEvent const* c
 
 			if (pSample == nullptr)
 			{
-				return ERequestStatus::Failure;
+				return ETriggerResult::Failure;
 			}
 		}
 
@@ -615,7 +615,7 @@ ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CEvent const* c
 		{
 			// If any sample was added then add the event to the object
 			pObject->m_eventInstances.push_back(pEventInstance);
-			requestStatus = ERequestStatus::Success;
+			result = ETriggerResult::Playing;
 		}
 	}
 	else
@@ -639,10 +639,10 @@ ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CEvent const* c
 			}
 		}
 
-		requestStatus = ERequestStatus::SuccessDoNotTrack;
+		result = ETriggerResult::DoNotTrack;
 	}
 
-	return requestStatus;
+	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////

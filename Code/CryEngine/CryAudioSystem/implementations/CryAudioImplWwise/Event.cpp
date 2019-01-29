@@ -42,9 +42,9 @@ void PrepareEventCallback(
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CEvent::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
+ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
 {
-	ERequestStatus result = ERequestStatus::Failure;
+	ETriggerResult result = ETriggerResult::Failure;
 
 	auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
 
@@ -70,7 +70,7 @@ ERequestStatus CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 		pEventInstance->SetPlayingId(playingId);
 		pBaseObject->AddEventInstance(pEventInstance);
 
-		result = (pEventInstance->GetState() == EEventInstanceState::Virtual) ? ERequestStatus::SuccessVirtual : ERequestStatus::Success;
+		result = (pEventInstance->GetState() == EEventInstanceState::Virtual) ? ETriggerResult::Virtual : ETriggerResult::Playing;
 	}
 	else
 	{

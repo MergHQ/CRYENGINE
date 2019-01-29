@@ -1596,10 +1596,6 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 				pTrigger->Execute(g_object, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
 				result = ERequestStatus::Success;
 			}
-			else
-			{
-				result = ERequestStatus::FailureInvalidControlId;
-			}
 
 			break;
 		}
@@ -1612,10 +1608,6 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 			if (pTrigger != nullptr)
 			{
 				result = g_object.HandleStopTrigger(pTrigger);
-			}
-			else
-			{
-				result = ERequestStatus::FailureInvalidControlId;
 			}
 
 			break;
@@ -1663,10 +1655,6 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 				}
 
 				result = ERequestStatus::Success;
-			}
-			else
-			{
-				result = ERequestStatus::FailureInvalidControlId;
 			}
 
 			break;
@@ -1810,10 +1798,6 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 				pParameter->Set(g_object, pRequestData->value);
 				result = ERequestStatus::Success;
 			}
-			else
-			{
-				result = ERequestStatus::FailureInvalidControlId;
-			}
 
 			break;
 		}
@@ -1828,16 +1812,11 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 				pParameter->SetGlobally(pRequestData->value);
 				result = ERequestStatus::Success;
 			}
-			else
-			{
-				result = ERequestStatus::FailureInvalidControlId;
-			}
 
 			break;
 		}
 	case ESystemRequestType::SetSwitchState:
 		{
-			result = ERequestStatus::FailureInvalidControlId;
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::SetSwitchState> const*>(request.GetData());
 
 			CSwitch const* const pSwitch = stl::find_in_map(g_switches, pRequestData->switchId, nullptr);
@@ -1857,7 +1836,6 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::SetGlobalSwitchState:
 		{
-			result = ERequestStatus::FailureInvalidControlId;
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::SetSwitchState> const*>(request.GetData());
 
 			CSwitch const* const pSwitch = stl::find_in_map(g_switches, pRequestData->switchId, nullptr);
@@ -1886,10 +1864,6 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 				pTrigger->LoadAsync(g_object, true);
 				result = ERequestStatus::Success;
 			}
-			else
-			{
-				result = ERequestStatus::FailureInvalidControlId;
-			}
 
 			break;
 		}
@@ -1903,10 +1877,6 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 			{
 				pTrigger->LoadAsync(g_object, false);
 				result = ERequestStatus::Success;
-			}
-			else
-			{
-				result = ERequestStatus::FailureInvalidControlId;
 			}
 
 			break;
@@ -1980,10 +1950,6 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 				pSetting->Load();
 				result = ERequestStatus::Success;
 			}
-			else
-			{
-				result = ERequestStatus::FailureInvalidControlId;
-			}
 
 			break;
 		}
@@ -1997,10 +1963,6 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 			{
 				pSetting->Unload();
 				result = ERequestStatus::Success;
-			}
-			else
-			{
-				result = ERequestStatus::FailureInvalidControlId;
 			}
 
 			break;
@@ -2156,10 +2118,6 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 				pTrigger->Execute(g_previewObject, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
 				result = ERequestStatus::Success;
 			}
-			else
-			{
-				result = ERequestStatus::FailureInvalidControlId;
-			}
 
 			break;
 		}
@@ -2232,8 +2190,6 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			Cry::Audio::Log(ELogType::Warning, "Unknown manager request type: %u", pBase->systemRequestType);
 #endif  // CRY_AUDIO_USE_PRODUCTION_CODE
-
-			result = ERequestStatus::FailureInvalidRequest;
 
 			break;
 		}
@@ -2367,8 +2323,6 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 			Cry::Audio::Log(ELogType::Warning, "Unknown callback manager request type: %u", pBase->callbackRequestType);
 #endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 
-			result = ERequestStatus::FailureInvalidRequest;
-
 			break;
 		}
 	}
@@ -2397,10 +2351,6 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 				pTrigger->LoadAsync(*pObject, true);
 				result = ERequestStatus::Success;
 			}
-			else
-			{
-				result = ERequestStatus::FailureInvalidControlId;
-			}
 
 			break;
 		}
@@ -2414,10 +2364,6 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 			{
 				pTrigger->LoadAsync(*pObject, false);
 				result = ERequestStatus::Success;
-			}
-			else
-			{
-				result = ERequestStatus::FailureInvalidControlId;
 			}
 
 			break;
@@ -2472,10 +2418,6 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 				pTrigger->Execute(*pObject, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
 				result = ERequestStatus::Success;
 			}
-			else
-			{
-				result = ERequestStatus::FailureInvalidControlId;
-			}
 
 			break;
 		}
@@ -2488,10 +2430,6 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 			if (pTrigger != nullptr)
 			{
 				result = pObject->HandleStopTrigger(pTrigger);
-			}
-			else
-			{
-				result = ERequestStatus::FailureInvalidControlId;
 			}
 
 			break;
@@ -2523,16 +2461,11 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 				pParameter->Set(*pObject, pRequestData->value);
 				result = ERequestStatus::Success;
 			}
-			else
-			{
-				result = ERequestStatus::FailureInvalidControlId;
-			}
 
 			break;
 		}
 	case EObjectRequestType::SetSwitchState:
 		{
-			result = ERequestStatus::FailureInvalidControlId;
 			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::SetSwitchState> const*>(request.GetData());
 
 			CSwitch const* const pSwitch = stl::find_in_map(g_switches, pRequestData->switchId, nullptr);
@@ -2591,10 +2524,6 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 					pEnvironment->Set(*pObject, pRequestData->amount);
 					result = ERequestStatus::Success;
 				}
-				else
-				{
-					result = ERequestStatus::FailureInvalidControlId;
-				}
 			}
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			else
@@ -2622,7 +2551,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 
 			if (pRequestData->isEnabled)
 			{
-				pObject->GetImplDataPtr()->ToggleFunctionality(Impl::EObjectFunctionality::TrackAbsoluteVelocity, true);
+				pObject->GetImplDataPtr()->ToggleFunctionality(EObjectFunctionality::TrackAbsoluteVelocity, true);
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				pObject->SetFlag(EObjectFlags::TrackAbsoluteVelocity);
@@ -2630,7 +2559,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 			}
 			else
 			{
-				pObject->GetImplDataPtr()->ToggleFunctionality(Impl::EObjectFunctionality::TrackAbsoluteVelocity, false);
+				pObject->GetImplDataPtr()->ToggleFunctionality(EObjectFunctionality::TrackAbsoluteVelocity, false);
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				pObject->RemoveFlag(EObjectFlags::TrackAbsoluteVelocity);
@@ -2646,7 +2575,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 
 			if (pRequestData->isEnabled)
 			{
-				pObject->GetImplDataPtr()->ToggleFunctionality(Impl::EObjectFunctionality::TrackRelativeVelocity, true);
+				pObject->GetImplDataPtr()->ToggleFunctionality(EObjectFunctionality::TrackRelativeVelocity, true);
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				pObject->SetFlag(EObjectFlags::TrackRelativeVelocity);
@@ -2654,7 +2583,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 			}
 			else
 			{
-				pObject->GetImplDataPtr()->ToggleFunctionality(Impl::EObjectFunctionality::TrackRelativeVelocity, false);
+				pObject->GetImplDataPtr()->ToggleFunctionality(EObjectFunctionality::TrackRelativeVelocity, false);
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				pObject->RemoveFlag(EObjectFlags::TrackRelativeVelocity);
@@ -2691,7 +2620,6 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 			Cry::Audio::Log(ELogType::Warning, "Unknown object request type: %u", pBase->objectRequestType);
 #endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 
-			result = ERequestStatus::FailureInvalidRequest;
 			break;
 		}
 	}
@@ -2746,8 +2674,6 @@ ERequestStatus CSystem::ProcessListenerRequest(SRequestData const* const pPassed
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			Cry::Audio::Log(ELogType::Warning, "Unknown listener request type: %u", pBase->listenerRequestType);
 #endif  // CRY_AUDIO_USE_PRODUCTION_CODE
-
-			result = ERequestStatus::FailureInvalidRequest;
 
 			break;
 		}
@@ -2871,8 +2797,6 @@ void CSystem::NotifyListener(CRequest const& request)
 			break;
 		}
 	case ERequestStatus::Failure:
-	case ERequestStatus::FailureInvalidControlId:
-	case ERequestStatus::FailureInvalidRequest:
 	case ERequestStatus::PartialSuccess:
 		{
 			result = ERequestResult::Failure;

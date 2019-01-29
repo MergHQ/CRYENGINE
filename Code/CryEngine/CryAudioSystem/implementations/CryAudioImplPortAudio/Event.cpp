@@ -17,9 +17,9 @@ namespace Impl
 namespace PortAudio
 {
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CEvent::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
+ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
 {
-	ERequestStatus requestResult = ERequestStatus::Failure;
+	ETriggerResult result = ETriggerResult::Failure;
 
 	auto const pObject = static_cast<CObject*>(pIObject);
 
@@ -31,13 +31,13 @@ ERequestStatus CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 		CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(triggerInstanceId, pathId);
 #endif        // CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE
 
-		requestResult = pEventInstance->Execute(
+		result = pEventInstance->Execute(
 			numLoops,
 			sampleRate,
 			filePath,
-			streamParameters) ? ERequestStatus::Success : ERequestStatus::Failure;
+			streamParameters) ? ETriggerResult::Playing : ETriggerResult::Failure;
 
-		if (requestResult == ERequestStatus::Success)
+		if (result == ETriggerResult::Playing)
 		{
 			pObject->RegisterEventInstance(pEventInstance);
 		}
@@ -46,10 +46,10 @@ ERequestStatus CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 	{
 		pObject->StopEvent(pathId);
 
-		requestResult = ERequestStatus::SuccessDoNotTrack;
+		result = ETriggerResult::DoNotTrack;
 	}
 
-	return requestResult;
+	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -101,9 +101,9 @@ CEvent::~CEvent()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CEvent::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
+ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
 {
-	ERequestStatus requestResult = ERequestStatus::Failure;
+	ETriggerResult result = ETriggerResult::Failure;
 
 	auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
 
@@ -153,7 +153,7 @@ ERequestStatus CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 				EventInstances& objectPendingEvents = pBaseObject->GetPendingEventInstances();
 				CRY_ASSERT_MESSAGE(std::find(objectPendingEvents.begin(), objectPendingEvents.end(), pEventInstance) == objectPendingEvents.end(), "Event was already in the pending list during %s", __FUNCTION__);
 				objectPendingEvents.push_back(pEventInstance);
-				requestResult = ERequestStatus::Success;
+				result = ETriggerResult::Playing;
 			}
 
 			break;
@@ -161,7 +161,7 @@ ERequestStatus CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 	case EActionType::Stop:
 		{
 			pBaseObject->StopEventInstance(m_id);
-			requestResult = ERequestStatus::SuccessDoNotTrack;
+			result = ETriggerResult::DoNotTrack;
 
 			break;
 		}
@@ -209,7 +209,7 @@ ERequestStatus CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 							}
 						}
 
-						requestResult = ERequestStatus::SuccessDoNotTrack;
+						result = ETriggerResult::DoNotTrack;
 					}
 				}
 			}
@@ -218,7 +218,7 @@ ERequestStatus CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 		}
 	}
 
-	return requestResult;
+	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////

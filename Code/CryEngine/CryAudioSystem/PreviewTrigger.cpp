@@ -44,20 +44,13 @@ void CPreviewTrigger::Execute(Impl::ITriggerInfo const& triggerInfo)
 
 		if (pIObject != nullptr)
 		{
-			ERequestStatus const activateResult = m_pConnection->Execute(pIObject, g_triggerInstanceIdCounter);
+			ETriggerResult const result = m_pConnection->Execute(pIObject, g_triggerInstanceIdCounter);
 
-			if (activateResult == ERequestStatus::Success || activateResult == ERequestStatus::Pending)
+			if (result == ETriggerResult::Playing)
 			{
-				if (activateResult == ERequestStatus::Success)
-				{
-					++(triggerInstanceState.numPlayingInstances);
-				}
-				else if (activateResult == ERequestStatus::Pending)
-				{
-					++(triggerInstanceState.numLoadingInstances);
-				}
+				++(triggerInstanceState.numPlayingInstances);
 			}
-			else if (activateResult != ERequestStatus::SuccessDoNotTrack)
+			else if (result != ETriggerResult::DoNotTrack)
 			{
 				Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", GetName(), g_previewObject.GetName(), __FUNCTION__);
 			}

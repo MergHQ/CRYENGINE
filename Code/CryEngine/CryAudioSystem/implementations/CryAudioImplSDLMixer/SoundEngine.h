@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Common.h"
+#include <ITriggerConnection.h>
 #include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace CryAudio
@@ -43,7 +44,7 @@ const SampleId LoadSampleFromMemory(void* pMemory, const size_t size, const stri
 void           UnloadSample(const SampleId id);
 
 // Events
-ERequestStatus ExecuteEvent(CObject* const pObject, CEvent const* const pEvent, TriggerInstanceId const triggerInstanceId);
+ETriggerResult ExecuteEvent(CObject* const pObject, CEvent const* const pEvent, TriggerInstanceId const triggerInstanceId);
 ERequestStatus PlayFile(CObject* const pObject, CStandaloneFile* const pStandaloneFile);
 
 // Callbacks

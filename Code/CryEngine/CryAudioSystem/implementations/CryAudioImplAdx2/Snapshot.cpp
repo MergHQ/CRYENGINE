@@ -18,7 +18,7 @@ CryFixedStringT<MaxControlNameLength> g_debugActiveSnapShotName = g_debugNoneSna
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CSnapshot::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
+ETriggerResult CSnapshot::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
 {
 	switch (m_actionType)
 	{
@@ -44,7 +44,7 @@ ERequestStatus CSnapshot::Execute(IObject* const pIObject, TriggerInstanceId con
 		}
 	}
 
-	return ERequestStatus::SuccessDoNotTrack;
+	return ETriggerResult::DoNotTrack;
 }
 
 //////////////////////////////////////////////////////////////////////////
