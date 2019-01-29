@@ -62,7 +62,7 @@ public:
 	virtual ~CCue() override = default;
 
 	// CryAudio::Impl::ITriggerConnection
-	virtual ERequestStatus Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId) override;
+	virtual ETriggerResult Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId) override;
 	virtual void           Stop(IObject* const pIObject) override;
 	virtual ERequestStatus Load()  const override                                                { return ERequestStatus::Success; }
 	virtual ERequestStatus Unload() const override                                               { return ERequestStatus::Success; }

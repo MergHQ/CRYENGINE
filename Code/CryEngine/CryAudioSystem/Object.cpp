@@ -901,8 +901,8 @@ void CObject::ForceImplementationRefresh(bool const setTransformation)
 		m_pImplData->SetTransformation(m_transformation);
 	}
 
-	m_pImplData->ToggleFunctionality(Impl::EObjectFunctionality::TrackAbsoluteVelocity, (m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0);
-	m_pImplData->ToggleFunctionality(Impl::EObjectFunctionality::TrackRelativeVelocity, (m_flags& EObjectFlags::TrackRelativeVelocity) != 0);
+	m_pImplData->ToggleFunctionality(EObjectFunctionality::TrackAbsoluteVelocity, (m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0);
+	m_pImplData->ToggleFunctionality(EObjectFunctionality::TrackRelativeVelocity, (m_flags& EObjectFlags::TrackRelativeVelocity) != 0);
 
 	// Parameters
 	for (auto const& parameterPair : m_parameters)

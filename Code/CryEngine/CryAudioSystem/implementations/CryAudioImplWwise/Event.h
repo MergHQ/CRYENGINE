@@ -38,7 +38,7 @@ public:
 	virtual ~CEvent() override = default;
 
 	// CryAudio::Impl::ITriggerConnection
-	virtual ERequestStatus Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId) override;
+	virtual ETriggerResult Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId) override;
 	virtual void           Stop(IObject* const pIObject) override;
 	virtual ERequestStatus Load() const override;
 	virtual ERequestStatus Unload() const override;

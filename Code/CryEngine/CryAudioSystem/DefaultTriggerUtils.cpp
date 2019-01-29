@@ -25,25 +25,21 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 	{
 		for (auto const pConnection : connections)
 		{
-			ERequestStatus const activateResult = pConnection->Execute(pIObject, g_triggerInstanceIdCounter);
+			ETriggerResult const result = pConnection->Execute(pIObject, g_triggerInstanceIdCounter);
 
-			if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual) || (activateResult == ERequestStatus::Pending))
+			if ((result == ETriggerResult::Playing) || (result == ETriggerResult::Virtual))
 			{
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				CRY_ASSERT_MESSAGE(pControl->GetDataScope() == EDataScope::Global, "Default controls must always have global data scope! (%s) during %s", pControl->GetName(), __FUNCTION__);
 #endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 
-				if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual))
+				if ((result == ETriggerResult::Playing) || (result == ETriggerResult::Virtual))
 				{
 					++(triggerInstanceState.numPlayingInstances);
 				}
-				else if (activateResult == ERequestStatus::Pending)
-				{
-					++(triggerInstanceState.numLoadingInstances);
-				}
 			}
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-			else if (activateResult != ERequestStatus::SuccessDoNotTrack)
+			else if (result != ETriggerResult::DoNotTrack)
 			{
 				Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", pControl->GetName(), g_object.GetName(), __FUNCTION__);
 			}

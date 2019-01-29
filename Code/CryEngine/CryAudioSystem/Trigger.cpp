@@ -60,32 +60,28 @@ void CTrigger::Execute(
 	{
 		for (auto const pConnection : m_connections)
 		{
-			ERequestStatus const activateResult = pConnection->Execute(pIObject, g_triggerInstanceIdCounter);
+			ETriggerResult const result = pConnection->Execute(pIObject, g_triggerInstanceIdCounter);
 
-			if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual) || (activateResult == ERequestStatus::Pending))
+			if ((result == ETriggerResult::Playing) || (result == ETriggerResult::Virtual))
 			{
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				triggerInstanceState.radius = m_radius;
 				object.UpdateMaxRadius(m_radius);
 #endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 
-				if (activateResult == ERequestStatus::Success)
+				if (result == ETriggerResult::Playing)
 				{
 					++(triggerInstanceState.numPlayingInstances);
 					isPlaying = true;
 				}
-				else if (activateResult == ERequestStatus::SuccessVirtual)
+				else if (result == ETriggerResult::Virtual)
 				{
 					++(triggerInstanceState.numPlayingInstances);
 					isVirtual = true;
 				}
-				else if (activateResult == ERequestStatus::Pending)
-				{
-					++(triggerInstanceState.numLoadingInstances);
-				}
 			}
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-			else if (activateResult != ERequestStatus::SuccessDoNotTrack)
+			else if (result != ETriggerResult::DoNotTrack)
 			{
 				Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", GetName(), object.GetName(), __FUNCTION__);
 			}
@@ -148,32 +144,28 @@ void CTrigger::Execute(
 	{
 		for (auto const pConnection : m_connections)
 		{
-			ERequestStatus const activateResult = pConnection->Execute(pIObject, triggerInstanceId);
+			ETriggerResult const result = pConnection->Execute(pIObject, triggerInstanceId);
 
-			if ((activateResult == ERequestStatus::Success) || (activateResult == ERequestStatus::SuccessVirtual) || (activateResult == ERequestStatus::Pending))
+			if ((result == ETriggerResult::Playing) || (result == ETriggerResult::Virtual))
 			{
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				triggerInstanceState.radius = m_radius;
 				object.UpdateMaxRadius(m_radius);
 #endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 
-				if (activateResult == ERequestStatus::Success)
+				if (result == ETriggerResult::Playing)
 				{
 					++(triggerInstanceState.numPlayingInstances);
 					isPlaying = true;
 				}
-				else if (activateResult == ERequestStatus::SuccessVirtual)
+				else if (result == ETriggerResult::Virtual)
 				{
 					++(triggerInstanceState.numPlayingInstances);
 					isVirtual = true;
 				}
-				else if (activateResult == ERequestStatus::Pending)
-				{
-					++(triggerInstanceState.numLoadingInstances);
-				}
 			}
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-			else if (activateResult != ERequestStatus::SuccessDoNotTrack)
+			else if (result != ETriggerResult::DoNotTrack)
 			{
 				Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", GetName(), object.GetName(), __FUNCTION__);
 			}

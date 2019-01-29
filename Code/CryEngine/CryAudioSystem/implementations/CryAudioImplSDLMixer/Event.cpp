@@ -15,7 +15,7 @@ namespace Impl
 namespace SDL_mixer
 {
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CEvent::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
+ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
 {
 	auto const pObject = static_cast<CObject*>(pIObject);
 	return SoundEngine::ExecuteEvent(pObject, this, triggerInstanceId);

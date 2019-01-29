@@ -15,9 +15,9 @@ namespace Impl
 namespace Fmod
 {
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CSnapshot::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
+ETriggerResult CSnapshot::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
 {
-	ERequestStatus requestResult = ERequestStatus::Failure;
+	ETriggerResult result = ETriggerResult::Failure;
 
 	switch (m_actionType)
 	{
@@ -44,20 +44,20 @@ ERequestStatus CSnapshot::Execute(IObject* const pIObject, TriggerInstanceId con
 			}
 #endif        // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
-			requestResult = ERequestStatus::SuccessDoNotTrack;
+			result = ETriggerResult::DoNotTrack;
 
 			break;
 		}
 	case EActionType::Stop:
 		{
 			Stop(nullptr);
-			requestResult = ERequestStatus::SuccessDoNotTrack;
+			result = ETriggerResult::DoNotTrack;
 
 			break;
 		}
 	}
 
-	return requestResult;
+	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -18,9 +18,9 @@ namespace Impl
 namespace Adx2
 {
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CCue::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
+ETriggerResult CCue::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
 {
-	ERequestStatus requestResult = ERequestStatus::Failure;
+	ETriggerResult result = ETriggerResult::Failure;
 
 	auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
 
@@ -45,7 +45,6 @@ ERequestStatus CCue::Execute(IObject* const pIObject, TriggerInstanceId const tr
 
 				while (true)
 				{
-					// Loop is needed because callbacks don't work for cues that fail to start.
 					CriAtomExPlaybackStatus const status = criAtomExPlayback_GetStatus(playbackId);
 
 					if (status != CRIATOMEXPLAYBACK_STATUS_PREP)
@@ -76,7 +75,7 @@ ERequestStatus CCue::Execute(IObject* const pIObject, TriggerInstanceId const tr
 							pBaseObject->AddCueInstance(pCueInstance);
 							pBaseObject->UpdateVelocityTracking();
 
-							requestResult = ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) != 0) ? ERequestStatus::SuccessVirtual : ERequestStatus::Success;
+							result = ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) != 0) ? ETriggerResult::Virtual : ETriggerResult::Playing;
 						}
 
 						break;
@@ -96,20 +95,20 @@ ERequestStatus CCue::Execute(IObject* const pIObject, TriggerInstanceId const tr
 	case EActionType::Stop:
 		{
 			pBaseObject->StopCue(m_id);
-			requestResult = ERequestStatus::SuccessDoNotTrack;
+			result = ETriggerResult::DoNotTrack;
 
 			break;
 		}
 	case EActionType::Pause:
 		{
 			pBaseObject->PauseCue(m_id);
-			requestResult = ERequestStatus::SuccessDoNotTrack;
+			result = ETriggerResult::DoNotTrack;
 			break;
 		}
 	case EActionType::Resume:
 		{
 			pBaseObject->ResumeCue(m_id);
-			requestResult = ERequestStatus::SuccessDoNotTrack;
+			result = ETriggerResult::DoNotTrack;
 
 			break;
 		}
@@ -119,7 +118,7 @@ ERequestStatus CCue::Execute(IObject* const pIObject, TriggerInstanceId const tr
 		}
 	}
 
-	return requestResult;
+	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////

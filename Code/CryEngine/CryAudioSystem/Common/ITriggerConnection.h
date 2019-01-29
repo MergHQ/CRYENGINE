@@ -6,6 +6,14 @@
 
 namespace CryAudio
 {
+enum class ETriggerResult : EnumFlagsType
+{
+	Playing,
+	Virtual,
+	DoNotTrack,
+	Failure,
+};
+
 namespace Impl
 {
 struct IEvent;
@@ -26,10 +34,10 @@ struct ITriggerConnection
 	 * Activate a trigger on this object.
 	 * @param pIObject - implementation-specific object to execute the trigger on.The audio system guarantees that this is never a null pointer.
 	 * @param triggerInstanceId - instance id of the executed trigger.
-	 * @return ERequestStatus - indicates the outcome of underlying process
+	 * @return ETriggerResult - indicates the outcome of underlying process
 	 * @see Stop
 	 */
-	virtual ERequestStatus Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId) = 0;
+	virtual ETriggerResult Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId) = 0;
 
 	/**
 	 * Stops a trigger on this object.
