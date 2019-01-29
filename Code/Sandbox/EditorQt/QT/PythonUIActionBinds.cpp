@@ -157,8 +157,7 @@ void PyStopAllSounds()
 //////////////////////////////////////////////////////////////////////////
 void PyRefreshAudioSystem()
 {
-	CryAudio::SRequestUserData const data(CryAudio::ERequestFlags::ExecuteBlocking);
-	gEnv->pAudioSystem->Refresh(GetIEditorImpl()->GetLevelName(), data);
+	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_REFRESH, reinterpret_cast<UINT_PTR>(GetIEditorImpl()->GetLevelName()), 0);
 }
 
 //////////////////////////////////////////////////////////////////////////

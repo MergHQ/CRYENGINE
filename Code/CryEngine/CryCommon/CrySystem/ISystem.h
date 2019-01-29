@@ -174,7 +174,7 @@ struct IMiniGUI;
 }
 
 typedef CryGUID CryInterfaceID;
-typedef void* CRY_HWND;
+typedef void*   CRY_HWND;
 
 #define PROC_MENU     1
 #define PROC_3DENGINE 2
@@ -475,6 +475,9 @@ enum ESystemEvent
 
 	//! Sent to inform the audio system to resume.
 	ESYSTEM_EVENT_AUDIO_RESUME,
+
+	//! Sent to inform the audio system to refresh.
+	ESYSTEM_EVENT_AUDIO_REFRESH,
 
 	//! Sent when the audio language has changed.
 	ESYSTEM_EVENT_AUDIO_LANGUAGE_CHANGED,
@@ -1583,7 +1586,7 @@ struct ISystem
 	//! GetSystemUpdate stats (all systems update without except console).
 	//! Very useful on dedicated server as we throttle it to fixed frequency.
 	//! \return zeros if no updates happened yet.
-	virtual void GetUpdateStats(SSystemUpdateStats& stats) = 0;
+	virtual void               GetUpdateStats(SSystemUpdateStats& stats) = 0;
 
 	virtual ESystemGlobalState GetSystemGlobalState(void) = 0;
 	virtual void               SetSystemGlobalState(const ESystemGlobalState systemGlobalState) = 0;
