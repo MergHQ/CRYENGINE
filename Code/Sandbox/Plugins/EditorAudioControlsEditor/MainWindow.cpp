@@ -438,8 +438,7 @@ void CMainWindow::RefreshAudioSystem()
 		szLevelName = nullptr;
 	}
 
-	CryAudio::SRequestUserData const data(CryAudio::ERequestFlags::ExecuteBlocking);
-	gEnv->pAudioSystem->Refresh(szLevelName, data);
+	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_REFRESH, reinterpret_cast<UINT_PTR>(szLevelName), 0);
 	QGuiApplication::restoreOverrideCursor();
 }
 

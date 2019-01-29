@@ -641,7 +641,7 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 
 			break;
 		}
-	case ESYSTEM_EVENT_FULL_SHUTDOWN:
+	case ESYSTEM_EVENT_FULL_SHUTDOWN: // Intentional fall-through.
 	case ESYSTEM_EVENT_FAST_SHUTDOWN:
 		{
 			if (gEnv->pInput != nullptr)
@@ -719,8 +719,20 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 	case ESYSTEM_EVENT_AUDIO_LANGUAGE_CHANGED:
 		{
 			OnLanguageChanged();
+
 			break;
 		}
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	case ESYSTEM_EVENT_AUDIO_REFRESH:
+		{
+			auto const szLevelName = reinterpret_cast<const char*>(wparam);
+			SSystemRequestData<ESystemRequestType::RefreshSystem> const requestData(szLevelName);
+			CRequest const request(&requestData, ERequestFlags::ExecuteBlocking);
+			PushRequest(request);
+
+			break;
+		}
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 	default:
 		{
 			break;
@@ -1167,14 +1179,6 @@ void CSystem::StopAllSounds(SRequestUserData const& userData /* = SAudioRequestU
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::Refresh(char const* const szLevelName, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
-{
-	SSystemRequestData<ESystemRequestType::RefreshSystem> const requestData(szLevelName);
-	CRequest const request(&requestData, userData);
-	PushRequest(request);
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CSystem::ParseControlsData(
 	char const* const szFolderPath,
 	EDataScope const dataScope,
@@ -1578,13 +1582,6 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::SetImpl> const*>(request.GetData());
 			result = HandleSetImpl(pRequestData->pIImpl);
-
-			break;
-		}
-	case ESystemRequestType::RefreshSystem:
-		{
-			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::RefreshSystem> const*>(request.GetData());
-			result = HandleRefresh(pRequestData->levelName);
 
 			break;
 		}
@@ -2139,6 +2136,15 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 			break;
 		}
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	case ESystemRequestType::RefreshSystem:
+		{
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::RefreshSystem> const*>(request.GetData());
+			HandleRefresh(pRequestData->levelName);
+			HandleRetriggerControls();
+			result = ERequestStatus::Success;
+
+			break;
+		}
 	case ESystemRequestType::ExecutePreviewTrigger:
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ExecutePreviewTrigger> const*>(request.GetData());
@@ -2980,69 +2986,6 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CSystem::HandleRefresh(char const* const szLevelName)
-{
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-	Cry::Audio::Log(ELogType::Warning, "Beginning to refresh the AudioSystem!");
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
-
-	ERequestStatus result = g_pIImpl->StopAllSounds();
-	CRY_ASSERT(result == ERequestStatus::Success);
-
-	result = g_fileCacheManager.UnloadDataByScope(EDataScope::LevelSpecific);
-	CRY_ASSERT(result == ERequestStatus::Success);
-
-	result = g_fileCacheManager.UnloadDataByScope(EDataScope::Global);
-	CRY_ASSERT(result == ERequestStatus::Success);
-
-	g_xmlProcessor.ClearPreloadsData(EDataScope::All);
-	g_xmlProcessor.ClearControlsData(EDataScope::All);
-
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-	ResetRequestCount();
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
-
-	g_pIImpl->OnRefresh();
-
-	g_xmlProcessor.ParseSystemData();
-	g_xmlProcessor.ParseControlsData(g_configPath.c_str(), EDataScope::Global);
-	g_xmlProcessor.ParsePreloadsData(g_configPath.c_str(), EDataScope::Global);
-
-	// The global preload might not exist if no preloads have been created, for that reason we don't check the result of this call
-	g_fileCacheManager.TryLoadRequest(GlobalPreloadRequestId, true, true);
-
-	AutoLoadSetting(EDataScope::Global);
-
-	if (szLevelName != nullptr && szLevelName[0] != '\0')
-	{
-		CryFixedStringT<MaxFilePathLength> levelPath = g_configPath;
-		levelPath += g_szLevelsFolderName;
-		levelPath += "/";
-		levelPath += szLevelName;
-		g_xmlProcessor.ParseControlsData(levelPath.c_str(), EDataScope::LevelSpecific);
-		g_xmlProcessor.ParsePreloadsData(levelPath.c_str(), EDataScope::LevelSpecific);
-
-		PreloadRequestId const preloadRequestId = StringToId(szLevelName);
-		result = g_fileCacheManager.TryLoadRequest(preloadRequestId, true, true);
-
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-		if (result != ERequestStatus::Success)
-		{
-			Cry::Audio::Log(ELogType::Warning, R"(No preload request found for level - "%s"!)", szLevelName);
-		}
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
-
-		AutoLoadSetting(EDataScope::LevelSpecific);
-	}
-
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-	Cry::Audio::Log(ELogType::Warning, "Done refreshing the AudioSystem!");
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
-
-	return ERequestStatus::Success;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CSystem::SetImplLanguage()
 {
 	if (ICVar* pCVar = gEnv->pConsole->GetCVar("g_languageAudio"))
@@ -3164,6 +3107,59 @@ void CSystem::GetImplInfo(SImplInfo& implInfo)
 }
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+//////////////////////////////////////////////////////////////////////////
+void CSystem::HandleRefresh(char const* const szLevelName)
+{
+	Cry::Audio::Log(ELogType::Warning, "Beginning to refresh the AudioSystem!");
+
+	ERequestStatus result = g_pIImpl->StopAllSounds();
+	CRY_ASSERT(result == ERequestStatus::Success);
+
+	result = g_fileCacheManager.UnloadDataByScope(EDataScope::LevelSpecific);
+	CRY_ASSERT(result == ERequestStatus::Success);
+
+	result = g_fileCacheManager.UnloadDataByScope(EDataScope::Global);
+	CRY_ASSERT(result == ERequestStatus::Success);
+
+	g_xmlProcessor.ClearPreloadsData(EDataScope::All);
+	g_xmlProcessor.ClearControlsData(EDataScope::All);
+
+	ResetRequestCount();
+
+	g_pIImpl->OnRefresh();
+
+	g_xmlProcessor.ParseSystemData();
+	g_xmlProcessor.ParseControlsData(g_configPath.c_str(), EDataScope::Global);
+	g_xmlProcessor.ParsePreloadsData(g_configPath.c_str(), EDataScope::Global);
+
+	// The global preload might not exist if no preloads have been created, for that reason we don't check the result of this call
+	g_fileCacheManager.TryLoadRequest(GlobalPreloadRequestId, true, true);
+
+	AutoLoadSetting(EDataScope::Global);
+
+	if (szLevelName != nullptr && szLevelName[0] != '\0')
+	{
+		CryFixedStringT<MaxFilePathLength> levelPath = g_configPath;
+		levelPath += g_szLevelsFolderName;
+		levelPath += "/";
+		levelPath += szLevelName;
+		g_xmlProcessor.ParseControlsData(levelPath.c_str(), EDataScope::LevelSpecific);
+		g_xmlProcessor.ParsePreloadsData(levelPath.c_str(), EDataScope::LevelSpecific);
+
+		PreloadRequestId const preloadRequestId = StringToId(szLevelName);
+		result = g_fileCacheManager.TryLoadRequest(preloadRequestId, true, true);
+
+		if (result != ERequestStatus::Success)
+		{
+			Cry::Audio::Log(ELogType::Warning, R"(No preload request found for level - "%s"!)", szLevelName);
+		}
+
+		AutoLoadSetting(EDataScope::LevelSpecific);
+	}
+
+	Cry::Audio::Log(ELogType::Warning, "Done refreshing the AudioSystem!");
+}
+
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ScheduleIRenderAuxGeomForRendering(IRenderAuxGeom* pRenderAuxGeom)
 {

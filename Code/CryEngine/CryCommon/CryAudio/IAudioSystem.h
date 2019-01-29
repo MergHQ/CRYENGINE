@@ -385,15 +385,6 @@ struct IAudioSystem
 	virtual void StopAllSounds(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
-	 * Used to reload the registered audio middleware.
-	 * This is useful when for instance an audio project changed while the application was running.
-	 * @param szLevelName - name of the currently loaded level so that level specific data gets reloaded as well.
-	 * @param userData - optional struct used to pass additional data to the internal request.
-	 * @return void
-	 */
-	virtual void Refresh(char const* const szLevelName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
-
-	/**
 	 * Loads all of the data referenced by the given preload request.
 	 * @param id - ID of the preload request in question.
 	 * @param bAutoLoadOnly - boolean indicating whether to load the given preload request only if it's been set to AutoLoad.

@@ -16,7 +16,6 @@ enum class ESystemRequestType : EnumFlagsType
 	None,
 	SetImpl,
 	ReleaseImpl,
-	RefreshSystem,
 	StopAllSounds,
 	ParseControlsData,
 	ParsePreloadsData,
@@ -52,6 +51,7 @@ enum class ESystemRequestType : EnumFlagsType
 	StopTrigger,
 	StopAllTriggers,
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	RefreshSystem,
 	ReloadControlsData,
 	RetriggerControls,
 	DrawDebugInfo,
@@ -533,25 +533,6 @@ struct SSystemRequestData<ESystemRequestType::UnloadAFCMDataByScope> final : pub
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SSystemRequestData<ESystemRequestType::RefreshSystem> final : public SSystemRequestDataBase
-{
-	explicit SSystemRequestData(char const* const szLevelName)
-		: SSystemRequestDataBase(ESystemRequestType::RefreshSystem)
-		, levelName(szLevelName)
-	{}
-
-	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::RefreshSystem> const* const pAMRData)
-		: SSystemRequestDataBase(ESystemRequestType::RefreshSystem)
-		, levelName(pAMRData->levelName)
-	{}
-
-	virtual ~SSystemRequestData() override = default;
-
-	CryFixedStringT<MaxFileNameLength> const levelName;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<>
 struct SSystemRequestData<ESystemRequestType::GetFileData> final : public SSystemRequestDataBase
 {
 	explicit SSystemRequestData(char const* const szName, SFileData& fileData_)
@@ -779,6 +760,25 @@ struct SSystemRequestData<ESystemRequestType::StopTrigger> final : public SSyste
 };
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SSystemRequestData<ESystemRequestType::RefreshSystem> final : public SSystemRequestDataBase
+{
+	explicit SSystemRequestData(char const* const szLevelName)
+		: SSystemRequestDataBase(ESystemRequestType::RefreshSystem)
+		, levelName(szLevelName)
+	{}
+
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::RefreshSystem> const* const pAMRData)
+		: SSystemRequestDataBase(ESystemRequestType::RefreshSystem)
+		, levelName(pAMRData->levelName)
+	{}
+
+	virtual ~SSystemRequestData() override = default;
+
+	CryFixedStringT<MaxFileNameLength> const levelName;
+};
+
 //////////////////////////////////////////////////////////////////////////
 template<>
 struct SSystemRequestData<ESystemRequestType::ReloadControlsData> final : public SSystemRequestDataBase

@@ -38,7 +38,6 @@ std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pReq
 			{
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::SetImpl)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::ReleaseImpl)
-				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::RefreshSystem)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::StopAllSounds)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::ParseControlsData)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::ParsePreloadsData)
@@ -74,6 +73,7 @@ std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pReq
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::StopTrigger)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::StopAllTriggers)
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::RefreshSystem)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::ReloadControlsData)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::RetriggerControls)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::DrawDebugInfo)

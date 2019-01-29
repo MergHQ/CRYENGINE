@@ -44,7 +44,6 @@ public:
 	virtual void        ReportPhysicalizedObject(Impl::IObject* const pIObject, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        ReportVirtualizedObject(Impl::IObject* const pIObject, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        StopAllSounds(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	virtual void        Refresh(char const* const szLevelName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        PreloadSingleRequest(PreloadRequestId const id, bool const bAutoLoadOnly, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        UnloadSingleRequest(PreloadRequestId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        LoadSetting(ControlId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
@@ -100,7 +99,6 @@ private:
 	ERequestStatus ProcessListenerRequest(SRequestData const* const pPassedRequestData);
 	void           NotifyListener(CRequest const& request);
 	ERequestStatus HandleSetImpl(Impl::IImpl* const pIImpl);
-	ERequestStatus HandleRefresh(char const* const szLevelName);
 	void           SetImplLanguage();
 	void           SetCurrentEnvironmentsOnObject(CObject* const pObject, EntityId const entityToIgnore);
 #if defined(CRY_AUDIO_USE_OCCLUSION)
@@ -138,6 +136,7 @@ private:
 	void DrawDebug();
 	void HandleDrawDebug();
 	void HandleRetriggerControls();
+	void HandleRefresh(char const* const szLevelName);
 
 	std::atomic<IRenderAuxGeom*> m_currentRenderAuxGeom{ nullptr };
 	std::atomic<IRenderAuxGeom*> m_lastRenderAuxGeom{ nullptr };

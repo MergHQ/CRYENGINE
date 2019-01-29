@@ -198,8 +198,7 @@ void CmdResetRequestCount(IConsoleCmdArgs* pCmdArgs)
 //////////////////////////////////////////////////////////////////////////
 void CmdRefresh(IConsoleCmdArgs* pCmdArgs)
 {
-	SRequestUserData const data(CryAudio::ERequestFlags::ExecuteBlocking);
-	g_system.Refresh(gEnv->pGameFramework->GetLevelName(), data);
+	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_REFRESH, reinterpret_cast<UINT_PTR>(gEnv->pGameFramework->GetLevelName()), 0);
 }
 #endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
