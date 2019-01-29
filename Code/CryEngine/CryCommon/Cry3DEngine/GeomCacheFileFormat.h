@@ -1,13 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   GeomCacheFileFormat.h
-//  Created:     26/8/2012 by Axel Gneiting
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __GeomCacheFileFormat_h__
-#define __GeomCacheFileFormat_h__
 #pragma once
 
 #include "CryExtension/CryGUID.h"
@@ -192,6 +184,4 @@ struct SNodeInfo
 
 #if !(CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID)
 	#pragma pack(pop)
-#endif
-
 #endif

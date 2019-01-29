@@ -14,31 +14,33 @@
 #include <CryRenderer/RenderObject.h>
 //Do not add any headers here!
 
-struct ISystem;
-struct ICharacterInstance;
-struct CVars;
-struct pe_params_particle;
-struct IMaterial;
-struct RenderLMData;
-struct AnimTexInfo;
-struct ISplineInterpolator;
 class CContentCGF;
-struct SpawnParams;
-class ICrySizer;
-struct SRenderNodeTempData;
-struct IParticleManager;
-class IOpticsManager;
-struct IDeferredPhysicsEventManager;
-struct IBSPTree3D;
-struct ITimeOfDay;
-struct IBreezeGenerator;
-struct IRenderView;
 class CRenderView;
-struct ISurfaceType;
-struct CryEngineDecalInfo;
-struct IShadowCaster;
-struct IGeometry;
+class ICrySizer;
+class IOpticsManager;
+
+struct AnimTexInfo;
 struct bop_meshupdate;
+struct CryEngineDecalInfo;
+struct CVars;
+struct IBreezeGenerator;
+struct IBSPTree3D;
+struct ICharacterInstance;
+struct IDeferredPhysicsEventManager;
+struct IGeometry;
+struct IMaterial;
+struct IParticleManager;
+struct IRenderView;
+struct IShadowCaster;
+struct ISplineInterpolator;
+struct ISurfaceType;
+struct ISystem;
+struct ITimeOfDay;
+struct pe_params_particle;
+struct RenderLMData;
+struct SpawnParams;
+struct SRenderNodeTempData;
+
 enum EERType;
 
 namespace ChunkFile
@@ -502,7 +504,7 @@ struct IVisArea : public IClipVolume
 	//! \return true if the VisArea if it's affected by outdoor lighting, else false will be returned.
 	virtual bool IsAffectedByOutLights() const = 0;
 
-	//! Determines if the spere can be affect the VisArea.
+	//! Determines if the sphere can be affect the VisArea.
 	//! \return Returns true if the VisArea can be affected by the sphere, else false will be returned.
 	virtual bool IsSphereInsideVisArea(const Vec3& vPos, const f32 fRadius) = 0;
 
@@ -880,6 +882,7 @@ struct IVisAreaCallback
 
 struct IVisAreaTestCallback
 {
+	virtual ~IVisAreaTestCallback() {}
 	virtual bool TestVisArea(IVisArea* pVisArea) const = 0;
 };
 
@@ -1422,7 +1425,7 @@ struct I3DEngine : public IProcess
 	virtual void GetObjectsStreamingStatus(SObjectsStreamingStatus& outStatus) = 0;
 
 	//! Gets stats on the streaming bandwidth requests from subsystems.
-	//! \param subsystem Rhe streaming subsystem for which we want bandwidth data.
+	//! \param subsystem The streaming subsystem for which we want bandwidth data.
 	//! \param outData Structure containing the bandwidth data for the subsystem requested.
 	virtual void GetStreamingSubsystemData(int subsystem, SStremaingBandwidthData& outData) = 0;
 
@@ -1524,7 +1527,7 @@ struct I3DEngine : public IProcess
 	virtual Vec4 GetCausticsParams() const = 0;
 
 	//! Gets ocean animation caustics parameters.
-	//! \return A Vec4 value which constains: x = unused, y = height, z = depth, w = intensity
+	//! \return A Vec4 value which contains: x = unused, y = height, z = depth, w = intensity
 	virtual Vec4 GetOceanAnimationCausticsParams() const = 0;
 
 	//! Gets ocean animation parameters.
@@ -1722,11 +1725,11 @@ struct I3DEngine : public IProcess
 	virtual bool GetStatInstGroup(int nGroupId, IStatInstGroup& siGroup) = 0;
 
 	// Summary:
-	//		Sets burbed out flag
+	//		Sets burned out flag
 	virtual void SetTerrainBurnedOut(int x, int y, bool bBurnedOut) = 0;
 
 	// Summary:
-	//		Gets burbed out flag
+	//		Gets burned out flag
 	virtual bool IsTerrainBurnedOut(int x, int y) = 0;
 
 	//! Notifies of an explosion, and maybe creates an hole in the terrain.
@@ -2158,7 +2161,7 @@ struct I3DEngine : public IProcess
 
 	virtual const char* GetVoxelEditOperationName(EVoxelEditOperation eOperation) = 0;
 
-	//! Gives 3dengine access to original and most precise heighmap data in the editor
+	//! Gives 3dengine access to original and most precise heightmap data in the editor
 	virtual void                     SetEditorHeightmapCallback(IEditorHeightmap* pCallBack) = 0;
 
 	virtual PodArray<SRenderLight*>* GetDynamicLightSources() = 0;

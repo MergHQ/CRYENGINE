@@ -1,16 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-//
-//	File:IStatObj.h
-//  Interface for CStatObj class
-//
-//	History:
-//	-:Created by Vladimir Kajalin
-//
-//////////////////////////////////////////////////////////////////////
-
-#ifndef _IStatObj_H_
-#define _IStatObj_H_
+#pragma once
 
 #include "IMeshObj.h"
 #include <CryCore/smartptr.h>
@@ -20,26 +10,24 @@
 #include <CryMath/Cry_Geo.h>
 #include <CryCore/BitMask.h>
 
-struct IMaterial;
-struct ShadowMapFrustum;
 class CRenderObject;
-struct IShader;
 class IReadStream;
-struct SRenderingPassInfo;
+
+struct IChunkFile;
+struct IMaterial;
+struct IShader;
 struct ITetrLattice;
 struct pe_geomparams;
+struct phys_geometry;
+struct ShadowMapFrustum;
+struct SMeshLodInfo;
+struct SRenderingPassInfo;
+
 namespace primitives {
 struct box;
 }
+
 TYPEDEF_AUTOPTR(IReadStream);
-
-// Interface to non animated object.
-struct phys_geometry;
-struct IChunkFile;
-
-// General forward declaration.
-class CRenderObject;
-struct SMeshLodInfo;
 
 //! Type of static sub object.
 enum EStaticSubObjectType
@@ -467,7 +455,7 @@ struct IStatObj : IMeshObj, IStreamable
 	//! Retrieve the static object, from which this one was cloned (if that is the case)
 	virtual IStatObj* GetCloneSourceObject() const = 0;
 
-	//! Find sub-pbject by name.
+	//! Find sub-object by name.
 	virtual IStatObj::SSubObject* FindSubObject(const char* sNodeName) = 0;
 
 	//! Find sub-object by name (including spaces, comma and semi-colon.
@@ -508,7 +496,7 @@ struct IStatObj : IMeshObj, IStreamable
 	//!     Optional output parameter. If it is specified then the file will not be written to the drive but instead
 	//!     the function returns a pointer to the IChunkFile interface with filled CGF chunks. Caller of the function
 	//!     is responsible to call Release method of IChunkFile to release it later.
-	virtual bool SaveToCGF(const char* sFilename, IChunkFile** pOutChunkFile = NULL, bool bHavePhysicalProxy = false) = 0;
+	virtual bool SaveToCGF(const char* sFilename, IChunkFile** pOutChunkFile = nullptr, bool bHavePhysicalProxy = false) = 0;
 
 	// Clone static geometry. Makes an exact copy of the Static object and the contained geometry.
 	// virtual IStatObj* Clone(bool bCloneChildren=true, bool nDynamic=false) = 0;
@@ -516,7 +504,7 @@ struct IStatObj : IMeshObj, IStreamable
 	//! Clones static geometry, Makes an exact copy of the Static object and the contained geometry.
 	virtual IStatObj* Clone(bool bCloneGeometry, bool bCloneChildren, bool bMeshesOnly) = 0;
 
-	//! Make sure that both objects have one-to-one vertex correspondance.
+	//! Make sure that both objects have one-to-one vertex correspondence.
 	//! Sets MorphBuddy for this object's render mesh
 	//! \return 0 if failed (due to objects having no vertex maps most likely).
 	virtual int SetDeformationMorphTarget(IStatObj* pDeformed) = 0;
@@ -585,5 +573,3 @@ struct IStatObj : IMeshObj, IStreamable
 protected:
 	virtual ~IStatObj() {}; //!< Should be never called, use Release() instead.
 };
-
-#endif // _IStatObj_H_

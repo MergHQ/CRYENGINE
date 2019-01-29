@@ -1,17 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// ------------------------------------------------------------------------
-//  File name:   CREGeomCache.h
-//  Created:     17/10/2012 by Axel Gneiting
-//  Description: Backend part of geometry cache rendering
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef _CREGEOMCACHE_
-#define _CREGEOMCACHE_
-
 #pragma once
+
 #include <CryRenderer/RenderElements/RendElement.h>
 
 #if defined(USE_GEOM_CACHES)
@@ -75,5 +65,4 @@ private:
 	static std::vector<CREGeomCache*> ms_updateList[2];
 };
 
-#endif
 #endif

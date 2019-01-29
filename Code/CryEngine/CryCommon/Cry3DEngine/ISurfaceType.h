@@ -1,16 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   ISurfaceType.h
-//  Version:     v1.00
-//  Created:     30/9/2004 by Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description: Defines interfaces to access Surface Types.
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 //! Flags that ISurfaceType::GetFlags() can return.
@@ -124,7 +113,7 @@ struct ISurfaceType
 	virtual void Release() = 0;
 
 	//! Return unique Id of this surface type.
-	//! Maximum of 65535 simultanious surface types can exist.
+	//! Maximum of 65535 simultaneous surface types can exist.
 	virtual uint16 GetId() const = 0;
 
 	//! Unique name of the surface type.
@@ -178,7 +167,7 @@ struct ISurfaceTypeEnumerator
 
 // Description:
 //    Manages loading and mapping of physical surface materials to Ids and materials scripts.
-// Behaviour:
+// Behavior:
 //    At start will enumerate all material names.
 //    When the surface is first time requested by name it will be loaded and cached
 //    and new unique id will be generated for it.
