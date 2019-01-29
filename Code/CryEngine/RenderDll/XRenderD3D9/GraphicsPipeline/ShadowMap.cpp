@@ -158,7 +158,7 @@ void CShadowMapStage::ReAllocateResources(const SShadowConfig shadowConfig)
 			if (!pTx)
 			{
 				char szName[64];
-				cry_sprintf(szName, "%CachedShadowMap_%d", i);
+				cry_sprintf(szName, "$ShadowMapCached_%d", i);
 
 				pTx = CTexture::GetOrCreateDepthStencil(szName, nResolutions[i], nResolutions[i], Clr_FarPlane, eTT_2D, FT_DONT_STREAM, texFormat);
 			}
