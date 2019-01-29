@@ -44,12 +44,12 @@ CObject::~CObject()
 //////////////////////////////////////////////////////////////////////////
 void CObject::Update(float const deltaTime)
 {
+	CBaseObject::Update(deltaTime);
+
 	if (((m_flags& EObjectFlags::MovingOrDecaying) != 0) && (deltaTime > 0.0f))
 	{
 		UpdateVelocities(deltaTime);
 	}
-
-	CBaseObject::Update(deltaTime);
 }
 
 //////////////////////////////////////////////////////////////////////////
