@@ -163,11 +163,11 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 
 	m_regularSoundBankFolder = szAssetDirectory;
 	m_regularSoundBankFolder += "/";
-	m_regularSoundBankFolder += AUDIO_SYSTEM_DATA_ROOT;
+	m_regularSoundBankFolder += CRY_AUDIO_DATA_ROOT;
 	m_regularSoundBankFolder += "/";
 	m_regularSoundBankFolder += g_szImplFolderName;
 	m_regularSoundBankFolder += "/";
-	m_regularSoundBankFolder += s_szAssetsFolderName;
+	m_regularSoundBankFolder += g_szAssetsFolderName;
 	m_localizedSoundBankFolder = m_regularSoundBankFolder;
 
 	if (ICVar* const pCVar = gEnv->pConsole->GetCVar("g_languageAudio"))
@@ -444,7 +444,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 			path += "/";
 		}
 
-		stack_string const name = pRootNode->getAttr(s_szNameAttribute);
+		stack_string const name = pRootNode->getAttr(g_szNameAttribute);
 		path += name.c_str();
 
 		SF_INFO sfInfo;
@@ -452,7 +452,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 
 		if (GetSoundInfo(path.c_str(), sfInfo, streamParameters))
 		{
-			CryFixedStringT<16> const eventTypeString(pRootNode->getAttr(s_szTypeAttribute));
+			CryFixedStringT<16> const eventTypeString(pRootNode->getAttr(g_szTypeAttribute));
 			CEvent::EActionType const actionType = eventTypeString.compareNoCase(g_szStartValue) == 0 ? CEvent::EActionType::Start : CEvent::EActionType::Stop;
 
 			int numLoops = 0;
@@ -612,11 +612,11 @@ void CImpl::SetLanguage(char const* const szLanguage)
 		m_localizedSoundBankFolder += "/";
 		m_localizedSoundBankFolder += szLanguage;
 		m_localizedSoundBankFolder += "/";
-		m_localizedSoundBankFolder += AUDIO_SYSTEM_DATA_ROOT;
+		m_localizedSoundBankFolder += CRY_AUDIO_DATA_ROOT;
 		m_localizedSoundBankFolder += "/";
 		m_localizedSoundBankFolder += g_szImplFolderName;
 		m_localizedSoundBankFolder += "/";
-		m_localizedSoundBankFolder += s_szAssetsFolderName;
+		m_localizedSoundBankFolder += g_szAssetsFolderName;
 
 		if (shouldReload)
 		{
@@ -741,8 +741,8 @@ void DrawMemoryPoolInfo(
 
 	ColorF const color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
 
-	posY += Debug::s_systemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, color, false,
+	posY += Debug::g_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, color, false,
 	                    "[%s] Constructed: %" PRISIZE_T " (%s) | Allocated: %" PRISIZE_T " (%s) | Pool Size: %u",
 	                    szType, pool.nUsed, memUsedString.c_str(), pool.nAlloc, memAllocString.c_str(), poolSize);
 }
@@ -768,8 +768,8 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 		memInfoString.Format("%s (Total Memory: %u KiB)", m_name.c_str(), memAlloc >> 10);
 	}
 
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemHeaderFontSize, Debug::s_globalColorHeader, false, memInfoString.c_str());
-	posY += Debug::s_systemHeaderLineSpacerHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemHeaderFontSize, Debug::s_globalColorHeader, false, memInfoString.c_str());
+	posY += Debug::g_systemHeaderLineSpacerHeight;
 
 	if (showDetailedInfo)
 	{
@@ -792,15 +792,15 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 
 	size_t const numEvents = g_constructedEventInstances.size();
 
-	posY += Debug::s_systemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextSecondary, false, "Active Events: %" PRISIZE_T, numEvents);
+	posY += Debug::g_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorTextSecondary, false, "Active Events: %" PRISIZE_T, numEvents);
 
 	Vec3 const& listenerPosition = g_pListener->GetTransformation().GetPosition();
 	Vec3 const& listenerDirection = g_pListener->GetTransformation().GetForward();
 	char const* const szName = g_pListener->GetName();
 
-	posY += Debug::s_systemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorListenerActive, false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z);
+	posY += Debug::g_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorListenerActive, false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z);
 #endif  // CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE
 }
 
@@ -811,8 +811,8 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(szTextFilter);
 	lowerCaseSearchString.MakeLower();
 
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "Port Audio Events [%" PRISIZE_T "]", g_constructedEventInstances.size());
-	posY += Debug::s_listHeaderLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "Port Audio Events [%" PRISIZE_T "]", g_constructedEventInstances.size());
+	posY += Debug::g_listHeaderLineHeight;
 
 	for (auto const pEventInstance : g_constructedEventInstances)
 	{
@@ -828,9 +828,9 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 
 			if (draw)
 			{
-				auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize, Debug::s_listColorItemActive, false, "%s on %s", szEventName, pEventInstance->GetObject()->GetName());
+				auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, Debug::s_listColorItemActive, false, "%s on %s", szEventName, pEventInstance->GetObject()->GetName());
 
-				posY += Debug::s_listLineHeight;
+				posY += Debug::g_listLineHeight;
 			}
 		}
 	}

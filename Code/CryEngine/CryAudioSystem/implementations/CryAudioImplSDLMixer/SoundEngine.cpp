@@ -28,7 +28,7 @@ namespace Impl
 {
 namespace SDL_mixer
 {
-static string const s_regularAssetsPath = string(AUDIO_SYSTEM_DATA_ROOT) + "/" + g_szImplFolderName + "/" + s_szAssetsFolderName + "/";
+static string const s_regularAssetsPath = string(CRY_AUDIO_DATA_ROOT) + "/" + g_szImplFolderName + "/" + g_szAssetsFolderName + "/";
 constexpr int g_supportedFormats = MIX_INIT_OGG | MIX_INIT_MP3;
 constexpr int g_numMixChannels = 512;
 constexpr SampleId g_invalidSampleId = 0;

@@ -179,7 +179,7 @@ void WriteControlToXML(XmlNodeRef const pNode, CControl* const pControl, string 
 {
 	EAssetType const type = pControl->GetType();
 	XmlNodeRef const pChildNode = pNode->createNode(TypeToTag(type));
-	pChildNode->setAttr(CryAudio::s_szNameAttribute, pControl->GetName());
+	pChildNode->setAttr(CryAudio::g_szNameAttribute, pControl->GetName());
 	CountControls(type, libScope);
 
 	if (!path.empty())
@@ -205,7 +205,7 @@ void WriteControlToXML(XmlNodeRef const pNode, CControl* const pControl, string 
 	{
 		if (pControl->IsAutoLoad())
 		{
-			pChildNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::g_szDataLoadType);
+			pChildNode->setAttr(CryAudio::g_szTypeAttribute, CryAudio::g_szDataLoadType);
 		}
 
 		size_t const numPlatforms = g_platforms.size();
@@ -213,7 +213,7 @@ void WriteControlToXML(XmlNodeRef const pNode, CControl* const pControl, string 
 		for (size_t i = 0; i < numPlatforms; ++i)
 		{
 			XmlNodeRef const pFileNode = pChildNode->createNode(CryAudio::g_szPlatformTag);
-			pFileNode->setAttr(CryAudio::s_szNameAttribute, g_platforms[i]);
+			pFileNode->setAttr(CryAudio::g_szNameAttribute, g_platforms[i]);
 			WriteConnectionsToXML(pFileNode, pControl, libScope, i);
 
 			if (pFileNode->getChildCount() > 0)
@@ -290,7 +290,7 @@ void WriteFolderEditorData(CAsset const& library, XmlNodeRef const pParentNode)
 
 			if (pFolderNode != nullptr)
 			{
-				pFolderNode->setAttr(CryAudio::s_szNameAttribute, pAsset->GetName());
+				pFolderNode->setAttr(CryAudio::g_szNameAttribute, pAsset->GetName());
 				string const description = pAsset->GetDescription();
 
 				if (!description.IsEmpty() && ((pAsset->GetFlags() & EAssetFlags::IsDefaultControl) == 0))
@@ -326,7 +326,7 @@ void WriteControlsEditorData(CAsset const& parentAsset, XmlNodeRef const pParent
 
 				if (!description.IsEmpty() && ((asset.GetFlags() & EAssetFlags::IsDefaultControl) == 0))
 				{
-					pControlNode->setAttr(CryAudio::s_szNameAttribute, asset.GetName());
+					pControlNode->setAttr(CryAudio::g_szNameAttribute, asset.GetName());
 					pControlNode->setAttr(g_szDescriptionAttribute, description);
 					pParentNode->addChild(pControlNode);
 				}
@@ -465,7 +465,7 @@ void CFileWriter::WriteLibrary(CLibrary& library)
 			if (libScope.isDirty)
 			{
 				XmlNodeRef pFileNode = GetISystem()->CreateXmlNode(CryAudio::g_szRootNodeTag);
-				pFileNode->setAttr(CryAudio::s_szNameAttribute, library.GetName());
+				pFileNode->setAttr(CryAudio::g_szNameAttribute, library.GetName());
 				pFileNode->setAttr(CryAudio::g_szVersionAttribute, g_currentFileVersion);
 
 				// Don't write control counts for default library, because default controls are not pooled.

@@ -3247,8 +3247,8 @@ void DrawMemoryPoolInfo(
 
 	ColorF const color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
 
-	posY += Debug::s_systemLineHeight;
-	pAuxGeom->Draw2dLabel(posX, posY, Debug::s_systemFontSize, color, false,
+	posY += Debug::g_systemLineHeight;
+	pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, color, false,
 	                      "[%s] Constructed: %" PRISIZE_T " (%s) | Allocated: %" PRISIZE_T " (%s) | Pool Size: %u",
 	                      szType, pool.nUsed, memUsedString.c_str(), pool.nAlloc, memAllocString.c_str(), poolSize);
 }
@@ -3256,8 +3256,8 @@ void DrawMemoryPoolInfo(
 //////////////////////////////////////////////////////////////////////////
 void DrawRequestCategoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, char const* const szType)
 {
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextSecondary, false, "%s Request Peak:", szType);
-	posY += Debug::s_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorTextSecondary, false, "%s Request Peak:", szType);
+	posY += Debug::g_systemLineHeight;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3278,18 +3278,18 @@ void DrawRequestPeakInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY,
 	auxGeom.Draw2dLabel(
 		posX,
 		posY,
-		Debug::s_systemFontSize,
+		Debug::g_systemFontSize,
 		poolSizeExceeded ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary,
 		false,
 		debugText.c_str());
-	posY += Debug::s_systemLineHeight;
+	posY += Debug::g_systemLineHeight;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void DrawRequestDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 {
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "Audio Requests");
-	posY += Debug::s_listHeaderLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "Audio Requests");
+	posY += Debug::g_listHeaderLineHeight;
 
 	DrawRequestPeakInfo(auxGeom, posX, posY, "Total", g_requestPeaks.requests, 0);
 
@@ -3357,12 +3357,12 @@ void DrawObjectInfo(
 				debugText.Format("%s [To Be Released]", szObjectName);
 			}
 
-			auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize,
+			auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize,
 			                    !hasActiveData ? Debug::s_globalColorInactive : (isVirtual ? Debug::s_globalColorVirtual : Debug::s_listColorItemActive),
 			                    false,
 			                    debugText.c_str());
 
-			posY += Debug::s_listLineHeight;
+			posY += Debug::g_listLineHeight;
 			++numObjects;
 		}
 	}
@@ -3376,7 +3376,7 @@ void DrawObjectDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
 	lowerCaseSearchString.MakeLower();
 
-	posY += Debug::s_listHeaderLineHeight;
+	posY += Debug::g_listHeaderLineHeight;
 
 	DrawObjectInfo(auxGeom, posX, posY, g_object, lowerCaseSearchString, numObjects);
 	DrawObjectInfo(auxGeom, posX, posY, g_previewObject, lowerCaseSearchString, numObjects);
@@ -3386,7 +3386,7 @@ void DrawObjectDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 		DrawObjectInfo(auxGeom, posX, posY, *pObject, lowerCaseSearchString, numObjects);
 	}
 
-	auxGeom.Draw2dLabel(posX, headerPosY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "Audio Objects [%" PRISIZE_T "]", numObjects);
+	auxGeom.Draw2dLabel(posX, headerPosY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "Audio Objects [%" PRISIZE_T "]", numObjects);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3437,10 +3437,10 @@ void CSystem::HandleDrawDebug()
 			char const* const szMuted = ((g_systemStates& ESystemStates::IsMuted) != 0) ? " - Muted" : "";
 			char const* const szPaused = ((g_systemStates& ESystemStates::IsPaused) != 0) ? " - Paused" : "";
 
-			pAuxGeom->Draw2dLabel(posX, posY, Debug::s_systemHeaderFontSize, Debug::s_globalColorHeader, false,
+			pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemHeaderFontSize, Debug::s_globalColorHeader, false,
 			                      "Audio System (Total Memory: %s)%s%s", memInfoString.c_str(), szMuted, szPaused);
 
-			posY += Debug::s_systemHeaderLineSpacerHeight;
+			posY += Debug::g_systemHeaderLineSpacerHeight;
 
 			if ((g_cvars.m_drawDebug & Debug::EDrawFilter::DetailedMemoryInfo) != 0)
 			{
@@ -3507,18 +3507,18 @@ void CSystem::HandleDrawDebug()
 			syncRays += (CPropagationProcessor::s_totalSyncPhysRays - syncRays) * SMOOTHING_ALPHA;
 			asyncRays += (CPropagationProcessor::s_totalAsyncPhysRays - asyncRays) * SMOOTHING_ALPHA * 0.1f;
 
-			posY += Debug::s_systemLineHeight;
-			pAuxGeom->Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextSecondary, false,
+			posY += Debug::g_systemLineHeight;
+			pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorTextSecondary, false,
 			                      "Objects: %3" PRISIZE_T "/%3" PRISIZE_T " | EventListeners %3" PRISIZE_T " | Listeners: %" PRISIZE_T " | SyncRays: %3.1f AsyncRays: %3.1f",
 			                      numActiveObjects, numObjects, numEventListeners, numListeners, syncRays, asyncRays);
 
 			if (g_pIImpl != nullptr)
 			{
-				posY += Debug::s_systemHeaderLineHeight;
+				posY += Debug::g_systemHeaderLineHeight;
 				g_pIImpl->DrawDebugMemoryInfo(*pAuxGeom, posX, posY, (g_cvars.m_drawDebug & Debug::EDrawFilter::DetailedMemoryInfo) != 0);
 			}
 
-			posY += Debug::s_systemHeaderLineHeight;
+			posY += Debug::g_systemHeaderLineHeight;
 		}
 
 		string debugFilter = g_cvars.m_pDebugFilter->GetString();
@@ -3630,11 +3630,11 @@ void CSystem::HandleDrawDebug()
 		if (!debugDraw.IsEmpty())
 		{
 			debugDraw.erase(debugDraw.length() - 2, 2);
-			pAuxGeom->Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextPrimary, false, "Debug Draw: %s", debugDraw.c_str());
-			posY += Debug::s_systemLineHeight;
-			pAuxGeom->Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextPrimary, false, "Debug Filter: %s | Debug Distance: %s", debugFilter.c_str(), debugDistance.c_str());
+			pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorTextPrimary, false, "Debug Draw: %s", debugDraw.c_str());
+			posY += Debug::g_systemLineHeight;
+			pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorTextPrimary, false, "Debug Filter: %s | Debug Distance: %s", debugFilter.c_str(), debugDistance.c_str());
 
-			posY += Debug::s_systemHeaderLineHeight;
+			posY += Debug::g_systemHeaderLineHeight;
 		}
 
 		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::FileCacheManagerInfo) != 0)

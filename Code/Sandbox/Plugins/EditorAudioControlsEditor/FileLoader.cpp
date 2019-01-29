@@ -126,7 +126,7 @@ void LoadLibraryEditorData(XmlNodeRef const pLibraryNode, CAsset& library)
 //////////////////////////////////////////////////////////////////////////
 void LoadFolderData(XmlNodeRef const pFolderNode, CAsset& parentAsset)
 {
-	CAsset* const pAsset = AddUniqueFolderPath(&parentAsset, pFolderNode->getAttr(CryAudio::s_szNameAttribute));
+	CAsset* const pAsset = AddUniqueFolderPath(&parentAsset, pFolderNode->getAttr(CryAudio::g_szNameAttribute));
 
 	if (pAsset != nullptr)
 	{
@@ -172,7 +172,7 @@ void LoadControlsEditorData(XmlNodeRef const pParentNode)
 
 		if ((controlType != EAssetType::None) && !description.IsEmpty())
 		{
-			CControl* const pControl = g_assetsManager.FindControl(pParentNode->getAttr(CryAudio::s_szNameAttribute), controlType);
+			CControl* const pControl = g_assetsManager.FindControl(pParentNode->getAttr(CryAudio::g_szNameAttribute), controlType);
 
 			if (pControl != nullptr)
 			{
@@ -299,9 +299,9 @@ void CFileLoader::LoadAllLibrariesInFolder(string const& folderPath, string cons
 						m_loadedFilenames.insert(fileName.MakeLower());
 						string file = fd.name;
 
-						if (root->haveAttr(CryAudio::s_szNameAttribute))
+						if (root->haveAttr(CryAudio::g_szNameAttribute))
 						{
-							file = root->getAttr(CryAudio::s_szNameAttribute);
+							file = root->getAttr(CryAudio::g_szNameAttribute);
 						}
 
 						int version = 1;
@@ -371,7 +371,7 @@ CControl* CFileLoader::LoadControl(XmlNodeRef const pNode, Scope const scope, ui
 
 		if (pFolderItem != nullptr)
 		{
-			string const name = pNode->getAttr(CryAudio::s_szNameAttribute);
+			string const name = pNode->getAttr(CryAudio::g_szNameAttribute);
 			EAssetType const controlType = TagToType(pNode->getTag());
 
 			// Don't load deprecated default controls.
@@ -454,7 +454,7 @@ void CFileLoader::CreateInternalControls()
 //////////////////////////////////////////////////////////////////////////
 void CFileLoader::LoadPlatformSpecificConnections(XmlNodeRef const pNode, CControl* const pControl, uint32 const version)
 {
-	if (_stricmp(pNode->getAttr(CryAudio::s_szTypeAttribute), CryAudio::g_szDataLoadType) == 0)
+	if (_stricmp(pNode->getAttr(CryAudio::g_szTypeAttribute), CryAudio::g_szDataLoadType) == 0)
 	{
 		pControl->SetAutoLoad(true);
 	}
@@ -475,7 +475,7 @@ void CFileLoader::LoadPlatformSpecificConnections(XmlNodeRef const pNode, CContr
 			// Get the index for that platform name
 			int platformIndex = -1;
 			bool foundPlatform = false;
-			char const* const szPlatformName = pPlatformNode->getAttr(CryAudio::s_szNameAttribute);
+			char const* const szPlatformName = pPlatformNode->getAttr(CryAudio::g_szNameAttribute);
 
 			for (auto const szPlatform : g_platforms)
 			{

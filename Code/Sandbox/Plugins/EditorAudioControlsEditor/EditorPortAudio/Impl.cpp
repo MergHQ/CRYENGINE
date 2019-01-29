@@ -26,10 +26,10 @@ constexpr uint32 g_eventConnectionPoolSize = 2048;
 //////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
 	: m_pDataPanel(nullptr)
-	, m_assetAndProjectPath(AUDIO_SYSTEM_DATA_ROOT "/" +
+	, m_assetAndProjectPath(CRY_AUDIO_DATA_ROOT "/" +
 	                        string(CryAudio::Impl::PortAudio::g_szImplFolderName) +
 	                        "/" +
-	                        string(CryAudio::s_szAssetsFolderName))
+	                        string(CryAudio::g_szAssetsFolderName))
 	, m_localizedAssetsPath(m_assetAndProjectPath)
 {
 }
@@ -201,7 +201,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 		    (_stricmp(szTag, "PortAudioEvent") == 0) || // Backwards compatibility.
 		    (_stricmp(szTag, "PortAudioSample") == 0))  // Backwards compatibility.
 		{
-			string name = pNode->getAttr(CryAudio::s_szNameAttribute);
+			string name = pNode->getAttr(CryAudio::g_szNameAttribute);
 			string path = pNode->getAttr(CryAudio::Impl::PortAudio::g_szPathAttribute);
 			// Backwards compatibility will be removed before March 2019.
 #if defined (USE_BACKWARDS_COMPATIBILITY)
@@ -231,7 +231,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 			if (pItem != nullptr)
 			{
 				auto const pEventConnection = new CEventConnection(pItem->GetId());
-				string actionType = pNode->getAttr(CryAudio::s_szTypeAttribute);
+				string actionType = pNode->getAttr(CryAudio::g_szTypeAttribute);
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 				if (actionType.IsEmpty() && pNode->haveAttr("event_type"))
 				{
@@ -269,7 +269,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 	if ((pItem != nullptr) && (pEventConnection != nullptr) && (assetType == EAssetType::Trigger))
 	{
 		pNode = GetISystem()->CreateXmlNode(CryAudio::Impl::PortAudio::g_szEventTag);
-		pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
+		pNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
 
 		string const& path = pItem->GetPath();
 
@@ -280,7 +280,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 
 		if (pEventConnection->GetActionType() == CEventConnection::EActionType::Start)
 		{
-			pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::PortAudio::g_szStartValue);
+			pNode->setAttr(CryAudio::g_szTypeAttribute, CryAudio::Impl::PortAudio::g_szStartValue);
 
 			if (pEventConnection->IsInfiniteLoop())
 			{
@@ -293,7 +293,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 		}
 		else
 		{
-			pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::PortAudio::g_szStopValue);
+			pNode->setAttr(CryAudio::g_szTypeAttribute, CryAudio::Impl::PortAudio::g_szStopValue);
 		}
 
 		if ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0)
@@ -446,11 +446,11 @@ void CImpl::SetLocalizedAssetsPath()
 			m_localizedAssetsPath += "/";
 			m_localizedAssetsPath += szLanguage;
 			m_localizedAssetsPath += "/";
-			m_localizedAssetsPath += AUDIO_SYSTEM_DATA_ROOT;
+			m_localizedAssetsPath += CRY_AUDIO_DATA_ROOT;
 			m_localizedAssetsPath += "/";
 			m_localizedAssetsPath += CryAudio::Impl::PortAudio::g_szImplFolderName;
 			m_localizedAssetsPath += "/";
-			m_localizedAssetsPath += CryAudio::s_szAssetsFolderName;
+			m_localizedAssetsPath += CryAudio::g_szAssetsFolderName;
 		}
 	}
 }

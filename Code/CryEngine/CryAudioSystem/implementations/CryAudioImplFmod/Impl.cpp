@@ -178,11 +178,11 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 	g_constructedObjects.reserve(static_cast<size_t>(objectPoolSize));
 	AllocateMemoryPools(objectPoolSize, static_cast<uint16>(g_cvars.m_eventPoolSize));
 
-	m_regularSoundBankFolder = AUDIO_SYSTEM_DATA_ROOT;
+	m_regularSoundBankFolder = CRY_AUDIO_DATA_ROOT;
 	m_regularSoundBankFolder += "/";
 	m_regularSoundBankFolder += g_szImplFolderName;
 	m_regularSoundBankFolder += "/";
-	m_regularSoundBankFolder += s_szAssetsFolderName;
+	m_regularSoundBankFolder += g_szAssetsFolderName;
 	m_localizedSoundBankFolder = m_regularSoundBankFolder;
 
 	FMOD_RESULT fmodResult = FMOD::Studio::System::create(&m_pSystem);
@@ -502,7 +502,7 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const pRootNode, SFileInfo* const
 
 	if ((_stricmp(pRootNode->getTag(), g_szFileTag) == 0) && (pFileInfo != nullptr))
 	{
-		char const* const szFileName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szFileName = pRootNode->getAttr(g_szNameAttribute);
 
 		if (szFileName != nullptr && szFileName[0] != '\0')
 		{
@@ -696,7 +696,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 	if (_stricmp(szTag, g_szEventTag) == 0)
 	{
 		stack_string path(g_szEventPrefix);
-		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
 		path += szName;
 		FMOD_GUID guid = { 0 };
 
@@ -706,7 +706,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 			m_pSystem->getEventByID(&guid, &pEventDescription);
 
 			CEvent::EActionType actionType = CEvent::EActionType::Start;
-			char const* const szEventType = pRootNode->getAttr(s_szTypeAttribute);
+			char const* const szEventType = pRootNode->getAttr(g_szTypeAttribute);
 
 			if ((szEventType != nullptr) && (szEventType[0] != '\0'))
 			{
@@ -748,7 +748,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 
 		if (m_pSystem->lookupID(path.c_str(), &guid) == FMOD_OK)
 		{
-			char const* const szKey = pRootNode->getAttr(s_szNameAttribute);
+			char const* const szKey = pRootNode->getAttr(g_szNameAttribute);
 
 			FMOD::Studio::EventDescription* pEventDescription = nullptr;
 			m_pSystem->getEventByID(&guid, &pEventDescription);
@@ -771,14 +771,14 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 	else if (_stricmp(szTag, g_szSnapshotTag) == 0)
 	{
 		stack_string path(g_szSnapshotPrefix);
-		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
 		path += szName;
 		FMOD_GUID guid = { 0 };
 
 		if (m_pSystem->lookupID(path.c_str(), &guid) == FMOD_OK)
 		{
 			CSnapshot::EActionType actionType = CSnapshot::EActionType::Start;
-			char const* const szActionType = pRootNode->getAttr(s_szTypeAttribute);
+			char const* const szActionType = pRootNode->getAttr(g_szTypeAttribute);
 
 			if ((szActionType != nullptr) && (szActionType[0] != '\0') && (_stricmp(szActionType, g_szStopValue) == 0))
 			{
@@ -860,7 +860,7 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRoot
 
 	if (_stricmp(szTag, g_szParameterTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
 		float multiplier = g_defaultParamMultiplier;
 		float shift = g_defaultParamShift;
 		pRootNode->getAttr(g_szMutiplierAttribute, multiplier);
@@ -877,7 +877,7 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRoot
 	else if (_stricmp(szTag, g_szVcaTag) == 0)
 	{
 		stack_string fullName(g_szVcaPrefix);
-		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
 		fullName += szName;
 		FMOD_GUID guid = { 0 };
 
@@ -932,7 +932,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 
 	if (_stricmp(szTag, g_szParameterTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
 		char const* const szValue = pRootNode->getAttr(g_szValueAttribute);
 		auto const value = static_cast<float>(atof(szValue));
 
@@ -947,7 +947,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 	else if (_stricmp(szTag, g_szVcaTag) == 0)
 	{
 		stack_string fullName(g_szVcaPrefix);
-		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
 		fullName += szName;
 		FMOD_GUID guid = { 0 };
 
@@ -1001,7 +1001,7 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const p
 	if (_stricmp(szTag, g_szBusTag) == 0)
 	{
 		stack_string path(g_szBusPrefix);
-		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
 		path += szName;
 		FMOD_GUID guid = { 0 };
 
@@ -1029,7 +1029,7 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const p
 	else if (_stricmp(szTag, g_szParameterTag) == 0)
 	{
 
-		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
 		float multiplier = g_defaultParamMultiplier;
 		float shift = g_defaultParamShift;
 		pRootNode->getAttr(g_szMutiplierAttribute, multiplier);
@@ -1093,11 +1093,11 @@ void CImpl::SetLanguage(char const* const szLanguage)
 		m_localizedSoundBankFolder += "/";
 		m_localizedSoundBankFolder += m_language.c_str();
 		m_localizedSoundBankFolder += "/";
-		m_localizedSoundBankFolder += AUDIO_SYSTEM_DATA_ROOT;
+		m_localizedSoundBankFolder += CRY_AUDIO_DATA_ROOT;
 		m_localizedSoundBankFolder += "/";
 		m_localizedSoundBankFolder += g_szImplFolderName;
 		m_localizedSoundBankFolder += "/";
-		m_localizedSoundBankFolder += s_szAssetsFolderName;
+		m_localizedSoundBankFolder += g_szAssetsFolderName;
 	}
 }
 
@@ -1334,7 +1334,7 @@ void CImpl::LoadMasterBanks()
 	{
 		// This does not qualify for a fallback to the NULL implementation!
 		// Still notify the user about this failure!
-		Cry::Audio::Log(ELogType::Error, "Fmod failed to load master banks during %", __FUNCTION__);
+		Cry::Audio::Log(ELogType::Error, "Fmod failed to load master banks during %s", __FUNCTION__);
 	}
 #endif        // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 }
@@ -1535,8 +1535,8 @@ void DrawMemoryPoolInfo(
 
 	ColorF const color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
 
-	posY += Debug::s_systemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, color, false,
+	posY += Debug::g_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, color, false,
 	                    "[%s] Constructed: %" PRISIZE_T " (%s) | Allocated: %" PRISIZE_T " (%s) | Pool Size: %u",
 	                    szType, pool.nUsed, memUsedString.c_str(), pool.nAlloc, memAllocString.c_str(), poolSize);
 }
@@ -1562,23 +1562,23 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 		memInfoString.Format("%s (Total Memory: %u KiB)", m_name.c_str(), memAlloc >> 10);
 	}
 
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemHeaderFontSize, Debug::s_globalColorHeader, false, memInfoString.c_str());
-	posY += Debug::s_systemHeaderLineSpacerHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemHeaderFontSize, Debug::s_globalColorHeader, false, memInfoString.c_str());
+	posY += Debug::g_systemHeaderLineSpacerHeight;
 
 	if (showDetailedInfo)
 	{
-		posY += Debug::s_systemLineHeight;
+		posY += Debug::g_systemLineHeight;
 
 		if (m_pMasterAssetsBank != nullptr)
 		{
-			auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextPrimary, false, "Master Bank: %uKiB | Master Strings Bank: %uKiB | Master Assets Bank: %uKiB",
+			auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorTextPrimary, false, "Master Bank: %uKiB | Master Strings Bank: %uKiB | Master Assets Bank: %uKiB",
 			                    static_cast<uint32>(m_masterBankSize / 1024),
 			                    static_cast<uint32>(m_masterStringsBankSize / 1024),
 			                    static_cast<uint32>(m_masterAssetsBankSize / 1024));
 		}
 		else
 		{
-			auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextPrimary, false, "Master Bank: %uKiB | Master Strings Bank: %uKiB",
+			auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorTextPrimary, false, "Master Bank: %uKiB | Master Strings Bank: %uKiB",
 			                    static_cast<uint32>(m_masterBankSize / 1024),
 			                    static_cast<uint32>(m_masterStringsBankSize / 1024));
 		}
@@ -1650,8 +1650,8 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 
 	size_t const numEvents = g_constructedEventInstances.size();
 
-	posY += Debug::s_systemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextSecondary, false, "Active Events: %3" PRISIZE_T " | Objects with Doppler: %u",
+	posY += Debug::g_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorTextSecondary, false, "Active Events: %3" PRISIZE_T " | Objects with Doppler: %u",
 	                    numEvents, g_numObjectsWithDoppler);
 
 	Vec3 const& listenerPosition = g_pListener->GetPosition();
@@ -1659,8 +1659,8 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 	float const listenerVelocity = g_pListener->GetVelocity().GetLength();
 	char const* const szName = g_pListener->GetName();
 
-	posY += Debug::s_systemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorListenerActive, false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s",
+	posY += Debug::g_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorListenerActive, false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s",
 	                    szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 }
@@ -1678,8 +1678,8 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 
 		if ((g_cvars.m_debugListFilter & EDebugListFilter::EventInstances) != 0)
 		{
-			auxGeom.Draw2dLabel(posX, posY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "Fmod Events [%" PRISIZE_T "]", g_constructedEventInstances.size());
-			posY += Debug::s_listHeaderLineHeight;
+			auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "Fmod Events [%" PRISIZE_T "]", g_constructedEventInstances.size());
+			posY += Debug::g_listHeaderLineHeight;
 
 			for (auto const pEventInstance : g_constructedEventInstances)
 			{
@@ -1696,9 +1696,9 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 					if (draw)
 					{
 						ColorF const color = (pEventInstance->GetState() == EEventState::Virtual) ? Debug::s_globalColorVirtual : Debug::s_listColorItemActive;
-						auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize, color, false, "%s on %s", szEventName, pEventInstance->GetObject()->GetName());
+						auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, "%s on %s", szEventName, pEventInstance->GetObject()->GetName());
 
-						posY += Debug::s_listLineHeight;
+						posY += Debug::g_listLineHeight;
 					}
 				}
 			}
@@ -1710,8 +1710,8 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 		{
 			posY = initialPosY;
 
-			auxGeom.Draw2dLabel(posX, posY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "Fmod Snapshots [%" PRISIZE_T "]", g_activeSnapshotNames.size());
-			posY += Debug::s_listHeaderLineHeight;
+			auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "Fmod Snapshots [%" PRISIZE_T "]", g_activeSnapshotNames.size());
+			posY += Debug::g_listHeaderLineHeight;
 
 			for (auto const& snapshotName : g_activeSnapshotNames)
 			{
@@ -1721,9 +1721,9 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 
 				if (draw)
 				{
-					auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize, Debug::s_listColorItemActive, false, "%s", snapshotName.c_str());
+					auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, Debug::s_listColorItemActive, false, "%s", snapshotName.c_str());
 
-					posY += Debug::s_listLineHeight;
+					posY += Debug::g_listLineHeight;
 				}
 			}
 
@@ -1734,8 +1734,8 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 		{
 			posY = initialPosY;
 
-			auxGeom.Draw2dLabel(posX, posY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "Fmod VCAs [%" PRISIZE_T "]", g_vcaValues.size());
-			posY += Debug::s_listHeaderLineHeight;
+			auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "Fmod VCAs [%" PRISIZE_T "]", g_vcaValues.size());
+			posY += Debug::g_listHeaderLineHeight;
 
 			for (auto const& vcaPair : g_vcaValues)
 			{
@@ -1746,9 +1746,9 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 
 				if (draw)
 				{
-					auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize, Debug::s_listColorItemActive, false, "%s : %3.2f", szVcaName, vcaPair.second);
+					auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, Debug::s_listColorItemActive, false, "%s : %3.2f", szVcaName, vcaPair.second);
 
-					posY += Debug::s_listLineHeight;
+					posY += Debug::g_listLineHeight;
 				}
 			}
 

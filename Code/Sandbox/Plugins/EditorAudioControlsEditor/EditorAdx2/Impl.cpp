@@ -300,8 +300,8 @@ CItem* SearchForItem(CItem* const pItem, string const& name, EItemType const typ
 //////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
 	: m_pDataPanel(nullptr)
-	, m_projectPath(AUDIO_SYSTEM_DATA_ROOT "/adx2_project")
-	, m_assetsPath(AUDIO_SYSTEM_DATA_ROOT "/" + string(CryAudio::Impl::Adx2::g_szImplFolderName) + "/" + string(CryAudio::s_szAssetsFolderName))
+	, m_projectPath(CRY_AUDIO_DATA_ROOT "/adx2_project")
+	, m_assetsPath(CRY_AUDIO_DATA_ROOT "/" + string(CryAudio::Impl::Adx2::g_szImplFolderName) + "/" + string(CryAudio::g_szAssetsFolderName))
 	, m_localizedAssetsPath(m_assetsPath)
 	, m_szUserSettingsFile("%USER%/audiocontrolseditor_adx2.user")
 {
@@ -614,7 +614,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 
 		if (type != EItemType::None)
 		{
-			string name = pNode->getAttr(CryAudio::s_szNameAttribute);
+			string name = pNode->getAttr(CryAudio::g_szNameAttribute);
 			string const cueSheetName = pNode->getAttr(CryAudio::Impl::Adx2::g_szCueSheetAttribute);
 
 			CItem* pItem = SearchForItem(&m_rootItem, name, type, cueSheetName);
@@ -632,7 +632,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 			case EItemType::Cue:
 				{
 					string const cueSheetName = pNode->getAttr(CryAudio::Impl::Adx2::g_szCueSheetAttribute);
-					string const actionType = pNode->getAttr(CryAudio::s_szTypeAttribute);
+					string const actionType = pNode->getAttr(CryAudio::g_szTypeAttribute);
 					CCueConnection::EActionType cueActionType = CCueConnection::EActionType::Start;
 
 					if (actionType.compareNoCase(CryAudio::Impl::Adx2::g_szStopValue) == 0)
@@ -685,7 +685,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 						if (pNode != nullptr)
 						{
 							CItem* pSelectorLabelItem = nullptr;
-							string const childName = pNode->getAttr(CryAudio::s_szNameAttribute);
+							string const childName = pNode->getAttr(CryAudio::g_szNameAttribute);
 							size_t const numChildren = pItem->GetNumChildren();
 
 							for (size_t i = 0; i < numChildren; ++i)
@@ -722,7 +722,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 				}
 			case EItemType::Snapshot:
 				{
-					string const actionType = pNode->getAttr(CryAudio::s_szTypeAttribute);
+					string const actionType = pNode->getAttr(CryAudio::g_szTypeAttribute);
 
 					CSnapshotConnection::EActionType const snapshotActionType =
 						(actionType.compareNoCase(CryAudio::Impl::Adx2::g_szStopValue) == 0) ? CSnapshotConnection::EActionType::Stop : CSnapshotConnection::EActionType::Start;
@@ -768,7 +768,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 		{
 		case EItemType::Cue:
 			{
-				pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
+				pNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
 				auto const pCueConnection = static_cast<CCueConnection const*>(pIConnection);
 
 				string cueSheetName = Utils::FindCueSheetName(pItem, m_rootItem);
@@ -782,15 +782,15 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 
 				if (pCueConnection->GetActionType() == CCueConnection::EActionType::Stop)
 				{
-					pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::Adx2::g_szStopValue);
+					pNode->setAttr(CryAudio::g_szTypeAttribute, CryAudio::Impl::Adx2::g_szStopValue);
 				}
 				else if (pCueConnection->GetActionType() == CCueConnection::EActionType::Pause)
 				{
-					pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::Adx2::g_szPauseValue);
+					pNode->setAttr(CryAudio::g_szTypeAttribute, CryAudio::Impl::Adx2::g_szPauseValue);
 				}
 				else if (pCueConnection->GetActionType() == CCueConnection::EActionType::Resume)
 				{
-					pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::Adx2::g_szResumeValue);
+					pNode->setAttr(CryAudio::g_szTypeAttribute, CryAudio::Impl::Adx2::g_szResumeValue);
 				}
 
 				break;
@@ -799,7 +799,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 		case EItemType::Category:     // Intentional fall-through.
 		case EItemType::GameVariable:
 			{
-				pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
+				pNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
 
 				if ((assetType == EAssetType::Parameter) || (assetType == EAssetType::Environment))
 				{
@@ -831,10 +831,10 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 				if (pParent != nullptr)
 				{
 					XmlNodeRef const pSwitchNode = GetISystem()->CreateXmlNode(TypeToTag(pParent->GetType()));
-					pSwitchNode->setAttr(CryAudio::s_szNameAttribute, pParent->GetName());
+					pSwitchNode->setAttr(CryAudio::g_szNameAttribute, pParent->GetName());
 
 					XmlNodeRef const pStateNode = pSwitchNode->createNode(CryAudio::Impl::Adx2::g_szSelectorLabelTag);
-					pStateNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
+					pStateNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
 					pSwitchNode->addChild(pStateNode);
 
 					pNode = pSwitchNode;
@@ -845,19 +845,19 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 		case EItemType::DspBusSetting: // Intentional fall-through.
 		case EItemType::Bus:
 			{
-				pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
+				pNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
 
 				break;
 			}
 		case EItemType::Snapshot:
 			{
-				pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
+				pNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
 
 				auto const pSnapshotConnection = static_cast<CSnapshotConnection const*>(pIConnection);
 
 				if (pSnapshotConnection->GetActionType() == CSnapshotConnection::EActionType::Stop)
 				{
-					pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::Adx2::g_szStopValue);
+					pNode->setAttr(CryAudio::g_szTypeAttribute, CryAudio::Impl::Adx2::g_szStopValue);
 				}
 
 				if (pSnapshotConnection->GetChangeoverTime() != CryAudio::Impl::Adx2::g_defaultChangeoverTime)
@@ -869,7 +869,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 			}
 		case EItemType::Binary:
 			{
-				pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
+				pNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
 
 				if ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0)
 				{
@@ -1098,11 +1098,11 @@ void CImpl::SetLocalizedAssetsPath()
 			m_localizedAssetsPath += "/";
 			m_localizedAssetsPath += szLanguage;
 			m_localizedAssetsPath += "/";
-			m_localizedAssetsPath += AUDIO_SYSTEM_DATA_ROOT;
+			m_localizedAssetsPath += CRY_AUDIO_DATA_ROOT;
 			m_localizedAssetsPath += "/";
 			m_localizedAssetsPath += CryAudio::Impl::Adx2::g_szImplFolderName;
 			m_localizedAssetsPath += "/";
-			m_localizedAssetsPath += CryAudio::s_szAssetsFolderName;
+			m_localizedAssetsPath += CryAudio::g_szAssetsFolderName;
 		}
 	}
 }

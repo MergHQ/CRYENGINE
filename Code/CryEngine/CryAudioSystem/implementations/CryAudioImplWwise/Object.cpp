@@ -389,14 +389,14 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 				auxGeom.Draw2dLabel(
 					posX,
 					posY,
-					Debug::s_objectFontSize,
+					Debug::g_objectFontSize,
 					isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorParameter,
 					false,
 					"[Wwise] %s: %2.2f\n",
 					parameterPair.first,
 					parameterPair.second);
 
-				posY += Debug::s_objectLineHeight;
+				posY += Debug::g_objectLineHeight;
 			}
 		}
 	}

@@ -167,14 +167,14 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 			auxGeom.Draw2dLabel(
 				posX,
 				posY,
-				Debug::s_objectFontSize,
+				Debug::g_objectFontSize,
 				isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorParameter,
 				false,
 				"[Fmod] %s: %2.2f m/s\n",
 				g_szAbsoluteVelocityParameterName,
 				m_absoluteVelocity);
 
-			posY += Debug::s_objectLineHeight;
+			posY += Debug::g_objectLineHeight;
 		}
 
 		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0)
@@ -182,7 +182,7 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 			auxGeom.Draw2dLabel(
 				posX,
 				posY,
-				Debug::s_objectFontSize,
+				Debug::g_objectFontSize,
 				isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorActive,
 				false,
 				"[Fmod] Doppler calculation enabled\n");

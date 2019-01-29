@@ -19,7 +19,7 @@ SResourceSelectionResult SoundFileSelector(const SResourceSelectorContext& conte
 	// start in Sounds folder if no sound is selected
 	string startPath = PathUtil::GetPathWithoutFilename(previousValue);
 	if (previousValue[0] == '\0')
-		startPath = AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR;
+		startPath = CRY_AUDIO_DATA_ROOT "/";
 
 	string relativeFilename = previousValue;
 	if (CFileUtil::SelectSingleFile(context.parentWidget, EFILE_TYPE_SOUND, relativeFilename, "", startPath))

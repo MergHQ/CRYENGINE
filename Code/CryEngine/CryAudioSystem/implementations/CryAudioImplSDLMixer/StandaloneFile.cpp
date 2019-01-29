@@ -16,12 +16,8 @@ namespace SDL_mixer
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CStandaloneFile::Play(IObject* const pIObject)
 {
-	ERequestStatus status = ERequestStatus::Failure;
-
 	auto const pObject = static_cast<CObject*>(pIObject);
-	status = SoundEngine::PlayFile(pObject, this);
-
-	return status;
+	return SoundEngine::PlayFile(pObject, this);
 }
 
 //////////////////////////////////////////////////////////////////////////

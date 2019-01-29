@@ -350,11 +350,11 @@ void CAssetsManager::UpdateConfigFolderPath()
 {
 	if (g_pIImpl != nullptr)
 	{
-		m_configFolderPath = AUDIO_SYSTEM_DATA_ROOT "/" + string(g_implInfo.folderName) + "/" + CryAudio::g_szConfigFolderName + "/";
+		m_configFolderPath = CRY_AUDIO_DATA_ROOT "/" + string(g_implInfo.folderName) + "/" + CryAudio::g_szConfigFolderName + "/";
 	}
 	else
 	{
-		m_configFolderPath = AUDIO_SYSTEM_DATA_ROOT "/";
+		m_configFolderPath = CRY_AUDIO_DATA_ROOT "/";
 	}
 }
 //////////////////////////////////////////////////////////////////////////

@@ -329,8 +329,8 @@ void CFileCacheManager::StreamAsyncOnComplete(IReadStream* pStream, unsigned int
 //////////////////////////////////////////////////////////////////////////
 void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 {
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "FileCacheManager (%d of %d KiB) [Entries: %d]", static_cast<int>(m_currentByteTotal >> 10), static_cast<int>(m_maxByteTotal >> 10), static_cast<int>(m_fileEntries.size()));
-	posY += Debug::s_listHeaderLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "FileCacheManager (%d of %d KiB) [Entries: %d]", static_cast<int>(m_currentByteTotal >> 10), static_cast<int>(m_maxByteTotal >> 10), static_cast<int>(m_fileEntries.size()));
+	posY += Debug::g_listHeaderLineHeight;
 
 	if (!m_fileEntries.empty())
 	{
@@ -439,8 +439,8 @@ void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX,
 								}
 							}
 
-							auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize, color, false, "%s", debugText.c_str());
-							posY += Debug::s_listLineHeight;
+							auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, "%s", debugText.c_str());
+							posY += Debug::g_listLineHeight;
 						}
 					}
 				}
