@@ -692,12 +692,12 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 						auxGeom.Draw2dLabel(
 							screenPos.x,
 							screenPos.y,
-							Debug::s_objectFontSize,
+							Debug::g_objectFontSize,
 							isVirtual ? Debug::s_globalColorVirtual : (hasActiveData ? Debug::s_objectColorActive : Debug::s_globalColorInactive),
 							false,
 							m_name.c_str());
 
-						screenPos.y += Debug::s_objectLineHeight;
+						screenPos.y += Debug::g_objectLineHeight;
 					}
 
 					if (drawTriggers && (isTextFilterDisabled || doesTriggerMatchFilter))
@@ -707,12 +707,12 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 							auxGeom.Draw2dLabel(
 								screenPos.x,
 								screenPos.y,
-								Debug::s_objectFontSize,
+								Debug::g_objectFontSize,
 								isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorTrigger,
 								false,
 								debugText.c_str());
 
-							screenPos.y += Debug::s_objectLineHeight;
+							screenPos.y += Debug::g_objectLineHeight;
 						}
 					}
 
@@ -723,12 +723,12 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 							auxGeom.Draw2dLabel(
 								screenPos.x,
 								screenPos.y,
-								Debug::s_objectFontSize,
+								Debug::g_objectFontSize,
 								isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorStandaloneFile,
 								false,
 								debugText.c_str());
 
-							screenPos.y += Debug::s_objectLineHeight;
+							screenPos.y += Debug::g_objectLineHeight;
 						}
 					}
 
@@ -746,14 +746,14 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 							auxGeom.Draw2dLabel(
 								screenPos.x,
 								screenPos.y,
-								Debug::s_objectFontSize,
+								Debug::g_objectFontSize,
 								isVirtual ? Debug::s_globalColorVirtual : switchTextColor,
 								false,
 								"%s: %s\n",
 								pSwitch->GetName(),
 								pSwitchState->GetName());
 
-							screenPos.y += Debug::s_objectLineHeight;
+							screenPos.y += Debug::g_objectLineHeight;
 						}
 					}
 
@@ -764,14 +764,14 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 							auxGeom.Draw2dLabel(
 								screenPos.x,
 								screenPos.y,
-								Debug::s_objectFontSize,
+								Debug::g_objectFontSize,
 								isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorParameter,
 								false,
 								"%s: %2.2f\n",
 								parameterPair.first,
 								parameterPair.second);
 
-							screenPos.y += Debug::s_objectLineHeight;
+							screenPos.y += Debug::g_objectLineHeight;
 						}
 					}
 
@@ -782,14 +782,14 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 							auxGeom.Draw2dLabel(
 								screenPos.x,
 								screenPos.y,
-								Debug::s_objectFontSize,
+								Debug::g_objectFontSize,
 								isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorEnvironment,
 								false,
 								"%s: %.2f\n",
 								environmentPair.first,
 								environmentPair.second);
 
-							screenPos.y += Debug::s_objectLineHeight;
+							screenPos.y += Debug::g_objectLineHeight;
 						}
 					}
 
@@ -809,12 +809,12 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 						auxGeom.Draw2dLabel(
 							screenPos.x,
 							screenPos.y,
-							Debug::s_objectFontSize,
+							Debug::g_objectFontSize,
 							isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorActive,
 							false,
 							debugText.c_str());
 
-						screenPos.y += Debug::s_objectLineHeight;
+						screenPos.y += Debug::g_objectLineHeight;
 					}
 
 	#if defined(CRY_AUDIO_USE_OCCLUSION)
@@ -849,14 +849,14 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 						auxGeom.Draw2dLabel(
 							screenPos.x,
 							screenPos.y,
-							Debug::s_objectFontSize,
+							Debug::g_objectFontSize,
 							isVirtual ? Debug::s_globalColorVirtual : (((occlusionType != EOcclusionType::None) && (occlusionType != EOcclusionType::Ignore)) ? activeRayLabelColor : Debug::s_globalColorInactive),
 							false,
 							"Occl: %3.2f | Type: %s",
 							occlusion,
 							debugText.c_str());
 
-						screenPos.y += Debug::s_objectLineHeight;
+						screenPos.y += Debug::g_objectLineHeight;
 					}
 
 					if (drawOcclusionRayOffset && !isVirtual)

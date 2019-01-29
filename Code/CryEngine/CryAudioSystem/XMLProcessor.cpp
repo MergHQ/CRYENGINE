@@ -171,7 +171,7 @@ void CXMLProcessor::ParseSystemData()
 
 	g_pIImpl->OnBeforeLibraryDataChanged();
 	g_pIImpl->GetInfo(g_implInfo);
-	g_configPath = AUDIO_SYSTEM_DATA_ROOT "/";
+	g_configPath = CRY_AUDIO_DATA_ROOT "/";
 	g_configPath += (g_implInfo.folderName + "/" + g_szConfigFolderName + "/").c_str();
 
 	ParseSystemDataFile(g_configPath.c_str(), g_poolSizes, false);
@@ -241,7 +241,7 @@ void CXMLProcessor::ParseControlsData(char const* const szFolderPath, EDataScope
 				{
 					if (_stricmp(pRootNode->getTag(), g_szRootNodeTag) == 0)
 					{
-						LibraryId const libraryId = StringToId(pRootNode->getAttr(s_szNameAttribute));
+						LibraryId const libraryId = StringToId(pRootNode->getAttr(g_szNameAttribute));
 
 						if (libraryId == DefaultLibraryId)
 						{
@@ -606,11 +606,11 @@ void CXMLProcessor::ParsePreloads(XmlNodeRef const pPreloadDataRoot, EDataScope 
 		{
 			PreloadRequestId preloadRequestId = GlobalPreloadRequestId;
 			char const* szPreloadRequestName = g_szGlobalPreloadRequestName;
-			bool const isAutoLoad = (_stricmp(pPreloadRequestNode->getAttr(s_szTypeAttribute), g_szDataLoadType) == 0);
+			bool const isAutoLoad = (_stricmp(pPreloadRequestNode->getAttr(g_szTypeAttribute), g_szDataLoadType) == 0);
 
 			if (!isAutoLoad)
 			{
-				szPreloadRequestName = pPreloadRequestNode->getAttr(s_szNameAttribute);
+				szPreloadRequestName = pPreloadRequestNode->getAttr(g_szNameAttribute);
 				preloadRequestId = static_cast<PreloadRequestId>(StringToId(szPreloadRequestName));
 			}
 			else if (dataScope == EDataScope::LevelSpecific)
@@ -628,7 +628,7 @@ void CXMLProcessor::ParsePreloads(XmlNodeRef const pPreloadDataRoot, EDataScope 
 				{
 					XmlNodeRef const pPlatformNode(pPreloadRequestNode->getChild(j));
 
-					if ((pPlatformNode != nullptr) && (_stricmp(pPlatformNode->getAttr(s_szNameAttribute), SXMLTags::szPlatform) == 0))
+					if ((pPlatformNode != nullptr) && (_stricmp(pPlatformNode->getAttr(g_szNameAttribute), SXMLTags::szPlatform) == 0))
 					{
 						pFileListParentNode = pPlatformNode;
 						break;
@@ -732,7 +732,7 @@ void CXMLProcessor::ParseEnvironments(XmlNodeRef const pEnvironmentRoot, EDataSc
 
 		if ((pEnvironmentNode != nullptr) && (_stricmp(pEnvironmentNode->getTag(), g_szEnvironmentTag) == 0))
 		{
-			char const* const szEnvironmentName = pEnvironmentNode->getAttr(s_szNameAttribute);
+			char const* const szEnvironmentName = pEnvironmentNode->getAttr(g_szNameAttribute);
 			auto const environmentId = static_cast<EnvironmentId const>(StringToId(szEnvironmentName));
 
 			if ((environmentId != InvalidControlId) && (stl::find_in_map(g_environments, environmentId, nullptr) == nullptr))
@@ -799,7 +799,7 @@ void CXMLProcessor::ParseSettings(XmlNodeRef const pRoot, EDataScope const dataS
 
 		if (pSettingNode && _stricmp(pSettingNode->getTag(), g_szSettingTag) == 0)
 		{
-			char const* const szSettingName = pSettingNode->getAttr(s_szNameAttribute);
+			char const* const szSettingName = pSettingNode->getAttr(g_szNameAttribute);
 			auto const settingId = static_cast<ControlId>(StringToId(szSettingName));
 
 			if ((settingId != InvalidControlId) && (stl::find_in_map(g_settings, settingId, nullptr) == nullptr))
@@ -811,7 +811,7 @@ void CXMLProcessor::ParseSettings(XmlNodeRef const pRoot, EDataScope const dataS
 				{
 					XmlNodeRef const pPlatformNode(pSettingNode->getChild(j));
 
-					if ((pPlatformNode != nullptr) && (_stricmp(pPlatformNode->getAttr(s_szNameAttribute), SXMLTags::szPlatform) == 0))
+					if ((pPlatformNode != nullptr) && (_stricmp(pPlatformNode->getAttr(g_szNameAttribute), SXMLTags::szPlatform) == 0))
 					{
 						pSettingImplParentNode = pPlatformNode;
 						break;
@@ -820,7 +820,7 @@ void CXMLProcessor::ParseSettings(XmlNodeRef const pRoot, EDataScope const dataS
 
 				if (pSettingImplParentNode != nullptr)
 				{
-					bool const isAutoLoad = (_stricmp(pSettingNode->getAttr(s_szTypeAttribute), g_szDataLoadType) == 0);
+					bool const isAutoLoad = (_stricmp(pSettingNode->getAttr(g_szTypeAttribute), g_szDataLoadType) == 0);
 
 					int const numConnections = pSettingImplParentNode->getChildCount();
 					SettingConnections connections;
@@ -880,7 +880,7 @@ void CXMLProcessor::ParseTriggers(XmlNodeRef const pXMLTriggerRoot, EDataScope c
 
 		if (pTriggerNode && _stricmp(pTriggerNode->getTag(), g_szTriggerTag) == 0)
 		{
-			char const* const szTriggerName = pTriggerNode->getAttr(s_szNameAttribute);
+			char const* const szTriggerName = pTriggerNode->getAttr(g_szNameAttribute);
 			auto const triggerId = static_cast<ControlId const>(StringToId(szTriggerName));
 
 			if ((triggerId != InvalidControlId) && (stl::find_in_map(g_triggers, triggerId, nullptr) == nullptr))
@@ -951,7 +951,7 @@ void CXMLProcessor::ParseDefaultTriggers(XmlNodeRef const pXMLTriggerRoot)
 
 		if (pTriggerNode && _stricmp(pTriggerNode->getTag(), g_szTriggerTag) == 0)
 		{
-			char const* const szTriggerName = pTriggerNode->getAttr(s_szNameAttribute);
+			char const* const szTriggerName = pTriggerNode->getAttr(g_szNameAttribute);
 			auto const triggerId = static_cast<ControlId const>(StringToId(szTriggerName));
 			int const numConnections = pTriggerNode->getChildCount();
 			TriggerConnections connections;
@@ -1029,7 +1029,7 @@ void CXMLProcessor::ParseSwitches(XmlNodeRef const pXMLSwitchRoot, EDataScope co
 
 		if (pSwitchNode && _stricmp(pSwitchNode->getTag(), g_szSwitchTag) == 0)
 		{
-			char const* const szSwitchName = pSwitchNode->getAttr(s_szNameAttribute);
+			char const* const szSwitchName = pSwitchNode->getAttr(g_szNameAttribute);
 			auto const switchId = static_cast<ControlId const>(StringToId(szSwitchName));
 
 			if ((switchId != InvalidControlId) && (stl::find_in_map(g_switches, switchId, nullptr) == nullptr))
@@ -1049,7 +1049,7 @@ void CXMLProcessor::ParseSwitches(XmlNodeRef const pXMLSwitchRoot, EDataScope co
 
 					if (pSwitchStateNode && _stricmp(pSwitchStateNode->getTag(), g_szStateTag) == 0)
 					{
-						char const* const szSwitchStateName = pSwitchStateNode->getAttr(s_szNameAttribute);
+						char const* const szSwitchStateName = pSwitchStateNode->getAttr(g_szNameAttribute);
 						auto const switchStateId = static_cast<SwitchStateId const>(StringToId(szSwitchStateName));
 
 						if (switchStateId != InvalidSwitchStateId)
@@ -1108,7 +1108,7 @@ void CXMLProcessor::ParseParameters(XmlNodeRef const pXMLParameterRoot, EDataSco
 
 		if (pParameterNode && _stricmp(pParameterNode->getTag(), g_szParameterTag) == 0)
 		{
-			char const* const szParameterName = pParameterNode->getAttr(s_szNameAttribute);
+			char const* const szParameterName = pParameterNode->getAttr(g_szNameAttribute);
 			auto const parameterId = static_cast<ControlId const>(StringToId(szParameterName));
 
 			if ((parameterId != InvalidControlId) && (stl::find_in_map(g_parameters, parameterId, nullptr) == nullptr))

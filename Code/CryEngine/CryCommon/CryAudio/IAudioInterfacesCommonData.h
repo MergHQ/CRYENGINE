@@ -9,7 +9,7 @@
 #include "../CryCore/CryEnumMacro.h"
 #include "../CryCore/CryCrc32.h"
 
-#define AUDIO_SYSTEM_DATA_ROOT "audio"
+#define CRY_AUDIO_DATA_ROOT "audio"
 
 namespace CryAudio
 {
@@ -69,7 +69,7 @@ constexpr char const* g_szPreloadRequestTag = "PreloadRequest";
 constexpr char const* g_szSettingTag = "Setting";
 constexpr char const* g_szPlatformTag = "Platform";
 
-constexpr char const* s_szNameAttribute = "name";
+constexpr char const* g_szNameAttribute = "name";
 constexpr char const* g_szVersionAttribute = "version";
 constexpr char const* g_szNumTriggersAttribute = "triggers";
 constexpr char const* g_szNumParametersAttribute = "parameters";
@@ -79,12 +79,12 @@ constexpr char const* g_szNumEnvironmentsAttribute = "environments";
 constexpr char const* g_szNumPreloadsAttribute = "preloads";
 constexpr char const* g_szNumSettingsAttribute = "settings";
 constexpr char const* g_szNumFilesAttribute = "files";
-constexpr char const* s_szTypeAttribute = "type";
+constexpr char const* g_szTypeAttribute = "type";
 
 constexpr char const* g_szDataLoadType = "autoload";
 
 constexpr char const* g_szConfigFolderName = "ace";
-constexpr char const* s_szAssetsFolderName = "assets";
+constexpr char const* g_szAssetsFolderName = "assets";
 constexpr char const* g_szLevelsFolderName = "levels";
 
 /**

@@ -214,6 +214,12 @@ if (AUDIO_WWISE)
 	foreach(wwise_lib ${${WWISE_PLATFORM_PREFIX}_NONRELEASE_LIBS})
 		target_link_libraries( ${THIS_PROJECT} PRIVATE debug ${wwise_lib} )
 	endforeach()
+
+	target_compile_definitions(${THIS_PROJECT} PRIVATE $<$<NOT:$<CONFIG:Release>>:CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE>)
+
+	if (DURANGO)
+		target_compile_definitions(${THIS_PROJECT} PRIVATE -DCRY_AUDIO_IMPL_WWISE_PROVIDE_SECONDARY_POOL)
+	endif()
 else()
 	CryFileContainer(CryAudioImplWwise SOLUTION_FOLDER "CryEngine/Audio/Implementations")
 endif()

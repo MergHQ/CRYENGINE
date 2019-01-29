@@ -290,11 +290,11 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 	g_constructedObjects.reserve(static_cast<size_t>(objectPoolSize));
 	AllocateMemoryPools(objectPoolSize, static_cast<uint16>(g_cvars.m_cuePoolSize));
 
-	m_regularSoundBankFolder = AUDIO_SYSTEM_DATA_ROOT;
+	m_regularSoundBankFolder = CRY_AUDIO_DATA_ROOT;
 	m_regularSoundBankFolder += "/";
 	m_regularSoundBankFolder += g_szImplFolderName;
 	m_regularSoundBankFolder += "/";
-	m_regularSoundBankFolder += s_szAssetsFolderName;
+	m_regularSoundBankFolder += g_szAssetsFolderName;
 	m_localizedSoundBankFolder = m_regularSoundBankFolder;
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
@@ -546,7 +546,7 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const pRootNode, SFileInfo* const
 
 	if ((_stricmp(pRootNode->getTag(), g_szBinaryTag) == 0) && (pFileInfo != nullptr))
 	{
-		char const* const szFileName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szFileName = pRootNode->getAttr(g_szNameAttribute);
 
 		if (szFileName != nullptr && szFileName[0] != '\0')
 		{
@@ -716,11 +716,11 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 
 	if (_stricmp(pRootNode->getTag(), g_szCueTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
 		char const* const szCueSheetName = pRootNode->getAttr(g_szCueSheetAttribute);
 
 		CCue::EActionType type = CCue::EActionType::Start;
-		char const* const szType = pRootNode->getAttr(s_szTypeAttribute);
+		char const* const szType = pRootNode->getAttr(g_szTypeAttribute);
 
 		if ((szType != nullptr) && (szType[0] != '\0'))
 		{
@@ -765,9 +765,9 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 	}
 	else if (_stricmp(pRootNode->getTag(), g_szSnapshotTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
 
-		char const* const szType = pRootNode->getAttr(s_szTypeAttribute);
+		char const* const szType = pRootNode->getAttr(g_szTypeAttribute);
 		CSnapshot::EActionType const type =
 			((szType != nullptr) && (szType[0] != '\0') && (_stricmp(szType, g_szStopValue) == 0)) ? CSnapshot::EActionType::Stop : CSnapshot::EActionType::Start;
 
@@ -824,7 +824,7 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRoot
 
 	if (_stricmp(szTag, g_szAisacControlTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
 		float multiplier = g_defaultParamMultiplier;
 		float shift = g_defaultParamShift;
 		pRootNode->getAttr(g_szMutiplierAttribute, multiplier);
@@ -835,7 +835,7 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRoot
 	}
 	else if (_stricmp(szTag, g_szSCategoryTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
 		float multiplier = g_defaultParamMultiplier;
 		float shift = g_defaultParamShift;
 		pRootNode->getAttr(g_szMutiplierAttribute, multiplier);
@@ -846,7 +846,7 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRoot
 	}
 	else if (_stricmp(szTag, g_szGameVariableTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
 		float multiplier = g_defaultParamMultiplier;
 		float shift = g_defaultParamShift;
 		pRootNode->getAttr(g_szMutiplierAttribute, multiplier);
@@ -876,7 +876,7 @@ bool ParseSelectorNode(XmlNodeRef const pNode, string& selectorName, string& sel
 {
 	bool foundAttributes = false;
 
-	char const* const szSelectorName = pNode->getAttr(s_szNameAttribute);
+	char const* const szSelectorName = pNode->getAttr(g_szNameAttribute);
 
 	if ((szSelectorName != nullptr) && (szSelectorName[0] != 0) && (pNode->getChildCount() == 1))
 	{
@@ -884,7 +884,7 @@ bool ParseSelectorNode(XmlNodeRef const pNode, string& selectorName, string& sel
 
 		if (pLabelNode && _stricmp(pLabelNode->getTag(), g_szSelectorLabelTag) == 0)
 		{
-			char const* const szSelectorLabelName = pLabelNode->getAttr(s_szNameAttribute);
+			char const* const szSelectorLabelName = pLabelNode->getAttr(g_szNameAttribute);
 
 			if ((szSelectorLabelName != nullptr) && (szSelectorLabelName[0] != 0))
 			{
@@ -924,7 +924,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 	}
 	else if (_stricmp(szTag, g_szAisacControlTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
 		float value = g_defaultStateValue;
 		pRootNode->getAttr(g_szValueAttribute, value);
 
@@ -934,7 +934,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 	}
 	else if (_stricmp(szTag, g_szGameVariableTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
 		float value = g_defaultStateValue;
 		pRootNode->getAttr(g_szValueAttribute, value);
 
@@ -943,7 +943,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 	}
 	else if (_stricmp(szTag, g_szSCategoryTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
 		float value = g_defaultStateValue;
 		pRootNode->getAttr(g_szValueAttribute, value);
 
@@ -975,14 +975,14 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const p
 
 	if (_stricmp(szTag, g_szDspBusTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CDspBus");
 		pEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CDspBus(szName));
 	}
 	else if (_stricmp(szTag, g_szAisacControlTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
 		float multiplier = g_defaultParamMultiplier;
 		float shift = g_defaultParamShift;
 		pRootNode->getAttr(g_szMutiplierAttribute, multiplier);
@@ -1016,7 +1016,7 @@ ISettingConnection* CImpl::ConstructSettingConnection(XmlNodeRef const pRootNode
 
 	if (_stricmp(szTag, g_szDspBusSettingTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CDspBusSetting");
 		pISettingConnection = static_cast<ISettingConnection*>(new CDspBusSetting(szName));
@@ -1063,11 +1063,11 @@ void CImpl::SetLanguage(char const* const szLanguage)
 		m_localizedSoundBankFolder += "/";
 		m_localizedSoundBankFolder += m_language.c_str();
 		m_localizedSoundBankFolder += "/";
-		m_localizedSoundBankFolder += AUDIO_SYSTEM_DATA_ROOT;
+		m_localizedSoundBankFolder += CRY_AUDIO_DATA_ROOT;
 		m_localizedSoundBankFolder += "/";
 		m_localizedSoundBankFolder += g_szImplFolderName;
 		m_localizedSoundBankFolder += "/";
-		m_localizedSoundBankFolder += s_szAssetsFolderName;
+		m_localizedSoundBankFolder += g_szAssetsFolderName;
 	}
 }
 
@@ -1362,8 +1362,8 @@ void DrawMemoryPoolInfo(
 
 	ColorF const color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
 
-	posY += Debug::s_systemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, color, false,
+	posY += Debug::g_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, color, false,
 	                    "[%s] Constructed: %" PRISIZE_T " (%s) | Allocated: %" PRISIZE_T " (%s) | Pool Size: %u",
 	                    szType, pool.nUsed, memUsedString.c_str(), pool.nAlloc, memAllocString.c_str(), poolSize);
 }
@@ -1389,8 +1389,8 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 		memInfoString.Format("%s (Total Memory: %u KiB)", m_name.c_str(), memAlloc >> 10);
 	}
 
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemHeaderFontSize, Debug::s_globalColorHeader, false, memInfoString.c_str());
-	posY += Debug::s_systemHeaderLineSpacerHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemHeaderFontSize, Debug::s_globalColorHeader, false, memInfoString.c_str());
+	posY += Debug::g_systemHeaderLineSpacerHeight;
 
 	if (showDetailedInfo)
 	{
@@ -1485,8 +1485,8 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 
 	size_t const numCueInstances = g_constructedCueInstances.size();
 
-	posY += Debug::s_systemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextSecondary, false,
+	posY += Debug::g_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorTextSecondary, false,
 	                    "Active Cues: %3" PRISIZE_T " | Objects with Doppler: %u | DSP Bus Setting: %s | Active Snapshot: %s",
 	                    numCueInstances, g_numObjectsWithDoppler, g_debugCurrentDspBusSettingName.c_str(), g_debugActiveSnapShotName.c_str());
 
@@ -1495,8 +1495,8 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 	float const listenerVelocity = g_pListener->GetVelocity().GetLength();
 	char const* const szName = g_pListener->GetName();
 
-	posY += Debug::s_systemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorListenerActive, false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s",
+	posY += Debug::g_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorListenerActive, false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s",
 	                    szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 }
@@ -1514,8 +1514,8 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 
 		if ((g_cvars.m_debugListFilter & EDebugListFilter::CueInstances) != 0)
 		{
-			auxGeom.Draw2dLabel(posX, posY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "Adx2 Cues [%" PRISIZE_T "]", g_constructedCueInstances.size());
-			posY += Debug::s_listHeaderLineHeight;
+			auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "Adx2 Cues [%" PRISIZE_T "]", g_constructedCueInstances.size());
+			posY += Debug::g_listHeaderLineHeight;
 
 			for (auto const pCueInstance : g_constructedCueInstances)
 			{
@@ -1532,9 +1532,9 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 					if (draw)
 					{
 						ColorF const color = ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) != 0) ? Debug::s_globalColorVirtual : Debug::s_listColorItemActive;
-						auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize, color, false, "%s on %s", szCueName, pCueInstance->GetObject()->GetName());
+						auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, "%s on %s", szCueName, pCueInstance->GetObject()->GetName());
 
-						posY += Debug::s_listLineHeight;
+						posY += Debug::g_listLineHeight;
 					}
 				}
 			}
@@ -1546,8 +1546,8 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 		{
 			posY = initialPosY;
 
-			auxGeom.Draw2dLabel(posX, posY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "Adx2 GameVariables [%" PRISIZE_T "]", g_gameVariableValues.size());
-			posY += Debug::s_listHeaderLineHeight;
+			auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "Adx2 GameVariables [%" PRISIZE_T "]", g_gameVariableValues.size());
+			posY += Debug::g_listHeaderLineHeight;
 
 			for (auto const& gameVariablePair : g_gameVariableValues)
 			{
@@ -1558,9 +1558,9 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 
 				if (draw)
 				{
-					auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize, Debug::s_listColorItemActive, false, "%s : %3.2f", szGameVariableName, gameVariablePair.second);
+					auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, Debug::s_listColorItemActive, false, "%s : %3.2f", szGameVariableName, gameVariablePair.second);
 
-					posY += Debug::s_listLineHeight;
+					posY += Debug::g_listLineHeight;
 				}
 			}
 
@@ -1571,8 +1571,8 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 		{
 			posY = initialPosY;
 
-			auxGeom.Draw2dLabel(posX, posY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "Adx2 Categories [%" PRISIZE_T "]", g_categoryValues.size());
-			posY += Debug::s_listHeaderLineHeight;
+			auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "Adx2 Categories [%" PRISIZE_T "]", g_categoryValues.size());
+			posY += Debug::g_listHeaderLineHeight;
 
 			for (auto const& categoryPair : g_categoryValues)
 			{
@@ -1583,9 +1583,9 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 
 				if (draw)
 				{
-					auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize, Debug::s_listColorItemActive, false, "%s : %3.2f", szCategoryName, categoryPair.second);
+					auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, Debug::s_listColorItemActive, false, "%s : %3.2f", szCategoryName, categoryPair.second);
 
-					posY += Debug::s_listLineHeight;
+					posY += Debug::g_listLineHeight;
 				}
 			}
 

@@ -78,8 +78,8 @@ void CFileManager::ReleaseStandaloneFile(CStandaloneFile* const pStandaloneFile)
 //////////////////////////////////////////////////////////////////////////
 void CFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float posY) const
 {
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "Standalone Files [%" PRISIZE_T "]", m_constructedStandaloneFiles.size());
-	posY += Debug::s_listHeaderLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "Standalone Files [%" PRISIZE_T "]", m_constructedStandaloneFiles.size());
+	posY += Debug::g_listHeaderLineHeight;
 
 	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
 	lowerCaseSearchString.MakeLower();
@@ -132,14 +132,14 @@ void CFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float posY
 					}
 				}
 
-				auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize,
+				auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize,
 				                    color,
 				                    false,
 				                    "%s on %s",
 				                    szStandaloneFileName,
 				                    szObjectName);
 
-				posY += Debug::s_listLineHeight;
+				posY += Debug::g_listLineHeight;
 			}
 		}
 	}

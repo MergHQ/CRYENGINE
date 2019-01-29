@@ -8,7 +8,3 @@
 #include <CryCore/StlUtils.h>
 #include <CryCore/Project/ProjectDefines.h>
 #include <CrySystem/ISystem.h>
-
-#if !defined(_RELEASE)
-	#define CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
-#endif // _RELEASE

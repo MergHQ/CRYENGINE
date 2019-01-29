@@ -9,7 +9,3 @@
 #include <CryCore/Project/ProjectDefines.h>
 #include <CrySystem/ISystem.h>
 #include <CrySystem/File/ICryPak.h>
-
-#if !defined(_RELEASE)
-	#define CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
-#endif // _RELEASE

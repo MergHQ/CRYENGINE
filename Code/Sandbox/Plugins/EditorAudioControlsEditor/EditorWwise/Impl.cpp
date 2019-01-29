@@ -224,8 +224,8 @@ CItem* SearchForItem(CItem* const pItem, string const& name, EItemType const typ
 //////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
 	: m_pDataPanel(nullptr)
-	, m_projectPath(AUDIO_SYSTEM_DATA_ROOT "/wwise_project")
-	, m_assetsPath(AUDIO_SYSTEM_DATA_ROOT "/" + string(CryAudio::Impl::Wwise::g_szImplFolderName) + "/" + string(CryAudio::s_szAssetsFolderName))
+	, m_projectPath(CRY_AUDIO_DATA_ROOT "/wwise_project")
+	, m_assetsPath(CRY_AUDIO_DATA_ROOT "/" + string(CryAudio::Impl::Wwise::g_szImplFolderName) + "/" + string(CryAudio::g_szAssetsFolderName))
 	, m_localizedAssetsPath(m_assetsPath)
 	, m_szUserSettingsFile("%USER%/audiocontrolseditor_wwise.user")
 {
@@ -483,7 +483,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 
 		if (type != EItemType::None)
 		{
-			string name = pNode->getAttr(CryAudio::s_szNameAttribute);
+			string name = pNode->getAttr(CryAudio::g_szNameAttribute);
 			string localizedAttribute = pNode->getAttr(CryAudio::Impl::Wwise::g_szLocalizedAttribute);
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 			if (name.IsEmpty() && pNode->haveAttr("wwise_name"))
@@ -522,7 +522,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 
 					if (pNode != nullptr)
 					{
-						string childName = pNode->getAttr(CryAudio::s_szNameAttribute);
+						string childName = pNode->getAttr(CryAudio::g_szNameAttribute);
 
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 						if (childName.IsEmpty() && pNode->haveAttr("wwise_name"))
@@ -649,10 +649,10 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 				if (pParent != nullptr)
 				{
 					XmlNodeRef const pSwitchNode = GetISystem()->CreateXmlNode(TypeToTag(pParent->GetType()));
-					pSwitchNode->setAttr(CryAudio::s_szNameAttribute, pParent->GetName());
+					pSwitchNode->setAttr(CryAudio::g_szNameAttribute, pParent->GetName());
 
 					XmlNodeRef const pStateNode = pSwitchNode->createNode(CryAudio::Impl::Wwise::g_szValueTag);
-					pStateNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
+					pStateNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
 					pSwitchNode->addChild(pStateNode);
 
 					pNode = pSwitchNode;
@@ -663,7 +663,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 			{
 				XmlNodeRef pConnectionNode;
 				pConnectionNode = GetISystem()->CreateXmlNode(TypeToTag(itemType));
-				pConnectionNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
+				pConnectionNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
 
 				if ((assetType == EAssetType::Parameter) || (assetType == EAssetType::Environment))
 				{
@@ -698,14 +698,14 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 			{
 				XmlNodeRef pConnectionNode;
 				pConnectionNode = GetISystem()->CreateXmlNode(TypeToTag(itemType));
-				pConnectionNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
+				pConnectionNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
 				pNode = pConnectionNode;
 			}
 			break;
 		case EItemType::SoundBank:
 			{
 				XmlNodeRef pConnectionNode = GetISystem()->CreateXmlNode(TypeToTag(itemType));
-				pConnectionNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
+				pConnectionNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
 
 				if ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0)
 				{
@@ -900,11 +900,11 @@ void CImpl::SetLocalizedAssetsPath()
 			m_localizedAssetsPath += "/";
 			m_localizedAssetsPath += szLanguage;
 			m_localizedAssetsPath += "/";
-			m_localizedAssetsPath += AUDIO_SYSTEM_DATA_ROOT;
+			m_localizedAssetsPath += CRY_AUDIO_DATA_ROOT;
 			m_localizedAssetsPath += "/";
 			m_localizedAssetsPath += CryAudio::Impl::Wwise::g_szImplFolderName;
 			m_localizedAssetsPath += "/";
-			m_localizedAssetsPath += CryAudio::s_szAssetsFolderName;
+			m_localizedAssetsPath += CryAudio::g_szAssetsFolderName;
 		}
 	}
 }

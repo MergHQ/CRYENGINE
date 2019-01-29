@@ -9,7 +9,3 @@
 #include <CryCore/Project/ProjectDefines.h>
 #include <CrySystem/ISystem.h>
 #include <fmod_studio.hpp>
-
-#if !defined(_RELEASE)
-	#define CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
-#endif // _RELEASE

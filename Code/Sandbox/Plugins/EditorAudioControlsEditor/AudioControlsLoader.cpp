@@ -16,7 +16,7 @@
 namespace ACE
 {
 string const CAudioControlsLoader::s_controlsLevelsFolder = "levels/";
-string const CAudioControlsLoader::s_assetsFolderPath = AUDIO_SYSTEM_DATA_ROOT "/ace/";
+string const CAudioControlsLoader::s_assetsFolderPath = CRY_AUDIO_DATA_ROOT "/ace/";
 
 //////////////////////////////////////////////////////////////////////////
 EAssetType TagToType_BackwardsComp(char const* const szTag)

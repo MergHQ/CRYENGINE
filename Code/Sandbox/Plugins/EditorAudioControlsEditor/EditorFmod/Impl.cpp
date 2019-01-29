@@ -287,8 +287,8 @@ CItem* SearchForItem(CItem* const pItem, string const& name, EItemType const typ
 //////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
 	: m_pDataPanel(nullptr)
-	, m_projectPath(AUDIO_SYSTEM_DATA_ROOT "/fmod_project")
-	, m_assetsPath(AUDIO_SYSTEM_DATA_ROOT "/" + string(CryAudio::Impl::Fmod::g_szImplFolderName) + "/" + string(CryAudio::s_szAssetsFolderName))
+	, m_projectPath(CRY_AUDIO_DATA_ROOT "/fmod_project")
+	, m_assetsPath(CRY_AUDIO_DATA_ROOT "/" + string(CryAudio::Impl::Fmod::g_szImplFolderName) + "/" + string(CryAudio::g_szAssetsFolderName))
 	, m_localizedAssetsPath(m_assetsPath)
 	, m_szUserSettingsFile("%USER%/audiocontrolseditor_fmod.user")
 {
@@ -566,7 +566,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 
 		if (type != EItemType::None)
 		{
-			string name = pNode->getAttr(CryAudio::s_szNameAttribute);
+			string name = pNode->getAttr(CryAudio::g_szNameAttribute);
 
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 			if (name.IsEmpty() && pNode->haveAttr("fmod_name"))
@@ -617,7 +617,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 			{
 			case EItemType::Event:
 				{
-					string actionType = pNode->getAttr(CryAudio::s_szTypeAttribute);
+					string actionType = pNode->getAttr(CryAudio::g_szTypeAttribute);
 
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 					if (actionType.IsEmpty() && pNode->haveAttr("fmod_event_type"))
@@ -653,7 +653,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 				break;
 			case EItemType::Snapshot:
 				{
-					string actionType = pNode->getAttr(CryAudio::s_szTypeAttribute);
+					string actionType = pNode->getAttr(CryAudio::g_szTypeAttribute);
 
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 					if (actionType.IsEmpty() && pNode->haveAttr("fmod_event_type"))
@@ -749,7 +749,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 		{
 		case EItemType::Event:
 			{
-				pNode->setAttr(CryAudio::s_szNameAttribute, Utils::GetPathName(pItem, m_rootItem));
+				pNode->setAttr(CryAudio::g_szNameAttribute, Utils::GetPathName(pItem, m_rootItem));
 				auto const pEventConnection = static_cast<CEventConnection const*>(pIConnection);
 
 				if (pEventConnection != nullptr)
@@ -758,22 +758,22 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 
 					if (actionType == CEventConnection::EActionType::Stop)
 					{
-						pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::Fmod::g_szStopValue);
+						pNode->setAttr(CryAudio::g_szTypeAttribute, CryAudio::Impl::Fmod::g_szStopValue);
 					}
 					else if (actionType == CEventConnection::EActionType::Pause)
 					{
-						pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::Fmod::g_szPauseValue);
+						pNode->setAttr(CryAudio::g_szTypeAttribute, CryAudio::Impl::Fmod::g_szPauseValue);
 					}
 					else if (actionType == CEventConnection::EActionType::Resume)
 					{
-						pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::Fmod::g_szResumeValue);
+						pNode->setAttr(CryAudio::g_szTypeAttribute, CryAudio::Impl::Fmod::g_szResumeValue);
 					}
 				}
 			}
 			break;
 		case EItemType::Key:
 			{
-				pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
+				pNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
 				auto const pKeyConnection = static_cast<CKeyConnection const*>(pIConnection);
 
 				if (pKeyConnection != nullptr)
@@ -784,24 +784,24 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 			break;
 		case EItemType::Snapshot:
 			{
-				pNode->setAttr(CryAudio::s_szNameAttribute, Utils::GetPathName(pItem, m_rootItem));
+				pNode->setAttr(CryAudio::g_szNameAttribute, Utils::GetPathName(pItem, m_rootItem));
 				auto const pEventConnection = static_cast<CSnapshotConnection const*>(pIConnection);
 
 				if ((pEventConnection != nullptr) && (pEventConnection->GetActionType() == CSnapshotConnection::EActionType::Stop))
 				{
-					pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::Fmod::g_szStopValue);
+					pNode->setAttr(CryAudio::g_szTypeAttribute, CryAudio::Impl::Fmod::g_szStopValue);
 				}
 			}
 			break;
 		case EItemType::Return:
 			{
-				pNode->setAttr(CryAudio::s_szNameAttribute, Utils::GetPathName(pItem, m_rootItem));
+				pNode->setAttr(CryAudio::g_szNameAttribute, Utils::GetPathName(pItem, m_rootItem));
 			}
 			break;
 		case EItemType::Parameter: // Intentional fall-through.
 		case EItemType::VCA:
 			{
-				pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
+				pNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
 
 				if (assetType == EAssetType::State)
 				{
@@ -830,7 +830,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 			break;
 		case EItemType::Bank:
 			{
-				pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
+				pNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
 
 				if ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0)
 				{
@@ -1030,11 +1030,11 @@ void CImpl::SetLocalizedAssetsPath()
 			m_localizedAssetsPath += "/";
 			m_localizedAssetsPath += szLanguage;
 			m_localizedAssetsPath += "/";
-			m_localizedAssetsPath += AUDIO_SYSTEM_DATA_ROOT;
+			m_localizedAssetsPath += CRY_AUDIO_DATA_ROOT;
 			m_localizedAssetsPath += "/";
 			m_localizedAssetsPath += CryAudio::Impl::Fmod::g_szImplFolderName;
 			m_localizedAssetsPath += "/";
-			m_localizedAssetsPath += CryAudio::s_szAssetsFolderName;
+			m_localizedAssetsPath += CryAudio::g_szAssetsFolderName;
 		}
 	}
 }

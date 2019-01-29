@@ -318,10 +318,10 @@ void CImpl::DestructFile(IFile* const pIFile)
 char const* const CImpl::GetFileLocation(SFileInfo* const pFileInfo)
 {
 	static CryFixedStringT<MaxFilePathLength> s_path;
-	s_path = AUDIO_SYSTEM_DATA_ROOT "/";
+	s_path = CRY_AUDIO_DATA_ROOT "/";
 	s_path += g_szImplFolderName;
 	s_path += "/";
-	s_path += s_szAssetsFolderName;
+	s_path += g_szAssetsFolderName;
 	s_path += "/";
 
 	return s_path.c_str();
@@ -345,7 +345,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 
 	if (_stricmp(pRootNode->getTag(), g_szEventTag) == 0)
 	{
-		char const* const szFileName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szFileName = pRootNode->getAttr(g_szNameAttribute);
 		char const* const szPath = pRootNode->getAttr(g_szPathAttribute);
 		string const fullFilePath = GetFullFilePath(szFileName, szPath);
 
@@ -355,15 +355,15 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true, isLocalized);
 		CEvent::EActionType type = CEvent::EActionType::Start;
 
-		if (_stricmp(pRootNode->getAttr(s_szTypeAttribute), g_szStopValue) == 0)
+		if (_stricmp(pRootNode->getAttr(g_szTypeAttribute), g_szStopValue) == 0)
 		{
 			type = CEvent::EActionType::Stop;
 		}
-		else if (_stricmp(pRootNode->getAttr(s_szTypeAttribute), g_szPauseValue) == 0)
+		else if (_stricmp(pRootNode->getAttr(g_szTypeAttribute), g_szPauseValue) == 0)
 		{
 			type = CEvent::EActionType::Pause;
 		}
-		else if (_stricmp(pRootNode->getAttr(s_szTypeAttribute), g_szResumeValue) == 0)
+		else if (_stricmp(pRootNode->getAttr(g_szTypeAttribute), g_szResumeValue) == 0)
 		{
 			type = CEvent::EActionType::Resume;
 		}
@@ -519,7 +519,7 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRoot
 
 	if (_stricmp(pRootNode->getTag(), g_szEventTag) == 0)
 	{
-		char const* const szFileName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szFileName = pRootNode->getAttr(g_szNameAttribute);
 		char const* const szPath = pRootNode->getAttr(g_szPathAttribute);
 		string const fullFilePath = GetFullFilePath(szFileName, szPath);
 
@@ -559,7 +559,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 
 	if (_stricmp(pRootNode->getTag(), g_szEventTag) == 0)
 	{
-		char const* const szFileName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szFileName = pRootNode->getAttr(g_szNameAttribute);
 		char const* const szPath = pRootNode->getAttr(g_szPathAttribute);
 		string const fullFilePath = GetFullFilePath(szFileName, szPath);
 
@@ -739,11 +739,11 @@ void CImpl::SetLanguage(char const* const szLanguage)
 		s_localizedAssetsPath += "/";
 		s_localizedAssetsPath += m_language.c_str();
 		s_localizedAssetsPath += "/";
-		s_localizedAssetsPath += AUDIO_SYSTEM_DATA_ROOT;
+		s_localizedAssetsPath += CRY_AUDIO_DATA_ROOT;
 		s_localizedAssetsPath += "/";
 		s_localizedAssetsPath += g_szImplFolderName;
 		s_localizedAssetsPath += "/";
-		s_localizedAssetsPath += s_szAssetsFolderName;
+		s_localizedAssetsPath += g_szAssetsFolderName;
 		s_localizedAssetsPath += "/";
 
 		if (shouldReload)
@@ -840,8 +840,8 @@ void DrawMemoryPoolInfo(
 
 	ColorF const color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
 
-	posY += Debug::s_systemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, color, false,
+	posY += Debug::g_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, color, false,
 	                    "[%s] Constructed: %" PRISIZE_T " (%s) | Allocated: %" PRISIZE_T " (%s) | Pool Size: %u",
 	                    szType, pool.nUsed, memUsedString.c_str(), pool.nAlloc, memAllocString.c_str(), poolSize);
 }
@@ -867,8 +867,8 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 		memInfoString.Format("%s (Total Memory: %u KiB)", m_name.c_str(), memAlloc >> 10);
 	}
 
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemHeaderFontSize, Debug::s_globalColorHeader, false, memInfoString.c_str());
-	posY += Debug::s_systemHeaderLineSpacerHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemHeaderFontSize, Debug::s_globalColorHeader, false, memInfoString.c_str());
+	posY += Debug::g_systemHeaderLineSpacerHeight;
 
 	if (showDetailedInfo)
 	{
@@ -903,15 +903,15 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 
 	size_t const numEvents = g_constructedEventInstances.size();
 
-	posY += Debug::s_systemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorTextSecondary, false, "Active Events: %" PRISIZE_T, numEvents);
+	posY += Debug::g_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorTextSecondary, false, "Active Events: %" PRISIZE_T, numEvents);
 
 	Vec3 const& listenerPosition = g_pListener->GetTransformation().GetPosition();
 	Vec3 const& listenerDirection = g_pListener->GetTransformation().GetForward();
 	char const* const szName = g_pListener->GetName();
 
-	posY += Debug::s_systemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_systemFontSize, Debug::s_systemColorListenerActive, false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z);
+	posY += Debug::g_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorListenerActive, false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z);
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 }
 
@@ -922,8 +922,8 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(szTextFilter);
 	lowerCaseSearchString.MakeLower();
 
-	auxGeom.Draw2dLabel(posX, posY, Debug::s_listHeaderFontSize, Debug::s_globalColorHeader, false, "SDL Mixer Events [%" PRISIZE_T "]", g_constructedEventInstances.size());
-	posY += Debug::s_listHeaderLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "SDL Mixer Events [%" PRISIZE_T "]", g_constructedEventInstances.size());
+	posY += Debug::g_listHeaderLineHeight;
 
 	for (auto const pEventInstance : g_constructedEventInstances)
 	{
@@ -939,9 +939,9 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 
 			if (draw)
 			{
-				auxGeom.Draw2dLabel(posX, posY, Debug::s_listFontSize, Debug::s_listColorItemActive, false, "%s on %s", szEventName, pEventInstance->GetObject()->GetName());
+				auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, Debug::s_listColorItemActive, false, "%s on %s", szEventName, pEventInstance->GetObject()->GetName());
 
-				posY += Debug::s_listLineHeight;
+				posY += Debug::g_listLineHeight;
 			}
 		}
 	}

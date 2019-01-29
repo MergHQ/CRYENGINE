@@ -9,19 +9,9 @@
 #include <CryCore/Project/ProjectDefines.h>
 #include <CryCore/Platform/CryWindows.h> // need to include before AK includes windows.h
 
-#if CRY_PLATFORM_DURANGO
-	#define CRY_AUDIO_IMPL_WWISE_PROVIDE_SECONDARY_POOL
-// Memory Allocation
+#if defined(CRY_AUDIO_IMPL_WWISE_PROVIDE_SECONDARY_POOL)
 	#include <CryMemory/CryPool/PoolAlloc.h>
-#endif
-
-#if !defined(_RELEASE)
-	#define CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
-#endif // _RELEASE
-
-#if CRY_PLATFORM_DURANGO
-	#define CRY_AUDIO_IMPL_WWISE_PROVIDE_SECONDARY_POOL
-#endif
+#endif // CRY_AUDIO_IMPL_WWISE_PROVIDE_SECONDARY_POOL
 
 namespace CryAudio
 {
@@ -71,7 +61,7 @@ inline bool Secondary_Free(void* pFree)
 
 	return bFreed;
 }
-#endif // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
+#endif // CRY_AUDIO_IMPL_WWISE_PROVIDE_SECONDARY_POOL
 }      // Wwise
 }      // Impl
 }      // CryAudio
