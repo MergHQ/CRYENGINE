@@ -377,6 +377,10 @@ gotcontacts:
 						continue;
 					nThroughHitsAux = min(nThroughHitsAux+1, nMaxHits-1-nThroughHits);
 				}
+				if (nThroughHits+1==nMaxHits)	{	// don't look after the last important pierceble hit's cell
+					Vec3 gpt = pgrid->vecToGrid(phits[nThroughHits].pt-pgrid->origin);
+					ilastcell = float2int(gpt.x*entgrid_stepr.x-0.5f) & 0xFFFF | float2int(gpt.y*entgrid_stepr.y-0.5f)<<16;
+				}
 			} else {
 				if ((flags & rwi_ignore_solid_back_faces)*facing>0)
 					continue;
