@@ -916,7 +916,7 @@ bool CTexture::StreamPrepare(CImageFilePtr&& pIM)
 	}
 
 	m_pFileTexMips->m_fMinMipFactor = StreamCalculateMipFactor((m_nMips - m_CacheFileHeader.m_nMipsPersistent) << 8);
-	m_nStreamFormatCode = StreamComputeFormatCode(m_nWidth, m_nHeight, m_nMips, m_eDstFormat, eTM_Optimal);
+	m_nStreamFormatCode = StreamComputeFormatCode(m_nWidth, m_nHeight, m_nMips, m_eDstFormat, eSrcTileMode);
 
 	Relink();
 
@@ -1111,29 +1111,21 @@ uint8 CTexture::StreamComputeFormatCode(uint32 nWidth, uint32 nHeight, uint32 nM
 		{
 			uint32 nMip1Size = CTexture::TextureDataSize(nMipWidth, nMipHeight, 1, SStreamFormatCode::MaxMips - nMip, 1, fmt, mode);
 
-			bool bAppearsLinear = true;
 			bool bAppearsPoT = true;
 
 			// Determine how the size function varies with slices. Currently only supports linear, or aligning slices to next pot
 			for (uint32 nSlices = 1; nSlices <= 32; ++nSlices)
 			{
 				uint32 nMipSize = CTexture::TextureDataSize(nMipWidth, nMipHeight, 1, SStreamFormatCode::MaxMips - nMip, nSlices, fmt, mode);
-
-				uint32 nExpectedLinearSize = nMip1Size * nSlices;
 				uint32 nAlignedSlices = 1u << (32 - (nSlices > 1 ? countLeadingZeros32(nSlices - 1) : 32));
+
 				uint32 nExpectedPoTSize = nMip1Size * nAlignedSlices;
-				if (nExpectedLinearSize != nMipSize)
-					bAppearsLinear = false;
 				if (nExpectedPoTSize != nMipSize)
 					bAppearsPoT = false;
 			}
 
-			// If this fires, we can't encode the size(slices) function
-			if (!bAppearsLinear && !bAppearsPoT)
-				__debugbreak();
-
 			code.sizes[nMip].size = nMip1Size;
-			code.sizes[nMip].alignSlices = !bAppearsLinear && bAppearsPoT;
+			code.sizes[nMip].alignSlices = bAppearsPoT;
 		}
 
 		it = s_formatCodeMap.insert(std::make_pair(key, s_nFormatCodes)).first;
