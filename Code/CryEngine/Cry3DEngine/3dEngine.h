@@ -513,7 +513,8 @@ public:
 	void                                   FinishWindGridJob();
 	void                                   UpdateWindGridJobEntry(Vec3 vPos);
 	void                                   UpdateWindGridArea(SWindGrid& rWindGrid, const SOptimizedOutdoorWindArea& windArea, const AABB& windBox);
-	void                                   RasterWindAreas(std::vector<SOptimizedOutdoorWindArea>* pWindAreas, const Vec3& vGlobalWind);
+	void                                   RasterWindAreas(std::vector<SOptimizedOutdoorWindArea>* pWindAreas, float fElapsedTime);
+	void                                   RasterGlobalWind(const Vec3& vGlobalWind, float fElapsedTime, bool bReset);
 
 	virtual Vec3                           GetGlobalWind(bool bIndoors) const;
 	virtual bool                           SampleWind(Vec3* pSamples, int nSamples, const AABB& volume, bool bIndoors) const;
@@ -1284,6 +1285,10 @@ private:
 
 	CVisibleRenderNodesManager             m_visibleNodesManager;
 
+	float                                  m_fLastWindProcessedTime = 0.0f;
+	Vec3                                   m_vProcessedGlobalWind = Vec3(0, 0, 0);
+	int                                    m_nProcessedWindAreas = -1;
+	int                                    m_nFrameWindAreas = 0;
 	int                                    m_nCurrentWindAreaList;
 	std::vector<SOptimizedOutdoorWindArea> m_outdoorWindAreas[2];
 	std::vector<SOptimizedOutdoorWindArea> m_indoorWindAreas[2];

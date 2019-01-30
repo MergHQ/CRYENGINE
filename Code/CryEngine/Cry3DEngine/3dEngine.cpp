@@ -3269,19 +3269,29 @@ void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 {
 	FUNCTION_PROFILER_3DENGINE
 
-	bool bIndoors = false;
+		bool bIndoors = false;
 
 	auto* pWindAreas = &m_outdoorWindAreas[m_nCurrentWindAreaList];
 	if (bIndoors)
 		pWindAreas = &m_indoorWindAreas[m_nCurrentWindAreaList];
 	Vec3 vGlobalWind = GetGlobalWind(bIndoors);
 
-	float fElapsedTime = gEnv->pTimer->GetFrameTime();
+	float fCurTime = gEnv->pTimer->GetCurrTime();
+	float fElapsedTime = fCurTime - m_fLastWindProcessedTime;
+	m_fLastWindProcessedTime = fCurTime;
 
-	RasterWindAreas(pWindAreas, vGlobalWind);
+	bool bReset = false;
+	if (fElapsedTime >= 2.0f)
+		bReset = true;
 
-	pWindAreas = &m_forcedWindAreas;
-	RasterWindAreas(pWindAreas, vGlobalWind);
+	if (!bReset)
+	{
+		RasterWindAreas(pWindAreas, fElapsedTime);
+
+		pWindAreas = &m_forcedWindAreas;
+		RasterWindAreas(pWindAreas, fElapsedTime);
+	}
+	RasterGlobalWind(vGlobalWind, fElapsedTime, bReset);
 
 	// Fade forced wind out
 	for (size_t i = 0; i < pWindAreas->size(); i++)
@@ -3296,18 +3306,14 @@ void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 	}
 }
 
-void C3DEngine::RasterWindAreas(std::vector<SOptimizedOutdoorWindArea>* pWindAreas, const Vec3& vGlobalWind)
+void C3DEngine::RasterWindAreas(std::vector<SOptimizedOutdoorWindArea>* pWindAreas, float fElapsedTime)
 {
-	static const float fBEND_RESPONSE = 0.25f;
-	static const float fMAX_BENDING = 2.f;
-
 	// Don't update anything if there are no areas with wind
-	if (pWindAreas->size() == 0 && vGlobalWind.IsZero())
+	if (pWindAreas->size() == 0)
 		return;
 
 	SWindGrid& rWindGrid = m_WindGrid[m_nCurWind];
 
-	int x;
 	rWindGrid.m_vCentr = m_vWindFieldCamera;
 	rWindGrid.m_vCentr.z = 0;
 
@@ -3315,12 +3321,8 @@ void C3DEngine::RasterWindAreas(std::vector<SOptimizedOutdoorWindArea>* pWindAre
 	Vec3 vHalfSize = Vec3(fSize * 0.5f, fSize * 0.5f, 0.0f);
 	AABB windBox(rWindGrid.m_vCentr - vHalfSize, rWindGrid.m_vCentr + vHalfSize);
 
-	float fInterp = min(gEnv->pTimer->GetFrameTime() * 0.8f, 1.f);
-
-	int nFrame = gEnv->nMainFrameID;
-
 	// 1 Step: Rasterize wind areas
-	for (const auto& windArea : * pWindAreas)
+	for (const auto& windArea : *pWindAreas)
 	{
 		SOptimizedOutdoorWindArea WA = windArea;
 		WA.point[1].x = (WA.point[0].x + WA.point[1].x) * 0.5f;
@@ -3350,10 +3352,83 @@ void C3DEngine::RasterWindAreas(std::vector<SOptimizedOutdoorWindArea>* pWindAre
 		WA.point[0].y = (WA.point[0].y + WA.point[3].y) * 0.5f;
 		UpdateWindGridArea(rWindGrid, WA, windBox);
 	}
+}
+
+void C3DEngine::RasterGlobalWind(const Vec3& vGlobalWind, float fElapsedTime, bool bReset)
+{
+	const float fBEND_RESPONSE = 0.25f;
+	const float fMAX_BENDING = 2.f;
+
+	// Don't update anything if there are no areas with wind
+	if (vGlobalWind.IsZero())
+		return;
+
+	SWindGrid& rWindGrid = m_WindGrid[m_nCurWind];
+
+	int x;
+	rWindGrid.m_vCentr = m_vWindFieldCamera;
+	rWindGrid.m_vCentr.z = 0;
+
+	float fInterp = min(fElapsedTime * 0.8f, 1.f);
+
+	int nFrame = gEnv->nMainFrameID;
 
 	// 2 Step: Initialize the rest of the field by global wind value
 	const int nSize = rWindGrid.m_nWidth * rWindGrid.m_nHeight;
 	Vec2 vWindCur = Vec2(vGlobalWind.x, vGlobalWind.y) * GetCVars()->e_WindBendingStrength;
+
+	if (bReset)
+	{
+#if CRY_PLATFORM_SSE2
+		__m128i* pData = (__m128i*)&rWindGrid.m_pData[0];
+		__m128i* pFrames = (__m128i*)&m_pWindAreaFrames[0];
+		__m128* pField = (__m128*)&m_pWindField[0];
+
+		Vec2 vBend = vWindCur * fBEND_RESPONSE;
+		vBend *= fMAX_BENDING / (fMAX_BENDING + vBend.GetLength());
+
+		__m128 vBends = _mm_set_ps(vBend.y, vBend.x, vBend.y, vBend.x);
+
+#if CRY_PLATFORM_F16C
+		__m128i hData = _mm_cvtps_ph(vBends, 0);
+		hData = _mm_unpacklo_epi64(hData, hData);
+#else
+		__m128i hSign, hData = approx_float_to_half_SSE2(vBends, hSign);
+		hSign = _mm_packs_epi32(hSign, hSign);
+		hData = _mm_packs_epi32(hData, hData);
+		hData = _mm_or_si128(hSign, hData);
+#endif
+
+		__m128i nFrames = _mm_set1_epi32(nFrame);
+		__m128 vWindCurs = _mm_set_ps(vWindCur.y, vWindCur.x, vWindCur.y, vWindCur.x);
+		for (x = 0; x < ((nSize + 3) / 4); ++x)
+		{
+			_mm_storeu_si128(pFrames + x, nFrames);
+
+			_mm_storeu_ps((float*)(pField + x * 2 + 0), vWindCurs);
+			_mm_storeu_ps((float*)(pField + x * 2 + 1), vWindCurs);
+
+			_mm_storeu_si128(pData + x, hData);
+		}
+#else
+		CryHalf2* pData = &rWindGrid.m_pData[0];
+		int* pFrames = &m_pWindAreaFrames[0];
+		Vec2* pField = &m_pWindField[0];
+
+		Vec2 vBend = vWindCur * fBEND_RESPONSE;
+		vBend *= fMAX_BENDING / (fMAX_BENDING + vBend.GetLength());
+		CryHalf2 vData = CryHalf2(vBend.x, vBend.y);
+
+		for (x = 0; x < nSize; x++)
+		{
+			// Test and update or skip
+			pFrames[x] = nFrame;
+			pField[x] = vWindCur;
+			pData[x] = vData;
+		}
+#endif
+		return;
+	}
 
 #if CRY_PLATFORM_SSE2
 	__m128i nFrames = _mm_set1_epi32(nFrame);
@@ -3397,25 +3472,25 @@ void C3DEngine::RasterWindAreas(std::vector<SOptimizedOutdoorWindArea>* pWindAre
 			__m128 loFieldLength = _mm_mul_ps(loField, loField);
 			__m128 hiFieldLength = _mm_mul_ps(hiField, hiField);
 
-	#if CRY_PLATFORM_SSE4
+#if CRY_PLATFORM_SSE4
 			loFieldLength = _mm_add_ps(_mm_sqrt_ps(_mm_hadd_ps(hiFieldLength, loFieldLength)), fBendMax);
 
 			loField = _mm_div_ps(_mm_mul_ps(loField, fBendMax), _mm_unpacklo_ps(loFieldLength, loFieldLength));
 			hiField = _mm_div_ps(_mm_mul_ps(hiField, fBendMax), _mm_unpackhi_ps(loFieldLength, loFieldLength));
-	#else
+#else
 			loFieldLength = _mm_sqrt_ps(_mm_add_ps(loFieldLength, _mm_shuffle_ps(loFieldLength, loFieldLength, _MM_SHUFFLE(2, 3, 0, 1))));
 			hiFieldLength = _mm_sqrt_ps(_mm_add_ps(hiFieldLength, _mm_shuffle_ps(hiFieldLength, hiFieldLength, _MM_SHUFFLE(2, 3, 0, 1))));
 
 			loField = _mm_div_ps(_mm_mul_ps(loField, fBendMax), _mm_add_ps(loFieldLength, fBendMax));
 			hiField = _mm_div_ps(_mm_mul_ps(hiField, fBendMax), _mm_add_ps(hiFieldLength, fBendMax));
-	#endif
+#endif
 
-	#if CRY_PLATFORM_F16C
+#if CRY_PLATFORM_F16C
 			__m128i loData = _mm_cvtps_ph(loField, 0);
 			__m128i hiData = _mm_cvtps_ph(hiField, 0);
 
 			_mm_storeu_si128(pData + x, _mm_unpacklo_epi64(loData, hiData));
-	#else
+#else
 			__m128i loSign, loData = approx_float_to_half_SSE2(loField, loSign);
 			__m128i hiSign, hiData = approx_float_to_half_SSE2(hiField, hiSign);
 
@@ -3423,8 +3498,8 @@ void C3DEngine::RasterWindAreas(std::vector<SOptimizedOutdoorWindArea>* pWindAre
 			loData = _mm_packs_epi32(loData, hiData);
 
 			_mm_storeu_si128(pData + x, _mm_or_si128(loSign, loData));
-	#endif
-		}
+#endif
+	}
 	}
 #else
 	CryHalf2* pData = &rWindGrid.m_pData[0];
@@ -3830,6 +3905,12 @@ void C3DEngine::UpdateWindAreas()
 	if (!m_pCVars->e_Wind)
 		return;
 
+	// Update each second frame
+	int nRendFrame = gEnv->nMainFrameID;
+	if (m_nFrameWindAreas + 1 >= nRendFrame)
+		return;
+	m_nFrameWindAreas = nRendFrame;
+
 	m_nCurrentWindAreaList = (m_nCurrentWindAreaList + 1) % 2;
 	int nextWindAreaList = (m_nCurrentWindAreaList + 1) % 2;
 
@@ -3895,7 +3976,16 @@ void C3DEngine::UpdateWindAreas()
 		std::sort(m_outdoorWindAreas[nextWindAreaList].begin(), m_outdoorWindAreas[nextWindAreaList].end(), [](const SOptimizedOutdoorWindArea& a, const SOptimizedOutdoorWindArea& b) { return a.x0 < b.x0; });
 		std::sort(m_indoorWindAreas[nextWindAreaList].begin(), m_indoorWindAreas[nextWindAreaList].end(), [](const SOptimizedOutdoorWindArea& a, const SOptimizedOutdoorWindArea& b) { return a.x0 < b.x0; });
 	}
-	StartWindGridJob(m_RenderingCamera.GetPosition());
+
+	// Don't update if: No areas and global wind is constant
+	Vec3 vGlobalWind = GetGlobalWind(false) * GetCVars()->e_WindBendingStrength;
+	int nCurAreas = m_outdoorWindAreas[m_nCurrentWindAreaList].size() + m_forcedWindAreas.size();
+	if (m_nProcessedWindAreas || nCurAreas || m_vProcessedGlobalWind != vGlobalWind)
+	{
+		m_nProcessedWindAreas = nCurAreas;
+		m_vProcessedGlobalWind = vGlobalWind;
+		StartWindGridJob(m_RenderingCamera.GetPosition());
+	}
 }
 
 void C3DEngine::CheckMemoryHeap()
