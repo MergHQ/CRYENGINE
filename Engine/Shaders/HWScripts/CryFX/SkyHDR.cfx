@@ -19,6 +19,17 @@ float Script : STANDARDSGLOBAL
 DIFFUSEMAP
 OPACITYMAP
 
+float SkyboxAngle
+<
+  register = REG_PM_PARAM_0.x;
+  string UIWidget = "slider";
+  string UIName = "Angle";
+  string UIDescription = "Set angle of skybox rotation";
+  float UIMin = 0.0;
+  float UIMax = 360.0;
+  float UIStep = 1.0;
+> = 0.0;
+
 ///////////////// io signatures //////////////////
  
 struct a2v 

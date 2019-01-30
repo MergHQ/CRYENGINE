@@ -1284,11 +1284,20 @@ void CSceneForwardStage::SetHDRSkyParameters()
 
 	// SkyBox
 	{
+		IMaterial* skyMat = m_pSkyMat ? m_pSkyMat : gEnv->p3DEngine->GetSkyMaterial();
+		CShaderResources* skyRes = nullptr;
+		if (!skyMat || !skyMat->GetShaderItem().m_pShaderResources)
+			return;
+
+		skyRes = (CShaderResources*)skyMat->GetShaderItem().m_pShaderResources;
+
 		static CCryNameR skyBoxParamName("SkyDome_SkyBoxParams");
 		const float skyBoxAngle = 0.0f;// DEG2RAD(gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SKY_SKYBOX_ANGLE));
 		const float skyBoxScaling = 2.0f;// 1.0f / std::max(0.0001f, gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SKY_SKYBOX_STRETCHING));
 		const float skyBoxMultiplier = gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SKYBOX_MULTIPLIER);
-		const Vec4 skyBoxParams(skyBoxAngle, skyBoxScaling, skyBoxMultiplier, 0);
+		Vec4 skyBoxParams(skyBoxAngle, skyBoxScaling, skyBoxMultiplier, 0);
+		SShaderParam::GetValue("SkyboxAngle", &skyRes->GetParameters(), &skyBoxParams.x, 0);
+		skyBoxParams.x = DEG2RAD(skyBoxParams.x);
 		m_skyPass.SetConstant(skyBoxParamName, skyBoxParams, eHWSC_Pixel);
 	}
 
