@@ -2198,25 +2198,114 @@ void CEntitySystem::DebugDrawEntityUsage()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntitySystem::DebugDrawLayerInfo()
-{
 
 #ifdef ENABLE_PROFILING_CODE
+namespace
+{
+	struct SLayerDesc
+	{
+		SLayerDesc(CEntityLayer* pLayer)
+			: pLayer(pLayer)
+		{}
+		typedef std::vector<SLayerDesc> TLayerDescs;
+		CEntityLayer* pLayer;
+		TLayerDescs childLayers;
+	};
 
+	typedef std::vector<SLayerDesc> TParentLayers;
+	typedef std::vector<CEntityLayer*> TLayerPtrs;
+
+	SLayerDesc* FindLayerDesc(SLayerDesc& inLayerDesc, CEntityLayer* pLayer)
+	{
+		SLayerDesc* pOutLayer = nullptr;
+		if (pLayer == inLayerDesc.pLayer)
+		{
+			pOutLayer = &inLayerDesc;
+		}
+		else
+		{
+			for (SLayerDesc& layerDesc : inLayerDesc.childLayers)
+			{
+				pOutLayer = FindLayerDesc(layerDesc, pLayer);
+				if (pOutLayer)
+					break;
+			}
+		}
+		return pOutLayer;
+	}
+
+	SLayerDesc* FindLayerDesc(TParentLayers& parentLayers, CEntityLayer* pLayer)
+	{
+		SLayerDesc* pOutLayer = nullptr;
+		for (SLayerDesc& layerDesc : parentLayers)
+		{
+			pOutLayer = FindLayerDesc(layerDesc, pLayer);
+			if (pOutLayer)
+				break;
+		}
+		return pOutLayer;
+	}
+
+	// lambda contract: [](const SLayerDesc& layerDesc, size_t level) -> bool
+	// return true to stop the loop
+	template <typename TLayerDescFunctor>
+	bool ForEachLayerDesc(const SLayerDesc& inLayerDesc, TLayerDescFunctor func, size_t level = 0)
+	{
+		if (func(inLayerDesc, level))
+			return true;
+		
+		for (const SLayerDesc& layerDesc : inLayerDesc.childLayers)
+		{
+			if (ForEachLayerDesc(layerDesc, func, level + 1))
+				return true;
+		}
+		return false;
+	}
+
+	template <typename TLayerDescFunctor>
+	bool ForEachLayerDesc(const TParentLayers& parentLayers, TLayerDescFunctor func)
+	{
+		for (const SLayerDesc& layerDesc : parentLayers)
+		{
+			if (ForEachLayerDesc(layerDesc, func))
+				return true;
+		}
+		return false;
+	}
+}
+#endif
+
+void CEntitySystem::DebugDrawLayerInfo()
+{
+#ifdef ENABLE_PROFILING_CODE
 	bool shouldRenderAllLayerStats = CVar::es_LayerDebugInfo >= 2;
 	bool shouldRenderMemoryStats = CVar::es_LayerDebugInfo == 3;
+	bool shouldRenderWithoutFolder = CVar::es_LayerDebugInfo == 4;
 	bool shouldShowLayerActivation = CVar::es_LayerDebugInfo == 5;
 
-	float tx = 0;
-	float ty = 30;
-	float ystep = 12.0f;
+	const float xstep = 480.f;
+	const float ystep = 12.0f;
+	const float ybegin = 30.f;
+	float tx = 0.f;
+	float ty = ybegin;
 	ColorF clText(0, 1, 1, 1);
+	IRenderAuxGeom* pRenderAux = IRenderAuxGeom::GetAux();
+	const float screenHeight = float(pRenderAux->GetCamera().GetViewSurfaceZ());
+
+	auto AdjustTextPos = [=](float& tx, float& ty)
+	{
+		if (!shouldRenderMemoryStats && (ty + ystep * 2.f) > screenHeight)
+		{
+			tx += xstep;
+			ty = ybegin;
+		}
+	};
 
 	if (shouldShowLayerActivation) // Show which layer was switched on or off
 	{
 		const float fShowTime = 10.0f; // 10 seconds
 		float fCurTime = gEnv->pTimer->GetCurrTime();
-		float fPrevTime = 0;
+		float fPrevTime = 0.f;
 		std::vector<SLayerProfile>::iterator ppClearProfile = m_layerProfiles.end();
 		for (std::vector<SLayerProfile>::iterator ppProfiles = m_layerProfiles.begin(); ppProfiles != m_layerProfiles.end(); ++ppProfiles)
 		{
@@ -2224,21 +2313,21 @@ void CEntitySystem::DebugDrawLayerInfo()
 			CEntityLayer* pLayer = profile.pLayer;
 
 			ColorF clTextProfiledTime(0, 1, 1, 1);
-			if (profile.fTimeMS > 50)  // Red color for more then 50 ms
+			if (profile.fTimeMS > 50.f)  // Red color for more then 50 ms
 				clTextProfiledTime = ColorF(1, 0.3f, 0.3f, 1);
-			else if (profile.fTimeMS > 10)    // Yellow color for more then 10 ms
+			else if (profile.fTimeMS > 10.f)    // Yellow color for more then 10 ms
 				clTextProfiledTime = ColorF(1, 1, 0.3f, 1);
 
 			if (!profile.isEnable)
 				clTextProfiledTime -= ColorF(0.3f, 0.3f, 0.3f, 0);
 
-			float xstep = 0.0f;
+			float xindent = 0.0f;
 			if (strlen(pLayer->GetParentName()) > 0)
 			{
-				xstep += 20;
+				xindent += 20.f;
 				const IEntityLayer* const pParentLayer = FindLayer(pLayer->GetParentName());
 				if (pParentLayer && strlen(pParentLayer->GetParentName()) > 0)
-					xstep += 20;
+					xindent += 20.f;
 			}
 			if (profile.fTimeOn != fPrevTime)
 			{
@@ -2246,31 +2335,14 @@ void CEntitySystem::DebugDrawLayerInfo()
 				fPrevTime = profile.fTimeOn;
 			}
 
-			DrawText(tx + xstep, ty += ystep, clTextProfiledTime, "%.1f ms: %s (%s)", profile.fTimeMS, pLayer->GetName(), profile.isEnable ? "On" : "Off");
+			AdjustTextPos(tx, ty);
+			DrawText(tx + xindent, ty += ystep, clTextProfiledTime, "%.1f ms: %s (%s)", profile.fTimeMS, pLayer->GetName(), profile.isEnable ? "On" : "Off");
 			if (ppClearProfile == m_layerProfiles.end() && fCurTime - profile.fTimeOn > fShowTime)
 				ppClearProfile = ppProfiles;
 		}
 		if (ppClearProfile != m_layerProfiles.end())
 			m_layerProfiles.erase(ppClearProfile, m_layerProfiles.end());
 		return;
-	}
-
-	typedef std::map<string, std::vector<CEntityLayer*>> TParentLayerMap;
-	TParentLayerMap parentLayers;
-
-	for (TLayers::iterator it = m_layers.begin(); it != m_layers.end(); ++it)
-	{
-		CEntityLayer* pLayer = it->second;
-		if (strlen(pLayer->GetParentName()) == 0)
-		{
-			TParentLayerMap::iterator itFindRes = parentLayers.find(pLayer->GetName());
-			if (itFindRes == parentLayers.end())
-				parentLayers[pLayer->GetName()] = std::vector<CEntityLayer*>();
-		}
-		else
-		{
-			parentLayers[pLayer->GetParentName()].push_back(pLayer);
-		}
 	}
 
 	SLayerPakStats layerPakStats;
@@ -2282,6 +2354,7 @@ void CEntitySystem::DebugDrawLayerInfo()
 
 	if (shouldShowLayerActivation)
 	{
+		AdjustTextPos(tx, ty);
 		DrawText(tx, ty += ystep, clText, "Layer Pak Stats: %1.1f MB / %1.1f MB)",
 			(float)layerPakStats.m_UsedSize / (1024.f * 1024.f),
 			(float)layerPakStats.m_MaxSize / (1024.f * 1024.f));
@@ -2290,10 +2363,11 @@ void CEntitySystem::DebugDrawLayerInfo()
 		{
 			SLayerPakStats::SEntry& entry = *it;
 
+			AdjustTextPos(tx, ty);
 			DrawText(tx, ty += ystep, clText, "  %20s: %1.1f MB - %s)", entry.name.c_str(),
 				(float)entry.nSize / (1024.f * 1024.f), entry.status.c_str());
 		}
-		ty += ystep;
+		AdjustTextPos(tx, ty);
 		DrawText(tx, ty += ystep, clText, "All Layers:");
 	}
 	else
@@ -2302,6 +2376,7 @@ void CEntitySystem::DebugDrawLayerInfo()
 		if (shouldRenderAllLayerStats)
 			tmp = "All Layers";
 
+		AdjustTextPos(tx, ty);
 		DrawText(tx, ty += ystep, clText, "%s (PakInfo: %1.1f MB / %1.1f MB):", tmp.c_str(),
 			(float)layerPakStats.m_UsedSize / (1024.f * 1024.f),
 			(float)layerPakStats.m_MaxSize / (1024.f * 1024.f));
@@ -2313,12 +2388,58 @@ void CEntitySystem::DebugDrawLayerInfo()
 	if (shouldRenderMemoryStats)
 		pSizer = gEnv->pSystem->CreateSizer();
 
-	for (TParentLayerMap::iterator it = parentLayers.begin(); it != parentLayers.end(); ++it)
-	{
-		const string& parentName = it->first;
-		std::vector<CEntityLayer*>& children = it->second;
+	std::vector<bool> layerUsed;
+	TLayerPtrs layerPtrs;
+	TParentLayers parentLayers;
 
-		IEntityLayer* pParent = FindLayer(parentName);
+	// Populate temporary flat layer storage
+	// This has some unnecessary expense per each frame
+	layerPtrs.reserve(m_layers.size());
+	layerUsed.reserve(m_layers.size());
+	for (const TLayers::value_type& layerPair : m_layers)
+	{
+		layerPtrs.push_back(layerPair.second);
+		layerUsed.push_back(false);
+	}
+
+	const size_t layersCount = layerPtrs.size();
+	const size_t layersLast = layersCount - 1;
+	size_t layersUsed = 0;
+
+	// Populate hierarchy of layers
+	for (size_t i = 0; layersUsed != layersCount; ++i)
+	{
+		if (i > layersLast)
+			i = 0;
+
+		if (layerUsed[i])
+			continue;
+
+		CEntityLayer* pLayer = layerPtrs[i];
+		CEntityLayer* pParentLayer = static_cast<CEntityLayer*>(FindLayer(pLayer->GetParentName()));
+
+		if (pParentLayer)
+		{
+			SLayerDesc* pLayerDesc = FindLayerDesc(parentLayers, pParentLayer);
+			if (pLayerDesc)
+			{
+				pLayerDesc->childLayers.emplace_back(pLayer);
+				layerUsed[i] = true;
+				layersUsed++;
+			}
+		}
+		else
+		{
+			parentLayers.emplace_back(pLayer);
+			layerUsed[i] = true;
+			layersUsed++;
+		}
+	}
+
+	for (const SLayerDesc& layerDesc : parentLayers)
+	{
+		CEntityLayer* pParent = layerDesc.pLayer;
+		const char* szParentName = pParent->GetName();
 
 		bool bIsEnabled = false;
 		if (shouldRenderAllLayerStats)
@@ -2327,21 +2448,15 @@ void CEntitySystem::DebugDrawLayerInfo()
 		}
 		else
 		{
-			if (pParent)
-				bIsEnabled = pParent->IsEnabledBrush();
-
-			if (!bIsEnabled)
+			ForEachLayerDesc(layerDesc, [&](const SLayerDesc& inLayerDesc, size_t level)
 			{
-				for (size_t i = 0; i < children.size(); ++i)
+				if (inLayerDesc.pLayer->IsEnabledBrush())
 				{
-					CEntityLayer* pChild = children[i];
-					if (pChild->IsEnabledBrush())
-					{
-						bIsEnabled = true;
-						break;
-					}
-				}
-			}
+					bIsEnabled = true;
+					return true;
+				}	
+				return false;
+			});
 		}
 
 		if (!bIsEnabled)
@@ -2351,7 +2466,7 @@ void CEntitySystem::DebugDrawLayerInfo()
 		for (SLayerPakStats::TEntries::iterator it2 = layerPakStats.m_entries.begin();
 			it2 != layerPakStats.m_entries.end(); ++it2)
 		{
-			if (it2->name == parentName)
+			if (it2->name == szParentName)
 			{
 				pLayerPakEntry = &(*it2);
 				break;
@@ -2360,17 +2475,22 @@ void CEntitySystem::DebugDrawLayerInfo()
 
 		if (pLayerPakEntry)
 		{
-			DrawText(tx, ty += ystep, clText, "%s (PakInfo - %1.1f MB - %s)", parentName.c_str(),
+			AdjustTextPos(tx, ty);
+			DrawText(tx, ty += ystep, clText, "%s (PakInfo - %1.1f MB - %s)", szParentName,
 				(float)pLayerPakEntry->nSize / (1024.f * 1024.f), pLayerPakEntry->status.c_str());
 		}
-		else
-		{
-			DrawText(tx, ty += ystep, clText, "%s", parentName.c_str());
-		}
 
-		for (size_t i = 0; i < children.size(); ++i)
+		ForEachLayerDesc(layerDesc, [&](const SLayerDesc& inLayerDesc, size_t level)
 		{
-			CEntityLayer* pChild = children[i];
+			if (pLayerPakEntry && level == 0)
+				return false;
+
+			if (shouldRenderWithoutFolder && !inLayerDesc.childLayers.empty())
+				return false;
+
+			stack_string levelStr(level, '.');
+			CEntityLayer* pChild = inLayerDesc.pLayer;
+			const char* szChildName = pChild->GetName();
 
 			if (shouldRenderAllLayerStats)
 			{
@@ -2380,15 +2500,15 @@ void CEntitySystem::DebugDrawLayerInfo()
 				{
 					// a layer was not disabled by Flowgraph in time when level is starting
 					state = "was not disabled";
-					clTextState = ColorF(1, 0.3f, 0.3f, 1);  // redish
+					clTextState = ColorF(1, 0.3f, 0.3f, 1);
 				}
 				else if (!pChild->IsEnabled())
 				{
 					state = "disabled";
-					clTextState = ColorF(0.7f, 0.7f, 0.7f, 1);  // grayish
+					clTextState = ColorF(0.7f, 0.7f, 0.7f, 1);
 				}
-				ty += ystep;
-				DrawText(tx, ty, clTextState, "  %s (%s)", pChild->GetName(), state);
+				AdjustTextPos(tx, ty);
+				DrawText(tx, ty += ystep, clTextState, "%s%s (%s)", levelStr.c_str(), szChildName, state);
 
 				if (shouldRenderMemoryStats && pSizer)
 				{
@@ -2400,8 +2520,8 @@ void CEntitySystem::DebugDrawLayerInfo()
 					int numEntities;
 					pChild->GetMemoryUsage(pSizer, &numEntities);
 					const float memorySize = float(pSizer->GetTotalSize()) / 1024.f;
-
 					const int kColumnPos = 350;
+
 					if (numDecals)
 						DrawText(tx + kColumnPos, ty, clTextState, "Brushes: %d, Decals: %d, Entities: %d; Mem: %.2f Kb", numBrushes, numDecals, numEntities, memorySize);
 					else
@@ -2410,9 +2530,12 @@ void CEntitySystem::DebugDrawLayerInfo()
 			}
 			else if (pChild->IsEnabledBrush())
 			{
-				DrawText(tx, ty += ystep, clText, "  %s", pChild->GetName());
+				AdjustTextPos(tx, ty);
+				DrawText(tx, ty += ystep, clText, "%s%s", levelStr.c_str(), szChildName);
 			}
-		}
+
+			return false;
+		});
 	}
 
 	SAFE_RELEASE(pSizer);

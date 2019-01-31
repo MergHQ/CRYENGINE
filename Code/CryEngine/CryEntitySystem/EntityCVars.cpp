@@ -194,8 +194,10 @@ void CVar::Init()
 	              "Render debug info on active layers: \n"
 	              "0 - inactive \n"
 	              "1 - active brush layers \n"
-	              "2 - all layer info \n"
-	              "3 - all layer and all layer pak info");
+	              "2 - all layers \n"
+	              "3 - all layers and memory info \n"
+	              "4 - all layers without folders\n"
+	              "5 - layer activation info");
 	REGISTER_CVAR(es_SaveLoadUseLUANoSaveFlag, 0, VF_CHEAT, "Save&Load optimization : use lua flag to not serialize entities, for example rigid bodies.");
 
 	pDrawAreas = REGISTER_INT("es_DrawAreas", 0, VF_CHEAT, "Enables drawing of Areas");
