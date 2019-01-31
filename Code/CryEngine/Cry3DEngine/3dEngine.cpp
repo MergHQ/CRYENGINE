@@ -232,7 +232,7 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 	m_fSunClipPlaneRange = 256.0f;
 	m_fSunClipPlaneRangeShift = 0.0f;
 
-	m_nRealLightsNum = m_nDeferredLightsNum = 0;
+	m_nRealLightsNum = m_nDeferredLightsNum = m_nDeferredProbesNum = 0;
 
 	union
 	{

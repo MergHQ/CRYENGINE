@@ -2782,7 +2782,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		#pragma warning( disable : 4267 )
 	#endif
 
-			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "DLights=%s(%d/%d)", sLightsList, m_nRealLightsNum + m_nDeferredLightsNum, m_lstDynLights.Count());
+			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "Probes=(%d) DLights=%s(%d/%d)", m_nDeferredProbesNum, sLightsList, m_nRealLightsNum + m_nDeferredLightsNum, m_lstDynLights.Count());
 		}
 		else
 		{
@@ -2814,7 +2814,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 			float nVidMemMB = (float)vidMemUsedThisFrame / (1024 * 1024);
 			int nPeakMemMB = (int)(processMemInfo.PeakPagefileUsage >> 20);
 			int nVirtMemMB = (int)(processMemInfo.PagefileUsage >> 20);
-			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "Vid=%.2f Mem=%d Peak=%d DLights=(%d/%d)", nVidMemMB, nVirtMemMB, nPeakMemMB, m_nRealLightsNum + m_nDeferredLightsNum, (int)m_lstDynLights.Count());
+			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "Vid=%.2f Mem=%d Peak=%d Probes=(%d) DLights=(%d/%d)", nVidMemMB, nVirtMemMB, nPeakMemMB, m_nDeferredProbesNum, m_nRealLightsNum + m_nDeferredLightsNum, (int)m_lstDynLights.Count());
 
 			if (GetCVars()->e_StreamInstances)
 			{
@@ -2884,6 +2884,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		}
 
 		m_nDeferredLightsNum = 0;
+		m_nDeferredProbesNum = 0;
 	}
 	#if CAPTURE_REPLAY_LOG
 	{
@@ -3391,7 +3392,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		for (int i = 0; i < GetDynamicLightSources()->Count(); i++)
 		{
 			SRenderLight* pL = GetDynamicLightSources()->GetAt(i);
-			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "%s - %d)", pL->m_sName, pL->m_Id);
+			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "%s - %d)",pL->m_sName, pL->m_Id);
 		}
 		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "---------------------------------------");
 	}

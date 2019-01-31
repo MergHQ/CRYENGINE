@@ -603,7 +603,11 @@ void CVars::Init()
 	              "Sets maximum amount of dynamic light sources");
 
 	DefineConstIntCVar(e_DynamicLights, 1, VF_CHEAT,
-	                   "Activates dynamic light sources");
+	                   "Activates dynamic light sources\n"
+		               "  0 - Disable dynamic lights\n"
+		               "  1 - Enable dynamic lights\n"
+		               "  2 - Show entity debug info on regular lights\n"
+		               "  3 - Show entity debug info on environment probes");
 	DefineConstIntCVar(e_DynamicLightsForceDeferred, 1, VF_CHEAT,
 	                   "Convert all lights to deferred (except sun)");
 	REGISTER_CVAR(e_DynamicLightsFrameIdVisTest, 1, VF_NULL,

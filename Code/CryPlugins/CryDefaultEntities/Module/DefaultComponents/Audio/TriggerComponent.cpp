@@ -156,48 +156,57 @@ void CTriggerComponent::ProcessEvent(const SEntityEvent& event)
 		switch (event.event)
 		{
 		case ENTITY_EVENT_AUDIO_TRIGGER_STARTED:
-			++m_numActiveTriggerInstances;
-			break;
-		case ENTITY_EVENT_AUDIO_TRIGGER_ENDED:
-			CRY_ASSERT(m_numActiveTriggerInstances > 0);
-			--m_numActiveTriggerInstances;
-
-			if (m_playTrigger.m_autoPlay && m_numActiveTriggerInstances == 0)
 			{
-				auto const pRequestInfo = reinterpret_cast<CryAudio::SRequestInfo const*>(event.nParam[0]);
-				auto const auxObjectId = static_cast<CryAudio::AuxObjectId>(reinterpret_cast<uintptr_t>(pRequestInfo->pUserData));
+				++m_numActiveTriggerInstances;
 
-				if (auxObjectId == m_auxObjectId)
+				break;
+			}
+		case ENTITY_EVENT_AUDIO_TRIGGER_ENDED:
+			{
+				CRY_ASSERT(m_numActiveTriggerInstances > 0);
+				--m_numActiveTriggerInstances;
+
+				if (m_numActiveTriggerInstances == 0)
 				{
-					Schematyc::IObject* const pSchematycObject = GetEntity()->GetSchematycObject();
+					auto const pRequestInfo = reinterpret_cast<CryAudio::SRequestInfo const*>(event.nParam[0]);
+					auto const auxObjectId = static_cast<CryAudio::AuxObjectId>(reinterpret_cast<uintptr_t>(pRequestInfo->pUserData));
 
-					if (pSchematycObject != nullptr)
+					if (auxObjectId == m_auxObjectId)
 					{
-						pSchematycObject->ProcessSignal(SFinishedSignal(), GetGUID());
+						Schematyc::IObject* const pSchematycObject = GetEntity()->GetSchematycObject();
+
+						if (pSchematycObject != nullptr)
+						{
+							pSchematycObject->ProcessSignal(SFinishedSignal(), GetGUID());
+						}
 					}
 				}
+
+				break;
 			}
-			break;
 		case ENTITY_EVENT_START_GAME:
-			// Only play in launcher. Editor is handled in Initialize()
-			if (m_playTrigger.m_autoPlay && !gEnv->IsEditor())
 			{
-				Play();
+				// Only play in launcher. Editor is handled in Initialize()
+				if (m_playTrigger.m_autoPlay && !gEnv->IsEditor())
+				{
+					Play();
+				}
+
+				break;
 			}
-			break;
 		case ENTITY_EVENT_DONE:
-			if (m_playTrigger.m_autoPlay)
 			{
 				Stop();
-			}
 
-			if (m_pIEntityAudioComponent != nullptr && m_auxObjectId != CryAudio::InvalidAuxObjectId && m_auxObjectId != CryAudio::DefaultAuxObjectId)
-			{
-				m_pIEntityAudioComponent->RemoveAudioAuxObject(m_auxObjectId);
-			}
+				if (m_pIEntityAudioComponent != nullptr && m_auxObjectId != CryAudio::InvalidAuxObjectId && m_auxObjectId != CryAudio::DefaultAuxObjectId)
+				{
+					m_pIEntityAudioComponent->RemoveAudioAuxObject(m_auxObjectId);
+				}
 
-			m_auxObjectId = CryAudio::InvalidAuxObjectId;
-			break;
+				m_auxObjectId = CryAudio::InvalidAuxObjectId;
+
+				break;
+			}
 #if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
 		case ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED:
 			{
@@ -225,8 +234,9 @@ void CTriggerComponent::ProcessEvent(const SEntityEvent& event)
 				m_previousStopTriggerId = m_stopTrigger.m_id;
 
 				m_debugInfo.UpdateDebugInfo();
+
+				break;
 			}
-			break;
 		case ENTITY_EVENT_RESET:
 			{
 				if (m_playTrigger.m_autoPlay && (m_numActiveTriggerInstances == 0))
@@ -239,13 +249,15 @@ void CTriggerComponent::ProcessEvent(const SEntityEvent& event)
 				}
 
 				m_debugInfo.UpdateDebugInfo();
+
+				break;
 			}
-			break;
 		case ENTITY_EVENT_UPDATE:
 			{
 				m_debugInfo.DrawDebugInfo();
+
+				break;
 			}
-			break;
 #endif      // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
 		}
 	}
