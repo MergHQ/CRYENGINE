@@ -27,11 +27,11 @@ public:
 private:
 
 	void      LoadAllLibrariesInFolder(string const& folderPath, string const& level);
-	void      LoadControlsLibrary(XmlNodeRef const pRoot, string const& filepath, string const& level, string const& filename, uint32 const version);
-	CControl* LoadControl(XmlNodeRef const pNode, Scope const scope, uint32 const version, CAsset* const pParentItem);
-	CControl* LoadDefaultControl(XmlNodeRef const pNode, Scope const scope, uint32 const version, CAsset* const pParentItem);
+	void      LoadControlsLibrary(XmlNodeRef const pRoot, string const& filepath, string const& level, string const& filename, uint8 const version);
+	CControl* LoadControl(XmlNodeRef const pNode, Scope const scope, uint8 const version, CAsset* const pParentItem);
+	CControl* LoadDefaultControl(XmlNodeRef const pNode, Scope const scope, CAsset* const pParentItem);
 
-	void      LoadPreloadConnections(XmlNodeRef const pNode, CControl* const pControl, uint32 const version);
+	void      LoadPreloadConnections(XmlNodeRef const pNode, CControl* const pControl, uint8 const version);
 	void      LoadConnections(XmlNodeRef const root, CControl* const pControl);
 
 	void      LoadScopesImpl(string const& path);

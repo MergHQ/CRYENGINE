@@ -143,7 +143,7 @@ void CAudioControlsLoader::LoadAllLibrariesInFolder(string const& folderPath, st
 						int atlVersion = 1;
 						root->getAttr("atl_version", atlVersion);
 						PathUtil::RemoveExtension(file);
-						LoadControlsLibrary(root, folderPath, level, file, atlVersion);
+						LoadControlsLibrary(root, folderPath, level, file, static_cast<uint8>(atlVersion));
 					}
 				}
 				else
@@ -182,7 +182,7 @@ CAsset* CAudioControlsLoader::AddUniqueFolderPath(CAsset* pParent, QString const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string const& filepath, string const& level, string const& filename, uint32 const version)
+void CAudioControlsLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string const& filepath, string const& level, string const& filename, uint8 const version)
 {
 	// Always create a library file, even if no proper formatting is present.
 	CLibrary* const pLibrary = g_assetsManager.CreateLibrary(filename);
@@ -210,7 +210,7 @@ void CAudioControlsLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string co
 					{
 						if (m_loadOnlyDefaultControls)
 						{
-							LoadDefaultControl(pNode->getChild(j), scope, version, pLibrary);
+							LoadDefaultControl(pNode->getChild(j), scope, pLibrary);
 						}
 						else
 						{
@@ -220,11 +220,16 @@ void CAudioControlsLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string co
 				}
 			}
 		}
+
+		if (version < g_currentFileVersion)
+		{
+			pLibrary->SetModified(true, true);
+		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-CControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope const scope, uint32 const version, CAsset* const pParentItem)
+CControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope const scope, uint8 const version, CAsset* const pParentItem)
 {
 	CControl* pControl = nullptr;
 
@@ -305,7 +310,7 @@ CControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope const 
 }
 
 //////////////////////////////////////////////////////////////////////////
-CControl* CAudioControlsLoader::LoadDefaultControl(XmlNodeRef const pNode, Scope const scope, uint32 const version, CAsset* const pParentItem)
+CControl* CAudioControlsLoader::LoadDefaultControl(XmlNodeRef const pNode, Scope const scope, CAsset* const pParentItem)
 {
 	CControl* pControl = nullptr;
 
@@ -396,7 +401,7 @@ void CAudioControlsLoader::LoadConnections(XmlNodeRef const pRoot, CControl* con
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsLoader::LoadPreloadConnections(XmlNodeRef const pNode, CControl* const pControl, uint32 const version)
+void CAudioControlsLoader::LoadPreloadConnections(XmlNodeRef const pNode, CControl* const pControl, uint8 const version)
 {
 	if (_stricmp(pNode->getAttr("atl_type"), "AutoLoad") == 0)
 	{

@@ -32,9 +32,9 @@ private:
 
 	void      LoadControls();
 	void      LoadAllLibrariesInFolder(string const& folderPath, string const& level);
-	void      LoadControlsLibrary(XmlNodeRef const pRoot, string const& filepath, string const& level, string const& filename, uint32 const version);
-	CControl* LoadControl(XmlNodeRef const pNode, Scope const scope, uint32 const version, CAsset* const pParentItem);
-	void      LoadPlatformSpecificConnections(XmlNodeRef const pNode, CControl* const pControl, uint32 const version);
+	void      LoadControlsLibrary(XmlNodeRef const pRoot, string const& filepath, string const& level, string const& filename, uint8 const version);
+	CControl* LoadControl(XmlNodeRef const pNode, Scope const scope, CAsset* const pParentItem);
+	void      LoadPlatformSpecificConnections(XmlNodeRef const pNode, CControl* const pControl);
 
 	FileNames  m_loadedFilenames;
 	EErrorCode m_errorCodeMask = EErrorCode::None;
