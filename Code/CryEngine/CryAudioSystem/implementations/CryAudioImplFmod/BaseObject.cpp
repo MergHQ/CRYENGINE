@@ -39,29 +39,36 @@ void CBaseObject::Update(float const deltaTime)
 	if (!m_pendingEventInstances.empty())
 	{
 		auto iter(m_pendingEventInstances.begin());
-		auto iterEnd(m_pendingEventInstances.cend());
+		auto iterEnd(m_pendingEventInstances.end());
 
 		while (iter != iterEnd)
 		{
 			if (SetEventInstance(*iter))
 			{
-				iter = m_pendingEventInstances.erase(iter);
-				iterEnd = m_pendingEventInstances.cend();
-				continue;
-			}
+				if (iter != (iterEnd - 1))
+				{
+					(*iter) = m_pendingEventInstances.back();
+				}
 
-			++iter;
+				m_pendingEventInstances.pop_back();
+				iter = m_pendingEventInstances.begin();
+				iterEnd = m_pendingEventInstances.end();
+			}
+			else
+			{
+				++iter;
+			}
 		}
 	}
 
 	if (!m_pendingFiles.empty())
 	{
 		auto iter(m_pendingFiles.begin());
-		auto iterEnd(m_pendingFiles.cend());
+		auto iterEnd(m_pendingFiles.end());
 
 		while (iter != iterEnd)
 		{
-			CBaseStandaloneFile* pStandaloneFile = *iter;
+			CBaseStandaloneFile* const pStandaloneFile = *iter;
 
 			if (pStandaloneFile->IsReady())
 			{
@@ -69,11 +76,19 @@ void CBaseObject::Update(float const deltaTime)
 
 				pStandaloneFile->PlayFile(m_attributes);
 
-				iter = m_pendingFiles.erase(iter);
-				iterEnd = m_pendingFiles.cend();
-				continue;
+				if (iter != (iterEnd - 1))
+				{
+					(*iter) = m_pendingFiles.back();
+				}
+
+				m_pendingFiles.pop_back();
+				iter = m_pendingFiles.begin();
+				iterEnd = m_pendingFiles.end();
 			}
-			++iter;
+			else
+			{
+				++iter;
+			}
 		}
 	}
 
