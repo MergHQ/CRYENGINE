@@ -2180,6 +2180,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 	case ESystemRequestType::DrawDebugInfo:
 		{
 			HandleDrawDebug();
+			m_canDraw = true;
 			result = ERequestStatus::Success;
 
 			break;
@@ -3127,9 +3128,14 @@ void CSystem::DrawDebug()
 	{
 		SubmitLastIRenderAuxGeomForRendering();
 
-		SSystemRequestData<ESystemRequestType::DrawDebugInfo> const requestData;
-		CRequest const request(&requestData);
-		PushRequest(request);
+		if (m_canDraw)
+		{
+			m_canDraw = false;
+
+			SSystemRequestData<ESystemRequestType::DrawDebugInfo> const requestData;
+			CRequest const request(&requestData);
+			PushRequest(request);
+		}
 	}
 }
 

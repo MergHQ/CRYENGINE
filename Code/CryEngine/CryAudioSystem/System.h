@@ -140,6 +140,7 @@ private:
 
 	std::atomic<IRenderAuxGeom*> m_currentRenderAuxGeom{ nullptr };
 	std::atomic<IRenderAuxGeom*> m_lastRenderAuxGeom{ nullptr };
+	std::atomic_bool             m_canDraw{ true };
 #endif // CRY_AUDIO_USE_PRODUCTION_CODE
 };
 } // namespace CryAudio
