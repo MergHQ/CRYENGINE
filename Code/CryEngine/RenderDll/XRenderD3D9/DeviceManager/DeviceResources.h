@@ -414,8 +414,8 @@ public:
 	{
 		CDeviceResource::SetDebugName(name);
 
-		::SetDebugName(m_pStagingResource[0], "%s Write-StagingB", name);
-		::SetDebugName(m_pStagingResource[1], "%s Read-StagingB", name);
+		::SetDebugName(m_pStagingResource[0], string(name).append(" Write-StagingB"));
+		::SetDebugName(m_pStagingResource[1], string(name).append(" Read-StagingB"));
 	}
 #endif
 

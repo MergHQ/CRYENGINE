@@ -60,23 +60,14 @@ inline void ClearDebugName(ID3D11DeviceChild* pNativeResource)
 #endif
 }
 
-inline void SetDebugName(ID3D11DeviceChild* pNativeResource, const char* name, ...)
+inline void SetDebugName(ID3D11DeviceChild* pNativeResource, const char* name)
 {
 #if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
 	if (!pNativeResource)
 		return;
 
-	va_list args;
-	va_start(args, name);
-
-	char* buffer = (char*)_alloca(512);
-	if (_vsnprintf(buffer, 512, name, args) < 0)
-		return;
-
 	pNativeResource->SetPrivateData(WKPDID_D3DDebugObjectName, 0, nullptr);
-	pNativeResource->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buffer), buffer);
-
-	va_end(args);
+	pNativeResource->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(name)+1, name);
 #endif
 }
 
@@ -86,9 +77,9 @@ inline std::string GetDebugName(ID3D11DeviceChild* pNativeResource)
 	if (!pNativeResource)
 		return "nullptr";
 
+	UINT length = 512;
 	do
 	{
-		UINT length = 512;
 		char* buffer = (char*)_alloca(length);
 		HRESULT hr = pNativeResource->GetPrivateData(WKPDID_D3DDebugObjectName, &length, buffer);
 		if (hr == S_OK)
