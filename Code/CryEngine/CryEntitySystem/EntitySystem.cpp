@@ -1027,23 +1027,26 @@ void CEntitySystem::Update()
 			DeletePendingEntities();
 		}
 
-		for (THeaps::iterator it = m_garbageLayerHeaps.begin(); it != m_garbageLayerHeaps.end(); )
 		{
-			SEntityLayerGarbage& lg = *it;
-			if (lg.pHeap->Cleanup())
+			CRY_PROFILE_SECTION(PROFILE_ENTITY, "Delete garbage layer heaps");
+			for (THeaps::iterator it = m_garbageLayerHeaps.begin(); it != m_garbageLayerHeaps.end(); )
 			{
-				lg.pHeap->Release();
-				it = m_garbageLayerHeaps.erase(it);
-			}
-			else
-			{
-				++lg.nAge;
-				if (lg.nAge == 32)
+				SEntityLayerGarbage& lg = *it;
+				if (lg.pHeap->Cleanup())
 				{
-					CryWarning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_WARNING, "Layer '%s', heap %p, has gone for %i frames without releasing its heap. Possible leak?", lg.layerName.c_str(), lg.pHeap, lg.nAge);
+					lg.pHeap->Release();
+					it = m_garbageLayerHeaps.erase(it);
 				}
+				else
+				{
+					++lg.nAge;
+					if (lg.nAge == 32)
+					{
+						CryWarning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_WARNING, "Layer '%s', heap %p, has gone for %i frames without releasing its heap. Possible leak?", lg.layerName.c_str(), lg.pHeap, lg.nAge);
+					}
 
-				++it;
+					++it;
+				}
 			}
 		}
 
@@ -1674,68 +1677,74 @@ void CEntitySystem::UpdateTimers()
 	const EntityTimersMap::const_iterator last = m_timersMap.upper_bound(currentTime);
 	if (last != first)
 	{
-		// Make a separate list, because OnTrigger call can modify original timers map.
-		m_currentTimers.clear();
-		m_currentTimers.reserve(std::distance(first, last));
-
-		for (EntityTimersMap::const_iterator it = first; it != last; ++it)
 		{
-			m_currentTimers.emplace_back(it->second);
+			CRY_PROFILE_REGION(PROFILE_ENTITY, "Split");
+			// Make a separate list, because OnTrigger call can modify original timers map.
+			m_currentTimers.clear();
+			m_currentTimers.reserve(std::distance(first, last));
+
+			for (EntityTimersMap::const_iterator it = first; it != last; ++it)
+			{
+				m_currentTimers.emplace_back(it->second);
+			}
+
+			// Delete these items from map.
+			m_timersMap.erase(first, last);
+
+			//////////////////////////////////////////////////////////////////////////
+			// Execute OnTimer events.
 		}
 
-		// Delete these items from map.
-		m_timersMap.erase(first, last);
-
-		//////////////////////////////////////////////////////////////////////////
-		// Execute OnTimer events.
-
-		SEntityEvent entityEvent;
-		entityEvent.event = ENTITY_EVENT_TIMER;
+		{
+			CRY_PROFILE_REGION(PROFILE_ENTITY, "SendEvent");
+			SEntityEvent entityEvent;
+			entityEvent.event = ENTITY_EVENT_TIMER;
 
 #ifdef ENABLE_PROFILING_CODE
-		if (CVar::es_profileComponentUpdates != 0)
-		{
-			const CTimeValue timeBeforeTimerEvents = gEnv->pTimer->GetAsyncTime();
-			const uint8 eventIndex = CEntity::GetEntityEventIndex(entityEvent.event);
+			if (CVar::es_profileComponentUpdates != 0)
+			{
+				const CTimeValue timeBeforeTimerEvents = gEnv->pTimer->GetAsyncTime();
+				const uint8 eventIndex = CEntity::GetEntityEventIndex(entityEvent.event);
 
+				for (const SEntityTimerEvent& event : m_currentTimers)
+				{
+					// Send Timer event to the entity.
+					entityEvent.nParam[0] = event.nTimerId;
+					entityEvent.nParam[1] = event.nMilliSeconds;
+
+					const CTimeValue timeBeforeTimerEvent = gEnv->pTimer->GetAsyncTime();
+
+					const CEntity* const pEntity = GetEntityFromID(event.entityId);
+					// Cache entity info before sending the event, as the entity may be removed by the event
+					const SProfiledEntityEvent::SEntityInfo listenerEntityInfo = pEntity != nullptr ? SProfiledEntityEvent::SEntityInfo(*pEntity) : SProfiledEntityEvent::SEntityInfo();
+
+					event.pListener->ProcessEvent(entityEvent);
+
+					const CTimeValue timeAfterTimerEvent = gEnv->pTimer->GetAsyncTime();
+					const float timerEventCostMs = (timeAfterTimerEvent - timeBeforeTimerEvent).GetMilliSeconds();
+
+					if (timerEventCostMs > m_profiledEvents[eventIndex].mostExpensiveEntityCostMs)
+					{
+						m_profiledEvents[eventIndex].mostExpensiveEntityCostMs = timerEventCostMs;
+						m_profiledEvents[eventIndex].mostExpensiveEntity = listenerEntityInfo;
+					}
+				}
+
+				const CTimeValue timeAfterTimerEvents = gEnv->pTimer->GetAsyncTime();
+
+				m_profiledEvents[eventIndex].numEvents = m_currentTimers.size();
+				m_profiledEvents[eventIndex].totalCostMs = (timeAfterTimerEvents - timeBeforeTimerEvents).GetMilliSeconds();
+			}
+			else
+#endif
 			for (const SEntityTimerEvent& event : m_currentTimers)
 			{
 				// Send Timer event to the entity.
 				entityEvent.nParam[0] = event.nTimerId;
 				entityEvent.nParam[1] = event.nMilliSeconds;
 
-				const CTimeValue timeBeforeTimerEvent = gEnv->pTimer->GetAsyncTime();
-
-				const CEntity* const pEntity = GetEntityFromID(event.entityId);
-				// Cache entity info before sending the event, as the entity may be removed by the event
-				const SProfiledEntityEvent::SEntityInfo listenerEntityInfo = pEntity != nullptr ? SProfiledEntityEvent::SEntityInfo(*pEntity) : SProfiledEntityEvent::SEntityInfo();
-
 				event.pListener->ProcessEvent(entityEvent);
-
-				const CTimeValue timeAfterTimerEvent = gEnv->pTimer->GetAsyncTime();
-				const float timerEventCostMs = (timeAfterTimerEvent - timeBeforeTimerEvent).GetMilliSeconds();
-
-				if (timerEventCostMs > m_profiledEvents[eventIndex].mostExpensiveEntityCostMs)
-				{
-					m_profiledEvents[eventIndex].mostExpensiveEntityCostMs = timerEventCostMs;
-					m_profiledEvents[eventIndex].mostExpensiveEntity = listenerEntityInfo;
-				}
 			}
-
-			const CTimeValue timeAfterTimerEvents = gEnv->pTimer->GetAsyncTime();
-
-			m_profiledEvents[eventIndex].numEvents = m_currentTimers.size();
-			m_profiledEvents[eventIndex].totalCostMs = (timeAfterTimerEvents - timeBeforeTimerEvents).GetMilliSeconds();
-		}
-		else
-#endif
-		for (const SEntityTimerEvent& event : m_currentTimers)
-		{
-			// Send Timer event to the entity.
-			entityEvent.nParam[0] = event.nTimerId;
-			entityEvent.nParam[1] = event.nMilliSeconds;
-
-			event.pListener->ProcessEvent(entityEvent);
 		}
 	}
 }
@@ -1848,6 +1857,8 @@ void CEntitySystem::RemoveEntityLayerListener(const char* szLayerName, IEntityLa
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::DebugDraw()
 {
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
+
 	const CVar::EEntityDebugDrawType drawMode = CVar::es_EntityDebugDraw;
 
 	// Check if we have to iterate through all entities to debug draw information.
@@ -1879,7 +1890,7 @@ void CEntitySystem::DebugDraw()
 		}
 	}
 
-	if (CVar::pDrawAreas->GetIVal() != 0 || CVar::pDrawAreaDebug->GetIVal() != 0)
+	if (CVar::pDrawAreas->GetIVal() != 0 || CVar::pDrawAreaDebug->GetIVal() != 0 || CVar::pLogAreaDebug->GetIVal() != 0)
 	{
 		m_pAreaManager->DrawAreas(gEnv->pSystem);
 	}
@@ -3212,6 +3223,8 @@ void CEntitySystem::DumpEntity(CEntity* pEntity)
 
 void CEntitySystem::DeletePendingEntities()
 {
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
+
 	while (!m_deletedEntities.empty())
 	{
 		CEntity* pEntity = m_deletedEntities.back();
@@ -3622,6 +3635,8 @@ void CEntitySystem::AddStaticEntityId(const EntityId id, StaticEntityNetworkIden
 
 void CEntitySystem::PurgeDeferredCollisionEvents(bool force)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
+
 	for (std::vector<CEntity*>::iterator it = m_deferredUsedEntities.begin(); it != m_deferredUsedEntities.end();)
 	{
 		CEntity* pEntity = *it;

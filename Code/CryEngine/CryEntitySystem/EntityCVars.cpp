@@ -25,6 +25,8 @@ ICVar* CVar::pDrawAreas = nullptr;
 ICVar* CVar::pDrawAreaGrid = nullptr;
 ICVar* CVar::pDrawAreaGridCells = nullptr;
 ICVar* CVar::pDrawAreaDebug = nullptr;
+ICVar* CVar::pLogAreaDebug = nullptr;
+ICVar* CVar::pUpdateAreas = nullptr;
 ICVar* CVar::pFlowgraphComponents = nullptr;
 
 ICVar* CVar::pSysSpecLight = nullptr;
@@ -200,6 +202,11 @@ void CVar::Init()
 	pDrawAreaGrid = REGISTER_INT("es_DrawAreaGrid", 0, VF_CHEAT, "Enables drawing of Area Grid");
 	pDrawAreaGridCells = REGISTER_INT("es_DrawAreaGridCells", 0, VF_CHEAT, "Enables drawing of Area Grid Cells' number and coordinates. Requires \"es_DrawAreaGrid\" to be enabled!");
 	pDrawAreaDebug = REGISTER_INT("es_DrawAreaDebug", 0, VF_CHEAT, "Enables debug drawing of Areas, set 2 for log details");
+	pLogAreaDebug = REGISTER_INT("es_LogAreaDebug", 0, VF_CHEAT, "Enables debug drawing of Areas, set 2 for log details");
+	pUpdateAreas = REGISTER_INT("es_UpdateAreas", 1, VF_CHEAT,
+		"Toggles area updating.\n"
+		"Usage: es_UpdateAreas [0/1]\n"
+		"Default is 1 (on). Set to 0 to prevent all areas from updating.");
 
 	REGISTER_CVAR(es_UsePhysVisibilityChecks, 1, 0,
 	              "Activates physics quality degradation and forceful sleeping for invisible and faraway entities");
