@@ -44,11 +44,8 @@ enum class ETriggerStatus : EnumFlagsType
 {
 	None                     = 0,
 	Playing                  = BIT(0),
-	Loaded                   = BIT(1),
-	Loading                  = BIT(2),
-	Unloading                = BIT(3),
-	CallbackOnExternalThread = BIT(4),
-	CallbackOnAudioThread    = BIT(5),
+	CallbackOnExternalThread = BIT(1),
+	CallbackOnAudioThread    = BIT(2),
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ETriggerStatus);
 
@@ -75,7 +72,6 @@ struct STriggerInstanceState final : public SUserDataBase
 	ETriggerStatus flags = ETriggerStatus::None;
 	ControlId      triggerId = InvalidControlId;
 	size_t         numPlayingInstances = 0;
-	size_t         numLoadingInstances = 0;
 	float          expirationTimeMS = 0.0f;
 	float          remainingTimeMS = 0.0f;
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
@@ -146,7 +142,6 @@ public:
 	void HandleSetOcclusionType(EOcclusionType const calcType);
 	void ProcessPhysicsRay(CRayInfo* const pRayInfo);
 	void HandleSetOcclusionRayOffset(float const offset);
-	void UpdateOcclusion();
 	void ReleasePendingRays();
 #endif // CRY_AUDIO_USE_OCCLUSION
 
@@ -187,8 +182,6 @@ private:
 	virtual void SetCurrentEnvironments(EntityId const entityToIgnore = 0, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void SetOcclusionType(EOcclusionType const occlusionType, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void SetOcclusionRayOffset(float const offset, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	virtual void LoadTrigger(ControlId const triggerId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	virtual void UnloadTrigger(ControlId const triggerId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void StopFile(char const* const szFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;

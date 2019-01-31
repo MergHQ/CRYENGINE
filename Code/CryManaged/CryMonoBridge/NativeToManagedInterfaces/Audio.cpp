@@ -14,16 +14,6 @@
 
 typedef void (* AudioRequestListener)(const CryAudio::SRequestInfo* const);
 
-static void LoadTrigger(uint triggerId)
-{
-	gEnv->pAudioSystem->LoadTrigger(triggerId);
-}
-
-static void UnloadTrigger(uint triggerId)
-{
-	gEnv->pAudioSystem->UnloadTrigger(triggerId);
-}
-
 static void ExecuteTrigger(uint triggerId, bool bExecuteSync)
 {
 	if (bExecuteSync)
@@ -246,8 +236,6 @@ static void SetAudioListenerTransformation(CryAudio::IListener* pAudioListener, 
 void CAudioInterface::RegisterFunctions(std::function<void(const void* pMethod, const char* szMethodName)> func)
 {
 	// IAudioSystem
-	func(LoadTrigger, "LoadTrigger");
-	func(UnloadTrigger, "UnloadTrigger");
 	func(ExecuteTrigger, "ExecuteTrigger");
 	func(StopTrigger, "StopTrigger");
 	func(GetAudioTriggerId, "GetAudioTriggerId");

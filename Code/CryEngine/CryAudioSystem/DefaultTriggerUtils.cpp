@@ -33,10 +33,7 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 				CRY_ASSERT_MESSAGE(pControl->GetDataScope() == EDataScope::Global, "Default controls must always have global data scope! (%s) during %s", pControl->GetName(), __FUNCTION__);
 #endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 
-				if ((result == ETriggerResult::Playing) || (result == ETriggerResult::Virtual))
-				{
-					++(triggerInstanceState.numPlayingInstances);
-				}
+				++(triggerInstanceState.numPlayingInstances);
 			}
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			else if (result != ETriggerResult::DoNotTrack)
@@ -53,7 +50,7 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 	}
 #endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 
-	if (triggerInstanceState.numPlayingInstances > 0 || triggerInstanceState.numLoadingInstances > 0)
+	if (triggerInstanceState.numPlayingInstances > 0)
 	{
 		triggerInstanceState.flags |= ETriggerStatus::Playing;
 		g_triggerInstanceIdToObject[g_triggerInstanceIdCounter] = &g_object;

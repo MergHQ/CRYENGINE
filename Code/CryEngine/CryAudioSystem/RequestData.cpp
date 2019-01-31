@@ -49,8 +49,6 @@ std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pReq
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::SetGlobalParameter)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::SetSwitchState)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::SetGlobalSwitchState)
-				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::LoadTrigger)
-				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::UnloadTrigger)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::PlayFile)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::StopFile)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::AutoLoadSetting)
@@ -98,8 +96,6 @@ std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pReq
 
 			switch (pBase->objectRequestType)
 			{
-				CRY_AUDIO_OBJECT_REQUEST_BLOCK(EObjectRequestType::LoadTrigger)
-				CRY_AUDIO_OBJECT_REQUEST_BLOCK(EObjectRequestType::UnloadTrigger)
 				CRY_AUDIO_OBJECT_REQUEST_BLOCK(EObjectRequestType::PlayFile)
 				CRY_AUDIO_OBJECT_REQUEST_BLOCK(EObjectRequestType::StopFile)
 				CRY_AUDIO_OBJECT_REQUEST_BLOCK(EObjectRequestType::ExecuteTrigger)

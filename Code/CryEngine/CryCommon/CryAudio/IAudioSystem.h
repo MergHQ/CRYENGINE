@@ -235,24 +235,6 @@ struct IAudioSystem
 	virtual void SetImpl(Impl::IImpl* const pIImpl, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
-	 * Loads a trigger's data. This can be used in "loading on demand" situations to prepare the data referenced by a trigger.
-	 * @param triggerId - ID of the trigger in question.
-	 * @param userData - optional struct used to pass additional data to the internal request.
-	 * @return void
-	 * @see UnloadTrigger
-	 */
-	virtual void LoadTrigger(ControlId const triggerId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
-
-	/**
-	 * Unloads a trigger's data. This can be used in "unloading on demand" situations to free the data referenced by a trigger.
-	 * @param triggerId - ID of the trigger in question.
-	 * @param userData - optional struct used to pass additional data to the internal request.
-	 * @return void
-	 * @see LoadTrigger
-	 */
-	virtual void UnloadTrigger(ControlId const triggerId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
-
-	/**
 	 * Performs the actions passed in the "triggerData" parameter. This is used for 3D type events exclusively. For 2D type events refer to ExecuteTrigger.
 	 * For convenience and efficiency this is used as a "fire and forget" type action where the user does not need to explicitly handle an audio object.
 	 * Make sure to only start non-looped type events this way otherwise they will turn into runaway loops.
