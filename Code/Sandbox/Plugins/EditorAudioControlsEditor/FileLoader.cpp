@@ -307,7 +307,7 @@ void CFileLoader::LoadAllLibrariesInFolder(string const& folderPath, string cons
 						int version = 1;
 						root->getAttr(CryAudio::g_szVersionAttribute, version);
 						PathUtil::RemoveExtension(file);
-						LoadControlsLibrary(root, fileName, level, file, version);
+						LoadControlsLibrary(root, fileName, level, file, static_cast<uint8>(version));
 					}
 				}
 				else
@@ -323,7 +323,7 @@ void CFileLoader::LoadAllLibrariesInFolder(string const& folderPath, string cons
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string const& filepath, string const& level, string const& filename, uint32 const version)
+void CFileLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string const& filepath, string const& level, string const& filename, uint8 const version)
 {
 	// Always create a library file, even if no proper formatting is present.
 	CLibrary* const pLibrary = g_assetsManager.CreateLibrary(filename);
@@ -352,16 +352,21 @@ void CFileLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string const& file
 
 					for (int j = 0; j < numControls; ++j)
 					{
-						LoadControl(pNode->getChild(j), scope, version, pLibrary);
+						LoadControl(pNode->getChild(j), scope, pLibrary);
 					}
 				}
 			}
+		}
+
+		if (version < g_currentFileVersion)
+		{
+			pLibrary->SetModified(true, true);
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-CControl* CFileLoader::LoadControl(XmlNodeRef const pNode, Scope const scope, uint32 const version, CAsset* const pParentItem)
+CControl* CFileLoader::LoadControl(XmlNodeRef const pNode, Scope const scope, CAsset* const pParentItem)
 {
 	CControl* pControl = nullptr;
 
@@ -394,13 +399,13 @@ CControl* CFileLoader::LoadControl(XmlNodeRef const pNode, Scope const scope, ui
 
 						for (int i = 0; i < stateCount; ++i)
 						{
-							LoadControl(pNode->getChild(i), scope, version, pControl);
+							LoadControl(pNode->getChild(i), scope, pControl);
 						}
 					}
 					break;
 				case EAssetType::Preload:
 				case EAssetType::Setting:
-					LoadPlatformSpecificConnections(pNode, pControl, version);
+					LoadPlatformSpecificConnections(pNode, pControl);
 					break;
 				default:
 					LoadConnections(pNode, pControl);
@@ -452,7 +457,7 @@ void CFileLoader::CreateInternalControls()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileLoader::LoadPlatformSpecificConnections(XmlNodeRef const pNode, CControl* const pControl, uint32 const version)
+void CFileLoader::LoadPlatformSpecificConnections(XmlNodeRef const pNode, CControl* const pControl)
 {
 	if (_stricmp(pNode->getAttr(CryAudio::g_szTypeAttribute), CryAudio::g_szDataLoadType) == 0)
 	{

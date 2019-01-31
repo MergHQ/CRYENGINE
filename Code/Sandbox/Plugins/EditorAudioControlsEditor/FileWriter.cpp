@@ -15,8 +15,6 @@
 
 namespace ACE
 {
-constexpr uint32 g_currentFileVersion = 3;
-
 using LibraryStorage = std::map<Scope, SLibraryScope>;
 
 //////////////////////////////////////////////////////////////////////////

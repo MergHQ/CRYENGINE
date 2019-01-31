@@ -34,6 +34,8 @@ extern CMiddlewareDataWidget* g_pMiddlewareDataWidget;
 extern SImplInfo g_implInfo;
 extern Platforms g_platforms;
 
+constexpr uint8 g_currentFileVersion = 4;
+
 constexpr char const* g_szLibraryNodeTag = "Library";
 constexpr char const* g_szFoldersNodeTag = "Folders";
 constexpr char const* g_szControlsNodeTag = "Controls";
