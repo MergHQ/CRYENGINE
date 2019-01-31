@@ -460,7 +460,9 @@ void CPhysicalWorld::RayWater(const Vec3 &org,const Vec3 &dir, entity_grid_check
 	}
 
 	if (inrange(t.x, 0.0f,t.y)) {
-		if ((uint)(flags & rwi_pierceability_mask) < (m_SurfaceFlagsTable[m_matWater] & sf_pierceable_mask)+((uint)flags & rwi_force_pierceable_noncoll)) {
+		int rayPierceability = (flags & rwi_pierceability_mask)-(flags & rwi_max_piercing);
+		int surfPierceability = (m_SurfaceFlagsTable[m_matWater] & sf_pierceable_mask)+(flags & rwi_force_pierceable_noncoll);
+		if (rayPierceability < surfPierceability) {
 			if (nMaxHits<=1)
 				goto nowater;
 			if ((m_SurfaceFlagsTable[m_matWater]|(flags^rwi_separate_important_hits)) & sf_important)
@@ -489,7 +491,7 @@ int CPhysicalWorld::RayWorldIntersection(const IPhysicalWorld::SRWIParams &rp, c
 
 	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 
-	IF (rp.dir.len2()<=0, 0)
+	IF (rp.dir.len2()<=0 || rp.flags & rwi_max_piercing && rp.nMaxHits<2, 0)
 		return 0;
 	extern thread_local int tls_isMainThread;
 	m_vars.bMultithreaded |= 1^tls_isMainThread;
@@ -570,9 +572,14 @@ int CPhysicalWorld::RayWorldIntersection(const IPhysicalWorld::SRWIParams &rp, c
 		egc.pPortals = rp.pPortals;	egc.nMaxPortals = rp.nMaxPortals;
 	}
 	egc.nPortals = 0;
-	if ((objtypes & ent_terrain) && m_pHeightfield[iCaller]) {
-    RayHeightfield(rp.org,dir,rp.hits,rp.flags,iCaller);
-  }
+	if ((objtypes & ent_terrain) && m_pHeightfield[iCaller]) 
+		if (!(rp.flags & rwi_max_piercing))
+			RayHeightfield(rp.org,dir,rp.hits,rp.flags,iCaller);
+		else {
+			Vec3 dir1 = dir; // prevent dir from being modified by RayHeightfield
+			RayHeightfield(rp.org,dir1,rp.hits+1,rp.flags,iCaller);
+			egc.nThroughHits += rp.hits[1].bTerrain;
+		}
 	egc.aray.CreateRay(rp.org,dir);
 
 	IF (objtypes & m_bCheckWaterHits & ent_water, 0) {
