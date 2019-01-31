@@ -237,7 +237,7 @@ HRESULT STDMETHODCALLTYPE CDevice::DuplicateCommittedResource(
 	{
 		*ppOutputResource = outputResource;
 
-		SetDebugName(outputResource, GetDebugName(pInputResource).c_str());
+		::SetDebugName(outputResource, ::GetDebugName(pInputResource).c_str());
 		return S_OK;
 	}
 
