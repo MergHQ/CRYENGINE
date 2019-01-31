@@ -471,7 +471,7 @@ bool CDefaultSkeleton::LoadNewSKEL(const char* szFilePath, uint32 nLoadingFlags)
 			m_arrBackupPhysInfo[j] = m_arrModelJoints[j].m_PhysInfoRef[0];
 		m_arrBackupPhyBoneMeshes = pSkinningInfo->m_arrPhyBoneMeshes;
 		m_arrBackupBoneEntities = pSkinningInfo->m_arrBoneEntities;
-		if (!SetupPhysicalProxies(m_arrBackupPhyBoneMeshes, m_arrBackupBoneEntities, pMaterial, szFilePath))
+		if (!SetupPhysicalProxies(m_arrBackupPhyBoneMeshes, m_arrBackupBoneEntities, pMaterial, szFilePath, CA_None))
 			return 0;
 	}
 	if (isSkeletonValid == 0)

@@ -538,7 +538,8 @@ public:
 	void LoadCHRPARAMS(const char* paramFileName);
 
 	//--> setup of physical proxies
-	bool                            SetupPhysicalProxies(const DynArray<PhysicalProxy>& arrPhyBoneMeshes, const DynArray<BONE_ENTITY>& arrBoneEntities, IMaterial* pIMaterial, const char* filename);
+	bool                            SetupPhysicalProxies(const DynArray<PhysicalProxy>& arrPhyBoneMeshes, const DynArray<BONE_ENTITY>& arrBoneEntities,
+	                                                     IMaterial* pIMaterial, const char* filename, const uint32 loadingFlags);
 
 	static bool                     ParsePhysInfoProperties_ROPE(CryBonePhysics& pi, const DynArray<SJointProperty>& props);
 	static DynArray<SJointProperty> GetPhysInfoProperties_ROPE(const CryBonePhysics& pi, int32 nRopeOrGrid);
@@ -680,6 +681,8 @@ public:
 	_smart_ptr<IStatObj> m_pCGA_Object;
 
 private:
+	bool SetupPhysicalProxiesChr(const char* filename, int nLod, const DynArray<PhysicalProxy>& arrPhyBoneMeshes, DynArray<BONE_ENTITY>& arrBoneEntitiesSorted, IMaterial* pIMaterial, float dfltApproxTol);
+	bool SetupPhysicalProxiesChrCgf(const char* filename, int nLod);
 
 	CModelMesh m_ModelMesh;
 	bool       m_ModelMeshEnabled;
