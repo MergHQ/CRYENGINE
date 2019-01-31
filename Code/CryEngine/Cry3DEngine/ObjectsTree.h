@@ -348,7 +348,7 @@ public:
 	void                     InsertObject(IRenderNode* pObj, const AABB& objBox, const float fObjRadiusSqr, const Vec3& vObjCenter);
 	bool                     DeleteObject(IRenderNode* pObj);
 	void                     Render_Object_Nodes(bool bNodeCompletelyInFrustum, int nRenderMask, const Vec3& vAmbColor, uint32 passCullMask, const SRenderingPassInfo& passInfo);
-	void                     Render_LightSources(bool bNodeCompletelyInFrustum, const SRenderingPassInfo& passInfo);
+	void                     Render_LightSources(bool bNodeCompletelyInFrustum, uint32 passCullMask, const SRenderingPassInfo& passInfo);
 	static uint32            UpdateCullMask(uint32 onePassTraversalFrameId, uint32 onePassTraversalShadowCascades, const IRenderNode::RenderFlagsType renderFlags, const SRenderingPassInfo& passInfo, const AABB& nodeBox, const float nodeDistance, const float nodeMaxViewDist, const bool bTestCoverageBuffer,
 	                                        bool& bCompletelyInMainFrustum, OcclusionTestClient* occlusionTestClient, uint32 passCullMask);
 	void                     CheckUpdateStaticInstancing();
@@ -497,11 +497,13 @@ private:
 
 	OcclusionTestClient              m_occlusionTestClient;
 
-	uint32                           m_compiledFlag: eRNListType_ListsNum;
-	uint32                           m_bHasLights               : 1;
-	uint32                           m_bHasRoads                : 1;
-	uint32                           m_bNodeCompletelyInFrustum : 1;
-	uint32                           m_bStaticInstancingIsDirty : 1;
+	uint32                           m_linkedTypes : eERType_TypesNum;
+	uint32                           m_compiledFlag : eRNListType_ListsNum;
+
+	static_assert(eERType_TypesNum + eRNListType_ListsNum <= 32, "Sum of type-bits plus listtype-bits should be 32");
+
+	uint8                            m_bNodeCompletelyInFrustum : 1;
+	uint8                            m_bStaticInstancingIsDirty : 1;
 
 	// used for streaming
 	int                           m_nFileDataOffset; // TODO: make it 64bit

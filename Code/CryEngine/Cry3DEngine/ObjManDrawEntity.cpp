@@ -42,11 +42,9 @@ void CObjManager::RenderDecalAndRoad(IRenderNode* pEnt, PodArray<SRenderLight*>*
 	if (nRndFlags & ERF_HIDDEN)
 		return;
 
-	EERType eERType = pEnt->GetRenderNodeType();
-
 	// detect bad objects
 	float fEntLengthSquared = objBox.GetSize().GetLengthSquared();
-	if (eERType != eERType_Light || !_finite(fEntLengthSquared))
+	if (!_finite(fEntLengthSquared))
 	{
 		if (fEntLengthSquared > MAX_VALID_OBJECT_VOLUME || !_finite(fEntLengthSquared) || fEntLengthSquared <= 0)
 		{
@@ -75,7 +73,7 @@ void CObjManager::RenderDecalAndRoad(IRenderNode* pEnt, PodArray<SRenderLight*>*
 
 	// test only near/big occluders - others will be tested on tree nodes level
 	if (!objBox.IsContainPoint(vCamPos))
-		if (eERType == eERType_Light || fEntDistance < pEnt->m_fWSMaxViewDist * GetCVars()->e_OcclusionCullingViewDistRatio)
+		if (fEntDistance < pEnt->m_fWSMaxViewDist * GetCVars()->e_OcclusionCullingViewDistRatio)
 			if (IsBoxOccluded(objBox, fEntDistance * passInfo.GetInverseZoomFactor(), &pTempData->userData.m_OcclState, pVisArea != NULL, eoot_OBJECT, passInfo))
 				return;
 
@@ -88,7 +86,7 @@ void CObjManager::RenderDecalAndRoad(IRenderNode* pEnt, PodArray<SRenderLight*>*
 	DrawParams.nAfterWater = IsAfterWater(objBox.GetCenter(), vCamPos, passInfo) ? 1 : 0;
 
 	// draw bbox
-	if (GetCVars()->e_BBoxes)// && eERType != eERType_Light)
+	if (GetCVars()->e_BBoxes)
 	{
 		RenderObjectDebugInfo(pEnt, fEntDistance, passInfo);
 	}
