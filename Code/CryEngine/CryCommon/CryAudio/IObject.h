@@ -101,24 +101,6 @@ struct IObject
 	virtual void SetOcclusionRayOffset(float const offset, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
-	 * Loads a trigger's data. This can be used in "loading on demand" situations to prepare the data referenced by a trigger.
-	 * @param triggerId - ID of the trigger in question.
-	 * @param userData - optional struct used to pass additional data to the internal request.
-	 * @return void
-	 * @see UnloadTrigger
-	 */
-	virtual void LoadTrigger(ControlId const triggerId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
-
-	/**
-	 * Unloads a trigger's data. This can be used in "unloading on demand" situations to free the data referenced by a trigger.
-	 * @param triggerId - ID of the trigger in question.
-	 * @param userData - optional struct used to pass additional data to the internal request.
-	 * @return void
-	 * @see LoadTrigger
-	 */
-	virtual void UnloadTrigger(ControlId const triggerId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
-
-	/**
 	 * Plays the given file on this audio object.
 	 * @param playFileInfo - reference to a struct that holds data necessary for playback.
 	 * @param userData - optional struct used to pass additional data to the internal request.

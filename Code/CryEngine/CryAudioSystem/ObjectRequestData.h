@@ -14,8 +14,6 @@ class CRayInfo;
 enum class EObjectRequestType : EnumFlagsType
 {
 	None,
-	LoadTrigger,
-	UnloadTrigger,
 	PlayFile,
 	StopFile,
 	ExecuteTrigger,
@@ -66,44 +64,6 @@ struct SObjectRequestData final : public SObjectRequestDataBase
 	{}
 
 	virtual ~SObjectRequestData() override = default;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<>
-struct SObjectRequestData<EObjectRequestType::LoadTrigger> final : public SObjectRequestDataBase
-{
-	explicit SObjectRequestData(CObject* const pObject_, ControlId const triggerId_)
-		: SObjectRequestDataBase(EObjectRequestType::LoadTrigger, pObject_)
-		, triggerId(triggerId_)
-	{}
-
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::LoadTrigger> const* const pORData)
-		: SObjectRequestDataBase(EObjectRequestType::LoadTrigger, pORData->pObject)
-		, triggerId(pORData->triggerId)
-	{}
-
-	virtual ~SObjectRequestData() override = default;
-
-	ControlId const triggerId;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<>
-struct SObjectRequestData<EObjectRequestType::UnloadTrigger> final : public SObjectRequestDataBase
-{
-	explicit SObjectRequestData(CObject* const pObject_, ControlId const triggerId_)
-		: SObjectRequestDataBase(EObjectRequestType::UnloadTrigger, pObject_)
-		, triggerId(triggerId_)
-	{}
-
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::UnloadTrigger> const* const pORData)
-		: SObjectRequestDataBase(EObjectRequestType::UnloadTrigger, pORData->pObject)
-		, triggerId(pORData->triggerId)
-	{}
-
-	virtual ~SObjectRequestData() override = default;
-
-	ControlId const triggerId;
 };
 
 //////////////////////////////////////////////////////////////////////////

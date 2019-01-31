@@ -46,40 +46,6 @@ struct ITriggerConnection
 	 * @see Execute
 	 */
 	virtual void Stop(IObject* const pIObject) = 0;
-
-	/**
-	 * Load the metadata and media needed by the audio middleware to execute this trigger
-	 * Loading Triggers manually is only necessary if their data have not been loaded via PreloadRequests
-	 * @return ERequestStatus::Success if the the data was successfully loaded, ERequestStatus::Failure otherwise
-	 * @see Unload, LoadAsync, UnloadAsync
-	 */
-	virtual ERequestStatus Load() const = 0;
-
-	/**
-	 * Release the metadata and media needed by the audio middleware to execute this trigger
-	 * Unloading Triggers manually is only necessary if their data are not managed via PreloadRequests.
-	 * @return ERequestStatus::Success if the the data was successfully unloaded, ERequestStatus::Failure otherwise
-	 * @see Load, LoadAsync, UnloadAsync
-	 */
-	virtual ERequestStatus Unload() const = 0;
-
-	/**
-	 * Load the metadata and media needed by the audio middleware to execute this trigger asynchronously.
-	 * Loading Triggers manually is only necessary if their data have not been loaded via PreloadRequests.
-	 * @param triggerInstanceId - The callback called once the loading is done must report that the trigger instance with this id is finished.
-	 * @return ERequestStatus::Success if the the request was successfully sent to the audio middleware, ERequestStatus::Failure otherwise
-	 * @see Load, Unload, UnloadAsync
-	 */
-	virtual ERequestStatus LoadAsync(TriggerInstanceId const triggerInstanceId) const = 0;
-
-	/**
-	 * Release the metadata and media needed by the audio middleware to execute this trigger asynchronously.
-	 * Unloading Triggers manually is only necessary if their data have not been loaded via PreloadRequests.
-	 * @param triggerInstanceId - The callback called once the loading is done must report that the trigger instance with this id is finished.
-	 * @return ERequestStatus::Success if the the request was successfully sent to the audio middleware, ERequestStatus::Failure otherwise
-	 * @see Load, Unload, LoadAsync
-	 */
-	virtual ERequestStatus UnloadAsync(TriggerInstanceId const triggerInstanceId) const = 0;
 };
 } // namespace Impl
 } // namespace CryAudio

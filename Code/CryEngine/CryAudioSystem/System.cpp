@@ -922,22 +922,6 @@ void CSystem::SetImpl(Impl::IImpl* const pIImpl, SRequestUserData const& userDat
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::LoadTrigger(ControlId const triggerId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
-{
-	SSystemRequestData<ESystemRequestType::LoadTrigger> const requestData(triggerId);
-	CRequest const request(&requestData, userData);
-	PushRequest(request);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CSystem::UnloadTrigger(ControlId const triggerId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
-{
-	SSystemRequestData<ESystemRequestType::UnloadTrigger> const requestData(triggerId);
-	CRequest const request(&requestData, userData);
-	PushRequest(request);
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CSystem::ExecuteTriggerEx(SExecuteTriggerData const& triggerData, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SSystemRequestData<ESystemRequestType::ExecuteTriggerEx> const requestData(triggerData);
@@ -1853,34 +1837,6 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			break;
 		}
-	case ESystemRequestType::LoadTrigger:
-		{
-			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::LoadTrigger> const*>(request.GetData());
-
-			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
-
-			if (pTrigger != nullptr)
-			{
-				pTrigger->LoadAsync(g_object, true);
-				result = ERequestStatus::Success;
-			}
-
-			break;
-		}
-	case ESystemRequestType::UnloadTrigger:
-		{
-			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::UnloadTrigger> const*>(request.GetData());
-
-			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
-
-			if (pTrigger != nullptr)
-			{
-				pTrigger->LoadAsync(g_object, false);
-				result = ERequestStatus::Success;
-			}
-
-			break;
-		}
 	case ESystemRequestType::PlayFile:
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::PlayFile> const*>(request.GetData());
@@ -2341,34 +2297,6 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 
 	switch (pBase->objectRequestType)
 	{
-	case EObjectRequestType::LoadTrigger:
-		{
-			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::LoadTrigger> const*>(request.GetData());
-
-			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
-
-			if (pTrigger != nullptr)
-			{
-				pTrigger->LoadAsync(*pObject, true);
-				result = ERequestStatus::Success;
-			}
-
-			break;
-		}
-	case EObjectRequestType::UnloadTrigger:
-		{
-			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::UnloadTrigger> const*>(request.GetData());
-
-			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
-
-			if (pTrigger != nullptr)
-			{
-				pTrigger->LoadAsync(*pObject, false);
-				result = ERequestStatus::Success;
-			}
-
-			break;
-		}
 	case EObjectRequestType::PlayFile:
 		{
 			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::PlayFile> const*>(request.GetData());

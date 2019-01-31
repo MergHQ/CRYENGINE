@@ -46,7 +46,7 @@ void CPreviewTrigger::Execute(Impl::ITriggerInfo const& triggerInfo)
 		{
 			ETriggerResult const result = m_pConnection->Execute(pIObject, g_triggerInstanceIdCounter);
 
-			if (result == ETriggerResult::Playing)
+			if ((result == ETriggerResult::Playing) || (result == ETriggerResult::Virtual))
 			{
 				++(triggerInstanceState.numPlayingInstances);
 			}
@@ -60,7 +60,7 @@ void CPreviewTrigger::Execute(Impl::ITriggerInfo const& triggerInfo)
 			Cry::Audio::Log(ELogType::Error, "Invalid impl object during %s", __FUNCTION__);
 		}
 
-		if (triggerInstanceState.numPlayingInstances > 0 || triggerInstanceState.numLoadingInstances > 0)
+		if (triggerInstanceState.numPlayingInstances > 0)
 		{
 			triggerInstanceState.flags |= ETriggerStatus::Playing;
 			g_triggerInstanceIdToObject[g_triggerInstanceIdCounter] = &g_previewObject;

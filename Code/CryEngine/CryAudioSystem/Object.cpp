@@ -47,7 +47,6 @@ void CObject::Release()
 
 	for (auto& triggerStatesPair : m_triggerStates)
 	{
-		triggerStatesPair.second.numLoadingInstances = 0;
 		triggerStatesPair.second.numPlayingInstances = 0;
 	}
 
@@ -69,6 +68,13 @@ void CObject::Destruct()
 //////////////////////////////////////////////////////////////////////////
 void CObject::AddTriggerState(TriggerInstanceId const id, STriggerInstanceState const& triggerInstanceState)
 {
+#if defined(CRY_AUDIO_USE_OCCLUSION)
+	if (((m_flags& EObjectFlags::Virtual) == 0) && m_triggerStates.empty())
+	{
+		m_propagationProcessor.UpdateOcclusion();
+	}
+#endif    // CRY_AUDIO_USE_OCCLUSION
+
 	m_triggerStates.emplace(id, triggerInstanceState);
 
 	if (std::find(g_activeObjects.begin(), g_activeObjects.end(), this) == g_activeObjects.end())
@@ -111,22 +117,13 @@ void CObject::ReportFinishedTriggerInstance(TriggerInstanceId const triggerInsta
 		STriggerInstanceState& triggerInstanceState = iter->second;
 		CRY_ASSERT_MESSAGE(triggerInstanceState.numPlayingInstances > 0, "Number of playing trigger instances must be at least 1 during %s", __FUNCTION__);
 
-		if (--(triggerInstanceState.numPlayingInstances) == 0 && triggerInstanceState.numLoadingInstances == 0)
+		if (--(triggerInstanceState.numPlayingInstances) == 0)
 		{
 			g_triggerInstanceIdToObject.erase(triggerInstanceId);
 
 			SendFinishedTriggerInstanceRequest(triggerInstanceState);
 
-			if ((triggerInstanceState.flags & ETriggerStatus::Loaded) != 0)
-			{
-				// If the trigger instance was manually loaded -- keep it
-				triggerInstanceState.flags &= ~ETriggerStatus::Playing;
-			}
-			else
-			{
-				// If the trigger instance wasn't loaded -- kill it
-				m_triggerStates.erase(iter);
-			}
+			m_triggerStates.erase(iter);
 		}
 	}
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
@@ -249,12 +246,6 @@ void CObject::ProcessPhysicsRay(CRayInfo* const pRayInfo)
 void CObject::HandleSetOcclusionRayOffset(float const offset)
 {
 	m_propagationProcessor.SetOcclusionRayOffset(offset);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObject::UpdateOcclusion()
-{
-	m_propagationProcessor.UpdateOcclusion();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -946,6 +937,7 @@ void CObject::ForceImplementationRefresh(bool const setTransformation)
 		}
 	}
 
+	uint16 triggerCounter = 0;
 	// Last re-execute its active triggers and standalone files.
 	for (auto& triggerStatePair : m_triggerStates)
 	{
@@ -953,7 +945,8 @@ void CObject::ForceImplementationRefresh(bool const setTransformation)
 
 		if (pTrigger != nullptr)
 		{
-			pTrigger->Execute(*this, triggerStatePair.first, triggerStatePair.second);
+			pTrigger->Execute(*this, triggerStatePair.first, triggerStatePair.second, triggerCounter);
+			++triggerCounter;
 		}
 		else if (!ExecuteDefaultTrigger(triggerStatePair.second.triggerId))
 		{
@@ -1094,22 +1087,6 @@ void CObject::SetOcclusionRayOffset(float const offset, SRequestUserData const& 
 	SObjectRequestData<EObjectRequestType::SetOcclusionRayOffset> requestData(this, offset);
 	PushRequest(requestData, userData);
 #endif // CRY_AUDIO_USE_OCCLUSION
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObject::LoadTrigger(ControlId const triggerId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
-{
-	SObjectRequestData<EObjectRequestType::LoadTrigger> const requestData(this, triggerId);
-	CRequest const request(&requestData, userData);
-	PushRequest(requestData, userData);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObject::UnloadTrigger(ControlId const triggerId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
-{
-	SObjectRequestData<EObjectRequestType::UnloadTrigger> const requestData(this, triggerId);
-	CRequest const request(&requestData, userData);
-	PushRequest(requestData, userData);
 }
 
 //////////////////////////////////////////////////////////////////////////

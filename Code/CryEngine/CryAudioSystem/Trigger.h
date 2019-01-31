@@ -55,12 +55,7 @@ public:
 		void* const pUserData = nullptr,
 		void* const pUserDataOwner = nullptr,
 		ERequestFlags const flags = ERequestFlags::None) const;
-	void Execute(
-		CObject& object,
-		TriggerInstanceId const triggerInstanceId,
-		STriggerInstanceState& triggerInstanceState) const;
 	void Stop(Impl::IObject* const pIObject) const;
-	void LoadAsync(CObject& object, bool const doLoad) const;
 	void PlayFile(
 		CObject& object,
 		char const* const szName,
@@ -70,6 +65,11 @@ public:
 		void* const pUserDataOwner = nullptr) const;
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	void Execute(
+		CObject& object,
+		TriggerInstanceId const triggerInstanceId,
+		STriggerInstanceState& triggerInstanceState,
+		uint16 const triggerCounter) const;
 	float GetRadius() const { return m_radius; }
 	void  PlayFile(CObject& object, CStandaloneFile* const pFile) const;
 #endif // CRY_AUDIO_USE_PRODUCTION_CODE

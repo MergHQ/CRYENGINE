@@ -27,8 +27,6 @@ enum class ESystemRequestType : EnumFlagsType
 	SetGlobalParameter,
 	SetSwitchState,
 	SetGlobalSwitchState,
-	LoadTrigger,
-	UnloadTrigger,
 	PlayFile,
 	StopFile,
 	AutoLoadSetting,
@@ -368,44 +366,6 @@ struct SSystemRequestData<ESystemRequestType::SetGlobalSwitchState> final : publ
 
 	ControlId const     switchId;
 	SwitchStateId const switchStateId;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<>
-struct SSystemRequestData<ESystemRequestType::LoadTrigger> final : public SSystemRequestDataBase
-{
-	explicit SSystemRequestData(ControlId const triggerId_)
-		: SSystemRequestDataBase(ESystemRequestType::LoadTrigger)
-		, triggerId(triggerId_)
-	{}
-
-	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::LoadTrigger> const* const pASRData)
-		: SSystemRequestDataBase(ESystemRequestType::LoadTrigger)
-		, triggerId(pASRData->triggerId)
-	{}
-
-	virtual ~SSystemRequestData() override = default;
-
-	ControlId const triggerId;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<>
-struct SSystemRequestData<ESystemRequestType::UnloadTrigger> final : public SSystemRequestDataBase
-{
-	explicit SSystemRequestData(ControlId const triggerId_)
-		: SSystemRequestDataBase(ESystemRequestType::UnloadTrigger)
-		, triggerId(triggerId_)
-	{}
-
-	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::UnloadTrigger> const* const pASRData)
-		: SSystemRequestDataBase(ESystemRequestType::UnloadTrigger)
-		, triggerId(pASRData->triggerId)
-	{}
-
-	virtual ~SSystemRequestData() override = default;
-
-	ControlId const triggerId;
 };
 
 //////////////////////////////////////////////////////////////////////////

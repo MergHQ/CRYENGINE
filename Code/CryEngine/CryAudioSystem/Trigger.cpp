@@ -52,7 +52,6 @@ void CTrigger::Execute(
 	}
 
 	bool isPlaying = false;
-	bool isVirtual = false;
 
 	Impl::IObject* const pIObject = object.GetImplDataPtr();
 
@@ -69,15 +68,11 @@ void CTrigger::Execute(
 				object.UpdateMaxRadius(m_radius);
 #endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 
+				++(triggerInstanceState.numPlayingInstances);
+
 				if (result == ETriggerResult::Playing)
 				{
-					++(triggerInstanceState.numPlayingInstances);
 					isPlaying = true;
-				}
-				else if (result == ETriggerResult::Virtual)
-				{
-					++(triggerInstanceState.numPlayingInstances);
-					isVirtual = true;
 				}
 			}
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
@@ -95,101 +90,27 @@ void CTrigger::Execute(
 	}
 #endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 
-	if ((triggerInstanceState.numPlayingInstances > 0) || (triggerInstanceState.numLoadingInstances > 0))
+	if (triggerInstanceState.numPlayingInstances > 0)
 	{
+		if (isPlaying)
+		{
+			object.RemoveFlag(EObjectFlags::Virtual);
+		}
+		else if ((object.GetFlags() & EObjectFlags::Active) == 0)
+		{
+			// Only when no trigger was active before, the object can get set to virtual here.
+			object.SetFlag(EObjectFlags::Virtual);
+		}
+
 		triggerInstanceState.flags |= ETriggerStatus::Playing;
 		g_triggerInstanceIdToObject[g_triggerInstanceIdCounter] = &object;
 		object.AddTriggerState(g_triggerInstanceIdCounter, triggerInstanceState);
 		IncrementTriggerInstanceIdCounter();
-
-		if (isPlaying)
-		{
-			object.RemoveFlag(EObjectFlags::Virtual);
-
-#if defined(CRY_AUDIO_USE_OCCLUSION)
-			object.UpdateOcclusion();
-#endif    // CRY_AUDIO_USE_OCCLUSION
-		}
-		else if (isVirtual)
-		{
-			object.SetFlag(EObjectFlags::Virtual);
-		}
 	}
 	else
 	{
 		// All of the events have either finished before we got here or never started, immediately inform the user that the trigger has finished.
 		object.SendFinishedTriggerInstanceRequest(triggerInstanceState);
-	}
-
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-	if (m_connections.empty())
-	{
-		Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" executed on object "%s" without connections)", GetName(), object.GetName());
-	}
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CTrigger::Execute(
-	CObject& object,
-	TriggerInstanceId const triggerInstanceId,
-	STriggerInstanceState& triggerInstanceState) const
-{
-	bool isPlaying = false;
-	bool isVirtual = false;
-
-	Impl::IObject* const pIObject = object.GetImplDataPtr();
-
-	if (pIObject != nullptr)
-	{
-		for (auto const pConnection : m_connections)
-		{
-			ETriggerResult const result = pConnection->Execute(pIObject, triggerInstanceId);
-
-			if ((result == ETriggerResult::Playing) || (result == ETriggerResult::Virtual))
-			{
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-				triggerInstanceState.radius = m_radius;
-				object.UpdateMaxRadius(m_radius);
-#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
-
-				if (result == ETriggerResult::Playing)
-				{
-					++(triggerInstanceState.numPlayingInstances);
-					isPlaying = true;
-				}
-				else if (result == ETriggerResult::Virtual)
-				{
-					++(triggerInstanceState.numPlayingInstances);
-					isVirtual = true;
-				}
-			}
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-			else if (result != ETriggerResult::DoNotTrack)
-			{
-				Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", GetName(), object.GetName(), __FUNCTION__);
-			}
-#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
-		}
-	}
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Invalid impl object during %s", __FUNCTION__);
-	}
-#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
-
-	if (isPlaying)
-	{
-		object.RemoveFlag(EObjectFlags::Virtual);
-
-#if defined(CRY_AUDIO_USE_OCCLUSION)
-		object.UpdateOcclusion();
-#endif    // CRY_AUDIO_USE_OCCLUSION
-	}
-	else if (isVirtual)
-	{
-		object.SetFlag(EObjectFlags::Virtual);
 	}
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
@@ -216,51 +137,6 @@ void CTrigger::Stop(Impl::IObject* const pIObject) const
 		Cry::Audio::Log(ELogType::Error, "Invalid impl object during %s", __FUNCTION__);
 	}
 #endif  // CRY_AUDIO_USE_PRODUCTION_CODE
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CTrigger::LoadAsync(CObject& object, bool const doLoad) const
-{
-	// TODO: This needs proper implementation!
-	STriggerInstanceState triggerInstanceState;
-	triggerInstanceState.triggerId = GetId();
-
-	for (auto const pConnection : m_connections)
-	{
-		ERequestStatus prepUnprepResult = ERequestStatus::Failure;
-
-		if (doLoad)
-		{
-			if (((triggerInstanceState.flags & ETriggerStatus::Loaded) == 0) && ((triggerInstanceState.flags & ETriggerStatus::Loading) == 0))
-			{
-				prepUnprepResult = pConnection->LoadAsync(g_triggerInstanceIdCounter);
-			}
-		}
-		else
-		{
-			if (((triggerInstanceState.flags & ETriggerStatus::Loaded) != 0) && ((triggerInstanceState.flags & ETriggerStatus::Unloading) == 0))
-			{
-				prepUnprepResult = pConnection->UnloadAsync(g_triggerInstanceIdCounter);
-			}
-		}
-
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-		if (prepUnprepResult == ERequestStatus::Success)
-		{
-
-			triggerInstanceState.radius = m_radius;
-			object.UpdateMaxRadius(m_radius);
-		}
-		else
-		{
-			Cry::Audio::Log(ELogType::Warning, R"(LoadAsync failed on trigger "%s" for object "%s" during %s)", GetName(), object.GetName(), __FUNCTION__);
-		}
-#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
-	}
-
-	g_triggerInstanceIdToObject[g_triggerInstanceIdCounter] = &object;
-	object.AddTriggerState(g_triggerInstanceIdCounter, triggerInstanceState);
-	IncrementTriggerInstanceIdCounter();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -320,6 +196,62 @@ void CTrigger::PlayFile(
 }
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+//////////////////////////////////////////////////////////////////////////
+void CTrigger::Execute(
+	CObject& object,
+	TriggerInstanceId const triggerInstanceId,
+	STriggerInstanceState& triggerInstanceState,
+	uint16 const triggerCounter) const
+{
+	bool isPlaying = false;
+
+	Impl::IObject* const pIObject = object.GetImplDataPtr();
+
+	if (pIObject != nullptr)
+	{
+		for (auto const pConnection : m_connections)
+		{
+			ETriggerResult const result = pConnection->Execute(pIObject, triggerInstanceId);
+
+			if ((result == ETriggerResult::Playing) || (result == ETriggerResult::Virtual))
+			{
+				triggerInstanceState.radius = m_radius;
+				object.UpdateMaxRadius(m_radius);
+
+				++(triggerInstanceState.numPlayingInstances);
+
+				if (result == ETriggerResult::Playing)
+				{
+					isPlaying = true;
+				}
+			}
+			else if (result != ETriggerResult::DoNotTrack)
+			{
+				Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", GetName(), object.GetName(), __FUNCTION__);
+			}
+		}
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Invalid impl object during %s", __FUNCTION__);
+	}
+
+	if (isPlaying)
+	{
+		object.RemoveFlag(EObjectFlags::Virtual);
+	}
+	else if (triggerCounter == 0)
+	{
+		// If the first trigger is not virtual, the object cannot get set to virtual here afterwards.
+		object.SetFlag(EObjectFlags::Virtual);
+	}
+
+	if (m_connections.empty())
+	{
+		Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" executed on object "%s" without connections)", GetName(), object.GetName());
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 void CTrigger::PlayFile(CObject& object, CStandaloneFile* const pFile) const
 {

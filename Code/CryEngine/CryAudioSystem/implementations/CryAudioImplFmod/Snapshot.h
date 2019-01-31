@@ -57,10 +57,6 @@ public:
 	// CryAudio::Impl::ITriggerConnection
 	virtual ETriggerResult Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId) override;
 	virtual void           Stop(IObject* const pIObject) override;
-	virtual ERequestStatus Load()  const override                                                { return ERequestStatus::Success; }
-	virtual ERequestStatus Unload() const override                                               { return ERequestStatus::Success; }
-	virtual ERequestStatus LoadAsync(TriggerInstanceId const triggerInstanceId) const override   { return ERequestStatus::Success; }
-	virtual ERequestStatus UnloadAsync(TriggerInstanceId const triggerInstanceId) const override { return ERequestStatus::Success; }
 	// ~CryAudio::Impl::ITriggerConnection
 
 private:
