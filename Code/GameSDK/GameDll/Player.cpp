@@ -11,6 +11,9 @@
 
 *************************************************************************/
 #include "StdAfx.h"
+
+#include <array>
+
 #include "Player.h"
 #include "Game.h"
 #include "GameCVars.h"
@@ -276,7 +279,6 @@ void RegisterGOEvents(CPlayer& player, IGameObject& gameObject)
 
 	gameObject.RegisterExtForEvents(&player, eventToRegister, sizeof(eventToRegister) / sizeof(int));
 }
-}
 
 //--------------------
 //this function will be called from the engine at the right time, since bones editing must be placed at the right time.
@@ -311,6 +313,38 @@ int PlayerProcessBones(ICharacterInstance* pCharacter, void* pvPlayer)
 	pPlayer->PostProcessAnimation(pCharacter);
 
 	return 1;
+}
+
+// Entities shadow setup according to camera view (1stPerson, 3rdPerson)
+void SetPlayerEntityShadow(IEntity* pEntity, bool isThirdPerson, int characterSlot, int shadowCharacterSlot)
+{
+	pEntity->SetFlags(pEntity->GetFlags() & ~ENTITY_FLAG_CASTSHADOW);
+	if (isThirdPerson)
+	{
+		pEntity->SetSlotFlags(characterSlot, pEntity->GetSlotFlags(characterSlot) | ENTITY_SLOT_CAST_SHADOW);
+		pEntity->SetSlotFlags(shadowCharacterSlot, pEntity->GetSlotFlags(shadowCharacterSlot) & ~ENTITY_SLOT_CAST_SHADOW);
+	}
+	else
+	{
+		pEntity->SetSlotFlags(characterSlot, pEntity->GetSlotFlags(characterSlot) & ~ENTITY_SLOT_CAST_SHADOW);
+		pEntity->SetSlotFlags(shadowCharacterSlot, pEntity->GetSlotFlags(shadowCharacterSlot) | ENTITY_SLOT_CAST_SHADOW);
+	}
+}
+
+// Helper: Call HideInShadow() and HideInRecursion() for all attachments with given parameters
+void HideAllAttachmentsInShadowAndRecursion(IAttachmentManager* attachmentManager, bool hideInShadow, bool hideInRecursion)
+{
+	if (attachmentManager)
+	{
+		for (int32 i = 0; i < attachmentManager->GetAttachmentCount(); i++)
+		{
+			IAttachment* attachment = attachmentManager->GetInterfaceByIndex(i);
+			attachment->HideInShadow(hideInShadow);
+			attachment->HideInRecursion(hideInRecursion);
+		}
+	}
+}
+	
 }
 
 void CPlayer::PostProcessAnimation(ICharacterInstance* pCharacter)
@@ -3146,7 +3180,8 @@ void CPlayer::UpdateReactionOverlay(float frameTime)
 
 void SetupPlayerCharacterVisibility(IEntity* playerEntity, bool isThirdPerson, int shadowCharacterSlot, bool forceDontRenderNearest)
 {
-	ICharacterInstance* mainChar = playerEntity->GetCharacter(0);
+	const int characterSlot = 0;
+	ICharacterInstance* mainChar = playerEntity->GetCharacter(characterSlot);
 
 	if (mainChar == NULL)
 		return;
@@ -3165,7 +3200,7 @@ void SetupPlayerCharacterVisibility(IEntity* playerEntity, bool isThirdPerson, i
 
 	bool showShadowChar = g_pGameCVars->g_showShadowChar != 0;
 
-	uint32 flags = playerEntity->GetSlotFlags(0);
+	uint32 flags = playerEntity->GetSlotFlags(characterSlot);
 	uint32 currentFlags = flags;
 
 	if (isThirdPerson || forceDontRenderNearest || g_pGameCVars->g_detachCamera || !g_pGameCVars->pl_renderInNearest)
@@ -3184,7 +3219,7 @@ void SetupPlayerCharacterVisibility(IEntity* playerEntity, bool isThirdPerson, i
 		pRecordingSystem->OnPlayerRenderNearestChange((flags & ENTITY_SLOT_RENDER_NEAREST) != 0);
 	}
 
-	playerEntity->SetSlotFlags(0, flags);
+	playerEntity->SetSlotFlags(characterSlot, flags);
 
 	if (attachmentManShadow)
 	{
@@ -3194,27 +3229,21 @@ void SetupPlayerCharacterVisibility(IEntity* playerEntity, bool isThirdPerson, i
 		}
 	}
 
-	IAttachment* attachment;
-
 	//--- Toggle 3P attachments
-	const char* ppFirstPersonParts[] = { "arms_1p" };
-	const char* ppThirdPersonParts[] = { "arms_3p", "head", "eye_left", "eye_right", "lower_body", "upper_body", "googles", "bag_01", "bag_02", "bag_03", "bag_04", "bag_05", "bag_06", "visor" };
+	std::array<const char*, 1> ppFirstPersonParts{ { "arms_1p" } };
+	std::array<const char*, 14> ppThirdPersonParts{ { "arms_3p", "head", "eye_left", "eye_right", "lower_body", "upper_body", "googles", "bag_01", "bag_02", "bag_03", "bag_04", "bag_05", "bag_06", "visor" } };
 
-	const int numFirstPersonParts = CRY_ARRAY_COUNT(ppFirstPersonParts);
-	const int numThirdPersonParts = CRY_ARRAY_COUNT(ppThirdPersonParts);
-
-	for (int i = 0; i < numFirstPersonParts; ++i)
+	for (auto const& it : ppFirstPersonParts)
 	{
-		attachment = attachmentMan->GetInterfaceByName(ppFirstPersonParts[i]);
-		if (attachment)
+		if (IAttachment* attachment = attachmentMan->GetInterfaceByName(it))
 		{
 			attachment->HideAttachment(isThirdPerson);
 		}
 	}
-	for (int i = 0; i < numThirdPersonParts; ++i)
+
+	for (auto const& it : ppThirdPersonParts)
 	{
-		attachment = attachmentMan->GetInterfaceByName(ppThirdPersonParts[i]);
-		if (attachment)
+		if (IAttachment* attachment = attachmentMan->GetInterfaceByName(it))
 		{
 			attachment->HideAttachment(!isThirdPerson);
 		}
@@ -3222,39 +3251,17 @@ void SetupPlayerCharacterVisibility(IEntity* playerEntity, bool isThirdPerson, i
 
 	if (isThirdPerson)
 	{
-		for (int32 i = 0; i < attachmentMan->GetAttachmentCount(); i++)
-		{
-			attachment = attachmentMan->GetInterfaceByIndex(i);
-			attachment->HideInShadow(false);
-			attachment->HideInRecursion(false);
-		}
-		if (attachmentManShadow)
-		{
-			for (int32 i = 0; i < attachmentManShadow->GetAttachmentCount(); i++)
-			{
-				attachment = attachmentManShadow->GetInterfaceByIndex(i);
-				attachment->HideInShadow(true);
-				attachment->HideInRecursion(true);
-			}
-		}
+		HideAllAttachmentsInShadowAndRecursion(attachmentMan, false, false);
+		HideAllAttachmentsInShadowAndRecursion(attachmentManShadow, true, true);
 	}
 	else
 	{
-		for (int32 i = 0; i < attachmentMan->GetAttachmentCount(); i++)
-		{
-			attachment = attachmentMan->GetInterfaceByIndex(i);
-			attachment->HideInRecursion(shadowChar ? true : false);
-		}
-		if (attachmentManShadow)
-		{
-			for (int32 i = 0; i < attachmentManShadow->GetAttachmentCount(); i++)
-			{
-				attachment = attachmentManShadow->GetInterfaceByIndex(i);
-				attachment->HideInShadow(false);
-				attachment->HideInRecursion(false);
-			}
-		}
+		HideAllAttachmentsInShadowAndRecursion(attachmentMan, true, shadowChar != nullptr);
+		HideAllAttachmentsInShadowAndRecursion(attachmentManShadow, false, false);
 	}
+	
+	// Set entities shadow flags according to view (1stPerson, 3rdPerson)
+	SetPlayerEntityShadow(playerEntity, isThirdPerson, characterSlot, shadowCharacterSlot);
 }
 
 void CPlayer::RefreshVisibilityState()
@@ -3462,9 +3469,9 @@ void CPlayer::SpawnCorpse()
 				IEntity* pCloneEntity = gEnv->pEntitySystem->SpawnEntity(params, true);
 				assert(pCloneEntity);
 
-				pCloneEntity->SetFlags(pCloneEntity->GetFlags() | (ENTITY_FLAG_CASTSHADOW));
-
 				pEntity->MoveSlot(pCloneEntity, 0);
+				SetPlayerEntityShadow(pCloneEntity, IsThirdPerson(), 0, GetShadowCharacterSlot());
+
 				pCharInst->SetFlags(pCharInst->GetFlags() | CS_FLAG_UPDATE);
 
 				//This is to fix a rare issue where you can potentially receive the spawn corpse message while the player is still
@@ -3690,7 +3697,7 @@ void CPlayer::Revive(EReasonForRevive reasonForRevive)
 		m_fDeathTime = 0.0f;  // we need to know this value whilst spectating so we can display the respawn countdown and so on
 	}
 
-	pEntity->SetFlags(pEntity->GetFlags() | (ENTITY_FLAG_CASTSHADOW));
+	SetPlayerEntityShadow(pEntity, IsThirdPerson(), 0, GetShadowCharacterSlot());
 	pEntity->SetSlotFlags(0, pEntity->GetSlotFlags(0) | ENTITY_SLOT_RENDER);
 
 	if (m_pPlayerInput.get())
@@ -7734,11 +7741,6 @@ void CPlayer::ExitPickAndThrow(bool forceInstantDrop)
 bool CPlayer::HasShadowCharacter() const
 {
 	return GetEntity()->GetCharacter(GetShadowCharacterSlot()) != NULL;
-}
-
-int CPlayer::GetShadowCharacterSlot() const
-{
-	return 5;
 }
 
 ICharacterInstance* CPlayer::GetShadowCharacter() const

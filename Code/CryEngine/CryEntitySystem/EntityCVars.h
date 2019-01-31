@@ -76,6 +76,8 @@ struct CVar
 	static ICVar* pDrawAreaGrid;
 	static ICVar* pDrawAreaGridCells;
 	static ICVar* pDrawAreaDebug;
+	static ICVar* pLogAreaDebug;
+	static ICVar* pUpdateAreas;
 
 	static float  es_EntityUpdatePosDelta;
 

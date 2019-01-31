@@ -546,7 +546,7 @@ void CMainEditorWindow::SetActiveTree(Cry::UDR::ITreeManager::ETreeIndex treeInd
 	m_pTreeView->setModel(m_pTreeModel);
 	m_pTreeView->header()->setSectionResizeMode(COLUMN_NODE_NAME, QHeaderView::ResizeToContents);
 	m_pTreeView->setExpanded(m_pTreeModel->GetRootIndex(), true);
-	m_pTreeView->setCurrentIndex(m_pTreeModel->GetRootIndex());
+	m_pTreeView->setCurrentIndex(QModelIndex());
 
 	m_pComboBoxTreeToShow->setCurrentIndex((int)treeIndex);
 }

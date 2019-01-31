@@ -3029,6 +3029,8 @@ void CharacterManager::SkelExtension(CCharInstance* pCharacter, const CharacterD
 
 void CharacterManager::ExtendDefaultSkeletonWithSkinAttachments(ICharacterInstance* pICharacter, const char* /*unused*/, const char** szSkinAttachments, const uint32 skinsCount, const uint32 loadingFlags)
 {
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_ANIMATION, pICharacter->GetFilePath());
+
 	CCharInstance* const pCharacter = static_cast<CCharInstance*>(pICharacter);
 
 	const char* originalSkeletonFilename = pCharacter->m_pDefaultSkeleton->GetModelFilePath();
@@ -3179,6 +3181,8 @@ static struct
 
 CDefaultSkeleton* CharacterManager::CreateExtendedSkel(CDefaultSkeleton* const pSourceSkeleton, const std::vector<const char*>& mismatchingSkins, IMaterial* const pMaterial, const uint32 nLoadingFlags)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION);
+
 	assert(pSourceSkeleton);
 	assert(pSourceSkeleton->GetModelFilePathCRC64() == 0);
 	assert(pMaterial);
@@ -3290,7 +3294,7 @@ CDefaultSkeleton* CharacterManager::CreateExtendedSkel(CDefaultSkeleton* const p
 	pExtendedSkeleton->SetModelAnimEventDatabase(pSourceSkeleton->GetModelAnimEventDatabaseCStr());
 	pExtendedSkeleton->RebuildJointLookupCaches();
 	pExtendedSkeleton->CopyAndAdjustSkeletonParams(pSourceSkeleton);
-	pExtendedSkeleton->SetupPhysicalProxies(pSourceSkeleton->m_arrBackupPhyBoneMeshes, pSourceSkeleton->m_arrBackupBoneEntities, pMaterial, pSourceSkeleton->GetModelFilePath());
+	pExtendedSkeleton->SetupPhysicalProxies(pSourceSkeleton->m_arrBackupPhyBoneMeshes, pSourceSkeleton->m_arrBackupBoneEntities, pMaterial, pSourceSkeleton->GetModelFilePath(), nLoadingFlags);
 	pExtendedSkeleton->VerifyHierarchy();
 
 	return pExtendedSkeleton;

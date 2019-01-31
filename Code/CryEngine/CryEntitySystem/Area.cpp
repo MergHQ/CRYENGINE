@@ -2816,6 +2816,7 @@ void CArea::SendCachedEventsFor(EntityId const nEntityID)
 //////////////////////////////////////////////////////////////////////////
 void CArea::SendEvent(SEntityEvent& newEvent, bool bClearCachedEvents /* = true */)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	m_pAreaManager->OnEvent(newEvent.event, (EntityId)newEvent.nParam[0], this);
 
 	size_t const nCountEntities = m_entityIdentifiers.size();

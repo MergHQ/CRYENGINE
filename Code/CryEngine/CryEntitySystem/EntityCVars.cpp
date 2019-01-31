@@ -25,6 +25,8 @@ ICVar* CVar::pDrawAreas = nullptr;
 ICVar* CVar::pDrawAreaGrid = nullptr;
 ICVar* CVar::pDrawAreaGridCells = nullptr;
 ICVar* CVar::pDrawAreaDebug = nullptr;
+ICVar* CVar::pLogAreaDebug = nullptr;
+ICVar* CVar::pUpdateAreas = nullptr;
 ICVar* CVar::pFlowgraphComponents = nullptr;
 
 ICVar* CVar::pSysSpecLight = nullptr;
@@ -192,14 +194,21 @@ void CVar::Init()
 	              "Render debug info on active layers: \n"
 	              "0 - inactive \n"
 	              "1 - active brush layers \n"
-	              "2 - all layer info \n"
-	              "3 - all layer and all layer pak info");
+	              "2 - all layers \n"
+	              "3 - all layers and memory info \n"
+	              "4 - all layers without folders\n"
+	              "5 - layer activation info");
 	REGISTER_CVAR(es_SaveLoadUseLUANoSaveFlag, 0, VF_CHEAT, "Save&Load optimization : use lua flag to not serialize entities, for example rigid bodies.");
 
 	pDrawAreas = REGISTER_INT("es_DrawAreas", 0, VF_CHEAT, "Enables drawing of Areas");
 	pDrawAreaGrid = REGISTER_INT("es_DrawAreaGrid", 0, VF_CHEAT, "Enables drawing of Area Grid");
 	pDrawAreaGridCells = REGISTER_INT("es_DrawAreaGridCells", 0, VF_CHEAT, "Enables drawing of Area Grid Cells' number and coordinates. Requires \"es_DrawAreaGrid\" to be enabled!");
 	pDrawAreaDebug = REGISTER_INT("es_DrawAreaDebug", 0, VF_CHEAT, "Enables debug drawing of Areas, set 2 for log details");
+	pLogAreaDebug = REGISTER_INT("es_LogAreaDebug", 0, VF_CHEAT, "Enables debug drawing of Areas, set 2 for log details");
+	pUpdateAreas = REGISTER_INT("es_UpdateAreas", 1, VF_CHEAT,
+		"Toggles area updating.\n"
+		"Usage: es_UpdateAreas [0/1]\n"
+		"Default is 1 (on). Set to 0 to prevent all areas from updating.");
 
 	REGISTER_CVAR(es_UsePhysVisibilityChecks, 1, 0,
 	              "Activates physics quality degradation and forceful sleeping for invisible and faraway entities");

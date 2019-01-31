@@ -18,6 +18,7 @@ CAreaGrid::~CAreaGrid()
 //////////////////////////////////////////////////////////////////////////
 bool CAreaGrid::GetAreas(uint32 const x, uint32 const y, TAreaPointers& outAreas)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	CRY_ASSERT(x < m_numCellsPerAxis && y < m_numCellsPerAxis);
 
 	uint32 const* const pBitsLHS = m_bitFieldX.data() + (m_bitFieldSizeU32 * x);
