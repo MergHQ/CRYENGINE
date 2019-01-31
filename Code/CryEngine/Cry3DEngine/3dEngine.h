@@ -439,7 +439,11 @@ public:
 		//passInfo.GetIRenderView()->AddLight(eDLT_DeferredLight,light);
 		GetRenderer()->EF_AddDeferredLight(light, fMult, passInfo);
 		Get3DEngine()->m_LightVolumesMgr.RegisterLight(light, nLightID, passInfo);
-		m_nDeferredLightsNum++;
+
+		if (light.m_Flags & DLF_DEFERRED_CUBEMAPS)
+			m_nDeferredProbesNum++;
+		else
+			m_nDeferredLightsNum++;
 	}
 
 	virtual void                 ApplyForceToEnvironment(Vec3 vPos, float fRadius, float fAmountOfForce);
@@ -915,6 +919,7 @@ public:
 	CREHDRSky* m_pREHDRSky;
 
 	int        m_nDeferredLightsNum;
+	int        m_nDeferredProbesNum;
 
 private:
 	// not sorted
