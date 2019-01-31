@@ -1639,6 +1639,8 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 
 	if (passInfo.RenderShadows() && !passInfo.IsRecursivePass())
 	{
+		CRY_PROFILE_REGION(PROFILE_3DENGINE, "Prepare Shadow Passes");
+
 		// Collect shadow passes used in scene and allocate render view for each of them
 		uint32 nTimeSlicedShadowsUpdatedThisFrame = 0;
 		PrepareShadowPasses(passInfo, nTimeSlicedShadowsUpdatedThisFrame, shadowFrustums, shadowPassInfo);
@@ -1653,10 +1655,11 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	else
 	{
 		CRY_PROFILE_REGION(PROFILE_3DENGINE, "Traverse Outdoor Lights");
+		uint32 outdoorCullMask = IsOutdoorVisible() ? passCullMask : (passCullMask & ~kPassCullMainMask);
 
 		// render point lights
 		CLightEntity::SetShadowFrustumsCollector(nullptr);
-		m_pObjectsTree->Render_LightSources(false, passInfo);
+		m_pObjectsTree->Render_LightSources(false, outdoorCullMask, passInfo);
 	}
 
 	// draw objects inside visible vis areas
@@ -3706,6 +3709,8 @@ void C3DEngine::FillDebugFPSInfo(SDebugFPSInfo& info)
 
 void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, uint32& nTimeSlicedShadowsUpdatedThisFrame, std::vector<std::pair<ShadowMapFrustum*, const CLightEntity*>>& shadowFrustums, std::vector<SRenderingPassInfo>& shadowPassInfo)
 {
+	uint32 passCullMask = kPassCullMainMask; // initialize main view bit as visible
+
 	// enable collection of all accessed frustums
 	CLightEntity::SetShadowFrustumsCollector(&shadowFrustums);
 
@@ -3714,7 +3719,10 @@ void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, uint32& 
 
 	// render outdoor point lights and collect dynamic point light frustums
 	if (IsObjectsTreeValid())
-		m_pObjectsTree->Render_LightSources(false, passInfo);
+	{
+		uint32 outdoorCullMask = IsOutdoorVisible() ? passCullMask : (passCullMask & ~kPassCullMainMask);
+		m_pObjectsTree->Render_LightSources(false, outdoorCullMask, passInfo);
+	}
 
 	// render indoor point lights and collect dynamic point light frustums
 	for (int i = 0; i < m_pVisAreaManager->m_lstVisibleAreas.Count(); ++i)
@@ -3724,7 +3732,7 @@ void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, uint32& 
 		if (pArea->IsObjectsTreeValid())
 		{
 			for (int c = 0; c < pArea->m_lstCurCamerasLen; ++c)
-				pArea->GetObjectsTree()->Render_LightSources(false, SRenderingPassInfo::CreateTempRenderingInfo(CVisArea::s_tmpCameras[pArea->m_lstCurCamerasIdx + c], passInfo));
+				pArea->GetObjectsTree()->Render_LightSources(false, passCullMask, SRenderingPassInfo::CreateTempRenderingInfo(CVisArea::s_tmpCameras[pArea->m_lstCurCamerasIdx + c], passInfo));
 		}
 	}
 

@@ -234,8 +234,11 @@ macro(copy_binary_files_to_target)
 			# Qt: Debug && Profile will use the same win_x64 folder, for Release Qt will not be deployed. Empty second arg do the job
 			deploy_runtime_files("${SDK_DIR}/Qt/5.12.0/msvc2017_64/Qt/bin/*.dll" "")
 			deploy_runtime_files("${SDK_DIR}/Qt/5.12.0/msvc2017_64/Qt/bin/*.pdb" "")
-			deploy_runtime_files("${SDK_DIR}/Qt/5.12.0/msvc2017_64/Qt/plugins/imageformats/*.dll" "imageformats")
-			deploy_runtime_files("${SDK_DIR}/Qt/5.12.0/msvc2017_64/Qt/plugins/platforms/*.dll" "platforms")
+			deploy_runtime_files("${SDK_DIR}/Qt/5.12.0/msvc2017_64/Qt/bin/QtWebEngineProcess.exe" "")
+			deploy_runtime_files("${SDK_DIR}/Qt/5.12.0/msvc2017_64/PySide/PySide2/qt.conf" "")
+			file(COPY ${SDK_DIR}/Qt/5.12.0/msvc2017_64/Qt/plugins DESTINATION ${base_outdir})
+			file(COPY ${SDK_DIR}/Qt/5.12.0/msvc2017_64/Qt/resources DESTINATION ${base_outdir})
+			file(COPY ${SDK_DIR}/Qt/5.12.0/msvc2017_64/Qt/translations/qtwebengine_locales/en-US.pak DESTINATION "${base_outdir}/translations/qtwebengine_locales")
 
 			deploy_runtime_files("${SDK_DIR}/XT_13_4/bin_vc14/*.dll" "")
 			deploy_runtime_files("${SDK_DIR}/XT_13_4/bin_vc14/*.pdb" "")

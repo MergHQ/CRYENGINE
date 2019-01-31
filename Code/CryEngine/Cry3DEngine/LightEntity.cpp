@@ -1811,6 +1811,8 @@ void CLightEntity::UpdateCastShadowFlag(float fDistance, const SRenderingPassInf
 
 void CLightEntity::Render(const SRendParams& rParams, const SRenderingPassInfo& passInfo)
 {
+	FUNCTION_PROFILER_3DENGINE;
+
 	DBG_LOCK_TO_THREAD(this);
 
 #if defined(FEATURE_SVO_GI)
@@ -1842,8 +1844,6 @@ void CLightEntity::Render(const SRendParams& rParams, const SRenderingPassInfo& 
 	}
 
 	UpdateCastShadowFlag(rParams.fDistance, passInfo);
-
-	FUNCTION_PROFILER_3DENGINE;
 
 	int nRenderNodeMinSpec = (m_dwRndFlags & ERF_SPEC_BITS_MASK) >> ERF_SPEC_BITS_SHIFT;
 	if (!CheckMinSpec(nRenderNodeMinSpec))
