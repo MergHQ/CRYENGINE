@@ -1069,6 +1069,8 @@ protected:
 	void UpdateLegsColliders();
 	void ReleaseLegsColliders();
 
+	int GetShadowCharacterSlot() const { return 5; }
+
 	static SActorAnimationEvents s_animationEventsTable;
 
 	EntityId m_lastNetItemId;

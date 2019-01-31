@@ -1301,7 +1301,7 @@ bool CActor::SetActorModelInternal(const SActorFileModelInfo &fileModelInfo)
 	if (bIsClient && !fileModelInfo.sShadowFileName.empty() && 0 != m_currShadowModel.compareNoCase(fileModelInfo.sShadowFileName))
 	{
 		m_currShadowModel = fileModelInfo.sShadowFileName;
-		pEntity->LoadCharacter(5, fileModelInfo.sShadowFileName.c_str());
+		pEntity->LoadCharacter(GetShadowCharacterSlot(), fileModelInfo.sShadowFileName.c_str());
 	}
 
 	return hasChangedModel;

@@ -1268,7 +1268,6 @@ public:
 	bool HasActiveNavPath() const;
 
 	bool HasShadowCharacter() const;
-	int  GetShadowCharacterSlot() const;
 	ICharacterInstance *GetShadowCharacter() const;
 
 	void UpdateVisibility();
