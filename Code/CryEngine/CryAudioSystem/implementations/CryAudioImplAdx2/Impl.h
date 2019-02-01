@@ -82,8 +82,8 @@ public:
 		TriggerInstanceId const triggerInstanceId,
 		uint32 const cueId,
 		CriAtomExPlaybackId const playbackId,
-		CBaseObject const* const pBaseObject = nullptr,
-		CCue const* const pCue = nullptr);
+		CCue const* const pCue,
+		CBaseObject const* const pBaseObject = nullptr);
 	void DestructCueInstance(CCueInstance const* const pCueInstance);
 
 private:
