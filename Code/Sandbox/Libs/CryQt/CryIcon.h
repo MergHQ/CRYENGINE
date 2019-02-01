@@ -45,18 +45,18 @@ public:
 	CryPixmapIconEngine(CryIconColorMap colorMap = CryIconColorMap());
 	CryPixmapIconEngine(const CryPixmapIconEngine&);
 
-	void                      paint(QPainter* painter, const QRect& rect, QIcon::Mode mode, QIcon::State state) Q_DECL_OVERRIDE;
-	QPixmap                   pixmap(const QSize& size, QIcon::Mode mode, QIcon::State state) Q_DECL_OVERRIDE;
-	CryPixmapIconEngineEntry* bestMatch(const QSize& size, QIcon::Mode mode, QIcon::State state, bool sizeOnly);
-	QSize                     actualSize(const QSize& size, QIcon::Mode mode, QIcon::State state) Q_DECL_OVERRIDE;
-	void                      addPixmap(const QPixmap& pixmap, QIcon::Mode mode, QIcon::State state) Q_DECL_OVERRIDE;
-	void                      addFile(const QString& fileName, const QSize& size, QIcon::Mode mode, QIcon::State state) Q_DECL_OVERRIDE;
+	virtual void                      paint(QPainter* painter, const QRect& rect, QIcon::Mode mode, QIcon::State state) override;
+	virtual QPixmap                   pixmap(const QSize& size, QIcon::Mode mode, QIcon::State state) override;
+	virtual CryPixmapIconEngineEntry* bestMatch(const QSize& size, QIcon::Mode mode, QIcon::State state, bool sizeOnly);
+	virtual QSize                     actualSize(const QSize& size, QIcon::Mode mode, QIcon::State state) override;
+	virtual void                      addPixmap(const QPixmap& pixmap, QIcon::Mode mode, QIcon::State state) override;
+	virtual void                      addFile(const QString& fileName, const QSize& size, QIcon::Mode mode, QIcon::State state) override;
 
-	QString                   key() const Q_DECL_OVERRIDE;
-	CryQtIconEngine* clone() const Q_DECL_OVERRIDE;
-	bool                      read(QDataStream& in) Q_DECL_OVERRIDE;
-	bool                      write(QDataStream& out) const Q_DECL_OVERRIDE;
-	void                      virtual_hook(int id, void* data) Q_DECL_OVERRIDE;
+	virtual QString                   key() const override;
+	virtual CryQtIconEngine*          clone() const override;
+	virtual bool                      read(QDataStream& in) override;
+	virtual bool                      write(QDataStream& out) const override;
+	virtual void                      virtual_hook(int id, void* data) override;
 
 private:
 	CryPixmapIconEngineEntry* tryMatch(const QSize& size, QIcon::Mode mode, QIcon::State state);

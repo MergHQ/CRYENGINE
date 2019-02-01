@@ -22,12 +22,12 @@ QToolWindowTabBar::QToolWindowTabBar(QWidget* parent)
 	m_tabSelectionButton->setIcon(CryIcon("icons:General/Pointer_Down_Expanded.ico"));
 	m_tabSelectionButton->setMenu(m_tabSelectionMenu);
 	m_tabSelectionButton->setPopupMode(QToolButton::InstantPopup);
-	QString styleSheet = QString("QToolWindowArea > QTabBar::scroller{	width: %1px;}").arg(m_tabSelectionButton->sizeHint().width()/2);//use half the size of the button for scrollers (Because size is used for each of the scroller
+	QString styleSheet = QString("QToolWindowArea > QTabBar::scroller{	width: %1px;}").arg(m_tabSelectionButton->sizeHint().width() / 2);//use half the size of the button for scrollers (Because size is used for each of the scroller
 	setStyleSheet(styleSheet);
 	connect(m_tabSelectionMenu, &QMenu::aboutToShow, this, &QToolWindowTabBar::onSelectionMenuClicked);
 }
 
-void QToolWindowTabBar::paintEvent(QPaintEvent *e)
+void QToolWindowTabBar::paintEvent(QPaintEvent* e)
 {
 	QTabBar::paintEvent(e);
 	QRect tabbarRect = rect();
@@ -38,7 +38,7 @@ void QToolWindowTabBar::paintEvent(QPaintEvent *e)
 		m_tabSelectionButton->raise();
 		QRect rect = contentsRect();
 		QSize size = m_tabSelectionButton->sizeHint();
-		m_tabSelectionButton->move(QPoint(rect.width()-m_tabSelectionButton->width(), 0));
+		m_tabSelectionButton->move(QPoint(rect.width() - m_tabSelectionButton->width(), 0));
 	}
 	else
 	{

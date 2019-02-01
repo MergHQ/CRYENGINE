@@ -4,16 +4,16 @@
 
 #include "QCustomWindowFrame.h"
 
-#include <QPushButton>
-#include <QToolButton>
+#include <QApplication>
+#include <QDesktopWidget>
 #include <QGridLayout>
 #include <QLabel>
 #include <QLayout>
-#include <QStyle>
 #include <QMouseEvent>
-#include <QApplication>
-#include <QDesktopWidget>
+#include <QPushButton>
+#include <QStyle>
 #include <QTimer>
+#include <QToolButton>
 
 #if defined(WIN32) || defined(WIN64)
 #include <windows.h>

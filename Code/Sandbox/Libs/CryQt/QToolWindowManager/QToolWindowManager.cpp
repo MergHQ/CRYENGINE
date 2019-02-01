@@ -1,9 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
 #include "QToolWindowManager.h"
+
+#include "IToolWindowDragHandler.h"
+#include "QCustomWindowFrame.h"
 #include "QToolWindowArea.h"
+#include "QToolWindowDragHandlerDropTargets.h"
 #include "QToolWindowRollupBarArea.h"
 #include "QToolWindowWrapper.h"
 
@@ -14,10 +17,6 @@
 #include <QSet>
 #include <QWindowStateChangeEvent>
 #include <QWindow>
-
-#include "QToolWindowDragHandlerDropTargets.h"
-#include "IToolWindowDragHandler.h"
-#include "QCustomWindowFrame.h"
 
 #if defined(WIN32) || defined(WIN64)
 	#include <windows.h>
