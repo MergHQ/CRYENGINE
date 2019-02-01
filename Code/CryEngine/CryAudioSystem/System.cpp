@@ -2468,7 +2468,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> const*>(request.GetData());
 
-			pObject->ProcessPhysicsRay(pRequestData->pRayInfo);
+			pObject->ProcessPhysicsRay(pRequestData->rayInfo);
 			result = ERequestStatus::Success;
 
 			break;

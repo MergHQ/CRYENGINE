@@ -237,9 +237,9 @@ void CObject::HandleSetOcclusionType(EOcclusionType const calcType)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CObject::ProcessPhysicsRay(CRayInfo* const pRayInfo)
+void CObject::ProcessPhysicsRay(CRayInfo& rayInfo)
 {
-	m_propagationProcessor.ProcessPhysicsRay(pRayInfo);
+	m_propagationProcessor.ProcessPhysicsRay(rayInfo);
 }
 
 //////////////////////////////////////////////////////////////////////////
