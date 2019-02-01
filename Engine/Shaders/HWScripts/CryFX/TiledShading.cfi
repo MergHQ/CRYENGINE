@@ -467,7 +467,7 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 	
 	// Find out if any threads in the tile are within the projection
 	{
-		bool bWithinProjection = all(linearUV.xy > 0) && all(linearUV.xy < 1);
+		uint bWithinProjection = all(linearUV.xy > 0) && all(linearUV.xy < 1);
 		
 		InterlockedMax( sTileWithinProjection, bWithinProjection );
 		

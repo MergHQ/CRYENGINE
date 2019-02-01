@@ -460,6 +460,10 @@ void CEntityPhysics::OnTimer(int id)
 			pfd.iForeignData = PHYS_FOREIGN_ID_ENTITY;
 			pfd.iForeignFlags = 0;
 			m_pPhysicalEntity->SetParams(&pfd);
+			pe_params_flags pf;
+			pf.flagsOR = pef_log_poststep;
+			pf.flagsAND = ~pef_disabled;
+			m_pPhysicalEntity->SetParams(&pf);
 			GetEntity()->SetInternalFlag(CEntity::EInternalFlag::PhysicsAttachClothOnRender, false);
 			return;
 		}
@@ -1456,6 +1460,10 @@ void CEntityPhysics::PhysicalizeSoft(SEntityPhysicalizeParams& params)
 			params.pAttachToEntity->AddRef();
 		pfd.iForeignFlags = params.nAttachToPart;
 		m_pPhysicalEntity->SetParams(&pfd);
+		pe_params_flags pf;
+		pf.flagsOR = pef_disabled;
+		pf.flagsAND = pef_log_poststep;
+		m_pPhysicalEntity->SetParams(&pf);
 		GetEntity()->SetInternalFlag(CEntity::EInternalFlag::PhysicsAttachClothOnRender, true);
 		GetEntity()->SetTimer(this, GetEntity()->GetId(), CryGUID(), 0, 50);
 	}
