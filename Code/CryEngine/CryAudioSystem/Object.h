@@ -140,7 +140,7 @@ public:
 #if defined(CRY_AUDIO_USE_OCCLUSION)
 	void SetOcclusion(float const occlusion);
 	void HandleSetOcclusionType(EOcclusionType const calcType);
-	void ProcessPhysicsRay(CRayInfo* const pRayInfo);
+	void ProcessPhysicsRay(CRayInfo& rayInfo);
 	void HandleSetOcclusionRayOffset(float const offset);
 	void ReleasePendingRays();
 #endif // CRY_AUDIO_USE_OCCLUSION

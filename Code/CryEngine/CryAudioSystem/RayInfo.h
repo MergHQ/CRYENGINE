@@ -8,7 +8,15 @@ namespace CryAudio
 {
 class CObject;
 
-constexpr size_t g_maxRayHits = 10;
+constexpr uint8 g_maxRayHits = 30;
+
+struct SRayHitInfo
+{
+	SRayHitInfo() = default;
+
+	float distance = 0.0f;
+	short surface_index = 0;
+};
 
 class CRayInfo
 {
@@ -18,11 +26,11 @@ public:
 
 	void Reset();
 
-	CObject* pObject = nullptr;
-	size_t   samplePosIndex = 0;
-	size_t   numHits = 0;
-	float    totalSoundOcclusion = 0.0f;
-	ray_hit  hits[g_maxRayHits];
+	CObject*    pObject = nullptr;
+	uint8       samplePosIndex = 0;
+	uint8       numHits = 0;
+	float       totalSoundOcclusion = 0.0f;
+	SRayHitInfo hits[g_maxRayHits];
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	Vec3  startPosition = ZERO;

@@ -300,19 +300,19 @@ struct SObjectRequestData<EObjectRequestType::SetEnvironment> final : public SOb
 template<>
 struct SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> final : public SObjectRequestDataBase, public CPoolObject<SObjectRequestData<EObjectRequestType::ProcessPhysicsRay>, stl::PSyncMultiThread>
 {
-	explicit SObjectRequestData(CObject* const pObject_, CRayInfo* const pRayInfo_)
+	explicit SObjectRequestData(CObject* const pObject_, CRayInfo& rayInfo_)
 		: SObjectRequestDataBase(EObjectRequestType::ProcessPhysicsRay, pObject_)
-		, pRayInfo(pRayInfo_)
+		, rayInfo(rayInfo_)
 	{}
 
 	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> const* const pORData)
 		: SObjectRequestDataBase(EObjectRequestType::ProcessPhysicsRay, pORData->pObject)
-		, pRayInfo(pORData->pRayInfo)
+		, rayInfo(pORData->rayInfo)
 	{}
 
 	virtual ~SObjectRequestData() override = default;
 
-	CRayInfo* const pRayInfo;
+	CRayInfo& rayInfo;
 };
 
 //////////////////////////////////////////////////////////////////////////
