@@ -42,23 +42,25 @@ public:
 		TriggerInstanceId const triggerInstanceId,
 		uint32 const cueId,
 		CriAtomExPlaybackId const playbackId,
-		CBaseObject const* const pBaseObject,
-		CCue const* const pCue)
+		CCue const* const pCue,
+		CBaseObject const* const pBaseObject)
 		: m_triggerInstanceId(triggerInstanceId)
 		, m_cueId(cueId)
 		, m_playbackId(playbackId)
+		, m_pCue(pCue)
 		, m_flags(ECueInstanceFlags::IsVirtual) // Voices always start in virtual state.
 		, m_pBaseObject(pBaseObject)
-		, m_pCue(pCue)
 	{}
 #else
 	explicit CCueInstance(
 		TriggerInstanceId const triggerInstanceId,
 		uint32 const cueId,
-		CriAtomExPlaybackId const playbackId)
+		CriAtomExPlaybackId const playbackId,
+		CCue const* const pCue)
 		: m_triggerInstanceId(triggerInstanceId)
 		, m_cueId(cueId)
 		, m_playbackId(playbackId)
+		, m_pCue(pCue)
 		, m_flags(ECueInstanceFlags::None)
 	{}
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
@@ -91,10 +93,10 @@ private:
 	uint32 const                   m_cueId;
 	CriAtomExPlaybackId const      m_playbackId;
 	std::atomic<ECueInstanceFlags> m_flags;
+	CCue const* const              m_pCue;
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	CBaseObject const* const m_pBaseObject;
-	CCue const* const        m_pCue;
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 };
 } // namespace Adx2

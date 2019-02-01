@@ -1076,16 +1076,16 @@ CCueInstance* CImpl::ConstructCueInstance(
 	TriggerInstanceId const triggerInstanceId,
 	uint32 const cueId,
 	CriAtomExPlaybackId const playbackId,
-	CBaseObject const* const pBaseObject /*= nullptr*/,
-	CCue const* const pCue /*= nullptr*/)
+	CCue const* const pCue,
+	CBaseObject const* const pBaseObject /*= nullptr*/)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCueInstance");
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
-	auto const pCueInstance = new CCueInstance(triggerInstanceId, cueId, playbackId, pBaseObject, pCue);
+	auto const pCueInstance = new CCueInstance(triggerInstanceId, cueId, playbackId, pCue, pBaseObject);
 	g_constructedCueInstances.push_back(pCueInstance);
 #else
-	auto const pCueInstance = new CCueInstance(triggerInstanceId, cueId, playbackId);
+	auto const pCueInstance = new CCueInstance(triggerInstanceId, cueId, playbackId, pCue);
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 	return pCueInstance;

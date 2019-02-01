@@ -44,9 +44,9 @@ ETriggerResult CCue::Execute(IObject* const pIObject, TriggerInstanceId const tr
 				CriAtomExPlaybackId const playbackId = criAtomExPlayer_Start(pPlayer);
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
-				auto const pCueInstance = g_pImpl->ConstructCueInstance(triggerInstanceId, m_id, playbackId, pBaseObject, this);
+				auto const pCueInstance = g_pImpl->ConstructCueInstance(triggerInstanceId, m_id, playbackId, this, pBaseObject);
 #else
-				auto const pCueInstance = g_pImpl->ConstructCueInstance(triggerInstanceId, m_id, playbackId);
+				auto const pCueInstance = g_pImpl->ConstructCueInstance(triggerInstanceId, m_id, playbackId, this);
 #endif                // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 				if (criAtomExPlayback_GetStatus(playbackId) == CRIATOMEXPLAYBACK_STATUS_PLAYING)
