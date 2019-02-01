@@ -2,6 +2,8 @@
 
 #include "stdafx.h"
 #include "CueInstance.h"
+#include "Common.h"
+#include "Cue.h"
 
 namespace CryAudio
 {
@@ -9,6 +11,36 @@ namespace Impl
 {
 namespace Adx2
 {
+//////////////////////////////////////////////////////////////////////////
+bool CCueInstance::PrepareForPlayback()
+{
+	bool isPlaying = false;
+
+	if (criAtomExPlayback_GetStatus(m_playbackId) == CRIATOMEXPLAYBACK_STATUS_PLAYING)
+	{
+		CriAtomExAcbHn const pAcbHandle = m_pCue->GetAcbHandle();
+		auto const cueName = static_cast<CriChar8 const*>(m_pCue->GetName());
+		CriAtomExCueInfo cueInfo;
+
+		if (criAtomExAcb_GetCueInfoByName(pAcbHandle, cueName, &cueInfo) == CRI_TRUE)
+		{
+			if (cueInfo.pos3d_info.doppler_factor > 0.0f)
+			{
+				SetFlag(ECueInstanceFlags::HasDoppler);
+			}
+		}
+
+		if (criAtomExAcb_IsUsingAisacControlByName(pAcbHandle, cueName, g_szAbsoluteVelocityAisacName) == CRI_TRUE)
+		{
+			SetFlag(ECueInstanceFlags::HasAbsoluteVelocity);
+		}
+
+		isPlaying = true;
+	}
+
+	return isPlaying;
+}
+
 //////////////////////////////////////////////////////////////////////////
 void CCueInstance::Stop()
 {

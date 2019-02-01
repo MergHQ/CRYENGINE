@@ -37,50 +37,28 @@ ETriggerResult CCue::Execute(IObject* const pIObject, TriggerInstanceId const tr
 
 			if (iter != g_acbHandles.end())
 			{
-				CriAtomExAcbHn const acbHandle = iter->second;
+				m_pAcbHandle = iter->second;
 				auto const cueName = static_cast<CriChar8 const*>(m_name.c_str());
 
-				criAtomExPlayer_SetCueName(pPlayer, acbHandle, cueName);
+				criAtomExPlayer_SetCueName(pPlayer, m_pAcbHandle, cueName);
 				CriAtomExPlaybackId const playbackId = criAtomExPlayer_Start(pPlayer);
 
-				while (true)
-				{
-					CriAtomExPlaybackStatus const status = criAtomExPlayback_GetStatus(playbackId);
-
-					if (status != CRIATOMEXPLAYBACK_STATUS_PREP)
-					{
-						if (status == CRIATOMEXPLAYBACK_STATUS_PLAYING)
-						{
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
-							auto const pCueInstance = g_pImpl->ConstructCueInstance(triggerInstanceId, m_id, playbackId, pBaseObject, this);
+				auto const pCueInstance = g_pImpl->ConstructCueInstance(triggerInstanceId, m_id, playbackId, pBaseObject, this);
 #else
-							auto const pCueInstance = g_pImpl->ConstructCueInstance(triggerInstanceId, m_id, playbackId);
+				auto const pCueInstance = g_pImpl->ConstructCueInstance(triggerInstanceId, m_id, playbackId);
 #endif                // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
-							CriAtomExCueInfo cueInfo;
-
-							if (criAtomExAcb_GetCueInfoByName(acbHandle, cueName, &cueInfo) == CRI_TRUE)
-							{
-								if (cueInfo.pos3d_info.doppler_factor > 0.0f)
-								{
-									pCueInstance->SetFlag(ECueInstanceFlags::HasDoppler);
-								}
-							}
-
-							if (criAtomExAcb_IsUsingAisacControlByName(acbHandle, cueName, g_szAbsoluteVelocityAisacName) == CRI_TRUE)
-							{
-								pCueInstance->SetFlag(ECueInstanceFlags::HasAbsoluteVelocity);
-							}
-
-							pBaseObject->AddCueInstance(pCueInstance);
-							pBaseObject->UpdateVelocityTracking();
-
-							result = ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) != 0) ? ETriggerResult::Virtual : ETriggerResult::Playing;
-						}
-
-						break;
-					}
+				if (criAtomExPlayback_GetStatus(playbackId) == CRIATOMEXPLAYBACK_STATUS_PLAYING)
+				{
+					pBaseObject->AddCueInstance(pCueInstance);
 				}
+				else
+				{
+					pBaseObject->AddPendingCueInstance(pCueInstance);
+				}
+
+				result = ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) != 0) ? ETriggerResult::Virtual : ETriggerResult::Playing;
 			}
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 			else

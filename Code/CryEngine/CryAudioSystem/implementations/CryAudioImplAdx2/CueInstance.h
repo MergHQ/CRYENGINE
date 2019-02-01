@@ -47,7 +47,7 @@ public:
 		: m_triggerInstanceId(triggerInstanceId)
 		, m_cueId(cueId)
 		, m_playbackId(playbackId)
-		, m_flags(ECueInstanceFlags::None)
+		, m_flags(ECueInstanceFlags::IsVirtual) // Voices always start in virtual state.
 		, m_pBaseObject(pBaseObject)
 		, m_pCue(pCue)
 	{}
@@ -73,6 +73,8 @@ public:
 	ECueInstanceFlags   GetFlags() const                         { return m_flags; }
 	void                SetFlag(ECueInstanceFlags const flag)    { m_flags = m_flags | flag; }
 	void                RemoveFlag(ECueInstanceFlags const flag) { m_flags = m_flags & ~flag; }
+
+	bool                PrepareForPlayback();
 
 	void                Stop();
 	void                Pause();
