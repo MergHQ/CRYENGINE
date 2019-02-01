@@ -14,20 +14,6 @@
 #include "PlayerAnimation.h"
 #include <CryGame/GameUtils.h>
 
-
-namespace
-{
-
-
-	bool g_fpAimingStopOnExit = true;
-	int g_fpAimingLayer = 0;
-	float g_fpAimingEntryTime = 0.25f;
-	float g_fpAimingExitTime = 0.2f;
-	float g_fpAimingTransitionTime = 0.175f;
-
-
-}
-
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
@@ -294,8 +280,6 @@ void CWeaponFPAiming::Update(const SParams_WeaponFPAiming &params)
 	const float STAP_MF_VerticalMotion	= GetGameConstCVar(STAP_MF_VerticalMotion);
 	const float STAP_MF_VelFactorVertical		= GetGameConstCVar(STAP_MF_VelFactorVertical);
 	const float STAP_MF_VelFactorHorizontal	= GetGameConstCVar(STAP_MF_VelFactorHorizontal);
-
-	const float SCOPE_LAND_FACTOR = 0.1f;
 
 	const float MIN_VERT_DIR = 0.2f;
 	const float MAX_VERT_DIR = 1.0f;

@@ -196,7 +196,6 @@ EMovementTransitionState STransition::Update(
 				Vec3 realEndPoint = jukePoint + Quat::CreateRotationZ(transParams.m_jukeAngle) * oldMoveDirection * distanceAfterJuke;
 
 				Vec3 desiredBodyDirection = Quat::CreateRotationZ(-this->desiredTravelAngle) * oldMoveDirection;
-				Vec3 currentBodyDirection = Quat::CreateRotationZ(-transParams.m_travelAngle) * oldMoveDirection;
 
 				pDc->DrawSphere(jukePoint + 8.00f*up, 0.1f, debugColor);
 				pDc->DrawArrow(startPoint + 8.00f*up, (jukePoint - startPoint), 0.1f, debugColor);
@@ -276,24 +275,30 @@ bool STransition::ReadParams( ETransitionType _transitionType, const struct IIte
 	if (transitionType == eTT_Stop)
 	{
 		desiredArrivalAngle = 0.0f;
-		bool hasDesiredArrivalAngle = ReadAngleParam("arrivalAngle", false, -gf_PI2, gf_PI2, pParams, &desiredArrivalAngle);
-
 		arrivalAngleTolerance = FLT_MAX;
+#if defined(USE_CRY_ASSERT)
+		bool hasDesiredArrivalAngle = ReadAngleParam("arrivalAngle", false, -gf_PI2, gf_PI2, pParams, &desiredArrivalAngle);
 		bool hasArrivalAngleTolerance = ReadAngleParam("arrivalAngleTolerance", false, 0.0f, gf_PI2, pParams, &arrivalAngleTolerance);
-
 		CRY_ASSERT_MESSAGE(!hasDesiredArrivalAngle ||  hasArrivalAngleTolerance, "Transition has arrivalAngle but no arrivalAngleTolerance");
 		CRY_ASSERT_MESSAGE( hasDesiredArrivalAngle || !hasArrivalAngleTolerance, "Transition has arrivalAngleTolerance but no arrivalAngle");
+#else
+		ReadAngleParam("arrivalAngle", false, -gf_PI2, gf_PI2, pParams, &desiredArrivalAngle);
+		ReadAngleParam("arrivalAngleTolerance", false, 0.0f, gf_PI2, pParams, &arrivalAngleTolerance);
+#endif
 	}
 	else
 	{
 		desiredTargetTravelAngle = 0.0f;
-		bool hasDesiredTargetTravelAngle = ReadAngleParam("targetTravelAngle", false, -gf_PI2, gf_PI2, pParams, &desiredTargetTravelAngle);
-
 		targetTravelAngleTolerance = FLT_MAX;
+#if defined(USE_CRY_ASSERT)
+		bool hasDesiredTargetTravelAngle = ReadAngleParam("targetTravelAngle", false, -gf_PI2, gf_PI2, pParams, &desiredTargetTravelAngle);
 		bool hasTargetTravelAngleTolerance = ReadAngleParam("targetTravelAngleTolerance", false, 0.0f, gf_PI2, pParams, &targetTravelAngleTolerance);
-
 		CRY_ASSERT_MESSAGE(!hasDesiredTargetTravelAngle ||  hasTargetTravelAngleTolerance, "Transition has targetTravelAngle but no targetTravelAngleTolerance");
 		CRY_ASSERT_MESSAGE( hasDesiredTargetTravelAngle || !hasTargetTravelAngleTolerance, "Transition has targetTravelAngleTolerance but no targetTravelAngle");
+#else
+		ReadAngleParam("targetTravelAngle", false, -gf_PI2, gf_PI2, pParams, &desiredTargetTravelAngle);
+		ReadAngleParam("targetTravelAngleTolerance", false, 0.0f, gf_PI2, pParams, &targetTravelAngleTolerance);
+#endif
 
 		if (transitionType == eTT_DirectionChange)
 		{

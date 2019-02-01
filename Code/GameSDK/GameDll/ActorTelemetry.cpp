@@ -135,9 +135,7 @@ void CActorTelemetry::Update()
 	CStatsRecordingMgr* pMgr = g_pGame->GetStatsRecorder();
 	if(tracker && pOwner && pMgr)
 	{
-		IGameStatistics		*gs=g_pGame->GetIGameFramework()->GetIGameStatistics();
 		CTimeValue time = gEnv->pTimer->GetFrameStartTime(ITimer::ETIMER_UI);
-		assert(gs);
 
 		if (TimePassedCheck(m_lastPositionTime, time, POSITION_DUMP_INTERVAL) && pMgr->ShouldRecordEvent(eSE_Position, pOwnerRaw))
 		{

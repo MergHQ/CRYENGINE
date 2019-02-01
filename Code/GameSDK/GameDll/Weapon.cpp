@@ -529,7 +529,7 @@ bool CWeapon::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile,
 
 			if (owner)
 			{
-				if (IInventory* inv = owner->GetInventory())
+				if (owner->GetInventory() != nullptr)
 				{
 					if (IFireMode* ifm = GetFireMode(GetCurrentFireMode()))
 					{
@@ -2283,7 +2283,6 @@ void CWeapon::SetAmmoCount(IEntityClass* pAmmoType, int count)
 			currentCapacity = pInventory->GetAmmoCapacity(pAmmoType);
 		}
 	}
-	const bool ammoChanged = currentCount != count;
 
 	const bool bExistingAmmoType = SWeaponAmmoUtils::SetAmmo(m_ammo, pAmmoType, count);
 	if (!bExistingAmmoType && m_isRegisteredAmmoWithInventory)
@@ -4477,7 +4476,6 @@ bool CWeapon::CheckAmmoRestrictionsForBonusAndMagazineAmmo(IInventory& inventory
 
 	if (!m_ammo.empty())
 	{
-		const TAmmoVector& accesoryAmmoMap = m_weaponsharedparams->ammoParams.accessoryAmmo;
 		const TAmmoVector::const_iterator ammoEndCit = m_ammo.end();
 
 		for (TAmmoVector::const_iterator ammoCit = m_ammo.begin(); ammoCit != ammoEndCit; ++ammoCit)

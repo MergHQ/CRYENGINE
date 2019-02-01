@@ -213,8 +213,6 @@ void CFeatureTestMgr::ForceRun(const char* testNameFilter)
 
 			CryLogAlways("Forcefully running Map Tests: %s", m_pRunningTest->Name());
 
-			const float currTime = gEnv->pTimer->GetCurrTime();
-
 			// If test doesn't start
 			if (!m_pRunningTest->Start())
 			{

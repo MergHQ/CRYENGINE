@@ -360,34 +360,30 @@ void	CRuntimePrefab::Move()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void	CRuntimePrefab::HideComponents(bool bHide)
+void CRuntimePrefab::HideComponents(bool bHide)
 {
 	// entities
-	int nPrefabRef=0;
-	for (std::vector<EntityId>::iterator i=m_lstIDs.begin();i!=m_lstIDs.end();++i)			
+	for (std::vector<EntityId>::iterator i=m_lstIDs.begin();i!=m_lstIDs.end();++i)
 	{
-		EntityId id=(*i);		
+		EntityId id=(*i);
 
-		IEntity	*pEntity = gEnv->pEntitySystem->GetEntity(id);		
-		if (pEntity)		
+		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id);
+		if (pEntity)
 			pEntity->Hide(bHide);
 	}
 
 	// brushes and decals
-	for (std::vector<IRenderNode*>::iterator i=m_lstNodes.begin();i!=m_lstNodes.end();++i)			
+	for (std::vector<IRenderNode*>::iterator i=m_lstNodes.begin();i!=m_lstNodes.end();++i)
 	{
-		IRenderNode *pNode=(*i);				
+		IRenderNode* pNode=(*i);
 		if (pNode)
 			pNode->Hide(bHide);
-	}	
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void	CRuntimePrefab::Hide(bool bHide)
 {
-	IEntity* pEntity = gEnv->pEntitySystem->GetEntity( m_id );	
-	assert(pEntity);
-
 	for (std::vector<CRuntimePrefab*>::iterator i=m_lstPrefabs.begin();i!=m_lstPrefabs.end();++i)
 	{
 		CRuntimePrefab *pPrefab=(*i);

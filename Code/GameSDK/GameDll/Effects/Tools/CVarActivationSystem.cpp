@@ -68,7 +68,6 @@ void CCVarActivationSystem::StoreCurrentValues()
 void CCVarActivationSystem::SetCVarsActive(bool isActive)
 {
 	SCVarParam* param = NULL;
-	float value = 0.0f;
 	for(uint32 i=0; i<m_cvarParam.Size(); i++)
 	{
 		param = &m_cvarParam[i];

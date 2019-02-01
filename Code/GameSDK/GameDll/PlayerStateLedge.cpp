@@ -316,7 +316,7 @@ void CPlayerStateLedge::OnEnter( CPlayer& player, const SStateEventLedge& ledgeE
 	m_onLedge = true;
 	m_postSerializeLedgeTransition = ledgeTransition;
 
-	if( IAnimatedCharacter* pAnimChar = player.GetAnimatedCharacter() )
+	if(player.GetAnimatedCharacter() != nullptr)
 	{
 		//////////////////////////////////////////////////////////////////////////
 		// Current weapon and input setup
@@ -622,7 +622,6 @@ void CPlayerStateLedge::UpdateNearestGrabbableLedge( const CPlayer& player, SLed
 		{
 			const bool characterMovesTowardLedge = IsCharacterMovingTowardsLedge(player, ledgeId);
 			const bool ledgePointsTowardCharacter = IsLedgePointingTowardCharacter(player, ledgeId);
-			const bool isPressingJump = player.m_jumpButtonIsPressed;
 			if ((characterMovesTowardLedge || ignoreCharacterMovement) && ledgePointsTowardCharacter)
 			{
 				pLedgeState->m_nearestGrabbableLedgeId = ledgeId;

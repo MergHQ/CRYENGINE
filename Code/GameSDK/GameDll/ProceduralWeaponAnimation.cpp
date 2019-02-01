@@ -156,7 +156,6 @@ namespace
 
 		SMovementState info;
 		pMC->GetMovementState(info);
-		Vec3 dir = info.fireDirection;
 
 		DrawGoldenRatio(currentAspectRatio, offsetX, widthMult);
 		DrawSights(currentAspectRatio, offsetX, widthMult);
@@ -167,9 +166,6 @@ namespace
 
 		gEnv->pRenderer->GetIRenderAuxGeom()->SetRenderFlags(currentFlags);
 	}
-
-
-
 }
 
 

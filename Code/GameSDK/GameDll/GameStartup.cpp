@@ -201,13 +201,6 @@ IGameRef CGameStartup::Init(SSystemInitParams &startupParams)
 		pConsole->ExecuteString(command.c_str(), true, false);
 	}
 
-	// load the appropriate game/mod
-#if !defined(_RELEASE)
-	const ICmdLineArg *pModArg = GetISystem()->GetICmdLine()->FindArg(eCLAT_Pre,"MOD");
-#else
-	const ICmdLineArg *pModArg = NULL;
-#endif // !defined(_RELEASE)
-
 	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CGameStartup");
 
 	// Creates and starts the realtime update system listener.

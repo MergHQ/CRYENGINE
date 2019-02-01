@@ -263,7 +263,6 @@ void CMountedGunController::UpdateGunnerLocation( CItem* pMountedGun, IEntity* p
 		characterTM.SetTranslation(playerOffset);
 
 		IEntity* pControlledPlayerEntity = m_pControlledPlayer->GetEntity();
-		IVehicle *pVehicle = NULL;
 
 		if (gEnv->bMultiplayer && m_pControlledPlayer->IsClient() && m_pControlledPlayer->GetLinkedVehicle())
 		{

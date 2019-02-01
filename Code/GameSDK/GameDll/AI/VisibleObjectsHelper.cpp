@@ -398,9 +398,6 @@ void CVisibleObjectsHelper::CheckVisibilityToAI(const TActiveVisibleObjects &act
 {
 	assert(agent.IsValid());
 
-	IScriptSystem *pSS = gEnv->pScriptSystem;
-	assert(pSS);
-
 	IEntity *pAIEntity = gEnv->pEntitySystem->GetEntity(agent.GetEntityID());
 
 	TActiveVisibleObjects::const_iterator itObject = activeVisibleObjects.begin();

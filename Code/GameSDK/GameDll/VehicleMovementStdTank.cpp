@@ -408,8 +408,6 @@ void CVehicleMovementTank::DebugDrawMovement(const float deltaTime)
 
   CVehicleMovementStdWheeled::DebugDrawMovement(deltaTime);
 
-  IPhysicalEntity* pPhysics = GetPhysics();
-  IRenderer* pRenderer = gEnv->pRenderer;
 //  float color[4] = {1,1,1,1};
 //  float green[4] = {0,1,0,1};
   ColorB colRed(255,0,0,255);
@@ -586,16 +584,15 @@ void CVehicleMovementTank::Update(const float deltaTime)
 	if (IsProfilingMovement())
 	{
 		if (m_steeringImpulseMin > 0.f && m_wheelContactsLeft != 0 && m_wheelContactsRight != 0)
-		{  
-			const Matrix34& worldTM = m_pVehicle->GetEntity()->GetWorldTM();   
-			Vec3 localVel = worldTM.GetInvertedFast().TransformVector(m_statusDyn.v);
+		{
+			const Matrix34& worldTM = m_pVehicle->GetEntity()->GetWorldTM();
 			Vec3 localW = worldTM.GetInvertedFast().TransformVector(m_statusDyn.w);
 			float speed = m_statusDyn.v.len();
 			float speedRatio = min(1.f, speed/m_maxSpeed);
 
 			const float maxW = 0.3f*gf_PI;
-			float steer = abs(m_currSteer)>0.001f ? m_currSteer : 0.f;    
-			float desired = steer * maxW; 
+			float steer = abs(m_currSteer)>0.001f ? m_currSteer : 0.f;
+			float desired = steer * maxW;
 			float curr = -localW.z;
 			float err = desired - curr; // err>0 means correction to right 
 			Limit(err, -maxW, maxW);

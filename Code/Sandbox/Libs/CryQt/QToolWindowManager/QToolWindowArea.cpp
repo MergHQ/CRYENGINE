@@ -322,7 +322,8 @@ bool QToolWindowArea::event(QEvent* event)
 	else if (event->type() == QEvent::MouseMove && !m_manager->config().value(QTWM_AREA_SHOW_DRAG_HANDLE, false).toBool())
 	{
 		if (m_areaDragCanStart)
-		{ //actually start the drag operation
+		{
+			//actually start the drag operation
 			if (qApp->mouseButtons() == Qt::LeftButton)
 			{
 				QList<QWidget*> toolWindows;

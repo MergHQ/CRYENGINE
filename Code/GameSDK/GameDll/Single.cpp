@@ -672,7 +672,6 @@ void CSingle::CancelReload()
 void CSingle::PlayShootAction(int ammoCount)
 {
 	CActor *pActor = m_pWeapon->GetOwnerActor();
-	const bool playerIsShooter = pActor ? pActor->IsPlayer() : false;
 	int flags = CItem::eIPAF_Default;
 
 	float speedOverride = -1.0f;
@@ -1143,8 +1142,6 @@ Vec3 CSingle::GetProbableHit(float maxRayLength, bool *pbHit, ray_hit *pHit) con
 	static Vec3 pos(ZERO), dir(FORWARD_DIRECTION);
 
 	CActor *pActor = m_pWeapon->GetOwnerActor();
-	IEntity *pWeaponEntity = m_pWeapon->GetEntity();
-
 	static PhysSkipList skipList;
 	skipList.clear();
 	GetSkipEntities(m_pWeapon, skipList);
@@ -1265,8 +1262,6 @@ void CSingle::DeferGetProbableHit(float maxRayLength)
 {
 	static Vec3 pos(ZERO), dir(FORWARD_DIRECTION);
 	CActor *pActor = m_pWeapon->GetOwnerActor();
-	IEntity *pWeaponEntity = m_pWeapon->GetEntity();
-
 	static PhysSkipList skipList;
 	skipList.clear();
 	GetSkipEntities(m_pWeapon, skipList);
@@ -1799,7 +1794,6 @@ void CSingle::NetShootEx(const Vec3 &pos, const Vec3 &dir, const Vec3 &vel, cons
 	int weaponAmmoCount = m_pWeapon->GetAmmoCount(ammo);
 	int inventoryAmmoCount = m_pWeapon->GetInventoryAmmoCount(ammo);
 	int ammoCount					= (clipSize == 0) ? inventoryAmmoCount : weaponAmmoCount;
-	bool playerIsShooter	= pActor ? pActor->IsPlayer() : false;
 	FragmentID action		= (ammoCount == 1 || m_fireParams->fireparams.no_cock) ? GetFragmentIds().fire : GetFragmentIds().fire_cock;
 
 	int ammoCost = m_fireParams->fireparams.fake_fire_rate ? m_fireParams->fireparams.fake_fire_rate : 1;
@@ -1916,9 +1910,6 @@ void CSingle::ReplayShoot()
 
 		if (firePosInFrustum || DoesFireLineSegmentIntersectFrustum(pos, hit))
 		{
-			Vec3 dir = GetFiringDir(hit, pos);
-			Vec3 vel = GetFiringVelocity(dir);
-
 			const STracerParams * tracerParams = &m_fireParams->tracerparams;
 			if (tracerParams->frequency > 0 && (!tracerParams->geometry.empty() || !tracerParams->effect.empty()))
 			{

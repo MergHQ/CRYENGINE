@@ -121,7 +121,6 @@ void CVehicleMountedWeapon::CorrectRipperEntityPosition(float timeStep)
 		{
 			CPlayer* pPlayer	 = static_cast<CPlayer*>(pOwner); 
 			const Matrix34& wMat = pVehicleEnt->GetWorldTM(); 
-			Vec3 vehiclePos		 = wMat.GetTranslation();
 			Vec3 currWSpaceRipUserOffset = wMat.TransformPoint(m_localRipUserOffset);
 
 			posDiff = currWSpaceRipUserOffset - m_previousWSpaceOffsetPosition;

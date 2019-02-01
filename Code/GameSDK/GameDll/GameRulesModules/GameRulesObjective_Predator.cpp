@@ -995,7 +995,6 @@ void CGameRulesObjective_Predator::Server_UpdateRemainingSoldierCount( int delta
 //-------------------------------------------------------------------------
 void CGameRulesObjective_Predator::Server_OnSoldierKilledOrLeft( EntityId soldierId )
 {
-	EntityId lastMarineStanding = 0;
 	if (m_pGameRules->HasGameActuallyStarted())
 	{
 		int survivorCount = 0;
@@ -1192,7 +1191,6 @@ void CGameRulesObjective_Predator::Server_PrepareChangeTeamPredator( EntityId pl
 	IActor *pActor = g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(playerId);
 	if(pActor)
 	{
-		CPlayer* pPlayer = static_cast<CPlayer*>(pActor);
 		uint16 channelId = pActor->GetChannelId();
 		if(wasSuicide)
 		{
@@ -1260,8 +1258,6 @@ void CGameRulesObjective_Predator::Server_PredatorReadyToSpawn( EntityId playerI
 	IActor *pActor = g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(playerId);
 	if(pActor && pActor->IsPlayer())
 	{
-		CPlayer* pPlayer = static_cast<CPlayer*>(pActor);
-
 		//Change team
 		m_pGameRules->SetTeam(TEAM_PREDATOR, playerId);
 		uint16 channelId = pActor->GetChannelId();

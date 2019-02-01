@@ -628,9 +628,6 @@ bool CGameRulesHoldObjectiveBase::NetSerialize( TSerialize ser, EEntityAspects a
 		{
 			SHoldEntityDetails *pDetails = &m_entities[i];
 
-			int oldTeam1Count = pDetails->m_insideCount[0];
-			int oldTeam2Count = pDetails->m_insideCount[1];
-
 			int team1Count = pDetails->m_insideEntities[0].size();
 			int team2Count = pDetails->m_insideEntities[1].size();
 
@@ -694,7 +691,6 @@ void CGameRulesHoldObjectiveBase::OnEntityKilled( const HitInfo &hitInfo )
 				if ((pIShooter != NULL && pIShooter->IsPlayer()) && (pITarget != NULL && pITarget->IsPlayer()))
 				{
 					CPlayer*  pShooter = (CPlayer*) pIShooter;
-					CPlayer*  pTarget = (CPlayer*) pITarget;
 
 					const int  shooterTeam = g_pGame->GetGameRules()->GetTeam(hitInfo.shooterId);
 					const int  targetTeam = g_pGame->GetGameRules()->GetTeam(hitInfo.targetId);

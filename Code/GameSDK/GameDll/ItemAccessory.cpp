@@ -213,7 +213,6 @@ void CItem::AttachAccessory(IEntityClass* pAccessoryClass, bool attach, bool noa
 	if (!force && IsBusy())
 		return;
 
-	bool anim = !noanim && m_stats.fp;
 	const SAccessoryParams *params = GetAccessoryParams(pAccessoryClass);
 	if (!params)
 		return;

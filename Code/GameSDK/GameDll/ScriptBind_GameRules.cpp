@@ -929,7 +929,7 @@ int CScriptBind_GameRules::GetPrimaryTeam(IFunctionHandler *pH)
 
 	if (CGameRules* pGameRules=g_pGame->GetGameRules())
 	{
-		if (IGameRulesRoundsModule* pRoundsModule=g_pGame->GetGameRules()->GetRoundsModule())
+		if (IGameRulesRoundsModule* pRoundsModule=pGameRules->GetRoundsModule())
 		{
 			t = pRoundsModule->GetPrimaryTeam();
 		}

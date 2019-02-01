@@ -50,8 +50,6 @@ void CMPTrackViewManager::Update()
 	{
 		IMovieSystem *pMovieSystem = gEnv->pMovieSystem;
 
-		int numSequences=pMovieSystem->GetNumSequences();
-
 		CryWatch("num finished trackviews=%d", m_FinishedTrackViewCount);
 		for (int i=0; i<m_FinishedTrackViewCount; i++)
 		{

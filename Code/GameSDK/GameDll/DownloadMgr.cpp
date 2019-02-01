@@ -234,8 +234,6 @@ void CDownloadMgr::Update(
 		}
 		else if (m_isShutingDown)
 		{
-			bool shutdown = true;
-			CGameLobby* pLobby = g_pGame->GetGameLobby();
 			gEnv->pSystem->Quit();
 		}
 		else
@@ -1064,7 +1062,6 @@ bool CDownloadableResource::DecryptAndCheckSigning(
 	int					signingSaltLength)
 {
 	char							*pOutput=NULL;
-	int								outDataLen=0;
 	bool							valid=false;
 
 	if (inDataLen>16)

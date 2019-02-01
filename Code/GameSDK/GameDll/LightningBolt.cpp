@@ -213,7 +213,7 @@ void CLightningBolt::Launch(const Vec3 &pos, const Vec3 &dir, const Vec3 &veloci
 {
 	Parent::Launch(pos, dir, velocity, speedScale);
 
-	if(CWeapon* pWeapon = GetWeapon()) //Late joiners can have the projectile created before the weapon
+	if(GetWeapon() != nullptr) //Late joiners can have the projectile created before the weapon
 	{
 		const SLightningBoltParams& boltParams = *(m_pAmmoParams->pLightningBoltParams);
 
@@ -335,7 +335,7 @@ void CLightningBolt::OnHit(const HitInfo& rHitInfo)
 {
 	if(gEnv->bServer && gEnv->bMultiplayer && rHitInfo.projectileId==GetEntityId() && !m_stuckProjectile.IsStuck())
 	{
-		if(IEntity * pEntity = gEnv->pEntitySystem->GetEntity(rHitInfo.targetId))
+		if(gEnv->pEntitySystem->GetEntity(rHitInfo.targetId) != nullptr)
 		{
 			CStickyProjectile::SStickParams stickParams(this, rHitInfo, CStickyProjectile::eO_AlignToSurface);
 			m_stuckProjectile.Stick(stickParams);

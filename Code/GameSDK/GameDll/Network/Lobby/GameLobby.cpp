@@ -443,7 +443,7 @@ CGameLobby::CGameLobby( CGameLobbyManager* pMgr )
 	m_isTeamGame = false;
 
 	if (CWarningsManager* pWarningsManager = g_pGame->GetWarnings())
-		m_DLCServerStartWarningId = g_pGame->GetWarnings()->GetWarningId("DLCServerStartWarning");
+		m_DLCServerStartWarningId = pWarningsManager->GetWarningId("DLCServerStartWarning");
 	else
 		m_DLCServerStartWarningId = INVALID_HUDWARNING_ID;
 
@@ -760,7 +760,6 @@ void CGameLobby::Update(float dt)
 		if (m_squadDirty && (m_nameList.Size() > 0))
 		{
 			bool bCanUpdateUserData = false;
-			uint32 squadLeaderUID = 0;
 			CryUserID pSquadLeaderId = g_pGame->GetSquadManager()->GetSquadLeader();
 			SCryMatchMakingConnectionUID squadLeaderConID;
 			if (pSquadLeaderId == CryUserInvalidID)
@@ -781,7 +780,7 @@ void CGameLobby::Update(float dt)
 				m_taskQueue.AddTask(CLobbyTaskQueue::eST_SetLocalUserData, true);
 			}
 		}
-		const float prevStartTimer = m_startTimer;
+		//const float prevStartTimer = m_startTimer;
 		if (m_server)
 		{
 			bool  sendCountdownPacket = false;
@@ -2719,11 +2718,11 @@ void CGameLobby::SvResetVotingForNextElection()
 	CRY_ASSERT(m_server);
 	CRY_ASSERT(m_votingEnabled);
 
+#if defined(USE_CRY_ASSERT)
 	CPlaylistManager*  plMgr = g_pGame->GetPlaylistManager();
 	CRY_ASSERT(plMgr);
 	CRY_ASSERT(plMgr->HavePlaylistSet());
-	ILevelRotation*  pLevelRotation = plMgr->GetLevelRotation();
-	CRY_ASSERT(pLevelRotation);
+#endif
 
 	m_votingClosed = false;
 	m_leftVoteChoice.Reset();
@@ -3257,7 +3256,6 @@ void CGameLobby::SetCurrentSession(CrySessionHandle h)
 //-------------------------------------------------------------------------
 void CGameLobby::SetLocalUserData(uint8 * localUserData)
 {
-	CPlayerProgression* pPlayerProgression = CPlayerProgression::GetInstance();
 	localUserData[eLUD_LoadedDLCs] = (uint8)g_pGame->GetDLCManager()->GetLoadedDLCs();
 
 	// ClanTag
@@ -4403,11 +4401,14 @@ void CGameLobby::MatchmakingSessionQueryCallback(CryLobbyTaskID taskID, ECryLobb
 			}
 
 			CryLog("CGameLobby::MatchmakingSessionQueryCallback() got user data Lobby: %p", pLobby);
+
+#if !defined(EXCLUDE_NORMAL_LOG)
 			for (int i = 0; i < eLDI_Num; ++ i)
 			{
 				SCryLobbyUserData &userData = pLobby->m_userData[i];
 				CryLog("  i=%i, id=%s, data=%i Lobby: %p", i, userData.m_id.c_str(), userData.m_int32, pLobby);
 			}
+#endif
 
 			pLobby->m_sessionData.m_data = pLobby->m_userData;
 			pLobby->m_sessionUserDataDirty = true;
@@ -4710,8 +4711,12 @@ void CGameLobby::SendPacket(GameUserPacketDefinitions packetType, SCryMatchMakin
 			if (packet.CreateWriteBuffer(MaxBufferSize))
 			{
 				packet.StartWrite(packetType, true);
+#if defined(USE_CRY_ASSERT)
 				ECryLobbyError error = pMatchmaking->WriteSessionIDToPacket(m_nextSessionId, &packet);
 				CRY_ASSERT(error == eCLE_Success);
+#else
+				pMatchmaking->WriteSessionIDToPacket(m_nextSessionId, &packet);
+#endif
 			}
 		}
 		break;
@@ -4801,8 +4806,6 @@ void CGameLobby::SendPacket(GameUserPacketDefinitions packetType, SCryMatchMakin
 
 			SCryMatchMakingConnectionUID  reservationRequests[MAX_RESERVATIONS];
 			const int  numReservationsToRequest = BuildReservationsRequestList(reservationRequests, CRY_ARRAY_COUNT(reservationRequests), m_reservationList);
-
-			const SSessionNames*  members = m_reservationList;
 
 			const int  bufferSz = (CryLobbyPacketHeaderSize + CryLobbyPacketUINT8Size + (numReservationsToRequest * CryLobbyPacketConnectionUIDSize));
 
@@ -5500,8 +5503,6 @@ void CGameLobby::ReadPacket(SCryLobbyUserPacketData** ppPacketData)
 			const SCryMatchMakingConnectionUID requestedUID = pPacket->ReadConnectionUID();
 			CryLog("    client identifying itself as uid=%u, sid=%" PRIu64, requestedUID.m_uid, requestedUID.m_sid);
 
-			const bool bHasPlaylist = pPacket->ReadBool();
-
 			ICryMatchMaking *pMatchmaking = gEnv->pNetwork->GetLobby()->GetLobbyService()->GetMatchMaking();
 			CRY_ASSERT(pMatchmaking);
 			CrySessionID joinersSessionId = pMatchmaking->ReadSessionIDFromPacket(pPacket);
@@ -5727,11 +5728,15 @@ void CGameLobby::ReadPacket(SCryLobbyUserPacketData** ppPacketData)
 
 			const uint32  seed = pPacket->ReadUINT32();
 			m_playListSeed = seed;
-			const int  curNextIdx = (int) pPacket->ReadUINT8();
-			const bool  gameHasStarted = pPacket->ReadBool();
+
+#if !defined(EXCLUDE_NORMAL_LOG)
+			const int curNextIdx = (int) pPacket->ReadUINT8();
+			const bool gameHasStarted = pPacket->ReadBool();
 			const bool bAdvancedThroughConsole = pPacket->ReadBool();
 
 			CryLog("[tlh]     reading next=%d, started=%d, advancedThruConsole=%d seed=%d", curNextIdx, gameHasStarted, bAdvancedThroughConsole, seed);
+#endif
+
 #if 0 // LEVEL ROTATION DISABLED FOR NOW
 			if (CPlaylistManager* pPlaylistManager=g_pGame->GetPlaylistManager())
 			{
@@ -6136,9 +6141,9 @@ void CGameLobby::SendChatMessageCheckProfanityCallback( const bool team, CryLobb
 		{
 			if (pGameLobby->IsCurrentlyInSession() && m_nameList.Size()>0)
 			{
+#if !defined(DEDICATED_SERVER)
 				SSessionNames::SSessionName &localPlayer = m_nameList.m_sessionNames[0];
 
-#if !defined(DEDICATED_SERVER)
 				int teamId = 0;
 				if (team)
 				{
@@ -7370,7 +7375,7 @@ void CGameLobby::MutePlayerBySessionName( SSessionNames::SSessionName *pUser, bo
 				reason &= ~SSessionNames::SSessionName::MUTE_REASON_MANUAL;
 			}
 
-			bool isMuted = (pUser->m_muted != 0);
+			//bool isMuted = (pUser->m_muted != 0);
 			if (mute)
 			{
 				pUser->m_muted |= reason;
@@ -10352,9 +10357,12 @@ void CGameLobby::MatchmakingDedicatedServerSetup(UCryLobbyEventData eventData, v
 	{
 		CGameLobby *pLobby = static_cast<CGameLobby*>(userParam);
 
+#if defined(USE_CRY_ASSERT)
 		uint32 packetType = pPacket->StartRead();
-
 		CRY_ASSERT(packetType == eGUPD_SetupDedicatedServer);
+#else
+		pPacket->StartRead();
+#endif
 
 		const char *pGameRules = GameLobbyData::GetGameRulesFromHash(pPacket->ReadUINT32());
 		const char *pMap = GameLobbyData::GetMapFromHash(pPacket->ReadUINT32());
@@ -10429,7 +10437,6 @@ void CGameLobby::MatchmakingDedicatedServerRelease(UCryLobbyEventData eventData,
 	CryLog("CGameLobby::MatchmakingDedicatedServerRelease pLobby %p", userParam);
 
 	CGameLobby *pLobby = static_cast<CGameLobby*>(userParam);
-	SCryLobbyDedicatedServerReleaseData *pReleaseData = eventData.pDedicatedServerReleaseData;
 
 	CRY_ASSERT(gEnv->IsDedicated());
 

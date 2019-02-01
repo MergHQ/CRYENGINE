@@ -506,7 +506,6 @@ void CLTAGGrenade::OnCollision(const SGameObjectEvent &event)
 		return;
 
 	int trgId = 1;
-	int srcId = 0;
 	IPhysicalEntity *pTarget = pCollision->pEntity[trgId];
 	IEntity* pTargetEntity = pTarget ? gEnv->pEntitySystem->GetEntityFromPhysics(pTarget) : 0;
 	IActor* pHitActor =

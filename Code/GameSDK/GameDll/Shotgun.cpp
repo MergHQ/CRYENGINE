@@ -61,8 +61,6 @@ void CShotgun::StartReload(int zoomed)
 	if ((ammoCount >= clipSize) || m_reloading)
 		return;
 
-	CActor* pActor =  m_pWeapon->GetOwnerActor();
-
 	m_max_shells = clipSize - ammoCount;
 
 	m_reload_was_broken = false;
@@ -471,7 +469,6 @@ void CShotgun::NetShootEx(const Vec3 &pos, const Vec3 &dir, const Vec3 &vel, con
 	FragmentID action = m_fireParams->fireparams.no_cock ? GetFragmentIds().fire : GetFragmentIds().fire_cock;
 
 	CActor *pActor = m_pWeapon->GetOwnerActor();
-	bool playerIsShooter = pActor?pActor->IsPlayer():false;
 
 	int ammoCount = m_pWeapon->GetAmmoCount(ammo);
 	int clipSize = GetClipSize();

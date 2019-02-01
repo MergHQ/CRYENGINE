@@ -3,14 +3,15 @@
 #include "stdafx.h"
 #include "QToolWindowManager.h"
 #include "QToolWindowRollupBarArea.h"
-#include <QWidget>
-#include <QVariantMap>
-#include <QMouseEvent>
-#include <QCollapsibleFrame.h>
-#include <QBoxLayout>
-#include <QStyleOptionToolBar>
-#include <QMenu>
+
 #include <QAction>
+#include <QBoxLayout>
+#include <QCollapsibleFrame.h>
+#include <QMenu>
+#include <QMouseEvent>
+#include <QStyleOptionToolBar>
+#include <QVariantMap>
+#include <QWidget>
 
 class QDragger : public QLabel
 {
@@ -22,9 +23,9 @@ public:
 		setScaledContents(false);
 	}
 
-	void resizeEvent(QResizeEvent * e)
+	void resizeEvent(QResizeEvent* e)
 	{
-		
+
 		QPixmap corner_img(this->size());
 		corner_img.fill(Qt::transparent);
 		QStyleOptionToolBar option;
@@ -39,7 +40,6 @@ public:
 		painter.setOpacity(0.5);
 		parentWidget()->style()->drawPrimitive(QStyle::PE_IndicatorToolBarHandle, &option, &painter, parentWidget());
 		setPixmap(corner_img);
-	
 
 		QLabel::resizeEvent(e);
 	}
@@ -48,11 +48,9 @@ public:
 		int w = this->width();
 		return QSize(w, 8);
 	}
-
 };
 
-
-QToolWindowRollupBarArea::QToolWindowRollupBarArea(QToolWindowManager* manager, QWidget *parent)
+QToolWindowRollupBarArea::QToolWindowRollupBarArea(QToolWindowManager* manager, QWidget* parent)
 	: QRollupBar(parent),
 	m_manager(manager),
 	m_tabDragCanStart(false),
@@ -79,7 +77,8 @@ QToolWindowRollupBarArea::QToolWindowRollupBarArea(QToolWindowManager* manager, 
 			corner_img.load(manager->config().value(QTWM_DROPTARGET_COMBINE, ":/QtDockLibrary/gfx/drag_handle.png").toString());
 			m_pTopWidget->setPixmap(corner_img);
 		}
-		else {
+		else
+		{
 			m_pTopWidget = new QDragger(this);
 			m_pTopWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 			m_pTopWidget->setFixedHeight(8);
@@ -109,7 +108,7 @@ void QToolWindowRollupBarArea::addToolWindow(QWidget* toolWindow, int index /*= 
 
 void QToolWindowRollupBarArea::addToolWindows(const QList<QWidget*>& toolWindows, int index /*= -1*/)
 {
-	foreach(QWidget* toolWindow, toolWindows)
+	foreach(QWidget * toolWindow, toolWindows)
 	{
 		if (index < 0)
 		{
@@ -122,7 +121,7 @@ void QToolWindowRollupBarArea::addToolWindows(const QList<QWidget*>& toolWindows
 	}
 }
 
-void QToolWindowRollupBarArea::removeToolWindow(QWidget* toolWindow) 
+void QToolWindowRollupBarArea::removeToolWindow(QWidget* toolWindow)
 {
 	removeWidget(toolWindow);
 }
@@ -163,7 +162,7 @@ QVariantMap QToolWindowRollupBarArea::saveState()
 	return result;
 }
 
-void QToolWindowRollupBarArea::restoreState(const QVariantMap &data, int stateFormat)
+void QToolWindowRollupBarArea::restoreState(const QVariantMap& data, int stateFormat)
 {
 	QStringList collapsed = data["collapsedObjects"].toStringList();
 	foreach(QVariant objectNameValue, data["objectNames"].toList())
@@ -171,7 +170,7 @@ void QToolWindowRollupBarArea::restoreState(const QVariantMap &data, int stateFo
 		QString objectName = objectNameValue.toString();
 		if (objectName.isEmpty()) { continue; }
 		bool found = false;
-		foreach(QWidget* toolWindow, m_manager->toolWindows())
+		foreach(QWidget * toolWindow, m_manager->toolWindows())
 		{
 			if (toolWindow->objectName() == objectName)
 			{
@@ -181,7 +180,7 @@ void QToolWindowRollupBarArea::restoreState(const QVariantMap &data, int stateFo
 					QCollapsibleFrame* frame = rollupAt(count() - 1);
 					frame->SetCollapsed(true);
 				}
-				
+
 				found = true;
 				break;
 			}
@@ -198,16 +197,17 @@ void QToolWindowRollupBarArea::adjustDragVisuals()
 	if (count() == 1 && m_manager->isFloatingWrapper(parentWidget()))
 	{
 		rollupAt(0)->GetDragHandler()->setHidden(true);
-	} else if (count() >= 1)
+	}
+	else if (count() >= 1)
 	{
 		rollupAt(0)->GetDragHandler()->setHidden(false);
 	}
 
-	if ( count() == 1)
+	if (count() == 1)
 	{
 		m_pTopWidget->setHidden(true);
 	}
-	else 
+	else
 	{
 		m_pTopWidget->setVisible(true);
 	}
@@ -240,12 +240,12 @@ int QToolWindowRollupBarArea::indexOf(QWidget* w) const
 	return QRollupBar::indexOf(w);
 }
 
-void QToolWindowRollupBarArea::setCurrentWidget(QWidget* w) 
+void QToolWindowRollupBarArea::setCurrentWidget(QWidget* w)
 {
 
 }
 
-QPoint QToolWindowRollupBarArea::mapCombineDropAreaFromGlobal(const QPoint & pos) const
+QPoint QToolWindowRollupBarArea::mapCombineDropAreaFromGlobal(const QPoint& pos) const
 {
 	return getDropTarget()->mapFromGlobal(pos);
 }
@@ -255,7 +255,7 @@ QRect QToolWindowRollupBarArea::combineAreaRect() const
 	return getDropTarget()->rect();
 }
 
-QRect QToolWindowRollupBarArea::combineSubWidgetRect(int index) const 
+QRect QToolWindowRollupBarArea::combineSubWidgetRect(int index) const
 {
 	QCollapsibleFrame* rollup = rollupAt(index);
 	if (rollup)
@@ -268,12 +268,12 @@ QRect QToolWindowRollupBarArea::combineSubWidgetRect(int index) const
 	return QRect();
 }
 
-int QToolWindowRollupBarArea::subWidgetAt(const QPoint& pos) const 
-{	
+int QToolWindowRollupBarArea::subWidgetAt(const QPoint& pos) const
+{
 	return rollupIndexAt(pos);
 }
 
-bool QToolWindowRollupBarArea::eventFilter(QObject *o, QEvent *ev)
+bool QToolWindowRollupBarArea::eventFilter(QObject* o, QEvent* ev)
 {
 	if (isDragHandle(static_cast<QWidget*>(o)) || o == m_pTopWidget)
 	{
@@ -282,7 +282,7 @@ bool QToolWindowRollupBarArea::eventFilter(QObject *o, QEvent *ev)
 			if (o == m_pTopWidget)
 			{
 				if (m_areaDraggable)
-				{ 
+				{
 					m_areaDragCanStart = true;
 					QMouseEvent* me = static_cast<QMouseEvent*>(ev);
 					m_areaDragStart = me->pos();
@@ -304,7 +304,7 @@ bool QToolWindowRollupBarArea::eventFilter(QObject *o, QEvent *ev)
 			}
 		}
 		else if (ev->type() == QEvent::MouseButtonRelease)
-		{ 
+		{
 			m_areaDragCanStart = false;
 			m_tabDragCanStart = false;
 		}
@@ -361,7 +361,7 @@ void QToolWindowRollupBarArea::closeRollup(int index)
 	m_manager->releaseToolWindow(widget(index), true);
 }
 
-void QToolWindowRollupBarArea::mouseReleaseEvent(QMouseEvent * e)
+void QToolWindowRollupBarArea::mouseReleaseEvent(QMouseEvent* e)
 {
 	if (e->button() == Qt::RightButton)
 	{
@@ -391,7 +391,7 @@ void QToolWindowRollupBarArea::setDraggable(bool draggable)
 	if (draggable)
 	{
 		m_pTopWidget->setCursor(Qt::CursorShape::OpenHandCursor);
-	}	
+	}
 	else
 	{
 		m_pTopWidget->setCursor(Qt::CursorShape::ArrowCursor);

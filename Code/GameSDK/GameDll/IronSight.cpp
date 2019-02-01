@@ -147,7 +147,6 @@ void CIronSight::Update(float frameTime, uint32 frameId)
 					gEnv->p3DEngine->SetPostEffectParam("Dof_FocusMin", m_zoomParams->zoomParams.dof_focusMin);
 					gEnv->p3DEngine->SetPostEffectParam("Dof_FocusMax", m_zoomParams->zoomParams.dof_focusMax);
 					gEnv->p3DEngine->SetPostEffectParam("Dof_FocusLimit", m_zoomParams->zoomParams.dof_focusLimit);
-					CActor* pOwner = m_pWeapon->GetOwnerActor();
 					bool useMinFilter = true;
 					
 					if (useMinFilter)
@@ -534,8 +533,6 @@ void CIronSight::EnterZoom(float time, bool smooth, int zoomStep)
   Stereo3D::Zoom::SetFinalPlaneDist(m_zoomParams->stereoParams.convergenceDistance, time);
   Stereo3D::Zoom::SetFinalEyeDist(m_zoomParams->stereoParams.eyeDistance, time);
 
-	const SZoomParams &zoomParams = m_zoomParams->zoomParams;
-
 	m_pWeapon->PlayAction( m_pWeapon->GetFragmentIds().zoom_in, 0, false, CItem::eIPAF_Default);
 
 	OnEnterZoom();
@@ -619,7 +616,6 @@ struct CIronSight::DisableTurnOffAction
 
 	void execute(CItem *pWeapon)
 	{
-		const SZoomParams &zoomParams = ironSight->m_zoomParams->zoomParams;
 		ironSight->OnZoomedIn();
 	}
 };
@@ -857,7 +853,7 @@ void CIronSight::OnZoomedIn()
 			pCharacter->HideMaster(1);
 		}
 
-		if(const CPlayer* pOwnerPlayer = m_pWeapon->GetOwnerPlayer())
+		if(m_pWeapon->GetOwnerPlayer() != nullptr)
 		{
 			if(m_pWeapon && m_pWeapon->GetEntity()->GetClass()!=CItem::sBinocularsClass)
 			{

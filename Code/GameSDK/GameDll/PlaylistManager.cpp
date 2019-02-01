@@ -962,8 +962,10 @@ void CPlaylistManager::AddPlaylistFromXmlNode(XmlNodeRef xmlNode)
 				CRY_ASSERT(FindPlaylistById(genId));
 				CryLog("CPlaylistManager::AddPlaylistFromXmlNode: added new playlist '%s' (enabled: %d) and gave it an id of '%u'", p->rotExtInfo.uniqueName.c_str(), p->IsEnabled(), p->id);
 
+#if defined(USE_CRY_ASSERT)
 				ILevelRotation*  pRot = pLevelSystem->FindLevelRotationForExtInfoId(genId);
 				CRY_ASSERT_TRACE(pRot, ("Cannot find newly added extended rotation '%s' with id '%u'", p->rotExtInfo.uniqueName.c_str(), genId));
+#endif
 			}
 			else
 			{
@@ -1178,7 +1180,7 @@ bool CPlaylistManager::ChooseVariant(int selectIdx)
 {
 	if (HavePlaylistSet())
 	{
-		if (SPlaylist* pList=FindPlaylistById(m_currentPlaylistId))
+		if (FindPlaylistById(m_currentPlaylistId) != nullptr)
 		{
 			if (selectIdx >= 0)
 				{
@@ -1599,7 +1601,7 @@ void CPlaylistManager::GetTotalPlaylistCounts(uint32 *outUnlocked, uint32 *outTo
 					const char *pVariantName = pPlaylist->rotExtInfo.m_supportedVariants[j].m_name.c_str();
 					int variantIndex = GetVariantIndex(pVariantName);
 					
-					if (const SGameVariant *pVariant = GetVariant(variantIndex))
+					if (GetVariant(variantIndex) != nullptr)
 					{
 						++total;
 						if (HaveUnlockedPlaylist(pPlaylist) && HaveUnlockedPlaylistVariant(pPlaylist, variantIndex))
@@ -2617,7 +2619,6 @@ void CPlaylistManager::LoadLevelRotation()
 					bool bReadServerInfo = false;
 					int variantIndex = -1;
 
-					IGameRulesSystem *pGameRulesSystem = g_pGame->GetIGameFramework()->GetIGameRulesSystem();
 					const int numChildren = root->getChildCount();
 					for (int i = 0; i < numChildren; ++ i)
 					{

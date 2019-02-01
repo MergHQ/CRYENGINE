@@ -37,9 +37,6 @@ namespace
 
 	bool PlayerCanInteract(CPlayer* pPlayer)
 	{
-		const SPlayerStats* pPlayerStats = static_cast<const SPlayerStats*>(pPlayer->GetActorStats());
-		CRY_ASSERT(pPlayerStats);
-
 		// During Stealth kill.
 		if (pPlayer->GetStealthKill().IsBusy())
 			return false;

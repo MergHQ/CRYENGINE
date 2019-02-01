@@ -175,8 +175,6 @@ void CHitRecoilGameEffect::AddHit(CPlayer* pPlayer, IEntityClass *pProjectileCla
 	}
 	else
 	{
-		CGameRules *pGameRules = g_pGame->GetGameRules();
-		
 		if(damageTypeId != 0)
 		{
 			THitTypeToRecoilMap::iterator it = m_hitTypeToRecoil.find(damageTypeId);

@@ -571,7 +571,6 @@ void CC4Projectile::SetupUIIcon()
 	{
 		const bool dangerous = !m_OnSameTeam || g_pGame->GetGameRules()->GetFriendlyFireRatio() > 0.f;
 		//If the C4 can't harm us we show a C4 icon (ThreatAwareness shows enemy C4 as well)
-		const CPlayer* pPlayer = static_cast<CPlayer*>(gEnv->pGameFramework->GetClientActor());
 		const bool shouldShow = !dangerous;
 		if(shouldShow && !m_isShowingUIIcon)
 		{

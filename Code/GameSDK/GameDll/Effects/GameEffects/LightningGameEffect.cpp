@@ -26,7 +26,6 @@ namespace
 	{
 		Vec2 textPos = Vec2(400.0f, 10.0f);
 		float red[4] = {1,0,0,1};
-		float location = 50.0f;
 		const float step = 12.0f;
 		IRenderAuxText::Draw2dLabel(textPos.x, textPos.y, 1.4f, red, false, "Lightning Stats: # (peak #)");
 		textPos.y += step;

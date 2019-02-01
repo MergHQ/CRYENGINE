@@ -351,8 +351,6 @@ void CStealthKill::DoDeathBlow(CActor* pTarget)
 
 		if(gEnv->bServer)
 		{
-			CGameRules *pGameRules = g_pGame->GetGameRules();
-
 			HitInfo hitInfo;
 			ConstructHitInfo(m_pPlayer->GetEntityId(), pTarget->GetEntityId(), targetDir, hitInfo);
 			g_pGame->GetGameRules()->ClientHit(hitInfo);
@@ -825,8 +823,6 @@ void CStealthKill::ForceFinishKill()
 	CActor* pCurrentTarget = GetTarget();
 	if (pCurrentTarget)
 	{
-		Vec3 targetDir = pCurrentTarget->GetEntity()->GetForwardDir();
-
 		HitInfo hitInfo;
 		CStealthKill::ConstructHitInfo(m_pPlayer->GetEntityId(), pCurrentTarget->GetEntityId(), m_pPlayer->GetEntity()->GetForwardDir(), hitInfo);
 		g_pGame->GetGameRules()->KillPlayer(pCurrentTarget, true, true, hitInfo);

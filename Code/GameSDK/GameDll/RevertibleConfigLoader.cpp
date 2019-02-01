@@ -57,9 +57,8 @@ void CRevertibleConfigLoader::ApplyAndStoreCVar( const char *szKey, const char *
 	}
 	if (m_allowCheatCVars || (var->GetFlags() & VF_CHEAT) == 0)
 	{
-		const int numStoredCvars = (int)m_savedCVars.size();
-
 #ifndef _RELEASE
+		const int numStoredCvars = (int)m_savedCVars.size();
 		const char* savedValue = NULL;
 		for (int i=0; i<numStoredCvars; i++)
 		{

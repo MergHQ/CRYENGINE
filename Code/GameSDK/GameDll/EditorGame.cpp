@@ -952,7 +952,7 @@ bool CEditorGame::BuildEntitySerializationList(XmlNodeRef output)
 
 		IFlowNodeIteratorPtr nodeIt = (*it)->CreateNodeIterator();
 		TFlowNodeId nodeId = 0;
-		while (IFlowNodeData* pNode = nodeIt->Next(nodeId))
+		while (nodeIt->Next(nodeId) != nullptr)
 		{
 			EntityId nodeEntity = (*it)->GetEntityId(nodeId);
 			if (nodeEntity != 0)

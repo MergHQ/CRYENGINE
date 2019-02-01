@@ -418,8 +418,6 @@ SRecording_Packet* CRecordingSystemCompressor::MovePacketsToBuffer(EFirstPersonP
 
 void CRecordingSystemCompressor::InterleavePackets(SRecording_Packet *dstBuffer, SRecording_Packet *srcBuffer, SRecording_Packet *endOfSrc)
 {
-	SRecording_Packet *srcBufferBase=srcBuffer;
-	
 	// Move FPChar and VictimPositions to start of buffer (needed as streams can be concatenated together)
 	dstBuffer=MovePacketsToBuffer(eFPP_FPChar, dstBuffer, srcBuffer, endOfSrc);
 	dstBuffer=MovePacketsToBuffer(eFPP_VictimPosition, dstBuffer, srcBuffer, endOfSrc);

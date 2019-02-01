@@ -555,7 +555,6 @@ void CGameRulesObjective_PowerStruggle::Common_UpdateActiveNode(SNodeInfo *pNode
 	
 	if (gEnv->bServer && bCountsChanged)
 	{
-		int previousOwnerId = pNodeInfo->m_controllingTeamId;
 		int team1Count = pNodeInfo->m_insideCount[0];
 		int team2Count = pNodeInfo->m_insideCount[1];
 		int newControllingTeamId;
@@ -1236,8 +1235,8 @@ bool CGameRulesObjective_PowerStruggle::NetSerialize(TSerialize ser, EEntityAspe
 		for(int i = 0; i < NUM_TEAMS; ++i)
 		{
 			SChargeeInfo& chargee = m_Chargees[i];
-				
-			float prevChargeValueWas=chargee.m_PrevChargeValue;
+
+			//float prevChargeValueWas=chargee.m_PrevChargeValue;
 			float chargeValueWas=chargee.m_ChargeValue;
 
 			ser.Value("chargeValue", chargee.m_ChargeValue, 'sone');

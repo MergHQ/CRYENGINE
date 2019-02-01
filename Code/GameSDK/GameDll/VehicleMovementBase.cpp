@@ -508,8 +508,6 @@ void CVehicleMovementBase::Update(const float deltaTime)
 	m_isProbablyVisible = pGameObj->IsProbablyVisible() ? 1 : 0;
 	m_isProbablyDistant = m_pVehicle->IsProbablyDistant() ? 1 : 0;
 
-	const SVehicleStatus& status = m_pVehicle->GetStatus();
-
 	// Check whether the ejection timer tripped
 	if (m_ejectionTimer>m_ejectionTimer0)
 	{
@@ -566,7 +564,7 @@ void CVehicleMovementBase::Update(const float deltaTime)
 			}
 		}
 
-		if (m_engineStartup >= m_engineIgnitionTime)		
+		if (m_engineStartup >= m_engineIgnitionTime)
 		{
 			OnEngineCompletelyStarted();
 		}
@@ -586,7 +584,7 @@ void CVehicleMovementBase::Update(const float deltaTime)
 			m_isEngineGoingOff = false;
 			m_isEnginePowered = false;
 
-			OnEngineCompletelyStopped();			
+			OnEngineCompletelyStopped();
 		}
 
 		m_pVehicle->NeedsUpdate();

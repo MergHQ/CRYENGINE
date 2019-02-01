@@ -37,9 +37,9 @@ const static float sNoRequiredKillVelocityWindow					= 0.25f;
 // Sweep testing
 const static int sMaxEntitiesToConsiderPerSweep = 2; 
 static Vec3  s_radiusAdjust(2.0f,2.0f,2.5f); // used to grab all entities in box
-static bool  s_bForceSweepTest			= true;
 
 #if ALLOW_SWEEP_DEBUGGING
+static bool s_bForceSweepTest = true;
 static bool  s_bRenderTris				= true; 
 static bool  s_bRenderFrameStamps		= true; 
 static bool  s_bRenderWeaponAABB		= false;
@@ -108,7 +108,7 @@ CEnvironmentalWeapon::~CEnvironmentalWeapon()
 {
 	if(CGameRules* pGameRules = g_pGame->GetGameRules())
 	{
-		g_pGame->GetGameRules()->UnRegisterRevivedListener(this); 
+		pGameRules->UnRegisterRevivedListener(this); 
 	}
 }
 
@@ -197,7 +197,6 @@ void CEnvironmentalWeapon::AttemptToRegisterInteractiveEntity()
 		GetEntity()->GetScriptTable()->GetValue( "IsRooted", bRooted );
 
 		// Test if can no longer interact / or *can* now interact
-		CPlayer* pPlayer = static_cast<CPlayer*>(pClientActor);
 		if(m_logicFlags & ELogicFlag_registeredWithIEMonitor)
 		{
 			if( bRooted || m_OwnerId != 0 || g_pGameCVars->g_mpNoEnvironmentalWeapons )
@@ -348,7 +347,7 @@ bool CEnvironmentalWeapon::DoDetachFromParent()
 	bool wasAttached=false;
 
 	IEntity* pWeaponEntity = GetEntity();
-	if (IEntity *pParent = pWeaponEntity->GetParent())
+	if (pWeaponEntity->GetParent() != nullptr)
 	{
 		// standard parent with assumed normal attachment - detaching
 		pWeaponEntity->DetachThis(IEntity::ATTACHMENT_KEEP_TRANSFORMATION);
@@ -892,8 +891,6 @@ void CEnvironmentalWeapon::DoVehicleAttach()
 
 bool CEnvironmentalWeapon::ProcessMeleeHit(const EntityHitRecord& hitRecord, IPhysicalEntity* pVictimPhysicalEntity) 
 {
-	IEntity* pEntity = GetEntity(); 
-
 	// Determine what we have hit and react accordingly. 
 	IActor* pActor = g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(hitRecord.m_entityId);
 	if(pActor && pActor->IsPlayer())
@@ -1066,7 +1063,6 @@ void CEnvironmentalWeapon::UpdateDebugOutput() const
 	{
 		// Render throw helper
 		pAuxGeom->DrawPoint(m_throwDir,green,20);
-		const float throwDebugLineLength = 1.0f; 
 		pAuxGeom->DrawLine(m_throwOrigin, blue, m_throwTarget, red, 1.0f);
 	}
 
@@ -1267,7 +1263,6 @@ void CEnvironmentalWeapon::ProcessEvent(const SEntityEvent& event)
 	case ENTITY_EVENT_START_LEVEL:
 		{
 			//Register with interactive entity monitor
-			IActor* pClientActor(NULL);
 			if( (m_logicFlags & ELogicFlag_registeredWithIEMonitor) == 0)
 			{
 				AttemptToRegisterInteractiveEntity(); 
@@ -2153,8 +2148,6 @@ bool CEnvironmentalWeapon::HandleChargedThrowCollisionEvent( const EventPhysColl
 			// We care about collisions with everything, including geometry
 			if(pVictimPhysicalEntity)
 			{
-				bool bHandledPhysCollision = false;
-
 				IEntity* pVictimEntity = gEnv->pEntitySystem->GetEntityFromPhysics(pVictimPhysicalEntity);
 				if(pVictimEntity)
 				{
@@ -2280,7 +2273,6 @@ Vec3 CEnvironmentalWeapon::CalculateImpulse_Player( const HitInfo& hitInfo, CPla
 	{
 		// Calc impulse required to move at targetVelocity
 		float victimMass = CalculateVictimMass(pVictimPhysicalEntity); 
-		Vec3 impulseVec  = hitInfo.dir * victimMass * desiredRagdollVelocity * g_pGameCVars->pl_pickAndThrow.environmentalWeaponImpulseScale; 
 
 		// LOGGING
 #ifndef _RELEASE

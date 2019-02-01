@@ -420,8 +420,6 @@ bool CBattlechatter::UpdateEvent(EBattlechatter& chatter, EntityId &actorId, IAc
 
 	if(pActor->IsPlayer() && m_clientPlayer)
 	{
-		CPlayer* pPlayer = static_cast<CPlayer*>(pActor);
-
 		EBattlechatter inChatter = chatter;	// cache chatter so tests are always done against original "parent" chatter rather than any new stealth/armour variants
 		CGameRules* pGameRules = g_pGame->GetGameRules();
 		

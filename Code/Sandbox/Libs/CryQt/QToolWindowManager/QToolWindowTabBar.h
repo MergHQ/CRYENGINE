@@ -26,11 +26,11 @@ public:
 	explicit QToolWindowTabBar(QWidget* parent = 0);
 
 protected:
-	void paintEvent(QPaintEvent *e);
+	void paintEvent(QPaintEvent* e);
 
 private:
 	void onSelectionMenuClicked();
 
-	QToolButton* m_tabSelectionButton;
+	QToolButton*       m_tabSelectionButton;
 	QTabSelectionMenu* m_tabSelectionMenu;
 };

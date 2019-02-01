@@ -477,9 +477,10 @@ void CAIAnimationComponent::UpdateAnimationStateRequests( CPlayer& player, const
 	case eCoverLocationRequest_Set:
 		{
 			CRY_ASSERT( coverRequest.coverLocation.IsValid() );
-
+#if defined(USE_CRY_ASSERT)
 			const float TOO_FAR_AWAY = 50;
 			CRY_ASSERT( coverRequest.coverLocation.t.GetSquaredDistance2D( player.GetEntity()->GetPos() ) < sqr( TOO_FAR_AWAY ) );
+#endif
 
 			m_animationState.SetCoverLocation( coverRequest.coverLocation );
 		}
@@ -559,7 +560,6 @@ void CAIAnimationComponent::UpdateStanceAndCover( CPlayer& player, IActionContro
 
 	// Cover Action and Cover Body Direction
 	const EStance currentVisualStance = m_animationState.GetStance();
-	const EStance currentLogicalStance = player.GetStance();
 	const bool isInCoverStance = ( currentVisualStance == STANCE_HIGH_COVER || currentVisualStance == STANCE_LOW_COVER );
 	if ( isInCoverStance )
 	{

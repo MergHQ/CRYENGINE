@@ -28,7 +28,7 @@ SET(SHIBOKEN_ARGS
 	"--use-isnull-as-nb_nonzero"
 	"--avoid-protected-hack"
 	"${CMAKE_CURRENT_SOURCE_DIR}/global.h"
-	"--include-paths=${PARENT_SOURCE_DIRECTORY}\;${PYSIDE_INCLUDE_PATH}\;${QT_INCLUDE_PATH}"
+	"--include-paths=${PARENT_SOURCE_DIRECTORY}\;${PYSIDE_INCLUDE_PATH}\;${QT_INCLUDE_PATH}\;${QT_INCLUDE_PATH}QtCore\;${QT_INCLUDE_PATH}QtGui\;${QT_INCLUDE_PATH}QtWidgets\;"
 	"--typesystem-paths=${TYPESYSTEM_PATHS}"
 	"--output-directory=${WRAPPER_OUTPUT_DIR}"
 	"${CMAKE_CURRENT_SOURCE_DIR}/typesystem_cryqt.xml"

@@ -163,8 +163,6 @@ void CLookAim_Helper::UpdateDynamicAimPoses(CPlayer* pPlayer, ICharacterInstance
 	const float AIM_BLEND_OVER_TIME = 0.4f;
 	const float AIM_BLEND_OUT_TIME = 0.4f;
 
-	const float frameTime = gEnv->pTimer->GetFrameTime();
-
 	ISkeletonPose* pISkeletonPose = pCharacter->GetISkeletonPose();
 	IAnimationPoseBlenderDir* pIPoseBlenderAim = pISkeletonPose->GetIPoseBlenderAim();
 	if (pIPoseBlenderAim)

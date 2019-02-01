@@ -242,7 +242,6 @@ Vec3 CHommingSwarmProjectile::Wander(const SVehicleStatus& vehicle, float deltaT
 
 	const float dist = params.wanderDistance;
 	const float radius = params.wanderSphereRadius;
-	const float randomness = params.wanderRand;
 	const float frequency = params.wanderFrequency;
 	const float dampingTime = params.wanderDampingTime;
 	const float damping = SATURATE(m_totalLifetime/dampingTime);
@@ -250,7 +249,6 @@ Vec3 CHommingSwarmProjectile::Wander(const SVehicleStatus& vehicle, float deltaT
 
 	const float wanderDist = LERP(0.0f, dist, damping);
 	const float wanderRadius = LERP(60.0f, radius, damping);
-	const float wanderRand = LERP(1.0f, randomness, damping);
 
 	m_wanderTimer += deltaTime;
 	Vec3 result(ZERO);

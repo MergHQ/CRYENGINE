@@ -348,8 +348,6 @@ EDoorPanelBehaviorState CDoorPanel::GetInitialBehaviorStateId() const
 {
 	EDoorPanelBehaviorState doorPanelState = eDoorPanelBehaviorState_Invalid;
 
-	IEntity* pEntity = GetEntity();
-
 	char* szDoorPanelStateName = NULL;
 	bool bResult = EntityScripts::GetEntityProperty(GetEntity(), "esDoorPanelState", szDoorPanelStateName);
 	if (bResult)

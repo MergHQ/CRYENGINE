@@ -405,7 +405,6 @@ void CPlayerStateSwim_WaterTestProxy::UpdateWaterLevel( const Vec3& worldReferen
 void CPlayerStateSwim_WaterTestProxy::DebugDraw(const CPlayer& player, const Vec3& referencePosition)
 {
 	// DEBUG RENDERING
-	const SPlayerStats& stats = *player.GetActorStats();
 	const bool debugSwimming = (g_pGameCVars->cl_debugSwimming != 0);
 	if (debugSwimming && (m_playerWaterLevel > -10.0f) && (m_playerWaterLevel < 10.0f))
 	{

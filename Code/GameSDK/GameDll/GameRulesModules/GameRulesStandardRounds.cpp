@@ -541,10 +541,11 @@ bool CGameRulesStandardRounds::NetSerialize( TSerialize ser, EEntityAspects aspe
 
 				if( (oldState == eGRRS_Restarting) && (m_bShownLoadout == false) )
 				{
-					const float  serverTime = pGameRules->GetServerTime();
 					m_missedLoadout ++;
-
+#if !defined(EXCLUDE_NORMAL_LOG)
+					const float  serverTime = pGameRules->GetServerTime();
 					CryLog("Rounds: Set state to In Progress but shown Loadout was false, current server time %.2f, happened %d times", serverTime, m_missedLoadout );
+#endif
 					
 					NewRoundTransition();
 				}
@@ -588,9 +589,11 @@ void CGameRulesStandardRounds::ClDisplayEndOfRoundMessage()
 	EntityId localActorId = g_pGame->GetIGameFramework()->GetClientActorId();
 	CGameRules *pGameRules = g_pGame->GetGameRules();
 	int localTeam = pGameRules->GetTeam(localActorId);
-	int primaryTeam = GetPrimaryTeam();
 
+#ifndef _RELEASE
+	int primaryTeam = GetPrimaryTeam();
 	LOG_PRIMARY_ROUND("LOG_PRIMARY_ROUND: ClDisplayEndOfRoundMessage: primary team = %d, local team = %d", primaryTeam, localTeam);
+#endif
 
 	SOnEndRoundStrings &strings = m_endOfRoundStringsDefault;
 
@@ -606,7 +609,6 @@ void CGameRulesStandardRounds::ClDisplayEndOfRoundMessage()
 	const char* victoryDescMessage = "";
 	int winner = 0;
 	EAnnouncementID announcement = INVALID_ANNOUNCEMENT_ID;
-	CGameAudio* pGameAudio = g_pGame->GetGameAudio();
 	CAnnouncer* pAnnouncer = CAnnouncer::GetInstance();
 	bool clientScoreIsTop = false;
 	const bool bIndividualScore = pGameRules->IndividualScore();
@@ -1314,8 +1316,6 @@ void CGameRulesStandardRounds::SetupEntities()
 //-------------------------------------------------------------------------
 void CGameRulesStandardRounds::SetTeamEntities( TEntityDetailsVec &classesVec, int teamId)
 {
-	CGameRules *pGameRules = g_pGame->GetGameRules();
-
 	IEntityItPtr pIt = gEnv->pEntitySystem->GetEntityIterator();
 	IEntity *pEntity = 0;
 

@@ -377,7 +377,6 @@ ISerializableInfoPtr CTurret::GetSpawnInfo()
 
 void CTurret::Update( SEntityUpdateContext& context, int updateSlot )
 {
-	const float frameTimeSeconds = context.fFrameTime;
 }
 
 
@@ -500,7 +499,7 @@ void CTurret::Reset( const bool enteringGameMode )
 	UnPhysicalize();
 
 	const char* const modelFilename = GetModelName();
-	const int loadCharacterStatus = pEntity->LoadCharacter( DEFAULT_TURRET_MODEL_SLOT, modelFilename );
+	pEntity->LoadCharacter( DEFAULT_TURRET_MODEL_SLOT, modelFilename );
 
 	SetAllowFire( true );
 
@@ -586,8 +585,6 @@ void CTurret::InitAiRepresentation( const EInitAiRepresentationMode mode )
 void CTurret::RemoveAiRepresentation()
 {
 	NotifyAiThatTurretIsRemoved();
-
-	IEntity* const pEntity = GetEntity();
 
 	RemoveRateOfDeathHelper();
 
@@ -1512,7 +1509,6 @@ bool CTurret::IsEntityHostileAndThreatening( IEntity* pTargetEntity ) const
 
 	IEntity* const pTurretEntity = GetEntity();
 
-	bool isAlive = true;
 	bool isHostileAndThreatening = false;
 	IAIObject* const pTurretAiObject = pTurretEntity->GetAI();
 	IAIObject* pTargetAiObject = pTargetEntity->GetAI();

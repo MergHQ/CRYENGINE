@@ -263,7 +263,6 @@ void CKillCamGameEffect::LoadStaticModeData( const IItemParamsNode* paramNode, S
 		{
 			const int childCount = pPostEffectsNode->GetChildCount();
 
-			int paramIndex=0;
 			for(int i=0; i<childCount; i++)
 			{
 				const IItemParamsNode* pChildNode = pPostEffectsNode->GetChild(i);

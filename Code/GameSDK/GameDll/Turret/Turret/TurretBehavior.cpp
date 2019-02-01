@@ -724,9 +724,6 @@ const CTurretBehavior::TStateIndex CTurretBehavior::FollowTarget(CTurret& turret
 
 		if (turretEventID == STATE_EVENT_TURRET_PRE_PHYSICS_UPDATE)
 		{
-			const SStateEventPrePhysicsUpdate& eventPrePhysicsUpdate = static_cast<const SStateEventPrePhysicsUpdate&>(event);
-			const float frameTimeSeconds = eventPrePhysicsUpdate.GetFrameTimeSeconds();
-
 			const CTimeValue timeNow = GetTimeNow();
 			const CTimeValue reevaluateTime = m_pParams->followTargetRuntime.reevaluateTime;
 			if (reevaluateTime < timeNow)

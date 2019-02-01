@@ -47,9 +47,9 @@ CFrontEndModelCache::CFrontEndModelCache()
 	gEnv->pConsole->GetCVar("sys_FileAccessLog")->Set(1);
 #endif // #if FEMC_FILE_ACCESS_LOG
 
-#ifdef FEMC_LOG_CACHE_TIME
+#if defined(FEMC_LOG_CACHE_TIME) && defined(FRONTEND_ENABLE_EXTRA_DEBUG)
 	const float startTime = gEnv->pTimer->GetAsyncCurTime();
-#endif // #ifdef FEMC_LOG_CACHE_TIME
+#endif // #ifdef FEMC_LOG_CACHE_TIME && FRONTEND_ENABLE_EXTRA_DEBUG
 
 #if FEMC_CACHE_FILE_ACCESSES
 	if (g_pGameCVars->g_FEMenuCacheSaveList)
@@ -149,19 +149,24 @@ CFrontEndModelCache::CFrontEndModelCache()
 		if(pPakName)
 		{
 			gEnv->pCryPak->LoadPakToMemory( pPakName,ICryPak::eInMemoryPakLocale_Unload );
+
+#if FRONTEND_ENABLE_EXTRA_DEBUG
 			bool bSucceeded = gEnv->pCryPak->ClosePack( pPakName,0 );
 			FE_LOG ("%s to close pack file '%s'", bSucceeded ? "Managed" : "Failed", pPakName);
+#else
+			gEnv->pCryPak->ClosePack( pPakName,0 );
+#endif
 		}
 	}
 
 #if FEMC_FILE_ACCESS_LOG
 	gEnv->pConsole->GetCVar("sys_FileAccessLog")->Set(0);
 #endif // #if FEMC_FILE_ACCESS_LOG
-#ifdef FEMC_LOG_CACHE_TIME
+#if defined(FEMC_LOG_CACHE_TIME) && defined(FRONTEND_ENABLE_EXTRA_DEBUG)
 	const float endTime = gEnv->pTimer->GetAsyncCurTime();
 	const float deltaTime = endTime - startTime;
 	FE_LOG("FrontEndModelCache loading took %3.1f seconds", deltaTime);
-#endif // #FEMC_LOG_CACHE_TIME FE_MODEL_CACHE_LOG_CACHE_TIME
+#endif // FEMC_LOG_CACHE_TIME && FRONTEND_ENABLE_EXTRA_DEBUG
 #if FEMC_CACHE_FILE_ACCESSES
 	m_pReasonForReportingFileOpen = NULL;
 

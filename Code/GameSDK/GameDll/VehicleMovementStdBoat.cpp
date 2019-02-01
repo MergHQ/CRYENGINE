@@ -256,8 +256,7 @@ void CVehicleMovementStdBoat::Update(const float deltaTime)
 	{
 		IEntity* pEntity = m_pVehicle->GetEntity();
 		const Matrix34& wTM = pEntity->GetWorldTM();  
-		Matrix34 wTMInv = wTM.GetInvertedFast();
-		
+
 		const SVehiclePhysicsStatus* physStatus = &m_physStatus[k_mainThread];
 		Vec3 localW = physStatus->q * physStatus->w;
 
@@ -784,7 +783,6 @@ void CVehicleMovementStdBoat::ProcessMovement(const float deltaTime)
   Vec3 localW = wTMInv.TransformVector( physStatus->w );   
 
   const Vec3 xAxis = wTM.GetColumn0();
-  const Vec3 yAxis = wTM.GetColumn1();
   const Vec3 zAxis = wTM.GetColumn2();
   
   // check if propeller is in water

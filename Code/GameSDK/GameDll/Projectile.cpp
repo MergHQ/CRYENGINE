@@ -2038,8 +2038,6 @@ bool CProjectile::ProximityDetector_MP(float proxyRadius)
 	if (!pOwnerActor || pOwnerActor->IsDead())
 		return false;
 
-	CGameRules* pGameRules = g_pGame->GetGameRules();
-
 	const static IEntityClass* sVTOLClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(CVTOLVehicleManager::s_VTOLClassName);
 
 	IVehicleSystem* pVehicleSystem = g_pGame->GetIGameFramework()->GetIVehicleSystem();

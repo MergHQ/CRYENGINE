@@ -45,7 +45,6 @@ QuatT CRecoilOffset::Compute(float frameTime)
 		m_fireTime -= frameTime;
 		if (m_fireTime < 0.0f)
 			m_fireTime = 0.0f;
-		float strength = m_firstFire ? m_staticParams.fireRecoilStrengthFirst : m_staticParams.fireRecoilStrength;
 		m_position += m_fireDirection * m_staticParams.fireRecoilStrength * frameTime;
 		m_angle += m_angleDirection * m_staticParams.angleRecoilStrength * frameTime;
 	}

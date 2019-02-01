@@ -63,11 +63,12 @@ void CGameRulesExtractionVictoryConditions::TimeLimitExpired()
 			pRoundsModule->OnEnterSuddenDeath();
 			return;
 		}
-
+#if CRY_DEBUG_LOG_ENABLED
 		int  primaryTeam = pRoundsModule->GetPrimaryTeam();	// attacking
 		int secondaryTeam = (primaryTeam == 1) ? 2 : 1;			// defending
 
 		DbgLog("CGameRulesExtractionVictoryConditions::TimeLimitExpired() - secondary team %d has won", secondaryTeam);
+#endif
 
 		//		notify listeners
 		if (pRoundsModule->IsInProgress())

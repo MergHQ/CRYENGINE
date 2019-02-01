@@ -1192,8 +1192,6 @@ bool CActor::SetActorModelInternal(const char* modelName)
 {
 	bool hasChangedModel = false;
 
-	const bool bIsClient = IsClient();
-
 	if (m_LuaCache_Properties && !modelName)
 	{
 		hasChangedModel = SetActorModelInternal(m_LuaCache_Properties->fileModelInfo);
@@ -1413,8 +1411,7 @@ void CActor::Fall(const HitInfo& hitInfo)
 void CActor::OnFall(const HitInfo& hitInfo)
 {
 	//we don't want noDeath (tutorial) AIs to loose their weapon, since we don't have pickup animations yet
-	bool	dropWeapon(true);
-	bool  hasDamageTable = false;
+	bool dropWeapon(true);
 
 	IAISystem *pAISystem=gEnv->pAISystem;
 	if (pAISystem)
@@ -1458,7 +1455,7 @@ void CActor::OnFall(const HitInfo& hitInfo)
 	//add some twist
 	if (!IsClient() && hitInfo.pos.len())
 	{
-		if(IPhysicalEntity *pPE = GetEntity()->GetPhysics())
+		if(GetEntity()->GetPhysics() != nullptr)
 		{
 			pe_action_impulse imp;
 			if( hitInfo.partId != -1 )
@@ -4044,7 +4041,6 @@ void CActor::ServerExchangeItem(CItem* pCurrentItem, CItem* pNewItem)
 			return;
 		}
 
-		IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem();
 		CWeapon* pCurrentWeapon = static_cast<CWeapon*>(pCurrentItem->GetIWeapon());
 		CWeapon* pNewWeapon = static_cast<CWeapon*>(pNewItem->GetIWeapon());
 		IInventory* pInventory = GetInventory();
@@ -4371,9 +4367,6 @@ TBodyDamageProfileId CActor::GetBodyDamageProfileID(
 //
 void CActor::OverrideBodyDamageProfileID(const TBodyDamageProfileId profileID)
 {
-	CBodyDamageManager *bodyDamageManager = g_pGame->GetBodyDamageManager();
-	CRY_ASSERT(bodyDamageManager != NULL);
-
 	if (m_OverrideBodyDamageProfileId != profileID)
 	{
 		m_OverrideBodyDamageProfileId = profileID;
@@ -4840,7 +4833,6 @@ void CActor::ForceRagdollizeAndApplyImpulse(const HitInfo& hitInfo)
 		peImpulse.iApplyTime = 0; // Apply immediately
 
 		RagDollize(false);
-		IPhysicalEntity* pPhysics = GetEntity()->GetPhysics();
 		m_pImpulseHandler->SetOnRagdollPhysicalizedImpulse( peImpulse );
 
 		CRecordingSystem *pRecordingSystem = g_pGame->GetRecordingSystem();
@@ -5079,8 +5071,6 @@ IMPLEMENT_RMI(CActor, ClPickUp)
 		{
 			pItem->PickUp(GetEntityId(), params.sound, params.select);
 
-			const char *displayName = pItem->GetDisplayName();
-
 			if (params.select)
 				m_netLastSelectablePickedUp=params.itemId;
 		}
@@ -5209,8 +5199,10 @@ void CActor::DumpActorInfo()
   CryLog("ActorInfo for %s", pEntity->GetName());
   CryLog("=====================================");
   
+#if !defined(EXCLUDE_NORMAL_LOG)
   Vec3 entPos(pEntity->GetWorldPos());
   CryLog("Entity Pos: %.f %.f %.f", entPos.x, entPos.y, entPos.z);
+#endif
   CryLog("Active: %i", pEntity->IsActivatedForUpdates());
   CryLog("Hidden: %i", pEntity->IsHidden());
   CryLog("Invisible: %i", pEntity->IsInvisible());  
@@ -5239,8 +5231,10 @@ void CActor::DumpActorInfo()
   {
     CryLog("Vehicle: %s (destroyed: %i)", pVehicle->GetEntity()->GetName(), pVehicle->IsDestroyed());
     
+#if !defined(EXCLUDE_NORMAL_LOG)
     IVehicleSeat* pSeat = pVehicle->GetSeatForPassenger(GetEntityId());
     CryLog("Seat %i", pSeat ? pSeat->GetSeatId() : 0);
+#endif
   }
 
   if (IItem* pItem = GetCurrentItem())

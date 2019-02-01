@@ -35,13 +35,6 @@
 #include "DataPatchDownloader.h"
 #include "PatchPakManager.h"
 
-
-static const char	*k_stats_suitMode_any="any";
-static const char	*k_stats_suitMode_tactical="tactical";
-static const char	*k_stats_suitMode_infiltration="infiltration";
-static const char	*k_stats_suitMode_combat="combat";
-static const char	*k_stats_suitMode_agility="agility";
-
 CStatsRecordingMgr::CStatsRecordingMgr() :
 	m_gameStats(NULL),
 	m_statsStorage(NULL),
@@ -1047,7 +1040,6 @@ IStatsTracker* CStatsRecordingMgr::GetStatsTracker(
 void CStatsRecordingMgr::StopTrackingAllPlayerStats()
 {
 	CGameRules::TPlayers		players;
-	IActorSystem				*as=g_pGame->GetIGameFramework()->GetIActorSystem();
 
 	// AI aren't in the gamerules player list,
 	//	so use actors here instead (the previous approach didn't work in SP)
@@ -1396,10 +1388,10 @@ void CStatsRecordingMgr::OnNodeAdded(const SNodeLocator& locator)
 						CRY_ASSERT_MESSAGE(pActor->m_telemetry.GetStatsTracker()==NULL,"setting stats tracker for AI, but one is already set?!");
 
 						//////////////////////////////////////////////////
-
+#if !defined(EXCLUDE_NORMAL_LOG)
 						const char	*pActorName = pActor->GetEntity()->GetName();
-
 						CryLog("%s\n", pActorName);
+#endif
 
 						//////////////////////////////////////////////////
 
@@ -1488,10 +1480,10 @@ void CStatsRecordingMgr::OnNodeRemoved(const SNodeLocator& locator, IStatsTracke
 					if (pActor)
 					{
 						//////////////////////////////////////////////////
-
+#if !defined(EXCLUDE_NORMAL_LOG)
 						const char	*pActorName = pActor->GetEntity()->GetName();
-
 						CryLog("%s\n", pActorName);
+#endif
 
 						//////////////////////////////////////////////////
 
@@ -1539,7 +1531,6 @@ void CStatsRecordingMgr::OnHit(const HitInfo& hit)
 			return;
 
 		IGameFramework* pGameFrameWork = g_pGame->GetIGameFramework();
-		IGameStatistics		*gs=pGameFrameWork->GetIGameStatistics();
 		if (IStatsTracker *tracker=GetStatsTracker(actor))
 		{
 			char weaponClassName[128];

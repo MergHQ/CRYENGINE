@@ -398,8 +398,6 @@ void CGameRulesSimpleEntityBasedObjective::CallScriptUpdateFunction( TEntityIdVe
 //------------------------------------------------------------------------
 void CGameRulesSimpleEntityBasedObjective::OnStartGame()
 {
-	CGameRules *pGameRules = g_pGame->GetGameRules();
-
 	if (gEnv->bServer)
 	{
 		int numEntityTypes = m_entityDetails.size();

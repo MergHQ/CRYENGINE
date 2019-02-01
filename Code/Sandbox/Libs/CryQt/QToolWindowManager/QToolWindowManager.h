@@ -13,7 +13,8 @@
 #include <QTimer>
 #include <QWidget>
 
-class IToolWindowDragHandler;
+struct IToolWindowDragHandler;
+
 class QToolWindowManager;
 
 struct QTOOLWINDOWMANAGER_EXPORT QToolWindowAreaReference
@@ -212,8 +213,8 @@ signals:
 	void updateTrackingTooltip(QString text, QPoint pos);
 
 protected:
-	virtual bool eventFilter(QObject*, QEvent*) Q_DECL_OVERRIDE;
-	virtual bool event(QEvent* e) Q_DECL_OVERRIDE;
+	virtual bool eventFilter(QObject*, QEvent*) override;
+	virtual bool event(QEvent* e) override;
 
 	bool         tryCloseToolWindow(QWidget* toolWindow);
 
@@ -280,5 +281,5 @@ public:
 	QSizePreservingSplitter(Qt::Orientation orientation, QWidget* parent = 0);
 
 protected:
-	virtual void childEvent(QChildEvent* c) Q_DECL_OVERRIDE;
+	virtual void childEvent(QChildEvent* c) override;
 };

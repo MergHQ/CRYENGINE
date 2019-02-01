@@ -639,7 +639,6 @@ void CGameRulesObjective_Extraction::UpdateButtonPresses()
 
 	if (pClientPlayer && m_useButtonHeld && m_attemptPickup)
 	{
-		bool  keepPressing = false;
 		const SInteractionInfo& interaction = pClientPlayer->GetCurrentInteractionInfo();
 
 		if(interaction.interactionType == eInteraction_GameRulesPickup)
@@ -777,7 +776,6 @@ void CGameRulesObjective_Extraction::Update(float frameTime)
 #endif
 
 	CGameRules *pGameRules = g_pGame->GetGameRules();
-	float serverTime = pGameRules->GetServerTime();
 	int numLeft = 0;
 	// update the timer on any dropped pickups, on clients and servers!
 	int numPickups = m_pickups.size();
@@ -1189,8 +1187,7 @@ void CGameRulesObjective_Extraction::OnStartGamePost()
 		CRY_ASSERT(pRoundsModule);
 		if (pRoundsModule)
 		{
-			int  primaryTeam = pRoundsModule->GetPrimaryTeam();	// attacking
-			int secondaryTeam = (primaryTeam == 1) ? 2 : 1;			// defending
+			int primaryTeam = pRoundsModule->GetPrimaryTeam();	// attacking
 			
 			pIt->MoveFirst();
 			while(pEntity = pIt->Next())
@@ -1891,8 +1888,6 @@ void CGameRulesObjective_Extraction::PlayerDropsPickupCommon(EntityId playerId, 
 			displayName = playerEntity ? playerEntity->GetName() : "NULL ENTITY";	
 		}
 
-		const bool  isLocalActor = (gEnv->IsClient() && (playerId == g_pGame->GetIGameFramework()->GetClientActorId()));
-
 		const char *pickupString = GetPickupString(pickup);	
 		string pickupStringCache = pickupString;
 
@@ -1968,11 +1963,8 @@ void CGameRulesObjective_Extraction::PickupReturnsCommon(SPickup *pickup, IEntit
 
 	if (!wasExtracted)
 	{
-		EntityId localActorId = g_pGame->GetIGameFramework()->GetClientActorId();
 		CGameRules *pGameRules = g_pGame->GetGameRules();
-		int localTeamId = pGameRules->GetTeam(localActorId);
 		int pickupTeamId = pGameRules->GetTeam(pickup->m_spawnedPickupEntityId); // pickup->m_teamAffected will be the defending team
-		bool localPlayerPickupSameTeam = (localTeamId == pickupTeamId);
 
 		const char *pickupString = GetPickupString(pickup);
 		string pickupStringCache = pickupString;
@@ -2021,9 +2013,10 @@ void CGameRulesObjective_Extraction::OnEntityEvent( IEntity *pEntity, const SEnt
 	{
 		// original proximity pickup collecting
 		EntityId entityEnteredId = (EntityId) event.nParam[0];
+#if CRY_DEBUG_LOG_ENABLED
 		IEntity *entityEntered = gEnv->pEntitySystem->GetEntity(entityEnteredId);
-
 		DbgLog("OnEntityEvent() Server - ENTERAREA entity=%p (%s) has entered pEntity=%p (%s);", entityEntered, entityEntered ? entityEntered->GetName() : "NULL", pEntity, pEntity ? pEntity->GetName() : "NULL");
+#endif
 
 		if (pEntity->GetClass() == m_extractAtEntityClass)
 		{
@@ -2229,7 +2222,7 @@ void CGameRulesObjective_Extraction::OnClientEnteredGame(int channelId, bool isR
 	EntityId localActorId = g_pGame->GetIGameFramework()->GetClientActorId();
 	if (gEnv->bServer)
 	{
-		int  plyrTeam = g_pGame->GetGameRules()->GetTeam(playerId);
+		//int  plyrTeam = g_pGame->GetGameRules()->GetTeam(playerId);
 
 		int numPickups=m_pickups.size();
 		int numExtractAts=m_extractAtElements.size();
@@ -2632,8 +2625,6 @@ void CGameRulesObjective_Extraction::OnAction(const ActionId& action, int activa
 
 				if (action == g_pGame->Actions().use)
 				{
-					const float  curTime = gEnv->pTimer->GetAsyncCurTime();
-
 					switch (activationMode)
 					{
 						case eAAM_OnPress:
@@ -2693,7 +2684,6 @@ void CGameRulesObjective_Extraction::SetIconForExtractionPoint(EntityId extracti
 	IGameRulesRoundsModule*  pRoundsModule = g_pGame->GetGameRules()->GetRoundsModule();
 	SExtractAt *extractAt = GetExtractAtForEntityId(extractionPointEntityId);
 	int  primaryTeam = pRoundsModule->GetPrimaryTeam();	// attacking
-	int secondaryTeam = (primaryTeam == 1) ? 2 : 1;			// defending
 	EntityId localActorId = g_pGame->GetIGameFramework()->GetClientActorId();
 	CGameRules *pGameRules=g_pGame->GetGameRules();
 	int localTeamId = pGameRules->GetTeam(localActorId);
@@ -3210,7 +3200,6 @@ void CGameRulesObjective_Extraction::CheckForInteractionWithEntity(EntityId inte
 
 bool CGameRulesObjective_Extraction::CheckIsPlayerEntityUsingObjective(EntityId playerId)
 {
-	int toBeExtracted = 0;
 	const size_t numPickups = m_pickups.size();
 	for (size_t i = 0; i < numPickups; i++)
 	{

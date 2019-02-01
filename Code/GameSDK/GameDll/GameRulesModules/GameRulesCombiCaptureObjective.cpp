@@ -405,7 +405,6 @@ void CGameRulesCombiCaptureObjective::Update( float frameTime )
 {
 	BaseType::Update(frameTime);
 
-	const bool  updatedCombiProgressLastFrame = m_updatedCombiProgressThisFrame;
 	m_updatedCombiProgressThisFrame = false;
 
 	EntityId  localClientId = g_pGame->GetIGameFramework()->GetClientActorId();
@@ -699,7 +698,7 @@ void CGameRulesCombiCaptureObjective::SvUpdateCaptureScorers()
 						for(int k=0; k<count; k++)
 						{
 							const EntityId  eid = pDetails->m_insideEntities[m_attackingTeamId - 1].at(k);
-							if (IEntity* pEnt=gEnv->pEntitySystem->GetEntity(eid))
+							if (gEnv->pEntitySystem->GetEntity(eid) != nullptr)
 							{
 								if (SSvCaptureScorer* pScorer=m_svCaptureScorers.FindByEntityId(eid))
 								{
@@ -946,9 +945,10 @@ void CGameRulesCombiCaptureObjective::SvDoEndOfRoundPlayerScoring(const int winn
 	CRY_ASSERT((winningTeam == 1) || (winningTeam == 2));
 
 	CGameRules *pGameRules = g_pGame->GetGameRules();
-
+#if defined(USE_CRY_ASSERT)
 	IGameRulesStateModule *pStateModule = pGameRules->GetStateModule();
 	CRY_ASSERT(pStateModule && (pStateModule->GetGameState() != IGameRulesStateModule::EGRS_PostGame));
+#endif
 
 	if (IGameRulesScoringModule* pScoringModule=pGameRules->GetScoringModule())
 	{
@@ -1146,7 +1146,6 @@ void CGameRulesCombiCaptureObjective::OnChangedTeam( EntityId entityId, int oldT
 	if ((g_pGame->GetIGameFramework()->GetClientActorId() == entityId) && newTeamId)
 	{
 		// Local player has changed teams, reset icons
-		int currActiveIndex = -1;
 		for (int i = 0; i < HOLD_OBJECTIVE_MAX_ENTITIES; ++ i)
 		{
 			SHoldEntityDetails *pDetails = &m_entities[i];
@@ -1266,7 +1265,6 @@ EGameRulesMissionObjectives CGameRulesCombiCaptureObjective::GetIcon(SHoldEntity
 		{
 			CGameRules *pGameRules = g_pGame->GetGameRules();
 			int localTeamId = pGameRules->GetTeam(g_pGame->GetIGameFramework()->GetClientActorId());
-			float serverTime = pGameRules->GetServerTime();
 
 			if (pCaptureEntity->m_capturing)
 			{
@@ -1424,7 +1422,6 @@ void CGameRulesCombiCaptureObjective::OnEntityKilled( const HitInfo &hitInfo )
 				if ((pIShooter != NULL && pIShooter->IsPlayer()) && (pITarget != NULL && pITarget->IsPlayer()))
 				{
 					CPlayer*  pShooter = (CPlayer*) pIShooter;
-					CPlayer*  pTarget = (CPlayer*) pITarget;
 
 					const int  shooterTeam = g_pGame->GetGameRules()->GetTeam(hitInfo.shooterId);
 					const int  targetTeam = g_pGame->GetGameRules()->GetTeam(hitInfo.targetId);

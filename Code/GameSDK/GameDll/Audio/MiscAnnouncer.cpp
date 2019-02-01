@@ -72,8 +72,6 @@ CMiscAnnouncer::~CMiscAnnouncer()
 void CMiscAnnouncer::Init()
 {
 	CryLog("CMiscAnnouncer::Init()");
-
-	IEntityClassRegistry *pEntityClassRegistry = gEnv->pEntitySystem->GetClassRegistry();
 	
 	XmlNodeRef xmlData = GetISystem()->LoadXmlFromFile("Scripts/Sounds/MiscAnnouncements.xml");
 	InitXML(xmlData);

@@ -444,133 +444,133 @@ void CRecordingSystemDebug::PrintThirdPersonPacketData( const SRecording_Packet&
 		break;
 	case eTPP_ProceduralBreakHappened:
 		{
-			const SRecording_ProceduralBreakHappened& rProcBreak = (const SRecording_ProceduralBreakHappened&)packet;
+			//const SRecording_ProceduralBreakHappened& rProcBreak = (const SRecording_ProceduralBreakHappened&)packet;
 			RecSysLog("[%4.4f] [PrcBrk]", frameTime 
 				);
 		}
 		break;
 	case eTPP_DrawSlotChange:
 		{
-			const SRecording_DrawSlotChange& rDrawSlotChange = (const SRecording_DrawSlotChange&)packet;
+			//const SRecording_DrawSlotChange& rDrawSlotChange = (const SRecording_DrawSlotChange&)packet;
 			RecSysLog("[%4.4f] [DrSlCh]", frameTime 
 				);
 		}
 		break;
 	case eTPP_StatObjChange:
 		{
-			const SRecording_StatObjChange& rStatObjChange = (const SRecording_StatObjChange&)packet;
+			//const SRecording_StatObjChange& rStatObjChange = (const SRecording_StatObjChange&)packet;
 			RecSysLog("[%4.4f] [StObCh]", frameTime 
 				);
 		}
 		break;
 	case eTPP_SubObjHideMask:
 		{
-			const SRecording_SubObjHideMask& rSubObjHideMask = (const SRecording_SubObjHideMask&)packet;
+			//const SRecording_SubObjHideMask& rSubObjHideMask = (const SRecording_SubObjHideMask&)packet;
 			RecSysLog("[%4.4f] [SbObHi]", frameTime 
 				);
 		}
 		break;
 	case eTPP_TeamChange:
 		{
-			const SRecording_TeamChange& rTeamChange = (const SRecording_TeamChange&)packet;
+			//const SRecording_TeamChange& rTeamChange = (const SRecording_TeamChange&)packet;
 			RecSysLog("[%4.4f] [TeamCh]", frameTime 
 				);
 		}
 		break;
 	case eTPP_ItemSwitchHand:
 		{
-			const SRecording_ItemSwitchHand& rItemSwitchHand = (const SRecording_ItemSwitchHand&)packet;
+			//const SRecording_ItemSwitchHand& rItemSwitchHand = (const SRecording_ItemSwitchHand&)packet;
 			RecSysLog("[%4.4f] [ItmHnd]", frameTime 
 				);
 		}
 		break;
 	case eTPP_EntityAttached:
 		{
-			const SRecording_EntityAttached& rEntityAttached = (const SRecording_EntityAttached&)packet;
+			//const SRecording_EntityAttached& rEntityAttached = (const SRecording_EntityAttached&)packet;
 			RecSysLog("[%4.4f] [EntAtt]", frameTime 
 				);
 		}
 		break;
 	case eTPP_EntityDetached:
 		{
-			const SRecording_EntityDetached& rEntityDetached = (const SRecording_EntityDetached&)packet;
+			//const SRecording_EntityDetached& rEntityDetached = (const SRecording_EntityDetached&)packet;
 			RecSysLog("[%4.4f] [EntDet]", frameTime 
 				);
 		}
 		break;
 	case eTPP_PlayerJoined:
 		{
-			const SRecording_PlayerJoined& rPlayerJoined = (const SRecording_PlayerJoined&)packet;
+			//const SRecording_PlayerJoined& rPlayerJoined = (const SRecording_PlayerJoined&)packet;
 			RecSysLog("[%4.4f] [PlrJnd]", frameTime 
 				);
 		}
 		break;
 	case eTPP_PlayerLeft:
 		{
-			const SRecording_PlayerLeft& rPlayerLeft = (const SRecording_PlayerLeft&)packet;
+			//const SRecording_PlayerLeft& rPlayerLeft = (const SRecording_PlayerLeft&)packet;
 			RecSysLog("[%4.4f] [PlrLft]", frameTime 
 				);
 		}
 		break;
 	case eTPP_PlayerChangedModel:
 		{
-			const SRecording_PlayerChangedModel& rPlayerChangedModel = (const SRecording_PlayerChangedModel&)packet;
+			//const SRecording_PlayerChangedModel& rPlayerChangedModel = (const SRecording_PlayerChangedModel&)packet;
 			RecSysLog("[%4.4f] [PlChMd]", frameTime 
 				);
 		}
 		break;
 	case eTPP_CorpseSpawned:
 		{
-			const SRecording_CorpseSpawned& rCorpseSpawned = (const SRecording_CorpseSpawned&)packet;
+			//const SRecording_CorpseSpawned& rCorpseSpawned = (const SRecording_CorpseSpawned&)packet;
 			RecSysLog("[%4.4f] [CrpsSp]", frameTime 
 				);
 		}
 		break;
 	case eTPP_CorpseRemoved:
 		{
-			const SRecording_CorpseRemoved& rCorpseRemoved = (const SRecording_CorpseRemoved&)packet;
+			//const SRecording_CorpseRemoved& rCorpseRemoved = (const SRecording_CorpseRemoved&)packet;
 			RecSysLog("[%4.4f] [CrpsRm]", frameTime 
 				);
 		}
 		break;
 	case eTPP_AnimObjectUpdated:
 		{
-			const SRecording_AnimObjectUpdated& rAnimObjectUpdate = (const SRecording_AnimObjectUpdated&)packet;
+			//const SRecording_AnimObjectUpdated& rAnimObjectUpdate = (const SRecording_AnimObjectUpdated&)packet;
 			RecSysLog("[%4.4f] [AnObUp]", frameTime 
 				);
 		}
 		break;
 	case eTPP_ObjectCloakSync:
 		{
-			const SRecording_ObjectCloakSync& rObjectCloakSync = (const SRecording_ObjectCloakSync&)packet;
+			//const SRecording_ObjectCloakSync& rObjectCloakSync = (const SRecording_ObjectCloakSync&)packet;
 			RecSysLog("[%4.4f] [OClkSy]", frameTime 
 				);
 		}
 		break;
 	case eTPP_PickAndThrowUsed:
 		{
-			const SRecording_PickAndThrowUsed& rPickAndThrowUsed = (const SRecording_PickAndThrowUsed&)packet;
+			//const SRecording_PickAndThrowUsed& rPickAndThrowUsed = (const SRecording_PickAndThrowUsed&)packet;
 			RecSysLog("[%4.4f] [PkThrw]", frameTime 
 				);
 		}
 		break;
 	case eTPP_InteractiveObjectFinishedUse:
 		{
-			const SRecording_InteractiveObjectFinishedUse& rInteractiveObjectFinishedUse = (const SRecording_InteractiveObjectFinishedUse&)packet;
+			//const SRecording_InteractiveObjectFinishedUse& rInteractiveObjectFinishedUse = (const SRecording_InteractiveObjectFinishedUse&)packet;
 			RecSysLog("[%4.4f] [IOFinU]", frameTime 
 				);
 		}
 		break;
 	case eTPP_ForcedRagdollAndImpulse:
 		{
-			const SRecording_ForcedRagdollAndImpulse& rForcedRagdollAndImpulse = (const SRecording_ForcedRagdollAndImpulse&)packet;
+			//const SRecording_ForcedRagdollAndImpulse& rForcedRagdollAndImpulse = (const SRecording_ForcedRagdollAndImpulse&)packet;
 			RecSysLog("[%4.4f] [FrRgIm]", frameTime 
 				);
 		}
 		break;
 	case eTPP_RagdollImpulse:
 		{
-			const SRecording_RagdollImpulse& rRagdollImpulse = (const SRecording_RagdollImpulse&)packet;
+			//const SRecording_RagdollImpulse& rRagdollImpulse = (const SRecording_RagdollImpulse&)packet;
 			RecSysLog("[%4.4f] [RagImp]", frameTime 
 				);
 		}

@@ -527,11 +527,6 @@ void* GetNearestTo(const TCenterSortArray& array, const Vec2& center, const floa
 		nearestDistSq = distanceSq;
 	}
 
-	if(numPoints>0 && nearest<0)
-	{
-		int a=1;
-	}
-
 	if(nearest>=0)
 	{
 		return array[nearest].m_pData;

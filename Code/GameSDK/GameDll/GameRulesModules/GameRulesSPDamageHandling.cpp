@@ -299,7 +299,6 @@ bool CGameRulesSPDamageHandling::SvOnHit(const HitInfo& hit)
 
 		if (victimIsLocalClientPlayer)
 		{
-			CPlayer* pPlayer = static_cast<CPlayer*>(pVictimActor);
 			SDamageHandling damageHandling(&hit, 1.0f);
 			
 			HitInfo hitInfo(hit);
@@ -551,7 +550,6 @@ void CGameRulesSPDamageHandling::SvOnExplosion(const ExplosionInfo& explosionInf
 	bool bHitActor = false;
 	for ( ; it != affectedEntities.end(); ++it)
 	{
-		bool success = false;
 		IEntity* entity = it->first;
 		float obstruction = 1.0f - it->second;
 
@@ -763,7 +761,6 @@ void CGameRulesSPDamageHandling::SvOnCollision(const IEntity* pVictimEntity, con
 	const IEntity* pOffenderEntity = gEnv->pEntitySystem->GetEntity(offenderID);
 
 	IScriptTable* pVictimScript = pVictimEntity ? pVictimEntity->GetScriptTable() : NULL;
-	IScriptTable* pOffenderScript = pOffenderEntity ? pOffenderEntity->GetScriptTable() : NULL;
 
 	const float currentTime = gEnv->pTimer->GetCurrTime();
 

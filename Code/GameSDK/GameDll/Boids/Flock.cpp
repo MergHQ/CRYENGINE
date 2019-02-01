@@ -151,8 +151,6 @@ CFlock::~CFlock()
 //////////////////////////////////////////////////////////////////////////
 void CFlock::ClearBoids()
 {
-	I3DEngine* engine = gEnv->p3DEngine;
-
 	DeleteEntities(true);
 	for (Boids::iterator it = m_boids.begin(); it != m_boids.end(); ++it)
 	{
@@ -161,7 +159,6 @@ void CFlock::ClearBoids()
 	}
 	m_boids.clear();
 	m_BoidCollisionMap.clear();
-
 }
 
 void CFlock::DeleteEntities(bool bForceDeleteAll)
@@ -171,7 +168,6 @@ void CFlock::DeleteEntities(bool bForceDeleteAll)
 		m_pEntity->ClearSlots();
 	}
 
-	I3DEngine* engine = gEnv->p3DEngine;
 	for (Boids::iterator it = m_boids.begin(); it != m_boids.end(); ++it)
 	{
 		CBoidObject* boid = *it;
@@ -377,7 +373,6 @@ void CFlock::Update(CCamera* pCamera)
 
 	UpdateBoidCollisions();
 
-	Vec3 entityPos = m_pEntity->GetWorldPos();
 	Matrix34 boidTM;
 	int num = 0;
 	for (Boids::iterator it = m_boids.begin(); it != m_boids.end(); ++it, num++)

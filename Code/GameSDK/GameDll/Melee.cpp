@@ -820,7 +820,6 @@ int CMelee::Hit(const Vec3 &pt, const Vec3 &dir, const Vec3 &normal, IPhysicalEn
 
 		if (pTarget)
 		{
-			CActor *pCTargetActor = static_cast<CActor*>(pTargetActor);
 			CPlayer* pTargetPlayer = (pTargetActor && pTargetActor->IsPlayer()) ? static_cast<CPlayer*>(pTargetActor) : NULL;
 
 			if(pTargetPlayer && pTargetPlayer->IsClient())
@@ -1003,7 +1002,7 @@ void CMelee::Impulse(const Vec3 &pt, const Vec3 &dir, const Vec3 &normal, IPhysi
 		// so we must solve for v given the same energy as a scar bullet
 		float speed = sqrt_tpl(4000.0f/(80.0f*0.5f)); // 80.0f is the mass of the player
 
-		if( IRenderNode *pBrush = (IRenderNode*)pCollider->GetForeignData(PHYS_FOREIGN_ID_STATIC) )
+		if(pCollider->GetForeignData(PHYS_FOREIGN_ID_STATIC) != nullptr)
 		{
 			speed = 0.003f;
 		}

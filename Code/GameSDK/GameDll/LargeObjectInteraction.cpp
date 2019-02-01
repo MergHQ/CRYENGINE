@@ -539,8 +539,6 @@ EntityId CLargeObjectInteraction::GetBestTargetAndDirection( const Vec3& playerD
 
 	CRY_ASSERT(m_pPlayer->IsClient());
 
-	const EntityId playerId = m_pPlayer->GetEntityId();
-
 	IMovementController* pMovementController = m_pPlayer->GetMovementController();
 	if (!pMovementController)
 		return 0;
@@ -564,7 +562,7 @@ EntityId CLargeObjectInteraction::GetBestTargetAndDirection( const Vec3& playerD
 	{
 		const SAutoaimTarget& target = aaTargets[i];
 
-		CRY_ASSERT(target.entityId != playerId);
+		CRY_ASSERT(target.entityId != m_pPlayer->GetEntityId());
 
 		//Skip friendly ai
 		if (target.HasFlagSet(eAATF_AIHostile) == false)

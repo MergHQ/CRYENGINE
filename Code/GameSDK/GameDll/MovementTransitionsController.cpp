@@ -461,7 +461,6 @@ void CMovementTransitionsController::Update(
 	const float avgEntitySpeed2D = (m_prevEntitySpeed2D == -1) ? entitySpeed2D : (m_prevEntitySpeed2D + entitySpeed2D)*0.5f;
 	m_prevEntitySpeed2D = entitySpeed2D;
 
-	EMovementTransitionState oldState = m_state;
 	m_state = m_pMovementTransitions->Update(
 		m_allowedTransitionFlags,
 		m_safeLine,
@@ -745,7 +744,6 @@ void CCornerSmoother::Update(
 
 				// Smooth speed changes (critically damped spring)
 				float smoothedSpeed = oldMovementSpeed;
-				float oldRate = m_travelSpeedRate;
 				SmoothCD(smoothedSpeed, m_travelSpeedRate, frameTime, desiredTravelSpeed, currentCurveSettings.speedSmoothTime);
 
 					*pNewDesiredSpeed = smoothedSpeed;
@@ -958,7 +956,6 @@ void CCornerSmoother::SimplifyPrediction(const Vec3& playerPos, const SPredictio
 				int proposedNextIncludedIndex = nextIncludedIndex + 1;
 				Vec2 comparePos = input.samples[(lastIncludedIndex + proposedNextIncludedIndex)/2]; // instead of checking all points, as an approximation I just check the half-way point (which works for 'corner' curves)
 				Vec2 newPos = input.samples[proposedNextIncludedIndex];
-				Vec2 delta = newPos - lastIncludedPos;
 				Lineseg ls = Lineseg(Vec3(lastIncludedPos), Vec3(newPos));
 				float lambda;
 				float distSq = Distance::Point_Lineseg2DSq(Vec3(comparePos), ls, lambda);

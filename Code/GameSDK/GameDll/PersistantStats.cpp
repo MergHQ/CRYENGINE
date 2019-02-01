@@ -967,10 +967,10 @@ void CPersistantStats::SaveTelemetryInternal(const char* filenameNoExt, const SS
 	
 	int bufferPosition = 0;
 
-	FILE *descFile = NULL;
 	TDescriptionVector descVector;
 
 #ifndef _RELEASE
+	FILE *descFile = NULL;
 	int pos = 0;
 
 	if(description)
@@ -1065,7 +1065,6 @@ void CPersistantStats::SaveTelemetryInternal(const char* filenameNoExt, const SS
 	IGameRulesModulesManager *pGameRulesModulesManager = CGameRulesModulesManager::GetInstance();
 	int rulesDataCount = 0;
 	const int rulesCount = pGameRulesModulesManager->GetRulesCount();
-	const int gamemodeRange = EMPS_GamesLost + 1 - EMPS_Gamemodes;
 	int rulesData[128];
 	CRY_ASSERT(rulesCount < CRY_ARRAY_COUNT(rulesData));
 	for(int i = 0; i < rulesCount; i++)
@@ -2029,12 +2028,6 @@ void CPersistantStats::Update(const float dt)
 							pSessionStats->m_intStats[EIPS_CrouchingOverCorpses]++;
 							memset(&m_crouchToggleTime, 0, sizeof(m_crouchToggleTime));
 
-							CGameRules* pNewGameRules = g_pGame->GetGameRules();
-
-							EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
-							int localClientTeamId = pNewGameRules->GetTeam(localClientId);
-							int corpseTeamId = pNewGameRules->GetTeam(corpseId);
-
 							if (!pClientPlayer->IsFriendlyEntity(corpseId))
 							{
 								{
@@ -2228,9 +2221,12 @@ EntityId CPersistantStats::ClientNearCorpse(CPlayer *pClientPlayer)
 void CPersistantStats::EnteredGame()
 {
 	IGameFramework *pGameFramework = g_pGame->GetIGameFramework();
-
+#if defined(USE_CRY_ASSERT)
 	bool found = pGameFramework->GetNetworkSafeClassId(m_pickAndThrowWeaponClassId, "PickAndThrowWeapon");
 	CRY_ASSERT_MESSAGE(found, "Unable to find PickAndThrowWeapon");
+#else
+	pGameFramework->GetNetworkSafeClassId(m_pickAndThrowWeaponClassId, "PickAndThrowWeapon");
+#endif
 
 	m_clientPreviousKillData.clear();
 	m_sessionStats.clear();
@@ -3272,7 +3268,6 @@ void CPersistantStats::OnEntityKilled(const HitInfo &hitInfo)
 
 						if (pShooterPlayer->IsClient())
 						{
-							float dist2killed = (pTargetActor->GetEntity()->GetWorldPos() - pShooterPlayer->GetEntity()->GetWorldPos()).len2();
 							const float currentTime = gEnv->pTimer->GetCurrTime();
 							float clientPlayerUncloakTime = pShooterPlayer->GetLastUnCloakTime();
 							if ( (currentTime - clientPlayerUncloakTime) < (float)k_warbirdTimeFromCloak)
@@ -3786,7 +3781,6 @@ void CPersistantStats::OnShoot(IWeapon *pWeapon, EntityId shooterId, EntityId am
 
 		if( shooterId == gEnv->pGameFramework->GetClientActorId() )
 		{
-			IActor *pActor = g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(shooterId);
 			IEntityClass* pClass = pWeaponImpl->GetEntity()->GetClass();
 			g_pGame->GetWeaponSystem()->GetWeaponAlias().UpdateClass(&pClass);
 			BLAZE_REPORT_WEAPON(pClass, pActor, shots, ammoCost);

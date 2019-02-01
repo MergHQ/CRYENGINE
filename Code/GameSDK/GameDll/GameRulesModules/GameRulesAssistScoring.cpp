@@ -190,7 +190,6 @@ void CGameRulesAssistScoring::SvDoScoringForDeath(const EntityId victimId, const
 		float fEarliestTimeForAssistShoot = time - m_maxTimeBetweenAttackAndKillForAssist;
 
 		bool hadAssist=false;
-		bool awardedSuicideKill=false;
 
 		for (TAttackers::reverse_iterator vit=it->second.rbegin(); vit!=it->second.rend(); ++vit)
 		{
@@ -296,7 +295,6 @@ void CGameRulesAssistScoring::ClHandleAssistsForDeath(const EntityId victimId, c
 		float time=m_pGameRules->GetServerTime();
 
 		bool hadAssist=false;
-		bool awardedSuicideKill=false;
 
 		for (TAttackers::reverse_iterator vit=it->second.rbegin(); vit!=it->second.rend(); ++vit)
 		{
@@ -380,8 +378,6 @@ EntityId CGameRulesAssistScoring::SvGetMostRecentAttacker(EntityId targetId)
 	}
 	else
 	{
-		float time=m_pGameRules->GetServerTime();
-
 		if (!it->second.empty())
 		{
 			TAttackers::const_iterator vit = it->second.begin();

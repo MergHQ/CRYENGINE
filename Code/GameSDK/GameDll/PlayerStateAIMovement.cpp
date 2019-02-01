@@ -61,8 +61,8 @@ const CPlayerStateAIMovement::TStateIndex CPlayerStateAIMovement::Root(CPlayer& 
 	{
 		if (eventID == STATE_EVENT_DEBUG)
 		{
-			AUTOENUM_BUILDNAMEARRAY(stateFlags, ePlayerStateFlags);
-			STATE_DEBUG_EVENT_LOG(this, event, false, state_white, "Active: StateMovement: CurrentFlags: %s", AutoEnum_GetStringFromBitfield(m_flags.GetRawFlags(), stateFlags, sizeof(stateFlags) / sizeof(char*)).c_str());
+			//AUTOENUM_BUILDNAMEARRAY(stateFlags, ePlayerStateFlags);
+			//STATE_DEBUG_EVENT_LOG(this, event, false, state_white, "Active: StateMovement: CurrentFlags: %s", AutoEnum_GetStringFromBitfield(m_flags.GetRawFlags(), stateFlags, sizeof(stateFlags) / sizeof(char*)).c_str());
 		}
 	}
 	else

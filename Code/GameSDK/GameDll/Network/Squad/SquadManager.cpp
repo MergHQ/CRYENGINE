@@ -30,7 +30,9 @@
 #define SQUADMGR_CREATE_SQUAD_RETRY_TIMER 10.f
 
 static int sm_enable = 0;
+#if !defined(_RELEASE)
 static int sm_debug = 0;
+#endif
 static float sm_inviteJoinTimeout = 2.f;
 
 //---------------------------------------
@@ -819,8 +821,6 @@ void CSquadManager::UserPacketCallback(UCryLobbyEventData eventData, void* userP
 
 		if (eventData.pUserPacketData->session != CrySessionInvalidHandle)
 		{
-			const CrySessionHandle lobbySessionHandle = g_pGame->GetGameLobby()->GetCurrentSessionHandle();
-
 			if (eventData.pUserPacketData->session == pSquadManager->m_squadHandle)
 			{
 				pSquadManager->ReadSquadPacket(&eventData.pUserPacketData);
@@ -876,8 +876,11 @@ void CSquadManager::SendSquadPacket(GameUserPacketDefinitions packetType, SCryMa
 			if (packet.CreateWriteBuffer(MaxBufferSize))
 			{
 				packet.StartWrite(packetType, true);
+#if defined(USE_CRY_ASSERT)
 				ECryLobbyError error = pMatchmaking->WriteSessionIDToPacket(m_currentGameSessionId, &packet);
-
+#else
+				pMatchmaking->WriteSessionIDToPacket(m_currentGameSessionId, &packet);
+#endif
 				bool bIsMatchmakingGame = false;
 
 				CGameLobby* pGameLobby = g_pGame->GetGameLobby();
@@ -973,8 +976,12 @@ void CSquadManager::SendSquadPacket(GameUserPacketDefinitions packetType, SCryMa
 			if (packet.CreateWriteBuffer(MaxBufferSize))
 			{
 				packet.StartWrite(packetType, true);
+#if defined(USE_CRY_ASSERT)
 				ECryLobbyError error = pMatchmaking->WriteSessionIDToPacket(m_inviteSessionId, &packet);
 				CRY_ASSERT(error == eCLE_Success);
+#else
+				pMatchmaking->WriteSessionIDToPacket(m_inviteSessionId, &packet);
+#endif
 			}
 			break;
 		}

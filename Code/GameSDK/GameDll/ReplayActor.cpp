@@ -196,7 +196,7 @@ void CReplayActor::SetGunId(EntityId gunId)
 { 
 	if(gunId)
 	{
-		if(IEntity * pGunEntity = gEnv->pEntitySystem->GetEntity(gunId))
+		if(gEnv->pEntitySystem->GetEntity(gunId) != nullptr)
 		{
 			//This will be unregistered in IEntity::Shutdown() when the gun is deleted
 			gEnv->pEntitySystem->AddEntityEventListener(gunId, ENTITY_EVENT_DONE, &m_GunRemovalListener);
@@ -452,7 +452,6 @@ void CReplayActor::ApplyMannequinEvent(const SMannHistoryItem &mannEvent, float 
 //------------------------------------------------------------------------
 bool CReplayActor::GetAdjustedLayerTime(ICharacterInstance* pCharacterInstance, int animId, const CryCharAnimationParams& params, float speedMultiplier, float animTime, float &adjustedLayerTime)
 {
-	ISkeletonAnim* pSkeletonAnim = pCharacterInstance->GetISkeletonAnim();
 	IAnimationSet* pAnimationSet = pCharacterInstance->GetIAnimationSet();
 	float duration = pAnimationSet->GetDuration_sec(animId);
 	animTime *= params.m_fPlaybackSpeed * speedMultiplier;
@@ -540,18 +539,12 @@ void SBasicReplayMovementParams::SetDesiredLocalLocation2( ISkeletonAnim* pSkele
 	Vec2 deltaVector(rDesiredLocation.t.x, rDesiredLocation.t.y);
 	float deltaDist = deltaVector.GetLength();
 
-	const float thresholdDistMin = 0.05f;
-	const float thresholdDistMax = 0.15f;
-	f32 uniform_scale = 1.0f;//m_pInstance->CCharInstance::GetUniformScale();
-
 	Vec2 deltaDir = (deltaDist > 0.0f) ? (deltaVector / deltaDist) : Vec2(0,0);
 	float deltaAngle = (deltaDir.x == 0.0f && deltaDir.y == 0.0f  ? 0.0f : RAD2DEG(atan2f(-deltaDir.x, deltaDir.y)) );
 	float travelAngle = DEG2RAD(deltaAngle);
 
 	// Update travel direction only if distance bigger (more secure) than thresholdDistMax.
 	// Though, also update travel direction if distance is small enough to not have any visible effect (since distance scale is zero).
-	bool initOnly = DO_INIT_ONLY_TEST && ((deltaDist > thresholdDistMin) && (deltaDist < thresholdDistMax));
-
 	Vec2 newStrafe = Vec2(-sin_tpl(travelAngle), cos_tpl(travelAngle));
 	if (pLMG) 
 	{

@@ -503,6 +503,7 @@ bool CGameRules::Init( IGameObject * pGameObject )
 	if (!GetGameObject()->BindToNetwork())
 		return false;
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	if (gEnv->bMultiplayer)
 	{
 		static int GAMERULES__s_round = 1;
@@ -522,10 +523,15 @@ bool CGameRules::Init( IGameObject * pGameObject )
 		CryLog( "Round %d", GAMERULES__s_round);
 		GAMERULES__s_round++;
 	}
+#endif
 
 	int  modei;
+#if defined(USE_CRY_ASSERT)
 	const bool  modeOk = AutoEnum_GetEnumValFromString(GetEntity()->GetClass()->GetName(), S_GetGameModeNamesArray(), eGM_NUM_GAMEMODES, &modei);
 	CRY_ASSERT(modeOk);
+#else
+	AutoEnum_GetEnumValFromString(GetEntity()->GetClass()->GetName(), S_GetGameModeNamesArray(), eGM_NUM_GAMEMODES, &modei);
+#endif
 	m_gameMode = (EGameMode) modei;
 	CRY_ASSERT((m_gameMode > eGM_INVALID_GAMEMODE) && (m_gameMode < eGM_NUM_GAMEMODES));
 
@@ -1061,7 +1067,6 @@ void CGameRules::Update( SEntityUpdateContext& ctx, int updateSlot )
 
 	if (m_hostMigrationTimeSinceGameStarted.GetValue())
 	{
-		int64 initialValue = m_gameStartedTime.GetValue();
 		m_gameStartedTime = (m_cachedServerTime - m_hostMigrationTimeSinceGameStarted);
 		m_hostMigrationTimeSinceGameStarted.SetValue(0);
 
@@ -5344,9 +5349,11 @@ void CGameRules::SendTextMessage(ETextMessageType type, const char *msg, unsigne
 //------------------------------------------------------------------------
 void CGameRules::ChatLog(EChatMessageType type, EntityId sourceId, EntityId targetId, const char *msg)
 {
-	IEntity * pSource = gEnv->pEntitySystem->GetEntity(sourceId);
 	IEntity * pTarget = gEnv->pEntitySystem->GetEntity(targetId);
+#if !defined(EXCLUDE_NORMAL_LOG)
+	IEntity * pSource = gEnv->pEntitySystem->GetEntity(sourceId);
 	const char * sourceName = pSource? pSource->GetName() : "<unknown>";
+#endif
 	const char * targetName = pTarget? pTarget->GetName() : "<unknown>";
 	int teamId = GetTeam(sourceId);
 
@@ -5949,6 +5956,7 @@ void CGameRules::UnregisterConsoleVars(IConsole *pConsole)
 //------------------------------------------------------------------------
 void CGameRules::CmdDebugTeams(IConsoleCmdArgs *pArgs)
 {
+#if !defined(EXCLUDE_NORMAL_LOG)
 	CGameRules *pGameRules=g_pGame->GetGameRules();
 	if (!pGameRules->m_entityteams.empty())
 	{
@@ -5966,6 +5974,7 @@ void CGameRules::CmdDebugTeams(IConsoleCmdArgs *pArgs)
 			}
 		}
 	}
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -6168,7 +6177,7 @@ void CGameRules::UpdateAffectedEntitiesSet(TExplosionAffectedEntities &affectedE
 			if (pEntity->IsHidden())
 				continue;
 
-			if (IScriptTable *pEntityTable = pEntity->GetScriptTable())
+			if (pEntity->GetScriptTable() != nullptr)
 			{
 				if (IPhysicalEntity* pPhys1 = pEntity->GetPhysics())
 				{
@@ -7069,10 +7078,12 @@ void CGameRules::AbortEntityRemoval(EntityId entityId)
 
 void CGameRules::ShowStatus()
 {
+#if !defined(EXCLUDE_NORMAL_LOG)
 	float timeRemaining = GetRemainingGameTime();
 	int mins = (int)(timeRemaining / 60.0f);
 	int secs = (int)(timeRemaining - mins*60);
 	CryLog("time remaining: %d:%02d", mins, secs);
+#endif
 }
 #ifndef OLD_VOICE_SYSTEM_DEPRECATED
 void CGameRules::ReconfigureVoiceGroups(EntityId id,int old_team,int new_team)
@@ -8774,9 +8785,12 @@ void CGameRules::SetupForbiddenAreaShapesHelpers()
 			memset(shapeArray, 0, sizeof(shapeArray));
 
 			EntityId forbiddenAreaId = m_forbiddenAreas[i];
-
+#if defined(USE_CRY_ASSERT)
 			const bool success = pAreaManager->GetLinkedAreas(forbiddenAreaId, &shapeArray[0], shapeArrayCount);
 			CRY_ASSERT_MESSAGE(success, "increasing k_shapeArraySize will fix this, or linking less entities to the area");
+#else
+			pAreaManager->GetLinkedAreas(forbiddenAreaId, &shapeArray[0], shapeArrayCount);
+#endif
 
 			bool reversed = false;
 			bool resetsObjects = true;
@@ -9012,7 +9026,7 @@ bool HitInfo::IsPartIDInvalid()
 {
 	if(partId > 1023 || partId < -1)
 	{
-		if(IActor *pActor = g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(targetId))
+		if(g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(targetId) != nullptr)
 		{
 			return true;
 		}

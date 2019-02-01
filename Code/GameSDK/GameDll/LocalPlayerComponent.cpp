@@ -662,11 +662,12 @@ void CLocalPlayerComponent::UpdatePlayerLowHealthStatus( const float oldHealth )
 	const float healthThrMid = g_pGameCVars->g_playerMidHealthThreshold;
 
 	const float maxHealth = (float)m_rPlayer.GetMaxHealth();
-	const float minHealth = 0; 
 	const float currentHealth = m_rPlayer.m_health.GetHealth();
 	const bool isDead = m_rPlayer.m_health.IsDead();
-	
+#if defined(USE_CRY_ASSERT)
+	const float minHealth = 0; 
 	CRY_ASSERT( maxHealth > minHealth );
+#endif
 
 	//Extra 'mid-low' health sound hint
 	if ((currentHealth <= healthThrMid) && (oldHealth > healthThrMid))

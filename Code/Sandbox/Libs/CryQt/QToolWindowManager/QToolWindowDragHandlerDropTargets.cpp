@@ -26,7 +26,7 @@ QToolWindowDropTarget::~QToolWindowDropTarget()
 		delete m_pixmap;
 }
 
-void QToolWindowDropTarget::paintEvent(QPaintEvent *paintEvent)
+void QToolWindowDropTarget::paintEvent(QPaintEvent* paintEvent)
 {
 	QPainter painter(this);
 	painter.drawPixmap(0, 0, *m_pixmap);

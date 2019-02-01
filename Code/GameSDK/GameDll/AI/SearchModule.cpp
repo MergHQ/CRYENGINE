@@ -232,19 +232,19 @@ void SearchGroup::GenerateSearchSpots()
 	Vec3 eyes[MaxEyeCount];
 	uint32 eyeCount = 0;
 
-	std::vector<SearchActor>::iterator actorIt = m_actors.begin();
+	/*std::vector<SearchActor>::iterator actorIt = m_actors.begin();
 	std::vector<SearchActor>::iterator actorEnd = m_actors.end();
 
-// 	for ( ; (eyeCount < MaxEyeCount) && (actorIt != actorEnd); ++actorIt)
-// 	{
-// 		SearchActor& actor = (*actorIt);
-// 
-// 		Agent agent(actor.entityID);
-// 		if(!agent.IsValid())
-// 			continue;
-// 
-// 		eyes[eyeCount++] = agent.GetPos();
-// 	}
+ 	for ( ; (eyeCount < MaxEyeCount) && (actorIt != actorEnd); ++actorIt)
+ 	{
+ 		SearchActor& actor = (*actorIt);
+ 
+ 		Agent agent(actor.entityID);
+ 		if(!agent.IsValid())
+ 			continue;
+ 
+ 		eyes[eyeCount++] = agent.GetPos();
+ 	}*/
 
 	IAISystem& aiSystem = *gEnv->pAISystem;
 	uint32 locationCount = 
