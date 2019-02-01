@@ -791,7 +791,7 @@ int CEntityRender::LoadGeometry(int nSlot, const char* szFilename, const char* s
 		pStatObj = GetI3DEngine()->LoadStatObj(szFilename, nullptr, nullptr, (nLoadFlags& IEntity::EF_NO_STREAMING) == 0);
 	}
 
-	SetSlotGeometry(nSlot, pStatObj);
+	SetSlotGeometry(nSlot | ENTITY_SLOT_ACTUAL, pStatObj);
 
 	return nSlot;
 }
