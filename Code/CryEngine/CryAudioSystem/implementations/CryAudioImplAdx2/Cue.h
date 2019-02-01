@@ -44,6 +44,7 @@ public:
 		, m_name(szCueName)
 		, m_cueSheetId(acbId)
 		, m_actionType(type)
+		, m_pAcbHandle(nullptr)
 		, m_cueSheetName(szCueSheetName)
 	{}
 #else
@@ -56,6 +57,7 @@ public:
 		, m_name(szCueName)
 		, m_cueSheetId(acbId)
 		, m_actionType(type)
+		, m_pAcbHandle(nullptr)
 	{}
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
@@ -66,16 +68,16 @@ public:
 	virtual void           Stop(IObject* const pIObject) override;
 	// ~CryAudio::Impl::ITriggerConnection
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
-	char const* GetName() const { return m_name.c_str(); }
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+	char const*    GetName() const      { return m_name.c_str(); }
+	CriAtomExAcbHn GetAcbHandle() const { return m_pAcbHandle; }
 
 private:
 
 	uint32 const                                m_id;
-	EActionType const                           m_actionType;
 	CryFixedStringT<MaxControlNameLength> const m_name;
 	uint32 const                                m_cueSheetId;
+	EActionType const                           m_actionType;
+	CriAtomExAcbHn                              m_pAcbHandle;
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	CryFixedStringT<MaxControlNameLength> const m_cueSheetName;

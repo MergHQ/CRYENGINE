@@ -9,51 +9,78 @@
 #include "Listener.h"
 #include "Cvars.h"
 
+#include <CryThreading/CryThread.h>
+
 namespace CryAudio
 {
 namespace Impl
 {
 namespace Adx2
 {
+CryCriticalSection g_cs;
+
+//////////////////////////////////////////////////////////////////////////
+static void ProcessCallback(CCueInstance* const pCueInstance, CriAtomExPlaybackEvent const playbackEvent)
+{
+	switch (playbackEvent)
+	{
+	case CriAtomExPlaybackEvent::CRIATOMEX_PLAYBACK_EVENT_FROM_NORMAL_TO_VIRTUAL:
+		{
+			pCueInstance->SetFlag(ECueInstanceFlags::IsVirtual);
+
+			break;
+		}
+	case CriAtomExPlaybackEvent::CRIATOMEX_PLAYBACK_EVENT_FROM_VIRTUAL_TO_NORMAL:
+		{
+			pCueInstance->RemoveFlag(ECueInstanceFlags::IsVirtual);
+
+			break;
+		}
+	case CriAtomExPlaybackEvent::CRIATOMEX_PLAYBACK_EVENT_REMOVE:
+		{
+			pCueInstance->SetFlag(ECueInstanceFlags::ToBeRemoved);
+
+			break;
+		}
+	default:
+		{
+			break;
+		}
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 static void PlaybackEventCallback(void* pObject, CriAtomExPlaybackEvent playbackEvent, CriAtomExPlaybackInfoDetail const* pInfo)
 {
 	if ((playbackEvent != CriAtomExPlaybackEvent::CRIATOMEX_PLAYBACK_EVENT_ALLOCATE) && (pObject != nullptr))
 	{
 		auto const pBaseObject = static_cast<CBaseObject*>(pObject);
-		CueInstances const& cueInstances = pBaseObject->GetCueInstances();
 
-		for (auto const pCueInstance : cueInstances)
 		{
-			if (pCueInstance->GetPlaybackId() == pInfo->id)
+			CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Adx2::g_cs);
+
+			CueInstances const& pendingCueInstances = pBaseObject->GetPendingCueInstances();
+
+			for (auto const pPendingCueInstance : pendingCueInstances)
 			{
-				switch (playbackEvent)
+				if (pPendingCueInstance->GetPlaybackId() == pInfo->id)
 				{
-				case CriAtomExPlaybackEvent::CRIATOMEX_PLAYBACK_EVENT_FROM_NORMAL_TO_VIRTUAL:
-					{
-						pCueInstance->SetFlag(ECueInstanceFlags::IsVirtual);
+					ProcessCallback(pPendingCueInstance, playbackEvent);
 
-						break;
-					}
-				case CriAtomExPlaybackEvent::CRIATOMEX_PLAYBACK_EVENT_FROM_VIRTUAL_TO_NORMAL:
-					{
-						pCueInstance->RemoveFlag(ECueInstanceFlags::IsVirtual);
-
-						break;
-					}
-				case CriAtomExPlaybackEvent::CRIATOMEX_PLAYBACK_EVENT_REMOVE:
-					{
-						pCueInstance->SetFlag(ECueInstanceFlags::ToBeRemoved);
-
-						break;
-					}
-				default:
-					{
-						break;
-					}
+					break;
 				}
+			}
 
-				break;
+			CueInstances const& cueInstances = pBaseObject->GetCueInstances();
+
+			for (auto const pCueInstance : cueInstances)
+			{
+				if (pCueInstance->GetPlaybackId() == pInfo->id)
+				{
+					ProcessCallback(pCueInstance, playbackEvent);
+
+					break;
+				}
 			}
 		}
 	}
@@ -61,7 +88,7 @@ static void PlaybackEventCallback(void* pObject, CriAtomExPlaybackEvent playback
 
 //////////////////////////////////////////////////////////////////////////
 CBaseObject::CBaseObject()
-	: m_flags(EObjectFlags::None)
+	: m_flags(EObjectFlags::IsVirtual) // Set to virtual because voices always start in virtual state.
 {
 	ZeroStruct(m_3dAttributes);
 	m_p3dSource = criAtomEx3dSource_Create(&g_3dSourceConfig, nullptr, 0);
@@ -69,6 +96,7 @@ CBaseObject::CBaseObject()
 	criAtomExPlayer_SetPlaybackEventCallback(m_pPlayer, PlaybackEventCallback, this);
 	CRY_ASSERT_MESSAGE(m_pPlayer != nullptr, "m_pPlayer is null pointer during %s", __FUNCTION__);
 	m_cueInstances.reserve(2);
+	m_pendingCueInstances.reserve(2);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -81,54 +109,75 @@ CBaseObject::~CBaseObject()
 void CBaseObject::Update(float const deltaTime)
 {
 	EObjectFlags const previousFlags = m_flags;
+
+	if (!m_pendingCueInstances.empty())
+	{
+		m_flags |= EObjectFlags::IsVirtual;
+
+		auto iter(m_pendingCueInstances.begin());
+		auto iterEnd(m_pendingCueInstances.end());
+
+		while (iter != iterEnd)
+		{
+			CCueInstance* const pCueInstance = *iter;
+
+			if (pCueInstance->PrepareForPlayback())
+			{
+				AddCueInstance(pCueInstance);
+				UpdateVelocityTracking();
+
+				if (iter != (iterEnd - 1))
+				{
+					(*iter) = m_pendingCueInstances.back();
+				}
+
+				m_pendingCueInstances.pop_back();
+				iter = m_pendingCueInstances.begin();
+				iterEnd = m_pendingCueInstances.end();
+			}
+			else
+			{
+				UpdateVirtualState(pCueInstance);
+
+				++iter;
+			}
+		}
+	}
+
 	bool removedCueInstance = false;
 
 	if (!m_cueInstances.empty())
 	{
 		m_flags |= EObjectFlags::IsVirtual;
-	}
 
-	auto iter(m_cueInstances.begin());
-	auto iterEnd(m_cueInstances.end());
+		auto iter(m_cueInstances.begin());
+		auto iterEnd(m_cueInstances.end());
 
-	while (iter != iterEnd)
-	{
-		auto const pCueInstance = *iter;
-
-		if ((pCueInstance->GetFlags() & ECueInstanceFlags::ToBeRemoved) != 0)
+		while (iter != iterEnd)
 		{
-			gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pCueInstance->GetTriggerInstanceId());
-			g_pImpl->DestructCueInstance(pCueInstance);
-			removedCueInstance = true;
+			CCueInstance* const pCueInstance = *iter;
 
-			if (iter != (iterEnd - 1))
+			if ((pCueInstance->GetFlags() & ECueInstanceFlags::ToBeRemoved) != 0)
 			{
-				(*iter) = m_cueInstances.back();
-			}
+				gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pCueInstance->GetTriggerInstanceId());
+				g_pImpl->DestructCueInstance(pCueInstance);
+				removedCueInstance = true;
 
-			m_cueInstances.pop_back();
-			iter = m_cueInstances.begin();
-			iterEnd = m_cueInstances.end();
-		}
-		else
-		{
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
-			// Always update in production code for debug draw.
-			if ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) == 0)
-			{
-				m_flags &= ~EObjectFlags::IsVirtual;
-			}
-#else
-			if (((m_flags& EObjectFlags::IsVirtual) != 0) && ((m_flags& EObjectFlags::UpdateVirtualStates) != 0))
-			{
-				if ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) == 0)
+				if (iter != (iterEnd - 1))
 				{
-					m_flags &= ~EObjectFlags::IsVirtual;
+					(*iter) = m_cueInstances.back();
 				}
-			}
-#endif      // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
-			++iter;
+				m_cueInstances.pop_back();
+				iter = m_cueInstances.begin();
+				iterEnd = m_cueInstances.end();
+			}
+			else
+			{
+				UpdateVirtualState(pCueInstance);
+
+				++iter;
+			}
 		}
 	}
 
@@ -148,6 +197,26 @@ void CBaseObject::Update(float const deltaTime)
 	{
 		UpdateVelocityTracking();
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CBaseObject::UpdateVirtualState(CCueInstance* const pCueInstance)
+{
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+	// Always update in production code for debug draw.
+	if ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) == 0)
+	{
+		m_flags &= ~EObjectFlags::IsVirtual;
+	}
+#else
+	if (((m_flags& EObjectFlags::IsVirtual) != 0) && ((m_flags& EObjectFlags::UpdateVirtualStates) != 0))
+	{
+		if ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) == 0)
+		{
+			m_flags &= ~EObjectFlags::IsVirtual;
+		}
+	}
+#endif      // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -174,22 +243,22 @@ ERequestStatus CBaseObject::SetName(char const* const szName)
 //////////////////////////////////////////////////////////////////////////
 void CBaseObject::AddCueInstance(CCueInstance* const pCueInstance)
 {
-	if ((m_flags& EObjectFlags::IsVirtual) != 0)
+	if ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) == 0)
 	{
-		if ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) == 0)
-		{
-			m_flags &= ~EObjectFlags::IsVirtual;
-		}
+		m_flags &= ~EObjectFlags::IsVirtual;
 	}
 	else if (m_cueInstances.empty())
 	{
-		if ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) != 0)
-		{
-			m_flags |= EObjectFlags::IsVirtual;
-		}
+		m_flags |= EObjectFlags::IsVirtual;
 	}
 
 	m_cueInstances.push_back(pCueInstance);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CBaseObject::AddPendingCueInstance(CCueInstance* const pCueInstance)
+{
+	m_pendingCueInstances.push_back(pCueInstance);
 }
 
 //////////////////////////////////////////////////////////////////////////
