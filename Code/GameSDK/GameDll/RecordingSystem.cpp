@@ -56,7 +56,9 @@
 #include "Utility/AttachmentUtils.h"
 #include <CryMovie/IMovieSystem.h>
 
+#ifdef RECSYS_DEBUG
 static AUTOENUM_BUILDNAMEARRAY(s_thirdPersonPacketList, ThirdPersonPacketList);
+#endif
 const char* NIGHT_VISION_PE = "NightVision_Active";
 
 // --------------------------------------------------------------------------------
@@ -1517,11 +1519,10 @@ bool CRecordingSystem::QueueStartPlayback(const SPlaybackRequest& request)
 
 	RecSysLogFunc;
 
-	IEntity* pKiller = gEnv->pEntitySystem->GetEntity(request.kill.killerId);
-
 #if defined(RECSYS_DEBUG)
 	if (!request.highlights)
 	{
+		IEntity* pKiller = gEnv->pEntitySystem->GetEntity(request.kill.killerId);
 		IEntity* pVictim = gEnv->pEntitySystem->GetEntity(request.kill.victimId);
 
 		const char* killerName = pKiller ? pKiller->GetName() : "unknown";
@@ -2739,9 +2740,6 @@ void CRecordingSystem::OnPlaybackStart(void)
 
 			m_playInfo.m_timings.ApplyOffset(GetPlaybackTimeOffset());
 
-#ifdef RECSYS_DEBUG
-			float liveBufferLength = GetLiveBufferLenSeconds();
-#endif //RECSYS_DEBUG
 			if (!m_highlightsReel)
 			{
 				GetTPCameraData(m_playInfo.m_timings.recStart);
@@ -2857,7 +2855,7 @@ void CRecordingSystem::OnPlaybackStart(void)
 									{
 										if (ISkeletonAnim* pAnim = pChar->GetISkeletonAnim())
 										{
-											if (ISkeletonPose* pPose = pChar->GetISkeletonPose())
+											if (pChar->GetISkeletonPose() != nullptr)
 											{
 												int32 numJoints = corpse.m_numJoints;
 												IAnimationOperatorQueuePtr poseModifier;
@@ -2925,7 +2923,6 @@ void CRecordingSystem::OnPlaybackStart(void)
 			// Takes 22ms
 			static IEntityClass* pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("ReplayActor");
 			assert(pEntityClass);
-			int killerTeam = pGameRules->GetTeam(m_killer);
 
 			for (int i = 0; i < MAX_RECORDED_PLAYERS; ++i)
 			{
@@ -3573,7 +3570,6 @@ void CRecordingSystem::DropTPFrame()
 
 		if (packet->type == eRBPT_FrameData)
 		{
-			SRecording_FrameData* sfd = (SRecording_FrameData*) startingplace;
 			frame++;
 			if (frame == 2)
 			{
@@ -5220,7 +5216,7 @@ void CRecordingSystem::UpdateThirdPersonPosition(const SRecording_TPChar* tpchar
 		bool isCloaked = ((tpchar->playerFlags & eTPF_Cloaked) != 0);
 		bool fade = true;
 
-		IEntityRender* pIEntityRender = (pReplayEntity->GetRenderInterface());
+		//IEntityRender* pIEntityRender = (pReplayEntity->GetRenderInterface());
 
 		{
 			//pIEntityRender->SetEffectLayerParams( tpchar->layerEffectParams );
@@ -6056,7 +6052,6 @@ void CRecordingSystem::RecordWeaponAccessories()
 		CItem* pItem = (CItem*)g_pGame->GetIGameFramework()->GetIItemSystem()->GetItem(*itEntity);
 		if (pItem)
 		{
-			IEntity* pEntity = pItem->GetEntity();
 			RecordWeaponAccessories(pItem);
 		}
 	}
@@ -7369,15 +7364,14 @@ void CRecordingSystem::ApplyBattleChatter(const SRecording_BattleChatter* pPacke
 				TReplayActorMap::iterator itReplayActor = m_replayActors.find(actorId);
 				if (itReplayActor != m_replayActors.end())
 				{
-					const float currentTime = gEnv->pTimer->GetCurrTime();
-					CActor* pActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(actorId));
+					/*CActor* pActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(actorId));
 
 					int killerTeam = -1;
 					CReplayActor* pKillerReplayActor = GetReplayActor(m_killer, true);
 					if (pKillerReplayActor)
 					{
 						killerTeam = pKillerReplayActor->GetTeam();
-					}
+					}*/
 
 					REINST("needs verification!");
 					//pBattleChatter->Play(pInfo, (EBattlechatter)pPacket->chatterType, pActor, itReplayActor->second, currentTime, eSoundSemantic_Replay, ((int)pPacket->chatterVariation)-1, killerTeam);
@@ -7721,7 +7715,7 @@ void CRecordingSystem::ApplyObjectCloakSync(const SRecording_ObjectCloakSync* pO
 	IEntity* pCloakSlave = GetReplayEntity(pObjectCloakSync->cloakObjectId);
 	if (pCloakSlave && pCloakMasterActor)
 	{
-		IEntity* pCloakMaster = pCloakMasterActor->GetEntity();
+		//IEntity* pCloakMaster = pCloakMasterActor->GetEntity();
 
 		// Grab render proxies
 		IEntityRender* pCloakSlaveRP = (pCloakSlave->GetRenderInterface());
@@ -7739,7 +7733,7 @@ void CRecordingSystem::ApplyObjectCloakSync(const SRecording_ObjectCloakSync* pO
 		}
 		else
 		{
-			IEntityRender* pCloakMasterRP = (pCloakMaster->GetRenderInterface());
+			//IEntityRender* pCloakMasterRP = (pCloakMaster->GetRenderInterface());
 			//const float cloakBlendSpeedScale		= pCloakMasterRP->GetCloakBlendTimeScale();
 			//const bool  bFadeByDistance				= pCloakMasterRP->DoesCloakFadeByDistance();
 			//const uint8 colorChannel			    = pCloakMasterRP->GetCloakColorChannel();

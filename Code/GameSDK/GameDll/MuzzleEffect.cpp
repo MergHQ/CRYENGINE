@@ -221,7 +221,6 @@ void CMuzzleEffect::AttachEmitters(CFireMode* pFireMode, int barrel)
 
 	CWeapon* pWeapon = pFireMode->GetWeapon();
 	const SEffectParams& muzzleFlash = GetMuzzleFlashParams(pFireMode);
-	const SEffectParams& muzzleBeam = GetMuzzleBeamParams(pFireMode);
 
 	if (m_mfIds.empty())
 		return;

@@ -103,14 +103,14 @@ void CGameRulesMPSpawningWithLives::Update(float frameTime)
 		return;
 	}
 
-	bool  isSuddenDeath = IsInSuddenDeath(); 
-
 	if (gEnv->IsClient() && (m_elimMarkerDuration > 0.f))
 	{
 		UpdateElimMarkers(frameTime);
 	}
 
 #if CRY_WATCH_ENABLED
+	bool isSuddenDeath = IsInSuddenDeath();
+
 	if (m_dbgWatchLvl >= 1)
 	{
 		if (gEnv->IsClient())
@@ -211,8 +211,10 @@ void CGameRulesMPSpawningWithLives::PerformRevive(EntityId playerId, int teamId,
 	}
 
 	CPlayer*  pPlayer = (CPlayer*) gEnv->pGameFramework->GetIActorSystem()->GetActor(playerId);
+#if !defined(EXCLUDE_NORMAL_LOG)
 	IEntity*  pEntity = gEnv->pEntitySystem->GetEntity( playerId );
 	CryLog("[tlh] @ CGameRulesMPSpawningWithLives::PerformRevive(playerId=%d, teamId=%d), player='%s'", playerId, teamId, (pEntity?pEntity->GetName():"!"));
+#endif
 
 	if( pPlayer != NULL && (pPlayer->IsDead() || pPlayer->GetSpectatorMode() != CActor::eASM_None/*Spectating*/) )
 	{
@@ -428,8 +430,10 @@ void CGameRulesMPSpawningWithLives::OnEntityKilled(const HitInfo &hitInfo)
 	if (gEnv->bServer)
 	{
 		EntityId  entityId = hitInfo.targetId;
+#if !defined(EXCLUDE_NORMAL_LOG)
 		IEntity*  e = gEnv->pEntitySystem->GetEntity(entityId);
 		CryLog("[tlh] @ CGameRulesMPSpawningWithLives::OnEntityKilled(), entity=%s", (e?e->GetName():"!"));
+#endif
 		CCCPOINT(MPSpawningWithLives_ListenedEntityKilled);
 		if (IGameRulesPlayerStatsModule* pPlayStatsMod=m_pGameRules->GetPlayerStatsModule())
 		{
@@ -491,10 +495,12 @@ void CGameRulesMPSpawningWithLives::SvNotifySurvivorCount()
 						{
 							CRY_ASSERT(0);
 						}
+#if !defined(EXCLUDE_NORMAL_LOG)
 						{
 							IEntity*  e = gEnv->pEntitySystem->GetEntity(s->playerId);
 							CryLog("      > added player '%s' to survivor array at idx %d", (e?e->GetName():"!"), (count - 1));
 						}
+#endif
 					}
 				}
 			}

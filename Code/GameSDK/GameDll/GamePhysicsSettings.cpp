@@ -162,7 +162,6 @@ void CGamePhysicsSettings::Debug( const IPhysicalEntity& physEnt, const bool dra
 	{
 		// NAME:
 		const int iForeign = physEnt.GetiForeignData();
-		void * const pForeign = physEnt.GetForeignData(iForeign);
 		static const int bufLen = 256;
 		char buf[bufLen] = "Unknown";
 		switch(iForeign)

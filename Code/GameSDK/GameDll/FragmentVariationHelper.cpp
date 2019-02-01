@@ -59,7 +59,7 @@ bool CFragmentVariationHelper::Reevaluate( const IAnimationDatabase* pDatabase, 
 	if ( m_requestedFragmentId != FRAGMENT_ID_INVALID )
 	{
 		SFragmentQuery fragQuery(m_requestedFragmentId, m_requestedTagState);
-		const uint32 optionCount = pDatabase->FindBestMatchingTag( fragQuery, &matchingTagState );
+		pDatabase->FindBestMatchingTag( fragQuery, &matchingTagState );
 	}
 
 	const bool fragmentTagsChanged = ( matchingTagState != m_selectedTagState );

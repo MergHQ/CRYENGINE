@@ -200,7 +200,6 @@ const Matrix34& LocalToVehicleTM(IVehiclePart* pParent, const Matrix34& localTM)
 
 static float factor1 = 0.5f;
 static float factor2 = 1.0f;
-static float factor3 = 1.0f;
 
 void CVehicleWeaponControlled::Update(SEntityUpdateContext& ctx, int update)
 {
@@ -244,7 +243,6 @@ void CVehicleWeaponControlled::Update(SEntityUpdateContext& ctx, int update)
 
 						Matrix34 vehicleWorldTm = pVehicle->GetEntity()->GetWorldTM();
 						Matrix34 mat = vehicleWorldTm * localT;
-						Vec3 vehicleSide2 = pPart->GetParent()->GetLocalTM(true, true).GetTranslation();
 
 						CPlayer *pl = this->GetOwnerPlayer();
 
@@ -261,8 +259,6 @@ void CVehicleWeaponControlled::Update(SEntityUpdateContext& ctx, int update)
 
 							Matrix33 desMat;
 							desMat.SetRotationVDir(diffLocal, 0.0f);
-
-							Vec3 test = GetEntity()->GetLocalTM().GetColumn0();
 
 							Ang3 testTM(desMat);
 
@@ -388,7 +384,7 @@ void CVehicleWeaponControlled::Update3PAnim(CPlayer *player, float goalTime, flo
   {
     if (IEntity *entity = player->GetEntity())
     {
-      const float ANIM_ANGLE_RANGE = gf_PI*0.25f;
+      //const float ANIM_ANGLE_RANGE = gf_PI*0.25f;
       static float dir = 0.05f;
       static float pos = 0.5f;
 

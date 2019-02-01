@@ -137,11 +137,7 @@ void CGameRulesRSSpawning::GetEnemyTeamCentre( SUsefulSpawnData& spawnData, Vec3
 	//This is now a blueprint for switching over the other functions to use the CActorManager.
 	//	They are not being switched over now because there are more significant changes in MPTrunk
 	//	that further changes would conflict with - Rich S
-
-	int				idx						= 0;
-	EntityId	enemyPlayerId = 0;
-
-	float fNumEnemies				= 0.0f;
+	float fNumEnemies = 0.0f;
 	Vec3	pureAveragePosition(0.0f, 0.0f, 0.0f);
 
 	CActorManager * pActorManager = CActorManager::GetActorManager();
@@ -556,10 +552,8 @@ float CGameRulesRSSpawning::GetScoreFromProximityToFriendlies(	SUsefulSpawnData&
 		float fClosestFriendly = sqrt_fast_tpl(fClosestFriendlySq);
 
 		if(fClosestFriendly < fIdealMin)
-		{	
-			const float fAbortDist = 0.7f; //If the sapwn is within this distance of a friendly, we're going to be intersecting - abort
+		{
 			const float fDiff = (fIdealMin - fClosestFriendly);
-			const float fDistanceScore = (float)__fsel(fDiff - fAbortDist, fDiff, sqr(fDiff) * 10.0f);
 			fScoreFromFriendlies =  fDiff * fCloseFriendlyScoreMultiplier * FriendlyScoreMultipliers[index];
 		}
 		else

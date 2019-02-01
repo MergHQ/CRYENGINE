@@ -140,8 +140,6 @@ void CPlayerPlugin_Interaction::Update(float dt)
 
 void CPlayerPlugin_Interaction::UpdateAutoPickup()
 {
-	const Vec3 ownerPlayerPosition = m_ownerPlayer->GetEntity()->GetWorldPos();
-
 	CGameRules* pGameRules = g_pGame->GetGameRules();
 	IGameRulesObjectivesModule* pObjectives = pGameRules ? pGameRules->GetObjectivesModule() : NULL;
 
@@ -160,7 +158,6 @@ void CPlayerPlugin_Interaction::UpdateAutoPickup()
 			//auto pickup ammo
 			if(pItem != NULL && pInventory != NULL)
 			{
-				IEntityClass* pItemClass = pItem->GetEntity()->GetClass();
 				if (IsInventoryFullForWeapon(pInventory, pItem->GetIWeapon()))
 					inventoryFull = true;
 				if (CanAutoPickupAmmo(pItem))
@@ -669,7 +666,6 @@ bool CPlayerPlugin_Interaction::CanAutoPickupAmmo(CItem* pTargetItem) const
 	if (pTargetItem)
 	{
 		IEntity* pTargetEntity = pTargetItem->GetEntity();
-		IEntityClass* pTargetItemClass = pTargetEntity->GetClass();
 		
 		if (CanLocalPlayerSee(pTargetEntity))
 		{

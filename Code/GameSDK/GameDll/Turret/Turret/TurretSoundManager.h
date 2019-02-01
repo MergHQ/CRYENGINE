@@ -101,8 +101,8 @@ public:
 	void SetSoundParam( const size_t soundId, const char* const paramName, const float value )
 	{
 		assert( soundId < eTS_SoundCount );
-		const STurretSoundInfo& soundInfo = m_sounds[ soundId ];
-		/*_smart_ptr< ISound > pSound = m_pIEntityAudioComponent->GetSound( soundInfo.soundId );
+		/*const STurretSoundInfo& soundInfo = m_sounds[ soundId ];
+		_smart_ptr< ISound > pSound = m_pIEntityAudioComponent->GetSound( soundInfo.soundId );
 		if ( pSound )
 		{
 			const bool logError = false;

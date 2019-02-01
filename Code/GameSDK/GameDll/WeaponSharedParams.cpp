@@ -440,7 +440,6 @@ void CWeaponSharedParams::ReadFireModeParams(const XmlNodeRef& paramsNode, CItem
 		if (fmParamsNode == NULL)
 			continue;
 
-		bool isMelee = false;
 		int enabled = 1;
 			
 		const char *name = fmParamsNode->getAttr("name");

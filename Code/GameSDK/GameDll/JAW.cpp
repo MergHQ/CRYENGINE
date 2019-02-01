@@ -366,7 +366,6 @@ void CJaw::PickUp(EntityId pickerId, bool sound, bool select, bool keepHistory, 
 
 	IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem();
 	IActor* pPicketActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(pickerId);
-	IInventory* pInventory = pPicketActor->GetInventory();
 	bool giveExtraTube = GiveExtraTubeToInventory(pPicketActor, pItemSystem);
 
 	if (pPicketActor->IsClient())
@@ -665,20 +664,12 @@ bool CJaw::OutOfAmmo(bool allFireModes) const
 //////////////////////////////////////////////////////////////////////////
 void CJaw::SvActivateMissileCountermeasures(EntityId shooterId, const Vec3 &pos, const Vec3 &dir)
 {
-	if(gEnv->bServer)
+	if (gEnv->bServer)
 	{
-		float fov = sinf(DEG2RAD(60.0f));
-
 		CActorManager * pActorManager = CActorManager::GetActorManager();
-
 		pActorManager->PrepareForIteration();
 
-		const int kNumActors			= pActorManager->GetNumActorsIncludingLocalPlayer();
-		const int kShooterTeam		= g_pGame->GetGameRules()->GetTeam(shooterId);
-		const float fZOffset			= 1.5f;
-		const float kPlayerRadius = 0.5f;
-
-		IActorSystem * pActorSystem = g_pGame->GetIGameFramework()->GetIActorSystem();
+		const int kNumActors = pActorManager->GetNumActorsIncludingLocalPlayer();
 
 		for(int i = 0; i < kNumActors; i++)
 		{
@@ -813,9 +804,6 @@ void CJaw::DoAutoDrop()
 		{
 			if( pOwner )
 			{
-				uint8 uniqueId = m_pItemSystem->GetItemUniqueId(GetEntity()->GetClass()->GetName());
-				bool selectNext = pOwner->GetInventory()->GetCountOfUniqueId(uniqueId) <= 1;
-
 				PlayAction(GetFragmentIds().drop);
 				m_playedDropAction = true;
 			}

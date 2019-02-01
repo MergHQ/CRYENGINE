@@ -572,8 +572,7 @@ void CTacticalManager::RemoveOverrideEntity(const EntityId tacticalEntity, const
 	TTacticalEntityToOverrideEntities::iterator iter = m_tacEntityToOverrideEntities.find(tacticalEntity);
 	if (iter != m_tacEntityToOverrideEntities.end())
 	{
-		const EntityId entityId = iter->second;
-		CRY_ASSERT(entityId == overrideEntity);
+		CRY_ASSERT(iter->second == overrideEntity);
 		m_tacEntityToOverrideEntities.erase(iter);
 	}
 	else

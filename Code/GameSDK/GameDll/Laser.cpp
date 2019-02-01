@@ -664,8 +664,6 @@ void CLaser::TurnOnLaser(bool manual /*= false*/)
 	if (params)
 		m_laserHelperFP = params->attach_helper;
 
-	int slot = pParentWeapon->IsOwnerFP() ? eIGS_FirstPerson: eIGS_ThirdPerson;
-
 	CActor* pOwner = pParentWeapon->GetOwnerActor();
 	GetGameObject()->EnableUpdateSlot(this, eIUS_General);
 	if (pOwner && pOwner->IsPlayer())
@@ -692,7 +690,6 @@ void CLaser::TurnOffLaser(bool manual /*= false*/)
 	CWeapon* pParentWeapon = GetWeapon();
 	if(pParentWeapon == NULL)
 		return;
-	bool ownerIsFP = pParentWeapon? pParentWeapon->IsOwnerFP(): false;
 
 	m_laserBeam.TurnOffLaser();
 
@@ -718,7 +715,6 @@ void CLaser::Update(SEntityUpdateContext& ctx, int slot)
 		CWeapon* pParentWeapon = GetWeapon();
 		if (pParentWeapon)
 		{
-			CActor* pOwnerActor = pParentWeapon->GetOwnerActor();
 			Vec3 laserPos, laserDir;
 			GetLaserPositionAndDirection(pParentWeapon, laserPos, laserDir);
 

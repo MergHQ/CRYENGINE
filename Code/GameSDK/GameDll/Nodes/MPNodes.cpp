@@ -714,8 +714,6 @@ public:
 						IAnimSequence* pSequence = pMPTrackViewManager->FindTrackviewSequence(id.id);
 						if (pSequence)
 						{
-							IMovieSystem* pMovieSystem = gEnv->pMovieSystem;
-
 							UpdateTrackedSequence(pSequence);
 
 							CGameRules::STrackViewRequestParameters params;
@@ -1776,10 +1774,9 @@ public:
 		{
 			m_bHighlighted = highlight;
 
-			if (IActor* pClientActor = g_pGame->GetIGameFramework()->GetClientActor())
+			if (g_pGame->GetIGameFramework()->GetClientActor() != nullptr)
 			{
-				CPlayer* pPlayer = static_cast<CPlayer*>(pClientActor);
-				if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_entityId))
+				if (gEnv->pEntitySystem->GetEntity(m_entityId) != nullptr)
 				{
 					if (highlight)
 					{
@@ -1799,8 +1796,6 @@ public:
 		const IGameFramework* pGameFramework = g_pGame->GetIGameFramework();
 		if (m_bRequiresNanosuit && gEnv->IsClient() && pGameFramework->GetClientActorId() == entityId)
 		{
-			const CActor* pClientActor = static_cast<CActor*>(pGameFramework->GetClientActor());
-
 			if (m_bHighlighted)
 			{
 				HighlightEntity(m_bHighlighted, false);

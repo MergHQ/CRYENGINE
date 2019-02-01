@@ -847,10 +847,6 @@ private:
 	{
 		STATE_DEBUG_LOG( this, "TransitionFromCurrentToSubState: From: <%s> To: <%s>", m_currentState.m_pDebugName, toSubState.m_pDebugName );
 
-#if defined(STATE_DEBUG)
-		const char* debugFromStateName =  m_currentState.m_pDebugName;
-		const char* debugIntoStateName = toSubState.m_pDebugName;
-#endif
 		const uint64 commonParent = CStateHelper<HOST, CStateHierarchy<HOST> >::GenerateCommonParent( m_currentState, toSubState );
 
 		CStateHierarchy* pState = this;

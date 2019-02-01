@@ -272,8 +272,6 @@ public:
 
 	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
-		EFlowEvent eventType = event;
-
 		switch (event)
 		{
 		case eFE_Activate:

@@ -1681,9 +1681,6 @@ void CItem::DetachItem(IEntity* pThisItemEntity, CActor* pOwnerActor, float impu
 
 						dropDirection.z = -1.f;
 
-						SActorStats* pActorStats = pOwnerActor->GetActorStats();
-						assert(pActorStats);
-
 						const Vec3 velocity = pOwnerActor->GetActorPhysics().velocity;
 
 						if (velocity.len2() > 0.0f)

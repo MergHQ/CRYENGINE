@@ -172,8 +172,6 @@ void CProceduralContextTurretAimPose::UpdateSmoothedTargetWorldPosition( const f
 
 	const Matrix34& worldTM = m_entity->GetWorldTM();
 
-	const Vec3 oldTargetLocalPosition = m_invertedWorldTM * m_smoothedTargetWorldPosition;
-
 	const float oldYawRadians = m_yawRadians;
 	const float oldPitchRadians = m_pitchRadians;
 

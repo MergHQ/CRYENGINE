@@ -50,9 +50,6 @@ struct CSpectacularKill::SPredNotValidAnim
 
 
 		// 1. the killer needs to be within a certain distance from the target
-		IEntity* pTargetEntity = m_pTarget->GetEntity();
-		IEntity* pKillerEntity = pOwner->GetEntity();
-
 		const QuatT& killerTransform = pOwner->GetAnimatedCharacter()->GetAnimLocation();
 		const QuatT& targetTransform = m_pTarget->GetAnimatedCharacter()->GetAnimLocation();
 		const Vec3& vKillerPos = killerTransform.t;
@@ -69,7 +66,6 @@ struct CSpectacularKill::SPredNotValidAnim
 			{
 				// visually shows why it failed
 				IPersistantDebug* pPersistantDebug = m_spectacularKill.BeginPersistantDebug();
-				const float fConeHeight = killAnim.optimalDist + skCVars.maxDistanceError;
 				pPersistantDebug->AddPlanarDisc(vTargetPos, killAnim.optimalDist - skCVars.maxDistanceError, killAnim.optimalDist + skCVars.maxDistanceError, Col_Coral, 6.0f);
 				pPersistantDebug->AddLine(vKillerPos, vKillerPos + Vec3(0.f, 0.f, 5.0f), Col_Red, 6.f);
 			}
@@ -477,7 +473,7 @@ bool CSpectacularKill::StartOnTarget(CActor* pTargetActor)
 
 #ifndef _RELEASE
 			// Clean persistant debug information
-			IPersistantDebug* pPersistantDebug = BeginPersistantDebug();
+			BeginPersistantDebug();
 
 			// Send telemetry event
 			CStatsRecordingMgr* pRecordingMgr = g_pGame->GetStatsRecorder();

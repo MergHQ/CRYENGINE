@@ -160,21 +160,14 @@ void CVehicleMovementTank::DebugDrawMovement(const float deltaTime)
 	#ifdef DEBUG_TANK_AI
 	if (m_movementAction.isAI)
 	{
-		IPhysicalEntity* pPhysics = GetPhysics();
-		IRenderer* pRenderer = gEnv->pRenderer;
-		static float color[4] = { 1, 1, 1, 1 };
-		float green[4] = { 0, 1, 0, 1 };
-		float red[4] = { 1, 0, 0, 1 };
 		static ColorB colRed(255, 0, 0, 255);
 		static ColorB colBlue(0, 0, 255, 255);
 		static ColorB colWhite(255, 255, 255, 255);
 		ColorB colGreen(0, 255, 0, 255);
 		ColorB col1(255, 255, 0, 255);
-		float y = 50.f, step1 = 15.f, step2 = 20.f, size = 1.3f, sizeL = 1.5f;
 
 		IRenderAuxGeom* pAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 		SAuxGeomRenderFlags flags = pAuxGeom->GetRenderFlags();
-		SAuxGeomRenderFlags oldFlags = pAuxGeom->GetRenderFlags();
 		flags.SetDepthWriteFlag(e_DepthWriteOff);
 		flags.SetDepthTestFlag(e_DepthTestOff);
 		pAuxGeom->SetRenderFlags(flags);
@@ -185,7 +178,6 @@ void CVehicleMovementTank::DebugDrawMovement(const float deltaTime)
 		const Vec3 xAxis = bodyPose.GetColumn0();
 		const Vec3 yAxis = bodyPose.GetColumn1();
 		const Vec3 zAxis = bodyPose.GetColumn2();
-		const Vec3 chassisPos = bodyPose.GetColumn3();
 
 		if (!m_debug.targetPos.IsZero())
 		{
@@ -222,7 +214,6 @@ void CVehicleMovementTank::ProcessAI(const float deltaTime)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_GAME);
 
-	float dt = max(deltaTime, 0.005f);
 	SVehiclePhysicsStatus* physStatus = &m_physStatus[k_physicsThread];
 
 	// Save the last steer state

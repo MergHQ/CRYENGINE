@@ -449,9 +449,12 @@ void CGameCache::CreateActorClassLuaCache(IEntityClass *pClass, SmartScriptTable
 
 		// Callback to lua to cache all required resources
 		CacheActorResources(pEntityScript);
-
+#if defined(USE_CRY_ASSERT)
 		std::pair<TActorClassLuaCacheMap::iterator, bool> result = m_ActorClassLuaCache.insert(TActorClassLuaCacheMap::value_type(pClass, actorClassLuaCache));
 		assert(result.second == true); // Assert that it was inserted and not already present
+#else
+		m_ActorClassLuaCache.insert(TActorClassLuaCacheMap::value_type(pClass, actorClassLuaCache));
+#endif
 	}
 	else
 	{
@@ -500,10 +503,6 @@ bool CGameCache::UpdateActorInstanceCache(SActorInstanceLuaCache &actorInstanceL
 
 		TCachedModelName modelVariationFileName;
 		GenerateModelVariation(fileModelInfo.sFileName, modelVariationFileName, pEntityScript, fileModelInfo.nModelVariations, modelVariation);
-
-		ICharacterManager *pCharacterManager = gEnv->pCharacterManager;
-		assert(pCharacterManager);
-
 
 		// Cache character model
 		const char* szCharacterFileModel = modelVariationFileName.c_str();

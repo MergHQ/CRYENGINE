@@ -172,7 +172,6 @@ void CLightningRenderNode::CSegment::Draw(const SLightningParams& desc, const SP
 		Vec3 up0 = dir0.Cross(front);
 		Vec3 up1 = dir1.Cross(front);
 		Vec3 up = (up0 + up1).GetNormalized();
-		float t = i / float(m_numFuzzyPoints - 1);
 
 		SLightningVertex v;
 		v.color = white;

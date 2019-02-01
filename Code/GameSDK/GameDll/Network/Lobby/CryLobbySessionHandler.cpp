@@ -131,9 +131,11 @@ void CCryLobbySessionHandler::OnUserQuit()
 //-------------------------------------------------------------------------
 void CCryLobbySessionHandler::OnGameShutdown()
 {
+#if !defined(EXCLUDE_NORMAL_LOG)
 	const CGame::EHostMigrationState  migrationState = (g_pGame ? g_pGame->GetHostMigrationState() : CGame::eHMS_NotMigrating);
-
 	CryLog("CCryLobbySessionHandler::OnGameShutdown(), m_userQuit=%s, migrationState=%d", (m_userQuit ? "true" : "false"), migrationState);
+#endif
+
 #if 0 // old frontend
 	CMPMenuHub* pMPMenu = NULL;
 	CFlashFrontEnd *pFlashFrontEnd = g_pGame ? g_pGame->GetFlashMenu() : NULL;

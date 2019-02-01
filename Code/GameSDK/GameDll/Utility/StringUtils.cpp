@@ -10,8 +10,6 @@ StringUtils.cpp
 #include "CryWatch.h"
 #include "UI/HUD/HUDUtils.h"
 
-static bool s_stringUtils_assertEnabled = true;
-
 //--------------------------------------------------------------------------------
 size_t cry_copyStringUntilFindChar(char * destination, const char * source, size_t bufferLength, char until)
 {

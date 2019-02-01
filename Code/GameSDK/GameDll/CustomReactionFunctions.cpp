@@ -9,11 +9,6 @@
 #include "Player.h"
 #include "ActorImpulseHandler.h"
 
-namespace
-{
-	float SHOTGUN_HIGH_CALIBER_DISTANCE = 9.0f; // maximum distance where the shotgun shot will be considered "high caliber"
-}
-
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 CCustomReactionFunctions::CCustomReactionFunctions() : m_shotgunShellProjectile(0)

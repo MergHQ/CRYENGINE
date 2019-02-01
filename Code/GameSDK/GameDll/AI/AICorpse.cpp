@@ -585,8 +585,10 @@ void CAICorpseManager::RemoveSomeCorpses()
 	const uint32 corspeCount = (uint32)m_corpsesArray.size();
 	assert(corspeCount > AI_CORPSES_MINIMUM);
 
+#if defined(USE_CRY_ASSERT)
 	const uint32 maxCorpsesToRemove = std::min((corspeCount / AI_CORPSES_MINIMUM), (uint32)8);
 	assert(maxCorpsesToRemove > 0);
+#endif
 
 	std::vector<SCorpseRemovalScore> corpseScoresInfo;
 	corpseScoresInfo.reserve( corspeCount );
@@ -626,7 +628,7 @@ void CAICorpseManager::RemoveSomeCorpses()
 	assert(maxCorpsesToRemove < corpseScoresInfo.size());
 
 	const uint32 corpseScoresCount = corpseScoresInfo.size();
-	for(uint32 i = 0; i < maxCorpsesToRemove; ++i)
+	for(uint32 i = 0; i < corpseScoresCount; ++i)
 	{
 		RemoveCorpse(corpseScoresInfo[i].corpseId);
 	}

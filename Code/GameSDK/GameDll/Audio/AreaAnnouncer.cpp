@@ -25,7 +25,10 @@ History:
 
 #define ANNOUNCEMENT_NOT_PLAYING_TIME -1.0f
 
+#if !defined(_RELEASE)
 int static aa_debug = 0;
+#endif
+
 int static aa_peopleNeeded = 2;
 
 int static aa_enabled = 1;
@@ -200,9 +203,6 @@ void CAreaAnnouncer::EntityRevived(EntityId entityId)
 	const EntityId clientId = gEnv->pGameFramework->GetClientActorId();
 	if(entityId == clientId)
 	{
-		CGameRules *pGameRules = g_pGame->GetGameRules();
-		CMiscAnnouncer *pMiscAnnouncer = pGameRules->GetMiscAnnouncer();
-	
 		TAudioSignalID signal = BuildAnnouncement(clientId);
 		if(signal != INVALID_AUDIOSIGNAL_ID)
 		{
@@ -219,7 +219,7 @@ TAudioSignalID CAreaAnnouncer::BuildAnnouncement(const EntityId clientId)
 	{
 		IActorSystem* pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 
-		if (CActor* pClientActor = static_cast<CActor*>(pActorSystem->GetActor(clientId)))
+		if (pActorSystem->GetActor(clientId) != nullptr)
 		{
 			int actorCount[k_maxAnnouncementAreas];
 			memset(&actorCount, 0, sizeof(actorCount));

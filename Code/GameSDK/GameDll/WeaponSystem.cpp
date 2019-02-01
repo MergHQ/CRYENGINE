@@ -1054,12 +1054,14 @@ void CWeaponSystem::RemoveFromPool(CProjectile *pProjectile)
 //------------------------------------------------------------------------
 void CWeaponSystem::DumpPoolSizes()
 {
+#if !defined(EXCLUDE_NORMAL_LOG)
 	CryLog("Ammo Pool Statistics:");
 	for (TAmmoPoolMap::iterator it=m_pools.begin(); it!=m_pools.end(); ++it)
 	{
 		int size=it->second.size;
 		CryLog("%s: %d", it->first->GetName(), size);
 	}
+#endif
 }
 
 void CWeaponSystem::FreePools()

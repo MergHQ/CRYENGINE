@@ -35,8 +35,6 @@ enum EWeaponStat
 	eWeaponStat_NumStats
 };
 
-static const char* s_weaponStatNames[eWeaponStat_NumStats] = { "stat_accuracy", "stat_rate_of_fire", "stat_mobility", "stat_damage", "stat_range", "stat_recoil" };
-
 struct SWeaponStatsData
 {
 	SWeaponStatsData();

@@ -166,7 +166,7 @@ void CStereoZoom::PrintDebugOutput()
 
 
   static float color[4] = {1,1,1,1};
-  float y=50.f, step1=15.f, step2=20.f, size1=1.3f, size2=1.5f;
+  float y=50.f, step1=15.f, size2=1.5f;
 
   IRenderAuxText::Draw2dLabel(5.0f,  y         , size2, color, false, "Current PlaneDist: %f", dist);
   IRenderAuxText::Draw2dLabel(5.0f,  y += step1, size2, color, false, "Current EyeDist  : %f", eyedist);

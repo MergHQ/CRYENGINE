@@ -145,8 +145,10 @@ void CSkillRanking::TeamGameFinished( int team1Score, int team2Score )
 
 		m_players[i].m_newSkillScore = GetNewSkillRank(m_players[i].m_skillPoints, totalFactor);
 
+#if ENABLE_SKILL_DEBUG
 		const int diff = m_players[i].m_newSkillScore - m_players[i].m_skillPoints;
 		SKILL_LOG("      id %u, team=%i, pp=%d, totalFactor=%f, skill=%d->%d (%s%d)", m_players[i].m_id, m_players[i].m_teamId, m_players[i].m_playerPoints, totalFactor, m_players[i].m_skillPoints, m_players[i].m_newSkillScore, diff >= 0 ? "+" : "", diff);
+#endif
 	}
 }
 
@@ -168,7 +170,6 @@ void CSkillRanking::NonTeamGameFinished()
 
 	for (uint32 i = 0; i < numPlayers; ++ i)
 	{
-		const int teamId = m_players[i].m_teamId;
 		totalPlayerPoints += (float) m_players[i].m_playerPoints;
 		totalSkillScore += (float) m_players[i].m_skillPoints;
 	}
@@ -191,8 +192,10 @@ void CSkillRanking::NonTeamGameFinished()
 
 		m_players[i].m_newSkillScore = GetNewSkillRank(m_players[i].m_skillPoints, totalFactor);
 
+#if ENABLE_SKILL_DEBUG
 		const int diff = m_players[i].m_newSkillScore - m_players[i].m_skillPoints;
 		SKILL_LOG("    id %u, pp=%d, totalFactor=%f, skill=%d->%d (%s%d)", m_players[i].m_id, m_players[i].m_playerPoints, totalFactor, m_players[i].m_skillPoints, m_players[i].m_newSkillScore, diff >= 0 ? "+" : "", diff);
+#endif
 	}
 }
 

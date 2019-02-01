@@ -117,15 +117,19 @@ void CGameRulesStandardVictoryConditionsPlayer::Update( float frameTime )
 						}
 					}
 				}
+#if CRY_WATCH_ENABLED
 				float  rem = std::max(0.f, ((g_pGameCVars->g_timelimitextratime * 60.f) + timeRemaining));  // remember, timeRemaining will be negative here
 				WATCH_SURVONE_LV1("TIME: %.2f *** SUDDEN DEATH!! ***", rem);
+#endif
 			}
 		}
+#if CRY_WATCH_ENABLED
 		else
 		{
 			float  timeRemaining = m_pGameRules->GetRemainingGameTime();
 			WATCH_SURVONE_LV1("TIME: %.2f", timeRemaining);
 		}
+#endif
 		WATCH_SURVONE_LV1(" ");
 	}
 }
@@ -400,7 +404,6 @@ void CGameRulesStandardVictoryConditionsPlayer::OnEndGamePlayer( EntityId player
 	{
 		const EntityId clientId = g_pGame->GetIGameFramework()->GetClientActorId();
 		const bool localPlayerWon = (playerId == clientId);
-		const char* localizedText = "";
 
 		if (playerId)
 		{

@@ -223,11 +223,10 @@ void CGameLobbyManager::OnlineCallback(UCryLobbyEventData eventData, void *arg)
 		CRY_ASSERT(eventData.pOnlineStateData->m_user < MAX_LOCAL_USERS);
 		pLobbyManager->m_onlineState[eventData.pOnlineStateData->m_user] = eventData.pOnlineStateData->m_curState;
 
-		uint32 userIndex = g_pGame->GetExclusiveControllerDeviceIndex();
-
 		ICryLobby *pLobby = gEnv->pNetwork->GetLobby();
 
 #ifndef _RELEASE
+		uint32 userIndex = g_pGame->GetExclusiveControllerDeviceIndex();
 		const char *pEventType = "eOS_Unknown";
 		if (eventData.pOnlineStateData->m_curState == eOS_SignedOut)
 		{
@@ -292,7 +291,7 @@ void CGameLobbyManager::OnlineCallback(UCryLobbyEventData eventData, void *arg)
 					}
 #endif
 				}
-			}					
+			}
 		}
 	}
 }

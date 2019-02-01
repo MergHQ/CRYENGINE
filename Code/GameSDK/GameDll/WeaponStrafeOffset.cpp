@@ -42,8 +42,6 @@ QuatT CStrafeOffset::Compute(float frameTime)
 	const float STAP_MF_StrafeLeft			= 1.0f;
 	const float STAP_MF_StrafeRight			= 1.0f;
 
-	static const float MIN_VERT_DIR = 0.2f;
-	static const float MAX_VERT_DIR = 1.0f;
 	static const float MIN_HORIZ_DIR  = 0.2f;
 	static const float MAX_HORIZ_DIR  = 3.0f;
 	static const float runEaseFactor = 0.2f;

@@ -56,7 +56,7 @@ namespace GameAI
 		{
 			if (IAIObject* pAI = pObjectEntity->GetAI())
 			{
-				if (IAIActor* pAIActor = pAI->CastToIAIActor())
+				if (pAI->CastToIAIActor() != nullptr)
 				{
 					const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGroupMemberGrabbedByPlayer(), pAI->GetAIObjectID());
 					gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_GROUPONLY_EXCEPT, pSignal);
@@ -72,7 +72,6 @@ namespace GameAI
 		EntityId closestMemberID = 0;
 		EntityId closestWitnessMemberID = 0;
 		float closestDistSq = FLT_MAX;
-		float closestWitnessDistSq = FLT_MAX;
 
 		int groupID = deadAgent.GetGroupID();
 		int memberCount = aiSystem.GetGroupCount(groupID);

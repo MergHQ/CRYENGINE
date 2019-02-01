@@ -97,8 +97,6 @@ void CAnimActionAIChangeCoverBodyDirection::Enter()
 
 void CAnimActionAIChangeCoverBodyDirection::Exit()
 {
-	SAnimationContext& context = GetContext();
-
 	SetPlayerAnimationInProgressCoverBodyDirection( eCoverBodyDirection_Unspecified );
 	SetPlayerAnimationCoverBodyDirectionOnce();
 	SetEntityControlledMovementParameters();
@@ -191,8 +189,8 @@ void CAnimActionAICoverAction::OnInitialise( )
 	static const uint32 s_coverActionOutCrc = CCrc32::ComputeLowercase( "CoverActionOut" );
 
 	const bool actionInitSuccess = m_actionStates[ eAction ].Init( *m_context, s_coverActionCrc, m_action.crc, SStateInfo::eType_Normal );
-	const bool transitionInInitSuccess = m_actionStates[ eTransitionIn ].Init( *m_context, s_coverActionInCrc, m_toActionCrc, SStateInfo::eType_Transition );
-	const bool transitionOutInitSuccess = m_actionStates[ eTransitionOut ].Init( *m_context, s_coverActionOutCrc, m_fromActionCrc, SStateInfo::eType_Transition );
+	m_actionStates[ eTransitionIn ].Init( *m_context, s_coverActionInCrc, m_toActionCrc, SStateInfo::eType_Transition );
+	m_actionStates[ eTransitionOut ].Init( *m_context, s_coverActionOutCrc, m_fromActionCrc, SStateInfo::eType_Transition );
 
 	if ( ! actionInitSuccess )
 	{
@@ -228,8 +226,6 @@ void CAnimActionAICoverAction::SetCurrentState( const EState state )
 	CRY_ASSERT( state < eStatesCount );
 
 	const SStateInfo& stateInfo = m_actionStates[ state ];
-
-	const SStateInfo::EType currentStateType = ( m_state < eStatesCount ) ? m_actionStates[ m_state ].m_stateType : SStateInfo::eType_None;
 	const SStateInfo::EType nextStateType = stateInfo.m_stateType;
 
 	SetFragment( stateInfo.m_fragmentId, stateInfo.m_fragmentTags );

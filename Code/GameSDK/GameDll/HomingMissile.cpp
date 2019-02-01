@@ -168,14 +168,12 @@ void CHomingMissile::UpdateControlledMissile(float frameTime)
 	bool isOwnerActor = pOwnerActor && pOwnerActor->IsClient();
 	bool shouldFollowHomingGuide = isOwnerActor;
 	
-
-	float color[4] = {1,1,1,1};
-	const static float step = 15.f;  
-	float y = 20.f;    
-
 	const SHomingMissileParams& homingParams = *(m_pAmmoParams->pHomingParams);
 
 #if DEBUG_HOMINGMISSILE
+	float color[4] = { 1,1,1,1 };
+	const static float step = 15.f;
+	float y = 20.f;
 	bool bDebug = g_pGameCVars->i_debug_projectiles > 0;
 #endif
 
@@ -390,14 +388,13 @@ void CHomingMissile::UpdateControlledMissile(float frameTime)
 //----------------------------------------------------------------------------
 void CHomingMissile::UpdateCruiseMissile(float frameTime)
 {
-	IRenderer* pRenderer = gEnv->pRenderer;
-	IRenderAuxGeom* pGeom = pRenderer->GetIRenderAuxGeom();
-	float color[4] = {1,1,1,1};
-	const static float step = 15.f;  
-	float y = 20.f;    
-
 	const SHomingMissileParams& homingParams = *(m_pAmmoParams->pHomingParams);
 #if DEBUG_HOMINGMISSILE
+	IRenderer* pRenderer = gEnv->pRenderer;
+	IRenderAuxGeom* pGeom = pRenderer->GetIRenderAuxGeom();
+	float color[4] = { 1,1,1,1 };
+	const static float step = 15.f;
+	float y = 20.f;
 	bool bDebug = g_pGameCVars->i_debug_projectiles > 0;
 #endif
 

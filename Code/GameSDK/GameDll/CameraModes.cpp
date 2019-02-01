@@ -717,7 +717,6 @@ bool CSpectatorFollowCameraMode::UpdateView( const CPlayer& clientPlayer, SViewP
 			if( newZLength < minHeightDiff )
 			{
 				// can't move the camera far enough away from the player in this direction. Try moving it directly up a bit
-				int numHits = 0;
 
 				// (move back just slightly to avoid colliding with the wall we've already found...)
 				sphere.center += worldOffset_Norm * (worldOffset_Len-0.05f);

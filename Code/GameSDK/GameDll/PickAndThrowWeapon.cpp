@@ -814,9 +814,7 @@ void CPickAndThrowWeapon::OnSelected(bool selected)
 
 	if (selected)
 	{
-		const SPickAndThrowParams::SGrabTypeParams& grabParams					  = GetGrabTypeParams(); 
-		const SPickAndThrowParams::SGrabTypeParams::TPropertyFlags& propertyFlags = grabParams.m_propertyFlags; 
-
+		const SPickAndThrowParams::SGrabTypeParams& grabParams = GetGrabTypeParams();
 		const bool validTargetEntity = (pTargetEntity != NULL);
 
 		int16 actionType = eEVE_Pickup;
@@ -1135,8 +1133,6 @@ bool CPickAndThrowWeapon::OnActionAttack(EntityId actorId, const ActionId& actio
 {
 	if (m_state != eST_IDLE)
 		return false;
-
-	const SPickAndThrowParams::SThrowParams& throwParams = GetThrowParams();
 
 	if (activationMode == eAAM_OnPress && m_state == eST_IDLE)
 	{
@@ -2097,7 +2093,6 @@ void CPickAndThrowWeapon::UpdateChargedThrowPreRelease( const float frameTime )
 	if (g_pGameCVars->pl_pickAndThrow.chargedThrowDebugOutputEnabled)
 	{
 		const CCamera& cam = gEnv->p3DEngine->GetRenderingCamera(); 
-		const IEntity* pEntity = CalculateBestChargedThrowAutoAimTarget(cam.GetMatrix()); 
 
 		// Draw cone
 		float length = g_pGameCVars->pl_pickAndThrow.chargedThrowAutoAimDistance; 
@@ -2603,7 +2598,6 @@ Vec3 CPickAndThrowWeapon::CalculateChargedThrowDir(const Matrix34& attackerTrans
 		}
 
 		// if no auto aim, or no valid target we set the thrown entity to intersect camera view dir at max autoaim range
-		const CCamera& cam = gEnv->p3DEngine->GetRenderingCamera();
 		target = viewDir * g_pGameCVars->pl_pickAndThrow.chargedThrowAutoAimDistance + viewPos;
 	}
 
@@ -2634,7 +2628,6 @@ IEntity* CPickAndThrowWeapon::CalculateBestChargedThrowAutoAimTarget(const Matri
 	float    fBestScore  = 0.0f; 
 
 	const TAutoaimTargets& players = g_pGame->GetAutoAimManager().GetAutoAimTargets();
-	const int targetCount = players.size();
 
 	// Cache commonly required constants for scoring
 	const float autoAimDistSqrd   = g_pGameCVars->pl_pickAndThrow.chargedThrowAutoAimDistance * g_pGameCVars->pl_pickAndThrow.chargedThrowAutoAimDistance; 
@@ -3069,10 +3062,6 @@ void CPickAndThrowWeapon::DecideGrabType()
 	if (CActor* pActor = GetNPCGrabbedActor())
 	{
 		m_isNPC = true;
-		CPlayer *pOwner = GetOwnerPlayer();
-		Vec3 playerDir2D = pOwner ? pOwner->GetBaseQuat().GetColumn1() : FORWARD_DIRECTION;
-		Vec3 NPCDir2D = GetNPCGrabbedPlayer()->GetBaseQuat().GetColumn1();
-
 		SmartScriptTable props;
 		IScriptTable* pScriptTable = pActor->GetEntity()->GetScriptTable();
 		stack_string grabType;
@@ -3162,8 +3151,6 @@ void CPickAndThrowWeapon::OnSuccesfulHit( const ray_hit& hitResult )
 //---------------------------------------------------------------------------
 void CPickAndThrowWeapon::OnFailedHit()
 {
-	const SCollisionTestParams& collisionParams = m_collisionHelper.GetCollisionTestParams();
-
 	if (m_currentMeleeAutoTargetId != 0)
 	{
 		m_collisionHelper.PerformMeleeOnAutoTarget(m_currentMeleeAutoTargetId);
@@ -3255,9 +3242,7 @@ int CPickAndThrowWeapon::DoSimpleMeleeHit( const ray_hit& hitResult, EntityId co
 
 //---------------------------------------------------------------------------
 void CPickAndThrowWeapon::DoSimpleMeleeImpulse( const ray_hit& hitResult, EntityId collidedEntityId, int hitTypeID )
-{
-	CActor* pWeaponOwner = GetOwnerActor();
-	
+{	
 	float impulseScale = 1.0f;
 	bool delayImpulse = false;
 
@@ -4267,7 +4252,6 @@ void CPickAndThrowWeapon::DebugDraw()
 			const CAnimation &playerAnim = pPlayerCharacter->GetISkeletonAnim()->GetAnimFromFIFO(ITEM_OWNER_ACTION_LAYER, 0);
 			const CAnimation &NPCAnim = pNPCCharacter->GetISkeletonAnim()->GetAnimFromFIFO(0, 0);
 
-			float timepopo = pPlayerCharacter->GetISkeletonAnim()->GetLayerNormalizedTime( ITEM_OWNER_ACTION_LAYER );
 			const char* pPlayerAnimName = pPlayerCharacter->GetIAnimationSet()->GetNameByAnimID( playerAnim.GetAnimationId() );
 			const char* pNPCAnimName = pNPCCharacter->GetIAnimationSet()->GetNameByAnimID( NPCAnim.GetAnimationId() );
 

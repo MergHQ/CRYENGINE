@@ -527,9 +527,6 @@ void CBodyDestructibilityProfile::LoadEvent( const XmlNodeRef& eventNode, SDestr
 	XmlNodeRef explosionNode = eventNode->findChild("Explosion");
 	if (explosionNode)
 	{
-		CGameRules* pGameRules = g_pGame->GetGameRules();
-		CRY_ASSERT(pGameRules);
-
 		SAFE_DELETE(eventData.pExplosion); //Should not be needed, but better not rely on data
 
 		eventData.pExplosion = new SBodyPartExplosion();
@@ -1164,7 +1161,6 @@ void CBodyDestructibilityProfile::ProcessHealthRatioEvents( IEntity& characterEn
 	CRY_ASSERT(pAttachmentManager);
 
 	const bool diedByMikeBurn = (newHealth <= 0.0f) && (CGameRules::EHitType::Mike_Burn == hitInfo.type);
-	const float healthRef = newHealth;
 	const int healthRatioEventCount = (int)m_healthRatioEvents.size();
 	for (int healthRatioIdx = instance.GetCurrentHealthRatioIndex(); healthRatioIdx < healthRatioEventCount; ++healthRatioIdx)
 	{

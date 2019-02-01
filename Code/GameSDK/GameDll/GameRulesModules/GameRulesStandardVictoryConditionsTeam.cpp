@@ -1220,7 +1220,6 @@ void CGameRulesStandardVictoryConditionsTeam::GetGameOverAnnouncement(const EGam
 		standardGame = !closeGame && scoreDiff < (scoreLimit * 0.6f);					// standard if not close and within 60% of score limit
 	}
 
-	CGameAudio *pGameAudio = g_pGame->GetGameAudio();
 	CAnnouncer *pAnnouncer = CAnnouncer::GetInstance();
 
 	if(gameOverType == EGOT_Win)

@@ -58,10 +58,15 @@ const float CPlayerProgression::k_queuedRankTime = 1.0f;
 
 
 static AUTOENUM_BUILDNAMEARRAY(s_eventName, PlayerProgressionType);
-static int pp_debug = 0;
-static int pp_xpDebug = 0;
 static int pp_defaultUnlockAll = 0;
+
+#if !defined(_RELEASE)
+static int pp_debug = 0;
+#if DEBUG_XP_ALLOCATION
+static int pp_xpDebug = 0;
+#endif
 static float pp_suitmodeAveraging = 0.0f;
+#endif
 
 
 #if DEBUG_XP_ALLOCATION
@@ -92,10 +97,14 @@ CPlayerProgression::~CPlayerProgression()
 {
 	if(gEnv->pConsole)
 	{
-		gEnv->pConsole->UnregisterVariable("pp_debug");
-		gEnv->pConsole->UnregisterVariable("pp_xpDebug");
+#if !defined(_RELEASE)
 		gEnv->pConsole->UnregisterVariable("pp_defaultUnlockAll");
+		gEnv->pConsole->UnregisterVariable("pp_debug");
+#if DEBUG_XP_ALLOCATION
+		gEnv->pConsole->UnregisterVariable("pp_xpDebug");
+#endif
 		gEnv->pConsole->UnregisterVariable("pp_suitmodeAveraging");
+#endif
 	}
 
 	if(IPlayerProfileManager *pProfileMan = gEnv->pGameFramework->GetIPlayerProfileManager())
@@ -471,7 +480,6 @@ void CPlayerProgression::InitPresaleUnlocks( const char* pScriptName )
 	//so if we ask for something that is presale content which is not unlocked by any other means
 	//and we don't have the entitlement to, HaveUnlocked will return exists true and unlocked false.
 
-	int returnXP = 0;
 	XmlNodeRef xml = GetISystem()->LoadXmlFromFile( pScriptName );
 
 	if(xml)
@@ -1023,12 +1031,11 @@ int CPlayerProgression::IncrementXPPresale( int amount, EXPReason inReason )
 				// Rank up
 				const int newRank = CalculateRankFromXp(newXp);
 				m_rank = newRank;
-				const int rankValueToUse = newRank+1;
 
 				UpdateAllUnlocks(true);
 				UpdateLocalUserData(); // static
 
-				CryLog("CPlayerProgression - Rank up to %s Offline", GetRankName(rankValueToUse));
+				CryLog("CPlayerProgression - Rank up to %s Offline", GetRankName(newRank+1));
 			}
 		}
 	}
@@ -1232,7 +1239,11 @@ void CPlayerProgression::InitConsoleCommands()
 		REGISTER_COMMAND("pp_GenerateProfile", CmdGenerateProfile, VF_CHEAT, "Generate a random profile");
 
 		REGISTER_CVAR(pp_debug, 0, VF_NULL, "Enable/Disables player progression debug messages");
+
+#if DEBUG_XP_ALLOCATION
 		REGISTER_CVAR(pp_xpDebug, pp_xpDebug, VF_NULL, "Enable/Disables xp debugging");
+#endif
+
 		REGISTER_CVAR(pp_defaultUnlockAll, 0, VF_NULL, "Can be used in cfg file to unlock everything");
 		REGISTER_CVAR(pp_suitmodeAveraging, pp_suitmodeAveraging, VF_CHEAT, "fraction of avg xp that is shared, 1 being all average, 0 being time in xp gained/ time in suit mode (must be between 0.0f and 1.0f)");
 #endif
@@ -1788,9 +1799,9 @@ void CPlayerProgression::CmdFakePlayerProgression(IConsoleCmdArgs *pArgs)
 	// "pp_FakeProgression"
 	// "(<rank>,<tactical>,<stealth>,<armour>,<power>)
 
-	if (IActor* pClientActor=g_pGame->GetIGameFramework()->GetClientActor())
+	if (g_pGame->GetIGameFramework()->GetClientActor() != nullptr) 
 	{
-		int  argCount = pArgs->GetArgCount();
+		int argCount = pArgs->GetArgCount();
 
 		if (argCount == 5)
 		{
@@ -1967,7 +1978,7 @@ bool CPlayerProgression::AllowedWriteStats() const
 	bool retval = false;
 	if( gEnv->bMultiplayer )
 	{
-		if( CGameRules* pRules = g_pGame->GetGameRules() )
+		if(g_pGame->GetGameRules() != nullptr)
 		{
 			if( !m_privateGame )
 			{

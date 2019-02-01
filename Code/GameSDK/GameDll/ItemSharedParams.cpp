@@ -494,7 +494,6 @@ bool CItemSharedParams::ReadGeometry(const XmlNodeRef& paramsNode)
 				childNode->getAttr("scale", geometryDef.scale);
 				childNode->getAttr("useParentMaterial", geometryDef.useParentMaterial);
 
-				const char *hand = childNode->getAttr("hand");
 				geometryDef.modelPath = childNode->getAttr("name");
 				geometryDef.material = childNode->getAttr("material");
 
@@ -993,7 +992,6 @@ void CItemSharedParams::CacheResources( CItemResourceCache& itemResourceCache, c
 	}
 
 	CItemGeometryCache& geomCache = itemResourceCache.GetItemGeometryCache();
-	CItemParticleEffectCache& particleCache = itemResourceCache.GetParticleEffectCache();
 	CItemMaterialAndTextureCache& materialCache = itemResourceCache.GetMaterialsAndTextureCache();
 
 	TGeometryDefVector::const_iterator geometryEndCit = geometry.end();

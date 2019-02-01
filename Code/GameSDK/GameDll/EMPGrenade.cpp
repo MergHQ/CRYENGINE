@@ -18,8 +18,6 @@ void CEMPGrenade::Update( SEntityUpdateContext &ctx, int updateSlot )
 {
 	if (m_bActive)
 	{
-		const Matrix34& worldMat = GetEntity()->GetWorldTM();
-
 		if(gEnv->bServer && m_postExplosionLifetime > 0.f)
 		{
 			m_postExplosionLifetime -= ctx.fFrameTime;

@@ -61,7 +61,6 @@ bool CWaypointPath::CreatePath(IEntity* pPathEntity)
 				}
 
 				//Read optional XML node information
-				IScriptTable* pScriptTable = pPathEntity->GetScriptTable();
 				const char* nodeDataFile = 0;
 				if(EntityScripts::GetEntityProperty(pPathEntity, "fileNodeDataFile", nodeDataFile) && strcmpi("", nodeDataFile) )
 				{
@@ -192,8 +191,6 @@ bool CWaypointPath::GetNextNodePosAfterDistance(TNodeId currentNode, const Vec3&
 		else
 		{
 			//Find which two nodes the look ahead point will be between
-			float currentLookAheadDistance = 0.f;
-			TNodeId startNode = currentNode;
 			TNodeId endNode = currentNode;
 			float remainingLookAheadDistance = lookAheadDistance;
 
@@ -212,7 +209,7 @@ bool CWaypointPath::GetNextNodePosAfterDistance(TNodeId currentNode, const Vec3&
 
 			newNode = endNode;
 			interpolatedPos = m_Nodes[endNode].pos;
-			return true;		
+			return true;
 		}
 	}
 	//Already at or moving towards the final node
@@ -325,8 +322,6 @@ bool CWaypointPath::GetPosAfterDistance(TNodeId currentNode, const Vec3& current
 		else
 		{
 			//Find which two nodes the look ahead point will be between
-			float currentLookAheadDistance = 0.f;
-			TNodeId startNode = currentNode;
 			TNodeId endNode = currentNode;
 			float remainingLookAheadDistance = lookAheadDistance + (resultPos - currentNodePos).GetLength();
 
@@ -441,7 +436,6 @@ float CWaypointPath::GetDistance( float from, float to, bool looping ) const
 	const float toLerp = to - toA;
 	const float toDistAlongPath = m_Nodes[toA].distanceAlongPath + (((toB<toA?totalDist:0.f)+m_Nodes[toB].distanceAlongPath-m_Nodes[toA].distanceAlongPath)*toLerp);
 
-	bool viaLoop = false;
 	float diff = toDistAlongPath - fromDistAlongPath;
 	if( looping )
 	{

@@ -107,7 +107,7 @@ void CCodeCheckpointDebugMgr::ReadFile(const char* fileName)
 		char* lineBlock = new char[BUFF_SIZE + 1];
 		//char* appendBlock = lineBlock;
 
-		while (int numRead = GetLine(lineBlock, cpFile))
+		while (GetLine(lineBlock, cpFile) > 0)
 		{
 			ICodeCheckpointMgr* pCheckpointManager = gEnv->pCodeCheckpointMgr;
 			if (pCheckpointManager)

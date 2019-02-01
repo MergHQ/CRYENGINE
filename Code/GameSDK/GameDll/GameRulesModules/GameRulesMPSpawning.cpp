@@ -327,10 +327,6 @@ void CGameRulesMPSpawningBase::Update(float frameTime)
 	{
 		if (!pObjectivesModule || pObjectivesModule->CanPlayerRevive(localActorEntityId))
 		{
-			const int  actorTeam = m_pGameRules->GetTeam(localActorEntityId);
-
-			bool preGameDone = g_pGame->GetUI()->IsPreGameDone();
-
 			float timeTillAutoRevive = GetTimeFromDeathTillAutoReviveForTeam(static_cast<CPlayer*>(pLocalActorImpl)->GetTeamWhenKilled());
 			timeTillAutoRevive += GetPlayerAutoReviveAdditionalTime(pLocalActorImpl);
 			
@@ -833,9 +829,12 @@ bool CGameRulesMPSpawningBase::SpawnIsValid(EntityId spawnId, EntityId playerId)
 	
 		if(fDistSq < fAcceptableDistanceSq)
 		{
+#if VERBOSE_DEBUG_SPAWNING_VISTABLE
 			float gameTime = GetTime();
 			VerboseDebugLog("ABORTING SPAWN: selected spawn is too close to recent spawn at game time %f\n        Previous spawn from team %d, player %s, at game time %f [%f seconds ago]\n        request from team %d, distance %f\n",
 						gameTime, rSpawnHistory.nTeamSpawned, pSpawnEnt->GetName(), rSpawnHistory.fGameTime, gameTime - rSpawnHistory.fGameTime, iTeamNum, sqrt_tpl(fDistSq) );
+#endif
+
 			return false;
 		}
 	}

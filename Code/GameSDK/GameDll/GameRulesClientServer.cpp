@@ -681,8 +681,6 @@ void CGameRules::CullEntitiesInExplosion(const ExplosionInfo &explosionInfo)
 	float minExtent = g_pGameCVars->g_ec_extent;
 	int   removeThreshold = max(1, g_pGameCVars->g_ec_removeThreshold);
 
-	IActor *pClientActor = g_pGame->GetIGameFramework()->GetClientActor();
-
 	Vec3 radiusVec(radiusScale * explosionInfo.physRadius);
 	int i = gEnv->pPhysicalWorld->GetEntitiesInBox(explosionInfo.pos-radiusVec,explosionInfo.pos+radiusVec,pents, ent_rigid|ent_sleeping_rigid);
 	int removedCount = 0;
@@ -811,12 +809,12 @@ void CGameRules::ClientExplosion(SExplosionContainer &explosionContainer)
 		if (pClientActor)
 		{
 			CRY_ASSERT (pClientActor->IsPlayer());
-			CPlayer* pPlayer = static_cast<CPlayer*>(pClientActor);
+			//CPlayer* pPlayer = static_cast<CPlayer*>(pClientActor);
 
 			//const EntityId clientId = pClientActor->GetEntityId();
-			const Vec3 playerPos = pClientActor->GetEntity()->GetWorldPos();
+			//const Vec3 playerPos = pClientActor->GetEntity()->GetWorldPos();
 
-			const float distSq = (playerPos - explosionInfo.pos).len2();
+			//const float distSq = (playerPos - explosionInfo.pos).len2();
 
 			//if(distSq < explosionInfo.radius * explosionInfo.radius)
 			//{

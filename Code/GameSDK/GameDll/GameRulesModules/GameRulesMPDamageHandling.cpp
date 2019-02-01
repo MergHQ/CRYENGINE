@@ -199,10 +199,6 @@ bool CGameRulesMPDamageHandling::SvOnHit( const HitInfo &hitInfo )
 		}
 	}
 
-	IEntity *pTarget = gEnv->pEntitySystem->GetEntity(hitInfo.targetId);
-
-	IEntityClass* pTargetClass = pTarget ? pTarget->GetClass() : NULL;
-
 	// Check for friendly fire
 	if( bool bCheckFriendlyFire = ((hitInfo.targetId!=hitInfo.shooterId) && (hitInfo.type!=CGameRules::EHitType::EventDamage)) )
 	{
@@ -509,7 +505,6 @@ void CGameRulesMPDamageHandling::SvOnExplosion(const ExplosionInfo &explosionInf
 	CGameRules::TExplosionAffectedEntities::const_iterator it = affectedEntities.begin();
 	for (; it != affectedEntities.end(); ++it)
 	{
-		bool success = false;
 		IEntity* entity = it->first;
 		float obstruction = 1.0f - it->second;
 
@@ -538,8 +533,6 @@ void CGameRulesMPDamageHandling::SvOnExplosion(const ExplosionInfo &explosionInf
 		if (incone && gEnv->bServer)
 		{
 			float damage = floor_tpl(0.5f + CalcExplosionDamage(entity, explosionInfo, obstruction));	
-
-			bool dead = false;
 
 			HitInfo explHit;
 
@@ -773,7 +766,6 @@ float CGameRulesMPDamageHandling::ProcessActorKickedVehicle(IActor* victimActor,
 		}
 	}
 
-	const Vec3& actorVelocity = collisionHitInfo.velocity;
 	const Vec3& vehicleVelocity = collisionHitInfo.target_velocity;
 	const float vehicleSpeedSq = vehicleVelocity.GetLengthSquared() + angSpeedSq;
 
@@ -1070,7 +1062,6 @@ void CGameRulesMPDamageHandling::SvOnCollision(const IEntity *pVictimEntity, con
 			if (damage >= DAMAGE_THRESHOLD_COLLISIONS)
 			{
 				IScriptTable* pVictimScript = pVictimEntity ? pVictimEntity->GetScriptTable() : NULL;
-				IScriptTable* pOffenderScript = pOffenderEntity ? pOffenderEntity->GetScriptTable() : NULL;
 
 				if (!pOffenderEntity && pVictimEntity)
 				{

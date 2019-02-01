@@ -1367,8 +1367,9 @@ void CAfterMatchAwards::FilterWinningAwards()
 			}
 
 		}
-
+#if CRY_DEBUG_LOG_ENABLED
 		int originalNumAwards=awards->m_awards.size();
+#endif
 
 		// filter out all awards already earned
 		CryFixedArray<EAfterMatchAwards, CAfterMatchAwards::kMaxLocalAwardsGiven> newlyWonAwards;
@@ -1376,7 +1377,6 @@ void CAfterMatchAwards::FilterWinningAwards()
 		len = awards->m_awards.size();
 		for( int i = 0; i < len; i++ )
 		{
-			int style = 0;
 			DbgLog("CAfterMatchAwards::FilterWinningAwards() has found that award=%s", GetNameForAward(awards->m_awards[i]));
 
 			if(IsAwardProhibited(awards->m_awards[i]))

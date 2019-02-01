@@ -153,8 +153,6 @@ SDeferredLinetestReceiver * CPlayerVisTable::GetDeferredLinetestReceiverFromVisT
 
 	SDeferredLinetestReceiver * visTableProcessingEntries = visBuffer.m_deferredLinetestReceivers;
 
-	VisEntryIndex processingIndex = -1;
-
 	for(int receiverIndex = 0; receiverIndex < kMaxVisTableLinetestsPerFrame; receiverIndex++)
 	{
 		if(visTableProcessingEntries[receiverIndex].visTableIndex == visEntryIndex)
@@ -191,8 +189,6 @@ void CPlayerVisTable::RemoveNthEntity(const VisEntryIndex n)
 
 void CPlayerVisTable::Update(float dt)
 {
-	const int numEntries = m_numUsedVisTableEntries;
-
 	CryPrefetch(m_visTableEntries);
 
 	//Flip the buffers
@@ -539,12 +535,10 @@ VisEntryIndex CPlayerVisTable::GetEntityIndexFromID(EntityId entityId)
 
 	for(VisEntryIndex i = 0; i < m_numUsedVisTableEntries; i++)
 	{
-		SVisTableEntry& visInfo = m_visTableEntries[i];
-
 		if(m_visTableEntries[i].entityId == entityId)
 		{
 			return i;
-		}		
+		}
 	}
 
 	return -1;

@@ -954,7 +954,6 @@ void CGameRulesObjective_CTF::Server_ResetAll()
 						spawnParams.pClass = pFlagClass;
 						spawnParams.sName = flagName.c_str();
 						spawnParams.vPosition = pEntity->GetWorldPos();
-						Ang3 rotation = pEntity->GetWorldAngles();
 
 						IEntity *pFlagEntity = gEnv->pEntitySystem->SpawnEntity(spawnParams, true);
 						FATAL_ASSERT(pFlagEntity);

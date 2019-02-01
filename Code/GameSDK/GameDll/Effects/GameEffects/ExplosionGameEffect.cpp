@@ -338,8 +338,6 @@ void CExplosionGameEffect::SpawnScreenExplosionEffect(const SExplosionContainer 
 
 					CRY_ASSERT_MESSAGE(pClientActor->IsPlayer(),"Effect shouldn't be spawned if not a player");
 
-					SPlayerStats* pStats = static_cast<SPlayerStats*>(pPlayer->GetActorStats());
-
 					NET_BATTLECHATTER(BC_Blinded, pPlayer);
 
 					if(pClientActor->GetEntityId() == explosionInfo.shooterId)

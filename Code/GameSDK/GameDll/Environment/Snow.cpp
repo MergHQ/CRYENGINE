@@ -97,9 +97,6 @@ void CSnow::Update(SEntityUpdateContext &ctx, int updateSlot)
 	const IActor * pClient = g_pGame->GetIGameFramework()->GetClientActor();
 	if (pClient && Reset())
 	{
-		const Vec3 vCamPos = GetISystem()->GetViewCamera().GetPosition();
-		Vec3 vR = (GetEntity()->GetWorldPos() - vCamPos) / max(m_fRadius, 1e-3f);
-
 		// todo: only update when things have changed.
 		gEnv->p3DEngine->SetSnowSurfaceParams(GetEntity()->GetWorldPos(), m_fRadius, m_fSnowAmount, m_fFrostAmount, m_fSurfaceFreezing);
 		gEnv->p3DEngine->SetSnowFallParams(m_nSnowFlakeCount, m_fSnowFlakeSize, m_fSnowFallBrightness, m_fSnowFallGravityScale, m_fSnowFallWindScale, m_fSnowFallTurbulence, m_fSnowFallTurbulenceFreq);

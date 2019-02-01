@@ -246,7 +246,7 @@ void CDataPatchDownloader::ApplyCVarPatch()
 						}
 						else if (c == '\t' || c == '\r' || c == '\n' || c == ' ')
 						{
-							if (ICVar* pV = gEnv->pConsole->GetCVar(cvar.c_str()))
+							if (gEnv->pConsole->GetCVar(cvar.c_str()) != nullptr)
 							{
 								cvarsWhiteList.push_back(cvar);
 							}

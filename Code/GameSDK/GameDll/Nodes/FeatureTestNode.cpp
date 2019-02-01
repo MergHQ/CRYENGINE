@@ -739,12 +739,14 @@ public:
 		if (TooDeep(depth))
 			return;
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 		const Vec3 size(value.GetSize());
 
 		CryLogAlways("%s%s: AABB min(%f, %f, %f) max(%f, %f, %f) size(%f, %f, %f)", Prefix(depth), name,
 		             value.min.x, value.min.y, value.min.z,
 		             value.max.x, value.max.y, value.max.z,
 		             size.x, size.y, size.z);
+#endif
 	}
 
 	void Log(const char* name, IAIObject* pAI, uint32 depth)
@@ -870,7 +872,7 @@ public:
 
 		Log("FilePath", pCharacter->GetFilePath(), depth);
 		Log("PlaybackScale", pCharacter->GetPlaybackScale(), depth);
-
+#if !defined(EXCLUDE_NORMAL_LOG)
 		if (ISkeletonAnim* pSkeletonAnim = pCharacter->GetISkeletonAnim())
 		{
 			IAnimationSet* pAnimSet = pCharacter->GetIAnimationSet();
@@ -900,6 +902,7 @@ public:
 				}
 			}
 		}
+#endif
 	}
 
 	void Log(const char* name, IAnimatedCharacter* pAnimCharacter, uint32 depth)
@@ -914,8 +917,6 @@ public:
 		Log("PhysicalColliderMode", pAnimCharacter->GetPhysicalColliderMode(), depth);
 		Log("IsAimIkAllowed", pAnimCharacter->IsAimIkAllowed(), depth);
 		Log("IsLookIkAllowed", pAnimCharacter->IsLookIkAllowed(), depth);
-
-		const SAnimatedCharacterParams& animParams = pAnimCharacter->GetParams();
 	}
 
 	void Log(const char* name, IMovementController* pMovementController, uint32 depth)
@@ -993,7 +994,7 @@ void CFlowNode_FeatureTest::SetResult(bool result, const char* reason)
 		if (m_entitySeqIndex >= 0 && m_entitySeqIndex < SEQ_ENTITY_COUNT)
 		{
 			IEntity* pEnt = NULL;
-			bool hasEntity = GetEntityAtIndex(m_entitySeqIndex, pEnt);
+			GetEntityAtIndex(m_entitySeqIndex, pEnt);
 			if (pEnt)
 			{
 				ActivateOutput(&m_actInfo, SEQ_ENTITY_FIRST_OUTPUT_PORT + m_entitySeqIndex, result);

@@ -377,8 +377,10 @@ CTelemetryCollector::~CTelemetryCollector()
 // outputs the session id to the console
 void CTelemetryCollector::OutputSessionId(IConsoleCmdArgs *inArgs)
 {
+#if !defined(EXCLUDE_NORMAL_LOG)
 	ITelemetryCollector* tc = g_pGame->GetITelemetryCollector();
 	CryLogAlways("Telemetry: Session id = '%s'", tc->GetSessionId().c_str());
+#endif
 }
 
 // static
@@ -390,7 +392,6 @@ void CTelemetryCollector::SubmitGameLog(IConsoleCmdArgs *inArgs)
 
 	if (tc)
 	{
-		TTelemetrySubmitFlags flags=k_tf_none;
 		CryFixedStringT<512> modLogFile(logFile);
 
 		// if the log file isn't set to write into an alias or the current directory, it will default to writing into the current directory. we need to prepend our path to access it from here
@@ -571,8 +572,6 @@ bool CTelemetryCollector::UploadLargeFileForPreviousSession(const char *inFileNa
 	if (gEnv->pCryPak->IsFileExist(inFileName, ICryPak::eFileLocation_OnDisk))
 	{
 		CryLogAlways("CTelemetryCollector::UploadLargeFileForPreviousSession() - %s exists", inFileName);
-
-		int fileSize = gEnv->pCryPak->FGetSize(inFileName);
 
 		if (gEnv->pCryPak->IsFileExist(k_hintFileName, ICryPak::eFileLocation_OnDisk))
 		{
@@ -894,7 +893,9 @@ string CTelemetryCollector::GetWebSafeClientName()
 
 void CTelemetryCollector::UpdateClientName()
 {
+#if CRY_PLATFORM_WINDOWS
 	const char	*hostName=GetHostName();
+#endif
 	const char	*profileName=GetProfileName();
 	
 	m_websafeClientName.clear();
@@ -2398,12 +2399,10 @@ void CTelemetryCollector::UpdateTransfersInProgress(int inDiff)
 // returns whether or not the upload was queued successfully
 bool CTelemetryCollector::UploadData(
 	STCPServiceDataPtr pData,
-	const char				*inReferenceFileName)
+	const char* inReferenceFileName)
 {
-	bool					success=false;
-	int						recording=m_telemetryTransactionRecordings->GetIVal();
-	int						enabled=m_telemetryEnabled->GetIVal();
-
+	bool success = false;
+	int enabled = m_telemetryEnabled->GetIVal();
 
 	// don't upload data if we're not configured - do queue up if we're trying to configure but are waiting on dns resolving
 	if (enabled && InitService())
@@ -2424,6 +2423,8 @@ bool CTelemetryCollector::UploadData(
 	}
 
 #ifdef ENABLE_PROFILING_CODE
+	int recording = m_telemetryTransactionRecordings->GetIVal();
+
 	if ((!success && recording==k_recording_ifServiceUnavailable) || recording==k_recording_always)
 	{
 		ICryPak		*pak=gEnv->pCryPak;
@@ -2672,8 +2673,6 @@ void CTelemetryCollector::SetNewSessionId( bool includeMatchDetails )
 	time( &ltime );
 	tm *today = localtime( &ltime );
 	strftime(timeStr.m_str, timeStr.MAX_SIZE, "%H%M%S", today);
-
-	int	lobbyVersion=GameLobbyData::GetVersion();
 
 	string newId;
 

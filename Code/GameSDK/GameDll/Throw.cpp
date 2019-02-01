@@ -887,7 +887,6 @@ void CThrow::RenderTrajectory(const Vec3* trajectory, unsigned int sampleCount, 
 
 	const float dashLength = g_pGameCVars->i_grenade_trajectory_dashes;
 	const float gapLength = g_pGameCVars->i_grenade_trajectory_gaps;
-	const float partLength = dashLength+gapLength;
 
 	float dash = 0.0f;
 	float gap = 0.0f;

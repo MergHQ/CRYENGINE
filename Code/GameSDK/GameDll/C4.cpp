@@ -306,7 +306,6 @@ void CC4::OnEnterFirstPerson()
 
 	if (!m_pDetonatorArmedMaterial && m_weaponsharedparams->pC4Params)
 	{
-		IMaterialManager* pMatManager = gEnv->p3DEngine->GetMaterialManager();
 		IEntityClass* pClass = (m_accessories.empty() == false) ? m_accessories[0].pClass : NULL;
 
 		const SAccessoryParams* params = GetAccessoryParams(pClass);

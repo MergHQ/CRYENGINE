@@ -97,8 +97,7 @@ void CGameRulesMPActorAction::OnActorAction(IActor *pActor, const ActionId& acti
 		{
 			// is spectating
 
-			int  curspecmode = pActorImpl->GetSpectatorMode();
-			int  curspecstate = pActorImpl->GetSpectatorState();
+			int curspecmode = pActorImpl->GetSpectatorMode();
 
 			const CRecordingSystem* pRecordingSystem = g_pGame->GetRecordingSystem();
 			// actions general across almost all spectator modes

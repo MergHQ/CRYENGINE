@@ -349,8 +349,6 @@ void HideAllAttachmentsInShadowAndRecursion(IAttachmentManager* attachmentManage
 
 void CPlayer::PostProcessAnimation(ICharacterInstance* pCharacter)
 {
-	const int curFrameId = gEnv->nMainFrameID;
-
 	if (IsClient() && m_playerCamera && m_isControllingCamera)
 	{
 		int cameraJnt = GetBoneID(BONE_CAMERA);
@@ -678,7 +676,7 @@ CPlayer::CPlayer()
 		EPlayerSounds soundID = tmpSoundTable[i].soundID;
 		assert(soundID >= ESound_Player_First && soundID < ESound_Player_Last);
 
-		SSound& sound = m_sounds[tmpSoundTable[i].soundID];
+		SSound& sound = m_sounds[soundID];
 		if (tmpSoundTable[i].signalName && tmpSoundTable[i].signalName[0])
 		{
 			sound.audioSignalPlayer.SetSignal(tmpSoundTable[i].signalName);
@@ -2556,7 +2554,6 @@ void CPlayer::PostUpdateView(SViewParams& viewParams)
 	if (CItem* pItem = GetItem(GetInventory()->GetCurrentItem()))
 		pItem->PostFilterView(viewParams);
 
-	const bool bRelativeToParent = false;
 	const int slotIndex = 0;
 	bool bWorldSpace = (!(GetEntity()->GetSlotFlags(slotIndex) & ENTITY_SLOT_RENDER_NEAREST)) ? true : false;
 
@@ -6067,9 +6064,6 @@ void CPlayer::ExecuteFootStep(ICharacterInstance* pCharacter, const float frameT
 			vDeltaMovment = (vRelTrans - vCurrentVel) / frameTime;
 		}
 
-		ISkeletonPose* pSkeletonPose = pCharacter->GetISkeletonPose();
-		CRY_ASSERT(pSkeletonPose);
-
 		// Setup FX params
 		SMFXRunTimeEffectParams params;
 
@@ -6652,8 +6646,12 @@ void CPlayer::SetSpectatorModeAndOtherEntId(const uint8 _mode, const EntityId _o
 				if (isLocalPlayer)
 				{
 					static const uint32 kDefaultCRC = CCrc32::ComputeLowercase("Default");
+#if defined(USE_CRY_ASSERT)
 					const bool setOk = SetCurrentFollowCameraSettings(kDefaultCRC);
 					CRY_ASSERT_MESSAGE(setOk, "Could not set the view mode to \"Default\"");
+#else
+					SetCurrentFollowCameraSettings(kDefaultCRC);
+#endif
 				}
 			}
 			break;
@@ -6664,8 +6662,12 @@ void CPlayer::SetSpectatorModeAndOtherEntId(const uint8 _mode, const EntityId _o
 				if (isLocalPlayer)
 				{
 					static const uint32 kKillerCRC = CCrc32::ComputeLowercase("Killer");
+#if defined(USE_CRY_ASSERT)
 					const bool setOk = SetCurrentFollowCameraSettings(kKillerCRC);
 					CRY_ASSERT_MESSAGE(setOk, "Could not set the view mode to \"Killer\"");
+#else
+					SetCurrentFollowCameraSettings(kKillerCRC);
+#endif
 				}
 			}
 			break;
@@ -7178,7 +7180,7 @@ void CPlayer::OnIntroSequenceFinished()
 {
 	RegisterOnHUD();
 
-	IEntity* pEntity = GetEntity();
+	//IEntity* pEntity = GetEntity();
 	// CryLogAlways("[OnIntroSequenceFinished()] [%d %s] [Time First spawned %.3f, IsDead %s]", pEntity->GetId(), pEntity->GetName(), m_timeFirstSpawned, IsDead() ? "TRUE" : "FALSE");
 
 	// Any remote players *already* fully spawned, need to be unhidden.
@@ -8289,8 +8291,6 @@ void CPlayer::StartTinnitus()
 	{
 		CAudioSignalPlayer::JustPlay("FlashbangEnter");
 
-		Vec3 zero = Vec3(0.0f, 0.0f, 0.0f);
-
 		EntityId playerId = GetEntityId();
 		//m_flashbangSignal.Play(playerId);
 		m_flashbangSignal.SetParam(playerId, "effect", 1.0f);
@@ -8447,8 +8447,6 @@ void CPlayer::UpdateFPAiming()
 	{
 		return;
 	}
-
-	ISkeletonPose* pSkeleton = pCharacter->GetISkeletonPose();
 
 	m_weaponParams.skelAnim = pCharacter->GetISkeletonAnim();
 	m_weaponParams.characterInst = pCharacter;
@@ -8914,14 +8912,14 @@ void CPlayer::NetSetInStealthKill(bool inKill, EntityId targetId, uint8 animInde
 					pTargetPlayer->StealthKillInterrupted(GetEntityId());
 				}
 
-				IEntity* pPlayerEntity = GetEntity();
+				/*IEntity* pPlayerEntity = GetEntity();
 				IEntity* pTargetEntity = pTargetActor->GetEntity();
 
-				/*g_pGame->GetIGameFramework()->GetIPersistantDebug()->Begin("STEALTHKILL_NETPREKILL", false);
-				   g_pGame->GetIGameFramework()->GetIPersistantDebug()->AddSphere(pTargetEntity->GetWorldPos(), 0.2f, ColorF(1.f, 1.f, 0.f, 1.f), 120.f);
-				   g_pGame->GetIGameFramework()->GetIPersistantDebug()->AddLine(pTargetEntity->GetWorldPos(), pTargetEntity->GetWorldTM().GetColumn1() + pTargetEntity->GetWorldPos(), ColorF(1.f, 1.f, 0.f, 1.f), 120.f);
-				   g_pGame->GetIGameFramework()->GetIPersistantDebug()->AddSphere(pPlayerEntity->GetWorldPos(), 0.2f, ColorF(0.f, 1.f, 0.f, 1.f), 120.f);
-				   g_pGame->GetIGameFramework()->GetIPersistantDebug()->AddLine(pPlayerEntity->GetWorldPos(), pPlayerEntity->GetWorldTM().GetColumn1() + pPlayerEntity->GetWorldPos(), ColorF(0.f, 1.f, 0.f, 1.f), 120.f);*/
+				g_pGame->GetIGameFramework()->GetIPersistantDebug()->Begin("STEALTHKILL_NETPREKILL", false);
+				g_pGame->GetIGameFramework()->GetIPersistantDebug()->AddSphere(pTargetEntity->GetWorldPos(), 0.2f, ColorF(1.f, 1.f, 0.f, 1.f), 120.f);
+				g_pGame->GetIGameFramework()->GetIPersistantDebug()->AddLine(pTargetEntity->GetWorldPos(), pTargetEntity->GetWorldTM().GetColumn1() + pTargetEntity->GetWorldPos(), ColorF(1.f, 1.f, 0.f, 1.f), 120.f);
+				g_pGame->GetIGameFramework()->GetIPersistantDebug()->AddSphere(pPlayerEntity->GetWorldPos(), 0.2f, ColorF(0.f, 1.f, 0.f, 1.f), 120.f);
+				g_pGame->GetIGameFramework()->GetIPersistantDebug()->AddLine(pPlayerEntity->GetWorldPos(), pPlayerEntity->GetWorldTM().GetColumn1() + pPlayerEntity->GetWorldPos(), ColorF(0.f, 1.f, 0.f, 1.f), 120.f);*/
 
 				m_stealthKill.Enter(targetId, animIndex);
 			}
@@ -9989,7 +9987,6 @@ void CPlayer::SetMultiplayerModelName()
 {
 	CRY_ASSERT(gEnv->bMultiplayer);
 
-	CGameRules* pGameRules = g_pGame->GetGameRules();
 	int teamId = m_teamId;
 	int teamDiff = g_pGameCVars->g_teamDifferentiation;
 

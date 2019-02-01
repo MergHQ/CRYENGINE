@@ -33,7 +33,6 @@ namespace CornerSmoothing
 	TWEAKABLE float TAKECORNER_MAX_SPEED_DIVERGENCE = 0.5f;
 	static const int TAKECORNER_MAX_SHOOTOUT_SPLINES = 3;
 
-	TWEAKABLE float SHOOTOUT_PREDICTION_STEP_DISTANCE_EPSILON = 0.01f; // m
 	TWEAKABLE float SHOOTOUT_PREDICTION_NUM_STEPS_PER_HERMITE_METERS = 0.2f; // TODO: use higher number on PC
 	TWEAKABLE int   SHOOTOUT_PREDICTION_MIN_NUM_STEPS = 3; // TODO: use higher number on PC
 	TWEAKABLE float SHOOTOUT_PREDICTION_MIN_STEP_DISTANCE_ALONG_CURVE = 0.1f;
@@ -204,7 +203,6 @@ namespace CornerSmoothing
 
 				const int age = s_frameID - entry.frameID;
 
-				float f = FONT_SIZE;
 				float* color = (age == 0) ? RECENT_LOG_ENTRY_COLOR : OLD_LOG_ENTRY_COLOR;
 				IRenderAuxText::Draw2dLabel( (float)START_X, (float)s_currentY, FONT_SIZE, color, false,
 					"age:%5d  %s",
@@ -1096,7 +1094,6 @@ namespace CornerSmoothing
 					const int proposedNextIncludedIndex = nextIncludedIndex + 1;
 					const Vec2 comparePos = input.samples[(lastIncludedIndex + proposedNextIncludedIndex)/2].pos; // instead of checking all points, as an approximation I just check the half-way point (which works for 'corner' curves)
 					const Vec2 newPos = input.samples[proposedNextIncludedIndex].pos;
-					const Vec2 delta = newPos - lastIncludedPos;
 					const Lineseg ls = Lineseg(Vec3(lastIncludedPos), Vec3(newPos));
 					float lambda;
 					const float distSq = Distance::Point_Lineseg2DSq(Vec3(comparePos), ls, lambda);

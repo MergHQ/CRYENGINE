@@ -231,9 +231,9 @@ bool CPlayerStateUtil::ShouldJump( CPlayer& player, const SActorFrameMovementPar
 		// and incorrectly and prematurely used to identify landing in MP.
 
 		const SPlayerStats& stats = *player.GetActorStats();
-		const SActorPhysics& actorPhysics = player.GetActorPhysics();
-		const float fUnconstrainedZ = actorPhysics.velocityUnconstrained.z;
-		bool jumpFailed = (stats.onGround > 0.0f) && (fUnconstrainedZ <= 0.0f);
+		//const SActorPhysics& actorPhysics = player.GetActorPhysics();
+		//const float fUnconstrainedZ = actorPhysics.velocityUnconstrained.z;
+		//bool jumpFailed = (stats.onGround > 0.0f) && (fUnconstrainedZ <= 0.0f);
 
 		const float onGroundTime = 0.2f;
 		if( ((stats.onGround > onGroundTime) || player.IsRemote()) ) // && !jumpFailed )
@@ -299,8 +299,6 @@ void CPlayerStateUtil::UpdatePlayerPhysicsStats( CPlayer& player, SActorPhysics&
 		{
 			stats.maxAirSpeed = 0.f;
 		}
-		float fSpeedFlatSelector = stats.speedFlat - 0.1f;
-
 
 		const float groundNormalBlend = clamp_tpl(frameTime * 6.666f, 0.0f, 1.0f);
 		actorPhysics.groundNormal = LERP(actorPhysics.groundNormal, livStat.groundSlope, groundNormalBlend);
@@ -600,8 +598,6 @@ void CPlayerStateUtil::ApplyFallDamage( CPlayer& player, const float startFallin
 	// Assuming this a physics lag issue, using the last good velocity should be more-or-less ok.
 	const float downwardsImpactSpeed = -(float)__fsel(-(player.m_playerStateSwim_WaterTestProxy.GetSwimmingTimer() + 0.5f), player.GetActorPhysics().velocityUnconstrainedLast.z, 0.0f);
 
-	const SPlayerStats& stats = *player.GetActorStats();
-
 	CRY_ASSERT(NumberValid(downwardsImpactSpeed));
 	const float MIN_FALL_DAMAGE_DISTANCE = 3.0f;
 	const float fallDist = startFallingHeight - fHeightofEntity;
@@ -659,10 +655,7 @@ bool CPlayerStateUtil::DoesArmorAbsorptFallDamage(CPlayer& player, const float d
 	absorptedDamageFraction = 0.0f;
 
 	const SPlayerHealth& healthCVars = g_pGameCVars->pl_health;
-
 	const float speedEnergySafe = healthCVars.fallDamage_SpeedSafe;
-	const float speedEnergyDeplete = healthCVars.fallDamage_SpeedFatal;
-	float heavyArmorFactor = 1.0f;
 
 	//Armor took all damage at no energy cost
 	if(downwardsImpactSpeed <= speedEnergySafe)

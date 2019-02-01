@@ -200,9 +200,13 @@ ECryLobbyError CGameBrowser::StartSearchingForServers(SCrySessionSearchParam* pa
 		uint32 userIndex = g_pGame->GetExclusiveControllerDeviceIndex();
 		if(lobby)
 		{
+#if !defined(EXCLUDE_NORMAL_LOG)
 			CryLobbyTaskID previousTask = m_searchingTask;
 			error = lobby->GetLobbyService()->GetMatchMaking()->SessionSearch(userIndex, param, &m_searchingTask, cb, cbArg);
 			CryLog("CGameBrowser::StartSearchingForServers previousTask=%u, newTask=%u", previousTask, m_searchingTask);
+#else
+			error = lobby->GetLobbyService()->GetMatchMaking()->SessionSearch(userIndex, param, &m_searchingTask, cb, cbArg);
+#endif
 		}
 		return error;
 	}
@@ -698,10 +702,10 @@ void CGameBrowser::GetNatTypeCallback(UCryLobbyEventData eventData, void *arg)
 		CGameBrowser* pGameBrowser = (CGameBrowser*) arg;
 		pGameBrowser->SetNatType(natTypeData->m_curState);
 
-		const char* natString = pGameBrowser->GetNatTypeString();
-		CryLog( "natString=%s", natString);
-
 #if !defined(_RELEASE)
+		const char* natString = pGameBrowser->GetNatTypeString();
+		CryLog("natString=%s", natString);
+
 		if(g_pGameCVars)
 		{
 			g_pGameCVars->net_nat_type->ForceSet(natString);

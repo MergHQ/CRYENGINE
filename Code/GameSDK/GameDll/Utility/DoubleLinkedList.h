@@ -68,10 +68,12 @@ class CDoubleLinkedElement
 
 		bool							IsInList() const
 										{
-											bool		linkPrev=(m_prev==this);
-											bool		linkNext=(m_next==this);
+											bool linkPrev=(m_prev==this);
 
+#if defined(USE_CRY_ASSERT)
+											bool linkNext=(m_next==this);
 											CRY_ASSERT_MESSAGE(linkPrev==linkNext,"Linked list element in inconsistant state");
+#endif
 
 											return !linkPrev;
 										}

@@ -1319,9 +1319,14 @@ void CGame::InitGameType(bool multiplayer, bool fromInit /*= false*/)
 
 	SAFE_DELETE(m_pDataPatchDownloader);
 
+#if !defined(DEDICATED_SERVER)
 	bool bWasMultiplayer = gEnv->bMultiplayer;
+#endif
+
+#if !defined(EXCLUDE_NORMAL_LOG)
 	const char* const hostName = gEnv->pSystem->GetPlatformOS()->GetHostName();
 	CryLog("hostName = '%s'", hostName);
+#endif
 
 	if (g_pGameCVars->g_multiplayerModeOnly && multiplayer == false)
 	{
@@ -3432,7 +3437,6 @@ void CGame::RemoveExclusiveController()
 {
 	CryLog("CGame::RemoveExclusiveController");
 
-	bool hasExclusiveController = m_hasExclusiveController;
 	m_hasExclusiveController = false;
 	m_bExclusiveControllerConnected = false;
 
@@ -5399,10 +5403,6 @@ void CGame::InviteAcceptedCallback(UCryLobbyEventData eventData, void* arg)
 		// can't possibly be in a squad if we're not multiplayer, i hope
 		if (gEnv->bMultiplayer && inviteData->m_error == eCLE_Success)
 		{
-			ICryLobby* pLobby = gEnv->pNetwork->GetLobby();
-			ICryLobbyService* pLobbyService = pLobby ? pLobby->GetLobbyService(eCLS_Online) : NULL;
-			ICryMatchMaking* pMatchMaking = pLobbyService ? pLobbyService->GetMatchMaking() : NULL;
-
 			bool alreadyInSession = false;
 
 			// the session we are trying to join is the same as the session we are in
@@ -5852,7 +5852,7 @@ void CGame::CommitDeferredKills()
 	{
 		const EntityId entityID = *it;
 
-		if (IEntity* entity = gEnv->pEntitySystem->GetEntity(entityID))
+		if (gEnv->pEntitySystem->GetEntity(entityID) != nullptr)
 		{
 			// Kill the agent by entityId a lot of damage.
 			const HitInfo hitinfo(entityID, entityID, entityID,

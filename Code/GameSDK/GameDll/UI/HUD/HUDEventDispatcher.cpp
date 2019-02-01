@@ -552,7 +552,7 @@ string CHUDEventDispatcher::GetEventName(EHUDEventType inputEvent)
 		}
 		CRY_ASSERT_MESSAGE( definedEventFound, string().Format("HUD: A defined event id was not found when looking for it in registered events. ID was %d. /FH", defdEventId).c_str() );
 	}
-
+#if defined(USE_CRY_ASSERT)
 	// Check for dupes
 	for(size_t i=0; i<regdEventCount; ++i )
 	{
@@ -566,6 +566,7 @@ string CHUDEventDispatcher::GetEventName(EHUDEventType inputEvent)
 			CRY_ASSERT_MESSAGE( redgType != checkType, string().Format("HUD: Duplicate event ID entries found names found for ID%d(%s). /FH", redgType, regdName).c_str() );
 		}
 	}
+#endif
 #endif
 }
 

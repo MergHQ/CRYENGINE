@@ -157,10 +157,6 @@ bool CWeapon::CAnimationFiringLocator::GetProbableHit(EntityId weaponId, const I
 	// [*DavidR | 14/Oct/2010] Note: Basically a Copy & Paste of CSingle::GetProbableHit but without getting info
 	// from the movement controller
 	static Vec3 pos(ZERO), dir(FORWARD_DIRECTION);
-
-	CActor *pActor = m_pOwnerWeapon->GetOwnerActor();
-	IEntity *pWeaponEntity = m_pOwnerWeapon->GetEntity();
-
 	static PhysSkipList skipList;
 	skipList.clear();
 	CSingle::GetSkipEntities(m_pOwnerWeapon, skipList);

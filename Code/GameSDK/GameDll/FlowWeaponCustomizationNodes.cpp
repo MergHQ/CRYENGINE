@@ -270,7 +270,7 @@ void CFlashUICheckAccessoryState ::ProcessEvent( EFlowEvent event, SActivationIn
 				IEntityClassRegistry *pRegistry = gEnv->pEntitySystem->GetClassRegistry();
 
 				//Find the accessory's class in the registry
-				const string accessory_name = GetPortString(pActInfo, eI_Accessory);				
+				const string accessory_name = GetPortString(pActInfo, eI_Accessory);
 				IEntityClass* pClass = pRegistry->FindClass(accessory_name);
 
 				//Check if its in inventory
@@ -292,15 +292,13 @@ void CFlashUICheckAccessoryState ::ProcessEvent( EFlowEvent event, SActivationIn
 					{
 
 						CGameObject * pGameObject = (CGameObject*)pEntity->GetProxy(ENTITY_PROXY_USER);
-						const char* ext = pGameObject->GetEntity()->GetClass()->GetName();
 						CWeapon* pWeapon = (CWeapon*)pGameObject->QueryExtension(pGameObject->GetEntity()->GetClass()->GetName());
-						bool selectable = pWeapon->CanSelect();
 						if(pWeapon)
 						{
 							if(pWeapon->GetAccessory(pClass->GetName()) != 0)
 							{
 								is_equipped = true;
-							}					
+							}
 						}
 					}
 				}

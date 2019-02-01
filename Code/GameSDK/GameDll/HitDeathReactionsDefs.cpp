@@ -348,7 +348,6 @@ void SReactionParams::SMannequinData::Initialize( const IActionController* piAct
 {
 	CRY_ASSERT( piActionController );
 
-	const TagState globalTags = piActionController->GetContext().state.GetMask();
 	const FragmentID fragID = CHitDeathReactions::GetHitDeathFragmentID( piActionController );
 	const SFragTagState fragTagState( TAG_STATE_FULL, tagState );
 	SFragmentQuery query( fragID, fragTagState, 0 );
@@ -484,11 +483,6 @@ void SReactionParams::SMannequinData::RequestNextAnim( const IActionController* 
 		const uint32 optionIdx = m_pCurrentFragment->GetCurrentOption();
 		if( (optionIdx != OPTION_IDX_RANDOM) && (optionIdx != m_iNextOptionIndex) )
 		{
-			ICharacterInstance* piCharacterInstance = piActionController->GetEntity().GetCharacter(0);
-			const IAnimationSet* piAnimationSet = piCharacterInstance->GetIAnimationSet();
-
-			const TagState globalTags = piActionController->GetContext().state.GetMask();
-			const FragmentID fragID = CHitDeathReactions::GetHitDeathFragmentID( piActionController );
 			m_pRequestedFragment.reset( new CFragmentCache( *m_pCurrentFragment, piActionController, m_iNextOptionIndex ) );
 
 			// Create a timer to poll when the asset ends streaming

@@ -100,7 +100,7 @@ IItem* CPlayerRotation::GetCurrentItem(bool includeVehicle)
 		{
 			if (IItem* pItem = gEnv->pGameFramework->GetIItemSystem()->GetItem(weaponId))    
 			{
-				if (IWeapon* pWeapon = pItem->GetIWeapon())
+				if (pItem->GetIWeapon() != nullptr)
 				{
 					pCurrentItem = pItem;
 				}
@@ -142,7 +142,6 @@ static void GetTalosInput(CPlayerRotation * pPlayerRotation, const CPlayer& rPla
 
 	CGameRules * pGameRules = g_pGame->GetGameRules();
 	int playerTeam = pGameRules->GetTeam(rPlayer.GetEntity()->GetId());
-	float cloakedPlayerMultiplier = g_pGameCVars->pl_aim_cloaked_multiplier;
 	const bool multipleTeams = pGameRules->GetTeamCount() > 0;
 
 	const TAutoaimTargets& aaTargets = g_pGame->GetAutoAimManager().GetAutoAimTargets();
@@ -191,14 +190,6 @@ static void GetTalosInput(CPlayerRotation * pPlayerRotation, const CPlayer& rPla
 			// linetests generally are as well... - Richard
 			continue;
 		}
-
-		const float angleDot = dirToTarget.dot(-playerRgt);
-		const float angle = (RAD2DEG(acos_tpl(angleDot)) - 90.f);
-		const float absAngle = fabsf(angle);
-
-		const float angleDotV = playerUp.dot(dirToTarget);
-		const float angleToTargetV = (RAD2DEG(acos_tpl(angleDotV)) - 90.f);
-		const float absAngleV = fabsf(angleToTargetV);
 
 		if ( s_follow_target_id == target.entityId )
 		{
@@ -632,7 +623,6 @@ void CPlayerRotation::TargetAimAssistance(CWeapon* pWeapon, float& followH, floa
 	float distance_follow_threshold_near	= max(0.0f, g_pGameCVars->aim_assistMinDistance);
 	float distance_follow_threshold_far		= max(20.0f, g_pGameCVars->aim_assistMaxDistance);
 	int playerTeam = pGameRules->GetTeam(m_player.GetEntity()->GetId());
-	float cloakedPlayerMultiplier = g_pGameCVars->pl_aim_cloaked_multiplier;
 	const bool multipleTeams = pGameRules->GetTeamCount() > 0;
 	const float fFollowFalloffDist = g_pGameCVars->aim_assistFalloffDistance + FLT_EPSILON*g_pGameCVars->aim_assistFalloffDistance;
 	const bool playerIsScoped = m_player.GetActorStats()->isScoped;
@@ -937,8 +927,6 @@ void CPlayerRotation::ProcessTargetAssistance( IItem* pCurrentPlayerItem )
 
 	//TODO: Fix so it's not using auto aim unless selected
 
-	float fFollowAssistScale = (absInput * (1.0f - fZoomAmount)) + min(absInput * fZoomAmount * __fres(g_pGameCVars->aim_assistInputForFullFollow_Ironsight), 1.0f);
-
 	m_deltaAngles.z = (m_deltaAngles.z * targetAimAssistAngleScale) + (absInput * targetAimAssistAngleFollowH);
 	m_deltaAngles.x = (m_deltaAngles.x * targetAimAssistAngleScale) + (absInput * targetAimAssistAngleFollowV);
 
@@ -1015,7 +1003,6 @@ void CPlayerRotation::ProcessNormal( float frameTime )
 	}
 	
 	const Vec3 right(m_baseQuat.GetColumn0());
-	const Vec3 forward((up % right).GetNormalized());
 
 	PR_CHECKQNAN_VEC(up);
 	PR_CHECKQNAN_VEC(right);

@@ -98,7 +98,7 @@ CDLCManager::~CDLCManager()
 {
 	if (IPlatformOS* pPlatformOS = gEnv->pSystem->GetPlatformOS())
 	{
-		gEnv->pSystem->GetPlatformOS()->RemoveListener(this);
+		pPlatformOS->RemoveListener(this);
 	}
 }
 

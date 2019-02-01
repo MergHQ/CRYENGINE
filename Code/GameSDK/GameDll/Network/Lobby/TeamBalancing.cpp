@@ -912,8 +912,10 @@ void CTeamBalancing::ReadPlayerFromPacket(CCryLobbyPacket *pPacket, bool bBalanc
 //------------------------------------------------------------------------------
 void CTeamBalancing::WritePacket(CCryLobbyPacket *pPacket, GameUserPacketDefinitions packetType, SCryMatchMakingConnectionUID playerUID) 
 {
+#if defined(USE_CRY_ASSERT)
 	CGameLobby *pGameLobby = g_pGame->GetGameLobby();
 	CRY_ASSERT(pGameLobby->IsServer());
+#endif
 
 	switch(packetType)
 	{

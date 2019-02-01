@@ -485,8 +485,6 @@ void CPlayerStateLadder::OnExit( CPlayer& player )
 		return;
 	}
 
-	IAnimatedCharacter* pAnimChar = player.GetAnimatedCharacter();
-
 	//player.GetActorStats()->gravity = simPar.gravity;
 
 	CPlayerStateUtil::PhySetNoFly( player, simPar.gravity );
