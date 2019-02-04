@@ -63,6 +63,8 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
+		CRY_PFX2_PROFILE_DETAIL;
+
 		if (!(m_pStaticObject = Get3DEngine()->FindStatObjectByFilename(m_meshName)))
 		{
 			GetPSystem()->CheckFileAccess(m_meshName);

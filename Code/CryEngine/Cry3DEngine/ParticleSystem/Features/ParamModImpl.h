@@ -12,10 +12,10 @@ void CParamMod<Domain, T>::AddToComponent(CParticleComponent* pComponent, CParti
 	if (Domain & EDD_PerParticle)
 		pComponent->InitParticles.add(pFeature);
 
-	for (auto& pModifier : m_modifiers)
+	for (auto& pMod : m_modifiers)
 	{
-		if (pModifier && pModifier->IsEnabled())
-			pModifier->AddToParam(pComponent);
+		if (pMod && pMod->IsEnabled())
+			pMod->AddToParam(pComponent);
 	}
 }
 
@@ -25,13 +25,13 @@ void CParamMod<Domain, T>::AddToComponent(CParticleComponent* pComponent, CParti
 	AddToComponent(pComponent, pFeature);
 	pComponent->AddParticleData(dataType);
 
-	for (auto& pModifier : m_modifiers)
+	for (auto& pMod : m_modifiers)
 	{
-		if (pModifier && pModifier->IsEnabled())
-			pModifier->SetDataType(dataType);
+		if (pMod && pMod->IsEnabled())
+			pMod->SetDataType(dataType);
 	}
 
-	if (Domain & EDD_HasUpdate && !m_modUpdate.empty())
+	if (Domain & EDD_HasUpdate && m_updateMask)
 	{
 		pComponent->AddParticleData(dataType.InitType());
 		if (Domain & EDD_PerParticle)
@@ -40,7 +40,7 @@ void CParamMod<Domain, T>::AddToComponent(CParticleComponent* pComponent, CParti
 }
 
 template<EDataDomain Domain, typename T>
-void CParamMod<Domain, T>::Serialize(Serialization::IArchive& ar)
+void CParamMod<Domain, T>::SerializeImpl(Serialization::IArchive& ar)
 {
 	EDataDomain domain = Domain;
 	Serialization::SContext _modContext(ar, static_cast<EDataDomain*>(&domain));
@@ -49,9 +49,10 @@ void CParamMod<Domain, T>::Serialize(Serialization::IArchive& ar)
 
 	if (ar.isInput())
 	{
-		m_modInit.clear();
-		m_modUpdate.clear();
+		m_initMask = m_updateMask = 0;
 		stl::find_and_erase_all(m_modifiers, nullptr);
+		m_modifiers.shrink_to_fit();
+		uint16 mask = 1;
 		for (auto& pMod : m_modifiers)
 		{
 			if (TModifier* pNewMod = pMod->VersionFixReplace())
@@ -61,10 +62,12 @@ void CParamMod<Domain, T>::Serialize(Serialization::IArchive& ar)
 			if (pMod->IsEnabled())
 			{
 				if (pMod->GetDomain() & Domain & EDD_HasUpdate)
-					m_modUpdate.push_back(pMod);
+					m_updateMask |= mask;
 				else
-					m_modInit.push_back(pMod);
+					m_initMask |= mask;
 			}
+			mask <<= 1;
+			assert(mask != 0);
 		}
 	}
 }
@@ -72,8 +75,6 @@ void CParamMod<Domain, T>::Serialize(Serialization::IArchive& ar)
 template<EDataDomain Domain, typename T>
 void CParamMod<Domain, T>::Init(CParticleComponentRuntime& runtime, ThisDataType dataType) const
 {
-	CRY_PFX2_PROFILE_DETAIL;
-
 	CParticleContainer& container = runtime.GetContainer();
 	if (container.GetMaxParticles() == 0 || !container.HasData(dataType))
 		return;
@@ -100,19 +101,23 @@ void CParamMod<Domain, T>::Update(CParticleComponentRuntime& runtime, ThisDataTy
 template<EDataDomain Domain, typename T>
 void CParamMod<Domain, T>::ModifyInit(const CParticleComponentRuntime& runtime, TIOStream<TType>& stream, SUpdateRange range) const
 {
-	CRY_PFX2_PROFILE_DETAIL;
 	stream.Fill(range, m_baseValue);
 
-	for (auto& pModifier : m_modInit)
-		pModifier->Modify(runtime, range, stream, Domain);
+	for (uint16 mask = m_initMask, index = 0; mask; mask >>= 1, index++)
+	{
+		if (mask & 1)
+			m_modifiers[index]->Modify(runtime, range, stream, Domain);
+	}
 }
 
 template<EDataDomain Domain, typename T>
 void CParamMod<Domain, T>::ModifyUpdate(const CParticleComponentRuntime& runtime, TIOStream<TType>& stream, SUpdateRange range) const
 {
-	CRY_PFX2_PROFILE_DETAIL;
-	for (auto& pModifier : m_modUpdate)
-		pModifier->Modify(runtime, range, stream, Domain);
+	for (uint16 mask = m_updateMask, index = 0; mask; mask >>= 1, index++)
+	{
+		if (mask & 1)
+			m_modifiers[index]->Modify(runtime, range, stream, Domain);
+	}
 }
 
 template<EDataDomain Domain, typename T>
@@ -156,10 +161,10 @@ template<EDataDomain Domain, typename T>
 void pfx2::CParamMod<Domain, T>::Sample(TVarArray<TFrom> samples) const
 {
 	samples.fill(T::From(m_baseValue));
-	for (auto& pModifier : m_modifiers)
+	for (auto& pMod : m_modifiers)
 	{
-		if (pModifier->IsEnabled())
-			pModifier->Sample(samples);
+		if (pMod->IsEnabled())
+			pMod->Sample(samples);
 	}
 }
 

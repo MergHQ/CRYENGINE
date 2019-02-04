@@ -58,6 +58,9 @@ public:
 		SParticleStats       statsCPU;
 		SParticleStats       statsGPU;
 		TElementCounts<uint> statsSync;
+
+		SThreadData()
+			: memHeap(stl::FHeap().PageSize(0x4000).StackAlloc(true).FreeWhenEmpty(false)) {}
 	};
 
 	PParticleEffect          LoadEffect(cstr effectName);

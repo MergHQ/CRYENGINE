@@ -68,9 +68,9 @@ public:
 
 	virtual void MainPreUpdate(CParticleComponentRuntime& runtime) {}
 
-	virtual void AddSubInstances(CParticleComponentRuntime& runtime, TDynArray<SInstance>& instances) {}
+	virtual void AddSubInstances(CParticleComponentRuntime& runtime) {}
 
-	virtual void CullSubInstances(CParticleComponentRuntime& runtime, TDynArray<SInstance>& instances) {}
+	virtual void CullSubInstances(CParticleComponentRuntime& runtime, TVarArray<SInstance>& instances) {}
 
 	virtual void InitSubInstances(CParticleComponentRuntime& runtime, SUpdateRange instanceRange) {}
 
@@ -112,36 +112,39 @@ private:
 	_smart_ptr<gpu_pfx2::IParticleFeature> m_gpuInterface;
 };
 
-template<class... Args> using TFeatureDispatcher = Dispatcher<CParticleFeature, Args...>;
+#define FEATURE_DISPATCHER(Function) \
+	struct Call##Function { \
+		template<class... Args> static void call(CParticleFeature* obj, Args&&... args) { obj->Function(std::forward<Args>(args)...); } \
+	}; CallDispatcher<CParticleFeature, Call##Function> Function;
 
 struct SFeatureDispatchers
 {
-	TFeatureDispatcher<CParticleComponentRuntime&> OnEdit { &CParticleFeature::OnEdit };
-	TFeatureDispatcher<CParticleComponentRuntime&> OnPreRun { &CParticleFeature::OnPreRun };
-	TFeatureDispatcher<CParticleComponentRuntime&> MainPreUpdate { &CParticleFeature::MainPreUpdate };
-	TFeatureDispatcher<const CParticleComponentRuntime&, EParticleDataType, void*, EDataDomain, SUpdateRange> GetDynamicData { &CParticleFeature::GetDynamicData };
+	FEATURE_DISPATCHER(OnEdit);
+	FEATURE_DISPATCHER(OnPreRun);
+	FEATURE_DISPATCHER(MainPreUpdate);
+	FEATURE_DISPATCHER(GetDynamicData);
 
-	TFeatureDispatcher<CParticleComponentRuntime&, TDynArray<SInstance>&> AddSubInstances { &CParticleFeature::AddSubInstances };
-	TFeatureDispatcher<CParticleComponentRuntime&, TDynArray<SInstance>&> CullSubInstances { &CParticleFeature::CullSubInstances };
-	TFeatureDispatcher<CParticleComponentRuntime&, SUpdateRange> InitSubInstances { &CParticleFeature::InitSubInstances };
-	TFeatureDispatcher<CParticleComponentRuntime&> KillParticles { &CParticleFeature::KillParticles };
-	TFeatureDispatcher<CParticleComponentRuntime&> SpawnParticles { &CParticleFeature::SpawnParticles };
+	FEATURE_DISPATCHER(AddSubInstances);
+	FEATURE_DISPATCHER(CullSubInstances);
+	FEATURE_DISPATCHER(InitSubInstances);
+	FEATURE_DISPATCHER(KillParticles);
+	FEATURE_DISPATCHER(SpawnParticles);
 
-	TFeatureDispatcher<CParticleComponentRuntime&> PreInitParticles { &CParticleFeature::PreInitParticles };
-	TFeatureDispatcher<CParticleComponentRuntime&> InitParticles { &CParticleFeature::InitParticles };
-	TFeatureDispatcher<CParticleComponentRuntime&> PostInitParticles { &CParticleFeature::PostInitParticles };
-	TFeatureDispatcher<CParticleComponentRuntime&> PastUpdateParticles { &CParticleFeature::PastUpdateParticles };
-	TFeatureDispatcher<CParticleComponentRuntime&> DestroyParticles { &CParticleFeature::DestroyParticles };
+	FEATURE_DISPATCHER(PreInitParticles);
+	FEATURE_DISPATCHER(InitParticles);
+	FEATURE_DISPATCHER(PostInitParticles);
+	FEATURE_DISPATCHER(PastUpdateParticles);
+	FEATURE_DISPATCHER(DestroyParticles);
 
-	TFeatureDispatcher<CParticleComponentRuntime&> PreUpdateParticles { &CParticleFeature::PreUpdateParticles };
-	TFeatureDispatcher<CParticleComponentRuntime&> UpdateParticles { &CParticleFeature::UpdateParticles };
-	TFeatureDispatcher<CParticleComponentRuntime&> PostUpdateParticles { &CParticleFeature::PostUpdateParticles };
+	FEATURE_DISPATCHER(PreUpdateParticles);
+	FEATURE_DISPATCHER(UpdateParticles);
+	FEATURE_DISPATCHER(PostUpdateParticles);
 
-	TFeatureDispatcher<CParticleComponentRuntime&, gpu_pfx2::SUpdateParams&> UpdateGPUParams { &CParticleFeature::UpdateGPUParams };
+	FEATURE_DISPATCHER(UpdateGPUParams);
 
-	TFeatureDispatcher<CParticleComponentRuntime&, const SRenderContext&> Render { &CParticleFeature::Render };
-	TFeatureDispatcher<const CParticleComponentRuntime&, const SRenderContext&> RenderDeferred { &CParticleFeature::RenderDeferred };
-	TFeatureDispatcher<const CParticleComponentRuntime&, const SCameraInfo&, CREParticle*, uint64, float> ComputeVertices { &CParticleFeature::ComputeVertices };
+	FEATURE_DISPATCHER(Render);
+	FEATURE_DISPATCHER(RenderDeferred);
+	FEATURE_DISPATCHER(ComputeVertices);
 };
 
 ILINE ColorB HexToColor(uint hex)

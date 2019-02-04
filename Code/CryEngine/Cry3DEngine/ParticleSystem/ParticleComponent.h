@@ -113,11 +113,13 @@ struct STimingParams
 
 struct SComponentParams: STimingParams
 {
+	static string             s_defaultDiffuseMap;
+
 	bool                      m_usesGPU              = false;
 	SParticleShaderData       m_shaderData;
 	_smart_ptr<IMaterial>     m_pMaterial;
 	EShaderType               m_requiredShaderType   = eST_All;
-	string                    m_diffuseMap           = "%ENGINE%/EngineAssets/Textures/white.dds";
+	string                    m_diffuseMap           = s_defaultDiffuseMap;
 	ERenderObjectFlags        m_renderObjectFlags;
 	int                       m_renderStateFlags     = OS_ALPHA_BLEND;
 	uint8                     m_particleObjFlags     = 0;
@@ -145,11 +147,10 @@ private:
 	uint m_offset;
 };
 
-class CParticleComponent : public IParticleComponent, public SFeatureDispatchers
+class CParticleComponent final : public IParticleComponent, public SFeatureDispatchers
 {
 public:
-	typedef _smart_ptr<CParticleComponent> TComponentPtr;
-	typedef std::vector<TComponentPtr>     TComponents;
+	typedef TSmartArray<CParticleComponent> TComponents;
 
 	CParticleComponent();
 
@@ -235,8 +236,7 @@ private:
 	void                    UpdateTimings();
 };
 
-typedef _smart_ptr<CParticleComponent> TComponentPtr;
-typedef std::vector<TComponentPtr>     TComponents;
+typedef TSmartArray<CParticleComponent> TComponents;
 
 }
 

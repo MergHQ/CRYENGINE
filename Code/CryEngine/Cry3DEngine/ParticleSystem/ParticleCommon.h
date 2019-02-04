@@ -54,12 +54,28 @@ const uint gCurrentVersion = 13;
 const TParticleId gInvalidId           = -1;
 const float gInfinity                  = std::numeric_limits<float>::infinity();
 
-using TParticleHeap                    = stl::HeapAllocator<stl::PSyncNone>;
+class HeapAllocator
+{
+public:
+	static void* SysAlloc(size_t nSize)
+	{
+		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+		return malloc(nSize); 
+	}
+	static void  SysDealloc(void* ptr)
+	{
+		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+		free(ptr);
+	}
+};
+
+using TParticleHeap                    = stl::HeapAllocator<stl::PSyncNone, HeapAllocator>;
 template<typename T> using THeapArray  = TParticleHeap::Array<T, uint, CRY_PFX2_PARTICLES_ALIGNMENT>;
 using TParticleIdArray                 = THeapArray<TParticleId>;
 using TFloatArray                      = THeapArray<float>;
 
 template<typename T> using TDynArray   = FastDynArray<T, uint, NAlloc::ModuleAlloc>;
+template<typename T> using TSmallArray = SmallDynArray<T, uint, NAlloc::ModuleAlloc>;
 template<typename T> using TSmartArray = TDynArray<_smart_ptr<T>>;
 
 ///////////////////////////////////////////////////////////////////////////////

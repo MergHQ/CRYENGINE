@@ -58,6 +58,7 @@ PParticleEffect CParticleSystem::FindEffect(cstr name, bool bAllowLoad)
 PParticleEmitter CParticleSystem::CreateEmitter(PParticleEffect pEffect)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "pfx2::ParticleEmitter");
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	PARTICLE_LIGHT_PROFILER();
 
 	CRY_PFX2_ASSERT(pEffect.get());
@@ -314,6 +315,9 @@ void CParticleSystem::ClearRenderResources()
 			++it;
 	}
 	m_numFrames = 0;
+
+	for (auto& data : m_threadData)
+		data.memHeap.FreeEmptyPages();
 }
 
 bool CParticleSystem::IsRuntime() const

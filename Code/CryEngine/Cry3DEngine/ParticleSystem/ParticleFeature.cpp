@@ -20,6 +20,8 @@ void CParticleFeature::Serialize(Serialization::IArchive& ar)
 
 gpu_pfx2::IParticleFeature* CParticleFeature::MakeGpuInterface(CParticleComponent* pComponent, gpu_pfx2::EGpuFeatureType feature)
 {
+	CRY_PFX2_PROFILE_DETAIL;
+
 	if (!feature || !pComponent->UsesGPU() || !gEnv->pRenderer)
 		m_gpuInterface.reset();
 	else if (!m_gpuInterface)
