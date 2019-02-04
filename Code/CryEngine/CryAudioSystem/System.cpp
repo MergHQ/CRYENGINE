@@ -3117,17 +3117,6 @@ void DrawMemoryPoolInfo(
 	char const* const szType,
 	uint16 const poolSize)
 {
-	CryFixedStringT<MaxMiscStringLength> memUsedString;
-
-	if (mem.nUsed < 1024)
-	{
-		memUsedString.Format("%" PRISIZE_T " Byte", mem.nUsed);
-	}
-	else
-	{
-		memUsedString.Format("%" PRISIZE_T " KiB", mem.nUsed >> 10);
-	}
-
 	CryFixedStringT<MaxMiscStringLength> memAllocString;
 
 	if (mem.nAlloc < 1024)
@@ -3143,8 +3132,8 @@ void DrawMemoryPoolInfo(
 
 	posY += Debug::g_systemLineHeight;
 	pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, color, false,
-	                      "[%s] Constructed: %" PRISIZE_T " (%s) | Allocated: %" PRISIZE_T " (%s) | Pool Size: %u",
-	                      szType, pool.nUsed, memUsedString.c_str(), pool.nAlloc, memAllocString.c_str(), poolSize);
+	                      "[%s] Constructed: %" PRISIZE_T " | Allocated: %" PRISIZE_T " | Preallocated: %u | Pool Size: %s",
+	                      szType, pool.nUsed, pool.nAlloc, poolSize, memAllocString.c_str());
 }
 
 //////////////////////////////////////////////////////////////////////////
