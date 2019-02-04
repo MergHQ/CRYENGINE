@@ -12,10 +12,8 @@ namespace Impl
 {
 namespace Adx2
 {
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 class CBaseObject;
 class CCue;
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 enum class ECueInstanceFlags : EnumFlagsType
 {
@@ -49,7 +47,7 @@ public:
 		, m_cueId(cueId)
 		, m_playbackId(playbackId)
 		, m_pCue(pCue)
-		, m_flags(ECueInstanceFlags::IsVirtual) // Voices always start in virtual state.
+		, m_flags(ECueInstanceFlags::IsVirtual | ECueInstanceFlags::IsPending) // Voices always start in virtual state.
 		, m_pBaseObject(pBaseObject)
 	{}
 #else
@@ -77,7 +75,7 @@ public:
 	void                SetFlag(ECueInstanceFlags const flag)    { m_flags = m_flags | flag; }
 	void                RemoveFlag(ECueInstanceFlags const flag) { m_flags = m_flags & ~flag; }
 
-	bool                PrepareForPlayback();
+	bool                PrepareForPlayback(CBaseObject* const pBaseObject);
 
 	void                Stop();
 	void                Pause();

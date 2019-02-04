@@ -20,36 +20,6 @@ namespace Adx2
 CryCriticalSection g_cs;
 
 //////////////////////////////////////////////////////////////////////////
-static void ProcessCallback(CCueInstance* const pCueInstance, CriAtomExPlaybackEvent const playbackEvent)
-{
-	switch (playbackEvent)
-	{
-	case CriAtomExPlaybackEvent::CRIATOMEX_PLAYBACK_EVENT_FROM_NORMAL_TO_VIRTUAL:
-		{
-			pCueInstance->SetFlag(ECueInstanceFlags::IsVirtual);
-
-			break;
-		}
-	case CriAtomExPlaybackEvent::CRIATOMEX_PLAYBACK_EVENT_FROM_VIRTUAL_TO_NORMAL:
-		{
-			pCueInstance->RemoveFlag(ECueInstanceFlags::IsVirtual);
-
-			break;
-		}
-	case CriAtomExPlaybackEvent::CRIATOMEX_PLAYBACK_EVENT_REMOVE:
-		{
-			pCueInstance->SetFlag(ECueInstanceFlags::ToBeRemoved);
-
-			break;
-		}
-	default:
-		{
-			break;
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 static void PlaybackEventCallback(void* pObject, CriAtomExPlaybackEvent playbackEvent, CriAtomExPlaybackInfoDetail const* pInfo)
 {
 	if ((playbackEvent != CriAtomExPlaybackEvent::CRIATOMEX_PLAYBACK_EVENT_ALLOCATE) && (pObject != nullptr))
@@ -59,25 +29,37 @@ static void PlaybackEventCallback(void* pObject, CriAtomExPlaybackEvent playback
 		{
 			CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Adx2::g_cs);
 
-			CueInstances const& pendingCueInstances = pBaseObject->GetPendingCueInstances();
-
-			for (auto const pPendingCueInstance : pendingCueInstances)
-			{
-				if (pPendingCueInstance->GetPlaybackId() == pInfo->id)
-				{
-					ProcessCallback(pPendingCueInstance, playbackEvent);
-
-					break;
-				}
-			}
-
 			CueInstances const& cueInstances = pBaseObject->GetCueInstances();
 
 			for (auto const pCueInstance : cueInstances)
 			{
 				if (pCueInstance->GetPlaybackId() == pInfo->id)
 				{
-					ProcessCallback(pCueInstance, playbackEvent);
+					switch (playbackEvent)
+					{
+					case CriAtomExPlaybackEvent::CRIATOMEX_PLAYBACK_EVENT_FROM_NORMAL_TO_VIRTUAL:
+						{
+							pCueInstance->SetFlag(ECueInstanceFlags::IsVirtual);
+
+							break;
+						}
+					case CriAtomExPlaybackEvent::CRIATOMEX_PLAYBACK_EVENT_FROM_VIRTUAL_TO_NORMAL:
+						{
+							pCueInstance->RemoveFlag(ECueInstanceFlags::IsVirtual);
+
+							break;
+						}
+					case CriAtomExPlaybackEvent::CRIATOMEX_PLAYBACK_EVENT_REMOVE:
+						{
+							pCueInstance->SetFlag(ECueInstanceFlags::ToBeRemoved);
+
+							break;
+						}
+					default:
+						{
+							break;
+						}
+					}
 
 					break;
 				}
@@ -96,7 +78,6 @@ CBaseObject::CBaseObject()
 	criAtomExPlayer_SetPlaybackEventCallback(m_pPlayer, PlaybackEventCallback, this);
 	CRY_ASSERT_MESSAGE(m_pPlayer != nullptr, "m_pPlayer is null pointer during %s", __FUNCTION__);
 	m_cueInstances.reserve(2);
-	m_pendingCueInstances.reserve(2);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -111,59 +92,6 @@ void CBaseObject::Update(float const deltaTime)
 	EObjectFlags const previousFlags = m_flags;
 	bool removedCueInstance = false;
 
-	if (!m_pendingCueInstances.empty())
-	{
-		m_flags |= EObjectFlags::IsVirtual;
-
-		auto iter(m_pendingCueInstances.begin());
-		auto iterEnd(m_pendingCueInstances.end());
-
-		while (iter != iterEnd)
-		{
-			CCueInstance* const pCueInstance = *iter;
-
-			if ((pCueInstance->GetFlags() & ECueInstanceFlags::ToBeRemoved) != 0)
-			{
-				gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pCueInstance->GetTriggerInstanceId(), ETriggerResult::Pending);
-				g_pImpl->DestructCueInstance(pCueInstance);
-				removedCueInstance = true;
-
-				if (iter != (iterEnd - 1))
-				{
-					(*iter) = m_pendingCueInstances.back();
-				}
-
-				m_pendingCueInstances.pop_back();
-				iter = m_pendingCueInstances.begin();
-				iterEnd = m_pendingCueInstances.end();
-			}
-			else if (pCueInstance->PrepareForPlayback())
-			{
-				pCueInstance->RemoveFlag(ECueInstanceFlags::IsPending);
-				AddCueInstance(pCueInstance);
-				UpdateVelocityTracking();
-
-				ETriggerResult const result = ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) == 0) ? ETriggerResult::Playing : ETriggerResult::Virtual;
-				gEnv->pAudioSystem->ReportStartedTriggerConnectionInstance(pCueInstance->GetTriggerInstanceId(), result);
-
-				if (iter != (iterEnd - 1))
-				{
-					(*iter) = m_pendingCueInstances.back();
-				}
-
-				m_pendingCueInstances.pop_back();
-				iter = m_pendingCueInstances.begin();
-				iterEnd = m_pendingCueInstances.end();
-			}
-			else
-			{
-				UpdateVirtualState(pCueInstance);
-
-				++iter;
-			}
-		}
-	}
-
 	if (!m_cueInstances.empty())
 	{
 		m_flags |= EObjectFlags::IsVirtual;
@@ -177,7 +105,8 @@ void CBaseObject::Update(float const deltaTime)
 
 			if ((pCueInstance->GetFlags() & ECueInstanceFlags::ToBeRemoved) != 0)
 			{
-				gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pCueInstance->GetTriggerInstanceId(), ETriggerResult::Playing);
+				ETriggerResult const result = ((pCueInstance->GetFlags() & ECueInstanceFlags::IsPending) != 0) ? ETriggerResult::Pending : ETriggerResult::Playing;
+				gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pCueInstance->GetTriggerInstanceId(), result);
 				g_pImpl->DestructCueInstance(pCueInstance);
 				removedCueInstance = true;
 
@@ -189,6 +118,18 @@ void CBaseObject::Update(float const deltaTime)
 				m_cueInstances.pop_back();
 				iter = m_cueInstances.begin();
 				iterEnd = m_cueInstances.end();
+			}
+			else if ((pCueInstance->GetFlags() & ECueInstanceFlags::IsPending) != 0)
+			{
+				if (pCueInstance->PrepareForPlayback(this))
+				{
+					ETriggerResult const result = ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) == 0) ? ETriggerResult::Playing : ETriggerResult::Virtual;
+					gEnv->pAudioSystem->ReportStartedTriggerConnectionInstance(pCueInstance->GetTriggerInstanceId(), result);
+
+					UpdateVirtualState(pCueInstance);
+				}
+
+				++iter;
 			}
 			else
 			{
@@ -261,22 +202,7 @@ ERequestStatus CBaseObject::SetName(char const* const szName)
 //////////////////////////////////////////////////////////////////////////
 void CBaseObject::AddCueInstance(CCueInstance* const pCueInstance)
 {
-	if ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) == 0)
-	{
-		m_flags &= ~EObjectFlags::IsVirtual;
-	}
-	else if (m_cueInstances.empty())
-	{
-		m_flags |= EObjectFlags::IsVirtual;
-	}
-
 	m_cueInstances.push_back(pCueInstance);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CBaseObject::AddPendingCueInstance(CCueInstance* const pCueInstance)
-{
-	m_pendingCueInstances.push_back(pCueInstance);
 }
 
 //////////////////////////////////////////////////////////////////////////
