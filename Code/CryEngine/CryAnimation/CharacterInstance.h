@@ -268,4 +268,8 @@ inline void CCharInstance::SpawnSkeletonEffect(const AnimEventInstance& animEven
 inline void CCharInstance::KillAllSkeletonEffects()
 {
 	m_skeletonEffectManager.KillAllEffects();
+
+	pe_params_flags pf;
+	pf.flagsOR = pef_disabled;
+	m_SkeletonPose.m_physics.SetAuxParams(&pf);
 }
