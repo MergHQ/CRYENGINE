@@ -111,6 +111,7 @@ static void DeadListPush(void* p, size_t sz)
 // Some globals for fast profiling.
 //////////////////////////////////////////////////////////////////////////
 LONG g_TotalAllocatedMemory = 0;
+thread_local LONG tls_ThreadAllocatedMemory = 0;
 
 #ifndef CRYMEMORYMANAGER_API
 	#define CRYMEMORYMANAGER_API
@@ -213,6 +214,7 @@ CRYMEMORYMANAGER_API void* CryMalloc(size_t size, size_t& allocated, size_t alig
 	}
 
 	CryInterlockedExchangeAdd(&g_TotalAllocatedMemory, sizePlus);
+	tls_ThreadAllocatedMemory += sizePlus;
 	allocated = sizePlus;
 
 	MEMREPLAY_SCOPE_ALLOC(p, sizePlus, 0);
@@ -354,6 +356,7 @@ size_t CryFree(void* p, size_t alignment)
 
 			LONG lsize = size;
 			CryInterlockedExchangeAdd(&g_TotalAllocatedMemory, -lsize);
+			tls_ThreadAllocatedMemory -= lsize;
 
 			MEMREPLAY_SCOPE_FREE(pid);
 		}
@@ -390,6 +393,7 @@ size_t CryFree(void* p, size_t alignment)
 
 		LONG lsize = size;
 		CryInterlockedExchangeAdd(&g_TotalAllocatedMemory, -lsize);
+		tls_ThreadAllocatedMemory -= lsize;
 
 		MEMREPLAY_SCOPE_FREE(pid);
 	}
@@ -400,6 +404,7 @@ size_t CryFree(void* p, size_t alignment)
 CRYMEMORYMANAGER_API void CryFlushAll()  // releases/resets ALL memory... this is useful for restarting the game
 {
 	g_TotalAllocatedMemory = 0;
+	tls_ThreadAllocatedMemory = 0;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -408,6 +413,12 @@ CRYMEMORYMANAGER_API void CryFlushAll()  // releases/resets ALL memory... this i
 CRYMEMORYMANAGER_API int CryMemoryGetAllocatedSize()
 {
 	return g_TotalAllocatedMemory;
+}
+
+//////////////////////////////////////////////////////////////////////////
+CRYMEMORYMANAGER_API int CryMemoryGetThreadAllocatedSize()
+{
+	return tls_ThreadAllocatedMemory;
 }
 
 //////////////////////////////////////////////////////////////////////////

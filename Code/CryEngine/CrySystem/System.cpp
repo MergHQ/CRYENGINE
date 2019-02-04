@@ -242,6 +242,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_env.bServer = false;
 	m_env.bMultiplayer = false;
 	m_env.bHostMigrating = false;
+	m_env.bFrameProfilerActive = 0;
 	m_env.bDeepProfiling = 0;
 	m_env.bBootProfilerEnabledFrames = false;
 	m_env.callbackStartSection = 0;

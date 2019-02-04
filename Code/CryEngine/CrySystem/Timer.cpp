@@ -243,8 +243,8 @@ void CTimer::UpdateBlending()
 	}
 	else
 	{
-		// Decay avg frame time, set as new peak.
-		m_fAvgFrameTime *= 1.f - fFrameTime / m_fSmoothTime;
+		// Decay peak time toward current, check for new peak
+		m_fAvgFrameTime += (fFrameTime - m_fAvgFrameTime) * fFrameTime / m_fSmoothTime;
 		if (fFrameTime > m_fAvgFrameTime)
 		{
 			m_fAvgFrameTime = fFrameTime;

@@ -36,7 +36,7 @@ static FUNC_GetProcessMemoryInfo pfGetProcessMemoryInfo;
 static bool m_bNoPsapiDll;
 #endif
 
-extern int CryMemoryGetAllocatedSize();
+extern int CryMemoryGetThreadAllocatedSize();
 
 #ifdef USE_FRAME_PROFILER
 
@@ -58,6 +58,9 @@ CryCriticalSection CFrameProfileSystem::m_staticProfilersLock;
 
 threadID CFrameProfileSystem::s_nFilterThreadId = 0;
 
+thread_local CFrameProfilerSection* CFrameProfileSystem::tls_pCurrentSection;
+thread_local int64 CFrameProfileSystem::tls_overheadTime;
+
 //////////////////////////////////////////////////////////////////////////
 CFrameProfileSystem::CFrameProfileSystem()
 	: m_nCurSample(-1)
@@ -73,14 +76,9 @@ CFrameProfileSystem::CFrameProfileSystem()
 	, m_frameStartTime(0)
 	, m_totalProfileTime(0)
 	, m_frameTime(0)
-	, m_callOverheadTime(0)
-	, m_nCallOverheadTotal(0)
-	, m_nCallOverheadRemainder(0)
-	, m_nCallOverheadCalls(0)
 	, m_frameSecAvg(0.0f)
 	, m_frameLostSecAvg(0.0f)
 	, m_frameOverheadSecAvg(0.0f)
-	, m_ProfilerThreads(GetCurrentThreadId())
 	, m_pCurrentCustomSection(nullptr)
 	, m_bDisplayedProfilersValid(false)
 	, m_subsystemFilter(PROFILE_RENDERER)
@@ -194,8 +192,8 @@ void CFrameProfileSystem::Init()
 		"	6: Subsystem Info\n"
 		"	7: Calls Numbers\n"
 		"	8: Standard Deviation\n"
-		"	9: Memory Allocation\n"
-		"	10: Memory Allocation (Bytes)\n"
+		"	9: Memory Allocation (KB)\n"
+		"	10: Memory Delta (Bytes)\n"
 		"	11: Stalls\n"
 		"	-1: Profiling enabled, but not displayed\n"
 		"Default is 0 (off)",
@@ -206,6 +204,7 @@ void CFrameProfileSystem::Init()
 			bool bEnable  = profValue != 0;
 			bool bDisplay = profValue > 0;
 			int dispNum   = abs(profValue);
+			gEnv->bFrameProfilerActive = profValue;
 			s_pFrameProfileSystem->SetDisplayQuantity((CFrameProfileSystem::EDisplayQuantity)(dispNum - 1));
 			if (bEnable != s_pFrameProfileSystem->IsEnabled() || bDisplay != s_pFrameProfileSystem->IsVisible())
 			{
@@ -456,19 +455,13 @@ CFrameProfiler* CFrameProfileSystem::GetProfiler(int index) const
 //////////////////////////////////////////////////////////////////////////
 void CFrameProfileSystem::Reset()
 {
-	//gEnv->callbackStartSection = &StartProfilerSection;
-	//gEnv->callbackEndSection = &EndProfilerSection;
-
 	m_absolutepeaks.clear();
-	m_ProfilerThreads.Reset();
+	tls_pCurrentSection = nullptr;
 	m_pCurrentCustomSection = 0;
 	m_totalProfileTime = 0;
-	m_frameStartTime = 0;
+	m_frameStartTime = CryGetTicks();
 	m_frameTime = 0;
-	m_callOverheadTime = 0;
-	m_nCallOverheadTotal = 0;
-	m_nCallOverheadRemainder = 0;
-	m_nCallOverheadCalls = 0;
+	tls_overheadTime = 0;
 	m_frameSecAvg = 0.f;
 	m_frameLostSecAvg = 0.f;
 	m_frameOverheadSecAvg = 0.f;
@@ -509,7 +502,7 @@ void CFrameProfileSystem::AddFrameProfiler(CFrameProfiler* pProfiler)
 	#endif
 
 	// Set default thread id.
-	pProfiler->m_threadId = GetMainThreadId();
+	pProfiler->m_threadId = GetCurrentThreadId();
 	if ((EProfiledSubsystem)pProfiler->m_subsystem == PROFILE_NETWORK_TRAFFIC)
 	{
 		m_netTrafficProfilers.push_back(pProfiler);
@@ -548,80 +541,12 @@ void CFrameProfileSystem::RemoveFrameProfiler(CFrameProfiler* pProfiler)
 	}
 }
 
-static int nMAX_THREADED_PROFILERS = 256;
-
-void CFrameProfileSystem::SProfilerThreads::Reset()
-{
-	m_aThreadStacks[0].pProfilerSection = 0;
-	if (!m_pReservedProfilers)
-	{
-		// Allocate reserved profilers;
-		for (int i = 0; i < nMAX_THREADED_PROFILERS; i++)
-		{
-			CFrameProfiler* pProf = new CFrameProfiler(PROFILE_ANY, EProfileDescription::UNDEFINED, __FUNC__, __FUNC__, __LINE__);
-			pProf->m_pNextThread = m_pReservedProfilers;
-			m_pReservedProfilers = pProf;
-		}
-	}
-}
-
-CFrameProfiler* CFrameProfileSystem::SProfilerThreads::NewThreadProfiler(CFrameProfiler* pMainProfiler, TThreadId nThreadId)
-{
-	if (!pMainProfiler->m_bInitialized)
-	{
-		// main thread has not yet initialized this frame profiler
-		return nullptr;
-	}
-
-	// Create new profiler for thread.
-	CryWriteLock(&m_lock);
-	if (!m_pReservedProfilers)
-	{
-		CryReleaseWriteLock(&m_lock);
-		return nullptr;
-	}
-	CFrameProfiler* pProfiler = m_pReservedProfilers;
-	m_pReservedProfilers = pProfiler->m_pNextThread;
-
-	// Init.
-	memset(pProfiler, 0, sizeof(*pProfiler));
-	pProfiler->m_name = pMainProfiler->m_name;
-	pProfiler->m_fileName = pMainProfiler->m_fileName;
-	pProfiler->m_fileLine = pMainProfiler->m_fileLine;
-	pProfiler->m_subsystem = pMainProfiler->m_subsystem;
-	pProfiler->m_threadId = nThreadId;
-	pProfiler->m_description = pMainProfiler->m_description;
-	pProfiler->m_colorIdentifier = pMainProfiler->m_colorIdentifier;
-
-	#if ALLOW_BROFILER
-	// Brofiler is checking the current threadId with every update call - no need to create separate EventDescription per thread
-	pProfiler->m_brofilerEventDescription = pMainProfiler->m_brofilerEventDescription;
-	#endif
-
-	// Insert in frame profiler list.
-	pProfiler->m_pNextThread = pMainProfiler->m_pNextThread;
-	pMainProfiler->m_pNextThread = pProfiler;
-
-	CryReleaseWriteLock(&m_lock);
-	return pProfiler;
-}
 
 //////////////////////////////////////////////////////////////////////////
 void CFrameProfileSystem::StartProfilerSection(CFrameProfilerSection* pSection)
 {
-	//if (CFrameProfileSystem::s_pFrameProfileSystem->m_bCollectionPaused)
-	//	return;
-
-	// Find thread instance to collect profiles in.
-	TThreadId nThreadId = GetCurrentThreadId();
-	if (nThreadId != s_pFrameProfileSystem->GetMainThreadId())
-	{
-		pSection->m_pFrameProfiler = s_pFrameProfileSystem->m_ProfilerThreads.GetThreadProfiler(pSection->m_pFrameProfiler, nThreadId);
-		if (!pSection->m_pFrameProfiler)
-			return;
-	}
-
-	if (s_pFrameProfileSystem->IsSubSystemFiltered(pSection->m_pFrameProfiler))
+	if (s_pFrameProfileSystem->IsSubSystemFiltered(pSection->m_pFrameProfiler)
+		|| s_pFrameProfileSystem->IsThreadFiltered(GetCurrentThreadId()))
 	{
 		pSection->m_pFrameProfiler = nullptr;
 		return;
@@ -639,20 +564,66 @@ void CFrameProfileSystem::StartProfilerSection(CFrameProfilerSection* pSection)
 	::CryProfile::detail::PushProfilingMarker(pSection->m_pFrameProfiler->m_colorIdentifier, pSection->m_pFrameProfiler->m_name);
 
 	// Push section on stack for current thread.
-	s_pFrameProfileSystem->m_ProfilerThreads.PushSection(pSection, nThreadId);
+	s_pFrameProfileSystem->PushSection(pSection);
 	pSection->m_excludeTime = 0;
+	pSection->m_childTime = 0;
+
 	pSection->m_startTime = CryGetTicks();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CFrameProfileSystem::EndProfilerSection(CFrameProfilerSection* pSection)
 {
-	AccumulateProfilerSection(pSection);
+	int64 endTime = CryGetTicks();
 
-	// Not in a SLICE_AND_SLEEP here, account for call overhead.
+	CFrameProfiler* pProfiler = pSection->m_pFrameProfiler;
+	if (!pProfiler)
+		return;
+
+	int64 totalTime = endTime - pSection->m_startTime;
+	int64 selfTime = totalTime - pSection->m_excludeTime;
+	if (totalTime < 0)
+		totalTime = 0;
+	if (selfTime < 0)
+		selfTime = 0;
+
+	tls_overheadTime += pSection->m_excludeTime - pSection->m_childTime;
+
 	if (pSection->m_pParent)
 	{
-		pSection->m_pParent->m_excludeTime += s_pFrameProfileSystem->m_callOverheadTime;
+		pSection->m_pParent->m_childTime += totalTime;
+	}
+
+	TThreadId nThreadId = GetCurrentThreadId();
+	{
+		CryAutoCriticalSection lock(m_staticProfilersLock);
+		if (nThreadId != pProfiler->m_threadId)
+			// Mark as multi-threaded
+			pProfiler->m_threadId = -1;
+			
+		pProfiler->m_count++;
+		pProfiler->m_selfTime += selfTime;
+		pProfiler->m_totalTime += totalTime;
+		pProfiler->m_peak = max(pProfiler->m_peak, selfTime);
+
+		if (!pProfiler->m_pParent && pSection->m_pParent)
+		{
+			if (CFrameProfiler* pParentProfiler = pSection->m_pParent->m_pFrameProfiler)
+			{
+				pParentProfiler->m_bHaveChildren = true;
+				pProfiler->m_pParent = pParentProfiler;
+			}
+		}
+	}
+
+	if (s_pFrameProfileSystem->profile_callstack)
+	{
+		if (pProfiler == s_pFrameProfileSystem->m_pGraphProfiler)
+		{
+			float fMillis = 1000.f * gEnv->pTimer->TicksToSeconds(totalTime);
+			CryLogAlways("Function Profiler: %s  (time=%.2fms)", s_pFrameProfileSystem->GetFullName(pProfiler), fMillis);
+			GetISystem()->debug_LogCallStack();
+		}
 	}
 
 	#if ALLOW_BROFILER
@@ -664,147 +635,75 @@ void CFrameProfileSystem::EndProfilerSection(CFrameProfilerSection* pSection)
 	#endif
 
 	// Platform profiling
-	CryProfile::detail::PopProfilingMarker(pSection->m_pFrameProfiler->m_colorIdentifier, pSection->m_pFrameProfiler->m_name);
+	CryProfile::detail::PopProfilingMarker(pProfiler->m_colorIdentifier, pProfiler->m_name);
 
-	s_pFrameProfileSystem->m_ProfilerThreads.PopSection(pSection, pSection->m_pFrameProfiler->m_threadId);
-}
-
-void CFrameProfileSystem::AccumulateProfilerSection(CFrameProfilerSection* pSection)
-{
-	//if (CFrameProfileSystem::s_pFrameProfileSystem->m_bCollectionPaused)
-	//	return;
-
-	int64 endTime = CryGetTicks();
-
-	CFrameProfiler* pProfiler = pSection->m_pFrameProfiler;
-	if (!pProfiler)
-		return;
-
-	assert(GetCurrentThreadId() == pProfiler->m_threadId);
-
-	int64 totalTime = endTime - pSection->m_startTime;
-	int64 selfTime = totalTime - pSection->m_excludeTime;
-	if (totalTime < 0)
-		totalTime = 0;
-	if (selfTime < 0)
-		selfTime = 0;
-
-	if (s_nFilterThreadId && GetCurrentThreadId() != s_nFilterThreadId)
-	{
-		selfTime = 0;
-		totalTime = 0;
-		pProfiler->m_count = 0;
-	}
-
-	pProfiler->m_count++;
-	pProfiler->m_selfTime += selfTime;
-	pProfiler->m_totalTime += totalTime;
-	pProfiler->m_peak = max(pProfiler->m_peak, selfTime);
-
-	if (pSection->m_pParent)
-	{
-		// If we have parent, add this counter total time (but not call overhead time, because
-		// if this is a SLICE_AND_SLEEP instead of a real end of frame, we might not have entered
-		// the section this frame and we certainly haven't left it) to parent exclude time.
-		pSection->m_pParent->m_excludeTime += totalTime;
-		if (!pProfiler->m_pParent && pSection->m_pParent->m_pFrameProfiler)
-		{
-			pSection->m_pParent->m_pFrameProfiler->m_bHaveChildren = true;
-			pProfiler->m_pParent = pSection->m_pParent->m_pFrameProfiler;
-		}
-	}
-	else
-		pProfiler->m_pParent = 0;
-
-	if (s_pFrameProfileSystem->profile_callstack)
-	{
-		if (pProfiler == s_pFrameProfileSystem->m_pGraphProfiler)
-		{
-			float fMillis = 1000.f * gEnv->pTimer->TicksToSeconds(totalTime);
-			CryLogAlways("Function Profiler: %s  (time=%.2fms)", s_pFrameProfileSystem->GetFullName(pSection->m_pFrameProfiler), fMillis);
-			GetISystem()->debug_LogCallStack();
-		}
-	}
+	s_pFrameProfileSystem->PopSection(pSection);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CFrameProfileSystem::StartMemoryProfilerSection(CFrameProfilerSection* pSection)
 {
-	CryAutoCriticalSection lock(m_staticProfilersLock);
-
-	// Find thread instance to collect profiles in.
-	TThreadId nThreadId = GetCurrentThreadId();
-	pSection->m_pFrameProfiler = s_pFrameProfileSystem->m_ProfilerThreads.GetThreadProfiler(pSection->m_pFrameProfiler, nThreadId);
-	if (pSection->m_pFrameProfiler)
+	if (s_pFrameProfileSystem->IsSubSystemFiltered(pSection->m_pFrameProfiler)
+		|| s_pFrameProfileSystem->IsThreadFiltered(GetCurrentThreadId()))
 	{
-		// Push section on stack for current thread.
-		s_pFrameProfileSystem->m_ProfilerThreads.PushSection(pSection, nThreadId);
-		pSection->m_excludeTime = 0;
-		pSection->m_startTime = CryMemoryGetAllocatedSize();
+		pSection->m_pFrameProfiler = nullptr;
+		return;
 	}
+
+	// Push section on stack for current thread.
+	s_pFrameProfileSystem->PushSection(pSection);
+	pSection->m_excludeTime = 0;
+	pSection->m_childTime = 0;
+	pSection->m_startTime = CryMemoryGetThreadAllocatedSize();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CFrameProfileSystem::EndMemoryProfilerSection(CFrameProfilerSection* pSection)
 {
-	CryAutoCriticalSection lock(m_staticProfilersLock);
-
-	int64 endTime = CryMemoryGetAllocatedSize();
-	TThreadId nThreadId = GetCurrentThreadId();
 	CFrameProfiler* pProfiler = pSection->m_pFrameProfiler;
 	if (!pProfiler)
 		return;
 
-	assert(nThreadId == pProfiler->m_threadId);
+	int64 endTime = CryMemoryGetThreadAllocatedSize();
 
 	int64 totalTime = endTime - pSection->m_startTime;
-	int64 selfTime = totalTime - pSection->m_excludeTime;
-	if (totalTime < 0)
-		totalTime = 0;
-	if (selfTime < 0)
-		selfTime = 0;
+	int64 selfTime = totalTime - pSection->m_childTime;
 
-	if (s_nFilterThreadId && nThreadId != s_nFilterThreadId)
+	if (pSection->m_pParent)
 	{
-		selfTime = 0;
-		totalTime = 0;
-		pProfiler->m_count = 0;
+		// If we have parent, add this counter total time to parent exclude time.
+		pSection->m_pParent->m_childTime += totalTime;
 	}
 
-	// Ignore allocation functions.
-	if (0 == _stricmp(pProfiler->m_name, "CryMalloc") ||
-	    0 == _stricmp(pProfiler->m_name, "CryRealloc") ||
-	    0 == _stricmp(pProfiler->m_name, "CryFree"))
-	{
-		selfTime = 0;
-		totalTime = 0;
-	}
+	CryAutoCriticalSection lock(m_staticProfilersLock);
+
+	TThreadId nThreadId = GetCurrentThreadId();
+	if (nThreadId != pProfiler->m_threadId)
+		// Mark as multi-threaded
+		pProfiler->m_threadId = -1;
 
 	pProfiler->m_count++;
 	pProfiler->m_selfTime += selfTime;
 	pProfiler->m_totalTime += totalTime;
-	pProfiler->m_peak = max(pProfiler->m_peak, selfTime);
+	pProfiler->m_peak += selfTime;
 
-	s_pFrameProfileSystem->m_ProfilerThreads.PopSection(pSection, pProfiler->m_threadId);
-	if (pSection->m_pParent)
+	if (!pProfiler->m_pParent && pSection->m_pParent)
 	{
-		// If we have parent, add this counter total time to parent exclude time.
-		pSection->m_pParent->m_excludeTime += totalTime;
-		if (!pProfiler->m_pParent && pSection->m_pParent->m_pFrameProfiler)
+		if (CFrameProfiler* pParentProfiler = pSection->m_pParent->m_pFrameProfiler)
 		{
-			pSection->m_pParent->m_pFrameProfiler->m_bHaveChildren = true;
-			pProfiler->m_pParent = pSection->m_pParent->m_pFrameProfiler;
+			pParentProfiler->m_bHaveChildren = true;
+			pProfiler->m_pParent = pParentProfiler;
 		}
 	}
-	else
-		pProfiler->m_pParent = 0;
+
+	s_pFrameProfileSystem->PopSection(pSection);
 }
 
 //////////////////////////////////////////////////////////////////////////
 CFrameProfilerSection const* CFrameProfileSystem::GetCurrentProfilerSection()
 {
-	// Return current (main-thread) profile section.
-	return m_ProfilerThreads.GetMainSection();
+	// Return current (current-thread) profile section.
+	return tls_pCurrentSection;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -848,55 +747,14 @@ void CFrameProfileSystem::EndCustomSection(CCustomProfilerSection* pSection)
 //////////////////////////////////////////////////////////////////////////
 void CFrameProfileSystem::StartFrame()
 {
-	m_ProfilerThreads.Reset();
-
 	m_bCollect = m_bEnabled && !m_bCollectionPaused;
-
-	if (m_bCollect)
-	{
-		m_pCurrentCustomSection = 0;
-		m_frameStartTime = CryGetTicks();
-
-		// Accumulate overhead measurement, in running average
-		static const int nPROFILE_CALLS_PER_FRAME = 16;
-		static CFrameProfiler staticFrameProfiler(PROFILE_SYSTEM, EProfileDescription::UNDEFINED, "CallOverhead", __FUNC__, __LINE__);
-
-		int64 nTicks = CryGetTicks();
-		for (int n = 0; n < nPROFILE_CALLS_PER_FRAME; n++)
-		{
-			CFrameProfilerSection frameProfilerSection(&staticFrameProfiler, "", 0, EProfileDescription::FUNCTIONENTRY);
-		}
-		nTicks = CryGetTicks() - nTicks;
-
-		m_nCallOverheadTotal += nTicks;
-		m_nCallOverheadCalls += nPROFILE_CALLS_PER_FRAME;
-
-		if (m_nCallOverheadCalls > 1024)
-		{
-			m_nCallOverheadTotal = m_nCallOverheadTotal * 1024 / m_nCallOverheadCalls;
-			m_nCallOverheadCalls = 1024;
-		}
-
-		// Compute per-call overhead, dithering error into remainder for accurate average over time.
-		m_callOverheadTime = (m_nCallOverheadTotal + m_nCallOverheadRemainder + m_nCallOverheadCalls / 2) / m_nCallOverheadCalls;
-		m_nCallOverheadRemainder += m_nCallOverheadTotal - m_callOverheadTime * m_nCallOverheadCalls;
-	}
+	tls_pCurrentSection = nullptr;
+	tls_overheadTime = 0;
+	m_pCurrentCustomSection = 0;
+	m_frameStartTime = CryGetTicks();
 }
 
 //////////////////////////////////////////////////////////////////////////
-float CFrameProfileSystem::TranslateToDisplayValue(int64 val)
-{
-	if (!profile_network && !m_bMemoryProfiling)
-		return gEnv->pTimer->TicksToSeconds(val) * 1000;
-	else if (m_displayQuantity == ALLOCATED_MEMORY)
-		return (float)(val >> 10); // In Kilobytes
-	else if (m_displayQuantity == ALLOCATED_MEMORY_BYTES)
-		return (float)val; // In bytes
-	else if (profile_network)
-		return (float)val;
-	return (float)val;
-}
-
 const char* CFrameProfileSystem::GetFullName(CFrameProfiler* pProfiler)
 {
 	static char sNameBuffer[256];
@@ -917,11 +775,8 @@ const char* CFrameProfileSystem::GetFullName(CFrameProfiler* pProfiler)
 	}
 	#endif
 
-	if (pProfiler->m_threadId != GetMainThreadId())
-	{
-		strcat(sNameBuffer, "@");
-		strcat(sNameBuffer, GetProfilerThreadName(pProfiler));
-	}
+	strcat(sNameBuffer, "@");
+	strcat(sNameBuffer, GetProfilerThreadName(pProfiler));
 
 	return sNameBuffer;
 }
@@ -961,33 +816,25 @@ void CFrameProfileSystem::EndFrame()
 	if (!m_bEnabled)
 		m_totalProfileTime = 0;
 
-	TThreadId mainThreadId = GetMainThreadId();
-	TThreadId renderThreadId = 0;
+	TThreadId mainThreadId = 0, renderThreadId = 0;
 	if (gEnv->pRenderer)
-	{
-		TThreadId id;
-		gEnv->pRenderer->GetThreadIDs(id, renderThreadId);
-	}
+		gEnv->pRenderer->GetThreadIDs(mainThreadId, renderThreadId);
+
+ 	int nWeightMode = 0;
+	const float smoothFactor = gEnv->pTimer->GetProfileFrameBlending(nullptr, &nWeightMode);
 
 	if (!m_bEnabled && !profile_network)
 	{
-		static ICVar* pDisplayInfo = nullptr;
-
-		if (pDisplayInfo == nullptr)
-		{
-			pDisplayInfo = gEnv->pConsole->GetCVar("r_DisplayInfo");
-			assert(pDisplayInfo != nullptr);
-		}
-
 		// We want single subsystems to be able to still sample profile data even if the Profiler is disabled.
 		// This is needed for r_DisplayInfo 2 for instance as it displays subsystems' performance data.
 		// Note: This is currently meant to be as light weight as possible and to not run the entire Profiler.
 		// Therefore we're ignoring overhead accumulated in StartFrame for instance.
 		// Feel free to add that if it proves necessary.
-		if (pDisplayInfo != nullptr && pDisplayInfo->GetIVal() > 1)
-		{
-			const float smoothFactor = GetSmoothFactor();
 
+		static ICVar* pDisplayInfo = gEnv->pConsole->GetCVar("r_DisplayInfo");
+		assert(pDisplayInfo);
+		if (pDisplayInfo && pDisplayInfo->GetIVal() > 1)
+		{
 			// Update profilers that are Regions only (without waiting time).
 			auto Iter = m_pProfilers->cbegin();
 			const auto IterEnd = m_pProfilers->cend();
@@ -1046,10 +893,9 @@ void CFrameProfileSystem::EndFrame()
 
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
-	const float smoothFactor = GetSmoothFactor();
-
 	int64 endTime = CryGetTicks();
 	m_frameTime = endTime - m_frameStartTime;
+	m_frameStartTime = endTime;
 	m_totalProfileTime += m_frameTime;
 
 	if (gEnv->pStatoscope)
@@ -1096,9 +942,6 @@ void CFrameProfileSystem::EndFrame()
 	#endif
 	//////////////////////////////////////////////////////////////////////////
 
-	static ICVar* pVarMode = GetISystem()->GetIConsole()->GetCVar("profile_weighting");
-	int nWeightMode = pVarMode ? pVarMode->GetIVal() : 0;
-
 	int64 selfAccountedTime = 0;
 
 	float fPeakTolerance = profile_peak;
@@ -1107,198 +950,192 @@ void CFrameProfileSystem::EndFrame()
 		fPeakTolerance = 0;
 	}
 
-	// Iterate over all profilers update their history and reset them.
+	// Iterate over all profilers, update their history, and reset them.
 	int numProfileCalls = 0;
 
-	// Combine all non-main thread stats into 1
 	for (auto const pFrameProfiler : * m_pProfilers)
 	{
+		if (!pFrameProfiler)
+			continue;
+
 		if (pFrameProfiler->m_threadId == mainThreadId)
 		{
-			if (CFrameProfiler* pThread = pFrameProfiler->m_pNextThread)
+			numProfileCalls += pFrameProfiler->m_count;
+			selfAccountedTime += pFrameProfiler->m_selfTime;
+		}
+
+		// Skip this profiler if its filtered out.
+		if (IsFiltered(pFrameProfiler))
+			continue;
+
+		// Filter stall profilers
+		if ((int)m_displayQuantity == STALL_TIME)
+			continue;
+
+		// Skip profiler markers
+		uint32 profilerType = pFrameProfiler->m_description & EProfileDescription::TYPE_MASK;
+		if (profilerType == EProfileDescription::MARKER || profilerType == EProfileDescription::PUSH_MARKER || profilerType == EProfileDescription::POP_MARKER)
+			continue;
+
+
+		bool bEnablePeaks = nWeightMode < 3;
+
+		// Only visually display render & main thread wait times
+		// Wait times for other threads are still visible in Statoscope
+		if (m_displayQuantity == SELF_TIME && pFrameProfiler->m_description & EProfileDescription::WAITING
+			&& (pFrameProfiler->m_threadId != renderThreadId && pFrameProfiler->m_threadId != mainThreadId))
+			continue;
+
+		//////////////////////////////////////////////////////////////////////////
+		pFrameProfiler->m_totalTime.Update(smoothFactor);
+		pFrameProfiler->m_selfTime.Update(smoothFactor);
+		pFrameProfiler->m_count.Update(smoothFactor);
+
+		switch ((int)m_displayQuantity)
+		{
+		case SELF_TIME:
+		case PEAK_TIME:
+		case COUNT_INFO:
+		case STALL_TIME:
+			pFrameProfiler->m_displayedValue = pFrameProfiler->m_selfTime.Average();
+			pFrameProfiler->m_variance = pFrameProfiler->m_selfTime.Variance();
+			break;
+		case TOTAL_TIME:
+			pFrameProfiler->m_displayedValue = pFrameProfiler->m_totalTime.Average();
+			pFrameProfiler->m_variance = pFrameProfiler->m_totalTime.Variance();
+			break;
+		case SELF_TIME_EXTENDED:
+			pFrameProfiler->m_displayedValue = pFrameProfiler->m_selfTime.Average();
+			pFrameProfiler->m_variance = pFrameProfiler->m_selfTime.Variance();
+			bEnablePeaks = false;
+			break;
+		case TOTAL_TIME_EXTENDED:
+			pFrameProfiler->m_displayedValue = pFrameProfiler->m_totalTime.Average();
+			pFrameProfiler->m_variance = pFrameProfiler->m_totalTime.Variance();
+			bEnablePeaks = false;
+			break;
+		case ALLOCATED_MEMORY_DELTA:
+			// Memory delta is stored rather than CPU time; reverse the STickTraits::ToDisplay conversion, so we have bytes.
+			pFrameProfiler->m_displayedValue = pFrameProfiler->m_selfTime.Average() / STickTraits::ToDisplay(1.0f);
+			pFrameProfiler->m_variance = pFrameProfiler->m_selfTime.Variance() / STickTraits::ToDisplay(1.0f);
+			break;
+		case ALLOCATED_MEMORY:
+			// Memory total is stored in m_peak as bytes; convert to kilobytes.
+			pFrameProfiler->m_displayedValue = (float)(pFrameProfiler->m_peak >> 10);
+			pFrameProfiler->m_variance = 0;
+			bEnablePeaks = false;
+			break;
+		case SUBSYSTEM_INFO:
+			pFrameProfiler->m_displayedValue = pFrameProfiler->m_selfTime.Average();
+			if (pFrameProfiler->m_subsystem < PROFILE_LAST_SUBSYSTEM)
 			{
-				pThread->m_activeThreads = pThread->m_count > 0;
-				for (CFrameProfiler* pOtherThread = pThread->m_pNextThread; pOtherThread; pOtherThread = pOtherThread->m_pNextThread)
+				if (pFrameProfiler->m_description & EProfileDescription::WAITING)
 				{
-					pThread->m_activeThreads += pOtherThread->m_count > 0;
-					pThread->m_count += pOtherThread->m_count;
-					pOtherThread->m_count = 0;
-					pThread->m_selfTime += pOtherThread->m_selfTime;
-					pOtherThread->m_selfTime = 0;
-					pThread->m_totalTime += pOtherThread->m_totalTime;
-					pOtherThread->m_totalTime = 0;
-					pOtherThread->m_displayedValue = 0;
+					m_subsystems[pFrameProfiler->m_subsystem].waitTime += pFrameProfiler->m_displayedValue;
+				}
+				else
+				{
+					m_subsystems[pFrameProfiler->m_subsystem].selfTime += pFrameProfiler->m_displayedValue;
+				}
+			}
+			break;
+		case STANDARD_DEVIATION:
+			// Standard Deviation.
+			pFrameProfiler->m_displayedValue = pFrameProfiler->m_selfTime.Variance();
+			break;
+		}
+
+		if ((SUBSYSTEM_INFO != m_displayQuantity) && profile_additionalsub)
+		{
+			float faveValue = pFrameProfiler->m_selfTime.Average();
+			if (pFrameProfiler->m_subsystem < PROFILE_LAST_SUBSYSTEM)
+			{
+				if (pFrameProfiler->m_description & EProfileDescription::WAITING)
+				{
+					m_subsystems[pFrameProfiler->m_subsystem].waitTime += faveValue;
+				}
+				else
+				{
+					m_subsystems[pFrameProfiler->m_subsystem].selfTime += faveValue;
 				}
 			}
 		}
+
+		//////////////////////////////////////////////////////////////////////////
+		// Records Peaks.
+		uint64 frameID = gEnv->nMainFrameID;
+		if (bEnablePeaks)
+		{
+			float prevValue = pFrameProfiler->m_selfTime.Average();
+			float peakValue = pFrameProfiler->m_selfTime.Last();
+
+			if (pFrameProfiler->m_latestFrame != frameID - 1)
+			{
+				prevValue = 0.0f;
+			}
+
+			if ((peakValue - prevValue) > fPeakTolerance)
+			{
+				SPeakRecord peak;
+				peak.pProfiler = pFrameProfiler;
+				peak.peakValue = peakValue;
+				peak.averageValue = pFrameProfiler->m_selfTime.Average();
+				peak.count = pFrameProfiler->m_count;
+				peak.pageFaults = m_nPagesFaultsLastFrame;
+				peak.waiting = pFrameProfiler->m_description & EProfileDescription::WAITING;
+				peak.when = gEnv->pTimer->TicksToSeconds(m_totalProfileTime);
+				AddPeak(peak);
+
+				// Call peak callbacks.
+				for (auto const pPeakCallback : m_peakCallbacks)
+				{
+					pPeakCallback->OnFrameProfilerPeak(pFrameProfiler, peakValue);
+				}
+			}
+		}
+
+		pFrameProfiler->m_latestFrame = frameID;
+
+		if (m_bEnableHistograms)
+		{
+			if (!pFrameProfiler->m_pGraph)
+			{
+				// Create graph.
+				pFrameProfiler->m_pGraph = new CFrameProfilerGraph;
+			}
+			// Update values in histogram graph.
+			if (m_histogramsMaxPos != pFrameProfiler->m_pGraph->m_data.size())
+			{
+				pFrameProfiler->m_pGraph->m_width = m_histogramsMaxPos;
+				pFrameProfiler->m_pGraph->m_height = m_histogramsHeight;
+				pFrameProfiler->m_pGraph->m_data.resize(m_histogramsMaxPos);
+			}
+			float millis;
+			if (m_displayQuantity == TOTAL_TIME || m_displayQuantity == TOTAL_TIME_EXTENDED)
+				millis = profile_graphScale * pFrameProfiler->m_totalTime.Last();
+			else
+				millis = profile_graphScale * pFrameProfiler->m_selfTime.Last();
+			if (millis < 0) millis = 0;
+			if (millis > 255) millis = 255;
+			pFrameProfiler->m_pGraph->m_data[m_histogramsCurrPos] = 255 - FtoI(millis); // must use ftoi.
+		}
+
+		if (m_nCurSample >= 0)
+		{
+			UpdateOfflineHistory(pFrameProfiler);
+		}
 	}
 
+	// Reset all profilers
 	for (auto const pFrameProfiler : * m_pProfilers)
 	{
-		// Skip this profiler if its filtered out.
-		if (pFrameProfiler != nullptr && (!m_bSubsystemFilterEnabled || (m_bSubsystemFilterEnabled && pFrameProfiler->m_subsystem == (uint8)m_subsystemFilter)))
+		if (!pFrameProfiler)
+			continue;
+
+		pFrameProfiler->m_totalTime = 0;
+		pFrameProfiler->m_selfTime = 0;
+		if (m_displayQuantity != ALLOCATED_MEMORY)
 		{
-			//filter stall profilers
-			if ((int)m_displayQuantity == STALL_TIME)
-				continue;
-
-			// Skip profiler markers
-			uint32 profilerType = pFrameProfiler->m_description & EProfileDescription::TYPE_MASK;
-			if (profilerType == EProfileDescription::MARKER || profilerType == EProfileDescription::PUSH_MARKER || profilerType == EProfileDescription::POP_MARKER)
-				continue;
-
-			if (pFrameProfiler->m_threadId == mainThreadId)
-			{
-				selfAccountedTime += pFrameProfiler->m_selfTime;
-				numProfileCalls += pFrameProfiler->m_count;
-			}
-
-			bool bEnablePeaks = nWeightMode < 3;
-
-			// Only visually display render & main thread wait times
-			// Wait times for other threads are still visible in Statoscope
-			if (m_displayQuantity == SELF_TIME && pFrameProfiler->m_description & EProfileDescription::WAITING && (pFrameProfiler->m_threadId != renderThreadId && pFrameProfiler->m_threadId != mainThreadId))
-			{
-				// Reset profiler
-				pFrameProfiler->m_totalTime = 0;
-				pFrameProfiler->m_selfTime = 0;
-				pFrameProfiler->m_peak = 0;
-				pFrameProfiler->m_count = 0;
-				continue;
-			}
-
-			//////////////////////////////////////////////////////////////////////////
-			pFrameProfiler->m_totalTime.Update(smoothFactor);
-			pFrameProfiler->m_selfTime.Update(smoothFactor);
-			pFrameProfiler->m_count.Update(smoothFactor);
-
-			switch ((int)m_displayQuantity)
-			{
-			case SELF_TIME:
-			case PEAK_TIME:
-			case COUNT_INFO:
-			case STALL_TIME:
-				pFrameProfiler->m_displayedValue = pFrameProfiler->m_selfTime.Average();
-				pFrameProfiler->m_variance = pFrameProfiler->m_selfTime.Variance();
-				break;
-			case TOTAL_TIME:
-				pFrameProfiler->m_displayedValue = pFrameProfiler->m_totalTime.Average();
-				pFrameProfiler->m_variance = pFrameProfiler->m_totalTime.Variance();
-				break;
-			case SELF_TIME_EXTENDED:
-				pFrameProfiler->m_displayedValue = pFrameProfiler->m_selfTime.Average();
-				pFrameProfiler->m_variance = pFrameProfiler->m_selfTime.Variance();
-				bEnablePeaks = false;
-				break;
-			case TOTAL_TIME_EXTENDED:
-				pFrameProfiler->m_displayedValue = pFrameProfiler->m_totalTime.Average();
-				pFrameProfiler->m_variance = pFrameProfiler->m_totalTime.Variance();
-				bEnablePeaks = false;
-				break;
-			case SUBSYSTEM_INFO:
-				pFrameProfiler->m_displayedValue = pFrameProfiler->m_selfTime.Average();
-				if (pFrameProfiler->m_subsystem < PROFILE_LAST_SUBSYSTEM)
-				{
-					if (pFrameProfiler->m_description & EProfileDescription::WAITING)
-					{
-						m_subsystems[pFrameProfiler->m_subsystem].waitTime += pFrameProfiler->m_displayedValue;
-					}
-					else
-					{
-						m_subsystems[pFrameProfiler->m_subsystem].selfTime += pFrameProfiler->m_displayedValue;
-					}
-				}
-				break;
-			case STANDARD_DEVIATION:
-				// Standard Deviation.
-				pFrameProfiler->m_displayedValue = pFrameProfiler->m_selfTime.Variance();
-				break;
-			}
-			;
-
-			if ((SUBSYSTEM_INFO != m_displayQuantity) && profile_additionalsub)
-			{
-				float faveValue = pFrameProfiler->m_selfTime.Average();
-				if (pFrameProfiler->m_subsystem < PROFILE_LAST_SUBSYSTEM)
-				{
-					if (pFrameProfiler->m_description & EProfileDescription::WAITING)
-					{
-						m_subsystems[pFrameProfiler->m_subsystem].waitTime += faveValue;
-					}
-					else
-					{
-						m_subsystems[pFrameProfiler->m_subsystem].selfTime += faveValue;
-					}
-				}
-			}
-
-			//////////////////////////////////////////////////////////////////////////
-			// Records Peaks.
-			uint64 frameID = gEnv->nMainFrameID;
-			if (bEnablePeaks)
-			{
-				float prevValue = pFrameProfiler->m_selfTime.Average();
-				float peakValue = pFrameProfiler->m_selfTime.Last();
-
-				if (pFrameProfiler->m_latestFrame != frameID - 1)
-				{
-					prevValue = 0.0f;
-				}
-
-				if ((peakValue - prevValue) > fPeakTolerance)
-				{
-					SPeakRecord peak;
-					peak.pProfiler = pFrameProfiler;
-					peak.peakValue = peakValue;
-					peak.averageValue = pFrameProfiler->m_selfTime.Average();
-					peak.count = pFrameProfiler->m_count;
-					peak.pageFaults = m_nPagesFaultsLastFrame;
-					peak.waiting = pFrameProfiler->m_description & EProfileDescription::WAITING;
-					peak.when = gEnv->pTimer->TicksToSeconds(m_totalProfileTime);
-					AddPeak(peak);
-
-					// Call peak callbacks.
-					for (auto const pPeakCallback : m_peakCallbacks)
-					{
-						pPeakCallback->OnFrameProfilerPeak(pFrameProfiler, peakValue);
-					}
-				}
-			}
-
-			pFrameProfiler->m_latestFrame = frameID;
-
-			if (m_bEnableHistograms)
-			{
-				if (!pFrameProfiler->m_pGraph)
-				{
-					// Create graph.
-					pFrameProfiler->m_pGraph = new CFrameProfilerGraph;
-				}
-				// Update values in histogram graph.
-				if (m_histogramsMaxPos != pFrameProfiler->m_pGraph->m_data.size())
-				{
-					pFrameProfiler->m_pGraph->m_width = m_histogramsMaxPos;
-					pFrameProfiler->m_pGraph->m_height = m_histogramsHeight;
-					pFrameProfiler->m_pGraph->m_data.resize(m_histogramsMaxPos);
-				}
-				float millis;
-				if (m_displayQuantity == TOTAL_TIME || m_displayQuantity == TOTAL_TIME_EXTENDED)
-					millis = profile_graphScale * pFrameProfiler->m_totalTime.Last();
-				else
-					millis = profile_graphScale * pFrameProfiler->m_selfTime.Last();
-				if (millis < 0) millis = 0;
-				if (millis > 255) millis = 255;
-				pFrameProfiler->m_pGraph->m_data[m_histogramsCurrPos] = 255 - FtoI(millis); // must use ftoi.
-			}
-
-			if (m_nCurSample >= 0)
-			{
-				UpdateOfflineHistory(pFrameProfiler);
-			}
-
-			// Reset profiler.
-			pFrameProfiler->m_totalTime = 0;
-			pFrameProfiler->m_selfTime = 0;
 			pFrameProfiler->m_peak = 0;
 			pFrameProfiler->m_count = 0;
 		}
@@ -1318,11 +1155,12 @@ void CFrameProfileSystem::EndFrame()
 	float frameSec = gEnv->pTimer->TicksToSeconds(m_frameTime);
 	m_frameSecAvg = Lerp(m_frameSecAvg, frameSec, smoothFactor);
 
-	float frameLostSec = gEnv->pTimer->TicksToSeconds(m_frameTime - selfAccountedTime);
-	m_frameLostSecAvg = Lerp(m_frameLostSecAvg, frameLostSec, smoothFactor);
-
-	float overheadtime = gEnv->pTimer->TicksToSeconds(numProfileCalls * m_nCallOverheadTotal / m_nCallOverheadCalls);
+	float overheadtime = gEnv->pTimer->TicksToSeconds(tls_overheadTime);
 	m_frameOverheadSecAvg = Lerp(m_frameOverheadSecAvg, overheadtime, smoothFactor);
+
+	float frameLostSec = gEnv->pTimer->TicksToSeconds(m_frameTime - selfAccountedTime);
+	frameLostSec -= overheadtime;
+	m_frameLostSecAvg = Lerp(m_frameLostSecAvg, frameLostSec, smoothFactor);
 
 	if (m_nCurSample >= 0)
 	{
@@ -1338,9 +1176,7 @@ void CFrameProfileSystem::EndFrame()
 
 void CFrameProfileSystem::OnSliceAndSleep()
 {
-	m_ProfilerThreads.OnEnterSliceAndSleep(GetCurrentThreadId());
 	EndFrame();
-	m_ProfilerThreads.OnLeaveSliceAndSleep(GetCurrentThreadId());
 }
 
 float CFrameProfileSystem::GetSmoothFactor() const
@@ -1436,7 +1272,7 @@ void CFrameProfileSystem::SetDisplayQuantity(EDisplayQuantity quantity)
 	else
 		EnableHistograms(false);
 
-	if (m_displayQuantity == ALLOCATED_MEMORY || m_displayQuantity == ALLOCATED_MEMORY_BYTES)
+	if (m_displayQuantity == ALLOCATED_MEMORY || m_displayQuantity == ALLOCATED_MEMORY_DELTA)
 	{
 		m_bMemoryProfiling = true;
 		gEnv->callbackStartSection = &StartMemoryProfilerSection;
@@ -1618,18 +1454,8 @@ void CFrameProfileSystem::UpdateInputSystemStatus()
 
 const char* CFrameProfileSystem::GetProfilerThreadName(CFrameProfiler* pProfiler) const
 {
-	if (pProfiler->m_threadId == GetMainThreadId())
-	{
-		return "Main";
-	}
-
-	// Add thread name.
-	static char sThreadNameBuffer[256];
-	if (pProfiler->m_pNextThread && pProfiler->m_pNextThread->m_pNextThread)
-	{
-		cry_sprintf(sThreadNameBuffer, "Job x%d", pProfiler->m_activeThreads);
-		return sThreadNameBuffer;
-	}
+	if (pProfiler->m_threadId == -1)
+		return "multi";
 
 	const char* sThreadName = gEnv->pThreadManager->GetThreadName(pProfiler->m_threadId);
 	if (sThreadName)
@@ -1638,9 +1464,10 @@ const char* CFrameProfileSystem::GetProfilerThreadName(CFrameProfiler* pProfiler
 	}
 	else
 	{
+		static char sThreadNameBuffer[256];
 		cry_sprintf(sThreadNameBuffer, "@%" PRI_THREADID, pProfiler->m_threadId);
+		return sThreadNameBuffer;
 	}
-	return sThreadNameBuffer;
 }
 
 #else //USE_FRAME_PROFILER
