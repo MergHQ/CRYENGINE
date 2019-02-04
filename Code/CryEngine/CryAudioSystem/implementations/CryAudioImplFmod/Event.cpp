@@ -146,13 +146,14 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 				fmodResult = pEventInstance->GetFmodEventInstance()->set3DAttributes(&pBaseObject->GetAttributes());
 				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
+				pBaseObject->AddEventInstance(pEventInstance);
+
 				if (pBaseObject->SetEventInstance(pEventInstance))
 				{
 					result = (pEventInstance->GetState() == EEventState::Playing) ? ETriggerResult::Playing : ETriggerResult::Virtual;
 				}
 				else
 				{
-					pBaseObject->AddPendingEventInstance(pEventInstance);
 					result = ETriggerResult::Pending;
 				}
 			}
