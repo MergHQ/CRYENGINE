@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "CueInstance.h"
 #include "Common.h"
+#include "BaseObject.h"
 #include "Cue.h"
 
 namespace CryAudio
@@ -12,7 +13,7 @@ namespace Impl
 namespace Adx2
 {
 //////////////////////////////////////////////////////////////////////////
-bool CCueInstance::PrepareForPlayback()
+bool CCueInstance::PrepareForPlayback(CBaseObject* const pBaseObject)
 {
 	bool isPlaying = false;
 
@@ -34,6 +35,9 @@ bool CCueInstance::PrepareForPlayback()
 		{
 			SetFlag(ECueInstanceFlags::HasAbsoluteVelocity);
 		}
+
+		RemoveFlag(ECueInstanceFlags::IsPending);
+		pBaseObject->UpdateVelocityTracking();
 
 		isPlaying = true;
 	}

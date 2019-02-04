@@ -702,7 +702,7 @@ void CRenderViewport::RenderSelectionRectangle(SDisplayContext& context)
 	CPoint bottomRight(m_selectedRect.right, m_selectedRect.bottom);
 
 	context.SetColor(1, 1, 1, 0.4f);
-	context.DrawWireQuad2d(topLeft, bottomRight, 1);
+	context.DrawWireQuad2d(topLeft, bottomRight, 1, true, false);
 }
 
 SDisplayContext CRenderViewport::InitDisplayContext(const SDisplayContextKey& displayContextKey)

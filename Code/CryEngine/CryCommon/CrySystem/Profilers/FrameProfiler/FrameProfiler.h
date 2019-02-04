@@ -53,7 +53,7 @@ struct IFrameProfileSystem
 		COUNT_INFO,
 		STANDARD_DEVIATION,
 		ALLOCATED_MEMORY,
-		ALLOCATED_MEMORY_BYTES,
+		ALLOCATED_MEMORY_DELTA,
 		STALL_TIME,
 		PEAKS_ONLY,
 	};
@@ -390,15 +390,13 @@ public:
 	uint8 m_subsystem;
 
 	//! Identifier to be used for color lookup
-	uint8      m_colorIdentifier;
+	uint8 m_colorIdentifier;
 
-	const char* m_stallCause;     //!< Additional information of stall cause.
+	//! Additional information of stall cause.
+	const char* m_stallCause;
 
-	//! Thread Id of this instance.
-	threadID            m_threadId;
-	uint                m_activeThreads;
-	//! Linked list to other thread instances.
-	CFrameProfiler*     m_pNextThread;
+	//! Thread Id of this profiler, or -1 if used in more than one thread
+	threadID m_threadId;
 
 	EProfileDescription m_description;
 
@@ -431,8 +429,6 @@ public:
 		, m_colorIdentifier(0)
 		, m_stallCause(nullptr)
 		, m_threadId(0)
-		, m_activeThreads(0)
-		, m_pNextThread(nullptr)
 		, m_description(desc)
 		, m_bInitialized(false)
 #if ALLOW_BROFILER
@@ -470,7 +466,6 @@ public:
 		m_peak = 0;
 		m_displayedValue = 0;
 		m_variance = 0;
-		m_activeThreads = 0;
 	}
 };
 
@@ -483,8 +478,10 @@ public:
 class CFrameProfilerSection
 {
 public:
+	int64                  m_outerTime;
 	int64                  m_startTime;
 	int64                  m_excludeTime;
+	int64                  m_childTime;
 	CFrameProfiler*        m_pFrameProfiler;
 	CFrameProfilerSection* m_pParent;
 	CBootProfilerRecord*   m_pRecord;
@@ -493,8 +490,7 @@ public:
 #endif
 
 	ILINE CFrameProfilerSection(CFrameProfiler* profiler, const char* sectionName, const char* instanceArguments, EProfileDescription profileDescription)
-		: m_startTime(0)
-		, m_excludeTime(0)
+		: m_outerTime(CryGetTicks())
 		, m_pFrameProfiler(nullptr)
 		, m_pParent(nullptr)
 		, m_pRecord(nullptr)
@@ -502,8 +498,9 @@ public:
 		, m_brofilerEventData(nullptr)
 #endif
 	{
-		m_pRecord = (gEnv->bBootProfilerEnabledFrames) ? gEnv->pSystem->StartBootSectionProfiler(sectionName, instanceArguments,profileDescription) : nullptr;
-		if (gEnv->bDeepProfiling || profileDescription == EProfileDescription::REGION)
+		if (gEnv->bBootProfilerEnabledFrames)
+			m_pRecord = gEnv->pSystem->StartBootSectionProfiler(sectionName, instanceArguments,profileDescription);
+		if (gEnv->bFrameProfilerActive && (gEnv->bDeepProfiling || profileDescription == EProfileDescription::REGION))
 		{
 			m_pFrameProfiler = profiler;
 			gEnv->callbackStartSection(this);
@@ -512,13 +509,15 @@ public:
 
 	ILINE ~CFrameProfilerSection()
 	{
-		if (m_pFrameProfiler)
-		{
-			gEnv->callbackEndSection(this);
-		}
 		if (m_pRecord)
 		{
 			gEnv->pSystem->StopBootSectionProfiler(m_pRecord);
+		}
+		if (m_pFrameProfiler)
+		{
+			gEnv->callbackEndSection(this);
+			if (m_pParent)
+				m_pParent->m_excludeTime += CryGetTicks() - m_outerTime;
 		}
 	}
 };

@@ -36,31 +36,6 @@ CBaseObject::CBaseObject()
 //////////////////////////////////////////////////////////////////////////
 void CBaseObject::Update(float const deltaTime)
 {
-	if (!m_pendingEventInstances.empty())
-	{
-		auto iter(m_pendingEventInstances.begin());
-		auto iterEnd(m_pendingEventInstances.end());
-
-		while (iter != iterEnd)
-		{
-			if (SetEventInstance(*iter))
-			{
-				if (iter != (iterEnd - 1))
-				{
-					(*iter) = m_pendingEventInstances.back();
-				}
-
-				m_pendingEventInstances.pop_back();
-				iter = m_pendingEventInstances.begin();
-				iterEnd = m_pendingEventInstances.end();
-			}
-			else
-			{
-				++iter;
-			}
-		}
-	}
-
 	if (!m_pendingFiles.empty())
 	{
 		auto iter(m_pendingFiles.begin());
@@ -105,11 +80,12 @@ void CBaseObject::Update(float const deltaTime)
 
 	while (iter != iterEnd)
 	{
-		auto const pEventInstance = *iter;
+		CEventInstance* const pEventInstance = *iter;
 
 		if (pEventInstance->IsToBeRemoved())
 		{
-			gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pEventInstance->GetTriggerInstanceId());
+			ETriggerResult const result = (pEventInstance->GetState() == EEventState::Pending) ? ETriggerResult::Pending : ETriggerResult::Playing;
+			gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pEventInstance->GetTriggerInstanceId(), result);
 			g_pImpl->DestructEventInstance(pEventInstance);
 			removedEvent = true;
 
@@ -122,32 +98,27 @@ void CBaseObject::Update(float const deltaTime)
 			iter = m_eventInstances.begin();
 			iterEnd = m_eventInstances.end();
 		}
+		else if ((pEventInstance->GetState() == EEventState::Pending))
+		{
+			if (SetEventInstance(pEventInstance))
+			{
+				ETriggerResult const result = (pEventInstance->GetState() == EEventState::Playing) ? ETriggerResult::Playing : ETriggerResult::Virtual;
+				gEnv->pAudioSystem->ReportStartedTriggerConnectionInstance(pEventInstance->GetTriggerInstanceId(), result);
+
+				UpdateVirtualFlag(pEventInstance);
+			}
+
+			++iter;
+		}
 		else
 		{
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
-			// Always update in production code for debug draw.
-			pEventInstance->UpdateVirtualState();
+			UpdateVirtualFlag(pEventInstance);
 
-			if (pEventInstance->GetState() != EEventState::Virtual)
-			{
-				m_flags &= ~EObjectFlags::IsVirtual;
-			}
-#else
-			if (((m_flags& EObjectFlags::IsVirtual) != 0) && ((m_flags& EObjectFlags::UpdateVirtualStates) != 0))
-			{
-				pEventInstance->UpdateVirtualState();
-
-				if (pEventInstance->GetState() != EEventState::Virtual)
-				{
-					m_flags &= ~EObjectFlags::IsVirtual;
-				}
-			}
-#endif      // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 			++iter;
 		}
 	}
 
-	if ((previousFlags != m_flags) && (!m_eventInstances.empty() || !m_pendingEventInstances.empty()))
+	if ((previousFlags != m_flags) && !m_eventInstances.empty())
 	{
 		if (((previousFlags& EObjectFlags::IsVirtual) != 0) && ((m_flags& EObjectFlags::IsVirtual) == 0))
 		{
@@ -180,6 +151,12 @@ ERequestStatus CBaseObject::SetName(char const* const szName)
 	m_name = szName;
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 	return ERequestStatus::Success;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CBaseObject::AddEventInstance(CEventInstance* const pEventInstance)
+{
+	m_eventInstances.push_back(pEventInstance);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -329,8 +306,6 @@ bool CBaseObject::SetEventInstance(CEventInstance* const pEventInstance)
 	// that are currently set on the object before starting it.
 	if (pEventInstance->PrepareForOcclusion())
 	{
-		m_eventInstances.push_back(pEventInstance);
-
 		FMOD::Studio::EventInstance* const pFModEventInstance = pEventInstance->GetFmodEventInstance();
 		CRY_ASSERT_MESSAGE(pFModEventInstance != nullptr, "Fmod event instance doesn't exist during %s", __FUNCTION__);
 		CEvent const* const pEvent = pEventInstance->GetEvent();
@@ -389,10 +364,35 @@ bool CBaseObject::SetEventInstance(CEventInstance* const pEventInstance)
 		fmodResult = pEventInstance->GetFmodEventInstance()->start();
 		CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
+		pEventInstance->UpdateVirtualState();
 		bSuccess = true;
 	}
 
 	return bSuccess;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CBaseObject::UpdateVirtualFlag(CEventInstance* const pEventInstance)
+{
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+	// Always update in production code for debug draw.
+	pEventInstance->UpdateVirtualState();
+
+	if (pEventInstance->GetState() != EEventState::Virtual)
+	{
+		m_flags &= ~EObjectFlags::IsVirtual;
+	}
+#else
+	if (((m_flags& EObjectFlags::IsVirtual) != 0) && ((m_flags& EObjectFlags::UpdateVirtualStates) != 0))
+	{
+		pEventInstance->UpdateVirtualState();
+
+		if (pEventInstance->GetState() != EEventState::Virtual)
+		{
+			m_flags &= ~EObjectFlags::IsVirtual;
+		}
+	}
+#endif      // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -9,10 +9,6 @@
 #include "EventInstance.h"
 #include "Listener.h"
 
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
-	#include <Logger.h>
-#endif // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
-
 namespace CryAudio
 {
 namespace Impl
@@ -150,10 +146,16 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 				fmodResult = pEventInstance->GetFmodEventInstance()->set3DAttributes(&pBaseObject->GetAttributes());
 				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
-				EventInstances& objectPendingEvents = pBaseObject->GetPendingEventInstances();
-				CRY_ASSERT_MESSAGE(std::find(objectPendingEvents.begin(), objectPendingEvents.end(), pEventInstance) == objectPendingEvents.end(), "Event was already in the pending list during %s", __FUNCTION__);
-				objectPendingEvents.push_back(pEventInstance);
-				result = ETriggerResult::Playing;
+				pBaseObject->AddEventInstance(pEventInstance);
+
+				if (pBaseObject->SetEventInstance(pEventInstance))
+				{
+					result = (pEventInstance->GetState() == EEventState::Playing) ? ETriggerResult::Playing : ETriggerResult::Virtual;
+				}
+				else
+				{
+					result = ETriggerResult::Pending;
+				}
 			}
 
 			break;

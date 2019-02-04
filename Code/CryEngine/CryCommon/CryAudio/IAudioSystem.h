@@ -336,12 +336,22 @@ struct IAudioSystem
 	virtual void ReportStoppedFile(CStandaloneFile& standaloneFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
-	 * Used by audio middleware implementations to inform the AudioSystem that an instance of a trigger connection finished producing sound.
-	 * @param triggerInstanceId - id of the the instance of the trigger connection that finished producing sound.
+	 * Used by audio middleware implementations to inform the AudioSystem that an instance of a trigger connection has started.
+	 * @param triggerInstanceId - id of the the instance of the trigger connection that started.
+	 * @param result - trigger result of the trigger connection instance when is started.
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
 	 */
-	virtual void ReportFinishedTriggerConnectionInstance(TriggerInstanceId const triggerInstanceId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+	virtual void ReportStartedTriggerConnectionInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+
+	/**
+	 * Used by audio middleware implementations to inform the AudioSystem that an instance of a trigger connection finished producing sound.
+	 * @param triggerInstanceId - id of the the instance of the trigger connection that finished producing sound.
+	 * @param result - trigger result of the trigger connection instance that finished producing sound.
+	 * @param userData - optional struct used to pass additional data to the internal request.
+	 * @return void
+	 */
+	virtual void ReportFinishedTriggerConnectionInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Used by audio middleware implementations to inform the AudioSystem that an object got physical.

@@ -119,7 +119,7 @@ struct EDITOR_COMMON_API SDisplayContext
 	void DrawLine(const Vec3& p1, const Vec3& p2, COLORREF rgb1, COLORREF rgb2);
 	void DrawPolyLine(const Vec3* pnts, int numPoints, bool cycled = true);
 
-	void DrawWireQuad2d(const CPoint& p1, const CPoint& p2, float z);
+	void DrawWireQuad2d(const CPoint& p1, const CPoint& p2, float z, bool drawInFront = false, bool depthTest = true);
 	void DrawLine2d(const CPoint& p1, const CPoint& p2, float z);
 	void DrawLine2dGradient(const CPoint& p1, const CPoint& p2, float z, ColorB firstColor, ColorB secondColor);
 	void DrawWireCircle2d(const CPoint& center, float radius, float z);

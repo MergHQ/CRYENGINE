@@ -48,6 +48,7 @@ void CObject::Release()
 	for (auto& triggerStatesPair : m_triggerStates)
 	{
 		triggerStatesPair.second.numPlayingInstances = 0;
+		triggerStatesPair.second.numPendingInstances = 0;
 	}
 
 	m_pImplData = nullptr;
@@ -108,22 +109,62 @@ void CObject::SendFinishedTriggerInstanceRequest(STriggerInstanceState const& tr
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CObject::ReportFinishedTriggerInstance(TriggerInstanceId const triggerInstanceId)
+void CObject::ReportStartedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result)
 {
 	ObjectTriggerStates::iterator const iter(m_triggerStates.find(triggerInstanceId));
 
 	if (iter != m_triggerStates.end())
 	{
 		STriggerInstanceState& triggerInstanceState = iter->second;
-		CRY_ASSERT_MESSAGE(triggerInstanceState.numPlayingInstances > 0, "Number of playing trigger instances must be at least 1 during %s", __FUNCTION__);
+		CRY_ASSERT_MESSAGE(triggerInstanceState.numPendingInstances > 0, "Number of panding trigger instances must be at least 1 during %s", __FUNCTION__);
 
-		if (--(triggerInstanceState.numPlayingInstances) == 0)
+#if defined(CRY_AUDIO_USE_OCCLUSION)
+		if ((result == ETriggerResult::Playing) && ((m_flags& EObjectFlags::Virtual) != 0))
 		{
-			g_triggerInstanceIdToObject.erase(triggerInstanceId);
+			m_flags &= ~EObjectFlags::Virtual;
+			m_propagationProcessor.UpdateOcclusion();
+		}
+#endif    // CRY_AUDIO_USE_OCCLUSION
 
-			SendFinishedTriggerInstanceRequest(triggerInstanceState);
+		--(triggerInstanceState.numPendingInstances);
+		++(triggerInstanceState.numPlayingInstances);
+	}
+}
 
-			m_triggerStates.erase(iter);
+///////////////////////////////////////////////////////////////////////////
+void CObject::ReportFinishedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result)
+{
+	ObjectTriggerStates::iterator const iter(m_triggerStates.find(triggerInstanceId));
+
+	if (iter != m_triggerStates.end())
+	{
+		STriggerInstanceState& triggerInstanceState = iter->second;
+
+		if (result != ETriggerResult::Pending)
+		{
+			CRY_ASSERT_MESSAGE(triggerInstanceState.numPlayingInstances > 0, "Number of playing trigger instances must be at least 1 during %s", __FUNCTION__);
+
+			if ((--(triggerInstanceState.numPlayingInstances) == 0) && ((triggerInstanceState.numPendingInstances) == 0))
+			{
+				g_triggerInstanceIdToObject.erase(triggerInstanceId);
+
+				SendFinishedTriggerInstanceRequest(triggerInstanceState);
+
+				m_triggerStates.erase(iter);
+			}
+		}
+		else
+		{
+			CRY_ASSERT_MESSAGE(triggerInstanceState.numPendingInstances > 0, "Number of pending trigger instances must be at least 1 during %s", __FUNCTION__);
+
+			if (((triggerInstanceState.numPlayingInstances) == 0) && (--(triggerInstanceState.numPendingInstances) == 0))
+			{
+				g_triggerInstanceIdToObject.erase(triggerInstanceId);
+
+				SendFinishedTriggerInstanceRequest(triggerInstanceState);
+
+				m_triggerStates.erase(iter);
+			}
 		}
 	}
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)

@@ -61,18 +61,25 @@ void CTrigger::Execute(
 		{
 			ETriggerResult const result = pConnection->Execute(pIObject, g_triggerInstanceIdCounter);
 
-			if ((result == ETriggerResult::Playing) || (result == ETriggerResult::Virtual))
+			if ((result == ETriggerResult::Playing) || (result == ETriggerResult::Virtual) || (result == ETriggerResult::Pending))
 			{
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				triggerInstanceState.radius = m_radius;
 				object.UpdateMaxRadius(m_radius);
 #endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 
-				++(triggerInstanceState.numPlayingInstances);
-
 				if (result == ETriggerResult::Playing)
 				{
+					++(triggerInstanceState.numPlayingInstances);
 					isPlaying = true;
+				}
+				else if (result == ETriggerResult::Virtual)
+				{
+					++(triggerInstanceState.numPlayingInstances);
+				}
+				else
+				{
+					++(triggerInstanceState.numPendingInstances);
 				}
 			}
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
@@ -90,7 +97,7 @@ void CTrigger::Execute(
 	}
 #endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 
-	if (triggerInstanceState.numPlayingInstances > 0)
+	if ((triggerInstanceState.numPlayingInstances > 0) || (triggerInstanceState.numPendingInstances > 0))
 	{
 		if (isPlaying)
 		{
@@ -213,16 +220,23 @@ void CTrigger::Execute(
 		{
 			ETriggerResult const result = pConnection->Execute(pIObject, triggerInstanceId);
 
-			if ((result == ETriggerResult::Playing) || (result == ETriggerResult::Virtual))
+			if ((result == ETriggerResult::Playing) || (result == ETriggerResult::Virtual) || (result == ETriggerResult::Pending))
 			{
 				triggerInstanceState.radius = m_radius;
 				object.UpdateMaxRadius(m_radius);
 
-				++(triggerInstanceState.numPlayingInstances);
-
 				if (result == ETriggerResult::Playing)
 				{
+					++(triggerInstanceState.numPlayingInstances);
 					isPlaying = true;
+				}
+				else if (result == ETriggerResult::Virtual)
+				{
+					++(triggerInstanceState.numPlayingInstances);
+				}
+				else
+				{
+					++(triggerInstanceState.numPendingInstances);
 				}
 			}
 			else if (result != ETriggerResult::DoNotTrack)

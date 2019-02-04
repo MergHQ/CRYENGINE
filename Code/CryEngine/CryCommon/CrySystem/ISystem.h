@@ -924,6 +924,7 @@ struct SSystemGlobalEnvironment
 
 	//////////////////////////////////////////////////////////////////////////
 	// Used by frame profiler.
+	int                          bFrameProfilerActive;
 	int                          bDeepProfiling;
 	bool                         bBootProfilerEnabledFrames;
 	FrameProfilerSectionCallback callbackStartSection;

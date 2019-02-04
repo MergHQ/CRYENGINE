@@ -54,18 +54,16 @@ public:
 	virtual void        UpdateVelocityTracking() {}
 
 	void                AddCueInstance(CCueInstance* const pCueInstance);
-	void                AddPendingCueInstance(CCueInstance* const pCueInstance);
 	void                StopCue(uint32 const cueId);
 	void                PauseCue(uint32 const cueId);
 	void                ResumeCue(uint32 const cueId);
 	void                MutePlayer(CriBool const shouldPause);
 	void                PausePlayer(CriBool const shouldPause);
 
-	CriAtomExPlayerHn   GetPlayer() const              { return m_pPlayer; }
-	CriAtomEx3dSourceHn Get3dSource() const            { return m_p3dSource; }
+	CriAtomExPlayerHn   GetPlayer() const       { return m_pPlayer; }
+	CriAtomEx3dSourceHn Get3dSource() const     { return m_p3dSource; }
 
-	CueInstances const& GetCueInstances() const        { return m_cueInstances; }
-	CueInstances const& GetPendingCueInstances() const { return m_pendingCueInstances; }
+	CueInstances const& GetCueInstances() const { return m_cueInstances; }
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	char const* GetName() const { return m_name.c_str(); }
@@ -82,7 +80,6 @@ protected:
 	CriAtomEx3dSourceHn m_p3dSource;
 	CriAtomExPlayerHn   m_pPlayer;
 	CueInstances        m_cueInstances;
-	CueInstances        m_pendingCueInstances;
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	CryFixedStringT<MaxObjectNameLength> m_name;

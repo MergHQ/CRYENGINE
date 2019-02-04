@@ -6,14 +6,6 @@
 
 namespace CryAudio
 {
-enum class ETriggerResult : EnumFlagsType
-{
-	Playing,
-	Virtual,
-	DoNotTrack,
-	Failure,
-};
-
 namespace Impl
 {
 struct IEvent;

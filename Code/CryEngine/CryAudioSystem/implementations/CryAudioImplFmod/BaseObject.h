@@ -45,10 +45,12 @@ public:
 	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter) override {}
 	// ~CryAudio::Impl::IObject
 
-	EventInstances const& GetEventInstances() const  { return m_eventInstances; }
-	EventInstances&       GetPendingEventInstances() { return m_pendingEventInstances; }
-	StandaloneFiles&      GetPendingFiles()          { return m_pendingFiles; }
-	FMOD_3D_ATTRIBUTES&   GetAttributes()            { return m_attributes; }
+	EventInstances const& GetEventInstances() const { return m_eventInstances; }
+	StandaloneFiles&      GetPendingFiles()         { return m_pendingFiles; }
+	FMOD_3D_ATTRIBUTES&   GetAttributes()           { return m_attributes; }
+
+	bool                  SetEventInstance(CEventInstance* const pEventInstance);
+	void                  AddEventInstance(CEventInstance* const pEventInstance);
 
 	void                  StopEventInstance(uint32 const id);
 
@@ -70,13 +72,12 @@ protected:
 
 	CBaseObject();
 
-	bool SetEventInstance(CEventInstance* const pEventInstance);
+	void UpdateVirtualFlag(CEventInstance* const pEventInstance);
 	void UpdateVelocityTracking();
 
 	EObjectFlags       m_flags;
 
 	EventInstances     m_eventInstances;
-	EventInstances     m_pendingEventInstances;
 	StandaloneFiles    m_files;
 	StandaloneFiles    m_pendingFiles;
 	Parameters         m_parameters;

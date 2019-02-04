@@ -76,6 +76,7 @@ constexpr uint16 g_objectProcessPhysicsRayPoolSize = 128;
 
 constexpr uint16 g_listenerSetTransformationPoolSize = 2;
 
+constexpr uint16 g_callbackReportStartedTriggerConnectionInstancePoolSize = 64;
 constexpr uint16 g_callbackReportFinishedTriggerConnectionInstancePoolSize = 128;
 constexpr uint16 g_callbackReportFinishedTriggerInstancePoolSize = 128;
 constexpr uint16 g_callbackReportPhysicalizedObjectPoolSize = 64;
@@ -105,6 +106,7 @@ struct SRequestCount final
 
 	uint16 listenerSetTransformation = 0;
 
+	uint16 callbackReportStartedriggerConnectionInstance = 0;
 	uint16 callbackReportFinishedTriggerConnectionInstance = 0;
 	uint16 callbackReportFinishedTriggerInstance = 0;
 	uint16 callbackReportPhysicalizedObject = 0;
@@ -260,6 +262,12 @@ void CountRequestPerUpdate(CRequest const& request)
 
 				switch (pBase->callbackRequestType)
 				{
+				case ECallbackRequestType::ReportStartedTriggerConnectionInstance:
+					{
+						g_requestsPerUpdate.callbackReportStartedriggerConnectionInstance++;
+
+						break;
+					}
 				case ECallbackRequestType::ReportFinishedTriggerConnectionInstance:
 					{
 						g_requestsPerUpdate.callbackReportFinishedTriggerConnectionInstance++;
@@ -324,6 +332,7 @@ void SetRequestCountPeak()
 
 	g_requestPeaks.listenerSetTransformation = std::max(g_requestPeaks.listenerSetTransformation, g_requestsPerUpdate.listenerSetTransformation);
 
+	g_requestPeaks.callbackReportStartedriggerConnectionInstance = std::max(g_requestPeaks.callbackReportStartedriggerConnectionInstance, g_requestsPerUpdate.callbackReportStartedriggerConnectionInstance);
 	g_requestPeaks.callbackReportFinishedTriggerConnectionInstance = std::max(g_requestPeaks.callbackReportFinishedTriggerConnectionInstance, g_requestsPerUpdate.callbackReportFinishedTriggerConnectionInstance);
 	g_requestPeaks.callbackReportFinishedTriggerInstance = std::max(g_requestPeaks.callbackReportFinishedTriggerInstance, g_requestsPerUpdate.callbackReportFinishedTriggerInstance);
 	g_requestPeaks.callbackReportPhysicalizedObject = std::max(g_requestPeaks.callbackReportPhysicalizedObject, g_requestsPerUpdate.callbackReportPhysicalizedObject);
@@ -371,6 +380,7 @@ void AllocateMemoryPools()
 	SListenerRequestData<EListenerRequestType::SetTransformation>::CreateAllocator(g_listenerSetTransformationPoolSize);
 
 	// Callback requests
+	SCallbackRequestData<ECallbackRequestType::ReportStartedTriggerConnectionInstance>::CreateAllocator(g_callbackReportStartedTriggerConnectionInstancePoolSize);
 	SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerConnectionInstance>::CreateAllocator(g_callbackReportFinishedTriggerConnectionInstancePoolSize);
 	SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance>::CreateAllocator(g_callbackReportFinishedTriggerInstancePoolSize);
 	SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedObject>::CreateAllocator(g_callbackReportPhysicalizedObjectPoolSize);
@@ -415,6 +425,7 @@ void FreeMemoryPools()
 	SListenerRequestData<EListenerRequestType::SetTransformation>::FreeMemoryPool();
 
 	// Callback requests
+	SCallbackRequestData<ECallbackRequestType::ReportStartedTriggerConnectionInstance>::FreeMemoryPool();
 	SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerConnectionInstance>::FreeMemoryPool();
 	SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance>::FreeMemoryPool();
 	SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedObject>::FreeMemoryPool();
@@ -1131,9 +1142,17 @@ void CSystem::ReportStoppedFile(CStandaloneFile& standaloneFile, SRequestUserDat
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::ReportFinishedTriggerConnectionInstance(TriggerInstanceId const triggerInstanceId, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+void CSystem::ReportStartedTriggerConnectionInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
-	SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerConnectionInstance> const requestData(triggerInstanceId);
+	SCallbackRequestData<ECallbackRequestType::ReportStartedTriggerConnectionInstance> const requestData(triggerInstanceId, result);
+	CRequest const request(&requestData, userData);
+	PushRequest(request);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::ReportFinishedTriggerConnectionInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+{
+	SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerConnectionInstance> const requestData(triggerInstanceId, result);
 	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
@@ -2207,6 +2226,27 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 
 			break;
 		}
+	case ECallbackRequestType::ReportStartedTriggerConnectionInstance:
+		{
+			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportStartedTriggerConnectionInstance> const*>(request.GetData());
+
+			CObject* const pObject = stl::find_in_map(g_triggerInstanceIdToObject, pRequestData->triggerInstanceId, nullptr);
+
+			if (pObject != nullptr)
+			{
+				pObject->ReportStartedTriggerInstance(pRequestData->triggerInstanceId, pRequestData->result);
+			}
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+			else
+			{
+				Cry::Audio::Log(ELogType::Error, "TriggerInstanceId %u is not mapped to an object during %s", pRequestData->triggerInstanceId, __FUNCTION__);
+			}
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
+
+			result = ERequestStatus::Success;
+
+			break;
+		}
 	case ECallbackRequestType::ReportFinishedTriggerConnectionInstance:
 		{
 			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerConnectionInstance> const*>(request.GetData());
@@ -2215,7 +2255,7 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 
 			if (pObject != nullptr)
 			{
-				pObject->ReportFinishedTriggerInstance(pRequestData->triggerInstanceId);
+				pObject->ReportFinishedTriggerInstance(pRequestData->triggerInstanceId, pRequestData->result);
 			}
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			else
@@ -3077,17 +3117,6 @@ void DrawMemoryPoolInfo(
 	char const* const szType,
 	uint16 const poolSize)
 {
-	CryFixedStringT<MaxMiscStringLength> memUsedString;
-
-	if (mem.nUsed < 1024)
-	{
-		memUsedString.Format("%" PRISIZE_T " Byte", mem.nUsed);
-	}
-	else
-	{
-		memUsedString.Format("%" PRISIZE_T " KiB", mem.nUsed >> 10);
-	}
-
 	CryFixedStringT<MaxMiscStringLength> memAllocString;
 
 	if (mem.nAlloc < 1024)
@@ -3103,8 +3132,8 @@ void DrawMemoryPoolInfo(
 
 	posY += Debug::g_systemLineHeight;
 	pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, color, false,
-	                      "[%s] Constructed: %" PRISIZE_T " (%s) | Allocated: %" PRISIZE_T " (%s) | Pool Size: %u",
-	                      szType, pool.nUsed, memUsedString.c_str(), pool.nAlloc, memAllocString.c_str(), poolSize);
+	                      "[%s] Constructed: %" PRISIZE_T " | Allocated: %" PRISIZE_T " | Preallocated: %u | Pool Size: %s",
+	                      szType, pool.nUsed, pool.nAlloc, poolSize, memAllocString.c_str());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3170,6 +3199,7 @@ void DrawRequestDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 	DrawRequestPeakInfo(auxGeom, posX, posY, "SetTransformation", g_requestPeaks.listenerSetTransformation, g_listenerSetTransformationPoolSize);
 
 	DrawRequestCategoryInfo(auxGeom, posX, posY, "Callback");
+	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportStartedTriggerConnectionInstance", g_requestPeaks.callbackReportStartedriggerConnectionInstance, g_callbackReportStartedTriggerConnectionInstancePoolSize);
 	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportFinishedTriggerConnectionInstance", g_requestPeaks.callbackReportFinishedTriggerConnectionInstance, g_callbackReportFinishedTriggerConnectionInstancePoolSize);
 	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportFinishedTriggerInstance", g_requestPeaks.callbackReportFinishedTriggerInstance, g_callbackReportFinishedTriggerInstancePoolSize);
 	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportPhysicalizedObject", g_requestPeaks.callbackReportPhysicalizedObject, g_callbackReportPhysicalizedObjectPoolSize);

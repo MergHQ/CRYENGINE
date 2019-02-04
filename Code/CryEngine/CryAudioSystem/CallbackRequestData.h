@@ -16,6 +16,7 @@ struct IObject;
 enum class ECallbackRequestType : EnumFlagsType
 {
 	None,
+	ReportStartedTriggerConnectionInstance,
 	ReportFinishedTriggerConnectionInstance,
 	ReportFinishedTriggerInstance,
 	ReportStartedFile,
@@ -54,21 +55,46 @@ struct SCallbackRequestData final : public SCallbackRequestDataBase
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerConnectionInstance> final : public SCallbackRequestDataBase, public CPoolObject<SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerConnectionInstance>, stl::PSyncMultiThread>
+struct SCallbackRequestData<ECallbackRequestType::ReportStartedTriggerConnectionInstance> final : public SCallbackRequestDataBase, public CPoolObject<SCallbackRequestData<ECallbackRequestType::ReportStartedTriggerConnectionInstance>, stl::PSyncMultiThread>
 {
-	explicit SCallbackRequestData(TriggerInstanceId const triggerInstanceId_)
-		: SCallbackRequestDataBase(ECallbackRequestType::ReportFinishedTriggerConnectionInstance)
+	explicit SCallbackRequestData(TriggerInstanceId const triggerInstanceId_, ETriggerResult const result_)
+		: SCallbackRequestDataBase(ECallbackRequestType::ReportStartedTriggerConnectionInstance)
 		, triggerInstanceId(triggerInstanceId_)
+		, result(result_)
 	{}
 
-	explicit SCallbackRequestData(SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerConnectionInstance> const* const pACMRData)
-		: SCallbackRequestDataBase(ECallbackRequestType::ReportFinishedTriggerConnectionInstance)
+	explicit SCallbackRequestData(SCallbackRequestData<ECallbackRequestType::ReportStartedTriggerConnectionInstance> const* const pACMRData)
+		: SCallbackRequestDataBase(ECallbackRequestType::ReportStartedTriggerConnectionInstance)
 		, triggerInstanceId(pACMRData->triggerInstanceId)
+		, result(pACMRData->result)
 	{}
 
 	virtual ~SCallbackRequestData() override = default;
 
 	TriggerInstanceId const triggerInstanceId;
+	ETriggerResult const    result;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerConnectionInstance> final : public SCallbackRequestDataBase, public CPoolObject<SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerConnectionInstance>, stl::PSyncMultiThread>
+{
+	explicit SCallbackRequestData(TriggerInstanceId const triggerInstanceId_, ETriggerResult const result_)
+		: SCallbackRequestDataBase(ECallbackRequestType::ReportFinishedTriggerConnectionInstance)
+		, triggerInstanceId(triggerInstanceId_)
+		, result(result_)
+	{}
+
+	explicit SCallbackRequestData(SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerConnectionInstance> const* const pACMRData)
+		: SCallbackRequestDataBase(ECallbackRequestType::ReportFinishedTriggerConnectionInstance)
+		, triggerInstanceId(pACMRData->triggerInstanceId)
+		, result(pACMRData->result)
+	{}
+
+	virtual ~SCallbackRequestData() override = default;
+
+	TriggerInstanceId const triggerInstanceId;
+	ETriggerResult const    result;
 };
 
 //////////////////////////////////////////////////////////////////////////

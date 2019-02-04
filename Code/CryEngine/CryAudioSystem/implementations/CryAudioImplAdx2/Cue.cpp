@@ -49,16 +49,16 @@ ETriggerResult CCue::Execute(IObject* const pIObject, TriggerInstanceId const tr
 				auto const pCueInstance = g_pImpl->ConstructCueInstance(triggerInstanceId, m_id, playbackId, this);
 #endif                // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
-				if (criAtomExPlayback_GetStatus(playbackId) == CRIATOMEXPLAYBACK_STATUS_PLAYING)
+				pBaseObject->AddCueInstance(pCueInstance);
+
+				if (pCueInstance->PrepareForPlayback(pBaseObject))
 				{
-					pBaseObject->AddCueInstance(pCueInstance);
+					result = ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) != 0) ? ETriggerResult::Virtual : ETriggerResult::Playing;
 				}
 				else
 				{
-					pBaseObject->AddPendingCueInstance(pCueInstance);
+					result = ETriggerResult::Pending;
 				}
-
-				result = ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) != 0) ? ETriggerResult::Virtual : ETriggerResult::Playing;
 			}
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 			else

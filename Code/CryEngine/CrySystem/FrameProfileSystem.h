@@ -92,11 +92,8 @@ public:
 	int64 m_totalProfileTime;
 	//! Frame time from the last frame.
 	int64 m_frameTime;
-	//! Ticks per profiling call, for adjustment.
-	int64 m_callOverheadTime;
-	int64 m_nCallOverheadTotal;
-	int64 m_nCallOverheadRemainder;
-	int32 m_nCallOverheadCalls;
+	//! Accumulated overhead time per thread
+	static thread_local int64 tls_overheadTime;
 
 	//! Smoothed version of frame time, lost time, and overhead.
 	float                     m_frameSecAvg;
@@ -167,132 +164,23 @@ public:
 
 	#endif
 
-	//! Maintain separate profiler stacks for each thread.
-	//! Disallow any post-init allocation, to avoid profiler/allocator conflicts
 	typedef threadID TThreadId;
-	struct SProfilerThreads
+	static thread_local CFrameProfilerSection* tls_pCurrentSection;
+
+	ILINE void PushSection(CFrameProfilerSection* pSection)
 	{
-		SProfilerThreads(TThreadId nMainThreadId)
-		{
-			// First thread stack is for main thread.
-			m_aThreadStacks[0].threadId = nMainThreadId;
-			m_nThreadStacks = 1;
-			m_pReservedProfilers = 0;
-			m_lock = 0;
-		}
+		assert(pSection);
+		pSection->m_pParent = tls_pCurrentSection;
+		tls_pCurrentSection = pSection;
+	}
 
-		void            Reset();
+	ILINE void PopSection(CFrameProfilerSection* pSection)
+	{
+		assert(pSection);
+		assert(tls_pCurrentSection == pSection || tls_pCurrentSection == nullptr);
+		tls_pCurrentSection = pSection->m_pParent;
+	}
 
-		ILINE TThreadId GetMainThreadId() const
-		{
-			return m_aThreadStacks[0].threadId;
-		}
-		ILINE CFrameProfilerSection const* GetMainSection() const
-		{
-			return m_aThreadStacks[0].pProfilerSection;
-		}
-
-		static ILINE void Push(CFrameProfilerSection*& parent, CFrameProfilerSection* child)
-		{
-			assert(child);
-			child->m_pParent = parent;
-			parent = child;
-		}
-
-		ILINE void PushSection(CFrameProfilerSection* pSection, TThreadId threadId)
-		{
-			assert(threadId != TThreadId(0) && pSection);
-
-			for (int i = 0, end = m_nThreadStacks; i < end; ++i)
-			{
-				if (m_aThreadStacks[i].threadId == threadId)
-				{
-					Push(m_aThreadStacks[i].pProfilerSection, pSection);
-					return;
-				}
-			}
-
-			// add new thread stack entry
-			int newIndex = CryInterlockedIncrement((volatile int*)&m_nThreadStacks) - 1;
-
-			if (newIndex == nMAX_THREADS)
-				CryFatalError("Profiled thread count of %d exceeded!", nMAX_THREADS);
-
-			m_aThreadStacks[newIndex].threadId = threadId;
-			Push(m_aThreadStacks[newIndex].pProfilerSection, pSection);
-			return;
-		}
-
-		ILINE void PopSection(CFrameProfilerSection* pSection, TThreadId threadId)
-		{
-			// Thread-safe without locking.
-			for (int i = 0; i < m_nThreadStacks; ++i)
-				if (m_aThreadStacks[i].threadId == threadId)
-				{
-					assert(m_aThreadStacks[i].pProfilerSection == pSection || m_aThreadStacks[i].pProfilerSection == 0);
-					m_aThreadStacks[i].pProfilerSection = pSection->m_pParent;
-					return;
-				}
-			assert(0);
-		}
-
-		ILINE CFrameProfiler* GetThreadProfiler(CFrameProfiler* pMainProfiler, TThreadId nThreadId)
-		{
-			// Check main threads, or existing linked threads.
-			if (nThreadId == GetMainThreadId())
-				return pMainProfiler;
-			for (CFrameProfiler* pProfiler = pMainProfiler->m_pNextThread; pProfiler; pProfiler = pProfiler->m_pNextThread)
-				if (pProfiler->m_threadId == nThreadId)
-					return pProfiler;
-			return NewThreadProfiler(pMainProfiler, nThreadId);
-		}
-
-		ILINE void OnEnterSliceAndSleep(TThreadId nThreadId)
-		{
-			for (CFrameProfilerSection* pSection = m_aThreadStacks[m_sliceAndSleepThreadIdx].pProfilerSection; pSection; pSection = pSection->m_pParent)
-			{
-				if (pSection->m_pFrameProfiler)
-				{
-					CFrameProfileSystem::AccumulateProfilerSection(pSection);
-				}
-			}
-		}
-
-		ILINE void OnLeaveSliceAndSleep(TThreadId nThreadId)
-		{
-			int64 now = CryGetTicks();
-
-			for (CFrameProfilerSection* pSection = m_aThreadStacks[m_sliceAndSleepThreadIdx].pProfilerSection; pSection; pSection = pSection->m_pParent)
-			{
-				if (pSection->m_pFrameProfiler)
-				{
-					pSection->m_startTime = now;
-					pSection->m_excludeTime = 0;
-				}
-			}
-		}
-
-		CFrameProfiler* NewThreadProfiler(CFrameProfiler* pMainProfiler, TThreadId nThreadId);
-
-	protected:
-
-		struct SThreadStack
-		{
-			TThreadId              threadId;
-			CFrameProfilerSection* pProfilerSection;
-
-			SThreadStack(TThreadId id = 0)
-				: threadId(id), pProfilerSection(0)
-			{}
-		};
-		static const int nMAX_THREADS = 128;
-		static const int m_sliceAndSleepThreadIdx = 0;          // SLICE_AND_SLEEP and Statoscope tick are on main thread
-		int              m_nThreadStacks;
-		SThreadStack     m_aThreadStacks[nMAX_THREADS];
-		CFrameProfiler*  m_pReservedProfilers;
-		volatile int     m_lock;
-	};
-	SProfilerThreads        m_ProfilerThreads;
 	CCustomProfilerSection* m_pCurrentCustomSection;
 
 	typedef std::vector<CFrameProfiler*> Profilers;
@@ -311,11 +199,6 @@ public:
 	EProfiledSubsystem                m_subsystemFilter;
 	bool                              m_bSubsystemFilterEnabled;
 	int                               m_maxProfileCount;
-
-	//////////////////////////////////////////////////////////////////////////
-	//! Smooth frame time in milliseconds.
-	CFrameProfilerSamplesHistory<float, 32> m_frameTimeHistory;
-	CFrameProfilerSamplesHistory<float, 32> m_frameTimeLostHistory;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Graphs.
@@ -415,10 +298,6 @@ public:
 	//! Get frame profiler at specified index.
 	//! @param index must be 0 <= index < GetProfileCount()
 	CFrameProfiler*  GetProfiler(int index) const;
-	inline TThreadId GetMainThreadId() const
-	{
-		return m_ProfilerThreads.GetMainThreadId();
-	}
 	
 	//////////////////////////////////////////////////////////////////////////
 	// Adds a value to profiler.
@@ -436,7 +315,6 @@ public:
 	static void StartProfilerSection(CFrameProfilerSection* pSection);
 	//! Ends profiling a section.
 	static void EndProfilerSection(CFrameProfilerSection* pSection);
-	static void AccumulateProfilerSection(CFrameProfilerSection* pSection);
 
 	static void StartMemoryProfilerSection(CFrameProfilerSection* pSection);
 	static void EndMemoryProfilerSection(CFrameProfilerSection* pSection);
@@ -448,7 +326,9 @@ public:
 	void         Enable(bool bCollect, bool bDisplay);
 	void         SetSubsystemFilter(bool bFilterSubsystem, EProfiledSubsystem subsystem);
 	bool         IsSubSystemFiltered(EProfiledSubsystem subsystem) const { return m_bSubsystemFilterEnabled && m_subsystemFilter != subsystem; }
-	bool         IsSubSystemFiltered(CFrameProfiler* pProfiler) const    { return IsSubSystemFiltered((EProfiledSubsystem)pProfiler->m_subsystem); }
+	bool         IsSubSystemFiltered(const CFrameProfiler* pProfiler) const { return IsSubSystemFiltered((EProfiledSubsystem)pProfiler->m_subsystem); }
+	bool         IsThreadFiltered(threadID threadId) const               { return s_nFilterThreadId && threadId != s_nFilterThreadId; }
+	bool         IsFiltered(const CFrameProfiler* pProfiler) const       { return IsSubSystemFiltered(pProfiler) || IsThreadFiltered(pProfiler->m_threadId); }
 	void         EnableHistograms(bool bEnableHistograms);
 	bool         IsEnabled() const                                       { return m_bEnabled; }
 	virtual bool IsVisible() const                                       { return m_bDisplay; }
@@ -481,7 +361,6 @@ public:
 	void            AddDisplayedProfiler(CFrameProfiler* pProfiler, int level);
 
 	//////////////////////////////////////////////////////////////////////////
-	float               TranslateToDisplayValue(int64 val);
 	const char*         GetFullName(CFrameProfiler* pProfiler);
 	virtual const char* GetModuleName(CFrameProfiler* pProfiler);
 	const char*         GetModuleName(int num) const;

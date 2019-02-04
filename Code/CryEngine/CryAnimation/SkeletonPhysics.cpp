@@ -1539,6 +1539,12 @@ cloth_aux:
 			atv.points[i] = qBase * GetPoseData().GetJointAbsolute(GetModelJointChildIndex(k, 0)).t;
 			m_auxPhys[j].pPhysEnt->Action(&atv);
 		}
+		if (!(m_pInstance->m_rpFlags & CS_FLAG_UPDATE_ALWAYS))
+		{	// if character updates on render, set ropes to initially disabled; they will be enabled when the node becomes visible
+			new(&pf) pe_params_flags;
+			pf.flagsOR = pef_disabled;
+			m_auxPhys[j].pPhysEnt->SetParams(&pf);
+		}
 	}
 
 	/*if (nLod==1)
