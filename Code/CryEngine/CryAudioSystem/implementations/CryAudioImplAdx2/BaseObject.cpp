@@ -109,6 +109,7 @@ CBaseObject::~CBaseObject()
 void CBaseObject::Update(float const deltaTime)
 {
 	EObjectFlags const previousFlags = m_flags;
+	bool removedCueInstance = false;
 
 	if (!m_pendingCueInstances.empty())
 	{
@@ -121,10 +122,29 @@ void CBaseObject::Update(float const deltaTime)
 		{
 			CCueInstance* const pCueInstance = *iter;
 
-			if (pCueInstance->PrepareForPlayback())
+			if ((pCueInstance->GetFlags() & ECueInstanceFlags::ToBeRemoved) != 0)
 			{
+				gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pCueInstance->GetTriggerInstanceId(), ETriggerResult::Pending);
+				g_pImpl->DestructCueInstance(pCueInstance);
+				removedCueInstance = true;
+
+				if (iter != (iterEnd - 1))
+				{
+					(*iter) = m_pendingCueInstances.back();
+				}
+
+				m_pendingCueInstances.pop_back();
+				iter = m_pendingCueInstances.begin();
+				iterEnd = m_pendingCueInstances.end();
+			}
+			else if (pCueInstance->PrepareForPlayback())
+			{
+				pCueInstance->RemoveFlag(ECueInstanceFlags::IsPending);
 				AddCueInstance(pCueInstance);
 				UpdateVelocityTracking();
+
+				ETriggerResult const result = ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) == 0) ? ETriggerResult::Playing : ETriggerResult::Virtual;
+				gEnv->pAudioSystem->ReportStartedTriggerConnectionInstance(pCueInstance->GetTriggerInstanceId(), result);
 
 				if (iter != (iterEnd - 1))
 				{
@@ -144,8 +164,6 @@ void CBaseObject::Update(float const deltaTime)
 		}
 	}
 
-	bool removedCueInstance = false;
-
 	if (!m_cueInstances.empty())
 	{
 		m_flags |= EObjectFlags::IsVirtual;
@@ -159,7 +177,7 @@ void CBaseObject::Update(float const deltaTime)
 
 			if ((pCueInstance->GetFlags() & ECueInstanceFlags::ToBeRemoved) != 0)
 			{
-				gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pCueInstance->GetTriggerInstanceId());
+				gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pCueInstance->GetTriggerInstanceId(), ETriggerResult::Playing);
 				g_pImpl->DestructCueInstance(pCueInstance);
 				removedCueInstance = true;
 

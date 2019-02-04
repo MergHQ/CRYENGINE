@@ -50,6 +50,9 @@ public:
 	StandaloneFiles&      GetPendingFiles()          { return m_pendingFiles; }
 	FMOD_3D_ATTRIBUTES&   GetAttributes()            { return m_attributes; }
 
+	bool                  SetEventInstance(CEventInstance* const pEventInstance);
+	void                  AddPendingEventInstance(CEventInstance* const pEventInstance);
+
 	void                  StopEventInstance(uint32 const id);
 
 	void                  SetParameter(uint32 const id, float const value);
@@ -70,7 +73,6 @@ protected:
 
 	CBaseObject();
 
-	bool SetEventInstance(CEventInstance* const pEventInstance);
 	void UpdateVelocityTracking();
 
 	EObjectFlags       m_flags;

@@ -34,6 +34,7 @@ enum class EEventState : EnumFlagsType
 	None,
 	Playing,
 	Virtual,
+	Pending,
 };
 
 class CEventInstance final : public CPoolObject<CEventInstance, stl::PSyncNone>
@@ -54,7 +55,7 @@ public:
 		CBaseObject const* const pBaseObject)
 		: m_triggerInstanceId(triggerInstanceId)
 		, m_eventId(eventId)
-		, m_state(EEventState::None)
+		, m_state(EEventState::Pending)
 		, m_lowpassFrequencyMax(0.0f)
 		, m_lowpassFrequencyMin(0.0f)
 		, m_pInstance(nullptr)
@@ -73,7 +74,7 @@ public:
 		CEvent const* const pEvent)
 		: m_triggerInstanceId(triggerInstanceId)
 		, m_eventId(eventId)
-		, m_state(EEventState::None)
+		, m_state(EEventState::Pending)
 		, m_lowpassFrequencyMax(0.0f)
 		, m_lowpassFrequencyMin(0.0f)
 		, m_pInstance(nullptr)

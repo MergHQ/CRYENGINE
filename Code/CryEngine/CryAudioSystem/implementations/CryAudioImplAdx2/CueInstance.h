@@ -21,9 +21,10 @@ enum class ECueInstanceFlags : EnumFlagsType
 {
 	None                = 0,
 	IsVirtual           = BIT(0),
-	HasAbsoluteVelocity = BIT(1),
-	HasDoppler          = BIT(2),
-	ToBeRemoved         = BIT(3),
+	IsPending           = BIT(1),
+	HasAbsoluteVelocity = BIT(2),
+	HasDoppler          = BIT(3),
+	ToBeRemoved         = BIT(4),
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ECueInstanceFlags);
 

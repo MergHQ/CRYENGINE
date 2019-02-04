@@ -1695,7 +1695,8 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 
 					if (draw)
 					{
-						ColorF const color = (pEventInstance->GetState() == EEventState::Virtual) ? Debug::s_globalColorVirtual : Debug::s_listColorItemActive;
+						EEventState const state = pEventInstance->GetState();
+						ColorF const color = (state == EEventState::Pending) ? Debug::s_listColorItemLoading : ((state == EEventState::Virtual) ? Debug::s_globalColorVirtual : Debug::s_listColorItemActive);
 						auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, "%s on %s", szEventName, pEventInstance->GetObject()->GetName());
 
 						posY += Debug::g_listLineHeight;

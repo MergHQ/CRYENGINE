@@ -151,6 +151,7 @@ std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pReq
 
 			switch (pBase->callbackRequestType)
 			{
+				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportStartedTriggerConnectionInstance)
 				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportFinishedTriggerConnectionInstance)
 				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportFinishedTriggerInstance)
 				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportStartedFile)

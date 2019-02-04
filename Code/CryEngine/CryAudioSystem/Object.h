@@ -72,6 +72,7 @@ struct STriggerInstanceState final : public SUserDataBase
 	ETriggerStatus flags = ETriggerStatus::None;
 	ControlId      triggerId = InvalidControlId;
 	size_t         numPlayingInstances = 0;
+	size_t         numPendingInstances = 0;
 	float          expirationTimeMS = 0.0f;
 	float          remainingTimeMS = 0.0f;
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
@@ -167,7 +168,8 @@ public:
 
 	void         AddTriggerState(TriggerInstanceId const id, STriggerInstanceState const& triggerInstanceState);
 	void         AddStandaloneFile(CStandaloneFile* const pStandaloneFile, SUserDataBase const& userDataBase);
-	void         ReportFinishedTriggerInstance(TriggerInstanceId const triggerInstanceId);
+	void         ReportStartedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result);
+	void         ReportFinishedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result);
 	void         SendFinishedTriggerInstanceRequest(STriggerInstanceState const& triggerInstanceState);
 
 private:

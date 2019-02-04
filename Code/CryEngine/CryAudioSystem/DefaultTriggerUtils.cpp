@@ -27,13 +27,20 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 		{
 			ETriggerResult const result = pConnection->Execute(pIObject, g_triggerInstanceIdCounter);
 
-			if ((result == ETriggerResult::Playing) || (result == ETriggerResult::Virtual))
+			if ((result == ETriggerResult::Playing) || (result == ETriggerResult::Virtual) || (result == ETriggerResult::Pending))
 			{
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				CRY_ASSERT_MESSAGE(pControl->GetDataScope() == EDataScope::Global, "Default controls must always have global data scope! (%s) during %s", pControl->GetName(), __FUNCTION__);
 #endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 
-				++(triggerInstanceState.numPlayingInstances);
+				if (result != ETriggerResult::Pending)
+				{
+					++(triggerInstanceState.numPlayingInstances);
+				}
+				else
+				{
+					++(triggerInstanceState.numPendingInstances);
+				}
 			}
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			else if (result != ETriggerResult::DoNotTrack)
@@ -50,7 +57,7 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 	}
 #endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 
-	if (triggerInstanceState.numPlayingInstances > 0)
+	if ((triggerInstanceState.numPlayingInstances > 0) || (triggerInstanceState.numPendingInstances > 0))
 	{
 		triggerInstanceState.flags |= ETriggerStatus::Playing;
 		g_triggerInstanceIdToObject[g_triggerInstanceIdCounter] = &g_object;

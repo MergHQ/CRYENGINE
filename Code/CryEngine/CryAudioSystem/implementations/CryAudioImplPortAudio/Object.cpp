@@ -42,7 +42,7 @@ void CObject::Update(float const deltaTime)
 
 		if (pEventInstance->IsToBeRemoved())
 		{
-			gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pEventInstance->GetTriggerInstanceId());
+			gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pEventInstance->GetTriggerInstanceId(), ETriggerResult::Playing);
 			g_pImpl->DestructEventInstance(pEventInstance);
 
 			if (iter != (iterEnd - 1))

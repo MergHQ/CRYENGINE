@@ -156,6 +156,24 @@ enum class ERequestResult : EnumFlagsType
 };
 
 /**
+ * @enum CryAudio::ETriggerResult
+ * @brief A strongly typed enum class representing a list of possible outcomes of a trigger connection being executed.
+ * @var CryAudio::ETriggerResult::Playing
+ * @var CryAudio::ETriggerResult::Virtual
+ * @var CryAudio::ETriggerResult::Pending
+ * @var CryAudio::ETriggerResult::DoNotTrack
+ * @var CryAudio::ETriggerResult::Failure
+ */
+enum class ETriggerResult : EnumFlagsType
+{
+	Playing,    /**< Returned if the trigger connection sucessfully started and is playing. */
+	Virtual,    /**< Returned if the trigger connection sucessfully started and is virtual. */
+	Pending,    /**< Returned if the trigger connection is pending. */
+	DoNotTrack, /**< Returned if the trigger connection should not get tracked from the audio system. */
+	Failure,    /**< Returned if the trigger connection fails to start. */
+};
+
+/**
  * @enum CryAudio::EOcclusionType
  * @brief A strongly typed enum class representing different audio occlusion types that can be set on audio objects.
  * @var CryAudio::EOcclusionType::None

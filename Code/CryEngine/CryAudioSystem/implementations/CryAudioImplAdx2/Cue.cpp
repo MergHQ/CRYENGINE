@@ -52,13 +52,14 @@ ETriggerResult CCue::Execute(IObject* const pIObject, TriggerInstanceId const tr
 				if (criAtomExPlayback_GetStatus(playbackId) == CRIATOMEXPLAYBACK_STATUS_PLAYING)
 				{
 					pBaseObject->AddCueInstance(pCueInstance);
+					result = ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) != 0) ? ETriggerResult::Virtual : ETriggerResult::Playing;
 				}
 				else
 				{
+					pCueInstance->SetFlag(ECueInstanceFlags::IsPending);
 					pBaseObject->AddPendingCueInstance(pCueInstance);
+					result = ETriggerResult::Pending;
 				}
-
-				result = ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) != 0) ? ETriggerResult::Virtual : ETriggerResult::Playing;
 			}
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 			else

@@ -36,6 +36,8 @@ CBaseObject::CBaseObject()
 //////////////////////////////////////////////////////////////////////////
 void CBaseObject::Update(float const deltaTime)
 {
+	bool removedEvent = false;
+
 	if (!m_pendingEventInstances.empty())
 	{
 		auto iter(m_pendingEventInstances.begin());
@@ -43,8 +45,28 @@ void CBaseObject::Update(float const deltaTime)
 
 		while (iter != iterEnd)
 		{
-			if (SetEventInstance(*iter))
+			CEventInstance* const pEventInstance = *iter;
+
+			if (pEventInstance->IsToBeRemoved())
 			{
+				gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pEventInstance->GetTriggerInstanceId(), ETriggerResult::Pending);
+				g_pImpl->DestructEventInstance(pEventInstance);
+				removedEvent = true;
+
+				if (iter != (iterEnd - 1))
+				{
+					(*iter) = m_pendingEventInstances.back();
+				}
+
+				m_pendingEventInstances.pop_back();
+				iter = m_pendingEventInstances.begin();
+				iterEnd = m_pendingEventInstances.end();
+			}
+			else if (SetEventInstance(pEventInstance))
+			{
+				ETriggerResult const result = (pEventInstance->GetState() == EEventState::Playing) ? ETriggerResult::Playing : ETriggerResult::Virtual;
+				gEnv->pAudioSystem->ReportStartedTriggerConnectionInstance(pEventInstance->GetTriggerInstanceId(), result);
+
 				if (iter != (iterEnd - 1))
 				{
 					(*iter) = m_pendingEventInstances.back();
@@ -93,7 +115,6 @@ void CBaseObject::Update(float const deltaTime)
 	}
 
 	EObjectFlags const previousFlags = m_flags;
-	bool removedEvent = false;
 
 	if (!m_eventInstances.empty())
 	{
@@ -105,11 +126,11 @@ void CBaseObject::Update(float const deltaTime)
 
 	while (iter != iterEnd)
 	{
-		auto const pEventInstance = *iter;
+		CEventInstance* const pEventInstance = *iter;
 
 		if (pEventInstance->IsToBeRemoved())
 		{
-			gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pEventInstance->GetTriggerInstanceId());
+			gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pEventInstance->GetTriggerInstanceId(), ETriggerResult::Playing);
 			g_pImpl->DestructEventInstance(pEventInstance);
 			removedEvent = true;
 
@@ -180,6 +201,12 @@ ERequestStatus CBaseObject::SetName(char const* const szName)
 	m_name = szName;
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 	return ERequestStatus::Success;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CBaseObject::AddPendingEventInstance(CEventInstance* const pEventInstance)
+{
+	m_pendingEventInstances.push_back(pEventInstance);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -389,6 +416,7 @@ bool CBaseObject::SetEventInstance(CEventInstance* const pEventInstance)
 		fmodResult = pEventInstance->GetFmodEventInstance()->start();
 		CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
+		pEventInstance->UpdateVirtualState();
 		bSuccess = true;
 	}
 
