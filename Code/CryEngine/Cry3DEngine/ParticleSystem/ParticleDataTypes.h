@@ -296,23 +296,23 @@ inline cstr SkipPrefix(cstr name)
 // Store usage of particle data types
 struct SUseData
 {
-	TDynArray<uint> offsets;        // Offset of data type if used, ~0 if not
-	uint            totalSize = 0;  // Total size of data per-particle
+	TDynArray<int16> offsets;        // Offset of data type if used, -1 if not
+	int16            totalSize = 0;  // Total size of data per-particle
 
 	SUseData()
-		: offsets(EParticleDataType::size(), ~0)
+		: offsets(EParticleDataType::size(), -1)
 	{
 	}
 	bool Used(EParticleDataType type) const
 	{
-		return offsets[type] != ~0;
+		return offsets[type] >= 0;
 	}
 	void AddData(EParticleDataType type)
 	{
 		if (!Used(type))
 		{
 			uint dim = type.info().dimension;
-			uint size = Align(type.info().typeSize, 4);
+			int16 size = Align(type.info().typeSize, 4);
 			for (uint i = 0; i < dim; ++i)
 			{
 				offsets[type + i] = totalSize;
@@ -327,9 +327,9 @@ inline PUseData NewUseData() { return std::make_shared<SUseData>(); }
 
 struct SUseDataRef
 {
-	TConstArray<uint> offsets;
-	uint              totalSize = 0;
-	PUseData          pRefData;
+	TConstArray<int16> offsets;
+	int16              totalSize = 0;
+	PUseData           pRefData;
 
 	SUseDataRef() 
 	{}
@@ -340,7 +340,7 @@ struct SUseDataRef
 	{}
 	bool Used(EParticleDataType type) const
 	{
-		return offsets[type] != ~0;
+		return offsets[type] >= 0;
 	}
 };
 

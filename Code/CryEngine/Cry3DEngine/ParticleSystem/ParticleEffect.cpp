@@ -116,14 +116,14 @@ void CParticleEffect::Sort()
 {
 	SortedComponents sortedComponents(m_components);
 	assert(sortedComponents.size() == m_components.size());
-	std::swap(m_components, sortedComponents);
+	m_components.swap(sortedComponents);
 }
 
 void CParticleEffect::SortFromTop()
 {
 	SortedComponents sortedComponents(m_topComponents);
 	assert(sortedComponents.size() == m_components.size());
-	std::swap(m_components, sortedComponents);
+	m_components.swap(sortedComponents);
 }
 
 CParticleComponent* CParticleEffect::FindComponentByName(const char* name) const
@@ -203,6 +203,8 @@ void CParticleEffect::SetName(cstr name)
 
 void CParticleEffect::Serialize(Serialization::IArchive& ar)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+
 	uint documentVersion = 1;
 	if (ar.isOutput())
 		documentVersion = gCurrentVersion;
@@ -234,8 +236,8 @@ void CParticleEffect::Serialize(Serialization::IArchive& ar)
 
 	if (ar.isInput())
 	{
-		auto it = std::remove_if(m_components.begin(), m_components.end(), [](TComponentPtr ptr){ return !ptr; });
-		m_components.erase(it, m_components.end());
+		stl::find_and_erase_all(m_components, nullptr);
+		m_components.shrink_to_fit();
 		SetChanged();
 		for (auto& component : m_components)
 			component->SetChanged();

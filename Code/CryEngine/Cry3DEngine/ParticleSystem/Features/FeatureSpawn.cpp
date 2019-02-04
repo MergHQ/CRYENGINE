@@ -79,12 +79,14 @@ public:
 		}
 	}
 
-	void AddSubInstances(CParticleComponentRuntime& runtime, TDynArray<SInstance>& instances) override
+	void AddSubInstances(CParticleComponentRuntime& runtime) override
 	{
 		if (!runtime.IsChild() && runtime.GetEmitter()->IsActive() && runtime.GetNumInstances() == 0)
 		{
 			// Add first instance
-			instances.push_back();
+			SInstance instance;
+			TVarArray<SInstance> instances(&instance, 1);
+			runtime.AddInstances(instances);
 		}
 	}
 
@@ -206,7 +208,8 @@ protected:
 
 		GetSpawnCounts(runtime, amounts);
 
-		TDynArray<SSpawnEntry> spawnEntries;
+		THeapArray<SSpawnEntry> spawnEntries(runtime.MemHeap());
+		spawnEntries.reserve(numInstances);
 
 		for (uint i = 0; i < numInstances; ++i)
 		{

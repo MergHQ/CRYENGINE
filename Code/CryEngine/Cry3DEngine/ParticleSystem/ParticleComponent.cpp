@@ -66,6 +66,8 @@ void STextureAnimation::Update()
 //////////////////////////////////////////////////////////////////////////
 // SModuleParams
 
+string SComponentParams::s_defaultDiffuseMap = "%ENGINE%/EngineAssets/Textures/white.dds";
+
 void SComponentParams::Serialize(Serialization::IArchive& ar)
 {
 	auto* pComponent = static_cast<CParticleComponent*>(ar.context<IParticleComponent>());
@@ -294,6 +296,8 @@ bool CParticleComponent::CanMakeRuntime(CParticleEmitter* pEmitter) const
 
 void CParticleComponent::PreCompile()
 {
+	CRY_PFX2_PROFILE_DETAIL;
+
 	if (!m_dirty)
 		return;
 
@@ -332,12 +336,15 @@ void CParticleComponent::ResolveDependencies()
 
 	// remove null features
 	stl::find_and_erase_all(m_features, nullptr);
+	m_features.shrink_to_fit();
 }
 
 void CParticleComponent::Compile()
 {
 	if (!m_dirty)
 		return;
+
+	CRY_PFX2_PROFILE_DETAIL;
 
 	uint featureMask = 0;
 	for (auto& it : m_features)
@@ -392,6 +399,8 @@ void CParticleComponent::FinalizeCompile()
 
 IMaterial* CParticleComponent::MakeMaterial()
 {
+	CRY_PFX2_PROFILE_DETAIL;
+
 	enum EGpuParticlesVertexShaderFlags
 	{
 		eGpuParticlesVertexShaderFlags_None           = 0x0,
@@ -446,6 +455,8 @@ IMaterial* CParticleComponent::MakeMaterial()
 
 void CParticleComponent::Serialize(Serialization::IArchive& ar)
 {
+	CRY_PFX2_PROFILE_DETAIL;
+
 	if (!m_pEffect)
 		m_pEffect = ar.context<CParticleEffect>();
 

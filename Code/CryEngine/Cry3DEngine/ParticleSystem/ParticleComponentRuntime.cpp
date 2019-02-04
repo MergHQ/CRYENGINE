@@ -300,22 +300,25 @@ void CParticleComponentRuntime::AddInstances()
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
-	TDynArray<SInstance> instances;
-	GetComponent()->AddSubInstances(*this, instances);
-	GetComponent()->CullSubInstances(*this, instances);
-
-	if (instances.empty())
-		return;
-
 	uint firstInstance = m_subInstances.size();
-	uint lastInstance = firstInstance + instances.size();
-	m_subInstances.append(instances);
-	m_subInstanceData.resize(ComponentParams().m_instanceDataStride * m_subInstances.size());
 
+	GetComponent()->AddSubInstances(*this);
+
+	uint lastInstance = m_subInstances.size();
 	SUpdateRange instanceRange(firstInstance, lastInstance);
 	GetComponent()->InitSubInstances(*this, instanceRange);
 
 	DebugStabilityCheck();
+}
+
+void CParticleComponentRuntime::AddInstances(TVarArray<SInstance> instances)
+{
+	GetComponent()->CullSubInstances(*this, instances);
+	if (instances.empty())
+		return;
+
+	m_subInstances.append(instances);
+	m_subInstanceData.resize(ComponentParams().m_instanceDataStride * m_subInstances.size());
 }
 
 void CParticleComponentRuntime::AddParticles(TConstArray<SSpawnEntry> spawnEntries)

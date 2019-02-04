@@ -12,7 +12,7 @@
 namespace pfx2
 {
 
-class CParticleEmitter : public IParticleEmitter, public Cry3DEngineBase
+class CParticleEmitter final : public IParticleEmitter, public Cry3DEngineBase
 {
 public:
 	using SRenderObjectMaterialPair = std::pair<CRenderObject*, _smart_ptr<IMaterial>>;

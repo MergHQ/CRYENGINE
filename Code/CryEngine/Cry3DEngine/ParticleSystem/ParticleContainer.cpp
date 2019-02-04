@@ -6,8 +6,6 @@
 namespace
 {
 
-uint memData;
-uint memContainer;
 
 byte* ParticleAlloc(uint32 sz)
 {
@@ -15,7 +13,6 @@ byte* ParticleAlloc(uint32 sz)
 		return 0;
 	void* ptr = CryModuleMemalign(sz, CRY_PFX2_PARTICLES_ALIGNMENT);
 	memset(ptr, 0, sz);
-	memData += sz;
 	return (byte*)ptr;
 }
 
@@ -24,7 +21,6 @@ void ParticleFree(void* ptr, uint32 sz)
 	if (!ptr)
 		return;
 	CryModuleMemalignFree(ptr);
-	memData -= sz;
 }
 
 }
@@ -36,19 +32,16 @@ CParticleContainer::CParticleContainer()
 {
 	static PUseData s_useData = NewUseData();
 	SetUsedData(s_useData);
-	memContainer += sizeof(*this);
 }
 
 CParticleContainer::CParticleContainer(const PUseData& pUseData)
 {
 	SetUsedData(pUseData);
-	memContainer += sizeof(*this);
 }
 
 CParticleContainer::~CParticleContainer()
 {
 	ParticleFree(m_pData, m_capacity * m_useData.totalSize);
-	memContainer -= sizeof(*this);
 }
 
 void CParticleContainer::Resize(uint32 newSize)

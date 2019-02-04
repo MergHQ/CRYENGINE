@@ -18,7 +18,7 @@ struct SSerializationContext
 
 uint GetVersion(IArchive& ar);
 
-class CParticleEffect : public IParticleEffect
+class CParticleEffect final : public IParticleEffect
 {
 public:
 	CParticleEffect();

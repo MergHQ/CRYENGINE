@@ -70,7 +70,7 @@ public:
 		ar(m_attribute, "Attribute", "Attribute");
 	}
 
-	virtual void CullSubInstances(CParticleComponentRuntime& runtime, TDynArray<SInstance>& instances) override
+	virtual void CullSubInstances(CParticleComponentRuntime& runtime, TVarArray<SInstance>& instances) override
 	{
 		if (!m_attribute.GetValueAs(runtime.GetEmitter()->GetAttributeInstance(), true))
 			instances.resize(0);
@@ -106,7 +106,7 @@ public:
 			SERIALIZE_VAR(ar, m_selectionStart);
 	}
 
-	virtual void CullSubInstances(CParticleComponentRuntime& runtime, TDynArray<SInstance>& instances) override
+	virtual void CullSubInstances(CParticleComponentRuntime& runtime, TVarArray<SInstance>& instances) override
 	{
 		if (m_probability == 1.0f)
 			return;

@@ -12,7 +12,7 @@
 namespace pfx2
 {
 
-struct IModifier : public _i_reference_target_t
+struct IModifier
 {
 public:
 	bool                IsEnabled() const { return m_enabled; }
@@ -39,8 +39,18 @@ struct IFieldModifier: ITypeModifier<T, TFrom>
 	virtual IFieldModifier* VersionFixReplace() const { return nullptr; }
 };
 
+struct IParamMod
+{
+	void Serialize(Serialization::IArchive& ar)
+	{
+		CRY_PFX2_PROFILE_DETAIL;
+		SerializeImpl(ar);
+	}
+	virtual void SerializeImpl(Serialization::IArchive& ar) = 0;
+};
+
 template<EDataDomain Domain, typename T = SFloat>
-class CParamMod
+class CParamMod: public IParamMod
 {
 public:
 	typedef T TValue;
@@ -52,14 +62,13 @@ public:
 		IFieldModifier<TType, TFrom>, 
 		ITypeModifier<TType, TFrom>
 	>::type;
-	using PModifier = _smart_ptr<TModifier>;
 
 	CParamMod(TFrom defaultValue = TFrom(1))
 		: m_baseValue(defaultValue) {}
 
 	void          AddToComponent(CParticleComponent* pComponent, CParticleFeature* pFeature);
 	void          AddToComponent(CParticleComponent* pComponent, CParticleFeature* pFeature, ThisDataType dataType);
-	void          Serialize(Serialization::IArchive& ar);
+	void          SerializeImpl(Serialization::IArchive& ar) override;
 
 	void          Init(CParticleComponentRuntime& runtime, ThisDataType dataType) const;
 	void          ModifyInit(const CParticleComponentRuntime& runtime, TIOStream<TType>& stream, SUpdateRange range) const;
@@ -72,17 +81,16 @@ public:
 	TRange<TFrom> GetValueRange() const;
 	void          Sample(TVarArray<TFrom> samples) const;
 
-	bool          HasInitModifiers() const   { return !m_modInit.empty(); }
-	bool          HasUpdateModifiers() const { return !m_modUpdate.empty(); }
-	bool          HasModifiers() const       { return !m_modifiers.empty(); }
+	uint16        HasInitModifiers() const   { return m_initMask; }
+	uint16        HasUpdateModifiers() const { return m_updateMask; }
+	uint16        HasModifiers() const       { return m_initMask | m_updateMask; }
 	TType         GetBaseValue() const       { return m_baseValue; }
 	bool          IsEnabled() const          { return crymath::valueisfinite(m_baseValue); }
 
 protected:
 	T                      m_baseValue;
-	std::vector<PModifier> m_modifiers;
-	std::vector<PModifier> m_modInit;
-	std::vector<PModifier> m_modUpdate;
+	uint16                 m_initMask = 0, m_updateMask = 0;
+	DynArray<std::unique_ptr<TModifier>, uint> m_modifiers;
 };
 
 //////////////////////////////////////////////////////////////////////////

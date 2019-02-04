@@ -40,18 +40,20 @@ public:
 
 	static uint DefaultForType() { return EFT_Child; }
 
-	void AddSubInstances(CParticleComponentRuntime& runtime, TDynArray<SInstance>& instances) override
+	void AddSubInstances(CParticleComponentRuntime& runtime) override
 	{
 		CParticleContainer& parentContainer = runtime.GetParentContainer();
 		IFStream normAges = parentContainer.GetIFStream(EPDT_NormalAge);
 		IFStream lifeTimes = parentContainer.GetIFStream(EPDT_LifeTime);
 
+		THeapArray<SInstance> instances(runtime.MemHeap());
 		instances.reserve(parentContainer.GetNumSpawnedParticles());
 		for (auto particleId : parentContainer.GetSpawnedRange())
 		{
 			const float delay = runtime.DeltaTime() - normAges.Load(particleId) * lifeTimes.Load(particleId);
 			instances.emplace_back(particleId, delay);
 		}
+		runtime.AddInstances(instances);
 	}
 };
 
@@ -66,13 +68,14 @@ public:
 
 	bool IsDelayed() const override { return true; }
 
-	void AddSubInstances(CParticleComponentRuntime& runtime, TDynArray<SInstance>& instances) override
+	void AddSubInstances(CParticleComponentRuntime& runtime) override
 	{
 		CParticleContainer& parentContainer = runtime.GetParentContainer();
 		
 		IFStream normAges = parentContainer.GetIFStream(EPDT_NormalAge);
 		IFStream lifeTimes = parentContainer.GetIFStream(EPDT_LifeTime);
 
+		THeapArray<SInstance> instances(runtime.MemHeap());
 		instances.reserve(parentContainer.GetNumParticles());
 		for (auto particleId : parentContainer.GetFullRange())
 		{
@@ -84,6 +87,7 @@ public:
 				instances.emplace_back(particleId, delay);
 			}
 		}
+		runtime.AddInstances(instances);
 	}
 };
 
@@ -119,9 +123,10 @@ public:
 
 	bool IsDelayed() const override { return true; }
 
-	void AddSubInstances(CParticleComponentRuntime& runtime, TDynArray<SInstance>& instances) override
+	void AddSubInstances(CParticleComponentRuntime& runtime) override
 	{
 		CParticleContainer& parentContainer = runtime.GetParentContainer();
+		THeapArray<SInstance> instances(runtime.MemHeap());
 		instances.reserve(parentContainer.GetNumParticles());
 		
 		const auto contactPoints = parentContainer.IStream(EPDT_ContactPoint);
@@ -144,6 +149,7 @@ public:
 				instances.emplace_back(particleId, contact.m_time);
 			}
 		}
+		runtime.AddInstances(instances);
 	}
 
 private:

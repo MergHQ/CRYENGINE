@@ -41,6 +41,7 @@ public:
 	void                          AddBounds(const AABB& bounds);
 	bool                          IsChild() const        { return m_pComponent->GetParentComponent() != nullptr; }
 	void                          ReparentParticles(TConstArray<TParticleId> swapIds);
+	void                          AddInstances(TVarArray<SInstance> instances);
 	void                          RemoveAllSubInstances();
 	void                          RenderAll(const SRenderContext& renderContext);
 
@@ -115,8 +116,8 @@ private:
 	TDynArray<byte>                m_subInstanceData;
 	AABB                           m_bounds;
 	bool                           m_alive;
-	float                          m_deltaTime;
 	bool                           m_isPreRunning;
+	float                          m_deltaTime;
 	SChaosKey mutable              m_chaos;
 	SChaosKeyV mutable             m_chaosV;
 

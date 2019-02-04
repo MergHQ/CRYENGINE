@@ -104,6 +104,7 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
+		CRY_PFX2_PROFILE_DETAIL;
 		if (!m_materialName.empty())
 		{
 			pParams->m_pMaterial = gEnv->p3DEngine->GetMaterialManager()->FindMaterial(m_materialName);

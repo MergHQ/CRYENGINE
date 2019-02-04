@@ -19,13 +19,18 @@ class CParticleJobManager
 public:
 	struct SDeferredRender
 	{
+		SDeferredRender()
+			: m_pEmitter(nullptr)
+			, m_passInfo(0)
+		{}
 		SDeferredRender(CParticleEmitter* pEmitter, const SRenderContext& renderContext)
 			: m_pEmitter(pEmitter)
 			, m_rParam(renderContext.m_renderParams)
 			, m_passInfo(renderContext.m_passInfo)
 			, m_distance(renderContext.m_distance)
 			, m_lightVolumeId(renderContext.m_lightVolumeId)
-			, m_fogVolumeId(renderContext.m_fogVolumeId) {}
+			, m_fogVolumeId(renderContext.m_fogVolumeId)
+		{}
 		CParticleEmitter*  m_pEmitter;
 		SRendParams        m_rParam;
 		SRenderingPassInfo m_passInfo;

@@ -1087,7 +1087,7 @@ public:
 		m_averageData.vectorTravel /= (float)container.GetNumParticles();
 	}
 
-	virtual void CullSubInstances(CParticleComponentRuntime& runtime, TDynArray<SInstance>& instances) override
+	virtual void CullSubInstances(CParticleComponentRuntime& runtime, TVarArray<SInstance>& instances) override
 	{
 		// Allow only one instance
 		uint numAllowed = 1 - runtime.GetNumInstances();
@@ -1157,7 +1157,8 @@ public:
 		uint numParticles = uint(numSpawned * runtime.ComponentParams().m_maxParticleLife / runtime.DeltaTime());
 
 		// Randomly generate positions in current sector; only those not in previous sector spawn as particles
-		TDynArray<Vec3> newPositions;
+		THeapArray<Vec3> newPositions(runtime.MemHeap());
+		newPositions.reserve(numParticles);
 		for (uint i = CRY_PFX2_GROUP_ALIGN(numParticles); i > 0; i -= CRY_PFX2_GROUP_STRIDE)
 		{
 			Vec3v posCam = RandomSector<floatv>(runtime.ChaosV());
