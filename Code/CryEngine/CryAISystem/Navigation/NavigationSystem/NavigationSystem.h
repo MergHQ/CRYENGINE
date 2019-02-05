@@ -425,6 +425,7 @@ public:
 		INCOMPATIBLE = 10,
 		FIRST_COMPATIBLE,
 		ENTITY_MARKUP_GUIDS,
+		UPDATE_STATE,
 
 		// Add new versions before NEXT
 		NEXT,
