@@ -331,9 +331,50 @@ void CSystem::RenderPhysicsStatistics(IPhysicalWorld* pWorld)
 		phys_profile_info* pInfos;
 		phys_job_info* pJobInfos;
 		PhysicsVars* pVars = pWorld->GetPhysVars();
-		int  i             = -2;
+		int  i             = -1;
 		char msgbuf[512];
 
+		if (pVars->bProfileGroups)
+		{
+			int j           = 0, mask, nGroups = pWorld->GetGroupProfileInfo(pInfos), nJobs = pWorld->GetJobProfileInfo(pJobInfos);
+			float fColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+			if (!pVars->bProfileEntities)
+				j = 12;
+
+			for (++i; j < nGroups; j++, i++)
+			{
+				pInfos[j].nTicksAvg   = (int)(((int64)pInfos[j].nTicksAvg * 15 + pInfos[j].nTicksLast) >> 4);
+				mask                  = (pInfos[j].nTicksPeak - pInfos[j].nTicksLast) >> 31;
+				mask                 |= (70 - pInfos[j].peakAge) >> 31;
+				pInfos[j].nTicksPeak += pInfos[j].nTicksLast - pInfos[j].nTicksPeak & mask;
+				pInfos[j].nCallsPeak += pInfos[j].nCallsLast - pInfos[j].nCallsPeak & mask;
+				float time     = gEnv->pTimer->TicksToSeconds(pInfos[j].nTicksAvg) * 1000.0f;
+				float timeNorm = time * (1.0f / 32);
+				fColor[1] = fColor[2] = 1.0f - (max(0.7f, min(1.0f, timeNorm)) - 0.7f) * (1.0f / 0.3f);
+				IRenderAuxText::Draw2dLabel(renderMarginX, renderMarginY + i * lineSize, fontSize, fColor, false,
+				  "%s %.2fms/%d (peak %.2fms/%d)", pInfos[j].pName, time, pInfos[j].nCallsLast,
+				  gEnv->pTimer->TicksToSeconds(pInfos[j].nTicksPeak) * 1000.0f, pInfos[j].nCallsPeak);
+				pInfos[j].peakAge = pInfos[j].peakAge + 1 & ~mask;
+				if (j == nGroups - 3) ++i;
+			}
+		}
+		if (pVars->bProfileFunx)
+		{
+			int j, mask, nFunx = pWorld->GetFuncProfileInfo(pInfos);
+			float fColor[4] = { 0.75f, 0.08f, 0.85f, 1.0f };
+			for (j = 0, ++i; j < nFunx; j++, i++)
+			{
+				mask                  = (pInfos[j].nTicksPeak - pInfos[j].nTicks) >> 31;
+				mask                 |= (70 - pInfos[j].peakAge) >> 31;
+				pInfos[j].nTicksPeak += pInfos[j].nTicks - pInfos[j].nTicksPeak & mask;
+				pInfos[j].nCallsPeak += pInfos[j].nCalls - pInfos[j].nCallsPeak & mask;
+				IRenderAuxText::Draw2dLabel(renderMarginX, renderMarginY + i * lineSize, fontSize, fColor, false,
+				  "%s %.2fms/%d (peak %.2fms/%d)", pInfos[j].pName, gEnv->pTimer->TicksToSeconds(pInfos[j].nTicks) * 1000.0f, pInfos[j].nCalls,
+				  gEnv->pTimer->TicksToSeconds(pInfos[j].nTicksPeak) * 1000.0f, pInfos[j].nCallsPeak);
+				pInfos[j].peakAge = pInfos[j].peakAge + 1 & ~mask;
+				pInfos[j].nCalls  = pInfos[j].nTicks = 0;
+			}
+		}
 		if (pVars->bProfileEntities == 1)
 		{
 			pe_status_pos sp;
@@ -351,7 +392,7 @@ void CSystem::RenderPhysicsStatistics(IPhysicalWorld* pWorld)
 			{
 				nMaxEntities = 0;
 			}
-			int j, mask, nEnts = pWorld->GetEntityProfileInfo(pInfos);
+			int j, mask, nEnts = pWorld->GetEntityProfileInfo(pInfos), line0 = ++i;
 			if (nEnts > nMaxEntities)
 			{
 				nEnts = nMaxEntities;
@@ -387,7 +428,7 @@ void CSystem::RenderPhysicsStatistics(IPhysicalWorld* pWorld)
 				  dt = gEnv->pTimer->TicksToSeconds(pInfos[i].nTicksAvg) * 1000.0f, pInfos[i].nCallsAvg,
 				  gEnv->pTimer->TicksToSeconds(pInfos[i].nTicksPeak) * 1000.0f, pInfos[i].nCallsPeak,
 				  pInfos[i].pName ? pInfos[i].pName : "", pInfos[i].id);
-				IRenderAuxText::Draw2dLabel(renderMarginX, renderMarginY + i * lineSize, fontSize, fColor, false, "%s", msgbuf);
+				IRenderAuxText::Draw2dLabel(renderMarginX, renderMarginY + (i + line0) * lineSize, fontSize, fColor, false, "%s", msgbuf);
 				if (pTMC) pTMC->PutText(0, i, msgbuf);
 				IPhysicalEntity* pent = pWorld->GetPhysicalEntityById(pInfos[i].id);
 				if (dt > 0.1f && pInfos[i].pName && pent && pent->GetStatus(&sp))
@@ -411,47 +452,6 @@ void CSystem::RenderPhysicsStatistics(IPhysicalWorld* pWorld)
 					pPlayerEnt->SetRotation(Quat(IDENTITY));
 				}
 				m_iJumpToPhysProfileEnt = 0;
-			}
-		}
-		if (pVars->bProfileFunx)
-		{
-			int j, mask, nFunx = pWorld->GetFuncProfileInfo(pInfos);
-			float fColor[4] = { 0.75f, 0.08f, 0.85f, 1.0f };
-			for (j = 0, ++i; j < nFunx; j++, i++)
-			{
-				mask                  = (pInfos[j].nTicksPeak - pInfos[j].nTicks) >> 31;
-				mask                 |= (70 - pInfos[j].peakAge) >> 31;
-				pInfos[j].nTicksPeak += pInfos[j].nTicks - pInfos[j].nTicksPeak & mask;
-				pInfos[j].nCallsPeak += pInfos[j].nCalls - pInfos[j].nCallsPeak & mask;
-				IRenderAuxText::Draw2dLabel(renderMarginX, renderMarginY + i * lineSize, fontSize, fColor, false,
-				  "%s %.2fms/%d (peak %.2fms/%d)", pInfos[j].pName, gEnv->pTimer->TicksToSeconds(pInfos[j].nTicks) * 1000.0f, pInfos[j].nCalls,
-				  gEnv->pTimer->TicksToSeconds(pInfos[j].nTicksPeak) * 1000.0f, pInfos[j].nCallsPeak);
-				pInfos[j].peakAge = pInfos[j].peakAge + 1 & ~mask;
-				pInfos[j].nCalls  = pInfos[j].nTicks = 0;
-			}
-		}
-		if (pVars->bProfileGroups)
-		{
-			int j           = 0, mask, nGroups = pWorld->GetGroupProfileInfo(pInfos), nJobs = pWorld->GetJobProfileInfo(pJobInfos);
-			float fColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-			if (!pVars->bProfileEntities)
-				j = 12;
-
-			for (++i; j < nGroups; j++, i++)
-			{
-				pInfos[j].nTicksAvg   = (int)(((int64)pInfos[j].nTicksAvg * 15 + pInfos[j].nTicksLast) >> 4);
-				mask                  = (pInfos[j].nTicksPeak - pInfos[j].nTicksLast) >> 31;
-				mask                 |= (70 - pInfos[j].peakAge) >> 31;
-				pInfos[j].nTicksPeak += pInfos[j].nTicksLast - pInfos[j].nTicksPeak & mask;
-				pInfos[j].nCallsPeak += pInfos[j].nCallsLast - pInfos[j].nCallsPeak & mask;
-				float time     = gEnv->pTimer->TicksToSeconds(pInfos[j].nTicksAvg) * 1000.0f;
-				float timeNorm = time * (1.0f / 32);
-				fColor[1] = fColor[2] = 1.0f - (max(0.7f, min(1.0f, timeNorm)) - 0.7f) * (1.0f / 0.3f);
-				IRenderAuxText::Draw2dLabel(renderMarginX, renderMarginY + i * lineSize, fontSize, fColor, false,
-				  "%s %.2fms/%d (peak %.2fms/%d)", pInfos[j].pName, time, pInfos[j].nCallsLast,
-				  gEnv->pTimer->TicksToSeconds(pInfos[j].nTicksPeak) * 1000.0f, pInfos[j].nCallsPeak);
-				pInfos[j].peakAge = pInfos[j].peakAge + 1 & ~mask;
-				if (j == nGroups - 3) ++i;
 			}
 		}
 		if (pVars->bProfileEntities == 2)
