@@ -17,34 +17,40 @@ namespace Private_EditorCommands
 {
 void PySetNavigationUpdate(int updateType)
 {
-	GetIEditorImpl()->GetAI()->SetNavigationUpdateType((ENavigationUpdateType)updateType);
+	GetIEditorImpl()->GetAI()->SetNavigationUpdateType((ENavigationUpdateMode)updateType);
 }
 
 void PySetNavigationUpdateContinuous()
 {
-	GetIEditorImpl()->GetAI()->SetNavigationUpdateType(ENavigationUpdateType::Continuous);
+	GetIEditorImpl()->GetAI()->SetNavigationUpdateType(ENavigationUpdateMode::Continuous);
 }
 
 void PySetNavigationUpdateAfterChange()
 {
-	GetIEditorImpl()->GetAI()->SetNavigationUpdateType(ENavigationUpdateType::AfterStabilization);
+	GetIEditorImpl()->GetAI()->SetNavigationUpdateType(ENavigationUpdateMode::AfterStabilization);
 }
 
 void PySetNavigationUpdateDisabled()
 {
-	GetIEditorImpl()->GetAI()->SetNavigationUpdateType(ENavigationUpdateType::Disabled);
+	GetIEditorImpl()->GetAI()->SetNavigationUpdateType(ENavigationUpdateMode::Disabled);
 }
 
-void PyRegenerateMNMType(const char* type)
+void PyRegenerateNavigationByType(const char* type)
 {
 	CAIManager* manager = GetIEditorImpl()->GetAI();
 	manager->RegenerateNavigationByTypeName(type);
 }
 
-void PyRegenerateMNMAll()
+void PyRegenerateNavigationAll()
 {
 	CAIManager* manager = GetIEditorImpl()->GetAI();
 	manager->RegenerateNavigationByTypeName("all");
+}
+
+void PyRegenerateNavigationIgnored()
+{
+	CAIManager* manager = GetIEditorImpl()->GetAI();
+	manager->RegenerateNavigationIgnoredChanges();
 }
 
 void PyGenerateCoverSurfaces()
@@ -132,10 +138,10 @@ void PyRegenerateAgentTypeLayer(const int typeIdx)
 }
 }
 
-REGISTER_PYTHON_ENUM_BEGIN(ENavigationUpdateType, ai, navigation_update_type)
-REGISTER_PYTHON_ENUM_ITEM(ENavigationUpdateType::Continuous, continuous)
-REGISTER_PYTHON_ENUM_ITEM(ENavigationUpdateType::AfterStabilization, afterChange)
-REGISTER_PYTHON_ENUM_ITEM(ENavigationUpdateType::Disabled, disabled)
+REGISTER_PYTHON_ENUM_BEGIN(ENavigationUpdateMode, ai, navigation_update_type)
+REGISTER_PYTHON_ENUM_ITEM(ENavigationUpdateMode::Continuous, continuous)
+REGISTER_PYTHON_ENUM_ITEM(ENavigationUpdateMode::AfterStabilization, afterChange)
+REGISTER_PYTHON_ENUM_ITEM(ENavigationUpdateMode::Disabled, disabled)
 REGISTER_PYTHON_ENUM_END
 
 #define REGISTER_AGENT_TYPE_COMMAND(typeID, functionPtr, moduleName, functionName)                                      \
@@ -161,12 +167,15 @@ REGISTER_AGENT_TYPE_COMMAND(5, PyRegenerateAgentTypeLayer, ai, regenerate_agent_
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::PyGenerateCoverSurfaces, ai, generate_cover_surfaces,
                                    CCommandDescription("Generate Cover Surfaces"));
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_EditorCommands::PyRegenerateMNMType, ai, regenerate_mnm_type,
+REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_EditorCommands::PyRegenerateNavigationByType, ai, regenerate_mnm_type,
                                      "Regenerate navmesh for specified agent type ('all' for all types)",
                                      "ai.regenerate_mnm_type(string agentType)");
 
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::PyRegenerateMNMAll, ai, regenerate_agent_type_all,
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::PyRegenerateNavigationAll, ai, regenerate_agent_type_all,
                                    CCommandDescription("Regenerate All Layers"));
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::PyRegenerateNavigationIgnored, ai, regenerate_ignored,
+                                   CCommandDescription("Regenerate Pending Changes"));
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::PyNavigationShowAreas, ai, show_navigation_areas,
                                    CCommandDescription("Show Navigation Areas"));

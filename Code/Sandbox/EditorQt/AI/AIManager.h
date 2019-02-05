@@ -12,11 +12,12 @@
 #include <CrySerialization/yasli/decorators/Range.h>
 #include "IEditor.h"
 
-enum class ENavigationUpdateType
+enum class ENavigationUpdateMode
 {
 	Continuous,
 	AfterStabilization,
 	Disabled,
+	Count,
 };
 
 // forward declarations.
@@ -93,7 +94,7 @@ struct SAINavigationPreferences : public SPreferencePage
 		: SPreferencePage("Navigation", "AI/Navigation")
 		, m_navigationDebugAgentType(0)
 		, m_navigationShowAreas(true)
-		, m_navigationUpdateType(ENavigationUpdateType::AfterStabilization)
+		, m_navigationUpdateType(ENavigationUpdateMode::AfterStabilization)
 		, m_navigationDebugDisplay(false)
 		, m_visualizeNavigationAccessibility(false)
 		, m_navigationRegenDisabledOnLevelLoad(true)
@@ -151,7 +152,7 @@ struct SAINavigationPreferences : public SPreferencePage
 
 	ADD_PREFERENCE_PAGE_PROPERTY(int, navigationDebugAgentType, setNavigationDebugAgentType)
 	ADD_PREFERENCE_PAGE_PROPERTY(bool, navigationShowAreas, setNavigationShowAreas)
-	ADD_PREFERENCE_PAGE_PROPERTY(ENavigationUpdateType, navigationUpdateType, setNavigationUpdateType)
+	ADD_PREFERENCE_PAGE_PROPERTY(ENavigationUpdateMode, navigationUpdateType, setNavigationUpdateType)
 	ADD_PREFERENCE_PAGE_PROPERTY(bool, navigationRegenDisabledOnLevelLoad, setNavigationRegenDisabledOnLevelLoad)
 	ADD_PREFERENCE_PAGE_PROPERTY(bool, navigationDebugDisplay, setNavigationDebugDisplay)
 	ADD_PREFERENCE_PAGE_PROPERTY(bool, visualizeNavigationAccessibility, setVisualizeNavigationAccessibility)
@@ -246,10 +247,11 @@ public:
 	void                              LateUpdate();
 	void                              EarlyUpdate();
 
-	void                              SetNavigationUpdateType(ENavigationUpdateType updateType);
+	void                              SetNavigationUpdateType(ENavigationUpdateMode updateType);
 	void                              OnNavigationUpdateChanged();
 
 	void                              RegenerateNavigationByTypeName(const char* szType);
+	void                              RegenerateNavigationIgnoredChanges();
 
 private:
 	void               OnHideMaskChanged();
@@ -273,11 +275,9 @@ private:
 	void               SetNavigationWorldMonitorState(const ENavigationWorldMonitorState newState);
 	static const char* GetNavigationWorldMonitorStateName(const ENavigationWorldMonitorState state);
 
-	void               PauseMNMRegeneration();
-	void               ResumeMNMRegeneration(bool updateChangedVolumes = true);
+	void               PauseNavigationRegeneration();
+	void               ResumeNavigationRegeneration();
 
-	// Resume navigation regeneration updating but without updating the changes that were made to NavMesh areas, when the navigation generation was disabled.
-	void               ResumeMNMRegenerationWithoutUpdatingPengingNavMeshChanges();
 	MapTemplates                          m_mapTemplates;
 
 
@@ -294,11 +294,16 @@ private:
 	typedef std::map<string, AgentPathfindingProperties> PFPropertiesMap;
 	PFPropertiesMap              m_mapPFProperties;
 
-	ENavigationUpdateType        m_currentUpdateType;
+	// NavMesh update mode used in the editor that can be changed by user from Sandbox menu
+	ENavigationUpdateMode        m_NavigationEditorUpdateMode;
+
+	// NavMesh update mode used in the engine
+	INavigationUpdatesManager::EUpdateMode m_NavigationUpdateMode;
+
 	ENavigationWorldMonitorState m_navigationWorldMonitorState;
-	int                          m_MNMRegenerationPausedCount;
-	bool                         m_refreshMnmOnGameExit;
-	bool                         m_resumeMNMRegenWhenPumpedPhysicsEventsAreFinished;
+	int                          m_navigationRegenerationPausedCount;
+	bool                         m_refreshNavigationOnGameExit;
+	bool                         m_resumeNavigationRegenWhenPumpedPhysicsEventsAreFinished;
 
 	bool                         m_navigationUpdatePaused;
 

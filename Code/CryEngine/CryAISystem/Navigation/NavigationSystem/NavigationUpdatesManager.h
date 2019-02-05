@@ -18,6 +18,7 @@ public:
 		RequestInQueue = 0,
 		RequestDelayedAndBuffered,
 		RequestIgnoredAndBuffered,
+		RequestIgnoredAndBufferedDuringLoad,
 		RequestInvalid,
 		Count
 	};
@@ -37,6 +38,8 @@ public:
 			Active,
 			Postponed,
 			Ignored,
+			IgnoredDuringLoad,
+			Count,
 		};
 
 		TileUpdateRequest()
@@ -103,6 +106,7 @@ public:
 		const size_t AllocateTileUpdateRequest();
 		void         FreeTileUpdateRequest(const size_t requestIdx);
 		const size_t GetRequestCount() const;
+		const size_t GetCapacity() const { return m_capacity; }
 
 		TileUpdateRequest&       operator[](size_t requestIdx);
 		const TileUpdateRequest& operator[](size_t requestIdx) const;
@@ -136,19 +140,15 @@ public:
 	virtual void RequestGlobalUpdate() override;
 	virtual void RequestGlobalUpdateForAgentType(NavigationAgentTypeID agentTypeID) override;
 
-	virtual void EnableRegenerationRequestsExecution(bool updateChangedVolumes) override;
-	virtual void DisableRegenerationRequestsAndBuffer() override;
-	virtual bool AreRegenerationRequestsDisabled() const override   { return m_bIsRegenerationRequestExecutionEnabled; }
-
-	virtual bool WasRegenerationRequestedThisCycle() const override { return m_bWasRegenerationRequestedThisUpdateCycle; }
-	virtual void ClearRegenerationRequestedThisCycleFlag() override { m_bWasRegenerationRequestedThisUpdateCycle = false; }
-
-	virtual void EnableUpdatesAfterStabilization() override         { m_bPostponeUpdatesForStabilization = true; }
-	virtual void DisableUpdatesAfterStabilization() override        { m_bPostponeUpdatesForStabilization = false; }
+	virtual bool WasRegenerationRequestedThisCycle() const override { return m_wasRegenerationRequestedThisUpdateCycle; }
+	virtual void ClearRegenerationRequestedThisCycleFlag() override { m_wasRegenerationRequestedThisUpdateCycle = false; }
 
 	virtual bool HasBufferedRegenerationRequests() const override;
-	virtual void ApplyBufferedRegenerationRequests() override;
+	virtual void ApplyBufferedRegenerationRequests(bool applyAll) override;
 	virtual void ClearBufferedRegenerationRequests() override;
+
+	virtual void SetUpdateMode(const INavigationUpdatesManager::EUpdateMode updateMode) override;
+	virtual INavigationUpdatesManager::EUpdateMode GetUpdateMode() const override { return m_updateMode; }
 
 	//! Request MNM regeneration on a specific AABB for a specific meshID
 	//! If MNM regeneration is disabled internally, requests will be stored in a buffer
@@ -163,12 +163,16 @@ public:
 	void                     Clear();
 	void                     OnMeshDestroyed(NavigationMeshID meshID);
 
+	void                     SaveData(CCryFile& file, const uint16 version) const;
+	void                     LoadData(CCryFile& file, const uint16 version);
+
 	size_t                   GetRequestQueueSize() const { return m_activeUpdateRequestsQueue.size(); }
 	bool                     HasUpdateRequests() const   { return !m_activeUpdateRequestsQueue.empty(); }
 	const TileUpdateRequest& GetFrontRequest() const;
 	void                     PopFrontRequest();
 
 	void                     DebugDraw();
+	void                     DebugDrawMeshTilesState(const NavigationMeshID meshId) const;
 
 private:
 	struct EntityUpdate
@@ -215,7 +219,7 @@ private:
 	MeshUpdateBoundaries ComputeMeshUpdateBoundaries(const NavigationMesh& mesh, const AABB& aabb);
 	MeshUpdateBoundaries ComputeMeshUpdateDifferenceBoundaries(const NavigationMesh& mesh, const AABB& oldVolume, const AABB& newVolume);
 
-	void                 SheduleTileUpdateRequests(const SRequestParams& requestParams, NavigationMeshID meshID, const MeshUpdateBoundaries& boundaries);
+	void                 ScheduleTileUpdateRequests(const SRequestParams& requestParams, NavigationMeshID meshID, const MeshUpdateBoundaries& boundaries);
 
 	void SwitchUpdateRequestState(size_t requestId, TileUpdateRequest::EState newState);
 
@@ -228,18 +232,41 @@ private:
 	TileRequestQueue  m_activeUpdateRequestsQueue;
 	TileUpdatesVector m_pospondedUpdateRequests;
 	TileUpdatesVector m_ignoredUpdateRequests;
+	TileUpdatesVector m_ignoredUpdateRequestsAfterLoad;
 
 	EntityUpdatesMap  m_postponedEntityUpdatesMap;
 
 	// map for storing AABBs of navigation areas in the case when navmesh updates are disabled and we will need to update them later after enabling
 	std::unordered_map<NavigationMeshID, AABB> m_pendingOldestAabbsOfChangedMeshes;
 
-	bool              m_bIsRegenerationRequestExecutionEnabled;
-	bool              m_bWasRegenerationRequestedThisUpdateCycle;
-	bool              m_bPostponeUpdatesForStabilization;
-	bool              m_bExplicitRegenerationToggle;
+	INavigationUpdatesManager::EUpdateMode m_updateMode;
+
+	bool              m_wasRegenerationRequestedThisUpdateCycle;
+	bool              m_explicitRegenerationToggle;
 
 	CTimeValue        m_lastUpdateTime;
 	CTimeValue        m_frameStartTime;
 	float             m_frameDeltaTime;
 };
+
+namespace MNMUtils
+{
+// Helper functions to read/write various navigationId types from file without creating intermediate uint32.
+// These functions are currently used only in NavigationUpdatesManager and NavigationSystem. They should be moved to separate file when they were needed somewhere else too.
+template<typename TId>
+void ReadNavigationIdType(CCryFile& file, TId& outId)
+{
+	static_assert(sizeof(TId) == sizeof(uint32), "Navigation ID underlying type have changed");
+	uint32 id;
+	file.ReadType(&id);
+	outId = TId(id);
+}
+
+template<typename TId>
+void WriteNavigationIdType(CCryFile& file, const TId& id)
+{
+	static_assert(sizeof(TId) == sizeof(uint32), "Navigation ID underlying type have changed");
+	const uint32 uid = id;
+	file.WriteType<uint32>(&uid);
+}
+} // namespace MNMUtils

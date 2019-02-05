@@ -1040,10 +1040,10 @@ void CEditorMainFrame::BindAIMenu()
 	{
 		pUpdateModeActionGroup->addAction(pContinousUpdate);
 		pUpdateModeMenu->addAction(pContinousUpdate);
-		pContinousUpdate->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateType::Continuous);
+		pContinousUpdate->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateMode::Continuous);
 		gAINavigationPreferences.signalSettingsChanged.Connect([pContinousUpdate]()
 		{
-			pContinousUpdate->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateType::Continuous);
+			pContinousUpdate->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateMode::Continuous);
 		});
 	}
 
@@ -1052,10 +1052,10 @@ void CEditorMainFrame::BindAIMenu()
 	{
 		pUpdateModeActionGroup->addAction(pAfterChangeUpdate);
 		pUpdateModeMenu->addAction(pAfterChangeUpdate);
-		pAfterChangeUpdate->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateType::AfterStabilization);
+		pAfterChangeUpdate->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateMode::AfterStabilization);
 		gAINavigationPreferences.signalSettingsChanged.Connect([pAfterChangeUpdate]()
 		{
-			pAfterChangeUpdate->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateType::AfterStabilization);
+			pAfterChangeUpdate->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateMode::AfterStabilization);
 		});
 	}
 
@@ -1064,10 +1064,10 @@ void CEditorMainFrame::BindAIMenu()
 	{
 		pUpdateModeActionGroup->addAction(pUpdateDisabled);
 		pUpdateModeMenu->addAction(pUpdateDisabled);
-		pUpdateDisabled->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateType::Disabled);
+		pUpdateDisabled->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateMode::Disabled);
 		gAINavigationPreferences.signalSettingsChanged.Connect([pUpdateDisabled]()
 		{
-			pUpdateDisabled->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateType::Disabled);
+			pUpdateDisabled->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateMode::Disabled);
 		});
 	}
 }

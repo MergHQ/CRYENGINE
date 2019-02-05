@@ -272,6 +272,7 @@ struct AIConsoleVars
 	float       ObstacleSizeThreshold;
 
 	int         MNMDebugAccessibility;
+	int         MNMDebugDrawTileStates;
 	const char* MNMDebugDrawFlag;
 
 	int         MNMEditorBackgroundUpdate;

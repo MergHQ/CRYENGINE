@@ -38,10 +38,10 @@
 
 const int kMinQueueSizeToShowProgressNotification = 100;
 
-SERIALIZATION_ENUM_BEGIN(ENavigationUpdateType, "NavigationUpdateType")
-SERIALIZATION_ENUM(ENavigationUpdateType::Continuous, "continuous", "Continuous");
-SERIALIZATION_ENUM(ENavigationUpdateType::AfterStabilization, "after_stabilization", "After Stabilization");
-SERIALIZATION_ENUM(ENavigationUpdateType::Disabled, "disabled", "Disabled");
+SERIALIZATION_ENUM_BEGIN(ENavigationUpdateMode, "NavigationUpdateType")
+SERIALIZATION_ENUM(ENavigationUpdateMode::Continuous, "continuous", "Continuous");
+SERIALIZATION_ENUM(ENavigationUpdateMode::AfterStabilization, "after_stabilization", "After Stabilization");
+SERIALIZATION_ENUM(ENavigationUpdateMode::Disabled, "disabled", "Disabled");
 SERIALIZATION_ENUM_END()
 
 //////////////////////////////////////////////////////////////////////////
@@ -102,11 +102,12 @@ REGISTER_PREFERENCES_PAGE_PTR(SAINavigationPreferences, &gAINavigationPreference
 CAIManager::CAIManager()
 	: m_coverSurfaceManager(new CCoverSurfaceManager)
 	, m_navigationWorldMonitorState(ENavigationWorldMonitorState::Stopped)
-	, m_currentUpdateType(ENavigationUpdateType::Continuous)
-	, m_refreshMnmOnGameExit(false)
-	, m_MNMRegenerationPausedCount(0)
+	, m_NavigationEditorUpdateMode(ENavigationUpdateMode::Continuous)
+	, m_NavigationUpdateMode(INavigationUpdatesManager::EUpdateMode::Continuous)
+	, m_refreshNavigationOnGameExit(false)
+	, m_navigationRegenerationPausedCount(0)
 	, m_navigationUpdatePaused(false)
-	, m_resumeMNMRegenWhenPumpedPhysicsEventsAreFinished(false)
+	, m_resumeNavigationRegenWhenPumpedPhysicsEventsAreFinished(false)
 	, m_frameStartTime(0.0f)
 	, m_frameDeltaTime(0.0f)
 {
@@ -209,13 +210,13 @@ void CAIManager::OnEditorNotifyEvent(EEditorNotifyEvent event)
 			if (!allowDynamicRegen)
 			{
 				PauseNavigationUpdating();
-				PauseMNMRegeneration();
+				PauseNavigationRegeneration();
 			}
 		}
 		break;
 	case eNotify_OnEndGameMode:
 		RestartNavigationUpdating();
-		m_resumeMNMRegenWhenPumpedPhysicsEventsAreFinished = true;
+		m_resumeNavigationRegenWhenPumpedPhysicsEventsAreFinished = true;
 		break;
 
 	case eNotify_OnClearLevelContents:
@@ -228,15 +229,18 @@ void CAIManager::OnEditorNotifyEvent(EEditorNotifyEvent event)
 
 	case eNotify_OnBeginLoad:
 		PauseNavigationWorldMonitor();
-		if (gAINavigationPreferences.navigationRegenDisabledOnLevelLoad())
+		if (m_pAISystem && gAINavigationPreferences.navigationRegenDisabledOnLevelLoad())
 		{
-			PauseMNMRegeneration();
+			m_pAISystem->GetNavigationSystem()->GetUpdateManager()->SetUpdateMode(INavigationUpdatesManager::EUpdateMode::DisabledDuringLoad);
 		}
 		break;
 
 	case eNotify_OnEndLoad:
 		RequestResumeNavigationWorldMonitorOnNextUpdate();
-		ResumeMNMRegenerationWithoutUpdatingPengingNavMeshChanges();
+		if (m_pAISystem && gAINavigationPreferences.navigationRegenDisabledOnLevelLoad())
+		{
+			m_pAISystem->GetNavigationSystem()->GetUpdateManager()->SetUpdateMode(m_navigationRegenerationPausedCount > 0 ? INavigationUpdatesManager::EUpdateMode::Disabled : m_NavigationUpdateMode);
+		}
 		break;
 	case eNotify_OnBeginExportToGame:
 		PauseNavigationUpdating();
@@ -717,7 +721,7 @@ void CAIManager::OnEnterGameMode(bool inGame)
 
 	if (inGame)
 	{
-		m_refreshMnmOnGameExit = false;
+		m_refreshNavigationOnGameExit = false;
 
 		if (allowDynamicRegen)
 		{
@@ -745,12 +749,24 @@ void CAIManager::OnEnterGameMode(bool inGame)
 			StartNavigationWorldMonitor();
 		}
 
-		if (m_refreshMnmOnGameExit)
+		if (m_refreshNavigationOnGameExit)
 		{
 			RebuildAINavigation();
-			m_refreshMnmOnGameExit = false;
+			m_refreshNavigationOnGameExit = false;
 		}
 	}
+}
+
+void CAIManager::RegenerateNavigationIgnoredChanges()
+{
+	if (!m_pAISystem)
+		return;
+
+	INavigationSystem* pNavigationSystem = m_pAISystem->GetNavigationSystem();
+	if (!pNavigationSystem)
+		return;
+
+	pNavigationSystem->GetUpdateManager()->ApplyBufferedRegenerationRequests(false);
 }
 
 void CAIManager::RegenerateNavigationByTypeName(const char* szType)
@@ -791,39 +807,41 @@ void CAIManager::RegenerateNavigationByTypeName(const char* szType)
 
 void CAIManager::OnNavigationUpdateChanged()
 {
-	SetNavigationUpdateType((ENavigationUpdateType)gAINavigationPreferences.navigationUpdateType());
+	SetNavigationUpdateType((ENavigationUpdateMode)gAINavigationPreferences.navigationUpdateType());
 }
 
-void CAIManager::SetNavigationUpdateType(ENavigationUpdateType updateType)
+void CAIManager::SetNavigationUpdateType(ENavigationUpdateMode updateType)
 {
-	if (m_currentUpdateType == updateType)
+	if (m_NavigationEditorUpdateMode == updateType)
 		return;
 
 	INavigationSystem* pNavigationSystem = m_pAISystem ? m_pAISystem->GetNavigationSystem() : nullptr;
 	if (!pNavigationSystem)
 		return;
 
-	switch (m_currentUpdateType)
-	{
-	case ENavigationUpdateType::AfterStabilization:
-		pNavigationSystem->GetUpdateManager()->DisableUpdatesAfterStabilization();
-		break;
-	case ENavigationUpdateType::Disabled:
-		ResumeMNMRegeneration();
-		break;
-	}
-
-	m_currentUpdateType = updateType;
+	m_NavigationEditorUpdateMode = updateType;
 	gAINavigationPreferences.setNavigationUpdateType(updateType);
 
 	switch (updateType)
 	{
-	case ENavigationUpdateType::AfterStabilization:
-		pNavigationSystem->GetUpdateManager()->EnableUpdatesAfterStabilization();
+	case ENavigationUpdateMode::Continuous:
+		m_NavigationUpdateMode = INavigationUpdatesManager::EUpdateMode::Continuous;
 		break;
-	case ENavigationUpdateType::Disabled:
-		PauseMNMRegeneration();
+	case ENavigationUpdateMode::AfterStabilization:
+		m_NavigationUpdateMode = INavigationUpdatesManager::EUpdateMode::AfterStabilization;
 		break;
+	case ENavigationUpdateMode::Disabled:
+		m_NavigationUpdateMode = INavigationUpdatesManager::EUpdateMode::Disabled;
+		break;
+	default:
+		CRY_ASSERT(false);
+		break;
+	}
+	static_assert(int(ENavigationUpdateMode::Count) == 3, "Unexpected enum count");
+
+	if (m_navigationRegenerationPausedCount == 0)
+	{
+		pNavigationSystem->GetUpdateManager()->SetUpdateMode(m_NavigationUpdateMode);
 	}
 }
 
@@ -869,7 +887,7 @@ void CAIManager::OnAreaModified(const AABB& aabb, const CBaseObject* object /*= 
 
 void CAIManager::RebuildAINavigation()
 {
-	ResumeMNMRegeneration();
+	ResumeNavigationRegeneration();
 
 	if (m_pAISystem) //0-pointer crash when starting without Game-Dll
 	{
@@ -880,7 +898,7 @@ void CAIManager::RebuildAINavigation()
 	}
 
 	// bring it back to the original state
-	PauseMNMRegeneration();
+	PauseNavigationRegeneration();
 }
 
 void CAIManager::PauseNavigationUpdating()
@@ -917,7 +935,7 @@ bool CAIManager::IsReadyToGameExport(unsigned int& adjustedExportFlags) const
 				  );
 				if (answer == QDialogButtonBox::Yes)
 				{
-					m_pAISystem->GetNavigationSystem()->GetUpdateManager()->ApplyBufferedRegenerationRequests();
+					m_pAISystem->GetNavigationSystem()->GetUpdateManager()->ApplyBufferedRegenerationRequests(true);
 					return false;
 				}
 			}
@@ -1062,14 +1080,14 @@ void CAIManager::LateUpdate()
 {
 	if (m_pAISystem)
 	{
-		if (m_resumeMNMRegenWhenPumpedPhysicsEventsAreFinished)
+		if (m_resumeNavigationRegenWhenPumpedPhysicsEventsAreFinished)
 		{
 			if (INavigationSystem* pINavigationSystem = m_pAISystem->GetNavigationSystem())
 			{
 				if (!pINavigationSystem->GetUpdateManager()->WasRegenerationRequestedThisCycle())
 				{
-					m_resumeMNMRegenWhenPumpedPhysicsEventsAreFinished = false;
-					ResumeMNMRegeneration();
+					m_resumeNavigationRegenWhenPumpedPhysicsEventsAreFinished = false;
+					ResumeNavigationRegeneration();
 				}
 			}
 		}
@@ -1078,7 +1096,7 @@ void CAIManager::LateUpdate()
 
 void CAIManager::OnNavigationMeshChanged(NavigationAgentTypeID, NavigationMeshID, MNM::TileID)
 {
-	m_refreshMnmOnGameExit = true;
+	m_refreshNavigationOnGameExit = true;
 }
 
 static bool StartNavigationWorldMonitorImpl(IAISystem* pAISystem)
@@ -1274,43 +1292,29 @@ void CAIManager::SetNavigationWorldMonitorState(const ENavigationWorldMonitorSta
 	m_navigationWorldMonitorState = newState;
 }
 
-void CAIManager::PauseMNMRegeneration()
+void CAIManager::PauseNavigationRegeneration()
 {
-	if (m_MNMRegenerationPausedCount++ == 0)
+	if (m_navigationRegenerationPausedCount++ == 0)
 	{
 		if (m_pAISystem)
 		{
 			if (INavigationSystem* pNavigationSystem = m_pAISystem->GetNavigationSystem())
 			{
-				pNavigationSystem->GetUpdateManager()->DisableRegenerationRequestsAndBuffer();
+				pNavigationSystem->GetUpdateManager()->SetUpdateMode(INavigationUpdatesManager::EUpdateMode::Disabled);
 			}
 		}
 	}
 }
 
-void CAIManager::ResumeMNMRegeneration(bool updateChangedVolumes)
+void CAIManager::ResumeNavigationRegeneration()
 {
-	if (--m_MNMRegenerationPausedCount == 0)
+	if (--m_navigationRegenerationPausedCount == 0)
 	{
 		if (m_pAISystem)
 		{
 			if (INavigationSystem* pNavigationSystem = m_pAISystem->GetNavigationSystem())
 			{
-				pNavigationSystem->GetUpdateManager()->EnableRegenerationRequestsExecution(true);
-			}
-		}
-	}
-}
-
-void CAIManager::ResumeMNMRegenerationWithoutUpdatingPengingNavMeshChanges()
-{
-	if (--m_MNMRegenerationPausedCount == 0)
-	{
-		if (m_pAISystem)
-		{
-			if (INavigationSystem* pNavigationSystem = m_pAISystem->GetNavigationSystem())
-			{
-				pNavigationSystem->GetUpdateManager()->EnableRegenerationRequestsExecution(false);
+				pNavigationSystem->GetUpdateManager()->SetUpdateMode(m_NavigationUpdateMode);
 			}
 		}
 	}

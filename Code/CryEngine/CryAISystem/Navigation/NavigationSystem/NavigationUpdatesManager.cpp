@@ -6,13 +6,17 @@
 #include "Navigation/NavigationSystem/NavigationSystem.h"
 #include "DebugDrawContext.h"
 
+#ifndef _RELEASE
+#define SAVE_TILE_STATES
+#endif // !RELEASE
+
+
 //------------------------------------------------------------------------
 CMNMUpdatesManager::CMNMUpdatesManager(NavigationSystem* pNavSystem)
 	: m_pNavigationSystem(pNavSystem)
-	, m_bIsRegenerationRequestExecutionEnabled(true)
-	, m_bWasRegenerationRequestedThisUpdateCycle(false)
-	, m_bPostponeUpdatesForStabilization(false)
-	, m_bExplicitRegenerationToggle(false)
+	, m_updateMode(INavigationUpdatesManager::EUpdateMode::Continuous)
+	, m_wasRegenerationRequestedThisUpdateCycle(false)
+	, m_explicitRegenerationToggle(false)
 	, m_frameStartTime(0.0f)
 	, m_frameDeltaTime(0.0f)
 {
@@ -29,6 +33,7 @@ void CMNMUpdatesManager::Clear()
 	m_updateRequestsMap.clear();
 	m_pospondedUpdateRequests.clear();
 	m_ignoredUpdateRequests.clear();
+	m_ignoredUpdateRequestsAfterLoad.clear();
 
 	m_pendingOldestAabbsOfChangedMeshes.clear();
 }
@@ -47,7 +52,7 @@ void CMNMUpdatesManager::Update(const CTimeValue frameStartTime, const float fra
 //------------------------------------------------------------------------
 void CMNMUpdatesManager::UpdatePostponedChanges()
 {
-	if (m_bPostponeUpdatesForStabilization)
+	if (m_updateMode == INavigationUpdatesManager::EUpdateMode::AfterStabilization)
 	{
 		// Uses global timer instead of AI timer because this has to work in Editor mode as well (AI timer only runs in Game and Physics/AI Mode)
 		if (m_frameStartTime.GetDifferenceInSeconds(m_lastUpdateTime) < gAIEnv.CVars.NavmeshStabilizationTimeToUpdate)
@@ -56,7 +61,7 @@ void CMNMUpdatesManager::UpdatePostponedChanges()
 		}
 	}
 
-	SRequestParams queueAndState = GetRequestParamsAfterStabilization(m_bExplicitRegenerationToggle);
+	const SRequestParams queueAndState = GetRequestParamsAfterStabilization(m_explicitRegenerationToggle);
 
 	//tiles update requests
 	if (m_pospondedUpdateRequests.size())
@@ -79,15 +84,16 @@ void CMNMUpdatesManager::UpdatePostponedChanges()
 		else
 		{
 			// Move update postponed requests to ignore array
-			// TODO: There's currently no way to apply ignored requests apart from Exporting the level. Add an Option to Apply ignored requests.
+			
+			TileUpdatesVector& updatesVector = queueAndState.status == EUpdateRequestStatus::RequestIgnoredAndBuffered ? m_ignoredUpdateRequests : m_ignoredUpdateRequestsAfterLoad;
 			for (size_t i = 0; i < m_pospondedUpdateRequests.size(); ++i)
 			{
 				const size_t requestId = m_pospondedUpdateRequests[i];
 				TileUpdateRequest& request = m_updateRequests[requestId];
 				CRY_ASSERT(request.state == TileUpdateRequest::EState::Postponed);
 
-				request.state = TileUpdateRequest::EState::Ignored;
-				m_ignoredUpdateRequests.push_back(requestId);
+				request.state = queueAndState.requestState;
+				updatesVector.push_back(requestId);
 			}
 		}
 		m_pospondedUpdateRequests.clear();
@@ -128,6 +134,7 @@ void CMNMUpdatesManager::OnMeshDestroyed(NavigationMeshID meshID)
 	
 	RemoveMeshUpdatesFromVector(m_pospondedUpdateRequests, meshID);
 	RemoveMeshUpdatesFromVector(m_ignoredUpdateRequests, meshID);
+	RemoveMeshUpdatesFromVector(m_ignoredUpdateRequestsAfterLoad, meshID);
 
 	m_pendingOldestAabbsOfChangedMeshes.erase(meshID);
 }
@@ -221,9 +228,9 @@ void CMNMUpdatesManager::WorldChanged(const AABB& aabb)
 //------------------------------------------------------------------------
 void CMNMUpdatesManager::RequestGlobalUpdate()
 {
-	m_bExplicitRegenerationToggle = true;
+	m_explicitRegenerationToggle = true;
 	m_pNavigationSystem->ClearAndNotify();
-	m_bExplicitRegenerationToggle = false;
+	m_explicitRegenerationToggle = false;
 }
 
 //------------------------------------------------------------------------
@@ -234,7 +241,7 @@ void CMNMUpdatesManager::RequestGlobalUpdateForAgentType(NavigationAgentTypeID a
 	
 	const AgentType& agentType = m_pNavigationSystem->m_agentTypes[agentTypeID - 1];
 
-	m_bExplicitRegenerationToggle = true;
+	m_explicitRegenerationToggle = true;
 	for (const AgentType::MeshInfo& meshInfo : agentType.meshes)
 	{
 		const NavigationMeshID meshID = meshInfo.id;
@@ -246,7 +253,7 @@ void CMNMUpdatesManager::RequestGlobalUpdateForAgentType(NavigationAgentTypeID a
 			RequestMeshUpdate(meshID, m_pNavigationSystem->m_worldAABB);
 		}
 	}
-	m_bExplicitRegenerationToggle = false;
+	m_explicitRegenerationToggle = false;
 }
 
 //------------------------------------------------------------------------
@@ -260,7 +267,7 @@ CMNMUpdatesManager::EUpdateRequestStatus CMNMUpdatesManager::RequestMeshUpdate(N
 		m_lastUpdateTime = gEnv->pTimer->GetFrameStartTime();
 	}
 
-	SRequestParams requestParams = GetRequestParams(m_bExplicitRegenerationToggle);
+	SRequestParams requestParams = GetRequestParams(m_explicitRegenerationToggle);
 	requestParams.flags |= bMarkupUpdate ? uint16(TileUpdateRequest::EFlag::MarkupUpdate) : 0;
 
 	if (!RequestQueueMeshUpdate(requestParams, meshID, aabb))
@@ -282,7 +289,7 @@ CMNMUpdatesManager::EUpdateRequestStatus CMNMUpdatesManager::RequestMeshDifferen
 	// Uses global timer instead of AI timer because this has to work in Editor mode as well (AI timer only runs in Game and Physics/AI Mode)
 	m_lastUpdateTime = gEnv->pTimer->GetFrameStartTime();
 	
-	SRequestParams queueAndState = GetRequestParams(m_bExplicitRegenerationToggle);
+	SRequestParams queueAndState = GetRequestParams(m_explicitRegenerationToggle);
 	if (!RequestQueueMeshDifferenceUpdate(queueAndState, meshID, oldVolume, newVolume))
 	{
 		return EUpdateRequestStatus::RequestInvalid;
@@ -308,44 +315,66 @@ CMNMUpdatesManager::SRequestParams CMNMUpdatesManager::GetRequestParams(bool bIs
 	{
 		params.status = EUpdateRequestStatus::RequestInQueue;
 		params.requestState = TileUpdateRequest::EState::Active;
+		return params;
 	}
-	else
+	
+	switch (m_updateMode)
 	{
-		if (!m_bIsRegenerationRequestExecutionEnabled)
-		{
-			params.status = EUpdateRequestStatus::RequestIgnoredAndBuffered;
-			params.requestState = TileUpdateRequest::EState::Ignored;
-		}
-		else if (m_bPostponeUpdatesForStabilization)
-		{
-			params.status = EUpdateRequestStatus::RequestDelayedAndBuffered;
-			params.requestState = TileUpdateRequest::EState::Postponed;
-		}
-		else
-		{
-			params.status = EUpdateRequestStatus::RequestInQueue;
-			params.requestState = TileUpdateRequest::EState::Active;
-		}
+	case INavigationUpdatesManager::EUpdateMode::Continuous:
+		params.status = EUpdateRequestStatus::RequestInQueue;
+		params.requestState = TileUpdateRequest::EState::Active;
+		break;
+	case INavigationUpdatesManager::EUpdateMode::AfterStabilization:
+		params.status = EUpdateRequestStatus::RequestDelayedAndBuffered;
+		params.requestState = TileUpdateRequest::EState::Postponed;
+		break;
+	case INavigationUpdatesManager::EUpdateMode::Disabled:
+		params.status = EUpdateRequestStatus::RequestIgnoredAndBuffered;
+		params.requestState = TileUpdateRequest::EState::Ignored;
+		break;
+	case INavigationUpdatesManager::EUpdateMode::DisabledDuringLoad:
+		params.status = EUpdateRequestStatus::RequestIgnoredAndBufferedDuringLoad;
+		params.requestState = TileUpdateRequest::EState::IgnoredDuringLoad;
+		break;
+	default:
+		CRY_ASSERT(false);
+		break;
 	}
 	return params;
 }
 
 //------------------------------------------------------------------------
-CMNMUpdatesManager::SRequestParams CMNMUpdatesManager::GetRequestParamsAfterStabilization(bool bIsExplicit)
+CMNMUpdatesManager::SRequestParams CMNMUpdatesManager::GetRequestParamsAfterStabilization(bool isExplicit)
 {
 	SRequestParams params;
 	static_assert(sizeof(params.flags) == sizeof(TileUpdateRequest::EFlag), "Invalid type size!");
-	params.flags = bIsExplicit ? uint16(TileUpdateRequest::EFlag::Explicit) : 0;
 
-	if (m_bIsRegenerationRequestExecutionEnabled || bIsExplicit)
+	if (isExplicit)
 	{
+		params.flags = uint16(TileUpdateRequest::EFlag::Explicit);
 		params.status = EUpdateRequestStatus::RequestInQueue;
 		params.requestState = TileUpdateRequest::EState::Active;
+		return params;
 	}
-	else
+
+	switch (m_updateMode)
 	{
+	case INavigationUpdatesManager::EUpdateMode::Continuous:
+	case INavigationUpdatesManager::EUpdateMode::AfterStabilization:
+		params.status = EUpdateRequestStatus::RequestInQueue;
+		params.requestState = TileUpdateRequest::EState::Active;
+		break;
+	case INavigationUpdatesManager::EUpdateMode::Disabled:
 		params.status = EUpdateRequestStatus::RequestIgnoredAndBuffered;
 		params.requestState = TileUpdateRequest::EState::Ignored;
+		break;
+	case INavigationUpdatesManager::EUpdateMode::DisabledDuringLoad:
+		params.status = EUpdateRequestStatus::RequestIgnoredAndBufferedDuringLoad;
+		params.requestState = TileUpdateRequest::EState::IgnoredDuringLoad;
+		break;
+	default:
+		CRY_ASSERT(false);
+		break;
 	}
 	return params;
 }
@@ -407,7 +436,7 @@ CMNMUpdatesManager::MeshUpdateBoundaries CMNMUpdatesManager::ComputeMeshUpdateDi
 {
 	const MNM::CNavMesh& navMesh = mesh.navMesh;
 
-	m_bWasRegenerationRequestedThisUpdateCycle = true;
+	m_wasRegenerationRequestedThisUpdateCycle = true;
 
 	const MNM::CNavMesh::SGridParams& paramsGrid = navMesh.GetGridParams();
 
@@ -458,9 +487,9 @@ bool CMNMUpdatesManager::RequestQueueMeshUpdate(const SRequestParams& requestPar
 	if (aabb.IsEmpty() || !mesh.boundary)
 		return false;
 
-	m_bWasRegenerationRequestedThisUpdateCycle = true;
+	m_wasRegenerationRequestedThisUpdateCycle = true;
 
-	SheduleTileUpdateRequests(requestParams, meshID, ComputeMeshUpdateBoundaries(mesh, aabb));
+	ScheduleTileUpdateRequests(requestParams, meshID, ComputeMeshUpdateBoundaries(mesh, aabb));
 	return true;
 #else //!NAV_MESH_REGENERATION_ENABLED
 	return false;
@@ -488,11 +517,11 @@ bool CMNMUpdatesManager::RequestQueueMeshDifferenceUpdate(
 
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-	m_bWasRegenerationRequestedThisUpdateCycle = true;
+	m_wasRegenerationRequestedThisUpdateCycle = true;
 
 	NavigationMesh& mesh = m_pNavigationSystem->m_meshes[meshID];
 	MeshUpdateBoundaries bounds = ComputeMeshUpdateDifferenceBoundaries(mesh, oldVolume.aabb, newVolume.aabb);
-	SheduleTileUpdateRequests(queueAndState, meshID, bounds);
+	ScheduleTileUpdateRequests(queueAndState, meshID, bounds);
 	return true;
 #else //!NAV_MESH_REGENERATION_ENABLED
 	return false;
@@ -508,6 +537,7 @@ void CMNMUpdatesManager::SwitchUpdateRequestState(size_t requestId, TileUpdateRe
 	if (newState == request.state)
 		return;
 	
+	static_assert(int(TileUpdateRequest::EState::Count) == 5, "Unexpected enum count");
 	switch (request.state)
 	{
 	case TileUpdateRequest::EState::Postponed:
@@ -520,9 +550,17 @@ void CMNMUpdatesManager::SwitchUpdateRequestState(size_t requestId, TileUpdateRe
 		m_updateRequests[m_ignoredUpdateRequests[request.idx]].idx = request.idx;
 		m_ignoredUpdateRequests.pop_back();
 		break;
+	case TileUpdateRequest::EState::IgnoredDuringLoad:
+		std::iter_swap(m_ignoredUpdateRequestsAfterLoad.begin() + request.idx, m_ignoredUpdateRequestsAfterLoad.end() - 1);
+		m_updateRequests[m_ignoredUpdateRequestsAfterLoad[request.idx]].idx = request.idx;
+		m_ignoredUpdateRequestsAfterLoad.pop_back();
+		break;
 	case TileUpdateRequest::EState::Active:
 		// request was already removed from the active deque
+	case TileUpdateRequest::EState::Free:
 		break;
+	default:
+		CRY_ASSERT(false);
 	}
 
 	request.state = newState;
@@ -541,11 +579,15 @@ void CMNMUpdatesManager::SwitchUpdateRequestState(size_t requestId, TileUpdateRe
 		request.idx = m_ignoredUpdateRequests.size();
 		m_ignoredUpdateRequests.push_back(requestId);
 		break;
+	case TileUpdateRequest::EState::IgnoredDuringLoad:
+		request.idx = m_ignoredUpdateRequestsAfterLoad.size();
+		m_ignoredUpdateRequestsAfterLoad.push_back(requestId);
+		break;
 	}
 }
 
 //------------------------------------------------------------------------
-void CMNMUpdatesManager::SheduleTileUpdateRequests(const SRequestParams& requestParams, NavigationMeshID meshID, const MeshUpdateBoundaries& bounds)
+void CMNMUpdatesManager::ScheduleTileUpdateRequests(const SRequestParams& requestParams, NavigationMeshID meshID, const MeshUpdateBoundaries& bounds)
 {
 	if (requestParams.requestState != TileUpdateRequest::EState::Active)
 	{
@@ -609,24 +651,31 @@ void CMNMUpdatesManager::SheduleTileUpdateRequests(const SRequestParams& request
 //------------------------------------------------------------------------
 bool CMNMUpdatesManager::HasBufferedRegenerationRequests() const
 {
-	return m_ignoredUpdateRequests.size() > 0;
+	return m_ignoredUpdateRequests.size() > 0 || m_ignoredUpdateRequestsAfterLoad.size() > 0;
 }
 
 //------------------------------------------------------------------------
-void CMNMUpdatesManager::ApplyBufferedRegenerationRequests()
+void CMNMUpdatesManager::ApplyBufferedRegenerationRequests(bool applyAll)
 {
-	for (size_t i = 0; i < m_ignoredUpdateRequests.size(); ++i)
+	TileUpdatesVector* const updatesVectors[] = { &m_ignoredUpdateRequests, &m_ignoredUpdateRequestsAfterLoad };
+	
+	const size_t count = applyAll ? 2 : 1;
+	for (size_t vIdx = 0; vIdx < count; ++vIdx)
 	{
-		const size_t requestId = m_ignoredUpdateRequests[i];
-		TileUpdateRequest& request = m_updateRequests[requestId];
-		request.idx = -1;
-		request.state = TileUpdateRequest::EState::Active;
+		TileUpdatesVector& updatesVector = *updatesVectors[vIdx];
+
+		for (size_t i = 0; i < updatesVector.size(); ++i)
+		{
+			const size_t requestId = updatesVector[i];
+			TileUpdateRequest& request = m_updateRequests[requestId];
+			request.idx = -1;
+			request.state = TileUpdateRequest::EState::Active;
+		}
+
+		m_activeUpdateRequestsQueue.insert(m_activeUpdateRequestsQueue.end(), updatesVector.begin(), updatesVector.end());
+		updatesVector.clear();
 	}
-
-	m_activeUpdateRequestsQueue.insert(m_activeUpdateRequestsQueue.end(), m_ignoredUpdateRequests.begin(), m_ignoredUpdateRequests.end());
 	std::sort(m_activeUpdateRequestsQueue.begin(), m_activeUpdateRequestsQueue.end());
-
-	m_ignoredUpdateRequests.clear();
 }
 
 //------------------------------------------------------------------------
@@ -636,70 +685,165 @@ void CMNMUpdatesManager::ClearBufferedRegenerationRequests()
 }
 
 //------------------------------------------------------------------------
-void CMNMUpdatesManager::DisableRegenerationRequestsAndBuffer()
+void CMNMUpdatesManager::SetUpdateMode(const INavigationUpdatesManager::EUpdateMode updateMode)
 {
-	m_bIsRegenerationRequestExecutionEnabled = false;
+	if (m_updateMode == updateMode)
+		return;
 
-	TileRequestQueue::iterator rear = m_activeUpdateRequestsQueue.end();
-	for (auto it = m_activeUpdateRequestsQueue.begin(); it != rear; )
+	const INavigationUpdatesManager::EUpdateMode previousMode = m_updateMode;
+	m_updateMode = updateMode;
+
+	switch (updateMode)
 	{
-		const size_t requestId = *it;
-		TileUpdateRequest& request = m_updateRequests[requestId];
+	case INavigationUpdatesManager::EUpdateMode::Continuous:
+	case INavigationUpdatesManager::EUpdateMode::AfterStabilization:
+	{
+		if (previousMode != INavigationUpdatesManager::EUpdateMode::Disabled && previousMode != INavigationUpdatesManager::EUpdateMode::DisabledDuringLoad)
+			break;
 
-		if (!request.IsExplicit())
+		if (previousMode == INavigationUpdatesManager::EUpdateMode::Disabled)
 		{
-			request.idx = m_ignoredUpdateRequests.size();
-			m_ignoredUpdateRequests.push_back(requestId);
-			
-			rear = rear - 1;
-			std::iter_swap(it, rear);
-			continue;
-		}
-		++it;
-	}
+			for (auto& meshWithAabb : m_pendingOldestAabbsOfChangedMeshes)
+			{
+				NavigationMeshID meshID = meshWithAabb.first;
+				if (!meshID || !m_pNavigationSystem->m_meshes.validate(meshID))
+					continue;
 
-	if (rear != m_activeUpdateRequestsQueue.end())
+				SRequestParams queueAndState = GetRequestParams(m_explicitRegenerationToggle);
+				NavigationMesh& mesh = m_pNavigationSystem->m_meshes[meshID];
+
+				CRY_ASSERT(m_pNavigationSystem->m_volumes.validate(mesh.boundary));
+				const AABB& oldAABB = meshWithAabb.second;
+				const AABB& currAABB = m_pNavigationSystem->m_volumes[mesh.boundary].aabb;
+
+				if (oldAABB.min != currAABB.min || oldAABB.max != currAABB.max)
+				{
+					MeshUpdateBoundaries bounds = ComputeMeshUpdateDifferenceBoundaries(mesh, oldAABB, currAABB);
+					ScheduleTileUpdateRequests(queueAndState, meshID, bounds);
+
+					m_wasRegenerationRequestedThisUpdateCycle = true;
+				}
+			}
+		}
+		m_pendingOldestAabbsOfChangedMeshes.clear();
+		break;
+	}
+	case INavigationUpdatesManager::EUpdateMode::Disabled:
+	case INavigationUpdatesManager::EUpdateMode::DisabledDuringLoad:
 	{
-		m_activeUpdateRequestsQueue.erase(rear, m_activeUpdateRequestsQueue.end());
+		if(previousMode == INavigationUpdatesManager::EUpdateMode::Disabled || previousMode == INavigationUpdatesManager::EUpdateMode::DisabledDuringLoad)
+			break;
+		
+		TileUpdateRequest::EState newState = updateMode == INavigationUpdatesManager::EUpdateMode::Disabled ? TileUpdateRequest::EState::Ignored : TileUpdateRequest::EState::IgnoredDuringLoad;
+		TileUpdatesVector& updatesVector = updateMode == INavigationUpdatesManager::EUpdateMode::Disabled ? m_ignoredUpdateRequests : m_ignoredUpdateRequestsAfterLoad;
+		TileRequestQueue::iterator rear = m_activeUpdateRequestsQueue.end();
+		for (auto it = m_activeUpdateRequestsQueue.begin(); it != rear; )
+		{
+			const size_t requestId = *it;
+			TileUpdateRequest& request = m_updateRequests[requestId];
+
+			if (!request.IsExplicit())
+			{
+				request.idx = updatesVector.size();
+				request.state = newState;
+				updatesVector.push_back(requestId);
+
+				rear = rear - 1;
+				std::iter_swap(it, rear);
+				continue;
+			}
+			++it;
+		}
+
+		if (rear != m_activeUpdateRequestsQueue.end())
+		{
+			m_activeUpdateRequestsQueue.erase(rear, m_activeUpdateRequestsQueue.end());
+		}
+		break;
+	}
+	default:
+		CRY_ASSERT(false);
+		break;
 	}
 }
 
-void CMNMUpdatesManager::EnableRegenerationRequestsExecution(bool updateChangedVolumes)
+void CMNMUpdatesManager::SaveData(CCryFile& file, const uint16 version) const
 {
-	m_bIsRegenerationRequestExecutionEnabled = true;
+	if (version < NavigationSystem::eBAINavigationFileVersion::UPDATE_STATE)
+		return;
 
-	if (updateChangedVolumes)
+	const uint32 updateRequestsCount = m_updateRequests.GetRequestCount();
+	file.WriteType(&updateRequestsCount);
+
+#ifdef SAVE_TILE_STATES
+	const bool areStatesSaved = true;
+	file.WriteType(&areStatesSaved);
+
+	for (uint32 i = 0; i < m_updateRequests.GetCapacity(); ++i)
 	{
-		for (auto& meshWithAabb : m_pendingOldestAabbsOfChangedMeshes)
+		const TileUpdateRequest& tileRequest = m_updateRequests[i];
+		if (tileRequest.state == TileUpdateRequest::EState::Free)
+			continue;
+
+		const uint32 state = uint32(tileRequest.state);
+
+		file.WriteType(&state);
+		MNMUtils::WriteNavigationIdType(file, tileRequest.meshID);
+		file.WriteType(&tileRequest.flags);
+		file.WriteType(&tileRequest.x);
+		file.WriteType(&tileRequest.y);
+		file.WriteType(&tileRequest.z);
+	}
+#else 
+	const bool areStatesSaved = false;
+	file.WriteType(&areStatesSaved);
+#endif // SAVE_TILE_STATES
+}
+
+void CMNMUpdatesManager::LoadData(CCryFile& file, const uint16 version)
+{
+	if (version < NavigationSystem::eBAINavigationFileVersion::UPDATE_STATE)
+		return;
+
+	uint32 updateRequestsCount = 0;
+	file.ReadType(&updateRequestsCount);
+
+	if (updateRequestsCount && !gEnv->IsEditor())
+	{
+		CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING,
+			"[AISYSTEM] Some NavMesh tiles may be outdated and AI may not be able to navigate correctly through the world. NavMesh needs to be regenerated in Sandbox before exporting the level!");
+	}
+
+	bool areStatesSaved = false;
+	file.ReadType(&areStatesSaved);
+
+	if (areStatesSaved)
+	{
+		for (uint32 i = 0; i < updateRequestsCount; ++i)
 		{
-			NavigationMeshID meshID = meshWithAabb.first;
-			if (!meshID || !m_pNavigationSystem->m_meshes.validate(meshID))
-				continue;
+			const size_t requestIdx = m_updateRequests.AllocateTileUpdateRequest();
+			TileUpdateRequest& tileRequest = m_updateRequests[requestIdx];
 
-			SRequestParams queueAndState = GetRequestParams(m_bExplicitRegenerationToggle);
-			NavigationMesh& mesh = m_pNavigationSystem->m_meshes[meshID];
+			uint32 state;
+			file.ReadType(&state);
+			MNMUtils::ReadNavigationIdType(file, tileRequest.meshID);
+			file.ReadType(&tileRequest.flags);
+			file.ReadType(&tileRequest.x);
+			file.ReadType(&tileRequest.y);
+			file.ReadType(&tileRequest.z);
 
-			CRY_ASSERT(m_pNavigationSystem->m_volumes.validate(mesh.boundary));
-			const AABB& oldAABB = meshWithAabb.second;
-			const AABB& currAABB = m_pNavigationSystem->m_volumes[mesh.boundary].aabb;
+			const uint64 key = TileUpdateRequestKey(tileRequest.meshID, tileRequest.x, tileRequest.y, tileRequest.z);
+			m_updateRequestsMap[key] = requestIdx;
 
-			if (oldAABB.min != currAABB.min || oldAABB.max != currAABB.max)
-			{
-				MeshUpdateBoundaries bounds = ComputeMeshUpdateDifferenceBoundaries(mesh, oldAABB, currAABB);
-				SheduleTileUpdateRequests(queueAndState, meshID, bounds);
-
-				m_bWasRegenerationRequestedThisUpdateCycle = true;
-			}
+			SwitchUpdateRequestState(requestIdx, TileUpdateRequest::EState(state));
 		}
 	}
-	
-	m_pendingOldestAabbsOfChangedMeshes.clear();
 }
 
 //------------------------------------------------------------------------
 void CMNMUpdatesManager::DebugDraw()
 {
-	CRY_ASSERT(m_updateRequests.GetRequestCount() == (m_activeUpdateRequestsQueue.size() + m_pospondedUpdateRequests.size() + m_ignoredUpdateRequests.size()));
+	CRY_ASSERT(m_updateRequests.GetRequestCount() == (m_activeUpdateRequestsQueue.size() + m_pospondedUpdateRequests.size() + m_ignoredUpdateRequests.size() + m_ignoredUpdateRequestsAfterLoad.size()));
 	
 	CDebugDrawContext dc;
 	
@@ -731,6 +875,50 @@ void CMNMUpdatesManager::DebugDraw()
 		aabb.Move(paramsGrid.origin);
 		
 		dc->DrawAABB(aabb, IDENTITY, false, Col_Red, eBBD_Faceted);
+	}
+}
+
+void CMNMUpdatesManager::DebugDrawMeshTilesState(const NavigationMeshID meshId) const
+{
+	const NavigationMesh& mesh = m_pNavigationSystem->m_meshes[meshId];
+	const MNM::CNavMesh::SGridParams& paramsGrid = mesh.navMesh.GetGridParams();
+
+	CDebugDrawContext dc;
+	const Vec3 offset(0.01f);
+	
+	for (size_t i = 0, count = m_updateRequests.GetCapacity(); i < count; ++i)
+	{
+		const TileUpdateRequest& tileRequest = m_updateRequests[i];
+		if(tileRequest.meshID != meshId || tileRequest.state == TileUpdateRequest::EState::Free)
+			continue;
+
+		AABB aabb(AABB::RESET);
+		aabb.Add(Vec3(float(tileRequest.x * paramsGrid.tileSize.x), float(tileRequest.y * paramsGrid.tileSize.y), float(tileRequest.z * paramsGrid.tileSize.z)) + offset);
+		aabb.Add(Vec3(float((tileRequest.x + 1)* paramsGrid.tileSize.x), float((tileRequest.y + 1) * paramsGrid.tileSize.y), float((tileRequest.z + 1) * paramsGrid.tileSize.z)) - offset);
+		aabb.Move(paramsGrid.origin);
+
+		ColorF color;
+		static_assert(int(TileUpdateRequest::EState::Count) == 5, "Unexpected enum count");
+		switch (tileRequest.state)
+		{
+		case TileUpdateRequest::EState::Active:
+			color = Col_Orange; 
+			break;
+		case TileUpdateRequest::EState::Postponed:
+			color = Col_Yellow;
+			break;
+		case TileUpdateRequest::EState::Ignored:
+			color = Col_Blue;
+			break;
+		case TileUpdateRequest::EState::IgnoredDuringLoad:
+			color = Col_Gray;
+			break;
+		default:
+			CRY_ASSERT(false);
+			break;
+		}
+
+		dc->DrawAABB(aabb, IDENTITY, false, color, eBBD_Faceted);
 	}
 }
 
