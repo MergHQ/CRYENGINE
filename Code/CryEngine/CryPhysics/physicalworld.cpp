@@ -2845,7 +2845,7 @@ void CPhysicalWorld::TimeStep(float time_interval, int flags)
 			m_grpProfileData[GetEntityProfileType(pent)].nCallsLast++;
 		for(pent=m_pTypedEnts[3]; pent; pent=pent->m_next)
 			m_grpProfileData[PE_LIVING-2].nCallsLast++;
-		for(pent=m_pTypedEntsPerm[4]; pent; pent=pent->m_next)
+		for(pent=m_pTypedEntsPerm[4]; pent; pent=pent->m_next) if (!(pent->m_flags & pef_disabled))
 			m_grpProfileData[GetEntityProfileType(pent)].nCallsLast++;
 		m_grpProfileData[13].nTicksLast = m_grpProfileData[13].nTicks;
 		m_grpProfileData[13].nTicks = 0;

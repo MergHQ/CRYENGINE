@@ -1911,7 +1911,6 @@ int CRopeEntity::Step(float time_interval)
 	if (m_nSegs<=0 || !m_bAwake)
 		return 1;
 	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
-	PHYS_ENTITY_PROFILER
 	
 	int iCaller = get_iCaller_int();
 	float seglen=m_length/m_nSegs, rseglen=m_nSegs/max(1e-6f,m_length),scale; 
@@ -1961,6 +1960,8 @@ int CRopeEntity::Step(float time_interval)
 		time_interval = max(0.001f, min(m_timeStepFull-m_timeStepPerformed, time_interval));
 	else
 		return 1;
+
+	PHYS_ENTITY_PROFILER
 
 	m_timeStepPerformed += time_interval;
 	m_lastTimeStep = time_interval;
