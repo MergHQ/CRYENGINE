@@ -166,8 +166,8 @@ void CRenderView::Clear()
 	m_skinningPoolIndex = 0;
 	m_shaderItemsToUpdate.CoalesceMemory();
 	m_shaderItemsToUpdate.clear();
-	ZeroArray(m_camera);
-	ZeroArray(m_previousCamera);
+	for (int i = 0; i < CCamera::eEye_eCount; ++i)
+		m_camera[i] = m_previousCamera[i] = CCamera();
 	ZeroArray(m_viewInfo);
 	m_viewInfoCount = 0;
 	m_bPostWriteExecuted = false;
@@ -1536,19 +1536,19 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 	}
 
 	// Calculate AABB
-	Vec3 aabb_min, aabb_max;
-	pElem->mfGetBBox(aabb_min, aabb_max);
-	const auto aabb = AABB{ aabb_min, aabb_max };
-	float objDistance;
+	AABB aabb;
+	pElem->mfGetBBox(aabb);
+	float objDistance = pObj->m_fDistance;
 
 	ERenderObjectFlags objFlags = pObj->m_ObjFlags;    // last time we read flags from renderObject
 
+	if (!(pElem->mfGetFlags() & FCEF_KEEP_DISTANCE))
 	{
-		// Use the (possibly) tighter AABB extracted from the render element and store distance squared.
+		// Use the (possibly) tighter AABB extracted from the render element and store distance.
 		const auto position = passInfo.GetCamera().GetPosition();
 		const auto transformed_aabb = pObj->TransformAABB(objFlags, aabb, position, passInfo);
 
-		objDistance = Distance::Point_AABBSq(position, transformed_aabb) * GetZoomFactor();
+		objDistance = crymath::sqrt_fast(Distance::Point_AABBSq(position, transformed_aabb)) * GetZoomFactor();
 	}
 
 	SRendItem ri = {0};

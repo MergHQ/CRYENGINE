@@ -48,6 +48,8 @@ enum ERenderElementFlags : uint16
 	FCEF_SKINNED       = BIT(5),
 	FCEF_PRE_DRAW_DONE = BIT(6),
 
+	FCEF_KEEP_DISTANCE = BIT(7),
+
 	FCEF_NONE          = 0
 };
 
@@ -74,9 +76,9 @@ public:
 	virtual int                mfGetMatId() = 0;
 	virtual void               mfReset() = 0;
 	virtual bool               mfIsHWSkinned() = 0;
-	virtual CRenderElement*      mfCopyConstruct(void) = 0;
+	virtual CRenderElement*    mfCopyConstruct() = 0;
 	virtual void               mfCenter(Vec3& centr, CRenderObject* pObj, const SRenderingPassInfo& passInfo) = 0;
-	virtual void               mfGetBBox(Vec3& vMins, Vec3& vMaxs) const = 0;
+	virtual void               mfGetBBox(AABB& bb) const = 0;
 
 	virtual bool  mfUpdate(InputLayoutHandle eVertFormat, EStreamMasks StreamMask, bool bTessellation = false) = 0;
 
@@ -217,7 +219,7 @@ public:
 	virtual bool               mfIsHWSkinned() { return false; }
 	virtual CRenderElement*    mfCopyConstruct(void);
 	virtual void               mfCenter(Vec3& centr, CRenderObject* pObj, const SRenderingPassInfo& passInfo);
-	virtual void               mfGetBBox(Vec3& vMins, Vec3& vMaxs) const;
+	virtual void               mfGetBBox(AABB& bb) const;
 	virtual void  mfGetPlane(Plane& pl);
 
 

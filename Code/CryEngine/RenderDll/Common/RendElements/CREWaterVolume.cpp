@@ -135,10 +135,9 @@ void CREWaterVolume::mfCenter(Vec3& vCenter, CRenderObject* pObj, const SRenderi
 		vCenter += pObj->GetMatrix(passInfo).GetTranslation();
 }
 
-void CREWaterVolume::mfGetBBox(Vec3& vMins, Vec3& vMaxs) const
+void CREWaterVolume::mfGetBBox(AABB& bb) const
 {
-	vMins = m_pParams->m_WSBBox.min;
-	vMaxs = m_pParams->m_WSBBox.max;
+	bb = m_pParams->m_WSBBox;
 }
 
 bool CREWaterVolume::Compile(CRenderObject* pObj, uint64 objFlags, ERenderElementFlags elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly)

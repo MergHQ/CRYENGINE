@@ -27,7 +27,7 @@ public:
 
 	void* mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, EStreamMasks StreamMask);
 	bool  mfUpdate(InputLayoutHandle eVertFormat, EStreamMasks StreamMask, bool bTessellation = false);
-	void  mfGetBBox(Vec3& vMins, Vec3& vMaxs) const;
+	void  mfGetBBox(AABB& bb) const;
 
 	int   Size()
 	{
