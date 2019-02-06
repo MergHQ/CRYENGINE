@@ -2,9 +2,10 @@
 
 #pragma once
 
-#include "RayInfo.h"
-#include <CryAudio/IAudioInterfacesCommonData.h>
-#include <CryPhysics/IPhysics.h>
+#if defined(CRY_AUDIO_USE_OCCLUSION)
+	#include "RayInfo.h"
+	#include <CryAudio/IAudioInterfacesCommonData.h>
+	#include <CryPhysics/IPhysics.h>
 
 namespace CryAudio
 {
@@ -19,6 +20,7 @@ constexpr uint8 g_numRaySamplePositionsHigh = g_numberHigh * g_numberHigh;
 constexpr uint8 g_numConcurrentRaysLow = 1;
 constexpr uint8 g_numConcurrentRaysMedium = 2;
 constexpr uint8 g_numConcurrentRaysHigh = 4;
+constexpr uint8 g_numInitialSamplePositions = 5;
 
 class CPropagationProcessor
 {
@@ -40,6 +42,7 @@ public:
 	// PhysicsSystem callback
 	static int  OnObstructionTest(EventPhys const* pEvent);
 	static void UpdateOcclusionRayFlags();
+	static void UpdateOcclusionPlanes();
 
 	void        Update();
 	void        SetOcclusionType(EOcclusionType const occlusionType);
@@ -65,8 +68,8 @@ private:
 	void  ProcessHigh(Vec3 const& up, Vec3 const& side, bool const bSynch);
 	uint8 GetNumConcurrentRays() const;
 	uint8 GetNumSamplePositions() const;
-	void  UpdateOcclusionPlanes();
 	bool  CanRunOcclusion();
+	float CastInitialRay(Vec3 const& origin, Vec3 const& target, bool const accumulate);
 
 	float          m_lastQuerriedOcclusion;
 	float          m_occlusion;
@@ -86,7 +89,7 @@ private:
 
 	static int     s_occlusionRayFlags;
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 public:
 
 	static uint16 s_totalSyncPhysRays;
@@ -116,6 +119,7 @@ private:
 
 	SRayDebugInfo m_rayDebugInfos[g_numConcurrentRaysHigh];
 	ColorB        m_listenerOcclusionPlaneColor;
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 };
-} // namespace CryAudio
+}      // namespace CryAudio
+#endif // CRY_AUDIO_USE_OCCLUSION

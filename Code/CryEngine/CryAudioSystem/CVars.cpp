@@ -4,8 +4,11 @@
 #include "CVars.h"
 #include "Common.h"
 #include "System.h"
-#include "PropagationProcessor.h"
 #include <CrySystem/IConsole.h>
+
+#if defined(CRY_AUDIO_USE_OCCLUSION)
+	#include "PropagationProcessor.h"
+#endif // CRY_AUDIO_USE_OCCLUSION
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	#include "Common/Logger.h"
@@ -14,11 +17,19 @@
 
 namespace CryAudio
 {
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 //////////////////////////////////////////////////////////////////////////
 void OnOcclusionRayTypesChanged(ICVar* const pCvar)
 {
 	CPropagationProcessor::UpdateOcclusionRayFlags();
 }
+
+//////////////////////////////////////////////////////////////////////////
+void OnOcclusionPlaneSizeChanged(ICVar* const pCvar)
+{
+	CPropagationProcessor::UpdateOcclusionPlanes();
+}
+#endif // CRY_AUDIO_USE_OCCLUSION
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
@@ -209,62 +220,97 @@ void CCVars::RegisterVariables()
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on PC
 	m_objectPoolSize = 256;
 	m_standaloneFilePoolSize = 1;
+	#if defined(CRY_AUDIO_USE_OCCLUSION)
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
-	m_fullObstructionMaxDistance = 5.0f;
+	#endif // CRY_AUDIO_USE_OCCLUSION
 #elif CRY_PLATFORM_DURANGO
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on XboxOne
 	m_objectPoolSize = 256;
 	m_standaloneFilePoolSize = 1;
+	#if defined(CRY_AUDIO_USE_OCCLUSION)
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
-	m_fullObstructionMaxDistance = 5.0f;
+	#endif // CRY_AUDIO_USE_OCCLUSION
 #elif CRY_PLATFORM_ORBIS
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on PS4
 	m_objectPoolSize = 256;
 	m_standaloneFilePoolSize = 1;
+	#if defined(CRY_AUDIO_USE_OCCLUSION)
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
-	m_fullObstructionMaxDistance = 5.0f;
+	#endif // CRY_AUDIO_USE_OCCLUSION
 #elif CRY_PLATFORM_MAC
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on Mac
 	m_objectPoolSize = 256;
 	m_standaloneFilePoolSize = 1;
+	#if defined(CRY_AUDIO_USE_OCCLUSION)
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
-	m_fullObstructionMaxDistance = 5.0f;
+	#endif // CRY_AUDIO_USE_OCCLUSION
 #elif CRY_PLATFORM_LINUX
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on Linux
 	m_objectPoolSize = 256;
 	m_standaloneFilePoolSize = 1;
+	#if defined(CRY_AUDIO_USE_OCCLUSION)
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
-	m_fullObstructionMaxDistance = 5.0f;
+	#endif // CRY_AUDIO_USE_OCCLUSION
 #elif CRY_PLATFORM_IOS
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on iOS
 	m_objectPoolSize = 256;
 	m_standaloneFilePoolSize = 1;
+	#if defined(CRY_AUDIO_USE_OCCLUSION)
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
-	m_fullObstructionMaxDistance = 5.0f;
+	#endif // CRY_AUDIO_USE_OCCLUSION
 #elif CRY_PLATFORM_ANDROID
 	m_fileCacheManagerSize = 72 << 10;      // 72 MiB
 	m_objectPoolSize = 256;
 	m_standaloneFilePoolSize = 1;
+	#if defined(CRY_AUDIO_USE_OCCLUSION)
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
-	m_fullObstructionMaxDistance = 5.0f;
+	#endif // CRY_AUDIO_USE_OCCLUSION
 #else
 	#error "Undefined platform."
 #endif
 
+	REGISTER_CVAR2("s_FileCacheManagerSize", &m_fileCacheManagerSize, m_fileCacheManagerSize, VF_REQUIRE_APP_RESTART,
+	               "Sets the size in KiB the AFCM will allocate on the heap.\n"
+	               "Usage: s_FileCacheManagerSize [0/...]\n"
+	               "Default PC: 393216 (384 MiB), XboxOne: 393216 (384 MiB), PS4: 393216 (384 MiB), Mac: 393216 (384 MiB), Linux: 393216 (384 MiB), iOS: 2048 (2 MiB), Android: 73728 (72 MiB)\n");
+
+	REGISTER_CVAR2("s_AudioObjectPoolSize", &m_objectPoolSize, m_objectPoolSize, VF_REQUIRE_APP_RESTART,
+	               "Sets the number of preallocated audio objects and corresponding audio proxies.\n"
+	               "Usage: s_AudioObjectPoolSize [0/...]\n"
+	               "Default PC: 256, XboxOne: 256, PS4: 256, Mac: 256, Linux: 256, iOS: 256, Android: 256\n");
+
+	REGISTER_CVAR2("s_AudioStandaloneFilePoolSize", &m_standaloneFilePoolSize, m_standaloneFilePoolSize, VF_REQUIRE_APP_RESTART,
+	               "Sets the number of preallocated audio standalone files.\n"
+	               "Usage: s_AudioStandaloneFilePoolSize [0/...]\n"
+	               "Default PC: 1, XboxOne: 1, PS4: 1, Mac: 1, Linux: 1, iOS: 1, Android: 1\n");
+
+	REGISTER_CVAR2("s_IgnoreWindowFocus", &m_ignoreWindowFocus, 0, VF_NULL,
+	               "If set to 1, the audio system will not execute the \"lose_focus\" and \"get_focus\" triggers when the application window focus changes.\n"
+	               "Usage: s_IgnoreWindowFocus [0/1]\n"
+	               "Default: 0 (off)\n");
+
+	REGISTER_STRING("s_DefaultStandaloneFilesAudioTrigger", "", 0,
+	                "The name of the AudioTrigger which is used for playing back standalone files, when you call 'PlayFile' without specifying\n"
+	                "an override triggerId that should be used instead.\n"
+	                "Usage: s_DefaultStandaloneFilesAudioTrigger audio_trigger_name.\n"
+	                "If you change this CVar to be empty, the control will not be created automatically.\n"
+	                "Default: \"do_nothing\" \n");
+
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 	REGISTER_CVAR2("s_OcclusionMaxDistance", &m_occlusionMaxDistance, m_occlusionMaxDistance, VF_CHEAT | VF_CHEAT_NOCHECK,
 	               "Occlusion is not calculated for audio objects, whose distance to the listener is greater than this value. Setting this value to 0 disables obstruction/occlusion calculations.\n"
 	               "Usage: s_OcclusionMaxDistance [0/...]\n"
@@ -290,40 +336,16 @@ void CCVars::RegisterVariables()
 	               "Usage: s_OcclusionMediumDistance [0/...]\n"
 	               "Default: 80 m\n");
 
-	REGISTER_CVAR2("s_FullObstructionMaxDistance", &m_fullObstructionMaxDistance, m_fullObstructionMaxDistance, VF_CHEAT | VF_CHEAT_NOCHECK,
-	               "for the sounds, whose distance to the listener is greater than this value, the obstruction is value gets attenuated with distance.\n"
-	               "Usage: s_FullObstructionMaxDistance [0/...]\n"
-	               "Default: 5 m\n");
+	REGISTER_CVAR2_CB("s_OcclusionListenerPlaneSize", &m_occlusionListenerPlaneSize, 1.0f, VF_CHEAT | VF_CHEAT_NOCHECK,
+	                  "Sets the size of the plane at listener position against which occlusion is calculated.\n"
+	                  "Usage: s_OcclusionListenerPlaneSize [0/...]\n"
+	                  "Default: 1.0 (100 cm)\n",
+	                  OnOcclusionPlaneSizeChanged);
 
-	REGISTER_CVAR2("s_ListenerOcclusionPlaneSize", &m_listenerOcclusionPlaneSize, 1.0f, VF_CHEAT | VF_CHEAT_NOCHECK,
-	               "Sets the size of the plane at listener position against which occlusion is calculated.\n"
-	               "Usage: s_ListenerOcclusionPlaneSize [0/...]\n"
-	               "Default: 1.0 (100 cm)\n");
-
-	REGISTER_CVAR2("s_FileCacheManagerSize", &m_fileCacheManagerSize, m_fileCacheManagerSize, VF_REQUIRE_APP_RESTART,
-	               "Sets the size in KiB the AFCM will allocate on the heap.\n"
-	               "Usage: s_FileCacheManagerSize [0/...]\n"
-	               "Default PC: 393216 (384 MiB), XboxOne: 393216 (384 MiB), PS4: 393216 (384 MiB), Mac: 393216 (384 MiB), Linux: 393216 (384 MiB), iOS: 2048 (2 MiB), Android: 73728 (72 MiB)\n");
-
-	REGISTER_CVAR2("s_AudioObjectPoolSize", &m_objectPoolSize, m_objectPoolSize, VF_REQUIRE_APP_RESTART,
-	               "Sets the number of preallocated audio objects and corresponding audio proxies.\n"
-	               "Usage: s_AudioObjectPoolSize [0/...]\n"
-	               "Default PC: 256, XboxOne: 256, PS4: 256, Mac: 256, Linux: 256, iOS: 256, Android: 256\n");
-
-	REGISTER_CVAR2("s_AudioStandaloneFilePoolSize", &m_standaloneFilePoolSize, m_standaloneFilePoolSize, VF_REQUIRE_APP_RESTART,
-	               "Sets the number of preallocated audio standalone files.\n"
-	               "Usage: s_AudioStandaloneFilePoolSize [0/...]\n"
-	               "Default PC: 1, XboxOne: 1, PS4: 1, Mac: 1, Linux: 1, iOS: 1, Android: 1\n");
-
-	REGISTER_CVAR2("s_AccumulateOcclusion", &m_accumulateOcclusion, m_accumulateOcclusion, VF_CHEAT | VF_CHEAT_NOCHECK,
+	REGISTER_CVAR2("s_OcclusionAccumulate", &m_occlusionAccumulate, m_occlusionAccumulate, VF_CHEAT | VF_CHEAT_NOCHECK,
 	               "Sets whether occlusion values encountered by a ray cast will be accumulated or only the highest value will be used.\n"
-	               "Usage: s_AccumulateOcclusion [0/1] (off/on)\n"
+	               "Usage: s_OcclusionAccumulate [0/1] (off/on)\n"
 	               "Default PC: 1, XboxOne: 1, PS4: 1, Mac: 1, Linux: 1, iOS: 1, Android: 1\n");
-
-	REGISTER_CVAR2("s_IgnoreWindowFocus", &m_ignoreWindowFocus, 0, VF_NULL,
-	               "If set to 1, the audio system will not execute the \"lose_focus\" and \"get_focus\" triggers when the application window focus changes.\n"
-	               "Usage: s_IgnoreWindowFocus [0/1]\n"
-	               "Default: 0 (off)\n");
 
 	REGISTER_CVAR2_CB("s_OcclusionCollisionTypes", &m_occlusionCollisionTypes, AlphaBits64("abcd"), VF_CHEAT | VF_BITFIELD,
 	                  "Sets which types of ray casting collision hits are used to calculate occlusion.\n"
@@ -336,17 +358,35 @@ void CCVars::RegisterVariables()
 	                  "d: Collisions with terrain.\n",
 	                  OnOcclusionRayTypesChanged);
 
-	REGISTER_CVAR2("s_SetFullOcclusionOnMaxHits", &m_setFullOcclusionOnMaxHits, m_setFullOcclusionOnMaxHits, VF_CHEAT | VF_CHEAT_NOCHECK,
+	REGISTER_CVAR2("s_OcclusionSetFullOnMaxHits", &m_occlusionSetFullOnMaxHits, m_occlusionSetFullOnMaxHits, VF_CHEAT | VF_CHEAT_NOCHECK,
 	               "If set to 1, the occlusion value will be set to 1 (max) when a ray cast reaches its max hit limit.\n"
-	               "Usage: s_SetFullOcclusionOnMaxHits [0/1] (off/on)\n"
+	               "Usage: s_OcclusionSetFullOnMaxHits [0/1] (off/on)\n"
 	               "Default: 0 (off)\n");
 
-	REGISTER_STRING("s_DefaultStandaloneFilesAudioTrigger", "", 0,
-	                "The name of the AudioTrigger which is used for playing back standalone files, when you call 'PlayFile' without specifying\n"
-	                "an override triggerId that should be used instead.\n"
-	                "Usage: s_DefaultStandaloneFilesAudioTrigger audio_trigger_name.\n"
-	                "If you change this CVar to be empty, the control will not be created automatically.\n"
-	                "Default: \"do_nothing\" \n");
+	REGISTER_CVAR2("s_OcclusionInitialRayCastMode", &m_occlusionInitialRayCastMode, m_occlusionInitialRayCastMode, VF_CHEAT | VF_CHEAT_NOCHECK,
+	               "Sets the ray cast mode of the initial occlusion check when a trigger gets executed.\n"
+	               "Usage: s_OcclusionInitialRayCastMode [0/...]\n"
+	               "Default: 1\n"
+	               "0: No initial occlusion check.\n"
+	               "1: Initial occlusion check uses 1 ray from the center of the listener occlusion plane.\n"
+	               "2: Initial occlusion check uses 5 rays. The center ray and one at each corner of the listener occlusion plane.\n");
+
+	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	REGISTER_CVAR2("s_OcclusionGlobalType", &m_occlusionGlobalType, m_occlusionGlobalType, VF_DEV_ONLY,
+	               "Can override audio objects' obstruction/occlusion ray type on a global scale.\n"
+	               "If set it determines whether audio objects use no, adaptive, low, medium or high granularity for rays.\n"
+	               "This is a performance type cvar and can be used to turn audio ray casting globally off\n"
+	               "or force it on every audio objects to a given mode.\n"
+	               "0: Audio object specific ray casting.\n"
+	               "1: All audio objects ignore ray casting.\n"
+	               "2: All audio objects use adaptive ray casting.\n"
+	               "3: All audio objects use low ray casting.\n"
+	               "4: All audio objects use medium ray casting.\n"
+	               "5: All audio objects use high ray casting.\n"
+	               "Usage: s_OcclusionGlobalType [0/1/2/3/4/5]\n"
+	               "Default PC: 0, XboxOne: 0, PS4: 0, Mac: 0, Linux: 0, iOS: 0, Android: 0\n");
+	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif   // CRY_AUDIO_USE_OCCLUSION
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	REGISTER_CVAR2("s_DebugDistance", &m_debugDistance, m_debugDistance, VF_CHEAT | VF_CHEAT_NOCHECK,
@@ -402,20 +442,6 @@ void CCVars::RegisterVariables()
 	               "When drawing audio object names on the screen this cvar can be used to choose between all registered audio objects or only those that reference active audio triggers.\n"
 	               "Usage: s_HideInactiveAudioObjects [0/1]\n"
 	               "Default: 1 (active only)\n");
-
-	REGISTER_CVAR2("s_AudioObjectsRayType", &m_objectsRayType, m_objectsRayType, VF_DEV_ONLY,
-	               "Can override AudioObjects' obstruction/occlusion ray type on a global scale.\n"
-	               "If set it determines whether AudioObjects use no, adaptive, low, medium or high granularity for rays.\n"
-	               "This is a performance type cvar and can be used to turn audio ray casting globally off\n"
-	               "or force it on every AudioObject to a given mode.\n"
-	               "0: AudioObject specific ray casting.\n"
-	               "1: All AudioObjects ignore ray casting.\n"
-	               "2: All AudioObjects use adaptive ray casting.\n"
-	               "3: All AudioObjects use low ray casting.\n"
-	               "4: All AudioObjects use medium ray casting.\n"
-	               "5: All AudioObjects use high ray casting.\n"
-	               "Usage: s_AudioObjectsRayType [0/1/2/3/4/5]\n"
-	               "Default PC: 0, XboxOne: 0, PS4: 0, Mac: 0, Linux: 0, iOS: 0, Android: 0\n");
 
 	m_pDebugFilter = REGISTER_STRING("s_DebugFilter", "", 0,
 	                                 "Allows for filtered display of audio debug info by a search string.\n"
@@ -494,21 +520,27 @@ void CCVars::UnregisterVariables()
 
 	if (pConsole != nullptr)
 	{
+		pConsole->UnregisterVariable("s_FileCacheManagerSize");
+		pConsole->UnregisterVariable("s_AudioObjectPoolSize");
+		pConsole->UnregisterVariable("s_AudioStandaloneFilePoolSize");
+		pConsole->UnregisterVariable("s_IgnoreWindowFocus");
+		pConsole->UnregisterVariable("s_DefaultStandaloneFilesAudioTrigger");
+
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 		pConsole->UnregisterVariable("s_OcclusionMaxDistance");
 		pConsole->UnregisterVariable("s_OcclusionMinDistance");
 		pConsole->UnregisterVariable("s_OcclusionMaxSyncDistance");
 		pConsole->UnregisterVariable("s_OcclusionHighDistance");
 		pConsole->UnregisterVariable("s_OcclusionMediumDistance");
-		pConsole->UnregisterVariable("s_FullObstructionMaxDistance");
-		pConsole->UnregisterVariable("s_ListenerOcclusionPlaneSize");
-		pConsole->UnregisterVariable("s_FileCacheManagerSize");
-		pConsole->UnregisterVariable("s_AudioObjectPoolSize");
-		pConsole->UnregisterVariable("s_AudioStandaloneFilePoolSize");
-		pConsole->UnregisterVariable("s_AccumulateOcclusion");
-		pConsole->UnregisterVariable("s_IgnoreWindowFocus");
+		pConsole->UnregisterVariable("s_OcclusionListenerPlaneSize");
+		pConsole->UnregisterVariable("s_OcclusionAccumulate");
 		pConsole->UnregisterVariable("s_OcclusionCollisionTypes");
-		pConsole->UnregisterVariable("s_SetFullOcclusionOnMaxHits");
-		pConsole->UnregisterVariable("s_DefaultStandaloneFilesAudioTrigger");
+		pConsole->UnregisterVariable("s_OcclusionSetFullOnMaxHits");
+		pConsole->UnregisterVariable("s_OcclusionInitialRayCastMode");
+	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+		pConsole->UnregisterVariable("s_OcclusionGlobalType");
+	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif   // CRY_AUDIO_USE_OCCLUSION
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 		pConsole->UnregisterVariable("s_DebugDistance");
@@ -516,7 +548,7 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_DrawAudioDebug");
 		pConsole->UnregisterVariable("s_FileCacheManagerDebugFilter");
 		pConsole->UnregisterVariable("s_HideInactiveAudioObjects");
-		pConsole->UnregisterVariable("s_AudioObjectsRayType");
+
 		pConsole->UnregisterVariable("s_DebugFilter");
 		pConsole->UnregisterVariable("s_ExecuteTrigger");
 		pConsole->UnregisterVariable("s_StopTrigger");

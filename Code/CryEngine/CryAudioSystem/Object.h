@@ -2,10 +2,13 @@
 
 #pragma once
 
-#include "PropagationProcessor.h"
 #include "Common/PoolObject.h"
 #include <CryAudio/IObject.h>
 #include <CrySystem/TimeValue.h>
+
+#if defined(CRY_AUDIO_USE_OCCLUSION)
+	#include "PropagationProcessor.h"
+#endif // CRY_AUDIO_USE_OCCLUSION
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 struct IRenderAuxGeom;
