@@ -29,7 +29,7 @@ class CParticle;
 
 //////////////////////////////////////////////////////////////////////////
 // A top-level emitter system, interfacing to 3D engine
-class CParticleEmitter : public IParticleEmitter, public CParticleSource
+class CParticleEmitter /* could be final */ : public IParticleEmitter, public CParticleSource
 {
 public:
 
@@ -40,7 +40,7 @@ public:
 	// IRenderNode implementation.
 	//////////////////////////////////////////////////////////////////////////
 	virtual void        ReleaseNode(bool bImmediate) final { CRY_ASSERT((m_dwRndFlags & ERF_PENDING_DELETE) == 0); Register(false, bImmediate); Kill(); }
-	virtual EERType     GetRenderNodeType()          final { return eERType_ParticleEmitter; }
+	virtual EERType     GetRenderNodeType()    const final { return eERType_ParticleEmitter; }
 
 	virtual char const* GetName() const              final { return m_pTopEffect ? m_pTopEffect->GetName() : ""; }
 	virtual char const* GetEntityClassName() const   final { return "ParticleEmitter"; }
@@ -50,9 +50,9 @@ public:
 
 	virtual const AABB  GetBBox() const                final { return m_bbWorld; }
 	virtual void        SetBBox(const AABB& WSBBox)    final { m_bbWorld = WSBBox; }
-	virtual void        FillBBox(AABB& aabb)           final { aabb = GetBBox(); }
+	virtual void        FillBBox(AABB& aabb) const     final { aabb = GetBBox(); }
 
-	virtual void        GetLocalBounds(AABB& bbox) final;
+	virtual void        GetLocalBounds(AABB& bbox) const final;
 	virtual void        SetViewDistRatio(int nViewDistRatio) final
 	{
 		// Override to cache normalized value.
@@ -60,14 +60,14 @@ public:
 		m_fViewDistRatio = GetViewDistRatioNormilized();
 	}
 	ILINE float              GetViewDistRatioFloat() const { return m_fViewDistRatio; }
-	virtual float            GetMaxViewDist() final;
+	virtual float            GetMaxViewDist() const final;
 	virtual void             UpdateStreamingPriority(const SUpdateStreamingPriorityContext& context) final;
 
 	virtual void             SetMatrix(Matrix34 const& mat) final { if (mat.IsValid()) SetLocation(QuatTS(mat)); }
 
 	virtual void             SetMaterial(IMaterial* pMaterial) final { m_pMaterial = pMaterial; }
 	virtual IMaterial*       GetMaterial(Vec3* pHitPos = NULL) const final;
-	virtual IMaterial*       GetMaterialOverride()             final { return m_pMaterial; }
+	virtual IMaterial*       GetMaterialOverride()             const final { return m_pMaterial; }
 
 	virtual IPhysicalEntity* GetPhysics() const                final { return 0; }
 	virtual void             SetPhysics(IPhysicalEntity*)      final {}

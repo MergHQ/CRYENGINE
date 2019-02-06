@@ -207,30 +207,6 @@ void CWaterWaveRenderNode::CopySerializationParams(uint64 nID, const Vec3* pVert
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CWaterWaveRenderNode::SetParams(const SWaterWaveParams& pParams)
-{
-	m_pParams = pParams;
-}
-
-//////////////////////////////////////////////////////////////////////////
-const SWaterWaveParams& CWaterWaveRenderNode::GetParams() const
-{
-	return m_pParams;
-}
-
-//////////////////////////////////////////////////////////////////////////
-const char* CWaterWaveRenderNode::GetEntityClassName() const
-{
-	return "CWaterWaveRenderNode";
-}
-
-//////////////////////////////////////////////////////////////////////////
-const char* CWaterWaveRenderNode::GetName() const
-{
-	return "WaterWave";
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CWaterWaveRenderNode::Spawn()
 {
 
@@ -702,19 +678,7 @@ void CWaterWaveManager::Update(const SRenderingPassInfo& passInfo)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void CWaterWaveRenderNode::FillBBox(AABB& aabb)
-{
-	aabb = CWaterWaveRenderNode::GetBBox();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-EERType CWaterWaveRenderNode::GetRenderNodeType()
-{
-	return eERType_WaterWave;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-float CWaterWaveRenderNode::GetMaxViewDist()
+float CWaterWaveRenderNode::GetMaxViewDist() const
 {
 	if (GetMinSpecFromRenderNodeFlags(m_dwRndFlags) == CONFIG_DETAIL_SPEC)
 		return max(GetCVars()->e_ViewDistMin, CWaterWaveRenderNode::GetBBox().GetRadius() * GetCVars()->e_ViewDistRatioDetail * GetViewDistRatioNormilized());

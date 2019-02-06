@@ -1742,7 +1742,7 @@ float C3DEngine::GetDistanceToSectorWithWater()
 		return 100000.f;
 
 	Vec3 camPostion = GetRenderingCamera().GetPosition();
-	bool bCameraInTerrainBounds = Overlap::Point_AABB2D(camPostion, m_pTerrain->GetParentNode()->GetBBoxVirtual());
+	bool bCameraInTerrainBounds = Overlap::Point_AABB2D(camPostion, m_pTerrain->GetParentNode()->GetBBox());
 
 	return (bCameraInTerrainBounds && (m_pTerrain && m_pTerrain->GetDistanceToSectorWithWater() > 0.1f))
 	       ? m_pTerrain->GetDistanceToSectorWithWater() : max(camPostion.z - GetWaterLevel(), 0.1f);
@@ -3795,7 +3795,7 @@ void C3DEngine::FinishWindGridJob()
 	}
 }
 
-IVisArea* C3DEngine::GetVisAreaFromPos(const Vec3& vPos)
+IVisArea* C3DEngine::GetVisAreaFromPos(const Vec3& vPos) const
 {
 	if (m_pObjManager && m_pVisAreaManager)
 		return m_pVisAreaManager->GetVisAreaFromPos(vPos);
@@ -3803,7 +3803,7 @@ IVisArea* C3DEngine::GetVisAreaFromPos(const Vec3& vPos)
 	return 0;
 }
 
-bool C3DEngine::IntersectsVisAreas(const AABB& box, void** pNodeCache)
+bool C3DEngine::IntersectsVisAreas(const AABB& box, void** pNodeCache) const
 {
 	if (m_pObjManager && m_pVisAreaManager)
 		return m_pVisAreaManager->IntersectsVisAreas(box, pNodeCache);
@@ -6497,7 +6497,7 @@ void C3DEngine::RenderRenderNode_ShadowPass(IShadowCaster* pShadowCaster, const 
 	default:
 		{
 			const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
-			const AABB objBox = pRenderNode->GetBBoxVirtual();
+			const AABB objBox = pRenderNode->GetBBox();
 			SRendParams rParams;
 			rParams.fDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, objBox)) * passInfo.GetZoomFactor();
 			rParams.lodValue = pRenderNode->ComputeLod(wantedLod, passInfo);
@@ -6553,8 +6553,7 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, uint32 nFrameID, bool bUnRe
 		return;
 	}
 
-	AABB aabb;
-	pEnt->FillBBox(aabb);
+	const AABB aabb = pEnt->GetBBox();
 	float fObjRadiusSqr = aabb.GetRadiusSqr();
 	EERType eERType = pEnt->GetRenderNodeType();
 
@@ -6570,8 +6569,7 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, uint32 nFrameID, bool bUnRe
 	if (m_bIntegrateObjectsIntoTerrain && eERType == eERType_MovableBrush && pEnt->GetGIMode() == IRenderNode::eGM_IntegrateIntoTerrain)
 	{
 		// update meshes integrated into terrain
-		AABB nodeBox = pEnt->GetBBox();
-		GetTerrain()->ResetTerrainVertBuffers(&nodeBox);
+		GetTerrain()->ResetTerrainVertBuffers(&aabb);
 	}
 
 	if (!(dwRndFlags & ERF_RENDER_ALWAYS) && !(dwRndFlags & ERF_CASTSHADOWMAPS))
@@ -6753,8 +6751,7 @@ bool C3DEngine::UnRegisterEntityImpl(IRenderNode* pEnt)
 ///////////////////////////////////////////////////////////////////////////////
 Vec3 C3DEngine::GetEntityRegisterPoint(IRenderNode* pEnt)
 {
-	AABB aabb;
-	pEnt->FillBBox(aabb);
+	const AABB aabb = pEnt->GetBBox();
 
 	Vec3 vPoint;
 

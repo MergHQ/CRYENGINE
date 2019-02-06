@@ -72,8 +72,3 @@ void CCloudBlockerRenderNode::SetProperties(const SCloudBlockerProperties& prope
 	m_decayInfluence = properties.decayInfluence;
 	m_bScreenspace = properties.bScreenspace;
 }
-
-void CCloudBlockerRenderNode::FillBBox(AABB& aabb)
-{
-	aabb = CCloudBlockerRenderNode::GetBBox();
-}

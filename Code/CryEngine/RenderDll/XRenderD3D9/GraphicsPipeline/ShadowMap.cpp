@@ -184,25 +184,22 @@ void CShadowMapStage::ReAllocateResources(const SShadowConfig shadowConfig)
 	{
 		for (auto& cachedPass : m_ShadowMapPasses[lightType])
 		{
-			if (SShadowFrustumToRender* pFrustumToRender = cachedPass.m_pFrustumToRender)
+			if (cachedPass.m_eFrustumType == EFrustumType::e_GsmDynamic ||
+				cachedPass.m_eFrustumType == EFrustumType::e_GsmDynamicDistance ||
+				cachedPass.m_eFrustumType == EFrustumType::e_PerObject ||
+				cachedPass.m_eFrustumType == EFrustumType::e_Nearest)
 			{
-				ShadowMapFrustum& frustum = *pFrustumToRender->pFrustum;
+				ETEX_Format texFormat = GetShadowTexFormat(shadowConfig, EPass(lightType));
 
-				if (frustum.m_eFrustumType == ShadowMapFrustum::e_GsmDynamic ||
-					frustum.m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance ||
-					frustum.m_eFrustumType == ShadowMapFrustum::e_PerObject ||
-					frustum.m_eFrustumType == ShadowMapFrustum::e_Nearest)
+				if (cachedPass.m_pDepthTarget)
 				{
-					ETEX_Format texFormat = GetShadowTexFormat(shadowConfig, EPass(lightType));
-					frustum.m_eReqTF = texFormat;
+					const int width = cachedPass.m_pDepthTarget->GetWidth();
+					const int height = cachedPass.m_pDepthTarget->GetHeight();
+					cachedPass.m_pDepthTarget->Invalidate(width, height, texFormat);
 
-					if (cachedPass.m_pDepthTarget)
+					if (!CTexture::IsTextureExist(cachedPass.m_pDepthTarget))
 					{
-						cachedPass.m_pDepthTarget->Invalidate(frustum.nTextureWidth, frustum.nTextureHeight, texFormat);
-						if (!CTexture::IsTextureExist(cachedPass.m_pDepthTarget))
-						{
-							cachedPass.m_pDepthTarget->CreateDepthStencil(texFormat, Clr_FarPlane);
-						}
+						cachedPass.m_pDepthTarget->CreateDepthStencil(texFormat, Clr_FarPlane);
 					}
 				}
 			}
@@ -222,29 +219,24 @@ void CShadowMapStage::ReAllocateResources(const SShadowConfig shadowConfig)
 
 void CShadowMapStage::OnEntityDeleted(IRenderNode* pRenderNode)
 {
-#if SHADOW_FRUSTUM_CLEANUP
 	for (int lightType = ePass_DirectionalLight; lightType <= ePass_LocalLightRSM; ++lightType)
 	{
-		for (const auto& cachedPass : m_ShadowMapPasses[lightType])
+		for (auto& cachedPass : m_ShadowMapPasses[lightType])
 		{
-			if (SShadowFrustumToRender* pFrustumToRender = cachedPass.m_pFrustumToRender)
+			if (cachedPass.m_pLightOwner == pRenderNode)
 			{
-				ShadowMapFrustum& frustum = *pFrustumToRender->pFrustum;
-
-				if (frustum.pLightOwner == pRenderNode)
+				if (cachedPass.m_eFrustumType == EFrustumType::e_GsmDynamic ||
+					cachedPass.m_eFrustumType == EFrustumType::e_GsmDynamicDistance ||
+					cachedPass.m_eFrustumType == EFrustumType::e_PerObject ||
+					cachedPass.m_eFrustumType == EFrustumType::e_Nearest)
 				{
-					if (frustum.m_eFrustumType == ShadowMapFrustum::e_GsmDynamic ||
-						frustum.m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance ||
-						frustum.m_eFrustumType == ShadowMapFrustum::e_PerObject ||
-						frustum.m_eFrustumType == ShadowMapFrustum::e_Nearest)
-					{
-						cachedPass.m_pDepthTarget->ReleaseDeviceTexture(false);
-					}
+					cachedPass.m_pDepthTarget->ReleaseDeviceTexture(false);
 				}
+
+				cachedPass.m_pLightOwner = nullptr;
 			}
 		}
 	}
-#endif
 }
 
 size_t CShadowMapStage::GetAllocatedMemory()
@@ -493,13 +485,16 @@ bool CShadowMapStage::CanRenderCachedShadows(const CCompiledRenderObject *obj) c
 
 void CShadowMapStage::Update()
 {
-	CRenderView* pRenderView = RenderView();
-
-	if (pRenderView->IsRecursive() || pRenderView->GetCurrentEye() != CCamera::eEye_Left)
+	if (!IsStageActive())
 		return; // TODO: how will we handle recursion?
 
 	{
 		PROFILE_LABEL_SCOPE("SHADOWMAP_PREPARE");
+
+		CRenderView* pRenderView = RenderView();
+
+		// compile shadow render items
+		pRenderView->PrepareShadowViews();
 
 		// prepare the shadow pool
 		CDeferredShading::Instance().SetupPasses(pRenderView);
@@ -551,6 +546,8 @@ void CShadowMapStage::PrepareShadowPasses(SShadowFrustumToRender& frustumToRende
 			if (PrepareOutputsForPass(frustumToRender, side, curPass))
 			{
 				curPass.m_pFrustumToRender = &frustumToRender;
+				curPass.m_eFrustumType = frustumToRender.pFrustum->m_eFrustumType;
+				curPass.m_pLightOwner = frustumToRender.pFrustum->pLightOwner;
 				curPass.m_nShadowFrustumSide = side;
 				curPass.m_eShadowPassID = passID;
 
@@ -861,16 +858,17 @@ CShadowMapStage::CShadowMapPass& CShadowMapStage::CShadowMapPassGroup::AddPass()
 }
 
 CShadowMapStage::CShadowMapPass::CShadowMapPass(CShadowMapStage* pStage)
-	: m_perPassResources(pStage->m_perPassResources) // clone per pass resources from stage
+	: m_pDepthTarget(nullptr)
+	, m_pFrustumToRender(nullptr)
+	, m_eFrustumType(EFrustumType(0))
+	, m_pLightOwner(nullptr)
+	, m_nShadowFrustumSide(0)
+	, m_eShadowPassID(EPass(0))
+	, m_perPassResources(pStage->m_perPassResources) // clone per pass resources from stage
 	, m_ViewProjMatrix(IDENTITY)
 	, m_ViewProjMatrixOrig(IDENTITY)
+	, m_pShadowMapStage(pStage)
 {
-	m_pDepthTarget = nullptr;
-	m_pFrustumToRender = nullptr;
-	m_nShadowFrustumSide = 0;
-	m_eShadowPassID = EPass(0);
-	m_pShadowMapStage = pStage;
-
 	m_pPerPassResourceSet = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
 	m_pPerPassConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerPassConstantBuffer_ShadowGen));
 	m_pPerViewConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerViewGlobalConstantBuffer));
@@ -879,6 +877,8 @@ CShadowMapStage::CShadowMapPass::CShadowMapPass(CShadowMapStage* pStage)
 CShadowMapStage::CShadowMapPass::CShadowMapPass(CShadowMapPass&& other)
 	: CSceneRenderPass(std::move(other))
 	, m_pFrustumToRender(std::move(other.m_pFrustumToRender))
+	, m_eFrustumType(std::move(other.m_eFrustumType))
+	, m_pLightOwner(std::move(other.m_pLightOwner))
 	, m_nShadowFrustumSide(std::move(other.m_nShadowFrustumSide))
 	, m_eShadowPassID(std::move(other.m_eShadowPassID))
 	, m_bRequiresRender(std::move(other.m_bRequiresRender))

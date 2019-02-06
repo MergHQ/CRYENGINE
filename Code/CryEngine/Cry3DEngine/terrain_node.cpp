@@ -1424,11 +1424,6 @@ void CTerrainNode::OffsetPosition(const Vec3& delta)
 			m_pChilds[i].OffsetPosition(delta);
 }
 
-void CTerrainNode::FillBBox(AABB& aabb)
-{
-	aabb = GetBBox();
-}
-
 void CTerrainNode::SetTraversalFrameId(uint32 onePassTraversalFrameId, int shadowFrustumLod)
 {
 	if (m_onePassTraversalFrameId != onePassTraversalFrameId)

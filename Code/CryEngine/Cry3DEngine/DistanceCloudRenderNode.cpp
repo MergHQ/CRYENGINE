@@ -175,17 +175,7 @@ void CDistanceCloudRenderNode::OffsetPosition(const Vec3& delta)
 	m_WSBBox.Move(delta);
 }
 
-void CDistanceCloudRenderNode::FillBBox(AABB& aabb)
-{
-	aabb = CDistanceCloudRenderNode::GetBBox();
-}
-
-EERType CDistanceCloudRenderNode::GetRenderNodeType()
-{
-	return eERType_DistanceCloud;
-}
-
-float CDistanceCloudRenderNode::GetMaxViewDist()
+float CDistanceCloudRenderNode::GetMaxViewDist() const
 {
 	if (GetMinSpecFromRenderNodeFlags(m_dwRndFlags) == CONFIG_DETAIL_SPEC)
 		return max(GetCVars()->e_ViewDistMin, CDistanceCloudRenderNode::GetBBox().GetRadius() * GetCVars()->e_ViewDistRatioDetail * GetViewDistRatioNormilized());

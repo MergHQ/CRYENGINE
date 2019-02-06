@@ -243,10 +243,10 @@ const Matrix34& CFogVolumeRenderNode::GetMatrix() const
 	return m_matNodeWS;
 }
 
-void CFogVolumeRenderNode::GetLocalBounds(AABB& bbox)
+void CFogVolumeRenderNode::GetLocalBounds(AABB& bbox) const
 {
 	bbox = m_localBounds;
-};
+}
 
 void CFogVolumeRenderNode::SetMatrix(const Matrix34& mat)
 {
@@ -777,19 +777,7 @@ void CFogVolumeRenderNode::GetVolumetricFogColorBox(const Vec3& worldPos, const 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void CFogVolumeRenderNode::FillBBox(AABB& aabb)
-{
-	aabb = CFogVolumeRenderNode::GetBBox();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-EERType CFogVolumeRenderNode::GetRenderNodeType()
-{
-	return eERType_FogVolume;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-float CFogVolumeRenderNode::GetMaxViewDist()
+float CFogVolumeRenderNode::GetMaxViewDist() const
 {
 	if (GetMinSpecFromRenderNodeFlags(m_dwRndFlags) == CONFIG_DETAIL_SPEC)
 		return max(GetCVars()->e_ViewDistMin, CFogVolumeRenderNode::GetBBox().GetRadius() * GetCVars()->e_ViewDistRatioDetail * GetViewDistRatioNormilized());

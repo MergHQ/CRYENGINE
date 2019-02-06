@@ -803,7 +803,7 @@ int CRopeRenderNode::OnPhysStateChange(EventPhys const* pEvent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRopeRenderNode::GetLocalBounds(AABB& bbox)
+void CRopeRenderNode::GetLocalBounds(AABB& bbox) const
 {
 	bbox = m_localBounds;
 };
@@ -2098,19 +2098,7 @@ void CRopeRenderNode::OffsetPosition(const Vec3& delta)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void CRopeRenderNode::FillBBox(AABB& aabb)
-{
-	aabb = CRopeRenderNode::GetBBox();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-EERType CRopeRenderNode::GetRenderNodeType()
-{
-	return eERType_Rope;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-float CRopeRenderNode::GetMaxViewDist()
+float CRopeRenderNode::GetMaxViewDist() const
 {
 	if (GetMinSpecFromRenderNodeFlags(m_dwRndFlags) == CONFIG_DETAIL_SPEC)
 		return std::max(GetCVars()->e_ViewDistMin, CRopeRenderNode::GetBBox().GetRadius() * GetCVars()->e_ViewDistRatioDetail * GetViewDistRatioNormilized());

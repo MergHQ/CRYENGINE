@@ -44,11 +44,11 @@ class CWaterWaveRenderNode final : public IWaterWaveRenderNode, public Cry3DEngi
 
 public:
 	CWaterWaveRenderNode();
-	virtual void                    Create(uint64 nID, const Vec3* pVertices, uint32 nVertexCount, const Vec2& pUVScale, const Matrix34& pWorldTM);
+	virtual void                    Create(uint64 nID, const Vec3* pVertices, uint32 nVertexCount, const Vec2& pUVScale, const Matrix34& pWorldTM) override;
 	void                            Update(float fDistanceToCamera);
 
-	virtual void                    SetParams(const SWaterWaveParams& pParams);
-	virtual const SWaterWaveParams& GetParams() const;
+	virtual void                    SetParams(const SWaterWaveParams& pParams) override { m_pParams = pParams; }
+	virtual const SWaterWaveParams& GetParams() const override { return m_pParams; }
 
 	void                            SetRenderMesh(IRenderMesh* pRenderMesh);
 
@@ -72,23 +72,23 @@ public:
 	///////////////////////////////////////////////////////////////////////////////////////////////////
 	// IRenderNode implementation
 
-	virtual EERType          GetRenderNodeType();
-	virtual const char*      GetEntityClassName() const;
-	virtual const char*      GetName() const;
-	virtual Vec3             GetPos(bool bWorldOnly = true) const;
-	virtual void             Render(const SRendParams& rParam, const SRenderingPassInfo& passInfo);
-	virtual IPhysicalEntity* GetPhysics() const;
-	virtual void             SetPhysics(IPhysicalEntity*);
-	virtual void             SetMaterial(IMaterial* pMat);
-	virtual IMaterial*       GetMaterial(Vec3* pHitPos) const;
-	virtual IMaterial*       GetMaterialOverride() { return m_pMaterial; }
-	virtual float            GetMaxViewDist();
-	virtual void             GetMemoryUsage(ICrySizer* pSizer) const;
-	virtual void             Precache();
-	virtual const AABB       GetBBox() const             { return m_WSBBox; }
-	virtual void             SetBBox(const AABB& WSBBox) { m_WSBBox = WSBBox; }
-	virtual void             FillBBox(AABB& aabb);
-	virtual void             OffsetPosition(const Vec3& delta);
+	virtual EERType          GetRenderNodeType() const override { return eERType_WaterWave; }
+	virtual const char*      GetEntityClassName() const override { return "CWaterWaveRenderNode"; }
+	virtual const char*      GetName() const override { return "WaterWave"; }
+	virtual Vec3             GetPos(bool bWorldOnly = true) const override;
+	virtual void             Render(const SRendParams& rParam, const SRenderingPassInfo& passInfo) override;
+	virtual IPhysicalEntity* GetPhysics() const override;
+	virtual void             SetPhysics(IPhysicalEntity*) override;
+	virtual void             SetMaterial(IMaterial* pMat) override;
+	virtual IMaterial*       GetMaterial(Vec3* pHitPos) const override;
+	virtual IMaterial*       GetMaterialOverride() const override { return m_pMaterial; }
+	virtual float            GetMaxViewDist() const override;
+	virtual void             GetMemoryUsage(ICrySizer* pSizer) const override;
+	virtual void             Precache() override;
+	virtual const AABB       GetBBox() const override { return m_WSBBox; }
+	virtual void             SetBBox(const AABB& WSBBox) override { m_WSBBox = WSBBox; }
+	virtual void             FillBBox(AABB& aabb) const override { aabb = GetBBox(); }
+	virtual void             OffsetPosition(const Vec3& delta) override;
 
 private:
 

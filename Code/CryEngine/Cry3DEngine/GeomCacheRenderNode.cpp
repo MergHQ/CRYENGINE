@@ -89,11 +89,6 @@ void CGeomCacheRenderNode::SetBBox(const AABB& bBox)
 	m_bBox = bBox;
 }
 
-const AABB CGeomCacheRenderNode::GetBBox() const
-{
-	return m_bBox;
-}
-
 void CGeomCacheRenderNode::UpdateBBox()
 {
 	AABB newAABB;
@@ -132,7 +127,7 @@ void CGeomCacheRenderNode::UpdateBBox()
 	}
 }
 
-void CGeomCacheRenderNode::GetLocalBounds(AABB& bbox)
+void CGeomCacheRenderNode::GetLocalBounds(AABB& bbox) const
 {
 	bbox = m_currentAABB;
 }
@@ -351,11 +346,6 @@ IMaterial* CGeomCacheRenderNode::GetMaterial(Vec3* pHitPos) const
 	}
 
 	return NULL;
-}
-
-float CGeomCacheRenderNode::GetMaxViewDist()
-{
-	return m_maxViewDist;
 }
 
 void CGeomCacheRenderNode::GetMemoryUsage(ICrySizer* pSizer) const

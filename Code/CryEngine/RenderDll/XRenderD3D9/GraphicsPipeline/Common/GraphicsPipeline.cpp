@@ -32,7 +32,8 @@ void CGraphicsPipeline::ShutDown()
 	// destroy stages in reverse order to satisfy data dependencies
 	for (auto it = m_pipelineStages.rbegin(); it != m_pipelineStages.rend(); ++it)
 	{
-		if (*it) delete *it;
+		if (*it)
+			delete *it;
 	}
 
 	m_pipelineStages.fill(nullptr);
@@ -44,7 +45,8 @@ void CGraphicsPipeline::Resize(int renderWidth, int renderHeight)
 	// Sets the current render resolution on all the pipeline stages.
 	for (auto it = m_pipelineStages.begin(); it != m_pipelineStages.end(); ++it)
 	{
-		if (*it) (*it)->Resize(renderWidth, renderHeight);
+		if (*it)
+			(*it)->Resize(renderWidth, renderHeight);
 	}
 }
 
@@ -56,7 +58,8 @@ void CGraphicsPipeline::SetCurrentRenderView(CRenderView* pRenderView)
 	// Sets the current render view on all the pipeline stages.
 	for (auto it = m_pipelineStages.begin(); it != m_pipelineStages.end(); ++it)
 	{
-		if (*it) (*it)->SetRenderView(pRenderView);
+		if (*it)
+			(*it)->SetRenderView(pRenderView);
 	}
 }
 
@@ -78,6 +81,7 @@ void CGraphicsPipeline::OnCVarsChanged(CCVarUpdateRecorder& rCVarRecs)
 {
 	for (auto it = m_pipelineStages.begin(); it != m_pipelineStages.end(); ++it)
 	{
-		if (*it) (*it)->OnCVarsChanged(rCVarRecs);
+		if (*it)
+			(*it)->OnCVarsChanged(rCVarRecs);
 	}
 }

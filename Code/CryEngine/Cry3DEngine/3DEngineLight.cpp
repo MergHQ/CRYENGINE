@@ -809,7 +809,7 @@ void C3DEngine::UpdateLightSources(const SRenderingPassInfo& passInfo)
 
 bool IsSphereInsideHull(const SPlaneObject* pHullPlanes, int nPlanesNum, const Sphere& objSphere);
 
-void C3DEngine::SetupLightScissors(SRenderLight* pLight, const SRenderingPassInfo& passInfo)
+void C3DEngine::SetupLightScissors(SRenderLight* pLight, const SRenderingPassInfo& passInfo) const
 {
 	const CCamera& pCam = passInfo.GetCamera();
 	Vec3 vViewVec = pLight->m_Origin - pCam.GetPosition();

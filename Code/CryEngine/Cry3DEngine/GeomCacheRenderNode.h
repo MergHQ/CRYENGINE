@@ -48,38 +48,38 @@ public:
 	CGeomCacheRenderNode();
 	virtual ~CGeomCacheRenderNode();
 
-	virtual const char* GetName() const final;
-	virtual const char* GetEntityClassName() const final;
-	virtual EERType     GetRenderNodeType() final { return eERType_GeomCache; }
+	virtual const char* GetName() const override;
+	virtual const char* GetEntityClassName() const override;
+	virtual EERType     GetRenderNodeType() const override { return eERType_GeomCache; }
 
-	virtual Vec3        GetPos(bool bWorldOnly) const final;
-	virtual void        SetBBox(const AABB& WSBBox) final;
-	virtual const AABB  GetBBox() const final;
-	virtual void        GetLocalBounds(AABB& bbox) final;
-	virtual void        OffsetPosition(const Vec3& delta) final;
-	virtual void        SetOwnerEntity(IEntity* pEntity) { m_pOwnerEntity = pEntity; }
-	virtual IEntity*    GetOwnerEntity() const { return m_pOwnerEntity; }
+	virtual Vec3        GetPos(bool bWorldOnly) const override;
+	virtual void        SetBBox(const AABB& WSBBox) override;
+	virtual const AABB  GetBBox() const override { return m_bBox; }
+	virtual void        GetLocalBounds(AABB& bbox) const override;
+	virtual void        OffsetPosition(const Vec3& delta) override;
+	virtual void        SetOwnerEntity(IEntity* pEntity) override { m_pOwnerEntity = pEntity; }
+	virtual IEntity*    GetOwnerEntity() const override { return m_pOwnerEntity; }
 
 	// Called before rendering to update to current frame bbox
 	void                            UpdateBBox();
 
-	virtual void                    Render(const struct SRendParams& entDrawParams, const SRenderingPassInfo& passInfo) final;
+	virtual void                    Render(const struct SRendParams& entDrawParams, const SRenderingPassInfo& passInfo) override;
 
-	void                            SetMatrix(const Matrix34& matrix);
-	const Matrix34&                 GetMatrix() const                         { return m_matrix; }
+	void                            SetMatrix(const Matrix34& matrix) override;
+	const Matrix34&                 GetMatrix() const { return m_matrix; }
 
-	virtual struct IPhysicalEntity* GetPhysics() const final                  { return NULL; }
-	virtual void                    SetPhysics(IPhysicalEntity* pPhys)  final {}
+	virtual struct IPhysicalEntity* GetPhysics() const override { return NULL; }
+	virtual void                    SetPhysics(IPhysicalEntity* pPhys)  override {}
 
-	virtual void                    SetMaterial(IMaterial* pMat) final;
-	virtual IMaterial*              GetMaterial(Vec3* pHitPos) const final;
-	virtual IMaterial*              GetMaterialOverride()  final { return m_pMaterial; }
+	virtual void                    SetMaterial(IMaterial* pMat) override;
+	virtual IMaterial*              GetMaterial(Vec3* pHitPos) const override;
+	virtual IMaterial*              GetMaterialOverride() const override { return m_pMaterial; }
 
-	virtual float                   GetMaxViewDist() final;
+	virtual float                   GetMaxViewDist() const override { return m_maxViewDist; }
 
-	virtual void                    GetMemoryUsage(ICrySizer* pSizer) const final;
+	virtual void                    GetMemoryUsage(ICrySizer* pSizer) const override;
 
-	virtual void                    UpdateStreamingPriority(const SUpdateStreamingPriorityContext& streamingContext) final;
+	virtual void                    UpdateStreamingPriority(const SUpdateStreamingPriorityContext& streamingContext) override;
 
 	// Streaming
 	float GetStreamingTime() const { return std::max(m_streamingTime, m_playbackTime); }
@@ -104,45 +104,45 @@ public:
 	void UpdateStreamableComponents(float fImportance, float fDistance, bool bFullUpdate, int nLod, const float fInvScale, bool bDrawNear);
 
 	// IGeomCacheRenderNode
-	virtual bool        LoadGeomCache(const char* sGeomCacheFileName) final;
+	virtual bool        LoadGeomCache(const char* sGeomCacheFileName) override;
 
-	virtual void        SetPlaybackTime(const float time) final;
-	virtual float       GetPlaybackTime() const final { return m_playbackTime; }
+	virtual void        SetPlaybackTime(const float time) override;
+	virtual float       GetPlaybackTime() const override { return m_playbackTime; }
 
-	virtual bool        IsStreaming() const final;
-	virtual void        StartStreaming(const float time) final;
-	virtual void        StopStreaming() final;
-	virtual bool        IsLooping() const final;
-	virtual void        SetLooping(const bool bEnable) final;
-	virtual float       GetPrecachedTime() const final;
+	virtual bool        IsStreaming() const override;
+	virtual void        StartStreaming(const float time) override;
+	virtual void        StopStreaming() override;
+	virtual bool        IsLooping() const override;
+	virtual void        SetLooping(const bool bEnable) override;
+	virtual float       GetPrecachedTime() const override;
 
-	virtual IGeomCache* GetGeomCache() const final { return m_pGeomCache; }
+	virtual IGeomCache* GetGeomCache() const override { return m_pGeomCache; }
 
-	virtual bool        DidBoundsChange() final;
+	virtual bool        DidBoundsChange() override;
 
-	virtual void        SetDrawing(bool bDrawing) final { m_bDrawing = bDrawing; }
+	virtual void        SetDrawing(bool bDrawing) override { m_bDrawing = bDrawing; }
 
 	// Set stand in CGFs and distance
-	virtual void SetStandIn(const char* pFilePath, const char* pMaterial) final;
-	virtual void SetFirstFrameStandIn(const char* pFilePath, const char* pMaterial) final;
-	virtual void SetLastFrameStandIn(const char* pFilePath, const char* pMaterial) final;
-	virtual void SetStandInDistance(const float distance) final;
+	virtual void SetStandIn(const char* pFilePath, const char* pMaterial) override;
+	virtual void SetFirstFrameStandIn(const char* pFilePath, const char* pMaterial) override;
+	virtual void SetLastFrameStandIn(const char* pFilePath, const char* pMaterial) override;
+	virtual void SetStandInDistance(const float distance) override;
 
 	// Set distance at which cache will start streaming automatically (0 means no auto streaming)
-	virtual void SetStreamInDistance(const float distance) final;
+	virtual void SetStreamInDistance(const float distance) override;
 
-	virtual void DebugDraw(const SGeometryDebugDrawInfo& info, uint nodeIndex) const final;
-	virtual bool RayIntersection(SRayHitInfo& hitInfo, IMaterial* pCustomMtl, uint* pHitNodeIndex) const final;
+	virtual void DebugDraw(const SGeometryDebugDrawInfo& info, uint nodeIndex) const override;
+	virtual bool RayIntersection(SRayHitInfo& hitInfo, IMaterial* pCustomMtl, uint* pHitNodeIndex) const override;
 
 	// Get node information
-	virtual uint        GetNodeCount() const final;
-	virtual Matrix34    GetNodeTransform(const uint nodeIndex) const final;
-	virtual const char* GetNodeName(const uint nodeIndex) const final;
-	virtual uint32      GetNodeNameHash(const uint nodeIndex) const final;
-	virtual bool        IsNodeDataValid(const uint nodeIndex) const final;
+	virtual uint        GetNodeCount() const override;
+	virtual Matrix34    GetNodeTransform(const uint nodeIndex) const override;
+	virtual const char* GetNodeName(const uint nodeIndex) const override;
+	virtual uint32      GetNodeNameHash(const uint nodeIndex) const override;
+	virtual bool        IsNodeDataValid(const uint nodeIndex) const override;
 
 	// Physics
-	virtual void InitPhysicalEntity(IPhysicalEntity* pPhysicalEntity, const pe_articgeomparams& params) final;
+	virtual void InitPhysicalEntity(IPhysicalEntity* pPhysicalEntity, const pe_articgeomparams& params) override;
 
 	#ifndef _RELEASE
 	void DebugRender();
@@ -166,8 +166,8 @@ private:
 	                                            const char* const pCeilNodeData, const QuatTNS& currentTransform, const float lerpFactor);
 
 	// IGeomCacheListener
-	virtual void OnGeomCacheStaticDataLoaded();
-	virtual void OnGeomCacheStaticDataUnloaded();
+	virtual void OnGeomCacheStaticDataLoaded() override;
+	virtual void OnGeomCacheStaticDataUnloaded() override;
 
 	void         DebugDrawRec(const SGeometryDebugDrawInfo& info,
 	                          uint& currentNodeIndex, const std::vector<SGeomCacheStaticNodeData>& staticNodeData) const;

@@ -523,8 +523,8 @@ public:
 	virtual Vec3                           GetGlobalWind(bool bIndoors) const;
 	virtual bool                           SampleWind(Vec3* pSamples, int nSamples, const AABB& volume, bool bIndoors) const;
 	virtual IBreezeGenerator*              GetBreezeGenerator() const;
-	virtual IVisArea*                      GetVisAreaFromPos(const Vec3& vPos);
-	virtual bool                           IntersectsVisAreas(const AABB& box, void** pNodeCache = 0);
+	virtual IVisArea*                      GetVisAreaFromPos(const Vec3& vPos) const;
+	virtual bool                           IntersectsVisAreas(const AABB& box, void** pNodeCache = 0) const;
 	virtual bool                           ClipToVisAreas(IVisArea* pInside, Sphere& sphere, Vec3 const& vNormal, void* pNodeCache = 0);
 	virtual bool                           IsVisAreasConnected(IVisArea* pArea1, IVisArea* pArea2, int nMaxReqursion, bool bSkipDisabledPortals);
 	void                                   EnableOceanRendering(bool bOcean); // todo: remove
@@ -978,7 +978,7 @@ public:
 	virtual void SaveInternalState(struct IDataWriteStream& writer, const AABB& filterArea, const bool bTerrain, const uint32 objectMask);
 	virtual void LoadInternalState(struct IDataReadStream& reader, const uint8* pVisibleLayersMask, const uint16* pLayerIdTranslation);
 
-	void         SetupLightScissors(SRenderLight* pLight, const SRenderingPassInfo& passInfo);
+	void         SetupLightScissors(SRenderLight* pLight, const SRenderingPassInfo& passInfo) const;
 	bool         IsTerrainTextureStreamingInProgress() { return m_bTerrainTextureStreamingInProgress; }
 
 	bool         IsTerrainSyncLoad()                   { return m_bContentPrecacheRequested && GetCVars()->e_AutoPrecacheTerrainAndProcVeget; }

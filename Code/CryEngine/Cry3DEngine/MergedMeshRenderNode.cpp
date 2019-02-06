@@ -5107,17 +5107,7 @@ void CMergedMeshRenderNode::OffsetPosition(const Vec3& delta)
 	m_pos += delta;
 }
 
-void CMergedMeshRenderNode::FillBBox(AABB& aabb)
-{
-	aabb = CMergedMeshRenderNode::GetBBox();
-}
-
-EERType CMergedMeshRenderNode::GetRenderNodeType()
-{
-	return eERType_MergedMesh;
-}
-
-float CMergedMeshRenderNode::GetMaxViewDist()
+float CMergedMeshRenderNode::GetMaxViewDist() const
 {
 	float radius = m_internalAABB.GetRadius();
 	return max(GetCVars()->e_ViewDistMin, radius * GetCVars()->e_MergedMeshesViewDistRatio);

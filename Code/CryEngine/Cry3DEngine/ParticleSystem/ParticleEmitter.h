@@ -24,7 +24,7 @@ public:
 	using TRuntimes = TSmartArray<CParticleComponentRuntime>;
 
 	// IRenderNode
-	virtual EERType          GetRenderNodeType() override;
+	virtual EERType          GetRenderNodeType() const override { return eERType_ParticleEmitter; }
 	virtual const char*      GetEntityClassName() const override;
 	virtual const char*      GetName() const override;
 	virtual void             SetMatrix(const Matrix34& mat) override;
@@ -34,15 +34,15 @@ public:
 	virtual void             SetPhysics(IPhysicalEntity*) override         {}
 	virtual void             SetMaterial(IMaterial* pMat) override         {}
 	virtual IMaterial*       GetMaterial(Vec3* pHitPos = 0) const override { return nullptr; }
-	virtual IMaterial*       GetMaterialOverride() override                { return nullptr; }
-	virtual float            GetMaxViewDist() override;
+	virtual IMaterial*       GetMaterialOverride() const override          { return nullptr; }
+	virtual float            GetMaxViewDist() const override;
 	virtual void             Precache() override                           {}
 	virtual void             GetMemoryUsage(ICrySizer* pSizer) const override;
-	virtual const AABB       GetBBox() const override;
-	virtual void             FillBBox(AABB& aabb) override;
-	virtual void             SetBBox(const AABB& WSBBox) override          {}
-	virtual void             OffsetPosition(const Vec3& delta) override    {}
-	virtual bool             IsAllocatedOutsideOf3DEngineDLL() override    { return false; }
+	virtual const AABB       GetBBox() const                      override { return m_bounds.IsReset() ? AABB(m_location.t, 0.05f) : m_bounds; }
+	virtual void             FillBBox(AABB& aabb) const           override { aabb = GetBBox(); }
+	virtual void             SetBBox(const AABB& WSBBox)          override {}
+	virtual void             OffsetPosition(const Vec3& delta)    override {}
+	virtual bool             IsAllocatedOutsideOf3DEngineDLL()    override { return false; }
 	virtual void             SetViewDistRatio(int nViewDistRatio) override;
 	virtual void             ReleaseNode(bool bImmediate) override;
 	virtual void             SetOwnerEntity(IEntity* pEntity) override     { SetEntity(pEntity, m_entitySlot); }

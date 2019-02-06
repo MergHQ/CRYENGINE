@@ -1109,17 +1109,7 @@ void CWaterVolumeRenderNode::OffsetPosition(const Vec3& delta)
 	}
 }
 
-void CWaterVolumeRenderNode::FillBBox(AABB& aabb)
-{
-	aabb = CWaterVolumeRenderNode::GetBBox();
-}
-
-EERType CWaterVolumeRenderNode::GetRenderNodeType()
-{
-	return eERType_WaterVolume;
-}
-
-float CWaterVolumeRenderNode::GetMaxViewDist()
+float CWaterVolumeRenderNode::GetMaxViewDist() const
 {
 	if (GetMinSpecFromRenderNodeFlags(m_dwRndFlags) == CONFIG_DETAIL_SPEC)
 		return max(GetCVars()->e_ViewDistMin, CWaterVolumeRenderNode::GetBBox().GetRadius() * GetCVars()->e_ViewDistRatioDetail * GetViewDistRatioNormilized());
@@ -1137,7 +1127,7 @@ IMaterial* CWaterVolumeRenderNode::GetMaterial(Vec3* pHitPos) const
 	return m_pMaterial;
 }
 
-bool CWaterVolumeRenderNode::CanExecuteRenderAsJob()
+bool CWaterVolumeRenderNode::CanExecuteRenderAsJob() const
 {
 	return !gEnv->IsEditor() && GetCVars()->e_ExecuteRenderAsJobMask & BIT(GetRenderNodeType()) && (m_dwRndFlags & ERF_RENDER_ALWAYS) == 0;
 }

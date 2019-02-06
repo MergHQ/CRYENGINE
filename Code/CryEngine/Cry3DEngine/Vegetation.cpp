@@ -799,7 +799,7 @@ const char* CVegetation::GetName() const
 	       GetStatObj()->GetFilePath() : "StatObjNotSet";
 }
 //////////////////////////////////////////////////////////////////////////
-IRenderMesh* CVegetation::GetRenderMesh(int nLod)
+IRenderMesh* CVegetation::GetRenderMesh(int nLod) const
 {
 	CStatObj* pStatObj(GetStatObj());
 
@@ -818,7 +818,7 @@ IRenderMesh* CVegetation::GetRenderMesh(int nLod)
 	return pStatObj->GetRenderMesh();
 }
 //////////////////////////////////////////////////////////////////////////
-IMaterial* CVegetation::GetMaterialOverride()
+IMaterial* CVegetation::GetMaterialOverride() const
 {
 	StatInstGroup& vegetGroup = GetStatObjGroup();
 
@@ -998,13 +998,6 @@ bool CVegetation::GetLodDistances(const SFrameLodInfo& frameLodInfo, float* dist
 	return true;
 }
 
-const AABB CVegetation::GetBBox() const
-{
-	AABB aabb;
-	FillBBoxFromExtends(aabb, m_boxExtends, m_vPos);
-	return aabb;
-}
-
 void CVegetation::UpdateRndFlags()
 {
 	StatInstGroup& vegetGroup = GetStatObjGroup();
@@ -1021,17 +1014,7 @@ void CVegetation::UpdateRndFlags()
 	IRenderNode::SetViewDistRatio((int)(vegetGroup.fMaxViewDistRatio * 100.f));
 }
 
-void CVegetation::FillBBox(AABB& aabb)
-{
-	FillBBoxFromExtends(aabb, m_boxExtends, m_vPos);
-}
-
-EERType CVegetation::GetRenderNodeType()
-{
-	return eERType_Vegetation;
-}
-
-float CVegetation::GetMaxViewDist()
+float CVegetation::GetMaxViewDist() const
 {
 	StatInstGroup& group = GetStatObjGroup();
 	CStatObj* pStatObj = (CStatObj*)(IStatObj*)group.pStatObj;
@@ -1084,7 +1067,7 @@ IMaterial* CVegetation::GetMaterial(Vec3* pHitPos) const
 	return NULL;
 }
 
-bool CVegetation::CanExecuteRenderAsJob()
+bool CVegetation::CanExecuteRenderAsJob() const
 {
 	return (GetCVars()->e_ExecuteRenderAsJobMask & BIT(GetRenderNodeType())) != 0 && (m_dwRndFlags & ERF_RENDER_ALWAYS) == 0;
 }

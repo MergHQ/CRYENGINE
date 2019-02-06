@@ -286,7 +286,7 @@ void CVisAreaManager::UpdateAABBTree()
 	m_pAABBTree = new SAABBTreeNode(lstAreas, nodeBox);
 }
 
-bool CVisAreaManager::IsEntityVisible(IRenderNode* pEnt)
+bool CVisAreaManager::IsEntityVisible(IRenderNode* pEnt) const
 {
 	if (GetCVars()->e_Portals == 3)
 		return true;
@@ -385,37 +385,6 @@ void CVisAreaManager::SetCurAreas(const SRenderingPassInfo& passInfo)
 	      PrintMessage("CurArea = %s, nRes = %d", m_pCurArea->m_sName, nConnections);
 	    }
 	   }*/
-}
-
-bool CVisAreaManager::IsSkyVisible()
-{
-	return m_bSkyVisible;
-}
-
-bool CVisAreaManager::IsOceanVisible()
-{
-	return m_bOceanVisible;
-}
-
-bool CVisAreaManager::IsOutdoorAreasVisible()
-{
-	if (!m_pCurArea && !m_pCurPortal)
-	{
-		m_bOutdoorVisible = true;
-		return m_bOutdoorVisible; // camera not in the areas
-	}
-
-	if (m_pCurPortal && m_pCurPortal->m_lstConnections.Count() == 1)
-	{
-		m_bOutdoorVisible = true;
-		return m_bOutdoorVisible; // camera is in exit portal
-	}
-
-	if (m_bOutdoorVisible)
-		return true; // exit is visible
-
-	// note: outdoor camera is no modified in this case
-	return false;
 }
 
 /*void CVisAreaManager::SetAreaFogVolume(CTerrain * pTerrain, CVisArea * pVisArea)
@@ -721,6 +690,17 @@ void CVisAreaManager::CheckVis(const SRenderingPassInfo& passInfo)
 
 	if (GetCVars()->e_Portals == 2)
 		PortalsDrawDebug();
+
+	if (!m_bOutdoorVisible)
+	{
+		if (!m_pCurArea && !m_pCurPortal)
+			m_bOutdoorVisible = true; // camera not in the areas
+		else if (m_pCurPortal && m_pCurPortal->m_lstConnections.Count() == 1)
+			m_bOutdoorVisible = true; // camera is in exit portal
+
+		// exit is visible
+		// note: outdoor camera is no modified in this case
+	}
 }
 
 void CVisAreaManager::ActivatePortal(const Vec3& vPos, bool bActivate, const char* szEntityName)
@@ -1066,7 +1046,7 @@ CVisArea* CVisAreaManager::CreateVisArea(VisAreaGUID visGUID)
 	return new CVisArea(visGUID);
 }
 
-bool CVisAreaManager::IsEntityVisAreaVisibleReqursive(CVisArea* pVisArea, int nMaxReqursion, PodArray<CVisArea*>* pUnavailableAreas, const SRenderLight* pLight, const SRenderingPassInfo& passInfo)
+bool CVisAreaManager::IsEntityVisAreaVisibleReqursive(const CVisArea* pVisArea, int nMaxReqursion, PodArray<const CVisArea*>* pUnavailableAreas, const SRenderLight* pLight, const SRenderingPassInfo& passInfo) const
 {
 	int nAreaId = pUnavailableAreas->Count();
 	pUnavailableAreas->Add(pVisArea);
@@ -1101,14 +1081,14 @@ bool CVisAreaManager::IsEntityVisAreaVisibleReqursive(CVisArea* pVisArea, int nM
 	return bFound;
 }
 
-bool CVisAreaManager::IsEntityVisAreaVisible(IRenderNode* pEnt, int nMaxReqursion, const SRenderLight* pLight, const SRenderingPassInfo& passInfo)
+bool CVisAreaManager::IsEntityVisAreaVisible(IRenderNode* pEnt, int nMaxReqursion, const SRenderLight* pLight, const SRenderingPassInfo& passInfo) const
 {
 	if (!pEnt)
 		return false;
 
-	PodArray<CVisArea*>& lUnavailableAreas = m_tmpLstUnavailableAreas;
-	lUnavailableAreas.Clear();
+	PodArray<const CVisArea*> lUnavailableAreas;
 
+	lUnavailableAreas.Clear();
 	lUnavailableAreas.PreAllocate(nMaxReqursion, 0);
 
 	return IsEntityVisAreaVisibleReqursive((CVisArea*)pEnt->GetEntityVisArea(), nMaxReqursion, &lUnavailableAreas, pLight, passInfo);
@@ -1660,7 +1640,7 @@ void CVisAreaManager::AddLightSource(SRenderLight* pLight, const SRenderingPassI
 		AABB lightBox(
 		  pLight->m_Origin - Vec3(pLight->m_fRadius, pLight->m_fRadius, pLight->m_fRadius),
 		  pLight->m_Origin + Vec3(pLight->m_fRadius, pLight->m_fRadius, pLight->m_fRadius));
-		PodArray<CVisArea*>& arrAreas = m_tmpLstLightBoxAreas;
+		PodArray<CVisArea*> arrAreas;
 		arrAreas.Clear();
 		m_pVisAreaManager->IntersectWithBox(lightBox, &arrAreas, true);
 		for (int i = 0; i < arrAreas.Count(); i++)
@@ -1897,7 +1877,7 @@ void CVisAreaManager::GenerateStatObjAndMatTables(std::vector<IStatObj*>* pStatO
 	HelperGenerateStatObjAndMatTables(m_lstPortals, pStatObjTable, pMatTable, pStatInstGroupTable, pExportInfo);
 }
 
-bool CVisAreaManager::IsAABBVisibleFromPoint(AABB& box, Vec3 pos)
+bool CVisAreaManager::IsAABBVisibleFromPoint(AABB& box, Vec3 pos) const
 {
 	CVisArea* pAreaBox = (CVisArea*)GetVisAreaFromPos(box.GetCenter());
 	CVisArea* pAreaPos = (CVisArea*)GetVisAreaFromPos(pos);
@@ -1920,7 +1900,7 @@ bool CVisAreaManager::IsAABBVisibleFromPoint(AABB& box, Vec3 pos)
 	return bRes;
 }
 
-bool CVisAreaManager::FindShortestPathToVisArea(CVisArea* pThisArea, CVisArea* pTargetArea, PodArray<CVisArea*>& arrVisitedAreas, int& nRecursion, const Shadowvolume& sv)
+bool CVisAreaManager::FindShortestPathToVisArea(CVisArea* pThisArea, CVisArea* pTargetArea, PodArray<CVisArea*>& arrVisitedAreas, int& nRecursion, const Shadowvolume& sv) const
 {
 	// skip double processing
 	if (arrVisitedAreas.Find(pThisArea) >= 0)

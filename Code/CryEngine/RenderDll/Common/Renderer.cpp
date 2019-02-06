@@ -1381,7 +1381,7 @@ void CRenderer::Log(const char* str)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Dynamic lights
-bool CRenderer::EF_IsFakeDLight(const SRenderLight* Source)
+bool CRenderer::EF_IsFakeDLight(const SRenderLight* Source) const
 {
 	if (!Source)
 	{
@@ -1545,7 +1545,7 @@ inline Matrix44 ToLightMatrix(const Ang3& angle)
 	return Matrix44(ViewMatX * ViewMatY * ViewMatZ).GetTransposed();
 }
 
-bool CRenderer::EF_UpdateDLight(SRenderLight* dl)
+bool CRenderer::EF_UpdateDLight(SRenderLight* dl) const
 {
 	if (!dl)
 		return false;

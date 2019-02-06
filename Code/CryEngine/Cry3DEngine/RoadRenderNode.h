@@ -49,42 +49,42 @@ public:
 	virtual ~CRoadRenderNode();
 
 	// IRoadRenderNode implementation
-	virtual void SetVertices(const Vec3* pVerts, int nVertsNum, float fTexCoordBegin, float fTexCoordEnd, float fTexCoordBeginGlobal, float fTexCoordEndGlobal);
-	virtual void SetSortPriority(uint8 sortPrio);
-	virtual void SetIgnoreTerrainHoles(bool bVal);
-	virtual void SetPhysicalize(bool bVal) { if (m_bPhysicalize != bVal) { m_bPhysicalize = bVal; ScheduleRebuild(true); } }
+	virtual void                SetVertices(const Vec3* pVerts, int nVertsNum, float fTexCoordBegin, float fTexCoordEnd, float fTexCoordBeginGlobal, float fTexCoordEndGlobal) override;
+	virtual void                SetSortPriority(uint8 sortPrio) override;
+	virtual void                SetIgnoreTerrainHoles(bool bVal) override;
+	virtual void                SetPhysicalize(bool bVal) override { if (m_bPhysicalize != bVal) { m_bPhysicalize = bVal; ScheduleRebuild(true); } }
 
 	// IRenderNode implementation
-	virtual const char*         GetEntityClassName(void) const { return "RoadObjectClass"; }
-	virtual const char*         GetName(void) const            { return "RoadObjectName"; }
-	virtual Vec3                GetPos(bool) const;
-	virtual void                Render(const SRendParams& RendParams, const SRenderingPassInfo& passInfo);
+	virtual const char*         GetEntityClassName(void) const override { return "RoadObjectClass"; }
+	virtual const char*         GetName(void) const            override { return "RoadObjectName"; }
+	virtual Vec3                GetPos(bool) const override;
+	virtual void                Render(const SRendParams& RendParams, const SRenderingPassInfo& passInfo) override;
 
-	virtual IPhysicalEntity*    GetPhysics(void) const             { return m_pPhysEnt; }
-	virtual void                SetPhysics(IPhysicalEntity* pPhys) { m_pPhysEnt = pPhys; }
+	virtual IPhysicalEntity*    GetPhysics(void) const             override { return m_pPhysEnt; }
+	virtual void                SetPhysics(IPhysicalEntity* pPhys) override { m_pPhysEnt = pPhys; }
 
-	virtual void                SetMaterial(IMaterial* pMat);
-	virtual IMaterial*          GetMaterial(Vec3* pHitPos = NULL) const;
-	virtual IMaterial*          GetMaterialOverride() { return m_pMaterial; }
-	virtual float               GetMaxViewDist();
-	virtual EERType             GetRenderNodeType();
-	virtual struct IRenderMesh* GetRenderMesh(int nLod)     { return nLod == 0 ? m_pRenderMesh.get() : NULL; }
-	virtual void                GetMemoryUsage(ICrySizer* pSizer) const;
-	virtual const AABB          GetBBox() const             { return m_serializedData.worldSpaceBBox; }
-	virtual void                SetBBox(const AABB& WSBBox) { m_serializedData.worldSpaceBBox = WSBBox; }
-	virtual void                FillBBox(AABB& aabb);
-	virtual void                OffsetPosition(const Vec3& delta);
-	virtual void                GetClipPlanes(Plane* pPlanes, int nPlanesNum, int nVertId);
-	virtual void                GetTexCoordInfo(float* pTexCoordInfo);
-	virtual uint8               GetSortPriority() { return m_sortPrio; }
-	virtual bool                CanExecuteRenderAsJob() final;
+	virtual void                SetMaterial(IMaterial* pMat) override;
+	virtual IMaterial*          GetMaterial(Vec3* pHitPos = NULL) const override;
+	virtual IMaterial*          GetMaterialOverride() const override { return m_pMaterial; }
+	virtual float               GetMaxViewDist() const override;
+	virtual EERType             GetRenderNodeType() const override { return eERType_Road; }
+	virtual struct IRenderMesh* GetRenderMesh(int nLod) const override { return nLod == 0 ? m_pRenderMesh.get() : NULL; }
+	virtual void                GetMemoryUsage(ICrySizer* pSizer) const override;
+	virtual const AABB          GetBBox() const             override { return m_serializedData.worldSpaceBBox; }
+	virtual void                SetBBox(const AABB& WSBBox) override { m_serializedData.worldSpaceBBox = WSBBox; }
+	virtual void                FillBBox(AABB& aabb) const override { aabb = GetBBox(); }
+	virtual void                OffsetPosition(const Vec3& delta) override;
+	virtual void                GetClipPlanes(Plane* pPlanes, int nPlanesNum, int nVertId) override;
+	virtual void                GetTexCoordInfo(float* pTexCoordInfo) override;
+	virtual uint8               GetSortPriority() const override { return m_sortPrio; }
+	virtual bool                CanExecuteRenderAsJob() const override;
 
-	virtual void                SetLayerId(uint16 nLayerId) { m_nLayerId = nLayerId; Get3DEngine()->C3DEngine::UpdateObjectsLayerAABB(this); }
-	virtual uint16              GetLayerId()                { return m_nLayerId; }
+	virtual void                SetLayerId(uint16 nLayerId) override { m_nLayerId = nLayerId; Get3DEngine()->C3DEngine::UpdateObjectsLayerAABB(this); }
+	virtual uint16              GetLayerId() const          override { return m_nLayerId; }
 
 	static bool                 ClipTriangle(PodArray<Vec3>& lstVerts, PodArray<vtx_idx>& lstInds, int nStartIdxId, Plane* pPlanes);
 	using IRenderNode::Physicalize;
-	virtual void                Dephysicalize(bool bKeepIfReferenced = false);
+	virtual void                Dephysicalize(bool bKeepIfReferenced = false) override;
 	void                        Compile();
 	void                        ScheduleRebuild(bool bFullRebuild);
 	void                        OnTerrainChanged();

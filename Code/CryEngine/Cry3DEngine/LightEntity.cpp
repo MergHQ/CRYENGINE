@@ -82,14 +82,14 @@ const char* CLightEntity::GetName(void) const
 	return GetOwnerEntity() ? GetOwnerEntity()->GetName() : (m_light.m_sName ? m_light.m_sName : "LightEntity");
 }
 
-void CLightEntity::GetLocalBounds(AABB& bbox)
+void CLightEntity::GetLocalBounds(AABB& bbox) const
 {
 	bbox = m_WSBBox;
 	bbox.min -= m_light.m_Origin;
 	bbox.max -= m_light.m_Origin;
 }
 
-bool CLightEntity::IsLightAreasVisible()
+bool CLightEntity::IsLightAreasVisible() const
 {
 	IVisArea* pArea = GetEntityVisArea();
 
@@ -1758,7 +1758,7 @@ void CLightEntity::SetupShadowFrustumCamera_OMNI(ShadowMapFrustum* pFr, int dwAl
 	}
 }
 
-ShadowMapFrustum* CLightEntity::GetShadowFrustum(int nId)
+ShadowMapFrustum* CLightEntity::GetShadowFrustum(int nId) const
 {
 	if (m_pShadowMapInfo && nId < MAX_GSM_LODS_NUM)
 		return m_pShadowMapInfo->pGSM[nId];
@@ -2114,8 +2114,7 @@ void CLightEntity::ProcessPerObjectFrustum(ShadowMapFrustum* pFr, struct SPerObj
 	COctreeNode::SetTraversalFrameId((IRenderNode*)pPerObjectShadow->pCaster, passInfo.GetMainFrameID(), ~0);
 
 	// get caster's bounding box and scale
-	AABB objectBBox;
-	pPerObjectShadow->pCaster->FillBBox(objectBBox);
+	const AABB objectBBox = pPerObjectShadow->pCaster->GetBBox();
 	Vec3 vExtents = 0.5f * objectBBox.GetSize().CompMul(pPerObjectShadow->vBBoxScale);
 	pFr->aabbCasters = AABB(objectBBox.GetCenter() - vExtents, objectBBox.GetCenter() + vExtents);
 
@@ -2156,17 +2155,7 @@ void CLightEntity::ProcessPerObjectFrustum(ShadowMapFrustum* pFr, struct SPerObj
 	}
 }
 
-void CLightEntity::FillBBox(AABB& aabb)
-{
-	aabb = CLightEntity::GetBBox();
-}
-
-EERType CLightEntity::GetRenderNodeType()
-{
-	return eERType_Light;
-}
-
-float CLightEntity::GetMaxViewDist()
+float CLightEntity::GetMaxViewDist() const
 {
 	if (m_light.m_Flags & DLF_SUN)
 		return 10.f * DISTANCE_TO_THE_SUN;

@@ -914,7 +914,7 @@ void CBreakableGlassRenderNode::SetPhysics(IPhysicalEntity* pPhysics)
 // Name: GetMaterialOverride
 // Desc: Returns the material override
 //--------------------------------------------------------------------------------------------------
-IMaterial* CBreakableGlassRenderNode::GetMaterialOverride()
+IMaterial* CBreakableGlassRenderNode::GetMaterialOverride() const
 {
 	return m_glassParams.pGlassMaterial;
 }//-------------------------------------------------------------------------------------------------
@@ -1077,28 +1077,6 @@ void CBreakableGlassRenderNode::OffsetPosition(const Vec3& delta)
 		par_pos.pos = m_matrix.GetTranslation();
 		m_pPhysEnt->SetParams(&par_pos);
 	}
-}
-
-void CBreakableGlassRenderNode::FillBBox(AABB& aabb)
-{
-	aabb = CBreakableGlassRenderNode::GetBBox();
-}
-
-const AABB CBreakableGlassRenderNode::GetBBox() const
-{
-	AABB bbox = m_planeBBox;
-	bbox.Add(m_fragBBox);
-	return bbox;
-}
-
-EERType CBreakableGlassRenderNode::GetRenderNodeType()
-{
-	return eERType_BreakableGlass;
-}
-
-float CBreakableGlassRenderNode::GetMaxViewDist()
-{
-	return m_maxViewDist;
 }
 
 Vec3 CBreakableGlassRenderNode::GetPos(bool worldOnly) const

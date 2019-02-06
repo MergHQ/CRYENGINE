@@ -1021,7 +1021,7 @@ public:
 	virtual void EF_EndEf2D(const bool bSort) override = 0;
 
 	// Dynamic lights
-	virtual bool                   EF_IsFakeDLight(const SRenderLight* Source) override;
+	virtual bool                   EF_IsFakeDLight(const SRenderLight* Source) const override;
 	virtual void                   EF_ADDDlight(SRenderLight* Source, const SRenderingPassInfo& passInfo) override;
 	virtual bool                   EF_AddDeferredDecal(const SDeferredDecal& rDecal, const SRenderingPassInfo& passInfo) override;
 
@@ -1030,7 +1030,7 @@ public:
 	virtual void                   EF_ReleaseDeferredData() override;
 	virtual SInputShaderResources* EF_CreateInputShaderResource(IRenderShaderResources* pOptionalCopyFrom = nullptr) override;
 	virtual void                   ClearPerFrameData(const SRenderingPassInfo& passInfo);
-	virtual bool                   EF_UpdateDLight(SRenderLight* pDL) override;
+	virtual bool                   EF_UpdateDLight(SRenderLight* pDL) const override;
 	void                           EF_CheckLightMaterial(SRenderLight* pLight, uint16 nRenderLightID, const SRenderingPassInfo& passInfo);
 
 	virtual void EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nInOutSize0, void* pInOut1, uint32 nInOutSize1) override;
