@@ -17,7 +17,7 @@ public:
 
 	virtual void mfGetPlane(Plane& pl) override;
 	virtual void mfCenter(Vec3& vCenter, CRenderObject* pObj, const SRenderingPassInfo& passInfo) override;
-	virtual void mfGetBBox(Vec3& vMins, Vec3& vMaxs) const override;
+	virtual void mfGetBBox(AABB& bb) const override;
 
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const override
 	{

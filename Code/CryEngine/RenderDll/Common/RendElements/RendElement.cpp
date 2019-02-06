@@ -214,10 +214,10 @@ CRenderElement* CRenderElement::mfCopyConstruct(void)
 
 void CRenderElement::mfCenter(Vec3& Pos, CRenderObject* pObj, const SRenderingPassInfo& passInfo)
 {
-	Vec3 Mins, Maxs;
-	mfGetBBox(Mins, Maxs);
+	AABB bb;
+	mfGetBBox(bb);
 
-	Pos = (Mins + Maxs) * 0.5f;
+	Pos = bb.GetCenter();
 	if (pObj)
 		Pos += pObj->GetMatrix(passInfo).GetTranslation();
 }
@@ -225,20 +225,19 @@ void CRenderElement::mfCenter(Vec3& Pos, CRenderObject* pObj, const SRenderingPa
 void CRenderElement::mfGetPlane(Plane& pl)
 {
 	// TODO: plane orientation based on biggest bbox axis
-	Vec3 Mins, Maxs;
-	mfGetBBox(Mins, Maxs);
+	AABB bb;
+	mfGetBBox(bb);
 
-	Vec3 p0 = Mins;
-	Vec3 p1 = Vec3(Maxs.x, Mins.y, Mins.z);
-	Vec3 p2 = Vec3(Mins.x, Maxs.y, Mins.z);
+	Vec3 p0 = bb.min;
+	Vec3 p1 = Vec3(bb.max.x, bb.min.y, bb.min.z);
+	Vec3 p2 = Vec3(bb.min.x, bb.max.y, bb.min.z);
 	pl.SetPlane(p2, p0, p1);
 }
 
-void CRenderElement::mfGetBBox(Vec3& vMins, Vec3& vMaxs) const
+void CRenderElement::mfGetBBox(AABB& bb) const
 {
 	// Obj view max distance
-	vMins = Vec3(-100000.f, -100000.f, -100000.f);
-	vMaxs = Vec3( 100000.f,  100000.f,  100000.f);
+	bb = AABB { Vec3(-100000.f), Vec3(+100000.f) };
 }
 
 void* CRenderElement::mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, EStreamMasks StreamMask) { return NULL; }

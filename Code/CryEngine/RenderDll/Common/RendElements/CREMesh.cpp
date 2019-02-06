@@ -14,10 +14,10 @@
 
 #include "XRenderD3D9/DriverD3D.h"
 
-void CREMeshImpl::mfGetBBox(Vec3& vMins, Vec3& vMaxs) const
+void CREMeshImpl::mfGetBBox(AABB& bb) const
 {
-	vMins = m_pRenderMesh->_GetVertexContainer()->m_vBoxMin;
-	vMaxs = m_pRenderMesh->_GetVertexContainer()->m_vBoxMax;
+	const auto& container = *m_pRenderMesh->_GetVertexContainer();
+	bb = AABB{ container.m_vBoxMin, container.m_vBoxMax };
 }
 
 ///////////////////////////////////////////////////////////////////

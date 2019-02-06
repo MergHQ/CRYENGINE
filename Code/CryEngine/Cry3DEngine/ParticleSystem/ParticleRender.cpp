@@ -65,6 +65,7 @@ void CParticleRenderBase::Render(CParticleComponentRuntime& runtime, const SRend
 
 void CParticleRenderBase::PrepareRenderObject(const CParticleComponentRuntime& runtime, uint renderObjectId, uint threadId, ERenderObjectFlags objFlags)
 {
+	CRY_PFX2_PROFILE_DETAIL;
 	const SComponentParams& params = runtime.ComponentParams();
 	CRenderObject* pRenderObject = gEnv->pRenderer->EF_GetObject();
 	auto particleMaterial = params.m_pMaterial;
@@ -86,6 +87,7 @@ void CParticleRenderBase::PrepareRenderObject(const CParticleComponentRuntime& r
 
 void CParticleRenderBase::AddRenderObject(CParticleComponentRuntime& runtime, const SRenderContext& renderContext, uint renderObjectId, uint threadId, ERenderObjectFlags objFlags)
 {
+	CRY_PFX2_PROFILE_DETAIL;
 	const SComponentParams& params = runtime.ComponentParams();
 	CParticleEmitter& emitter = *runtime.GetEmitter();
 	CRenderObject* pRenderObject = emitter.GetRenderObject(threadId, renderObjectId);
@@ -97,10 +99,11 @@ void CParticleRenderBase::AddRenderObject(CParticleComponentRuntime& runtime, co
 	SRenderObjData* pObjData = pRenderObject->GetObjData();
 
 	const float sortBiasSize = 1.0f / 1024.0f;
-	const float sortBias = renderContext.m_distance * params.m_renderObjectSortBias * sortBiasSize;
+	const float sortBias = (float) runtime.GetComponent()->GetComponentId() + params.m_renderObjectSortBias;
 
 	pRenderObject->m_ObjFlags = objFlags;
-	pRenderObject->m_fDistance = renderContext.m_distance - sortBias;
+	pRenderObject->m_fDistance = renderContext.m_distance;
+	pRenderObject->m_fSort = -sortBias * sortBiasSize * renderContext.m_distance;
 	pRenderObject->SetInstanceDataDirty();
 	pObjData->m_FogVolumeContribIdx = renderContext.m_fogVolumeId;
 	pObjData->m_LightVolumeId = renderContext.m_lightVolumeId;

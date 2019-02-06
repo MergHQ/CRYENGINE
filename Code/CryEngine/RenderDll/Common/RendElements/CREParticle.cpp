@@ -208,6 +208,7 @@ CREParticle::CREParticle()
 	, m_addedToView(0)
 {
 	mfSetType(eDATA_Particle);
+	mfUpdateFlags(FCEF_KEEP_DISTANCE);
 }
 
 void CREParticle::ResetPool()
@@ -377,12 +378,11 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 		size_t ij = &job - aJobs.data();
 		CREParticle* pRE = static_cast<CREParticle*>(pRenderObject->m_pRE);
 
-		// Clamp AABB
-		auto aabb = job.aabb;
-		if (aabb.IsReset())
-			aabb = AABB{ .0f };
+		if (job.aabb.IsReset())
+			continue;
+
 		if (pRenderObject->m_pCompiledObject)
-			pRenderObject->m_pCompiledObject->m_aabb = aabb;
+			pRenderObject->m_pCompiledObject->m_aabb = job.aabb;
 
 		// generate the RenderItem entries for this Particle Element
 		assert(pRenderObject->m_bPermanent);
@@ -392,7 +392,7 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 		if (!pRE->AddedToView())
 		{
 			// Update particle AABB
-			pRE->SetBBox(aabb.min, aabb.max);
+			pRE->SetBBox(job.aabb);
 
 			passInfo.GetRenderView()->AddRenderItem(
 				pRE, pRenderObject, shaderItem, nList, nBatchFlags, 

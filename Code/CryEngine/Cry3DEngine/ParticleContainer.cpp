@@ -802,7 +802,7 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 			job.pRenderObject->m_fDistance = PRParams.m_fCamDistance;
 		else
 			job.pRenderObject->m_fDistance = GetMain().GetNearestDistance(passInfo.GetCamera().GetPosition(), pParams->fSortBoundsScale);
-		job.pRenderObject->m_fDistance += pParams->fSortOffset;
+		job.pRenderObject->m_fSort = pParams->fSortOffset;
 
 		//
 		// Set remaining SAddParticlesToSceneJob data.
