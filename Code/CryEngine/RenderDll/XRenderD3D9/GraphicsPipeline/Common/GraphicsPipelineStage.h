@@ -100,9 +100,9 @@ public:
 	// If this stage should be updated based on the given flags
 	virtual bool IsStageActive(EShaderRenderingFlags flags) const { return true; }
 
-public:
-	void                             SetRenderView(CRenderView* pRenderView) { m_pRenderView = pRenderView; }
+	virtual void SetRenderView(CRenderView* pRenderView) { m_pRenderView = pRenderView; }
 
+public:
 	CRenderView*                     RenderView() const { return m_pRenderView; }
 	const SRenderViewport&           GetViewport() const;
 
@@ -127,5 +127,7 @@ protected:
 
 private:
 	CGraphicsPipeline* m_pGraphicsPipeline = nullptr;
+
+protected:
 	CRenderView*       m_pRenderView = nullptr;
 };

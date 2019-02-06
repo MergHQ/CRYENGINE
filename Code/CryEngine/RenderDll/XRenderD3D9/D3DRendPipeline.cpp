@@ -518,6 +518,8 @@ void CD3D9Renderer::FX_ClearCharInstCB(uint32 frameId)
 
 void CD3D9Renderer::RT_PreRenderScene(CRenderView* pRenderView)
 {
+	GetGraphicsPipeline().SetCurrentRenderView(pRenderView);
+
 	const uint32 shaderRenderingFlags = pRenderView->GetShaderRenderingFlags();
 	const bool bRecurse = pRenderView->IsRecursive();
 	const bool bAllowPostProcess = pRenderView->IsPostProcessingEnabled();
@@ -595,6 +597,8 @@ void CD3D9Renderer::RT_PostRenderScene(CRenderView* pRenderView)
 	{
 		gRenDev->GetIRenderAuxGeom()->Submit();
 	}
+
+	GetGraphicsPipeline().SetCurrentRenderView(nullptr);
 }
 
 // Render thread only scene rendering
@@ -655,7 +659,7 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 	{
 		CRY_ASSERT(shaderRenderingFlags & SHDF_ALLOWHDR);
 
-		GetGraphicsPipeline().Update(pRenderView, EShaderRenderingFlags(shaderRenderingFlags));
+		GetGraphicsPipeline().Update(EShaderRenderingFlags(shaderRenderingFlags));
 
 		{
 			PROFILE_FRAME(WaitForParticleRendItems);

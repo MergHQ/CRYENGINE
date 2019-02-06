@@ -18,7 +18,7 @@ namespace Wwise
 CBaseObject::CBaseObject(
 	AkGameObjectID const id,
 	char const* const szName /*= nullptr*/,
-	Vec3 const position /*= { 0.0f, 0.0f, 0.0f }*/)
+	Vec3 const& position /*= { 0.0f, 0.0f, 0.0f }*/)
 	: m_id(id)
 	, m_flags(EObjectFlags::None)
 	, m_position(position)

@@ -210,11 +210,9 @@ void CStandardGraphicsPipeline::ShutDown()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CStandardGraphicsPipeline::Update(CRenderView* pRenderView, EShaderRenderingFlags renderingFlags)
+void CStandardGraphicsPipeline::Update(EShaderRenderingFlags renderingFlags)
 {
 	FUNCTION_PROFILER_RENDERER();
-
-	CGraphicsPipeline::SetCurrentRenderView(pRenderView);
 
 	m_numInvalidDrawcalls = 0;
 	GenerateMainViewConstantBuffer();
@@ -226,7 +224,7 @@ void CStandardGraphicsPipeline::Update(CRenderView* pRenderView, EShaderRenderin
 	}
 
 	m_renderingFlags = renderingFlags;
-	CGraphicsPipeline::Update(pRenderView, renderingFlags);
+	CGraphicsPipeline::Update(renderingFlags);
 }
 
 //////////////////////////////////////////////////////////////////////////

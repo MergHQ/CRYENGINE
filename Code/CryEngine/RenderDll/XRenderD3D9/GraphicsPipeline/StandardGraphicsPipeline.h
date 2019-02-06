@@ -105,7 +105,7 @@ public:
 
 	void Init() final;
 	void Resize(int renderWidth, int renderHeight) final;
-	void Update(CRenderView* pRenderView, EShaderRenderingFlags renderingFlags) final;
+	void Update(EShaderRenderingFlags renderingFlags) final;
 	void Execute() final;
 	void ShutDown() final;
 

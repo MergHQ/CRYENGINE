@@ -42,7 +42,7 @@ public:
 	virtual void Init() = 0;
 	virtual void Resize(int renderWidth, int renderHeight);
 	// Prepare all stages before actual drawing starts
-	virtual void Update(CRenderView* pRenderView, EShaderRenderingFlags renderingFlags);
+	virtual void Update(EShaderRenderingFlags renderingFlags);
 	virtual void OnCVarsChanged(CCVarUpdateRecorder& rCVarRecs);
 	// Execute the pipeline and its stages
 	virtual void Execute() = 0;
