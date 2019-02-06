@@ -34,11 +34,6 @@ enum class ECVarType
 #define CONST_CVAR_FLAGS (VF_CHEAT)
 #endif
 
-// Defines for backwards compatibility
-#define CVAR_INT    ECVarType::Int
-#define CVAR_FLOAT  ECVarType::Float
-#define CVAR_STRING ECVarType::String
-
 #if defined(_RELEASE)
 	#define ALLOW_AUDIT_CVARS    0
 	#define LOG_CVAR_INFRACTIONS 1

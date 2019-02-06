@@ -771,11 +771,11 @@ struct SCvarOverrideHelper
 		{
 			switch (m_pCVar->GetType())
 			{
-			case CVAR_INT:
+			case ECVarType::Int:
 				m_previousValue.emplace<int>(m_pCVar->GetIVal());
 				m_pCVar->Set(stl::get<int>(m_desiredValue));
 				break;
-			case CVAR_FLOAT:
+			case ECVarType::Float:
 				m_previousValue.emplace<float>(m_pCVar->GetFVal());
 				m_pCVar->Set(stl::get<float>(m_desiredValue));
 				break;
@@ -789,10 +789,10 @@ struct SCvarOverrideHelper
 		{
 			switch (m_pCVar->GetType())
 			{
-			case CVAR_INT:
+			case ECVarType::Int:
 				m_pCVar->Set(stl::get<int>(m_previousValue));
 				break;
-			case CVAR_FLOAT:
+			case ECVarType::Float:
 				m_pCVar->Set(stl::get<float>(m_previousValue));
 				break;
 			}

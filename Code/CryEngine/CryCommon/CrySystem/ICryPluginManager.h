@@ -22,9 +22,6 @@ namespace Cry
 			Managed
 		};
 
-		//! Alias for backwards compatibility
-		using EPluginType = EType;
-
 		struct IEventListener
 		{
 			enum class EEvent
@@ -80,9 +77,9 @@ namespace Cry
 		virtual void UpdateAfterRenderSubmit() = 0;
 	};
 
-YASLI_ENUM_BEGIN_NESTED(IPluginManager, EPluginType, "PluginType")
-YASLI_ENUM_VALUE_NESTED(IPluginManager, EPluginType::Native, "Native")
-YASLI_ENUM_VALUE_NESTED(IPluginManager, EPluginType::Managed, "Managed")
+YASLI_ENUM_BEGIN_NESTED(IPluginManager, EType, "PluginType")
+YASLI_ENUM_VALUE_NESTED(IPluginManager, EType::Native, "Native")
+YASLI_ENUM_VALUE_NESTED(IPluginManager, EType::Managed, "Managed")
 YASLI_ENUM_END()
 
 }
