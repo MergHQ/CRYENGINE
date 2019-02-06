@@ -1924,7 +1924,7 @@ void CArticulatedEntity::CalcBodiesIinv(int bLockLimits)
 {
 	int idx,i,nAngles;
 	float Iinv_buf[39],aux_buf[39],Mright_buf[39],s_buf[34],qinv_sT_buf[18];
-	Vec3 r,pos_parent;
+	Vec3 r,pos_parent,axisParent,pivotParent;
 	matrixf Iinv_parent(6,6,0,_align16(Iinv_buf)),Iaux(6,6,0,_align16(aux_buf));
 	memset(Iinv_buf,0,sizeof(Iinv_buf));
 	SetMtxStrided<float,6,1>(m_M0inv*-1.0f, Iinv_parent.data+18);
@@ -1933,9 +1933,12 @@ void CArticulatedEntity::CalcBodiesIinv(int bLockLimits)
 		if (m_joints[idx].iParent>=0) {
 			Iinv_parent.data = m_joints[m_joints[idx].iParent].fs->Iinv[0];
 			pos_parent = m_joints[m_joints[idx].iParent].body.pos;
+			axisParent = m_joints[m_joints[idx].iParent].fs->axisSingular;
+			pivotParent = m_joints[m_joints[idx].iParent].fs->pivot;
 		} else {
 			Iinv_parent.data = _align16(Iinv_buf);
-			pos_parent = m_posPivot;
+			pivotParent = pos_parent = m_posPivot;
+			axisParent = Vec3(m_bGrounded);
 		}
 		matrixf Iinv(6,6,0,m_joints[idx].fs->Iinv[0]);
 		matrixf s_qinv_sT_Ia(6,6,0, m_joints[idx].fs->s_qinv_sT_Ia[0]);
@@ -1976,12 +1979,17 @@ void CArticulatedEntity::CalcBodiesIinv(int bLockLimits)
 				Iinv = (Iaux=Iinv)*Mright;
 			}
 			Iinv += s_qinv_sT;
+			Vec3 axis0 = nAngles==1 ? m_joints[idx].rotaxes[m_joints[idx].fs->axidx2qidx[0]] : Vec3(0);
+			m_joints[idx].fs->axisSingular = fabs(axis0*axisParent)+axisParent.len2()>1.98f ? axis0 : Vec3(0);
+			m_joints[idx].fs->pivot = m_joints[idx].quat*m_joints[idx].pivot[1];
 		} else {
 			Iinv = Iinv_parent;
 			LeftOffsetSpatialMatrix(Iinv, -r);
 			RightOffsetSpatialMatrix(Iinv, r);
 			s_qinv_sT_Ia.identity();
 			RightOffsetSpatialMatrix(s_qinv_sT_Ia, -r);
+			m_joints[idx].fs->axisSingular = axisParent;
+			m_joints[idx].fs->pivot = pivotParent;
 		}
 	}
 }
@@ -2820,6 +2828,14 @@ void ArticulatedBody::GetContactMatrix(const Vec3& r, Matrix33 &K)
 	Matrix33 Pw=GetMtxStrided<float,6,1>(fs->Iinv[0]), Lw=GetMtxStrided<float,6,1>(fs->Iinv[0]+3),
 					 Pv=GetMtxStrided<float,6,1>(fs->Iinv[3]), Lv=GetMtxStrided<float,6,1>(fs->Iinv[3]+3);
 	K -= Pv+Lv*rx-rx*(Pw+Lw*rx);
+	Matrix33 mtxsing; 
+	Vec3 dirsing = r-fs->pivot;
+	if (dirsing*(K*dirsing) < dirsing.len2()*body.Minv*0.001f) { // check if the direction towards pivot is singular for movement
+		dirsing.NormalizeFast();
+		K += dotproduct_matrix(dirsing,dirsing*body.Minv*0.01f,mtxsing);
+	}
+	if (fs->axisSingular*(K*fs->axisSingular) < body.Minv*0.001f)	// check if the principal rotation axis is singular for movement
+		K += dotproduct_matrix(fs->axisSingular,fs->axisSingular*body.Minv*0.01f,mtxsing);
 }
 
 void ArticulatedBody::GetContactMatrixRot(Matrix33 &K, ArticulatedBody *buddy)

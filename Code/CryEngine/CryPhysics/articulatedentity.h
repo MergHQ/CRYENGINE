@@ -21,6 +21,7 @@ struct featherstone_data {
 	float qinv_sT[3][6];
 	float qinv_sT_Ia[3][6];
 	CRY_ALIGN(16) float Iinv[6][6];
+	Vec3 axisSingular,pivot;
 	int useTree;
 	int iparent;
 	int jointSize;

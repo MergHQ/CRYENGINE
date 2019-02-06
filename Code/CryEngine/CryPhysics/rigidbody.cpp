@@ -551,7 +551,7 @@ int InvokeContactSolverMC(contact_helper *pContactsRB,contact_helper_constraint 
 					if ((g_ContactsC[i].C*dp).len2() > max(sqr(e),g_ContactsRB[i].vreq.len2()*sqr(0.05f))) {
 						dP = g_ContactsC[i].Kinv*-dp;
 						dPn = dP*g_ContactsRB[i].n;
-						if (min(g_ContactsRB[i].Pspare, fabsf(g_ContactsRB[i].Pn+dPn)-g_ContactsRB[i].Pspare*1.01f)>1e-5f) {
+						if (g_ContactsRB[i].Pspare && fabsf(g_ContactsRB[i].Pn+dPn)>g_ContactsRB[i].Pspare*1.01f) {
 							float t = (g_ContactsRB[i].Pspare*1.01f-fabsf(g_ContactsRB[i].Pn))/fabsf(dPn);
 							dP*=t; dPn*=t;
 							bContactBounced = isneg(0.001f-t);
