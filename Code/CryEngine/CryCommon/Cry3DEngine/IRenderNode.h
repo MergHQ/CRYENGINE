@@ -224,10 +224,10 @@ struct IShadowCaster
 	virtual bool                       HasOcclusionmap(int nLod, IRenderNode* pLightOwner)           { return false; }
 	virtual CLodValue                  ComputeLod(int wantedLod, const SRenderingPassInfo& passInfo) { return CLodValue(wantedLod); }
 	virtual void                       Render(const SRendParams& RendParams, const SRenderingPassInfo& passInfo) = 0;
-	virtual const AABB                 GetBBoxVirtual() = 0;
-	virtual void                       FillBBox(AABB& aabb) = 0;
+	virtual const AABB                 GetBBox() const = 0;
+	virtual void                       FillBBox(AABB& aabb) const = 0;
 	virtual struct ICharacterInstance* GetEntityCharacter(Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) = 0;
-	virtual EERType                    GetRenderNodeType() = 0;
+	virtual EERType                    GetRenderNodeType() const = 0;
 	// </interfuscator:shuffle>
 
 	//! Internal states to track shadow cache status
@@ -306,7 +306,7 @@ public:
 		ZeroArray(m_shadowCacheLastRendered);
 	}
 
-	virtual bool CanExecuteRenderAsJob() { return false; }
+	virtual bool CanExecuteRenderAsJob() const { return false; }
 
 	// <interfuscator:shuffle>
 
@@ -325,11 +325,11 @@ public:
 	virtual void SetMatrix(const Matrix34& mat) {}
 
 	//! Gets local bounds of the render node.
-	virtual void       GetLocalBounds(AABB& bbox) { AABB WSBBox(GetBBox()); bbox = AABB(WSBBox.min - GetPos(true), WSBBox.max - GetPos(true)); }
+	virtual void       GetLocalBounds(AABB& bbox) const { AABB WSBBox(GetBBox()); bbox = AABB(WSBBox.min - GetPos(true), WSBBox.max - GetPos(true)); }
 
 	virtual Vec3       GetPos(bool bWorldOnly = true) const = 0;
 	virtual const AABB GetBBox() const = 0;
-	virtual void       FillBBox(AABB& aabb) { aabb = GetBBox(); }
+	virtual void       FillBBox(AABB& aabb) const { aabb = GetBBox(); }
 	virtual void       SetBBox(const AABB& WSBBox) = 0;
 
 	//! Changes the world coordinates position of this node by delta.
@@ -354,7 +354,7 @@ public:
 #endif
 
 	//! \return IRenderMesh of the object.
-	virtual struct IRenderMesh* GetRenderMesh(int nLod) { return 0; }
+	virtual struct IRenderMesh* GetRenderMesh(int nLod) const { return 0; }
 
 	//! Allows to adjust default lod distance settings.
 	//! If fLodRatio is 100 - default lod distance is used.
@@ -390,7 +390,7 @@ public:
 
 	//! Queries override material of this instance.
 	virtual IMaterial* GetMaterial(Vec3* pHitPos = NULL) const = 0;
-	virtual IMaterial* GetMaterialOverride() = 0;
+	virtual IMaterial* GetMaterialOverride() const = 0;
 
 	//! Used by the editor during export.
 	virtual void       SetCollisionClassIndex(int tableIndex)          {}
@@ -398,10 +398,10 @@ public:
 	virtual void       SetStatObjGroupIndex(int nVegetationGroupIndex) {}
 	virtual int        GetStatObjGroupId() const                       { return -1; }
 	virtual void       SetLayerId(uint16 nLayerId)                     {}
-	virtual uint16     GetLayerId()                                    { return 0; }
-	virtual float      GetMaxViewDist() = 0;
+	virtual uint16     GetLayerId() const                              { return 0; }
+	virtual float      GetMaxViewDist() const = 0;
 
-	virtual EERType    GetRenderNodeType() = 0;
+	virtual EERType    GetRenderNodeType() const = 0;
 	virtual bool       IsAllocatedOutsideOf3DEngineDLL()             { return GetOwnerEntity() != nullptr; }
 	virtual void       Dephysicalize(bool bKeepIfReferenced = false) {}
 	virtual void       Dematerialize()                               {}
@@ -410,8 +410,6 @@ public:
 	virtual void       Precache()                                                                       {}
 
 	virtual void       UpdateStreamingPriority(const SUpdateStreamingPriorityContext& streamingContext) {}
-
-	virtual const AABB GetBBoxVirtual()                                                                 { return GetBBox(); }
 
 	//	virtual float GetLodForDistance(float fDistance) { return 0; }
 
@@ -434,7 +432,7 @@ public:
 		}
 	}
 
-	virtual uint8 GetSortPriority()                        { return 0; }
+	virtual uint8 GetSortPriority() const { return 0; }
 
 	//! Object can be used by GI system in several ways.
 	enum EGIMode
@@ -742,9 +740,10 @@ struct ILightSource : public IRenderNode
 	// <interfuscator:shuffle>
 	virtual void                     SetLightProperties(const SRenderLight& light) = 0;
 	virtual SRenderLight&            GetLightProperties() = 0;
-	virtual const Matrix34&          GetMatrix() = 0;
-	virtual struct ShadowMapFrustum* GetShadowFrustum(int nId = 0) = 0;
-	virtual bool                     IsLightAreasVisible() = 0;
+	virtual const SRenderLight&      GetLightProperties() const = 0;
+	virtual const Matrix34&          GetMatrix() const = 0;
+	virtual struct ShadowMapFrustum* GetShadowFrustum(int nId = 0) const = 0;
+	virtual bool                     IsLightAreasVisible() const = 0;
 	virtual void                     SetCastingException(IRenderNode* pNotCaster) = 0;
 	// </interfuscator:shuffle>
 };
@@ -914,8 +913,8 @@ struct IDecalRenderNode : public IRenderNode
 	// <interfuscator:shuffle>
 	virtual void                    SetDecalProperties(const SDecalProperties& properties) = 0;
 	virtual const SDecalProperties* GetDecalProperties() const = 0;
-	virtual const Matrix34& GetMatrix() = 0;
-	virtual void            CleanUpOldDecals() = 0;
+	virtual const Matrix34&         GetMatrix() const = 0;
+	virtual void                    CleanUpOldDecals() = 0;
 	// </interfuscator:shuffle>
 };
 

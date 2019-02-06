@@ -13,7 +13,7 @@ public:
 	// IDecalRenderNode
 	virtual void                    SetDecalProperties(const SDecalProperties& properties) override;
 	virtual const SDecalProperties* GetDecalProperties() const override;
-	virtual const Matrix34&  GetMatrix() override { return m_Matrix; }
+	virtual const Matrix34&         GetMatrix() const override { return m_Matrix; }
 	virtual void                    CleanUpOldDecals() override;
 	// ~IDecalRenderNode
 
@@ -21,7 +21,7 @@ public:
 	virtual IRenderNode*     Clone() const override;
 	virtual void             SetMatrix(const Matrix34& mat) override;
 
-	virtual EERType          GetRenderNodeType() override;
+	virtual EERType          GetRenderNodeType() const override { return eERType_Decal; }
 	virtual const char*      GetEntityClassName() const override;
 	virtual const char*      GetName() const override;
 	virtual Vec3             GetPos(bool bWorldOnly = true) const override;
@@ -30,20 +30,20 @@ public:
 	virtual void             SetPhysics(IPhysicalEntity*) override;
 	virtual void             SetMaterial(IMaterial* pMat) override;
 	virtual IMaterial*       GetMaterial(Vec3* pHitPos = 0) const override;
-	virtual IMaterial*       GetMaterialOverride() override { return m_pMaterial; }
-	virtual float            GetMaxViewDist() override;
+	virtual IMaterial*       GetMaterialOverride() const override { return m_pMaterial; }
+	virtual float            GetMaxViewDist() const override;
 	virtual void             Precache() override;
 	virtual void             GetMemoryUsage(ICrySizer* pSizer) const override;
 
 	virtual const AABB       GetBBox() const override { return m_WSBBox; }
 	virtual void             SetBBox(const AABB& WSBBox) override { m_WSBBox = WSBBox; }
-	virtual void             FillBBox(AABB& aabb) override;
+	virtual void             FillBBox(AABB& aabb) const override { aabb = GetBBox(); }
 	virtual void             OffsetPosition(const Vec3& delta) override;
 
-	virtual uint8            GetSortPriority() override { return m_decalProperties.m_sortPrio; }
+	virtual uint8            GetSortPriority() const override { return m_decalProperties.m_sortPrio; }
 
 	virtual void             SetLayerId(uint16 nLayerId) override { m_nLayerId = nLayerId; Get3DEngine()->C3DEngine::UpdateObjectsLayerAABB(this); }
-	virtual uint16           GetLayerId() override { return m_nLayerId; }
+	virtual uint16           GetLayerId() const override { return m_nLayerId; }
 
 	// Implementation not currently needed, but required due to assertion in IRenderNode::SetOwnerEntity default implementation
 	virtual void SetOwnerEntity(IEntity* pEntity) override {}

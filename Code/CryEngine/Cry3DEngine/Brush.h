@@ -38,8 +38,8 @@ public:
 	virtual void                SetCollisionClassIndex(int tableIndex) final { m_collisionClassIdx = tableIndex; }
 
 	virtual void                SetLayerId(uint16 nLayerId) final;
-	virtual uint16              GetLayerId() final                           { return m_nLayerId; }
-	virtual struct IRenderMesh* GetRenderMesh(int nLod) final;
+	virtual uint16              GetLayerId() const final { return m_nLayerId; }
+	virtual struct IRenderMesh* GetRenderMesh(int nLod) const final;
 
 	virtual IPhysicalEntity*    GetPhysics() const final;
 	virtual void                SetPhysics(IPhysicalEntity* pPhys) final;
@@ -54,12 +54,12 @@ public:
 	//! Assign final material to this entity.
 	virtual void       SetMaterial(IMaterial* pMat) final;
 	virtual IMaterial* GetMaterial(Vec3* pHitPos = NULL) const final;
-	virtual IMaterial* GetMaterialOverride() final { return m_pMaterial; };
+	virtual IMaterial* GetMaterialOverride() const final { return m_pMaterial; };
 	virtual void       CheckPhysicalized() final;
 
-	virtual float      GetMaxViewDist() final;
+	virtual float      GetMaxViewDist() const final;
 
-	virtual EERType    GetRenderNodeType();
+	virtual EERType    GetRenderNodeType() const override { return eERType_Brush; }
 
 	void               SetStatObj(IStatObj* pStatObj);
 
@@ -74,13 +74,13 @@ public:
 
 	virtual const AABB GetBBox() const final;
 	virtual void       SetBBox(const AABB& WSBBox) final { m_WSBBox = WSBBox; }
-	virtual void       FillBBox(AABB& aabb) final;
+	virtual void       FillBBox(AABB& aabb) const final { aabb = GetBBox(); }
 	virtual void       OffsetPosition(const Vec3& delta) final;
 
 	virtual void SetCameraSpacePos( Vec3* pCameraSpacePos ) final;
 	virtual void SetSubObjectHideMask( hidemask subObjHideMask ) final;
 
-	virtual bool       CanExecuteRenderAsJob() final;
+	virtual bool       CanExecuteRenderAsJob() const final;
 	
 	virtual void       DisablePhysicalization(bool bDisable) final;
 
@@ -142,7 +142,7 @@ class CMovableBrush final : public CBrush
 {
 	virtual void     SetOwnerEntity(struct IEntity* pEntity) final { m_pOwnerEntity = pEntity; }
 	virtual IEntity* GetOwnerEntity() const final                  { return m_pOwnerEntity; }
-	virtual EERType  GetRenderNodeType() final                     { return eERType_MovableBrush; }
+	virtual EERType  GetRenderNodeType() const final               { return eERType_MovableBrush; }
 	virtual bool     IsAllocatedOutsideOf3DEngineDLL()             { return GetOwnerEntity() != nullptr; }
 
 private:

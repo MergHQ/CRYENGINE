@@ -888,16 +888,6 @@ void COcean::OffsetPosition(const Vec3& delta)
 {
 }
 
-void COcean::FillBBox(AABB& aabb)
-{
-	aabb = COcean::GetBBox();
-}
-
-EERType COcean::GetRenderNodeType()
-{
-	return eERType_WaterVolume;
-}
-
 Vec3 COcean::GetPos(bool) const
 {
 	return Vec3(0, 0, 0);

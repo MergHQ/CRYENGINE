@@ -664,17 +664,7 @@ void CRoadRenderNode::OffsetPosition(const Vec3& delta)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void CRoadRenderNode::FillBBox(AABB& aabb)
-{
-	aabb = CRoadRenderNode::GetBBox();
-}
-
-EERType CRoadRenderNode::GetRenderNodeType()
-{
-	return eERType_Road;
-}
-
-float CRoadRenderNode::GetMaxViewDist()
+float CRoadRenderNode::GetMaxViewDist() const
 {
 	if (GetMinSpecFromRenderNodeFlags(m_dwRndFlags) == CONFIG_DETAIL_SPEC)
 		return max(GetCVars()->e_ViewDistMin, CRoadRenderNode::GetBBox().GetRadius() * GetCVars()->e_ViewDistRatioDetail * GetViewDistRatioNormilized());
@@ -692,7 +682,7 @@ IMaterial* CRoadRenderNode::GetMaterial(Vec3* pHitPos) const
 	return m_pMaterial;
 }
 
-bool CRoadRenderNode::CanExecuteRenderAsJob()
+bool CRoadRenderNode::CanExecuteRenderAsJob() const
 {
 	return !gEnv->IsEditor() && GetCVars()->e_ExecuteRenderAsJobMask & BIT(GetRenderNodeType());
 }

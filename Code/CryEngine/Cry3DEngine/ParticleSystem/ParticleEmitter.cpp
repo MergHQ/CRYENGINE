@@ -82,11 +82,6 @@ CParticleEmitter::~CParticleEmitter()
 	ResetRenderObjects();
 }
 
-EERType CParticleEmitter::GetRenderNodeType()
-{
-	return eERType_ParticleEmitter;
-}
-
 const char* CParticleEmitter::GetEntityClassName() const
 {
 	return "ParticleEmitter";
@@ -371,7 +366,7 @@ void CParticleEmitter::PostUpdate()
 	m_parentContainer.GetIOVec3Stream(EPVF_AngularVelocity).Store(TParticleGroupId(0), Vec3v(ZERO));
 }
 
-float CParticleEmitter::GetMaxViewDist()
+float CParticleEmitter::GetMaxViewDist() const
 {
 	IRenderer* pRenderer = GetRenderer();
 	const float angularDensity =
@@ -395,19 +390,6 @@ float CParticleEmitter::GetMaxViewDist()
 
 void CParticleEmitter::GetMemoryUsage(ICrySizer* pSizer) const
 {
-}
-
-const AABB CParticleEmitter::GetBBox() const
-{
-	if (m_bounds.IsReset())
-		return AABB(m_location.t, 0.05f);
-	else
-		return m_bounds;
-}
-
-void CParticleEmitter::FillBBox(AABB& aabb)
-{
-	aabb = GetBBox();
 }
 
 void CParticleEmitter::SetViewDistRatio(int nViewDistRatio)

@@ -97,8 +97,7 @@ void COctreeNode::CheckManageVegetationSprites(float fNodeDistance, int nMaxFram
 		if (pNext = (CVegetation*)pObj->m_pNext)
 			cryPrefetchT0SSE(pNext);
 
-		AABB objBox;
-		pObj->FillBBox(objBox);
+		const AABB objBox = pObj->GetBBox();
 
 		const float fEntDistanceSqr = Distance::Point_AABBSq(vCamPos, objBox) * passInfo.GetZoomFactor() * passInfo.GetZoomFactor();
 
@@ -734,8 +733,7 @@ void COctreeNode::Render_LightSources(bool bNodeCompletelyInFrustum, uint32 pass
 			IF(pObj->m_dwRndFlags & ERF_HIDDEN, 0)
 				continue;
 
-			AABB objBox;
-			pObj->FillBBox(objBox);
+			const AABB objBox = pObj->GetBBox();
 
 			float entDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, objBox)) * passInfo.GetZoomFactor();
 
@@ -1789,8 +1787,7 @@ bool COctreeNode::UpdateStreamingPriority(PodArray<COctreeNode*>& arrRecursion, 
 			IF (pObj->m_dwRndFlags & ERF_HIDDEN, 0)
 				continue;
 
-			AABB objBox;
-			pObj->FillBBox(objBox);
+			const AABB objBox = pObj->GetBBox();
 
 			// stream more in zoom mode if in frustum
 			float fZoomFactorSq = (passInfo.IsZoomActive() && passInfo.GetCamera().IsAABBVisible_E(objBox))
@@ -2400,6 +2397,7 @@ void COctreeNode::ReleaseObjects(bool bReleaseOnlyStreamable)
 		assert(!m_arrObjects[l].m_pFirstNode || bReleaseOnlyStreamable);
 	}
 }
+
 void COctreeNode::ResetStaticInstancing()
 {
 	FUNCTION_PROFILER_3DENGINE;
@@ -2655,7 +2653,7 @@ void COctreeNode::RenderVegetations(TDoublyLinkedList<IRenderNode>* lstObjects, 
 		if (pObj->m_pInstancingInfo)
 			objBox = pObj->m_pInstancingInfo->m_aabbBox;
 		else
-			pObj->FillBBox(objBox);
+			objBox = pObj->GetBBox();
 
 		float fEntDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, objBox) * sqr(passInfo.GetZoomFactor()));
 
@@ -2677,7 +2675,7 @@ void COctreeNode::RenderVegetations(TDoublyLinkedList<IRenderNode>* lstObjects, 
 				}
 			}
 
-			if (pObj->CVegetation::CanExecuteRenderAsJob() || !bOcclusionCullerInUse)
+			if (pObj->CanExecuteRenderAsJob() || !bOcclusionCullerInUse)
 			{
 				GetObjManager()->RenderVegetation(pObj, pAffectingLights, objBox, fEntDistance, pTerrainTexInfo, bCheckPerObjectOcclusion, passInfo, objCullMask);
 			}
@@ -2712,8 +2710,7 @@ void COctreeNode::RenderBrushes(TDoublyLinkedList<IRenderNode>* lstObjects, cons
 		IF (pObj->m_dwRndFlags & ERF_HIDDEN, 0)
 			continue;
 
-		AABB objBox;
-		pObj->FillBBox(objBox);
+		const AABB objBox = pObj->GetBBox();
 
 		float fEntDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, objBox)) * passInfo.GetZoomFactor();
 
@@ -2723,7 +2720,7 @@ void COctreeNode::RenderBrushes(TDoublyLinkedList<IRenderNode>* lstObjects, cons
 
 		if (objCullMask)
 		{
-			if (pObj->CBrush::CanExecuteRenderAsJob() || !bOcclusionCullerInUse)
+			if (pObj->CanExecuteRenderAsJob() || !bOcclusionCullerInUse)
 			{
 				GetObjManager()->RenderBrush(pObj, pAffectingLights, pTerrainTexInfo, objBox, fEntDistance, bCheckPerObjectOcclusion, passInfo, objCullMask);
 			}
@@ -2831,8 +2828,7 @@ void COctreeNode::RenderDecalsAndRoads(TDoublyLinkedList<IRenderNode>* lstObject
 		IF (pObj->m_dwRndFlags & ERF_HIDDEN, 0)
 			continue;
 
-		AABB objBox;
-		pObj->FillBBox(objBox);
+		const AABB objBox = pObj->GetBBox();
 
 		float fEntDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, objBox)) * passInfo.GetZoomFactor();
 
@@ -2867,7 +2863,6 @@ void COctreeNode::RenderLights(TDoublyLinkedList<IRenderNode>* lstObjects, const
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	AABB objBox;
 	const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 
 	const bool bOcclusionCullerInUse = Get3DEngine()->IsStatObjBufferRenderTasksAllowed() && passInfo.IsGeneralPass() && JobManager::InvokeAsJob("CheckOcclusion");
@@ -2875,15 +2870,14 @@ void COctreeNode::RenderLights(TDoublyLinkedList<IRenderNode>* lstObjects, const
 	for (IRenderNode* pObj = lstObjects->m_pFirstNode, *pNext; pObj; pObj = pNext)
 	{
 		passInfo.GetRendItemSorter().IncreaseObjectCounter();
-		pNext = pObj->m_pNext;
 
-		if (pObj->m_pNext)
+		if (pNext = pObj->m_pNext)
 			cryPrefetchT0SSE(pObj->m_pNext);
 
 		IF(pObj->m_dwRndFlags & ERF_HIDDEN, 0)
 			continue;
 
-		pObj->FillBBox(objBox);
+		const AABB objBox = pObj->GetBBox();
 
 		float fEntDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, objBox)) * passInfo.GetZoomFactor();
 
@@ -2924,8 +2918,7 @@ void COctreeNode::RenderCommonObjects(TDoublyLinkedList<IRenderNode>* lstObjects
 		IF (pObj->m_dwRndFlags & ERF_HIDDEN, 0)
 			continue;
 
-		AABB objBox;
-		pObj->FillBBox(objBox);
+		const AABB objBox = pObj->GetBBox();
 
 		float fEntDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, objBox)) * passInfo.GetZoomFactor();
 
@@ -3676,9 +3669,8 @@ void COctreeNode::GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERType o
 
 		if ((pObj->GetRenderNodeType() == objType) && (pObj->GetRndFlags() & dwFlags))
 		{
-			AABB box;
-			pObj->FillBBox(box);
-			if (!pBBox || Overlap::AABB_AABB(*pBBox, box))
+			const AABB objBox = pObj->GetBBox();
+			if (!pBBox || Overlap::AABB_AABB(*pBBox, objBox))
 			{
 				lstObjects.Add(pObj);
 			}
@@ -3719,10 +3711,8 @@ void COctreeNode::GetNearestCubeProbe(float& fMinDistance, int& nMaxPriority, CL
 		if (!(pLight->m_Flags & DLF_DEFERRED_CUBEMAPS))
 			continue;
 
-		AABB box;
-		pObj->FillBBox(box);
-
-		if (Overlap::AABB_AABB(*pBBox, box))
+		const AABB objBox = pObj->GetBBox();
+		if (Overlap::AABB_AABB(*pBBox, objBox))
 		{
 			Vec3 vCenterRel = vCenter - pLight->GetPosition();
 			Vec3 vCenterOBBSpace;

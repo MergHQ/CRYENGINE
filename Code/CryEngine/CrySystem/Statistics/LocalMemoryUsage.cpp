@@ -1100,8 +1100,6 @@ void CLocalMemoryUsage::CollectGeometryP1()
 		dwCount += p3DEngine->GetObjectsByType(eERType_Character, &renderNodes[dwCount]);
 		dwCount += p3DEngine->GetObjectsByType(eERType_MovableBrush, &renderNodes[dwCount]);
 
-		AABB objBox;
-
 		for (uint32 dwI = 0; dwI < dwCount; ++dwI)
 		{
 			IRenderNode* pRenderNode = renderNodes[dwI];
@@ -1136,8 +1134,8 @@ void CLocalMemoryUsage::CollectGeometryP1()
 				objScale = max(0.001f, ((IFogVolumeRenderNode*)pRenderNode)->GetMatrix().GetColumn0().GetLength());
 			}
 
+			const AABB objBox = pRenderNode->GetBBox();
 			float maxViewDist = pRenderNode->m_fWSMaxViewDist;
-			pRenderNode->FillBBox(objBox);
 
 			IMaterial* pRenderNodeMat = pRenderNode->GetMaterialOverride();
 

@@ -247,13 +247,13 @@ void CTerrain::UpdateNodesIncrementaly(const SRenderingPassInfo& passInfo)
 					switch (pNode->m_eTexStreamingStatus)
 					{
 					case ecss_NotLoaded:
-						DrawBBox(pNode->GetBBoxVirtual(), Col_Red);
+						DrawBBox(pNode->GetBBox(), Col_Red);
 						break;
 					case ecss_InProgress:
-						DrawBBox(pNode->GetBBoxVirtual(), Col_Green);
+						DrawBBox(pNode->GetBBox(), Col_Green);
 						break;
 					case ecss_Ready:
-						DrawBBox(pNode->GetBBoxVirtual(), Col_Blue);
+						DrawBBox(pNode->GetBBox(), Col_Blue);
 						break;
 					}
 			}
@@ -289,7 +289,7 @@ void CTerrain::UpdateNodesIncrementaly(const SRenderingPassInfo& passInfo)
 		IF (GetCVars()->e_ProcVegetation == 2, 0)
 		{
 			for (int i = 0; i < m_lstActiveProcObjNodes.Count(); i++)
-				DrawBBox(m_lstActiveProcObjNodes[i]->GetBBoxVirtual(), m_lstActiveProcObjNodes[i]->IsProcObjectsReady() ? Col_Green : Col_Red);
+				DrawBBox(m_lstActiveProcObjNodes[i]->GetBBox(), m_lstActiveProcObjNodes[i]->IsProcObjectsReady() ? Col_Green : Col_Red);
 		}
 	}
 }

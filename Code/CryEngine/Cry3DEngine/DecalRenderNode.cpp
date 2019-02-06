@@ -708,17 +708,7 @@ void CDecalRenderNode::OffsetPosition(const Vec3& delta)
 	m_Matrix.SetTranslation(m_Matrix.GetTranslation() + delta);
 }
 
-void CDecalRenderNode::FillBBox(AABB& aabb)
-{
-	aabb = CDecalRenderNode::GetBBox();
-}
-
-EERType CDecalRenderNode::GetRenderNodeType()
-{
-	return eERType_Decal;
-}
-
-float CDecalRenderNode::GetMaxViewDist()
+float CDecalRenderNode::GetMaxViewDist() const
 {
 	float fMatScale = m_Matrix.GetColumn0().GetLength();
 

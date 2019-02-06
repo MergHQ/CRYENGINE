@@ -1258,9 +1258,9 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual void PrepareShadowPool(CRenderView* pRenderView) const = 0;
 
 	// Dynamic lights.
-	virtual bool EF_IsFakeDLight(const SRenderLight* Source) = 0;
+	virtual bool EF_IsFakeDLight(const SRenderLight* Source) const = 0;
 	virtual void EF_ADDDlight(SRenderLight* Source, const SRenderingPassInfo& passInfo) = 0;
-	virtual bool EF_UpdateDLight(SRenderLight* pDL) = 0;
+	virtual bool EF_UpdateDLight(SRenderLight* pDL) const = 0;
 	virtual bool EF_AddDeferredDecal(const SDeferredDecal& rDecal, const SRenderingPassInfo& passInfo) { return true; }
 
 	// Deferred lights/vis areas

@@ -25,22 +25,22 @@ public:
 	int32         GetMemoryUsage();
 
 	// fake IRenderNode implementation
-	virtual EERType          GetRenderNodeType();
-	virtual const char*      GetEntityClassName(void) const                                 { return "Ocean"; }
-	virtual const char*      GetName(void) const                                            { return "Ocean"; }
-	virtual Vec3             GetPos(bool) const;
-	virtual void             Render(const SRendParams&, const SRenderingPassInfo& passInfo) {}
-	virtual IPhysicalEntity* GetPhysics(void) const                                         { return 0; }
-	virtual void             SetPhysics(IPhysicalEntity*)                                   {}
-	virtual void             SetMaterial(IMaterial* pMat)                                   { m_pMaterial = pMat; }
-	virtual IMaterial*       GetMaterial(Vec3* pHitPos = NULL) const;
-	virtual IMaterial*       GetMaterialOverride()                                          { return m_pMaterial; }
-	virtual float            GetMaxViewDist()                                               { return 1000000.f; }
-	virtual void             GetMemoryUsage(ICrySizer* pSizer) const                        {}
-	virtual const AABB       GetBBox() const                                                { return AABB(Vec3(-1000000.f, -1000000.f, -1000000.f), Vec3(1000000.f, 1000000.f, 1000000.f)); }
-	virtual void             SetBBox(const AABB& WSBBox)                                    {}
-	virtual void             FillBBox(AABB& aabb);
-	virtual void             OffsetPosition(const Vec3& delta);
+	virtual EERType          GetRenderNodeType() const                                      override { return eERType_WaterVolume; }
+	virtual const char*      GetEntityClassName(void) const                                 override { return "Ocean"; }
+	virtual const char*      GetName(void) const                                            override { return "Ocean"; }
+	virtual Vec3             GetPos(bool) const override;
+	virtual void             Render(const SRendParams&, const SRenderingPassInfo& passInfo) override {}
+	virtual IPhysicalEntity* GetPhysics(void) const                                         override { return 0; }
+	virtual void             SetPhysics(IPhysicalEntity*)                                   override {}
+	virtual void             SetMaterial(IMaterial* pMat)                                   override { m_pMaterial = pMat; }
+	virtual IMaterial*       GetMaterial(Vec3* pHitPos = NULL) const override;
+	virtual IMaterial*       GetMaterialOverride() const                                    override { return m_pMaterial; }
+	virtual float            GetMaxViewDist() const                                         override { return 1000000.f; }
+	virtual void             GetMemoryUsage(ICrySizer* pSizer) const                        override {}
+	virtual const AABB       GetBBox() const                                                override { return AABB(Vec3(-1000000.f, -1000000.f, -1000000.f), Vec3(1000000.f, 1000000.f, 1000000.f)); }
+	virtual void             SetBBox(const AABB& WSBBox)                                    override {}
+	virtual void             FillBBox(AABB& aabb) const                                     override { aabb = GetBBox(); }
+	virtual void             OffsetPosition(const Vec3& delta) override;
 
 private:
 

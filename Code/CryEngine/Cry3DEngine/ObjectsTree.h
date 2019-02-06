@@ -368,7 +368,7 @@ public:
 	void                     InvalidateCachedShadowData();
 	void                     ActivateObjectsLayer(uint16 nLayerId, bool bActivate, bool bPhys, IGeneralMemoryHeap* pHeap, const AABB& layerBox);
 	void                     GetLayerMemoryUsage(uint16 nLayerId, ICrySizer* pSizer, int* pNumBrushes, int* pNumDecals);
-	virtual void             MarkAsUncompiled(const ERNListType eListType)       { SetCompiled(eListType, false); }
+	virtual void             MarkAsUncompiled(const ERNListType eListType) override { SetCompiled(eListType, false); }
 	void                     MarkAsUncompiled();
 	inline bool              IsCompiled(ERNListType eRNListType) const           { return (m_compiledFlag & (1 << eRNListType)) != 0; }
 	void                     SetCompiled(ERNListType eRNListType, bool compiled) { m_compiledFlag = (compiled ? (1 << eRNListType) : 0) | (m_compiledFlag & ~(1 << eRNListType)); }
@@ -427,7 +427,7 @@ public:
 	float                  GetNodeStreamingDistance(const SObjManPrecacheCamera* pPrecacheCams, AABB objectsBox, size_t nPrecacheCams, const SRenderingPassInfo& passInfo);
 	void                   ReleaseStreamableContent();
 	bool                   CheckStartStreaming(bool bFullUpdate);
-	virtual void           StreamOnComplete(IReadStream* pStream, unsigned nError);
+	virtual void           StreamOnComplete(IReadStream* pStream, unsigned nError) override;
 	template<class T> void StreamOnCompleteReadObjects(T* f, int nDataSize);
 	void                   StartStreaming(bool bFinishNow, IReadStream_AutoPtr* ppStream);
 	template<class T> int  ReadObjects(T*& f, int& nDataSize, EEndian eEndian, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, const SLayerVisibility* pLayerVisibilityMask, SOcTreeNodeChunk& chunk, ELoadObjectsMode eLoadMode);

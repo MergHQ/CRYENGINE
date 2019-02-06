@@ -149,7 +149,7 @@ void CCharacterRenderNode::SetMatrix(const Matrix34& transform)
 	m_pCharacterInstance->SetAttachmentLocation_DEPRECATED(QuatTS(transform));
 }
 
-void CCharacterRenderNode::GetLocalBounds(AABB& bbox)
+void CCharacterRenderNode::GetLocalBounds(AABB& bbox) const
 {
 	if (!m_pCharacterInstance)
 	{
@@ -185,7 +185,7 @@ void CCharacterRenderNode::Physicalize(bool bInstant)
 }
 
 //////////////////////////////////////////////////////////////////////////
-float CCharacterRenderNode::GetMaxViewDist()
+float CCharacterRenderNode::GetMaxViewDist() const
 {
 	if (GetRndFlags() & ERF_FORCE_POST_3D_RENDER)
 	{

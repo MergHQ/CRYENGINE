@@ -461,7 +461,7 @@ struct IVisArea : public IClipVolume
 	//! \param nMaxConnNum          - The maximum of IVisArea to write in pAreas
 	//! \param bSkipDisabledPortals - Ignore portals which are disabled
 	//! \return An integer which hold the amount of VisArea found to be connected.
-	virtual int GetVisAreaConnections(IVisArea** pAreas, int nMaxConnNum, bool bSkipDisabledPortals = false) = 0;
+	virtual int GetVisAreaConnections(IVisArea** pAreas, int nMaxConnNum, bool bSkipDisabledPortals = false) const = 0;
 
 	//! Determines if it's connected to an outdoor area.
 	//! \return True if the VisArea is connected to an outdoor area.
@@ -506,11 +506,11 @@ struct IVisArea : public IClipVolume
 
 	//! Determines if the sphere can be affect the VisArea.
 	//! \return Returns true if the VisArea can be affected by the sphere, else false will be returned.
-	virtual bool IsSphereInsideVisArea(const Vec3& vPos, const f32 fRadius) = 0;
+	virtual bool IsSphereInsideVisArea(const Vec3& vPos, const f32 fRadius) const = 0;
 
 	//! Clips geometry inside or outside a vis area.
 	//! \return true if geom was clipped.
-	virtual bool ClipToVisArea(bool bInside, Sphere& sphere, Vec3 const& vNormal) = 0;
+	virtual bool ClipToVisArea(bool bInside, Sphere& sphere, Vec3 const& vNormal) const = 0;
 
 	//! Gives back the axis aligned bounding box of VisArea.
 	//! \return the pointer of an AABB.
@@ -526,7 +526,7 @@ struct IVisArea : public IClipVolume
 	virtual bool IsPointInsideVisArea(const Vec3& vPos) const = 0;
 
 	//! \return vis area final ambient color (ambient color depends on factors, like if connected to outdoor, is affected by skycolor - etc)
-	virtual const Vec3 GetFinalAmbientColor() = 0;
+	virtual const Vec3 GetFinalAmbientColor() const = 0;
 
 	virtual void       GetShapePoints(const Vec3*& pPoints, size_t& nPoints) = 0;
 	virtual float      GetHeight() = 0;
@@ -1923,13 +1923,13 @@ struct I3DEngine : public IProcess
 
 	//! Gets the VisArea which is present at a specified point.
 	//! \return VisArea containing point, if any, 0 otherwise.
-	virtual IVisArea* GetVisAreaFromPos(const Vec3& vPos) = 0;
+	virtual IVisArea* GetVisAreaFromPos(const Vec3& vPos) const = 0;
 
 	//! Tests for intersection against Vis Areas.
 	//! \param[in] box Volume to test for intersection.
 	//! \param[out] pNodeCache Optional, set to a cached pointer for quicker calls to ClipToVisAreas.
 	//! \return Whether box intersects any vis areas.
-	virtual bool IntersectsVisAreas(const AABB& box, void** pNodeCache = 0) = 0;
+	virtual bool IntersectsVisAreas(const AABB& box, void** pNodeCache = 0) const = 0;
 
 	//! Clips geometry against the boundaries of VisAreas.
 	//! \param pInside: Vis Area to clip inside of. If 0, clip outside all Vis Areas.

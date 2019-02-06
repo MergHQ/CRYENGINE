@@ -15,10 +15,10 @@ public:
 public:
 	//////////////////////////////////////////////////////////////////////////
 	// implements IRenderNode
-	virtual void             GetLocalBounds(AABB& bbox) override;
+	virtual void             GetLocalBounds(AABB& bbox) const override;
 	virtual void             SetMatrix(const Matrix34& mat) override;
 
-	virtual EERType          GetRenderNodeType() override;
+	virtual EERType          GetRenderNodeType() const override { return eERType_Rope; }
 	virtual const char*      GetEntityClassName() const override;
 	virtual const char*      GetName() const override;
 	virtual Vec3             GetPos(bool bWorldOnly = true) const override;
@@ -29,20 +29,20 @@ public:
 	virtual void             Dephysicalize(bool bKeepIfReferenced = false) override;
 	virtual void             SetMaterial(IMaterial* pMat) override;
 	virtual IMaterial*       GetMaterial(Vec3* pHitPos = 0) const override;
-	virtual IMaterial*       GetMaterialOverride() override { return m_pMaterial; }
-	virtual float            GetMaxViewDist() override;
+	virtual IMaterial*       GetMaterialOverride() const override { return m_pMaterial; }
+	virtual float            GetMaxViewDist() const override;
 	virtual void             Precache() override;
 	virtual void             GetMemoryUsage(ICrySizer* pSizer) const override;
 	virtual void             LinkEndPoints() override;
 	virtual const AABB       GetBBox() const override             { return m_WSBBox; }
 	virtual void             SetBBox(const AABB& WSBBox) override { m_WSBBox = WSBBox; m_bNeedToReRegister = true; }
-	virtual void             FillBBox(AABB& aabb) override;
+	virtual void             FillBBox(AABB& aabb) const override { aabb = GetBBox(); }
 	virtual void             OffsetPosition(const Vec3& delta) override;
 
 	// Set a new owner entity
-	virtual void             SetOwnerEntity(IEntity* pEntity) final { m_pEntity = pEntity; }
+	virtual void             SetOwnerEntity(IEntity* pEntity) override { m_pEntity = pEntity; }
 	// Retrieve a pointer to the entity who owns this render node.
-	virtual IEntity*         GetOwnerEntity() const final { return m_pEntity; }
+	virtual IEntity*         GetOwnerEntity() const override { return m_pEntity; }
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////

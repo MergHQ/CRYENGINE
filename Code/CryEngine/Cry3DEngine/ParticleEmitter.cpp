@@ -107,7 +107,7 @@ IMaterial* CParticleEmitter::GetMaterial(Vec3*) const
 	return NULL;
 }
 
-float CParticleEmitter::GetMaxViewDist()
+float CParticleEmitter::GetMaxViewDist() const
 {
 	// Max particles/radian, modified by emitter settings.
 	return CParticleManager::Instance()->GetMaxAngularDensity(gEnv->pSystem->GetViewCamera())
@@ -674,7 +674,7 @@ void CParticleEmitter::UpdateFromEntity()
 		SetRndFlags(ERF_CASTSHADOWMAPS, false);
 }
 
-void CParticleEmitter::GetLocalBounds(AABB& bbox)
+void CParticleEmitter::GetLocalBounds(AABB& bbox) const
 {
 	if (!m_bbWorld.IsReset())
 	{

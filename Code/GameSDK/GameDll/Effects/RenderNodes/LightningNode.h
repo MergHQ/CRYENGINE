@@ -13,7 +13,7 @@ struct SLightningStats;
 
 
 
-class CLightningRenderNode : public IRenderNode
+class CLightningRenderNode final : public IRenderNode
 {
 private:
 	typedef SVF_P3F_C4B_T2F SLightningVertex;
@@ -88,24 +88,24 @@ public:
 	virtual ~CLightningRenderNode();
 
 	// IRenderNode
-	virtual EERType GetRenderNodeType();
-	virtual const char* GetEntityClassName() const;
-	virtual const char* GetName() const;
-	virtual Vec3 GetPos(bool bWorldOnly = true) const;
-	virtual void Render(const struct SRendParams& rParam, const SRenderingPassInfo& passInfo);
-	virtual IPhysicalEntity* GetPhysics() const;
-	virtual void SetPhysics(IPhysicalEntity*);
-	virtual void SetMaterial(IMaterial* pMat);
-	virtual IMaterial* GetMaterial(Vec3* pHitPos = 0) const;
-	virtual IMaterial* GetMaterialOverride();
-	virtual float GetMaxViewDist();
-	virtual void Precache();
-	virtual void GetMemoryUsage(ICrySizer* pSizer) const;
-	virtual const AABB GetBBox() const;
-	virtual void FillBBox(AABB &aabb);
-	virtual void SetBBox(const AABB& WSBBox);
-	virtual void OffsetPosition(const Vec3& delta);
-	virtual bool IsAllocatedOutsideOf3DEngineDLL();
+	virtual EERType GetRenderNodeType() const override { return eERType_GameEffect; }
+	virtual const char* GetEntityClassName() const override { return "Lightning"; }
+	virtual const char* GetName() const override { return "Lightning"; }
+	virtual Vec3 GetPos(bool bWorldOnly = true) const override;
+	virtual void Render(const struct SRendParams& rParam, const SRenderingPassInfo& passInfo) override;
+	virtual IPhysicalEntity* GetPhysics() const override;
+	virtual void SetPhysics(IPhysicalEntity*) override;
+	virtual void SetMaterial(IMaterial* pMat) override { m_pMaterial = pMat; }
+	virtual IMaterial* GetMaterial(Vec3* pHitPos = nullptr) const override { return m_pMaterial; }
+	virtual IMaterial* GetMaterialOverride() const override { return m_pMaterial; }
+	virtual float GetMaxViewDist() const override;
+	virtual void Precache() override;
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const override;
+	virtual const AABB GetBBox() const override;
+	virtual void FillBBox(AABB &aabb) const override { aabb = GetBBox(); }
+	virtual void SetBBox(const AABB& WSBBox) override;
+	virtual void OffsetPosition(const Vec3& delta) override;
+	virtual bool IsAllocatedOutsideOf3DEngineDLL() override;
 
 	void Reset();
 	float TriggerSpark();

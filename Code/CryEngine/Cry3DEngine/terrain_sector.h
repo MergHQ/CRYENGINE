@@ -347,38 +347,37 @@ enum ETextureEditingState : unsigned int
 
 const float kGeomErrorNotSet = -1;
 
-struct CTerrainNode : public Cry3DEngineBase, public IRenderNode, public IStreamCallback
+struct CTerrainNode final : public Cry3DEngineBase, public IRenderNode, public IStreamCallback
 {
 public:
 
 	// IRenderNode implementation
-	virtual const char*             GetName() const                         { return "TerrainNode"; }
-	virtual const char*             GetEntityClassName() const              { return "TerrainNodeClass"; }
-	virtual Vec3                    GetPos(bool bWorldOnly = true) const    { return Vec3(m_nOriginX, m_nOriginY, 0); }
-	virtual void                    SetBBox(const AABB& WSBBox)             {}
-	virtual struct IPhysicalEntity* GetPhysics() const                      { return NULL; }
-	virtual void                    SetPhysics(IPhysicalEntity* pPhys)      {}
-	virtual void                    SetMaterial(IMaterial* pMat)            {}
-	virtual IMaterial*              GetMaterial(Vec3* pHitPos = NULL) const { return NULL; }
-	virtual IMaterial*              GetMaterialOverride()                   { return NULL; }
-	virtual float                   GetMaxViewDist()                        { return 1000000.f; }
-	virtual EERType                 GetRenderNodeType()                     { return eERType_TerrainSector;  }
+	virtual const char*             GetName() const                         override { return "TerrainNode"; }
+	virtual const char*             GetEntityClassName() const              override { return "TerrainNodeClass"; }
+	virtual Vec3                    GetPos(bool bWorldOnly = true) const    override { return Vec3(m_nOriginX, m_nOriginY, 0); }
+	virtual void                    SetBBox(const AABB& WSBBox)             override {}
+	virtual struct IPhysicalEntity* GetPhysics() const                      override { return NULL; }
+	virtual void                    SetPhysics(IPhysicalEntity* pPhys)      override {}
+	virtual void                    SetMaterial(IMaterial* pMat)            override {}
+	virtual IMaterial*              GetMaterial(Vec3* pHitPos = NULL) const override { return NULL; }
+	virtual IMaterial*              GetMaterialOverride() const             override { return NULL; }
+	virtual float                   GetMaxViewDist() const                  override { return 1000000.f; }
+	virtual EERType                 GetRenderNodeType() const               override { return eERType_TerrainSector;  }
 
 	friend class CTerrain;
 	friend class CTerrainUpdateDispatcher;
 
-	virtual void                       Render(const SRendParams& RendParams, const SRenderingPassInfo& passInfo);
-	const AABB                         GetBBox() const;
-	virtual const AABB                 GetBBoxVirtual()                                                               { return GetBBox(); }
-	virtual void                       FillBBox(AABB& aabb);
-	virtual struct ICharacterInstance* GetEntityCharacter(Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) { return NULL; };
+	virtual void                       Render(const SRendParams& RendParams, const SRenderingPassInfo& passInfo) override;
+	virtual const AABB                 GetBBox() const override { return AABB(m_boxHeigtmapLocal.min, m_boxHeigtmapLocal.max + Vec3(0, 0, m_fBBoxExtentionByObjectsIntegration)); }
+	virtual void                       FillBBox(AABB& aabb) const override { aabb = GetBBox(); }
+	virtual struct ICharacterInstance* GetEntityCharacter(Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) override { return NULL; };
 
 	//////////////////////////////////////////////////////////////////////////
 	// IStreamCallback
 	//////////////////////////////////////////////////////////////////////////
 	// streaming
-	virtual void StreamOnComplete(IReadStream* pStream, unsigned nError);
-	virtual void StreamAsyncOnComplete(IReadStream* pStream, unsigned nError);
+	virtual void StreamOnComplete(IReadStream* pStream, unsigned nError) override;
+	virtual void StreamAsyncOnComplete(IReadStream* pStream, unsigned nError) override;
 	//////////////////////////////////////////////////////////////////////////
 	void         StartSectorTexturesStreaming(bool bFinishNow);
 
@@ -434,7 +433,7 @@ public:
 
 	void                         UnloadNodeTexture(bool bRecursive);
 	float                        GetSurfaceTypeAmount(Vec3 vPos, int nSurfType);
-	void                         GetMemoryUsage(ICrySizer* pSizer) const;
+	virtual void                 GetMemoryUsage(ICrySizer* pSizer) const override;
 	void                         GetResourceMemoryUsage(ICrySizer* pSizer, const AABB& cstAABB);
 
 	void                         SetLOD(const SRenderingPassInfo& passInfo);
@@ -477,7 +476,7 @@ public:
 	int                          GetSectorSizeInHeightmapUnits() const;
 	void                         CheckLeafData();
 	inline STerrainNodeLeafData* GetLeafData() { return m_pLeafData; }
-	void                         OffsetPosition(const Vec3& delta);
+	virtual void                 OffsetPosition(const Vec3& delta) override;
 	_smart_ptr<IRenderMesh>      GetSharedRenderMesh();
 	uint32                       GetMaterialsModificationId();
 	void                         SetTraversalFrameId(uint32 onePassTraversalFrameId, int shadowFrustumLod);
@@ -585,10 +584,5 @@ struct STerrainNodeChunk
 #pragma pack(pop)
 
 #include "terrain.h"
-
-inline const AABB CTerrainNode::GetBBox() const
-{
-	return AABB(m_boxHeigtmapLocal.min, m_boxHeigtmapLocal.max + Vec3(0, 0, m_fBBoxExtentionByObjectsIntegration));
-}
 
 #endif

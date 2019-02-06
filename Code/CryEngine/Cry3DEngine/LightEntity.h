@@ -21,42 +21,42 @@ public:
 	CLightEntity();
 	~CLightEntity();
 	static void                          StaticReset();
-	virtual EERType                      GetRenderNodeType();
-	virtual const char*                  GetEntityClassName(void) const { return "LightEntityClass"; }
-	virtual const char*                  GetName(void) const;
-	virtual void                         GetLocalBounds(AABB& bbox);
-	virtual Vec3                         GetPos(bool) const;
-	virtual void                         Render(const SRendParams&, const SRenderingPassInfo& passInfo) final;
-	virtual void                         Hide(bool bHide);
-	virtual IPhysicalEntity*             GetPhysics(void) const                  { return 0; }
-	virtual void                         SetPhysics(IPhysicalEntity*)            {}
-	virtual void                         SetMaterial(IMaterial* pMat)            { m_pMaterial = pMat; }
-	virtual IMaterial*                   GetMaterial(Vec3* pHitPos = NULL) const { return m_pMaterial; }
-	virtual IMaterial*                   GetMaterialOverride()                   { return m_pMaterial; }
-	virtual float                        GetMaxViewDist();
-	virtual void                         SetLightProperties(const SRenderLight& light);
-	virtual SRenderLight&                GetLightProperties()       { return m_light; };
-	virtual const SRenderLight&          GetLightProperties() const { return m_light; };
-	virtual void                         Release(bool);
-	virtual void                         SetMatrix(const Matrix34& mat);
-	virtual const Matrix34&              GetMatrix() { return m_Matrix; }
-	virtual struct ShadowMapFrustum*     GetShadowFrustum(int nId = 0);
-	virtual void                         GetMemoryUsage(ICrySizer* pSizer) const;
-	virtual const AABB                   GetBBox() const             { return m_WSBBox; }
-	virtual void                         SetBBox(const AABB& WSBBox) { m_WSBBox = WSBBox; }
-	virtual void                         FillBBox(AABB& aabb);
-	virtual void                         OffsetPosition(const Vec3& delta);
-	virtual void                         SetCastingException(IRenderNode* pNotCaster) { m_pNotCaster = pNotCaster; }
-	IRenderNode*                         GetCastingException()                        { return m_pNotCaster; }
-	virtual bool                         IsLightAreasVisible();
-	static const PodArray<SPlaneObject>& GetCastersHull()                             { return s_lstTmpCastersHull; }
-	virtual void                         SetViewDistRatio(int nViewDistRatio);
+
+	virtual EERType                      GetRenderNodeType() const override { return eERType_Light; }
+	virtual const char*                  GetEntityClassName(void) const override { return "LightEntityClass"; }
+	virtual const char*                  GetName(void) const override;
+	virtual void                         GetLocalBounds(AABB& bbox) const override;
+	virtual Vec3                         GetPos(bool) const override;
+	virtual void                         Render(const SRendParams&, const SRenderingPassInfo& passInfo) override;
+	virtual void                         Hide(bool bHide) override;
+	virtual IPhysicalEntity*             GetPhysics(void) const                  override { return 0; }
+	virtual void                         SetPhysics(IPhysicalEntity*)            override {}
+	virtual void                         SetMaterial(IMaterial* pMat)            override { m_pMaterial = pMat; }
+	virtual IMaterial*                   GetMaterial(Vec3* pHitPos = NULL) const override { return m_pMaterial; }
+	virtual IMaterial*                   GetMaterialOverride()             const override { return m_pMaterial; }
+	virtual float                        GetMaxViewDist() const override;
+	virtual void                         SetLightProperties(const SRenderLight& light) override;
+	virtual SRenderLight&                GetLightProperties()       override { return m_light; };
+	virtual const SRenderLight&          GetLightProperties() const override { return m_light; };
+	virtual void                         SetMatrix(const Matrix34& mat) override;
+	virtual const Matrix34&              GetMatrix() const override { return m_Matrix; }
+	virtual struct ShadowMapFrustum*     GetShadowFrustum(int nId = 0) const override;
+	virtual void                         GetMemoryUsage(ICrySizer* pSizer) const override;
+	virtual const AABB                   GetBBox() const override { return m_WSBBox; }
+	virtual void                         SetBBox(const AABB& WSBBox) override { m_WSBBox = WSBBox; }
+	virtual void                         FillBBox(AABB& aabb) const override { aabb = GetBBox(); }
+	virtual void                         OffsetPosition(const Vec3& delta) override;
+	virtual void                         SetCastingException(IRenderNode* pNotCaster) override { m_pNotCaster = pNotCaster; }
+	IRenderNode*                         GetCastingException()                                 { return m_pNotCaster; }
+	virtual bool                         IsLightAreasVisible() const override;
+	static const PodArray<SPlaneObject>& GetCastersHull() { return s_lstTmpCastersHull; }
+	virtual void                         SetViewDistRatio(int nViewDistRatio) override;
 #if defined(FEATURE_SVO_GI)
-	virtual EGIMode                      GetGIMode() const;
+	virtual EGIMode                      GetGIMode() const override;
 #endif
-	virtual void                         SetOwnerEntity(IEntity* pEntity);
-	virtual IEntity*                     GetOwnerEntity() const final      { return m_pOwnerEntity; }
-	virtual bool                         IsAllocatedOutsideOf3DEngineDLL() { return GetOwnerEntity() != nullptr; }
+	virtual void                         SetOwnerEntity(IEntity* pEntity) override;
+	virtual IEntity*                     GetOwnerEntity() const            override { return m_pOwnerEntity; }
+	virtual bool                         IsAllocatedOutsideOf3DEngineDLL() override { return GetOwnerEntity() != nullptr; }
 	void                                 InitEntityShadowMapInfoStructure(int dynamicLods, int cachedLods);
 	void                                 UpdateGSMLightSourceShadowFrustum(const SRenderingPassInfo& passInfo);
 	int                                  UpdateGSMLightSourceDynamicShadowFrustum(int nDynamicLodCount, int nDistanceLodCount, float& fDistanceFromViewLastDynamicLod, float& fGSMBoxSizeLastDynamicLod, bool bFadeLastCascade, const SRenderingPassInfo& passInfo);
@@ -83,9 +83,11 @@ public:
 	static bool                          FrustumIntersection(const CCamera& viewFrustum, const CCamera& shadowFrustum);
 	void                                 UpdateCastShadowFlag(float fDistance, const SRenderingPassInfo& passInfo);
 	void                                 CalculateShadowBias(ShadowMapFrustum* pFr, int nLod, float fGSMBoxSize) const;
-	void                                 SetLayerId(uint16 nLayerId);
-	uint16                               GetLayerId()       { return m_layerId; }
-	ShadowMapInfo*                       GetShadowMapInfo() { return m_pShadowMapInfo.get(); }
+	virtual void                         SetLayerId(uint16 nLayerId) override;
+	virtual uint16                       GetLayerId() const override { return m_layerId; }
+	ShadowMapInfo*                       GetShadowMapInfo() const { return m_pShadowMapInfo.get(); }
+
+	virtual void                         Release(bool);
 
 private:
 	static PodArray<SPlaneObject>  s_lstTmpCastersHull;

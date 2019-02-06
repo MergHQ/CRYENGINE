@@ -723,7 +723,7 @@ void CBrush::SetLayerId(uint16 nLayerId)
 	InvalidatePermanentRenderObject();
 }
 
-IRenderMesh* CBrush::GetRenderMesh(int nLod)
+IRenderMesh* CBrush::GetRenderMesh(int nLod) const
 {
 	IStatObj* pStatObj = m_pStatObj ? m_pStatObj->GetLodObject(nLod) : NULL;
 	return pStatObj ? pStatObj->GetRenderMesh() : NULL;
@@ -1104,7 +1104,7 @@ void CBrush::InvalidatePermanentRenderObjectMatrix()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-bool CBrush::CanExecuteRenderAsJob()
+bool CBrush::CanExecuteRenderAsJob() const
 {
 	return (GetCVars()->e_ExecuteRenderAsJobMask & BIT(GetRenderNodeType())) != 0 &&
 	       (m_dwRndFlags & ERF_RENDER_ALWAYS) == 0;
@@ -1117,19 +1117,7 @@ void CBrush::DisablePhysicalization(bool bDisable)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void CBrush::FillBBox(AABB& aabb)
-{
-	aabb = CBrush::GetBBox();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-EERType CBrush::GetRenderNodeType()
-{
-	return eERType_Brush;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-float CBrush::GetMaxViewDist()
+float CBrush::GetMaxViewDist() const
 {
 	if (GetRndFlags() & ERF_FORCE_POST_3D_RENDER)
 	{

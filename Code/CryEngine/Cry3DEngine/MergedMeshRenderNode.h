@@ -476,8 +476,8 @@ public:
 
 	bool StreamedIn() const { return m_State == STREAMED_IN; }
 
-	// Update streamable components
-	void UpdateStreamingPriority(const SUpdateStreamingPriorityContext& streamingContext);
+	// Update streamable components (IRenderNode)
+	void UpdateStreamingPriority(const SUpdateStreamingPriorityContext& streamingContext) override;
 
 	Vec3 GetSamplePos(size_t, size_t) const;
 	AABB GetSampleAABB(size_t, size_t) const;
@@ -496,29 +496,29 @@ public:
 	//////////////////////////////////////////////////////////////////////
 	// Inherited from IStreamCallback
 	//////////////////////////////////////////////////////////////////////
-	void StreamAsyncOnComplete(IReadStream* pStream, unsigned nError);
-	void StreamOnComplete(IReadStream* pStream, unsigned nError);
+	void StreamAsyncOnComplete(IReadStream* pStream, unsigned nError) override;
+	void StreamOnComplete(IReadStream* pStream, unsigned nError) override;
 
 	//////////////////////////////////////////////////////////////////////
 	// Inherited from IRenderNode
 	//////////////////////////////////////////////////////////////////////
-	const char*             GetName() const             { return "Runtime MergedMesh";  }
-	const char*             GetEntityClassName() const  { return "Runtime MergedMesh"; }
-	Vec3                    GetPos(bool bWorldOnly = true) const;
-	const AABB              GetBBox() const             { return m_visibleAABB; }
-	void                    SetBBox(const AABB& WSBBox) {}
-	void                    FillBBox(AABB& aabb);
-	void                    OffsetPosition(const Vec3& delta);
-	void                    Render(const struct SRendParams& EntDrawParams, const SRenderingPassInfo& passInfo);
+	const char*             GetName() const             override { return "Runtime MergedMesh";  }
+	const char*             GetEntityClassName() const  override { return "Runtime MergedMesh"; };
+	Vec3                    GetPos(bool bWorldOnly = true) const override;
+	const AABB              GetBBox() const             override { return m_visibleAABB; };
+	void                    SetBBox(const AABB& WSBBox) override {};
+	void                    FillBBox(AABB& aabb) const  override { aabb = GetBBox(); }
+	void                    OffsetPosition(const Vec3& delta) override;
+	void                    Render(const struct SRendParams& EntDrawParams, const SRenderingPassInfo& passInfo) override;
 
-	struct IPhysicalEntity* GetPhysics() const                 { return NULL; }
-	void                    SetPhysics(IPhysicalEntity* pPhys) {}
-	void                    SetMaterial(IMaterial* pMat)       {}
-	IMaterial*              GetMaterial(Vec3* pHitPos = NULL) const;
-	IMaterial*              GetMaterialOverride()              { return NULL; }
-	EERType                 GetRenderNodeType();
-	float                   GetMaxViewDist();
-	void                    GetMemoryUsage(ICrySizer* pSizer) const {}
+	struct IPhysicalEntity* GetPhysics() const                 override { return NULL; };
+	void                    SetPhysics(IPhysicalEntity* pPhys) override {};
+	void                    SetMaterial(IMaterial* pMat)       override {}
+	IMaterial*              GetMaterial(Vec3* pHitPos = NULL) const override;
+	IMaterial*              GetMaterialOverride() const override { return NULL; }
+	EERType                 GetRenderNodeType() const override { return eERType_MergedMesh; }
+	float                   GetMaxViewDist() const override;
+	void                    GetMemoryUsage(ICrySizer* pSizer) const override {}
 
 	ILINE StatInstGroup&    GetStatObjGroup(const int index) const
 	{
@@ -557,22 +557,22 @@ public:
 	//////////////////////////////////////////////////////////////////////
 	// Inherited from IRenderNode
 	//////////////////////////////////////////////////////////////////////
-	const char*             GetName() const                                                                     { return "Runtime MergedMesh Proxy Instance";  }
-	const char*             GetEntityClassName() const                                                          { return "Runtime MergedMesh Proxy Instance"; }
-	Vec3                    GetPos(bool bWorldOnly = true) const                                                { return m_host->GetSamplePos(m_headerIndex, m_sampleIndex); }
-	const AABB              GetBBox() const                                                                     { return m_host->GetSampleAABB(m_headerIndex, m_sampleIndex); }
-	void                    SetBBox(const AABB& WSBBox)                                                         { __debugbreak(); }
-	void                    OffsetPosition(const Vec3& delta)                                                   {}
-	void                    Render(const struct SRendParams& EntDrawParams, const SRenderingPassInfo& passInfo) { __debugbreak(); }
+	const char*             GetName() const                                                                     override { return "Runtime MergedMesh Proxy Instance";  }
+	const char*             GetEntityClassName() const                                                          override { return "Runtime MergedMesh Proxy Instance"; }
+	Vec3                    GetPos(bool bWorldOnly = true) const                                                override { return m_host->GetSamplePos(m_headerIndex, m_sampleIndex); }
+	const AABB              GetBBox() const                                                                     override { return m_host->GetSampleAABB(m_headerIndex, m_sampleIndex); }
+	void                    SetBBox(const AABB& WSBBox)                                                         override { __debugbreak(); }
+	void                    OffsetPosition(const Vec3& delta)                                                   override {}
+	void                    Render(const struct SRendParams& EntDrawParams, const SRenderingPassInfo& passInfo) override { __debugbreak(); }
 
-	struct IPhysicalEntity* GetPhysics() const                                                                  { __debugbreak(); return NULL; }
-	void                    SetPhysics(IPhysicalEntity* pPhys)                                                  { __debugbreak(); }
-	void                    SetMaterial(IMaterial* pMat)                                                        { __debugbreak(); }
-	IMaterial*              GetMaterial(Vec3* pHitPos = NULL) const                                             { __debugbreak(); return NULL; }
-	IMaterial*              GetMaterialOverride()                                                               { __debugbreak(); return NULL; }
-	EERType                 GetRenderNodeType()                                                                 { __debugbreak(); return eERType_MergedMesh; }
-	float                   GetMaxViewDist()                                                                    { __debugbreak(); return FLT_MAX; }
-	void                    GetMemoryUsage(ICrySizer* pSizer) const                                             { __debugbreak(); }
+	struct IPhysicalEntity* GetPhysics() const                                                                  override { __debugbreak(); return NULL; }
+	void                    SetPhysics(IPhysicalEntity* pPhys)                                                  override { __debugbreak(); }
+	void                    SetMaterial(IMaterial* pMat)                                                        override { __debugbreak(); }
+	IMaterial*              GetMaterial(Vec3* pHitPos = NULL) const                                             override { __debugbreak(); return NULL; }
+	IMaterial*              GetMaterialOverride()             const                                             override { __debugbreak(); return NULL; }
+	EERType                 GetRenderNodeType()               const                                             override { __debugbreak(); return eERType_MergedMesh; }
+	float                   GetMaxViewDist()                  const                                             override { __debugbreak(); return FLT_MAX; }
+	void                    GetMemoryUsage(ICrySizer* pSizer) const                                             override { __debugbreak(); }
 };
 
 ////////////////////////////////////////////////////////////////////////////////

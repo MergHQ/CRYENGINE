@@ -233,16 +233,6 @@ CLightningRenderNode::~CLightningRenderNode()
 {
 }
 
-const char* CLightningRenderNode::GetEntityClassName() const
-{
-	return "Lightning";
-}
-
-const char* CLightningRenderNode::GetName() const
-{
-	return "Lightning";
-}
-
 void CLightningRenderNode::Render(const struct SRendParams& rParam, const SRenderingPassInfo& passInfo)
 {
 	if (!m_pMaterial)
@@ -268,16 +258,6 @@ IPhysicalEntity* CLightningRenderNode::GetPhysics() const
 
 void CLightningRenderNode::SetPhysics(IPhysicalEntity*)
 {
-}
-
-void CLightningRenderNode::SetMaterial(IMaterial* pMat)
-{
-	m_pMaterial = pMat;
-}
-
-IMaterial* CLightningRenderNode::GetMaterialOverride()
-{
-	return m_pMaterial;
 }
 
 void CLightningRenderNode::Precache()

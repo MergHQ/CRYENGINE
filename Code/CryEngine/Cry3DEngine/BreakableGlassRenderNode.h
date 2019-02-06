@@ -25,39 +25,39 @@ public:
 	virtual ~CBreakableGlassRenderNode();
 
 	// IBreakableGlassRenderNode interface
-	virtual bool   InitialiseNode(const SBreakableGlassInitParams& params, const Matrix34& matrix);
-	virtual void   ReleaseNode(bool bImmediate);
+	virtual bool   InitialiseNode(const SBreakableGlassInitParams& params, const Matrix34& matrix) override;
+	virtual void   ReleaseNode(bool bImmediate) override;
 
-	virtual void   SetId(const uint16 id);
-	virtual uint16 GetId();
+	virtual void   SetId(const uint16 id) override;
+	virtual uint16 GetId() override;
 
-	virtual void   Update(SBreakableGlassUpdateParams& params);
-	virtual bool   HasGlassShattered();
-	virtual bool   HasActiveFragments();
-	virtual void   ApplyImpactToGlass(const EventPhysCollision* pPhysEvent);
-	virtual void   ApplyExplosionToGlass(const EventPhysCollision* pPhysEvent);
-	virtual void   DestroyPhysFragment(SGlassPhysFragment* pPhysFrag);
+	virtual void   Update(SBreakableGlassUpdateParams& params) override;
+	virtual bool   HasGlassShattered() override;
+	virtual bool   HasActiveFragments() override;
+	virtual void   ApplyImpactToGlass(const EventPhysCollision* pPhysEvent) override;
+	virtual void   ApplyExplosionToGlass(const EventPhysCollision* pPhysEvent) override;
+	virtual void   DestroyPhysFragment(SGlassPhysFragment* pPhysFrag) override;
 
-	virtual void   SetCVars(const SBreakableGlassCVars* pCVars);
+	virtual void   SetCVars(const SBreakableGlassCVars* pCVars) override;
 
 	// IRenderNode interface
-	virtual const char*      GetName() const;
-	virtual EERType          GetRenderNodeType();
-	virtual const char*      GetEntityClassName() const;
-	virtual void             GetMemoryUsage(ICrySizer* pSizer) const;
-	virtual void             SetMaterial(IMaterial* pMaterial);
-	virtual IMaterial*       GetMaterial(Vec3* pHitPos = NULL) const;
-	virtual void             SetMatrix(const Matrix34& matrix);
-	virtual Vec3             GetPos(bool worldOnly = true) const;
-	virtual const AABB       GetBBox() const;
-	virtual void             SetBBox(const AABB& worldSpaceBoundingBox);
-	virtual void             FillBBox(AABB& aabb);
-	virtual void             OffsetPosition(const Vec3& delta);
-	virtual float            GetMaxViewDist();
-	virtual IPhysicalEntity* GetPhysics() const;
-	virtual void             SetPhysics(IPhysicalEntity* pPhysics);
-	virtual void             Render(const SRendParams& renderParams, const SRenderingPassInfo& passInfo);
-	virtual IMaterial*       GetMaterialOverride();
+	virtual const char*      GetName() const override;
+	virtual EERType          GetRenderNodeType() const override { return eERType_BreakableGlass; }
+	virtual const char*      GetEntityClassName() const override;
+	virtual void             GetMemoryUsage(ICrySizer* pSizer) const override;
+	virtual void             SetMaterial(IMaterial* pMaterial) override;
+	virtual IMaterial*       GetMaterial(Vec3* pHitPos = NULL) const override;
+	virtual void             SetMatrix(const Matrix34& matrix) override;
+	virtual Vec3             GetPos(bool worldOnly = true) const override;
+	virtual const AABB       GetBBox() const override { AABB bbox = m_planeBBox; bbox.Add(m_fragBBox); return bbox; }
+	virtual void             SetBBox(const AABB& worldSpaceBoundingBox) override;
+	virtual void             FillBBox(AABB& aabb) const override { aabb = GetBBox(); }
+	virtual void             OffsetPosition(const Vec3& delta) override;
+	virtual float            GetMaxViewDist() const override { return m_maxViewDist; }
+	virtual IPhysicalEntity* GetPhysics() const override;
+	virtual void             SetPhysics(IPhysicalEntity* pPhysics) override;
+	virtual void             Render(const SRendParams& renderParams, const SRenderingPassInfo& passInfo) override;
+	virtual IMaterial*       GetMaterialOverride() const override;
 
 private:
 	void PhysicalizeGlass();
