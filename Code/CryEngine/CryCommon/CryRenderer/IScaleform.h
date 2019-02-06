@@ -540,7 +540,7 @@ public:
 	virtual void                   EnableMaskedRendering(bool enable) = 0;
 	virtual void                   ExtendCanvasToViewport(bool extend) = 0;
 
-	virtual void                   SetThreadIDs(uint32 mainThreadID, uint32 renderThreadID) = 0;
+	virtual void                   SetThreadIDs(threadID mainThreadID, threadID renderThreadID) = 0;
 	virtual bool                   IsMainThread() const = 0;
 	virtual bool                   IsRenderThread() const = 0;
 

@@ -1840,7 +1840,7 @@ void CScaleformPlayback::ExtendCanvasToViewport(bool extend)
 	m_extendCanvasToVP = extend;
 }
 
-void CScaleformPlayback::SetThreadIDs(uint32 mainThreadID, uint32 renderThreadID)
+void CScaleformPlayback::SetThreadIDs(threadID mainThreadID, threadID renderThreadID)
 {
 	m_mainThreadID = mainThreadID;
 	m_renderThreadID = renderThreadID;
@@ -1849,13 +1849,13 @@ void CScaleformPlayback::SetThreadIDs(uint32 mainThreadID, uint32 renderThreadID
 
 bool CScaleformPlayback::IsMainThread() const
 {
-	uint32 threadID = GetCurrentThreadId();
+	threadID threadID = GetCurrentThreadId();
 	return threadID == m_mainThreadID;
 }
 
 bool CScaleformPlayback::IsRenderThread() const
 {
-	uint32 threadID = GetCurrentThreadId();
+	threadID threadID = GetCurrentThreadId();
 	return threadID == m_renderThreadID;
 }
 
