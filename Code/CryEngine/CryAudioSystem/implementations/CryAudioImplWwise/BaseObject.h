@@ -67,7 +67,7 @@ protected:
 	explicit CBaseObject(
 		AkGameObjectID const id,
 		char const* const szName = nullptr,
-		Vec3 const position = { 0.0f, 0.0f, 0.0f });
+		Vec3 const& position = { 0.0f, 0.0f, 0.0f });
 
 	void SetDistanceToListener();
 

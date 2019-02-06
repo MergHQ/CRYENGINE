@@ -4,8 +4,8 @@
 
 #include "AK/AkWwiseSDKVersion.h"
 
-#if AK_WWISESDK_VERSION_MAJOR <= 2017 && AK_WWISESDK_VERSION_MINOR < 2
-	#error This version of Wwise is not supported, the minimum supported version is 2017.2.0
+#if (AK_WWISESDK_VERSION_MAJOR != 2018) || (AK_WWISESDK_VERSION_MINOR != 1) || (AK_WWISESDK_VERSION_SUBMINOR > 5)
+	#error This version of Wwise is not supported. The supported versions are 2018.1.0 to 2018.1.5
 #endif
 
 #include "AK/SoundEngine/Common/AkTypes.h"
