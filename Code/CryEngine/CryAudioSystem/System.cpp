@@ -33,10 +33,13 @@
 #include "SwitchState.h"
 #include "Trigger.h"
 #include "Common/IObject.h"
-#include "PropagationProcessor.h"
 #include <CrySystem/ITimer.h>
 #include <CryString/CryPath.h>
 #include <CryEntitySystem/IEntitySystem.h>
+
+#if defined(CRY_AUDIO_USE_OCCLUSION)
+	#include "PropagationProcessor.h"
+#endif // CRY_AUDIO_USE_OCCLUSION
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	#include "PreviewTrigger.h"
@@ -435,10 +438,10 @@ void FreeMemoryPools()
 //////////////////////////////////////////////////////////////////////////
 void UpdateActiveObjects(float const deltaTime)
 {
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE) && defined(CRY_AUDIO_USE_OCCLUSION)
 	CPropagationProcessor::s_totalAsyncPhysRays = 0;
 	CPropagationProcessor::s_totalSyncPhysRays = 0;
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE && CRY_AUDIO_USE_OCCLUSION
 
 	if (deltaTime > 0.0f)
 	{
@@ -616,7 +619,9 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 	case ESYSTEM_EVENT_LEVEL_UNLOAD:
 		{
 			// This event is issued in Editor and Game mode.
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 			CPropagationProcessor::s_bCanIssueRWIs = false;
+#endif    // CRY_AUDIO_USE_OCCLUSION
 
 			SSystemRequestData<ESystemRequestType::ReleasePendingRays> const requestData1;
 			CRequest const request1(&requestData1);
@@ -636,6 +641,7 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 
 			break;
 		}
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 	case ESYSTEM_EVENT_LEVEL_LOAD_END:
 		{
 			// This event is issued in Editor and Game mode.
@@ -643,6 +649,7 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 
 			break;
 		}
+#endif    // CRY_AUDIO_USE_OCCLUSION
 	case ESYSTEM_EVENT_CRYSYSTEM_INIT_DONE:
 		{
 			if (gEnv->pInput != nullptr)
@@ -849,11 +856,16 @@ bool CSystem::Initialize()
 
 		CStandaloneFile::CreateAllocator(static_cast<uint16>(g_cvars.m_standaloneFilePoolSize));
 
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 		// Add the callback for the obstruction calculation.
 		gEnv->pPhysicalWorld->AddEventClient(
 			EventPhysRWIResult::id,
 			&CPropagationProcessor::OnObstructionTest,
 			1);
+
+		CPropagationProcessor::UpdateOcclusionRayFlags();
+		CPropagationProcessor::UpdateOcclusionPlanes();
+#endif    // CRY_AUDIO_USE_OCCLUSION
 
 		m_objectPoolSize = static_cast<uint16>(g_cvars.m_objectPoolSize);
 
@@ -891,6 +903,7 @@ void CSystem::Release()
 
 		m_mainThread.Deactivate();
 
+#if defined(CRY_AUDIO_USE_OCCLUSION)
 		if (gEnv->pPhysicalWorld != nullptr)
 		{
 			// remove the callback for the obstruction calculation
@@ -899,6 +912,7 @@ void CSystem::Release()
 				&CPropagationProcessor::OnObstructionTest,
 				1);
 		}
+#endif    // CRY_AUDIO_USE_OCCLUSION
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 		for (auto const pObject : g_constructedObjects)
@@ -3385,6 +3399,8 @@ void CSystem::HandleDrawDebug()
 			size_t const numActiveObjects = g_activeObjects.size();
 			size_t const numListeners = g_listenerManager.GetNumActiveListeners();
 			size_t const numEventListeners = g_eventListenerManager.GetNumEventListeners();
+
+	#if defined(CRY_AUDIO_USE_OCCLUSION)
 			static float const SMOOTHING_ALPHA = 0.2f;
 			static float syncRays = 0;
 			static float asyncRays = 0;
@@ -3395,6 +3411,12 @@ void CSystem::HandleDrawDebug()
 			pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorTextSecondary, false,
 			                      "Objects: %3" PRISIZE_T "/%3" PRISIZE_T " | EventListeners %3" PRISIZE_T " | Listeners: %" PRISIZE_T " | SyncRays: %3.1f AsyncRays: %3.1f",
 			                      numActiveObjects, numObjects, numEventListeners, numListeners, syncRays, asyncRays);
+	#else
+			posY += Debug::g_systemLineHeight;
+			pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorTextSecondary, false,
+			                      "Objects: %3" PRISIZE_T "/%3" PRISIZE_T " | EventListeners %3" PRISIZE_T " | Listeners: %" PRISIZE_T,
+			                      numActiveObjects, numObjects, numEventListeners, numListeners);
+	#endif  // CRY_AUDIO_USE_OCCLUSION
 
 			if (g_pIImpl != nullptr)
 			{

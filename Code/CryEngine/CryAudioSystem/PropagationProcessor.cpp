@@ -1,30 +1,32 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "PropagationProcessor.h"
-#include "Common.h"
-#include "Managers.h"
-#include "ListenerManager.h"
-#include "CVars.h"
-#include "Object.h"
-#include "System.h"
-#include "ObjectRequestData.h"
-#include <Cry3DEngine/I3DEngine.h>
-#include <Cry3DEngine/ISurfaceType.h>
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-	#include "Debug.h"
-	#include <CryRenderer/IRenderAuxGeom.h>
-	#include <CryMath/Random.h>
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#if defined(CRY_AUDIO_USE_OCCLUSION)
+	#include "PropagationProcessor.h"
+	#include "Common.h"
+	#include "Managers.h"
+	#include "ListenerManager.h"
+	#include "CVars.h"
+	#include "Object.h"
+	#include "System.h"
+	#include "ObjectRequestData.h"
+	#include <Cry3DEngine/I3DEngine.h>
+	#include <Cry3DEngine/ISurfaceType.h>
+
+	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+		#include "Debug.h"
+		#include <CryRenderer/IRenderAuxGeom.h>
+		#include <CryMath/Random.h>
+	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 constexpr uint32 g_numIndices = 6;
 constexpr vtx_idx g_auxIndices[g_numIndices] = { 2, 1, 0, 2, 3, 1 };
 constexpr uint32 g_numPoints = 4;
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 float g_listenerHeadSize = 0.0f;
 float g_listenerHeadSizeHalf = 0.0f;
@@ -39,7 +41,7 @@ enum class EOcclusionCollisionType : EnumFlagsType
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EOcclusionCollisionType);
 
-struct SRayOffset
+struct SRayOffset final
 {
 	SRayOffset() = default;
 	SRayOffset(SRayOffset const&) = delete;
@@ -55,6 +57,16 @@ SRayOffset g_raySamplePositionsLow[g_numRaySamplePositionsLow];
 SRayOffset g_raySamplePositionsMedium[g_numRaySamplePositionsMedium];
 SRayOffset g_raySamplePositionsHigh[g_numRaySamplePositionsHigh];
 
+SRayOffset g_initialRaySamplePositionsLow[g_numInitialSamplePositions];
+SRayOffset g_initialRaySamplePositionsMedium[g_numInitialSamplePositions];
+SRayOffset g_initialRaySamplePositionsHigh[g_numInitialSamplePositions];
+
+uint8 g_initialRaySamplePositionTopLeft = 0;
+uint8 g_initialRaySamplePositionTopRight = 0;
+uint8 g_initialRaySamplePositionCenter = 0;
+uint8 g_initialRaySamplePositionBottomLeft = 0;
+uint8 g_initialRaySamplePositionBottomRight = 0;
+
 int CPropagationProcessor::s_occlusionRayFlags = 0;
 
 ///////////////////////////////////////////////////////////////////////////
@@ -62,19 +74,19 @@ void CRayInfo::Reset()
 {
 	totalSoundOcclusion = 0.0f;
 	numHits = 0;
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	startPosition.zero();
 	direction.zero();
 	distanceToFirstObstacle = FLT_MAX;
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 bool CPropagationProcessor::s_bCanIssueRWIs = false;
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 uint16 CPropagationProcessor::s_totalSyncPhysRays = 0;
 uint16 CPropagationProcessor::s_totalAsyncPhysRays = 0;
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 ///////////////////////////////////////////////////////////////////////////
 int CPropagationProcessor::OnObstructionTest(EventPhys const* pEvent)
@@ -125,8 +137,6 @@ CPropagationProcessor::CPropagationProcessor(CObject& object)
 	, m_originalOcclusionType(EOcclusionType::None)
 	, m_occlusionTypeWhenAdaptive(EOcclusionType::Low) //will be updated in the first Update
 {
-	UpdateOcclusionRayFlags();
-	UpdateOcclusionPlanes();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -139,9 +149,9 @@ void CPropagationProcessor::Init()
 
 	m_currentListenerDistance = g_listenerManager.GetActiveListenerTransformation().GetPosition().GetDistance(m_object.GetTransformation().GetPosition());
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	m_listenerOcclusionPlaneColor.set(cry_random<uint8>(0, 255), cry_random<uint8>(0, 255), cry_random<uint8>(0, 255), uint8(64));
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -187,16 +197,16 @@ void CPropagationProcessor::UpdateOcclusionRayFlags()
 ///////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::Update()
 {
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-	if (g_cvars.m_objectsRayType > 0)
+	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	if (g_cvars.m_occlusionGlobalType > 0)
 	{
-		m_occlusionType = clamp_tpl<EOcclusionType>(static_cast<EOcclusionType>(g_cvars.m_objectsRayType), EOcclusionType::Ignore, EOcclusionType::High);
+		m_occlusionType = clamp_tpl<EOcclusionType>(static_cast<EOcclusionType>(g_cvars.m_occlusionGlobalType), EOcclusionType::Ignore, EOcclusionType::High);
 	}
 	else
 	{
 		m_occlusionType = m_originalOcclusionType;
 	}
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	if (CanRunOcclusion())
 	{
@@ -213,9 +223,9 @@ void CPropagationProcessor::Update()
 			m_occlusionTypeWhenAdaptive = EOcclusionType::Low;
 		}
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 		UpdateOcclusionPlanes();
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 		RunObstructionQuery();
 	}
@@ -237,91 +247,118 @@ void CPropagationProcessor::UpdateOcclusion()
 {
 	if (CanRunOcclusion())
 	{
-		Vec3 const& listenerPosition = g_listenerManager.GetActiveListenerTransformation().GetPosition();
-
-		// First time run is synchronous and center ray only to get a quick initial value to start from.
-		Vec3 const direction(m_object.GetTransformation().GetPosition() - listenerPosition);
-		Vec3 directionNormalized(direction / m_currentListenerDistance);
-		Vec3 const finalDirection(direction - (directionNormalized* m_occlusionRayOffset));
-		ray_hit hits[g_maxRayHits];
-
-		// We use "rwi_max_piercing" to allow audio rays to always pierce surfaces regardless of the "pierceability" attribute.
-		// Note: The very first entry of rayInfo.hits (solid slot) is always empty.
-		int const numHits = gEnv->pPhysicalWorld->RayWorldIntersection(
-			listenerPosition,
-			finalDirection,
-			s_occlusionRayFlags,
-			rwi_max_piercing,
-			hits,
-			static_cast<int>(g_maxRayHits),
-			nullptr,
-			nullptr,
-			nullptr,
-			PHYS_FOREIGN_ID_SOUND_OBSTRUCTION);
-
-		CRayInfo& rayInfo = m_raysInfo[0];
-		rayInfo.numHits = static_cast<uint8>(numHits);
-
-		// The very first entry in "hits" is reserved for a solid hit.
-		// As we're using "rwi_max_piercing" when issuing a ray cast we're guaranteed to never have a solid hit.
-		// This means we're safe to always ignore the very first entry in returned in "ray_hit".
-		CRY_ASSERT_MESSAGE(hits[0].dist < 0.0f, "<Audio> encountered a solid hit in %s", __FUNCTION__);
-
-		// Skip the "solid hit entry".
-		ray_hit const* const pHits = &(hits[1]);
-
-		for (uint8 i = 0; i < rayInfo.numHits; ++i)
+		if (g_cvars.m_occlusionInitialRayCastMode == 1)
 		{
-			rayInfo.hits[i].distance = pHits[i].dist;
-			rayInfo.hits[i].surface_index = pHits[i].surface_idx;
-		}
+			Vec3 const& listenerPosition = g_listenerManager.GetActiveListenerTransformation().GetPosition();
+			Vec3 const& objectPosition = m_object.GetTransformation().GetPosition();
 
-		float finalOcclusion = 0.0f;
+			m_occlusion = CastInitialRay(listenerPosition, objectPosition, (g_cvars.m_occlusionAccumulate > 0));
 
-		if ((g_cvars.m_setFullOcclusionOnMaxHits > 0) && (rayInfo.numHits == g_maxRayHits))
-		{
-			finalOcclusion = 1.0f;
-		}
-		else if (rayInfo.numHits > 0)
-		{
-			ISurfaceTypeManager* const pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
-			bool const accumulate = g_cvars.m_accumulateOcclusion > 0;
-
-			for (uint8 i = 0; i < rayInfo.numHits; ++i)
+			for (auto& rayOcclusion : m_raysOcclusion)
 			{
-				float const distance = rayInfo.hits[i].distance;
+				rayOcclusion = m_occlusion;
+			}
+		}
+		else if (g_cvars.m_occlusionInitialRayCastMode > 1)
+		{
+			float occlusionValues[g_numInitialSamplePositions];
+			Vec3 const& listenerPosition = g_listenerManager.GetActiveListenerTransformation().GetPosition();
+			Vec3 const& objectPosition = m_object.GetTransformation().GetPosition();
 
-				if (distance > 0.0f)
+			// TODO: this breaks if listener and object x and y coordinates are exactly the same.
+			Vec3 const side((listenerPosition - objectPosition).Cross(Vec3Constants<float>::fVec3_OneZ).normalize());
+			Vec3 const up((listenerPosition - objectPosition).Cross(side).normalize());
+			bool const accumulate = g_cvars.m_occlusionAccumulate > 0;
+
+			for (uint8 i = 0; i < g_numInitialSamplePositions; ++i)
+			{
+				switch (m_occlusionType)
 				{
-					ISurfaceType* const pMat = pSurfaceTypeManager->GetSurfaceType(static_cast<int>(rayInfo.hits[i].surface_index));
-
-					if (pMat != nullptr)
+				case EOcclusionType::Adaptive:
 					{
-						ISurfaceType::SPhysicalParams const& physParams = pMat->GetPhyscalParams();
+						switch (m_occlusionTypeWhenAdaptive)
+						{
+						case EOcclusionType::Low:
+							{
+								SRayOffset const& rayOffset = g_initialRaySamplePositionsLow[i];
+								Vec3 const origin(listenerPosition + up* rayOffset.z + side* rayOffset.x);
+								occlusionValues[i] = CastInitialRay(origin, objectPosition, accumulate);
 
-						if (accumulate)
-						{
-							finalOcclusion += physParams.sound_obstruction; // Not clamping b/w 0 and 1 for performance reasons.
-						}
-						else
-						{
-							finalOcclusion = std::max(finalOcclusion, physParams.sound_obstruction);
+								break;
+							}
+						case EOcclusionType::Medium:
+							{
+								SRayOffset const& rayOffset = g_initialRaySamplePositionsMedium[i];
+								Vec3 const origin(listenerPosition + up* rayOffset.z + side* rayOffset.x);
+								occlusionValues[i] = CastInitialRay(origin, objectPosition, accumulate);
+
+								break;
+							}
+						case EOcclusionType::High:
+							{
+								SRayOffset const& rayOffset = g_initialRaySamplePositionsHigh[i];
+								Vec3 const origin(listenerPosition + up* rayOffset.z + side* rayOffset.x);
+								occlusionValues[i] = CastInitialRay(origin, objectPosition, accumulate);
+
+								break;
+							}
+						default:
+							{
+								break;
+							}
 						}
 
-						if (finalOcclusion >= 1.0f)
-						{
-							break;
-						}
+						break;
+					}
+				case EOcclusionType::Low:
+					{
+						SRayOffset const& rayOffset = g_initialRaySamplePositionsLow[i];
+						Vec3 const origin(listenerPosition + up* rayOffset.z + side* rayOffset.x);
+						occlusionValues[i] = CastInitialRay(origin, objectPosition, accumulate);
+
+						break;
+					}
+				case EOcclusionType::Medium:
+					{
+						SRayOffset const& rayOffset = g_initialRaySamplePositionsMedium[i];
+						Vec3 const origin(listenerPosition + up* rayOffset.z + side* rayOffset.x);
+						occlusionValues[i] = CastInitialRay(origin, objectPosition, accumulate);
+
+						break;
+					}
+				case EOcclusionType::High:
+					{
+						SRayOffset const& rayOffset = g_initialRaySamplePositionsHigh[i];
+						Vec3 const origin(listenerPosition + up* rayOffset.z + side* rayOffset.x);
+						occlusionValues[i] = CastInitialRay(origin, objectPosition, accumulate);
+
+						break;
+					}
+				default:
+					{
+						break;
 					}
 				}
 			}
+
+			m_occlusion = 0.0f;
+
+			for (auto const value : occlusionValues)
+			{
+				m_occlusion += value;
+			}
+
+			m_occlusion /= static_cast<float>(g_numInitialSamplePositions);
+
+			for (auto& rayOcclusion : m_raysOcclusion)
+			{
+				rayOcclusion = m_occlusion;
+			}
 		}
-
-		m_occlusion = clamp_tpl(finalOcclusion, 0.0f, 1.0f);
-
-		for (auto& rayOcclusion : m_raysOcclusion)
+		else
 		{
-			rayOcclusion = m_occlusion;
+			m_occlusion = 0.0f;
+			m_lastQuerriedOcclusion = 0.0f;
 		}
 	}
 	else
@@ -329,6 +366,89 @@ void CPropagationProcessor::UpdateOcclusion()
 		m_occlusion = 0.0f;
 		m_lastQuerriedOcclusion = 0.0f;
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+float CPropagationProcessor::CastInitialRay(Vec3 const& origin, Vec3 const& target, bool const accumulate)
+{
+	Vec3 const direction(target - origin);
+	Vec3 directionNormalized(direction);
+	directionNormalized.Normalize();
+	Vec3 const finalDirection(direction - (directionNormalized* m_occlusionRayOffset));
+	ray_hit hits[g_maxRayHits];
+
+	// We use "rwi_max_piercing" to allow audio rays to always pierce surfaces regardless of the "pierceability" attribute.
+	// Note: The very first entry of rayInfo.hits (solid slot) is always empty.
+	int const numHits = gEnv->pPhysicalWorld->RayWorldIntersection(
+		origin,
+		finalDirection,
+		s_occlusionRayFlags,
+		rwi_max_piercing,
+		hits,
+		static_cast<int>(g_maxRayHits),
+		nullptr,
+		nullptr,
+		nullptr,
+		PHYS_FOREIGN_ID_SOUND_OBSTRUCTION);
+
+	CRayInfo rayInfo;
+	rayInfo.numHits = static_cast<uint8>(numHits);
+
+	// The very first entry in "hits" is reserved for a solid hit.
+	// As we're using "rwi_max_piercing" when issuing a ray cast we're guaranteed to never have a solid hit.
+	// This means we're safe to always ignore the very first entry in returned in "ray_hit".
+	CRY_ASSERT_MESSAGE(hits[0].dist < 0.0f, "<Audio> encountered a solid hit in %s", __FUNCTION__);
+
+	// Skip the "solid hit entry".
+	ray_hit const* const pHits = &(hits[1]);
+
+	for (uint8 i = 0; i < rayInfo.numHits; ++i)
+	{
+		rayInfo.hits[i].distance = pHits[i].dist;
+		rayInfo.hits[i].surface_index = pHits[i].surface_idx;
+	}
+
+	float finalOcclusion = 0.0f;
+
+	if ((g_cvars.m_occlusionSetFullOnMaxHits > 0) && (rayInfo.numHits == g_maxRayHits))
+	{
+		finalOcclusion = 1.0f;
+	}
+	else if (rayInfo.numHits > 0)
+	{
+		ISurfaceTypeManager* const pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
+
+		for (uint8 i = 0; i < rayInfo.numHits; ++i)
+		{
+			float const distance = rayInfo.hits[i].distance;
+
+			if (distance > 0.0f)
+			{
+				ISurfaceType* const pMat = pSurfaceTypeManager->GetSurfaceType(static_cast<int>(rayInfo.hits[i].surface_index));
+
+				if (pMat != nullptr)
+				{
+					ISurfaceType::SPhysicalParams const& physParams = pMat->GetPhyscalParams();
+
+					if (accumulate)
+					{
+						finalOcclusion += physParams.sound_obstruction; // Not clamping b/w 0 and 1 for performance reasons.
+					}
+					else
+					{
+						finalOcclusion = std::max(finalOcclusion, physParams.sound_obstruction);
+					}
+
+					if (finalOcclusion >= 1.0f)
+					{
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	return clamp_tpl(finalOcclusion, 0.0f, 1.0f);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -349,9 +469,9 @@ bool CPropagationProcessor::CanRunOcclusion()
 		}
 	}
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	canRun ? m_object.SetFlag(EObjectFlags::CanRunOcclusion) : m_object.RemoveFlag(EObjectFlags::CanRunOcclusion);
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	return canRun;
 }
@@ -364,11 +484,11 @@ void CPropagationProcessor::ProcessPhysicsRay(CRayInfo& rayInfo)
 	float finalOcclusion = 0.0f;
 	uint8 numRealHits = 0;
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	float minDistance = FLT_MAX;
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
-	if ((g_cvars.m_setFullOcclusionOnMaxHits > 0) && (rayInfo.numHits == g_maxRayHits))
+	if ((g_cvars.m_occlusionSetFullOnMaxHits > 0) && (rayInfo.numHits == g_maxRayHits))
 	{
 		finalOcclusion = 1.0f;
 		numRealHits = g_maxRayHits;
@@ -376,7 +496,7 @@ void CPropagationProcessor::ProcessPhysicsRay(CRayInfo& rayInfo)
 	else if (rayInfo.numHits > 0)
 	{
 		ISurfaceTypeManager* const pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
-		bool const accumulate = g_cvars.m_accumulateOcclusion > 0;
+		bool const accumulate = g_cvars.m_occlusionAccumulate > 0;
 
 		for (uint8 i = 0; i < rayInfo.numHits; ++i)
 		{
@@ -401,9 +521,9 @@ void CPropagationProcessor::ProcessPhysicsRay(CRayInfo& rayInfo)
 
 					++numRealHits;
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 					minDistance = std::min(minDistance, distance);
-#endif      // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 
 					if (finalOcclusion >= 1.0f)
 					{
@@ -417,14 +537,14 @@ void CPropagationProcessor::ProcessPhysicsRay(CRayInfo& rayInfo)
 	rayInfo.numHits = numRealHits;
 	rayInfo.totalSoundOcclusion = clamp_tpl(finalOcclusion, 0.0f, 1.0f);
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	rayInfo.distanceToFirstObstacle = minDistance;
 
 	if (m_remainingRays == 0)
 	{
 		CryFatalError("Negative ref or ray count on audio object");
 	}
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	if (--m_remainingRays == 0)
 	{
@@ -478,7 +598,7 @@ void CPropagationProcessor::ProcessObstructionOcclusion()
 		m_occlusion = (m_occlusion / numSamplePositions);
 	}
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	if ((m_object.GetFlags() & EObjectFlags::CanRunOcclusion) != 0) // only re-sample the rays about 10 times per second for a smoother debug drawing
 	{
 		for (uint8 i = 0; i < g_numConcurrentRaysHigh; ++i)
@@ -504,7 +624,7 @@ void CPropagationProcessor::ProcessObstructionOcclusion()
 			rayDebugInfo.occlusionValue = rayInfo.totalSoundOcclusion;
 		}
 	}
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -574,7 +694,7 @@ void CPropagationProcessor::CastObstructionRay(
 			PHYS_FOREIGN_ID_SOUND_OBSTRUCTION);
 	}
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	rayInfo.startPosition = origin;
 	rayInfo.direction = finalDirection;
 
@@ -586,7 +706,7 @@ void CPropagationProcessor::CastObstructionRay(
 	{
 		++s_totalAsyncPhysRays;
 	}
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -777,64 +897,243 @@ uint8 CPropagationProcessor::GetNumSamplePositions() const
 //////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::UpdateOcclusionPlanes()
 {
-	if (g_listenerHeadSize != g_cvars.m_listenerOcclusionPlaneSize)
+	g_listenerHeadSize = g_cvars.m_occlusionListenerPlaneSize;
+	g_listenerHeadSizeHalf = g_listenerHeadSize * 0.5f;
+	uint8 index = 0;
+
+	// Low
+	float step = g_listenerHeadSize / (g_numberLow - 1);
+
+	for (uint8 i = 0; i < g_numberLow; ++i)
 	{
-		g_listenerHeadSize = g_cvars.m_listenerOcclusionPlaneSize;
-		g_listenerHeadSizeHalf = g_listenerHeadSize * 0.5f;
-		uint8 index = 0;
+		float const z = g_listenerHeadSizeHalf - i * step;
 
-		// Low
-		float step = g_listenerHeadSize / (g_numberLow - 1);
-
-		for (uint8 i = 0; i < g_numberLow; ++i)
+		for (uint8 j = 0; j < g_numberLow; ++j)
 		{
-			float const z = g_listenerHeadSizeHalf - i * step;
+			float const x = -g_listenerHeadSizeHalf + j * step;
+			g_raySamplePositionsLow[index].x = x;
+			g_raySamplePositionsLow[index].z = z;
 
-			for (uint8 j = 0; j < g_numberLow; ++j)
+			// Initial sample positions:
+			// . . . . . . .
+			// . 8 . . . 12.
+			// . . . . . . .
+			// . . . 24. . .
+			// . . . . . . .
+			// . 36. . . 40.
+			// . . . . . . .
+
+			switch (index)
 			{
-				g_raySamplePositionsLow[index].x = -g_listenerHeadSizeHalf + j * step;
-				g_raySamplePositionsLow[index].z = z;
-				++index;
+			case 8:
+				{
+					g_initialRaySamplePositionTopLeft = index;
+					g_initialRaySamplePositionsLow[0].x = x;
+					g_initialRaySamplePositionsLow[0].z = z;
+
+					break;
+				}
+			case 12:
+				{
+					g_initialRaySamplePositionTopRight = index;
+					g_initialRaySamplePositionsLow[1].x = x;
+					g_initialRaySamplePositionsLow[1].z = z;
+
+					break;
+				}
+			case 24:
+				{
+					g_initialRaySamplePositionCenter = index;
+					g_initialRaySamplePositionsLow[2].x = x;
+					g_initialRaySamplePositionsLow[2].z = z;
+
+					break;
+				}
+			case 36:
+				{
+					g_initialRaySamplePositionBottomLeft = index;
+					g_initialRaySamplePositionsLow[3].x = x;
+					g_initialRaySamplePositionsLow[3].z = z;
+
+					break;
+				}
+			case 40:
+				{
+					g_initialRaySamplePositionBottomRight = index;
+					g_initialRaySamplePositionsLow[4].x = x;
+					g_initialRaySamplePositionsLow[4].z = z;
+
+					break;
+				}
+			default:
+				{
+					break;
+				}
 			}
+
+			++index;
 		}
+	}
 
-		index = 0;
+	index = 0;
 
-		// Medium
-		step = g_listenerHeadSize / (g_numberMedium - 1);
+	// Medium
+	step = g_listenerHeadSize / (g_numberMedium - 1);
 
-		for (uint8 i = 0; i < g_numberMedium; ++i)
+	for (uint8 i = 0; i < g_numberMedium; ++i)
+	{
+		float const z = g_listenerHeadSizeHalf - i * step;
+
+		for (uint8 j = 0; j < g_numberMedium; ++j)
 		{
-			float const z = g_listenerHeadSizeHalf - i * step;
+			float const x = -g_listenerHeadSizeHalf + j * step;
+			g_raySamplePositionsMedium[index].x = x;
+			g_raySamplePositionsMedium[index].z = z;
 
-			for (uint8 j = 0; j < g_numberMedium; ++j)
+			// Initial sample positions:
+			// . . . . . . . . .
+			// . 10. . . . . 16.
+			// . . . . . . . . .
+			// . . . . . . . . .
+			// . . . . 40. . . .
+			// . . . . . . . . .
+			// . . . . . . . . .
+			// . 64. . . . . 70.
+			// . . . . . . . . .
+
+			switch (index)
 			{
-				g_raySamplePositionsMedium[index].x = -g_listenerHeadSizeHalf + j * step;
-				g_raySamplePositionsMedium[index].z = z;
-				++index;
+			case 10:
+				{
+					g_initialRaySamplePositionTopLeft = index;
+					g_initialRaySamplePositionsMedium[0].x = x;
+					g_initialRaySamplePositionsMedium[0].z = z;
+
+					break;
+				}
+			case 16:
+				{
+					g_initialRaySamplePositionTopRight = index;
+					g_initialRaySamplePositionsMedium[1].x = x;
+					g_initialRaySamplePositionsMedium[1].z = z;
+					break;
+				}
+			case 40:
+				{
+					g_initialRaySamplePositionCenter = index;
+					g_initialRaySamplePositionsMedium[2].x = x;
+					g_initialRaySamplePositionsMedium[2].z = z;
+
+					break;
+				}
+			case 64:
+				{
+					g_initialRaySamplePositionBottomLeft = index;
+					g_initialRaySamplePositionsMedium[3].x = x;
+					g_initialRaySamplePositionsMedium[3].z = z;
+
+					break;
+				}
+			case 70:
+				{
+					g_initialRaySamplePositionBottomRight = index;
+					g_initialRaySamplePositionsMedium[4].x = x;
+					g_initialRaySamplePositionsMedium[4].z = z;
+
+					break;
+				}
+			default:
+				{
+					break;
+				}
 			}
+
+			++index;
 		}
+	}
 
-		index = 0;
+	index = 0;
 
-		// High
-		step = g_listenerHeadSize / (g_numberHigh - 1);
+	// High
+	step = g_listenerHeadSize / (g_numberHigh - 1);
 
-		for (uint8 i = 0; i < g_numberHigh; ++i)
+	for (uint8 i = 0; i < g_numberHigh; ++i)
+	{
+		float const z = g_listenerHeadSizeHalf - i * step;
+
+		for (uint8 j = 0; j < g_numberHigh; ++j)
 		{
-			float const z = g_listenerHeadSizeHalf - i * step;
+			float const x = -g_listenerHeadSizeHalf + j * step;
+			g_raySamplePositionsHigh[index].x = x;
+			g_raySamplePositionsHigh[index].z = z;
 
-			for (uint8 j = 0; j < g_numberHigh; ++j)
+			// Initial sample positions:
+			// . . . . . . . . . . .
+			// . 12. . . . . . . 20.
+			// . . . . . . . . . . .
+			// . . . . . . . . . . .
+			// . . . . . . . . . . .
+			// . . . . . 60. . . . .
+			// . . . . . . . . . . .
+			// . . . . . . . . . . .
+			// . . . . . . . . . . .
+			// .100. . . . . . .108.
+			// . . . . . . . . . . .
+
+			switch (index)
 			{
-				g_raySamplePositionsHigh[index].x = -g_listenerHeadSizeHalf + j * step;
-				g_raySamplePositionsHigh[index].z = z;
-				++index;
+			case 12:
+				{
+					g_initialRaySamplePositionTopLeft = index;
+					g_initialRaySamplePositionsHigh[0].x = x;
+					g_initialRaySamplePositionsHigh[0].z = z;
+
+					break;
+				}
+			case 20:
+				{
+					g_initialRaySamplePositionTopRight = index;
+					g_initialRaySamplePositionsHigh[1].x = x;
+					g_initialRaySamplePositionsHigh[1].z = z;
+
+					break;
+				}
+			case 60:
+				{
+					g_initialRaySamplePositionCenter = index;
+					g_initialRaySamplePositionsHigh[2].x = x;
+					g_initialRaySamplePositionsHigh[2].z = z;
+
+					break;
+				}
+			case 100:
+				{
+					g_initialRaySamplePositionBottomLeft = index;
+					g_initialRaySamplePositionsHigh[3].x = x;
+					g_initialRaySamplePositionsHigh[3].z = z;
+
+					break;
+				}
+			case 108:
+				{
+					g_initialRaySamplePositionBottomRight = index;
+					g_initialRaySamplePositionsHigh[4].x = x;
+					g_initialRaySamplePositionsHigh[4].z = z;
+
+					break;
+				}
+			default:
+				{
+					break;
+				}
 			}
+
+			++index;
 		}
 	}
 }
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 {
@@ -916,5 +1215,6 @@ void CPropagationProcessor::ResetRayData()
 		}
 	}
 }
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
-}      // namespace CryAudio
+	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+}        // namespace CryAudio
+#endif   // CRY_AUDIO_USE_OCCLUSION

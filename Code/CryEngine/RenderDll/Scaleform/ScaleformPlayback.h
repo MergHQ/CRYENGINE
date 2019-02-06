@@ -363,7 +363,7 @@ public:
 	virtual void EnableMaskedRendering(bool enable) override;
 	virtual void ExtendCanvasToViewport(bool extend) override;
 
-	virtual void SetThreadIDs(uint32 mainThreadID, uint32 renderThreadID) override;
+	virtual void SetThreadIDs(threadID mainThreadID, threadID renderThreadID) override;
 	virtual bool IsMainThread() const override;
 	virtual bool IsRenderThread() const override;
 
@@ -567,7 +567,7 @@ public:
 	virtual void EnableMaskedRendering(bool enable) override {}
 	virtual void ExtendCanvasToViewport(bool extend) override {}
 
-	virtual void SetThreadIDs(uint32 mainThreadID, uint32 renderThreadID) override {}
+	virtual void SetThreadIDs(threadID mainThreadID, threadID renderThreadID) override {}
 	virtual bool IsMainThread() const override { return false; }
 	virtual bool IsRenderThread() const override { return false; }
 
