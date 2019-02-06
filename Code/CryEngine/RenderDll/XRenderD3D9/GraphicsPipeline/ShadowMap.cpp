@@ -305,6 +305,24 @@ void CShadowMapStage::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
 	}
 }
 
+void CShadowMapStage::SetRenderView(CRenderView* pRenderView)
+{
+	m_pRenderView = pRenderView;
+
+	if (!pRenderView)
+	{
+		// Cleanup dangling pointers
+
+		for (CShadowMapPassGroup& passGroup : m_ShadowMapPasses)
+		{
+			for (size_t i = 0, count = passGroup.GetCount(); i < count; ++i)
+			{
+				passGroup[i].m_pFrustumToRender = nullptr;
+			}
+		}
+	}
+}
+
 bool CShadowMapStage::CreatePipelineState(const SGraphicsPipelineStateDescription& description, EPass passID, CDeviceGraphicsPSOPtr& outPSO)
 {
 	outPSO = NULL;
@@ -485,40 +503,35 @@ bool CShadowMapStage::CanRenderCachedShadows(const CCompiledRenderObject *obj) c
 
 void CShadowMapStage::Update()
 {
-	if (!IsStageActive())
-		return; // TODO: how will we handle recursion?
+	PROFILE_LABEL_SCOPE("SHADOWMAP_PREPARE");
 
+	CRenderView* pRenderView = RenderView();
+
+	// compile shadow render items
+	pRenderView->PrepareShadowViews();
+
+	// prepare the shadow pool
+	CDeferredShading::Instance().SetupPasses(pRenderView);
+
+	// now prepare passes for each frustum
+	for (auto& passGroup : m_ShadowMapPasses)
+		passGroup.Reset();
+
+	for (auto frustumType  = CRenderView::eShadowFrustumRenderType_First;
+			    frustumType != CRenderView::eShadowFrustumRenderType_Count;
+			    frustumType  = CRenderView::eShadowFrustumRenderType(frustumType + 1))
 	{
-		PROFILE_LABEL_SCOPE("SHADOWMAP_PREPARE");
-
-		CRenderView* pRenderView = RenderView();
-
-		// compile shadow render items
-		pRenderView->PrepareShadowViews();
-
-		// prepare the shadow pool
-		CDeferredShading::Instance().SetupPasses(pRenderView);
-
-		// now prepare passes for each frustum
-		for (auto& passGroup : m_ShadowMapPasses)
-			passGroup.Reset();
-
-		for (auto frustumType  = CRenderView::eShadowFrustumRenderType_First;
-			      frustumType != CRenderView::eShadowFrustumRenderType_Count;
-			      frustumType  = CRenderView::eShadowFrustumRenderType(frustumType + 1))
+		for (auto& pFrustumToRender : pRenderView->GetShadowFrustumsByType(frustumType))
 		{
-			for (auto& pFrustumToRender : pRenderView->GetShadowFrustumsByType(frustumType))
-			{
-				CRY_ASSERT(pRenderView->GetFrameId() == pFrustumToRender->pShadowsView->GetFrameId());
-				PrepareShadowPasses(*pFrustumToRender, frustumType);
-			}
+			CRY_ASSERT(pRenderView->GetFrameId() == pFrustumToRender->pShadowsView->GetFrameId());
+			PrepareShadowPasses(*pFrustumToRender, frustumType);
 		}
+	}
 
-		// clear the shadow maps we will use
-		if (CRendererCVars::CV_r_ShadowMapsUpdate)
-		{
-			ClearShadowMaps(m_ShadowMapPasses);
-		}
+	// clear the shadow maps we will use
+	if (CRendererCVars::CV_r_ShadowMapsUpdate)
+	{
+		ClearShadowMaps(m_ShadowMapPasses);
 	}
 }
 

@@ -49,6 +49,7 @@ public:
 	bool CanRenderCachedShadows(const CCompiledRenderObject *obj) const;
 
 	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater) final;
+	void SetRenderView(CRenderView* pRenderView) final;
 	void OnEntityDeleted(IRenderNode* pRenderNode);
 
 	size_t GetAllocatedMemory();
