@@ -225,10 +225,6 @@ void CStandardGraphicsPipeline::Update(CRenderView* pRenderView, EShaderRenderin
 		m_changedCVars.Reset();
 	}
 
-	// Compile shadow renderitems (TODO: move into ShadowMap's Update())
-	if (m_pShadowMapStage->IsStageActive(renderingFlags))
-		pRenderView->PrepareShadowViews();
-
 	m_renderingFlags = renderingFlags;
 	CGraphicsPipeline::Update(pRenderView, renderingFlags);
 }

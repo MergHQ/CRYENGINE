@@ -13,6 +13,8 @@
 
 class CShadowMapStage : public CGraphicsPipelineStage
 {
+	using EFrustumType = ShadowMapFrustum::eFrustumType;
+
 	enum EPerPassTexture
 	{
 		EPerPassTexture_PerlinNoiseMap = CSceneGBufferStage::ePerPassTexture_PerlinNoiseMap,
@@ -36,11 +38,8 @@ class CShadowMapStage : public CGraphicsPipelineStage
 public:
 	CShadowMapStage();
 
-	bool IsStageActive(EShaderRenderingFlags flags) const final
-	{
-		return !RenderView()->IsRecursive() && RenderView()->GetCurrentEye() != CCamera::eEye_Right;
-	}
-
+	bool IsStageActive(EShaderRenderingFlags flags) const final { return IsStageActive(); }
+	
 	void Init()   final;
 	void Update() final;
 
@@ -94,6 +93,8 @@ private:
 
 		_smart_ptr<CTexture>     m_pDepthTarget;
 		SShadowFrustumToRender*  m_pFrustumToRender;
+		EFrustumType             m_eFrustumType;
+		IRenderNode*             m_pLightOwner;
 		int                      m_nShadowFrustumSide;
 		EPass                    m_eShadowPassID;
 		bool                     m_bRequiresRender;
@@ -156,6 +157,11 @@ private:
 	void ClearShadowMaps(PassGroupList& shadowMapPasses);
 
 	ETEX_Format GetShadowTexFormat(const SShadowConfig& shadowConfig, EPass passID) const;
+
+	bool IsStageActive() const
+	{
+		return !RenderView()->IsRecursive() && RenderView()->GetCurrentEye() != CCamera::eEye_Right;
+	}
 
 	_smart_ptr<CTexture>     m_ShadowMapCache[MAX_GSM_LODS_NUM];
 
