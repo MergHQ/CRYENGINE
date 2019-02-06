@@ -110,11 +110,6 @@ enum class EPlatform
 	#define NDEBUG
 #endif
 
-#if CRY_PLATFORM_DURANGO && defined(_RELEASE) && !defined(_LIB) && !defined(CRY_IS_SCALEFORM_HELPER)
-// Build static library when compiling release on Durango
-	#error _LIB is expected to be set for release Durango
-#endif
-
 #if CRY_PLATFORM_ORBIS && !defined(_LIB) && !defined(CRY_IS_SCALEFORM_HELPER)
 	#error _LIB is expected to be set for Orbis
 #endif
