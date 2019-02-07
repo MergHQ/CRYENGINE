@@ -100,6 +100,7 @@ inline void ReflectType(Schematyc::CTypeDesc<IEntityNavigationComponent::SCollis
 
 	desc.AddMember(&IEntityNavigationComponent::SCollisionAvoidanceProperties::type, 'type', "type", "Type", "How the agent is going to behave in collision avoidance system", IEntityNavigationComponent::SCollisionAvoidanceProperties::EType::Active);
 	desc.AddMember(&IEntityNavigationComponent::SCollisionAvoidanceProperties::radius, 'rad', "radius", "Radius", "Radius of the agent used in collision avoidance calculations", 0.3f);
+	desc.AddMember(&IEntityNavigationComponent::SCollisionAvoidanceProperties::height, 'hei', "height", "Height", "Height of the agent used in collision avoidance calculations", 2.0f);
 }
 
 //////////////////////////////////////////////////////////////////////////

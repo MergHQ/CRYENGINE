@@ -371,6 +371,7 @@ public:
 	virtual ICommunicationManager*              GetCommunicationManager() const override;
 	virtual ICoverSystem*                       GetCoverSystem() const override;
 	virtual INavigationSystem*                  GetNavigationSystem() const override;
+    virtual Cry::AI::CollisionAvoidance::ISystem* GetCollisionAvoidanceSystem() const override;
 	virtual BehaviorTree::IBehaviorTreeManager* GetIBehaviorTreeManager() const override;
 	virtual ITargetTrackManager*                GetTargetTrackManager() const override;
 	virtual struct IMovementSystem*             GetMovementSystem() const override;

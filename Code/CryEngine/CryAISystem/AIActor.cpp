@@ -31,12 +31,12 @@ CActorCollisionAvoidance::CActorCollisionAvoidance(CAIActor* pActor)
 	: m_pActor(pActor)
 	, m_radiusIncrement(0.0f)
 {
-	gAIEnv.pCollisionAvoidanceSystem->RegisterAgent(this);
+	gEnv->pAISystem->GetCollisionAvoidanceSystem()->RegisterAgent(this);
 }
 
 CActorCollisionAvoidance::~CActorCollisionAvoidance()
 {
-	gAIEnv.pCollisionAvoidanceSystem->UnregisterAgent(this);
+    gEnv->pAISystem->GetCollisionAvoidanceSystem()->UnregisterAgent(this);
 }
 
 void CActorCollisionAvoidance::Reset()
@@ -63,71 +63,83 @@ const INavMeshQueryFilter* CActorCollisionAvoidance::GetNavigationQueryFilter() 
 	return nullptr;
 }
 
-const char* CActorCollisionAvoidance::GetName() const
+const char* CActorCollisionAvoidance::GetDebugName() const
 {
 	return m_pActor->GetName();
 }
 
-ICollisionAvoidanceAgent::TreatType CActorCollisionAvoidance::GetTreatmentType() const
+Cry::AI::CollisionAvoidance::ETreatType CActorCollisionAvoidance::GetTreatmentDuringUpdateTick(Cry::AI::CollisionAvoidance::SAgentParams& outAgent, Cry::AI::CollisionAvoidance::SObstacleParams& outObstacle) const
 {
 	if (!m_pActor->IsEnabled() || !m_pActor->GetMovementAbility().collisionAvoidanceParticipation)
-		return ICollisionAvoidanceAgent::TreatType::None;
+		return Cry::AI::CollisionAvoidance::ETreatType::None;
+
+    Cry::AI::CollisionAvoidance::ETreatType treatType = Cry::AI::CollisionAvoidance::ETreatType::None;
 
 	uint16 aiType = m_pActor->GetAIType();
 	if (aiType == AIOBJECT_PLAYER)
 	{
 		// player is always treated only as obstacle
-		return ICollisionAvoidanceAgent::TreatType::Obstacle;
+		treatType = Cry::AI::CollisionAvoidance::ETreatType::Obstacle;
 	}
-
-	if ((aiType == AIOBJECT_ALIENTICK) || (aiType == AIOBJECT_ACTOR) || (aiType == AIOBJECT_INFECTED))
+	else if ((aiType == AIOBJECT_ALIENTICK) || (aiType == AIOBJECT_ACTOR) || (aiType == AIOBJECT_INFECTED))
 	{
 		const float targetCutoff = gAIEnv.CVars.CollisionAvoidanceTargetCutoffRange;
 		const float pathEndCutoff = gAIEnv.CVars.CollisionAvoidancePathEndCutoffRange;
 		const float smartObjectCutoff = gAIEnv.CVars.CollisionAvoidanceSmartObjectCutoffRange;
 
-		CPipeUser* pPipeUser = m_pActor->CastToCPipeUser();
+		const CPipeUser* pPipeUser = m_pActor->CastToCPipeUser();
 
-		bool bIsMoving = (fabs_tpl(m_pActor->m_State.fDesiredSpeed) > 0.0001f);
-		bool bCuttoff = (m_pActor->m_State.fDistanceFromTarget < targetCutoff)
+		const bool bIsMoving = (fabs_tpl(m_pActor->m_State.fDesiredSpeed) > 0.0001f);
+		const bool bCuttoff = (m_pActor->m_State.fDistanceFromTarget < targetCutoff)
 			|| (m_pActor->m_State.fDistanceToPathEnd < pathEndCutoff)
 			|| (pPipeUser && pPipeUser->GetPendingSmartObjectID() && (m_pActor->m_State.fDistanceToPathEnd < smartObjectCutoff));
 
-		return (bIsMoving && !bCuttoff) ? ICollisionAvoidanceAgent::TreatType::Agent : ICollisionAvoidanceAgent::TreatType::Obstacle;
+		treatType = (bIsMoving && !bCuttoff) ? Cry::AI::CollisionAvoidance::ETreatType::Agent : Cry::AI::CollisionAvoidance::ETreatType::Obstacle;
 	}
-	return ICollisionAvoidanceAgent::TreatType::None;
+
+	static_assert(int(Cry::AI::CollisionAvoidance::ETreatType::Count) == 3, "Unexpected enum count!");
+	switch (treatType)
+	{
+	case Cry::AI::CollisionAvoidance::ETreatType::Agent:
+	{
+		const float forcedSpeed = gAIEnv.CVars.DebugCollisionAvoidanceForceSpeed;
+		const bool bUseForcedSpeed = fabs_tpl(forcedSpeed) > 0.0001f;
+
+		float minSpeed;
+		float maxSpeed;
+		float normalSpeed;
+
+		m_pActor->GetMovementSpeedRange(m_pActor->m_State.fMovementUrgency, false, normalSpeed, minSpeed, maxSpeed);
+
+		outAgent.radius = m_pActor->m_Parameters.m_fPassRadius + gAIEnv.CVars.CollisionAvoidanceAgentExtraFat;
+		if (gAIEnv.CVars.CollisionAvoidanceEnableRadiusIncrement)
+			outAgent.radius += m_radiusIncrement;
+		outAgent.height = m_pActor->GetBodyInfo().stanceSize.GetSize().z;
+		outAgent.maxSpeed = min(m_pActor->m_State.fDesiredSpeed, maxSpeed);
+		outAgent.maxAcceleration = min(outAgent.maxAcceleration, m_pActor->m_movementAbility.maxAccel);
+		outAgent.currentLocation = m_pActor->GetPhysicsPos();
+		outAgent.currentVelocity = m_pActor->GetVelocity();
+
+		outAgent.desiredVelocity = bUseForcedSpeed ? m_pActor->GetMoveDir() * forcedSpeed : m_pActor->m_State.vMoveDir * m_pActor->m_State.fDesiredSpeed;
+		break;
+	}
+	case Cry::AI::CollisionAvoidance::ETreatType::Obstacle:
+	{
+		outObstacle.currentLocation = m_pActor->GetPhysicsPos();
+		outObstacle.currentVelocity = m_pActor->GetVelocity();
+		outObstacle.radius = m_pActor->m_Parameters.m_fPassRadius + gAIEnv.CVars.CollisionAvoidanceAgentExtraFat;
+		outObstacle.height = m_pActor->GetBodyInfo().stanceSize.GetSize().z;
+		break;
+	}
+	case Cry::AI::CollisionAvoidance::ETreatType::None:
+		break;
+	default:
+		CRY_ASSERT(false);
+		break;
+	}
+
+	return treatType;
 }
-
-void CActorCollisionAvoidance::InitializeCollisionAgent(CCollisionAvoidanceSystem::SAgentParams& agent) const
-{
-	const float forcedSpeed = gAIEnv.CVars.DebugCollisionAvoidanceForceSpeed;
-	const bool bUseForcedSpeed = fabs_tpl(forcedSpeed) > 0.0001f;
-
-	float minSpeed;
-	float maxSpeed;
-	float normalSpeed;
-
-	m_pActor->GetMovementSpeedRange(m_pActor->m_State.fMovementUrgency, false, normalSpeed, minSpeed, maxSpeed);
-
-	agent.radius = m_pActor->m_Parameters.m_fPassRadius + gAIEnv.CVars.CollisionAvoidanceAgentExtraFat;
-	if (gAIEnv.CVars.CollisionAvoidanceEnableRadiusIncrement)
-		agent.radius += m_radiusIncrement;
-	agent.maxSpeed = min(m_pActor->m_State.fDesiredSpeed, maxSpeed);
-	agent.maxAcceleration = min(agent.maxAcceleration, m_pActor->m_movementAbility.maxAccel);
-	agent.currentLocation = m_pActor->GetPhysicsPos();
-	agent.currentVelocity = Vec2(m_pActor->GetVelocity());
-
-	agent.desiredVelocity = bUseForcedSpeed ? Vec2(m_pActor->GetMoveDir() * forcedSpeed) : Vec2(m_pActor->m_State.vMoveDir * m_pActor->m_State.fDesiredSpeed);
-	agent.currentLookDirection = Vec2(agent.desiredVelocity);
-}
-
-void CActorCollisionAvoidance::InitializeCollisionObstacle(CCollisionAvoidanceSystem::SObstacleParams& obstacle) const
-{
-	obstacle.currentLocation = m_pActor->GetPhysicsPos();
-	obstacle.currentVelocity = Vec2(m_pActor->GetVelocity());
-	obstacle.radius = m_pActor->m_Parameters.m_fPassRadius + gAIEnv.CVars.CollisionAvoidanceAgentExtraFat;
-}
-	
 
 void CActorCollisionAvoidance::ApplyComputedVelocity(const Vec2& avoidanceVelocity, float updateTime)
 {

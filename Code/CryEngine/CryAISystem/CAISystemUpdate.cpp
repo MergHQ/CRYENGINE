@@ -57,6 +57,7 @@
 #include "TacticalPointSystem/TacticalPointSystem.h"
 #include "Communication/CommunicationManager.h"
 #include "Navigation/NavigationSystem/NavigationSystem.h"
+#include "CollisionAvoidance/CollisionAvoidanceSystem.h"
 
 #include "DebugDrawContext.h"
 

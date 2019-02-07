@@ -22,10 +22,10 @@
 #include "AIObject.h"
 #include "BlackBoard.h"
 #include "PersonalLog.h"
-#include "CollisionAvoidance/CollisionAvoidanceSystem.h"
 
 #include <CryAISystem/IAIActor.h>
 #include <CryAISystem/IAgent.h>
+#include <CryAISystem/ICollisionAvoidance.h>
 
 #include <CryAISystem/ValueHistory.h>
 #include <CryAISystem/INavigationSystem.h>
@@ -40,7 +40,7 @@ class TimestampCollection;
 }
 
 // AI Actor Collision Avoidance agent
-class CActorCollisionAvoidance : public ICollisionAvoidanceAgent
+class CActorCollisionAvoidance : public Cry::AI::CollisionAvoidance::IAgent
 {
 public:
 	CActorCollisionAvoidance(CAIActor* pActor);
@@ -51,11 +51,10 @@ public:
 
 	virtual NavigationAgentTypeID GetNavigationTypeId() const override;
 	virtual const INavMeshQueryFilter* GetNavigationQueryFilter() const override;
-	virtual const char* GetName() const override;
-	virtual TreatType GetTreatmentType() const override;
+	virtual const char* GetDebugName() const override;
 
-	virtual void InitializeCollisionAgent(CCollisionAvoidanceSystem::SAgentParams& agent) const override;
-	virtual void InitializeCollisionObstacle(CCollisionAvoidanceSystem::SObstacleParams& obstacle) const override;
+	virtual Cry::AI::CollisionAvoidance::ETreatType GetTreatmentDuringUpdateTick(Cry::AI::CollisionAvoidance::SAgentParams& outAgent, Cry::AI::CollisionAvoidance::SObstacleParams& outObstacle) const override;
+
 	virtual void ApplyComputedVelocity(const Vec2& avoidanceVelocity, float updateTime) override;
 
 private:
