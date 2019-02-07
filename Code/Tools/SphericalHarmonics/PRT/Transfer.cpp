@@ -405,7 +405,6 @@ void NSH::NTransfer::CInterreflectionTransfer::ComputeDirectPass
 		const CSimpleIndexedMesh& crMesh = *(crMeshes[mesh]);
 		TScalarCoeffVec& rCoeffsDirect		= m_DirectCoefficients[mesh];
 		THemispherePerMeshCountInfo& rMeshVertexCounter = m_HSVertexCounter[mesh];
-		TRayCacheVecVec& rIntersectionInfo = m_IntersectionInfo[mesh];
 
 		GetSHLog().LogTime();
 		GetSHLog().Log("computing direct pass: ");
@@ -851,7 +850,6 @@ DWORD WINAPI NSH::NTransfer::CInterreflectionTransfer::RayCastingThread(LPVOID p
 			rContinueLoop = true;
 			rApplyTransparency = false;
 
-			bool firstElement = true;
 			if(cHasTransparentMats && crParameters.supportTransparency)
 			{
 				const TCartesianCoord& crSampleDir = crSample.GetCartesianPos();
