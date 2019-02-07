@@ -3,6 +3,7 @@
 #pragma once
 
 #include "ParticleCommon.h"
+#include <CryThreading/IJobManager.h>
 
 class CRenderObject;
 
@@ -19,10 +20,6 @@ class CParticleJobManager
 public:
 	struct SDeferredRender
 	{
-		SDeferredRender()
-			: m_pEmitter(nullptr)
-			, m_passInfo(0)
-		{}
 		SDeferredRender(CParticleEmitter* pEmitter, const SRenderContext& renderContext)
 			: m_pEmitter(pEmitter)
 			, m_rParam(renderContext.m_renderParams)

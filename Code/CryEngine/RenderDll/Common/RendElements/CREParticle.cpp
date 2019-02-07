@@ -378,11 +378,12 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 		size_t ij = &job - aJobs.data();
 		CREParticle* pRE = static_cast<CREParticle*>(pRenderObject->m_pRE);
 
-		if (job.aabb.IsReset())
-			continue;
-
+		// Clamp AABB
+		AABB aabb = job.aabb;
+		if (aabb.IsReset())
+			aabb = AABB{ .0f };
 		if (pRenderObject->m_pCompiledObject)
-			pRenderObject->m_pCompiledObject->m_aabb = job.aabb;
+			pRenderObject->m_pCompiledObject->m_aabb = aabb;
 
 		// generate the RenderItem entries for this Particle Element
 		assert(pRenderObject->m_bPermanent);
@@ -392,7 +393,7 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 		if (!pRE->AddedToView())
 		{
 			// Update particle AABB
-			pRE->SetBBox(job.aabb);
+			pRE->SetBBox(aabb);
 
 			passInfo.GetRenderView()->AddRenderItem(
 				pRE, pRenderObject, shaderItem, nList, nBatchFlags, 
