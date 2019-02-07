@@ -14,7 +14,7 @@ CVersionControlTrayWidget::CVersionControlTrayWidget(QWidget* pParent /* = nullp
 {
 	connect(GetIEditor()->GetTrayArea(), &CTrayArea::MainFrameInitialized, [this]()
 	{
-		m_pPopUpMenu = new QPopupWidget("NotificationCenterPopup", QtUtil::MakeScrollable(new CVersonControlMainView()), QSize(480, 640));
+		m_pPopUpMenu = new QPopupWidget("NotificationCenterPopup", QtUtil::MakeScrollable(new CVersonControlMainView(parentWidget())), QSize(480, 640));
 		m_pPopUpMenu->SetFocusShareWidget(this);
 	});
 	connect(this, &QToolButton::clicked, this, &CVersionControlTrayWidget::OnClicked);

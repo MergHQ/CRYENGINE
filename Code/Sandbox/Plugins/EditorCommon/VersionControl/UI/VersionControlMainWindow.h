@@ -18,9 +18,9 @@ public:
 
 private:
 	CVersionControlWorkspaceOverviewTab* m_pChangelistsTab{ nullptr };
-	CVersionControlHistoryTab*              m_pHistoryTab{ nullptr };
-	CVersionControlSettingsTab*             m_pSettingsTab{ nullptr };
-	QTabWidget*                             m_pTabWidget{ nullptr };
+	CVersionControlHistoryTab*           m_pHistoryTab{ nullptr };
+	CVersionControlSettingsTab*          m_pSettingsTab{ nullptr };
+	QTabWidget*                          m_pTabWidget{ nullptr };
 };
 
 //! Main dockable window for version control system.
@@ -30,9 +30,9 @@ class EDITOR_COMMON_API CVersionControlMainWindow : public CDockableEditor
 public:
 	CVersionControlMainWindow(QWidget* pParent = nullptr);
 
-	CVersonControlMainView* GetView() { return m_pView; }
+	CVersonControlMainView* GetView()                      { return m_pView; }
 
-	virtual const char* GetEditorName() const override { return "Version Control System"; }
+	virtual const char*     GetEditorName() const override { return "Version Control System"; }
 
 private:
 	CVersonControlMainView* m_pView{ nullptr };
