@@ -13,7 +13,7 @@ class EDITOR_COMMON_API CVersionControlPendingChangesWidget : public QWidget
 {
 	Q_OBJECT
 public:
-	explicit CVersionControlPendingChangesWidget(QWidget* pParent = nullptr);
+	explicit CVersionControlPendingChangesWidget(QWidget* pParent);
 
 	~CVersionControlPendingChangesWidget();
 

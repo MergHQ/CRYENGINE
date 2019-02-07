@@ -384,8 +384,6 @@ public:
 	}
 };
 
-CHeaderProxyStyle g_headerProxyStyle;
-
 CPendingChangesModel* GetModel(QTreeView* pTree)
 {
 	return static_cast<CPendingChangesModel*>(pTree->model());
@@ -426,7 +424,8 @@ std::vector<CPendingChange*> CVersionControlPendingChangesWidget::GetSelectedPen
 	return GetModel(m_pTree)->GetSelectedPendingChanges();
 }
 
-CVersionControlPendingChangesWidget::CVersionControlPendingChangesWidget(QWidget* pParent /*= nullptr*/)
+CVersionControlPendingChangesWidget::CVersionControlPendingChangesWidget(QWidget* pParent)
+	: QWidget(pParent)
 {
 	using namespace Private_VersionControlPendingChangesTab;
 
@@ -452,7 +451,8 @@ CVersionControlPendingChangesWidget::CVersionControlPendingChangesWidget(QWidget
 	m_pTree->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
 	m_pTree->setBaseSize(460, 280);
 
-	m_pTree->header()->setStyle(&g_headerProxyStyle);
+	static CHeaderProxyStyle s_headerProxyStyle;
+	m_pTree->header()->setStyle(&s_headerProxyStyle);
 
 	QStyledItemDelegate* pCheckBoxItemDelegate = new CCheckBoxItemDelegate(m_pTree);
 	m_pTree->setItemDelegateForColumn(0, pCheckBoxItemDelegate);

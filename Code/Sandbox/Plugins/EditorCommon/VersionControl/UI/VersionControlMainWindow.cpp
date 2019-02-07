@@ -1,12 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include "StdAfx.h"
 #include "VersionControlMainWindow.h"
-#include "VersionControlWorkspaceOverviewTab.h"
 #include "VersionControlHistoryTab.h"
 #include "VersionControlSettingsTab.h"
-#include <QTabWidget>
-#include <QTabBar>
+#include "VersionControlWorkspaceOverviewTab.h"
+
 #include <QBoxLayout>
+#include <QTabWidget>
 
 REGISTER_VIEWPANE_FACTORY(CVersionControlMainWindow, "Version Control System", "", true);
 
