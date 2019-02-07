@@ -115,6 +115,8 @@ private:
 	bool       m_hide;
 	bool       m_calledShowHWMouse;
 	int        m_debugHardwareMouse;
+
+	static int s_MouseControllerEmulation;
 };
 
 //-----------------------------------------------------------------------------------------------------
