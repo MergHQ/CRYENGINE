@@ -54,6 +54,8 @@ void SetMouseUseSystemCursorCVar(ICVar* pVar)
 }
 #endif //CRY_PLATFORM_WINDOWS
 
+int CHardwareMouse::s_MouseControllerEmulation = 1;
+
 //-----------------------------------------------------------------------------------------------------
 
 CHardwareMouse::CHardwareMouse(bool bVisibleByDefault)
@@ -82,10 +84,12 @@ CHardwareMouse::CHardwareMouse(bool bVisibleByDefault)
 		"Sets the image (dds file) to be displayed as the mouse cursor",
 		SetMouseCursorIconCVar);
 
+	REGISTER_CVAR2("r_MouseControllerEmulation", &s_MouseControllerEmulation, 1, VF_NULL, "Should the controller be used to emulate mouse input?");
+
 #if CRY_PLATFORM_WINDOWS
 
 	REGISTER_INT_CB("r_MouseUseSystemCursor", 0, VF_NULL,
-		"Should the game use the hardware mouse cursor?",
+		"Should the application use the hardware mouse cursor?",
 		SetMouseUseSystemCursorCVar);
 #endif // CRY_PLATFORM_WINDOWS
 
@@ -301,26 +305,29 @@ bool CHardwareMouse::OnInputEvent(const SInputEvent& rInputEvent)
 	}
 	else if (eIDT_Gamepad == rInputEvent.deviceType)
 	{
-		if (rInputEvent.keyId == thumbX)
+		if (s_MouseControllerEmulation)
 		{
-			m_fIncX = rInputEvent.value;
-		}
-		else if (rInputEvent.keyId == thumbY)
-		{
-			m_fIncY = -rInputEvent.value;
-		}
-		else if (rInputEvent.keyId == XButton)
-		{
-			// This emulation was just not right, A-s meaning is context sensitive
-			/*if(eIS_Pressed == rInputEvent.state)
-			   {
-			   Event((int)m_fCursorX,(int)m_fCursorY,HARDWAREMOUSEEVENT_LBUTTONDOWN);
-			   }
-			   else if(eIS_Released == rInputEvent.state)
-			   {
-			   Event((int)m_fCursorX,(int)m_fCursorY,HARDWAREMOUSEEVENT_LBUTTONUP);
-			   }*/
-			// TODO: do we simulate double-click?
+			if (rInputEvent.keyId == thumbX)
+			{
+				m_fIncX = rInputEvent.value;
+			}
+			else if (rInputEvent.keyId == thumbY)
+			{
+				m_fIncY = -rInputEvent.value;
+			}
+			else if (rInputEvent.keyId == XButton)
+			{
+				// This emulation was just not right, A-s meaning is context sensitive
+				/*if(eIS_Pressed == rInputEvent.state)
+					 {
+					 Event((int)m_fCursorX,(int)m_fCursorY,HARDWAREMOUSEEVENT_LBUTTONDOWN);
+					 }
+					 else if(eIS_Released == rInputEvent.state)
+					 {
+					 Event((int)m_fCursorX,(int)m_fCursorY,HARDWAREMOUSEEVENT_LBUTTONUP);
+					 }*/
+					 // TODO: do we simulate double-click?
+			}
 		}
 	}
 #if !CRY_PLATFORM_WINDOWS
@@ -361,25 +368,28 @@ bool CHardwareMouse::OnInputEvent(const SInputEvent& rInputEvent)
 #endif
 	else if (rInputEvent.keyId == eKI_SYS_Commit)
 	{
-		const float fSensitivity = 100.0f;
-		const float fDeadZone = 0.3f;
+		if (s_MouseControllerEmulation)
+		{
+			const float fSensitivity = 100.0f;
+			const float fDeadZone = 0.3f;
 
-		if (m_fIncX < -fDeadZone || m_fIncX > +fDeadZone ||
-		    m_fIncY < -fDeadZone || m_fIncY > +fDeadZone)
-		{
-			float fFrameTime = gEnv->pTimer->GetFrameTime(ITimer::ETIMER_UI);
-			if (s_fAcceleration < 10.0f)
+			if (m_fIncX < -fDeadZone || m_fIncX > +fDeadZone ||
+				m_fIncY < -fDeadZone || m_fIncY > +fDeadZone)
 			{
-				s_fAcceleration += fFrameTime * 5.0f;
+				float fFrameTime = gEnv->pTimer->GetFrameTime(ITimer::ETIMER_UI);
+				if (s_fAcceleration < 10.0f)
+				{
+					s_fAcceleration += fFrameTime * 5.0f;
+				}
+				m_fCursorX += m_fIncX * fSensitivity * s_fAcceleration * fFrameTime;
+				m_fCursorY += m_fIncY * fSensitivity * s_fAcceleration * fFrameTime;
+				SetHardwareMousePosition(m_fCursorX, m_fCursorY);
 			}
-			m_fCursorX += m_fIncX * fSensitivity * s_fAcceleration * fFrameTime;
-			m_fCursorY += m_fIncY * fSensitivity * s_fAcceleration * fFrameTime;
-			SetHardwareMousePosition(m_fCursorX, m_fCursorY);
-		}
-		else
-		{
-			GetHardwareMousePosition(&m_fCursorX, &m_fCursorY);
-			s_fAcceleration = 1.0f;
+			else
+			{
+				GetHardwareMousePosition(&m_fCursorX, &m_fCursorY);
+				s_fAcceleration = 1.0f;
+			}
 		}
 	}
 
