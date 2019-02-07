@@ -272,6 +272,7 @@ CAISystem::~CAISystem()
 	SAFE_DELETE(gAIEnv.pMovementSystem);
 	SAFE_DELETE(gAIEnv.pSequenceManager);
 	SAFE_DELETE(gAIEnv.pClusterDetector);
+	SAFE_DELETE(gAIEnv.pCollisionAvoidanceSystem);
 
 #ifdef CRYAISYSTEM_DEBUG
 	SAFE_DELETE(gAIEnv.pBubblesSystem);
@@ -523,7 +524,7 @@ void CAISystem::SetupAIEnvironment()
 		gAIEnv.pFormationManager = new CFormationManager();
 	}
 
-	gAIEnv.pCollisionAvoidanceSystem = new CCollisionAvoidanceSystem();
+	gAIEnv.pCollisionAvoidanceSystem = new Cry::AI::CollisionAvoidance::CCollisionAvoidanceSystem();
 
 	gAIEnv.pRayCaster = new IAISystem::GlobalRayCaster;
 	gAIEnv.pRayCaster->SetQuota(gAIEnv.CVars.RayCasterQuota);
@@ -1627,7 +1628,14 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 		return;
 	}
 
-	gAIEnv.pCollisionAvoidanceSystem->Reset(reason == RESET_UNLOAD_LEVEL);
+	if (reason == RESET_UNLOAD_LEVEL)
+	{
+		gAIEnv.pCollisionAvoidanceSystem->Clear();
+	}
+	else
+	{
+		gAIEnv.pCollisionAvoidanceSystem->Reset();
+	}
 
 	AILogEvent("CAISystem::Reset %d", reason);
 	m_bUpdateSmartObjects = false;
@@ -5133,6 +5141,11 @@ ICoverSystem* CAISystem::GetCoverSystem() const
 INavigationSystem* CAISystem::GetNavigationSystem() const
 {
 	return gAIEnv.pNavigationSystem;
+}
+
+Cry::AI::CollisionAvoidance::ISystem* CAISystem::GetCollisionAvoidanceSystem() const
+{
+    return gAIEnv.pCollisionAvoidanceSystem;
 }
 
 IAuditionMap* CAISystem::GetAuditionMap() 

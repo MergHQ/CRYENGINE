@@ -45,10 +45,11 @@ struct IEntityNavigationComponent : public IEntityComponent
 
 		bool operator==(const SCollisionAvoidanceProperties& other) const
 		{
-			return radius == other.radius && type == other.type;
+			return radius == other.radius && height == other.height && type == other.type;
 		}
 
 		float radius = 0.3;
+		float height = 2.0f;
 		EType type = EType::Active;
 	};
 	

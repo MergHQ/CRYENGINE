@@ -2,12 +2,12 @@
 
 #pragma once
 
-#include "CollisionAvoidance/CollisionAvoidanceSystem.h"
+#include <CryAISystem/ICollisionAvoidance.h>
 
 class CEntityAINavigationComponent;
 struct IEntity;
 
-class CCollisionAvoidanceAgent : public ICollisionAvoidanceAgent
+class CCollisionAvoidanceAgent : public Cry::AI::CollisionAvoidance::IAgent
 {
 public:
 	CCollisionAvoidanceAgent(CEntityAINavigationComponent* pOwner)
@@ -15,18 +15,16 @@ public:
 		, m_pAttachedEntity(nullptr)
 	{}
 
-	~CCollisionAvoidanceAgent();
+    virtual ~CCollisionAvoidanceAgent() override;
 
-	//! Registers/Unregisters entity to/from collision avoidance system. Passing nullptr to pEntity parameter unregisters the entity.
-	void                                  Initialize(IEntity* pEntity);
-	void                                  Release();
+    //! Registers/Unregisters entity to/from collision avoidance system. Passing nullptr to pEntity parameter unregisters the entity.
+    void                                  Initialize(IEntity* pEntity);
+    void                                  Release();
 
 	virtual NavigationAgentTypeID         GetNavigationTypeId() const override;
-	virtual const INavMeshQueryFilter* GetNavigationQueryFilter() const override;
-	virtual const char*                   GetName() const override;
-	virtual TreatType                     GetTreatmentType() const override;
-	virtual void                          InitializeCollisionAgent(CCollisionAvoidanceSystem::SAgentParams& agent) const override;
-	virtual void                          InitializeCollisionObstacle(CCollisionAvoidanceSystem::SObstacleParams& obstacle) const override;
+	virtual const INavMeshQueryFilter*    GetNavigationQueryFilter() const override;
+	virtual const char*                   GetDebugName() const override;
+	virtual Cry::AI::CollisionAvoidance::ETreatType GetTreatmentDuringUpdateTick(Cry::AI::CollisionAvoidance::SAgentParams& outAgent, Cry::AI::CollisionAvoidance::SObstacleParams& outObstacle) const override;
 	virtual void                          ApplyComputedVelocity(const Vec2& avoidanceVelocity, float updateTime) override;
 
 private:

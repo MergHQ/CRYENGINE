@@ -28,6 +28,11 @@ struct ICoordinationManager;
 struct ICommunicationManager;
 struct ICoverSystem;
 struct INavigationSystem;
+
+namespace Cry { namespace AI { namespace CollisionAvoidance {
+struct ISystem;
+}}}
+
 class INavPath;
 struct IPhysicalEntity;
 struct AIObjectParams;
@@ -714,6 +719,7 @@ struct IAISystem
 	virtual BehaviorTree::IBehaviorTreeManager* GetIBehaviorTreeManager() const = 0;
 	virtual ICoverSystem*                       GetCoverSystem() const = 0;
 	virtual INavigationSystem*                  GetNavigationSystem() const = 0;
+    virtual Cry::AI::CollisionAvoidance::ISystem* GetCollisionAvoidanceSystem() const = 0;
 	virtual IMNMPathfinder*                     GetMNMPathfinder() const = 0;
 	virtual ICommunicationManager*              GetCommunicationManager() const = 0;
 	virtual ITacticalPointSystem*               GetTacticalPointSystem(void) = 0;
