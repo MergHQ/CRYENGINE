@@ -156,7 +156,7 @@ void CObject::UpdateVelocityTracking()
 
 	while ((iter != iterEnd) && !(trackAbsoluteVelocity && trackDoppler))
 	{
-		auto const pCueInstance = *iter;
+		CCueInstance* const pCueInstance = *iter;
 		trackAbsoluteVelocity |= ((pCueInstance->GetFlags() & ECueInstanceFlags::HasAbsoluteVelocity) != 0);
 		trackDoppler |= ((pCueInstance->GetFlags() & ECueInstanceFlags::HasDoppler) != 0);
 		++iter;

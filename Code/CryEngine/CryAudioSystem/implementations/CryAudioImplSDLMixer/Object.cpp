@@ -33,7 +33,7 @@ void CObject::Update(float const deltaTime)
 
 		while (iter != iterEnd)
 		{
-			auto const pEventInstance = *iter;
+			CEventInstance* const pEventInstance = *iter;
 
 			if (pEventInstance->IsToBeRemoved())
 			{
@@ -86,7 +86,7 @@ void CObject::StopEvent(uint32 const id)
 {
 	for (auto const pEventInstance : m_eventInstances)
 	{
-		if (pEventInstance->GetEventId() == id)
+		if (pEventInstance->GetEvent().GetId() == id)
 		{
 			pEventInstance->Stop();
 		}
@@ -104,11 +104,11 @@ void CObject::SetVolume(SampleId const sampleId, float const value)
 
 		for (auto const pEventInstance : m_eventInstances)
 		{
-			auto const pEvent = pEventInstance->GetEvent();
+			CEvent const& event = pEventInstance->GetEvent();
 
-			if (pEvent->GetSampleId() == sampleId)
+			if (event.GetSampleId() == sampleId)
 			{
-				int const mixVolume = GetAbsoluteVolume(pEvent->GetVolume(), volumeMultiplier);
+				int const mixVolume = GetAbsoluteVolume(event.GetVolume(), volumeMultiplier);
 
 				for (auto const channel : pEventInstance->m_channels)
 				{

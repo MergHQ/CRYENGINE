@@ -1071,25 +1071,24 @@ void CImpl::SetLanguage(char const* const szLanguage)
 	}
 }
 
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
-CCueInstance* CImpl::ConstructCueInstance(
-	TriggerInstanceId const triggerInstanceId,
-	uint32 const cueId,
-	CriAtomExPlaybackId const playbackId,
-	CCue const* const pCue,
-	CBaseObject const* const pBaseObject /*= nullptr*/)
+CCueInstance* CImpl::ConstructCueInstance(TriggerInstanceId const triggerInstanceId, CriAtomExPlaybackId const playbackId, CCue const& cue, CBaseObject const& baseObject)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCueInstance");
-
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
-	auto const pCueInstance = new CCueInstance(triggerInstanceId, cueId, playbackId, pCue, pBaseObject);
+	auto const pCueInstance = new CCueInstance(triggerInstanceId, playbackId, cue, baseObject);
 	g_constructedCueInstances.push_back(pCueInstance);
-#else
-	auto const pCueInstance = new CCueInstance(triggerInstanceId, cueId, playbackId, pCue);
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 	return pCueInstance;
 }
+#else
+//////////////////////////////////////////////////////////////////////////
+CCueInstance* CImpl::ConstructCueInstance(TriggerInstanceId const triggerInstanceId, CriAtomExPlaybackId const playbackId, CCue const& cue)
+{
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCueInstance");
+	return new CCueInstance(triggerInstanceId, playbackId, cue);
+}
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::DestructCueInstance(CCueInstance const* const pCueInstance)
@@ -1508,12 +1507,12 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 
 			for (auto const pCueInstance : g_constructedCueInstances)
 			{
-				Vec3 const& position = pCueInstance->GetObject()->GetTransformation().GetPosition();
+				Vec3 const& position = pCueInstance->GetObject().GetTransformation().GetPosition();
 				float const distance = position.GetDistance(g_pListener->GetPosition());
 
 				if ((debugDistance <= 0.0f) || ((debugDistance > 0.0f) && (distance < debugDistance)))
 				{
-					char const* const szCueName = pCueInstance->GetCue()->GetName();
+					char const* const szCueName = pCueInstance->GetCue().GetName();
 					CryFixedStringT<MaxControlNameLength> lowerCaseCueName(szCueName);
 					lowerCaseCueName.MakeLower();
 					bool const draw = ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseCueName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos));
@@ -1522,7 +1521,7 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 					{
 						ECueInstanceFlags const flags = pCueInstance->GetFlags();
 						ColorF const color = ((flags& ECueInstanceFlags::IsPending) != 0) ? Debug::s_listColorItemLoading : (((flags& ECueInstanceFlags::IsVirtual) != 0) ? Debug::s_globalColorVirtual : Debug::s_listColorItemActive);
-						auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, "%s on %s", szCueName, pCueInstance->GetObject()->GetName());
+						auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, "%s on %s", szCueName, pCueInstance->GetObject().GetName());
 
 						posY += Debug::g_listLineHeight;
 					}

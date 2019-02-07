@@ -78,12 +78,12 @@ public:
 	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const override;
 	// ~CryAudio::Impl::IImpl
 
-	CEventInstance* ConstructEventInstance(
-		TriggerInstanceId const triggerInstanceId,
-		AkUniqueID const eventId,
-		float const maxAttenuation,
-		CBaseObject const* const pBaseObject = nullptr,
-		CEvent const* const pEvent = nullptr);
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
+	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event, CBaseObject const& baseObject);
+#else
+	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event);
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
+
 	void DestructEventInstance(CEventInstance const* const pEventInstance);
 
 	void SetPanningRule(int const panningRule);

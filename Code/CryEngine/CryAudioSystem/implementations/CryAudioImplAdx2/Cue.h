@@ -68,6 +68,7 @@ public:
 	virtual void           Stop(IObject* const pIObject) override;
 	// ~CryAudio::Impl::ITriggerConnection
 
+	uint32         GetId() const        { return m_id; }
 	char const*    GetName() const      { return m_name.c_str(); }
 	CriAtomExAcbHn GetAcbHandle() const { return m_pAcbHandle; }
 

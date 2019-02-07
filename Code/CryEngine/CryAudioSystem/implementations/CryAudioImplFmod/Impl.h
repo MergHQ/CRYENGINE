@@ -75,11 +75,12 @@ public:
 	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const override;
 	// ~CryAudio::Impl::IImpl
 
-	CEventInstance* ConstructEventInstance(
-		TriggerInstanceId const triggerInstanceId,
-		uint32 const eventId,
-		CEvent const* const pEvent,
-		CBaseObject const* const pBaseObject = nullptr);
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event, CBaseObject const& baseObject);
+#else
+	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event);
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+
 	void DestructEventInstance(CEventInstance const* const pEventInstance);
 
 private:
@@ -100,8 +101,6 @@ private:
 	CryFixedStringT<MaxFilePathLength>    m_masterStreamsBankPath;
 	CryFixedStringT<MaxFilePathLength>    m_masterStringsBankPath;
 
-	FMOD::Studio::System*                 m_pSystem;
-	FMOD::System*                         m_pLowLevelSystem;
 	FMOD::Studio::Bank*                   m_pMasterBank;
 	FMOD::Studio::Bank*                   m_pMasterAssetsBank;
 	FMOD::Studio::Bank*                   m_pMasterStreamsBank;

@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "BaseObject.h"
+#include "Event.h"
 #include "EventInstance.h"
 #include "Impl.h"
 #include "Listener.h"
@@ -47,7 +48,7 @@ void CBaseObject::Update(float const deltaTime)
 
 	while (iter != iterEnd)
 	{
-		auto const pEventInstance = *iter;
+		CEventInstance* const pEventInstance = *iter;
 
 		if (pEventInstance->IsToBeRemoved())
 		{
@@ -157,7 +158,7 @@ void CBaseObject::StopEvent(AkUniqueID const eventId)
 {
 	for (auto const pEventInstance : m_eventInstances)
 	{
-		if (pEventInstance->GetEventId() == eventId)
+		if (pEventInstance->GetEvent().GetId() == eventId)
 		{
 			pEventInstance->Stop();
 		}

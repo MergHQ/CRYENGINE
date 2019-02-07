@@ -69,11 +69,11 @@ void GetDistanceAngleToObject(
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SetChannelPosition(CEvent const* const pEvent, int const channelID, float const distance, float const angle)
+void SetChannelPosition(CEvent const& event, int const channelID, float const distance, float const angle)
 {
 	static const uint8 sdlMaxDistance = 255;
-	float const min = pEvent->GetAttenuationMinDistance();
-	float const max = pEvent->GetAttenuationMaxDistance();
+	float const min = event.GetAttenuationMinDistance();
+	float const max = event.GetAttenuationMaxDistance();
 
 	if (min <= max)
 	{
@@ -95,7 +95,7 @@ void SetChannelPosition(CEvent const* const pEvent, int const channelID, float c
 		//Temp code, to be reviewed during the SetChannelPosition rewrite:
 		Mix_SetDistance(channelID, nDistance);
 
-		if (pEvent->IsPanningEnabled())
+		if (event.IsPanningEnabled())
 		{
 			//Temp code, to be reviewed during the SetChannelPosition rewrite:
 			float const absAngle = fabs(angle);
@@ -110,7 +110,7 @@ void SetChannelPosition(CEvent const* const pEvent, int const channelID, float c
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
 	else
 	{
-		Cry::Audio::Log(ELogType::Error, "The minimum attenuation distance (%f) is higher than the maximum (%f) of %s", min, max, pEvent->GetName());
+		Cry::Audio::Log(ELogType::Error, "The minimum attenuation distance (%f) is higher than the maximum (%f) of %s", min, max, event.GetName());
 	}
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 }

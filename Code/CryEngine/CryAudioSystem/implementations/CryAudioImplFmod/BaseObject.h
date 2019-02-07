@@ -62,8 +62,6 @@ public:
 
 	void                  RemoveFile(CBaseStandaloneFile const* const pStandaloneFile);
 
-	static FMOD::Studio::System* s_pSystem;
-
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	char const* GetName() const { return m_name.c_str(); }
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE

@@ -76,11 +76,12 @@ public:
 	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const override;
 	// ~CryAudio::Impl::IImpl
 
-	CEventInstance* ConstructEventInstance(
-		TriggerInstanceId const triggerInstanceId,
-		uint32 const eventId,
-		CEvent const* const pEvent,
-		CObject const* const pObject = nullptr);
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event, CObject const& object);
+#else
+	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event);
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+
 	void DestructEventInstance(CEventInstance const* const pEventInstance);
 
 private:

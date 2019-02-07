@@ -488,20 +488,17 @@ void SoundEngine::UnMute()
 
 				if (pEventInstance != nullptr)
 				{
-					auto const pEvent = pEventInstance->GetEvent();
+					CEvent const& event = pEventInstance->GetEvent();
 
-					if (pEvent != nullptr)
+					float const volumeMultiplier = GetVolumeMultiplier(pObject, event.GetSampleId());
+					int const mixVolume = GetAbsoluteVolume(event.GetVolume(), volumeMultiplier);
+
+					ChannelList::const_iterator channelIt = pEventInstance->m_channels.begin();
+					ChannelList::const_iterator const channelEnd = pEventInstance->m_channels.end();
+
+					for (; channelIt != channelEnd; ++channelIt)
 					{
-						float const volumeMultiplier = GetVolumeMultiplier(pObject, pEvent->GetSampleId());
-						int const mixVolume = GetAbsoluteVolume(pEvent->GetVolume(), volumeMultiplier);
-
-						ChannelList::const_iterator channelIt = pEventInstance->m_channels.begin();
-						ChannelList::const_iterator const channelEnd = pEventInstance->m_channels.end();
-
-						for (; channelIt != channelEnd; ++channelIt)
-						{
-							Mix_Volume(*channelIt, mixVolume);
-						}
+						Mix_Volume(*channelIt, mixVolume);
 					}
 				}
 			}
@@ -524,14 +521,12 @@ ETriggerResult SoundEngine::ExecuteEvent(CObject* const pObject, CEvent const* c
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
 		CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(
 			triggerInstanceId,
-			pEvent->GetId(),
-			pEvent,
-			pObject);
+			*pEvent,
+			*pObject);
 #else
 		CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(
 			triggerInstanceId,
-			pEvent->GetId(),
-			pEvent);
+			*pEvent);
 #endif      // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 
 		// Start playing samples
@@ -622,7 +617,7 @@ ETriggerResult SoundEngine::ExecuteEvent(CObject* const pObject, CEvent const* c
 	{
 		for (auto const pEventInstance : pObject->m_eventInstances)
 		{
-			if (pEventInstance->GetEvent()->GetSampleId() == sampleId)
+			if (pEventInstance->GetEvent().GetSampleId() == sampleId)
 			{
 				switch (type)
 				{

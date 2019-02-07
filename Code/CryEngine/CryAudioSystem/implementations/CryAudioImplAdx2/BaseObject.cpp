@@ -121,7 +121,7 @@ void CBaseObject::Update(float const deltaTime)
 			}
 			else if ((pCueInstance->GetFlags() & ECueInstanceFlags::IsPending) != 0)
 			{
-				if (pCueInstance->PrepareForPlayback(this))
+				if (pCueInstance->PrepareForPlayback(*this))
 				{
 					ETriggerResult const result = ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) == 0) ? ETriggerResult::Playing : ETriggerResult::Virtual;
 					gEnv->pAudioSystem->ReportStartedTriggerConnectionInstance(pCueInstance->GetTriggerInstanceId(), result);
@@ -210,7 +210,7 @@ void CBaseObject::StopCue(uint32 const cueId)
 {
 	for (auto const pCueInstance : m_cueInstances)
 	{
-		if (pCueInstance->GetCueId() == cueId)
+		if (pCueInstance->GetCue().GetId() == cueId)
 		{
 			pCueInstance->Stop();
 		}
@@ -222,7 +222,7 @@ void CBaseObject::PauseCue(uint32 const cueId)
 {
 	for (auto const pCueInstance : m_cueInstances)
 	{
-		if (pCueInstance->GetCueId() == cueId)
+		if (pCueInstance->GetCue().GetId() == cueId)
 		{
 			pCueInstance->Pause();
 		}
@@ -234,7 +234,7 @@ void CBaseObject::ResumeCue(uint32 const cueId)
 {
 	for (auto const pCueInstance : m_cueInstances)
 	{
-		if (pCueInstance->GetCueId() == cueId)
+		if (pCueInstance->GetCue().GetId() == cueId)
 		{
 			pCueInstance->Resume();
 		}

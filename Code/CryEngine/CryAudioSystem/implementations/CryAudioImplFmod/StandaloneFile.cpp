@@ -40,7 +40,7 @@ FMOD_RESULT F_CALLBACK FileCallback(FMOD_CHANNELCONTROL* pChannelControl, FMOD_C
 //////////////////////////////////////////////////////////////////////////
 void CStandaloneFile::StartLoading()
 {
-	FMOD_RESULT fmodResult = s_pLowLevelSystem->createSound(m_fileName, FMOD_CREATESTREAM | FMOD_NONBLOCKING | FMOD_3D, nullptr, &m_pLowLevelSound);
+	FMOD_RESULT fmodResult = g_pLowLevelSystem->createSound(m_fileName, FMOD_CREATESTREAM | FMOD_NONBLOCKING | FMOD_3D, nullptr, &m_pLowLevelSound);
 
 	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 }
@@ -68,7 +68,7 @@ bool CStandaloneFile::IsReady()
 //////////////////////////////////////////////////////////////////////////
 void CStandaloneFile::PlayFile(FMOD_3D_ATTRIBUTES const& attributes)
 {
-	FMOD_RESULT const fmodResult = s_pLowLevelSystem->playSound(m_pLowLevelSound, nullptr, true, &m_pChannel);
+	FMOD_RESULT const fmodResult = g_pLowLevelSystem->playSound(m_pLowLevelSound, nullptr, true, &m_pChannel);
 	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 	if (m_pChannel != nullptr)

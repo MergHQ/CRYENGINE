@@ -13,14 +13,14 @@ namespace Impl
 namespace Adx2
 {
 //////////////////////////////////////////////////////////////////////////
-bool CCueInstance::PrepareForPlayback(CBaseObject* const pBaseObject)
+bool CCueInstance::PrepareForPlayback(CBaseObject& baseObject)
 {
 	bool isPlaying = false;
 
 	if (criAtomExPlayback_GetStatus(m_playbackId) == CRIATOMEXPLAYBACK_STATUS_PLAYING)
 	{
-		CriAtomExAcbHn const pAcbHandle = m_pCue->GetAcbHandle();
-		auto const cueName = static_cast<CriChar8 const*>(m_pCue->GetName());
+		CriAtomExAcbHn const pAcbHandle = m_cue.GetAcbHandle();
+		auto const cueName = static_cast<CriChar8 const*>(m_cue.GetName());
 		CriAtomExCueInfo cueInfo;
 
 		if (criAtomExAcb_GetCueInfoByName(pAcbHandle, cueName, &cueInfo) == CRI_TRUE)
@@ -37,7 +37,7 @@ bool CCueInstance::PrepareForPlayback(CBaseObject* const pBaseObject)
 		}
 
 		RemoveFlag(ECueInstanceFlags::IsPending);
-		pBaseObject->UpdateVelocityTracking();
+		baseObject.UpdateVelocityTracking();
 
 		isPlaying = true;
 	}

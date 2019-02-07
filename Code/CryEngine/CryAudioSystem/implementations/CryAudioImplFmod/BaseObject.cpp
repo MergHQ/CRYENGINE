@@ -164,7 +164,7 @@ void CBaseObject::StopEventInstance(uint32 const id)
 {
 	for (auto const pEventInstance : m_eventInstances)
 	{
-		if (pEventInstance->GetId() == id)
+		if (pEventInstance->GetEvent().GetId() == id)
 		{
 			pEventInstance->StopAllowFadeOut();
 		}
@@ -180,16 +180,15 @@ void CBaseObject::SetParameter(uint32 const id, float const value)
 	{
 		FMOD::Studio::EventInstance* const pFmodEventInstance = pEventInstance->GetFmodEventInstance();
 		CRY_ASSERT_MESSAGE(pFmodEventInstance != nullptr, "Fmod event instance doesn't exist during %s", __FUNCTION__);
-		CEvent const* const pEvent = pEventInstance->GetEvent();
-		CRY_ASSERT_MESSAGE(pEvent != nullptr, "Event doesn't exist during %s", __FUNCTION__);
+		CEvent const& event = pEventInstance->GetEvent();
 
 		FMOD::Studio::EventDescription* pEventDescription = nullptr;
 		fmodResult = pFmodEventInstance->getDescription(&pEventDescription);
 		CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
-		if (g_eventToParameterIndexes.find(pEvent) != g_eventToParameterIndexes.end())
+		if (g_eventToParameterIndexes.find(&event) != g_eventToParameterIndexes.end())
 		{
-			ParameterIdToIndex& parameters = g_eventToParameterIndexes[pEvent];
+			ParameterIdToIndex& parameters = g_eventToParameterIndexes[&event];
 
 			if (parameters.find(id) != parameters.end())
 			{
@@ -232,7 +231,7 @@ void CBaseObject::SetParameter(uint32 const id, float const value)
 
 				if (id == StringToId(parameterDescription.name))
 				{
-					g_eventToParameterIndexes[pEvent].emplace(std::make_pair(id, index));
+					g_eventToParameterIndexes[&event].emplace(std::make_pair(id, index));
 					fmodResult = pFmodEventInstance->setParameterValueByIndex(index, value);
 					CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 					break;
@@ -308,16 +307,15 @@ bool CBaseObject::SetEventInstance(CEventInstance* const pEventInstance)
 	{
 		FMOD::Studio::EventInstance* const pFModEventInstance = pEventInstance->GetFmodEventInstance();
 		CRY_ASSERT_MESSAGE(pFModEventInstance != nullptr, "Fmod event instance doesn't exist during %s", __FUNCTION__);
-		CEvent const* const pEvent = pEventInstance->GetEvent();
-		CRY_ASSERT_MESSAGE(pEvent != nullptr, "Event doesn't exist during %s", __FUNCTION__);
+		CEvent const& event = pEventInstance->GetEvent();
 
 		FMOD::Studio::EventDescription* pEventDescription = nullptr;
 		FMOD_RESULT fmodResult = pFModEventInstance->getDescription(&pEventDescription);
 		CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
-		if (g_eventToParameterIndexes.find(pEvent) != g_eventToParameterIndexes.end())
+		if (g_eventToParameterIndexes.find(&event) != g_eventToParameterIndexes.end())
 		{
-			ParameterIdToIndex& parameters = g_eventToParameterIndexes[pEvent];
+			ParameterIdToIndex& parameters = g_eventToParameterIndexes[&event];
 
 			for (auto const& parameterPair : m_parameters)
 			{

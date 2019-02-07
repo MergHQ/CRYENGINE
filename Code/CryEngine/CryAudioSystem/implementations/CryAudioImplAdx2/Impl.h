@@ -78,12 +78,12 @@ public:
 	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const override;
 	// ~CryAudio::Impl::IImpl
 
-	CCueInstance* ConstructCueInstance(
-		TriggerInstanceId const triggerInstanceId,
-		uint32 const cueId,
-		CriAtomExPlaybackId const playbackId,
-		CCue const* const pCue,
-		CBaseObject const* const pBaseObject = nullptr);
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+	CCueInstance* ConstructCueInstance(TriggerInstanceId const triggerInstanceId, CriAtomExPlaybackId const playbackId, CCue const& cue, CBaseObject const& baseObject);
+#else
+	CCueInstance* ConstructCueInstance(TriggerInstanceId const triggerInstanceId, CriAtomExPlaybackId const playbackId, CCue const& cue);
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+
 	void DestructCueInstance(CCueInstance const* const pCueInstance);
 
 private:
