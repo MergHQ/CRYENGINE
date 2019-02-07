@@ -753,24 +753,24 @@ void CImpl::SetLanguage(char const* const szLanguage)
 	}
 }
 
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
-CEventInstance* CImpl::ConstructEventInstance(
-	TriggerInstanceId const triggerInstanceId,
-	uint32 const eventId,
-	CEvent const* const pEvent,
-	CObject const* const pObject /*= nullptr*/)
+CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event, CObject const& object)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CEventInstance");
-
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
-	auto const pEventInstance = new CEventInstance(triggerInstanceId, eventId, pEvent, pObject);
+	auto const pEventInstance = new CEventInstance(triggerInstanceId, event, object);
 	g_constructedEventInstances.push_back(pEventInstance);
-#else
-	auto const pEventInstance = new CEventInstance(triggerInstanceId, eventId, pEvent);
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 
 	return pEventInstance;
 }
+#else
+//////////////////////////////////////////////////////////////////////////
+CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event)
+{
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CEventInstance");
+	return new CEventInstance(triggerInstanceId, event);
+}
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::DestructEventInstance(CEventInstance const* const pEventInstance)
@@ -916,19 +916,19 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 
 	for (auto const pEventInstance : g_constructedEventInstances)
 	{
-		Vec3 const& position = pEventInstance->GetObject()->GetTransformation().GetPosition();
+		Vec3 const& position = pEventInstance->GetObject().GetTransformation().GetPosition();
 		float const distance = position.GetDistance(g_pListener->GetTransformation().GetPosition());
 
 		if ((debugDistance <= 0.0f) || ((debugDistance > 0.0f) && (distance < debugDistance)))
 		{
-			char const* const szEventName = pEventInstance->GetEvent()->GetName();
+			char const* const szEventName = pEventInstance->GetEvent().GetName();
 			CryFixedStringT<MaxControlNameLength> lowerCaseEventName(szEventName);
 			lowerCaseEventName.MakeLower();
 			bool const draw = ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseEventName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos));
 
 			if (draw)
 			{
-				auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, Debug::s_listColorItemActive, false, "%s on %s", szEventName, pEventInstance->GetObject()->GetName());
+				auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, Debug::s_listColorItemActive, false, "%s on %s", szEventName, pEventInstance->GetObject().GetName());
 
 				posY += Debug::g_listLineHeight;
 			}

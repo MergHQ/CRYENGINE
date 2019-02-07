@@ -48,13 +48,9 @@ public:
 	CEventInstance& operator=(CEventInstance&&) = delete;
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
-	explicit CEventInstance(
-		TriggerInstanceId const triggerInstanceId,
-		uint32 const eventId,
-		CEvent const* const pEvent,
-		CBaseObject const* const pBaseObject)
+	explicit CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event, CBaseObject const& baseObject)
 		: m_triggerInstanceId(triggerInstanceId)
-		, m_eventId(eventId)
+		, m_event(event)
 		, m_state(EEventState::Pending)
 		, m_lowpassFrequencyMax(0.0f)
 		, m_lowpassFrequencyMin(0.0f)
@@ -63,17 +59,13 @@ public:
 		, m_pLowpass(nullptr)
 		, m_pOcclusionParameter(nullptr)
 		, m_pAbsoluteVelocityParameter(nullptr)
-		, m_pEvent(pEvent)
 		, m_toBeRemoved(false)
-		, m_pBaseObject(pBaseObject)
+		, m_baseObject(baseObject)
 	{}
 #else
-	explicit CEventInstance(
-		TriggerInstanceId const triggerInstanceId,
-		uint32 const eventId,
-		CEvent const* const pEvent)
+	explicit CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event)
 		: m_triggerInstanceId(triggerInstanceId)
-		, m_eventId(eventId)
+		, m_event(event)
 		, m_state(EEventState::Pending)
 		, m_lowpassFrequencyMax(0.0f)
 		, m_lowpassFrequencyMin(0.0f)
@@ -82,7 +74,6 @@ public:
 		, m_pLowpass(nullptr)
 		, m_pOcclusionParameter(nullptr)
 		, m_pAbsoluteVelocityParameter(nullptr)
-		, m_pEvent(pEvent)
 		, m_toBeRemoved(false)
 	{}
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
@@ -90,9 +81,8 @@ public:
 	~CEventInstance();
 
 	TriggerInstanceId            GetTriggerInstanceId() const                                       { return m_triggerInstanceId; }
-	uint32                       GetId() const                                                      { return m_eventId; }
+	CEvent const&                GetEvent() const                                                   { return m_event; }
 	EEventState                  GetState() const                                                   { return m_state; }
-	CEvent const*                GetEvent() const                                                   { return m_pEvent; }
 
 	FMOD::Studio::EventInstance* GetFmodEventInstance() const                                       { return m_pInstance; }
 	void                         SetFmodEventInstance(FMOD::Studio::EventInstance* const pInstance) { m_pInstance = pInstance; }
@@ -112,13 +102,13 @@ public:
 	bool                         IsToBeRemoved() const { return m_toBeRemoved; }
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
-	CBaseObject const* GetObject() const { return m_pBaseObject; }
+	CBaseObject const& GetObject() const { return m_baseObject; }
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
 private:
 
 	TriggerInstanceId const          m_triggerInstanceId;
-	uint32 const                     m_eventId;
+	CEvent const&                    m_event;
 
 	EEventState                      m_state;
 
@@ -131,12 +121,10 @@ private:
 	FMOD::Studio::ParameterInstance* m_pOcclusionParameter;
 	FMOD::Studio::ParameterInstance* m_pAbsoluteVelocityParameter;
 
-	CEvent const* const              m_pEvent;
-
 	std::atomic_bool                 m_toBeRemoved;
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
-	CBaseObject const* const m_pBaseObject;
+	CBaseObject const& m_baseObject;
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 };
 } // namespace Fmod

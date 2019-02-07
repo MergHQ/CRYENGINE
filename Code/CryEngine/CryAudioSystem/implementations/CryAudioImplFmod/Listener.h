@@ -41,8 +41,6 @@ public:
 	char const* GetName() const { return m_name.c_str(); }
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
-	static FMOD::Studio::System* s_pSystem;
-
 private:
 
 	void SetVelocity();

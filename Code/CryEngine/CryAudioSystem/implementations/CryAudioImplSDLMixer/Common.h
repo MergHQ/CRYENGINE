@@ -36,7 +36,7 @@ void  GetDistanceAngleToObject(
 	CTransformation const& objectTransformation,
 	float& distance,
 	float& angle);
-void SetChannelPosition(CEvent const* const pEvent, int const channelID, float const distance, float const angle);
+void SetChannelPosition(CEvent const& event, int const channelID, float const distance, float const angle);
 } // namespace SDL_mixer
 } // namespace Impl
 } // namespace CryAudio

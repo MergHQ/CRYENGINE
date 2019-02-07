@@ -156,7 +156,7 @@ void CEventInstance::SetReturnSend(CReturn const* const pReturn, float const val
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	else
 	{
-		Cry::Audio::Log(ELogType::Error, "Event instance or master track of %s does not exist during %s", m_pEvent->GetName(), __FUNCTION__);
+		Cry::Audio::Log(ELogType::Error, "Event instance or master track of %s does not exist during %s", m_event.GetName(), __FUNCTION__);
 	}
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 }

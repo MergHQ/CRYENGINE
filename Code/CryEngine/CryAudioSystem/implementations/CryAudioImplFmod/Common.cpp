@@ -9,6 +9,9 @@ namespace Impl
 {
 namespace Fmod
 {
+FMOD::System* g_pLowLevelSystem = nullptr;
+FMOD::Studio::System* g_pSystem = nullptr;
+
 CImpl* g_pImpl = nullptr;
 CGlobalObject* g_pObject = nullptr;
 CListener* g_pListener = nullptr;

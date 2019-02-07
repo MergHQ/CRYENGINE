@@ -32,7 +32,7 @@ FMOD_RESULT F_CALLBACK ProgrammerSoundFileCallback(FMOD_STUDIO_EVENT_CALLBACK_TY
 
 				// Create the sound
 				FMOD::Sound* pSound = nullptr;
-				fmodResult = pFile->s_pLowLevelSystem->createSound(pFile->GetFileName(), FMOD_CREATESTREAM | FMOD_NONBLOCKING | FMOD_3D, nullptr, &pSound);
+				fmodResult = g_pLowLevelSystem->createSound(pFile->GetFileName(), FMOD_CREATESTREAM | FMOD_NONBLOCKING | FMOD_3D, nullptr, &pSound);
 				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 				// Pass the sound to FMOD
@@ -64,7 +64,7 @@ FMOD_RESULT F_CALLBACK ProgrammerSoundFileCallback(FMOD_STUDIO_EVENT_CALLBACK_TY
 void CProgrammerSoundFile::StartLoading()
 {
 	FMOD::Studio::EventDescription* pEventDescription = nullptr;
-	FMOD_RESULT fmodResult = CBaseObject::s_pSystem->getEventByID(&m_eventGuid, &pEventDescription);
+	FMOD_RESULT fmodResult = g_pSystem->getEventByID(&m_eventGuid, &pEventDescription);
 	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 	fmodResult = pEventDescription->createInstance(&m_pEventInstance);

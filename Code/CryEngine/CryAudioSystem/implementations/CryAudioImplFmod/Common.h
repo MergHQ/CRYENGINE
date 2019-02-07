@@ -38,6 +38,9 @@ class CListener;
 class CEvent;
 class CGlobalObject;
 
+extern FMOD::System* g_pLowLevelSystem;
+extern FMOD::Studio::System* g_pSystem;
+
 extern CImpl* g_pImpl;
 extern CGlobalObject* g_pObject;
 extern CListener* g_pListener;

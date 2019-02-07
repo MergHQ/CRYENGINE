@@ -42,6 +42,9 @@ public:
 	virtual void           Stop(IObject* const pIObject) override;
 	// ~CryAudio::Impl::ITriggerConnection
 
+	AkUniqueID GetId() const             { return m_id; }
+	float      GetMaxAttenuation() const { return m_maxAttenuation; }
+
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	char const* GetName() const { return m_name.c_str(); }
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE

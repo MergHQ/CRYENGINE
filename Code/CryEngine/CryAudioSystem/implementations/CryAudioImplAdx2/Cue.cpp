@@ -44,14 +44,14 @@ ETriggerResult CCue::Execute(IObject* const pIObject, TriggerInstanceId const tr
 				CriAtomExPlaybackId const playbackId = criAtomExPlayer_Start(pPlayer);
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
-				auto const pCueInstance = g_pImpl->ConstructCueInstance(triggerInstanceId, m_id, playbackId, this, pBaseObject);
+				CCueInstance* const pCueInstance = g_pImpl->ConstructCueInstance(triggerInstanceId, playbackId, *this, *pBaseObject);
 #else
-				auto const pCueInstance = g_pImpl->ConstructCueInstance(triggerInstanceId, m_id, playbackId, this);
+				CCueInstance* const pCueInstance = g_pImpl->ConstructCueInstance(triggerInstanceId, playbackId, *this);
 #endif                // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 				pBaseObject->AddCueInstance(pCueInstance);
 
-				if (pCueInstance->PrepareForPlayback(pBaseObject))
+				if (pCueInstance->PrepareForPlayback(*pBaseObject))
 				{
 					result = ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) != 0) ? ETriggerResult::Virtual : ETriggerResult::Playing;
 				}

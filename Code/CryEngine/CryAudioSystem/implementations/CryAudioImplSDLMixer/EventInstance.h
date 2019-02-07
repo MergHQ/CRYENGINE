@@ -23,25 +23,16 @@ public:
 	CEventInstance& operator=(CEventInstance&&) = delete;
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
-	explicit CEventInstance(
-		TriggerInstanceId const triggerInstanceId,
-		uint32 const eventId,
-		CEvent const* const pEvent,
-		CObject const* const pObject)
+	explicit CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event, CObject const& object)
 		: m_triggerInstanceId(triggerInstanceId)
-		, m_eventId(eventId)
-		, m_pEvent(pEvent)
+		, m_event(event)
 		, m_toBeRemoved(false)
-		, m_pObject(pObject)
+		, m_object(object)
 	{}
 #else
-	explicit CEventInstance(
-		TriggerInstanceId const triggerInstanceId,
-		uint32 const eventId,
-		CEvent const* const pEvent)
+	explicit CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event)
 		: m_triggerInstanceId(triggerInstanceId)
-		, m_eventId(eventId)
-		, m_pEvent(pEvent)
+		, m_event(event)
 		, m_toBeRemoved(false)
 	{}
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
@@ -49,8 +40,7 @@ public:
 	~CEventInstance() = default;
 
 	TriggerInstanceId GetTriggerInstanceId() const { return m_triggerInstanceId; }
-	uint32            GetEventId() const           { return m_eventId; }
-	CEvent const*     GetEvent() const             { return m_pEvent; }
+	CEvent const&     GetEvent() const             { return m_event; }
 
 	void              Stop();
 	void              Pause();
@@ -60,7 +50,7 @@ public:
 	void              SetToBeRemoved()      { m_toBeRemoved = true; }
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
-	CObject const* GetObject() const { return m_pObject; }
+	CObject const& GetObject() const { return m_object; }
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 
 	ChannelList m_channels;
@@ -68,12 +58,11 @@ public:
 private:
 
 	TriggerInstanceId const m_triggerInstanceId;
-	uint32 const            m_eventId;
-	CEvent const* const     m_pEvent;
+	CEvent const&           m_event;
 	bool                    m_toBeRemoved;
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
-	CObject const* const m_pObject;
+	CObject const& m_object;
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 };
 } // namespace SDL_mixer

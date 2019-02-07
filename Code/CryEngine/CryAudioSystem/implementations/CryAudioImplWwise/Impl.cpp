@@ -141,7 +141,7 @@ static void ErrorMonitorCallback(
 	CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
 	CryAudio::Impl::Wwise::CEventInstance const* const pEventInstance = stl::find_in_map(CryAudio::Impl::Wwise::g_playingIds, in_playingID, nullptr);
 	CryAudio::Impl::Wwise::CBaseObject const* const pBaseObject = stl::find_in_map(CryAudio::Impl::Wwise::g_gameObjectIds, in_gameObjID, nullptr);
-	char const* const szEventName = (pEventInstance != nullptr) ? pEventInstance->GetEvent()->GetName() : "Unknown PlayingID";
+	char const* const szEventName = (pEventInstance != nullptr) ? pEventInstance->GetEvent().GetName() : "Unknown PlayingID";
 	char const* const szObjectName = (pBaseObject != nullptr) ? pBaseObject->GetName() : "Unknown GameObjID";
 	Cry::Audio::Log(
 		((in_eErrorLevel& AK::Monitor::ErrorLevel_Error) != 0) ? CryAudio::ELogType::Error : CryAudio::ELogType::Comment,
@@ -1614,25 +1614,24 @@ void CImpl::SetLanguage(char const* const szLanguage)
 	}
 }
 
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
-CEventInstance* CImpl::ConstructEventInstance(
-	TriggerInstanceId const triggerInstanceId,
-	AkUniqueID const eventId,
-	float const maxAttenuation,
-	CBaseObject const* const pBaseObject /*= nullptr*/,
-	CEvent const* const pEvent /*= nullptr*/)
+CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event, CBaseObject const& baseObject)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CEventInstance");
-
-#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
-	auto const pEventInstance = new CEventInstance(triggerInstanceId, eventId, maxAttenuation, pBaseObject, pEvent);
+	auto const pEventInstance = new CEventInstance(triggerInstanceId, event, baseObject);
 	g_constructedEventInstances.push_back(pEventInstance);
-#else
-	auto const pEventInstance = new CEventInstance(triggerInstanceId, eventId, maxAttenuation);
-#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 	return pEventInstance;
 }
+#else
+//////////////////////////////////////////////////////////////////////////
+CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event)
+{
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CEventInstance");
+	return new CEventInstance(triggerInstanceId, event);
+}
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::DestructEventInstance(CEventInstance const* const pEventInstance)
@@ -1834,12 +1833,12 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 
 			for (auto const pEventInstance : g_constructedEventInstances)
 			{
-				Vec3 const& position = pEventInstance->GetObject()->GetTransformation().GetPosition();
+				Vec3 const& position = pEventInstance->GetObject().GetTransformation().GetPosition();
 				float const distance = position.GetDistance(g_pListener->GetPosition());
 
 				if ((debugDistance <= 0.0f) || ((debugDistance > 0.0f) && (distance < debugDistance)))
 				{
-					char const* const szEventName = pEventInstance->GetEvent()->GetName();
+					char const* const szEventName = pEventInstance->GetEvent().GetName();
 					CryFixedStringT<MaxControlNameLength> lowerCaseEventName(szEventName);
 					lowerCaseEventName.MakeLower();
 					bool const draw = ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseEventName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos));
@@ -1869,7 +1868,7 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 							break;
 						}
 
-						auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, "%s on %s", szEventName, pEventInstance->GetObject()->GetName());
+						auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, "%s on %s", szEventName, pEventInstance->GetObject().GetName());
 
 						posY += Debug::g_listLineHeight;
 					}

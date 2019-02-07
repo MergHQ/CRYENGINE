@@ -17,7 +17,7 @@ void CObject::StopEvent(uint32 const pathId)
 {
 	for (auto const pEventInstance : m_eventInstances)
 	{
-		if (pEventInstance->GetPathId() == pathId)
+		if (pEventInstance->GetEvent().pathId == pathId)
 		{
 			pEventInstance->Stop();
 		}
@@ -38,7 +38,7 @@ void CObject::Update(float const deltaTime)
 
 	while (iter != iterEnd)
 	{
-		auto const pEventInstance = *iter;
+		CEventInstance* const pEventInstance = *iter;
 
 		if (pEventInstance->IsToBeRemoved())
 		{

@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "EventInstance.h"
+#include "Event.h"
 
 #include <AK/SoundEngine/Common/AkSoundEngine.h>
 
@@ -35,7 +36,8 @@ void CEventInstance::Stop()
 //////////////////////////////////////////////////////////////////////////
 void CEventInstance::UpdateVirtualState(float const distance)
 {
-	m_state = ((m_maxAttenuation > 0.0f) && (m_maxAttenuation < distance)) ? EEventInstanceState::Virtual : EEventInstanceState::Playing;
+	float const maxAttenuation = m_event.GetMaxAttenuation();
+	m_state = ((maxAttenuation > 0.0f) && (maxAttenuation < distance)) ? EEventInstanceState::Virtual : EEventInstanceState::Playing;
 }
 } // namespace Wwise
 } // namespace Impl

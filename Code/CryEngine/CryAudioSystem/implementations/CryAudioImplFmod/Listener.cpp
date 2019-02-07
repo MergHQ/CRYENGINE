@@ -19,7 +19,7 @@ CListener::CListener(CTransformation const& transformation, int const id)
 	, m_previousPosition(transformation.GetPosition())
 {
 	Fill3DAttributeTransformation(transformation, m_attributes);
-	FMOD_RESULT const fmodResult = s_pSystem->setListenerAttributes(id, &m_attributes);
+	FMOD_RESULT const fmodResult = g_pSystem->setListenerAttributes(id, &m_attributes);
 	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 }
 
@@ -89,7 +89,7 @@ void CListener::SetTransformation(CTransformation const& transformation)
 	}
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
-	FMOD_RESULT const fmodResult = s_pSystem->setListenerAttributes(m_id, &m_attributes);
+	FMOD_RESULT const fmodResult = g_pSystem->setListenerAttributes(m_id, &m_attributes);
 	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 }
 
@@ -97,7 +97,7 @@ void CListener::SetTransformation(CTransformation const& transformation)
 void CListener::SetVelocity()
 {
 	Fill3DAttributeVelocity(m_velocity, m_attributes);
-	FMOD_RESULT const fmodResult = s_pSystem->setListenerAttributes(m_id, &m_attributes);
+	FMOD_RESULT const fmodResult = g_pSystem->setListenerAttributes(m_id, &m_attributes);
 	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 }
 } // namespace Fmod

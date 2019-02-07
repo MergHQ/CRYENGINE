@@ -49,9 +49,9 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 	auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
-	CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(triggerInstanceId, m_id, m_maxAttenuation, pBaseObject, this);
+	CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(triggerInstanceId, *this, *pBaseObject);
 #else
-	CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(triggerInstanceId, m_id, m_maxAttenuation);
+	CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(triggerInstanceId, *this);
 #endif      // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 	pBaseObject->SetAuxSendValues();

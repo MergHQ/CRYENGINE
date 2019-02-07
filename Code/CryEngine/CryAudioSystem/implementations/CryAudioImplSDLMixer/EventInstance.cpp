@@ -18,7 +18,7 @@ void CEventInstance::Stop()
 	// need to make a copy because the callback
 	// registered with Mix_ChannelFinished can edit the list
 	ChannelList const channels = m_channels;
-	int const fadeOutTime = m_pEvent->GetFadeOutTime();
+	int const fadeOutTime = m_event.GetFadeOutTime();
 
 	for (int const channel : channels)
 	{

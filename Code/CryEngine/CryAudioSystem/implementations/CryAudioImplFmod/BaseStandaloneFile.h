@@ -42,8 +42,6 @@ public:
 
 	char const*  GetFileName() const { return m_fileName.c_str(); }
 
-	static FMOD::System* s_pLowLevelSystem;
-
 protected:
 
 	explicit CBaseStandaloneFile(char const* const szFile, CryAudio::CStandaloneFile& standaloneFile)
