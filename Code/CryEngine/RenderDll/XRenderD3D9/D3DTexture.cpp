@@ -578,7 +578,7 @@ void CTexture::RT_UpdateTextureRegion(const byte* pSrcData, int nX, int nY, int 
 	if (!pDevTex)
 		return;
 
-	GPUPIN_DEVICE_TEXTURE(gcpRendD3D->GetPerformanceDeviceContext(), pDevTex);
+//	GPUPIN_DEVICE_TEXTURE(gcpRendD3D->GetPerformanceDeviceContext(), pDevTex);
 
 	if (eSrcFormat != m_eDstFormat)
 	{
