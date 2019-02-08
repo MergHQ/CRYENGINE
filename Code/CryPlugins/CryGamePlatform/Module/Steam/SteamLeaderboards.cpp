@@ -50,7 +50,7 @@ namespace Cry
 				{
 					const SQueuedUpdateRequest& request = m_queuedUpdateRequests[0];
 					int scoreDetails[1] = { static_cast<int>(request.scoreType) };
-					SteamAPICall_t hSteamAPICall = pSteamUserStats->UploadLeaderboardScore(pResult->m_hSteamLeaderboard, request.method, request.score, scoreDetails, 1);
+					pSteamUserStats->UploadLeaderboardScore(pResult->m_hSteamLeaderboard, request.method, request.score, scoreDetails, 1);
 
 					m_queuedUpdateRequests.erase( m_queuedUpdateRequests.begin() );
 					FindNextLeaderboardToUpdateScore();

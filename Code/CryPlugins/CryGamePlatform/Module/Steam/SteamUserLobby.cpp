@@ -460,8 +460,6 @@ namespace Cry
 				m_service.GetNetworking()->SendPacket(GetOwnerId(), &conReq, 2);
 
 				IGameFramework* pGameFramework = gEnv->pGameFramework;
-				IConsole* pConsole = gEnv->pConsole;
-
 				pGameFramework->EndGameContext();
 
 				const int NBYTES = 4;
