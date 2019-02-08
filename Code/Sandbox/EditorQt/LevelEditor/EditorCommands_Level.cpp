@@ -1,15 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include <StdAfx.h>
 
-// EditorCommon
-#include <ICommandManager.h>
-#include <IUndoObject.h>
-#include <EditorFramework/Events.h>
-#include <LevelEditor/LevelEditorSharedState.h>
-#include <ModelViewport.h>
-#include <Qt/Widgets/QWaitProgress.h>
-#include <UsedResources.h>
-
 // Sandbox
 #include "CryEditDoc.h"
 #include "IEditorImpl.h"
@@ -22,6 +13,15 @@
 #include "Terrain/TerrainManager.h"
 #include "Material/MaterialManager.h"
 #include "LogFile.h"
+
+// EditorCommon
+#include <Commands/ICommandManager.h>
+#include <IUndoObject.h>
+#include <EditorFramework/Events.h>
+#include <LevelEditor/LevelEditorSharedState.h>
+#include <ModelViewport.h>
+#include <Qt/Widgets/QWaitProgress.h>
+#include <UsedResources.h>
 
 // CryCommon
 #include <CryGame/IGameFramework.h>

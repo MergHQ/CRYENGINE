@@ -28,7 +28,7 @@
 #include <QPushButton>
 #include <QEvent.h>
 
-#include "ICommandManager.h"
+#include <Commands/ICommandManager.h>
 #include "GameEngine.h"
 #include "RenderViewport.h"
 #include "Viewmanager.h"

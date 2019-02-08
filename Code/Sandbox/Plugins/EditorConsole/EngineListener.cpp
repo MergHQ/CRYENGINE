@@ -2,8 +2,8 @@
 
 #include "StdAfx.h"
 #include "EngineListener.h"
-#include "Command.h"
-#include "ICommandManager.h"
+#include <Commands/Command.h>
+#include <Commands/ICommandManager.h>
 
 //string compare/ordering functions used
 //note: these are mostly non-standard (MSVC only), so I grouped them here in case this file ever needs to be ported

@@ -3,14 +3,15 @@
 #include "StdAfx.h"
 #include "CommandManager.h"
 #include "IconManager.h"
-#include "Commands/QCommandAction.h"
-#include "PolledKey.h"
-#include "Qt/QtUtil.h"
-#include "KeyboardShortcut.h"
-#include "CustomCommand.h"
-#include "CryIcon.h"
-#include "LogFile.h"
 #include "IEditorImpl.h"
+#include "LogFile.h"
+
+#include <Commands/CustomCommand.h>
+#include <Commands/PolledKey.h>
+#include <Commands/QCommandAction.h>
+#include <CryIcon.h>
+#include <KeyboardShortcut.h>
+#include <QtUtil.h>
 
 CEditorCommandManager::CEditorCommandManager()
 	: m_bWarnDuplicate(true) {}
@@ -97,7 +98,9 @@ bool CEditorCommandManager::AddCommand(CCommand* pCommand, TPfnDeleter deleter)
 	  CommandTable::value_type(GetFullCommandName(module, name),
 	                           entry));
 
+	signalCommandAdded(pCommand);
 	signalChanged();
+
 	return true;
 }
 
@@ -249,7 +252,7 @@ bool CEditorCommandManager::IsCommandDeprecated(const char* cmdFullName) const
 	return m_commands.find(cmdFullName) == m_commands.end() && m_deprecatedCommands.find(cmdFullName) != m_deprecatedCommands.end();
 }
 
-const CCommandModuleDescription* CEditorCommandManager::GetCommandModuleDescription(const char* moduleName)
+const CCommandModuleDescription* CEditorCommandManager::FindOrCreateModuleDescription(const char* moduleName)
 {
 	auto it = m_commandModules.find(moduleName);
 	if (it != m_commandModules.end())
@@ -483,8 +486,11 @@ void CEditorCommandManager::AddCustomCommand(CCustomCommand* pCommand)
 	if (it == m_CustomCommands.end())
 	{
 		m_CustomCommands.push_back(pCommand);
-		QCommandAction* action = new QCommandAction(*pCommand);
-		pCommand->SetUiInfo(action);
+		QCommandAction* pCommandAction = new QCommandAction(*pCommand);
+		pCommand->SetUiInfo(pCommandAction);
+
+		signalCommandAdded(pCommand);
+		signalCustomCommandAdded(pCommandAction);
 		signalChanged();
 	}
 }

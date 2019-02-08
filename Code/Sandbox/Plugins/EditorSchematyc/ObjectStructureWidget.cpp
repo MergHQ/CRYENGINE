@@ -19,7 +19,7 @@
 #include <Controls/DictionaryWidget.h>
 #include <EditorFramework/BroadcastManager.h>
 #include <EditorFramework/Inspector.h>
-#include <ICommandManager.h>
+#include <Commands/ICommandManager.h>
 
 #include <QAbstractItemModel>
 #include <QStyledItemDelegate>

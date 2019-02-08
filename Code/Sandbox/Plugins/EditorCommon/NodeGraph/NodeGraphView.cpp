@@ -28,7 +28,7 @@
 
 #include <IEditor.h>
 #include <CryMath/Cry_Math.h>
-#include <ICommandManager.h>
+#include <Commands/ICommandManager.h>
 #include <EditorFramework/Events.h>
 #include <EditorFramework/BroadcastManager.h>
 #include <EditorFramework/Inspector.h>

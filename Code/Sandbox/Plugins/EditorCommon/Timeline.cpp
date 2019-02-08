@@ -6,7 +6,7 @@
 #include "DrawingPrimitives/TimeSlider.h"
 #include "CryIcon.h"
 #include "EditorStyleHelper.h"
-#include "ICommandManager.h"
+#include "Commands/ICommandManager.h"
 #include <IEditor.h>
 
 #include "QSearchBox.h"

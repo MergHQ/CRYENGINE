@@ -2,7 +2,7 @@
 #include "StdAfx.h"
 #include "MaterialEditorPlugin.h"
 
+#include <Commands/ICommandManager.h>
 #include <CryCore/Platform/platform_impl.inl>
-#include <ICommandManager.h>
 
 REGISTER_PLUGIN(CMaterialEditorPlugin);

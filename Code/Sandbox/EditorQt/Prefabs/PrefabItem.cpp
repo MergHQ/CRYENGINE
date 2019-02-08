@@ -737,7 +737,19 @@ void CPrefabItem::RemapIDsInNode(XmlNodeRef objectNode, const TObjectIdMapping& 
 {
 	CryGUID patchedId;
 	if (objectNode->getAttr("Id", patchedId))
-		objectNode->setAttr("Id", ResolveID(mapping, patchedId, prefabIdToGuidDirection));
+	{
+		CryGUID resolvedId = ResolveID(mapping, patchedId, prefabIdToGuidDirection);
+		// this is sort of a work-around for a specific case.
+		// The problem was that whenever you create a prefab it goes through all the children in it's xml objects'
+		// description, finds and replaces (or remaps) all attributes "Id". It expects all of them to be of CryGUID type.
+		// If it doesn't find mapped value for the given CryGUID, it will return the given CryGUID.
+		// For some objects (like Area) ids are not represented as CryGUID but rather just plain integer.
+		// And therefore theirs ids will be overridden by invalid CryGUIDs.
+		if (patchedId != resolvedId)
+		{
+			objectNode->setAttr("Id", resolvedId);
+		}
+	}
 	if (objectNode->getAttr("Parent", patchedId))
 		objectNode->setAttr("Parent", ResolveID(mapping, patchedId, prefabIdToGuidDirection));
 	if (objectNode->getAttr("LinkedTo", patchedId))

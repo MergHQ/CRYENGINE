@@ -3,7 +3,7 @@
 
 #include "PhysTool.h"
 #include "IEditorImpl.h"
-#include <ICommandManager.h>
+#include <Commands/ICommandManager.h>
 #include <BoostPythonMacros.h>
 #include <LevelEditor/LevelEditorSharedState.h>
 #include <CrySystem/ISystem.h>

@@ -1,19 +1,22 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include <StdAfx.h>
 
+// Sandbox
+#include "CryEdit.h"
+#include "IEditorImpl.h"
 #include "Objects/ObjectLayer.h"
 #include "Objects/ObjectLayerManager.h"
 #include "Objects/SelectionGroup.h"
-#include "ICommandManager.h"
-#include "EditorFramework/Events.h"
-
-#include "CryEdit.h"
-#include "IEditorImpl.h"
-#include "IUndoObject.h"
-#include "LevelEditor/LevelEditorSharedState.h"
 #include "Util/BoostPythonHelpers.h"
 
+// Editor Interface
+#include <IUndoObject.h>
+
+// Editor Common
+#include <Commands/ICommandManager.h>
 #include <Dialogs/QNumericBoxDialog.h>
+#include <EditorFramework/Events.h>
+#include <LevelEditor/LevelEditorSharedState.h>
 
 namespace Private_EditorCommands
 {

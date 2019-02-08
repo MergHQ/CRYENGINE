@@ -2,10 +2,12 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
+
 #include <QWidget>
 #include <QAbstractItemModel>
 
-class CUiCommand;
+class CCommand;
 class CCommandModuleDescription;
 class QCommandAction;
 
@@ -23,7 +25,7 @@ public:
 	}
 };
 
-class CommandModel : public QAbstractItemModel
+class EDITOR_COMMON_API CommandModel : public QAbstractItemModel
 {
 	friend CommandModelFactory;
 protected:

@@ -4,7 +4,7 @@
 #include "AbstractMenu.h"
 #include "QtUtil.h"
 #include "IEditor.h"
-#include "ICommandManager.h"
+#include "Commands/ICommandManager.h"
 #include <CrySystem/ISystem.h>
 #include <QAction>
 

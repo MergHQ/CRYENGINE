@@ -7,14 +7,14 @@
 class EDITOR_COMMON_API CUserData
 {
 public:
-	CUserData(std::vector<string> userDataPaths);
-	virtual ~CUserData();
+	CUserData(const std::vector<string>& userDataPaths);
+	virtual ~CUserData() { }
 };
 
 namespace UserDataUtil
 {
 // Get path in user folder for given relative path
-QString EDITOR_COMMON_API GetUserPath(const char* relativeFilePath);
+string EDITOR_COMMON_API GetUserPath(const char* relativeFilePath);
 
 // Load user data. Path should be relative to user data folder
 QVariant EDITOR_COMMON_API Load(const char* relativeFilePath);

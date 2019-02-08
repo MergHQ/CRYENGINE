@@ -6,7 +6,7 @@
 #include <QCoreApplication>
 #include <QKeyEvent>
 
-#include "PolledKey.h"
+#include <Commands/PolledKey.h>
 #include "Commands/QCommandAction.h"
 #include "CommandManager.h"
 

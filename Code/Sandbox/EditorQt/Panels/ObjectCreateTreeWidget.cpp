@@ -64,7 +64,7 @@ void CObjectCreateTreeWidget::UpdatePreviewWidget()
 	const auto idVariant = currentIndex.data(QObjectTreeView::Id);
 	if (idVariant.isValid())
 	{
-		const auto previewDesc = m_pClassDesc->GetPreviewDesc(idVariant.toString().toLocal8Bit());
+		const auto previewDesc = m_pClassDesc->GetPreviewDesc(QtUtil::ToString(idVariant.toString()).c_str());
 
 		if (m_pShowPreviewButton->isChecked())
 		{

@@ -7,7 +7,7 @@
 #endif
 
 #include "IEditor.h"
-#include "ICommandManager.h"
+#include "Commands/ICommandManager.h"
 
 struct SPythonCommand;
 struct SPythonModule;
