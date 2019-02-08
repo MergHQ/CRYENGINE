@@ -300,7 +300,7 @@ void CAISystem::TrySubsystemUpdateCoverSystem(const CTimeValue frameStartTime, c
 void CAISystem::TrySubsystemUpdateNavigationSystem(const CTimeValue frameStartTime, const float frameDeltaTime, const bool isAutomaticUpdate)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI)
-	CRY_ASSERT(gAIEnv.pCoverSystem);
+	CRY_ASSERT(gAIEnv.pNavigationSystem);
 	if (!ShouldUpdateSubsystem(IAISystem::ESubsystemUpdateFlag::NavigationSystem, isAutomaticUpdate))
 		return;
 	
