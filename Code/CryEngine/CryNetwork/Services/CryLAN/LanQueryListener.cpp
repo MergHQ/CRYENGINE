@@ -13,6 +13,9 @@
 *************************************************************************/
 
 #include "StdAfx.h"
+
+#if ENABLE_GAME_QUERY
+
 #include "LanQueryListener.h"
 #include <CrySystem/ITimer.h>
 #include "Config.h"
@@ -331,3 +334,5 @@ void CLanQueryListener::NQ_RefreshPings()
 {
 	m_pGameQueryListener->RefreshPings();
 }
+
+#endif // ENABLE_GAME_QUERY

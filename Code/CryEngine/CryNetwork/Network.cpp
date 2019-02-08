@@ -43,6 +43,8 @@
 
 #include "Cryptography/StreamCipher.h"
 #include "Cryptography/rijndael.h"
+#include "Cryptography/CngCrypto.h"
+#include "Cryptography/TomCryptCrypto.h"
 
 #include "Protocol/PacketRateCalculator.h"
 #if USE_GFWL
@@ -334,6 +336,13 @@ CNetwork::~CNetwork()
 
 	SAFE_DELETE(m_pMMM);
 	SAFE_DELETE(m_pResolver);
+
+#if CRYNETWORK_USE_TOMCRYPT
+	ShutdownTomCrypt();
+#endif
+#if CRYNETWORK_USE_CNG
+	ShutdownCng();
+#endif
 }
 
 bool CNetwork::AllSuicidal()
@@ -531,6 +540,13 @@ bool CNetwork::HasNetworkConnectivity()
 bool CNetwork::Init(int ncpu)
 {
 	m_cpuCount = ncpu;
+
+#if CRYNETWORK_USE_CNG
+	InitCng();
+#endif
+#if CRYNETWORK_USE_TOMCRYPT
+	InitTomCrypt();
+#endif
 
 	m_gameTime = gEnv->pTimer->GetFrameStartTime();
 	m_pMessageQueueConfig = CMessageQueue::LoadConfig("%engine%/Config/DefaultScripts/Scheduler.xml");
@@ -767,6 +783,7 @@ INetNub* CNetwork::CreateNub(const char* address, IGameNub* pGameNub,
 
 ILanQueryListener* CNetwork::CreateLanQueryListener(IGameQueryListener* pGameQueryListener)
 {
+#if ENABLE_GAME_QUERY
 	SCOPED_GLOBAL_LOCK;
 	CLanQueryListener* pLanQueryListener = new CLanQueryListener(pGameQueryListener);
 	if (!pLanQueryListener->Init())
@@ -778,6 +795,10 @@ ILanQueryListener* CNetwork::CreateLanQueryListener(IGameQueryListener* pGameQue
 	AddMember(pLanQueryListener);
 	CNetwork::Get()->WakeThread();
 	return pLanQueryListener;
+#else
+	NetWarning("Unable to create ILanQueryListener, feature is disabled");
+	return nullptr;
+#endif
 }
 
 #if ENABLE_PACKET_PREDICTION

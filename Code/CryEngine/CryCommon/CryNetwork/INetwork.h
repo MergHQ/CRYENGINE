@@ -2121,6 +2121,7 @@ public:
 		m_index = N - 1;
 	}
 
+	//! Adds a new sample value to the back of the queue and removes value from the front
 	void AddSample(T x)
 	{
 		m_index = (m_index + 1) % N;
@@ -2157,27 +2158,34 @@ public:
 		return static_cast<float>(m_total) / static_cast<float>(m_count);
 	}
 
+	//! Returns oldest sample value, front of the queue
 	T GetFirst() const
 	{
 		NET_ASSERT(!Empty());
-		return m_values[m_index];
+		return m_values[IndexFirst() % N];
 	}
 
+	//! Returns newest sample value, back of the queue
 	T GetLast() const
 	{
 		NET_ASSERT(!Empty());
-		return m_values[(m_index - 1) % N];
+		return m_values[IndexLast()];
 	}
 
+	//! Get sample by index.
+	//! 0 is the first sample (\see GetFirst()), N-1 is last sample (\see GetLast())
 	T operator[](size_t index) const
 	{
 		NET_ASSERT(!Empty());
-		return m_values[(m_index + index) % N];
+		return m_values[(IndexFirst() + index) % N];
 	}
 
 private:
+	const size_t IndexFirst() const { return m_index + 1; }
+	const size_t IndexLast() const { return m_index; }
+
 	size_t m_count;
-	size_t m_index;
+	size_t m_index;           //!< Index of the latest sample at the back of the queue
 	T      m_values[N]{};
 	T      m_total;
 };

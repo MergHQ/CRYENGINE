@@ -131,30 +131,77 @@ static void DumpBytes(const uint8* p, size_t len)
 }
 #endif
 
+
+bool CCTPEndpoint::SSeqNumber::operator<(SSeqNumber other) const
+{
+	if (*this == other) return false;
+	return LessImpl(other);
+}
+
+bool CCTPEndpoint::SSeqNumber::operator<=(SSeqNumber other) const
+{
+	if (*this == other) return true;
+	return LessImpl(other);
+}
+
+bool CCTPEndpoint::SSeqNumber::LessImpl(SSeqNumber other) const
+{
+	// a < b with support for wrapping.
+	// For example: if range is [0, 16) then next are true:
+	//  0 < 1
+	//  15 < 1 as 15 < (16 + 1)
+	const uint32 a = this->value;
+	const uint32 b = other.value;
+
+	NET_ASSERT(a != b);
+
+	// TODO: optimize, given maxVal = ~0
+	const uint32 maxVal = ~uint32(0);
+	const uint32 halfRange = maxVal / 2;
+	if (a < b)
+	{
+		return (b - a <= halfRange);
+	}
+	return (a - b > halfRange);
+}
+
+int32 CCTPEndpoint::SSeqNumber::GetDiff(SSeqNumber other) const
+{
+	// return b - a
+	const uint32 b = this->value;
+	const uint32 a = other.value;
+
+	// TODO: optimize, given maxVal = ~0
+	const uint32 maxVal = ~uint32(0);
+
+	const uint32 diff = (b >= a)
+		? b - a
+		: maxVal - a + 1 + b;
+
+	return int32(diff);
+}
+
+uint32 CCTPEndpoint::SSeqNumber::GetDist(SSeqNumber other) const
+{
+	NET_ASSERT(*this >= other);
+	// TODO: optimize, given this >= other.
+	return uint32(GetDiff(other));
+}
+
+
 //
 // SBigEndpointState
 //
-#if ENCRYPTION_RIJNDAEL
-CCTPEndpoint::SBigEndpointState::SBigEndpointState(size_t acks, CMessageMapper& msgMapper, Rijndael::Direction dir, const uint8* key, uint8* initVec)
-#elif ENCRYPTION_STREAMCIPHER
-CCTPEndpoint::SBigEndpointState::SBigEndpointState(size_t acks, CMessageMapper & msgMapper, const uint8 * key, int keyLen)
-#else
-CCTPEndpoint::SBigEndpointState::SBigEndpointState(size_t acks, CMessageMapper & msgMapper)
-#endif
-#if USE_ARITHSTREAM
+CCTPEndpoint::SBigEndpointState::SBigEndpointState(size_t acks, CMessageMapper& msgMapper, const ChannelSecurity::CCipher& cipher)
 	:
+#if USE_ARITHSTREAM
 	m_AckAlphabet(acks),
 	m_MsgAlphabet(msgMapper.GetNumberOfMsgIds()),
-	m_ArithModel()
+	m_ArithModel(),
 #endif
+	m_crypt(cipher)
 {
 	++g_objcnt.bigEndpointState;
-
-#if ENCRYPTION_RIJNDAEL
-	m_crypt.init(Rijndael::CBC, dir, key, Rijndael::Key32Bytes, initVec);
-#elif ENCRYPTION_STREAMCIPHER
-	m_crypt.Init(key, keyLen);
-#endif
 
 #if !USE_ARITHSTREAM
 	const SNetMessageDef* pDef;
@@ -315,6 +362,16 @@ ILINE void CCTPEndpoint::SBigEndpointState::SwitchTable(uint32 id)
 }
 #endif
 
+bool CCTPEndpoint::SBigEndpointState::Encrypt(uint8* pBuf, size_t len)
+{
+	return m_crypt.EncryptInPlace(pBuf, len);
+}
+
+bool CCTPEndpoint::SBigEndpointState::Decrypt(uint8* pBuf, size_t len)
+{
+	return m_crypt.DecryptInPlace(pBuf, len);
+}
+
 //void CCTPEndpoint::SBigEndpointState::GetMemoryStatistics(ICrySizer *pSizer)
 //{
 //	SIZER_COMPONENT_NAME(pSizer, "CCTPEndpoint::SBigEndpointState");
@@ -331,16 +388,17 @@ ILINE void CCTPEndpoint::SBigEndpointState::SwitchTable(uint32 id)
 //}
 
 //
-// CCTPEndpoint::S*State
+// CCTPEndpoint::CState
 //
 
 // Reset
 ILINE void CCTPEndpoint::CState::Reset(CBigEndpointStateManager* pBigMgr)
 {
-	m_nAcks = 0;
-	m_nAckedPackets = 0;
+	m_lastAckedSeq = 0;
+#if DEBUG_ENDPOINT_LOGIC
 	m_nPackets = 0;
 	m_nAcksThisPacket = 0;
+#endif
 	FreeState(pBigMgr);
 }
 
@@ -367,7 +425,7 @@ void CCTPEndpoint::CState::Dump(FILE* f) const
 {
 	NET_ASSERT(m_pBigState);
 
-	fprintf(f, " %.4d %.4d %.4d\n", m_nPackets, m_nAcks, m_nAckedPackets);
+	fprintf(f, " %.4d %.4u\n", m_nPackets, m_lastAckedSeq);
 	fprintf(f, "AckAlphabet:\n");
 
 	if (!m_pBigState)
@@ -399,10 +457,11 @@ void CCTPEndpoint::CState::Dump(FILE* f) const
 ILINE void CCTPEndpoint::CState::Clone(CBigEndpointStateManager* pBigMgr,
                                        const CState& s)
 {
-	m_nAcks = s.m_nAcks;
-	m_nAckedPackets = s.m_nAckedPackets;
+	m_lastAckedSeq = s.m_lastAckedSeq;
+#if DEBUG_ENDPOINT_LOGIC
 	m_nPackets = s.m_nPackets + 1;
 	m_nAcksThisPacket = 0;
+#endif
 
 	NET_ASSERT(s.m_pBigState);
 	NET_ASSERT(!m_pBigState);
@@ -422,8 +481,19 @@ void CCTPEndpoint::COutputState::Clone(CBigEndpointStateManager* pBigMgr,
 	m_nStateBlockers = 0;
 }
 
+void CCTPEndpoint::COutputState::CreateState(CBigEndpointStateManager* pBigMgr, CMessageMapper& msgMapper, const ChannelSecurity::CCipher& cipher, SSeqNumber nSeq)
+{
+	CreateStateImpl(pBigMgr, msgMapper, cipher, nSeq);
+}
+
+void CCTPEndpoint::CInputState::CreateState(CBigEndpointStateManager* pBigMgr, CMessageMapper& msgMapper, const ChannelSecurity::CCipher& cipher, SSeqNumber nSeq)
+{
+	CreateStateImpl(pBigMgr, msgMapper, cipher, nSeq);
+	m_nValidSeq = nSeq;
+}
+
 void CCTPEndpoint::CInputState::Clone(CBigEndpointStateManager* pBigMgr,
-                                      const CCTPEndpoint::CInputState& s, uint32 nSeq)
+                                      const CCTPEndpoint::CInputState& s, SSeqNumber nSeq)
 {
 	CCTPEndpoint::CState::Clone(pBigMgr, s);
 
@@ -431,13 +501,13 @@ void CCTPEndpoint::CInputState::Clone(CBigEndpointStateManager* pBigMgr,
 }
 
 // acks & nacks
-ILINE uint32 CCTPEndpoint::CState::AddAck(bool bAck)
+ILINE CCTPEndpoint::SSeqNumber CCTPEndpoint::CState::AddAck(bool bAck)
 {
-	if (bAck)
-		m_nAcks++;
+#if DEBUG_ENDPOINT_LOGIC
 	m_nAcksThisPacket++;
-	m_nAckedPackets++;
-	return m_nAckedPackets;
+#endif
+	++m_lastAckedSeq;
+	return m_lastAckedSeq;
 }
 
 #if USE_ARITHSTREAM
@@ -499,9 +569,9 @@ void CCTPEndpoint::CState::WriteEndAcks(CNetOutputSerializeImpl& stm, bool retur
 }
 
 #if USE_ARITHSTREAM
-bool CCTPEndpoint::CState::ReadAck(CCommInputStream& stm, bool& bAck, uint32& nSeq, bool& recvAckNeeded)
+bool CCTPEndpoint::CState::ReadAck(CCommInputStream& stm, bool& bAck, SSeqNumber& nSeq, bool& recvAckNeeded)
 #else
-bool CCTPEndpoint::CState::ReadAck(CNetInputSerializeImpl& stm, bool& bAck, uint32& nSeq, bool& recvAckNeeded)
+bool CCTPEndpoint::CState::ReadAck(CNetInputSerializeImpl& stm, bool& bAck, SSeqNumber& nSeq, bool& recvAckNeeded)
 #endif
 {
 #if DEBUG_STREAM_INTEGRITY
@@ -738,7 +808,8 @@ ILINE uint32 CCTPEndpoint::CState::ReadMsgId(CNetInputSerializeImpl& stm)
 static CDefaultStreamAllocator s_allocator;
 
 CCTPEndpoint::CCTPEndpoint(CMementoMemoryManagerPtr pMMM) :
-	m_outputStreamImpl(m_assemblyBuffer + 1, sizeof(m_assemblyBuffer) - 1), // +1 to account for sequence bytes
+	m_pParent(nullptr),
+	m_outputStreamImpl(m_assemblyBuffer + 1, sizeof(m_assemblyBuffer) - 1 - ChannelSecurity::CHMac::HashSize), // +1 to account for sequence bytes
 	m_outputStream(m_outputStreamImpl),
 	m_emptyMode(false),
 	m_queue(CNetwork::Get()->GetMessageQueueConfig()),
@@ -755,7 +826,7 @@ CCTPEndpoint::CCTPEndpoint(CMementoMemoryManagerPtr pMMM) :
 	m_log_output = NULL;
 	m_log_input = NULL;
 #endif
-	Init(NULL);
+	BeginInit();
 }
 
 CCTPEndpoint::~CCTPEndpoint()
@@ -789,27 +860,45 @@ CCTPEndpoint::~CCTPEndpoint()
 	m_bigStateMgrOutput.FlushAll();
 }
 
-void CCTPEndpoint::Init(CNetChannel* pParent)
+void CCTPEndpoint::BeginInit()
 {
 	MMM_REGION(m_pMMM);
 	// these are the interfaces we use
-	m_pParent = pParent;
+
+	CRY_ASSERT_MESSAGE(m_pParent == nullptr, "BeginInit is called on intialized CCTPEndpoint");
 	m_queue.SetParent(this);
 
 	m_entityId = 0;
 
-#if DEBUG_ENDPOINT_LOGIC
-	static int N = 0;
-	if (m_log_output) fclose(m_log_output);
-	if (m_log_input) fclose(m_log_input);
-	m_log_output = NULL;
-	m_log_input = NULL;
-	if (pParent)
+
+
+	// initialize our state array
+	for (uint32 i = 0; i < WHOLE_SEQ; i++)
 	{
+		m_vInputState[i].Reset(&m_bigStateMgrInput);
+		m_vOutputState[i].Reset(&m_bigStateMgrOutput);
+	}
+}
+
+void CCTPEndpoint::EndInit(CNetChannel& parent, const SEndInitParams& params)
+{
+	CRY_ASSERT_MESSAGE(m_pParent == nullptr, "EndInit is called on intialized CCTPEndpoint");
+	m_pParent = &parent;
+
+	MMM_REGION(m_pMMM);
+
+#if DEBUG_ENDPOINT_LOGIC
+	{
+		static int N = 0;
+		if (m_log_output) fclose(m_log_output);
+		if (m_log_input) fclose(m_log_input);
+		m_log_output = NULL;
+		m_log_input = NULL;
 		char buf[30];
-		cry_sprintf(buf, "output.%d.log", ++N);
+		const int instance = gEnv->pSystem->GetApplicationInstance();
+		cry_sprintf(buf, "output.%d.%d.log", instance, ++N);
 		m_log_output = fxopen(buf, "wt");
-		cry_sprintf(buf, "input.%d.log", N);
+		cry_sprintf(buf, "input.%d.%d.log", instance, N);
 		m_log_input = fxopen(buf, "wt");
 		NET_ASSERT(m_log_input);
 		NET_ASSERT(m_log_output);
@@ -823,8 +912,8 @@ void CCTPEndpoint::Init(CNetChannel* pParent)
 		std::vector<SNetProtocolDef> receiving;
 		std::vector<SSinkInfo>       sinks;
 		virtual void AddMessageSink(INetMessageSink* pSink,
-		                            const SNetProtocolDef& protocolSending,
-		                            const SNetProtocolDef& protocolReceiving)
+			const SNetProtocolDef& protocolSending,
+			const SNetProtocolDef& protocolReceiving)
 		{
 			sinks.push_back(pSink);
 			sending.push_back(protocolSending);
@@ -832,52 +921,44 @@ void CCTPEndpoint::Init(CNetChannel* pParent)
 		}
 	};
 	SProtocolBuilder protocolBuilder;
-	if (pParent)
-		pParent->DefineProtocol(&protocolBuilder);
+	parent.DefineProtocol(&protocolBuilder);
 
 	if (!protocolBuilder.sending.empty())
 		m_OutputMapper.Reset(eIM_LastInternalMessage,
-		                     &protocolBuilder.sending[0], protocolBuilder.sending.size());
+			&protocolBuilder.sending[0], protocolBuilder.sending.size());
 	else
 		m_OutputMapper.Reset(eIM_LastInternalMessage, 0, 0);
 
 	if (!protocolBuilder.receiving.empty())
 		m_InputMapper.Reset(eIM_LastInternalMessage,
-		                    &protocolBuilder.receiving[0], protocolBuilder.receiving.size());
+			&protocolBuilder.receiving[0], protocolBuilder.receiving.size());
 	else
 		m_InputMapper.Reset(eIM_LastInternalMessage, 0, 0);
 
 	m_MessageSinks.swap(protocolBuilder.sinks);
 
-	// initialize our state array
-	for (uint32 i = 0; i < WHOLE_SEQ; i++)
-	{
-		m_vInputState[i].Reset(&m_bigStateMgrInput);
-		m_vOutputState[i].Reset(&m_bigStateMgrOutput);
-	}
-
-#if ENCRYPTION_RIJNDAEL
-	m_vInputState[0].CreateState(&m_bigStateMgrInput, m_InputMapper, Rijndael::Decrypt, m_pParent ? m_pParent->GetPrivateKey().key : NULL, 0);
-	m_vOutputState[0].CreateState(&m_bigStateMgrOutput, m_OutputMapper, Rijndael::Encrypt, m_pParent ? m_pParent->GetPrivateKey().key : NULL, 0);
-#elif ENCRYPTION_STREAMCIPHER
-	m_vInputState[0].CreateState(&m_bigStateMgrInput, m_InputMapper, m_pParent ? m_pParent->GetPrivateKey().key : NULL, CExponentialKeyExchange::KEY_SIZE);
-	m_vOutputState[0].CreateState(&m_bigStateMgrOutput, m_OutputMapper, m_pParent ? m_pParent->GetPrivateKey().key : NULL, CExponentialKeyExchange::KEY_SIZE);
-#else
-	m_vInputState[0].CreateState(&m_bigStateMgrInput, m_InputMapper);
-	m_vOutputState[0].CreateState(&m_bigStateMgrOutput, m_OutputMapper);
-#endif
-
-	m_vOutputState[0].Unavailable();
-
 	// initialize sequence numbers
-	m_nOutputSeq = 0;
-	m_nInputSeq = 1;
-	m_nInputAck = 0;
-	m_nReliableSeq = 0;
-	m_bReliableWait = false;
-	m_nLastBasisSeq = 0;
+	const uint32 seqStart = params.frameSequenceStart;
+	m_nOutputSeq = seqStart;
+	m_nInputSeq = seqStart + 1;
+	m_nInputAck = seqStart;
+	m_nLastBasisSeq = m_nInputAck;
 	m_nUrgentAcks = 0;
 	m_receivedPacketSinceBackoff = true;
+
+	// allocate basis states
+	m_vInputState[m_nLastBasisSeq % WHOLE_SEQ].CreateState(&m_bigStateMgrInput, m_InputMapper, params.inputCipher, m_nLastBasisSeq);
+	m_vOutputState[m_nInputAck % WHOLE_SEQ].CreateState(&m_bigStateMgrOutput, m_OutputMapper, params.outputCipher, m_nLastBasisSeq);
+	m_vOutputState[m_nInputAck % WHOLE_SEQ].Unavailable();
+
+	// setup the ack structure
+	m_nFrontAck = m_nInputSeq;
+	m_dqAcks.clear();
+	m_recvAckNeeded = false;
+	m_sentAckNeeded = false;
+
+	m_nStateBlockers = 0;
+
 
 	// initialize debug counters
 	m_nReceived = 0;
@@ -889,14 +970,6 @@ void CCTPEndpoint::Init(CNetChannel* pParent)
 
 	m_nPQTimeout = 0;
 	m_nPQReady = 0;
-
-	// setup the ack structure
-	m_nFrontAck = 1;
-	m_dqAcks.clear();
-	m_recvAckNeeded = false;
-	m_sentAckNeeded = false;
-
-	m_nStateBlockers = 0;
 }
 
 void CCTPEndpoint::MarkNotUserSink(INetMessageSink* pSink)
@@ -945,11 +1018,6 @@ void CCTPEndpoint::GetMemoryStatistics(ICrySizer* pSizer, bool countingThis)
 	}
 
 	m_PacketRateCalculator.GetMemoryStatistics(pSizer);
-}
-
-void CCTPEndpoint::Reset()
-{
-	Init(m_pParent);
 }
 
 void CCTPEndpoint::PerformRegularCleanup()
@@ -1010,7 +1078,7 @@ CTimeValue CCTPEndpoint::GetNextUpdateTime(CTimeValue nTime)
 		return backoffTime;
 
 	// search for when we can get a packet out
-	int age = m_nOutputSeq - m_nInputAck;
+	int age = m_nOutputSeq.GetDiff(m_nInputAck);
 	return m_PacketRateCalculator.GetNextPacketTime(age, IsIdle());
 }
 
@@ -1019,7 +1087,7 @@ void CCTPEndpoint::UpdatePendingQueue(CTimeValue nTime, bool isDisconnecting)
 	MMM_REGION(m_pMMM);
 
 	// check to see if we have anything that's timed out
-	uint32 lastTimedOut = 0;
+	SSeqNumber lastTimedOut = 0;
 	for (TIncomingPacketMap::reverse_iterator it = m_incomingPackets.rbegin(); it != m_incomingPackets.rend(); ++it)
 	{
 		if (nTime - it->second.when > IncomingTimeoutLength)
@@ -1095,6 +1163,8 @@ void CCTPEndpoint::SendPacketsIfNecessary(CTimeValue nTime, bool isDisconnecting
 		uint16 maxOutputSize = m_PacketRateCalculator.GetMaxPacketSize(nTime);
 #endif // NEW_BANDWIDTH_MEASUREMENT
 
+		maxOutputSize -= ChannelSecurity::CHMac::HashSize;
+
 		bool bSend = false;
 		SSendPacketParams params;
 
@@ -1114,9 +1184,10 @@ void CCTPEndpoint::SendPacketsIfNecessary(CTimeValue nTime, bool isDisconnecting
 	#endif // LOG_BANDWIDTH_SHAPING
 			                                                               );
 		}
+		CRY_ASSERT(params.nSize + params.nSpareBytes <= maxOutputSize);
 		bSend |= ((params.nSize + params.nSpareBytes) != 0);
 #else
-		int age = m_nOutputSeq - m_nInputAck;
+		int age = m_nOutputSeq.GetDiff(m_nInputAck);
 		params.nSize = m_PacketRateCalculator.GetIdealPacketSize(age, IsIdle(), maxOutputSize);
 		bSend |= (params.nSize != 0);
 #endif // NEW_BANDWIDTH_MANAGEMENT
@@ -1155,7 +1226,7 @@ void CCTPEndpoint::SendPacketsIfNecessary(CTimeValue nTime, bool isDisconnecting
 				size_t outSize = stm->GetOutputSize();
 #endif
 				m_pParent->Send(m_assemblyBuffer, m_assemblySize);
-				m_PacketRateCalculator.SentPacket(nTime, m_nOutputSeq, static_cast<uint16>(outSize));
+				m_PacketRateCalculator.SentPacket(nTime, m_nOutputSeq.value, static_cast<uint16>(outSize));
 				m_nRepeated++;
 				m_nSent++;
 			}
@@ -1210,7 +1281,7 @@ void CCTPEndpoint::Update(CTimeValue nTime, bool isDisconnecting, bool bAllowUse
 		return;
 }
 
-bool CCTPEndpoint::AckPacket(CTimeValue nTime, uint32 nSeq, bool bOk)
+bool CCTPEndpoint::AckPacket(CTimeValue nTime, SSeqNumber nSeq, bool bOk)
 {
 	//	NET_ASSERT( m_nOutputSeq >= nSeq );
 	MMM_REGION(m_pMMM);
@@ -1231,7 +1302,7 @@ bool CCTPEndpoint::AckPacket(CTimeValue nTime, uint32 nSeq, bool bOk)
 	if (m_ackedPackets.find(nSeq) != m_ackedPackets.end())
 	{
 		NET_ASSERT(false);
-		NetLog("Duplicate ack detected (seq=%d)", nSeq);
+		NetLog("Duplicate ack detected (seq=%u)", nSeq);
 		m_pParent->Disconnect(eDC_ProtocolError, "duplicate ack detected");
 		return false;
 	}
@@ -1242,7 +1313,7 @@ bool CCTPEndpoint::AckPacket(CTimeValue nTime, uint32 nSeq, bool bOk)
 
 	if (m_vOutputState[m_nInputAck % WHOLE_SEQ].IsAvailable())
 	{
-		NetWarning("Illegal ack detected (seq=%d)", nSeq);
+		NetWarning("Illegal ack detected (seq=%u)", nSeq);
 		m_pParent->Disconnect(eDC_ProtocolError, "Malformed packet");
 		return false;
 	}
@@ -1251,12 +1322,9 @@ bool CCTPEndpoint::AckPacket(CTimeValue nTime, uint32 nSeq, bool bOk)
 
 	m_nInputAck = nSeq;
 
-	if (m_bReliableWait && m_nReliableSeq == nSeq)
-		m_bReliableWait = false;
-
 	COutputState& state = m_vOutputState[nSeq % WHOLE_SEQ];
 
-	m_PacketRateCalculator.AckedPacket(nTime, nSeq, bOk);
+	m_PacketRateCalculator.AckedPacket(nTime, nSeq.value, bOk);
 	AckMessages(state.m_headSentMessage, nSeq, bOk, false);
 	m_nStateBlockers -= state.m_nStateBlockers;
 	state.m_nStateBlockers = 0;
@@ -1295,11 +1363,11 @@ void CCTPEndpoint::EmptyMessages()
 void CCTPEndpoint::DumpOutputState(const CTimeValue& time)
 {
 	fprintf(m_log_output, "-----------------------------------\n");
-	fprintf(m_log_output, "Time: %d\n", time.GetMilliSeconds());
-	fprintf(m_log_output, "OutputSeq: %d\n", m_nOutputSeq);
-	fprintf(m_log_output, "InputAck: %d\n", m_nInputAck);
-	fprintf(m_log_output, "ReliableSeq: %d %s\n", m_nReliableSeq, m_bReliableWait ? "waiting" : "not-waiting");
-	fprintf(m_log_output, "Acks: from %d (with %d queued)\n     ", m_nFrontAck, m_dqAcks.size());
+	fprintf(m_log_output, "Time: %f\n", time.GetMilliSeconds());
+	fprintf(m_log_output, "OutputSeq: %u\n", m_nOutputSeq);
+	fprintf(m_log_output, "InputAck: %u\n", m_nInputAck);
+	//fprintf(m_log_output, "ReliableSeq: %d %s\n", m_nReliableSeq, m_bReliableWait ? "waiting" : "not-waiting");
+	fprintf(m_log_output, "Acks: from %u (with %" PRISIZE_T " queued)\n     ", m_nFrontAck, m_dqAcks.size());
 	//for (size_t i=0; i<m_dqAcks.size(); ++i)
 	//	fprintf( m_log_output, m_dqAcks[i]?"#":"." );
 	fprintf(m_log_output, "\n");
@@ -1314,14 +1382,14 @@ void CCTPEndpoint::DumpOutputState(const CTimeValue& time)
 void CCTPEndpoint::DumpInputState(const CTimeValue& time)
 {
 	fprintf(m_log_input, "-----------------------------------\n");
-	fprintf(m_log_input, "Time: %d\n", time.GetMilliSeconds());
-	fprintf(m_log_input, "InputSeq: %d\n", m_nInputSeq - 1);
-	fprintf(m_log_input, "Acks: from %d (with %d queued)\n     ", m_nFrontAck, m_dqAcks.size());
+	fprintf(m_log_input, "Time: %f\n", time.GetMilliSeconds());
+	fprintf(m_log_input, "InputSeq: %u\n", m_nInputSeq.value - 1);
+	fprintf(m_log_input, "Acks: from %u (with %" PRISIZE_T " queued)\n     ", m_nFrontAck, m_dqAcks.size());
 	//for (size_t i=0; i<m_dqAcks.size(); ++i)
 	//	fprintf( m_log_input, m_dqAcks[i]?"#":"." );
 	fprintf(m_log_input, "\n");
 	fprintf(m_log_input, "Current State:");
-	m_vInputState[(m_nInputSeq - 1) % WHOLE_SEQ].Dump(m_log_input);
+	m_vInputState[(m_nInputSeq.value - 1) % WHOLE_SEQ].Dump(m_log_input);
 
 	fflush(m_log_input);
 }
@@ -1330,7 +1398,7 @@ void CCTPEndpoint::DumpInputState(const CTimeValue& time)
 class CCTPEndpoint::CSequenceNumberParser
 {
 public:
-	CSequenceNumberParser(const uint8* normBytes, uint32 inputSeq, bool inSync, size_t pktLen)
+	CSequenceNumberParser(const uint8* normBytes, SSeqNumber inputSeq, bool inSync, size_t pktLen)
 	{
 		ok = false;
 		reorderings = 0;
@@ -1353,47 +1421,47 @@ public:
 		uint32 nCurrentSeqTag = UnseqBytes[normBytes[1]];
 
 		nCurrent = (inputSeq & ~SequenceNumberMask) | nCurrentSeqTag;
-		if (inputSeq >= SequenceNumberRadius && nCurrent < inputSeq - SequenceNumberRadius)
-			nCurrent += SequenceNumberDiameter;
+		if (inputSeq >= SequenceNumberRadius && nCurrent < SSeqNumber(inputSeq.value - SequenceNumberRadius))
+			nCurrent.value += SequenceNumberDiameter;
 		else if (nCurrent > inputSeq + SequenceNumberRadius)
-			nCurrent -= SequenceNumberDiameter;
-		nBasis = nCurrent - nBasisSeqTag - 1;
+			nCurrent.value -= SequenceNumberDiameter;
+		nBasis = nCurrent.value - nBasisSeqTag - 1;
 
 #if DEBUG_SEQUENCE_NUMBERS
 		//DEBUG:
 		uint32 nProperSeq = *(uint32*)(normBytes + pktLen + 2);
-		NetLog("got tags: %d, %d with seq %d; => %d, %d [should be %d]\n", nCurrentSeqTag, nBasisSeqTag, inputSeq, nCurrent, nBasis, nProperSeq);
+		NetLog("got tags: %u, %u with seq %u; => %u, %u [should be %u]\n", nBasisSeqTag, nCurrentSeqTag, inputSeq, nCurrent, nBasis, nProperSeq);
 		NET_ASSERT(nCurrent == nProperSeq);
 #endif
 
 		ok = CheckValidResult(inputSeq);
 	}
 
-	bool IsCompatibleWithBasis(const CInputState& basis, uint32 lastBasisSeq) const
+	bool IsCompatibleWithBasis(const CInputState& basis, SSeqNumber lastBasisSeq) const
 	{
 		if (basis.LastValid() != nBasis)
 		{
-			MALFORMED_PACKET_REPORT("Ignoring bad basis state %d (still at %d) - possible malicious stream", nBasis, basis.LastValid());
+			MALFORMED_PACKET_REPORT("Ignoring bad basis state %u (still at %u) - possible malicious stream", nBasis, basis.LastValid());
 			return false;
 		}
 
 		NET_ASSERT(nBasis >= lastBasisSeq);
 		if (nBasis < lastBasisSeq)
 		{
-			MALFORMED_PACKET_REPORT("Ignoring old basis state %d (currently at %d)", nBasis, lastBasisSeq);
+			MALFORMED_PACKET_REPORT("Ignoring old basis state %u (currently at %u)", nBasis, lastBasisSeq);
 			return false;
 		}
 
 		return true;
 	}
 
-	uint32 nCurrent;
-	uint32 nBasis;
+	SSeqNumber nCurrent;
+	SSeqNumber nBasis;
 	uint32 reorderings;
 	bool   ok;
 
 private:
-	bool CheckValidResult(uint32 inputSeq)
+	bool CheckValidResult(SSeqNumber inputSeq)
 	{
 		// check our location
 		if (inputSeq > nCurrent)
@@ -1405,7 +1473,7 @@ private:
 
 		if (nCurrent > inputSeq + CCTPEndpoint::WHOLE_SEQ)
 		{
-			NetWarning("Sequence %d is way in the future (I'm only up to %d) - ignoring it", nCurrent, inputSeq);
+			NetWarning("Sequence %u is way in the future (I'm only up to %u) - ignoring it", nCurrent, inputSeq);
 			return false;
 		}
 
@@ -1491,12 +1559,12 @@ public:
 
 	ILINE uint32 GetCurrentSeq() const
 	{
-		return m_seq.nCurrent;
+		return m_seq.nCurrent.value;
 	}
 
 	ILINE uint32 GetBasisSeq() const
 	{
-		return m_seq.nBasis;
+		return m_seq.nBasis.value;
 	}
 
 	ILINE uint32 GetTimeFraction32() const
@@ -1523,7 +1591,7 @@ private:
 	const CSequenceNumberParser&             m_seq;
 };
 
-void CCTPEndpoint::QueueForLater(CTimeValue nTime, CAutoFreeHandle& hdl, uint32 nCurrentSeq)
+void CCTPEndpoint::QueueForLater(CTimeValue nTime, CAutoFreeHandle& hdl, SSeqNumber nCurrentSeq)
 {
 	if (m_incomingPackets.find(nCurrentSeq) != m_incomingPackets.end())
 	{
@@ -1537,7 +1605,7 @@ void CCTPEndpoint::QueueForLater(CTimeValue nTime, CAutoFreeHandle& hdl, uint32 
 		m_incomingPackets[nCurrentSeq] = pkt;
 #if ENABLE_DEBUG_KIT
 		if (CNetCVars::Get().EndpointPendingQueueLogging)
-			NetLog("Queued packet %d for later (as at %d)", nCurrentSeq, m_nInputSeq);
+			NetLog("Queued packet %u for later (as at %u)", nCurrentSeq, m_nInputSeq);
 #endif
 		m_nQueued++;
 	}
@@ -1608,6 +1676,41 @@ void CCTPEndpoint::DoPacketDump()
 }
 #endif
 
+bool CCTPEndpoint::VerifyPacket(const uint8* pData, size_t size)
+{
+	const size_t messageSize = size - ChannelSecurity::CHMac::HashSize;
+#if 0
+	NetLog("VerifyPacket: message size %zu, packet size %zu", messageSize, size);
+	DumpBytes(pData, size);
+#endif
+
+	const size_t minMessageSize = 7 + (CRC8_ENCODING_GLOBAL);
+	const size_t minPacketSize = minMessageSize + ChannelSecurity::CHMac::HashSize;
+	if (size < minPacketSize)
+	{
+		NetWarning("Illegal packet size [size was %zu, from %s]", size, m_pParent->GetName());
+		return false;
+	}
+
+#if ALLOW_ENCRYPTION
+	const size_t blockSize = ChannelSecurity::CCipher::GetBlockSize();
+	NET_ASSERT(IsPowerOfTwo(blockSize));
+	
+	if ((messageSize - 2 - 4 * DEBUG_SEQUENCE_NUMBERS) & (blockSize - 1))
+	{
+		NetWarning("Illegal packet block alignment [message size was %zu, from %s]", messageSize, m_pParent->GetName());
+		return false;
+	}
+#endif
+
+	if (!m_pParent->GetHmac().HashFinishAndVerify(pData, messageSize, pData + messageSize))
+	{
+		NetWarning("Failed HMAC [size was %zu, from %s]", size, m_pParent->GetName());
+		return false;
+	}
+	return true;
+}
+
 void CCTPEndpoint::ProcessPacket(CTimeValue nTime, CAutoFreeHandle& hdl, bool bQueueing, bool inSync)
 {
 #if _DEBUG && defined(USER_craig)
@@ -1627,25 +1730,14 @@ void CCTPEndpoint::ProcessPacket(CTimeValue nTime, CAutoFreeHandle& hdl, bool bQ
 
 	const uint32 pktSize = MMM().GetHdlSize(hdl.Peek());
 
-#if ENCRYPTION_RIJNDAEL
-	if ((pktSize < (7 + (CRC8_ENCODING_GLOBAL))) || ((pktSize - 2 - 4 * DEBUG_SEQUENCE_NUMBERS) & 15))
-#else
-	if (pktSize < (7 + (CRC8_ENCODING_GLOBAL)))
-#endif
-	{
-		//m_pParent->Disconnect(eDC_ProtocolError, "Malformed packet");
-		NetWarning("Illegal packet size [size was %d, from %s]", pktSize, m_pParent->GetName());
-		return;
-	}
-
 	//
 	// read sequence data
 	//
 
-	NetLogPacketDebug("CCTPEndpoint::ProcessPacket size %d", pktSize);
+	NetLogPacketDebug("CCTPEndpoint::ProcessPacket size %u", pktSize);
 
 	uint8* normBytes = (uint8*)MMM().PinHdl(hdl.Peek());
-	size_t pktLen = pktSize - 2 - 4 * DEBUG_SEQUENCE_NUMBERS;
+	size_t pktLen = pktSize - 2 - 4 * DEBUG_SEQUENCE_NUMBERS - ChannelSecurity::CHMac::HashSize;
 
 	//	DumpBytes( normBytes, MMM_PACKETDATA.GetHdlSize(hdl) );
 
@@ -1677,7 +1769,7 @@ void CCTPEndpoint::ProcessPacket(CTimeValue nTime, CAutoFreeHandle& hdl, bool bQ
 
 		m_nReceived++;
 
-		LOG_INCOMING_MESSAGE(2, "INCOMING: frame #%d from %s", seq.nCurrent, m_pParent->GetName());
+		LOG_INCOMING_MESSAGE(2, "INCOMING: frame #%u from %s", seq.nCurrent, m_pParent->GetName());
 	}
 
 	// get state structs
@@ -1693,7 +1785,7 @@ void CCTPEndpoint::ProcessPacket(CTimeValue nTime, CAutoFreeHandle& hdl, bool bQ
 	if (!m_corruptPacketDumpData.doingDump)
 #endif
 	{
-		for (uint32 i = m_nLastBasisSeq; i < seq.nBasis; i++)
+		for (SSeqNumber i = m_nLastBasisSeq; i < seq.nBasis; i++)
 			m_vInputState[i % WHOLE_SEQ].FreeState(&m_bigStateMgrInput);
 		m_nLastBasisSeq = seq.nBasis;
 
@@ -1704,7 +1796,11 @@ void CCTPEndpoint::ProcessPacket(CTimeValue nTime, CAutoFreeHandle& hdl, bool bQ
 		// final setup of the state for decoding
 		state.Clone(&m_bigStateMgrInput, basis, seq.nCurrent);
 		// decrypt
-		state.Decrypt(normBytes + 2, pktLen);
+		if (!state.Decrypt(normBytes + 2, pktLen))
+		{
+			m_pParent->Disconnect(eDC_ProtocolError, "Decryption failure");
+			return;
+		}
 	}
 
 	uint8 hash = QuickHashBytes(normBytes, pktLen);
@@ -1723,7 +1819,7 @@ void CCTPEndpoint::ProcessPacket(CTimeValue nTime, CAutoFreeHandle& hdl, bool bQ
 		while (m_nInputSeq < seq.nCurrent)
 		{
 			if (CVARS.LogLevel > 1)
-				NetWarning("!!!!! On receiving packet %d, input seq was %d, causing a nack to be sent (basis state %d)", seq.nCurrent, m_nInputSeq, seq.nBasis);
+				NetWarning("!!!!! On receiving packet %u, input seq was %u, causing a nack to be sent (basis state %u)", seq.nCurrent, m_nInputSeq, seq.nBasis);
 			NET_ASSERT(m_nInputSeq == m_nFrontAck + m_dqAcks.size());
 			m_dqAcks.push_back(SAckData(false, false, nTime));
 			m_nInputSeq++;
@@ -1732,6 +1828,7 @@ void CCTPEndpoint::ProcessPacket(CTimeValue nTime, CAutoFreeHandle& hdl, bool bQ
 			m_dqAcks.back().bHadUrgentData = true;
 			m_nUrgentAcks++;
 		}
+		NET_ASSERT(m_nInputSeq == seq.nCurrent);
 		NET_ASSERT(m_nInputSeq == m_nFrontAck + m_dqAcks.size());
 		m_dqAcks.push_back(SAckData(true, false, nTime));
 		m_nInputSeq++;
@@ -1750,9 +1847,13 @@ void CCTPEndpoint::ProcessPacket(CTimeValue nTime, CAutoFreeHandle& hdl, bool bQ
 	//
 	NetLogPacketDebug("Start read acks & nacks (%f)", stmImpl.GetInput().GetBitSize());
 	bool bAck;
-	uint32 nAckSeq;
+	SSeqNumber nAckSeq;
 	while (state.ReadAck(stmImpl.GetInput(), bAck, nAckSeq, m_recvAckNeeded))
 	{
+#if DEBUG_SEQUENCE_NUMBERS
+		NetLog("ReadAck %u %d %d", nAckSeq, bAck, m_recvAckNeeded);
+#endif
+
 #if ENABLE_CORRUPT_PACKET_DUMP
 		if (!m_corruptPacketDumpData.doingDump)
 #endif
@@ -1867,7 +1968,7 @@ void CCTPEndpoint::ProcessPacket_NormalMessage(uint32 msg, CParsePacketContext& 
 
 		m_previouslyReceivedMessages.Put(pDef);
 		LOG_INCOMING_MESSAGE(1, "INCOMING: %s [id=%u;state=%d]", pDef->description, (unsigned)msg, m_pParent->GetContextViewState());
-		NetLogPacketDebug("Message %d %s (%f)", msg, pDef->description, ppctx.GetCommStream().GetBitSize());
+		NetLogPacketDebug("Message %u %s (%f)", msg, pDef->description, ppctx.GetCommStream().GetBitSize());
 
 		if (pDef->CheckParallelFlag(eMPF_DecodeInSync) && !ppctx.IsInSync())
 			m_pParent->Disconnect(eDC_ProtocolError, "received %s without having the packet marked for synchronous processing", pDef->description);
@@ -1928,7 +2029,7 @@ public:
 	ILINE CMessageSender(CCTPEndpoint* pEndpoint, COutputState& State,
 	                     size_t nSize, int& nMessages, CStatsCollector* pStats,
 	                     INetChannel* pChannel, CTimeValue now, uint32 timeFraction32) :
-		INetSender(TSerialize(&pEndpoint->m_outputStream), pEndpoint->m_nOutputSeq, pEndpoint->m_nInputAck, timeFraction32, pEndpoint->m_pParent->IsServer()),
+		INetSender(TSerialize(&pEndpoint->m_outputStream), pEndpoint->m_nOutputSeq.value, pEndpoint->m_nInputAck.value, timeFraction32, pEndpoint->m_pParent->IsServer()),
 		m_State(State),
 		m_nSize(nSize),
 		m_nMessages(nMessages),
@@ -2268,6 +2369,8 @@ uint32 CCTPEndpoint::SendPacket(CTimeValue nTime, const SSendPacketParams& param
 	                                                                                    ));
 	schedParams.transportLatency = m_PacketRateCalculator.GetPing(true) * 0.5f;
 
+	CRY_ASSERT(schedParams.targetBytes <= m_outputStreamImpl.GetOutput().GetOutputCapacity());
+
 #if FULL_ON_SCHEDULING
 	schedParams.haveWitnessPosition = m_pParent->GetWitnessPosition(schedParams.witnessPosition);
 	schedParams.haveWitnessDirection = m_pParent->GetWitnessDirection(schedParams.witnessDirection);
@@ -2279,7 +2382,7 @@ uint32 CCTPEndpoint::SendPacket(CTimeValue nTime, const SSendPacketParams& param
 	COutputState& basis = m_vOutputState[m_nInputAck % WHOLE_SEQ];
 
 	// and remove any old acks from our ack cache
-	while (m_nFrontAck <= basis.GetNumberOfAckedPackets())
+	while (m_nFrontAck <= basis.GetLastAckedSeq())
 	{
 		NET_ASSERT(!m_dqAcks.empty());
 		m_nFrontAck++;
@@ -2338,7 +2441,7 @@ uint32 CCTPEndpoint::SendPacket(CTimeValue nTime, const SSendPacketParams& param
 
 	m_outputStreamImpl.ResetLogging();
 
-	STATS.BeginPacket(m_pParent->GetIP(), nTime, m_nOutputSeq);
+	STATS.BeginPacket(m_pParent->GetIP(), nTime, m_nOutputSeq.value);
 
 	// remove any old states from our state cache
 	COutputState& state = m_vOutputState[m_nOutputSeq % WHOLE_SEQ];
@@ -2348,10 +2451,10 @@ uint32 CCTPEndpoint::SendPacket(CTimeValue nTime, const SSendPacketParams& param
 	//
 
 	NET_ASSERT(m_nOutputSeq > m_nInputAck);
-	NET_ASSERT(m_nOutputSeq - m_nInputAck <= WHOLE_SEQ);
+	NET_ASSERT(m_nOutputSeq.GetDist(m_nInputAck) <= WHOLE_SEQ);
 	// create the stream, with the bonus (first) byte specifying it's a ctp frame,
 	// and our basis offset, and the second byte indicating the current sequence number obfuscated a little
-	uint8 nBasisSeqTag = m_nOutputSeq - m_nInputAck - 1;
+	uint8 nBasisSeqTag = m_nOutputSeq.GetDist(m_nInputAck) - 1;
 	m_assemblyBuffer[0] = Frame_IDToHeader[eH_TransportSeq0 + nBasisSeqTag];
 	m_outputStreamImpl.GetOutput().Reset(SeqBytes[m_nOutputSeq & SequenceNumberMask]);
 
@@ -2359,7 +2462,7 @@ uint32 CCTPEndpoint::SendPacket(CTimeValue nTime, const SSendPacketParams& param
 
 #if LOG_OUTGOING_MESSAGES
 	if (CNetCVars::Get().LogNetMessages & 8)
-		NetLog("OUTGOING: frame #%d to %s", m_nOutputSeq, m_pParent->GetName());
+		NetLog("OUTGOING: frame #%u to %s", m_nOutputSeq, m_pParent->GetName());
 #endif
 
 #if ENABLE_DEBUG_KIT
@@ -2381,14 +2484,14 @@ uint32 CCTPEndpoint::SendPacket(CTimeValue nTime, const SSendPacketParams& param
 #if DEBUG_SEQUENCE_NUMBERS
 	char debugBuffer[512];
 	int pos = 0;
-	for (size_t i = m_nInputAck; (i % WHOLE_SEQ) != ((m_nInputAck - 1) % WHOLE_SEQ); i++)
+	for (uint32 i = m_nInputAck.value; (i % WHOLE_SEQ) != ((m_nInputAck.value - 1) % WHOLE_SEQ); i++)
 	{
-		if (i == m_nOutputSeq)
+		if (i == m_nOutputSeq.value)
 			pos += sprintf(debugBuffer + pos, "|");
 		pos += sprintf(debugBuffer + pos, "%d", m_vOutputState[i % WHOLE_SEQ].IsAvailable());
 	}
 	NetLog("SENDSEQ[%p]: %s", this, debugBuffer);
-	NetLog("send tags: %d, %d for %d, %d", nBasisSeqTag, m_nOutputSeq & 0xff, m_nOutputSeq, m_nInputAck);
+	NetLog("send tags: %u, %u for %u, %u", nBasisSeqTag, m_nOutputSeq & 0xff, m_nOutputSeq, m_nInputAck);
 #endif
 
 	NET_ASSERT(!m_vOutputState[m_nInputAck % WHOLE_SEQ].IsAvailable());
@@ -2402,8 +2505,17 @@ uint32 CCTPEndpoint::SendPacket(CTimeValue nTime, const SSendPacketParams& param
 	//
 	debugPacketDataSizeStartData(eDPDST_Ack, m_outputStreamImpl.GetBitSize());
 
+	
 	for (TAckDeque::const_iterator pb = m_dqAcks.begin(); pb != m_dqAcks.end(); ++pb)
+	{
+#if DEBUG_SEQUENCE_NUMBERS
+		pos += sprintf(debugBuffer + pos, "%d", pb->bReceived);
+#endif
 		state.WriteAck(m_outputStreamImpl.GetOutput(), pb->bReceived, &STATS);
+	}
+#if DEBUG_SEQUENCE_NUMBERS
+	NetLog("SENDACKS[%p]: %u %s", this, m_nFrontAck, debugBuffer);
+#endif
 	state.WriteEndAcks(m_outputStreamImpl.GetOutput(), returnAckNeeded, &STATS);
 
 	debugPacketDataSizeEndData(eDPDST_Ack, m_outputStreamImpl.GetBitSize());
@@ -2428,7 +2540,7 @@ uint32 CCTPEndpoint::SendPacket(CTimeValue nTime, const SSendPacketParams& param
 	state.GetArithModel()->SetTimeFraction(timeToSend);
 #endif
 
-	schedParams.nSeq = m_nOutputSeq;
+	schedParams.nSeq = m_nOutputSeq.value;
 	CMessageSender sender(this, state, schedParams.targetBytes, nMessages, &STATS, m_pParent, nTime, timeToSend);
 	bool actuallySend = m_queue.BuildPacket(&sender, schedParams);
 	actuallySend &= !sender.IsCorrupt();
@@ -2477,13 +2589,18 @@ uint32 CCTPEndpoint::SendPacket(CTimeValue nTime, const SSendPacketParams& param
 	// sign
 	int nBig = nSent + 1 + 2; // one byte for the header that the range encoder needs, 2 bytes for signing
 
-#if ENCRYPTION_RIJNDAEL
-	while ((nBig - 2) & 15)
-		nBig++;
+#if ALLOW_ENCRYPTION
+	const int blockSize = ChannelSecurity::CCipher::GetBlockSize();
+	if (blockSize > 1)
+	{
+		NET_ASSERT(IsPowerOfTwo(blockSize));
+		while ((nBig - 2) & (blockSize - 1))
+			nBig++;
 
-	m_outputStreamImpl.GetOutput().PutZeros(nBig - nSent - 1);
+		m_outputStreamImpl.GetOutput().PutZeros(nBig - nSent - 1);
 
-	NET_ASSERT(0 == ((nBig - 2) & 15));
+		NET_ASSERT(0 == ((nBig - 2) & (blockSize - 1)));
+	}
 #endif
 
 	debugPacketDataSizeEndData(eDPDST_Padding, m_outputStreamImpl.GetBitSize());
@@ -2494,24 +2611,35 @@ uint32 CCTPEndpoint::SendPacket(CTimeValue nTime, const SSendPacketParams& param
 	uint8 hash = QuickHashBytes(normBytes, nBig - 2);
 	endBytes[1] = hash ^ signingKey;
 
-	state.Encrypt(normBytes + 2, nBig - 2);
+	if (!state.Encrypt(normBytes + 2, nBig - 2))
+	{
+		m_pParent->Disconnect(eDC_ProtocolError, "Encription failure");
+		return 0;
+	}
 	STATS.EndPacket(nBig);
 
 #if DEBUG_SEQUENCE_NUMBERS
-	*(uint32*)(normBytes + nBig) = m_nOutputSeq;
+	*(uint32*)(normBytes + nBig) = m_nOutputSeq.value;
 #endif
-	//	DumpBytes( normBytes, nBig + 4*DEBUG_SEQUENCE_NUMBERS );
+
+	const size_t messageSize = nBig + 4 * DEBUG_SEQUENCE_NUMBERS;
+	const size_t packetSize = messageSize + ChannelSecurity::CHMac::HashSize;
+	uint8* pHmacData = normBytes + nBig + 4 * DEBUG_SEQUENCE_NUMBERS;
+	m_pParent->GetHmac().HashAndFinish(normBytes, messageSize, pHmacData);
+
+	//NetLog("message size %zu, packet size %zu", messageSize, packetSize);
+	//DumpBytes( normBytes, packetSize );
 	if (actuallySend)
-		m_pParent->Send(normBytes, nBig + 4 * DEBUG_SEQUENCE_NUMBERS);
+		m_pParent->Send(normBytes, packetSize);
 	else
 		NetWarning("Refusing to send corrupted packet");
-	m_assemblySize = nBig + 4 * DEBUG_SEQUENCE_NUMBERS;
-	m_PacketRateCalculator.SentPacket(nTime, m_nOutputSeq, nBig);
+	m_assemblySize = packetSize;
+	m_PacketRateCalculator.SentPacket(nTime, m_nOutputSeq.value, packetSize);
 #if ENABLE_DEBUG_KIT
 	debugPacket.Sent();
 #endif
 
-	debugPacketDataSizeEndPacket(8 * nBig);
+	debugPacketDataSizeEndPacket(8 * packetSize);
 
 	m_nSent++;
 
@@ -2602,15 +2730,15 @@ void CCTPEndpoint::SchedulerDebugDraw()
 	float drawScale = CNetCVars::Get().DebugDrawScale;
 	float white[] = { 1, 1, 1, 1 };
 	m_queue.DrawLabel(0.0f, 0.0f, white, "Channel: [%s]", m_pParent->GetName());
-	m_queue.DrawLabel(0.0f, drawScale * 10.0f, white, "OutputSeq:%d", m_nOutputSeq);
-	m_queue.DrawLabel(drawScale * 150.0f, drawScale * 10.0f, white, "InputAck:%d", m_nInputAck);
-	m_queue.DrawLabel(drawScale * 250.0f, drawScale * 10.0f, white, "InputSeq:%d", m_nInputSeq);
+	m_queue.DrawLabel(0.0f, drawScale * 10.0f, white, "OutputSeq:%u", m_nOutputSeq);
+	m_queue.DrawLabel(drawScale * 150.0f, drawScale * 10.0f, white, "InputAck:%u", m_nInputAck);
+	m_queue.DrawLabel(drawScale * 250.0f, drawScale * 10.0f, white, "InputSeq:%u", m_nInputSeq);
 	m_queue.DrawLabel(drawScale * 350.0f, drawScale * 10.0f, white, "PacketRateCalculator Ping:%f", m_PacketRateCalculator.GetPing(false));
 
 	SSchedulingParams schedParams;
 	schedParams.now = g_time;
 	schedParams.next = schedParams.now + 0.1f;
-	schedParams.nSeq = m_nOutputSeq;
+	schedParams.nSeq = m_nOutputSeq.value;
 	//	int age = m_nOutputSeq - m_nInputAck;
 #if !NEW_BANDWIDTH_MANAGEMENT
 	schedParams.targetBytes = m_PacketRateCalculator.GetMaxPacketSize(schedParams.now);
@@ -2631,11 +2759,11 @@ void CCTPEndpoint::ChannelStatsDraw()
 {
 	float drawScale = CNetCVars::Get().DebugDrawScale;
 	static float y = drawScale * 30.f;
-	static int yframe = -1;
+	static uint64 yframe = 0;
 	float white[4] = { 1, 1, 1, 1 };
 	float cyan[4] = { 0, 1, 1, 1 };
 
-	int frame = gEnv->pRenderer->GetFrameID();
+	uint64 frame = gEnv->pSystem->GetUpdateCounter();
 	if (frame != yframe)
 	{
 		yframe = frame;
@@ -2679,11 +2807,11 @@ void CCTPEndpoint::ChannelStatsDraw()
 		backoffTimeStr += "..";
 
 	y += (drawScale * 10.0f);
-	m_queue.DrawLabel(0.0f, y, white, "%4d", static_cast<uint32>(m_PacketRateCalculator.GetPing(false) / 1000.0f));
-	m_queue.DrawLabel(drawScale * 40.0f, y, white, "[%4d]", static_cast<uint32>(m_PacketRateCalculator.GetPing(true) / 1000.0f));
+	m_queue.DrawLabel(0.0f, y, white, "%.2f", m_PacketRateCalculator.GetPing(false) * 1000.0f);
+	m_queue.DrawLabel(drawScale * 40.0f, y, white, "[%.2f]", m_PacketRateCalculator.GetPing(true) * 1000.0f);
 	//m_queue.DrawLabel(drawScale * 80.0f, y, white, "%13.2f", m_PacketRateCalculator.GetTcpFriendlyBitRate());
-	m_queue.DrawLabel(drawScale * 120.0f, y, white, "%-6d", m_PacketRateCalculator.GetBandwidthUsage(g_time, CPacketRateCalculator::eIO_Incoming));
-	m_queue.DrawLabel(drawScale * 160.0f, y, white, "%-6d", m_PacketRateCalculator.GetBandwidthUsage(g_time, CPacketRateCalculator::eIO_Outgoing));
+	m_queue.DrawLabel(drawScale * 120.0f, y, white, "%.1f", m_PacketRateCalculator.GetBandwidthUsage(g_time, CPacketRateCalculator::eIO_Incoming) * 8);
+	m_queue.DrawLabel(drawScale * 160.0f, y, white, "%.1f", m_PacketRateCalculator.GetBandwidthUsage(g_time, CPacketRateCalculator::eIO_Outgoing) * 8);
 	m_queue.DrawLabel(drawScale * 200.0f, y, white, "%3.2f", m_PacketRateCalculator.GetPacketRate(IsIdle(), g_time));
 	m_queue.DrawLabel(drawScale * 240.0f, y, white, "%3.2f", m_PacketRateCalculator.GetCurrentPacketRate(g_time));
 	m_queue.DrawLabel(drawScale * 280.0f, y, white, "%3.1f", m_PacketRateCalculator.GetPacketLossPerPacketSent(g_time) * 100.0f);
@@ -2742,7 +2870,7 @@ void CCTPEndpoint::SentElem(uint32& head, const SSendableHandle& hdl)
 	head = cur;
 }
 
-void CCTPEndpoint::AckMessages(uint32& head, uint32 nSeq, bool ack, bool clear)
+void CCTPEndpoint::AckMessages(uint32& head, SSeqNumber nSeq, bool ack, bool clear)
 {
 	static const size_t MESSAGE_BUFFER_SIZE = 4096;
 	static CryFixedArray<SSendableHandle, MESSAGE_BUFFER_SIZE / sizeof(SSendableHandle)> temp;
@@ -2752,7 +2880,7 @@ void CCTPEndpoint::AckMessages(uint32& head, uint32 nSeq, bool ack, bool clear)
 		SSentElem& elem = m_sentElems[cur];
 		if (temp.isfull())
 		{
-			m_queue.AckMessages(&temp[0], temp.size(), nSeq, ack, clear);
+			m_queue.AckMessages(&temp[0], temp.size(), nSeq.value, ack, clear);
 			temp.clear();
 		}
 		temp.push_back(elem.hdl);
@@ -2765,7 +2893,7 @@ void CCTPEndpoint::AckMessages(uint32& head, uint32 nSeq, bool ack, bool clear)
 	head = InvalidSentElem;
 	if (temp.size() != 0)
 	{
-		m_queue.AckMessages(&temp[0], temp.size(), nSeq, ack, clear);
+		m_queue.AckMessages(&temp[0], temp.size(), nSeq.value, ack, clear);
 		temp.clear();
 	}
 }

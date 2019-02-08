@@ -13,10 +13,9 @@
    - 13/01/2006   : Continued by Jan Müller
 *************************************************************************/
 
-#ifndef __LANQUERYLISTENER_H__
-#define __LANQUERYLISTENER_H__
-
 #pragma once
+
+#if ENABLE_GAME_QUERY
 
 #include "INetworkMember.h"
 #include "Socket/IDatagramSocket.h"
@@ -122,4 +121,4 @@ private:
 	TOutstandingPings m_outstandingPings;
 };
 
-#endif
+#endif // ENABLE_GAME_QUERY

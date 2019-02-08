@@ -35,7 +35,7 @@ CNetCVars::CNetCVars()
 	NET_ASSERT(!s_pThis);
 	s_pThis = this;
 
-#if ALLOW_ENCRYPTION
+#if ENCRYPTION_GENERATE_KEYS
 	#if defined(_DEBUG) || defined(DEBUG)
 	REGISTER_COMMAND_DEV_ONLY("net_ExpKeyXch_test", CExponentialKeyExchange::Test, 0, "");
 	#endif

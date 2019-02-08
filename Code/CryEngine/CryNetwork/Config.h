@@ -202,16 +202,50 @@
 
 #define VERBOSE_MALFORMED_PACKET_REPORTS 1
 
-// Using rijndael cipher will pad data to multiple of 16 bytes
+// Using rijndael/aes cipher will pad data to multiple of 16 bytes
 // Using stream cipher there is no padding
-#define ENCRYPTION_RIJNDAEL     1
+
+#define ENCRYPTION_RIJNDAEL     0
 #define ENCRYPTION_STREAMCIPHER 0
+#define ENCRYPTION_CNG_AES      0
+#define ENCRYPTION_TOMCRYPT_AES 0
+
+#if CRYNETWORK_USE_CNG
+	#undef ENCRYPTION_CNG_AES
+	#define ENCRYPTION_CNG_AES 1
+#elif CRYNETWORK_USE_TOMCRYPT
+	#undef ENCRYPTION_TOMCRYPT_AES
+	#define ENCRYPTION_TOMCRYPT_AES 1
+#else
+	#undef ENCRYPTION_RIJNDAEL
+	#define ENCRYPTION_RIJNDAEL 1
+#endif
+
+// HMAC-SHA256 adds 32 bytes to the packet.
+#define HMAC_CNG_SHA256         0
+#define HMAC_TOMCRYPT_SHA256    0
+
+#if CRYNETWORK_USE_CNG
+	#undef HMAC_CNG_SHA256
+	#define HMAC_CNG_SHA256 1
+#elif CRYNETWORK_USE_TOMCRYPT
+	#undef HMAC_TOMCRYPT_SHA256
+	#define HMAC_TOMCRYPT_SHA256 1
+#endif
+
+
 
 // this is here so that console and pc can talk to each other with the online services
 // enabled. once the platform specific services are up and running this shouldn't be needed
 #define ENABLE_PLATFORM_PROTOCOL 1
 
-#define ALLOW_ENCRYPTION (ENCRYPTION_RIJNDAEL || ENCRYPTION_STREAMCIPHER)
+#define ALLOW_HMAC (HMAC_CNG_SHA256 || HMAC_TOMCRYPT_SHA256)
+#define ALLOW_ENCRYPTION (ENCRYPTION_RIJNDAEL || ENCRYPTION_STREAMCIPHER || ENCRYPTION_CNG_AES || ENCRYPTION_TOMCRYPT_AES)
+#if (ALLOW_ENCRYPTION || ALLOW_HMAC) && CRYNETWORK_GENERATE_ENCRYPTION_KEYS
+	// If enabled, generate and exchange own keys/cryptographic material. 
+	// Otherwise - cryptographic material have to be supplied from outside through a different communication channel.
+	#define ENCRYPTION_GENERATE_KEYS 1
+#endif
 
 // never ever release with this defined
 #define INTERNET_SIMULATOR   1
@@ -464,6 +498,16 @@
 	#if ENABLE_BUFFER_VERIFICATION
 		#error Cannot define ENABLE_BUFFER_VERIFICATION and ALLOW_ENCRYPTION at once
 	#endif
+
+	#if (ENCRYPTION_RIJNDAEL + ENCRYPTION_STREAMCIPHER + ENCRYPTION_CNG_AES + ENCRYPTION_TOMCRYPT_AES) > 1
+		#error "Multiple encryption modes cannot be active"
+	#endif
+#endif
+
+#if ALLOW_HMAC
+	#if (HMAC_CNG_SHA256 + HMAC_TOMCRYPT_SHA256) > 1
+		#error "Multiple HMAC modes cannot be active"
+	#endif
 #endif
 
 #if INTERNET_SIMULATOR
@@ -551,5 +595,11 @@ static inline bool ServerFileSyncEnabled()
 	#endif
 }
 #endif // SERVER_FILE_SYNC_MODE
+
+
+// Enable support of IGameQuery/IGameQueryListener/etc.
+#if CRYNETWORK_SUPPORT_GAME_QUERY
+#define ENABLE_GAME_QUERY 1
+#endif
 
 #endif

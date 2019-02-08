@@ -7,7 +7,7 @@
 
 static const int NUM_SEQ_SLOTS = 64;
 
-static const uint32 PROTOCOL_VERSION = 6;
+static const uint32 PROTOCOL_VERSION = 7;
 
 enum EHeaders
 {
@@ -15,14 +15,16 @@ enum EHeaders
 	eH_INVALID = 0,
 	// external protocols
 	eH_CryLobby,
+#if ENABLE_GAME_QUERY
 	eH_PingServer, // 'kind' of external
 	eH_QueryLan,   // also 'kind' of external - we want it in a constant non-time-varying place in the protocol
+#endif
 	eH_PunkBuster, // EvenBalance - M. Quinn
 	eH_ConnectionSetup,
 	eH_Disconnect,
 	eH_DisconnectAck,
 	// must be after external and before internal
-	eH_FIRST_GENERAL_ENTRY,
+	eH_FIRST_GENERAL_ENTRY = 16,
 	// internal protocols
 	eH_TransportSeq0,
 	eH_TransportSeq_Last     = eH_TransportSeq0 + NUM_SEQ_SLOTS - 1,
@@ -33,7 +35,6 @@ enum EHeaders
 	eH_KeepAlive,
 	eH_KeepAliveReply,
 	eH_BackOff,
-	eH_AlreadyConnecting,
 	eH_Fragmentation,
 	eH_DediServerScheduler, // Expected on dedicated server scheduler socket only, CServerDefence is listener
 	// following must be last

@@ -25,8 +25,10 @@ void InitFrameTypes()
 #ifdef __WITH_PB__
 	Frame_HeaderToID[0xff] = eH_PunkBuster;
 #endif
+#if ENABLE_GAME_QUERY
 	Frame_HeaderToID[uchar('P')] = eH_PingServer;
 	Frame_HeaderToID[uchar('?')] = eH_QueryLan;
+#endif
 	Frame_HeaderToID[uchar('C')] = eH_CryLobby;
 	uchar conn = '<';
 	uchar discon = '>';
