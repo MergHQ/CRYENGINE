@@ -238,7 +238,7 @@ public:
 	{
 		SetDebugLocked(false);
 		const int counter = CryInterlockedDecrement(&m_readCount);     // release read
-		assert(counter >= 0);
+		CRY_ASSERT(counter >= 0);
 		if (m_writeLock.TryLock())
 			m_writeLock.Unlock();
 		else if (counter == 0 && m_modifyCount)
@@ -259,7 +259,7 @@ public:
 
 #if defined(USE_CRY_ASSERT)
 		int counter = CryInterlockedDecrement(&m_modifyCount);    // decrement write counter
-		assert(counter >= 0);
+		CRY_ASSERT(counter >= 0);
 #else
 		CryInterlockedDecrement(&m_modifyCount);    // decrement write counter
 #endif
@@ -288,8 +288,8 @@ protected:
 		if (!m_writeLock.TryLock())
 		{
 #ifdef _DEBUG
-			assert(!m_debugLocked);
-			assert(!bDebug);
+			CRY_ASSERT(!m_debugLocked);
+			CRY_ASSERT(!bDebug);
 #endif
 			if (bTry)
 				return false;

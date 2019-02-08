@@ -662,13 +662,13 @@ struct SUIArguments
 
 	inline const TUIData& GetArg(int index) const
 	{
-		assert(index >= 0 && index < m_ArgList.size());
+		CRY_ASSERT(index >= 0 && index < m_ArgList.size());
 		return m_ArgList[index].Data;
 	}
 
 	inline EUIDataTypes GetArgType(int index) const
 	{
-		assert(index >= 0 && index < m_ArgList.size());
+		CRY_ASSERT(index >= 0 && index < m_ArgList.size());
 		return m_ArgList[index].Type;
 	}
 
@@ -683,9 +683,9 @@ struct SUIArguments
 	template<class T>
 	inline void GetArgNoConversation(int index, T& val) const
 	{
-		assert(index >= 0 && index < m_ArgList.size());
+		CRY_ASSERT(index >= 0 && index < m_ArgList.size());
 		const T* valPtr = m_ArgList[index].Data.GetPtr<T>();
-		assert(valPtr);
+		CRY_ASSERT(valPtr);
 		val = *valPtr;
 	}
 
@@ -769,7 +769,7 @@ private:
 						            || TryAddValue<float>(it->Data)
 						            || (it->Data.GetType() == eUIDT_String && AddValue<string>(it->Data))
 						            || (it->Data.GetType() == eUIDT_WString && AddValue<wstring>(it->Data));
-						assert(bRes);
+						CRY_ASSERT(bRes);
 #else
 					TryAddValue<int>(it->Data)
 						|| TryAddValue<float>(it->Data)
@@ -779,7 +779,7 @@ private:
 					}
 					break;
 				default:
-					assert(false);
+					CRY_ASSERT(false);
 					break;
 				}
 			}
@@ -791,7 +791,7 @@ private:
 	inline bool AddValue(const TUIData& data) const
 	{
 		const T* val = data.GetPtr<T>();
-		assert(val);
+		CRY_ASSERT(val);
 		m_FlashValueBuffer.push_back(SFlashVarValue(*val));
 		return true;
 	}
@@ -822,7 +822,7 @@ private:
 				CryStringT<T> val;
 #if defined(USE_CRY_ASSERT)
 				bool bRes = it->Data.GetValueWithConversion(val);
-				assert(bRes && "try to convert to char* string list but some of the values are unsupported wchar_t*");
+				CRY_ASSERT(bRes && "try to convert to char* string list but some of the values are unsupported wchar_t*");
 #else
 				it->Data.GetValueWithConversion(val);
 #endif
@@ -846,7 +846,7 @@ private:
 	}
 
 	template<class T>
-	inline void setStringBuffer(const T* str) { assert(false); }
+	inline void setStringBuffer(const T* str) { CRY_ASSERT(false); }
 };
 
 //! Specialize in global scope.
@@ -904,7 +904,7 @@ template<class T> struct SUIItemLookupIDD
 {
 	static inline const char* GetId(const T* p)
 	{
-		assert(false);
+		CRY_ASSERT(false);
 		return "";
 	}
 };
@@ -951,7 +951,7 @@ struct SUIItemLookupSet_Impl
 
 	void push_back(Base* item)
 	{
-		assert(m_Lookup[CCryName(SUIItemLookupIDD < Base > ::GetId(item))] == 0);
+		CRY_ASSERT(m_Lookup[CCryName(SUIItemLookupIDD < Base > ::GetId(item))] == 0);
 		m_Lookup[CCryName(SUIItemLookupIDD < Base > ::GetId(item))] = m_Items.size();
 		m_Items.push_back(item);
 	}
@@ -973,7 +973,7 @@ struct SUIItemLookupSet_Impl
 				}
 			}
 		}
-		assert(false);
+		CRY_ASSERT(false);
 	}
 
 	void clear()
@@ -1045,7 +1045,7 @@ struct SUIItemLookupSet_DllSafeImpl
 	inline size_type      capacity() const                     { return m_pImpl->capacity(); }
 
 protected:
-	inline SUIItemLookupSet_Impl<Base>* CreateLookupImpl() { assert(false); return NULL; }
+	inline SUIItemLookupSet_Impl<Base>* CreateLookupImpl() { CRY_ASSERT(false); return NULL; }
 
 protected:
 	SUIItemLookupSet_Impl<Base>* m_pImpl;
@@ -1528,7 +1528,7 @@ struct IUIElement
 			if (out.GetValueWithConversion(res))
 				return res;
 		}
-		assert(false);
+		CRY_ASSERT(false);
 		return T();
 	}
 
@@ -1828,9 +1828,9 @@ public:
 };
 
 #if !defined(_LIB)
-inline SUIItemLookupSet_Impl<SUIParameterDesc>* SUIItemLookupSetFactory::CreateLookupParameter() { assert(gEnv->pFlashUI); return gEnv->pFlashUI->CreateLookupParameter(); }
-inline SUIItemLookupSet_Impl<SUIMovieClipDesc>* SUIItemLookupSetFactory::CreateLookupMovieClip() { assert(gEnv->pFlashUI); return gEnv->pFlashUI->CreateLookupMovieClip(); }
-inline SUIItemLookupSet_Impl<SUIEventDesc>*     SUIItemLookupSetFactory::CreateLookupEvent()     { assert(gEnv->pFlashUI); return gEnv->pFlashUI->CreateLookupEvent(); }
+inline SUIItemLookupSet_Impl<SUIParameterDesc>* SUIItemLookupSetFactory::CreateLookupParameter() { CRY_ASSERT(gEnv->pFlashUI); return gEnv->pFlashUI->CreateLookupParameter(); }
+inline SUIItemLookupSet_Impl<SUIMovieClipDesc>* SUIItemLookupSetFactory::CreateLookupMovieClip() { CRY_ASSERT(gEnv->pFlashUI); return gEnv->pFlashUI->CreateLookupMovieClip(); }
+inline SUIItemLookupSet_Impl<SUIEventDesc>*     SUIItemLookupSetFactory::CreateLookupEvent()     { CRY_ASSERT(gEnv->pFlashUI); return gEnv->pFlashUI->CreateLookupEvent(); }
 #endif
 
 DECLARE_SHARED_POINTERS(IFlashUI);
@@ -1889,11 +1889,11 @@ template<EUIObjectType type, class Item, class Idx> struct SUIGetDesc
 {
 	static const typename SUIDescTypeOf<type>::TType * GetDesc(Item * pItem, Idx i)
 	{
-		assert(false);
+		CRY_ASSERT(false);
 		return NULL;
 	} static int GetCount(Item* pItem)
 	{
-		assert(false);
+		CRY_ASSERT(false);
 		return 0;
 	}
 };

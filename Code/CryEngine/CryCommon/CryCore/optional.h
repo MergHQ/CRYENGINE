@@ -80,7 +80,7 @@ namespace stl
 	//! Remove once we move to C++17
 
 	struct nullopt_t {};
-	static nullopt_t nullopt;
+	constexpr nullopt_t nullopt;
 
 	struct optional_ctor_inplace {};
 
