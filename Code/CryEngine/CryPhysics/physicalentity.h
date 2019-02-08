@@ -379,7 +379,7 @@ public:
 	int m_nGroundPlanes;
 
 	int (*m_pUsedParts)[16];
-	volatile unsigned int m_nUsedParts;
+	volatile uint64 m_nUsedParts;
 
 	CPhysicalPlaceholder *m_pLastPortal = nullptr;
 	CPhysicalPlaceholder *GetLastPortal() const { return m_pLastPortal; }

@@ -1777,7 +1777,8 @@ int CPhysicalWorld::GetEntitiesAround(const Vec3 &ptmin,const Vec3 &ptmax, CPhys
 	CPhysicalEntity **pTmpEntList;
 	int nout=0,nout0=0,itypePetitioner;
 
-	int maskCaller = 1<<iCaller, maskCaller4 = sqr(sqr(maskCaller));
+	int maskCaller = 1<<iCaller;
+	uint64 maskCaller4 = 1ull<<iCaller*4;
 	EventPhysBBoxOverlap event;
 	int szList = GetTmpEntList(pTmpEntList, iCaller);
 	IF ((szListPrealloc | (objtypes & ent_allocate_list))==0, 1) {
@@ -1936,12 +1937,12 @@ int CPhysicalWorld::GetEntitiesAround(const Vec3 &ptmin,const Vec3 &ptmax, CPhys
 									AtomicAdd(&pent->m_lockUpdate, bProcessed^1);
 									volatile char *pw=(volatile char*)&pent->m_lockUpdate+(1+eBigEndian); for(;*pw;); // ReadLock(m_lockUpdate)
 									AtomicAdd(&pent->m_bProcessed, maskCaller & ~-bProcessed);
-									AtomicAdd(&pent->m_nUsedParts, (pent->m_nUsedParts & 15*maskCaller4)*(bProcessed-1u));
+									CryInterlockedAdd((int64*)&pent->m_nUsedParts, (pent->m_nUsedParts & 15*maskCaller4)*(bProcessed-1u));
 									int nUsedParts = pent->m_nUsedParts>>iCaller*4 & 15;
 									int notFull = nUsedParts+1>>4 ^ 1;
 									notFull &= 1-iszero((INT_PTR)pGridEnt->m_pEntBuddy);
 									nUsedParts += notFull;
-									AtomicAdd(&pent->m_nUsedParts, maskCaller4 & -notFull);
+									CryInterlockedAdd((int64*)&pent->m_nUsedParts, maskCaller4 & -(int64)notFull);
 									pent->m_pUsedParts[iCaller][nUsedParts-1] = -2-pGridEnt->m_id;
 									if (!bProcessed)
 										pTmpEntList[nout++] = pent;
@@ -4400,7 +4401,7 @@ float CPhysicalWorld::PrimitiveWorldIntersection(const SPWIParams &pp, WriteLock
 		pents = (CPhysicalEntity**)pp.pSkipEnts;
 		nents = -pp.nSkipEnts;
 		for(i=0;i<nents;i++) if (pents[i]->m_flags & pef_parts_traceable)
-			AtomicAdd(&pents[i]->m_nUsedParts, (15<<iCaller*4) - (pents[i]->m_nUsedParts & 15<<iCaller*4));
+			CryInterlockedAdd((int64*)&pents[i]->m_nUsedParts, (15ull<<iCaller*4) - (pents[i]->m_nUsedParts & 15ull<<iCaller*4));
 	}
 
 	if (ip.bSweepTest && nents>0) {
@@ -5294,7 +5295,7 @@ void CPhysicalWorld::RasterizeEntities(const grid3d& grid, uchar *rbuf, int objt
 	for(j=ibbox[0].y;j<=ibbox[1].y;j++) memset(rbuf+j*ystride+ibbox[0].x, 0, (ibbox[1].x-ibbox[0].x+1));
 	if (pent)	{
 		ient=0; pents=(CPhysicalEntity**)&pent;
-		AtomicAdd(&pents[0]->m_nUsedParts, -((int)pents[0]->m_nUsedParts & 15<<iCaller*4));	// make sure GetUsedParts goes over all parts
+		CryInterlockedAdd((int64*)&pents[0]->m_nUsedParts, -((int64)pents[0]->m_nUsedParts & 15ll<<iCaller*4));	// make sure GetUsedParts goes over all parts
 	} else
 		ient = GetEntitiesAround(grid.origin+max(Vec3(ZERO),offsBBox-sizeBBox),grid.origin+min(wbounds,offsBBox+sizeBBox),pents,objtypes)-1;
 
