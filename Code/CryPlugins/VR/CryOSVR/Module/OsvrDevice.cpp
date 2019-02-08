@@ -286,7 +286,6 @@ void Device::GetCameraSetupInfo(float& fov, float& aspectRatioFactor) const
 
 HMDCameraSetup Device::GetHMDCameraSetup(int nEye, float ratio, float fnear) const
 {
-	const EyeSetup& setup = m_eyes[nEye];
 	// TODO: Generate projection matrix
 	assert(false);
 	return HMDCameraSetup{};

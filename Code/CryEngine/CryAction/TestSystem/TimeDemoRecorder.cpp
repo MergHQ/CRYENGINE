@@ -2610,7 +2610,6 @@ void CTimeDemoRecorder::ProcessKeysInput()
 	if (!gEnv->IsDedicated() && gEnv->pSystem->IsDevMode())
 	{
 		// Check if special development keys where pressed.
-		bool bAlt = ((CryGetAsyncKeyState(VK_LMENU) & (1 << 15)) != 0) || (CryGetAsyncKeyState(VK_RMENU) & (1 << 15)) != 0;
 		bool bCtrl = (CryGetAsyncKeyState(VK_CONTROL) & (1 << 15)) != 0;
 		bool bShift = (CryGetAsyncKeyState(VK_SHIFT) & (1 << 15)) != 0;
 

@@ -4364,7 +4364,6 @@ void NavigationSystem::GetMemoryStatistics(ICrySizer* pSizer)
 
 			const NavigationMesh& mesh = m_meshes[meshID];
 			const MNM::OffMeshNavigation& offMeshNavigation = m_offMeshNavigationManager.GetOffMeshNavigationForMesh(meshID);
-			const AgentType& agentType = m_agentTypes[mesh.agentTypeID - 1];
 
 			const NavigationMesh::ProfileMemoryStats meshMemStats = mesh.GetMemoryStats(pSizer);
 			const MNM::OffMeshNavigation::ProfileMemoryStats offMeshMemStats = offMeshNavigation.GetMemoryStats(pSizer);
@@ -4544,7 +4543,6 @@ MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem&
 
 	NavigationMesh& mesh = navigationSystem.m_meshes[settings.meshID];
 	const MNM::CNavMesh::SGridParams& paramsGrid = mesh.navMesh.GetGridParams();
-	const AgentType& agentType = navigationSystem.m_agentTypes[m_agentTypeID - 1];
 
 	bool forceGeneration = settings.forceGeneration;
 	size_t selectedX = settings.selectedX;
@@ -5354,7 +5352,6 @@ void NavigationSystemDebugDraw::DebugDrawMeshBorders(NavigationSystem& navigatio
 	IF_UNLIKELY(!meshID)
 		return;
 
-	const NavigationMesh& mesh = navigationSystem.GetMesh(meshID);
 	const INavMeshQueryFilter* pDebugQueryFilter = GetDebugQueryFilter("MNMDebugQueryFilter");
 	const MNM::aabb_t aabb(
 		MNM::vector3_t(debugObject.objectPos - Vec3(10.0f)), 
