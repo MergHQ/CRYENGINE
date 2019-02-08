@@ -80,7 +80,6 @@ public:
 	// Start accepting work on thread
 	virtual void ThreadEntry()
 	{
-		IInput* pInput = m_pInput;
 		XINPUT_CAPABILITIES caps;
 
 		while (!m_bQuit)
