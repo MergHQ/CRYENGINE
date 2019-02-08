@@ -81,8 +81,7 @@ LRESULT CSourceEdit::OnPaint(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	int w, h;
 	UINT i;
 	int iLine;
-	const char* pszFile = NULL;
-	/////////////////////////////
+
 	GetClientRect(&rect);
 	w = rect.right - rect.left;
 	h = rect.bottom - rect.top;
@@ -1112,7 +1111,6 @@ void CLUADbg::GetStackAndLocals()
 	{
 		std::vector<SLuaStackEntry> callstack;
 		m_pScriptSystem->GetCallStack(callstack);
-		const char* pszText = NULL;
 		int iItem = 0;
 		m_wCallstack.Clear();
 
@@ -1378,7 +1376,6 @@ HTREEITEM CLUADbg::AddVariableToTree(const char* sName, ScriptVarType type, HTRE
 		}
 		else
 		{
-			float fVal = 0;
 			if (type == svtString)
 			{
 				bRetrieved = m_pIVariable->GetValue(sName, szContent);
@@ -1427,7 +1424,6 @@ HTREEITEM CLUADbg::AddVariableToTree(const char* sName, ScriptVarType type, HTRE
 void CLUADbg::OnElementFound(const char* sName, ScriptVarType type)
 {
 	HTREEITEM hRoot = NULL;
-	UINT iRecursionLevel = 0;
 	SmartScriptTable pTable(m_pScriptSystem, true);
 	IScriptTable* pIOldTbl = NULL;
 	HTREEITEM hOldRoot = NULL;
