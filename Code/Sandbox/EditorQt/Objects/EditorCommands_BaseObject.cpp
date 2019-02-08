@@ -1,13 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include <StdAfx.h>
 
-// EditorCommon
-#include <ICommandManager.h>
-#include <IUndoObject.h>
-#include <Controls/QuestionDialog.h>
-#include <FileDialogs/SystemFileDialog.h>
-#include <Objects/ObjectLoader.h>
-
 // Sandbox
 #include "IEditorImpl.h"
 #include "Objects/ObjectManager.h"
@@ -21,6 +14,13 @@
 #include "Util/CubemapUtils.h"
 #include "Vegetation/VegetationMap.h"
 #include "Dialogs/DuplicatedObjectsHandlerDlg.h"
+
+// EditorCommon
+#include <Commands/ICommandManager.h>
+#include <IUndoObject.h>
+#include <Controls/QuestionDialog.h>
+#include <FileDialogs/SystemFileDialog.h>
+#include <Objects/ObjectLoader.h>
 
 // CryCommon
 #include <CrySystem/ICryLink.h>

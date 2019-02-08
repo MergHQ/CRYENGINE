@@ -4,10 +4,10 @@
 
 #include "EditorCommonAPI.h"
 
+#include "Commands/ICommandManager.h"
 #include "EditorFramework/StateSerializable.h"
 #include "IEditor.h"
 #include "IEditorClassFactory.h"
-#include "ICommandManager.h"
 
 #include <QMainWindow>
 #include <QMenu>

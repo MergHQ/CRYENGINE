@@ -3,13 +3,13 @@
 
 #include "Objects/ObjectLayer.h"
 #include "Objects/ObjectLayerManager.h"
-#include "ICommandManager.h"
 #include "EditorFramework/Events.h"
 
 #include "Util/BoostPythonHelpers.h"
 #include "CryEdit.h"
 #include "IEditorImpl.h"
 
+#include <Commands/ICommandManager.h>
 #include <IObjectManager.h>
 #include <IUndoObject.h>
 #include <Dialogs/QNumericBoxDialog.h>

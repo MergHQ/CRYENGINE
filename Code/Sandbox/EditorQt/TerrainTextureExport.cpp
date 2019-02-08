@@ -3,18 +3,22 @@
 #include "StdAfx.h"
 #include "TerrainTextureExport.h"
 
+// Sandbox
 #include "Terrain/TerrainTexGen.h"
 #include "Terrain/TerrainManager.h"
 #include "CryEditDoc.h"
 #include "ResizeResolutionDialog.h"
 #include "TerrainLighting.h"
 
+// MFC Tools
 #include <Util/FileUtil.h>
 
+// Editor Common
 #include <Controls/QuestionDialog.h>
 #include <EditorFramework/PersonalizationManager.h>
 #include <FileDialogs/SystemFileDialog.h>
 #include <PathUtils.h>
+#include <QtUtil.h>
 #include <Viewport.h>
 
 #define TERRAIN_PREVIEW_RESOLUTION 256
@@ -68,7 +72,7 @@ BOOL CTerrainTextureExport::OnInitDialog()
 
 	m_terrain.Allocate(TERRAIN_PREVIEW_RESOLUTION, TERRAIN_PREVIEW_RESOLUTION);
 
-	string filePath(GET_PERSONALIZATION_PROPERTY(CTerrainTextureExport, szFileProperty).toString().toLocal8Bit());
+	string filePath(QtUtil::ToString(GET_PERSONALIZATION_PROPERTY(CTerrainTextureExport, szFileProperty).toString()));
 	GetDlgItem(IDC_FILE)->SetWindowText(filePath);
 
 	CRGBLayer* pRGBLayer = GetIEditorImpl()->GetTerrainManager()->GetRGBLayer();
@@ -241,7 +245,7 @@ void CTerrainTextureExport::OnGenerate()
 
 string CTerrainTextureExport::BrowseTerrainTexture(bool bIsSave)
 {
-	string filePath(GET_PERSONALIZATION_PROPERTY(CTerrainTextureExport, szFileProperty).toString().toLocal8Bit());
+	string filePath(QtUtil::ToString(GET_PERSONALIZATION_PROPERTY(CTerrainTextureExport, szFileProperty).toString()));
 	if (filePath.empty())
 		filePath = CFileUtil::FormatInitialFolderForFileDialog(PathUtil::GamePathToCryPakPath("", true).c_str()) + "terraintex.bmp";
 

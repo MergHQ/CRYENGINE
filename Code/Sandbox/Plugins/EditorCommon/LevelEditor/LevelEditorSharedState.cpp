@@ -3,13 +3,14 @@
 #include <StdAfx.h>
 #include "LevelEditorSharedState.h"
 
+#include "Commands/ICommandManager.h"
 #include "Commands/QCommandAction.h"
 #include "LevelEditor/Tools/EditTool.h"
 #include "LevelEditor/Tools/PickObjectTool.h"
 #include "LevelEditor/Tools/ObjectMode.h"
 #include "EditorFramework/PersonalizationManager.h"
-#include "ICommandManager.h"
 #include "Viewport.h"
+
 #include <IEditor.h>
 #include <CrySystem/ISystem.h>
 #include <CrySystem/IConsole.h>

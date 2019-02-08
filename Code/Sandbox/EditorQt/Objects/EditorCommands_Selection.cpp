@@ -2,9 +2,9 @@
 #include <StdAfx.h>
 
 #include "IEditorImpl.h"
-#include "ICommandManager.h"
 #include "Objects/ObjectManager.h"
 
+#include <Commands/ICommandManager.h>
 #include <IUndoObject.h>
 #include <Viewport.h>
 

@@ -220,6 +220,13 @@ public:
 			, icon(nullptr)
 		{}
 
+		UiInfo(const string& text, const string& iconName, const CKeyboardShortcut& shortcut, bool checkable)
+			: buttonText(text)
+			, icon(iconName)
+			, key(shortcut)
+			, isCheckable(checkable)
+		{}
+
 		UiInfo(const char* text, const char* iconName, const CKeyboardShortcut& shortcut, bool checkable)
 			: buttonText(text)
 			, icon(iconName)

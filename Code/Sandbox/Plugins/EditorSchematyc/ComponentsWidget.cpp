@@ -17,7 +17,7 @@
 #include <ProxyModels/AttributeFilterProxyModel.h>
 #include <Controls/QPopupWidget.h>
 #include <Controls/DictionaryWidget.h>
-#include <ICommandManager.h>
+#include <Commands/ICommandManager.h>
 #include <EditorFramework/BroadcastManager.h>
 #include <EditorFramework/Inspector.h>
 

@@ -69,7 +69,7 @@
 #include <QtViewPane.h>
 #include <CryIcon.h>
 #include "Controls/QuestionDialog.h"
-#include <ICommandManager.h>
+#include <Commands/ICommandManager.h>
 #include "Preferences/ViewportPreferences.h"
 
 extern CharacterTool::System* g_pCharacterToolSystem;

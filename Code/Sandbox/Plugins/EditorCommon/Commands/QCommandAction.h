@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include "SandboxAPI.h"
 #include "Command.h"
+#include "EditorCommonAPI.h"
+
 #include <QAction>
 #include <QSet>
 #include <QKeySequence>
@@ -14,7 +15,7 @@ class CUiCommand;
 class CCustomCommand;
 
 //////////////////////////////////////////////////////////////////////////
-class QCommandAction : public QAction, public CUiCommand::UiInfo
+class EDITOR_COMMON_API QCommandAction : public QAction, public CUiCommand::UiInfo
 {
 	Q_OBJECT
 public:

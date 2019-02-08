@@ -1,8 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
-#include <Command.h>
+#include "Command.h"
 
-class CCustomCommand : public CCommand0
+class EDITOR_COMMON_API CCustomCommand : public CCommand0
 {
 public:
 	CCustomCommand(const string& name, const string& command);

@@ -5,31 +5,45 @@
 #include "Command.h"
 #include "CommandModuleDescription.h"
 #include "BoostPythonMacros.h"
+
+// CryCommon
+#include <CrySandbox/CrySignal.h>
 #include <CryCore/functor.h>
 
 typedef void (* TPfnDeleter)(void*);
 
+class CCustomCommand;
 class QAction;
+class QCommandAction;
 
 struct ICommandManager
 {
 	virtual ~ICommandManager() {}
-	virtual bool      AddCommand(CCommand* pCommand, TPfnDeleter deleter = nullptr) = 0;
-	virtual bool      AddCommandModule(CCommandModuleDescription* pCommand) = 0;
-	virtual void      SetUiDescription(const char* module, const char* name, const CUiCommand::UiInfo& info) const = 0;
-	virtual bool      UnregisterCommand(const char* cmdFullName) = 0;
-	virtual bool      IsRegistered(const char* module, const char* name) const = 0;
-	virtual bool      IsRegistered(const char* cmdLine) const = 0;
-	virtual CCommand* GetCommand(const char* cmdFullName) const = 0;
-	virtual void      SetChecked(const char* cmdFullName, bool checked) = 0;
+	virtual bool                             AddCommand(CCommand* pCommand, TPfnDeleter deleter = nullptr) = 0;
+	virtual bool                             AddCommandModule(CCommandModuleDescription* pCommand) = 0;
+	virtual void                             SetUiDescription(const char* module, const char* name, const CUiCommand::UiInfo& info) const = 0;
+	virtual bool                             UnregisterCommand(const char* cmdFullName) = 0;
+	virtual bool                             IsRegistered(const char* module, const char* name) const = 0;
+	virtual bool                             IsRegistered(const char* cmdLine) const = 0;
+	virtual bool                             IsCommandDeprecated(const char* cmdFullName) const = 0;
+	virtual const CCommandModuleDescription* FindOrCreateModuleDescription(const char* moduleName) = 0;
+	virtual CCommand*                        GetCommand(const char* cmdFullName) const = 0;
+	virtual void                             SetChecked(const char* cmdFullName, bool checked) = 0;
 	// Searches for a registered command and returns an action. If no UI command is found, we create a new action and use text to set the action text
-	virtual QAction*  GetAction(const char* cmdFullName, const char* text = nullptr) const = 0;
-	virtual string    Execute(const string& cmdLine) = 0;
-	virtual void      GetCommandList(std::vector<string>& cmds) const = 0;
-	virtual void      GetCommandList(std::vector<CCommand*>& cmds) const = 0;
-	virtual void      RemapCommand(const char* oldModule, const char* oldName, const char* newModule, const char* newName) = 0;
+	virtual QAction*                         GetAction(const char* cmdFullName, const char* text = nullptr) const = 0;
+	virtual string                           Execute(const string& cmdLine) = 0;
+	virtual void                             GetCommandList(std::vector<string>& cmds) const = 0;
+	virtual void                             GetCommandList(std::vector<CCommand*>& cmds) const = 0;
+	virtual void                             RemapCommand(const char* oldModule, const char* oldName, const char* newModule, const char* newName) = 0;
 	// Creates a new action for the given command, this action is already populated with predefined icons, text, etc but has independent state
-	virtual QAction*  CreateNewAction(const char* cmdFullName) const = 0;
+	virtual QAction*                         CreateNewAction(const char* cmdFullName) const = 0;
+	virtual void                             AddCustomCommand(CCustomCommand* pCommand) = 0;
+	virtual void                             RemoveCustomCommand(CCustomCommand* pCommand) = 0;
+
+	// signals
+	CCrySignal<void()>                signalChanged;
+	CCrySignal<void(CCommand*)>       signalCommandAdded;
+	CCrySignal<void(QCommandAction*)> signalCustomCommandAdded;
 };
 
 /// A set of helper template methods for an easy registration of commands

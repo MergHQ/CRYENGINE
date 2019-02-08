@@ -41,7 +41,7 @@
 #include <Notifications/NotificationCenter.h>
 #include <Preferences/ViewportPreferences.h>
 #include <QT/Widgets/QWaitProgress.h>
-#include <ICommandManager.h>
+#include <Commands/ICommandManager.h>
 #include <RenderViewport.h>
 #include <UIEnumsDatabase.h>
 

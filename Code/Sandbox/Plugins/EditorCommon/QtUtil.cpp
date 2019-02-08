@@ -102,6 +102,16 @@ QString GetAppDataFolder()
 	return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
 }
 
+void AssignMenuRole(QAction* action, const QString& roleString)
+{
+	if (roleString == STRINGIFY(QuitRole))
+		action->setMenuRole(QAction::QuitRole);
+	else if (roleString == STRINGIFY(PreferencesRole))
+		action->setMenuRole(QAction::PreferencesRole);
+	else if (roleString == STRINGIFY(AboutRole))
+		action->setMenuRole(QAction::AboutRole);
+}
+
 void DrawStatePixmap(QPainter* painter, const QRect& iconRect, const QPixmap& pixmap, QStyle::State state)
 {
 	QPixmap normal = QPixmap(pixmap.size());

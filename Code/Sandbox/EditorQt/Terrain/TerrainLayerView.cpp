@@ -151,9 +151,10 @@ void QTerrainLayerView::OnContextMenu(const QPoint& pos)
 	const QModelIndex indexUnderMousePress = indexAt(pos);
 	if (indexUnderMousePress.isValid())
 	{
-		QString name = "Create Layer (below)";
-		QString cmd = QString("terrain.create_layer_at '%1'").arg(indexUnderMousePress.row() + 1);
-		menu.addAction(new QCommandAction(name, (const char*)cmd.toLocal8Bit(), &menu));
+		string name = "Create Layer (below)";
+		string command;
+		command.Format("terrain.create_layer_at '%d'", indexUnderMousePress.row() + 1);
+		menu.addAction(new QCommandAction(name.c_str(), command.c_str(), &menu));
 
 		menu.addAction(pManager->GetAction("terrain.delete_layer"));
 		menu.addAction(pManager->GetAction("terrain.duplicate_layer"));

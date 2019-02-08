@@ -8,9 +8,9 @@
 #include "Prefabs/PrefabManager.h"
 #include "IEditorImpl.h"
 
-#include <Preferences/SnappingPreferences.h>
-#include <ICommandManager.h>
+#include <Commands/ICommandManager.h>
 #include <IUndoObject.h>
+#include <Preferences/SnappingPreferences.h>
 
 namespace Private_EditorCommands
 {

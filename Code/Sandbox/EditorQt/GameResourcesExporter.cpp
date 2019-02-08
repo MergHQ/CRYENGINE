@@ -9,7 +9,7 @@
 #include "GameEngine.h"
 #include "LogFile.h"
 
-#include <ICommandManager.h>
+#include <Commands/ICommandManager.h>
 #include <UsedResources.h>
 #include <Util/MemoryBlock.h>
 #include <Util/FileUtil.h>

@@ -32,11 +32,6 @@ inline CryStringT<char> ToString(const QString& str)
 	return Unicode::Convert<CryStringT<char>>(str);
 }
 
-inline const char* ToConstCharPtr(const QString& str)
-{
-	return str.toLocal8Bit();
-}
-
 // From CryString to QString
 inline QString ToQString(const CryStringT<char>& str)
 {
@@ -102,6 +97,8 @@ inline QColor DesaturateColor(QColor color)
 	const float average = (color.redF() + color.greenF() + color.blueF()) * (1.0f / 3.0f);
 	return QColor(average * 255.0f, average * 255.0f, average * 255.0f);
 }
+
+EDITOR_COMMON_API void       AssignMenuRole(QAction* action, const QString& roleString);
 
 EDITOR_COMMON_API void       DrawStatePixmap(QPainter* painter, const QRect& iconRect, const QPixmap& pixmap, QStyle::State state);
 

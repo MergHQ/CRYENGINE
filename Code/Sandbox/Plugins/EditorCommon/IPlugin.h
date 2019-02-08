@@ -4,7 +4,7 @@
 
 #define SANDBOX_PLUGIN_SYSTEM_VERSION 1
 
-#include "ICommandManager.h"
+#include "Commands/ICommandManager.h"
 #include "EditorFramework/TrayArea.h"
 #include "EditorFramework/Preferences.h"
 #include "QtViewPane.h"

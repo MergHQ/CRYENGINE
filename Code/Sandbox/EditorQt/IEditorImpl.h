@@ -78,44 +78,46 @@ public:
 
 	//! This will be called after most of the other systems have initialized. If something depends on something else being initialized,
 	//! move the dependent code into Init()
-	void                         Init();
+	void                           Init();
 
-	IEditorClassFactory*         GetClassFactory();
-	CPersonalizationManager*     GetPersonalizationManager() { return m_pPersonalizationManager; }
-	virtual CPreferences*        GetPreferences() override   { return m_pPreferences; }
-	CEditorCommandManager*       GetCommandManager()         { return m_pCommandManager; }
-	ICommandManager*             GetICommandManager();
-	static bool                  OnFilterInputEvent(SInputEvent* pInput);
-	virtual CTrayArea*           GetTrayArea()           { return m_pTrayArea; }
-	virtual ILevelEditor*        GetLevelEditor() override;
-	virtual INotificationCenter* GetNotificationCenter() { return m_pNotificationCenter; }
-	void                         ExecuteCommand(const char* sCommand, ...);
-	CAssetManager*               GetAssetManager()       { return m_pAssetManager; }
-	IPythonManager*              GetIPythonManager();
-	CEditorPythonManager*        GetPythonManager()      { return m_pPythonManager; }
-	void                         SetDocument(CCryEditDoc* pDoc);
-	void                         CloseDocument();
-	CCryEditDoc*                 GetDocument() const;
-	bool                         IsDocumentReady() const;
-	virtual bool                 IsMainFrameClosing() const;
-	bool                         IsLevelExported() const;
-	bool                         SetLevelExported(bool boExported = true);
-	void                         InitFinished();
-	bool                         IsInitialized() const { return m_bInitialized; }
-	bool                         SaveDocument();
-	bool                         SaveDocumentBackup();
-	ISystem*                     GetSystem() override;
-	I3DEngine*                   Get3DEngine() override;
-	IRenderer*                   GetRenderer() override;
-	void                         WriteToConsole(const char* pszString);
+	IEditorClassFactory*           GetClassFactory();
+	CPersonalizationManager*       GetPersonalizationManager() { return m_pPersonalizationManager; }
+	virtual CPreferences*          GetPreferences() override   { return m_pPreferences; }
+	CEditorCommandManager*         GetCommandManager()         { return m_pCommandManager; }
+	ICommandManager*               GetICommandManager();
+	static bool                    OnFilterInputEvent(SInputEvent* pInput);
+	virtual CTrayArea*             GetTrayArea() override             { return m_pTrayArea; }
+	//! Access to toolbar service for loading and storing editor specific toolbars
+	virtual CEditorToolBarService* GetEditorToolBarService() override { return m_pEditorToolBarService; }
+	virtual ILevelEditor*          GetLevelEditor() override;
+	virtual INotificationCenter*   GetNotificationCenter() override { return m_pNotificationCenter; }
+	void                           ExecuteCommand(const char* sCommand, ...);
+	CAssetManager*                 GetAssetManager()                  { return m_pAssetManager; }
+	IPythonManager*                GetIPythonManager();
+	CEditorPythonManager*          GetPythonManager()                 { return m_pPythonManager; }
+	void                           SetDocument(CCryEditDoc* pDoc);
+	void                           CloseDocument();
+	CCryEditDoc*                   GetDocument() const;
+	bool                           IsDocumentReady() const;
+	virtual bool                   IsMainFrameClosing() const;
+	bool                           IsLevelExported() const;
+	bool                           SetLevelExported(bool boExported = true);
+	void                           InitFinished();
+	bool                           IsInitialized() const { return m_bInitialized; }
+	bool                           SaveDocument();
+	bool                           SaveDocumentBackup();
+	ISystem*                       GetSystem() override;
+	I3DEngine*                     Get3DEngine() override;
+	IRenderer*                     GetRenderer() override;
+	void                           WriteToConsole(const char* pszString);
 
-	void                         SetConsoleVar(const char* var, const int value);
-	void                         SetConsoleVar(const char* var, const float value);
-	void                         SetConsoleStringVar(const char* var, const char* value);
+	void                           SetConsoleVar(const char* var, const int value);
+	void                           SetConsoleVar(const char* var, const float value);
+	void                           SetConsoleStringVar(const char* var, const char* value);
 
-	float                        GetConsoleVar(const char* var);
+	float                          GetConsoleVar(const char* var);
 	//! Query main window of the editor
-	HWND                         GetEditorMainWnd()
+	HWND                           GetEditorMainWnd()
 	{
 		if (AfxGetMainWnd())
 		{
@@ -343,6 +345,7 @@ protected:
 	CEditorCommandManager*                   m_pCommandManager;
 	CAssetManager*                           m_pAssetManager;
 	CTrayArea*                               m_pTrayArea;
+	CEditorToolBarService*                   m_pEditorToolBarService;
 	INotificationCenter*                     m_pNotificationCenter;
 	CPersonalizationManager*                 m_pPersonalizationManager;
 	CPreferences*                            m_pPreferences;

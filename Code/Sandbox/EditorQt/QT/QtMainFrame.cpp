@@ -5,11 +5,9 @@
 
 #include "Commands/CommandManager.h"
 #include "Commands/KeybindEditor.h"
-#include "QT/MainToolBars/QToolBarCreator.h"
 #include "QT/QMainFrameMenuBar.h"
 #include "QT/QtMainFrameWidgets.h"
 #include "QT/QToolTabManager.h"
-#include "QT/QtUtil.h"
 #include "QT/TraySearchBox.h"
 #include "AboutDialog.h"
 #include "CryEdit.h"
@@ -26,9 +24,11 @@
 #include <EditorFramework/BroadcastManager.h>
 #include <EditorFramework/Events.h>
 #include <EditorFramework/PersonalizationManager.h>
+#include <EditorFramework/ToolBarCustomizeDialog.h>
 #include <Menu/MenuWidgetBuilders.h>
 #include <Preferences/GeneralPreferences.h>
 #include <QTrackingTooltip.h>
+#include <QtUtil.h>
 #include <RenderViewport.h>
 
 #include <CrySystem/IProjectManager.h>
@@ -196,9 +196,10 @@ public:
 		actionRuler->setIcon(CryIcon("icons:Tools/tools-ruler.ico"));
 		actionRuler->setCheckable(true);
 
-		QString name("Snap Settings");
-		QString cmd = QString("general.open_pane '%1'").arg(name);
-		QCommandAction* pSnapSettings = new QCommandAction(name.append("..."), (const char*)cmd.toLocal8Bit(), menuAlign_Snap);
+		string name("Snap Settings");
+		string command;
+		command.Format("general.open_pane '%s'", name);
+		QCommandAction* pSnapSettings = new QCommandAction(QtUtil::ToQString(name) + "...", command.c_str(), menuAlign_Snap);
 		pSnapSettings->setIcon(CryIcon("icons:Viewport/viewport-snap-options.ico"));
 		actionReduce_Working_Set = new QCommandAction(nullptr, nullptr, MainWindow);
 		actionReduce_Working_Set->setObjectName(QStringLiteral("actionReduce_Working_Set"));
@@ -661,7 +662,6 @@ CEditorMainFrame::CEditorMainFrame(QWidget* parent)
 	m_pAboutDlg = nullptr;
 	Ui_MainWindow().setupUi(this);
 	s_pToolTabManager = new CTabPaneManager(this);
-	m_pMainToolBarManager = new QMainToolBarManager(this);
 	connect(m_levelEditor.get(), &CLevelEditor::LevelLoaded, this, &CEditorMainFrame::UpdateWindowTitle);
 
 	setAttribute(Qt::WA_DeleteOnClose, true);
@@ -733,6 +733,19 @@ CEditorMainFrame::CEditorMainFrame(QWidget* parent)
 	w->setObjectName("mainWindow");
 	w->show();
 
+	ICommandManager* pCommandManager = GetIEditorImpl()->GetICommandManager();
+
+	// Workaround for having CEditorMainframe handle shortcuts for all registered commands
+	pCommandManager->signalCommandAdded.Connect(this, &CEditorMainFrame::AddCommand);
+
+	// Any commands added before creation of CEditorMainFrame must also be added
+	std::vector<CCommand*> commands;
+	pCommandManager->GetCommandList(commands);
+	for (CCommand* pCommand : commands)
+	{
+		AddCommand(pCommand);
+	}
+
 	GetIEditorImpl()->GetLevelEditorSharedState()->signalEditToolChanged.Connect(this, &CEditorMainFrame::OnEditToolChanged);
 
 	//Important so the focus is set to this and messages reach the CLevelEditor when clicking on the menu.
@@ -793,7 +806,18 @@ void CEditorMainFrame::PostLoad()
 	LOADING_TIME_PROFILE_SECTION;
 	InitActions();
 	InitMenus();
-	m_pMainToolBarManager->CreateMainFrameToolBars();
+
+	// First attempt to migrate any toolbars in the root path to the mainframe folder. This will place any toolbars in the root
+	// in this editor's (MainFrame) specific folder. It will also upgrade toolbars to the latest version
+	GetIEditor()->GetEditorToolBarService()->MigrateToolBars("", "MainFrame");
+
+	// Hardcoded editor name because mainframe toolbars are just a hack caused by not having a proper standalone level editor
+	std::vector<QToolBar*> toolbars = GetIEditor()->GetEditorToolBarService()->LoadToolBars("MainFrame");
+	for (QToolBar* pToolBar : toolbars)
+	{
+		addToolBar(pToolBar);
+	}
+
 	GetIEditorImpl()->GetTrayArea()->RegisterTrayWidget<CTraySearchBox>(0);
 	InitMenuBar();
 
@@ -1180,15 +1204,16 @@ void CEditorMainFrame::InitMenus()
 	else
 	{
 		// Add entries
-		QString name("Keyboard Shortcuts");
-		QString cmd = QString("general.open_pane '%1'").arg(name);
-		QCommandAction* pKeyboardShortcuts = new QCommandAction(name.append("..."), (const char*)cmd.toLocal8Bit(), editMenu);
+		string name("Keyboard Shortcuts");
+		string command;
+		command.Format("general.open_pane '%s'", name);
+		QCommandAction* pKeyboardShortcuts = new QCommandAction(QtUtil::ToQString(name) + "...", command.c_str(), editMenu);
 		pKeyboardShortcuts->setIcon(CryIcon("icons:Tools/Keyboard_Shortcuts.ico"));
 		editMenu->addAction(pKeyboardShortcuts);
 
 		name = "Preferences";
-		cmd = QString("general.open_pane '%1'").arg(name);
-		editMenu->addAction(new QCommandAction(name.append("..."), (const char*)cmd.toLocal8Bit(), editMenu));
+		command.Format("general.open_pane '%s'", name);
+		editMenu->addAction(new QCommandAction(QtUtil::ToQString(name) + "...", command.c_str(), editMenu));
 
 		// Search for the action (separator) right after redo
 		QList<QAction*> editActions = editMenu->actions();
@@ -1206,8 +1231,8 @@ void CEditorMainFrame::InitMenus()
 		}
 
 		name = "Undo History";
-		cmd = QString("general.open_pane '%1'").arg(name);
-		QAction* pUndoHistory = new QCommandAction(name, (const char*)cmd.toLocal8Bit(), editMenu);
+		command.Format("general.open_pane '%s'", name);
+		QAction* pUndoHistory = new QCommandAction(QtUtil::ToQString(name) + "...", command.c_str(), editMenu);
 		pUndoHistory->setIcon(CryIcon("icons:General/History_Undo_List.ico"));
 		editMenu->insertAction(pAfterRedo, pUndoHistory);
 
@@ -1242,22 +1267,23 @@ void CEditorMainFrame::InitMenus()
 
 		pHelpMenu->addSeparator();
 
-		QString name = "Console Commands";
-		QString cmd = QString("general.open_pane '%1'").arg(name);
-		QAction* pAction = new QCommandAction(name, static_cast<const char*>(cmd.toLocal8Bit()), pHelpMenu);
+		const char* szName = "Console Commands";
+		string command;
+		command.Format("general.open_pane '%s'", szName);
+		QAction* pAction = new QCommandAction(QtUtil::ToQString(szName) + "...", command.c_str(), pHelpMenu);
 		pAction->setIcon(CryIcon("icons:ObjectTypes/Console_Commands.ico"));
 		pHelpMenu->addAction(pAction);
 
-		name = "Console Variables";
-		cmd = QString("general.open_pane '%1'").arg(name);
-		pAction = new QCommandAction(name, static_cast<const char*>(cmd.toLocal8Bit()), pHelpMenu);
+		szName = "Console Variables";
+		command.Format("general.open_pane '%s'", szName);
+		pAction = new QCommandAction(QtUtil::ToQString(szName) + "...", command.c_str(), pHelpMenu);
 		pAction->setIcon(CryIcon("icons:ObjectTypes/Console_Variables.ico"));
 		pHelpMenu->addAction(pAction);
 
 		pHelpMenu->addSeparator();
 
-		name = "About Sandbox...";
-		pAction = new QAction(name, pHelpMenu);
+		szName = "About Sandbox...";
+		pAction = new QAction(szName, pHelpMenu);
 		pAction->setProperty("menurole", QVariant(QApplication::translate("MainWindow", "AboutRole", 0)));
 		connect(pAction, &QAction::triggered, [this]()
 		{
@@ -1439,14 +1465,65 @@ void CEditorMainFrame::contextMenuEvent(QContextMenuEvent* pEvent)
 
 	menu.addSeparator();
 	QAction* pCustomize = menu.addAction("Customize...");
-	connect(pCustomize, &QAction::triggered, [this](bool bChecked)
-	{
-		QToolBarCreator* pToolBarCreator = new QToolBarCreator();
-		pToolBarCreator->show();
-		m_pMainToolBarManager->CreateMainFrameToolBars();
-	});
+	connect(pCustomize, &QAction::triggered, this, &CEditorMainFrame::OnCustomizeToolBar);
 
 	menu.exec(pEvent->globalPos());
+}
+
+void CEditorMainFrame::OnCustomizeToolBar()
+{
+	CEditorToolBarService* pToolBarService =  GetIEditor()->GetEditorToolBarService();
+	CToolBarCustomizeDialog* pToolBarCustomizeDialog = new CToolBarCustomizeDialog(this, "MainFrame");
+
+	pToolBarCustomizeDialog->signalToolBarAdded.Connect(this, &CEditorMainFrame::OnToolBarAdded);
+	pToolBarCustomizeDialog->signalToolBarModified.Connect(this, &CEditorMainFrame::OnToolBarModified);
+	pToolBarCustomizeDialog->signalToolBarRemoved.Connect(this, &CEditorMainFrame::OnToolBarRemoved);
+
+	connect(pToolBarCustomizeDialog, &QWidget::destroyed, [this, pToolBarCustomizeDialog]()
+	{
+		pToolBarCustomizeDialog->signalToolBarModified.DisconnectObject(this);
+		pToolBarCustomizeDialog->signalToolBarRemoved.DisconnectObject(this);
+	});
+
+	pToolBarCustomizeDialog->show();
+}
+
+void CEditorMainFrame::OnToolBarAdded(QToolBar* pToolBar)
+{
+	// Make sure new toolbars start up as invisible
+	pToolBar->setVisible(false);
+
+	addToolBar(pToolBar);
+}
+
+void CEditorMainFrame::OnToolBarModified(QToolBar* pToolBar)
+{
+	QList<QToolBar*> oldToolBars = findChildren<QToolBar*>(pToolBar->objectName(), Qt::FindDirectChildrenOnly);
+
+	if (!oldToolBars.isEmpty())
+	{
+		QToolBar* pFirstToolBar = oldToolBars.first();
+		insertToolBar(pFirstToolBar, pToolBar);
+		pToolBar->setVisible(pFirstToolBar->isVisible());
+	}
+
+	for (QToolBar* pOldToolBar : oldToolBars)
+	{
+		// This is necessary because the modified toolbars placement will be incorrect if we remove/delete it's old version
+		// on the same tick of the event loop
+		QTimer::singleShot(0, [this, pOldToolBar]
+		{
+			removeToolBar(pOldToolBar);
+			pOldToolBar->deleteLater();
+		});
+	}
+}
+
+void CEditorMainFrame::OnToolBarRemoved(const char* szToolBarName)
+{
+	QToolBar* pOldToolBar = findChild<QToolBar*>(szToolBarName);
+	removeToolBar(pOldToolBar);
+	pOldToolBar->deleteLater();
 }
 
 void CEditorMainFrame::OnEditToolChanged()
@@ -1645,6 +1722,18 @@ bool CEditorMainFrame::OnNativeEvent(void* message, long* result)
 	return false;
 }
 
+void CEditorMainFrame::AddCommand(CCommand* pCommand)
+{
+	QAction* pAction = GetIEditor()->GetICommandManager()->GetAction(pCommand->GetCommandString().c_str());
+
+	// This is a valid case because there might be for example, a user created command that has an error in it.
+	// We don't generate an action in this case
+	if (!pAction)
+		return;
+
+	addAction(pAction);
+}
+
 void CEditorMainFrame::OnIdleCallback()
 {
 	if (gEnv->stoppedOnAssert)
@@ -1712,11 +1801,6 @@ void CEditorMainFrame::OnBackgroundUpdateTimer()
 QToolWindowManager* CEditorMainFrame::GetToolManager()
 {
 	return m_toolManager;
-}
-
-QMainToolBarManager* CEditorMainFrame::GetToolBarManager()
-{
-	return m_pMainToolBarManager;
 }
 
 void CEditorMainFrame::AddWaitProgress(CWaitProgress* task)

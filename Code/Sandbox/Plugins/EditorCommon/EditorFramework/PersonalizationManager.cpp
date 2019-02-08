@@ -141,7 +141,7 @@ void CPersonalizationManager::LoadProjectState()
 	if (!file.open(QIODevice::ReadOnly))
 	{
 		QString msg = "Failed to open path: " + path;
-		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_COMMENT, msg.toLocal8Bit());
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_COMMENT, msg.toLocal8Bit().constData());
 		return;
 	}
 
@@ -160,7 +160,7 @@ void CPersonalizationManager::SaveProjectState() const
 	if (!file.open(QIODevice::WriteOnly))
 	{
 		QString msg = "Failed to open path: " + path;
-		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, msg.toLocal8Bit());
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, msg.toLocal8Bit().constData());
 		return;
 	}
 

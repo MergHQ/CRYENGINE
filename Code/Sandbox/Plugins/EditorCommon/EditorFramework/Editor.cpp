@@ -3,9 +3,9 @@
 #include "Editor.h"
 
 #include "BroadcastManager.h"
+#include "Commands/ICommandManager.h"
 #include "Controls/SaveChangesDialog.h"
 #include "Events.h"
-#include "ICommandManager.h"
 #include "Menu/AbstractMenu.h"
 #include "Menu/MenuBarUpdater.h"
 #include "Menu/MenuWidgetBuilders.h"

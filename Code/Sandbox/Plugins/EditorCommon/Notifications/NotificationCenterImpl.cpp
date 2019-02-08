@@ -102,7 +102,7 @@ int CNotificationCenter::AddNotification(Internal::CNotification* pNotification)
 		// for every command link
 		for (const QString& commandLink : regExpMatch.capturedTexts())
 		{
-			CryLinkService::CCryLink link(commandLink.toLocal8Bit());
+			CryLinkService::CCryLink link(commandLink.toLocal8Bit().constData());
 			for (auto query : link.GetQueries())
 				commands.push_back(QtUtil::ToQString(query.second));
 		}

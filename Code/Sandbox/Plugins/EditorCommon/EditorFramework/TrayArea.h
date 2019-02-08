@@ -3,7 +3,7 @@
 
 #include "EditorCommonAPI.h"
 #include "AutoRegister.h"
-#include "ICommandManager.h"
+#include "Commands/ICommandManager.h"
 
 #include <QWidget>
 
