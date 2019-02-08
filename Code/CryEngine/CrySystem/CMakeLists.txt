@@ -516,8 +516,11 @@ end_sources()
 #END-FILE-LIST
 
 MACRO(setup_crysystem)
-	target_link_libraries( ${THIS_PROJECT} PRIVATE zlib expat lz4 md5 tomcrypt )
+	target_link_libraries( ${THIS_PROJECT} PRIVATE zlib expat lz4 md5 )
 	use_scaleform()
+	if (NOT DURANGO)
+		target_link_libraries( ${THIS_PROJECT} PRIVATE tomcrypt )
+	endif()
 
 	if (WINDOWS)
 		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /NODEFAULTLIB:libcmt.lib /NODEFAULTLIB:libcpmt.lib")

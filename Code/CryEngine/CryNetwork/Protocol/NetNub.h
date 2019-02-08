@@ -17,6 +17,7 @@
 #include <CryNetwork/INetwork.h>
 #include "Network.h"
 #include "Socket/IDatagramSocket.h"
+#include "NetChannelSecurity.h"
 #include "INetworkMember.h"
 #include "INubMember.h"
 #include "NetTimer.h"
@@ -82,15 +83,19 @@ public:
 	virtual void OnError(const TNetAddress& addr, ESocketError error);
 	// ~IDatagramListener
 
+	// INetNubPrivate
+	virtual void         DisconnectChannel(EDisconnectionCause cause, CrySessionHandle session, const char* reason);
+	virtual INetChannel* GetChannelFromSessionHandle(CrySessionHandle session);
+	// ~INetNubPrivate
+
 	// CryNetwork-only code
 	bool                 Init(CNetwork* pNetwork);
 	bool                 SendTo(const uint8* pData, size_t nSize, const TNetAddress& to);
 	CNetwork*            GetNetwork()  { return m_pNetwork; }
 	IGameSecurity*       GetSecurity() { return m_pSecurity; }
-	void                 DisconnectChannel(EDisconnectionCause cause, const TNetAddress* pFrom, CNetChannel* pChannel, const char* reason);
-	virtual void         DisconnectChannel(EDisconnectionCause cause, CrySessionHandle session, const char* reason);
-	virtual INetChannel* GetChannelFromSessionHandle(CrySessionHandle session);
-
+	void                 DisconnectChannel(EDisconnectionCause cause, CNetChannel& channel, const char* reason);
+	void                 DisconnectChannel(EDisconnectionCause cause, const TNetAddress& from, CNetChannel& channel, const char* reason);
+	
 	void                 RegisterBackoffAddress(const TNetAddress& addr)
 	{
 		m_pSocketMain->RegisterBackoffAddress(addr);
@@ -126,10 +131,6 @@ public:
 #endif // NEW_BANDWIDTH_MANAGEMENT
 
 private:
-	void         ProcessPacketFrom(const TNetAddress& from, const uint8* pData, uint32 nLength);
-	void         ProcessErrorFrom(ESocketError err, const TNetAddress& from);
-	bool         ProcessQueryPacketFrom(const TNetAddress& from, const uint8* pData, uint32 nLength);
-	bool         ProcessConnectionPacketFrom(const TNetAddress& from, const uint8* pData, uint32 nLength);
 	bool         ProcessTransportPacketFrom(const TNetAddress& from, const uint8* pData, uint32 nLength);
 
 	void         ProcessSetup(const TNetAddress& from, const uint8* pData, uint32 nLength);
@@ -137,8 +138,7 @@ private:
 	void         ProcessLanQuery(const TNetAddress& from);
 	bool         ProcessPingQuery(const TNetAddress& from, const uint8* pData, uint32 nLength);
 	void         ProcessDisconnect(const TNetAddress& from, const uint8* pData, uint32 nLength);
-	void         ProcessDisconnectAck(const TNetAddress& from);
-	void         ProcessAlreadyConnecting(const TNetAddress& from, const uint8* pData, uint32 nLength);
+	void         ProcessDisconnectAck(const TNetAddress& from, const uint8* pData, uint32 nLength);
 	void         ProcessSimplePacket(const TNetAddress& from, const uint8* pData, uint32 nLength);
 
 	void         ProcessKeyExchange0(const TNetAddress& from, const uint8* pData, uint32 nLength);
@@ -148,7 +148,7 @@ private:
 	TNetAddress  GetIPForChannel(const INetChannel*);
 	static void TimerCallback(NetTimerId, void*, CTimeValue);
 
-	void CreateChannel(const TNetAddress& ip, const CExponentialKeyExchange::KEY_TYPE& key, const string& connectionString, uint32 remoteSocketCaps, uint32 proifle, CrySessionHandle session, CNubConnectingLock conlk); // first half, network thread
+	void CreateChannel(const TNetAddress& ip, ChannelSecurity::SInitState&& securityInit, const string& connectionString, uint32 remoteSocketCaps, uint32 proifle, CrySessionHandle session, CNubConnectingLock conlk); // first half, network thread
 
 	void GC_CreateChannel(CNetChannel* pNetChannel, string connectionString, CNubConnectingLock conlk);   // game thread
 
@@ -164,6 +164,7 @@ private:
 		size_t              infoLength;
 		char                backlog[1024]; // NOTE: the disconnect message will be sent within one UDP packet, our network system disallows IP fragmentation, so packets larger than the local interface MTU get discoarded
 		size_t              backlogLen;
+		ChannelSecurity::CHMac hmac;
 	};
 
 	enum EKeyExchangeState
@@ -179,7 +180,7 @@ private:
 	{
 		SKeyExchangeStuff() : kes(eKES_NotStarted), kesStart(0.0f) {}
 		EKeyExchangeState                 kes;
-#if ALLOW_ENCRYPTION
+#if ENCRYPTION_GENERATE_KEYS
 		CExponentialKeyExchange           exchange;
 		CExponentialKeyExchange::KEY_TYPE B, g, p, A;
 #endif
@@ -260,18 +261,21 @@ private:
 	// someone we're trying to connect to
 	struct SPendingConnection : public SKeyExchangeStuff
 	{
-		SPendingConnection() : pChannel(0), lastSend(0.0f), connectCounter(0), profile(0) {}
-
 		string                  connectionString;
+		DynArray<uint8>         connectionStringBuf;
 		TNetAddress             to;
 		TNetAddressVec          tos;
 		_smart_ptr<CNetChannel> pChannel;
 		CTimeValue              lastSend;
-		int                     connectCounter;
-		uint32                  profile;
+		int                     connectCounter = 0;
 		CNubConnectingLock      conlk;
-		uint32                  socketCaps;
-		CrySessionHandle        session;
+		uint32                  socketCaps = 0;
+		CrySessionHandle        session = CrySessionInvalidHandle;
+
+		CNetProfileTokens::EMode tokenMode = CNetProfileTokens::EMode::Legacy;
+		CNetProfileTokens::SProfileTokenPair profileTokenPair;
+		uint32                  legacyToken = 0;
+		ChannelSecurity::CHMac  hmac;
 	};
 
 	// someone we're currently connecting with (waiting for game)
@@ -279,15 +283,16 @@ private:
 	{
 		SConnecting() : lastNotify(0.0f) {}
 
-		string           connectionString; // save the connection string for later use
 		uint32           socketCaps;
-		uint32           profile; //connecting user profile
 		CTimeValue       lastNotify;
 		CrySessionHandle session;
+		CNetProfileTokens::EMode tokenMode = CNetProfileTokens::EMode::Legacy;
+		CNetProfileTokens::SProfileTokenPair profileTokenPair;
+		ChannelSecurity::CHMac hmac;
 	};
 
 	void SendDisconnect(const TNetAddress& to, SDisconnect& dis);
-	void AckDisconnect(const TNetAddress& to);
+	void AckDisconnect(const TNetAddress& to, ChannelSecurity::CHMac& hmac);
 
 	void LobbySafeDisconnect(CNetChannel* pChannel, EDisconnectionCause cause, const char* reason);
 
@@ -296,6 +301,11 @@ private:
 	typedef std::map<TNetAddress, SConnecting> TConnectingMap;
 	typedef std::vector<SPendingConnection>    TPendingConnectionSet;
 
+	TPendingConnectionSet::iterator FindPendingConnection(const TNetAddress& from, const bool checkAllTos);
+
+	bool PrepareConnectionString(SPendingConnection& con, ChannelSecurity::CCipher& outputCipher);
+	bool ProcessConnectionString(uint8* pBuf, const size_t bufSize, ChannelSecurity::CCipher& inputCipher, string& outConnectionString);
+
 	CNetwork*             m_pNetwork;
 	ICryLobby*            m_pLobby;
 	SStatistics           m_statistics;
@@ -303,7 +313,9 @@ private:
 	TChannelMap           m_channels;
 	IDatagramSocketPtr    m_pSocketMain;
 	IGameSecurity*        m_pSecurity;
+#if ENABLE_GAME_QUERY
 	IGameQuery*           m_pGameQuery;
+#endif
 	IGameNub*             m_pGameNub;
 	bool                  m_bDead;
 	TNetAddress           m_addr;
@@ -319,11 +331,12 @@ private:
 	CryCriticalSection    m_lockChannels;
 
 	bool SendPendingConnect(SPendingConnection& pc);
-	void SendConnecting(const TNetAddress& to, SConnecting& con);
-	void AddDisconnectEntry(const TNetAddress& ip, CrySessionHandle session, EDisconnectionCause cause, const char* reason);
+	void AddDisconnectEntry(const TNetAddress& ip, CrySessionHandle session, const ChannelSecurity::CHMac& hmac, EDisconnectionCause cause, const char* szReason);
+	//! Silent disconnect is for cases, when we cannot send disconnect packet (sender is not verified, connection is not established, etc.)
+	void AddSilentDisconnectEntry(const TNetAddress& ip, CrySessionHandle session, EDisconnectionCause cause, const char* szReason);
 
-	bool SendKeyExchange0(const TNetAddress& to, SConnecting& con, bool doNotRegenerate = false);
-	bool SendKeyExchange1(SPendingConnection& pc, bool doNotRegenerate = false);
+	bool SendKeyExchange0(const TNetAddress& to, SConnecting& con, bool doNotRegenerate);
+	bool SendKeyExchange1(SPendingConnection& pc);
 
 	void LockConnecting()
 	{

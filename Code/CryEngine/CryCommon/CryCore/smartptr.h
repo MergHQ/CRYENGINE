@@ -176,7 +176,7 @@ public:
 		CHECK_REFCOUNT_CRASH(m_nRefCounter > 0);
 		if (--m_nRefCounter == 0)
 		{
-			delete static_cast<TDerived*>(this);
+			delete static_cast<const TDerived*>(this);
 		}
 		else if (m_nRefCounter < 0)
 		{

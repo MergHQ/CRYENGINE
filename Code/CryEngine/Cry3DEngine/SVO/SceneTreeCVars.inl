@@ -61,11 +61,7 @@ m_arrVars.Clear();
 #endif
 
 // UI parameters
-#if CRY_PLATFORM_DESKTOP
 REGISTER_CVAR_AUTO(int, e_svoTI_Active, 0, VF_NULL, "Activates voxel GI for the level"); // default value of 0 allows GI to be activated in level settings
-#else
-REGISTER_CVAR_AUTO(int, e_svoTI_Active, -1, VF_NULL, "Activates voxel GI for the level"); // default value of -1 forces disabling of GI on weak platforms
-#endif
 
 REGISTER_CVAR_AUTO(int, e_svoTI_IntegrationMode, 0, VF_EXPERIMENTAL,
                    "GI computations may be used in several ways:\n"

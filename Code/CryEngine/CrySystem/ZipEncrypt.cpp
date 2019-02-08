@@ -238,8 +238,8 @@ int ZipEncrypt::custom_rsa_encrypt_key_ex(const unsigned char* in, unsigned long
 	CRY_ASSERT(key != NULL);
 
 	/* valid padding? */
-	if ((padding != LTC_LTC_PKCS_1_V1_5) &&
-	    (padding != LTC_LTC_PKCS_1_OAEP))
+	if ((padding != LTC_PKCS_1_V1_5) &&
+	    (padding != LTC_PKCS_1_OAEP))
 	{
 		return CRYPT_PK_INVALID_PADDING;
 	}
@@ -250,7 +250,7 @@ int ZipEncrypt::custom_rsa_encrypt_key_ex(const unsigned char* in, unsigned long
 		return err;
 	}
 
-	if (padding == LTC_LTC_PKCS_1_OAEP)
+	if (padding == LTC_PKCS_1_OAEP)
 	{
 		/* valid hash? */
 		if ((err = hash_is_valid(hash_idx)) != CRYPT_OK)
@@ -270,7 +270,7 @@ int ZipEncrypt::custom_rsa_encrypt_key_ex(const unsigned char* in, unsigned long
 		return CRYPT_BUFFER_OVERFLOW;
 	}
 
-	if (padding == LTC_LTC_PKCS_1_OAEP)
+	if (padding == LTC_PKCS_1_OAEP)
 	{
 		/* OAEP pad the key */
 		x = *outlen;
@@ -285,7 +285,7 @@ int ZipEncrypt::custom_rsa_encrypt_key_ex(const unsigned char* in, unsigned long
 	{
 		/* LTC_PKCS #1 v1.5 pad the key */
 		x = *outlen;
-		if ((err = pkcs_1_v1_5_encode(in, inlen, LTC_LTC_PKCS_1_EME,
+		if ((err = pkcs_1_v1_5_encode(in, inlen, LTC_PKCS_1_EME,
 		                              modulus_bitlen, prng, prng_idx,
 		                              out, &x)) != CRYPT_OK)
 		{
@@ -318,13 +318,13 @@ int ZipEncrypt::custom_rsa_decrypt_key_ex(const unsigned char* in, unsigned long
 
 	/* valid padding? */
 
-	if ((padding != LTC_LTC_PKCS_1_V1_5) &&
-	    (padding != LTC_LTC_PKCS_1_OAEP))
+	if ((padding != LTC_PKCS_1_V1_5) &&
+	    (padding != LTC_PKCS_1_OAEP))
 	{
 		return CRYPT_PK_INVALID_PADDING;
 	}
 
-	if (padding == LTC_LTC_PKCS_1_OAEP)
+	if (padding == LTC_PKCS_1_OAEP)
 	{
 		/* valid hash ? */
 		if ((err = hash_is_valid(hash_idx)) != CRYPT_OK)
@@ -358,7 +358,7 @@ int ZipEncrypt::custom_rsa_decrypt_key_ex(const unsigned char* in, unsigned long
 		return err;
 	}
 
-	if (padding == LTC_LTC_PKCS_1_OAEP)
+	if (padding == LTC_PKCS_1_OAEP)
 	{
 		/* now OAEP decode the packet */
 		err = pkcs_1_oaep_decode(tmp, x, lparam, lparamlen, modulus_bitlen, hash_idx,
@@ -367,7 +367,7 @@ int ZipEncrypt::custom_rsa_decrypt_key_ex(const unsigned char* in, unsigned long
 	else
 	{
 		/* now LTC_PKCS #1 v1.5 depad the packet */
-		err = pkcs_1_v1_5_decode(tmp, x, LTC_LTC_PKCS_1_EME, modulus_bitlen, out, outlen, stat);
+		err = pkcs_1_v1_5_decode(tmp, x, LTC_PKCS_1_EME, modulus_bitlen, out, outlen, stat);
 	}
 
 	XFREE(tmp);

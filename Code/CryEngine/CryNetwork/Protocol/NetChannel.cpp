@@ -27,8 +27,8 @@ int g_nChannels = 0;
 static const float STATS_UPDATE_INTERVAL = 0.1f;
 static const CTimeValue KEEPALIVE_REPLY_TIMEOUT = 0.7f;
 
-CNetChannel::CNetChannel(const TNetAddress& ipRemote, const CExponentialKeyExchange::KEY_TYPE& key, uint32 remoteSocketCaps, CrySessionHandle session) :
-	m_privateKey(key),
+CNetChannel::CNetChannel(const TNetAddress& ipRemote, ChannelSecurity::SInitState&& securityInit, uint32 remoteSocketCaps, CrySessionHandle session) :
+	m_hmac(std::move(securityInit.hmac)),
 	m_ip(ipRemote),
 	m_nKeepAliveTimer(0.0f),
 	m_nKeepAliveTimer2(0.0f),
@@ -77,6 +77,7 @@ CNetChannel::CNetChannel(const TNetAddress& ipRemote, const CExponentialKeyExcha
 	, m_writeUrgentMessages(false)
 	, m_haveUrgentMessages(false)
 #endif // ENABLE_URGENT_RMIS
+	, m_pEndInitParams(stl::make_unique<CCTPEndpoint::SEndInitParams>(securityInit))
 {
 	SCOPED_GLOBAL_LOCK;
 	++g_nChannels;
@@ -270,7 +271,7 @@ void CNetChannel::Disconnect(EDisconnectionCause cause, const char* fmt, ...)
 #endif
 
 	if (m_pNub)
-		m_pNub->DisconnectChannel(cause, NULL, this, temp);
+		m_pNub->DisconnectChannel(cause, *this, temp);
 }
 
 void CNetChannel::SendMsg(INetMessage* pMsg)
@@ -853,9 +854,12 @@ void CNetChannel::Init(CNetNub* pNub, IGameChannel* pGameChannel)
 	if (m_pContextView)
 		m_pContextView->CompleteInitialization();
 
-	m_ctpEndpoint.Init(this);
+	NET_ASSERT(m_pEndInitParams != nullptr);
+	m_ctpEndpoint.EndInit(*this, *m_pEndInitParams);
 	m_ctpEndpoint.MarkNotUserSink(this);
 	m_ctpEndpoint.MarkNotUserSink(m_pContextView);
+
+	m_pEndInitParams.reset();
 
 #if USE_CHANNEL_TIMERS
 	//#if CHANNEL_TIED_TO_NETWORK_TICK
@@ -1023,6 +1027,11 @@ void CNetChannel::ProcessPacket(bool forceWaitForSync, const uint8* pData, uint3
 	}
 #endif
 
+	if (!m_ctpEndpoint.VerifyPacket(pData, nLength))
+	{
+		return;
+	}
+
 	if (!m_bConnectionEstablished)
 		m_ctpEndpoint.ChangeSubscription(this, eCEE_BecomeAlerted | eCEE_BackoffTooLong);
 	m_bConnectionEstablished = true;
@@ -1137,7 +1146,7 @@ void CNetChannel::Die(EDisconnectionCause cause, string msg)
 	{
 		if (m_pNub)
 		{
-			m_pNub->DisconnectChannel(cause, NULL, this, msg.c_str());
+			m_pNub->DisconnectChannel(cause, *this, msg.c_str());
 		}
 		else
 		{

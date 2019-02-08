@@ -36,11 +36,7 @@
 
 #include <CryCore/Containers/CryFixedArray.h>
 
-#if ENCRYPTION_RIJNDAEL
-	#include "Cryptography/rijndael.h"
-#elif ENCRYPTION_STREAMCIPHER
-	#include "Cryptography/StreamCipher.h"
-#endif
+#include "NetChannelSecurity.h"
 
 class CNetInputSerialize;
 class CNetChannel;
@@ -347,30 +343,83 @@ inline void debugPacketDataSizeSigningKey(uint32 size)
 class CCTPEndpoint
 {
 public:
+	struct SEndInitParams
+	{
+		SEndInitParams(ChannelSecurity::SInitState& securityInit)
+			: inputCipher(securityInit.inputCipher)
+			, outputCipher(securityInit.outputCipher)
+			, frameSequenceStart(securityInit.frameSequenceStart)
+		{}
+
+		ChannelSecurity::CCipher inputCipher;
+		ChannelSecurity::CCipher outputCipher;
+		uint32 frameSequenceStart;
+	};
+
+	//! Represent packet sequence number. Supports sequence wrapping.
+	struct SSeqNumber
+	{
+		SSeqNumber() = default;
+		SSeqNumber(const SSeqNumber&) = default;
+		SSeqNumber& operator=(const SSeqNumber&) = default;
+
+		SSeqNumber(uint32 v) : value(v) {}
+
+		SSeqNumber& operator++() { ++value; return *this; }
+		SSeqNumber& operator--() { --value; return *this; }
+		SSeqNumber operator++(int) { uint32 tmp = value++; return SSeqNumber(tmp); }
+		SSeqNumber operator--(int) { uint32 tmp = value++; return SSeqNumber(tmp); }
+
+		SSeqNumber operator+(SSeqNumber other) const { return SSeqNumber(value + other.value); }
+
+		int32 GetDiff(SSeqNumber other) const;
+		uint32 GetDist(SSeqNumber other) const;
+
+		uint32 operator%(uint32 x) const { return value % x; }
+		uint32 operator&(uint32 x) const { return value & x; }
+
+		bool operator==(SSeqNumber other) const { return value == other.value; }
+		bool operator!=(SSeqNumber other) const { return !(*this == other); }
+
+		bool operator<=(SSeqNumber other) const;
+		bool operator<(SSeqNumber other) const;
+		bool operator>=(SSeqNumber other) const { return !(*this < other); }
+		bool operator>(SSeqNumber other) const { return !(*this <= other); }
+
+	private:
+		bool LessImpl(SSeqNumber other) const;
+
+	public:
+
+		uint32 value = 0;
+	};
+
+public:
 	CCTPEndpoint(CMementoMemoryManagerPtr pMMM);
 	~CCTPEndpoint();
 
 	static const char* GetCurrentProcessingMessageDescription();
 
-	void               Reset();
-	void               Init(CNetChannel* pParent);
-	ILINE bool         AddSendable(INetSendable* p, int numAfterHandle, const SSendableHandle* afterHandle, SSendableHandle* handle)        { return CallAddSubstitute(p, numAfterHandle, afterHandle, handle, false); }
+	void               BeginInit();
+	void               EndInit(CNetChannel& parent, const SEndInitParams& params);
+	ILINE bool         AddSendable(INetSendable* p, int numAfterHandle, const SSendableHandle* afterHandle, SSendableHandle* handle) { return CallAddSubstitute(p, numAfterHandle, afterHandle, handle, false); }
 	ILINE bool         SubstituteSendable(INetSendable* p, int numAfterHandle, const SSendableHandle* afterHandle, SSendableHandle* handle) { return CallAddSubstitute(p, numAfterHandle, afterHandle, handle, true); }
 	bool               RemoveSendable(SSendableHandle handle);
 	INetSendablePtr    FindSendable(SSendableHandle handle);
 	void               Update(CTimeValue nTime, bool isDisconnecting, bool bAllowUserSend, bool bForceSend, bool bFlushBuffers);
 	CTimeValue GetNextUpdateTime(CTimeValue);
 	// assumes we're already in the right memento region
+	bool       VerifyPacket(const uint8* pData, size_t size);
 	void       ProcessPacket(CTimeValue nTime, CAutoFreeHandle& hdl, bool allowQueueing, bool inSync);
 	void       GetMemoryStatistics(ICrySizer* pSizer, bool countingThis = false);
 	void       MarkNotUserSink(INetMessageSink* pSink);
-	float      GetPing(bool smoothed) const                   { return m_PacketRateCalculator.GetPing(smoothed); }
+	float      GetPing(bool smoothed) const { return m_PacketRateCalculator.GetPing(smoothed); }
 	bool       IsSufferingHighLatency(CTimeValue nTime) const { return m_PacketRateCalculator.IsSufferingHighLatency(nTime); }
-	CTimeValue GetRemoteTime() const                          { return m_PacketRateCalculator.GetRemoteTime(); }
-	bool       IsTimeReady() const                            { return m_PacketRateCalculator.IsTimeReady(); }
+	CTimeValue GetRemoteTime() const { return m_PacketRateCalculator.GetRemoteTime(); }
+	bool       IsTimeReady() const { return m_PacketRateCalculator.IsTimeReady(); }
 	CTimeValue GetNextUpdateTime();
-	uint32     GetMostRecentAckedSeq() const                  { return m_nInputAck; }
-	uint32     GetMostRecentSentSeq() const                   { return m_nOutputSeq; }
+	uint32     GetMostRecentAckedSeq() const { return m_nInputAck.value; }
+	uint32     GetMostRecentSentSeq() const { return m_nOutputSeq.value; }
 	void       SetPerformanceMetrics(INetChannel::SPerformanceMetrics* pMetrics)
 	{
 		m_PacketRateCalculator.SetPerformanceMetrics(*pMetrics);
@@ -399,10 +448,7 @@ public:
 		return GetBackoffTime(blah, false);
 	}
 
-	void         SetEntityId(EntityId id)   { m_entityId = id; }
-
-	unsigned int GetLostPackets()           { return m_vInputState[m_nInputSeq].GetLostPackets(); }
-	unsigned int GetUnreliableLostPackets() { return GetLostPackets(); }
+	void         SetEntityId(EntityId id) { m_entityId = id; }
 
 	void         PerformRegularCleanup();
 	void         EmptyMessages();
@@ -461,13 +507,7 @@ private:
 	// in all 128 sequence states (2*64) if at all possible
 	struct SBigEndpointState
 	{
-#if ENCRYPTION_RIJNDAEL
-		SBigEndpointState(size_t acks, CMessageMapper& msgMapper, Rijndael::Direction dir, const uint8* key, uint8* initVec);
-#elif ENCRYPTION_STREAMCIPHER
-		SBigEndpointState(size_t acks, CMessageMapper& msgMapper, const uint8* key, int keyLen);
-#else
-		SBigEndpointState(size_t acks, CMessageMapper& msgMapper);
-#endif
+		SBigEndpointState(size_t acks, CMessageMapper& msgMapper, const ChannelSecurity::CCipher& cipher);
 		SBigEndpointState(const SBigEndpointState& cp)
 #if USE_ARITHSTREAM || ALLOW_ENCRYPTION
 			:
@@ -526,30 +566,8 @@ private:
 #endif
 		}
 
-		void Encrypt(uint8* pBuf, size_t len)
-		{
-#if ENCRYPTION_RIJNDAEL
-			// cppcheck-suppress allocaCalled
-			PREFAST_SUPPRESS_WARNING(6255) uint8 * buf = (uint8*)alloca(len);
-			NET_ASSERT(0 == (len & 15));
-			m_crypt.blockEncrypt(pBuf, len * 8, buf);
-			memcpy(pBuf, buf, len);
-#elif ENCRYPTION_STREAMCIPHER
-			m_crypt.Encrypt(pBuf, len, pBuf);
-#endif
-		}
-		void Decrypt(uint8* pBuf, size_t len)
-		{
-#if ENCRYPTION_RIJNDAEL
-			// cppcheck-suppress allocaCalled
-			PREFAST_SUPPRESS_WARNING(6255) uint8 * buf = (uint8*)alloca(len);
-			NET_ASSERT(0 == (len & 15));
-			m_crypt.blockDecrypt(pBuf, len * 8, buf);
-			memcpy(pBuf, buf, len);
-#elif ENCRYPTION_STREAMCIPHER
-			m_crypt.Decrypt(pBuf, len, pBuf);
-#endif
-		}
+		bool Encrypt(uint8* pBuf, size_t len);
+		bool Decrypt(uint8* pBuf, size_t len);
 
 		size_t GetSize()
 		{
@@ -631,11 +649,7 @@ private:
 		ILINE void   SwitchTable(uint32 id);
 #endif
 	private:
-#if ENCRYPTION_RIJNDAEL
-		Rijndael m_crypt;
-#elif ENCRYPTION_STREAMCIPHER
-		CStreamCipher m_crypt;
-#endif
+		ChannelSecurity::CCipher m_crypt;
 	};
 
 	class CBigEndpointStateManager
@@ -664,25 +678,11 @@ private:
 			}
 		}
 
-#if ENCRYPTION_RIJNDAEL
-		SBigEndpointState* Create(size_t a, CMessageMapper& m, Rijndael::Direction dir, const uint8* key, uint8* initVec)
+		SBigEndpointState* Create(size_t a, CMessageMapper& m, const ChannelSecurity::CCipher cipher)
 		{
 			m_nAlloced++;
-			return new SBigEndpointState(a, m, dir, key, initVec);
+			return new SBigEndpointState(a, m, cipher);
 		}
-#elif ENCRYPTION_STREAMCIPHER
-		SBigEndpointState* Create(size_t a, CMessageMapper& m, const uint8* key, int keyLen)
-		{
-			m_nAlloced++;
-			return new SBigEndpointState(a, m, key, keyLen);
-		}
-#else
-		SBigEndpointState* Create(size_t a, CMessageMapper& m)
-		{
-			m_nAlloced++;
-			return new SBigEndpointState(a, m);
-		}
-#endif
 
 		SBigEndpointState* Clone(SBigEndpointState* pState)
 		{
@@ -789,7 +789,7 @@ private:
 		// finish writing ack block
 		void WriteEndAcks(CCommOutputStream& stm, bool returnAckNeeded, CStatsCollector* pStats);
 		// read an ack or a nack (returns false if at the end of the ack block)
-		bool ReadAck(CCommInputStream& stm, bool& bAck, uint32& nSeq, bool& recvAckNeeded);
+		bool ReadAck(CCommInputStream& stm, bool& bAck, SSeqNumber& nSeq, bool& recvAckNeeded);
 
 		// read a message id
 		uint32 ReadMsgId(CCommInputStream& stm);
@@ -801,7 +801,7 @@ private:
 		// finish writing ack block
 		void WriteEndAcks(CNetOutputSerializeImpl& stm, bool returnAckNeeded, CStatsCollector* pStats);
 		// read an ack or a nack (returns false if at the end of the ack block)
-		bool ReadAck(CNetInputSerializeImpl& stm, bool& bAck, uint32& nSeq, bool& recvAckNeeded);
+		bool ReadAck(CNetInputSerializeImpl& stm, bool& bAck, SSeqNumber& nSeq, bool& recvAckNeeded);
 
 		// read a message id
 		uint32 ReadMsgId(CNetInputSerializeImpl& stm);
@@ -809,19 +809,16 @@ private:
 		bool   WriteMsgId(CNetOutputSerializeImpl& stm, uint32 id, CStatsCollector* pStats, const char* name);
 #endif
 
-		ILINE void Encrypt(uint8* buf, size_t len)
+		ILINE bool Encrypt(uint8* buf, size_t len)
 		{
-			m_pBigState->Encrypt(buf, len);
+			return m_pBigState->Encrypt(buf, len);
 		}
-		ILINE void Decrypt(uint8* buf, size_t len)
+		ILINE bool Decrypt(uint8* buf, size_t len)
 		{
-			m_pBigState->Decrypt(buf, len);
+			return m_pBigState->Decrypt(buf, len);
 		}
 
-		// number of acked packets seen in this state-chain
-		uint32 GetNumberOfAckedPackets() const { return m_nAckedPackets; }
-		// number of lost packets seen in this state-chain
-		uint32 GetLostPackets() const          { return m_nAckedPackets - m_nAcks; }
+		SSeqNumber GetLastAckedSeq() const { return m_lastAckedSeq; }
 
 #if USE_ARITHSTREAM
 		CArithModel* GetArithModel() { return &m_pBigState->m_ArithModel; }
@@ -832,25 +829,7 @@ private:
 			if (m_pBigState) pBigMgr->Free(m_pBigState);
 			m_pBigState = NULL;
 		}
-#if ENCRYPTION_RIJNDAEL
-		void CreateState(CBigEndpointStateManager* pBigMgr, CMessageMapper& msgMapper, Rijndael::Direction dir, const uint8* key, uint8* initVec)
-		{
-			NET_ASSERT(!m_pBigState);
-			m_pBigState = pBigMgr->Create(ACK_TYPE_NUM_TYPES, msgMapper, dir, key, initVec);
-		}
-#elif ENCRYPTION_STREAMCIPHER
-		void CreateState(CBigEndpointStateManager* pBigMgr, CMessageMapper& msgMapper, const uint8* key, int keyLen)
-		{
-			NET_ASSERT(!m_pBigState);
-			m_pBigState = pBigMgr->Create(ACK_TYPE_NUM_TYPES, msgMapper, key, keyLen);
-		}
-#else
-		void CreateState(CBigEndpointStateManager* pBigMgr, CMessageMapper& msgMapper)
-		{
-			NET_ASSERT(!m_pBigState);
-			m_pBigState = pBigMgr->Create(ACK_TYPE_NUM_TYPES, msgMapper);
-		}
-#endif
+
 		void GetMemoryStatistics(ICrySizer* pSizer, bool countingThis = false)
 		{
 			SIZER_COMPONENT_NAME(pSizer, "CCTPEndpoint::CState");
@@ -865,18 +844,27 @@ private:
 		void Dump(FILE* f) const;
 #endif
 
+	protected:
+		void CreateStateImpl(CBigEndpointStateManager* pBigMgr, CMessageMapper& msgMapper, const ChannelSecurity::CCipher& cipher, SSeqNumber nSeq)
+		{
+			NET_ASSERT(!m_pBigState);
+			m_pBigState = pBigMgr->Create(ACK_TYPE_NUM_TYPES, msgMapper, cipher);
+			m_lastAckedSeq = nSeq;
+		}
+
 	private:
 		// helper to update ack count trackers
-		uint32 AddAck(bool bAck);
+		SSeqNumber AddAck(bool bAck);
 
-		// total packets acknowledged
-		uint32             m_nAcks;
-		// total packets acknowledged or not acknowledged
-		uint32             m_nAckedPackets;
+		// Sequence number of last acked packet
+		SSeqNumber             m_lastAckedSeq;
+
+#if DEBUG_ENDPOINT_LOGIC
 		// total packets through this state train
 		uint32             m_nPackets;
 		// number of acks in this state so far
 		uint32             m_nAcksThisPacket;
+#endif
 
 		SBigEndpointState* m_pBigState;
 	};
@@ -886,6 +874,7 @@ private:
 	public:
 		COutputState() : m_nStateBlockers(0), m_headSentMessage(InvalidSentElem), m_bAvailable(false) {}
 
+		void CreateState(CBigEndpointStateManager* pBigMgr, CMessageMapper& msgMapper, const ChannelSecurity::CCipher& cipher, SSeqNumber nSeq);
 		void Reset(CBigEndpointStateManager* pBigMgr);
 		void Clone(CBigEndpointStateManager* pBigMgr, const COutputState&);
 		void SentMessage(CCTPEndpoint& ep, SSendableHandle msghdl, int nStateBlockers)
@@ -916,12 +905,13 @@ private:
 	class CInputState : public CState
 	{
 	public:
-		void   Clone(CBigEndpointStateManager* pBigMgr, const CInputState&, uint32 nSeq);
-		uint32 LastValid() const { return m_nValidSeq; }
+		void   CreateState(CBigEndpointStateManager* pBigMgr, CMessageMapper& msgMapper, const ChannelSecurity::CCipher& cipher, SSeqNumber nSeq);
+		void   Clone(CBigEndpointStateManager* pBigMgr, const CInputState&, SSeqNumber nSeq);
+		SSeqNumber LastValid() const { return m_nValidSeq; }
 		void   Reset(CBigEndpointStateManager* pBigMgr);
 
 	private:
-		uint32 m_nValidSeq;
+		SSeqNumber m_nValidSeq;
 	};
 	class CMessageSender;
 
@@ -944,7 +934,7 @@ private:
 		TMemHdl    hdl;
 		CTimeValue when;
 	};
-	typedef std::map<uint32, TQueuedIncomingPacket> TIncomingPacketMap;
+	typedef std::map<SSeqNumber, TQueuedIncomingPacket> TIncomingPacketMap;
 
 	//
 	// constants
@@ -967,26 +957,18 @@ private:
 
 	// the sequence number of the last packet sent
 	// (incremented in SendPacket)
-	uint32 m_nOutputSeq;
+	SSeqNumber m_nOutputSeq;
 	// the sequence number of the last packet we received
 	// from our paired endpoint
-	uint32 m_nInputSeq;
+	SSeqNumber m_nInputSeq;
 	// the sequence number of the last ack we received
-	uint32 m_nInputAck;
+	SSeqNumber m_nInputAck;
 	// the last basis sequence we got
-	uint32 m_nLastBasisSeq;
+	SSeqNumber m_nLastBasisSeq;
 
 	// this helps support RMI - by allowing upper layers to specify
 	// an entity id to pass around
 	EntityId m_entityId;
-
-	// the sequence number of the last packet sent with reliable data
-	uint32 m_nReliableSeq;
-	// should we wait for an ack/nack before sending reliable data again
-	// (we are ping-pong (1-bit sliding window) for reliable ordered messages,
-	//  we need to wait for an ack before sending the next packet with
-	//  reliable ordered messages in it)
-	bool m_bReliableWait;
 
 	// message mapper for outgoing packets
 	CMessageMapper m_OutputMapper;
@@ -1012,7 +994,7 @@ private:
 	// (bool true == ack, false == nack, dqAcks first ack sequence number
 	//  is nFrontAck)
 	TAckDeque m_dqAcks;
-	uint32    m_nFrontAck;
+	SSeqNumber    m_nFrontAck;
 
 	// these two structures track queued packets that are waiting to be
 	// processed
@@ -1050,7 +1032,7 @@ private:
 #endif
 
 #if DETECT_DUPLICATE_ACKS
-	std::set<uint32> m_ackedPackets;
+	std::set<SSeqNumber> m_ackedPackets;
 #endif
 
 #if ENABLE_CORRUPT_PACKET_DUMP
@@ -1123,7 +1105,7 @@ private:
 	uint32 SendPacket(CTimeValue nTime, const SSendPacketParams&);
 
 	// helper to perform actions necessary when receiving an ack
-	bool AckPacket(CTimeValue nTime, uint32 nSeq, bool bOk);
+	bool AckPacket(CTimeValue nTime, SSeqNumber nSeq, bool bOk);
 	void BroadcastMessage(const SCTPEndpointEvent& evt);
 	void UpdatePendingQueue(CTimeValue nTime, bool isDisconnecting);
 	void SendPacketsIfNecessary(CTimeValue nTime, bool isDisconnecting, bool bAllowUserSend, bool bForce, bool bFlush);
@@ -1210,8 +1192,8 @@ private:
 	std::vector<SSentElem> m_sentElems;
 	uint32                 m_freeSentElem;
 	void SentElem(uint32& head, const SSendableHandle& hdl);
-	void AckMessages(uint32& head, uint32 nSeq, bool ack, bool clear);
-	void QueueForLater(CTimeValue nTime, CAutoFreeHandle& hdl, uint32 nCurrentSeq);
+	void AckMessages(uint32& head, SSeqNumber nSeq, bool ack, bool clear);
+	void QueueForLater(CTimeValue nTime, CAutoFreeHandle& hdl, SSeqNumber nCurrentSeq);
 
 	CMementoMemoryManagerPtr m_pMMM;
 	bool                     m_recvAckNeeded;

@@ -19,6 +19,8 @@ public:
 	void EncryptStream(const uint8* input, int inputLen, uint8* output) { ProcessBuffer(input, inputLen, output, false); }
 	void DecryptStream(const uint8* input, int inputLen, uint8* output) { ProcessBuffer(input, inputLen, output, false); }
 
+	static int GetBlockSize() { return 1; }
+
 private:
 	uint8 GetNext();
 	void  ProcessBuffer(const uint8* input, int inputLen, uint8* output, bool resetKey);

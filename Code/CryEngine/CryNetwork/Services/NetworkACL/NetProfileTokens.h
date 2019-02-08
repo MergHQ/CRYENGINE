@@ -22,40 +22,66 @@
 
 class CNetProfileTokens : public INetworkService, public INetProfileTokens
 {
+public:
+	enum class EMode
+	{
+		ProfileTokens,
+		Legacy
+	};
+
 private:
 	typedef std::map<uint32, uint32> TTokenEntities;
+	typedef std::map<uint32, SToken> TProfileTokens;
 
 public:
+
 	CNetProfileTokens();
 
 	// INetworkService
-	virtual ENetworkServiceState GetState()                                                                  { return m_state; }
-	virtual void                 Close();
-	virtual void                 CreateContextViewExtensions(bool server, IContextViewExtensionAdder* adder) {};
-	virtual IServerBrowser*      GetServerBrowser()                                                          { return 0; }
-	virtual INetworkChat*        GetNetworkChat()                                                            { return 0; }
-	virtual IServerReport*       GetServerReport()                                                           { return 0; }
-	virtual IStatsTrack*         GetStatsTrack(int version)                                                  { return 0; }
-	virtual INatNeg*             GetNatNeg(INatNegListener* const)                                           { return 0; }
-	virtual INetworkProfile*     GetNetworkProfile()                                                         { return 0; }
-	virtual ITestInterface*      GetTestInterface()                                                          { return 0; }
-	virtual IFileDownloader*     GetFileDownloader()                                                         { return 0; }
-	virtual void                 GetMemoryStatistics(ICrySizer* pSizer)                                      {}
-	virtual IPatchCheck*         GetPatchCheck()                                                             { return 0; }
-	virtual IHTTPGateway*        GetHTTPGateway()                                                            { return 0; }
-	virtual INetProfileTokens*   GetNetProfileTokens()                                                       { return static_cast<INetProfileTokens*>(this); }
+	virtual ENetworkServiceState GetState() override                                                         { return m_state; }
+	virtual void                 Close() override;
+	virtual void                 CreateContextViewExtensions(bool server, IContextViewExtensionAdder* adder) override {};
+	virtual IServerBrowser*      GetServerBrowser() override                                                 { return 0; }
+	virtual INetworkChat*        GetNetworkChat() override                                                   { return 0; }
+	virtual IServerReport*       GetServerReport() override                                                  { return 0; }
+	virtual IStatsTrack*         GetStatsTrack(int version) override                                         { return 0; }
+	virtual INatNeg*             GetNatNeg(INatNegListener* const) override                                  { return 0; }
+	virtual INetworkProfile*     GetNetworkProfile() override                                                { return 0; }
+	virtual ITestInterface*      GetTestInterface() override                                                 { return 0; }
+	virtual IFileDownloader*     GetFileDownloader() override                                                { return 0; }
+	virtual void                 GetMemoryStatistics(ICrySizer* pSizer) override                             {}
+	virtual IPatchCheck*         GetPatchCheck() override                                                    { return 0; }
+	virtual IHTTPGateway*        GetHTTPGateway() override                                                   { return 0; }
+	virtual INetProfileTokens*   GetNetProfileTokens() override                                              { return static_cast<INetProfileTokens*>(this); }
+	// ~INetworkService
 
 	// INetProfileTokens
-	virtual void AddToken(uint32 profile, uint32 token);
-	virtual bool IsValid(uint32 profile, uint32 token);
-	virtual void Init();
-	virtual void Lock();
-	virtual void Unlock();
+	virtual void Init() override;
+	virtual void Server_AddTokens(const Array<SProfileTokenPair>& profileTokens) override;
+	virtual void Client_SetToken(uint32 profile, const SToken& token) override;
+
+	virtual void AddToken(uint32 profile, uint32 token) override;
+	virtual bool IsValid(uint32 profile, uint32 token) override;
+	// ~INetProfileTokens
+
+	EMode GetMode() const { return m_mode; }
+	
+	bool Server_FindToken(uint32 profile, SProfileTokenPair& outProfileToken) const;
+	void Client_GetToken(SProfileTokenPair& outTokenPair) const;
+
+private:
+	void ResetTokens();
 
 private:
 	ENetworkServiceState m_state;
-	TTokenEntities       m_tokens;
-	CryCriticalSection   m_lockTokens;
+	TTokenEntities       m_legacyTokens;
+
+	TProfileTokens       m_profileTokensServer;
+
+	SProfileTokenPair    m_tokenClient;
+
+	EMode                m_mode;
+	CryCriticalSectionNonRecursive m_lockTokens;
 };
 
 #endif // __NET_PROFILE_TOKENS_H__

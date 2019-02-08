@@ -68,15 +68,45 @@ struct INetworkService : public CMultiThreadRefCount
 	// </interfuscator:shuffle>
 };
 
+//! Tokens service provides a way for game/lobby to inject cryptographic tokens,
+//! which are used for CryNetwork connection.
 struct INetProfileTokens
 {
+	//! Token containing cryptographic material for connection
+	struct SToken
+	{
+		struct SEncryptionToken
+		{
+			DynArray<uint8> secret;
+			DynArray<uint8> initVector;
+		};
+		SEncryptionToken inputEncryption;
+		SEncryptionToken outputEncryption;
+		DynArray<uint8> hmacSecret;
+		uint32 frameSequenceStart = 0;
+	};
+
+	struct SProfileTokenPair
+	{
+		uint32 profile = 0;
+		SToken token;
+	};
+
 	// <interfuscator:shuffle>
 	virtual ~INetProfileTokens(){}
+	virtual void Init() = 0;
+
+	//! Sets tokens for a profile IDs on the server. 
+	//! Values are copied. Tokens for already set profiles are replaced.
+	virtual void Server_AddTokens(const Array<SProfileTokenPair>& profileTokens) = 0;
+
+	//! Sets current profileID and token for this client
+	virtual void Client_SetToken(uint32 profile, const SToken& token) = 0;
+
+	// Old profile/token API
 	virtual void AddToken(uint32 profile, uint32 token) = 0;
 	virtual bool IsValid(uint32 profile, uint32 token) = 0;
-	virtual void Init() = 0;
-	virtual void Lock() = 0;
-	virtual void Unlock() = 0;
+
 	// </interfuscator:shuffle>
 };
 

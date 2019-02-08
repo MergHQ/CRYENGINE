@@ -1300,7 +1300,7 @@ bool ZipDir::CacheFactory::DecryptKeysTable()
 		int stat = 0;
 		len = sizeof(tmp);
 		res = ZipEncrypt::custom_rsa_decrypt_key_ex(m_headerEncryption.CDR_IV, sizeof(m_headerEncryption.CDR_IV),
-		                                            tmp, &len, NULL, 0, hash_idx, LTC_LTC_PKCS_1_OAEP, &stat, &g_rsa_key_public_for_sign);
+		                                            tmp, &len, NULL, 0, hash_idx, LTC_PKCS_1_OAEP, &stat, &g_rsa_key_public_for_sign);
 		if (res != CRYPT_OK || stat != 1)
 			return false;
 
@@ -1318,7 +1318,7 @@ bool ZipDir::CacheFactory::DecryptKeysTable()
 		int stat = 0;
 		len = sizeof(tmp);
 		res = ZipEncrypt::custom_rsa_decrypt_key_ex(m_headerEncryption.keys_table[i], sizeof(m_headerEncryption.keys_table[i]),
-		                                            tmp, &len, NULL, 0, hash_idx, LTC_LTC_PKCS_1_OAEP, &stat, &g_rsa_key_public_for_sign);
+		                                            tmp, &len, NULL, 0, hash_idx, LTC_PKCS_1_OAEP, &stat, &g_rsa_key_public_for_sign);
 		if (res != CRYPT_OK || stat != 1)
 			return false;
 
