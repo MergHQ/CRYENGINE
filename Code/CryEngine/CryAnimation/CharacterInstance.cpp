@@ -572,7 +572,6 @@ void CCharInstance::ReloadCHRPARAMS()
 		if (pIAttachmentObject == 0)
 			continue;
 
-		uint32 type = pIAttachment->GetType();
 		CCharInstance* pCharInstance = (CCharInstance*)pIAttachmentObject->GetICharacterInstance();
 		if (pCharInstance == 0)
 			continue;  //its not a CHR at all

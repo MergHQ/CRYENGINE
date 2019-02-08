@@ -1139,7 +1139,7 @@ bool GlobalAnimationHeaderCAF::Export2HTR(const char* szAnimationName, const cha
 	}
 
 	bool htr = SaveHTR(szAnimationName, savePath, jointNameArray, jointParentArray, arrAnimation, parrDefJoints);
-	bool caf = SaveICAF(szAnimationName, savePath, jointNameArray, arrAnimation);
+	SaveICAF(szAnimationName, savePath, jointNameArray, arrAnimation);
 	return htr;
 }
 #endif

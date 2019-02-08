@@ -481,7 +481,6 @@ void SParametricSamplerInternal::BlendSpace2DVisualize(GlobalAnimationHeaderLMG&
 	const Diag33 scl(rLMG.m_DimPara[0].m_scale, 1.0f, 1.0f);
 	Vec3 off(ZERO);
 
-	int selFace = -1;
 	int numExamples = rLMG.m_numExamples;
 	uint32 numVExamples = rLMG.m_VirtualExampleGrid2D.size();
 	if (numExamples == 0 || numVExamples == 0)
@@ -2138,7 +2137,6 @@ void DrawPoly(Vec3* pts, uint32 numPts, bool wireframe, ColorB color, ColorB bac
 #if BLENDSPACE_VISUALIZATION
 void SParametricSamplerInternal::VisualizeBlendSpace(const IAnimationSet* _pAnimationSet, const CAnimation& rCurAnim, f32 fPlaybackScale, uint32 nInstanceOffset, const GlobalAnimationHeaderLMG& rLMG, Vec3 off, int selectedFace, float fUniScale) const
 {
-	const CAnimationSet* pAnimationSet = (const CAnimationSet*)_pAnimationSet;
 	uint32 numDebugInstances = g_pCharacterManager->m_arrCharacterBase.size();
 
 	const f32 fAnimTime = rCurAnim.GetCurrentSegmentNormalizedTime();
@@ -2316,9 +2314,6 @@ void SParametricSamplerInternal::VisualizeBlendSpace(const IAnimationSet* _pAnim
 			const char* pAnimName = rLMG.m_arrParameter[p].m_animName.GetName_DEBUG();
 			pSkeletonAnim->StartAnimation(pAnimName, AParams);
 
-			int32 nAnimIDPS = m_nAnimID[p];
-			const ModelAnimationHeader* pAnimPS = pAnimationSet->GetModelAnimationHeader(nAnimIDPS);
-			GlobalAnimationHeaderCAF& rCAF = g_AnimationManager.m_arrGlobalCAF[pAnimPS->m_nGlobalAnimId];
 			uint8 segcount = m_nSegmentCounter[0][p];
 			pSkeletonAnim->SetLayerNormalizedTimeAndSegment(fAnimTime, nEOC, 0, 0, segcount, 0);
 			pExampleInst->StartAnimationProcessing(params);
@@ -2342,7 +2337,6 @@ void SParametricSamplerInternal::VisualizeBlendSpace(const IAnimationSet* _pAnim
 			IRenderAuxText::DrawLabelF(pos, 1.5f, "%d", p);
 
 			int32 i0 = rLMG.m_arrParameter[p].i0;
-			f32 w0 = rLMG.m_arrParameter[p].w0;
 			int32 i1 = rLMG.m_arrParameter[p].i1;
 			f32 w1 = rLMG.m_arrParameter[p].w1;
 			GlobalAnimationHeaderLMG& rInternalPara1D = g_AnimationManager.m_arrGlobalLMG[0];
@@ -2359,8 +2353,6 @@ void SParametricSamplerInternal::VisualizeBlendSpace(const IAnimationSet* _pAnim
 
 			int32 nAnimIDPS0 = m_nAnimID[i0];
 			int32 nAnimIDPS1 = m_nAnimID[i1];
-			const ModelAnimationHeader* pAnimPS = pAnimationSet->GetModelAnimationHeader(nAnimIDPS1);
-			GlobalAnimationHeaderCAF& rCAF = g_AnimationManager.m_arrGlobalCAF[pAnimPS->m_nGlobalAnimId];
 
 			int32 segcount0 = m_nSegmentCounter[0][i0];
 			int32 segcount1 = m_nSegmentCounter[0][i1];
