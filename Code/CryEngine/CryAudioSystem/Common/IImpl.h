@@ -9,8 +9,6 @@ struct IRenderAuxGeom;
 
 namespace CryAudio
 {
-class CStandaloneFile;
-
 using DeviceId = uint8;
 
 namespace Impl
@@ -22,7 +20,6 @@ struct IListener;
 struct IObject;
 struct IParameterConnection;
 struct ISettingConnection;
-struct IStandaloneFileConnection;
 struct ISwitchStateConnection;
 struct ITriggerConnection;
 struct ITriggerInfo;
@@ -222,28 +219,6 @@ struct IImpl
 	virtual void DestructTriggerConnection(ITriggerConnection const* const pITriggerConnection) = 0;
 
 	/**
-	 * Create an object implementing ConstructStandaloneFile that stores all of the data needed by the AudioImplementation
-	 * to identify and use an audio standalone file. Return a pointer to that object.
-	 * @param standaloneFile - reference to the CStandaloneFile associated with the IStandaloneFile object we want to construct. It's used as an ID to link the two objects.
-	 * @param szFile - full path to the file that wants to be played
-	 * @param bLocalized - is the file specified in szFile localized or not
-	 * @param pITriggerConnection - if set, routes the playing of the audio file through the specified implementation trigger
-	 * @return IStandaloneFile pointer to the audio implementation-specific data needed by the audio middleware and the
-	 * @return AudioImplementation code to use the corresponding audio standalone file.
-	 * @return nullptr if the new IStandaloneFileConnection instance was not created.
-	 * @see DestructStandaloneFile
-	 */
-	virtual IStandaloneFileConnection* ConstructStandaloneFileConnection(CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITriggerConnection const* pITriggerConnection = nullptr) = 0;
-
-	/**
-	 * Free the memory and potentially other resources used by the supplied IStandaloneFileConnection instance
-	 * @param pIStandaloneFileConnection - pointer to the object implementing IStandaloneFileConnection to be discarded
-	 * @return void
-	 * @see ConstructStandaloneFile
-	 */
-	virtual void DestructStandaloneFileConnection(IStandaloneFileConnection const* const pIStandaloneFileConnection) = 0;
-
-	/**
 	 * Parse the implementation-specific XML node that represents an IParameterConnection, return a pointer to the data needed for identifying
 	 * and using this IParameterConnection instance inside the AudioImplementation
 	 * @param pRootNode - an XML node corresponding to the new IParameterConnection to be created
@@ -400,15 +375,6 @@ struct IImpl
 	//////////////////////////////////////////////////////////////////////////
 	// NOTE: The methods below are ONLY USED when INCLUDE_AUDIO_PRODUCTION_CODE is defined!
 	//////////////////////////////////////////////////////////////////////////
-
-	/**
-	 * Asks the audio implementation to fill the fileData structure with data (e.g. duration of track) relating to the
-	 * standalone file referenced in szName.
-	 * @param[in] szName - filepath to the standalone file
-	 * @param[out] fileData - a reference to an instance of SAudioFileData
-	 * @return void
-	 */
-	virtual void GetFileData(char const* const szName, SFileData& fileData) const = 0;
 
 	/**
 	 * Informs the audio middlware that it can draw its memory debug information in the debug header.

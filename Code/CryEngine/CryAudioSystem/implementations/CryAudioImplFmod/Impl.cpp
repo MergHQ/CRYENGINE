@@ -13,10 +13,8 @@
 #include "Parameter.h"
 #include "ParameterEnvironment.h"
 #include "ParameterState.h"
-#include "ProgrammerSoundFile.h"
 #include "Return.h"
 #include "Snapshot.h"
-#include "StandaloneFile.h"
 #include "Vca.h"
 #include "VcaState.h"
 #include "GlobalData.h"
@@ -631,43 +629,6 @@ void CImpl::DestructListener(IListener* const pIListener)
 	CRY_ASSERT_MESSAGE(pIListener == g_pListener, "pIListener is not g_pListener during %s", __FUNCTION__);
 	delete g_pListener;
 	g_pListener = nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
-IStandaloneFileConnection* CImpl::ConstructStandaloneFileConnection(CryAudio::CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITriggerConnection const* pITriggerConnection /*= nullptr*/)
-{
-	string filePath;
-
-	if (bLocalized)
-	{
-		filePath = string(m_localizedSoundBankFolder + "/" + szFile) + ".mp3";
-	}
-	else
-	{
-		filePath = string(szFile) + ".mp3";
-	}
-
-	CBaseStandaloneFile* pFile = nullptr;
-
-	if (pITriggerConnection != nullptr)
-	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CProgrammerSoundFile");
-		pFile = new CProgrammerSoundFile(filePath, static_cast<CEvent const* const>(pITriggerConnection)->GetGuid(), standaloneFile);
-	}
-	else
-	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CStandaloneFile");
-		pFile = new CStandaloneFile(filePath, standaloneFile);
-	}
-
-	return static_cast<IStandaloneFileConnection*>(pFile);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CImpl::DestructStandaloneFileConnection(IStandaloneFileConnection const* const pIStandaloneFileConnection)
-{
-	CRY_ASSERT_MESSAGE(pIStandaloneFileConnection != nullptr, "pIStandaloneFileConnection is nullptr during %s", __FUNCTION__);
-	delete pIStandaloneFileConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1475,25 +1436,6 @@ void CImpl::DestructEventInstance(CEventInstance const* const pEventInstance)
 	delete pEventInstance;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
-{
-	FMOD::Sound* pSound = nullptr;
-	FMOD_CREATESOUNDEXINFO info;
-	ZeroStruct(info);
-	info.cbsize = sizeof(FMOD_CREATESOUNDEXINFO);
-	info.decodebuffersize = 1;
-	FMOD_RESULT const fmodResult = g_pLowLevelSystem->createStream(szName, FMOD_OPENONLY, &info, &pSound);
-	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
-
-	if (pSound != nullptr)
-	{
-		unsigned int length = 0;
-		pSound->getLength(&length, FMOD_TIMEUNIT_MS);
-		fileData.duration = length / 1000.0f; // convert to seconds
-	}
-}
-
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 void DrawMemoryPoolInfo(
@@ -1516,7 +1458,7 @@ void DrawMemoryPoolInfo(
 		memAllocString.Format("%" PRISIZE_T " KiB", mem.nAlloc >> 10);
 	}
 
-	ColorF const color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
+	ColorF const& color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
 
 	posY += Debug::g_systemLineHeight;
 	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, color, false,
@@ -1679,7 +1621,7 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 					if (draw)
 					{
 						EEventState const state = pEventInstance->GetState();
-						ColorF const color = (state == EEventState::Pending) ? Debug::s_listColorItemLoading : ((state == EEventState::Virtual) ? Debug::s_globalColorVirtual : Debug::s_listColorItemActive);
+						ColorF const& color = (state == EEventState::Pending) ? Debug::s_listColorItemLoading : ((state == EEventState::Virtual) ? Debug::s_globalColorVirtual : Debug::s_listColorItemActive);
 						auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, "%s on %s", szEventName, pEventInstance->GetObject().GetName());
 
 						posY += Debug::g_listLineHeight;

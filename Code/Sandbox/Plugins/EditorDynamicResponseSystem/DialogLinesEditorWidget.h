@@ -26,7 +26,6 @@ protected:
 		audioStart, //Line
 		audioStop, //Line
 		lipsyncAnimation, //Line
-		standaloneFile, //Line
 		pauseLength, //Line
 		customData, //Line
 		NUM_COLUMNS
@@ -34,7 +33,7 @@ protected:
 
 	bool SplitStringList(const wchar_t* szStringToSplit, int stringLength, const wchar_t delimeter1, const wchar_t delimeter2, std::vector<wstring>* outResult, bool bTrim, bool bBothDelimeter);
 
-	std::vector<wstring> m_dataColumns = { L"lineID", L"priority", L"flags", L"maxQueueDuration", L"text", L"audioStart", L"audioStop", L"lipsyncAnimation", L"standaloneFile", L"pauseLength", L"customData" };
+	std::vector<wstring> m_dataColumns = { L"lineID", L"priority", L"flags", L"maxQueueDuration", L"text", L"audioStart", L"audioStop", L"lipsyncAnimation", L"pauseLength", L"customData" };
 	std::vector<int> m_dataColumnsIndex = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
 };
 

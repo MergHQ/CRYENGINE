@@ -36,7 +36,6 @@ void CAudioNode::Initialize()
 		AudioNode::s_audioParams.reserve(4);
 
 		AudioNode::AddSupportedParam("Trigger", eAnimParamType_AudioTrigger, eAnimValue_Unknown);
-		AudioNode::AddSupportedParam("File", eAnimParamType_AudioFile, eAnimValue_Unknown);
 		AudioNode::AddSupportedParam("Parameter", eAnimParamType_AudioParameter, eAnimValue_Float);
 		AudioNode::AddSupportedParam("Switch", eAnimParamType_AudioSwitch, eAnimValue_Unknown);
 	}
@@ -47,7 +46,6 @@ void CAudioNode::Animate(SAnimContext& animContext)
 	size_t numAudioParameterTracks = 0;
 	size_t numAudioTriggerTracks = 0;
 	size_t numAudioSwitchTracks = 0;
-	size_t numAudioFileTracks = 0;
 
 	const int trackCount = NumTracks();
 	for (int paramIndex = 0; paramIndex < trackCount; ++paramIndex)
@@ -126,45 +124,6 @@ void CAudioNode::Animate(SAnimContext& animContext)
 			}
 			break;
 
-		case eAnimParamType_AudioFile:
-			{
-				++numAudioFileTracks;
-
-				if (numAudioFileTracks > m_audioFileTracks.size())
-				{
-					m_audioFileTracks.resize(numAudioFileTracks);
-				}
-
-				if (!animContext.bResetting && !bMuted)
-				{
-					SAudioFileKey audioFileKey;
-					SAudioInfo& audioFileInfo = m_audioFileTracks[numAudioFileTracks - 1];
-					const int audioFileKeyNum = static_cast<CAudioFileTrack*>(pTrack)->GetActiveKey(animContext.time, &audioFileKey);
-					if (audioFileKeyNum >= 0 && audioFileKey.m_duration > SAnimTime(0) && !(audioFileKey.m_bNoTriggerInScrubbing && animContext.bSingleFrame))
-					{
-						const SAnimTime audioKeyTime = (animContext.time - audioFileKey.m_time);
-						if (animContext.time <= audioFileKey.m_time + audioFileKey.m_duration)
-						{
-							if (audioFileInfo.audioKeyStart < audioFileKeyNum)
-							{
-								ApplyAudioFileKey(audioFileKey.m_audioFile, audioFileKey.m_bIsLocalized);
-							}
-
-							audioFileInfo.audioKeyStart = audioFileKeyNum;
-						}
-						else if (audioKeyTime >= audioFileKey.m_duration)
-						{
-							audioFileInfo.audioKeyStart = -1;
-						}
-					}
-					else
-					{
-						audioFileInfo.audioKeyStart = -1;
-					}
-				}
-			}
-			break;
-
 		case eAnimParamType_AudioParameter:
 			{
 				++numAudioParameterTracks;
@@ -228,7 +187,6 @@ void CAudioNode::OnReset()
 	m_audioParameterTracks.clear();
 	m_audioTriggerTracks.clear();
 	m_audioSwitchTracks.clear();
-	m_audioFileTracks.clear();
 }
 
 void CAudioNode::OnStop()
@@ -277,15 +235,6 @@ bool CAudioNode::GetParamInfoFromType(const CAnimParamType& paramId, SParamInfo&
 	}
 
 	return false;
-}
-
-void CAudioNode::ApplyAudioFileKey(const string& filePath, const bool bLocalized)
-{
-	if (!filePath.empty())
-	{
-		CryAudio::SPlayFileInfo const info(filePath.c_str(), bLocalized);
-		gEnv->pAudioSystem->PlayFile(info);
-	}
 }
 
 void CAudioNode::ApplyAudioSwitchKey(CryAudio::ControlId audioSwitchId, CryAudio::SwitchStateId audioSwitchStateId)

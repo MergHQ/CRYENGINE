@@ -167,7 +167,6 @@ void CAnimEntityNode::Initialize()
 		AddSupportedParam(g_nodeParams, "Visibility", eAnimParamType_Visibility, eAnimValue_Bool);
 		AddSupportedParam(g_nodeParams, "Event", eAnimParamType_Event, eAnimValue_Unknown);
 		AddSupportedParam(g_nodeParams, "Audio/Trigger", eAnimParamType_AudioTrigger, eAnimValue_Unknown, eSupportedParamFlags_MultipleTracks);
-		AddSupportedParam(g_nodeParams, "Audio/File", eAnimParamType_AudioFile, eAnimValue_Unknown, eSupportedParamFlags_MultipleTracks);
 		AddSupportedParam(g_nodeParams, "Audio/Parameter", eAnimParamType_AudioParameter, eAnimValue_Float, eSupportedParamFlags_MultipleTracks);
 		AddSupportedParam(g_nodeParams, "Audio/Switch", eAnimParamType_AudioSwitch, eAnimValue_Unknown, eSupportedParamFlags_MultipleTracks);
 		AddSupportedParam(g_nodeParams, "Dynamic Response Signal", eAnimParamType_DynamicResponseSignal, eAnimValue_Unknown, eSupportedParamFlags_MultipleTracks);
@@ -1028,7 +1027,6 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 
 	int animCharacterLayer = 0;
 	int animationTrack = 0;
-	size_t numAudioFileTracks = 0;
 	size_t numAudioSwitchTracks = 0;
 	size_t numAudioTriggerTracks = 0;
 	size_t numAudioParameterTracks = 0;
@@ -1271,51 +1269,6 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 					{
 						audioTriggerInfo.audioKeyStart = -1;
 						audioTriggerInfo.audioKeyStop = -1;
-					}
-				}
-
-				break;
-			}
-
-		case eAnimParamType_AudioFile:
-			{
-				++numAudioFileTracks;
-
-				if (numAudioFileTracks > m_audioFileTracks.size())
-				{
-					m_audioFileTracks.resize(numAudioFileTracks);
-				}
-
-				if (!animContext.bResetting && !bMute)
-				{
-					SAudioFileKey audioFileKey;
-					SAudioInfo& audioFileInfo = m_audioFileTracks[numAudioFileTracks - 1];
-					CAudioFileTrack* pAudioFileTrack = static_cast<CAudioFileTrack*>(pTrack);
-					const int audioFileKeyNum = pAudioFileTrack->GetActiveKey(animContext.time, &audioFileKey);
-					if (pEntity && audioFileKeyNum >= 0 && audioFileKey.m_duration > SAnimTime(0) && !(audioFileKey.m_bNoTriggerInScrubbing && animContext.bSingleFrame))
-					{
-						const SAnimTime audioKeyTime = (animContext.time - audioFileKey.m_time);
-						if (animContext.time <= audioFileKey.m_time + audioFileKey.m_duration)
-						{
-							if (audioFileInfo.audioKeyStart < audioFileKeyNum)
-							{
-								IEntityAudioComponent* pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
-								if (pIEntityAudioComponent)
-								{
-									const CryAudio::SPlayFileInfo audioPlayFileInfo(audioFileKey.m_audioFile, audioFileKey.m_bIsLocalized);
-									pIEntityAudioComponent->PlayFile(audioPlayFileInfo);
-								}
-							}
-							audioFileInfo.audioKeyStart = audioFileKeyNum;
-						}
-						else if (audioKeyTime >= audioFileKey.m_duration)
-						{
-							audioFileInfo.audioKeyStart = -1;
-						}
-					}
-					else
-					{
-						audioFileInfo.audioKeyStart = -1;
 					}
 				}
 

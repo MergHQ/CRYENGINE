@@ -9,7 +9,6 @@
 #include "ListenerManager.h"
 #include "EventListenerManager.h"
 #include "XMLProcessor.h"
-#include "FileManager.h"
 #include "SystemRequestData.h"
 #include "ObjectRequestData.h"
 #include "ListenerRequestData.h"
@@ -18,7 +17,6 @@
 #include "FileEntry.h"
 #include "Listener.h"
 #include "Object.h"
-#include "StandaloneFile.h"
 #include "LoseFocusTrigger.h"
 #include "GetFocusTrigger.h"
 #include "MuteAllTrigger.h"
@@ -845,17 +843,6 @@ bool CSystem::Initialize()
 
 		CObject::CreateAllocator(static_cast<uint16>(g_cvars.m_objectPoolSize));
 
-		if (g_cvars.m_standaloneFilePoolSize < 1)
-		{
-			g_cvars.m_standaloneFilePoolSize = 1;
-
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-			Cry::Audio::Log(ELogType::Warning, R"(Audio Standalone File pool size must be at least 1. Forcing the cvar "s_AudioStandaloneFilePoolSize" to 1!)");
-#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
-		}
-
-		CStandaloneFile::CreateAllocator(static_cast<uint16>(g_cvars.m_standaloneFilePoolSize));
-
 #if defined(CRY_AUDIO_USE_OCCLUSION)
 		// Add the callback for the obstruction calculation.
 		gEnv->pPhysicalWorld->AddEventClient(
@@ -928,7 +915,6 @@ void CSystem::Release()
 		g_cvars.UnregisterVariables();
 
 		CObject::FreeMemoryPool();
-		CStandaloneFile::FreeMemoryPool();
 
 		m_isInitialized = false;
 	}
@@ -1116,46 +1102,6 @@ void CSystem::ResetRequestCount()
 #endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
-{
-	SSystemRequestData<ESystemRequestType::PlayFile> const requestData(playFileInfo.szFile, playFileInfo.usedTriggerForPlayback, playFileInfo.bLocalized);
-	CRequest const request(
-		&requestData,
-		userData.flags,
-		((userData.pOwner != nullptr) ? userData.pOwner : &g_system),
-		userData.pUserData,
-		userData.pUserDataOwner);
-	PushRequest(request);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CSystem::StopFile(char const* const szName, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
-{
-	SSystemRequestData<ESystemRequestType::StopFile> const requestData(szName);
-	CRequest const request(&requestData, userData);
-	PushRequest(request);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CSystem::ReportStartedFile(
-	CStandaloneFile& standaloneFile,
-	bool const bSuccessfullyStarted,
-	SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
-{
-	SCallbackRequestData<ECallbackRequestType::ReportStartedFile> const requestData(standaloneFile, bSuccessfullyStarted);
-	CRequest const request(&requestData, userData);
-	PushRequest(request);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CSystem::ReportStoppedFile(CStandaloneFile& standaloneFile, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
-{
-	SCallbackRequestData<ECallbackRequestType::ReportStoppedFile> const requestData(standaloneFile);
-	CRequest const request(&requestData, userData);
-	PushRequest(request);
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CSystem::ReportStartedTriggerConnectionInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
 	SCallbackRequestData<ECallbackRequestType::ReportStartedTriggerConnectionInstance> const requestData(triggerInstanceId, result);
@@ -1325,16 +1271,6 @@ void CSystem::ReleaseObject(CryAudio::IObject* const pIObject)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::GetFileData(char const* const szName, SFileData& fileData)
-{
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-	SSystemRequestData<ESystemRequestType::GetFileData> const requestData(szName, fileData);
-	CRequest const request(&requestData, ERequestFlags::ExecuteBlocking);
-	PushRequest(request);
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CSystem::GetTriggerData(ControlId const triggerId, STriggerData& triggerData)
 {
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
@@ -1356,7 +1292,6 @@ void CSystem::ReleaseImpl()
 	g_pIImpl->OnBeforeRelease();
 
 	// Release middleware specific data before its shutdown.
-	g_fileManager.ReleaseImplData();
 	g_listenerManager.ReleaseImplData();
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
@@ -1385,10 +1320,6 @@ void CSystem::ReleaseImpl()
 	g_pIImpl->ShutDown();
 	g_pIImpl->Release();
 	g_pIImpl = nullptr;
-
-	// Release engine specific data after impl shut down to prevent dangling data accesses during shutdown.
-	// Note: The object and listener managers are an exception as we need their data to survive in case the middleware is swapped out.
-	g_fileManager.Release();
 
 	FreeMemoryPools();
 
@@ -1870,45 +1801,6 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			break;
 		}
-	case ESystemRequestType::PlayFile:
-		{
-			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::PlayFile> const*>(request.GetData());
-
-			if (pRequestData != nullptr && !pRequestData->file.empty())
-			{
-				if (pRequestData->usedTriggerId != InvalidControlId)
-				{
-					CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->usedTriggerId, nullptr);
-
-					if (pTrigger != nullptr)
-					{
-						pTrigger->PlayFile(
-							g_object,
-							pRequestData->file.c_str(),
-							pRequestData->bLocalized,
-							request.pOwner,
-							request.pUserData,
-							request.pUserDataOwner);
-					}
-				}
-
-				result = ERequestStatus::Success;
-			}
-
-			break;
-		}
-	case ESystemRequestType::StopFile:
-		{
-			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::StopFile> const*>(request.GetData());
-
-			if (pRequestData != nullptr && !pRequestData->file.empty())
-			{
-				g_object.HandleStopFile(pRequestData->file.c_str());
-				result = ERequestStatus::Success;
-			}
-
-			break;
-		}
 	case ESystemRequestType::AutoLoadSetting:
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::AutoLoadSetting> const*>(request.GetData());
@@ -1992,12 +1884,6 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 			break;
 		}
 #endif // CRY_AUDIO_USE_OCCLUSION
-	case ESystemRequestType::GetFileData:
-		{
-			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::GetFileData> const*>(request.GetData());
-			g_pIImpl->GetFileData(pRequestData->name.c_str(), pRequestData->fileData);
-			break;
-		}
 	case ESystemRequestType::GetImplInfo:
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::GetImplInfo> const*>(request.GetData());
@@ -2196,50 +2082,6 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 
 	switch (pBase->callbackRequestType)
 	{
-	case ECallbackRequestType::ReportStartedFile:
-		{
-			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportStartedFile> const*>(request.GetData());
-
-			CStandaloneFile& standaloneFile = pRequestData->standaloneFile;
-
-			if (standaloneFile.m_pObject != &g_object)
-			{
-				standaloneFile.m_pObject->GetStartedStandaloneFileRequestData(&standaloneFile, request);
-			}
-			else
-			{
-				g_object.GetStartedStandaloneFileRequestData(&standaloneFile, request);
-			}
-
-			standaloneFile.m_state = (pRequestData->bSuccess) ? EStandaloneFileState::Playing : EStandaloneFileState::None;
-
-			result = (pRequestData->bSuccess) ? ERequestStatus::Success : ERequestStatus::Failure;
-
-			break;
-		}
-	case ECallbackRequestType::ReportStoppedFile:
-		{
-			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportStoppedFile> const*>(request.GetData());
-
-			CStandaloneFile& standaloneFile = pRequestData->standaloneFile;
-
-			if (standaloneFile.m_pObject != &g_object)
-			{
-				standaloneFile.m_pObject->GetStartedStandaloneFileRequestData(&standaloneFile, request);
-				standaloneFile.m_pObject->ReportFinishedStandaloneFile(&standaloneFile);
-			}
-			else
-			{
-				g_object.GetStartedStandaloneFileRequestData(&standaloneFile, request);
-				g_object.ReportFinishedStandaloneFile(&standaloneFile);
-			}
-
-			g_fileManager.ReleaseStandaloneFile(&standaloneFile);
-
-			result = ERequestStatus::Success;
-
-			break;
-		}
 	case ECallbackRequestType::ReportStartedTriggerConnectionInstance:
 		{
 			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportStartedTriggerConnectionInstance> const*>(request.GetData());
@@ -2351,45 +2193,6 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 
 	switch (pBase->objectRequestType)
 	{
-	case EObjectRequestType::PlayFile:
-		{
-			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::PlayFile> const*>(request.GetData());
-
-			if (pRequestData != nullptr && !pRequestData->file.empty())
-			{
-				if (pRequestData->usedTriggerId != InvalidControlId)
-				{
-					CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->usedTriggerId, nullptr);
-
-					if (pTrigger != nullptr)
-					{
-						pTrigger->PlayFile(
-							*pObject,
-							pRequestData->file.c_str(),
-							pRequestData->bLocalized,
-							request.pOwner,
-							request.pUserData,
-							request.pUserDataOwner);
-					}
-				}
-
-				result = ERequestStatus::Success;
-			}
-
-			break;
-		}
-	case EObjectRequestType::StopFile:
-		{
-			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::StopFile> const*>(request.GetData());
-
-			if (pRequestData != nullptr && !pRequestData->file.empty())
-			{
-				pObject->HandleStopFile(pRequestData->file.c_str());
-				result = ERequestStatus::Success;
-			}
-
-			break;
-		}
 	case EObjectRequestType::ExecuteTrigger:
 		{
 			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::ExecuteTrigger> const*>(request.GetData());
@@ -2669,7 +2472,6 @@ ERequestStatus CSystem::ProcessListenerRequest(SRequestData const* const pPassed
 void CSystem::NotifyListener(CRequest const& request)
 {
 	ESystemEvents systemEvent = ESystemEvents::None;
-	CStandaloneFile* pStandaloneFile = nullptr;
 	ControlId controlID = InvalidControlId;
 	EntityId entityId = INVALID_ENTITYID;
 
@@ -2682,8 +2484,11 @@ void CSystem::NotifyListener(CRequest const& request)
 			switch (pBase->systemRequestType)
 			{
 			case ESystemRequestType::SetImpl:
-				systemEvent = ESystemEvents::ImplSet;
-				break;
+				{
+					systemEvent = ESystemEvents::ImplSet;
+
+					break;
+				}
 			case ESystemRequestType::ExecuteTrigger:
 				{
 					auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ExecuteTrigger> const*>(pBase);
@@ -2692,9 +2497,6 @@ void CSystem::NotifyListener(CRequest const& request)
 
 					break;
 				}
-			case ESystemRequestType::PlayFile:
-				systemEvent = ESystemEvents::FilePlay;
-				break;
 			}
 
 			break;
@@ -2711,22 +2513,6 @@ void CSystem::NotifyListener(CRequest const& request)
 					controlID = pRequestData->triggerId;
 					entityId = pRequestData->entityId;
 					systemEvent = ESystemEvents::TriggerFinished;
-
-					break;
-				}
-			case ECallbackRequestType::ReportStartedFile:
-				{
-					auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportStartedFile> const*>(pBase);
-					pStandaloneFile = &pRequestData->standaloneFile;
-					systemEvent = ESystemEvents::FileStarted;
-
-					break;
-				}
-			case ECallbackRequestType::ReportStoppedFile:
-				{
-					auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportStoppedFile> const*>(pBase);
-					pStandaloneFile = &pRequestData->standaloneFile;
-					systemEvent = ESystemEvents::FileStopped;
 
 					break;
 				}
@@ -2749,9 +2535,6 @@ void CSystem::NotifyListener(CRequest const& request)
 
 					break;
 				}
-			case EObjectRequestType::PlayFile:
-				systemEvent = ESystemEvents::FilePlay;
-				break;
 			}
 
 			break;
@@ -2800,8 +2583,7 @@ void CSystem::NotifyListener(CRequest const& request)
 		request.pUserDataOwner,
 		systemEvent,
 		controlID,
-		entityId,
-		pStandaloneFile);
+		entityId);
 
 	g_eventListenerManager.NotifyListener(&requestInfo);
 }
@@ -3142,7 +2924,7 @@ void DrawMemoryPoolInfo(
 		memAllocString.Format("%" PRISIZE_T " KiB", mem.nAlloc >> 10);
 	}
 
-	ColorF const color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
+	ColorF const& color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
 
 	posY += Debug::g_systemLineHeight;
 	pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, color, false,
@@ -3347,11 +3129,6 @@ void CSystem::HandleDrawDebug()
 					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Objects", m_objectPoolSize);
 				}
 
-				{
-					auto& allocator = CStandaloneFile::GetAllocator();
-					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Standalone Files", static_cast<uint16>(g_cvars.m_standaloneFilePoolSize));
-				}
-
 				if (g_debugPoolSizes.triggers > 0)
 				{
 					auto& allocator = CTrigger::GetAllocator();
@@ -3498,19 +3275,9 @@ void CSystem::HandleDrawDebug()
 			debugDraw += "Listener Occlusion Plane, ";
 		}
 
-		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectStandaloneFiles) != 0)
-		{
-			debugDraw += "Object Standalone Files, ";
-		}
-
 		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectImplInfo) != 0)
 		{
 			debugDraw += "Object Middleware Info, ";
-		}
-
-		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::StandaloneFiles) != 0)
-		{
-			debugDraw += "Standalone Files, ";
 		}
 
 		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ImplList) != 0)
@@ -3568,11 +3335,6 @@ void CSystem::HandleDrawDebug()
 		{
 			DrawRequestDebugInfo(*pAuxGeom, posX, posY);
 			posX += 600.0f;
-		}
-
-		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::StandaloneFiles) != 0)
-		{
-			g_fileManager.DrawDebugInfo(*pAuxGeom, posX, posY);
 		}
 	}
 

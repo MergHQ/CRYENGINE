@@ -7,7 +7,6 @@
 #include "Impl.h"
 #include "Listener.h"
 #include "VolumeParameter.h"
-#include "StandaloneFile.h"
 #include "VolumeState.h"
 #include "SoundEngine.h"
 

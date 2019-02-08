@@ -25,8 +25,6 @@ public:
 	virtual void     SetCurrentEnvironments(EntityId const entityToIgnore = 0, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                             {}
 	virtual void     SetOcclusionType(EOcclusionType const occlusionType, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                  {}
 	virtual void     SetOcclusionRayOffset(float const occlusionRayOffset, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                 {}
-	virtual void     PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                           {}
-	virtual void     StopFile(char const* const szFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                    {}
 	virtual void     SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                     {}
 	virtual EntityId GetEntityId() const override                                                                                                                                          { return INVALID_ENTITYID; }
 	virtual void     ToggleAbsoluteVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                     {}
@@ -52,10 +50,6 @@ public:
 	virtual void        SetGlobalParameter(ControlId const parameterId, float const value, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                              {}
 	virtual void        SetSwitchState(ControlId const switchId, SwitchStateId const switchStateId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                     {}
 	virtual void        SetGlobalSwitchState(ControlId const switchId, SwitchStateId const switchStateId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                               {}
-	virtual void        PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                                     {}
-	virtual void        StopFile(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                                              {}
-	virtual void        ReportStartedFile(CStandaloneFile& standaloneFile, bool const bSuccessfullyStarted, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                             {}
-	virtual void        ReportStoppedFile(CStandaloneFile& standaloneFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                              {}
 	virtual void        ReportStartedTriggerConnectionInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override  {}
 	virtual void        ReportFinishedTriggerConnectionInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override {}
 	virtual void        ReportPhysicalizedObject(Impl::IObject* const pIObject, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                         {}
@@ -74,7 +68,6 @@ public:
 	virtual void        ReleaseListener(IListener* const pIListener) override                                                                                                                                           {}
 	virtual IObject*    CreateObject(SCreateObjectData const& objectData = SCreateObjectData::GetEmptyObject()) override                                                                                                { return static_cast<IObject*>(&m_object); }
 	virtual void        ReleaseObject(IObject* const pIObject) override                                                                                                                                                 {}
-	virtual void        GetFileData(char const* const szName, SFileData& fileData) override                                                                                                                             {}
 	virtual void        GetTriggerData(ControlId const triggerId, STriggerData& triggerData) override                                                                                                                   {}
 	virtual void        GetImplInfo(SImplInfo& implInfo) override                                                                                                                                                       {}
 	virtual void        Log(ELogType const type, char const* const szFormat, ...) override                                                                                                                              {}

@@ -17,11 +17,9 @@ struct IRenderAuxGeom;
 namespace CryAudio
 {
 class CSystem;
-class CFileManager;
 class CEnvironment;
 class CTrigger;
 class CRequest;
-class CStandaloneFile;
 struct SRequestData;
 
 namespace Impl
@@ -82,7 +80,6 @@ struct STriggerInstanceState final : public SUserDataBase
 };
 
 // CObject-related typedefs
-using ObjectStandaloneFileMap = std::map<CStandaloneFile*, SUserDataBase>;
 using ObjectTriggerStates = std::map<TriggerInstanceId, STriggerInstanceState>;
 
 class CObject final : public IObject, public CPoolObject<CObject, stl::PSyncNone>
@@ -127,17 +124,12 @@ public:
 
 	ERequestStatus HandleStopTrigger(CTrigger const* const pTrigger);
 	void           HandleSetTransformation(CTransformation const& transformation);
-	void           HandleStopFile(char const* const szFile);
 
 	void           Init(Impl::IObject* const pImplData, EntityId const entityId);
 	void           Release();
 	void           Destruct();
 
-	// Callbacks
-	void ReportFinishedStandaloneFile(CStandaloneFile* const pStandaloneFile);
-	void GetStartedStandaloneFileRequestData(CStandaloneFile* const pStandaloneFile, CRequest& request);
-
-	void StopAllTriggers();
+	void           StopAllTriggers();
 
 #if defined(CRY_AUDIO_USE_OCCLUSION)
 	void SetOcclusion(float const occlusion);
@@ -147,15 +139,13 @@ public:
 	void ReleasePendingRays();
 #endif // CRY_AUDIO_USE_OCCLUSION
 
-	ObjectStandaloneFileMap const& GetActiveStandaloneFiles() const               { return m_activeStandaloneFiles; }
+	void                   SetImplDataPtr(Impl::IObject* const pImplData) { m_pImplData = pImplData; }
+	Impl::IObject*         GetImplDataPtr() const                         { return m_pImplData; }
 
-	void                           SetImplDataPtr(Impl::IObject* const pImplData) { m_pImplData = pImplData; }
-	Impl::IObject*                 GetImplDataPtr() const                         { return m_pImplData; }
+	CTransformation const& GetTransformation() const                      { return m_transformation; }
 
-	CTransformation const&         GetTransformation() const                      { return m_transformation; }
-
-	bool                           IsPlaying() const;
-	bool                           HasPendingCallbacks() const;
+	bool                   IsPlaying() const;
+	bool                   HasPendingCallbacks() const;
 
 	// Flags / Properties
 	EObjectFlags GetFlags() const { return m_flags; }
@@ -168,7 +158,6 @@ public:
 	void         DecrementSyncCallbackCounter() { CRY_ASSERT(m_numPendingSyncCallbacks >= 1); CryInterlockedDecrement(&m_numPendingSyncCallbacks); }
 
 	void         AddTriggerState(TriggerInstanceId const id, STriggerInstanceState const& triggerInstanceState);
-	void         AddStandaloneFile(CStandaloneFile* const pStandaloneFile, SUserDataBase const& userDataBase);
 	void         ReportStartedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result);
 	void         ReportFinishedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result);
 	void         SendFinishedTriggerInstanceRequest(STriggerInstanceState const& triggerInstanceState);
@@ -185,8 +174,6 @@ private:
 	virtual void SetCurrentEnvironments(EntityId const entityToIgnore = 0, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void SetOcclusionType(EOcclusionType const occlusionType, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void SetOcclusionRayOffset(float const offset, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	virtual void PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	virtual void StopFile(char const* const szFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	void         ToggleAbsoluteVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	void         ToggleRelativeVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
@@ -195,13 +182,12 @@ private:
 	void PushRequest(SRequestData const& requestData, SRequestUserData const& userData);
 	bool ExecuteDefaultTrigger(ControlId const id);
 
-	ObjectStandaloneFileMap m_activeStandaloneFiles;
-	ObjectTriggerStates     m_triggerStates;
-	Impl::IObject*          m_pImplData;
-	EObjectFlags            m_flags;
-	CTransformation         m_transformation;
-	EntityId                m_entityId;
-	volatile int            m_numPendingSyncCallbacks;
+	ObjectTriggerStates m_triggerStates;
+	Impl::IObject*      m_pImplData;
+	EObjectFlags        m_flags;
+	CTransformation     m_transformation;
+	EntityId            m_entityId;
+	volatile int        m_numPendingSyncCallbacks;
 
 #if defined(CRY_AUDIO_USE_OCCLUSION)
 	CPropagationProcessor m_propagationProcessor;

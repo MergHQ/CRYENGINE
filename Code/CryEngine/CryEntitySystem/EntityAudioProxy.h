@@ -42,8 +42,6 @@ public:
 	virtual bool                    RemoveAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId) override;
 	virtual void                    SetAudioAuxObjectOffset(Matrix34 const& offset, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) override;
 	virtual Matrix34 const&         GetAudioAuxObjectOffset(CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) override;
-	virtual bool                    PlayFile(CryAudio::SPlayFileInfo const& playbackInfo, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) override;
-	virtual void                    StopFile(char const* const szFile, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) override;
 	virtual bool                    ExecuteTrigger(CryAudio::ControlId const audioTriggerId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) override;
 	virtual void                    StopTrigger(CryAudio::ControlId const audioTriggerId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) override;
 	virtual void                    SetSwitchState(CryAudio::ControlId const audioSwitchId, CryAudio::SwitchStateId const audioStateId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) override;
@@ -125,40 +123,6 @@ private:
 
 		Matrix34 const&                   transformation;
 		CryAudio::SRequestUserData const& userData;
-	};
-
-	struct SPlayFile
-	{
-		SPlayFile(CryAudio::SPlayFileInfo const& _playbackInfo, CryAudio::SRequestUserData const& _userData)
-			: playbackInfo(_playbackInfo)
-			, userData(_userData)
-		{}
-
-		inline void operator()(AuxObjectPair const& pair)
-		{
-			pair.second.pIObject->PlayFile(playbackInfo, userData);
-		}
-
-	private:
-
-		CryAudio::SPlayFileInfo const&    playbackInfo;
-		CryAudio::SRequestUserData const& userData;
-	};
-
-	struct SStopFile
-	{
-		explicit SStopFile(char const* const _szFile)
-			: szFile(_szFile)
-		{}
-
-		inline void operator()(AuxObjectPair const& pair)
-		{
-			pair.second.pIObject->StopFile(szFile);
-		}
-
-	private:
-
-		char const* const szFile;
 	};
 
 	struct SStopTrigger

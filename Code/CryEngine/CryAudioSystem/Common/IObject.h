@@ -21,7 +21,6 @@ struct IEvent;
 struct IParameterConnection;
 struct ISwitchStateConnection;
 struct ITriggerConnection;
-struct IStandaloneFileConnection;
 
 /**
  * An implementation may use this interface to define a class for storing implementation-specific

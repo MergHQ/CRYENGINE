@@ -138,49 +138,6 @@ public:
 	}
 };
 
-class CAudioFileTrack final : public TAnimTrack<SAudioFileKey>
-{
-public:
-	virtual CAnimParamType GetParameterType() const override { return eAnimParamType_AudioFile; }
-
-	virtual void           SerializeKey(SAudioFileKey& key, XmlNodeRef& keyNode, bool bLoading) override
-	{
-		if (bLoading)
-		{
-			keyNode->getAttr("isLocalized", key.m_bIsLocalized);
-			key.m_audioFile = keyNode->getAttr("file");
-		}
-		else
-		{
-			bool bIsLocalized = key.m_bIsLocalized;
-			string audioFilePath = key.m_audioFile;
-
-			if (bIsLocalized)
-			{
-				const char* szLanguage = gEnv->pSystem->GetLocalizationManager()->GetLanguage();
-				int pathLength = audioFilePath.find(szLanguage);
-				if (pathLength > 0)
-				{
-					audioFilePath = audioFilePath.substr(pathLength + strlen(szLanguage) + 1, audioFilePath.length() - (pathLength + strlen(szLanguage)));
-				}
-			}
-
-			keyNode->setAttr("isLocalized", bIsLocalized);
-			keyNode->setAttr("file", audioFilePath);
-		}
-
-		if (!PathUtil::GetFileName(key.m_audioFile).empty())
-		{
-			int pathLength = key.m_audioFile.find(PathUtil::GetGameFolder());
-			const string tempFilePath = (pathLength == -1) ? PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + key.m_audioFile : key.m_audioFile;
-
-			CryAudio::SFileData fileData;
-			gEnv->pAudioSystem->GetFileData(tempFilePath.c_str(), fileData);
-			key.m_duration = fileData.duration;
-		}
-	}
-};
-
 class CAudioSwitchTrack final : public TAnimTrack<SAudioSwitchKey>
 {
 public:

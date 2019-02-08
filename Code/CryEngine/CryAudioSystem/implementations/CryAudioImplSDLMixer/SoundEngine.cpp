@@ -8,7 +8,6 @@
 #include "Impl.h"
 #include "Listener.h"
 #include "Object.h"
-#include "StandaloneFile.h"
 #include "GlobalData.h"
 #include <CryAudio/IAudioSystem.h>
 #include <CrySystem/File/CryFile.h>
@@ -42,9 +41,6 @@ SampleDataMap g_sampleData;
 using SampleNameMap = std::unordered_map<SampleId, string>;
 SampleNameMap g_samplePaths;
 
-using SampleIdUsageCounterMap = std::unordered_map<SampleId, int>;
-SampleIdUsageCounterMap g_usageCounters;
-
 // Channels
 struct SChannelData
 {
@@ -67,23 +63,6 @@ CRY_CREATE_ENUM_FLAG_OPERATORS(EChannelFinishedRequestQueueId);
 using ChannelFinishedRequests = std::deque<int>;
 ChannelFinishedRequests g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::Count)];
 CryCriticalSection g_channelFinishedCriticalSection;
-
-SoundEngine::FnStandaloneFileCallback g_fnStandaloneFileFinishedCallback;
-
-//////////////////////////////////////////////////////////////////////////
-void SoundEngine::RegisterStandaloneFileFinishedCallback(FnStandaloneFileCallback pCallbackFunction)
-{
-	g_fnStandaloneFileFinishedCallback = pCallbackFunction;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void StandaloneFileFinishedPlaying(CryAudio::CStandaloneFile& standaloneFile, char const* const szFileName)
-{
-	if (g_fnStandaloneFileFinishedCallback)
-	{
-		g_fnStandaloneFileFinishedCallback(standaloneFile, szFileName);
-	}
-}
 
 //////////////////////////////////////////////////////////////////////////
 void SoundEngine::UnloadSample(SampleId const nID)
@@ -109,7 +88,7 @@ void ProcessChannelFinishedRequests(ChannelFinishedRequests& queue)
 	{
 		for (int const finishedChannelId : queue)
 		{
-			CObject* const pObject = g_channels[finishedChannelId].pObject;
+			CObject const* const pObject = g_channels[finishedChannelId].pObject;
 
 			if (pObject != nullptr)
 			{
@@ -136,42 +115,12 @@ void ProcessChannelFinishedRequests(ChannelFinishedRequests& queue)
 					}
 				}
 
-				StandAloneFileInstanceList::iterator standaloneFilesEnd = pObject->m_standaloneFiles.end();
-				for (StandAloneFileInstanceList::iterator standaloneFilesIt = pObject->m_standaloneFiles.begin(); standaloneFilesIt != standaloneFilesEnd;)
-				{
-					CStandaloneFile* pStandaloneFileInstance = *standaloneFilesIt;
-					StandAloneFileInstanceList::iterator standaloneFilesCurrent = standaloneFilesIt;
-					++standaloneFilesIt;
-					if (pStandaloneFileInstance)
-					{
-						const ChannelList::iterator channelsEnd = pStandaloneFileInstance->m_channels.end();
-						for (ChannelList::iterator channelIt = pStandaloneFileInstance->m_channels.begin(); channelIt != channelsEnd; ++channelIt)
-						{
-							if (*channelIt == finishedChannelId)
-							{
-								pStandaloneFileInstance->m_channels.erase(channelIt);
-								if (pStandaloneFileInstance->m_channels.empty())
-								{
-									standaloneFilesIt = pObject->m_standaloneFiles.erase(standaloneFilesCurrent);
-									standaloneFilesEnd = pObject->m_standaloneFiles.end();
-									StandaloneFileFinishedPlaying(pStandaloneFileInstance->m_file, pStandaloneFileInstance->m_name.c_str());
-
-									SampleIdUsageCounterMap::iterator it = g_usageCounters.find(pStandaloneFileInstance->m_sampleId);
-									CRY_ASSERT(it != g_usageCounters.end() && it->second > 0);
-									if (--it->second == 0)
-									{
-										SoundEngine::UnloadSample(pStandaloneFileInstance->m_sampleId);
-									}
-								}
-								break;
-							}
-						}
-					}
-				}
 				g_channels[finishedChannelId].pObject = nullptr;
 			}
+
 			g_freeChannels.push(finishedChannelId);
 		}
+
 		queue.clear();
 	}
 }
@@ -638,86 +587,6 @@ ETriggerResult SoundEngine::ExecuteEvent(CObject* const pObject, CEvent const* c
 	}
 
 	return result;
-}
-
-//////////////////////////////////////////////////////////////////////////
-ERequestStatus SoundEngine::PlayFile(CObject* const pObject, CStandaloneFile* const pStandaloneFile)
-{
-	ERequestStatus status = ERequestStatus::Failure;
-	SampleId const idForThisFile = pStandaloneFile->m_sampleId;
-	Mix_Chunk* pSample = stl::find_in_map(g_sampleData, idForThisFile, nullptr);
-
-	if (pSample == nullptr)
-	{
-		if (LoadSampleImpl(idForThisFile, pStandaloneFile->m_name.c_str()))
-		{
-			pSample = stl::find_in_map(g_sampleData, idForThisFile, nullptr);
-		}
-	}
-
-	if (pSample != nullptr)
-	{
-		SampleIdUsageCounterMap::iterator it = g_usageCounters.find(idForThisFile);
-
-		if (it != g_usageCounters.end())
-		{
-			++it->second;
-		}
-		else
-		{
-			g_usageCounters[idForThisFile] = 1;
-		}
-
-		if (!g_freeChannels.empty())
-		{
-			int const channelId = Mix_PlayChannel(g_freeChannels.front(), pSample, 1);
-
-			if (channelId >= 0)
-			{
-				g_freeChannels.pop();
-				Mix_Volume(channelId, g_bMuted ? 0 : 128);
-
-				// Get distance and angle from the listener to the object
-				float distance = 0.0f;
-				float angle = 0.0f;
-				GetDistanceAngleToObject(g_pListener->GetTransformation(), pObject->GetTransformation(), distance, angle);
-
-				// Assuming a max distance of 100.0
-				uint8 sldMixerDistance = static_cast<uint8>((std::min((distance / 100.0f), 1.0f) * 255) + 0.5f);
-
-				Mix_SetDistance(channelId, sldMixerDistance);
-
-				float const absAngle = fabs(angle);
-				float const frontAngle = (angle > 0.0f ? 1.0f : -1.0f) * (absAngle > 90.0f ? 180.f - absAngle : absAngle);
-				float const rightVolume = (frontAngle + 90.0f) / 180.0f;
-				float const leftVolume = 1.0f - rightVolume;
-				Mix_SetPanning(channelId, static_cast<uint8>(255.0f * leftVolume), static_cast<uint8>(255.0f * rightVolume));
-
-				g_channels[channelId].pObject = pObject;
-				pStandaloneFile->m_channels.push_back(channelId);
-			}
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
-			else
-			{
-				Cry::Audio::Log(ELogType::Error, "Could not play sample. Error: %s", Mix_GetError());
-			}
-#endif      // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
-		}
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
-		else
-		{
-			Cry::Audio::Log(ELogType::Error, "Ran out of free audio channels. Are you trying to play more than %d samples?", g_numMixChannels);
-		}
-#endif      // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
-
-		if (!pStandaloneFile->m_channels.empty())
-		{
-			pObject->m_standaloneFiles.push_back(pStandaloneFile);
-			status = ERequestStatus::Success;
-		}
-	}
-
-	return status;
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -5,9 +5,7 @@
 #include "Common.h"
 #include "Impl.h"
 #include "BaseObject.h"
-#include "BaseStandaloneFile.h"
 #include "EventInstance.h"
-#include "Listener.h"
 
 namespace CryAudio
 {

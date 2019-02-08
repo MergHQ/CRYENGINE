@@ -20,8 +20,6 @@ enum class EEventInstanceState : EnumFlagsType
 {
 	None,
 	Playing,
-	Loading,
-	Unloading,
 	Virtual,
 };
 

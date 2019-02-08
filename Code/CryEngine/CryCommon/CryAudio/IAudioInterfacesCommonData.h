@@ -269,17 +269,6 @@ struct SRequestUserData
 	void* const                    pUserDataOwner;
 };
 
-struct SFileData
-{
-	SFileData() = default;
-	SFileData(SFileData const&) = delete;
-	SFileData(SFileData&&) = delete;
-	SFileData& operator=(SFileData const&) = delete;
-	SFileData& operator=(SFileData&&) = delete;
-
-	float duration = 0.0f;
-};
-
 struct STriggerData
 {
 	STriggerData() = default;
@@ -289,22 +278,6 @@ struct STriggerData
 	STriggerData& operator=(STriggerData&&) = delete;
 
 	float radius = 0.0f;
-};
-
-struct SPlayFileInfo
-{
-	explicit SPlayFileInfo(
-		char const* const _szFile,
-		bool const _bLocalized = true,
-		ControlId const _usedPlaybackTrigger = InvalidControlId)
-		: szFile(_szFile)
-		, bLocalized(_bLocalized)
-		, usedTriggerForPlayback(_usedPlaybackTrigger)
-	{}
-
-	char const* const szFile;
-	bool const        bLocalized;
-	ControlId const   usedTriggerForPlayback;
 };
 
 struct SImplInfo

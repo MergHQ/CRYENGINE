@@ -2,7 +2,6 @@
 
 #include "stdafx.h"
 #include "Object.h"
-#include "BaseStandaloneFile.h"
 #include "CVars.h"
 #include "Event.h"
 #include "EventInstance.h"
@@ -199,11 +198,6 @@ void CObject::Set3DAttributes()
 	{
 		FMOD_RESULT const fmodResult = pEventInstance->GetFmodEventInstance()->set3DAttributes(&m_attributes);
 		CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
-	}
-
-	for (auto const pFile : m_files)
-	{
-		pFile->Set3DAttributes(m_attributes);
 	}
 }
 

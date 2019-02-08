@@ -30,7 +30,6 @@ namespace CryAudio
 // Forward declarations.
 struct IObject;
 struct IListener;
-class CStandaloneFile;
 
 namespace Impl
 {
@@ -46,9 +45,6 @@ struct ITriggerInfo;
  * @var CryAudio::ESystemEvents::ImplSet
  * @var CryAudio::ESystemEvents::TriggerExecuted
  * @var CryAudio::ESystemEvents::TriggerFinished
- * @var CryAudio::ESystemEvents::FilePlay
- * @var CryAudio::ESystemEvents::FileStarted
- * @var CryAudio::ESystemEvents::FileStopped
  * @var CryAudio::ESystemEvents::All
  */
 enum class ESystemEvents : EnumFlagsType
@@ -57,9 +53,6 @@ enum class ESystemEvents : EnumFlagsType
 	ImplSet         = BIT(0),     /**< Invoked once the audio middleware implementation has been set. */
 	TriggerExecuted = BIT(1),     /**< Invoked once a trigger finished starting all of its event connections. */
 	TriggerFinished = BIT(2),     /**< Invoked once all of the spawned event instances finished playing. */
-	FilePlay        = BIT(3),     /**< Invoked once playback of a standalone file is issued. */
-	FileStarted     = BIT(4),     /**< Invoked once playback of a standalone file has started. */
-	FileStopped     = BIT(5),     /**< Invoked once playback of a standalone file has stopped. */
 	All             = 0xFFFFFFFF, /**< Listen to all supported audio system events. */
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ESystemEvents);
@@ -129,8 +122,7 @@ struct SRequestInfo
 		void* const pUserDataOwner_,
 		ESystemEvents const systemEvent_,
 		ControlId const audioControlId_,
-		EntityId const entityId_,
-		CStandaloneFile* pStandaloneFile_)
+		EntityId const entityId_)
 		: requestResult(requestResult_)
 		, pOwner(pOwner_)
 		, pUserData(pUserData_)
@@ -138,7 +130,6 @@ struct SRequestInfo
 		, systemEvent(systemEvent_)
 		, audioControlId(audioControlId_)
 		, entityId(entityId_)
-		, pStandaloneFile(pStandaloneFile_)
 	{}
 
 	SRequestInfo(SRequestInfo const&) = delete;
@@ -153,7 +144,6 @@ struct SRequestInfo
 	ESystemEvents const  systemEvent;
 	ControlId const      audioControlId;
 	EntityId const       entityId;
-	CStandaloneFile*     pStandaloneFile;
 };
 
 struct SCreateObjectData
@@ -297,43 +287,6 @@ struct IAudioSystem
 	 * @return void
 	 */
 	virtual void SetGlobalSwitchState(ControlId const switchId, SwitchStateId const switchStateId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
-
-	/**
-	 * Globally plays a file.
-	 * @param playFileInfo - reference to a struct that holds data necessary for playback.
-	 * @param userData - optional struct used to pass additional data to the internal request.
-	 * @return void
-	 * @see StopFile
-	 */
-	virtual void PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
-
-	/**
-	 * Globally stops a file.
-	 * @param szName - name of the file in question.
-	 * @param userData - optional struct used to pass additional data to the internal request.
-	 * @return void
-	 * @see PlayFile
-	 */
-	virtual void StopFile(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
-
-	/**
-	 * Used by audio middleware implementations to inform the AudioSystem that a file started playback.
-	 * @param standaloneFile - reference to the instance of the file that started playback.
-	 * @param bSuccessfullyStarted - boolean indicating whether playback started successfully or not.
-	 * @param userData - optional struct used to pass additional data to the internal request.
-	 * @return void
-	 * @see ReportStoppedFile
-	 */
-	virtual void ReportStartedFile(CStandaloneFile& standaloneFile, bool const bSuccessfullyStarted, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
-
-	/**
-	 * Used by audio middleware implementations to inform the AudioSystem that a file stopped playback.
-	 * @param standaloneFile - reference to the instance of the file that stopped playback.
-	 * @param userData - optional struct used to pass additional data to the internal request.
-	 * @return void
-	 * @see ReportStartedFile
-	 */
-	virtual void ReportStoppedFile(CStandaloneFile& standaloneFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Used by audio middleware implementations to inform the AudioSystem that an instance of a trigger connection has started.
@@ -489,14 +442,6 @@ struct IAudioSystem
 	 * @see CreateObject
 	 */
 	virtual void ReleaseObject(IObject* const pIObject) = 0;
-
-	/**
-	 * Retrieve an audio file's attributes.
-	 * @param szName - name of the file in question.
-	 * @param fileData - out parameter which receives the file's data.
-	 * @return void
-	 */
-	virtual void GetFileData(char const* const szName, SFileData& fileData) = 0;
 
 	/**
 	 * Retrieve an audio trigger's attributes.

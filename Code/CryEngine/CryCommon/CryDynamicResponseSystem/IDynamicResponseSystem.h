@@ -651,7 +651,6 @@ struct IDialogLine
 	virtual const string& GetStartAudioTrigger() const = 0;
 	virtual const string& GetEndAudioTrigger() const = 0;
 	virtual const string& GetLipsyncAnimation() const = 0;
-	virtual const string& GetStandaloneFile() const = 0;
 	virtual float         GetPauseLength() const = 0;
 	virtual const string& GetCustomData() const = 0;
 
@@ -659,7 +658,6 @@ struct IDialogLine
 	virtual void          SetStartAudioTrigger(const string& trigger) = 0;
 	virtual void          SetEndAudioTrigger(const string& trigger) = 0;
 	virtual void          SetLipsyncAnimation(const string& lipsyncAnimation) = 0;
-	virtual void          SetStandaloneFile(const string& standAlonefile) = 0;
 	virtual void          SetPauseLength(float length) = 0;
 	virtual void          SetCustomData(const string& data) = 0;
 

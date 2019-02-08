@@ -31,7 +31,6 @@ class CImpl;
 class CBaseObject;
 class CEventInstance;
 class CParameter;
-class CBaseStandaloneFile;
 class CParameterState;
 class CReturn;
 class CListener;
@@ -53,7 +52,6 @@ using Objects = std::vector<CBaseObject*>;
 using EventInstances = std::vector<CEventInstance*>;
 using Parameters = std::map<uint32, float>;
 using Returns = std::map<CReturn const*, float>;
-using StandaloneFiles = std::vector<CBaseStandaloneFile*>;
 using SnapshotEventInstances = std::map<uint32, FMOD::Studio::EventInstance*>;
 
 using ParameterIdToIndex = std::map<uint32, int>;

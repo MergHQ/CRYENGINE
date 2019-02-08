@@ -46,7 +46,6 @@ public:
 	// ~CryAudio::Impl::IObject
 
 	EventInstances const& GetEventInstances() const { return m_eventInstances; }
-	StandaloneFiles&      GetPendingFiles()         { return m_pendingFiles; }
 	FMOD_3D_ATTRIBUTES&   GetAttributes()           { return m_attributes; }
 
 	bool                  SetEventInstance(CEventInstance* const pEventInstance);
@@ -59,8 +58,6 @@ public:
 
 	void                  SetReturn(CReturn const* const pReturn, float const amount);
 	void                  RemoveReturn(CReturn const* const pReturn);
-
-	void                  RemoveFile(CBaseStandaloneFile const* const pStandaloneFile);
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	char const* GetName() const { return m_name.c_str(); }
@@ -76,8 +73,6 @@ protected:
 	EObjectFlags       m_flags;
 
 	EventInstances     m_eventInstances;
-	StandaloneFiles    m_files;
-	StandaloneFiles    m_pendingFiles;
 	Parameters         m_parameters;
 	Returns            m_returns;
 

@@ -2,13 +2,10 @@
 
 #include "stdafx.h"
 #include "Managers.h"
-#include "FileManager.h"
 #include "Object.h"
 #include "Trigger.h"
-#include "StandaloneFile.h"
 #include "Common/IImpl.h"
 #include "Common/IObject.h"
-#include "Common/IStandaloneFileConnection.h"
 #include "Common/ITriggerConnection.h"
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
@@ -146,62 +143,6 @@ void CTrigger::Stop(Impl::IObject* const pIObject) const
 #endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CTrigger::PlayFile(
-	CObject& object,
-	char const* const szName,
-	bool const isLocalized,
-	void* const pOwner /* = nullptr */,
-	void* const pUserData /* = nullptr */,
-	void* const pUserDataOwner /* = nullptr */) const
-{
-	Impl::IObject* const pIObject = object.GetImplDataPtr();
-
-	if (pIObject != nullptr)
-	{
-		if (!m_connections.empty())
-		{
-			Impl::ITriggerConnection const* const pITriggerConnection = m_connections[0];
-			CStandaloneFile* const pFile = g_fileManager.ConstructStandaloneFile(szName, isLocalized, pITriggerConnection);
-			ERequestStatus const status = pFile->m_pImplData->Play(object.GetImplDataPtr());
-
-			if (status == ERequestStatus::Success || status == ERequestStatus::Pending)
-			{
-				if (status == ERequestStatus::Success)
-				{
-					pFile->m_state = EStandaloneFileState::Playing;
-				}
-				else if (status == ERequestStatus::Pending)
-				{
-					pFile->m_state = EStandaloneFileState::Loading;
-				}
-
-				pFile->m_pObject = &object;
-
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-				pFile->m_triggerId = GetId();
-#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
-
-				object.AddStandaloneFile(pFile, SUserDataBase(pOwner, pUserData, pUserDataOwner));
-			}
-			else
-			{
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-				Cry::Audio::Log(ELogType::Warning, R"(PlayFile failed with "%s" on object "%s")", pFile->m_hashedFilename.GetText().c_str(), object.GetName());
-#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
-
-				g_fileManager.ReleaseStandaloneFile(pFile);
-			}
-		}
-	}
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Invalid impl object during %s", __FUNCTION__);
-	}
-#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
-}
-
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 void CTrigger::Execute(
@@ -264,52 +205,6 @@ void CTrigger::Execute(
 	{
 		Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" executed on object "%s" without connections)", GetName(), object.GetName());
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CTrigger::PlayFile(CObject& object, CStandaloneFile* const pFile) const
-{
-	CRY_ASSERT_MESSAGE(pFile->m_pImplData == nullptr, "Standalone file impl data survided a middleware switch during %s", __FUNCTION__);
-
-	Impl::IObject* const pIObject = object.GetImplDataPtr();
-
-	if (pIObject != nullptr)
-	{
-		if (!m_connections.empty())
-		{
-			Impl::ITriggerConnection const* const pITriggerConnection = m_connections[0];
-			pFile->m_pImplData = g_pIImpl->ConstructStandaloneFileConnection(*pFile, pFile->m_hashedFilename.GetText().c_str(), pFile->m_isLocalized, pITriggerConnection);
-			ERequestStatus const status = pFile->m_pImplData->Play(object.GetImplDataPtr());
-
-			if (status == ERequestStatus::Success || status == ERequestStatus::Pending)
-			{
-				if (status == ERequestStatus::Success)
-				{
-					pFile->m_state = EStandaloneFileState::Playing;
-				}
-				else if (status == ERequestStatus::Pending)
-				{
-					pFile->m_state = EStandaloneFileState::Loading;
-				}
-			}
-			else
-			{
-	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-				Cry::Audio::Log(ELogType::Error, R"(PlayFile failed with "%s" on object "%s")", pFile->m_hashedFilename.GetText().c_str(), object.GetName());
-	#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
-
-				g_pIImpl->DestructStandaloneFileConnection(pFile->m_pImplData);
-				pFile->m_pImplData = nullptr;
-			}
-		}
-	}
-	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Invalid impl object during %s", __FUNCTION__);
-	}
-	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
-
 }
 #endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }      // namespace CryAudio

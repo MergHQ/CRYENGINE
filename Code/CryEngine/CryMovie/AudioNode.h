@@ -29,11 +29,9 @@ private:
 	void ApplyAudioSwitchKey(CryAudio::ControlId audioSwitchId, CryAudio::SwitchStateId audioSwitchStateId);
 	void ApplyAudioParameterValue(CryAudio::ControlId audioParameterId, const float value);
 	void ApplyAudioTriggerKey(CryAudio::ControlId audioTriggerId, const bool bPlay = true);
-	void ApplyAudioFileKey(const string& filePath, const bool bLocalized);
 
 	std::vector<int>              m_audioSwitchTracks;
 	std::vector<float>            m_audioParameterTracks;
 	std::vector<SAudioInfo>       m_audioTriggerTracks;
-	std::vector<SAudioInfo>       m_audioFileTracks;
 	std::vector<SAudioTriggerKey> m_activeAudioTriggers;
 };

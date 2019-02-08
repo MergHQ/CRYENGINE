@@ -94,7 +94,6 @@ private:
 		CryAudio::AuxObjectId speechAuxObjectId;
 		CryAudio::ControlId   startTriggerID;
 		CryAudio::ControlId   stopTriggerID;
-		string                standaloneFile;
 
 		uint32                endingConditions;      //EEndingConditions
 		DRS::LipSyncID        lipsyncId;
@@ -144,7 +143,6 @@ private:
 
 	// CVars
 	int          m_displaySubtitlesCVar;
-	int          m_playAudioCVar;
 	int          m_samePrioCancelsLinesCVar;
 	float        m_defaultMaxQueueTime;
 	static float s_defaultPauseAfterLines;

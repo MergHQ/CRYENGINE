@@ -48,9 +48,6 @@ struct CTrackViewIcons
 		case eAnimParamType_AudioTrigger:
 			path = "icons:ObjectTypes/node_track_audio-trigger.ico";
 			break;
-		case eAnimParamType_AudioFile:
-			path = "icons:ObjectTypes/node_track_audio-file.ico";
-			break;
 		case eAnimParamType_AudioParameter:
 			path = "icons:ObjectTypes/node_track_audio-parameter.ico";
 			break;

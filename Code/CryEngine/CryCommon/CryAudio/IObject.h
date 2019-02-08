@@ -101,24 +101,6 @@ struct IObject
 	virtual void SetOcclusionRayOffset(float const offset, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
-	 * Plays the given file on this audio object.
-	 * @param playFileInfo - reference to a struct that holds data necessary for playback.
-	 * @param userData - optional struct used to pass additional data to the internal request.
-	 * @return void
-	 * @see StopFile
-	 */
-	virtual void PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
-
-	/**
-	 * Stops the given file on this audio object.
-	 * @param szFile - name of the file in question.
-	 * @param userData - optional struct used to pass additional data to the internal request.
-	 * @return void
-	 * @see PlayFile
-	 */
-	virtual void StopFile(char const* const szFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
-
-	/**
 	 * Sets this audio object's name.
 	 * Is only used during production whenever an entity's name is changed to adjust corresponding audio objects as well.
 	 * @param szName - name to set.

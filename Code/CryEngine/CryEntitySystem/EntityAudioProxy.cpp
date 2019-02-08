@@ -222,67 +222,6 @@ void CEntityComponentAudio::GameSerialize(TSerialize ser)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CEntityComponentAudio::PlayFile(CryAudio::SPlayFileInfo const& playbackInfo, CryAudio::AuxObjectId const audioAuxObjectId /* = DefaultAuxObjectId */, CryAudio::SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
-{
-	if (m_pEntity != nullptr)
-	{
-		if (audioAuxObjectId != CryAudio::InvalidAuxObjectId)
-		{
-			AuxObjectPair const& audioObjectPair = GetAudioAuxObjectPair(audioAuxObjectId);
-
-			if (audioObjectPair.first != CryAudio::InvalidAuxObjectId)
-			{
-				(SPlayFile(playbackInfo, userData))(audioObjectPair);
-				return true;
-			}
-#if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
-			else
-			{
-				gEnv->pSystem->Warning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_WARNING, VALIDATOR_FLAG_AUDIO, nullptr, "<Audio> Could not find AuxAudioProxy with id '%u' on entity '%s' to PlayFile '%s'", audioAuxObjectId, m_pEntity->GetEntityTextDescription().c_str(), playbackInfo.szFile);
-			}
-#endif  // INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
-		}
-		else
-		{
-			std::for_each(m_mapAuxObjects.begin(), m_mapAuxObjects.end(), SPlayFile(playbackInfo, userData));
-			return !m_mapAuxObjects.empty();
-		}
-	}
-	else
-	{
-		gEnv->pSystem->Warning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_WARNING, VALIDATOR_FLAG_AUDIO, nullptr, "<Audio> Trying to play an audio file on an EntityAudioProxy without a valid entity!");
-	}
-	return false;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntityComponentAudio::StopFile(
-	char const* const szFile,
-	CryAudio::AuxObjectId const audioAuxObjectId /*= DefaultAuxObjectId*/)
-{
-	if (m_pEntity != nullptr)
-	{
-		if (audioAuxObjectId != CryAudio::InvalidAuxObjectId)
-		{
-			AuxObjectPair const& audioObjectPair = GetAudioAuxObjectPair(audioAuxObjectId);
-
-			if (audioObjectPair.first != CryAudio::InvalidAuxObjectId)
-			{
-				(SStopFile(szFile))(audioObjectPair);
-			}
-		}
-		else
-		{
-			std::for_each(m_mapAuxObjects.begin(), m_mapAuxObjects.end(), SStopFile(szFile));
-		}
-	}
-	else
-	{
-		gEnv->pSystem->Warning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_WARNING, VALIDATOR_FLAG_AUDIO, nullptr, "<Audio> Trying to stop an audio file on an EntityAudioProxy without a valid entity!");
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 bool CEntityComponentAudio::ExecuteTrigger(
 	CryAudio::ControlId const audioTriggerId,
 	CryAudio::AuxObjectId const audioAuxObjectId /* = DefaultAuxObjectId */,
