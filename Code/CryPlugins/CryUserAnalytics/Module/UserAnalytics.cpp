@@ -398,7 +398,6 @@ void CUserAnalytics::ReadUserIdFromDisk()
 {
 	PWSTR pLocalDirectoryPath = nullptr;
 	HRESULT hr = SHGetKnownFolderPath(FOLDERID_Profile, KF_FLAG_CREATE | KF_FLAG_DONT_UNEXPAND, nullptr, &pLocalDirectoryPath);
-	bool success = true;
 	if (SUCCEEDED(hr))
 	{
 		// Convert from UNICODE to UTF-8
@@ -423,7 +422,7 @@ void CUserAnalytics::ReadUserIdFromDisk()
 		if (Serialization::LoadJsonFile(launcherInfo, sFilePath.c_str()))
 		{
 			m_userId = string().Format("%" PRIu64, launcherInfo.userId);
-		}		
+		}
 
 		CoTaskMemFree(pLocalDirectoryPath);
 	}
