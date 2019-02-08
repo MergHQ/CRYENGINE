@@ -1140,11 +1140,10 @@ bool GlobalAnimationHeaderLMG::Export2HTR(const char* szAnimationName, const cha
 		Vec3 rel = arrAnimation[0][k].t;
 		arrAnimation[0][k] = arrAnimation[0][k - 1] * arrAnimation[0][k];
 		Vec3 abs1 = arrAnimation[0][k].t;
-		uint32 ddd = 0;
 	}
 
-	bool htr = GlobalAnimationHeaderCAF::SaveHTR(szAnimationName, savePath, jointNameArray, jointParentArray, arrAnimation, parrDefJoints);
-	bool caf = GlobalAnimationHeaderCAF::SaveICAF(szAnimationName, savePath, jointNameArray, arrAnimation);
+	GlobalAnimationHeaderCAF::SaveHTR(szAnimationName, savePath, jointNameArray, jointParentArray, arrAnimation, parrDefJoints);
+	GlobalAnimationHeaderCAF::SaveICAF(szAnimationName, savePath, jointNameArray, arrAnimation);
 	return true;
 }
 

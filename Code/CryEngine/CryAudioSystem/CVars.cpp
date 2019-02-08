@@ -219,7 +219,6 @@ void CCVars::RegisterVariables()
 #if CRY_PLATFORM_WINDOWS
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on PC
 	m_objectPoolSize = 256;
-	m_standaloneFilePoolSize = 1;
 	#if defined(CRY_AUDIO_USE_OCCLUSION)
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
@@ -228,7 +227,6 @@ void CCVars::RegisterVariables()
 #elif CRY_PLATFORM_DURANGO
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on XboxOne
 	m_objectPoolSize = 256;
-	m_standaloneFilePoolSize = 1;
 	#if defined(CRY_AUDIO_USE_OCCLUSION)
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
@@ -237,7 +235,6 @@ void CCVars::RegisterVariables()
 #elif CRY_PLATFORM_ORBIS
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on PS4
 	m_objectPoolSize = 256;
-	m_standaloneFilePoolSize = 1;
 	#if defined(CRY_AUDIO_USE_OCCLUSION)
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
@@ -246,7 +243,6 @@ void CCVars::RegisterVariables()
 #elif CRY_PLATFORM_MAC
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on Mac
 	m_objectPoolSize = 256;
-	m_standaloneFilePoolSize = 1;
 	#if defined(CRY_AUDIO_USE_OCCLUSION)
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
@@ -255,7 +251,6 @@ void CCVars::RegisterVariables()
 #elif CRY_PLATFORM_LINUX
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on Linux
 	m_objectPoolSize = 256;
-	m_standaloneFilePoolSize = 1;
 	#if defined(CRY_AUDIO_USE_OCCLUSION)
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
@@ -264,7 +259,6 @@ void CCVars::RegisterVariables()
 #elif CRY_PLATFORM_IOS
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on iOS
 	m_objectPoolSize = 256;
-	m_standaloneFilePoolSize = 1;
 	#if defined(CRY_AUDIO_USE_OCCLUSION)
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
@@ -273,7 +267,6 @@ void CCVars::RegisterVariables()
 #elif CRY_PLATFORM_ANDROID
 	m_fileCacheManagerSize = 72 << 10;      // 72 MiB
 	m_objectPoolSize = 256;
-	m_standaloneFilePoolSize = 1;
 	#if defined(CRY_AUDIO_USE_OCCLUSION)
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
@@ -293,22 +286,10 @@ void CCVars::RegisterVariables()
 	               "Usage: s_AudioObjectPoolSize [0/...]\n"
 	               "Default PC: 256, XboxOne: 256, PS4: 256, Mac: 256, Linux: 256, iOS: 256, Android: 256\n");
 
-	REGISTER_CVAR2("s_AudioStandaloneFilePoolSize", &m_standaloneFilePoolSize, m_standaloneFilePoolSize, VF_REQUIRE_APP_RESTART,
-	               "Sets the number of preallocated audio standalone files.\n"
-	               "Usage: s_AudioStandaloneFilePoolSize [0/...]\n"
-	               "Default PC: 1, XboxOne: 1, PS4: 1, Mac: 1, Linux: 1, iOS: 1, Android: 1\n");
-
 	REGISTER_CVAR2("s_IgnoreWindowFocus", &m_ignoreWindowFocus, 0, VF_NULL,
 	               "If set to 1, the audio system will not execute the \"lose_focus\" and \"get_focus\" triggers when the application window focus changes.\n"
 	               "Usage: s_IgnoreWindowFocus [0/1]\n"
 	               "Default: 0 (off)\n");
-
-	REGISTER_STRING("s_DefaultStandaloneFilesAudioTrigger", "", 0,
-	                "The name of the AudioTrigger which is used for playing back standalone files, when you call 'PlayFile' without specifying\n"
-	                "an override triggerId that should be used instead.\n"
-	                "Usage: s_DefaultStandaloneFilesAudioTrigger audio_trigger_name.\n"
-	                "If you change this CVar to be empty, the control will not be created automatically.\n"
-	                "Default: \"do_nothing\" \n");
 
 #if defined(CRY_AUDIO_USE_OCCLUSION)
 	REGISTER_CVAR2("s_OcclusionMaxDistance", &m_occlusionMaxDistance, m_occlusionMaxDistance, VF_CHEAT | VF_CHEAT_NOCHECK,
@@ -418,12 +399,10 @@ void CCVars::RegisterVariables()
 	               "i: Draw occlusion rays.\n"
 	               "j: Draw spheres with occlusion ray offset radius around active audio objects.\n"
 	               "k: Draw listener occlusion plane.\n"
-	               "l: Draw object standalone files.\n"
 	               "m: Draw middleware specific info for active audio objects.\n"
 	               "q: Hide audio system memory info.\n"
 	               "r: Apply filter also to inactive object debug info.\n"
 	               "s: Draw detailed memory pool debug info.\n"
-	               "u: List standalone files.\n"
 	               "v: List implementation specific info.\n"
 	               "w: List active Audio Objects.\n"
 	               "x: Draw FileCache Manager debug info.\n"
@@ -522,9 +501,7 @@ void CCVars::UnregisterVariables()
 	{
 		pConsole->UnregisterVariable("s_FileCacheManagerSize");
 		pConsole->UnregisterVariable("s_AudioObjectPoolSize");
-		pConsole->UnregisterVariable("s_AudioStandaloneFilePoolSize");
 		pConsole->UnregisterVariable("s_IgnoreWindowFocus");
-		pConsole->UnregisterVariable("s_DefaultStandaloneFilesAudioTrigger");
 
 #if defined(CRY_AUDIO_USE_OCCLUSION)
 		pConsole->UnregisterVariable("s_OcclusionMaxDistance");

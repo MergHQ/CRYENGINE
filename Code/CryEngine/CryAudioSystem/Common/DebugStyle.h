@@ -30,7 +30,6 @@ constexpr float g_objectFontSize = 1.35f;
 constexpr float g_objectLineHeight = 14.0f;
 static ColorF const s_objectColorActive = Col_LightGrey;
 static ColorF const s_objectColorTrigger = Col_LimeGreen;
-static ColorF const s_objectColorStandaloneFile = Col_Yellow;
 static ColorF const s_objectColorParameter = Col_SlateBlue;
 static ColorF const s_objectColorEnvironment = Col_Orange;
 

@@ -27,8 +27,6 @@ enum class ESystemRequestType : EnumFlagsType
 	SetGlobalParameter,
 	SetSwitchState,
 	SetGlobalSwitchState,
-	PlayFile,
-	StopFile,
 	AutoLoadSetting,
 	LoadSetting,
 	UnloadSetting,
@@ -37,7 +35,6 @@ enum class ESystemRequestType : EnumFlagsType
 	RemoveRequestListener,
 	ChangeLanguage,
 	ReleasePendingRays,
-	GetFileData,
 	GetImplInfo,
 	RegisterListener,
 	ReleaseListener,
@@ -370,53 +367,6 @@ struct SSystemRequestData<ESystemRequestType::SetGlobalSwitchState> final : publ
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SSystemRequestData<ESystemRequestType::PlayFile> final : public SSystemRequestDataBase
-{
-	explicit SSystemRequestData(
-		CryFixedStringT<MaxFilePathLength> const& file_,
-		ControlId const usedTriggerId_,
-		bool const bLocalized_)
-		: SSystemRequestDataBase(ESystemRequestType::PlayFile)
-		, file(file_)
-		, usedTriggerId(usedTriggerId_)
-		, bLocalized(bLocalized_)
-	{}
-
-	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::PlayFile> const* const pASRData)
-		: SSystemRequestDataBase(ESystemRequestType::PlayFile)
-		, file(pASRData->file)
-		, usedTriggerId(pASRData->usedTriggerId)
-		, bLocalized(pASRData->bLocalized)
-	{}
-
-	virtual ~SSystemRequestData() override = default;
-
-	CryFixedStringT<MaxFilePathLength> const file;
-	ControlId const                          usedTriggerId;
-	bool const                               bLocalized;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<>
-struct SSystemRequestData<ESystemRequestType::StopFile> final : public SSystemRequestDataBase
-{
-	explicit SSystemRequestData(CryFixedStringT<MaxFilePathLength> const& file_)
-		: SSystemRequestDataBase(ESystemRequestType::StopFile)
-		, file(file_)
-	{}
-
-	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::StopFile> const* const pASRData)
-		: SSystemRequestDataBase(ESystemRequestType::StopFile)
-		, file(pASRData->file)
-	{}
-
-	virtual ~SSystemRequestData() override = default;
-
-	CryFixedStringT<MaxFilePathLength> const file;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<>
 struct SSystemRequestData<ESystemRequestType::AutoLoadSetting> final : public SSystemRequestDataBase
 {
 	explicit SSystemRequestData(EDataScope const scope_)
@@ -489,28 +439,6 @@ struct SSystemRequestData<ESystemRequestType::UnloadAFCMDataByScope> final : pub
 	virtual ~SSystemRequestData() override = default;
 
 	EDataScope const dataScope;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<>
-struct SSystemRequestData<ESystemRequestType::GetFileData> final : public SSystemRequestDataBase
-{
-	explicit SSystemRequestData(char const* const szName, SFileData& fileData_)
-		: SSystemRequestDataBase(ESystemRequestType::GetFileData)
-		, name(szName)
-		, fileData(fileData_)
-	{}
-
-	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::GetFileData> const* const pAMRData)
-		: SSystemRequestDataBase(ESystemRequestType::GetFileData)
-		, name(pAMRData->name)
-		, fileData(pAMRData->fileData)
-	{}
-
-	virtual ~SSystemRequestData() override = default;
-
-	CryFixedStringT<MaxFileNameLength> const name;
-	SFileData&                               fileData;
 };
 
 //////////////////////////////////////////////////////////////////////////

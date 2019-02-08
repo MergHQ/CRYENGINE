@@ -19,8 +19,6 @@ enum class ECallbackRequestType : EnumFlagsType
 	ReportStartedTriggerConnectionInstance,
 	ReportFinishedTriggerConnectionInstance,
 	ReportFinishedTriggerInstance,
-	ReportStartedFile,
-	ReportStoppedFile,
 	ReportPhysicalizedObject,
 	ReportVirtualizedObject,
 };
@@ -117,47 +115,6 @@ struct SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance>
 
 	ControlId const triggerId;
 	EntityId const  entityId;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<>
-struct SCallbackRequestData<ECallbackRequestType::ReportStartedFile> final : public SCallbackRequestDataBase
-{
-	explicit SCallbackRequestData(CStandaloneFile& standaloneFile_, bool const bSuccess_)
-		: SCallbackRequestDataBase(ECallbackRequestType::ReportStartedFile)
-		, standaloneFile(standaloneFile_)
-		, bSuccess(bSuccess_)
-	{}
-
-	explicit SCallbackRequestData(SCallbackRequestData<ECallbackRequestType::ReportStartedFile> const* const pACMRData)
-		: SCallbackRequestDataBase(ECallbackRequestType::ReportStartedFile)
-		, standaloneFile(pACMRData->standaloneFile)
-		, bSuccess(pACMRData->bSuccess)
-	{}
-
-	virtual ~SCallbackRequestData() override = default;
-
-	CStandaloneFile& standaloneFile;
-	bool const       bSuccess;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<>
-struct SCallbackRequestData<ECallbackRequestType::ReportStoppedFile> final : public SCallbackRequestDataBase
-{
-	explicit SCallbackRequestData(CStandaloneFile& standaloneFile_)
-		: SCallbackRequestDataBase(ECallbackRequestType::ReportStoppedFile)
-		, standaloneFile(standaloneFile_)
-	{}
-
-	explicit SCallbackRequestData(SCallbackRequestData<ECallbackRequestType::ReportStoppedFile> const* const pACMRData)
-		: SCallbackRequestDataBase(ECallbackRequestType::ReportStoppedFile)
-		, standaloneFile(pACMRData->standaloneFile)
-	{}
-
-	virtual ~SCallbackRequestData() override = default;
-
-	CStandaloneFile& standaloneFile;
 };
 
 //////////////////////////////////////////////////////////////////////////

@@ -25,14 +25,12 @@ enum class EDrawFilter : EnumFlagsType
 	OcclusionRays          = BIT(14), // i
 	OcclusionRayOffset     = BIT(15), // j
 	ListenerOcclusionPlane = BIT(16), // k
-	ObjectStandaloneFiles  = BIT(17), // l
 	ObjectImplInfo         = BIT(18), // m
 
 	HideMemoryInfo         = BIT(22), // q
 	FilterAllObjectInfo    = BIT(23), // r
 	DetailedMemoryInfo     = BIT(24), // s
 
-	StandaloneFiles        = BIT(26), // u
 	ImplList               = BIT(27), // v
 	ActiveObjects          = BIT(28), // w
 	FileCacheManagerInfo   = BIT(29), // x
@@ -52,7 +50,6 @@ constexpr EDrawFilter objectMask =
 	EDrawFilter::OcclusionRays |
 	EDrawFilter::OcclusionRayOffset |
 	EDrawFilter::ListenerOcclusionPlane |
-	EDrawFilter::ObjectStandaloneFiles |
 	EDrawFilter::ObjectImplInfo;
 
 // Debug draw style for objects.

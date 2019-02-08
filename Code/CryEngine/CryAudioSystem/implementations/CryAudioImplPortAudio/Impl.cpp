@@ -14,7 +14,6 @@
 #include <IFile.h>
 #include <IParameterConnection.h>
 #include <ISettingConnection.h>
-#include <IStandaloneFileConnection.h>
 #include <ISwitchStateConnection.h>
 #include <FileInfo.h>
 #include <sndfile.hh>
@@ -401,18 +400,6 @@ void CImpl::DestructListener(IListener* const pIListener)
 }
 
 //////////////////////////////////////////////////////////////////////////
-IStandaloneFileConnection* CImpl::ConstructStandaloneFileConnection(CryAudio::CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITriggerConnection const* pITriggerConnection /*= nullptr*/)
-{
-	return nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CImpl::DestructStandaloneFileConnection(IStandaloneFileConnection const* const pIStandaloneFileConnection)
-{
-	delete pIStandaloneFileConnection;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CImpl::GamepadConnected(DeviceId const deviceUniqueID)
 {
 }
@@ -701,11 +688,6 @@ void CImpl::DestructEventInstance(CEventInstance const* const pEventInstance)
 	delete pEventInstance;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
-{
-}
-
 #if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 void DrawMemoryPoolInfo(
@@ -728,7 +710,7 @@ void DrawMemoryPoolInfo(
 		memAllocString.Format("%" PRISIZE_T " KiB", mem.nAlloc >> 10);
 	}
 
-	ColorF const color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
+	ColorF const& color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
 
 	posY += Debug::g_systemLineHeight;
 	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, color, false,

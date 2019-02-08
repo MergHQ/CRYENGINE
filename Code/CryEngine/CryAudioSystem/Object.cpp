@@ -5,10 +5,8 @@
 #include "CVars.h"
 #include "Managers.h"
 #include "System.h"
-#include "FileManager.h"
 #include "ListenerManager.h"
 #include "Request.h"
-#include "StandaloneFile.h"
 #include "Environment.h"
 #include "Parameter.h"
 #include "Switch.h"
@@ -24,8 +22,6 @@
 #include "CallbackRequestData.h"
 #include "Common/IImpl.h"
 #include "Common/IObject.h"
-#include "Common/IStandaloneFileConnection.h"
-#include <CryString/HashedString.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryMath/Cry_Camera.h>
 
@@ -43,7 +39,6 @@ namespace CryAudio
 void CObject::Release()
 {
 	// Do not clear the object's name though!
-	m_activeStandaloneFiles.clear();
 
 	for (auto& triggerStatesPair : m_triggerStates)
 	{
@@ -83,12 +78,6 @@ void CObject::AddTriggerState(TriggerInstanceId const id, STriggerInstanceState 
 		g_activeObjects.push_back(this);
 		m_flags |= EObjectFlags::Active;
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObject::AddStandaloneFile(CStandaloneFile* const pStandaloneFile, SUserDataBase const& userDataBase)
-{
-	m_activeStandaloneFiles.emplace(pStandaloneFile, userDataBase);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -183,26 +172,6 @@ void CObject::ReportFinishedTriggerInstance(TriggerInstanceId const triggerInsta
 #endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CObject::GetStartedStandaloneFileRequestData(CStandaloneFile* const pStandaloneFile, CRequest& request)
-{
-	ObjectStandaloneFileMap::const_iterator const iter(m_activeStandaloneFiles.find(pStandaloneFile));
-
-	if (iter != m_activeStandaloneFiles.end())
-	{
-		SUserDataBase const& standaloneFileData = iter->second;
-		request.pOwner = standaloneFileData.pOwnerOverride;
-		request.pUserData = standaloneFileData.pUserData;
-		request.pUserDataOwner = standaloneFileData.pUserDataOwner;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObject::ReportFinishedStandaloneFile(CStandaloneFile* const pStandaloneFile)
-{
-	m_activeStandaloneFiles.erase(pStandaloneFile);
-}
-
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CObject::HandleStopTrigger(CTrigger const* const pTrigger)
 {
@@ -227,7 +196,7 @@ void CObject::PushRequest(SRequestData const& requestData, SRequestUserData cons
 //////////////////////////////////////////////////////////////////////////
 bool CObject::IsPlaying() const
 {
-	return !m_triggerStates.empty() || !m_activeStandaloneFiles.empty();
+	return !m_triggerStates.empty();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -295,68 +264,6 @@ void CObject::ReleasePendingRays()
 	m_propagationProcessor.ReleasePendingRays();
 }
 #endif // CRY_AUDIO_USE_OCCLUSION
-
-//////////////////////////////////////////////////////////////////////////
-void CObject::HandleStopFile(char const* const szFile)
-{
-	if (m_pImplData != nullptr)
-	{
-		CHashedString const hashedFilename(szFile);
-		auto iter = m_activeStandaloneFiles.cbegin();
-		auto iterEnd = m_activeStandaloneFiles.cend();
-
-		while (iter != iterEnd)
-		{
-			CStandaloneFile* const pFile = iter->first;
-
-			if (pFile != nullptr && pFile->m_hashedFilename == hashedFilename)
-			{
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-				if (pFile->m_state != EStandaloneFileState::Playing)
-				{
-					char const* szState = "unknown";
-
-					switch (pFile->m_state)
-					{
-					case EStandaloneFileState::Playing:
-						szState = "playing";
-						break;
-					case EStandaloneFileState::Loading:
-						szState = "loading";
-						break;
-					case EStandaloneFileState::Stopping:
-						szState = "stopping";
-						break;
-					default:
-						szState = "unknown";
-						break;
-					}
-
-					Cry::Audio::Log(ELogType::Warning, R"(Request to stop a standalone audio file that is not playing! State: "%s")", szState);
-				}
-#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
-
-				ERequestStatus const status = pFile->m_pImplData->Stop(m_pImplData);
-
-				if (status != ERequestStatus::Pending)
-				{
-					ReportFinishedStandaloneFile(pFile);
-					g_fileManager.ReleaseStandaloneFile(pFile);
-
-					iter = m_activeStandaloneFiles.begin();
-					iterEnd = m_activeStandaloneFiles.end();
-					continue;
-				}
-				else
-				{
-					pFile->m_state = EStandaloneFileState::Stopping;
-				}
-			}
-
-			++iter;
-		}
-	}
-}
 
 //////////////////////////////////////////////////////////////////////////
 void CObject::Init(Impl::IObject* const pImplData, EntityId const entityId)
@@ -474,7 +381,6 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 				bool const drawSphere = (g_cvars.m_drawDebug & Debug::EDrawFilter::Spheres) != 0;
 				bool const drawLabel = (g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectLabel) != 0;
 				bool const drawTriggers = (g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectTriggers) != 0;
-				bool const drawStandaloneFiles = (g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectStandaloneFiles) != 0;
 				bool const drawStates = (g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectStates) != 0;
 				bool const drawParameters = (g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectParameters) != 0;
 				bool const drawEnvironments = (g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectEnvironments) != 0;
@@ -541,50 +447,6 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 						}
 
 						triggerInfo.emplace_back(debugText);
-					}
-				}
-
-				// Check if any standalone file matches text filter.
-				bool doesStandaloneFileMatchFilter = false;
-				std::vector<CryFixedStringT<MaxMiscStringLength>> standaloneFileInfo;
-
-				if ((drawStandaloneFiles && !m_activeStandaloneFiles.empty()) || filterAllObjectInfo)
-				{
-					std::map<CHashedString, size_t> numStandaloneFiles;
-
-					for (auto const& standaloneFilePair : m_activeStandaloneFiles)
-					{
-						++(numStandaloneFiles[standaloneFilePair.first->m_hashedFilename]);
-					}
-
-					for (auto const& numInstancesPair : numStandaloneFiles)
-					{
-						char const* const szStandaloneFileName = numInstancesPair.first.GetText().c_str();
-
-						if (!isTextFilterDisabled)
-						{
-							CryFixedStringT<MaxControlNameLength> lowerCaseStandaloneFileName(szStandaloneFileName);
-							lowerCaseStandaloneFileName.MakeLower();
-
-							if (lowerCaseStandaloneFileName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
-							{
-								doesStandaloneFileMatchFilter = true;
-							}
-						}
-
-						CryFixedStringT<MaxMiscStringLength> debugText;
-						size_t const numInstances = numInstancesPair.second;
-
-						if (numInstances == 1)
-						{
-							debugText.Format("%s\n", szStandaloneFileName);
-						}
-						else
-						{
-							debugText.Format("%s: %" PRISIZE_T "\n", szStandaloneFileName, numInstances);
-						}
-
-						standaloneFileInfo.emplace_back(debugText);
 					}
 				}
 
@@ -741,22 +603,6 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 								screenPos.y,
 								Debug::g_objectFontSize,
 								isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorTrigger,
-								false,
-								debugText.c_str());
-
-							screenPos.y += Debug::g_objectLineHeight;
-						}
-					}
-
-					if (drawStandaloneFiles && (isTextFilterDisabled || doesStandaloneFileMatchFilter))
-					{
-						for (auto const& debugText : standaloneFileInfo)
-						{
-							auxGeom.Draw2dLabel(
-								screenPos.x,
-								screenPos.y,
-								Debug::g_objectFontSize,
-								isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorStandaloneFile,
 								false,
 								debugText.c_str());
 
@@ -979,7 +825,7 @@ void CObject::ForceImplementationRefresh(bool const setTransformation)
 	}
 
 	uint16 triggerCounter = 0;
-	// Last re-execute its active triggers and standalone files.
+	// Last re-execute its active triggers.
 	for (auto& triggerStatePair : m_triggerStates)
 	{
 		CTrigger const* const pTrigger = stl::find_in_map(g_triggers, triggerStatePair.second.triggerId, nullptr);
@@ -992,30 +838,6 @@ void CObject::ForceImplementationRefresh(bool const setTransformation)
 		else if (!ExecuteDefaultTrigger(triggerStatePair.second.triggerId))
 		{
 			Cry::Audio::Log(ELogType::Warning, "Trigger \"%u\" does not exist!", triggerStatePair.second.triggerId);
-		}
-	}
-
-	ObjectStandaloneFileMap const& activeStandaloneFiles = m_activeStandaloneFiles;
-
-	for (auto const& standaloneFilePair : activeStandaloneFiles)
-	{
-		CStandaloneFile* const pFile = standaloneFilePair.first;
-
-		if (pFile == nullptr)
-		{
-			Cry::Audio::Log(ELogType::Warning, "Standalone file pointer is nullptr during %s", __FUNCTION__);
-		}
-		else
-		{
-			CRY_ASSERT_MESSAGE(pFile->m_state == EStandaloneFileState::Playing, "Standalone file must be in playing state during %s", __FUNCTION__);
-			CRY_ASSERT_MESSAGE(pFile->m_pObject == this, "Standalone file played on wrong object during %s", __FUNCTION__);
-
-			auto const pTrigger = stl::find_in_map(g_triggers, pFile->m_triggerId, nullptr);
-
-			if (pTrigger != nullptr)
-			{
-				pTrigger->PlayFile(*this, pFile);
-			}
 		}
 	}
 }
@@ -1128,20 +950,6 @@ void CObject::SetOcclusionRayOffset(float const offset, SRequestUserData const& 
 	SObjectRequestData<EObjectRequestType::SetOcclusionRayOffset> requestData(this, offset);
 	PushRequest(requestData, userData);
 #endif // CRY_AUDIO_USE_OCCLUSION
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObject::PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
-{
-	SObjectRequestData<EObjectRequestType::PlayFile> requestData(this, playFileInfo.szFile, playFileInfo.usedTriggerForPlayback, playFileInfo.bLocalized);
-	PushRequest(requestData, userData);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObject::StopFile(char const* const szFile, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
-{
-	SObjectRequestData<EObjectRequestType::StopFile> requestData(this, szFile);
-	PushRequest(requestData, userData);
 }
 
 //////////////////////////////////////////////////////////////////////////

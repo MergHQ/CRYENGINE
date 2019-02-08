@@ -52,9 +52,8 @@ public:
 	char const* GetName() const { return m_name.c_str(); }
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 
-	EventInstances             m_eventInstances;
-	StandAloneFileInstanceList m_standaloneFiles;
-	VolumeMultipliers          m_volumeMultipliers;
+	EventInstances    m_eventInstances;
+	VolumeMultipliers m_volumeMultipliers;
 
 private:
 

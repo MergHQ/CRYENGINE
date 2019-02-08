@@ -4,13 +4,11 @@
 
 namespace CryAudio
 {
-class CFileManager;
 class CListenerManager;
 class CFileCacheManager;
 class CEventListenerManager;
 class CXMLProcessor;
 
-extern CFileManager g_fileManager;
 extern CListenerManager g_listenerManager;
 extern CFileCacheManager g_fileCacheManager;
 extern CEventListenerManager g_eventListenerManager;

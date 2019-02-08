@@ -13,7 +13,6 @@ class CEventInstance;
 class CImpl;
 class CListener;
 class CObject;
-class CStandaloneFile;
 class CEvent;
 
 extern bool g_bMuted;
@@ -24,7 +23,6 @@ extern CObject* g_pObject;
 using SampleId = uint;
 using ChannelList = std::vector<int>;
 using EventInstances = std::vector<CEventInstance*>;
-using StandAloneFileInstanceList = std::vector<CStandaloneFile*>;
 
 using Objects = std::vector<CObject*>;
 extern Objects g_objects;

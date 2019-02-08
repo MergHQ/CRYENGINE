@@ -21,7 +21,6 @@
 #include "Switch.h"
 
 #include <ISettingConnection.h>
-#include <IStandaloneFileConnection.h>
 #include <FileInfo.h>
 #include <CrySystem/File/ICryPak.h>
 #include <CrySystem/IProjectManager.h>
@@ -1153,18 +1152,6 @@ void CImpl::DestructListener(IListener* const pIListener)
 }
 
 //////////////////////////////////////////////////////////////////////////
-IStandaloneFileConnection* CImpl::ConstructStandaloneFileConnection(CryAudio::CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITriggerConnection const* pITriggerConnection /*= nullptr*/)
-{
-	return nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CImpl::DestructStandaloneFileConnection(IStandaloneFileConnection const* const pIStandaloneFileConnection)
-{
-	delete pIStandaloneFileConnection;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CImpl::GamepadConnected(DeviceId const deviceUniqueID)
 {
 	CRY_ASSERT(m_mapInputDevices.find(deviceUniqueID) == m_mapInputDevices.end()); // Mustn't exist yet!
@@ -1527,11 +1514,6 @@ void CImpl::DestructSettingConnection(ISettingConnection const* const pISettingC
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CImpl::SignalAuxAudioThread()
 {
 	g_auxAudioThread.m_lock.Lock();
@@ -1693,7 +1675,7 @@ void DrawMemoryPoolInfo(
 		memAllocString.Format("%" PRISIZE_T " KiB", mem.nAlloc >> 10);
 	}
 
-	ColorF const color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
+	ColorF const& color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
 
 	posY += Debug::g_systemLineHeight;
 	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, color, false,
@@ -1845,29 +1827,7 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 
 					if (draw)
 					{
-						ColorF color = Debug::s_globalColorInactive;
-
-						switch (pEventInstance->GetState())
-						{
-						case EEventInstanceState::Playing:
-							{
-								color = Debug::s_listColorItemActive;
-								break;
-							}
-						case EEventInstanceState::Virtual:
-							{
-								color = Debug::s_globalColorVirtual;
-								break;
-							}
-						case EEventInstanceState::Loading:
-							{
-								color = Debug::s_listColorItemLoading;
-								break;
-							}
-						default:
-							break;
-						}
-
+						ColorF const& color = (pEventInstance->GetState() == EEventInstanceState::Virtual) ? Debug::s_globalColorVirtual : Debug::s_listColorItemActive;
 						auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, "%s on %s", szEventName, pEventInstance->GetObject().GetName());
 
 						posY += Debug::g_listLineHeight;

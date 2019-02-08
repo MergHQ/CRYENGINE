@@ -14,8 +14,6 @@ class CRayInfo;
 enum class EObjectRequestType : EnumFlagsType
 {
 	None,
-	PlayFile,
-	StopFile,
 	ExecuteTrigger,
 	StopTrigger,
 	StopAllTriggers,
@@ -64,54 +62,6 @@ struct SObjectRequestData final : public SObjectRequestDataBase
 	{}
 
 	virtual ~SObjectRequestData() override = default;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<>
-struct SObjectRequestData<EObjectRequestType::PlayFile> final : public SObjectRequestDataBase
-{
-	explicit SObjectRequestData(
-		CObject* const pObject_,
-		CryFixedStringT<MaxFilePathLength> const& file_,
-		ControlId const usedTriggerId_,
-		bool const bLocalized_)
-		: SObjectRequestDataBase(EObjectRequestType::PlayFile, pObject_)
-		, file(file_)
-		, usedTriggerId(usedTriggerId_)
-		, bLocalized(bLocalized_)
-	{}
-
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::PlayFile> const* const pORData)
-		: SObjectRequestDataBase(EObjectRequestType::PlayFile, pORData->pObject)
-		, file(pORData->file)
-		, usedTriggerId(pORData->usedTriggerId)
-		, bLocalized(pORData->bLocalized)
-	{}
-
-	virtual ~SObjectRequestData() override = default;
-
-	CryFixedStringT<MaxFilePathLength> const file;
-	ControlId const                          usedTriggerId;
-	bool const                               bLocalized;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<>
-struct SObjectRequestData<EObjectRequestType::StopFile> final : public SObjectRequestDataBase
-{
-	explicit SObjectRequestData(CObject* const pObject_, CryFixedStringT<MaxFilePathLength> const& file_)
-		: SObjectRequestDataBase(EObjectRequestType::StopFile, pObject_)
-		, file(file_)
-	{}
-
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::StopFile> const* const pORData)
-		: SObjectRequestDataBase(EObjectRequestType::StopFile, pORData->pObject)
-		, file(pORData->file)
-	{}
-
-	virtual ~SObjectRequestData() override = default;
-
-	CryFixedStringT<MaxFilePathLength> const file;
 };
 
 //////////////////////////////////////////////////////////////////////////

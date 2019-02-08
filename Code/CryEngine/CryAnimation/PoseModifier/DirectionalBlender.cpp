@@ -627,8 +627,6 @@ void SDirectionalBlender::DebugVEGrid(const SAnimationPoseModifierParams& params
 
 	CDefaultSkeleton* pDefaultSkeleton = pInstance->m_pDefaultSkeleton;
 	uint32 numJoints = pDefaultSkeleton->m_poseDefaultData.GetJointCount();
-	const CDefaultSkeleton::SJoint* parrModelJoints = &pDefaultSkeleton->m_arrModelJoints[0];
-	CAnimationSet* pAnimationSet = pInstance->m_pDefaultSkeleton->m_pAnimationSet;
 
 	const GlobalAnimationHeaderAIM& rAIM0 = g_AnimationManager.m_arrGlobalAIM[rAimInfo.m_nGlobalDirID0];
 

@@ -23,7 +23,6 @@
 #include "DspBusSetting.h"
 #include "IoInterface.h"
 
-#include <IStandaloneFileConnection.h>
 #include <FileInfo.h>
 #include <CrySystem/IStreamEngine.h>
 #include <CrySystem/File/ICryPak.h>
@@ -688,18 +687,6 @@ void CImpl::DestructListener(IListener* const pIListener)
 }
 
 //////////////////////////////////////////////////////////////////////////
-IStandaloneFileConnection* CImpl::ConstructStandaloneFileConnection(CryAudio::CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITriggerConnection const* pITriggerConnection /*= nullptr*/)
-{
-	return nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CImpl::DestructStandaloneFileConnection(IStandaloneFileConnection const* const pIStandaloneFileConnection)
-{
-	delete pIStandaloneFileConnection;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CImpl::GamepadConnected(DeviceId const deviceUniqueID)
 {
 }
@@ -1116,12 +1103,6 @@ void CImpl::DestructCueInstance(CCueInstance const* const pCueInstance)
 
 	delete pCueInstance;
 }
-
-//////////////////////////////////////////////////////////////////////////
-void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
-{
-}
-
 //////////////////////////////////////////////////////////////////////////
 bool CImpl::InitializeLibrary()
 {
@@ -1348,7 +1329,7 @@ void DrawMemoryPoolInfo(
 		memAllocString.Format("%" PRISIZE_T " KiB", mem.nAlloc >> 10);
 	}
 
-	ColorF const color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
+	ColorF const& color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
 
 	posY += Debug::g_systemLineHeight;
 	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, color, false,
@@ -1520,7 +1501,7 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 					if (draw)
 					{
 						ECueInstanceFlags const flags = pCueInstance->GetFlags();
-						ColorF const color = ((flags& ECueInstanceFlags::IsPending) != 0) ? Debug::s_listColorItemLoading : (((flags& ECueInstanceFlags::IsVirtual) != 0) ? Debug::s_globalColorVirtual : Debug::s_listColorItemActive);
+						ColorF const& color = ((flags& ECueInstanceFlags::IsPending) != 0) ? Debug::s_listColorItemLoading : (((flags& ECueInstanceFlags::IsVirtual) != 0) ? Debug::s_globalColorVirtual : Debug::s_listColorItemActive);
 						auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, "%s on %s", szCueName, pCueInstance->GetObject().GetName());
 
 						posY += Debug::g_listLineHeight;

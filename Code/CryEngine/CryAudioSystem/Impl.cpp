@@ -184,17 +184,6 @@ IListener* CImpl::ConstructListener(CTransformation const& transformation, char 
 }
 
 //////////////////////////////////////////////////////////////////////////
-IStandaloneFileConnection* CImpl::ConstructStandaloneFileConnection(CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITriggerConnection const* pITriggerConnection /*= nullptr*/)
-{
-	return nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CImpl::DestructStandaloneFileConnection(IStandaloneFileConnection const* const pIStandaloneFileConnection)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CImpl::GamepadConnected(DeviceId const deviceUniqueID)
 {
 }
@@ -272,11 +261,6 @@ void CImpl::OnRefresh()
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::SetLanguage(char const* const szLanguage)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
 {
 }
 

@@ -261,10 +261,6 @@ IAnimTrack* CAnimNode::CreateTrackInternal(const CAnimParamType& paramType, EAni
 		pTrack = new CAudioTriggerTrack;
 		break;
 
-	case eAnimParamType_AudioFile:
-		pTrack = new CAudioFileTrack;
-		break;
-
 	case eAnimParamType_AudioParameter:
 		pTrack = new CAudioParameterTrack;
 		break;

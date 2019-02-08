@@ -8,7 +8,6 @@
 #include "EventInstance.h"
 #include "Listener.h"
 #include "Object.h"
-#include "StandaloneFile.h"
 #include "VolumeParameter.h"
 #include "VolumeState.h"
 
@@ -102,16 +101,9 @@ string GetFullFilePath(char const* const szFileName, char const* const szPath)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void OnStandaloneFileFinished(CryAudio::CStandaloneFile& standaloneFile, const char* szFile)
-{
-	gEnv->pAudioSystem->ReportStoppedFile(standaloneFile);
-}
-
-///////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
-	: m_pCVarFileExtension(nullptr)
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
-	, m_name("SDL Mixer 2.0.2")
+	: m_name("SDL Mixer 2.0.2")
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 {
 	g_pImpl = this;
@@ -158,8 +150,6 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 	g_eventPoolSize = static_cast<uint16>(g_cvars.m_eventPoolSize);
 #endif        // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 
-	m_pCVarFileExtension = REGISTER_STRING("s_SDLMixerStandaloneFileExtension", ".mp3", 0, "the expected file extension for standalone files, played via the sdl_mixer");
-
 	if (ICVar* const pCVar = gEnv->pConsole->GetCVar("g_languageAudio"))
 	{
 		SetLanguage(pCVar->GetString());
@@ -167,7 +157,6 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 
 	if (SoundEngine::Init())
 	{
-		SoundEngine::RegisterStandaloneFileFinishedCallback(OnStandaloneFileFinished);
 		return ERequestStatus::Success;
 	}
 
@@ -182,12 +171,6 @@ void CImpl::ShutDown()
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::Release()
 {
-	if (m_pCVarFileExtension != nullptr)
-	{
-		m_pCVarFileExtension->Release();
-		m_pCVarFileExtension = nullptr;
-	}
-
 	SoundEngine::Release();
 
 	delete this;
@@ -691,35 +674,6 @@ void CImpl::DestructListener(IListener* const pIListener)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IStandaloneFileConnection* CImpl::ConstructStandaloneFileConnection(CryAudio::CStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITriggerConnection const* pITriggerConnection /*= nullptr*/)
-{
-	static string s_localizedfilesFolder = PathUtil::GetLocalizationFolder() + "/" + m_language + "/";
-	static string filePath;
-
-	if (bLocalized)
-	{
-		filePath = s_localizedfilesFolder + szFile + m_pCVarFileExtension->GetString();
-	}
-	else
-	{
-		filePath = string(szFile) + m_pCVarFileExtension->GetString();
-	}
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CStandaloneFile");
-	return static_cast<IStandaloneFileConnection*>(new CStandaloneFile(filePath, standaloneFile));
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructStandaloneFileConnection(IStandaloneFileConnection const* const pIStandaloneFileConnection)
-{
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
-	auto const pStandaloneEvent = static_cast<CStandaloneFile const*>(pIStandaloneFileConnection);
-	CRY_ASSERT_MESSAGE(pStandaloneEvent->m_channels.size() == 0, "Events always have to be stopped/finished before they get deleted during %s", __FUNCTION__);
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
-	delete pIStandaloneFileConnection;
-}
-
-///////////////////////////////////////////////////////////////////////////
 void CImpl::GamepadConnected(DeviceId const deviceUniqueID)
 {}
 
@@ -800,11 +754,6 @@ void CImpl::DestructEventInstance(CEventInstance const* const pEventInstance)
 	delete pEventInstance;
 }
 
-///////////////////////////////////////////////////////////////////////////
-void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
-{
-}
-
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 void DrawMemoryPoolInfo(
@@ -827,7 +776,7 @@ void DrawMemoryPoolInfo(
 		memAllocString.Format("%" PRISIZE_T " KiB", mem.nAlloc >> 10);
 	}
 
-	ColorF const color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
+	ColorF const& color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
 
 	posY += Debug::g_systemLineHeight;
 	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, color, false,

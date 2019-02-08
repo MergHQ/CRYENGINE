@@ -87,16 +87,6 @@ static MonoInternals::MonoString* GetConfigPath()
 	return pAudioConfigPathObject->GetManagedObject();
 }
 
-static void PlayFile(CryAudio::SPlayFileInfo* pPlayFileInfo)
-{
-	gEnv->pAudioSystem->PlayFile(*pPlayFileInfo);
-}
-
-static void StopFile(CryAudio::SPlayFileInfo* pPlayFileInfo)
-{
-	gEnv->pAudioSystem->StopFile(pPlayFileInfo->szFile);
-}
-
 static void EnableAllSound(bool bIsEnabled)
 {
 	if (bIsEnabled)
@@ -168,23 +158,9 @@ static void StopAudioObjectTrigger(CryAudio::IObject* pAudioObject, uint trigger
 	}
 }
 
-static CryAudio::SPlayFileInfo* CreateSPlayFileInfo(MonoInternals::MonoString* pFilePath)
-{
-	std::shared_ptr<CMonoString> pFilePathObject = CMonoDomain::CreateString(pFilePath);
-
-	CryAudio::SPlayFileInfo* pPlayFileInfo = new CryAudio::SPlayFileInfo(pFilePathObject->GetString());
-
-	return pPlayFileInfo;
-}
-
-static void ReleaseSPlayFileInfo(CryAudio::SPlayFileInfo* pPlayFileInfo)
-{
-	delete pPlayFileInfo;
-}
-
 static CryAudio::SRequestInfo* CreateSRequestInfo(uint eRequestResult, uint audioSystemEvent, uint CtrlId, EntityId entityId)
 {
-	CryAudio::SRequestInfo* pRequestInfo = new CryAudio::SRequestInfo(static_cast<CryAudio::ERequestResult>(eRequestResult), nullptr, nullptr, nullptr, static_cast<CryAudio::ESystemEvents>(audioSystemEvent), (CryAudio::ControlId)CtrlId, entityId, nullptr);
+	CryAudio::SRequestInfo* pRequestInfo = new CryAudio::SRequestInfo(static_cast<CryAudio::ERequestResult>(eRequestResult), nullptr, nullptr, nullptr, static_cast<CryAudio::ESystemEvents>(audioSystemEvent), (CryAudio::ControlId)CtrlId, entityId);
 	return pRequestInfo;
 }
 
@@ -247,8 +223,6 @@ void CAudioInterface::RegisterFunctions(std::function<void(const void* pMethod, 
 	func(CreateAudioObject, "CreateAudioObject");
 	func(StopAllSounds, "StopAllSounds");
 	func(GetConfigPath, "GetConfigPath");
-	func(PlayFile, "PlayFile");
-	func(StopFile, "StopFile");
 	func(EnableAllSound, "EnableAllSound");
 	func(AddAudioRequestListener, "AddAudioRequestListener");
 	func(RemoveAudioRequestListener, "RemoveAudioRequestListener");
@@ -262,10 +236,6 @@ void CAudioInterface::RegisterFunctions(std::function<void(const void* pMethod, 
 	func(ReleaseAudioObject, "ReleaseAudioObject");
 	func(ExecuteAudioObjectTrigger, "ExecuteAudioObjectTrigger");
 	func(StopAudioObjectTrigger, "StopAudioObjectTrigger");
-
-	//SPlayFileInfo
-	func(CreateSPlayFileInfo, "CreateSPlayFileInfo");
-	func(ReleaseSPlayFileInfo, "ReleaseSPlayFileInfo");
 
 	//SRequestInfo
 	func(CreateSRequestInfo, "CreateSRequestInfo");

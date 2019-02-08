@@ -96,7 +96,6 @@ enum EAnimParamType : uint32
 	eAnimParamType_Animation           = 7,
 	eAnimParamType_AudioSwitch         = 9,
 	eAnimParamType_AudioTrigger        = 10,
-	eAnimParamType_AudioFile           = 11,
 	eAnimParamType_AudioParameter      = 12,
 	eAnimParamType_Sequence            = 13,
 	eAnimParamType_Expression          = 14,

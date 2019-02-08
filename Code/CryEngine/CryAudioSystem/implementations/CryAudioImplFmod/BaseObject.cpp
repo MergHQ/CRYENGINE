@@ -3,7 +3,6 @@
 #include "stdafx.h"
 #include "BaseObject.h"
 #include "Impl.h"
-#include "BaseStandaloneFile.h"
 #include "Event.h"
 #include "EventInstance.h"
 #include "Parameter.h"
@@ -36,37 +35,6 @@ CBaseObject::CBaseObject()
 //////////////////////////////////////////////////////////////////////////
 void CBaseObject::Update(float const deltaTime)
 {
-	if (!m_pendingFiles.empty())
-	{
-		auto iter(m_pendingFiles.begin());
-		auto iterEnd(m_pendingFiles.end());
-
-		while (iter != iterEnd)
-		{
-			CBaseStandaloneFile* const pStandaloneFile = *iter;
-
-			if (pStandaloneFile->IsReady())
-			{
-				m_files.push_back(pStandaloneFile);
-
-				pStandaloneFile->PlayFile(m_attributes);
-
-				if (iter != (iterEnd - 1))
-				{
-					(*iter) = m_pendingFiles.back();
-				}
-
-				m_pendingFiles.pop_back();
-				iter = m_pendingFiles.begin();
-				iterEnd = m_pendingFiles.end();
-			}
-			else
-			{
-				++iter;
-			}
-		}
-	}
-
 	EObjectFlags const previousFlags = m_flags;
 	bool removedEvent = false;
 
@@ -280,20 +248,6 @@ void CBaseObject::SetReturn(CReturn const* const pReturn, float const amount)
 void CBaseObject::RemoveReturn(CReturn const* const pReturn)
 {
 	m_returns.erase(pReturn);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CBaseObject::RemoveFile(CBaseStandaloneFile const* const pFile)
-{
-	if (!stl::find_and_erase(m_files, pFile))
-	{
-		if (!stl::find_and_erase(m_pendingFiles, pFile))
-		{
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
-			Cry::Audio::Log(ELogType::Error, "Tried to remove an audio file from an object that is not playing that file");
-#endif      // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
-		}
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////

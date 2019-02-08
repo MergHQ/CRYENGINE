@@ -2004,7 +2004,6 @@ CDefaultSkeleton* CharacterManager::GetModelByAimPoseID(uint32 nGlobalIDAimPose)
 			CDefaultSkeleton* pDefaultSkeleton = (CDefaultSkeleton*)pModelBase;
 			if (pDefaultSkeleton->m_ObjectType == CHR)
 			{
-				const char* PathName = pDefaultSkeleton->GetModelFilePath();
 				CAnimationSet* pAnimationSet = pDefaultSkeleton->m_pAnimationSet;
 				int32 status = pAnimationSet->FindAimposeByGlobalID(nGlobalIDAimPose);
 				if (status > 0)
@@ -4096,7 +4095,6 @@ void CharacterManager::RenderBlendSpace(const SRenderingPassInfo& passInfo, ICha
 	const ModelAnimationHeader* pAnim = pAnimationSet->GetModelAnimationHeader(nAnimID);
 	assert(pAnim->m_nAssetType == LMG_File);
 	GlobalAnimationHeaderLMG& rLMG = g_AnimationManager.m_arrGlobalLMG[pAnim->m_nGlobalAnimId];
-	uint32 nError = rLMG.m_Status.size();
 
 	SParametricSamplerInternal* pSampler = (SParametricSamplerInternal*)pAnimation->GetParametricSampler();
 	if (pSampler)

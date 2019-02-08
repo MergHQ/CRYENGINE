@@ -49,8 +49,6 @@ std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pReq
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::SetGlobalParameter)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::SetSwitchState)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::SetGlobalSwitchState)
-				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::PlayFile)
-				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::StopFile)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::AutoLoadSetting)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::LoadSetting)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::UnloadSetting)
@@ -59,7 +57,6 @@ std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pReq
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::RemoveRequestListener)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::ChangeLanguage)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::ReleasePendingRays)
-				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::GetFileData)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::GetImplInfo)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::RegisterListener)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::ReleaseListener)
@@ -96,8 +93,6 @@ std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pReq
 
 			switch (pBase->objectRequestType)
 			{
-				CRY_AUDIO_OBJECT_REQUEST_BLOCK(EObjectRequestType::PlayFile)
-				CRY_AUDIO_OBJECT_REQUEST_BLOCK(EObjectRequestType::StopFile)
 				CRY_AUDIO_OBJECT_REQUEST_BLOCK(EObjectRequestType::ExecuteTrigger)
 				CRY_AUDIO_OBJECT_REQUEST_BLOCK(EObjectRequestType::StopTrigger)
 				CRY_AUDIO_OBJECT_REQUEST_BLOCK(EObjectRequestType::StopAllTriggers)
@@ -154,8 +149,6 @@ std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pReq
 				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportStartedTriggerConnectionInstance)
 				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportFinishedTriggerConnectionInstance)
 				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportFinishedTriggerInstance)
-				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportStartedFile)
-				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportStoppedFile)
 				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportPhysicalizedObject)
 				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportVirtualizedObject)
 			default:

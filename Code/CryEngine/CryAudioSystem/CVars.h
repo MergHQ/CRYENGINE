@@ -23,7 +23,6 @@ public:
 
 	int m_fileCacheManagerSize = 0;
 	int m_objectPoolSize = 0;
-	int m_standaloneFilePoolSize = 0;
 	int m_ignoreWindowFocus = 0;
 
 #if defined(CRY_AUDIO_USE_OCCLUSION)
