@@ -642,7 +642,6 @@ public:
 				return;
 			}
 
-			const char* szText = nullptr;
 			if (vtx.debugInfoIndex < infos.size())
 			{
 				const CTileGenerator::SContourVertexDebugInfo& info = infos[vtx.debugInfoIndex];
