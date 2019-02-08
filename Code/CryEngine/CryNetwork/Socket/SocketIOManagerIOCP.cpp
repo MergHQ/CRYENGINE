@@ -846,7 +846,6 @@ bool CSocketIOManagerIOCP::RequestConnect(SSocketID sockid, const TNetAddress& a
 	}
 	else
 	{
-		int err = WSAGetLastError();
 		return false;
 	}
 	#else
