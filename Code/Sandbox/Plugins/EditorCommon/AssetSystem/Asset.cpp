@@ -6,9 +6,9 @@
 #include "AssetManager.h"
 #include "AssetType.h"
 #include "DependencyTracker.h"
-#include "SourceFilesTracker.h"
 #include "EditableAsset.h"
 #include "Loader/Metadata.h"
+#include "Notifications/NotificationCenter.h"
 
 #include "PathUtils.h"
 #include "QtUtil.h"
@@ -80,13 +80,13 @@ static uint64 GetModificationTime(const string& filePath)
 	return timestamp;
 }
 
-void AddUniqueFile(const string& file, std::vector<string>& files, const string& assetName, const string& fileType)
+bool AddUniqueFile(const string& file, std::vector<string>& files, const string& assetName, const string& fileType)
 {
 	// Ignore empty files.
 	if (file.empty())
 	{
 		CryWarning(VALIDATOR_MODULE_ASSETS, VALIDATOR_WARNING, string().Format("Ignoring addition of empty %s '%s' to asset '%s'", fileType, file.c_str(), assetName));
-		return;
+		return false;
 	}
 
 	// Ignore duplicate files.
@@ -98,10 +98,11 @@ void AddUniqueFile(const string& file, std::vector<string>& files, const string&
 	if (it != files.end())
 	{
 		CryWarning(VALIDATOR_MODULE_ASSETS, VALIDATOR_WARNING, string().Format("Ignoring addition of duplicate %s '%s' to asset '%s'", fileType, file.c_str(), assetName));
-		return;
+		return false;
 	}
 
 	files.push_back(file);
+	return true;
 }
 
 } // namespace Private_Asset
@@ -125,12 +126,7 @@ CAsset::CAsset(const char* type, const CryGUID& guid, const char* name)
 }
 
 CAsset::~CAsset()
-{
-	if (HasSourceFile())
-	{
-		CSourceFilesTracker::GetInstance()->Remove(*this);
-	}
-}
+{ }
 
 const string& CAsset::GetFolder() const
 {
@@ -212,6 +208,13 @@ void CAsset::Edit(CAssetEditor* pEditor)
 {
 	if (!CanBeEdited())
 		return;
+
+	string errorMsg;
+	if (!IsBeingEdited() && !m_type->IsAssetValid(this, errorMsg))
+	{
+		GetIEditor()->GetNotificationCenter()->ShowInfo("Cant open the asset for edit", QtUtil::ToQString(errorMsg));
+		return;
+	}
 
 	// Special handling for switching from a shared instant editor to a dedicated one.
 	if (!pEditor && m_pEditor && m_pEditor == GetType()->GetInstantEditor())
@@ -404,23 +407,7 @@ void CAsset::SetMetadataFile(const char* szFilepath)
 
 void CAsset::SetSourceFile(const char* szFilepath)
 {
-	using namespace Private_Asset;
-
-	string sourceFile = PathUtil::ToUnixPath(szFilepath);
-
-	bool newSourceFile = m_sourceFile != szFilepath;
-
-	if (newSourceFile && !m_sourceFile.empty())
-	{
-		CSourceFilesTracker::GetInstance()->Remove(*this);
-	}
-
-	m_sourceFile = std::move(sourceFile);
-
-	if (newSourceFile && !m_sourceFile.empty())
-	{
-		CSourceFilesTracker::GetInstance()->Add(*this);
-	}
+	m_sourceFile = PathUtil::ToUnixPath(szFilepath);
 }
 
 void CAsset::AddFile(const string& filePath)
@@ -445,12 +432,11 @@ void CAsset::AddWorkFile(const string& filePath)
 
 void CAsset::SetWorkFiles(const std::vector<string>& filenames)
 {
-	m_workFiles.clear();
-	m_workFiles.reserve(filenames.size());
-	for (const string& filename : filenames)
+	if (m_workFiles == filenames)
 	{
-		AddWorkFile(filename);
+		return;
 	}
+	m_workFiles = filenames;
 }
 
 void CAsset::SetDetail(const string& name, const string& value)

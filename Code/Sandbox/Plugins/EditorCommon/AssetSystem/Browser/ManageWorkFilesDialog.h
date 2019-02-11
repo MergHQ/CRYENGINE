@@ -6,6 +6,8 @@
 #include "Controls/EditorDialog.h"
 
 class CAsset;
+class QLabel;
+class QPushButton;
 class QTreeView;
 
 class EDITOR_COMMON_API CManageWorkFilesDialog : public CEditorDialog
@@ -20,6 +22,11 @@ private:
 	void OnSave();
 	void OnAddWorkFile();
 
-	CAsset* m_pAsset{ nullptr };
-	QTreeView* m_pTree{ nullptr };
+	void CheckAssetsStatus();
+
+	CAsset*      m_pAsset{ nullptr };
+	QTreeView*   m_pTree{ nullptr };
+	QPushButton* m_pSaveButton{ nullptr };
+	QWidget*     m_pWarningWidget{ nullptr };
+	QLabel*      m_pWarningText{ nullptr };
 };

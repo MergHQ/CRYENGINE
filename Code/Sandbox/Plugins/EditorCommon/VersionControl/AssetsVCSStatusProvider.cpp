@@ -3,7 +3,7 @@
 #include "AssetsVCSStatusProvider.h"
 #include "VersionControl.h"
 #include "AssetFilesProvider.h"
-#include "AssetSystem/IFilesGroupProvider.h"
+#include "AssetSystem/IFilesGroupController.h"
 #include "AssetSystem/AssetManagerHelpers.h"
 #include "Objects/IObjectLayer.h"
 #include <CryString/CryPath.h>
@@ -37,7 +37,7 @@ int CAssetsVCSStatusProvider::GetStatus(const CAsset& asset)
 	return GetStatus(asset.GetMetadataFile());
 }
 
-int CAssetsVCSStatusProvider::GetStatus(const IFilesGroupProvider& pFileGroup)
+int CAssetsVCSStatusProvider::GetStatus(const IFilesGroupController& pFileGroup)
 {
 	using namespace Private_AssetsVCSStatusProvider;
 	return GetStatus(pFileGroup.GetMainFile());
@@ -52,7 +52,7 @@ int CAssetsVCSStatusProvider::GetStatus(const IObjectLayer& layer)
 bool CAssetsVCSStatusProvider::HasStatus(const string& file, int status)
 {
 	auto fs = CVersionControl::GetInstance().GetFileStatus(file);
-	return fs ? fs->HasState(status) : status == CVersionControlFileStatus::eState_NotTracked;
+	return fs ? fs->HasState(status) : status & CVersionControlFileStatus::eState_NotTracked;
 }
 
 bool CAssetsVCSStatusProvider::HasStatus(const CAsset& asset, int status)
@@ -61,7 +61,7 @@ bool CAssetsVCSStatusProvider::HasStatus(const CAsset& asset, int status)
 	return HasStatus(asset.GetMetadataFile(), status);
 }
 
-bool CAssetsVCSStatusProvider::HasStatus(const IFilesGroupProvider& fileGroup, int status)
+bool CAssetsVCSStatusProvider::HasStatus(const IFilesGroupController& fileGroup, int status)
 {
 	using namespace Private_AssetsVCSStatusProvider;
 	return HasStatus(fileGroup.GetMainFile(), status);
@@ -85,13 +85,13 @@ void CAssetsVCSStatusProvider::UpdateStatus(const std::vector<IObjectLayer*>& la
 	UpdateFilesStatus(CAssetFilesProvider::GetForLayers(layers, CAssetFilesProvider::EInclude::OnlyMainFile), {}, std::move(callback));
 }
 
-void CAssetsVCSStatusProvider::UpdateStatus(const IFilesGroupProvider& pFilesGroup, std::function<void()> callback /*= nullptr*/)
+void CAssetsVCSStatusProvider::UpdateStatus(const IFilesGroupController& pFilesGroup, std::function<void()> callback /*= nullptr*/)
 {
 	using namespace Private_AssetsVCSStatusProvider;
 	UpdateFilesStatus({ pFilesGroup.GetMainFile() }, {}, std::move(callback));
 }
 
-void CAssetsVCSStatusProvider::UpdateStatus(const std::vector<std::shared_ptr<IFilesGroupProvider>>& fileGroups, std::vector<string> folders, std::function<void()> callback /*= nullptr*/)
+void CAssetsVCSStatusProvider::UpdateStatus(const std::vector<std::shared_ptr<IFilesGroupController>>& fileGroups, std::vector<string> folders, std::function<void()> callback /*= nullptr*/)
 {
 	using namespace Private_AssetsVCSStatusProvider;
 	UpdateFilesStatus(CAssetFilesProvider::GetForFileGroups(fileGroups, CAssetFilesProvider::EInclude::OnlyMainFile), {}, std::move(callback));

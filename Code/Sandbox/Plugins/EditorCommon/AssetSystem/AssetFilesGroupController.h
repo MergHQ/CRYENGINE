@@ -1,16 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH. All rights reserved.
 #pragma once
 
-#include "IFilesGroupProvider.h"
+#include "IFilesGroupController.h"
 #include "CryString/CryString.h"
 #include <vector>
 
 class CAsset;
 
-class CAssetFilesGroupProvider : public IFilesGroupProvider
+class CAssetFilesGroupController : public IFilesGroupController
 {
 public:
-	CAssetFilesGroupProvider(CAsset* pAsset, bool shouldIncludeSourceFile);
+	CAssetFilesGroupController(CAsset* pAsset, bool shouldIncludeSourceFile);
 
 	virtual std::vector<string> GetFiles(bool includeGeneratedFile = true) const override final;
 

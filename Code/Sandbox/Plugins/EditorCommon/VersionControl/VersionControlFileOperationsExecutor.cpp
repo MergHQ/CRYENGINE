@@ -5,11 +5,12 @@
 #include "VersionControlFileOperationsExecutor.h"
 
 #include "VersionControl.h"
+#include "VersionControlPathUtils.h"
 #include "AssetsVCSStatusProvider.h"
 #include "AssetsVCSSynchronizer.h"
 #include "AssetFilesProvider.h"
 #include "AssetSystem/FileOperationsExecutor.h"
-#include "AssetSystem/IFilesGroupProvider.h"
+#include "AssetSystem/IFilesGroupController.h"
 #include "FileUtils.h"
 #include "PathUtils.h"
 #include "ThreadingUtils.h"
@@ -17,10 +18,10 @@
 namespace Private_VersionControlFileOperationsExecutor
 {
 
-class CSingleFileProvider : public IFilesGroupProvider
+class CSingleFileController : public IFilesGroupController
 {
 public:
-	CSingleFileProvider(const string& file)
+	CSingleFileController(const string& file)
 		: m_file(file)
 	{}
 
@@ -34,20 +35,24 @@ private:
 	string m_file;
 };
 
-void RevertAndDeletePhysically(std::vector<string> files)
+void RevertAndDeletePhysically(std::vector<string> files, std::function<void(void)> callback)
 {
 	if (files.empty())
 	{
+		callback();
 		return;
 	}
-	ThreadingUtils::AsyncQueue([files = std::move(files)]() mutable
+
+	CFileOperationExecutor::GetDefaultExecutor()->AsyncDelete(files, [files, callback = std::move(callback)]() mutable
 	{
-		CFileOperationExecutor::GetDefaultExecutor()->Delete(files);
-		CVersionControl::GetInstance().Revert(std::move(files));
+		CVersionControl::GetInstance().Revert(std::move(files), {}, false, [callback = std::move(callback)](const auto& result)
+		{
+			callback();
+		});
 	});
 }
 
-void DeleteOnlyFolders(const std::vector<string>& paths)
+void DeleteOnlyFolders(const std::vector<string>& paths, std::function<void(void)> callback)
 {
 	std::vector<string> folders;
 	for (const string& path : paths)
@@ -59,37 +64,43 @@ void DeleteOnlyFolders(const std::vector<string>& paths)
 	}
 	if (!folders.empty())
 	{
-		ThreadingUtils::AsyncQueue([folders = std::move(folders)]()
-		{
-			CFileOperationExecutor::GetDefaultExecutor()->Delete(folders);
-		});
+		CFileOperationExecutor::GetDefaultExecutor()->AsyncDelete(folders, callback);
+	}
+	else
+	{
+		callback();
 	}
 }
 
-void DeleteFoldersAndFiles(const IFilesGroupProvider& pFileGroup)
+void DeleteFoldersAndFiles(const IFilesGroupController& pFileGroup, std::function<void(void)> callback)
 {
 	using namespace Private_VersionControlFileOperationsExecutor;
 	auto files = pFileGroup.GetFiles(false);
 
 	if (!pFileGroup.GetGeneratedFile().empty())
 	{
-		RevertAndDeletePhysically({ pFileGroup.GetGeneratedFile() });
+		RevertAndDeletePhysically({ pFileGroup.GetGeneratedFile() }, [] {});
 	}
 
-	for (string& file : files)
+	VersionControlPathUtils::MatchCaseAndRemoveUnmatched(files);
+
+	if (files.empty())
 	{
-		file = PathUtil::MatchGamePathToCaseOnFileSystem(file);
+		callback();
+		return;
 	}
 
 	auto& vcs = CVersionControl::GetInstance();
 
-	auto deleteCallback = [files, name = pFileGroup.GetName()](const auto& result) mutable
+	auto deleteCallback = [files, name = pFileGroup.GetName(), callback = std::move(callback)](const auto& result) mutable
 	{
 		if (result.IsSuccess())
 		{
-			DeleteOnlyFolders(files);
+			DeleteOnlyFolders(files, std::move(callback));
+			return;
 		}
-		else if (result.GetError().type == EVersionControlError::AlreadyCheckedOutByOthers)
+
+		if (result.GetError().type == EVersionControlError::AlreadyCheckedOutByOthers)
 		{
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Can't delete %s because it's exclusively checked out", name);
 		}
@@ -97,40 +108,42 @@ void DeleteFoldersAndFiles(const IFilesGroupProvider& pFileGroup)
 		{
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Can't delete %s", name);
 		}
+		callback();
 	};
 
 	vcs.DeleteFiles(std::move(files), false, std::move(deleteCallback));
 }
 
-void DeleteTrackedFiles(const std::shared_ptr<IFilesGroupProvider>& pFileGroup, const std::shared_ptr<const CVersionControlFileStatus>& pFileStatus)
+void DeleteTrackedFiles(const std::shared_ptr<IFilesGroupController>& pFileGroup, std::function<void(void)> callback)
 {
 	using namespace Private_VersionControlFileOperationsExecutor;
-	if (pFileStatus->HasState(CVersionControlFileStatus::eState_CheckedOutLocally))
+	if (CAssetsVCSStatusProvider::HasStatus(*pFileGroup, CVersionControlFileStatus::eState_CheckedOutLocally))
 	{
-		CVersionControl::GetInstance().Revert(pFileGroup->GetFiles(false), {}, false, [pFileGroup](const auto& result) mutable
+		CVersionControl::GetInstance().Revert(pFileGroup->GetFiles(false), {}, false
+			, [pFileGroup, callback = std::move(callback)](const auto& result) mutable
 		{
 			pFileGroup->Update();
-			DeleteFoldersAndFiles(*pFileGroup);
+			DeleteFoldersAndFiles(*pFileGroup, std::move(callback));
 		});
 	}
 	else
 	{
-		CAssetsVCSStatusProvider::UpdateStatus(*pFileGroup, [pFileGroup]()
+		CAssetsVCSStatusProvider::UpdateStatus(*pFileGroup, [pFileGroup, callback = std::move(callback)]() mutable
 		{
 			if (CAssetsVCSStatusProvider::HasStatus(*pFileGroup, CVersionControlFileStatus::eState_DeletedRemotely))
 			{
-				CAssetsVCSSynchronizer::Sync(pFileGroup);
+				CAssetsVCSSynchronizer::Sync(pFileGroup, std::move(callback));
 			}
 			else if (CAssetsVCSStatusProvider::HasStatus(*pFileGroup, CVersionControlFileStatus::eState_UpdatedRemotely))
 			{
-				CAssetsVCSSynchronizer::Sync(pFileGroup, [pFileGroup]()
+				CAssetsVCSSynchronizer::Sync(pFileGroup, [pFileGroup, callback = std::move(callback)]() mutable
 				{
-					DeleteFoldersAndFiles(*pFileGroup);
+					DeleteFoldersAndFiles(*pFileGroup, std::move(callback));
 				});
 			}
 			else
 			{
-				DeleteFoldersAndFiles(*pFileGroup);
+				DeleteFoldersAndFiles(*pFileGroup, std::move(callback));
 			}
 		});
 	}
@@ -138,40 +151,53 @@ void DeleteTrackedFiles(const std::shared_ptr<IFilesGroupProvider>& pFileGroup, 
 
 }
 
-void CVersionControlFileOperationsExecutor::DoDelete(std::vector<std::unique_ptr<IFilesGroupProvider>> fileGroups)
+void CVersionControlFileOperationsExecutor::DoDelete(std::vector<std::unique_ptr<IFilesGroupController>> fileGroups,
+	std::function<void(void)> callback)
 {
+	if (!callback)
+	{
+		callback = [] {};
+	}
+
 	using namespace Private_VersionControlFileOperationsExecutor;
 	auto& vcs = CVersionControl::GetInstance();
 
-	std::vector<string> locallyAddedFiles;
-	for (std::unique_ptr<IFilesGroupProvider>& pFileGroup : fileGroups)
+	auto localFilesIt = std::partition(fileGroups.begin(), fileGroups.end(), [](const auto& pFileGroup)
 	{
-		auto pFileStatus = vcs.GetFileStatus(pFileGroup->GetMainFile());
-		if (!pFileStatus || pFileStatus->HasState(CVersionControlFileStatus::eState_AddedLocally))
+		return !CAssetsVCSStatusProvider::HasStatus(pFileGroup->GetMainFile(), CVersionControlFileStatus::eState_AddedLocally)
+			&& !CAssetsVCSStatusProvider::HasStatus(pFileGroup->GetMainFile(), CVersionControlFileStatus::eState_NotTracked);
+	});
+	
+	if (localFilesIt != fileGroups.end())
+	{
+		std::vector<string> locallyAddedFiles;
+		for (auto it = localFilesIt; it != fileGroups.end(); ++it)
 		{
-			auto files = CAssetFilesProvider::GetForFileGroup(*pFileGroup);
+			auto files = CAssetFilesProvider::GetForFileGroup(**it);
 			locallyAddedFiles.reserve(locallyAddedFiles.size() + files.size());
 			std::move(files.begin(), files.end(), std::back_inserter(locallyAddedFiles));
 		}
-		else
-		{
-			DeleteTrackedFiles(std::move(pFileGroup), pFileStatus);
-		}
+		fileGroups.erase(localFilesIt, fileGroups.end());
+		RevertAndDeletePhysically(std::move(locallyAddedFiles), fileGroups.empty() ? std::move(callback) : [] {});
 	}
 
-	RevertAndDeletePhysically(std::move(locallyAddedFiles));
+	for (std::unique_ptr<IFilesGroupController>& pFileGroup : fileGroups)
+	{
+		DeleteTrackedFiles(std::move(pFileGroup), pFileGroup == fileGroups.back() ? std::move(callback) : [] {});
+	}
 }
 
-void CVersionControlFileOperationsExecutor::DoDelete(const std::vector<string>& files)
+void CVersionControlFileOperationsExecutor::DoDelete(const std::vector<string>& files, 
+	std::function<void(void)> callback)
 {
 	using namespace Private_VersionControlFileOperationsExecutor;
 
-	std::vector<std::unique_ptr<IFilesGroupProvider>> fileProviders;
+	std::vector<std::unique_ptr<IFilesGroupController>> fileProviders;
 	fileProviders.reserve(files.size());
 	for (const string& file : files)
 	{
-		fileProviders.push_back(std::make_unique<CSingleFileProvider>(file));
+		fileProviders.push_back(std::make_unique<CSingleFileController>(file));
 	}
 
-	DoDelete(std::move(fileProviders));
+	DoDelete(std::move(fileProviders), std::move(callback));
 }

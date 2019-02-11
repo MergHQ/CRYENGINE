@@ -290,8 +290,8 @@ void CAssetBrowserDialog::OnAcceptSave()
 
 	CRY_ASSERT(m_pAssetType);
 
-	const QStringList selectedFolders = m_pBrowser->GetSelectedFolders();
-	const string folder = selectedFolders.isEmpty() ? string() : QtUtil::ToString(selectedFolders.back());
+	const std::vector<string>& selectedFolders = m_pBrowser->GetSelectedFolders();
+	const string folder = selectedFolders.empty() ? string() : selectedFolders.back();
 
 	const QStringList filenames = m_pPathEdit->GetFileNames();
 	if (filenames.isEmpty() || filenames.back().isEmpty())

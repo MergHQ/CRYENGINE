@@ -13,7 +13,6 @@
 #include "HyperGraph/FlowGraphManager.h"
 #include "HyperGraph/FlowGraph.h"
 #include "HyperGraph/FlowGraphNode.h"
-#include "ThreadingUtils.h"
 #include "AssetSystem/FileOperationsExecutor.h"
 
 #include "Controls/QuestionDialog.h"
@@ -191,6 +190,32 @@ const std::vector<IObjectLayer*>& CObjectLayerManager::GetLayers() const
 		}
 	}
 	return m_layersCache;
+}
+
+IObjectLayer* CObjectLayerManager::GetLayerByFileIfOpened(const string& layerFile) const
+{
+	if (!IsLayerFileOfOpenedLevel(layerFile))
+	{
+		return nullptr;
+	}
+
+	const string layersFolder = PathUtil::Make(PathUtil::MakeGamePath(GetIEditor()->GetLevelPath()), "Layers");
+
+	// we skip ".lyr" on the back and "/" in front of layer's full name.
+	const auto fullName = layerFile.substr(layersFolder.size() + 1, layerFile.size() - layersFolder.size() - 5);
+	return GetIEditor()->GetObjectManager()->GetIObjectLayerManager()->FindLayerByFullName(fullName);
+}
+
+bool CObjectLayerManager::IsLayerFileOfOpenedLevel(const string& layerFile) const
+{
+	string levelPath = GetIEditor()->GetLevelPath();
+	if (levelPath.empty())
+	{
+		return false;
+	}
+	levelPath = PathUtil::MakeGamePath(levelPath);
+
+	return layerFile.compareNoCase(0, levelPath.size(), levelPath) == 0;
 }
 
 void CObjectLayerManager::ClearLayers(bool bNotify /*= true*/)
@@ -790,10 +815,7 @@ void CObjectLayerManager::DeletePendingLayers()
 
 	m_toBeDeleted.clear();
 
-	ThreadingUtils::AsyncQueue([files = std::move(filesToDelete)]() mutable
-	{
-		CFileOperationExecutor::GetExecutor()->Delete(files);
-	});
+	CFileOperationExecutor::GetExecutor()->AsyncDelete(filesToDelete);
 }
 
 void CObjectLayerManager::SaveLayer(CObjectArchive* pArchive, CObjectLayer* pLayer)
@@ -950,6 +972,7 @@ CObjectLayer* CObjectLayerManager::ImportLayerFromFile(const string& filePath, b
 					{
 						archive->ResolveObjects();
 					}
+					pLayer->SetModified(false);
 				}
 				archive->node = prevNove;
 				return pLayer;

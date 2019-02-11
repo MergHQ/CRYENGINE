@@ -109,7 +109,7 @@ int CPropagationProcessor::OnObstructionTest(EventPhys const* pEvent)
 		for (uint8 i = 0; i < rayInfo.numHits; ++i)
 		{
 			rayInfo.hits[i].distance = pHits[i].dist;
-			rayInfo.hits[i].surface_index = pHits[i].surface_idx;
+			rayInfo.hits[i].surfaceIndex = pHits[i].surface_idx;
 		}
 
 		SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> const requestData(rayInfo.pObject, rayInfo);
@@ -405,7 +405,7 @@ float CPropagationProcessor::CastInitialRay(Vec3 const& origin, Vec3 const& targ
 	for (uint8 i = 0; i < rayInfo.numHits; ++i)
 	{
 		rayInfo.hits[i].distance = pHits[i].dist;
-		rayInfo.hits[i].surface_index = pHits[i].surface_idx;
+		rayInfo.hits[i].surfaceIndex = pHits[i].surface_idx;
 	}
 
 	float finalOcclusion = 0.0f;
@@ -424,7 +424,7 @@ float CPropagationProcessor::CastInitialRay(Vec3 const& origin, Vec3 const& targ
 
 			if (distance > 0.0f)
 			{
-				ISurfaceType* const pMat = pSurfaceTypeManager->GetSurfaceType(static_cast<int>(rayInfo.hits[i].surface_index));
+				ISurfaceType* const pMat = pSurfaceTypeManager->GetSurfaceType(static_cast<int>(rayInfo.hits[i].surfaceIndex));
 
 				if (pMat != nullptr)
 				{
@@ -504,7 +504,7 @@ void CPropagationProcessor::ProcessPhysicsRay(CRayInfo& rayInfo)
 
 			if (distance > 0.0f)
 			{
-				ISurfaceType* const pMat = pSurfaceTypeManager->GetSurfaceType(static_cast<int>(rayInfo.hits[i].surface_index));
+				ISurfaceType* const pMat = pSurfaceTypeManager->GetSurfaceType(static_cast<int>(rayInfo.hits[i].surfaceIndex));
 
 				if (pMat != nullptr)
 				{
@@ -674,7 +674,7 @@ void CPropagationProcessor::CastObstructionRay(
 		for (uint8 i = 0; i < rayInfo.numHits; ++i)
 		{
 			rayInfo.hits[i].distance = pHits[i].dist;
-			rayInfo.hits[i].surface_index = pHits[i].surface_idx;
+			rayInfo.hits[i].surfaceIndex = pHits[i].surface_idx;
 		}
 
 		ProcessPhysicsRay(rayInfo);

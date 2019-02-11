@@ -2,6 +2,7 @@
 #pragma once
 
 #include "IVersionControlAdapter.h"
+#include "VersionControlFileStatusUpdate.h"
 #include "EditorCommonAPI.h"
 #include <CrySandbox/CrySignal.h>
 #include <unordered_map>
@@ -51,8 +52,14 @@ private:
 
 	FileStatusesMap m_fileStatuses;
 
+	//! Holds list of last updates to file statuses. So UpdateFiles() needs to be called only once during a task execution.
+	std::vector<CVersionControlFileStatusUpdate> m_lastUpdateList;
+
 	std::unordered_map<string, string, stl::hash_strcmp<string>, stl::hash_strcmp<string>> m_filesContents;
 
 	mutable std::mutex m_fileStatusesMutex;
 	mutable std::mutex m_fileContentsMutex;
+
+	//! task manager manipulates only with the list of last updates to assign it to the result of completed task.
+	friend class CVersionControlTaskManager;
 };

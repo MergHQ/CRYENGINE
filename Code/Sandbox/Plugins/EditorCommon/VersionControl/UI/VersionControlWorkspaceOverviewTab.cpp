@@ -6,7 +6,7 @@
 #include "PendingChange.h"
 #include "VersionControl/VersionControl.h"
 #include "VersionControl/AssetsVCSReverter.h"
-#include "AssetSystem/IFilesGroupProvider.h"
+#include "AssetSystem/IFilesGroupController.h"
 #include "QtUtil.h"
 #include <CrySystem/ISystem.h>
 #include <QPushButton>
@@ -15,7 +15,7 @@
 namespace Private_VersionControlWorkspaceOverviewTab
 {
 
-class CPendingChangeFilesGroup : public IFilesGroupProvider
+class CPendingChangeFilesGroup : public IFilesGroupController
 {
 public:
 	CPendingChangeFilesGroup(CPendingChange* pPendingChange)
@@ -108,7 +108,7 @@ void CVersionControlWorkspaceOverviewTab::OnRevert()
 		}
 	}
 
-	std::vector<std::shared_ptr<IFilesGroupProvider>> fileGroups;
+	std::vector<std::shared_ptr<IFilesGroupController>> fileGroups;
 	fileGroups.reserve(pendingChanges.size());
 	std::transform(pendingChanges.cbegin(), pendingChanges.cend(), std::back_inserter(fileGroups), [](CPendingChange* pPendingChange)
 	{

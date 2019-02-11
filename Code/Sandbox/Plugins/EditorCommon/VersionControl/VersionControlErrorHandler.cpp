@@ -43,6 +43,9 @@ void Handle(SVersionControlError error)
 	case EVersionControlError::AlreadyCheckedOutByOthers:
 		errorMessage = "Version Control System: Exclusive check out";
 		break;
+	case EVersionControlError::UpdateFileFailed:
+		errorMessage = "Version Control System: failed to update file(s)";
+		break;
 	case EVersionControlError::Unknown:
 		errorMessage = "Version Control System: Error";
 		break;

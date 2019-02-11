@@ -16,6 +16,8 @@
 #include "QT/QtMainFrame.h"
 #include "CryEdit.h"
 
+#include "VersionControl/VersionControlEventHandler.h"
+
 #include <EditorFramework/Events.h>
 #include <Controls/DynamicPopupMenu.h>
 #include <Controls/QMenuComboBox.h>
@@ -154,6 +156,17 @@ void AddColorSubMenuForLayers(CAbstractMenu& menu, const std::vector<CObjectLaye
 			  layer->SetColor(finalColor, true);
 			}
 		});
+}
+
+std::vector<IObjectLayer*> ToIObjectLayers(std::vector<CObjectLayer*> layers)
+{
+	std::vector<IObjectLayer*> iObjLayers;
+	iObjLayers.reserve(layers.size());
+	for (auto pLayer : layers)
+	{
+		iObjLayers.push_back(pLayer);
+	}
+	return iObjLayers;
 }
 
 }
@@ -400,54 +413,77 @@ QVariantMap CLevelExplorer::GetLayout() const
 
 void CLevelExplorer::customEvent(QEvent* event)
 {
+	using namespace Private_LevelExplorer;
+
 	if (event->type() != SandboxEvent::Command)
 	{
 		CDockableEditor::customEvent(event);
 		return;
 	}
 
-	CommandEvent* commandEvent = static_cast<CommandEvent*>(event);
-	const string& command = commandEvent->GetCommand();
+	QStringList params = QtUtil::ToQString(static_cast<CommandEvent*>(event)->GetCommand()).split(' ');
 
-	if (command == "level.isolate_editability")
+	if (params.empty())
+		return;
+
+	QString command = params[0];
+	params.removeFirst();
+
+	QStringList fullCommand = command.split('.');
+	QString module = fullCommand[0];
+	command = fullCommand[1];
+
+	if (module == "level_explorer")
 	{
-		QModelIndex index = m_treeView->currentIndex();
-		if (index.isValid())
+		if (command == "isolate_editability")
 		{
-			IsolateEditability(index);
+			QModelIndex index = m_treeView->currentIndex();
+			if (index.isValid())
+			{
+				IsolateEditability(index);
+			}
+		}
+		else if (command == "isolate_visibility")
+		{
+			QModelIndex index = m_treeView->currentIndex();
+			if (index.isValid())
+			{
+				IsolateVisibility(index);
+			}
+		}
+		else if (command == "focus_on_active_layer")
+		{
+			FocusActiveLayer();
+		}
+		else if (command == "show_full_hierarchy")
+		{
+			SetModelType(FullHierarchy);
+		}
+		else if (command == "show_layers")
+		{
+			SetModelType(Layers);
+		}
+		else if (command == "show_all_objects")
+		{
+			SetModelType(Objects);
+		}
+		else if (command == "show_active_layer_contents")
+		{
+			SetModelType(ActiveLayer);
+		}
+		else if (command == "sync_selection")
+		{
+			SetSyncSelection(!m_syncSelection);
 		}
 	}
-	else if (command == "level.isolate_visibility")
+	else if (module == "version_control_system")
 	{
-		QModelIndex index = m_treeView->currentIndex();
-		if (index.isValid())
-		{
-			IsolateVisibility(index);
-		}
-	}
-	else if (command == "level_explorer.focus_on_active_layer")
-	{
-		FocusActiveLayer();
-	}
-	else if (command == "level_explorer.show_full_hierarchy")
-	{
-		SetModelType(FullHierarchy);
-	}
-	else if (command == "level_explorer.show_layers")
-	{
-		SetModelType(Layers);
-	}
-	else if (command == "level_explorer.show_all_objects")
-	{
-		SetModelType(Objects);
-	}
-	else if (command == "level_explorer.show_active_layer_contents")
-	{
-		SetModelType(ActiveLayer);
-	}
-	else if (command == "level_explorer.sync_selection")
-	{
-		SetSyncSelection(!m_syncSelection);
+		std::vector<CBaseObject*> objects;
+		std::vector<CObjectLayer*> layers;
+		std::vector<CObjectLayer*> layerFolders;
+		auto selection = m_treeView->selectionModel()->selectedRows();
+		LevelModelsUtil::ProcessIndexList(selection, objects, layers, layerFolders);
+		VersionControlEventHandler::HandleOnLevelExplorer(command, ToIObjectLayers(layers), ToIObjectLayers(layerFolders));
 	}
 	else
 	{

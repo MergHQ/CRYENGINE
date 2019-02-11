@@ -273,6 +273,7 @@
         <file alias="General/Element_MoveUp.ico">icons/general_Element_MoveUp.ico</file>
         <file alias="General/Element_Remove.ico">icons/general_Element_Remove.ico</file>
         <file alias="General/Element_Clear.ico">icons/general_Element_Clear.ico</file>
+        <file alias="General/Error.ico">icons/general_error.ico</file>
         <file alias="General/etc.ico">icons/general_etc.ico</file>
         <file alias="General/Exit.ico">icons/general_Exit.ico</file>
         <file alias="General/Export.ico">icons/general_file_export.ico</file>
@@ -403,6 +404,7 @@
         <file alias="General/Visibility_False_Tinted.ico">icons/general_Visibility_False_Tinted.ico</file>
         <file alias="General/Visibility_True.ico">icons/general_Visibility_True.ico</file>
         <file alias="General/Visibility_True_Tinted.ico">icons/general_Visibility_True_Tinted.ico</file>
+        <file alias="General/Warning.ico">icons/general_warning.ico</file>
         <file alias="General/Zoom_In.ico">icons/general_Zoom_In.ico</file>
         <file alias="General/Zoom_Out.ico">icons/general_Zoom_Out.ico</file>
         <file alias="General/cut_generic.ico">icons/general_cut_generic.ico</file>

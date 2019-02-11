@@ -4,15 +4,15 @@
 #include "AssetFilesProvider.h"
 
 #include "AssetSystem/Asset.h"
-#include "AssetSystem/AssetFilesGroupProvider.h"
+#include "AssetSystem/AssetFilesGroupController.h"
 #include "AssetSystem/AssetType.h"
-#include "AssetSystem/IFilesGroupProvider.h"
 #include "FileUtils.h"
-#include "LevelEditor/LayerFileGroupProvider.h"
+#include "LevelEditor/LayerFileGroupController.h"
 #include "Objects/IObjectLayer.h"
 #include "PathUtils.h"
 #include "QtUtil.h"
 #include "VersionControl.h"
+#include "VersionControlPathUtils.h"
 
 #include <QFileInfo>
 
@@ -46,7 +46,7 @@ void InsertAssetFilePaths(const CAsset& asset, std::vector<string>& outputFiles,
 
 	if (include == EInclude::OnlyMainFile)
 	{
-		outputFiles.push_back(PathUtil::MatchGamePathToCaseOnFileSystem(asset.GetMetadataFile()));
+		VersionControlPathUtils::MatchCaseAndPushBack(outputFiles, asset.GetMetadataFile());
 		return;
 	}
 
@@ -57,10 +57,7 @@ void InsertAssetFilePaths(const CAsset& asset, std::vector<string>& outputFiles,
 		files.erase(std::remove(files.begin(), files.end(), asset.GetMetadataFile()), files.end());
 	}
 
-	for (string& file : files)
-	{
-		file = PathUtil::MatchGamePathToCaseOnFileSystem(file);
-	}
+	VersionControlPathUtils::MatchCaseAndRemoveUnmatched(files);
 
 	if (shouldReplaceFoldersWithContent)
 	{
@@ -80,7 +77,7 @@ void InsertLayerFilePaths(const IObjectLayer& layer, std::vector<string>& output
 
 	if (include == EInclude::OnlyMainFile || include == EInclude::AllFiles)
 	{
-		outputFiles.push_back(PathUtil::MatchGamePathToCaseOnFileSystem(PathUtil::MakeGamePath(mainFile)));
+		VersionControlPathUtils::MatchCaseAndPushBack(outputFiles, PathUtil::MakeGamePath(mainFile));
 		if (include == EInclude::OnlyMainFile)
 		{
 			return;
@@ -91,11 +88,11 @@ void InsertLayerFilePaths(const IObjectLayer& layer, std::vector<string>& output
 	std::vector<string> files = layer.GetFiles();
 	for (string& file : files)
 	{
-		outputFiles.push_back(PathUtil::MatchGamePathToCaseOnFileSystem(PathUtil::MakeGamePath(PathUtil::Make(levelFolder, file))));
+		VersionControlPathUtils::MatchCaseAndPushBack(outputFiles, PathUtil::MakeGamePath(PathUtil::Make(levelFolder, file)));
 	}
 }
 
-void InsertFileGroupPaths(const IFilesGroupProvider& fileGroup, std::vector<string>& outputFiles, EInclude include)
+void InsertFileGroupPaths(const IFilesGroupController& fileGroup, std::vector<string>& outputFiles, EInclude include)
 {
 	if (FileUtils::Pak::IsFileInPakOnly(fileGroup.GetMainFile()))
 	{
@@ -104,7 +101,7 @@ void InsertFileGroupPaths(const IFilesGroupProvider& fileGroup, std::vector<stri
 
 	if (include == EInclude::OnlyMainFile)
 	{
-		outputFiles.push_back(PathUtil::MatchGamePathToCaseOnFileSystem(fileGroup.GetMainFile()));
+		VersionControlPathUtils::MatchCaseAndPushBack(outputFiles, fileGroup.GetMainFile());
 		return;
 	}
 
@@ -117,7 +114,7 @@ void InsertFileGroupPaths(const IFilesGroupProvider& fileGroup, std::vector<stri
 
 	for (string& file : files)
 	{
-		outputFiles.push_back(PathUtil::MatchGamePathToCaseOnFileSystem(file));
+		VersionControlPathUtils::MatchCaseAndPushBack(outputFiles, file);
 	}
 }
 
@@ -147,19 +144,19 @@ std::vector<string> CAssetFilesProvider::GetForLayers(const std::vector<IObjectL
 	return filePaths;
 }
 
-std::vector<string> CAssetFilesProvider::GetForFileGroups(const std::vector<std::shared_ptr<IFilesGroupProvider>>& fileGroups, EInclude include /*= EInclude::AllFiles*/)
+std::vector<string> CAssetFilesProvider::GetForFileGroups(const std::vector<std::shared_ptr<IFilesGroupController>>& fileGroups, EInclude include /*= EInclude::AllFiles*/)
 {
 	using namespace Private_AssetFileProvider;
 	std::vector<string> filePaths;
 	filePaths.reserve(fileGroups.size() * 1.2);
-	for (const std::shared_ptr<IFilesGroupProvider>& pFileGroup : fileGroups)
+	for (const std::shared_ptr<IFilesGroupController>& pFileGroup : fileGroups)
 	{
 		InsertFileGroupPaths(*pFileGroup, filePaths, include);
 	}
 	return filePaths;
 }
 
-std::vector<string> CAssetFilesProvider::GetForFileGroup(const IFilesGroupProvider& fileGroup, EInclude include /*= EInclude::AllFiles*/)
+std::vector<string> CAssetFilesProvider::GetForFileGroup(const IFilesGroupController& fileGroup, EInclude include /*= EInclude::AllFiles*/)
 {
 	using namespace Private_AssetFileProvider;
 	std::vector<string> filePaths;
@@ -167,24 +164,24 @@ std::vector<string> CAssetFilesProvider::GetForFileGroup(const IFilesGroupProvid
 	return filePaths;
 }
 
-std::vector<std::shared_ptr<IFilesGroupProvider>> CAssetFilesProvider::ToFileGroups(const std::vector<IObjectLayer*>& layers)
+std::vector<std::shared_ptr<IFilesGroupController>> CAssetFilesProvider::ToFileGroups(const std::vector<IObjectLayer*>& layers)
 {
-	std::vector<std::shared_ptr<IFilesGroupProvider>> fileGroups;
+	std::vector<std::shared_ptr<IFilesGroupController>> fileGroups;
 	fileGroups.reserve(layers.size());
 	std::transform(layers.cbegin(), layers.cend(), std::back_inserter(fileGroups), [](IObjectLayer* pLayer)
 	{
-		return std::make_shared<CLayerFileGroupProvider>(*pLayer);
+		return std::make_shared<CLayerFileGroupController>(*pLayer);
 	});
 	return fileGroups;
 }
 
-std::vector<std::shared_ptr<IFilesGroupProvider>> CAssetFilesProvider::ToFileGroups(const std::vector<CAsset*>& assets)
+std::vector<std::shared_ptr<IFilesGroupController>> CAssetFilesProvider::ToFileGroups(const std::vector<CAsset*>& assets)
 {
-	std::vector<std::shared_ptr<IFilesGroupProvider>> fileGroups;
+	std::vector<std::shared_ptr<IFilesGroupController>> fileGroups;
 	fileGroups.reserve(assets.size());
 	std::transform(assets.cbegin(), assets.cend(), std::back_inserter(fileGroups), [](CAsset* pAsset)
 	{
-		return std::make_shared<CAssetFilesGroupProvider>(pAsset, false);
+		return std::make_shared<CAssetFilesGroupController>(pAsset, false);
 	});
 	return fileGroups;
 }

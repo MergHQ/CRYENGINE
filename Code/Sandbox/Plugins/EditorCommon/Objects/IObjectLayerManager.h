@@ -33,6 +33,12 @@ struct IObjectLayerManager
 	//! Import layer from file. If globalArchive, caller is responsible for both Object and Layer resolution!
 	virtual IObjectLayer* ImportLayerFromFile(const string& filename, bool bNotify = true, CObjectArchive* globalArchive = nullptr) = 0;
 
+	//! Find a layer that corresponds to the given layer file if respective level is opened.
+	virtual IObjectLayer* GetLayerByFileIfOpened(const string& layerFile) const = 0;
+
+	//! Determines if given layer file belongs to the current opened level.
+	virtual bool          IsLayerFileOfOpenedLevel(const string& layerFile) const = 0;
+
 	//! Get a list of all managed layers.
 	virtual const std::vector<IObjectLayer*>& GetLayers() const = 0;
 

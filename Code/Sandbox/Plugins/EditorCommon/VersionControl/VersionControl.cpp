@@ -9,18 +9,23 @@
 #include <CrySystem/ISystem.h>
 #include <memory>
 
+namespace Private_VersionControl
+{
+
+static const string VCS_NONE = "None";
+
 struct EDITOR_COMMON_API SVersionControlPreferences : public SPreferencePage
 {
 	SVersionControlPreferences::SVersionControlPreferences()
 		: SPreferencePage("General", "Version Control/General")
-		, vcsName("none")
+		, vcsName(VCS_NONE)
 	{}
 
 	virtual bool Serialize(yasli::Archive& ar) override
 	{
 		string currentVCS = vcsName;
 		Serialization::StringList vcsList;
-		vcsList.push_back("none");
+		vcsList.push_back(VCS_NONE);
 
 		std::vector<IClassDesc*> classes;
 		GetIEditor()->GetClassFactory()->GetClassesBySystemID(ESYSTEM_CLASS_VCS_PROVIDER, classes);
@@ -67,21 +72,25 @@ struct EDITOR_COMMON_API SVersionControlPreferences : public SPreferencePage
 EDITOR_COMMON_API SVersionControlPreferences gVersionControlPreferences;
 REGISTER_PREFERENCES_PAGE_PTR(SVersionControlPreferences, &gVersionControlPreferences)
 
+}
+
 bool CVersionControl::IsAvailable()
 {
-	return gVersionControlPreferences.vcsName != "none"; 
+	using namespace Private_VersionControl;
+	return gVersionControlPreferences.vcsName != VCS_NONE;
 }
 
 bool CVersionControl::UpdateAdapter()
 {
-	static string currentAdapterClass = "none";
+	using namespace Private_VersionControl;
+	static string currentAdapterClass = VCS_NONE;
 
 	if (currentAdapterClass == gVersionControlPreferences.vcsName)
 	{
 		return false;
 	}
 
-	if (gVersionControlPreferences.vcsName == "none")
+	if (gVersionControlPreferences.vcsName == VCS_NONE)
 	{
 		// first we destroy current adapter because it will signal onlineChange event which we want to catch
 		// before deactivating listeners.
@@ -131,30 +140,44 @@ void CVersionControl::OnAdapterOnlineChanged()
 	});
 }
 
+std::shared_ptr<CVersionControlTask> CVersionControl::RemoveFilesLocally(std::vector<string> files, bool isBlocking, Callback callback)
+{
+	auto adapter = m_pAdapter;
+	return m_taskManager.ScheduleTask([files = std::move(files), adapter]()
+	{
+		return adapter->RemoveFilesLocally(files);
+	}, isBlocking, std::move(callback));
+}
+
 std::shared_ptr<CVersionControlTask> CVersionControl::UpdateFileStatus(std::vector<string> filePaths, std::vector<string> folders, bool isBlocking, CVersionControl::Callback callback)
 {
 	auto adapter = m_pAdapter;
-	return m_taskManager.ScheduleTask([filePaths = std::move(filePaths), folders = std::move(folders), adapter](CVersionControlResult& result)
+	return m_taskManager.ScheduleTask([filePaths = std::move(filePaths), folders = std::move(folders), adapter]()
 	{
-		result.SetError(adapter->UpdateStatus(filePaths, folders));
+		return adapter->UpdateStatus(filePaths, folders);
 	}, isBlocking, std::move(callback));
 }
 
 std::shared_ptr<CVersionControlTask> CVersionControl::UpdateStatus(bool isBlocking, CVersionControl::Callback callback)
 {
 	auto adapter = m_pAdapter;
-	return m_taskManager.ScheduleTask([adapter](CVersionControlResult& result)
+	return m_taskManager.ScheduleTask([adapter]()
 	{
-		result.SetError(adapter->UpdateStatus());
+		return adapter->UpdateStatus();
 	}, isBlocking, std::move(callback));
 }
 
-std::shared_ptr<CVersionControlTask> CVersionControl::GetLatest(std::vector<string> files, std::vector<string> folders, bool force, bool isBlocking, CVersionControl::Callback callback)
+std::shared_ptr<CVersionControlTask> CVersionControl::GetLatest(std::vector<string> files, std::vector<string> folders, std::vector<string> fileExtensions, bool force, bool isBlocking, CVersionControl::Callback callback)
 {
 	auto adapter = m_pAdapter;
-	return m_taskManager.ScheduleTask([files = std::move(files), folders = std::move(folders), force, adapter](CVersionControlResult& result)
+	if (files.empty() && folders.empty())
 	{
-		result.SetError(adapter->GetLatest(files, folders, force));
+		CRY_ASSERT_MESSAGE(!files.empty() || !folders.empty(), "Get Latest should not be called for empty list.");
+		return nullptr;
+	}
+	return m_taskManager.ScheduleTask([files = std::move(files), folders = std::move(folders), fileExtensions = std::move(fileExtensions), force, adapter]()
+	{
+		return adapter->GetLatest(files, folders, fileExtensions, force);
 	}, isBlocking, std::move(callback));
 }
 
@@ -162,81 +185,80 @@ std::shared_ptr<CVersionControlTask> CVersionControl::SubmitFiles(std::vector<st
 {
 	auto adapter = m_pAdapter;
 	CRY_ASSERT_MESSAGE(!filePaths.empty(), "List of files to publish is empty");
-	return m_taskManager.ScheduleTask([filePaths = std::move(filePaths), message, adapter](CVersionControlResult& result)
+	return m_taskManager.ScheduleTask([filePaths = std::move(filePaths), message, adapter]()
 	{
-		result.SetError(adapter->SubmitFiles(filePaths, message));
+		return adapter->SubmitFiles(filePaths, message);
 	}, isBlocking, std::move(callback));
 }
 
 std::shared_ptr<CVersionControlTask> CVersionControl::ResolveConflicts(std::vector<SVersionControlFileConflictStatus> resolutions, bool isBlocking, CVersionControl::Callback callback)
 {
 	auto adapter = m_pAdapter;
-	return m_taskManager.ScheduleTask([resolutions = std::move(resolutions), adapter](CVersionControlResult& result)
+	return m_taskManager.ScheduleTask([resolutions = std::move(resolutions), adapter]()
 	{
-		result.SetError(adapter->ResolveConflicts(resolutions));
+		return adapter->ResolveConflicts(resolutions);
 	}, isBlocking, std::move(callback));
 }
 
 std::shared_ptr<CVersionControlTask> CVersionControl::AddFiles(std::vector<string> filePaths, bool isBlocking, CVersionControl::Callback callback)
 {
 	auto adapter = m_pAdapter;
-	return m_taskManager.ScheduleTask([filePaths = std::move(filePaths), adapter](CVersionControlResult& result)
+	return m_taskManager.ScheduleTask([filePaths = std::move(filePaths), adapter]()
 	{
-		result.SetError(adapter->AddFiles(filePaths));
+		return adapter->AddFiles(filePaths);
 	}, isBlocking, std::move(callback));
 }
 
 std::shared_ptr<CVersionControlTask> CVersionControl::EditFiles(std::vector<string> filePaths, bool isBlocking, CVersionControl::Callback callback)
 {
 	auto adapter = m_pAdapter;
-	return m_taskManager.ScheduleTask([filePaths = std::move(filePaths), adapter](CVersionControlResult& result)
+	return m_taskManager.ScheduleTask([filePaths = std::move(filePaths), adapter]()
 	{
-		result.SetError(adapter->EditFiles(filePaths));
+		return adapter->EditFiles(filePaths);
 	}, isBlocking, std::move(callback));
 }
 
 std::shared_ptr<CVersionControlTask> CVersionControl::DeleteFiles(std::vector<string> filePaths, bool isBlocking, CVersionControl::Callback callback)
 {
 	auto adapter = m_pAdapter;
-	return m_taskManager.ScheduleTask([filePaths = std::move(filePaths), adapter](CVersionControlResult& result)
+	return m_taskManager.ScheduleTask([filePaths = std::move(filePaths), adapter]()
 	{
-		result.SetError(adapter->DeleteFiles(filePaths));
+		return adapter->DeleteFiles(filePaths);
 	}, isBlocking, std::move(callback));
 }
 
 std::shared_ptr<CVersionControlTask> CVersionControl::Revert(std::vector<string> files, std::vector<string> folders, bool isBlocking, CVersionControl::Callback callback)
 {
 	auto adapter = m_pAdapter;
-	return m_taskManager.ScheduleTask([files = std::move(files), folders = std::move(folders), adapter](CVersionControlResult& result)
+	return m_taskManager.ScheduleTask([files = std::move(files), folders = std::move(folders), adapter]()
 	{
-		result.SetError(adapter->Revert(files, folders));
+		return adapter->Revert(files, folders);
 	}, isBlocking, std::move(callback));
 }
 
 std::shared_ptr<CVersionControlTask> CVersionControl::ClearLocalState(std::vector<string> files, std::vector<string> folders, bool clearIfUnchaged, bool isBlocking, CVersionControl::Callback callback)
 {
 	auto adapter = m_pAdapter;
-	return m_taskManager.ScheduleTask([files = std::move(files), folders = std::move(folders), clearIfUnchaged, adapter](CVersionControlResult& result)
+	return m_taskManager.ScheduleTask([files = std::move(files), folders = std::move(folders), clearIfUnchaged, adapter]()
 	{
-		result.SetError(adapter->ClearLocalState(files, folders, clearIfUnchaged));
+		return adapter->ClearLocalState(files, folders, clearIfUnchaged);
 	}, isBlocking, std::move(callback));
 }
 
 std::shared_ptr<CVersionControlTask> CVersionControl::CheckSettings(bool isBlocking, CVersionControl::Callback callback)
 {
-	CryLog("CVersionControl::CheckSettings");
 	auto adapter = m_pAdapter;
-	return m_taskManager.ScheduleTask([adapter](CVersionControlResult& result)
+	return m_taskManager.ScheduleTask([adapter]()
 	{
-		result.SetError(adapter->CheckSettings());
+		return adapter->CheckSettings();
 	}, isBlocking, std::move(callback));
 }
 
 std::shared_ptr<CVersionControlTask> CVersionControl::RetrieveFilesContent(const string& file, bool isBlocking, CVersionControl::Callback callback)
 {
 	auto adapter = m_pAdapter;
-	return m_taskManager.ScheduleTask([file, adapter](CVersionControlResult& result)
+	return m_taskManager.ScheduleTask([file, adapter]()
 	{
-		result.SetError(adapter->RetrieveFilesContent(file));
+		return adapter->RetrieveFilesContent(file);
 	}, isBlocking, std::move(callback));
 }

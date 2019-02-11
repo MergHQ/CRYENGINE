@@ -6,7 +6,7 @@
 #include <vector>
 
 class CAsset;
-struct IFilesGroupProvider;
+struct IFilesGroupController;
 struct IObjectLayer;
 
 //! This is a convenient class that provides lists of files for specific asset(s) or layer(s).
@@ -33,15 +33,15 @@ public:
 
 	//! Returns the list of files that belong to given file groups.
 	//! \param include Specifies which files need to be included.
-	static std::vector<string> GetForFileGroups(const std::vector<std::shared_ptr<IFilesGroupProvider>>& fileGroups, EInclude include = EInclude::AllFiles);
+	static std::vector<string> GetForFileGroups(const std::vector<std::shared_ptr<IFilesGroupController>>& fileGroups, EInclude include = EInclude::AllFiles);
 
 	//! Returns the list of files that belong to given file group.
 	//! \param include Specifies which files need to be included.
-	static std::vector<string> GetForFileGroup(const IFilesGroupProvider& fileGroup, EInclude include = EInclude::AllFiles);
+	static std::vector<string> GetForFileGroup(const IFilesGroupController& fileGroup, EInclude include = EInclude::AllFiles);
 
 	//! Converts given list of layers into a list of file groups.
-	static std::vector<std::shared_ptr<IFilesGroupProvider>> ToFileGroups(const std::vector<IObjectLayer*>& layers);
+	static std::vector<std::shared_ptr<IFilesGroupController>> ToFileGroups(const std::vector<IObjectLayer*>& layers);
 
 	//! Converts given list of assets into a list of file groups.
-	static std::vector<std::shared_ptr<IFilesGroupProvider>> ToFileGroups(const std::vector<CAsset*>& assets);
+	static std::vector<std::shared_ptr<IFilesGroupController>> ToFileGroups(const std::vector<CAsset*>& assets);
 };

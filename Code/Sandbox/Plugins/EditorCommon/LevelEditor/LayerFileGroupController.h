@@ -2,15 +2,15 @@
 
 #pragma once
 
-#include "AssetSystem/IFilesGroupProvider.h"
+#include "AssetSystem/IFilesGroupController.h"
 
 struct IObjectLayer;
 
 //! This class is responsible for providing files that comprise a particular layer.
-class CLayerFileGroupProvider : public IFilesGroupProvider
+class CLayerFileGroupController : public IFilesGroupController
 {
 public:
-	explicit CLayerFileGroupProvider(IObjectLayer& layer);
+	explicit CLayerFileGroupController(IObjectLayer& layer);
 
 	virtual std::vector<string> GetFiles(bool includeGeneratedFile /*= true*/) const override final;
 

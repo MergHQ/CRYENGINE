@@ -1,7 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "LayerFileGroupProvider.h"
+#include "LayerFileGroupController.h"
 #include "PathUtils.h"
 #include "FileUtils.h"
 #include "Objects/IObjectLayerManager.h"
@@ -26,14 +26,14 @@ bool IsLayerOfOpenedLevel(const string& layerFile, string& outLevelPath)
 }
 
 }
-CLayerFileGroupProvider::CLayerFileGroupProvider(IObjectLayer& layer)
+CLayerFileGroupController::CLayerFileGroupController(IObjectLayer& layer)
 	: m_pLayer(&layer)
 {
 	m_mainFile = PathUtil::ToGamePath(m_pLayer->GetLayerFilepath());
 	m_name = m_pLayer->GetName();
 }
 
-std::vector<string> CLayerFileGroupProvider::GetFiles(bool includeGeneratedFile /*= true*/) const
+std::vector<string> CLayerFileGroupController::GetFiles(bool includeGeneratedFile /*= true*/) const
 {
 	if (!m_pLayer)
 	{
@@ -59,7 +59,7 @@ std::vector<string> CLayerFileGroupProvider::GetFiles(bool includeGeneratedFile 
 	return result;
 }
 
-void CLayerFileGroupProvider::Update()
+void CLayerFileGroupController::Update()
 {
 	using namespace Private_LayerFileGroup;
 	IObjectLayerManager* pLayerManager = GetIEditor()->GetObjectManager()->GetIObjectLayerManager();

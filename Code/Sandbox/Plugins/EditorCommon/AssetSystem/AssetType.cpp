@@ -439,6 +439,21 @@ bool CAssetType::OnCopy(INewAsset& asset, CAsset& assetToCopy) const
 	return true;
 }
 
+bool CAssetType::IsAssetValid(CAsset* pAsset, string& errorMsg) const
+{
+	const string assetsPath(PathUtil::GetGameProjectAssetsPath());
+	for (size_t i = 0, N = pAsset->GetFilesCount(); i < N; ++i)
+	{
+		QFileInfo info = QFileInfo(QtUtil::ToQString(PathUtil::Make(assetsPath, pAsset->GetFile(i))));
+		if (!info.exists())
+		{
+			errorMsg = string("Asset's file %s is missing on the file system.").Format(pAsset->GetFile(i));
+			return false;
+		}
+	}
+	return true;
+}
+
 bool CAssetType::RenameAsset(CAsset* pAsset, const char* szNewName) const
 {
 	const string oldName(pAsset->GetName());

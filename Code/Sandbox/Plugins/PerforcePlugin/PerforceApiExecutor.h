@@ -42,7 +42,7 @@ public:
 
 	virtual string CreateChangelist(const string& description, const std::vector<string>& filePaths /* = {} */) override;
 
-	virtual string Sync(const std::vector<string>& filePaths /* = {} */, bool force /* = false */) override;
+	virtual string Sync(const std::vector<string>& filePaths /* = {} */, bool force /* = false */, int rev /*= -1*/) override;
 
 	virtual string SyncPreview() override;
 

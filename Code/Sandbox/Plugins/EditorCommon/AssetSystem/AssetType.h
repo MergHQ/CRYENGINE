@@ -104,7 +104,11 @@ public:
 	virtual bool CanBeEdited() const { return false; }
 	//! Opens the asset in the appropriate editor
 	//! Usually implemented using CAssetEditor::OpenAssetForEdit
-	virtual CAssetEditor* Edit(CAsset* asset) const { CRY_ASSERT(0); /*not implemented*/ return nullptr; }
+	virtual CAssetEditor* Edit(CAsset* pAsset) const { CRY_ASSERT(0); /*not implemented*/ return nullptr; }
+
+	//! Checks if the given asset is valid
+	//! The minimum check that performed is if assets' files are present on the file system.
+	virtual bool IsAssetValid(CAsset* pAsset, string& errorMsg) const;
 
 	//! Renames an existing asset.
 	//! \param pAsset The asset to be renamed.

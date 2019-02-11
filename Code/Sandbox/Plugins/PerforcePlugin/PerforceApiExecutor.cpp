@@ -459,7 +459,7 @@ string CPerforceApiExecutor::CreateChangelist(const string& description, const s
 	return cu.GetOutput();
 }
 
-string CPerforceApiExecutor::Sync(const std::vector<string>& filePaths /* = {} */, bool force /* = false */)
+string CPerforceApiExecutor::Sync(const std::vector<string>& filePaths /* = {} */, bool force /* = false */, int rev /* = -1 */)
 {
 	using namespace Private_CPerforceApiExecutor;
 
@@ -470,7 +470,18 @@ string CPerforceApiExecutor::Sync(const std::vector<string>& filePaths /* = {} *
 	}
 	if (!filePaths.empty())
 	{
-		AppendVector(args, filePaths);
+		if (rev >= 0) 
+		{
+			args.reserve(args.size() + filePaths.size());
+			const string revString = string().Format("#%d", rev);
+			for (const string& path : filePaths) 
+			{
+				args.push_back(path + revString);
+			}
+		} else
+		{
+			AppendVector(args, filePaths);
+		}
 	}
 	TryRun("sync", args);
 

@@ -22,6 +22,7 @@
 #include "LineEditDelegate.h"
 #include "ManageWorkFilesDialog.h"
 
+#include "EditorFramework/Events.h"
 #include "Controls/BreadcrumbsBar.h"
 #include "Controls/QuestionDialog.h"
 #include "DragDrop.h"
@@ -41,6 +42,7 @@
 #include "QtViewPane.h"
 #include "ThreadingUtils.h"
 
+#include "VersionControl/VersionControlEventHandler.h"
 #include <IEditor.h>
 
 #include <QButtonGroup>
@@ -529,6 +531,81 @@ private:
 
 static CDependenciesAttribute s_dependenciesAttribute;
 static CUsageCountAttribute s_usageCountAttribute;
+
+class CWorkFileOperator : public Attributes::IAttributeFilterOperator
+{
+public:
+	virtual QString GetName() override { return QWidget::tr("Work File"); }
+
+	virtual bool    Match(const QVariant& value, const QVariant& filterValue) override
+	{
+		if (!filterValue.isValid())
+		{
+			return true;
+		}
+
+		const CAsset* const pAsset = value.isValid() ? reinterpret_cast<CAsset*>(value.value<intptr_t>()) : nullptr;
+		if (!pAsset)
+		{
+			return false;
+		}
+
+		const string workFileSubstr = QtUtil::ToString(filterValue.toString());
+		for (const string& workFile : pAsset->GetWorkFiles())
+		{
+			if (workFile.find(workFileSubstr) != std::string::npos)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	QWidget* CreateEditWidget(std::shared_ptr<CAttributeFilter> filter) override
+	{
+		auto pWidget = new QLineEdit();
+		auto currentValue = filter->GetFilterValue();
+
+		if (currentValue.type() == QVariant::String)
+		{
+			pWidget->setText(currentValue.toString());
+		}
+
+		QWidget::connect(pWidget, &QLineEdit::editingFinished, [filter, pWidget]()
+		{
+			filter->SetFilterValue(pWidget->text());
+		});
+
+		return pWidget;
+	}
+
+	void UpdateWidget(QWidget* widget, const QVariant& value) override
+	{
+		QLineEdit* pEdit = qobject_cast<QLineEdit*>(widget);
+		if (pEdit)
+		{
+			pEdit->setText(value.toString());
+		}
+	}
+};
+
+static CAttributeType<QString> s_workFileAttributeType({ new CWorkFileOperator() });
+
+class CWorkFileAttribute : public CItemModelAttribute
+{
+public:
+	CWorkFileAttribute()
+		: CItemModelAttribute("Work File", &s_workFileAttributeType, CItemModelAttribute::AlwaysHidden, true, QVariant(), (int)CAssetModel::Roles::InternalPointerRole)
+	{
+		static CAssetModel::CAutoRegisterColumn column(this, [](const CAsset* pAsset, const CItemModelAttribute* /*pAttribute*/, int role)
+		{
+			return QVariant();
+		});
+	}
+};
+
+static CWorkFileAttribute g_workFilesAttribute;
 
 class SortFilterProxyModel : public QAttributeFilterProxyModel
 {
@@ -1503,9 +1580,15 @@ std::vector<CAsset*> CAssetBrowser::GetSelectedAssets() const
 	return assets;
 }
 
-QStringList CAssetBrowser::GetSelectedFolders() const
+std::vector<string> CAssetBrowser::GetSelectedFolders() const
 {
-	return m_pFoldersView->GetSelectedFolders();
+	std::vector<string> folders;
+	folders.reserve(folders.size());
+	for (const QString& f : m_pFoldersView->GetSelectedFolders())
+	{
+		folders.push_back(QtUtil::ToString(f));
+	}
+	return folders;
 }
 
 CAsset* CAssetBrowser::GetLastSelectedAsset() const
@@ -1727,7 +1810,7 @@ void CAssetBrowser::CreateContextMenu(bool isFolderView /*= false*/)
 	{
 		if (isFolderView)
 		{
-			folders = GetSelectedFoldersInFolderView();
+			folders = GetSelectedFolders();
 		}
 		BuildContextMenuForFolders(folders, abstractMenu);
 	}
@@ -1749,7 +1832,7 @@ void CAssetBrowser::BuildContextMenuForEmptiness(CAbstractMenu& abstractMenu)
 {
 	const bool isRecursiveView = m_recursiveSearch || IsRecursiveView();
 
-	std::vector<string> selectedFolders = GetSelectedFoldersInFolderView();
+	std::vector<string> selectedFolders = GetSelectedFolders();
 	CAssetFoldersModel* pModel = CAssetFoldersModel::GetInstance();
 
 	int foldersSection = abstractMenu.GetNextEmptySection();
@@ -1784,18 +1867,6 @@ void CAssetBrowser::BuildContextMenuForEmptiness(CAbstractMenu& abstractMenu)
 	NotifyContextMenuCreation(abstractMenu, {}, selectedFolders);
 }
 
-std::vector<string> CAssetBrowser::GetSelectedFoldersInFolderView()
-{
-	auto& selectedFolders = m_pFoldersView->GetSelectedFolders();
-
-	std::vector<string> folders;
-	folders.reserve(selectedFolders.size());
-	std::transform(selectedFolders.cbegin(), selectedFolders.cend(), std::back_inserter(folders), [](const QString& str)
-	{
-		return QtUtil::ToString(str);
-	});
-	return folders;
-}
 void CAssetBrowser::BuildContextMenuForFolders(const std::vector<string>& folders, CAbstractMenu& abstractMenu)
 {
 	if (folders.size() > 1)
@@ -1975,7 +2046,7 @@ void CAssetBrowser::AddWorkFilesMenu(CAbstractMenu& abstractMenu, CAsset* pAsset
 			action = pWorkFileMenu->CreateAction(tr("Copy Path"));
 			connect(action, &QAction::triggered, [workFile]()
 			{
-				const string path = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), workFile);
+				const string path = PathUtil::MatchAbsolutePathToCaseOnFileSystem(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), workFile));
 				QApplication::clipboard()->setText(QtUtil::ToQString(path));
 			});
 
@@ -2000,6 +2071,43 @@ void CAssetBrowser::NotifyContextMenuCreation(CAbstractMenu& menu, const std::ve
 	}
 
 	s_signalContextMenuRequested(menu, assets, folders, std::make_shared<Private_AssetBrowser::CContextMenuContext>(this));
+}
+
+void CAssetBrowser::customEvent(QEvent* pEvent)
+{
+	if (pEvent->type() != SandboxEvent::Command)
+	{
+		CDockableEditor::customEvent(pEvent);
+		return;
+	}
+
+	CommandEvent* pCommandEvent = static_cast<CommandEvent*>(pEvent);
+
+	QStringList params = QtUtil::ToQString(pCommandEvent->GetCommand()).split(' ');
+
+	if (params.empty())
+		return;
+
+	QString command = params[0];
+	params.removeFirst();
+
+	QStringList fullCommand = command.split('.');
+	QString module = fullCommand[0];
+	command = fullCommand[1];
+
+	if (module == "version_control_system")
+	{
+		std::vector<CAsset*> assets;
+		std::vector<string> folders;
+		ProcessSelection(assets, folders);
+		const bool hasMainViewSelection = !assets.empty() || !folders.empty();
+		VersionControlEventHandler::HandleOnAssetBrowser(command, std::move(assets), hasMainViewSelection ? 
+			std::move(folders) : GetSelectedFolders());
+	}
+	else
+	{
+		CDockableEditor::customEvent(pEvent);
+	}
 }
 
 void CAssetBrowser::AppendFilterDependenciesActions(CAbstractMenu* pAbstractMenu, const CAsset* pAsset)

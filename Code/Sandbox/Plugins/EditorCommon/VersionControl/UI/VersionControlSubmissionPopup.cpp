@@ -18,10 +18,23 @@ static QString g_description;
 
 }
 
-void CVersionControlSubmissionPopup::ShowPopup(const std::vector<CAsset*>& assets, const std::vector<string>& layersFiles, const std::vector<string>& folders)
+void CVersionControlSubmissionPopup::ShowPopup()
 {
 	CVersionControlSubmissionPopup popup;
-	popup.Select(assets, layersFiles, folders);
+	popup.Execute();
+}
+
+void CVersionControlSubmissionPopup::ShowPopup(const std::vector<CAsset*>& assets, const std::vector<string>& folders)
+{
+	CVersionControlSubmissionPopup popup;
+	popup.Select(assets, folders);
+	popup.Execute();
+}
+
+void CVersionControlSubmissionPopup::ShowPopup(const std::vector<string>& mainFiles, const std::vector<string>& folders)
+{
+	CVersionControlSubmissionPopup popup;
+	popup.Select(mainFiles, folders);
 	popup.Execute();
 }
 
@@ -64,7 +77,7 @@ CVersionControlSubmissionPopup::~CVersionControlSubmissionPopup()
 	Private_VersionControlSubmissionPopup::g_description = m_textEdit->toPlainText();
 }
 
-void CVersionControlSubmissionPopup::Select(const std::vector<CAsset*>& assets, const std::vector<string>& layersFiles, const std::vector<string>& folders)
+void CVersionControlSubmissionPopup::Select(const std::vector<CAsset*>& assets, const std::vector<string>& folders)
 {
 	bool shouldDeselectCurrent = true;
 	if (!assets.empty())
@@ -72,9 +85,18 @@ void CVersionControlSubmissionPopup::Select(const std::vector<CAsset*>& assets, 
 		m_pPendingChangesWidget->SelectAssets(assets, shouldDeselectCurrent);
 		shouldDeselectCurrent = false;
 	}
-	if (!layersFiles.empty())
+	if (!folders.empty())
 	{
-		m_pPendingChangesWidget->SelectLayers(layersFiles, shouldDeselectCurrent);
+		m_pPendingChangesWidget->SelectFolders(folders, shouldDeselectCurrent);
+	}
+}
+
+void CVersionControlSubmissionPopup::Select(const std::vector<string>& mainFiles, const std::vector<string>& folders)
+{
+	bool shouldDeselectCurrent = true;
+	if (!mainFiles.empty())
+	{
+		m_pPendingChangesWidget->SelectFiles(mainFiles, shouldDeselectCurrent);
 		shouldDeselectCurrent = false;
 	}
 	if (!folders.empty())

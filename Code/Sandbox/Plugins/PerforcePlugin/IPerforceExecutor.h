@@ -42,7 +42,7 @@ struct IPerforceExecutor
 
 	virtual string CreateChangelist(const string& description, const std::vector<string>& filePaths = {}) = 0;
 
-	virtual string Sync(const std::vector<string>& filePaths = {}, bool force = false) = 0;
+	virtual string Sync(const std::vector<string>& filePaths = {}, bool force = false, int rev = -1) = 0;
 	
 	virtual string SyncPreview() = 0;
 

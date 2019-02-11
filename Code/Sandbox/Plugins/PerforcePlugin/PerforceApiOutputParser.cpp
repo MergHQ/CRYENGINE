@@ -296,11 +296,21 @@ public:
 	void EnableDetailedOutput() { m_hasDetailedOutput = true; }
 
 protected:
-	void SetErrorIfNew(EVersionControlError error, const string& message = "") 
+	bool SetErrorIfNew(EVersionControlError error, const string& message = "") 
 	{
 		if (m_error.type == EVersionControlError::None)
 		{
 			m_error = { error, message };
+			return true;
+		}
+		return false;
+	}
+
+	void SetOrAppendError(EVersionControlError error, const string& message)
+	{
+		if (!SetErrorIfNew(error, message) && (m_error.type == error))
+		{
+			m_error.message + '\n' + message;
 		}
 	}
 
@@ -487,6 +497,7 @@ public:
 	{
 		CBaseClientUser::OutputInfo(level, data);
 		AddFilePathToVectorIfValid(m_conflictingList, data);
+		SetOrAppendError(EVersionControlError::UpdateFileFailed, data);
 	}
 
 	virtual void OutputStat(StrDict* dict) override
@@ -505,6 +516,15 @@ public:
 	{
 		CBaseFileStatusClientUser::Reset();
 		m_conflictingList.clear();
+	}
+
+	void AddUpdatedRemotelyState()
+	{
+		using FS = CVersionControlFileStatus;
+		for (auto& fs : m_fileStatuses)
+		{
+			fs.AddState(FS::eState_UpdatedRemotely);
+		}
 	}
 
 	void ClearRemoteChanges()
@@ -1006,22 +1026,26 @@ void CPerforceApiOutputParser::ParseDelete(const string& perforceOutput, std::ve
 }
 
 void CPerforceApiOutputParser::ParseSync(const string&, std::vector<CVersionControlFileStatusUpdate>& result, 
-	std::vector<string>& resultConflicting, bool isPreview /*=true*/) const
+	std::vector<string>& resultConflicting, SyncMode mode /* = Default*/) const
 {
 	using namespace Private_CPerforceApiOutputParser;
 	auto cu = GetP4ClientUser<CSyncClientUser>();
-	if (!isPreview)
+	if (mode == SyncMode::Default)
 	{
 		cu->ClearRemoteChanges();
+	}
+	else if (mode == SyncMode::Remove)
+	{
+		cu->AddUpdatedRemotelyState();
 	}
 	result = std::move(cu->m_fileStatuses);
 	resultConflicting = std::move(cu->m_conflictingList);
 }
 
-void CPerforceApiOutputParser::ParseSync(const string& perforceOutput, std::vector<CVersionControlFileStatusUpdate>& result, bool isPreview /*=true*/) const
+void CPerforceApiOutputParser::ParseSync(const string& perforceOutput, std::vector<CVersionControlFileStatusUpdate>& result, SyncMode mode /*= Default*/) const
 {
 	std::vector<string> conflicting;
-	return ParseSync(perforceOutput, result, conflicting, isPreview);
+	return ParseSync(perforceOutput, result, conflicting, mode);
 }
 
 void CPerforceApiOutputParser::ParseFiles(const string& perforceOutput, std::vector<int>& result) const

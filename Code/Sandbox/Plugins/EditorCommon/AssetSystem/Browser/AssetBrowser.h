@@ -52,7 +52,7 @@ public:
 	void                 SelectAsset(const char* szPath) const;
 	void                 SelectAsset(const CAsset& asset) const;
 
-	QStringList          GetSelectedFolders() const;
+	std::vector<string> GetSelectedFolders() const;
 
 	//CEditor implementation
 	virtual const char* GetEditorName() const override { return "Asset Browser"; }
@@ -88,6 +88,8 @@ public:
 	void    SetButtonsSpacing(int val)      { m_buttonsSpacing = val; }
 	int     GetButtonGroupsSpacing() const  { return m_buttonGroupsSpacing; }
 	void    SetButtonGroupsSpacing(int val) { m_buttonGroupsSpacing = val; }
+
+	virtual void customEvent(QEvent* pEvent) override;
 
 signals:
 	//! This signal is emitted whenever the selection of folders or assets changes.
@@ -140,8 +142,6 @@ private:
 	void                OnFolderViewContextMenu();
 
 	void                CreateContextMenu(bool isFolderView = false);
-
-	std::vector<string> GetSelectedFoldersInFolderView();
 
 	void                BuildContextMenuForEmptiness(CAbstractMenu& abstractMenu);
 	void                BuildContextMenuForFolders(const std::vector<string>& folders, CAbstractMenu& abstractMenu);

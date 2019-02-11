@@ -6,6 +6,7 @@
 #include "Asset.h"
 #include "AssetType.h"
 #include "AssetConverter.h"
+#include "ObjectIndexContainer.h"
 #include <CrySandbox/CrySignal.h>
 #include <CryCore/StlUtils.h>
 
@@ -30,6 +31,9 @@ class EDITOR_COMMON_API CAssetManager
 	friend class CAssetFoldersModel;
 
 public:
+	template<bool isOnePerAsset>
+	using AssetFilesTracker = CObjectIndexContainer<string, CAsset, isOnePerAsset, stl::hash_stricmp<string>, stl::hash_stricmp<string>>;
+
 	CAssetManager();
 	~CAssetManager();
 
@@ -84,7 +88,7 @@ public:
 	//! \sa CAssetType::DeleteAssetFiles
 	//! \sa CAssetManager::signalBeforeAssetsRemoved
 	//! \sa CAssetManager::signalAfterAssetsRemoved
-	void DeleteAssetsOnlyFromData(const std::vector<CAsset*>& assets);
+	void DeleteAssetsOnlyFromData(std::vector<CAsset*> assets);
 
 	//! Moves existing assets to the specified folder, including all assets files.
 	//! \param assets A collection of assets to be moved.
@@ -189,13 +193,24 @@ public:
 
 	void WaitAsyncProcess() const;
 
+	//! Returns assets' source files tracker.
+	const AssetFilesTracker<true>& GetSourceFilesTracker() const { return m_sourceFilesTracker; }
+	AssetFilesTracker<true>& GetSourceFilesTracker() { return m_sourceFilesTracker; }
+
+	//! Returns assets' work files tracker.
+	const AssetFilesTracker<false>& GetWorkFilesTracker() const { return m_workFilesTracker; }
+	AssetFilesTracker<false>& GetWorkFilesTracker() { return m_workFilesTracker; }
+
 	//! Braces the invalidation of all assets.
-	CCrySignal<void()> signalBeforeAssetsUpdated;
-	CCrySignal<void()> signalAfterAssetsUpdated;
+	CCrySignal<void()> signalBeforeAssetsReset;
+	CCrySignal<void()> signalAfterAssetsReset;
 
 	//! Braces the insertion of new assets.
 	CCrySignal<void(const std::vector<CAsset*>&)> signalBeforeAssetsInserted;
 	CCrySignal<void(const std::vector<CAsset*>&)> signalAfterAssetsInserted;
+	
+	//! Signals that a group of assets is updated.
+	CCrySignal<void(const std::vector<CAsset*>&)> signalAssetsUpdated;
 
 	//! Braces the removing of existing assets.
 	CCrySignal<void(const std::vector<CAsset*>&)> signalBeforeAssetsRemoved;
@@ -247,6 +262,9 @@ private:
 
 	// A list of pairs {alias name, user friendly name};
 	const static std::pair<const char*, const char*> m_knownAliases[];
+
+	AssetFilesTracker<true>  m_sourceFilesTracker{ [](const CAsset& asset) { return asset.GetSourceFile(); } };
+	AssetFilesTracker<false> m_workFilesTracker{ [](const CAsset& asset) { return  asset.GetWorkFiles(); } };
 
 	//For convenience and speed, do not expose, only accessible to internals of the asset system through friend status
 	static CAssetManager* s_instance;

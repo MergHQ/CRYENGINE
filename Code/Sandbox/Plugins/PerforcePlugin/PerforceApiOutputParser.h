@@ -33,9 +33,9 @@ public:
 
 	virtual void ParseDelete(const string& perforceOutput, std::vector<CVersionControlFileStatusUpdate>& result) const override;
 
-	virtual void ParseSync(const string& perforceOutput, std::vector<CVersionControlFileStatusUpdate>& result, bool isPreview) const override;
+	virtual void ParseSync(const string& perforceOutput, std::vector<CVersionControlFileStatusUpdate>& result, SyncMode mode) const override;
 
-	virtual void ParseSync(const string& perforceOutput, std::vector<CVersionControlFileStatusUpdate>& result, std::vector<string>& resultConflicting, bool isPreview) const override;
+	virtual void ParseSync(const string& perforceOutput, std::vector<CVersionControlFileStatusUpdate>& result, std::vector<string>& resultConflicting, SyncMode mode) const override;
 
 	virtual void ParseFiles(const string& perforceOutput, std::vector<int>& result) const override;
 

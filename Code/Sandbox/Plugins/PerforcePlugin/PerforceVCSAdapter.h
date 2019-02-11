@@ -21,7 +21,7 @@ public:
 
 	virtual SVersionControlError UpdateStatus(const std::vector<string>& filePaths, const std::vector<string>& folders) override;
 
-	virtual SVersionControlError GetLatest(const std::vector<string>& files, const std::vector<string>& folders, bool force) override;
+	virtual SVersionControlError GetLatest(const std::vector<string>& files, const std::vector<string>& folders, const std::vector<string>& fileExtensions, bool force) override;
 
 	virtual SVersionControlError SubmitFiles(const std::vector<string>& filePaths, const string& message = "") override;
 
@@ -38,6 +38,8 @@ public:
 	virtual SVersionControlError ClearLocalState(const std::vector<string>& files, const std::vector<string>& folders, bool clearIfUnchanged) override;
 
 	virtual SVersionControlError RetrieveFilesContent(const string& file) override;
+
+	virtual SVersionControlError RemoveFilesLocally(const std::vector<string>& filePaths) override;
 
 	virtual SVersionControlError CheckSettings() override;
 

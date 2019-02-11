@@ -9,6 +9,6 @@
 class EDITOR_COMMON_API CVersionControlFileOperationsExecutor : public IFileOperationsExecutor
 {
 public:
-	virtual void DoDelete(std::vector<std::unique_ptr<IFilesGroupProvider>> fileGroups) override;
-	virtual void DoDelete(const std::vector<string>& files) override;
+	virtual void DoDelete(std::vector<std::unique_ptr<IFilesGroupController>> fileGroups, std::function<void(void)>) override;
+	virtual void DoDelete(const std::vector<string>& files, std::function<void(void)>) override;
 };

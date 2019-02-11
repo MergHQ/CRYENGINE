@@ -16,6 +16,13 @@ struct IPerforceOutputParser
 		string currentDir;
 	};
 
+	enum class SyncMode
+	{
+		Default,
+		Preview,
+		Remove
+	};
+
 	virtual ~IPerforceOutputParser() {}
 
 	virtual void ParsePendingChangelists(const string& perforceOutput, const string& workspace, std::vector<string>& result) const = 0;
@@ -36,9 +43,9 @@ struct IPerforceOutputParser
 
 	virtual void ParseDelete(const string& perforceOutput, std::vector<CVersionControlFileStatusUpdate>& result) const = 0;
 
-	virtual void ParseSync(const string& perforceOutput, std::vector<CVersionControlFileStatusUpdate>& result, bool isPreview = true) const = 0;
+	virtual void ParseSync(const string& perforceOutput, std::vector<CVersionControlFileStatusUpdate>& result, SyncMode mode = SyncMode::Default) const = 0;
 
-	virtual void ParseSync(const string& perforceOutput, std::vector<CVersionControlFileStatusUpdate>& result, std::vector<string>& resultConflicting, bool isPreview) const = 0;
+	virtual void ParseSync(const string& perforceOutput, std::vector<CVersionControlFileStatusUpdate>& result, std::vector<string>& resultConflicting, SyncMode mode = SyncMode::Default) const = 0;
 
 	virtual void ParseFiles(const string& perforceOutput, std::vector<int>& result) const = 0;
 

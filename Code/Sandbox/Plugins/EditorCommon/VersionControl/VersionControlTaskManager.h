@@ -14,6 +14,8 @@ namespace Private_VersionControlTaskManager
 	class CBlockingTask;
 }
 
+class CVersionControlCache;
+
 //! The worker task that is being executed on a dedicated thread for executing version control operations.
 class CVersionControlTask : public std::enable_shared_from_this<CVersionControlTask>
 {
@@ -58,6 +60,9 @@ class EDITOR_COMMON_API CVersionControlTaskManager
 public:
 	using Callback = std::function<void(const CVersionControlResult&)>;
 
+	explicit CVersionControlTaskManager(CVersionControlCache* pCache)
+		: m_pCache(pCache) {}
+
 	~CVersionControlTaskManager();
 
 	//! Starts task manager by running a dedicated thread so that version control tasks can be executed on it.
@@ -72,10 +77,12 @@ public:
 	//! @isBlocking Specifies if the thread this method is called from needs to be blocked and wait until the task is finished.
 	//! This can't be done on main thread.
 	//! @callback Callback to be called once the task is finished. Callback doesn't make much sense it the call is blocking.
-	std::shared_ptr<CVersionControlTask> ScheduleTask(std::function<void(CVersionControlResult&)> taskFunc, bool isBlocking, Callback callback);
+	std::shared_ptr<CVersionControlTask> ScheduleTask(std::function<SVersionControlError()> taskFunc, bool isBlocking, Callback callback);
 
 private:
 	std::shared_ptr<CVersionControlTask> AddTask(CVersionControlTask::TaskWrapper func, bool isBlocking);
+
+	CVersionControlCache* m_pCache{ nullptr };
 
 	std::deque<std::shared_ptr<CVersionControlTask>> m_tasks;
 };

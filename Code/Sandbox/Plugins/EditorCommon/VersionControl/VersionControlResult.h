@@ -3,9 +3,7 @@
 
 #include "EditorCommonAPI.h"
 #include "VersionControlError.h"
-
-class CVersionControl;
-class CVersionControlTaskManager;
+#include "VersionControlFileStatusUpdate.h"
 
 //! This class is responsible for containing the results of execution of a VCS task.
 class EDITOR_COMMON_API CVersionControlResult
@@ -15,11 +13,14 @@ public:
 
 	SVersionControlError GetError() const { return m_error; }
 
+	const std::vector<CVersionControlFileStatusUpdate>& GetStatusChanges() const { return m_statusChanges; };
+
 private:
 	void SetError(SVersionControlError error) { m_error = error; }
 
 	SVersionControlError m_error;
+	std::vector<CVersionControlFileStatusUpdate> m_statusChanges;
 
-	friend CVersionControl;
-	friend CVersionControlTaskManager;
+	friend class CVersionControl;
+	friend class CVersionControlTaskManager;
 };

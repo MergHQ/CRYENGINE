@@ -11,6 +11,11 @@
 
 struct SPreferencePage;
 
+namespace Private_VersionControl
+{
+	struct SVersionControlPreferences;
+}
+
 //! This class is main entry point for communicating with version control system.
 //! All methods here that return std::shared_ptr<CVersionControlTask> are executed asynchronously. 
 //! All of them accept a parameter that allow to specify if the call should be blocking or not. 
@@ -45,7 +50,7 @@ public:
 	string RemoveFilesContent(const string& file) { return m_pCache->RemoveFilesContent(file); }
 
 	//! Returns a given file's textual content.
-	const string& GetFilesContent(const string& file) { return m_pCache->GetFilesContent(file); }
+	const string& GetFilesContent(const string& file) const { return m_pCache->GetFilesContent(file); }
 
 	//! Returns the signal that is sent when the file's statuses data is changed.
 	CCrySignal<void()>& GetUpdateSignal() { return m_pCache->m_signalUpdate; }
@@ -60,7 +65,9 @@ public:
 	std::shared_ptr<CVersionControlTask> UpdateStatus(bool isBlocking = false, Callback callback = {});
 
 	//! Downloads (or synchronizes to) the latest version of gives files and folders.
-	std::shared_ptr<CVersionControlTask> GetLatest(std::vector<string> files, std::vector<string> folders, bool force = false, bool isBlocking = false, Callback callback = {});
+	//! \param fileExtensions If given only files with matching extension will be downloaded. Can be applied only to folders.
+	//! \param force Specifies if update to date files need to be forced to update.
+	std::shared_ptr<CVersionControlTask> GetLatest(std::vector<string> files, std::vector<string> folders, std::vector<string> fileExtensions = {}, bool force = false, bool isBlocking = false, Callback callback = {});
 
 	//! Submits files to the remote repository.
 	//! \param message The message to be associated with the commit.
@@ -88,6 +95,10 @@ public:
 	//! Retrieves textual content from repository of a given file.
 	std::shared_ptr<CVersionControlTask> RetrieveFilesContent(const string& file, bool isBlocking = false, CVersionControl::Callback callback = {});
 
+	//! Removes local version of the file from the files system. 
+	//! It needs to be done in VCS-friendly way in order to retrieve it back when needed.
+	std::shared_ptr<CVersionControlTask> RemoveFilesLocally(std::vector<string> files, bool isBlocking = false, Callback = {});
+
 	//! Checks if the current settings are correct.
 	std::shared_ptr<CVersionControlTask> CheckSettings(bool isBlocking = false, Callback callback = {});
 
@@ -102,6 +113,7 @@ public:
 private:
 	CVersionControl()
 		: m_pCache(std::make_shared<CVersionControlCache>())
+		, m_taskManager(m_pCache.get())
 	{}
 
 	bool UpdateAdapter();
@@ -114,6 +126,6 @@ private:
 	std::shared_ptr<CVersionControlCache>   m_pCache;
 	CVersionControlTaskManager              m_taskManager;
 
-	friend struct SVersionControlPreferences;
 	friend struct IVersionControlAdapter;
+	friend struct Private_VersionControl::SVersionControlPreferences;
 };

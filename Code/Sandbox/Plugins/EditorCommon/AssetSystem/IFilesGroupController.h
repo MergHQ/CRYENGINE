@@ -1,9 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH. All rights reserved.
 #pragma once
 
-struct IFilesGroupProvider
+struct IFilesGroupController
 {
-	virtual ~IFilesGroupProvider() {}
+	virtual ~IFilesGroupController() {}
 
 	//! Returns paths to the files the object owns. The paths are relative to the assets root directory.
 	//! \param includeGeneratedFile specifies if generated file (like thumbnail) needs to be included.

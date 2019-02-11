@@ -16,7 +16,7 @@ struct SRayHitInfo
 	SRayHitInfo() = default;
 
 	float distance = 0.0f;
-	short surface_index = 0;
+	short surfaceIndex = 0;
 };
 
 class CRayInfo

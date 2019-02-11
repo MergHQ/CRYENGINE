@@ -108,7 +108,11 @@ public:
 	bool IsAnyLayerOfType(EObjectLayerType type) const;
 
 	//! Get a list of all managed layers.
-	const std::vector<IObjectLayer*>& GetLayers() const override;
+	virtual const std::vector<IObjectLayer*>& GetLayers() const override;
+	
+	virtual IObjectLayer* GetLayerByFileIfOpened(const string& layerFile) const override;
+
+	virtual bool          IsLayerFileOfOpenedLevel(const string& layerFile) const override;
 
 	//! Set this layer is current.
 	void                   SetCurrentLayer(CObjectLayer* pCurrLayer);
