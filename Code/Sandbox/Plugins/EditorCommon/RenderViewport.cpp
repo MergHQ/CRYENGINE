@@ -1299,8 +1299,6 @@ void CRenderViewport::ProcessKeys()
 
 	Vec3 pos = GetViewTM().GetTranslation();
 
-	IConsole* console = GetIEditor()->GetSystem()->GetIConsole();
-
 	float speedScale = 60.0f * GetIEditor()->GetSystem()->GetITimer()->GetFrameTime();
 	if (speedScale > 20) speedScale = 20;
 

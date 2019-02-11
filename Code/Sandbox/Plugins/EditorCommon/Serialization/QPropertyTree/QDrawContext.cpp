@@ -410,8 +410,6 @@ void QDrawContext::drawButtonWithIcon(const Icon& icon, const Rect& rect, const 
 {
 	bool pressed = (buttonFlags & BUTTON_PRESSED) != 0;
 	bool focused = (buttonFlags & BUTTON_FOCUSED) != 0;
-	bool center = (buttonFlags & BUTTON_CENTER_TEXT) != 0;
-	bool dropDownArrow = (buttonFlags & BUTTON_DROP_DOWN) != 0;
 	bool enabled = (buttonFlags & BUTTON_DISABLED) == 0;
 	bool showButtonFrame = (buttonFlags & BUTTON_NO_FRAME) == 0;
 

@@ -73,7 +73,6 @@ void CAbstractGroupItem::LinkItem(CAbstractNodeGraphViewModelItem& item)
 
 void CAbstractGroupItem::UnlinkItem(CAbstractNodeGraphViewModelItem& item)
 {
-	auto  pItem = &item;
 	auto& items = GetItems();
 
 	if (item.GetAcceptsGroup() == false)

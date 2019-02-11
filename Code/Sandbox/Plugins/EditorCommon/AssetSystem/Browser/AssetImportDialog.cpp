@@ -44,7 +44,7 @@ CAssetImportDialog::CAssetImportDialog(
 	QGridLayout* const pMainLayout = new QGridLayout();
 
 	QDialogButtonBox* const pButtons = new QDialogButtonBox();
-	QPushButton* const pImportButton = pButtons->addButton("Import", QDialogButtonBox::YesRole);
+	pButtons->addButton("Import", QDialogButtonBox::YesRole);
 
 	if (allFilePaths.size() > 1)
 	{

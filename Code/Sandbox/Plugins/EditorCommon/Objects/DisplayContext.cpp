@@ -863,7 +863,6 @@ void SDisplayContext::DrawTextOn2DBox(const Vec3& pos, const char* text, float t
 	int vx = 0, vy = 0, vw = m_width, vh = m_height;
 
 	uint32 backupstate = GetState();
-	int backupThickness = int(GetLineWidth());
 
 	SetState(backupstate | e_DepthTestOff);
 

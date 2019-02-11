@@ -160,7 +160,6 @@ void CVersionControlFileOperationsExecutor::DoDelete(std::vector<std::unique_ptr
 	}
 
 	using namespace Private_VersionControlFileOperationsExecutor;
-	auto& vcs = CVersionControl::GetInstance();
 
 	auto localFilesIt = std::partition(fileGroups.begin(), fileGroups.end(), [](const auto& pFileGroup)
 	{

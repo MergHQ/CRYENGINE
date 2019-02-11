@@ -167,7 +167,6 @@ CModelViewport::CModelViewport(const char* settingsPath)
 	if (GetIEditor()->IsInPreviewMode())
 	{
 		// In preview mode create a simple physical grid, so we can register physical entities.
-		int nCellSize = 4;
 		IPhysicalWorld* pPhysWorld = gEnv->pPhysicalWorld;
 		if (pPhysWorld)
 		{
@@ -185,7 +184,6 @@ CModelViewport::CModelViewport(const char* settingsPath)
 	if (gEnv->pInput)
 	{
 		gEnv->pInput->AddEventListener(this);
-		uint32 test = gEnv->pInput->HasInputDeviceOfType(eIDT_Gamepad);
 	}
 
 	m_pIAudioListener = gEnv->pAudioSystem->CreateListener(m_viewTM);

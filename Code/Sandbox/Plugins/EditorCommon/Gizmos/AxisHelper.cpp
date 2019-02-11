@@ -428,8 +428,6 @@ bool CAxisHelper::HitTest(const Matrix34& worldTM, HitContext& hc, EHelperMode* 
 	Vec3 y(0, m_size, 0);
 	Vec3 z(0, 0, m_size);
 
-	float hitDist = 0.01f * m_fScreenScale;
-
 	Vec3 pos = m_matrix.GetTranslation();
 
 	Vec3 intPoint;

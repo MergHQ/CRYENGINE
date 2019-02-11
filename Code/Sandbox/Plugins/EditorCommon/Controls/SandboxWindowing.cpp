@@ -317,7 +317,6 @@ std::pair<IPane*, QWidget*> QToolsMenuToolWindowArea::FindIPaneInTabChildren(int
 {
 	std::pair<IPane*, QWidget*> result{ nullptr, nullptr };
 
-	IPane* pane = nullptr;
 	for (QObject* object : widget(tabIndex)->children())
 	{
 		QBaseTabPane* pPaneProxy = qobject_cast<QBaseTabPane*>(object);
@@ -358,7 +357,6 @@ QWidget* QToolsMenuToolWindowArea::SetupMenu(int currentIndex)
 
 	if (pane) //qt widget
 	{
-		auto title = pane->GetPaneTitle();
 		menuToAttach = pane->GetPaneMenu();
 		focusTarget = pane->GetWidget();
 	}

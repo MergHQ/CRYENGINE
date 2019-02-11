@@ -31,9 +31,9 @@ CNodeGraphViewStyle::CNodeGraphViewStyle(const char* szStyleId)
 	m_gridSubSegmentCount = 8;
 	m_gridSubSegmentLineWidth = 1.f;
 
-	CNodeWidgetStyle* pNodeStyle = new CNodeWidgetStyle("Node", *this);
-	CConnectionWidgetStyle* pConnectionStyle = new CConnectionWidgetStyle("Connection", *this);
-	CNodePinWidgetStyle* pPinStyle = new CNodePinWidgetStyle("Pin", *this);
+	new CNodeWidgetStyle("Node", *this);
+	new CConnectionWidgetStyle("Connection", *this);
+	new CNodePinWidgetStyle("Pin", *this);
 }
 
 void CNodeGraphViewStyle::RegisterNodeWidgetStyle(CNodeWidgetStyle* pStyle)

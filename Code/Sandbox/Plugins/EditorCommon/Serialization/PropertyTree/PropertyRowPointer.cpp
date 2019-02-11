@@ -27,7 +27,6 @@ void ClassMenuItemAdder::generateMenu(IMenu& createItem, const StringList& combo
 	for (it = comboStrings.begin(); it != comboStrings.end(); ++it) {
 		StringList path;
 		splitStringList(&path, it->c_str(), '\\');
-		int level = 0;
 		IMenu* item = &createItem;
 
 		for(int level = 0; level < int(path.size()); ++level){

@@ -137,7 +137,7 @@ bool QFullScreenWidgetWindow::event(QEvent* ev)
 				const auto key = keyEvent->key();
 				if (key != Qt::Key_unknown && !(key == Qt::Key_Control || key == Qt::Key_Shift || key == Qt::Key_Alt || key == Qt::Key_Meta))
 				{
-					MissedShortcutEvent* event = new MissedShortcutEvent(QKeySequence(key | keyEvent->modifiers()));
+					//MissedShortcutEvent* event = new MissedShortcutEvent(QKeySequence(key | keyEvent->modifiers()));
 					return QApplication::sendEvent(m_widget->window(), keyEvent);
 				}
 			}

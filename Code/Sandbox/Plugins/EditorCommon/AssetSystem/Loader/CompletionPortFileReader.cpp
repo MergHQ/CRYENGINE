@@ -162,7 +162,7 @@ public:
 		WaitForCompletion();
 
 		// Signal the Completion threads to exit.
-		for (const CUniqueHandle& t : m_threads)
+		for (size_t num = m_threads.size(), i = 0; i < num; ++i)
 		{
 			::PostQueuedCompletionStatus(m_completionPort, 0, 0, nullptr);
 		}

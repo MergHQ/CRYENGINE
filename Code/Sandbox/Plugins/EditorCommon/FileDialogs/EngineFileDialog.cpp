@@ -1043,7 +1043,6 @@ struct CEngineFileDialog::Implementation
 				fileDetailsView->setColumnHidden(3, true);
 			}
 
-			auto enumerator = GetIEditor()->GetFileSystemEnumerator();
 			//history
 			pHistoryView = new CFileTreeView(parent);
 			pHistoryView->setUniformRowHeights(true);
