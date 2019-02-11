@@ -430,7 +430,7 @@ void CMannTagDefEditorDialog::OnNewTagButton()
 //////////////////////////////////////////////////////////////////////////
 void CMannTagDefEditorDialog::OnEditTagButton()
 {
-	const CEdit* pEdit = m_tagsTree->EditLabel(m_tagsTree->GetSelectedItem());
+	m_tagsTree->EditLabel(m_tagsTree->GetSelectedItem());
 }
 
 //////////////////////////////////////////////////////////////////////////

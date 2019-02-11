@@ -541,7 +541,6 @@ void CEnvironementProbeObject::UpdateLinks()
 		if (!pDstDeferredCubemap || !pDeferredCubemap)
 			continue;
 
-		bool bDeferred = false;
 		string strCubemap;
 
 		pDeferredCubemap->Get(strCubemap);

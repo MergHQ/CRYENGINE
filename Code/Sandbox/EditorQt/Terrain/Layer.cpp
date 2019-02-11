@@ -1148,8 +1148,6 @@ bool CLayer::UpdateMaskForSector(CPoint sector, const CRect& sectorRect, const i
 
 	mask.Attach(m_layerMask);
 
-	float hVal = 0.0f;
-
 	AutogenLayerMask(sectorRect, resolution, vTexOffset, hmap, m_layerMask);
 
 	return true;

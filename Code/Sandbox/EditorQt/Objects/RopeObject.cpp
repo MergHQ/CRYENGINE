@@ -203,8 +203,6 @@ void CRopeObject::Display(CObjectRenderHelper& objRenderHelper)
 	bool bPrevShowIcons = dc.showIcons;
 	const Matrix34& wtm = GetWorldTM();
 
-	bool bLineWidth = 0;
-
 	if (m_points.size() > 1)
 	{
 		IRopeRenderNode* pRopeNode = GetRenderNode();
@@ -219,8 +217,6 @@ void CRopeObject::Display(CObjectRenderHelper& objRenderHelper)
 
 			IRopeRenderNode::SEndPointLink links[2];
 			pRopeNode->GetEndPointLinks(links);
-
-			float s = m_ropeParams.fAnchorRadius;
 
 			bool bCalcBBox = false;
 			for (int i = 0; i < 2; i++)
@@ -306,7 +302,6 @@ void CRopeObject::UpdateGameArea()
 		std::vector<Vec3> points;
 		if (GetPointCount() > 1)
 		{
-			const Matrix34& wtm = GetWorldTM();
 			points.resize(GetPointCount());
 			for (int i = 0; i < GetPointCount(); i++)
 			{
@@ -611,7 +606,6 @@ XmlNodeRef CRopeObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 		// Export Points
 		if (!m_points.empty())
 		{
-			const Matrix34& wtm = GetWorldTM();
 			XmlNodeRef points = xmlNodeRope->newChild("Points");
 
 			for (auto const& point : m_points)

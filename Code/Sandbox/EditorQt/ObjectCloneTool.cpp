@@ -120,8 +120,6 @@ bool CObjectCloneTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint&
 			const CSelectionGroup* selection = GetIEditorImpl()->GetSelection();
 			if (!selection->IsEmpty())
 			{
-				bool followTerrain = false;
-
 				Vec3 p1 = m_initPosition;
 				Vec3 p2 = view->MapViewToCP(point);
 				if (p2.IsZero())

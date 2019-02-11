@@ -231,8 +231,6 @@ void CImagePainter::PaintBrushWithPattern(const float fpx, const float fpy, CIma
 	uint32* src = outImage.GetData();
 	uint32* pat = imgPattern.GetData();
 
-	int value = brush.color;
-
 	// Calculate the maximum distance
 	fMaxDist = brush.fRadius;
 

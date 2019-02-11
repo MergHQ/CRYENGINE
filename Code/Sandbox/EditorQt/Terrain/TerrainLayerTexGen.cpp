@@ -103,8 +103,6 @@ bool CTerrainLayerTexGen::UpdateSectorLayers(CPoint sector)
 
 	// Update heightmap for that sector.
 	{
-		int sectorFlags = GetSectorFlags(sector);
-
 		// Allocate heightmap big enough.
 		{
 			if (!hmap.Allocate(recHMap.Width(), recHMap.Height()))
@@ -165,7 +163,6 @@ bool CTerrainLayerTexGen::GenerateSectorTexture(CPoint sector, const CRect& rect
 	bool bShowWater = flags & ETTG_SHOW_WATER;
 	bool bConvertToABGR = flags & ETTG_ABGR;
 	bool bNoTexture = flags & ETTG_NOTEXTURE;
-	bool bUseLightmap = flags & ETTG_USE_LIGHTMAPS;
 	m_bLog = !(flags & ETTG_QUIET);
 
 	if (flags & ETTG_INVALIDATE_LAYERS)
@@ -176,12 +173,13 @@ bool CTerrainLayerTexGen::GenerateSectorTexture(CPoint sector, const CRect& rect
 	uint32 i;
 
 	CCryEditDoc* pDocument = GetIEditorImpl()->GetDocument();
+	CRY_ASSERT(pDocument);
+
 	CHeightmap* pHeightmap = GetIEditorImpl()->GetHeightmap();
+	CRY_ASSERT(pHeightmap);
+
 	CTexSectorInfo& texsectorInfo = GetCTexSectorInfo(sector);
 	int sectorFlags = texsectorInfo.m_Flags;
-
-	assert(pDocument);
-	assert(pHeightmap);
 
 	float waterLevel = pHeightmap->GetWaterLevel();
 

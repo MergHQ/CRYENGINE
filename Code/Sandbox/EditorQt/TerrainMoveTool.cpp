@@ -338,9 +338,6 @@ void CTerrainMoveTool::OnManipulatorDrag(IDisplayViewport* view, ITransformManip
 
 		Vec3 max = pHeightmap->HmapToWorld(CPoint(pHeightmap->GetWidth(), pHeightmap->GetHeight()));
 
-		uint32 wid = max.x;
-		uint32 hey = max.y;
-
 		if (m_target.isSelected)
 			pos = m_target.pos;
 

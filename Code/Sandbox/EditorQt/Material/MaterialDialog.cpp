@@ -1473,7 +1473,7 @@ BOOL CMaterialDialog::OnInitDialog()
 
 	m_propsCtrl.Create(WS_CHILD | WS_BORDER, rc, this, AFX_IDW_PANE_FIRST);
 	m_vars = m_pMaterialUI->CreateVars();
-	CPropertyItem* varsItems = m_propsCtrl.AddVarBlock(m_vars);
+	m_propsCtrl.AddVarBlock(m_vars);
 
 	m_publicVarsItems = m_propsCtrl.FindItemByVar(m_pMaterialUI->tableShaderParams.GetVar());
 	m_shaderGenParamsVarsItem = m_propsCtrl.FindItemByVar(m_pMaterialUI->tableShaderGenParams.GetVar());
@@ -1865,7 +1865,6 @@ void CMaterialDialog::OnUpdateProperties(IVariable* var)
 		bShaderGenMaskChanged = m_shaderGenParamsVars->IsContainsVariable(var);
 
 	bool bMtlLayersChanged = false;
-	SMaterialLayerResources* pMtlLayerResources = mtl->GetMtlLayerResources();
 	int nCurrLayer = -1;
 
 	// Check for shader changes

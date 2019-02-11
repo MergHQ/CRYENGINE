@@ -414,7 +414,6 @@ void CSequencerDopeSheetBase::DrawTimeline(CDC* dc, const CRect& rcUpdate)
 	CPen* prevPen;
 
 	// Draw time ticks every tick step seconds.
-	const Range& timeRange = m_timeRange;
 	CString str;
 
 	dc->SetTextColor(textCol);
@@ -611,7 +610,7 @@ void CSequencerDopeSheetBase::SetTimeScale(float timeScale, float fAnchorTime)
 	//m_leftOffset - m_scrollOffset.x + time*m_timeScale
 	double fOldOffset = -fAnchorTime * m_timeScale;
 
-	double fOldScale = m_timeScale;
+	//double fOldScale = m_timeScale;
 	if (timeScale < 0.001f)
 		timeScale = 0.001f;
 	if (timeScale > 100000.0f)
@@ -1087,7 +1086,7 @@ void CSequencerDopeSheetBase::OnLButtonUp(UINT nFlags, CPoint point)
 {
 	if (m_mouseMode == MOUSE_MODE_SELECT)
 	{
-		bool prevSelected = m_bAnySelected;
+		//bool prevSelected = m_bAnySelected;
 		// Check if any key are selected.
 		m_rcSelect -= m_scrollOffset;
 		SelectKeys(m_rcSelect);
@@ -1448,7 +1447,7 @@ void CSequencerDopeSheetBase::OnLButtonDblClk(UINT nFlags, CPoint point)
 	// Add key here.
 	int item = ItemFromPoint(point);
 	CSequencerTrack* track = GetTrack(item);
-	CSequencerNode* node = GetNode(item);
+
 	if (track)
 	{
 		bool keyCreated = false;
@@ -2548,7 +2547,6 @@ void CSequencerDopeSheetBase::SetHorizontalExtent(int min, int max)
 	m_scrollMax = max;
 	m_itemWidth = max - min;
 	int nPage = m_rcClient.Width() / 2;
-	int sx = m_itemWidth - nPage + m_leftOffset;
 
 	SCROLLINFO si;
 	ZeroStruct(si);
@@ -2760,7 +2758,6 @@ void CSequencerDopeSheetBase::StartDraggingKeys(CPoint point)
 		return;
 	}
 
-	CSequencerTrack* pFirstTrack = selectedKeys.keys[0].pTrack;
 	CSequencerNode* pFirstNode = selectedKeys.keys[0].pNode;
 	for (std::vector<CSequencerUtils::SelectedKey>::iterator iter = selectedKeys.keys.begin(), iterEnd = selectedKeys.keys.end(); iter != iterEnd; ++iter)
 	{
@@ -2954,7 +2951,6 @@ void CSequencerDopeSheetBase::DeserializeTracks(const XmlNodeRef& source)
 
 bool CSequencerDopeSheetBase::PasteKeys(CSequencerNode* pAnimNode, CSequencerTrack* pAnimTrack, float fTimeOffset)
 {
-	int nPasteToItem = -1;
 	if (!pAnimNode)
 	{
 		// Find mouse-over item.
@@ -3022,8 +3018,6 @@ bool CSequencerDopeSheetBase::PasteKeys(CSequencerNode* pAnimNode, CSequencerTra
 	bool bUseGivenTrackIfPossible = false;
 	if (nNumTracksToPaste == 1 && pAnimTrack)
 		bUseGivenTrackIfPossible = true;
-
-	bool bIsPasted = false;
 
 	UnselectAllKeys(false);
 	m_bAnySelected = true;

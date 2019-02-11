@@ -2448,7 +2448,6 @@ void CHeightmap::CalcSurfaceTypes(const CRect* rect)
 			// For every pixel of layer update surface type.
 			for (uint32 y = rc.top; y < rc.bottom; y++)
 			{
-				int yp = y * m_iWidth;
 				for (uint32 x = rc.left; x < rc.right; x++)
 				{
 					SSurfaceTypeItem st;
@@ -2773,8 +2772,8 @@ void CHeightmap::SerializeTerrain(CXmlArchive& xmlAr)
 		{
 			if (xmlAr.pNamedData->GetDataBlock("TerrainCompiledData", pData, nSize))
 			{
-				STerrainChunkHeader* pHeader = (STerrainChunkHeader*)pData;
-				/*if ((pHeader->nVersion == TERRAIN_CHUNK_VERSION) && (pHeader->TerrainInfo.sectorSize_InMeters == pHeader->TerrainInfo.unitSize_InMeters * SECTOR_SIZE_IN_UNITS))
+				/*STerrainChunkHeader* pHeader = (STerrainChunkHeader*)pData;
+				if ((pHeader->nVersion == TERRAIN_CHUNK_VERSION) && (pHeader->TerrainInfo.sectorSize_InMeters == pHeader->TerrainInfo.unitSize_InMeters * SECTOR_SIZE_IN_UNITS))
 				   {
 				   SSectorInfo si;
 				   GetSectorsInfo(si);
@@ -2832,7 +2831,6 @@ void CHeightmap::MakeHole(int x1, int y1, int width, int height, bool bMake)
 	if (GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
 		GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CUndoHeightmapInfo(x1, y1, width + 1, height + 1, this));
 
-	I3DEngine* engine = GetIEditorImpl()->Get3DEngine();
 	int x2 = x1 + width;
 	int y2 = y1 + height;
 	for (int x = x1; x <= x2; x++)
@@ -2966,8 +2964,6 @@ float CHeightmap::GetZInterpolated(const float x, const float y)
 
 float CHeightmap::GetAccurateSlope(const float x, const float y)
 {
-	uint32 iHeightmapWidth = GetWidth();
-
 	if (x <= 0 || y <= 0 || x >= m_iWidth - 1 || y >= m_iHeight - 1)
 		return 0;
 
@@ -3031,7 +3027,6 @@ void CHeightmap::SetSurfaceTextureSize(int width, int height)
 int CHeightmap::LogLayerSizes()
 {
 	int totalSize = 0;
-	CCryEditDoc* doc = GetIEditorImpl()->GetDocument();
 	int numLayers = GetIEditorImpl()->GetTerrainManager()->GetLayerCount();
 	for (int i = 0; i < numLayers; i++)
 	{
@@ -3918,7 +3913,7 @@ void CHeightmap::UpdateSectorTexture(CPoint texsector,
 	{
 		uint32 dwNeededResolution = dwFullResolution / texSectorCount;
 
-		CTerrainSector* st = m_terrainGrid.GetSector(texsector);
+		m_terrainGrid.GetSector(texsector);
 
 		bool bFullRefreshRequired = true;
 
@@ -4308,7 +4303,6 @@ float SampleImage(const CFloatImage* pImage, float x, float y)
 	float v1 = pImage->ValueAt(x1, y1);
 	float v2 = pImage->ValueAt(x2, y1);
 	float v3 = pImage->ValueAt(x1, y2);
-	float v4 = pImage->ValueAt(x2, y2);
 	return (v1 * (1 - tx) + v2 * tx) * (1 - ty) + (v3 * (1 - tx) + v2 * tx) * ty;
 }
 

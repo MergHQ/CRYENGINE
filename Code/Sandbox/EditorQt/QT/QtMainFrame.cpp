@@ -883,7 +883,6 @@ void CEditorMainFrame::CreateToolsMenu()
 			continue;
 		}
 
-		int numClasses = numClassesInCategory[pViewClass->Category()];
 		string name = pViewClass->ClassName();
 		string category = pViewClass->Category();
 
@@ -942,8 +941,6 @@ void CEditorMainFrame::CreateToolsMenu()
 
 	for (QAction* pAction : actions)
 	{
-		QMenu* menu = pAction->menu();
-
 		if (!pAction->menu())
 		{
 			looseActions.append(pAction);
@@ -1342,7 +1339,6 @@ void CEditorMainFrame::InitActions()
 			if (pythonProp.isValid())
 			{
 				//Note : could also replace the action in the menu by a QPythonAction
-				QObject* object = action->parent();
 				string command("python.execute '");
 				command += pythonProp.toString().toStdString().c_str() + '\'';
 				action->SetCommand(command);
@@ -1472,7 +1468,6 @@ void CEditorMainFrame::contextMenuEvent(QContextMenuEvent* pEvent)
 
 void CEditorMainFrame::OnCustomizeToolBar()
 {
-	CEditorToolBarService* pToolBarService =  GetIEditor()->GetEditorToolBarService();
 	CToolBarCustomizeDialog* pToolBarCustomizeDialog = new CToolBarCustomizeDialog(this, "MainFrame");
 
 	pToolBarCustomizeDialog->signalToolBarAdded.Connect(this, &CEditorMainFrame::OnToolBarAdded);

@@ -194,7 +194,6 @@ void CRiverObject::SetMaterial(IEditorMaterial* mtl)
 //////////////////////////////////////////////////////////////////////////
 void CRiverObject::UpdateSectors()
 {
-	IWaterVolumeRenderNode* pOriginatorProxy(0);
 	if (!m_sectors.empty())
 	{
 		const Matrix34& wtm(GetWorldTM());

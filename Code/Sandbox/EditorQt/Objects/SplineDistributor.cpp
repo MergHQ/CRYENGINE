@@ -217,7 +217,6 @@ void CSplineDistributor::UpdateEngineNode(bool bOnlyTransform)
 	if (m_renderNodes.empty() || GetPointCount() == 0)
 		return;
 
-	float length = GetSplineLength();
 	int numObjects = m_renderNodes.size();
 
 	for (int i = 0; i < numObjects; ++i)

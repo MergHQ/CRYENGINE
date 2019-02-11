@@ -934,9 +934,6 @@ void CParticleDialog::OnLButtonUp(UINT nFlags, CPoint point)
 		else
 		{
 			// Not dropped inside tree.
-
-			CWnd* wnd = WindowFromPoint(p);
-
 			CUndo undo("Assign ParticleEffect");
 
 			CViewport* viewport = GetIEditorImpl()->GetViewManager()->GetViewportAtPoint(p);

@@ -121,9 +121,6 @@ void         CRGBLayer::SetSubImageTransformed(const CImageEx* pImage, const Mat
 	float fSrcTop = clamp_tpl(min(min(p0.y, p1.y), min(p2.y, p3.y)), 0.0f, 1.0f);
 	float fSrcBottom = clamp_tpl(max(max(p0.y, p1.y), max(p2.y, p3.y)), 0.0f, 1.0f);
 
-	float fSrcWidth = fSrcRight - fSrcLeft;
-	float fSrcHeight = fSrcBottom - fSrcTop;
-
 	uint32 dwTileX1 = (uint32)(fSrcLeft * m_dwTileCountX);
 	uint32 dwTileY1 = (uint32)(fSrcTop * m_dwTileCountY);
 	uint32 dwTileX2 = (uint32)ceil(fSrcRight * m_dwTileCountX);
@@ -215,7 +212,7 @@ bool CRGBLayer::ChangeTileResolution(const uint32 dwTileX, const uint32 dwTileY,
 
 	CImageEx newImage;
 
-	uint32 dwOldSize = tile->m_pTileImage->GetWidth();
+	//uint32 dwOldSize = tile->m_pTileImage->GetWidth();
 	//uint32 dwNewSize = bRaise ? dwOldSize*2 : dwOldSize/2;
 
 	if (dwNewSize < 8)

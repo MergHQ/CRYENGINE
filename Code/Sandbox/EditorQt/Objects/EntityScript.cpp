@@ -1103,8 +1103,6 @@ void CEntityScript::RunMethod(IEntity* pEntity, const string& method)
 		return;
 	}
 
-	IScriptSystem* scriptSystem = GetIEditorImpl()->GetSystem()->GetIScriptSystem();
-
 	Script::CallMethod(scriptTable, (const char*)method);
 }
 

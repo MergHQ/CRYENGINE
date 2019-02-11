@@ -94,7 +94,6 @@ int CIconManager::GetIconTexture(const char* iconName)
 		if (stricmp(ext, "bmp") == 0 || stricmp(ext, "jpg") == 0)
 		{
 			int sz = image.GetWidth() * image.GetHeight();
-			int h = image.GetHeight();
 			uint8* buf = (uint8*)image.GetData();
 			for (int i = 0; i < sz; i++)
 			{

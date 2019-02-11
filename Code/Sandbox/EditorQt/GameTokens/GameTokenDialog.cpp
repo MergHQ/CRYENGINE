@@ -775,13 +775,9 @@ void CGameTokenDialog::OnLButtonUp(UINT nFlags, CPoint point)
 		else
 		{
 			// Not droped inside tree.
-
-			CWnd* wnd = WindowFromPoint(p);
-
 			CViewport* viewport = GetIEditorImpl()->GetViewManager()->GetViewportAtPoint(p);
 			if (viewport)
 			{
-				bool bHit = false;
 				CPoint vp = p;
 				viewport->ScreenToClient(&vp);
 			}

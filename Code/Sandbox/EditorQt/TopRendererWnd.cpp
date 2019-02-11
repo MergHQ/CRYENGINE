@@ -146,7 +146,6 @@ void CTopRendererWnd::InitHeightmapAlignment()
 		SSectorInfo si;
 		heightmap->GetSectorsInfo(si);
 		float sizeMeters = si.numSectors * si.sectorSize;
-		float mid = sizeMeters / 2;
 		//SetScrollOffset( 0,-sizeMeters );
 
 		SetZoom(0.95f * m_rcClient.Width() / sizeMeters, CPoint(m_rcClient.Width() / 2, m_rcClient.Height() / 2));
@@ -259,8 +258,6 @@ void CTopRendererWnd::ResetSurfaceTexture()
 	////////////////////////////////////////////////////////////////////////
 
 	unsigned int i, j;
-	DWORD* pSurfaceTextureData = NULL;
-	DWORD* pPixData = NULL, * pPixDataEnd = NULL;
 	CBitmap bmpLoad;
 	BOOL bReturn;
 

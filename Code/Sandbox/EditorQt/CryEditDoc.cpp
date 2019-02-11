@@ -831,7 +831,6 @@ BOOL CCryEditDoc::DoOpenDocument(LPCTSTR lpszPathName, TOpenDocContext& context)
 	// write the full filename and path to the log
 	m_bLoadFailed = false;
 
-	ICryPak* pIPak = GetIEditorImpl()->GetSystem()->GetIPak();
 	string levelPath = PathUtil::GetPathWithoutFilename(relativeLevelName);
 
 	TDocMultiArchive arrXmlAr = {};
@@ -1472,10 +1471,10 @@ void CCryEditDoc::InitEmptyLevel(int resolution, float unitSize, bool bUseTerrai
 	}
 
 	auto* pObjectLayerManager = GetIEditorImpl()->GetObjectManager()->GetLayersManager();
-	CObjectLayer* pMainLayer = pObjectLayerManager->CreateLayer("Main");
+	pObjectLayerManager->CreateLayer("Main");
 	if (bUseTerrain)
 	{
-		CObjectLayer* pTerrainLayer = pObjectLayerManager->CreateLayer("Terrain", eObjectLayerType_Terrain);
+		pObjectLayerManager->CreateLayer("Terrain", eObjectLayerType_Terrain);
 	}
 
 	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_LOAD_END, 0, 0);
@@ -1547,8 +1546,6 @@ string CCryEditDoc::GetCryIndexPath(const LPCTSTR levelFilePath)
 
 BOOL CCryEditDoc::LoadXmlArchiveArray(TDocMultiArchive& arrXmlAr, const string& relativeLevelName, const string& levelPath)
 {
-	ICryPak* pIPak = GetIEditorImpl()->GetSystem()->GetIPak();
-
 	//if (m_pSWDoc->IsNull())
 	{
 		CXmlArchive* pXmlAr = new CXmlArchive();

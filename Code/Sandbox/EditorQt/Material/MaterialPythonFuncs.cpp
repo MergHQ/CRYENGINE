@@ -1843,9 +1843,6 @@ void PySetProperty(const char* pPathAndMaterialName, const char* pPathAndPropert
 		}
 		else if (propertyName == "Specular Level")
 		{
-			float tempFloat = pMaterial->GetShaderResources().m_LMaterial.m_Specular.a;
-			float tempFloat2 = value.property.floatValue;
-
 			ColorF colorFloat = pMaterial->GetShaderResources().m_LMaterial.m_Specular;
 			colorFloat.a = value.property.floatValue;
 			colorFloat.r *= colorFloat.a;

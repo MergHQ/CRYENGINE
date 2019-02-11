@@ -638,7 +638,6 @@ bool CLevelEditor::OnNew()
 
 	// levelSaveDialog has got the confirmation to overwrite the level.
 	CAsset* pAsset = CAssetManager::GetInstance()->FindAssetForMetadata(cryassetPath);
-	size_t filesDeleted = 0;
 
 	// If new level path does not point to a level
 	if (!pAsset)

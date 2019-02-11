@@ -1981,7 +1981,6 @@ void CHyperGraphView::OnLButtonDblClk(UINT nFlags, CPoint point)
 //////////////////////////////////////////////////////////////////////////
 void CHyperGraphView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
-	bool processed = true;
 	switch (nChar)
 	{
 	case VK_ADD:
@@ -2152,7 +2151,6 @@ void CHyperGraphView::UpdateDebugCount(CHyperNode* pNode)
 		return;
 
 	std::vector<CHyperEdge*> edges;
-	int count = pNode->GetDebugCount();
 
 	if (m_pGraph->FindEdges(pNode, edges))
 	{
@@ -2938,7 +2936,7 @@ bool CHyperGraphView::GetNodesInRect(const CRect& viewRect, std::multimap<int, C
 {
 	if (!m_pGraph)
 		return false;
-	bool bFirst = true;
+
 	Gdiplus::RectF localRect = ViewToLocalRect(viewRect);
 	IHyperGraphEnumerator* pEnum = m_pGraph->GetNodesEnumerator();
 	nodes.clear();

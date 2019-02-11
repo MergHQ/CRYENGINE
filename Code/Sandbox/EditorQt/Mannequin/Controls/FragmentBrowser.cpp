@@ -493,7 +493,6 @@ void CFragmentBrowser::RebuildAll()
 		}
 
 		int indexSelected = 0;
-		int indexExpanded = 0;
 
 		HTREEITEM currentItem = m_treeCtrl.GetRootItem();
 		while (currentItem)
@@ -744,7 +743,7 @@ void CFragmentBrowser::OnBeginDrag(NMHDR* pNMHdr, LRESULT* pResult)
 			COleDataSource* dataSource = CreateFragmentDescriptionDataSource(fragmentData);
 			if (dataSource)
 			{
-				DROPEFFECT dropEffect = dataSource->DoDragDrop(DROPEFFECT_MOVE | DROPEFFECT_LINK);
+				dataSource->DoDragDrop(DROPEFFECT_MOVE | DROPEFFECT_LINK);
 			}
 		}
 	}
@@ -1814,8 +1813,6 @@ void CFragmentBrowser::BuildFragment(FragmentID fragID)
 
 		for (uint32 o = 0; o < numOptions; o++)
 		{
-			const CFragment* fragment = m_animDB->GetEntry(fragID, t, o);
-
 			char subFragNameBuffer[128];
 			const char* nodeName;
 
@@ -1904,9 +1901,6 @@ void CFragmentBrowser::OnNewBtn()
 	if (HTREEITEM item = m_treeCtrl.GetSelectedItem())
 	{
 		STreeFragmentData* pFragData = (STreeFragmentData*)m_treeCtrl.GetItemData(item);
-
-		HTREEITEM parentItemID = item;
-
 		FragmentID fragID;
 		SFragTagState newTagState;
 		if (pFragData)

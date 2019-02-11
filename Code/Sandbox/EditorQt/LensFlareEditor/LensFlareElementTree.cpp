@@ -495,8 +495,6 @@ void CLensFlareElementTree::ElementChanged(CLensFlareElement* pPrevLensFlareElem
 
 void CLensFlareElementTree::OnTvnBeginlabeleditTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	LPNMTVDISPINFO pTVDispInfo = reinterpret_cast<LPNMTVDISPINFO>(pNMHDR);
-
 	// Mark message as handled and suppress default handling
 	*pResult = 0;
 }

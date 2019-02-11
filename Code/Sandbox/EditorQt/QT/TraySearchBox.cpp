@@ -205,7 +205,6 @@ void CTraySearchBox::AddActionsToModel(QMenu* pParentMenu, QStandardItemModel* p
 
 void CTraySearchBox::keyPressEvent(QKeyEvent* pKeyEvent)
 {
-	int key = pKeyEvent->key();
 	switch (pKeyEvent->key())
 	{
 	case Qt::Key_Escape:

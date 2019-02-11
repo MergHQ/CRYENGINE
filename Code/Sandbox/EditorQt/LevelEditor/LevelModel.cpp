@@ -706,7 +706,7 @@ bool CLevelModel::dropMimeData(const QMimeData* pData, Qt::DropAction action, in
 		return false;
 	}
 	bool hasOnlyLayers = layers.size() && !objects.size();
-	bool hasOnlyObjects = !layers.size() && objects.size();
+
 	if (!parent.isValid())
 	{
 		if (!hasOnlyLayers)

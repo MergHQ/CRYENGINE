@@ -1340,8 +1340,6 @@ bool CMaterial::IsBreakable2D() const
 	if ((GetFlags() & MTL_FLAG_NODRAW) != 0)
 		return false;
 
-	int result = 0;
-
 	const string& surfaceTypeName = GetSurfaceTypeName();
 	if (ISurfaceTypeManager* pSurfaceManager = GetIEditorImpl()->Get3DEngine()->GetMaterialManager()->GetSurfaceTypeManager())
 	{

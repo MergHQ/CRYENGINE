@@ -588,7 +588,6 @@ void ValidatePositions()
 	std::vector<CBaseObject*> foundObjects;
 
 	std::vector<CryGUID> objIDs;
-	bool reportVeg = false;
 
 	for (int i1 = 0; i1 < objCount; ++i1)
 	{

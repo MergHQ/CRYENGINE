@@ -345,7 +345,6 @@ QVariant CLevelLayerModel::data(const QModelIndex& index, int role) const
 				category = "Legacy_Entities";
 
 			//Special Case 2: Use specific Group Icon
-			ObjectType objType = classDesc->GetObjectType();
 			if (classDesc->GetObjectType() == ObjectType::OBJTYPE_GROUP)
 			{
 				category = "Group";

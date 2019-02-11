@@ -232,11 +232,7 @@ bool CBrushObject::Init(CBaseObject* prev, const string& file)
 
 	if (IsCreateGameObjects())
 	{
-		if (prev)
-		{
-			CBrushObject* brushObj = (CBrushObject*)prev;
-		}
-		else if (!file.IsEmpty())
+		if (!prev && !file.IsEmpty())
 		{
 			// Create brush from geometry.
 			mv_geometryFile = file;
@@ -890,8 +886,6 @@ void CBrushObject::UpdateEngineNode(bool bOnlyTransform)
 		m_renderFlags |= ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND;
 	if (!mv_ignoreDecalBlend)
 		m_renderFlags |= ERF_FOB_ALLOW_DECAL_BLEND;
-
-	int flags = GetRenderFlags();
 
 	m_pRenderNode->SetRndFlags(m_renderFlags);
 

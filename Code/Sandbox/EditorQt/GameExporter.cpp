@@ -813,8 +813,8 @@ bool CGameExporter::ExportSurfaceTexture(CPakFile& levelPakFile, const char* szF
 	lSectorDimensions[0] = 256;                                         // good texture size for streaming
 	lSectorDimensions[1] = lSectorDimensions[0] / OCCMAP_DOWNSCALE_FACTOR;
 
-	CRGBLayer* pRGBLayer = GetIEditorImpl()->GetTerrainManager()->GetRGBLayer();
-	uint32 dwMinRequiredTextureExtend = pRGBLayer->CalcMinRequiredTextureExtend();
+	//CRGBLayer* pRGBLayer = GetIEditorImpl()->GetTerrainManager()->GetRGBLayer();
+	//uint32 dwMinRequiredTextureExtend = pRGBLayer->CalcMinRequiredTextureExtend();
 
 	// if the requested texture resolution is higher then the painted one, stick to this resolution
 	//	if(lSectorDimensions[0]*numSectors>dwMinRequiredTextureExtend)
@@ -868,7 +868,6 @@ bool CGameExporter::ExportSurfaceTexture(CPakFile& levelPakFile, const char* szF
 	uint32 dwUsedTextureIds = 0;
 	std::vector<int16> IndexBlock;    // >=0 means x is texture index, -1 is used as terminator
 	{
-		uint32 dwMaxTextureRes = pRGBLayer->CalcMinRequiredTextureExtend();
 		_BuildIndexBlockRecursive(lSectorDimensions[0], IndexBlock, dwUsedTextureIds, fLeft, fTop, fWidth, fHeight);
 
 		uint16 dwSize = (uint16)IndexBlock.size();
@@ -897,9 +896,6 @@ bool CGameExporter::ExportSurfaceTexture(CPakFile& levelPakFile, const char* szF
 		LightGen.Init(pHeightmap->GetWidth(), false);
 
 		CWaitProgress progress("Generating Terrain Texture");
-
-		int nSectorId = 0;
-
 		SProgressHelper phelper(progress, dwUsedTextureIds, LightGen, ctcFile, IndexBlock, DataSeekPos, ElementFileSize, szFilePathName);
 
 		phelper.m_dwLayerExtends[0] = lSectorDimensions[0];
@@ -1019,9 +1015,6 @@ float GetFilteredNoiseVal(int X, int Y)
 bool CGameExporter::_ExportSurfaceTextureRecursive(CPakFile& levelPakFile, CCryMemFile& fileTemp, SProgressHelper& phelper, const int iParentIndex, SRecursionHelperQuarter& rDestPiece,
                                                    const float fMinX, const float fMinY, const float fWidth, const float fHeight, const uint32 dwRecursionDepth)
 {
-	// to jump over one mip level
-	uint32 dwMipSectorCount = 1 << (dwRecursionDepth + 1);
-
 	SSectorInfo sectorInfo;
 	CHeightmap* pHeightmap = GetIEditorImpl()->GetHeightmap();
 	pHeightmap->GetSectorsInfo(sectorInfo);

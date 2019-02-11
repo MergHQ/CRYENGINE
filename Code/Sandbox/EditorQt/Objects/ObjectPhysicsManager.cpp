@@ -329,7 +329,7 @@ void CObjectPhysicsManager::Command_GenerateJoints()
 		if (pSelection->GetObject(iobj)->GetType() == OBJTYPE_ENTITY || pSelection->GetObject(iobj)->GetType() == OBJTYPE_BRUSH)
 		{
 			CBaseObject* pObj = pSelection->GetObject(iobj);
-			IStatObj* pTrgObj, * pCutObj = 0;
+			IStatObj* pTrgObj = nullptr;
 			IMaterial* pSrcMtl = pObj->GetMaterial() ? pObj->GetMaterial()->GetMatInfo() : 0, * pTplMtl = 0;
 			if (pObj->GetType() == OBJTYPE_ENTITY)
 			{
@@ -445,9 +445,7 @@ void CObjectPhysicsManager::Command_GenerateJoints()
 							if (VerifySingleProxy(pObjTpl))
 							{
 								IStatObj* pCutObj = pObjTpl->Clone(true, true, true), * pSrcObj = pSubObj0->pStatObj;
-								AABB boxTpl = pObjTpl->GetAABB(), boxSrc = pSrcObj->GetAABB();
-								Vec3 szSrc = boxSrc.GetSize(), szTpl = boxTpl.GetSize();
-								int imaxTpl = idxmax3(szTpl), iminTpl = idxmin3(szTpl), imaxSrc = idxmax3(szSrc), iminSrc = idxmin3(szSrc) != imaxSrc ? idxmin3(szSrc) : 2 - imaxSrc;
+								AABB boxTpl = pObjTpl->GetAABB();
 								gwd[1].R = align == -2 ? tplR.T() * gwd[1].R : Matrix33(IDENTITY);
 								AlignCutTemplate(pSrcObj, pObjTpl, align, tplOffs, tplScale, gwd[1].R, gwd[1].offset, gwd[1].scale);
 								gEnv->pLog->LogToConsole("Template orientation in source: x-> %c%c, y-> %c%c, z-> %c%c",

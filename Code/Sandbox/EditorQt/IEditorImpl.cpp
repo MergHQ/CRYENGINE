@@ -686,7 +686,6 @@ bool CEditorImpl::StartObjectCreation(const char* type, const char* file /*= nul
 
 CBaseObject* CEditorImpl::GetSelectedObject()
 {
-	CBaseObject* obj = 0;
 	if (m_pObjectManager->GetSelection()->GetCount() != 1)
 		return 0;
 	return m_pObjectManager->GetSelection()->GetObject(0);

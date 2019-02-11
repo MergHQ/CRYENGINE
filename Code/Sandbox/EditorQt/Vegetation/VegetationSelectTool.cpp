@@ -395,7 +395,6 @@ CVegetationInstance* CVegetationSelectTool::SelectThingAtPoint(CViewport* pView,
 		std::vector<CVegetationInstance*> instances;
 		m_pVegetationMap->GetAllInstances(instances);
 
-		int minimumDistanceIndex = -1;
 		float currentSquareDistance = FLT_MAX;
 		float nextSquareDistance = 0;
 		CVegetationInstance* pSelectedInstance(nullptr);
@@ -440,7 +439,7 @@ CVegetationInstance* CVegetationSelectTool::SelectThingAtPoint(CViewport* pView,
 		auto objTypes = ent_static;
 		auto flags = rwi_stop_at_pierceable | rwi_ignore_terrain_holes;
 		ray_hit hit;
-		auto col = pPhysics->RayWorldIntersection(raySrc, rayDir * 1000.0f, objTypes, flags, &hit, 1);
+		pPhysics->RayWorldIntersection(raySrc, rayDir * 1000.0f, objTypes, flags, &hit, 1);
 		if (hit.dist > 0 && !hit.bTerrain && hit.dist < terrainHitDistance)
 		{
 			pe_status_pos statusPos;

@@ -1067,7 +1067,6 @@ void CMannequinModelViewport::DrawEntityAndChildren(CEntityObject* pEntityObject
 
 void CMannequinModelViewport::DrawCharacter(ICharacterInstance* pInstance, const SRendParams& rRP, const SRenderingPassInfo& passInfo)
 {
-	f32 FrameTime = GetIEditorImpl()->GetSystem()->GetITimer()->GetFrameTime();
 	m_AverageFrameTime = pInstance->GetAverageFrameTime();
 
 	GetIEditorImpl()->GetSystem()->GetIConsole()->GetCVar("ca_DrawLocator")->Set(mv_showLocator);

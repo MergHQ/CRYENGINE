@@ -722,7 +722,6 @@ int CPrefabManager::GetPrefabInstanceCount(IDataBaseItem* pPrefabItem)
 
 	if (pPrefabItem)
 	{
-		CPrefabManager* pManager = GetIEditor()->GetPrefabManager();
 		for (int i = 0, prefabsFound(prefabObjects.size()); i < prefabsFound; ++i)
 		{
 			CPrefabObject* pPrefabObject = (CPrefabObject*)prefabObjects[i];

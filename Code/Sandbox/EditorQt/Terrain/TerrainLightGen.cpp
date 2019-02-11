@@ -132,8 +132,6 @@ float CTerrainLightGen::GetSunAmount(const float* inpHeightmapData, int iniX, in
 	int iDirX = (int)(vSunShadowVector.x * fForwardStepSize * iFixPointBase);
 	int iDirY = (int)(vSunShadowVector.y * fForwardStepSize * iFixPointBase);
 
-	float fLen = 0.0f;
-
 	int iX = iniX * iFixPointBase + iFixPointBase / 2, iY = iniY * iFixPointBase + iFixPointBase / 2;
 
 	float fZBottom = fZInit + 0.1f, fZTop = fZInit + 1.4f;
@@ -258,12 +256,9 @@ bool CTerrainLightGen::GenerateSectorTexture(CPoint sector, const CRect& rect, i
 
 	CCryEditDoc* pDocument = GetIEditorImpl()->GetDocument();
 	CHeightmap* pHeightmap = GetIEditorImpl()->GetHeightmap();
-	int sectorFlags = GetCLightGenSectorFlag(sector);
 
 	assert(pDocument);
 	assert(pHeightmap);
-
-	float waterLevel = pHeightmap->GetWaterLevel();
 
 	// Update heightmap for that sector.
 	UpdateSectorHeightmap(sector);
@@ -480,20 +475,14 @@ bool CTerrainLightGen::GenerateLightmap(CPoint sector, LightingSettings* pSettin
 	assert(fSunCol[0] >= 0 && fSunCol[1] >= 0 && fSunCol[2] >= 0);
 	assert(fSkyCol[0] >= 0 && fSkyCol[1] >= 0 && fSkyCol[2] >= 0);
 
-	float fHeighmapSizeInMeters = m_heightmap->GetWidth() * m_heightmap->GetUnitSize();
-
 	// Calculate a height scalation factor. This is needed to convert the
 	// relative nature of the height values. The contrast value is used to
 	// raise the slope of the triangles, whos results in higher contrast lighting
 
 	float fHeightScale = CalcHeightScaleForLighting(pSettings, m_resolution);
-	float fInvHeightScale = 1.0f / fHeightScale;
 
 	if (genFlags & ETTG_SHOW_WATER)
 		fWaterZ = m_heightmap->GetWaterLevel();
-
-	uint32 iWidth = m_resolution;
-	uint32 iHeight = m_resolution;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Prepare constants.
@@ -511,9 +500,8 @@ bool CTerrainLightGen::GenerateLightmap(CPoint sector, LightingSettings* pSettin
 	// Generate shadowmap.
 	//////////////////////////////////////////////////////////////////////////
 	CByteImage shadowmap;
-	float shadowAmmount = 255.0f * pSettings->iShadowIntensity / 100.0f;
-	//	float fShadowIntensity = (float)pSettings->iShadowIntensity/100.0f;
-	float fShadowBlur = pSettings->iShadowBlur * 0.04f;       // defines the slope blurring, 0=no blurring, .. (angle would be better but is slower)
+	//float shadowAmmount = 255.0f * pSettings->iShadowIntensity / 100.0f;
+	//float fShadowIntensity = (float)pSettings->iShadowIntensity/100.0f;
 
 	//	bool bStatObjShadows = genFlags & ETTG_STATOBJ_SHADOWS;
 	bool bPaintBrightness = (genFlags & ETTG_STATOBJ_PAINTBRIGHTNESS) && (GetIEditorImpl()->GetVegetationMap() != 0);
@@ -571,9 +559,7 @@ bool CTerrainLightGen::GenerateLightmap(CPoint sector, LightingSettings* pSettin
 		vSunShadowVector = lightVector * invR;
 	}
 
-	float fSkyLuminosity = ColorLuminosity(fSkyCol[0], fSkyCol[1], fSkyCol[2]);
 	float fBrightness, fBrightnessShadowmap;
-	float fBrighter = 0.f;
 
 	uint32 dwWidth = lightmap.GetWidth();
 	uint32 dwHeight = lightmap.GetHeight();
@@ -581,8 +567,6 @@ bool CTerrainLightGen::GenerateLightmap(CPoint sector, LightingSettings* pSettin
 	//	if(lightAlgo==ePrecise || lightAlgo==eDynamicSun)
 	{
 		assert(m_heightmap->GetWidth() == m_heightmap->GetHeight());
-		bool bHaveSkyColor = (fSkyCol[0] != 0) || (fSkyCol[1] != 0) || (fSkyCol[2] != 0);
-		float fSunBrightness = 0;
 
 		////////////////////////////////////////////////////////////////////////
 		// Precise lighting
@@ -696,11 +680,6 @@ void CTerrainLightGen::GenerateShadowmap(CPoint sector, CByteImage& shadowmap, f
 	//	return;
 	SSectorInfo si;
 	GetIEditorImpl()->GetHeightmap()->GetSectorsInfo(si);
-
-	int width = shadowmap.GetWidth();
-	int height = shadowmap.GetHeight();
-
-	int numSectors = si.numSectors;
 
 	int sectorTexSize = shadowmap.GetWidth();
 	int sectorTexSize2 = sectorTexSize * 2;
@@ -838,7 +817,6 @@ void CTerrainLightGen::SetSectorFlags(CPoint sector, int flags)
 
 void CTerrainLightGen::InvalidateLighting()
 {
-	size_t nCount(0);
 	size_t nTotal(m_sectorGrid.size());
 	for (int i = 0; i < nTotal; i++)
 	{
@@ -867,7 +845,6 @@ void CTerrainLightGen::GetSubImageStretched(const float fSrcLeft, const float fS
 
 	CCryEditDoc* pDocument = GetIEditorImpl()->GetDocument();
 	LightingSettings* pSettings = pDocument->GetLighting();
-	bool bTerrainShadows = pSettings->bTerrainShadows && (!(genFlags & ETTG_NO_TERRAIN_SHADOWS));
 	bool bPaintBrightness = (genFlags & ETTG_STATOBJ_PAINTBRIGHTNESS) && (GetIEditorImpl()->GetVegetationMap() != 0);
 
 	if (!RefreshAccessibility(pSettings, genFlags & ~ETTG_PREVIEW))
@@ -983,11 +960,6 @@ void CTerrainLightGen::GetSubImageStretched(const float fSrcLeft, const float fS
 	if (bPaintBrightness)
 	{
 		CVegetationMap* pVegetationMap = GetIEditorImpl()->GetVegetationMap();
-
-		CHeightmap& roHeightMap = *GetIEditorImpl()->GetHeightmap();
-
-		float fTerrainWidth = roHeightMap.GetWidth() * roHeightMap.GetUnitSize();
-		float fTerrainHeight = roHeightMap.GetWidth() * roHeightMap.GetUnitSize();
 
 		//////////////////////////////////////////////////////////////////////////
 		// Paint vegetation brightness

@@ -470,8 +470,6 @@ void CVegetationMap::UpdateGroundDecal(CVegetationInstance* pInst)
 	{
 		pInst->pRenderNodeGroundDecal = (IDecalRenderNode*)GetIEditorImpl()->Get3DEngine()->CreateRenderNode(eERType_Decal);
 
-		bool boIsSelected = false;
-
 		// update basic entity render flags
 		unsigned int renderFlags = 0;
 		pInst->pRenderNodeGroundDecal->SetRndFlags(renderFlags);
@@ -1302,10 +1300,6 @@ void CVegetationMap::ClearBrush(CRect& rc, bool bCircle, CVegetationObject* pObj
 
 	Vec3 p(0, 0, 0);
 
-	float unitSize = GetIEditorImpl()->GetHeightmap()->GetUnitSize();
-
-	int mapSize = m_numSectors * m_sectorSize;
-
 	// Intersect with map rectangle.
 	// Offset by 1 from each side.
 	float brushRadius2 = (rc.right - rc.left) * (rc.right - rc.left) / 4;
@@ -1327,7 +1321,6 @@ void CVegetationMap::ClearBrush(CRect& rc, bool bCircle, CVegetationObject* pObj
 	sy1 = max(sy1, 0);
 	sy2 = min(sy2, m_numSectors - 1);
 
-	CVegetationInstance* next = 0;
 	for (int y = sy1; y <= sy2; y++)
 	{
 		for (int x = sx1; x <= sx2; x++)
@@ -1670,7 +1663,6 @@ void CVegetationMap::ClearRotateInstances(CVegetationObject* object)
 
 void CVegetationMap::DistributeVegetationObject(CVegetationObject* object)
 {
-	auto numInstances = object->GetNumInstances();
 	CRect rc(0, 0, GetSize(), GetSize());
 	// emits signalVegetationObjectChanged
 	PaintBrush(rc, false, object);
@@ -1678,7 +1670,6 @@ void CVegetationMap::DistributeVegetationObject(CVegetationObject* object)
 
 void CVegetationMap::ClearVegetationObject(CVegetationObject* object)
 {
-	auto numInstances = object->GetNumInstances();
 	CRect rc(0, 0, GetSize(), GetSize());
 	// emits signalVegetationObjectChanged
 	ClearBrush(rc, false, object);
@@ -2162,7 +2153,6 @@ void CVegetationMap::LoadOldStuff(CXmlArchive& xmlAr)
 		if (nSize != 2048 * 2048)
 			return;
 
-		int numObjects = m_objects.size();
 		CVegetationObject* usedObjects[256];
 		ZeroStruct(usedObjects);
 
@@ -2206,7 +2196,6 @@ void CVegetationMap::GenerateShadowMap(CByteImage& shadowmap, float shadowAmmoun
 	CHeightmap* pHeightmap = GetIEditorImpl()->GetHeightmap();
 
 	int width = shadowmap.GetWidth();
-	int height = shadowmap.GetHeight();
 
 	//@FIXME: Hardcoded.
 	int sectorSizeInMeters = 64;
@@ -2803,8 +2792,6 @@ void CVegetationMap::GenerateBillboards(IConsoleCmdArgs*)
 	const Vec3 vAt(-1, 0, 0);
 	const Vec3 vUp(0, 0, 1);
 
-	float fCustomDistRatio = 1;
-
 	int nSpriteResFinal = 128;
 	int nSpriteResInt = nSpriteResFinal << 1;
 	int nLine = (int)sqrtf(FAR_TEX_COUNT);
@@ -2828,6 +2815,7 @@ void CVegetationMap::GenerateBillboards(IConsoleCmdArgs*)
 			float fRadiusVert = pObj->GetRadiusVert();
 			float fAngle = FAR_TEX_ANGLE * (float)j + 90.f;
 
+			//float fCustomDistRatio = 1.0f;
 			float fGenDist = 18.f; // *max(0.5f, BI.fDistRatio * fCustomDistRatio);
 
 			float fFOV = 0.565f / fGenDist * 200.f * (gf_PI / 180.0f);

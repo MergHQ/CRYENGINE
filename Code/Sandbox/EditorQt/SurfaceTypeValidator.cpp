@@ -17,7 +17,6 @@ void CSurfaceTypeValidator::Validate()
 {
 	LOADING_TIME_PROFILE_SECTION;
 	IObjectManager* pObjectManager = GetIEditorImpl()->GetObjectManager();
-	ISurfaceTypeManager* pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
 	std::set<string> reportedMaterialNames;
 
 	CBaseObjectsArray objects;

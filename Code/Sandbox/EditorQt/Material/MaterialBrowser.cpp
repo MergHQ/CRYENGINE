@@ -903,7 +903,8 @@ void CMaterialBrowserCtrl::AddItemToTree(IDataBaseItem* pItem, bool bUpdate)
 		return;
 
 	m_bIgnoreSelectionChange = true;
-	CMaterialBrowserRecord* pRecord = InsertItemToTree(pItem);
+	//CMaterialBrowserRecord* pRecord = InsertItemToTree(pItem);
+	InsertItemToTree(pItem);
 	if (bUpdate)
 	{
 		//m_tree.UpdateRecord(pRecord,TRUE); // Crashes
@@ -2574,7 +2575,7 @@ uint32 CMaterialBrowserCtrl::MaterialNameToCrc32(const char* str)
 CMaterialBrowserRecord* CMaterialBrowserCtrl::GetSelectedRecord()
 {
 	CMaterialBrowserRecord* pFirstFoundRecord = 0;
-	CMaterialBrowserRecord* pFocusedRecord = 0;
+
 	int nCount = m_tree.GetSelectedRows()->GetCount();
 	for (int i = 0; i < nCount; i++)
 	{

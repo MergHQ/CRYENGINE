@@ -111,7 +111,6 @@ void CTerrainGIGen::GetMaterialColor(IMaterial* pMat, std::vector<ColorF>& rSubM
 			if (((pMat->GetFlags() & MTL_FLAG_NODRAW) == 0))
 			{
 				const SShaderItem& shaderItem = pMat->GetShaderItem();
-				const SEfResTexture* pMtlDiffuseTex = shaderItem.m_pShaderResources ? shaderItem.m_pShaderResources->GetTexture(EFTT_DIFFUSE) : NULL;
 				//				SInputShaderResources& rRes = pMat->GetShaderResources();
 				//				ColorF matCol(rRes.m_LMaterial.m_Front.m_Diffuse);
 				ColorF matCol = shaderItem.m_pShaderResources->GetColorValue(EFTT_DIFFUSE);
@@ -400,7 +399,6 @@ const bool CTerrainGIGen::ProcessMesh
 		if (newCol.a <= 0.000001f)
 			continue;//proxy mat
 
-		float area = 0;
 		Vec3 center(0, 0, 0);//center mean
 
 		Vec3 max(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
@@ -486,7 +484,6 @@ const bool CTerrainGIGen::ProcessMesh
 		if (cLocMaxMin.x <= 0.1f || cLocMaxMin.y <= 0.1f || cLocMaxMin.z <= 0.1f)
 			isPlane = true;//will not get a CBBoxRaster
 		Vec3 centerDiff;
-		float weight = 1.f;
 		rMinMaxCalculated = bbox;
 		const Vec3 cCalcCenter((min + max) * 0.5f);
 		const float cXYExtensionScale = std::min(1.f, 1.f / 200.f * (bbox.GetSize().x * bbox.GetSize().x + bbox.GetSize().y * bbox.GetSize().y));//xy scale for alpha weighting
@@ -1263,7 +1260,6 @@ const bool CTerrainGIGen::InterpolateGridPoint
 	float distSum = 0.f;
 	float dist[TQuadTree::scInitalSliceGranularity];
 	assert(cLeafCount < TQuadTree::scInitalSliceGranularity);
-	int nonZeroCount = 0;
 
 	float curClosestDist[2] = { std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
 	for (int i = 0; i < cLeafCount; ++i)
@@ -1356,8 +1352,6 @@ void CTerrainGIGen::AddSamplesAroundObjects
 		++convertFactorShift;
 	assert((cResMultiplier << convertFactorShift) == m_Config.baseGranularity);
 
-	uint32 obstructionIndex = 0xFFFFFFFF;//dummy
-	float obstructionAmount = 1.f;//dummy
 	const uint32 cCalcWidth = rHMapCalc.m_Sink.GetGridResolution();
 
 	//sample refinement constants
@@ -1399,9 +1393,7 @@ void CTerrainGIGen::AddSamplesAroundObjects
 		const TVec2F& crMax(rObject.maxOuter);
 		TVec2F minInner(rObject.minInner);
 		TVec2F maxInner(rObject.maxInner);
-		//do ray casting if object type is not entity, if brushes are not too large or far off ground
-		bool doObjectRayCasting = (cObjectType != eOT_Entity) && ((cObjectType == eOT_Veg) ||
-		                                                          ((rObject.maxAxisExtension < scMaxObjectSampleExtension) && (rObject.distToGround < scMaxDistToGroundRC)));
+
 		//add object link computation (find sample most close to center and set object link to it)
 		const TVec2F cCenterPos((crMin + crMax) * 0.5f);
 		uint32 cGridPosX = ((uint32)cCenterPos.x >> convertFactorShift) << convertFactorShift;
@@ -1413,7 +1405,7 @@ void CTerrainGIGen::AddSamplesAroundObjects
 		//WORLD_HMAP_COORDINATE_EXCHANGE
 		const unsigned int cGridIndexI = cGridPosY >> worldToHMapMulShift;
 		const unsigned int cGridIndexJ = cGridPosX >> worldToHMapMulShift;
-		SSHSample& rSample = rHMapCalc.GetSampleAt(cGridIndexI, cGridIndexJ);
+
 		if (cObjectType != eOT_Voxel)
 		{
 			//now ensure object sample does not stuck in one of the bounding boxes of the neighbor objects
@@ -2044,7 +2036,7 @@ void CTerrainGIGen::CalcTerrainOcclusion
 			const uint8 cTerrainMarkVal = m_TerrainMapMarks[(tempY >> hmapUnitShift) * m_TerrainMapRes + (tempX >> hmapUnitShift)];
 			if (cTerrainMarkVal == 0)
 				continue;
-			float height = 1.f;
+
 			//generate heightmap normal
 			const Vec3 cNormal = ComputeHeightmapNormal
 			                     (
@@ -2293,7 +2285,7 @@ void CTerrainGIGen::OnBeforeProcessing(const uint32 cFullWidth, CTerrainObjectMa
 						continue;
 					}
 					//if sample is obstructed by a large building, mark it as fully obstructed and set the respective colours
-					uint32 reflCol = 0;
+
 					//get 4 neighbor samples
 					SSHSample& rSampleLeft = rCalc.GetSampleAt(i - 1, j);
 					SSHSample& rSampleRight = rCalc.GetSampleAt(i + 1, j);

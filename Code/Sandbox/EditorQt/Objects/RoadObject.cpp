@@ -384,9 +384,6 @@ void CRoadObject::SetMaterial(IEditorMaterial* pMaterial)
 
 void CRoadObject::DrawSectorLines(SDisplayContext& dc)
 {
-	const Matrix34& wtm = GetWorldTM();
-	float fPointSize = 0.5f;
-
 	dc.SetColor(RGB(127, 127, 255));
 	for (size_t i = 0; i < m_sectors.size(); ++i)
 	{

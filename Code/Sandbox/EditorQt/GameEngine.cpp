@@ -285,7 +285,7 @@ void KillMemory(IConsoleCmdArgs* /* pArgs */)
 			size = size > kLimit ? kLimit : size;
 		}
 
-		uint8* alloc = new uint8[size];
+		new uint8[size];
 		// cppcheck-suppress memleak
 	}
 }
