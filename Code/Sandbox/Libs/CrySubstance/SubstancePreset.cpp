@@ -117,10 +117,7 @@ void CSubstancePreset::SSerializer::SInputCategory::Serialize(Serialization::IAr
 		}
 		else if (desc.mIdentifier == "$outputsize")
 		{
-
 			SubstanceAir::InputInstanceInt2* inst = static_cast<SubstanceAir::InputInstanceInt2*>(var);
-			const SubstanceAir::InputDescInt2& tDesc = inst->getDesc();
-
 	
 			if (ar.isEdit())
 			{
@@ -624,9 +621,7 @@ void CSubstancePreset::LoadGraphInstance()
 
 		}
 		else if (inputInstance->mDesc.mType == Substance_IType_Image)
-		{			
-			SubstanceAir::InputInstanceImage* inst = static_cast<SubstanceAir::InputInstanceImage*>(inputInstance);
-			const SubstanceAir::InputDescImage& tDesc = inst->getDesc();
+		{
 			m_usedImages[inputInstance->mDesc.mUid] = string();
 		}
 	}

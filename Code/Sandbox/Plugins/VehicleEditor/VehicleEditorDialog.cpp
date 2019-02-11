@@ -1006,7 +1006,6 @@ bool CVehicleEditorDialog::OpenVehicle(bool silent /*=false*/)
 		return false;
 	}
 
-	bool ok = false;
 	string sFile, sClass;
 
 	CBaseObject* obj = group->GetObject(0);

@@ -353,8 +353,6 @@ void CDialogFolderCtrl::Reload()
 //////////////////////////////////////////////////////////////////////////
 void CDialogFolderCtrl::UpdateSCStatus(CTreeScriptRecord* pRec, CEditorDialogScript* pScript, bool bUseCached)
 {
-	uint32 scAttr = SCC_FILE_ATTRIBUTE_NORMAL;
-
 	int index = 0;
 
 	if (pRec->IsGroup())

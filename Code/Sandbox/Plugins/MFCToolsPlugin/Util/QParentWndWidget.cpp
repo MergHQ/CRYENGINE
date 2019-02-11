@@ -84,8 +84,6 @@ void QParentWndWidget::hide()
 
 void QParentWndWidget::center()
 {
-	const QWidget* child = findChild<QWidget*>();
-
 	RECT rect;
 	GetWindowRect(m_parentToCenterOn, &rect);
 	setGeometry((rect.right - rect.left) / 2 + rect.left,

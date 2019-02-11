@@ -412,12 +412,12 @@ void CNumberCtrl::OnMouseMove(UINT nFlags, CPoint point)
 			y *= abs(y);
 		SetInternalValue(Round(GetInternalValue() - m_step * y, m_step));
 
-		// Make sure Edit control is updated here immidietly.
+		// Make sure Edit control is updated here immediately.
 		m_edit.UpdateWindow();
 
 		CPoint cp;
 		GetCursorPos(&cp);
-		int sX = GetSystemMetrics(SM_CXSCREEN);
+
 		int sY = GetSystemMetrics(SM_CYSCREEN);
 
 		if (cp.y < 20 || cp.y > sY - 20)

@@ -214,7 +214,6 @@ bool Converter::ConvertMeshToBrushDesigner(IIndexedMesh* pMesh, Model* pModel)
 		return false;
 
 	int numVerts = pMesh->GetVertexCount();
-	int numFaces = pMesh->GetIndexCount() / 3;
 
 	IIndexedMesh::SMeshDescription md;
 	pMesh->GetMeshDescription(md);

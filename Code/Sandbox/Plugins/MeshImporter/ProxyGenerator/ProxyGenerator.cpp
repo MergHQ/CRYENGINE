@@ -176,7 +176,6 @@ SPhysProxies* CProxyGenerator::AddPhysProxies(const FbxTool::SNode* pFbxNode, co
 
 phys_geometry* CProxyGenerator::AddProxyGeom(SPhysProxies* pPhysProxies, IGeometry* pProxyGeom, bool replaceIfPresent)
 {
-	int sIdx = -1;
 	const mesh_data* mdOld, * mdNew = (const mesh_data*)pProxyGeom->GetData();
 	IGeomManager* pGeoman = gEnv->pPhysicalWorld->GetGeomManager();
 	phys_geometry* pPhysGeom = pGeoman->RegisterGeometry(pProxyGeom, 0);

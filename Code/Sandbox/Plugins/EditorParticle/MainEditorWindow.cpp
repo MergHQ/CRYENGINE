@@ -175,9 +175,6 @@ void CParticleEditor::InitToolbar(QVBoxLayout* pWindowLayout)
 	// Add Effect Toolbar
 	{
 		QToolBar* pToolBar = new QToolBar("Effect");
-
-		QMenu* pTemplatesMenu = new QMenu();
-
 		pToolBar->addSeparator();
 		ADD_BUTTON(OnReloadEffect, "Reload Effect", 0, "icons:General/Reload.ico")
 		ADD_BUTTON(OnShowEffectOptions, "Show Effect Options", 0, "icons:General/Options.ico")

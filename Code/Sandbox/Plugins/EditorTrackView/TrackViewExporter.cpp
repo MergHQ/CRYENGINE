@@ -413,9 +413,6 @@ bool CTrackViewExporter::ShowFBXExportDialog()
 		m_pivotEntityObject = static_cast<CEntityObject*>(GetIEditor()->GetObjectManager()->FindObject(pivotObjectNode->GetName()));
 	}
 
-	bool bExportMasterCamOnly = false;
-	bool bExportLocalToSelected = false;
-
 	QFBXExporterDlg fbxExporterDlg(false, false, (m_pivotEntityObject != nullptr));
 	fbxExporterDlg.exec();
 
@@ -599,8 +596,6 @@ void CTrackViewExporter::AddEntityAnimationData(const CTrackViewTrack* pTrack, S
 
 			float fOutTantentX = currentCurve.m_keys[keyNumber].m_controlPoint.m_outTangent.x;
 			float fOutTantentY = currentCurve.m_keys[keyNumber].m_controlPoint.m_outTangent.y;
-
-			float fTangentDelta = 0.01f;
 
 			if (fInTantentX == 0.0f)
 			{
@@ -1122,13 +1117,12 @@ bool CTrackViewExporter::ProcessObjectsForExport()
 	m_data.AddObject(pObj);
 
 	const int32 fpsTimeInterval = SAnimTime::numTicksPerSecond / m_FBXBakedExportFramerate;
-	IObjectManager* pObjMgr = GetIEditor()->GetObjectManager();
 
 	CTrackViewPlugin::GetAnimationContext()->SetRecording(false);
 	CTrackViewPlugin::GetAnimationContext()->PlayPause(false);
 
-	CViewport* vp = GetIEditor()->GetViewManager()->GetSelectedViewport();
-	/*
+	/*CViewport* vp = GetIEditor()->GetViewManager()->GetSelectedViewport();
+	
 	   if (vp && vp->IsRenderViewport())
 	    ((CRenderViewport*)vp)->SetSequenceCamera();
 	 */

@@ -168,7 +168,7 @@ void CVehicleHelper::Display(CObjectRenderHelper& objRenderHelper)
 {
 	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	COLORREF color = CMFCUtils::ColorBToColorRef(GetColor());
-	float radius = RADIUS;
+	//float radius = RADIUS;
 
 	//dc.SetColor( color, 0.5f );
 	//dc.DrawBall( GetPos(), radius );

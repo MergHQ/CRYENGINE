@@ -38,9 +38,9 @@ SubdivisionContext Subdivision::CreateSubdividedMesh(SubdivisionContext& sc)
 	std::vector<HE_Edge>& he_fp_edges = next_sc.fullPatches->GetEdges();
 	std::vector<HE_Face>& he_fp_faces = next_sc.fullPatches->GetFaces();
 
-	std::vector<HE_Vertex>& he_tp_vertices = next_sc.transitionPatches->GetVertices();
-	std::vector<HE_Edge>& he_tp_edges = next_sc.transitionPatches->GetEdges();
-	std::vector<HE_Face>& he_tp_faces = next_sc.transitionPatches->GetFaces();
+	//std::vector<HE_Vertex>& he_tp_vertices = next_sc.transitionPatches->GetVertices();
+	//std::vector<HE_Edge>& he_tp_edges = next_sc.transitionPatches->GetEdges();
+	//std::vector<HE_Face>& he_tp_faces = next_sc.transitionPatches->GetFaces();
 
 	he_fp_vertices.reserve(sc.fullPatches->GetVertexCount() * 4);
 	he_fp_edges.reserve(sc.fullPatches->GetEdgeCount() * 4);

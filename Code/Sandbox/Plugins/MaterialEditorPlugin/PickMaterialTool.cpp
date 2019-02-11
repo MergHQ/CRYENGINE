@@ -101,7 +101,6 @@ bool CPickMaterialTool::OnMouseMove(CViewport* view, UINT nFlags, CPoint point)
 	view->SetCurrentCursor(STD_CURSOR_HIT, "");
 
 	IMaterial* pNearestMaterial(NULL);
-	IEntity* pNearnestEntity(NULL);
 
 	CSurfaceInfoPicker surfacePicker;
 	int nPickObjectGroupFlag = CSurfaceInfoPicker::ePOG_All;

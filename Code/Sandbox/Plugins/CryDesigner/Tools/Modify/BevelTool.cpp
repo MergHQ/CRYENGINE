@@ -775,7 +775,6 @@ void BevelTool::PP0_SubdivideSpreadedEdge(int nSubdivideNum)
 
 			DESIGNER_ASSERT(nCount < 2);
 
-			int nEdgeIndex = -1;
 			BrushEdge3D sideEdge = pEdgePolygon->GetEdge(i);
 
 			BrushVec3 vApexPos = rp.mapBetweenEdgeIdToApex[edgeId];

@@ -351,7 +351,7 @@ ELatheErrorCode LatheTool::CreateShapeAlongPath(
 	GetModel()->RemovePolygon(pInitProfilePolygon);
 	GetModel()->MovePolygonsBetweenShelves(eShelf_Construction, eShelf_Base);
 
-	bool bSubtractedFloor = GluePolygons(pPathPolygon, newPolygons);
+	GluePolygons(pPathPolygon, newPolygons);
 
 	ElementSet* pSelected = DesignerSession::GetInstance()->GetSelectedElements();
 	pSelected->Clear();

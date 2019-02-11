@@ -1518,7 +1518,6 @@ void CJoystickCtrl::RenderString(CDC& dc, const char* szString, const Vec2& posi
 	enum {MAX_STRING = 256};
 	WCHAR wszString[MAX_STRING];
 
-	int length = min((szString ? int(strlen(szString)) : 0), MAX_STRING - 1);
 	Unicode::Convert(wszString, szString ? szString : "");
 
 	if (wcslen(wszString) == 0)

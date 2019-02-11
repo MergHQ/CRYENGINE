@@ -171,8 +171,6 @@ void ShapeTool::RegisterShape(PolygonPtr pFloorPolygon)
 	GetModel()->SetShelf(eShelf_Construction);
 	GetModel()->RemovePolygonsWithSpecificFlagsAndPlane(ePolyFlag_Mirrored);
 
-	bool bUniquePolygon = GetModel()->GetPolygonCount() == 1 ? true : false;
-
 	PolygonList polygons;
 	GetModel()->GetPolygonList(polygons);
 	PolygonPtr pPolygonTouchingFloor = NULL;

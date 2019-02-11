@@ -139,7 +139,6 @@ bool SpotManager::AddPolygonToDesignerFromSpotList(Model* pModel, const SpotList
 		{
 			BrushVec3 firstVertex;
 			BrushVec3 lastVertex;
-			bool bOnlyAdd = false;
 
 			bool bFirstOnEdge =
 			  pPolygon0->GetFirstVertex(firstVertex) &&

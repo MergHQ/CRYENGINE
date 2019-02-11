@@ -1012,8 +1012,6 @@ void CSplineCtrlEx::DrawKeys(CDC* pDC, int splineIndex, float startTime, float e
 	pen.CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
 	CPen* pOldPen = pDC->SelectObject(&pen);
 
-	int lastKeyX = m_rcSpline.left - 100;
-
 	int i;
 
 	int nTotalNumberOfDimensions(0);
@@ -1175,9 +1173,7 @@ void CSplineCtrlEx::OnLButtonDown(UINT nFlags, CPoint point)
 	ISplineInterpolator* pSpline = HitSpline(point);
 
 	// Get control key status.
-	bool bAltClick = CheckVirtualKey(VK_MENU);
 	bool bCtrlClick = CheckVirtualKey(VK_CONTROL);
-	bool bShiftClick = CheckVirtualKey(VK_SHIFT);
 
 	switch (m_hitCode)
 	{
@@ -1394,8 +1390,6 @@ void CSplineCtrlEx::OnMouseMove(UINT nFlags, CPoint point)
 			StoreUndo();
 
 			bool bAltClick = CheckVirtualKey(VK_MENU);
-			bool bCtrlClick = CheckVirtualKey(VK_CONTROL);
-			bool bShiftClick = CheckVirtualKey(VK_SHIFT);
 
 			Vec2 v0 = ClientToWorld(m_cMouseDownPos);
 			Vec2 v1 = ClientToWorld(point);
@@ -1567,14 +1561,6 @@ void CSplineCtrlEx::OnLButtonUp(UINT nFlags, CPoint point)
 
 		if (!m_startedDragging)
 		{
-			// Get control key status.
-			bool bAltClick = CheckVirtualKey(VK_MENU);
-			bool bCtrlClick = CheckVirtualKey(VK_CONTROL);
-			bool bShiftClick = CheckVirtualKey(VK_SHIFT);
-
-			bool bAddSelect = bCtrlClick;
-			bool bUnselect = bAltClick;
-
 			HitSpline(m_cMouseDownPos);
 		}
 	}
@@ -1584,7 +1570,6 @@ void CSplineCtrlEx::OnLButtonUp(UINT nFlags, CPoint point)
 		// Get control key status.
 		bool bAltClick = CheckVirtualKey(VK_MENU);
 		bool bCtrlClick = CheckVirtualKey(VK_CONTROL);
-		bool bShiftClick = CheckVirtualKey(VK_SHIFT);
 
 		bool bAddSelect = bCtrlClick;
 		bool bUnselect = bAltClick;
@@ -2791,7 +2776,6 @@ void CSplineCtrlEx::SelectAll()
 	for (int splineIndex = 0, splineCount = m_splines.size(); splineIndex < splineCount; ++splineIndex)
 	{
 		ISplineInterpolator* pSpline = m_splines[splineIndex].pSpline;
-		ISplineInterpolator* pDetailSpline = m_splines[splineIndex].pDetailSpline;
 
 		for (int i = 0; i < (int)pSpline->GetKeyCount(); i++)
 			pSpline->SelectKeyAllDimensions(i, true);

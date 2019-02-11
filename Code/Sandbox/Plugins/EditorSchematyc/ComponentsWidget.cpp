@@ -459,7 +459,7 @@ void CComponentsWidget::OnSelectionChanged(const QItemSelection& selected, const
 		if (row != -1)
 		{
 			QModelIndex index = selections.at(0);
-			CComponentItem* pItem = reinterpret_cast<CComponentItem*>(index.data(CComponentsModel::Role_Pointer).value<quintptr>());
+			//CComponentItem* pItem = reinterpret_cast<CComponentItem*>(index.data(CComponentsModel::Role_Pointer).value<quintptr>());
 
 			if (CBroadcastManager* pBroadcastManager = CBroadcastManager::Get(this))
 			{

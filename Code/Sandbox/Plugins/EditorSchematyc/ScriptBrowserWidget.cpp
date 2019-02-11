@@ -1847,8 +1847,6 @@ void CScriptBrowserWidget::OnRemoveItem()
 					{
 						if (szElementType && m_pModel)
 						{
-							Schematyc::IScriptElement* pRootElement = m_pModel->GetRootElement();
-
 							GetIEditor()->GetIUndoManager()->Begin();
 							stack_string desc("Added ");
 							desc.append(szElementType);

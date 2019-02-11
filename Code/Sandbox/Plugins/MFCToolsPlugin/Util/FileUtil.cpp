@@ -2070,13 +2070,8 @@ CFileUtil::ECopyTreeResult CFileUtil::MoveFile(const CString& strSourceFile, con
 
 	ECopyTreeResult eCopyResult(ETREECOPYOK);
 
-	intptr_t hfil(0);
-
 	std::vector<CString> cFiles;
 	std::vector<CString> cDirectories;
-
-	size_t nCurrent(0);
-	size_t nTotal(0);
 
 	// First we copy all files (maybe not all, depending on the user options...)
 	BOOL bnLastFileWasCopied(FALSE);
@@ -2306,7 +2301,6 @@ void CFileUtil::GatherAssetFilenamesFromLevel(std::set<CString>& rOutFilenames, 
 	CBaseObjectsArray objArr;
 	CUsedResources usedRes;
 	IMaterialManager* pMtlMan = GetIEditor()->Get3DEngine()->GetMaterialManager();
-	IParticleManager* pPartMan = GetIEditor()->Get3DEngine()->GetParticleManager();
 
 	GetIEditor()->GetObjectManager()->GetObjects(objArr);
 
@@ -2404,7 +2398,6 @@ void CFileUtil::GatherAssetFilenamesFromLevel(DynArray<dll_string>& outFilenames
 	CBaseObjectsArray objArr;
 	CUsedResources usedRes;
 	IMaterialManager* pMtlMan = GetIEditor()->Get3DEngine()->GetMaterialManager();
-	IParticleManager* pPartMan = GetIEditor()->Get3DEngine()->GetParticleManager();
 	bool newFile = true;
 	GetIEditor()->GetObjectManager()->GetObjects(objArr);
 
@@ -2446,8 +2439,6 @@ void CFileUtil::GatherAssetFilenamesFromLevel(DynArray<dll_string>& outFilenames
 		for (size_t i = 0; i < mtlCount; ++i)
 		{
 			IMaterial* pMtl = arrMtls[i];
-
-			size_t subMtls = pMtl->GetSubMtlCount();
 
 			// for the main material
 			IRenderShaderResources* pShaderRes = pMtl->GetShaderItem().m_pShaderResources;

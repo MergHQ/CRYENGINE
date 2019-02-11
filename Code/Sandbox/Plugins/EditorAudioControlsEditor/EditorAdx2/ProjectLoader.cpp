@@ -235,7 +235,7 @@ void CProjectLoader::ParseBusSettings(XmlNodeRef const pNode, CItem& parent)
 		if (pChild != nullptr)
 		{
 			char const* const szNameValue = pChild->getAttr(s_nameAttrib);
-			CItem* const pItem = CreateItem(szNameValue, EItemType::DspBusSetting, &parent, EItemFlags::None);
+			CreateItem(szNameValue, EItemType::DspBusSetting, &parent, EItemFlags::None);
 			ParseBusesAndSnapshots(pChild);
 		}
 	}
@@ -257,12 +257,12 @@ void CProjectLoader::ParseBusesAndSnapshots(XmlNodeRef const pNode)
 			if (_stricmp(typeAttrib, "CriMw.CriAtomCraft.AcCore.AcOoDspBus") == 0)
 			{
 				char const* const szNameValue = pChild->getAttr(s_nameAttrib);
-				CItem* const pItem = CreateItem(szNameValue, EItemType::Bus, m_pBusesFolder, EItemFlags::None);
+				CreateItem(szNameValue, EItemType::Bus, m_pBusesFolder, EItemFlags::None);
 			}
 			else if (_stricmp(typeAttrib, "CriMw.CriAtomCraft.AcCore.AcOoDspSettingSnapshot") == 0)
 			{
 				char const* const szNameValue = pChild->getAttr(s_nameAttrib);
-				CItem* const pItem = CreateItem(szNameValue, EItemType::Snapshot, m_pSnapShotsFolder, EItemFlags::None);
+				CreateItem(szNameValue, EItemType::Snapshot, m_pSnapShotsFolder, EItemFlags::None);
 			}
 		}
 	}

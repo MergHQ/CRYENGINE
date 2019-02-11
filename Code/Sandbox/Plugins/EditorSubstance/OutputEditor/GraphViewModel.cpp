@@ -165,7 +165,6 @@ namespace EditorSubstance
 				CSubstanceConnectionItem* pConnectionItem = new CSubstanceConnectionItem(sourcePin, targetPin, *this);
 				m_connections.push_back(pConnectionItem);
 
-				COriginalOutputNode& sourceNode = static_cast<COriginalOutputNode&>(sourcePin.GetNodeItem());
 				CVirtualOutputNode& targetNode = static_cast<CVirtualOutputNode&>(targetPin.GetNodeItem());
 				targetNode.UpdatePinState();
 				// TODO: Move this into a CNodeGraphViewModel method that gets called from here.
@@ -196,11 +195,7 @@ namespace EditorSubstance
 				SignalRemoveConnection(connection);
 				m_connections.erase(result);
 
-				COriginalOutputNode& sourceNode = static_cast<COriginalOutputNode&>(connection.GetSourcePinItem().GetNodeItem());
 				CVirtualOutputNode& targetNode = static_cast<CVirtualOutputNode&>(connection.GetTargetPinItem().GetNodeItem());
-
-
-
 				CSubstanceConnectionItem* pConnection = static_cast<CSubstanceConnectionItem*>(&connection);
 				delete pConnection;
 				targetNode.UpdatePinState();

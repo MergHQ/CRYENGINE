@@ -417,7 +417,7 @@ void CVehiclePartsPanel::OnTreeKeyDown(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	// Key press in items tree view.
 
-	bool bCtrl = GetAsyncKeyState(VK_CONTROL) != 0;
+	//bool bCtrl = GetAsyncKeyState(VK_CONTROL) != 0;
 	NMTVKEYDOWN* nm = (NMTVKEYDOWN*)pNMHDR;
 
 	//if (bCtrl && (nm->wVKey == 'c' || nm->wVKey == 'C'))
@@ -537,8 +537,6 @@ void CVehiclePartsPanel::OnItemRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 	// Show helper menu.
 	CPoint point;
-
-	CVehiclePart* pPart = 0;
 
 	// Find node under mouse.
 	GetCursorPos(&point);
@@ -796,7 +794,7 @@ void CVehiclePartsPanel::OnHelperNew()
 	Vec3 pos = m_pVehicle->GetWorldTM().GetTranslation() + Vec3(0, 0, bbox.GetSize().z + 0.25f);
 
 	// create obj
-	CVehicleHelper* pHelper = CreateHelperObject(pos, Vec3(FORWARD_DIRECTION), "NewHelper", UNIQUE, SELECTED, EDIT_LABEL, FROM_EDITOR);
+	CreateHelperObject(pos, Vec3(FORWARD_DIRECTION), "NewHelper", UNIQUE, SELECTED, EDIT_LABEL, FROM_EDITOR);
 
 	GetIEditor()->SetModifiedFlag();
 }
@@ -1182,7 +1180,7 @@ void CVehiclePartsPanel::CreateHelpersFromStatObj(IStatObj* pObj, CVehiclePart* 
 
 			vPos = m_pVehicle->GetCEntity()->GetIEntity()->GetWorldTM().TransformPoint(vPos);
 			CString name(pSubObj->name);
-			CVehicleHelper* pHelper = CreateHelperObject(vPos, Vec3(FORWARD_DIRECTION), name, NOT_UNIQUE, NOT_SELECTED, NOT_EDIT_LABEL, FROM_ASSET);
+			CreateHelperObject(vPos, Vec3(FORWARD_DIRECTION), name, NOT_UNIQUE, NOT_SELECTED, NOT_EDIT_LABEL, FROM_ASSET);
 		}
 	}
 
@@ -1438,10 +1436,8 @@ void CVehiclePartsPanel::FillSeats()
 {
 	CScopedSuspendUndo susp;
 	// get seats, create objs, add to treeview
-	HTREEITEM hRoot = m_hVehicle;
 
 	IVariable* pData = GetVariable();
-
 	IVariable* pSeatsVar = GetChildVar(pData, "Seats", false);
 
 	if (pSeatsVar)
@@ -1493,7 +1489,7 @@ void CVehiclePartsPanel::FillSeats()
 				hParentItem = m_hVehicle;
 			}
 
-			HTREEITEM hItem = InsertTreeItem(pSeatObj, hParentItem);
+			InsertTreeItem(pSeatObj, hParentItem);
 			pSeatObj->signalChanged.Connect(this, &CVehiclePartsPanel::OnObjectEvent);
 
 			// create weapon objects
@@ -1653,7 +1649,7 @@ void CVehiclePartsPanel::FillComps(IVariablePtr pData)
 			m_pVehicle->AttachChild(pComp);
 			pComp->SetVariable(pVar);
 
-			HTREEITEM hItem = InsertTreeItem(pComp, hRoot);
+			InsertTreeItem(pComp, hRoot);
 			pComp->signalChanged.Connect(this, &CVehiclePartsPanel::OnObjectEvent);
 		}
 	}

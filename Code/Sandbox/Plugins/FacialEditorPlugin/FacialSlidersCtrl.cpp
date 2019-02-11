@@ -184,7 +184,6 @@ void CFacialSlidersCtrl::RecalcLayout()
 	GetClientRect(rcClient);
 
 	int nSliderWidth = GetColumnWidth(COLUMN_SLIDER);
-	int nTextrWidth = GetColumnWidth(COLUMN_NAME);
 	int nNewTextWidth = rcClient.Width() - nSliderWidth - 4 - 45 - 50;
 	if (nNewTextWidth < m_nTextWidth)
 		nNewTextWidth = m_nTextWidth;

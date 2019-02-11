@@ -177,7 +177,6 @@ bool FillTool::FillHoleBasedOnSelectedElements()
 	linkedEdgeList.push_back(validEdgeList[0]);
 	usedEdgeSet.insert(0);
 	const int nValidEdgeSize(validEdgeList.size());
-	bool bFinishLoop = false;
 
 	while (linkedEdgeList.size() < nValidEdgeSize)
 	{

@@ -11,7 +11,6 @@
 
 CTrackViewKeyHandle CTrackViewGeomCacheAnimationTrack::CreateKey(const SAnimTime time)
 {
-	CTrackViewSequence* pSequence = GetSequence();
 	CTrackViewSequenceNotificationContext context(GetSequence());
 
 	CTrackViewKeyHandle keyHandle = CTrackViewTrack::CreateKey(time);

@@ -154,8 +154,6 @@ QVariantMap CTrackViewWindow::GetLayout() const
 
 void CTrackViewWindow::InitMenu()
 {
-	CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager();
-
 	const CEditor::MenuItems items[] = {
 		CEditor::MenuItems::FileMenu,
 		CEditor::MenuItems::EditMenu,CEditor::MenuItems::ViewMenu,  CEditor::MenuItems::New,

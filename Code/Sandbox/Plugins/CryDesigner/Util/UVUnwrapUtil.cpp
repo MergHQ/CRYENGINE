@@ -156,9 +156,6 @@ bool Project(const CCamera& camera, const Vec3& p, Vec3& outPos)
 	int pViewport[4] = { 0, 0, camera.GetViewSurfaceX(), camera.GetViewSurfaceZ() };
 
 	transformed = Vec4(p, 1) * mView;
-
-	bool visible = transformed.z < 0.0f;
-
 	projected = transformed * mProj;
 
 	if (projected.w == 0.0f)

@@ -588,9 +588,9 @@ void CGraphsWidget::OnSelectionChanged(const QItemSelection& selected, const QIt
 
 				if (pItem->GetType() == eObjectItemType_State)
 				{
-					CStateItem* pStateItem = static_cast<CStateItem*>(pItem);
+					/*CStateItem* pStateItem = static_cast<CStateItem*>(pItem);
 
-					/*QVariantMap params;
+					QVariantMap params;
 					   params.insert("Model", reinterpret_cast<quintptr>(static_cast<CAbstractVariablesModel*>(pStateItem)));
 
 					   // TODO: Remove hardcoded event name!

@@ -662,7 +662,7 @@ void CMaterialSerializer::SerializeTextureSlots(Serialization::IArchive& ar, boo
 
 			//TODO: In old editor this is obviously buggy as it is set both from shader resource and from mtl flag, however it only sets the material flag
 			//Confirm with rendering engineers how this should work
-			bool bIsDetailDecal = (shaderResources.m_ResFlags & MTL_FLAG_DETAIL_DECAL);
+			//bool bIsDetailDecal = (shaderResources.m_ResFlags & MTL_FLAG_DETAIL_DECAL);
 
 			bHasDetailDecalOut = true;
 

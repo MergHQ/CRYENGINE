@@ -150,7 +150,6 @@ void SubdivisionPanel::OnItemChanged(QTreeWidgetItem* item, int column)
 
 void SubdivisionPanel::OnCurrentItemChanged(QTreeWidgetItem* current, QTreeWidgetItem* previous)
 {
-	EdgeSharpnessManager* pEdgeMgr = m_pSubdivisionTool->GetModel()->GetEdgeSharpnessMgr();
 	if (current)
 		m_pSubdivisionTool->HighlightEdgeGroup(current->text(0).toStdString().c_str());
 	else

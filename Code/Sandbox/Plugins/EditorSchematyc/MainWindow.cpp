@@ -145,7 +145,7 @@ void CMainWindow::OnEditorNotifyEvent(EEditorNotifyEvent event)
 void CMainWindow::Serialize(Serialization::IArchive& archive)
 {
 	// TODO: What is going to happen with this?
-	int stateVersion = 1;
+	//int stateVersion = 1;
 	QByteArray state;
 	if (archive.isOutput())
 	{

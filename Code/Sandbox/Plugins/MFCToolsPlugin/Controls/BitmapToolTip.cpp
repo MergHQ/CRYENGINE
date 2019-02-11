@@ -512,8 +512,6 @@ void CBitmapToolTip::CorrectPosition()
 	CRect toolRc(m_toolRect);
 	pWnd->ClientToScreen(&toolRc);
 
-	bool bOffset = false;
-	int cy = GetSystemMetrics(SM_CYCURSOR);
 	int dy;
 	CRect go = rc;
 

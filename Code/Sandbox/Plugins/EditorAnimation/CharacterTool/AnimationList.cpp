@@ -64,7 +64,6 @@ struct UpdateAnimationSizesTask : public IBackgroundTask
 				return eTaskResult_Failed;
 			}
 
-			unsigned int newSize = 0;
 			if (FILE* f = gEnv->pCryPak->FOpen(animationPath, "rb"))
 			{
 				m_newSizes[i] = gEnv->pCryPak->FGetSize(f);
@@ -102,7 +101,7 @@ struct UpdateAnimationSizesTask : public IBackgroundTask
 			if (m_system->explorerData.get())
 			{
 				m_system->explorerData->BeginBatchChange(m_subtree);
-				size_t num = min(m_entries.size(), m_newSizes.size());
+
 				for (size_t i = 0; i < m_entries.size(); ++i)
 					m_system->explorerData->SetEntryColumn(m_entries[i], m_column, m_newSizes[i], true);
 				m_system->explorerData->EndBatchChange(m_subtree);
@@ -388,8 +387,6 @@ void AnimationList::ReloadAnimationList()
 {
 	m_animations.Clear();
 	m_aliasToId.clear();
-
-	IAnimEvents* animEvents = gEnv->pCharacterManager->GetIAnimEvents();
 
 	std::vector<std::pair<ExplorerEntryId, unsigned int>> audioColumnValues;
 	std::vector<std::pair<ExplorerEntryId, int>> pakColumnValues;

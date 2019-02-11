@@ -48,7 +48,6 @@ void CTrackGizmo::Display(SDisplayContext& dc)
 	}
 
 #pragma message("TODO")
-	uint32 hideMask = 0; //gSettings.objectHideMask;
 
 	CAnimationContext* ac = CTrackViewPlugin::GetAnimationContext();
 
@@ -203,8 +202,6 @@ void CTrackGizmo::DrawKeys(SDisplayContext& dc, CTrackViewTrack* pTrack, CTrackV
 	dc.SetColor(1, 0, 0, 1);
 
 	float zOffset = kTrackDrawZOffset;
-
-	float sz = 0.2f;
 	int nkeys = pKeysTrack->GetKeyCount();
 
 	for (int i = 0; i < nkeys; i++)

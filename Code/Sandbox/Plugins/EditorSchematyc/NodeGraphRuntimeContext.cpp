@@ -42,7 +42,6 @@ public:
 		{
 			const char* szBehavior = pCommand->GetBehavior();
 			const char* szSubject = pCommand->GetSubject();
-			const char* szDescription = pCommand->GetDescription();
 			const char* szStyleId = pCommand->GetStyleId();
 
 			m_fullName = szBehavior;

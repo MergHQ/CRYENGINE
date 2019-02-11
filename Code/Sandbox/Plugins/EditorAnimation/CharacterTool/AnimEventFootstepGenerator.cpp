@@ -238,9 +238,6 @@ void FootstepGenerationParameters::SetRightFootJoint(const char* joint)
 //////////////////////////////////////////////////////////////////////////
 bool GenerateFootsteps(AnimationContent* content, string* errorMessage, ICharacterInstance* character, const char* animationName, const FootstepGenerationParameters& params)
 {
-	// Character path (to create intermediate char instances)
-	const char* szFilePath = character->GetFilePath();
-
 	// Sample the animation
 	IDefaultSkeleton& skeleton = character->GetIDefaultSkeleton();
 	float footHeight = params.footHeightMM * 0.001f;

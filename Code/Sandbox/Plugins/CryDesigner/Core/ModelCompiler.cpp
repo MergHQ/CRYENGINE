@@ -191,7 +191,6 @@ bool ModelCompiler::UpdateMesh(CBaseObject* pBaseObject, Model* pModel, ShelfID 
 
 	IMaterial* pMaterial = GetMaterialFromBaseObj(pBaseObject);
 
-	int prevSubObjCount = m_pStatObj[nShelf]->GetSubObjectCount();
 	bool bCreateBackFaces = pModel->GetFlag() & eModelFlag_DisplayBackFace;
 
 	m_pStatObj[nShelf]->m_eStreamingStatus = ecss_Ready;
@@ -400,9 +399,6 @@ void ModelCompiler::SaveMesh(CArchive& ar, CBaseObject* pObj, Model* pModel)
 			faces = pMesh->GetMesh()->GetStreamPtr<SMeshFace>(CMesh::FACES);
 			nFaceCount = pMesh->GetFaceCount();
 		}
-
-		int nIndexCount = pMesh->GetIndexCount();
-		vtx_idx* const indices = pMesh->GetMesh()->GetStreamPtr<vtx_idx>(CMesh::INDICES);
 
 		int nSubsetCount = pMesh->GetSubSetCount();
 

@@ -113,7 +113,6 @@ void SubdivisionTool::Display(SDisplayContext& dc)
 		dc.DrawLine(m_HighlightedSharpEdges[i].m_v[0], m_HighlightedSharpEdges[i].m_v[1]);
 	dc.DepthTestOn();
 
-	ElementSet* pSelected = DesignerSession::GetInstance()->GetSelectedElements();
 	dc.SetColor(kSelectedColor);
 	dc.SetLineWidth(kChosenLineThickness);
 	for (int i = 0, iCount(m_SelectedEdgesAsEnter.size()); i < iCount; ++i)

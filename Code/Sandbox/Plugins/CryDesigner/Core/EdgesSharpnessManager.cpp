@@ -92,7 +92,6 @@ bool EdgeSharpnessManager::AddEdges(const char* name, const std::vector<BrushEdg
 	if (edges.empty() || HasName(name))
 		return false;
 
-	int iEdgeCount(edges.size());
 	for (int i = 0, iEdgeCount(edges.size()); i < iEdgeCount; ++i)
 		DeleteEdge(GetEdgeInfo(edges[i]));
 

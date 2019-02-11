@@ -679,9 +679,6 @@ void CDialogScriptRecord::OnBrowseAG(string& value, CDialogScriptRecord* pRecord
 	if (pEntity == 0)
 		return;
 
-	const CEditorDialogScript::SScriptLine* pLine = pRecord->GetLine();
-	int method = pLine->m_flagAGSignal ? 1 : 0;
-
 	if (gEnv->pGameFramework)
 	{
 		IMannequin& mannequin = gEnv->pGameFramework->GetMannequinInterface();

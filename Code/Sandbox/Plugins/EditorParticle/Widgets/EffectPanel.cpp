@@ -714,7 +714,6 @@ private:
 
 	void AddEntry(QMenu* menu, const CAbstractDictionaryEntry* entry)
 	{
-		CAbstractDictionaryEntry::EType type = (CAbstractDictionaryEntry::EType)entry->GetType();
 		QString name = entry->GetColumnValue(0).toString();
 
 		if (int num = entry->GetNumChildEntries())
