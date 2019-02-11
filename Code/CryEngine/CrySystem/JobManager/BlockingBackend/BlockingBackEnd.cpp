@@ -100,10 +100,6 @@ void JobManager::BlockingBackEnd::CBlockingBackEnd::AddJob(JobManager::CJobDeleg
 {
 	uint32 nJobPriority = crJob.GetPriorityLevel();
 
-#if !defined(_RELEASE) || defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
-	CJobManager* __restrict pJobManager = CJobManager::Instance();
-#endif
-
 	/////////////////////////////////////////////////////////////////////////////
 	// Acquire Infoblock to use
 	uint32 jobSlot;
@@ -111,7 +107,7 @@ void JobManager::BlockingBackEnd::CBlockingBackEnd::AddJob(JobManager::CJobDeleg
 	m_JobQueue.GetJobSlot(jobSlot, nJobPriority);
 
 #if !defined(_RELEASE)
-	pJobManager->IncreaseRunJobs();
+	CJobManager::Instance()->IncreaseRunJobs();
 #endif
 	// copy info block into job queue
 	JobManager::SInfoBlock& RESTRICT_REFERENCE rJobInfoBlock = m_JobQueue.jobInfoBlocks[nJobPriority][jobSlot];
@@ -137,7 +133,7 @@ void JobManager::BlockingBackEnd::CBlockingBackEnd::AddJob(JobManager::CJobDeleg
 
 #if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
 	assert(cJobId < JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS);
-	m_pBackEndWorkerProfiler->RegisterJob(cJobId, pJobManager->GetJobName(rInfoBlock.jobInvoker));
+	m_pBackEndWorkerProfiler->RegisterJob(cJobId, CJobManager::Instance()->GetJobName(rInfoBlock.jobInvoker));
 	rJobInfoBlock.frameProfIndex = (unsigned char)m_pBackEndWorkerProfiler->GetProfileIndex();
 #endif
 
@@ -168,9 +164,7 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 {
 	// set up thread id
 	JobManager::detail::SetWorkerThreadId(m_nId | 0x40000000);
-#if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
-	CJobManager* __restrict pJobManager = CJobManager::Instance();
-#endif
+
 	do
 	{
 		SInfoBlock infoBlock;
@@ -302,8 +296,8 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 		// call delegator function to invoke job entry
 #if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
 		CRY_PROFILE_REGION(PROFILE_SYSTEM, "Job");
-		CRYPROFILE_SCOPE_PROFILE_MARKER(pJobManager->GetJobName(infoBlock.jobInvoker));
-		CRYPROFILE_SCOPE_PLATFORM_MARKER(pJobManager->GetJobName(infoBlock.jobInvoker));
+		CRYPROFILE_SCOPE_PROFILE_MARKER(CJobManager::Instance()->GetJobName(infoBlock.jobInvoker));
+		CRYPROFILE_SCOPE_PLATFORM_MARKER(CJobManager::Instance()->GetJobName(infoBlock.jobInvoker));
 #endif
 		(*infoBlock.jobInvoker)(infoBlock.GetParamAddress());
 

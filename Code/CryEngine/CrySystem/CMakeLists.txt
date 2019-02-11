@@ -546,7 +546,6 @@ MACRO(setup_crysystem)
 
 	if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 		target_compile_options(${THIS_PROJECT} PRIVATE
-			-Wno-unused-variable
 			-Wno-array-bounds
 			-Wno-parentheses
 			-Wno-reorder
@@ -571,7 +570,6 @@ MACRO(setup_crysystem)
 			-Wno-unused-function
 			-Wno-unused-value
 			-Wno-array-bounds
-			-Wno-unused-variable
 			-Wno-sign-compare
 			-Wno-ignored-attributes
 			-Wno-int-in-bool-context
