@@ -379,40 +379,48 @@ CControl* CFileLoader::LoadControl(XmlNodeRef const pNode, Scope const scope, CA
 			string const name = pNode->getAttr(CryAudio::g_szNameAttribute);
 			EAssetType const controlType = TagToType(pNode->getTag());
 
-			// Don't load deprecated default controls.
-			if (((controlType == EAssetType::Parameter) && ((name.compareNoCase("absolute_velocity") == 0) || (name.compareNoCase("relative_velocity") == 0))))
+			if (controlType != EAssetType::None)
 			{
-				pParentItem->SetModified(true, true);
+				// Don't load deprecated default controls.
+				if (((controlType == EAssetType::Parameter) && ((name.compareNoCase("absolute_velocity") == 0) || (name.compareNoCase("relative_velocity") == 0))))
+				{
+					pParentItem->SetModified(true, true);
+				}
+				else
+				{
+					pControl = g_assetsManager.CreateControl(name, controlType, pFolderItem);
+				}
+
+				if (pControl != nullptr)
+				{
+					switch (controlType)
+					{
+					case EAssetType::Switch:
+						{
+							int const stateCount = pNode->getChildCount();
+
+							for (int i = 0; i < stateCount; ++i)
+							{
+								LoadControl(pNode->getChild(i), scope, pControl);
+							}
+						}
+						break;
+					case EAssetType::Preload:
+					case EAssetType::Setting:
+						LoadPlatformSpecificConnections(pNode, pControl);
+						break;
+					default:
+						LoadConnections(pNode, pControl);
+						break;
+					}
+
+					pControl->SetScope(scope);
+				}
 			}
 			else
 			{
-				pControl = g_assetsManager.CreateControl(name, controlType, pFolderItem);
-			}
-
-			if (pControl != nullptr)
-			{
-				switch (controlType)
-				{
-				case EAssetType::Switch:
-					{
-						int const stateCount = pNode->getChildCount();
-
-						for (int i = 0; i < stateCount; ++i)
-						{
-							LoadControl(pNode->getChild(i), scope, pControl);
-						}
-					}
-					break;
-				case EAssetType::Preload:
-				case EAssetType::Setting:
-					LoadPlatformSpecificConnections(pNode, pControl);
-					break;
-				default:
-					LoadConnections(pNode, pControl);
-					break;
-				}
-
-				pControl->SetScope(scope);
+				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, R"([Audio Controls Editor] Invalid XML tag "%s" in audio system data file "%s".)",
+				           pNode->getTag(), pFolderItem->GetName().c_str());
 			}
 		}
 	}
