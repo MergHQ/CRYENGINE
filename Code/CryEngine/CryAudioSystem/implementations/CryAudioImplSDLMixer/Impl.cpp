@@ -24,6 +24,7 @@
 	#include <Logger.h>
 	#include <DebugStyle.h>
 	#include <CryRenderer/IRenderAuxGeom.h>
+	#include <CrySystem/ITimer.h>
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 
 #include <SDL_mixer.h>
@@ -877,7 +878,21 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 
 			if (draw)
 			{
-				auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, Debug::s_listColorItemActive, false, "%s on %s", szEventName, pEventInstance->GetObject().GetName());
+				ColorF color = Debug::s_listColorItemActive;
+
+				CryFixedStringT<MaxMiscStringLength> debugText;
+				debugText.Format("%s on %s", szEventName, pEventInstance->GetObject().GetName());
+
+				if (pEventInstance->IsFadingOut())
+				{
+					float const fadeOutTime = static_cast<float>(pEventInstance->GetEvent().GetFadeOutTime()) / 1000.0f;
+					float const remainingTime = std::max(0.0f, fadeOutTime - (gEnv->pTimer->GetAsyncTime().GetSeconds() - pEventInstance->GetTimeFadeOutStarted()));
+
+					debugText.Format("%s on %s (%.2f sec)", szEventName, pEventInstance->GetObject().GetName(), remainingTime);
+					color = Debug::s_listColorItemStopping;
+				}
+
+				auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, debugText);
 
 				posY += Debug::g_listLineHeight;
 			}

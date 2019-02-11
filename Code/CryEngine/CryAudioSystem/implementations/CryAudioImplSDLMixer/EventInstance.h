@@ -27,6 +27,8 @@ public:
 		: m_triggerInstanceId(triggerInstanceId)
 		, m_event(event)
 		, m_toBeRemoved(false)
+		, m_isFadingOut(false)
+		, m_timeFadeOutStarted(0.0f)
 		, m_object(object)
 	{}
 #else
@@ -50,7 +52,9 @@ public:
 	void              SetToBeRemoved()      { m_toBeRemoved = true; }
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
-	CObject const& GetObject() const { return m_object; }
+	bool           IsFadingOut() const           { return m_isFadingOut; }
+	float          GetTimeFadeOutStarted() const { return m_timeFadeOutStarted; }
+	CObject const& GetObject() const             { return m_object; }
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 
 	ChannelList m_channels;
@@ -62,6 +66,8 @@ private:
 	bool                    m_toBeRemoved;
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+	bool           m_isFadingOut;
+	float          m_timeFadeOutStarted;
 	CObject const& m_object;
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 };
