@@ -181,12 +181,14 @@ void CBaseObject::UpdateVirtualState(CCueInstance* const pCueInstance)
 //////////////////////////////////////////////////////////////////////////
 void CBaseObject::StopAllTriggers()
 {
-	criAtomExPlayer_Stop(m_pPlayer);
-
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	for (auto const pCueInstance : m_cueInstances)
 	{
-		pCueInstance->SetFlag(ECueInstanceFlags::ToBeRemoved);
+		pCueInstance->StartFadeOut();
 	}
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+
+	criAtomExPlayer_Stop(m_pPlayer);
 }
 
 //////////////////////////////////////////////////////////////////////////

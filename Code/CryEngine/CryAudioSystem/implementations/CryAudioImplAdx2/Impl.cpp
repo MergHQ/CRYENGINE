@@ -33,6 +33,7 @@
 	#include <Logger.h>
 	#include <DebugStyle.h>
 	#include <CryRenderer/IRenderAuxGeom.h>
+	#include <CrySystem/ITimer.h>
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 #if defined(CRY_PLATFORM_WINDOWS)
@@ -152,35 +153,69 @@ void FreeMemoryPools()
 }
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
-std::map<string, std::vector<std::pair<string, float>>> g_cueRadiusInfo;
+using CueInfo = std::map<uint32, std::vector<std::pair<uint32, float>>>;
+CueInfo g_cueRadiusInfo;
+CueInfo g_cueFadeOutTimes;
 
 //////////////////////////////////////////////////////////////////////////
-void ParseAcbInfoFile(XmlNodeRef const pRoot, string const& acbName)
+void ParseAcbInfoFile(XmlNodeRef const pRoot, uint32 const acbId)
 {
-	int const numChildren = pRoot->getChildCount();
+	int const numCueNodes = pRoot->getChildCount();
 
-	for (int i = 0; i < numChildren; ++i)
+	for (int i = 0; i < numCueNodes; ++i)
 	{
-		XmlNodeRef const pChild = pRoot->getChild(i);
+		XmlNodeRef const pCueNode = pRoot->getChild(i);
 
-		if (pChild != nullptr)
+		if (pCueNode != nullptr)
 		{
-			char const* const typeAttrib = pChild->getAttr("OrcaType");
+			char const* const typeAttrib = pCueNode->getAttr("OrcaType");
 
 			if (_stricmp(typeAttrib, "CriMw.CriAtomCraft.AcCore.AcOoCueSynthCue") == 0)
 			{
-				if (pChild->haveAttr("Pos3dDistanceMax"))
+				uint32 const cueId = StringToId(pCueNode->getAttr("OrcaName"));
+
+				if (pCueNode->haveAttr("Pos3dDistanceMax"))
 				{
 					float distanceMax = 0.0f;
-					pChild->getAttr("Pos3dDistanceMax", distanceMax);
+					pCueNode->getAttr("Pos3dDistanceMax", distanceMax);
 
-					g_cueRadiusInfo[pChild->getAttr("OrcaName")].emplace_back(acbName, distanceMax);
+					g_cueRadiusInfo[cueId].emplace_back(acbId, distanceMax);
+				}
+
+				int const numTrackNodes = pCueNode->getChildCount();
+				float cueFadeOutTime = 0.0f;
+
+				for (int j = 0; j < numTrackNodes; ++j)
+				{
+					XmlNodeRef const pTrackNode = pCueNode->getChild(j);
+
+					if (pTrackNode != nullptr)
+					{
+						int const numWaveNodes = pTrackNode->getChildCount();
+
+						for (int k = 0; k < numWaveNodes; ++k)
+						{
+							XmlNodeRef const pWaveNode = pTrackNode->getChild(k);
+
+							if (pWaveNode->haveAttr("EgReleaseTimeMs"))
+							{
+								float trackFadeOutTime = 0.0f;
+								pWaveNode->getAttr("EgReleaseTimeMs", trackFadeOutTime);
+								cueFadeOutTime = std::max(cueFadeOutTime, trackFadeOutTime);
+							}
+						}
+					}
+				}
+
+				if (cueFadeOutTime > 0.0f)
+				{
+					g_cueFadeOutTimes[cueId].emplace_back(acbId, cueFadeOutTime / 1000.0f);
 				}
 			}
 			else if ((_stricmp(typeAttrib, "CriMw.CriAtomCraft.AcCore.AcOoCueFolder") == 0) ||
 			         (_stricmp(typeAttrib, "CriMw.CriAtomCraft.AcCore.AcOoCueFolderPrivate") == 0))
 			{
-				ParseAcbInfoFile(pChild, acbName);
+				ParseAcbInfoFile(pCueNode, acbId);
 			}
 		}
 	}
@@ -214,7 +249,7 @@ void LoadAcbInfos(string const& folderPath)
 
 						if ((pAcbNode != nullptr) && pAcbNode->haveAttr("AwbHash"))
 						{
-							ParseAcbInfoFile(pAcbNode, pAcbNode->getAttr("OrcaName"));
+							ParseAcbInfoFile(pAcbNode, StringToId(pAcbNode->getAttr("OrcaName")));
 						}
 					}
 				}
@@ -705,6 +740,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 	{
 		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
 		char const* const szCueSheetName = pRootNode->getAttr(g_szCueSheetAttribute);
+		uint32 const cueId = StringToId(szName);
 
 		CCue::EActionType type = CCue::EActionType::Start;
 		char const* const szType = pRootNode->getAttr(g_szTypeAttribute);
@@ -726,17 +762,34 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 		}
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+		uint32 const cueSheetId = StringToId(szCueSheetName);
+		float fadeOutTime = 0.0f;
+
 		if (type == CCue::EActionType::Start)
 		{
-			auto const iter = g_cueRadiusInfo.find(szName);
+			auto const iterRadius = g_cueRadiusInfo.find(cueId);
 
-			if (iter != g_cueRadiusInfo.end())
+			if (iterRadius != g_cueRadiusInfo.end())
 			{
-				for (auto const& pair : iter->second)
+				for (auto const& pair : iterRadius->second)
 				{
-					if (_stricmp(szCueSheetName, pair.first) == 0)
+					if (cueSheetId == pair.first)
 					{
 						radius = pair.second;
+						break;
+					}
+				}
+			}
+
+			auto const iterFadeOutTime = g_cueFadeOutTimes.find(cueId);
+
+			if (iterFadeOutTime != g_cueFadeOutTimes.end())
+			{
+				for (auto const& pair : iterFadeOutTime->second)
+				{
+					if (cueSheetId == pair.first)
+					{
+						fadeOutTime = pair.second;
 						break;
 					}
 				}
@@ -744,10 +797,10 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 		}
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCue");
-		pITriggerConnection = static_cast<ITriggerConnection*>(new CCue(StringToId(szName), szName, StringToId(szCueSheetName), type, szCueSheetName));
+		pITriggerConnection = static_cast<ITriggerConnection*>(new CCue(cueId, szName, StringToId(szCueSheetName), type, szCueSheetName, fadeOutTime));
 #else
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCue");
-		pITriggerConnection = static_cast<ITriggerConnection*>(new CCue(StringToId(szName), szName, StringToId(szCueSheetName), type));
+		pITriggerConnection = static_cast<ITriggerConnection*>(new CCue(cueId, szName, StringToId(szCueSheetName), type));
 #endif    // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 	}
 	else if (_stricmp(pRootNode->getTag(), g_szSnapshotTag) == 0)
@@ -785,9 +838,27 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 	{
 		char const* const szName = pTriggerInfo->name.c_str();
 		char const* const szCueSheetName = pTriggerInfo->cueSheet.c_str();
+		uint32 const cueId = StringToId(szName);
+		uint32 const cueSheetId = StringToId(szCueSheetName);
+
+		float fadeOutTime = 0.0f;
+
+		auto const iterFadeOutTime = g_cueFadeOutTimes.find(cueId);
+
+		if (iterFadeOutTime != g_cueFadeOutTimes.end())
+		{
+			for (auto const& pair : iterFadeOutTime->second)
+			{
+				if (cueSheetId == pair.first)
+				{
+					fadeOutTime = pair.second;
+					break;
+				}
+			}
+		}
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCue");
-		pITriggerConnection = static_cast<ITriggerConnection*>(new CCue(StringToId(szName), szName, StringToId(szCueSheetName), CCue::EActionType::Start, szCueSheetName));
+		pITriggerConnection = static_cast<ITriggerConnection*>(new CCue(cueId, szName, StringToId(szCueSheetName), CCue::EActionType::Start, szCueSheetName, fadeOutTime));
 	}
 
 	return pITriggerConnection;
@@ -1031,6 +1102,7 @@ void CImpl::OnRefresh()
 	g_debugCurrentDspBusSettingName = g_debugNoneDspBusSetting;
 	m_acfFileSize = 0;
 	g_cueRadiusInfo.clear();
+	g_cueFadeOutTimes.clear();
 	LoadAcbInfos(m_regularSoundBankFolder);
 	LoadAcbInfos(m_localizedSoundBankFolder);
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
@@ -1501,8 +1573,29 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 					if (draw)
 					{
 						ECueInstanceFlags const flags = pCueInstance->GetFlags();
-						ColorF const& color = ((flags& ECueInstanceFlags::IsPending) != 0) ? Debug::s_listColorItemLoading : (((flags& ECueInstanceFlags::IsVirtual) != 0) ? Debug::s_globalColorVirtual : Debug::s_listColorItemActive);
-						auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, "%s on %s", szCueName, pCueInstance->GetObject().GetName());
+						ColorF color = Debug::s_listColorItemActive;
+
+						CryFixedStringT<MaxMiscStringLength> debugText;
+						debugText.Format("%s on %s", szCueName, pCueInstance->GetObject().GetName());
+
+						if ((flags& ECueInstanceFlags::IsPending) != 0)
+						{
+							color = Debug::s_listColorItemLoading;
+						}
+						else if ((flags& ECueInstanceFlags::IsVirtual) != 0)
+						{
+							color = Debug::s_globalColorVirtual;
+						}
+						else if ((flags& ECueInstanceFlags::IsStopping) != 0)
+						{
+							float const fadeOutTime = pCueInstance->GetCue().GetFadeOutTime();
+							float const remainingTime = std::max(0.0f, fadeOutTime - (gEnv->pTimer->GetAsyncTime().GetSeconds() - pCueInstance->GetTimeFadeOutStarted()));
+
+							debugText.Format("%s on %s (%.2f sec)", szCueName, pCueInstance->GetObject().GetName(), remainingTime);
+							color = Debug::s_listColorItemStopping;
+						}
+
+						auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, debugText);
 
 						posY += Debug::g_listLineHeight;
 					}
