@@ -152,9 +152,10 @@ void CSystem::LogVersion()
 
 	strftime(s, 128, "%d %b %y (%H %M %S)", today);
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	const SFileVersion& ver = GetFileVersion();
-
 	CryLogAlways("BackupNameAttachment=\" Build(%d) %s\"  -- used by backup system\n", ver[0], s);      // read by CreateBackupFile()
+#endif
 
 	// Use strftime to build a customized time string.
 	strftime(s, 128, "Log Started at %c", today);

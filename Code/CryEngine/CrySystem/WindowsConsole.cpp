@@ -639,7 +639,6 @@ void CWindowsConsole::DrawStatus()
 		// Current update rate and player count on the right.
 
 		const char* const pMapName = m_pCVarSvMap->GetString();
-		const char* const pGameRules = m_pCVarSvGameRules->GetString();
 
 		const char* const pMissionName = m_pCVarSvMission ? m_pCVarSvMission->GetString() : "";
 		cry_sprintf(bufferLeft, " mission: %s map:%s", pMissionName, pMapName);

@@ -97,8 +97,6 @@ void CDrawContext::StopDrawing()
 	// Restore old flags that where set before our draw context.
 	m_pAuxRender->SetRenderFlags(m_prevRenderFlags);
 
-	int width  = gEnv->pRenderer->GetOverlayWidth();
-	int height = gEnv->pRenderer->GetOverlayHeight();
 	gEnv->pRenderer->GetIRenderAuxGeom()->SetOrthographicProjection(false);
 }
 

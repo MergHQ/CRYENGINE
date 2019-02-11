@@ -711,7 +711,6 @@ void CLocalMemoryUsage::OnRender(IRenderer* pRenderer, const CCamera* camera)
 	f32 fColorOK[4] = { LOCALMEMORY_FCOLOR_OK, 1 };
 	f32 fColorWarning[4] = { LOCALMEMORY_FCOLOR_WARNING, 1 };
 	f32 fColorError[4] = { LOCALMEMORY_FCOLOR_ERROR, 1 };
-	f32 fColorOther[4] = { LOCALMEMORY_FCOLOR_OTHER, 1 };
 
 	f32* pColor;
 	Vec3 v0, v1, v2, v3, v4, vTextureDiagram, vTextureDiagram2, vGeometryDiagram, vGeometryDiagram2;
@@ -804,6 +803,7 @@ void CLocalMemoryUsage::OnRender(IRenderer* pRenderer, const CCamera* camera)
 						{
 							if (xDebug == x && yDebug == y)
 							{
+#if !defined(EXCLUDE_NORMAL_LOG)
 								for (TTextureMap::iterator it = m_globalTextures.begin(); it != m_globalTextures.end(); ++it)
 								{
 									STextureInfo* textureObjInfo = &it->second;
@@ -815,6 +815,7 @@ void CLocalMemoryUsage::OnRender(IRenderer* pRenderer, const CCamera* camera)
 										CryLog("Texture: %s %dX%d mipfactor:%.4f", pTexture->GetName(), pTexture->GetWidth(), pTexture->GetHeight(), mipFactor);
 									}
 								}
+#endif
 								sys_LocalMemoryLogText = false;   //Log only once!
 							}
 						}
@@ -839,9 +840,6 @@ void CLocalMemoryUsage::OnRender(IRenderer* pRenderer, const CCamera* camera)
 					}
 				}
 			}
-
-			float localMemoryTextureStreamingSpeedLimit = sys_LocalMemoryTextureStreamingSpeedLimit * 1024.f * 1024.f;
-			float localMemoryStatObjStreamingSpeedLimit = sys_LocalMemoryGeometryStreamingSpeedLimit * 1024.f * 1024.f;
 
 			sector++;
 		}

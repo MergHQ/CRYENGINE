@@ -229,8 +229,6 @@ void CXConsoleVariableCVarGroup::Set(const int i)
 
 CXConsoleVariableCVarGroup::~CXConsoleVariableCVarGroup()
 {
-	TCVarGroupStateMap::iterator it, end = m_CVarGroupStates.end();
-
 	for (auto& it : m_CVarGroupStates)
 	{
 		SCVarGroup* pGroup = it.second;

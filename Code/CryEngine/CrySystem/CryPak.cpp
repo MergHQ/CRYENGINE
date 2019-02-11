@@ -518,7 +518,7 @@ void CCryPak::LogFileAccessCallStack(const char* name, const char* nameFull, con
 	}
 
 	char tempPath[MAX_PATH];
-	const char* szPath = AdjustFileName(filename.c_str(), tempPath, FLAGS_PATH_REAL | FLAGS_FOR_WRITING);
+	AdjustFileName(filename.c_str(), tempPath, FLAGS_PATH_REAL | FLAGS_FOR_WRITING);
 
 	// Print call stack for each find.
 	const char* funcs[32];
@@ -2078,8 +2078,12 @@ size_t CCryPak::FReadRawAll(void* pData, size_t nFileSize, FILE* hFile)
 		}
 	}
 
+#if defined(USE_CRY_ASSERT)
 	int nRes = CIOWrapper::Fseek(hFile, 0, SEEK_SET);
 	assert(nRes == 0);
+#else
+	CIOWrapper::Fseek(hFile, 0, SEEK_SET);
+#endif
 	return CIOWrapper::Fread(pData, 1, nFileSize, hFile);
 }
 
@@ -2108,8 +2112,13 @@ void* CCryPak::FGetCachedFileData(FILE* hFile, size_t& nFileSize)
 	m_pCachedFileData = new CCachedFileRawData(nFileSize);
 	m_pCachedFileData->m_hFile = hFile;
 
+#if defined(USE_CRY_ASSERT)
 	int nRes = CIOWrapper::Fseek(hFile, 0, SEEK_SET);
 	assert(nRes == 0);
+#else
+	CIOWrapper::Fseek(hFile, 0, SEEK_SET);
+#endif
+
 	if (CIOWrapper::Fread(m_pCachedFileData->m_pCachedData, 1, nFileSize, hFile) != nFileSize)
 	{
 		m_pCachedFileData = 0;
@@ -3606,7 +3615,7 @@ bool CCryPak::MakeDir(const char* szPath, bool bGamePathMapping)
 	memset(newPath, 0, sizeof(newPath));
 
 	const char* p = szPath;
-	bool bUNCPath = false;
+
 	// Check for UNC path.
 	if (szPath[0] == g_cNativeSlash && szPath[1] == g_cNativeSlash)
 	{
@@ -3892,9 +3901,12 @@ uint32 CCryPak::ComputeCRC(const char* szPath, uint32 nFileOpenFlags)
 		{
 			uint32 dwLocalSize = min(dwSize, dwChunkSize);
 
+#if defined(USE_CRY_ASSERT)
 			INT_PTR read = gEnv->pCryPak->FReadRaw(pMem, 1, dwLocalSize, fp);
-
 			assert(read == dwLocalSize);
+#else
+			gEnv->pCryPak->FReadRaw(pMem, 1, dwLocalSize, fp);
+#endif
 
 			dwCRC = crc32(dwCRC, pMem, dwLocalSize);
 			dwSize -= dwLocalSize;
@@ -3951,8 +3963,12 @@ bool CCryPak::ComputeMD5(const char* szPath, unsigned char* md5, uint32 nFileOpe
 		{
 			uint32 dwLocalSize = min(dwSize, dwChunkSize);
 
+#if defined(USE_CRY_ASSERT)
 			INT_PTR read = gEnv->pCryPak->FReadRaw(pMem, 1, dwLocalSize, fp);
 			assert(read == dwLocalSize);
+#else
+			gEnv->pCryPak->FReadRaw(pMem, 1, dwLocalSize, fp);
+#endif
 
 			MD5Update(&context, pMem, dwLocalSize);
 			dwSize -= dwLocalSize;
@@ -3971,7 +3987,6 @@ int CCryPak::ComputeCachedPakCDR_CRC(const char* filename, bool useCryFile /*=tr
 {
 	uint32 offset = 0;
 	uint32 size = 0;
-	int retval = 0;
 
 	//get Central Directory Record position and length
 	gEnv->pCryPak->GetCachedPakCDROffsetSize(filename, offset, size);
@@ -4548,7 +4563,7 @@ EStreamSourceMediaType CCryPak::GetFileMediaType(const char* szName)
 
 	ZipDir::CachePtr pZip = 0;
 	unsigned int archFlags;
-	ZipDir::FileEntry* pFileEntry = FindPakFileEntry(szFullPath, archFlags, &pZip, false);
+	FindPakFileEntry(szFullPath, archFlags, &pZip, false);
 
 	return GetMediaType(pZip, archFlags);
 }

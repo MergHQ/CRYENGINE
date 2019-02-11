@@ -797,7 +797,6 @@ void DebugCallStack::FillStackTrace(int maxStackEntries, int skipNumFunctions, H
 
 		DWORD64 modOffset = stack_frame.AddrPC.Offset - modInfo.BaseOfImage;
 
-		void* p = (void*)(uintptr_t)stack_frame.AddrPC.Offset;
 		char str[300];
 		char* szImageNameLastPathSeparator = strrchr(modInfo.ImageName, '\\');
 		char* szImageName = szImageNameLastPathSeparator ? szImageNameLastPathSeparator + 1 : modInfo.ImageName;
@@ -1888,7 +1887,7 @@ int DebugCallStack::CollectCallStack(HANDLE thread, void** pCallstack, int maxSt
 	#endif
 	int prev_priority = GetThreadPriority(thread);
 	SetThreadPriority(thread, THREAD_PRIORITY_TIME_CRITICAL);
-	BOOL result = GetThreadContext(thread, &context);
+	GetThreadContext(thread, &context);
 	::SetThreadPriority(thread, prev_priority);
 	return WalkStackFrames(context, pCallstack, maxStackEntries);
 }

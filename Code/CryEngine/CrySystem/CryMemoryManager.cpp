@@ -302,8 +302,6 @@ CRYMEMORYMANAGER_API void* CryRealloc(void* memblock, size_t size, size_t& alloc
 #ifdef CRYMM_SUPPORT_DEADLIST
 static void CryFreeReal(void* p)
 {
-	UINT_PTR pid = (UINT_PTR)p;
-
 	if (p != NULL)
 	{
 		if (g_GlobPageBucketAllocator.IsInAddressRange(p))
@@ -327,7 +325,9 @@ size_t CryFree(void* p, size_t alignment)
 	{
 		size_t size = 0;
 
+#if CAPTURE_REPLAY_LOG
 		UINT_PTR pid = (UINT_PTR)p;
+#endif
 
 		if (p != NULL)
 		{
@@ -367,7 +367,9 @@ size_t CryFree(void* p, size_t alignment)
 
 	size_t size = 0;
 
+#if CAPTURE_REPLAY_LOG
 	UINT_PTR pid = (UINT_PTR)p;
+#endif
 
 	if (p != NULL)
 	{

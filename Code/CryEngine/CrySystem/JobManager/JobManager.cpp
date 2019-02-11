@@ -289,7 +289,6 @@ void JobManager::CWorkerBackEndProfiler::GetJobStats(const uint8 nBufferIndex, T
 	rJobStatsContainer.reserve(JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS);
 
 	// Copy job stats
-	uint16 curCount = 0;
 	for (uint16 i = 0; i < JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS; ++i)
 	{
 		const JobManager::SJobFrameStats& rJobStats = pJobStatsToCopyFrom[i];
@@ -332,7 +331,6 @@ void JobManager::CWorkerBackEndProfiler::ResetJobStats(const uint8 nBufferIndex)
 	JobManager::SJobFrameStats* pJobStatsToReset = &m_JobStatsInfo.m_pJobStats[nBufferIndex * JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS];
 
 	// Reset job stats
-	uint16 curCount = 0;
 	for (uint16 i = 0; i < JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS; ++i)
 	{
 		JobManager::SJobFrameStats& rJobStats = pJobStatsToReset[i];
@@ -1576,12 +1574,14 @@ SJobFinishedConditionVariable* JobManager::CJobManager::GetSemaphore(JobManager:
 ///////////////////////////////////////////////////////////////////////////////
 void JobManager::CJobManager::DumpJobList()
 {
+#if !defined(EXCLUDE_NORMAL_LOG)
 	int i = 1;
 	CryLogAlways("== JobManager registered Job List ==");
 	for (std::set<JobManager::SJobStringHandle>::iterator it = m_registeredJobs.begin(); it != m_registeredJobs.end(); ++it)
 	{
 		CryLogAlways("%3d. %s", i++, it->cpString);
 	}
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

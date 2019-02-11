@@ -3210,7 +3210,7 @@ void CFlashPlayer::RenderCallback(EFrameType ft)
 		//#endif
 		{
 			CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
-			FLASH_PROFILE_FUNC(eFncDisplay, VOID_RETURN, "Display");
+			//FLASH_PROFILE_FUNC(eFncDisplay, VOID_RETURN, "Display");
 			SET_LOG_CONTEXT(m_filePath);
 			bool devLost = false;
 			gEnv->pRenderer->EF_Query(EFQ_DeviceLost, devLost);
@@ -3257,7 +3257,7 @@ void CFlashPlayer::RenderPlaybackLocklessCallback(int cbIdx, EFrameType ft, bool
 		//#endif
 		{
 			CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
-			FLASH_PROFILE_FUNC(eFncDisplay, VOID_RETURN, "Display Lockless (Playback)");
+			//FLASH_PROFILE_FUNC(eFncDisplay, VOID_RETURN, "Display Lockless (Playback)");
 			SET_LOG_CONTEXT(m_filePath);
 
 			GRendererCommandBuffer& cmdBuf = m_cmdBuf[cbIdx];

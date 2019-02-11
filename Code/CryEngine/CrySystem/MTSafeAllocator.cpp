@@ -334,7 +334,9 @@ void CMTSafeHeap::PrintStats()
 #if MTSAFE_PROFILE
 	LARGE_INTEGER freq;
 	QueryPerformanceFrequency(&freq);
+#if !defined(EXCLUDE_NORMAL_LOG)
 	const double rFreq = 1. / static_cast<double>(freq.QuadPart);
+#endif
 
 	CryLogAlways("mtsafe temporary pool failed for %" PRISIZE_T " bytes, time spent in allocations %3.08f seconds",
 	             m_TempAllocationsFailed, static_cast<double>(m_TempAllocationsTime.QuadPart) * rFreq);

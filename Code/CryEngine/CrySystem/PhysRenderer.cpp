@@ -221,9 +221,6 @@ void CPhysRenderer::DrawFrame(const Vec3& pnt, const Vec3* axes, const float sca
 	aux->SetRenderFlags(renderFlags);
 
 	ColorB clr[3] = { ColorB(255, 0, 0), ColorB(0, 255, 0), ColorB(0, 0, 255) };
-	float fclr[4][4] = {
-		{ 1.f, 0.f, 0.f, 1.f }, { 0.f, 1.f, 0.f, 1.f }, { 0.f, 0.f, 1.f, 1.f }, { 1.f, 1.f, 1.f, 1.f }
-	};
 
 	for (int j = 0; j < 3; ++j)
 		if (axes_locked & 1 << j)

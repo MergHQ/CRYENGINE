@@ -787,8 +787,6 @@ void CResourceManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_P
 //////////////////////////////////////////////////////////////////////////
 void CResourceManager::GetMemoryStatistics(ICrySizer* pSizer)
 {
-	IResourceList* pResList = gEnv->pCryPak->GetResourceList(ICryPak::RFOM_Level);
-
 	pSizer->AddContainer(m_openedPaks);
 }
 
@@ -827,8 +825,10 @@ void CResourceManager::SaveRecordedResources(bool bTotalList)
 		{
 			for (std::vector<string>::iterator it = m_recordedFiles.begin(); it != m_recordedFiles.end(); ++it)
 			{
+#if !defined(_RELEASE) || defined(RELEASE_LOGGING)
 				const char* str = it->c_str();
 				fprintf(file, "%s\n", str);
+#endif
 			}
 			fclose(file);
 		}
@@ -841,8 +841,10 @@ void CResourceManager::SaveRecordedResources(bool bTotalList)
 		{
 			for (std::set<string>::iterator it = fileset.begin(); it != fileset.end(); ++it)
 			{
+#if !defined(_RELEASE) || defined(RELEASE_LOGGING)
 				const char* str = it->c_str();
 				fprintf(file, "%s\n", str);
+#endif
 			}
 			fclose(file);
 		}

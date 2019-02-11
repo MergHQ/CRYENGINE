@@ -94,7 +94,9 @@ void CStreamingIOThread::Pause(bool bPause)
 //////////////////////////////////////////////////////////////////////////
 void CStreamingIOThread::ThreadEntry()
 {
+#ifdef STREAMENGINE_ENABLE_STATS
 	CTimeValue t0 = gEnv->pTimer->GetAsyncTime();
+#endif
 
 	m_nLastReadDiskOffset = 0;
 
@@ -723,9 +725,13 @@ void CStreamingWorkerThread::ThreadEntry()
 			{
 			case eWorkerAsyncCallback:
 				{
+#ifndef _RELEASE
 					float fTime = gEnv->pTimer->GetAsyncCurTime();
+#endif
 					m_pStreamEngine->ReportAsyncFileRequestComplete(pFileRequest);
+#ifndef _RELEASE
 					float fTime1 = gEnv->pTimer->GetAsyncCurTime();
+#endif
 
 #ifdef STREAMENGINE_ENABLE_STATS
 					CryInterlockedDecrement(&m_pStreamEngine->GetStreamingStatistics().nCurrentAsyncCount);

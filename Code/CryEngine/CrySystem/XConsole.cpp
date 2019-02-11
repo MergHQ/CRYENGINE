@@ -257,8 +257,6 @@ void ConsoleHide(IConsoleCmdArgs*)
 
 void Bind(IConsoleCmdArgs* cmdArgs)
 {
-	int count = cmdArgs->GetArgCount();
-
 	if (cmdArgs->GetArgCount() >= 3)
 	{
 		string arg;

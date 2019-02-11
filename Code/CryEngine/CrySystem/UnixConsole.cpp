@@ -883,8 +883,6 @@ void CUNIXConsole::KeyEnd(bool ctrl)
 	assert(IsLocked());
 	if (ctrl)
 	{
-		const int logHeight = GetLogHeight();
-		int maxUp = m_LineBuffer.size() - logHeight;
 		if (m_ScrollUp != 0)
 		{
 			m_ScrollUp = 0;
@@ -1032,7 +1030,7 @@ void CUNIXConsole::KeyPgUp(bool ctrl)
 
 void CUNIXConsole::KeyPgDown(bool ctrl)
 {
-	const int logHeight = GetLogHeight();
+	// const int logHeight = GetLogHeight();
 	// int logStep = logHeight - 2;
 	int logStep = ctrl ? 10 : 1;
 	int prevScrollUp = m_ScrollUp;

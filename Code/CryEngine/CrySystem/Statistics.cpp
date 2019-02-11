@@ -840,8 +840,6 @@ bool CEngineStats::AddResource_SingleStatObj(IStatObj& rData)
 
 void CEngineStats::AddResource_CharInstance(ICharacterInstance& rData)
 {
-	IMaterial* pMat = rData.GetIMaterial();
-
 	if (!m_ResourceCollector.AddResource(rData.GetFilePath()))
 		return;   // was already registered
 
@@ -972,8 +970,6 @@ void CEngineStats::AddResource_StatObjWithLODs(IStatObj* pObj, CrySizerImpl& sta
 	si.bSplitLods = false;
 	// Analyze geom object.
 
-	bool bMultiSubObj = (si.pStatObj->GetFlags() & STATIC_OBJECT_COMPOUND) != 0;
-
 	si.nMeshSize = 0;
 	si.nTextureSize = 0;
 	si.nIndices = 0;
@@ -1019,8 +1015,7 @@ inline bool CompareAnimations(const SAnimationStatistics& p1, const SAnimationSt
 //////////////////////////////////////////////////////////////////////////
 void CEngineStats::CollectAnimations()
 {
-	ISystem* pSystem = GetISystem();
-	I3DEngine* p3DEngine = pSystem->GetI3DEngine();
+	// ISystem* pSystem = GetISystem();
 
 	m_stats.animations.clear();
 	/*
@@ -1084,7 +1079,10 @@ void CEngineStats::CollectGeometry()
 		p3DEngine->GetLoadedStatObjArray(0, nObjCount);
 		if (nObjCount > 0)
 		{
+#ifdef _PREFAST_
 			const int numStatObjs = nObjCount;
+#endif
+
 			m_stats.objects.reserve(nObjCount);
 			IStatObj** pObjects = new IStatObj*[nObjCount];
 			p3DEngine->GetLoadedStatObjArray(pObjects, nObjCount);
@@ -1146,7 +1144,6 @@ void CEngineStats::CollectGeometry()
 void CEngineStats::CollectCharacters() PREFAST_SUPPRESS_WARNING(6262)
 {
 	ISystem* pSystem = GetISystem();
-	I3DEngine* p3DEngine = pSystem->GetI3DEngine();
 
 	m_stats.nChar_SummaryTextureSize = 0;
 	m_stats.nChar_SummaryMeshSize = 0;
@@ -1165,7 +1162,10 @@ void CEngineStats::CollectCharacters() PREFAST_SUPPRESS_WARNING(6262)
 	pICharacterManager->GetLoadedModels(0, nObjCount);
 	if (nObjCount > 0)
 	{
+#ifdef _PREFAST_
 		const int numLoadedModels = nObjCount;
+#endif
+		
 		m_stats.characters.reserve(nObjCount);
 		IDefaultSkeleton** pObjects = new IDefaultSkeleton*[nObjCount];
 		pICharacterManager->GetLoadedModels(pObjects, nObjCount);

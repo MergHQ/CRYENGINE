@@ -748,8 +748,12 @@ bool ZipDir::CacheRW::WriteCDR(FILE* fTarget)
 	//arrFiles.SortByFileOffset();
 	size_t nSizeCDR = arrFiles.GetStats().nSizeCDR;
 	void* pCDR = m_pHeap->TempAlloc(nSizeCDR, "ZipDir::CacheRW::WriteCDR");
+#if defined(USE_CRY_ASSERT)
 	size_t nSizeCDRSerialized = arrFiles.MakeZipCDR(m_lCDROffset, pCDR, m_encryptedHeaders == HEADERS_ENCRYPTED_TEA);
 	assert(nSizeCDRSerialized == nSizeCDR);
+#else
+	arrFiles.MakeZipCDR(m_lCDROffset, pCDR, m_encryptedHeaders == HEADERS_ENCRYPTED_TEA);
+#endif
 	if (m_encryptedHeaders == HEADERS_ENCRYPTED_TEA)
 	{
 	#if defined(SUPPORT_XTEA_PAK_ENCRYPTION)
@@ -840,7 +844,6 @@ bool ZipDir::CacheRW::RelinkZip(FILE* fTmp)
 {
 	FileRecordList arrFiles(GetRoot());
 	arrFiles.SortByFileOffset();
-	FileRecordList::ZipStats Stats = arrFiles.GetStats();
 
 	// we back up our file entries, because we'll need to restore them
 	// in case the operation fails

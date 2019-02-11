@@ -618,7 +618,6 @@ struct BootProfilerSessionSerializerToJSON
 				ar(label, "name");
 
 				uint32 profilerType = pRecord->m_type & EProfileDescription::TYPE_MASK; //FUNCTIONENTRY,REGION,SECTION
-				bool bWaiting = (pRecord->m_type & EProfileDescription::WAITING) != 0;
 				
 				// Events Documentation: https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/preview#heading=h.lenwiilchoxp
 				if (profilerType == EProfileDescription::MARKER)
@@ -708,11 +707,6 @@ struct BootProfilerSessionSerializerToJSON
 
 	void Serialize(Serialization::IArchive& ar)
 	{
-		int pid = 0;
-#ifdef WIN32
-		pid = ::GetCurrentProcessId();
-#endif
-
 		std::vector<BootProfilerEventSerializerToJSON> threadProfilers;
 
 		const size_t numThreads = gThreadsInterface.GetThreadCount();

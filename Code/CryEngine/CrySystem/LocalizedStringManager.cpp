@@ -165,7 +165,6 @@ void CLocalizedStringsManager::LocalizationDumpLoadedInfo(IConsoleCmdArgs* pArgs
 {
 	CLocalizedStringsManager* pLoca = (CLocalizedStringsManager*) gEnv->pSystem->GetLocalizationManager();
 
-	const char* pTagName = "";
 	for (TTagFileNames::iterator tagit = pLoca->m_tagFileNames.begin(); tagit != pLoca->m_tagFileNames.end(); ++tagit)
 	{
 		CryLogAlways("Tag %s (%u)", tagit->first.c_str(), tagit->second.id);
@@ -1608,7 +1607,9 @@ void CLocalizedStringsManager::AddLocalizedString(SLanguage* pLanguage, SLocaliz
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "m_vLocalizedStrings push back");
 		pLanguage->m_vLocalizedStrings.push_back(pEntry);
 	}
+#if !defined(EXCLUDE_NORMAL_LOG)
 	int nId = (int)pLanguage->m_vLocalizedStrings.size() - 1;
+#endif
 	{
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Language Key Map Entry");
 		pLanguage->m_keysMap[keyCRC32] = pEntry;
@@ -1645,8 +1646,6 @@ bool CLocalizedStringsManager::LocalizeStringInternal(const char* pStr, size_t l
 	string out;
 
 	// scan the string
-	bool done = false;
-	int curpos = 0;
 	const char* pPos = pStr;
 	const char* pEnd = pStr + len;
 	while (true)
@@ -1764,7 +1763,9 @@ string CLocalizedStringsManager::SLocalizedStringEntry::GetTranslatedText(const 
 			nDecompTicks = CryGetTicks() - nDecompTicks;
 #endif  //LOG_DECOMP_TIMES
 
+#if defined(USE_CRY_ASSERT)
 			size_t len = strnlen((const char*)decompressionBuffer, COMPRESSION_FIXED_BUFFER_LENGTH);
+#endif
 			assert(len < COMPRESSION_FIXED_BUFFER_LENGTH && "Buffer not null-terminated");
 
 #if defined(LOG_DECOMP_TIMES)

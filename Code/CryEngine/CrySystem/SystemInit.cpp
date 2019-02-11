@@ -261,6 +261,7 @@ static inline void InlineInitializationProcessing(const char* sDescription)
 //////////////////////////////////////////////////////////////////////////
 static void CmdCrashTest(IConsoleCmdArgs* pArgs)
 {
+	CRY_DISABLE_WARN_UNUSED_VARIABLES();
 	assert(pArgs);
 
 	if (pArgs->GetArgCount() == 2)
@@ -296,7 +297,7 @@ static void CmdCrashTest(IConsoleCmdArgs* pArgs)
 		case 3:
 			while (true)
 			{
-				char* element = new char[40960];
+				new char[40960];
 				// cppcheck-suppress memleak
 			}
 			break;
@@ -310,7 +311,7 @@ static void CmdCrashTest(IConsoleCmdArgs* pArgs)
 		case 5:
 			while (true)
 			{
-				char* element = new char[128];   //testing the crash handler an exception in the cry memory allocation occurred
+				new char[128];   //testing the crash handler an exception in the cry memory allocation occurred
 				// cppcheck-suppress memleak
 			}
 
@@ -364,6 +365,8 @@ static void CmdCrashTest(IConsoleCmdArgs* pArgs)
 	#pragma warning(pop)
 #endif // CRY_COMPILER_MSVC
 	}
+
+	CRY_RESTORE_WARN_UNUSED_VARIABLES();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -453,16 +456,22 @@ static void CmdDumpCvars(IConsoleCmdArgs* pArgs)
 
 			std::sort(m_cvars.begin(), m_cvars.end(), [](const std::pair<const char*, const char*> & rA, const std::pair<const char*, const char*>& rB) -> bool { return strcmp(rA.first, rB.first) < 0; });
 
+#if !defined(_RELEASE) || defined(RELEASE_LOGGING)
 			for (const auto& cvar : m_cvars)
 			{
 				fprintf(pFile, "%s=%s\n", cvar.first,cvar.second);
 			}
+#endif
 
 			if (gEnv && gEnv->pCryPak)
 			{
 				char path[_MAX_PATH];
+#if !defined(EXCLUDE_NORMAL_LOG)
 				const char* szAdjustedPath = gEnv->pCryPak->AdjustFileName(file_path, path, 0);
 				CryLogAlways("\n=================\n CVars dumped to file: \"%s\" \n=================\n", szAdjustedPath);
+#else
+				gEnv->pCryPak->AdjustFileName(file_path, path, 0);
+#endif
 			}
 
 			fclose(pFile);
@@ -772,7 +781,9 @@ bool CSystem::UnloadDynamicLibrary(const char* szDllName)
 
 		CryLog("%s", msg.c_str());
 
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 		WIN_HMODULE hModule = moduleIt->second;
+#endif
 
 		// CVars should be unregistered earlier than owning objects/modules are destroyed.
 		auto CleanupModuleCVars = (void (*)())CryGetProcAddress(hModule, "CleanupModuleCVars");
@@ -900,8 +911,10 @@ bool CSystem::InitializeEngineModule(const SSystemInitParams& startupParams, con
 	{
 		GetIMemoryManager()->GetProcessMemInfo(memEnd);
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 		uint64 memUsed = memEnd.WorkingSetSize - memStart.WorkingSetSize;
 		CryLog("Initializing %s done, MemUsage=%uKb", dllName, uint32(memUsed / 1024));
+#endif
 	}
 
 	return true;
@@ -1773,7 +1786,8 @@ bool CSystem::InitFileSystem(const SSystemInitParams& startupParams)
 
 	// Legacy support for setting decryption key from IGameStartup interface
 	// Should be removed when legacy game dll's are gone
-	if (ICVar* pLegacyGameDllCVar = m_env.pConsole->GetCVar("sys_dll_game"))
+	ICVar* pLegacyGameDllCVar = m_env.pConsole->GetCVar("sys_dll_game");
+	if (pLegacyGameDllCVar != nullptr)
 	{
 		HMODULE hGameDll;
 
@@ -1881,12 +1895,15 @@ void CSystem::InitLog(const SSystemInitParams& startupParams)
 
 void CSystem::LoadPatchPaks()
 {
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
 	const char* pPatchPakMountPath = "";
 	uint32 nFlags = 0;
 	nFlags |= ICryPak::FLAGS_NEVER_IN_PAK;
 	nFlags |= ICryPak::FLAGS_PATH_REAL;
 	nFlags |= ICryArchive::FLAGS_OVERRIDE_PAK;
-	//For patching open the special patch pak with FLAGS_OVERRIDE_PAK so it beats all other paks
+#endif // #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
+
+	// For patching open the special patch pak with FLAGS_OVERRIDE_PAK so it beats all other paks
 
 #if CRY_PLATFORM_WINDOWS
 	m_env.pCryPak->OpenPack(pPatchPakMountPath, "patch/patch1.pak", nFlags);
@@ -4132,8 +4149,6 @@ public:
 		string trgFilename = PathUtil::Make(m_sPath, sFilePath);
 		int fsize = file.GetLength();
 
-		size_t len = file.GetLength();
-
 		if (fsize > (int)data.size())
 			data.resize(fsize + 16);
 
@@ -5191,7 +5206,10 @@ void CSystem::CreateSystemVars()
 	static const int default_sys_usePlatformSavingAPIDefault = 0;
 #else
 	static const int default_sys_usePlatformSavingAPI = 1;
+
+#ifndef _RELEASE
 	static const int default_sys_usePlatformSavingAPIDefault = 1;
+#endif
 #endif
 
 	REGISTER_CVAR2("sys_usePlatformSavingAPI", &g_cvars.sys_usePlatformSavingAPI, default_sys_usePlatformSavingAPI, VF_CHEAT, "Use the platform APIs for saving and loading (complies with TRCs, but allocates lots of memory)");

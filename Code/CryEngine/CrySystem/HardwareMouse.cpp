@@ -215,9 +215,11 @@ void CHardwareMouse::ShowHardwareMouse(bool bShow)
 	IInput* const pInput = gEnv->pInput;
 	if (pInput)
 	{
-		
-
+#if !defined(EXCLUDE_NORMAL_LOG)
 		const int count = pInput->ShowCursor(bShow);
+#else
+		pInput->ShowCursor(bShow);
+#endif
 		pInput->SetExclusiveMode(eIDT_Mouse, false);
 
 		if (m_debugHardwareMouse)

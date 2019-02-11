@@ -67,8 +67,9 @@ GFile* CryGFxFileOpener::OpenFile(const char* pUrl, SInt flags, SInt /*mode*/)
 	assert(pUrl);
 	if (flags & ~(GFileConstants::Open_Read | GFileConstants::Open_Buffered))
 		return 0;
-	const char* pExt = PathUtil::GetExt(pUrl);
+
 	#if defined(USE_GFX_VIDEO)
+	const char* pExt = PathUtil::GetExt(pUrl);
 	if (!strcmp(pUrl, internal_video_player))
 		return new GMemoryFile(pUrl, fxvideoplayer_swf, sizeof(fxvideoplayer_swf));
 	if (!stricmp(pExt, "usm"))

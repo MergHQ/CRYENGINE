@@ -162,7 +162,6 @@ bool CPlatformOS_PC::DecryptAndCheckSigning(const char* pInData, int inDataLen, 
 	IZLibCompressor* pZLib = GetISystem()->GetIZLibCompressor();
 	TCipher cipher = pNet->BeginCipher(key, 8);         // Use the first 8 bytes of the key as the decryption key
 	char* pOutput = NULL;
-	int outDataLen = 0;
 	bool valid = false;
 
 	if (inDataLen > 16)
@@ -624,7 +623,6 @@ bool CPlatformOS_PC::SxmlMissingFromHDD(ZipDir::FileEntryTree* pZipRoot, const c
 		CryFixedStringT<ICryPak::g_nMaxPath> filePath;
 		for (; fileIt != fileEndIt; ++fileIt)
 		{
-			ZipDir::FileEntry* pFileEntry = pSourceDir->GetFileEntry(fileIt);
 			const char* pFileName = pSourceDir->GetFileName(fileIt);
 
 			if (strstr(pFileName, ".sxml"))

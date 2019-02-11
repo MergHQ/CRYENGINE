@@ -584,8 +584,12 @@ ZipDir::CachePtr ZipDir::CacheFactory::MakeCache(const char* szFile)
 	}
 	else
 	{
+#if defined(USE_CRY_ASSERT)
 		size_t nSizeSerialized = m_treeFileEntries.Serialize(cache->GetRoot());
 		assert(nSizeSerialized == nSizeRequired);
+#else
+		m_treeFileEntries.Serialize(cache->GetRoot());
+#endif
 	}
 
 	char* pZipPath = ((char*)(pCacheInstance + 1)) + nSizeRequired;
@@ -1293,7 +1297,6 @@ bool ZipDir::CacheFactory::DecryptKeysTable()
 	unsigned long res, len;
 
 	int hash_idx = find_hash("sha256");
-	int prng_idx = find_prng("yarrow");
 
 	// Decrypt CDR initial Vector
 	{

@@ -432,7 +432,9 @@ void CFrameProfileSystem::Render()
 void CFrameProfileSystem::RenderProfilers(float col, float row, bool bExtended)
 {
 	//  float HeaderColor[4] = { 1,1,0,1 };
+#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
 	float CounterColor[4] = { 0, 0.8f, 1, 1 };
+#endif
 
 	// Header.
 	m_baseY += 40;
@@ -582,14 +584,14 @@ void CFrameProfileSystem::RenderProfilers(float col, float row, bool bExtended)
 void CFrameProfileSystem::RenderProfilerHeader(float col, float row, bool bExtended)
 {
 	char szText[256];
+#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
 	char szTitle[32];
+	bool bShowFrameTimeSummary = false;
+#endif
 	float MainHeaderColor[4] = { 0, 1, 1, 1 };
 	float HeaderColor[4] = { 1, 1, 0, 1 };
 	float CounterColor[4] = { 0, 0.8f, 1, 1 };
 	float PausedColor[4] = { 1, 0.3f, 0, 1 };
-	const float origCol = col;
-
-	bool bShowFrameTimeSummary = false;
 
 	#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
 	float rowOrig = row;
@@ -1231,17 +1233,15 @@ void CFrameProfileSystem::DrawGraph()
 	#endif
 
 	// UI item layout information
-	const float cWorkerGraphScale = 180.f;     // Worker Graph displays the last X frames
 	const float cTextAreaWidth = 220.f;        // Absolute Text Area width
-
+#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
 	// Do not render in the top X% of rt top area to allow space for the r_DisplayInfo 1 profiler
 	const float cTopSafeArea = 0.13f;
+#endif
 
 	// UI Control colour items
 	float labelColor[4] = { 1.f, 1.f, 1.f, 1.f };
 	float labelColDarkGreen[4] = { 0, 0.6f, 0.2f, 1.f };
-	float labelColRed[4] = { 1.f, 0, 0, 1.f };
-	float labelColorSuspended[4] = { 0.25f, 0.25f, 0.25f, 1.f };
 	ColorF graphColor(0, 0.85, 0, 1);
 
 	IRenderAuxGeom* pRenderAux = m_pRenderer->GetIRenderAuxGeom();
@@ -1259,9 +1259,7 @@ void CFrameProfileSystem::DrawGraph()
 	const int fOverscanAdjY = (int)(overscanBorder.y * (float)nRtHeight);
 
 	// Surface Area
-	const float nSafeAreaY = nRtHeight * cTopSafeArea;
 	const float nSurfaceWidth = nRtWidth - fOverscanAdjX;
-	const float nSurfaceHeight = nRtHeight - nSafeAreaY - fOverscanAdjX;
 
 	// Calculate worker graph dimensions
 	const float nTextAreaWidth = cTextAreaWidth * FrameProfileRenderConstants::c_yScale;
@@ -1270,7 +1268,9 @@ void CFrameProfileSystem::DrawGraph()
 	const int nGraphWidth = (int)(nSurfaceWidth - nGraphStartX - nSurfaceWidth * 0.05f * FrameProfileRenderConstants::c_yScale);   // Add a 5% of RT width gap to the right RT edge
 
 	const float nTextAreaWidthOvrScnAdj = nTextAreaWidth + fOverscanAdjX;
+#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
 	const float nGraphStartXOvrScnAdj = nGraphStartX + fOverscanAdjX;
+#endif
 
 	// Absolute coordinates tracker
 	float x = 0;
@@ -1531,12 +1531,9 @@ void CFrameProfileSystem::RenderHistograms()
 
 	// Draw histograms.
 	int h = m_pRenderer->GetOverlayHeight();
-	int w = m_pRenderer->GetOverlayWidth();
 
 	int graphStyle = 2; // histogram.
-
 	float fScale = 1.0f; // histogram.
-
 
 	for (int i = 0; i < (int)m_displayedProfilers.size(); i++)
 	{
@@ -1571,9 +1568,7 @@ void CFrameProfileSystem::RenderSubSystems(float col, float row)
 	char szWaitText[128];
 	float HeaderColor[4] = { 1, 1, 0, 1 };
 	float ValueColor[4] = { 0, 1, 0, 1 };
-	float CounterColor[4] = { 0, 0.8f, 1, 1 };
 
-	float colPercOfs = -3.0f;
 	float colTextOfs = 9.0f;
 
 	m_baseY += 40;
@@ -1695,7 +1690,10 @@ void CFrameProfileSystem::RenderMemoryInfo()
 	DrawLabel(col4, row, HeaderColor, 0, "Total Allocs(KB)", fLabelScale);
 	float col5 = col4 + 20;
 	DrawLabel(col5, row, HeaderColor, 0, "Total Wasted(KB)", fLabelScale);
+
+#if !(CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID)
 	int totalUsedInModulesStatic = 0;
+#endif
 
 	row++;
 

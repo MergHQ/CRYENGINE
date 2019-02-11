@@ -94,8 +94,11 @@ DECLARE_JOB("StreamInflateBlock", TStreamInflateBlockJob, CAsyncIOFileRequest::D
 	#define STREAMENGINE_ENABLE_TIMING
 #endif
 
-//#define STREAM_DECOMPRESS_TRACE(...) printf(__VA_ARGS__)
+#if defined(ENABLE_STREAM_DECOMPRESS_TRACE)
+#define STREAM_DECOMPRESS_TRACE(...) printf(__VA_ARGS__)
+#else
 #define STREAM_DECOMPRESS_TRACE(...)
+#endif
 
 void SStreamJobQueue::Flush(SStreamEngineTempMemStats& tms)
 {
@@ -139,8 +142,12 @@ int SStreamJobQueue::Pop()
 
 void CAsyncIOFileRequest::AddRef()
 {
+#if defined(ENABLE_STREAM_DECOMPRESS_TRACE)
 	int nRef = CryInterlockedIncrement(&m_nRefCount);
 	STREAM_DECOMPRESS_TRACE("[StreamDecompress] AddRef(%x) %p %i %s\n", CryGetCurrentThreadId(), this, nRef, m_strFileName.c_str());
+#else
+	CryInterlockedIncrement(&m_nRefCount);
+#endif
 }
 
 int CAsyncIOFileRequest::Release()

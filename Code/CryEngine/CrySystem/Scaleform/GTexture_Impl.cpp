@@ -570,7 +570,6 @@ int GTextureXRenderYUV::Map(int level, int n, MapRect* maps, int /*flags*/)
 	if (m_numIDs <= 0 || !maps || level > 0 || n < m_numIDs)
 		return 0;
 
-	IRenderer* pRenderer(gEnv->pRenderer);
 	bool ok = true;
 	for (int32 i = 0; i < m_numIDs; ++i)
 	{

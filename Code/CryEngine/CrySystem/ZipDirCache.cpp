@@ -416,7 +416,6 @@ ZipDir::ErrorEnum ZipDir::Cache::ReadFileStreaming(FileEntry* pFileEntry, void* 
 				}
 
 				ptrdiff_t srcLeft = 0;
-				ptrdiff_t srcRight = nRead;
 				ptrdiff_t dstLeft = nBufferOffs;
 				ptrdiff_t dstRight = (ptrdiff_t)(nBufferOffs + nRead);
 

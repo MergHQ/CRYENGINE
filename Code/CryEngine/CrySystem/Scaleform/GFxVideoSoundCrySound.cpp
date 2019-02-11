@@ -760,8 +760,8 @@ float GFxVideoCrySound::Update(bool muteMainTrack)
 		}
 		else
 		{
-			const float t = 0.015f;
 		#if defined(ENABLE_VIDEOSOUND_UPDATE_LOGGING)
+			const float t = 0.015f;
 			gEnv->pLog->Log("%s. %d bytes to refill pos. Wait %.2f ms...", prevStarved ? "Still starving" : "Nothing received", distToRefill, t * 1000.0f);
 		#endif
 			return 0.015f;

@@ -233,8 +233,6 @@ size_t CStatoscopeIntervalGroup::GetDescEventLength() const
 
 void CStatoscopeIntervalGroup::WriteDescEvent(void* p) const
 {
-	size_t numElements = m_dataClass.GetNumElements();
-
 	char* pc = (char*)p;
 	for (size_t i = 0; i < m_dataClass.GetNumBinElements(); ++i)
 	{
@@ -2923,8 +2921,6 @@ int32 CStatoscopeServer::ReceiveData(void* buffer, int bufferSize)
 
 void CStatoscopeServer::SendData(const char* buffer, int bufferSize)
 {
-	threadID threadID = CryGetCurrentThreadId();
-
 	if (m_socket == CRY_INVALID_SOCKET || !m_isConnected)
 	{
 		return;
@@ -3417,8 +3413,6 @@ void CStatoscopeIOThread::QueueSendData(const char* pBuffer, int nBytes)
 {
 	if (nBytes > 0)
 	{
-		bool bWait = false;
-
 		//PIXSetMarker(0, "[STATOSCOPE]Queue Data\n");
 
 		assert(pBuffer);

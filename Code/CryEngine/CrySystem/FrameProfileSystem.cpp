@@ -836,9 +836,6 @@ void CFrameProfileSystem::EndFrame()
 		if (pDisplayInfo && pDisplayInfo->GetIVal() > 1)
 		{
 			// Update profilers that are Regions only (without waiting time).
-			auto Iter = m_pProfilers->cbegin();
-			const auto IterEnd = m_pProfilers->cend();
-
 			for (auto const pFrameProfiler : * m_pProfilers)
 			{
 				if (pFrameProfiler != nullptr && (pFrameProfiler->m_description & PROFILE_TYPE_CHECK_MASK) == EProfileDescription::REGION)

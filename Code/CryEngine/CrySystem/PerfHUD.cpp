@@ -672,8 +672,6 @@ bool CPerfHUD::OnInputEvent(const SInputEvent& rInputEvent)
 	if (rInputEvent.deviceType == eIDT_Gamepad &&
 	    rInputEvent.deviceIndex == 0)
 	{
-		int frameNum = gEnv->pRenderer->GetFrameID(false);
-
 		if (rInputEvent.state == eIS_Pressed)
 		{
 			bool checkState = false;
@@ -1884,8 +1882,6 @@ CStreamingStatsWidget::CStreamingStatsWidget(IMiniCtrl* pParentMenu, ICryPerfHUD
 //////////////////////////////////////////////////////////////////////////
 void CStreamingStatsWidget::Update()
 {
-	IRenderer* pRenderer = gEnv->pRenderer;
-
 	char entryBuffer[CMiniInfoBox::MAX_TEXT_LENGTH] = { 0 };
 
 	//Clear old entries
@@ -2115,8 +2111,6 @@ void CRenderBatchWidget::Enable(int mode)
 {
 	mode = min(mode, DISPLAY_MODE_NUM - 1);
 	EDisplayMode newMode = (EDisplayMode)mode;
-
-	bool bValidMode = false;
 
 	if (m_displayMode != newMode)
 	{
