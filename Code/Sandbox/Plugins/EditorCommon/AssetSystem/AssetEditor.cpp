@@ -577,8 +577,6 @@ void CAssetEditor::dragEnterEvent(QDragEnterEvent* pEvent)
 		QStringList engineFilePaths;
 		stream >> engineFilePaths;
 
-		const auto meshType = CAssetManager::GetInstance()->FindAssetType("Mesh");
-
 		if (engineFilePaths.size() == 1)
 		{
 			CAsset* asset = CAssetManager::GetInstance()->FindAssetForFile(engineFilePaths[0].toStdString().c_str());
@@ -594,7 +592,6 @@ void CAssetEditor::dragEnterEvent(QDragEnterEvent* pEvent)
 	if (pDragDropData->HasFilePaths())
 	{
 		const auto filePaths = pDragDropData->GetFilePaths();
-		const auto meshType = CAssetManager::GetInstance()->FindAssetType("Mesh");
 
 		if (filePaths.size() == 1)
 		{
@@ -638,8 +635,6 @@ void CAssetEditor::dropEvent(QDropEvent* pEvent)
 		QStringList engineFilePaths;
 		stream >> engineFilePaths;
 
-		const auto meshType = CAssetManager::GetInstance()->FindAssetType("Mesh");
-
 		if (engineFilePaths.size() == 1)
 		{
 			CAsset* asset = CAssetManager::GetInstance()->FindAssetForFile(engineFilePaths[0].toStdString().c_str());
@@ -655,7 +650,6 @@ void CAssetEditor::dropEvent(QDropEvent* pEvent)
 	if (pDragDropData->HasFilePaths())
 	{
 		const auto filePaths = pDragDropData->GetFilePaths();
-		const auto meshType = CAssetManager::GetInstance()->FindAssetType("Mesh");
 
 		if (filePaths.size() == 1)
 		{

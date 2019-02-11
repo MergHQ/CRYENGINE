@@ -545,8 +545,6 @@ bool CObjectMode::OnLButtonDown(CViewport* view, int nFlags, CPoint point)
 
 int CObjectMode::ApplyMouseSelection(CViewport* pView, CBaseObject* pHitObject, bool bNoRemoveSelection, bool bToggle, bool bAdd)
 {
-	CLevelEditorSharedState::EditMode editMode = GetIEditor()->GetLevelEditorSharedState()->GetEditMode();
-
 	int numSelected = 0;
 
 		// If not selection locked.

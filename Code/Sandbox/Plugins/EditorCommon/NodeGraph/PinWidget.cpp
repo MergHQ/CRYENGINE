@@ -162,7 +162,6 @@ void CPinWidget::SetNameWidget(CPinName* pWidget)
 	if (m_pContent == pWidget)
 		return;
 
-	QGraphicsScene* pScene = GetView().scene();
 	if (m_pContent)
 	{
 		m_pName = nullptr;

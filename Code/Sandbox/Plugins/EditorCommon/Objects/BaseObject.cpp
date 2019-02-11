@@ -318,7 +318,6 @@ private:
 	{
 		IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
 		CBaseObject* pObject = pObjectManager->FindObject(m_objectGUID);
-		CBaseObject* pParentObject = pObjectManager->FindObject(m_linkedObjectGUID);
 
 		if (pObject)
 			pObject->UnLink();
@@ -3441,9 +3440,6 @@ void CBaseObject::OnContextMenu(CPopupMenuItem* menu)
 
 	// Linking menu items
 	menu->AddSeparator();
-
-	ICommandManager* pCommandManager = GetIEditor()->GetICommandManager();
-
 	menu->AddCommand("tools.link_to_pick");
 	CPopupMenuItem& unlinkItem = menu->AddCommand("tools.unlink");
 

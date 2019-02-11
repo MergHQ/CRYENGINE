@@ -539,7 +539,6 @@ public:
 	bool drop(QPoint screenPoint)
 	{
 		bool rowLayoutChanged = false;
-		PropertyTreeModel* model = tree_->model();
 		if(row_ && hoveredRow_){
 			YASLI_ASSERT(destinationRow_);
 			clickedRow_->setSelected(false);
@@ -1097,7 +1096,6 @@ void QPropertyTree::paintEvent(QPaintEvent* ev)
 	QPainter painter(this);
 	QRect clientRect = this->rect();
 
-	int clientWidth = clientRect.width();
 	int clientHeight = clientRect.height();
 	painter.fillRect(clientRect, palette().window());
 
@@ -1199,9 +1197,6 @@ void QPropertyTree::mousePressEvent(QMouseEvent* ev)
 
 	if (ev->button() == Qt::LeftButton)
 	{
-		int x = ev->x();
-		int y = ev->y();
-
 		Point point = fromQPoint(ev->pos());
 		PropertyRow* row = rowByPoint(point);
 		if (row && !row->isRoot() && treeStyle().propertySplitter && (!treeStyle().groupRectangle || !row->isGroupParent(this))) {
@@ -1265,7 +1260,6 @@ void QPropertyTree::mouseReleaseEvent(QMouseEvent* ev)
 		 }
 		 else {
 			 Point point = fromQPoint(ev->pos());
-			 PropertyRow* row = rowByPoint(point);
 			 if(capturedRow_){
 				 Rect rowRect = capturedRow_->rect();
 				 onRowLMBUp(capturedRow_, rowRect, pointToRootSpace(point));

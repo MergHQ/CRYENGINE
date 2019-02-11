@@ -60,6 +60,7 @@ public:
 		, m_pOcclusionParameter(nullptr)
 		, m_pAbsoluteVelocityParameter(nullptr)
 		, m_toBeRemoved(false)
+		, m_isFadingOut(false)
 		, m_baseObject(baseObject)
 	{}
 #else
@@ -102,7 +103,8 @@ public:
 	bool                         IsToBeRemoved() const { return m_toBeRemoved; }
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
-	CBaseObject const& GetObject() const { return m_baseObject; }
+	bool               IsFadingOut() const { return m_isFadingOut; }
+	CBaseObject const& GetObject() const   { return m_baseObject; }
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
 private:
@@ -124,6 +126,7 @@ private:
 	std::atomic_bool                 m_toBeRemoved;
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+	bool               m_isFadingOut;
 	CBaseObject const& m_baseObject;
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 };

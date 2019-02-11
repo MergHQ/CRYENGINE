@@ -61,7 +61,7 @@ CMemoryBlock& CMemoryBlock::operator=(const CMemoryBlock& mem)
 bool CMemoryBlock::Allocate(int size, int uncompressedSize)
 {
 	using namespace Private_MemoryBlock;
-	assert(size > 0);
+	CRY_ASSERT(size > 0);
 	if (m_buffer)
 	{
 		m_buffer = RealocateBlock(m_buffer, size);
@@ -117,7 +117,7 @@ void CMemoryBlock::Free()
 
 void CMemoryBlock::Copy(void* src, int size)
 {
-	assert(size <= m_size);
+	CRY_ASSERT(size <= m_size);
 	memcpy(m_buffer, src, size);
 }
 
@@ -138,7 +138,7 @@ void CMemoryBlock::Detach()
 void CMemoryBlock::Compress(CMemoryBlock& toBlock) const
 {
 	// Cannot compress to itself.
-	assert(this != &toBlock);
+	CRY_ASSERT(this != &toBlock);
 	unsigned long destSize = m_size * 2 + 128;
 	CMemoryBlock temp;
 	temp.Allocate(destSize);
@@ -152,13 +152,13 @@ void CMemoryBlock::Compress(CMemoryBlock& toBlock) const
 
 void CMemoryBlock::Uncompress(CMemoryBlock& toBlock) const
 {
-	assert(this != &toBlock);
+	CRY_ASSERT(this != &toBlock);
 	toBlock.Allocate(m_uncompressedSize);
 	toBlock.m_uncompressedSize = 0;
 	unsigned long destSize = m_uncompressedSize;
 	int result = uncompress((unsigned char*)toBlock.GetBuffer(), &destSize, (unsigned char*)GetBuffer(), GetSize());
-	assert(result == Z_OK);
-	assert(destSize == m_uncompressedSize);
+	CRY_ASSERT(result == Z_OK);
+	CRY_ASSERT(destSize == m_uncompressedSize);
 }
 
 void CMemoryBlock::Serialize(CArchive& ar)

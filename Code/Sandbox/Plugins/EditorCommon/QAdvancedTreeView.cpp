@@ -252,7 +252,6 @@ void QAdvancedTreeView::OnContextMenu(const QPoint& point)
 					pAction->setChecked(IsColumnVisible(i));
 					connect(pAction, &QAction::toggled, [=](bool bChecked)
 					{
-						int column = pAction->data().toInt();
 						SetColumnVisible(i, bChecked);
 					});
 
@@ -270,7 +269,6 @@ void QAdvancedTreeView::OnContextMenu(const QPoint& point)
 
 				connect(pAction, &QAction::toggled, [=](bool bChecked)
 				{
-					int column = pAction->data().toInt();
 					SetColumnVisible(i, bChecked);
 				});
 
@@ -537,7 +535,6 @@ QVariantMap QAdvancedTreeView::GetState() const
 
 void QAdvancedTreeView::SetState(const QVariantMap& state)
 {
-	QHeaderView* pHeader = header();
 	auto itemModel = header()->model();
 
 	QVariant columnDataVar = state.value("columnData");
@@ -628,7 +625,6 @@ void QAdvancedTreeView::SetState(const QVariantMap& state)
 
 		if (sortedSectionVar.isValid() && sortOrderVar.isValid())
 		{
-			auto h = header();
 			header()->setSortIndicator(sortedSectionVar.toInt(), static_cast<Qt::SortOrder>(sortOrderVar.toInt()));
 		}
 	}
@@ -691,7 +687,6 @@ void QAdvancedTreeView::drawBranches(QPainter* painter, const QRect& rect,
 	int level = index.column();
 
 	QRect primitive(reverse ? rect.left() : rect.right() + 1, rect.top(), indent, rect.height());
-	int branchAreaLeft = rect.left();
 
 	QModelIndex parent = index.parent();
 	QModelIndex current = parent;

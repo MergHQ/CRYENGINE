@@ -154,8 +154,7 @@ void CImpl::Update()
 {
 	if (g_pSystem != nullptr)
 	{
-		FMOD_RESULT const fmodResult = g_pSystem->update();
-		CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+		CRY_VERIFY(g_pSystem->update() == FMOD_OK);
 	}
 }
 
@@ -260,8 +259,7 @@ void CImpl::ShutDown()
 		ClearActiveSnapshots();
 		UnloadMasterBanks();
 
-		FMOD_RESULT const fmodResult = g_pSystem->release();
-		CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+		CRY_VERIFY(g_pSystem->release() == FMOD_OK);
 	}
 }
 
@@ -421,8 +419,12 @@ void CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 			}
 #endif      // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
-			FMOD_RESULT fmodResult = g_pSystem->loadBankMemory(static_cast<char*>(pFileInfo->pFileData), static_cast<int>(pFileInfo->size), FMOD_STUDIO_LOAD_MEMORY_POINT, FMOD_STUDIO_LOAD_BANK_NORMAL, &pFileData->pBank);
-			CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+			CRY_VERIFY(g_pSystem->loadBankMemory(
+									 static_cast<char*>(pFileInfo->pFileData),
+									 static_cast<int>(pFileInfo->size),
+									 FMOD_STUDIO_LOAD_MEMORY_POINT,
+									 FMOD_STUDIO_LOAD_BANK_NORMAL,
+									 &pFileData->pBank) == FMOD_OK);
 
 			CryFixedStringT<MaxFilePathLength> streamsBankPath = pFileInfo->szFilePath;
 			PathUtil::RemoveExtension(streamsBankPath);
@@ -433,8 +435,7 @@ void CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 			if (streamsBankFileSize > 0)
 			{
 				pFileData->m_streamsBankPath = streamsBankPath;
-				fmodResult = LoadBankCustom(pFileData->m_streamsBankPath.c_str(), &pFileData->pStreamsBank);
-				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+				CRY_VERIFY(LoadBankCustom(pFileData->m_streamsBankPath.c_str(), &pFileData->pStreamsBank) == FMOD_OK);
 			}
 		}
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
@@ -455,16 +456,14 @@ void CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 
 		if (pFileData != nullptr)
 		{
-			FMOD_RESULT fmodResult = pFileData->pBank->unload();
-			CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+			CRY_VERIFY(pFileData->pBank->unload() == FMOD_OK);
 
 			FMOD_STUDIO_LOADING_STATE loadingState;
 
 			do
 			{
-				fmodResult = g_pSystem->update();
-				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
-				fmodResult = pFileData->pBank->getLoadingState(&loadingState);
+				CRY_VERIFY(g_pSystem->update() == FMOD_OK);
+				FMOD_RESULT const fmodResult = pFileData->pBank->getLoadingState(&loadingState);
 				CRY_AUDIO_IMPL_FMOD_ASSERT_OK_OR_INVALID_HANDLE;
 			}
 			while (loadingState == FMOD_STUDIO_LOADING_STATE_UNLOADING);
@@ -473,8 +472,7 @@ void CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 
 			if (pFileData->pStreamsBank != nullptr)
 			{
-				fmodResult = pFileData->pStreamsBank->unload();
-				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+				CRY_VERIFY(pFileData->pStreamsBank->unload() == FMOD_OK);
 				pFileData->pStreamsBank = nullptr;
 			}
 		}
@@ -839,8 +837,7 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRoot
 		if (g_pSystem->lookupID(fullName.c_str(), &guid) == FMOD_OK)
 		{
 			FMOD::Studio::VCA* pVca = nullptr;
-			FMOD_RESULT const fmodResult = g_pSystem->getVCAByID(&guid, &pVca);
-			CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+			CRY_VERIFY(g_pSystem->getVCAByID(&guid, &pVca) == FMOD_OK);
 
 			float multiplier = g_defaultParamMultiplier;
 			float shift = g_defaultParamShift;
@@ -909,8 +906,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 		if (g_pSystem->lookupID(fullName.c_str(), &guid) == FMOD_OK)
 		{
 			FMOD::Studio::VCA* pVca = nullptr;
-			FMOD_RESULT const fmodResult = g_pSystem->getVCAByID(&guid, &pVca);
-			CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+			CRY_VERIFY(g_pSystem->getVCAByID(&guid, &pVca) == FMOD_OK);
 
 			char const* const szValue = pRootNode->getAttr(g_szValueAttribute);
 			auto const value = static_cast<float>(atof(szValue));
@@ -963,8 +959,7 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const p
 		if (g_pSystem->lookupID(path.c_str(), &guid) == FMOD_OK)
 		{
 			FMOD::Studio::Bus* pBus = nullptr;
-			FMOD_RESULT const fmodResult = g_pSystem->getBusByID(&guid, &pBus);
-			CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+			CRY_VERIFY(g_pSystem->getBusByID(&guid, &pBus) == FMOD_OK);
 
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CReturn");
 
@@ -1181,7 +1176,6 @@ FMOD_RESULT CImpl::LoadBankCustom(char const* const szFileName, FMOD::Studio::Ba
 //////////////////////////////////////////////////////////////////////////
 void CImpl::LoadMasterBanks()
 {
-	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 	m_masterBankPath.clear();
 	m_masterAssetsBankPath.clear();
 	m_masterStreamsBankPath.clear();
@@ -1227,11 +1221,9 @@ void CImpl::LoadMasterBanks()
 
 		if (masterBankFileSize > 0 && masterBankStringsFileSize > 0)
 		{
-			fmodResult = LoadBankCustom(m_masterBankPath.c_str(), &m_pMasterBank);
-			CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+			CRY_VERIFY(LoadBankCustom(m_masterBankPath.c_str(), &m_pMasterBank) == FMOD_OK);
 
-			fmodResult = LoadBankCustom(m_masterStringsBankPath.c_str(), &m_pMasterStringsBank);
-			CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+			CRY_VERIFY(LoadBankCustom(m_masterStringsBankPath.c_str(), &m_pMasterStringsBank) == FMOD_OK);
 
 			if (m_pMasterBank != nullptr)
 			{
@@ -1241,22 +1233,19 @@ void CImpl::LoadMasterBanks()
 #endif        // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
 				int numBuses = 0;
-				fmodResult = m_pMasterBank->getBusCount(&numBuses);
-				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+				CRY_VERIFY(m_pMasterBank->getBusCount(&numBuses) == FMOD_OK);
 
 				if (numBuses > 0)
 				{
 					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "FMOD::Studio::Bus*[]");
 					FMOD::Studio::Bus** pBuses = new FMOD::Studio::Bus*[numBuses];
 					int numRetrievedBuses = 0;
-					fmodResult = m_pMasterBank->getBusList(pBuses, numBuses, &numRetrievedBuses);
-					CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+					CRY_VERIFY(m_pMasterBank->getBusList(pBuses, numBuses, &numRetrievedBuses) == FMOD_OK);
 					CRY_ASSERT(numBuses == numRetrievedBuses);
 
 					for (int i = 0; i < numRetrievedBuses; ++i)
 					{
-						fmodResult = pBuses[i]->lockChannelGroup();
-						CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+						CRY_VERIFY(pBuses[i]->lockChannelGroup() == FMOD_OK);
 					}
 
 					delete[] pBuses;
@@ -1267,8 +1256,7 @@ void CImpl::LoadMasterBanks()
 
 			if (masterBankAssetsFileSize > 0)
 			{
-				fmodResult = LoadBankCustom(m_masterAssetsBankPath.c_str(), &m_pMasterAssetsBank);
-				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+				CRY_VERIFY(LoadBankCustom(m_masterAssetsBankPath.c_str(), &m_pMasterAssetsBank) == FMOD_OK);
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 				m_masterAssetsBankSize = masterBankAssetsFileSize;
@@ -1279,8 +1267,7 @@ void CImpl::LoadMasterBanks()
 
 			if (masterBankStreamsFileSize > 0)
 			{
-				fmodResult = LoadBankCustom(m_masterStreamsBankPath.c_str(), &m_pMasterStreamsBank);
-				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+				CRY_VERIFY(LoadBankCustom(m_masterStreamsBankPath.c_str(), &m_pMasterStreamsBank) == FMOD_OK);
 			}
 		}
 	}
@@ -1297,33 +1284,27 @@ void CImpl::LoadMasterBanks()
 //////////////////////////////////////////////////////////////////////////
 void CImpl::UnloadMasterBanks()
 {
-	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
-
 	if (m_pMasterStringsBank != nullptr)
 	{
-		fmodResult = m_pMasterStringsBank->unload();
-		CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+		CRY_VERIFY(m_pMasterStringsBank->unload() == FMOD_OK);
 		m_pMasterStringsBank = nullptr;
 	}
 
 	if (m_pMasterStreamsBank != nullptr)
 	{
-		fmodResult = m_pMasterStreamsBank->unload();
-		CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+		CRY_VERIFY(m_pMasterStreamsBank->unload() == FMOD_OK);
 		m_pMasterStreamsBank = nullptr;
 	}
 
 	if (m_pMasterAssetsBank != nullptr)
 	{
-		fmodResult = m_pMasterAssetsBank->unload();
-		CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+		CRY_VERIFY(m_pMasterAssetsBank->unload() == FMOD_OK);
 		m_pMasterAssetsBank = nullptr;
 	}
 
 	if (m_pMasterBank != nullptr)
 	{
-		fmodResult = m_pMasterBank->unload();
-		CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+		CRY_VERIFY(m_pMasterBank->unload() == FMOD_OK);
 		m_pMasterBank = nullptr;
 	}
 
@@ -1621,7 +1602,21 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 					if (draw)
 					{
 						EEventState const state = pEventInstance->GetState();
-						ColorF const& color = (state == EEventState::Pending) ? Debug::s_listColorItemLoading : ((state == EEventState::Virtual) ? Debug::s_globalColorVirtual : Debug::s_listColorItemActive);
+						ColorF color = Debug::s_listColorItemActive;
+
+						if (state == EEventState::Pending)
+						{
+							color = Debug::s_listColorItemLoading;
+						}
+						else if (state == EEventState::Virtual)
+						{
+							color = Debug::s_globalColorVirtual;
+						}
+						else if (pEventInstance->IsFadingOut())
+						{
+							color = Debug::s_listColorItemStopping;
+						}
+
 						auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, "%s on %s", szEventName, pEventInstance->GetObject().GetName());
 
 						posY += Debug::g_listLineHeight;

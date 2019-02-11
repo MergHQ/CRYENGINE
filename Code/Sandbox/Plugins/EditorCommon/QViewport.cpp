@@ -101,7 +101,6 @@ void QViewport::CreateGridLines(const uint count, const uint interStepCount, con
 	const float alphaMulMain = (float)gridSettings.mainColor.a;
 	const float alphaMulInter = (float)gridSettings.middleColor.a;
 	const float alphaFalloff = 1.0f - (gridSettings.alphaFalloff / 100.0f);
-	float orthoWeight = 1.0f;
 
 	for (int i = 0; i < count + 2; i++)
 	{

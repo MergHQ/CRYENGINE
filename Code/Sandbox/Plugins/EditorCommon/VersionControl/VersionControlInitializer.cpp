@@ -121,7 +121,6 @@ void OnDeletedWorkFilesStorageSaved()
 		}
 		else if (!CAssetsVCSStatusProvider::HasStatus(file, FS::eState_DeletedLocally | FS::eState_NotTracked))
 		{
-			auto status = CAssetsVCSStatusProvider::GetStatus(file);
 			filesToDelete.push_back(file);
 		}
 	}

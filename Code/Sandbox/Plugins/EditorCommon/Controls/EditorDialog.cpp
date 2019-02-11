@@ -198,7 +198,6 @@ void CEditorDialog::showEvent(QShowEvent* event)
 		m_grid->addWidget(w, 1, 1);
 	#if defined(WIN32) || defined(WIN64)
 		//Ensure titlebar has a HWND so it can receive native events
-		HWND h = (HWND)m_titleBar->winId();
 		SetWindowLong((HWND)winId(), GWL_STYLE, WS_OVERLAPPED | WS_MAXIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
 	#endif
 		setLayout(m_grid);

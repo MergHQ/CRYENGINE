@@ -276,7 +276,7 @@ void CBreadcrumbsBar::OnEnterPressed()
 		}
 		else
 		{
-			bool result = m_textEdit->setProperty("error", true);
+			m_textEdit->setProperty("error", true);
 			m_textEdit->style()->unpolish(m_textEdit);
 			m_textEdit->style()->polish(m_textEdit);
 			ToggleBreadcrumbsVisibility(false);

@@ -454,9 +454,8 @@ void ExplorerFileList::RevertEntry(uint id)
 		for (size_t i = 0; i < entryType->formats.size(); ++i)
 		{
 			const EntryFormat& format = entryType->formats[i];
-
 			string filename = format.MakeFilename(entry->path.c_str());
-			bool fileExists = gEnv->pCryPak->IsFileExist(entry->path.c_str());
+
 			if (!format.loader)
 				continue;
 			if (!format.loader->Load(entry, filename.c_str()))

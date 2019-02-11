@@ -746,8 +746,6 @@ struct CCurveEditor::SMoveHandler : public CCurveEditor::SMouseHandler
 
 	void RestoreKeyPositions()
 	{
-		SCurveEditorContent* pContent = m_pCurveEditor->m_pContent;
-
 		auto timeIter = m_keyTimes.begin();
 		auto valueIter = m_keyValues.begin();
 

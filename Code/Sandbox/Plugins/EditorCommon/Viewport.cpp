@@ -356,10 +356,6 @@ void CViewport::OnDragSelectRectangle(CPoint pnt1, CPoint pnt2, bool bNormilizeR
 	box.min.z = -10000;
 	box.max.z = 10000;
 	GetIEditor()->GetLevelEditorSharedState()->SetSelectedRegion(box);
-
-	// Show marker position in the status bar
-	float w = box.max.x - box.min.x;
-	float h = box.max.y - box.min.y;
 }
 
 void CViewport::SetCursor(QCursor* hCursor)

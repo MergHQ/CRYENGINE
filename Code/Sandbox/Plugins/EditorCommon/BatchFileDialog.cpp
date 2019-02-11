@@ -324,8 +324,6 @@ bool EDITOR_COMMON_API ShowBatchFileDialog(Serialization::StringList* result, co
 		            max(0, center.y() - dialog.height() / 2));
 	}
 
-	int numFailed = 0;
-	int numSaved = 0;
 	std::vector<string> failedFiles;
 	if (dialog.exec() == QDialog::Accepted)
 	{

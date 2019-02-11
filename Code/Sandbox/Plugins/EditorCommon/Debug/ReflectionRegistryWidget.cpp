@@ -197,9 +197,9 @@ CReflectionRegistryDockable::CReflectionRegistryDockable(QWidget* const pParent)
 {
 	const auto pMenuBar = new QMenuBar();
 	const auto pFileMenu = pMenuBar->addMenu("&File");
-	const auto pExportAction = pFileMenu->addAction("&Export...");
+	pFileMenu->addAction("&Export...");
 	const auto pViewMenu = pMenuBar->addMenu("&View");
-	const auto pOpenSourceAction = pViewMenu->addAction("&Source");
+	pViewMenu->addAction("&Source");
 
 	m_pReflectionRegistryWidget = new CReflectionRegistryWidget(this);
 

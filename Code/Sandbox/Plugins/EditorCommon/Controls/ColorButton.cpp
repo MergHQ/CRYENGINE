@@ -58,7 +58,6 @@ void CColorButton::paintEvent(QPaintEvent* paintEvent)
 		checkboardPattern = QImage((unsigned char*)pixels, size, size, size * 4, QImage::Format_RGBA8888);
 	}
 
-	QStyle* style = QWidget::style();
 	QPainter painter(this);
 
 	QStyleOption opt;

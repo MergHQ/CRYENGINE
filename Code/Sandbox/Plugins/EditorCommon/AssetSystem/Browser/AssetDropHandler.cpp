@@ -113,7 +113,6 @@ std::vector<CAsset*> CAssetDropHandler::Import(const std::vector<string>& filePa
 	}).get();
 
 	const float inc = 1.0f / filePaths.size();
-	float fileProgress = 0.0f;
 
 	importParamsEx.beginImportingFile = [pShared](const string& filename)
 	{

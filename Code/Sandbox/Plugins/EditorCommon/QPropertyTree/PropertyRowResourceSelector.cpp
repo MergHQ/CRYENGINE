@@ -116,7 +116,6 @@ PropertyRowResourceSelector::PropertyRowResourceSelector()
 property_tree::InplaceWidget* PropertyRowResourceSelector::createWidget(PropertyTree* tree)
 {
 	int buttonsWidth = buttonCount() * 16;
-	int iconSpace = buttonsWidth ? buttonsWidth + 2 : 0;
 	int widgetWidth = max(16, widgetRect(tree).width() - buttonsWidth - 2);
 
 	context_.typeName = type_.c_str();
@@ -393,7 +392,6 @@ bool PropertyRowResourceSelector::createFile(PropertyTree* tree)
 	if (!provider_)
 		return false;
 
-	QPropertyTree* qtree = static_cast<QPropertyTree*>(tree);
 	QString title;
 	if (labelUndecorated())
 		title = QString("Create file for '") + labelUndecorated() + "'";
