@@ -39,13 +39,15 @@ public:
 		char const* const szCueName,
 		uint32 const acbId,
 		EActionType const type,
-		char const* const szCueSheetName)
+		char const* const szCueSheetName,
+		float const fadeOutTime)
 		: m_id(id)
 		, m_name(szCueName)
 		, m_cueSheetId(acbId)
 		, m_actionType(type)
 		, m_pAcbHandle(nullptr)
 		, m_cueSheetName(szCueSheetName)
+		, m_fadeOutTime(fadeOutTime)
 	{}
 #else
 	explicit CCue(
@@ -72,6 +74,10 @@ public:
 	char const*    GetName() const      { return m_name.c_str(); }
 	CriAtomExAcbHn GetAcbHandle() const { return m_pAcbHandle; }
 
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+	float GetFadeOutTime() const { return m_fadeOutTime; }
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+
 private:
 
 	uint32 const                                m_id;
@@ -82,6 +88,7 @@ private:
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	CryFixedStringT<MaxControlNameLength> const m_cueSheetName;
+	float const m_fadeOutTime;
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 };
 } // namespace Adx2

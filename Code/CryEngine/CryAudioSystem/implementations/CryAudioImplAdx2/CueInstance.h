@@ -23,6 +23,9 @@ enum class ECueInstanceFlags : EnumFlagsType
 	HasAbsoluteVelocity = BIT(2),
 	HasDoppler          = BIT(3),
 	ToBeRemoved         = BIT(4),
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+	IsStopping          = BIT(5),
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ECueInstanceFlags);
 
@@ -46,6 +49,7 @@ public:
 		, m_playbackId(playbackId)
 		, m_cue(cue)
 		, m_flags(ECueInstanceFlags::IsVirtual | ECueInstanceFlags::IsPending) // Voices always start in virtual state.
+		, m_timeFadeOutStarted(0.0f)
 		, m_baseObject(baseObject)
 	{}
 #else
@@ -78,7 +82,9 @@ public:
 	void                Resume();
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
-	CBaseObject const& GetObject() const { return m_baseObject; }
+	void               StartFadeOut();
+	float              GetTimeFadeOutStarted() const { return m_timeFadeOutStarted; }
+	CBaseObject const& GetObject() const             { return m_baseObject; }
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 private:
@@ -89,6 +95,7 @@ private:
 	CCue const&                    m_cue;
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+	float              m_timeFadeOutStarted;
 	CBaseObject const& m_baseObject;
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 };
