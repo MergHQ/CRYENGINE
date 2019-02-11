@@ -1055,7 +1055,6 @@ public:
 		LARGE_INTEGER stepStart, stepEnd;
 #endif
 		LARGE_INTEGER waitStart, waitEnd;
-		uint64 yieldBegin = 0U;
 
 		while (true)
 		{
@@ -2029,7 +2028,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 				maxTimeStep = 0.25f;
 			int maxSteps = 1;
 			float fCurTime = m_Time.GetCurrTime();
-			float fPrevTime = m_env.pPhysicalWorld->GetPhysicsTime();
+			//float fPrevTime = m_env.pPhysicalWorld->GetPhysicsTime();
 			float timeToDo = m_Time.GetFrameTime();//fCurTime - fPrevTime;
 			if (m_env.bMultiplayer)
 				timeToDo = m_Time.GetRealFrameTime();
@@ -2044,7 +2043,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 				{
 					CRY_PROFILE_REGION(PROFILE_SYSTEM, "SysUpdate:Physics");
 
-					int iPrevTime = m_env.pPhysicalWorld->GetiPhysicsTime();
+					//int iPrevTime = m_env.pPhysicalWorld->GetiPhysicsTime();
 					//float fPrevTime=m_env.pPhysicalWorld->GetPhysicsTime();
 					pVars->bMultithreaded = 0;
 					pVars->timeScalePlayers = 1.0f;
@@ -2812,8 +2811,13 @@ IResourceManager* CSystem::GetIResourceManager()
 //////////////////////////////////////////////////////////////////////////
 void CSystem::debug_GetCallStackRaw(void** callstack, uint32& callstackLength)
 {
+#if CRY_PLATFORM_ORBIS || CRY_PLATFORM_WINAPI
 	uint32 callstackCapacity = callstackLength;
+#endif
+
+#if CRY_PLATFORM_WINAPI
 	uint32 nNumStackFramesToSkip = 1;
+#endif
 
 	memset(callstack, 0, sizeof(void*) * callstackLength);
 
@@ -3023,9 +3027,7 @@ void CSystem::UpdateUpdateTimes()
 	sUpdateTimes& sample = m_UpdateTimes[m_UpdateTimesIdx];
 	if (m_PhysThread)
 	{
-		static uint64 lastPhysTime = 0U;
 		static uint64 lastMainTime = 0U;
-		static uint64 lastYields = 0U;
 		static uint64 lastPhysWait = 0U;
 		uint64 physTime = 0, mainTime = 0;
 		uint32 yields = 0;
@@ -3272,8 +3274,10 @@ void CSystem::SetSystemGlobalState(const ESystemGlobalState systemGlobalState)
 	{
 		if (gEnv && gEnv->pTimer)
 		{
+#if !defined(EXCLUDE_NORMAL_LOG)
 			const CTimeValue endTime = gEnv->pTimer->GetAsyncTime();
 			const float numSeconds = endTime.GetDifferenceInSeconds(s_startTime);
+#endif
 			CryLog("SetGlobalState %d->%d '%s'->'%s' %3.1f seconds",
 			       m_systemGlobalState, systemGlobalState,
 			       CSystem::GetSystemGlobalStateName(m_systemGlobalState), CSystem::GetSystemGlobalStateName(systemGlobalState),
@@ -3294,8 +3298,12 @@ void CSystem::RegisterWindowMessageHandler(IWindowMessageHandler* pHandler)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::UnregisterWindowMessageHandler(IWindowMessageHandler* pHandler)
 {
+#if defined(USE_CRY_ASSERT)
 	bool bRemoved = stl::find_and_erase(m_windowMessageHandlers, pHandler);
 	assert(pHandler && bRemoved && "This IWindowMessageHandler was not registered");
+#else
+	stl::find_and_erase(m_windowMessageHandlers, pHandler);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

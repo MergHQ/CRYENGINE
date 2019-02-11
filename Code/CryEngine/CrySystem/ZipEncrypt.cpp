@@ -33,8 +33,12 @@ void ZipEncrypt::Init(const uint8* pKeyData, uint32 keyLen)
 
 	register_cipher(&twofish_desc);
 
-	int prng_idx = register_prng(&yarrow_desc) != -1;
+#if defined(USE_CRY_ASSERT)
+	int prng_idx = register_prng(&yarrow_desc);
 	assert(prng_idx != -1);
+#else
+	register_prng(&yarrow_desc);
+#endif
 	rng_make_prng(128, find_prng("yarrow"), &g_yarrow_prng_state, NULL);
 
 	int importReturn = rsa_import(pKeyData, (unsigned long)keyLen, &g_rsa_key_public_for_sign);
@@ -169,8 +173,10 @@ bool ZipEncrypt::RSA_VerifyData(void* inBuffer, int sizeIn, unsigned char* signe
 
 	assert(hash_descriptor[sha256].hashsize == hashSize);
 
+#if defined(USE_CRY_ASSERT)
 	int prng_idx = find_prng("yarrow");
 	assert(prng_idx != -1);
+#endif
 
 	// Verify generated hash with RSA public key
 	int statOut = 0;
@@ -210,8 +216,10 @@ bool ZipEncrypt::RSA_VerifyData(const unsigned char** inBuffers, unsigned int* s
 
 	assert(hash_descriptor[sha256].hashsize == hashSize);
 
+#if defined(USE_CRY_ASSERT)
 	int prng_idx = find_prng("yarrow");
 	assert(prng_idx != -1);
+#endif
 
 	// Verify generated hash with RSA public key
 	int statOut = 0;

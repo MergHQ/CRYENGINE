@@ -367,7 +367,6 @@ bool CXmlNode::getAttr(const char* key, CryGUID& value) const
 	const char* svalue = GetValue(key);
 	if (svalue)
 	{
-		const char* guidStr = getAttr(key);
 		value = CryGUID::FromString(svalue);
 		return true;
 	}
@@ -1750,7 +1749,6 @@ XmlNodeRef XmlParserImp::ParseFile(const char* filename, XmlString& errorString,
 		{
 			// not binary XML - refuse to load if in scripts dir and not in bin xml to help reduce hacking
 			// wish we could compile the text xml parser out, but too much work to get everything moved over
-			static const char SCRIPTS_DIR[] = "Scripts/";
 			CryFixedStringT<32> strScripts("S");
 			strScripts += "c";
 			strScripts += "r";

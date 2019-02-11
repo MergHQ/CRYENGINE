@@ -99,7 +99,10 @@ bool JobManager::BlockingBackEnd::CBlockingBackEnd::ShutDown()
 void JobManager::BlockingBackEnd::CBlockingBackEnd::AddJob(JobManager::CJobDelegator& crJob, const JobManager::TJobHandle cJobHandle, JobManager::SInfoBlock& rInfoBlock)
 {
 	uint32 nJobPriority = crJob.GetPriorityLevel();
+
+#if !defined(_RELEASE) || defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
 	CJobManager* __restrict pJobManager = CJobManager::Instance();
+#endif
 
 	/////////////////////////////////////////////////////////////////////////////
 	// Acquire Infoblock to use
@@ -165,10 +168,12 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 {
 	// set up thread id
 	JobManager::detail::SetWorkerThreadId(m_nId | 0x40000000);
+#if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
+	CJobManager* __restrict pJobManager = CJobManager::Instance();
+#endif
 	do
 	{
 		SInfoBlock infoBlock;
-		CJobManager* __restrict pJobManager = CJobManager::Instance();
 		///////////////////////////////////////////////////////////////////////////
 		// wait for new work
 		{

@@ -79,7 +79,7 @@ void CDiskProfilerWindowsSpecific::Update(float timeNow, bool writeToLog)
 	{
 		DWORD numBytesReturned = 0;
 		LPOVERLAPPED overlapped = nullptr;
-		BOOL bResult = DeviceIoControl(m_engineDriveHandle,
+		DeviceIoControl(m_engineDriveHandle,
 			IOCTL_DISK_PERFORMANCE,
 			NULL, 0,
 			&m_currDiskPerf, sizeof(m_currDiskPerf),
@@ -111,7 +111,7 @@ void CDiskProfilerWindowsSpecific::DisableDiskProfiling()
 {
 	DWORD numBytesReturned = 0;
 	LPOVERLAPPED overlapped = nullptr;
-	BOOL bResult = DeviceIoControl(m_engineDriveHandle,
+	DeviceIoControl(m_engineDriveHandle,
 		IOCTL_DISK_PERFORMANCE_OFF,
 		NULL, 0,
 		NULL, 0,

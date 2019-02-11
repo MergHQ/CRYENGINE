@@ -24,7 +24,6 @@ static WCHAR szFR[] = L"\\System32\\FaultRep.dll";
 
 WCHAR* GetFullPathToFaultrepDll(void)
 {
-	CHAR* lpRet = NULL;
 	UINT rc;
 
 	rc = GetSystemWindowsDirectoryW(szPath, ARRAYSIZE(szPath));
@@ -45,7 +44,6 @@ typedef BOOL (WINAPI * MINIDUMPWRITEDUMP)(HANDLE hProcess, DWORD dwPid, HANDLE h
 LONG WINAPI CryEngineExceptionFilterMiniDump(struct _EXCEPTION_POINTERS* pExceptionPointers, const char* szDumpPath, MINIDUMP_TYPE mdumpValue)
 {
 	LONG lRet = EXCEPTION_CONTINUE_SEARCH;
-	HWND hParent = NULL;
 	HMODULE hDll = NULL;
 	//	char szDbgHelpPath[_MAX_PATH];
 
@@ -152,7 +150,7 @@ LONG WINAPI CryEngineExceptionFilterWER(struct _EXCEPTION_POINTERS* pExceptionPo
 			pfn_REPORTFAULT pfn = (pfn_REPORTFAULT)GetProcAddress(hFaultRepDll, "ReportFault");
 			if (pfn)
 			{
-				EFaultRepRetVal rc = pfn(pExceptionPointers, 0);
+				pfn(pExceptionPointers, 0);
 				lRet = EXCEPTION_EXECUTE_HANDLER;
 			}
 			FreeLibrary(hFaultRepDll);

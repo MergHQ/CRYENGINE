@@ -316,6 +316,7 @@ void CVisRegTest::Finish()
 
 bool CVisRegTest::WriteResults()
 {
+#if !defined(_RELEASE) || defined(RELEASE_LOGGING)
 	stack_string filename("%USER%/TestResults/VisReg/");
 	filename += m_testName + "/visreg_results.xml";
 
@@ -351,6 +352,7 @@ bool CVisRegTest::WriteResults()
 	fprintf(f, "\t</testsuite>\n");
 	fprintf(f, "</testsuites>");
 	fclose(f);
+#endif
 
 	return true;
 }

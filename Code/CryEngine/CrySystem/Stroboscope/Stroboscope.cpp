@@ -252,7 +252,7 @@ void CStroboscope::UpdateResult()
 					string file, procname;
 					int line;
 					void* baseAddr;
-					bool ok = IDebugCallStack::instance()->GetProcNameForAddr(addr, procname, baseAddr, file, line);
+					IDebugCallStack::instance()->GetProcNameForAddr(addr, procname, baseAddr, file, line);
 					string module = IDebugCallStack::instance()->GetModuleNameForAddr(addr);
 
 					SStrobosopeResult::SSymbolInfo info;

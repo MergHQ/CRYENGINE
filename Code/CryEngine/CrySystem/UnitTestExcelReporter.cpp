@@ -178,10 +178,11 @@ void CTestExcelReporter::OnFinishTesting(const SRunContext& context, bool openRe
 		AddCell(res.testInfo.lineNumber);
 	}
 
+#if CRY_PLATFORM_WINDOWS
 	bool bSaveSucceed = SaveToFile(kOutputFileName);
+
 	if (openReport)
 	{
-#if CRY_PLATFORM_WINDOWS
 		if (!bSaveSucceed)
 		{
 			// For local testing notify user to close previously opened report.
@@ -208,8 +209,10 @@ void CTestExcelReporter::OnFinishTesting(const SRunContext& context, bool openRe
 				}
 			}
 		}
-#endif
 	}
+#else
+	SaveToFile(kOutputFileName);
+#endif
 }
 
 void CTestExcelReporter::OnSingleTestStart(const STestInfo& testInfo)

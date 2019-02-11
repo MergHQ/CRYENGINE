@@ -1321,8 +1321,6 @@ void CMemReplay::Start(bool bPaused, const char* openString)
 	#if CRY_PLATFORM_ORBIS
 			m_stream.WriteEvent(MemReplayModuleRefShortEvent("orbis"));
 	#endif
-
-			uint32 id = 0;
 		}
 	}
 }
@@ -1895,7 +1893,7 @@ void CMemReplay::RecordModuleLoad(void* pSelf, const CReplayModules::ModuleLoadD
 
 	const uint32 threadId = CryGetCurrentThreadId();
 
-	MemReplayPushContextEvent* pEv = new(pMR->m_stream.BeginAllocateRawEvent<MemReplayPushContextEvent>(baseNameLen))MemReplayPushContextEvent(threadId, baseName, EMemStatContextTypes::MSC_Other, 0);
+	new(pMR->m_stream.BeginAllocateRawEvent<MemReplayPushContextEvent>(baseNameLen))MemReplayPushContextEvent(threadId, baseName, EMemStatContextTypes::MSC_Other, 0);
 	pMR->m_stream.EndAllocateRawEvent<MemReplayPushContextEvent>(baseNameLen);
 
 	pMR->RecordAlloc(

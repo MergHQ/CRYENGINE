@@ -187,8 +187,6 @@ void* CGeneralMemoryHeap::Malloc(size_t sz, const char* sUsage)
 
 size_t CGeneralMemoryHeap::Free(void* ptr)
 {
-	UINT_PTR ptri = reinterpret_cast<UINT_PTR>(ptr);
-
 	if (CGeneralMemoryHeap::IsInAddressRange(ptr))
 	{
 #if CAPTURE_REPLAY_LOG
@@ -344,8 +342,6 @@ void* CGeneralMemoryHeap::Memalign(size_t boundary, size_t size, const char* sUs
 
 size_t CGeneralMemoryHeap::UsableSize(void* ptr) const
 {
-	UINT_PTR ptri = reinterpret_cast<UINT_PTR>(ptr);
-
 	if (CGeneralMemoryHeap::IsInAddressRange(ptr))
 	{
 		CryAutoLock<CryCriticalSectionNonRecursive> lock(const_cast<CryCriticalSectionNonRecursive&>(m_mspaceLock));

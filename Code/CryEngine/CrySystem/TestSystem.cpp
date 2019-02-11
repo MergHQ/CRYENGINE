@@ -405,10 +405,13 @@ void CTestSystem::RunTestsByName(const DynArray<string>& names)
 {
 	CRY_ASSERT(!names.empty());
 	CryLogAlways("Running following tests:");
+
+#if !defined(EXCLUDE_NORMAL_LOG)
 	for (const string& name : names)
 	{
 		CryLogAlways(name);
 	}
+#endif
 	SaveAndDisableAssertDialogSetting();
 	std::set<string> remainingNames;
 	for (const string& name : names)

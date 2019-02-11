@@ -433,8 +433,6 @@ void CThreadConfigManager::LoadPriority(const XmlNodeRef& rXmlThreadRef, int32& 
 //////////////////////////////////////////////////////////////////////////
 void CThreadConfigManager::LoadDisablePriorityBoost(const XmlNodeRef& rXmlThreadRef, bool& rPriorityBoost, SThreadConfig::TThreadParamFlag& rParamActivityFlag)
 {
-	const char* sValidCharacters = "-,0123456789";
-
 	// Validate node
 	if (!rXmlThreadRef->haveAttr("DisablePriorityBoost"))
 	{
@@ -475,8 +473,6 @@ void CThreadConfigManager::LoadStackSize(const XmlNodeRef& rXmlThreadRef, uint32
 
 	if (rXmlThreadRef->haveAttr("StackSizeKB"))
 	{
-		int32 nPos = 0;
-
 		// Read stack size
 		CryFixedStringT<32> stackSize(rXmlThreadRef->getAttr("StackSizeKB"));
 

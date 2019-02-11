@@ -114,7 +114,7 @@ void CSystem::DumpMemoryUsageStatistics(bool bUseKB)
 	CrySizerStatsRenderer StatsRenderer(this, m_pMemStats, 10, 0);
 	StatsRenderer.dump(bUseKB);
 
-	int iSizeInM = m_env.p3DEngine->GetTerrainSize();
+	//int iSizeInM = m_env.p3DEngine->GetTerrainSize();
 
 	//	ResourceCollector.ComputeDependencyCnt();
 
@@ -558,7 +558,7 @@ int CSystem::GetApplicationInstance()
 		{
 			suffix.Format("(%d)", instance);
 
-			HANDLE instanceMutex = CreateMutex(NULL, TRUE, "CrytekApplication" + suffix);
+			CreateMutex(NULL, TRUE, "CrytekApplication" + suffix);
 			// search for duplicates
 			if (GetLastError() != ERROR_ALREADY_EXISTS)
 			{
@@ -721,13 +721,12 @@ void CSystem::DebugStats(bool checkpoint, bool leaks)
 	}
 	//////////////////////////////////////////////////////////////////////////
 
-	ILog* log = GetILog();
-	int totalal = 0, totalbl = 0, nolib = 0;
-
 	#ifdef _DEBUG
-	int extrastats[10];
+	ILog* log = GetILog();
+	int extrastats[10], totalal = 0, totalbl = 0;
 	#endif
 
+	int nolib = 0;
 	int totalUsedInModules = 0;
 	int countedMemoryModules = 0;
 	for (int i = 0; i < (int)(dbgmodules.size()); i++)
@@ -832,7 +831,9 @@ void CSystem::DebugStats(bool checkpoint, bool leaks)
 		phe.lpData = NULL;
 		int nCommitted = 0, nUncommitted = 0, nOverhead = 0;
 		int nCommittedPieces = 0, nUncommittedPieces = 0;
+#if defined(USE_CRY_ASSERT)
 		int nPrevRegionIndex = -1;
+#endif
 		while (HeapWalk(hHeap, &phe))
 		{
 			if (phe.wFlags & PROCESS_HEAP_REGION)
@@ -866,8 +867,7 @@ void CSystem::DebugStats(bool checkpoint, bool leaks)
 			nOverhead += phe.cbOverhead;
 		}
 		;
-		int nCommittedMin = min(nCommitted, nCommittedPieces);
-		int nCommittedMax = max(nCommitted, nCommittedPieces);
+
 		CryLogAlways("* heap %8x: %6d (or ~%6d) K in use, %6d..%6d K uncommitted, %6d K overhead (%s)\n",
 		             handles[i], nCommittedPieces / 1024, nCommitted / 1024, nUncommittedPieces / 1024, nUncommitted / 1024, nOverhead / 1024, hinfo);
 
@@ -981,7 +981,7 @@ void CSystem::GetExeSizes(ICrySizer* pSizer, MemStatsPurposeEnum nPurpose)
 	{
 		// the sizes of each module group
 		StringToSizeMap mapGroupSize;
-		DWORD dwTotalModuleSize = 0;
+
 		do
 		{
 			dwProcessID = me.th32ProcessID;
@@ -1273,7 +1273,6 @@ void CSystem::LogSystemInfo()
 	char szProfileBuffer[128];
 	char szLanguageBuffer[64];
 	//char szCPUModel[64];
-	char* pChar = 0;
 
 	MEMORYSTATUSEX MemoryStatus;
 	MemoryStatus.dwLength = sizeof(MemoryStatus);

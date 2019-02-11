@@ -84,7 +84,6 @@ void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 	m_rIntialWindowSizeRatio = REGISTER_FLOAT("r_InitialWindowSizeRatio", 0.666f, VF_DUMPTODISK,
 		"Sets the size ratio of the initial application window in relation to the primary monitor resolution.\n"
 		"Usage: r_InitialWindowSizeRatio [1.0/0.666/..]");
-	const float initialWindowSizeRatio = m_rIntialWindowSizeRatio->GetFVal();
 
 	int iFullScreenDefault  = 1;
 	int iDisplayInfoDefault = 1;
@@ -98,6 +97,7 @@ void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 	iHeightDefault = 1080;
 #elif CRY_PLATFORM_WINDOWS
 	iFullScreenDefault = 0;
+	const float initialWindowSizeRatio = m_rIntialWindowSizeRatio->GetFVal();
 	iWidthDefault = static_cast<int>(GetSystemMetrics(SM_CXSCREEN) * initialWindowSizeRatio);
 	iHeightDefault = static_cast<int>(GetSystemMetrics(SM_CYSCREEN) * initialWindowSizeRatio);
 #elif CRY_PLATFORM_LINUX || CRY_PLATFORM_APPLE
@@ -329,14 +329,13 @@ void CSystem::RenderPhysicsStatistics(IPhysicalWorld* pWorld)
 		const float fontSize      = 1.3f;
 		ITextModeConsole*  pTMC   = GetITextModeConsole();
 		phys_profile_info* pInfos;
-		phys_job_info* pJobInfos;
 		PhysicsVars* pVars = pWorld->GetPhysVars();
 		int  i             = -1;
 		char msgbuf[512];
 
 		if (pVars->bProfileGroups)
 		{
-			int j           = 0, mask, nGroups = pWorld->GetGroupProfileInfo(pInfos), nJobs = pWorld->GetJobProfileInfo(pJobInfos);
+			int j           = 0, mask, nGroups = pWorld->GetGroupProfileInfo(pInfos);
 			float fColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 			if (!pVars->bProfileEntities)
 				j = 12;
@@ -484,13 +483,13 @@ void CSystem::RenderJobStats()
 	gEnv->GetJobManager()->Update(m_sys_job_system_profiler->GetIVal());
 	gEnv->GetJobManager()->SetJobSystemEnabled(m_sys_job_system_enable->GetIVal());
 
-	JobManager::IBackend* const __restrict pThreadBackEnd   = gEnv->GetJobManager()->GetBackEnd(JobManager::eBET_Thread);
-	JobManager::IBackend* const __restrict pBlockingBackEnd = gEnv->GetJobManager()->GetBackEnd(JobManager::eBET_Blocking);
-
 #if defined(ENABLE_PROFILING_CODE)
 	if (m_FrameProfileSystem.IsEnabled())
 	{
 #if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
+
+		JobManager::IBackend* const __restrict pThreadBackEnd = gEnv->GetJobManager()->GetBackEnd(JobManager::eBET_Thread);
+		JobManager::IBackend* const __restrict pBlockingBackEnd = gEnv->GetJobManager()->GetBackEnd(JobManager::eBET_Blocking);
 
 		// Get none-blocking job & worker profile stats
 		if (pThreadBackEnd)
@@ -840,7 +839,6 @@ void CSystem::RenderOverscanBorders()
 		int iOverscanBordersDrawDebugView = m_rOverscanBordersDrawDebugView->GetIVal();
 		if (iOverscanBordersDrawDebugView)
 		{
-			const int texId          = -1;
 			const float uv           = 0.0f;
 			const float rot          = 0.0f;
 			const int whiteTextureId = m_env.pRenderer->GetWhiteTextureId();

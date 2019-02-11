@@ -905,7 +905,7 @@ void CLog::FormatTimestampInternal(stack_string& timeStr, const string& logForma
 
 	time_t ltime = now.time;
 	struct tm* today = isUtC ? gmtime(&ltime) : localtime(&ltime);
-	size_t actualLength = strftime(sTime, 128, logFormat.c_str(), today);
+	strftime(sTime, 128, logFormat.c_str(), today);
 
 	timeStr.Format("%s", sTime);
 

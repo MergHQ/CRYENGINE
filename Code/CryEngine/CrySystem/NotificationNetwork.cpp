@@ -409,8 +409,10 @@ bool CConnectionBase::Validate()
 		int r = (int)::select(int(m_socket + 1), NULL, &stWriteSockets, &stExceptions, &timeOut); // Ian: CRYSOCKET possible truncation on x64
 		if (r < 0)
 		{
+#if !defined(EXCLUDE_NORMAL_LOG)
 			TErrorType nErrorType(GetLastError());
 			CryLog("CNotificationNetworkClient::Validate: Failed to select socket. Reason: %u ", nErrorType);
+#endif
 			CrySock::closesocket(m_socket);
 			m_socket = CRY_INVALID_SOCKET;
 			if (m_boIsConnected)
@@ -675,8 +677,10 @@ bool CConnectionBase::ReceiveNotification(CListeners& listeners)
 	{
 		m_dataLeft = 0;
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 		TErrorType nCurrentError(GetLastError());
 		CryLog("CNotificationNetworkClient::ReceiveNotification: Failed to receive package. Reason: %u ", nCurrentError);
+#endif
 		CrySock::closesocket(m_socket);
 		m_socket = CRY_INVALID_SOCKET;
 		if (m_boIsConnected)
@@ -726,8 +730,10 @@ bool CConnectionBase::GetIsConnectedFlag()
 	int r = (int)::select(int(m_socket + 1), NULL, &stWriteSockets, &stExceptions, &timeOut); // Ian: CRYSOCKET possible truncation on x64
 	if (r < 0)
 	{
+#if !defined(EXCLUDE_NORMAL_LOG)
 		TErrorType nErrorType(GetLastError());
 		CryLog("CNotificationNetworkClient::GetIsConnectedFlag: Failed to select socket. Reason: %u ", nErrorType);
+#endif
 		CrySock::closesocket(m_socket);
 		m_socket = CRY_INVALID_SOCKET;
 		if (m_boIsConnected)

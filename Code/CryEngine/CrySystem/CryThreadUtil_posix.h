@@ -168,7 +168,6 @@ bool CryCreateThread(TThreadHandle* pThreadHandle, const SThreadCreationDesc& th
 
 	assert(pThreadHandle != THREADID_NULL);
 	pthread_attr_t threadAttr;
-	sched_param schedParam;
 	pthread_attr_init(&threadAttr);
 	pthread_attr_setdetachstate(&threadAttr, PTHREAD_CREATE_JOINABLE);
 	pthread_attr_setstacksize(&threadAttr, nStackSize);

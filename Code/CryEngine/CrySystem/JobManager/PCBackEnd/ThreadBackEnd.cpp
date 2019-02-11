@@ -126,7 +126,9 @@ bool JobManager::ThreadBackEnd::CThreadBackEnd::ShutDown()
 void JobManager::ThreadBackEnd::CThreadBackEnd::AddJob(JobManager::CJobDelegator& crJob, const JobManager::TJobHandle cJobHandle, JobManager::SInfoBlock& rInfoBlock)
 {
 	uint32 nJobPriority = crJob.GetPriorityLevel();
+#if !defined(_RELEASE) || defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
 	CJobManager* __restrict pJobManager = CJobManager::Instance();
+#endif
 
 	/////////////////////////////////////////////////////////////////////////////
 	// Acquire Infoblock to use
@@ -262,9 +264,11 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::ThreadEntry()
 #endif
 
 	uint64 nTicksInJobExecution = 0;
-	const float fMinTimeInJobExecution = 1.0f;
 
+#if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
 	CJobManager* __restrict pJobManager = CJobManager::Instance();
+#endif
+
 	do
 	{
 		SInfoBlock infoBlock;
@@ -361,7 +365,6 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::ThreadEntry()
 
 				// 2. Wait till the produces has finished writing all data to the SInfoBlock
 				JobManager::detail::SJobQueueSlotState* pJobInfoBlockState = &m_rJobQueue.jobInfoBlockStates[nPriorityLevel][nJobSlot];
-				int iter = 0;
 				while (!pJobInfoBlockState->IsReady())
 				{
 					//CRY_PROFILE_REGION(PROFILE_SYSTEM, "JobWorkerThread: About to sleep");

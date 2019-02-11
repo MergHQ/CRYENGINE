@@ -283,7 +283,9 @@ void* CCryMemoryManager::AllocPages(size_t size)
 
 void CCryMemoryManager::FreePages(void* p, size_t size)
 {
+#if CAPTURE_REPLAY_LOG
 	UINT_PTR id = (UINT_PTR)p;
+#endif
 	MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
 
 #if CRY_PLATFORM_ORBIS
