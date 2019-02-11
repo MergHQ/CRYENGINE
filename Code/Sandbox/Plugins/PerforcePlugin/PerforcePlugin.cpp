@@ -16,7 +16,7 @@ const int kVersion = 1;
 class CPerforceVersionControl_ClassDesc : public IClassDesc
 {
 	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_VCS_PROVIDER; }
-	virtual const char*    ClassName() { return "perforce"; }
+	virtual const char*    ClassName() { return "Perforce"; }
 	virtual const char*    Category() { return "VersionControl"; }
 	virtual void*          CreateObject()
 	{

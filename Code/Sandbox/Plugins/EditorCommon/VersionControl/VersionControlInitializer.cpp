@@ -2,41 +2,64 @@
 #include "StdAfx.h"
 #include "VersionControlInitializer.h"
 #include "VersionControl.h"
+#include "VersionControlPathUtils.h"
 #include "AssetsVCSStatusProvider.h"
 #include "AssetFilesProvider.h"
+#include "DeletedWorkFilesStorage.h"
 #include "UI/VersionControlMenuBuilder.h"
 #include "UI/VersionControlUIHelper.h"
 #include "AssetSystem/AssetManager.h"
 #include "AssetSystem/Browser/AssetModel.h"
 #include "AssetSystem/Loader/AssetLoaderHelpers.h"
 #include "AssetSystem/AssetManagerHelpers.h"
+#include "AssetSystem/FileOperationsExecutor.h"
 #include "Notifications/NotificationCenter.h"
 #include "IObjectManager.h"
 #include "Objects/IObjectLayerManager.h"
 #include "Objects/IObjectLayer.h"
 #include "ThreadingUtils.h"
 #include "Controls/QMenuComboBox.h"
-#include <CryString/CryPath.h>
+#include "PathUtils.h"
 
 namespace Private_VersionControlInitializer
 {
 
 CVersionControlMenuBuilder menuBuilder;
 
-void NotifyAboutAddedFiles()
+void NotifyAboutAddedFiles(const std::vector<string>& files, const QString& itemsName)
 {
-	std::vector<std::shared_ptr<const CVersionControlFileStatus>> fileStatuses;
-	CVersionControl::GetInstance().GetFileStatuses([](const CVersionControlFileStatus& fs)
+	auto numAdded = std::count_if(files.cbegin(), files.cend(), [](const string& file)
 	{
-		if (!fs.HasState(CVersionControlFileStatus::eState_AddedLocally))
+		return CAssetsVCSStatusProvider::HasStatus(file, CVersionControlFileStatus::eState_AddedLocally);
+	});
+	if (numAdded > 0)
+	{
+		GetIEditor()->GetNotificationCenter()->ShowInfo("Version Control System notification", 
+			QString("%1 new %2 were added").arg(QString::number(numAdded), itemsName));
+	}
+}
+
+void AddAllWorkFiles()
+{
+	std::vector<string> filesToAdd;
+	CAssetManager::GetInstance()->GetWorkFilesTracker().ForEachIndex([&filesToAdd](const string& file, int count) mutable
+	{
+		if (count == 0)
 		{
-			return false;
+			return;
 		}
-		return AssetLoader::IsMetadataFile(fs.GetFileName());
-	}, fileStatuses);
-	if (!fileStatuses.empty())
+		if (CAssetsVCSStatusProvider::HasStatus(file, CVersionControlFileStatus::eState_NotTracked))
+		{
+			filesToAdd.push_back(file);
+		}
+	});
+
+	VersionControlPathUtils::MatchCaseAndRemoveUnmatched(filesToAdd);
+
+	if (!filesToAdd.empty())
 	{
-		GetIEditor()->GetNotificationCenter()->ShowInfo("Version Control System notification", QString("%1 new assets were added").arg(fileStatuses.size()));
+		auto OnAddCallback = [filesToAdd](const auto& result) { NotifyAboutAddedFiles(filesToAdd, "work files"); };
+		CVersionControl::GetInstance().AddFiles(std::move(filesToAdd), false, std::move(OnAddCallback));
 	}
 }
 
@@ -61,8 +84,7 @@ void AddAllAssets()
 		{
 			if (metadataFile.empty())
 				return true;
-			const auto& fs = CVersionControl::GetInstance().GetFileStatus(metadataFile);
-			return fs && !fs->HasState(CVersionControlFileStatus::eState_NotTracked);
+			return !CAssetsVCSStatusProvider::HasStatus(metadataFile, CVersionControlFileStatus::eState_NotTracked);
 		}), metadataFiles.end());
 
 		assets.clear();
@@ -76,11 +98,41 @@ void AddAllAssets()
 			return;
 		}
 
-		CVersionControl::GetInstance().AddFiles(CAssetFilesProvider::GetForAssets(assets), false, [](const auto& result)
+		CVersionControl::GetInstance().AddFiles(CAssetFilesProvider::GetForAssets(assets), false
+			, [metadataFiles = std::move(metadataFiles)](const auto& result)
 		{
-			NotifyAboutAddedFiles();
+			NotifyAboutAddedFiles(metadataFiles, "assets");
 		});
 	});
+}
+
+void OnDeletedWorkFilesStorageSaved()
+{
+	using FS = CVersionControlFileStatus;
+	const CDeletedWorkFilesStorage& storage = CDeletedWorkFilesStorage::GetInstance();
+	std::vector<string> filesToDelete;
+	std::vector<string> filesToRevert;
+	for (int i = 0; i < storage.GetSize(); ++i)
+	{
+		const string& file = storage.GetFile(i);
+		if (CAssetsVCSStatusProvider::HasStatus(file, FS::eState_AddedLocally))
+		{
+			filesToRevert.push_back(file);
+		}
+		else if (!CAssetsVCSStatusProvider::HasStatus(file, FS::eState_DeletedLocally | FS::eState_NotTracked))
+		{
+			auto status = CAssetsVCSStatusProvider::GetStatus(file);
+			filesToDelete.push_back(file);
+		}
+	}
+	if (!filesToRevert.empty())
+	{
+		CVersionControl::GetInstance().Revert(std::move(filesToRevert));
+	}
+	if (!filesToDelete.empty())
+	{
+		CFileOperationExecutor::GetExecutor()->AsyncDelete(filesToDelete);
+	}
 }
 
 void UpdateStatusIfOnline()
@@ -91,6 +143,8 @@ void UpdateStatusIfOnline()
 		vcs.UpdateStatus(false, [](const auto& result)
 		{
 			AddAllAssets();
+			AddAllWorkFiles();
+			OnDeletedWorkFilesStorageSaved();
 		});
 	}
 }
@@ -109,6 +163,25 @@ void OnAssetChanged(CAsset& asset, int flags)
 		// TODO: there should be a check if any files from the asset has been deleted
 		// for this the old version of the cryasset needs to be compared with the new one.
 		// in this case we definitely need to know that the asset was changed due to underlying list of files change.
+	}
+}
+
+void OnAssetsUpdated(const std::vector<CAsset*>& assets)
+{
+	CDeletedWorkFilesStorage().GetInstance().Save();
+}
+
+void OnBeforeAssetsRemoved(const std::vector<CAsset*>& assets)
+{
+	for (CAsset* pAsset : assets)
+	{
+		for (const string& file : pAsset->GetWorkFiles())
+		{
+			if (GetIEditor()->GetAssetManager()->GetWorkFilesTracker().GetIndexCount(file) <= 1)
+			{
+				CDeletedWorkFilesStorage::GetInstance().Add(file);
+			}
+		}
 	}
 }
 
@@ -173,11 +246,17 @@ public:
 			GetIEditor()->GetAssetManager()->signalAfterAssetsInserted.Connect(&OnAssetsAdded, id);
 		}
 
+		pAssetManager->signalAssetsUpdated.Connect(&OnAssetsUpdated, id);
+
 		GetIEditor()->GetObjectManager()->GetIObjectLayerManager()->signalLayerSaved.Connect(&OnLayerSaved, id);
 
 		AddAssetsThumbnailIconProvider();
 
 		menuBuilder.Activate();
+
+		CDeletedWorkFilesStorage::GetInstance().Load();
+
+		CDeletedWorkFilesStorage::GetInstance().signalSaved.Connect(&OnDeletedWorkFilesStorageSaved, id);
 
 		CVersionControl::GetInstance().signalOnlineChanged.Connect(&UpdateStatusIfOnline, id);
 	}
@@ -190,12 +269,15 @@ public:
 		pAssetManager->signalAfterAssetsInserted.DisconnectById(id);
 		pAssetManager->signalAssetChanged.DisconnectById(id);
 		pAssetManager->signalScanningCompleted.DisconnectById(id);
+		pAssetManager->signalAssetsUpdated.DisconnectById(id);
 
 		GetIEditor()->GetObjectManager()->GetIObjectLayerManager()->signalLayerSaved.DisconnectById(id);
 
 		RemoveAssetsThunbnailIconProvider();
 
 		menuBuilder.Deactivate();
+
+		CDeletedWorkFilesStorage::GetInstance().signalSaved.DisconnectById(id);
 
 		CVersionControl::GetInstance().signalOnlineChanged.DisconnectById(id);
 	}

@@ -4,7 +4,10 @@
 #include "VersionControlUIHelper.h"
 #include "PendingChange.h"
 #include "AssetSystem/Loader/AssetLoaderHelpers.h"
+#include "AssetSystem/AssetManager.h"
+#include "VersionControl/DeletedWorkFilesStorage.h"
 #include "VersionControl/VersionControl.h"
+#include "VersionControl/AssetsVCSStatusProvider.h"
 #include "ProxyModels/AttributeFilterProxyModel.h"
 #include <CryString/CryPath.h>
 #include <QApplication>
@@ -23,6 +26,17 @@ bool IsLayerFile(const char* fileName)
 {
 	const char* const szExt = PathUtil::GetExt(fileName);
 	return strcmp(szExt, "lyr") == 0; 
+}
+
+bool IsDeletedWorkFiles(const CVersionControlFileStatus& fs)
+{
+	return CDeletedWorkFilesStorage::GetInstance().Contains(fs.GetFileName()) 
+		&& fs.HasState(CVersionControlFileStatus::eState_DeletedLocally);
+}
+
+bool IsWorkFile(const CVersionControlFileStatus& fs)
+{
+	return CAssetManager::GetInstance()->GetWorkFilesTracker().GetIndexCount(fs.GetFileName()) > 0 || IsDeletedWorkFiles(fs);
 }
 
 QIcon GetStatusIconForPendingChange(const CPendingChange* pPendingChange)
@@ -183,7 +197,7 @@ public:
 		vcs.GetFileStatuses([this](const auto& fs)
 		{
 			if (fs.IsUntouchedLocally()) return false;
-			return AssetLoader::IsMetadataFile(fs.GetFileName()) || IsLayerFile(fs.GetFileName());
+			return AssetLoader::IsMetadataFile(fs.GetFileName()) || IsLayerFile(fs.GetFileName()) || IsWorkFile(fs);
 		}, fileStatuses);
 
 		beginResetModel();
@@ -404,7 +418,7 @@ void CVersionControlPendingChangesWidget::SelectAssets(const std::vector<CAsset*
 	signalSelectionChanged();
 }
 
-void CVersionControlPendingChangesWidget::SelectLayers(const std::vector<string>& layersFiles, bool shouldDeselectCurrent)
+void CVersionControlPendingChangesWidget::SelectFiles(const std::vector<string>& layersFiles, bool shouldDeselectCurrent)
 {
 	using namespace Private_VersionControlPendingChangesTab;
 	GetModel(m_pTree)->SetSelectedMainFiles(layersFiles, shouldDeselectCurrent);

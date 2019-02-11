@@ -1,11 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include "StdAfx.h"
 #include "VersionControlTaskManager.h"
+#include "VersionControlCache.h"
 #include "CryThreading/CryThread.h"
 #include "CryThreading/IThreadManager.h"
 #include "VersionControlErrorHandler.h"
-
-#include <IEditor.h>
+#include "IEditor.h"
 
 namespace Private_VersionControlTaskManager
 {
@@ -145,7 +145,7 @@ std::shared_ptr<CVersionControlTask> CVersionControlTaskManager::AddTask(CVersio
 	return task;
 }
 
-std::shared_ptr<CVersionControlTask> CVersionControlTaskManager::ScheduleTask(std::function<void(CVersionControlResult&)> taskFunc, bool isBlocking, Callback callback)
+std::shared_ptr<CVersionControlTask> CVersionControlTaskManager::ScheduleTask(std::function<SVersionControlError()> taskFunc, bool isBlocking, Callback callback)
 {
 	using namespace Private_VersionControlTaskManager;
 	CRY_ASSERT_MESSAGE(g_pTaskQueueExecutor, "VCS Thread is not running");
@@ -153,10 +153,12 @@ std::shared_ptr<CVersionControlTask> CVersionControlTaskManager::ScheduleTask(st
 	{
 		return nullptr;
 	}
-	auto pTask = AddTask([taskFunc, callback = std::move(callback)](std::shared_ptr<CVersionControlTask> pTask) mutable
+	auto pTask = AddTask([this, taskFunc, callback = std::move(callback)](std::shared_ptr<CVersionControlTask> pTask) mutable
 	{
 		auto& result = pTask->m_result;
-		taskFunc(pTask->m_result);
+		m_pCache->m_lastUpdateList.clear();
+		result.SetError(taskFunc());
+		result.m_statusChanges = std::move(m_pCache->m_lastUpdateList);
 		if (g_shouldTerminate)
 		{
 			result.SetError(EVersionControlError::Terminated);

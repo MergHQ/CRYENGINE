@@ -7,7 +7,7 @@
 #include <functional>
 
 class CAsset;
-struct IFilesGroupProvider;
+struct IFilesGroupController;
 struct IObjectLayer;
 
 //! This class is responsible for synchronizing assets with the version on repository.
@@ -18,11 +18,11 @@ public:
 	static void Sync(const std::vector<CAsset*>& assets, std::vector<string> folders , std::function<void()> callback = nullptr);
 
 	//! Synchronizes files group with version in the repository.
-	static void Sync(const std::shared_ptr<IFilesGroupProvider>&, std::function<void()> callback = nullptr);
+	static void Sync(const std::shared_ptr<IFilesGroupController>&, std::function<void()> callback = nullptr);
 
 	//! Synchronizes layers with version in the repository.
 	static void Sync(const std::vector<IObjectLayer*>& layers, std::vector<string> folders, std::function<void()> callback = nullptr);
 
 	//! Synchronizes files groups with version in the repository.
-	static void Sync(std::vector<std::shared_ptr<IFilesGroupProvider>>, std::vector<string> folders, std::function<void()> callback = nullptr);
+	static void Sync(std::vector<std::shared_ptr<IFilesGroupController>>, std::vector<string> folders, std::function<void()> callback = nullptr);
 };

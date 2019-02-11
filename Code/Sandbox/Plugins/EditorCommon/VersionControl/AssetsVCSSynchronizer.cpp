@@ -4,6 +4,8 @@
 #include "VersionControl/VersionControl.h"
 #include "AssetFilesProvider.h"
 #include "AssetSystem/IFileOperationsExecutor.h"
+#include "AssetSystem/Loader/AssetLoaderHelpers.h"
+#include "AssetSystem/AssetManager.h"
 #include "AssetsVCSStatusProvider.h"
 #include "Objects/IObjectLayer.h"
 #include "Objects/IObjectLayerManager.h"
@@ -34,7 +36,7 @@ void CompareFilesAndDownloadMissing(std::vector<string> newFiles, std::vector<st
 
 	if (!missingFiles.empty())
 	{
-		CVersionControl::GetInstance().GetLatest(std::move(missingFiles), {}, false, false
+		CVersionControl::GetInstance().GetLatest(std::move(missingFiles), {}, {}, false, false
 			, [callback = std::move(callback)](const CVersionControlResult&) 
 		{
 			callback();
@@ -47,7 +49,7 @@ void CompareFilesAndDownloadMissing(std::vector<string> newFiles, std::vector<st
 }
 
 //! Returns the list of all files that comprise given file groups.
-std::vector<string> GetAllFiles(const std::vector<std::shared_ptr<IFilesGroupProvider>>& fileGroups)
+std::vector<string> GetAllFiles(const std::vector<std::shared_ptr<IFilesGroupController>>& fileGroups)
 {
 	std::vector<string> result;
 	result.reserve(fileGroups.size() * 2);
@@ -60,7 +62,7 @@ std::vector<string> GetAllFiles(const std::vector<std::shared_ptr<IFilesGroupPro
 }
 
 //! Returns the list of main files of given list of file groups.
-std::vector<string> GetAllMainFiles(const std::vector<std::shared_ptr<IFilesGroupProvider>>& fileGroups)
+std::vector<string> GetAllMainFiles(const std::vector<std::shared_ptr<IFilesGroupController>>& fileGroups)
 {
 	std::vector<string> mainFiles;
 	mainFiles.reserve(fileGroups.size());
@@ -101,9 +103,115 @@ std::vector<string> GetLayersFilesInFolders(const std::vector<string>& folders)
 	return layersFiles;
 }
 
+std::shared_ptr<std::vector<std::shared_ptr<IFilesGroupController>>> ToSharedVectorOfFileGroups(const std::vector<CAsset*>& vec)
+{
+	return std::make_shared<std::vector<std::shared_ptr<IFilesGroupController>>>(std::move(CAssetFilesProvider::ToFileGroups(vec)));
 }
 
-void CAssetsVCSSynchronizer::Sync(std::vector<std::shared_ptr<IFilesGroupProvider>> fileGroups, std::vector<string> folders
+void GetLatestForFileGroups(std::shared_ptr<std::vector<std::shared_ptr<IFilesGroupController>>> pFileGroups, std::function<void()> callback = nullptr)
+{
+	if (!callback)
+	{
+		callback = [] {};
+	}
+	// move all remotely deleted items to the end of the vector.
+	auto firstDeleteRemotelyIt = std::partition(pFileGroups->begin(), pFileGroups->end(), [](const auto& pFileGroup)
+	{
+		return !CAssetsVCSStatusProvider::HasStatus(*pFileGroup, CVersionControlFileStatus::eState_DeletedRemotely);
+	});
+	auto firstDeletedIndex = std::distance(pFileGroups->begin(), firstDeleteRemotelyIt);
+
+	auto originalFiles = GetAllFiles(*pFileGroups);
+
+	auto onGetLatest = [originalFiles, pFileGroups, firstDeletedIndex
+		, callback = std::move(callback)](const auto& result) mutable
+	{
+		// for the rest of the file we want to update theirs content to find missing files that we need to sync.
+		for (auto& pFileGroup : *pFileGroups)
+		{
+			pFileGroup->Update();
+		}
+
+		// erase all deleted items because at this point (after sync) all local files should be gone.
+		if (firstDeletedIndex != pFileGroups->size())
+		{
+			pFileGroups->erase(pFileGroups->begin() + firstDeletedIndex, pFileGroups->end());
+		}
+
+		if (pFileGroups->empty())
+		{
+			callback();
+			return;
+		}
+
+		CompareFilesAndDownloadMissing(GetAllFiles(*pFileGroups), originalFiles, std::move(callback));
+	};
+
+	CVersionControl::GetInstance().GetLatest(std::move(originalFiles), {}, {}, false, false
+		, std::move(onGetLatest));
+}
+
+void GetLatestForFolders(std::vector<string> folders, std::function<void()> callback)
+{
+	auto pAssetManager = CAssetManager::GetInstance();
+	std::vector<CAsset*> existingAssets;
+	for (const string& folder : folders)
+	{
+		auto folderAssets = pAssetManager->GetAssetsFromDirectory(folder);
+		existingAssets.reserve(existingAssets.size() + folderAssets.size());
+		existingAssets.insert(existingAssets.end(), folderAssets.cbegin(), folderAssets.cend());
+	}
+	if (!existingAssets.empty())
+	{
+		GetLatestForFileGroups(ToSharedVectorOfFileGroups(existingAssets));
+	}
+
+	CVersionControl::GetInstance().GetLatest({}, std::move(folders), { "cryasset", "lyr" }, false, false,
+		[callback = std::move(callback)](const auto& result) mutable
+	{
+		std::vector<string> metadataFiles;
+		metadataFiles.reserve(result.GetStatusChanges().size());
+		IObjectLayerManager* pLayerManager = GetIEditor()->GetObjectManager()->GetIObjectLayerManager();
+		for (const auto& update : result.GetStatusChanges())
+		{
+			if (update.GetFileName().compareNoCase(update.GetFileName().size() - 4, 4, ".lyr") == 0)
+			{
+				if (pLayerManager->IsLayerFileOfOpenedLevel(update.GetFileName()))
+				{
+					if (IObjectLayer* pLayer = pLayerManager->GetLayerByFileIfOpened(update.GetFileName()))
+					{
+						pLayerManager->DeleteLayer(pLayer);
+					}
+					pLayerManager->ImportLayerFromFile(PathUtil::Make(PathUtil::GetGameProjectAssetsRelativePath(), update.GetFileName()));
+				}
+			}
+			else
+			{
+				metadataFiles.push_back(update.GetFileName());
+			}
+		}
+
+		if (metadataFiles.empty())
+		{
+			callback();
+			return;
+		}
+
+		auto pAssetManager = CAssetManager::GetInstance();
+		pAssetManager->MergeAssets(AssetLoader::CAssetFactory::LoadAssetsFromMetadataFiles(metadataFiles));
+		std::vector<CAsset*> assets;
+		assets.reserve(metadataFiles.size());
+		for (const string& metadataFile : metadataFiles)
+		{
+			assets.push_back(pAssetManager->FindAssetForMetadata(metadataFile));
+		}
+		GetLatestForFileGroups(ToSharedVectorOfFileGroups(assets), std::move(callback));
+	});
+}
+
+}
+
+void CAssetsVCSSynchronizer::Sync(std::vector<std::shared_ptr<IFilesGroupController>> fileGroups, std::vector<string> folders
 	, std::function<void()> callback /*= nullptr*/)
 {
 	using namespace Private_AssetsVCSSynchronizer;
@@ -135,50 +243,20 @@ void CAssetsVCSSynchronizer::Sync(std::vector<std::shared_ptr<IFilesGroupProvide
 			if (folders.empty())
 			{
 				callback();
-				return;
 			}
-			CVersionControl::GetInstance().GetLatest({}, std::move(folders), false, false, [callback = std::move(callback)](const auto& result)
+			else
 			{
-				callback();
-			});
+				GetLatestForFolders(std::move(folders), std::move(callback));
+			}
 			return;
 		}
 
-		// move all remotely deleted items to the end of the vector.
-		auto firstDeleteRemotelyIt = std::partition(pFileGroups->begin(), pFileGroups->end(), [](const auto& pFileGroup)
+		GetLatestForFileGroups(pFileGroups, callback = folders.empty() ? std::move(callback) : [] {});
+
+		if (!folders.empty())
 		{
-			return !CAssetsVCSStatusProvider::HasStatus(*pFileGroup, FS::eState_DeletedRemotely);
-		});
-		auto firstDeletedIndex = std::distance(pFileGroups->begin(), firstDeleteRemotelyIt);
-
-		auto originalFiles = GetAllFiles(*pFileGroups);
-
-		auto onGetLatest = [originalFiles, pFileGroups, firstDeletedIndex
-			, callback = std::move(callback)](const auto& result) mutable
-		{
-			// for the rest of the file we want to update theirs content to find missing files that we need to sync.
-			for (auto& pFileGroup : *pFileGroups)
-			{
-				pFileGroup->Update();
-			}
-
-			// erase all deleted items because at this point (after sync) all local files should be gone.
-			if (firstDeletedIndex != pFileGroups->size())
-			{
-				pFileGroups->erase(pFileGroups->begin() + firstDeletedIndex, pFileGroups->end());
-			}
-
-			if (pFileGroups->empty())
-			{
-				callback();
-				return;
-			}
-
-			CompareFilesAndDownloadMissing(GetAllFiles(*pFileGroups), originalFiles, std::move(callback));
-		};
-
-		CVersionControl::GetInstance().GetLatest(std::move(originalFiles), std::move(folders), false, false
-			, std::move(onGetLatest));
+			GetLatestForFolders(std::move(folders), std::move(callback));
+		}
 	});
 }
 
@@ -188,7 +266,7 @@ void CAssetsVCSSynchronizer::Sync(const std::vector<CAsset*>& assets, std::vecto
 	Sync(CAssetFilesProvider::ToFileGroups(assets), std::move(folders), std::move(callback));
 }
 
-void CAssetsVCSSynchronizer::Sync(const std::shared_ptr<IFilesGroupProvider>& pFileGroup, std::function<void()> callback /*= nullptr*/)
+void CAssetsVCSSynchronizer::Sync(const std::shared_ptr<IFilesGroupController>& pFileGroup, std::function<void()> callback /*= nullptr*/)
 {
 	Sync({ pFileGroup }, {}, std::move(callback));
 }
@@ -196,24 +274,5 @@ void CAssetsVCSSynchronizer::Sync(const std::shared_ptr<IFilesGroupProvider>& pF
 void CAssetsVCSSynchronizer::Sync(const std::vector<IObjectLayer*>& layers, std::vector<string> folders
 	, std::function<void()> callback /*= nullptr*/)
 {
-	using namespace Private_AssetsVCSSynchronizer;
-	auto originalFiles = GetLayersFilesInFolders(folders);
-	auto onSync = [originalFiles = std::move(originalFiles), folders, callback = std::move(callback)]() mutable
-	{
-		auto newFiles = GetLayersFilesInFolders(folders);
-		auto missingFiles = FindMissingStrings(newFiles, originalFiles);
-		IObjectLayerManager* pLayerManager = GetIEditor()->GetObjectManager()->GetIObjectLayerManager();
-		for (const string& missingFile : missingFiles)
-		{
-			CryLog("Importing just downloaded layer file %s.", missingFile);
-			IObjectLayer* pLayer = pLayerManager->ImportLayerFromFile(PathUtil::Make(PathUtil::GetGameProjectAssetsRelativePath(), missingFile));
-			pLayer->SetModified(false);
-		}
-		if (callback)
-		{
-			callback();
-		}
-	};
-	Sync(CAssetFilesProvider::ToFileGroups(layers), std::move(folders), std::move(onSync));
-
+	Sync(CAssetFilesProvider::ToFileGroups(layers), std::move(folders), std::move(callback));
 }

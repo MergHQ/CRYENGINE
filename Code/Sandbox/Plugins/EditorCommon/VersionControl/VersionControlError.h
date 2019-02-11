@@ -14,6 +14,7 @@ enum class EVersionControlError
 	NoConnection,
 	InvalidFileName,
 	OperationFailed,
+	UpdateFileFailed,
 	Unknown
 };
 

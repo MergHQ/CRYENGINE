@@ -13,14 +13,20 @@ class EDITOR_COMMON_API CVersionControlSubmissionPopup : public CEditorDialog
 {
 	Q_OBJECT
 public:
-	static void ShowPopup(const std::vector<CAsset*>& assets = {}, const std::vector<string>& layersFiles = {}, const std::vector<string>& folders = {});
+	static void ShowPopup();
+
+	static void ShowPopup(const std::vector<CAsset*>& assets, const std::vector<string>& folders = {});
+
+	static void ShowPopup(const std::vector<string>& mainFiles, const std::vector<string>& folders = {});
 
 	CVersionControlSubmissionPopup(QWidget* pParent = nullptr);
 
 	~CVersionControlSubmissionPopup();
 
 	//! Marks given assets as selected if they can be submitted.
-	void Select(const std::vector<CAsset*>& assets, const std::vector<string>& layersFiles, const std::vector<string>& folders);
+	void Select(const std::vector<CAsset*>& assets, const std::vector<string>& folders);
+
+	void Select(const std::vector<string>& mainFiles, const std::vector<string>& folders);
 
 private:
 	//! Triggered when "Submit" button is pressed.

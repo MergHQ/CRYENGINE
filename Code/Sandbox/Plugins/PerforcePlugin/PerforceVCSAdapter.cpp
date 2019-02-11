@@ -139,7 +139,21 @@ std::vector<string> MergeFilesWithFolders(const std::vector<string>& files, cons
 	return result;
 }
 
-std::vector<string> AdjustAndMergePaths(const std::vector<string>& paths, const std::vector<string>& folders)
+std::vector<string> ApplyFileExtensionToFolders(const std::vector<string>& folders, const std::vector<string>& fileExtensions)
+{
+	std::vector<string> result;
+	result.reserve(folders.size() * fileExtensions.size());
+	for (const string& folder : folders)
+	{
+		for (const string& fileExtension : fileExtensions)
+		{
+			result.push_back(folder + "." + fileExtension);
+		}
+	}
+	return result;
+}
+
+std::vector<string> AdjustAndMergePaths(const std::vector<string>& paths, const std::vector<string>& folders, const std::vector<string>& fileExtensions = {})
 {
 	if (folders.empty())
 	{
@@ -148,6 +162,10 @@ std::vector<string> AdjustAndMergePaths(const std::vector<string>& paths, const 
 	
 	std::vector<string> result = PerforceFilePathUtil::AdjustPaths(paths);
 	std::vector<string> adjustedFolders = PerforceFilePathUtil::AdjustFolders(folders);
+	if (!fileExtensions.empty())
+	{
+		adjustedFolders = ApplyFileExtensionToFolders(adjustedFolders, fileExtensions);
+	}
 	std::move(adjustedFolders.begin(), adjustedFolders.end(), std::back_inserter(result));
 	return result;
 }
@@ -229,11 +247,11 @@ SVersionControlError CPerforceVCSAdapter::UpdateStatus(const std::vector<string>
 	return m_pParser->GetError();
 }
 
-SVersionControlError CPerforceVCSAdapter::GetLatest(const std::vector<string>& files, const std::vector<string>& folders, bool force)
+SVersionControlError CPerforceVCSAdapter::GetLatest(const std::vector<string>& files, const std::vector<string>& folders, const std::vector<string>& fileExtensions, bool force)
 {
 	using namespace Private_PerforceVCSAdapter;
 	std::vector<CVersionControlFileStatusUpdate> fileStatuses;
-	m_pParser->ParseSync(m_pExecutor->Sync(AdjustAndMergePaths(files, folders), force), fileStatuses, false);
+	m_pParser->ParseSync(m_pExecutor->Sync(AdjustAndMergePaths(files, folders, fileExtensions), force), fileStatuses);
 	if (!UpdateOnlineState())
 	{
 		return m_pParser->GetError();
@@ -441,6 +459,20 @@ SVersionControlError CPerforceVCSAdapter::RetrieveFilesContent(const string& fil
 	m_pParser->ParsePrint(m_pExecutor->Print(file), filesContent);
 
 	GetCache()->SaveFilesContent(file, filesContent);
+	return m_pParser->GetError();
+}
+
+SVersionControlError CPerforceVCSAdapter::RemoveFilesLocally(const std::vector<string>& filePaths)
+{
+	using namespace Private_PerforceVCSAdapter;
+	std::vector<CVersionControlFileStatusUpdate> fileStatuses;
+	m_pParser->ParseSync(m_pExecutor->Sync(PerforceFilePathUtil::AdjustPaths(filePaths), false, 0), fileStatuses
+		, IPerforceOutputParser::SyncMode::Remove);
+	if (!UpdateOnlineState())
+	{
+		return m_pParser->GetError();
+	}
+	GetCache()->UpdateFiles(fileStatuses);
 	return m_pParser->GetError();
 }
 

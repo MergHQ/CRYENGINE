@@ -7,7 +7,7 @@
 
 class CAsset;
 struct IObjectLayer;
-struct IFilesGroupProvider;
+struct IFilesGroupController;
 
 //! This class is responsible for reverting assets.
 class EDITOR_COMMON_API CAssetsVCSReverter
@@ -20,5 +20,5 @@ public:
 	static void RevertLayers(const std::vector<IObjectLayer*>& layers);
 
 	//! Reverts layers.
-	static void Revert(std::vector<std::shared_ptr<IFilesGroupProvider>> filesGroups);
+	static void Revert(std::vector<std::shared_ptr<IFilesGroupController>> filesGroups);
 };

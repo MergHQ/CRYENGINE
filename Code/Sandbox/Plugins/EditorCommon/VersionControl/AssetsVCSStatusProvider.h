@@ -7,7 +7,7 @@
 #include <vector>
 
 class CAsset;
-struct IFilesGroupProvider;
+struct IFilesGroupController;
 struct IObjectLayer;
 
 //! This class is responsible for providing current VCS status of assets as well as refreshing it.
@@ -19,7 +19,7 @@ public:
 	//! Returns the status of the given asset.
 	static int  GetStatus(const CAsset&);
 	//! Returns the status of the given file group.
-	static int  GetStatus(const IFilesGroupProvider&);
+	static int  GetStatus(const IFilesGroupController&);
 	//! Returns the status of the given layer.
 	static int  GetStatus(const IObjectLayer&);
 
@@ -28,7 +28,7 @@ public:
 	//! Specifies if the given asset has a specific status.
 	static bool HasStatus(const CAsset&, int status);
 	//! Specifies if the given file group has a specific status.
-	static bool HasStatus(const IFilesGroupProvider&, int status);
+	static bool HasStatus(const IFilesGroupController&, int status);
 	//! Specifies if the given layer has a specific status.
 	static bool HasStatus(const IObjectLayer&, int status);
 
@@ -40,8 +40,8 @@ public:
 	static void UpdateStatus(const std::vector<IObjectLayer*>&, std::function<void()> callback = nullptr);
 	//! Updates the status of given file group. This call is asynchronous.
 	//! \param callback Callback to be called once the status is updated.
-	static void UpdateStatus(const IFilesGroupProvider&, std::function<void()> callback = nullptr);
+	static void UpdateStatus(const IFilesGroupController&, std::function<void()> callback = nullptr);
 	//! Updates the status of given list of file groups. This call is asynchronous.
 	//! \param callback Callback to be called once the status is updated.
-	static void UpdateStatus(const std::vector<std::shared_ptr<IFilesGroupProvider>>& fileGroups, std::vector<string> folder = {}, std::function<void()> callback = nullptr);
+	static void UpdateStatus(const std::vector<std::shared_ptr<IFilesGroupController>>& fileGroups, std::vector<string> folder = {}, std::function<void()> callback = nullptr);
 };

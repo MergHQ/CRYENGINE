@@ -47,7 +47,7 @@ CDependencyTracker::CDependencyTracker()
 		CreateIndex();
 	}, (uintptr_t)this);
 
-	pAssetManager->signalAfterAssetsUpdated.Connect([this]()
+	pAssetManager->signalAfterAssetsReset.Connect([this]()
 	{
 		CreateIndex();
 	}, (uintptr_t)this);
@@ -67,7 +67,7 @@ CDependencyTracker::~CDependencyTracker()
 {
 	CAssetManager* pAssetManager = CAssetManager::GetInstance();
 	pAssetManager->signalAfterAssetsInserted.DisconnectById((uintptr_t)this);
-	pAssetManager->signalAfterAssetsUpdated.DisconnectById((uintptr_t)this);
+	pAssetManager->signalAfterAssetsReset.DisconnectById((uintptr_t)this);
 	pAssetManager->signalAssetChanged.DisconnectById((uintptr_t)this);
 	pAssetManager->signalAfterAssetsRemoved.DisconnectById((uintptr_t)this);
 }

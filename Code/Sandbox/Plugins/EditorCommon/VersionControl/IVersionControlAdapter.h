@@ -30,30 +30,31 @@ struct EDITOR_COMMON_API IVersionControlAdapter
 	virtual ~IVersionControlAdapter();
 
 	//! Updates version control status of given files and folders.
-	virtual SVersionControlError UpdateStatus(const std::vector<string>& filePaths, const std::vector<string>& folders = {}) = 0;
+	virtual SVersionControlError UpdateStatus(const std::vector<string>& files, const std::vector<string>& folders = {}) = 0;
 
 	//! Updates version control status of all tracked files.
 	virtual SVersionControlError UpdateStatus() = 0;
 
 	//! Downloads the last revision of given files and folders
+	//! \param fileExtensions If given only files with matching extension will be downloaded. Can be applied only to folders.
 	//! \param force Specifies if update to date files need to be forced to update.
-	virtual SVersionControlError GetLatest(const std::vector<string>& files, const std::vector<string>& folders, bool force) = 0;
+	virtual SVersionControlError GetLatest(const std::vector<string>& files, const std::vector<string>& folders, const std::vector<string>& fileExtensions, bool force) = 0;
 
 	//! Submits files to repository.
 	//! \param message Description for the current commit.
-	virtual SVersionControlError SubmitFiles(const std::vector<string>& filePaths, const string& message = "") = 0;
+	virtual SVersionControlError SubmitFiles(const std::vector<string>& files, const string& message = "") = 0;
 
 	//! Resolves conflicts.
 	virtual SVersionControlError ResolveConflicts(const std::vector<SVersionControlFileConflictStatus>& conflictStatuses) = 0;
 
 	//! Marks given files for add in version control system.
-	virtual SVersionControlError AddFiles(const std::vector<string>& filePaths) = 0;
+	virtual SVersionControlError AddFiles(const std::vector<string>& files) = 0;
 
 	//! Marks given files as being edited (or checks out).
-	virtual SVersionControlError EditFiles(const std::vector<string>& filePaths) = 0;
+	virtual SVersionControlError EditFiles(const std::vector<string>& files) = 0;
 
 	//! Marks given files for delete in version control system.
-	virtual SVersionControlError DeleteFiles(const std::vector<string>& filePaths) = 0;
+	virtual SVersionControlError DeleteFiles(const std::vector<string>& files) = 0;
 
 	//! Reverts all local changes to the files or folders.
 	virtual SVersionControlError Revert(const std::vector<string>& files, const std::vector<string>& folders) = 0;
@@ -64,6 +65,9 @@ struct EDITOR_COMMON_API IVersionControlAdapter
 
 	//! Retrieves file's textual content from repository.
 	virtual SVersionControlError RetrieveFilesContent(const string& file) = 0;
+
+	//! Removes files from the files system in VCS-friendly way.
+	virtual SVersionControlError RemoveFilesLocally(const std::vector<string>& files) = 0;
 
 	//! Check is current version control settings are valid.
 	virtual SVersionControlError CheckSettings() = 0;

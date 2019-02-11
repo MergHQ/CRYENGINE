@@ -90,8 +90,8 @@ private:
 		std::vector<std::unique_ptr<Folder>> m_subFolders;
 	};
 
-	void PreUpdate();
-	void PostUpdate();
+	void PreReset();
+	void PostReset();
 
 	void PreInsert(const std::vector<CAsset*>& assets);
 

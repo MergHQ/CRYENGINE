@@ -122,8 +122,8 @@ private:
 
 	void AddPredefinedComputedColumns();
 
-	void PreUpdate();
-	void PostUpdate();
+	void PreReset();
+	void PostReset();
 
 	void PreInsert(const std::vector<CAsset*>& assets);
 	void PostInsert(const std::vector<CAsset*>& assets);

@@ -2,7 +2,7 @@
 #include "StdAfx.h"
 #include "AssetEditor.h"
 
-#include "AssetFilesGroupProvider.h"
+#include "AssetFilesGroupController.h"
 #include "AssetManager.h"
 #include "AssetType.h"
 #include "Browser/AssetBrowserDialog.h"

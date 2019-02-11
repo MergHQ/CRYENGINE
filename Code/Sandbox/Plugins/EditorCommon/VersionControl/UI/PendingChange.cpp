@@ -32,6 +32,12 @@ bool DoesFileExist(const string& file)
 	return FileUtils::FileExists(PathUtil::Make(PathUtil::GetGameProjectAssetsRelativePath(), file));
 }
 
+bool IsLayerFile(const char* fileName)
+{
+	const char* const szExt = PathUtil::GetExt(fileName);
+	return strcmp(szExt, "lyr") == 0;
+}
+
 //! This class is responsible for retrieving a file's content from VCS repository.
 //! It makes sure that if the object is destroyed the retrieving (async) task is canceled.
 class CFilesContentRetriever
@@ -93,14 +99,14 @@ class CPendingDeletionAssetChange : public CPendingChange
 {
 public:
 	explicit CPendingDeletionAssetChange(string metadataFile)
-		: m_filesContentRetriewer(metadataFile)
+		: m_filesContentRetriever(metadataFile)
 	{
 		m_location = QtUtil::ToQString(PathUtil::MakeGamePath(PathUtil::GetParentDirectory(metadataFile)));
 		m_name = QtUtil::ToQString(PathUtil::GetFileName(metadataFile));
 		m_typeName = "...";
 		m_mainFile = metadataFile;
 
-		m_filesContentRetriewer.Retrieve([this](const string& filesContent)
+		m_filesContentRetriever.Retrieve([this](const string& filesContent)
 		{
 			ReadAndApplyAssetsFileContent(filesContent);
 		});
@@ -132,7 +138,7 @@ private:
 		}
 	}
 
-	CFilesContentRetriever m_filesContentRetriewer;
+	CFilesContentRetriever m_filesContentRetriever;
 };
 
 //! Specific implementation of pending change for levels.
@@ -342,6 +348,20 @@ public:
 	}
 };
 
+//! Specific implementation of pending change for a work file.
+class CPendingWorkFileChange : public CPendingChange
+{
+public:
+	explicit CPendingWorkFileChange(const string& workFile)
+	{
+		m_typeName = "-";
+		m_location = PathUtil::GetPathWithoutFilename(workFile);
+		m_name = QtUtil::ToQString(PathUtil::GetFile(workFile));
+		m_mainFile = workFile;
+		m_files = { workFile };
+	}
+};
+
 }
 
 CCrySignal<void(const std::vector<CPendingChange*>&)> CPendingChange::s_signalDataUpdatedIndirectly;
@@ -392,11 +412,11 @@ CPendingChange* CPendingChangeList::CreatePendingChangeFor(const string& file)
 		}
 		else 
 		{
-			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Couldn't find the asset for metadata file %s. File probably doesn't exist on the files system.", file.c_str());
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Version Control: Asset's file %s doesn't exist.", file.c_str());
 			return nullptr;
 		}
 	}
-	else
+	else if (IsLayerFile(file))
 	{
 		if (CAssetsVCSStatusProvider::HasStatus(file, CVersionControlFileStatus::eState_DeletedLocally))
 		{
@@ -408,7 +428,20 @@ CPendingChange* CPendingChangeList::CreatePendingChangeFor(const string& file)
 		}
 		else
 		{
-			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Couldn't find the layer's file %s because it doesn't exist on the file system.", file.c_str());
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Version Control: Layer's file %s doesn't exist.", file.c_str());
+			return nullptr;
+		}
+	}
+	else
+	{
+		if (CAssetsVCSStatusProvider::HasStatus(file, CVersionControlFileStatus::eState_DeletedLocally) ||
+			FileUtils::FileExists(PathUtil::Make(PathUtil::GetGameProjectAssetsRelativePath(), file)))
+		{
+			g_pendingChanges.push_back(std::make_unique<CPendingWorkFileChange>(file));
+		}
+		else
+		{
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Version Control: Work file %s doesn't exist.", file.c_str());
 			return nullptr;
 		}
 	}

@@ -21,9 +21,9 @@ public:
 	//! \param shouldDeselectCurrent specifies if the current selected item need to be cleared.
 	void SelectAssets(const std::vector<CAsset*>& assets, bool shouldDeselectCurrent = true);
 
-	//! Marks given layers as selected if they can be submitted.
+	//! Marks given files as selected if they can be submitted.
 	//! \param shouldDeselectCurrent specifies if the current selected item need to be cleared.
-	void SelectLayers(const std::vector<string>& layersFiles, bool shouldDeselectCurrent = true);
+	void SelectFiles(const std::vector<string>& files, bool shouldDeselectCurrent = true);
 
 	//! Marks all items in given folders as selected if they can be submitted.
 	//! \param shouldDeselectCurrent specifies if the current selected item need to be cleared.

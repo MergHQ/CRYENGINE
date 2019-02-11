@@ -4,7 +4,7 @@
 
 #include "AssetEditor.h"
 #include "AssetFileMonitor.h"
-#include "AssetFilesGroupProvider.h"
+#include "AssetFilesGroupController.h"
 #include "AssetGenerator.h"
 #include "AssetImporter.h"
 #include "AssetManagerHelpers.h"
@@ -15,12 +15,10 @@
 #include "EditableAsset.h"
 #include "EditorFramework/BroadcastManager.h"
 #include "FileOperationsExecutor.h"
-#include "IFilesGroupProvider.h"
 #include "Loader/AssetLoaderBackgroundTask.h"
 #include "Loader/AssetLoaderHelpers.h"
 #include "PakImporter.h"
 #include "PathUtils.h"
-#include "SourceFilesTracker.h"
 #include "ThreadingUtils.h"
 
 #include <IEditor.h>
@@ -69,11 +67,11 @@ void InitializeFileToAssetMap(FileToAssetMap& fileToAssetMap, const std::vector<
 	fileToAssetMap.reserve(allocNum);
 }
 
-	std::future<void> g_asyncProcess;
+std::future<void> g_asyncProcess;
 
-	std::vector<std::unique_ptr<IFilesGroupProvider>> ComposeFileGroupsForDeletion(std::vector<CAsset*>& assets)
-	{
-		std::vector<std::unique_ptr<IFilesGroupProvider>> fileGroups;
+std::vector<std::unique_ptr<IFilesGroupController>> ComposeFileGroupsForDeletion(std::vector<CAsset*>& assets)
+{
+		std::vector<std::unique_ptr<IFilesGroupController>> fileGroups;
 		fileGroups.reserve(assets.size());
 
 		std::sort(assets.begin(), assets.end(), [](CAsset* pAsset1, CAsset* pAsset2)
@@ -92,11 +90,11 @@ void InitializeFileToAssetMap(FileToAssetMap& fileToAssetMap, const std::vector<
 				bool shouldIncludeSource = !sourceFile.empty();
 				if (shouldIncludeSource)
 				{
-					auto count = CSourceFilesTracker::GetInstance()->GetCount(sourceFile);
+				auto count = CAssetManager::GetInstance()->GetSourceFilesTracker().GetIndexCount(sourceFile);
 					auto dist = std::distance(rangeStart, rangeEnd);
 					shouldIncludeSource = count == dist;
 				}
-				fileGroups.emplace_back(new CAssetFilesGroupProvider(*it, shouldIncludeSource));
+				fileGroups.emplace_back(new CAssetFilesGroupController(*it, shouldIncludeSource));
 				if (rangeEnd == assets.end())
 				{
 					break;
@@ -106,13 +104,13 @@ void InitializeFileToAssetMap(FileToAssetMap& fileToAssetMap, const std::vector<
 			}
 			else
 			{
-				fileGroups.emplace_back(new CAssetFilesGroupProvider(*it, false));
+				fileGroups.emplace_back(new CAssetFilesGroupController(*it, false));
 			}
 			++rangeEnd;
 			++it;
 		}
 		return fileGroups;
-	}
+}
 }
 
 const std::pair<const char*, const char*> CAssetManager::m_knownAliases[] =
@@ -287,13 +285,13 @@ CAsset* CAssetManager::FindAssetById(const CryGUID& guid)
 {
 	if (!m_orderedByGUID)
 	{
-		signalBeforeAssetsUpdated();
+		signalBeforeAssetsReset();
 		std::sort(m_assets.begin(), m_assets.end(), [](const CAsset* a, const CAsset* b)
 		{
 			return a->GetGUID() < b->GetGUID();
 		});
 		m_orderedByGUID = true;
-		signalAfterAssetsUpdated();
+		signalAfterAssetsReset();
 	}
 
 	auto it = std::lower_bound(m_assets.cbegin(), m_assets.cend(), guid, [](const CAsset* pAsset, const CryGUID& guid)
@@ -345,6 +343,8 @@ void CAssetManager::InsertAssets(const std::vector<CAsset*>& assets)
 
 	for (CAsset* pAsset : assets)
 	{
+		m_sourceFilesTracker.SetIndex(pAsset->GetSourceFile(), *pAsset);
+		m_workFilesTracker.SetIndices(pAsset->GetWorkFiles(), *pAsset);
 		m_assets.push_back(pAsset);
 		m_orderedByGUID = false;
 		AddAssetFilesToMap(m_fileToAssetMap, pAsset);
@@ -364,48 +364,59 @@ void CAssetManager::MergeAssets(std::vector<CAsset*> assets)
 
 	ICryPak* const pPak = GetISystem()->GetIPak();
 
+	std::vector<CAsset*> updatedAssets;
+
 	size_t count = assets.size();
 	for (size_t i = 0; i < count;)
 	{
-		CAsset* const pOther = FindAssetForMetadata(assets[i]->GetMetadataFile());
-		if (pOther)
+		CAsset* const pExistingAsset = FindAssetForMetadata(assets[i]->GetMetadataFile());
+		if (pExistingAsset)
 		{
-			if (pOther != assets[i])
+			// TODO: Better error handling.
+			if (pExistingAsset != assets[i] && pExistingAsset->GetGUID() == assets[i]->GetGUID() &&
+				pExistingAsset->GetType() == assets[i]->GetType())
 			{
-				// TODO: Better error handling.
-				if (pOther->GetGUID() == assets[i]->GetGUID() && pOther->GetType() == assets[i]->GetType())
+				// TODO: Support of this is error prone. Probably we need something like an assignment operator.
+				CEditableAsset editable(*pExistingAsset);
+
+				m_sourceFilesTracker.SetIndex(assets[i]->GetSourceFile(), *pExistingAsset);
+				editable.SetSourceFile(assets[i]->GetSourceFile());
+				m_workFilesTracker.SetIndices(assets[i]->GetWorkFiles(), *pExistingAsset);
+				editable.SetWorkFiles(assets[i]->GetWorkFiles());
+				
+				DeleteAssetFilesFromMap(m_fileToAssetMap, pExistingAsset, false);
+				editable.SetFiles(assets[i]->GetFiles());
+				AddAssetFilesToMap(m_fileToAssetMap, pExistingAsset, false);
+				editable.SetLastModifiedTime(assets[i]->GetLastModifiedTime());
+				editable.SetDependencies(assets[i]->GetDependencies());
+				editable.SetDetails(assets[i]->GetDetails());
+
+				// Force to update the thumbnail.
+				if (!pExistingAsset->IsImmutable())
 				{
-					// TODO: Support of this is error prone. Probably we need something like an assignment operator.
-					CEditableAsset editable(*pOther);
-					editable.SetSourceFile(assets[i]->GetSourceFile());
-					DeleteAssetFilesFromMap(m_fileToAssetMap, pOther, false);
-					editable.SetFiles(assets[i]->GetFiles());
-					AddAssetFilesToMap(m_fileToAssetMap, pOther, false);
-					editable.SetLastModifiedTime(assets[i]->GetLastModifiedTime());
-					editable.SetDependencies(assets[i]->GetDependencies());
-					editable.SetDetails(assets[i]->GetDetails());
-
-					// Force to update the thumbnail.
-					if (!pOther->IsImmutable())
-					{
-						pPak->RemoveFile(pOther->GetThumbnailPath());
-					}
-					editable.InvalidateThumbnail();
-
-					delete assets[i];
-					assets[i] = nullptr;
+					pPak->RemoveFile(pExistingAsset->GetThumbnailPath());
 				}
+				editable.InvalidateThumbnail();
+
+				updatedAssets.push_back(pExistingAsset);
+				delete assets[i];
+				assets[i] = nullptr;
+
+				// TODO: detect if list of files is changed, propagate the corresponding event eAssetChangeFlags_Files
+				pExistingAsset->NotifyChanged(eAssetChangeFlags_All);
 			}
 
 			std::swap(assets[i], assets[--count]);
-
-			// TODO: detect if list of files is changed, propagate the corresponding event eAssetChangeFlags_Files
-			pOther->NotifyChanged(eAssetChangeFlags_All);
 
 			// Do not increment index i.
 			continue;
 		}
 		++i;
+	}
+
+	if (!updatedAssets.empty())
+	{
+		signalAssetsUpdated(updatedAssets);
 	}
 
 	if (count)
@@ -445,25 +456,30 @@ bool CAssetManager::DeleteAssetsWithFiles(std::vector<CAsset*> assets)
 	return true;
 }
 
-void CAssetManager::DeleteAssetsOnlyFromData(const std::vector<CAsset*>& assets)
+void CAssetManager::DeleteAssetsOnlyFromData(std::vector<CAsset*> assets)
 {
 	MAKE_SURE(!m_assets.empty(), return );
 	MAKE_SURE(!assets.empty(), return );
 
 	using namespace Private_AssetManager;
+
+	assets.erase(std::remove_if(assets.begin(), assets.end(), [this](CAsset* pAsset)
+	{
+		auto it = std::find(m_assets.cbegin(), m_assets.cend(), pAsset);
+		return it == m_assets.cend();
+	}), assets.end());
+
 	signalBeforeAssetsRemoved(assets);
+
 	int newSize = m_assets.size();
 	for (auto pAsset : assets)
 	{
-		auto it = std::find(m_assets.cbegin(), m_assets.cend(), pAsset);
-		if (it == m_assets.cend())
-		{
-			continue;
-		}
-		
 		m_orderedByGUID = false;
 
-		int index = std::distance(m_assets.cbegin(), it);
+		m_sourceFilesTracker.RemoveIndex(pAsset->GetSourceFile(), *pAsset);
+		m_workFilesTracker.RemoveIndices(pAsset->GetWorkFiles(), *pAsset);  
+
+		int index = std::distance(m_assets.cbegin(), std::find(m_assets.cbegin(), m_assets.cend(), pAsset));
 		const CAssetPtr pAssetToDelete = std::move(m_assets[index]);
 		m_assets[index] = std::move(m_assets[--newSize]);
 		m_assets.resize(newSize);
@@ -512,7 +528,7 @@ bool CAssetManager::HasSharedSourceFile(const CAsset& asset) const
 		return false;
 	}
 
-	return CSourceFilesTracker::GetInstance()->GetCount(asset.GetSourceFile()) > 1;
+	return GetSourceFilesTracker().GetIndexCount(asset.GetSourceFile()) > 1;
 }
 
 //Reimport is implemented in asset manager to avoid adding dependency from CAsset to CAssetImporter

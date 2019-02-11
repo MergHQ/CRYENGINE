@@ -9,6 +9,7 @@ void CVersionControlCache::UpdateFiles(const std::vector<CVersionControlFileStat
 {
 	if (newFiles.empty())
 	{
+		m_lastUpdateList.clear();
 		return;
 	}
 	bool hasChanges = false;
@@ -38,6 +39,7 @@ void CVersionControlCache::UpdateFiles(const std::vector<CVersionControlFileStat
 			}
 		}
 	}
+	m_lastUpdateList = newFiles;
 	if (hasChanges)
 	{
 		SendUpdateSignal();
@@ -54,6 +56,7 @@ void CVersionControlCache::Clear()
 		std::lock_guard<std::mutex> lock(m_fileContentsMutex);
 		m_filesContents.clear();
 	}
+	m_lastUpdateList.clear();
 	SendUpdateSignal();
 }
 

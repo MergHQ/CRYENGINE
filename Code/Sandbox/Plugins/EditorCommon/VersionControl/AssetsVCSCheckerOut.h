@@ -6,7 +6,7 @@
 
 class CAsset;
 struct IObjectLayer;
-struct IFilesGroupProvider;
+struct IFilesGroupController;
 
 //! This class is responsible for checking out assets.
 class EDITOR_COMMON_API CAssetsVCSCheckerOut
@@ -19,5 +19,5 @@ public:
 	static void CheckOut(const std::vector<IObjectLayer*>& layers);
 
 	//! Check out file groups
-	static void CheckOut(const std::vector<std::shared_ptr<IFilesGroupProvider>>& fileGroups);
+	static void CheckOut(const std::vector<std::shared_ptr<IFilesGroupController>>& fileGroups);
 };

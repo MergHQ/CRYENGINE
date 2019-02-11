@@ -3,6 +3,7 @@
 #include "AssetsVCSReverter.h"
 
 #include "AssetFilesProvider.h"
+#include "DeletedWorkFilesStorage.h"
 #include "AssetSystem/AssetManager.h"
 #include "AssetSystem/FileOperationsExecutor.h"
 #include "AssetSystem/Loader/AssetLoaderHelpers.h"
@@ -12,7 +13,6 @@
 #include "Objects/IObjectLayerManager.h"
 #include "Objects/ObjectManager.h"
 #include "PathUtils.h"
-#include "ThreadingUtils.h"
 #include "VersionControl.h"
 
 #include <QDialogButtonBox>
@@ -89,33 +89,6 @@ bool IsConfirmed(const QString& str, bool hasAdded, const QString& additionalInf
 	return true;
 }
 
-bool IsLayerOfOpenedLevel(const string& layerFile, string& outLevelPath)
-{
-	const string levelPath = GetIEditor()->GetLevelPath();
-	if (levelPath.empty())
-	{
-		return false;
-	}
-	outLevelPath = PathUtil::MakeGamePath(levelPath);
-
-	return layerFile.compareNoCase(0, outLevelPath.size(), outLevelPath) == 0;
-}
-
-IObjectLayer* GetLayerIfOpened(const string& layerFile)
-{
-	string levelPath;
-	if (!IsLayerOfOpenedLevel(layerFile, levelPath))
-	{
-		return nullptr;
-	}
-
-	levelPath = PathUtil::Make(levelPath, "Layers");
-
-	// we skip ".lyr" on the back and "/" in from of layer's full name.
-	const auto fullName = layerFile.substr(levelPath.size() + 1, layerFile.size() - levelPath.size() - 5);
-	return GetIEditor()->GetObjectManager()->GetIObjectLayerManager()->FindLayerByFullName(fullName);
-}
-
 void DoRevertLayers(const std::vector<IObjectLayer*>& layers, std::vector<IObjectLayer*>& addedLayers)
 {
 	CVersionControl::GetInstance().Revert(CAssetFilesProvider::GetForLayers(layers), {}, false
@@ -136,11 +109,8 @@ void DoRevertLayers(const std::vector<IObjectLayer*>& layers, std::vector<IObjec
 		return;
 	}
 
-	std::vector<string> addedLayersFiles = CAssetFilesProvider::GetForLayers(addedLayers);
-	ThreadingUtils::AsyncQueue([addedLayersFiles = std::move(addedLayersFiles)]()
-	{
-		CFileOperationExecutor::GetDefaultExecutor()->Delete(addedLayersFiles);
-	});
+	CFileOperationExecutor::GetDefaultExecutor()->AsyncDelete(CAssetFilesProvider::GetForLayers(addedLayers));
+
 	for (IObjectLayer* pLayer : addedLayers)
 	{
 		GetIEditor()->GetObjectManager()->GetIObjectLayerManager()->DeleteLayer(pLayer, true, false);
@@ -157,7 +127,7 @@ void DoRevertAssets(const std::vector<CAsset*>& assets, const std::vector<string
 	}
 }
 
-std::vector<CAsset*> ExtractAsset(std::vector<std::shared_ptr<IFilesGroupProvider>>& filesGroups)
+std::vector<CAsset*> ExtractAsset(std::vector<std::shared_ptr<IFilesGroupController>>& filesGroups)
 {
 	std::vector<CAsset*> assets;
 	auto it = std::partition(filesGroups.begin(), filesGroups.end(), [](const auto& pGroup)
@@ -174,12 +144,13 @@ std::vector<CAsset*> ExtractAsset(std::vector<std::shared_ptr<IFilesGroupProvide
 	return assets;
 }
 
-std::vector<IObjectLayer*> ExtractLayersOfOpenedLevel(std::vector<std::shared_ptr<IFilesGroupProvider>>& filesGroups)
+std::vector<IObjectLayer*> ExtractLayersOfOpenedLevel(std::vector<std::shared_ptr<IFilesGroupController>>& filesGroups)
 {
 	std::vector<IObjectLayer*> layers;
-	auto it = std::partition(filesGroups.begin(), filesGroups.end(), [&layers](const auto& pGroup)
+	IObjectLayerManager* pLayerManager = GetIEditor()->GetObjectManager()->GetIObjectLayerManager();
+	auto it = std::partition(filesGroups.begin(), filesGroups.end(), [&layers, pLayerManager](const auto& pGroup)
 	{
-		auto pLayer = GetLayerIfOpened(pGroup->GetMainFile());
+		auto pLayer = pLayerManager->GetLayerByFileIfOpened(pGroup->GetMainFile());
 		if (pLayer)
 		{
 			layers.push_back(pLayer);
@@ -190,9 +161,9 @@ std::vector<IObjectLayer*> ExtractLayersOfOpenedLevel(std::vector<std::shared_pt
 	return layers;
 }
 
-std::vector<std::shared_ptr<IFilesGroupProvider>> ExtractDeleted(std::vector<std::shared_ptr<IFilesGroupProvider>>& filesGroups)
+std::vector<std::shared_ptr<IFilesGroupController>> ExtractDeleted(std::vector<std::shared_ptr<IFilesGroupController>>& filesGroups)
 {
-	std::vector<std::shared_ptr<IFilesGroupProvider>> deletedFilesGroups;
+	std::vector<std::shared_ptr<IFilesGroupController>> deletedFilesGroups;
 	auto it = std::partition(filesGroups.begin(), filesGroups.end(), [](const auto& pGroup)
 	{
 		return !CAssetsVCSStatusProvider::HasStatus(pGroup->GetMainFile(), CVersionControlFileStatus::eState_DeletedLocally);
@@ -202,7 +173,7 @@ std::vector<std::shared_ptr<IFilesGroupProvider>> ExtractDeleted(std::vector<std
 	return deletedFilesGroups;
 }
 
-std::vector<string> FilterLayersFiles(const std::vector<std::shared_ptr<IFilesGroupProvider>>& filesGroups)
+std::vector<string> FilterLayersFiles(const std::vector<std::shared_ptr<IFilesGroupController>>& filesGroups)
 {
 	std::vector<string> layersFiles;
 	for (const auto& pGroup : filesGroups)
@@ -215,7 +186,7 @@ std::vector<string> FilterLayersFiles(const std::vector<std::shared_ptr<IFilesGr
 	return layersFiles;
 }
 
-void TransformToFiles(const std::vector<std::shared_ptr<IFilesGroupProvider>>& filesGroups, std::vector<string>& files, std::vector<string>& addedFiles)
+void TransformToFiles(const std::vector<std::shared_ptr<IFilesGroupController>>& filesGroups, std::vector<string>& files, std::vector<string>& addedFiles)
 {
 	for (const auto& pGroup : filesGroups)
 	{
@@ -228,7 +199,7 @@ void TransformToFiles(const std::vector<std::shared_ptr<IFilesGroupProvider>>& f
 	}
 }
 
-void RevertDeletedGroups(const std::vector<std::shared_ptr<IFilesGroupProvider>>& deletedFilesGroups)
+void RevertDeletedGroups(const std::vector<std::shared_ptr<IFilesGroupController>>& deletedFilesGroups)
 {
 	if (deletedFilesGroups.empty())
 	{
@@ -246,30 +217,39 @@ void RevertDeletedGroups(const std::vector<std::shared_ptr<IFilesGroupProvider>>
 	CVersionControl::GetInstance().Revert(std::move(deletedFiles), {}, false
 		, [deletedLayersFiles = std::move(deletedLayersFiles)](const auto& result)
 	{
-		string tmp;
+		if (!result.IsSuccess())
+		{
+			return;
+		}
+
+		for (const auto& fs : result.GetStatusChanges())
+		{
+			CDeletedWorkFilesStorage::GetInstance().Remove(fs.GetFileName());
+		}
+		CDeletedWorkFilesStorage::GetInstance().Save();
+
 		IObjectLayerManager* pLayerManager = GetIEditor()->GetObjectManager()->GetIObjectLayerManager();
 		for (const string& deletedLayersFile : deletedLayersFiles)
 		{
-			if (IsLayerOfOpenedLevel(deletedLayersFile, tmp))
+			if (pLayerManager->IsLayerFileOfOpenedLevel(deletedLayersFile))
 			{
-				if (IObjectLayer* pLayer = GetLayerIfOpened(deletedLayersFile))
+				if (IObjectLayer* pLayer = pLayerManager->GetLayerByFileIfOpened(deletedLayersFile))
 				{
 					pLayerManager->DeleteLayer(pLayer);
 				}
-				IObjectLayer* pLayer = pLayerManager->ImportLayerFromFile(PathUtil::Make(PathUtil::GetGameProjectAssetsRelativePath(), deletedLayersFile));
-				pLayer->SetModified(false);
+				pLayerManager->ImportLayerFromFile(PathUtil::Make(PathUtil::GetGameProjectAssetsRelativePath(), deletedLayersFile));
 			}
 		}
 	});
 }
 
-bool HasLayersWithSameNameInOpenedLevel(const std::vector<std::shared_ptr<IFilesGroupProvider>>& filesGroups)
+bool HasLayersWithSameNameInOpenedLevel(const std::vector<std::shared_ptr<IFilesGroupController>>& filesGroups)
 {
 	for (const auto& pGroup : filesGroups)
 	{
 		if (!AssetLoader::IsMetadataFile(pGroup->GetMainFile()))
 		{
-			if (GetLayerIfOpened(pGroup->GetMainFile()))
+			if (GetIEditor()->GetObjectManager()->GetIObjectLayerManager()->GetLayerByFileIfOpened(pGroup->GetMainFile()))
 			{
 				return true;
 			}
@@ -278,7 +258,7 @@ bool HasLayersWithSameNameInOpenedLevel(const std::vector<std::shared_ptr<IFiles
 	return false;
 }
 
-QString GetConfirmString(const std::vector<std::shared_ptr<IFilesGroupProvider>>& filesGroups)
+QString GetConfirmString(const std::vector<std::shared_ptr<IFilesGroupController>>& filesGroups)
 {
 	bool hasAssets = false;
 	bool hasLayers = false;
@@ -348,12 +328,12 @@ void CAssetsVCSReverter::RevertLayers(const std::vector<IObjectLayer*>& layers)
 	DoRevertLayers(layers, addedLayers);
 }
 
-void CAssetsVCSReverter::Revert(std::vector<std::shared_ptr<IFilesGroupProvider>> filesGroups)
+void CAssetsVCSReverter::Revert(std::vector<std::shared_ptr<IFilesGroupController>> filesGroups)
 {
 	using namespace Private_AssetsVCSReverter;
 
 	QString confirmString = GetConfirmString(filesGroups);
-	std::vector<std::shared_ptr<IFilesGroupProvider>> deletedFilesGroups = ExtractDeleted(filesGroups);
+	std::vector<std::shared_ptr<IFilesGroupController>> deletedFilesGroups = ExtractDeleted(filesGroups);
 	std::vector<CAsset*> assets = ExtractAsset(filesGroups);
 	std::vector<IObjectLayer*> layers = ExtractLayersOfOpenedLevel(filesGroups);
 
@@ -394,9 +374,6 @@ void CAssetsVCSReverter::Revert(std::vector<std::shared_ptr<IFilesGroupProvider>
 	
 	if (!addedLayerFiles.empty())
 	{
-		ThreadingUtils::AsyncQueue([addedLayerFiles = std::move(addedLayerFiles)]()
-		{
-			CFileOperationExecutor::GetDefaultExecutor()->Delete(addedLayerFiles);
-		});
+		CFileOperationExecutor::GetDefaultExecutor()->AsyncDelete(addedLayerFiles);
 	}
 }

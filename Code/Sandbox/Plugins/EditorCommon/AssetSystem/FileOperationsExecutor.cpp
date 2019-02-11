@@ -2,7 +2,7 @@
 #include "StdAfx.h"
 #include "FileOperationsExecutor.h"
 
-#include "IFilesGroupProvider.h"
+#include "IFilesGroupController.h"
 #include "PathUtils.h"
 #include "QtUtil.h"
 #include <QFileInfo>
@@ -14,15 +14,16 @@ namespace Private_FileOperationsExecutor
 class CDefaultFileOperationsExecutor : public IFileOperationsExecutor
 {
 protected:
-	virtual void DoDelete(std::vector<std::unique_ptr<IFilesGroupProvider>> fileGroups) override
+	virtual void DoDelete(std::vector<std::unique_ptr<IFilesGroupController>> fileGroups
+		, std::function<void(void)> callback) override
 	{
 		for (const auto& pFileGroup : fileGroups)
 		{
-			DoDelete(pFileGroup->GetFiles());
+			DoDelete(pFileGroup->GetFiles(), pFileGroup == fileGroups.back() ? std::move(callback) : [] {});
 		}
 	}
 
-	virtual void DoDelete(const std::vector<string>& files) override
+	virtual void DoDelete(const std::vector<string>& files, std::function<void(void)> callback) override
 	{
 		for (const auto& file : files)
 		{
@@ -38,6 +39,10 @@ protected:
 			{
 				GetISystem()->GetILog()->LogWarning("Can not delete asset file %s", file.c_str());
 			}
+		}
+		if (callback)
+		{
+			callback();
 		}
 	}
 };

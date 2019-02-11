@@ -3,12 +3,17 @@
 #include "ManageWorkFilesDialog.h"
 
 #include "AssetSystem/Asset.h"
+#include "AssetSystem/AssetManager.h"
 #include "AssetSystem/AssetImportContext.h"
+#include "Controls/QuestionDialog.h"
 #include "EditorStyleHelper.h"
 #include "FileDialogs/EngineFileDialog.h"
 #include "PathUtils.h"
 #include "ProxyModels/AttributeFilterProxyModel.h"
 #include "QtUtil.h"
+#include "VersionControl/VersionControl.h"
+#include "VersionControl/VersionControlPathUtils.h"
+#include "VersionControl/DeletedWorkFilesStorage.h"
 
 #include <QBoxLayout>
 #include <QPlainTextEdit>
@@ -16,11 +21,19 @@
 #include <QStyledItemDelegate>
 #include <QTreeView>
 #include <QHeaderView>
+#include <QFileInfo>
+#include <QLabel>
 
 namespace Private_DefineWorkFilesWindow
 {
 
 constexpr int DELETE_ROW_ROLE = Qt::UserRole + 1;
+
+bool IsValidWorkFile(const string& file)
+{
+	auto pManager = CAssetManager::GetInstance();
+	return pManager->FindAssetForFile(file) == nullptr && pManager->GetSourceFilesTracker().GetIndexCount(file) == 0;
+}
 
 class CWorkFilesModel : public QAbstractItemModel
 {
@@ -29,6 +42,7 @@ public:
 		: m_pAsset(pAsset)
 	{
 		m_workFiles = pAsset->GetWorkFiles();
+		m_isAdded.resize(m_workFiles.size(), 0);
 	}
 
 	QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const
@@ -53,7 +67,7 @@ public:
 
 	int columnCount(const QModelIndex&) const override
 	{
-		return 2;
+		return 3;
 	}
 
 	QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override
@@ -71,6 +85,8 @@ public:
 				return QtUtil::ToQString(PathUtil::GetFile(m_workFiles[index.row()]));
 			case 1:
 				return QtUtil::ToQString(PathUtil::GetDirectory(m_workFiles[index.row()]));
+			case 2:
+				return CAssetManager::GetInstance()->GetWorkFilesTracker().GetIndexCount(m_workFiles[index.row()]) + m_isAdded[index.row()];
 			}
 		}
 
@@ -117,16 +133,41 @@ public:
 				return "Name";
 			case 1:
 				return "Path";
+			case 2:
+				return "Usage";
 			}
 		}
 
 		return QVariant();
 	}
 
-	void AddWorkFiles(const std::vector<string>& workFiles)
+	void AddWorkFiles(std::vector<string> workFiles)
 	{
+		ValidateFiles(workFiles);
+		if (workFiles.empty())
+		{
+			return;
+		}
 		beginResetModel();
-		m_workFiles.insert(m_workFiles.end(), workFiles.cbegin(), workFiles.cend());
+		const int originalSize = m_isAdded.size();
+		for (const string& workFile : workFiles)
+		{
+			auto it = std::find(m_workFiles.cbegin(), m_workFiles.cend(), workFile);
+			if (it == m_workFiles.cend())
+			{
+				m_workFiles.push_back(workFile);
+				m_isAdded.push_back(1);
+			}
+		}
+		const int numAdded = m_workFiles.size() - originalSize;
+		for (int i = 0; i < numAdded; ++i)
+		{
+			auto it = std::find(m_pAsset->GetWorkFiles().cbegin(), m_pAsset->GetWorkFiles().cend(), workFiles[i]);
+			if (it != m_pAsset->GetWorkFiles().cend())
+			{
+				m_isAdded[originalSize + i] = 0;
+			}
+		}
 		endResetModel();
 	}
 
@@ -134,20 +175,87 @@ public:
 	{
 		beginResetModel();
 		m_workFiles.erase(m_workFiles.begin() + row);
+		m_isAdded.erase(m_isAdded.begin() + row);
 		endResetModel();
 	}
 
 	void SaveAsset()
 	{
+		if (m_workFiles == m_pAsset->GetWorkFiles())
+		{
+			return;
+		}
+		
+		QFileInfo info(QtUtil::ToQString(PathUtil::Make(PathUtil::GetGameProjectAssetsRelativePath(), m_pAsset->GetMetadataFile())));
+		if (!info.isWritable() && CQuestionDialog::SQuestion(tr("Saving read-only asset"),
+			tr("The asset that you want to save is read-only. Do you want to override it?")) != QDialogButtonBox::Yes)
+		{
+			return;
+		}
+
+		CAssetManager::GetInstance()->GetWorkFilesTracker().SetIndices(m_workFiles, *m_pAsset);
+
+		for (const string& oldWorkFile : m_pAsset->GetWorkFiles())
+		{
+			if (CAssetManager::GetInstance()->GetWorkFilesTracker().GetIndexCount(oldWorkFile) == 0)
+			{
+				CDeletedWorkFilesStorage::GetInstance().Add(oldWorkFile);
+			}
+		}
+
 		CAssetImportContext ctx;
 		CEditableAsset editableAsset = ctx.CreateEditableAsset(*m_pAsset);
 		editableAsset.SetWorkFiles(m_workFiles);
-		editableAsset.WriteToFile();
+		if (editableAsset.WriteToFile() && CVersionControl::GetInstance().IsOnline())
+		{
+			AddNewFilesToVCS();
+		}
 	}
 
 private:
+	void AddNewFilesToVCS()
+	{
+		std::vector<string> filesToAdd;
+		for (int i = 0; i < m_isAdded.size(); ++i)
+		{
+			if (m_isAdded[i])
+			{
+				auto fs = CVersionControl::GetInstance().GetFileStatus(m_workFiles[i]);
+				if (!fs || fs->HasState(CVersionControlFileStatus::eState_NotTracked))
+				{
+					filesToAdd.push_back(m_workFiles[i]);
+					CDeletedWorkFilesStorage::GetInstance().Remove(m_workFiles[i]);
+				}
+			}
+		}
+		VersionControlPathUtils::MatchCaseAndRemoveUnmatched(filesToAdd);
+		if (!filesToAdd.empty())
+		{
+			CVersionControl::GetInstance().AddFiles(std::move(filesToAdd));
+		}
+	}
+
+	void ValidateFiles(std::vector<string>& workFiles)
+	{
+		auto it = std::partition(workFiles.begin(), workFiles.end(), [](const string& file)
+		{
+			return IsValidWorkFile(file);
+		});
+		if (it != workFiles.end())
+		{
+			auto delIt = it;
+			do
+			{
+				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING
+					, "File %s can't be added as work file because it is a part of some asset", *it);
+			} while (++it != workFiles.end());
+			workFiles.erase(delIt, workFiles.end());
+		}
+	}
+
 	CAsset* m_pAsset;
 	std::vector<string> m_workFiles;
+	std::vector<int>    m_isAdded;
 };
 
 CWorkFilesModel* GetModel(QAbstractItemView* pView)
@@ -295,11 +403,11 @@ CManageWorkFilesDialog::CManageWorkFilesDialog(CAsset* pAsset, QWidget* pParent 
 	pAddFileButton->setFixedHeight(36);
 	pLayout->addWidget(pAddFileButton);
 
-	CWorkFilesModel* pModel = new CWorkFilesModel(pAsset);
-	QAttributeFilterProxyModel* pSortModel = new QAttributeFilterProxyModel(QAttributeFilterProxyModel::BaseBehavior, this);
+	auto pModel = new CWorkFilesModel(pAsset);
+	auto pSortModel = new QAttributeFilterProxyModel(QAttributeFilterProxyModel::BaseBehavior, this);
 	pSortModel->setSourceModel(pModel);
 
-	m_pTree = new CRowSelfDeletableTreeView(this, 1);
+	m_pTree = new CRowSelfDeletableTreeView(this, 2);
 	m_pTree->setModel(pSortModel);
 	m_pTree->setSelectionMode(QAbstractItemView::NoSelection);
 	m_pTree->setSortingEnabled(true);
@@ -312,18 +420,34 @@ CManageWorkFilesDialog::CManageWorkFilesDialog(CAsset* pAsset, QWidget* pParent 
 	pLayout->addWidget(m_pTree);
 
 	auto pCancelButton = new QPushButton(tr("Cancel"));
-	auto pSaveButton = new QPushButton(tr("Save"));
+	m_pSaveButton = new QPushButton(tr("Save"));
 	QObject::connect(pCancelButton, &QPushButton::clicked, this, [this] { close(); });
-	QObject::connect(pSaveButton, &QPushButton::clicked, this, &CManageWorkFilesDialog::OnSave);
+	QObject::connect(m_pSaveButton, &QPushButton::clicked, this, &CManageWorkFilesDialog::OnSave);
 	pCancelButton->setFixedWidth(120);
-	pSaveButton->setFixedWidth(190);
+	m_pSaveButton->setFixedWidth(190);
+
+	m_pWarningWidget = new QWidget(this);
+	auto pWarningLayout = new QHBoxLayout();
+
+	auto pLabel = new QLabel(this);
+	pLabel->setPixmap(QPixmap("icons:General/Warning.ico"));
+	pWarningLayout->addWidget(pLabel);
+
+	m_pWarningText = new QLabel(this);
+	pWarningLayout->addWidget(m_pWarningText);
+
+	m_pWarningWidget->setLayout(pWarningLayout);
+	m_pWarningWidget->hide();
 
 	auto pButtonLayout = new QHBoxLayout();
 	pButtonLayout->setMargin(0);
+	pButtonLayout->addWidget(m_pWarningWidget);
 	pButtonLayout->addStretch();
 	pButtonLayout->addWidget(pCancelButton);
-	pButtonLayout->addWidget(pSaveButton);
+	pButtonLayout->addWidget(m_pSaveButton);
 	pLayout->addLayout(pButtonLayout);
+
+	CheckAssetsStatus();
 
 	setLayout(pLayout);
 }
@@ -343,6 +467,30 @@ void CManageWorkFilesDialog::OnAddWorkFile()
 	if (OpenSelectFilesDialog(files, "All Files (*.*)|*.*|", m_pAsset->GetFolder(), PathUtil::GetGameProjectAssetsPath()))
 	{
 		// given files are already relative to assets root
-		GetModel(m_pTree)->AddWorkFiles(files);
+		GetModel(m_pTree)->AddWorkFiles(std::move(files));
+	}
+}
+
+void CManageWorkFilesDialog::CheckAssetsStatus()
+{
+	if (CVersionControl::GetInstance().IsOnline())
+	{
+		const auto fs = CVersionControl::GetInstance().GetFileStatus(m_pAsset->GetMetadataFile());
+		if (fs)
+		{
+			if (!fs->HasState(CVersionControlFileStatus::eState_AddedLocally | CVersionControlFileStatus::eState_CheckedOutLocally))
+			{
+				m_pWarningText->setText("The asset is not checked out");
+				m_pWarningWidget->show();
+				m_pSaveButton->setDisabled(true);
+				return;
+			}
+		}
+	}
+	QFileInfo info(QtUtil::ToQString(PathUtil::Make(PathUtil::GetGameProjectAssetsRelativePath(), m_pAsset->GetMetadataFile())));
+	if (!info.isWritable())
+	{
+		m_pWarningText->setText(tr("The asset is read-only"));
+		m_pWarningWidget->show();
 	}
 }
