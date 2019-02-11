@@ -80,7 +80,6 @@ void CPrefabEvents::OnHyperGraphEvent(IHyperNode* pINode, EHyperGraphEvent event
 		if (pHyperNode->IsFlowNode())
 		{
 			CFlowNode* pFlowNode = static_cast<CFlowNode*>(pINode);
-			TFlowNodeId typeId = pFlowNode->GetTypeId();
 
 			if (pFlowNode->GetTypeId() == s_prefabInstanceNodeId)
 			{

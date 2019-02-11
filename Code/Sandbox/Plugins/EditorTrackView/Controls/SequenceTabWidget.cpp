@@ -456,7 +456,6 @@ void CTrackViewSequenceTabWidget::OpenSequenceTab(const CryGUID sequenceGUID)
 
 	SSequenceData& sequenceData = m_idToSequenceDataMap[sequenceGUID];
 
-	bool bOpen = false;
 	const int numTabs = m_pDopesheetTabs->count();
 	for (int i = 0; i < numTabs; ++i)
 	{
@@ -701,8 +700,6 @@ void CTrackViewSequenceTabWidget::OnRenameNode()
 
 void CTrackViewSequenceTabWidget::OnDeleteNodes()
 {
-	QAction* pAction = static_cast<QAction*>(QObject::sender());
-
 	CTimeline* pDopeSheet = GetActiveDopeSheet();
 	CTrackViewSequence* pSequence = GetSequenceFromDopeSheet(pDopeSheet);
 	STimelineContent* pContent = pDopeSheet ? pDopeSheet->Content() : nullptr;
@@ -1416,7 +1413,7 @@ void CTrackViewSequenceTabWidget::OnDopesheetTreeContextMenu(const QPoint& point
 				if (pEntityObject)
 				{
 					pContextMenu->addSeparator();
-					QAction* pAction = pContextMenu->addAction("Select in Viewport", this, SLOT(OnSelectEntity()));
+					pContextMenu->addAction("Select in Viewport", this, SLOT(OnSelectEntity()));
 				}
 
 				pAnimNode->RefreshDynamicParams();
@@ -1773,7 +1770,6 @@ void CTrackViewSequenceTabWidget::ApplyTrackChangesRecursive(const CTrackViewSeq
 void CTrackViewSequenceTabWidget::UpdateTrackViewTrack(CTrackViewTrack* pTrack)
 {
 	CTrackViewSequence* pSequence = pTrack->GetSequence();
-	SSequenceData& sequenceData = m_idToSequenceDataMap[pSequence->GetGUID()];
 	STimelineTrack* pDopeSheetTrack = GetDopeSheetTrackFromNode(pTrack);
 	CTrackViewSequenceNotificationContext notificationContext(pSequence);
 
@@ -2035,9 +2031,6 @@ void CTrackViewSequenceTabWidget::UpdateDopeSheetNode(CTrackViewNode* pNode)
 			}
 			return;
 		}
-
-		CTrackViewSequence* pSequence = pTrack->GetSequence();
-		SSequenceData& sequenceData = m_idToSequenceDataMap[pSequence->GetGUID()];
 
 		if (pDopeSheetTrack)
 		{

@@ -295,7 +295,7 @@ void CTerrainManager::CreateDefaultLayer()
 	// Create default surface type.
 	CSurfaceType* sfType = new CSurfaceType;
 	sfType->SetName("%ENGINE%/EngineAssets/Materials/material_terrain_default");
-	uint32 dwDetailLayerId = AddSurfaceType(sfType);
+	AddSurfaceType(sfType);
 	sfType->SetMaterial("%ENGINE%/EngineAssets/Materials/material_terrain_default");
 	sfType->AssignUnusedSurfaceTypeID();
 

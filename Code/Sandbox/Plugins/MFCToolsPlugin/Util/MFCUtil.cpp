@@ -18,7 +18,6 @@ BOOL CMFCUtils::LoadTrueColorImageList(CImageList& imageList, UINT nIDResource, 
 	if (!bitmap.GetBitmap(&bmBitmap))
 		return FALSE;
 	CSize cSize(bmBitmap.bmWidth, bmBitmap.bmHeight);
-	RGBTRIPLE* rgb = (RGBTRIPLE*)(bmBitmap.bmBits);
 	int nCount = cSize.cx / nIconWidth;
 	if (!imageList)
 	{

@@ -995,7 +995,6 @@ void CPreviewModelCtrl::GetImage(CImageEx& image)
 	BITMAP bmpInfo;
 	bmp.GetBitmap(&bmpInfo);
 	bmp.GetBitmapBits(width * height * (bmpInfo.bmBitsPixel / 8), image.GetData());
-	int bpp = bmpInfo.bmBitsPixel / 8;
 
 	dcMemory.SelectObject(pOldBitmap);
 

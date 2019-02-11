@@ -139,7 +139,6 @@ public:
 
 		std::vector<QAction*>& actions = ite->second;
 
-		bool bChecked = false;
 		switch (pCVar->GetType())
 		{
 		case ECVarType::Int:

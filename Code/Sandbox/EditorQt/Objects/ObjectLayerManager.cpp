@@ -225,7 +225,7 @@ void CObjectLayerManager::ClearLayers(bool bNotify /*= true*/)
 	LayersMap::iterator it, itnext;
 	for (LayersMap::iterator it = m_layersMap.begin(); it != m_layersMap.end(); it = itnext)
 	{
-		CObjectLayer* pLayer = it->second;
+		//CObjectLayer* pLayer = it->second;
 
 		//CLayerChangeEvent(CLayerChangeEvent::LE_BEFORE_REMOVE, pLayer).Send();
 
@@ -688,7 +688,7 @@ void CObjectLayerManager::Serialize(CObjectArchive& ar)
 				{
 					const string filepath = PathUtil::Make(layersFolder, filename);
 					m_bOverwriteDuplicates = true;
-					CObjectLayer* pLayer = ImportLayerFromFile(filepath.c_str(), false, &ar);
+					ImportLayerFromFile(filepath.c_str(), false, &ar);
 					m_bOverwriteDuplicates = false;
 				}
 			}
@@ -924,8 +924,6 @@ CObjectLayer* CObjectLayerManager::ImportLayer(CObjectArchive& ar, const string&
 	XmlNodeRef layerObjects = layerNode->findChild("LayerObjects");
 	if (layerObjects)
 	{
-		int numObjects = layerObjects->getChildCount();
-
 		TSmartPtr<CObjectLayer> pCurLayer = m_pCurrentLayer;
 		m_pCurrentLayer = pLayer;
 
@@ -1503,11 +1501,10 @@ XmlNodeRef CObjectLayerManager::GenerateDynTexSrcLayerInfo() const
 					CObjectLayer* pLayer = (CObjectLayer*)pObj->GetLayer();
 
 					const char* pLayerName = pLayer ? pLayer->GetName() : 0;
-					const char* pObjName = pObj->GetName();
 					const char* pMtlName = pMat->GetName();
 
 					assert(pLayerName);
-					assert(pObjName);
+					assert(pObj->GetName());
 					assert(pMtlName);
 
 					MtlSharingMap::iterator itMtl = mtlSharingMap.find(pMtlName);

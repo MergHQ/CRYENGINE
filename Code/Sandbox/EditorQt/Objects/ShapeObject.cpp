@@ -527,8 +527,6 @@ bool CMergeShapesTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint&
 
 			CShapeObject* shape = (CShapeObject*)pObj;
 
-			const Matrix34& shapeTM = shape->GetWorldTM();
-
 			float dist;
 			Vec3 raySrc, rayDir;
 			view->ViewToWorldRay(point, raySrc, rayDir);
@@ -1071,9 +1069,6 @@ void CShapeObject::GetLocalBounds(AABB& box)
 
 bool CShapeObject::HitTest(HitContext& hc)
 {
-	// First check if ray intersect our bounding box.
-	float tr = hc.distanceTolerance / 2 + SHAPE_CLOSE_DISTANCE;
-
 	// Find intersection of line with zero Z plane.
 	float minDist = FLT_MAX;
 	Vec3 intPnt(0, 0, 0);
@@ -3131,7 +3126,6 @@ bool CAIPathObject::IsSegmentValid(const Vec3& p0, const Vec3& p1, float rad)
 	spherePrim.r = rad;
 	Vec3 dir(p1 - p0);
 
-	unsigned hitCount = 0;
 	ray_hit hit;
 	IPhysicalWorld* pPhysics = gEnv->pPhysicalWorld;
 

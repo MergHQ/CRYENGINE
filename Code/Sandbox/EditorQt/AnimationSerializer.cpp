@@ -34,7 +34,6 @@ IAnimSequence* CAnimationSerializer::LoadSequence(const char* szFilePath)
 
 void CAnimationSerializer::SaveAllSequences(const char* szPath, CPakFile& pakFile)
 {
-	IMovieSystem* movSys = GetIEditorImpl()->GetMovieSystem();
 	XmlNodeRef movieNode = XmlHelpers::CreateXmlNode("MovieData");
 	for (int i = 0; i < GetIEditorImpl()->GetDocument()->GetMissionCount(); i++)
 	{

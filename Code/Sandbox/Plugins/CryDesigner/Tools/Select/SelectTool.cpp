@@ -30,8 +30,6 @@ void SelectTool::Enter()
 
 bool SelectTool::OnLButtonDown(CViewport* view, UINT nFlags, CPoint point)
 {
-	int nPolygonIndex(0);
-
 	if (m_bAllowSelectionUndo)
 	{
 		GetIEditor()->GetIUndoManager()->Begin();
@@ -258,7 +256,7 @@ void SelectTool::EraseElementsInRectangle(CViewport* view, CPoint point, bool bO
 bool SelectTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags)
 {
 	DesignerSession* pSession = DesignerSession::GetInstance();
-	ElementSet* pSelected = pSession->GetSelectedElements();
+
 	if (nChar == Qt::Key_Escape)
 	{
 		pSession->GetExcludedEdgeManager()->Clear();
@@ -302,7 +300,6 @@ void SelectTool::Display(SDisplayContext& dc)
 	if (gDesignerSettings.bHighlightElements)
 	{
 		DesignerSession* pSession = DesignerSession::GetInstance();
-		ElementSet* pSelected = pSession->GetSelectedElements();
 		Display::DisplayHighlightedElements(dc, GetMainContext(), m_nPickFlag, pSession->GetExcludedEdgeManager());
 	}
 }

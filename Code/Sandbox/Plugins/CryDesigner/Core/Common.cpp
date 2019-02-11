@@ -26,8 +26,10 @@ const BrushFloat kDistanceLimitation((BrushFloat)0.001);
 const BrushFloat kLimitForMagnetic((BrushFloat)8.0);
 const BrushFloat kInitialPrimitiveHeight((BrushFloat)1.0e-5);
 
+CRY_DISABLE_WARN_UNUSED_VARIABLES()
 SERIALIZATION_ENUM_BEGIN(EDesignerTool, "DesignerMode")
 SERIALIZATION_ENUM_END()
+CRY_RESTORE_WARN_UNUSED_VARIABLES()
 
 BrushVec3 WorldPos2ScreenPos(const BrushVec3& worldPos)
 {
@@ -69,7 +71,6 @@ BrushVec3 ScreenPos2WorldPos(const BrushVec3& screenPos)
 
 void DrawSpot(SDisplayContext& dc, const BrushMatrix34& worldTM, const BrushVec3& pos, const ColorB& color, float fSize)
 {
-	const BrushMatrix34& viewTM(dc.view->GetViewTM());
 	const BrushMatrix34& invWorldTM(worldTM.GetInverted());
 
 	BrushVec3 positionInScreen = WorldPos2ScreenPos(worldTM.TransformPoint(pos));

@@ -192,7 +192,6 @@ void CEditSplineObjectTool::SelectPoint(int index)
 void CEditSplineObjectTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const Vec2i& point0, const Vec3& value, int flags)
 {
 	// get world/local coordinate system setting.
-	CLevelEditorSharedState::CoordSystem coordSys = GetIEditorImpl()->GetLevelEditorSharedState()->GetCoordSystem();
 	CLevelEditorSharedState::EditMode editMode = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode();
 
 	// get current axis constrains.
@@ -1375,9 +1374,6 @@ int CSplineObject::GetNearestPoint(const Vec3& raySrc, const Vec3& rayDir, float
 
 bool CSplineObject::HitTest(HitContext& hc)
 {
-	// First check if ray intersect our bounding box.
-	float tr = hc.distanceTolerance / 2 + kSplinePointSelectionRadius;
-
 	// Find intersection of line with zero Z plane.
 	float minDist = FLT_MAX;
 	Vec3 intPnt;

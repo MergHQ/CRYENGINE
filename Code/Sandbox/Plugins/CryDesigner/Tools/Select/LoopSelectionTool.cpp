@@ -131,7 +131,6 @@ bool LoopSelectionTool::SelectLoop(MainContext& mc, const BrushEdge3D& initialEd
 	BrushEdge3D edge = initialEdge;
 	ElementSet edgeElements;
 
-	int nCount = 0;
 	bool bLoop = false;
 
 	for (int i = 0; i < 2; ++i)

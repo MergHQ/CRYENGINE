@@ -328,7 +328,7 @@ void CMannFragmentEditor::OnEditorNotifyEvent(EEditorNotifyEvent event)
 			CClipKey animClip;
 
 			Range timeRange = GetSequence()->GetTimeRange();
-			float maxTime = FRAGMENT_MIN_TIME_RANGE;
+
 			const uint32 numKeys = selectedKeys.keys.size();
 			for (uint32 i = 0; i < numKeys; i++)
 			{
@@ -448,7 +448,7 @@ void CMannFragmentEditor::OnAccept()
 
 			CSequencerSequence* sequence = GetSequence();
 			uint32 numNodes = sequence->GetNodeCount();
-			IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
+
 			for (uint32 i = 0; i < numNodes; i++)
 			{
 				CSequencerNode* animNode = sequence->GetNode(i);

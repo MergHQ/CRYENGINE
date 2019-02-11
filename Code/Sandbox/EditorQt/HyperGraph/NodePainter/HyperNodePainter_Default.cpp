@@ -198,7 +198,6 @@ struct SDefaultRenderPort
 void CHyperNodePainter_Default::Paint(CHyperNode* pNode, CDisplayList* pList)
 {
 	static SAssets* pAssets = nullptr;
-	IHyperGraph* pPrevGraph = nullptr;
 
 	if (pNode->GetBlackBox()) //hide node
 		return;

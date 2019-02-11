@@ -262,7 +262,6 @@ bool CLevelEditorViewport::ApplyAsset(const CDragDropData& dragDropData, QDropEv
 		{
 		case eDragMove:
 			{
-				const QDragMoveEvent* dragMove = static_cast<const QDragMoveEvent*>(pDropEvent);
 				CDragDropData::ShowDragText(GetViewWidget(), QString(dragText));
 			}
 			break;
@@ -291,11 +290,11 @@ void CLevelEditorViewport::PopulateMenu(CPopupMenuItem& menu)
 {
 	{
 		ICommandManager* pCommandManager = GetIEditor()->GetICommandManager();
-		CPopupMenuItem& itemZ = menu.AddCommand("camera.toggle_speed_height_relative");
+		menu.AddCommand("camera.toggle_speed_height_relative");
 		pCommandManager->GetAction("camera.toggle_speed_height_relative")->setChecked(s_cameraPreferences.IsSpeedHeightRelativeEnabled());
-		CPopupMenuItem& itemT = menu.AddCommand("camera.toggle_terrain_collisions");
+		menu.AddCommand("camera.toggle_terrain_collisions");
 		pCommandManager->GetAction("camera.toggle_terrain_collisions")->setChecked(s_cameraPreferences.IsTerrainCollisionEnabled());
-		CPopupMenuItem& itemO = menu.AddCommand("camera.toggle_object_collisions");
+		menu.AddCommand("camera.toggle_object_collisions");
 		pCommandManager->GetAction("camera.toggle_object_collisions")->setChecked(s_cameraPreferences.IsObjectCollisionEnabled());
 		menu.AddSeparator();
 	}

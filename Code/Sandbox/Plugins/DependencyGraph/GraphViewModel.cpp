@@ -540,7 +540,6 @@ void CGraphViewModel::OnEndModelChange()
 			stack.resize(depth + 1, 0);
 		}
 
-		CAssetNode* pNode = nullptr;
 		const string assetKey = string(assetPath).MakeLower();
 		const auto it = map.find(assetKey);
 		if (it == map.end())

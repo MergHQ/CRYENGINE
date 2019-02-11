@@ -344,7 +344,6 @@ void SCompressionSettings::InitializeForCharacter(ICharacterInstance* pCharacter
 		return;
 	}
 
-	ISkeletonPose& skeletonPose = *pCharacter->GetISkeletonPose();
 	IDefaultSkeleton& rIDefaultSkeleton = pCharacter->GetIDefaultSkeleton();
 
 	const uint32 jointCount = rIDefaultSkeleton.GetJointCount();

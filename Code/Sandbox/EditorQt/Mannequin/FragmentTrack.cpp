@@ -307,11 +307,7 @@ void CFragmentTrack::InsertKeyMenuOptions(CMenu& menu, int keyID)
 
 void CFragmentTrack::OnKeyMenuOption(int menuOption, int keyID)
 {
-	IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
-
 	CFragmentKey& key = m_keys[keyID];
-	SMannequinContexts* contexts = m_scopeData.mannContexts;
-	const SControllerDef& contDef = *m_scopeData.mannContexts->m_controllerDef;
 
 	switch (menuOption)
 	{
@@ -509,8 +505,6 @@ float CFragmentTrack::GetKeyDuration(const int key) const
 	float duration = 0.0f;
 	CFragmentKey keyFrag;
 	GetKey(key, &keyFrag);
-
-	const SControllerDef& contDef = *m_scopeData.mannContexts->m_controllerDef;
 
 	if (keyFrag.transition)
 	{
@@ -1912,8 +1906,6 @@ CTransitionPropertyTrack::CTransitionPropertyTrack(SScopeData& scopeData)
 void CTransitionPropertyTrack::SetKey(int index, CSequencerKey* _key)
 {
 	__super::SetKey(index, _key);
-
-	CTransitionPropertyKey& tagKey = m_keys[index];
 }
 
 void CTransitionPropertyTrack::GetKeyInfo(int key, const char*& description, float& duration)

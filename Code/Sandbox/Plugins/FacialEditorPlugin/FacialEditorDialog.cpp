@@ -891,8 +891,6 @@ void CFacialEditorDialog::MergeVideoExtractedSequence(const char* filename, floa
 
 	int nJoystickPhonemeStrenght = -1;
 
-	float fLenSeconds = fVideoFPS * nFrames;
-
 	for (int nFrameIndex = 0; nFrameIndex < nFrames; ++nFrameIndex)
 	{
 		//float oldTime = (nFrameIndex - 1) * fVideoFPS;
@@ -959,7 +957,7 @@ void CFacialEditorDialog::MergeVideoExtractedSequence(const char* filename, floa
 							if (stricmp(GetJoystickName(joystickIndex), szBuffer) == 0)
 							{
 
-								float fScale = 1.0f;
+								//float fScale = 1.0f;
 
 								for (int k = 0; k < m_pContext->m_nMarkers; k++)
 								{

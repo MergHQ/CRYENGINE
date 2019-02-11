@@ -197,7 +197,7 @@ void CFolderTreeCtrl::AddItem(const CString& path)
 	if (PathMatchSpec(path, m_fileNameSpec) && !GetItem(path))
 	{
 		CTreeItem* folderTreeItem = CreateFolderItems(folder.c_str());
-		CTreeItem* fileTreeItem = folderTreeItem->AddChild(fileNameWithoutExtension.c_str(), path, eTreeImage_File);
+		folderTreeItem->AddChild(fileNameWithoutExtension.c_str(), path, eTreeImage_File);
 	}
 }
 

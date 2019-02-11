@@ -17,7 +17,7 @@ CMatEditPreviewDlg::CMatEditPreviewDlg(const char* title, CWnd* pParent)
 
 	GetIEditorImpl()->GetMaterialManager()->AddListener(this);
 
-	BOOL b = Create(IDD_MATEDITPREVIEWDLG, pParent);
+	Create(IDD_MATEDITPREVIEWDLG, pParent);
 
 	OnPreviewSphere();
 }
@@ -163,7 +163,6 @@ void CMatEditPreviewDlg::OnSize(UINT nType, int cx, int cy)
 
 void CMatEditPreviewDlg::OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseItemEvent event)
 {
-	CMaterial* pMtl = (CMaterial*)pItem;
 	switch (event)
 	{
 	case EDB_ITEM_EVENT_SELECTED:

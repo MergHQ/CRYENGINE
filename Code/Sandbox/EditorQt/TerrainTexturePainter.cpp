@@ -200,7 +200,6 @@ struct CUndoTPElement
 		CHeightmap* heightmap = GetIEditorImpl()->GetHeightmap();
 		CRGBLayer* pRGBLayer = GetIEditorImpl()->GetTerrainManager()->GetRGBLayer();
 
-		bool bFirst = true;
 		CPoint gminp;
 		CPoint gmaxp;
 
@@ -395,7 +394,6 @@ bool CTerrainTexturePainter::MouseCallback(CViewport* view, EMouseEvent event, C
 	if (eMouseWheel == event)
 		return false;
 
-	bool bPainting = false;
 	bool bHitTerrain = false;
 	Vec3 pointerPos = view->ViewToWorld(point, &bHitTerrain, true);
 

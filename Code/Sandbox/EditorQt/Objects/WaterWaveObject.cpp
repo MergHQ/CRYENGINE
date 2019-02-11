@@ -200,7 +200,6 @@ void CWaterWaveObject::UpdateSectors()
 		pWaterWaveRN->SetParams(pParams);
 
 		const Matrix34& pWorldTM(GetWorldTM());
-		const Matrix34& pLocalTM(GetLocalTM());
 
 		CMaterial* pMat((CMaterial*)GetMaterial());
 		if (pMat)

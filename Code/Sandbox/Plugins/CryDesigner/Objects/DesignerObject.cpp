@@ -323,7 +323,7 @@ void DesignerObject::Serialize(CObjectArchive& ar)
 			else
 			{
 				bool bConvertSuccess = Converter::ConvertSolidXMLToDesignerObject(brushNode, this);
-				DESIGNER_ASSERT(bConvertSuccess);
+				CRY_ASSERT(bConvertSuccess);
 			}
 		}
 
@@ -402,7 +402,7 @@ void DesignerObject::Serialize(CObjectArchive& ar)
 				{
 					unsigned int meshBufferSize = meshBuffer.size();
 					std::vector<char> encodedStr(Base64::encodedsize_base64(meshBufferSize) + 1);
-					int nReturnedSize = Base64::encode_base64(&encodedStr[0], &meshBuffer[0], meshBufferSize, true);
+					Base64::encode_base64(&encodedStr[0], &meshBuffer[0], meshBufferSize, true);
 					meshNode->setAttr("Version", nMeshVersion);
 					meshNode->setAttr("BinaryData", &encodedStr[0]);
 				}

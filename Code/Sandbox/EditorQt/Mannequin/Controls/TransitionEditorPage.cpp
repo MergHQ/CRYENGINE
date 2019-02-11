@@ -1243,7 +1243,6 @@ void CTransitionEditorPage::SetHistoryFromUI()
 //////////////////////////////////////////////////////////////////////////
 void CTransitionEditorPage::OnUpdateTV(bool forceUpdate)
 {
-	IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 	bool anyChanges = false;
 
 	const uint32 numScopes = m_contexts->m_scopeData.size();
@@ -1391,7 +1390,7 @@ void CTransitionEditorPage::OnUpdateTV(bool forceUpdate)
 		if ((clipChangeCount || fragChangeCount) && pFragTrack)
 		{
 			const int numKeys = pFragTrack->GetNumKeys();
-			float lastTime = 0.0f;
+
 			for (uint32 k = 0; k < numKeys; k++)
 			{
 				CFragmentKey fragKey;
@@ -1566,7 +1565,6 @@ void CTransitionEditorPage::PopulateTagList()
 	transitionTags.fragmentTags = m_fromFragTag.fragmentTags | m_toFragTag.fragmentTags;
 
 	// Store the current preview tag state
-	const CTagDefinition& tagDefs = m_contexts->m_controllerDef->m_tags;
 	const TagState globalTags = m_contexts->viewData[eMEM_TransitionEditor].m_pAnimContext->state.GetMask();
 
 	SFragTagState usedTags(TAG_STATE_EMPTY, TAG_STATE_EMPTY);

@@ -554,7 +554,7 @@ void QPresetsWidget::RemovePreset(const char* szName)
 void QPresetsWidget::OpenPreset(const char* szName)
 {
 	char fullPath[ICryPak::g_nMaxPath];
-	const char* szTemp = gEnv->pCryPak->AdjustFileName(szPresetsLibsPath, fullPath, 0);
+	gEnv->pCryPak->AdjustFileName(szPresetsLibsPath, fullPath, 0);
 	const QString dir(fullPath);
 
 	CSystemFileDialog::RunParams runParams;
@@ -582,7 +582,7 @@ void QPresetsWidget::OpenPreset(const char* szName)
 void QPresetsWidget::SavePresetAs(const char* szName)
 {
 	char fullPath[ICryPak::g_nMaxPath];
-	const char* szTemp = gEnv->pCryPak->AdjustFileName(szPresetsLibsPath, fullPath, 0);
+	gEnv->pCryPak->AdjustFileName(szPresetsLibsPath, fullPath, 0);
 	const QString dir(fullPath);
 
 	CSystemFileDialog::RunParams runParams;

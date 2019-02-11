@@ -1721,7 +1721,6 @@ void CObjectManager::LinkToBone(const std::vector<CBaseObject*>& objects, CEntit
 
 	IEntity* pIEntity = pLinkTo->GetIEntity();
 	ICharacterInstance* pCharacter = pIEntity->GetCharacter(0);
-	ISkeletonPose* pSkeletonPose = pCharacter->GetISkeletonPose();
 	IDefaultSkeleton& rIDefaultSkeleton = pCharacter->GetIDefaultSkeleton();
 	const uint32 numJoints = rIDefaultSkeleton.GetJointCount();
 
@@ -2557,13 +2556,9 @@ bool CObjectManager::HitTest(HitContext& hitInfo)
 	}
 	hc.rayDir = hc.rayDir.GetNormalized();
 
-	float mindist = FLT_MAX;
-
 	// Only HitTest objects, that where previously Displayed.
 	CBaseObjectsCache* pDispayedViewObjects = hitInfo.view->GetVisibleObjectsCache();
 
-	CBaseObject* selected = 0;
-	const char* name = nullptr;
 	int numVis = pDispayedViewObjects->GetObjectCount();
 	for (int i = 0; i < numVis; i++)
 	{

@@ -20,9 +20,6 @@ bool CImageUtil::SaveBitmap(const string& szFileName, CImageEx& inImage, bool in
 	HANDLE hfile;
 	DWORD dwBytes;
 	unsigned int i;
-	DWORD* pLine1 = NULL;
-	DWORD* pLine2 = NULL;
-	DWORD* pTemp = NULL;
 	BITMAPFILEHEADER bitmapfileheader;
 	BITMAPINFOHEADER bitmapinfoheader;
 

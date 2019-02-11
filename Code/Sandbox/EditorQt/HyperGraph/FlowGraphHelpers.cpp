@@ -70,7 +70,7 @@ void FindGraphsForEntity(const CEntityObject* pEntity, std::vector<CHyperFlowGra
 		TFGMap fgMap;
 		CHyperFlowGraph* pEntityGraph = nullptr;
 
-		IEntitySystem* pEntSys = gEnv->pEntitySystem;
+		//IEntitySystem* pEntSys = gEnv->pEntitySystem;
 		EntityId myId = pEntity->GetEntityId();
 		CFlowGraphManager* pFGMgr = GetIEditorImpl()->GetFlowGraphManager();
 		size_t numFG = pFGMgr->GetFlowGraphCount();

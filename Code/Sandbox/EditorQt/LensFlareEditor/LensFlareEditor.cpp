@@ -117,14 +117,18 @@ void CLensFlareEditor::CreatePanes()
 {
 	const CSize basicMinimumSize(16, 16);
 	CXTPDockingPane* pElementTreePane = CreatePane(_T("Element Tree"), basicMinimumSize, IDW_LENSFLARE_ELEMENTTREE_PANE, kDefaultRect, xtpPaneDockBottom);
-	CXTPDockingPane* pViewPane = CreatePane(_T("Preview"), basicMinimumSize, IDW_LENSFLARE_PREVIEW_PANE, kDefaultRect, xtpPaneDockTop, pElementTreePane);
-	CXTPDockingPane* pBasicSetPane = CreatePane(_T("Basic Set"), basicMinimumSize, IDW_LENSFLARE_ATOMICLIST_PANE, kDefaultRect, xtpPaneDockLeft, pElementTreePane);
+	CreatePane(_T("Preview"), basicMinimumSize, IDW_LENSFLARE_PREVIEW_PANE, kDefaultRect, xtpPaneDockTop, pElementTreePane);
+
 #ifndef DISABLE_REFERENCETREE
-	CXTPDockingPane* pReferencePane = CreatePane(_T("Reference Tree"), basicMinimumSize, IDW_LENSFLARE_REFERENCETREE_PANE, kDefaultRect, xtpPaneDockRight, pBasicSetPane);
+	CXTPDockingPane* pBasicSetPane = CreatePane(_T("Basic Set"), basicMinimumSize, IDW_LENSFLARE_ATOMICLIST_PANE, kDefaultRect, xtpPaneDockLeft, pElementTreePane);
+	CreatePane(_T("Reference Tree"), basicMinimumSize, IDW_LENSFLARE_REFERENCETREE_PANE, kDefaultRect, xtpPaneDockRight, pBasicSetPane);
+#else
+	CreatePane(_T("Basic Set"), basicMinimumSize, IDW_LENSFLARE_ATOMICLIST_PANE, kDefaultRect, xtpPaneDockLeft, pElementTreePane);
 #endif
-	CXTPDockingPane* pLensFlareTreePane = CreatePane(_T("Lens Flare Tree"), basicMinimumSize, IDW_LENSFLARE_TREE_PANE, CRect(0, 0, 200, 600), xtpPaneDockLeft);
+
+	CreatePane(_T("Lens Flare Tree"), basicMinimumSize, IDW_LENSFLARE_TREE_PANE, CRect(0, 0, 200, 600), xtpPaneDockLeft);
 	CXTPDockingPane* pPropertyPane = CreatePane(_T("Properties"), basicMinimumSize, IDW_LENSFLARE_PROPERTY_PANE, CRect(0, 0, 200, 600), xtpPaneDockRight);
-	CXTPDockingPane* pLensFlareEntityTreePane = CreatePane(_T("Light Entities"), basicMinimumSize, IDW_LENSFLARE_LIGHTENTITYTREE_PANE, CRect(0, 0, 200, 200), xtpPaneDockBottom, pPropertyPane);
+	CreatePane(_T("Light Entities"), basicMinimumSize, IDW_LENSFLARE_LIGHTENTITYTREE_PANE, CRect(0, 0, 200, 200), xtpPaneDockBottom, pPropertyPane);
 }
 
 CXTPDockingPane* CLensFlareEditor::CreatePane(const string& name, const CSize& minSize, UINT nID, CRect rc, XTPDockingPaneDirection direction, CXTPDockingPaneBase* pNeighbour)
@@ -742,7 +746,6 @@ void CLensFlareEditor::OnGetFlareFromSelection()
 
 void CLensFlareEditor::OnTvnBeginlabeleditTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	LPNMTVDISPINFO pTVDispInfo = reinterpret_cast<LPNMTVDISPINFO>(pNMHDR);
 	HTREEITEM hItem = GetTreeCtrl().GetSelectedItem();
 
 	if (hItem == GetRootItem())
@@ -824,7 +827,6 @@ void CLensFlareEditor::ChangeGroupName(HTREEITEM hItem, const string& newGroupNa
 	if (hItem == NULL || newGroupName.IsEmpty())
 		return;
 
-	bool bRenamed = false;
 	string fullGroupName;
 	if (!GetFullLensFlareItemName(hItem, fullGroupName))
 		return;
@@ -1125,7 +1127,6 @@ void CLensFlareEditor::OnRemoveItem()
 			HTREEITEM hItem = stl::find_in_map(m_itemsToTree, pSelectedLensFlareItem, (HTREEITEM)0);
 			if (hItem)
 			{
-				CLensFlareItem* pGroupItemAsTreeItemData = (CLensFlareItem*)GetTreeCtrl().GetItemData(hItem);
 				UpdateLensOpticsNames(pSelectedLensFlareItem->GetFullName(), "");
 				GetTreeCtrl().DeleteItem(hItem);
 				m_itemsToTree.erase(pSelectedLensFlareItem);

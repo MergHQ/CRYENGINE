@@ -477,7 +477,6 @@ float PlaybackPanel::FrameRate() const
 
 void PlaybackPanel::UpdateTimeUnitsUI(bool timeChanged, bool durationChanged)
 {
-	float time = m_normalizedTime;
 	float duration = m_duration;
 	int numFrames = int(duration * FrameRate() + 0.5f);
 

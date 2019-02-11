@@ -186,7 +186,7 @@ void CSOLibrary::LoadClassTemplates()
 	ICryPak* pack = gEnv->pCryPak;
 	_finddata_t fd;
 	intptr_t handle = pack->FindFirst(sLibPath, &fd);
-	int nCount = 0;
+
 	if (handle < 0)
 		return;
 
@@ -686,7 +686,6 @@ public:
 
 	IVariable* ResolveVariable(const CSOParam* pParam)
 	{
-		IVariable* pVar = NULL;
 		if (pParam->sName == "bNavigationRule")
 			return &bNavigationRule;
 		else if (pParam->sName == "sEvent")
@@ -2508,7 +2507,6 @@ void CSmartObjectsEditorDialog::ModifyRuleOrder(int from, int to)
 	{
 		for (; it != itEnd; ++it)
 		{
-			int order = it->iOrder;
 			if (it->iOrder == from)
 				it->iOrder = to;
 			else if (from < it->iOrder && it->iOrder <= to)
@@ -3376,8 +3374,6 @@ void CSmartObjectsEditorDialog::OnTreeEndEdit(NMHDR* pNotifyStruct, LRESULT* res
 	if (res)
 	{
 		CSOLibrary::m_bSaveNeeded = true;
-
-		bool bRemove = false;
 		CString txt(pItemNotify->item.pszText);
 		res = txt.FindOneOf(_T("/\\")) < 0;
 

@@ -415,8 +415,6 @@ bool PolygonDecomposer::TriangulateMonotonePolygon(const IndexList& indexList, s
 
 		if (topSide != currentSide)
 		{
-			int nBaseFaceIndex = outFaceList.size();
-
 			while (!vertexStack.empty())
 			{
 				top = vertexStack.top();
@@ -753,7 +751,6 @@ PolygonDecomposer::EDirection PolygonDecomposer::QueryPointSide(int nIndex, cons
 
 int PolygonDecomposer::FindDirectlyLeftEdge(int nBeginIndex, const IndexList& edgeSearchList, const IndexList& indexList) const
 {
-	int nIndexCount = indexList.size();
 	const BrushVec2& point = m_PointList[nBeginIndex].pos;
 	const BrushVec2 leftDir(-1.0f, 0);
 	BrushFloat nearestDist = 3e10f;
@@ -845,8 +842,6 @@ void PolygonDecomposer::AddDiagonalEdge(int i0, int i1, EdgeSet& diagonalSet) co
 
 bool PolygonDecomposer::DecomposePolygonIntoMonotonePieces(const IndexList& indexList, std::vector<IndexList>& outMonatonePieces)
 {
-	int nIndexCount(indexList.size());
-
 	std::vector<EPointType> pointTypeList;
 	IndexList helperList;
 	IndexList edgeSearchList;
@@ -867,7 +862,6 @@ bool PolygonDecomposer::DecomposePolygonIntoMonotonePieces(const IndexList& inde
 	auto yIter = yMap.begin();
 	for (; yIter != yMap.end(); ++yIter)
 	{
-		const PointComp& top = yIter->first;
 		int index = yIter->second;
 		int prev = m_PointList[index].prev;
 
@@ -1056,8 +1050,6 @@ void PolygonDecomposer::SearchMonotoneLoops(EdgeSet& diagonalSet, const IndexLis
 
 PolygonDecomposer::EPointType PolygonDecomposer::QueryPointType(int nIndex, const IndexList& indexList) const
 {
-	int iIndexCount(indexList.size());
-
 	int nCurrIndex = indexList[nIndex];
 	int nPrevIndex = m_PointList[nCurrIndex].prev;
 	int nNextIndex = m_PointList[nCurrIndex].next;
@@ -1123,8 +1115,6 @@ PolygonDecomposer::EPointType PolygonDecomposer::QueryPointType(int nIndex, cons
 
 PolygonDecomposer::EDirection PolygonDecomposer::QueryInteriorDirection(int nIndex, const IndexList& indexList) const
 {
-	int nIndexSize = indexList.size();
-
 	int nCurrIndex = indexList[nIndex];
 	int nPrevIndex = m_PointList[nCurrIndex].prev;
 	int nNextIndex = m_PointList[nCurrIndex].next;

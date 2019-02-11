@@ -848,8 +848,6 @@ void CMainDialog::RenderStaticMesh(const SRenderContext& rc)
 		{
 			if (!m_bHasLods && !GetAutoLodNodes(GetScene()).empty())
 			{
-				IRenderAuxGeom* const pAux = gEnv->pRenderer->GetIRenderAuxGeom();
-
 				string label;
 				label.Format("Waiting for generation of LOD %d.\n", m_viewSettings.lod);
 				frameText += label;
@@ -862,8 +860,6 @@ void CMainDialog::RenderStaticMesh(const SRenderContext& rc)
 			}
 		}
 	}
-
-	const FbxTool::CScene* pScene = GetScene();
 
 	for (size_t i = 0; i < m_pSceneModel->GetElementCount(); ++i)
 	{
@@ -978,9 +974,6 @@ void CMainDialog::RenderSkin(const SRenderContext& rc)
 {
 	IRenderAuxGeom* pAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 	pAuxGeom->SetRenderFlags(e_Def3DPublicRenderflags);
-
-	IRenderer* const pRenderer = gEnv->pRenderer;
-	IRenderAuxGeom* const pAux = pRenderer->GetIRenderAuxGeom();
 
 	// Update skin material, if necessary
 	if (m_pCharacterInstance && m_pMaterialPanel->GetMaterialSettings()->GetMaterial() && m_pCharacterInstance->GetIMaterial() != m_pMaterialPanel->GetMaterialSettings()->GetMaterial()->GetMatInfo())
@@ -1266,7 +1259,6 @@ void CMainDialog::CreateSkinFromFile(const string& filePath)
 		materialFilename = m_pMaterialPanel->GetMaterialSettings()->GetMaterialName();
 	}
 
-	ICharacterManager* const pCharacterManager = GetIEditor()->GetSystem()->GetIAnimationSystem();
 	m_pCharacterInstance = CreateTemporaryCharacter(
 		QtUtil::ToQString(filePath),
 		QtUtil::ToQString(filePath),
@@ -2812,8 +2804,7 @@ bool CMainDialog::CreateMetaData(FbxMetaData::SMetaData& metaData, const QString
 	  m_pGlobalImportSettings->GetUpAxis(),
 	  m_pGlobalImportSettings->GetForwardAxis());
 
-	CSortedMaterialModel* const pMaterialModel = m_pMaterialPanel->GetMaterialModel();
-	assert(m_pSceneModel && pMaterialModel);
+	assert(m_pSceneModel && m_pMaterialPanel->GetMaterialModel());
 	m_pMaterialPanel->ApplyMaterial();
 
 	const FbxTool::CScene* const pScene = GetScene();

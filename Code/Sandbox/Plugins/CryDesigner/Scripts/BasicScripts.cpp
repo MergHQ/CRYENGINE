@@ -26,7 +26,6 @@ MainContext GetContext()
 		throw std::logic_error("The selected object isn't a designer object type");
 
 	DesignerObject* pDesignerObject = (DesignerObject*)pObject;
-	DesignerEditor* pDesignerTool = (DesignerEditor*)pEditor;
 	DesignerSession* pSession = DesignerSession::GetInstance();
 
 	MainContext mc;

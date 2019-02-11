@@ -85,7 +85,6 @@ static bool RaycastConnections(const Ray& ray, const Vec3& eye, const IDefaultSk
 	OBB obb;
 	obb.c = Vec3(ZERO);
 	const ColorB black = ColorB(0, 0, 0);
-	IRenderAuxGeom* pAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 	float hitDist;
 	int32 hitJoint = kInvalidJointId;
 	for (int32 jid = 0, N = (int32)skel.GetJointCount(); jid < N; ++jid)

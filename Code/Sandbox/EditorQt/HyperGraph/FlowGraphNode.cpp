@@ -463,7 +463,6 @@ void CFlowNode::Serialize(XmlNodeRef& node, bool bLoading, CObjectArchive* ar)
 			}
 			if (node->haveAttr("GraphEntity"))
 			{
-				const char* sEntity = node->getAttr("GraphEntity");
 				int index = atoi(node->getAttr("GraphEntity"));
 				if (index == 0)
 				{

@@ -252,7 +252,6 @@ public:
 
 		{
 			std::vector<IViewPaneClass*> viewPaneClasses;
-			int nViews = 0;
 			int i;
 			std::vector<CViewportClassDesc*> vdesc;
 			GetIEditorImpl()->GetViewManager()->GetViewportDescriptions(vdesc);

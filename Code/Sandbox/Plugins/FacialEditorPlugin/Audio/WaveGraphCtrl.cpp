@@ -81,7 +81,7 @@ void CWaveGraphCtrl::LoadWaveformSound(int index, const CString& soundFile)
 	m_bScrubbing = false;
 
 	// Check whether the sound is in the cache.
-	bool bSoundLoaded = false;
+	//bool bSoundLoaded = false;
 
 	//SoundCache::iterator itSound = m_soundCache.find(soundFile);
 
@@ -231,7 +231,7 @@ void CWaveGraphCtrl::OnFacialEdEvent(EFacialEdEvent event, IFacialEffector* pEff
 //////////////////////////////////////////////////////////////////////////
 int CWaveGraphCtrl::HitTestWaveforms(const CPoint point)
 {
-	float time = ClientToWorld(point).x;
+	//float time = ClientToWorld(point).x;
 	int hitWaveform = -1;
 	/*for (int waveFormIndex = 0, waveFormCount = m_waveforms.size(); waveFormIndex < waveFormCount; ++waveFormIndex)
 	   {
@@ -748,7 +748,7 @@ float CWaveGraphCtrl::GetTimeMarker()
 //////////////////////////////////////////////////////////////////////////
 float CWaveGraphCtrl::CalculateTimeRange()
 {
-	float minT = 0, maxT = 1;
+	float /*minT = 0,*/ maxT = 1;
 	/*for (int waveformIndex = 0, waveformCount = m_waveforms.size(); waveformIndex < waveformCount; ++waveformIndex)
 	   {
 	   float startTime = m_waveforms[waveformIndex].time;

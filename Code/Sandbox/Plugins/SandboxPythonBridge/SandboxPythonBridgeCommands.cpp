@@ -61,9 +61,11 @@ const char* PyGeneratePythonEditorAutocompleteFiles()
 
 		if (!args.empty())
 		{
-			size_t commas = args.size() - 1;
+			size_t numArgs = args.size();
+			size_t commas = numArgs - 1;
 			int argNum = 1;
-			for (const auto& arg : args)
+
+			for (size_t i = 0; i < numArgs; ++i)
 			{
 				ofs << "arg" << argNum;
 				if (commas != 0)

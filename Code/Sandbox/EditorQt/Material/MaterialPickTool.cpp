@@ -104,7 +104,6 @@ bool CMaterialPickTool::OnMouseMove(CViewport* view, UINT nFlags, CPoint point)
 	view->SetCurrentCursor(STD_CURSOR_HIT, "");
 
 	IMaterial* pNearestMaterial(NULL);
-	IEntity* pNearnestEntity(NULL);
 
 	m_Mouse2DPosition = point;
 

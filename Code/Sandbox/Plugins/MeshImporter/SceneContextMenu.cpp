@@ -69,9 +69,7 @@ void CSceneContextMenuCommon::Attach()
 
 void CSceneContextMenuCommon::Show(const QPoint& point)
 {
-	QAbstractItemModel* const pModel = m_pSceneView->model();
-	QItemSelectionModel* const pSelectionModel = m_pSceneView->selectionModel();
-	assert(pModel && pSelectionModel);
+	CRY_ASSERT(m_pSceneView->model() && m_pSceneView->selectionModel());
 	const QPersistentModelIndex index = m_pSceneView->indexAt(point);
 
 	CScopedVariableSetter<QMenu*> setMenu(m_pMenu, new QMenu(m_pSceneView));
@@ -94,7 +92,7 @@ void CSceneContextMenuCommon::AddSceneElementSectionInternal(const QModelIndex& 
 	using namespace Private_SceneContextMenu;
 
 	CSceneElementCommon* const pSceneElement = (CSceneElementCommon*)index.data(CSceneModelCommon::eRole_InternalPointerRole).value<intptr_t>();
-	assert(pSceneElement);
+	CRY_ASSERT(pSceneElement);
 	AddSceneElementSection(pSceneElement);
 
 	AddExpandCollapseChildrenContextMenu(m_pSceneView, index, m_pMenu);

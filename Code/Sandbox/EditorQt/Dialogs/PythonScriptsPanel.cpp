@@ -26,7 +26,6 @@ CPythonScriptsPanel::CPythonScriptsPanel()
 	SetContent(pLayout);
 
 	auto filesystemEnumerator = GetIEditorImpl()->GetFileSystemEnumerator();
-	auto gameFolder = GetIEditorImpl()->GetSystem()->GetIPak()->GetGameFolder();
 
 	FileSystem::SFileFilter fileFilter;
 	fileFilter.skipEmptyDirectories = true;

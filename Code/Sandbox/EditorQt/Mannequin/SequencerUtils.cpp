@@ -62,7 +62,6 @@ static int GetKeys(const CSequencerSequence* pSequence, CSequencerUtils::Selecte
 		return 0;
 	}
 
-	int trackType = -1;
 	const bool noTimeRange = !(t0 < t1);
 
 	int nNodeCount = pSequence->GetNodeCount();
@@ -95,7 +94,6 @@ static int GetKeysByAnyTimeMarker(const CSequencerSequence* pSequence, CSequence
 		return 0;
 	}
 
-	int trackType = -1;
 	const bool noTimeRange = !(t0 < t1);
 
 	const int nNodeCount = pSequence->GetNodeCount();
@@ -136,8 +134,6 @@ int CSequencerUtils::GetAllKeys(CSequencerSequence* pSequence, SelectedKeys& sel
 //////////////////////////////////////////////////////////////////////////
 int CSequencerUtils::GetSelectedTracks(CSequencerSequence* pSequence, SelectedTracks& selectedTracks)
 {
-	int trackType = -1;
-
 	int nNodeCount = pSequence ? pSequence->GetNodeCount() : 0;
 	for (int node = 0; node < nNodeCount; node++)
 	{

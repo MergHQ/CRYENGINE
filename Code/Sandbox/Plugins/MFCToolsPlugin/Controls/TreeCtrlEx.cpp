@@ -274,7 +274,7 @@ void CTreeCtrlEx::OnLButtonDown(UINT nFlags, CPoint point)
 
 	// Clear selection if clicking off all items
 	UINT flags;
-	HTREEITEM item = HitTest(point, &flags);
+	HitTest(point, &flags);
 	if (!(flags & TVHT_ONITEM))
 		SelectItem(NULL);
 

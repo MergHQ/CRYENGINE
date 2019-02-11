@@ -756,8 +756,8 @@ CFlowGraphSearchResultsCtrl::CFlowGraphSearchResultsCtrl(CHyperGraphDialog* pDia
 
 	m_pDialog = pDialog;
 	CXTPReportColumn* pGraphCol = AddColumn(new CXTPReportColumn(0, _T("Graph"), 50, TRUE, XTP_REPORT_NOICON, TRUE, TRUE));
-	CXTPReportColumn* pNodeCol = AddColumn(new CXTPReportColumn(1, _T("Node"), 50, TRUE, XTP_REPORT_NOICON, TRUE, TRUE));
-	CXTPReportColumn* pContextCol = AddColumn(new CXTPReportColumn(2, _T("Context"), 50, TRUE, XTP_REPORT_NOICON, TRUE, TRUE));
+	AddColumn(new CXTPReportColumn(1, _T("Node"), 50, TRUE, XTP_REPORT_NOICON, TRUE, TRUE));
+	AddColumn(new CXTPReportColumn(2, _T("Context"), 50, TRUE, XTP_REPORT_NOICON, TRUE, TRUE));
 	GetReportHeader()->AllowColumnRemove(TRUE);
 	ShadeGroupHeadings(TRUE);
 	SkipGroupsFocus(TRUE);
@@ -806,7 +806,6 @@ void CFlowGraphSearchResultsCtrl::OnReportKeyDown(NMHDR* pNotifyStruct, LRESULT*
 //////////////////////////////////////////////////////////////////////////
 void CFlowGraphSearchResultsCtrl::OnReportItemHyperlink(NMHDR* pNotifyStruct, LRESULT* result)
 {
-	XTP_NM_REPORTRECORDITEM* pItemNotify = (XTP_NM_REPORTRECORDITEM*) pNotifyStruct;
 }
 
 #define ID_GROUP_BY_THIS   1

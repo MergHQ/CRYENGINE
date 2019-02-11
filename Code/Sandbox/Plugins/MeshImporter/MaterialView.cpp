@@ -32,7 +32,6 @@ CMaterialView::CMaterialView(CSortedMaterialModel* pModel, QWidget* pParent)
 
 		for (int i = 0; i < pScene->GetMaterialCount(); ++i)
 		{
-			const FbxTool::SMaterial* const pMaterial = pScene->GetMaterialByIndex(i);
 			QString text = QString("%1").arg(i);
 			const QString name = pModel->GetSubMaterialName(i);
 			if (!name.isEmpty())

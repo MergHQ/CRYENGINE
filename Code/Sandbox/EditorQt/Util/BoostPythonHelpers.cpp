@@ -790,7 +790,6 @@ PyGamePrefab::PyGamePrefab(void* prefabPtr, pSPyWrappedClass sharedPtr)
 
 PyGamePrefab::~PyGamePrefab()
 {
-	CPrefabObject* pPrefab = static_cast<CPrefabObject*>(m_prefabPtr);
 }
 
 std::vector<pPyGameObject> PyGamePrefab::GetChildren()
@@ -881,7 +880,6 @@ void PyGamePrefab::UpdatePrefab()
 PyGameGroup::PyGameGroup(void* groupPtr, pSPyWrappedClass sharedPtr)
 {
 	m_groupPtr = groupPtr;
-	CGroup* pGroup = static_cast<CGroup*>(m_groupPtr);
 }
 
 std::vector<pPyGameObject> PyGameGroup::GetChildren()
@@ -952,7 +950,6 @@ void PyGameGroup::UpdateGroup()
 PyGameCamera::PyGameCamera(void* cameraPtr, pSPyWrappedClass sharedPtr)
 {
 	m_cameraPtr = cameraPtr;
-	CCameraObject* pCamera = static_cast<CCameraObject*>(m_cameraPtr);
 }
 
 void PyGameCamera::UpdateCamera()

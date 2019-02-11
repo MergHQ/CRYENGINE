@@ -483,9 +483,6 @@ void CGravityVolumeObject::GetLocalBounds(AABB& box)
 
 bool CGravityVolumeObject::HitTest(HitContext& hc)
 {
-	// First check if ray intersect our bounding box.
-	float tr = hc.distanceTolerance / 2 + GravityVolume_CLOSE_DISTANCE;
-
 	// Find intersection of line with zero Z plane.
 	float minDist = FLT_MAX;
 	Vec3 intPnt(hc.raySrc);
@@ -634,7 +631,6 @@ Vec3 CGravityVolumeObject::GetBezierNormal(int index, float t)
 
 float CGravityVolumeObject::GetBezierSegmentLength(int index, float t)
 {
-	const Matrix34& wtm = GetWorldTM();
 	int kn = int(t * 20) + 1;
 	float fRet = 0.0f;
 	for (int k = 0; k < kn; k++)

@@ -448,7 +448,7 @@ void CHemisphereSink_SH::OnCalcEnd(SampleType& rInoutValue)
 		const double cSampleScale = 4. /*full hs*/ * NSH::g_cPi / (double)m_SampleCount;
 		SSHSampleOnDemand& rSHData = *rInoutValue.pSHData;
 		//average colour
-		float upperHSAveVis = 1.f;
+
 		if (rInoutValue.colCount == 0xFFFF)
 		{
 			//set SH data to no visibility (used for completely by large objects obstructed samples

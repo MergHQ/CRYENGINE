@@ -198,7 +198,6 @@ protected:
 			const size_t agentTypeCount = manager->GetNavigationAgentTypeCount();
 
 			string actionName = action->objectName().toStdString().c_str();
-			int numItems = 1;
 
 			for (size_t i = 0; i < agentTypeCount; ++i)
 			{

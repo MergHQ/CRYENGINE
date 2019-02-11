@@ -39,7 +39,7 @@ void CTerrainBeachGenerator::Generate(CFile& file)
 {
 	m_pFile = &file;
 
-	int nAreasFound = MarkWaterAreas();
+	MarkWaterAreas();
 
 	int i, x, y;
 
@@ -146,7 +146,6 @@ float CTerrainBeachGenerator::GetZApr(float x1, float y1)
 
 int CTerrainBeachGenerator::MarkWaterAreas()
 {
-	uint16 nMaxAreaId = 0;
 	int nSize = m_terrainSize / m_unitSize;
 
 	for (int x = 0; x < nSize; x++)
@@ -400,8 +399,8 @@ void CTerrainBeachGenerator::MakeBeachStage2(CTerrainSectorBeachInfo* pSector)
 			CTerrainSectorBeachInfo::BeachPairStruct* p1 = &pSector->m_arrlistBeachVerts[group][i];
 			CTerrainSectorBeachInfo::BeachPairStruct* p2 = &pSector->m_arrlistBeachVerts[group][i + 1];
 
-			int _x = int((p1->pos + p1->water_dir * 2).x);
-			int _y = int((p1->pos + p1->water_dir * 2).y);
+			//int _x = int((p1->pos + p1->water_dir * 2).x);
+			//int _y = int((p1->pos + p1->water_dir * 2).y);
 
 			//      int nAreaID = m_WaterAreaMap[_x/m_unitSize][_y/m_unitSize];
 			float fBeachSize = (float)m_fShoreSize;  //1.f+8.f*((float)m_lstWaterAreaSizeTable[nAreaID]/(float)m_nMaxAreaSize);

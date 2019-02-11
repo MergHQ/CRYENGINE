@@ -669,8 +669,6 @@ void CLevelExplorer::CreateContextMenuForLayers(CAbstractMenu& abstractMenu, con
 	}
 	else
 	{
-		int showFreezeSection = abstractMenu.GetNextEmptySection();
-
 		// Visibility
 		abstractMenu.AddAction(GetIEditor()->GetICommandManager()->GetAction("layer.show_all"));
 		abstractMenu.AddAction(GetIEditor()->GetICommandManager()->GetAction("layer.hide_all"));

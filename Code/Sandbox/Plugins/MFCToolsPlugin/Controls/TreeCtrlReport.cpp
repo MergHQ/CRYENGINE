@@ -16,7 +16,7 @@ public:
 
 	virtual int Draw(XTP_REPORTRECORDITEM_DRAWARGS* pDrawArgs)
 	{
-		int res = __super::Draw(pDrawArgs);
+		__super::Draw(pDrawArgs);
 		if (m_nIconIndex2 != -1)
 		{
 			CXTPReportPaintManager* pPaintManager = pDrawArgs->pControl->GetPaintManager();
@@ -262,14 +262,12 @@ void CTreeCtrlReport::OnReportColumnRClick(NMHDR* pNotifyStruct, LRESULT* result
 	XTP_NM_REPORTRECORDITEM* pItemNotify = (XTP_NM_REPORTRECORDITEM*) pNotifyStruct;
 	ASSERT(pItemNotify->pColumn);
 	CPoint ptClick = pItemNotify->pt;
-	CXTPReportColumn* pColumn = pItemNotify->pColumn;
 
 	CMenu menu;
 	VERIFY(menu.CreatePopupMenu());
 
 	CXTPReportColumns* pColumns = GetColumns();
 	CXTPReportColumn* pNodeClassColumn = pColumns->GetAt(0);
-	CXTPReportColumn* pCatColumn = pColumns->GetAt(1);
 
 	// create main menu items
 	menu.AppendMenu(MF_STRING, ID_SORT_ASC, _T("Sort ascending"));

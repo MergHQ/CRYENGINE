@@ -233,8 +233,6 @@ void C2DViewport::SetZoom(float fZoomFactor, CPoint center)
 	if (fZoomFactor < 0.01f)
 		fZoomFactor = 0.01f;
 
-	float prevz = GetZoomFactor();
-
 	// Zoom to mouse position.
 	float ofsx, ofsy;
 	GetScrollOffset(ofsx, ofsy);
@@ -548,12 +546,6 @@ void C2DViewport::DrawGrid(SDisplayContext& dc, bool bNoXNumbers)
 		}
 	}
 
-	int firstGridLineX = origin[0] / gridSize - 1;
-	int firstGridLineY = origin[1] / gridSize - 1;
-
-	int numGridLinesX = (m_rcClient.Width() / fScale) / gridSize + 1;
-	int numGridLinesY = (m_rcClient.Height() / fScale) / gridSize + 1;
-
 	Matrix34 viewTM = GetViewTM().GetInverted() * m_screenTM_Inverted;
 	Matrix34 viewTM_Inv = m_screenTM * GetViewTM();
 
@@ -668,8 +660,6 @@ void C2DViewport::DrawGrid(SDisplayContext& dc, bool bNoXNumbers)
 
 void C2DViewport::DrawAxis(SDisplayContext& dc)
 {
-	int ix = 0;
-	int iy = 0;
 	float cl = 0.85f;
 	char xstr[2], ystr[2], zstr[2];
 	Vec3 colx, coly, colz;
@@ -712,7 +702,6 @@ void C2DViewport::DrawAxis(SDisplayContext& dc)
 		break;
 	}
 
-	int width = m_rcClient.Width();
 	int height = m_rcClient.Height();
 
 	int size = 25;
@@ -970,8 +959,6 @@ void C2DViewport::CenterOnSelection()
 	AABB bounds = sel->GetBounds();
 	Vec3 selPos = sel->GetCenter();
 
-	float size = (bounds.max - bounds.min).GetLength();
-
 	Vec3 v1 = ViewToWorld(CPoint(m_rcClient.left, m_rcClient.bottom));
 	Vec3 v2 = ViewToWorld(CPoint(m_rcClient.right, m_rcClient.top));
 	Vec3 vofs = (v2 - v1) * 0.5f;
@@ -1119,8 +1106,6 @@ bool C2DViewport::MouseCallback(EMouseEvent event, CPoint& point, int flags)
 
 					CRect rc;
 					GetClientRect(rc);
-					int w = rc.right;
-					int h = rc.bottom;
 
 					// Zoom to mouse position.
 					float z = m_prevZoomFactor + (point.y - m_RMouseDownPos.y) * 0.02f;

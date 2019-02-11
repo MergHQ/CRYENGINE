@@ -139,7 +139,6 @@ int QHistoryModel::columnCount(const QModelIndex& parent) const
 QVariant QHistoryModel::data(const QModelIndex& index, int role) const
 {
 	int row = index.row();
-	int col = index.column();
 
 	switch (role)
 	{

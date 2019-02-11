@@ -156,7 +156,6 @@ void DesignerEditor::EndEdit()
 	else
 	{
 		MainContext ctx = pSession->GetMainContext();
-		CBaseObject* pObject = ctx.pObject;
 		pModel = ctx.pModel;
 
 		// revert the selected state of the objects back for highlighting

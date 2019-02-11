@@ -253,8 +253,6 @@ void CKeybindEditor::KeybindModel::Rebuild()
 void CKeybindEditor::KeybindModel::UpdateConflicts(CUiCommand* command, QList<QKeySequence> oldShortcuts)
 {
 	QList<QKeySequence> shortcuts = static_cast<QCommandAction*>(command->GetUiInfo())->shortcuts();
-
-	bool bChanged = false;
 	QSet<CCommand*> changedCommands;
 
 	for (const QKeySequence& seq : oldShortcuts)
@@ -810,8 +808,6 @@ void CKeybindEditor::customEvent(QEvent* event)
 		const string& command = commandEvent->GetCommand();
 		if (command == "general.delete")
 		{
-			CEditorCommandManager* comMan = GetIEditorImpl()->GetCommandManager();
-
 			CCommand* command = nullptr;
 			QModelIndex index = m_treeView->selectionModel()->currentIndex();
 			if (index.isValid())

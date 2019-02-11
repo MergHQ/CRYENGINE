@@ -139,10 +139,8 @@ int LuaCommentParser::FindTables(LuaTable* parentTable, int offset)
 	int posInFile = offset;
 	string fullfile = string(m_AllText);
 	int posOpenBracket = FindStringInFileSkippingComments("{", posInFile);
-	int i = 0;
 
 	//table found
-	int breakhere = 0;
 	string file = string(m_AllText + posOpenBracket + 1);
 	posInFile = posOpenBracket + 1;
 	string tableName = FindTableNameForBracket(posInFile - 1);
@@ -190,7 +188,6 @@ string LuaCommentParser::FindTableNameForBracket(int bracketPos)
 {
 	// Find '=' sign and the word before that if not commented
 	bool found = false;
-	const char* pBracket = m_AllText + bracketPos;
 	string tableName;
 	int i = bracketPos;
 	bool inMultiComment = false;

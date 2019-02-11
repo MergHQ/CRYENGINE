@@ -492,7 +492,8 @@ void CEffectorInfoWnd::ReloadCtrls()
 		ci.pCtrl = pCtrl;
 		m_controllers.push_back(ci);
 
-		CXTPTaskPanelGroupItem* pItem = pFolder->AddControlItem(*pSplineCtrl);
+		pFolder->AddControlItem(*pSplineCtrl);
+		//CXTPTaskPanelGroupItem* pItem = pFolder->AddControlItem(*pSplineCtrl);
 		//pItem->GetMargins().SetRect(0,0,0,0);
 
 		pSplineCtrl->MoveWindow(sliderRc);
@@ -639,7 +640,6 @@ void CEffectorInfoWnd::OnSplineChange(UINT nID, NMHDR* pNMHDR, LRESULT* lpResult
 			{
 				if (m_controllers[i].pSplineCtrl == pSlineCtrl)
 				{
-					IFacialEffCtrl* pCtrl = m_controllers[i].pCtrl;
 					m_pContext->SetModified(m_pContext->pSelectedEffector);
 				}
 			}

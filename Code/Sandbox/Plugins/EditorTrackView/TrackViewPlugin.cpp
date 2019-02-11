@@ -87,12 +87,13 @@ void CTrackViewPlugin::OnOpenObjectContextMenu(CPopupMenuItem* pMenu, const CBas
 void CTrackViewPlugin::OnMenuOpenTrackView(CTrackViewAnimNode* pAnimNode)
 {
 	GetIEditor()->OpenView("Track View");
-	std::vector<CTrackViewWindow*> windows = CTrackViewWindow::GetTrackViewWindows();
+
+	// TODO
+	/*std::vector<CTrackViewWindow*> windows = CTrackViewWindow::GetTrackViewWindows();
 	for (CTrackViewWindow* pWindow : windows)
 	{
-		// TODO
-		//pWindow->ShowNode(pAnimNode);
-	}
+		pWindow->ShowNode(pAnimNode);
+	}*/
 }
 
 void CTrackViewPlugin::OnMove(const Vec3 targetPos, Vec3 sourcePos, bool bIsCopy)

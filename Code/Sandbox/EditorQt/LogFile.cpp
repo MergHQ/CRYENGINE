@@ -104,7 +104,6 @@ void CLogFile::AboutSystem()
 	char szProfileBuffer[128];
 	char szLanguageBuffer[64];
 	//char szCPUModel[64];
-	char* pChar = 0;
 	MEMORYSTATUS MemoryStatus;
 	DEVMODE DisplayConfig;
 	RTL_OSVERSIONINFOEXW OSVerInfo = { 0 };

@@ -206,9 +206,6 @@ protected:
 
 		if (m_bShowDropTarget)
 		{
-			QAction* pAction = actionAt(m_DropTargetPos);
-			QWidget* pWidget = widgetForAction(pAction);
-
 			QPixmap pixmap(":toolbar-drop-target.png");
 			int spacing = (pixmap.width() + layout()->spacing()) / 2;
 			QPoint drawPos = QPoint(m_DropTargetPos.x() - spacing, 0);
@@ -477,7 +474,7 @@ void CToolBarCustomizeDialog::QDropContainer::mouseMoveEvent(QMouseEvent* pEvent
 
 	pDrag->setMimeData(pMimeData);
 	m_pCurrentToolBar->SetDragStartPosition(m_DragStartPosition);
-	Qt::DropAction dropAction = pDrag->exec(Qt::CopyAction | Qt::MoveAction);
+	pDrag->exec(Qt::CopyAction | Qt::MoveAction);
 	m_pCurrentToolBar->DrawDropTarget(pEvent->globalPos());
 }
 
@@ -1106,7 +1103,6 @@ void CToolBarCustomizeDialog::dropEvent(QDropEvent* pEvent)
 
 void CToolBarCustomizeDialog::OnContextMenu(const QPoint& position) const
 {
-	CUiCommand* command = nullptr;
 	QModelIndex index = m_pTreeView->indexAt(position);
 
 	if (!index.isValid())

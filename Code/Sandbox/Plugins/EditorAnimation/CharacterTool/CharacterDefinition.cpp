@@ -3124,9 +3124,7 @@ void CharacterDefinition::ApplyFaceAttachment(IAttachment* pIAttachment, ICharac
 
 void CharacterDefinition::ApplySkinAttachment(IAttachment* pIAttachment, ICharacterManager* characterManager, const CharacterAttachment& desc, ICharacterInstance* pICharacterInstance, bool* skinChanged) const
 {
-	uint32 type = pIAttachment->GetType();
 	IAttachmentObject* iattachmentObject = pIAttachment->GetIAttachmentObject();
-	IAttachmentManager* attachmentManager = pICharacterInstance->GetIAttachmentManager();
 
 	string existingMaterialFilename;
 	string existingBindingFilename;

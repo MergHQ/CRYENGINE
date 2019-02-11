@@ -2095,7 +2095,7 @@ void CPropertyItem::DrawValue(CDC* dc, CRect rect)
 				color = (COLORREF)ColorB::ComputeAvgCol_Fast(RGB(255, 255, 255), color);
 			}
 			CPen pen(PS_SOLID, 1, color);
-			CPen* pPen = dc->SelectObject(&pen);
+			dc->SelectObject(&pen);
 
 			//Draw bold check-mark
 			int number_of_lines = sz / 8;
@@ -2854,7 +2854,6 @@ void CPropertyItem::OnPsdEditButton()
 //////////////////////////////////////////////////////////////////////////
 void CPropertyItem::OnAnimationApplyButton()
 {
-	CUIEnumerations& roGeneralProxy = CUIEnumerations::GetUIEnumerationsInstance();
 	std::vector<string> cSelectedAnimations;
 	size_t nTotalAnimations(0);
 	size_t nCurrentAnimation(0);

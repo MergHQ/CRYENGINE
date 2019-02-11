@@ -49,12 +49,6 @@ void AIInitLog(ISystem* system)
 	// NOTE Mrz 4, 2008: <pvl> this is the editor, let's assume devmode instead
 	// of trying to access the function that lives in a different dll and isn't
 	// exported
-	bool inDevMode = true; //::IsAIInDevMode();
-#ifdef _DEBUG
-	int isDebug = 1;
-#else
-	int isDebug = 0;
-#endif
 
 	if (console)
 	{

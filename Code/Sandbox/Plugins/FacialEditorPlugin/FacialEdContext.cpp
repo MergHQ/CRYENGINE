@@ -516,7 +516,7 @@ void CFacialEdContext::DoChannelDragDrop(IFacialAnimChannel* pChannel)
 
 	if (dataSource)
 	{
-		DROPEFFECT dropEffect = dataSource->DoDragDrop(DROPEFFECT_MOVE | DROPEFFECT_LINK);
+		dataSource->DoDragDrop(DROPEFFECT_MOVE | DROPEFFECT_LINK);
 		//dataSource->InternalRelease();
 	}
 }
@@ -857,7 +857,6 @@ void CFacialEdContext::UpdateSelectedFromSliders()
 		{
 			if (i >= nMaxEffectors)
 				break;
-			IFacialEffector* pEffector = pModel->GetEffector(i);
 
 			float fWeight = m_weights[i];
 			if (fabs(fWeight) > 0.0001f)
@@ -927,9 +926,7 @@ void CFacialEdContext::UpdateSelectedFromSequenceTime(float minimumWeight)
 							for (int subEffector = 0; subEffector < subEffectorCount; ++subEffector)
 							{
 								IFacialEffector* pSubEffector = pLibEffector->GetSubEffector(subEffector);
-								const char* subEffName = pSubEffector->GetName();
 								float effectorWeight = pLibEffector->GetSubEffCtrl(subEffector)->GetConstantWeight();
-								float bal = pLibEffector->GetSubEffCtrl(subEffector)->GetConstantBalance();
 								float mergedWeight = channelWeight * effectorWeight;
 								if (fabs(mergedWeight) < minimumWeight)
 									continue;

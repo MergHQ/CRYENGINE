@@ -86,9 +86,6 @@ CItemProperties::CItemProperties(CryGraphEditor::GraphItemSet& selectedItems)
 
 	if (nodesByNameCrc.size() == 1)
 	{
-		QWidget* pContainer = new QWidget();
-		QVBoxLayout* pLayout = new QVBoxLayout();
-
 		SNode& node = nodesByNameCrc.begin()->second;
 		m_pNodeItem = node.pNodeItem;
 

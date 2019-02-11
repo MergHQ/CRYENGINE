@@ -426,7 +426,6 @@ void CMannequinDialog::ResavePreviewFile()
 
 bool CMannequinDialog::SavePreviewFile(const char* filename)
 {
-	IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 	const SControllerDef* pControllerDef = m_contexts.m_controllerDef;
 	if (pControllerDef == NULL)
 	{

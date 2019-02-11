@@ -147,7 +147,6 @@ CTrackViewKeyHandle CTrackViewTrack::GetNextKey(const SAnimTime time)
 
 	const SAnimTime startTime = time;
 	SAnimTime closestTime = SAnimTime::Max();
-	bool bFoundKey = false;
 
 	const int numKeys = m_pAnimTrack->GetNumKeys();
 	for (int i = 0; i < numKeys; ++i)

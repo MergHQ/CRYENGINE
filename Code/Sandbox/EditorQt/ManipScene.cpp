@@ -88,8 +88,6 @@ static void DrawElement(const SRenderContext& rc, const SElement& element, Eleme
 	if (element.hidden)
 		return;
 
-	IRenderer* renderer = GetIEditorImpl()->GetRenderer();
-	IPhysicsDebugRenderer* physicsDebugRenderer = GetIEditorImpl()->GetSystem()->GetIPhysicsDebugRenderer();
 	IRenderAuxGeom* aux = rc.pAuxGeom;
 
 	SAuxGeomRenderFlags defaultFlags(e_Mode3D | e_AlphaBlended | e_DrawInFrontOff | e_FillModeSolid | e_CullModeNone | e_DepthWriteOn | e_DepthTestOn);
@@ -98,8 +96,6 @@ static void DrawElement(const SRenderContext& rc, const SElement& element, Eleme
 
 	QuatT transform = spaceProvider->ElementToWorldSpace(element);
 	Matrix34 transformM(transform);
-
-	bool isHighlighted = element.id == highlightedItem;
 
 	if (element.shape == SHAPE_BOX)
 	{
@@ -170,9 +166,6 @@ static void DrawElement(const SRenderContext& rc, const SElement& element, Eleme
 
 void CScene::OnViewportRender(const SRenderContext& rc)
 {
-	IRenderer* renderer = GetIEditorImpl()->GetRenderer();
-	IRenderAuxGeom* aux = rc.pAuxGeom;
-
 	IPhysicsDebugRenderer* physicsDebugRenderer = GetIEditorImpl()->GetSystem()->GetIPhysicsDebugRenderer();
 	physicsDebugRenderer->UpdateCamera(*rc.viewport->Camera());
 
@@ -214,7 +207,6 @@ void CScene::OnViewportRender(const SRenderContext& rc)
 		SAuxGeomRenderFlags prevFlags = IRenderAuxGeom::GetAux()->GetRenderFlags();
 		IRenderAuxGeom::GetAux()->SetRenderFlags(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthTestOn | e_DepthWriteOn);
 
-		int selectionCaps = GetSelectionCaps();
 		Matrix34 m = Matrix34(GetGizmoOrientation(GetSelectionTransform(SPACE_WORLD), rc.viewport->Camera(), m_transformationSpace));
 		SDisplayContext dc;
 		CDisplayViewportAdapter view(rc.viewport);

@@ -294,7 +294,7 @@ void CAbstractUndoAnimNodeTransaction::AddNode()
 	m_pParentNode->m_pAnimSequence->AddNode(m_pNode->m_pAnimNode);
 
 	// Release ownership and add node back to parent node
-	CTrackViewNode* pNode = m_pStoredTrackViewNode.release();
+	m_pStoredTrackViewNode.release();
 	m_pParentNode->AddNode(m_pNode);
 
 	m_pNode->BindToEditorObjects();

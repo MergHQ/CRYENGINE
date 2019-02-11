@@ -62,7 +62,6 @@ public:
 
 		const char* errorString[] = { "None", "Fragment", "Transition" };
 		CString text, file, object, module, type;
-		int count = err.count;
 
 		text = err.error;
 		file = err.file;
@@ -334,8 +333,6 @@ void CMannErrorReportDialog::ReloadErrors()
 	for (int i = 0; i < m_errorRecords.size(); i++)
 	{
 		CMannErrorRecord& err = m_errorRecords[i];
-		const char* str = err.error;
-
 		m_wndReport.AddRecord(new CMannErrorMessageRecord(err, m_contexts));
 	}
 
@@ -915,7 +912,7 @@ void CMannErrorReportDialog::OnReportItemDblClick(NMHDR* pNotifyStruct, LRESULT*
 	CMannErrorMessageRecord* pRecord = DYNAMIC_DOWNCAST(CMannErrorMessageRecord, pItemNotify->pRow->GetRecord());
 	if (pRecord)
 	{
-		bool bDone = false;
+		//bool bDone = false;
 		CMannErrorRecord* pError = pRecord->m_pRecord;
 		if (pError)
 		{
@@ -987,8 +984,8 @@ void CMannErrorReportDialog::OnReportHyperlink(NMHDR* pNotifyStruct, LRESULT* re
 		CMannErrorMessageRecord* pRecord = DYNAMIC_DOWNCAST(CMannErrorMessageRecord, pItemNotify->pRow->GetRecord());
 		if (pRecord)
 		{
-			bool bDone = false;
-			CMannErrorRecord* pError = pRecord->m_pRecord;
+			//bool bDone = false;
+			//CMannErrorRecord* pError = pRecord->m_pRecord;
 			//if (pError && pError->pObject != NULL)
 			//{
 			//	CUndo undo( "Select Object(s)" );

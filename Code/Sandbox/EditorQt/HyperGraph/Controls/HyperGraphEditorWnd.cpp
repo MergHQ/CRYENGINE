@@ -2851,7 +2851,6 @@ bool CHyperGraphDialog::IsGraphType(HTREEITEM hSelectedItem, IFlowGraph::EFlowGr
 {
 	CHyperGraph* pGraph = 0;
 	CHyperFlowGraph* pFlowGraph = 0;
-	CEntityObject* pOwnerEntity = 0;
 
 	pGraph = (CHyperGraph*)m_graphsTreeCtrl.GetItemData(hSelectedItem);
 	if (pGraph)

@@ -172,7 +172,6 @@ int CInPlaceCBListBox::SetCurSel(int nPos)
 	// Check if we have autoscrolled
 	//if( m_nLastTopIdx != GetTopIndex() )
 	{
-		int nDiff = m_nLastTopIdx - GetTopIndex();
 		m_nLastTopIdx = GetTopIndex();
 
 		SCROLLINFO info;
@@ -330,9 +329,6 @@ void CInPlaceCBScrollBar::VScroll(UINT nSBCode, UINT nPos)
 {
 	if (!m_pListBox)
 		return;
-
-	int nTop = m_pListBox->GetTopIndex();
-	int nBottom = m_pListBox->GetBottomIndex();
 
 	SCROLLINFO info;
 

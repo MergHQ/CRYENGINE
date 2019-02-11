@@ -228,7 +228,6 @@ CEmitterVisibleIcon::CEmitterVisibleIcon(CryGraphEditor::CNodeWidget& nodeWidget
 	}
 
 	CNodeItem& node = static_cast<CNodeItem&>(GetViewItem());
-	CParticleGraphModel& model = static_cast<CParticleGraphModel&>(node.GetViewModel());
 	UpdateIcon(GetViewWidget().IsSelected(), node.IsVisible(), node.IsDeactivated());
 
 	GetViewWidget().SignalSelectionChanged.Connect(this, &CEmitterVisibleIcon::OnNodeSelectionChanged);

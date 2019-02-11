@@ -70,7 +70,7 @@ float CTrackViewAnimationTrack::GetKeyDurationFromAnimationData(const SCharacter
 
 	CTrackViewAnimNode* animNode = static_cast<CTrackViewAnimNode*>(pParent);
 	EAnimNodeType animNodeType = animNode->GetType();
-	if (nodeType != eAnimNodeType_Entity)
+	if (animNodeType != eAnimNodeType_Entity)
 	{
 		return duration;
 	}

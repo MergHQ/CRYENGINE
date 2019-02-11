@@ -163,7 +163,7 @@ bool CObjectCreateTool::OnDragEvent(CViewport* view, EDragEvent eventId, QEvent*
 				CRY_ASSERT(m_createdObject);
 				GetIEditorImpl()->GetIUndoManager()->Suspend();
 				CPoint point(dragMove->pos().x(), dragMove->pos().y());
-				int res = m_createdObject->MouseCreateCallback(view, eMouseMove, point, flags);
+				m_createdObject->MouseCreateCallback(view, eMouseMove, point, flags);
 				GetIEditorImpl()->GetIUndoManager()->Resume();
 				dragMove->accept();
 				return true;
@@ -175,7 +175,6 @@ bool CObjectCreateTool::OnDragEvent(CViewport* view, EDragEvent eventId, QEvent*
 			QDropEvent* drop = static_cast<QDropEvent*>(event);
 			if (IsValidDragData(drop->mimeData(), false))
 			{
-				auto action = drop->proposedAction();
 				drop->acceptProposedAction();
 				CPoint point(drop->pos().x(), drop->pos().y());
 				m_createdObject->MouseCreateCallback(view, eMouseLDown, point, flags);

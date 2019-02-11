@@ -986,7 +986,6 @@ void CFacialExpressionsDialog::OnTreeRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	CMenu menu;
 	menu.CreatePopupMenu();
 
-	IFacialEffCtrl* pSelectedCtrl = m_treeCtrl.GetSelectedCtrl();
 	IFacialEffector* pSelected = m_treeCtrl.GetSelectedEffector();
 
 	if (pSelected)

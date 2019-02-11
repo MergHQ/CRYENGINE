@@ -65,7 +65,7 @@ void EnableXTDarkSkin()
 		XTPOffice2007Images()->SetHandle(PathUtil::Make(PathUtil::GetEnginePath(), "Editor\\Styles\\Office2007Black.dll").c_str());
 
 		//CXTPPaintManager::SetCustomTheme(new CCrytekTheme());
-		BOOL bLoaded = XTPSkinManager()->LoadSkin(PathUtil::Make(PathUtil::GetEnginePath(), "Editor\\Styles\\CryDark.cjstyles").c_str());
+		XTPSkinManager()->LoadSkin(PathUtil::Make(PathUtil::GetEnginePath(), "Editor\\Styles\\CryDark.cjstyles").c_str());
 		// Apply skin, including metrics, coloring and frame
 		XTPSkinManager()->SetApplyOptions(xtpSkinApplyMetrics | xtpSkinApplyColors | xtpSkinApplyMenus);
 

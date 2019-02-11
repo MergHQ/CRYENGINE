@@ -386,7 +386,7 @@ void AreaSolidObject::Display(CObjectRenderHelper& objRenderHelper)
 
 	if (GetCompiler())
 	{
-		for (int i = 0, iCount(GetEntityCount()); i < GetEntityCount(); i++)
+		for (int i = 0; i < GetEntityCount(); i++)
 		{
 			CEntityObject* pEntity = GetEntity(i);
 			if (!pEntity || !pEntity->GetIEntity())
