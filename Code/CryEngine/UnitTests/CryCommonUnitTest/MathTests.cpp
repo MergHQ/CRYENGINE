@@ -492,7 +492,6 @@ void VectorTest(TestMode mode)
 	static const float Tolerance = -1e-5f;
 	bool add_names = TestNames.empty();
 
-	int stat = 0;
 	VECTOR_TEST_CODE(e.v0, 0.0f);
 	VECTOR_TEST_CODE(e.v0 == e.v1, bool());
 	VECTOR_TEST_CODE(IsEquivalent(e.v0, e.v1, Tolerance), bool());
