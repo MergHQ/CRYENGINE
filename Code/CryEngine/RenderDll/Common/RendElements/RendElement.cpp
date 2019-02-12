@@ -165,16 +165,12 @@ const char*        CRenderElement::mfTypeString()
 {
 	switch (m_Type)
 	{
-	case eDATA_Sky:
-		return "Sky";
 	case eDATA_ClientPoly:
 		return "ClientPoly";
 	case eDATA_Flare:
 		return "Flare";
 	case eDATA_Terrain:
 		return "Terrain";
-	case eDATA_SkyZone:
-		return "SkyZone";
 	case eDATA_Mesh:
 		return "Mesh";
 	case eDATA_LensOptics:
@@ -183,8 +179,6 @@ const char*        CRenderElement::mfTypeString()
 		return "OcclusionQuery";
 	case eDATA_Particle:
 		return "Particle";
-	case eDATA_HDRSky:
-		return "HDRSky";
 	case eDATA_FogVolume:
 		return "FogVolume";
 	case eDATA_WaterVolume:

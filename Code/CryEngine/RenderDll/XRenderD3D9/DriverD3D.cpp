@@ -1021,9 +1021,11 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 	ICVar* pCVDebugTexelDensity = gEnv->pConsole->GetCVar("e_texeldensity");
 	ICVar* pCVDebugDraw = gEnv->pConsole->GetCVar("e_debugdraw");
 	ICVar* pCVTerrainBlendingDebug = gEnv->pConsole->GetCVar("e_TerrainBlendingDebug");
+	ICVar* pCVClouds = gEnv->pConsole->GetCVar("e_Clouds");
 	CRendererCVars::CV_e_DebugTexelDensity = pCVDebugTexelDensity ? pCVDebugTexelDensity->GetIVal() : 0;
 	CRendererCVars::CV_e_DebugDraw = pCVDebugDraw ? pCVDebugDraw->GetIVal() : 0;
 	CRendererCVars::CV_e_TerrainBlendingDebug = pCVTerrainBlendingDebug ? pCVTerrainBlendingDebug->GetIVal() : 0;
+	CRendererCVars::CV_e_Clouds = pCVClouds ? pCVClouds->GetIVal() : 0;
 #endif
 
 	if (m_hWndActive == m_hWnd)

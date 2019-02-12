@@ -1502,36 +1502,14 @@ int __cdecl C3DEngine__Cmp_SRNInfo(const void* v1, const void* v2)
 	return 0;
 }
 
-IMaterial* C3DEngine::GetSkyMaterial()
+const SSkyLightRenderParams* C3DEngine::GetSkyLightRenderParams() const
 {
-	IMaterial* pRes(0);
-	if (GetCVars()->e_SkyType == 0)
-	{
-		if (!m_pSkyLowSpecMat)
-		{
-			m_pSkyLowSpecMat = m_skyLowSpecMatName.empty() ? 0 : m_pMatMan->LoadMaterial(m_skyLowSpecMatName.c_str(), false);
-		}
-		pRes = m_pSkyLowSpecMat;
-	}
-	else
-	{
-		if (!m_pSkyMat)
-		{
-			m_pSkyMat = m_skyMatName.empty() ? 0 : GetMatMan()->LoadMaterial(m_skyMatName.c_str(), false);
-		}
-		pRes = m_pSkyMat;
-	}
-	return pRes;
+	return m_pSkyLightManager ? m_pSkyLightManager->GetRenderParams() : NULL;
 }
 
-void C3DEngine::SetSkyMaterial(IMaterial* pSkyMat)
+void C3DEngine::SetSkyMaterial(IMaterial* pSkyMat, eSkyType type)
 {
-	m_pSkyMat = pSkyMat;
-}
-
-bool C3DEngine::IsHDRSkyMaterial(IMaterial* pMat) const
-{
-	return pMat && pMat->GetShaderItem().m_pShader && !stricmp(pMat->GetShaderItem().m_pShader->GetName(), "SkyHDR");
+	m_pSkyMat[type] = pSkyMat;
 }
 
 void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& passInfo)
@@ -1698,9 +1676,9 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 			//const_cast<CCamera&>(passInfo.GetCamera()).m_pMultiCamera = &m_pVisAreaManager->m_lstOutdoorPortalCameras;
 		}
 
-		if (IsOutdoorVisible())
+		if (IsSkyVisible())
 		{
-			RenderSkyBox(GetSkyMaterial(), passInfo);
+			UpdateSky(passInfo);
 		}
 
 		// start processing terrain
@@ -1983,90 +1961,79 @@ void C3DEngine::ProcessOcean(const SRenderingPassInfo& passInfo)
 	}
 }
 
-void C3DEngine::RenderSkyBox(IMaterial* pMat, const SRenderingPassInfo& passInfo)
+bool C3DEngine::IsSkyVisible()
+{
+	return GetCVars()->e_SkyBox && IsOutdoorVisible();
+}
+
+void C3DEngine::UpdateSky(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "C3DEngine::RenderSkyBox");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "C3DEngine::UpdateSky");
 
-	const float fForceDrawLastSortOffset = 100000.0f;
+	const eSkyType skyType = GetSkyType();
 
-	Vec3 vSkyLight(0.0f, 0.0f, 0.0f);
-
-	// hdr sky dome
-	// TODO: temporary workaround to force the right sky dome for the selected shader
-	if (m_pREHDRSky && IsHDRSkyMaterial(pMat))
+	// Note: this should be deprecated at some point.
+	// Update some sky params from the material:
+	//    - m_fSkyBoxAngle
+	//    - m_vSkyBoxExposure
+	//    - m_vSkyBoxOpacity
+	//    - m_SkyDomeTextureName
+	if (m_pSkyMat[skyType]
+		&& m_pSkyMat[skyType]->GetShaderItem().m_pShader
+		&& m_pSkyMat[skyType]->GetShaderItem().m_pShaderResources)
 	{
-		if (GetCVars()->e_SkyBox)
+		m_bSkyMatOverride = true;
+
+		IRenderShaderResources *const pShaderResources = m_pSkyMat[skyType]->GetShaderItem().m_pShaderResources;
+
+		auto& shaderParams = pShaderResources->GetParameters();
+		for (int i = 0; i < shaderParams.size(); i++)
 		{
-#ifndef CONSOLE_CONST_CVAR_MODE
-			if (GetCVars()->e_SkyQuality < 1)
-				GetCVars()->e_SkyQuality = 1;
-			else if (GetCVars()->e_SkyQuality > 2)
-				GetCVars()->e_SkyQuality = 2;
-#endif
-			m_pSkyLightManager->SetQuality(GetCVars()->e_SkyQuality);
-
-			// set sky light incremental update rate and perform update
-			if (GetCVars()->e_SkyUpdateRate <= 0.0f)
-				GetCVars()->e_SkyUpdateRate = 0.01f;
-			m_pSkyLightManager->IncrementalUpdate(GetCVars()->e_SkyUpdateRate, passInfo);
-
-			// prepare render object
-			CRenderObject* pObj = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
-			if (!pObj)
-				return;
-			pObj->SetMatrix(Matrix34::CreateTranslationMat(passInfo.GetCamera().GetPosition()), passInfo);
-			pObj->m_ObjFlags |= FOB_TRANS_TRANSLATE;
-			pObj->m_pRenderNode = 0;//m_pREHDRSky;
-			pObj->m_fSort = fForceDrawLastSortOffset; // force sky to draw last
-
-			/*			if( 0 == m_nRenderStackLevel )
-			   {
-			   // set scissor rect
-			   pObj->m_nScissorX1 = GetCamera().m_ScissorInfo.x1;
-			   pObj->m_nScissorY1 = GetCamera().m_ScissorInfo.y1;
-			   pObj->m_nScissorX2 = GetCamera().m_ScissorInfo.x2;
-			   pObj->m_nScissorY2 = GetCamera().m_ScissorInfo.y2;
-			   }*/
-
-			m_pREHDRSky->m_pRenderParams = m_pSkyLightManager->GetRenderParams();
-			m_pREHDRSky->m_moonTexId = m_nNightMoonTexId;
-
-			// add sky dome to render list
-			passInfo.GetIRenderView()->AddRenderObject(m_pREHDRSky, pMat->GetShaderItem(), pObj, passInfo, EFSLIST_GENERAL, 0);
-
-			// get sky lighting parameter.
-			const SSkyLightRenderParams* pSkyParams = m_pSkyLightManager->GetRenderParams();
-			if (pSkyParams)
+			const SShaderParam *const sp = &(shaderParams)[i];
+			if (sp && !stricmp(sp->m_Name, "SkyboxAngle") && sp->m_Type == eType_FLOAT)
 			{
-				Vec4 skylightRayleighInScatter;
-				skylightRayleighInScatter = pSkyParams->m_hazeColorRayleighNoPremul * pSkyParams->m_partialRayleighInScatteringConst;
-				vSkyLight = Vec3(skylightRayleighInScatter);
+				m_fSkyBoxAngle[1] = sp->m_Value.m_Float;
 			}
 		}
-	}
-	// skybox
-	else if (m_pRESky && pMat)
-	{
-		if (GetCVars()->e_SkyBox)
+
+		m_vSkyBoxExposure[1] = pShaderResources->GetFinalEmittance().toVec3();
+		m_vSkyBoxOpacity[1] = (pShaderResources->GetColorValue(EFTT_DIFFUSE) * pShaderResources->GetStrengthValue(EFTT_OPACITY)).toVec3();
+
+		if (const SEfResTexture *const pSkyTexInfo = pShaderResources->GetTexture(EFTT_DIFFUSE))
 		{
-			CRenderObject* pObj = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
-			if (!pObj)
-				return;
-			Matrix34 mat = Matrix34::CreateTranslationMat(passInfo.GetCamera().GetPosition());
-			pObj->SetMatrix(mat * Matrix33::CreateRotationZ(DEG2RAD(m_fSkyBoxAngle)), passInfo);
-			pObj->m_ObjFlags |= FOB_TRANS_TRANSLATE | FOB_TRANS_ROTATE;
-			pObj->m_fSort = fForceDrawLastSortOffset; // force sky to draw last
-
-			m_pRESky->m_fTerrainWaterLevel = max(0.0f, m_pTerrain->GetWaterLevel());
-			m_pRESky->m_fSkyBoxStretching = m_fSkyBoxStretching;
-			m_pRESky->m_fSkyBoxAngle = DEG2RAD(m_fSkyBoxAngle);
-
-			passInfo.GetIRenderView()->AddRenderObject(m_pRESky, pMat->GetShaderItem(), pObj, passInfo, EFSLIST_GENERAL, 0);
+			m_SkyDomeTextureName[1] = pSkyTexInfo->m_Name;
+		}
+		else
+		{
+			stl::free_container(m_SkyDomeTextureName[1]);
 		}
 	}
+	else
+	{
+		m_bSkyMatOverride = false;
+	}
 
-	SetGlobalParameter(E3DPARAM_SKYLIGHT_RAYLEIGH_INSCATTER, vSkyLight);
+	// dynamic sky dome
+	if (skyType == eSkyType_HDRSky)
+	{
+#ifndef CONSOLE_CONST_CVAR_MODE
+		GetCVars()->e_SkyQuality = crymath::clamp(GetCVars()->e_SkyQuality, 1, 2);
+#endif
+		m_pSkyLightManager->SetQuality(GetCVars()->e_SkyQuality);
+
+		// set sky light incremental update rate and perform update
+		GetCVars()->e_SkyUpdateRate = std::max(GetCVars()->e_SkyUpdateRate, 0.01f);
+		m_pSkyLightManager->IncrementalUpdate(GetCVars()->e_SkyUpdateRate, passInfo);
+
+		// get sky lighting parameter.
+		const SSkyLightRenderParams* pSkyParams = m_pSkyLightManager->GetRenderParams();
+		m_fogColorSkylightRayleighInScatter = Vec3(pSkyParams->m_hazeColorRayleighNoPremul * pSkyParams->m_partialRayleighInScatteringConst);
+	}
+	else
+	{
+		m_fogColorSkylightRayleighInScatter.SetZero();
+	}
 }
 
 void C3DEngine::DrawTextRightAligned(const float x, const float y, const char* format, ...)

@@ -7,6 +7,7 @@
 #include "SceneGBuffer.h"
 #include "SceneDepth.h"
 #include "SceneForward.h"
+#include "Sky.h"
 #include "SceneCustom.h"
 #include "AutoExposure.h"
 #include "Bloom.h"
@@ -111,6 +112,7 @@ void CStandardGraphicsPipeline::Init()
 	RegisterStage<CScreenSpaceReflectionsStage>(m_pScreenSpaceReflectionsStage, eStage_ScreenSpaceReflections);
 	RegisterStage<CScreenSpaceSSSStage        >(m_pScreenSpaceSSSStage        , eStage_ScreenSpaceSSS);
 	RegisterStage<CVolumetricFogStage         >(m_pVolumetricFogStage         , eStage_VolumetricFog);
+	RegisterStage<CSkyStage                   >(m_pSkyStage                   , eStage_Sky);
 	RegisterStage<CFogStage                   >(m_pFogStage                   , eStage_Fog);
 	RegisterStage<CVolumetricCloudsStage      >(m_pVolumetricCloudsStage      , eStage_VolumetricClouds);
 	RegisterStage<CWaterRipplesStage          >(m_pWaterRipplesStage          , eStage_WaterRipples);
@@ -734,7 +736,7 @@ void CStandardGraphicsPipeline::ExecuteMinimumForwardShading()
 	m_pSceneGBufferStage->ExecuteMinimumZpass();
 
 	// forward opaque and transparent passes for recursive rendering
-	m_pSceneForwardStage->ExecuteSky(pColorTex, pDepthTex);
+	m_pSkyStage->Execute(pColorTex, pDepthTex);
 	m_pSceneForwardStage->ExecuteMinimum(pColorTex, pDepthTex);
 
 	// Insert fence which is used on consoles to prevent overwriting video memory
@@ -797,7 +799,7 @@ void CStandardGraphicsPipeline::ExecuteMobilePipeline()
 	}
 
 	// Opaque and transparent forward passes
-	m_pSceneForwardStage->ExecuteSky(CRendererResources::s_ptexHDRTarget, pZTexture);
+	m_pSkyStage->Execute(CRendererResources::s_ptexHDRTarget, pZTexture);
 	m_pSceneForwardStage->ExecuteMobile();
 
 	// Insert fence which is used on consoles to prevent overwriting video memory
@@ -935,7 +937,7 @@ void CStandardGraphicsPipeline::Execute()
 		PROFILE_LABEL_SCOPE("FORWARD Z");
 
 		// Opaque forward passes
-		m_pSceneForwardStage->ExecuteSky(CRendererResources::s_ptexHDRTarget, pZTexture);
+		m_pSkyStage->Execute(CRendererResources::s_ptexHDRTarget, pZTexture);
 		m_pSceneForwardStage->ExecuteOpaque();
 	}
 

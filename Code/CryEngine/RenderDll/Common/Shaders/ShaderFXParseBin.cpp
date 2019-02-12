@@ -1526,10 +1526,7 @@ bool CShaderManBin::ParseBinFX_Global_Annotations(CParserBin& Parser, SParserFra
 				else if (eT == eT_Custom)
 					ef->m_eSHDType = eSHDT_CustomDraw;
 				else if (eT == eT_Sky)
-				{
 					ef->m_eSHDType = eSHDT_Sky;
-					ef->m_Flags |= EF_SKY;
-				}
 				else if (eT == eT_OceanShore)
 					ef->m_eSHDType = eSHDT_OceanShore;
 				else if (eT == eT_DebugHelper)
@@ -1565,8 +1562,6 @@ bool CShaderManBin::ParseBinFX_Global_Annotations(CParserBin& Parser, SParserFra
 					ef->m_eShaderType = eST_PostProcess;
 				else if (eT == eT_HDR)
 					ef->m_eShaderType = eST_HDR;
-				else if (eT == eT_Sky)
-					ef->m_eShaderType = eST_Sky;
 				else if (eT == eT_Glass)
 					ef->m_eShaderType = eST_Glass;
 				else if (eT == eT_Vegetation)

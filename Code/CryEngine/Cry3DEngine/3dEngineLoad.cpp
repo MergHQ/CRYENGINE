@@ -97,15 +97,6 @@ void C3DEngine::LoadDefaultAssets()
 
 	if (GetRenderer())
 	{
-		if (!m_pRESky)
-		{
-			m_pRESky = (CRESky*)GetRenderer()->EF_CreateRE(eDATA_Sky); //m_pRESky->m_fAlpha = 1.f;
-		}
-		if (!m_pREHDRSky)
-		{
-			m_pREHDRSky = (CREHDRSky*)GetRenderer()->EF_CreateRE(eDATA_HDRSky);
-		}
-
 		if (!m_ptexIconLowMemoryUsage)
 		{
 			m_ptexIconLowMemoryUsage = GetRenderer()->EF_LoadTexture("%ENGINE%/EngineAssets/Icons/LowMemoryUsage.tif", FT_DONT_STREAM);
@@ -177,9 +168,6 @@ bool C3DEngine::InitLevelForEditor(const char* szFolderName, const char* szMissi
 	m_pMergedMeshesManager->Init();
 
 	m_pBreezeGenerator->Initialize();
-
-	if (m_pSkyLightManager)
-		m_pSkyLightManager->InitSkyDomeMesh();
 
 	// recreate particles and decals
 	if (m_pPartManager)
@@ -384,9 +372,6 @@ void C3DEngine::UnloadLevel()
 
 	FreeFoliages();
 
-	if (m_pSkyLightManager)
-		m_pSkyLightManager->ReleaseSkyDomeMesh();
-
 	// free vegetation and brush CGF's
 	m_lstKilledVegetations.Reset();
 
@@ -459,14 +444,10 @@ void C3DEngine::UnloadLevel()
 
 	CleanLevelShaders();
 
-	if (m_pRESky)
-		m_pRESky->Release(true);
-	if (m_pREHDRSky)
-		m_pREHDRSky->Release(true);
-	m_pRESky = 0;
-	m_pREHDRSky = 0;
-	stl::free_container(m_skyMatName);
-	stl::free_container(m_skyLowSpecMatName);
+	stl::free_container(m_SkyDomeTextureName[0]);
+	stl::free_container(m_MoonTextureName);
+	for (int skyTypeIdx = 0; skyTypeIdx < eSkyType_NumSkyTypes; ++skyTypeIdx)
+		SAFE_RELEASE(m_pSkyMat[skyTypeIdx]);
 
 	if (m_nCloudShadowTexId)
 	{
@@ -500,15 +481,6 @@ void C3DEngine::UnloadLevel()
 			GetRenderer()->SetVolumetricCloudParams(0);
 			GetRenderer()->SetVolumetricCloudNoiseTex(0, 0);
 		}
-	}
-
-	if (m_nNightMoonTexId)
-	{
-		ITexture* tex = GetRenderer()->EF_GetTextureByID(m_nNightMoonTexId);
-		if (tex)
-			tex->Release();
-
-		m_nNightMoonTexId = 0;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -814,9 +786,6 @@ I3DEngine::ELevelLoadStatus C3DEngineLevelLoadTimeslicer::DoStep()
 	NEXT_STEP(EStep::LoadDefaultAssets)
 	{
 		m_owner.LoadDefaultAssets();
-
-		if (m_owner.m_pSkyLightManager)
-			m_owner.m_pSkyLightManager->InitSkyDomeMesh();
 
 		// Load LevelData.xml File.
 		m_xmlLevelData = m_owner.GetSystem()->LoadXmlFromFile(m_owner.GetLevelFilePath(LEVEL_DATA_FILE));
@@ -1361,14 +1330,12 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode)
 	m_fTerrainDetailMaterialsViewDistRatio = fTerrainDetailMaterialsViewDistRatio;
 
 	// SkyBox
-	m_skyMatName = GetXMLAttribText(pInputNode, "SkyBox", "Material", "%ENGINE%/EngineAssets/Materials/sky/Sky");
-	m_skyLowSpecMatName = GetXMLAttribText(pInputNode, "SkyBox", "MaterialLowSpec", "%ENGINE%/EngineAssets/Materials/sky/Sky");
+	const string hdrSkyMatName = GetXMLAttribText(pInputNode, "SkyBox", "Material", "");
+	const string skyMatName = GetXMLAttribText(pInputNode, "SkyBox", "MaterialLowSpec", "");
+	m_pSkyMat[eSkyType_HDRSky] = hdrSkyMatName.empty() ? NULL : GetMatMan()->LoadMaterial(hdrSkyMatName.c_str(), false);
+	m_pSkyMat[eSkyType_Sky] = skyMatName.empty() ? NULL : GetMatMan()->LoadMaterial(skyMatName.c_str(), false);
 
-	// Forces the engine to reload the material of the skybox in the next time it renders it.
-	m_pSkyMat = NULL;
-	m_pSkyLowSpecMat = NULL;
-
-	m_fSkyBoxAngle = (float)atof(GetXMLAttribText(pInputNode, "SkyBox", "Angle", "0.0"));
+	m_fSkyBoxAngle[0] = (float)atof(GetXMLAttribText(pInputNode, "SkyBox", "Angle", "0.0"));
 	m_fSkyBoxStretching = (float)atof(GetXMLAttribText(pInputNode, "SkyBox", "Stretching", "1.0"));
 
 	// set terrain water, sun road and bottom shaders
@@ -1585,13 +1552,7 @@ void C3DEngine::UpdateMoonParams()
 	m_moonRotationLatitude = moon.latitude;
 	m_moonRotationLongitude = moon.longitude;
 	m_nightMoonSize = moon.size;
-
-	//Texture
-	ITexture* pTex = 0;
-	if (moon.texture[0] != '\0' && GetRenderer())
-		pTex = GetRenderer()->EF_LoadTexture(moon.texture, FT_DONT_STREAM);
-
-	m_nNightMoonTexId = pTex ? pTex->GetTextureID() : 0;
+	m_MoonTextureName = moon.texture;
 
 	UpdateMoonDirection();
 }

@@ -16,8 +16,6 @@
 struct SNodeInfo;
 struct SRNInfo;
 class C3DEngineLevelLoadTimeslicer;
-class CRESky;
-class CREHDRSky;
 class CStitchedImage;
 class CWaterRippleManager;
 
@@ -688,7 +686,7 @@ public:
 
 	void         DebugDraw_Draw();
 	bool         IsOutdoorVisible();
-	void         RenderSkyBox(IMaterial* pMat, const SRenderingPassInfo& passInfo);
+	void         UpdateSky(const SRenderingPassInfo& passInfo);
 	int          GetStreamingFramesSinceLevelStart() { return m_nStreamingFramesSinceLevelStart; }
 	int          GetRenderFramesSinceLevelStart()    { return m_nFramesSinceLevelStart; }
 
@@ -729,8 +727,13 @@ public:
 	bool                         m_bAreaActivationInUse;
 
 	// Level info
-	float m_fSkyBoxAngle,
-	      m_fSkyBoxStretching;
+	float                 m_fSkyBoxStretching;
+	// These params can be overriden by the sky material
+	bool                  m_bSkyMatOverride;
+	float                 m_fSkyBoxAngle[2];
+	Vec3                  m_vSkyBoxExposure[2];
+	Vec3                  m_vSkyBoxOpacity[2];
+	string                m_SkyDomeTextureName[2];
 
 	float                 m_fMaxViewDistScale;
 	float                 m_fMaxViewDistHighSpec;
@@ -810,7 +813,7 @@ public:
 	float                 m_moonRotationLongitude;
 	Vec3                  m_moonDirection;
 	int                   m_nWaterBottomTexId;
-	int                   m_nNightMoonTexId;
+	string                m_MoonTextureName;
 	bool                  m_bShowTerrainSurface;
 	float                 m_fSunClipPlaneRange;
 	float                 m_fSunClipPlaneRangeShift;
@@ -850,9 +853,6 @@ public:
 	float                 m_oceanCausticHeight;
 	float                 m_oceanCausticDepth;
 	float                 m_oceanCausticIntensity;
-
-	string                m_skyMatName;
-	string                m_skyLowSpecMatName;
 
 	float                 m_oceanWindDirection;
 	float                 m_oceanWindSpeed;
@@ -895,8 +895,7 @@ public:
 
 	// Level shaders
 	_smart_ptr<IMaterial> m_pTerrainWaterMat;
-	_smart_ptr<IMaterial> m_pSkyMat;
-	_smart_ptr<IMaterial> m_pSkyLowSpecMat;
+	_smart_ptr<IMaterial> m_pSkyMat[eSkyType_NumSkyTypes];
 	_smart_ptr<IMaterial> m_pSunMat;
 
 	// Fog Materials
@@ -906,17 +905,14 @@ public:
 	void CleanLevelShaders()
 	{
 		m_pTerrainWaterMat = 0;
-		m_pSkyMat = 0;
-		m_pSkyLowSpecMat = 0;
+
+		for (int skyTypeIdx = 0; skyTypeIdx < eSkyType_NumSkyTypes; ++skyTypeIdx)
+			m_pSkyMat[skyTypeIdx] = 0;
 		m_pSunMat = 0;
 
 		m_pMatFogVolEllipsoid = 0;
 		m_pMatFogVolBox = 0;
 	}
-
-	// Render elements
-	CRESky*    m_pRESky;
-	CREHDRSky* m_pREHDRSky;
 
 	int        m_nDeferredLightsNum;
 	int        m_nDeferredProbesNum;
@@ -1070,10 +1066,21 @@ public:
 	bool                          IsContentPrecacheRequested() { return m_bContentPrecacheRequested; }
 
 	virtual ITimeOfDay*           GetTimeOfDay();
-	//! [GDC09]: Return SkyBox material
-	virtual IMaterial*            GetSkyMaterial();
-	virtual void                  SetSkyMaterial(IMaterial* pSkyMat);
-	bool                          IsHDRSkyMaterial(IMaterial* pMat) const;
+
+	//////////////////////////////////////////////////////////////////////////
+	// Sky
+	virtual bool                  IsSkyVisible() final;
+	virtual eSkyType              GetSkyType() const final { return (eSkyType)GetCVars()->e_SkyType; }
+
+	virtual const SSkyLightRenderParams* GetSkyLightRenderParams() const final;
+
+	virtual string                GetSkyDomeTextureName() const final { return m_SkyDomeTextureName[m_bSkyMatOverride]; }
+	virtual void                  SetSkyDomeTextureName(string name) final { m_SkyDomeTextureName[0] = name; }
+
+	virtual string                GetMoonTextureName() const final { return m_MoonTextureName; }
+	virtual void                  SetMoonTextureName(string name) final { m_MoonTextureName = name; }
+
+	virtual void                  SetSkyMaterial(IMaterial* pSkyMat, eSkyType type);
 
 	using I3DEngine::SetGlobalParameter;
 	virtual void                     SetGlobalParameter(E3DEngineParameter param, const Vec3& v);

@@ -622,7 +622,7 @@ public:
 class CFlowNode_SkyMaterialSwitch : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_SkyMaterialSwitch(SActivationInfo* pActInfo){};
+	CFlowNode_SkyMaterialSwitch(SActivationInfo* pActInfo){}
 	virtual void GetMemoryUsage(ICrySizer* s) const;
 	void         GetConfiguration(SFlowNodeConfig& config);
 	void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
@@ -636,6 +636,7 @@ void CFlowNode_SkyMaterialSwitch::GetMemoryUsage(ICrySizer* s) const
 void CFlowNode_SkyMaterialSwitch::GetConfiguration(SFlowNodeConfig& config)
 {
 	static const SInputPortConfig in_config[] = {
+		InputPortConfig<string>("hdr_mat_Material", _HELP("HDR Skybox material name")),
 		InputPortConfig<string>("mat_Material", _HELP("Skybox material name")),
 		InputPortConfig<bool>("Start",          false,                         _HELP("Trigger to start the loading")),
 		InputPortConfig<float>("Angle",         1.f,                           _HELP("Sky box rotation")),
@@ -653,23 +654,22 @@ void CFlowNode_SkyMaterialSwitch::ProcessEvent(EFlowEvent event, SActivationInfo
 	switch (event)
 	{
 	case eFE_Activate:
-		if (IsPortActive(pActInfo, 1))
+		if (IsPortActive(pActInfo, 2))
 		{
-			gEnv->p3DEngine->SetGlobalParameter(E3DPARAM_SKY_SKYBOX_ANGLE, GetPortFloat(pActInfo, 2));
-			gEnv->p3DEngine->SetGlobalParameter(E3DPARAM_SKY_SKYBOX_STRETCHING, GetPortFloat(pActInfo, 3));
+			gEnv->p3DEngine->SetGlobalParameter(E3DPARAM_SKY_SKYBOX_ANGLE, GetPortFloat(pActInfo, 3));
+			gEnv->p3DEngine->SetGlobalParameter(E3DPARAM_SKY_SKYBOX_STRETCHING, GetPortFloat(pActInfo, 4));
 
-			string mat = GetPortString(pActInfo, 0);
-
-			IMaterial* pSkyMtl = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(mat, false, false, IMaterialManager::ELoadingFlagsPreviewMode);
-
-			if (pSkyMtl != NULL)
+			const string matNames[2] =
 			{
-				gEnv->p3DEngine->SetSkyMaterial(pSkyMtl);
-				gEnv->pLog->Log("Sky box switched");
-			}
-			else
+				GetPortString(pActInfo, 1), // eSkyType_Sky
+				GetPortString(pActInfo, 0)  // eSkyType_HDRSky
+			};
+
+			for (int skyTypeIdx = 0; skyTypeIdx < eSkyType_NumSkyTypes; ++skyTypeIdx)
 			{
-				gEnv->pLog->LogError("Error switching sky box: can't find material");
+				const string matName = matNames[skyTypeIdx];
+				IMaterial *const pSkyMtl = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(matNames[skyTypeIdx], false, false, IMaterialManager::ELoadingFlagsPreviewMode);
+				gEnv->p3DEngine->SetSkyMaterial(pSkyMtl, (eSkyType) skyTypeIdx);
 			}
 		}
 		break;

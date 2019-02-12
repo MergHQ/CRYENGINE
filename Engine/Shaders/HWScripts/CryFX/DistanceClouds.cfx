@@ -11,7 +11,7 @@ float Script : STANDARDSGLOBAL
 		"Public;"
 		"Sky;"
 		"ShaderDrawType = Sky;"
-		"ShaderType = FX;"
+		"ShaderType = General;"
 >;
 
 #if !%SIMPLE
