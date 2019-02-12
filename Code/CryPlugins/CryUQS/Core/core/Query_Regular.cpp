@@ -1267,7 +1267,7 @@ namespace UQS
 
 #ifdef UQS_CHECK_PROPER_CLEANUP_ONCE_ALL_ITEMS_ARE_INSPECTED
 				CRY_ASSERT(m_deferredTasks.empty());
-
+#if defined(USE_CRY_ASSERT)
 				// check the working data of all items for consistency
 				for (const SItemWorkingData& wd : m_itemWorkingDatas)
 				{
@@ -1300,6 +1300,7 @@ namespace UQS
 					// deferred-evaluators that caused an exception themselves cannot have finished their work
 					CRY_ASSERT((wd.bitsExceptionByDeferredEvaluatorsThemselves & (wd.bitsAbortedDeferredEvaluators | wd.bitsFinishedDeferredEvaluators)) == 0);
 				}
+#endif
 #endif
 			}
 
