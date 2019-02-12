@@ -211,7 +211,7 @@ public:
 	void Set();
 
 	//! Access a HANDLE to wait on.
-	void* GetHandle() const { return m_handle; };
+	void* GetHandle() const { return m_handle; }
 
 	//! Wait indefinitely for the object to become signalled.
 	void Wait() const;

@@ -21,7 +21,7 @@ public:
 		AreaAnnotation   annotation;
 	};
 
-	virtual ~IOffMeshLink() {};
+	virtual ~IOffMeshLink() {}
 
 protected:
 

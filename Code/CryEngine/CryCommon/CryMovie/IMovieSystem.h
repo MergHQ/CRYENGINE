@@ -9,7 +9,6 @@
 #include <CryString/CryName.h>
 #include <CryExtension/CryGUID.h>
 
-// forward declaration.
 struct IAnimTrack;
 struct IAnimNode;
 struct IAnimSequence;
@@ -460,7 +459,7 @@ struct IAnimTrack : public _i_reference_target_t
 	//! Get count of sub tracks.
 	virtual int GetSubTrackCount() const = 0;
 
-	//! Retrieve pointer the specfied sub track.
+	//! Retrieve pointer the specified sub track.
 	virtual IAnimTrack* GetSubTrack(int nIndex) const = 0;
 	virtual const char* GetSubTrackName(int nIndex) const = 0;
 	virtual void        SetSubTrackName(int nIndex, const char* name) = 0;
@@ -545,7 +544,7 @@ struct IAnimTrack : public _i_reference_target_t
 	virtual bool SerializeKeys(XmlNodeRef& xmlNode, bool bLoading, std::vector<SAnimTime>& keys, const SAnimTime time = SAnimTime(0)) = 0;
 
 	//! For custom track animate parameters.
-	virtual void Animate(SAnimContext& animContext) {};
+	virtual void Animate(SAnimContext& animContext) {}
 
 	//! Return the index of the key which lies right after the given key in time.
 	//! In the case of sorted keys, it's just 'key+1', but if not sorted, it can be another value.
@@ -561,7 +560,7 @@ struct IAnimTrack : public _i_reference_target_t
 
 	// </interfuscator:shuffle>
 protected:
-	virtual ~IAnimTrack() {};
+	virtual ~IAnimTrack() {}
 };
 
 //! Callback called by animation node when its animated.

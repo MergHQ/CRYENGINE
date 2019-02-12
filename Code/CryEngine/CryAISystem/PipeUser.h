@@ -1,24 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/********************************************************************
-   -------------------------------------------------------------------------
-   File name:   PipeUser.h
-   $Id$
-   Description:
-
-   -------------------------------------------------------------------------
-   History:
-   -
-
- *********************************************************************/
-#ifndef _PIPE_USER_
-#define _PIPE_USER_
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
-
-// created by Petar
+#pragma once
 
 #include "GoalPipe.h"
 #include "AIActor.h"
@@ -55,7 +37,7 @@ class MovementStyle;
 
 class CPipeUser
 	: public CAIActor
-	  , public CPipeUserAdapter
+	, public CPipeUserAdapter
 {
 	friend class CAISystem;
 
@@ -80,7 +62,7 @@ public:
 
 	virtual void             SetAttentionTarget(CWeakRef<CAIObject> refTarget) override;
 
-	virtual void             ClearPotentialTargets() {};
+	virtual void             ClearPotentialTargets() {}
 	void                     SetLastOpResult(CWeakRef<CAIObject> refObject);
 
 	/// fUrgency would normally be a value from AISPEED_WALK and similar. This returns the "normal" movement
@@ -111,10 +93,10 @@ public:
 	bool AdjustPathAroundObstacles();
 
 	/// returns the path follower if it exists (it may be created if appropriate). May return 0
-	class IPathFollower* GetPathFollower();
+	IPathFollower* GetPathFollower();
 
 	/// returns the current path follower. Will never create one. May return 0.
-	virtual class IPathFollower* GetPathFollower() const override;
+	virtual IPathFollower* GetPathFollower() const override;
 
 	virtual void                 GetPathFollowerParams(struct PathFollowerParams& outParams) const;
 	EntityId                     GetPendingSmartObjectID() const;
@@ -134,7 +116,7 @@ public:
 	virtual bool                 UsePathToFollow(bool reverse, bool startNearest, bool loop);
 	virtual void                 SetPointListToFollow(const std::vector<Vec3>& pointList, IAISystem::ENavigationType navType, bool bSpline);
 	virtual bool                 UsePointListToFollow(void);
-	virtual void                 ClearDevalued() override              {};
+	virtual void                 ClearDevalued() override              {}
 	virtual void                 Forget(CAIObject* pDummyObject)       {}
 	virtual void                 Navigate3d(CAIObject* pTarget)        {}
 	virtual void                 MakeIgnorant(bool bIgnorant) override {}
@@ -161,8 +143,8 @@ public:
 	// Sets the allowed start and end of the path strafing distance.
 	void               SetAllowedStrafeDistances(float start, float end, bool whileMoving) override {}
 
-	void               SetExtraPriority(float priority) override                                    { m_AttTargetPersistenceTimeout = priority; };
-	float              GetExtraPriority() override                                                  { return m_AttTargetPersistenceTimeout; };
+	void               SetExtraPriority(float priority) override                                    { m_AttTargetPersistenceTimeout = priority; }
+	float              GetExtraPriority() override                                                  { return m_AttTargetPersistenceTimeout; }
 
 	// Set/reset the looseAttention target to some existing object
 	//id is used when clearing the loose attention target
@@ -316,7 +298,7 @@ public:
 	virtual void              OnAIHandlerSentSignal(const AISignals::SignalSharedPtr& pSignal) override;
 
 	Movement::PathfinderState GetPathfinderState();
-	INavPath*                 GetINavPath() { return &m_Path; };
+	INavPath*                 GetINavPath() { return &m_Path; }
 
 	typedef std::vector<COPWaitSignal*> ListWaitGoalOps;
 	ListWaitGoalOps m_listWaitGoalOps;
@@ -352,7 +334,7 @@ public:
 	int                 m_nPathDecision;
 	uint32              m_queuedPathId;
 
-	bool                m_IsSteering;            // if stering around local obstacle now
+	bool                m_IsSteering;            // if steering around local obstacle now
 	float               m_flightSteeringZOffset; // flight navigation only
 
 	ENavSOMethod        m_eNavSOMethod; // defines which method to use for navigating through a navigational smart object
@@ -388,8 +370,8 @@ public:
 	virtual void RegisterGoalPipeListener(IGoalPipeListener* pListener, int goalPipeId, const char* debugClassName) override;
 	virtual void UnRegisterGoalPipeListener(IGoalPipeListener* pListener, int goalPipeId) override;
 
-	int          CountGroupedActiveGoals(); //
-	void         ClearGroupedActiveGoals(); //
+	int          CountGroupedActiveGoals();
+	void         ClearGroupedActiveGoals();
 
 	EAimState    GetAimState() const;
 
@@ -481,7 +463,7 @@ protected:
 	float           m_timeSinceLastLiveTarget;
 
 	/// path follower is only set if we're using that class to follow a path
-	class IPathFollower* m_pPathFollower;
+	IPathFollower* m_pPathFollower;
 
 	/// Private helper - calculates the path obstacles - in practice a previous result may
 	/// be used if it's not out of date
@@ -559,5 +541,3 @@ private:
 
 ILINE const CPipeUser* CastToCPipeUserSafe(const IAIObject* pAI) { return pAI ? pAI->CastToCPipeUser() : 0; }
 ILINE CPipeUser*       CastToCPipeUserSafe(IAIObject* pAI)       { return pAI ? pAI->CastToCPipeUser() : 0; }
-
-#endif

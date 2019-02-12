@@ -31,8 +31,8 @@ enum type_invalid_ticket { INVALID_TICKET = 0 };
 template<int i> struct STicket
 {
 	int n;
-	STicket() : n(0) {};
-	STicket(int _n) : n(_n) {};
+	STicket() : n(0) {}
+	STicket(int _n) : n(_n) {}
 	STicket(type_invalid_ticket) : n(INVALID_TICKET) {}
 	operator int() const { return n; }
 	void Advance() { n++; }
@@ -126,7 +126,7 @@ enum ETacticalPointDeferredState
 {
 	eTPDS_Failed = 0,                                       //!< Operation execution failed.
 	eTPDS_InProgress,                                       //!< Operation is still processing a request.
-	eTPDS_Complete,                                         //!< Opertion completed, result is ready.
+	eTPDS_Complete,                                         //!< Operation completed, result is ready.
 	eTPDS_UnknownRequest                                    //!< Request is unknown or not implemented.
 };
 

@@ -666,7 +666,7 @@ struct SCaptureFormatInfo
 			"png"
 		};
 		return captureFormatNames[captureFormat];
-	};
+	}
 
 	static ECaptureFileFormat GetCaptureFormatByExtension(const char* szFormatName)
 	{
@@ -680,7 +680,7 @@ struct SCaptureFormatInfo
 		}
 		CryLog("Can't find specified capture format: %s - reverting to %s", szFormatName, GetCaptureFormatExtension(eCaptureFormat_TGA));
 		return eCaptureFormat_TGA;
-	};
+	}
 
 	enum ECaptureBuffer
 	{
@@ -695,7 +695,7 @@ struct SCaptureFormatInfo
 			"Color"
 		};
 		return captureBufferNames[captureBuffer];
-	};
+	}
 
 	static ECaptureBuffer GetCaptureBufferByName(const char* szBufferName)
 	{
@@ -709,7 +709,7 @@ struct SCaptureFormatInfo
 		}
 		CryLog("Can't find specified capture buffer type: %s - reverting to %s", szBufferName, GetCaptureBufferName(eCaptureBuffer_Color));
 		return eCaptureBuffer_Color;
-	};
+	}
 };
 
 struct SCaptureKey : public STrackDurationKey
@@ -808,8 +808,6 @@ struct SBoolKey : public STrackKey
 	{
 		STrackKey::Serialize(ar);
 	}
-
-	SBoolKey() {};
 };
 
 struct SCommentKey : public STrackDurationKey

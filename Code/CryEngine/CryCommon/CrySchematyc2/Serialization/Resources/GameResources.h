@@ -29,7 +29,7 @@ namespace GameSerialization
 
 	public:
 
-		void Serialize(Serialization::IArchive& archive) {}; // Do nothing
+		void Serialize(Serialization::IArchive& archive) {} // Do nothing
 
 		const char* szValue;
 		const char* szType;

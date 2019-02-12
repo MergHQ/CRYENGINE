@@ -292,7 +292,6 @@ private:
 
 struct IBlackboardVariable
 {
-public:
 	virtual ~IBlackboardVariable() {}
 
 	template<typename Type>
@@ -337,7 +336,7 @@ public:
 	virtual Serialization::TypeID GetDataTypeId() const override { return m_typeId; }
 
 private:
-	BlackboardVariable() {};
+	BlackboardVariable() {}
 
 	virtual void*       GetDataVoidPointer() override       { return &m_value; }
 	virtual const void* GetDataVoidPointer() const override { return &m_value; }
@@ -350,7 +349,7 @@ struct BlackboardVariableId
 {
 	BlackboardVariableId()
 		: id(0)
-	{};
+	{}
 
 	BlackboardVariableId(const char* _name)
 	{
@@ -358,9 +357,9 @@ struct BlackboardVariableId
 #ifdef STORE_BLACKBOARD_VARIABLE_NAMES
 		name = _name;
 #endif
-	};
+	}
 
-	operator uint32() const { return id; };
+	operator uint32() const { return id; }
 
 	static inline uint32 GetIdValueFromName(const char* name)
 	{
@@ -371,7 +370,6 @@ struct BlackboardVariableId
 #ifdef STORE_BLACKBOARD_VARIABLE_NAMES
 	string name;
 #endif
-
 };
 
 class Blackboard

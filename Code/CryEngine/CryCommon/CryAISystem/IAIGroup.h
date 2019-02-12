@@ -1,17 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/********************************************************************
-   -------------------------------------------------------------------------
-   File name:   IAIGroup.h
-   $Id$
-   Description:
-
-   -------------------------------------------------------------------------
-   History:
-   - 2 Mar 2009			 : Evgeny Adamenkov: Removed IRenderer
-
- *********************************************************************/
-
 #pragma once
 
 #include <CryAISystem/IAISystem.h> // <> required for Interfuscator
@@ -124,7 +112,7 @@ enum EGroupUnitType
 struct IAIGroupTactic
 {
 	// <interfuscator:shuffle>
-	virtual ~IAIGroupTactic() {};
+	virtual ~IAIGroupTactic() {}
 
 	//! Updates the group tactic.
 	virtual void Update(float dt) = 0;

@@ -514,7 +514,7 @@ template<> struct SUIParamTypeHelper<TUIData>
 
 struct SUIArguments
 {
-	SUIArguments() : m_cDelimiter(UIARGS_DEFAULT_DELIMITER), m_Dirty(eBDF_Delimiter) {};
+	SUIArguments() : m_cDelimiter(UIARGS_DEFAULT_DELIMITER), m_Dirty(eBDF_Delimiter) {}
 	template<class T>
 	SUIArguments(const T* argStringList, bool bufferStr = false) : m_cDelimiter(UIARGS_DEFAULT_DELIMITER) { SetArguments(argStringList, bufferStr); }
 	SUIArguments(const SFlashVarValue* vArgs, int iNumArgs) : m_cDelimiter(UIARGS_DEFAULT_DELIMITER) { SetArguments(vArgs, iNumArgs); }
@@ -1257,7 +1257,7 @@ struct IUIElementEventListener
 	virtual void OnInstanceCreated(IUIElement* pSender, IUIElement* pNewInstance)                                   {}
 	virtual void OnInstanceDestroyed(IUIElement* pSender, IUIElement* pDeletedInstance)                             {}
 protected:
-	virtual ~IUIElementEventListener() {};
+	virtual ~IUIElementEventListener() {}
 };
 
 struct IUIElementIterator
@@ -1684,22 +1684,22 @@ struct IVirtualKeyboardEvents;
 
 struct IUIModule
 {
-	virtual ~IUIModule() {};
+	virtual ~IUIModule() {}
 
 	//! Called once on initialization of the UISystem.
-	virtual void Init() {};
+	virtual void Init() {}
 
 	//! Called once on shutdown of the UISystem.
-	virtual void Shutdown() {};
+	virtual void Shutdown() {}
 
 	//! Called if gfx_reload_all command was issued.
-	virtual void Reload() {};
+	virtual void Reload() {}
 
 	//! Called on FlashUI reset (unload level etc.)
-	virtual void Reset() {};
+	virtual void Reset() {}
 
 	//! Called on FlashUI update.
-	virtual void UpdateModule(float fDelta) {};
+	virtual void UpdateModule(float fDelta) {}
 
 	/////////////////////////////////////////////////////////
 	// Sandbox only.
@@ -1707,7 +1707,7 @@ struct IUIModule
 	virtual bool EditorAllowReload() { return true; }
 
 	//! Called on reload all.
-	virtual void EditorReload() {};
+	virtual void EditorReload() {}
 	/////////////////////////////////////////////////////////
 };
 
@@ -2168,7 +2168,7 @@ template<> inline bool SUIEventArgumentCheck<TUIData       >::Check(SUIParameter
 //! Dispatcher function interface.
 struct IUIEventDispatchFct
 {
-	virtual ~IUIEventDispatchFct() {};
+	virtual ~IUIEventDispatchFct() {}
 	virtual SUIArgumentsRet Dispatch(void* pThis, const SUIEvent& event) = 0;
 };
 
@@ -2195,7 +2195,7 @@ template<class R, class C>
 struct SUIEventDispatchFctImpl : public IUIEventDispatchFct
 {
 	SUIEventDispatchFctImpl(typename C::TFct fct) : Impl(fct) {}
-	virtual ~SUIEventDispatchFctImpl() {};
+	virtual ~SUIEventDispatchFctImpl() {}
 	virtual SUIArgumentsRet Dispatch(void* pThis, const SUIEvent& event) { return SUIEventDispatchFctReturn<R, C>::Dispatch(Impl, pThis, event); }
 	C Impl;
 };

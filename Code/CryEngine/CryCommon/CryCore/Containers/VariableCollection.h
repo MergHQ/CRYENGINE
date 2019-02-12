@@ -188,7 +188,7 @@ private:
 
 struct Description
 {
-	Description() {};
+	Description() {}
 
 	Description(const char* _name)
 		: name(_name)

@@ -571,5 +571,5 @@ struct IStatObj : IMeshObj, IStreamable
 	// </interfuscator:shuffle>
 
 protected:
-	virtual ~IStatObj() {}; //!< Should be never called, use Release() instead.
+	virtual ~IStatObj() {} //!< Should be never called, use Release() instead.
 };

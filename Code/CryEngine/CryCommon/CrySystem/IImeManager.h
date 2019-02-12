@@ -4,10 +4,9 @@
 
 struct IWindowMessageHandler;
 
-class IImeManager
+struct IImeManager
 {
-public:
-	virtual ~IImeManager() {};
+	virtual ~IImeManager() {}
 	// Check if IME is supported
 	virtual bool IsImeSupported() = 0;
 

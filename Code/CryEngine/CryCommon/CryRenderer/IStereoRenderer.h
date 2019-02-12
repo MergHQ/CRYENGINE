@@ -133,7 +133,7 @@ private:
 	bool       m_bActive{ false };
 	ITexture*  m_pTexture{ nullptr };
 };
-};
+}
 
 // ------------------------------------------------------------------------------------------------------------------
 struct IHmdRenderer;
@@ -181,7 +181,7 @@ struct IStereoRenderer
 struct IHmdRenderer
 {
 	// <interfuscator:shuffle>
-	virtual ~IHmdRenderer() {};
+	virtual ~IHmdRenderer() {}
 
 	virtual bool Initialize(int initialWidth, int initialeight) = 0;
 	virtual void Shutdown() = 0;

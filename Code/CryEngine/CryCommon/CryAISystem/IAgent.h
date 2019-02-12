@@ -837,7 +837,7 @@ struct IFireCommandHandler
 	virtual int GetShotCount() const = 0;
 
 	//! Used by fire command handler to fill in information about projectiles to be fired by the AI.
-	virtual void GetProjectileInfo(SFireCommandProjectileInfo& info) const     {};
+	virtual void GetProjectileInfo(SFireCommandProjectileInfo& info) const     {}
 
 	virtual bool GetOverrideAimingPosition(Vec3& overrideAimingPosition) const { return false; }
 

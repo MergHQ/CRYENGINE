@@ -1,15 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   IMovementSystem.h
-//  Version:     v1.00
-//  Created:     2011-12-20 by Jonas Johansson.
-//  Description: Interface for the AI Movement System.
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include <CryAISystem/IAgent.h>
@@ -21,8 +11,8 @@ struct MovementRequest;
 struct MovementRequestID;
 struct MovementRequestStatus;
 struct MNMPathRequest;
-class INavPath;
-class IPathFollower;
+struct INavPath;
+struct IPathFollower;
 struct SShape;
 struct PathFollowResult;
 struct OffMeshLink_SmartObject;

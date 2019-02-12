@@ -31,12 +31,12 @@ public:
 	typedef CryAutoCriticalSection AutoLock;
 
 	// std::queue interface
-	const T& front() const           { AutoLock lock(m_cs); return v.front(); };
+	const T& front() const           { AutoLock lock(m_cs); return v.front(); }
 	const T& back() const            { AutoLock lock(m_cs);  return v.back(); }
-	void     push(const T& x)        { AutoLock lock(m_cs); return v.push_back(x); };
-	void     reserve(const size_t n) { AutoLock lock(m_cs); v.reserve(n); };
+	void     push(const T& x)        { AutoLock lock(m_cs); return v.push_back(x); }
+	void     reserve(const size_t n) { AutoLock lock(m_cs); v.reserve(n); }
 	// classic pop function of queue should not be used for thread safety, use try_pop instead
-	//void	pop()							{ AutoLock lock(m_cs); return v.erase(v.begin()); };
+	//void	pop()							{ AutoLock lock(m_cs); return v.erase(v.begin()); }
 
 	CryCriticalSection& get_lock() const { return m_cs; }
 

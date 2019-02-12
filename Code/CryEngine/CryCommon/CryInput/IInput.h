@@ -85,8 +85,8 @@ struct TKeyName
 	const char* key;
 
 	TKeyName() { key = ""; }
-	TKeyName(const char* _key) { key = _key; };
-	operator const char*() const { return key; };
+	TKeyName(const char* _key) { key = _key; }
+	operator const char*() const { return key; }
 	bool        operator<(const TKeyName& n) const             { return stricmp(key, n.key) < 0; }
 	bool        operator>(const TKeyName& n) const             { return stricmp(key, n.key) > 0; }
 	bool        operator==(const TKeyName& n) const            { return stricmp(key, n.key) == 0; }
@@ -733,9 +733,8 @@ struct SKinSkeletonRawData
 
 //! \cond INTERNAL
 //! Interface for different joint filtering types.
-class ISkeletonFilter
+struct ISkeletonFilter
 {
-public:
 	// <interfuscator:shuffle>
 	//! Default virtual destructor.
 	virtual ~ISkeletonFilter() {}
@@ -818,7 +817,7 @@ struct SKinRailStateHoverTime
 
 struct SKinRailState
 {
-	bool                     bAttached; //!< true if playes is going over this grip.
+	bool                     bAttached; //!< true if players is going over this grip.
 	bool                     bCommited; //!< true if the player has committed in going on a certain rail (check the rail id).
 	int                      nGripId;
 	int                      nRailId;
@@ -976,7 +975,7 @@ struct IKinectInputListener;
 struct IKinectInput
 {
 	// <interfuscator:shuffle>
-	virtual ~IKinectInput(){};
+	virtual ~IKinectInput() {}
 
 	virtual bool Init() = 0;
 	virtual void Update() = 0;
@@ -1068,7 +1067,7 @@ struct IKinectInput
 struct IEyeTrackerInput
 {
 	// <interfuscator:shuffle>
-	virtual ~IEyeTrackerInput() {};
+	virtual ~IEyeTrackerInput() {}
 
 	virtual bool Init() = 0;
 	virtual void Update() = 0;
@@ -1117,7 +1116,7 @@ struct NP_RawData
 struct INaturalPointInput
 {
 	// <interfuscator:shuffle>
-	virtual ~INaturalPointInput(){};
+	virtual ~INaturalPointInput() {}
 
 	virtual bool Init() = 0;
 	virtual void Update() = 0;

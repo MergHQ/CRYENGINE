@@ -52,10 +52,10 @@ struct IAIRecorderListener
 {
 	// <interfuscator:shuffle>
 	virtual ~IAIRecorderListener(){}
-	virtual void OnRecordingStart(EAIRecorderMode mode, const char* filename) {};
-	virtual void OnRecordingStop(const char* filename)                        {};
-	virtual void OnRecordingLoaded(const char* filename)                      {};
-	virtual void OnRecordingSaved(const char* filename)                       {};
+	virtual void OnRecordingStart(EAIRecorderMode mode, const char* filename) {}
+	virtual void OnRecordingStop(const char* filename)                        {}
+	virtual void OnRecordingLoaded(const char* filename)                      {}
+	virtual void OnRecordingSaved(const char* filename)                       {}
 	// </interfuscator:shuffle>
 };
 

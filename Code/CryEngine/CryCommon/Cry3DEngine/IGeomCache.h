@@ -65,5 +65,5 @@ struct IGeomCache : public IStreamable
 protected:
 
 	//! Should be never called, use Release() instead.
-	virtual ~IGeomCache() {};
+	virtual ~IGeomCache() {}
 };

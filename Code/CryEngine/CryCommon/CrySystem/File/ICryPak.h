@@ -94,7 +94,7 @@ struct ICryArchive : public _reference_target_t
 	struct IEnumerateArchiveEntries
 	{
 		virtual bool OnEnumArchiveEntry(const char* pFilename, Handle hEntry, bool bIsFolder, int aSize, int64 aModifiedTime) = 0;
-		virtual ~IEnumerateArchiveEntries(){};
+		virtual ~IEnumerateArchiveEntries(){}
 	};
 
 	//! Enumerate the file entries found in the specified folder.

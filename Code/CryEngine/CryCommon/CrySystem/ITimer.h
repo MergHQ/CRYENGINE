@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "TimeValue.h"        // CTimeValue
+#include "TimeValue.h"
 #include <CryNetwork/SerializeFwd.h>
 
 //! Interface to the Timer System.
@@ -22,7 +22,7 @@ struct ITimer
 	};
 
 	// <interfuscator:shuffle>
-	virtual ~ITimer() {};
+	virtual ~ITimer() {}
 
 	//! Resets the timer
 	//! \note Only needed because float precision wasn't last that long - can be removed if 64bit is used everywhere.
@@ -103,7 +103,7 @@ struct ITimer
 
 	// Summary:
 	//	Force fixed frame time. Passing time <= 0 will disable fixed frame time
-	virtual void SetFixedFrameTime(float time) {};
+	virtual void SetFixedFrameTime(float time) {}
 
 	//! Convert from ticks (CryGetTicks()) to seconds.
 	virtual float TicksToSeconds(int64 ticks) const = 0;

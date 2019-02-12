@@ -11,12 +11,13 @@
 #include <CrySystem/IEngineModule.h>
 
 class ICrySizer;
-struct IWeakScriptObject;
-struct IScriptTable;
-struct ISystem;
-struct IFunctionHandler;
 class SmartScriptTable;
+
+struct IFunctionHandler;
+struct IScriptTable;
 struct ISerialize;
+struct ISystem;
+struct IWeakScriptObject;
 
 //! Script function reference.
 struct SScriptFuncHandle {};
@@ -132,7 +133,7 @@ struct ScriptAnyValue
 
 	//! Compares 2 values.
 	bool operator==(const ScriptAnyValue& rhs) const;
-	bool operator!=(const ScriptAnyValue& rhs) const { return !(*this == rhs); };
+	bool operator!=(const ScriptAnyValue& rhs) const { return !(*this == rhs); }
 
 	bool CopyTo(bool& value) const             { if (GetType() == EScriptAnyType::Boolean)  { value = GetBool(); return true; } return false; }
 	bool CopyTo(int& value) const              { if (GetType() == EScriptAnyType::Number)   { value = static_cast<int>(GetNumber()); return true; } return false; }
@@ -959,7 +960,7 @@ struct IFunctionHandler
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	// To be removed later (FC Compatability).
+	// To be removed later (FC Compatibility).
 	//////////////////////////////////////////////////////////////////////////
 	/*
 	   bool GetParamUDVal(int nIdx,ULONG_PTR &nValue,int &nCookie)
@@ -1191,7 +1192,7 @@ class CScriptableBase
 public:
 	friend class CScriptBind_GameStatistics;
 
-	virtual ~CScriptableBase() { Done(); };
+	virtual ~CScriptableBase() { Done(); }
 	virtual void Init(IScriptSystem* pSS, ISystem* pSystem, int nParamIdOffset = 0)
 	{
 		m_pSS = pSS;
@@ -1205,7 +1206,7 @@ public:
 			m_pSS->SetGlobalToNull(m_sGlobalName);
 		SAFE_RELEASE(m_pMethodsTable);
 	}
-	virtual void GetMemoryStatistics(ICrySizer* pSizer) {};
+	virtual void GetMemoryStatistics(ICrySizer* pSizer) {}
 
 	void         SetGlobalName(const char* sGlobalName)
 	{
@@ -1215,7 +1216,7 @@ public:
 			m_pSS->SetGlobalValue(sGlobalName, m_pMethodsTable);
 	}
 
-	IScriptTable* GetMethodsTable() const { return m_pMethodsTable; };
+	IScriptTable* GetMethodsTable() const { return m_pMethodsTable; }
 
 protected:
 	CScriptableBase() { m_pSS = NULL; m_pMethodsTable = NULL; m_sGlobalName[0] = 0; }
@@ -1294,7 +1295,7 @@ protected:
 class SmartScriptTable
 {
 public:
-	SmartScriptTable() : p(NULL) {};
+	SmartScriptTable() : p(NULL) {}
 	SmartScriptTable(const SmartScriptTable& st)
 	{
 		p = st.p;
@@ -1338,13 +1339,13 @@ public:
 	operator bool() const { return (p != NULL); }
 
 	// Boolean comparisons.
-	bool operator!() const { return p == NULL; };
-	bool operator==(const IScriptTable* p2) const { return p == p2; };
-	bool operator==(IScriptTable* p2) const { return p == p2; };
-	bool operator!=(const IScriptTable* p2) const { return p != p2; };
-	bool operator!=(IScriptTable* p2) const { return p != p2; };
-	bool operator<(const IScriptTable* p2) const { return p < p2; };
-	bool operator>(const IScriptTable* p2) const { return p > p2; };
+	bool operator!() const { return p == NULL; }
+	bool operator==(const IScriptTable* p2) const { return p == p2; }
+	bool operator==(IScriptTable* p2) const { return p == p2; }
+	bool operator!=(const IScriptTable* p2) const { return p != p2; }
+	bool operator!=(IScriptTable* p2) const { return p != p2; }
+	bool operator<(const IScriptTable* p2) const { return p < p2; }
+	bool operator>(const IScriptTable* p2) const { return p > p2; }
 
 	//////////////////////////////////////////////////////////////////////////
 	IScriptTable* GetPtr() const { return p; }
