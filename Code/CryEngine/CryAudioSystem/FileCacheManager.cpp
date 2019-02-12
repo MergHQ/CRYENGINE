@@ -16,10 +16,22 @@
 	#include "Debug.h"
 	#include "Common/DebugStyle.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
+	#include <CrySystem/ITimer.h>
 #endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+enum class EFileCacheManagerDebugFilter : EnumFlagsType
+{
+	All            = 0,
+	Globals        = BIT(6), // a
+	LevelSpecifics = BIT(7), // b
+	UseCounted     = BIT(8), // c
+};
+CRY_CREATE_ENUM_FLAG_OPERATORS(EFileCacheManagerDebugFilter);
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+
 //////////////////////////////////////////////////////////////////////////
 CFileCacheManager::~CFileCacheManager()
 {
@@ -334,7 +346,7 @@ void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX,
 
 	if (!m_fileEntries.empty())
 	{
-		CTimeValue const frameTime = gEnv->pTimer->GetAsyncTime();
+		float const frameTime = gEnv->pTimer->GetAsyncTime().GetSeconds();
 
 		CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
 		lowerCaseSearchString.MakeLower();
@@ -405,7 +417,7 @@ void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX,
 								color = Debug::s_afcmColorFileNotFound;
 							}
 
-							float const ratio = (frameTime - pFileEntry->m_timeCached).GetSeconds() / 2.0f;
+							float const ratio = (frameTime - pFileEntry->m_timeCached) / 2.0f;
 
 							if (ratio <= 1.0f)
 							{
@@ -514,7 +526,7 @@ bool CFileCacheManager::FinishStreamInternal(IReadStreamPtr const pStream, int u
 			pFileEntry->m_flags = (pFileEntry->m_flags | EFileFlags::Cached) & ~(EFileFlags::Loading | EFileFlags::NotCached);
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-			pFileEntry->m_timeCached = gEnv->pTimer->GetAsyncTime();
+			pFileEntry->m_timeCached = gEnv->pTimer->GetAsyncTime().GetSeconds();
 #endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 
 			Impl::SFileInfo fileEntryInfo;
@@ -610,7 +622,7 @@ void CFileCacheManager::UncacheFile(CFileEntry* const pFileEntry)
 	pFileEntry->m_useCount = 0;
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-	pFileEntry->m_timeCached.SetValue(0);
+	pFileEntry->m_timeCached = 0.0f;
 #endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 

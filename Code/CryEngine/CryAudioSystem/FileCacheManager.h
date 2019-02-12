@@ -15,21 +15,6 @@ namespace CryAudio
 struct ICustomMemoryHeap;
 class CFileEntry;
 
-namespace Impl
-{
-struct IImpl;
-} // namespace Impl
-
-// Filter for drawing debug info to the screen
-enum class EFileCacheManagerDebugFilter : EnumFlagsType
-{
-	All            = 0,
-	Globals        = BIT(6), // a
-	LevelSpecifics = BIT(7), // b
-	UseCounted     = BIT(8), // c
-};
-CRY_CREATE_ENUM_FLAG_OPERATORS(EFileCacheManagerDebugFilter);
-
 class CFileCacheManager final : public IStreamCallback
 {
 public:
