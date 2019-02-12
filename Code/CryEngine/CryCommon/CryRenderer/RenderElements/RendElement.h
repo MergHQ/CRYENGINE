@@ -1,19 +1,19 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __RENDELEMENT_H__
-#define __RENDELEMENT_H__
+#pragma once
 
 #include <CryRenderer/VertexFormats.h>
 #include <CryMath/Cry_Color.h>
 
+class CParserBin;
 class CRenderElement;
+class CRenderView;
+class CShader;
+
 struct CRenderChunk;
 struct PrimitiveGroup;
-class CShader;
-struct SShaderTechnique;
-class CParserBin;
 struct SParserFrame;
-class CRenderView;
+struct SShaderTechnique;
 
 enum EDataType : int
 {
@@ -66,7 +66,7 @@ class IRenderElement
 {
 public:
 	IRenderElement() {}
-	virtual ~IRenderElement() {};
+	virtual ~IRenderElement() {}
 
 	virtual CRenderChunk*      mfGetMatInfo() = 0;
 	virtual TRenderChunkArray* mfGetMatInfoList() = 0;
@@ -232,16 +232,16 @@ public:
 	// ~Pipeline 2.0 methods.
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual InputLayoutHandle GetVertexFormat() const                                                { return InputLayoutHandle::Unspecified; };
+	virtual InputLayoutHandle GetVertexFormat() const                                                { return InputLayoutHandle::Unspecified; }
 	virtual bool          GetGeometryInfo(SGeometryInfo& streams, bool bSupportTessellation = false) { return false; }
 
 	//! Compile is called on a non mesh render elements, must be called only in rendering thread
 	//! Returns false if compile failed, and render element must not be rendered
-	virtual bool          Compile(CRenderObject* pObj, uint64 objFlags, ERenderElementFlags elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly)  { return false; };
+	virtual bool          Compile(CRenderObject* pObj, uint64 objFlags, ERenderElementFlags elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly)  { return false; }
 
 	//! Custom Drawing for the non mesh render elements.
 	//! Must be thread safe for the parallel recording
-	virtual void          DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx, class CDeviceCommandList* commandList)  {};
+	virtual void          DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx, class CDeviceCommandList* commandList)  {}
 	
 	//////////////////////////////////////////////////////////////////////////
 	// ~Pipeline 2.0 methods.
@@ -267,5 +267,3 @@ public:
 #include "CREGameEffect.h"
 #include "CREBreakableGlass.h"
 #include <Cry3DEngine/CREGeomCache.h>
-
-#endif  // __RENDELEMENT_H__

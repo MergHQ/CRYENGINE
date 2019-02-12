@@ -1,16 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   ixml.h
-//  Version:     v1.00
-//  Created:     16/7/2002 by Timur.
-//  Compilers:   Visual Studio.NET
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include <CryCore/Platform/platform.h>
@@ -61,10 +50,10 @@ struct ISerialize;
 class XmlString : public string
 {
 public:
-	XmlString() {};
-	XmlString(const char* str) : string(str) {};
+	XmlString() {}
+	XmlString(const char* str) : string(str) {}
 #ifdef  _AFX
-	XmlString(const CString& str) : string((const char*)str) {};
+	XmlString(const CString& str) : string((const char*)str) {}
 #endif
 
 	operator const char*() const { return c_str(); }
@@ -129,7 +118,7 @@ protected:
 protected:
 	// <interfuscator:shuffle>
 	virtual void DeleteThis() = 0;
-	virtual ~IXmlNode() {};
+	virtual ~IXmlNode() {}
 	// </interfuscator:shuffle>
 
 public:
@@ -141,11 +130,11 @@ public:
 	// AddRef/Release need to be virtual to permit overloading from CXMLNodePool.
 
 	//! Reference counting.
-	virtual void AddRef() { m_nRefCount++; };
+	virtual void AddRef() { m_nRefCount++; }
 
 	//! When ref count reaches zero, the XML node dies.
-	virtual void Release()           { if (--m_nRefCount <= 0) DeleteThis(); };
-	virtual int  GetRefCount() const { return m_nRefCount; };
+	virtual void Release()           { if (--m_nRefCount <= 0) DeleteThis(); }
+	virtual int  GetRefCount() const { return m_nRefCount; }
 
 	//! Get XML node tag.
 	virtual const char* getTag() const = 0;
@@ -337,8 +326,8 @@ public:
 #if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_APPLE
 	bool getAttr(const char* key, long& value) const           { int v; if (getAttr(key, v)) { value = v; return true; } else return false; }
 	bool getAttr(const char* key, unsigned long& value) const  { unsigned int v; if (getAttr(key, v)) { value = v; return true; } else return false; }
-	void setAttr(const char* key, unsigned long value)         { setAttr(key, (unsigned int)value); };
-	void setAttr(const char* key, long value)                  { setAttr(key, (int)value); };
+	void setAttr(const char* key, unsigned long value)         { setAttr(key, (unsigned int)value); }
+	void setAttr(const char* key, long value)                  { setAttr(key, (int)value); }
 #endif
 	bool getAttr(const char* key, unsigned short& value) const { unsigned int v; if (getAttr(key, v)) { value = v; return true; } else return false; }
 	bool getAttr(const char* key, unsigned char& value) const  { unsigned int v; if (getAttr(key, v)) { value = v; return true; } else return false; }

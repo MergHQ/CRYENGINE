@@ -243,7 +243,7 @@
    template <class T>
    class Functor{
    public:
-   void operator()(T t)const{};
+   void operator()(T t)const{}
    };
 
    void foo(const Functor<int> &f)

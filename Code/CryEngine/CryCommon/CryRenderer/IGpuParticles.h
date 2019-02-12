@@ -296,7 +296,7 @@ public:
 		InternalSetParameters(Parameters::type, parameters);
 	}
 protected:
-	virtual void InternalSetParameters(const EParameterType type, const SFeatureParametersBase& p) {};
+	virtual void InternalSetParameters(const EParameterType type, const SFeatureParametersBase& p) {}
 };
 
 // interface of GPU particle system

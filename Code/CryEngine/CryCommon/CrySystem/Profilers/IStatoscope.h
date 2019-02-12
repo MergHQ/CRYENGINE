@@ -1,13 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   IStatoscope.h
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __IStatoscope_h__
-#define __IStatoscope_h__
 #pragma once
 
 class CFrameProfiler;
@@ -126,7 +118,7 @@ struct IStatoscope
 	void        SetCurrentProfilerRecords(const std::vector<CFrameProfiler*>* profilers)      {}
 	void        Flush()                                                                       {}
 	bool        IsRunning()                                                                   { return false; }
-	void        SetIsRunning(const bool bIsRunning)                                           {};
+	void        SetIsRunning(const bool bIsRunning)                                           {}
 	bool        IsLoggingForTelemetry()                                                       { return false; }
 	void        SetupFPSCaptureCVars()                                                        {}
 	bool        RequestScreenShot()                                                           { return false; }
@@ -139,5 +131,3 @@ struct IStatoscope
 };
 
 #endif // ENABLE_STATOSCOPE
-
-#endif  // __IStatoscope_h__

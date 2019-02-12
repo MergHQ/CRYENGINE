@@ -118,7 +118,7 @@ struct IFlowGraphDebugListener
 	virtual void OnEnableTracepoint(const STracePoint& tracepoint, bool enable) = 0;
 
 protected:
-	virtual ~IFlowGraphDebugListener() {};
+	virtual ~IFlowGraphDebugListener() {}
 };
 
 struct IFlowGraphDebugger : public ICryUnknown

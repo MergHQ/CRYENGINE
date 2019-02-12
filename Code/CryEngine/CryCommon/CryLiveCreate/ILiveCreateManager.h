@@ -1,12 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _H_ILIVECREATEMANAGER_H_
-#define _H_ILIVECREATEMANAGER_H_
+#pragma once
 
 #include "ILiveCreateCommon.h"
-
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
 
 struct IRemoteCommand;
 
@@ -19,7 +15,7 @@ struct IPlatformHandler;
 struct IHostInfo
 {
 protected:
-	virtual ~IHostInfo() {};
+	virtual ~IHostInfo() {}
 
 public:
 	//! Host target name.
@@ -56,10 +52,8 @@ public:
 //! Host-side (PC) LiveCreate manager interface.
 struct IManager
 {
-public:
-	virtual ~IManager() {};
+	virtual ~IManager() {}
 
-public:
 	//! This is a hint that the LiveCreate is the null implementation that does nothing.
 	//! Useful when we dont want to ship CryLiveCreate.dll and the system falls back to LiveCreate::CNullManager.
 	virtual bool IsNullImplementation() const = 0;
@@ -114,5 +108,3 @@ public:
 };
 
 }
-
-#endif

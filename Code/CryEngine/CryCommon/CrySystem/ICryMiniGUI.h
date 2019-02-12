@@ -1,16 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   ICryMiniGUI.h
-//  Created:     26/08/2009 by Timur.
-//  Description: Interface to the Mini GUI subsystem
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __ICryMiniGUI_h__
-#define __ICryMiniGUI_h__
+#pragma once
 
 #include <CryCore/smartptr.h>
 #include <CryMath/Cry_Color.h>
@@ -202,7 +192,7 @@ struct IMiniCtrl : public _reference_target_t
 	virtual void       SetVisible(bool state) = 0;
 
 	//! Events from GUI.
-	virtual void OnEvent(float x, float y, EMiniCtrlEvent) {};
+	virtual void OnEvent(float x, float y, EMiniCtrlEvent) {}
 
 	//! When set, this control will be enabling/disabling specified cvar.
 	//! When button not checked fOffValue will be set on cvar, when checked fOnValue will be set.
@@ -226,19 +216,17 @@ struct IMiniCtrl : public _reference_target_t
 };
 typedef _smart_ptr<IMiniCtrl> IMiniCtrlPtr;
 
-class IMiniGuiCommon
+struct IMiniGuiCommon
 {
-public:
 	// <interfuscator:shuffle>
-	virtual ~IMiniGuiCommon(){}
+	virtual ~IMiniGuiCommon() {}
 	virtual bool IsHidden() = 0;
 	virtual void Hide(bool stat) = 0;
 	// </interfuscator:shuffle>
 };
 
-class IMiniTable : public IMiniGuiCommon
+struct IMiniTable : public IMiniGuiCommon
 {
-public:
 	// <interfuscator:shuffle>
 	virtual int  AddColumn(const char* name) = 0;
 	virtual void RemoveColumns() = 0;
@@ -247,9 +235,8 @@ public:
 	// </interfuscator:shuffle>
 };
 
-class IMiniInfoBox : public IMiniGuiCommon
+struct IMiniInfoBox : public IMiniGuiCommon
 {
-public:
 	// <interfuscator:shuffle>
 	virtual void SetTextIndent(float x) = 0;
 	virtual void SetTextSize(float sz) = 0;
@@ -261,5 +248,3 @@ public:
 
 #define MINIGUI_BEGIN namespace minigui {
 #define MINIGUI_END   }
-
-#endif //__ICryMiniGUI_h__

@@ -16,54 +16,56 @@
 #define AIRAYCAST_EXTENDED_STATS 0
 #endif
 
-struct AgentPathfindingProperties;
-struct INavigation;
-struct IAIPathFinder;
-struct IMNMPathfinder;
+class IAISystemComponent;
+class ICentralInterestManager;
 class ICrySizer;
-struct IEntity;
+
+struct AgentPathfindingProperties;
+struct AIObjectParams;
+struct IActorLookUp;
+struct IAIActionManager;
+struct IAIActor;
+struct IAIActorProxyFactory;
+struct IAIBubblesSystem;
 struct IAIDebugRenderer;
+struct IAIGroupManager;
+struct IAIGroupProxy;
+struct IAIGroupProxyFactory;
 struct IAIObject;
-struct ICoordinationManager;
+struct IAIObjectManager;
+struct IAIPathFinder;
+struct IAuditionMap;
+struct IClusterDetector;
 struct ICommunicationManager;
+struct ICoordinationManager;
 struct ICoverSystem;
+struct IEntity;
+struct IFactionMap;
+struct IFunctionHandler;
+struct IMNMPathfinder;
+struct INavigation;
 struct INavigationSystem;
+struct INavPath;
+struct IPathFollower;
+struct IPathObstacles;
+struct IPhysicalEntity;
+struct ISmartObjectManager;
+struct ITacticalPointSystem;
+struct ITargetTrackManager;
+struct IVisionMap;
+struct PathFollowerParams;
+struct SAIDetectionLevels;
+struct Sphere;
 
 namespace Cry { namespace AI { namespace CollisionAvoidance {
 struct ISystem;
 }}}
 
-class INavPath;
-struct IPhysicalEntity;
-struct AIObjectParams;
 namespace BehaviorTree
 {
 struct IBehaviorTreeManager;
 }
-struct IFunctionHandler;
-class ICentralInterestManager;
-struct ITacticalPointSystem;
-struct ITargetTrackManager;
-struct Sphere;
-struct IAIActionManager;
-struct ISmartObjectManager;
-struct IAuditionMap;
-class IVisionMap;
-struct IFactionMap;
-class IAISystemComponent;
-struct IAIObjectManager;
-struct IAIActorProxyFactory;
-struct IAIGroupProxyFactory;
-struct IAIGroupProxy;
-struct IAIGroupManager;
-struct SAIDetectionLevels;
-struct IAIActor;
-struct IClusterDetector;
-class IPathFollower;
-struct IPathObstacles;
-struct PathFollowerParams;
-struct IAIBubblesSystem;
-struct IActorLookUp;
+
 namespace AIActionSequence {
 struct ISequenceManager;
 }
@@ -445,6 +447,7 @@ struct IAIEngineModule : public Cry::IDefaultModule
 
 struct IAISystemCallbacks
 {
+	virtual ~IAISystemCallbacks() {}
 	virtual CFunctorsList<Functor1<IAIObject*>>& ObjectCreated() = 0;
 	virtual CFunctorsList<Functor1<IAIObject*>>& ObjectRemoved() = 0;
 	virtual CFunctorsList<Functor2<tAIObjectID, bool>>& EnabledStateChanged() = 0;
@@ -488,7 +491,7 @@ struct IAISystem
 	};
 	enum {NAV_TYPE_COUNT = 10};
 
-	//! Two masks that summarise the basic abilities.
+	//! Two masks that summarize the basic abilities.
 	enum
 	{
 		NAVMASK_SURFACE = NAV_TRIANGULAR | NAV_WAYPOINT_HUMAN | NAV_ROAD | NAV_SMARTOBJECT,
@@ -530,7 +533,7 @@ struct IAISystem
 	//! producing meshes tailored to various agent type capabilities.  While the
 	//! question "can triangulation be used" was well-formed it doesn't make sense
 	//! in the context of the LNM where there's multiple meshes, out of which some
-	//! might be useable and some not.
+	//! might be usable and some not.
 	//!
 	//! To narrow the choice down to a single mesh, still making the rest of
 	//! the system work as it did before, 's_lnmBits' are set aside to be used
@@ -601,7 +604,7 @@ struct IAISystem
 	//! Gets the override update flags
 	//! Flags indicate which subsystems are updated automatically by the AI system (0) or manually by client code (1)
 	//! This is required to avoid updating a subsystem twice
-	//! If a subsystem update is overriden (1) client code should call UpdateSubsystem providing the right flag when desired
+	//! If a subsystem update is overridden (1) client code should call UpdateSubsystem providing the right flag when desired
 	virtual CEnumFlags<ESubsystemUpdateFlag>&    GetOverrideUpdateFlags() = 0;
 
 	//If disabled most things early out
@@ -844,7 +847,7 @@ public:
 	{
 	}
 
-	//! Need to force as no_inline, else on xbox(if cstr and dstr are inlined), we get totaly wrong numbers.
+	//! Need to force as no_inline, else on xbox(if cstr and dstr are inlined), we get totally wrong numbers.
 	NO_INLINE ~CAILightProfileSection()
 	{
 		IAISystem* pAISystem = gEnv->pAISystem;

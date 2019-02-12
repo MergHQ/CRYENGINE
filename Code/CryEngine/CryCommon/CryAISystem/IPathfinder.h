@@ -195,12 +195,12 @@ struct IAIPathAgent
 	virtual void         SetPathToFollow(const char* pathName) = 0;
 	virtual void         SetPathAttributeToFollow(bool bSpline) = 0;
 
-	virtual bool                 GetValidPositionNearby(const Vec3& proposedPosition, Vec3& adjustedPosition) const = 0;
-	virtual bool                 GetTeleportPosition(Vec3& teleportPos) const = 0;
+	virtual bool           GetValidPositionNearby(const Vec3& proposedPosition, Vec3& adjustedPosition) const = 0;
+	virtual bool           GetTeleportPosition(Vec3& teleportPos) const = 0;
 
-	virtual class IPathFollower* GetPathFollower() const = 0;
+	virtual IPathFollower* GetPathFollower() const = 0;
 
-	virtual bool                 IsPointValidForAgent(const Vec3& pos, uint32 flags) const = 0;
+	virtual bool           IsPointValidForAgent(const Vec3& pos, uint32 flags) const = 0;
 	// </interfuscator:shuffle>
 };
 
@@ -288,9 +288,8 @@ struct SNavPathParams
 	}
 };
 
-class INavPath
+struct INavPath
 {
-public:
 	// <interfuscator:shuffle>
 	virtual ~INavPath(){}
 	virtual void                                       Release() = 0;
@@ -345,7 +344,6 @@ public:
 	virtual bool        CanPassFilter(size_t fromPointIndex, const INavMeshQueryFilter* pFilter) const = 0;
 
 	virtual void        TrimPath(float length, bool twoD) = 0;
-	;
 	virtual float       GetDiscardedPathLength() const = 0;
 	//virtual bool AdjustPathAroundObstacles(const CPathObstacles &obstacles, IAISystem::tNavCapMask navCapMask) = 0;
 	//virtual void AddObjectAdjustedFor(const class CAIObject *pObject) = 0;
@@ -420,9 +418,8 @@ struct IPathObstacles
 	virtual bool IsLineSegmentIntersectingObstaclesOrCloseToThem(const Lineseg& linesegToTest, float maxDistanceToConsiderClose) const = 0;
 };
 
-class IPathFollower
+struct IPathFollower
 {
-public:
 	// <interfuscator:shuffle>
 	virtual ~IPathFollower(){}
 
@@ -684,7 +681,7 @@ struct MNMPathRequest
 struct IMNMPathfinder
 {
 	// <interfuscator:shuffle>
-	virtual ~IMNMPathfinder() {};
+	virtual ~IMNMPathfinder() {}
 
 	//! Request a path (look at MNMPathRequest for relevant request info).
 	//! This request is queued and processed in a separate thread.

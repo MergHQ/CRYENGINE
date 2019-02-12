@@ -461,7 +461,7 @@ struct SParametricSampler
 	uint8         m_MotionParameterID[MAX_LMG_DIMENSIONS];                //!< The motion parameter id/name.
 	uint8         m_MotionParameterFlags[MAX_LMG_DIMENSIONS];             //!< Flags relevant to this motion parameter. /see CA_Dimension_Flags
 	virtual uint8 GetCurrentSegmentIndexBSpace() const = 0;
-	virtual ~SParametricSampler() {};
+	virtual ~SParametricSampler() {}
 };
 
 class CRY_ALIGN(16) CAnimation

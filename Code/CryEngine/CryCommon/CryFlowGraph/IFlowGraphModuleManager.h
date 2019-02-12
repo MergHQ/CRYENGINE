@@ -16,7 +16,7 @@
  * The same instance can be referenced by multiple call nodes.
  */
 
-	#pragma once
+#pragma once
 
 #include <CryFlowGraph/IFlowSystem.h>
 
@@ -158,7 +158,7 @@ struct IFlowGraphModuleListener
 	virtual void OnModulesScannedAndReloaded() = 0;
 
 protected:
-	virtual ~IFlowGraphModuleListener() {};
+	virtual ~IFlowGraphModuleListener() {}
 };
 
 // Module Manager

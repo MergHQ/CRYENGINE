@@ -161,8 +161,8 @@ public:
 	virtual void Run() = 0;
 
 	//! Optional methods called by the system at the beginning of the testing and at the end of the testing.
-	virtual void Init() {};
-	virtual void Done() {};
+	virtual void Init() {}
+	virtual void Done() {}
 
 protected:
 

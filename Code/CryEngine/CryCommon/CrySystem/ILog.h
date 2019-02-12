@@ -112,9 +112,9 @@ struct ILog : public IMiniLog
 	//! Asset scope strings help to figure out asset dependencies in case of asset loading errors.
 	//! Should not be used directly, only by using define CRY_DEFINE_ASSET_SCOPE.
 	//! \see CRY_DEFINE_ASSET_SCOPE.
-	virtual void        PushAssetScopeName(const char* sAssetType, const char* sName) {};
-	virtual void        PopAssetScopeName()                                           {};
-	virtual const char* GetAssetScopeString()                                         { return ""; };
+	virtual void        PushAssetScopeName(const char* sAssetType, const char* sName) {}
+	virtual void        PopAssetScopeName()                                           {}
+	virtual const char* GetAssetScopeString()                                         { return ""; }
 	// </interfuscator:shuffle>
 
 #if defined(SUPPORT_LOG_IDENTER)

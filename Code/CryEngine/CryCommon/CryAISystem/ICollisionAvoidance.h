@@ -62,7 +62,7 @@ struct IAgent
 
 struct ISystem
 {
-	virtual ~ISystem() {};
+	virtual ~ISystem() {}
 
 	virtual void RegisterAgent(IAgent* pAgent) = 0;
 	virtual void UnregisterAgent(IAgent* pAgent) = 0;

@@ -6,10 +6,11 @@
 
 struct IMovementActor;
 struct IMovementSystem;
-class CPipeUser;
-class IPathFollower;
+struct IPathFollower;
 struct SOBJECTSTATE;
 struct MovementRequest;
+
+class CPipeUser;
 
 namespace Movement
 {

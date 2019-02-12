@@ -1,17 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   IClusterDetector
-//  Version:     v1.00
-//  Created:     01/01/2008 by Francesco Roccucci.
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __I_Cluster_Detector_h__
-#define __I_Cluster_Detector_h__
+#pragma once
 
 #include <CryCore/functor.h>
 
@@ -53,7 +42,7 @@ struct IClusterRequest
 {
 	typedef Functor1<IClusterRequest*> Callback;
 	// <interfuscator:shuffle>
-	virtual ~IClusterRequest() {};
+	virtual ~IClusterRequest() {}
 	virtual void                SetNewPointInRequest(const uint32 pointId, const Vec3& location) = 0;
 	virtual void                SetCallback(Callback callback) = 0;
 	virtual size_t              GetNumberOfPoint() const = 0;
@@ -73,5 +62,3 @@ struct IClusterDetector
 	virtual void                QueueRequest(const ClusterRequestID requestId) = 0;
 	// </interfuscator:shuffle>
 };
-
-#endif // __I_Cluster_Detector_h__

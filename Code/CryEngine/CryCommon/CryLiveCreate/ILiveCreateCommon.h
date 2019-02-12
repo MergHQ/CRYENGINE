@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _H_ILIVECREATECOMMON_H_
-#define _H_ILIVECREATECOMMON_H_
+#pragma once
 
 #include <CrySystem/IEngineModule.h>
 
@@ -40,28 +39,26 @@ enum ELogMessageType
 struct IManagerListenerEx
 {
 	// <interfuscator:shuffle>
-	virtual ~IManagerListenerEx(){};
+	virtual ~IManagerListenerEx() {}
 
 	//! Manager was successfully connected to a remote host.
-	virtual void OnHostConnected(IHostInfo* pHostInfo) {};
+	virtual void OnHostConnected(IHostInfo* pHostInfo) {}
 
 	//! Manager was disconnected from a remote host.
-	virtual void OnHostDisconnected(IHostInfo* pHostInfo) {};
+	virtual void OnHostDisconnected(IHostInfo* pHostInfo) {}
 
 	//! Manager connection was confirmed and we are ready to send LiveCreate data.
-	virtual void OnHostReady(IHostInfo* pHost) {};
+	virtual void OnHostReady(IHostInfo* pHost) {}
 
 	//! LiveCreate host is busy (probably loading the level).
-	virtual void OnHostBusy(IHostInfo* pHost) {};
+	virtual void OnHostBusy(IHostInfo* pHost) {}
 
 	//! Manager wide sending status flag has changed.
-	virtual void OnSendingStatusChanged(bool bCanSend) {};
+	virtual void OnSendingStatusChanged(bool bCanSend) {}
 
 	//! Internal message logging.
-	virtual void OnLogMessage(ELogMessageType aType, const char* pMessage) {};
+	virtual void OnLogMessage(ELogMessageType aType, const char* pMessage) {}
 
 	// </interfuscator:shuffle>
 };
 }
-
-#endif
