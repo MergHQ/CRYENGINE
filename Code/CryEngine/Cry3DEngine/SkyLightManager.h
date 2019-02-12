@@ -51,9 +51,6 @@ public:
 
 	void GetMemoryUsage(ICrySizer * pSizer) const;
 
-	void InitSkyDomeMesh();
-	void ReleaseSkyDomeMesh();
-
 	void UpdateInternal(int32 newFrameID, int32 numUpdates, int callerIsFullUpdate = 0);
 private:
 	typedef std::vector<CryHalf4> SkyDomeTextureData;
@@ -79,8 +76,6 @@ private:
 	int32 m_skyDomeTextureTimeStamp[2];
 
 	bool m_bFlushFullUpdate;
-
-	_smart_ptr<IRenderMesh> m_pSkyDomeMesh;
 
 	int32 m_numSkyDomeColorsComputed;
 	int32 m_curBackBuffer;

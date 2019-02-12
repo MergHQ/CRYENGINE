@@ -18,16 +18,13 @@ class CRenderView;
 enum EDataType : int
 {
 	eDATA_Unknown = 0,
-	eDATA_Sky,
 	eDATA_ClientPoly,
 	eDATA_Flare,
 	eDATA_Terrain,
-	eDATA_SkyZone,
 	eDATA_Mesh,
 	eDATA_LensOptics,
 	eDATA_OcclusionQuery,
 	eDATA_Particle,
-	eDATA_HDRSky,
 	eDATA_FogVolume,
 	eDATA_WaterVolume,
 	eDATA_WaterOcean,
@@ -263,7 +260,6 @@ public:
 };
 
 #include "CREMesh.h"
-#include "CRESky.h"
 #include "CREOcclusionQuery.h"
 #include "CREFogVolume.h"
 #include "CREWaterVolume.h"

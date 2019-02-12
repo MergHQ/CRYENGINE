@@ -13,7 +13,7 @@ float Script : STANDARDSGLOBAL
   string Script =
            "Public;"
            "ShaderDrawType = Sky;"
-           "ShaderType = Sky;"
+           "ShaderType = General;"
 >;
 
 DIFFUSEMAP

@@ -10,6 +10,7 @@
 class CShadowMapStage;
 class CSceneGBufferStage;
 class CSceneForwardStage;
+class CSkyStage;
 class CAutoExposureStage;
 class CBloomStage;
 class CHeightMapAOStage;
@@ -71,6 +72,7 @@ enum EStandardGraphicsPipelineStage
 	eStage_ScreenSpaceReflections,
 	eStage_ScreenSpaceSSS,
 	eStage_VolumetricFog,
+	eStage_Sky,
 	eStage_Fog,
 	eStage_WaterRipples,
 	eStage_Water,
@@ -147,6 +149,7 @@ public:
 	CSceneGBufferStage*       GetGBufferStage()                        { return m_pSceneGBufferStage; }
 	CShadowMapStage*          GetShadowStage()                   const { return m_pShadowMapStage; }
 	CSceneForwardStage*       GetSceneForwardStage()             const { return m_pSceneForwardStage; }
+	CSkyStage*                GetSkyStage()                      const { return m_pSkyStage; }
 	CComputeSkinningStage*    GetComputeSkinningStage()          const { return m_pComputeSkinningStage; }
 	CComputeParticlesStage*   GetComputeParticlesStage()         const { return m_pComputeParticlesStage; }
 	CDeferredDecalsStage*     GetDeferredDecalsStage()           const { return m_pDeferredDecalsStage; }
@@ -174,6 +177,7 @@ private:
 	CShadowMapStage*              m_pShadowMapStage = nullptr;
 	CSceneGBufferStage*           m_pSceneGBufferStage = nullptr;
 	CSceneForwardStage*           m_pSceneForwardStage = nullptr;
+	CSkyStage*                    m_pSkyStage = nullptr;
 	CAutoExposureStage*           m_pAutoExposureStage = nullptr;
 	CBloomStage*                  m_pBloomStage = nullptr;
 	CHeightMapAOStage*            m_pHeightMapAOStage = nullptr;

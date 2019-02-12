@@ -1225,7 +1225,6 @@ QUALITY_VAR(Water)
 QUALITY_VAR(FX)
 QUALITY_VAR(PostProcess)
 QUALITY_VAR(HDR)
-QUALITY_VAR(Sky)
 
 #undef QUALITY_VAR
 
@@ -1585,7 +1584,6 @@ iLog->Log(" %s shader quality: %s", # name, sGetSQuality("q_Shader" # name)); } 
 	QUALITY_VAR(FX);
 	QUALITY_VAR(PostProcess);
 	QUALITY_VAR(HDR);
-	QUALITY_VAR(Sky);
 
 #undef QUALITY_VAR
 

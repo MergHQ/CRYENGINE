@@ -115,14 +115,6 @@ void CShaderResources::Cleanup()
 	}
 	SAFE_DELETE(m_pDeformInfo);
 	SAFE_DELETE(m_pDetailDecalInfo);
-	if (m_pSky)
-	{
-		for (size_t i = 0; i < sizeof(m_pSky->m_SkyBox) / sizeof(m_pSky->m_SkyBox[0]); ++i)
-		{
-			SAFE_RELEASE(m_pSky->m_SkyBox[i]);
-		}
-		SAFE_DELETE(m_pSky);
-	}
 	ReleaseConstants();
 
 	// not thread safe main thread can potentially access this destroyed entry in mfCreateShaderResources()

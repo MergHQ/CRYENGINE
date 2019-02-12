@@ -408,6 +408,7 @@ public:
 	DeclareStaticConstIntCVar(CV_e_DebugTexelDensity, 0);
 	DeclareStaticConstIntCVar(CV_e_DebugDraw, 0);
 	DeclareStaticConstIntCVar(CV_e_TerrainBlendingDebug, 0);
+	DeclareStaticConstIntCVar(CV_e_Clouds, 0);
 	static int CV_r_RainDropsEffect;
 	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolveMode, 2);
 	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolveMinimalResolveArea, 0);

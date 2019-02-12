@@ -12,8 +12,10 @@
 float Script : STANDARDSGLOBAL
 <
   string Script =
-           "ShaderDrawType = General;"
-           "ShaderType = Sky;"
+           "NoPreview;"
+           "LocalConstants;"
+           "ShaderDrawType = Custom;"
+           "ShaderType = PostProcess;"
 >;
 
 

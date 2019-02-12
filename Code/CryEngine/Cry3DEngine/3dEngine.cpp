@@ -176,8 +176,8 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 
 	m_pSun = 0;
 	m_nFlags = 0;
-	m_pSkyMat = 0;
-	m_pSkyLowSpecMat = 0;
+	for (int skyTypeIdx = 0; skyTypeIdx < eSkyType_NumSkyTypes; ++skyTypeIdx)
+		m_pSkyMat[skyTypeIdx] = 0;
 	m_pTerrainWaterMat = 0;
 	m_nWaterBottomTexId = 0;
 	m_vSunDir = Vec3(5.f, 5.f, DISTANCE_TO_THE_SUN);
@@ -203,18 +203,17 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 	m_pWaterWaveManager = 0;
 	m_pWaterRippleManager.reset(new CWaterRippleManager());
 
-	// create REs
-	m_pRESky = 0;
-	m_pREHDRSky = 0;
-
 	m_pPhysMaterialEnumerator = 0;
 
 	m_fMaxViewDistHighSpec = 8000;
 	m_fMaxViewDistLowSpec = 1000;
 	m_fTerrainDetailMaterialsViewDistRatio = 1.f;
 
-	m_fSkyBoxAngle = 0;
+	m_bSkyMatOverride = false;
+	m_fSkyBoxAngle[0] = 0;
 	m_fSkyBoxStretching = 0;
+	m_vSkyBoxExposure[0].Set(0, 0, 0);
+	m_vSkyBoxOpacity[0].Set(0, 0, 0);
 
 	m_pGlobalWind = 0;
 	m_vWindSpeed(1, 0, 0);
@@ -384,8 +383,6 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 	m_bInLoad = false;
 
 	m_nCloudShadowTexId = 0;
-
-	m_nNightMoonTexId = 0;
 
 	m_pDeferredPhysicsEventManager = new CDeferredPhysicsEventManager();
 
@@ -1687,7 +1684,7 @@ void C3DEngine::SetSkyLightParameters(const Vec3& sunDir, const Vec3& sunIntensi
 	skyCond.m_sunDirection = sunDir;
 
 	m_pSkyLightManager->SetSkyDomeCondition(skyCond);
-	if (forceImmediateUpdate && IsHDRSkyMaterial(GetSkyMaterial()))
+	if (forceImmediateUpdate && GetSkyType() == eSkyType_HDRSky)
 		m_pSkyLightManager->FullUpdate();
 }
 
@@ -4468,10 +4465,16 @@ void C3DEngine::SetGlobalParameter(E3DEngineParameter param, const Vec3& v)
 		SetPostEffectParam("ColorGrading_GrainAmount", m_fGrainAmount);
 		break;
 	case E3DPARAM_SKY_SKYBOX_ANGLE: // sky box rotation
-		m_fSkyBoxAngle = fValue;
+		m_fSkyBoxAngle[0] = fValue;
 		break;
 	case E3DPARAM_SKY_SKYBOX_STRETCHING: // sky box stretching
 		m_fSkyBoxStretching = fValue;
+		break;
+	case E3DPARAM_SKY_SKYBOX_EXPOSURE:
+		m_vSkyBoxExposure[0] = v;
+		break;
+	case E3DPARAM_SKY_SKYBOX_OPACITY:
+		m_vSkyBoxOpacity[0] = v;
 		break;
 	case E3DPARAM_HDR_FILMCURVE_SHOULDER_SCALE:
 		m_vHDRFilmCurveParams.x = v.x;
@@ -4679,6 +4682,18 @@ void C3DEngine::GetGlobalParameter(E3DEngineParameter param, Vec3& v)
 		break;
 	case E3DPARAM_SKY_MOONROTATION:
 		v = Vec3(m_moonRotationLatitude, m_moonRotationLongitude, 0);
+		break;
+	case E3DPARAM_SKY_SKYBOX_ANGLE:
+		v = Vec3(m_fSkyBoxAngle[m_bSkyMatOverride], 0, 0);
+		break;
+	case E3DPARAM_SKY_SKYBOX_STRETCHING:
+		v = Vec3(m_fSkyBoxStretching, 0, 0);
+		break;
+	case E3DPARAM_SKY_SKYBOX_EXPOSURE:
+		v = m_vSkyBoxExposure[m_bSkyMatOverride];
+		break;
+	case E3DPARAM_SKY_SKYBOX_OPACITY:
+		v = m_vSkyBoxOpacity[m_bSkyMatOverride];
 		break;
 	case E3DPARAM_OCEANFOG_COLOR:
 		v = m_oceanFogColor;

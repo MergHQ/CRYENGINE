@@ -443,35 +443,6 @@ void CShader::mfFlushCache()
 void CShaderResources::PostLoad(CShader* pSH)
 {
 	AdjustForSpec();
-	if (pSH && (pSH->m_Flags & EF_SKY))
-	{
-		if (m_Textures[EFTT_DIFFUSE])
-		{
-			char sky[128];
-			char path[1024];
-			cry_strcpy(sky, m_Textures[EFTT_DIFFUSE]->m_Name.c_str());
-			int size = strlen(sky);
-			const char* ext = PathUtil::GetExt(sky);
-			while (sky[size] != '_')
-			{
-				size--;
-				if (!size)
-					break;
-			}
-			sky[size] = 0;
-			if (size)
-			{
-				m_pSky = new SSkyInfo;
-				cry_sprintf(path, "%s_12.%s", sky, ext);
-				m_pSky->m_SkyBox[0] = CTexture::ForName(path, 0, eTF_Unknown);
-				cry_sprintf(path, "%s_34.%s", sky, ext);
-				m_pSky->m_SkyBox[1] = CTexture::ForName(path, 0, eTF_Unknown);
-				cry_sprintf(path, "%s_5.%s", sky, ext);
-				m_pSky->m_SkyBox[2] = CTexture::ForName(path, 0, eTF_Unknown);
-			}
-		}
-	}
-
 	UpdateConstants(pSH);
 }
 

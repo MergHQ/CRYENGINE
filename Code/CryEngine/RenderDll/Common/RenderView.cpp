@@ -4,7 +4,6 @@
 #include "RenderView.h"
 
 
-#include "GraphicsPipeline/SceneForward.h"
 #include "GraphicsPipeline/ShadowMap.h"
 #include "GraphicsPipeline/ClipVolumes.h"
 #include "GraphicsPipeline/SceneGBuffer.h"
@@ -1419,6 +1418,12 @@ static inline ERenderListID CalculateRenderItemList(const SShaderItem& shaderIte
 		nList = EFSLIST_NEAREST_OBJECTS;
 	}
 
+	// Redirect all sky shader draw types shaders to the SKY-list
+	if (shaderDrawType == eSHDT_Sky)
+	{
+		nList = EFSLIST_SKY;
+	}
+
 	return ERenderListID(nList);
 }
 
@@ -1484,38 +1489,6 @@ void CRenderView::AddRenderObject(CRenderElement* pElem, SShaderItem& shaderItem
 
 	uint32 nBatchFlags = CalculateRenderItemBatchFlags(shaderItem, pObj, pElem, passInfo, nAW);
 	ERenderListID nRenderList = CalculateRenderItemList(shaderItem, pObj, nBatchFlags, nSuggestedList, passInfo, nAW);
-
-#ifndef OMIT_SKY_ELEMENT_MATERIAL_WORKAROUND
-	// TODO: Clean up sky-code
-	// Sky-shaded elements shall not pass!
-	EDataType reType = pElem ? pElem->mfGetType() : eDATA_Unknown;
-	if (reType == eDATA_Sky)
-	{
-		gcpRendD3D.GetGraphicsPipeline().GetSceneForwardStage()->SetSkyRE((CRESky*)pElem);
-		return;
-	}
-
-	if (reType == eDATA_HDRSky)
-	{
-		gcpRendD3D.GetGraphicsPipeline().GetSceneForwardStage()->SetSkyRE((CREHDRSky*)pElem);
-		return;
-	}
-
-	if (pShader->m_eSHDType == eSHDT_Sky)
-	{
-		// Redirect all "DistanceCloud"-type shaders to the SKY-list
-		if (pShader->m_eShaderType == eST_FX)
-		{
-			nRenderList = EFSLIST_SKY;
-		}
-		// Redirect all "Sky"-type shaders to the SkyPass
-		else if (pShader->m_eShaderType == eST_Sky)
-		{
-			gcpRendD3D.GetGraphicsPipeline().GetSceneForwardStage()->SetSkyMat(pObj->m_pCurrMaterial);
-			return;
-		}
-	}
-#endif // !OMIT_SKY_ELEMENT_MATERIAL_WORKAROUND
 
 	passInfo.GetRenderView()->AddRenderItem(pElem, pObj, shaderItem, nRenderList, nBatchFlags, passInfo, passInfo.GetRendItemSorter());
 }
@@ -1608,8 +1581,6 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 		const bool compiledRenderElement =
 			reType == eDATA_WaterVolume ||
 			reType == eDATA_WaterOcean ||
-			reType == eDATA_Sky ||
-			reType == eDATA_HDRSky ||
 			reType == eDATA_FogVolume;
 
 		const bool customRenderLoop =
@@ -1664,10 +1635,8 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, uint64 
 	float objDistance = ri.fDist;
 	bool distributeToOtherLists = !IsShadowGenView();
 
-#ifndef OMIT_SKY_ELEMENT_MATERIAL_WORKAROUND
 	if (renderList == EFSLIST_SKY)
 		distributeToOtherLists = false;
-#endif
 
 	if (distributeToOtherLists)
 	{

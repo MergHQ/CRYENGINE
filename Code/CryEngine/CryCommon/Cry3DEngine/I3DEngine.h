@@ -139,6 +139,8 @@ enum E3DEngineParameter
 
 	E3DPARAM_SKY_SKYBOX_ANGLE,
 	E3DPARAM_SKY_SKYBOX_STRETCHING,
+	E3DPARAM_SKY_SKYBOX_EXPOSURE,
+	E3DPARAM_SKY_SKYBOX_OPACITY,
 
 	EPARAM_SUN_SHAFTS_VISIBILITY,
 
@@ -1039,6 +1041,16 @@ struct IFoliage
 	// </interfuscator:shuffle>
 };
 
+//////////////////////////////////////////////////////////////////////
+//! Sky rendering
+enum eSkyType // Maps to "e_SkyType" CVar
+{
+	eSkyType_Sky = 0,
+	eSkyType_HDRSky = 1,
+
+	eSkyType_NumSkyTypes,
+};
+
 struct SSkyLightRenderParams
 {
 	static constexpr int skyDomeTextureWidth = 64;
@@ -1050,8 +1062,7 @@ struct SSkyLightRenderParams
 	static constexpr int skyDomeTextureHeightBy2Log = 4;  //!< = log2(32/2).
 
 	SSkyLightRenderParams()
-		: m_pSkyDomeMesh(0)
-		, m_pSkyDomeTextureDataMie(0)
+		: m_pSkyDomeTextureDataMie(0)
 		, m_pSkyDomeTextureDataRayleigh(0)
 		, m_skyDomeTexturePitch(0)
 		, m_skyDomeTextureTimeStamp(-1)
@@ -1069,9 +1080,6 @@ struct SSkyLightRenderParams
 		, m_skyColorWest(0.0f, 0.0f, 0.0f)
 	{
 	}
-
-	//! Sky dome mesh.
-	_smart_ptr<IRenderMesh> m_pSkyDomeMesh;
 
 	// temporarily add padding bytes to prevent fetching Vec4 constants below from wrong offset
 	uint32 dummy0;
@@ -2091,11 +2099,21 @@ struct I3DEngine : public IProcess
 	//! \return TOD interface.
 	virtual ITimeOfDay* GetTimeOfDay() = 0;
 
-	//! \return SkyBox material.
-	virtual IMaterial* GetSkyMaterial() = 0;
+	//////////////////////////////////////////////////////////////////////////
+	// Sky
+	virtual bool IsSkyVisible() = 0;
+	virtual eSkyType GetSkyType() const = 0;
 
-	//! Sets SkyBox Material.
-	virtual void SetSkyMaterial(IMaterial* pSkyMat) = 0;
+	virtual const SSkyLightRenderParams* GetSkyLightRenderParams() const = 0;
+	
+	virtual string GetSkyDomeTextureName() const = 0;
+	virtual void   SetSkyDomeTextureName(string name) = 0;
+
+	virtual string GetMoonTextureName() const = 0;
+	virtual void   SetMoonTextureName(string name) = 0;
+
+	//! Updates sky parameters from specified material
+	virtual void SetSkyMaterial(IMaterial* pSkyMat, eSkyType type) = 0;
 
 	//! Sets global 3d engine parameter.
 	virtual void SetGlobalParameter(E3DEngineParameter param, const Vec3& v) = 0;

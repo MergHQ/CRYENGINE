@@ -24,7 +24,6 @@ public:
 	SDeformInfo*                   m_pDeformInfo;
 	TArray<struct SHRenderTarget*> m_RTargets;
 	CCamera*                       m_pCamera;
-	SSkyInfo*                      m_pSky;
 	SDetailDecalInfo*              m_pDetailDecalInfo;
 	CConstantBufferPtr             m_pConstantBuffer;
 	uint16                         m_Id;
@@ -99,7 +98,6 @@ public:
 	virtual void                       SetMaterialName(const char* szName) final { m_szMaterialName = szName; }
 	virtual CCamera*                   GetCamera() final                         { return m_pCamera; }
 	virtual void                       SetCamera(CCamera* pCam) final            { m_pCamera = pCam; }
-	virtual SSkyInfo*                  GetSkyInfo() final                        { return m_pSky; }
 	virtual const float&               GetAlphaRef() const final                 { return m_AlphaRef; }
 	virtual void                       SetAlphaRef(float alphaRef) final         { m_AlphaRef = alphaRef; }
 	virtual SEfResTexture*             GetTexture(int nSlot) const final         { return m_Textures[nSlot]; }
@@ -151,7 +149,6 @@ public:
 		m_pDeformInfo = NULL;
 		m_pDetailDecalInfo = NULL;
 		m_pCamera = NULL;
-		m_pSky = NULL;
 		m_pConstantBuffer.reset();
 		m_nMtlLayerNoDrawFlags = 0;
 		m_flags = 0;

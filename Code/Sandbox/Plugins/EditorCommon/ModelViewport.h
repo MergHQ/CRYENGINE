@@ -101,7 +101,6 @@ protected:
 
 	virtual void DrawModel(const SRenderingPassInfo& passInfo);
 	virtual void DrawLights(const SRenderingPassInfo& passInfo);
-	virtual void DrawSkyBox(const SRenderingPassInfo& passInfo);
 	virtual bool UseAnimationDrivenMotion() const;
 
 	//This implementation is dangerous. If we change or rename the specialized function, we use this as fallback and don't execute anything
@@ -153,9 +152,6 @@ protected:
 
 	f32                         m_LightRotationRadian;
 
-	class CRESky*               m_pRESky;
-	struct ICVar*               m_pSkyboxName;
-	IShader*                    m_pSkyBoxShader;
 	_smart_ptr<IEditorMaterial> m_pCurrentMaterial;
 
 	CryAudio::IListener*        m_pIAudioListener;

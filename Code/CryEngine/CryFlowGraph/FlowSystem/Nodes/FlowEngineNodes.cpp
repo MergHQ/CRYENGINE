@@ -273,148 +273,15 @@ public:
 //  Sky box asynchronous loading /////////////////////////////////////////////////////
 //! [GDC09]: Async change SkyBox material[deprecated]	//////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
-namespace SkyBoxLoading
-{
-class CSkyBoxLoadingCallback;
-};
-
 class CFlowNode_SkyboxSwitch : public CFlowBaseNode<eNCT_Instanced>
 {
-	friend class SkyBoxLoading::CSkyBoxLoadingCallback;
-protected:
-	IReadStreamPtr m_Job;
 public:
-	CFlowNode_SkyboxSwitch(SActivationInfo* pActInfo);
+	CFlowNode_SkyboxSwitch(SActivationInfo* pActInfo) {}
 	virtual void         GetMemoryUsage(ICrySizer* s) const;
 	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) { return new CFlowNode_SkyboxSwitch(pActInfo); }
 	void                 GetConfiguration(SFlowNodeConfig& config);
 	void                 ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
 };
-
-namespace SkyBoxLoading
-{
-class CSkyBoxLoadingCallback : public IStreamCallback
-{
-	virtual void StreamAsyncOnComplete(IReadStream* pStream, unsigned nError);
-	virtual void StreamOnComplete(IReadStream* pStream, unsigned nError);
-};
-
-struct SSkyboxLoadingInfo
-{
-	uint32                        nSelfSize;
-	string                        sSkyTextureName;
-	ITexture*                     pTextures[3];
-	class CFlowNode_SkyboxSwitch* pParentNode;
-	CSkyBoxLoadingCallback        pCallBack;
-
-	SSkyboxLoadingInfo(class CFlowNode_SkyboxSwitch* _pParent)
-	{
-		pTextures[0] = NULL;
-		pTextures[1] = NULL;
-		pTextures[2] = NULL;
-		pParentNode = _pParent;
-		nSelfSize = sizeof(SSkyboxLoadingInfo);
-	}
-};
-
-void CSkyBoxLoadingCallback::StreamAsyncOnComplete(IReadStream* pStream, unsigned nError)
-{
-	CRY_ASSERT(nError == 0);
-	SSkyboxLoadingInfo* pSkyboxLoadingInfo = (SSkyboxLoadingInfo*)pStream->GetParams().dwUserData;
-	if (!pSkyboxLoadingInfo || pSkyboxLoadingInfo->nSelfSize != sizeof(SSkyboxLoadingInfo))
-	{
-		CRY_ASSERT(0);
-		return;
-	}
-
-	static const char* pNameSuffixes[] = { "box_12.dds", "box_34.dds", "box_5.dds" };
-	string szNameBump;
-	for (uint32 i = 0; i < 3; ++i)
-	{
-		szNameBump = PathUtil::Make(pSkyboxLoadingInfo->sSkyTextureName, pNameSuffixes[i]);
-		// check if the texture exists
-		if (gEnv->pCryPak->IsFileExist(szNameBump))
-			pSkyboxLoadingInfo->pTextures[i] = gEnv->pRenderer->EF_LoadTexture(szNameBump, FT_DONT_STREAM);
-		else
-		{
-			gEnv->pLog->LogError("Sky box texture not found: %s", szNameBump.c_str());
-			for (uint32 j = i; j < 3; ++j)
-			{
-				SAFE_RELEASE(pSkyboxLoadingInfo->pTextures[i]);
-			}
-			return;
-		}
-		// in case of error release the rest textures
-		if (!pSkyboxLoadingInfo->pTextures[i])
-		{
-			gEnv->pLog->LogError("Error loading sky box texture: %s", szNameBump.c_str());
-			CRY_ASSERT(0);
-			for (uint32 j = i; j < 3; ++j)
-			{
-				SAFE_RELEASE(pSkyboxLoadingInfo->pTextures[i]);
-			}
-			return;
-		}
-	}
-}
-
-void CSkyBoxLoadingCallback::StreamOnComplete(IReadStream* pStream, unsigned nError)
-{
-	CRY_ASSERT(nError == 0);
-	SSkyboxLoadingInfo* pSkyboxLoadingInfo = (SSkyboxLoadingInfo*)pStream->GetParams().dwUserData;
-	if (!pSkyboxLoadingInfo || pSkyboxLoadingInfo->nSelfSize != sizeof(SSkyboxLoadingInfo) || !pSkyboxLoadingInfo->pTextures[0])
-	{
-		CRY_ASSERT(0);
-		gEnv->pLog->LogError("Error switching sky box");
-		if (pSkyboxLoadingInfo != nullptr && pSkyboxLoadingInfo->pParentNode != nullptr)
-		{
-			pSkyboxLoadingInfo->pParentNode->m_Job = nullptr;
-		}
-		return;
-	}
-
-	IMaterial* pSkyMat = gEnv->p3DEngine->GetSkyMaterial();
-
-	bool bSucceeded = false;
-	if (pSkyMat && !(pSkyMat->GetFlags() & EF_SKY))
-	{
-		SShaderItem& rShaderItem = pSkyMat->GetShaderItem();
-		if (rShaderItem.m_pShaderResources)
-		{
-			SSkyInfo* pSkyInfo = rShaderItem.m_pShaderResources->GetSkyInfo();
-
-			if (pSkyInfo)
-			{
-				for (int i = 0; i < 3; ++i)
-				{
-					SAFE_RELEASE(pSkyInfo->m_SkyBox[i]);
-					pSkyInfo->m_SkyBox[i] = pSkyboxLoadingInfo->pTextures[i];
-				}
-				bSucceeded = true;
-			}
-		}
-	}
-
-	// remove job
-	pSkyboxLoadingInfo->pParentNode->m_Job = NULL;
-
-	if (!bSucceeded)
-	{
-		gEnv->pLog->LogError("Error switching sky box: HDR sky box is not supported [deprecated]");
-		for (int i = 0; i < 3; ++i)
-			SAFE_RELEASE(pSkyboxLoadingInfo->pTextures[i]);
-	}
-	else
-	{
-		gEnv->pLog->Log("Sky box switched [deprecated]");
-	}
-}
-}
-
-CFlowNode_SkyboxSwitch::CFlowNode_SkyboxSwitch(SActivationInfo* pActInfo)
-{
-	m_Job = NULL;
-}
 
 void CFlowNode_SkyboxSwitch::GetMemoryUsage(ICrySizer* s) const
 {
@@ -432,7 +299,7 @@ void CFlowNode_SkyboxSwitch::GetConfiguration(SFlowNodeConfig& config)
 	};
 
 	config.pInputPorts = in_config;
-	config.sDescription = _HELP("Node for asynchronous sky box switching");
+	config.sDescription = _HELP("Node for sky box switching");
 	config.SetCategory(EFLN_ADVANCED);
 }
 
@@ -442,27 +309,12 @@ void CFlowNode_SkyboxSwitch::ProcessEvent(EFlowEvent event, SActivationInfo* pAc
 	{
 	case eFE_Activate:
 		// start loading signal
-		if (IsPortActive(pActInfo, 1) && !m_Job)
+		if (IsPortActive(pActInfo, 1))
 		{
 			// set up sky box size and angle
 			gEnv->p3DEngine->SetGlobalParameter(E3DPARAM_SKY_SKYBOX_ANGLE, GetPortFloat(pActInfo, 2));
 			gEnv->p3DEngine->SetGlobalParameter(E3DPARAM_SKY_SKYBOX_STRETCHING, GetPortFloat(pActInfo, 3));
-
-			string sTextureName = GetPortString(pActInfo, 0);
-			// start asynchronous job
-			{
-				// fill streaming params
-				SkyBoxLoading::SSkyboxLoadingInfo* pSkyboxLoadingInfo = new SkyBoxLoading::SSkyboxLoadingInfo(this);
-				pSkyboxLoadingInfo->sSkyTextureName = sTextureName;
-				StreamReadParams pStreamParams;
-				pStreamParams.nFlags = 0;
-				pStreamParams.dwUserData = (DWORD_PTR)pSkyboxLoadingInfo;
-				//				pStreamParams.nPriority = 0;
-				pStreamParams.pBuffer = NULL;
-				pStreamParams.nOffset = 0;
-				pStreamParams.nSize = 0;
-				m_Job = gEnv->pSystem->GetStreamEngine()->StartRead(eStreamTaskTypeTexture, sTextureName, &pSkyboxLoadingInfo->pCallBack, &pStreamParams);
-			}
+			gEnv->p3DEngine->SetSkyDomeTextureName(GetPortString(pActInfo, 0));
 		}
 		break;
 	}

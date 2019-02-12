@@ -1288,14 +1288,6 @@ CRenderElement* CRenderer::EF_CreateRE(EDataType edt)
 		re = new CRELensOptics;
 		break;
 
-	case eDATA_Sky:
-		re = new CRESky;
-		break;
-
-	case eDATA_HDRSky:
-		re = new CREHDRSky;
-		break;
-
 	case eDATA_FogVolume:
 		re = new CREFogVolume;
 		break;

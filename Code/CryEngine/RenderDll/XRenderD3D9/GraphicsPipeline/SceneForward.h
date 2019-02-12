@@ -9,9 +9,6 @@
 #include "Common/UtilityPasses.h"
 #include "SceneGBuffer.h"
 
-class CRESky;
-class CREHDRSky;
-
 class CSceneForwardStage : public CGraphicsPipelineStage
 {
 public:
@@ -55,7 +52,6 @@ public:
 	                                 EPass passId = ePass_Forward,
 	                                 const std::function<void(CDeviceGraphicsPSODesc& psoDesc, const SGraphicsPipelineStateDescription& desc)> &customState = nullptr);
 
-	void         ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex);
 	void         ExecuteOpaque();
 	void         ExecuteTransparentBelowWater();
 	void         ExecuteTransparentAboveWater();
@@ -66,10 +62,6 @@ public:
 	void         ExecuteMobile();
 	void         ExecuteMinimum(CTexture* pColorTex, CTexture* pDepthTex);
 
-	void         SetSkyRE(CRESky* pSkyRE);
-	void         SetSkyRE(CREHDRSky* pHDRSkyRE);
-	void         SetSkyMat(IMaterial* pMat);
-
 	bool IsTransparentLoResEnabled() const { return CRendererCVars::CV_r_ParticlesHalfRes > 0; }
 	bool IsTransparentDepthFixupEnabled() const { return CRendererCVars::CV_r_TranspDepthFixup > 0; }
 
@@ -79,17 +71,7 @@ private:
 	bool PreparePerPassResources(bool bOnInit, bool bShadowMask = true, bool bFog = true);
 	void ExecuteTransparent(bool bBelowWater);
 
-	void SetSkyParameters();
-	void SetHDRSkyParameters();
-	void SetMatParameters();
-
-
-
 private:
-	_smart_ptr<CTexture> m_pSkyDomeTextureMie;
-	_smart_ptr<CTexture> m_pSkyDomeTextureRayleigh;
-	_smart_ptr<CTexture> m_pSkyMoonTex;
-
 	CDeviceResourceLayoutPtr m_pOpaqueResourceLayout;
 	CDeviceResourceLayoutPtr m_pOpaqueResourceLayoutMobile;
 	CDeviceResourceLayoutPtr m_pTransparentResourceLayout;
@@ -130,13 +112,4 @@ private:
 	CFullscreenPass           m_depthFixupPass;
 	CFullscreenPass           m_depthCopyPass;
 	CNearestDepthUpsamplePass m_depthUpscalePass;
-	CFullscreenPass           m_skyPass;
-	CRenderPrimitive          m_starsPrimitive;
-	CPrimitiveRenderPass      m_starsPass;
-	CRESky*                   m_pSkyRE = nullptr;
-	IMaterial*                m_pSkyMat = nullptr;
-	CREHDRSky*                m_pHDRSkyRE = nullptr;
-	Vec4                      m_paramMoonTexGenRight;
-	Vec4                      m_paramMoonTexGenUp;
-	Vec4                      m_paramMoonDirSize;
 };
