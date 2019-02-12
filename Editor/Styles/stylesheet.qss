@@ -2175,3 +2175,9 @@ CSelectProjectDialog
     min-width: 920px;
     min-height: 550px;
 }
+
+QToolWindowCustomWrapper, QCustomWindowFrame
+{
+    /*Do not modify: proper minimize/maximize windows*/
+    border: 0px;
+}

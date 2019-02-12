@@ -84,24 +84,24 @@ QCustomTitleBar::QCustomTitleBar(QWidget* parent)
 
 void QCustomTitleBar::updateWindowStateButtons()
 {
-	if (parentWidget()->windowState() != Qt::WindowMaximized)
+	if (parentWidget()->windowState() & Qt::WindowMaximized)
 	{
-		layout()->setContentsMargins(4, 4, 4, 0);
+		layout()->setContentsMargins(0, 0, 0, 0);
 	}
 	else
 	{
-		layout()->setContentsMargins(0, 0, 0, 0);
+		layout()->setContentsMargins(4, 4, 4, 0);
 	}
 
 	if (m_maximizeButton)
 	{
-		if (parentWidget()->windowState() != Qt::WindowMaximized)
+		if (parentWidget()->windowState() & Qt::WindowMaximized)
 		{
-			m_maximizeButton->setObjectName("maximizeButton");
+			m_maximizeButton->setObjectName("restoreButton");
 		}
 		else
 		{
-			m_maximizeButton->setObjectName("restoreButton");
+			m_maximizeButton->setObjectName("maximizeButton");
 		}
 		style()->unpolish(m_maximizeButton);
 		style()->polish(m_maximizeButton);
@@ -117,7 +117,7 @@ void QCustomTitleBar::setActive(bool active)
 
 void QCustomTitleBar::toggleMaximizedParent()
 {
-	if (parentWidget()->windowState() == Qt::WindowMaximized)
+	if (parentWidget()->windowState() & Qt::WindowMaximized)
 	{
 		parentWidget()->showNormal();
 	}
