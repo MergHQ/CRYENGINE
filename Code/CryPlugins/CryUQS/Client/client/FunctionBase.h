@@ -129,6 +129,7 @@ namespace UQS
 		template <class TFunction, class TReturn, IFunctionFactory::ELeafFunctionKind tLeafFunctionKind>
 		void CFunctionBase<TFunction, TReturn, tLeafFunctionKind>::DebugAssertChildReturnTypes() const
 		{
+#if defined(USE_CRY_ASSERT)
 			CRY_ASSERT(m_inputParameterRegistry.GetParameterCount() == m_children.size());
 
 			const size_t numChildren = m_children.size();
@@ -139,6 +140,7 @@ namespace UQS
 				const Shared::CTypeInfo& expectedReturnType = m_inputParameterRegistry.GetParameter(i).type;
 				CRY_ASSERT(childReturnType == expectedReturnType);
 			}
+#endif
 		}
 
 		template <class TFunction, class TReturn, IFunctionFactory::ELeafFunctionKind tLeafFunctionKind>

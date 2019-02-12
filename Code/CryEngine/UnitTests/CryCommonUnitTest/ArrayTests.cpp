@@ -180,5 +180,4 @@ TEST(CryDynArrayTest, LocalDynArray)
 		REQUIRE(delta_counts() == Counts(0, 0, 0, 0, 0, 6));
 	}                                                   // destruct 12 elements from aas and 6 from at
 	REQUIRE(delta_counts() == Counts(0, 0, 0, 0, 0, 18));
-	int construct = 0, copy_init = 0, copy_assign = 0, move_init = 0, move_assign = 0, destruct = 0;
 }

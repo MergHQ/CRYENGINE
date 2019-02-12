@@ -49,8 +49,7 @@ namespace UQS
 			cry_vsprintf(text, szFormat, args);
 			va_end(args);
 
-			const int indentLevel = CLoggerIndentation::GetCurrentIndentLevel();
-			CryLog("%*s%s", indentLevel * 4, "", text);
+			CryLog("%*s%s", CLoggerIndentation::GetCurrentIndentLevel() * 4, "", text);
 		}
 
 	}

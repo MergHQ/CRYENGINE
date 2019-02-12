@@ -63,8 +63,6 @@ TEST(CryStringTest, FindLastNotOf)
 	string str4aNF("b-a");
 	string str4bNF("12");
 
-	size_t nPosition3A(string::npos);
-
 	position = strTestFindLastNotOfOverload1.find_last_not_of('d', 7);
 	REQUIRE(position == 5);
 
