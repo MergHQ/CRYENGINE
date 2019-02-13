@@ -33,7 +33,7 @@
 #include <AssetSystem/EditableAsset.h>
 #include <Controls/DockableDialog.h>
 #include <Controls/QuestionDialog.h>
-#include <EditorFramework/Inspector.h>
+#include <EditorFramework/InspectorLegacy.h>
 #include <EditorFramework/Events.h>
 #include <EditorFramework/PreferencesDialog.h>
 #include <EditorStyleHelper.h>
@@ -66,11 +66,11 @@
 // Register viewpanes defined in EditorCommon
 REGISTER_VIEWPANE_FACTORY_AND_MENU(CNotificationCenterDockable, "Notification Center", "Advanced", true, "Advanced")
 
-class CLevelEditorInspector : public CInspector
+class CLevelEditorInspector : public CInspectorLegacy
 {
 public:
 	CLevelEditorInspector()
-		: CInspector(CEditorMainFrame::GetInstance()->GetLevelEditor())
+		: CInspectorLegacy(CEditorMainFrame::GetInstance()->GetLevelEditor())
 	{
 		GetIEditorImpl()->GetObjectManager()->EmitPopulateInspectorEvent();
 	}
@@ -751,7 +751,7 @@ bool CLevelEditor::OnSaveAs()
 	if (dialog.Execute())
 	{
 		auto filename = CLevelType::MakeLevelFilename(dialog.GetSelectedAssetPath());
-		GetIEditorImpl()->GetDocument()->DoSave(PathUtil::GamePathToCryPakPath(filename,  true), true);
+		GetIEditorImpl()->GetDocument()->DoSave(PathUtil::GamePathToCryPakPath(filename, true), true);
 		SaveCryassetFile(GetIEditorImpl()->GetDocument()->GetPathName());
 	}
 	return true;

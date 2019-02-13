@@ -12,7 +12,6 @@ struct SSubstanceOutput;
 
 class CAsset;
 class CBroadcastManager;
-class CInspector;
 
 namespace SubstanceAir
 {

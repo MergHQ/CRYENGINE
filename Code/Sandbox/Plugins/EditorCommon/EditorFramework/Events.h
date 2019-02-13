@@ -12,6 +12,7 @@
 
 class QWidget;
 class CBroadcastManager;
+class CInspectorLegacy;
 class CInspector;
 struct SInputEvent;
 
@@ -67,10 +68,9 @@ public:
 
 	const QKeySequence& GetSequence() const { return m_sequence; }
 private:
-	QKeySequence m_sequence;
+	QKeySequence        m_sequence;
 
 };
-
 
 class EDITOR_COMMON_API GetBroadcastManagerEvent : public SandboxEvent
 {
@@ -97,6 +97,7 @@ public:
 	{
 		First = SandboxEvent::Max,
 		All,
+		PopulateLegacyInspector,
 		PopulateInspector,
 		CustomEditorEvent,
 		EditCurve,
@@ -114,17 +115,35 @@ protected:
 };
 
 //Sent by any UI component to populate the inspector in the current context.
+class EDITOR_COMMON_API PopulateLegacyInspectorEvent : public BroadcastEvent
+{
+public:
+	typedef std::function<void (CInspectorLegacy& inspector)> TCallback;
+
+	PopulateLegacyInspectorEvent(const TCallback& factory, const char* szTitle = "")
+		: BroadcastEvent(BroadcastEvent::PopulateLegacyInspector)
+		, m_factory(factory)
+		, m_szTitle(szTitle) {}
+
+	const char*     GetTitle() const    { return m_szTitle.c_str(); }
+	const TCallback GetCallback() const { return m_factory; }
+
+private:
+	const TCallback m_factory;
+	string          m_szTitle;
+};
+
 class EDITOR_COMMON_API PopulateInspectorEvent : public BroadcastEvent
 {
-public: 
-	typedef std::function<void(CInspector& inspector)> TCallback;
+public:
+	typedef std::function<void (CInspector& inspector)> TCallback;
 
 	PopulateInspectorEvent(const TCallback& factory, const char* szTitle = "")
 		: BroadcastEvent(BroadcastEvent::PopulateInspector)
 		, m_factory(factory)
 		, m_szTitle(szTitle) {}
 
-	const char* GetTitle() const { return m_szTitle.c_str(); }
+	const char*     GetTitle() const    { return m_szTitle.c_str(); }
 	const TCallback GetCallback() const { return m_factory; }
 
 private:
@@ -133,6 +152,12 @@ private:
 };
 
 //Clears all inspectors
+class EDITOR_COMMON_API ClearLegacyInspectorEvent : public PopulateLegacyInspectorEvent
+{
+public:
+	ClearLegacyInspectorEvent();
+};
+
 class EDITOR_COMMON_API ClearInspectorEvent : public PopulateInspectorEvent
 {
 public:

@@ -8,6 +8,8 @@
 class QLineEdit;
 class CMaterial;
 class CMaterialSerializer;
+class CInspectorLegacy;
+class CInspector;
 
 //! Material editor integrated with the asset system
 class CMaterialEditor : public CAssetEditor, public IAutoEditorNotifyListener, public IDataBaseManagerListener
@@ -49,7 +51,6 @@ public:
 	CCrySignal<void(CMaterial*)> signalMaterialForEditChanged;
 
 	//Actions that can be called from components of the material editor
-
 	void OnResetSubMaterial(int slot);
 	void OnRemoveSubMaterial(int slot);
 
@@ -57,7 +58,7 @@ private:
 
 	void         InitMenuBar();
 	void         CreateToolbar();
-	virtual void CreateDefaultLayout(CDockableContainer* sender) override;
+	virtual void CreateDefaultLayout(CDockableContainer* pSender) override;
 	virtual void OnLayoutChange(const QVariantMap& state) override;
 	void         BroadcastPopulateInspector();
 
@@ -74,4 +75,6 @@ private:
 	_smart_ptr<CMaterial>           m_pMaterial;
 	_smart_ptr<CMaterial>           m_pEditedMaterial;
 	_smart_ptr<CMaterialSerializer> m_pMaterialSerializer;
+
+	const bool                      m_useLegacyPropertyTree;
 };

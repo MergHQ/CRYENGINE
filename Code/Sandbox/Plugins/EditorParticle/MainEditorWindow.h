@@ -23,7 +23,6 @@ class QDockWidget;
 class QPropertyTree;
 class QToolBar;
 
-class CInspector;
 class CCurveEditorPanel;
 
 namespace pfx2
@@ -99,11 +98,11 @@ private:
 	std::unique_ptr<CEffectAssetModel> m_pEffectAssetModel;
 
 	//
-	QToolBar*   m_pEffectToolBar;
-	CInspector* m_pInspector;
+	QToolBar*         m_pEffectToolBar;
+	CInspectorLegacy* m_pInspector;
 
-	QAction*    m_pReloadEffectMenuAction;
-	QAction*    m_pShowEffectOptionsMenuAction;
+	QAction*          m_pReloadEffectMenuAction;
+	QAction*          m_pShowEffectOptionsMenuAction;
 };
 
 }

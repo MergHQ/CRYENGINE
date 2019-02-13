@@ -11,19 +11,20 @@
 
 class QScrollArea;
 class QSearchBox;
+class QWheelEvent;
 
-namespace PropertyTree2 
+namespace PropertyTree2
 {
-	class CRowModel;
-	class CFormWidget;
-	class CInlineWidgetBox;
+class CRowModel;
+class CFormWidget;
+class CInlineWidgetBox;
 }
 
 //Replacement class for QPropertyTree. This is a much more straightforward implementation using QWidget components to display a property tree.
 //Intended to be a similar interface to facilitate migration however not all features, signals and methods are supported.
 
 //TODO: Possible improvements:
-// * Overlay for drawing various highlights and effects: 
+// * Overlay for drawing various highlights and effects:
 //		* See CFormRow limitations on the drag highlight
 //		* Draw a highlight to indicate the current search row which may be different from the active row
 // * templated attach method with SFINAE that wraps objects in Serialization::SStruct automatically or errors
@@ -38,9 +39,9 @@ class EDITOR_COMMON_API QPropertyTree2 : public QWidget
 	friend class PropertyTree2::CFormWidget;
 	friend class PropertyTree2::CInlineWidgetBox;
 public:
-	explicit QPropertyTree2(QWidget* parent = nullptr);
+	explicit QPropertyTree2(QWidget* pParent = nullptr);
 	virtual ~QPropertyTree2();
-	
+
 	//! Attach and displays the property of an object. Does not take ownership of the object.
 	void attach(const yasli::Serializer& serializer);
 
@@ -52,14 +53,14 @@ public:
 	//! Detaches serializable objects and clears the tree
 	void detach();
 
-	//! Updates the tree by serializing the data from the object to the ui
+	//! Updates the tree by serializing the data from the object to the ui. Object -> UI
 	void revert();
 
-	//! Updates the attached objects by serializing data from the ui to the objects
+	//! Updates the attached objects by serializing data from the ui to the objects. UI -> Object
 	void apply();
 
 	//! Sets head of the context-list. Can be used to pass additional data to nested decorators.
-	void setArchiveContext(yasli::Context* context) { m_archiveContext = context; }
+	void setArchiveContext(yasli::Context* pContext) { m_pArchiveContext = pContext; }
 
 	//! Automatically reverts after each change, guaranteeing that the tree is up to date if the serialization alters other properties or the general structure. Defaults to true.
 	void setAutoRevert(bool autoRevert) { m_autoRevert = autoRevert; }
@@ -71,9 +72,14 @@ public:
 	void setExpandLevels(int depth) { setAutoExpandDepth(depth); }
 
 signals:
+	// Invoked before any change is going to occur and can be used to store current version
+	// of data for undo stack.
+	void signalPreChanged();
 	// Emitted for every finished changed of the value.  E.g. when you drag a slider,
 	// signalChanged will be invoked when you release a mouse button.
 	void signalChanged();
+	// Emitted for every change of a value that was discarded by the user
+	void signalDiscarded();
 	// Used fast-pace changes, like movement of the slider before mouse gets released.
 	void signalContinuousChange();
 
@@ -81,81 +87,83 @@ signals:
 	void signalAboutToSerialize(const yasli::Serializer& object, yasli::Archive& ar);
 	// Called for each attached object after serialization
 	void signalSerialized(const yasli::Serializer& object, yasli::Archive& ar);
-	
-	// Invoked before any change is going to occur and can be used to store current version
-	// of data for own undo stack.
-	void signalPushUndo();
 
 private:
+	class CScrollArea;
 
-	virtual void keyPressEvent(QKeyEvent* ev) override;
-	virtual void customEvent(QEvent* event) override;
+	virtual void keyPressEvent(QKeyEvent* pEvent) override;
+	virtual void customEvent(QEvent* pEvent) override;
 
-	void OnRowChanged(const PropertyTree2::CRowModel* row);
-	void OnRowContinuousChanged(const PropertyTree2::CRowModel* row);
-	void CopyRowValueToModels(const PropertyTree2::CRowModel* row);
-	void OnFind();
-	void OnFindPrevious();
-	void OnFindNext();
-	void OnCloseSearch();
-	const PropertyTree2::CRowModel* DoFind(const PropertyTree2::CRowModel* currentRow, const QString& searchStr, bool searchUp = false);
-	
+	//!Used to register undos on widget change, we record the undo on PreChange and accept/discard it on Changed/Discarded
+	void                            OnRowChanged(const PropertyTree2::CRowModel* pRow);
+	void                            OnRowDiscarded(const PropertyTree2::CRowModel* pRow);
+	void                            OnRowContinuousChanged(const PropertyTree2::CRowModel* pRow);
+	void                            OnRowPreChanged(const PropertyTree2::CRowModel* pRow);
+
+	void                            CopyRowValueToModels(const PropertyTree2::CRowModel* pRow);
+	void                            OnFind();
+	void                            OnFindPrevious();
+	void                            OnFindNext();
+	void                            OnCloseSearch();
+	const PropertyTree2::CRowModel* DoFind(const PropertyTree2::CRowModel* pCurrentRow, const QString& searchString, bool searchUp = false);
+
 	//! Computes the next row in vertical order, regardless of hierarchy
-	const PropertyTree2::CRowModel* GetRowBelow(const PropertyTree2::CRowModel* row);
+	const PropertyTree2::CRowModel* GetRowBelow(const PropertyTree2::CRowModel* pRow);
 	//! Computes the previous row in vertical order, regardless of hierarchy
-	const PropertyTree2::CRowModel* GetRowAbove(const PropertyTree2::CRowModel* row);
+	const PropertyTree2::CRowModel* GetRowAbove(const PropertyTree2::CRowModel* pRow);
 	//! "Selects" and scrolls to a row
-	void FocusRow(const PropertyTree2::CRowModel* row);
+	void                            FocusRow(const PropertyTree2::CRowModel* pRow);
 
 	//! Will accumulate all the next changes until set to false again. Notifies once set to false if anything has changed.
-	void SetAccumulateChanges(bool accumulate);
+	void                            SetAccumulateChanges(bool accumulate);
 
-	bool IsDraggingSplitter() const { return m_isDraggingSplitter; }
-	void SetDraggingSplitter(bool dragging) { m_isDraggingSplitter = dragging; }
+	bool                            IsDraggingSplitter() const         { return m_isDraggingSplitter; }
+	void                            SetDraggingSplitter(bool dragging) { m_isDraggingSplitter = dragging; }
 
-	void SetSplitterPosition(int pos);
-	int GetSplitterPosition() const;
+	void                            SetSplitterPosition(int position);
+	int                             GetSplitterPosition() const;
 
-	void SetActiveRow(const PropertyTree2::CRowModel* row);
-	const PropertyTree2::CRowModel* GetActiveRow() { return m_activeRow.get(); }
+	void                            SetActiveRow(const PropertyTree2::CRowModel* pRow);
+	const PropertyTree2::CRowModel* GetActiveRow() { return m_pActiveRow.get(); }
 
-	void EnsureRowVisible(const PropertyTree2::CRowModel* row);
-	QScrollArea* GetScrollArea() { return m_scrollArea; }
+	void                            EnsureRowVisible(const PropertyTree2::CRowModel* pRow);
+	QScrollArea*                    GetScrollArea();
+	//! Used to intercept widget wheel events and forward to the scroll area
+	void                            HandleScroll(QWheelEvent* pEvent);
 
-	int GetAutoExpandDepth() const { return m_autoExpandDepth; }
+	int                             GetAutoExpandDepth() const { return m_autoExpandDepth; }
 
 	//Styling
-	QIcon GetCollapsedIcon() const { return m_collapsedIcon; }
-	void SetCollapsedIcon(QIcon icon) { m_collapsedIcon = icon; }
+	QIcon GetCollapsedIcon() const      { return m_collapsedIcon; }
+	void  SetCollapsedIcon(QIcon icon)  { m_collapsedIcon = icon; }
 
-	QIcon GetExpandedIcon() const { return m_expandedIcon; }
-	void SetExpandedIcon(QIcon icon) { m_expandedIcon = icon; }
+	QIcon GetExpandedIcon() const       { return m_expandedIcon; }
+	void  SetExpandedIcon(QIcon icon)   { m_expandedIcon = icon; }
 
-	QIcon GetDragHandleIcon() const { return m_dragHandleIcon; }
-	void SetDragHandleIcon(QIcon icon) { m_dragHandleIcon = icon; }
+	QIcon GetDragHandleIcon() const     { return m_dragHandleIcon; }
+	void  SetDragHandleIcon(QIcon icon) { m_dragHandleIcon = icon; }
 
-
-	typedef std::vector<yasli::Object> Objects;
-	Objects m_attached;
+	typedef std::vector<yasli::Object>                        Objects;
+	Objects                                    m_attached;
 	typedef std::vector<_smart_ptr<PropertyTree2::CRowModel>> Models;
-	Models m_models;
-	yasli::Context* m_archiveContext;
-	_smart_ptr<PropertyTree2::CRowModel> m_root;
+	Models                                     m_models;
+	yasli::Context*                            m_pArchiveContext;
+	_smart_ptr<PropertyTree2::CRowModel>       m_pRoot;
 
-	QScrollArea* m_scrollArea;
-	QSearchBox* m_searchBox;
-	QWidget* m_searchWidget;
-	PropertyTree2::CFormWidget* m_rootForm;
-	_smart_ptr<const PropertyTree2::CRowModel> m_currentSearchRow;
-	_smart_ptr<const PropertyTree2::CRowModel> m_activeRow;
-	QString m_lastSearchText;
+	CScrollArea*                               m_pScrollArea;
+	QSearchBox*                                m_pSearchBox;
+	QWidget*                                   m_pSearchWidget;
+	PropertyTree2::CFormWidget*                m_pRootForm;
+	_smart_ptr<const PropertyTree2::CRowModel> m_pCurrentSearchRow;
+	_smart_ptr<const PropertyTree2::CRowModel> m_pActiveRow;
+	QString                                    m_lastSearchText;
 
 	float m_splitterRatio;
-	bool m_isDraggingSplitter;
+	bool  m_isDraggingSplitter;
 
-	bool m_autoRevert;
-	bool m_ignoreChanges;
-	int m_autoExpandDepth;
+	bool  m_autoRevert;
+	bool  m_ignoreChanges;
+	int   m_autoExpandDepth;
 
 	enum class AccumulateChangesStatus
 	{

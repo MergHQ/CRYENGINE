@@ -18,63 +18,77 @@
 #include <QToolButton>
 #include <CryIcon.h>
 
+class QPropertyTree2::CScrollArea : public QScrollArea
+{
+public:
+	// Required for intercepting all property tree children widget wheel events and forwarding
+	// to the scroll area. Since QScrollArea event handlers are not accessible to the property
+	// tree we expose a public member that can forward the event
+	void HandleScroll(QWheelEvent* pEvent)
+	{
+		wheelEvent(pEvent);
+	}
+};
+
+//////////////////////////////////////////////////////////////////////////
+
 //TODOLIST:
-//- optimizations: 
+//- optimizations:
 //		* check box doesn't need to be a widget
 //		* finding model children by name could be sped up by a map
 
-QPropertyTree2::QPropertyTree2(QWidget* parent /*= nullptr*/)
+QPropertyTree2::QPropertyTree2(QWidget* pParent /*= nullptr*/)
 	: m_autoRevert(true)
 	, m_ignoreChanges(false)
-	, m_currentSearchRow(nullptr)
-	, m_activeRow(nullptr)
+	, m_pCurrentSearchRow(nullptr)
+	, m_pActiveRow(nullptr)
 	, m_accumulateChanges(AccumulateChangesStatus::None)
 	, m_autoExpandDepth(1)
 {
-	m_scrollArea = new QScrollArea();
-	m_scrollArea->setWidgetResizable(true);
-	m_rootForm = nullptr;
+	m_pScrollArea = new CScrollArea();
+	m_pScrollArea->setWidgetResizable(true);
+	m_pRootForm = nullptr;
 
-	m_scrollArea->setWidget(nullptr);
-	m_scrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+	m_pScrollArea->setWidget(nullptr);
+	m_pScrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-	m_searchBox = new QSearchBox();
-	m_searchBox->SetSearchFunction(this, &QPropertyTree2::OnFindNext);
+	m_pSearchBox = new QSearchBox();
+	m_pSearchBox->SetSearchFunction(this, &QPropertyTree2::OnFindNext);
 
-	auto closeSearch = new QToolButton();
-	closeSearch->setIcon(CryIcon("icons:General/Close.ico"));
-	closeSearch->setToolTip("Close");
-	connect(closeSearch, &QToolButton::clicked, this, &QPropertyTree2::OnCloseSearch);
+	QToolButton* pCloseSearch = new QToolButton();
+	pCloseSearch->setIcon(CryIcon("icons:General/Close.ico"));
+	pCloseSearch->setToolTip("Close");
+	connect(pCloseSearch, &QToolButton::clicked, this, &QPropertyTree2::OnCloseSearch);
 
-	auto searchNext = new QToolButton();
-	searchNext->setIcon(CryIcon("icons:General/Arrow_Down.ico"));
-	searchNext->setToolTip("Next");
-	connect(searchNext, &QToolButton::clicked, this, &QPropertyTree2::OnFindNext);
+	QToolButton* pSearchNext = new QToolButton();
+	pSearchNext->setIcon(CryIcon("icons:General/Arrow_Down.ico"));
+	pSearchNext->setToolTip("Next");
+	connect(pSearchNext, &QToolButton::clicked, this, &QPropertyTree2::OnFindNext);
 
-	auto searchPrev = new QToolButton();
-	searchPrev->setIcon(CryIcon("icons:General/Arrow_Up.ico"));
-	searchPrev->setToolTip("Previous");
-	connect(searchPrev, &QToolButton::clicked, this, &QPropertyTree2::OnFindPrevious);
+	QToolButton* pSearchPrevious = new QToolButton();
+	pSearchPrevious->setIcon(CryIcon("icons:General/Arrow_Up.ico"));
+	pSearchPrevious->setToolTip("Previous");
+	connect(pSearchPrevious, &QToolButton::clicked, this, &QPropertyTree2::OnFindPrevious);
 
-	QHBoxLayout* searchLayout = new QHBoxLayout();
-	searchLayout->setMargin(0);
-	searchLayout->setSpacing(4);
-	searchLayout->addWidget(m_searchBox);
-	searchLayout->addWidget(searchNext);
-	searchLayout->addWidget(searchPrev);
-	searchLayout->addWidget(closeSearch);
+	QHBoxLayout* pSearchLayout = new QHBoxLayout();
+	pSearchLayout->setMargin(0);
+	pSearchLayout->setSpacing(4);
+	pSearchLayout->addWidget(m_pSearchBox);
+	pSearchLayout->addWidget(pSearchNext);
+	pSearchLayout->addWidget(pSearchPrevious);
+	pSearchLayout->addWidget(pCloseSearch);
 
-	m_searchWidget = new QWidget();
-	m_searchWidget->setLayout(searchLayout);
-	m_searchWidget->setVisible(false);
+	m_pSearchWidget = new QWidget();
+	m_pSearchWidget->setLayout(pSearchLayout);
+	m_pSearchWidget->setVisible(false);
 
-	QVBoxLayout* layout = new QVBoxLayout();
-	layout->addWidget(m_searchWidget);
-	layout->setMargin(0);
-	layout->setSpacing(4);
-	layout->addWidget(m_scrollArea);
+	QVBoxLayout* pLayout = new QVBoxLayout();
+	pLayout->addWidget(m_pSearchWidget);
+	pLayout->setMargin(0);
+	pLayout->setSpacing(4);
+	pLayout->addWidget(m_pScrollArea);
 
-	setLayout(layout);
+	setLayout(pLayout);
 
 	m_splitterRatio = 0.5;
 	m_isDraggingSplitter = false;
@@ -95,7 +109,7 @@ QPropertyTree2::~QPropertyTree2()
 
 void QPropertyTree2::attach(const yasli::Serializer& serializer)
 {
-	if (m_attached.size() != 1 || m_attached[0].serializer() != serializer) 
+	if (m_attached.size() != 1 || m_attached[0].serializer() != serializer)
 	{
 		m_attached.clear();
 		m_attached.push_back(yasli::Object(serializer));
@@ -111,8 +125,10 @@ void QPropertyTree2::attach(const yasli::Serializers& serializers)
 	m_attached.assign(serializers.begin(), serializers.end());
 	m_models.clear();
 	m_models.reserve(serializers.size());
-	for(int i = 0; i < serializers.size(); i++)
+	for (int i = 0; i < serializers.size(); i++)
+	{
 		m_models.emplace_back(new PropertyTree2::CRowModel(nullptr));
+	}
 	revert();
 }
 
@@ -129,7 +145,7 @@ void QPropertyTree2::detach()
 {
 	m_attached.clear();
 	m_models.clear();
-	m_root = nullptr;
+	m_pRoot = nullptr;
 	revert();
 }
 
@@ -141,99 +157,105 @@ void QPropertyTree2::revert()
 
 	if (!m_attached.empty())
 	{
-		for(int i = 0; i < m_attached.size(); i++)
+		for (int i = 0; i < m_attached.size(); i++)
 		{
-			auto& object = m_attached[i];
-			auto& model = m_models[i];
-			model->MarkNotVisitedRecursive();
+			yasli::Object& object = m_attached[i];
+			_smart_ptr<PropertyTree2::CRowModel>& pModel = m_models[i];
+			pModel->MarkNotVisitedRecursive();
 
-			PropertyTreeOArchive oa(*model);
-			oa.setLastContext(m_archiveContext);
+			PropertyTreeOArchive propertyArchive(*pModel);
+			propertyArchive.setLastContext(m_pArchiveContext);
 
-			const auto yasliSerializer = object.serializer();
-			signalAboutToSerialize(yasliSerializer, oa);
-			object(oa);
-			signalSerialized(yasliSerializer, oa);
+			const yasli::Serializer objectSerializer = object.serializer();
+			signalAboutToSerialize(objectSerializer, propertyArchive);
+			object(propertyArchive);
+			signalSerialized(objectSerializer, propertyArchive);
 		}
 
-		if(!m_root)
+		if (!m_pRoot)
 		{
 			if (m_attached.size() == 1)
-				m_root = m_models[0];
+			{
+				m_pRoot = m_models[0];
+			}
 			else // multi-edit
 			{
 				//Merge the models
-				m_root = new CRowModel(nullptr);
+				m_pRoot = new CRowModel(nullptr);
 
 				//Run the root model through serialization of the first object [0]
-				m_root->MarkNotVisitedRecursive();
-				PropertyTreeOArchive oa(*m_root);
-				oa.setLastContext(m_archiveContext);
-				const auto yasliSerializer = m_attached[0].serializer();
-				signalAboutToSerialize(yasliSerializer, oa);
-				m_attached[0](oa);
-				signalSerialized(yasliSerializer, oa);
+				m_pRoot->MarkNotVisitedRecursive();
+				PropertyTreeOArchive rootOArchive(*m_pRoot);
+				rootOArchive.setLastContext(m_pArchiveContext);
+				const yasli::Serializer attachedObjectSerializer = m_attached[0].serializer();
+				signalAboutToSerialize(attachedObjectSerializer, rootOArchive);
+				m_attached[0](rootOArchive);
+				signalSerialized(attachedObjectSerializer, rootOArchive);
 
 				//Intersect with all the other models [1..n]
-				auto it = m_models.begin();
-				for (++it; it != m_models.end(); ++it)
+				auto modelsIterator = m_models.begin();
+				for (++modelsIterator; modelsIterator != m_models.end(); ++modelsIterator)
 				{
-					m_root->Intersect(*it);
+					m_pRoot->Intersect(*modelsIterator);
 				}
 			}
 
-			m_rootForm = new CFormWidget(this, m_root, 0);
-			m_scrollArea->setWidget(m_rootForm);
-			m_rootForm->show();
-			m_scrollArea->show();
+			m_pRootForm = new CFormWidget(this, m_pRoot, 0);
+			m_pScrollArea->setWidget(m_pRootForm);
+			m_pRootForm->show();
+			m_pScrollArea->show();
 		}
 		else
 		{
-			if(m_attached.size() > 1) // multi-edit
+			if (m_attached.size() > 1) // multi-edit
 			{
-				auto it = m_models.begin();
+				auto modelsIterator = m_models.begin();
 
-				m_root->MarkNotVisitedRecursive();
-				m_root->MarkClean(); //The root is clean and should not be pruned
+				m_pRoot->MarkNotVisitedRecursive();
+				m_pRoot->MarkClean(); //The root is clean and should not be pruned
 
 				//Run the root model through serialization of the first object [0]
-				m_root->MarkNotVisitedRecursive();
-				PropertyTreeOArchive oa(*m_root);
-				oa.setLastContext(m_archiveContext);
-				const auto yasliSerializer = m_attached[0].serializer();
-				signalAboutToSerialize(yasliSerializer, oa);
-				m_attached[0](oa);
-				signalSerialized(yasliSerializer, oa);
+				m_pRoot->MarkNotVisitedRecursive();
+				PropertyTreeOArchive rootOArchive(*m_pRoot);
+				rootOArchive.setLastContext(m_pArchiveContext);
+				const yasli::Serializer attachedObjectSerializer = m_attached[0].serializer();
+				signalAboutToSerialize(attachedObjectSerializer, rootOArchive);
+				m_attached[0](rootOArchive);
+				signalSerialized(attachedObjectSerializer, rootOArchive);
 
 				//Clean after copy so to make intersection meaningful again
-				m_root->PruneNotVisitedChildren();
+				m_pRoot->PruneNotVisitedChildren();
 
 				//Intersect with all the other models [1..n]
-				for (++it; it != m_models.end(); ++it)
+				for (++modelsIterator; modelsIterator != m_models.end(); ++modelsIterator)
 				{
-					(*it)->PruneNotVisitedChildren();
-					m_root->Intersect(*it);
+					(*modelsIterator)->PruneNotVisitedChildren();
+					m_pRoot->Intersect(*modelsIterator);
 				}
 			}
 			else
 			{
-				m_root->PruneNotVisitedChildren();
+				m_pRoot->PruneNotVisitedChildren();
 			}
 
-			m_rootForm->UpdateTree();
+			m_pRootForm->UpdateTree();
 
 			//Clear active row and search row if they are now detached
-			if (m_activeRow && m_activeRow->IsRoot())
-				m_activeRow.reset();
+			if (m_pActiveRow && m_pActiveRow->IsRoot())
+			{
+				m_pActiveRow.reset();
+			}
 
-			if (m_currentSearchRow && m_currentSearchRow->IsRoot())
-				m_currentSearchRow.reset();
+			if (m_pCurrentSearchRow && m_pCurrentSearchRow->IsRoot())
+			{
+				m_pCurrentSearchRow.reset();
+			}
 		}
 	}
 	else
 	{
-		m_root = nullptr;
-		m_scrollArea->setWidget(nullptr);
+		m_pRoot = nullptr;
+		m_pScrollArea->setWidget(nullptr);
 	}
 }
 
@@ -242,162 +264,201 @@ void QPropertyTree2::apply()
 	using namespace PropertyTree2;
 
 	if (m_attached.empty())
+	{
 		return;
+	}
 
 	for (int i = 0; i < m_attached.size(); i++)
 	{
-		auto& object = m_attached[i];
-		auto& model = m_models[i];
+		yasli::Object& object = m_attached[i];
+		_smart_ptr<PropertyTree2::CRowModel>& pModel = m_models[i];
 
-		PropertyTreeIArchive oa(*model);
-		oa.setLastContext(m_archiveContext);
+		PropertyTreeIArchive modelOArchive(*pModel);
+		modelOArchive.setLastContext(m_pArchiveContext);
 
-		const auto yasliSerializer = object.serializer();
-		signalAboutToSerialize(yasliSerializer, oa);
-		object(oa);
-		signalSerialized(yasliSerializer, oa);
+		const yasli::Serializer objectSerializer = object.serializer();
+		signalAboutToSerialize(objectSerializer, modelOArchive);
+		object(modelOArchive);
+		signalSerialized(objectSerializer, modelOArchive);
 	}
 }
 
-void QPropertyTree2::keyPressEvent(QKeyEvent* ev)
+void QPropertyTree2::keyPressEvent(QKeyEvent* pEvent)
 {
-	if (ev->key() == Qt::Key_Escape)
+	if (pEvent->key() == Qt::Key_Escape)
 	{
-		if (m_searchWidget->isVisible())
+		if (m_pSearchWidget->isVisible())
 		{
-			ev->accept();
+			pEvent->accept();
 			OnCloseSearch();
 			return;
 		}
 	}
 
-	ev->ignore();
+	pEvent->ignore();
 }
 
-void QPropertyTree2::customEvent(QEvent* event)
+void QPropertyTree2::customEvent(QEvent* pEvent)
 {
-	if (event->type() == SandboxEvent::Command)
+	if (pEvent->type() == SandboxEvent::Command)
 	{
-		CommandEvent* commandEvent = static_cast<CommandEvent*>(event);
+		CommandEvent* pCommandEvent = static_cast<CommandEvent*>(pEvent);
 
-		const string& command = commandEvent->GetCommand();
-		
+		const string& command = pCommandEvent->GetCommand();
+
 		if (command == "general.find")
 		{
 			OnFind();
-			event->accept();
+			pEvent->accept();
 		}
 		else if (command == "general.find_previous")
 		{
 			OnFindPrevious();
-			event->accept();
+			pEvent->accept();
 		}
 		else if (command == "general.find_next")
 		{
 			OnFindNext();
-			event->accept();
+			pEvent->accept();
 		}
 	}
 	else
 	{
-		QWidget::customEvent(event);
+		QWidget::customEvent(pEvent);
 	}
 }
 
-void QPropertyTree2::OnRowChanged(const PropertyTree2::CRowModel* row)
+void QPropertyTree2::OnRowChanged(const PropertyTree2::CRowModel* pRow)
 {
 	if (m_ignoreChanges)
+	{
 		return;
+	}
 
 	if (m_attached.size() > 1) //multi-edit
 	{
 		//Copy the changed value over to the individual models
-		CopyRowValueToModels(row);
-	}
-
-	if (m_accumulateChanges != AccumulateChangesStatus::UndoPushed)
-	{
-		signalPushUndo();
-		if (m_accumulateChanges == AccumulateChangesStatus::Accumulate)
-			m_accumulateChanges = AccumulateChangesStatus::UndoPushed;
+		CopyRowValueToModels(pRow);
 	}
 
 	apply();
 
-	if(m_accumulateChanges == AccumulateChangesStatus::None)
+	if (m_accumulateChanges == AccumulateChangesStatus::None)
+	{
 		signalChanged();
+	}
 
 	if (m_autoRevert)
+	{
 		revert();
+	}
 }
 
-void QPropertyTree2::OnRowContinuousChanged(const PropertyTree2::CRowModel* row)
+void QPropertyTree2::OnRowDiscarded(const PropertyTree2::CRowModel* pRow)
+{
+	//When a change is discarded signal it and then reload the tree as the serialized data wwill probably have changed as a result of signalDiscarded() (aka maybe undo is called)
+	if (m_ignoreChanges)
+	{
+		return;
+	}
+
+	if (m_accumulateChanges == AccumulateChangesStatus::None)
+	{
+		signalDiscarded();
+	}
+
+	if (m_autoRevert)
+	{
+		revert();
+	}
+}
+
+void QPropertyTree2::OnRowContinuousChanged(const PropertyTree2::CRowModel* pRow)
 {
 	if (m_ignoreChanges)
+	{
 		return;
+	}
 
 	if (m_attached.size() > 1) //multi-edit
 	{
 		//Copy the changed value over to the individual models
-		CopyRowValueToModels(row);
+		CopyRowValueToModels(pRow);
 	}
 
 	apply();
 	signalContinuousChange();
 }
 
-void QPropertyTree2::CopyRowValueToModels(const PropertyTree2::CRowModel* row)
+void QPropertyTree2::OnRowPreChanged(const PropertyTree2::CRowModel* pRow)
+{
+	if (m_ignoreChanges)
+	{
+		return;
+	}
+
+	if (m_accumulateChanges != AccumulateChangesStatus::UndoPushed)
+	{
+		signalPreChanged();
+		if (m_accumulateChanges == AccumulateChangesStatus::Accumulate)
+		{
+			m_accumulateChanges = AccumulateChangesStatus::UndoPushed;
+		}
+	}
+}
+
+void QPropertyTree2::CopyRowValueToModels(const PropertyTree2::CRowModel* pRow)
 {
 	//Note: for now this only copies one individual row over, but perhaps in cases of mutable containers we also need to copy the state of the children
 	using namespace PropertyTree2;
 
 	std::vector<const CRowModel*> parents;
-	const CRowModel* parent = row->GetParent();
-	while (!parent->IsRoot())
+	const CRowModel* pParent = pRow->GetParent();
+	while (!pParent->IsRoot())
 	{
-		parents.push_back(parent);
-		parent = parent->GetParent();
+		parents.push_back(pParent);
+		pParent = pParent->GetParent();
 	}
 
-	for (auto& model : m_models)
+	for (_smart_ptr<PropertyTree2::CRowModel>& pModel : m_models)
 	{
-		const CRowModel* current = model;
-		for (auto it = parents.rbegin(); it != parents.rend(); ++it)
+		const CRowModel* pCurrentModel = pModel;
+		for (auto parentsIterator = parents.rbegin(); parentsIterator != parents.rend(); ++parentsIterator)
 		{
 			//Match by name and type
-			auto foundIt = std::find_if(current->GetChildren().begin(), current->GetChildren().end(), [&](const _smart_ptr<CRowModel>& child)
+			auto foundParentIterator = std::find_if(pCurrentModel->GetChildren().begin(), pCurrentModel->GetChildren().end(), [&](const _smart_ptr<CRowModel>& child)
 			{
-				return child->GetType() == (*it)->GetType() && child->GetName() == (*it)->GetName();
+				return child->GetType() == (*parentsIterator)->GetType() && child->GetName() == (*parentsIterator)->GetName();
 			});
 
-			CRY_ASSERT(foundIt != current->GetChildren().end()); //Since the models have been intersected, the equivalent row must exist
-			current = *foundIt;
+			CRY_ASSERT(foundParentIterator != pCurrentModel->GetChildren().end()); //Since the models have been intersected, the equivalent row must exist
+			pCurrentModel = *foundParentIterator;
 		}
 
-		auto matchingRowIt = std::find_if(current->GetChildren().begin(), current->GetChildren().end(), [&](const _smart_ptr<CRowModel>& child)
+		auto matchingRowIterator = std::find_if(pCurrentModel->GetChildren().begin(), pCurrentModel->GetChildren().end(), [&](const _smart_ptr<CRowModel>& child)
 		{
-			return child->GetType() == row->GetType() && child->GetName() == row->GetName();
+			return child->GetType() == pRow->GetType() && child->GetName() == pRow->GetName();
 		});
-		CRY_ASSERT(matchingRowIt != current->GetChildren().end()); //Since the models have been intersected, the equivalent row must exist
+		CRY_ASSERT(matchingRowIterator != pCurrentModel->GetChildren().end()); //Since the models have been intersected, the equivalent row must exist
 
 		//Copy value
-		if (row->GetPropertyTreeWidget() && (*matchingRowIt)->GetPropertyTreeWidget())
+		if (pRow->GetPropertyTreeWidget() && (*matchingRowIterator)->GetPropertyTreeWidget())
 		{
-			yasli::BinOArchive oar;
-			row->GetPropertyTreeWidget()->Serialize(oar);
-			yasli::BinIArchive iar;
-			iar.open(oar.buffer(), oar.length());
-			(*matchingRowIt)->GetPropertyTreeWidget()->Serialize(iar);
+			yasli::BinOArchive rowOArchive;
+			pRow->GetPropertyTreeWidget()->Serialize(rowOArchive);
+			yasli::BinIArchive rowIArchive;
+			rowIArchive.open(rowOArchive.buffer(), rowOArchive.length());
+			(*matchingRowIterator)->GetPropertyTreeWidget()->Serialize(rowIArchive);
 		}
 	}
 }
 
 void QPropertyTree2::OnFind()
 {
-	if (!m_searchWidget->isVisible() || !m_searchBox->hasFocus())
+	if (!m_pSearchWidget->isVisible() || !m_pSearchBox->hasFocus())
 	{
-		m_searchWidget->setVisible(true);
-		m_searchBox->setFocus();
+		m_pSearchWidget->setVisible(true);
+		m_pSearchBox->setFocus();
 	}
 	else
 	{
@@ -407,130 +468,152 @@ void QPropertyTree2::OnFind()
 
 void QPropertyTree2::OnFindPrevious()
 {
-	if (!m_searchWidget->isVisible())
+	if (!m_pSearchWidget->isVisible())
+	{
 		return;
+	}
 
-	QString searchText = m_searchBox->text();
+	QString searchText = m_pSearchBox->text();
 	if (searchText != m_lastSearchText)
 	{
 		m_lastSearchText = searchText;
-		m_currentSearchRow = nullptr;
+		m_pCurrentSearchRow = nullptr;
 	}
 
-	const auto row = DoFind(m_currentSearchRow ? m_currentSearchRow.get() : m_root.get(), searchText, true);
-	if (row)
+	const PropertyTree2::CRowModel* pRow = DoFind(m_pCurrentSearchRow ? m_pCurrentSearchRow.get() : m_pRoot.get(), searchText, true);
+	if (pRow)
 	{
-		m_currentSearchRow = row;
-		FocusRow(m_currentSearchRow);
+		m_pCurrentSearchRow = pRow;
+		FocusRow(m_pCurrentSearchRow);
 	}
 }
 
 void QPropertyTree2::OnFindNext()
 {
-	if (!m_searchWidget->isVisible())
+	if (!m_pSearchWidget->isVisible())
+	{
 		return;
+	}
 
-	QString searchText = m_searchBox->text();
+	QString searchText = m_pSearchBox->text();
 	if (searchText != m_lastSearchText)
 	{
 		m_lastSearchText = searchText;
-		m_currentSearchRow = nullptr;
+		m_pCurrentSearchRow = nullptr;
 	}
 
-	auto row = DoFind(m_currentSearchRow ? m_currentSearchRow : m_root, searchText, false);
-	if (row)
+	const PropertyTree2::CRowModel* pRow = DoFind(m_pCurrentSearchRow ? m_pCurrentSearchRow : m_pRoot, searchText, false);
+	if (pRow)
 	{
-		m_currentSearchRow = row;
-		FocusRow(m_currentSearchRow);
+		m_pCurrentSearchRow = pRow;
+		FocusRow(m_pCurrentSearchRow);
 	}
 }
 
 void QPropertyTree2::OnCloseSearch()
 {
-	m_searchWidget->setVisible(false);
+	m_pSearchWidget->setVisible(false);
 }
 
-const PropertyTree2::CRowModel* QPropertyTree2::DoFind(const PropertyTree2::CRowModel* currentRow, const QString& searchStr, bool searchUp /*= false*/)
+const PropertyTree2::CRowModel* QPropertyTree2::DoFind(const PropertyTree2::CRowModel* pCurrentRow, const QString& searchString, bool searchUp /*= false*/)
 {
-	if (searchStr.isEmpty())
-		return nullptr;
-
-	while (currentRow)
+	if (searchString.isEmpty())
 	{
-		if(searchUp)
-			currentRow = GetRowAbove(currentRow);
+		return nullptr;
+	}
+
+	while (pCurrentRow)
+	{
+		if (searchUp)
+		{
+			pCurrentRow = GetRowAbove(pCurrentRow);
+		}
 		else
-			currentRow = GetRowBelow(currentRow);
-
-		if (currentRow && currentRow->GetLabel().contains(searchStr, Qt::CaseInsensitive))
 		{
-			return currentRow;
+			pCurrentRow = GetRowBelow(pCurrentRow);
+		}
+
+		if (pCurrentRow && pCurrentRow->GetLabel().contains(searchString, Qt::CaseInsensitive))
+		{
+			return pCurrentRow;
 		}
 	}
 
 	return nullptr;
 }
 
-const PropertyTree2::CRowModel* QPropertyTree2::GetRowBelow(const PropertyTree2::CRowModel* row)
+const PropertyTree2::CRowModel* QPropertyTree2::GetRowBelow(const PropertyTree2::CRowModel* pRow)
 {
-	if (row->HasChildren())
-		return row->GetChildren()[0];
-
-	while(!row->IsRoot())
+	if (pRow->HasChildren())
 	{
-		auto index = row->GetIndex();
-		const auto count = row->GetParent()->GetChildren().size();
-		while (count - 1 > index) //Go to next visible sibling
+		return pRow->GetChildren()[0];
+	}
+
+	while (!pRow->IsRoot())
+	{
+		int rowIndex = pRow->GetIndex();
+		const size_t rowCount = pRow->GetParent()->GetChildren().size();
+		while (rowCount - 1 > rowIndex) //Go to next visible sibling
 		{
-			const auto sibling = row->GetParent()->GetChildren()[index + 1];
-			if (!sibling->IsHidden())
-				return sibling;
+			const _smart_ptr<PropertyTree2::CRowModel> pSibling = pRow->GetParent()->GetChildren()[rowIndex + 1];
+			if (!pSibling->IsHidden())
+			{
+				return pSibling;
+			}
 			else
-				index++;
+			{
+				rowIndex++;
+			}
 		}
 
-		row = row->GetParent();
+		pRow = pRow->GetParent();
 	}
 
 	return nullptr;
 }
 
-const PropertyTree2::CRowModel* QPropertyTree2::GetRowAbove(const PropertyTree2::CRowModel* row)
+const PropertyTree2::CRowModel* QPropertyTree2::GetRowAbove(const PropertyTree2::CRowModel* pRow)
 {
-	if (row->IsRoot())
+	if (pRow->IsRoot())
+	{
 		return nullptr;
+	}
 
-	auto index = row->GetIndex();
-	while (index > 0)
+	int rowIndex = pRow->GetIndex();
+	while (rowIndex > 0)
 	{
 		//Previous sibling or its bottom-est child
-		row = row->GetParent()->GetChildren()[index - 1];
-		if(!row->IsHidden())
+		pRow = pRow->GetParent()->GetChildren()[rowIndex - 1];
+		if (!pRow->IsHidden())
 		{
-			while (row->HasChildren())
+			while (pRow->HasChildren())
 			{
-				row = row->GetChildren()[row->GetChildren().size() - 1];
+				pRow = pRow->GetChildren()[pRow->GetChildren().size() - 1];
 			}
 
-			if (!row->IsHidden())
-				return row;
+			if (!pRow->IsHidden())
+			{
+				return pRow;
+			}
 			else
-				return GetRowAbove(row);
+			{
+				return GetRowAbove(pRow);
+			}
 		}
 		else
 		{
-			index--;
+			rowIndex--;
 		}
 	}
 
-	return row->GetParent();
+	return pRow->GetParent();
 }
 
-void QPropertyTree2::FocusRow(const PropertyTree2::CRowModel* row)
+void QPropertyTree2::FocusRow(const PropertyTree2::CRowModel* pRow)
 {
-	CRY_ASSERT(row);
-	EnsureRowVisible(row);
-	SetActiveRow(row);
+	CRY_ASSERT(pRow);
+	EnsureRowVisible(pRow);
+	SetActiveRow(pRow);
 }
 
 void QPropertyTree2::SetAccumulateChanges(bool accumulate)
@@ -539,24 +622,26 @@ void QPropertyTree2::SetAccumulateChanges(bool accumulate)
 	{
 		m_accumulateChanges = AccumulateChangesStatus::Accumulate;
 	}
-	else 
+	else
 	{
 		if (m_accumulateChanges == AccumulateChangesStatus::UndoPushed)
+		{
 			signalChanged();
+		}
 
 		m_accumulateChanges = AccumulateChangesStatus::None;
 	}
 }
 
-void QPropertyTree2::SetSplitterPosition(int pos)
+void QPropertyTree2::SetSplitterPosition(int position)
 {
-	pos = crymath::clamp(pos, 20, width() - 20);
-	if (pos != GetSplitterPosition())
+	position = crymath::clamp(position, 20, width() - 20);
+	if (position != GetSplitterPosition())
 	{
-		m_splitterRatio = float(pos) / float(width());
+		m_splitterRatio = float(position) / float(width());
 
 		//Force relayout for all form widgets
-		m_rootForm->OnSplitterPosChanged();
+		m_pRootForm->OnSplitterPosChanged();
 	}
 }
 
@@ -567,19 +652,29 @@ int QPropertyTree2::GetSplitterPosition() const
 	return int(m_splitterRatio * float(width()));
 }
 
-void QPropertyTree2::SetActiveRow(const PropertyTree2::CRowModel* row)
+void QPropertyTree2::SetActiveRow(const PropertyTree2::CRowModel* pRow)
 {
-	if(m_activeRow != row)
+	if (m_pActiveRow != pRow)
 	{
-		m_activeRow = row;
+		m_pActiveRow = pRow;
 
 		//Notify all children
-		m_rootForm->OnActiveRowChanged(m_activeRow);
+		m_pRootForm->OnActiveRowChanged(m_pActiveRow);
 	}
 }
 
-void QPropertyTree2::EnsureRowVisible(const PropertyTree2::CRowModel* row)
+void QPropertyTree2::EnsureRowVisible(const PropertyTree2::CRowModel* pRow)
 {
-	const auto form = m_rootForm->ExpandToRow(row);
-	form->ScrollToRow(row);
+	PropertyTree2::CFormWidget* pForm = m_pRootForm->ExpandToRow(pRow);
+	pForm->ScrollToRow(pRow);
+}
+QScrollArea* QPropertyTree2::GetScrollArea()
+{
+	return m_pScrollArea;
+}
+
+void QPropertyTree2::HandleScroll(QWheelEvent* pEvent)
+{
+	CRY_ASSERT_MESSAGE(m_pScrollArea, "Property Tree missing scroll area");
+	m_pScrollArea->HandleScroll(pEvent);
 }

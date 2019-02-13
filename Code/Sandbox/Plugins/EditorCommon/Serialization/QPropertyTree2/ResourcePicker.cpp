@@ -23,21 +23,19 @@ class ResourceSelectionCallback : public IResourceSelectionCallback
 public:
 	virtual void SetValue(const char* newValue) override
 	{
-		if (m_pResourcePicker)
+		if (m_onValueChanged)
 		{
-			(m_pResourcePicker->*m_pCallback)(newValue);
+			m_onValueChanged(newValue);
 		}
 	}
 
-	void SetValueChangedCallback(CResourcePicker* pResourcePicker, void (CResourcePicker::* pCallback)(const char*))
+	void SetValueChangedCallback(const std::function<void(const char*)>& onValueChanged)
 	{
-		m_pResourcePicker = pResourcePicker;
-		m_pCallback = pCallback;
+		m_onValueChanged = onValueChanged;
 	}
 
 private:
-	CResourcePicker* m_pResourcePicker;
-	void (CResourcePicker::* m_pCallback)(const char*);
+	std::function<void(const char*)> m_onValueChanged;
 };
 }
 
@@ -54,7 +52,7 @@ CResourcePicker::CResourcePicker()
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
 	// needs to be lambda because of default param
-	connect(m_pLineEdit, &QLineEdit::editingFinished, [this]() { OnValueChanged(); });
+	connect(m_pLineEdit, &QLineEdit::editingFinished, [this]() { OnValueChanged(m_pLineEdit->text().toStdString().c_str()); });
 }
 
 bool CResourcePicker::event(QEvent* pEvent)
@@ -70,20 +68,64 @@ bool CResourcePicker::event(QEvent* pEvent)
 	return QWidget::event(pEvent);
 }
 
-void CResourcePicker::OnValueChanged(bool isContinuous /*= false*/)
+void CResourcePicker::OnValueChanged(const char* newValue)
 {
-	CRY_ASSERT(m_pSelector);   // must have valid selector
+	//If we are confirming a continuous change (aka pressing ok on the resource selector) skip validation because the data
+	//has already been validated in the continuous step
+	if (!IsContinuousChange())
+	{
+		//in case of continuous change m_previousValue is already set to the last value in the resource picker, so it's fine to go ahead and submit and undo. If we are not doing continuous edit we need to actually skip repetition
+		if (m_previousValue == newValue)
+		{
+			return;
+		}
 
-	QString newValue = m_pLineEdit->text();
+		//Run validation check
+		//When we get here we have NO way of knowing what the actual previous value is, the line edit might have been modified with a new (possibly invalid) path
+		//Note that this is currently a hack to avoid problems when newValue and m_previousValue are the same, this can happen after continuous editing or after line change when a value is modified and then set back to the previous one
+		string invalid = "invalid";
+		dll_string validatedPath = m_pSelector->ValidateValue(m_context, newValue, invalid.c_str());
+
+		if (invalid == validatedPath.c_str())
+		{
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Invalid %s: %s", m_context.typeName, newValue);
+			m_pLineEdit->setText(m_previousValue);
+			if (m_pLineEdit->hasFocus())
+			{
+				m_pLineEdit->selectAll();
+			}
+
+			//we don't want an undo to be registered here as it will be just undoing to the same value (m_previousValue)
+			return;
+		}
+	}
+
+	m_previousValue = newValue;
+
+	OnChanged();
+
+	if (m_pLineEdit->hasFocus())
+	{
+		m_pLineEdit->selectAll();
+	}
+}
+
+void CResourcePicker::OnValueContinuousChange(const char* newValue)
+{
+	m_pLineEdit->setText(newValue);
+
 	if (m_previousValue == newValue)
+	{
 		return;
+	}
 
 	// Run validation check
-	dll_string validatedPath = m_pSelector->ValidateValue(m_context, newValue.toStdString().c_str(), m_previousValue.toStdString().c_str());
-
-	if (m_previousValue == validatedPath.c_str())
+	//Note that this is currently a hack to avoid problems when newValue and m_previousValue are the same, this can happen after continuous editing or after line change when a value is modified and then set back to the previous one
+	string invalid = "invalid";
+	dll_string validatedPath = m_pSelector->ValidateValue(m_context, newValue, invalid.c_str());
+	if (invalid == validatedPath.c_str())
 	{
-		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Invalid %s: %s", m_context.typeName, newValue.toStdString().c_str());
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Invalid %s: %s", m_context.typeName, newValue);
 		m_pLineEdit->setText(m_previousValue);
 		if (m_pLineEdit->hasFocus())
 		{
@@ -92,15 +134,10 @@ void CResourcePicker::OnValueChanged(bool isContinuous /*= false*/)
 		return;
 	}
 
-	if (isContinuous)
-	{
-		OnContinuousChanged();
-	}
-	else
-	{
-		OnChanged();
-	}
+	OnContinuousChanged();
 
+	//If we are in continuous edit it means that we are using the resource picker. The picker sets the string in the line edit to an always valid value
+	//and since we are using the picker the lined edit actually stores the previous value
 	m_previousValue = m_pLineEdit->text();
 
 	if (m_pLineEdit->hasFocus())
@@ -109,27 +146,25 @@ void CResourcePicker::OnValueChanged(bool isContinuous /*= false*/)
 	}
 }
 
-void CResourcePicker::OnValueContinuousChange(const char* szFilename)
-{
-	m_pLineEdit->setText(szFilename);
-	OnValueChanged(true);
-}
-
 void CResourcePicker::OnPick()
 {
 	CRY_ASSERT(m_pSelector);
 
 	Private_ResourcePickers::ResourceSelectionCallback callback;
-	callback.SetValueChangedCallback(this, &CResourcePicker::OnValueContinuousChange);
+	callback.SetValueChangedCallback([this](const char* newValue) { OnValueContinuousChange(newValue); });
 	m_context.callback = &callback;
 
-	const QString value = m_pLineEdit->text();
-	SResourceSelectionResult result = m_pSelector->SelectResource(m_context, m_previousValue.toStdString().c_str());
+	SResourceSelectionResult result = m_pSelector->SelectResource(m_context, m_pLineEdit->text().toStdString().c_str());
 
-	if (result.selectionAccepted && value != result.selectedResource.c_str())
+	if (result.selectionAccepted)
 	{
 		m_pLineEdit->setText(result.selectedResource.c_str());
-		OnValueChanged();
+		OnValueChanged(result.selectedResource.c_str());
+	}
+	else
+	{
+		m_previousValue = result.selectedResource.c_str();
+		OnDiscarded();
 	}
 }
 
@@ -149,7 +184,9 @@ void CResourcePicker::Init(Serialization::IResourceSelector* pSelector, const ya
 {
 	// If we have a valid selector and the type hasn't changed for this row, then return
 	if (m_pSelector && strcmp(pSelector->resourceType, m_context.typeName) == 0)
+	{
 		return;
+	}
 
 	m_type = pSelector->resourceType;
 	m_pSelector = GetIEditor()->GetResourceSelectorHost()->GetSelector(m_type.c_str());
@@ -196,38 +233,42 @@ void CResourcePicker::AddButton(const char* szIconPath, const char* szToolTip, v
 	connect(pButton, &QToolButton::clicked, this, pCallback);
 }
 
-void CResourcePicker::SetValue(void* valuePtr, const yasli::TypeID& type, const yasli::Archive& ar)
+void CResourcePicker::SetValue(void* pValue, const yasli::TypeID& type, const yasli::Archive& ar)
 {
+	//Note that when we get here we have no way of knowing the previous value, the pSelector holds the new value and the line edit too as we might have modified it with a new (possibly invalid) path
 	if (type != yasli::TypeID::get<Serialization::IResourceSelector>())
+	{
 		return;
+	}
 
-	Serialization::IResourceSelector* pSelector = (Serialization::IResourceSelector*)valuePtr;
+	Serialization::IResourceSelector* pSelector = (Serialization::IResourceSelector*)pValue;
 
 	Init(pSelector, ar);
 
-	m_previousValue = pSelector->GetValue();
-	m_pLineEdit->setText(m_previousValue);
+	m_pLineEdit->setText(pSelector->GetValue());
 }
 
-void CResourcePicker::GetValue(void* valuePtr, const yasli::TypeID& type) const
+void CResourcePicker::GetValue(void* pValue, const yasli::TypeID& type) const
 {
 	if (type != yasli::TypeID::get<Serialization::IResourceSelector>())
+	{
 		return;
+	}
 
-	Serialization::IResourceSelector* pSelector = (Serialization::IResourceSelector*)valuePtr;
+	Serialization::IResourceSelector* pSelector = (Serialization::IResourceSelector*)pValue;
 	pSelector->SetValue(m_pLineEdit->text().toStdString().c_str());
 }
 
 void CResourcePicker::Serialize(Serialization::IArchive& ar)
 {
-	string str = m_pLineEdit->text().toStdString().c_str();
-	ar(str, "text", "Text");
-	QString newValue = str;
+	string lineEditText = m_pLineEdit->text().toStdString().c_str();
+	ar(lineEditText, "text", "Text");
+	QString newLineEditTextValue = lineEditText;
 
-	if (newValue != m_previousValue && ar.isInput())
+	if (newLineEditTextValue != m_previousValue && ar.isInput())
 	{
-		m_pLineEdit->setText(QString(str));
-		OnValueChanged();
+		m_pLineEdit->setText(newLineEditTextValue);
+		OnValueChanged(lineEditText);
 	}
 }
 

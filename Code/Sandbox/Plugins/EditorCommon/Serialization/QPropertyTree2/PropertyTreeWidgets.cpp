@@ -19,711 +19,805 @@
 
 namespace PropertyTree2
 {
-	CTextWidget::CTextWidget()
-		: QLineEdit()
-	{
-		connect(this, &CTextWidget::editingFinished, [this]() 
-		{ 
-			if(m_previousValue != text())
+CTextWidget::CTextWidget()
+	: QLineEdit()
+{
+	connect(this, &CTextWidget::editingFinished, [this]()
+		{
+			if (m_previousValue != text())
 			{
-				OnChanged();
+			  OnChanged();
 
-				if (hasFocus())
-				{
-					selectAll();
+			  if (hasFocus())
+			  {
+			    selectAll();
 				}
 			}
 		});
+}
+
+void CTextWidget::focusInEvent(QFocusEvent* pEvent)
+{
+	QLineEdit::focusInEvent(pEvent);
+	selectAll();
+}
+
+void CTextWidget::SetValue(void* pValue, const yasli::TypeID& type, const yasli::Archive& ar)
+{
+	if (type == yasli::TypeID::get<yasli::StringInterface>())
+	{
+		yasli::StringInterface* pStringInterface = (yasli::StringInterface*)pValue;
+		setText(pStringInterface->get());
+	}
+	else if (type == yasli::TypeID::get<yasli::WStringInterface>())
+	{
+		yasli::WStringInterface* pWStringInterface = (yasli::WStringInterface*)pValue;
+		setText(QString((const QChar*)pWStringInterface->get()));
+	}
+	else
+	{
+		return;
 	}
 
-	void CTextWidget::focusInEvent(QFocusEvent* e)
+	m_previousValue = text();
+}
+
+void CTextWidget::GetValue(void* pValue, const yasli::TypeID& type) const
+{
+	if (type == yasli::TypeID::get<yasli::StringInterface>())
 	{
-		QLineEdit::focusInEvent(e);
-		selectAll();
+		yasli::StringInterface* pStringInterface = (yasli::StringInterface*)pValue;
+		pStringInterface->set(text().toStdString().c_str());
 	}
-
-	void CTextWidget::SetValue(void* valuePtr, const yasli::TypeID& type, const yasli::Archive& ar)
+	else if (type == yasli::TypeID::get<yasli::WStringInterface>())
 	{
-		if (type == yasli::TypeID::get<yasli::StringInterface>())
-		{
-			yasli::StringInterface* si = (yasli::StringInterface*)valuePtr;
-			setText(si->get());
-		}
-		else if (type == yasli::TypeID::get<yasli::WStringInterface>())
-		{
-			yasli::WStringInterface* si = (yasli::WStringInterface*)valuePtr;
-			setText(QString((const QChar*)si->get()));
-		}
-		else
-		{
-			return;
-		}
+		yasli::WStringInterface* pWStringInterface = (yasli::WStringInterface*)pValue;
+		pWStringInterface->set((wchar_t*)text().data());
+	}
+}
 
+void CTextWidget::Serialize(Serialization::IArchive& ar)
+{
+	string widgetText = text().toStdString().c_str();
+	ar(widgetText, "value", "Value");
+	if (widgetText != m_previousValue && ar.isInput())
+	{
+		setText(QString(widgetText));
 		m_previousValue = text();
+		OnChanged();
 	}
+}
 
-	void CTextWidget::GetValue(void* valuePtr, const yasli::TypeID& type) const
-	{
-		if (type == yasli::TypeID::get<yasli::StringInterface>())
+void CTextWidget::SetMultiEditValue()
+{
+	setText("");
+	setPlaceholderText("Multiple Values");
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+CBoolWidget::CBoolWidget()
+{
+	connect(this, &CBoolWidget::clicked, [this]()
 		{
-			yasli::StringInterface* si = (yasli::StringInterface*)valuePtr;
-			si->set(text().toStdString().c_str());
-		}
-		else if (type == yasli::TypeID::get<yasli::WStringInterface>())
-		{
-			yasli::WStringInterface* si = (yasli::WStringInterface*)valuePtr;
-			si->set((wchar_t*)text().data());
-		}
-	}
-
-	void CTextWidget::Serialize(Serialization::IArchive& ar)
-	{
-		string str = text().toStdString().c_str();
-		ar(str, "value", "Value");
-		if (str != m_previousValue && ar.isInput())
-		{
-			setText(QString(str));
-			m_previousValue = text();
-			OnChanged();
-		}
-	}
-
-	void CTextWidget::SetMultiEditValue()
-	{
-		setText("");
-		setPlaceholderText("Multiple Values");
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-
-	CBoolWidget::CBoolWidget()
-	{
-		connect(this, &CBoolWidget::clicked, [this]() 
-		{ 
 			setTristate(false);
-			OnChanged(); 
+			OnChanged();
 		});
-	}
+}
 
-	void CBoolWidget::SetValue(void* valuePtr, const yasli::TypeID& type, const yasli::Archive& ar)
+void CBoolWidget::SetValue(void* pValue, const yasli::TypeID& type, const yasli::Archive& ar)
+{
+	if (type == yasli::TypeID::get<bool>())
 	{
-		if (type == yasli::TypeID::get<bool>())
+		setChecked(*(bool*)pValue ? Qt::Checked : Qt::Unchecked);
+	}
+}
+
+void CBoolWidget::GetValue(void* pValue, const yasli::TypeID& type) const
+{
+	if (type == yasli::TypeID::get<bool>())
+	{
+		*(bool*)pValue = checkState() == Qt::Checked;
+	}
+}
+
+void CBoolWidget::Serialize(Serialization::IArchive& ar)
+{
+	bool checked = checkState() == Qt::Checked;
+	const bool oldChecked = checked;
+	ar(checked, "checked", "Checked");
+	if (oldChecked != checked && ar.isInput())
+	{
+		setChecked(checked ? Qt::Checked : Qt::Unchecked);
+		OnChanged();
+	}
+}
+
+void CBoolWidget::SetMultiEditValue()
+{
+	setTristate(true);
+	setCheckState(Qt::PartiallyChecked);
+}
+
+REGISTER_PROPERTY_WIDGET(bool, CBoolWidget);
+
+//////////////////////////////////////////////////////////////////////////
+
+CButtonWidget::CButtonWidget()
+	: QPushButton()
+{
+	//This widget does not trigger serialization
+	connect(this, &CButtonWidget::clicked, this, &CButtonWidget::Call);
+}
+
+void CButtonWidget::SetValue(void* pValue, const yasli::TypeID& type, const yasli::Archive& ar)
+{
+	//Setting the label here as it may change every time this is called, while the row is only set once
+	setText(m_rowModel->GetLabel());
+}
+
+void CButtonWidget::GetValue(void* pValue, const yasli::TypeID& type) const
+{
+	//Do nothing
+}
+
+class CActionButtonWidget : public CButtonWidget
+{
+public:
+	using CButtonWidget::CButtonWidget;
+
+	void SetValue(void* pValue, const yasli::TypeID& type, const yasli::Archive& ar) final
+	{
+		CButtonWidget::SetValue(pValue, type, ar);
+		if (type == yasli::TypeID::get<Serialization::IActionButton>())
 		{
-			setChecked(*(bool*)valuePtr ? Qt::Checked : Qt::Unchecked);
+			Serialization::IActionButton* pActionButton = (Serialization::IActionButton*)pValue;
+			//TODO: optimize it so it doesn't have to do allocate and clone every time!
+			m_pActionButton = pActionButton->Clone();
 		}
 	}
 
-	void CBoolWidget::GetValue(void* valuePtr, const yasli::TypeID& type) const
+	void Call() final
 	{
-		if (type == yasli::TypeID::get<bool>())
+		m_pActionButton->Callback();
+	}
+
+private:
+	Serialization::IActionButtonPtr m_pActionButton;
+};
+
+class CYasliButtonWidget : public CButtonWidget
+{
+public:
+	CYasliButtonWidget()
+		: m_pressed(false)
+	{}
+
+	void SetValue(void* pValue, const yasli::TypeID& type, const yasli::Archive& ar) final
+	{
+		if (type == yasli::TypeID::get<yasli::Button>())
 		{
-			*(bool*)valuePtr = checkState() == Qt::Checked;
+			yasli::Button* pYasliButton = (yasli::Button*)pValue;
+			setText(pYasliButton->text);
+			m_pressed = pYasliButton->pressed;
 		}
 	}
 
-	void CBoolWidget::Serialize(Serialization::IArchive& ar)
+	void GetValue(void* pValue, const yasli::TypeID& type) const final
 	{
-		bool checked = checkState() == Qt::Checked;
-		const bool oldChecked = checked;
-		ar(checked, "checked", "Checked");
-		if (oldChecked != checked && ar.isInput())
+		if (type == yasli::TypeID::get<yasli::Button>())
 		{
-			setChecked(checked ? Qt::Checked : Qt::Unchecked);
-			OnChanged();
+			yasli::Button* pYasliButton = (yasli::Button*)pValue;
+			pYasliButton->pressed = m_pressed;
 		}
 	}
 
-	void CBoolWidget::SetMultiEditValue()
+	void Call() final
 	{
-		setTristate(true);
-		setCheckState(Qt::PartiallyChecked);
-	}
-	
-	REGISTER_PROPERTY_WIDGET(bool, CBoolWidget);
-
-	//////////////////////////////////////////////////////////////////////////
-
-	CButtonWidget::CButtonWidget()
-		: QPushButton()
-	{
-		//This widget does not trigger serialization
-		connect(this, &CButtonWidget::clicked, this, &CButtonWidget::Call);
-	}
-
-	void CButtonWidget::SetValue(void* valuePtr, const yasli::TypeID& type, const yasli::Archive& ar)
-	{
-		//Setting the label here as it may change every time this is called, while the row is only set once
-		setText(m_rowModel->GetLabel());
-	}
-
-	void CButtonWidget::GetValue(void* valuePtr, const yasli::TypeID& type) const
-	{
-		//Do nothing
-	}
-
-	class CActionButtonWidget : public CButtonWidget
-	{
-	public:
-		using CButtonWidget::CButtonWidget;
-
-		void SetValue(void* valuePtr, const yasli::TypeID& type, const yasli::Archive& ar) final
-		{
-			CButtonWidget::SetValue(valuePtr, type, ar);
-			if (type == yasli::TypeID::get<Serialization::IActionButton>())
-			{
-				Serialization::IActionButton* actionButton = (Serialization::IActionButton*)valuePtr;
-				//TODO: optimize it so it doesn't have to do allocate and clone every time!
-				m_actionButton = actionButton->Clone();
-			}
-		}
-
-		void Call() final
-		{
-			m_actionButton->Callback();
-		}
-
-	private:
-		Serialization::IActionButtonPtr m_actionButton;
-	};
-
-	class CYasliButtonWidget : public CButtonWidget
-	{
-	public:
-		CYasliButtonWidget()
-			: m_pressed(false)
-		{}
-
-		void SetValue(void* valuePtr, const yasli::TypeID& type, const yasli::Archive& ar) final
-		{
-			if (type == yasli::TypeID::get<yasli::Button>())
-			{
-				yasli::Button* button = (yasli::Button*)valuePtr;
-				setText(button->text);
-				m_pressed = button->pressed;
-			}
-		}
-
-		void GetValue(void* valuePtr, const yasli::TypeID& type) const final
-		{
-			if (type == yasli::TypeID::get<yasli::Button>())
-			{
-				yasli::Button* button = (yasli::Button*)valuePtr;
-				button->pressed = m_pressed;
-			}
-		}
-
-		void Call() final
-		{
-			m_pressed = true;
-			OnChanged();
-		}
-
-	private:
-		bool m_pressed;
-	};
-
-	//////////////////////////////////////////////////////////////////////////
-
-
-	CPtrTypeSelectWidget::CPtrTypeSelectWidget()
-		: m_factory(nullptr)
-	{
-		//TODO: Disallow mouse wheel movement here as it can be very dangerous
-		signalCurrentIndexChanged.Connect(this, &CPtrTypeSelectWidget::OnChanged);
-	}
-
-	void CPtrTypeSelectWidget::SetValue(void* valuePtr, const yasli::TypeID& type, const yasli::Archive& ar)
-	{
-		if (type == yasli::TypeID::get<yasli::PointerInterface>())
-		{
-			yasli::PointerInterface* ptr = (yasli::PointerInterface*)valuePtr;
-
-			//Rebuild the combo if Multiple Value is detected
-			bool ok = false;
-			const int data = GetData(0).toInt(&ok);
-			const bool bMultipleValues = ok && data == -2;
-
-			if (bMultipleValues || ptr->baseType() != m_baseTypeId)
-			{
-				//Setup the combo box if not set
-				m_baseTypeId = ptr->baseType();
-				m_factory = ptr->factory();
-				Clear();
-				SetupCombo();
-			}
-
-			//Select the currently valid entry
-			const auto desc = m_factory->descriptionByRegisteredName(ptr->registeredTypeName());
-			if (desc)
-				SetText(desc->label());
-			else //null pointer
-				SetCheckedByData(-1);
-		}
-	}
-
-	void CPtrTypeSelectWidget::GetValue(void* valuePtr, const yasli::TypeID& type) const
-	{
-		if (type == yasli::TypeID::get<yasli::PointerInterface>())
-		{
-			yasli::PointerInterface* ptr = (yasli::PointerInterface*)valuePtr;
-
-			bool ok = false;
-			int selectedFactoryIndex = GetCurrentData().toInt(&ok);
-			CRY_ASSERT(ok);
-
-			if (selectedFactoryIndex == -2) //Multiple values, invalid
-				return;
-
-			const auto desc = selectedFactoryIndex >= 0 ? m_factory->descriptionByIndex(selectedFactoryIndex) : nullptr;
-			if (desc != m_factory->descriptionByRegisteredName(ptr->registeredTypeName()))
-			{
-				//Create object of new type
-				if (desc)
-					ptr->create(desc->name()); //TODO: ensure that row is expanded next ?! perhaps any row that didn't have children and how has should be expanded ?
-				else
-					ptr->create(nullptr);
-			}
-		}
-	}
-
-	void CPtrTypeSelectWidget::Serialize(Serialization::IArchive& ar)
-	{
-		string text = GetText().toStdString().c_str();
-		ar(text, "type", "Pointer Type");
-		string typeName = m_baseTypeId.name();
-		ar(typeName, "basetype", "Base Type");
-
-		if(ar.isInput() && typeName == m_baseTypeId.name())
-			SetText(QString(text));//This calls OnChanged() if necessary
-	}
-
-	void CPtrTypeSelectWidget::SetMultiEditValue()
-	{
-		Clear();
-		AddItem("Multiple Values", -2);
-		SetupCombo();
-		SetChecked(0, true);
-	}
-
-	void CPtrTypeSelectWidget::SetupCombo()
-	{
-		const size_t count = m_factory->size();
-
-		const char* nullLabel = m_factory->nullLabel();
-
-		if (nullLabel && *nullLabel)
-			AddItem(nullLabel, -1);
-		else
-			AddItem("[ null ]", -1);
-
-		for (int i = 0; i < count; ++i)
-		{
-			const yasli::TypeDescription* desc = m_factory->descriptionByIndex(i);
-			AddItem(desc->label(), i);
-		}
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-
-	CArrayWidget::CArrayWidget()
-	{
-		m_addElementButton = new QToolButton();
-		m_addElementButton->setIcon(CryIcon("icons:General/Element_Add.ico"));
-		m_addElementButton->setToolTip(tr("Add Item"));
-		connect(m_addElementButton, &QToolButton::clicked, this, &CArrayWidget::OnAddItem);
-
-		QHBoxLayout* layout = new QHBoxLayout();
-		layout->addWidget(m_addElementButton, 0, Qt::AlignRight | Qt::AlignVCenter);
-		layout->setMargin(0);
-		setLayout(layout);
-
-		setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-		setCursor(Qt::ArrowCursor);
-	}
-
-
-	void CArrayWidget::SetValue(void* valuePtr, const yasli::TypeID& type, const yasli::Archive& ar)
-	{
-		CRY_ASSERT(type == yasli::TypeID::get<yasli::ContainerInterface>());
-		yasli::ContainerInterface* pContainer = (yasli::ContainerInterface*)valuePtr;
-
-		m_variableSize = !pContainer->isFixedSize();
-		m_ordered = pContainer->isOrdered();
-		m_addElementButton->setVisible(m_variableSize);
-		m_action = Action();
-	}
-
-	void CArrayWidget::GetValue(void* valuePtr, const yasli::TypeID& type) const
-	{
-		CRY_ASSERT(type == yasli::TypeID::get<yasli::ContainerInterface>());
-		yasli::ContainerInterface* pContainer = (yasli::ContainerInterface*)valuePtr;
-
-		ExecuteAction(pContainer);
-	}
-
-	bool CArrayWidget::CanMoveChildren() const
-	{
-		return m_ordered;
-	}
-
-	void CArrayWidget::MoveChild(int oldIndex, int newIndex)
-	{
-		m_action = { ActionType::MoveItem, oldIndex, newIndex };
+		m_pressed = true;
 		OnChanged();
 	}
 
-	void CArrayWidget::ExecuteAction(yasli::ContainerInterface* ci) const
-	{
-		switch (m_action.type)
-		{
-		case InsertItem:
-			if(m_variableSize)
-			{
-				ci->begin();
-				for (int i = 0; i < m_action.arg1; i++)
-					ci->next();
+private:
+	bool m_pressed;
+};
 
-				ci->insert();
+//////////////////////////////////////////////////////////////////////////
+
+CPtrTypeSelectWidget::CPtrTypeSelectWidget()
+	: m_pFactory(nullptr)
+{
+	//TODO: Disallow mouse wheel movement here as it can be very dangerous
+	signalCurrentIndexChanged.Connect(this, &CPtrTypeSelectWidget::OnChanged);
+}
+
+void CPtrTypeSelectWidget::SetValue(void* pValue, const yasli::TypeID& type, const yasli::Archive& ar)
+{
+	if (type == yasli::TypeID::get<yasli::PointerInterface>())
+	{
+		yasli::PointerInterface* pPointerInterface = (yasli::PointerInterface*)pValue;
+
+		//Rebuild the combo if Multiple Value is detected
+		bool ok = false;
+		const int data = GetData(0).toInt(&ok);
+		const bool multipleValues = ok && data == -2;
+
+		if (multipleValues || pPointerInterface->baseType() != m_baseTypeId)
+		{
+			//Setup the combo box if not set
+			m_baseTypeId = pPointerInterface->baseType();
+			m_pFactory = pPointerInterface->factory();
+			Clear();
+			SetupCombo();
+		}
+
+		//Select the currently valid entry
+		const yasli::TypeDescription* pTypeDescription = m_pFactory->descriptionByRegisteredName(pPointerInterface->registeredTypeName());
+		if (pTypeDescription)
+		{
+			SetText(pTypeDescription->label());
+		}
+		else   //null pointer
+		{
+			SetCheckedByData(-1);
+		}
+	}
+}
+
+void CPtrTypeSelectWidget::GetValue(void* pValue, const yasli::TypeID& type) const
+{
+	if (type == yasli::TypeID::get<yasli::PointerInterface>())
+	{
+		yasli::PointerInterface* pPointerInterface = (yasli::PointerInterface*)pValue;
+
+		bool ok = false;
+		int selectedFactoryIndex = GetCurrentData().toInt(&ok);
+		CRY_ASSERT(ok);
+
+		if (selectedFactoryIndex == -2)   //Multiple values, invalid
+			return;
+
+		const yasli::TypeDescription* pTypeDescription = selectedFactoryIndex >= 0 ? m_pFactory->descriptionByIndex(selectedFactoryIndex) : nullptr;
+		if (pTypeDescription != m_pFactory->descriptionByRegisteredName(pPointerInterface->registeredTypeName()))
+		{
+			//Create object of new type
+			if (pTypeDescription)
+			{
+				pPointerInterface->create(pTypeDescription->name());   //TODO: ensure that row is expanded next ?! perhaps any row that didn't have children and how has should be expanded ?
 			}
-			break;
-		case MoveItem:
-			ci->begin();
+			else
+			{
+				pPointerInterface->create(nullptr);
+			}
+		}
+	}
+}
+
+void CPtrTypeSelectWidget::Serialize(Serialization::IArchive& ar)
+{
+	string text = GetText().toStdString().c_str();
+	ar(text, "type", "Pointer Type");
+	string typeName = m_baseTypeId.name();
+	ar(typeName, "basetype", "Base Type");
+
+	if (ar.isInput() && typeName == m_baseTypeId.name())
+	{
+		SetText(QString(text));  //This calls OnChanged() if necessary
+	}
+}
+
+void CPtrTypeSelectWidget::SetMultiEditValue()
+{
+	Clear();
+	AddItem("Multiple Values", -2);
+	SetupCombo();
+	SetChecked(0, true);
+}
+
+void CPtrTypeSelectWidget::SetupCombo()
+{
+	const size_t count = m_pFactory->size();
+
+	const char* nullLabel = m_pFactory->nullLabel();
+
+	if (nullLabel && *nullLabel)
+	{
+		AddItem(nullLabel, -1);
+	}
+	else
+	{
+		AddItem("[ null ]", -1);
+	}
+
+	for (int i = 0; i < count; ++i)
+	{
+		const yasli::TypeDescription* pTypeDescription = m_pFactory->descriptionByIndex(i);
+		AddItem(pTypeDescription->label(), i);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+CArrayWidget::CArrayWidget()
+{
+	m_pAddElementButton = new QToolButton();
+	m_pAddElementButton->setIcon(CryIcon("icons:General/Element_Add.ico"));
+	m_pAddElementButton->setToolTip(tr("Add Item"));
+	connect(m_pAddElementButton, &QToolButton::clicked, this, &CArrayWidget::OnAddItem);
+
+	QHBoxLayout* pHBoxLayout = new QHBoxLayout();
+	pHBoxLayout->addWidget(m_pAddElementButton, 0, Qt::AlignRight | Qt::AlignVCenter);
+	pHBoxLayout->setMargin(0);
+	setLayout(pHBoxLayout);
+
+	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+	setCursor(Qt::ArrowCursor);
+}
+
+void CArrayWidget::SetValue(void* pValue, const yasli::TypeID& type, const yasli::Archive& ar)
+{
+	CRY_ASSERT(type == yasli::TypeID::get<yasli::ContainerInterface>());
+	yasli::ContainerInterface* pContainer = (yasli::ContainerInterface*)pValue;
+
+	m_isFixedSize = pContainer->isFixedSize();
+	m_ordered = pContainer->isOrdered();
+	m_pAddElementButton->setVisible(!m_isFixedSize);
+	m_action = Action();
+}
+
+void CArrayWidget::GetValue(void* pValue, const yasli::TypeID& type) const
+{
+	CRY_ASSERT(type == yasli::TypeID::get<yasli::ContainerInterface>());
+	yasli::ContainerInterface* pContainer = (yasli::ContainerInterface*)pValue;
+
+	ExecuteAction(pContainer);
+}
+
+bool CArrayWidget::CanMoveChildren() const
+{
+	return m_ordered;
+}
+
+void CArrayWidget::MoveChild(int oldIndex, int newIndex)
+{
+	m_action = { ActionType::MoveItem, oldIndex, newIndex };
+	OnChanged();
+}
+
+void CArrayWidget::ExecuteAction(yasli::ContainerInterface* pContainerInterface) const
+{
+	switch (m_action.type)
+	{
+	case InsertItem:
+		if (!m_isFixedSize)
+		{
+			pContainerInterface->begin();
 			for (int i = 0; i < m_action.arg1; i++)
-				ci->next();
-
-			ci->move(m_action.arg2);
-			break;
-		case DeleteItem:
-			if (m_variableSize)
 			{
-				ci->begin();
-				for (int i = 0; i < m_action.arg1; i++)
-					ci->next();
-
-				ci->remove();
+				pContainerInterface->next();
 			}
-			break;
-		case Resize:
-			if(m_variableSize)
-				ci->resize(m_action.arg1);
-			break;
-		default:
-			break;
+
+			pContainerInterface->insert();
 		}
-	}
-
-	bool CArrayWidget::IsArrayMutable() const
-	{
-		return m_variableSize;
-	}
-
-	void CArrayWidget::PopulateContextMenu(QMenu* menu, const PropertyTree2::CRowModel* row)
-	{
-		if (m_variableSize)
+		break;
+	case MoveItem:
+		pContainerInterface->begin();
+		for (int i = 0; i < m_action.arg1; i++)
 		{
-			auto action = menu->addAction(tr("Add Item"));
-			connect(action, &QAction::triggered, this, &CArrayWidget::OnAddItem);
-
-			action = menu->addAction(tr("Clear All"));
-			connect(action, &QAction::triggered, this, &CArrayWidget::OnClearAll);
+			pContainerInterface->next();
 		}
-	}
 
-	void CArrayWidget::PopulateChildContextMenu(QMenu* menu, const PropertyTree2::CRowModel* row)
-	{
-		CRY_ASSERT(row->GetParent() == m_rowModel);
-
-		//We know that arrays don't have hidden rows so index is usable directly
-		const auto index = row->GetIndex();
-
-		if (m_variableSize)
+		pContainerInterface->move(m_action.arg2);
+		break;
+	case DeleteItem:
+		if (!m_isFixedSize)
 		{
-			auto action = menu->addAction(tr("Delete"));
-			connect(action, &QAction::triggered, [this, index]()
+			pContainerInterface->begin();
+			for (int i = 0; i < m_action.arg1; i++)
+			{
+				pContainerInterface->next();
+			}
+
+			pContainerInterface->remove();
+		}
+		break;
+	case Resize:
+		if (!m_isFixedSize)
+		{
+			pContainerInterface->resize(m_action.arg1);
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+bool CArrayWidget::IsArrayMutable() const
+{
+	return !m_isFixedSize;
+}
+
+void CArrayWidget::PopulateContextMenu(QMenu* pMenu, const PropertyTree2::CRowModel* pRow)
+{
+	if (!m_isFixedSize)
+	{
+		QAction* pAction = pMenu->addAction(tr("Add Item"));
+		connect(pAction, &QAction::triggered, this, &CArrayWidget::OnAddItem);
+
+		pAction = pMenu->addAction(tr("Clear All"));
+		connect(pAction, &QAction::triggered, this, &CArrayWidget::OnClearAll);
+	}
+}
+
+void CArrayWidget::PopulateChildContextMenu(QMenu* pMenu, const PropertyTree2::CRowModel* pRow)
+{
+	CRY_ASSERT(pRow->GetParent() == m_rowModel);
+
+	//We know that arrays don't have hidden rows so index is usable directly
+	const int index = pRow->GetIndex();
+
+	if (!m_isFixedSize)
+	{
+		QAction* pAction = pMenu->addAction(tr("Delete"));
+		connect(pAction, &QAction::triggered, [this, index]()
 			{
 				m_action = { ActionType::DeleteItem, index, -1 };
 				OnChanged();
 			});
-		}
+	}
 
-		if(index > 0)
-		{
-			auto action = menu->addAction(tr("Move Up"));
-			connect(action, &QAction::triggered, [this, row, index]()
+	if (index > 0)
+	{
+		QAction* pAction = pMenu->addAction(tr("Move Up"));
+		connect(pAction, &QAction::triggered, [this, pRow, index]()
 			{
-				m_action = { ActionType::MoveItem, index, index -1 };
+				m_action = { ActionType::MoveItem, index, index - 1 };
 				OnChanged();
 			});
-		}
+	}
 
-		if(index < row->GetParent()->GetChildren().size() - 1)
-		{
-			auto action = menu->addAction(tr("Move Down"));
-			connect(action, &QAction::triggered, [this, row, index]()
+	if (index < pRow->GetParent()->GetChildren().size() - 1)
+	{
+		QAction* pAction = pMenu->addAction(tr("Move Down"));
+		connect(pAction, &QAction::triggered, [this, pRow, index]()
 			{
 				m_action = { ActionType::MoveItem, index, index + 1 };
 				OnChanged();
 			});
-		}
+	}
 
-		if(m_variableSize)
-		{
-			auto action = menu->addAction(tr("Add Above"));
-			connect(action, &QAction::triggered, [this, row, index]()
+	if (!m_isFixedSize)
+	{
+		QAction* pAction = pMenu->addAction(tr("Add Above"));
+		connect(pAction, &QAction::triggered, [this, pRow, index]()
 			{
 				m_action = { ActionType::InsertItem, index, -1 };
 				OnChanged();
 			});
 
-			action = menu->addAction(tr("Add Below"));
-			connect(action, &QAction::triggered, [this, row, index]()
+		pAction = pMenu->addAction(tr("Add Below"));
+		connect(pAction, &QAction::triggered, [this, pRow, index]()
 			{
-				m_action = { ActionType::InsertItem, index+1, -1 };
+				m_action = { ActionType::InsertItem, index + 1, -1 };
 				OnChanged();
 			});
 
-			menu->addSeparator();
+		pMenu->addSeparator();
 
-			action = menu->addAction(tr("Clear All"));
-			connect(action, &QAction::triggered, this, &CArrayWidget::OnClearAll);
+		pAction = pMenu->addAction(tr("Clear All"));
+		connect(pAction, &QAction::triggered, this, &CArrayWidget::OnClearAll);
+	}
+}
+
+void CArrayWidget::SetMultiEditValue()
+{
+	QString label = m_rowModel->GetLabel();
+	const int index = label.lastIndexOf('(');
+	label = label.left(index);
+	label.append("(Multiple Sizes)");
+	m_rowModel->SetLabel(label);
+}
+
+void CArrayWidget::OnAddItem()
+{
+	m_action = { ActionType::InsertItem, (int)m_rowModel->GetChildren().size(), -1 };
+	OnChanged();
+}
+
+void CArrayWidget::OnClearAll()
+{
+	m_action = { ActionType::Resize, 0, -1 };
+	OnChanged();
+}
+
+void CArrayWidget::Action::Serialize(Serialization::IArchive& ar)
+{
+	ar((std::underlying_type<ActionType>::type&)type, "type", "type");
+	ar(arg1, "arg1", "arg1");
+	ar(arg2, "arg2", "arg2");
+}
+
+void CArrayWidget::Serialize(Serialization::IArchive& ar)
+{
+	//If we have an action in progress then serialization should transfer the action (used in multi-edit),
+	//otherwise we transfer the size as it is the only thing really managed by this widget (for copy/paste situations)
+
+	if (ar.isInput())
+	{
+		const bool actionFound = ar(m_action, "action", "Action");
+
+		//Only take into account size if action was not set
+		if (!actionFound && m_action.type == ActionType::None)
+		{
+			int size = 0;
+			bool sizeFound = ar(size, "size", "Size");
+			if (sizeFound && !m_isFixedSize && size != m_rowModel->GetChildren().size())
+			{
+				m_action = { ActionType::Resize, size, -1 };
+				OnChanged();
+			}
 		}
 	}
-
-	void CArrayWidget::SetMultiEditValue()
+	else
 	{
-		QString label = m_rowModel->GetLabel();
-		const auto index = label.lastIndexOf('(');
-		label = label.left(index);
-		label.append("(Multiple Sizes)");
-		m_rowModel->SetLabel(label);
-	}
-
-	void CArrayWidget::OnAddItem()
-	{
-		m_action = { ActionType::InsertItem, (int)m_rowModel->GetChildren().size(), -1 };
-		OnChanged();
-	}
-
-	void CArrayWidget::OnClearAll()
-	{
-		m_action = { ActionType::Resize, 0, -1 };
-		OnChanged();
-	}
-
-	void CArrayWidget::Action::Serialize(Serialization::IArchive& ar)
-	{
-		ar((std::underlying_type<ActionType>::type&)type, "type", "type");
-		ar(arg1, "arg1", "arg1");
-		ar(arg2, "arg2", "arg2");
-	}
-
-	void CArrayWidget::Serialize(Serialization::IArchive& ar)
-	{
-		//If we have an action in progress then serialization should transfer the action (used in multi-edit),
-		//otherwise we transfer the size as it is the only thing really managed by this widget (for copy/paste situations)
-
-		if (ar.isInput())
+		if (m_action.type != ActionType::None)
 		{
-			const bool actionFound = ar(m_action, "action", "Action");
-			
-			//Only take into account size if action was not set
-			if (!actionFound && m_action.type == ActionType::None)
-			{
-				int size = 0;
-				bool sizeFound = ar(size, "size", "Size");
-				if (sizeFound && m_variableSize && size != m_rowModel->GetChildren().size())
-				{
-					m_action = { ActionType::Resize, size, -1 };
-					OnChanged();
-				}
-			}
+			ar(m_action, "action", "Action");
 		}
 		else
 		{
-			if (m_action.type != ActionType::None)
-			{
-				ar(m_action, "action", "Action");
-			}
-			else
-			{
-				int size = m_rowModel->GetChildren().size();
-				ar(size, "size", "Size");
-			}
+			int size = m_rowModel->GetChildren().size();
+			ar(size, "size", "Size");
 		}
 	}
+}
 
-	//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
-	CStringListWidget::CStringListWidget()
+CStringListWidget::CStringListWidget()
+{
+}
+
+void CStringListWidget::SetValue(void* pValue, const yasli::TypeID& type, const yasli::Archive& ar)
+{
+	if (type == yasli::TypeID::get<yasli::StringListValue>())
 	{
-		signalCurrentIndexChanged.Connect(this, &CStringListWidget::OnChanged);
+		const yasli::StringListValue& stringListValue = *(yasli::StringListValue*)pValue;
+		SetupCombo(stringListValue);
 	}
-
-	void CStringListWidget::SetValue(void* valuePtr, const yasli::TypeID& type, const yasli::Archive& ar)
+	else if (type == yasli::TypeID::get<yasli::StringListStaticValue>())
 	{
-		if (type == yasli::TypeID::get<yasli::StringListValue>())
+		const yasli::StringListStaticValue& stringListStaticValue = *(yasli::StringListStaticValue*)pValue;
+		SetupCombo(stringListStaticValue);
+	}
+}
+
+void CStringListWidget::GetValue(void* pValue, const yasli::TypeID& type) const
+{
+	//This will be called on serialization of data into archive which happens just after item selection
+	//this serialization is called on EVERY item in the property tree, so we must make sure to load the proper index even if we are lazy loading
+	//aka. the widget popup menu is not shown yet
+	if (type == yasli::TypeID::get<yasli::StringListValue>())
+	{
+		yasli::StringListValue& stringListValue = *(yasli::StringListValue*)pValue;
+		//If lazy loading is complete (popup has been show at least once) return the checked item, if not return m_selected
+		//this is because the checked item will be zero as we load only one entry of the menu (m_selected has the correct index)
+		if (m_loadComplete)
 		{
-			const yasli::StringListValue& value = *(yasli::StringListValue*)valuePtr;
-			SetupCombo(value);
+			stringListValue = GetCheckedItem();
 		}
-		else if (type == yasli::TypeID::get<yasli::StringListStaticValue>())
-		{
-			const yasli::StringListStaticValue& value = *(yasli::StringListStaticValue*)valuePtr;
-			SetupCombo(value);
-		}
-	}
-
-	void CStringListWidget::GetValue(void* valuePtr, const yasli::TypeID& type) const
-	{
-		if (type == yasli::TypeID::get<yasli::StringListValue>())
-		{
-			yasli::StringListValue& value = *(yasli::StringListValue*)valuePtr;
-			value = GetCheckedItem();
-		}
-		else if (type == yasli::TypeID::get<yasli::StringListStaticValue>())
-		{
-			yasli::StringListStaticValue& value = *(yasli::StringListStaticValue*)valuePtr;
-			value = GetCheckedItem();
-		}
-	}
-
-	void CStringListWidget::Serialize(Serialization::IArchive& ar)
-	{
-		string str = GetText().toStdString().c_str();
-		ar(str, "value", "Value");
-		if (ar.isInput())
-			SetText(QString(str));
-	}
-
-	void CStringListWidget::SetMultiEditValue()
-	{
-		AddItem("Multiple Values");
-		SetText("Multiple Values");
-	}
-
-	template<typename List>
-	void PropertyTree2::CStringListWidget::SetupCombo(const List& list)
-	{
-		bool shouldInit = false;
-
-		auto stringList = list.stringList();
-		if (stringList.size() != GetItemCount())
-			shouldInit = true;
 		else
 		{
-			for (int i = 0; i < stringList.size(); i++)
-			{
-				if (GetItem(i) != stringList[i])
-				{
-					shouldInit = true;
-					break;
-				}
-			}
+			stringListValue = m_selected;
 		}
-
-		if (shouldInit)
+	}
+	else if (type == yasli::TypeID::get<yasli::StringListStaticValue>())
+	{
+		//If lazy loading is complete (popup has been show at least once) return the checked item, if not return m_selected
+		//this is because the checked item will be zero as we load only one entry of the menu (m_selected has the correct index)
+		yasli::StringListStaticValue& staticValue = *(yasli::StringListStaticValue*)pValue;
+		if (m_loadComplete)
 		{
-			Clear();
-			for (int i = 0; i < stringList.size(); i++)
+			staticValue = GetCheckedItem();
+		}
+		else
+		{
+			staticValue = m_selected;
+		}
+	}
+}
+
+void CStringListWidget::Serialize(Serialization::IArchive& ar)
+{
+	string listValue = GetText().toStdString().c_str();
+	ar(listValue, "value", "Value");
+	if (ar.isInput())
+	{
+		SetText(QString(listValue));
+	}
+}
+
+void CStringListWidget::SetMultiEditValue()
+{
+	AddItem("Multiple Values");
+	SetText("Multiple Values");
+}
+
+void CStringListWidget::ShowPopup()
+{
+	signalCurrentIndexChanged.DisconnectObject(this);
+
+	bool shouldInit = false;
+
+	//is it ready or do we have to reload it
+	if (m_values.size() != GetItemCount())
+	{
+		shouldInit = true;
+	}
+	else
+	{
+		for (int i = 0; i < m_values.size(); i++)
+		{
+			if (m_values[i] != GetItem(i))
 			{
-				AddItem(QString(stringList[i]));
+				shouldInit = true;
+				break;
 			}
 		}
+	}
 
+	if (shouldInit)
+	{
+		Clear();
+		//Actually add the items to the popup
+		AddItems(m_values);
+		m_loadComplete = true;
+	}
+
+	SetChecked(m_selected);
+	signalCurrentIndexChanged.Connect(this, &CStringListWidget::OnChanged);
+
+	QMenuComboBox::ShowPopup();
+}
+
+template<typename List>
+void PropertyTree2::CStringListWidget::SetupCombo(const List& list)
+{
+	signalCurrentIndexChanged.DisconnectObject(this);
+
+	bool shouldInit = false;
+
+	auto stringList = list.stringList();
+	if (stringList.size() != m_values.size())
+	{
+		shouldInit = true;
+	}
+	else
+	{
+		for (int i = 0; i < m_values.size(); i++)
+		{
+			if (m_values[i] != stringList[i])
+			{
+				shouldInit = true;
+				break;
+			}
+		}
+	}
+
+	//Cache the list of strings in m_values but don't register them with the menu combo box (AddItem)
+	//this is done first time ShowPopup is called and it's skipped here because it's a very expensive operation
+	if (shouldInit)
+	{
+		Clear();
+		m_values.clear();
+		for (int i = 0; i < stringList.size(); i++)
+		{
+			m_values.push_back(QString(stringList[i]));
+		}
+		//only add and select the value we are actually going to see in the preview
+		AddItem(m_values[list.index()]);
+		m_loadComplete = false;
+	}
+	else if (m_selected != list.index()) //The list is the same size with the same items but the selected value has changed (for example this happens if we are undoing)
+	{
 		SetChecked(list.index());
 	}
 
-	CColorwidget::CColorwidget()
-		: m_multiEdit(false)
-	{
-		signalColorChanged.Connect(this, &CColorwidget::OnChanged);
-		signalColorContinuousChanged.Connect(this, &CColorwidget::OnContinuousChanged);
-	}
+	m_selected = list.index();
 
-	void CColorwidget::SetValue(void* valuePtr, const yasli::TypeID& type, const yasli::Archive& ar)
-	{
-		m_multiEdit = false;
-		if (type == yasli::TypeID::get<SerializableColor_tpl<unsigned char>>())
-		{
-			const SerializableColor_tpl<unsigned char>& value = *(SerializableColor_tpl<unsigned char>*)valuePtr;
-			SetColor(value);
-			SetHasAlpha(true);
-		}
-		else if (type == yasli::TypeID::get<SerializableColor_tpl<float>>())
-		{
-			const SerializableColor_tpl<float>& value = *(SerializableColor_tpl<float>*)valuePtr;
-			SetColor(value);
-			SetHasAlpha(true);
-		}
-		else if (type == yasli::TypeID::get<Serialization::Vec3AsColor>())
-		{
-			const Serialization::Vec3AsColor& value = *(Serialization::Vec3AsColor*)valuePtr;
-			SetColor(QColor(value.v.x, value.v.y, value.v.z));
-			SetHasAlpha(false);
-		}
-		else if (type == yasli::TypeID::get<SerializableColor_tpl<property_tree::Color>>())
-		{
-			const property_tree::Color& value = *(property_tree::Color*)valuePtr;
-			SetColor(QColor(value.r, value.g, value.b, value.a));
-		}
-	}
+	signalCurrentIndexChanged.Connect(this, &CStringListWidget::OnChanged);
+}
 
-	void CColorwidget::GetValue(void* valuePtr, const yasli::TypeID& type) const
-	{
-		if (type == yasli::TypeID::get<SerializableColor_tpl<unsigned char>>())
-		{
-			ColorB& value = *(SerializableColor_tpl<unsigned char>*)valuePtr;
-			value = GetColorB();
-		}
-		else if (type == yasli::TypeID::get<SerializableColor_tpl<float>>())
-		{
-			ColorF& value = *(SerializableColor_tpl<float>*)valuePtr;
-			value = GetColorF();
-		}
-		else if (type == yasli::TypeID::get<Serialization::Vec3AsColor>())
-		{
-			Serialization::Vec3AsColor& value = *(Serialization::Vec3AsColor*)valuePtr;
-			const auto color = GetQColor();
-			value.v.x = color.red();
-			value.v.y = color.green();
-			value.v.z = color.blue();
-		}
-		else if (type == yasli::TypeID::get<SerializableColor_tpl<property_tree::Color>>())
-		{
-			property_tree::Color& value = *(property_tree::Color*)valuePtr;
-			const auto color = GetQColor();
-			value.r = color.red();
-			value.g = color.green();
-			value.b = color.blue();
-			value.a = color.alpha();
-		}
-	}
+CColorwidget::CColorwidget()
+	: m_multiEdit(false)
+{
+	signalColorChanged.Connect(this, &CColorwidget::OnChanged);
+	signalColorContinuousChanged.Connect(this, &CColorwidget::OnContinuousChanged);
+}
 
-	void CColorwidget::Serialize(Serialization::IArchive& ar)
+void CColorwidget::SetValue(void* pValue, const yasli::TypeID& type, const yasli::Archive& ar)
+{
+	m_multiEdit = false;
+	if (type == yasli::TypeID::get<SerializableColor_tpl<unsigned char>>())
 	{
-		ColorB color = GetColorB();
-		ar(color, "color", "Color");
-		SetColor(color);
+		const SerializableColor_tpl<unsigned char>& value = *(SerializableColor_tpl<unsigned char>*)pValue;
+		SetColor(value);
+		SetHasAlpha(true);
 	}
-
-	void CColorwidget::SetMultiEditValue()
+	else if (type == yasli::TypeID::get<SerializableColor_tpl<float>>())
 	{
-		m_multiEdit = true;
-		setText("Multiple Values");
+		const SerializableColor_tpl<float>& value = *(SerializableColor_tpl<float>*)pValue;
+		SetColor(value);
+		SetHasAlpha(true);
 	}
-
-	void CColorwidget::paintEvent(QPaintEvent* paintEvent)
+	else if (type == yasli::TypeID::get<Serialization::Vec3AsColor>())
 	{
-		if (!m_multiEdit)
-		{
-			CColorButton::paintEvent(paintEvent);
-		}
-		else
-		{
-			QPushButton::paintEvent(paintEvent);
-		}
+		const Serialization::Vec3AsColor& value = *(Serialization::Vec3AsColor*)pValue;
+		SetColor(QColor(value.v.x, value.v.y, value.v.z));
+		SetHasAlpha(false);
 	}
+	else if (type == yasli::TypeID::get<SerializableColor_tpl<property_tree::Color>>())
+	{
+		const property_tree::Color& value = *(property_tree::Color*)pValue;
+		SetColor(QColor(value.r, value.g, value.b, value.a));
+	}
+}
 
+void CColorwidget::GetValue(void* pValue, const yasli::TypeID& type) const
+{
+	if (type == yasli::TypeID::get<SerializableColor_tpl<unsigned char>>())
+	{
+		ColorB& value = *(SerializableColor_tpl<unsigned char>*)pValue;
+		value = GetColorB();
+	}
+	else if (type == yasli::TypeID::get<SerializableColor_tpl<float>>())
+	{
+		ColorF& value = *(SerializableColor_tpl<float>*)pValue;
+		value = GetColorF();
+	}
+	else if (type == yasli::TypeID::get<Serialization::Vec3AsColor>())
+	{
+		Serialization::Vec3AsColor& value = *(Serialization::Vec3AsColor*)pValue;
+		const QColor color = GetQColor();
+		value.v.x = color.red();
+		value.v.y = color.green();
+		value.v.z = color.blue();
+	}
+	else if (type == yasli::TypeID::get<SerializableColor_tpl<property_tree::Color>>())
+	{
+		property_tree::Color& value = *(property_tree::Color*)pValue;
+		const QColor color = GetQColor();
+		value.r = color.red();
+		value.g = color.green();
+		value.b = color.blue();
+		value.a = color.alpha();
+	}
+}
+
+void CColorwidget::Serialize(Serialization::IArchive& ar)
+{
+	ColorB color = GetColorB();
+	ar(color, "color", "Color");
+	SetColor(color);
+}
+
+void CColorwidget::SetMultiEditValue()
+{
+	m_multiEdit = true;
+	setText("Multiple Values");
+}
+
+void CColorwidget::paintEvent(QPaintEvent* paintEvent)
+{
+	if (!m_multiEdit)
+	{
+		CColorButton::paintEvent(paintEvent);
+	}
+	else
+	{
+		QPushButton::paintEvent(paintEvent);
+	}
+}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -732,53 +826,53 @@ namespace PropertyTree2
 
 namespace yasli
 {
-	REGISTER_PROPERTY_WIDGET(StringInterface,		PropertyTree2::CTextWidget);
-	REGISTER_PROPERTY_WIDGET(WStringInterface,		PropertyTree2::CTextWidget);
-	REGISTER_PROPERTY_WIDGET(PointerInterface,		PropertyTree2::CPtrTypeSelectWidget);
-	REGISTER_PROPERTY_WIDGET(Button,				PropertyTree2::CYasliButtonWidget);
-	REGISTER_PROPERTY_WIDGET(ContainerInterface,	PropertyTree2::CArrayWidget);
-	REGISTER_PROPERTY_WIDGET(StringListStaticValue, PropertyTree2::CStringListWidget)
-	REGISTER_PROPERTY_WIDGET(StringListValue,		PropertyTree2::CStringListWidget)
+REGISTER_PROPERTY_WIDGET(StringInterface, PropertyTree2::CTextWidget);
+REGISTER_PROPERTY_WIDGET(WStringInterface, PropertyTree2::CTextWidget);
+REGISTER_PROPERTY_WIDGET(PointerInterface, PropertyTree2::CPtrTypeSelectWidget);
+REGISTER_PROPERTY_WIDGET(Button, PropertyTree2::CYasliButtonWidget);
+REGISTER_PROPERTY_WIDGET(ContainerInterface, PropertyTree2::CArrayWidget);
+REGISTER_PROPERTY_WIDGET(StringListStaticValue, PropertyTree2::CStringListWidget)
+REGISTER_PROPERTY_WIDGET(StringListValue, PropertyTree2::CStringListWidget)
 
-	REGISTER_PROPERTY_WIDGET(float,		PropertyTree2::CNumberWidget<float>);
-	REGISTER_PROPERTY_WIDGET(double,	PropertyTree2::CNumberWidget<double>);
-	REGISTER_PROPERTY_WIDGET(char,		PropertyTree2::CNumberWidget<char>);
+REGISTER_PROPERTY_WIDGET(float, PropertyTree2::CNumberWidget<float> );
+REGISTER_PROPERTY_WIDGET(double, PropertyTree2::CNumberWidget<double> );
+REGISTER_PROPERTY_WIDGET(char, PropertyTree2::CNumberWidget<char> );
 
-	REGISTER_PROPERTY_WIDGET(i8,		PropertyTree2::CNumberWidget<i8>);
-	REGISTER_PROPERTY_WIDGET(i16,		PropertyTree2::CNumberWidget<i16>);
-	REGISTER_PROPERTY_WIDGET(i32,		PropertyTree2::CNumberWidget<i32>);
-	REGISTER_PROPERTY_WIDGET(i64,		PropertyTree2::CNumberWidget<i64>);
+REGISTER_PROPERTY_WIDGET(i8, PropertyTree2::CNumberWidget<i8> );
+REGISTER_PROPERTY_WIDGET(i16, PropertyTree2::CNumberWidget<i16> );
+REGISTER_PROPERTY_WIDGET(i32, PropertyTree2::CNumberWidget<i32> );
+REGISTER_PROPERTY_WIDGET(i64, PropertyTree2::CNumberWidget<i64> );
 
-	REGISTER_PROPERTY_WIDGET(u8,		PropertyTree2::CNumberWidget<u8>);
-	REGISTER_PROPERTY_WIDGET(u16,		PropertyTree2::CNumberWidget<u16>);
-	REGISTER_PROPERTY_WIDGET(u32,		PropertyTree2::CNumberWidget<u32>);
-	REGISTER_PROPERTY_WIDGET(u64,		PropertyTree2::CNumberWidget<u64>);
+REGISTER_PROPERTY_WIDGET(u8, PropertyTree2::CNumberWidget<u8> );
+REGISTER_PROPERTY_WIDGET(u16, PropertyTree2::CNumberWidget<u16> );
+REGISTER_PROPERTY_WIDGET(u32, PropertyTree2::CNumberWidget<u32> );
+REGISTER_PROPERTY_WIDGET(u64, PropertyTree2::CNumberWidget<u64> );
 
-	REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<float>,	_float,		PropertyTree2::CNumberWidget<float>);
-	REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<double>,	_double,	PropertyTree2::CNumberWidget<double>);
-	REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<char>,		_char,		PropertyTree2::CNumberWidget<char>);
+REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<float>, _float, PropertyTree2::CNumberWidget<float> );
+REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<double>, _double, PropertyTree2::CNumberWidget<double> );
+REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<char>, _char, PropertyTree2::CNumberWidget<char> );
 
-	REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<i8>,		_i8,		PropertyTree2::CNumberWidget<i8>);
-	REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<i16>,		_i16,		PropertyTree2::CNumberWidget<i16>);
-	REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<i32>,		_i32,		PropertyTree2::CNumberWidget<i32>);
-	REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<i64>,		_i64,		PropertyTree2::CNumberWidget<i64>);
+REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<i8>, _i8, PropertyTree2::CNumberWidget<i8> );
+REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<i16>, _i16, PropertyTree2::CNumberWidget<i16> );
+REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<i32>, _i32, PropertyTree2::CNumberWidget<i32> );
+REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<i64>, _i64, PropertyTree2::CNumberWidget<i64> );
 
-	REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<u8>,		_u8,		PropertyTree2::CNumberWidget<u8>);
-	REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<u16>,		_u16,		PropertyTree2::CNumberWidget<u16>);
-	REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<u32>,		_u32,		PropertyTree2::CNumberWidget<u32>);
-	REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<u64>,		_u64,		PropertyTree2::CNumberWidget<u64>);
+REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<u8>, _u8, PropertyTree2::CNumberWidget<u8> );
+REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<u16>, _u16, PropertyTree2::CNumberWidget<u16> );
+REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<u32>, _u32, PropertyTree2::CNumberWidget<u32> );
+REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<u64>, _u64, PropertyTree2::CNumberWidget<u64> );
 }
 
 namespace Serialization
 {
-	REGISTER_PROPERTY_WIDGET(IActionButton, PropertyTree2::CActionButtonWidget);
-	REGISTER_PROPERTY_WIDGET(Vec3AsColor,	PropertyTree2::CColorwidget);
+REGISTER_PROPERTY_WIDGET(IActionButton, PropertyTree2::CActionButtonWidget);
+REGISTER_PROPERTY_WIDGET(Vec3AsColor, PropertyTree2::CColorwidget);
 }
 
 namespace property_tree
 {
-	REGISTER_PROPERTY_WIDGET(Color, PropertyTree2::CColorwidget);
+REGISTER_PROPERTY_WIDGET(Color, PropertyTree2::CColorwidget);
 }
 
-REGISTER_PROPERTY_WIDGET_TEMPLATE(SerializableColor_tpl<float>,			ColorF, PropertyTree2::CColorwidget);
+REGISTER_PROPERTY_WIDGET_TEMPLATE(SerializableColor_tpl<float>, ColorF, PropertyTree2::CColorwidget);
 REGISTER_PROPERTY_WIDGET_TEMPLATE(SerializableColor_tpl<unsigned char>, ColorB, PropertyTree2::CColorwidget);
