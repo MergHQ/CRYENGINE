@@ -8,8 +8,6 @@
 
 namespace CryAudio
 {
-class CObject;
-
 class CParameter final : public Control, public CPoolObject<CParameter, stl::PSyncNone>
 {
 public:
@@ -41,8 +39,14 @@ public:
 
 	~CParameter();
 
-	void Set(CObject const& object, float const value) const;
 	void SetGlobally(float const value) const;
+
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	void Set(CObject const& object, float const value) const;
+	void Set(CGlobalObject const& globalObject, float const value) const;
+#else
+	void Set(Impl::IObject* const pIObject, float const value) const;
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 private:
 

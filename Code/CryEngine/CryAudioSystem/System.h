@@ -6,7 +6,6 @@
 #include "Request.h"
 #include <CryAudio/IAudioSystem.h>
 #include <CrySystem/ISystem.h>
-#include <CrySystem/TimeValue.h>
 #include <CryInput/IInput.h>
 #include <concqueue/concqueue.hpp>
 

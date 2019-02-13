@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "Object.h"
 #include "Parameter.h"
 #include "Common/IImpl.h"
 #include "Common/IObject.h"
@@ -9,6 +8,7 @@
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	#include "Object.h"
+	#include "GlobalObject.h"
 	#include "Common/Logger.h"
 #endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
@@ -25,33 +25,52 @@ CParameter::~CParameter()
 	}
 }
 
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 void CParameter::Set(CObject const& object, float const value) const
 {
 	Impl::IObject* const pIObject = object.GetImplDataPtr();
 
-	if (pIObject != nullptr)
+	for (auto const pConnection : m_connections)
 	{
-		for (auto const pConnection : m_connections)
-		{
-			pConnection->Set(pIObject, value);
-		}
-	}
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Invalid impl object during %s", __FUNCTION__);
+		pConnection->Set(pIObject, value);
 	}
 
-	// Log the "no-connections" case only on user generated controls.
 	if (m_connections.empty())
 	{
 		Cry::Audio::Log(ELogType::Warning, R"(Parameter "%s" set on object "%s" without connections)", GetName(), object.GetName());
 	}
 
-	const_cast<CObject&>(object).StoreParameterValue(GetId(), value);
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	const_cast<CObject&>(object).StoreParameterValue(m_id, value);
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CParameter::Set(CGlobalObject const& globalObject, float const value) const
+{
+	Impl::IObject* const pIObject = globalObject.GetImplDataPtr();
+
+	for (auto const pConnection : m_connections)
+	{
+		pConnection->Set(pIObject, value);
+	}
+
+	if (m_connections.empty())
+	{
+		Cry::Audio::Log(ELogType::Warning, R"(Parameter "%s" set on object "%s" without connections)", GetName(), globalObject.GetName());
+	}
+
+	const_cast<CGlobalObject&>(globalObject).StoreParameterValue(m_id, value);
+}
+#else
+//////////////////////////////////////////////////////////////////////////
+void CParameter::Set(Impl::IObject* const pIObject, float const value) const
+{
+	for (auto const pConnection : m_connections)
+	{
+		pConnection->Set(pIObject, value);
+	}
+}
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
 void CParameter::SetGlobally(float const value) const
@@ -62,7 +81,6 @@ void CParameter::SetGlobally(float const value) const
 	}
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-	// Log the "no-connections" case only on user generated controls.
 	if (m_connections.empty())
 	{
 		Cry::Audio::Log(ELogType::Warning, R"(Parameter "%s" set globally without connections)", GetName());

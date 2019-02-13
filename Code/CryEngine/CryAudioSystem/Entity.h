@@ -41,8 +41,6 @@ protected:
 
 	~CEntity() = default;
 
-private:
-
 	IDType const     m_id;
 	EDataScope const m_dataScope;
 

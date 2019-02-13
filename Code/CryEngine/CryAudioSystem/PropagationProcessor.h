@@ -9,8 +9,6 @@
 
 namespace CryAudio
 {
-class CObject;
-
 constexpr uint8 g_numberLow = 7;
 constexpr uint8 g_numberMedium = 9;
 constexpr uint8 g_numberHigh = 11;

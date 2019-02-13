@@ -6,7 +6,7 @@
 	#include "PreviewTrigger.h"
 
 	#include "Common.h"
-	#include "Object.h"
+	#include "GlobalObject.h"
 	#include "Common/IImpl.h"
 	#include "Common/IObject.h"
 	#include "Common/ITriggerConnection.h"
@@ -37,47 +37,38 @@ void CPreviewTrigger::Execute(Impl::ITriggerInfo const& triggerInfo)
 
 	if (m_pConnection != nullptr)
 	{
-		STriggerInstanceState triggerInstanceState;
-		triggerInstanceState.triggerId = GetId();
+		STriggerInstanceState triggerInstanceState(m_id);
 
 		Impl::IObject* const pIObject = g_previewObject.GetImplDataPtr();
+		ETriggerResult const result = m_pConnection->Execute(pIObject, g_triggerInstanceIdCounter);
 
-		if (pIObject != nullptr)
+		if ((result == ETriggerResult::Playing) || (result == ETriggerResult::Virtual) || (result == ETriggerResult::Pending))
 		{
-			ETriggerResult const result = m_pConnection->Execute(pIObject, g_triggerInstanceIdCounter);
-
-			if ((result == ETriggerResult::Playing) || (result == ETriggerResult::Virtual) || (result == ETriggerResult::Pending))
+			if (result != ETriggerResult::Pending)
 			{
-				if (result != ETriggerResult::Pending)
-				{
-					++(triggerInstanceState.numPlayingInstances);
-				}
-				else
-				{
-					++(triggerInstanceState.numPendingInstances);
-				}
+				++(triggerInstanceState.numPlayingInstances);
 			}
-			else if (result != ETriggerResult::DoNotTrack)
+			else
 			{
-				Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", GetName(), g_previewObject.GetName(), __FUNCTION__);
+				++(triggerInstanceState.numPendingInstances);
 			}
 		}
-		else
+		else if (result != ETriggerResult::DoNotTrack)
 		{
-			Cry::Audio::Log(ELogType::Error, "Invalid impl object during %s", __FUNCTION__);
+			Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", GetName(), g_previewObject.GetName(), __FUNCTION__);
 		}
 
 		if ((triggerInstanceState.numPlayingInstances > 0) || (triggerInstanceState.numPendingInstances > 0))
 		{
 			triggerInstanceState.flags |= ETriggerStatus::Playing;
-			g_triggerInstanceIdToObject[g_triggerInstanceIdCounter] = &g_previewObject;
+			g_triggerInstanceIdToGlobalObject[g_triggerInstanceIdCounter] = &g_previewObject;
 			g_previewObject.AddTriggerState(g_triggerInstanceIdCounter, triggerInstanceState);
 			IncrementTriggerInstanceIdCounter();
 		}
 		else
 		{
 			// All of the events have either finished before we got here or never started, immediately inform the user that the trigger has finished.
-			g_previewObject.SendFinishedTriggerInstanceRequest(triggerInstanceState);
+			SendFinishedTriggerInstanceRequest(triggerInstanceState, INVALID_ENTITYID);
 		}
 	}
 }

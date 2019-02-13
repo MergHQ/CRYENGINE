@@ -4,6 +4,7 @@
 #include "Common.h"
 #include "System.h"
 #include "Object.h"
+#include "GlobalObject.h"
 #include "LoseFocusTrigger.h"
 #include "GetFocusTrigger.h"
 #include "MuteAllTrigger.h"
@@ -27,6 +28,7 @@ PreloadRequestLookup g_preloadRequests;
 EnvironmentLookup g_environments;
 SettingLookup g_settings;
 TriggerInstanceIdLookup g_triggerInstanceIdToObject;
+TriggerInstanceIdLookupGlobal g_triggerInstanceIdToGlobalObject;
 
 CLoseFocusTrigger g_loseFocusTrigger;
 CGetFocusTrigger g_getFocusTrigger;
@@ -45,11 +47,11 @@ SPoolSizes g_poolSizes;
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 Objects g_constructedObjects;
-CObject g_object(CTransformation::GetEmptyObject(), "Global Object");
-CObject g_previewObject(CTransformation::GetEmptyObject(), "Preview Object");
+CGlobalObject g_object("Global Object");
+CGlobalObject g_previewObject("Preview Object");
 CPreviewTrigger g_previewTrigger;
 SPoolSizes g_debugPoolSizes;
 #else
-CObject g_object(CTransformation::GetEmptyObject());
+CGlobalObject g_object;
 #endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }      // namespace CryAudio

@@ -161,11 +161,28 @@ namespace Cry
 
 			const char* CUserLobby::GetMemberData(const AccountIdentifier& userId, const char* szKey)
 			{
-				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
-				if (pSteamMatchmaking)
+				const CSteamID steamUserId = ExtractSteamID(userId);
+
+				const char* szMemberData = nullptr;
+
+				// https://partner.steamgames.com/doc/api/ISteamMatchmaking#LobbyDataUpdate_t
+				if (m_steamLobbyId != steamUserId)
 				{
-					const CSteamID steamUserId = ExtractSteamID(userId);
-					return pSteamMatchmaking->GetLobbyMemberData(m_steamLobbyId, steamUserId, szKey);
+					ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
+					if (pSteamMatchmaking)
+					{
+						szMemberData = pSteamMatchmaking->GetLobbyMemberData(m_steamLobbyId, steamUserId, szKey);
+					}
+				}
+				else
+				{
+					szMemberData = GetData(szKey);
+				}
+
+				// https://partner.steamgames.com/doc/api/ISteamMatchmaking#GetLobbyMemberData
+				if (szMemberData != nullptr && szMemberData[0] != '\0')
+				{
+					return szMemberData;
 				}
 				return nullptr;
 			}
@@ -337,7 +354,7 @@ namespace Cry
 					{
 						for (IListener* pListener : m_listeners)
 						{
-							pListener->OnPlayerKicked(CreateAccountIdentifier(pCallback->m_ulSteamIDUserChanged), 
+							pListener->OnPlayerKicked(CreateAccountIdentifier(pCallback->m_ulSteamIDUserChanged),
 							                          CreateAccountIdentifier(pCallback->m_ulSteamIDMakingChange));
 						}
 					}
@@ -346,7 +363,7 @@ namespace Cry
 					{
 						for (IListener* pListener : m_listeners)
 						{
-							pListener->OnPlayerBanned(CreateAccountIdentifier(pCallback->m_ulSteamIDUserChanged), 
+							pListener->OnPlayerBanned(CreateAccountIdentifier(pCallback->m_ulSteamIDUserChanged),
 							                          CreateAccountIdentifier(pCallback->m_ulSteamIDMakingChange));
 						}
 					}

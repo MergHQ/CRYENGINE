@@ -7,8 +7,6 @@
 
 namespace CryAudio
 {
-class CObject;
-
 class CSwitchState final : public CPoolObject<CSwitchState, stl::PSyncNone>
 {
 public:
@@ -43,12 +41,15 @@ public:
 
 	~CSwitchState();
 
-	void          Set(CObject const& object) const;
 	void          SetGlobally() const;
 	SwitchStateId GetId() const { return m_switchStateId; }
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	void        Set(CObject const& object) const;
+	void        Set(CGlobalObject const& globalObject) const;
 	char const* GetName() const { return m_name.c_str(); }
+#else
+	void        Set(Impl::IObject* const pIObject) const;
 #endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 private:

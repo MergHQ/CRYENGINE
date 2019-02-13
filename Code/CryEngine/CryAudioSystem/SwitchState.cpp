@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "Object.h"
 #include "SwitchState.h"
 #include "Common/IImpl.h"
 #include "Common/IObject.h"
@@ -9,6 +8,7 @@
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	#include "Object.h"
+	#include "GlobalObject.h"
 	#include "Common/Logger.h"
 #endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
@@ -25,33 +25,52 @@ CSwitchState::~CSwitchState()
 	}
 }
 
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 void CSwitchState::Set(CObject const& object) const
 {
 	Impl::IObject* const pIObject = object.GetImplDataPtr();
 
-	if (pIObject != nullptr)
+	for (auto const pConnection : m_connections)
 	{
-		for (auto const pConnection : m_connections)
-		{
-			pConnection->Set(pIObject);
-		}
-	}
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Invalid impl object during %s", __FUNCTION__);
+		pConnection->Set(pIObject);
 	}
 
-	// Log the "no-connections" case only on user generated controls.
 	if (m_connections.empty())
 	{
 		Cry::Audio::Log(ELogType::Warning, R"(SwitchState "%s" set on object "%s" without connections)", GetName(), object.GetName());
 	}
 
 	const_cast<CObject&>(object).StoreSwitchValue(m_switchId, m_switchStateId);
-#endif   // CRY_AUDIO_USE_PRODUCTION_CODE
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CSwitchState::Set(CGlobalObject const& globalObject) const
+{
+	Impl::IObject* const pIObject = globalObject.GetImplDataPtr();
+
+	for (auto const pConnection : m_connections)
+	{
+		pConnection->Set(pIObject);
+	}
+
+	if (m_connections.empty())
+	{
+		Cry::Audio::Log(ELogType::Warning, R"(SwitchState "%s" set on object "%s" without connections)", GetName(), globalObject.GetName());
+	}
+
+	const_cast<CGlobalObject&>(globalObject).StoreSwitchValue(m_switchId, m_switchStateId);
+}
+#else
+//////////////////////////////////////////////////////////////////////////
+void CSwitchState::Set(Impl::IObject* const pIObject) const
+{
+	for (auto const pConnection : m_connections)
+	{
+		pConnection->Set(pIObject);
+	}
+}
+#endif   // CRY_AUDIO_USE_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
 void CSwitchState::SetGlobally() const
@@ -62,7 +81,6 @@ void CSwitchState::SetGlobally() const
 	}
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-	// Log the "no-connections" case only on user generated controls.
 	if (m_connections.empty())
 	{
 		Cry::Audio::Log(ELogType::Warning, R"(SwitchState "%s" set globally without connections)", GetName());

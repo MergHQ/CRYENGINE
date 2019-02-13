@@ -8,13 +8,7 @@
 
 namespace CryAudio
 {
-class CObject;
 struct STriggerInstanceState;
-
-namespace Impl
-{
-struct IObject;
-} // namespace Impl
 
 class CTrigger final : public Control, public CPoolObject<CTrigger, stl::PSyncNone>
 {
@@ -55,6 +49,14 @@ public:
 		void* const pUserData = nullptr,
 		void* const pUserDataOwner = nullptr,
 		ERequestFlags const flags = ERequestFlags::None) const;
+
+	void Execute(
+		CGlobalObject& globalObject,
+		void* const pOwner = nullptr,
+		void* const pUserData = nullptr,
+		void* const pUserDataOwner = nullptr,
+		ERequestFlags const flags = ERequestFlags::None) const;
+
 	void Stop(Impl::IObject* const pIObject) const;
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
@@ -63,10 +65,25 @@ public:
 		TriggerInstanceId const triggerInstanceId,
 		STriggerInstanceState& triggerInstanceState,
 		uint16 const triggerCounter) const;
+
+	void Execute(
+		CGlobalObject& globalObject,
+		TriggerInstanceId const triggerInstanceId,
+		STriggerInstanceState& triggerInstanceState,
+		uint16 const triggerCounter) const;
+
 	float GetRadius() const { return m_radius; }
 #endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 private:
+
+	bool ExecuteConnections(CObject& object,
+	                        TriggerInstanceId const triggerInstanceId,
+	                        STriggerInstanceState& triggerInstanceState) const;
+
+	bool ExecuteConnections(CGlobalObject& globalObject,
+	                        TriggerInstanceId const triggerInstanceId,
+	                        STriggerInstanceState& triggerInstanceState) const;
 
 	TriggerConnections const m_connections;
 

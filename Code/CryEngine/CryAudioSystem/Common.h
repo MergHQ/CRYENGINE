@@ -17,6 +17,7 @@ constexpr ControlId g_resumeAllTriggerId = StringToId(g_szResumeAllTriggerName);
 namespace Impl
 {
 struct IImpl;
+struct IObject;
 struct IEnvironmentConnection;
 struct IParameterConnection;
 struct ISettingConnection;
@@ -26,6 +27,7 @@ struct ITriggerConnection;
 
 class CSystem;
 class CObject;
+class CGlobalObject;
 class CLoseFocusTrigger;
 class CGetFocusTrigger;
 class CMuteAllTrigger;
@@ -58,6 +60,7 @@ using PreloadRequestLookup = std::map<PreloadRequestId, CPreloadRequest*>;
 using EnvironmentLookup = std::map<EnvironmentId, CEnvironment const*>;
 using SettingLookup = std::map<ControlId, CSetting const*>;
 using TriggerInstanceIdLookup = std::map<TriggerInstanceId, CObject*>;
+using TriggerInstanceIdLookupGlobal = std::map<TriggerInstanceId, CGlobalObject*>;
 
 using TriggerConnections = std::vector<Impl::ITriggerConnection*>;
 using ParameterConnections = std::vector<Impl::IParameterConnection*>;
@@ -76,7 +79,8 @@ extern PreloadRequestLookup g_preloadRequests;
 extern EnvironmentLookup g_environments;
 extern SettingLookup g_settings;
 extern TriggerInstanceIdLookup g_triggerInstanceIdToObject;
-extern CObject g_object;
+extern TriggerInstanceIdLookupGlobal g_triggerInstanceIdToGlobalObject;
+extern CGlobalObject g_object;
 extern CLoseFocusTrigger g_loseFocusTrigger;
 extern CGetFocusTrigger g_getFocusTrigger;
 extern CMuteAllTrigger g_muteAllTrigger;
@@ -126,7 +130,11 @@ constexpr ControlId g_previewTriggerId = StringToId(g_szPreviewTriggerName);
 
 class CPreviewTrigger;
 extern CPreviewTrigger g_previewTrigger;
-extern CObject g_previewObject;
+extern CGlobalObject g_previewObject;
 extern SPoolSizes g_debugPoolSizes;
+
+using SwitchStateIds = std::map<ControlId, SwitchStateId>;
+using ParameterValues = std::map<ControlId, float>;
+using EnvironmentValues = std::map<EnvironmentId, float>;
 #endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }      // namespace CryAudio

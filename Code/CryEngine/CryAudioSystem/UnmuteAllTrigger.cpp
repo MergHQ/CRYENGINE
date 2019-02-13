@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 #include "UnmuteAllTrigger.h"
-#include "DefaultTriggerUtils.h"
+#include "TriggerUtils.h"
 #include "Common/IImpl.h"
 
 namespace CryAudio
