@@ -3344,13 +3344,13 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		int nVarCount = pTimeOfDay->GetVariableCount();
 		for (int v = 0; v < nVarCount; ++v)
 		{
-			ITimeOfDay::SVariableInfo pVar;
-			pTimeOfDay->GetVariableInfo(v, pVar);
+			ITimeOfDay::SVariableInfo var;
+			pTimeOfDay->GetVariableInfo(v, var);
 
-			if (pVar.type == ITimeOfDay::TYPE_FLOAT)
-				DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, " %s: %.9f", pVar.displayName, pVar.fValue[0]);
+			if (var.type == ITimeOfDay::TYPE_FLOAT)
+				DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, " %s: %.9f", var.szDisplayName, var.fValue[0]);
 			else
-				DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, " %s: %.3f %.3f %.3f", pVar.displayName, pVar.fValue[0], pVar.fValue[1], pVar.fValue[2]);
+				DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, " %s: %.3f %.3f %.3f", var.szDisplayName, var.fValue[0], var.fValue[1], var.fValue[2]);
 		}
 		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "---------------------------------------");
 	}

@@ -16,65 +16,54 @@ public:
 	virtual bool        GetPresetsInfos(SPresetInfo* resultArray, unsigned int arraySize) const override;
 	virtual bool        SetCurrentPreset(const char* szPresetName) override;
 	virtual const char* GetCurrentPresetName() const override;
+	virtual IPreset&    GetCurrentPreset() override;
+	virtual bool        SetDefaultPreset(const char* szPresetName) override;
+	virtual const char* GetDefaultPresetName() const override;
 	virtual bool        AddNewPreset(const char* szPresetName) override;
 	virtual bool        RemovePreset(const char* szPresetName) override;
 	virtual bool        SavePreset(const char* szPresetName) const override;
 	virtual bool        LoadPreset(const char* szFilePath) override;
-	virtual void        ResetPreset(const char* szPresetName) override;
+	virtual bool        ResetPreset(const char* szPresetName) override;
+	virtual void        DiscardPresetChanges(const char* szPresetName) override;
 
 	virtual bool        ImportPreset(const char* szPresetName, const char* szFilePath) override;
 	virtual bool        ExportPreset(const char* szPresetName, const char* szFilePath) const override;
 
-	virtual int         GetVariableCount() override { return ITimeOfDay::PARAM_TOTAL; }
-	virtual bool        GetVariableInfo(int nIndex, SVariableInfo& varInfo) override;
-	virtual void        SetVariableValue(int nIndex, float fValue[3]) override;
-	virtual bool        InterpolateVarInRange(int nIndex, float fMin, float fMax, unsigned int nCount, Vec3* resultArray) const override;
-	virtual uint        GetSplineKeysCount(int nIndex, int nSpline) const override;
-	virtual bool        GetSplineKeysForVar(int nIndex, int nSpline, SBezierKey* keysArray, unsigned int keysArraySize) const override;
-	virtual bool        SetSplineKeysForVar(int nIndex, int nSpline, const SBezierKey* keysArray, unsigned int keysArraySize) override;
-	virtual bool        UpdateSplineKeyForVar(int nIndex, int nSpline, float fTime, float newValue) override;
-	virtual float       GetAnimTimeSecondsIn24h() override;
+	virtual bool        PreviewPreset(const char* szPresetName) override;
 
-	virtual void        ResetVariables() override;
+	virtual float       GetAnimTimeSecondsIn24h() const override;
 
 	// Time of day is specified in hours.
-	virtual void                   SetTime(float fHour, bool bForceUpdate = false) override;
-	virtual float                  GetTime() override              { return m_fTime; }
+	virtual void  SetTime(float fHour, bool bForceUpdate = false) override;
+	virtual float GetTime() const override        { return m_fTime; }
 
-	virtual void                   SetPaused(bool paused) override { m_bPaused = paused; }
+	virtual void  SetPaused(bool paused) override { m_bPaused = paused; }
 
-	virtual void                   SetAdvancedInfo(const SAdvancedInfo& advInfo) override;
-	virtual void                   GetAdvancedInfo(SAdvancedInfo& advInfo) override;
+	virtual void  SetAdvancedInfo(const SAdvancedInfo& advInfo) override;
+	virtual void  GetAdvancedInfo(SAdvancedInfo& advInfo) const override;
 
-	virtual void                   Update(bool bInterpolate = true, bool bForceUpdate = false) override;
-	virtual void                   ConstantsChanged() override;
+	virtual void  Update(bool bInterpolate = true, bool bForceUpdate = false) override;
+	virtual void  ConstantsChanged() override;
 
-	virtual Sun&                   GetSunParams() override;
-	virtual Moon&                  GetMoonParams() override;
-	virtual Wind&                  GetWindParams() override;
-	virtual CloudShadows&          GetCloudShadowsParams() override;
-	virtual TotalIllum&            GetTotalIlluminationParams() override;
-	virtual TotalIllumAdv&         GetTotalIlluminationAdvParams() override;
-	virtual Serialization::SStruct GetConstantParams() override;
-	virtual void                   ResetConstants(const DynArray<char>& binaryBuffer) override;
+	virtual void  Serialize(XmlNodeRef& node, bool bLoading) override;
+	virtual void  Serialize(TSerialize ser) override;
 
-	virtual void                   Serialize(XmlNodeRef& node, bool bLoading) override;
-	virtual void                   Serialize(TSerialize ser) override;
+	virtual void  SetTimer(ITimer* pTimer) override;
 
-	virtual void                   SetTimer(ITimer* pTimer) override;
+	virtual void  NetSerialize(TSerialize ser, float lag, uint32 flags) override;
 
-	virtual void                   NetSerialize(TSerialize ser, float lag, uint32 flags) override;
+	virtual void  Tick() override;
 
-	virtual void                   Tick() override;
-
-	virtual void                   SaveInternalState(struct IDataWriteStream& writer) override;
-	virtual void                   LoadInternalState(struct IDataReadStream& reader) override;
+	virtual void  SaveInternalState(struct IDataWriteStream& writer) override;
+	virtual void  LoadInternalState(struct IDataReadStream& reader) override;
 
 	//////////////////////////////////////////////////////////////////////////
 	float GetHDRMultiplier() const { return m_fHDRMultiplier; }
 
 	void  BeginEditMode() override { m_bEditMode = true; }
 	void  EndEditMode() override   { m_bEditMode = false; }
+
+	void  Reset();
 
 protected:
 	virtual bool RegisterListenerImpl(IListener* const pListener, const char* const szDbgName, const bool staticName) override;
@@ -83,24 +72,28 @@ protected:
 private:
 	CTimeOfDay(const CTimeOfDay&);
 	CTimeOfDay(const CTimeOfDay&&);
-	CTimeOfDay&    operator=(const CTimeOfDay&);
-	CTimeOfDay&    operator=(const CTimeOfDay&&);
+	CTimeOfDay&         operator=(const CTimeOfDay&);
+	CTimeOfDay&         operator=(const CTimeOfDay&&);
 
-	SVariableInfo& GetVar(ETimeOfDayParamID id);
-	void           UpdateEnvLighting(bool forceUpdate);
-	void           NotifyOnChange(const IListener::EChangeType changeType, const char* const szPresetName);
+	CEnvironmentPreset& GetPreset() const;
+	const Vec3          GetValue(ETimeOfDayParamID id) const;
+	void                SetValue(ETimeOfDayParamID id, const Vec3& newValue);
+	void                UpdateEnvLighting(bool forceUpdate);
+	void                NotifyOnChange(const IListener::EChangeType changeType, const char* const szPresetName);
+
+	// The bool indicates whether the creation took place. True if a new preset has been created, false if it already exists.
+	std::pair<CEnvironmentPreset*, bool> GetOrCreatePreset(const string& presetName);
 
 private:
-	typedef std::map<string, CEnvironmentPreset> TPresetsSet;
-	typedef CListenerSet<IListener*>             TListenerSet;
+	typedef std::map<string, std::unique_ptr<CEnvironmentPreset>, stl::less_stricmp<string>> TPresetsSet;
+	typedef CListenerSet<IListener*>                                                         TListenerSet;
 
 private:
 	TPresetsSet         m_presets;
+	TPresetsSet         m_previewPresets;
 	CEnvironmentPreset* m_pCurrentPreset;
 	string              m_currentPresetName;
-
-	SVariableInfo       m_vars[ITimeOfDay::PARAM_TOTAL];
-	CTimeOfDayConstants m_consts; //Working copy
+	string              m_defaultPresetName;
 
 	float               m_fTime;
 

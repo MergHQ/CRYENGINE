@@ -22,6 +22,7 @@
 #include <IEditor.h>
 
 #include <QCloseEvent>
+#include <QToolBar>
 #include <QToolButton>
 
 namespace Private_AssetEditor
@@ -194,7 +195,7 @@ bool CAssetEditor::OpenAsset(CAsset* pAsset)
 
 	CEditableAsset editableAsset(*pAsset);
 	editableAsset.SetOpenedInAssetEditor(this);
-
+	signalAssetOpened();
 	return true;
 }
 
@@ -275,10 +276,7 @@ void CAssetEditor::SetAssetBeingEdited(CAsset* pAsset)
 		{
 			if (std::find(assets.begin(), assets.end(), GetAssetBeingEdited()) != assets.end())
 			{
-			  OnCloseAsset();
-			  CRY_ASSERT(GetAssetBeingEdited() != nullptr);
-			  signalAssetClosed(GetAssetBeingEdited());
-			  SetAssetBeingEdited(nullptr);
+				CloseAsset();
 			}
 		}, (uintptr_t)this);
 
@@ -357,10 +355,7 @@ bool CAssetEditor::TryCloseAsset()
 
 	if (bClose)
 	{
-		OnCloseAsset();
-		CRY_ASSERT(GetAssetBeingEdited() != nullptr);
-		signalAssetClosed(GetAssetBeingEdited());
-		SetAssetBeingEdited(nullptr);
+		CloseAsset();
 		return true;
 	}
 	else
@@ -664,16 +659,19 @@ void CAssetEditor::dropEvent(QDropEvent* pEvent)
 	}
 }
 
-QToolButton* CAssetEditor::CreateLockButton()
+QWidget* CAssetEditor::CreateInstantEditorToolbar()
 {
-	if (m_pLockButton)
-	{
-		return m_pLockButton;
-	}
+	QToolBar* pToolbar = new QToolBar(this);
+	pToolbar->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+	pToolbar->addAction(m_pLockAction);
 
-	m_pLockButton = new QToolButton();
-	m_pLockButton->setDefaultAction(m_pLockAction);
+	InitInstantEditing();
 
+	return pToolbar;
+}
+
+void CAssetEditor::InitInstantEditing()
+{
 	const bool foundInstantEditor = std::any_of(m_supportedAssetTypes.cbegin(), m_supportedAssetTypes.cend(), [](const CAssetType* pType)
 	{
 		return pType->GetInstantEditor() != nullptr;
@@ -683,8 +681,6 @@ QToolButton* CAssetEditor::CreateLockButton()
 	{
 		SetInstantEditingMode(true);
 	}
-
-	return m_pLockButton;
 }
 
 void CAssetEditor::DiscardAssetChanges()
@@ -764,14 +760,20 @@ bool CAssetEditor::OnSaveAs()
 	{
 		// Close previous asset and unconditionally discard all changes.
 		DiscardAssetChanges();
-		OnCloseAsset();
-		CRY_ASSERT(GetAssetBeingEdited() != nullptr);
-		signalAssetClosed(GetAssetBeingEdited());
-		SetAssetBeingEdited(nullptr);
-
+		CloseAsset();
 		OpenAsset(pAsset);
 	}
 	return true;
+}
+
+void CAssetEditor::CloseAsset()
+{
+	CRY_ASSERT(GetAssetBeingEdited() != nullptr);
+
+	OnCloseAsset();
+	CAsset* const pAssetToClose = GetAssetBeingEdited();
+	SetAssetBeingEdited(nullptr);
+	signalAssetClosed(pAssetToClose);
 }
 
 bool CAssetEditor::SaveBackup(const string& backupFolder)

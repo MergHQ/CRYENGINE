@@ -71,10 +71,20 @@ public:
 	//! Note that editAsset may not have all of its metadata cleared before passing. TODO:improve this!
 	virtual bool OnSaveAsset(CEditableAsset& editAsset) = 0;
 
+	//! Called immediately after the editor has opened an asset.
+	// \sa CAssetEditor::GetAssetBeingEdited()
+	// \sa CAssetEditor::IsAssetOpened()
+	// \sa CAssetEditor::OnOpenAsset()
+	CCrySignal<void()> signalAssetOpened;
+
+	//! Called when the editor is closed the asset.
+	//! \sa CAssetEditor::OnCloseAsset
 	CCrySignal<void(CAsset*)> signalAssetClosed;
 
 protected:
 
+	//! Called when the editor is about to open the asset.
+	//! If the method returns false, it cancels the opening of the asset.
 	virtual bool OnOpenAsset(CAsset* pAsset) = 0;
 
 	//! Called when the asset changes are discarded,
@@ -113,7 +123,8 @@ protected:
 	virtual void dragEnterEvent(QDragEnterEvent* pEvent) override;
 	virtual void dropEvent(QDropEvent* pEvent) override;
 
-	QToolButton* CreateLockButton();
+	QWidget*     CreateInstantEditorToolbar();
+	void         InitInstantEditing();
 
 	QAction* m_pLockAction;
 
@@ -136,6 +147,10 @@ private:
 	//! \param reason Reason that prevents this editor from closing safely.
 	bool OnAboutToCloseAssetInternal(string& reason) const;
 
+	//! Unconditionally closes the currently opened asset.
+	//! The method calls OnCloseAsset and signalAssetClosed.
+	void CloseAsset();
+
 	//! Allows you to use this editor as an instant editor. There can be only one instance of the active instance editor for each asset type.
 	void SetInstantEditingMode(bool isActive);
 
@@ -147,5 +162,4 @@ private:
 
 	CAsset*                  m_assetBeingEdited;
 	std::vector<CAssetType*> m_supportedAssetTypes;
-	QToolButton*             m_pLockButton = nullptr;
 };

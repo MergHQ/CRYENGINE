@@ -582,7 +582,10 @@ void C3DEngine::UnloadLevel()
 
 	Cry3DEngineBase::m_pRenderMeshMerger->Reset();
 
-	SAFE_DELETE(m_pTimeOfDay);
+	if (!gEnv->IsEditor())
+	{
+		m_pTimeOfDay->Reset();
+	}
 	CLightEntity::StaticReset();
 	CVisArea::StaticReset();
 	CRoadRenderNode::FreeStaticMemoryUsage();

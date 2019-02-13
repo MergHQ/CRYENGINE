@@ -217,6 +217,10 @@ protected:
 	static QVariant GetVariantFromDetail(const string& detailValue, const CItemModelAttribute* pAttrib);
 
 private:
+	// Override this method if the asset type needs special initialization.
+	// \sa CAssetType::Init()
+	virtual void OnInit() {}
+
 	//! Fills in the files, details and dependencies fields of the editable asset.
 	//! Must be overridden if CanBeCreated() returns true.
 	//! \param asset An instance to be filled in.

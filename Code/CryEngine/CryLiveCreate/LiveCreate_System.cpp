@@ -253,7 +253,7 @@ void CLiveCreateCmd_SetTimeOfDayValue::Execute()
 	ITimeOfDay::SVariableInfo varInfo;
 	if (gEnv->p3DEngine->GetTimeOfDay()->GetVariableInfo(m_index, varInfo))
 	{
-		if (m_name == varInfo.displayName)
+		if (m_name == varInfo.szDisplayName)
 		{
 			XmlNodeRef xml = gEnv->pSystem->LoadXmlFromBuffer(m_data.c_str(), m_data.length());
 			if (xml)

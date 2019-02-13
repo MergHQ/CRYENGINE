@@ -186,7 +186,7 @@ void CParticleEditor::InitToolbar(QVBoxLayout* pWindowLayout)
 	// Add instant editing button
 	QSpacerItem* pSpacer = new QSpacerItem(20, 0, QSizePolicy::Expanding, QSizePolicy::Minimum);
 	pToolBarsLayout->addSpacerItem(pSpacer);
-	pToolBarsLayout->addWidget(CreateLockButton(), 0, Qt::AlignRight);
+	pToolBarsLayout->addWidget(CreateInstantEditorToolbar(), 0, Qt::AlignRight);
 
 	pWindowLayout->addLayout(pToolBarsLayout);
 }

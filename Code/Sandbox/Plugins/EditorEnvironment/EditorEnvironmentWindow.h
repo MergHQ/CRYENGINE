@@ -2,30 +2,38 @@
 
 #pragma once
 
+#include <AssetSystem/AssetEditor.h>
 #include <IEditor.h>
-#include <EditorFramework/Editor.h>
 #include <QtViewPane.h>
 
-class QPresetsWidget;
-class QTimeOfDayWidget;
+#include <Cry3DEngine/ITimeOfDay.h>
 
-class CEditorEnvironmentWindow : public CDockableEditor, public IEditorNotifyListener
+class CEditorEnvironmentWindow : public CAssetEditor
 {
 	Q_OBJECT
 public:
+
 	CEditorEnvironmentWindow();
-	~CEditorEnvironmentWindow();
+
+	virtual bool                                  AllowsInstantEditing() const override { return true; }
+	virtual std::unique_ptr<IAssetEditingSession> CreateEditingSession() override;
+
+	ITimeOfDay::IPreset*                          GetPreset();
+
+protected:
+	virtual bool OnSaveAsset(CEditableAsset& editAsset) override;
+	virtual bool OnOpenAsset(CAsset* pAsset) override;
+	virtual void OnCloseAsset() override;
+	virtual void OnDiscardAssetChanges(CEditableAsset& editAsset) override;
 
 private:
-	const char* GetEditorName() const override { return "Environment Editor"; }
-	void        OnEditorNotifyEvent(EEditorNotifyEvent event) override;
-	void        customEvent(QEvent* event) override;
+	const char*  GetEditorName() const override { return "Environment Editor"; }
+	void         customEvent(QEvent* event) override;
+	QWidget*     CreateToolbar();
 
-	QWidget*    CreateToolbar();
-	void        RestorePersonalizationState();
-	void        SavePersonalizationState() const;
+	void         RegisterDockingWidgets();
+	virtual void CreateDefaultLayout(CDockableContainer* pSender) override;
 
-	QPresetsWidget*   m_presetsWidget;
-	QTimeOfDayWidget* m_timeOfDayWidget;
-	QDockWidget*      m_pPresetsDock;
+private:
+	ITimeOfDay::IPreset* m_pPreset;
 };

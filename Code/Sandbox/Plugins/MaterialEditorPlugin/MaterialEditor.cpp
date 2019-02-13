@@ -143,7 +143,7 @@ void CMaterialEditor::CreateToolbar()
 	pSpacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 	auto toolbarLayout = new QHBoxLayout(pToolbar);
 	toolbarLayout->addWidget(pSpacer);
-	toolbarLayout->addWidget(CreateLockButton());
+	toolbarLayout->addWidget(CreateInstantEditorToolbar());
 	toolbarLayout->setContentsMargins(0, 0, 0, 0);
 
 	QVBoxLayout* pMainLayout = new QVBoxLayout();

@@ -17,6 +17,7 @@ struct SNodeInfo;
 struct SRNInfo;
 class C3DEngineLevelLoadTimeslicer;
 class CStitchedImage;
+class CTimeOfDay;
 class CWaterRippleManager;
 
 struct SEntInFoliage
@@ -1252,7 +1253,7 @@ private:
 #define MAX_LIGHTS_NUM 32
 	PodArray<CCamera> m_arrLightProjFrustums;
 
-	class CTimeOfDay* m_pTimeOfDay;
+	CTimeOfDay*       m_pTimeOfDay;
 
 	ICVar*            m_pLightQuality;
 

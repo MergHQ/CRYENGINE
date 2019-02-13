@@ -2,14 +2,18 @@
 
 #pragma once
 
-#include <QPropertyTree/ContextList.h>
-
 #include <IEditor.h>
+
+#include <Cry3DEngine/ITimeOfDay.h>
+
+#include <QPropertyTree/ContextList.h>
 
 #include <QWidget>
 
 struct SCurveEditorContent;
 struct STODParameterGroup;
+
+class CEditorEnvironmentWindow;
 
 enum ETODParamType
 {
@@ -82,25 +86,29 @@ class QPropertyTree;
 class QSplitter;
 class CTimeEditControl;
 
-class QTimeOfDayWidget : public QWidget, public IEditorNotifyListener
+class QTimeOfDayWidget : public QWidget, public IEditorNotifyListener, public IStateSerializable
 {
 	Q_OBJECT
 
 	friend struct STODParameter;
 
 public:
-	QTimeOfDayWidget();
+	QTimeOfDayWidget(CEditorEnvironmentWindow* pEditor);
 	~QTimeOfDayWidget();
 
-	void        CheckParameterChanged(STODParameter& param, const Vec3& newValue);
+	void                 CheckParameterChanged(STODParameter& param, const Vec3& newValue);
 
-	void        SetPersonalizationState(const QVariantMap& state);
-	QVariantMap GetPersonalizationState() const;
+	virtual void         SetState(const QVariantMap& state) override;
+	virtual QVariantMap  GetState() const override;
 
-	void        Refresh();
-	void        OnIdleUpdate();
+	void                 Refresh();
+	void                 OnIdleUpdate();
 
-	void        UpdateCurveContent();
+	void                 UpdateCurveContent();
+	void                 OnOpenAsset();
+	void                 OnCloseAsset(CAsset* pAsset);
+
+	ITimeOfDay::IPreset* GetPreset();
 
 signals:
 	void SignalContentChanged();
@@ -115,48 +123,54 @@ private:
 	class CContentChangedUndoCommand;
 	class CUndoConstPropTreeCommand;
 
-	void OnBeginUndo();
-	void OnChanged();
-	void OnEndUndo(bool acceptUndo);
-	void CurrentTimeEdited(); // called when user enters new value in m_currentTimeEdit
-	void OnSplineEditing();
-	void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
-	void SetTODTime(const float fTime);
+	void         OnBeginUndo();
+	void         OnChanged();
+	void         OnEndUndo(bool acceptUndo);
+	void         CurrentTimeEdited(); // called when user enters new value in m_currentTimeEdit
+	void         OnSplineEditing();
+	void         OnEditorNotifyEvent(EEditorNotifyEvent event) override;
+	void         SetTODTime(const float fTime);
 
-	void UndoConstantProperties();
-	void OnEndActionUndoConstantProperties(bool acceptUndo);
-	void CreateUi();
-	void CreatePropertyTrees(QSplitter* pParent);
-	void CreateCurveEditor(QSplitter* pParent);
-	void LoadPropertiesTrees();
+	void         UndoConstantProperties();
+	void         OnEndActionUndoConstantProperties(bool acceptUndo);
+	void         CreateUi();
+	void         CreatePropertyTrees(QSplitter* pParent);
+	void         CreateCurveEditor(QSplitter* pParent);
+	void         LoadPropertiesTrees();
 
-	void UpdateValues();
-	void UpdateSelectedParamId();
-	void UpdateVarPropTree();
-	void UpdateCurrentTimeEdit();
-	void UpdateCurveTime();
-	void UpdateConstPropTree();
+	void         UpdateValues();
+	void         UpdateSelectedParamId();
+	void         UpdateVarPropTree();
+	void         UpdateCurrentTimeEdit();
+	void         UpdateCurveTime();
+	void         UpdateConstPropTree();
 
-	bool eventFilter(QObject* obj, QEvent* event);
+	virtual bool eventFilter(QObject* obj, QEvent* event) override;
+	virtual bool event(QEvent* event) override;
 
 	bool                                         m_bIsPlaying;
 	bool                                         m_bIsEditing;
 	STODParameterGroupSet                        m_groups;
 	std::unique_ptr<Serialization::CContextList> m_pContextList;
-	QPropertyTree*                               m_propertyTreeVar;
+	QPropertyTree*                               m_pPropertyTree;
 
-	CTimeEditControl*                            m_currentTimeEdit;
-	CTimeEditControl*                            m_startTimeEdit;
-	CTimeEditControl*                            m_endTimeEdit;
-	QLineEdit*                                   m_playSpeedEdit;
-	CCurveEditor*                                m_curveEdit;
-	std::unique_ptr<SCurveEditorContent>         m_curveContent;
+	CTimeEditControl*                            m_pCurrentTimeEdit;
+	CTimeEditControl*                            m_pStartTimeEdit;
+	CTimeEditControl*                            m_pEndTimeEdit;
+	QLineEdit*                                   m_pPlaySpeedEdit;
+	CCurveEditor*                                m_pCurveEdit;
+	std::unique_ptr<SCurveEditorContent>         m_pCurveContent;
 
 	int                         m_selectedParamId;
+	int                         m_previousSelectedParamId;
 	CContentChangedUndoCommand* m_pUndoCommand;
 
 	float                       m_fAnimTimeSecondsIn24h;
 
-	QSplitter*                  m_splitterBetweenTrees;
-	QPropertyTree*              m_propertyTreeConst;
+	QSplitter*                  m_pSplitterBetweenTrees;
+	QPropertyTree*              m_pPropertyTreeConst;
+
+	CEditorEnvironmentWindow*   m_pEditor;
+	string                      m_preset;
+	ITimeOfDay::SAdvancedInfo   m_advancedInfo;
 };

@@ -263,12 +263,12 @@ void TotalIllumAdvImpl::Serialize(Serialization::IArchive& ar)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CTimeOfDayConstants::CTimeOfDayConstants()
+STimeOfDayConstants::STimeOfDayConstants()
 {
-	ResetVariables();
+	Reset();
 }
 
-void CTimeOfDayConstants::ResetVariables()
+void STimeOfDayConstants::Reset()
 {
 	sun.ResetVariables();
 	moon.ResetVariables();
@@ -278,7 +278,7 @@ void CTimeOfDayConstants::ResetVariables()
 	totalIlluminationAdvanced.ResetVariables();
 }
 
-void CTimeOfDayConstants::Serialize(Serialization::IArchive& ar)
+void STimeOfDayConstants::Serialize(Serialization::IArchive& ar)
 {
 	ar(sun, "Sun", "Sun");
 	ar(moon, "Moon", "Moon");
@@ -286,4 +286,34 @@ void CTimeOfDayConstants::Serialize(Serialization::IArchive& ar)
 	ar(cloudShadows, "CloudShadows", "Cloud Shadows");
 	ar(totalIllumination, "TotalIllumination", "Total Illumination");
 	ar(totalIlluminationAdvanced, "TotalIlluminationAdv", "Total Illumination Advanced");
+}
+
+ITimeOfDay::Sun& STimeOfDayConstants::GetSunParams()
+{
+	return sun;
+}
+
+ITimeOfDay::Moon& STimeOfDayConstants::GetMoonParams()
+{
+	return moon;
+}
+
+ITimeOfDay::Wind& STimeOfDayConstants::GetWindParams()
+{
+	return wind;
+}
+
+ITimeOfDay::CloudShadows& STimeOfDayConstants::GetCloudShadowsParams()
+{
+	return cloudShadows;
+}
+
+ITimeOfDay::TotalIllum& STimeOfDayConstants::GetTotalIlluminationParams()
+{
+	return totalIllumination;
+}
+
+ITimeOfDay::TotalIllumAdv& STimeOfDayConstants::GetTotalIlluminationAdvParams()
+{
+	return totalIlluminationAdvanced;
 }

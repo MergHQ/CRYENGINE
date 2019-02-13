@@ -453,8 +453,6 @@ EDITOR_COMMON_API void BackupFile(const char* szFilePath)
 
 EDITOR_COMMON_API bool Pak::CopyFileAllowOverwrite(const char* szSourceFilePath, const char* szDestinationFilePath)
 {
-	GetISystem()->GetIPak()->MakeDir(PathUtil::GetDirectory(szDestinationFilePath));
-
 	ICryPak* const pPak = GetISystem()->GetIPak();
 	FILE* pFile = pPak->FOpen(szSourceFilePath, "rbx");
 	if (!pFile)
@@ -470,7 +468,12 @@ EDITOR_COMMON_API bool Pak::CopyFileAllowOverwrite(const char* szSourceFilePath,
 		return false;
 	}
 
-	QFile destFile(QtUtil::ToQString(szDestinationFilePath));
+	char szAdjustedPath[ICryPak::g_nMaxPath];
+	pPak->AdjustFileName(szDestinationFilePath, szAdjustedPath, ICryPak::FLAGS_FOR_WRITING);
+
+	GetISystem()->GetIPak()->MakeDir(PathUtil::GetDirectory(szAdjustedPath));
+
+	QFile destFile(QtUtil::ToQString(szAdjustedPath));
 	if (!destFile.open(QIODevice::WriteOnly | QIODevice::Truncate))
 	{
 		return false;

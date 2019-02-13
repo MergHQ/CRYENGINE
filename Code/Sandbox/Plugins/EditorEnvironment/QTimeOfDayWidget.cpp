@@ -3,20 +3,20 @@
 #include "stdafx.h"
 #include "QTimeOfDayWidget.h"
 
-#include <QPropertyTree/ContextList.h>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
-#include <CurveEditor.h>
-#include <TimeEditControl.h>
-#include <EditorStyleHelper.h>
-
-#include <IUndoObject.h>
-
-#include <CryIcon.h>
+#include "EditorEnvironmentWindow.h"
 
 #include <Cry3DEngine/I3DEngine.h>
-#include <Cry3DEngine/ITimeOfDay.h>
+#include <CryEditDoc.h>
+#include <CryIcon.h>
 #include <CrySerialization/yasli/JSONIArchive.h>
 #include <CrySerialization/yasli/JSONOArchive.h>
+#include <CurveEditor.h>
+#include <EditorStyleHelper.h>
+#include <IEditor.h>
+#include <IUndoObject.h>
+#include <QPropertyTree/ContextList.h>
+#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <TimeEditControl.h>
 
 #include <QApplication>
 #include <QBoxLayout>
@@ -40,6 +40,7 @@ SERIALIZATION_ENUM_END()
 
 namespace
 {
+
 const float nTimeLineMinutesScale = 60.0f;
 const int nRulerHeight = 30;
 const int nRulerGradientHeight = 14;
@@ -73,47 +74,47 @@ QTime FloatToQTime(float fTime)
 	return QTime(hour, minute);
 }
 
-void SetQTimeEditTimeBlocking(QTimeEdit* timeEdit, QTime time)
+void SetQTimeEditTimeBlocking(QTimeEdit* pTimeEdit, QTime time)
 {
-	timeEdit->blockSignals(true);
-	timeEdit->setTime(time);
-	timeEdit->blockSignals(false);
+	pTimeEdit->blockSignals(true);
+	pTimeEdit->setTime(time);
+	pTimeEdit->blockSignals(false);
 }
 
-void SetQTimeEditTimeBlocking(CTimeEditControl* timeEdit, QTime time)
+void SetQTimeEditTimeBlocking(CTimeEditControl* pTimeEdit, QTime time)
 {
-	timeEdit->blockSignals(true);
-	timeEdit->setTime(time);
-	timeEdit->blockSignals(false);
+	pTimeEdit->blockSignals(true);
+	pTimeEdit->setTime(time);
+	pTimeEdit->blockSignals(false);
 }
 
-void UpdateToDAdvancedInfo(std::function<void (ITimeOfDay::SAdvancedInfo& sAdvInfo)> updateFunc)
+void UpdateToDAdvancedInfo(ITimeOfDay::SAdvancedInfo& sAdvInfo, std::function<void (ITimeOfDay::SAdvancedInfo& sAdvInfo)> updateFunc)
 {
-	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
+	ITimeOfDay* const pTimeOfDay = GetTimeOfDay();
 
-	ITimeOfDay::SAdvancedInfo sAdvInfo;
 	pTimeOfDay->GetAdvancedInfo(sAdvInfo);
 	updateFunc(sAdvInfo);
 	pTimeOfDay->SetAdvancedInfo(sAdvInfo);
+
 	pTimeOfDay->Update(false, true);
 	GetIEditor()->Notify(eNotify_OnTimeOfDayChange);
 }
 
-void UpdateCurveContentFromToDVar(int nVarId, int nSplineId, SCurveEditorContent* pContent)
+void UpdateCurveContentFromToDVar(ITimeOfDay::IPreset* pPreset, int nVarId, int nSplineId, SCurveEditorContent* pContent)
 {
-	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-
 	if (nSplineId >= 0 && nSplineId < pContent->m_curves.size())
 	{
 		std::vector<SCurveEditorKey>& splineKeys = pContent->m_curves[nSplineId].m_keys;
 		splineKeys.clear();
 
-		const uint nKeysNum = pTimeOfDay->GetSplineKeysCount(nVarId, nSplineId);
+		const ITimeOfDay::IVariables& variables = pPreset->GetVariables();
+
+		const uint nKeysNum = variables.GetSplineKeysCount(nVarId, nSplineId);
 		if (nKeysNum)
 		{
 			std::vector<SBezierKey> keys;
 			keys.resize(nKeysNum);
-			pTimeOfDay->GetSplineKeysForVar(nVarId, nSplineId, &keys[0], nKeysNum);
+			variables.GetSplineKeysForVar(nVarId, nSplineId, &keys[0], nKeysNum);
 
 			splineKeys.reserve(nKeysNum);
 			for (auto& key : keys)
@@ -127,10 +128,8 @@ void UpdateCurveContentFromToDVar(int nVarId, int nSplineId, SCurveEditorContent
 	}
 }
 
-void UpdateToDVarFromCurveContent(int nVarId, int nSplineId, const SCurveEditorContent* pContent)
+void UpdateToDVarFromCurveContent(ITimeOfDay::IPreset* pPreset, int nVarId, int nSplineId, const SCurveEditorContent* pContent)
 {
-	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-
 	if (nSplineId >= 0 && nSplineId < pContent->m_curves.size())
 	{
 		const SCurveEditorCurve& curve = pContent->m_curves[nSplineId];
@@ -147,7 +146,7 @@ void UpdateToDVarFromCurveContent(int nVarId, int nSplineId, const SCurveEditorC
 			}
 		}
 
-		pTimeOfDay->SetSplineKeysForVar(nVarId, nSplineId, &keys[0], keys.size());
+		pPreset->GetVariables().SetSplineKeysForVar(nVarId, nSplineId, &keys[0], keys.size());
 	}
 }
 
@@ -168,51 +167,59 @@ QRgb ColorLinearToGamma(const Vec3& col)
 	return qRgb(int(r), int(g), int(b));
 }
 
-void DrawGradient(ITimeOfDay* pTimeOfDay, int selectedParam, QPainter& painter, const QRect& rect, const Range& visibleRange)
+void DrawGradient(ITimeOfDay::IPreset* pPreset, int selectedParam, QPainter& painter, const QRect& rect, const Range& visibleRange)
 {
-	if (selectedParam >= 0 && selectedParam < pTimeOfDay->GetVariableCount())
+	if (!pPreset)
 	{
-		ITimeOfDay::SVariableInfo sVarInfo;
-		if (pTimeOfDay->GetVariableInfo(selectedParam, sVarInfo))
+		return;
+	}
+
+	ITimeOfDay::IVariables& variables = pPreset->GetVariables();
+	if (selectedParam >= 0 && selectedParam < variables.GetVariableCount())
+	{
+		return;
+	}
+
+	ITimeOfDay::SVariableInfo sVarInfo;
+	if (variables.GetVariableInfo(selectedParam, sVarInfo))
+	{
+		const int xMin = rect.left();
+		const int xMax = rect.right();
+		const int nRange = xMax - xMin;
+		const float fRange = float(nRange);
+
+		QPoint from = QPoint(xMin, rect.bottom() - nRulerGradientHeight + 1);
+		QPoint to = QPoint(xMin, rect.bottom() + 1);
+
+		std::vector<Vec3> gradient;
+		gradient.resize(nRange);
+		variables.InterpolateVarInRange(selectedParam, visibleRange.start, visibleRange.end, nRange, &gradient[0]);
+
+		if (ITimeOfDay::TYPE_COLOR == sVarInfo.type)
 		{
-			const int xMin = rect.left();
-			const int xMax = rect.right();
-			const int nRange = xMax - xMin;
-			const float fRange = float(nRange);
-
-			QPoint from = QPoint(xMin, rect.bottom() - nRulerGradientHeight + 1);
-			QPoint to = QPoint(xMin, rect.bottom() + 1);
-
-			std::vector<Vec3> gradient;
-			gradient.resize(nRange);
-			pTimeOfDay->InterpolateVarInRange(selectedParam, visibleRange.start, visibleRange.end, nRange, &gradient[0]);
-
-			if (ITimeOfDay::TYPE_COLOR == sVarInfo.type)
+			for (size_t i = 0; i < nRange; ++i)
 			{
-				for (size_t i = 0; i < nRange; ++i)
-				{
-					const Vec3& val = gradient[i];
-					QColor color(ColorLinearToGamma(val));
-					painter.setPen(color);
-					from.setX(i + xMin);
-					to.setX(i + xMin);
-					painter.drawLine(from, to);
-				}
+				const Vec3& val = gradient[i];
+				QColor color(ColorLinearToGamma(val));
+				painter.setPen(color);
+				from.setX(i + xMin);
+				to.setX(i + xMin);
+				painter.drawLine(from, to);
 			}
-			else
+		}
+		else
+		{
+			for (size_t i = 0; i < nRange; ++i)
 			{
-				for (size_t i = 0; i < nRange; ++i)
-				{
-					const Vec3& val = gradient[i];
-					const float value = clamp_tpl(val.x, sVarInfo.fValue[1], sVarInfo.fValue[2]);
-					const float normVal = (value - sVarInfo.fValue[1]) / (sVarInfo.fValue[2] - sVarInfo.fValue[1]);
-					const int grayScaled = int(normVal * 255.0f);
-					QColor color(grayScaled, grayScaled, grayScaled);
-					painter.setPen(color);
-					from.setX(i + xMin);
-					to.setX(i + xMin);
-					painter.drawLine(from, to);
-				}
+				const Vec3& val = gradient[i];
+				const float value = clamp_tpl(val.x, sVarInfo.fValue[1], sVarInfo.fValue[2]);
+				const float normVal = (value - sVarInfo.fValue[1]) / (sVarInfo.fValue[2] - sVarInfo.fValue[1]);
+				const int grayScaled = int(normVal * 255.0f);
+				QColor color(grayScaled, grayScaled, grayScaled);
+				painter.setPen(color);
+				from.setX(i + xMin);
+				to.setX(i + xMin);
+				painter.drawLine(from, to);
 			}
 		}
 	}
@@ -286,13 +293,13 @@ public:
 	{
 		m_pWidget = pWidget;
 		m_paramId = pWidget->m_selectedParamId;
-		SCurveEditorContent* pContent = pWidget->m_curveContent.get();
+		SCurveEditorContent* pContent = pWidget->m_pCurveContent.get();
 		Serialization::SaveBinaryBuffer(m_oldState, *pContent);
 	}
 
 	void SaveNewState(QTimeOfDayWidget* pWidget)
 	{
-		SCurveEditorContent* pContent = pWidget->m_curveContent.get();
+		SCurveEditorContent* pContent = pWidget->m_pCurveContent.get();
 		Serialization::SaveBinaryBuffer(m_newState, *pContent);
 	}
 
@@ -321,12 +328,15 @@ private:
 		const int paramID = m_paramId;
 		if (paramID >= 0)
 		{
-			UpdateToDVarFromCurveContent(paramID, 0, pContent);
-			UpdateToDVarFromCurveContent(paramID, 1, pContent);
-			UpdateToDVarFromCurveContent(paramID, 2, pContent);
+			ITimeOfDay::IPreset* pPreset = m_pWidget->GetPreset();
+
+			UpdateToDVarFromCurveContent(pPreset, paramID, 0, pContent);
+			UpdateToDVarFromCurveContent(pPreset, paramID, 1, pContent);
+			UpdateToDVarFromCurveContent(pPreset, paramID, 2, pContent);
 
 			GetTimeOfDay()->Update(true, true);
 			GetIEditor()->Notify(eNotify_OnTimeOfDayChange);
+			m_pWidget->OnChanged();
 		}
 	}
 
@@ -343,8 +353,8 @@ public:
 	explicit CUndoConstPropTreeCommand(QTimeOfDayWidget* pTodWidget)
 		: m_pTodWidget(pTodWidget)
 	{
-		ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-		gEnv->pSystem->GetArchiveHost()->SaveBinaryBuffer(m_undoState, pTimeOfDay->GetConstantParams());
+		ITimeOfDay::IPreset* const pPreset = m_pTodWidget->GetPreset();
+		gEnv->pSystem->GetArchiveHost()->SaveBinaryBuffer(m_undoState, Serialization::SStruct(pPreset->GetConstants()));
 	}
 
 private:
@@ -354,8 +364,8 @@ private:
 	{
 		if (bUndo)
 		{
-			ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-			gEnv->pSystem->GetArchiveHost()->SaveBinaryBuffer(m_redoState, pTimeOfDay->GetConstantParams());
+			ITimeOfDay::IPreset* const pPreset = m_pTodWidget->GetPreset();
+			gEnv->pSystem->GetArchiveHost()->SaveBinaryBuffer(m_undoState, Serialization::SStruct(pPreset->GetConstants()));
 		}
 
 		ApplyState(m_undoState);
@@ -368,9 +378,10 @@ private:
 
 	void ApplyState(const DynArray<char>& state)
 	{
-		ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-		pTimeOfDay->ResetConstants(state);
+		ITimeOfDay::IPreset* const pPreset = m_pTodWidget->GetPreset();
+		gEnv->pSystem->GetArchiveHost()->LoadBinaryBuffer(Serialization::SStruct(pPreset->GetConstants()), state.data(), state.size());
 		m_pTodWidget->UpdateConstPropTree();
+		m_pTodWidget->OnChanged();
 	}
 
 	QTimeOfDayWidget* m_pTodWidget;
@@ -379,76 +390,99 @@ private:
 };
 
 //////////////////////////////////////////////////////////////////////////
-QTimeOfDayWidget::QTimeOfDayWidget()
+QTimeOfDayWidget::QTimeOfDayWidget(CEditorEnvironmentWindow* pEditor)
 	: m_pContextList(new Serialization::CContextList())
-	, m_propertyTreeVar(nullptr)
-	, m_currentTimeEdit(nullptr)
-	, m_startTimeEdit(nullptr)
-	, m_endTimeEdit(nullptr)
-	, m_playSpeedEdit(nullptr)
-	, m_curveEdit(nullptr)
-	, m_curveContent(new SCurveEditorContent)
+	, m_pPropertyTree(nullptr)
+	, m_pCurrentTimeEdit(nullptr)
+	, m_pStartTimeEdit(nullptr)
+	, m_pEndTimeEdit(nullptr)
+	, m_pPlaySpeedEdit(nullptr)
+	, m_pCurveEdit(nullptr)
+	, m_pCurveContent(new SCurveEditorContent)
 	, m_selectedParamId(-1)
+	, m_previousSelectedParamId(-1)
 	, m_pUndoCommand(nullptr)
 	, m_fAnimTimeSecondsIn24h(0.0f)
 	, m_bIsPlaying(false)
 	, m_bIsEditing(false)
-	, m_splitterBetweenTrees(nullptr)
-	, m_propertyTreeConst(nullptr)
+	, m_pSplitterBetweenTrees(nullptr)
+	, m_pPropertyTreeConst(nullptr)
+	, m_pEditor(pEditor)
 {
+	m_advancedInfo.fAnimSpeed = 0;
+	m_advancedInfo.fStartTime = 0;
+	m_advancedInfo.fEndTime = 24;
+
 	m_pContextList->Update<QTimeOfDayWidget>(this);
 
 	m_fAnimTimeSecondsIn24h = GetTimeOfDay()->GetAnimTimeSecondsIn24h();
 
 	CreateUi();
-	LoadPropertiesTrees();
-
-	Refresh();
-
 	GetIEditor()->RegisterNotifyListener(this);
+	m_pEditor->signalAssetOpened.Connect(this, &QTimeOfDayWidget::OnOpenAsset);
+	m_pEditor->signalAssetClosed.Connect(this, &QTimeOfDayWidget::OnCloseAsset);
+	setEnabled(false);
 }
 
 QTimeOfDayWidget::~QTimeOfDayWidget()
 {
 	GetIEditor()->UnregisterNotifyListener(this);
+	m_pEditor->signalAssetOpened.DisconnectObject(this);
 }
 
 void QTimeOfDayWidget::Refresh()
 {
+	setEnabled(m_pEditor->GetAssetBeingEdited());
+	if (!GetPreset())
+	{
+		return;
+	}
+
+	LoadPropertiesTrees();
+
 	UpdateValues();
 	UpdateCurveContent();
 
 	if (m_selectedParamId < 0)
 	{
-		m_curveEdit->SetFitMargin(0.0f);
-		m_curveEdit->ZoomToTimeRange(SAnimTime(0.0f), SAnimTime(m_fAnimTimeSecondsIn24h));
+		m_pCurveEdit->SetFitMargin(0.0f);
+		m_pCurveEdit->ZoomToTimeRange(SAnimTime(0.0f), SAnimTime(m_fAnimTimeSecondsIn24h));
 	}
 	else
 	{
-		m_curveEdit->OnFitCurvesVertically();
-		m_curveEdit->OnFitCurvesHorizontally();
+		m_pCurveEdit->OnFitCurvesVertically();
+		m_pCurveEdit->OnFitCurvesHorizontally();
 	}
 }
 
 void QTimeOfDayWidget::OnIdleUpdate()
 {
-	if (m_bIsPlaying)
+	if (!m_bIsPlaying)
 	{
-		ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-		float fHour = pTimeOfDay->GetTime();
-
-		ITimeOfDay::SAdvancedInfo advInfo;
-		pTimeOfDay->GetAdvancedInfo(advInfo);
-		float dt = gEnv->pTimer->GetFrameTime();
-		float fTime = fHour + dt * advInfo.fAnimSpeed;
-		if (fTime > advInfo.fEndTime)
-			fTime = advInfo.fStartTime;
-		if (fTime < advInfo.fStartTime)
-			fTime = advInfo.fEndTime;
-
-		SetTODTime(fTime);
-		UpdateValues();
+		return;
 	}
+
+	ITimeOfDay* const pTimeOfDay = GetTimeOfDay();
+
+	// Animate the preset parameters for the active editor only.
+	const ITimeOfDay::IPreset* const pPreset = &pTimeOfDay->GetCurrentPreset();
+	if (pPreset != GetPreset())
+	{
+		return;
+	}
+
+	const float fHour = pTimeOfDay->GetTime();
+
+	ITimeOfDay::SAdvancedInfo advInfo;
+	pTimeOfDay->GetAdvancedInfo(advInfo);
+	float fTime = fHour + gEnv->pTimer->GetFrameTime() * advInfo.fAnimSpeed;
+	if (fTime > advInfo.fEndTime)
+		fTime = advInfo.fStartTime;
+	if (fTime < advInfo.fStartTime)
+		fTime = advInfo.fEndTime;
+
+	SetTODTime(fTime);
+	UpdateValues();
 }
 
 void QTimeOfDayWidget::UpdateCurveContent()
@@ -457,40 +491,57 @@ void QTimeOfDayWidget::UpdateCurveContent()
 
 	if (m_selectedParamId >= 0)
 	{
-		ITimeOfDay* pTimeOfDay = GetTimeOfDay();
+		ITimeOfDay::IPreset* const pPreset = GetPreset();
 		const int paramID = m_selectedParamId;
 		ITimeOfDay::SVariableInfo sVarInfo;
-		pTimeOfDay->GetVariableInfo(m_selectedParamId, sVarInfo);
+		pPreset->GetVariables().GetVariableInfo(m_selectedParamId, sVarInfo);
 
 		if (ITimeOfDay::TYPE_FLOAT == sVarInfo.type)
 		{
-			m_curveContent->m_curves.resize(1);
-			m_curveContent->m_curves[0].m_color.set(textColor.red(), textColor.green(), textColor.blue(), 255);
-			m_curveEdit->SetValueRange(sVarInfo.fValue[1], sVarInfo.fValue[2]);
+			m_pCurveContent->m_curves.resize(1);
+			m_pCurveContent->m_curves[0].m_color.set(textColor.red(), textColor.green(), textColor.blue(), 255);
+			m_pCurveEdit->SetValueRange(sVarInfo.fValue[1], sVarInfo.fValue[2]);
 		}
 		else if (ITimeOfDay::TYPE_COLOR == sVarInfo.type)
 		{
-			m_curveContent->m_curves.resize(3);
-			m_curveContent->m_curves[0].m_color.set(190, 20, 20, 255); // r
-			m_curveContent->m_curves[1].m_color.set(20, 190, 20, 255); // g
-			m_curveContent->m_curves[2].m_color.set(20, 20, 190, 255); // b
-			m_curveEdit->SetValueRange(0.0f, 1.0f);
+			m_pCurveContent->m_curves.resize(3);
+			m_pCurveContent->m_curves[0].m_color.set(190, 20, 20, 255); // r
+			m_pCurveContent->m_curves[1].m_color.set(20, 190, 20, 255); // g
+			m_pCurveContent->m_curves[2].m_color.set(20, 20, 190, 255); // b
+			m_pCurveEdit->SetValueRange(0.0f, 1.0f);
 		}
 
-		UpdateCurveContentFromToDVar(paramID, 0, m_curveContent.get());
-		UpdateCurveContentFromToDVar(paramID, 1, m_curveContent.get());
-		UpdateCurveContentFromToDVar(paramID, 2, m_curveContent.get());
+		UpdateCurveContentFromToDVar(pPreset, paramID, 0, m_pCurveContent.get());
+		UpdateCurveContentFromToDVar(pPreset, paramID, 1, m_pCurveContent.get());
+		UpdateCurveContentFromToDVar(pPreset, paramID, 2, m_pCurveContent.get());
 	}
 	else
 	{
-		m_curveEdit->SetValueRange(0.0f, 1.0f);
-		m_curveContent->m_curves.resize(0);
+		m_pCurveEdit->SetValueRange(0.0f, 1.0f);
+		m_pCurveContent->m_curves.resize(0);
 	}
+}
+
+void QTimeOfDayWidget::OnOpenAsset()
+{
+	m_preset = m_pEditor->GetAssetBeingEdited()->GetFile(0);
+	Refresh();
+}
+
+void QTimeOfDayWidget::OnCloseAsset(CAsset* pAsset)
+{
+	m_preset.clear();
+	Refresh();
+}
+
+ITimeOfDay::IPreset* QTimeOfDayWidget::GetPreset()
+{
+	return m_pEditor->GetPreset();
 }
 
 void QTimeOfDayWidget::CurveEditTimeChanged()
 {
-	float time = m_curveEdit->Time().ToFloat();
+	float time = m_pCurveEdit->Time().ToFloat();
 	time /= m_fAnimTimeSecondsIn24h;
 	float fTODTime = time * 24.0f;
 	SetTODTime(fTODTime);
@@ -500,7 +551,7 @@ void QTimeOfDayWidget::CurveEditTimeChanged()
 
 void QTimeOfDayWidget::CurrentTimeEdited()
 {
-	const float fTODTime = QTimeToFloat(m_currentTimeEdit->time());
+	const float fTODTime = QTimeToFloat(m_pCurrentTimeEdit->time());
 	SetTODTime(fTODTime);
 	UpdateCurveTime();
 	UpdateVarPropTree();
@@ -515,21 +566,21 @@ void QTimeOfDayWidget::OnPropertySelected()
 	if (m_selectedParamId < 0)
 	{
 		UpdateCurveContent();
-		m_curveEdit->ZoomToTimeRange(SAnimTime(0.0f), SAnimTime(m_fAnimTimeSecondsIn24h));
+		m_pCurveEdit->ZoomToTimeRange(SAnimTime(0.0f), SAnimTime(m_fAnimTimeSecondsIn24h));
 		return;
 	}
 
 	if (oldSelectedParam != m_selectedParamId)
 	{
 		UpdateCurveContent();
-		m_curveEdit->OnFitCurvesVertically();
-		m_curveEdit->OnFitCurvesHorizontally();
+		m_pCurveEdit->OnFitCurvesVertically();
+		m_pCurveEdit->OnFitCurvesHorizontally();
 	}
 }
 
 void QTimeOfDayWidget::OnBeginUndo()
 {
-	if (m_curveContent && !CUndo::IsRecording() && !m_pUndoCommand)
+	if (m_pCurveContent && !CUndo::IsRecording() && !m_pUndoCommand)
 	{
 		GetIEditor()->GetIUndoManager()->Begin();
 		m_pUndoCommand = new CContentChangedUndoCommand(this);
@@ -544,6 +595,7 @@ void QTimeOfDayWidget::OnBeginUndo()
 void QTimeOfDayWidget::OnChanged()
 {
 	SignalContentChanged();
+	m_pEditor->GetAssetBeingEdited()->SetModified(true);
 }
 
 void QTimeOfDayWidget::OnEndUndo(bool acceptUndo)
@@ -596,9 +648,13 @@ void QTimeOfDayWidget::OnEndActionUndoConstantProperties(bool acceptUndo)
 
 void QTimeOfDayWidget::CheckParameterChanged(STODParameter& param, const Vec3& newValue)
 {
-	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
+	CRY_ASSERT(GetPreset());
+
+	ITimeOfDay::IPreset* const pPreset = GetPreset();
+	ITimeOfDay::IVariables& variables = pPreset->GetVariables();
+
 	const int paramID = param.GetParamID();
-	const float fTime = pTimeOfDay->GetTime();
+	const float fTime = GetTimeOfDay()->GetTime();
 	const float fSplineTime = (fTime / 24.0f) * m_fAnimTimeSecondsIn24h;
 
 	bool bChanged = false;
@@ -606,23 +662,23 @@ void QTimeOfDayWidget::CheckParameterChanged(STODParameter& param, const Vec3& n
 	if (fabs(oldValue.x - newValue.x) > fToDParameterComareEpsilon)
 	{
 		bChanged = true;
-		pTimeOfDay->UpdateSplineKeyForVar(paramID, 0, fSplineTime, newValue.x);
+		variables.UpdateSplineKeyForVar(paramID, 0, fSplineTime, newValue.x);
 	}
 	if (fabs(oldValue.y - newValue.y) > fToDParameterComareEpsilon)
 	{
 		bChanged = true;
-		pTimeOfDay->UpdateSplineKeyForVar(paramID, 1, fSplineTime, newValue.y);
+		variables.UpdateSplineKeyForVar(paramID, 1, fSplineTime, newValue.y);
 	}
 	if (fabs(oldValue.z - newValue.z) > fToDParameterComareEpsilon)
 	{
 		bChanged = true;
-		pTimeOfDay->UpdateSplineKeyForVar(paramID, 2, fSplineTime, newValue.z);
+		variables.UpdateSplineKeyForVar(paramID, 2, fSplineTime, newValue.z);
 	}
 
 	if (bChanged)
 	{
 		param.SetValue(newValue);
-		pTimeOfDay->Update(true, true);
+		GetTimeOfDay()->Update(true, true);
 		m_bIsEditing = true;
 		GetIEditor()->Notify(eNotify_OnTimeOfDayChange);
 		m_bIsEditing = false;
@@ -660,25 +716,25 @@ void SaveTreeState(const QPropertyTree* pTree, const char* name, QVariantMap& st
 
 } //~unnamed namespace
 
-void QTimeOfDayWidget::SetPersonalizationState(const QVariantMap& state)
+void QTimeOfDayWidget::SetState(const QVariantMap& state)
 {
 	QVariant var = state.value("TreeSplitter");
 	if (var.isValid())
 	{
-		m_splitterBetweenTrees->restoreState(QByteArray::fromBase64(var.toByteArray()));
+		m_pSplitterBetweenTrees->restoreState(QByteArray::fromBase64(var.toByteArray()));
 	}
 
-	RestoreTreeState(state, "TreeVar", m_propertyTreeVar);
-	RestoreTreeState(state, "TreeConst", m_propertyTreeConst);
+	RestoreTreeState(state, "TreeVar", m_pPropertyTree);
+	RestoreTreeState(state, "TreeConst", m_pPropertyTreeConst);
 }
 
-QVariantMap QTimeOfDayWidget::GetPersonalizationState() const
+QVariantMap QTimeOfDayWidget::GetState() const
 {
 	QVariantMap state;
-	state.insert("TreeSplitter", m_splitterBetweenTrees->saveState().toBase64());
+	state.insert("TreeSplitter", m_pSplitterBetweenTrees->saveState().toBase64());
 
-	SaveTreeState(m_propertyTreeVar, "TreeVar", state);
-	SaveTreeState(m_propertyTreeConst, "TreeConst", state);
+	SaveTreeState(m_pPropertyTree, "TreeVar", state);
+	SaveTreeState(m_pPropertyTreeConst, "TreeConst", state);
 
 	return state;
 }
@@ -688,7 +744,7 @@ void QTimeOfDayWidget::OnSplineEditing()
 	if (m_selectedParamId < 0)
 		return;
 
-	SCurveEditorContent* pContent = m_curveContent.get();
+	SCurveEditorContent* pContent = m_pCurveContent.get();
 
 	if (!m_bIsPlaying)
 	{
@@ -712,9 +768,10 @@ void QTimeOfDayWidget::OnSplineEditing()
 		}
 	}
 
-	UpdateToDVarFromCurveContent(m_selectedParamId, 0, pContent);
-	UpdateToDVarFromCurveContent(m_selectedParamId, 1, pContent);
-	UpdateToDVarFromCurveContent(m_selectedParamId, 2, pContent);
+	ITimeOfDay::IPreset* const pPreset = GetPreset();
+	UpdateToDVarFromCurveContent(pPreset, m_selectedParamId, 0, pContent);
+	UpdateToDVarFromCurveContent(pPreset, m_selectedParamId, 1, pContent);
+	UpdateToDVarFromCurveContent(pPreset, m_selectedParamId, 2, pContent);
 
 	GetTimeOfDay()->Update(true, true);
 	m_bIsEditing = true;
@@ -728,7 +785,7 @@ void QTimeOfDayWidget::OnCopyCurveContent()
 	if (m_selectedParamId < 0 || m_selectedParamId >= m_groups.m_params.size())
 		return;
 
-	SCurveEditorContent* pContent = m_curveContent.get();
+	SCurveEditorContent* pContent = m_pCurveContent.get();
 	if (pContent)
 	{
 		DynArray<char> buffer;
@@ -760,7 +817,7 @@ void QTimeOfDayWidget::OnPasteCurveContent()
 		if (array.isEmpty())
 			return;
 
-		SCurveEditorContent* pContent = m_curveContent.get();
+		SCurveEditorContent* pContent = m_pCurveContent.get();
 		if (pContent)
 		{
 			OnBeginUndo();
@@ -776,9 +833,13 @@ void QTimeOfDayWidget::OnPasteCurveContent()
 
 void QTimeOfDayWidget::SetTODTime(const float fTime)
 {
-	GetTimeOfDay()->SetTime(fTime, true);
+	ITimeOfDay* const pTimeOfDay = GetTimeOfDay();
+	pTimeOfDay->SetTime(fTime, true);
 
-	GetIEditor()->SetCurrentMissionTime(fTime);
+	if (GetIEditor()->GetDocument()->GetMissionCount())
+	{
+		GetIEditor()->SetCurrentMissionTime(fTime);
+	}
 
 	m_bIsEditing = true;
 	GetIEditor()->Notify(eNotify_OnTimeOfDayChange);
@@ -803,96 +864,104 @@ void QTimeOfDayWidget::CreateUi()
 
 void QTimeOfDayWidget::CreatePropertyTrees(QSplitter* pParent)
 {
-	QWidget* varWidget = new QWidget;
+	QWidget* const pVarWidget = new QWidget;
 	{
-		QLabel* label = new QLabel("Variables");
-		label->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+		QLabel* pLabel = new QLabel("Variables");
+		pLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
-		m_propertyTreeVar = new QPropertyTree(this);
-		m_propertyTreeVar->setHideSelection(false);
-		m_propertyTreeVar->setUndoEnabled(false, false);
-		connect(m_propertyTreeVar, &QPropertyTree::signalSelected, this, &QTimeOfDayWidget::OnPropertySelected);
-		connect(m_propertyTreeVar, &QPropertyTree::signalBeginUndo, this, &QTimeOfDayWidget::OnBeginUndo);
-		connect(m_propertyTreeVar, &QPropertyTree::signalChanged, this, &QTimeOfDayWidget::OnChanged);
-		connect(m_propertyTreeVar, &QPropertyTree::signalEndUndo, this, &QTimeOfDayWidget::OnEndUndo);
+		m_pPropertyTree = new QPropertyTree(this);
+		m_pPropertyTree->setHideSelection(false);
+		m_pPropertyTree->setUndoEnabled(false, false);
+		connect(m_pPropertyTree, &QPropertyTree::signalSelected, this, &QTimeOfDayWidget::OnPropertySelected);
+		connect(m_pPropertyTree, &QPropertyTree::signalBeginUndo, this, &QTimeOfDayWidget::OnBeginUndo);
+		connect(m_pPropertyTree, &QPropertyTree::signalChanged, this, &QTimeOfDayWidget::OnChanged);
+		connect(m_pPropertyTree, &QPropertyTree::signalEndUndo, this, &QTimeOfDayWidget::OnEndUndo);
 
-		auto* layout = new QVBoxLayout;
-		layout->setContentsMargins(QMargins(0, 0, 0, 0));
-		layout->addWidget(label);
-		layout->addWidget(m_propertyTreeVar);
-		varWidget->setLayout(layout);
+		QVBoxLayout* const pLayout = new QVBoxLayout;
+		pLayout->setContentsMargins(QMargins(0, 0, 0, 0));
+		pLayout->addWidget(pLabel);
+		pLayout->addWidget(m_pPropertyTree);
+		pVarWidget->setLayout(pLayout);
 	}
 
-	QWidget* constWidget = new QWidget;
+	QWidget* const pConstWidget = new QWidget;
 	{
-		QLabel* label = new QLabel("Constants");
-		label->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+		QLabel* const pLabel = new QLabel("Constants");
+		pLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
-		m_propertyTreeConst = new QPropertyTree(this);
-		m_propertyTreeConst->setHideSelection(false);
-		m_propertyTreeConst->setUndoEnabled(false, false);
-		connect(m_propertyTreeConst, &QPropertyTree::signalChanged, this, []() { GetTimeOfDay()->ConstantsChanged(); });
-		connect(m_propertyTreeConst, &QPropertyTree::signalBeginUndo, this, &QTimeOfDayWidget::UndoConstantProperties);
-		connect(m_propertyTreeConst, &QPropertyTree::signalEndUndo, this, &QTimeOfDayWidget::OnEndActionUndoConstantProperties);
+		m_pPropertyTreeConst = new QPropertyTree(this);
+		m_pPropertyTreeConst->setHideSelection(false);
+		m_pPropertyTreeConst->setUndoEnabled(false, false);
+		connect(m_pPropertyTreeConst, &QPropertyTree::signalChanged, this, [this]() 
+		{ 
+			ITimeOfDay* const pTimeOfDay = GetTimeOfDay();
+			if (GetPreset() == &pTimeOfDay->GetCurrentPreset())
+			{
+				pTimeOfDay->ConstantsChanged();
+				OnChanged();
+			}
+		});
+		connect(m_pPropertyTreeConst, &QPropertyTree::signalBeginUndo, this, &QTimeOfDayWidget::UndoConstantProperties);
+		connect(m_pPropertyTreeConst, &QPropertyTree::signalEndUndo, this, &QTimeOfDayWidget::OnEndActionUndoConstantProperties);
 
-		auto* layout = new QVBoxLayout;
-		layout->setContentsMargins(QMargins(0, 0, 0, 0));
-		layout->addWidget(label);
-		layout->addWidget(m_propertyTreeConst);
-		constWidget->setLayout(layout);
+		QVBoxLayout* const pLayout = new QVBoxLayout;
+		pLayout->setContentsMargins(QMargins(0, 0, 0, 0));
+		pLayout->addWidget(pLabel);
+		pLayout->addWidget(m_pPropertyTreeConst);
+		pConstWidget->setLayout(pLayout);
 	}
 
-	m_splitterBetweenTrees = new QSplitter(Qt::Orientation::Vertical);
-	m_splitterBetweenTrees->setChildrenCollapsible(false);
+	m_pSplitterBetweenTrees = new QSplitter(Qt::Orientation::Vertical);
+	m_pSplitterBetweenTrees->setChildrenCollapsible(false);
 
-	m_splitterBetweenTrees->addWidget(varWidget);
-	m_splitterBetweenTrees->addWidget(constWidget);
+	m_pSplitterBetweenTrees->addWidget(pVarWidget);
+	m_pSplitterBetweenTrees->addWidget(pConstWidget);
 
-	pParent->addWidget(m_splitterBetweenTrees);
+	pParent->addWidget(m_pSplitterBetweenTrees);
 }
 
 void QTimeOfDayWidget::CreateCurveEditor(QSplitter* pParent)
 {
-	QBoxLayout* centralVerticalLayout = new QBoxLayout(QBoxLayout::TopToBottom);
-	QWidget* w = new QWidget();
-	w->setLayout(centralVerticalLayout);
-	pParent->addWidget(w);
+	QBoxLayout* pCentralVerticalLayout = new QBoxLayout(QBoxLayout::TopToBottom);
+	QWidget* pWidget = new QWidget();
+	pWidget->setLayout(pCentralVerticalLayout);
+	pParent->addWidget(pWidget);
 
-	QToolBar* toolBar = new QToolBar(this);
-	centralVerticalLayout->addWidget(toolBar, Qt::AlignTop);
+	QToolBar* pToolBar = new QToolBar(this);
+	pCentralVerticalLayout->addWidget(pToolBar, Qt::AlignTop);
 
-	m_curveEdit = new CCurveEditor(this);
-	m_curveEdit->FillWithCurveToolsAndConnect(toolBar);
-	m_curveEdit->SetContent(m_curveContent.get());
-	m_curveEdit->SetTimeRange(SAnimTime(0.0f), SAnimTime(m_fAnimTimeSecondsIn24h));
-	m_curveEdit->SetRulerVisible(true);
-	m_curveEdit->SetRulerHeight(nRulerHeight);
-	m_curveEdit->SetRulerTicksYOffset(nRulerGradientHeight);
-	m_curveEdit->SetHandlesVisible(false);
-	m_curveEdit->SetGridVisible(true);
-	m_curveEdit->OnFitCurvesHorizontally();
-	m_curveEdit->OnFitCurvesVertically();
-	m_curveEdit->installEventFilter(this);
-	m_curveEdit->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+	m_pCurveEdit = new CCurveEditor(this);
+	m_pCurveEdit->FillWithCurveToolsAndConnect(pToolBar);
+	m_pCurveEdit->SetContent(m_pCurveContent.get());
+	m_pCurveEdit->SetTimeRange(SAnimTime(0.0f), SAnimTime(m_fAnimTimeSecondsIn24h));
+	m_pCurveEdit->SetRulerVisible(true);
+	m_pCurveEdit->SetRulerHeight(nRulerHeight);
+	m_pCurveEdit->SetRulerTicksYOffset(nRulerGradientHeight);
+	m_pCurveEdit->SetHandlesVisible(false);
+	m_pCurveEdit->SetGridVisible(true);
+	m_pCurveEdit->OnFitCurvesHorizontally();
+	m_pCurveEdit->OnFitCurvesVertically();
+	m_pCurveEdit->installEventFilter(this);
+	m_pCurveEdit->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 
-	connect(m_curveEdit, &CCurveEditor::SignalScrub, this, &QTimeOfDayWidget::CurveEditTimeChanged);
-	connect(m_curveEdit, &CCurveEditor::SignalDrawRulerBackground, [this](QPainter& painter, const QRect& rulerRect, const Range& visibleRange)
+	connect(m_pCurveEdit, &CCurveEditor::SignalScrub, this, &QTimeOfDayWidget::CurveEditTimeChanged);
+	connect(m_pCurveEdit, &CCurveEditor::SignalDrawRulerBackground, [this](QPainter& painter, const QRect& rulerRect, const Range& visibleRange)
 	{
-		DrawGradient(GetTimeOfDay(), m_selectedParamId, painter, rulerRect, visibleRange);
+		DrawGradient(GetPreset(), m_selectedParamId, painter, rulerRect, visibleRange);
 	});
-	connect(m_curveEdit, &CCurveEditor::SignalContentAboutToBeChanged, this, &QTimeOfDayWidget::OnBeginUndo);
-	connect(m_curveEdit, &CCurveEditor::SignalContentChanging, this, &QTimeOfDayWidget::OnSplineEditing);
-	connect(m_curveEdit, &CCurveEditor::SignalContentChanged, [this]() { OnSplineEditing(); OnChanged(); OnEndUndo(true); });
+	connect(m_pCurveEdit, &CCurveEditor::SignalContentAboutToBeChanged, this, &QTimeOfDayWidget::OnBeginUndo);
+	connect(m_pCurveEdit, &CCurveEditor::SignalContentChanging, this, &QTimeOfDayWidget::OnSplineEditing);
+	connect(m_pCurveEdit, &CCurveEditor::SignalContentChanged, [this]() { OnSplineEditing(); OnChanged(); OnEndUndo(true); });
 
-	centralVerticalLayout->addWidget(m_curveEdit, Qt::AlignTop);
+	pCentralVerticalLayout->addWidget(m_pCurveEdit, Qt::AlignTop);
 
-	toolBar->addSeparator();
-	toolBar->addAction(CryIcon("icons:CurveEditor/Copy_Curve.ico"), "Copy curve content", this, SLOT(OnCopyCurveContent()));
-	toolBar->addAction(CryIcon("icons:CurveEditor/Paste_Curve.ico"), "Paste curve content", this, SLOT(OnPasteCurveContent()));
+	pToolBar->addSeparator();
+	pToolBar->addAction(CryIcon("icons:CurveEditor/Copy_Curve.ico"), "Copy curve content", this, SLOT(OnCopyCurveContent()));
+	pToolBar->addAction(CryIcon("icons:CurveEditor/Paste_Curve.ico"), "Paste curve content", this, SLOT(OnPasteCurveContent()));
 
-	QBoxLayout* bottomLayout = new QBoxLayout(QBoxLayout::TopToBottom);
-	bottomLayout->setContentsMargins(5, 1, 5, 3);
-	centralVerticalLayout->addLayout(bottomLayout, Qt::AlignBottom);
+	QBoxLayout* pBottomLayout = new QBoxLayout(QBoxLayout::TopToBottom);
+	pBottomLayout->setContentsMargins(5, 1, 5, 3);
+	pCentralVerticalLayout->addLayout(pBottomLayout, Qt::AlignBottom);
 
 	{
 		QBoxLayout* pMediaBarLayout = new QHBoxLayout;
@@ -906,113 +975,119 @@ void QTimeOfDayWidget::CreateCurveEditor(QSplitter* pParent)
 		pMediaBarLayout->addLayout(pMediaBarLayoutCenter);
 		pMediaBarLayout->addLayout(pMediaBarLayoutRight);
 
-		QLabel* startTimeLabel = new QLabel("Start:");
-		startTimeLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+		QLabel* pStartTimeLabel = new QLabel("Start:");
+		pStartTimeLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
-		m_startTimeEdit = new CTimeEditControl(this);
-		m_startTimeEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-		connect(m_startTimeEdit, &CTimeEditControl::timeChanged, [](const QTime& time)
+		m_pStartTimeEdit = new CTimeEditControl(this);
+		m_pStartTimeEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+		connect(m_pStartTimeEdit, &CTimeEditControl::timeChanged, [this](const QTime& time)
 		{
 			const float fTODTime = QTimeToFloat(time);
-			UpdateToDAdvancedInfo([fTODTime](ITimeOfDay::SAdvancedInfo& sAdvInfo) { sAdvInfo.fStartTime = fTODTime; });
+			UpdateToDAdvancedInfo(m_advancedInfo, [fTODTime](ITimeOfDay::SAdvancedInfo& sAdvInfo) { sAdvInfo.fStartTime = fTODTime; });
 		});
-		pMediaBarLayoutLeft->addWidget(startTimeLabel);
-		pMediaBarLayoutLeft->addWidget(m_startTimeEdit);
+		pMediaBarLayoutLeft->addWidget(pStartTimeLabel);
+		pMediaBarLayoutLeft->addWidget(m_pStartTimeEdit);
 		pMediaBarLayoutLeft->addStretch();
 
-		QLabel* currentTimeLabel = new QLabel("Current:");
-		currentTimeLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+		QLabel* pCurrentTimeLabel = new QLabel("Current:");
+		pCurrentTimeLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
-		m_currentTimeEdit = new CTimeEditControl(this);
-		m_currentTimeEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-		connect(m_currentTimeEdit, &CTimeEditControl::timeChanged, this, &QTimeOfDayWidget::CurrentTimeEdited);
+		m_pCurrentTimeEdit = new CTimeEditControl(this);
+		m_pCurrentTimeEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+		connect(m_pCurrentTimeEdit, &CTimeEditControl::timeChanged, this, &QTimeOfDayWidget::CurrentTimeEdited);
 
-		QToolButton* stopButton = new QToolButton;
-		stopButton->setIcon(CryIcon("icons:Trackview/Stop_Sequence.ico"));
-		stopButton->setCheckable(true);
-		stopButton->setChecked(!m_bIsPlaying);
-		stopButton->setAutoExclusive(true);
+		QToolButton* pStopButton = new QToolButton;
+		pStopButton->setIcon(CryIcon("icons:Trackview/Stop_Sequence.ico"));
+		pStopButton->setCheckable(true);
+		pStopButton->setChecked(!m_bIsPlaying);
+		pStopButton->setAutoExclusive(true);
 
-		QToolButton* playButton = new QToolButton;
-		playButton->setIcon(CryIcon("icons:Trackview/Play_Sequence.ico"));
-		playButton->setCheckable(true);
-		playButton->setChecked(m_bIsPlaying);
-		playButton->setAutoExclusive(true);
+		QToolButton* pPlayButton = new QToolButton;
+		pPlayButton->setIcon(CryIcon("icons:Trackview/Play_Sequence.ico"));
+		pPlayButton->setCheckable(true);
+		pPlayButton->setChecked(m_bIsPlaying);
+		pPlayButton->setAutoExclusive(true);
 
-		QLabel* playSpeedLabel = new QLabel("Speed: ");
-		playSpeedLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+		QLabel* pPlaySpeedLabel = new QLabel("Speed: ");
+		pPlaySpeedLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
-		m_playSpeedEdit = new QLineEdit;
-		m_playSpeedEdit->setFixedWidth(37);
-		m_playSpeedEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-		QDoubleValidator* validator = new QDoubleValidator(0.0, 99.999, 3, m_playSpeedEdit);
+		m_pPlaySpeedEdit = new QLineEdit;
+		m_pPlaySpeedEdit->setFixedWidth(37);
+		m_pPlaySpeedEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+		QDoubleValidator* validator = new QDoubleValidator(0.0, 99.999, 3, m_pPlaySpeedEdit);
 		validator->setNotation(QDoubleValidator::StandardNotation);
-		m_playSpeedEdit->setValidator(validator);
-		m_playSpeedEdit->setToolTip("TimeOfDay play speed\n Valid range:[0.000 - 99.999]");
+		m_pPlaySpeedEdit->setValidator(validator);
+		m_pPlaySpeedEdit->setToolTip("TimeOfDay play speed\n Valid range:[0.000 - 99.999]");
 
-		connect(m_playSpeedEdit, &QLineEdit::editingFinished, [this]()
+		connect(m_pPlaySpeedEdit, &QLineEdit::editingFinished, [this]()
 		{
-			m_curveEdit->setFocus();
-			const QString value = m_playSpeedEdit->text();
+			m_pCurveEdit->setFocus();
+			const QString value = m_pPlaySpeedEdit->text();
 			const float fFloatValue = value.toFloat();
-			UpdateToDAdvancedInfo([fFloatValue](ITimeOfDay::SAdvancedInfo& sAdvInfo) { sAdvInfo.fAnimSpeed = fFloatValue; });
+			UpdateToDAdvancedInfo(m_advancedInfo, [fFloatValue](ITimeOfDay::SAdvancedInfo& sAdvInfo) { sAdvInfo.fAnimSpeed = fFloatValue; });
 		});
 
-		connect(stopButton, &QToolButton::clicked, [this]() { m_bIsPlaying = false; m_playSpeedEdit->clearFocus(); m_propertyTreeVar->setEnabled(true); });
-		connect(playButton, &QToolButton::clicked, [this]() { m_bIsPlaying = true; m_playSpeedEdit->clearFocus();  m_propertyTreeVar->setEnabled(false); });
+		connect(pStopButton, &QToolButton::clicked, [this]() { m_bIsPlaying = false; m_pPlaySpeedEdit->clearFocus(); m_pPropertyTree->setEnabled(true); });
+		connect(pPlayButton, &QToolButton::clicked, [this]() { m_bIsPlaying = true; m_pPlaySpeedEdit->clearFocus();  m_pPropertyTree->setEnabled(false); });
 
 		pMediaBarLayoutCenter->setSpacing(0);
 		pMediaBarLayoutCenter->setMargin(0);
 
-		pMediaBarLayoutCenter->addWidget(currentTimeLabel);
-		pMediaBarLayoutCenter->addWidget(m_currentTimeEdit);
+		pMediaBarLayoutCenter->addWidget(pCurrentTimeLabel);
+		pMediaBarLayoutCenter->addWidget(m_pCurrentTimeEdit);
 		pMediaBarLayoutCenter->addSpacing(5);
-		pMediaBarLayoutCenter->addWidget(stopButton);
-		pMediaBarLayoutCenter->addWidget(playButton);
+		pMediaBarLayoutCenter->addWidget(pStopButton);
+		pMediaBarLayoutCenter->addWidget(pPlayButton);
 		pMediaBarLayoutCenter->addSpacing(5);
-		pMediaBarLayoutCenter->addWidget(playSpeedLabel);
-		pMediaBarLayoutCenter->addWidget(m_playSpeedEdit);
+		pMediaBarLayoutCenter->addWidget(pPlaySpeedLabel);
+		pMediaBarLayoutCenter->addWidget(m_pPlaySpeedEdit);
 		pMediaBarLayoutCenter->addSpacing(15);
 
-		QLabel* endTimeLabel = new QLabel("End:");
-		endTimeLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+		QLabel* pEndTimeLabel = new QLabel("End:");
+		pEndTimeLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
-		m_endTimeEdit = new CTimeEditControl(this);
-		m_endTimeEdit->setTime(QTime(23, 59));
-		m_endTimeEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-		connect(m_endTimeEdit, &CTimeEditControl::timeChanged, [](const QTime& time)
+		m_pEndTimeEdit = new CTimeEditControl(this);
+		m_pEndTimeEdit->setTime(QTime(23, 59));
+		m_pEndTimeEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+		connect(m_pEndTimeEdit, &CTimeEditControl::timeChanged, [this](const QTime& time)
 		{
 			const float fTODTime = QTimeToFloat(time);
-			UpdateToDAdvancedInfo([fTODTime](ITimeOfDay::SAdvancedInfo& sAdvInfo) { sAdvInfo.fEndTime = fTODTime; });
+			UpdateToDAdvancedInfo(m_advancedInfo, [fTODTime](ITimeOfDay::SAdvancedInfo& sAdvInfo) { sAdvInfo.fEndTime = fTODTime; });
 		});
 
 		pMediaBarLayoutRight->addStretch();
-		pMediaBarLayoutRight->addWidget(endTimeLabel, Qt::AlignRight);
-		pMediaBarLayoutRight->addWidget(m_endTimeEdit, Qt::AlignRight);
+		pMediaBarLayoutRight->addWidget(pEndTimeLabel, Qt::AlignRight);
+		pMediaBarLayoutRight->addWidget(m_pEndTimeEdit, Qt::AlignRight);
 
-		bottomLayout->addLayout(pMediaBarLayout, Qt::AlignTop);
+		pBottomLayout->addLayout(pMediaBarLayout, Qt::AlignTop);
 	}
 }
 
 void QTimeOfDayWidget::LoadPropertiesTrees()
 {
-	m_propertyTreeVar->setArchiveContext(m_pContextList->Tail());
-	m_propertyTreeVar->detach();
+	if (m_groups.m_params.size())
+	{
+		return;
+	}
 
-	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-	const int nTODParamCount = pTimeOfDay->GetVariableCount();
+	m_pPropertyTree->detach();
+	m_pPropertyTree->setArchiveContext(m_pContextList->Tail());
+
+	ITimeOfDay::IPreset* pPreset = GetPreset();
+	ITimeOfDay::IVariables& variables = pPreset->GetVariables();
+	const int nTODParamCount = variables.GetVariableCount();
 
 	std::map<string, size_t> tempMap;
 	int nGroupId = 0;
 	for (int varID = 0; varID < nTODParamCount; ++varID)
 	{
 		ITimeOfDay::SVariableInfo sVarInfo;
-		if (pTimeOfDay->GetVariableInfo(varID, sVarInfo))
+		if (variables.GetVariableInfo(varID, sVarInfo))
 		{
-			auto it = tempMap.find(sVarInfo.group);
+			auto it = tempMap.find(sVarInfo.szGroup);
 			if (it == tempMap.end())
 			{
-				tempMap[sVarInfo.group] = nGroupId++;
+				tempMap[sVarInfo.szGroup] = nGroupId++;
 			}
 		}
 	}
@@ -1021,10 +1096,10 @@ void QTimeOfDayWidget::LoadPropertiesTrees()
 	for (int varID = 0; varID < nTODParamCount; ++varID)
 	{
 		ITimeOfDay::SVariableInfo sVarInfo;
-		if (pTimeOfDay->GetVariableInfo(varID, sVarInfo))
+		if (variables.GetVariableInfo(varID, sVarInfo))
 		{
 			const int nParamID = sVarInfo.nParamId;
-			const char* sGroupName = sVarInfo.group;
+			const char* sGroupName = sVarInfo.szGroup;
 
 			const int groupId = tempMap[sGroupName];
 
@@ -1034,9 +1109,9 @@ void QTimeOfDayWidget::LoadPropertiesTrees()
 
 			STODParameter todParam;
 			todParam.SetParamID(nParamID);
-			todParam.SetName(sVarInfo.name);
+			todParam.SetName(sVarInfo.szName);
 			todParam.SetGroupName(sGroupName);
-			todParam.SetLabel(sVarInfo.displayName);
+			todParam.SetLabel(sVarInfo.szDisplayName);
 			todParam.SetTODParamType((sVarInfo.type == ITimeOfDay::TYPE_FLOAT) ? eFloatType : eColorType);
 			todParam.SetValue(Vec3(sVarInfo.fValue[0], sVarInfo.fValue[1], sVarInfo.fValue[2]));
 			todParam.m_pGroup = &group;
@@ -1067,12 +1142,12 @@ void QTimeOfDayWidget::LoadPropertiesTrees()
 		}
 	}
 
-	m_propertyTreeVar->attach(Serialization::SStruct(m_groups));
-	m_propertyTreeConst->attach(pTimeOfDay->GetConstantParams());
+	m_pPropertyTree->attach(Serialization::SStruct(m_groups));
+	m_pPropertyTreeConst->attach(Serialization::SStruct(pPreset->GetConstants()));
 
 	//By default, trees are collapsed. If layout is present, it will restore state
-	m_propertyTreeVar->collapseAll();
-	m_propertyTreeConst->collapseAll();
+	m_pPropertyTree->collapseAll();
+	m_pPropertyTreeConst->collapseAll();
 }
 
 void QTimeOfDayWidget::UpdateValues()
@@ -1081,43 +1156,40 @@ void QTimeOfDayWidget::UpdateValues()
 	UpdateCurveTime();
 	UpdateCurrentTimeEdit();
 
-	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
+	GetTimeOfDay()->GetAdvancedInfo(m_advancedInfo);
 
-	ITimeOfDay::SAdvancedInfo advInfo;
-	pTimeOfDay->GetAdvancedInfo(advInfo);
+	const QTime startTime = FloatToQTime(m_advancedInfo.fStartTime);
+	SetQTimeEditTimeBlocking(m_pStartTimeEdit, startTime);
+	const QTime endTime = FloatToQTime(m_advancedInfo.fEndTime);
+	SetQTimeEditTimeBlocking(m_pEndTimeEdit, endTime);
 
-	const QTime startTime = FloatToQTime(advInfo.fStartTime);
-	SetQTimeEditTimeBlocking(m_startTimeEdit, startTime);
-	const QTime endTime = FloatToQTime(advInfo.fEndTime);
-	SetQTimeEditTimeBlocking(m_endTimeEdit, endTime);
-
-	m_playSpeedEdit->blockSignals(true);
-	m_playSpeedEdit->setText(QString::number(advInfo.fAnimSpeed));
-	m_playSpeedEdit->blockSignals(false);
+	m_pPlaySpeedEdit->blockSignals(true);
+	m_pPlaySpeedEdit->setText(QString::number(m_advancedInfo.fAnimSpeed));
+	m_pPlaySpeedEdit->blockSignals(false);
 
 	UpdateConstPropTree();
 }
 
 void QTimeOfDayWidget::UpdateSelectedParamId()
 {
-	PropertyRow* row = m_propertyTreeVar->selectedRow();
-	if (!row)
+	PropertyRow* pRow = m_pPropertyTree->selectedRow();
+	if (!pRow)
 	{
 		m_selectedParamId = -1;
 		return;
 	}
 
 	STODParameter* pParam = NULL;
-	while (row && row->parent())
+	while (pRow && pRow->parent())
 	{
-		if (STODParameterGroup* pGroup = row->parent()->serializer().cast<STODParameterGroup>())
+		if (STODParameterGroup* pGroup = pRow->parent()->serializer().cast<STODParameterGroup>())
 		{
-			int index = row->parent()->childIndex(row);
+			int index = pRow->parent()->childIndex(pRow);
 			if (index >= 0 && index < pGroup->m_Params.size())
 				pParam = &pGroup->m_Params[index];
 			break;
 		}
-		row = row->parent();
+		pRow = pRow->parent();
 	}
 
 	m_selectedParamId = pParam ? pParam->GetParamID() : -1;
@@ -1125,12 +1197,12 @@ void QTimeOfDayWidget::UpdateSelectedParamId()
 
 void QTimeOfDayWidget::UpdateVarPropTree()
 {
-	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-	const int nToDVarCount = pTimeOfDay->GetVariableCount();
+	ITimeOfDay::IVariables& variables = GetPreset()->GetVariables();
+	const int nToDVarCount = variables.GetVariableCount();
 	for (int varID = 0; varID < nToDVarCount; ++varID)
 	{
 		ITimeOfDay::SVariableInfo sVarInfo;
-		if (pTimeOfDay->GetVariableInfo(varID, sVarInfo))
+		if (variables.GetVariableInfo(varID, sVarInfo))
 		{
 			if (sVarInfo.nParamId >= 0 && sVarInfo.nParamId < m_groups.m_params.size())
 			{
@@ -1139,29 +1211,27 @@ void QTimeOfDayWidget::UpdateVarPropTree()
 			}
 		}
 	}
-	m_propertyTreeVar->revert();
+	m_pPropertyTree->revert();
 }
 
 void QTimeOfDayWidget::UpdateCurrentTimeEdit()
 {
-	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-	const float fTime = pTimeOfDay->GetTime();
+	const float fTime = GetTimeOfDay()->GetTime();
 	QTime currentTime = FloatToQTime(fTime);
 
-	SetQTimeEditTimeBlocking(m_currentTimeEdit, currentTime);
+	SetQTimeEditTimeBlocking(m_pCurrentTimeEdit, currentTime);
 }
 
 void QTimeOfDayWidget::UpdateCurveTime()
 {
-	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-	const float fTime = pTimeOfDay->GetTime();
+	const float fTime = GetTimeOfDay()->GetTime();
 	const float fSplineTime = (fTime / 24.0f) * m_fAnimTimeSecondsIn24h;
-	m_curveEdit->SetTime(SAnimTime(fSplineTime));
+	m_pCurveEdit->SetTime(SAnimTime(fSplineTime));
 }
 
 bool QTimeOfDayWidget::eventFilter(QObject* obj, QEvent* event)
 {
-	if (obj == m_curveEdit)
+	if (obj == m_pCurveEdit)
 	{
 		//forward some keys to m_propertyTreeVar, when its not focused
 		if (event->type() == QEvent::KeyPress)
@@ -1173,7 +1243,7 @@ bool QTimeOfDayWidget::eventFilter(QObject* obj, QEvent* event)
 			    (keyEvent->key() == Qt::Key_Enter) || (keyEvent->key() == Qt::Key_Return)
 			    )
 			{
-				return QApplication::sendEvent(m_propertyTreeVar, event);
+				return QApplication::sendEvent(m_pPropertyTree, event);
 			}
 		}
 	}
@@ -1181,15 +1251,45 @@ bool QTimeOfDayWidget::eventFilter(QObject* obj, QEvent* event)
 	return QObject::eventFilter(obj, event);
 }
 
+bool QTimeOfDayWidget::event(QEvent *event)
+{
+	if (event->type() == QEvent::WindowActivate || isActiveWindow() && event->type() == QEvent::Show)
+	{
+		// Thus, we ignore a bunch of state change events when the application is activated. 
+		// By postponing the processing to the next frame, we make the final decision about 
+		// the active state of the editor, when, probably, all windows receive the final state.
+		QTimer::singleShot(0, [this]()
+		{
+			if (isActiveWindow() && !m_preset.empty())
+			{
+				GetTimeOfDay()->SetAdvancedInfo(m_advancedInfo);
+				const float fTODTime = QTimeToFloat(m_pCurrentTimeEdit->time());
+				SetTODTime(fTODTime);
+				GetTimeOfDay()->PreviewPreset(m_preset);
+			}
+		});
+	}
+	return QObject::event(event);
+}
+
 void QTimeOfDayWidget::UpdateConstPropTree()
 {
-	m_propertyTreeVar->revert();
-	m_propertyTreeConst->attach(GetTimeOfDay()->GetConstantParams());
+	m_pPropertyTree->revert();
+	m_pPropertyTreeConst->attach(Serialization::SStruct(GetPreset()->GetConstants()));
 }
 
 void QTimeOfDayWidget::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
-	if (event == eNotify_OnTimeOfDayChange && !m_bIsEditing)
+	if (event == eNotify_OnIdleUpdate)
+	{
+		OnIdleUpdate();
+	}
+	else if (event == eNotify_OnStyleChanged)
+	{
+		// refresh curves color by updating content
+		UpdateCurveContent();
+	}
+	else if (event == eNotify_OnTimeOfDayChange && !m_bIsEditing && isActiveWindow() && GetPreset())
 	{
 		UpdateCurveContent();
 		UpdateVarPropTree();
