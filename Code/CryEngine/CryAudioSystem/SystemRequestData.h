@@ -24,9 +24,9 @@ enum class ESystemRequestType : EnumFlagsType
 	PreloadSingleRequest,
 	UnloadSingleRequest,
 	SetParameter,
-	SetGlobalParameter,
+	SetParameterGlobally,
 	SetSwitchState,
-	SetGlobalSwitchState,
+	SetSwitchStateGlobally,
 	AutoLoadSetting,
 	LoadSetting,
 	UnloadSetting,
@@ -301,16 +301,16 @@ struct SSystemRequestData<ESystemRequestType::SetParameter> final : public SSyst
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SSystemRequestData<ESystemRequestType::SetGlobalParameter> final : public SSystemRequestDataBase
+struct SSystemRequestData<ESystemRequestType::SetParameterGlobally> final : public SSystemRequestDataBase
 {
 	explicit SSystemRequestData(ControlId const parameterId_, float const value_)
-		: SSystemRequestDataBase(ESystemRequestType::SetGlobalParameter)
+		: SSystemRequestDataBase(ESystemRequestType::SetParameterGlobally)
 		, parameterId(parameterId_)
 		, value(value_)
 	{}
 
-	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::SetGlobalParameter> const* const pASRData)
-		: SSystemRequestDataBase(ESystemRequestType::SetGlobalParameter)
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::SetParameterGlobally> const* const pASRData)
+		: SSystemRequestDataBase(ESystemRequestType::SetParameterGlobally)
 		, parameterId(pASRData->parameterId)
 		, value(pASRData->value)
 	{}
@@ -345,16 +345,16 @@ struct SSystemRequestData<ESystemRequestType::SetSwitchState> final : public SSy
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SSystemRequestData<ESystemRequestType::SetGlobalSwitchState> final : public SSystemRequestDataBase
+struct SSystemRequestData<ESystemRequestType::SetSwitchStateGlobally> final : public SSystemRequestDataBase
 {
 	explicit SSystemRequestData(ControlId const switchId_, SwitchStateId const switchStateId_)
-		: SSystemRequestDataBase(ESystemRequestType::SetGlobalSwitchState)
+		: SSystemRequestDataBase(ESystemRequestType::SetSwitchStateGlobally)
 		, switchId(switchId_)
 		, switchStateId(switchStateId_)
 	{}
 
-	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::SetGlobalSwitchState> const* const pASRData)
-		: SSystemRequestDataBase(ESystemRequestType::SetGlobalSwitchState)
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::SetSwitchStateGlobally> const* const pASRData)
+		: SSystemRequestDataBase(ESystemRequestType::SetSwitchStateGlobally)
 		, switchId(pASRData->switchId)
 		, switchStateId(pASRData->switchStateId)
 	{}
