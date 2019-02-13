@@ -18,7 +18,7 @@
 
 #include "ViewManager.h"
 #include "IUndoObject.h"
-#include <EditorFramework/Inspector.h>
+#include <EditorFramework/InspectorLegacy.h>
 
 #include <AssetSystem/Asset.h>
 #include <AssetSystem/AssetManager.h>
@@ -103,10 +103,9 @@ CParticleEditor::CParticleEditor()
 void CParticleEditor::InitMenu()
 {
 	const CEditor::MenuItems items[] = {
-		CEditor::MenuItems::FileMenu, CEditor::MenuItems::Save, CEditor::MenuItems::SaveAs,
+		CEditor::MenuItems::FileMenu, CEditor::MenuItems::Save,  CEditor::MenuItems::SaveAs,
 		CEditor::MenuItems::EditMenu, CEditor::MenuItems::Undo,  CEditor::MenuItems::Redo,
-		CEditor::MenuItems::Copy,     CEditor::MenuItems::Paste, CEditor::MenuItems::Delete
-	};
+		CEditor::MenuItems::Copy,     CEditor::MenuItems::Paste, CEditor::MenuItems::Delete };
 	AddToMenu(items, sizeof(items) / sizeof(CEditor::MenuItems));
 
 	{
@@ -146,11 +145,11 @@ void CParticleEditor::InitMenu()
 void CParticleEditor::InitToolbar(QVBoxLayout* pWindowLayout)
 {
 #define ADD_BUTTON(slot, name, shortcut, icon)                           \
-  { QAction* pAction = pToolBar->addAction(CryIcon(icon), QString());    \
-	pAction->setToolTip(name);                                           \
-	if (shortcut) pAction->setShortcut(tr(shortcut));                    \
-	connect(pAction, &QAction::triggered, this, &CParticleEditor::slot); \
-  }
+	{ QAction* pAction = pToolBar->addAction(CryIcon(icon), QString());    \
+		pAction->setToolTip(name);                                           \
+		if (shortcut) pAction->setShortcut(tr(shortcut));                    \
+		connect(pAction, &QAction::triggered, this, &CParticleEditor::slot); \
+	}
 
 	// TODO: make this better, the toolbars should behave like the main frame
 	//			 toolbars, where you can move them around in dedicated areas!
@@ -204,7 +203,7 @@ void CParticleEditor::RegisterDockingWidgets()
 	// to keep two instances of the inspector in sync when either one of them changes.
 	// Similar to the object properties, the property trees should be reverted when a feature item
 	// signals SignalInvalidated.
-	RegisterDockableWidget(s_szInspectorName, [=]() { return new CInspector(this); }, true, false);
+	RegisterDockableWidget(s_szInspectorName, [&]() { return new CInspectorLegacy(this); }, true, false);
 }
 
 bool CParticleEditor::OnUndo()
@@ -502,7 +501,7 @@ void CParticleEditor::OnShowEffectOptions()
 	if (!pEffect)
 		return;
 
-	PopulateInspectorEvent popEvent([this, pEffect](CInspector& inspector)
+	PopulateLegacyInspectorEvent popEvent([this, pEffect](CInspectorLegacy& inspector)
 	{
 		QAdvancedPropertyTree* pPropertyTree = new QAdvancedPropertyTree(pEffect->GetName());
 		// WORKAROUND: Serialization of features doesn't work with the default style.

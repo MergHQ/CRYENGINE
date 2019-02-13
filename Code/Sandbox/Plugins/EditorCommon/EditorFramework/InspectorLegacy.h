@@ -10,14 +10,14 @@
 #include <CryCore/CryVariant.h>
 
 class QEvent;
-class QVBoxLayout;
 class QLabel;
 class QToolButton;
 class QWidget;
-class PopulateInspectorEvent;
+class PopulateLegacyInspectorEvent;
 class CBroadcastManager;
 class CEditor;
 class QScrollableBox;
+class QVBoxLayout;
 
 //////////////////////////////////////////////////////////////////////////
 //! Inspector class
@@ -26,18 +26,22 @@ class QScrollableBox;
 //!
 //! To populate an inspector, you should dock it in your editor and broadcast a PopulateInspectorEvent
 //! from the broadcast manager. The event includes a label for the inspector and a widget factory lambda that will
-//! be called on population, and will create the client property widget type and add it to the inspector via AddWidget.
-//! Returning null from the factory lambda will clear the inspector unless it is locked (see below)
+//! be called on population, and will create the client property widget type. Returning null from the factory lambda
+//! will clear the inspector unless it is locked (see below)
 //!
 //! Example:
 //!
+//! CBroadcastManager* const pBroadcastManager = CBroadcastManager::Get(CMyEditor);
+//! if (pBroadcastManager)
+//! {
 //!   CMyObservedObject* pObj;
-//!   PopulateInspectorEvent popEvent([pObj](const PopulateInspectorEvent& inspector)
+//!   PopulateInspectorEvent popEvent([pObj](const PopulateInspectorEvent&)
 //!   {
-//!     inspector.AddWidget(new CMyObservedObjectPropertyWidget(pObj));
+//!     return new CMyObservedObjectPropertyWidget(pObj);
 //!   }, "Observed Object Properties");
 //!
-//!   popEvent.Broadcast(popEvent);
+//!   pBroadcastManager->Broadcast(popEvent);
+//! }
 //!
 //! The custom property widget would need to properly register with the observed object(s)
 //! for notification and refresh itself when the object properties change, using signals or any other
@@ -53,55 +57,65 @@ class QScrollableBox;
 //!    (Not recommended, since it overrides the user's preference)
 //! 3) By destroying the properties widget explicitly. This would usually happen if the observed object(s)
 //!    are somehow invalidated or destroyed.
-class EDITOR_COMMON_API CInspector : public CDockableWidget
+class EDITOR_COMMON_API CInspectorLegacy : public CDockableWidget
 {
 	Q_OBJECT
 public:
 	//!Parent must be specified in the constructor as we need to connect to a specific broadcast manager
-	CInspector(QWidget* pParent);
-	//!Inspector will use the context of the CEditor
-	CInspector(CEditor* pParent);
-	//!Directly assigning broadcast manager to the CInspector
-	CInspector(CBroadcastManager* pBroadcastManager);
-	virtual ~CInspector();
-	//!Locking API. If property widgets want to unlock the inspector they should delete themselves
-	//! Sets the inspector to be lockable, as it is not useful for unique panes.
-	void                SetLockable(bool bLockable);
-	bool                IsLocked() const { return m_isLocked; }
-	void                Lock();
-	void                Unlock();
-	void                ToggleLock()                  { IsLocked() ? Unlock() : Lock(); }
+	CInspectorLegacy(QWidget* pParent);
 
+	//!Inspector will use the context of the CEditor
+	CInspectorLegacy(CEditor* pParent);
+
+	//!Directly assigning broadcast manager to the CInspector
+	CInspectorLegacy(CBroadcastManager* pBroadcastManager);
+
+	virtual ~CInspectorLegacy();
+
+	//! Sets the inspector to be lockable, as it is not useful for unique panes.
+	void SetLockable(bool lockable);
+
+	//!Locking API. If property widgets want to unlock the inspector they should delete themselves
+	bool IsLocked() const { return m_locked; }
+	void Lock();
+	void Unlock();
+	void ToggleLock() { IsLocked() ? Unlock() : Lock(); }
+
+	//////////////////////////////////////////////////////////
+	// CDockableWidget implementation
 	virtual const char* GetPaneTitle() const override { return "Properties"; }
 	virtual QRect       GetPaneRect() override        { return QRect(0, 0, 200, 200); }
-	virtual QSize       sizeHint() const override     { return QSize(240, 600); }
-	void                closeEvent(QCloseEvent* event);
-	//!Add a widget to this inspector, only one widget can be added at a time
-	void                AddWidget(QWidget* pWidget);
+	//////////////////////////////////////////////////////////
+
+	virtual QSize sizeHint() const override { return QSize(240, 600); }
+	void          closeEvent(QCloseEvent* event);
+
+	void          AddWidget(QWidget* pWidget);
+
+public slots:
+	void OnWidgetDeleted(QObject* pObj);
 
 private:
-	//!If the inspector is not locked populate it with a widget allocated by the PopulateInspectorEvent
-	void OnPopulate(PopulateInspectorEvent& event);
-	//!Remove previously created widgets
+	void OnPopulate(PopulateLegacyInspectorEvent& event);
+
+	// Remove previously created widgets
 	void Clear();
+	void ClearAndFillSpace();
+
 	void Init();
-	//!Register to the PopulateInspector event in Broadcast Manager
 	void Connect(CBroadcastManager* pBroadcastManager);
-	//!Disconnect from Broadcast Manager
 	void Disconnect();
 
 	QPointer<CBroadcastManager> m_pBroadcastManager;
 	QToolButton*                m_pLockButton;
 	QLabel*                     m_pTitleLabel;
-	bool                        m_isLocked;
-	//!The layout we actually add a widget to
-	QVBoxLayout*                m_pWidgetLayout;
-	//!The widget owned by this inspector, (added via AddWidget)
-	QWidget*                    m_pOwnedWidget;
+	QVBoxLayout*                m_pMainLayout;
+	bool                        m_locked;
+	QScrollableBox*             m_pScrollableBox;
 };
 
 //! This header widget only exists for styling purposes
-class CInspectorHeaderWidget : public QWidget
+class CLegacyInspectorHeaderWidget : public QWidget
 {
 	Q_OBJECT
 public:

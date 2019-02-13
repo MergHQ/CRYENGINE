@@ -35,7 +35,7 @@
 #include <CrySystem/File/ICryPak.h>
 #include <Serialization/Qt.h>
 #include <CryIcon.h>
-#include <EditorFramework/Inspector.h>
+#include <EditorFramework/InspectorLegacy.h>
 #include <EditorFramework/BroadcastManager.h>
 #include <QtUtil.h>
 #include <Controls/QuestionDialog.h>
@@ -305,8 +305,7 @@ void CMainWindow::OnCloseAsset()
 {
 	if (CBroadcastManager* pBroadcastManager = CBroadcastManager::Get(this))
 	{
-		PopulateInspectorEvent popEvent([](CInspector& inspector) {});
-		pBroadcastManager->Broadcast(popEvent);
+		ClearLegacyInspectorEvent().Broadcast(pBroadcastManager);
 	}
 
 	if (m_pGraphView)
@@ -517,7 +516,7 @@ void CMainWindow::OnScriptBrowserWidgetDestruction(QObject* pObject)
 
 void CMainWindow::OnInspectorWidgetDestruction(QObject* pObject)
 {
-	CInspector* pWidget = static_cast<CInspector*>(pObject);
+	CInspectorLegacy* pWidget = static_cast<CInspectorLegacy*>(pObject);
 	if (m_pInspector == pWidget)
 	{
 		m_pInspector = nullptr;
@@ -606,8 +605,8 @@ void CMainWindow::OnScriptBrowserSelection(const Schematyc::SScriptBrowserSelect
 			CPropertiesWidget* pPropertiesWidget = new CPropertiesWidget(*pDetailItem, this, m_pPreview);
 			Schematyc::IScriptElement* pScriptElement = selection.pScriptElement;
 
-			PopulateInspectorEvent popEvent([pPropertiesWidget, pScriptElement](CInspector& inspector)
-				{
+			PopulateLegacyInspectorEvent popEvent([pPropertiesWidget, pScriptElement](CInspectorLegacy& inspector)
+			{
 					QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame(pScriptElement->GetName());
 					pInspectorWidget->SetWidget(pPropertiesWidget);
 					inspector.AddWidget(pInspectorWidget);
@@ -673,8 +672,8 @@ void CMainWindow::ShowLogSettings()
 	{
 		if (CBroadcastManager* pBroadcastManager = CBroadcastManager::Get(this))
 		{
-			PopulateInspectorEvent popEvent([this](CInspector& inspector)
-				{
+			PopulateLegacyInspectorEvent popEvent([this](CInspectorLegacy& inspector)
+			 {
 					QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Log Settings");
 					pInspectorWidget->SetWidget(new Schematyc::CLogSettingsWidget(m_logSettings));
 					inspector.AddWidget(pInspectorWidget);
@@ -691,8 +690,8 @@ void CMainWindow::ShowPreviewSettings()
 	{
 		if (CBroadcastManager* pBroadcastManager = CBroadcastManager::Get(this))
 		{
-			PopulateInspectorEvent popEvent([this](CInspector& inspector)
-				{
+			PopulateLegacyInspectorEvent popEvent([this](CInspectorLegacy& inspector)
+			 {
 					QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Preview Settings");
 					pInspectorWidget->SetWidget(new Schematyc::CPreviewSettingsWidget(*m_pPreview));
 					inspector.AddWidget(pInspectorWidget);
@@ -736,9 +735,9 @@ Schematyc::CPreviewWidget* CMainWindow::CreatePreviewWidget()
 	return pPreviewWidget;
 }
 
-CInspector* CMainWindow::CreateInspectorWidget()
+CInspectorLegacy* CMainWindow::CreateInspectorWidget()
 {
-	CInspector* pInspectorWidget = new CInspector(this);
+	CInspectorLegacy* pInspectorWidget = new CInspectorLegacy(this);
 	if (m_pInspector == nullptr)
 	{
 		m_pInspector = pInspectorWidget;
@@ -777,11 +776,11 @@ Schematyc::CScriptBrowserWidget* CMainWindow::CreateScriptBrowserWidget()
 			    if (pScriptGraph && &pModel->GetScriptGraph() == pScriptGraph)
 			    {
 			      m_pGraphView->SetModel(nullptr);
-			    }
+				}
 			  }
 			}
 
-	  });
+		});
 
 	if (m_pModel)
 	{

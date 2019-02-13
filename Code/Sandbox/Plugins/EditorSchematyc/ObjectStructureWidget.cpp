@@ -18,7 +18,7 @@
 #include <Controls/QPopupWidget.h>
 #include <Controls/DictionaryWidget.h>
 #include <EditorFramework/BroadcastManager.h>
-#include <EditorFramework/Inspector.h>
+#include <EditorFramework/InspectorLegacy.h>
 #include <Commands/ICommandManager.h>
 
 #include <QAbstractItemModel>
@@ -577,7 +577,7 @@ void CGraphsWidget::OnSelectionChanged(const QItemSelection& selected, const QIt
 			if (CBroadcastManager* pBroadcastManager = CBroadcastManager::Get(this))
 			{
 				CPropertiesWidget* pPropertiesWidget = nullptr /*new CPropertiesWidget(*pItem)*/;
-				PopulateInspectorEvent popEvent([pPropertiesWidget](CInspector& inspector)
+				PopulateLegacyInspectorEvent popEvent([pPropertiesWidget](CInspectorLegacy& inspector)
 				{
 					QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Properties");
 					pInspectorWidget->SetWidget(pPropertiesWidget);
@@ -648,7 +648,7 @@ void CGraphsWidget::OnContextMenu(const QPoint& point)
 					{
 						const QModelIndex editIndex = m_pFilterProxy->mapFromSource(m_pComponentsList->model()->index(index.row(), CComponentsDictionary::Column_Name, index.parent()));
 						m_pComponentsList->edit(editIndex);
-				  });
+					});
 			}
 
 			const EObjectStructureItemType itemType = static_cast<EObjectStructureItemType>(pItem->GetType());
@@ -670,8 +670,7 @@ void CGraphsWidget::OnContextMenu(const QPoint& point)
 								  m_pComponentsList->setCurrentIndex(index);
 								  m_pComponentsList->edit(index);
 								}
-						  });
-					}
+							}); }
 				}
 				break;
 			case eObjectItemType_State:
@@ -770,7 +769,7 @@ void CGraphsWidget::PopulateContextMenuForItem(QMenu& menu, CStateItem& stateIte
 				{
 				  EditItem(*pCreatedItem);
 				}
-		  });
+			});
 	}
 	{
 		QAction* pAction = menu.addAction(QObject::tr("Add Function"));
@@ -781,14 +780,14 @@ void CGraphsWidget::PopulateContextMenuForItem(QMenu& menu, CStateItem& stateIte
 				{
 				  EditItem(*pCreatedItem);
 				}
-		  });
+			});
 	}
 	{
 		QAction* pAction = menu.addAction(QObject::tr("Add Signal"));
 		QObject::connect(pAction, &QAction::triggered, [this, &stateItem]()
 			{
 				CRY_ASSERT_MESSAGE(false, "Not yet implemented!");
-		  });
+			});
 	}
 	{
 		QAction* pAction = menu.addAction(QObject::tr("Add Signals Receiver"));
@@ -799,7 +798,7 @@ void CGraphsWidget::PopulateContextMenuForItem(QMenu& menu, CStateItem& stateIte
 				{
 				  EditItem(*pCreatedItem);
 				}
-		  });
+			});
 	}
 }
 

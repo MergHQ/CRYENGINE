@@ -31,7 +31,7 @@
 #include <Commands/ICommandManager.h>
 #include <EditorFramework/Events.h>
 #include <EditorFramework/BroadcastManager.h>
-#include <EditorFramework/Inspector.h>
+#include <EditorFramework/InspectorLegacy.h>
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySerialization/STL.h>
@@ -65,9 +65,13 @@ protected:
 	{
 		switch (pEvent->key())
 		{
-			case Qt::Key_Return: m_textWidget.SignalTextChanged(toPlainText());
-			case Qt::Key_Escape: SignalEditingFinished(); break;
-			default: QTextEdit::keyPressEvent(pEvent);
+		case Qt::Key_Return:
+			m_textWidget.SignalTextChanged(toPlainText());
+		case Qt::Key_Escape:
+			SignalEditingFinished();
+			break;
+		default:
+			QTextEdit::keyPressEvent(pEvent);
 		}
 	}
 
@@ -98,7 +102,7 @@ CNodeGraphView::CNodeGraphView()
 	, m_operation(eOperation_None)
 	, m_action(eAction_None)
 	, m_isRecodringUndo(false)
-	, m_isTooltipActive(false)	
+	, m_isTooltipActive(false)
 	, m_pNewConnectionBeginPin(nullptr)
 	, m_pNewConnectionPossibleTargetPin(nullptr)
 	, m_currentScaleFactor(1.0)
@@ -574,7 +578,7 @@ void CNodeGraphView::OnCommentMouseEvent(QGraphicsItem* pSender, SGroupMouseEven
 
 	switch (args.GetReason())
 	{
-		case EMouseEventReason::ButtonPress:
+	case EMouseEventReason::ButtonPress:
 		{
 			if (args.GetButton() == Qt::MouseButton::LeftButton)
 			{
@@ -594,7 +598,7 @@ void CNodeGraphView::OnCommentMouseEvent(QGraphicsItem* pSender, SGroupMouseEven
 			}
 		}
 		break;
-		case EMouseEventReason::ButtonPressAndMove:
+	case EMouseEventReason::ButtonPressAndMove:
 		{
 			if (args.GetButtons() & Qt::MouseButton::LeftButton)
 			{
@@ -614,7 +618,7 @@ void CNodeGraphView::OnCommentMouseEvent(QGraphicsItem* pSender, SGroupMouseEven
 			}
 		}
 		break;
-		case EMouseEventReason::ButtonRelease:
+	case EMouseEventReason::ButtonRelease:
 		{
 			if (args.GetButton() == Qt::MouseButton::LeftButton)
 			{
@@ -628,18 +632,18 @@ void CNodeGraphView::OnCommentMouseEvent(QGraphicsItem* pSender, SGroupMouseEven
 			}
 		}
 		break;
-		case EMouseEventReason::HoverMove:
+	case EMouseEventReason::HoverMove:
 		{
 
 		}
 		break;
-		case EMouseEventReason::HoverLeave:
+	case EMouseEventReason::HoverLeave:
 		{
 
 		}
 		break;
-		default:
-			break;
+	default:
+		break;
 	}
 }
 
@@ -1177,7 +1181,7 @@ void CNodeGraphView::BroadcastSelectionChange(bool forceClear)
 	{
 		if (!forceClear)
 		{
-			PopulateInspectorEvent popEvent([this](CInspector& inspector)
+			PopulateLegacyInspectorEvent popEvent([this](CInspectorLegacy& inspector)
 				{
 					if (m_selectedItems.size() > 0)
 					{
@@ -1213,8 +1217,7 @@ void CNodeGraphView::BroadcastSelectionChange(bool forceClear)
 		}
 		else
 		{
-			PopulateInspectorEvent popEvent([this](CInspector& inspector) {});
-			pBroadcastManager->Broadcast(popEvent);
+			ClearLegacyInspectorEvent().Broadcast(pBroadcastManager);
 		}
 	}
 }
@@ -1484,7 +1487,7 @@ void CNodeGraphView::OnRemoveGroup(CAbstractGroupItem& group)
 	if (m_pModel)
 		m_pModel->GetEditorData().RemoveGroupEditorDataById(group.GetId());
 
-	const QPointF groupPos = group.GetPosition();	
+	const QPointF groupPos = group.GetPosition();
 
 	const QList<QGraphicsItem*> itemList = m_pScene->items(QRectF(groupPos - QPoint(5, 5), groupPos + QPoint(5, 5)));
 	for (QGraphicsItem* pGraphicsItem : itemList)
@@ -1500,7 +1503,7 @@ void CNodeGraphView::OnRemoveGroup(CAbstractGroupItem& group)
 				return;
 			}
 		}
-	}	
+	}
 
 	return;
 }
@@ -1564,7 +1567,6 @@ void CNodeGraphView::OnRemoveConnection(CAbstractConnectionItem& connection)
 
 	CRY_ASSERT_MESSAGE(false, "Item not found!!");
 }
-
 
 void CNodeGraphView::OnContextMenuAddNode(CAbstractDictionaryEntry& entry)
 {
@@ -1772,7 +1774,7 @@ void CNodeGraphView::ShowItemToolTip(CNodeGraphViewGraphicsWidget* pItemWidget)
 						{
 							if (m_isTooltipActive)
 								QTrackingTooltip::ShowTrackingTooltip(m_pTooltip);
-					  });
+						});
 				}
 
 				return;
@@ -1793,26 +1795,26 @@ void CNodeGraphView::ReloadItems()
 	DeselectAllItems();
 	ClearItems();
 
-	for (int32 i = m_pModel->GetNodeItemCount(); i--; )
+	for (int32 i = m_pModel->GetNodeItemCount(); i--;)
 	{
 		if (CAbstractNodeItem* pItem = m_pModel->GetNodeItemByIndex(i))
 			AddNodeItem(*pItem);
 	}
 
-	for (int32 i = m_pModel->GetCommentItemCount(); i--; )
+	for (int32 i = m_pModel->GetCommentItemCount(); i--;)
 	{
 		if (CAbstractCommentItem* pItem = m_pModel->GetCommentItemByIndex(i))
 			AddCommentItem(*pItem);
 	}
-	
-	for (int32 i = m_pModel->GetConnectionItemCount(); i--; )
+
+	for (int32 i = m_pModel->GetConnectionItemCount(); i--;)
 	{
 		if (CAbstractConnectionItem* pItem = m_pModel->GetConnectionItemByIndex(i))
 			AddConnectionItem(*pItem);
 	}
 
 	// groups should be restored after all other items restored
-	for (int32 i = m_pModel->GetGroupItemCount(); i--; )
+	for (int32 i = m_pModel->GetGroupItemCount(); i--;)
 	{
 		if (CAbstractGroupItem* pItem = m_pModel->GetGroupItemByIndex(i))
 			AddGroupItem(*pItem);
@@ -1903,8 +1905,8 @@ void CNodeGraphView::mouseMoveEvent(QMouseEvent* pEvent)
 	case eAction_SceneNavigation:
 		{
 			QMouseEvent moveEvent(
-			  QEvent::DragMove, pEvent->localPos(), pEvent->windowPos(), pEvent->screenPos(),
-			  Qt::LeftButton, pEvent->buttons() | Qt::LeftButton, pEvent->modifiers());
+				QEvent::DragMove, pEvent->localPos(), pEvent->windowPos(), pEvent->screenPos(),
+				Qt::LeftButton, pEvent->buttons() | Qt::LeftButton, pEvent->modifiers());
 			QGraphicsView::mouseMoveEvent(&moveEvent);
 		}
 		break;
@@ -2398,7 +2400,7 @@ void CNodeGraphView::RunPendingItemPlacement()
 
 	CGroupWidget* pGroupCanditate = GetGroupCandidateForPlacement(selection);
 	if (pGroupCanditate)
-	{		
+	{
 		pGroupCanditate->PushPendingSelection(selection);
 	}
 }
@@ -2481,8 +2483,8 @@ void CNodeGraphView::BeginSceneDragging(QMouseEvent* pEvent)
 
 	// We fake a left mouse click because build in scrolling works with left mouse button only.
 	QMouseEvent leftPressEvent(
-	  pEvent->type(), pEvent->localPos(), pEvent->windowPos(), pEvent->screenPos(),
-	  Qt::LeftButton, pEvent->buttons() | Qt::LeftButton, pEvent->modifiers());
+		pEvent->type(), pEvent->localPos(), pEvent->windowPos(), pEvent->screenPos(),
+		Qt::LeftButton, pEvent->buttons() | Qt::LeftButton, pEvent->modifiers());
 	QGraphicsView::mousePressEvent(&leftPressEvent);
 }
 
@@ -2490,8 +2492,8 @@ void CNodeGraphView::EndSceneDragging(QMouseEvent* pEvent)
 {
 	// We fake a left mouse release because build-in scrolling works with left mouse button only.
 	QMouseEvent leftReleaseEvent(
-	  pEvent->type(), pEvent->localPos(), pEvent->windowPos(), pEvent->screenPos(),
-	  Qt::LeftButton, pEvent->buttons() & ~Qt::LeftButton, pEvent->modifiers());
+		pEvent->type(), pEvent->localPos(), pEvent->windowPos(), pEvent->screenPos(),
+		Qt::LeftButton, pEvent->buttons() & ~Qt::LeftButton, pEvent->modifiers());
 	QGraphicsView::mousePressEvent(&leftReleaseEvent);
 
 	setDragMode(QGraphicsView::NoDrag);
@@ -2566,7 +2568,7 @@ void CNodeGraphView::ShowNodeContextMenu(CNodeWidget* pNodeWidget, QPointF scree
 		QObject::connect(pAction, &QAction::triggered, this, [&item](bool isChecked)
 			{
 				item.SetDeactivated(!isChecked);
-		  });
+			});
 
 		menu.addSeparator();
 	}
@@ -2661,7 +2663,7 @@ void CNodeGraphView::ShowSelectionContextMenu(QPointF screenPos)
 				    pNodeItem->SetDeactivated(false);
 				  }
 				}
-		  });
+			});
 
 		QAction* pDeactivateAction = menu.addAction(QObject::tr("Deactivate"));
 		QObject::connect(pDeactivateAction, &QAction::triggered, this, [this](bool isChecked)
@@ -2673,7 +2675,7 @@ void CNodeGraphView::ShowSelectionContextMenu(QPointF screenPos)
 				    pNodeItem->SetDeactivated(true);
 				  }
 				}
-		  });
+			});
 	}
 
 	const QPoint parent = mapFromGlobal(QPoint(screenPos.x(), screenPos.y()));
@@ -2767,7 +2769,6 @@ CGroupWidget* CNodeGraphView::GetGroupCandidateForPlacement(const GraphViewWidge
 		selectionBB.setY(std::max(selectionBB.y(), itemBB.y()));
 	}
 
-
 	QRectF selectionAABB(selectionAA, selectionBB);
 
 	const QList<QGraphicsItem*> itemList = m_pScene->items(selectionAABB);
@@ -2782,10 +2783,10 @@ CGroupWidget* CNodeGraphView::GetGroupCandidateForPlacement(const GraphViewWidge
 			for (auto pItem : selection)
 			{
 				QRectF itemRect = pItem->geometry();
-				float  itemArea = itemRect.width() * itemRect.height();
+				float itemArea = itemRect.width() * itemRect.height();
 
 				QRectF intersectRect = groupRect.intersected(itemRect);
-				float  intersectArea = intersectRect.width() * intersectRect.height();
+				float intersectArea = intersectRect.width() * intersectRect.height();
 
 				candidateItemCount = (intersectArea > itemArea * 0.5f - 0.00001f) ? candidateItemCount + 1 : candidateItemCount;
 			}

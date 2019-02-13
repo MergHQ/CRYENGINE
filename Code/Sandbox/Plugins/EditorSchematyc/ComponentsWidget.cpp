@@ -19,7 +19,7 @@
 #include <Controls/DictionaryWidget.h>
 #include <Commands/ICommandManager.h>
 #include <EditorFramework/BroadcastManager.h>
-#include <EditorFramework/Inspector.h>
+#include <EditorFramework/InspectorLegacy.h>
 
 #include <QAbstractItemModel>
 #include <QStyledItemDelegate>
@@ -361,11 +361,11 @@ CComponentsWidget::CComponentsWidget(CMainWindow& editor, QWidget* pParent)
 	QObject::connect(m_pEditor, &CMainWindow::SignalReleasingModel, [this]
 		{
 			SetModel(nullptr);
-	  });
+		});
 	QObject::connect(m_pEditor, &QWidget::destroyed, [this](QObject*)
 		{
 			m_pEditor = nullptr;
-	  });
+		});
 }
 
 CComponentsWidget::~CComponentsWidget()
@@ -465,7 +465,7 @@ void CComponentsWidget::OnSelectionChanged(const QItemSelection& selected, const
 			{
 				CPropertiesWidget* pPropertiesWidget = nullptr /*new CPropertiesWidget(*pItem)*/;
 
-				PopulateInspectorEvent popEvent([pPropertiesWidget](CInspector& inspector)
+				PopulateLegacyInspectorEvent popEvent([pPropertiesWidget](CInspectorLegacy& inspector)
 				{
 					QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Properties");
 					pInspectorWidget->SetWidget(pPropertiesWidget);
@@ -497,7 +497,7 @@ void CComponentsWidget::OnContextMenu(const QPoint& point)
 					{
 						const QModelIndex editIndex = m_pComponentsList->model()->index(index.row(), CComponentsDictionary::Column_Name, index.parent());
 						m_pComponentsList->edit(editIndex);
-				  });
+					});
 			}
 
 			menu.addSeparator();

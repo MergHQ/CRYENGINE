@@ -2,8 +2,8 @@
 #include "StdAfx.h"
 #include "MaterialProperties.h"
 #include "QAdvancedPropertyTree.h"
-
 #include <Cry3DEngine/ISurfaceType.h>
+#include <Serialization/QPropertyTree2/PropertyTree2.h>
 #include <CrySerialization/Decorators/Range.h>
 #include <CrySerialization/Decorators/Resources.h>
 
@@ -12,13 +12,12 @@
 //////////////////////////////////////////////////////////////////////////
 
 //! Property tree displaying the serialized material properties
-class CMaterialSerializer::CMaterialPropertyTree : public QAdvancedPropertyTree, public IDataBaseManagerListener
+class CMaterialSerializer::CMaterialLegacyPropertyTree : public QAdvancedPropertyTree, public IDataBaseManagerListener
 {
 public:
-	CMaterialPropertyTree(CMaterialSerializer* pMaterialSerializer);
-	~CMaterialPropertyTree();
+	CMaterialLegacyPropertyTree(CMaterialSerializer* pMaterialSerializer);
+	~CMaterialLegacyPropertyTree();
 
-public slots:
 	void OnBeginUndo();
 	void OnEndUndo(bool acceptUndo);
 
@@ -28,7 +27,7 @@ private:
 	_smart_ptr<CMaterialSerializer> m_serializer;
 };
 
-CMaterialSerializer::CMaterialPropertyTree::CMaterialPropertyTree(CMaterialSerializer* pMaterialSerializer)
+CMaterialSerializer::CMaterialLegacyPropertyTree::CMaterialLegacyPropertyTree(CMaterialSerializer* pMaterialSerializer)
 	: QAdvancedPropertyTree("MaterialProperties")
 	, m_serializer(pMaterialSerializer)
 {
@@ -39,8 +38,83 @@ CMaterialSerializer::CMaterialPropertyTree::CMaterialPropertyTree(CMaterialSeria
 	setSizeToContent(true);
 	setUndoEnabled(false);
 
-	QObject::connect(this, &CMaterialPropertyTree::signalBeginUndo, this, &CMaterialPropertyTree::OnBeginUndo);
-	QObject::connect(this, &QAdvancedPropertyTree::signalEndUndo, this, &CMaterialPropertyTree::OnEndUndo);
+	QObject::connect(this, &CMaterialLegacyPropertyTree::signalBeginUndo, this, &CMaterialLegacyPropertyTree::OnBeginUndo);
+	QObject::connect(this, &CMaterialLegacyPropertyTree::signalEndUndo, this, &CMaterialLegacyPropertyTree::OnEndUndo);
+
+	attach(Serialization::SStruct(*m_serializer.get()));
+
+	GetIEditor()->GetMaterialManager()->AddListener(this);
+
+	setEnabled(!m_serializer->m_bIsReadOnly);
+}
+
+CMaterialSerializer::CMaterialLegacyPropertyTree::~CMaterialLegacyPropertyTree()
+{
+	GetIEditor()->GetMaterialManager()->RemoveListener(this);
+}
+
+void CMaterialSerializer::CMaterialLegacyPropertyTree::OnBeginUndo()
+{
+	GetIEditor()->GetIUndoManager()->Begin();
+	m_serializer->m_pMaterial->RecordUndo("Material Edited", true);
+}
+
+void CMaterialSerializer::CMaterialLegacyPropertyTree::OnEndUndo(bool acceptUndo)
+{
+	if (acceptUndo)
+	{
+		GetIEditor()->GetIUndoManager()->Accept("Material Edited");
+	}
+	else
+	{
+		GetIEditor()->GetIUndoManager()->Cancel();
+	}
+}
+
+void CMaterialSerializer::CMaterialLegacyPropertyTree::OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseItemEvent event)
+{
+	if (!pItem || event == EDB_ITEM_EVENT_SELECTED)
+		return;
+
+	if (pItem == (IDataBaseItem*)m_serializer->m_pMaterial.get())
+	{
+		switch (event)
+		{
+		case EDB_ITEM_EVENT_CHANGED:
+		case EDB_ITEM_EVENT_UPDATE_PROPERTIES:
+			if (!m_serializer->m_bIsBeingChanged) //TODO: there should be a better way to identify changes that come from this property tree
+				revert();
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+class CMaterialSerializer::CMaterialPropertyTree : public QPropertyTree2, public IDataBaseManagerListener
+{
+public:
+	CMaterialPropertyTree(CMaterialSerializer* pMaterialSerializer);
+	~CMaterialPropertyTree();
+
+	void OnPreChanged();
+	void OnChanged();
+	void OnDiscarded();
+
+private:
+	virtual void OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseItemEvent event) override;
+
+	_smart_ptr<CMaterialSerializer> m_serializer;
+};
+
+CMaterialSerializer::CMaterialPropertyTree::CMaterialPropertyTree(CMaterialSerializer* pMaterialSerializer)
+	: m_serializer(pMaterialSerializer)
+{
+	QObject::connect(this, &CMaterialPropertyTree::signalPreChanged, this, &CMaterialPropertyTree::OnPreChanged);
+	QObject::connect(this, &CMaterialPropertyTree::signalChanged, this, &CMaterialPropertyTree::OnChanged);
+	QObject::connect(this, &CMaterialPropertyTree::signalDiscarded, this, &CMaterialPropertyTree::OnDiscarded);
 
 	attach(Serialization::SStruct(*m_serializer.get()));
 
@@ -54,22 +128,20 @@ CMaterialSerializer::CMaterialPropertyTree::~CMaterialPropertyTree()
 	GetIEditor()->GetMaterialManager()->RemoveListener(this);
 }
 
-void CMaterialSerializer::CMaterialPropertyTree::OnBeginUndo()
+void CMaterialSerializer::CMaterialPropertyTree::OnPreChanged()
 {
 	GetIEditor()->GetIUndoManager()->Begin();
-	m_serializer->m_pMaterial->RecordUndo("Material Edited", true);
+	m_serializer->m_pMaterial->RecordUndo("Material Edited");
 }
 
-void CMaterialSerializer::CMaterialPropertyTree::OnEndUndo(bool acceptUndo)
+void CMaterialSerializer::CMaterialPropertyTree::OnChanged()
 {
-	if (acceptUndo)
-	{
-		GetIEditor()->GetIUndoManager()->Accept("Material Edited");
-	}
-	else
-	{
-		GetIEditor()->GetIUndoManager()->Cancel();
-	}
+	GetIEditor()->GetIUndoManager()->Accept("Material Edited");
+}
+
+void CMaterialSerializer::CMaterialPropertyTree::OnDiscarded()
+{
+	GetIEditor()->GetIUndoManager()->Cancel();
 }
 
 void CMaterialSerializer::CMaterialPropertyTree::OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseItemEvent event)
@@ -332,7 +404,7 @@ void CMaterialSerializer::Serialize(Serialization::IArchive& ar)
 			col.srgb2rgb();
 			shaderResources.m_LMaterial.m_Emittance = col;
 			float emissiveIntensity;
-			ar(Serialization::Decorators::Range<float>(emissiveIntensity, 0.f, FLT_MAX, 0.f, 200.f, 1.f), "emissiveIntensity", "Emissive Intensity (kcd/m2)");
+			ar(Serialization::Decorators::Range<float>(emissiveIntensity, 0.f, std::numeric_limits<float>::max(), 0.f, 200.f, 1.f), "emissiveIntensity", "Emissive Intensity (kcd/m2)");
 			shaderResources.m_LMaterial.m_Emittance.a = emissiveIntensity;
 		}
 		else
@@ -345,7 +417,7 @@ void CMaterialSerializer::Serialize(Serialization::IArchive& ar)
 			ar(col, "specularColor", "Specular Color");
 
 			float emissiveIntensity = shaderResources.m_LMaterial.m_Emittance.a;
-			ar(Serialization::Decorators::Range<float>(emissiveIntensity, 0.f, FLT_MAX, 0.f, 200.f, 1.f), "emissiveIntensity", "Emissive Intensity (kcd/m2)");
+			ar(Serialization::Decorators::Range<float>(emissiveIntensity, 0.f, std::numeric_limits<float>::max(), 0.f, 200.f, 1.f), "emissiveIntensity", "Emissive Intensity (kcd/m2)");
 			col = shaderResources.m_LMaterial.m_Emittance;
 			col.a = 1.f; //alpha is used for emissive intensity
 			col.rgb2srgb();
@@ -1077,6 +1149,11 @@ void CMaterialSerializer::SerializeShaderGenParams(Serialization::IArchive& ar)
 	ar.closeBlock();
 
 	m_pMaterial->SetShaderGenMask(shaderGenMask);
+}
+
+QWidget* CMaterialSerializer::CreateLegacyPropertyTree()
+{
+	return new CMaterialSerializer::CMaterialLegacyPropertyTree(this);
 }
 
 QWidget* CMaterialSerializer::CreatePropertyTree()

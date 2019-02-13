@@ -94,13 +94,17 @@ void BroadcastEvent::Broadcast(QWidget* pContextWidget)
 
 //////////////////////////////////////////////////////////////////////////
 
-
-ClearInspectorEvent::ClearInspectorEvent()
-	: PopulateInspectorEvent([](CInspector&){ /*Do nothing*/})
+ClearLegacyInspectorEvent::ClearLegacyInspectorEvent()
+	: PopulateLegacyInspectorEvent([](CInspectorLegacy&){ /*Do nothing*/ })
 {
-	
+
 }
 
+ClearInspectorEvent::ClearInspectorEvent()
+	: PopulateInspectorEvent([](CInspector&) { /*Do nothing*/ })
+{
+
+}
 
 //////////////////////////////////////////////////////////////////////////
 

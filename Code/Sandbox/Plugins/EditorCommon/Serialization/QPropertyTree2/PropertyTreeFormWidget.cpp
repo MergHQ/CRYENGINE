@@ -21,1444 +21,1554 @@
 namespace PropertyTree2
 {
 
-	CFormWidget::FormRow::FormRow(const CRowModel* rowModel)
-		: model(rowModel)
-		, childContainer(nullptr)
-		, widget(nullptr)
-	{
-	}
+CFormWidget::FormRow::FormRow(const CRowModel* pRowModel)
+	: m_pModel(pRowModel)
+	, m_pChildContainer(nullptr)
+	, m_pWidget(nullptr)
+{
+}
 
-	CFormWidget::FormRow::FormRow(FormRow&& other)
-	{
-		*this = std::move(other);
-	}
+CFormWidget::FormRow::FormRow(FormRow&& other)
+{
+	*this = std::move(other);
+}
 
-	CFormWidget::FormRow& CFormWidget::FormRow::operator=(FormRow&& other)
-	{
-		model = other.model;
-		childContainer = other.childContainer;
-		widget = other.widget;
-		other.childContainer = nullptr;
-		other.widget = nullptr;
-		return *this;
-	}
+CFormWidget::FormRow& CFormWidget::FormRow::operator=(FormRow&& other)
+{
+	m_pModel = other.m_pModel;
+	m_pChildContainer = other.m_pChildContainer;
+	m_pWidget = other.m_pWidget;
+	other.m_pChildContainer = nullptr;
+	other.m_pWidget = nullptr;
+	return *this;
+}
 
-	CFormWidget::FormRow::~FormRow()
+CFormWidget::FormRow::~FormRow()
+{
+	if (m_pChildContainer)
 	{
-		if (childContainer)
+		m_pChildContainer->setParent(nullptr);
+		m_pChildContainer->deleteLater();
+	}
+}
+
+bool CFormWidget::FormRow::IsExpanded() const
+{
+	//We rely on "local" visible flag for expansion status. isVisible() is not enough as it needs all parents to also be visible
+	return m_pChildContainer && m_pChildContainer->isVisibleTo(qobject_cast<QWidget*>(m_pChildContainer->parent()));
+}
+
+QWidget* CFormWidget::FormRow::GetQWidget()
+{
+	return m_pWidget;
+}
+
+IPropertyTreeWidget* CFormWidget::FormRow::GetPropertyTreeWidget()
+{
+	return qobject_cast<IPropertyTreeWidget*>(m_pWidget);
+}
+
+bool CFormWidget::FormRow::HasChildren() const
+{
+	//If all the children are hidden then the form row doesn't have children
+	return m_pModel->HasVisibleChildren();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+CFormWidget::CFormWidget(QPropertyTree2* pParentTree, const CRowModel* pRow, int nesting)
+	: m_pRowModel(pRow)
+	, m_pParentTree(pParentTree)
+	, m_nesting(nesting)
+	, m_pActiveRow(nullptr)
+	, m_dragInsertIndex(-2)
+	, m_spacing(4)
+	, m_minRowHeight(20)
+	, m_iconSize(16)
+	, m_nestingIndent(10)
+	, m_groupBorderWidth(0)
+	, m_groupBorderColor(Qt::transparent)
+{
+	setContentsMargins(0, 0, 0, 0);
+
+	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+	setMinimumSize(QSize(40, 500));
+	setMouseTracking(true);
+
+	SetupWidgets();
+	UpdateMinimumSize();
+
+	const IPropertyTreeWidget* pParentPtWidget = m_pRowModel ? m_pRowModel->GetPropertyTreeWidget() : nullptr;
+	m_allowReorderChildren = pParentPtWidget ? pParentPtWidget->CanMoveChildren() : false;
+
+	setAcceptDrops(m_allowReorderChildren);
+	setFocusPolicy(Qt::WheelFocus);
+}
+
+CFormWidget::~CFormWidget()
+{
+	//detach widgets from parent relationship here because they are owned by CRowDescriptor
+	ReleaseWidgets();
+}
+
+void CFormWidget::OnSplitterPosChanged()
+{
+	//Note: this here could be a trimmed down version of DoLayout(), which only relayouts the widgets (not row rects or child widgets)
+	DoLayout(size());
+
+	//Recurse to all children
+	for (FormRow& formRow : m_rows)
+	{
+		if (formRow.IsExpanded())
 		{
-			childContainer->setParent(nullptr);
-			childContainer->deleteLater();
+			formRow.m_pChildContainer->OnSplitterPosChanged();
 		}
 	}
 
-	bool CFormWidget::FormRow::IsExpanded() const
+	update();
+}
+
+void CFormWidget::SetupWidgets()
+{
+	if (!m_pRowModel)
 	{
-		//We rely on "local" visible flag for expansion status. isVisible() is not enough as it needs all parents to also be visible
-		return childContainer && childContainer->isVisibleTo(qobject_cast<QWidget*>(childContainer->parent()));
+		m_rows.clear();
+		return;
 	}
 
-	QWidget* CFormWidget::FormRow::GetQWidget()
+	if (m_pActiveRow)
 	{
-		return widget;
+		//Clear active row so it can be recomputed once the widgets have changed
+		SetActiveRow(nullptr);
+		m_lastCursorPos = QPoint(INT_MAX, INT_MAX);
 	}
 
-	IPropertyTreeWidget* CFormWidget::FormRow::GetPropertyTreeWidget()
+	//Cleanup old rows
+	auto rowsIterator = std::remove_if(m_rows.begin(), m_rows.end(), [](const FormRow& row)
+		{
+			return row.m_pModel->IsRoot() || row.m_pModel->IsHidden();
+		});
+	m_rows.erase(rowsIterator, m_rows.end());
+
+	const int count = m_pRowModel->GetChildren().size();
+	m_rows.reserve(count);
+
+	//Sets up the widgets, parenting relationship, signal/slot mechanism, etc...
+	for (int i = 0; i < count; i++)
 	{
-		return qobject_cast<IPropertyTreeWidget*>(widget);
+		const _smart_ptr<CRowModel>& pChild = m_pRowModel->GetChildren()[i];
+
+		//Skip hidden rows
+		if (pChild->IsHidden())
+		{
+			continue;
+		}
+
+		FormRow* pFormRow = nullptr;
+		if (m_rows.size() <= i)
+		{
+			m_rows.emplace_back(pChild);
+			pFormRow = &m_rows.back();
+		}
+		else if (m_rows[i].m_pModel != pChild)
+		{
+			m_rows.emplace(m_rows.begin() + i, pChild);
+			pFormRow = &m_rows[i];
+		}
+		else
+		{
+			pFormRow = &m_rows[i];
+		}
+
+		if (pChild->IsWidgetSet())
+		{
+			QWidget* pChildWidget = pChild->GetWidget();
+			RecursiveInstallEventFilter(pChildWidget);   // Install event filter to catch all mouse wheel events and forward to scroll area
+			pFormRow->m_pWidget = pChildWidget;
+
+			if (pChildWidget->parent() != this)
+			{
+				pChildWidget->setParent(this);
+				pChildWidget->setVisible(true);
+
+				IPropertyTreeWidget* pPropertyTreeWidget = pChild->GetPropertyTreeWidget();
+				if (pPropertyTreeWidget)   //The property tree supports non property tree widgets however they will not be interacting with serialization
+				{
+					pPropertyTreeWidget->signalDiscarded.Connect(m_pParentTree, &QPropertyTree2::OnRowDiscarded);
+					pPropertyTreeWidget->signalChanged.Connect(m_pParentTree, &QPropertyTree2::OnRowChanged);
+					pPropertyTreeWidget->signalContinuousChanged.Connect(m_pParentTree, &QPropertyTree2::OnRowContinuousChanged);
+					pPropertyTreeWidget->signalPreChanged.Connect(m_pParentTree, &QPropertyTree2::OnRowPreChanged);
+				}
+			}
+		}
+		else if (pChild->HasChildren())
+		{
+			//No widget and children, let's check if there is a need for inlining child widgets
+			CRowModel* pInlinedChild = pChild->GetChildren()[0];
+			if (pInlinedChild->GetFlags() & CRowModel::Inline)
+			{
+				CInlineWidgetBox* pInlineWidgetBox = new CInlineWidgetBox(this);
+				pFormRow->m_pWidget = pInlineWidgetBox;
+
+				int index = 0;
+				const int count = pChild->GetChildren().size();
+
+				while (index < count)
+				{
+					pInlinedChild = pChild->GetChildren()[index];
+					if (pInlinedChild->GetWidget() && pInlinedChild->GetFlags() & CRowModel::Inline)
+					{
+						RecursiveInstallEventFilter(pInlinedChild->GetWidget());   // Install event filter to catch all mouse wheel events and forward to scroll area
+						pInlineWidgetBox->AddWidget(pInlinedChild->GetWidget(), m_pParentTree);
+						index++;
+					}
+					else
+					{
+						break;
+					}
+				}
+			}
+		}
+
+		//Auto expand only the first time (child container has not yet been created)
+		if (pChild->HasVisibleChildren() && pFormRow->m_pChildContainer == nullptr)
+		{
+			if (pChild->GetFlags() & CRowModel::ExpandByDefault || (m_nesting < m_pParentTree->GetAutoExpandDepth() && !(pChild->GetFlags() & CRowModel::CollapseByDefault)))
+			{
+				ToggleExpand(*pFormRow, true);
+			}
+		}
+
+		pChild->MarkClean();
+	}
+}
+
+void CFormWidget::RecursiveInstallEventFilter(QWidget* pWidget)
+{
+	pWidget->installEventFilter(this);
+
+	QList<QWidget*> childWidgets = pWidget->findChildren<QWidget*>();
+	for (QWidget* pChild : childWidgets)
+	{
+		RecursiveInstallEventFilter(pChild);
+	}
+}
+
+void CFormWidget::ReleaseWidgets()
+{
+	//The widgets in the property tree do not follow by the regular Qt model of hierarchy.
+	//As they are created by the row model we only transfer temporary ownership to the formWidget or parents for display, but return them afterwards.
+	//CRowModel is responsible for their lifetime
+	for (FormRow& pRow : m_rows)
+	{
+		QWidget* pWidget = pRow.m_pWidget;
+
+		if (pWidget)
+		{
+			pWidget->setParent(nullptr);
+
+			IPropertyTreeWidget* pPropertyTreeWidget = pRow.GetPropertyTreeWidget();
+			if (pPropertyTreeWidget)
+			{
+				pPropertyTreeWidget->signalDiscarded.DisconnectObject(m_pParentTree);
+				pPropertyTreeWidget->signalChanged.DisconnectObject(m_pParentTree);
+				pPropertyTreeWidget->signalContinuousChanged.DisconnectObject(m_pParentTree);
+				pPropertyTreeWidget->signalPreChanged.DisconnectObject(m_pParentTree);
+			}
+
+			CInlineWidgetBox* pInlineWidgetBox = qobject_cast<CInlineWidgetBox*>(pWidget);
+			if (pInlineWidgetBox)
+			{
+				pInlineWidgetBox->ReleaseWidgets(m_pParentTree);
+				pInlineWidgetBox->deleteLater();
+			}
+		}
+
+		pRow.m_pWidget = nullptr;
+	}
+}
+
+void CFormWidget::SetSpacing(int value)
+{
+	if (value != m_spacing)
+	{
+		m_spacing = value;
+		DoFullLayoutUpdate();
+	}
+}
+
+void CFormWidget::SetMinRowHeight(int value)
+{
+	if (value != m_minRowHeight)
+	{
+		m_minRowHeight = value;
+		DoFullLayoutUpdate();
+	}
+}
+
+void CFormWidget::SetIconSize(int value)
+{
+	if (value != m_iconSize)
+	{
+		m_iconSize = value;
+		update();   //only requires repaint, not full layout
+	}
+}
+
+void CFormWidget::SetGroupBorderWidth(int value)
+{
+	if (value != m_groupBorderWidth)
+	{
+		m_groupBorderWidth = value;
+		DoFullLayoutUpdate();
+	}
+}
+
+void CFormWidget::SetGroupBorderColor(const QColor& color)
+{
+	if (m_groupBorderColor != color)
+	{
+		m_groupBorderColor = color;
+		update();
+	}
+}
+
+void CFormWidget::SetMargins(const QRect& margins)
+{
+	if (margins != GetMargins())
+	{
+		setContentsMargins(QMargins(margins.left(), margins.top(), margins.width(), margins.height()));
+		DoFullLayoutUpdate();
+	}
+}
+
+QRect CFormWidget::GetMargins() const
+{
+	const QMargins margins = contentsMargins();
+	return QRect(margins.left(), margins.top(), margins.right(), margins.bottom());
+}
+
+CFormWidget* CFormWidget::ExpandRow(const CRowModel* pRow, bool expand)
+{
+	CRY_ASSERT(pRow && pRow->GetParent() == m_pRowModel && pRow->HasVisibleChildren());
+
+	FormRow* pFormRow = ModelToFormRow(pRow);
+	CRY_ASSERT(pFormRow);
+
+	if (pFormRow->IsExpanded() != expand)
+	{
+		ToggleExpand(*pFormRow);
 	}
 
-	bool CFormWidget::FormRow::HasChildren() const
+	return pFormRow->m_pChildContainer;
+}
+
+CFormWidget* CFormWidget::ExpandToRow(const CRowModel* pRow)
+{
+	CRY_ASSERT(pRow && !pRow->IsRoot());
+
+	if (pRow->GetParent() == m_pRowModel)
 	{
-		//If all the children are hidden then the form row doesn't have children
-		return model->HasVisibleChildren();
+		return this;
+	}
+	else
+	{
+		//Expand parent row (recursive)
+		CFormWidget* pFormWidget = ExpandToRow(pRow->GetParent());
+		CFormWidget* pChildFormWidget = pFormWidget->ExpandRow(pRow->GetParent(), true);
+		return pChildFormWidget;
+	}
+}
+
+void CFormWidget::ScrollToRow(const CRowModel* pRow)
+{
+	const FormRow* pFormRow = ModelToFormRow(pRow);
+	if (!pFormRow)
+	{
+		return;
 	}
 
-	//////////////////////////////////////////////////////////////////////////
+	QScrollArea* pScrollArea = m_pParentTree->GetScrollArea();
 
-	CFormWidget::CFormWidget(QPropertyTree2* parentTree, const CRowModel* row, int nesting)
-		: m_rowModel(row)
-		, m_parentTree(parentTree)
-		, m_nesting(nesting)
-		, m_activeRow(nullptr)
-		, m_dragInsertIndex(-2)
+	QPoint formBottomRightToScrollArea = mapTo(pScrollArea->widget(), pFormRow->rowRect.bottomRight());
+	pScrollArea->ensureVisible(formBottomRightToScrollArea.x(), formBottomRightToScrollArea.y(), 0, 0);
+
+	QPoint formTopLeftToScrollArea = mapTo(pScrollArea->widget(), pFormRow->rowRect.topLeft());
+	pScrollArea->ensureVisible(formTopLeftToScrollArea.x(), formTopLeftToScrollArea.y(), 0, 0);
+
+}
+
+void CFormWidget::UpdateTree()
+{
+	if (m_pRowModel->IsClean())
 	{
-		//default values for style properties
-		m_spacing = 4;
-		m_minRowHeight = 20;
-		m_iconSize = 16;
-		m_nestingIndent = 10;
-		m_groupBorderWidth = 0;
-		m_groupBorderColor = Qt::transparent;
+		return;
+	}
 
-		setContentsMargins(0, 0, 0, 0);
+	bool doSetup = false;
 
-		setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-		setMinimumSize(QSize(40, 500));
-		setMouseTracking(true);
-		
+	if (m_pRowModel->HasDirtyChildren())
+	{
+		for (FormRow& pRow : m_rows)
+		{
+			if (pRow.m_pChildContainer)
+			{
+				if (pRow.m_pModel->IsClean())
+				{
+					continue;
+				}
 
+				pRow.m_pChildContainer->UpdateTree();
+
+				//Clean up rows that no longer have children
+				if (!pRow.m_pModel->HasChildren())
+				{
+					pRow.m_pChildContainer->deleteLater();
+					pRow.m_pChildContainer = nullptr;
+
+					doSetup = true;
+				}
+			}
+			else if (pRow.m_pModel->HasFirstTimeChildren())   //Expand rows that have children for the first time
+			{
+				ToggleExpand(pRow);
+			}
+		}
+	}
+
+	if (doSetup || m_pRowModel->IsDirty())
+	{
 		SetupWidgets();
 		UpdateMinimumSize();
-
-		const auto parentPtWidget = m_rowModel ? m_rowModel->GetPropertyTreeWidget() : nullptr;
-		m_allowReorderChildren = parentPtWidget ? parentPtWidget->CanMoveChildren() : false;
-
-		setAcceptDrops(m_allowReorderChildren);
-		setFocusPolicy(Qt::WheelFocus);
 	}
 
-	CFormWidget::~CFormWidget()
+	m_pRowModel->MarkClean();
+	update();
+}
+
+void CFormWidget::SetNestingIndent(int value)
+{
+	m_nestingIndent = value;
+	update();   //only requires repaint, not full layout
+}
+
+bool CFormWidget::eventFilter(QObject* pWatched, QEvent* pEvent)
+{
+	// The property tree takes ownership of wheel events. No widget should handle wheel events
+	// since scrolling the property tree would be unreliable when hovering over widgets
+	if (pEvent->type() == QEvent::Wheel)
 	{
-		//detach widgets from parent relationship here because they are owned by CRowDescriptor
-		ReleaseWidgets();
+		m_pParentTree->HandleScroll(static_cast<QWheelEvent*>(pEvent));
+		return true;
 	}
 
-	void CFormWidget::OnSplitterPosChanged()
+	return false;
+}
+
+void CFormWidget::paintEvent(QPaintEvent* pEvent)
+{
+	QStyle* pStyle = QWidget::style();
+	QPainter painter(this);
+	painter.setRenderHint(QPainter::Antialiasing);
+
+	QStyleOption styleOption;
+	styleOption.initFrom(this);
+
+	const QPoint cursorPosition = mapFromGlobal(QCursor::pos());
+
+	//Update active row for cases that wouldn't trigger mouse events, such as moving between widgets on the right side.
+	if (!m_pParentTree->GetActiveRow() && rect().contains(cursorPosition))
 	{
-		//Note: this here could be a trimmed down version of DoLayout(), which only relayouts the widgets (not row rects or child widgets)
-		DoLayout(size());
-
-		//Recurse to all children
-		for (auto& formRow : m_rows)
+		QObject* pWidget = QApplication::widgetAt(QCursor::pos());
+		CFormWidget* pForm = nullptr;
+		while (pWidget && !pForm)
 		{
-			if (formRow.IsExpanded())
-				formRow.childContainer->OnSplitterPosChanged();
+			pWidget = pWidget->parent();
+			pForm = qobject_cast<CFormWidget*>(pWidget);
 		}
-
-		update();
+		if (pForm == this)
+		{
+			UpdateActiveRow(cursorPosition);
+		}
 	}
 
-	void CFormWidget::SetupWidgets()
+	//Paint background due to group widgets
+	painter.fillRect(rect(), palette().background());
+
+	//Paint the drag highlight
+	//TODO: problem drawing before the first row or after the last row as it is not in this widget's rect
+	if (m_dragInsertIndex >= 0 && m_dragInsertIndex < m_rows.size())
 	{
-		if (!m_rowModel)
+		const int index = m_dragInsertIndex;
+		QRect highlightRect = m_rows[index].rowRect;
+		highlightRect.setTop(highlightRect.top() - m_spacing);
+		highlightRect.setBottom(highlightRect.top() + m_spacing - 1);
+
+		//In QSS this color is set by the selection-background-color property.
+		painter.fillRect(highlightRect, palette().highlight());
+	}
+
+	const bool isDragging = m_dragInsertIndex != -2 || m_pParentTree->IsDraggingSplitter();
+	const int flags = Qt::AlignVCenter | Qt::TextForceLeftToRight | Qt::TextSingleLine;
+	const int leftMargin = contentsMargins().left();
+	const int textIndent = leftMargin + m_groupBorderWidth + m_nesting * m_nestingIndent + m_iconSize + m_spacing;
+
+	const int count = m_rows.size();
+	for (int i = 0; i < count; i++)
+	{
+		const FormRow& row = m_rows[i];
+		const _smart_ptr<const CRowModel>& rowModel = row.m_pModel;
+
+		//Draw group frame
+		if (row.HasChildren() && m_groupBorderWidth > 0)
 		{
-			m_rows.clear();
-			return;
-		}
-
-		if(m_activeRow)
-		{
-			//Clear active row so it can be recomputed once the widgets have changed
-			SetActiveRow(nullptr);
-			m_lastCursorPos = QPoint(INT_MAX, INT_MAX);
-		}
-
-		//Cleanup old rows
-		auto it = std::remove_if(m_rows.begin(), m_rows.end(), [](const FormRow& row) 
-		{ 
-			return row.model->IsRoot() || row.model->IsHidden(); 
-		});
-		m_rows.erase(it, m_rows.end());
-
-		const int count = m_rowModel->GetChildren().size();
-		m_rows.reserve(count);
-
-		//Sets up the widgets, parenting relationship, signal/slot mechanism, etc...
-		for (int i = 0; i < count; i++)
-		{
-			const auto& child = m_rowModel->GetChildren()[i];
-
-			//Skip hidden rows
-			if (child->IsHidden())
-				continue;
-
-			FormRow* pFormRow = nullptr;
-			if(m_rows.size() <= i)
+			QRect rowFrame = row.rowRect;
+			if (row.IsExpanded())
 			{
-				m_rows.emplace_back(child);
-				pFormRow = &m_rows.back();
-			}
-			else if (m_rows[i].model != child)
-			{
-				m_rows.emplace(m_rows.begin() + i, child);
-				pFormRow = &m_rows[i];
-			}
-			else
-			{
-				pFormRow = &m_rows[i];
-			}
-
-			if (child->IsWidgetSet())
-			{
-				QWidget* w = child->GetQWidget();
-				pFormRow->widget = w;
-
-				if (w->parent() != this)
-				{
-					w->setParent(this);
-					w->setVisible(true);
-
-					IPropertyTreeWidget* ptw = child->GetPropertyTreeWidget();
-					if (ptw) //The property tree supports non property tree widgets however they will not be interacting with serialization
-					{
-						ptw->signalChanged.Connect(m_parentTree, &QPropertyTree2::OnRowChanged);
-						ptw->signalContinuousChanged.Connect(m_parentTree, &QPropertyTree2::OnRowContinuousChanged);
-					}
-				}
-			}
-			else if(child->HasChildren())
-			{
-				//No widget and children, let's check if there is a need for inlining child widgets
-				CRowModel* inlinedChild = child->GetChildren()[0];
-				if (inlinedChild->GetFlags() & CRowModel::Inline)
-				{
-					CInlineWidgetBox* box = new CInlineWidgetBox(this);
-					pFormRow->widget = box;
-
-					int index = 0;
-					const int count = child->GetChildren().size();
-
-					while (index < count)
-					{
-						inlinedChild = child->GetChildren()[index];
-						if (inlinedChild->GetQWidget() && inlinedChild->GetFlags() & CRowModel::Inline)
-						{
-							box->AddWidget(inlinedChild->GetQWidget(), m_parentTree);
-							index++;
-						}
-						else
-							break;
-					}
-				}
+				rowFrame.setBottom(rowFrame.bottom() + m_groupBorderWidth + row.m_pChildContainer->rect().height());
 			}
 
-			//Auto expand only the first time (child container has not yet been created)
-			if (child->HasVisibleChildren() && pFormRow->childContainer == nullptr)
+			QPainterPath path;
+			path.addRoundedRect(rowFrame, 3, 3);
+
+			painter.fillPath(path, m_pActiveRow != &row ? m_groupBorderColor : palette().alternateBase());
+		}
+		else if (m_pActiveRow == &row && !isDragging)   //draw highlighted row if not in any drag mode
+		{
+			//In QSS this color is set by the alternate-background-color property.
+			painter.fillRect(row.rowRect, palette().alternateBase());
+		}
+
+		//Draw labels
+
+		QRect textRect = row.rowRect;
+		textRect.setLeft(textRect.left() + textIndent);
+		textRect.setRight(GetSplitterPosition());
+
+		pStyle->drawItemText(&painter, textRect, flags, styleOption.palette, isEnabled(), rowModel->GetLabel(), foregroundRole());
+
+		//Draw expand icon
+		if (rowModel->HasVisibleChildren())
+		{
+			const QRect iconRect = GetExpandIconRect(row);
+			const bool bActive = iconRect.contains(cursorPosition);
+
+			if (row.IsExpanded())
 			{
-				if (child->GetFlags() & CRowModel::ExpandByDefault || (m_nesting < m_parentTree->GetAutoExpandDepth() && !(child->GetFlags() & CRowModel::CollapseByDefault)))
-				{
-					ToggleExpand(*pFormRow, true);
-				}
-			}
-
-			child->MarkClean();
-		}
-	}
-
-	void CFormWidget::ReleaseWidgets()
-	{
-		//The widgets in the property tree do not follow by the regular Qt model of hierarchy.
-		//As they are created by the row model we only transfer temporary ownership to the formWidget or parents for display, but return them afterwards.
-		//CRowModel is responsible for their lifetime
-		for (auto& row : m_rows)
-		{
-			QWidget* widget = row.widget;
-
-			if (widget)
-			{
-				widget->setParent(nullptr);
-
-				IPropertyTreeWidget* ptw = row.GetPropertyTreeWidget();
-				if (ptw)
-				{
-					ptw->signalChanged.DisconnectObject(m_parentTree);
-					ptw->signalContinuousChanged.DisconnectObject(m_parentTree);
-				}
-				
-				CInlineWidgetBox* box = qobject_cast<CInlineWidgetBox*>(widget);
-				if (box)
-				{
-					box->ReleaseWidgets(m_parentTree);
-					box->deleteLater();
-				}
-			}
-
-			row.widget = nullptr;
-		}
-	}
-
-	void CFormWidget::SetSpacing(int value)
-	{
-		if(value != m_spacing)
-		{
-			m_spacing = value;
-			DoFullLayoutUpdate();
-		}
-	}
-
-	void CFormWidget::SetMinRowHeight(int value)
-	{
-		if(value != m_minRowHeight)
-		{
-			m_minRowHeight = value;
-			DoFullLayoutUpdate();
-		}
-	}
-
-	void CFormWidget::SetIconSize(int value)
-	{
-		if(value != m_iconSize)
-		{
-			m_iconSize = value;
-			update(); //only requires repaint, not full layout
-		}
-	}
-
-	void CFormWidget::SetGroupBorderWidth(int value)
-	{
-		if(value != m_groupBorderWidth)
-		{
-			m_groupBorderWidth = value;
-			DoFullLayoutUpdate();
-		}
-	}
-
-	void CFormWidget::SetGroupBorderColor(const QColor& color)
-	{
-		if (m_groupBorderColor != color)
-		{
-			m_groupBorderColor = color;
-			update();
-		}
-	}
-
-	void CFormWidget::SetMargins(const QRect& margins)
-	{
-		if (margins != GetMargins())
-		{
-			setContentsMargins(QMargins(margins.left(), margins.top(), margins.width(), margins.height()));
-			DoFullLayoutUpdate();
-		}
-	}
-
-	QRect CFormWidget::GetMargins() const
-	{
-		const auto  margins = contentsMargins();
-		return QRect(margins.left(), margins.top(), margins.right(), margins.bottom());
-	}
-
-	CFormWidget* CFormWidget::ExpandRow(const CRowModel* row, bool expand)
-	{
-		CRY_ASSERT(row && row->GetParent() == m_rowModel && row->HasVisibleChildren());
-
-		FormRow* formRow = ModelToFormRow(row);
-		CRY_ASSERT(formRow);
-
-		if (formRow->IsExpanded() != expand)
-			ToggleExpand(*formRow);
-
-		return formRow->childContainer;
-	}
-
-	CFormWidget* CFormWidget::ExpandToRow(const CRowModel* row)
-	{
-		CRY_ASSERT(row && !row->IsRoot());
-
-		if (row->GetParent() == m_rowModel)
-		{
-			return this;
-		}
-		else
-		{
-			//Expand parent row (recursive)
-			auto formWidget = ExpandToRow(row->GetParent());
-			auto childFormWidget = formWidget->ExpandRow(row->GetParent(), true);
-			return childFormWidget;
-		}
-	}
-
-	void CFormWidget::ScrollToRow(const CRowModel* row)
-	{
-		const FormRow* formRow = ModelToFormRow(row);
-		if (!formRow)
-			return;
-
-		QScrollArea* scrollArea = m_parentTree->GetScrollArea();
-
-		{
-			auto point = mapTo(scrollArea->widget(), formRow->rowRect.bottomRight());
-			scrollArea->ensureVisible(point.x(), point.y(), 0, 0);
-		}
-		{
-			auto point = mapTo(scrollArea->widget(), formRow->rowRect.topLeft());
-			scrollArea->ensureVisible(point.x(), point.y(), 0, 0);
-		}
-	}
-
-	void CFormWidget::UpdateTree()
-	{
-		if (m_rowModel->IsClean())
-			return;
-
-		bool doSetup = false;
-
-		if (m_rowModel->HasDirtyChildren())
-		{
-			for (auto& row : m_rows)
-			{
-				if (row.childContainer)
-				{
-					if (row.model->IsClean())
-						continue;
-
-					row.childContainer->UpdateTree();
-
-					//Clean up rows that no longer have children
-					if (!row.model->HasChildren())
-					{
-						row.childContainer->deleteLater();
-						row.childContainer = nullptr;
-
-						doSetup = true;
-					}
-				}
-				else if (row.model->HasFirstTimeChildren()) //Expand rows that have children for the first time 
-				{
-					ToggleExpand(row);
-				}
-			}
-		}
-
-		if (doSetup || m_rowModel->IsDirty())
-		{
-			SetupWidgets();
-			UpdateMinimumSize();
-		}
-
-		m_rowModel->MarkClean();
-		update();
-	}
-
-	void CFormWidget::SetNestingIndent(int value)
-	{
-		m_nestingIndent = value;
-		update(); //only requires repaint, not full layout
-	}
-
-	void CFormWidget::paintEvent(QPaintEvent* event)
-	{
-		QStyle* style = QWidget::style();
-		QPainter painter(this);
-		painter.setRenderHint(QPainter::Antialiasing);
-
-		QStyleOption opt;
-		opt.initFrom(this);
-
-		const QPoint cursorPos = mapFromGlobal(QCursor::pos());
-
-		//Update active row for cases that wouldn't trigger mouse events, such as moving between widgets on the right side.
-		if (!m_parentTree->GetActiveRow() && rect().contains(cursorPos))
-		{
-			QObject* w = QApplication::widgetAt(QCursor::pos());
-			CFormWidget* form = nullptr;
-			while (w && !form)
-			{
-				w = w->parent();
-				form = qobject_cast<CFormWidget*>(w);
-			}
-			if(form == this)
-				UpdateActiveRow(cursorPos);
-		}
-
-		//Paint background due to group widgets
-		painter.fillRect(rect(), palette().background());
-
-		//Paint the drag highlight
-		if (m_dragInsertIndex >= 0)
-		{
-			//TODO: problem drawing before the first row or after the last row as it is not in this widget's rect
-			const auto index = m_dragInsertIndex;
-			CRY_ASSERT(index >= 0 && index < m_rows.size());
-			QRect highightRect = m_rows[index].rowRect;
-			highightRect.setTop(highightRect.top() - m_spacing);
-			highightRect.setBottom(highightRect.top() + m_spacing - 1);
-
-			//In QSS this color is set by the selection-background-color property.
-			painter.fillRect(highightRect, palette().highlight());
-		}
-
-		const bool isDragging = m_dragInsertIndex != -2 || m_parentTree->IsDraggingSplitter();
-		const int flags = Qt::AlignVCenter | Qt::TextForceLeftToRight | Qt::TextSingleLine;
-		const int leftMargin = contentsMargins().left();
-		const int textIndent = leftMargin + m_groupBorderWidth + m_nesting * m_nestingIndent + m_iconSize + m_spacing;
-
-		const int count = m_rows.size();
-		for (int i = 0; i < count; i++)
-		{
-			const auto& row = m_rows[i];
-			const auto& rowModel = row.model;
-
-			//Draw group frame
-			if (row.HasChildren() && m_groupBorderWidth > 0)
-			{
-				QRect frame = row.rowRect;
-				if (row.IsExpanded())
-					frame.setBottom(frame.bottom() + m_groupBorderWidth + row.childContainer->rect().height());
-
-				QPainterPath path;
-				path.addRoundedRect(frame, 3, 3);
-
-				painter.fillPath(path, m_activeRow != &row ? m_groupBorderColor : palette().alternateBase());
-			}
-			else if (m_activeRow == &row && !isDragging) //draw highlighted row if not in any drag mode
-			{
-				//In QSS this color is set by the alternate-background-color property.
-				painter.fillRect(row.rowRect, palette().alternateBase());
-			}
-
-			//Draw labels
-			{
-				QRect textRect = row.rowRect;
-				textRect.setLeft(textRect.left() + textIndent);
-				textRect.setRight(GetSplitterPosition());
-
-				style->drawItemText(&painter, textRect, flags, opt.palette, isEnabled(), rowModel->GetLabel(), foregroundRole());
-			}
-
-			//Draw expand icon
-			if (rowModel->HasVisibleChildren())
-			{
-				const QRect iconRect = GetExpandIconRect(row);
-				const bool bActive = iconRect.contains(cursorPos);
-				
-				if (row.IsExpanded())
-					m_parentTree->GetExpandedIcon().paint(&painter, iconRect, Qt::AlignCenter, bActive ? QIcon::Active : QIcon::Normal);
-				else
-					m_parentTree->GetCollapsedIcon().paint(&painter, iconRect, Qt::AlignCenter, bActive ? QIcon::Active : QIcon::Normal);
-			}
-
-			//Draw drag icon
-			if (m_allowReorderChildren)
-			{
-				const QRect iconRect = GetDragHandleIconRect(row);
-				m_parentTree->GetDragHandleIcon().paint(&painter, iconRect, Qt::AlignCenter, QIcon::Normal);
-			}
-		}
-
-		QWidget::paintEvent(event);
-	}
-
-	QRect CFormWidget::GetExpandIconRect(const FormRow& row) const
-	{
-		QRect iconRect = row.rowRect;
-		if (m_groupBorderWidth > 0 && row.HasChildren())
-			iconRect.setLeft(iconRect.left() + m_groupBorderWidth);
-		iconRect.setLeft(iconRect.left() + contentsMargins().left() + m_nesting * m_nestingIndent);
-		iconRect.setWidth(m_iconSize);
-		return iconRect;
-	}
-
-	QRect CFormWidget::GetDragHandleIconRect(const FormRow& row) const
-	{
-		QRect iconRect = row.rowRect;
-		if (m_groupBorderWidth > 0 && row.HasChildren())
-			iconRect.setRight(iconRect.right() - m_groupBorderWidth);
-		iconRect.setLeft(iconRect.right() - contentsMargins().right() - m_iconSize);
-		iconRect.setWidth(m_iconSize);
-		return iconRect;
-	}
-
-	void CFormWidget::ToggleExpand(FormRow& row, bool skipLayout /* = false*/)
-	{
-		if (row.IsExpanded())
-		{
-			row.childContainer->setVisible(false);
-		}
-		else
-		{
-			if (row.childContainer)
-			{
-				row.childContainer->setVisible(true);
+				m_pParentTree->GetExpandedIcon().paint(&painter, iconRect, Qt::AlignCenter, bActive ? QIcon::Active : QIcon::Normal);
 			}
 			else
 			{
-				//Create child container
-				row.childContainer = new CFormWidget(m_parentTree, row.model, m_nesting + 1);
-				row.childContainer->setParent(this);
-				row.childContainer->setVisible(true);
+				m_pParentTree->GetCollapsedIcon().paint(&painter, iconRect, Qt::AlignCenter, bActive ? QIcon::Active : QIcon::Normal);
 			}
 		}
 
-		if(!skipLayout)
-			DoFullLayoutUpdate();
+		//Draw drag icon
+		if (m_allowReorderChildren)
+		{
+			const QRect iconRect = GetDragHandleIconRect(row);
+			m_pParentTree->GetDragHandleIcon().paint(&painter, iconRect, Qt::AlignCenter, QIcon::Normal);
+		}
 	}
 
-	void CFormWidget::resizeEvent(QResizeEvent* event)
+	QWidget::paintEvent(pEvent);
+}
+
+QRect CFormWidget::GetExpandIconRect(const FormRow& row) const
+{
+	QRect iconRect = row.rowRect;
+	if (m_groupBorderWidth > 0 && row.HasChildren())
 	{
-		QWidget::resizeEvent(event);
-		DoLayout(event->size());
+		iconRect.setLeft(iconRect.left() + m_groupBorderWidth);
 	}
 
-	void CFormWidget::enterEvent(QEvent* ev)
+	iconRect.setLeft(iconRect.left() + contentsMargins().left() + m_nesting * m_nestingIndent);
+	iconRect.setWidth(m_iconSize);
+	return iconRect;
+}
+
+QRect CFormWidget::GetDragHandleIconRect(const FormRow& row) const
+{
+	QRect iconRect = row.rowRect;
+	if (m_groupBorderWidth > 0 && row.HasChildren())
+	{
+		iconRect.setRight(iconRect.right() - m_groupBorderWidth);
+	}
+
+	iconRect.setLeft(iconRect.right() - contentsMargins().right() - m_iconSize);
+	iconRect.setWidth(m_iconSize);
+	return iconRect;
+}
+
+void CFormWidget::ToggleExpand(FormRow& row, bool skipLayout /* = false*/)
+{
+	if (row.IsExpanded())
+	{
+		row.m_pChildContainer->setVisible(false);
+	}
+	else
+	{
+		if (row.m_pChildContainer)
+		{
+			row.m_pChildContainer->setVisible(true);
+		}
+		else
+		{
+			//Create child container
+			row.m_pChildContainer = new CFormWidget(m_pParentTree, row.m_pModel, m_nesting + 1);
+			row.m_pChildContainer->setParent(this);
+			row.m_pChildContainer->setVisible(true);
+		}
+	}
+
+	if (!skipLayout)
+	{
+		DoFullLayoutUpdate();
+	}
+}
+
+void CFormWidget::resizeEvent(QResizeEvent* pEvent)
+{
+	QWidget::resizeEvent(pEvent);
+	DoLayout(pEvent->size());
+}
+
+void CFormWidget::enterEvent(QEvent* pEvent)
+{
+	const QPoint cursorPos = mapFromGlobal(QCursor::pos());
+	UpdateActiveRow(cursorPos);
+}
+
+void CFormWidget::leaveEvent(QEvent* pEvent)
+{
+	if (m_pActiveRow)
 	{
 		const QPoint cursorPos = mapFromGlobal(QCursor::pos());
 		UpdateActiveRow(cursorPos);
 	}
+}
 
-	void CFormWidget::leaveEvent(QEvent* ev)
+void CFormWidget::contextMenuEvent(QContextMenuEvent* pEvent)
+{
+	if (!m_pActiveRow)
 	{
-		if(m_activeRow)
-		{
-			const QPoint cursorPos = mapFromGlobal(QCursor::pos());
-			UpdateActiveRow(cursorPos);
-		}
+		return;
 	}
 
-	void CFormWidget::contextMenuEvent(QContextMenuEvent* event)
+	QMenu* pMenu = new QMenu();
+
+	//Active row
+	if (m_pActiveRow->m_pModel->GetPropertyTreeWidget())
 	{
-		if (!m_activeRow)
-			return;
-
-		QMenu* menu = new QMenu();
-
-		//Active row
-		if (m_activeRow->model->GetPropertyTreeWidget())
-			m_activeRow->model->GetPropertyTreeWidget()->PopulateContextMenu(menu, m_activeRow->model);
-
-		menu->addSeparator();
-		
-	    //Parent row may add some entries
-		if (m_rowModel->GetPropertyTreeWidget())
-			m_rowModel->GetPropertyTreeWidget()->PopulateChildContextMenu(menu, m_activeRow->model);
-
-		menu->addSeparator();
-
-		//Generic entries
-		auto action = menu->addAction(tr("Copy"));
-		connect(action, &QAction::triggered, this, &CFormWidget::OnCopy);
-
-		action = menu->addAction(tr("Paste"));
-		connect(action, &QAction::triggered, this, &CFormWidget::OnPaste);
-
-		menu->popup(event->globalPos());
+		m_pActiveRow->m_pModel->GetPropertyTreeWidget()->PopulateContextMenu(pMenu, m_pActiveRow->m_pModel);
 	}
 
-	void CFormWidget::mousePressEvent(QMouseEvent* ev)
+	pMenu->addSeparator();
+
+	//Parent row may add some entries
+	if (m_pRowModel->GetPropertyTreeWidget())
 	{
-		UpdateActiveRow(ev->pos());
+		m_pRowModel->GetPropertyTreeWidget()->PopulateChildContextMenu(pMenu, m_pActiveRow->m_pModel);
+	}
 
-		if(ev->buttons() & Qt::LeftButton)
-			m_mouseDownPos = m_lastCursorPos;
+	pMenu->addSeparator();
 
-		if (m_activeRow)
+	//Generic entries
+	QAction* pAction = pMenu->addAction(tr("Copy"));
+	connect(pAction, &QAction::triggered, this, &CFormWidget::OnCopy);
+
+	pAction = pMenu->addAction(tr("Paste"));
+	connect(pAction, &QAction::triggered, this, &CFormWidget::OnPaste);
+
+	pMenu->popup(pEvent->globalPos());
+}
+
+void CFormWidget::mousePressEvent(QMouseEvent* pEvent)
+{
+	UpdateActiveRow(pEvent->pos());
+
+	if (pEvent->buttons() & Qt::LeftButton)
+	{
+		m_mouseDownPos = m_lastCursorPos;
+	}
+
+	if (m_pActiveRow)
+	{
+		if (m_pActiveRow->m_pModel->HasVisibleChildren())
 		{
-			if(m_activeRow->model->HasVisibleChildren())
+			QRect iconRect = GetExpandIconRect(*m_pActiveRow);
+			if (iconRect.marginsAdded(QMargins(2, 0, 2, 0)).contains(pEvent->pos()))
 			{
-				QRect iconRect = GetExpandIconRect(*m_activeRow);
-				if (iconRect.marginsAdded(QMargins(2, 0, 2, 0)).contains(ev->pos()))
-				{
-					ToggleExpand(*m_activeRow);
-				}
+				ToggleExpand(*m_pActiveRow);
 			}
 		}
+	}
 
+	const int splitterPos = GetSplitterPosition();
+	if (abs(pEvent->x() - splitterPos) <= 5)
+	{
+		m_pParentTree->SetDraggingSplitter(true);
+		grabMouse();
+		update();
+	}
+}
+
+void CFormWidget::mouseMoveEvent(QMouseEvent* pEvent)
+{
+	UpdateActiveRow(pEvent->pos());
+
+	const bool isInsideWidget = rect().contains(pEvent->pos());
+
+	if (isInsideWidget && m_pActiveRow && m_pActiveRow->m_pModel->HasVisibleChildren())
+	{
+		//Repaint when nearing the icon to ensure the active state is updated correctly
+		QRect iconRect = GetExpandIconRect(*m_pActiveRow);
+		if (iconRect.marginsAdded(QMargins(2, 0, 2, 0)).contains(pEvent->pos()))
+		{
+			update();   //Trigger repaint
+		}
+	}
+
+	if (m_pParentTree->IsDraggingSplitter())
+	{
+		m_pParentTree->SetSplitterPosition(mapTo(m_pParentTree, pEvent->pos()).x());
+	}
+	else
+	{
 		const int splitterPos = GetSplitterPosition();
-		if (abs(ev->x() - splitterPos) <= 5)
+		const int sliderHalfAreaWidth = 5;
+		if (abs(pEvent->x() - splitterPos) <= sliderHalfAreaWidth)
 		{
-			m_parentTree->SetDraggingSplitter(true);
-			grabMouse();
-			update();
+			setCursor(QCursor(Qt::SplitHCursor));
 		}
-	}
-
-
-	void CFormWidget::mouseMoveEvent(QMouseEvent* ev)
-	{
-		UpdateActiveRow(ev->pos());
-
-		const bool isInsideWidget = rect().contains(ev->pos());
-
-		if (isInsideWidget && m_activeRow && m_activeRow->model->HasVisibleChildren())
+		else if (m_pActiveRow && GetDragHandleIconRect(*m_pActiveRow).contains(pEvent->pos()))
 		{
-			//Repaint when nearing the icon to ensure the active state is updated correctly
-			QRect iconRect = GetExpandIconRect(*m_activeRow);
-			if (iconRect.marginsAdded(QMargins(2, 0, 2, 0)).contains(ev->pos()))
-				update(); //Trigger repaint
-		}
-
-		if (m_parentTree->IsDraggingSplitter())
-		{
-			m_parentTree->SetSplitterPosition(mapTo(m_parentTree, ev->pos()).x());
+			setCursor(QCursor(Qt::OpenHandCursor));
 		}
 		else
 		{
-			const int splitterPos = GetSplitterPosition();
-			const int sliderHalfAreaWidth = 5;
-			if (abs(ev->x() - splitterPos) <= sliderHalfAreaWidth)
+			setCursor(QCursor(Qt::ArrowCursor));
+		}
+
+		if (pEvent->buttons() & Qt::LeftButton && isEnabled())
+		{
+			if (m_allowReorderChildren && (m_mouseDownPos - pEvent->pos()).manhattanLength() > QApplication::startDragDistance())
 			{
-				setCursor(QCursor(Qt::SplitHCursor));
+				PropertyTree2::CFormWidget::FormRow* pDraggedRow = RowAtPos(m_mouseDownPos);
+				if (pDraggedRow)
+				{
+					CDragDropData* pDragData = new CDragDropData();
+					pDragData->SetCustomData("PropertyRow", pDraggedRow->m_pModel);
+
+					QPixmap* pPixmap = new QPixmap(pDraggedRow->rowRect.size());
+					render(pPixmap, QPoint(), QRegion(pDraggedRow->rowRect));
+
+					CDragDropData::StartDrag(this, Qt::MoveAction, pDragData, pPixmap, pDraggedRow->rowRect.topLeft() - pEvent->pos());
+				}
 			}
-			else if (m_activeRow && GetDragHandleIconRect(*m_activeRow).contains(ev->pos()))
+		}
+	}
+}
+
+void CFormWidget::mouseReleaseEvent(QMouseEvent* pEvent)
+{
+	if (m_pParentTree->IsDraggingSplitter())
+	{
+		releaseMouse();
+		m_pParentTree->SetDraggingSplitter(false);
+		setCursor(QCursor(Qt::ArrowCursor));
+		update();
+	}
+}
+
+void CFormWidget::dragEnterEvent(QDragEnterEvent* pEvent)
+{
+	const CDragDropData* pDragData = CDragDropData::FromDragDropEvent(pEvent);
+	if (pDragData->HasCustomData("PropertyRow"))
+	{
+		const CRowModel* pDraggedRowModel = pDragData->GetCustomData<CRowModel*>("PropertyRow");
+		if (pDraggedRowModel->GetParent() == m_pRowModel && m_allowReorderChildren)
+		{
+			pEvent->acceptProposedAction();
+		}
+	}
+
+	m_dragInsertIndex = -1;
+	SetActiveRow(nullptr);
+}
+
+void CFormWidget::dragMoveEvent(QDragMoveEvent* pEvent)
+{
+	UpdateActiveRow(pEvent->pos());
+
+	QWidget::dragMoveEvent(pEvent);
+
+	const int oldDragIndex = m_dragInsertIndex;
+	m_dragInsertIndex = InsertionIndexAtPos(pEvent->pos());
+
+	if (m_dragInsertIndex != oldDragIndex)
+	{
+		update();
+	}
+
+	if (m_dragInsertIndex >= 0)
+	{
+		const CDragDropData* pDragData = CDragDropData::FromDragDropEvent(pEvent);
+		if (pDragData->HasCustomData("PropertyRow"))
+		{
+			const CRowModel* pDraggedRowModel = pDragData->GetCustomData<CRowModel*>("PropertyRow");
+
+			//Note: Because the only case for reordering is arrays which should not have hidden rows, we take the model index at face value
+			const int index = pDraggedRowModel->GetIndex();
+
+			//A row cannot be dropped on itself or below itself
+			//TODO: Currently it is difficult to handle drop are above the first element and below the last element. This is due to the widget hierarchy, not being able to paint above or below.
+			//A solution could be to add the spacing inside the child form widget so it can handle it, or otherwise have a global overlay for highlighting. For now these cases are not handled and guarded against here.
+			if (index == m_dragInsertIndex || index == m_dragInsertIndex - 1 || m_dragInsertIndex == 0 || m_dragInsertIndex == m_rows.size())
 			{
-				setCursor(QCursor(Qt::OpenHandCursor));
+				m_dragInsertIndex = -1;
 			}
 			else
 			{
-				setCursor(QCursor(Qt::ArrowCursor));
-			}
-
-			if (ev->buttons() & Qt::LeftButton && isEnabled())
-			{
-				if (m_allowReorderChildren && (m_mouseDownPos - ev->pos()).manhattanLength() > QApplication::startDragDistance())
-				{
-					auto draggedRow = RowAtPos(m_mouseDownPos);
-					if (draggedRow)
-					{
-						auto dragData = new CDragDropData();
-						dragData->SetCustomData("PropertyRow", draggedRow->model);
-
-						QPixmap* pixmap = new QPixmap(draggedRow->rowRect.size());
-						render(pixmap, QPoint(), QRegion(draggedRow->rowRect));
-
-						CDragDropData::StartDrag(this, Qt::MoveAction, dragData, pixmap, draggedRow->rowRect.topLeft() - ev->pos());
-					}
-				}
+				pEvent->acceptProposedAction();
+				return;
 			}
 		}
 	}
-	
-	void CFormWidget::mouseReleaseEvent(QMouseEvent* ev)
+
+	pEvent->ignore();
+}
+
+void CFormWidget::dragLeaveEvent(QDragLeaveEvent* pEvent)
+{
+	m_dragInsertIndex = -2;
+	if (m_pActiveRow)
 	{
-		if (m_parentTree->IsDraggingSplitter())
-		{
-			releaseMouse();
-			m_parentTree->SetDraggingSplitter(false);
-			setCursor(QCursor(Qt::ArrowCursor));
-			update();
-		}
-	}
-
-	void CFormWidget::dragEnterEvent(QDragEnterEvent* ev)
-	{
-		const CDragDropData* data = CDragDropData::FromDragDropEvent(ev);
-		if (data->HasCustomData("PropertyRow"))
-		{
-			const CRowModel* draggedRow = data->GetCustomData<CRowModel*>("PropertyRow");
-			if (draggedRow->GetParent() == m_rowModel && m_allowReorderChildren)
-			{
-				ev->acceptProposedAction();
-			}
-		}
-
-		m_dragInsertIndex = -1;
-		SetActiveRow(nullptr);
-	}
-
-	void CFormWidget::dragMoveEvent(QDragMoveEvent* ev)
-	{
-		UpdateActiveRow(ev->pos());
-
-		QWidget::dragMoveEvent(ev);
-
-		const auto oldDragIndex = m_dragInsertIndex;
-		m_dragInsertIndex = InsertionIndexAtPos(ev->pos());
-
-		if(m_dragInsertIndex != oldDragIndex)
-			update();
-		
-		if (m_dragInsertIndex >= 0)
-		{
-			const CDragDropData* data = CDragDropData::FromDragDropEvent(ev);
-			if (data->HasCustomData("PropertyRow"))
-			{
-				const CRowModel* draggedRow = data->GetCustomData<CRowModel*>("PropertyRow");
-				
-				//Note: Because the only case for reordering is arrays which should not have hidden rows, we take the model index at face value
-				const auto index = draggedRow->GetIndex();
-
-				//A row cannot be dropped on itself or below itself
-				//TODO: Currently it is difficult to handle drop are above the first element and below the last element. This is due to the widget hierarchy, not being able to paint above or below.
-				//A solution could be to add the spacing inside the child form widget so it can handle it, or otherwise have a global overlay for highlighting. For now these cases are not handled and guarded against here.
-				if (index == m_dragInsertIndex || index == m_dragInsertIndex - 1 || m_dragInsertIndex == 0 || m_dragInsertIndex == m_rows.size())
-				{
-					m_dragInsertIndex = -1;
-				}
-				else
-				{
-					ev->acceptProposedAction();
-					return;
-				}
-			}
-		}
-
-		ev->ignore();
-	}
-
-	void CFormWidget::dragLeaveEvent(QDragLeaveEvent* ev)
-	{
-		m_dragInsertIndex = -2;
-		if (m_activeRow)
-		{
-			const QPoint cursorPos = mapFromGlobal(QCursor::pos());
-			UpdateActiveRow(cursorPos);
-		}
-	}
-
-	void CFormWidget::dropEvent(QDropEvent* ev)
-	{
-		m_dragInsertIndex = -2;
 		const QPoint cursorPos = mapFromGlobal(QCursor::pos());
 		UpdateActiveRow(cursorPos);
+	}
+}
 
-		const CDragDropData* data = CDragDropData::FromDragDropEvent(ev);
-		if (data->HasCustomData("PropertyRow"))
+void CFormWidget::dropEvent(QDropEvent* pEvent)
+{
+	m_dragInsertIndex = -2;
+	const QPoint cursorPos = mapFromGlobal(QCursor::pos());
+	UpdateActiveRow(cursorPos);
+
+	const CDragDropData* pDragData = CDragDropData::FromDragDropEvent(pEvent);
+	if (pDragData->HasCustomData("PropertyRow"))
+	{
+		const CRowModel* pDraggedRowModel = pDragData->GetCustomData<CRowModel*>("PropertyRow");
+		if (pDraggedRowModel->GetParent() == m_pRowModel && m_allowReorderChildren)
 		{
-			const CRowModel* draggedRow = data->GetCustomData<CRowModel*>("PropertyRow");
-			if (draggedRow->GetParent() == m_rowModel && m_allowReorderChildren)
-			{
-				const int insertIndex = InsertionIndexAtPos(ev->pos());
+			const int insertIndex = InsertionIndexAtPos(pEvent->pos());
 
-				const auto w = m_rowModel->GetPropertyTreeWidget();
-				CRY_ASSERT(w && w->CanMoveChildren());
+			IPropertyTreeWidget* pPropertyTreeWidget = m_pRowModel->GetPropertyTreeWidget();
+			CRY_ASSERT(pPropertyTreeWidget && pPropertyTreeWidget->CanMoveChildren());
 
-				//Note: Because the only case for reordering is arrays which should not have hidden rows, we take the model index at face value
-				const auto index = draggedRow->GetIndex();
-				w->MoveChild(index, index < insertIndex ? insertIndex - 1 : insertIndex);
-				ev->acceptProposedAction();
-			}
+			//Note: Because the only case for reordering is arrays which should not have hidden rows, we take the model index at face value
+			const int index = pDraggedRowModel->GetIndex();
+			pPropertyTreeWidget->MoveChild(index, index < insertIndex ? insertIndex - 1 : insertIndex);
+			pEvent->acceptProposedAction();
 		}
 	}
+}
 
-	void CFormWidget::keyPressEvent(QKeyEvent* ev)
+void CFormWidget::keyPressEvent(QKeyEvent* pEvent)
+{
+	if (!m_pActiveRow)
 	{
-		if (!m_activeRow)
+		//If the form widget with active row is not in focus, the root form will dispatch the message properly
+		if (m_pRowModel->IsRoot())
 		{
-			//If the form widget with active row is not in focus, the root form will dispatch the message properly
-			if (m_rowModel->IsRoot())
+			const CRowModel* pRow = m_pParentTree->GetActiveRow();
+			if (pRow && pRow->GetParent() != m_pRowModel)
 			{
-				auto row = m_parentTree->GetActiveRow();
-				if(row && row->GetParent() != m_rowModel)
-				{
-					auto form = ExpandToRow(row);
-					CRY_ASSERT(form != this);
-					form->setFocus();
+				CFormWidget* pForm = ExpandToRow(pRow);
+				CRY_ASSERT(pForm != this);
+				pForm->setFocus();
 
-					//Don't use qapp::sendEvent because it will lead back here and recurse until stack overflow
-					form->event(ev); 
-				}
+				//Don't use qapp::sendEvent because it will lead back here and recurse until stack overflow
+				pForm->event(pEvent);
 			}
-
-			ev->ignore();
-			return;
 		}
 
-		switch (ev->key())
+		pEvent->ignore();
+		return;
+	}
+
+	switch (pEvent->key())
+	{
+	case Qt::Key_Up:
 		{
-		case Qt::Key_Up:
-		{
-			const auto index = RowIndex(m_activeRow);
-			
+			const int index = RowIndex(m_pActiveRow);
+
 			if (index > 0)
 			{
-				FormRow* row = &m_rows[index - 1];
-				CFormWidget* form = this;
-				while (row->IsExpanded())
+				FormRow* pRow = &m_rows[index - 1];
+				CFormWidget* pForm = this;
+				while (pRow->IsExpanded())
 				{
-					form = row->childContainer;
-					row = &row->childContainer->m_rows.back();
+					pForm = pRow->m_pChildContainer;
+					pRow = &pRow->m_pChildContainer->m_rows.back();
 				}
 
-				m_parentTree->EnsureRowVisible(row->model);
-				m_parentTree->SetActiveRow(row->model);
-				form->setFocus();
+				m_pParentTree->EnsureRowVisible(pRow->m_pModel);
+				m_pParentTree->SetActiveRow(pRow->m_pModel);
+				pForm->setFocus();
 			}
-			else if(!m_rowModel->IsRoot())
+			else if (!m_pRowModel->IsRoot())
 			{
-				m_parentTree->EnsureRowVisible(m_rowModel);
-				m_parentTree->SetActiveRow(m_rowModel);
-				auto parentForm = qobject_cast<CFormWidget*>(parent());
-				if(parentForm)
-					parentForm->setFocus();
+				m_pParentTree->EnsureRowVisible(m_pRowModel);
+				m_pParentTree->SetActiveRow(m_pRowModel);
+				CFormWidget* pParentForm = qobject_cast<CFormWidget*>(parent());
+				if (pParentForm)
+				{
+					pParentForm->setFocus();
+				}
 			}
-			
+
 			break;
 		}
-		case Qt::Key_Down:
+	case Qt::Key_Down:
 		{
 			//Get first child
-			if (m_activeRow->model->HasVisibleChildren() && m_activeRow->IsExpanded())
+			if (m_pActiveRow->m_pModel->HasVisibleChildren() && m_pActiveRow->IsExpanded())
 			{
-				CFormWidget* form = m_activeRow->childContainer;
-				CRY_ASSERT(form->m_rows.size() > 0);
-				form->setFocus();
-				m_parentTree->EnsureRowVisible(form->m_rows[0].model);
-				m_parentTree->SetActiveRow(form->m_rows[0].model);
+				CFormWidget* pForm = m_pActiveRow->m_pChildContainer;
+				CRY_ASSERT(pForm->m_rows.size() > 0);
+				pForm->setFocus();
+				m_pParentTree->EnsureRowVisible(pForm->m_rows[0].m_pModel);
+				m_pParentTree->SetActiveRow(pForm->m_rows[0].m_pModel);
 			}
 			else
 			{
-				FormRow* row = m_activeRow;
-				CFormWidget* form = this;
+				FormRow* pFormRow = m_pActiveRow;
+				CFormWidget* pFormWidget = this;
 
-				while (form && row)
+				while (pFormWidget && pFormRow)
 				{
 					//Get next sibling
+					const int formRowIndex = pFormWidget->RowIndex(pFormRow);
+					const size_t formRowsCount = pFormWidget->m_rows.size();
+					if (formRowsCount - 1 > formRowIndex)
 					{
-						const auto index = form->RowIndex(row);
-						const auto count = form->m_rows.size();
-						if (count - 1 > index)
-						{
-							row = &form->m_rows[index + 1];
-							break;
-						}
+						pFormRow = &pFormWidget->m_rows[formRowIndex + 1];
+						break;
 					}
 
 					//Or go to parent for next loop
+
+					CFormWidget* pParentForm = qobject_cast<CFormWidget*>(pFormWidget->parent());
+					if (pParentForm)
 					{
-						CFormWidget* parentForm = qobject_cast<CFormWidget*>(form->parent());
-						if (parentForm)
-						{
-							const auto index = parentForm->RowIndex(parentForm->ModelToFormRow(form->m_rowModel));
-							row = &parentForm->m_rows[index];
-						}
-						form = parentForm;
+						const int index = pParentForm->RowIndex(pParentForm->ModelToFormRow(pFormWidget->m_pRowModel));
+						pFormRow = &pParentForm->m_rows[index];
 					}
+					pFormWidget = pParentForm;
+
 				}
 
-				if (form && row)
+				if (pFormWidget && pFormRow)
 				{
-					m_parentTree->EnsureRowVisible(row->model);
-					m_parentTree->SetActiveRow(row->model);
-					form->setFocus();
+					m_pParentTree->EnsureRowVisible(pFormRow->m_pModel);
+					m_pParentTree->SetActiveRow(pFormRow->m_pModel);
+					pFormWidget->setFocus();
 				}
 			}
 			break;
 		}
-		case Qt::Key_Left:
+	case Qt::Key_Left:
 		{
-			if (m_activeRow->IsExpanded())
-				ToggleExpand(*m_activeRow);
-			else if(!m_rowModel->IsRoot()) //select parent row
+			if (m_pActiveRow->IsExpanded())
+			{
+				ToggleExpand(*m_pActiveRow);
+			}
+			else if (!m_pRowModel->IsRoot()) //select parent row
 			{
 				CFormWidget* form = qobject_cast<CFormWidget*>(parent());
 				if (form)
 				{
-					m_parentTree->EnsureRowVisible(m_rowModel);
-					m_parentTree->SetActiveRow(m_rowModel);
+					m_pParentTree->EnsureRowVisible(m_pRowModel);
+					m_pParentTree->SetActiveRow(m_pRowModel);
 					form->setFocus();
 				}
 			}
 			break;
 		}
-		case Qt::Key_Right:
+	case Qt::Key_Right:
 		{
-			if (m_activeRow->model->HasVisibleChildren() && !m_activeRow->IsExpanded())
-				ToggleExpand(*m_activeRow);
+			if (m_pActiveRow->m_pModel->HasVisibleChildren() && !m_pActiveRow->IsExpanded())
+				ToggleExpand(*m_pActiveRow);
 			break;
 		}
-		default:
-			QWidget::keyPressEvent(ev);
-		}
+	default:
+		QWidget::keyPressEvent(pEvent);
 	}
+}
 
-	bool CFormWidget::event(QEvent* ev)
+bool CFormWidget::event(QEvent* pEvent)
+{
+	switch (pEvent->type())
 	{
-		switch (ev->type())
-		{
-		/* All the following events are reimplemented from QWidget::event to allow usage when the widget is disabled 
-		   Note that keyPressEvent cannot be handled as disabled widgets cannot get focus. 
-		   Then again, disabled property tree also disables the scroll area so it is very impractical ...*/
-		case QEvent::MouseMove:
-			mouseMoveEvent((QMouseEvent*)ev);
-			break;
-		case QEvent::MouseButtonPress:
-			mousePressEvent((QMouseEvent*)ev);
-			break;
-		case QEvent::MouseButtonRelease:
-			mouseReleaseEvent((QMouseEvent*)ev);
-			break;
-		/* End event overrides for disabled state */
-		case QEvent::LayoutRequest:
+	/* All the following events are reimplemented from QWidget::event to allow usage when the widget is disabled
+	   Note that keyPressEvent cannot be handled as disabled widgets cannot get focus.
+	   Then again, disabled property tree also disables the scroll area so it is very impractical ...*/
+	case QEvent::MouseMove:
+		mouseMoveEvent((QMouseEvent*)pEvent);
+		break;
+	case QEvent::MouseButtonPress:
+		mousePressEvent((QMouseEvent*)pEvent);
+		break;
+	case QEvent::MouseButtonRelease:
+		mouseReleaseEvent((QMouseEvent*)pEvent);
+		break;
+	/* End event overrides for disabled state */
+	case QEvent::LayoutRequest:
 		{
 			DoFullLayoutUpdate();
 			break;
 		}
-		case QEvent::ToolTip:
+	case QEvent::ToolTip:
 		{
-			QHelpEvent *helpEvent = static_cast<QHelpEvent *>(ev);
-			if (m_activeRow)
+			QHelpEvent* pHelpEvent = static_cast<QHelpEvent*>(pEvent);
+			if (m_pActiveRow)
 			{
-				QString tooltip = m_activeRow->model->GetTooltip();
-				if(tooltip.isEmpty())
+				QString tooltip = m_pActiveRow->m_pModel->GetTooltip();
+				if (tooltip.isEmpty())
 				{
 					QToolTip::hideText();
-					ev->ignore();
+					pEvent->ignore();
 				}
 				else
 				{
 					QToolTip::hideText();
-					QToolTip::showText(helpEvent->globalPos(), tooltip);
+					QToolTip::showText(pHelpEvent->globalPos(), tooltip);
 				}
 			}
 
 			break;
 		}
-		case SandboxEvent::Command:
+	case SandboxEvent::Command:
 		{
-			CommandEvent* commandEvent = static_cast<CommandEvent*>(ev);
+			CommandEvent* pCommandEvent = static_cast<CommandEvent*>(pEvent);
 
-			const string& command = commandEvent->GetCommand();
+			const string& command = pCommandEvent->GetCommand();
 
 			if (command == "general.copy" || command == "general.cut")
 			{
 				OnCopy();
-				ev->accept();
+				pEvent->accept();
 			}
 			else if (command == "general.paste")
 			{
 				OnPaste();
-				ev->accept();
+				pEvent->accept();
 			}
 			else
 			{
-				ev->ignore();
+				pEvent->ignore();
 				return false;
 			}
 			break;
 		}
-		default:
-			return QWidget::event(ev);
-		}
-
-		return true;
+	default:
+		return QWidget::event(pEvent);
 	}
 
-	void CFormWidget::DoFullLayoutUpdate()
-	{
-		//TODO: layout is called too often.
-		//Update min size already triggers a resize event/ relayout so doLayout should not be called again
-		//Also doLayout could have the wrong size!
+	return true;
+}
 
-		UpdateMinimumSize();
-		DoLayout(size());
-		update();
-	}
+void CFormWidget::DoFullLayoutUpdate()
+{
+	//TODO: layout is called too often.
+	//Update min size already triggers a resize event/ relayout so doLayout should not be called again
+	//Also doLayout could have the wrong size!
 
-	QSize CFormWidget::sizeHint() const
-	{
-		return minimumSize();
-	}
+	UpdateMinimumSize();
+	DoLayout(size());
+	update();
+}
 
-	QSize CFormWidget::minimumSizeHint() const
-	{
-		return minimumSize();
-	}
-	
-	bool CFormWidget::focusNextPrevChild(bool next)
-	{
-		//Ensure that tab will target the current active row's widget if possible
-		QWidget* candidate = focusWidget();
-		if (candidate->hasFocus() && !qobject_cast<CFormWidget*>(candidate))
-		{
-			return QWidget::focusNextPrevChild(next);
-		}
-		else if (m_parentTree->GetActiveRow() != nullptr)
-		{
-			//TODO: with inlining this may not be the right widget, tab navigation needs to be adressed
-			if (m_parentTree->GetActiveRow()->IsWidgetSet())
-			{
-				m_parentTree->GetActiveRow()->GetQWidget()->setFocus();
-				return true;
-			}
-			else
-				return false;
-		}
+QSize CFormWidget::sizeHint() const
+{
+	return minimumSize();
+}
 
+QSize CFormWidget::minimumSizeHint() const
+{
+	return minimumSize();
+}
+
+bool CFormWidget::focusNextPrevChild(bool next)
+{
+	//Ensure that tab will target the current active row's widget if possible
+	QWidget* pCandidate = focusWidget();
+	if (pCandidate->hasFocus() && !qobject_cast<CFormWidget*>(pCandidate))
+	{
 		return QWidget::focusNextPrevChild(next);
 	}
-
-	void CFormWidget::UpdateMinimumSize()
+	else if (m_pParentTree->GetActiveRow() != nullptr)
 	{
-		//Note: this mimics the structure and behavior of UpdateMinimumSize, keep in sync!
-		int height = contentsMargins().top() + contentsMargins().bottom();
-
-		int widgetsMinWidth = 0;
-		int nestedFormsMinWidth = 0;
-
-		const int childCount = m_rows.size();
-		if (childCount > 0)
-			height += (childCount - 1) * m_spacing;
-
-		for (int i = 0; i < childCount; i++)
+		//TODO: with inlining this may not be the right widget, tab navigation needs to be adressed
+		if (m_pParentTree->GetActiveRow()->IsWidgetSet())
 		{
-			const auto& row = m_rows[i];
-			const int groupPadding = row.HasChildren() ? m_groupBorderWidth * 2 : 0;
-
-			height += groupPadding;
-
-			QWidget* widget = row.widget;
-			if (widget)
-			{
-				const QSize sizeHint = widget->minimumSizeHint();
-				height += max(sizeHint.height(), m_minRowHeight);
-				widgetsMinWidth = max(widgetsMinWidth, sizeHint.width() + groupPadding);
-			}
-			else
-			{
-				height += m_minRowHeight;
-			}
-
-			if (row.childContainer && row.IsExpanded())
-			{
-				const QSize minSize = row.childContainer->minimumSizeHint();
-				height += minSize.height() + (m_groupBorderWidth == 0 ? m_spacing : m_groupBorderWidth);
-				nestedFormsMinWidth = max(nestedFormsMinWidth, minSize.width() + groupPadding);
-			}
+			m_pParentTree->GetActiveRow()->GetWidget()->setFocus();
+			return true;
 		}
-
-		//reserve some space for the labels //TODO: this must be enforced when sizing down so widgets are not actually laid out past their min width
-		const int labelsMinWidth = 20;
-		int width = contentsMargins().left() + contentsMargins().right() + labelsMinWidth + widgetsMinWidth;
-
-		if(m_allowReorderChildren)
-			width += m_iconSize + m_spacing;
-
-		width = max(width, nestedFormsMinWidth);
-
-		setMinimumSize(width, height);
-	}
-
-	void CFormWidget::DoLayout(const QSize& size)
-	{
-		if (!isVisible())
-			return;
-
-		//Actually sets the geometry on all the children
-		//Note: this mimics the structure and behavior of UpdateMinimumSize, keep in sync!
-
-		int height = contentsMargins().top();
-
-		//Left and right limit for content
-		const int left = contentsMargins().left();
-		const int right = size.width() - contentsMargins().right();
-
-		//Left and right limit for widgets (right side of the tree)
-		const int wLeft = GetSplitterPosition();
-		const int wRight = right - (m_allowReorderChildren ? m_iconSize + m_spacing : 0);
-
-		const int childCount = m_rows.size();
-		for (int i = 0; i < childCount; i++)
+		else
 		{
-			auto& row = m_rows[i];
-			const bool isGroup = row.HasChildren();
-
-			int groupPadding = 0;
-			if (isGroup)
-				groupPadding = m_groupBorderWidth;
-
-			QWidget* widget = row.widget;
-			if (widget != nullptr)
-			{
-				//TODO: HeightForWidth widgets are not handled
-				const QSize sizeHint = widget->minimumSizeHint();
-				const bool expandsHorizontal = widget->sizePolicy().expandingDirections() & Qt::Horizontal;
-				const int widgetWidth = expandsHorizontal ? wRight - wLeft - groupPadding : min(sizeHint.width(), wRight - wLeft - groupPadding);
-				const int rowHeight = max(m_minRowHeight, sizeHint.height()) + 2*groupPadding;
-
-				row.rowRect = QRect(left, height, right - left, rowHeight);
-				widget->setGeometry(wLeft, height + (rowHeight - sizeHint.height()) / 2, widgetWidth, sizeHint.height());
-			}
-			else
-			{
-				const int rowHeight = m_minRowHeight + 2*groupPadding;
-				row.rowRect = QRect(left, height, right - left, rowHeight);
-			}
-
-			height += row.rowRect.height();
-
-			if (row.childContainer && row.IsExpanded())
-			{
-				height += m_groupBorderWidth == 0 ? m_spacing : 0;
-
-				const int rowHeight = row.childContainer->minimumSizeHint().height();
-				row.childContainer->setGeometry(left + groupPadding, height, right - groupPadding * 2 - left, rowHeight);
-
-				height += rowHeight + groupPadding;
-			}
-
-			height += m_spacing;
-		}
-
-		//Check that the size fits expected minimum size
-		//Equality cannot be tested for because if internal controls are affected by the style, minimum size is not necessarily recomputed
-		//This is most certainly a bug in Qt as a style change should trigger LayoutRequest
-		//Note that too many spacings was added during the loop so we remove it before testing
-		if (height - m_spacing > minimumSize().height())
-		{
-			UpdateMinimumSize();
-			CRY_ASSERT(height - m_spacing <= minimumSize().height());
+			return false;
 		}
 	}
 
-	//Fakes a serializable around the tree and its widgets, for copy paste
-	struct SerializableWrapper
+	return QWidget::focusNextPrevChild(next);
+}
+
+void CFormWidget::UpdateMinimumSize()
+{
+	//Note: this mimics the structure and behavior of UpdateMinimumSize, keep in sync!
+	int height = contentsMargins().top() + contentsMargins().bottom();
+
+	int widgetsMinWidth = 0;
+	int nestedFormsMinWidth = 0;
+
+	const int childCount = m_rows.size();
+	if (childCount > 0)
 	{
-		SerializableWrapper(const CRowModel* model) : m_model(model) {}
+		height += (childCount - 1) * m_spacing;
+	}
 
-		void Serialize(yasli::Archive& ar)
+	for (int i = 0; i < childCount; i++)
+	{
+		const FormRow& row = m_rows[i];
+		const int groupPadding = row.HasChildren() ? m_groupBorderWidth * 2 : 0;
+
+		height += groupPadding;
+
+		QWidget* pWidget = row.m_pWidget;
+		if (pWidget)
 		{
-			if (m_model->GetPropertyTreeWidget())
-			{
-				m_model->GetPropertyTreeWidget()->Serialize(ar);
-			}
-
-			for (auto& child : m_model->GetChildren())
-			{
-				ar(SerializableWrapper(child), child->GetName(), "");
-			}
+			const QSize sizeHint = pWidget->minimumSizeHint();
+			height += max(sizeHint.height(), m_minRowHeight);
+			widgetsMinWidth = max(widgetsMinWidth, sizeHint.width() + groupPadding);
+		}
+		else
+		{
+			height += m_minRowHeight;
 		}
 
-		const CRowModel* m_model;
-	};
+		if (row.m_pChildContainer && row.IsExpanded())
+		{
+			const QSize minSize = row.m_pChildContainer->minimumSizeHint();
+			height += minSize.height() + (m_groupBorderWidth == 0 ? m_spacing : m_groupBorderWidth);
+			nestedFormsMinWidth = max(nestedFormsMinWidth, minSize.width() + groupPadding);
+		}
+	}
 
-	void CFormWidget::OnCopy()
+	//reserve some space for the labels //TODO: this must be enforced when sizing down so widgets are not actually laid out past their min width
+	const int labelsMinWidth = 20;
+	int width = contentsMargins().left() + contentsMargins().right() + labelsMinWidth + widgetsMinWidth;
+
+	if (m_allowReorderChildren)
 	{
-		if (!m_activeRow)
-			return;
+		width += m_iconSize + m_spacing;
+	}
 
-		yasli::JSONOArchive ar;
-		SerializableWrapper wrapper(m_activeRow->model);
+	width = max(width, nestedFormsMinWidth);
+
+	setMinimumSize(width, height);
+}
+
+void CFormWidget::DoLayout(const QSize& size)
+{
+	if (!isVisible())
+	{
+		return;
+	}
+
+	//Actually sets the geometry on all the children
+	//Note: this mimics the structure and behavior of UpdateMinimumSize, keep in sync!
+
+	int height = contentsMargins().top();
+
+	//Left and right limit for content
+	const int left = contentsMargins().left();
+	const int right = size.width() - contentsMargins().right();
+
+	//Left and right limit for widgets (right side of the tree)
+	const int wLeft = GetSplitterPosition();
+	const int wRight = right - (m_allowReorderChildren ? m_iconSize + m_spacing : 0);
+
+	const int childCount = m_rows.size();
+	for (int i = 0; i < childCount; i++)
+	{
+		FormRow& row = m_rows[i];
+		const bool isGroup = row.HasChildren();
+
+		int groupPadding = 0;
+		if (isGroup)
+		{
+			groupPadding = m_groupBorderWidth;
+		}
+
+		QWidget* pWidget = row.m_pWidget;
+		if (pWidget != nullptr)
+		{
+			//TODO: HeightForWidth widgets are not handled
+			const QSize sizeHint = pWidget->minimumSizeHint();
+			const bool expandsHorizontal = pWidget->sizePolicy().expandingDirections() & Qt::Horizontal;
+			const int widgetWidth = expandsHorizontal ? wRight - wLeft - groupPadding : min(sizeHint.width(), wRight - wLeft - groupPadding);
+			const int rowHeight = max(m_minRowHeight, sizeHint.height()) + 2 * groupPadding;
+
+			row.rowRect = QRect(left, height, right - left, rowHeight);
+			pWidget->setGeometry(wLeft, height + (rowHeight - sizeHint.height()) / 2, widgetWidth, sizeHint.height());
+		}
+		else
+		{
+			const int rowHeight = m_minRowHeight + 2 * groupPadding;
+			row.rowRect = QRect(left, height, right - left, rowHeight);
+		}
+
+		height += row.rowRect.height();
+
+		if (row.m_pChildContainer && row.IsExpanded())
+		{
+			height += m_groupBorderWidth == 0 ? m_spacing : 0;
+
+			const int rowHeight = row.m_pChildContainer->minimumSizeHint().height();
+			row.m_pChildContainer->setGeometry(left + groupPadding, height, right - groupPadding * 2 - left, rowHeight);
+
+			height += rowHeight + groupPadding;
+		}
+
+		height += m_spacing;
+	}
+
+	//Check that the size fits expected minimum size
+	//Equality cannot be tested for because if internal controls are affected by the style, minimum size is not necessarily recomputed
+	//This is most certainly a bug in Qt as a style change should trigger LayoutRequest
+	//Note that too many spacings was added during the loop so we remove it before testing
+	if (height - m_spacing > minimumSize().height())
+	{
+		UpdateMinimumSize();
+		CRY_ASSERT(height - m_spacing <= minimumSize().height());
+	}
+}
+
+//Fakes a serializable around the tree and its widgets, for copy paste
+struct SerializableWrapper
+{
+	SerializableWrapper(const CRowModel* pModel) : m_pModel(pModel) {}
+
+	void Serialize(yasli::Archive& ar)
+	{
+		if (m_pModel->GetPropertyTreeWidget())
+		{
+			m_pModel->GetPropertyTreeWidget()->Serialize(ar);
+		}
+
+		for (const _smart_ptr<CRowModel>& child : m_pModel->GetChildren())
+		{
+			ar(SerializableWrapper(child), child->GetName(), "");
+		}
+	}
+
+	const CRowModel* m_pModel;
+};
+
+void CFormWidget::OnCopy()
+{
+	if (!m_pActiveRow)
+	{
+		return;
+	}
+
+	yasli::JSONOArchive ar;
+	SerializableWrapper wrapper(m_pActiveRow->m_pModel);
+	ar(wrapper);
+
+	QClipboard* pClipboard = QApplication::clipboard();
+	CRY_ASSERT(pClipboard);
+
+	QMimeData* pMimeData = new QMimeData();
+	pMimeData->setText(ar.c_str());
+	pClipboard->setMimeData(pMimeData);
+}
+
+void CFormWidget::OnPaste()
+{
+	if (!m_pActiveRow)
+	{
+		return;
+	}
+
+	QClipboard* pClipboard = QApplication::clipboard();
+	CRY_ASSERT(pClipboard);
+
+	if (pClipboard->mimeData()->hasText())
+	{
+		string text = pClipboard->mimeData()->text().toStdString().c_str();
+
+		yasli::JSONIArchive ar;
+		ar.open(text.data(), text.length());
+
+		m_pParentTree->SetAccumulateChanges(true);
+
+		SerializableWrapper wrapper(m_pActiveRow->m_pModel);
 		ar(wrapper);
 
-		QClipboard* pClipboard = QApplication::clipboard();
-		CRY_ASSERT(pClipboard);
-
-		QMimeData* mimeData = new QMimeData();
-		mimeData->setText(ar.c_str());
-		pClipboard->setMimeData(mimeData);
+		//Force only one undo notification even though this may trigger many serialization passes
+		m_pParentTree->SetAccumulateChanges(false);
 	}
+}
 
-	void CFormWidget::OnPaste()
+int CFormWidget::GetSplitterPosition() const
+{
+	const int splitterPos = m_pParentTree->GetSplitterPosition();
+	return mapFrom(m_pParentTree, QPoint(splitterPos, 0)).x();
+}
+
+PropertyTree2::CFormWidget::FormRow* CFormWidget::ModelToFormRow(const CRowModel* pRow)
+{
+	CRY_ASSERT(pRow && pRow->GetParent() == m_pRowModel && !pRow->IsHidden());
+
+	const int index = pRow->GetIndex();
+
+	//Because of hidden rows, the index of the form row is either at the index or before. Start at index and work our way back to 0.
+	auto beginIt = index > m_rows.size() ? m_rows.rbegin() : m_rows.rbegin() + (m_rows.size() - index - 1);
+	auto rowsIterator = std::find_if(beginIt, m_rows.rend(), [&](const FormRow& formRow) { return formRow.m_pModel == pRow; });
+	if (rowsIterator != m_rows.rend())
 	{
-		if (!m_activeRow)
-			return;
-
-		QClipboard* pClipboard = QApplication::clipboard();
-		CRY_ASSERT(pClipboard);
-
-		if (pClipboard->mimeData()->hasText())
-		{
-			string text = pClipboard->mimeData()->text().toStdString().c_str();
-
-			yasli::JSONIArchive ar;
-			ar.open(text.data(), text.length());
-
-			m_parentTree->SetAccumulateChanges(true);
-
-			SerializableWrapper wrapper(m_activeRow->model);
-			ar(wrapper);
-
-			//Force only one undo notification even though this may trigger many serialization passes
-			m_parentTree->SetAccumulateChanges(false);
-		}
+		return &(*rowsIterator);
 	}
-
-	int CFormWidget::GetSplitterPosition() const
+	else
 	{
-		const auto splitterPos = m_parentTree->GetSplitterPosition();
-		return mapFrom(m_parentTree, QPoint(splitterPos, 0)).x();
-	}
-
-	PropertyTree2::CFormWidget::FormRow* CFormWidget::ModelToFormRow(const CRowModel* row)
-	{
-		CRY_ASSERT(row && row->GetParent() == m_rowModel && !row->IsHidden());
-
-		const auto index = row->GetIndex();
-
-		//Because of hidden rows, the index of the form row is either at the index or before. Start at index and work our way back to 0.
-		auto beginIt = index > m_rows.size() ? m_rows.rbegin() : m_rows.rbegin() + (m_rows.size() - index - 1);
-		auto it = std::find_if(beginIt, m_rows.rend(), [&](const FormRow& formRow) { return formRow.model == row; });
-		if (it != m_rows.rend())
-			return &(*it);
-		else
-			return nullptr;
-	}
-
-	PropertyTree2::CFormWidget::FormRow* CFormWidget::RowAtPos(const QPoint& position)
-	{
-		//Binary search through the rows, using only vertical position
-		int low = 0;
-		int high = m_rows.size() - 1;
-
-		while (low <= high)
-		{
-			int mid = (low + high) / 2;
-			auto& row = m_rows[mid];
-
-			if (position.y() < row.rowRect.top())
-				high = mid - 1;
-			else if (position.y() > row.rowRect.bottom())
-				low = mid + 1;
-			else if (row.rowRect.contains(position))
-				return &row;
-			else
-				return nullptr;
-		}
-
 		return nullptr;
 	}
+}
 
-	int CFormWidget::InsertionIndexAtPos(const QPoint& position, int tolerancePx)
+PropertyTree2::CFormWidget::FormRow* CFormWidget::RowAtPos(const QPoint& position)
+{
+	//Binary search through the rows, using only vertical position
+	int low = 0;
+	int high = m_rows.size() - 1;
+
+	while (low <= high)
 	{
-		//Computes the insertion index when dragging something and dropping it between two rows
-		//This assumes spacing + tolerance < average row size
+		int mid = (low + high) / 2;
+		FormRow& row = m_rows[mid];
 
-		//TODO: if above row has a child widget then this algorithm makes it possible to drop between the top row and its children, this is strange, we really should only test the row below!
-
-		int index = -1;
-
-		auto row = RowAtPos(position);
-		if (row)
+		if (position.y() < row.rowRect.top())
 		{
-			if (!row->rowRect.contains(QPoint(position.x(), position.y() - tolerancePx)))
-			{
-				//pos is closer to the top of the row
-				index = RowIndex(row);
-			}
-			else if (!row->rowRect.contains(QPoint(position.x(), position.y() + tolerancePx)))
-			{
-				//pos is closer to the bottom of the row
-				index = RowIndex(row) + 1;
-			}
+			high = mid - 1;
 		}
-		else //Current position is in between rows
+		else if (position.y() > row.rowRect.bottom())
 		{
-			auto rowAbove = RowAtPos(QPoint(position.x(), position.y() - m_spacing));
-			if (rowAbove)
+			low = mid + 1;
+		}
+		else if (row.rowRect.contains(position))
+		{
+			return &row;
+		}
+		else
+		{
+			return nullptr;
+		}
+	}
+
+	return nullptr;
+}
+
+int CFormWidget::InsertionIndexAtPos(const QPoint& position, int tolerancePx)
+{
+	//Computes the insertion index when dragging something and dropping it between two rows
+	//This assumes spacing + tolerance < average row size
+
+	//TODO: if above row has a child widget then this algorithm makes it possible to drop between the top row and its children, this is strange, we really should only test the row below!
+
+	int index = -1;
+
+	FormRow* pRow = RowAtPos(position);
+	if (pRow)
+	{
+		if (!pRow->rowRect.contains(QPoint(position.x(), position.y() - tolerancePx)))
+		{
+			//pos is closer to the top of the row
+			index = RowIndex(pRow);
+		}
+		else if (!pRow->rowRect.contains(QPoint(position.x(), position.y() + tolerancePx)))
+		{
+			//pos is closer to the bottom of the row
+			index = RowIndex(pRow) + 1;
+		}
+	}
+	else   //Current position is in between rows
+	{
+		FormRow* pRowAbove = RowAtPos(QPoint(position.x(), position.y() - m_spacing));
+		if (pRowAbove)
+		{
+			index = RowIndex(pRowAbove) + 1;
+		}
+		else
+		{
+			FormRow* pRowBelow = RowAtPos(QPoint(position.x(), position.y() + m_spacing));
+			if (pRowBelow)
 			{
-				index = RowIndex(rowAbove) + 1;
+				index = RowIndex(pRowBelow);
 			}
 			else
 			{
-				auto rowBelow = RowAtPos(QPoint(position.x(), position.y() + m_spacing));
-				if (rowBelow)
+				pRowAbove = RowAtPos(QPoint(position.x(), position.y() - m_spacing - tolerancePx));
+				if (pRowAbove)
 				{
-					index = RowIndex(rowBelow);
+					index = RowIndex(pRowAbove) + 1;
 				}
 				else
 				{
-					rowAbove = RowAtPos(QPoint(position.x(), position.y() - m_spacing - tolerancePx));
-					if (rowAbove)
+					pRowBelow = RowAtPos(QPoint(position.x(), position.y() + m_spacing + tolerancePx));
+					if (pRowBelow)
 					{
-						index = RowIndex(rowAbove) + 1;
-					}
-					else
-					{
-						rowBelow = RowAtPos(QPoint(position.x(), position.y() + m_spacing + tolerancePx));
-						if (rowBelow)
-						{
-							index = RowIndex(rowBelow);
-						}
+						index = RowIndex(pRowBelow);
 					}
 				}
 			}
 		}
-		
-		//Cannot insert after the last row
-		if (index >= m_rows.size())
-			index = -1;
-
-		return index;
 	}
 
-	int CFormWidget::RowIndex(const FormRow* row)
+	//Cannot insert after the last row
+	if (index >= m_rows.size())
 	{
-		return int(row - &(*m_rows.begin()));
+		index = -1;
 	}
 
-	void CFormWidget::OnActiveRowChanged(const CRowModel* newActiveRow)
+	return index;
+}
+
+int CFormWidget::RowIndex(const FormRow* pRow)
+{
+	return int(pRow - &(*m_rows.begin()));
+}
+
+void CFormWidget::OnActiveRowChanged(const CRowModel* pNewActiveRow)
+{
+	CRY_ASSERT(!pNewActiveRow || !pNewActiveRow->IsRoot());
+
+	if (m_pActiveRow && m_pActiveRow->m_pModel == pNewActiveRow)
 	{
-		CRY_ASSERT(!newActiveRow || !newActiveRow->IsRoot());
-
-		if (m_activeRow && m_activeRow->model == newActiveRow)
-			return;
-
-		if (newActiveRow && newActiveRow->GetParent() == m_rowModel)
-		{
-			SetActiveRow(ModelToFormRow(newActiveRow));
-		}
-		else
-		{
-			SetActiveRow(nullptr);
-		}
-
-		//Recurse to all children
-		for (auto& formRow : m_rows)
-		{
-			if (formRow.IsExpanded())
-				formRow.childContainer->OnActiveRowChanged(newActiveRow);
-		}
+		return;
 	}
 
-	void CFormWidget::UpdateActiveRow(const QPoint& cursorPos)
+	if (pNewActiveRow && pNewActiveRow->GetParent() == m_pRowModel)
 	{
-		if (cursorPos == m_lastCursorPos)
-			return;
-
-		m_lastCursorPos = cursorPos;
-
-		if (m_activeRow && !rect().contains(cursorPos))
-		{
-			SetActiveRow(nullptr);
-			m_parentTree->SetActiveRow(nullptr);
-			return;
-		}
-
-		//But first test the existing row and discard early
-		if (m_activeRow && m_activeRow->rowRect.contains(cursorPos))
-			return;
-
-		FormRow* formRowPtr = RowAtPos(cursorPos);
-		SetActiveRow(formRowPtr);
-		if(formRowPtr)
-			m_parentTree->SetActiveRow(formRowPtr->model);
-		else
-			m_parentTree->SetActiveRow(nullptr);
+		SetActiveRow(ModelToFormRow(pNewActiveRow));
+	}
+	else
+	{
+		SetActiveRow(nullptr);
 	}
 
-	void CFormWidget::SetActiveRow(FormRow* row)
+	//Recurse to all children
+	for (FormRow& formRow : m_rows)
 	{
-		if (row != m_activeRow)
+		if (formRow.IsExpanded())
 		{
-			m_activeRow = row;
-			update();
+			formRow.m_pChildContainer->OnActiveRowChanged(pNewActiveRow);
 		}
 	}
+}
 
-	//////////////////////////////////////////////////////////////////////////
-
-	CInlineWidgetBox::CInlineWidgetBox(CFormWidget* parent)
-		: QWidget(parent)
+void CFormWidget::UpdateActiveRow(const QPoint& cursorPos)
+{
+	if (cursorPos == m_lastCursorPos)
 	{
-		QHBoxLayout* layout = new QHBoxLayout();
-		layout->setMargin(0);
-		layout->setSpacing(parent->GetSpacing());
-		setLayout(layout);
-		setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+		return;
 	}
 
-	void CInlineWidgetBox::AddWidget(QWidget* widget, QPropertyTree2* pTree)
-	{
-		widget->setParent(this);
-		qobject_cast<QHBoxLayout*>(layout())->addWidget(widget);
-		widget->setVisible(true);
+	m_lastCursorPos = cursorPos;
 
-		IPropertyTreeWidget* ptw = qobject_cast<IPropertyTreeWidget*>(widget);
-		if (ptw)
-		{
-			ptw->signalChanged.Connect(pTree, &QPropertyTree2::OnRowChanged);
-			ptw->signalContinuousChanged.Connect(pTree, &QPropertyTree2::OnRowContinuousChanged);
-		}
+	if (m_pActiveRow && !rect().contains(cursorPos))
+	{
+		SetActiveRow(nullptr);
+		m_pParentTree->SetActiveRow(nullptr);
+		return;
 	}
 
-	void CInlineWidgetBox::ReleaseWidgets(QPropertyTree2* pTree)
+	//But first test the existing row and discard early
+	if (m_pActiveRow && m_pActiveRow->rowRect.contains(cursorPos))
 	{
-		while (layout()->count() > 0)
+		return;
+	}
+
+	FormRow* pFormRow = RowAtPos(cursorPos);
+	SetActiveRow(pFormRow);
+	if (pFormRow)
+	{
+		m_pParentTree->SetActiveRow(pFormRow->m_pModel);
+	}
+	else
+	{
+		m_pParentTree->SetActiveRow(nullptr);
+	}
+}
+
+void CFormWidget::SetActiveRow(FormRow* pRow)
+{
+	if (pRow != m_pActiveRow)
+	{
+		m_pActiveRow = pRow;
+		update();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+CInlineWidgetBox::CInlineWidgetBox(CFormWidget* pParent)
+	: QWidget(pParent)
+{
+	QHBoxLayout* pHBoxLayout = new QHBoxLayout();
+	pHBoxLayout->setMargin(0);
+	pHBoxLayout->setSpacing(pParent->GetSpacing());
+	setLayout(pHBoxLayout);
+	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+}
+
+void CInlineWidgetBox::AddWidget(QWidget* pWidget, QPropertyTree2* pPropertyTree)
+{
+	pWidget->setParent(this);
+	qobject_cast<QHBoxLayout*>(layout())->addWidget(pWidget);
+	pWidget->setVisible(true);
+
+	IPropertyTreeWidget* pPropertyTreeWidget = qobject_cast<IPropertyTreeWidget*>(pWidget);
+	if (pPropertyTreeWidget)
+	{
+		pPropertyTreeWidget->signalDiscarded.Connect(pPropertyTree, &QPropertyTree2::OnRowDiscarded);
+		pPropertyTreeWidget->signalPreChanged.Connect(pPropertyTree, &QPropertyTree2::OnRowPreChanged);
+		pPropertyTreeWidget->signalChanged.Connect(pPropertyTree, &QPropertyTree2::OnRowChanged);
+		pPropertyTreeWidget->signalContinuousChanged.Connect(pPropertyTree, &QPropertyTree2::OnRowContinuousChanged);
+	}
+}
+
+void CInlineWidgetBox::ReleaseWidgets(QPropertyTree2* pPropertyTree)
+{
+	while (layout()->count() > 0)
+	{
+		QLayoutItem* pItem = layout()->takeAt(layout()->count() - 1);
+		QWidget* pItemWidget = pItem->widget();
+		if (pItemWidget)
 		{
-			auto item = layout()->takeAt(layout()->count() - 1);
-			auto w = item->widget();
-			if (w)
+			pItemWidget->setParent(nullptr);
+
+			IPropertyTreeWidget* pPropertyTreeWidget = qobject_cast<IPropertyTreeWidget*>(pItemWidget);
+			if (pPropertyTreeWidget)
 			{
-				w->setParent(nullptr);
-
-				IPropertyTreeWidget* ptw = qobject_cast<IPropertyTreeWidget*>(w);
-				if (ptw)
-				{
-					ptw->signalChanged.DisconnectObject(pTree);
-					ptw->signalContinuousChanged.DisconnectObject(pTree);
-				}
+				pPropertyTreeWidget->signalDiscarded.DisconnectObject(pPropertyTree);
+				pPropertyTreeWidget->signalChanged.DisconnectObject(pPropertyTree);
+				pPropertyTreeWidget->signalContinuousChanged.DisconnectObject(pPropertyTree);
+				pPropertyTreeWidget->signalPreChanged.DisconnectObject(pPropertyTree);
 			}
 		}
 	}
+}
 
 }

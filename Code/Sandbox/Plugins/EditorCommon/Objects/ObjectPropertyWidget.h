@@ -8,6 +8,7 @@
 #include <memory>
 #include <vector>
 
+
 class CBaseObject;
 class QPropertyTree;
 

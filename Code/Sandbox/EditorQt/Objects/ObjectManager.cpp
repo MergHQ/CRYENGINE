@@ -1340,11 +1340,11 @@ void CObjectManager::ShowDuplicationMsgWarning(CBaseObject* obj, const string& n
 		string sRenameWarning("");
 		sRenameWarning.Format
 		(
-		  "%s \"%s\" was NOT renamed to \"%s\" because %s with the same name already exists.",
-		  obj->GetClassDesc()->ClassName(),
-		  obj->GetName().GetString(),
-		  newName.GetString(),
-		  pExisting->GetClassDesc()->ClassName()
+			"%s \"%s\" was NOT renamed to \"%s\" because %s with the same name already exists.",
+			obj->GetClassDesc()->ClassName(),
+			obj->GetName().GetString(),
+			newName.GetString(),
+			pExisting->GetClassDesc()->ClassName()
 		);
 
 		if (bShowMsgBox)
@@ -1363,10 +1363,10 @@ void CObjectManager::ShowInvalidNameMsgWarning(CBaseObject* obj, const string& n
 	string sRenameWarning("");
 	sRenameWarning.Format
 	(
-	  "%s \"%s\" was NOT renamed to \"%s\" because that name is invalid.",
-	  obj->GetClassDesc()->ClassName(),
-	  obj->GetName().GetString(),
-	  newName.GetString()
+		"%s \"%s\" was NOT renamed to \"%s\" because that name is invalid.",
+		obj->GetClassDesc()->ClassName(),
+		obj->GetName().GetString(),
+		newName.GetString()
 	);
 
 	if (bShowMsgBox)
@@ -2071,7 +2071,7 @@ void CObjectManager::EmitPopulateInspectorEvent() const
 			szTitle.sprintf("%zu Selected Objects", objectCount);
 		}
 
-		PopulateInspectorEvent popEvent([](CInspector& inspector)
+		PopulateLegacyInspectorEvent popEvent([](CInspectorLegacy& inspector)
 		{
 			const CSelectionGroup* pSelectionGroup = GetIEditorImpl()->GetObjectManager()->GetSelection();
 			CInspectorWidgetCreator creator;
