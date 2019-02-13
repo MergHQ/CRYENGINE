@@ -24,7 +24,13 @@ namespace Cry
 			{
 				if (ISteamFriends* pSteamFriends = SteamFriends())
 				{
-					return pSteamFriends->GetFriendPersonaName(m_id);
+					const char* szNickName = pSteamFriends->GetFriendPersonaName(m_id);
+
+					// https://partner.steamgames.com/doc/api/ISteamFriends#GetFriendPersonaName
+					if (szNickName[0] != '\0' && cry_strcmp(szNickName, "[unknown]") != 0)
+					{
+						return szNickName;
+					}
 				}
 
 				return nullptr;
