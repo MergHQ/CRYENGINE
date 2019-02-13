@@ -5,6 +5,7 @@
 #include "ProxyModels/MergingProxyModel.h"
 #include "ProxyModels/MountingProxyModel.h"
 #include "ProxyModels/ItemModelAttribute.h"
+#include "VersionControl/UI/VersionControlUIHelper.h"
 
 #include "Objects/ObjectLayerManager.h"
 #include "IEditorImpl.h"
@@ -62,7 +63,7 @@ static CItemModelAttribute* FullLevel_GetColumnAttribute(int column)
 	case eFullLevelColumns_Frozen:
 		return &LevelModelsAttributes::s_frozenAttribute;
 	case eFullLevelColumns_VCS:
-		return &LevelModelsAttributes::s_vcsAttribute;
+		return VersionControlUIHelper::GetVCSStatusAttribute();
 	case eFullLevelColumns_DefaultMaterial:
 		return &LevelModelsAttributes::s_defaultMaterialAttribute;
 	case eFullLevelColumns_CustomMaterial:
