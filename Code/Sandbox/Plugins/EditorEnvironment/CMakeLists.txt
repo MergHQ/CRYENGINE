@@ -14,11 +14,9 @@ add_sources("NoUberFile"
 		"stdafx.h"
 		"QTimeOfDayWidget.h"
 		"QTimeOfDayWidget.cpp"
-		"QPresetsWidget.h"
-		"QPresetsWidget.cpp"
-		"PresetsModel.cpp"
-		"PresetsModel.h"
 		"LightingSettings.h"
+		"EnvironmentAssetType.h"
+		"EnvironmentAssetType.cpp"
 )
 
 end_sources()

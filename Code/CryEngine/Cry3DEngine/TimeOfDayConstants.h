@@ -48,11 +48,19 @@ struct TotalIllumAdvImpl : public ITimeOfDay::TotalIllumAdv
 	void Serialize(Serialization::IArchive& ar);
 };
 
-struct CTimeOfDayConstants
+struct STimeOfDayConstants : public ITimeOfDay::IConstants
 {
-	CTimeOfDayConstants();
-	void ResetVariables();
-	void Serialize(Serialization::IArchive& ar);
+	STimeOfDayConstants();
+
+	virtual ITimeOfDay::Sun& GetSunParams() override;
+	virtual ITimeOfDay::Moon& GetMoonParams() override;
+	virtual ITimeOfDay::Wind& GetWindParams() override;
+	virtual ITimeOfDay::CloudShadows& GetCloudShadowsParams() override;
+	virtual ITimeOfDay::TotalIllum& GetTotalIlluminationParams() override;
+	virtual ITimeOfDay::TotalIllumAdv& GetTotalIlluminationAdvParams() override;
+
+	virtual void Serialize(Serialization::IArchive& ar) override;
+	virtual void Reset() override;
 
 	SunImpl           sun;
 	MoonImpl          moon;

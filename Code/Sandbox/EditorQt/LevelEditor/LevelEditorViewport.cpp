@@ -1,4 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #include "StdAfx.h"
 #include "LevelEditorViewport.h"
 
@@ -33,6 +34,7 @@
 #include <Util/AffineParts.h>
 
 #include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/ITimeOfDay.h>
 #include <CryAISystem/IAISystem.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <CryGame/IGameFramework.h>
@@ -206,6 +208,50 @@ bool CLevelEditorViewport::HandleDragEvent(EDragEvent eventId, QEvent* event, in
 			}
 
 			return false;
+		}
+
+		if (className == "Environment")
+		{
+			if (!GetIEditor()->GetDocument()->IsDocumentReady())
+			{
+				return false;
+			}
+
+			switch (eventId)
+			{
+			case eDragEnter:
+				break;
+			case eDragMove:
+				CDragDropData::ShowDragText(GetViewWidget(), QString("%1 \"%2\"").arg(QObject::tr("Apply environment"), QtUtil::ToQString(pAsset->GetName())));
+				break;
+			case eDragLeave:
+				CDragDropData::ClearDragTooltip(GetViewWidget());
+				break;
+			case eDrop:
+				{
+					pDragEvent->acceptProposedAction();
+					event->accept();
+
+					ITimeOfDay* const pTimeOfDay = GetIEditor()->Get3DEngine()->GetTimeOfDay();
+					const string preset = pAsset->GetType()->GetObjectFilePath(pAsset);
+					if (pTimeOfDay->SetDefaultPreset(preset))
+					{
+						const char* szMessage = QT_TR_NOOP("Default environment now set to");
+						CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "%s %s", szMessage, pAsset->GetName().c_str());
+						return true;
+					}
+					else if (pTimeOfDay->LoadPreset(preset) && pTimeOfDay->SetDefaultPreset(preset))
+					{ 
+						const char* szMessage = QT_TR_NOOP("Environment Asset added to the level in Level Settings. Default environment now set to");
+						CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "%s %s", szMessage, pAsset->GetName().c_str());
+						return true;
+					}
+					return false;
+				}
+				break;
+			}
+			event->accept();
+			return true;
 		}
 	}
 

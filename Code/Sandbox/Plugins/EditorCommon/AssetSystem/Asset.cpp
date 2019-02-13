@@ -45,7 +45,7 @@ static AssetLoader::SAssetMetadata GetMetadata(const CAsset& asset)
 	// Data files are relative to the asset
 	for (string& str : metadata.files)
 	{
-		if (strncmp(path.c_str(), str.c_str(), path.size()) == 0)
+		if (strnicmp(path.c_str(), str.c_str(), path.size()) == 0)
 		{
 			str.erase(0, path.size());
 		}
@@ -57,7 +57,7 @@ static AssetLoader::SAssetMetadata GetMetadata(const CAsset& asset)
 	for (auto& item : metadata.dependencies)
 	{
 		string& str = item.first;
-		if (!path.empty() && strncmp(path.c_str(), str.c_str(), path.size()) == 0)
+		if (!path.empty() && strnicmp(path.c_str(), str.c_str(), path.size()) == 0)
 		{
 			// The path is relative to the asset. 
 			str.Format("./%s", str.substr(path.size()));

@@ -4,52 +4,121 @@
 #include "EditorEnvironmentWindow.h"
 
 #include "QTimeOfDayWidget.h"
-#include "QPresetsWidget.h"
 
+#include <AssetSystem/EditableAsset.h>
 #include <EditorFramework/PersonalizationManager.h>
 #include <EditorFramework/Events.h>
+#include <FileUtils.h>
+
+#include <Cry3DEngine/I3DEngine.h>
 
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler.h>
 
 #include <QToolBar>
 #include <QVBoxLayout>
 
-REGISTER_VIEWPANE_FACTORY(CEditorEnvironmentWindow, "Environment Editor", "Tools", true);
-
-CEditorEnvironmentWindow::CEditorEnvironmentWindow()
-	: CDockableEditor()
-	, m_presetsWidget(new QPresetsWidget)
-	, m_timeOfDayWidget(new QTimeOfDayWidget)
+namespace Private_EditorEnvironmentWindow
 {
-	auto* topLayout = new QVBoxLayout;
-	topLayout->setMargin(0);
-	topLayout->addWidget(CreateToolbar());
 
-	auto* centerLayout = new QHBoxLayout;
+class CSession final : public IAssetEditingSession
+{
+public:
+	CSession(const char* szPresetPath, ITimeOfDay::IPreset* pPreset)
+		: m_presetPath(szPresetPath)
+		, m_pPreset(pPreset)
+	{
+		CRY_ASSERT(m_pPreset);
+	}
 
-	QSplitter* splitter = new QSplitter(Qt::Orientation::Horizontal, this);
-	splitter->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-	splitter->setChildrenCollapsible(false);
-	splitter->addWidget(m_presetsWidget);
-	splitter->addWidget(m_timeOfDayWidget);
+	virtual const char* GetEditorName() const { return "Environment Editor"; }
 
-	centerLayout->addWidget(splitter);
+	virtual bool        OnSaveAsset(IEditableAsset& asset)
+	{
+		asset.SetFiles({ m_presetPath });
+		ITimeOfDay* const pTimeOfDay = GetIEditor()->Get3DEngine()->GetTimeOfDay();
+		return pTimeOfDay->SavePreset(m_presetPath);
+	}
 
-	topLayout->addLayout(centerLayout);
+	virtual void DiscardChanges(IEditableAsset& asset)
+	{
+		ITimeOfDay* const pTimeOfDay = GetIEditor()->Get3DEngine()->GetTimeOfDay();
+		pTimeOfDay->DiscardPresetChanges(m_presetPath);
+	}
 
-	SetContent(topLayout);
+	virtual bool OnCopyAsset(INewAsset& asset)
+	{
+		const string dataFilePath = PathUtil::RemoveExtension(asset.GetMetadataFile());
+		if (!FileUtils::Pak::CopyFileAllowOverwrite(m_presetPath, dataFilePath))
+		{
+			return false;
+		}
 
-	RestorePersonalizationState();
+		ITimeOfDay* const pTimeOfDay = GetIEditor()->Get3DEngine()->GetTimeOfDay();
+		if (!pTimeOfDay->LoadPreset(dataFilePath))
+		{
+			return false;
+		}
 
-	connect(m_presetsWidget, &QPresetsWidget::SignalCurrentPresetChanged, [&]() { m_timeOfDayWidget->Refresh(); });
-	GetIEditor()->RegisterNotifyListener(this);
+		ITimeOfDay::IPreset& preset = pTimeOfDay->GetCurrentPreset();
+		CSession session(dataFilePath, &preset);
+		return session.OnSaveAsset(asset);
+	}
+
+	ITimeOfDay::IPreset* GetPreset()
+	{
+		return m_pPreset;
+	}
+
+	static ITimeOfDay::IPreset* GetSessionPreset(CAsset* pAsset)
+	{
+		IAssetEditingSession* pSession = pAsset->GetEditingSession();
+		if (!pSession || strcmp(pSession->GetEditorName(), "Environment Editor") != 0)
+		{
+			return nullptr;
+		}
+		return static_cast<CSession*>(pSession)->GetPreset();
+	}
+
+private:
+	const string               m_presetPath;
+	ITimeOfDay::IPreset* const m_pPreset;
+};
+
 }
 
-CEditorEnvironmentWindow::~CEditorEnvironmentWindow()
-{
-	GetIEditor()->UnregisterNotifyListener(this);
+REGISTER_VIEWPANE_FACTORY(CEditorEnvironmentWindow, "Environment Editor", "Tools", false);
 
-	SavePersonalizationState();
+CEditorEnvironmentWindow::CEditorEnvironmentWindow()
+	: CAssetEditor("Environment")
+	, m_pPreset(nullptr)
+{
+	auto* pTopLayout = new QVBoxLayout;
+	pTopLayout->setMargin(0);
+
+	QBoxLayout* pToolBarsLayout = new QBoxLayout(QBoxLayout::LeftToRight);
+	pToolBarsLayout->setSizeConstraint(QLayout::SetMaximumSize);
+
+	pToolBarsLayout->addWidget(CreateToolbar(), 0, Qt::AlignLeft);
+	pToolBarsLayout->addSpacerItem(new QSpacerItem(20, 0, QSizePolicy::Expanding, QSizePolicy::Minimum));
+	pToolBarsLayout->addWidget(CreateInstantEditorToolbar(), 0, Qt::AlignRight);
+
+	pTopLayout->addLayout(pToolBarsLayout);
+	SetContent(pTopLayout);
+
+	RegisterDockingWidgets();
+}
+
+std::unique_ptr<IAssetEditingSession> CEditorEnvironmentWindow::CreateEditingSession()
+{
+	using namespace Private_EditorEnvironmentWindow;
+
+	const string& filename = GetAssetBeingEdited()->GetFile(0);
+	return std::make_unique<CSession>(filename, m_pPreset);
+}
+
+ITimeOfDay::IPreset* CEditorEnvironmentWindow::GetPreset()
+{
+	return m_pPreset;
 }
 
 QWidget* CEditorEnvironmentWindow::CreateToolbar()
@@ -57,37 +126,65 @@ QWidget* CEditorEnvironmentWindow::CreateToolbar()
 	QAction* pUndo = GetIEditor()->GetICommandManager()->GetAction("general.undo");
 	QAction* pRedo = GetIEditor()->GetICommandManager()->GetAction("general.redo");
 
-	QAction* pRefresh = new QAction(CryIcon("icons:General/Reload.ico"), ("Refresh"), this);
-	connect(pRefresh, &QAction::triggered, [&]() { m_presetsWidget->RefreshPresetList(); });
-
-	QAction* pSaveAll = new QAction(CryIcon("icons:General/File_Save.ico"), ("Save all"), this);
-	connect(pSaveAll, &QAction::triggered, [&]() { m_presetsWidget->SaveAllPresets(); });
-
 	QToolBar* pToolbar = new QToolBar(this);
 	pToolbar->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 	pToolbar->addAction(pUndo);
 	pToolbar->addAction(pRedo);
-	pToolbar->addSeparator();
-	pToolbar->addAction(pRefresh);
-	pToolbar->addSeparator();
-	pToolbar->addAction(pSaveAll);
-
 	return pToolbar;
 }
 
-void CEditorEnvironmentWindow::RestorePersonalizationState()
+void CEditorEnvironmentWindow::RegisterDockingWidgets()
 {
-	const QVariant& var = GetIEditor()->GetPersonalizationManager()->GetProperty(GetEditorName(), "TimeOfDayWidgetState");
-	if (var.isValid() && var.type() == QVariant::Map)
-	{
-		m_timeOfDayWidget->SetPersonalizationState(var.value<QVariantMap>());
-	}
+	EnableDockingSystem();
+
+	RegisterDockableWidget(tr("TimeOfDay"), [=]() { return new QTimeOfDayWidget(this); }, true, false);
 }
 
-void CEditorEnvironmentWindow::SavePersonalizationState() const
+void CEditorEnvironmentWindow::CreateDefaultLayout(CDockableContainer* pSender)
 {
-	const QVariant state = m_timeOfDayWidget->GetPersonalizationState();
-	GetIEditor()->GetPersonalizationManager()->SetProperty(GetEditorName(), "TimeOfDayWidgetState", state);
+	pSender->SpawnWidget("TimeOfDay");
+}
+
+bool CEditorEnvironmentWindow::OnSaveAsset(CEditableAsset& editAsset)
+{
+	return GetAssetBeingEdited()->GetEditingSession()->OnSaveAsset(editAsset);
+}
+
+bool CEditorEnvironmentWindow::OnOpenAsset(CAsset* pAsset)
+{
+	using namespace Private_EditorEnvironmentWindow;
+
+	m_pPreset = CSession::GetSessionPreset(pAsset);
+	if (!m_pPreset)
+	{
+		ITimeOfDay* pTimeOfDay = GetIEditor()->Get3DEngine()->GetTimeOfDay();
+
+		const string& filename = pAsset->GetFile(0);
+		if (!pTimeOfDay->PreviewPreset(filename))
+		{
+			return false;
+		}
+
+		m_pPreset = &pTimeOfDay->GetCurrentPreset();
+	}
+
+	return m_pPreset != nullptr;
+}
+
+void CEditorEnvironmentWindow::OnCloseAsset()
+{
+	m_pPreset = nullptr;
+}
+
+void CEditorEnvironmentWindow::OnDiscardAssetChanges(CEditableAsset& editAsset)
+{
+	CRY_ASSERT(GetAssetBeingEdited());
+	CRY_ASSERT(GetAssetBeingEdited()->GetEditingSession());
+
+	CAsset* const pAsset = GetAssetBeingEdited();
+	OnCloseAsset();
+	GetAssetBeingEdited()->GetEditingSession()->DiscardChanges(editAsset);
+	OnOpenAsset(pAsset);
 }
 
 void CEditorEnvironmentWindow::customEvent(QEvent* event)
@@ -106,28 +203,6 @@ void CEditorEnvironmentWindow::customEvent(QEvent* event)
 
 	if (!event->isAccepted())
 	{
-		QWidget::customEvent(event);
-	}
-}
-
-void CEditorEnvironmentWindow::OnEditorNotifyEvent(EEditorNotifyEvent event)
-{
-	if (event == eNotify_OnIdleUpdate)
-	{
-		m_timeOfDayWidget->OnIdleUpdate();
-	}
-	else if (event == eNotify_OnEndSceneOpen || event == eNotify_OnEndNewScene)
-	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CEditorEnvironmentWindow::OnEditorNotifyEvent OnEndSceneOpen/NewScene");
-		m_presetsWidget->OnNewScene();
-	}
-	else if (event == eNotify_OnEndSceneSave)
-	{
-		m_presetsWidget->SaveAllPresets();
-	}
-	else if (event == eNotify_OnStyleChanged)
-	{
-		// refresh curves color by updating content
-		m_timeOfDayWidget->UpdateCurveContent();
+		CAssetEditor::customEvent(event);
 	}
 }

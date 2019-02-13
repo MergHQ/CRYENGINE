@@ -2,19 +2,19 @@
 
 #pragma once
 
-#include <QWidget>
 #include "EditorFramework/Editor.h"
 #include "QtViewPane.h"
 #include "Util/Variable.h"
 
 class QPropertyTree;
+class CEnvironmentPresets;
 
-class CLevelSettingsEditor : public CDockableEditor, public ISystemEventListener
+class CLevelSettingsEditor : public CDockableEditor
 {
 public:
 	CLevelSettingsEditor(QWidget* parent = nullptr);
-	~CLevelSettingsEditor();
 
+	void                                      RegisterDockingWidgets();
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
 	virtual QRect                             GetPaneRect() override               { return QRect(0, 0, 500, 800); }
 
@@ -22,14 +22,5 @@ public:
 	void                                      InitMenu();
 
 private:
-	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam);
-	void         ReloadFromTemplate();
-	void         BeforeSerialization(Serialization::IArchive& ar);
-	void         AfterSerialization(Serialization::IArchive& ar);
-	void         OnBeginUndo();
-	void         OnEndUndo(bool acceptUndo);
-
-	QPropertyTree* m_pPropertyTree;
-	CVarBlockPtr   m_varBlock;
-	bool           m_bIgnoreEvent;
+	virtual void CreateDefaultLayout(CDockableContainer* pSender) override;
 };

@@ -181,6 +181,7 @@ private:
 void CAssetType::Init()
 {
 	m_icon = GetIconInternal();
+	OnInit();
 }
 
 string CAssetType::MakeMetadataFilename(const char* szAssetName) const

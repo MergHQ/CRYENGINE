@@ -231,14 +231,26 @@ void CTimeOfDayVariable::Serialize(Serialization::IArchive& ar)
 	ar(m_spline[2], "spline2");
 }
 
-//////////////////////////////////////////////////////////////////////////
-
-CEnvironmentPreset::CEnvironmentPreset()
+void CTimeOfDayVariable::SetValuesFrom(const CTimeOfDayVariable& var)
 {
-	ResetVariables();
+	CRY_ASSERT(m_id == var.m_id);
+
+	m_type = var.m_type;
+
+	m_minValue = var.m_minValue;
+	m_maxValue = var.m_maxValue;
+
+	m_spline[0] = var.m_spline[0];
+	m_spline[1] = var.m_spline[1];
+	m_spline[2] = var.m_spline[2];
 }
 
-void CEnvironmentPreset::ResetVariables()
+CTimeOfDayVariables::CTimeOfDayVariables()
+{
+	Reset();
+}
+
+void CTimeOfDayVariables::Reset()
 {
 	const float fRecip255 = 1.0f / 255.0f;
 
@@ -403,97 +415,90 @@ void CEnvironmentPreset::ResetVariables()
 	AddVar("Obsolete", "", "Global illumination multiplier", ITimeOfDay::PARAM_GI_MULTIPLIER, ITimeOfDay::TYPE_FLOAT, 1.f, 0.f, 100.f);
 	AddVar("Obsolete", "", "Sky brightening (terrain occlusion)", ITimeOfDay::PARAM_TERRAIN_OCCL_MULTIPLIER, ITimeOfDay::TYPE_FLOAT, 0.3f, 0.f, 1.f);
 	AddVar("Obsolete", "", "Sun color multiplier", ITimeOfDay::PARAM_SUN_COLOR_MULTIPLIER, ITimeOfDay::TYPE_FLOAT, 1.0f, 0.0f, 16.0f);
-
-	m_consts.ResetVariables();
 }
 
-void CEnvironmentPreset::Serialize(Serialization::IArchive& ar)
+int CTimeOfDayVariables::GetVariableCount()
 {
-	if (ar.isInput())
-	{
-		unsigned int version = 0;
-		const bool bReadResult = ar(version, "version");
-		if (bReadResult && (sCurrentPresetVersion == version))
-		{
-			// read directly
-			for (size_t i = 0; i < ITimeOfDay::PARAM_TOTAL; ++i)
-			{
-				ar(m_vars[i], "var");
-			}
-			//Root node is for XML-header only. PropertyTree will have no root node
-			ar(m_consts, "Constants");
-		}
-		else if (bReadResult && (2 == version))
-		{
-			for (size_t i = 0; i < ITimeOfDay::PARAM_TOTAL; ++i)
-			{
-				ar(m_vars[i], "var");
-			}
-			m_consts.ResetVariables();
-		}
-		else
-		{
-			// convert to current version
-			for (size_t i = 0; i < ITimeOfDay::PARAM_TOTAL; ++i)
-			{
-				const CTimeOfDayVariable& var = m_vars[i];
-				CTimeOfDayVariable tempVar = var;
-				ar(tempVar, "var");
-
-				if (!bReadResult)
-				{
-					//converting from initial version.
-					//rescale time from [0..1] to [0..sAnimTimeSecondsIn24h]
-					for (unsigned int i = 0; i < 3; ++i)
-					{
-						CBezierSpline* pSpline = tempVar.GetSpline(i);
-						const size_t nKeyCount = pSpline->GetKeyCount();
-
-						if (!nKeyCount)
-							continue;
-
-						std::vector<SBezierKey> tempKeys;
-						tempKeys.resize(nKeyCount);
-						pSpline->GetKeys(&tempKeys[0]);
-						for (unsigned int j = 0; j < nKeyCount; ++j)
-						{
-							SBezierKey& key = tempKeys[j];
-							key.m_time *= sAnimTimeSecondsIn24h;
-						}
-						pSpline->SetKeys(&tempKeys[0], nKeyCount);
-					}
-				}
-
-				const ITimeOfDay::ETimeOfDayParamID id = tempVar.GetId();
-				if (id < ITimeOfDay::PARAM_TOTAL)
-				{
-					m_vars[id] = tempVar; //update the actual var
-				}
-				m_consts.ResetVariables();
-			}
-		}
-	}
-	else
-	{
-		ar(sCurrentPresetVersion, "version");
-		for (size_t i = 0; i < ITimeOfDay::PARAM_TOTAL; ++i)
-		{
-			ar(m_vars[i], "var");
-		}
-		ar(m_consts, "Constants");
-	}
+	return ITimeOfDay::PARAM_TOTAL;
 }
 
-void CEnvironmentPreset::Update(float t)
+bool CTimeOfDayVariables::GetVariableInfo(int nIndex, ITimeOfDay::SVariableInfo& varInfo)
 {
-	t *= sAnimTimeSecondsIn24h;
-	for (size_t i = 0; i < ITimeOfDay::PARAM_TOTAL; ++i)
+	if (nIndex < 0 || nIndex >= GetVariableCount())
+		return false;
+
+	const CTimeOfDayVariable& var = m_vars[nIndex];
+
+	varInfo.szName = var.GetName();
+	varInfo.szDisplayName = var.GetDisplayName();
+	varInfo.szGroup = var.GetGroupName();
+	varInfo.nParamId = nIndex;
+
+	varInfo.fValue[0] = var.GetValue().x;
+	if (var.GetType() == ITimeOfDay::TYPE_FLOAT)
 	{
-		m_vars[i].Update(t);
+		varInfo.type = ITimeOfDay::TYPE_FLOAT;
+		varInfo.fValue[1] = var.GetMinValue();
+		varInfo.fValue[2] = var.GetMaxValue();
 	}
+	else if (var.GetType() == ITimeOfDay::TYPE_COLOR)
+	{
+		varInfo.type = ITimeOfDay::TYPE_COLOR;
+		varInfo.fValue[1] = var.GetValue().y;
+		varInfo.fValue[2] = var.GetValue().z;
+	}
+	return true;
 }
 
-CTimeOfDayVariable* CEnvironmentPreset::GetVar(const char* varName)
+bool CTimeOfDayVariables::InterpolateVarInRange(int nIndex, float fMin, float fMax, unsigned int nCount, Vec3* resultArray) const
+{
+	if (nIndex >= 0 && nIndex < ITimeOfDay::PARAM_TOTAL)
+	{
+		InterpolateVarInRange((ITimeOfDay::ETimeOfDayParamID)nIndex, fMin, fMax, nCount, resultArray);
+		return true;
+	}
+
+	return false;
+}
+
+uint CTimeOfDayVariables::GetSplineKeysCount(int nIndex, int nSpline) const
+{
+	if (nIndex >= 0 && nIndex < ITimeOfDay::PARAM_TOTAL)
+	{
+		return m_vars[nIndex].GetSplineKeyCount(nSpline);
+	}
+	return 0;
+}
+
+bool CTimeOfDayVariables::GetSplineKeysForVar(int nIndex, int nSpline, SBezierKey* keysArray, unsigned int keysArraySize) const
+{
+	if (nIndex >= 0 && nIndex < ITimeOfDay::PARAM_TOTAL)
+	{
+		return m_vars[nIndex].GetSplineKeys(nSpline, keysArray, keysArraySize);
+	}
+
+	return false;
+}
+
+bool CTimeOfDayVariables::SetSplineKeysForVar(int nIndex, int nSpline, const SBezierKey* keysArray, unsigned int keysArraySize)
+{
+	if (nIndex >= 0 && nIndex < ITimeOfDay::PARAM_TOTAL)
+	{
+		return m_vars[nIndex].SetSplineKeys(nSpline, keysArray, keysArraySize);
+	}
+	return false;
+}
+
+bool CTimeOfDayVariables::UpdateSplineKeyForVar(int nIndex, int nSpline, float fTime, float newValue)
+{
+	if (nIndex >= 0 && nIndex < ITimeOfDay::PARAM_TOTAL)
+	{
+		return m_vars[nIndex].UpdateSplineKeyForTime(nSpline, fTime, newValue);
+	}
+	return false;
+}
+
+CTimeOfDayVariable* CTimeOfDayVariables::GetVar(const char* varName)
 {
 	for (size_t i = 0; i < ITimeOfDay::PARAM_TOTAL; ++i)
 	{
@@ -502,15 +507,20 @@ CTimeOfDayVariable* CEnvironmentPreset::GetVar(const char* varName)
 			return &m_vars[i];
 		}
 	}
-	return NULL;
+	return nullptr;
+
 }
 
-CTimeOfDayConstants& CEnvironmentPreset::GetConstants()
+void CTimeOfDayVariables::Update(float t)
 {
-	return m_consts;
+	t *= sAnimTimeSecondsIn24h;
+	for (size_t i = 0; i < ITimeOfDay::PARAM_TOTAL; ++i)
+	{
+		m_vars[i].Update(t);
+	}
 }
 
-bool CEnvironmentPreset::InterpolateVarInRange(ITimeOfDay::ETimeOfDayParamID id, float fMin, float fMax, unsigned int nCount, Vec3* resultArray) const
+bool CTimeOfDayVariables::InterpolateVarInRange(ITimeOfDay::ETimeOfDayParamID id, float fMin, float fMax, unsigned int nCount, Vec3* resultArray) const
 {
 	const float fdx = 1.0f / float(nCount);
 	float normX = 0.0f;
@@ -524,13 +534,116 @@ bool CEnvironmentPreset::InterpolateVarInRange(ITimeOfDay::ETimeOfDayParamID id,
 	return true;
 }
 
-float CEnvironmentPreset::GetAnimTimeSecondsIn24h()
-{
-	return sAnimTimeSecondsIn24h;
-}
-
-void CEnvironmentPreset::AddVar(const char* group, const char* displayName, const char* name, ITimeOfDay::ETimeOfDayParamID nParamId, ITimeOfDay::EVariableType type, float defVal0, float defVal1, float defVal2)
+void CTimeOfDayVariables::AddVar(const char* group, const char* displayName, const char* name, ITimeOfDay::ETimeOfDayParamID nParamId, ITimeOfDay::EVariableType type, float defVal0, float defVal1, float defVal2)
 {
 	CTimeOfDayVariable& var = m_vars[nParamId];
 	var.Init(group, displayName, name, nParamId, type, defVal0, defVal1, defVal2);
+}
+
+ITimeOfDay::IVariables& CEnvironmentPreset::GetVariables()
+{
+	return m_variables;
+}
+
+ITimeOfDay::IConstants& CEnvironmentPreset::GetConstants()
+{
+	return m_constants;
+}
+
+void CEnvironmentPreset::Update(float normalizedTime)
+{
+	m_variables.Update(normalizedTime);
+}
+
+void CEnvironmentPreset::Reset()
+{
+	m_variables.Reset();
+	m_constants.Reset();
+}
+
+void CEnvironmentPreset::Serialize(Serialization::IArchive& ar)
+{
+	if (ar.isInput())
+	{
+		unsigned int version = 0;
+		const bool bReadResult = ar(version, "version");
+		if (bReadResult && (sCurrentPresetVersion == version))
+		{
+			// read directly
+			for (size_t i = 0; i < ITimeOfDay::PARAM_TOTAL; ++i)
+			{
+				CTimeOfDayVariable& var = *m_variables.GetVar(static_cast<ITimeOfDay::ETimeOfDayParamID>(i));
+				ar(var, "var");
+			}
+			//Root node is for XML-header only. PropertyTree will have no root node
+			ar(m_constants, "Constants");
+		}
+		else if (bReadResult && (2 == version))
+		{
+			for (size_t i = 0; i < ITimeOfDay::PARAM_TOTAL; ++i)
+			{
+				CTimeOfDayVariable& var = *m_variables.GetVar(static_cast<ITimeOfDay::ETimeOfDayParamID>(i));
+				ar(var, "var");
+			}
+			m_constants.Reset();
+		}
+		else
+		{
+			// convert to current version
+			for (size_t i = 0; i < ITimeOfDay::PARAM_TOTAL; ++i)
+			{
+				CTimeOfDayVariable tempVar;
+				ar(tempVar, "var");
+
+				if (!bReadResult)
+				{
+					//converting from initial version.
+					//rescale time from [0..1] to [0..sAnimTimeSecondsIn24h]
+					for (unsigned int j = 0; j < 3; ++j)
+					{
+						CBezierSpline* pSpline = tempVar.GetSpline(j);
+						const size_t nKeyCount = pSpline->GetKeyCount();
+						if (!nKeyCount)
+						{
+							continue;
+						}
+
+						std::vector<SBezierKey> tempKeys;
+						tempKeys.resize(nKeyCount);
+						pSpline->GetKeys(&tempKeys[0]);
+						for (unsigned int k = 0; k < nKeyCount; ++k)
+						{
+							SBezierKey& key = tempKeys[k];
+							key.m_time *= sAnimTimeSecondsIn24h;
+						}
+						pSpline->SetKeys(&tempKeys[0], nKeyCount);
+					}
+				}
+
+				//update the actual var
+				const ITimeOfDay::ETimeOfDayParamID id = tempVar.GetId();
+				if (id < ITimeOfDay::PARAM_TOTAL)
+				{
+					CTimeOfDayVariable& var = *m_variables.GetVar(id);
+					var.SetValuesFrom(tempVar);
+				}
+			}
+			m_constants.Reset();
+		}
+	}
+	else
+	{
+		ar(sCurrentPresetVersion, "version");
+		for (size_t i = 0; i < ITimeOfDay::PARAM_TOTAL; ++i)
+		{
+			CTimeOfDayVariable& var = *m_variables.GetVar(static_cast<ITimeOfDay::ETimeOfDayParamID>(i));
+			ar(var, "var");
+		}
+		ar(m_constants, "Constants");
+	}
+}
+
+const float CEnvironmentPreset::GetAnimTimeSecondsIn24h()
+{
+	return sAnimTimeSecondsIn24h;
 }
