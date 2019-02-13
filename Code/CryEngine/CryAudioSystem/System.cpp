@@ -17,6 +17,7 @@
 #include "FileEntry.h"
 #include "Listener.h"
 #include "Object.h"
+#include "GlobalObject.h"
 #include "LoseFocusTrigger.h"
 #include "GetFocusTrigger.h"
 #include "MuteAllTrigger.h"
@@ -443,6 +444,12 @@ void UpdateActiveObjects(float const deltaTime)
 
 	if (deltaTime > 0.0f)
 	{
+		g_object.Update(deltaTime);
+
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+		g_previewObject.Update(deltaTime);
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+
 		auto iter = g_activeObjects.begin();
 		auto iterEnd = g_activeObjects.end();
 
@@ -479,6 +486,12 @@ void UpdateActiveObjects(float const deltaTime)
 	}
 	else
 	{
+		g_object.Update(deltaTime);
+
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+		g_previewObject.Update(deltaTime);
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+
 		for (auto const pObject : g_activeObjects)
 		{
 			pObject->GetImplDataPtr()->Update(deltaTime);
@@ -1265,6 +1278,7 @@ CryAudio::IObject* CSystem::CreateObject(SCreateObjectData const& objectData /*=
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ReleaseObject(CryAudio::IObject* const pIObject)
 {
+	CRY_ASSERT_MESSAGE(pIObject != nullptr, "pIObject is nullptr during %s", __FUNCTION__);
 	SSystemRequestData<ESystemRequestType::ReleaseObject> const requestData(static_cast<CObject*>(pIObject));
 	CRequest const request(&requestData);
 	PushRequest(request);
@@ -1555,7 +1569,8 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			if (pTrigger != nullptr)
 			{
-				result = g_object.HandleStopTrigger(pTrigger);
+				pTrigger->Stop(g_object.GetImplDataPtr());
+				result = ERequestStatus::Success;
 			}
 
 			break;
@@ -1743,7 +1758,12 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			if (pParameter != nullptr)
 			{
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				pParameter->Set(g_object, pRequestData->value);
+#else
+				pParameter->Set(g_object.GetImplDataPtr(), pRequestData->value);
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
+
 				result = ERequestStatus::Success;
 			}
 
@@ -1775,7 +1795,12 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 				if (pState != nullptr)
 				{
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 					pState->Set(g_object);
+#else
+					pState->Set(g_object.GetImplDataPtr());
+#endif      // CRY_AUDIO_USE_PRODUCTION_CODE
+
 					result = ERequestStatus::Success;
 				}
 			}
@@ -1942,27 +1967,14 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ReleaseObject> const*>(request.GetData());
 
-			CRY_ASSERT(pRequestData->pObject != nullptr);
+			pRequestData->pObject->RemoveFlag(EObjectFlags::InUse);
 
-			if (pRequestData->pObject != nullptr)
+			if ((pRequestData->pObject->GetFlags() & EObjectFlags::Active) == 0)
 			{
-				if (pRequestData->pObject != &g_object)
-				{
-					pRequestData->pObject->RemoveFlag(EObjectFlags::InUse);
-
-					if ((pRequestData->pObject->GetFlags() & EObjectFlags::Active) == 0)
-					{
-						pRequestData->pObject->Destruct();
-					}
-					result = ERequestStatus::Success;
-				}
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-				else
-				{
-					Cry::Audio::Log(ELogType::Warning, "Audio System received a request to release the global object");
-				}
-#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
+				pRequestData->pObject->Destruct();
 			}
+
+			result = ERequestStatus::Success;
 
 			break;
 		}
@@ -2037,6 +2049,9 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 				pObject->StopAllTriggers();
 			}
 
+			g_object.StopAllTriggers();
+			g_previewObject.StopAllTriggers();
+
 			g_xmlProcessor.ClearControlsData(EDataScope::All);
 			g_xmlProcessor.ParseSystemData();
 			g_xmlProcessor.ParseControlsData(pRequestData->folderPath, EDataScope::Global);
@@ -2086,17 +2101,36 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 		{
 			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportStartedTriggerConnectionInstance> const*>(request.GetData());
 
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+			bool objectFound = false;
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
+
 			CObject* const pObject = stl::find_in_map(g_triggerInstanceIdToObject, pRequestData->triggerInstanceId, nullptr);
 
 			if (pObject != nullptr)
 			{
 				pObject->ReportStartedTriggerInstance(pRequestData->triggerInstanceId, pRequestData->result);
-			}
+
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+				objectFound = true;
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
+			}
 			else
 			{
-				Cry::Audio::Log(ELogType::Error, "TriggerInstanceId %u is not mapped to an object during %s", pRequestData->triggerInstanceId, __FUNCTION__);
+				CGlobalObject* const pGlobalObject = stl::find_in_map(g_triggerInstanceIdToGlobalObject, pRequestData->triggerInstanceId, nullptr);
+
+				if (pGlobalObject != nullptr)
+				{
+					pGlobalObject->ReportStartedTriggerInstance(pRequestData->triggerInstanceId, pRequestData->result);
+
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+					objectFound = true;
+#endif      // CRY_AUDIO_USE_PRODUCTION_CODE
+				}
 			}
+
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+			CRY_ASSERT_MESSAGE(objectFound, "TriggerInstanceId %u is not mapped to an object during %s", pRequestData->triggerInstanceId, __FUNCTION__);
 #endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 
 			result = ERequestStatus::Success;
@@ -2107,17 +2141,37 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 		{
 			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerConnectionInstance> const*>(request.GetData());
 
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+			bool objectFound = false;
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
+
 			CObject* const pObject = stl::find_in_map(g_triggerInstanceIdToObject, pRequestData->triggerInstanceId, nullptr);
 
 			if (pObject != nullptr)
 			{
 				pObject->ReportFinishedTriggerInstance(pRequestData->triggerInstanceId, pRequestData->result);
-			}
+
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+				objectFound = true;
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
+
+			}
 			else
 			{
-				Cry::Audio::Log(ELogType::Error, "TriggerInstanceId %u is not mapped to an object during %s", pRequestData->triggerInstanceId, __FUNCTION__);
+				CGlobalObject* const pGlobalObject = stl::find_in_map(g_triggerInstanceIdToGlobalObject, pRequestData->triggerInstanceId, nullptr);
+
+				if (pGlobalObject != nullptr)
+				{
+					pGlobalObject->ReportFinishedTriggerInstance(pRequestData->triggerInstanceId, pRequestData->result);
+
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+					objectFound = true;
+#endif      // CRY_AUDIO_USE_PRODUCTION_CODE
+				}
 			}
+
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+			CRY_ASSERT_MESSAGE(objectFound, "TriggerInstanceId %u is not mapped to an object during %s", pRequestData->triggerInstanceId, __FUNCTION__);
 #endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 
 			result = ERequestStatus::Success;
@@ -2189,7 +2243,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 	ERequestStatus result = ERequestStatus::Failure;
 
 	auto const pBase = static_cast<SObjectRequestDataBase const*>(request.GetData());
-	CObject* const pObject = (pBase->pObject != nullptr) ? pBase->pObject : &g_object;
+	CObject* const pObject = pBase->pObject;
 
 	switch (pBase->objectRequestType)
 	{
@@ -2215,7 +2269,8 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 
 			if (pTrigger != nullptr)
 			{
-				result = pObject->HandleStopTrigger(pTrigger);
+				pTrigger->Stop(pObject->GetImplDataPtr());
+				result = ERequestStatus::Success;
 			}
 
 			break;
@@ -2244,7 +2299,12 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 
 			if (pParameter != nullptr)
 			{
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 				pParameter->Set(*pObject, pRequestData->value);
+#else
+				pParameter->Set(pObject->GetImplDataPtr(), pRequestData->value);
+#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
+
 				result = ERequestStatus::Success;
 			}
 
@@ -2262,7 +2322,12 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 
 				if (pState != nullptr)
 				{
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 					pState->Set(*pObject);
+#else
+					pState->Set(pObject->GetImplDataPtr());
+#endif      // CRY_AUDIO_USE_PRODUCTION_CODE
+
 					result = ERequestStatus::Success;
 				}
 			}
@@ -2299,24 +2364,15 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 		}
 	case EObjectRequestType::SetEnvironment:
 		{
-			if (pObject != &g_object)
-			{
-				auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::SetEnvironment> const*>(request.GetData());
+			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::SetEnvironment> const*>(request.GetData());
 
-				CEnvironment const* const pEnvironment = stl::find_in_map(g_environments, pRequestData->environmentId, nullptr);
+			CEnvironment const* const pEnvironment = stl::find_in_map(g_environments, pRequestData->environmentId, nullptr);
 
-				if (pEnvironment != nullptr)
-				{
-					pEnvironment->Set(*pObject, pRequestData->amount);
-					result = ERequestStatus::Success;
-				}
-			}
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-			else
+			if (pEnvironment != nullptr)
 			{
-				Cry::Audio::Log(ELogType::Warning, "Audio System received a request to set an environment on the global object");
+				pEnvironment->Set(*pObject, pRequestData->amount);
+				result = ERequestStatus::Success;
 			}
-#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
 
 			break;
 		}
@@ -2393,7 +2449,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 
 			if (result == ERequestStatus::SuccessNeedsRefresh)
 			{
-				pObject->ForceImplementationRefresh(true);
+				pObject->ForceImplementationRefresh();
 				result = ERequestStatus::Success;
 			}
 
@@ -3003,6 +3059,34 @@ void DrawRequestDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void DrawGlobalObjectInfo(
+	IRenderAuxGeom& auxGeom,
+	float const posX,
+	float& posY,
+	CGlobalObject const& globalObject,
+	CryFixedStringT<MaxControlNameLength> const& lowerCaseSearchString,
+	size_t& numObjects)
+{
+	char const* const szObjectName = globalObject.GetName();
+	CryFixedStringT<MaxControlNameLength> lowerCaseObjectName(szObjectName);
+	lowerCaseObjectName.MakeLower();
+	bool const hasActiveData = globalObject.IsActive();
+	bool const stringFound = (lowerCaseSearchString.empty() || (lowerCaseSearchString.compareNoCase("0") == 0)) || (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
+	bool const draw = stringFound && ((g_cvars.m_hideInactiveObjects == 0) || ((g_cvars.m_hideInactiveObjects != 0) && hasActiveData));
+
+	if (draw)
+	{
+		auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize,
+		                    !hasActiveData ? Debug::s_globalColorInactive : Debug::s_listColorItemActive,
+		                    false,
+		                    szObjectName);
+
+		posY += Debug::g_listLineHeight;
+		++numObjects;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void DrawObjectInfo(
 	IRenderAuxGeom& auxGeom,
 	float const posX,
@@ -3058,8 +3142,8 @@ void DrawObjectDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 
 	posY += Debug::g_listHeaderLineHeight;
 
-	DrawObjectInfo(auxGeom, posX, posY, g_object, lowerCaseSearchString, numObjects);
-	DrawObjectInfo(auxGeom, posX, posY, g_previewObject, lowerCaseSearchString, numObjects);
+	DrawGlobalObjectInfo(auxGeom, posX, posY, g_object, lowerCaseSearchString, numObjects);
+	DrawGlobalObjectInfo(auxGeom, posX, posY, g_previewObject, lowerCaseSearchString, numObjects);
 
 	for (auto const pObject : g_constructedObjects)
 	{
@@ -3072,9 +3156,13 @@ void DrawObjectDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 //////////////////////////////////////////////////////////////////////////
 void DrawPerActiveObjectDebugInfo(IRenderAuxGeom& auxGeom)
 {
+	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
+	lowerCaseSearchString.MakeLower();
+	bool const isTextFilterDisabled = (lowerCaseSearchString.empty() || (lowerCaseSearchString.compareNoCase("0") == 0));
+
 	for (auto const pObject : g_activeObjects)
 	{
-		pObject->DrawDebugInfo(auxGeom);
+		pObject->DrawDebugInfo(auxGeom, isTextFilterDisabled, lowerCaseSearchString);
 	}
 }
 
@@ -3275,6 +3363,11 @@ void CSystem::HandleDrawDebug()
 			debugDraw += "Listener Occlusion Plane, ";
 		}
 
+		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::GlobalObjectInfo) != 0)
+		{
+			debugDraw += "Gloabl Object Info, ";
+		}
+
 		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectImplInfo) != 0)
 		{
 			debugDraw += "Object Middleware Info, ";
@@ -3316,6 +3409,12 @@ void CSystem::HandleDrawDebug()
 			posX += 600.0f;
 		}
 
+		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::GlobalObjectInfo) != 0)
+		{
+			g_object.DrawDebugInfo(*pAuxGeom, posX, posY);
+			posX += 400.0f;
+		}
+
 		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ActiveObjects) != 0)
 		{
 			DrawObjectDebugInfo(*pAuxGeom, posX, posY);
@@ -3346,12 +3445,11 @@ void CSystem::HandleRetriggerControls()
 {
 	for (auto const pObject : g_constructedObjects)
 	{
-		pObject->ForceImplementationRefresh(true);
+		pObject->ForceImplementationRefresh();
 	}
 
 	g_object.ForceImplementationRefresh(false);
-
-	g_previewObject.ForceImplementationRefresh(false);
+	g_previewObject.ForceImplementationRefresh(true);
 
 	if ((g_systemStates& ESystemStates::IsMuted) != 0)
 	{

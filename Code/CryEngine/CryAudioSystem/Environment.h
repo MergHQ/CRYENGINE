@@ -8,8 +8,6 @@
 
 namespace CryAudio
 {
-class CObject;
-
 class CEnvironment final : public CEntity<EnvironmentId>, public CPoolObject<CEnvironment, stl::PSyncNone>
 {
 public:

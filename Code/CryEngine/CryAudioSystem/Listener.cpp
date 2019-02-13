@@ -4,9 +4,12 @@
 #include "Listener.h"
 #include "Common.h"
 #include "System.h"
-#include "Object.h"
 #include "ListenerRequestData.h"
 #include "Common/IListener.h"
+
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#include "GlobalObject.h"
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 namespace CryAudio
 {

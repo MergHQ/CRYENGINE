@@ -25,6 +25,7 @@ enum class EDrawFilter : EnumFlagsType
 	OcclusionRays          = BIT(14), // i
 	OcclusionRayOffset     = BIT(15), // j
 	ListenerOcclusionPlane = BIT(16), // k
+	GlobalObjectInfo       = BIT(17), // l
 	ObjectImplInfo         = BIT(18), // m
 
 	HideMemoryInfo         = BIT(22), // q
@@ -75,6 +76,41 @@ static ColorF const s_afcmColorFileMemAllocFail = Col_VioletRed;
 static ColorF const s_afcmColorFileRemovable = Col_Cyan;
 static ColorF const s_afcmColorFileNotCached = Col_Grey;
 static ColorF const s_afcmColorFileNotFound = Col_Red;
+
+class CStateDrawData final
+{
+public:
+
+	CStateDrawData() = delete;
+	CStateDrawData(CStateDrawData const&) = delete;
+	CStateDrawData(CStateDrawData&&) = delete;
+	CStateDrawData& operator=(CStateDrawData const&) = delete;
+	CStateDrawData& operator=(CStateDrawData&&) = delete;
+
+	explicit CStateDrawData(SwitchStateId const switchStateId)
+		: m_currentStateId(switchStateId)
+		, m_currentSwitchColor(Debug::g_objectColorSwitchGreenMax)
+	{}
+
+	void Update(SwitchStateId const switchStateId)
+	{
+		if ((switchStateId == m_currentStateId) && (m_currentSwitchColor > Debug::g_objectColorSwitchGreenMin))
+		{
+			m_currentSwitchColor -= Debug::g_objectColorSwitchUpdateValue;
+		}
+		else if (switchStateId != m_currentStateId)
+		{
+			m_currentStateId = switchStateId;
+			m_currentSwitchColor = Debug::g_objectColorSwitchGreenMax;
+		}
+	}
+
+	SwitchStateId m_currentStateId;
+	float         m_currentSwitchColor;
+};
+
+using StateDrawInfo = std::map<ControlId, CStateDrawData>;
+using TriggerCounts = std::map<ControlId const, uint8>;
 }      // namespace Debug
 }      // namespace CryAudio
 #endif // CRY_AUDIO_USE_PRODUCTION_CODE
