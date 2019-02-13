@@ -266,7 +266,7 @@ bool CThreadManager::JoinThread(IThread* pThreadTask, EJoinMode eJoinMode)
 	pThreadImpl->m_threadExitMutex.Lock();
 	while (pThreadImpl->m_isRunning)
 	{
-#ifndef CRY_PLATFORM_ORBIS
+#if !CRY_PLATFORM_ORBIS
 		// Ensure thread is still alive.
 		// Handle special case where engine shutdown is using exit(1) e.g. CrashHandler.
 		// Exit(1) force terminates all threads so they don't reach the cleanup code at the end of the RunThread() function.		
