@@ -612,12 +612,12 @@ void CObject::DrawDebugInfo(
 						{
 							debugText.Format(
 								"%s(%s)",
-								Debug::g_szOcclusionTypes[IntegralValue(occlusionType)],
-								Debug::g_szOcclusionTypes[IntegralValue(m_propagationProcessor.GetOcclusionTypeWhenAdaptive())]);
+								Debug::g_szOcclusionTypes[static_cast<std::underlying_type<EOcclusionType>::type>(occlusionType)],
+								Debug::g_szOcclusionTypes[static_cast<std::underlying_type<EOcclusionType>::type>(m_propagationProcessor.GetOcclusionTypeWhenAdaptive())]);
 						}
 						else
 						{
-							debugText.Format("%s", Debug::g_szOcclusionTypes[IntegralValue(occlusionType)]);
+							debugText.Format("%s", Debug::g_szOcclusionTypes[static_cast<std::underlying_type<EOcclusionType>::type>(occlusionType)]);
 						}
 					}
 					else

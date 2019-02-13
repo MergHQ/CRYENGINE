@@ -194,7 +194,6 @@ enum class EOcclusionType : EnumFlagsType
 	High,     /**< The audio object uses a fine grained occlusion plane for calculation. */
 	Count,    /**< Used to initialize arrays to this size. */
 };
-CRY_CREATE_ENUM_FLAG_OPERATORS(EOcclusionType);
 
 class CTransformation
 {

@@ -579,7 +579,7 @@ void CRopeObject::Serialize(CObjectArchive& ar)
 			xmlNodeAudio->setAttr("StartTrigger", m_ropeAudioData.startTriggerName);
 			xmlNodeAudio->setAttr("StopTrigger", m_ropeAudioData.stopTriggerName);
 			xmlNodeAudio->setAttr("AngleParameter", m_ropeAudioData.angleParameterName);
-			xmlNodeAudio->setAttr("OcclusionType", IntegralValue(m_ropeAudioData.occlusionType));
+			xmlNodeAudio->setAttr("OcclusionType", static_cast<std::underlying_type<CryAudio::EOcclusionType>::type>(m_ropeAudioData.occlusionType));
 			xmlNodeAudio->setAttr("SegmentToAttachTo", m_ropeAudioData.segementToAttachTo);
 			xmlNodeAudio->setAttr("Offset", m_ropeAudioData.offset);
 		}
@@ -621,7 +621,7 @@ XmlNodeRef CRopeObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 			xmlNodeAudio->setAttr("StartTrigger", m_ropeAudioData.startTriggerName);
 			xmlNodeAudio->setAttr("StopTrigger", m_ropeAudioData.stopTriggerName);
 			xmlNodeAudio->setAttr("AngleParameter", m_ropeAudioData.angleParameterName);
-			xmlNodeAudio->setAttr("OcclusionType", IntegralValue(m_ropeAudioData.occlusionType));
+			xmlNodeAudio->setAttr("OcclusionType", static_cast<std::underlying_type<CryAudio::EOcclusionType>::type>(m_ropeAudioData.occlusionType));
 			xmlNodeAudio->setAttr("SegmentToAttachTo", m_ropeAudioData.segementToAttachTo);
 			xmlNodeAudio->setAttr("Offset", m_ropeAudioData.offset);
 		}
