@@ -758,13 +758,13 @@ void CXMLProcessor::ParseEnvironments(XmlNodeRef const pEnvironmentRoot, EDataSc
 					}
 				}
 
-				if (connections.size() < numConnections)
-				{
-					connections.shrink_to_fit();
-				}
-
 				if (!connections.empty())
 				{
+					if (connections.size() < numConnections)
+					{
+						connections.shrink_to_fit();
+					}
+
 					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CEnvironment");
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 					auto const pNewEnvironment = new CEnvironment(environmentId, dataScope, connections, szEnvironmentName);
@@ -841,21 +841,24 @@ void CXMLProcessor::ParseSettings(XmlNodeRef const pRoot, EDataScope const dataS
 						}
 					}
 
-					if (connections.size() < numConnections)
+					if (!connections.empty())
 					{
-						connections.shrink_to_fit();
-					}
+						if (connections.size() < numConnections)
+						{
+							connections.shrink_to_fit();
+						}
 
-					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CSetting");
+						MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CSetting");
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-					auto const pNewSetting = new CSetting(settingId, dataScope, isAutoLoad, connections, szSettingName);
+						auto const pNewSetting = new CSetting(settingId, dataScope, isAutoLoad, connections, szSettingName);
 #else
-					auto const pNewSetting = new CSetting(settingId, dataScope, isAutoLoad, connections);
+						auto const pNewSetting = new CSetting(settingId, dataScope, isAutoLoad, connections);
 #endif        // CRY_AUDIO_USE_PRODUCTION_CODE
 
-					if (pNewSetting != nullptr)
-					{
-						g_settings[settingId] = pNewSetting;
+						if (pNewSetting != nullptr)
+						{
+							g_settings[settingId] = pNewSetting;
+						}
 					}
 				}
 			}
@@ -913,21 +916,24 @@ void CXMLProcessor::ParseTriggers(XmlNodeRef const pXMLTriggerRoot, EDataScope c
 					}
 				}
 
-				if (connections.size() < numConnections)
+				if (!connections.empty())
 				{
-					connections.shrink_to_fit();
-				}
+					if (connections.size() < numConnections)
+					{
+						connections.shrink_to_fit();
+					}
 
-				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CTrigger");
+					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CTrigger");
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-				CTrigger* const pNewTrigger = new CTrigger(triggerId, dataScope, connections, maxRadius, szTriggerName);
+					auto const pNewTrigger = new CTrigger(triggerId, dataScope, connections, maxRadius, szTriggerName);
 #else
-				CTrigger* const pNewTrigger = new CTrigger(triggerId, dataScope, connections);
+					auto const pNewTrigger = new CTrigger(triggerId, dataScope, connections);
 #endif        // CRY_AUDIO_USE_PRODUCTION_CODE
 
-				if (pNewTrigger != nullptr)
-				{
-					g_triggers[triggerId] = pNewTrigger;
+					if (pNewTrigger != nullptr)
+					{
+						g_triggers[triggerId] = pNewTrigger;
+					}
 				}
 			}
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
@@ -973,46 +979,51 @@ void CXMLProcessor::ParseDefaultTriggers(XmlNodeRef const pXMLTriggerRoot)
 				}
 			}
 
-			if (connections.size() < numConnections)
+			if (!connections.empty())
 			{
-				connections.shrink_to_fit();
-			}
+				if (connections.size() < numConnections)
+				{
+					connections.shrink_to_fit();
+				}
 
-			switch (triggerId)
-			{
-			case g_loseFocusTriggerId:
+				switch (triggerId)
 				{
-					g_loseFocusTrigger.AddConnections(connections);
-					break;
+				case g_loseFocusTriggerId:
+					{
+						g_loseFocusTrigger.AddConnections(connections);
+						break;
+					}
+				case g_getFocusTriggerId:
+					{
+						g_getFocusTrigger.AddConnections(connections);
+						break;
+					}
+				case g_muteAllTriggerId:
+					{
+						g_muteAllTrigger.AddConnections(connections);
+						break;
+					}
+				case g_unmuteAllTriggerId:
+					{
+						g_unmuteAllTrigger.AddConnections(connections);
+						break;
+					}
+				case g_pauseAllTriggerId:
+					{
+						g_pauseAllTrigger.AddConnections(connections);
+						break;
+					}
+				case g_resumeAllTriggerId:
+					{
+						g_resumeAllTrigger.AddConnections(connections);
+						break;
+					}
+				default:
+					{
+						CRY_ASSERT_MESSAGE(false, R"(The default trigger "%s" does not exist during %s)", szTriggerName, __FUNCTION__);
+						break;
+					}
 				}
-			case g_getFocusTriggerId:
-				{
-					g_getFocusTrigger.AddConnections(connections);
-					break;
-				}
-			case g_muteAllTriggerId:
-				{
-					g_muteAllTrigger.AddConnections(connections);
-					break;
-				}
-			case g_unmuteAllTriggerId:
-				{
-					g_unmuteAllTrigger.AddConnections(connections);
-					break;
-				}
-			case g_pauseAllTriggerId:
-				{
-					g_pauseAllTrigger.AddConnections(connections);
-					break;
-				}
-			case g_resumeAllTriggerId:
-				{
-					g_resumeAllTrigger.AddConnections(connections);
-					break;
-				}
-			default:
-				CRY_ASSERT_MESSAGE(false, R"(The default trigger "%s" does not exist during %s)", szTriggerName, __FUNCTION__);
-				break;
 			}
 		}
 	}
@@ -1073,14 +1084,22 @@ void CXMLProcessor::ParseSwitches(XmlNodeRef const pXMLSwitchRoot, EDataScope co
 								}
 							}
 
-							MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CSwitchState");
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-							auto const pNewState = new CSwitchState(switchId, switchStateId, connections, szSwitchStateName);
-#else
-							auto const pNewState = new CSwitchState(switchId, switchStateId, connections);
-#endif          // CRY_AUDIO_USE_PRODUCTION_CODE
+							if (!connections.empty())
+							{
+								if (connections.size() < numConnections)
+								{
+									connections.shrink_to_fit();
+								}
 
-							pNewSwitch->AddState(switchStateId, pNewState);
+								MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CSwitchState");
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+								auto const pNewState = new CSwitchState(switchId, switchStateId, connections, szSwitchStateName);
+#else
+								auto const pNewState = new CSwitchState(switchId, switchStateId, connections);
+#endif            // CRY_AUDIO_USE_PRODUCTION_CODE
+
+								pNewSwitch->AddState(switchStateId, pNewState);
+							}
 						}
 					}
 				}
@@ -1132,21 +1151,24 @@ void CXMLProcessor::ParseParameters(XmlNodeRef const pXMLParameterRoot, EDataSco
 					}
 				}
 
-				if (connections.size() < numConnections)
+				if (!connections.empty())
 				{
-					connections.shrink_to_fit();
-				}
+					if (connections.size() < numConnections)
+					{
+						connections.shrink_to_fit();
+					}
 
-				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CParameter");
+					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CParameter");
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-				auto const pParameter = new CParameter(parameterId, dataScope, connections, szParameterName);
+					auto const pParameter = new CParameter(parameterId, dataScope, connections, szParameterName);
 #else
-				auto const pParameter = new CParameter(parameterId, dataScope, connections);
+					auto const pParameter = new CParameter(parameterId, dataScope, connections);
 #endif        // CRY_AUDIO_USE_PRODUCTION_CODE
 
-				if (pParameter != nullptr)
-				{
-					g_parameters[parameterId] = pParameter;
+					if (pParameter != nullptr)
+					{
+						g_parameters[parameterId] = pParameter;
+					}
 				}
 			}
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
