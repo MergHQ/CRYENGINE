@@ -85,7 +85,7 @@ int CScriptBind_Sound::GetAudioEnvironmentID(IFunctionHandler* pH, char const* c
 //////////////////////////////////////////////////////////////////////////
 int CScriptBind_Sound::SetAudioRtpcValue(IFunctionHandler* pH, ScriptHandle const hParameterId, float const value)
 {
-	gEnv->pAudioSystem->SetGlobalParameter(HandleToInt<CryAudio::ControlId>(hParameterId), value);
+	gEnv->pAudioSystem->SetParameterGlobally(HandleToInt<CryAudio::ControlId>(hParameterId), value);
 	return pH->EndFunction();
 }
 

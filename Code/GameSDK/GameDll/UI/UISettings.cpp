@@ -32,7 +32,7 @@ static float g_sfx = 1.0f;
 ////////////////////////////////////////////////////////////////////////////
 static void SetVolume(CryAudio::ControlId id, float volume)
 {
-	gEnv->pAudioSystem->SetGlobalParameter(id, volume);
+	gEnv->pAudioSystem->SetParameterGlobally(id, volume);
 }
 
 ////////////////////////////////////////////////////////////////////////////

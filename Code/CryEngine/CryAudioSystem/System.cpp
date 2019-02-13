@@ -970,9 +970,9 @@ void CSystem::SetParameter(ControlId const parameterId, float const value, SRequ
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::SetGlobalParameter(ControlId const parameterId, float const value, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
+void CSystem::SetParameterGlobally(ControlId const parameterId, float const value, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SSystemRequestData<ESystemRequestType::SetGlobalParameter> const requestData(parameterId, value);
+	SSystemRequestData<ESystemRequestType::SetParameterGlobally> const requestData(parameterId, value);
 	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
@@ -986,9 +986,9 @@ void CSystem::SetSwitchState(ControlId const switchId, SwitchStateId const switc
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::SetGlobalSwitchState(ControlId const switchId, SwitchStateId const switchStateId, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+void CSystem::SetSwitchStateGlobally(ControlId const switchId, SwitchStateId const switchStateId, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
-	SSystemRequestData<ESystemRequestType::SetGlobalSwitchState> const requestData(switchId, switchStateId);
+	SSystemRequestData<ESystemRequestType::SetSwitchStateGlobally> const requestData(switchId, switchStateId);
 	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
@@ -1769,7 +1769,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			break;
 		}
-	case ESystemRequestType::SetGlobalParameter:
+	case ESystemRequestType::SetParameterGlobally:
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::SetParameter> const*>(request.GetData());
 
@@ -1807,7 +1807,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			break;
 		}
-	case ESystemRequestType::SetGlobalSwitchState:
+	case ESystemRequestType::SetSwitchStateGlobally:
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::SetSwitchState> const*>(request.GetData());
 

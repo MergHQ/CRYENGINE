@@ -86,7 +86,7 @@ void CmdSetParameter(IConsoleCmdArgs* pCmdArgs)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CmdSetGlobalParameter(IConsoleCmdArgs* pCmdArgs)
+void CmdSetParameterGlobally(IConsoleCmdArgs* pCmdArgs)
 {
 	int const numArgs = pCmdArgs->GetArgCount();
 
@@ -94,11 +94,11 @@ void CmdSetGlobalParameter(IConsoleCmdArgs* pCmdArgs)
 	{
 		ControlId const parameterId = StringToId(pCmdArgs->GetArg(1));
 		double const value = atof(pCmdArgs->GetArg(2));
-		gEnv->pAudioSystem->SetGlobalParameter(parameterId, static_cast<float>(value));
+		gEnv->pAudioSystem->SetParameterGlobally(parameterId, static_cast<float>(value));
 	}
 	else
 	{
-		Cry::Audio::Log(ELogType::Error, "Usage: s_SetGlobalParameter [ParameterName] [ParameterValue]");
+		Cry::Audio::Log(ELogType::Error, "Usage: s_SetParameterGlobally [ParameterName] [ParameterValue]");
 	}
 }
 
@@ -120,7 +120,7 @@ void CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CmdSetGlobalSwitchState(IConsoleCmdArgs* pCmdArgs)
+void CmdSetSwitchStateGlobally(IConsoleCmdArgs* pCmdArgs)
 {
 	int const numArgs = pCmdArgs->GetArgCount();
 
@@ -128,11 +128,11 @@ void CmdSetGlobalSwitchState(IConsoleCmdArgs* pCmdArgs)
 	{
 		ControlId const switchId = StringToId(pCmdArgs->GetArg(1));
 		SwitchStateId const switchStateId = StringToId(pCmdArgs->GetArg(2));
-		gEnv->pAudioSystem->SetGlobalSwitchState(switchId, switchStateId);
+		gEnv->pAudioSystem->SetSwitchStateGlobally(switchId, switchStateId);
 	}
 	else
 	{
-		Cry::Audio::Log(ELogType::Error, "Usage: s_SetGlobalSwitchState [SwitchName] [SwitchStateName]");
+		Cry::Audio::Log(ELogType::Error, "Usage: s_SetSwitchStateGlobally [SwitchName] [SwitchStateName]");
 	}
 }
 
@@ -445,11 +445,11 @@ void CCVars::RegisterVariables()
 	                 "The parameter is set on the Global Object.\n"
 	                 "Usage: s_SetParameter volume_music 1.0\n");
 
-	REGISTER_COMMAND("s_SetGlobalParameter", CmdSetGlobalParameter, VF_CHEAT,
+	REGISTER_COMMAND("s_SetParameterGlobally", CmdSetParameterGlobally, VF_CHEAT,
 	                 "Set an Audio Parameter value.\n"
 	                 "The first argument is the name of the parameter to be set, the second argument is the float value to be set."
 	                 "The parameter is set on all constructed objects.\n"
-	                 "Usage: s_SetParameter volume_music 1.0\n");
+	                 "Usage: s_SetParameterGlobally volume_music 1.0\n");
 
 	REGISTER_COMMAND("s_SetSwitchState", CmdSetSwitchState, VF_CHEAT,
 	                 "Set an Audio Switch to a provided State.\n"
@@ -457,11 +457,11 @@ void CCVars::RegisterVariables()
 	                 "The switch state is set on the Global Object.\n"
 	                 "Usage: s_SetSwitchState weather rain\n");
 
-	REGISTER_COMMAND("s_SetGlobalSwitchState", CmdSetGlobalSwitchState, VF_CHEAT,
+	REGISTER_COMMAND("s_SetSwitchStateGlobally", CmdSetSwitchStateGlobally, VF_CHEAT,
 	                 "Set an Audio Switch to a provided State.\n"
 	                 "The first argument is the name of the switch to, the second argument is the name of the state to be set."
 	                 "The switch state is set on all constructed objects.\n"
-	                 "Usage: s_SetSwitchState weather rain\n");
+	                 "Usage: s_SetSwitchStateGlobally weather rain\n");
 
 	REGISTER_COMMAND("s_LoadRequest", CmdLoadRequest, VF_CHEAT,
 	                 "Loads a preload request. The preload request has to be non-autoloaded.\n"
@@ -531,7 +531,9 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_ExecuteTrigger");
 		pConsole->UnregisterVariable("s_StopTrigger");
 		pConsole->UnregisterVariable("s_SetParameter");
+		pConsole->UnregisterVariable("s_SetParameterGlobally");
 		pConsole->UnregisterVariable("s_SetSwitchState");
+		pConsole->UnregisterVariable("s_SetSwitchStateGlobally");
 		pConsole->UnregisterVariable("s_LoadRequest");
 		pConsole->UnregisterVariable("s_UnloadRequest");
 		pConsole->UnregisterVariable("s_LoadSetting");
