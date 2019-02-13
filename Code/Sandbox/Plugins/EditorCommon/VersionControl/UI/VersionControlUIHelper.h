@@ -4,7 +4,15 @@
 #include "EditorCommonAPI.h"
 #include <QIcon>
 
+class CItemModelAttribute;
+
 namespace VersionControlUIHelper
 {
 	EDITOR_COMMON_API QIcon GetIconFromStatus(int status);
+
+	EDITOR_COMMON_API int   GetVCSStatusRole();
+
+	EDITOR_COMMON_API CItemModelAttribute* GetVCSStatusAttribute();
+
+	EDITOR_COMMON_API CItemModelAttribute* GetVCSIconAttribute();
 }

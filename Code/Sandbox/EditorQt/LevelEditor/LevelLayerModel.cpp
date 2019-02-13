@@ -13,6 +13,7 @@
 #include "Objects/PrefabObject.h"
 #include "Material/Material.h"
 #include "HyperGraph/FlowGraphHelpers.h"
+#include "VersionControl/UI/VersionControlUIHelper.h"
 
 #include <CrySystem/ISystem.h>
 #include <ProxyModels/ItemModelAttribute.h>
@@ -34,7 +35,6 @@ namespace LevelModelsAttributes
 {
 CItemModelAttribute s_visibleAttribute("Visible", &Attributes::s_booleanAttributeType, CItemModelAttribute::Visible, true, Qt::Checked, Qt::CheckStateRole);
 CItemModelAttribute s_frozenAttribute("Frozen", &Attributes::s_booleanAttributeType, CItemModelAttribute::Visible, true, Qt::Unchecked, Qt::CheckStateRole);
-CItemModelAttribute s_vcsAttribute("Version Control", &Attributes::s_iconAttributeType);
 CItemModelAttribute s_layerNameAttribute("Layer", &Attributes::s_stringAttributeType);
 CItemModelAttribute s_objectTypeDescAttribute("Type", &Attributes::s_stringAttributeType);
 CItemModelAttribute s_defaultMaterialAttribute("Default Material", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
@@ -94,7 +94,7 @@ CItemModelAttribute * CLevelLayerModel::GetAttributeForColumn(EObjectColumns col
 	case eObjectColumns_Frozen:
 		return &LevelModelsAttributes::s_frozenAttribute;
 	case eObjectColumns_VCS:
-		return &LevelModelsAttributes::s_vcsAttribute;
+		return VersionControlUIHelper::GetVCSStatusAttribute();
 	case eObjectColumns_DefaultMaterial:
 		return &LevelModelsAttributes::s_defaultMaterialAttribute;
 	case eObjectColumns_CustomMaterial:

@@ -252,7 +252,7 @@ CItemModelAttribute* CLevelModel::GetColumnAttribute(int column) const
 	case eLayerColumns_Frozen:
 		return &LevelModelsAttributes::s_frozenAttribute;
 	case eLayerColumns_VCS:
-		return &LevelModelsAttributes::s_vcsAttribute;
+		return VersionControlUIHelper::GetVCSStatusAttribute();
 	case eLayerColumns_Exportable:
 		return &LevelModelsAttributes::s_ExportableAttribute;
 	case eLayerColumns_ExportablePak:
@@ -382,11 +382,13 @@ QVariant CLevelModel::data(const QModelIndex& index, int role) const
 						return "-";
 					if (role == Qt::TextAlignmentRole)
 						return Qt::AlignCenter;
-					break;
+					break; // don't handle folders anymore
 				}
 
-				if (role == Qt::DecorationRole && !isFolder)
+				if (role == Qt::DecorationRole)
 					return VersionControlUIHelper::GetIconFromStatus(CAssetsVCSStatusProvider::GetStatus(*pLayer));
+				if (role == VersionControlUIHelper::GetVCSStatusRole())
+					return CAssetsVCSStatusProvider::GetStatus(*pLayer);
 			}
 			break;
 		case ELayerColumns::eLayerColumns_Exportable:

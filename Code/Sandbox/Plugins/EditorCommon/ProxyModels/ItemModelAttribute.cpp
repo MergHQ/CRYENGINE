@@ -377,7 +377,6 @@ CAttributeType<float> s_floatAttributeType(
 	new CGreaterThanOperator<CBaseFloatOperator>(),
 	new CLessThanOperator<CBaseFloatOperator>()
 });
-CAttributeType<QIcon> s_iconAttributeType(nullptr);
 
 CItemModelAttribute s_nameAttribute("Name", &s_stringAttributeType);
 CItemModelAttribute s_visibleAttribute("Visible", &s_booleanAttributeType, CItemModelAttribute::Visible, true, Qt::Unchecked, Qt::CheckStateRole);
