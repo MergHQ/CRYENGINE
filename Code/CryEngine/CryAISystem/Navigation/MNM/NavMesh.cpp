@@ -2792,7 +2792,6 @@ bool CNavMesh::IsPointInsideNeighbouringTriangleWhichSharesEdge(const TriangleID
 	// Find the nearest vertex that should be common for all triangles
 	uint16 currentVertexIndex = GetNearestTriangleVertexIndex(sourceTile, GetTileOrigin(sourceContainer.x, sourceContainer.y, sourceContainer.z), sourceTriangle, targetPosition, currentEdgeIndex);
 	uint16 vertexIndexInTile = sourceTriangle.vertex[currentVertexIndex];
-	const vector3_t vertexPosition = sourceTile.vertices[vertexIndexInTile];
 
 	const int32 clockwiseEdgeIndices[] = { 0, 1, 2 };
 	const int32* counterClockwiseEdgeIndices = dec_mod3;
@@ -2877,7 +2876,7 @@ bool CNavMesh::IsPointInsideNeighbouringTriangleWhichSharesEdge(const TriangleID
 
 					if (backTriangleID == currentTriangleID)
 					{
-						currentVertexIndex = GetNearestTriangleVertexIndex(neighbourTile, GetTileOrigin(neighbourContainer.x, neighbourContainer.y, neighbourContainer.z), neighbourTriangle, vertexPosition, reciprocalLink.edge);
+						currentVertexIndex = GetNearestTriangleVertexIndex(neighbourTile, GetTileOrigin(neighbourContainer.x, neighbourContainer.y, neighbourContainer.z), neighbourTriangle, targetPosition, reciprocalLink.edge);
 						vertexIndexInTile = neighbourTriangle.vertex[currentVertexIndex];
 						currentEdgeIndex = vertexToEdgeIdx[currentVertexIndex];
 
