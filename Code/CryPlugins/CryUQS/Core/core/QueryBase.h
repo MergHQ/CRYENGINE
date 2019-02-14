@@ -43,10 +43,11 @@ namespace UQS
 
 			struct SCtorContext
 			{
-				explicit                                 SCtorContext(const CQueryID& _queryID, const std::shared_ptr<const CQueryBlueprint>& _pQueryBlueprint, const char* _szQuerierName, const HistoricQuerySharedPtr& _pOptionalHistoryToWriteTo, const std::shared_ptr<CItemList>& _pOptionalResultingItemsFromPreviousQuery);
+				explicit                                 SCtorContext(const CQueryID& _queryID, const std::shared_ptr<const CQueryBlueprint>& _pQueryBlueprint, int _priority, const char* _szQuerierName, const HistoricQuerySharedPtr& _pOptionalHistoryToWriteTo, const std::shared_ptr<CItemList>& _pOptionalResultingItemsFromPreviousQuery);
 
 				CQueryID                                 queryID;
 				std::shared_ptr<const CQueryBlueprint>   pQueryBlueprint;
+				int                                      priority;
 				const char*                              szQuerierName;
 				HistoricQuerySharedPtr                   pOptionalHistoryToWriteTo;
 				std::shared_ptr<CItemList>               pOptionalResultingItemsFromPreviousQuery;     // this is how we pass items of a result set from one query to another

@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "QueryManager.h"
 #include <CryRenderer/IRenderer.h>
+#include <numeric>	// std::accumulate()
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
@@ -23,6 +24,8 @@ namespace UQS
 			, pCallback(0)
 			, queryID(CQueryID::CreateInvalid())
 			, parentQueryID(CQueryID::CreateInvalid())
+			, priority(0)	// invalid default value
+			, pWorkingData(new SWorkingData)
 		{}
 
 		//===================================================================================
@@ -31,12 +34,13 @@ namespace UQS
 		//
 		//===================================================================================
 
-		CQueryManager::SFinishedQueryInfo::SFinishedQueryInfo(const std::shared_ptr<CQueryBase>& _pQuery, const std::shared_ptr<const CQueryBlueprint>& _pQueryBlueprint, const Functor1<const SQueryResult&>& _pCallback, const CQueryID& _queryID, const CQueryID& _parentQueryID, const CTimeValue& _queryFinishedTimestamp, bool _bQueryFinishedWithSuccess, const string& _errorIfAny)
+		CQueryManager::SFinishedQueryInfo::SFinishedQueryInfo(const std::shared_ptr<CQueryBase>& _pQuery, const std::shared_ptr<const CQueryBlueprint>& _pQueryBlueprint, const Functor1<const SQueryResult&>& _pCallback, const CQueryID& _queryID, const CQueryID& _parentQueryID, int _priority, const CTimeValue& _queryFinishedTimestamp, bool _bQueryFinishedWithSuccess, const string& _errorIfAny)
 			: pQuery(_pQuery)
 			, pQueryBlueprint(_pQueryBlueprint)
 			, pCallback(_pCallback)
 			, queryID(_queryID)
 			, parentQueryID(_parentQueryID)
+			, priority(_priority)
 			, queryFinishedTimestamp(_queryFinishedTimestamp)
 			, bQueryFinishedWithSuccess(_bQueryFinishedWithSuccess)
 			, errorIfAny(_errorIfAny)
@@ -48,8 +52,9 @@ namespace UQS
 		//
 		//===================================================================================
 
-		CQueryManager::SHistoryQueryInfo2D::SHistoryQueryInfo2D(const CQueryID &_queryID, const CQueryBase::SStatistics& _statistics, bool _bQueryFinishedWithSuccess, const CTimeValue& _timestamp)
+		CQueryManager::SHistoryQueryInfo2D::SHistoryQueryInfo2D(const CQueryID &_queryID, int _priority, const CQueryBase::SStatistics& _statistics, bool _bQueryFinishedWithSuccess, const CTimeValue& _timestamp)
 			: queryID(_queryID)
+			, priority(_priority)
 			, statistics(_statistics)
 			, bQueryFinishedWithSuccess(_bQueryFinishedWithSuccess)
 			, finishedTimestamp(_timestamp)
@@ -105,9 +110,15 @@ namespace UQS
 				return CQueryID::CreateInvalid();
 			}
 
+			if (request.priority < 1)
+			{
+				errorMessage.Format("CQueryManager::StartQuery: bad 'priority' level given: %i (should be > 0)", request.priority);
+				return CQueryID::CreateInvalid();
+			}
+
 			static const CQueryID noParentQueryID = CQueryID::CreateInvalid();
 			std::shared_ptr<CItemList> pEmptyResultSinceThereIsNoPreviousQuery;
-			return StartQueryInternal(noParentQueryID, qbp, request.runtimeParams, request.szQuerierName, request.callback, pEmptyResultSinceThereIsNoPreviousQuery, errorMessage);
+			return StartQueryInternal(noParentQueryID, qbp, request.runtimeParams, request.szQuerierName, request.callback, pEmptyResultSinceThereIsNoPreviousQuery, request.priority, errorMessage);
 		}
 
 		void CQueryManager::CancelQuery(const CQueryID& idOfQueryToCancel)
@@ -168,6 +179,7 @@ namespace UQS
 					runningQueryInfo.parentQueryID,
 					stats.querierName.c_str(),
 					stats.queryBlueprintName.c_str(),
+					runningQueryInfo.priority,
 					(int)stats.numGeneratedItems,
 					(int)stats.numRemainingItemsToInspect,
 					(int)stats.queryCreatedFrame,
@@ -180,8 +192,10 @@ namespace UQS
 			}
 		}
 
-		CQueryID CQueryManager::StartQueryInternal(const CQueryID& parentQueryID, std::shared_ptr<const CQueryBlueprint> pQueryBlueprint, const Shared::IVariantDict& runtimeParams, const char* szQuerierName, Functor1<const SQueryResult&> pCallback, const std::shared_ptr<CItemList>& pPotentialResultingItemsFromPreviousQuery, Shared::IUqsString& errorMessage)
+		CQueryID CQueryManager::StartQueryInternal(const CQueryID& parentQueryID, std::shared_ptr<const CQueryBlueprint> pQueryBlueprint, const Shared::IVariantDict& runtimeParams, const char* szQuerierName, Functor1<const SQueryResult&> pCallback, const std::shared_ptr<CItemList>& pPotentialResultingItemsFromPreviousQuery, int priority, Shared::IUqsString& errorMessage)
 		{
+			CRY_ASSERT(priority > 0);
+
 			// generate a new query ID (even if the query fails to start)
 			const CQueryID id = ++m_queryIDProvider;
 
@@ -189,11 +203,11 @@ namespace UQS
 			HistoricQuerySharedPtr pOptionalHistoryEntry;
 			if (SCvars::logQueryHistory)
 			{
-				pOptionalHistoryEntry = m_queryHistoryManager.AddNewLiveHistoricQuery(id, szQuerierName, parentQueryID);
+				pOptionalHistoryEntry = m_queryHistoryManager.AddNewLiveHistoricQuery(id, szQuerierName, parentQueryID, priority);
 			}
 
 			// create a new query instance through the query-blueprint
-			const CQueryBase::SCtorContext queryCtorContext(id, pQueryBlueprint, szQuerierName, pOptionalHistoryEntry, pPotentialResultingItemsFromPreviousQuery);
+			const CQueryBase::SCtorContext queryCtorContext(id, pQueryBlueprint, priority, szQuerierName, pOptionalHistoryEntry, pPotentialResultingItemsFromPreviousQuery);
 			std::unique_ptr<CQueryBase> q = pQueryBlueprint->CreateQuery(queryCtorContext);
 
 			// instantiate that query (cannot be done in the query's ctor as it needs to return success/failure)
@@ -206,6 +220,7 @@ namespace UQS
 					nullptr,
 					id,
 					parentQueryID,
+					priority,
 					gEnv->pTimer->GetAsyncTime(),
 					false,
 					error.c_str());
@@ -221,6 +236,8 @@ namespace UQS
 			newEntry.pCallback = pCallback;
 			newEntry.queryID = id;
 			newEntry.parentQueryID = parentQueryID;
+			newEntry.priority = priority;
+			newEntry.pWorkingData->remainingPriorityForNextFrame = priority;
 			m_queries.emplace_back(std::move(newEntry));
 
 			return id;
@@ -242,12 +259,18 @@ namespace UQS
 		void CQueryManager::DebugDrawRunningQueriesStatistics2D() const
 		{
 			const CTimeValue now = gEnv->pTimer->GetAsyncTime();
-			int row = 1;
+
+			//
+			// visualize the current round-robin load
+			//
+
+			DebugDrawRoundRobinLoad();
 
 			//
 			// number of currently running queries
 			//
 
+			int row = 8;	// the round-robin slots are rendered just above
 			CDrawUtil2d::DrawLabel(row, Col_White, "=== %i UQS queries currently running ===", (int)m_queries.size());
 			++row;
 
@@ -260,7 +283,7 @@ namespace UQS
 				const CTimeValue age = (now - historyEntry.finishedTimestamp);
 				const float alpha = (age < s_delayBeforeFadeOut) ? 1.0f : clamp_tpl(1.0f - (age - s_delayBeforeFadeOut).GetSeconds() / s_fadeOutDuration.GetSeconds(), 0.0f, 1.0f);
 				const ColorF color = historyEntry.bQueryFinishedWithSuccess ? ColorF(0.0f, 1.0f, 0.0f, alpha) : ColorF(1.0f, 0.0f, 0.0f, alpha);
-				row = DebugDrawQueryStatistics(historyEntry.statistics, historyEntry.queryID, row, color);
+				row = DebugDrawQueryStatistics(historyEntry.statistics, historyEntry.queryID, historyEntry.priority, row, color);
 				++row;
 			}
 
@@ -272,7 +295,7 @@ namespace UQS
 			{
 				CQueryBase::SStatistics stats;
 				runningQueryInfo.pQuery->GetStatistics(stats);
-				row = DebugDrawQueryStatistics(stats, runningQueryInfo.queryID, row, Col_White);
+				row = DebugDrawQueryStatistics(stats, runningQueryInfo.queryID, runningQueryInfo.priority, row, Col_White);
 				++row;
 			}
 		}
@@ -310,6 +333,7 @@ namespace UQS
 						queryToUpdate.pCallback,
 						queryToUpdate.queryID,
 						queryToUpdate.parentQueryID,
+						queryToUpdate.priority,
 						timestampAfterQueryUpdate,
 						bQueryFinishedWithSuccess, "");
 				}
@@ -324,6 +348,7 @@ namespace UQS
 						queryToUpdate.pCallback,
 						queryToUpdate.queryID,
 						queryToUpdate.parentQueryID,
+						queryToUpdate.priority,
 						timestampAfterQueryUpdate,
 						bQueryFinishedWithSuccess,
 						error.c_str());
@@ -405,6 +430,7 @@ namespace UQS
 			CRY_ASSERT(!m_queries.empty());	// optimization to circumvent special cases
 
 			std::list<SRunningQueryInfo>::const_iterator it = m_roundRobinStart;
+			std::list<SRunningQueryInfo>::const_iterator itLastAddedQueryToRoundRobinList = m_queries.cend();
 
 			// start from the beginning if already residing at the end (this would be the initial situation or when removing the back-most query)
 			if (it == m_queries.cend())
@@ -412,15 +438,33 @@ namespace UQS
 				it = m_roundRobinStart = m_queries.cbegin();
 			}
 
+			int remainingCakeSlices = SCvars::roundRobinLimit > 0 ? SCvars::roundRobinLimit : m_queries.size();
+
 			while (1)
 			{
-				// put this query in the round-robin list if it requires some time-budget
-				if (it->pQuery->RequiresSomeTimeBudgetForExecution())
+				const SRunningQueryInfo& runningInfo = *it;
+
+				// put this query into the round-robin list if it requires some time-budget to do its work
+				if (runningInfo.pQuery->RequiresSomeTimeBudgetForExecution())
 				{
-					outRoundRobinQueries.push_back(&(*it));
+					CRY_ASSERT(runningInfo.pWorkingData->remainingPriorityForNextFrame > 0);
+
+					// grant this query a piece of the time-budget cake (in "cake slice" units)
+					const int numSlicesToHandOut = std::min(remainingCakeSlices, runningInfo.pWorkingData->remainingPriorityForNextFrame);
+					runningInfo.pWorkingData->handedOutPriorityInCurrentFrame = numSlicesToHandOut;
+					runningInfo.pWorkingData->remainingPriorityForNextFrame -= numSlicesToHandOut;
+					remainingCakeSlices -= numSlicesToHandOut;
+
+					// add it to the round-robin list
+					outRoundRobinQueries.push_back(&runningInfo);
+					itLastAddedQueryToRoundRobinList = it;
 
 					// reached round-robin capacity?
 					if ((int)outRoundRobinQueries.size() == SCvars::roundRobinLimit)
+						break;
+
+					// no more cake slices left?
+					if (remainingCakeSlices == 0)
 						break;
 				}
 
@@ -433,8 +477,42 @@ namespace UQS
 					break;
 			}
 
-			// continue the round-robin update on the next frame from here on
-			m_roundRobinStart = it;
+			//
+			// update the round-robin bookmark for next frame:
+			// - if there is a query whose priority spills over to the next frame, then continue with that query
+			// - but if all queries in the round-robin list perfectly fit their priorities into the round-robin limit, then proceed with the next query in the list
+			//
+
+			if (!outRoundRobinQueries.empty())
+			{
+				if (itLastAddedQueryToRoundRobinList->pWorkingData->remainingPriorityForNextFrame > 0)
+				{
+					// have this query spill over to the next frame
+					m_roundRobinStart = itLastAddedQueryToRoundRobinList;
+				}
+				else
+				{
+					// continue the round-robin update on the next frame from here on
+					m_roundRobinStart = it;
+				}
+			}
+
+			// debug: track last round-robin load for debug rendering on screen
+			if (SCvars::debugDraw)
+			{
+				m_roundRobinDebugSnapshot.roundRobinLimit = SCvars::roundRobinLimit > 0 ? SCvars::roundRobinLimit : m_queries.size();
+				m_roundRobinDebugSnapshot.elements.clear();
+
+				for (const SRunningQueryInfo* pRunningInfo : outRoundRobinQueries)
+				{
+					SRoundRobinDebugSnapshot::SElement debugElement;
+					pRunningInfo->queryID.ToString(debugElement.queryIdAsString);
+					debugElement.priority = pRunningInfo->priority;
+					debugElement.priorityHandedOut = pRunningInfo->pWorkingData->handedOutPriorityInCurrentFrame;
+					debugElement.priorityRemaining = pRunningInfo->pWorkingData->remainingPriorityForNextFrame;
+					m_roundRobinDebugSnapshot.elements.push_back(debugElement);
+				}
+			}
 		}
 
 		void CQueryManager::UpdateRoundRobinQueries(const std::vector<const SRunningQueryInfo*>& roundRobinQueries, std::vector<SFinishedQueryInfo>& outFinishedQueries)
@@ -445,15 +523,29 @@ namespace UQS
 			const CTimeValue extraTimeBufferBeforeWarning(SCvars::timeBudgetExcessThresholdInPercent * 0.01f * SCvars::timeBudgetInSeconds);
 
 			CTimeValue remainingOverallTimeBudget(SCvars::timeBudgetInSeconds);
-			CTimeValue totalTimeUsedSoFar;
 
 			for (auto it = roundRobinQueries.cbegin(); it != roundRobinQueries.cend(); ++it)
 			{
-				const size_t numRemainingQueries = roundRobinQueries.cend() - it;
-				const CTimeValue timeBudgetForThisQuery(remainingOverallTimeBudget.GetSeconds() / (float)numRemainingQueries);
-				const CTimeValue timeUsedByThisQuery = HelpUpdateSingleQuery(*(*it), timeBudgetForThisQuery, outFinishedQueries);
+				auto accumulateRemainingPriorities = [](int accumulatedPriosSoFar, const SRunningQueryInfo* pRunningInfo)
+				{
+					return accumulatedPriosSoFar + pRunningInfo->pWorkingData->handedOutPriorityInCurrentFrame;
+				};
 
-				totalTimeUsedSoFar += timeUsedByThisQuery;
+				const int accumulatedPrioritiesOfRemainingQueries = std::accumulate(it, roundRobinQueries.cend(), 0, accumulateRemainingPriorities);
+
+				//
+				// compute the time-budget to grant in relation to how much the other queries in the round-robin list would still get granted
+				//
+
+				const SRunningQueryInfo* pRunningInfo = *it;
+				const float fractionOfOverallRemainingTimeToGrant = (float)pRunningInfo->pWorkingData->handedOutPriorityInCurrentFrame / (float)accumulatedPrioritiesOfRemainingQueries;
+				const CTimeValue timeBudgetForThisQuery(remainingOverallTimeBudget.GetSeconds() * fractionOfOverallRemainingTimeToGrant);
+
+				//
+				// run the query
+				//
+
+				const CTimeValue timeUsedByThisQuery = HelpUpdateSingleQuery(*pRunningInfo, timeBudgetForThisQuery, outFinishedQueries);
 
 				//
 				// check for some unused time and donate it to the remaining queries
@@ -474,12 +566,21 @@ namespace UQS
 
 					if (timeUsedByThisQuery > timeBudgetForThisQuery + extraTimeBufferBeforeWarning)
 					{
-						NotifyOfQueryPerformanceWarning(*(*it), "system frame #%i: query has just consumed %.1f%% of its granted time: %fms vs %fms",
+						NotifyOfQueryPerformanceWarning(*pRunningInfo, "system frame #%i: query has just consumed %.1f%% of its granted time: %fms vs %fms",
 							(int)gEnv->nMainFrameID,
 							(timeUsedByThisQuery.GetMilliSeconds() / timeBudgetForThisQuery.GetMilliSeconds()) * 100.0f,
 							timeUsedByThisQuery.GetMilliSeconds(),
 							timeBudgetForThisQuery.GetMilliSeconds());
 					}
+				}
+
+				//
+				// restore the query's priority once it has used all the time-budget that it was granted (possibly over multiple frames)
+				//
+
+				if (pRunningInfo->pWorkingData->remainingPriorityForNextFrame == 0)
+				{
+					pRunningInfo->pWorkingData->remainingPriorityForNextFrame = pRunningInfo->priority;
 				}
 			}
 		}
@@ -529,7 +630,7 @@ namespace UQS
 				{
 					CQueryBase::SStatistics stats;
 					entry.pQuery->GetStatistics(stats);
-					SHistoryQueryInfo2D newHistoryEntry(entry.queryID, stats, entry.bQueryFinishedWithSuccess, gEnv->pTimer->GetAsyncTime());
+					SHistoryQueryInfo2D newHistoryEntry(entry.queryID, entry.priority, stats, entry.bQueryFinishedWithSuccess, gEnv->pTimer->GetAsyncTime());
 					m_debugDrawHistory2D.push_back(std::move(newHistoryEntry));
 				}
 			}
@@ -649,6 +750,7 @@ namespace UQS
 				const Client::IQueryWarningListener::SWarningInfo warningInfo(
 					problematicQuery.queryID,
 					problematicQuery.parentQueryID,
+					problematicQuery.priority,
 					problematicQuery.pQuery->GetQuerierName(),
 					problematicQuery.pQueryBlueprint->GetName(),
 					commonWarningMessage.c_str());
@@ -765,21 +867,82 @@ namespace UQS
 			}
 		}
 
-		int CQueryManager::DebugDrawQueryStatistics(const CQueryBase::SStatistics& statisticsToDraw, const CQueryID& queryID, int row, const ColorF& color)
+		int CQueryManager::DebugDrawQueryStatistics(const CQueryBase::SStatistics& statisticsToDraw, const CQueryID& queryID, int priority, int row, const ColorF& color)
 		{
 			Shared::CUqsString queryIDAsString;
 			queryID.ToString(queryIDAsString);
 
-			CDrawUtil2d::DrawLabel(row, color, "#%s: '%s' / '%s' (%i/%i) still to inspect: %i",
+			CDrawUtil2d::DrawLabel(row, color, "#%s: '%s' / '%s' (prio = %i) (%i/%i) still to inspect: %i",
 				queryIDAsString.c_str(),
 				statisticsToDraw.querierName.c_str(),
 				statisticsToDraw.queryBlueprintName.c_str(),
+				priority,
 				(int)statisticsToDraw.numItemsInFinalResultSet,
 				(int)statisticsToDraw.numGeneratedItems,
 				(int)statisticsToDraw.numRemainingItemsToInspect);
 			++row;
 
 			return row;
+		}
+
+		void CQueryManager::DebugDrawRoundRobinLoad() const
+		{
+			float x = 20;
+			float y = 20;
+
+			const float blockSize = 50;
+			const float extraSpaceBetweenBlocks = 2;
+
+			for (const SRoundRobinDebugSnapshot::SElement& element : m_roundRobinDebugSnapshot.elements)
+			{
+				float oldX = x;
+
+				// fully updated?
+				if (element.priorityHandedOut == element.priority && element.priorityRemaining == 0)
+				{
+					ColorB col(0, 255, 0);	// green
+					for (int i = 0; i < element.priorityHandedOut; i++)
+					{
+						CDrawUtil2d::DrawFilledQuad(x, y, x + blockSize, y + blockSize, col);
+						x += blockSize + extraSpaceBetweenBlocks;
+					}
+				}
+
+				// going to spill over?
+				if (element.priorityHandedOut < element.priority && element.priorityRemaining > 0)
+				{
+					ColorB col1(0, 255, 255);	// cyan
+					for (int i = 0; i < element.priorityHandedOut; i++)
+					{
+						CDrawUtil2d::DrawFilledQuad(x, y, x + blockSize, y + blockSize, col1);
+						x += blockSize + extraSpaceBetweenBlocks;
+					}
+
+					ColorB col2(255, 105, 180);	// pink
+					for (int i = 0; i < element.priorityRemaining; i++)
+					{
+						CDrawUtil2d::DrawFilledQuad(x, y, x + blockSize, y + blockSize, col2);
+						x += blockSize + extraSpaceBetweenBlocks;
+					}
+				}
+
+				// remainder just spilled over from previous frame?
+				if (element.priorityHandedOut < element.priority && element.priorityRemaining == 0)
+				{
+					ColorB col(0, 255, 255);	// cyan
+					for (int i = 0; i < element.priorityHandedOut; i++)
+					{
+						CDrawUtil2d::DrawFilledQuad(x, y, x + blockSize, y + blockSize, col);
+						x += blockSize + extraSpaceBetweenBlocks;
+					}
+				}
+
+				// query ID
+				CDrawUtil2d::DrawLabel(oldX, y, 1.6, Col_White, "#%s", element.queryIdAsString.c_str());
+
+				// priority
+				CDrawUtil2d::DrawLabel(oldX, y + 15, 1.6, Col_White, "p: %i", element.priorityHandedOut);
+			}
 		}
 
 	}

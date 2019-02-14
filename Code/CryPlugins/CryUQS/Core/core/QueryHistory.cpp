@@ -137,6 +137,7 @@ namespace UQS
 			: m_pOwningHistoryManager(nullptr)
 			, m_queryID(CQueryID::CreateInvalid())
 			, m_parentQueryID(CQueryID::CreateInvalid())
+			, m_priority(0)
 			, m_queryLifetimeStatus(EQueryLifetimeStatus::QueryIsNotCreatedYet)
 			, m_queryCreatedFrame(0)
 			, m_queryDestroyedFrame(0)
@@ -147,11 +148,12 @@ namespace UQS
 			// nothing
 		}
 
-		CHistoricQuery::CHistoricQuery(const CQueryID& queryID, const char* szQuerierName, const CQueryID& parentQueryID, CQueryHistoryManager* pOwningHistoryManager)
+		CHistoricQuery::CHistoricQuery(const CQueryID& queryID, const char* szQuerierName, const CQueryID& parentQueryID, int priority, CQueryHistoryManager* pOwningHistoryManager)
 			: m_pOwningHistoryManager(pOwningHistoryManager)
 			, m_queryID(queryID)
 			, m_parentQueryID(parentQueryID)
 			, m_querierName(szQuerierName)
+			, m_priority(priority)
 			, m_queryLifetimeStatus(EQueryLifetimeStatus::QueryIsNotCreatedYet)
 			, m_queryCreatedFrame(0)
 			, m_queryDestroyedFrame(0)
@@ -782,6 +784,7 @@ namespace UQS
 				m_queryID,
 				m_parentQueryID,
 				m_queryBlueprintName.c_str(),
+				m_priority,
 				numGeneratedItems,
 				numItemsInFinalResultSet,
 				elapsedTime,
@@ -808,6 +811,11 @@ namespace UQS
 			// querier name + query blueprint name
 			{
 				consumer.AddTextLineToCurrentHistoricQuery(color, "'%s' / '%s'", m_finalStatistics.querierName.c_str(), m_finalStatistics.queryBlueprintName.c_str());
+			}
+
+			// priority
+			{
+				consumer.AddTextLineToCurrentHistoricQuery(color, "Priority: %i", m_priority);
 			}
 
 			// exception message
@@ -1118,6 +1126,7 @@ namespace UQS
 			ar(m_parentQueryID, "m_parentQueryID");
 			ar(m_querierName, "m_querierName");
 			ar(m_queryBlueprintName, "m_queryBlueprintName");
+			ar(m_priority, "m_priority");
 			ar(m_queryLifetimeStatus, "m_queryLifetimeStatus");
 			ar(m_queryCreatedTimestamp, "m_queryCreatedTimestamp");
 			ar(m_queryDestroyedTimestamp, "m_queryDestroyedTimestamp");
@@ -1160,7 +1169,7 @@ namespace UQS
 			return *this;
 		}
 
-		HistoricQuerySharedPtr CQueryHistory::AddNewHistoryEntry(const CQueryID& queryID, const char* szQuerierName, const CQueryID& parentQueryID, CQueryHistoryManager* pOwningHistoryManager)
+		HistoricQuerySharedPtr CQueryHistory::AddNewHistoryEntry(const CQueryID& queryID, const char* szQuerierName, const CQueryID& parentQueryID, int priority, CQueryHistoryManager* pOwningHistoryManager)
 		{
 			//
 			// insert the new historic query into the correct position in the array such that children will always reside somewhere after their parent
@@ -1186,7 +1195,7 @@ namespace UQS
 				}
 			}
 
-			HistoricQuerySharedPtr pNewEntry(new CHistoricQuery(queryID, szQuerierName, parentQueryID, pOwningHistoryManager));
+			HistoricQuerySharedPtr pNewEntry(new CHistoricQuery(queryID, szQuerierName, parentQueryID, priority, pOwningHistoryManager));
 			insertPos = m_historyData.historicQueries.insert(insertPos, std::move(pNewEntry));
 			return *insertPos;
 		}

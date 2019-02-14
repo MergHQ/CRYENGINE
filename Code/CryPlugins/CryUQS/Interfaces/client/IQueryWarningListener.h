@@ -19,10 +19,11 @@ namespace UQS
 		{
 			struct SWarningInfo
 			{
-				explicit        SWarningInfo(const Core::CQueryID& _queryID, const Core::CQueryID& _parentQueryID, const char* _szQuerierName, const char* _szQueryBlueprintName, const char* _szWarningMessage);
+				explicit        SWarningInfo(const Core::CQueryID& _queryID, const Core::CQueryID& _parentQueryID, int _priority, const char* _szQuerierName, const char* _szQueryBlueprintName, const char* _szWarningMessage);
 
 				Core::CQueryID  queryID;
 				Core::CQueryID  parentQueryID;
+				int             priority;
 				const char*     szQuerierName;
 				const char*     szQueryBlueprintName;
 				const char*     szWarningMessage;
@@ -35,9 +36,10 @@ namespace UQS
 			~IQueryWarningListener() {}	// protected non-virtual dtor since deletion through base-class pointers is not intended
 		};
 
-		inline IQueryWarningListener::SWarningInfo::SWarningInfo(const Core::CQueryID& _queryID, const Core::CQueryID& _parentQueryID, const char* _szQuerierName, const char* _szQueryBlueprintName, const char* _szWarningMessage)
+		inline IQueryWarningListener::SWarningInfo::SWarningInfo(const Core::CQueryID& _queryID, const Core::CQueryID& _parentQueryID, int _priority, const char* _szQuerierName, const char* _szQueryBlueprintName, const char* _szWarningMessage)
 			: queryID(_queryID)
 			, parentQueryID(_parentQueryID)
+			, priority(_priority)
 			, szQuerierName(_szQuerierName)
 			, szQueryBlueprintName(_szQueryBlueprintName)
 			, szWarningMessage(_szWarningMessage)

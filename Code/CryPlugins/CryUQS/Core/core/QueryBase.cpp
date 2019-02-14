@@ -18,9 +18,10 @@ namespace UQS
 		//
 		//===================================================================================
 
-		CQueryBase::SCtorContext::SCtorContext(const CQueryID& _queryID, const std::shared_ptr<const CQueryBlueprint>& _pQueryBlueprint, const char* _szQuerierName, const HistoricQuerySharedPtr& _pOptionalHistoryToWriteTo, const std::shared_ptr<CItemList>& _pOptionalResultingItemsFromPreviousQuery)
+		CQueryBase::SCtorContext::SCtorContext(const CQueryID& _queryID, const std::shared_ptr<const CQueryBlueprint>& _pQueryBlueprint, int _priority, const char* _szQuerierName, const HistoricQuerySharedPtr& _pOptionalHistoryToWriteTo, const std::shared_ptr<CItemList>& _pOptionalResultingItemsFromPreviousQuery)
 			: queryID(_queryID)
 			, pQueryBlueprint(_pQueryBlueprint)
+			, priority(_priority)
 			, szQuerierName(_szQuerierName)
 			, pOptionalHistoryToWriteTo(_pOptionalHistoryToWriteTo)
 			, pOptionalResultingItemsFromPreviousQuery(_pOptionalResultingItemsFromPreviousQuery)

@@ -40,6 +40,7 @@ namespace UQS
 
 		private:
 			Shared::CVariantDict                     m_runtimeParams;
+			int                                      m_priority;
 			size_t                                   m_indexOfNextChildToInstantiate;
 			CQueryID                                 m_queryIDOfCurrentlyRunningChild;
 			bool                                     m_bExceptionOccurredInChild;

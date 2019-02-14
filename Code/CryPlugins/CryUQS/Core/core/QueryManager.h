@@ -32,12 +32,20 @@ namespace UQS
 
 			struct SRunningQueryInfo
 			{
+				struct SWorkingData
+				{
+					int                                                handedOutPriorityInCurrentFrame = 0;
+					int                                                remainingPriorityForNextFrame = 0;
+				};
+
 				explicit                                               SRunningQueryInfo();
 				std::shared_ptr<CQueryBase>                            pQuery;
 				std::shared_ptr<const CQueryBlueprint>                 pQueryBlueprint;
 				Functor1<const SQueryResult&>                          pCallback;
 				CQueryID                                               queryID;
 				CQueryID                                               parentQueryID;
+				int                                                    priority;
+				std::unique_ptr<SWorkingData>                          pWorkingData;
 			};
 
 			//===================================================================================
@@ -50,12 +58,13 @@ namespace UQS
 
 			struct SFinishedQueryInfo
 			{
-				explicit                                               SFinishedQueryInfo(const std::shared_ptr<CQueryBase>& _pQuery, const std::shared_ptr<const CQueryBlueprint>& _pQueryBlueprint, const Functor1<const SQueryResult&>& _pCallback, const CQueryID& _queryID, const CQueryID& _parentQueryID, const CTimeValue& _queryFinishedTimestamp, bool _bQueryFinishedWithSuccess, const string& _errorIfAny);
+				explicit                                               SFinishedQueryInfo(const std::shared_ptr<CQueryBase>& _pQuery, const std::shared_ptr<const CQueryBlueprint>& _pQueryBlueprint, const Functor1<const SQueryResult&>& _pCallback, const CQueryID& _queryID, const CQueryID& _parentQueryID, int _priority, const CTimeValue& _queryFinishedTimestamp, bool _bQueryFinishedWithSuccess, const string& _errorIfAny);
 				std::shared_ptr<CQueryBase>                            pQuery;
 				std::shared_ptr<const CQueryBlueprint>                 pQueryBlueprint;
 				Functor1<const SQueryResult&>                          pCallback;
 				CQueryID                                               queryID;
 				CQueryID                                               parentQueryID;
+				int                                                    priority;
 				CTimeValue                                             queryFinishedTimestamp;
 				bool                                                   bQueryFinishedWithSuccess;
 				string                                                 errorIfAny;
@@ -71,11 +80,34 @@ namespace UQS
 
 			struct SHistoryQueryInfo2D
 			{
-				explicit                                               SHistoryQueryInfo2D(const CQueryID &_queryID, const CQueryBase::SStatistics& _statistics, bool _bQueryFinishedWithSuccess, const CTimeValue& _timestamp);
+				explicit                                               SHistoryQueryInfo2D(const CQueryID &_queryID, int _priority, const CQueryBase::SStatistics& _statistics, bool _bQueryFinishedWithSuccess, const CTimeValue& _timestamp);
 				CQueryID                                               queryID;
+				int                                                    priority;
 				CQueryBase::SStatistics                                statistics;
 				bool                                                   bQueryFinishedWithSuccess;
 				CTimeValue                                             finishedTimestamp;     // time of when the query was finished; for fading out after a short moment
+			};
+
+			//===================================================================================
+			//
+			// SRoundRobinDebugSnapshot
+			//
+			// - to visualize the granted time-budget per query in the round-robin list of the current frame
+			//
+			//===================================================================================
+
+			struct SRoundRobinDebugSnapshot
+			{
+				struct SElement
+				{
+					Shared::CUqsString                                 queryIdAsString;
+					int                                                priority = 0;           // priority level of the query in general
+					int                                                priorityHandedOut = 0;  // how much was used in the current frame
+					int                                                priorityRemaining = 0;  // how much will spill over to the next frame
+				};
+
+				int                                                    roundRobinLimit = 0;    // max. no. of queries that could fit into the round-robin list in the current frame
+				std::vector<SElement>                                  elements;               // all queries that actually ended up in the round-robin list
 			};
 
 			//===================================================================================
@@ -108,7 +140,7 @@ namespace UQS
 			virtual void                                               VisitRunningQueries(Client::IQueryVisitor& visitor) override;
 			// ~IQueryManager
 
-			CQueryID                                                   StartQueryInternal(const CQueryID& parentQueryID, std::shared_ptr<const CQueryBlueprint> pQueryBlueprint, const Shared::IVariantDict& runtimeParams, const char* szQuerierName, Functor1<const SQueryResult&> callback, const std::shared_ptr<CItemList>& pPotentialResultingItemsFromPreviousQuery, Shared::IUqsString& errorMessage);
+			CQueryID                                                   StartQueryInternal(const CQueryID& parentQueryID, std::shared_ptr<const CQueryBlueprint> pQueryBlueprint, const Shared::IVariantDict& runtimeParams, const char* szQuerierName, Functor1<const SQueryResult&> callback, const std::shared_ptr<CItemList>& pPotentialResultingItemsFromPreviousQuery, int priority, Shared::IUqsString& errorMessage);
 			CQueryBase*                                                FindQueryByQueryID(const CQueryID& queryID);
 			void                                                       Update();
 			void                                                       DebugDrawRunningQueriesStatistics2D() const;
@@ -129,7 +161,8 @@ namespace UQS
 
 			static CTimeValue                                          HelpUpdateSingleQuery(const SRunningQueryInfo& queryToUpdate, const CTimeValue& timeBudgetForThisQuery, std::vector<SFinishedQueryInfo>& outFinishedQueries);
 			static void                                                DebugPrintQueryStatistics(CLogger& logger, const CQueryBase& query, const CQueryID& queryID);
-			static int                                                 DebugDrawQueryStatistics(const CQueryBase::SStatistics& statisticsToDraw, const CQueryID& queryID, int row, const ColorF& color);
+			static int                                                 DebugDrawQueryStatistics(const CQueryBase::SStatistics& statisticsToDraw, const CQueryID& queryID, int priority, int row, const ColorF& color);
+			void                                                       DebugDrawRoundRobinLoad() const;
 
 		private:
 			CQueryID                                                   m_queryIDProvider;
@@ -138,6 +171,7 @@ namespace UQS
 			bool                                                       m_bQueriesUpdateInProgress;   // safety guard to detect calls to CancelQuery() in the middle of iterating through all m_queries (this would invalidate iterators!!!)
 			CQueryHistoryManager&                                      m_queryHistoryManager;        // for allocating new historic queries each time a query blueprint gets instantiated and runs
 			std::deque<SHistoryQueryInfo2D>                            m_debugDrawHistory2D;         // for 2D on-screen drawing of statistics of all current and some past queries
+			SRoundRobinDebugSnapshot                                   m_roundRobinDebugSnapshot;    // round-robin load of the current frame for visualizing on screen
 			std::vector<Client::IQueryFinishedListener*>               m_queryFinishedListeners;
 			std::vector<Client::IQueryWarningListener*>                m_queryWarningListeners;
 

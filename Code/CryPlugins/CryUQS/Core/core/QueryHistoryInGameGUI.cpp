@@ -139,7 +139,7 @@ namespace UQS
 			overview.queryID.ToString(queryIdAsString);
 
 			string shortInfo;
-			shortInfo.Format("#%s: '%s' / '%s' (%i / %i items) [%.2f ms]", queryIdAsString.c_str(), overview.szQuerierName, overview.szQueryBlueprintName, (int)overview.numResultingItems, (int)overview.numGeneratedItems, overview.timeElapsedUntilResult.GetMilliSeconds());
+			shortInfo.Format("#%s: '%s' / '%s' [prio = %i] (%i / %i items) [%.2f ms]", queryIdAsString.c_str(), overview.szQuerierName, overview.szQueryBlueprintName, overview.priority, (int)overview.numResultingItems, (int)overview.numGeneratedItems, overview.timeElapsedUntilResult.GetMilliSeconds());
 
 			//
 			// Since we don't know if the given historic query is already tracked in m_historicQueries and also need to ensure that it will reside at the correct position after

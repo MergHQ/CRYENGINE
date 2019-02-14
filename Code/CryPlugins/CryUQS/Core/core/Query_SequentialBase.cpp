@@ -11,6 +11,7 @@ namespace UQS
 
 		CQuery_SequentialBase::CQuery_SequentialBase(const SCtorContext& ctorContext)
 			: CQueryBase(ctorContext, false)
+			, m_priority(ctorContext.priority)
 			, m_indexOfNextChildToInstantiate(0)
 			, m_queryIDOfCurrentlyRunningChild(CQueryID::CreateInvalid())
 			, m_bExceptionOccurredInChild(false)
@@ -134,6 +135,7 @@ namespace UQS
 				m_querierName.c_str(),
 				functor(*this, &CQuery_SequentialBase::OnChildQueryFinished),
 				pResultingItemsOfPotentialPreviousChildQuery,
+				m_priority,
 				m_exceptionMessageFromChild);
 
 			if (!m_queryIDOfCurrentlyRunningChild.IsValid())
