@@ -287,6 +287,12 @@ namespace SchematycBaseEnv
 			return b != 0 ? a % b : 0;
 		}
 
+		int32 RoundRobin(int32 a, int32 b) 
+		{
+			const int32 r = b != 0 ? a % b : 0;
+			return r < 0 ? r + b : r;
+		}
+
 		int32 Random(int32 min, int32 max)
 		{
 			return min < max ? cry_random(min, max) : min;
@@ -295,6 +301,11 @@ namespace SchematycBaseEnv
 		int32 Abs(int32 value)
 		{
 			return abs(value);
+		}
+
+		int32 Sign(int32 value)
+		{
+			return value < 0 ? -1 : 1;
 		}
 
 		int32 Min(int32 a, int32 b)
@@ -433,6 +444,17 @@ namespace SchematycBaseEnv
 			}
 
 			{
+				Schematyc2::IGlobalFunctionPtr pFunction = SCHEMATYC2_MAKE_GLOBAL_FUNCTION_SHARED(Int32::RoundRobin, "a0d745ea-0517-40bc-b50c-8ef6cd2a06b5");
+				pFunction->SetNamespace("Types::Int32");
+				pFunction->SetAuthor("Crytek");
+				pFunction->SetDescription("Calculate an overflowed value between A (inclusive) and B (exclusive)");
+				pFunction->BindInput(1, "A", "A", int32(0));
+				pFunction->BindInput(2, "B", "B", int32(0));
+				pFunction->BindOutput(0, "Result", "Result");
+				envRegistry.RegisterGlobalFunction(pFunction);
+			}
+
+			{
 				Schematyc2::IGlobalFunctionPtr pFunction = SCHEMATYC2_MAKE_GLOBAL_FUNCTION_SHARED(Int32::Random, "67bc3c63-e6f2-42c2-85af-a30fc30d0b11");
 				pFunction->SetNamespace("Types::Int32");
 				pFunction->SetAuthor("Crytek");
@@ -448,6 +470,16 @@ namespace SchematycBaseEnv
 				pFunction->SetNamespace("Types::Int32");
 				pFunction->SetAuthor("Crytek");
 				pFunction->SetDescription("Returns the absolute value");
+				pFunction->BindInput(1, "Value", "Value", int32(0));
+				pFunction->BindOutput(0, "Result", "Result");
+				envRegistry.RegisterGlobalFunction(pFunction);
+			}
+
+			{
+				Schematyc2::IGlobalFunctionPtr pFunction = SCHEMATYC2_MAKE_GLOBAL_FUNCTION_SHARED(Int32::Sign, "6db0fd52-eb04-4303-b6ba-ce8211b2b31e");
+				pFunction->SetNamespace("Types::Int32");
+				pFunction->SetAuthor("Crytek");
+				pFunction->SetDescription("Returns -1 for negative values and 1 for positive values");
 				pFunction->BindInput(1, "Value", "Value", int32(0));
 				pFunction->BindOutput(0, "Result", "Result");
 				envRegistry.RegisterGlobalFunction(pFunction);
@@ -790,12 +822,12 @@ namespace SchematycBaseEnv
 
 		float Divide(float a, float b)
 		{
-			return b != 0.0f ? a / b : 0.0f;
+			return fabs_tpl(b) >= FLT_EPSILON ? a / b : 0.0f;
 		}
 
 		float Modulus(float a, float b)
 		{
-			return b != 0.0f ? fmodf(a, b) : 0.0f;
+			return fabs_tpl(b) >= FLT_EPSILON ? fmodf(a, b) : 0.0f;
 		}
 
 		float Sin(float value)
@@ -848,6 +880,11 @@ namespace SchematycBaseEnv
 			return fabs_tpl(value);
 		}
 
+		float Sign(float value) 
+		{
+			return std::signbit(value) ? 1.0f : -1.0f;
+		}
+
 		float ClampValue(float value, float minValue, float maxValue)
 		{
 			if( minValue >= maxValue ) 
@@ -857,6 +894,43 @@ namespace SchematycBaseEnv
 			}
 			
 			return clamp_tpl(value, minValue, maxValue);
+		}
+
+		//Safely maps value from range A to range B
+		float Map(float value, float startA, float endA, float startB, float endB, bool clamp)
+		{
+			float lengthA = endA - startA;
+
+			if (fabs_tpl(lengthA) < FLT_EPSILON)
+			{
+				lengthA = Sign(lengthA) * FLT_EPSILON;
+			}
+
+			const float mappedValue = startB + ((value - startA) * ((endB - startB) / lengthA));
+
+			if (clamp) 
+			{
+				if (startB > endB) 
+				{
+					std::swap(startB, endB);
+				}
+
+				return clamp_tpl(mappedValue, startB, endB);
+			}
+			else 
+			{
+				return mappedValue;
+			}
+		}
+
+		float Round (float value)
+		{
+			return std::round(value);
+		}
+
+		int32 RoundToInt32(float value)
+		{
+			return static_cast<int32>(std::round(value));
 		}
 
 		bool InRange(float value, float minBound, float maxBound )
@@ -1082,6 +1156,16 @@ namespace SchematycBaseEnv
 			}
 
 			{
+				Schematyc2::IGlobalFunctionPtr pFunction = SCHEMATYC2_MAKE_GLOBAL_FUNCTION_SHARED(Float::Sign, "7234ad1e-25f5-4abe-a89f-14ebe8de6806");
+				pFunction->SetNamespace("Types::Float");
+				pFunction->SetAuthor("Crytek");
+				pFunction->SetDescription("Returns a signed value of 1");
+				pFunction->BindInput(1, "Value", "Value", 0.f);
+				pFunction->BindOutput(0, "Result", "Result");
+				envRegistry.RegisterGlobalFunction(pFunction);
+			}
+
+			{
 				Schematyc2::IGlobalFunctionPtr pFunction = SCHEMATYC2_MAKE_GLOBAL_FUNCTION_SHARED(Float::ClampValue, "1669a3c2-7c2b-496c-82c9-9b9f2d94dff9");
 				pFunction->SetNamespace("Types::Float");
 				pFunction->SetAuthor("Crytek");
@@ -1089,6 +1173,41 @@ namespace SchematycBaseEnv
 				pFunction->BindInput(1, "Value", "Value", float(0));
 				pFunction->BindInput(2, "MinValue", "Min Value", float(0));
 				pFunction->BindInput(3, "MaxValue", "Max Value", float(1));
+				pFunction->BindOutput(0, "Result", "Result");
+				envRegistry.RegisterGlobalFunction(pFunction);
+			}
+
+			{
+				Schematyc2::IGlobalFunctionPtr pFunction = SCHEMATYC2_MAKE_GLOBAL_FUNCTION_SHARED(Float::Map, "3a51ae19-2954-4695-99e6-7ef00d7f4025");
+				pFunction->SetNamespace("Types::Float");
+				pFunction->SetAuthor("Chris Bliss");
+				pFunction->SetDescription("Map Value from Range A to Range B");
+				pFunction->BindInput(1, "Value", "Value");
+				pFunction->BindInput(2, "StartA", "Start A");
+				pFunction->BindInput(3, "EndA", "End A");
+				pFunction->BindInput(4, "StartB", "Start B");
+				pFunction->BindInput(5, "EndB", "End B");
+				pFunction->BindInput(6, "Clamp", "Clamp", bool(false));
+				pFunction->BindOutput(0, "Result", "Result");
+				envRegistry.RegisterGlobalFunction(pFunction);
+			}
+
+			{
+				Schematyc2::IGlobalFunctionPtr pFunction = SCHEMATYC2_MAKE_GLOBAL_FUNCTION_SHARED(Float::Round, "e9dccf98-4e09-4dea-911f-3e35728ad479");
+				pFunction->SetNamespace("Types::Float");
+				pFunction->SetAuthor("Chris Bliss");
+				pFunction->SetDescription("Round float");
+				pFunction->BindInput(1, "Value", "Value", float(0));
+				pFunction->BindOutput(0, "Result", "Result");
+				envRegistry.RegisterGlobalFunction(pFunction);
+			}
+
+			{
+				Schematyc2::IGlobalFunctionPtr pFunction = SCHEMATYC2_MAKE_GLOBAL_FUNCTION_SHARED(Float::RoundToInt32, "756b8571-e168-48da-85d1-55f329ae9d12");
+				pFunction->SetNamespace("Types::Float");
+				pFunction->SetAuthor("Chris Bliss");
+				pFunction->SetDescription("Round float to Int32");
+				pFunction->BindInput(1, "Value", "Value", float(0));
 				pFunction->BindOutput(0, "Result", "Result");
 				envRegistry.RegisterGlobalFunction(pFunction);
 			}
@@ -1168,13 +1287,13 @@ namespace SchematycBaseEnv
 			return Vec2(x,y);
 		}
 
-		void Expand(Vec2 value, float& x, float& y)
+		void Expand(const Vec2& value, float& x, float& y)
 		{
 			x = value.x;
 			y = value.y;
 		}
 
-		float Length(Vec2 value)
+		float Length(const Vec2& value)
 		{
 			return value.GetLength();
 		}
@@ -1390,7 +1509,7 @@ namespace SchematycBaseEnv
 			z = value.z;
 		}
 
-		float Length(Vec3 value)
+		float Length(const Vec3& value)
 		{
 			return value.GetLength();
 		}
@@ -1425,11 +1544,32 @@ namespace SchematycBaseEnv
 			return a * b;
 		}
 
+		Vec3 Divide(const Vec3& a, float b)
+		{
+			return fabs_tpl(b) >= FLT_EPSILON ? a / b : Vec3(ZERO);
+		}
+
 		float DotProduct(const Vec3& a, const Vec3& b)
 		{
 			return a.Dot(b);
 		}
 
+		float AngleBetween(const Vec3& a, const Vec3& b)
+		{
+			const float c = (a.GetLengthSquared() * b.GetLengthSquared());
+
+			if (c < FLT_EPSILON)
+				return 0;
+
+			const float deg = RAD2DEG(std::acos(a.Dot(b) / c));
+			return (deg > 0.0f ? deg : 360.0f + deg);
+		}
+
+		float SignedAngleBetween(const Vec3& a, const Vec3& b, const Vec3& normal)
+		{
+			return AngleBetween(a, b) * Float::Sign(a.Dot(b.Cross(normal)));
+		}
+		
 		Vec3 CrossProduct(const Vec3& a, const Vec3& b)
 		{
 			return a.Cross(b);
@@ -1565,12 +1705,46 @@ namespace SchematycBaseEnv
 			}
 
 			{
+				Schematyc2::IGlobalFunctionPtr pFunction = SCHEMATYC2_MAKE_GLOBAL_FUNCTION_SHARED(Vector3::Divide, "a32f7aec-2801-45ba-a231-931b5baeff75");
+				pFunction->SetNamespace("Types::Vector3");
+				pFunction->SetAuthor("Chris Bliss");
+				pFunction->SetDescription("Divide 3D vector");
+				pFunction->BindInput(1, "Vector", "Vector", Vec3(ZERO));
+				pFunction->BindInput(2, "A", "A", 1.f);
+				pFunction->BindOutput(0, "Result", "Result");
+				envRegistry.RegisterGlobalFunction(pFunction);
+			}
+
+			{
 				Schematyc2::IGlobalFunctionPtr pFunction = SCHEMATYC2_MAKE_GLOBAL_FUNCTION_SHARED(Vector3::DotProduct, "b2806327-f747-4dbb-905c-fadc027dbe2c");
 				pFunction->SetNamespace("Types::Vector3");
 				pFunction->SetAuthor("Crytek");
 				pFunction->SetDescription("Calculate dot product of two 3D vectors");
 				pFunction->BindInput(1, "A", "A", Vec3(ZERO));
 				pFunction->BindInput(2, "B", "B", Vec3(ZERO));
+				pFunction->BindOutput(0, "Result", "Result");
+				envRegistry.RegisterGlobalFunction(pFunction);
+			}
+
+			{
+				Schematyc2::IGlobalFunctionPtr pFunction = SCHEMATYC2_MAKE_GLOBAL_FUNCTION_SHARED(Vector3::AngleBetween, "740f4d30-96de-4b50-9157-bb7dae1d4679");
+				pFunction->SetNamespace("Types::Vector3");
+				pFunction->SetAuthor("Crytek");
+				pFunction->SetDescription("Returns the angle between A and B");
+				pFunction->BindInput(1, "A", "A", Vec3(ZERO));
+				pFunction->BindInput(2, "B", "B", Vec3(ZERO));
+				pFunction->BindOutput(0, "Result", "Result");
+				envRegistry.RegisterGlobalFunction(pFunction);
+			}
+
+			{
+				Schematyc2::IGlobalFunctionPtr pFunction = SCHEMATYC2_MAKE_GLOBAL_FUNCTION_SHARED(Vector3::SignedAngleBetween, "78d5785c-5fed-490d-a1a2-ad0f15c8dbe8");
+				pFunction->SetNamespace("Types::Vector3");
+				pFunction->SetAuthor("Crytek");
+				pFunction->SetDescription("Returns the signed angle between A and B");
+				pFunction->BindInput(1, "A", "A", Vec3(ZERO));
+				pFunction->BindInput(2, "B", "B", Vec3(ZERO));
+				pFunction->BindInput(3, "Normal", "Normal", Vec3(ZERO));
 				pFunction->BindOutput(0, "Result", "Result");
 				envRegistry.RegisterGlobalFunction(pFunction);
 			}
@@ -1647,7 +1821,7 @@ namespace SchematycBaseEnv
 
 	namespace QRotation
 	{
-		Schematyc2::QRotation FromVector3(const Vec3& forward, Vec3 up)
+		Schematyc2::QRotation FromVector3(const Vec3& forward, const Vec3& up)
 		{
 			return Schematyc2::QRotation(Quat(MathUtils::CreateOrthonormalTM33(forward.normalized(), up.normalized())));
 		}
