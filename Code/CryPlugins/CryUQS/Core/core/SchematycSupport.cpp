@@ -920,7 +920,7 @@ namespace UQS
 				return;
 			}
 
-			const Client::SQueryRequest request(m_upcomingQueryInfo.queryBlueprintID, m_upcomingQueryInfo.runtimeParams, m_upcomingQueryInfo.querierName.c_str(), functor(*this, &CSchematycUqsComponent::OnQueryResult));
+			const Client::SQueryRequest request(m_upcomingQueryInfo.queryBlueprintID, m_upcomingQueryInfo.runtimeParams, m_upcomingQueryInfo.querierName.c_str(), functor(*this, &CSchematycUqsComponent::OnQueryResult), Client::SQueryRequest::kDefaultPriority);
 			Shared::CUqsString errorMessage;
 
 			const CQueryID queryID = pHub->GetQueryManager().StartQuery(request, errorMessage);

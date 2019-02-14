@@ -117,7 +117,7 @@ namespace UQS
 		public:
 
 			explicit                                            CHistoricQuery();
-			explicit                                            CHistoricQuery(const CQueryID& queryID, const char* szQuerierName, const CQueryID& parentQueryID, CQueryHistoryManager* pOwningHistoryManager);
+			explicit                                            CHistoricQuery(const CQueryID& queryID, const char* szQuerierName, const CQueryID& parentQueryID, int priority, CQueryHistoryManager* pOwningHistoryManager);
 
 			CDebugRenderWorldPersistent&                        GetDebugRenderWorldPersistent();
 			CDebugMessageCollection&                            GetDebugMessageCollection();
@@ -184,6 +184,7 @@ namespace UQS
 			CQueryID                                            m_parentQueryID;
 			string                                              m_querierName;
 			string                                              m_queryBlueprintName;
+			int                                                 m_priority;
 			EQueryLifetimeStatus                                m_queryLifetimeStatus;
 			size_t                                              m_queryCreatedFrame;
 			size_t                                              m_queryDestroyedFrame;
@@ -226,7 +227,7 @@ namespace UQS
 		public:
 			explicit                                       CQueryHistory();
 			CQueryHistory&                                 operator=(CQueryHistory&& other);
-			HistoricQuerySharedPtr                         AddNewHistoryEntry(const CQueryID& queryID, const char* szQuerierName, const CQueryID& parentQueryID, CQueryHistoryManager* pOwningHistoryManager);
+			HistoricQuerySharedPtr                         AddNewHistoryEntry(const CQueryID& queryID, const char* szQuerierName, const CQueryID& parentQueryID, int priority, CQueryHistoryManager* pOwningHistoryManager);
 			void                                           Clear();
 			size_t                                         GetHistorySize() const;		// number of CHistoricQueries
 			const CHistoricQuery&                          GetHistoryEntryByIndex(size_t index) const;

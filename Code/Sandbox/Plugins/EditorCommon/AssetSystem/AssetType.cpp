@@ -445,8 +445,7 @@ bool CAssetType::IsAssetValid(CAsset* pAsset, string& errorMsg) const
 	const string assetsPath(PathUtil::GetGameProjectAssetsPath());
 	for (size_t i = 0, N = pAsset->GetFilesCount(); i < N; ++i)
 	{
-		QFileInfo info = QFileInfo(QtUtil::ToQString(PathUtil::Make(assetsPath, pAsset->GetFile(i))));
-		if (!info.exists())
+		if (!FileUtils::Pak::IsFileInPakOrOnDisk(PathUtil::Make(assetsPath, pAsset->GetFile(i))))
 		{
 			errorMsg = string("Asset's file %s is missing on the file system.").Format(pAsset->GetFile(i));
 			return false;
