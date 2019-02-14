@@ -70,8 +70,9 @@ namespace Pak
 {
 //! Returns true if the file exists only in paks.
 EDITOR_COMMON_API bool IsFileInPakOnly(const string& path);
+//! Returns true if the file exists either in paks or on file system.
+EDITOR_COMMON_API bool IsFileInPakOrOnDisk(const string& path);
 // Returns true if the files have the same content, false otherwise.
-
 EDITOR_COMMON_API bool CompareFiles(const string& filePath1, const string& filePath2);
 //! Copies the file at the given file path to the target file path allowing overwriting of the target.
 

@@ -377,17 +377,12 @@ std::vector<string> GetDirectorysContent(const QString& dirPath, int depthLevel 
 
 bool Pak::IsFileInPakOnly(const string& path)
 {
-	ICryPak* const pPak = GetISystem()->GetIPak();
-	if (pPak->IsAbsPath(path))
-	{
-		return !FileExists(path) && GetISystem()->GetIPak()->IsFileExist(PathUtil::AbsolutePathToGamePath(path), ICryPak::eFileLocation_InPak);
-	}
+	return !FileExists(path) && GetISystem()->GetIPak()->IsFileExist(PathUtil::ToGamePath(path), ICryPak::eFileLocation_InPak);;
+}
 
-	// Resolve aliases, e.g. %engine%
-	char szAdjustedPath[ICryPak::g_nMaxPath];
-	pPak->AdjustFileName(path.c_str(), szAdjustedPath, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
-
-	return !FileExists(szAdjustedPath) && GetISystem()->GetIPak()->IsFileExist(path, ICryPak::eFileLocation_InPak);
+bool Pak::IsFileInPakOrOnDisk(const string& path)
+{
+	return GetISystem()->GetIPak()->IsFileExist(PathUtil::ToGamePath(path));
 }
 
 EDITOR_COMMON_API bool Pak::CompareFiles(const string& filePath1, const string& filePath2)
