@@ -42,6 +42,8 @@ void CSkyStage::CreateSkyDomeTextures(int32 width, int32 height)
 
 bool CSkyStage::LoadStarsData()
 {
+	SAFE_RELEASE(m_pStarMesh);
+
 	const uint32 c_fileTag(0x52415453);       // "STAR"
 	const uint32 c_fileVersion(0x00010001);
 	const char c_fileName[] = "%ENGINE%/engineassets/sky/stars.dat";
@@ -131,15 +133,15 @@ bool CSkyStage::LoadStarsData()
 void CSkyStage::SetSkyParameters()
 {
 	const eSkyType skyType = gEnv->p3DEngine->GetSkyType();
-	I3DEngine *const p3DEngine = gEnv->p3DEngine;
+	I3DEngine* const p3DEngine = gEnv->p3DEngine;
 
 	// SkyBox
 	{
 		static CCryNameR skyBoxParamName("SkyDome_SkyBoxParams");
 		const float skyBoxAngle = DEG2RAD(p3DEngine->GetGlobalParameter(E3DPARAM_SKY_SKYBOX_ANGLE));
-		const float skyBoxScaling = skyType == eSkyType_HDRSky 
-			? 2.f 
-			: 1.0f / std::max(0.0001f, p3DEngine->GetGlobalParameter(E3DPARAM_SKY_SKYBOX_STRETCHING));
+		const float skyBoxScaling = skyType == eSkyType_HDRSky
+		                            ? 2.f
+		                            : 1.0f / std::max(0.0001f, p3DEngine->GetGlobalParameter(E3DPARAM_SKY_SKYBOX_STRETCHING));
 		const float skyBoxMultiplier = p3DEngine->GetGlobalParameter(E3DPARAM_SKYBOX_MULTIPLIER);
 		const Vec4 skyBoxParams(skyBoxAngle, skyBoxScaling, skyBoxMultiplier, 0.f);
 		m_skyPass.SetConstant(skyBoxParamName, skyBoxParams, eHWSC_Pixel);
@@ -163,7 +165,7 @@ void CSkyStage::SetSkyParameters()
 
 void CSkyStage::SetHDRSkyParameters()
 {
-	I3DEngine *const p3DEngine = gEnv->p3DEngine;
+	I3DEngine* const p3DEngine = gEnv->p3DEngine;
 
 	// Day sky
 	{
@@ -237,7 +239,7 @@ void CSkyStage::SetHDRSkyParameters()
 		float cosLonR = cosf(-0.5f * gf_PI);
 		float sinLatR = sinf(moonLati + 0.5f * gf_PI);
 		float cosLatR = cosf(moonLati + 0.5f * gf_PI);
-		Vec3 moonTexGenRight(sinLonR * cosLatR, sinLonR * sinLatR, cosLonR);
+		Vec3 moonTexGenRight(sinLonR* cosLatR, sinLonR* sinLatR, cosLonR);
 		m_paramMoonTexGenRight = Vec4(moonTexGenRight, 0);
 		m_skyPass.SetConstant(moonTexGenRightName, m_paramMoonTexGenRight, eHWSC_Pixel);
 
@@ -245,7 +247,7 @@ void CSkyStage::SetHDRSkyParameters()
 		float cosLonU = cosf(moonLong + 0.5f * gf_PI);
 		float sinLatU = sinf(moonLati);
 		float cosLatU = cosf(moonLati);
-		Vec3 moonTexGenUp(sinLonU * cosLatU, sinLonU * sinLatU, cosLonU);
+		Vec3 moonTexGenUp(sinLonU* cosLatU, sinLonU* sinLatU, cosLonU);
 		m_paramMoonTexGenUp = Vec4(moonTexGenUp, 0);
 		m_skyPass.SetConstant(moonTexGenUpName, m_paramMoonTexGenUp, eHWSC_Pixel);
 
@@ -269,7 +271,7 @@ static void FillSkyTextureData(CTexture* pTexture, const void* pData, const uint
 
 void CSkyStage::Execute(CTexture* pColorTex, CTexture* pDepthTex)
 {
-	I3DEngine *const p3DEngine = gEnv->p3DEngine;
+	I3DEngine* const p3DEngine = gEnv->p3DEngine;
 
 	if (!p3DEngine->IsSkyVisible())
 		return;
@@ -279,23 +281,23 @@ void CSkyStage::Execute(CTexture* pColorTex, CTexture* pDepthTex)
 
 	const eSkyType skyType = gEnv->p3DEngine->GetSkyType();
 
-	CRenderView *const pRenderView = RenderView();
+	CRenderView* const pRenderView = RenderView();
 	const bool applyFog = pRenderView->IsGlobalFogEnabled() && !(GetGraphicsPipeline().IsPipelineFlag(CGraphicsPipeline::EPipelineFlags::NO_SHADER_FOG));
 	bool isProcedualSky = false;
-	
+
 	CTexture* pSkyDomeTextureMie = CRendererResources::s_ptexBlack;
 	CTexture* pSkyDomeTextureRayleigh = CRendererResources::s_ptexBlack;
 
 	if (skyType == eSkyType_HDRSky)
 	{
-		const SSkyLightRenderParams *const pRenderParams = p3DEngine->GetSkyLightRenderParams();
+		const SSkyLightRenderParams* const pRenderParams = p3DEngine->GetSkyLightRenderParams();
 
 		if (m_skyDomeTextureLastTimeStamp != pRenderParams->m_skyDomeTextureTimeStamp)
 		{
 			FillSkyTextureData(m_pSkyDomeTextureMie, pRenderParams->m_pSkyDomeTextureDataMie,
-				SSkyLightRenderParams::skyDomeTextureWidth, SSkyLightRenderParams::skyDomeTextureHeight, pRenderParams->m_skyDomeTexturePitch);
+			                   SSkyLightRenderParams::skyDomeTextureWidth, SSkyLightRenderParams::skyDomeTextureHeight, pRenderParams->m_skyDomeTexturePitch);
 			FillSkyTextureData(m_pSkyDomeTextureRayleigh, pRenderParams->m_pSkyDomeTextureDataRayleigh,
-				SSkyLightRenderParams::skyDomeTextureWidth, SSkyLightRenderParams::skyDomeTextureHeight, pRenderParams->m_skyDomeTexturePitch);
+			                   SSkyLightRenderParams::skyDomeTextureWidth, SSkyLightRenderParams::skyDomeTextureHeight, pRenderParams->m_skyDomeTexturePitch);
 
 			// Update time stamp of last update
 			m_skyDomeTextureLastTimeStamp = pRenderParams->m_skyDomeTextureTimeStamp;
@@ -310,14 +312,14 @@ void CSkyStage::Execute(CTexture* pColorTex, CTexture* pDepthTex)
 	const string skyDomeTextureName = p3DEngine->GetSkyDomeTextureName();
 	const bool hasSkyDomeTexture = !skyDomeTextureName.empty();
 	CTexture* pSkyDomeTex = hasSkyDomeTexture
-		? CTexture::ForName(skyDomeTextureName, FT_DONT_STREAM, eTF_Unknown)
-		: CRendererResources::s_ptexBlack;
+	                        ? CTexture::ForName(skyDomeTextureName, FT_DONT_STREAM, eTF_Unknown)
+	                        : CRendererResources::s_ptexBlack;
 
 	const string moonTextureName = p3DEngine->GetMoonTextureName();
 	const bool hasMoonTexture = !moonTextureName.empty();
 	CTexture* pSkyMoonTex = hasMoonTexture
-		? CTexture::ForName(moonTextureName, FT_DONT_STREAM, eTF_Unknown)
-		: CRendererResources::s_ptexBlack;
+	                        ? CTexture::ForName(moonTextureName, FT_DONT_STREAM, eTF_Unknown)
+	                        : CRendererResources::s_ptexBlack;
 
 	uint64 rtMask = 0;
 	rtMask |= isProcedualSky ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
@@ -327,9 +329,9 @@ void CSkyStage::Execute(CTexture* pColorTex, CTexture* pDepthTex)
 	rtMask |= applyFog ? g_HWSR_MaskBit[HWSR_FOG] : 0;
 
 	if (m_skyPass.IsDirty(skyType, rtMask, m_skyDomeTextureLastTimeStamp,
-		pSkyMoonTex->GetTextureID(), pSkyDomeTex->GetTextureID(), pDepthTex->GetTextureID()))
+	                      pSkyMoonTex->GetTextureID(), pSkyDomeTex->GetTextureID(), pDepthTex->GetTextureID()))
 	{
-		const SSamplerState      samplerDescLinearWrapU(FILTER_LINEAR, eSamplerAddressMode_Wrap, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, 0);
+		const SSamplerState samplerDescLinearWrapU(FILTER_LINEAR, eSamplerAddressMode_Wrap, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, 0);
 		const SamplerStateHandle samplerStateLinearWrapU = GetDeviceObjectFactory().GetOrCreateSamplerStateHandle(samplerDescLinearWrapU);
 
 		static CCryNameTSCRC techSkyPass("SkyPass");
@@ -381,7 +383,7 @@ void CSkyStage::Execute(CTexture* pColorTex, CTexture* pDepthTex)
 			m_starsPrimitive.SetRenderState(depthState | GS_BLSRC_ONE | GS_BLDST_ONE);
 			m_starsPrimitive.SetCullMode(eCULL_None);
 
-			CRenderMesh* pStarMesh = static_cast<CRenderMesh*>(m_pStarMesh.get());
+			CRenderMesh* pStarMesh = static_cast<CRenderMesh*>(m_pStarMesh);
 			buffer_handle_t hVertexStream = pStarMesh->_GetVBStream(VSF_GENERAL);
 
 			m_starsPrimitive.SetCustomVertexStream(hVertexStream, pStarMesh->_GetVertexFormat(), pStarMesh->GetStreamStride(VSF_GENERAL));
@@ -406,7 +408,7 @@ void CSkyStage::Execute(CTexture* pColorTex, CTexture* pDepthTex)
 				float flickerTime(gEnv->pTimer->GetCurrTime());
 				Vec4 paramStarSize(size / (float)viewport.Width, size / (float)viewport.Height, 0, flickerTime * 0.5f);
 				m_starsPrimitive.GetConstantManager().SetNamedConstant(nameStarSize, paramStarSize, eHWSC_Vertex);
-				Vec4 paramStarIntensity(starIntensity * min(1.0f, size), 0, 0, 0);
+				Vec4 paramStarIntensity(starIntensity* min(1.0f, size), 0, 0, 0);
 				m_starsPrimitive.GetConstantManager().SetNamedConstant(nameStarIntensity, paramStarIntensity, eHWSC_Pixel);
 
 				m_starsPrimitive.GetConstantManager().EndNamedConstantUpdate(&m_starsPass.GetViewport());

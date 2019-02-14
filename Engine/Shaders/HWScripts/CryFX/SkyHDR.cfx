@@ -17,7 +17,6 @@ float Script : STANDARDSGLOBAL
 >;
 
 DIFFUSEMAP
-OPACITYMAP
 
 float SkyboxAngle
 <
@@ -42,6 +41,7 @@ struct a2v
 struct v2f_hdr
 {
 	float4 Position   : SV_POSITION;  //in projection space
+    float2 baseTC     : TEXCOORD0;
 };
 
 struct v2fZ
@@ -59,6 +59,7 @@ v2f_hdr SkyHDRVS(a2v IN)
 	float4 vPos = IN.Position;
 	OUT.Position = _pos_Common(vPos);
 	OUT.Position.z = OUT.Position.w;
+    OUT.baseTC = IN.baseTC;
 
 	return OUT;
 }
@@ -66,7 +67,7 @@ v2f_hdr SkyHDRVS(a2v IN)
 pixout SkyHDRPS(v2f_hdr IN)
 {
 	pixout OUT = (pixout)0;
-	OUT.color = float4(GetDiffuseTex(diffuseTex, IN.baseTC.xy), GetOpacityTex(opacityTex, IN.baseTC.xy));
+    OUT.Color = float4(GetDiffuseTex(diffuseTex, IN.baseTC.xy).rgb, 1);
 	return OUT;
 }
 

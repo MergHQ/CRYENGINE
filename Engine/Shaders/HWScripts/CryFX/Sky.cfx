@@ -74,7 +74,7 @@ v2fZ SkyZVS(a2v IN)
 pixout SkyPS(v2f IN)
 {
 	pixout OUT = (pixout)0;
-	OUT.color = float4(GetDiffuseTex(diffuseTex, IN.baseTC.xy), 1);
+    OUT.Color = float4(GetDiffuseTex(diffuseTex, IN.baseTC.xy).rgb, 1);
 	return OUT;
 }
 
