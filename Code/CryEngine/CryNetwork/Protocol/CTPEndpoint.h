@@ -509,19 +509,11 @@ private:
 	{
 		SBigEndpointState(size_t acks, CMessageMapper& msgMapper, const ChannelSecurity::CCipher& cipher);
 		SBigEndpointState(const SBigEndpointState& cp)
-#if USE_ARITHSTREAM || ALLOW_ENCRYPTION
-			:
-#endif
+			: m_crypt(cp.m_crypt)
 #if USE_ARITHSTREAM
-		m_AckAlphabet(cp.m_AckAlphabet),
-		m_MsgAlphabet(cp.m_MsgAlphabet),
-		m_ArithModel(cp.m_ArithModel)
-#endif
-#if USE_ARITHSTREAM && ALLOW_ENCRYPTION
-		,
-#endif
-#if ALLOW_ENCRYPTION
-		m_crypt(cp.m_crypt)
+			, m_AckAlphabet(cp.m_AckAlphabet)
+			, m_MsgAlphabet(cp.m_MsgAlphabet)
+			, m_ArithModel(cp.m_ArithModel)
 #endif
 		{
 #if !USE_ARITHSTREAM
@@ -538,15 +530,12 @@ private:
 		}
 		SBigEndpointState& operator=(const SBigEndpointState& other)
 		{
+			m_crypt = other.m_crypt;
 #if USE_ARITHSTREAM
 			m_AckAlphabet = other.m_AckAlphabet;
 			m_MsgAlphabet = other.m_MsgAlphabet;
 			m_ArithModel = other.m_ArithModel;
-#endif
-#if ALLOW_ENCRYPTION
-			m_crypt = other.m_crypt;
-#endif
-#if !USE_ARITHSTREAM
+#else
 			m_currentTable = other.m_currentTable;
 			memcpy(&m_normalData, &other.m_normalData, sizeof(m_normalData));
 			memcpy(&m_updateObjectData, &other.m_updateObjectData, sizeof(m_updateObjectData));
@@ -578,14 +567,9 @@ private:
 #endif
 		}
 #if USE_ARITHSTREAM
-		TAckAlphabet m_AckAlphabet;
-		TMsgAlphabet m_MsgAlphabet;
-		CArithModel  m_ArithModel;
-
 		ILINE void   WriteMsgIDData(CCommOutputStream& stm, uint32 id);
 		ILINE uint32 ReadMsgIDData(CCommInputStream& stm);
-#endif
-#if !USE_ARITHSTREAM
+#else
 		// eMIDT_Normal data
 		// 0 - BeginUpdateObject
 		// 1 + idBitSize - for all other IDs
@@ -597,8 +581,6 @@ private:
 			uint32 idBitSize;
 			uint32 lowBitIDs[NORMAL_NUM_LOW_BIT_MESSAGE_IDS];
 		};
-
-		SNormalData m_normalData;
 
 		// eMIDT_UpdateObject data
 		// 0 - EndUpdateObject
@@ -627,8 +609,6 @@ private:
 			uint32 highBitIDs[UPDATEOBJECT_NUM_HIGH_BIT_MESSAGE_IDS];
 		};
 
-		SUpdateObjectData m_updateObjectData;
-
 		// MessageID Table change data
 	#define NUM_MESSAGEID_TABLE_CHANGE_DATAS 4
 		// 0 - EndUpdateObject switch to table eMIDT_Normal
@@ -641,15 +621,23 @@ private:
 			EMessageIDTable table;
 		};
 
-		SMessageIDTableChangeData m_messageIDTableChangeData[NUM_MESSAGEID_TABLE_CHANGE_DATAS];
-		EMessageIDTable           m_currentTable;
-
 		ILINE void   WriteMsgIDData(CNetOutputSerializeImpl& stm, uint32 id, int numBits);
 		ILINE uint32 ReadMsgIDData(CNetInputSerializeImpl& stm, int numBits);
 		ILINE void   SwitchTable(uint32 id);
 #endif
 	private:
 		ChannelSecurity::CCipher m_crypt;
+	public:
+#if USE_ARITHSTREAM
+		TAckAlphabet m_AckAlphabet;
+		TMsgAlphabet m_MsgAlphabet;
+		CArithModel  m_ArithModel;
+#else
+		SNormalData m_normalData;
+		SUpdateObjectData m_updateObjectData;
+		SMessageIDTableChangeData m_messageIDTableChangeData[NUM_MESSAGEID_TABLE_CHANGE_DATAS];
+		EMessageIDTable           m_currentTable;
+#endif
 	};
 
 	class CBigEndpointStateManager
@@ -678,7 +666,7 @@ private:
 			}
 		}
 
-		SBigEndpointState* Create(size_t a, CMessageMapper& m, const ChannelSecurity::CCipher cipher)
+		SBigEndpointState* Create(size_t a, CMessageMapper& m, const ChannelSecurity::CCipher& cipher)
 		{
 			m_nAlloced++;
 			return new SBigEndpointState(a, m, cipher);
