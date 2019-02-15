@@ -230,14 +230,15 @@ namespace ChannelSecurity
 		CRY_ASSERT(GetCurrentThreadId() == m_debugThreadId);
 #endif
 
-		bool res = true;
 #if ALLOW_HMAC
 #if HMAC_CNG_SHA256 || HMAC_TOMCRYPT_SHA256
 		CRY_ASSERT_MESSAGE(m_pHmac, "HMAC is not initialized");
-		res = m_pHmac->FinishAndRestartHash(result);
+		bool res = m_pHmac->FinishAndRestartHash(result);
 #else
 #error "Unknown configuration"
 #endif
+#else
+		bool res = true;
 #endif
 
 #if DEBUG_HMAC_THREAD_ACCESS

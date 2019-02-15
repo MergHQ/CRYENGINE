@@ -23,6 +23,8 @@ using namespace minigui;
 
 CRY_PFX2_DBG
 
+ParticleAllocator::TPoolsList ParticleAllocator::s_pools;
+
 //////////////////////////////////////////////////////////////////////////
 // Single direct entry point for particle clients.
 IParticleManager* CreateParticleManager(bool bEnable)
@@ -300,7 +302,7 @@ void CParticleManager::ClearRenderResources(bool bForceClear)
 
 	stl::free_container(m_Effects);
 
-	ParticleAllocator::Heap().FreeMemory();
+	ParticleAllocator::FreeMemory();
 
 	m_pPartLightShader = 0;
 }

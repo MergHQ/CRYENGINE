@@ -1785,7 +1785,7 @@ void CCTPEndpoint::ProcessPacket(CTimeValue nTime, CAutoFreeHandle& hdl, bool bQ
 	if (!m_corruptPacketDumpData.doingDump)
 #endif
 	{
-		for (SSeqNumber i = m_nLastBasisSeq; i < seq.nBasis; i++)
+		for (SSeqNumber i = m_nLastBasisSeq; i < seq.nBasis; ++i)
 			m_vInputState[i % WHOLE_SEQ].FreeState(&m_bigStateMgrInput);
 		m_nLastBasisSeq = seq.nBasis;
 
@@ -1822,16 +1822,16 @@ void CCTPEndpoint::ProcessPacket(CTimeValue nTime, CAutoFreeHandle& hdl, bool bQ
 				NetWarning("!!!!! On receiving packet %u, input seq was %u, causing a nack to be sent (basis state %u)", seq.nCurrent, m_nInputSeq, seq.nBasis);
 			NET_ASSERT(m_nInputSeq == m_nFrontAck + m_dqAcks.size());
 			m_dqAcks.push_back(SAckData(false, false, nTime));
-			m_nInputSeq++;
-			m_nDropped++;
+			++m_nInputSeq;
+			++m_nDropped;
 			// dont allow connection to idle here
 			m_dqAcks.back().bHadUrgentData = true;
-			m_nUrgentAcks++;
+			++m_nUrgentAcks;
 		}
 		NET_ASSERT(m_nInputSeq == seq.nCurrent);
 		NET_ASSERT(m_nInputSeq == m_nFrontAck + m_dqAcks.size());
 		m_dqAcks.push_back(SAckData(true, false, nTime));
-		m_nInputSeq++;
+		++m_nInputSeq;
 
 		m_PacketRateCalculator.GotPacket(nTime, pktSize);
 	}
@@ -2385,7 +2385,7 @@ uint32 CCTPEndpoint::SendPacket(CTimeValue nTime, const SSendPacketParams& param
 	while (m_nFrontAck <= basis.GetLastAckedSeq())
 	{
 		NET_ASSERT(!m_dqAcks.empty());
-		m_nFrontAck++;
+		++m_nFrontAck;
 		SAckData& ack = m_dqAcks.front();
 		m_nUrgentAcks -= ack.bHadUrgentData;
 		m_dqAcks.pop_front();
@@ -2437,7 +2437,7 @@ uint32 CCTPEndpoint::SendPacket(CTimeValue nTime, const SSendPacketParams& param
 	// update output state
 	//
 
-	m_nOutputSeq++;
+	++m_nOutputSeq;
 
 	m_outputStreamImpl.ResetLogging();
 

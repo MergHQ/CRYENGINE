@@ -410,11 +410,22 @@ public:
 		}
 	};
 
+	// Free all memory held by this heap
 	void Clear(FreeMemLock& lock)
 	{
-		// Remove the pages from the object.
 		Validate(lock);
-		lock._pPageList = _pPageList;
+		FreeEmptyPages(lock);
+
+		if (_pPageList)
+		{ // concat lists
+			auto pListEnd = _pPageList;
+			while (pListEnd->pNext)
+				pListEnd = pListEnd->pNext;
+
+			pListEnd->pNext = lock._pPageList;
+			lock._pPageList = _pPageList;
+		}
+
 		_pPageList = 0;
 		_TotalMem.Clear();
 	}
@@ -428,6 +439,7 @@ public:
 	{
 		// Remove free pages from the object.
 		Validate(lock);
+		CRY_ASSERT(lock._pPageList == nullptr);
 		lock._pPageList = _pFreeList;
 		for (PageNode* pPage = _pFreeList; pPage; pPage = pPage->pNext)
 			_TotalMem.nAlloc -= pPage->GetMemoryAlloc();
