@@ -98,14 +98,26 @@ void CShadowMapStage::Init()
 
 		ReAllocateResources({ nShadowTexFormat, nShadowPoolSize, nShadowCacheFormat, nShadowCacheLODs, nShadowCacheCascades, nResolutions });
 	}
+	
+	// Providing the right texture is not necessary at all since shadow map rendering is using texture from depth target pool.
+	// It is only necessary to provide a texture with right format.
+	_smart_ptr<CTexture> pDummyRsmDepth = CRendererResources::s_ptexRT_ShadowPool;
+	_smart_ptr<CTexture> pDummyRsmPoolDepth = CRendererResources::s_ptexRT_ShadowPool;
 
 #if defined(FEATURE_SVO_GI)
 	CSvoRenderer::GetRsmTextures(m_pRsmColorTex, m_pRsmNormalTex, m_pRsmPoolColorTex, m_pRsmPoolNormalTex);
-	m_pRsmPoolDepth = CRendererResources::s_ptexRT_ShadowPool;
+
 
 	if (!CTexture::IsTextureExist(m_pRsmColorTex))
 	{
-		m_pRsmPoolDepth = CTexture::GetOrCreateTextureObject("SVO_PRJ_DEPTH_DUMMY", 0, 0, 1,
+		pDummyRsmDepth = CTexture::GetOrCreateTextureObject("SVO_PRJ_DEPTH_DIRECTIONAL_LIGHT_DUMMY", 0, 0, 1,
+			CRendererResources::s_ptexRT_ShadowPool->GetTextureType(),
+			CRendererResources::s_ptexRT_ShadowPool->GetFlags(),
+			CRendererResources::s_ptexRT_ShadowPool->GetDstFormat());
+	}
+	if (!CTexture::IsTextureExist(m_pRsmPoolColorTex))
+	{
+		pDummyRsmPoolDepth = CTexture::GetOrCreateTextureObject("SVO_PRJ_DEPTH_LOCAL_LIGHT_DUMMY", 0, 0, 1,
 			CRendererResources::s_ptexRT_ShadowPool->GetTextureType(),
 			CRendererResources::s_ptexRT_ShadowPool->GetFlags(),
 			CRendererResources::s_ptexRT_ShadowPool->GetDstFormat());
@@ -117,8 +129,8 @@ void CShadowMapStage::Init()
 	m_ShadowMapPasses[ePass_DirectionalLight      ].Init(this, 8,  CRendererResources::s_ptexRT_ShadowPool, nullptr,            nullptr);
 	m_ShadowMapPasses[ePass_DirectionalLightCached].Init(this, 8,  CRendererResources::s_ptexRT_ShadowPool, nullptr,            nullptr);
 	m_ShadowMapPasses[ePass_LocalLight            ].Init(this, 16, CRendererResources::s_ptexRT_ShadowPool, nullptr,            nullptr);
-	m_ShadowMapPasses[ePass_DirectionalLightRSM   ].Init(this, 1,  CRendererResources::s_ptexRT_ShadowPool, m_pRsmColorTex,     m_pRsmNormalTex);
-	m_ShadowMapPasses[ePass_LocalLightRSM         ].Init(this, 1,  m_pRsmPoolDepth,                         m_pRsmPoolColorTex, m_pRsmPoolNormalTex);
+	m_ShadowMapPasses[ePass_DirectionalLightRSM   ].Init(this, 1,  pDummyRsmDepth,                          m_pRsmColorTex,     m_pRsmNormalTex);
+	m_ShadowMapPasses[ePass_LocalLightRSM         ].Init(this, 1,  pDummyRsmPoolDepth,                      m_pRsmPoolColorTex, m_pRsmPoolNormalTex);
 	// *INDENT-ON*
 }
 
