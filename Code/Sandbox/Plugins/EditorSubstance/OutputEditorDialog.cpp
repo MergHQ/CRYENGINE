@@ -72,7 +72,6 @@ void CSubstanceOutputEditorDialog::OnPreviewUpdated(SubstanceAir::RenderResult* 
 		auto node = m_editorWidget->GetGraphViewModel()->GetNodeItemById(data->outputName + OutputEditor::CSubstanceOutputNodeBase::GetIdSuffix(data->isVirtual ? OutputEditor::eInput : OutputEditor::eOutput));
 		if (node)
 		{
-			const SubstanceTexture& texture = result->getTexture();
 			std::shared_ptr<QImage> qImage = std::make_shared<QImage>((const uchar*)result->getTexture().buffer, result->getTexture().level0Width, result->getTexture().level0Height, QImage::Format_RGBA8888);
 			static_cast<OutputEditor::CSubstanceOutputNodeBase*>(node)->SetPreviewImage(qImage);
 
