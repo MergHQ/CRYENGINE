@@ -193,8 +193,6 @@ extern "C" IGameStartup * CreateGameStartup();
 #include "EntityContainers/EntityContainerMgr.h"
 #include "FlowSystem/Nodes/FlowEntityCustomNodes.h"
 
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
-
 CCryAction* CCryAction::m_pThis = 0;
 
 static const int s_saveGameFrameDelay = 3; // Enough to render enough frames to display the save warning icon before the save generation.
@@ -2540,7 +2538,6 @@ void CCryAction::PrePhysicsUpdate()
 void CCryAction::PreSystemUpdate()
 {
 	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PreRenderUpdate");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::PreRenderUpdate");
 
 	if (!m_nextFrameCommand->empty())
 	{
@@ -2576,7 +2573,6 @@ uint32 CCryAction::GetPreUpdateTicks()
 bool CCryAction::PostSystemUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags> updateFlags)
 {
 	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PostSystemUpdate");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::PostSystemUpdate");
 
 	float frameTime = gEnv->pTimer->GetFrameTime();
 
@@ -2714,7 +2710,6 @@ bool CCryAction::PostSystemUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags>
 void CCryAction::PreFinalizeCamera(CEnumFlags<ESystemUpdateFlags> updateFlags)
 {
 	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PreFinalizeCamera");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::PreFinalizeCamera");
 
 	if (m_pShowLanBrowserCVAR->GetIVal() == 0)
 	{
@@ -2754,7 +2749,6 @@ void CCryAction::PreFinalizeCamera(CEnumFlags<ESystemUpdateFlags> updateFlags)
 void CCryAction::PreRender()
 {
 	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PreRender");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::PreRender");
 
 	CALL_FRAMEWORK_LISTENERS(OnPreRender());
 }
@@ -2762,7 +2756,6 @@ void CCryAction::PreRender()
 void CCryAction::PostRender(CEnumFlags<ESystemUpdateFlags> updateFlags)
 {
 	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PostRender");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::PostRender");
 
 	if (updateFlags & ESYSUPDATE_EDITOR_AI_PHYSICS)
 	{
@@ -2806,7 +2799,6 @@ void CCryAction::PostRender(CEnumFlags<ESystemUpdateFlags> updateFlags)
 void CCryAction::PostRenderSubmit()
 {
 	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PostRenderSubmit");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::PostRenderSubmit");
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CCryAction::PostRenderSubmit");
 
 	if (m_pGame)

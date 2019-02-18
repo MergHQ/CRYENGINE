@@ -65,7 +65,6 @@
 #include "XML/XmlUtils.h"
 #include "Serialization/ArchiveHost.h"
 #include <CrySystem/Profilers/IDiskProfiler.h>
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
 #include "SystemEventDispatcher.h"
 #include "HardwareMouse.h"
 #include "ServerThrottle.h"
@@ -1185,7 +1184,6 @@ public:
 	void EnsureStepDone()
 	{
 		CRY_PROFILE_REGION_WAITING(PROFILE_SYSTEM, "SysUpdate:PhysicsEnsureDone");
-		CRYPROFILE_SCOPE_PROFILE_MARKER("SysUpdate:PhysicsEnsureDone");
 
 		if (m_bIsActive)
 		{
@@ -1421,7 +1419,6 @@ int prev_sys_float_exceptions = -1;
 void CSystem::PrePhysicsUpdate()
 {
 	CRY_PROFILE_REGION(PROFILE_SYSTEM, "System::PrePhysicsUpdate");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("System::PrePhysicsUpdate");
 
 	if (m_env.pGameFramework)
 	{
@@ -1512,7 +1509,6 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 	}
 
 	CRY_PROFILE_REGION(PROFILE_SYSTEM, __FUNC__);
-	CRYPROFILE_SCOPE_PROFILE_MARKER(__FUNC__);
 
 	if (m_env.pGameFramework != nullptr)
 	{
@@ -1671,7 +1667,6 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 {
 	CRY_PROFILE_REGION(PROFILE_SYSTEM, "System: Update");
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM)
-	CRYPROFILE_SCOPE_PROFILE_MARKER("CSystem::Update()");
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CSystem::Update");
 
 #ifndef EXCLUDE_UPDATE_ON_CONSOLE
@@ -2010,7 +2005,6 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 		if (!pPhysicsThreadTask)
 		{
 			CRY_PROFILE_REGION(PROFILE_SYSTEM, "SystemUpdate: AllAIAndPhysics");
-			CRYPROFILE_SCOPE_PROFILE_MARKER("SystemUpdate: AllAIAndPhysics");
 
 			//////////////////////////////////////////////////////////////////////
 			// update entity system (a little bit) before physics
@@ -2087,7 +2081,6 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 				if (bNotLoading)
 				{
 					CRY_PROFILE_REGION(PROFILE_SYSTEM, "SysUpdate:PumpLoggedEvents");
-					CRYPROFILE_SCOPE_PROFILE_MARKER("PumpLoggedEvents");
 					m_env.pPhysicalWorld->PumpLoggedEvents();
 				}
 
@@ -2117,7 +2110,6 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 			if (bNotLoading)
 			{
 				CRY_PROFILE_REGION(PROFILE_SYSTEM, "SysUpdate:PumpLoggedEvents");
-				CRYPROFILE_SCOPE_PROFILE_MARKER("PumpLoggedEvents");
 				m_env.pPhysicalWorld->PumpLoggedEvents();
 			}
 
@@ -2365,7 +2357,6 @@ void CSystem::UpdateAudioSystems()
 	if (m_env.pAudioSystem != nullptr && !isLoadInProgress)   //do not update pAudioSystem during async level load
 	{
 		CRY_PROFILE_SECTION(PROFILE_SYSTEM, "UpdateAudioSystems");
-		CRYPROFILE_SCOPE_PROFILE_MARKER("UpdateAudioSystems");
 
 		m_env.pAudioSystem->ExternalUpdate();
 	}

@@ -842,7 +842,6 @@ void CShaderMan::RT_ParseShader(CShader* pSH, uint64 nMaskGen, uint32 flags, CSh
 		if (!gRenDev->IsShaderCacheGenMode())
 		{
 			CRY_PROFILE_REGION(PROFILE_RENDERER, "Renderer: ImportShader");
-			CRYPROFILE_SCOPE_PROFILE_MARKER("ImportShader");
 
 			bSuccess = ImportShader(pSH, m_Bin);
 
@@ -867,7 +866,6 @@ void CShaderMan::RT_ParseShader(CShader* pSH, uint64 nMaskGen, uint32 flags, CSh
 	if (!bSuccess)
 	{
 		CRY_PROFILE_REGION(PROFILE_RENDERER, "Renderer: RT_ParseShader");
-		CRYPROFILE_SCOPE_PROFILE_MARKER("RT_ParseShader");
 
 
 		bool nukeCaches = false;

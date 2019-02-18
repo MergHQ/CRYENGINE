@@ -2,7 +2,6 @@
 
 #include <StdAfx.h>
 #include <CryThreading/IJobManager.h>
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
 
 #include "StreamAsyncFileRequest.h"
 
@@ -198,7 +197,6 @@ void CAsyncIOFileRequest::DecompressBlockEntry(SStreamJobEngineState engineState
 		char eventName[128] = { 0 };
 		cry_sprintf(eventName, "DcmpBlck %u : %s", m_pZlibStream ? m_pZlibStream->avail_in : 0, pFileNameShort);
 		CRY_PROFILE_REGION(PROFILE_SYSTEM, "DcmpBlck");
-		CRYPROFILE_SCOPE_PROFILE_MARKER(eventName);
 		CRYPROFILE_SCOPE_PLATFORM_MARKER(eventName);
 #endif
 
@@ -320,8 +318,6 @@ void CAsyncIOFileRequest::DecryptBlockEntry(SStreamJobEngineState engineState, i
 		char eventName[128] = { 0 };
 		cry_sprintf(eventName, "DcptBlck %s", pFileNameShort);
 		CRY_PROFILE_REGION(PROFILE_SYSTEM, "DcptBlck");
-		CRYPROFILE_SCOPE_PROFILE_MARKER(eventName);
-		CRYPROFILE_SCOPE_PLATFORM_MARKER(eventName);
 	#endif
 
 		//printf("Inflate: %s Avail in: %d, Avail Out: %d, Next In: 0x%p, Next Out: 0x%p\n", m_strFileName.c_str(), m_pZlibStream->avail_in, m_pZlibStream->avail_out, m_pZlibStream->next_in, m_pZlibStream->next_out);

@@ -2138,7 +2138,6 @@ void CScriptSystem::ShowDebugger(const char* pszSourceFile, int iLine, const cha
 void CScriptSystem::Update()
 {
 	CRY_PROFILE_REGION(PROFILE_SCRIPT, "ScriptSystem: Update");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("ScriptSystem: Update");
 	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
 	
 	ITimer* pTimer = gEnv->pTimer;

@@ -75,8 +75,6 @@
 // Hijack the old CCCPOINT definition (and add a semi-colon to allow compilation)
 #define CCCPOINT(x) CODECHECKPOINT(x);
 
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>  // to be removed
-
 /// This frees the memory allocation for a vector (or similar), rather than just erasing the contents
 template<typename T>
 void ClearVectorMemory(T& container)

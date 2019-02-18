@@ -22,6 +22,7 @@
 #include <CryAISystem/INavigationSystem.h>
 #include <CryAISystem/IPathfinder.h>
 #include <CryAISystem/NavigationSystem/INavMeshQueryFilter.h>
+#include <CryThreading/IJobManager.h>
 
 //////////////////////////////////////////////////////////////////////////
 

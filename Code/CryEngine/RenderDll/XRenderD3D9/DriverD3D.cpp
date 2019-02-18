@@ -3489,6 +3489,7 @@ void CD3D9Renderer::RT_EndFrame()
 		m_mtxStopAtRenderFrameEnd.Unlock();
 	}
 
+	gEnv->GetJobManager()->SetRenderDoneTime(gEnv->pTimer->GetAsyncTime());
 #if defined(ENABLE_SIMPLE_GPU_TIMERS)
 	m_pPipelineProfiler->EndSection("END");
 	m_pPipelineProfiler->EndFrame();

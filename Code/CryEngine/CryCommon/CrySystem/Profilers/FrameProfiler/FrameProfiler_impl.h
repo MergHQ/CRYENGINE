@@ -67,33 +67,4 @@ ColorF profile_colors[] =
 /* inline */ void CryProfile::detail::ProfilerFrameEnd(int nFrameId)                             {}
 #endif
 
-//////////////////////////////////////////////////////////////////////////
-//! Direct push/pop for profiling markers.
-void CryProfile::PushProfilingMarker(const EProfileDescription desc, const char* pName, ...)
-{
-	va_list args;
-	va_start(args, pName);
-
-	// Format marker name
-	char markerName[256];
-	if (strlen(pName) == 0)
-		__debugbreak();
-	const int cNumCharsNeeded = vsnprintf(markerName, CRY_ARRAY_COUNT(markerName), pName, args);
-	if (cNumCharsNeeded > CRY_ARRAY_COUNT(markerName) - 1 || cNumCharsNeeded < 0)
-	{
-		markerName[CRY_ARRAY_COUNT(markerName) - 1] = '\0'; // The WinApi only null terminates if strLen < bufSize
-		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "ProfileEvent: Marker name \"%s\" has been truncated. Max characters allowed: %i. ", pName, CRY_ARRAY_COUNT(markerName) - 1);
-	}
-
-	// Set marker
-	gEnv->pJobManager->PushProfilingMarker(markerName);
-	va_end(args);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CryProfile::PopProfilingMarker(const EProfileDescription desc, const char* pName)
-{
-	gEnv->pJobManager->PopProfilingMarker();
-}
-
 #endif // CRY_PROFILE_MARKER_IMPL_H_

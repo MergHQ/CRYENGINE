@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "TriggerUtils.h"
+#include "TriggerInstance.h"
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	#include "Debug.h"
@@ -45,14 +45,22 @@ public:
 
 	void           Update(float const deltaTime);
 
-	void           AddTriggerState(TriggerInstanceId const id, STriggerInstanceState const& triggerInstanceState);
-	void           ReportStartedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result);
-	void           ReportFinishedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result);
+	void           ConstructTriggerInstance(
+		ControlId const triggerId,
+		uint16 const numPlayingConnectionInstances,
+		uint16 const numPendingConnectionInstances,
+		ERequestFlags const flags,
+		void* const pOwner,
+		void* const pUserData,
+		void* const pUserDataOwner);
+
+	void ReportStartedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result);
+	void ReportFinishedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result);
 
 private:
 
-	TriggerInstanceStates m_triggerInstanceStates;
-	Impl::IObject*        m_pIObject;
+	TriggerInstances m_triggerInstances;
+	Impl::IObject*   m_pIObject;
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 public:
@@ -66,7 +74,7 @@ public:
 	char const*            GetName() const { return m_name.c_str(); }
 	ERequestStatus         HandleSetName(char const* const szName);
 
-	bool                   IsActive() const { return !m_triggerInstanceStates.empty(); }
+	bool                   IsActive() const { return !m_triggerInstances.empty(); }
 
 	void                   StoreParameterValue(ControlId const id, float const value);
 	void                   StoreSwitchValue(ControlId const switchId, SwitchStateId const switchStateId);

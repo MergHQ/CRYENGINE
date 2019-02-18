@@ -58,8 +58,6 @@
 #include <CryLobby/CommonICryMatchMaking.h>
 #include <CryThreading/IThreadManager.h>
 
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
-
 static const int MIN_LOBBY_TICK_FREQUENCY = 4;
 
 static const int OCCASIONAL_TICKS = 50;
@@ -1046,7 +1044,6 @@ void CNetwork::SyncWithGame(ENetworkGameSync type)
 		char profileLabel[32];
 		cry_sprintf(profileLabel, "SyncWithGame() lock %d", type);
 		CRY_PROFILE_REGION(PROFILE_NETWORK, "SyncWithGame() lock unknown");
-		CRYPROFILE_SCOPE_PROFILE_MARKER(profileLabel);
 		CRYPROFILE_SCOPE_PLATFORM_MARKER(profileLabel);
 #endif
 		CTimeValue startTime = gEnv->pTimer->GetAsyncTime();

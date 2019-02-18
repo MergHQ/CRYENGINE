@@ -11,6 +11,7 @@
 #include "Switch.h"
 #include "SwitchState.h"
 #include "Trigger.h"
+#include "TriggerInstance.h"
 #include "Common/IImpl.h"
 #include "Common/IObject.h"
 #include <CryEntitySystem/IEntitySystem.h>
@@ -36,69 +37,80 @@ void CGlobalObject::Release()
 {
 	// Do not clear the object's name though!
 
-	for (auto& triggerStatesPair : m_triggerInstanceStates)
+	for (auto& triggerInstancePair : m_triggerInstances)
 	{
-		triggerStatesPair.second.numPlayingInstances = 0;
-		triggerStatesPair.second.numPendingInstances = 0;
+		triggerInstancePair.second->Release();
 	}
 
 	m_pIObject = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CGlobalObject::AddTriggerState(TriggerInstanceId const id, STriggerInstanceState const& triggerInstanceState)
+void CGlobalObject::ConstructTriggerInstance(
+	ControlId const triggerId,
+	uint16 const numPlayingConnectionInstances,
+	uint16 const numPendingConnectionInstances,
+	ERequestFlags const flags,
+	void* const pOwner,
+	void* const pUserData,
+	void* const pUserDataOwner)
 {
-	m_triggerInstanceStates.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(triggerInstanceState));
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	m_triggerInstances.emplace(
+		std::piecewise_construct,
+		std::forward_as_tuple(g_triggerInstanceIdCounter),
+		std::forward_as_tuple(new CTriggerInstance(triggerId, numPlayingConnectionInstances, numPendingConnectionInstances, flags, pOwner, pUserData, pUserDataOwner, 0.0f)));
+#else
+	m_triggerInstances.emplace(
+		std::piecewise_construct,
+		std::forward_as_tuple(g_triggerInstanceIdCounter),
+		std::forward_as_tuple(new CTriggerInstance(triggerId, numPlayingConnectionInstances, numPendingConnectionInstances, flags, pOwner, pUserData, pUserDataOwner)));
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+
+	g_triggerInstanceIdToGlobalObject[g_triggerInstanceIdCounter] = this;
+	IncrementTriggerInstanceIdCounter();
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CGlobalObject::ReportStartedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result)
 {
-	TriggerInstanceStates::iterator const iter(m_triggerInstanceStates.find(triggerInstanceId));
+	TriggerInstances::iterator const iter(m_triggerInstances.find(triggerInstanceId));
 
-	if (iter != m_triggerInstanceStates.end())
+	if (iter != m_triggerInstances.end())
 	{
-		STriggerInstanceState& triggerInstanceState = iter->second;
-		CRY_ASSERT_MESSAGE(triggerInstanceState.numPendingInstances > 0, "Number of panding trigger instances must be at least 1 during %s", __FUNCTION__);
-
-		--(triggerInstanceState.numPendingInstances);
-		++(triggerInstanceState.numPlayingInstances);
+		iter->second->SetPendingToPlaying();
 	}
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CGlobalObject::ReportFinishedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result)
 {
-	TriggerInstanceStates::iterator const iter(m_triggerInstanceStates.find(triggerInstanceId));
+	TriggerInstances::iterator const iter(m_triggerInstances.find(triggerInstanceId));
 
-	if (iter != m_triggerInstanceStates.end())
+	if (iter != m_triggerInstances.end())
 	{
-		STriggerInstanceState& triggerInstanceState = iter->second;
+		CTriggerInstance* const pTriggerInstance = iter->second;
 
 		if (result != ETriggerResult::Pending)
 		{
-			CRY_ASSERT_MESSAGE(triggerInstanceState.numPlayingInstances > 0, "Number of playing trigger instances must be at least 1 during %s", __FUNCTION__);
-
-			if ((--(triggerInstanceState.numPlayingInstances) == 0) && ((triggerInstanceState.numPendingInstances) == 0))
+			if (pTriggerInstance->IsPlayingInstanceFinished())
 			{
 				g_triggerInstanceIdToGlobalObject.erase(triggerInstanceId);
+				pTriggerInstance->SendFinishedRequest(INVALID_ENTITYID);
 
-				SendFinishedTriggerInstanceRequest(triggerInstanceState, INVALID_ENTITYID);
-
-				m_triggerInstanceStates.erase(iter);
+				m_triggerInstances.erase(iter);
+				delete pTriggerInstance;
 			}
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(triggerInstanceState.numPendingInstances > 0, "Number of pending trigger instances must be at least 1 during %s", __FUNCTION__);
-
-			if (((triggerInstanceState.numPlayingInstances) == 0) && (--(triggerInstanceState.numPendingInstances) == 0))
+			if (pTriggerInstance->IsPendingInstanceFinished())
 			{
 				g_triggerInstanceIdToGlobalObject.erase(triggerInstanceId);
+				pTriggerInstance->SendFinishedRequest(INVALID_ENTITYID);
 
-				SendFinishedTriggerInstanceRequest(triggerInstanceState, INVALID_ENTITYID);
-
-				m_triggerInstanceStates.erase(iter);
+				m_triggerInstances.erase(iter);
+				delete pTriggerInstance;
 			}
 		}
 	}
@@ -125,7 +137,7 @@ void CGlobalObject::SetImplDataPtr(Impl::IObject* const pIObject)
 ///////////////////////////////////////////////////////////////////////////
 void CGlobalObject::Update(float const deltaTime)
 {
-	if (!m_triggerInstanceStates.empty())
+	if (!m_triggerInstances.empty())
 	{
 		m_pIObject->Update(deltaTime);
 	}
@@ -173,18 +185,18 @@ void CGlobalObject::ForceImplementationRefresh(bool const setTransformation)
 
 	uint16 triggerCounter = 0;
 	// Last re-execute its active triggers.
-	for (auto& triggerStatePair : m_triggerInstanceStates)
+	for (auto const& triggerInstancePair : m_triggerInstances)
 	{
-		CTrigger const* const pTrigger = stl::find_in_map(g_triggers, triggerStatePair.second.triggerId, nullptr);
+		CTrigger const* const pTrigger = stl::find_in_map(g_triggers, triggerInstancePair.second->GetTriggerId(), nullptr);
 
 		if (pTrigger != nullptr)
 		{
-			pTrigger->Execute(*this, triggerStatePair.first, triggerStatePair.second, triggerCounter);
+			pTrigger->Execute(*this, triggerInstancePair.first, triggerInstancePair.second, triggerCounter);
 			++triggerCounter;
 		}
-		else if (!ExecuteDefaultTrigger(triggerStatePair.second.triggerId))
+		else if (!ExecuteDefaultTrigger(triggerInstancePair.second->GetTriggerId()))
 		{
-			Cry::Audio::Log(ELogType::Warning, "Trigger \"%u\" does not exist!", triggerStatePair.second.triggerId);
+			Cry::Audio::Log(ELogType::Warning, "Trigger \"%u\" does not exist!", triggerInstancePair.second->GetTriggerId());
 		}
 	}
 }
@@ -278,13 +290,13 @@ void CGlobalObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, flo
 	bool doesTriggerMatchFilter = false;
 	std::vector<CryFixedStringT<MaxMiscStringLength>> triggerInfo;
 
-	if (!m_triggerInstanceStates.empty() || filterAllObjectInfo)
+	if (!m_triggerInstances.empty() || filterAllObjectInfo)
 	{
 		Debug::TriggerCounts triggerCounts;
 
-		for (auto const& triggerStatesPair : m_triggerInstanceStates)
+		for (auto const& triggerInstancePair : m_triggerInstances)
 		{
-			++(triggerCounts[triggerStatesPair.second.triggerId]);
+			++(triggerCounts[triggerInstancePair.second->GetTriggerId()]);
 		}
 
 		for (auto const& triggerCountsPair : triggerCounts)
@@ -391,7 +403,7 @@ void CGlobalObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, flo
 		}
 	}
 
-	if ((g_cvars.m_hideInactiveObjects == 0) || ((g_cvars.m_hideInactiveObjects != 0) && !m_triggerInstanceStates.empty()))
+	if ((g_cvars.m_hideInactiveObjects == 0) || ((g_cvars.m_hideInactiveObjects != 0) && !m_triggerInstances.empty()))
 	{
 		if (isTextFilterDisabled || doesTriggerMatchFilter)
 		{

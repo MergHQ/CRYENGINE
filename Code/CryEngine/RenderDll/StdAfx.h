@@ -1502,4 +1502,3 @@ inline D3DViewPort RenderViewportToD3D11Viewport(const SRenderViewport &vp)
 
 #include "XRenderD3D9/DeviceManager/DeviceCommandList.inl"
 #include "XRenderD3D9/DeviceManager/D3D11/DeviceSubmissionQueue_D3D11.h"
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>  // to be removed

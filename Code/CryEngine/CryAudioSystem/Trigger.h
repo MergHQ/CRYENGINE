@@ -8,7 +8,7 @@
 
 namespace CryAudio
 {
-struct STriggerInstanceState;
+class CTriggerInstance;
 
 class CTrigger final : public Control, public CPoolObject<CTrigger, stl::PSyncNone>
 {
@@ -63,27 +63,19 @@ public:
 	void Execute(
 		CObject& object,
 		TriggerInstanceId const triggerInstanceId,
-		STriggerInstanceState& triggerInstanceState,
+		CTriggerInstance* const pTriggerInstance,
 		uint16 const triggerCounter) const;
 
 	void Execute(
 		CGlobalObject& globalObject,
 		TriggerInstanceId const triggerInstanceId,
-		STriggerInstanceState& triggerInstanceState,
+		CTriggerInstance* const pTriggerInstance,
 		uint16 const triggerCounter) const;
 
 	float GetRadius() const { return m_radius; }
 #endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 private:
-
-	bool ExecuteConnections(CObject& object,
-	                        TriggerInstanceId const triggerInstanceId,
-	                        STriggerInstanceState& triggerInstanceState) const;
-
-	bool ExecuteConnections(CGlobalObject& globalObject,
-	                        TriggerInstanceId const triggerInstanceId,
-	                        STriggerInstanceState& triggerInstanceState) const;
 
 	TriggerConnections const m_connections;
 

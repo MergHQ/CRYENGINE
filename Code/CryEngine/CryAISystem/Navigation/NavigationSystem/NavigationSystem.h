@@ -24,6 +24,7 @@
 #include <CryCore/Containers/CryListenerSet.h>
 
 #include <CryThreading/IThreadManager.h>
+#include <CryThreading/IJobManager.h>
 
 #define NAV_MESH_REGENERATION_ENABLED 1
 

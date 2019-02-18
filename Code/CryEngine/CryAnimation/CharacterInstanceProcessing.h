@@ -5,6 +5,7 @@
 #include <CryAnimation/ICryAnimation.h>
 #include "SkeletonAnim.h"
 #include "CharacterInstance.h"
+#include <CryThreading/IJobManager.h>
 
 class CAttachmentBONE;
 class CAttachmentManager;

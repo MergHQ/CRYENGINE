@@ -140,31 +140,6 @@ public:
 		m_nJobSystemEnabled = nEnable;
 	}
 
-	virtual void PushProfilingMarker(const char* pName) override;
-	virtual void PopProfilingMarker() override;
-
-	// move to right place
-	enum { nMarkerEntries = 1024 };
-	struct SMarker
-	{
-		typedef CryFixedStringT<128> TMarkerString;
-		enum MarkerType { PUSH_MARKER, POP_MARKER };
-
-		SMarker() {}
-		SMarker(MarkerType _type, CTimeValue _time, bool _bIsMainThread) : type(_type), time(_time), bIsMainThread(_bIsMainThread) {}
-		SMarker(MarkerType _type, const char* pName, CTimeValue _time, bool _bIsMainThread) : type(_type), marker(pName), time(_time), bIsMainThread(_bIsMainThread) {}
-
-		TMarkerString marker;
-		MarkerType    type;
-		CTimeValue    time;
-		bool          bIsMainThread;
-	};
-	uint32 m_nMainThreadMarkerIndex[SJobProfilingDataContainer::nCapturedFrames];
-	uint32 m_nRenderThreadMarkerIndex[SJobProfilingDataContainer::nCapturedFrames];
-	SMarker m_arrMainThreadMarker[SJobProfilingDataContainer::nCapturedFrames][nMarkerEntries];
-	SMarker m_arrRenderThreadMarker[SJobProfilingDataContainer::nCapturedFrames][nMarkerEntries];
-	// move to right place
-
 	//copy the job parameter into the jobinfo  structure
 	static void CopyJobParameter(const uint32 cJobParamSize, void* pDest, const void* pSrc);
 
@@ -175,9 +150,10 @@ public:
 
 	void Update(int nJobSystemProfiler) override;
 
-	virtual void SetFrameStartTime(const CTimeValue &rFrameStartTime) override;
+	void SetFrameStartTime(const CTimeValue &rFrameStartTime) override;
+	void SetMainDoneTime(const CTimeValue &) override;
+	void SetRenderDoneTime(const CTimeValue &) override;
 
-	ColorB GetRegionColor(SMarker::TMarkerString marker);
 	JobManager::Invoker GetJobInvoker(uint32 nIdx)
 	{
 		assert(nIdx < m_nJobInvokerIdx);
@@ -248,9 +224,9 @@ private:
 #if defined(JOBMANAGER_SUPPORT_PROFILING)
 	SJobProfilingDataContainer m_profilingData;
 	std::map<JobManager::SJobStringHandle, ColorB> m_JobColors;
-	std::map<SMarker::TMarkerString, ColorB> m_RegionColors;
 	CTimeValue m_FrameStartTime[SJobProfilingDataContainer::nCapturedFrames];
-
+	CTimeValue m_mainDoneTime[SJobProfilingDataContainer::nCapturedFrames];
+	CTimeValue m_renderDoneTime[SJobProfilingDataContainer::nCapturedFrames];
 #endif
 
 	// singleton stuff
