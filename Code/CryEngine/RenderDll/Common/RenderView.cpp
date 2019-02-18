@@ -2427,7 +2427,7 @@ void CRenderView::Job_SortRenderItemsInList(ERenderListID renderList)
 		{
 			{
 				PROFILE_FRAME(State_SortingForwardOpaque);
-				SRendItem::mfSortForDepthPass(&renderItems[nStart], n);
+				SRendItem::mfSortForZPass(&renderItems[nStart], n, false);
 			}
 		}
 		break;

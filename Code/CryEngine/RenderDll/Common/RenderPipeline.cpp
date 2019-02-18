@@ -63,8 +63,8 @@ struct SCompareRendItemZPrePass
 	bool operator()(const SRendItem& a, const SRendItem& b) const
 	{
 		// Cluster all alpha-testing shader-types together (needs texture, everything else not)
-		uint32 nSortObjFlagsA = (a.ObjSort & (FOB_SORT_MASK & FOB_ALPHATEST));
-		uint32 nSortObjFlagsB = (b.ObjSort & (FOB_SORT_MASK & FOB_ALPHATEST));
+		uint32 nSortObjFlagsA = (a.ObjSort & (FOB_SORT_MASK & FOB_DISCARD_MASK));
+		uint32 nSortObjFlagsB = (b.ObjSort & (FOB_SORT_MASK & FOB_DISCARD_MASK));
 		if (nSortObjFlagsA != nSortObjFlagsB)
 			return nSortObjFlagsA < nSortObjFlagsB;
 
