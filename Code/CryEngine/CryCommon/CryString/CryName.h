@@ -220,20 +220,12 @@ public:
 	}
 	static int GetMemoryUsage()
 	{
-#ifdef USE_STATIC_NAME_TABLE
-		CNameTable* pTable = GetNameTable();
-#else
 		INameTable* pTable = GetNameTable();
-#endif
 		return pTable->GetMemoryUsage();
 	}
 	static int GetNumberOfEntries()
 	{
-#ifdef USE_STATIC_NAME_TABLE
-		CNameTable* pTable = GetNameTable();
-#else
 		INameTable* pTable = GetNameTable();
-#endif
 		return pTable->GetNumberOfEntries();
 	}
 
@@ -249,26 +241,11 @@ public:
 private:
 	typedef INameTable::SNameEntry SNameEntry;
 
-#ifdef USE_STATIC_NAME_TABLE
-	static CNameTable* GetNameTable()
-	{
-		//! \note We cannot use a 'static CNameTable sTable' here, because that
-		//! implies a static destruction order depenency - the name table is
-		//! accessed from static destructor calls.
-		static CNameTable* table = NULL;
-
-		if (table == NULL)
-			table = new CNameTable();
-		return table;
-	}
-#else
-	//static INameTable* GetNameTable() { return GetISystem()->GetINameTable(); }
 	static INameTable* GetNameTable()
 	{
 		assert(gEnv && gEnv->pNameTable);
 		return gEnv->pNameTable;
 	}
-#endif
 
 	SNameEntry* _entry(const char* pBuffer) const { assert(pBuffer); return ((SNameEntry*)pBuffer) - 1; }
 	void        _release(const char* pBuffer)
