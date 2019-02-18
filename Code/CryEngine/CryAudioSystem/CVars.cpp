@@ -216,6 +216,8 @@ void CmdRefresh(IConsoleCmdArgs* pCmdArgs)
 //////////////////////////////////////////////////////////////////////////
 void CCVars::RegisterVariables()
 {
+	m_triggerInstancePoolSize = 512;
+
 #if CRY_PLATFORM_WINDOWS
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on PC
 	m_objectPoolSize = 256;
@@ -285,6 +287,11 @@ void CCVars::RegisterVariables()
 	               "Sets the number of preallocated audio objects and corresponding audio proxies.\n"
 	               "Usage: s_AudioObjectPoolSize [0/...]\n"
 	               "Default PC: 256, XboxOne: 256, PS4: 256, Mac: 256, Linux: 256, iOS: 256, Android: 256\n");
+
+	REGISTER_CVAR2("s_TriggerInstancePoolSize", &m_triggerInstancePoolSize, m_triggerInstancePoolSize, VF_REQUIRE_APP_RESTART,
+	               "Sets the number of preallocated trigger instances.\n"
+	               "Usage: s_TriggerInstancePoolSize [0/...]\n"
+	               "Default: 512\n");
 
 	REGISTER_CVAR2("s_IgnoreWindowFocus", &m_ignoreWindowFocus, 0, VF_NULL,
 	               "If set to 1, the audio system will not execute the \"lose_focus\" and \"get_focus\" triggers when the application window focus changes.\n"
@@ -502,6 +509,7 @@ void CCVars::UnregisterVariables()
 	{
 		pConsole->UnregisterVariable("s_FileCacheManagerSize");
 		pConsole->UnregisterVariable("s_AudioObjectPoolSize");
+		pConsole->UnregisterVariable("s_TriggerInstancePoolSize");
 		pConsole->UnregisterVariable("s_IgnoreWindowFocus");
 
 #if defined(CRY_AUDIO_USE_OCCLUSION)

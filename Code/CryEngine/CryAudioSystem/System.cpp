@@ -31,6 +31,7 @@
 #include "Switch.h"
 #include "SwitchState.h"
 #include "Trigger.h"
+#include "TriggerInstance.h"
 #include "Common/IObject.h"
 #include <CrySystem/ITimer.h>
 #include <CryString/CryPath.h>
@@ -856,6 +857,17 @@ bool CSystem::Initialize()
 
 		CObject::CreateAllocator(static_cast<uint16>(g_cvars.m_objectPoolSize));
 
+		if (g_cvars.m_triggerInstancePoolSize < 1)
+		{
+			g_cvars.m_triggerInstancePoolSize = 1;
+
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+			Cry::Audio::Log(ELogType::Warning, R"(Trigger instance pool size must be at least 1. Forcing the cvar "s_TriggerInstancePoolSize" to 1!)");
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
+		}
+
+		CTriggerInstance::CreateAllocator(static_cast<uint16>(g_cvars.m_triggerInstancePoolSize));
+
 #if defined(CRY_AUDIO_USE_OCCLUSION)
 		// Add the callback for the obstruction calculation.
 		gEnv->pPhysicalWorld->AddEventClient(
@@ -928,6 +940,7 @@ void CSystem::Release()
 		g_cvars.UnregisterVariables();
 
 		CObject::FreeMemoryPool();
+		CTriggerInstance::FreeMemoryPool();
 
 		m_isInitialized = false;
 	}
@@ -3215,6 +3228,11 @@ void CSystem::HandleDrawDebug()
 				{
 					auto& allocator = CObject::GetAllocator();
 					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Objects", m_objectPoolSize);
+				}
+
+				{
+					auto& allocator = CTriggerInstance::GetAllocator();
+					DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Trigger Instances", static_cast<uint16>(g_cvars.m_triggerInstancePoolSize));
 				}
 
 				if (g_debugPoolSizes.triggers > 0)

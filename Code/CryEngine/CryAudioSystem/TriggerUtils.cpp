@@ -5,7 +5,6 @@
 #include "GlobalObject.h"
 #include "System.h"
 #include "CallbackRequestData.h"
-#include "Common/IImpl.h"
 #include "Common/IObject.h"
 #include "Common/ITriggerConnection.h"
 
@@ -16,18 +15,24 @@
 namespace CryAudio
 {
 //////////////////////////////////////////////////////////////////////////
-void SendFinishedTriggerInstanceRequest(STriggerInstanceState const& triggerInstanceState, EntityId const entityId)
+void SendFinishedTriggerInstanceRequest(
+	ControlId const triggerId,
+	EntityId const entityId,
+	ERequestFlags const flags /*= ERequestFlags::None*/,
+	void* const pOwner /*= nullptr*/,
+	void* const pUserData /*= nullptr*/,
+	void* const pUserDataOwner /*= nullptr*/)
 {
-	if ((triggerInstanceState.flags & ETriggerStatus::CallbackOnExternalThread) != 0)
+	if ((flags& ERequestFlags::DoneCallbackOnExternalThread) != 0)
 	{
-		SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> const requestData(triggerInstanceState.triggerId, entityId);
-		CRequest const request(&requestData, ERequestFlags::CallbackOnExternalOrCallingThread, triggerInstanceState.pOwnerOverride, triggerInstanceState.pUserData, triggerInstanceState.pUserDataOwner);
+		SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> const requestData(triggerId, entityId);
+		CRequest const request(&requestData, ERequestFlags::CallbackOnExternalOrCallingThread, pOwner, pUserData, pUserDataOwner);
 		g_system.PushRequest(request);
 	}
-	else if ((triggerInstanceState.flags & ETriggerStatus::CallbackOnAudioThread) != 0)
+	else if ((flags& ERequestFlags::DoneCallbackOnAudioThread) != 0)
 	{
-		SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> const requestData(triggerInstanceState.triggerId, entityId);
-		CRequest const request(&requestData, ERequestFlags::CallbackOnAudioThread, triggerInstanceState.pOwnerOverride, triggerInstanceState.pUserData, triggerInstanceState.pUserDataOwner);
+		SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> const requestData(triggerId, entityId);
+		CRequest const request(&requestData, ERequestFlags::CallbackOnAudioThread, pOwner, pUserData, pUserDataOwner);
 		g_system.PushRequest(request);
 	}
 }
@@ -35,9 +40,10 @@ void SendFinishedTriggerInstanceRequest(STriggerInstanceState const& triggerInst
 //////////////////////////////////////////////////////////////////////////
 void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConnections const& connections)
 {
-	STriggerInstanceState triggerInstanceState(pControl->GetId());
-
 	Impl::IObject* const pIObject = g_object.GetImplDataPtr();
+
+	uint16 numPlayingInstances = 0;
+	uint16 numPendingInstances = 0;
 
 	for (auto const pConnection : connections)
 	{
@@ -51,11 +57,11 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 
 			if (result != ETriggerResult::Pending)
 			{
-				++(triggerInstanceState.numPlayingInstances);
+				++numPlayingInstances;
 			}
 			else
 			{
-				++(triggerInstanceState.numPendingInstances);
+				++numPendingInstances;
 			}
 		}
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
@@ -66,17 +72,14 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 #endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 	}
 
-	if ((triggerInstanceState.numPlayingInstances > 0) || (triggerInstanceState.numPendingInstances > 0))
+	if ((numPlayingInstances > 0) || (numPendingInstances > 0))
 	{
-		triggerInstanceState.flags |= ETriggerStatus::Playing;
-		g_triggerInstanceIdToGlobalObject[g_triggerInstanceIdCounter] = &g_object;
-		g_object.AddTriggerState(g_triggerInstanceIdCounter, triggerInstanceState);
-		IncrementTriggerInstanceIdCounter();
+		g_object.ConstructTriggerInstance(pControl->GetId(), numPlayingInstances, numPendingInstances, ERequestFlags::None, nullptr, nullptr, nullptr);
 	}
 	else
 	{
 		// All of the events have either finished before we got here or never started, immediately inform the user that the trigger has finished.
-		SendFinishedTriggerInstanceRequest(triggerInstanceState, INVALID_ENTITYID);
+		SendFinishedTriggerInstanceRequest(pControl->GetId(), INVALID_ENTITYID);
 	}
 }
 } // namespace CryAudio

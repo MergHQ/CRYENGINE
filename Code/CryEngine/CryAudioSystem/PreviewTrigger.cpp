@@ -7,6 +7,7 @@
 
 	#include "Common.h"
 	#include "GlobalObject.h"
+	#include "TriggerUtils.h"
 	#include "Common/IImpl.h"
 	#include "Common/IObject.h"
 	#include "Common/ITriggerConnection.h"
@@ -31,26 +32,28 @@ CPreviewTrigger::~CPreviewTrigger()
 //////////////////////////////////////////////////////////////////////////
 void CPreviewTrigger::Execute(Impl::ITriggerInfo const& triggerInfo)
 {
-	g_pIImpl->DestructTriggerConnection(m_pConnection);
-	m_pConnection = nullptr;
+	Clear();
+
 	m_pConnection = g_pIImpl->ConstructTriggerConnection(&triggerInfo);
 
 	if (m_pConnection != nullptr)
 	{
-		STriggerInstanceState triggerInstanceState(m_id);
-
 		Impl::IObject* const pIObject = g_previewObject.GetImplDataPtr();
+
+		uint16 numPlayingInstances = 0;
+		uint16 numPendingInstances = 0;
+
 		ETriggerResult const result = m_pConnection->Execute(pIObject, g_triggerInstanceIdCounter);
 
 		if ((result == ETriggerResult::Playing) || (result == ETriggerResult::Virtual) || (result == ETriggerResult::Pending))
 		{
 			if (result != ETriggerResult::Pending)
 			{
-				++(triggerInstanceState.numPlayingInstances);
+				++numPlayingInstances;
 			}
 			else
 			{
-				++(triggerInstanceState.numPendingInstances);
+				++numPendingInstances;
 			}
 		}
 		else if (result != ETriggerResult::DoNotTrack)
@@ -58,17 +61,14 @@ void CPreviewTrigger::Execute(Impl::ITriggerInfo const& triggerInfo)
 			Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", GetName(), g_previewObject.GetName(), __FUNCTION__);
 		}
 
-		if ((triggerInstanceState.numPlayingInstances > 0) || (triggerInstanceState.numPendingInstances > 0))
+		if ((numPlayingInstances > 0) || (numPendingInstances > 0))
 		{
-			triggerInstanceState.flags |= ETriggerStatus::Playing;
-			g_triggerInstanceIdToGlobalObject[g_triggerInstanceIdCounter] = &g_previewObject;
-			g_previewObject.AddTriggerState(g_triggerInstanceIdCounter, triggerInstanceState);
-			IncrementTriggerInstanceIdCounter();
+			g_previewObject.ConstructTriggerInstance(m_id, numPlayingInstances, numPendingInstances, ERequestFlags::None, nullptr, nullptr, nullptr);
 		}
 		else
 		{
 			// All of the events have either finished before we got here or never started, immediately inform the user that the trigger has finished.
-			SendFinishedTriggerInstanceRequest(triggerInstanceState, INVALID_ENTITYID);
+			SendFinishedTriggerInstanceRequest(m_id, INVALID_ENTITYID);
 		}
 	}
 }
@@ -76,8 +76,11 @@ void CPreviewTrigger::Execute(Impl::ITriggerInfo const& triggerInfo)
 //////////////////////////////////////////////////////////////////////////
 void CPreviewTrigger::Clear()
 {
-	g_pIImpl->DestructTriggerConnection(m_pConnection);
-	m_pConnection = nullptr;
+	if (m_pConnection != nullptr)
+	{
+		g_pIImpl->DestructTriggerConnection(m_pConnection);
+		m_pConnection = nullptr;
+	}
 }
 }      // namespace CryAudio
 #endif // CRY_AUDIO_USE_PRODUCTION_CODE

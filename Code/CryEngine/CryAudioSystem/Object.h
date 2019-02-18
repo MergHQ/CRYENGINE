@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "TriggerUtils.h"
+#include "TriggerInstance.h"
 #include "Common/PoolObject.h"
 #include <CryAudio/IObject.h>
 
@@ -102,9 +102,29 @@ public:
 	void                   IncrementSyncCallbackCounter() { CryInterlockedIncrement(&m_numPendingSyncCallbacks); }
 	void                   DecrementSyncCallbackCounter() { CRY_ASSERT(m_numPendingSyncCallbacks >= 1); CryInterlockedDecrement(&m_numPendingSyncCallbacks); }
 
-	void                   AddTriggerState(TriggerInstanceId const id, STriggerInstanceState const& triggerInstanceState);
-	void                   ReportStartedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result);
-	void                   ReportFinishedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result);
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	void ConstructTriggerInstance(
+		ControlId const triggerId,
+		uint16 const numPlayingConnectionInstances,
+		uint16 const numPendingConnectionInstances,
+		ERequestFlags const flags,
+		void* const pOwner,
+		void* const pUserData,
+		void* const pUserDataOwner,
+		float const radius);
+#else
+	void ConstructTriggerInstance(
+		ControlId const triggerId,
+		uint16 const numPlayingConnectionInstances,
+		uint16 const numPendingConnectionInstances,
+		ERequestFlags const flags,
+		void* const pOwner,
+		void* const pUserData,
+		void* const pUserDataOwner);
+#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+
+	void ReportStartedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result);
+	void ReportFinishedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result);
 
 private:
 
@@ -123,12 +143,14 @@ private:
 	void         ToggleRelativeVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	// ~CryAudio::IObject
 
-	TriggerInstanceStates m_triggerInstanceStates;
-	Impl::IObject*        m_pIObject;
-	EObjectFlags          m_flags;
-	CTransformation       m_transformation;
-	EntityId              m_entityId;
-	volatile int          m_numPendingSyncCallbacks;
+	void SetActive();
+
+	TriggerInstances m_triggerInstances;
+	Impl::IObject*   m_pIObject;
+	EObjectFlags     m_flags;
+	CTransformation  m_transformation;
+	EntityId         m_entityId;
+	volatile int     m_numPendingSyncCallbacks;
 
 #if defined(CRY_AUDIO_USE_OCCLUSION)
 	CPropagationProcessor m_propagationProcessor;
