@@ -127,6 +127,7 @@ public:
 	bool                      HasBounds() const            { return m_bounds.GetVolume() > 0.0f; }
 	void                      AddBounds(const AABB& bb);
 	bool                      NeedsUpdate() const          { return ThreadMode() < 3 || !IsStable() || WasRenderedLastFrame(); }
+	uint                      Debug() const                { return m_debug; }
 
 private:
 	void     UpdateBounds();
@@ -172,6 +173,7 @@ private:
 	bool                                   m_active;
 	bool                                   m_alive;
 	uint                                   m_unrendered;
+	uint                                   m_debug;
 	stl::PSyncMultiThread                  m_lock;
 };
 

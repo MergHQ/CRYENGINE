@@ -300,6 +300,7 @@ struct CVars : public Cry3DEngineBase
 	DeclareConstIntCVar(e_RenderMeshUpdateAsync, 1);
 	int   e_ParticlesPreload;
 	int   e_ParticlesAllowRuntimeLoad;
+	int   e_ParticlesPrecacheAssets;
 	int   e_ParticlesConvertPfx1;
 	DeclareConstIntCVar(e_ParticlesSerializeNamedFields, 1);
 	float e_CoverageBufferOccludersViewDistRatio; // TODO: make use of this cvar

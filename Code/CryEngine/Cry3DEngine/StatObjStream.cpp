@@ -346,14 +346,14 @@ int CStatObj::GetStreamableContentMemoryUsage(bool bJustForDebug)
 	return m_nMergedMemoryUsage + m_arrRenderMeshesPotentialMemoryUsage[bCountLods];
 }
 
-void CStatObj::UpdateStreamingPrioriryInternal(const Matrix34A& objMatrix, float fImportance, bool bFullUpdate)
+void CStatObj::UpdateStreamingPrioriryInternal(float fImportance, bool bFullUpdate)
 {
 	int nRoundId = GetObjManager()->m_nUpdateStreamingPrioriryRoundId;
 
 	if (m_pParentObject && m_bSubObject)
 	{
 		// stream parent for sub-objects
-		m_pParentObject->UpdateStreamingPrioriryInternal(objMatrix, fImportance, bFullUpdate);
+		m_pParentObject->UpdateStreamingPrioriryInternal(fImportance, bFullUpdate);
 	}
 	else if (!m_bSubObject)
 	{
@@ -367,17 +367,17 @@ void CStatObj::UpdateStreamingPrioriryInternal(const Matrix34A& objMatrix, float
 	else if (m_pLod0)
 	{
 		// sub-object lod without parent
-		m_pLod0->UpdateStreamingPrioriryInternal(objMatrix, fImportance, bFullUpdate);
+		m_pLod0->UpdateStreamingPrioriryInternal(fImportance, bFullUpdate);
 		assert(!m_pLod0->m_bLodsAreLoadedFromSeparateFile);
 	}
 	else if (m_bCanUnload)
 		assert(!"Invalid CGF hierarchy");
 }
 
-bool CStatObj::UpdateStreamableComponents(float fImportance, const Matrix34A& objMatrix, bool bFullUpdate, int nNewLod)
+bool CStatObj::UpdateStreamableComponents(float fImportance, bool bFullUpdate, int nNewLod)
 {
 	if (m_pLod0) // redirect to lod0, otherwise we fail to pre-cache neighbor LODs
-		return m_pLod0->UpdateStreamableComponents(fImportance, objMatrix, bFullUpdate, nNewLod);
+		return m_pLod0->UpdateStreamableComponents(fImportance, bFullUpdate, nNewLod);
 
 #ifndef _RELEASE
 	if (GetCVars()->e_StreamCgfDebug && strlen(GetCVars()->e_StreamCgfDebugFilter->GetString()) && strstr(m_szFileName, GetCVars()->e_StreamCgfDebugFilter->GetString()))
@@ -408,7 +408,7 @@ bool CStatObj::UpdateStreamableComponents(float fImportance, const Matrix34A& ob
 				{
 					if (CStatObj* pLod = (CStatObj*)pSubStatObj->GetLodObject(l, true))
 					{
-						pLod->UpdateStreamingPrioriryInternal(objMatrix, fImportance, bFullUpdate);
+						pLod->UpdateStreamingPrioriryInternal(fImportance, bFullUpdate);
 
 						if (!(CStatObj*)pSubStatObj->m_pLODs)
 							break;
@@ -423,7 +423,7 @@ bool CStatObj::UpdateStreamableComponents(float fImportance, const Matrix34A& ob
 		{
 			if (CStatObj* pLod = (CStatObj*)GetLodObject(l, true))
 			{
-				pLod->UpdateStreamingPrioriryInternal(objMatrix, fImportance, bFullUpdate);
+				pLod->UpdateStreamingPrioriryInternal(fImportance, bFullUpdate);
 
 				if (!m_pLODs)
 					break;
@@ -434,11 +434,11 @@ bool CStatObj::UpdateStreamableComponents(float fImportance, const Matrix34A& ob
 	// update also next state CGF
 	if (!m_szStreamingDependencyFilePath.empty())
 		if (CStatObj* pNextState = (CStatObj*)GetObjManager()->FindStaticObjectByFilename(m_szStreamingDependencyFilePath))
-			pNextState->UpdateStreamableComponents(fImportance, objMatrix, bFullUpdate, nNewLod);
+			pNextState->UpdateStreamableComponents(fImportance, bFullUpdate, nNewLod);
 
 	if (m_pParentObject && !m_pParentObject->m_szStreamingDependencyFilePath.empty())
 		if (CStatObj* pNextState = (CStatObj*)GetObjManager()->FindStaticObjectByFilename(m_pParentObject->m_szStreamingDependencyFilePath))
-			pNextState->UpdateStreamableComponents(fImportance, objMatrix, bFullUpdate, nNewLod);
+			pNextState->UpdateStreamableComponents(fImportance, bFullUpdate, nNewLod);
 
 	if (GetBillboardMaterial())
 	{

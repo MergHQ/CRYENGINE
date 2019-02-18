@@ -11,11 +11,13 @@ struct IIndexedMesh;
 struct IParticleEffect;
 
 #include "Cry3DEngineBase.h"
+#include "RenderMeshUtils.h"
+
 #include <CryCore/Containers/CryArray.h>
+#include <CryThreading/IJobManager.h>
 
 #include <Cry3DEngine/IStatObj.h>
 #include <CrySystem/IStreamEngine.h>
-#include "RenderMeshUtils.h"
 #include <CryMath/GeomQuery.h>
 
 #define MAX_PHYS_GEOMS_TYPES 4
@@ -469,7 +471,7 @@ public:
 	// -------------------------------------------------------------------------------
 
 	virtual void StartStreaming(bool bFinishNow, IReadStream_AutoPtr * ppStream) final;
-	void UpdateStreamingPrioriryInternal(const Matrix34A &objMatrix, float fDistance, bool bFullUpdate);
+	void UpdateStreamingPrioriryInternal(float fDistance, bool bFullUpdate);
 
 	void MakeCompiledFileName(char* szCompiledFileName, int nMaxLen);
 
@@ -573,7 +575,7 @@ public:
 	virtual float GetLodDistance() const final     { return m_fLodDistance; }
 	virtual Vec3  GetDepthSortOffset() const final { return m_depthSortOffset; }
 	virtual int ComputeLodFromScale(float fScale, float fLodRatioNormalized, float fEntDistance, bool bFoliage, bool bForPrecache) final;
-	bool UpdateStreamableComponents(float fImportance, const Matrix34A &objMatrix, bool bFullUpdate, int nNewLod);
+	bool UpdateStreamableComponents(float fImportance, bool bFullUpdate, int nNewLod);
 	void GetStreamableName(string& sName) final
 	{
 		sName = m_szFileName;

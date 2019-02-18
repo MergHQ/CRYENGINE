@@ -183,8 +183,7 @@ void CParticleSystem::FinishRenderTasks(const SRenderingPassInfo& passInfo)
 	m_jobManager.DeferredRender();
 	DebugParticleSystem(m_emitters);
 
-	const bool debugBBox = (GetCVars()->e_ParticlesDebug & AlphaBit('b')) != 0;
-	if (debugBBox)
+	if (DebugMode('b'))
 	{
 		for (auto& pEmitter : m_emitters)
 			pEmitter->DebugRender(passInfo);
@@ -226,7 +225,7 @@ void DisplayParticleStats(Vec2& displayLocation, float lineHeight, cstr name, TS
 	{
 		auto screens = stats.pixels;
 		const float pixelsToScreens = 1.0f / (gEnv->pRenderer->GetWidth() * gEnv->pRenderer->GetHeight());
-		screens.alloc = C3DEngine::GetCVars()->e_ParticlesMaxScreenFill;
+		screens.alloc = GetCVars()->e_ParticlesMaxScreenFill;
 		screens.alive = 1;
 		screens.rendered *= pixelsToScreens;
 		screens.updated *= pixelsToScreens;
@@ -269,14 +268,14 @@ void CParticleSystem::DisplayStats(Vec2& location, float lineHeight)
 		if (!countsAvg.emitters.IsZero())
 			DisplayParticleStats(location, lineHeight, "Particles V1", countsAvg);
 			
-		if (GetCVars()->e_ParticlesDebug & AlphaBit('r'))
+		if (DebugMode('r'))
 		{
 			gEnv->p3DEngine->DrawTextRightAligned(location.x, location.y += lineHeight,
 			                     "Reiter %4.0f, Reject %4.0f, Clip %4.1f, Coll %4.1f / %4.1f",
 			                     countsAvg.particles.reiterate, countsAvg.particles.reject, countsAvg.particles.clip,
 			                     countsAvg.particles.collideHit, countsAvg.particles.collideTest);
 		}
-		if (GetCVars()->e_ParticlesDebug & AlphaBits('bx'))
+		if (DebugMode('bx'))
 		{
 			if (countsAvg.volume.stat + countsAvg.volume.dyn > 0.0f)
 			{
@@ -306,15 +305,27 @@ void CParticleSystem::ClearRenderResources()
 	m_emitters.clear();
 	m_newEmitters.clear();
 
-	// Remove only unreferenced effects
 	for (auto it = m_effects.begin(); it != m_effects.end(); )
 	{
-		if (!it->second || it->second->Unique())
-			it = m_effects.erase(it);
-		else
-			++it;
+		if (auto& pEffect = it->second)
+		{
+			if (m_numLevelLoads == 0)
+			{
+				// Preserve all effects loaded at startup
+				pEffect->AddRef();
+			}
+			else if (pEffect->Unique())
+			{
+				// Remove unreferenced effects loaded last level
+				it = m_effects.erase(it);
+				continue;
+			}
+		}
+		++it;
 	}
+
 	m_numFrames = 0;
+	m_numLevelLoads ++;
 
 	for (auto& data : m_threadData)
 		data.memHeap.FreeEmptyPages();

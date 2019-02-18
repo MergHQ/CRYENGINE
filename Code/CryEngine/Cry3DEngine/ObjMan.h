@@ -253,7 +253,7 @@ public:
 
 	void                    PrecacheStatObjMaterial(IMaterial* pMaterial, const float fEntDistance, IStatObj* pStatObj, bool bFullUpdate, bool bDrawNear);
 
-	void                    PrecacheStatObj(CStatObj* pStatObj, int nLod, const Matrix34A& statObjMatrix, IMaterial* pMaterial, float fImportance, float fEntDistance, bool bFullUpdate, bool bHighPriority);
+	void                    PrecacheStatObj(CStatObj* pStatObj, int nLod, IMaterial* pMaterial, float fImportance, float fEntDistance, bool bFullUpdate, bool bHighPriority);
 
 	NCullQueue::SCullQueue& CullQueue() { return m_cullQueue; }
 

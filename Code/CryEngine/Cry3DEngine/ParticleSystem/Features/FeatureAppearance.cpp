@@ -107,11 +107,16 @@ public:
 		CRY_PFX2_PROFILE_DETAIL;
 		if (!m_materialName.empty())
 		{
-			pParams->m_pMaterial = gEnv->p3DEngine->GetMaterialManager()->FindMaterial(m_materialName);
+			if (GetPSystem()->IsRuntime())
+				pParams->m_pMaterial = gEnv->p3DEngine->GetMaterialManager()->FindMaterial(m_materialName);
 			if (!pParams->m_pMaterial)
 			{
 				GetPSystem()->CheckFileAccess(m_materialName);
 				pParams->m_pMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(m_materialName);
+			}
+			if (pParams->m_pMaterial && GetCVars()->e_ParticlesPrecacheAssets)
+			{
+				pParams->m_pMaterial->PrecacheMaterial(0.0f, nullptr, true, true);
 			}
 		}
 		if (!m_textureName.empty())

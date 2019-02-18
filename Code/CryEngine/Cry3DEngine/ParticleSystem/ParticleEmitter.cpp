@@ -2,13 +2,16 @@
 
 #include "StdAfx.h"
 #include "ParticleEmitter.h"
-#include "ParticleComponentRuntime.h"
 #include "ParticleManager.h"
 #include "ParticleSystem.h"
-#include "ParticleDataTypes.h"
-#include "ParticleFeature.h"
+
+#include "3dEngine.h"
 #include "FogVolumeRenderNode.h"
-#include <CryEntitySystem/IEntitySystem.h>
+#include "LightVolumeManager.h"
+#include "Material.h"
+#include "ObjMan.h"
+
+#include <CryRenderer/IRenderAuxGeom.h>
 
 namespace pfx2
 {
@@ -73,6 +76,8 @@ CParticleEmitter::CParticleEmitter(CParticleEffect* pEffect, uint emitterId)
 	static PUseData s_emitterData = std::make_shared<SEmitterData>();
 	m_parentContainer.SetUsedData(s_emitterData);
 	m_parentContainer.AddParticle();
+
+	m_debug = DebugVar();
 }
 
 CParticleEmitter::~CParticleEmitter()
@@ -264,7 +269,7 @@ bool CParticleEmitter::UpdateParticles()
 	// Update all components, and accumulate bounds and stats
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
-	if (m_spawnParams.bPrime && !(GetCVars()->e_ParticlesDebug & AlphaBit('p')))
+	if (m_spawnParams.bPrime && !DebugMode('p'))
 	{
 		if (m_timeUpdated == m_timeCreated)
 			m_time = m_timeStable;
@@ -318,11 +323,12 @@ void CParticleEmitter::DebugRender(const SRenderingPassInfo& passInfo) const
 {
 	if (!GetRenderer())
 		return;
-
-	IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
-
+	if (!DebugMode('b'))
+		return;
 	if (!IsAlive() && !HasParticles())
 		return;
+
+	IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
 
 	const bool visible = WasRenderedLastFrame();
 	const bool stable = IsStable();
@@ -576,6 +582,10 @@ void CParticleEmitter::SetTarget(const ParticleTarget& target)
 
 void CParticleEmitter::UpdateStreamingPriority(const SUpdateStreamingPriorityContext& context)
 {
+	if (GetCVars()->e_ParticlesPrecacheAssets)
+		// Already cached at maximum priority
+		return;
+
 	FUNCTION_PROFILER_3DENGINE;
 
 	for (auto& pRuntime : m_componentRuntimes)
@@ -595,13 +605,14 @@ void CParticleEmitter::UpdateStreamingPriority(const SUpdateStreamingPriorityCon
 		}
 
 		if (CStatObj* pStatObj = static_cast<CStatObj*>(params.m_pMesh.get()))
-			m_pObjManager->PrecacheStatObj(pStatObj, context.lod, Matrix34A(m_location),
+			m_pObjManager->PrecacheStatObj(pStatObj, context.lod,
 				pStatObj->GetMaterial(), context.importance, normalizedDist, context.bFullUpdate, bHighPriority);
 	}
 }
 
 void CParticleEmitter::UpdatePhysEnv()
 {
+	CRY_PFX2_PROFILE_DETAIL;
 	CParticleManager::Instance()->GetPhysEnviron().Update(m_physEnviron, 
 		m_bounds, m_visEnviron.OriginIndoors(), m_pEffect->GetEnvironFlags() | ENV_WATER, true, 0);
 }
