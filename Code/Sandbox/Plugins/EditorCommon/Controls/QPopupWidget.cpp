@@ -55,6 +55,10 @@ QPopupWidget::QPopupWidget(const QString& name, QWidget* pContent, QSize sizeHin
 		QSize lastSize = QtUtil::ToQSize(lastSizeVar);
 		resize(lastSize);
 	}
+	else
+	{
+		resize(m_sizeHint);
+	}
 }
 
 void QPopupWidget::ShowAt(const QPoint& globalPos, Origin origin /* = Unknown*/)
@@ -64,17 +68,15 @@ void QPopupWidget::ShowAt(const QPoint& globalPos, Origin origin /* = Unknown*/)
 
 	// Use the desktop widget to get screen size and position
 	QDesktopWidget* pDesktopWidget = QApplication::desktop();
-	QRect screenRes = pDesktopWidget->screenGeometry(globalPos);
 
 	// Get the screen widget so we can determine the screen's global position and move the screen rect to match
 	QWidget* pScreen = pDesktopWidget->screen(pDesktopWidget->screenNumber(globalPos));
-	screenRes.moveTopLeft(pScreen->pos());
 
-	// Rects bounds go from 0 to screenRes - 1, get the real bottom-right-most pixel
-	int screenRight = screenRes.x() + screenRes.width();
-	int screenBottom = screenRes.y() + screenRes.height();
+	const QRect screenGeometry = pDesktopWidget->screenGeometry(pScreen);
+	const QPoint bottomRight(globalPos.x() + width(), globalPos.y() + height());
 
-	QPoint bottomRight(globalPos.x() + width(), globalPos.y() + height());
+	const int screenRight = screenGeometry.x() + screenGeometry.width();
+	const int screenBottom = screenGeometry.y() + screenGeometry.height();
 
 	m_origin = origin;
 	if (m_origin == Origin::Unknown)
@@ -134,7 +136,7 @@ void QPopupWidget::OnFocusChanged(QWidget* pOld, QWidget* pNew)
 	// If the newly focused item is the widget we share focus with, make sure to raise our widget
 	// so it stays visible
 	if (pNew == m_pFocusShareWidget || (m_pFocusShareWidget && pNew->isAncestorOf(m_pFocusShareWidget) &&
-	                                    QApplication::widgetAt(QCursor::pos()) == m_pFocusShareWidget))
+		QApplication::widgetAt(QCursor::pos()) == m_pFocusShareWidget))
 	{
 		raise();
 		return;
@@ -174,14 +176,19 @@ void QPopupWidget::mouseMoveEvent(QMouseEvent* pEvent)
 		QRect currGeometry = m_initialGeometry;
 
 		// Use the desktop widget to get screen size and position
-		const QRect screenRes = QApplication::desktop()->screenGeometry(mapToGlobal(pos()));
+		const int screenWidth = QApplication::desktop()->width();
+		const int screenHeight = QApplication::desktop()->height();
 
 		// pEvent->pos() cannot be used here, because sometimes while mouse move, it can have invalid values.
 		// Take them from cursor position
-		const QPoint delta = m_mousePressPos - QCursor::pos();
+
+		const QRect screenRes = QRect(0, 0, screenWidth, screenHeight);
+		const QPoint mouseCurrentPos = QCursor::pos();
+
+		const QPoint delta = m_mousePressPos - mouseCurrentPos;
 		if (m_resizeFlags & Origin::Left)
 		{
-			int newLeft = currGeometry.left() - delta.x() * m_resizeConstraint.x();
+			int newLeft = currGeometry.left() - delta.x()*m_resizeConstraint.x();
 			int newWidth = currGeometry.right() - newLeft;
 
 			// Make sure we don't move the left side more than is allowed or we'll eventually be moving the anchor point
