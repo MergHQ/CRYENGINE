@@ -83,18 +83,20 @@ namespace Schematyc2
 			Input,
 			FunctionBegin,
 			FunctionEnd,
+			Signal,
 
 			Count
 		};
 
-		SExecutionHistoryItem(const SGUID& guid, const string& value, const string& data, EExecutionHistoryType type)
-			: guid(guid), value(value), data(data), type(type)
+		SExecutionHistoryItem(const SGUID& guid, const string& value, const string& data, const float time, EExecutionHistoryType type)
+			: guid(guid), value(value), data(data), time(time), type(type)
 		{
 		}
 
 		SGUID                 guid;
 		string                value;
 		string                data;
+		float                 time;
 		EExecutionHistoryType type;
 	};
 
