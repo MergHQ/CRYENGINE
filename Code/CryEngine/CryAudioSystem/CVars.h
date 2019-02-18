@@ -21,9 +21,12 @@ public:
 	void RegisterVariables();
 	void UnregisterVariables();
 
-	int m_fileCacheManagerSize = 0;
-	int m_objectPoolSize = 0;
-	int m_triggerInstancePoolSize = 0;
+#if CRY_PLATFORM_DURANGO
+	int m_fileCacheManagerSize = 384 << 10;
+#endif // CRY_PLATFORM_DURANGO
+
+	int m_objectPoolSize = 256;
+	int m_triggerInstancePoolSize = 512;
 	int m_ignoreWindowFocus = 0;
 
 #if defined(CRY_AUDIO_USE_OCCLUSION)
@@ -33,9 +36,9 @@ public:
 	int   m_occlusionAccumulate = 1;
 	float m_occlusionMaxDistance = 500.0f;
 	float m_occlusionMinDistance = 0.1f;
-	float m_occlusionMaxSyncDistance = 0.0f;
-	float m_occlusionHighDistance = 0.0f;
-	float m_occlusionMediumDistance = 0.0f;
+	float m_occlusionMaxSyncDistance = 10.0f;
+	float m_occlusionHighDistance = 10.0f;
+	float m_occlusionMediumDistance = 80.0f;
 	float m_occlusionListenerPlaneSize = 0.0f;
 	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	int   m_occlusionGlobalType = 0;

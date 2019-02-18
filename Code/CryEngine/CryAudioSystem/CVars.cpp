@@ -216,77 +216,17 @@ void CmdRefresh(IConsoleCmdArgs* pCmdArgs)
 //////////////////////////////////////////////////////////////////////////
 void CCVars::RegisterVariables()
 {
-	m_triggerInstancePoolSize = 512;
-
-#if CRY_PLATFORM_WINDOWS
-	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on PC
-	m_objectPoolSize = 256;
-	#if defined(CRY_AUDIO_USE_OCCLUSION)
-	m_occlusionMaxSyncDistance = 10.0f;
-	m_occlusionHighDistance = 10.0f;
-	m_occlusionMediumDistance = 80.0f;
-	#endif // CRY_AUDIO_USE_OCCLUSION
-#elif CRY_PLATFORM_DURANGO
-	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on XboxOne
-	m_objectPoolSize = 256;
-	#if defined(CRY_AUDIO_USE_OCCLUSION)
-	m_occlusionMaxSyncDistance = 10.0f;
-	m_occlusionHighDistance = 10.0f;
-	m_occlusionMediumDistance = 80.0f;
-	#endif // CRY_AUDIO_USE_OCCLUSION
-#elif CRY_PLATFORM_ORBIS
-	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on PS4
-	m_objectPoolSize = 256;
-	#if defined(CRY_AUDIO_USE_OCCLUSION)
-	m_occlusionMaxSyncDistance = 10.0f;
-	m_occlusionHighDistance = 10.0f;
-	m_occlusionMediumDistance = 80.0f;
-	#endif // CRY_AUDIO_USE_OCCLUSION
-#elif CRY_PLATFORM_MAC
-	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on Mac
-	m_objectPoolSize = 256;
-	#if defined(CRY_AUDIO_USE_OCCLUSION)
-	m_occlusionMaxSyncDistance = 10.0f;
-	m_occlusionHighDistance = 10.0f;
-	m_occlusionMediumDistance = 80.0f;
-	#endif // CRY_AUDIO_USE_OCCLUSION
-#elif CRY_PLATFORM_LINUX
-	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on Linux
-	m_objectPoolSize = 256;
-	#if defined(CRY_AUDIO_USE_OCCLUSION)
-	m_occlusionMaxSyncDistance = 10.0f;
-	m_occlusionHighDistance = 10.0f;
-	m_occlusionMediumDistance = 80.0f;
-	#endif // CRY_AUDIO_USE_OCCLUSION
-#elif CRY_PLATFORM_IOS
-	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on iOS
-	m_objectPoolSize = 256;
-	#if defined(CRY_AUDIO_USE_OCCLUSION)
-	m_occlusionMaxSyncDistance = 10.0f;
-	m_occlusionHighDistance = 10.0f;
-	m_occlusionMediumDistance = 80.0f;
-	#endif // CRY_AUDIO_USE_OCCLUSION
-#elif CRY_PLATFORM_ANDROID
-	m_fileCacheManagerSize = 72 << 10;      // 72 MiB
-	m_objectPoolSize = 256;
-	#if defined(CRY_AUDIO_USE_OCCLUSION)
-	m_occlusionMaxSyncDistance = 10.0f;
-	m_occlusionHighDistance = 10.0f;
-	m_occlusionMediumDistance = 80.0f;
-	#endif // CRY_AUDIO_USE_OCCLUSION
-#else
-	#error "Undefined platform."
-#endif
-
+#if CRY_PLATFORM_DURANGO
 	REGISTER_CVAR2("s_FileCacheManagerSize", &m_fileCacheManagerSize, m_fileCacheManagerSize, VF_REQUIRE_APP_RESTART,
 	               "Sets the size in KiB the AFCM will allocate on the heap.\n"
 	               "Usage: s_FileCacheManagerSize [0/...]\n"
-	               "Default PC: 393216 (384 MiB), XboxOne: 393216 (384 MiB), PS4: 393216 (384 MiB), Mac: 393216 (384 MiB), Linux: 393216 (384 MiB), iOS: 2048 (2 MiB), Android: 73728 (72 MiB)\n");
+	               "Default: 393216 (384 MiB)\n");
+#endif // CRY_PLATFORM_DURANGO
 
 	REGISTER_CVAR2("s_AudioObjectPoolSize", &m_objectPoolSize, m_objectPoolSize, VF_REQUIRE_APP_RESTART,
 	               "Sets the number of preallocated audio objects and corresponding audio proxies.\n"
 	               "Usage: s_AudioObjectPoolSize [0/...]\n"
-	               "Default PC: 256, XboxOne: 256, PS4: 256, Mac: 256, Linux: 256, iOS: 256, Android: 256\n");
+	               "Default: 256\n");
 
 	REGISTER_CVAR2("s_TriggerInstancePoolSize", &m_triggerInstancePoolSize, m_triggerInstancePoolSize, VF_REQUIRE_APP_RESTART,
 	               "Sets the number of preallocated trigger instances.\n"
@@ -333,7 +273,7 @@ void CCVars::RegisterVariables()
 	REGISTER_CVAR2("s_OcclusionAccumulate", &m_occlusionAccumulate, m_occlusionAccumulate, VF_CHEAT | VF_CHEAT_NOCHECK,
 	               "Sets whether occlusion values encountered by a ray cast will be accumulated or only the highest value will be used.\n"
 	               "Usage: s_OcclusionAccumulate [0/1] (off/on)\n"
-	               "Default PC: 1, XboxOne: 1, PS4: 1, Mac: 1, Linux: 1, iOS: 1, Android: 1\n");
+	               "Default: 1\n");
 
 	REGISTER_CVAR2_CB("s_OcclusionCollisionTypes", &m_occlusionCollisionTypes, AlphaBits64("abcd"), VF_CHEAT | VF_BITFIELD,
 	                  "Sets which types of ray casting collision hits are used to calculate occlusion.\n"
@@ -372,7 +312,7 @@ void CCVars::RegisterVariables()
 	               "4: All audio objects use medium ray casting.\n"
 	               "5: All audio objects use high ray casting.\n"
 	               "Usage: s_OcclusionGlobalType [0/1/2/3/4/5]\n"
-	               "Default PC: 0, XboxOne: 0, PS4: 0, Mac: 0, Linux: 0, iOS: 0, Android: 0\n");
+	               "Default: 0\n");
 	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 #endif   // CRY_AUDIO_USE_OCCLUSION
 
@@ -507,7 +447,10 @@ void CCVars::UnregisterVariables()
 
 	if (pConsole != nullptr)
 	{
+#if CRY_PLATFORM_DURANGO
 		pConsole->UnregisterVariable("s_FileCacheManagerSize");
+#endif // CRY_PLATFORM_DURANGO
+
 		pConsole->UnregisterVariable("s_AudioObjectPoolSize");
 		pConsole->UnregisterVariable("s_TriggerInstancePoolSize");
 		pConsole->UnregisterVariable("s_IgnoreWindowFocus");

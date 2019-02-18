@@ -41,24 +41,16 @@ CFileCacheManager::~CFileCacheManager()
 //////////////////////////////////////////////////////////////////////////
 void CFileCacheManager::Initialize()
 {
-	AllocateHeap(static_cast<size_t>(g_cvars.m_fileCacheManagerSize), "AudioFileCacheManager");
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileCacheManager::AllocateHeap(size_t const size, char const* const szUsage)
-{
-	if (size > 0)
-	{
 #if CRY_PLATFORM_DURANGO
-		m_pMemoryHeap = gEnv->pSystem->GetIMemoryManager()->CreateCustomMemoryHeapInstance(IMemoryManager::eapAPU);
-#else
-		m_pMemoryHeap = gEnv->pSystem->GetIMemoryManager()->CreateCustomMemoryHeapInstance(IMemoryManager::eapCustomAlignment);
-#endif // CRY_PLATFORM_DURANGO
-		if (m_pMemoryHeap != nullptr)
-		{
-			m_maxByteTotal = size << 10;
-		}
+	m_pMemoryHeap = gEnv->pSystem->GetIMemoryManager()->CreateCustomMemoryHeapInstance(IMemoryManager::eapAPU);
+
+	if (m_pMemoryHeap != nullptr)
+	{
+		m_maxByteTotal = static_cast<size_t>(g_cvars.m_fileCacheManagerSize) << 10;
 	}
+#else
+	m_pMemoryHeap = gEnv->pSystem->GetIMemoryManager()->CreateCustomMemoryHeapInstance(IMemoryManager::eapCustomAlignment);
+#endif // CRY_PLATFORM_DURANGO
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -341,7 +333,12 @@ void CFileCacheManager::StreamAsyncOnComplete(IReadStream* pStream, unsigned int
 //////////////////////////////////////////////////////////////////////////
 void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 {
+	#if CRY_PLATFORM_DURANGO
 	auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "FileCacheManager (%d of %d KiB) [Entries: %d]", static_cast<int>(m_currentByteTotal >> 10), static_cast<int>(m_maxByteTotal >> 10), static_cast<int>(m_fileEntries.size()));
+	#else
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "FileCacheManager (%d KiB) [Entries: %d]", static_cast<int>(m_currentByteTotal >> 10), static_cast<int>(m_fileEntries.size()));
+	#endif // CRY_PLATFORM_DURANGO
+
 	posY += Debug::g_listHeaderLineHeight;
 
 	if (!m_fileEntries.empty())
@@ -463,52 +460,6 @@ void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX,
 #endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
-bool CFileCacheManager::DoesRequestFitInternal(size_t const requestSize)
-{
-	// Make sure these unsigned values don't flip around.
-	CRY_ASSERT(m_currentByteTotal <= m_maxByteTotal);
-	bool bSuccess = false;
-
-	if (requestSize <= (m_maxByteTotal - m_currentByteTotal))
-	{
-		// Here the requested size is available without the need of first cleaning up.
-		bSuccess = true;
-	}
-	else
-	{
-		// Determine how much memory would get freed if all eAFF_REMOVABLE files get thrown out.
-		// We however skip files that are already queued for unload. The request will get queued up in that case.
-		size_t potentialMemoryGain = 0;
-
-		// Check the single file entries for removability.
-		for (auto const& audioFileEntryPair : m_fileEntries)
-		{
-			CFileEntry* const pFileEntry = audioFileEntryPair.second;
-
-			if ((pFileEntry != nullptr) &&
-			    ((pFileEntry->m_flags & EFileFlags::Cached) != 0) &&
-			    ((pFileEntry->m_flags & EFileFlags::Removable) != 0))
-			{
-				potentialMemoryGain += pFileEntry->m_size;
-			}
-		}
-
-		size_t const maxAvailableSize = (m_maxByteTotal - (m_currentByteTotal - potentialMemoryGain));
-
-		if (requestSize <= maxAvailableSize)
-		{
-			// Here we need to cleanup first before allowing the new request to be allocated.
-			TryToUncacheFiles();
-
-			// We should only indicate success if there's actually really enough room for the new entry!
-			bSuccess = (m_maxByteTotal - m_currentByteTotal) >= requestSize;
-		}
-	}
-
-	return bSuccess;
-}
-
-//////////////////////////////////////////////////////////////////////////
 bool CFileCacheManager::FinishStreamInternal(IReadStreamPtr const pStream, int unsigned const error)
 {
 	bool bSuccess = false;
@@ -596,7 +547,9 @@ bool CFileCacheManager::AllocateMemoryBlockInternal(CFileEntry* const __restrict
 //////////////////////////////////////////////////////////////////////////
 void CFileCacheManager::UncacheFile(CFileEntry* const pFileEntry)
 {
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	m_currentByteTotal -= pFileEntry->m_size;
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
 
 	if (pFileEntry->m_pReadStream)
 	{
@@ -678,7 +631,7 @@ bool CFileCacheManager::TryCacheFileCacheEntryInternal(
 	    ((pFileEntry->m_flags & EFileFlags::NotCached) != 0) &&
 	    (pFileEntry->m_flags & (EFileFlags::Cached | EFileFlags::Loading)) == 0)
 	{
-		if (DoesRequestFitInternal(pFileEntry->m_size) && AllocateMemoryBlockInternal(pFileEntry))
+		if (AllocateMemoryBlockInternal(pFileEntry))
 		{
 			StreamReadParams streamReadParams;
 			streamReadParams.nOffset = 0;
@@ -698,8 +651,10 @@ bool CFileCacheManager::TryCacheFileCacheEntryInternal(
 				pFileEntry->m_pReadStream->Wait();
 			}
 
-			// Always add to the total size.
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 			m_currentByteTotal += pFileEntry->m_size;
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
+
 			bSuccess = true;
 		}
 		else
